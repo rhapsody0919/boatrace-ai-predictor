@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.js";
 
 /**
  * 画面幅ごとのレイアウト崩れを機械的に検知する。

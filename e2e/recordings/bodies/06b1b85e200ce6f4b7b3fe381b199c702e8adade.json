@@ -1,0 +1,6 @@
+[{"boat_number":1,"win_rate":5.690,"local_win_rate":6.340,"global_2rate":39.33,"local_2rate":43.75,"global_3rate":58.43,"local_3rate":65.63,"f_count":2,"l_count":0}, 
+ {"boat_number":2,"win_rate":4.510,"local_win_rate":3.290,"global_2rate":24.66,"local_2rate":0.00,"global_3rate":38.36,"local_3rate":14.29,"f_count":0,"l_count":0}, 
+ {"boat_number":3,"win_rate":4.920,"local_win_rate":4.600,"global_2rate":32.18,"local_2rate":28.00,"global_3rate":41.38,"local_3rate":40.00,"f_count":0,"l_count":0}, 
+ {"boat_number":4,"win_rate":7.120,"local_win_rate":6.800,"global_2rate":54.62,"local_2rate":50.00,"global_3rate":78.15,"local_3rate":70.00,"f_count":0,"l_count":0}, 
+ {"boat_number":5,"win_rate":3.970,"local_win_rate":3.140,"global_2rate":20.41,"local_2rate":4.76,"global_3rate":36.73,"local_3rate":14.29,"f_count":1,"l_count":0}, 
+ {"boat_number":6,"win_rate":1.150,"local_win_rate":1.500,"global_2rate":0.00,"local_2rate":0.00,"global_3rate":0.00,"local_3rate":0.00,"f_count":1,"l_count":0}]

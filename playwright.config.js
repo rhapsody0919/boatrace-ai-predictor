@@ -1,5 +1,6 @@
 import { defineConfig } from "@playwright/test";
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 // このマシンでは複数のgit worktreeが並行してdevサーバーを起動する運用のため、
 // 既定ポート5173を全worktreeで共有すると、reuseExistingServer:true経由で
@@ -13,11 +14,37 @@ function derivePortFromCwd() {
   return 40000 + (hash.readUInt16BE(0) % 10000);
 }
 
+// 既定（replay）は e2e/recordings/ の録画を再生し、時計を録画時刻に固定する。
+// E2E_LIVE=1 で本番データ・実時刻、E2E_RECORD=1 で撮り直し（e2e/fixtures.js、ADR-0077）
+const isReplay = process.env.E2E_LIVE !== "1" && process.env.E2E_RECORD !== "1";
+
+// replay では、フロントが叩く Supabase のオリジンを録画時と揃える
+// （HAR はURLの完全一致で引くため）。Vite は既存の環境変数を .env より優先する
+function replayServerEnv() {
+  if (!isReplay) return undefined;
+  let meta;
+  try {
+    meta = JSON.parse(readFileSync("e2e/recordings/meta.json", "utf8"));
+  } catch (error) {
+    throw new Error(
+      `e2e/recordings/meta.json を読めません。npm run test:e2e:record で録画してください: ${error.message}`,
+    );
+  }
+  return {
+    ...process.env,
+    VITE_SUPABASE_URL: meta.supabaseOrigin,
+    // 再生時は本番へ出ないので実キーは要らない。未設定でもクライアントを作れるようにする
+    VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || "e2e-replay",
+  };
+}
+
 const explicitPort = process.env.PW_PORT;
 const port = explicitPort || String(derivePortFromCwd());
 
 export default defineConfig({
   testDir: "./e2e",
+  globalSetup: "./e2e/global-setup.js",
+  globalTeardown: "./e2e/global-teardown.js",
   // 本番Supabaseに直接接続するため、DB応答の揺らぎで読み込み待ちが伸びる。
   // 既定の5秒expect・30秒テストではDBが少し遅いだけで大量に失敗するため余裕を持たせる
   timeout: 60000,
@@ -89,6 +116,7 @@ export default defineConfig({
   ],
   webServer: {
     command: `npm run dev -- --port ${port} --strictPort`,
+    env: replayServerEnv(),
     url: `http://localhost:${port}`,
     // PW_PORTを明示指定した場合のみ既存サーバーの再利用を許可する
     // （開発者が意図的に指定した前提）。無指定時は上記の自動導出ポートで

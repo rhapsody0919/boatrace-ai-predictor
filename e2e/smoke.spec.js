@@ -1,4 +1,10 @@
-import { test, expect } from "@playwright/test";
+import {
+  test,
+  expect,
+  applyRecording,
+  e2eNow,
+  e2eTodayJST,
+} from "./fixtures.js";
 
 test.describe("ホーム・基本ナビゲーション", () => {
   test("トップページが表示され、主要ナビが機能する", async ({ page }) => {
@@ -560,9 +566,7 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
   test("/races/{本日}には導線がある（本日開催中のレースのため機能する）", async ({
     page,
   }) => {
-    const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
+    const today = e2eTodayJST();
     await page.goto(`/races/${today}`);
     await page.locator(".venue-grid-card--open").first().click();
     await page.locator(".race-card .predict-btn").first().click();
@@ -666,8 +670,7 @@ test.describe("開催場一覧ページ（venue-list-redesign）", () => {
 // DBの状態に依存しないよう、Edge API・Supabase RESTはpage.routeで差し替える
 test.describe("予測データ取得失敗の扱い（失敗を「開催なし」と誤表示せずキャッシュしない）", () => {
   const NO_RACES_TEXT = "本日、このレース場での開催はありません";
-  const todayJST = () =>
-    new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const todayJST = e2eTodayJST;
 
   const predictionCacheKeys = (page) =>
     page.evaluate(() =>
@@ -677,8 +680,8 @@ test.describe("予測データ取得失敗の扱い（失敗を「開催なし�
     );
 
   const mockEdgeRaces = (date) => ({
-    generatedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    generatedAt: e2eNow().toISOString(),
+    updatedAt: e2eNow().toISOString(),
     races: [1, 2].map((n) => ({
       raceId: `${date}-05-${String(n).padStart(2, "0")}`,
       venueCode: 5,
@@ -2070,10 +2073,12 @@ test.describe("レース荒れ度ムード演出（BOA-195: race-open-animation�
 
   test("prefers-reduced-motion環境では波紋アニメーションが表示されない", async ({
     browser,
-  }) => {
+  }, testInfo) => {
     test.setTimeout(60000);
     const context = await browser.newContext({ reducedMotion: "reduce" });
     try {
+      // fixture を通らない context なので、録画の再生と時計の固定を明示的に掛ける
+      await applyRecording(context, testInfo);
       const page = await context.newPage();
       const level = await findRaceWithVolatilityLevel(page);
       test.skip(

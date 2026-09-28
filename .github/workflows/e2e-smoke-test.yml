@@ -1,5 +1,11 @@
 name: E2E Smoke Test
 
+# PRゲート。本番へは繋がず、e2e/recordings/ の録画（HAR）を再生し、ブラウザ時計を
+# 録画時刻に固定して実行する（BOA-466、ADR-0077）。以前は本番Supabase・本番 /api に
+# 直結しており、当日データと実行時刻で結果が変わっていた（直近30回で失敗14回）。
+# 本番データでの実行は e2e-live.yml が開催時間帯に定期実行する。
+# 録画の撮り直し: npm run test:e2e:record
+
 on:
   pull_request:
     branches:
@@ -24,11 +30,11 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E smoke tests
+      # Supabase のオリジンは録画（e2e/recordings/meta.json）から playwright.config.js が
+      # 設定し、録画に無い通信は abort するため、本番の接続情報は渡さない
+      - name: Run E2E smoke tests (録画の再生)
         env:
           CI: true
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run test:e2e
 
       # skipされたテストを数える。データ依存の test.skip() が常に真になると

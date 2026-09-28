@@ -1,0 +1,6 @@
+[{"racer_id":3850,"period_year":2026,"period_no":2,"calc_from":"2025-11-01","calc_to":"2026-04-30","win_rate":5.03,"top2_rate":32.7,"avg_st":0.14,"starts":119}, 
+ {"racer_id":4240,"period_year":2026,"period_no":2,"calc_from":"2025-11-01","calc_to":"2026-04-30","win_rate":5.78,"top2_rate":42.5,"avg_st":0.15,"starts":108}, 
+ {"racer_id":4281,"period_year":2026,"period_no":2,"calc_from":"2025-11-01","calc_to":"2026-04-30","win_rate":4.89,"top2_rate":27.4,"avg_st":0.17,"starts":91}, 
+ {"racer_id":4407,"period_year":2026,"period_no":2,"calc_from":"2025-11-01","calc_to":"2026-04-30","win_rate":5.09,"top2_rate":26.2,"avg_st":0.18,"starts":103}, 
+ {"racer_id":5150,"period_year":2026,"period_no":2,"calc_from":"2025-11-01","calc_to":"2026-04-30","win_rate":6.71,"top2_rate":51.6,"avg_st":0.14,"starts":120}, 
+ {"racer_id":5455,"period_year":2026,"period_no":2,"calc_from":"2025-11-01","calc_to":"2026-04-30","win_rate":null,"top2_rate":null,"avg_st":null,"starts":0}]

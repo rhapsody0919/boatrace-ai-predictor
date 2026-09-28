@@ -1,0 +1,98 @@
+name: E2E Live (本番データ)
+
+# PRゲート（e2e-smoke-test.yml）は録画の再生で決定的に実行する（BOA-466、ADR-0077）。
+# その代わり、本番データ・実時刻でしか出ない不具合（RPCの応答形の変化、当日データの
+# 欠け、時刻に依存する表示）はPRでは検知できなくなる。それを拾うため、開催時間帯に
+# 本番データで同じE2Eを1日1回実行し、失敗をSlackに流す。
+#
+# JST 14:00 に置くのは、ほぼ全会場が開催中で「本日開催中の未終了レース」が確実にあり、
+# selectUpcomingRace 系のテストが skip しない時間帯だから。
+
+on:
+  schedule:
+    # JST 14:00 = UTC 05:00
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-live
+  cancel-in-progress: true
+
+jobs:
+  e2e-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Run E2E (本番データ・実時刻)
+        id: e2e
+        env:
+          CI: true
+          E2E_LIVE: '1'
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          set +e
+          npm run test:e2e > e2e-live.log 2>&1
+          CODE=$?
+          cat e2e-live.log
+          {
+            echo "summary<<SUMMARY_EOF"
+            # 失敗したテスト名と最終集計だけを送る（全文はActionsのログで見る）
+            grep -E '^\s+[0-9]+\) |^\s+[0-9]+ (passed|failed|flaky|skipped)' e2e-live.log | head -40
+            echo "SUMMARY_EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "exit_code=$CODE" >> "$GITHUB_OUTPUT"
+          # 失敗はSlackに流してから明示的に落とす
+          exit 0
+
+      - name: Check skipped tests
+        if: always()
+        run: node scripts/maintenance/check-e2e-skips.js
+
+      - name: Notify Slack (失敗時のみ)
+        if: steps.e2e.outputs.exit_code != '0'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SUMMARY: ${{ steps.e2e.outputs.summary }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        # 通知の形（attachments + section/mrkdwn）は nightly-verify-db.yml に揃える。
+        # テスト名に引用符・改行が入るため、JSONは jq で組み立ててエスケープを任せる
+        run: |
+          PAYLOAD=$(jq -n --arg summary "$SUMMARY" --arg url "$RUN_URL" '{
+            attachments: [{
+              color: "#c0392b",
+              blocks: [{
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: (":rotating_light: *本番データでのE2Eが失敗しました*\n```" + $summary + "```\nPRゲートは録画の再生で走るため、本番データ側の変化（RPCの応答形・当日データの欠け・時刻依存の表示）はここでしか検知できません。データ側の正常な変化が原因なら `npm run test:e2e:record` で録画を撮り直してください。\n<" + $url + "|実行ログ>")
+                }
+              }]
+            }]
+          }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"
+
+      - name: Upload Playwright trace on failure
+        if: steps.e2e.outputs.exit_code != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-live
+          path: test-results/
+          retention-days: 7
+
+      - name: E2Eの失敗をジョブの失敗として扱う
+        if: steps.e2e.outputs.exit_code != '0'
+        run: exit 1
