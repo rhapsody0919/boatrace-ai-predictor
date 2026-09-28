@@ -431,7 +431,13 @@
   },
   "raceStage": {
     "final": "우승전",
-    "semifinal": "준우승전"
+    "semifinal": "준우승전",
+    "semifinalQualifier": "준우승 진출전",
+    "dream": "드림전",
+    "special": "특별전",
+    "qualifier": "예선",
+    "general": "일반전",
+    "officialName": "공식 명칭: {{name}}"
   },
   "raceCard": {
     "awaitingResult": "결과 반영 대기중",

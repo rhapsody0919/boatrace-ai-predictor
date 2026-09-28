@@ -431,7 +431,13 @@
   },
   "raceStage": {
     "final": "優勝戰",
-    "semifinal": "準優勝戰"
+    "semifinal": "準優勝戰",
+    "semifinalQualifier": "準優進出戰",
+    "dream": "夢幻戰",
+    "special": "特別戰",
+    "qualifier": "預賽",
+    "general": "一般戰",
+    "officialName": "官方名稱：{{name}}"
   },
   "raceCard": {
     "awaitingResult": "結果待反映",

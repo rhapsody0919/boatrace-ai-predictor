@@ -433,7 +433,13 @@
   },
   "raceStage": {
     "final": "Final",
-    "semifinal": "Semifinal"
+    "semifinal": "Semifinal",
+    "semifinalQualifier": "Semifinal qualifier",
+    "dream": "Dream race",
+    "special": "Special race",
+    "qualifier": "Qualifying",
+    "general": "General race",
+    "officialName": "Official name: {{name}}"
   },
   "raceCard": {
     "awaitingResult": "Awaiting result",

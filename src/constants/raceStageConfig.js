@@ -38,3 +38,51 @@ export function getRaceStageBadge(raceStage) {
   const key = getRaceStageKey(raceStage);
   return key ? RACE_STAGE_BADGE_CONFIG[key] : undefined;
 }
+
+/**
+ * レース詳細の見出しに出す種別チップの分類（BOA-509）。
+ * getRaceStageKey（RaceCard のバッジ用。優勝戦・準優勝戦だけを返す）とは別物で、
+ * 既存の戻り値を変えないために関数を分けている。
+ *
+ * race_stage は会場の自由記述がほぼ生で入る（「予選特賞」「ペイペイDR」
+ * 「ウインウイン５」等）。直近30日（2026-08-29〜09-28、4,797R）の棚卸しでは、
+ * 下の順に部分一致させると約87%が分類でき、残りは会場の企画レース名
+ * （「朝からセンプル」「サンライズX戦」等）だった。分類できないものは null を返し、
+ * 呼び出し側で公式表記のまま出す（情報を消さない）。
+ *
+ * 判定順序の理由:
+ * - 「準々優勝戦」「準優進出戦」「準優勝戦」はいずれも「優勝戦」を含むので先に見る
+ * - 「予選ドリーム戦」はドリーム戦、「予選特賞」「一般特選」は特別戦にする。
+ *   得点率の配点（seriesPoints.js の classifyStage）が特別戦の点数表を使う
+ *   レースと揃えるため、特選・特賞・選抜・特別を「予選」「一般」より先に見る
+ */
+const RACE_STAGE_CATEGORY_RULES = [
+  {
+    key: "semifinalQualifier",
+    test: (s) => s.includes("準々") || s.includes("準優進出"),
+  },
+  { key: "semifinal", test: (s) => s.includes("準優勝戦") },
+  { key: "final", test: (s) => s.includes("優勝戦") },
+  { key: "dream", test: (s) => s.includes("ドリーム") || s.includes("DR") },
+  {
+    key: "special",
+    test: (s) =>
+      s.includes("特選") ||
+      s.includes("特賞") ||
+      s.includes("選抜") ||
+      s.includes("特別"),
+  },
+  { key: "qualifier", test: (s) => s.includes("予選") },
+  { key: "general", test: (s) => s.includes("一般") },
+];
+
+/**
+ * @param {string|null|undefined} raceStage race_conditions.race_stage（生の公式表記）
+ * @returns {{ key: string, i18nKey: string } | null} 分類できなければ null
+ */
+export function getRaceStageCategory(raceStage) {
+  if (!raceStage) return null;
+  const s = raceStage.normalize("NFKC");
+  const rule = RACE_STAGE_CATEGORY_RULES.find((r) => r.test(s));
+  return rule ? { key: rule.key, i18nKey: `raceStage.${rule.key}` } : null;
+}

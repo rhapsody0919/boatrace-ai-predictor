@@ -27,6 +27,11 @@ import { parseRaceId } from "../utils/raceId";
 import { getTodayJST } from "../utils/dateUtils";
 import { getRaceStatus } from "../utils/raceStatus";
 import { formatDateLocalized } from "../utils/formatters";
+import { GRADE_CONFIG } from "../constants/gradeConfig";
+import {
+  getRaceStageBadge,
+  getRaceStageCategory,
+} from "../constants/raceStageConfig";
 import "./RaceDetailPage.css";
 
 // 開催の何日目かの表示ラベル（BOA-488）。値が無ければnull（「—」も出さない）。
@@ -38,6 +43,34 @@ function getSeriesDayLabel(seriesDay, isFinalDay, t) {
     return t("raceDetailPage.seriesDayNth", { day: seriesDay });
   }
   return null;
+}
+
+// 見出しの種別チップ（BOA-509）。分類できたものは分類名、できないもの
+// （会場の企画レース名）は公式表記のまま出す。race_stage はレースごとの値なので
+// 他レースで補わない（無ければ出さない）
+function getStageChip(raceStage, t) {
+  if (!raceStage) return null;
+  const official = raceStage.normalize("NFKC");
+  const category = getRaceStageCategory(raceStage);
+  if (!category) {
+    return { variant: "raw", label: official, official, isOfficial: true };
+  }
+  const label = t(category.i18nKey);
+  const variant =
+    category.key === "final" || category.key === "semifinal"
+      ? category.key
+      : category.key === "dream" || category.key === "special"
+        ? "special"
+        : "plain";
+  return {
+    variant,
+    label,
+    // 優勝戦・準優勝戦は RaceCard のバッジと同じ絵文字を添える
+    emoji: getRaceStageBadge(raceStage)?.emoji,
+    // 分類名と公式表記が同じ（「予選」「優勝戦」等）ならツールチップは出さない
+    official: label === official ? null : official,
+    isOfficial: false,
+  };
 }
 
 // rawData（getPredictionsのrace）からPredictionSection用のprediction objectを構築
@@ -194,6 +227,19 @@ function RaceDetailPage() {
         t,
       )
     : null;
+  // 節タイトル（BOA-509）。race_title は会場・日付単位で同じ値なので、日目と同様に
+  // race_conditions が欠損したレース（BOA-347）は同じ会場の他レースの値で補う
+  const rawSeriesTitle = racePrediction
+    ? (racePrediction.raceTitle ??
+      venueRaces.find((r) => r.rawData.raceTitle)?.rawData.raceTitle ??
+      null)
+    : null;
+  const seriesTitle = rawSeriesTitle ? rawSeriesTitle.normalize("NFKC") : null;
+  // 一般（ippan）は GRADE_CONFIG に無いのでバッジを出さない（BOA-96 と同じ）
+  const gradeConfig = GRADE_CONFIG[racePrediction?.raceGrade];
+  const stageChip = racePrediction
+    ? getStageChip(racePrediction.raceStage, t)
+    : null;
   const status = getRaceStatus(
     { startTime: racePrediction?.startTime, result: racePrediction?.result },
     nowHHMM,
@@ -253,9 +299,52 @@ function RaceDetailPage() {
         <Breadcrumb items={breadcrumbItems} />
 
         <div className="race-detail-page-v2__container">
+          {(gradeConfig || seriesTitle) && (
+            <p className="race-detail-kicker">
+              {gradeConfig && (
+                <span
+                  className="race-detail-grade"
+                  style={{ backgroundColor: gradeConfig.color }}
+                  translate="no"
+                >
+                  {gradeConfig.label}
+                </span>
+              )}
+              {seriesTitle && (
+                <span
+                  className="race-detail-kicker__title"
+                  title={seriesTitle}
+                  translate="no"
+                >
+                  {seriesTitle}
+                </span>
+              )}
+            </p>
+          )}
           <header className="page-header">
             <h1>
               🚤 {venueName} {parsed.raceNo}R
+              {stageChip && (
+                <>
+                  {" "}
+                  <span
+                    className={`race-detail-stage race-detail-stage--${stageChip.variant}`}
+                    title={
+                      stageChip.official && !stageChip.isOfficial
+                        ? t("raceStage.officialName", {
+                            name: stageChip.official,
+                          })
+                        : undefined
+                    }
+                    translate={stageChip.isOfficial ? "no" : undefined}
+                  >
+                    {stageChip.emoji && (
+                      <span aria-hidden="true">{stageChip.emoji} </span>
+                    )}
+                    {stageChip.label}
+                  </span>
+                </>
+              )}
               {seriesDayLabel && (
                 <>
                   {" "}
