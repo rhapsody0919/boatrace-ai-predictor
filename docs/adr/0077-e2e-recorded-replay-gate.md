@@ -58,7 +58,9 @@
 
 HAR は context に登録し、spec 側の `page.route` は page に登録される。page のルートが先に評価されるため、既存の差し替え（予測データ取得失敗・ピットレポートの回帰テスト）はそのまま効く。`route.fallback()` すれば HAR に落ちる。実測で確認した（`/rest/v1/venues*` を page.route で `[]` にした場合、HAR の応答ではなく `[]` が返った）。
 
-例外が1つある。page.route の中で `route.fetch()`（実応答を取ってから加工する）を使うと、そのリクエストはブラウザの通信経路を通らずに直接ネットワークへ出るため、context の HAR では録画も再生もされない。再生時は本番へ出ようとして失敗した（`layout.spec.js` の BOA-460 再現テスト10件、`smoke.spec.js` の前検テスト1件）。`e2e/fixtures.js` の `fetchRecorded(route)` を代わりに使う。録画時は `route.fetch()` の結果を HAR に書き足し、再生時は録画から同じ応答を返す。`APIResponse` そのものではないので、`route.fulfill` には `status`・`headers` を明示して渡す。
+例外が1つある。page.route の中で `route.fetch()`（実応答を取ってから加工する）を使うと、そのリクエストはブラウザの通信経路を通らずに直接ネットワークへ出るため、context の HAR では録画も再生もされない。再生時は本番へ出ようとして失敗した（`layout.spec.js` の BOA-460 再現テスト10件、`smoke.spec.js` の前検テスト1件）。`e2e/fixtures.js` の `fetchRecorded(route)` を代わりに使う。録画時は `route.fetch()` の結果を HAR に書き足し、再生時は録画から同じ応答を返す。`APIResponse` そのものではないので、`route.fulfill` には `status`・`headers` を明示して渡す。`route.continue()` も同じく context のルートを飛ばすので `route.fallback()` にする。導入初日に master 側で `route.continue()` 4箇所・`route.fetch()` 1箇所が新たに入ったため、`scripts/maintenance/verify-e2e-recorded-network.js`（Quality Gates で実行）で機械検査する。
+
+もう1つ、テスト終了時の `page.unrouteAll()` は、context 側の録画の再生と競合して `Route is already handled!` で落ちる（実測: 展示前の体重テスト5件）。このフックは本番の応答待ちを捨てるためのものなので、live モードでだけ呼ぶ。
 
 ## サイズ
 

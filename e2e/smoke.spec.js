@@ -2,6 +2,7 @@ import {
   test,
   expect,
   applyRecording,
+  E2E_MODE,
   e2eNow,
   fetchRecorded,
   e2eTodayJST,
@@ -2779,7 +2780,7 @@ test.describe("レース詳細の直前情報タブ: 展示進入", () => {
   const routeMaintenance = async (page, fulfill) => {
     await page.route("**/rest/v1/exhibition_data?*", (route) => {
       if (!route.request().url().includes("exhibition_course"))
-        return route.continue();
+        return route.fallback();
       return fulfill(route);
     });
   };
@@ -2951,7 +2952,7 @@ test.describe("レース詳細の直前情報タブ: この枠からの進入コ
     await page.route("**/rest/v1/race_results?*", (route) => {
       const url = decodeURIComponent(route.request().url());
       if (!url.includes("actual_course_1") || !url.includes("payout_win"))
-        return route.continue();
+        return route.fallback();
       return route.fulfill({
         status: 500,
         contentType: "application/json",
@@ -2977,7 +2978,7 @@ test.describe("レース詳細の直前情報タブ: この枠からの進入コ
     // 1号艇（登番3833）の出走履歴だけ即失敗、他の艇は応答を遅らせる
     await page.route("**/rest/v1/race_entries?*", async (route) => {
       const url = decodeURIComponent(route.request().url());
-      if (!url.includes("f_count")) return route.continue();
+      if (!url.includes("f_count")) return route.fallback();
       if (url.includes("racer_id=eq.3833"))
         return route.fulfill({
           status: 500,
@@ -2985,7 +2986,7 @@ test.describe("レース詳細の直前情報タブ: この枠からの進入コ
           body: JSON.stringify({ message: "stub failure" }),
         });
       await new Promise((resolve) => setTimeout(resolve, 15000));
-      return route.continue().catch(() => {});
+      return route.fallback().catch(() => {});
     });
     await openBeforeInfoTab(page);
 
@@ -3453,9 +3454,14 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
   };
   const routeUnfinished = async (page) => {
     const handler = async (route) => {
-      const response = await route.fetch();
+      // route.fetch() は録画を通らないため fetchRecorded を使う（e2e/fixtures.js）
+      const response = await fetchRecorded(route);
       const json = stripResults(await response.json());
-      await route.fulfill({ response, json });
+      await route.fulfill({
+        status: response.status(),
+        headers: response.headers(),
+        json,
+      });
     };
     await page.route("**/api/predictions/**", handler);
     await page.route("**/rest/v1/rpc/get_predictions*", handler);
@@ -3463,9 +3469,14 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
 
   // routeUnfinished の route.fetch は本物の応答を待つため、アサーションが先に終わると
   // テスト終了時にまだ応答待ちのリクエストが残り、「page closed」でテストが失敗扱いになる
-  // （2026-09-28実測。アサーションは全て通っていた）。終了時に待ちを捨てる
+  // （2026-09-28実測。アサーションは全て通っていた）。終了時に待ちを捨てる。
+  // 本番へ出るのは live モードだけ。録画の再生・録画中は fetchRecorded が待たずに返るうえ、
+  // ここで page のルートを外すと、context 側の録画の再生と競合して
+  // 「Route is already handled!」で落ちる（BOA-466で実測）ため、live に限る
   test.afterEach(async ({ page }) => {
-    await page.unrouteAll({ behavior: "ignoreErrors" });
+    if (E2E_MODE === "live") {
+      await page.unrouteAll({ behavior: "ignoreErrors" });
+    }
   });
 
   test("展示前（exhibition_data が空）は出走表の体重を出し、チルトは展示後に公開される旨を添える", async ({
