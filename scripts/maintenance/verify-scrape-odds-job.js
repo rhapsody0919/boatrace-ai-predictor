@@ -874,7 +874,8 @@ const opts = (db, fetchFn, extra = {}) => ({
   );
   check(
     "全艇票0: 3連単の人気上位3件は、単勝が無くても odds3t から求まる",
-    written.trifecta_popular_1 !== null && written.trifecta_odds_1 !== null,
+    // != null（undefined も落とす）。修正前は written が {} で、!== null だと undefined でも通ってしまう
+    written.trifecta_popular_1 != null && written.trifecta_odds_1 != null,
     show([written.trifecta_popular_1, written.trifecta_odds_1]),
   );
   // winFirst（-60 の延長中の再試行）でも、票0は「公開済み」として扱い、残りの4ページを取る
