@@ -58,14 +58,27 @@ export function buildRaceEntryRows(raceId, entries, { extended = false } = {}) {
 /**
  * race_conditions の行（気象の列を除く。気象は buildWeatherRows が作る）。race_grade は races テーブルで管理する。
  *
+ * series_day は、ページ（出走表の日別タブ）から読めた値を必ず優先し、読めなかった（null）ときだけ
+ * fallbackSeriesDay で補う（BOA-501）。fallbackSeriesDay は、節（race_series）の開始日から導いた値を
+ * 呼び出し側が渡す（この関数はDBを引かない。導出は scripts/lib/raceSeriesLookup.js）。
+ * 節の途中に中止日があると導出が1日ぶん進みすぎるため、両方あるときにページ側を採るのは必須の規則。
+ * 食い違いの記録は呼び出し側が行う（update-race-info.js の accumulateRaceInfo）。
+ *
+ * is_final_day は補わない。節の終了日は予定で、順延でずれる（total_days は順延を反映しない、084）ため、
+ * 導出すると誤って「最終日」と出しかねない。
+ *
  * @param {string} raceId
  * @param {ReturnType<import("./raceListParser.js").parseRaceListPage>["meta"]} meta
- * @param {{extended?: boolean}} [options]
+ * @param {{extended?: boolean, fallbackSeriesDay?: number|null}} [options]
  */
-export function buildRaceConditionRow(raceId, meta, { extended = false } = {}) {
+export function buildRaceConditionRow(
+  raceId,
+  meta,
+  { extended = false, fallbackSeriesDay = null } = {},
+) {
   return {
     race_id: raceId,
-    series_day: meta.seriesDay,
+    series_day: meta.seriesDay ?? fallbackSeriesDay ?? null,
     is_final_day: meta.isFinalDay,
     race_title: meta.raceTitle,
     race_stage: meta.raceStage,
