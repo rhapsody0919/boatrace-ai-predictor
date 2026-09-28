@@ -28,6 +28,9 @@ import {
   SCORE_POINTS,
   SPECIAL_SCORE_POINTS,
   TOKUSEN_SCORE_POINTS,
+  officialSeriesScore,
+  parseOfficialPlacements,
+  buildMeetRanking,
 } from "../../src/components/race/seriesPoints.js";
 import { getRaceStageKey } from "../../src/constants/raceStageConfig.js";
 import { fetchAllByRaceId } from "../lib/meetBoundaries.js";
@@ -495,6 +498,139 @@ check("バッジ: 予選", getRaceStageKey("予選"), null);
     threw = e.message.includes("ページングできない");
   }
   check("1レースがページに収まらないときは例外で落とす", threw, true);
+}
+
+
+// ---- 6. 公式の得点率一覧の読み替え（BOA-475） --------------------------------
+// 公式の得点率は (着順点 − 減点) ÷ 走数。走数の列は無いが `placements` の
+// 文字数から出せる（収録済み101行で検算し、得点率のある94行すべてで一致）
+{
+  check(
+    "placements を着順の配列にする（全角空白は日の区切りなので落とす）",
+    parseOfficialPlacements("３２１　４５２"),
+    [3, 2, 1, 4, 5, 2],
+  );
+  check(
+    "着順が付いていない走（妨・落）は null にする",
+    parseOfficialPlacements("２２落"),
+    [2, 2, null],
+  );
+  check("placements が無ければ空", parseOfficialPlacements(null), []);
+
+  // 多摩川G1の岩瀬裕亮。公式は 得点38・減点10・6走・得点率4.67
+  check(
+    "減点を引いた得点率になる（岩瀬裕亮・多摩川G1）",
+    officialSeriesScore({
+      placements: "３２１　４５２",
+      total_points: 38,
+      penalty_points: 10,
+    }),
+    { points: 28, runs: 6, rate: 28 / 6, finishes: [3, 2, 1, 4, 5, 2] },
+  );
+  // 若松G1の吉田裕平。減点99は賞典除外の印で、引くと得点が負になる
+  check(
+    "減点99（賞典除外の印）は引かない",
+    officialSeriesScore({
+      placements: "２　３３２１妨",
+      total_points: 40,
+      penalty_points: 99,
+    })?.points,
+    40,
+  );
+  check(
+    "減点が無ければ着順点のまま",
+    officialSeriesScore({
+      placements: "１２３",
+      total_points: 24,
+      penalty_points: 0,
+    }),
+    { points: 24, runs: 3, rate: 8, finishes: [1, 2, 3] },
+  );
+  check(
+    "得点が無い行は読み替えない",
+    officialSeriesScore({ placements: "１２３", total_points: null }),
+    null,
+  );
+  check("行が無ければ null", officialSeriesScore(null), null);
+}
+
+// ---- 7. 公式値を使うと順位が変わる（BOA-475） --------------------------------
+// 減点を持つ選手が過大な得点率のまま上位に残ると、その下の全員の順位がズレる
+{
+  // `rank{n}` は「n着だった艇番」。艇番1が1着なら rank1=1
+  const entry = (racerId, raceId, boatNumber, rank1, rank2 = null) => ({
+    racerId,
+    playerName: `選手${racerId}`,
+    raceId,
+    raceStage: "予選",
+    boatNumber,
+    rank1,
+    rank2,
+    rank3: null,
+    rank4: null,
+    rank5: null,
+    rank6: null,
+  });
+  // A(1着) / B(1着) / C(2着) の3人。Bだけ公式で減点10が付いている
+  const board = {
+    prelimEndRaceId: "2026-09-19-05-12",
+    entries: [
+      entry(1, "2026-09-16-05-01", 1, 1),
+      entry(2, "2026-09-16-05-02", 1, 1),
+      // 艇番2の選手が2着（1着は艇番1）
+      entry(3, "2026-09-16-05-03", 2, 1, 2),
+    ],
+  };
+  const own = buildMeetRanking(board);
+  check(
+    "公式行が無ければ当社計算（1着10点の2人が同率1位）",
+    own.map((r) => [r.racerId, r.rank, r.points, r.fromOfficial]),
+    [
+      [1, 1, 10, false],
+      [2, 1, 10, false],
+      [3, 3, 8, false],
+    ],
+  );
+
+  const withOfficial = buildMeetRanking({
+    ...board,
+    officialByRacer: {
+      1: { placements: "１", total_points: 10, penalty_points: 0 },
+      2: { placements: "１", total_points: 10, penalty_points: 10 },
+      3: { placements: "２", total_points: 8, penalty_points: 0 },
+    },
+  });
+  check(
+    "公式行があれば減点込みで並び替わる（減点10のBが最下位へ）",
+    withOfficial.map((r) => [r.racerId, r.rank, r.points, r.fromOfficial]),
+    [
+      [1, 1, 10, true],
+      [3, 2, 8, true],
+      [2, 3, 0, true],
+    ],
+  );
+  check(
+    "着順の並びも公式の placements から出す",
+    withOfficial.find((r) => r.racerId === 3).finishes,
+    [2],
+  );
+
+  // 公式に行が無い選手（予選終了後に乗り込んだ等）は当社計算に戻る
+  const mixed = buildMeetRanking({
+    ...board,
+    officialByRacer: {
+      1: { placements: "１", total_points: 10, penalty_points: 0 },
+    },
+  });
+  check(
+    "公式に行が無い選手は当社計算のまま（fromOfficial=false）",
+    mixed.map((r) => [r.racerId, r.fromOfficial]),
+    [
+      [1, true],
+      [2, false],
+      [3, false],
+    ],
+  );
 }
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);

@@ -372,6 +372,9 @@
     "borderNote": "点線より上が準優の目安内（番組は未定のため確定ではありません）。",
     "prelimOverNote": "予選は{{date}}で終了。得点率はここで確定していて、今日の着順では動きません",
     "rankSourceNote": "節内順位は当社計算です。公式の得点率一覧が取れている開催では、公式の備考（賞典除外・途中帰郷）で順位の対象外を判定しています。取れていない開催では「節の最終日に出走が無い選手」を離脱として推定します。",
+    "rankSourceNoteOfficial": "得点率・節内順位は公式の得点率一覧（予選終了時点）の値です。減点・賞典除外・途中帰郷も公式のとおりに反映しています。予選中は公式の一覧がまだ出ないため当社計算になります。",
+    "sourceOfficial": "公式",
+    "sourceOwn": "当社計算",
     "sparkStTitle": "今節のST",
     "sparkExTitle": "今節の展示",
     "sparkBaselineSt": "通常 {{value}}",
@@ -442,7 +445,7 @@
     "viewConditions": "条件別",
     "viewMeet": "今節",
     "meetNote": "今節（この開催）のこれまでの走り。日付をタップでレース詳細へ",
-    "meetScore": "今節の得点率 {{rate}}（{{n}}走・当社計算）",
+    "meetScore": "今節の得点率 {{rate}}（{{n}}走・{{source}}）",
     "meetPretest": "前検タイム {{time}}（前検{{rank}}位）",
     "meetPretestSource": "前検タイムの出典: BOAT RACE オフィシャルウェブサイト",
     "meetCompareTitle": "この6艇の今節（得点率順）",
@@ -487,7 +490,7 @@
     "periodAvgSt": "平均ST {{value}}",
     "periodFetchError": "前期成績を取得できませんでした",
     "meetScoreForecastTitle": "今日の着順で得点率はこう動く",
-    "meetScorePrelimOver": "予選の得点率 {{rate}}（{{n}}走・当社計算・確定）"
+    "meetScorePrelimOver": "予選の得点率 {{rate}}（{{n}}走・{{source}}・確定）"
   },
   "wakuInfo": {
     "note": "選手を選ぶと、その選手が本日入る想定コースでの成績を期間・条件ごとに比較できます。左端の期間名をタップするとそのコースの直近10走の着順が開きます。全コース（1〜6）の比較は表の下の折りたたみから開けます",

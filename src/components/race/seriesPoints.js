@@ -344,6 +344,69 @@ export function listSeriesFinishes(meetRecords, options = {}) {
 }
 
 /**
+ * 公式の得点率一覧（`racer_series_points`）の1行を、当社の
+ * `{points, runs, rate, finishes}` に読み替える（純関数、BOA-475）。
+ *
+ * ## なぜ読み替えるのか
+ *
+ * **公式の得点率 = (着順点の合計 − 減点) ÷ 走数**。当社は減点を持っていないため、
+ * 減点のある選手の得点率が過大になり、**その下にいる全員の節内順位までズレる**
+ * （多摩川G1では公式順位がある45名のうち25名が不一致だった）。公式の行がある
+ * 開催では、当社計算ではなく公式の値を使う。
+ *
+ * ## 走数は `placements` の文字数から出す
+ *
+ * 公式データに走数の列は無いが、`placements`（着順の文字列。日の区切りが全角空白の
+ * 「３２１」「４５２」のような形）の空白を除いた文字数が走数になる。
+ * 2026-09-28に収録済みの全101行で検算し、`(得点 − 減点) ÷ 得点率` と
+ * **得点率のある94行すべてで一致**した。
+ *
+ * ## 減点99は引かない
+ *
+ * `penalty_points = 99` は**賞典除外の印**で、実際に引く点数ではない
+ * （マイグレーション064のCOMMENT）。引くと得点が負になる（実データ: 得点40・減点99）。
+ *
+ * @param {{placements: string|null, total_points: number|null,
+ *   penalty_points: number|null}} row
+ * @returns {{points: number, runs: number, rate: number,
+ *   finishes: Array<number|null>}|null} 読み替えられなければ null
+ */
+export function officialSeriesScore(row) {
+  if (!row) return null;
+  if (row.total_points === null || row.total_points === undefined) return null;
+  const finishes = parseOfficialPlacements(row.placements);
+  const runs = finishes.length;
+  if (runs === 0) return null;
+  const penalty = row.penalty_points ?? 0;
+  // 99は賞典除外の印。引き算の対象ではない
+  const points = row.total_points - (penalty === 99 ? 0 : penalty);
+  return { points, runs, rate: points / runs, finishes };
+}
+
+/**
+ * 公式の `placements`（着順の文字列）を着順の配列にする（純関数）。
+ *
+ * 全角空白は日の区切りなので落とす。全角・半角の数字は着順、それ以外
+ * （「妨」＝妨害失格、「落」＝落水 等）は着順が付いていないので null にする
+ * （当社の `listSeriesFinishes` と同じ形）。
+ *
+ * @param {string|null} placements
+ * @returns {Array<number|null>}
+ */
+export function parseOfficialPlacements(placements) {
+  if (!placements) return [];
+  const IDEOGRAPHIC_SPACE = String.fromCharCode(0x3000);
+  return [...String(placements)]
+    .filter((c) => !/\s/u.test(c) && c !== IDEOGRAPHIC_SPACE)
+    .map((c) => {
+      const half = /[\uFF10-\uFF19]/u.test(c)
+        ? String.fromCharCode(c.charCodeAt(0) - 0xfee0)
+        : c;
+      return /^[1-6]$/u.test(half) ? Number(half) : null;
+    });
+}
+
+/**
  * 節の全選手の得点率を計算して順位を付ける（純関数）。
  *
  * 得点率は**単独では読めない**（「3.67」だけでは準優に乗るか分からない）。
@@ -369,14 +432,33 @@ export function buildMeetRanking(scoreboard) {
     byRacer.get(e.racerId).rows.push(e);
   });
 
+  // 公式の得点率一覧がある開催では、当社計算ではなく公式の値を使う（BOA-475）。
+  // **いつ使うかはサービス層が決める**（`officialByRacer` を渡すかどうか）。
+  // 公式の行は「予選終了時点」のスナップショットなので、予選中のレースを
+  // 開いているときに使うと**まだ走っていない走を含む値**になってしまう
+  const officialByRacer = scoreboard?.officialByRacer ?? null;
+
   const rows = [...byRacer.entries()]
     .map(([racerId, { playerName, rows: runs }]) => {
-      const score = computeSeriesScore(runs, { prelimEndRaceId });
+      const official = officialByRacer
+        ? officialSeriesScore(officialByRacer[racerId])
+        : null;
+      // 公式に行が無い選手（予選終了後に乗り込んだ選手等）は当社計算に戻す。
+      // 予選を走っていなければ走数0で `rate` が null になり、順位から外れる
+      const own = official
+        ? null
+        : computeSeriesScore(runs, { prelimEndRaceId });
       return {
         racerId,
         playerName,
-        ...score,
-        finishes: listSeriesFinishes(runs, { prelimEndRaceId }),
+        points: official ? official.points : own.points,
+        runs: official ? official.runs : own.runs,
+        rate: official ? official.rate : own.rate,
+        finishes: official
+          ? official.finishes
+          : listSeriesFinishes(runs, { prelimEndRaceId }),
+        // この行が公式の値か（画面が出典の注記を出し分ける）
+        fromOfficial: Boolean(official),
       };
     })
     .filter((r) => r.rate !== null)

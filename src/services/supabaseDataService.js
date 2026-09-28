@@ -6248,7 +6248,7 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v11-${raceId}`, async () => {
+    return withCache(`meet-scoreboard-v12-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る
@@ -6349,7 +6349,13 @@ export const supabaseDataService = {
         // 無い開催では出走の有無からの推定にフォールバックする
         supabase
           .from("racer_series_points")
-          .select("racer_id, remarks")
+          // 備考（賞典除外・途中帰郷）に加えて、**得点率そのもの**も使う。
+          // 公式の得点率は `(着順点 − 減点) ÷ 走数` で、当社は減点を持って
+          // いないため、減点のある選手とその下の全員の順位がズレる（BOA-475）。
+          // 走数の列は無いが `placements` の文字数から出せる
+          .select(
+            "racer_id, remarks, placements, total_points, penalty_points",
+          )
           .eq("venue_code", venueCode)
           .eq("meet_start_date", meetStart)
           .then(({ data }) => data ?? []),
@@ -6387,6 +6393,29 @@ export const supabaseDataService = {
         // 52人中32人の得点率が公式とズレた（公式と照合して5/5で確認）。
         // 無い（予選中でまだ予選が終わっていない）なら null
         prelimEndRaceId: prelimEndRaceIdOf(conditions ?? []),
+        // **公式の得点率一覧（`racer_series_points`）の行**。
+        // `buildMeetRanking` がこれを受け取ると、当社計算ではなく公式の値で
+        // 得点率・節内順位・着順の並びを出す（BOA-475）。
+        //
+        // **予選が終わった後の表示でだけ渡す**。公式の行は節に1行しか無く、
+        // 中身は「◯日目１２R終了時点」＝予選終了時点のスナップショットなので、
+        // 予選中のレースを開いているときに使うと**まだ走っていない走を含む
+        // 得点率・順位**を出してしまう（レース詳細は過去日も開ける）。
+        // 予選中は従来どおり当社計算で、減点のズレは残る（公式の行が生えるのも
+        // 4日目以降なので、予選中は直しようが無い）
+        officialByRacer: (() => {
+          const currentStage = stageById.get(raceId) ?? null;
+          const prelimEnd = prelimEndRaceIdOf(conditions ?? []);
+          const prelimOver = !countsForSeriesScore(
+            currentStage,
+            raceId,
+            prelimEnd,
+          );
+          if (!prelimOver) return null;
+          const rows = officialSeries ?? [];
+          if (rows.length === 0) return null;
+          return Object.fromEntries(rows.map((r) => [r.racer_id, r]));
+        })(),
         // **途中で節を離脱した選手**（途中帰郷）。公式の順位表はこの選手たちを
         // 順位から外すため、当社が全員で順位を振ると下位ほどズレる。
         //
