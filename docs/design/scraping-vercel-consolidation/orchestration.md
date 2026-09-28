@@ -435,9 +435,29 @@ live化の前提にしない。
 [verification-runbook.md](./verification-runbook.md) §L-5 の順に進める:
 
 1. `CRON_SECRET` で `?chunk=5` を手動で数回叩き、`processed`・`afterRacerId`・`durationSeconds` を確認する（shadowなので書き込まない）
+   → **実施済み（2026-09-28 10:14 JST）。合格**。下記「手動確認の結果」
 2. `cursor` を消して `live` にする（10/2 03:00 JST の前に）
 3. **10/2の回は `SKIP_RACER_SEASON_ON_GHA` を立てない**。GHAと並走させ、同じ値が入ることを確認する（上書き型のupsertなので二重でも壊れない）
 4. 確認できたら変数を立て、11/2の回をVercelのみで通す
+
+#### 手動確認の結果（2026-09-28 10:14 JST、`?chunk=5`）
+
+| 項目 | 値 | 評価 |
+|---|---|---|
+| `success` / `mode` / `rowsWritten` | true / `shadow` / **0** | shadowは書かない。正しい |
+| `processed` / `remaining` | 5 / **1,623** | runbookの期待「約1,620」と一致 |
+| `afterRacerId` | 3070 | `cursor` に保存された |
+| `chunk.durationSeconds` | **22秒 / 5人**（同時4） | **U9の実測**（tasks.md T4b-16-2で未実施だった項目） |
+| `season.unchanged` | **5 / 5** | ★下記 |
+| `season.failed` / `profile.failed` / `alerts` | 0 / 0 / なし | 異常なし |
+| `deadlineStopped` / `aborted` | false / false | ソフトデッドラインに当たっていない |
+
+**`season.unchanged` が 5/5 であることが、shadowで見たかった比較そのもの。** shadowは取得・解析したうえで
+DBの既存値と突き合わせており、差分ゼロ＝**Vercel実装の解析結果が、GHA実装が2026-09-19に書いた値と一致している**。
+月次ジョブのため「shadowで1周見てからlive」だと11月までかかるが、この手動確認で同じ根拠が取れた。
+
+22秒には開始時のDB読み取り（選手一覧・直近の出走）の固定費が含まれるため、5人での単価（4.4秒/人）は過大に出る。
+周回数の見積りは、より大きいチャンクでの実測で置き換える。
 
 ### G3の残り
 
