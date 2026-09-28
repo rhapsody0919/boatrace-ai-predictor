@@ -424,8 +424,8 @@ function buildRowDefs({
       // 当日体重は計量時点の実測値であり、値の高低が好走/凡走を示唆する指標では
       // ないため、他行と違いbestは持たせない（BOA-289、tilt/adjustmentWeightと同じ扱い）
       //
-      // 直前情報タブへ移した（BOA-484）: 調整重量と同じく当日に決まる値で、
-      // 展示前から公開されるため。展示前（exhibition_data の行がまだ無い）は、
+      // 直前情報タブにも出す（BOA-484、基本情報タブの行はそのまま残す）: 調整重量と
+      // 同じく当日に決まる値で、展示前から公開されるため。展示前（exhibition_data の行がまだ無い）は、
       // 出走表の体重（race_entries.weight_kg、発走60分前に取得）を出す。
       // 直前情報ページの体重と同じ時刻に公開され、値も一致する（getRaceEntryWeights）。
       // entryWeights: null=渡されない（RaceCardDataTable 等。従来どおり exhibition_data のみ）、
@@ -433,7 +433,7 @@ function buildRowDefs({
       key: "todayWeight",
       label: t("dataTable.rowTodayWeight"),
       shortLabel: t("review.cols.todayWeight"),
-      category: "beforeInfo",
+      alsoBeforeInfo: true,
       tab: null,
       best: null,
       render: (p) => {
@@ -633,7 +633,10 @@ export function buildBasicIndicatorRows(args) {
 }
 
 // 直前情報タブ（RaceBeforeInfoTab）向け: 展示ST・展示タイム・オリジナル展示
+// （当日体重は alsoBeforeInfo で基本情報タブと両方に出す）
 // （一周/半周ラップ/まわり足/直線、BOA-452）・当日体重（BOA-484）・チルト・調整重量・部品交換（BOA-304）
 export function buildBeforeInfoRows(args) {
-  return buildRowDefs(args).filter((row) => row.category === "beforeInfo");
+  return buildRowDefs(args).filter(
+    (row) => row.category === "beforeInfo" || row.alsoBeforeInfo,
+  );
 }
