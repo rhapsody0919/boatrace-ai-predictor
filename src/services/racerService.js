@@ -195,6 +195,7 @@ export async function getRacerCurrentMotorStatus(racerId) {
     meetTrend,
     latestPartsEvent,
     venueMotorStats,
+    preGeneration,
   };
 }
 

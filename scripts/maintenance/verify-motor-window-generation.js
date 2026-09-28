@@ -212,6 +212,37 @@ check(
       racer,
     ),
 );
+// 2026-09-29 ファン評価1周目の修正
+check(
+  "選手ページ: 直近出走が入れ替え前なら理由を書き、行き止まりのリンクを出さない",
+  racer.includes("preGeneration,\n  };") &&
+    read("src/components/racer/RacerMotorStatusCard.jsx").includes(
+      "{preGeneration ? (",
+    ),
+);
+check(
+  "画面: 入れ替え前のレースは一覧の時点で伝え、「行を押すと推移」の案内を出さない",
+  chart.includes("setRacePreGeneration(preGeneration)") &&
+    chart.includes("analysis.motor.racePreGenerationNote") &&
+    chart.includes("drillDownMotor === null && !racePreGeneration"),
+);
+check(
+  "画面: 過去レースのドリルダウンは「このモーターの現在まで」と明示する",
+  chart.includes("isPastSelectedRace && (") &&
+    chart.includes("analysis.motor.drillCurrentStateNote"),
+);
+{
+  // 出典の注記は横スクロール枠（右端のフェード）の外に置く（375pxで行末が隠れる）
+  const wrapperStart = chart.indexOf("table-wrapper hscroll-hint");
+  const noteAt = chart.indexOf("motor-official-source-note", wrapperStart);
+  const between = chart.slice(wrapperStart, noteAt);
+  const opens = (between.match(/<div\b/g) ?? []).length;
+  const closes = (between.match(/<\/div>/g) ?? []).length;
+  check(
+    "画面: 出典の注記が横スクロール枠の外にある",
+    wrapperStart >= 0 && noteAt > wrapperStart && closes > opens,
+  );
+}
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;
@@ -223,6 +254,8 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       "officialModeSourceNote",
       "drillPreGeneration",
       "periodSinceGeneration",
+      "racePreGenerationNote",
+      "drillCurrentStateNote",
     ].every((k) => typeof motor[k] === "string" && motor[k].length > 0),
   );
 }
