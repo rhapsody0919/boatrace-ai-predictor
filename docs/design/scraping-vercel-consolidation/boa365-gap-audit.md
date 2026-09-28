@@ -176,16 +176,65 @@ G7〜G11 のうち、**既存チケットで受けられず、かつ未解決**�
 
 3. [BOA-477](https://linear.app/boat-ai/issue/BOA-477) **画面の中止・不成立の除外が効いていない**（§2-3 の実測）。不成立8レースが集計に混ざっている。
    078が定めた `race_status IS DISTINCT FROM 'no_race'` の判定に寄せる
-4. [BOA-478](https://linear.app/boat-ai/issue/BOA-478) **`prediction_odds` を書き続けるかの判断**。`scrape_job_state` 上で live のまま稼働している一方、
-   画面の買い目オッズ表示は 2026-08-14 に削除済みで、`src/`・`api/` に読み手が無い。
-   つまり**誰も読まないデータを5分ごとに書き続けている**（Disk IO予算の観点でも効く。BOA-357）。
-   表示カバレッジ台帳では当初これを「意図的に表示しない」として例外登録したが、
-   並行セッションの指摘を受けて**例外から外し「要判断」に戻した**（取得を止めるか否かの判断が先に要る）。
-   BOA-404 の完了条件との関係を整理する必要がある
+4. [BOA-478](https://linear.app/boat-ai/issue/BOA-478) **`prediction_odds` の扱い**。当初「誰も読まないデータを書き続けている」と判断したが、
+   **これは誤りだった**（§4）。読み手は実在する。残る論点は Disk IO（25.1万更新 / 2.3万行＝11倍の回転量）
+   だけで、BOA-404 の導出方式への置き換えで更新量を減らす話になる。取得側が BOA-410 と合わせて見る
 
 ---
 
-## 4. BOA-365 の残り — 「網羅」の物差しが未定義
+## 4. 表示カバレッジ台帳の検出漏れを1件直した（nested select）
+
+本監査の過程で、[表示カバレッジ台帳](../../reference/display-coverage.md)が `prediction_odds` を
+「画面から読んでいない」と**誤判定していた**ことが分かった（並行セッションの指摘、2026-09-28）。
+
+原因は、`.from("<table>")` だけを読み手として数えていたこと。PostgREST には**nested select**という
+書き方があり、親テーブルの `.select()` の中に `子テーブル ( 列, 列 )` と書いて join する。
+この形では子テーブル名が `.from()` に現れない。
+
+実物（`src/services/supabaseDataService.js`）:
+
+```
+  .select(`
+    …
+    exhibition_data ( boat_number, exhibition_time, start_timing ),
+    prediction_odds ( updated_at, trifecta_pred_standard, … )   ← :1328
+  `)
+```
+
+…で読み、`:1404` の `const po = race.prediction_odds ?? null;` 以降で値を使っている。**読んでいる。**
+
+### 影響範囲を実測した
+
+`src/`・`api/` の nested select を全部洗い出したところ、対象は6テーブルだけだった。
+
+| nested selectで読まれているテーブル | 台帳での分類（修正前） |
+|---|---|
+| `race_entries`・`race_conditions`・`race_results`・`predictions`・`exhibition_data` | いずれも `.from()` でも読まれており「読んでいる」に分類済み（影響なし） |
+| **`prediction_odds`** | **「要判断」と誤判定していた** |
+
+つまり**誤判定は `prediction_odds` の1件だけ**。`extractCodeReferences` に nested select の検出を足し、
+既知の関係名に限って拾うようにした（`return (`・`if (` のような同じ形の行を除くため）。要判断は8件→**7件**に戻った。
+
+### 残った7件は、参照の形まで確認した
+
+「要判断」に残る7件について、`src/`・`api/` の参照を1件ずつ目で確認した。**いずれも読み手ではない**。
+
+| テーブル | 参照の実体 |
+|---|---|
+| `external_predictions` | `api/cron/pcexpect.js` の**コメント**（取得ジョブの説明） |
+| `race_original_exhibition` / `_values` | `api/cron/boatcast-oriten.js` の**コメント**（書き込み先の説明） |
+| `race_payouts` | `api/cron/daily-reconcile.js` の**コメント**（照合対象の説明） |
+| `venue_motor_start_dates` | `api/cron/boatcast-motor-start.js` の**コメント**（書き込み先の説明） |
+| `race_series` | `src/components/race/basicInfoStats.js` の**コメント**（「`race_series` を引かずにこの2列で初日・最終日を判定する（追加クエリ0本）」＝**あえて使っていない**） |
+| `race_special_notes` | `src/components/digest/ReturnedRacerList.jsx` の**コメント**（「理由の行があれば併記するが、無くても行は出す」） |
+
+**この確認は機械化できていない**（コメントとコードの区別をしていない）。台帳は「`.from()`・nested select・
+REST直叩き・RPC経由のいずれでも参照されていない」ことしか言えないので、要判断に出たものは
+**人が参照の形を見る**必要がある。台帳の役目は候補を漏らさず挙げることまで。
+
+---
+
+## 5. BOA-365 の残り — 「網羅」の物差しが未定義
 
 本監査は job-inventory.md §7.2 が挙げた G7〜G11 を決着させたが、[orchestration.md](./orchestration.md) が
 完了の定義A について「**全データセットでの網羅確認は未（BOA-365）**」と書いているのは、より広い問いを指している。
