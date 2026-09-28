@@ -72,7 +72,11 @@ export default function RacerMotorStatusCard({ status }) {
           <p className={`racer-motor-status-index ${indexClass}`}>
             機力指数 {powerIndex.power_index > 0 ? "+" : ""}
             {powerIndex.power_index.toFixed(1)}
-            （過去90日・{powerIndex.sample_count}走の平均） —{" "}
+            （
+            {powerIndex.clipped_by_generation
+              ? "現行モーターの使用開始以降"
+              : "過去90日"}
+            ・{powerIndex.sample_count}走の平均） —{" "}
             {powerIndex.power_index > 0
               ? "実力以上に走っている"
               : powerIndex.power_index < 0

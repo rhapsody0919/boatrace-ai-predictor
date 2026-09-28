@@ -599,7 +599,11 @@ function MotorConditionChart({
                 {t("analysis.motor.powerIndexSummary", {
                   index: `${powerIndex.power_index > 0 ? "+" : ""}${powerIndex.power_index.toFixed(1)}`,
                   count: powerIndex.sample_count,
-                  period: t(`analysis.motor.period${periodDays}`),
+                  // 入れ替え後で期間を切り詰めたときは「過去90日」と書かない
+                  // （37走が本当に90日分に見えてしまう）
+                  period: powerIndex.clipped_by_generation
+                    ? t("analysis.motor.periodSinceGeneration")
+                    : t(`analysis.motor.period${periodDays}`),
                 })}
                 {" — "}
                 {powerIndex.power_index > 0

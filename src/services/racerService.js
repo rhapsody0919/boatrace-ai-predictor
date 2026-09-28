@@ -128,10 +128,20 @@ export async function getRacerCurrentMotorStatus(racerId) {
   if (!parsed) return null;
   const { venueCode, date } = parsed;
 
+  // 直近出走が、その会場のモーター入れ替えより前なら、そのモーターは今の同じ
+  // 番号のモーターとは別物。機力指数・公式成績（どちらも現行世代の値）は出さない
+  // （BOA-329。長期休養明け等で直近出走が数ヶ月前のことがある）
+  const generationStart =
+    await supabaseDataService.getMotorGenerationStart(venueCode);
+  const preGeneration = generationStart !== null && date < generationStart;
   const [powerIndex, meetEntries, venueMotorStats] = await Promise.all([
-    supabaseDataService.getMotorPowerIndex(venueCode, data.motor_number),
+    preGeneration
+      ? null
+      : supabaseDataService.getMotorPowerIndex(venueCode, data.motor_number),
     getCurrentMeetRaceEntries(racerId, data.motor_number),
-    supabaseDataService.getVenueMotorStats(venueCode, data.motor_number),
+    preGeneration
+      ? null
+      : supabaseDataService.getVenueMotorStats(venueCode, data.motor_number),
   ]);
 
   const meetRaceIds = meetEntries.map((e) => e.race_id);

@@ -1007,6 +1007,7 @@
       "powerIndexSummary": "Power index {{index}} (average over {{count}} races, {{period}})",
       "period90": "last 90 days",
       "period30": "last month",
+      "periodSinceGeneration": "since the current motor went into service",
       "periodOfficialNote": "💡 This is a past race, so motor stats are the official values as of the race card (the period cannot be changed).",
       "periodClippedNote": "💡 The motors were recently replaced, so the period is limited to since the current motor went into service (the previous motor with the same number is excluded).",
       "powerIndexNote": "💡 The power index averages, across every past race this motor has run, the gap between \"did the boat actually finish top-2 (0/1)\" and \"that rider's own national top-2 rate at the time.\" A larger positive value means the motor is outperforming whichever rider is on it.",

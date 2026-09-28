@@ -31,7 +31,8 @@
  *    venue_motor_stats はレース日以前のスナップショット）。過去/当日がキャッシュの
  *    キーに入っている（当日に保存した再計算の値を、翌日以降に7日TTLで読まない）
  * 5. 画面: 過去レースでは期間の切り替えを出さず注記に置き換え、公式2連率の列を畳む。
- *    入れ替え前のモーターはドリルダウンの中身を出さない
+ *    入れ替え前のモーターはドリルダウンの中身を出さない。選手ページも、直近出走が
+ *    入れ替え前なら機力指数を出さない
  */
 
 import { readFileSync } from "node:fs";
@@ -198,6 +199,19 @@ check(
   "画面: 期間を使用開始日で切り詰めたら注記を出す",
   chart.includes("analysis.motor.periodClippedNote"),
 );
+check(
+  "画面: 切り詰めたときは機力指数の要約に「過去90日」と書かない",
+  chart.includes("period: powerIndex.clipped_by_generation") &&
+    chart.includes("analysis.motor.periodSinceGeneration"),
+);
+const racer = read("src/services/racerService.js");
+check(
+  "選手ページ: 直近出走が入れ替え前なら機力指数・公式成績を出さない",
+  racer.includes("date < generationStart") &&
+    /preGeneration\s*\?\s*null\s*:\s*supabaseDataService\.getMotorPowerIndex/.test(
+      racer,
+    ),
+);
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;
@@ -208,6 +222,7 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       "periodClippedNote",
       "officialModeSourceNote",
       "drillPreGeneration",
+      "periodSinceGeneration",
     ].every((k) => typeof motor[k] === "string" && motor[k].length > 0),
   );
 }
