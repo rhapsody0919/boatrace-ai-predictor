@@ -136,24 +136,31 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   // オリジナル展示（一周/半周ラップ/まわり足/直線、BOA-452 / FR-4b）。
   // BOATCAST由来の生値なので、表示するときは必ず出典を添える（ADR-0067）。
   // 096が未適用の間は state==="forbidden" が返り、行も出典も出さない
-  const [originalExhibition, setOriginalExhibition] = useState(null);
+  // **raceIdとセットで持つ**（RacePitReportSection と同じ）。レース詳細は
+  // ボトムナビで次のレースへ移ってもこのコンポーネントが再マウントされず、
+  // raceId プロップだけが変わる。値だけを持つと、新しい取得が返るまでの間、
+  // 展示ST・展示タイムは新レース・一周/まわり足/直線は前レース、という
+  // 1つの表の中で別レースの数字が混ざった状態になる
+  const [fetchedExhibition, setFetchedExhibition] = useState(null);
   useEffect(() => {
     if (!raceId) return undefined;
     let cancelled = false;
     supabaseDataService
       .getRaceOriginalExhibition(raceId)
       .then((data) => {
-        if (!cancelled) setOriginalExhibition(data);
+        if (!cancelled) setFetchedExhibition({ raceId, data });
       })
       .catch((err) => {
         // 取得失敗でこのタブの他の行まで巻き込まない。行が出ないだけにする
         console.error("オリジナル展示取得エラー:", err?.message ?? String(err));
-        if (!cancelled) setOriginalExhibition(null);
+        if (!cancelled) setFetchedExhibition({ raceId, data: null });
       });
     return () => {
       cancelled = true;
     };
   }, [raceId]);
+  const originalExhibition =
+    fetchedExhibition?.raceId === raceId ? fetchedExhibition.data : null;
 
   // 展示情報の表は390pxで5号艇までしか入らない。**早期returnより前**に
   // 置く（フックの呼び出し順は毎回同じでなければならない）

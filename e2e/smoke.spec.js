@@ -2617,6 +2617,92 @@ test.describe("レース詳細の直前情報タブ: オリジナル展示", () 
     await expect(rowByLabel(page, "一周")).toHaveCount(0);
     await expect(page.locator(".rbi-source")).toHaveCount(0);
   });
+
+  // --- ここから /code-review の指摘に対する再現テスト（2026-09-28） ---
+
+  test("096未適用で一度開いた後に権限が付いたら、リロード無しの再訪でも行が出る（forbiddenをキャッシュしない）", async ({
+    page,
+  }) => {
+    // 1回目: 権限が無い（096未適用）
+    const denied = (route) =>
+      route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({
+          code: "42501",
+          message: "permission denied for table race_original_exhibition",
+        }),
+      });
+    await page.route("**/rest/v1/race_original_exhibition?*", denied);
+    await page.route("**/rest/v1/race_original_exhibition_values*", denied);
+    await openBeforeInfoTab(page);
+    await expect(rowByLabel(page, "一周")).toHaveCount(0);
+
+    // 2回目: 096を適用した後を模して200を返す。forbiddenがキャッシュされていると、
+    // 過去レースのキーは7日TTLなのでここで行が出ない
+    await page.unroute("**/rest/v1/race_original_exhibition?*");
+    await page.unroute("**/rest/v1/race_original_exhibition_values*");
+    await routeOriginalExhibition(page, {
+      header: {
+        item_labels: "一周|まわり足|直線",
+        updated_at: "2026-09-21T06:42:00Z",
+      },
+      values: VALUES,
+    });
+    await page.goto("/");
+    await openBeforeInfoTab(page);
+    await expect(rowByLabel(page, "一周")).toBeVisible({ timeout: 20000 });
+    await expect(rowByLabel(page, "一周")).toContainText("36.91");
+  });
+
+  test("全艇が欠測（value=null）の項目は、行だけでなく出典の項目名にも出さない", async ({
+    page,
+  }) => {
+    // 津・三国の一周のように、ファイルが `--.--` を返す項目は value=NULL で入る
+    // （マイグレーション091のコメント）。行が出ないのに出典だけが名乗ると、
+    // 出していない値の出典を表示することになる
+    await routeOriginalExhibition(page, {
+      header: {
+        item_labels: "一周|まわり足|直線",
+        updated_at: "2026-09-21T06:42:00Z",
+      },
+      values: VALUES.map((v) =>
+        v.kind === "一周" ? { ...v, value: null } : v,
+      ),
+    });
+    await openBeforeInfoTab(page);
+
+    await expect(rowByLabel(page, "まわり足")).toBeVisible({ timeout: 20000 });
+    await expect(rowByLabel(page, "一周")).toHaveCount(0);
+    const source = page.locator(".rbi-source");
+    await expect(source).toBeVisible();
+    await expect(source).toContainText("まわり足");
+    await expect(source).not.toContainText("一周");
+  });
+
+  test("全項目が欠測なら行も出典も出さない", async ({ page }) => {
+    await routeOriginalExhibition(page, {
+      header: {
+        item_labels: "一周|まわり足|直線",
+        updated_at: "2026-09-21T06:42:00Z",
+      },
+      values: VALUES.map((v) => ({ ...v, value: null })),
+    });
+    await openBeforeInfoTab(page);
+
+    await expect(page.locator(".drt-table")).toBeVisible({ timeout: 20000 });
+    await expect(rowByLabel(page, "一周")).toHaveCount(0);
+    await expect(page.locator(".rbi-source")).toHaveCount(0);
+  });
+
+  // **「別のレースへ移っても前のレースの値が残らない」はE2Eにしていない。**
+  // raceIdとセットで持つ修正（RaceBeforeInfoTab）は入れてあるが、この不具合が
+  // 顕在化するのは「未確定のレース同士を行き来する」ときだけ。確定済みの
+  // レース同士だと defaultTabId が result のまま→basic→result と揺れて
+  // RaceTabs がタブをリセットし、RaceBeforeInfoTab が作り直されるため、
+  // 修正の有無で結果が変わらない（実測、2026-09-28）。未確定のレースを
+  // 2つ用意するには「当日の未発走レース」が要り、実行時刻とDBの状態に
+  // 依存してフレークになるため、テストは置かない（BOA-452のPRコメントに記録）
 });
 
 // 前検タイム・公式2連率（節時点）をモータ情報タブに出す（BOA-451 / phase a FR-4a）
@@ -2687,5 +2773,42 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
     await expect(table.locator("td.motor-pretest-cell")).toHaveCount(0);
     // 公式2連率は race_entries 由来なので前検が無くても出る
     await expect(table.locator("thead")).toContainText("公式2連率");
+  });
+
+  test("旧形状のキャッシュが残っていても「前検」列が出る（キャッシュキーの版を上げている）", async ({
+    page,
+  }) => {
+    // BOA-264 で 1着率・優出数を足したときと同じ事故。返り値に
+    // フィールドを足したのにキャッシュキーの版を上げないと、過去レースは
+    // 7日TTLの旧キャッシュが新フィールド無しの形で返り、列が消える
+    await page.addInitScript(() => {
+      const stale = [1, 2, 3, 4, 5, 6].map((n) => ({
+        boat_number: n,
+        player_name: `旧キャッシュ${n}`,
+        motor_number: n,
+        motor_2rate: 30,
+        motor_3rate: 40,
+        power_index: 0,
+        final_count: null,
+        championship_count: null,
+        first_place_count: null,
+        race_count: 10,
+      }));
+      [90, 30].forEach((days) => {
+        try {
+          window.localStorage.setItem(
+            `boatai:race-motor-breakdown-v3-5-${days}-2026-09-21-05-12`,
+            JSON.stringify({ data: stale, timestamp: Date.now() }),
+          );
+        } catch {
+          /* private window 等ではスキップ */
+        }
+      });
+    });
+    await openMotorTab(page);
+
+    const table = page.locator(".motor-ranking-table").first();
+    await expect(table.locator("thead")).toContainText("前検");
+    await expect(table).not.toContainText("旧キャッシュ1");
   });
 });

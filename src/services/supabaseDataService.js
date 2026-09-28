@@ -2536,8 +2536,10 @@ export const supabaseDataService = {
       // 格下げされてしまうため、raceIdより前に置く。
       // v2: motor_2rate/3rateを選択期間に応じた値に差し替えるよう変更(BOA-283)。
       // v3: 優出回数・優勝回数・1着率を追加(BOA-264追加調査、日和比較)。
+      // v4: 前検タイム・前検順位・公式2連率（節時点）を追加(BOA-451)。
       // 旧キーのままだと古いキャッシュが新フィールド無しの形状のまま返る
-      `race-motor-breakdown-v3-${venueCode}-${days}-${raceId}`,
+      // （過去レースは7日TTLなので、上げ忘れると1週間「前検」列が出ない）
+      `race-motor-breakdown-v4-${venueCode}-${days}-${raceId}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -6252,7 +6254,9 @@ export const supabaseDataService = {
       if (rows.length === 0) return null;
 
       // 日付の連続性で節を切る（表示日を含む区間だけ残す）
-      const dates = [...new Set(rows.map((r) => r.race_id.slice(0, 10)))].sort();
+      const dates = [
+        ...new Set(rows.map((r) => r.race_id.slice(0, 10))),
+      ].sort();
       // 表示日のレースが1つも無い場合（初日の第1レース等）は直近の日から遡る
       let meetStart = dates.includes(date) ? date : dates[dates.length - 1];
       for (let i = dates.indexOf(meetStart); i > 0; i--) {
@@ -6485,9 +6489,7 @@ export const supabaseDataService = {
               exhibition: ex === null ? null : Number(ex),
               st,
               stRank:
-                st === null
-                  ? null
-                  : sameRace.filter((v) => v < st).length + 1,
+                st === null ? null : sameRace.filter((v) => v < st).length + 1,
             });
           }
           for (const id of Object.keys(byRacer)) {
@@ -6979,7 +6981,7 @@ export const supabaseDataService = {
         [headerRes, valueRes] = await Promise.all([
           supabase
             .from("race_original_exhibition")
-            .select("item_labels, measure_status, updated_at")
+            .select("item_labels, updated_at")
             .eq("race_id", raceId)
             .maybeSingle(),
           supabase
@@ -6991,19 +6993,42 @@ export const supabaseDataService = {
         if (isPermissionDeniedError(error)) {
           // 096（匿名へのSELECT公開）が未適用の間はここを通る。
           // 「データ無し」ではなく forbidden として返し、画面は行ごと出さない
-          return { state: "forbidden", capturedAt: null, kinds: [], byBoat: {} };
+          // fetchFailed を付けて withCache に保存させない。付け忘れると、
+          // 096の適用前に開いた過去レースが7日間ずっと forbidden のまま固着する
+          return {
+            state: "forbidden",
+            capturedAt: null,
+            kinds: [],
+            byBoat: {},
+            fetchFailed: true,
+          };
         }
         throw error;
       }
 
       const values = valueRes.data ?? [];
-      if (values.length === 0) {
-        return { state: "empty", capturedAt: null, kinds: [], byBoat: {} };
+
+      // `value` は nullable で、欠測（BOATCASTのファイルの `--.--`。津・三国の
+      // 一周など。091のコメント）は NULL で入る。**値がある行だけ**を数えて
+      // 「出せるかどうか」を決める。行数だけで見ると、全艇が欠測の項目まで
+      // 出典に名前が並んだり、1行も出ないのに出典ブロックだけ残ったりする
+      const measured = values.filter(
+        (row) => row.value !== null && row.value !== undefined,
+      );
+      if (measured.length === 0) {
+        // まだ計測されていない（または全艇欠測）。発走の30分前あたりに値が
+        // 入るので、この状態をキャッシュすると出た後もリロードまで出ない
+        return {
+          state: "empty",
+          capturedAt: null,
+          kinds: [],
+          byBoat: {},
+          fetchFailed: true,
+        };
       }
 
       const byBoat = {};
-      values.forEach((row) => {
-        if (row.value === null || row.value === undefined) return;
+      measured.forEach((row) => {
         byBoat[row.boat_number] = {
           ...(byBoat[row.boat_number] ?? {}),
           [row.kind]: Number(row.value),
@@ -7013,7 +7038,7 @@ export const supabaseDataService = {
       // 会場によって項目が違う（例: 児島は「一周|まわり足」の2項目だけ）。
       // ヘッダの item_labels（"一周|まわり足|直線"）を正として順番を決め、
       // 実際に値がある種別だけ残す。ヘッダが無ければ既定の順に落とす
-      const present = new Set(values.map((row) => row.kind));
+      const present = new Set(measured.map((row) => row.kind));
       const declared = (headerRes.data?.item_labels ?? "")
         .split("|")
         .map((label) => label.trim())
