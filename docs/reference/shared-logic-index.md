@@ -238,4 +238,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 203 ファイル / export 1011 件。
+対象 203 ファイル / export 1012 件。
