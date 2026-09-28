@@ -145,9 +145,23 @@ export function finishPositionOf(r) {
 
 /**
  * 直近n走の個別結果を返す（新しい方が配列の末尾）。
- * 当初は「節」単位でグルーピングした勝率推移を計画していたが、節境界の
- * データ（series_day/is_final_day）が実データで常にnullのため断念し、
- * 個別レースの着順をそのまま並べる方式にした（上記モジュールコメント参照）。
+ *
+ * **節単位のグルーピングには戻さない。** 当初は「節」単位でグルーピングした
+ * 勝率推移を計画していたが、当時は節境界のデータ（series_day/is_final_day）が
+ * 実データで常にnullだったため断念し、個別レースの着順をそのまま並べる方式にした
+ * （上記モジュールコメント参照）。
+ *
+ * **2026-09-28追記（BOA-457）**: `series_day` は 2026-02-01 以降
+ * 36,607/36,629行（99.94%）で埋まっており、この前提はもう成り立たない
+ * （残る22行はすべて当日＝スクレイプ前のレース）。節単位の推移に作り直すこと自体は
+ * 可能になった。
+ *
+ * それでも戻さないのは**役割分担が決まったから**で、データ制約が理由ではない。
+ * 2026-09-26のユーザーフィードバックで、今節タブ（FR-3、`buildMeetResults`）が
+ * 「節の区切り」を担い、こちらの直近n走は「節をまたぐ流れ」を見る、と切り分けが
+ * 確定した（`RaceBasicInfoTab.jsx` の RECENT_RACES_COUNT を5→10に増やしたのも
+ * 同じ判断による）。節単位にすると今節タブと役割が重複する。
+ *
  * recordsは日付昇順であることを前提とする（getRacerScopedRaceStatsの戻り値順）
  *
  * 2026-09-16（BOA-333/159共通化）: 戻り値の形をRaceHistoryTable.jsx
@@ -180,6 +194,16 @@ export function getRecentRaces(records, count = 5) {
     // 実際に進入したコース。今節タブ（FR-3）が「進入」列で使う。
     // 2025-12-04より前のレースと当日のレースはnull（BOA-257）
     entryCourse: r.actualCourse ?? null,
+    // 展示タイムと、その走の同レース内での展示順位。今節タブ（FR-3）が
+    // 「展示」列で使う。**推移の判定文（上向き/下向き）は出さない**——
+    // 初日と直近の2点だけを比べると、間の走を捨てて実態と逆の結論になる
+    // （2026-09-27の実測: 宮田龍馬は 6.86→6.89→6.77→6.78→6.88→6.81→
+    // 6.76→6.87 と動いており、最初と最後だけ見ると「下向き」だが
+    // 今節ベスト級は間にある）
+    exhibitionTime:
+      typeof r.exhibitionTime === "number" ? r.exhibitionTime : null,
+    exhibitionRank:
+      typeof r.exhibitionRank === "number" ? r.exhibitionRank : null,
     startTiming: r.startTiming ?? null,
     // 4〜6着はBOA-238以降のみ保存されているため、rank4〜6が未バックフィルの
     // 過去レースではnullになる（"unknown"として表示側が「着外」等に読み替える）
@@ -226,19 +250,45 @@ export function computeVenueRanking(records, metric) {
 }
 
 /**
- * 平均進入コースを計算する（BOA-304、直前情報タブ「平均進入順」）。
- * getRacerScopedRaceStatsのactualCourse（BOA-257の実進入コース、race_results.
- * actual_course_N）を使う。2025-12-04より前のレース・欠場艇はactualCourseが
- * nullのため対象外になる（そのレースを1着扱い等にすり替えない）
+ * この枠からの進入コース分布（BOA-485、直前情報タブ「この枠からの進入」）。
+ *
+ * 旧「平均進入順」（computeAvgEntryCourse）は全枠のレースを混ぜて平均していたため、
+ * 1号艇でも「3.16」のような値になり、この枠から何コースに入るかが読めなかった
+ * （ユーザー指摘、2026-09-28）。今回と同じ枠番で出走したレースだけに絞り、
+ * 本番の進入コース（actualCourse、race_results.actual_course_N）の分布を返す。
+ *
+ * - 対象は beforeRaceId より前のレースだけ（過去レースを開いたときに、
+ *   そのレース自身や後のレースの進入を混ぜない）
+ * - actualCourse が null（2025-12-03より前・欠場）は分母から除く
+ * - 前づけ = 枠番より内のコースに入った、外へ = 枠番より外
+ *
  * @param {Array} records - getRacerScopedRaceStatsの戻り値
+ * @param {number} frame - 今回の枠番（艇番）
+ * @param {string|null} beforeRaceId - 表示中のレースID
+ * @returns {{n:number, counts:number[], wakuRate:number|null,
+ *   inwardRate:number|null, outwardRate:number|null}}
+ *   counts[i] はコース i+1 に入った回数
  */
-export function computeAvgEntryCourse(records) {
+export function computeFrameEntryDistribution(records, frame, beforeRaceId) {
   const courses = (records ?? [])
+    .filter((r) => r.boatNumber === frame)
+    .filter((r) => !beforeRaceId || r.raceId < beforeRaceId)
     .map((r) => r.actualCourse)
-    .filter((c) => c !== null && c !== undefined);
-  if (courses.length === 0) return { n: 0, avgCourse: null };
-  const sum = courses.reduce((a, b) => a + b, 0);
-  return { n: courses.length, avgCourse: sum / courses.length };
+    .filter((c) => Number.isInteger(c) && c >= 1 && c <= 6);
+  const counts = [1, 2, 3, 4, 5, 6].map(
+    (course) => courses.filter((c) => c === course).length,
+  );
+  const n = courses.length;
+  if (n === 0)
+    return { n, counts, wakuRate: null, inwardRate: null, outwardRate: null };
+  const rate = (count) => (count / n) * 100;
+  return {
+    n,
+    counts,
+    wakuRate: rate(courses.filter((c) => c === frame).length),
+    inwardRate: rate(courses.filter((c) => c < frame).length),
+    outwardRate: rate(courses.filter((c) => c > frame).length),
+  };
 }
 
 /**
@@ -361,6 +411,16 @@ export function buildConditionRows(records, { venueCode, metric }) {
       };
     }
 
+    // 初日・最終日。**他行と母数が違う**点に注意（2026-09-28実測）。
+    // 走数の中央値は初日24走・最終日25走に対し、他行（全国）は176走。
+    // 差の主因は**初日が節の1日だけ**であること（節の長さは実測で4〜6日が大半・
+    // 中央6日なので、初日はその1/6前後にあたる）。加えて期間の差もある:
+    // `race_conditions` は2025-12が12行・2026-01が0行（BOA-498）なので、この2行は
+    // 実質2026-02以降しか母数に入らない。同じ2026-02以降だけで比べると比率17.8%
+    // （全走数の中央135走に対し初日24走）で、期間差の寄与は0.76倍ぶん。
+    // 値そのものは読める母数がある（SMALL_SAMPLE_THRESHOLD=6 を割るのは初日0.6%・
+    // 最終日0.4%）が、「全国176走」と「初日24走」を同じ表に並べている点は
+    // 波・F行のような baseN での注記が無い（BOA-499で起票済み）
     if (row.kind === "seriesDay" || row.kind === "isFinalDay") {
       const field = row.kind === "seriesDay" ? "seriesDay" : "isFinalDay";
       if (isUnavailable(all, field)) {

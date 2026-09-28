@@ -48,9 +48,21 @@ const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
 // （2026-09-26ユーザーフィードバック。今節は節の区切りで、こちらは節をまたぐ流れを見る）
 const RECENT_RACES_COUNT = 10;
 const GRADES = ["all", "ippan", "sgg1"];
-// 「初日」「最終日」は当初検討したが、判定に使うrace_conditions.series_day/
-// is_final_dayが実データで常にnull（generate-predictions.jsが未実装のまま
-// null固定で書き込む、2026-09-15確認）のため削除した（basicInfoStats.js参照）
+// 期間フィルタ（PERIODS）に「初日」「最終日」は**足さない**。2026-09-15時点では
+// 判定に使うrace_conditions.series_day/is_final_dayが全件nullだったため削除した
+// 経緯があるが、この2列は現在99.9%埋まっている（2026-09-28実測、2026-02-01以降
+// 36,607/36,629行＝99.94%。残る22行は当日＝スクレイプ前の分）。それでも
+// 足さない理由は2つで、いずれもデータの有無とは関係ない。
+//   1. **条件別タブで既に出している**（CONDITION_ROWSのfirstDay/finalDay、PR #831
+//      で出荷済み。basicInfoStats.js参照）。足すと同じ数字が同じタブの2箇所に出る
+//   2. **軸の意味が混ざる**。PERIODSは「今期／過去3ヶ月／直近1ヶ月」という
+//      *時間の幅* の軸で、初日・最終日は幅ではなく *条件*（当地・一般戦・波5cm以上
+//      と同じ仲間）。条件は条件別タブ側が持つ、という切り分けを崩さない
+// なお母数は足りている（初日の走数は中央24走、SMALL_SAMPLE_THRESHOLDを割るのは
+// 0.6%。2026-09-28実測）ので、将来「初日×当地×SG・G1」のような掛け合わせが
+// 欲しくなったら条件別タブ側を多軸化するのが筋。1の重複が言えるのは既定状態
+// （全国・全レース）についてで、当地やSG・G1を選ぶと条件別タブ側は絞らない
+// 集計のままなので数字は一致しない
 const PERIODS = ["current", "last3m", "last1m"];
 const PRESETS = [
   { scope: "local", grade: "ippan" },
@@ -79,15 +91,37 @@ function formatMetricValue(metric, value) {
   return metric === "avgSt" ? value.toFixed(2) : `${value.toFixed(1)}%`;
 }
 
-function RaceBasicInfoTab({ raceId, venueCode, players }) {
+function RaceBasicInfoTab({
+  raceId,
+  venueCode,
+  players,
+  focusedBoat,
+  onFocusBoat,
+}) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
   const [metric, setMetric] = useState("winRate");
   const [scope, setScope] = useState("national");
   const [grade, setGrade] = useState("all");
   const [period, setPeriod] = useState("current");
-  const [expandedBoat, setExpandedBoat] = useState(null);
-  const [expandedView, setExpandedView] = useState("trend");
+  // 展開中の艇はタブをまたいで共有する（BOA-492）。null は「誰も展開していない」で、
+  // 従来のタブ内stateと同じ初期値。枠別・今節タブで艇を選んでからこのタブへ来ると、
+  // その艇が展開済みで開く
+  const expandedBoat = focusedBoat ?? null;
+  // 展開パネルの内訳（トレンド/当地/条件別）。どの艇のものかを一緒に持ち、
+  // 艇が変わったら "trend" に戻す。艇の選択はタブ間共有（BOA-492）で
+  // このタブの操作以外でも変わるため、押した瞬間に戻すのでは足りない。
+  // 副作用として、同じ艇を閉じて開き直したときは前の内訳が復元される
+  // （従来は毎回 "trend" に戻っていた）。同じ選手の同じ切り口に戻るだけなので
+  // そのままにしている
+  const [expandedViewState, setExpandedViewState] = useState({
+    boat: null,
+    view: "trend",
+  });
+  const expandedView =
+    expandedViewState.boat === expandedBoat ? expandedViewState.view : "trend";
+  const setExpandedView = (view) =>
+    setExpandedViewState({ boat: expandedBoat, view });
   const [officialRates, setOfficialRates] = useState(null);
   const [scopedStatsByRacer, setScopedStatsByRacer] = useState({});
   // 「前期」（racer_period_stats、phase a FR-4c）。6人分を1クエリで取る。
@@ -189,6 +223,19 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needsOwnAggregation, raceId]);
 
+  // 展開中の艇が変わったら、その選手の履歴を取りに行く（withCacheで他タブと
+  // 共有されるため、枠別タブが先に取っていれば再フェッチは起きない）。
+  // 以前は toggleExpanded の中で呼んでいたが、共有state化（BOA-492）で
+  // 枠別・今節タブからも expandedBoat が変わるようになったため、
+  // 「押したとき」ではなく「変わったとき」に寄せる
+  useEffect(() => {
+    if (expandedBoat === null) return;
+    ensureScopedStats(
+      sortedPlayers.find((p) => p.number === expandedBoat)?.racerId,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedBoat, raceId]);
+
   const officialRowFor = (boatNumber) =>
     (officialRates ?? []).find((r) => r.boat_number === boatNumber) ?? null;
 
@@ -280,14 +327,8 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
   const isPresetActive = (preset) =>
     preset.scope === scope && preset.grade === grade;
 
-  const toggleExpanded = (boatNumber, racerId) => {
-    if (expandedBoat === boatNumber) {
-      setExpandedBoat(null);
-      return;
-    }
-    setExpandedBoat(boatNumber);
-    setExpandedView("trend");
-    ensureScopedStats(racerId);
+  const toggleExpanded = (boatNumber) => {
+    onFocusBoat(expandedBoat === boatNumber ? null : boatNumber);
   };
 
   return (
@@ -400,7 +441,7 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
               <button
                 type="button"
                 className="rbit-bar-row"
-                onClick={() => toggleExpanded(boat, player?.racerId)}
+                onClick={() => toggleExpanded(boat)}
                 aria-expanded={expandedBoat === boat}
               >
                 <span
@@ -413,7 +454,11 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                     grid-template-columns（5列）がずれ、バーの上に重なる */}
                 <span className="rbit-name-cell">
                   <span className="rbit-name" translate="no">
-                    {player?.name}
+                    {/* 出走表の名前は姓と名の間を全角スペースで詰め物して
+                        字数を揃えてある。今節タブ・モータ情報タブ・オッズ一覧は
+                        詰めて出しており、ここだけ空きが残ると同じ画面で
+                        表記が揺れる */}
+                    {player?.name?.replace(/\s+/g, "")}
                   </span>
                   {/* 出走表の今期F数（T5-3）。ST考察カードのバッジと同じ出所
                       （race_entries.f_count）にしてある。この行は <button> なので
@@ -498,7 +543,10 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                           </p>
                         );
                       }
-                      const recent = getRecentRaces(records, RECENT_RACES_COUNT);
+                      const recent = getRecentRaces(
+                        records,
+                        RECENT_RACES_COUNT,
+                      );
                       if (recent.length === 0) {
                         return (
                           <p className="rbit-expanded-empty">
@@ -737,7 +785,9 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                             buildConditionRows(records, {
                               venueCode,
                               metric: "top3Rate",
-                            }).some((r) => r.value !== null && r.value >= 1) && (
+                            }).some(
+                              (r) => r.value !== null && r.value >= 1,
+                            ) && (
                               <p className="rbit-conditions-zero">
                                 {t("basicInfo.conditionsAllZeroHint")}
                                 <button

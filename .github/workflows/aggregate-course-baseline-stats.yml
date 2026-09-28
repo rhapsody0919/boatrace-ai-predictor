@@ -42,3 +42,32 @@ jobs:
           TZ: 'Asia/Tokyo'
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      # tasks.md「完了の定義（バッチ分）」の継続監視。スクリプトは整合チェックに
+      # 失敗すると非0で落ちるが、それだけでは赤いジョブが残るだけで誰も気づかない。
+      # 既存の SLACK_WEBHOOK_URL（他の日次ジョブと同じ経路）へ流す。
+      # 集計が止まれば window_end が古いまま残る＝この通知が「2日以上古い」の
+      # 実質的な検知になる（行数が固定の表では scrape-monitor の daily_overdue が
+      # 空振りするため、そちらは使えない）
+      - name: Notify Slack (失敗時のみ)
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"#c9a227\",
+                \"blocks\": [
+                  {
+                    \"type\": \"section\",
+                    \"text\": {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \":warning: *コース×級別ベースラインの日次集計に失敗（phase a FR-1・FR-6）*\nst_course_baseline / nige_second_by_course が更新されていません。放置すると ST考察・逃げシミュレーションが古い window_end のまま表示され続けます。\n<${RUN_URL}|実行ログ>\"
+                    }
+                  }
+                ]
+              }]
+            }"

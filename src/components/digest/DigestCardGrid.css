@@ -2,23 +2,36 @@
  *
  * 折りたたみで1枚が低くなったため、480px以上で2列に増やす
  * （旧: 768px以上で2列。1列のままだと低いカードが縦に長く伸びるだけになる）。
+ *
+ * 列数は「上限」として効かせ、カードが上限より少ない日は列を作らない。
+ * repeat(2|3, ...) の固定列だと、候補が1件の日に右側へ空列が残る
+ * （E2E layout.spec.js の「空トラック」で検出。当日データ次第で崩れていた）。
+ * auto-fit + 最小幅を「上限列数で割った幅」にすると、列数は上限を超えず、
+ * 使われない列は潰れて残りのカードが幅いっぱいに広がる。
  */
 
 .digest-grid {
+  --digest-gap: 0.6rem;
   display: grid;
   grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 0.6rem;
+  gap: var(--digest-gap);
 }
 
 @media (min-width: 480px) {
   .digest-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(calc((100% - var(--digest-gap)) / 2), 1fr)
+    );
   }
 }
 
 @media (min-width: 1024px) {
   .digest-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(calc((100% - 2 * var(--digest-gap)) / 3), 1fr)
+    );
   }
 }
 

@@ -4,6 +4,7 @@
     "tier=ci   : PRごとにGitHub Actionsで毎回実行する。外部ネットワーク・実DB・実時刻に依存せず、同じコミットなら常に同じ結果を返すものだけを置く。",
     "tier=manual: 実Supabase等への接続が要るため自動実行しない。reason（なぜCIに載せないか）と command（どう実行するか）を必ず書く。",
     "runner    : 省略時は node。bash スクリプトは \"bash\" を指定する。",
+    "timeoutSec: 省略時は180秒（run-verify-registry.js の TIMEOUT_MS）。単独では通るが、負荷の高い開発機で並列実行すると上限を超えるものだけに付ける。",
     "新しい verify-* を追加したら、ここに1エントリ足すこと。未登録だと `npm run verify:ci` が失敗する（.js / .mjs / .cjs / .sh を検知する）。",
     "対象外: サブディレクトリ（content-ops-checks/ の check-*.js）、scripts/analysis/verify-*.js、scripts/verification/（verify-cache-config.js は専用ワークフローで既にPRゲートとして動いている）。"
   ],
@@ -51,7 +52,14 @@
     {
       "script": "verify-data-health-job.js",
       "tier": "ci",
-      "guards": "汎用の日次監視 data_health（完了の定義C、マイグレーション089）。PGliteでDB関数の意味論まで検証する"
+      "guards": "汎用の日次監視 data_health（完了の定義C、マイグレーション089）。PGliteでDB関数の意味論まで検証する",
+      "timeoutSec": 600,
+      "note": "PGliteの変異検証が重い（CI実測21.5秒、並行セッションで負荷の高い開発機では121秒・180秒超えも実測、2026-09-28）"
+    },
+    {
+      "script": "verify-display-coverage.js",
+      "tier": "ci",
+      "guards": "表示カバレッジ台帳（docs/reference/display-coverage.md）の最新性と抽出ロジック。取得したデータが画面に繋がっているかを、マイグレーションと src/・api/ の静的突合で追う"
     },
     {
       "script": "verify-data-health-report.js",
@@ -96,7 +104,9 @@
     {
       "script": "verify-migration-numbers.js",
       "tier": "ci",
-      "args": ["--base=origin/master"],
+      "args": [
+        "--base=origin/master"
+      ],
       "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
       "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
     },
@@ -104,6 +114,13 @@
       "script": "verify-migration-rls.js",
       "tier": "ci",
       "guards": "新規マイグレーションが公開スキーマのテーブルをRLSなし・匿名書き込み可のまま作っていないか（BOA-370の再発防止）"
+    },
+    {
+      "script": "verify-meet-grouping.js",
+      "tier": "manual",
+      "guards": "節推定（src/utils/meetGrouping.js、race_idの日付連続性）がrace_conditions.series_dayと一致し続けること。選手単位の一致率と、推定が誤りうる会場境界に前後どちらの節にも出走した選手が現れないこと（BOA-491の同型が選手単位でも起きていないかの監視）",
+      "reason": "実Supabaseの全期間データ（race_conditions・race_entries）を読むためCIでは決定的にならない。斡旋・中止順延の運用が変わったときに崩れる性質を見るので、日々のデータ投入結果に依存する",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-meet-grouping.js"
     },
     {
       "script": "verify-monthly-schedule.js",
@@ -119,6 +136,11 @@
       "script": "verify-morning-init-refactor.js",
       "tier": "ci",
       "guards": "朝の初期化・公式予想を、ファイル・execSync・process.exit に依存しない関数へ分けた構造"
+    },
+    {
+      "script": "verify-motor-championship-generation.js",
+      "tier": "ci",
+      "guards": "モータ情報「優勝した日・選手」が入れ替え前の別モーター（同じ番号）の優勝を混ぜないこと（現行モーター世代への絞り込み）"
     },
     {
       "script": "verify-motor-pretest.js",
@@ -257,6 +279,11 @@
       "guards": "取得時刻の列（created_at・updated_at、マイグレーション071）を使う書き込みと計測"
     },
     {
+      "script": "verify-series-points-stage-rules.js",
+      "tier": "ci",
+      "guards": "得点率の種別判定（src/components/race/seriesPoints.js の算入範囲と配点、raceStageConfig のバッジ）。race_stage は会場の自由記述で349種あり、部分一致の判定が壊れやすい（BOA-457・BOA-458）"
+    },
+    {
       "script": "verify-sitemap-coverage.js",
       "tier": "ci",
       "guards": "AppRouter.jsx の静的ルートと generate-sitemap.js の staticPages の突き合わせ（sitemap登録漏れ）"
@@ -305,9 +332,24 @@
       "guards": "セッション開始時のorigin乖離・worktree衛生の判定（check-git-hygiene.js / check-worktrees.js）"
     },
     {
+      "script": "verify-worktree-in-use.js",
+      "tier": "ci",
+      "guards": "稼働中セッションの worktree（作業開始直後・ロックなしのデスクトップアプリ）を「片付けてよい」に分類しないこと（check-worktrees.js）"
+    },
+    {
       "script": "verify-guard-pr-merge.js",
       "tier": "ci",
       "guards": "品質ゲートが緑でないPRのマージと、worktreeごと消える取り直しの効かないデータの保護（guard-pr-merge.js）"
+    },
+    {
+      "script": "verify-merge-order-guard.js",
+      "tier": "ci",
+      "guards": "並行セッションのオーケストレーションが決めたマージ順（台帳で先行とされたPRが未マージなら gh pr merge を止める。guard-pr-merge.js・scripts/lib/mergeOrder.js・merge-order.js）"
+    },
+    {
+      "script": "verify-hit-verification-guidance.js",
+      "tier": "ci",
+      "guards": "「毎回の的中/不的中はどこで見られるか」の案内（About・FAQ・使い方ガイド）が、実際に判定を描くタブと食い違うこと（BOA-346の移設で3か所が取り残された）"
     },
     {
       "script": "verify-race-cancellation-usage.js",
@@ -354,6 +396,13 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-morning-digest.js"
     },
     {
+      "script": "verify-pretest-row-pick.js",
+      "tier": "manual",
+      "guards": "前検タイム（motor_pretest_stats）の行の選び方の前提。節の中で値が変わらないこと・6日ルックバックが前の節を拾わないこと・カバー率（BOA-451）",
+      "reason": "実Supabaseの全期間データを読む必要があり、日々のデータ投入結果に依存するためCIでは決定的にならない",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-pretest-row-pick.js"
+    },
+    {
       "script": "verify-rpc-output-keys.js",
       "tier": "manual",
       "guards": "本番RPC（get_predictions_by_date / _light / get_today_races）の出力キーとフロントの参照の整合（BOA-363の再発防止）",
@@ -373,6 +422,16 @@
       "guards": "sns_topic_targetsのclaim機構（ADR 0036）の並行実行時の排他",
       "reason": "実Supabaseに対する並行実行テストのため",
       "command": "node --env-file=.env.local scripts/maintenance/verify-topic-target-claim.js"
+    },
+    {
+      "script": "verify-scraped-at-on-update.js",
+      "tier": "ci",
+      "guards": "scraped_at を持つテーブルへの upsert/update が scraped_at を載せること（DEFAULT now() は INSERT でしか効かず、載せないと初回挿入時の値が残り、鮮度の指標が壊れる。BOA-463）"
+    },
+    {
+      "script": "verify-series-day-fallback.js",
+      "tier": "ci",
+      "guards": "日目（race_conditions.series_day）のフォールバック（BOA-501）。ページから読めた値を節（race_series）からの導出より必ず優先すること、節が無い・読めない会場×日を勝手な値で埋めないこと、バックフィルが既存の値を上書きしないこと"
     }
   ]
 }

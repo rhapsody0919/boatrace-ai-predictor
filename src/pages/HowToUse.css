@@ -154,6 +154,13 @@
   font-size: 1.2rem;
 }
 
+/* 一覧の前に置く一行の補足（タブの前半/後半の別など） */
+.step-note {
+  margin: 0 0 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
 .step-detail ul {
   margin: 0;
   padding-left: 1.5rem;

@@ -69,6 +69,15 @@
   color: var(--text-secondary);
 }
 
+/* 展示タイムのグラフは「棒が長いほど速い」という読み方の明示が要る
+   （素の値で立てると一番高い棒が一番遅い艇になり、逆に読まれる） */
+.rbi-chart-note {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
 .rbi-empty {
   margin: 0;
   padding: var(--spacing-4) 0;
@@ -106,4 +115,47 @@
   .rbi-weather-grid {
     grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
   }
+}
+
+/* オリジナル展示（BOA-452 / ADR-0067）の出典ブロック。
+   ピットレポート（.rpr-source）と同じ見た目にする。出典表記の形が
+   セクションごとに違うと「どれが外部の生値か」が読み取れなくなるため */
+.rbi-source {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-3);
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+}
+
+.rbi-source-text {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* 展示進入（BOA-485）: 枠番と違うコースに入った艇。前づけの予兆なので
+   「枠なりでない」ことが一目で分かるようにする。drt-best（最良値、金の
+   実線枠）と色味が近いので、枠を破線にして形でも区別する（375pxの実画面で
+   同じ表に並ぶと、実線同士では「一番良い値」の印と見分けにくかった） */
+.race-before-info-tab .drt-cell.drt-entry-moved {
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  outline: 1px dashed var(--color-warning);
+  outline-offset: -3px;
+  font-weight: var(--font-weight-bold);
+}
+
+.race-before-info-tab .drt-entry-moved-label {
+  color: var(--color-warning-text);
+  font-weight: var(--font-weight-bold);
+}
+
+/* 「1コース」が375pxのセル幅で「1コー／ス」と折れて読みにくかった
+   （2026-09-28、実画面のスクショで確認）。コース表記は折り返さない */
+.race-before-info-tab .drt-entry-course {
+  white-space: nowrap;
 }

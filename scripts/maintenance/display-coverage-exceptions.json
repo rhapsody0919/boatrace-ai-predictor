@@ -1,0 +1,35 @@
+{
+  "$comment": [
+    "表示カバレッジ台帳（docs/reference/display-coverage.md）の例外登録。",
+    "generate-display-coverage.js が読む。画面（src/）・API（api/）から読んでいないテーブル・ビューのうち、",
+    "「表示しないことが意図的」なものを理由付きで登録する。ここに無いものは台帳の",
+    "『要判断』セクションに出て、表示するか例外にするかの判断を促す。",
+    "登録の条件: なぜ画面に出さないのかを、判断した根拠（チケット・ADR・spec・マイグレーションの目的）とともに1文で書く。",
+    "「今は使っていない」だけでは理由にならない（それは表示すべきものの可能性がある）。"
+  ],
+  "tables": {
+    "scrape_slots": "取得基盤の内部状態（Cronの実行スロット、075）。画面に出す性質のデータではない",
+    "scrape_job_state": "取得基盤の内部状態（ジョブのモード live/shadow/off と最終成功時刻、075）。画面ではなく data_health と orchestration.md が使う",
+    "race_notices_health": "取得監視の健全性指標（060）。画面ではなく data_health とSlack通知が使う",
+    "racer_news_pending": "選手ニュースの承認待ちキュー（080、運用）。承認を経て公開側に入る。セッション開始チェックが読む",
+    "sns_campaigns": "SNS運用（sns-hub）。他の sns_* は管理API（api/admin/sns-hub）経由で読まれており、公開サイトの表示対象ではない",
+    "sns_campaign_entries": "SNS運用（sns-hub）。上と同じ",
+    "sns_target_accounts": "SNS運用（sns-hub）。上と同じ",
+    "kb_archive_races": "K/Bファイルの生アーカイブ（074、2019-04以降）。学習・検証・バックフィルの入力で、画面は本体テーブル（races・race_results 等）を読む",
+    "kb_archive_boats": "K/Bファイルの生アーカイブ（074）。上と同じ",
+    "kb_archive_venue_days": "K/Bファイルの生アーカイブ（074）。上と同じ",
+    "racer_course_technique_stats": "/today（morning digest）の集計の中間テーブル（098）。画面は集計結果の morning_digest_rows を読む",
+    "venue_course_technique_baseline": "会場×グレード×実進入コースの決まり手ベースライン（098）。上と同じく集計の中間テーブル",
+    "venue_entry_course_stats": "「表示には使わず、自前計算の全国値の検証にのみ使う」とユーザー判断済み（BOA-293、orchestration.md）。読み手が無いことは既知",
+    "bet_filters": "001_schema.sql の初期設計に由来する運用・実験用。読み手は scripts/ のみ",
+    "daily_bet_summary": "001_schema.sql の初期設計に由来する運用・実験用。読み手は scripts/ のみ",
+    "model_experiments": "001_schema.sql の初期設計に由来するモデル実験用。読み手は scripts/ のみ",
+    "user_visible_summary": "001_schema.sql の初期設計に由来。読み手は scripts/ のみ",
+    "v_performance_comparison": "001_schema.sql のモデル評価用ビュー。読み手は scripts/ のみ",
+    "v_prediction_performance": "001_schema.sql のモデル評価用ビュー。読み手は scripts/ のみ",
+    "v_production_models": "001_schema.sql のモデル管理用ビュー。読み手は scripts/ のみ",
+    "v_todays_recommendations": "001_schema.sql の初期設計に由来するビュー。scripts/ にも読み手が無い（廃止候補）",
+    "model_bet_candidates": "030（AI予想モデル刷新）の中間テーブル。読み手は scripts/ のみ",
+    "race_outcome_frequencies": "030（AI予想モデル刷新）の中間テーブル。読み手は scripts/ のみ"
+  }
+}

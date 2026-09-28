@@ -34,6 +34,7 @@ import {
   buildRaceEntryRows,
   planDeadlineUpdates,
 } from "../lib/preRaceRows.js";
+import { loadSeriesDayByVenue } from "../lib/raceSeriesLookup.js";
 import {
   PRE_RACE_OPTIONAL_COLUMN_GROUPS,
   detectPreRaceSchema,
@@ -209,6 +210,8 @@ function createAccumulator() {
  * @param {{page: Object, conditions?: Object|null}|null} input.data 取得できなければ null
  * @param {"found"|"not_found"|"skip"} input.cancellationCheck 中止・順延の暫定検知に、今回の取得を数えるか。
  *   found=選手が取れた、not_found=ページは取れたが選手が0人、skip=数えない（通信の失敗等。streak を進めない）
+ * @param {Map<number, number>|null} [input.seriesDayByVenue] 会場コード → 節から導いた日目（BOA-501）。
+ *   ページの日別タブから日目を読めなかったときだけ使う
  */
 function accumulateRaceInfo(
   acc,
@@ -223,6 +226,7 @@ function accumulateRaceInfo(
     entriesExtended,
     conditionsExtended,
     includeWeather,
+    seriesDayByVenue = null,
   },
 ) {
   // 中止・順延の暫定検知（BOA-254 FR1）: data有無に関わらず全レース分計算する。
@@ -292,8 +296,23 @@ function accumulateRaceInfo(
   if (conditions || raceTitle || raceStage) {
     // 気象の列（と観測時刻）は、書き込みの直前にまとめて作る（flushRaceInfo の buildWeatherRows。展示取得と
     // 同じ規則）。気象を取得できなかったレースは、気象の列を含めず、既存の良い値を消さない
+    //
+    // 日目（series_day）は、ページの日別タブから読めなかったときだけ、節（race_series）から導いた値で補う
+    // （BOA-501）。両方あって食い違うときは、ページ側を採り、食い違いを記録する: 節の途中に中止日があると
+    // 公式は同じ日目を振り直すため、導出が1日ぶん進みすぎる（実測 3,064 会場×日で8件。raceSeriesLookup.js）
+    const fallbackSeriesDay = seriesDayByVenue?.get(r.venue_code) ?? null;
+    if (
+      page.meta.seriesDay != null &&
+      fallbackSeriesDay != null &&
+      page.meta.seriesDay !== fallbackSeriesDay
+    ) {
+      console.warn(
+        `  ⚠️ ${venueName} ${r.race_no}R 日目: ページ=${page.meta.seriesDay}日目 / 節からの導出=${fallbackSeriesDay}日目。ページの値を採ります（順延・中止で節の日程がずれた可能性）`,
+      );
+    }
     const conditionRow = buildRaceConditionRow(r.race_id, page.meta, {
       extended: conditionsExtended,
+      fallbackSeriesDay,
     });
     acc.conditionsRows.push(conditionRow);
     perRace.condition = conditionRow;
@@ -538,6 +557,8 @@ export async function run(
 
   // 出走表の新しい列（マイグレーション081）が適用済みかを先に判定する。未適用なら、旧実装と同じ列だけを書く
   const preRaceSchema = await detectPreRaceSchema(client);
+  // 日目のフォールバック（BOA-501）。開催中の節は最大24行で、1回の実行で1回だけ読む
+  const seriesDayByVenue = await loadSeriesDayByVenue(date, { client });
 
   const { rows: cancellationRows, error: cancellationFetchError } =
     await loadCancellationRows(
@@ -583,6 +604,7 @@ export async function run(
         entriesExtended: preRaceSchema.raceEntries,
         conditionsExtended: preRaceSchema.raceConditions,
         includeWeather: true,
+        seriesDayByVenue,
       });
       if (data) {
         const racerSummary = data.page.entries
@@ -638,6 +660,9 @@ export async function run(
  *   getRaceSchedule() の返り値（締切予定時刻との照合用）。無ければ読み込む
  * @param {boolean} [options.syncDeadlines] 既定 true（run と同じ）
  * @param {boolean} [options.includeWeather] 既定 false（気象は展示側）。true なら run と同じく beforeinfo も取る
+ * @param {Map<number, number>|null} [options.seriesDayByVenue] 会場コード → 節から導いた日目（BOA-501）。
+ *   無ければこの中で読む。Vercel Cron は1スロット＝1レースで呼ぶため、1回の起動で同じ読み取りを最大24回
+ *   繰り返さないよう、ハンドラー側（preRaceHandlers.js の createSeriesDayLoader）が起動ごとに1回だけ読んで渡す
  * @returns {Promise<Array<{race_id: string, outcome: string, rowsWritten: number, rowsParsed: number, rowsExpected: number, changed: boolean, resultDigest?: string, error?: string, retryAt?: Date}>>}
  *   changed: 今回、DBを実際に書き換えた（予測の再計算の対象になる）
  */
@@ -652,6 +677,7 @@ export async function runForRaces(
     schedule = null,
     syncDeadlines = true,
     includeWeather = false,
+    seriesDayByVenue = null,
   } = {},
 ) {
   if (mode !== "live" && mode !== "shadow") {
@@ -670,6 +696,8 @@ export async function runForRaces(
   const startTimeLookup = buildStartTimeLookup(fullSchedule);
 
   const preRaceSchema = await detectPreRaceSchema(client);
+  const seriesDays =
+    seriesDayByVenue ?? (await loadSeriesDayByVenue(date, { client }));
   const { rows: cancellationRows, error: cancellationFetchError } =
     await loadCancellationRows(
       client,
@@ -716,6 +744,7 @@ export async function runForRaces(
         entriesExtended: preRaceSchema.raceEntries,
         conditionsExtended: preRaceSchema.raceConditions,
         includeWeather,
+        seriesDayByVenue: seriesDays,
       });
     if (detail.status === "ok") {
       accumulate(detail, "found");

@@ -129,6 +129,16 @@ export const COUNT_CHECKS = Object.freeze([
   },
 
   // 節・選手の期別成績。取り込み前（テーブルが空）は「未導入」。取り込み後（過去分のバックフィル済み）に有効になる
+  //
+  // race_series.covered は、日目（race_conditions.series_day）のフォールバック（BOA-501）の見張りも兼ねる。
+  // 日目は、出走表ページから読めなかったとき節（race_series）から導く（scripts/lib/raceSeriesLookup.js）ため、
+  // 節の行が無い会場×日ができると、日目が黙って NULL のまま残る。それはこの項目が検知する
+  // （2026-09-28 の実測で、2026-09-01〜28 の全会場×日が covered=100%）。
+  //
+  // 症状そのもの（series_day の充足率）を見る pre_race.series_day は、まだ足していない。
+  // data_health_pre_race_fields（089）が series_day を返さないうちに登録表へ足すと、evaluate.js が
+  // 欠けた列を 0 と読んで（sum の `?? 0`）、分母だけがある＝充足率0% の誤報になる。
+  // 足すなら、関数を CREATE OR REPLACE するマイグレーションを本番へ適用してからにする。
   {
     id: "race_series.covered",
     label: "節(開催のあった会場×日を覆う)",
@@ -174,20 +184,29 @@ export const COUNT_CHECKS = Object.freeze([
     note: "汚染は1会場日でも異常のため、閾値は100%。2025-12-02〜2026-09-25の実測で誤検知0（判定はレース単位の一致が2件以上）",
   },
 
-  // 月別の結果充足率（全期間）。既知の欠損（2025-12・2026-01・2026-03。バックフィル前）があるため、
-  // 通知せず last_report に載せる（バックフィル後に severity を alert に変える）
+  // 月別の結果充足率（全期間）。**2026-09-28に全10か月が100.00%になったため、severity を info から
+  // alert に上げた**（BOA-468）。以降、どの月かが99%を割ったら通知する。
+  //
+  // 長く info（通知しない）だったのは、過去分の欠損が残っていたため。その免責の書き方で失敗した経緯を
+  // 残す: 2026-09-28まで「既知の欠損（2025-12・2026-01・2026-03）があるため通知しない」と書いてあったが、
+  // その3か月は既に閾値を満たしており、実際に未達だったのは 2026-04〜06（欠損231レース）だった。
+  // **ずれた免責が、別の未達を覆っていた。** 免責を書くなら対象を実測で更新し、解消したら外す。
+  //
+  // 是正に使った道具: scripts/maintenance/audit-missing-results.js（公式の開催場一覧と結果ページから
+  // 中止 / 取得漏れ / races に実在しない行 の3つに分類する）＋ delete-phantom-races.js。
+  // 2026-09-28の内訳は、中止201件を confirmed 化・取得漏れ23件を取り直し・実在しない48レースを削除。
   {
     id: "result.monthly",
     label: "結果(rank1)の月別充足率(全期間)",
     classification: "count",
-    severity: "info",
+    severity: "alert",
     fn: "data_health_monthly_result",
     numerator: "with_result",
     denominator: "denom",
     aggregate: "perRow",
     keyColumn: "month",
     cadence: { weeklyOn: 1 },
-    note: "全期間の集計のため週次（月曜）。既知の欠損月（バックフィル前）があるため通知しない",
+    note: "全期間の集計のため週次（月曜）。2026-09-28に全10か月100.00%を達成し、通知を有効にした（BOA-468）",
   },
 ]);
 
