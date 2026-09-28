@@ -201,6 +201,15 @@ function createDb({ tables = {}, failUpsert = {}, failSelect = {} } = {}) {
               filters.push((r) => r[c] === v);
               return q;
             },
+            // 日付の範囲（race_series の start_date <= 対象日 <= end_date）。日付は YYYY-MM-DD の文字列で比較する
+            lte(c, v) {
+              filters.push((r) => String(r[c]) <= String(v));
+              return q;
+            },
+            gte(c, v) {
+              filters.push((r) => String(r[c]) >= String(v));
+              return q;
+            },
             limit(n) {
               limit = n;
               return q;
@@ -1155,6 +1164,114 @@ for (const [job, createHandleSlot, offset] of [
   check(
     "スケジュールの読み取りの失敗は、例外にして覚えない（次のスロットがもう一度試す。「対象なし」に化けさせない）",
     failure === "DB down" && failureAgain === "DB down",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (d-2) 日目（series_day）のフォールバック（BOA-501）
+// 出走表の日別タブから日目を読めなかったとき、節（race_series）の開始日から導いた値で補う。
+// ページから読めた値は必ず優先する（節の途中に中止日があると、導出が1日ぶん進みすぎるため）。
+// ---------------------------------------------------------------------------
+{
+  // 日程タブ（.tab2_inner）を落として、ページから日目が読めない状態を作る（実際に本番で起きている状態）
+  const LIST_NO_TABS_HTML = (() => {
+    const $ = cheerio.load(LIST_HTML);
+    $(".tab2_inner").remove();
+    return $.html();
+  })();
+  // 会場23の節。2026-09-16 は開始日 2026-09-14 から数えて3日目。フィクスチャのページは「初日」（1日目）なので、
+  // ページと導出がわざと食い違う（ページ優先の検証を兼ねる）
+  const SERIES = [
+    { venue_code: 23, start_date: "2026-09-14", end_date: "2026-09-18" },
+  ];
+  const dbWith = (series, extra = {}) =>
+    createDb({ tables: { races: seedRaces(), race_series: series }, ...extra });
+  const seriesDayOf = (db) =>
+    db.state.tables.race_conditions?.find((r) => r.race_id === RACE)
+      ?.series_day ?? null;
+  const runRaceInfo = ({ db, list = LIST_HTML }) =>
+    runViaWrapper({
+      job: "race_info",
+      createHandleSlot: riHandler,
+      rows: {
+        race_info: { job: "race_info", mode: "live", consecutive_failures: 0 },
+      },
+      slots: [slotOf("race_info", RACE, -60)],
+      db,
+      fetcher: createFetcher(pagesHandler({ list })),
+    });
+
+  const noTabs = await runRaceInfo({
+    db: dbWith(SERIES),
+    list: LIST_NO_TABS_HTML,
+  });
+  check(
+    "日目: ページの日程タブが無いとき、節（race_series）の開始日から導いた値で補う（2026-09-16 は 2026-09-14 開始の3日目）",
+    seriesDayOf(noTabs.db) === 3 &&
+      noTabs.store.completed[0]?.outcome === "ok",
+    show({
+      seriesDay: seriesDayOf(noTabs.db),
+      outcome: noTabs.store.completed[0]?.outcome,
+    }),
+  );
+
+  const pageWins = await runRaceInfo({ db: dbWith(SERIES) });
+  check(
+    "日目: ページから読めた値は、節からの導出と食い違っても優先する（順延・中止で節の日程がずれると、導出が進みすぎる）",
+    seriesDayOf(pageWins.db) === 1,
+    show({ seriesDay: seriesDayOf(pageWins.db) }),
+  );
+
+  const noSeries = await runRaceInfo({
+    db: dbWith([]),
+    list: LIST_NO_TABS_HTML,
+  });
+  check(
+    "日目: 節が無い会場×日は、従来どおり NULL のままにする（勝手な値を入れない）",
+    seriesDayOf(noSeries.db) === null &&
+      noSeries.store.completed[0]?.outcome === "ok",
+    show({
+      seriesDay: seriesDayOf(noSeries.db),
+      outcome: noSeries.store.completed[0]?.outcome,
+    }),
+  );
+
+  const seriesDown = await runRaceInfo({
+    db: dbWith(SERIES, {
+      failSelect: { race_series: { code: "57014", message: "DB down" } },
+    }),
+    list: LIST_NO_TABS_HTML,
+  });
+  check(
+    "日目: 節を読めなくても、レース情報の更新そのものは止めない（日目だけ NULL のまま完了する）",
+    seriesDown.store.completed[0]?.outcome === "ok" &&
+      writeCount(seriesDown.db) > 0 &&
+      seriesDayOf(seriesDown.db) === null,
+    show({
+      outcome: seriesDown.store.completed[0]?.outcome,
+      seriesDay: seriesDayOf(seriesDown.db),
+    }),
+  );
+
+  const twoSlots = await runViaWrapper({
+    job: "race_info",
+    createHandleSlot: riHandler,
+    rows: {
+      race_info: { job: "race_info", mode: "live", consecutive_failures: 0 },
+    },
+    slots: [slotOf("race_info", RACE, -60), slotOf("race_info", RACE_11, -60)],
+    db: dbWith(SERIES),
+  });
+  const seriesReads = twoSlots.db.state.selects.filter(
+    (x) => x.table === "race_series",
+  );
+  check(
+    "日目: 1回の起動で処理した2スロットが、節（race_series）を1回だけ読む（スロットごとに読むと1起動で最大24回になる）",
+    twoSlots.store.completed.length === 2 && seriesReads.length === 1,
+    show({
+      completed: twoSlots.store.completed.length,
+      seriesReads: seriesReads.length,
+    }),
   );
 }
 
