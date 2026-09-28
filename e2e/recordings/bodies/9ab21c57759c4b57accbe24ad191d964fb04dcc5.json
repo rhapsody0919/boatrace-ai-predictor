@@ -1,0 +1,6 @@
+[{"boat_number":1,"win_rate":5.680,"local_win_rate":6.000,"global_2rate":39.32,"local_2rate":0.00,"global_3rate":61.54,"local_3rate":100.00,"f_count":1,"l_count":0}, 
+ {"boat_number":2,"win_rate":6.720,"local_win_rate":5.800,"global_2rate":45.88,"local_2rate":35.00,"global_3rate":62.35,"local_3rate":60.00,"f_count":0,"l_count":0}, 
+ {"boat_number":3,"win_rate":4.410,"local_win_rate":4.370,"global_2rate":27.62,"local_2rate":21.05,"global_3rate":40.95,"local_3rate":47.37,"f_count":0,"l_count":0}, 
+ {"boat_number":4,"win_rate":5.360,"local_win_rate":6.730,"global_2rate":33.70,"local_2rate":55.10,"global_3rate":56.52,"local_3rate":67.35,"f_count":1,"l_count":0}, 
+ {"boat_number":5,"win_rate":7.720,"local_win_rate":7.790,"global_2rate":65.94,"local_2rate":65.52,"global_3rate":82.61,"local_3rate":86.21,"f_count":0,"l_count":0}, 
+ {"boat_number":6,"win_rate":5.030,"local_win_rate":5.000,"global_2rate":29.59,"local_2rate":30.00,"global_3rate":48.98,"local_3rate":45.45,"f_count":0,"l_count":0}]

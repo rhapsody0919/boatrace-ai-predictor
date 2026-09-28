@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures.js";
+import { test, expect, fetchRecorded } from "./fixtures.js";
 
 /**
  * 画面幅ごとのレイアウト崩れを機械的に検知する。
@@ -236,7 +236,8 @@ const DIGEST_FIXED_DATE = "2026-09-22";
 /** morning_digest_rows の応答を、セクションごとに先頭 `perSection` 行だけに絞る */
 async function capDigestRowsPerSection(page, perSection) {
   await page.route(/\/rest\/v1\/morning_digest_rows/, async (route) => {
-    const response = await route.fetch();
+    // route.fetch() は録画を通らないため、録画から同じ応答を返す fetchRecorded を使う
+    const response = await fetchRecorded(route);
     const rows = await response.json();
     const kept = [];
     const counts = new Map();
@@ -246,7 +247,11 @@ async function capDigestRowsPerSection(page, perSection) {
       counts.set(row.section, seen + 1);
       kept.push(row);
     }
-    await route.fulfill({ response, json: kept });
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json: kept,
+    });
   });
 }
 

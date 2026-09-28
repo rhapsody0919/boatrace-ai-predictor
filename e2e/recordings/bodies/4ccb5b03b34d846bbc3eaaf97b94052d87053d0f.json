@@ -1,0 +1,6 @@
+[{"boat_number":1,"player_name":"安河内　　健","grade":"A1","age":31,"win_rate":6.420,"local_win_rate":6.700,"global_2rate":48.80,"motor_number":11,"motor_2rate":44.40}, 
+ {"boat_number":2,"player_name":"上條　　嘉嗣","grade":"A1","age":36,"win_rate":6.410,"local_win_rate":7.030,"global_2rate":53.10,"motor_number":65,"motor_2rate":0.00}, 
+ {"boat_number":3,"player_name":"郷原　　章平","grade":"A2","age":45,"win_rate":6.150,"local_win_rate":4.820,"global_2rate":44.90,"motor_number":4,"motor_2rate":44.40}, 
+ {"boat_number":4,"player_name":"坪口　　竜也","grade":"A2","age":37,"win_rate":5.840,"local_win_rate":5.620,"global_2rate":38.00,"motor_number":59,"motor_2rate":0.00}, 
+ {"boat_number":5,"player_name":"中越　　博紀","grade":"B1","age":42,"win_rate":5.780,"local_win_rate":5.390,"global_2rate":44.90,"motor_number":8,"motor_2rate":50.00}, 
+ {"boat_number":6,"player_name":"松尾　　　充","grade":"A2","age":38,"win_rate":6.430,"local_win_rate":5.330,"global_2rate":44.40,"motor_number":63,"motor_2rate":0.00}]

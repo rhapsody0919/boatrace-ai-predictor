@@ -1,4 +1,5 @@
-import { E2E_MODE, RECORDED_AT_ENV } from "./fixtures.js";
+import { rmSync } from "node:fs";
+import { E2E_MODE, RECORD_CACHE_DIR, RECORDED_AT_ENV } from "./fixtures.js";
 
 /**
  * record モードでは、今回の録画時刻をここで1つに決める。
@@ -8,6 +9,8 @@ import { E2E_MODE, RECORDED_AT_ENV } from "./fixtures.js";
  */
 export default function globalSetup() {
   if (E2E_MODE !== "record") return;
+  // 前回の録画で取った応答を持ち越さない
+  rmSync(RECORD_CACHE_DIR, { recursive: true, force: true });
   process.env[RECORDED_AT_ENV] = new Date().toISOString();
   console.log(`[e2e record] 録画時刻: ${process.env[RECORDED_AT_ENV]}`);
 }

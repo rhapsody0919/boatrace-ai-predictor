@@ -17,7 +17,7 @@ export const LOCAL_ORIGIN_PLACEHOLDER = "http://localhost:0";
 
 const LOCAL_ORIGIN = /^http:\/\/localhost:\d+/;
 // 本文は展開済みで保存されるため、圧縮・長さのヘッダーは実体と食い違う
-const DROP_RESPONSE_HEADERS = new Set([
+export const DROP_RESPONSE_HEADERS = new Set([
   "set-cookie",
   "date",
   "cf-ray",

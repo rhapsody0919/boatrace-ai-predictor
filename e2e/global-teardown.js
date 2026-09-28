@@ -13,15 +13,15 @@ import {
   E2E_MODE,
   HAR_PATH,
   META_PATH,
-  RAW_HAR_PREFIX,
   RAW_EXTERNAL_PREFIX,
+  RECORD_CACHE_DIR,
   RECORDED_AT_ENV,
   RECORDINGS_DIR,
 } from "./fixtures.js";
 import { mergeHarLogs } from "./har-merge.js";
 
 /**
- * record モードの後始末。テストごとに書き出した HAR（test-results 配下）を
+ * record モードの後始末。録画中に取った応答（RECORD_CACHE_DIR に1件ずつ）を
  * 1本に束ねて e2e/recordings/api.har に置き、録画時刻を meta.json に残す。
  */
 export default function globalTeardown(config) {
@@ -40,10 +40,14 @@ export function bundleRecordings(outputDir, recordedAt) {
       const base = path.basename(f);
       return base.startsWith(prefix) && base.endsWith(ext);
     });
-  const harFiles = named(RAW_HAR_PREFIX, ".har");
+  const harFiles = existsSync(RECORD_CACHE_DIR)
+    ? readdirSync(RECORD_CACHE_DIR)
+        .filter((f) => f.endsWith(".har"))
+        .map((f) => path.join(RECORD_CACHE_DIR, f))
+    : [];
   if (harFiles.length === 0) {
     throw new Error(
-      `${outputDir} にテストごとの HAR（${RAW_HAR_PREFIX}*.har）が1つもありません。録画に失敗しています`,
+      `${RECORD_CACHE_DIR} に録画した応答が1つもありません。録画に失敗しています`,
     );
   }
 
@@ -68,7 +72,7 @@ export function bundleRecordings(outputDir, recordedAt) {
 
   console.log(
     [
-      `[e2e record] ${harFiles.length}件の録画を束ねました → ${path.relative(process.cwd(), HAR_PATH)}`,
+      `[e2e record] ${harFiles.length}件の応答を束ねました → ${path.relative(process.cwd(), HAR_PATH)}`,
       `  録画時刻: ${meta.recordedAt}`,
       `  応答: ${stats.unique}件（重複 ${stats.duplicates}件・失敗応答 ${stats.skippedFailed}件を除外）`,
       `  本文: ${readdirSync(BODIES_DIR).length}ファイル・${(bodyBytes / 1024 / 1024).toFixed(1)}MB → ${path.relative(process.cwd(), BODIES_DIR)}/`,
@@ -111,6 +115,7 @@ function externalizeBodies(har) {
 }
 
 function listFiles(dir) {
+  if (!existsSync(dir)) return [];
   return readdirSync(dir, { withFileTypes: true, recursive: true })
     .filter((d) => d.isFile())
     .map((d) => path.join(d.parentPath ?? d.path, d.name));
