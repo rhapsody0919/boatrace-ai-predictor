@@ -2931,7 +2931,7 @@ test.describe("レース詳細の直前情報タブ: 今節のオリジナル展
     await expect(rowByLabel(page, "一周")).toHaveCount(0);
   });
 
-  test("節ぶんの取得は、6選手が出揃ってから1回だけ走る（選手ごとに投げない）", async ({
+  test("節ぶんの取得は、6選手が出揃ってから1通りのID集合でしか走らない", async ({
     page,
   }) => {
     const meetRequests = [];
@@ -2950,8 +2950,17 @@ test.describe("レース詳細の直前情報タブ: 今節のオリジナル展
     await expect(rowByLabel(page, "今節一周")).toBeVisible({ timeout: 30000 });
     await page.waitForTimeout(3000);
 
-    // 選手ごとに投げると6本になる。IDの集合が育つたびに投げ直すのも同じ症状
-    expect(meetRequests.length).toBeLessThanOrEqual(1);
+    // **HTTPの本数ではなく「要求したID集合が何通りあるか」を見る**。
+    // fetchAllByIn は1000行ごとに .range() でページングするので、長い節
+    // （12R×7日＝最大84レース → 84×6艇×3項目＝1,512行）では正当に2本以上になる。
+    // 守りたいのは「選手ごとに投げていない」「集合が育つたびに投げ直していない」
+    // ことなので、race_id=in.(...) の中身の種類が1通りであることを見る
+    const distinctIdSets = new Set(
+      meetRequests.map(
+        (u) => (u.match(/race_id=in\.\(([^)]*)\)/) ?? [])[1] ?? "",
+      ),
+    );
+    expect(distinctIdSets.size).toBe(1);
   });
 });
 

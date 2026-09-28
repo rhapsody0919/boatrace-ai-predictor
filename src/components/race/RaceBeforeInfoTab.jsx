@@ -94,6 +94,10 @@ const MEET_ORIGINAL_KINDS = Object.freeze([
   },
 ]);
 
+/** レース遷移直後の「まだ何も取れていない」状態。毎回新しい {} を作ると
+ *  useMemo の依存が毎レンダー変わってしまうため、定数を使い回す */
+const EMPTY_TREND = Object.freeze({});
+
 function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   const { t } = useTranslation();
   const analysis = useRaceAnalysisData(raceId, { venueCode });
@@ -131,8 +135,19 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [raceId]);
 
-  // 今節展示情報用: 選手ごとに「このレースより前・同一モーターの今節」の展示タイム推移を取得する
-  const [meetTrendByRacer, setMeetTrendByRacer] = useState({});
+  // 今節展示情報用: 選手ごとに「このレースより前・同一モーターの今節」の展示タイム推移を取得する。
+  //
+  // **raceIdとセットで持つ**（2026-09-28、BOA-473のレビューで修正）。以前は
+  // `prev` にマージするだけでレース遷移時にクリアしていなかった。未確定レース同士を
+  // 行き来すると RaceTabs はタブをリセットしないので、前のレースの節（古い
+  // beforeRaceId で計算されたもの）がそのまま残る。すると
+  //   1. 「前走」が1走ずれた値になる（同じ節の2レースなら、ずれるのは1走分）
+  //   2. 下の meetRaceKeys が古い集合で確定してしまい、オリジナル展示の取得を
+  //      余分に1本投げる（「1本に絞る」という設計がレース遷移で崩れる）
+  const [fetchedMeetTrend, setFetchedMeetTrend] = useState({
+    raceId: null,
+    byRacer: {},
+  });
   useEffect(() => {
     let cancelled = false;
     sortedPlayers.forEach((p) => {
@@ -140,15 +155,24 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
       supabaseDataService
         .getRacerMeetExhibitionTrendBefore(p.racerId, p.motorNumber, raceId)
         .then((data) => {
-          if (!cancelled)
-            setMeetTrendByRacer((prev) => ({ ...prev, [p.racerId]: data }));
+          if (cancelled) return;
+          setFetchedMeetTrend((prev) =>
+            // 別のレースの結果が遅れて届いても混ぜない
+            prev.raceId === raceId
+              ? { raceId, byRacer: { ...prev.byRacer, [p.racerId]: data } }
+              : { raceId, byRacer: { [p.racerId]: data } },
+          );
         })
         .catch((err) => {
           // catchしないとmeetTrendByRacer[p.racerId]がundefinedのまま残り、
           // 今節展示情報のセルがスケルトンのまま固まる（上のscopedStatsと同じ扱い）
           console.error("今節展示情報取得エラー:", err?.message ?? String(err));
-          if (!cancelled)
-            setMeetTrendByRacer((prev) => ({ ...prev, [p.racerId]: [] }));
+          if (cancelled) return;
+          setFetchedMeetTrend((prev) =>
+            prev.raceId === raceId
+              ? { raceId, byRacer: { ...prev.byRacer, [p.racerId]: [] } }
+              : { raceId, byRacer: { [p.racerId]: [] } },
+          );
         });
     });
     return () => {
@@ -156,6 +180,8 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [raceId]);
+  const meetTrendByRacer =
+    fetchedMeetTrend.raceId === raceId ? fetchedMeetTrend.byRacer : EMPTY_TREND;
 
   // オリジナル展示（一周/半周ラップ/まわり足/直線、BOA-452 / FR-4b）。
   // BOATCAST由来の生値なので、表示するときは必ず出典を添える（ADR-0067）。
