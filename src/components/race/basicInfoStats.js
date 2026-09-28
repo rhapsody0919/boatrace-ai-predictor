@@ -145,9 +145,13 @@ export function finishPositionOf(r) {
 
 /**
  * 直近n走の個別結果を返す（新しい方が配列の末尾）。
- * 当初は「節」単位でグルーピングした勝率推移を計画していたが、節境界の
- * データ（series_day/is_final_day）が実データで常にnullのため断念し、
+ * 当初は「節」単位でグルーピングした勝率推移を計画していたが、当時は節境界の
+ * データ（series_day/is_final_day）が実データで常にnullだったため断念し、
  * 個別レースの着順をそのまま並べる方式にした（上記モジュールコメント参照）。
+ * **2026-09-28追記（BOA-457）**: `series_day` は 2026-02-03 以降 36,539/36,677 行
+ * （99.6%）で埋まっており、この前提はもう成り立たない。節単位の推移に作り直す
+ * こと自体は可能になったが、個別レースを並べる今の形でファンの要求は満たせて
+ * いるため、この関数はそのままにしてある（変えるなら別チケットで）。
  * recordsは日付昇順であることを前提とする（getRacerScopedRaceStatsの戻り値順）
  *
  * 2026-09-16（BOA-333/159共通化）: 戻り値の形をRaceHistoryTable.jsx
@@ -186,8 +190,10 @@ export function getRecentRaces(records, count = 5) {
     // （2026-09-27の実測: 宮田龍馬は 6.86→6.89→6.77→6.78→6.88→6.81→
     // 6.76→6.87 と動いており、最初と最後だけ見ると「下向き」だが
     // 今節ベスト級は間にある）
-    exhibitionTime: typeof r.exhibitionTime === "number" ? r.exhibitionTime : null,
-    exhibitionRank: typeof r.exhibitionRank === "number" ? r.exhibitionRank : null,
+    exhibitionTime:
+      typeof r.exhibitionTime === "number" ? r.exhibitionTime : null,
+    exhibitionRank:
+      typeof r.exhibitionRank === "number" ? r.exhibitionRank : null,
     startTiming: r.startTiming ?? null,
     // 4〜6着はBOA-238以降のみ保存されているため、rank4〜6が未バックフィルの
     // 過去レースではnullになる（"unknown"として表示側が「着外」等に読み替える）
