@@ -8,7 +8,9 @@ import "./MotorConditionChart.css";
  * MotorRacerWakuDrillDown - 選手×モーター×枠(進入コース)の成績一覧
  * （BOA-301 FR-4）。MotorWakuStatsGridの特定コース行タップで開く。
  * サンプル数が最小になりやすい軸のため、n<6（SMALL_SAMPLE_THRESHOLD、
- * BOA-306と同じ閾値）の行は視覚的に区別する（非表示化・合否判定はしない、
+ * BOA-306と同じ閾値）の行は、nと率の両方を参考値の色にする（枠番別成績の表と
+ * 同じく率にも色を付ける。nだけだと大きな緑の「100.0%」が目立ち注意が伝わらない。
+ * 2026-09-28 ファン評価）。非表示化・合否判定はしない（
  * [[feedback_ui_visualization_over_statistical_rigor]]の方針を踏襲）
  */
 function MotorRacerWakuDrillDown({ course, rows, onBack }) {
@@ -39,15 +41,21 @@ function MotorRacerWakuDrillDown({ course, rows, onBack }) {
                 >
                   {t("analysis.motor.sampleCount", { n: row.raceCount })}
                 </span>
-                <span className="usage-history-rate">
+                <span
+                  className={`usage-history-rate ${isSmallSample ? "is-small-sample" : ""}`}
+                >
                   {t("analysis.motor.firstPlaceRateHeader")}{" "}
                   {row.winRate !== null ? `${row.winRate.toFixed(1)}%` : "-"}
                 </span>
-                <span className="usage-history-rate">
+                <span
+                  className={`usage-history-rate ${isSmallSample ? "is-small-sample" : ""}`}
+                >
                   {t("analysis.motor.legend2")}{" "}
                   {row.top2Rate !== null ? `${row.top2Rate.toFixed(1)}%` : "-"}
                 </span>
-                <span className="usage-history-rate">
+                <span
+                  className={`usage-history-rate ${isSmallSample ? "is-small-sample" : ""}`}
+                >
                   {t("analysis.motor.legend3")}{" "}
                   {row.top3Rate !== null ? `${row.top3Rate.toFixed(1)}%` : "-"}
                 </span>
@@ -58,7 +66,9 @@ function MotorRacerWakuDrillDown({ course, rows, onBack }) {
       ) : (
         <div className="empty-state">{t("analysis.motor.racerWakuEmpty")}</div>
       )}
-      <p className="table-note">{t("analysis.motor.racerWakuNote")}</p>
+      <p className="table-note">
+        {t("analysis.motor.racerWakuNote", { n: SMALL_SAMPLE_THRESHOLD })}
+      </p>
     </div>
   );
 }

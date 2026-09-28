@@ -1033,7 +1033,8 @@
       "venueRankBadge": "{{rank}}位／{{total}}機中",
       "sampleCount": "(n={{n}})",
       "wakuStatsHeading": "枠番別成績",
-      "wakuStatsWindowNote": "💡 集計期間: 直近180日",
+      "wakuStatsWindowNote": "💡 集計期間: 現行モーターの使用開始以降（入れ替え前の同じ番号の別モーターは含めません）。オレンジ色の値は{{n}}走未満のため参考値です。",
+      "wakuStatsUnknownGeneration": "現行モーターの使用開始日が取得できていないため、表示していません（入れ替え前の別モーターの成績が混ざるのを避けるため）",
       "courseHeader": "コース",
       "exhibitionTrendHeader": "展示タイム推移",
       "wakuStatsExpand": "全6コースを表示",
@@ -1041,7 +1042,7 @@
       "racerWakuBackLabel": "← 枠番別成績に戻る",
       "racerWakuHeading": "{{course}}コースでの選手別成績",
       "racerWakuEmpty": "このモーター・コースの組み合わせで出走した選手が見つかりません",
-      "racerWakuNote": "💡 直近180日・このモーターがこのコースで使われたレースに絞った選手別成績です。nが小さい選手は参考程度にご覧ください。"
+      "racerWakuNote": "💡 現行モーターの使用開始以降に、このモーターがこのコースで使われたレースだけで集計しています。オレンジ色の値は{{n}}走未満のため参考値です。"
     },
     "racerForm": {
       "title": "📈 選手調子",

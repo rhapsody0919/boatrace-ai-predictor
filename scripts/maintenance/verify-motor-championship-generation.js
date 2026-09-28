@@ -16,6 +16,7 @@
  *    - currentMotorGenerationStart: 使用開始日の履歴から最新の日付を選ぶ。行が無ければ null
  *    - isInMotorGeneration: 使用開始日の前日は除外、当日・以降は含める
  * 2. getVenueMotorChampionshipHistory の本体が、上の2関数と venue_motor_start_dates を通っていること
+ *    （使用開始日の取得は getMotorGenerationStart に共通化。枠番別成績も同じものを使う）
  *    また、戻り値の形を変えたため、キャッシュのキーが旧版と違うこと（localStorageに30分残る
  *    旧形式の配列を読むと、画面が .wins.length で落ちる）
  *    （サービス層は import.meta.env に依存し node から実行できないため、ソースを検査する）
@@ -81,13 +82,28 @@ const begin = src.indexOf("getVenueMotorChampionshipHistory(venueCode");
 const end = src.indexOf("\n  },\n", begin);
 const body = begin >= 0 && end > begin ? src.slice(begin, end) : "";
 check("getVenueMotorChampionshipHistory が見つかる", body.length > 0);
+// 使用開始日の取得は枠番別成績（BOA-301）と共通の getMotorGenerationStart に寄せた
+const helperBegin = src.indexOf("async function getMotorGenerationStart(");
+const helperEnd = src.indexOf("\n}\n", helperBegin);
+const helper =
+  helperBegin >= 0 && helperEnd > helperBegin
+    ? src.slice(helperBegin, helperEnd)
+    : "";
 check(
-  "venue_motor_start_dates から使用開始日を読む",
-  body.includes('.from("venue_motor_start_dates")'),
+  "getMotorGenerationStart が venue_motor_start_dates から使用開始日を読む",
+  helper.includes('.from("venue_motor_start_dates")'),
 );
 check(
-  "currentMotorGenerationStart で現行世代の開始日を決める",
-  body.includes("currentMotorGenerationStart("),
+  "getMotorGenerationStart が currentMotorGenerationStart で現行世代の開始日を決める",
+  helper.includes("currentMotorGenerationStart("),
+);
+check(
+  "getMotorGenerationStart が権限エラーを世代不明（null）に倒す",
+  helper.includes("isPermissionDeniedError(err)"),
+);
+check(
+  "優勝履歴が getMotorGenerationStart で現行世代の開始日を決める",
+  body.includes("getMotorGenerationStart(venueCode)"),
 );
 check(
   "isInMotorGeneration で優勝戦を現行世代に絞る",

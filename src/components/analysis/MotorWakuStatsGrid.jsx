@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
+import InlineFetchError from "../InlineFetchError";
 import "./MotorConditionChart.css";
 
 /**
@@ -14,6 +15,10 @@ import "./MotorConditionChart.css";
  * 行のみを表示し、タップで全6コースに展開する（レース詳細ページの
  * 「モータ情報」タブ向けの凝縮ビュー）。embedded=falseの時は常に全6コース
  * を表示する（分析ツール「モーター調子」タブのフル版向け）
+ *
+ * 集計期間は現行モーターの世代（使用開始日以降）。generationStartがnullの
+ * 会場（使用開始日が不明）は、別モーターの成績を混ぜないよう表を出さない。
+ * 使用開始日そのものは画面に出さない（ADR-0067 2026-09-28追記）
  */
 function ExhibitionSparkline({ trend }) {
   if (!trend || trend.length < 2) return null;
@@ -92,6 +97,8 @@ function MotorWakuRow({ row, onSelectCourse, isHighlighted }) {
 
 function MotorWakuStatsGrid({
   rows,
+  generationStart,
+  fetchFailed,
   embedded,
   highlightCourse,
   onSelectCourse,
@@ -100,6 +107,23 @@ function MotorWakuStatsGrid({
   const [expanded, setExpanded] = useState(!embedded);
 
   if (!rows || rows.length === 0) return null;
+
+  if (fetchFailed || generationStart === null) {
+    return (
+      <div className="motor-waku-stats-grid">
+        <h3 className="selected-motor-heading">
+          {t("analysis.motor.wakuStatsHeading")}
+        </h3>
+        {fetchFailed ? (
+          <InlineFetchError />
+        ) : (
+          <div className="empty-state">
+            {t("analysis.motor.wakuStatsUnknownGeneration")}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   const highlightedRow = rows.find((r) => r.course === highlightCourse);
   const visibleRows =
@@ -110,7 +134,11 @@ function MotorWakuStatsGrid({
       <h3 className="selected-motor-heading">
         {t("analysis.motor.wakuStatsHeading")}
       </h3>
-      <p className="table-note">{t("analysis.motor.wakuStatsWindowNote")}</p>
+      <p className="table-note">
+        {t("analysis.motor.wakuStatsWindowNote", {
+          n: SMALL_SAMPLE_THRESHOLD,
+        })}
+      </p>
       <div className="table-wrapper">
         <table className="motor-ranking-table motor-waku-table">
           <thead>

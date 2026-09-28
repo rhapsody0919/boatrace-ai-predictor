@@ -1033,7 +1033,8 @@
       "venueRankBadge": "{{total}}대 중 {{rank}}위",
       "sampleCount": "(n={{n}})",
       "wakuStatsHeading": "코스별 성적",
-      "wakuStatsWindowNote": "💡 집계 기간: 최근 180일",
+      "wakuStatsWindowNote": "💡 집계 기간: 현재 모터 사용 개시 이후(교체 전 같은 번호의 다른 모터는 포함하지 않음). 주황색 값은 {{n}}회 미만이라 참고치입니다.",
+      "wakuStatsUnknownGeneration": "현재 모터의 사용 개시일을 가져오지 못해 표시하지 않습니다(교체 전 같은 번호의 다른 모터 성적이 섞이는 것을 피하기 위해).",
       "courseHeader": "코스",
       "exhibitionTrendHeader": "전시 타임 추이",
       "wakuStatsExpand": "전체 6코스 표시",
@@ -1041,7 +1042,7 @@
       "racerWakuBackLabel": "← 코스별 성적으로 돌아가기",
       "racerWakuHeading": "{{course}}코스 선수별 성적",
       "racerWakuEmpty": "이 모터・코스 조합으로 출전한 선수를 찾을 수 없습니다",
-      "racerWakuNote": "💡 최근 180일・이 모터가 이 코스에서 사용된 레이스로 한정한 선수별 성적입니다. n이 작은 선수는 참고 정도로만 봐주세요."
+      "racerWakuNote": "💡 현재 모터 사용 개시 이후, 이 모터가 이 코스에서 사용된 레이스만으로 집계했습니다. 주황색 값은 {{n}}회 미만이라 참고치입니다."
     },
     "racerForm": {
       "title": "📈 선수 컨디션",

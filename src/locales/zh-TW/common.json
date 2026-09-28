@@ -1033,7 +1033,8 @@
       "venueRankBadge": "第{{rank}}名／共{{total}}台",
       "sampleCount": "(n={{n}})",
       "wakuStatsHeading": "各水道成績",
-      "wakuStatsWindowNote": "💡 統計期間：近180天",
+      "wakuStatsWindowNote": "💡 統計期間：現役馬達開始使用後（不含更換前同號碼的其他馬達）。橘色數值少於{{n}}場，僅供參考。",
+      "wakuStatsUnknownGeneration": "由於無法取得現役馬達的開始使用日，因此不顯示（避免混入更換前同號碼馬達的成績）。",
       "courseHeader": "水道",
       "exhibitionTrendHeader": "展示時間走勢",
       "wakuStatsExpand": "顯示全部6水道",
@@ -1041,7 +1042,7 @@
       "racerWakuBackLabel": "← 返回各水道成績",
       "racerWakuHeading": "{{course}}水道的選手別成績",
       "racerWakuEmpty": "找不到此馬達・水道組合的出賽選手",
-      "racerWakuNote": "💡 僅統計近180天內此馬達在該水道被使用的比賽。n值較小的選手僅供參考。"
+      "racerWakuNote": "💡 僅統計現役馬達開始使用後，此馬達在該水道被使用的比賽。橘色數值少於{{n}}場，僅供參考。"
     },
     "racerForm": {
       "title": "📈 選手狀態",
