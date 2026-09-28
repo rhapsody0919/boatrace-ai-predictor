@@ -14,7 +14,14 @@ import {
 } from "../../scripts/lib/dateUtils.js";
 import { groupIntoCurrentMeet } from "../utils/meetGrouping";
 import { deriveRaceStContext } from "../utils/stConsideration";
+import { isFinalStage } from "../constants/raceStageConfig";
 import { finishPositionOf } from "../components/race/basicInfoStats.js";
+import {
+  countsForSeriesScore,
+  prelimEndRaceIdOf,
+  semifinalRaceIdsOf,
+  scoreTableFor,
+} from "../components/race/seriesPoints.js";
 import {
   PRETEST_LOOKBACK_DAYS,
   pickFirstPretestByRacer,
@@ -2929,11 +2936,13 @@ export const supabaseDataService = {
         try {
           const { data: stageRows, error: stageError } = await supabase
             .from("race_conditions")
-            .select("race_id, races!inner(venue_code)")
-            // 完全一致で絞る。ilikeの部分一致だと「準優勝戦」も「優勝戦」を
-            // 部分文字列として含むため誤ってヒットしてしまう（実データで
-            // race_stageが"優勝戦"/"準優勝戦"の2値のみ存在することを確認済み）
-            .eq("race_stage", "優勝戦")
+            .select("race_id, race_stage, races!inner(venue_code)")
+            // 「優勝戦」で終わるものをDBで粗く絞り、「準優勝戦」「準々優勝戦」の
+            // 除外は `isFinalStage` に任せる。完全一致だと会場固有の接頭が付く
+            // 「ツッキー優勝戦」「ＭＤ優勝戦」「団体・優勝戦」を取りこぼす
+            // （旧コメントは「優勝戦/準優勝戦の2値のみ」と書いていたが、
+            //  実データの race_stage は349種あった。BOA-457）
+            .like("race_stage", "%優勝戦")
             .eq("races.venue_code", venueCode);
           if (stageError) {
             console.error("race_conditions取得エラー:", stageError.message);
@@ -2941,7 +2950,10 @@ export const supabaseDataService = {
           }
           if (!stageRows || stageRows.length === 0) return [];
 
-          const raceIds = stageRows.map((r) => r.race_id);
+          const raceIds = stageRows
+            .filter((r) => isFinalStage(r.race_stage))
+            .map((r) => r.race_id);
+          if (raceIds.length === 0) return [];
           const { data: entries, error: entriesError } = await supabase
             .from("race_entries")
             .select("race_id, boat_number, racer_id, player_name")
@@ -6420,6 +6432,19 @@ export const supabaseDataService = {
       const stageById = new Map(
         (conditions ?? []).map((c) => [c.race_id, c.race_stage]),
       );
+      // **本番スタートの記録があるか**（欠場の判定。BOA-489）。
+      // 着順に載らない走には「失格・落水（走ったが着順が付かない。0点だが
+      // 走数に入れる）」と「欠場（走っていない。走数にも入れない）」があり、
+      // 区別にはST記録の有無を使う。`meetStarts` は得点率に使う範囲
+      // （節の頭〜表示中レースの直前）と同じ窓を引いているので追加クエリ0本。
+      //
+      // STが1行も無いレースは**取得漏れ**の可能性があるため、全艇を出走扱いに
+      // 倒す（欠場扱いにするとレースが丸ごと得点率から消えて、いま直そうと
+      // している誤差より大きく狂う）
+      const startedKeys = new Set(
+        (meetStarts ?? []).map((r) => `${r.race_id}|${r.boat_number}`),
+      );
+      const racesWithSt = new Set((meetStarts ?? []).map((r) => r.race_id));
 
       return {
         meetStart,
@@ -6435,12 +6460,7 @@ export const supabaseDataService = {
         // 準優だった。「最初の準優より前」で切ると9/26の一般戦が入り、
         // 52人中32人の得点率が公式とズレた（公式と照合して5/5で確認）。
         // 無い（予選中でまだ予選が終わっていない）なら null
-        prelimEndRaceId:
-          [...stageById.entries()]
-            .filter(([, st]) => st?.includes("予選"))
-            .map(([id]) => id)
-            .sort()
-            .pop() ?? null,
+        prelimEndRaceId: prelimEndRaceIdOf(conditions ?? []),
         // **途中で節を離脱した選手**（途中帰郷）。公式の順位表はこの選手たちを
         // 順位から外すため、当社が全員で順位を振ると下位ほどズレる。
         //
@@ -6479,24 +6499,41 @@ export const supabaseDataService = {
         // 残り走数は**番組が出ている予選レース**からしか数えられないので、
         // 当社は当日ぶんまでで数える（翌日以降の出走表は未取得のことが多い）。
         // 画面側はその旨を注記する
+        //
+        // **算入判定は得点率と同じ `countsForSeriesScore` を通す**。
+        // 以前は「種別に『予選』を含むレース」だけを数えていたため、
+        // 予選期間内でも会場固有名のレース（芦屋「サンライズＸ戦」、桐生
+        // 「ドラドキ３」等）が残り走数から漏れ、必要得点が過大になっていた
+        // （BOA-457）
         remainingPrelimRunsByRacer: (() => {
           const byRacer = {};
+          const prelimEnd = prelimEndRaceIdOf(conditions ?? []);
           for (const e of meetRows) {
             if (e.race_id < raceId) continue;
             const st = stageById.get(e.race_id) ?? "";
-            if (!st.includes("予選")) continue;
+            if (!countsForSeriesScore(st, e.race_id, prelimEnd)) continue;
             byRacer[e.racer_id] = (byRacer[e.racer_id] ?? 0) + 1;
+          }
+          return byRacer;
+        })(),
+        // 残り走で取りうる**最大得点**。残りの本数だけでは出せない（ドリーム戦の
+        // 1着は12点、特選は11点）。予選配点の10点で決め打ちすると、ドリーム戦が
+        // 残っている選手を「届かず」と誤って出す（BOA-457）
+        remainingPrelimMaxPointsByRacer: (() => {
+          const byRacer = {};
+          const prelimEnd = prelimEndRaceIdOf(conditions ?? []);
+          for (const e of meetRows) {
+            if (e.race_id < raceId) continue;
+            const st = stageById.get(e.race_id) ?? "";
+            if (!countsForSeriesScore(st, e.race_id, prelimEnd)) continue;
+            byRacer[e.racer_id] =
+              (byRacer[e.racer_id] ?? 0) + scoreTableFor(st)[1];
           }
           return byRacer;
         })(),
         // 予選が終わった日が節の何日目か（公式の「4日目12R終了時点」に合わせる）
         prelimEndDay: (() => {
-          const last =
-            [...stageById.entries()]
-              .filter(([, st]) => st?.includes("予選"))
-              .map(([id]) => id)
-              .sort()
-              .pop() ?? null;
+          const last = prelimEndRaceIdOf(conditions ?? []);
           if (!last) return null;
           // `dates` は9日窓ぶん（前節を含む）なので、節の日付だけで数える
           const meetDates = [
@@ -6504,10 +6541,9 @@ export const supabaseDataService = {
           ].sort();
           return meetDates.indexOf(last.slice(0, 10)) + 1 || null;
         })(),
-        // この節に組まれた準優勝戦の枠数（予選中はまだ0）。慣例は3個レース=18名
-        semifinalSlots:
-          [...stageById.entries()].filter(([, st]) => st?.includes("準優"))
-            .length * 6 || null,
+        // この節に組まれた準優勝戦の枠数（予選中はまだ0）。慣例は3個レース=18名。
+        // 「準優進出戦」は準優の1つ前の勝ち上がり戦なので数えない（BOA-457）
+        semifinalSlots: semifinalRaceIdsOf(conditions ?? []).length * 6 || null,
         // 節の全レースの種別が取れているか（取れていなければ枠数は目安のまま）
         stagesKnown: stageById.size > 0,
         // その日の会場の展示タイム平均（水面の重さ）。同じ6.90でも日によって
@@ -6593,6 +6629,10 @@ export const supabaseDataService = {
             racerId: e.racer_id,
             playerName: e.player_name,
             raceStage: stageById.get(e.race_id) ?? null,
+            // 欠場を走数から外すための材料（BOA-489）
+            started:
+              !racesWithSt.has(e.race_id) ||
+              startedKeys.has(`${e.race_id}|${e.boat_number}`),
             ...(resultById.get(e.race_id) ?? {}),
           })),
       };

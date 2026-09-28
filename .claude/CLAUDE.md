@@ -37,10 +37,11 @@
 | `spec-ambiguity-detector` | 依頼文だけを見て「決まっていない点」を列挙する | **実装方針を考える前**（下記「実装前の要件確認」） |
 | `second-opinion-reviewer` | 後戻りが困難な意思決定・分析結論の批判的検証 | 上記「セカンドオピニオン検証」の手順2 |
 | `design-reviewer` | SDD設計（spec/screens/plan/tasks）の独立レビュー。実測値の再現とコード前提の裏取りが中心 | `/step3`完了後、`/step4`着手前（省略不可。`.claude/rules/sdd-workflow.md`） |
+| `acceptance-test-writer` | UI機能の受け入れE2Eを spec.md・screens.md だけから書く（plan/tasks/src は読まない） | `/step3`完了後、`/step4`着手前（UI機能のみ。`.claude/rules/sdd-workflow.md`） |
 | `data-accuracy-verifier` | 集計結果が実データと一致するかだけの検証 | 実装完了後の自動レビュー2番（新規の集計・分析機能を含む場合） |
 | `content-qa` | ブログ記事の公開前品質チェック6観点 | 記事の新規公開・改稿前 |
 
-いずれも読み取り専用で、修正は親セッションが行う。定義に無い一回限りの調査は、従来通りAgent toolへ直接プロンプトを渡す。
+いずれも読み取り専用（`acceptance-test-writer` のみ `e2e/acceptance/` に書く）で、修正は親セッションが行う。定義に無い一回限りの調査は、従来通りAgent toolへ直接プロンプトを渡す。
 
 **Agent Teams機能（`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`）は使わない**。理由は2つ:
 
