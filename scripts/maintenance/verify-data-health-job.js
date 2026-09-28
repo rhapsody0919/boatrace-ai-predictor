@@ -171,6 +171,7 @@ check(
 const MIGRATION_FILES = Object.freeze([
   "089_data_health_functions.sql",
   "100_data_health_entries_duplicates.sql",
+  "107_data_health_cancellation_with_result.sql",
 ]);
 const MIGRATION_FILE = MIGRATION_FILES[0];
 const migrationSqlByFile = new Map(
@@ -2120,6 +2121,124 @@ for (const [label, mutate] of [
   try {
     const d = await runEntriesDuplicates(mutated);
     detected = !(d.venue_days === 4 && d.clean_venue_days === 3);
+  } catch {
+    detected = true;
+  }
+  check(
+    `変異検証（SQL）: ${label}`,
+    detected,
+    "この変異を検知できない（検証が通ってしまう）",
+  );
+}
+
+// 中止の誤検出（cancellation.with_result、BOA-512）は、独立したPGliteで確かめる。
+// 仕込み（2026-09-12）: 1R = 確定中止かつ結果あり（誤検出）／2R = 確定中止・結果なし（本物の中止）／
+//   3R = 確定中止・結果の行はあるが rank1 が NULL（中止・返還の行。マイグレーション078）／
+//   4R = 中止でない・結果あり／5R = 中止の疑い（tentative）・結果あり（確定ではない）／6R = cancellation_status NULL・結果なし
+//   2026-09-13: 確定中止なし（全て一致）
+async function runCancellationWithResult(sql) {
+  const mdb = new PGlite();
+  await mdb.exec(`
+CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
+CREATE TABLE races (race_id varchar(20) primary key, race_date date not null, venue_code smallint not null, race_number smallint not null, cancellation_status text);
+CREATE TABLE race_results (race_id varchar(20) primary key, rank1 smallint);
+INSERT INTO races VALUES
+ ('2026-09-12-10-01','2026-09-12',10,1,'confirmed'),
+ ('2026-09-12-10-02','2026-09-12',10,2,'confirmed'),
+ ('2026-09-12-10-03','2026-09-12',10,3,'confirmed'),
+ ('2026-09-12-10-04','2026-09-12',10,4,NULL),
+ ('2026-09-12-10-05','2026-09-12',10,5,'tentative'),
+ ('2026-09-12-10-06','2026-09-12',10,6,NULL),
+ ('2026-09-13-10-01','2026-09-13',10,1,NULL),
+ ('2026-09-13-10-02','2026-09-13',10,2,NULL);
+INSERT INTO race_results VALUES
+ ('2026-09-12-10-01',1),
+ ('2026-09-12-10-03',NULL),
+ ('2026-09-12-10-04',2),
+ ('2026-09-12-10-05',3),
+ ('2026-09-13-10-01',1),
+ ('2026-09-13-10-02',4);
+`);
+  try {
+    await mdb.exec("BEGIN;\n" + sql + "\nCOMMIT;");
+    return (
+      await mdb.query(
+        `select data_health_cancellation_with_result('2026-09-12'::date,'2026-09-13'::date) as r`,
+      )
+    ).rows[0].r;
+  } finally {
+    await mdb.close();
+  }
+}
+// jsonb はキーの順を並べ替えるため、列ごとの値で比べる
+const cancellationWithResultOk = (r) =>
+  show(
+    (r ?? []).map((x) => [
+      x.d,
+      x.races,
+      x.confirmed_with_result,
+      x.consistent_races,
+    ]),
+  ) ===
+  show([
+    ["2026-09-12", 6, 1, 5],
+    ["2026-09-13", 2, 0, 2],
+  ]);
+{
+  const r = await runCancellationWithResult(migrationSql);
+  check(
+    "data_health_cancellation_with_result: 確定中止かつ rank1 のある結果だけを誤検出と数える（本物の中止・rank1 が NULL の返還の行・tentative・中止でないレースは数えない）。分母は全レース",
+    cancellationWithResultOk(r),
+    show(r),
+  );
+  const { evaluateCountCheck } = await import("../lib/dataHealth/evaluate.js");
+  const chk = COUNT_CHECKS.find((c) => c.id === "cancellation.with_result");
+  const breach = evaluateCountCheck(chk, r, { end: "2026-09-13" });
+  const clean = evaluateCountCheck(chk, r.slice(1), { end: "2026-09-13" });
+  check(
+    "cancellation.with_result: 誤検出が1件でもあれば未達（閾値100%・母数の下限1）、0件なら正常",
+    chk?.severity === "alert" &&
+      breach.status === "breach" &&
+      breach.missing === 1 &&
+      breach.worst?.key === "2026-09-12" &&
+      clean.status === "ok",
+    show({ breach, clean }),
+  );
+}
+for (const [label, mutate] of [
+  [
+    "中止の誤検出: rank1 を見ず、結果の行があれば数える（返還の行を誤検出にする）",
+    (x) =>
+      x.replaceAll(
+        "r.cancellation_status = 'confirmed' and rr.rank1 is not null",
+        "r.cancellation_status = 'confirmed' and rr.race_id is not null",
+      ),
+  ],
+  [
+    "中止の誤検出: tentative も数える",
+    (x) =>
+      x.replaceAll(
+        "r.cancellation_status = 'confirmed' and rr.rank1 is not null",
+        "r.cancellation_status is not null and rr.rank1 is not null",
+      ),
+  ],
+  [
+    "中止の誤検出: 否定の論理式で一致を数える（cancellation_status が NULL の行を取りこぼす）",
+    (x) =>
+      x.replace(
+        "count(*) - count(*) filter (where r.cancellation_status = 'confirmed' and rr.rank1 is not null) as consistent_races",
+        "count(*) filter (where not (r.cancellation_status = 'confirmed' and rr.rank1 is not null)) as consistent_races",
+      ),
+  ],
+]) {
+  const mutated = mutate(migrationSql);
+  if (mutated === migrationSql)
+    throw new Error(`SQLの変異の対象が見つかりません: ${label}`);
+  let detected = false;
+  try {
+    detected = !cancellationWithResultOk(
+      await runCancellationWithResult(mutated),
+    );
   } catch {
     detected = true;
   }
