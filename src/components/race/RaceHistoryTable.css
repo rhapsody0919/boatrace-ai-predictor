@@ -1,5 +1,11 @@
 /* RaceHistoryTable - レース一覧テーブル（BOA-159/333共通化） */
 
+/* 横スクロールの手がかり（BOA-455）のフェード色は、ここでは決めない。
+   この表が載る面は呼び出し元ごとに違う（今節タブ .rmt-card と選手ページ
+   .racer-vc-race-list はカード面、基本情報タブ .rbit-expanded はページ面）。
+   合わない色でフェードすると右端に段差が出るため、**面を持つ側**が
+   --hscroll-fade-color を宣言し、ここは既定（--surface-page）に従う */
+
 /* レース名の文字数が多く、折り返すと見出しが縦積みになってしまうため、
    改行させず横スクロールに委ねる（RacerPerformanceStats.css移設元と同じ方針） */
 .race-history-table-wrapper {
@@ -63,4 +69,16 @@
 
 .race-history-table-link:hover {
   text-decoration: underline;
+}
+
+/* 狭い画面では左右の余白を詰めて、**着順までは初期表示に収める**（BOA-455）。
+   今節タブの実測（390px幅・omitColumns適用済み）では、余白が8pxのままだと
+   表が480px / 可視308pxで着順が半分切れる。4pxにすると9列ぶんで72px縮み、
+   着順の右端が可視域の内側へ入る。決まり手・単勝配当はそれでも右に残るが、
+   そちらは「1着のときだけ値が入る」列で、着順とは読まれ方が違う */
+@media (max-width: 480px) {
+  .race-history-table th,
+  .race-history-table td {
+    padding: var(--spacing-2) var(--spacing-1);
+  }
 }
