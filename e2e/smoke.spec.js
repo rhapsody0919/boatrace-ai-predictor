@@ -2961,9 +2961,13 @@ test.describe("レース詳細の直前情報タブ: この枠からの進入コ
     await expect(
       page.getByTestId("entry-course-dist-1").locator(".ecd-bar-empty"),
     ).toHaveText("—");
-    await expect(
-      page.getByTestId("entry-course-dist-2").locator(".drt-skeleton"),
-    ).toBeVisible();
+    const skeleton = page
+      .getByTestId("entry-course-dist-2")
+      .locator(".drt-skeleton");
+    await expect(skeleton).toBeVisible();
+    // スケルトンは棒と同じ幅を占める（表セル用の2.5em固定のままだと40pxの
+    // 小さな塊になり、読み込み後に行の見た目が大きく変わる）
+    expect((await skeleton.boundingBox()).width).toBeGreaterThan(120);
   });
 });
 

@@ -305,6 +305,11 @@ test.describe("レイアウト: 直前情報タブ（この枠からの進入コ
     await expect(card.locator(".ecd-seg").first()).toBeVisible({
       timeout: 30000,
     });
+    // 6艇ぶんの取得が出揃ってから測る（1艇目の棒が出た時点では他艇が
+    // 読み込み中のことがある。CIで実際にそのタイミングを踏んだ）
+    await expect(card.locator(".drt-skeleton")).toHaveCount(0, {
+      timeout: 30000,
+    });
 
     const layout = await page.evaluate(() => {
       const de = document.documentElement;
