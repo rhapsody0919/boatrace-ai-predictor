@@ -217,10 +217,14 @@ export function semifinalRaceIdsOf(rows) {
 export function semifinalSlotsOf(rows, options = {}) {
   const cancelled = toSet(options.cancelledRaceIds);
   const ran = toSet(options.ranRaceIds);
-  const kept = semifinalRaceIdsOf(rows).filter(
-    (id) => !(cancelled.has(id) && !ran.has(id)),
-  );
-  return kept.length * 6 || null;
+  const all = semifinalRaceIdsOf(rows);
+  const kept = all.filter((id) => !(cancelled.has(id) && !ran.has(id)));
+  // **全部落ちたら番組どおりの本数に戻す**。中止ぶんを引くのは「振替が同じ節に
+  // 残っている」ことが前提で、1本も残らないなら枠数が分かったのではなく
+  // 見えなくなっただけ。呼び出し側は表示日までの番組しか持っていないので、
+  // 中止された当日を開くと振替（翌日）がまだ窓に入らず、この形になる
+  // （江戸川 2026-05-29: 窓の準優は中止された2本だけ。引くと0になるが正解は12枠）
+  return (kept.length || all.length) * 6 || null;
 }
 
 /** `Set` でも配列でも受けられるようにする（呼び出し側の形に合わせない） */

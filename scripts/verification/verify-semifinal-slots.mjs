@@ -3,7 +3,13 @@
  *
  * 画面が使う `semifinalSlotsOf` をそのまま通し、次の3つを確かめる。
  *
- *   1. 枠数が変わる節が、中止順延で準優が2日ぶん残る節だけであること
+ * **評価の単位は「表示日」**。節の全日ぶんを渡して評価すると、画面が実際に出す値を
+ * 再現できない——`getMeetScoreboard` は `race_conditions` を `.lte("race_id",
+ * "${date}-zz")` で引くので、**画面が持つのは表示日までの番組だけ**だからである。
+ * 節単位で見ていたせいで、準優が中止された当日（振替が翌日でまだ窓に無い）に
+ * 枠数が既定値へ落ちる退行を取り逃していた（2026-09-28のデータ精度検証の指摘）。
+ *
+ *   1. 枠数が変わる（節,表示日）が、中止順延で準優が2日ぶん残る節だけであること
  *   2. 準優に「過去日なのに結果も中止フラグも無い」ものが無いこと
  *      （＝中止フラグが取りこぼしていない。この前提が崩れると枠数が過大に戻る）
  *   3. 中止フラグの誤検出（`confirmed` なのに結果がある）が準優に及んでいないこと
@@ -134,6 +140,7 @@ for (const c of cond) {
   m.set(d, cur);
 }
 let meetCount = 0;
+let dayCount = 0;
 const changed = [];
 for (const [vv, m] of byVenue) {
   const dates = [...m.keys()].sort();
@@ -150,35 +157,59 @@ for (const [vv, m] of byVenue) {
   }
   for (const [start, ds] of groups) {
     meetCount += 1;
-    const rows = ds.flatMap((d) => m.get(d).rows);
-    const before = semifinalRaceIdsOf(rows).length * 6 || null;
-    const after = semifinalSlotsOf(rows, {
-      cancelledRaceIds: cancelled,
-      ranRaceIds: ran,
-    });
-    if (before !== after) changed.push({ venue: vv, start, before, after });
+    // **表示日ごと**に、画面が持つのと同じ範囲（節の頭〜その日の終わり）で評価する
+    for (const date of ds) {
+      dayCount += 1;
+      const rows = ds
+        .filter((d) => d <= date)
+        .flatMap((d) => m.get(d).rows)
+        .filter((r) => r.race_id.slice(0, 10) <= date);
+      const before = semifinalRaceIdsOf(rows).length * 6 || null;
+      const after = semifinalSlotsOf(rows, {
+        cancelledRaceIds: cancelled,
+        ranRaceIds: ran,
+      });
+      if (before !== after)
+        changed.push({ venue: vv, start, date, before, after });
+    }
   }
 }
-changed.sort((a, b) => a.start.localeCompare(b.start));
-console.log(`\n節 ${meetCount}／枠数が変わる節 ${changed.length}`);
+changed.sort((a, b) => a.date.localeCompare(b.date));
+console.log(
+  `\n節 ${meetCount}／（節,表示日） ${dayCount}／枠数が変わる（節,表示日） ${changed.length}`,
+);
+const show = (v) => (v === null ? "null（画面は既定の18枠）" : `${v}枠`);
 for (const c of changed)
   console.log(
-    `  会場${c.venue} ${c.start}: ${c.before}枠 → ${c.after === null ? "null（画面は既定の18枠）" : `${c.after}枠`}`,
+    `  会場${c.venue} ${c.start}開催 の ${c.date}: ${show(c.before)} → ${show(c.after)}`,
   );
 
-// 変わった節はすべて「中止の準優を含む」はず（それ以外の理由で変わってはいけない）
+// **枠数が増える方向に変わってはいけない**。中止を除くのは減らす操作なので、
+// 増えたなら（既定値へ落ちる等で）情報を失っている
+for (const c of changed) {
+  const b = c.before ?? 18;
+  const a = c.after ?? 18;
+  if (a > b)
+    fail(
+      `会場${c.venue} ${c.date}: 枠数が ${show(c.before)} から ${show(c.after)} へ**増えて**いる`,
+    );
+}
+
+// 変わった（節,表示日）はすべて「中止の準優を含む」はず
 for (const c of changed) {
   const m = byVenue.get(c.venue);
   const rows = [...m.keys()]
-    .filter((d) => d >= c.start)
+    .filter((d) => d >= c.start && d <= c.date)
     .flatMap((d) => m.get(d).rows);
   const semis = semifinalRaceIdsOf(rows);
   const dropped = semis.filter((id) => cancelled.has(id) && !ran.has(id));
   if (dropped.length === 0)
-    fail(`会場${c.venue} ${c.start}: 枠数が変わったのに中止の準優が無い`);
+    fail(`会場${c.venue} ${c.date}: 枠数が変わったのに中止の準優が無い`);
 }
 if (changed.length > 0 && failures === 0)
-  console.log("✅ 変わった節はすべて中止の準優を含む");
+  console.log(
+    "✅ 変わった（節,表示日）はすべて中止の準優を含み、増えたものは無い",
+  );
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);
 process.exit(failures === 0 ? 0 : 1);
