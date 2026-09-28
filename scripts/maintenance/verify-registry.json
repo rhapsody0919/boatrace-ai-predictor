@@ -322,6 +322,11 @@
       "guards": "品質ゲートが緑でないPRのマージと、worktreeごと消える取り直しの効かないデータの保護（guard-pr-merge.js）"
     },
     {
+      "script": "verify-merge-order-guard.js",
+      "tier": "ci",
+      "guards": "並行セッションのオーケストレーションが決めたマージ順（台帳で先行とされたPRが未マージなら gh pr merge を止める。guard-pr-merge.js・scripts/lib/mergeOrder.js・merge-order.js）"
+    },
+    {
       "script": "verify-hit-verification-guidance.js",
       "tier": "ci",
       "guards": "「毎回の的中/不的中はどこで見られるか」の案内（About・FAQ・使い方ガイド）が、実際に判定を描くタブと食い違うこと（BOA-346の移設で3か所が取り残された）"
