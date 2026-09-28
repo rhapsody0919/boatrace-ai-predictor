@@ -307,6 +307,11 @@
       "guards": "セッション開始時のorigin乖離・worktree衛生の判定（check-git-hygiene.js / check-worktrees.js）"
     },
     {
+      "script": "verify-worktree-in-use.js",
+      "tier": "ci",
+      "guards": "稼働中セッションの worktree（作業開始直後・ロックなしのデスクトップアプリ）を「片付けてよい」に分類しないこと（check-worktrees.js）"
+    },
+    {
       "script": "verify-guard-pr-merge.js",
       "tier": "ci",
       "guards": "品質ゲートが緑でないPRのマージと、worktreeごと消える取り直しの効かないデータの保護（guard-pr-merge.js）"
