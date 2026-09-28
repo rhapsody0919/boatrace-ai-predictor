@@ -603,6 +603,112 @@ function buildRowDefs({
   ];
 }
 
+/**
+ * 展示進入（スタート展示のコース）を取り始めた日（BOA-479、マイグレーション082）。
+ * これより前のレースは遡って取れない（2026-09-28実測: 09-20以前はほぼ全行NULL）
+ */
+export const EXHIBITION_COURSE_AVAILABLE_FROM = "2026-09-21";
+
+export const hasExhibitionCourse = (motorMaintenance) =>
+  (motorMaintenance ?? []).some(
+    (row) => toNumber(row.exhibition_course) !== null,
+  );
+
+/**
+ * 展示進入が「取得の対象外」のレースか（取得開始前のレースで、値も1つも無い）。
+ * 対象外なら行を出さず、表の下に控えめな注記だけを出す。
+ * 取得開始前でも値があれば（09-19に一部だけ入っている）そのまま出す
+ */
+export function isExhibitionCourseOutOfRange(raceId, motorMaintenance) {
+  const raceDate = (raceId ?? "").slice(0, 10);
+  if (!raceDate || raceDate >= EXHIBITION_COURSE_AVAILABLE_FROM) return false;
+  return !hasExhibitionCourse(motorMaintenance);
+}
+
+/**
+ * 展示進入の取得時刻（出典表記用）。値がある行の updated_at の最大。
+ * 値が1つも無ければ null（出典ブロックに展示進入の行を出さない）
+ */
+export function exhibitionCourseCapturedAt(motorMaintenance) {
+  const times = (motorMaintenance ?? [])
+    .filter((row) => toNumber(row.exhibition_course) !== null)
+    .map((row) => row.updated_at)
+    .filter(Boolean)
+    .sort();
+  return times.length > 0 ? times[times.length - 1] : null;
+}
+
+/**
+ * 直前情報タブの「展示進入」行（BOA-485）。公式の直前情報（スタート展示）の
+ * コースをそのまま出す。枠番と違うコースに入った艇は強調し、内へ/外へを添える
+ * （前づけの予兆。枠なりかどうかが一目で分かることがこの行の目的）。
+ *
+ * データは getRaceMotorMaintenanceBreakdown（exhibition_data の1回読み取り）に
+ * 列を足して取っている。クエリ本数は増えない（BOA-357）。
+ *
+ * 状態の出し分け:
+ *   - 取得開始前のレースで値が無い → null（行を出さない。注記は呼び出し側）
+ *   - 取得中 → スケルトン
+ *   - 取得失敗 → 「—」（タブ上部の InlineFetchError が失敗を知らせる）
+ *   - 欠場 → 「欠場」
+ *   - 展示前・未取得 → 「—」
+ *
+ * RaceCardDataTable（開催場一覧のカード）には出さないため、buildRowDefs には入れない
+ */
+export function buildExhibitionCourseRow({
+  t,
+  raceId,
+  motorMaintenance,
+  pending = {},
+}) {
+  if (isExhibitionCourseOutOfRange(raceId, motorMaintenance)) return null;
+  const byBoatNumber = byBoat(motorMaintenance);
+  return {
+    key: "exhibitionCourse",
+    label: t("beforeInfo.rowExhibitionCourse"),
+    shortLabel: t("beforeInfo.rowExhibitionCourseShort"),
+    category: "beforeInfo",
+    tab: null,
+    // コースに良し悪しは無い（事実の記録）。best は持たせない
+    best: null,
+    cellClass: (p) => {
+      const course = toNumber(byBoatNumber.get(p.number)?.exhibition_course);
+      return course !== null && course !== p.number ? "drt-entry-moved" : "";
+    },
+    render: (p) => {
+      const row = byBoatNumber.get(p.number);
+      if (!row) {
+        return pending.motorMaintenance ? (
+          <span className="drt-skeleton" aria-hidden="true" />
+        ) : (
+          "—"
+        );
+      }
+      if (row.is_absent === true) {
+        return (
+          <span className="drt-sub">{t("beforeInfo.exhibitionAbsent")}</span>
+        );
+      }
+      const course = toNumber(row.exhibition_course);
+      if (course === null) return "—";
+      const movedKey =
+        course < p.number
+          ? "beforeInfo.exhibitionCourseMovedIn"
+          : course > p.number
+            ? "beforeInfo.exhibitionCourseMovedOut"
+            : null;
+      return (
+        <span className="drt-value" data-testid="exhibition-course">
+          {t("dataTable.prevResultCourse", { course })}
+          {movedKey && (
+            <span className="drt-sub drt-entry-moved-label">{t(movedKey)}</span>
+          )}
+        </span>
+      );
+    },
+  };
+}
+
 // 全指標（従来通りの挙動、後方互換のため名前は維持）。RaceCardDataTable
 // （開催場一覧ページのカード内出走表）が引き続き全指標をまとめて表示するために使う
 export function buildIndicatorRows(args) {

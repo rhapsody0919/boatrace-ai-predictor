@@ -48,6 +48,10 @@ import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import {
   buildBeforeInfoRows,
+  buildExhibitionCourseRow,
+  exhibitionCourseCapturedAt,
+  hasExhibitionCourse,
+  isExhibitionCourseOutOfRange,
   originalExhibitionKindLabels,
   toNumber,
 } from "./raceIndicators";
@@ -266,7 +270,28 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
     },
   ];
 
+  // 展示進入（BOA-485）はスタート展示の結果なので、展示STの前＝表の先頭に置く
+  const exhibitionCourseRow = buildExhibitionCourseRow({
+    t,
+    raceId,
+    motorMaintenance: analysis.motorMaintenance,
+    pending: analysis.pending,
+  });
+  const exhibitionCourseOutOfRange = isExhibitionCourseOutOfRange(
+    raceId,
+    analysis.motorMaintenance,
+  );
+  const exhibitionCourseTime = formatCapturedAtJst(
+    exhibitionCourseCapturedAt(analysis.motorMaintenance),
+  );
+  const hasOriginalExhibitionSource = originalExhibition?.state === "published";
+  // 値を1つでも出したときだけ出典を出す（取得時刻は取れたときだけ添える）
+  const hasExhibitionCourseSource =
+    exhibitionCourseRow !== null &&
+    hasExhibitionCourse(analysis.motorMaintenance);
+
   const rows = [
+    ...(exhibitionCourseRow ? [exhibitionCourseRow] : []),
     ...buildBeforeInfoRows({
       t,
       players: sortedPlayers,
@@ -530,7 +555,7 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
                     {sortedPlayers.map((p) => (
                       <td
                         key={p.number}
-                        className={cellClass(p.number, row.best)}
+                        className={`${cellClass(p.number, row.best)} ${row.cellClass?.(p) ?? ""}`}
                       >
                         {row.render(p)}
                       </td>
@@ -542,29 +567,56 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
           </div>
         </div>
         <p className="rbi-note">💡 {t("beforeInfo.detailTableNote")}</p>
+        {exhibitionCourseOutOfRange && (
+          <p className="rbi-note" data-testid="exhibition-course-out-of-range">
+            {t("beforeInfo.exhibitionCourseOutOfRange")}
+          </p>
+        )}
         {/* オリジナル展示（BOA-452 / ADR-0067）の出典。値を出したときだけ、
             表のすぐ下に1回。ピットレポート（RacePitReportSection）と同じ形で、
             出典・取得時刻・再配布しない旨の3点を書く */}
-        {originalExhibition?.state === "published" && (
-          <div className="rbi-source">
-            <p className="rbi-source-text">
-              {t("beforeInfo.originalExhibitionSource", {
-                items: originalExhibitionKindLabels(
-                  t,
-                  originalExhibition.kinds,
-                ).join(t("beforeInfo.originalExhibitionItemSeparator")),
-              })}
-            </p>
-            {formatCapturedAtJst(originalExhibition.capturedAt) && (
+        {(hasOriginalExhibitionSource || hasExhibitionCourseSource) && (
+          <div className="rbi-source" data-testid="rbi-source">
+            {hasExhibitionCourseSource && (
               <p className="rbi-source-text">
-                {t("beforeInfo.originalExhibitionCapturedAt", {
-                  time: formatCapturedAtJst(originalExhibition.capturedAt),
-                })}
-                {t("home.jstNote")}
+                {t("beforeInfo.exhibitionCourseSource")}
+                {exhibitionCourseTime && (
+                  <>
+                    {" / "}
+                    {t("beforeInfo.originalExhibitionCapturedAt", {
+                      time: exhibitionCourseTime,
+                    })}
+                    {t("home.jstNote")}
+                  </>
+                )}
               </p>
             )}
+            {hasOriginalExhibitionSource && (
+              <>
+                <p className="rbi-source-text">
+                  {t("beforeInfo.originalExhibitionSource", {
+                    items: originalExhibitionKindLabels(
+                      t,
+                      originalExhibition.kinds,
+                    ).join(t("beforeInfo.originalExhibitionItemSeparator")),
+                  })}
+                </p>
+                {formatCapturedAtJst(originalExhibition.capturedAt) && (
+                  <p className="rbi-source-text">
+                    {t("beforeInfo.originalExhibitionCapturedAt", {
+                      time: formatCapturedAtJst(originalExhibition.capturedAt),
+                    })}
+                    {t("home.jstNote")}
+                  </p>
+                )}
+              </>
+            )}
+            {/* 注記は1回だけ。BOATCASTだけなら従来の文言、展示進入を含むなら
+                出典が2つありうるので「各出典で」の文言にする */}
             <p className="rbi-source-text">
-              {t("beforeInfo.originalExhibitionNote")}
+              {hasExhibitionCourseSource
+                ? t("beforeInfo.rawValuesNote")
+                : t("beforeInfo.originalExhibitionNote")}
             </p>
           </div>
         )}
