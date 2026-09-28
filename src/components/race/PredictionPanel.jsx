@@ -386,6 +386,7 @@ function PredictionPanel({
                     selectedRace?.raceGrade ??
                     null
                   }
+                  isFinished={isFinished}
                 />
               ),
             },

@@ -2855,9 +2855,36 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
       }),
     });
 
+  // 展示前の注記は確定済みのレースには出さない。確定済みの過去レースを
+  // 「未確定」に見せるため、予想データの応答から結果（rank1 を持つ result）を外す
+  // （Edge API・RPC のどちらの経路でも効くよう、応答のJSONを走査する）
+  const stripResults = (value) => {
+    if (Array.isArray(value)) return value.map(stripResults);
+    if (value && typeof value === "object") {
+      return Object.fromEntries(
+        Object.entries(value).map(([k, v]) =>
+          k === "result" && v && typeof v === "object" && v.rank1 != null
+            ? [k, null]
+            : [k, stripResults(v)],
+        ),
+      );
+    }
+    return value;
+  };
+  const routeUnfinished = async (page) => {
+    const handler = async (route) => {
+      const response = await route.fetch();
+      const json = stripResults(await response.json());
+      await route.fulfill({ response, json });
+    };
+    await page.route("**/api/predictions/**", handler);
+    await page.route("**/rest/v1/rpc/get_predictions*", handler);
+  };
+
   test("展示前（exhibition_data が空）は出走表の体重を出し、チルトは展示後に公開される旨を添える", async ({
     page,
   }) => {
+    await routeUnfinished(page);
     await page.route(isMaintenance, fulfillJson([]));
     await page.route(isEntryWeights, fulfillJson(ENTRY_WEIGHTS));
     await openBeforeInfoTab(page);
@@ -2892,6 +2919,7 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
       prev_start_timing: null,
       prev_finish_rank: null,
     }));
+    await routeUnfinished(page);
     await page.route(isMaintenance, fulfillJson(maintenance));
     await page.route(isEntryWeights, fulfillJson(ENTRY_WEIGHTS));
     await openBeforeInfoTab(page);
@@ -2907,6 +2935,7 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
   test("出走表の体重の取得に失敗したら、未公開と区別して取得失敗を出す", async ({
     page,
   }) => {
+    await routeUnfinished(page);
     await page.route(isMaintenance, fulfillJson([]));
     await page.route(
       isEntryWeights,
@@ -2926,6 +2955,7 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
   test("体重が未公開（出走表・直前情報とも空）なら注記も取得失敗も出さない", async ({
     page,
   }) => {
+    await routeUnfinished(page);
     await page.route(isMaintenance, fulfillJson([]));
     await page.route(
       isEntryWeights,
@@ -2937,6 +2967,77 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
     await expect(weightRow).toBeVisible({ timeout: 20000 });
     await expect(weightRow.locator("td.drt-cell").first()).toHaveText("—");
     await expect(page.getByTestId("rbi-pre-exhibition-note")).toHaveCount(0);
-    await expect(page.locator(".inline-fetch-error")).toHaveCount(0);
+    await expect(
+      page.locator(".inline-fetch-error", {
+        hasText: "出走表の体重を取得できませんでした",
+      }),
+    ).toHaveCount(0);
+  });
+
+  // --- ここから /code-review の指摘に対する再現テスト（2026-09-28） ---
+
+  test("直前情報の設定値の取得に失敗したときは、取得失敗を「チルト未公開」の注記に化けさせない", async ({
+    page,
+  }) => {
+    await routeUnfinished(page);
+    await page.route(
+      isMaintenance,
+      fulfillJson({ code: "57014", message: "canceling statement" }, 500),
+    );
+    await page.route(isEntryWeights, fulfillJson(ENTRY_WEIGHTS));
+    await openBeforeInfoTab(page);
+
+    // 体重は出走表の値で出る
+    await expect(
+      rowByLabel(page, "当日体重").locator("td.drt-cell").first(),
+    ).toHaveText("51.0kg", { timeout: 20000 });
+    await expect(page.locator(".inline-fetch-error").first()).toBeVisible();
+    await expect(page.getByTestId("rbi-pre-exhibition-note")).toHaveCount(0);
+  });
+
+  test("確定済みのレースでは、直前情報が入らなかったときも展示前の注記を出さない", async ({
+    page,
+  }) => {
+    // routeUnfinished を使わない＝結果ありの確定済みレース
+    await page.route(isMaintenance, fulfillJson([]));
+    await page.route(isEntryWeights, fulfillJson(ENTRY_WEIGHTS));
+    await openBeforeInfoTab(page);
+
+    await expect(
+      rowByLabel(page, "当日体重").locator("td.drt-cell").first(),
+    ).toHaveText("51.0kg", { timeout: 20000 });
+    await expect(page.getByTestId("rbi-pre-exhibition-note")).toHaveCount(0);
+  });
+
+  test("全艇に直前情報の体重があれば、出走表の体重の取得失敗は出さない（表示に影響しない）", async ({
+    page,
+  }) => {
+    const maintenance = [1, 2, 3, 4, 5, 6].map((n) => ({
+      boat_number: n,
+      tilt: 0,
+      adjustment_weight: 0,
+      propeller_change: null,
+      parts_changed: null,
+      today_weight: 50 + n,
+      prev_race_no: null,
+      prev_entry_course: null,
+      prev_start_timing: null,
+      prev_finish_rank: null,
+    }));
+    await page.route(isMaintenance, fulfillJson(maintenance));
+    await page.route(
+      isEntryWeights,
+      fulfillJson({ code: "57014", message: "canceling statement" }, 500),
+    );
+    await openBeforeInfoTab(page);
+
+    await expect(
+      rowByLabel(page, "当日体重").locator("td.drt-cell").first(),
+    ).toHaveText("51.0kg", { timeout: 20000 });
+    await expect(
+      page.locator(".inline-fetch-error", {
+        hasText: "出走表の体重を取得できませんでした",
+      }),
+    ).toHaveCount(0);
   });
 });

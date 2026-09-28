@@ -70,7 +70,14 @@ import "./RaceBeforeInfoTab.css";
 import "../common/HorizontalScrollHint.css";
 import { formatCapturedAtJst } from "../../utils/formatters";
 
-function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
+function RaceBeforeInfoTab({
+  raceId,
+  venueCode,
+  players,
+  weather,
+  raceGrade,
+  isFinished = false,
+}) {
   const { t } = useTranslation();
   const analysis = useRaceAnalysisData(raceId, { venueCode });
 
@@ -318,7 +325,10 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
 
   // 展示前の注記（BOA-484）: 体重・調整重量が出ていて、チルトがまだ1艇も出ていない間。
   // チルトは展示航走の後に公開される（2026-09-28、9会場の展示前ページで全て空欄を確認）ため、
-  // 「—」を未取得の不具合と読まれないようにする。展示後（チルトが出た後）は出さない
+  // 「—」を未取得の不具合と読まれないようにする。展示後（チルトが出た後）は出さない。
+  // 直前情報の設定値（exhibition_data）の取得に失敗したときは、チルトが無いのは
+  // 「未公開」ではなく「取得失敗」なので出さない（失敗は上部の InlineFetchError が示す）。
+  // 確定済みのレース（展示データが最後まで入らなかった中止・取得漏れ等）にも出さない
   const maintenanceRows = analysis.motorMaintenance ?? [];
   const tiltPublished = maintenanceRows.some((r) => toNumber(r.tilt) !== null);
   const hasPreExhibitionWeight =
@@ -330,7 +340,9 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
     (entryWeights.state === "published" &&
       Object.keys(entryWeights.byBoat ?? {}).length > 0);
   const showPreExhibitionNote =
+    !isFinished &&
     !analysis.pending?.motorMaintenance &&
+    !analysis.failed?.motorMaintenance &&
     !tiltPublished &&
     hasPreExhibitionWeight;
 
@@ -587,7 +599,17 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
             </table>
           </div>
         </div>
-        {entryWeights.state === "error" && (
+        {/* 出走表の体重の取得失敗は、展示前の体重を出せないときだけ示す
+            （全艇に直前情報の体重があれば、表示に影響しないため） */}
+        {entryWeights.state === "error" &&
+          !sortedPlayers.every(
+            (p) =>
+              toNumber(
+                (analysis.motorMaintenance ?? []).find(
+                  (r) => r.boat_number === p.number,
+                )?.today_weight,
+              ) !== null,
+          ) && (
           <InlineFetchError
             message={t("beforeInfo.entryWeightFetchError")}
             onRetry={() => setEntryWeightsReloadKey((k) => k + 1)}
