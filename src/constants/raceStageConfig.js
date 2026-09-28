@@ -57,11 +57,18 @@ export function getRaceStageBadge(raceStage) {
  *   「一般特選」「一般特賞」「一般」「一般戦」は3日目以降・最終日（予選終了後）に
  *   組まれている。1つの「特別戦」にまとめると、得点率に入るレースか予選落ちの
  *   消化戦かを見分けられない（BOA-509 のファン評価で P1）ため、予選/一般の軸を残す
- * - 「選抜戦」「記者選抜戦」等は最終日（選抜戦111件すべて）の上位戦なので別の分類
+ *   「予選選抜」（1〜3日目）・「一般選抜」も同じ軸で分ける
+ * - それ以外の「選抜」は「選抜戦」。完全一致の「選抜戦」は111件すべて最終日だが、
+ *   「記者選抜戦」「福岡選抜」等は1〜4日目にも組まれる（ファン評価3周目）。
+ *   文字列だけでは区別できないので、隣の日目バッジで読ませる
+ * - 「特別選抜戦」は「特別」を含むが選抜戦（最終日のみ）なので、特別戦より先に見る
  * - 「予選ドリーム戦」はドリーム戦
  */
 const hasSpecial = (s) =>
-  s.includes("特選") || s.includes("特賞") || s.includes("特別");
+  s.includes("特選") ||
+  s.includes("特賞") ||
+  s.includes("特別") ||
+  s.includes("選抜");
 
 const RACE_STAGE_CATEGORY_RULES = [
   {
@@ -71,12 +78,12 @@ const RACE_STAGE_CATEGORY_RULES = [
   { key: "semifinal", test: (s) => s.includes("準優勝戦") },
   { key: "final", test: (s) => s.includes("優勝戦") },
   { key: "dream", test: (s) => s.includes("ドリーム") || s.includes("DR") },
-  { key: "selection", test: (s) => s.includes("選抜") },
   {
     key: "qualifierSpecial",
     test: (s) => s.includes("予選") && hasSpecial(s),
   },
   { key: "generalSpecial", test: (s) => s.includes("一般") && hasSpecial(s) },
+  { key: "selection", test: (s) => s.includes("選抜") },
   { key: "special", test: hasSpecial },
   { key: "qualifier", test: (s) => s.includes("予選") },
   { key: "general", test: (s) => s.includes("一般") },
