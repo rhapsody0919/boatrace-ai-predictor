@@ -139,12 +139,13 @@
 }
 
 /* 展示進入（BOA-485）: 枠番と違うコースに入った艇。前づけの予兆なので
-   「枠なりでない」ことが一目で分かるようにする。drt-best（最良値）の
-   アクセント色と混同しないよう警告色系にする */
+   「枠なりでない」ことが一目で分かるようにする。drt-best（最良値、金の
+   実線枠）と色味が近いので、枠を破線にして形でも区別する（375pxの実画面で
+   同じ表に並ぶと、実線同士では「一番良い値」の印と見分けにくかった） */
 .race-before-info-tab .drt-cell.drt-entry-moved {
-  background: color-mix(in srgb, var(--color-warning) 16%, transparent);
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--color-warning) 45%, transparent);
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  outline: 1px dashed var(--color-warning);
+  outline-offset: -3px;
   font-weight: var(--font-weight-bold);
 }
 
