@@ -61,6 +61,73 @@ function bestOf(candidates, dir = "max") {
 }
 
 /**
+ * オリジナル展示（一周・半周ラップ・まわり足・直線）の行を作る（BOA-452 / FR-4b）。
+ *
+ * `supabaseDataService.getRaceOriginalExhibition` の戻り値をそのまま受け取り、
+ * **値が取れている種別のぶんだけ**行を返す。次のいずれかなら空配列を返す
+ * （行ごと出さない。空の「—」を並べない）:
+ *   - null（まだ取得していない / 取得に失敗した）
+ *   - state === "forbidden"（マイグレーション096が未適用で匿名に権限が無い）
+ *   - state === "empty"（計測前・未公開）
+ *
+ * 速いほど良い数字なので best は最小値（`dir: "min"`）。1艇でも値が欠けている
+ * 種別でも、値がある艇の中の最小に印を付ける（`bestOf` が null を除く）
+ */
+const ORIGINAL_EXHIBITION_ROW_META = {
+  一周: { key: "oriLap", labelKey: "dataTable.rowOriLap" },
+  半周ラップ: { key: "oriHalfLap", labelKey: "dataTable.rowOriHalfLap" },
+  まわり足: { key: "oriTurn", labelKey: "dataTable.rowOriTurn" },
+  直線: { key: "oriStraight", labelKey: "dataTable.rowOriStraight" },
+};
+
+/**
+ * 出典表記に並べる項目名（その会場・そのレースで実際に出した種別だけ）を訳して返す。
+ * 児島のように「一周・まわり足」しか計測しない会場で「直線」まで書くと、
+ * 出していない値の出典を名乗ることになるため、行と同じ集合から作る
+ */
+export function originalExhibitionKindLabels(t, kinds) {
+  return (kinds ?? [])
+    .map((kind) => ORIGINAL_EXHIBITION_ROW_META[kind])
+    .filter(Boolean)
+    .map((meta) => t(meta.labelKey));
+}
+
+function buildOriginalExhibitionRows(t, originalExhibition) {
+  if (!originalExhibition || originalExhibition.state !== "published")
+    return [];
+  const byBoat = originalExhibition.byBoat ?? {};
+  return (originalExhibition.kinds ?? [])
+    .map((kind) => {
+      const meta = ORIGINAL_EXHIBITION_ROW_META[kind];
+      // 取得側が新しい種別を拾い始めた場合、訳の無いラベルを出すより
+      // 行を出さないほうが安全（次の改修で meta に足す）
+      if (!meta) return null;
+      const candidates = Object.entries(byBoat).map(([boat, values]) => ({
+        boat: Number(boat),
+        value: toNumber(values?.[kind]),
+      }));
+      if (candidates.every((c) => c.value === null)) return null;
+      return {
+        key: meta.key,
+        label: t(meta.labelKey),
+        shortLabel: t(meta.labelKey),
+        // 発走の直前に出る値なので直前情報タブへ（展示タイムと同じ扱い）
+        category: "beforeInfo",
+        best: bestOf(candidates, "min"),
+        render: (p) => {
+          const value = toNumber(byBoat[p.number]?.[kind]);
+          return value !== null ? (
+            <span className="drt-value">{value.toFixed(2)}</span>
+          ) : (
+            "—"
+          );
+        },
+      };
+    })
+    .filter(Boolean);
+}
+
+/**
  * 指標行の定義を構築する（内部関数、buildIndicatorRows/buildBeforeInfoRowsの共通実装）
  * 各行にcategoryを付与し、DataRaceTable（category: "basic"、デフォルト）と
  * RaceBeforeInfoTab（category: "beforeInfo"）で同じ定義・同じレンダリング
@@ -76,6 +143,7 @@ function buildRowDefs({
   analysis,
   pending = {},
   motorDeepLink = null,
+  originalExhibition = null,
 }) {
   const {
     motor,
@@ -342,6 +410,15 @@ function buildRowDefs({
         return "—";
       },
     },
+    // オリジナル展示（BOA-452 / FR-4b）。展示タイムの直後・ST/体重の手前に置く
+    // （ボートレース日和の「展示情報」も 展示→周回→周り足→直線→ST の順で、
+    // 「直線で伸びるが回りが重い」のような読み方をこの並びが支えている）。
+    //
+    // 出せる項目は会場によって違う（児島は一周・まわり足のみ）ので、
+    // 取れた種別ぶんだけ行を作る。取れていない・096未適用で権限が無い場合は
+    // originalExhibition が null / state != "published" になり、行は1つも作られない
+    // （「—」を6つ並べない。ADR-0067 の前検タイム追記と同じ扱い）
+    ...buildOriginalExhibitionRows(t, originalExhibition),
     {
       // 当日体重は計量時点の実測値であり、値の高低が好走/凡走を示唆する指標では
       // ないため、他行と違いbestは持たせない（BOA-289、tilt/adjustmentWeightと同じ扱い）
@@ -538,8 +615,8 @@ export function buildBasicIndicatorRows(args) {
   return buildRowDefs(args).filter((row) => row.category !== "beforeInfo");
 }
 
-// 直前情報タブ（RaceBeforeInfoTab）向け: 展示ST・展示タイム・チルト・
-// 調整重量・部品交換の5行のみ（BOA-304）
+// 直前情報タブ（RaceBeforeInfoTab）向け: 展示ST・展示タイム・オリジナル展示
+// （一周/半周ラップ/まわり足/直線、BOA-452）・チルト・調整重量・部品交換（BOA-304）
 export function buildBeforeInfoRows(args) {
   return buildRowDefs(args).filter((row) => row.category === "beforeInfo");
 }
