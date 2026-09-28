@@ -153,6 +153,11 @@
       "guards": "前検タイム・前検順位・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）"
     },
     {
+      "script": "verify-odds-live-api.js",
+      "tier": "ci",
+      "guards": "オッズのライブ取得API（api/odds/live.js、BOA-487）: オッズ更新時間・締切時オッズの検出、票0を0で返す解析、当日のみ受け付けるクエリ検証、Cache-Control"
+    },
+    {
       "script": "verify-opening-day-backfill.js",
       "tier": "ci",
       "guards": "節の初日バックフィル（scripts/lib/openingDayBackfill.js）"

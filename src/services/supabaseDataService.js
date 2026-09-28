@@ -5354,17 +5354,24 @@ export const supabaseDataService = {
     const ttl =
       dateMatch && dateMatch[1] < todayJst ? undefined : 3 * 60 * 1000;
 
+    // v2: 単勝・複勝（odds_win_N・odds_place_N_low/high）を足した（BOA-487）。キーを変えないと、
+    // localStorage に残った旧形（単勝なし）が過去レースで最大7日返る
     return withCache(
-      `race-odds-snapshots-${raceId}`,
+      `race-odds-snapshots-v2-${raceId}`,
       async () => {
         if (!supabase) {
           throw new Error("Supabase client not initialized");
         }
 
+        const winPlaceColumns = [1, 2, 3, 4, 5, 6]
+          .map(
+            (n) => `odds_win_${n}, odds_place_${n}_low, odds_place_${n}_high`,
+          )
+          .join(", ");
         const { data, error } = await supabase
           .from("race_odds")
           .select(
-            "captured_at, trifecta_all, trio_all, exacta_all, quinella_all, wide_all",
+            `captured_at, trifecta_all, trio_all, exacta_all, quinella_all, wide_all, ${winPlaceColumns}`,
           )
           .eq("race_id", raceId)
           .order("captured_at", { ascending: true });
@@ -5376,6 +5383,23 @@ export const supabaseDataService = {
           throw new Error(`race_odds（全通り系）取得エラー: ${error.message}`);
         }
 
+        // 単勝・複勝は艇番（"1"〜"6"）→ 値。null は「票0（公式の0.0）か未取得」で、保存時に区別していない
+        // （scrape-odds.js が 0.0 を null にする）。画面では「票なし（または未取得）」として扱う
+        const winOf = (row) =>
+          Object.fromEntries(
+            [1, 2, 3, 4, 5, 6].map((n) => [String(n), row[`odds_win_${n}`]]),
+          );
+        const placeOf = (row) =>
+          Object.fromEntries(
+            [1, 2, 3, 4, 5, 6].map((n) => {
+              const low = row[`odds_place_${n}_low`];
+              const high = row[`odds_place_${n}_high`];
+              return [
+                String(n),
+                low != null && high != null ? { low, high } : null,
+              ];
+            }),
+          );
         return (data || [])
           .filter(
             (row) =>
@@ -5383,7 +5407,8 @@ export const supabaseDataService = {
               row.trio_all ||
               row.exacta_all ||
               row.quinella_all ||
-              row.wide_all,
+              row.wide_all ||
+              [1, 2, 3, 4, 5, 6].some((n) => row[`odds_win_${n}`] != null),
           )
           .map((row) => ({
             capturedAt: row.captured_at,
@@ -5392,6 +5417,8 @@ export const supabaseDataService = {
             exactaAll: row.exacta_all ?? null,
             quinellaAll: row.quinella_all ?? null,
             wideAll: row.wide_all ?? null,
+            win: winOf(row),
+            place: placeOf(row),
           }));
       },
       ttl,
