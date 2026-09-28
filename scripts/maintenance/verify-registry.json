@@ -108,6 +108,13 @@
       "guards": "新規マイグレーションが公開スキーマのテーブルをRLSなし・匿名書き込み可のまま作っていないか（BOA-370の再発防止）"
     },
     {
+      "script": "verify-meet-grouping.js",
+      "tier": "manual",
+      "guards": "節推定（src/utils/meetGrouping.js、race_idの日付連続性）がrace_conditions.series_dayと一致し続けること。選手単位の一致率と、推定が誤りうる会場境界に前後どちらの節にも出走した選手が現れないこと（BOA-491の同型が選手単位でも起きていないかの監視）",
+      "reason": "実Supabaseの全期間データ（race_conditions・race_entries）を読むためCIでは決定的にならない。斡旋・中止順延の運用が変わったときに崩れる性質を見るので、日々のデータ投入結果に依存する",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-meet-grouping.js"
+    },
+    {
       "script": "verify-monthly-schedule.js",
       "tier": "ci",
       "guards": "月間スケジュール（節メタ N16）のパーサー・節の確定・行変換・CLI"

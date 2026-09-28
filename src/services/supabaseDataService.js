@@ -3869,10 +3869,13 @@ export const supabaseDataService = {
 
       const raceIds = [...new Set(entries.map((e) => e.race_id))];
       // race_gradeはraces側のカラム（race_conditions側は017マイグレーションで
-      // 削除済み）。race_conditions.series_day/is_final_dayはgenerate-predictions.js
-      // で常にnull書き込みが確定しているため（実データも大部分がnull、
-      // 2026-09-15確認）、この関数では取得しない（race_title/race_stageは
-      // 別カラムでBOA-226以前から実データが入っているため下記で取得する）。
+      // 削除済み）。race_conditions.series_day/is_final_dayは**下記で取得する**。
+      // 以前ここには「generate-predictions.jsが常にnullを書くため取得しない」と
+      // 書いてあったが、BOA-226（update-race-info.jsのscrapeSeriesDay()）と
+      // BOA-390のバックフィルで埋まり、条件別タブ（phase a FR-2）の初日・最終日行が
+      // 実際にこの2列を読んでいる（2026-09-28実測で2026-02以降100%・全体99.8%）。
+      // ただし2025-12は12行・2026-01は0行で、過去2年窓の前半はrace_conditionsの
+      // 行そのものが無い。
       // rank4〜6はBOA-238で追加（過去データは未バックフィルのためnullのままの
       // 行がある）。start_timingは平均ST（BOA-306フィードバック#1で会場/グレード
       // フィルタ対応が必要になったため追加、race_start_timingsから取得）。
