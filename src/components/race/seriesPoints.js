@@ -148,12 +148,16 @@ export function listSeriesFinishes(meetRecords) {
  *
  * @param {{entries: Array<Object>}|null} scoreboard `getMeetScoreboard` の戻り値
  * @returns {Array<{racerId: number, playerName: string, points: number,
- *   runs: number, rate: number, rank: number}>} 得点率の降順。同率は同順位
+ *   runs: number, rate: number, rank: number|null, withdrawn: boolean}>}
+ *   得点率の降順。同率は同順位。途中で節を離脱した選手は `rank: null`
  */
 export function buildMeetRanking(scoreboard) {
   const entries = scoreboard?.entries;
   if (!Array.isArray(entries) || entries.length === 0) return [];
   const prelimEndRaceId = scoreboard?.prelimEndRaceId ?? null;
+  // 途中で節を離脱した選手（途中帰郷）は順位の対象から外す。公式の順位表と
+  // 同じ扱い。得点率自体は出すので、行が消えることはない（rank が null になる）
+  const withdrawn = new Set(scoreboard?.withdrawnRacerIds ?? []);
 
   const byRacer = new Map();
   entries.forEach((e) => {
@@ -175,13 +179,17 @@ export function buildMeetRanking(scoreboard) {
     .filter((r) => r.rate !== null)
     .sort((a, b) => b.rate - a.rate);
 
-  // 同率は同順位（1,2,2,4…）。公式の得点率一覧と同じ付け方
+  // 同率は同順位（1,2,2,4…）。公式の得点率一覧と同じ付け方。
+  // 離脱者は順位を飛ばさず（母集団から外して）詰める
   let rank = 0;
   let prev = null;
-  return rows.map((r, i) => {
-    if (prev === null || Math.abs(r.rate - prev) > 0.0001) rank = i + 1;
+  let counted = 0;
+  return rows.map((r) => {
+    if (withdrawn.has(r.racerId)) return { ...r, rank: null, withdrawn: true };
+    counted += 1;
+    if (prev === null || Math.abs(r.rate - prev) > 0.0001) rank = counted;
     prev = r.rate;
-    return { ...r, rank };
+    return { ...r, rank, withdrawn: false };
   });
 }
 

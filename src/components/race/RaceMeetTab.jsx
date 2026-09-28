@@ -131,10 +131,15 @@ function RaceMeetTab({ raceId, venueCode, players }) {
   const pretestOf = (racerId) => board?.pretestByRacer?.[racerId] ?? null;
   // 同率が何人いるか。節の序盤は得点率の刻みが粗く（3走なら0.33刻み）
   // 「11位」が3人並ぶ。順位だけ見せると分解能を過信させる
-  const tiedCount = (rank) => ranking.filter((r) => r.rank === rank).length;
+  const tiedCount = (rank) =>
+    ranking.filter((r) => r.rank !== null && r.rank === rank).length;
 
   const mine = ranking.find((r) => r.racerId === selectedPlayer?.racerId);
-  const border = ranking[slots - 1]?.rate;
+  // ボーダーは**順位の対象になっている選手だけ**から取る。途中で離脱した
+  // 選手を混ぜると公式とズレる（若松G1の実測で 5.67 → 除外すると 5.60 で
+  // 実ボーダーと完全一致）
+  const rankedOnly = ranking.filter((r) => !r.withdrawn);
+  const border = rankedOnly[slots - 1]?.rate;
   // 表のボーダー表示は「節全体の順位」なので、選んだ選手の走数に依存しない
   const showBorderBadge = !isAfterPrelim && !prelimOver && border !== undefined;
   const showBorder =
@@ -331,7 +336,12 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                         {row.rate.toFixed(2)}
                       </td>
                       <td className="rmt-rank">
-                        {tied > 1 ? (
+                        {/* 途中で節を離脱した選手は順位の対象外（公式も同じ） */}
+                        {row.rank === null ? (
+                          <span title={t("meetTab.withdrawnTitle")}>
+                            {t("meetTab.withdrawn")}
+                          </span>
+                        ) : tied > 1 ? (
                           <span title={t("meetTab.rankTiedTitle", { tied })}>
                             {t("meetTab.rankTied", { rank: row.rank })}
                           </span>
@@ -366,7 +376,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
             {ranking.some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS) && (
               <>{t("meetTab.smallSampleLegend")} </>
             )}
-            {t("meetTab.compareSub", { total: ranking.length })}
+            {t("meetTab.compareSub", { total: rankedOnly.length })}
             {showBorderBadge && (
               <>
                 {" "}

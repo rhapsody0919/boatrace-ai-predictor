@@ -4,11 +4,11 @@
 //   若松G1   実ボーダー5.60 / 推定5.67（差0.07）。ズレの原因は途中帰郷の1名
 //   桐生一般 実ボーダー4.50 / 推定5.33（差0.83）。一般戦は得点率順だけで
 //            準優が決まらないことがある
-import { supabase } from "./scripts/lib/supabaseClient.js";
+import { supabase } from "../lib/supabaseClient.js";
 import {
   buildMeetRanking,
   SEMIFINAL_DEFAULT_SLOTS,
-} from "./src/components/race/seriesPoints.js";
+} from "../../src/components/race/seriesPoints.js";
 
 // 必要得点はボーダー（準優の目安）を前提にしている。その推定が妥当かを
 // 「実際に準優に乗った選手の最低得点率」と突き合わせて検証する。
@@ -77,6 +77,21 @@ for (const m of MEETS) {
 
   const slots = semifinalIds.length * 6 || SEMIFINAL_DEFAULT_SLOTS;
   const estimated = ranking[slots - 1]?.rate ?? null;
+
+  // 節の最終日に出走が無い選手（＝途中で離脱した選手）を除いた場合の推定。
+  // 公式の順位表も途中帰郷の選手を順位から外している
+  const meetDates = [
+    ...new Set((entries ?? []).map((e) => e.race_id.slice(0, 10))),
+  ].sort();
+  const lastDay = meetDates[meetDates.length - 1];
+  const ranAtLastDay = new Set(
+    (entries ?? [])
+      .filter((e) => e.race_id.startsWith(lastDay))
+      .map((e) => e.racer_id),
+  );
+  const withoutWithdrawn = ranking.filter((r) => ranAtLastDay.has(r.racerId));
+  const estimatedExcl = withoutWithdrawn[slots - 1]?.rate ?? null;
+  const withdrawn = ranking.filter((r) => !ranAtLastDay.has(r.racerId));
   const actualMin = rates.length ? rates[rates.length - 1].rate : null;
 
   console.log(`\n■ ${m.name}（準優 ${semifinalIds.length}個 = ${slots}枠）`);
@@ -94,6 +109,20 @@ for (const m of MEETS) {
   if (actualMin !== null && estimated !== null) {
     console.log("  差:", (estimated - actualMin).toFixed(2));
   }
+  console.log(
+    "  途中離脱（最終日に出走なし）:",
+    withdrawn.length,
+    withdrawn
+      .map((r) => `${r.playerName.replace(/\s+/g, "")}(${r.rate.toFixed(2)})`)
+      .join(" "),
+  );
+  console.log(
+    "  離脱者を除いた推定:",
+    estimatedExcl === null ? "—" : estimatedExcl.toFixed(2),
+    actualMin !== null && estimatedExcl !== null
+      ? `→ 差 ${(estimatedExcl - actualMin).toFixed(2)}`
+      : "",
+  );
   // 推定ボーダー以上だったのに準優に乗らなかった人／その逆
   const inSemifinal = new Set(semifinalRacers);
   const missed = ranking.filter(

@@ -6191,7 +6191,7 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v9-${raceId}`, async () => {
+    return withCache(`meet-scoreboard-v10-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る
@@ -6238,7 +6238,7 @@ export const supabaseDataService = {
         // 表示中レース自体の種別（早見の出し分け）もここから取る
         supabase
           .from("race_conditions")
-          .select("race_id, race_stage")
+          .select("race_id, race_stage, is_final_day")
           .gte("race_id", meetStart)
           .lte("race_id", `${date}-zz`)
           .like("race_id", `__________-${vv}-__`)
@@ -6304,6 +6304,30 @@ export const supabaseDataService = {
             .map(([id]) => id)
             .sort()
             .pop() ?? null,
+        // **途中で節を離脱した選手**（途中帰郷）。公式の順位表はこの選手たちを
+        // 順位から外すため、当社が全員で順位を振ると下位ほどズレる。
+        //
+        // 判定は「節の最終日に1度も出走が無い」。2026-09-28に実測で裏を取った:
+        //   若松G1 … 該当2名が公式の「途中帰郷」2名と完全一致。除くと
+        //             推定ボーダーが 5.67 → 5.60 になり実ボーダーと**完全一致**
+        //   桐生   … 該当5名は全員、他会場でも走っておらず9/22〜9/24で出走が
+        //             途切れている（節の前後半でメンバーが入れ替わる形ではない）
+        //
+        // **節が終わるまでは判定できない**（最終日が未来なので）。
+        // `is_final_day` が取れていて、その日を過ぎている場合だけ有効にする。
+        // 賞典除外は判定できない（該当選手は最終日まで普通に走っている）
+        withdrawnRacerIds: (() => {
+          const finalDayRow = (conditions ?? []).find((c) => c.is_final_day);
+          const finalDay = finalDayRow?.race_id.slice(0, 10) ?? null;
+          if (!finalDay || date < finalDay) return [];
+          const ranAtFinalDay = new Set(
+            meetRows
+              .filter((e) => e.race_id.startsWith(finalDay))
+              .map((e) => e.racer_id),
+          );
+          const all = new Set(meetRows.map((e) => e.racer_id));
+          return [...all].filter((id) => !ranAtFinalDay.has(id));
+        })(),
         // **残りの予選走数**（表示中のレースを含む）。公式の「必要得点」は
         // 「準優ボーダーをクリアするために必要な得点」で、実データから
         // 逆算すると `ボーダー × (今の走数 + 残り走数) − 今の得点` だった

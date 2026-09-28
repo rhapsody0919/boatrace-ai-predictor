@@ -1,14 +1,14 @@
 // 実行: node --env-file=.env.local scripts/verification/verify-series-points-needed.mjs
 // CIには載せない（本番Supabaseへの接続と、特定の節のデータに依存するため）。
 // 2026-09-28の実行結果: 1955組（レース×選手）で不整合0。
-import { supabase } from "./scripts/lib/supabaseClient.js";
+import { supabase } from "../lib/supabaseClient.js";
 import {
   computeSeriesScore,
   buildMeetRanking,
   pointsNeededForBorder,
   SCORE_POINTS,
   SEMIFINAL_DEFAULT_SLOTS,
-} from "./src/components/race/seriesPoints.js";
+} from "../../src/components/race/seriesPoints.js";
 
 // 若松G1（2026-09-22〜27）の予選期間の各日・各レースについて、
 // 「必要得点」の自己整合性を全選手ぶん検証する。
