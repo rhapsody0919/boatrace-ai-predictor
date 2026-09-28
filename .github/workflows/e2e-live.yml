@@ -61,7 +61,8 @@ jobs:
         run: node scripts/maintenance/check-e2e-skips.js
 
       - name: Notify Slack (失敗時のみ)
-        if: steps.e2e.outputs.exit_code != '0'
+        # skip の検査（直前、always()）が落ちても通知・trace・失敗扱いが飛ばないよう always() を付ける
+        if: always() && steps.e2e.outputs.exit_code != '0'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SUMMARY: ${{ steps.e2e.outputs.summary }}
@@ -86,7 +87,8 @@ jobs:
             -d "$PAYLOAD"
 
       - name: Upload Playwright trace on failure
-        if: steps.e2e.outputs.exit_code != '0'
+        # skip の検査（直前、always()）が落ちても通知・trace・失敗扱いが飛ばないよう always() を付ける
+        if: always() && steps.e2e.outputs.exit_code != '0'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-traces-live
@@ -94,5 +96,6 @@ jobs:
           retention-days: 7
 
       - name: E2Eの失敗をジョブの失敗として扱う
-        if: steps.e2e.outputs.exit_code != '0'
+        # skip の検査（直前、always()）が落ちても通知・trace・失敗扱いが飛ばないよう always() を付ける
+        if: always() && steps.e2e.outputs.exit_code != '0'
         run: exit 1

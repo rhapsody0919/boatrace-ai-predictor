@@ -58,6 +58,8 @@ export const META_PATH = path.join(RECORDINGS_DIR, "meta.json");
 export const BODIES_DIR = path.join(RECORDINGS_DIR, "bodies");
 /** record モードで global-setup が今回の録画時刻を入れる環境変数（ワーカーに引き継がれる） */
 export const RECORDED_AT_ENV = "E2E_RECORDED_AT";
+/** record モードで、対象を絞った実行（部分録画）かどうか（global-setup が入れる） */
+export const RECORD_PARTIAL_ENV = "E2E_RECORD_PARTIAL";
 /**
  * record モードで、取った応答を1件ずつ置く場所（全ワーカーで共有）。
  * 同じリクエストは最初に取った応答を以降の全テストに返し、ここに残ったものを

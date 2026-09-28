@@ -15,10 +15,11 @@ import {
   META_PATH,
   RAW_EXTERNAL_PREFIX,
   RECORD_CACHE_DIR,
+  RECORD_PARTIAL_ENV,
   RECORDED_AT_ENV,
   RECORDINGS_DIR,
 } from "./fixtures.js";
-import { mergeHarLogs } from "./har-merge.js";
+import { harKey, mergeHarLogs } from "./har-merge.js";
 
 /**
  * record モードの後始末。録画中に取った応答（RECORD_CACHE_DIR に1件ずつ）を
@@ -28,10 +29,41 @@ export default function globalTeardown(config) {
   if (E2E_MODE !== "record") return;
   const outputDir = config.projects[0]?.outputDir;
   if (!outputDir) throw new Error("outputDir が取得できません");
-  bundleRecordings(outputDir, process.env[RECORDED_AT_ENV]);
+  bundleRecordings(outputDir, process.env[RECORDED_AT_ENV], {
+    partial: process.env[RECORD_PARTIAL_ENV] === "1",
+  });
 }
 
-export function bundleRecordings(outputDir, recordedAt) {
+/**
+ * 既存の録画のエントリを、本文を埋め込んだ形で読み出す（部分録画で残す分）。
+ * 本文は bodies/ から読み、base64 で持つ（externalizeBodies が同じ sha1 名で書き戻す）
+ */
+function readExistingEntries() {
+  if (!existsSync(HAR_PATH)) return [];
+  const har = JSON.parse(readFileSync(HAR_PATH, "utf8"));
+  return har.log.entries.map((entry) => {
+    const { _file, ...content } = entry.response.content;
+    if (!_file) return entry;
+    const body = readFileSync(path.join(RECORDINGS_DIR, _file));
+    return {
+      ...entry,
+      response: {
+        ...entry.response,
+        content: {
+          ...content,
+          text: body.toString("base64"),
+          encoding: "base64",
+        },
+      },
+    };
+  });
+}
+
+export function bundleRecordings(
+  outputDir,
+  recordedAt,
+  { partial = false } = {},
+) {
   if (!recordedAt) throw new Error("録画時刻がありません");
 
   const files = listFiles(outputDir);
@@ -52,7 +84,27 @@ export function bundleRecordings(outputDir, recordedAt) {
   }
 
   const logs = harFiles.map((f) => JSON.parse(readFileSync(f, "utf8")).log);
-  const { har, supabaseOrigin, stats } = mergeHarLogs(logs);
+  let merged = mergeHarLogs(logs);
+  let kept = 0;
+  if (partial) {
+    // 対象を絞った録画（spec・-g・--project 指定）で全体を置き換えると、今回走らせて
+    // いないテストの応答が録画から消え、以降のPRゲートでまとめて abort される。
+    // 今回取った応答で既存の録画を上書きし、それ以外は残す
+    const fresh = new Set(
+      merged.har.log.entries.map((e) =>
+        harKey(e.request.method, e.request.url, e.request.postData?.text),
+      ),
+    );
+    const old = readExistingEntries().filter(
+      (e) =>
+        !fresh.has(
+          harKey(e.request.method, e.request.url, e.request.postData?.text),
+        ),
+    );
+    kept = old.length;
+    merged = mergeHarLogs([merged.har.log, { entries: old }]);
+  }
+  const { har, supabaseOrigin, stats } = merged;
 
   mkdirSync(RECORDINGS_DIR, { recursive: true });
   const bodyBytes = externalizeBodies(har);
@@ -74,7 +126,7 @@ export function bundleRecordings(outputDir, recordedAt) {
     [
       `[e2e record] ${harFiles.length}件の応答を束ねました → ${path.relative(process.cwd(), HAR_PATH)}`,
       `  録画時刻: ${meta.recordedAt}`,
-      `  応答: ${stats.unique}件（重複 ${stats.duplicates}件・失敗応答 ${stats.skippedFailed}件を除外）`,
+      `  応答: ${stats.unique}件（重複 ${stats.duplicates}件・失敗応答 ${stats.skippedFailed}件を除外）${partial ? `。部分録画のため既存の${kept}件を残した` : ""}`,
       `  本文: ${readdirSync(BODIES_DIR).length}ファイル・${(bodyBytes / 1024 / 1024).toFixed(1)}MB → ${path.relative(process.cwd(), BODIES_DIR)}/`,
       `  replay で止める外部通信: ${external.size === 0 ? "なし" : [...external].sort().join(", ")}`,
     ].join("\n"),

@@ -357,6 +357,11 @@
       "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）がソースと一致していること"
     },
     {
+      "script": "verify-e2e-har-merge.js",
+      "tier": "ci",
+      "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）と部分録画の判定（ADR-0077）"
+    },
+    {
       "script": "verify-e2e-recorded-network.js",
       "tier": "ci",
       "guards": "E2Eのspecが録画の再生（e2e/fixtures.js、ADR-0077）を素通りする書き方（@playwright/testからの直接import・route.continue()・route.fetch()）をしていないこと"

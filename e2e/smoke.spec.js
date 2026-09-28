@@ -3470,11 +3470,11 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
   // routeUnfinished の route.fetch は本物の応答を待つため、アサーションが先に終わると
   // テスト終了時にまだ応答待ちのリクエストが残り、「page closed」でテストが失敗扱いになる
   // （2026-09-28実測。アサーションは全て通っていた）。終了時に待ちを捨てる。
-  // 本番へ出るのは live モードだけ。録画の再生・録画中は fetchRecorded が待たずに返るうえ、
-  // ここで page のルートを外すと、context 側の録画の再生と競合して
-  // 「Route is already handled!」で落ちる（BOA-466で実測）ため、live に限る
+  // 録画の再生（replay）では fetchRecorded が待たずに返るうえ、ここで page のルートを
+  // 外すと context 側の routeFromHAR と競合して「Route is already handled!」で落ちる
+  // （BOA-466で実測）ため、replay では外さない。本番へ出る live と録画中（record）は従来どおり
   test.afterEach(async ({ page }) => {
-    if (E2E_MODE === "live") {
+    if (E2E_MODE !== "replay") {
       await page.unrouteAll({ behavior: "ignoreErrors" });
     }
   });
