@@ -310,6 +310,11 @@
       "guards": "品質ゲートが緑でないPRのマージと、worktreeごと消える取り直しの効かないデータの保護（guard-pr-merge.js）"
     },
     {
+      "script": "verify-hit-verification-guidance.js",
+      "tier": "ci",
+      "guards": "「毎回の的中/不的中はどこで見られるか」の案内（About・FAQ・使い方ガイド）が、実際に判定を描くタブと食い違うこと（BOA-346の移設で3か所が取り残された）"
+    },
+    {
       "script": "verify-race-cancellation-usage.js",
       "tier": "ci",
       "guards": "開催中止の判定が共通関数を通らず生の文字列比較で書かれること（BOA-418）"
