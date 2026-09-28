@@ -2931,7 +2931,9 @@ export const supabaseDataService = {
    */
   getVenueMotorChampionshipHistory(venueCode, motorNumber) {
     return withCache(
-      `venue-motor-championship-history-${venueCode}-${motorNumber}`,
+      // 戻り値を配列から{generationStart, wins}に変えたため、キーを変えて
+      // localStorageに残る旧形式（配列）を読まない
+      `venue-motor-championship-generation-${venueCode}-${motorNumber}`,
       async () => {
         const failed = { generationStart: null, wins: [], fetchFailed: true };
         if (!supabase) {

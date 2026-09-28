@@ -16,6 +16,8 @@
  *    - currentMotorGenerationStart: 使用開始日の履歴から最新の日付を選ぶ。行が無ければ null
  *    - isInMotorGeneration: 使用開始日の前日は除外、当日・以降は含める
  * 2. getVenueMotorChampionshipHistory の本体が、上の2関数と venue_motor_start_dates を通っていること
+ *    また、戻り値の形を変えたため、キャッシュのキーが旧版と違うこと（localStorageに30分残る
+ *    旧形式の配列を読むと、画面が .wins.length で落ちる）
  *    （サービス層は import.meta.env に依存し node から実行できないため、ソースを検査する）
  */
 
@@ -96,6 +98,11 @@ check(
   /if \(generationStart === null\) return \{ generationStart, wins: \[\] \}/.test(
     body,
   ),
+);
+
+check(
+  "キャッシュのキーが旧形式（配列）のキーと異なる（localStorageの旧値で描画が落ちない）",
+  !body.includes("`venue-motor-championship-history-"),
 );
 
 if (failures.length > 0) {
