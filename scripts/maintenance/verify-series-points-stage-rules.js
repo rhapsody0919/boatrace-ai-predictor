@@ -23,6 +23,7 @@ import {
   computeSeriesScore,
   forecastSeriesScore,
   listSeriesFinishes,
+  pointsNeededForBorder,
   normalizeStage,
   SCORE_POINTS,
   SPECIAL_SCORE_POINTS,
@@ -238,6 +239,22 @@ check(
   [false, false],
 );
 
+// 「一般」の除外は**予選ラベルの最終レースより後**にだけ効かせる。日単位で
+// 落とすと、予選がまだ続いている日の「一般」まで落ちる（BOA-457のレビュー指摘）
+check(
+  "予選最終日より前の日の「一般」は落とさない",
+  [
+    countsForSeriesScore("一般戦", "2026-09-23-20-05", "2026-09-25-20-12"),
+    countsForSeriesScore("一般特選", "2026-09-24-20-11", "2026-09-25-20-12"),
+  ],
+  [true, true],
+);
+check(
+  "予選最終日でも「予選」ラベルの最終レースまでは無条件に算入する",
+  countsForSeriesScore("一般特選", "2026-02-13-07-08", "2026-02-13-07-09"),
+  true,
+);
+
 check(
   "予選ラベルが1本も無い節は算入範囲を切らない",
   [
@@ -319,6 +336,21 @@ check(
   "着順の並びは算入したレースだけ（予選終了後の一般戦を含めない）",
   listSeriesFinishes(RECORDS, { prelimEndRaceId: "2026-09-25-20-12" }),
   [1, 2, 1],
+);
+
+// 「届かず」の判定に使う上限は、残りレースの種別ごとの1着の点で出す。
+// 予選配点の10点で決め打ちすると、ドリーム戦が残っている選手を取りこぼす
+check(
+  "必要得点の上限は残りレースの配点で決まる",
+  [
+    // 残り1走・必要11点。予選配点（上限10）では届かないが、ドリーム戦（12）なら届く
+    pointsNeededForBorder({ points: 0, runs: 1 }, 5.5, 1),
+    pointsNeededForBorder({ points: 0, runs: 1 }, 5.5, 1, 12),
+  ],
+  [
+    { needed: 11, max: 10, reachable: false },
+    { needed: 11, max: 12, reachable: true },
+  ],
 );
 
 check(

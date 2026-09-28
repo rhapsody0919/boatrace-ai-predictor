@@ -195,12 +195,17 @@ export function isPastPrelimDay(raceId, prelimEndRaceId) {
  *
  * 1. 勝ち上がり戦（準優・優勝戦）
  * 2. 予選最終日より後の日
- * 3. 種別に「一般」と付くレース。予選最終日の遅いレースが「一般特選」
- *    「一般記者特選」のように組まれる会場（蒲郡・丸亀等）があり、これは
- *    予選が締まった後の番組なので算入しない
+ * 3. 予選最終日のうち、**「予選」ラベルの最終レースより後**で種別に「一般」と
+ *    付くレース。予選最終日の遅いレースが「一般特選」「一般記者特選」のように
+ *    組まれる会場（蒲郡・丸亀等）があり、これは予選が締まった後の番組
  *
  * 逆に、予選期間内で「一般」と付かないものは**種別名が「予選」でなくても算入する**
  * （「サンライズＸ戦」「ドラドキ３」「蒼月まるる特賞」等も番組上は予選）。
+ *
+ * 3番目を「予選ラベルの最終レースより後」に限っているのは、**予選がまだ続いて
+ * いる日の「一般」を落とさないため**。実データ（2026-02〜09の563節）では
+ * 「一般」と付くレースが予選最終日より前の日に出たことは無く、日単位で落としても
+ * 結果は同じだが、そちらは未知の番組で予選レースを取りこぼす。
  *
  * この切り方は `scripts/analysis/series-points-scoring-hypotheses.mjs` で
  * 4案を実測比較して選んだ。公式との一致はどの案でも保たれ（若松G1 49/49、
@@ -209,7 +214,10 @@ export function isPastPrelimDay(raceId, prelimEndRaceId) {
  */
 export function countsForSeriesScore(stage, raceId, prelimEndRaceId) {
   if (isExcludedStage(stage)) return false;
+  if (!prelimEndRaceId) return true;
   if (isPastPrelimDay(raceId, prelimEndRaceId)) return false;
+  // 「予選」ラベルの最終レースまでは無条件に算入する
+  if (String(raceId) <= String(prelimEndRaceId)) return true;
   return !normalizeStage(stage).includes("一般");
 }
 
@@ -299,9 +307,7 @@ export function listSeriesFinishes(meetRecords, options = {}) {
   const { prelimEndRaceId = null } = options;
   return (Array.isArray(meetRecords) ? [...meetRecords] : [])
     .filter((r) => r.rank1 !== null && r.rank1 !== undefined)
-    .filter((r) =>
-      countsForSeriesScore(r.raceStage, r.raceId, prelimEndRaceId),
-    )
+    .filter((r) => countsForSeriesScore(r.raceStage, r.raceId, prelimEndRaceId))
     .sort((a, b) => String(a.raceId).localeCompare(String(b.raceId)))
     .map((r) => finishPositionOf(r));
 }
@@ -368,14 +374,25 @@ export function buildMeetRanking(scoreboard) {
  *  篠崎 得点率5.75・4走・残り2走 → 13点、池田 7.00・5走・残り1走 → 1点。
  *  どちらも `ボーダー × (走数 + 残り走数) − 得点` で一致する）。
  *
+ * `max`（残り走で取りうる最大得点）は**残りレースの種別ごとの1着の点**を足す。
+ * 予選配点の10点で決め打ちすると、残りにドリーム戦（1着12）や特選（同11）が
+ * 含まれる選手を「届かず」と誤って出す（BOA-457）。
+ *
  * @param {{points: number, runs: number}} current `computeSeriesScore` の戻り値
  * @param {number|null} border ボーダー（準優の目安）の得点率
  * @param {number} remaining 残りの予選走数（表示中のレースを含む）
+ * @param {number|null} [maxPoints] 残り走で取りうる最大得点。省略時は
+ *   予選配点の1着 × 残り走数（種別が分からない呼び出し向けのフォールバック）
  * @returns {{needed: number, max: number, reachable: boolean}|null}
  *   `needed` は必要得点（0未満は0に丸める）、`max` は残り走で取りうる最大得点、
  *   `reachable` は届く見込みがあるか。残り0走・ボーダー不明なら null
  */
-export function pointsNeededForBorder(current, border, remaining) {
+export function pointsNeededForBorder(
+  current,
+  border,
+  remaining,
+  maxPoints = null,
+) {
   if (border === null || border === undefined) return null;
   if (!remaining || remaining <= 0) return null;
   const points = current?.points ?? 0;
@@ -383,7 +400,7 @@ export function pointsNeededForBorder(current, border, remaining) {
   const raw = border * (runs + remaining) - points;
   // 得点は整数なので切り上げる。既に足りている場合は0
   const needed = Math.max(0, Math.ceil(raw - 1e-9));
-  const max = SCORE_POINTS[1] * remaining;
+  const max = maxPoints ?? SCORE_POINTS[1] * remaining;
   return { needed, max, reachable: needed <= max };
 }
 

@@ -20,6 +20,7 @@ import {
   countsForSeriesScore,
   prelimEndRaceIdOf,
   semifinalRaceIdsOf,
+  scoreTableFor,
 } from "../components/race/seriesPoints.js";
 
 // 100円単位で賭けた場合の回収率(%)を返す（払戻合計 / (件数*100) * 100）。
@@ -6380,6 +6381,21 @@ export const supabaseDataService = {
             const st = stageById.get(e.race_id) ?? "";
             if (!countsForSeriesScore(st, e.race_id, prelimEnd)) continue;
             byRacer[e.racer_id] = (byRacer[e.racer_id] ?? 0) + 1;
+          }
+          return byRacer;
+        })(),
+        // 残り走で取りうる**最大得点**。残りの本数だけでは出せない（ドリーム戦の
+        // 1着は12点、特選は11点）。予選配点の10点で決め打ちすると、ドリーム戦が
+        // 残っている選手を「届かず」と誤って出す（BOA-457）
+        remainingPrelimMaxPointsByRacer: (() => {
+          const byRacer = {};
+          const prelimEnd = prelimEndRaceIdOf(conditions ?? []);
+          for (const e of meetRows) {
+            if (e.race_id < raceId) continue;
+            const st = stageById.get(e.race_id) ?? "";
+            if (!countsForSeriesScore(st, e.race_id, prelimEnd)) continue;
+            byRacer[e.racer_id] =
+              (byRacer[e.racer_id] ?? 0) + scoreTableFor(st)[1];
           }
           return byRacer;
         })(),

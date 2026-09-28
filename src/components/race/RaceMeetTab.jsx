@@ -199,6 +199,9 @@ function RaceMeetTab({ raceId, venueCode, players }) {
   // 1艇ぶんだけ出していたときは「他の艇はどうなるのか」が読めなかった。
   // 追加クエリ0本（既に持っている得点・走数から純関数で出す）
   const remainingPrelimRuns = board?.remainingPrelimRunsByRacer ?? {};
+  // 残り走で取りうる最大得点（ドリーム戦の1着は12点）。無ければ予選配点で代用
+  const remainingPrelimMaxPoints =
+    board?.remainingPrelimMaxPointsByRacer ?? {};
   const forecastRows =
     !prelimOver && !isAfterPrelim
       ? sortedPlayers
@@ -219,6 +222,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
               row,
               showBorderBadge && border !== undefined ? border : null,
               remainingPrelimRuns[player.racerId] ?? 0,
+              remainingPrelimMaxPoints[player.racerId] ?? null,
             ),
             remaining: remainingPrelimRuns[player.racerId] ?? 0,
           }))
