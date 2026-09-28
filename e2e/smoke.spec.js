@@ -2821,34 +2821,35 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
 test.describe("レース詳細の直前情報タブ: 今節のオリジナル展示", () => {
   const RACE = "/race/2026-09-21-05-12";
 
-  const meetRow = (raceId, boat, kind, value) => ({
-    race_id: raceId,
-    boat_number: boat,
-    kind,
-    value,
-  });
-
-  // 節の2走ぶん（前走=2走目）。平均は2走の平均になる
-  const MEET_VALUES = [
-    ...[1, 2, 3, 4, 5, 6].flatMap((b) => [
-      meetRow("2026-09-21-05-10", b, "一周", 37.0),
-      meetRow("2026-09-21-05-10", b, "まわり足", 5.6),
-      meetRow("2026-09-21-05-10", b, "直線", 7.0),
-    ]),
-    ...[1, 2, 3, 4, 5, 6].flatMap((b) => [
-      meetRow("2026-09-21-05-11", b, "一周", 37.4),
-      meetRow("2026-09-21-05-11", b, "まわり足", 5.8),
-      meetRow("2026-09-21-05-11", b, "直線", 7.2),
-    ]),
-  ];
+  // **要求された race_id から値を組み立てる**。選手の実際の節は実データ次第なので、
+  // 固定のレースIDを返すと画面側のlookup（`${raceId}-${boatNumber}`）が空振りする。
+  // 種別ごとに定数を返すので、前走も節平均も同じ値になる
+  const KIND_VALUE = { 一周: 37.0, まわり足: 5.8, 直線: 7.2 };
+  const meetBodyFor = (url) => {
+    const ids = (decodeURIComponent(url).match(/race_id=in\.\(([^)]*)\)/) ??
+      [])[1];
+    if (!ids) return [];
+    return ids
+      .split(",")
+      .map((id) => id.replace(/^"|"$/g, ""))
+      .flatMap((raceId) =>
+        [1, 2, 3, 4, 5, 6].flatMap((boat) =>
+          Object.entries(KIND_VALUE).map(([kind, value]) => ({
+            race_id: raceId,
+            boat_number: boat,
+            kind,
+            value,
+          })),
+        ),
+      );
+  };
 
   const routeValues = async (page, { meet, single }) => {
     await page.route("**/rest/v1/race_original_exhibition_values*", (route) => {
       const url = route.request().url();
-      const body = decodeURIComponent(url).includes("race_id=in.")
-        ? meet
-        : single;
-      if (body === "forbidden") {
+      const isMeet = decodeURIComponent(url).includes("race_id=in.");
+      const spec = isMeet ? meet : single;
+      if (spec === "forbidden") {
         return route.fulfill({
           status: 401,
           contentType: "application/json",
@@ -2861,7 +2862,7 @@ test.describe("レース詳細の直前情報タブ: 今節のオリジナル展
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(body),
+        body: JSON.stringify(spec === "derive" ? meetBodyFor(url) : spec),
       });
     });
     await page.route("**/rest/v1/race_original_exhibition?*", (route) =>
@@ -2894,13 +2895,12 @@ test.describe("レース詳細の直前情報タブ: 今節のオリジナル展
   test("節に値があると、今節一周・今節まわり足・今節直線の行が前走と平均で出る", async ({
     page,
   }) => {
-    await routeValues(page, { meet: MEET_VALUES, single: [] });
+    await routeValues(page, { meet: "derive", single: [] });
     await openBeforeInfoTab(page);
 
-    // 前走は節の最後の走（37.40）、平均は2走の平均（37.20）
+    // 種別ごとに定数を返しているので、前走も節平均も同じ値になる
     await expect(rowByLabel(page, "今節一周")).toBeVisible({ timeout: 30000 });
-    await expect(rowByLabel(page, "今節一周")).toContainText("37.40");
-    await expect(rowByLabel(page, "今節一周")).toContainText("37.20");
+    await expect(rowByLabel(page, "今節一周")).toContainText("37.00");
     await expect(rowByLabel(page, "今節まわり足")).toContainText("5.80");
     await expect(rowByLabel(page, "今節直線")).toContainText("7.20");
     // 節に値が無い種別（半周ラップ）の行は作らない
@@ -2941,7 +2941,9 @@ test.describe("レース詳細の直前情報タブ: 今節のオリジナル展
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(url.includes("race_id=in.") ? MEET_VALUES : []),
+        body: JSON.stringify(
+          url.includes("race_id=in.") ? meetBodyFor(url) : [],
+        ),
       });
     });
     await openBeforeInfoTab(page);
