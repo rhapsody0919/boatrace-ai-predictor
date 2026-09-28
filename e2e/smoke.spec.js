@@ -1476,34 +1476,77 @@ test.describe("レースページ再設計（BOA-168）", () => {
 
     // 2. 選んだ1艇の詳細。既定は1号艇なので4号艇（登番4872）に切り替える
     await page.locator(".rmt-select-chip").nth(3).click();
+    // 予選中は「今節の得点率」、予選終了後は「予選の得点率（確定）」。
+    // このレース（2026-09-24 桐生3R）は9/23で予選が終わった後の一般戦
     await expect(page.locator(".rmt-detail-score")).toContainText(
-      "今節の得点率",
+      "の得点率",
       { timeout: 25000 },
     );
-    // 早見は1行のベタ書きではなく着順ごとに割る（390pxで折り返して読めなくなる）
-    await expect(page.locator(".rmt-forecast-list li")).toHaveCount(6);
-    await expect(page.locator(".rmt-forecast-list li").first()).toContainText(
-      "1着",
-    );
+    // 予選が終わった後のレースでは、早見（今日の着順で得点率がどう動くか）は
+    // 出さない。準優はもう終わっていて得点率で争うものが無いため
+    await expect(page.locator(".rmt-forecast-table")).toHaveCount(0);
+    await expect(page.locator(".rmt-forecast")).toContainText("予選は");
 
-    const trend = page.locator(".rmt-trend");
-    await expect(trend).toContainText("今節の平均ST");
-    await expect(trend).toContainText("前検タイム");
-    // 展示は順位で見る（絶対値だと水面の影響を拾う）
-    await expect(trend).toContainText("展示順位");
+    // ST・展示は走順の折れ線で見せる（数字の羅列はやめた）。
+    // 平均・通常値・前検タイムはグラフの見出しに寄せてある
+    const sparkHeads = page.locator(".rmt-spark-head");
+    await expect(sparkHeads).toHaveCount(2);
+    await expect(sparkHeads.first()).toContainText("今節のST");
+    await expect(sparkHeads.first()).toContainText("通常");
+    await expect(sparkHeads.nth(1)).toContainText("今節の展示");
+    await expect(sparkHeads.nth(1)).toContainText("前検");
+    await expect(page.locator(".rmt-sparks .meet-sparkline")).toHaveCount(2);
 
-    // 日別の走り。同じ節の走しか並ばない列は省くので8列
+    // 6艇の推移（同じ縦の物差しで並べる）。ST/展示を切り替えられる
+    await expect(page.locator(".rmt-trend-row")).toHaveCount(6);
+    await page.locator(".rmt-metric-chip", { hasText: "展示" }).click();
+    await expect(
+      page.locator(".rmt-metric-chip", { hasText: "展示" }),
+    ).toHaveAttribute("aria-pressed", "true");
+
+    // 日別の走り。同じ節の走しか並ばない列は省き、展示の列を足すので9列
     const rows = page.locator(".race-meet-tab .race-history-table tbody tr");
     await expect(rows).toHaveCount(6, { timeout: 25000 });
     await expect(
       page.locator(".race-meet-tab .race-history-table thead th"),
-    ).toHaveCount(8);
+    ).toHaveCount(9);
     const cells = rows.first().locator("td");
     // 同じ節の走しか並ばないので日付は月日だけ（年は毎行同じで幅を食う）
     await expect(cells.nth(0)).toHaveText("9/20");
     await expect(cells.nth(1)).toContainText("5R");
     await expect(cells.nth(3)).toHaveText("5");
-    await expect(cells.nth(4)).toHaveText("0.09");
+    // 展示は「タイム(同レース内の順位)」。上向き/下向きの断定はしない
+    await expect(cells.nth(4)).toHaveText(/^\d\.\d{2}\(\d\)$|^\d\.\d{2}$|^-$/);
+    // STは「タイム(そのレース内のST順位)」。平均STだけでは「毎回相手に
+    // 先んじているか」が読めないため順位を併記する
+    await expect(cells.nth(5)).toHaveText(/^0\.09(\(\d\))?$/);
+    // 展示の推移を「初日→直近」で断定する文言は出さない
+    await expect(page.locator(".race-meet-tab")).not.toContainText("展示順位");
+
+    // 予選中のレース（2026-09-22 桐生3R「予選男子」）では、早見を着順ごとに
+    // 割って出す（1行のベタ書きだと390pxで折り返して読めない）
+    await page.goto("/race/2026-09-22-01-03");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    await expect(page.locator(".rmt-detail-score")).toContainText(
+      "今節の得点率",
+      { timeout: 25000 },
+    );
+    // 得点率早見は公式と同じ行列（行＝艇・列＝1着〜6着）。
+    // ボーダーの目安に届くセルに色が付く
+    const forecast = page.locator(".rmt-forecast-table");
+    await expect(forecast).toBeVisible();
+    // 艇・選手 / 得点率 / 必要得点 / 1着〜6着 の9列
+    await expect(forecast.locator("thead th")).toHaveCount(9);
+    await expect(forecast.locator("thead")).toContainText("1着");
+    await expect(forecast.locator("thead")).toContainText("6着");
+    await expect(forecast.locator("thead")).toContainText("必要得点");
+    await expect(forecast.locator("tbody tr")).toHaveCount(6);
+    // 1着の得点率は6着より必ず高い（同じ艇の行の中で単調に下がる）
+    const firstRow = forecast.locator("tbody tr").first();
+    const forecastTexts = await firstRow.locator("td").allInnerTexts();
+    const forecastCells = forecastTexts.slice(2).map(Number);
+    expect(forecastCells).toHaveLength(6);
+    expect(forecastCells[0]).toBeGreaterThan(forecastCells[5]);
 
     // 節の初戦では前節が混ざらず、空状態になる
     await page.goto("/race/2026-09-20-01-05");

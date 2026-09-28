@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
+import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import RacerGradeBadge from "../racer/RacerGradeBadge";
 import MotorStatBadgeRow from "../MotorStatBadgeRow";
 import MotorRecordStatCards from "../MotorRecordStatCards";
@@ -18,6 +19,7 @@ import DrillDownHeader from "./DrillDownHeader";
 import MotorWakuStatsGrid from "./MotorWakuStatsGrid";
 import MotorRacerWakuDrillDown from "./MotorRacerWakuDrillDown";
 import "./MotorConditionChart.css";
+import "../common/HorizontalScrollHint.css";
 
 function MotorConditionChart({
   initialVenueCode = null,
@@ -252,6 +254,13 @@ function MotorConditionChart({
       return "";
     };
   };
+  // 全艇が null（その会場・その節で1着率が取れていない）の列は出さない。
+  // 「-」だけが6行並んで横幅を50px食い、肝心の2連率・機力指数を画面外へ
+  // 押し出していた（2026-09-27、ファン視点のレビュー。条件別タブで
+  // n=0の行を畳んだBOA-432と同じ考え方）
+  const showFirstPlaceRate = firstPlaceRates.some((v) => v !== null);
+  // 9列の表は390pxでは右が切れる。切れていることに気づけるようにする
+  const rankingScroll = useHorizontalScrollHint([breakdown.length]);
   const finalCountRankClass = rankClassFor(breakdown.map((r) => r.final_count));
   const championshipCountRankClass = rankClassFor(
     breakdown.map((r) => r.championship_count),
@@ -343,8 +352,28 @@ function MotorConditionChart({
         !error &&
         drillDownMotor === null &&
         breakdown.length > 0 && (
-          <div className="table-wrapper">
-            <table className="motor-ranking-table">
+          <div
+            className={`table-wrapper hscroll-hint${rankingScroll.hasMore ? " has-more" : ""}`}
+          >
+            {rankingScroll.hasMore && (
+              <button
+                type="button"
+                className="hscroll-more"
+                onClick={rankingScroll.scrollRight}
+                /* 装飾兼ショートカット。表自体は指でスワイプできるので
+                   支援技術には出さない */
+                aria-hidden="true"
+                tabIndex={-1}
+              >
+                ›
+              </button>
+            )}
+            <div
+              className="table-scroll"
+              ref={rankingScroll.ref}
+              onScroll={rankingScroll.update}
+            >
+              <table className="motor-ranking-table">
               <thead>
                 <tr>
                   <th>{t("analysis.laneHeader")}</th>
@@ -352,7 +381,9 @@ function MotorConditionChart({
                   <th>{t("analysis.motor.motorNumberHeader")}</th>
                   <th>{t("analysis.motor.rate2Header")}</th>
                   <th>{t("analysis.motor.rate3Header")}</th>
-                  <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
+                  {showFirstPlaceRate && (
+                    <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
+                  )}
                   <th>{t("analysis.motor.powerIndexHeader")}</th>
                   <th>{t("analysis.motor.finalCountHeader")}</th>
                   <th>{t("analysis.motor.championshipCountHeader")}</th>
@@ -374,13 +405,15 @@ function MotorConditionChart({
                     </td>
                     <td className="rate">{row.motor_2rate?.toFixed(2)}</td>
                     <td className="rate">{row.motor_3rate?.toFixed(2)}</td>
-                    <td
-                      className={`rate ${firstPlaceRateRankClass(firstPlaceRates[i])}`}
-                    >
-                      {firstPlaceRates[i] !== null
-                        ? `${firstPlaceRates[i].toFixed(1)}%`
-                        : "-"}
-                    </td>
+                    {showFirstPlaceRate && (
+                      <td
+                        className={`rate ${firstPlaceRateRankClass(firstPlaceRates[i])}`}
+                      >
+                        {firstPlaceRates[i] !== null
+                          ? `${firstPlaceRates[i].toFixed(1)}%`
+                          : "-"}
+                      </td>
+                    )}
                     <td
                       className={`rate power-index ${
                         row.power_index > 0
@@ -407,7 +440,8 @@ function MotorConditionChart({
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         )}
 

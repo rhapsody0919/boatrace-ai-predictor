@@ -58,14 +58,24 @@ export function isSpecialStage(stage) {
  * 今節の得点・走数・得点率を計算する（純関数）。
  *
  * @param {Array<Object>} meetRecords `buildMeetResults` の戻り値（節内の走）
+ * @param {{prelimEndRaceId?: string|null}} [options] `prelimEndRaceId` は
+ *   節で最初に組まれた準優勝戦の `race_id`。**これ以降のレースは算入しない**
  * @returns {{points: number, runs: number, rate: number|null}}
  */
-export function computeSeriesScore(meetRecords) {
+export function computeSeriesScore(meetRecords, options = {}) {
+  const { prelimEndRaceId = null } = options;
   const rows = Array.isArray(meetRecords) ? meetRecords : [];
   let points = 0;
   let runs = 0;
   rows.forEach((r) => {
     if (isExcludedStage(r.raceStage)) return;
+    // **予選が終わったらそこで確定**。予選終了後の一般戦・特別選抜戦・
+    // 準優・優勝戦は公式の得点率に算入されない。公式の得点率一覧も
+    // 「4日目12R終了時点」と予選終了時点で止まる（2026-09-27、若松G1の
+    // 最終日に公式ページで確認）。`prelimEndRaceId` は**予選の最後の
+    // レース**なので、それより後（>）を落とす（>= だと予選最終レース自体が
+    // 落ちる）
+    if (prelimEndRaceId && String(r.raceId) > prelimEndRaceId) return;
     // **結果がまだ無いレースは分母に入れない**。節の全選手を引く経路では
     // その日のこれから走るレースも `race_entries` に入っており、数えると
     // 「得点率4.00（4走）なのに日別の表は3行」という食い違いが出る
@@ -138,11 +148,16 @@ export function listSeriesFinishes(meetRecords) {
  *
  * @param {{entries: Array<Object>}|null} scoreboard `getMeetScoreboard` の戻り値
  * @returns {Array<{racerId: number, playerName: string, points: number,
- *   runs: number, rate: number, rank: number}>} 得点率の降順。同率は同順位
+ *   runs: number, rate: number, rank: number|null, withdrawn: boolean}>}
+ *   得点率の降順。同率は同順位。途中で節を離脱した選手は `rank: null`
  */
 export function buildMeetRanking(scoreboard) {
   const entries = scoreboard?.entries;
   if (!Array.isArray(entries) || entries.length === 0) return [];
+  const prelimEndRaceId = scoreboard?.prelimEndRaceId ?? null;
+  // 途中で節を離脱した選手（途中帰郷）は順位の対象から外す。公式の順位表と
+  // 同じ扱い。得点率自体は出すので、行が消えることはない（rank が null になる）
+  const withdrawn = new Set(scoreboard?.withdrawnRacerIds ?? []);
 
   const byRacer = new Map();
   entries.forEach((e) => {
@@ -153,7 +168,7 @@ export function buildMeetRanking(scoreboard) {
 
   const rows = [...byRacer.entries()]
     .map(([racerId, { playerName, rows: runs }]) => {
-      const score = computeSeriesScore(runs);
+      const score = computeSeriesScore(runs, { prelimEndRaceId });
       return {
         racerId,
         playerName,
@@ -164,14 +179,46 @@ export function buildMeetRanking(scoreboard) {
     .filter((r) => r.rate !== null)
     .sort((a, b) => b.rate - a.rate);
 
-  // 同率は同順位（1,2,2,4…）。公式の得点率一覧と同じ付け方
+  // 同率は同順位（1,2,2,4…）。公式の得点率一覧と同じ付け方。
+  // 離脱者は順位を飛ばさず（母集団から外して）詰める
   let rank = 0;
   let prev = null;
-  return rows.map((r, i) => {
-    if (prev === null || Math.abs(r.rate - prev) > 0.0001) rank = i + 1;
+  let counted = 0;
+  return rows.map((r) => {
+    if (withdrawn.has(r.racerId)) return { ...r, rank: null, withdrawn: true };
+    counted += 1;
+    if (prev === null || Math.abs(r.rate - prev) > 0.0001) rank = counted;
     prev = r.rate;
-    return { ...r, rank };
+    return { ...r, rank, withdrawn: false };
   });
+}
+
+/**
+ * ボーダーに届くのに必要な得点（純関数）。
+ *
+ * 公式の「必要得点」＝「準優ボーダーをクリアするために必要な得点」を、
+ * 公式の実データから逆算した式で再現する
+ * （https://www.boatrace.jp/static_extra/pc/guide/guide-7.html の図:
+ *  篠崎 得点率5.75・4走・残り2走 → 13点、池田 7.00・5走・残り1走 → 1点。
+ *  どちらも `ボーダー × (走数 + 残り走数) − 得点` で一致する）。
+ *
+ * @param {{points: number, runs: number}} current `computeSeriesScore` の戻り値
+ * @param {number|null} border ボーダー（準優の目安）の得点率
+ * @param {number} remaining 残りの予選走数（表示中のレースを含む）
+ * @returns {{needed: number, max: number, reachable: boolean}|null}
+ *   `needed` は必要得点（0未満は0に丸める）、`max` は残り走で取りうる最大得点、
+ *   `reachable` は届く見込みがあるか。残り0走・ボーダー不明なら null
+ */
+export function pointsNeededForBorder(current, border, remaining) {
+  if (border === null || border === undefined) return null;
+  if (!remaining || remaining <= 0) return null;
+  const points = current?.points ?? 0;
+  const runs = current?.runs ?? 0;
+  const raw = border * (runs + remaining) - points;
+  // 得点は整数なので切り上げる。既に足りている場合は0
+  const needed = Math.max(0, Math.ceil(raw - 1e-9));
+  const max = SCORE_POINTS[1] * remaining;
+  return { needed, max, reachable: needed <= max };
 }
 
 /**

@@ -57,6 +57,10 @@ import "./RaceHistoryTable.css";
  *   外へ押し出されるため省く
  * @param {boolean} [compactDate] 日付を月日だけにする（`9/24`）。同じ節の走
  *   しか並ばない今節タブ向け。選手ページ・直近10走は年をまたぐので既定のまま
+ * @param {boolean} [showExhibition] 「展示」列（展示タイムと同レース内の
+ *   展示順位）を足す。今節タブが使う。**「初日→直近」の2点比較で
+ *   上向き/下向きと断定する表示をやめた代わり**に、走ごとの生の数字を
+ *   並べて読み手に委ねる（2026-09-27）
  * @param {boolean} [showEntryCourse] 「進入」列（実際に進入したコース）を
  *   枠番の隣に足す。今節タブ（phase a FR-3）は「日別・進入・着順・ST」を
  *   見せるのが目的で進入が要る。直近10走・選手ページでは出さない
@@ -67,6 +71,7 @@ function RaceHistoryTable({
   rows,
   buildRaceHref = (raceId) => `/race/${raceId}`,
   showEntryCourse = false,
+  showExhibition = false,
   omitColumns = [],
   compactDate = false,
 }) {
@@ -96,6 +101,7 @@ function RaceHistoryTable({
             {showEntryCourse && (
               <th>{t("raceHistoryTable.entryCourse")}</th>
             )}
+            {showExhibition && <th>{t("raceHistoryTable.exhibition")}</th>}
             <th>{t("raceHistoryTable.startTiming")}</th>
             <th>{t("raceHistoryTable.finish")}</th>
             <th>{t("raceHistoryTable.technique")}</th>
@@ -131,9 +137,30 @@ function RaceHistoryTable({
               {shows("stage") && <td>{race.raceStage ?? "-"}</td>}
               <td>{race.boatNumber}</td>
               {showEntryCourse && <td>{race.entryCourse ?? "-"}</td>}
+              {showExhibition && (
+                <td>
+                  {race.exhibitionTime !== null &&
+                  race.exhibitionTime !== undefined
+                    ? race.exhibitionRank
+                      ? t("raceHistoryTable.exhibitionCell", {
+                          time: Number(race.exhibitionTime).toFixed(2),
+                          rank: race.exhibitionRank,
+                        })
+                      : Number(race.exhibitionTime).toFixed(2)
+                    : "-"}
+                </td>
+              )}
+              {/* 「毎回ちゃんと届いているか」は平均STより、そのレースで
+                  何番目だったかの方が直接的（日和の「安定率」が答えようと
+                  している問いに、%より読みやすい形で答える） */}
               <td>
                 {race.startTiming !== null
-                  ? Number(race.startTiming).toFixed(2)
+                  ? race.startTimingRank
+                    ? t("raceHistoryTable.startTimingCell", {
+                        time: Number(race.startTiming).toFixed(2),
+                        rank: race.startTimingRank,
+                      })
+                    : Number(race.startTiming).toFixed(2)
                   : "-"}
               </td>
               <td>{race.finishRank ?? t("basicInfo.finishUnknown")}</td>

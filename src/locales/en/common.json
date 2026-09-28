@@ -263,7 +263,10 @@
       "G2": "G2",
       "G3": "G3",
       "SG": "SG"
-    }
+    },
+    "exhibition": "Trial",
+    "exhibitionCell": "{{time}}({{rank}})",
+    "startTimingCell": "{{time}}({{rank}})"
   },
   "panel": {
     "noData": "Prediction data is not available",
@@ -564,7 +567,8 @@
     "top2RateAbbrev": "Top-2",
     "top3RateAbbrev": "Top-3",
     "prevAbbrev": "Prev",
-    "avgAbbrev": "Avg"
+    "avgAbbrev": "Avg",
+    "exhibitionChartNote": "A longer bar means a faster trial (gap to the slowest boat). The number is the actual exhibition time in seconds."
   },
   "pitReport": {
     "title": "Pit Report (racer comments)",
@@ -622,7 +626,35 @@
     "finishDq": "DQ",
     "smallSampleLegend": "⚠ = fewer than three runs (the score rate still swings).",
     "finishLabel": "Finishes",
-    "borderNote": "Rows above the dashed line are within the semi-final line (the card is not set yet, so this is not final)."
+    "borderNote": "Rows above the dashed line are within the semi-final line (the card is not set yet, so this is not final).",
+    "prelimOverNote": "The preliminaries ended on {{date}}. The score rate is final and today's finish will not change it.",
+    "rankSourceNote": "The series rank is our own calculation. Where the official score-rate list is available we use its remarks (excluded from prizes, withdrew mid-series) to drop racers from the ranking; otherwise we infer a withdrawal from having no start on the final day of the series.",
+    "sparkStTitle": "Start timing this series",
+    "sparkExTitle": "Trial time this series",
+    "sparkBaselineSt": "Usual {{value}}",
+    "sparkBaselinePretest": "Pre-test {{value}}",
+    "sparkLast": "Last {{value}}",
+    "sparkNote": "For ST the dashed line is the racer's usual average; for the trial it is the venue-wide average trial time for that day (how heavy the water was; it can move by nearly 0.1s). Higher is faster, and above the dashed line means fast for that day's water. The large dot is the latest run. The vertical scale is stretched to this racer's own min-max for the series, so the size of the peaks cannot be compared between racers. We do not label it as improving or declining.",
+    "sparkStMeta": "Avg {{avg}} ({{n}} runs) / usual {{base}}",
+    "sparkExMetaRank": "Pre-test {{value}} (#{{rank}})",
+    "compareTrendTitle": "How the six have moved this series",
+    "compareTrendSt": "ST",
+    "compareTrendEx": "Trial",
+    "compareTrendNote": "All six ran the same series on the same water, so they share one scale (the min-max across the six) and you can compare the heights of the lines across rows directly. The dashed line is the average of the six. Higher is faster; the large dot is the latest run.",
+    "compareTrendEmpty": "Not enough runs yet to draw a trend",
+    "prelimOverNoteDay": "The preliminaries ended on day {{day}} ({{date}}). The score rate is final and today's finish will not change it.",
+    "trendLastHeader": "Last",
+    "forecastTitle": "Score-rate outlook (how today's finish moves it)",
+    "forecastRankHeader": "{{rank}}",
+    "forecastNote": "A highlighted cell means that finish should reach the semi-final line ({{slots}}th = {{rate}}). \"Points needed\" is what it takes to reach that line.",
+    "forecastNoteNoBorder": "The score rate you would have after that finish. Assumes a clean finish.",
+    "colNeeded": "Points needed",
+    "neededPoints": "{{points}}",
+    "neededUnreachable": "Out of reach",
+    "forecastDetailSummary": "How the line and the points needed are derived",
+    "forecastDetail": "The line is the score rate of the {{slots}}th racer when the preliminaries ended. It can differ from the real border by a few places (measured: 0.07 at Wakamatsu G1, 0.83 at a Kiryu general meet — we cannot exclude racers who withdrew mid-series or were excluded from prizes, and general meets do not always pick semi-finalists purely by score rate). Points needed = line x (runs so far + remaining runs) - points so far, where remaining runs are the carded preliminary races for today (some racers run twice, so it differs per racer). It assumes a clean finish, and we never call it a lock.",
+    "withdrawn": "N/A",
+    "withdrawnTitle": "No start on the final day of the series, so treated as having withdrawn (the official table also drops mid-series withdrawals from the ranking)"
   },
   "basicInfo": {
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",
@@ -683,10 +715,6 @@
     "meetTrendStPush": "−{{diff}}, pushing harder",
     "meetTrendStCareful": "+{{diff}}, holding back",
     "meetTrendStFlat": "same as usual",
-    "meetTrendExhibition": "Exhibition rank {{first}} → {{last}} ({{n}} races, {{firstTime}}→{{lastTime}})",
-    "meetTrendExhibitionUp": "up {{diff}} place(s)",
-    "meetTrendExhibitionDown": "down {{diff}} place(s)",
-    "meetTrendExhibitionFlat": "unchanged",
     "meetEmpty": "No races yet in this series (this is the racer's first one)",
     "conditionsNote": "{{metric}} by condition (our own tally, all available data). It will not match the official figures in the bars above, which are calculated differently.",
     "conditions": {
@@ -716,8 +744,7 @@
     "periodAvgSt": "Avg. ST {{value}}",
     "periodFetchError": "Could not load the previous term record",
     "meetScoreForecastTitle": "How today's finish moves the score rate",
-    "meetTrendExhibitionDownSameTime": "Same time; the others improved, {{diff}} place(s) down",
-    "meetTrendExhibitionUpSameTime": "Same time; the others slowed, {{diff}} place(s) up"
+    "meetScorePrelimOver": "Preliminary score rate {{rate}} ({{n}} runs, our calculation, final)"
   },
   "dataTable": {
     "title": "Data Race Card",

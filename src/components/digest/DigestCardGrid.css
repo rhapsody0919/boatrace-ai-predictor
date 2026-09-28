@@ -3,43 +3,35 @@
  * 折りたたみで1枚が低くなったため、480px以上で2列に増やす
  * （旧: 768px以上で2列。1列のままだと低いカードが縦に長く伸びるだけになる）。
  *
- * 列数は固定（480px以上で2列、1024px以上で3列）。まくりは該当0〜数件の日が
- * あるため、枚数が列数を下回るセクションでは右側に空の列が残っていた
- * （BOA-460。1440pxで718px分の空白。`npm run test:layout` が「空トラック」として
- * 検知する実在の崩れ）。`repeat(auto-fit, minmax(Xpx, 1fr))` に置き換えると
- * 最小幅Xを決めることになり、「480〜1023pxで最大2列・1024px以上で最大3列」という
- * 現行の刻みを幅で保証できなくなる（1023pxで3列入る等）。そのため
- * **枚数の上限を `--n1` / `--n2` として受け取り、メディアクエリ側で上書きする**。
- * 同じ詳細度なので、base より後に書く順序に意味がある。
+ * 列数は「上限」として効かせ、カードが上限より少ない日は列を作らない。
+ * repeat(2|3, ...) の固定列だと、候補が1件の日に右側へ空列が残る
+ * （E2E layout.spec.js の「空トラック」で検出。当日データ次第で崩れていた）。
+ * auto-fit + 最小幅を「上限列数で割った幅」にすると、列数は上限を超えず、
+ * 使われない列は潰れて残りのカードが幅いっぱいに広がる。
  */
 
 .digest-grid {
+  --digest-gap: 0.6rem;
   display: grid;
   grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 0.6rem;
+  gap: var(--digest-gap);
 }
 
 @media (min-width: 480px) {
   .digest-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .digest-grid--n1 {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(calc((100% - var(--digest-gap)) / 2), 1fr)
+    );
   }
 }
 
 @media (min-width: 1024px) {
   .digest-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .digest-grid--n1 {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-
-  .digest-grid--n2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(calc((100% - 2 * var(--digest-gap)) / 3), 1fr)
+    );
   }
 }
 
