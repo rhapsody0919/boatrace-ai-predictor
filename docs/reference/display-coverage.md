@@ -12,9 +12,9 @@
 | 区分 | 件数 |
 |---|---|
 | テーブル・ビューの定義 | 79 |
-| 読んでいる（テーブルを直接） | 51 |
+| 読んでいる（テーブルを直接） | 52 |
 | 読んでいる（RPC経由のみ） | 0 |
-| 画面から読んでいない（例外登録あり） | 24 |
+| 画面から読んでいない（例外登録あり） | 23 |
 | **画面から読んでいない（例外登録なし＝要判断）** | **4** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 0 |
 
@@ -33,7 +33,7 @@
 | `race_series` | 表 | 084_race_series.sql | なし | GRANT（095_phase_a_numeric_public_read.sql） |  |
 | `race_special_notes` | 表 | 060_race_special_notes.sql | なし | 記述なし |  |
 
-## 画面から読んでいない（例外登録あり）（24件）
+## 画面から読んでいない（例外登録あり）（23件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -44,7 +44,6 @@
 | `kb_archive_venue_days` | 表 | 074_kb_archive_tables.sql | なし | 記述なし | K/Bファイルの生アーカイブ（074）。上と同じ |
 | `model_bet_candidates` | 表 | 030_ai_model_redesign_schema.sql | なし | ポリシー（030_ai_model_redesign_schema.sql） | 030（AI予想モデル刷新）の中間テーブル。読み手は scripts/ のみ |
 | `model_experiments` | 表 | 001_schema.sql | なし | 記述なし | 001_schema.sql の初期設計に由来するモデル実験用。読み手は scripts/ のみ |
-| `prediction_odds` | 表 | 011_prediction_odds.sql | なし | ポリシー（011_prediction_odds.sql） | 2026-08-14のAI予想モデル刷新で画面の買い目オッズ表示を削除済み。BOA-404 で race_odds からの導出に置き換え中 |
 | `race_notices_health` | 表 | 060_race_special_notes.sql | なし | 記述なし | 取得監視の健全性指標（060）。画面ではなく data_health とSlack通知が使う |
 | `race_outcome_frequencies` | 表 | 030_ai_model_redesign_schema.sql | なし | ポリシー（030_ai_model_redesign_schema.sql） | 030（AI予想モデル刷新）の中間テーブル。読み手は scripts/ のみ |
 | `racer_course_technique_stats` | 表 | 098_morning_data_digest.sql | なし | GRANT（098_morning_data_digest.sql） | /today（morning digest）の集計の中間テーブル（098）。画面は集計結果の morning_digest_rows を読む |
@@ -62,7 +61,7 @@
 | `venue_course_technique_baseline` | 表 | 098_morning_data_digest.sql | なし | GRANT（098_morning_data_digest.sql） | 会場×グレード×実進入コースの決まり手ベースライン（098）。上と同じく集計の中間テーブル |
 | `venue_entry_course_stats` | 表 | 064_venue_entry_course_stats.sql | なし | 記述なし | 「表示には使わず、自前計算の全国値の検証にのみ使う」とユーザー判断済み（BOA-293、orchestration.md）。読み手が無いことは既知 |
 
-## 画面から読んでいる（51件）
+## 画面から読んでいる（52件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -81,6 +80,7 @@
 | `nige_second_by_course` | 表 | 094_course_baselines.sql | 画面が直接 | GRANT（094_course_baselines.sql） |  |
 | `outcome_distribution` | 表 | 020_outcome_distribution.sql | API・画面が直接 | GRANT（020_outcome_distribution.sql） |  |
 | `poirot_predictions` | 表 | 021_poirot_predictions.sql | 画面が直接 | ポリシー（021_poirot_predictions.sql） |  |
+| `prediction_odds` | 表 | 011_prediction_odds.sql | 画面が直接 | ポリシー（011_prediction_odds.sql） |  |
 | `predictions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_today_races(API) | ポリシー（001_schema.sql） |  |
 | `race_conditions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_today_races(API) | ポリシー（076_enable_rls_on_public_tables.sql） |  |
 | `race_entries` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_exhibition_trend(画面), get_race_return_rate(画面), get_race_st_predictability(画面), get_race_technique_profile(画面), get_today_races(API) | ポリシー（001_schema.sql） |  |

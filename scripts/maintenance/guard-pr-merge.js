@@ -20,6 +20,11 @@
  *    実行した場合は止まり、外から実行した場合だけ消えるという直感に反する挙動。
  *    2026-09-25に、これで数夜かけて取得したK/Bファイル約2,730日分を失っている。
  *
+ * 3. 並行セッションのオーケストレーションが決めたマージ順を守る。
+ *
+ *    台帳（scripts/lib/mergeOrder.js）で「このPRは #N の後に」とされていれば、#N が MERGED に
+ *    なるまで止める。台帳が無い・PRが台帳に無い・台帳が読めない・ghが失敗した場合は素通し。
+ *
  * 判定できない場合（PR番号が読めない、ghが応答しない等）は素通しする。
  * 止めるべきものを見逃す方が、止めるべきでないものを止めて作業を詰まらせるより軽いため。
  *
@@ -31,6 +36,12 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PRECIOUS_PATHS } from "../lib/preciousPaths.js";
+import {
+  judgeMergeOrder,
+  ledgerPath,
+  prerequisitesOf,
+  readLedger,
+} from "../lib/mergeOrder.js";
 
 const REQUIRED_CHECK = "verify";
 /** まだ結果が出ていない状態。落ちたのではないので「待て」に倒す。 */
@@ -198,6 +209,24 @@ export function judgeChecks(pr, checks) {
   return null;
 }
 
+function checkMergeOrder(pr) {
+  const file = ledgerPath(repoRoot);
+  if (!file) return null;
+  let prerequisites;
+  try {
+    prerequisites = prerequisitesOf(readLedger(file), pr);
+  } catch {
+    return null; // 台帳が壊れていても作業は止めない（CLIの list で気づける）
+  }
+  if (prerequisites.length === 0) return null;
+  const states = {};
+  for (const n of prerequisites) {
+    const state = gh(["pr", "view", String(n), "--json", "state", "-q", ".state"]);
+    if (state) states[n] = state;
+  }
+  return judgeMergeOrder(pr, prerequisites, states);
+}
+
 function checkQualityGate(pr) {
   const raw = gh(["pr", "checks", pr, "--json", "name,state"]);
   if (!raw) return null;
@@ -272,6 +301,9 @@ function main() {
     extractExplicitPrNumber(command) ??
     gh(["pr", "view", "--json", "number", "-q", ".number"]);
   if (!pr || !/^\d+$/.test(pr)) respond("allow");
+
+  const order = checkMergeOrder(pr);
+  if (order) respond(order.decision, order.reason);
 
   const gate = checkQualityGate(pr);
   if (gate) respond(gate.decision, gate.reason);

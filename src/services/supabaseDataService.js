@@ -22,6 +22,7 @@ import { isFinalStage } from "../constants/raceStageConfig";
 import { finishPositionOf } from "../components/race/basicInfoStats.js";
 import {
   countsForSeriesScore,
+  shouldUseOfficialSeries,
   prelimEndRaceIdOf,
   semifinalRaceIdsOf,
   scoreTableFor,
@@ -3899,10 +3900,14 @@ export const supabaseDataService = {
 
       const raceIds = [...new Set(entries.map((e) => e.race_id))];
       // race_gradeはraces側のカラム（race_conditions側は017マイグレーションで
-      // 削除済み）。race_conditions.series_day/is_final_dayはgenerate-predictions.js
-      // で常にnull書き込みが確定しているため（実データも大部分がnull、
-      // 2026-09-15確認）、この関数では取得しない（race_title/race_stageは
-      // 別カラムでBOA-226以前から実データが入っているため下記で取得する）。
+      // 削除済み）。race_conditions.series_day/is_final_dayは**下記で取得する**。
+      // 以前ここには「generate-predictions.jsが常にnullを書くため取得しない」と
+      // 書いてあったが、BOA-226（update-race-info.jsのscrapeSeriesDay()）と
+      // BOA-390のバックフィルで埋まり、条件別タブ（phase a FR-2）の初日・最終日行が
+      // 実際にこの2列を読んでいる（2026-09-28実測で2026-02-01以降
+      // 36,607/36,629行＝99.94%。残る22行は当日＝スクレイプ前の分）。
+      // ただし2025-12は12行・2026-01は0行で、選手の窓の前半はrace_conditionsの
+      // 行そのものが無い（BOA-498）。
       // rank4〜6はBOA-238で追加（過去データは未バックフィルのためnullのままの
       // 行がある）。start_timingは平均ST（BOA-306フィードバック#1で会場/グレード
       // フィルタ対応が必要になったため追加、race_start_timingsから取得）。
@@ -4129,7 +4134,9 @@ export const supabaseDataService = {
    * 「選手の絶対最新の節」を返すのに対し、こちらはbeforeRaceIdより前の節を
    * 返す点が異なる（過去日付のレース詳細ページを閲覧した場合に、選手の
    * 最新（未来）の節を誤って表示しないため）
-   * @returns {Promise<Array<{raceId: string, exhibitionTime: number|null}>>} 昇順（古い→新しい）
+   * `boatNumber` も返す（追加クエリ0本）。オリジナル展示（BOA-473）は
+   * `(race_id, boat_number)` で引くため、呼び出し側がこの2つを組にして使う。
+   * @returns {Promise<Array<{raceId: string, boatNumber: number, exhibitionTime: number|null}>>} 昇順（古い→新しい）
    */
   getRacerMeetExhibitionTrendBefore(racerId, motorNumber, beforeRaceId) {
     return withCache(
@@ -4173,11 +4180,82 @@ export const supabaseDataService = {
 
         return meet.map((e) => ({
           raceId: e.race_id,
+          boatNumber: e.boat_number,
           exhibitionTime:
             exhibitionByKey.get(`${e.race_id}-${e.boat_number}`) ?? null,
         }));
       },
     );
+  },
+
+  /**
+   * 今節のオリジナル展示（一周・半周ラップ・まわり足・直線）を、**レースIDの集合に対して
+   * 1クエリ**で引く（[BOA-473](https://linear.app/boat-ai/issue/BOA-473) / phase a FR-4b の続き）。
+   *
+   * ## なぜ選手ごとではなく集合で引くか
+   *
+   * 直前情報タブの「今節展示情報」は選手ごとに
+   * `getRacerMeetExhibitionTrendBefore` を呼ぶ（6選手 × 2クエリ）。同じ形で
+   * オリジナル展示も選手ごとに引くと **+6本**になり、非機能要件（1タブあたり+3本以内）を
+   * 超える。6選手の今節はほぼ同じレース集合なので、**IDを束ねて1本**にする。
+   *
+   * ## なぜ「今節展示情報」に出すのか
+   *
+   * 直前情報タブの「展示情報」に出しているオリジナル展示（BOA-452）は、**そのレースの
+   * 展示が発表されてからしか出ない**（発走30〜10分前）。それまでの間、機力の内訳は
+   * 画面に何も無い。ボートレース日和は同じ画面に「今節展示情報」として前走と節平均を
+   * 併記していて、**締切前に読めるのはこちらだけ**。
+   *
+   * 戻り値の `state` は `getRaceOriginalExhibition` と同じ規約:
+   *   "published" 値がある / "empty" まだ無い / "forbidden" 匿名に権限が無い（096未適用）
+   * 終端でない状態には `fetchFailed: true` を付けて `withCache` に焼き付けない。
+   *
+   * @param {string[]} raceIds 今節のレースID（表示中のレースより前）
+   * @returns {Promise<{state: string, byKey: Object<string, Object<string, number>>}>}
+   *   `byKey` のキーは `` `${raceId}-${boatNumber}` ``、値は `{ 一周: 36.9, ... }`
+   */
+  getMeetOriginalExhibitionByRaceBoat(raceIds) {
+    const ids = [...new Set(raceIds ?? [])].filter(Boolean).sort();
+    if (ids.length === 0) {
+      return Promise.resolve({ state: "empty", byKey: {}, fetchFailed: true });
+    }
+    // **IDを全部キーに入れる**。件数＋最後のIDだけだと、同じ節・同じ最終レースで
+    // 中身の違う集合（選手の顔ぶれが変わって別のレースが混ざる等）が同じキーに
+    // なりうる。全部繋ぐと末尾が `YYYY-MM-DD-VV-RR` のままなので、
+    // inferTtlFromKey の過去レース判定（7日TTL）もそのまま効く
+    return withCache(`meet-original-exhibition-${ids.join(",")}`, async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+      let rows;
+      try {
+        rows = await fetchAllByIn(
+          "race_original_exhibition_values",
+          "race_id, boat_number, kind, value",
+          "race_id",
+          ids,
+        );
+      } catch (error) {
+        if (isPermissionDeniedError(error)) {
+          // 096（匿名へのSELECT公開）が未適用なら行ごと出さない
+          return { state: "forbidden", byKey: {}, fetchFailed: true };
+        }
+        throw error;
+      }
+
+      const byKey = {};
+      (rows ?? []).forEach((row) => {
+        // 欠測（BOATCASTの `--.--`）は NULL で入る。平均の分母に入れない
+        if (row.value === null || row.value === undefined) return;
+        const key = `${row.race_id}-${row.boat_number}`;
+        byKey[key] = { ...(byKey[key] ?? {}), [row.kind]: Number(row.value) };
+      });
+
+      if (Object.keys(byKey).length === 0) {
+        return { state: "empty", byKey: {}, fetchFailed: true };
+      }
+      return { state: "published", byKey };
+    });
   },
 
   /**
@@ -4831,7 +4909,10 @@ export const supabaseDataService = {
    * 巻き添えで表示できなくなる。これを避けるため、失敗時は新列を除いた旧列のみで再取得する
    */
   getRaceMotorMaintenanceBreakdown(raceId) {
-    return withCache(`race-motor-maintenance-${raceId}`, async () => {
+    // v2: 展示進入（exhibition_course、マイグレーション082）・欠場（is_absent）・
+    // 取得時刻（updated_at）を足した（BOA-485）。キーを変えないと、localStorage に
+    // 残った旧形（列なし）が過去レースで最大7日返り、展示進入が「—」のまま出る
+    return withCache(`race-motor-maintenance-v2-${raceId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4845,7 +4926,9 @@ export const supabaseDataService = {
         ({ data } = await supabase
           .from("exhibition_data")
           .select(
-            "boat_number, tilt, adjustment_weight, propeller_change, parts_changed, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank",
+            // exhibition_course/is_absent/updated_at は直前情報タブの「展示進入」用
+            // （BOA-485）。同じ行の別列なので、クエリ本数は増やさない（BOA-357）
+            "boat_number, tilt, adjustment_weight, propeller_change, parts_changed, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank, exhibition_course, is_absent, updated_at",
           )
           .eq("race_id", raceId));
       } catch (error) {
@@ -4865,6 +4948,41 @@ export const supabaseDataService = {
       }
 
       return data ?? [];
+    });
+  },
+
+  /**
+   * 指定レースの出走表の体重（race_entries.weight_kg、マイグレーション081）を取得する（BOA-484）。
+   *
+   * 直前情報タブで、展示前（exhibition_data の行がまだ無い時点）に体重を出すために使う。
+   * 公式の出走表の体重は、直前情報ページの体重と同じ時刻に公開され、値も一致する
+   * （2026-09-23〜27の5,075艇で99.4%一致。差は展示の直前の再計量）。race_entries へは
+   * 発走60分前の出走表の取得（race_info スロット）で入る。朝の初期化の時点では NULL。
+   *
+   * 戻り値:
+   *   { state: "published", byBoat: { [boat_number]: number } }  1艇以上の体重がある
+   *   { state: "empty", byBoat: {}, fetchFailed: true }            まだ公開されていない
+   * empty はキャッシュさせない（fetchFailed。公開された後もリロードまで出なくなるため）。
+   * 取得の失敗は例外のまま投げる（呼び出し側で「取得失敗」として扱う）
+   */
+  getRaceEntryWeights(raceId) {
+    return withCache(`race-entry-weights-${raceId}`, async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+      const { data } = await supabase
+        .from("race_entries")
+        .select("boat_number, weight_kg")
+        .eq("race_id", raceId);
+      const byBoat = {};
+      (data ?? []).forEach((row) => {
+        const weight = parseFloat(row.weight_kg);
+        if (Number.isFinite(weight)) byBoat[row.boat_number] = weight;
+      });
+      if (Object.keys(byBoat).length === 0) {
+        return { state: "empty", byBoat: {}, fetchFailed: true };
+      }
+      return { state: "published", byBoat };
     });
   },
 
@@ -6278,7 +6396,7 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v11-${raceId}`, async () => {
+    return withCache(`meet-scoreboard-v12-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る
@@ -6379,7 +6497,13 @@ export const supabaseDataService = {
         // 無い開催では出走の有無からの推定にフォールバックする
         supabase
           .from("racer_series_points")
-          .select("racer_id, remarks")
+          // 備考（賞典除外・途中帰郷）に加えて、**得点率そのもの**も使う。
+          // 公式の得点率は `(着順点 − 減点) ÷ 走数` で、当社は減点を持って
+          // いないため、減点のある選手とその下の全員の順位がズレる（BOA-475）。
+          // 走数の列は無いが `placements` の文字数から出せる
+          .select(
+            "racer_id, remarks, placements, total_points, penalty_points",
+          )
           .eq("venue_code", venueCode)
           .eq("meet_start_date", meetStart)
           .then(({ data }) => data ?? []),
@@ -6417,6 +6541,30 @@ export const supabaseDataService = {
         // 52人中32人の得点率が公式とズレた（公式と照合して5/5で確認）。
         // 無い（予選中でまだ予選が終わっていない）なら null
         prelimEndRaceId: prelimEndRaceIdOf(conditions ?? []),
+        // **公式の得点率一覧（`racer_series_points`）の行**。
+        // `buildMeetRanking` がこれを受け取ると、当社計算ではなく公式の値で
+        // 得点率・節内順位・着順の並びを出す（BOA-475）。
+        //
+        // **予選が終わった後の表示でだけ渡す**。公式の行は節に1行しか無く、
+        // 中身は「◯日目１２R終了時点」＝予選終了時点のスナップショットなので、
+        // 予選中のレースを開いているときに使うと**まだ走っていない走を含む
+        // 得点率・順位**を出してしまう（レース詳細は過去日も開ける）。
+        // 予選中は従来どおり当社計算で、減点のズレは残る（公式の行が生えるのも
+        // 4日目以降なので、予選中は直しようが無い）
+        officialByRacer: (() => {
+          // 「使ってよいか」の判断は純関数に切り出してある（回帰テスト可能）
+          if (
+            !shouldUseOfficialSeries(
+              stageById.get(raceId) ?? null,
+              raceId,
+              prelimEndRaceIdOf(conditions ?? []),
+            )
+          )
+            return null;
+          const rows = officialSeries ?? [];
+          if (rows.length === 0) return null;
+          return Object.fromEntries(rows.map((r) => [r.racer_id, r]));
+        })(),
         // **途中で節を離脱した選手**（途中帰郷）。公式の順位表はこの選手たちを
         // 順位から外すため、当社が全員で順位を振ると下位ほどズレる。
         //

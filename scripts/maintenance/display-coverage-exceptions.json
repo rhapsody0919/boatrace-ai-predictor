@@ -21,7 +21,6 @@
     "racer_course_technique_stats": "/today（morning digest）の集計の中間テーブル（098）。画面は集計結果の morning_digest_rows を読む",
     "venue_course_technique_baseline": "会場×グレード×実進入コースの決まり手ベースライン（098）。上と同じく集計の中間テーブル",
     "venue_entry_course_stats": "「表示には使わず、自前計算の全国値の検証にのみ使う」とユーザー判断済み（BOA-293、orchestration.md）。読み手が無いことは既知",
-    "prediction_odds": "2026-08-14のAI予想モデル刷新で画面の買い目オッズ表示を削除済み。BOA-404 で race_odds からの導出に置き換え中",
     "bet_filters": "001_schema.sql の初期設計に由来する運用・実験用。読み手は scripts/ のみ",
     "daily_bet_summary": "001_schema.sql の初期設計に由来する運用・実験用。読み手は scripts/ のみ",
     "model_experiments": "001_schema.sql の初期設計に由来するモデル実験用。読み手は scripts/ のみ",
