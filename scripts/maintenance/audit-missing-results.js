@@ -36,6 +36,7 @@
  *   （--apply は cancelled のみを confirmed にする。phantom は消さず、削除用のSQLを出力する）
  */
 import { fetchAll, supabase } from "../lib/supabaseClient.js";
+import { isCancellationConfirmed } from "../lib/cancellationStatus.js";
 import {
   raceIndexUrl,
   parseVenueStatuses,
@@ -82,7 +83,7 @@ async function findMissingRaces(from, to) {
   return races.filter((r) => {
     if (seen.has(r.race_id)) return false;
     seen.add(r.race_id);
-    if (r.cancellation_status === "confirmed") return false;
+    if (isCancellationConfirmed(r.cancellation_status)) return false;
     return !withRank1.has(r.race_id);
   });
 }
