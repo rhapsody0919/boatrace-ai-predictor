@@ -4879,7 +4879,10 @@ export const supabaseDataService = {
    * 巻き添えで表示できなくなる。これを避けるため、失敗時は新列を除いた旧列のみで再取得する
    */
   getRaceMotorMaintenanceBreakdown(raceId) {
-    return withCache(`race-motor-maintenance-${raceId}`, async () => {
+    // v2: 展示進入（exhibition_course、マイグレーション082）・欠場（is_absent）・
+    // 取得時刻（updated_at）を足した（BOA-485）。キーを変えないと、localStorage に
+    // 残った旧形（列なし）が過去レースで最大7日返り、展示進入が「—」のまま出る
+    return withCache(`race-motor-maintenance-v2-${raceId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4893,7 +4896,9 @@ export const supabaseDataService = {
         ({ data } = await supabase
           .from("exhibition_data")
           .select(
-            "boat_number, tilt, adjustment_weight, propeller_change, parts_changed, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank",
+            // exhibition_course/is_absent/updated_at は直前情報タブの「展示進入」用
+            // （BOA-485）。同じ行の別列なので、クエリ本数は増やさない（BOA-357）
+            "boat_number, tilt, adjustment_weight, propeller_change, parts_changed, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank, exhibition_course, is_absent, updated_at",
           )
           .eq("race_id", raceId));
       } catch (error) {

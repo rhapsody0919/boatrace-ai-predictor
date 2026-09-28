@@ -2604,7 +2604,10 @@ test.describe("レース詳細の直前情報タブ: オリジナル展示", () 
     await expect(rowByLabel(page, "一周")).toHaveCount(0);
     await expect(rowByLabel(page, "まわり足")).toHaveCount(0);
     await expect(rowByLabel(page, "直線")).toHaveCount(0);
-    await expect(page.locator(".rbi-source")).toHaveCount(0);
+    // 展示進入（BOA-485）の出典は同じブロックに出うるので、BOATCASTの出典に絞って見る
+    await expect(
+      page.locator(".rbi-source", { hasText: "BOATCAST" }),
+    ).toHaveCount(0);
   });
 
   test("まだ計測されていないレースでは行も出典も出さない（「—」を並べない）", async ({
@@ -2615,7 +2618,10 @@ test.describe("レース詳細の直前情報タブ: オリジナル展示", () 
 
     await expect(page.locator(".drt-table")).toBeVisible({ timeout: 20000 });
     await expect(rowByLabel(page, "一周")).toHaveCount(0);
-    await expect(page.locator(".rbi-source")).toHaveCount(0);
+    // 展示進入（BOA-485）の出典は同じブロックに出うるので、BOATCASTの出典に絞って見る
+    await expect(
+      page.locator(".rbi-source", { hasText: "BOATCAST" }),
+    ).toHaveCount(0);
   });
 
   // --- ここから /code-review の指摘に対する再現テスト（2026-09-28） ---
@@ -2692,7 +2698,10 @@ test.describe("レース詳細の直前情報タブ: オリジナル展示", () 
 
     await expect(page.locator(".drt-table")).toBeVisible({ timeout: 20000 });
     await expect(rowByLabel(page, "一周")).toHaveCount(0);
-    await expect(page.locator(".rbi-source")).toHaveCount(0);
+    // 展示進入（BOA-485）の出典は同じブロックに出うるので、BOATCASTの出典に絞って見る
+    await expect(
+      page.locator(".rbi-source", { hasText: "BOATCAST" }),
+    ).toHaveCount(0);
   });
 
   // **「別のレースへ移っても前のレースの値が残らない」はE2Eにしていない。**
@@ -2703,6 +2712,263 @@ test.describe("レース詳細の直前情報タブ: オリジナル展示", () 
   // 修正の有無で結果が変わらない（実測、2026-09-28）。未確定のレースを
   // 2つ用意するには「当日の未発走レース」が要り、実行時刻とDBの状態に
   // 依存してフレークになるため、テストは置かない（BOA-452のPRコメントに記録）
+});
+
+// 展示進入（スタート展示のコース、BOA-485）。exhibition_data の列は
+// getRaceMotorMaintenanceBreakdown の1回の取得に足している（クエリ本数を増やさない）。
+// DBの状態に依存しないよう、そのリクエスト（select に exhibition_course を含むもの）
+// だけを page.route で差し替える
+test.describe("レース詳細の直前情報タブ: 展示進入", () => {
+  const RACE = "/race/2026-09-21-05-12";
+  // 取得開始（2026-09-21）より前のレース。展示進入の値は1つも入っていない
+  const RACE_BEFORE_START = "/race/2026-09-18-05-01";
+
+  const row = (boat, course, extra = {}) => ({
+    boat_number: boat,
+    tilt: -0.5,
+    adjustment_weight: 0,
+    propeller_change: null,
+    parts_changed: null,
+    today_weight: 52.0,
+    prev_race_no: null,
+    prev_entry_course: null,
+    prev_start_timing: null,
+    prev_finish_rank: null,
+    exhibition_course: course,
+    is_absent: false,
+    updated_at: "2026-09-21T07:12:56Z",
+    ...extra,
+  });
+
+  const routeMaintenance = async (page, fulfill) => {
+    await page.route("**/rest/v1/exhibition_data?*", (route) => {
+      if (!route.request().url().includes("exhibition_course"))
+        return route.continue();
+      return fulfill(route);
+    });
+  };
+
+  const stubRows = (rows) => (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(rows),
+    });
+
+  const openBeforeInfoTab = async (page, url = RACE) => {
+    await page.goto(url);
+    await page.click('[role="tab"]:has-text("直前情報")');
+    await expect(page.locator(".race-before-info-tab")).toBeVisible({
+      timeout: 20000,
+    });
+  };
+
+  const courseRow = (page) =>
+    page.locator(".drt-table tbody tr").filter({
+      has: page.locator(".drt-label-full", { hasText: /^展示進入$/ }),
+    });
+
+  test("枠番と違うコースに入った艇だけ強調し、内へ/外へを添え、出典を表の下に1回出す", async ({
+    page,
+  }) => {
+    // 3号艇が5コース、4号艇が3コース、5号艇が4コース（2026-09-26 徳山7Rの実データと同じ並び）
+    await routeMaintenance(
+      page,
+      stubRows([
+        row(1, 1),
+        row(2, 2),
+        row(3, 5),
+        row(4, 3),
+        row(5, 4),
+        row(6, 6),
+      ]),
+    );
+    await openBeforeInfoTab(page);
+
+    const cells = courseRow(page).locator("td.drt-cell");
+    await expect(cells).toHaveCount(6, { timeout: 20000 });
+    await expect(cells.nth(0)).toHaveText("1コース");
+    await expect(cells.nth(0)).not.toHaveClass(/drt-entry-moved/);
+    await expect(cells.nth(2)).toContainText("5コース");
+    await expect(cells.nth(2)).toContainText("外へ");
+    await expect(cells.nth(2)).toHaveClass(/drt-entry-moved/);
+    await expect(cells.nth(3)).toContainText("3コース");
+    await expect(cells.nth(3)).toContainText("内へ");
+    await expect(page.locator(".drt-entry-moved")).toHaveCount(3);
+
+    // ADR-0067の3点（出典・取得時刻・再配布しない旨）が1ブロックだけ
+    const source = page.locator(".rbi-source");
+    await expect(source).toHaveCount(1);
+    await expect(source).toContainText("BOAT RACE オフィシャルウェブサイト");
+    await expect(source).toContainText("9/21 16:12");
+    await expect(source).toContainText("再配布はしていません");
+    await expect(
+      page.getByTestId("exhibition-course-out-of-range"),
+    ).toHaveCount(0);
+  });
+
+  test("欠場艇は「欠場」と出し、コースの「—」と区別する", async ({ page }) => {
+    await routeMaintenance(
+      page,
+      stubRows([
+        row(1, 1),
+        row(2, 2),
+        row(3, 3),
+        row(4, 4),
+        row(5, null, { is_absent: true }),
+        row(6, 5),
+      ]),
+    );
+    await openBeforeInfoTab(page);
+
+    const cells = courseRow(page).locator("td.drt-cell");
+    await expect(cells.nth(4)).toHaveText("欠場", { timeout: 20000 });
+    await expect(cells.nth(5)).toContainText("5コース");
+  });
+
+  test("取得開始前のレースでは行を出さず、表示対象外である旨を注記する", async ({
+    page,
+  }) => {
+    await openBeforeInfoTab(page, RACE_BEFORE_START);
+
+    await expect(page.locator(".drt-table")).toBeVisible({ timeout: 20000 });
+    await expect(
+      page.getByTestId("exhibition-course-out-of-range"),
+    ).toBeVisible();
+    await expect(courseRow(page)).toHaveCount(0);
+    await expect(
+      page.locator(".rbi-source", {
+        hasText: "BOAT RACE オフィシャルウェブサイト",
+      }),
+    ).toHaveCount(0);
+  });
+
+  test("取得に失敗したら「データなし」に化けさせず、失敗を表示する", async ({
+    page,
+  }) => {
+    await routeMaintenance(page, (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "stub failure" }),
+      }),
+    );
+    await openBeforeInfoTab(page);
+
+    await expect(page.locator(".inline-fetch-error")).toBeVisible({
+      timeout: 20000,
+    });
+    // 行は残る（対象期間のレース）。値は出さない
+    await expect(courseRow(page)).toHaveCount(1);
+    await expect(
+      page.locator(".rbi-source", { hasText: "BOAT RACE" }),
+    ).toHaveCount(0);
+  });
+});
+
+// この枠からの進入コース（BOA-485 案A）。旧「平均進入順」（全枠を混ぜた平均で、
+// 1号艇でも3.16になっていた）を置き換えた。題材はユーザー指摘の実レース
+// 2026-09-26-08-02。集計はこのレースより前に絞るので、後のレースが増えても値は動かない
+test.describe("レース詳細の直前情報タブ: この枠からの進入コース", () => {
+  const RACE = "/race/2026-09-26-08-02";
+
+  const openBeforeInfoTab = async (page) => {
+    await page.goto(RACE);
+    await page.click('[role="tab"]:has-text("直前情報")');
+    await expect(page.locator(".race-before-info-tab")).toBeVisible({
+      timeout: 20000,
+    });
+  };
+
+  test("艇ごとに同じ枠からの進入の横棒と枠なり%・走数を出し、平均進入順の行は出さない", async ({
+    page,
+  }) => {
+    await openBeforeInfoTab(page);
+
+    const card = page.getByTestId("entry-course-dist");
+    await expect(card).toBeVisible({ timeout: 20000 });
+    // 1号艇は1枠から常に1コース（前づけされていない）
+    const boat1 = page.getByTestId("entry-course-dist-1");
+    await expect(boat1).toContainText("枠なり 100%", { timeout: 30000 });
+    await expect(boat1).toContainText(/1枠で\d+走/);
+    await expect(boat1.locator(".ecd-seg")).toHaveCount(1);
+    // 4号艇は4枠から内（2・3コース）に入ったことがある＝前づけ%が出る
+    const boat4 = page.getByTestId("entry-course-dist-4");
+    await expect(boat4).toContainText(/前づけ \d+%/);
+    expect(await boat4.locator(".ecd-seg").count()).toBeGreaterThan(1);
+
+    // 旧行は表から消えている
+    await expect(
+      page.locator(".drt-table .drt-label-full", { hasText: "平均進入順" }),
+    ).toHaveCount(0);
+    // 注記は集計期間の実態（2025年12月以降）を書く。「過去2年間の集計」とは言わない
+    await expect(card).toContainText("2025年12月以降");
+    await expect(page.locator(".rbi-note").first()).not.toContainText(
+      "過去2年間の集計",
+    );
+  });
+
+  test("選手の出走履歴の取得に失敗したら「出走なし」に化けさせず、再読み込みを出す", async ({
+    page,
+  }) => {
+    // getRacerScopedRaceStats の race_results 取得（actual_course を含む）だけを落とす
+    await page.route("**/rest/v1/race_results?*", (route) => {
+      const url = decodeURIComponent(route.request().url());
+      if (!url.includes("actual_course_1") || !url.includes("payout_win"))
+        return route.continue();
+      return route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "stub failure" }),
+      });
+    });
+    await openBeforeInfoTab(page);
+
+    const card = page.getByTestId("entry-course-dist");
+    await expect(card.locator(".inline-fetch-error")).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(card).not.toContainText("この枠での出走なし");
+    await expect(card.locator(".ecd-seg")).toHaveCount(0);
+  });
+
+  // /code-review の指摘の再現テスト（2026-09-28）。読み込み中の判定に
+  // レース単位の failed を混ぜていたため、1艇が先に失敗すると、まだ取得中の
+  // 他艇まで「—」になり、失敗・データなしと見分けがつかなかった
+  test("1艇だけ取得に失敗しても、まだ取得中の他艇は読み込み中のまま表示する", async ({
+    page,
+  }) => {
+    // 1号艇（登番3833）の出走履歴だけ即失敗、他の艇は応答を遅らせる
+    await page.route("**/rest/v1/race_entries?*", async (route) => {
+      const url = decodeURIComponent(route.request().url());
+      if (!url.includes("f_count")) return route.continue();
+      if (url.includes("racer_id=eq.3833"))
+        return route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "stub failure" }),
+        });
+      await new Promise((resolve) => setTimeout(resolve, 15000));
+      return route.continue().catch(() => {});
+    });
+    await openBeforeInfoTab(page);
+
+    const card = page.getByTestId("entry-course-dist");
+    await expect(card.locator(".inline-fetch-error")).toBeVisible({
+      timeout: 30000,
+    });
+    // 失敗した1号艇は「—」、取得中の2号艇はスケルトン
+    await expect(
+      page.getByTestId("entry-course-dist-1").locator(".ecd-bar-empty"),
+    ).toHaveText("—");
+    const skeleton = page
+      .getByTestId("entry-course-dist-2")
+      .locator(".drt-skeleton");
+    await expect(skeleton).toBeVisible();
+    // スケルトンは棒と同じ幅を占める（表セル用の2.5em固定のままだと40pxの
+    // 小さな塊になり、読み込み後に行の見た目が大きく変わる）
+    expect((await skeleton.boundingBox()).width).toBeGreaterThan(120);
+  });
 });
 
 // 前検タイム・公式2連率（節時点）をモータ情報タブに出す（BOA-451 / phase a FR-4a）

@@ -15,10 +15,11 @@
  * 2026-09-16追記(ユーザーによる日和再調査後のフィードバック): 除外理由の無い
  * 抜けが4つ見つかったため追加した。いずれも新規スクレイピング不要、既存データの
  * 集計のみ:
- * - 平均進入順・展示タイム1位勝率: RaceBasicInfoTab（BOA-306）と同じ
+ * - 展示タイム1位勝率（と、BOA-485で平均進入順を置き換えた「この枠からの
+ *   進入コース」カード）: RaceBasicInfoTab（BOA-306）と同じ
  *   getRacerScopedRaceStats(racerId)の生データ（既にactualCourse/
  *   isFastestExhibitionを追加済み）をこのタブでも取得し、basicInfoStats.jsの
- *   computeAvgEntryCourse/computeExhibitionTopRatesで集計する
+ *   computeFrameEntryDistribution/computeExhibitionTopRatesで集計する
  * - 今節展示情報（展示タイムのみ）: racerService.getCurrentMeetRaceEntriesと
  *   同じ節判定（groupIntoCurrentMeet）を使うgetRacerMeetExhibitionTrendBefore
  *
@@ -48,11 +49,14 @@ import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import {
   buildBeforeInfoRows,
+  buildExhibitionCourseRow,
+  exhibitionCourseCapturedAt,
+  hasExhibitionCourse,
+  isExhibitionCourseOutOfRange,
   originalExhibitionKindLabels,
   toNumber,
 } from "./raceIndicators";
 import {
-  computeAvgEntryCourse,
   computeExhibitionTopRates,
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
@@ -65,6 +69,7 @@ import {
 import { trackEvent } from "../../utils/analytics";
 import TermHintButton from "./TermHintButton";
 import RacePitReportSection from "./RacePitReportSection";
+import EntryCourseDistributionCard from "./EntryCourseDistributionCard";
 import InlineFetchError from "../InlineFetchError";
 import "./RaceBeforeInfoTab.css";
 import "../common/HorizontalScrollHint.css";
@@ -95,7 +100,8 @@ const MEET_ORIGINAL_KINDS = Object.freeze([
 ]);
 
 /** レース遷移直後の「まだ何も取れていない」状態。毎回新しい {} を作ると
- *  useMemo の依存が毎レンダー変わってしまうため、定数を使い回す */
+ *  useMemo の依存が毎レンダー変わってしまうため、定数を使い回す
+ *  （今節展示情報・選手の出走履歴の両方で使う） */
 const EMPTY_TREND = Object.freeze({});
 
 function RaceBeforeInfoTab({
@@ -113,34 +119,64 @@ function RaceBeforeInfoTab({
     (a, b) => a.number - b.number,
   );
 
-  // 平均進入順・展示タイム1位勝率用: 基本情報タブ(BOA-306)と同じgetRacerScopedRaceStats
+  // 展示タイム1位勝率・この枠からの進入コース用: 基本情報タブ(BOA-306)と同じgetRacerScopedRaceStats
   // を選手ごとに取得する（withCacheで基本情報タブと同一キャッシュを共有するため、
   // 既にどちらかのタブを開いていれば再取得は発生しない）
-  const [scopedStatsByRacer, setScopedStatsByRacer] = useState({});
+  //
+  // **raceIdとセットで持つ**（今節展示情報の fetchedMeetTrend と同じ。BOA-485）。
+  // 失敗も空配列に倒さず、同じ箱の failed に残す（「この枠からの進入コース」が
+  // 失敗時に「出走なし」と誤表示しないため。.claude/rules/frontend-data-fetch.md §3）。
+  // 再試行は reloadKey でこのセクションだけ取り直す
+  const [fetchedScopedStats, setFetchedScopedStats] = useState({
+    raceId: null,
+    byRacer: {},
+    failed: false,
+  });
+  const [scopedStatsReloadKey, setScopedStatsReloadKey] = useState(0);
   useEffect(() => {
     let cancelled = false;
+    const apply = (racerId, data, didFail) =>
+      setFetchedScopedStats((prev) => {
+        // 別のレースの結果が遅れて届いても混ぜない
+        const base =
+          prev.raceId === raceId
+            ? prev
+            : { raceId, byRacer: {}, failed: false };
+        return {
+          raceId,
+          byRacer: { ...base.byRacer, [racerId]: data },
+          failed: base.failed || didFail,
+        };
+      });
     sortedPlayers.forEach((p) => {
       if (!p.racerId) return;
       supabaseDataService
         .getRacerScopedRaceStats(p.racerId)
         .then((data) => {
-          if (!cancelled)
-            setScopedStatsByRacer((prev) => ({ ...prev, [p.racerId]: data }));
+          if (!cancelled) apply(p.racerId, data, false);
         })
         .catch((err) => {
-          // 取得失敗時にscopedStatsByRacer[p.racerId]が永久にundefinedのまま
-          // 残ると「平均進入順」「展示タイム1位勝率」が読み込み中のまま固まる
-          // （RaceBasicInfoTab.jsxの同種の指摘と同じ問題、2026-09-16修正）
+          // catchしないとbyRacer[p.racerId]がundefinedのまま残り、
+          // 「展示タイム1位勝率」「この枠からの進入」が読み込み中のまま固まる
           console.error("選手出走履歴取得エラー:", err?.message ?? String(err));
-          if (!cancelled)
-            setScopedStatsByRacer((prev) => ({ ...prev, [p.racerId]: [] }));
+          // null＝取得失敗（undefined＝取得中、配列＝取得済みと区別する）
+          if (!cancelled) apply(p.racerId, null, true);
         });
     });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [raceId]);
+  }, [raceId, scopedStatsReloadKey]);
+  const scopedStatsCurrent = fetchedScopedStats.raceId === raceId;
+  const scopedStatsByRacer = scopedStatsCurrent
+    ? fetchedScopedStats.byRacer
+    : EMPTY_TREND;
+  const scopedStatsFailed = scopedStatsCurrent && fetchedScopedStats.failed;
+  const retryScopedStats = () => {
+    setFetchedScopedStats({ raceId: null, byRacer: {}, failed: false });
+    setScopedStatsReloadKey((n) => n + 1);
+  };
 
   // 今節展示情報用: 選手ごとに「このレースより前・同一モーターの今節」の展示タイム推移を取得する。
   //
@@ -366,29 +402,6 @@ function RaceBeforeInfoTab({
 
   const extraRows = [
     {
-      key: "avgEntryCourse",
-      label: t("beforeInfo.rowAvgEntryCourse"),
-      shortLabel: t("beforeInfo.rowAvgEntryCourseShort"),
-      tab: null,
-      best: null,
-      render: (p) => {
-        if (!p.racerId) return "—";
-        const state = scopedStatsByRacer[p.racerId];
-        if (state === undefined)
-          return <span className="drt-skeleton" aria-hidden="true" />;
-        const { n, avgCourse } = computeAvgEntryCourse(state ?? []);
-        if (avgCourse === null) return "—";
-        return (
-          <span className="drt-value">
-            {avgCourse.toFixed(2)}
-            <span className={`drt-sub ${smallSampleClass(n)}`}>
-              {t("beforeInfo.sampleCount", { n })}
-            </span>
-          </span>
-        );
-      },
-    },
-    {
       key: "exhibitionTopRate",
       label: t("beforeInfo.rowExhibitionTopRate"),
       shortLabel: t("beforeInfo.rowExhibitionTopRateShort"),
@@ -399,7 +412,10 @@ function RaceBeforeInfoTab({
         const state = scopedStatsByRacer[p.racerId];
         if (state === undefined)
           return <span className="drt-skeleton" aria-hidden="true" />;
-        const rates = computeExhibitionTopRates(state ?? []);
+        // null＝取得失敗。「展示1位なし」に化けさせず「—」にする
+        // （失敗はカード側の InlineFetchError が知らせる）
+        if (state === null) return "—";
+        const rates = computeExhibitionTopRates(state);
         if (rates.n === 0)
           return (
             <span className="drt-sub">
@@ -462,7 +478,28 @@ function RaceBeforeInfoTab({
     ...meetOriginalRows,
   ];
 
+  // 展示進入（BOA-485）はスタート展示の結果なので、展示STの前＝表の先頭に置く
+  const exhibitionCourseRow = buildExhibitionCourseRow({
+    t,
+    raceId,
+    motorMaintenance: analysis.motorMaintenance,
+    pending: analysis.pending,
+  });
+  const exhibitionCourseOutOfRange = isExhibitionCourseOutOfRange(
+    raceId,
+    analysis.motorMaintenance,
+  );
+  const exhibitionCourseTime = formatCapturedAtJst(
+    exhibitionCourseCapturedAt(analysis.motorMaintenance),
+  );
+  const hasOriginalExhibitionSource = originalExhibition?.state === "published";
+  // 値を1つでも出したときだけ出典を出す（取得時刻は取れたときだけ添える）
+  const hasExhibitionCourseSource =
+    exhibitionCourseRow !== null &&
+    hasExhibitionCourse(analysis.motorMaintenance);
+
   const rows = [
+    ...(exhibitionCourseRow ? [exhibitionCourseRow] : []),
     ...buildBeforeInfoRows({
       t,
       players: sortedPlayers,
@@ -750,7 +787,7 @@ function RaceBeforeInfoTab({
                     {sortedPlayers.map((p) => (
                       <td
                         key={p.number}
-                        className={cellClass(p.number, row.best)}
+                        className={`${cellClass(p.number, row.best)} ${row.cellClass?.(p) ?? ""}`}
                       >
                         {row.render(p)}
                       </td>
@@ -772,44 +809,79 @@ function RaceBeforeInfoTab({
                 )?.today_weight,
               ) !== null,
           ) && (
-          <InlineFetchError
-            message={t("beforeInfo.entryWeightFetchError")}
-            onRetry={() => setEntryWeightsReloadKey((k) => k + 1)}
-          />
-        )}
+            <InlineFetchError
+              message={t("beforeInfo.entryWeightFetchError")}
+              onRetry={() => setEntryWeightsReloadKey((k) => k + 1)}
+            />
+          )}
         {showPreExhibitionNote && (
           <p className="rbi-note" data-testid="rbi-pre-exhibition-note">
             {t("beforeInfo.preExhibitionNote")}
           </p>
         )}
         <p className="rbi-note">💡 {t("beforeInfo.detailTableNote")}</p>
+        {exhibitionCourseOutOfRange && (
+          <p className="rbi-note" data-testid="exhibition-course-out-of-range">
+            {t("beforeInfo.exhibitionCourseOutOfRange")}
+          </p>
+        )}
         {/* オリジナル展示（BOA-452 / ADR-0067）の出典。値を出したときだけ、
             表のすぐ下に1回。ピットレポート（RacePitReportSection）と同じ形で、
             出典・取得時刻・再配布しない旨の3点を書く */}
-        {originalExhibition?.state === "published" && (
-          <div className="rbi-source">
-            <p className="rbi-source-text">
-              {t("beforeInfo.originalExhibitionSource", {
-                items: originalExhibitionKindLabels(
-                  t,
-                  originalExhibition.kinds,
-                ).join(t("beforeInfo.originalExhibitionItemSeparator")),
-              })}
-            </p>
-            {formatCapturedAtJst(originalExhibition.capturedAt) && (
+        {(hasOriginalExhibitionSource || hasExhibitionCourseSource) && (
+          <div className="rbi-source" data-testid="rbi-source">
+            {hasExhibitionCourseSource && (
               <p className="rbi-source-text">
-                {t("beforeInfo.originalExhibitionCapturedAt", {
-                  time: formatCapturedAtJst(originalExhibition.capturedAt),
-                })}
-                {t("home.jstNote")}
+                {t("beforeInfo.exhibitionCourseSource")}
+                {exhibitionCourseTime && (
+                  <>
+                    {" / "}
+                    {t("beforeInfo.originalExhibitionCapturedAt", {
+                      time: exhibitionCourseTime,
+                    })}
+                    {t("home.jstNote")}
+                  </>
+                )}
               </p>
             )}
+            {hasOriginalExhibitionSource && (
+              <>
+                <p className="rbi-source-text">
+                  {t("beforeInfo.originalExhibitionSource", {
+                    items: originalExhibitionKindLabels(
+                      t,
+                      originalExhibition.kinds,
+                    ).join(t("beforeInfo.originalExhibitionItemSeparator")),
+                  })}
+                </p>
+                {formatCapturedAtJst(originalExhibition.capturedAt) && (
+                  <p className="rbi-source-text">
+                    {t("beforeInfo.originalExhibitionCapturedAt", {
+                      time: formatCapturedAtJst(originalExhibition.capturedAt),
+                    })}
+                    {t("home.jstNote")}
+                  </p>
+                )}
+              </>
+            )}
+            {/* 注記は1回だけ。BOATCASTだけなら従来の文言、展示進入を含むなら
+                出典が2つありうるので「各出典で」の文言にする */}
             <p className="rbi-source-text">
-              {t("beforeInfo.originalExhibitionNote")}
+              {hasExhibitionCourseSource
+                ? t("beforeInfo.rawValuesNote")
+                : t("beforeInfo.originalExhibitionNote")}
             </p>
           </div>
         )}
       </section>
+
+      <EntryCourseDistributionCard
+        raceId={raceId}
+        players={sortedPlayers}
+        statsByRacer={scopedStatsByRacer}
+        failed={scopedStatsFailed}
+        onRetry={retryScopedStats}
+      />
 
       <RacePitReportSection
         raceId={raceId}

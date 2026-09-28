@@ -250,19 +250,45 @@ export function computeVenueRanking(records, metric) {
 }
 
 /**
- * 平均進入コースを計算する（BOA-304、直前情報タブ「平均進入順」）。
- * getRacerScopedRaceStatsのactualCourse（BOA-257の実進入コース、race_results.
- * actual_course_N）を使う。2025-12-04より前のレース・欠場艇はactualCourseが
- * nullのため対象外になる（そのレースを1着扱い等にすり替えない）
+ * この枠からの進入コース分布（BOA-485、直前情報タブ「この枠からの進入」）。
+ *
+ * 旧「平均進入順」（computeAvgEntryCourse）は全枠のレースを混ぜて平均していたため、
+ * 1号艇でも「3.16」のような値になり、この枠から何コースに入るかが読めなかった
+ * （ユーザー指摘、2026-09-28）。今回と同じ枠番で出走したレースだけに絞り、
+ * 本番の進入コース（actualCourse、race_results.actual_course_N）の分布を返す。
+ *
+ * - 対象は beforeRaceId より前のレースだけ（過去レースを開いたときに、
+ *   そのレース自身や後のレースの進入を混ぜない）
+ * - actualCourse が null（2025-12-03より前・欠場）は分母から除く
+ * - 前づけ = 枠番より内のコースに入った、外へ = 枠番より外
+ *
  * @param {Array} records - getRacerScopedRaceStatsの戻り値
+ * @param {number} frame - 今回の枠番（艇番）
+ * @param {string|null} beforeRaceId - 表示中のレースID
+ * @returns {{n:number, counts:number[], wakuRate:number|null,
+ *   inwardRate:number|null, outwardRate:number|null}}
+ *   counts[i] はコース i+1 に入った回数
  */
-export function computeAvgEntryCourse(records) {
+export function computeFrameEntryDistribution(records, frame, beforeRaceId) {
   const courses = (records ?? [])
+    .filter((r) => r.boatNumber === frame)
+    .filter((r) => !beforeRaceId || r.raceId < beforeRaceId)
     .map((r) => r.actualCourse)
-    .filter((c) => c !== null && c !== undefined);
-  if (courses.length === 0) return { n: 0, avgCourse: null };
-  const sum = courses.reduce((a, b) => a + b, 0);
-  return { n: courses.length, avgCourse: sum / courses.length };
+    .filter((c) => Number.isInteger(c) && c >= 1 && c <= 6);
+  const counts = [1, 2, 3, 4, 5, 6].map(
+    (course) => courses.filter((c) => c === course).length,
+  );
+  const n = courses.length;
+  if (n === 0)
+    return { n, counts, wakuRate: null, inwardRate: null, outwardRate: null };
+  const rate = (count) => (count / n) * 100;
+  return {
+    n,
+    counts,
+    wakuRate: rate(courses.filter((c) => c === frame).length),
+    inwardRate: rate(courses.filter((c) => c < frame).length),
+    outwardRate: rate(courses.filter((c) => c > frame).length),
+  };
 }
 
 /**
