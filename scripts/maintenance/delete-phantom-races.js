@@ -11,17 +11,38 @@
  * **対象の見つけ方はこのスクリプトの仕事ではない。** `audit-missing-results.js` が phantom として
  * 出したレースIDを、人が確認したうえで `--race-ids=` に渡す（暗黙の探索で消す範囲を広げない）。
  *
+ * ## 既存の `delete-phantom-race-days.js`（BOA-407）との関係
+ *
+ * 同じ事象を消すスクリプトが既にある（[BOA-420](https://linear.app/boat-ai/issue/BOA-420) は
+ * 「それを期間拡張して再利用する」としている）。それを使わず別に作った理由は2つ:
+ *
+ *   1. **判定材料が使えない。** あちらはK-fileの解析結果（`data/kb-archive` の `parsed`）を必要とするが、
+ *      アーカイブは 2026-01 までしか無い（本体テーブル開始前の期間が対象）。2026-04 は判定できない。
+ *      本スクリプトは公式の開催場一覧だけで判定するため、アーカイブに依存しない
+ *   2. **探索と削除を分けたい。** あちらは期間を渡すと自分で対象を探して消す。本スクリプトは
+ *      `--race-ids=` で明示された分しか消さず、実行時に3つの守りを掛ける
+ *
+ * どちらを使ってもよいが、**アーカイブが無い期間は本スクリプトを使う。**
+ *
  * 実行時の守り（すべて満たさないレースは対象から外し、1件でも外れたら既定で中断する）:
  *   1. 公式の開催場一覧（race/index）に、その会場がその日**載っていない**こと。
  *      順延・中止の会場は過去日の一覧にも残るため、「載っていない」は開催が無かったことを意味する
  *   2. `race_results`・`race_odds`・`race_start_timings`・`race_payouts` に行が**無い**こと。
- *      1件でもあれば、実際に走った証拠なので消さない
+ *      1件でもあれば、実際に走った証拠なので消さない。あわせて `sns_campaign_entries`（唯一
+ *      CASCADEでない外部キー。行があると `races` の削除自体が失敗する）も確認する
  *   3. `predictions` の的中フラグが**すべてNULL**であること。判定済みの予想は的中率の履歴に載っており、
  *      消すと過去の集計が変わる（BOA-422では、判定済みの657行を「汚染期間として記録して残す」と判断した）
  *
- * 削除するテーブル（`races` を参照する外部キーは1本も無いため、順に消す）:
+ * 削除するテーブル（従属→本体の順）:
  *   predictions → bet_recommendations → prediction_odds → exhibition_data → race_conditions
  *   → race_entries → races
+ *
+ * **`races` には `ON DELETE CASCADE` の外部キーが17本あり、`races` を消せば従属行は連動して消える**
+ * （`pg_constraint` で確認。2026-09-28）。それでも順に消しているのは、**テーブルごとの削除行数を
+ * 記録に残すため**（CASCADEだと何行消えたか分からない）。冪等で、二重に消しても害はない。
+ *
+ * **例外1本: `sns_campaign_entries` は `NO ACTION`**（CASCADEでない）。該当行があると `races` の削除が
+ * 失敗するため、守り2の確認に含めている（0行であることを確かめてから消す）。
  *
  * 消した内容は data/analysis/deleted-phantom-races-<日付>.json に残す（後の分析が「消えた理由」を辿れるように）。
  *
@@ -44,12 +65,17 @@ const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 const RACE_ID_PATTERN = /^(\d{4}-\d{2}-\d{2})-(\d{2})-(\d{2})$/;
 
-/** 「走った証拠」。1件でもあれば消さない */
+/**
+ * 1件でもあれば消さないテーブル。
+ * 前4つは「実際に走った証拠」。`sns_campaign_entries` は唯一 ON DELETE CASCADE でない外部キーで、
+ * 行があると `races` の削除自体が失敗する（`pg_constraint` で確認、2026-09-28）
+ */
 const EVIDENCE_TABLES = Object.freeze([
   "race_results",
   "race_odds",
   "race_start_timings",
   "race_payouts",
+  "sns_campaign_entries",
 ]);
 
 /** 消す順（従属→本体） */
