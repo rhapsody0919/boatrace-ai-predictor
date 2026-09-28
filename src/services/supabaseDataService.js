@@ -4184,44 +4184,43 @@ export const supabaseDataService = {
     if (ids.length === 0) {
       return Promise.resolve({ state: "empty", byKey: {}, fetchFailed: true });
     }
-    // キーは「節の最後のレースID」を末尾に置く。inferTtlFromKey が
-    // `YYYY-MM-DD-VV-RR` 形式の末尾を見て過去レースに7日TTLを与えるため
-    return withCache(
-      `meet-original-exhibition-${ids.length}-${ids[ids.length - 1]}`,
-      async () => {
-        if (!supabase) {
-          throw new Error("Supabase client not initialized");
+    // **IDを全部キーに入れる**。件数＋最後のIDだけだと、同じ節・同じ最終レースで
+    // 中身の違う集合（選手の顔ぶれが変わって別のレースが混ざる等）が同じキーに
+    // なりうる。全部繋ぐと末尾が `YYYY-MM-DD-VV-RR` のままなので、
+    // inferTtlFromKey の過去レース判定（7日TTL）もそのまま効く
+    return withCache(`meet-original-exhibition-${ids.join(",")}`, async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+      let rows;
+      try {
+        rows = await fetchAllByIn(
+          "race_original_exhibition_values",
+          "race_id, boat_number, kind, value",
+          "race_id",
+          ids,
+        );
+      } catch (error) {
+        if (isPermissionDeniedError(error)) {
+          // 096（匿名へのSELECT公開）が未適用なら行ごと出さない
+          return { state: "forbidden", byKey: {}, fetchFailed: true };
         }
-        let rows;
-        try {
-          rows = await fetchAllByIn(
-            "race_original_exhibition_values",
-            "race_id, boat_number, kind, value",
-            "race_id",
-            ids,
-          );
-        } catch (error) {
-          if (isPermissionDeniedError(error)) {
-            // 096（匿名へのSELECT公開）が未適用なら行ごと出さない
-            return { state: "forbidden", byKey: {}, fetchFailed: true };
-          }
-          throw error;
-        }
+        throw error;
+      }
 
-        const byKey = {};
-        (rows ?? []).forEach((row) => {
-          // 欠測（BOATCASTの `--.--`）は NULL で入る。平均の分母に入れない
-          if (row.value === null || row.value === undefined) return;
-          const key = `${row.race_id}-${row.boat_number}`;
-          byKey[key] = { ...(byKey[key] ?? {}), [row.kind]: Number(row.value) };
-        });
+      const byKey = {};
+      (rows ?? []).forEach((row) => {
+        // 欠測（BOATCASTの `--.--`）は NULL で入る。平均の分母に入れない
+        if (row.value === null || row.value === undefined) return;
+        const key = `${row.race_id}-${row.boat_number}`;
+        byKey[key] = { ...(byKey[key] ?? {}), [row.kind]: Number(row.value) };
+      });
 
-        if (Object.keys(byKey).length === 0) {
-          return { state: "empty", byKey: {}, fetchFailed: true };
-        }
-        return { state: "published", byKey };
-      },
-    );
+      if (Object.keys(byKey).length === 0) {
+        return { state: "empty", byKey: {}, fetchFailed: true };
+      }
+      return { state: "published", byKey };
+    });
   },
 
   /**

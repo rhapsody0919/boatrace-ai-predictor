@@ -187,11 +187,13 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
     fetchedExhibition?.raceId === raceId ? fetchedExhibition.data : null;
 
   // 今節のオリジナル展示（BOA-473）。6選手の今節はほぼ同じレース集合なので、
-  // 選手ごとではなく**IDを束ねて1クエリ**で引く（選手ごとにすると+6本になる）。
-  // meetTrendByRacer が揃ってから走るので、直前情報タブを開いたときだけ+1本
-  // **6選手ぶんが出揃うまで発火させない**。meetTrendByRacer は選手ごとに
-  // 非同期で埋まるので、揃う前に投げるとIDの集合が育つたびに別のキャッシュキーで
-  // 投げ直し、**1本のはずが6本**になる（2026-09-28に実測して気づいた）
+  // 選手ごとではなく**IDを束ねて1クエリ**で引く（選手ごとに引くと+6本になり、
+  // 非機能要件の「1タブあたり+3本以内」を超える）。
+  //
+  // **6選手ぶんが出揃うまで発火させない**のが肝。meetTrendByRacer は選手ごとに
+  // 非同期で埋まるため、揃う前に投げるとIDの集合が育つたびに別のキャッシュキーで
+  // 投げ直し、束ねた意味が消えて結局6本になる（2026-09-28に本番ビルドで実測。
+  // ids=7→15→20→27→32→37 と6回投げていた）。E2Eで1本であることを固定してある
   const meetRaceKeys = useMemo(() => {
     const targets = sortedPlayers.filter((p) => p.racerId && p.motorNumber);
     if (targets.length === 0) return [];
