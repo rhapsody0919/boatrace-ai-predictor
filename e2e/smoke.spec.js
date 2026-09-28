@@ -2474,3 +2474,80 @@ test.describe("レース詳細の直前情報タブ: ピットレポート", () 
     expect(pitRequests).toEqual([]);
   });
 });
+test.describe("静的ガイドがレース詳細の8タブに追随している（BOA-456フォローアップ）", () => {
+  // レース詳細が8タブになったあと、/how-to-use だけが追随し /about・/faq は
+  // 「結果」タブにしか触れていなかった。同じ取りこぼしを繰り返さないよう、
+  // 8タブの名前が両ページに載っていることを機械的に固定する
+  const TABS = [
+    "基本情報",
+    "AI予想",
+    "枠別情報",
+    "モータ情報",
+    "今節",
+    "直前情報",
+    "オッズ一覧",
+    "結果",
+  ];
+
+  test("/about に8タブがすべて載っている", async ({ page }) => {
+    await page.goto("/about");
+    const list = page.locator(".about-tab-list");
+    await expect(list).toBeVisible();
+    await expect(list.locator("li")).toHaveCount(TABS.length);
+    for (const tab of TABS) {
+      await expect(list).toContainText(tab);
+    }
+    // 詳しい手順は使い方ガイドが正本なので、そこへの導線を保つ
+    await expect(
+      page.locator('.about-section a[href="/how-to-use"]'),
+    ).toHaveCount(1);
+  });
+
+  test("/faq のタブ説明に8タブがすべて載っている", async ({ page }) => {
+    await page.goto("/faq");
+    const question = page
+      .locator(".faq-question")
+      .filter({ hasText: "レース詳細ページのタブは何が違うのですか？" });
+    await expect(question).toHaveCount(1);
+    await question.click();
+    const answer = page.locator(".faq-item.open .faq-answer p").first();
+    for (const tab of TABS) {
+      await expect(answer).toContainText(tab);
+    }
+  });
+
+  test("FAQの回答の改行が段落として表示される（空白に潰れない）", async ({
+    page,
+  }) => {
+    // 回答データは「【展開予測】…改行…【イン崩れ指数】…」と改行で項目を区切るが、
+    // .faq-answer p が white-space: normal のままだと改行が空白に潰れ、
+    // 項目が1段落に繋がって読めなくなる（2026-09-28に実測で発見）
+    await page.goto("/faq");
+    const question = page
+      .locator(".faq-question")
+      .filter({ hasText: "展開予測・イン崩れ指数の違いは何ですか？" });
+    await question.click();
+    const answer = page.locator(".faq-item.open .faq-answer p").first();
+    await expect(answer).toBeVisible();
+    const text = await answer.innerText();
+    expect(text).toContain("\n");
+    expect(text).toContain("【展開予測】");
+    expect(text).toContain("【イン崩れ指数】");
+  });
+
+  test("旧UIの文言が /faq に残っていない", async ({ page }) => {
+    await page.goto("/faq");
+    // 全問を開いて回答本文まで検査する（アコーディオンは1問ずつしか開かない）
+    const buttons = await page.locator(".faq-question").all();
+    const texts = [];
+    for (const button of buttons) {
+      await button.click();
+      texts.push(await page.locator(".faq-item.open .faq-answer").innerText());
+      await button.click();
+    }
+    const body = texts.join("\n");
+    // ボタンは raceCard.view =「詳細を見る」、的中はヘッダーナビ nav.hits
+    expect(body).not.toContain("データ分析を見る");
+    expect(body).not.toContain("トップページの「的中レース」タブ");
+  });
+});

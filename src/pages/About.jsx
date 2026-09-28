@@ -118,6 +118,52 @@ export default function About() {
         </section>
 
         <section className="about-section">
+          <h2>🗂️ レース詳細で見られるもの（8つのタブ）</h2>
+          <p>
+            各レースの詳細ページは、見たい切り口ごとに
+            <strong>8つのタブ</strong>
+            に分かれています。AI予想はそのうちの1つで、残りは
+            <strong>誰が見ても同じ客観的なデータ</strong>
+            です。予想を受け取るだけでなく、その根拠を自分で確かめられる構成にしています。
+          </p>
+          <ul className="about-tab-list">
+            <li>
+              <strong>基本情報</strong>:
+              勝率・2連対率・3連対率・平均STを、会場（全国/当地）・グレード（全レース/一般戦/SG・G1）・期間（今期/直近3ヶ月/直近1ヶ月）で切り替えて比較。走数も併記します
+            </li>
+            <li>
+              <strong>AI予想</strong>:
+              1マークの展開予測と、1号艇が崩れやすいかを示すイン崩れ注意度
+            </li>
+            <li>
+              <strong>枠別情報</strong>:
+              本日入る想定コースでの成績に加え、ST考察（安定率・抜出・出遅率を同じコース・同じ級別の平均との差つきで表示）と逃げシミュレーション（1コースが逃げたとき2着に来たコースの割合）
+            </li>
+            <li>
+              <strong>モータ情報</strong>: この会場のモーターの成績・調子
+            </li>
+            <li>
+              <strong>今節</strong>:
+              出走6選手の今節の得点率・節内順位・準優の目安までの必要得点。勝負駆けがかかっているのが誰かを読めます
+            </li>
+            <li>
+              <strong>直前情報</strong>: 展示タイム・気象・ピットレポート
+            </li>
+            <li>
+              <strong>オッズ一覧</strong>: 発売中のオッズ
+            </li>
+            <li>
+              <strong>結果</strong>:
+              レース確定後の着順と、展開予測が的中したかの判定
+            </li>
+          </ul>
+          <p className="note">
+            ※ 各タブの使い分けは<Link to="/how-to-use">使い方ガイド</Link>
+            で手順つきに説明しています
+          </p>
+        </section>
+
+        <section className="about-section">
           <h2>📊 AIが分析する45項目のデータ</h2>
           <div className="data-grid">
             <div className="data-category">
