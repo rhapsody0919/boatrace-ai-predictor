@@ -15,10 +15,11 @@
  * 2026-09-16追記(ユーザーによる日和再調査後のフィードバック): 除外理由の無い
  * 抜けが4つ見つかったため追加した。いずれも新規スクレイピング不要、既存データの
  * 集計のみ:
- * - 平均進入順・展示タイム1位勝率: RaceBasicInfoTab（BOA-306）と同じ
+ * - 展示タイム1位勝率（と、BOA-485で平均進入順を置き換えた「この枠からの
+ *   進入コース」カード）: RaceBasicInfoTab（BOA-306）と同じ
  *   getRacerScopedRaceStats(racerId)の生データ（既にactualCourse/
  *   isFastestExhibitionを追加済み）をこのタブでも取得し、basicInfoStats.jsの
- *   computeAvgEntryCourse/computeExhibitionTopRatesで集計する
+ *   computeFrameEntryDistribution/computeExhibitionTopRatesで集計する
  * - 今節展示情報（展示タイムのみ）: racerService.getCurrentMeetRaceEntriesと
  *   同じ節判定（groupIntoCurrentMeet）を使うgetRacerMeetExhibitionTrendBefore
  *
@@ -56,7 +57,6 @@ import {
   toNumber,
 } from "./raceIndicators";
 import {
-  computeAvgEntryCourse,
   computeExhibitionTopRates,
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
@@ -69,6 +69,7 @@ import {
 import { trackEvent } from "../../utils/analytics";
 import TermHintButton from "./TermHintButton";
 import RacePitReportSection from "./RacePitReportSection";
+import EntryCourseDistributionCard from "./EntryCourseDistributionCard";
 import InlineFetchError from "../InlineFetchError";
 import "./RaceBeforeInfoTab.css";
 import "../common/HorizontalScrollHint.css";
@@ -82,12 +83,19 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
     (a, b) => a.number - b.number,
   );
 
-  // 平均進入順・展示タイム1位勝率用: 基本情報タブ(BOA-306)と同じgetRacerScopedRaceStats
+  // 展示タイム1位勝率・この枠からの進入コース用: 基本情報タブ(BOA-306)と同じgetRacerScopedRaceStats
   // を選手ごとに取得する（withCacheで基本情報タブと同一キャッシュを共有するため、
   // 既にどちらかのタブを開いていれば再取得は発生しない）
+  //
+  // 失敗は「空配列」に倒さず scopedStatsFailed に raceId 付きで残す（BOA-485。
+  // 「この枠からの進入コース」が失敗時に「出走なし」と誤表示しないため。
+  // .claude/rules/frontend-data-fetch.md §3）。再試行は reloadKey で行う
   const [scopedStatsByRacer, setScopedStatsByRacer] = useState({});
+  const [scopedStatsFailedRaceId, setScopedStatsFailedRaceId] = useState(null);
+  const [scopedStatsReloadKey, setScopedStatsReloadKey] = useState(0);
   useEffect(() => {
     let cancelled = false;
+    setScopedStatsFailedRaceId(null);
     sortedPlayers.forEach((p) => {
       if (!p.racerId) return;
       supabaseDataService
@@ -98,18 +106,25 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
         })
         .catch((err) => {
           // 取得失敗時にscopedStatsByRacer[p.racerId]が永久にundefinedのまま
-          // 残ると「平均進入順」「展示タイム1位勝率」が読み込み中のまま固まる
+          // 残ると「展示タイム1位勝率」「この枠からの進入」が読み込み中のまま固まる
           // （RaceBasicInfoTab.jsxの同種の指摘と同じ問題、2026-09-16修正）
           console.error("選手出走履歴取得エラー:", err?.message ?? String(err));
-          if (!cancelled)
-            setScopedStatsByRacer((prev) => ({ ...prev, [p.racerId]: [] }));
+          if (!cancelled) {
+            setScopedStatsByRacer((prev) => ({ ...prev, [p.racerId]: null }));
+            setScopedStatsFailedRaceId(raceId);
+          }
         });
     });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [raceId]);
+  }, [raceId, scopedStatsReloadKey]);
+  const scopedStatsFailed = scopedStatsFailedRaceId === raceId;
+  const retryScopedStats = () => {
+    setScopedStatsByRacer({});
+    setScopedStatsReloadKey((n) => n + 1);
+  };
 
   // 今節展示情報用: 選手ごとに「このレースより前・同一モーターの今節」の展示タイム推移を取得する
   const [meetTrendByRacer, setMeetTrendByRacer] = useState({});
@@ -179,29 +194,6 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
 
   const extraRows = [
     {
-      key: "avgEntryCourse",
-      label: t("beforeInfo.rowAvgEntryCourse"),
-      shortLabel: t("beforeInfo.rowAvgEntryCourseShort"),
-      tab: null,
-      best: null,
-      render: (p) => {
-        if (!p.racerId) return "—";
-        const state = scopedStatsByRacer[p.racerId];
-        if (state === undefined)
-          return <span className="drt-skeleton" aria-hidden="true" />;
-        const { n, avgCourse } = computeAvgEntryCourse(state ?? []);
-        if (avgCourse === null) return "—";
-        return (
-          <span className="drt-value">
-            {avgCourse.toFixed(2)}
-            <span className={`drt-sub ${smallSampleClass(n)}`}>
-              {t("beforeInfo.sampleCount", { n })}
-            </span>
-          </span>
-        );
-      },
-    },
-    {
       key: "exhibitionTopRate",
       label: t("beforeInfo.rowExhibitionTopRate"),
       shortLabel: t("beforeInfo.rowExhibitionTopRateShort"),
@@ -212,7 +204,10 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
         const state = scopedStatsByRacer[p.racerId];
         if (state === undefined)
           return <span className="drt-skeleton" aria-hidden="true" />;
-        const rates = computeExhibitionTopRates(state ?? []);
+        // null＝取得失敗。「展示1位なし」に化けさせず「—」にする
+        // （失敗はカード側の InlineFetchError が知らせる）
+        if (state === null) return "—";
+        const rates = computeExhibitionTopRates(state);
         if (rates.n === 0)
           return (
             <span className="drt-sub">
@@ -621,6 +616,14 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
           </div>
         )}
       </section>
+
+      <EntryCourseDistributionCard
+        raceId={raceId}
+        players={sortedPlayers}
+        statsByRacer={scopedStatsByRacer}
+        failed={scopedStatsFailed}
+        onRetry={retryScopedStats}
+      />
 
       <RacePitReportSection
         raceId={raceId}

@@ -2866,6 +2866,73 @@ test.describe("レース詳細の直前情報タブ: 展示進入", () => {
   });
 });
 
+// この枠からの進入コース（BOA-485 案A）。旧「平均進入順」（全枠を混ぜた平均で、
+// 1号艇でも3.16になっていた）を置き換えた。題材はユーザー指摘の実レース
+// 2026-09-26-08-02。集計はこのレースより前に絞るので、後のレースが増えても値は動かない
+test.describe("レース詳細の直前情報タブ: この枠からの進入コース", () => {
+  const RACE = "/race/2026-09-26-08-02";
+
+  const openBeforeInfoTab = async (page) => {
+    await page.goto(RACE);
+    await page.click('[role="tab"]:has-text("直前情報")');
+    await expect(page.locator(".race-before-info-tab")).toBeVisible({
+      timeout: 20000,
+    });
+  };
+
+  test("艇ごとに同じ枠からの進入の横棒と枠なり%・走数を出し、平均進入順の行は出さない", async ({
+    page,
+  }) => {
+    await openBeforeInfoTab(page);
+
+    const card = page.getByTestId("entry-course-dist");
+    await expect(card).toBeVisible({ timeout: 20000 });
+    // 1号艇は1枠から常に1コース（前づけされていない）
+    const boat1 = page.getByTestId("entry-course-dist-1");
+    await expect(boat1).toContainText("枠なり 100%", { timeout: 30000 });
+    await expect(boat1).toContainText(/1枠で\d+走/);
+    await expect(boat1.locator(".ecd-seg")).toHaveCount(1);
+    // 4号艇は4枠から内（2・3コース）に入ったことがある＝前づけ%が出る
+    const boat4 = page.getByTestId("entry-course-dist-4");
+    await expect(boat4).toContainText(/前づけ \d+%/);
+    expect(await boat4.locator(".ecd-seg").count()).toBeGreaterThan(1);
+
+    // 旧行は表から消えている
+    await expect(
+      page.locator(".drt-table .drt-label-full", { hasText: "平均進入順" }),
+    ).toHaveCount(0);
+    // 注記は集計期間の実態（2025年12月以降）を書く。「過去2年間の集計」とは言わない
+    await expect(card).toContainText("2025年12月以降");
+    await expect(page.locator(".rbi-note").first()).not.toContainText(
+      "過去2年間の集計",
+    );
+  });
+
+  test("選手の出走履歴の取得に失敗したら「出走なし」に化けさせず、再読み込みを出す", async ({
+    page,
+  }) => {
+    // getRacerScopedRaceStats の race_results 取得（actual_course を含む）だけを落とす
+    await page.route("**/rest/v1/race_results?*", (route) => {
+      const url = decodeURIComponent(route.request().url());
+      if (!url.includes("actual_course_1") || !url.includes("payout_win"))
+        return route.continue();
+      return route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "stub failure" }),
+      });
+    });
+    await openBeforeInfoTab(page);
+
+    const card = page.getByTestId("entry-course-dist");
+    await expect(card.locator(".inline-fetch-error")).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(card).not.toContainText("この枠での出走なし");
+    await expect(card.locator(".ecd-seg")).toHaveCount(0);
+  });
+});
+
 // 前検タイム・公式2連率（節時点）をモータ情報タブに出す（BOA-451 / phase a FR-4a）
 test.describe("レース詳細のモータ情報タブ: 前検タイムと公式2連率", () => {
   const RACE = "/race/2026-09-21-05-12";
