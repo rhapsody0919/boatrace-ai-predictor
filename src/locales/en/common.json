@@ -116,7 +116,7 @@
     "invalidUrl": "We couldn't find that race. Please check the URL.",
     "backToHome": "← Back to home",
     "seriesDayFirst": "Opening day",
-    "seriesDayFinal": "Final day",
+    "seriesDayFinal": "Last day",
     "seriesDayNth": "Day {{day}}"
   },
   "volatility": {
@@ -433,7 +433,17 @@
   },
   "raceStage": {
     "final": "Final",
-    "semifinal": "Semifinal"
+    "semifinal": "Semifinal",
+    "semifinalQualifier": "Semifinal qualifier",
+    "dream": "Dream race",
+    "special": "Special race",
+    "qualifier": "Qualifying",
+    "general": "Consolation race",
+    "officialName": "Official name: {{name}}",
+    "selection": "Selection race",
+    "qualifierSpecial": "Qualifying special",
+    "generalSpecial": "Consolation special",
+    "venueOriginal": "Venue's own race name"
   },
   "raceCard": {
     "awaitingResult": "Awaiting result",

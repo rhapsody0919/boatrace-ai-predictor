@@ -744,7 +744,17 @@
   },
   "raceStage": {
     "final": "優勝戦",
-    "semifinal": "準優勝戦"
+    "semifinal": "準優勝戦",
+    "semifinalQualifier": "準優進出戦",
+    "dream": "ドリーム戦",
+    "special": "特別戦",
+    "qualifier": "予選",
+    "general": "一般",
+    "officialName": "公式表記: {{name}}",
+    "selection": "選抜戦",
+    "qualifierSpecial": "予選特別戦",
+    "generalSpecial": "一般特選",
+    "venueOriginal": "会場独自のレース名"
   },
   "raceCard": {
     "awaitingResult": "結果反映待ち",

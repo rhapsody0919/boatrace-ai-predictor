@@ -38,3 +38,64 @@ export function getRaceStageBadge(raceStage) {
   const key = getRaceStageKey(raceStage);
   return key ? RACE_STAGE_BADGE_CONFIG[key] : undefined;
 }
+
+/**
+ * レース詳細の見出しに出す種別チップの分類（BOA-509）。
+ * getRaceStageKey（RaceCard のバッジ用。優勝戦・準優勝戦だけを返す）とは別物で、
+ * 既存の戻り値を変えないために関数を分けている。
+ *
+ * race_stage は会場の自由記述がほぼ生で入る（「予選特賞」「ペイペイDR」
+ * 「ウインウイン５」等）。直近30日（2026-08-29〜09-28、4,797R）の棚卸しでは、
+ * 下の順に部分一致させると約87%が分類でき、残りは会場の企画レース名
+ * （「朝からセンプル」「サンライズX戦」等）だった。分類できないものは null を返し、
+ * 呼び出し側で公式表記のまま出す（情報を消さない）。
+ *
+ * 判定順序の理由:
+ * - 「準々優勝戦」「準優進出戦」「準優勝戦」はいずれも「優勝戦」を含むので先に見る
+ * - 特選・特賞・特別は「予選の中の特別戦」と「予選落ち組の上位戦」で意味が逆になる。
+ *   直近30日の日目分布で、「予選特賞」「予選特選」は1〜4日目（予選期間）、
+ *   「一般特選」「一般特賞」「一般」「一般戦」は3日目以降・最終日（予選終了後）に
+ *   組まれている。1つの「特別戦」にまとめると、得点率に入るレースか予選落ちの
+ *   消化戦かを見分けられない（BOA-509 のファン評価で P1）ため、予選/一般の軸を残す
+ *   「予選選抜」（1〜3日目）・「一般選抜」も同じ軸で分ける
+ * - それ以外の「選抜」は「選抜戦」。完全一致の「選抜戦」は111件すべて最終日だが、
+ *   「記者選抜戦」「福岡選抜」等は1〜4日目にも組まれる（ファン評価3周目）。
+ *   文字列だけでは区別できないので、隣の日目バッジで読ませる
+ * - 「特別選抜戦」は「特別」を含むが選抜戦（最終日のみ）なので、特別戦より先に見る
+ * - 「予選ドリーム戦」はドリーム戦
+ */
+const hasSpecial = (s) =>
+  s.includes("特選") ||
+  s.includes("特賞") ||
+  s.includes("特別") ||
+  s.includes("選抜");
+
+const RACE_STAGE_CATEGORY_RULES = [
+  {
+    key: "semifinalQualifier",
+    test: (s) => s.includes("準々") || s.includes("準優進出"),
+  },
+  { key: "semifinal", test: (s) => s.includes("準優勝戦") },
+  { key: "final", test: (s) => s.includes("優勝戦") },
+  { key: "dream", test: (s) => s.includes("ドリーム") || s.includes("DR") },
+  {
+    key: "qualifierSpecial",
+    test: (s) => s.includes("予選") && hasSpecial(s),
+  },
+  { key: "generalSpecial", test: (s) => s.includes("一般") && hasSpecial(s) },
+  { key: "selection", test: (s) => s.includes("選抜") },
+  { key: "special", test: hasSpecial },
+  { key: "qualifier", test: (s) => s.includes("予選") },
+  { key: "general", test: (s) => s.includes("一般") },
+];
+
+/**
+ * @param {string|null|undefined} raceStage race_conditions.race_stage（生の公式表記）
+ * @returns {{ key: string, i18nKey: string } | null} 分類できなければ null
+ */
+export function getRaceStageCategory(raceStage) {
+  if (!raceStage) return null;
+  const s = raceStage.normalize("NFKC");
+  const rule = RACE_STAGE_CATEGORY_RULES.find((r) => r.test(s));
+  return rule ? { key: rule.key, i18nKey: `raceStage.${rule.key}` } : null;
+}
