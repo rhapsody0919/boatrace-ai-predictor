@@ -129,6 +129,16 @@ export const COUNT_CHECKS = Object.freeze([
   },
 
   // 節・選手の期別成績。取り込み前（テーブルが空）は「未導入」。取り込み後（過去分のバックフィル済み）に有効になる
+  //
+  // race_series.covered は、日目（race_conditions.series_day）のフォールバック（BOA-501）の見張りも兼ねる。
+  // 日目は、出走表ページから読めなかったとき節（race_series）から導く（scripts/lib/raceSeriesLookup.js）ため、
+  // 節の行が無い会場×日ができると、日目が黙って NULL のまま残る。それはこの項目が検知する
+  // （2026-09-28 の実測で、2026-09-01〜28 の全会場×日が covered=100%）。
+  //
+  // 症状そのもの（series_day の充足率）を見る pre_race.series_day は、まだ足していない。
+  // data_health_pre_race_fields（089）が series_day を返さないうちに登録表へ足すと、evaluate.js が
+  // 欠けた列を 0 と読んで（sum の `?? 0`）、分母だけがある＝充足率0% の誤報になる。
+  // 足すなら、関数を CREATE OR REPLACE するマイグレーションを本番へ適用してからにする。
   {
     id: "race_series.covered",
     label: "節(開催のあった会場×日を覆う)",

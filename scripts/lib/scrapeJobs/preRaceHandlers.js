@@ -24,6 +24,7 @@ import {
   runForRaces as runExhibitionForRaces,
 } from "../../daily/scrape-exhibition-data.js";
 import { getRaceSchedule } from "../raceSchedule.js";
+import { loadSeriesDayByVenue } from "../raceSeriesLookup.js";
 import { refreshAfterChange } from "../predictionRefresh.js";
 import { SCRAPE_JOBS, isCatchupOffset } from "./registry.js";
 import { isAuthorized, runScrapeJob } from "./cronWrapper.js";
@@ -52,6 +53,16 @@ export function createScheduleLoader({
   load = (date, client) =>
     getRaceSchedule(date, { client, throwOnError: true }),
 } = {}) {
+  return createPerDateLoader(load);
+}
+
+/**
+ * 1回の起動（ctx）の中で、日付ごとに1回だけ読む（createScheduleLoader・createSeriesDayLoader の共通部分）。
+ * 失敗した読み取りは覚えない（次のスロットが、もう一度試す）。
+ *
+ * @param {(date: string, client: unknown) => Promise<unknown>} load
+ */
+function createPerDateLoader(load) {
   const cache = new WeakMap();
   return (ctx, date) => {
     let byDate = cache.get(ctx);
@@ -61,12 +72,25 @@ export function createScheduleLoader({
     }
     if (!byDate.has(date)) {
       const pending = Promise.resolve().then(() => load(date, ctx.client));
-      // 失敗した読み取りを覚えない（次のスロットが、もう一度試す）
       pending.catch(() => byDate.delete(date));
       byDate.set(date, pending);
     }
     return byDate.get(date);
   };
+}
+
+/**
+ * 日目のフォールバック（BOA-501）の元になる、会場コード → 節から導いた日目 の対応を、
+ * 1回の起動（ctx）の中で1回だけ読む。スロットごとに読むと、1回の起動で最大24回の同じ読み取りになる。
+ *
+ * スケジュール（createScheduleLoader）と違い、読み取りの失敗は例外にしない（loadSeriesDayByVenue が空の Map を
+ * 返す）。日目はページから読めるのが本筋で、これはその欠けを補うためのもの。節が読めないことで、
+ * レース情報の更新そのものが止まってはならない。
+ */
+export function createSeriesDayLoader({
+  load = (date, client) => loadSeriesDayByVenue(date, { client }),
+} = {}) {
+  return createPerDateLoader(load);
 }
 
 /**
@@ -76,8 +100,10 @@ export function createScheduleLoader({
  * @param {(date: string, raceId: string) => void} [options.onChanged]
  * @param {{isCatchup: (offsetMin: number) => boolean, retrySec: number}} [options.catchup]
  *   窓の外の補完（発走の後のスロット）の判定と再試行の間隔。展示だけが持つ（BOA-382）
+ * @param {ReturnType<typeof createSeriesDayLoader>} [options.loadSeriesDays]
+ *   レース情報だけが持つ（展示は race_conditions.series_day を書かない）
  */
-function slotHandler({ run, loadSchedule, onChanged, catchup }) {
+function slotHandler({ run, loadSchedule, loadSeriesDays, onChanged, catchup }) {
   const scheduleFor = loadSchedule ?? createScheduleLoader();
   return async function handleSlot(slot, ctx) {
     const race = parsePreRaceId(slot.race_id);
@@ -99,7 +125,12 @@ function slotHandler({ run, loadSchedule, onChanged, catchup }) {
         // 補完は、気象を書かないため、スケジュール（気象の観測時刻の解決用）を読まない
         ...(isCatchup
           ? { catchup: true, updateWeather: false }
-          : { schedule: await scheduleFor(ctx, race.date) }),
+          : {
+              schedule: await scheduleFor(ctx, race.date),
+              ...(loadSeriesDays
+                ? { seriesDayByVenue: await loadSeriesDays(ctx, race.date) }
+                : {}),
+            }),
       },
     );
     if (!result) {
@@ -135,14 +166,16 @@ function slotHandler({ run, loadSchedule, onChanged, catchup }) {
  * @param {Object} [options]
  * @param {typeof runRaceInfoForRaces} [options.run]
  * @param {ReturnType<typeof createScheduleLoader>} [options.loadSchedule]
+ * @param {ReturnType<typeof createSeriesDayLoader>} [options.loadSeriesDays]
  * @param {(date: string, raceId: string) => void} [options.onChanged] 変更を書いたレースの通知
  */
 export function createRaceInfoSlotHandler({
   run = runRaceInfoForRaces,
   loadSchedule,
+  loadSeriesDays = createSeriesDayLoader(),
   onChanged,
 } = {}) {
-  return slotHandler({ run, loadSchedule, onChanged });
+  return slotHandler({ run, loadSchedule, loadSeriesDays, onChanged });
 }
 
 /**
