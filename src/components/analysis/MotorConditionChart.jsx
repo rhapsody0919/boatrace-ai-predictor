@@ -19,6 +19,7 @@ import DrillDownHeader from "./DrillDownHeader";
 import MotorWakuStatsGrid from "./MotorWakuStatsGrid";
 import MotorRacerWakuDrillDown from "./MotorRacerWakuDrillDown";
 import InlineFetchError from "../InlineFetchError";
+import { getTodayJST } from "../../utils/dateUtils";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
 
@@ -67,6 +68,9 @@ function MotorConditionChart({
     rows: [],
   });
   const [selectedWakuCourse, setSelectedWakuCourse] = useState(null);
+  // 過去レースで、そのレースのモーターが入れ替え前（現行世代より前）か。
+  // 今の同じ番号のモーターとは別物なので、ドリルダウンの中身を出さない（BOA-329）
+  const [drillPreGeneration, setDrillPreGeneration] = useState(false);
   const [periodDays, setPeriodDays] = useState(90);
   const pendingInitialMotorNumber = useRef(initialMotorNumber);
   // レース/会場が変わった時だけドリルダウンをリセットする（期間トグルだけの
@@ -132,6 +136,16 @@ function MotorConditionChart({
       try {
         setLoading(true);
         setError(null);
+        setDrillPreGeneration(false);
+        const raceDate = selectedRace?.slice(0, 10) ?? null;
+        if (raceDate !== null && raceDate < getTodayJST()) {
+          const generationStart =
+            await supabaseDataService.getMotorGenerationStart(selectedVenue);
+          if (generationStart !== null && raceDate < generationStart) {
+            setDrillPreGeneration(true);
+            return;
+          }
+        }
         const [
           trend,
           power,
@@ -198,7 +212,7 @@ function MotorConditionChart({
     };
     loadTrend();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedVenue, drillDownMotor, periodDays]);
+  }, [selectedVenue, selectedRace, drillDownMotor, periodDays]);
 
   // モーター・会場が変わったらFR-4ドリルダウン（枠タップで開く選手一覧）を閉じる
   // （periodDaysトグルだけの変更では閉じない。90/30日切り替えはFR-2〜4の
@@ -283,6 +297,18 @@ function MotorConditionChart({
     breakdown.map((r) => r.championship_count),
   );
   const firstPlaceRateRankClass = rankClassFor(firstPlaceRates);
+  // 過去レースの一覧表は出走表時点の公式値（BOA-329、2026-09-29 ユーザー判断(c)）。
+  // 期間の切り替えは効かないので出さず、1行の注記に置き換える
+  const officialMode = breakdown.some((r) => r.rate_source === "official");
+  const showPeriodToggle =
+    drillDownMotor === null ? !officialMode : !drillPreGeneration;
+  // 期間を現行モーターの使用開始日で切り詰めたか（入れ替え後で期間が短い）
+  const clippedByGeneration =
+    drillDownMotor === null
+      ? breakdown.some((r) => r.clipped_by_generation)
+      : Boolean(
+          powerIndex?.clipped_by_generation || trendData?.clippedByGeneration,
+        );
 
   return (
     <div className="motor-condition-container">
@@ -341,22 +367,36 @@ function MotorConditionChart({
           </div>
         ))}
 
-      <div className="period-toggle" role="group">
-        <button
-          type="button"
-          className={`period-toggle-btn ${periodDays === 90 ? "active" : ""}`}
-          onClick={() => setPeriodDays(90)}
-        >
-          {t("analysis.motor.period90")}
-        </button>
-        <button
-          type="button"
-          className={`period-toggle-btn ${periodDays === 30 ? "active" : ""}`}
-          onClick={() => setPeriodDays(30)}
-        >
-          {t("analysis.motor.period30")}
-        </button>
-      </div>
+      {showPeriodToggle ? (
+        <>
+          <div className="period-toggle" role="group">
+            <button
+              type="button"
+              className={`period-toggle-btn ${periodDays === 90 ? "active" : ""}`}
+              onClick={() => setPeriodDays(90)}
+            >
+              {t("analysis.motor.period90")}
+            </button>
+            <button
+              type="button"
+              className={`period-toggle-btn ${periodDays === 30 ? "active" : ""}`}
+              onClick={() => setPeriodDays(30)}
+            >
+              {t("analysis.motor.period30")}
+            </button>
+          </div>
+          {clippedByGeneration && (
+            <p className="table-note">
+              {t("analysis.motor.periodClippedNote")}
+            </p>
+          )}
+        </>
+      ) : (
+        officialMode &&
+        drillDownMotor === null && (
+          <p className="table-note">{t("analysis.motor.periodOfficialNote")}</p>
+        )
+      )}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
       {error && (
@@ -403,7 +443,10 @@ function MotorConditionChart({
                       画面が埋まるため、手前に足すと肝心の2連率・機力指数が画面外へ
                       押し出される（1着率の列を条件表示にしたのと同じ理由、2026-09-27） */}
                     <th>{t("analysis.motor.rate2Header")}</th>
-                    <th>{t("analysis.motor.officialRate2Header")}</th>
+                    {/* 過去レースは2連率の列そのものが公式値なので、同じ値の列を畳む */}
+                    {!officialMode && (
+                      <th>{t("analysis.motor.officialRate2Header")}</th>
+                    )}
                     <th>{t("analysis.motor.rate3Header")}</th>
                     {hasPretest && (
                       <th>{t("analysis.motor.pretestTimeHeader")}</th>
@@ -444,12 +487,14 @@ function MotorConditionChart({
                           ボートレース日和も1桁。再計算した2連率/3連率も、母数が数十走で
                           2桁目に意味が無いため揃える */}
                       <td className="rate">{row.motor_2rate?.toFixed(1)}</td>
-                      <td className="rate">
-                        {row.official_2rate !== null &&
-                        row.official_2rate !== undefined
-                          ? Number(row.official_2rate).toFixed(1)
-                          : "-"}
-                      </td>
+                      {!officialMode && (
+                        <td className="rate">
+                          {row.official_2rate !== null &&
+                          row.official_2rate !== undefined
+                            ? Number(row.official_2rate).toFixed(1)
+                            : "-"}
+                        </td>
+                      )}
                       <td className="rate">{row.motor_3rate?.toFixed(1)}</td>
                       {hasPretest && (
                         <td className="rate motor-pretest-cell">
@@ -512,12 +557,27 @@ function MotorConditionChart({
                 の出典を表のすぐ下に1回だけ置く。集計・加工した列（期間別の
                 2連率/3連率・機力指数）は当社の計算なので出典の対象外 */}
             <p className="table-note motor-official-source-note">
-              {t("analysis.motor.officialSourceNote")}
+              {officialMode
+                ? t("analysis.motor.officialModeSourceNote")
+                : t("analysis.motor.officialSourceNote")}
             </p>
           </div>
         )}
 
-      {!loading && !error && drillDownMotor !== null && (
+      {!loading && !error && drillDownMotor !== null && drillPreGeneration && (
+        <>
+          <DrillDownHeader
+            onBack={() => setDrillDownMotor(null)}
+            backLabel={t("analysis.backToList")}
+            heading={t("analysis.motor.trendHeading", { n: drillDownMotor })}
+          />
+          <div className="empty-state">
+            {t("analysis.motor.drillPreGeneration", { n: drillDownMotor })}
+          </div>
+        </>
+      )}
+
+      {!loading && !error && drillDownMotor !== null && !drillPreGeneration && (
         <>
           <DrillDownHeader
             onBack={() => setDrillDownMotor(null)}

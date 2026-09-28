@@ -991,6 +991,7 @@
       "pretestRank": "#{{rank}}",
       "officialRate2Header": "Official top-2 (series start)",
       "officialSourceNote": "Note: \"Trial\" and \"Official top-2 (series start)\" are shown exactly as published on the BOAT RACE Official Website (fixed when the series starts; they do not change mid-series). \"Top-2 rate\", \"Top-3 rate\" and the power index are our own recalculations over the selected period.",
+      "officialModeSourceNote": "※ For past races, \"Top-2 rate\", \"Top-3 rate\" and \"Trial\" are the BOAT RACE official website values as of the race card, and \"1st-place rate\", \"Finals\" and \"Championships\" are the latest values from each venue's official website on or before the race date. The \"Power index\" is computed backward from today, so it is shown only for today's races.",
       "rate2Header": "Top-2 rate (%)",
       "rate3Header": "Top-3 rate (%)",
       "powerIndexHeader": "Power index",
@@ -1006,6 +1007,8 @@
       "powerIndexSummary": "Power index {{index}} (average over {{count}} races, {{period}})",
       "period90": "last 90 days",
       "period30": "last month",
+      "periodOfficialNote": "💡 This is a past race, so motor stats are the official values as of the race card (the period cannot be changed).",
+      "periodClippedNote": "💡 The motors were recently replaced, so the period is limited to since the current motor went into service (the previous motor with the same number is excluded).",
       "powerIndexNote": "💡 The power index averages, across every past race this motor has run, the gap between \"did the boat actually finish top-2 (0/1)\" and \"that rider's own national top-2 rate at the time.\" A larger positive value means the motor is outperforming whichever rider is on it.",
       "freshnessLabel": "Motor freshness",
       "freshnessRaceBadge": "Race {{raceCount}}",
@@ -1047,7 +1050,8 @@
       "racerWakuBackLabel": "← Back to lane results",
       "racerWakuHeading": "Racers in lane {{course}}",
       "racerWakuEmpty": "No racers found for this motor/lane combination",
-      "racerWakuNote": "💡 Counts only races since the current motor went into service where this motor was used in this lane. Values in orange come from fewer than {{n}} starts and are for reference only."
+      "racerWakuNote": "💡 Counts only races since the current motor went into service where this motor was used in this lane. Values in orange come from fewer than {{n}} starts and are for reference only.",
+      "drillPreGeneration": "Motor #{{n}} in this race is from before the motor changeover and is a different motor from the current #{{n}}, so its trend, power index and usage history are not shown."
     },
     "racerForm": {
       "title": "📈 Racer Form",
