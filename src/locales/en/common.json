@@ -554,7 +554,7 @@
     "secondsUnit": "s",
     "detailTableTitle": "Exhibition details",
     "detailTableNote": "Avg. entry course and exhibition-fastest win rate cover the last 2 years; this-meet exhibition trend covers races since this motor was assigned",
-    "originalExhibitionSource": "Source: BOATCAST (BOATRACE Promotion Association) — full lap, half lap, turn speed, straight",
+    "originalExhibitionSource": "Source: BOATCAST (BOATRACE Promotion Association) — {{items}}",
     "originalExhibitionCapturedAt": "Retrieved: {{time}}",
     "originalExhibitionNote": "Note: Values are shown exactly as retrieved (no summarising, editing or redistribution). Check BOATCAST for the latest figures.",
     "motorHistoryLink": "See parts/propeller replacement history in Motor Condition",
@@ -571,7 +571,8 @@
     "top3RateAbbrev": "Top-3",
     "prevAbbrev": "Prev",
     "avgAbbrev": "Avg",
-    "exhibitionChartNote": "A longer bar means a faster trial (gap to the slowest boat). The number is the actual exhibition time in seconds."
+    "exhibitionChartNote": "A longer bar means a faster trial (gap to the slowest boat). The number is the actual exhibition time in seconds.",
+    "originalExhibitionItemSeparator": ", "
   },
   "pitReport": {
     "title": "Pit Report (racer comments)",

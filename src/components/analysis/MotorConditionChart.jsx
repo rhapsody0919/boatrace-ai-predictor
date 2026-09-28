@@ -384,16 +384,18 @@ function MotorConditionChart({
                     <th>{t("analysis.laneHeader")}</th>
                     <th>{t("table.playerName")}</th>
                     <th>{t("analysis.motor.motorNumberHeader")}</th>
-                    {/* BOA-451: 機力の「起点」（前検）と「公式の節時点2連率」を、
-                      期間で再計算した2連率/3連率の手前に置く。左から
-                      「節の始まりに何秒だったか」→「公式が節の頭に出した2連率」→
-                      「直近90日/1ヶ月で実際どうか」の順で読めるようにする */}
+                    {/* BOA-451: 「公式2連率（節時点）」は再計算した2連率の**すぐ右**に
+                      置く。この2つを見比べられることが追加の目的なので隣り合わせる。
+                      前検は「起点」なので3連率の右（機力指数の手前）。
+                      **2連率より左に列を足さない**のが肝心で、390pxでは左から3列で
+                      画面が埋まるため、手前に足すと肝心の2連率・機力指数が画面外へ
+                      押し出される（1着率の列を条件表示にしたのと同じ理由、2026-09-27） */}
+                    <th>{t("analysis.motor.rate2Header")}</th>
+                    <th>{t("analysis.motor.officialRate2Header")}</th>
+                    <th>{t("analysis.motor.rate3Header")}</th>
                     {hasPretest && (
                       <th>{t("analysis.motor.pretestTimeHeader")}</th>
                     )}
-                    <th>{t("analysis.motor.officialRate2Header")}</th>
-                    <th>{t("analysis.motor.rate2Header")}</th>
-                    <th>{t("analysis.motor.rate3Header")}</th>
                     {showFirstPlaceRate && (
                       <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
                     )}
@@ -416,6 +418,14 @@ function MotorConditionChart({
                       <td className="motor-num">
                         {t("analysis.motor.motorUnit", { n: row.motor_number })}
                       </td>
+                      <td className="rate">{row.motor_2rate?.toFixed(2)}</td>
+                      <td className="rate">
+                        {row.official_2rate !== null &&
+                        row.official_2rate !== undefined
+                          ? Number(row.official_2rate).toFixed(2)
+                          : "-"}
+                      </td>
+                      <td className="rate">{row.motor_3rate?.toFixed(2)}</td>
                       {hasPretest && (
                         <td className="rate motor-pretest-cell">
                           {row.pretest_time !== null &&
@@ -435,14 +445,6 @@ function MotorConditionChart({
                           )}
                         </td>
                       )}
-                      <td className="rate">
-                        {row.official_2rate !== null &&
-                        row.official_2rate !== undefined
-                          ? Number(row.official_2rate).toFixed(2)
-                          : "-"}
-                      </td>
-                      <td className="rate">{row.motor_2rate?.toFixed(2)}</td>
-                      <td className="rate">{row.motor_3rate?.toFixed(2)}</td>
                       {showFirstPlaceRate && (
                         <td
                           className={`rate ${firstPlaceRateRankClass(firstPlaceRates[i])}`}

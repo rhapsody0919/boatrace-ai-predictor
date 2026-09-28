@@ -46,7 +46,11 @@ import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import { supabaseDataService } from "../../services/supabaseDataService";
-import { buildBeforeInfoRows, toNumber } from "./raceIndicators";
+import {
+  buildBeforeInfoRows,
+  originalExhibitionKindLabels,
+  toNumber,
+} from "./raceIndicators";
 import {
   computeAvgEntryCourse,
   computeExhibitionTopRates,
@@ -537,7 +541,12 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
         {originalExhibition?.state === "published" && (
           <div className="rbi-source">
             <p className="rbi-source-text">
-              {t("beforeInfo.originalExhibitionSource")}
+              {t("beforeInfo.originalExhibitionSource", {
+                items: originalExhibitionKindLabels(
+                  t,
+                  originalExhibition.kinds,
+                ).join(t("beforeInfo.originalExhibitionItemSeparator")),
+              })}
             </p>
             {formatCapturedAtJst(originalExhibition.capturedAt) && (
               <p className="rbi-source-text">

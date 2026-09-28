@@ -552,7 +552,7 @@
     "secondsUnit": "秒",
     "detailTableTitle": "展示資訊",
     "detailTableNote": "平均進入順位・展示時間第1名勝率為過去2年統計，本節展示資訊為換用此馬達後（本節）的推移",
-    "originalExhibitionSource": "出處: BOATCAST（一般財團法人BOATRACE振興會）— 一周・半周單圈・迴旋腳・直線",
+    "originalExhibitionSource": "出處: BOATCAST（一般財團法人BOATRACE振興會）— {{items}}",
     "originalExhibitionCapturedAt": "擷取時間: {{time}}",
     "originalExhibitionNote": "※ 取得的數值原樣顯示（未經摘要、修改或再散布）。最新內容請至BOATCAST確認。",
     "motorHistoryLink": "查看馬達調子中的零件交換・螺旋槳交換紀錄",
@@ -569,7 +569,8 @@
     "top3RateAbbrev": "3連對",
     "prevAbbrev": "前一場",
     "avgAbbrev": "平均",
-    "exhibitionChartNote": "長條越長代表展示越快（與最慢艇的差）。數字為實際展示時間（秒）"
+    "exhibitionChartNote": "長條越長代表展示越快（與最慢艇的差）。數字為實際展示時間（秒）",
+    "originalExhibitionItemSeparator": "・"
   },
   "pitReport": {
     "title": "維修區報告（選手留言）",

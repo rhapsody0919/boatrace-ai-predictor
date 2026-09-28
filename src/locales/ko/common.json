@@ -552,7 +552,7 @@
     "secondsUnit": "초",
     "detailTableTitle": "전시 정보",
     "detailTableNote": "평균 진입 순위・전시 타임 1위 승률은 최근 2년간 집계이며, 이번 시리즈 전시 정보는 이 모터 사용 시작 이후(이번 시리즈)의 추이입니다",
-    "originalExhibitionSource": "출처: BOATCAST(일반재단법인 BOATRACE 진흥회) — 한 바퀴・반 바퀴 랩・선회 발・직선",
+    "originalExhibitionSource": "출처: BOATCAST(일반재단법인 BOATRACE 진흥회) — {{items}}",
     "originalExhibitionCapturedAt": "취득: {{time}}",
     "originalExhibitionNote": "※ 취득한 값을 그대로 표시하고 있습니다(요약・수정・재배포하지 않았습니다). 최신 내용은 BOATCAST에서 확인해 주세요.",
     "motorHistoryLink": "모터 컨디션에서 부품 교환・프로펠러 교환 이력 보기",
@@ -569,7 +569,8 @@
     "top3RateAbbrev": "3연대",
     "prevAbbrev": "직전",
     "avgAbbrev": "평균",
-    "exhibitionChartNote": "막대가 길수록 전시가 빠릅니다(가장 느린 정과의 차). 숫자는 실제 전시 타임(초)"
+    "exhibitionChartNote": "막대가 길수록 전시가 빠릅니다(가장 느린 정과의 차). 숫자는 실제 전시 타임(초)",
+    "originalExhibitionItemSeparator": "・"
   },
   "pitReport": {
     "title": "피트 리포트(선수 코멘트)",

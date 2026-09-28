@@ -80,8 +80,21 @@ const ORIGINAL_EXHIBITION_ROW_META = {
   直線: { key: "oriStraight", labelKey: "dataTable.rowOriStraight" },
 };
 
+/**
+ * 出典表記に並べる項目名（その会場・そのレースで実際に出した種別だけ）を訳して返す。
+ * 児島のように「一周・まわり足」しか計測しない会場で「直線」まで書くと、
+ * 出していない値の出典を名乗ることになるため、行と同じ集合から作る
+ */
+export function originalExhibitionKindLabels(t, kinds) {
+  return (kinds ?? [])
+    .map((kind) => ORIGINAL_EXHIBITION_ROW_META[kind])
+    .filter(Boolean)
+    .map((meta) => t(meta.labelKey));
+}
+
 function buildOriginalExhibitionRows(t, originalExhibition) {
-  if (!originalExhibition || originalExhibition.state !== "published") return [];
+  if (!originalExhibition || originalExhibition.state !== "published")
+    return [];
   const byBoat = originalExhibition.byBoat ?? {};
   return (originalExhibition.kinds ?? [])
     .map((kind) => {

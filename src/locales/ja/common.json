@@ -295,7 +295,7 @@
     "secondsUnit": "秒",
     "detailTableTitle": "展示情報",
     "detailTableNote": "平均進入順・展示タイム1位勝率は過去2年間の集計、今節展示情報はモーター使用開始後（今節）の推移です",
-    "originalExhibitionSource": "出典: BOATCAST（一般財団法人BOATRACE振興会）— 一周・半周ラップ・まわり足・直線",
+    "originalExhibitionSource": "出典: BOATCAST（一般財団法人BOATRACE振興会）— {{items}}",
     "originalExhibitionCapturedAt": "取得: {{time}}",
     "originalExhibitionNote": "※ 取得した値をそのまま表示しています（要約・改変・再配布はしていません）。最新の内容はBOATCASTでご確認ください。",
     "motorHistoryLink": "モーター調子で部品交換・プロペラ交換の履歴を見る",
@@ -312,7 +312,8 @@
     "top3RateAbbrev": "3連対",
     "prevAbbrev": "前走",
     "avgAbbrev": "平均",
-    "exhibitionChartNote": "棒が長いほど速い（最も遅い艇との差）。数字は実際の展示タイム（秒）"
+    "exhibitionChartNote": "棒が長いほど速い（最も遅い艇との差）。数字は実際の展示タイム（秒）",
+    "originalExhibitionItemSeparator": "・"
   },
   "pitReport": {
     "title": "ピットレポート（選手コメント）",
