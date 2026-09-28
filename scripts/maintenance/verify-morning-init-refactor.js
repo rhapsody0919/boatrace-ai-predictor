@@ -715,7 +715,9 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
     FALLBACK_FROM_JST_HOUR === 7 && !decide(true, 6, 0).run && decide(true, 7, 0).run,
   );
 
-  // 本番の資格情報が環境にあっても、DBに書かないよう、Supabase の変数は空にして起動する
+  // 本番の資格情報が環境にあっても、DBに書かないよう、Supabase の変数は空にして起動する。
+  // 削除ではなく空文字にするのが要点: 削除すると supabaseClient.js の dotenv が .env.local から
+  // 本番の値を読み込む（dotenv は既にある変数を上書きしないので、空文字なら未設定のまま）
   const FAKE_NOW = fileURLToPath(
     new URL("../lib/scrapeJobs/testing/fakeNow.mjs", import.meta.url),
   );
@@ -737,9 +739,17 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
           ...extra,
         },
         encoding: "utf8",
-        timeout: 30000,
+        // 子プロセスの中身は1秒程度で終わるが、並行セッションで負荷が高い開発機では起動だけで
+        // 30秒を超え、5件まとめて status=null で落ちた（2026-09-28）。上限は run-verify-registry.js の
+        // 1本あたりの上限（180秒）より短くし、ハングしたときはこちらの失敗として理由を出す
+        timeout: 150_000,
       },
     );
+  // タイムアウト等で結果が出なかったとき、期待との食い違いと区別できるよう理由を出す
+  const why = (r) =>
+    r.error
+      ? `子プロセスが完了しませんでした: ${r.error.code ?? r.error.message}`
+      : `${r.status} ${r.stdout} ${r.stderr}`.slice(0, 300);
   const skipped = spawn(
     { SKIP_MORNING_INIT_ON_GHA: "true" },
     "2026-09-21T05:30:00+09:00",
@@ -747,7 +757,7 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
   check(
     "(e) SKIP_MORNING_INIT_ON_GHA=true・05:30 JST: 何もせず正常終了（Supabase が無くても）",
     skipped.status === 0 && /スキップ/.test(skipped.stdout),
-    `${skipped.status} ${skipped.stdout} ${skipped.stderr}`.slice(0, 200),
+    why(skipped),
   );
   const failsafe = spawn(
     { SKIP_MORNING_INIT_ON_GHA: "true" },
@@ -758,13 +768,13 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
     failsafe.status === 1 &&
       /フェイルセーフで初期化/.test(failsafe.stderr) &&
       /Supabase環境変数が未設定/.test(failsafe.stderr),
-    `${failsafe.status} ${failsafe.stdout} ${failsafe.stderr}`.slice(0, 300),
+    why(failsafe),
   );
   const normal = spawn({}, "2026-09-21T05:30:00+09:00");
   check(
     "(e) 既定（変数なし）: 従来どおり動く（時刻に依らず。Supabase 未設定なら、そのエラーで異常終了）",
     normal.status === 1 && /Supabase環境変数が未設定/.test(normal.stderr),
-    `${normal.status} ${normal.stderr}`.slice(0, 200),
+    why(normal),
   );
   const falseVar = spawn(
     { SKIP_MORNING_INIT_ON_GHA: "false" },
@@ -773,6 +783,7 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
   check(
     "(e) SKIP_MORNING_INIT_ON_GHA=false: 従来どおり（止めない）",
     falseVar.status === 1 && /Supabase環境変数が未設定/.test(falseVar.stderr),
+    why(falseVar),
   );
   const skipPc = spawn(
     { SKIP_PCEXPECT_ON_GHA: "true" },
@@ -781,6 +792,7 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
   check(
     "(e) SKIP_PCEXPECT_ON_GHA だけでは、朝の初期化そのものは止まらない（Supabase 未設定のエラーまで進む）",
     skipPc.status === 1 && /Supabase環境変数が未設定/.test(skipPc.stderr),
+    why(skipPc),
   );
 }
 

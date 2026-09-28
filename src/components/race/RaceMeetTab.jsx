@@ -197,6 +197,35 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
       r.stRank,
     ]),
   );
+  // 線の点に合わせたときに出す文字列（BOA-454の確認中に出たユーザー要望）。
+  // 文言の組み立て（i18n）は呼び出し側の責任にし、MeetSparkline は受け取った
+  // 文字列を出すだけにしてある。日付は月日だけ（同じ節しか並ばないので年は要らない）。
+  //
+  // **下の「日別の走り」表と同じ行（getRecentRaces の正規化後）から作る。**
+  // 生の `meet` の行はレース番号を持たず（race_id から導出する）、着順も
+  // `finishPositionOf` を通して初めて決まるため、生の行から組み立てると
+  // 表には「11R・4着」と出ているのに吹き出しだけ「—R・着外」になる
+  const meetRows = getRecentRaces(meet, meet.length);
+  const sparkLabel = (row, metricKey, value, rank) => {
+    if (value === null || value === undefined) return null;
+    const shown = Number(value).toFixed(2);
+    return t("meetTab.sparkTip", {
+      date:
+        typeof row.date === "string" && row.date.length === 10
+          ? `${Number(row.date.slice(5, 7))}/${Number(row.date.slice(8, 10))}`
+          : (row.date ?? "—"),
+      no: row.raceNo ?? "—",
+      metric: t(metricKey),
+      value: rank
+        ? t("raceHistoryTable.startTimingCell", { time: shown, rank })
+        : shown,
+      finish:
+        row.finishRank == null
+          ? t("basicInfo.finishUnknown")
+          : t("meetTab.sparkTipFinish", { finish: row.finishRank }),
+    });
+  };
+
   // 得点率早見（6艇×1着〜6着）。公式の「得点率早見」は**6艇を1つの表**にして
   // 行＝艇・列＝着順で並べ、ボーダーとの関係を色で示す
   // （https://www.boatrace.jp/static_extra/pc/guide/guide-7.html）。
@@ -204,8 +233,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   // 追加クエリ0本（既に持っている得点・走数から純関数で出す）
   const remainingPrelimRuns = board?.remainingPrelimRunsByRacer ?? {};
   // 残り走で取りうる最大得点（ドリーム戦の1着は12点）。無ければ予選配点で代用
-  const remainingPrelimMaxPoints =
-    board?.remainingPrelimMaxPointsByRacer ?? {};
+  const remainingPrelimMaxPoints = board?.remainingPrelimMaxPointsByRacer ?? {};
   const forecastRows =
     !prelimOver && !isAfterPrelim
       ? sortedPlayers
@@ -746,7 +774,15 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                   )}
                 </div>
                 <MeetSparkline
-                  points={meet.map((r) => ({ value: r.startTiming ?? null }))}
+                  points={meetRows.map((r) => ({
+                    value: r.startTiming ?? null,
+                    label: sparkLabel(
+                      r,
+                      "meetTab.compareTrendSt",
+                      r.startTiming,
+                      stRankByRace[r.raceId] ?? null,
+                    ),
+                  }))}
                   baseline={st.baseAvg}
                   color="var(--brand-accent-primary)"
                 />
@@ -780,13 +816,19 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                     )}
                 </div>
                 <MeetSparkline
-                  points={meet.map((r) => ({
+                  points={meetRows.map((r) => ({
                     value: r.exhibitionTime ?? null,
+                    label: sparkLabel(
+                      r,
+                      "meetTab.compareTrendEx",
+                      r.exhibitionTime,
+                      r.exhibitionRank ?? null,
+                    ),
                   }))}
                   // 基準は「その日の会場全体の展示平均」。水面は日ごとに
                   // 0.08秒動くため（若松2026-09-22〜27の実測で6.829〜6.907）、
                   // 生タイムだけでは重い日の6.90と軽い日の6.90を同じに読む
-                  referenceSeries={meet.map(
+                  referenceSeries={meetRows.map(
                     (r) => venueDailyExhibitionAvg[r.date] ?? null,
                   )}
                   color="var(--color-info-text, #2a7fbf)"
@@ -811,7 +853,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                 「1つ下向き」と出るが、今節ベスト級は間にある）。
                 判定はやめ、走ごとの生の数字を表に並べて読み手に委ねる */}
             <RaceHistoryTable
-              rows={getRecentRaces(meet, meet.length).map((r) => ({
+              rows={meetRows.map((r) => ({
                 ...r,
                 startTimingRank: stRankByRace[r.raceId] ?? null,
               }))}
