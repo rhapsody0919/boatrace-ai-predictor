@@ -28,32 +28,9 @@ import {
 import { trackEvent } from "../../utils/analytics";
 import TermHintButton from "./TermHintButton";
 import "./RacePitReportSection.css";
+import { formatCapturedAtJst } from "../../utils/formatters";
 
 const CONFIDENCE_MAX = 3;
-
-// ロケールによる並び順・桁揃えの差を受けないよう、部品で取り出してから組み立てる
-// （month/dayに"numeric"を指定しても、hourと組み合わせると2桁に揃うロケールがある）
-const JST_DATETIME_FORMAT = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Tokyo",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-});
-
-/** 取得時刻（ISO文字列）を「9/18 15:42」（JST）にする。読めなければnull */
-function formatCapturedAt(capturedAt) {
-  if (!capturedAt) return null;
-  const date = new Date(capturedAt);
-  if (Number.isNaN(date.getTime())) return null;
-  const parts = JST_DATETIME_FORMAT.formatToParts(date);
-  const pick = (type) => parts.find((p) => p.type === type)?.value ?? "";
-  const month = Number(pick("month"));
-  const day = Number(pick("day"));
-  if (!month || !day) return null;
-  return `${month}/${day} ${pick("hour")}:${pick("minute")}`;
-}
 
 function ConfidenceStars({ stars, t }) {
   if (!Number.isInteger(stars) || stars < 0 || stars > CONFIDENCE_MAX) {
@@ -230,7 +207,7 @@ function RacePitReportSection({ raceId, raceGrade, players }) {
   }
 
   const playerByBoat = new Map((players ?? []).map((p) => [p.number, p]));
-  const capturedAt = formatCapturedAt(report.capturedAt);
+  const capturedAt = formatCapturedAtJst(report.capturedAt);
 
   return (
     <section className="rbi-card rpr-card">

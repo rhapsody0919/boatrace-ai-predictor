@@ -1,0 +1,150 @@
+{
+  "generatedAt": "2026-08-31T05:25:33.522Z",
+  "days": 30,
+  "byLanguage": {
+    "ja": {
+      "pv": 11449,
+      "users": 922
+    },
+    "en": {
+      "pv": 100,
+      "users": 46
+    },
+    "zh-TW": {
+      "pv": 2,
+      "users": 2
+    },
+    "ko": {
+      "pv": 4,
+      "users": 3
+    }
+  },
+  "shareOfPv": {
+    "en": 0.87,
+    "zh-TW": 0.02,
+    "ko": 0.03
+  },
+  "languageSwitches": 37,
+  "byCountry": {
+    "en": [
+      {
+        "country": "United States",
+        "users": 26,
+        "pv": 52
+      },
+      {
+        "country": "Japan",
+        "users": 10,
+        "pv": 26
+      },
+      {
+        "country": "Germany",
+        "users": 3,
+        "pv": 6
+      },
+      {
+        "country": "Singapore",
+        "users": 2,
+        "pv": 4
+      },
+      {
+        "country": "China",
+        "users": 1,
+        "pv": 3
+      },
+      {
+        "country": "Ghana",
+        "users": 1,
+        "pv": 5
+      },
+      {
+        "country": "Hong Kong",
+        "users": 1,
+        "pv": 2
+      },
+      {
+        "country": "India",
+        "users": 1,
+        "pv": 2
+      }
+    ],
+    "zh-TW": [
+      {
+        "country": "Hong Kong",
+        "users": 1,
+        "pv": 1
+      },
+      {
+        "country": "Japan",
+        "users": 1,
+        "pv": 1
+      }
+    ],
+    "ko": [
+      {
+        "country": "Japan",
+        "users": 1,
+        "pv": 2
+      },
+      {
+        "country": "South Korea",
+        "users": 1,
+        "pv": 2
+      }
+    ]
+  },
+  "bySource": {
+    "en": [
+      {
+        "channel": "Direct",
+        "sessions": 34
+      },
+      {
+        "channel": "Organic Search",
+        "sessions": 16
+      }
+    ],
+    "zh-TW": [
+      {
+        "channel": "Organic Search",
+        "sessions": 1
+      },
+      {
+        "channel": "Unassigned",
+        "sessions": 1
+      }
+    ],
+    "ko": [
+      {
+        "channel": "Organic Search",
+        "sessions": 2
+      }
+    ]
+  },
+  "defaultLangSource": [
+    {
+      "channel": "Organic Search",
+      "sessions": 1532
+    },
+    {
+      "channel": "Direct",
+      "sessions": 801
+    },
+    {
+      "channel": "Unassigned",
+      "sessions": 61
+    },
+    {
+      "channel": "Referral",
+      "sessions": 25
+    },
+    {
+      "channel": "AI Assistant",
+      "sessions": 22
+    },
+    {
+      "channel": "Organic Social",
+      "sessions": 12
+    }
+  ]
+}
