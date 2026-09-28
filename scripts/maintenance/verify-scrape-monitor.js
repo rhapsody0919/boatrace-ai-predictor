@@ -4,6 +4,7 @@
  *
  * 確認すること:
  *   (a) 窓内取得率・遅延の集計（確定中止・shadow・未claimの他モードのジョブを分母に入れない。展示は許容幅ベース）
+ *   (a3) 体重だけの窓（展示の発走60分前。BOA-500）は、窓内取得率（ジョブ別）の分母に入れず、期限切れを通知しない
  *   (b) expired・未実行の検知（1件でも）、窓内取得率の閾値（母数が小さいときは判定しない）
  *   (b2) 発売開始の遅れ（全レースの発走60分前のオッズの未公開。延長で取得できた、または後続の窓で公開が確認できたものだけ、
  *        警告・分母から外す。BOA-386・完了の定義Bの見直し）と、発売開始の検知の遅れ（5分以内の割合）の集計・警告
@@ -289,6 +290,86 @@ const doneOdds = (delayMin, over = {}) =>
     mutantAlerts.some(
       (a) => a.key === "expired:exhibition:2026-09-19-02-02:10",
     ),
+    show(mutantAlerts.map((a) => a.key)),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (a3) 体重だけの窓（展示の発走60分前。レジストリの weightOnlyOffsets。BOA-500）
+// ---------------------------------------------------------------------------
+{
+  const noWeightOnly = {
+    ...SCRAPE_JOBS,
+    exhibition: { ...SCRAPE_JOBS.exhibition, weightOnlyOffsets: undefined },
+  };
+  // 10:00発走。-60 の期限は 09:00、-33 の期限は 09:27
+  const primaryDone = () =>
+    slot("exhibition", -33, "done", {
+      done_at: iso(new Date(at("09:27").getTime() + 5 * 60000)),
+    });
+  // -33: 60件すべてヒット。-60: 体重の公開が窓より遅かった10件が expired（-33 が同じ行を埋めている）
+  const slots = [
+    ...Array.from({ length: 60 }, () => primaryDone()),
+    ...Array.from({ length: 50 }, () =>
+      slot("exhibition", -60, "done", {
+        done_at: iso(new Date(at("09:00").getTime() + 60000)),
+      }),
+    ),
+    ...Array.from({ length: 10 }, () =>
+      slot("exhibition", -60, "expired", { attempts: 6 }),
+    ),
+  ];
+  const stats = computeWindowStats(slots);
+  const weightRow = stats.find((x) => x.offset_min === -60);
+  const job = aggregateByJob(stats).find((j) => j.job === "exhibition");
+  check(
+    "体重だけの窓: 窓別の集計には残る（50/60）が、ジョブ別の窓内取得率には束ねない（-33 の60/60のまま。閾値の警告を出さない）",
+    weightRow?.total === 60 &&
+      weightRow?.hit === 50 &&
+      job?.total === 60 &&
+      job?.hit === 60 &&
+      evaluateWindowRates(stats, DATE).length === 0,
+    show({ weightRow, job }),
+  );
+  const mutantJob = aggregateByJob(stats, noWeightOnly).find(
+    (j) => j.job === "exhibition",
+  );
+  check(
+    "変異検証: 「体重だけの窓も束ねる」版では、率が 110/120 に下がり、上の検証が失敗する",
+    mutantJob?.total === 120 && mutantJob?.hit === 110,
+    show(mutantJob),
+  );
+
+  const active = new Set(["exhibition"]);
+  const expired = [
+    slot("exhibition", -60, "expired", {
+      attempts: 6,
+      outcome: "no_values",
+      race_id: "2026-09-19-02-01",
+    }),
+    slot("exhibition", -60, "expired", {
+      attempts: 0,
+      race_id: "2026-09-19-02-02",
+    }),
+    slot("exhibition", -33, "expired", {
+      attempts: 13,
+      race_id: "2026-09-19-02-03",
+    }),
+  ];
+  const alerts = evaluateExpired(expired, { activeJobs: active });
+  check(
+    "体重だけの窓: 期限切れ・未実行を通知しない（体重の公開が窓より遅くても、-33 の窓が同じ行を埋める）。-33 の期限切れは従来どおり通知する",
+    show(alerts.map((a) => a.key)) ===
+      show(["expired:exhibition:2026-09-19-02-03:-33"]),
+    show(alerts.map((a) => a.key)),
+  );
+  const mutantAlerts = evaluateExpired(expired, {
+    activeJobs: active,
+    registry: noWeightOnly,
+  });
+  check(
+    "変異検証: 「体重だけの窓の期限切れも通知する」版では、-60 が通知され、上の検証が失敗する",
+    mutantAlerts.some((a) => a.key.endsWith(":-60")),
     show(mutantAlerts.map((a) => a.key)),
   );
 }

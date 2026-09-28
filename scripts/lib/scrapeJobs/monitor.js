@@ -22,11 +22,20 @@
  * ジョブ別の集計（aggregateByJob）には入れず、窓別の集計（computeWindowStats）にだけ残す。期限切れの通知は、
  * 補完の失敗（展示が最後まで取れなかった）を伝えるが、中止・順延の疑い（cancellation_status が入っている）のレースは通知しない
  *
+ * 体重だけの窓（レジストリの weightOnlyOffsets。展示の発走60分前。BOA-500）は、当日体重・調整重量の前倒しの取得
+ * （best effort）で、取れなくても -33 の窓が同じ行を埋める。展示の窓内取得率（ジョブ別）の分母に入れず（窓別の集計には残す）、
+ * 期限切れを通知しない（体重の公開が窓より遅いだけのレースを、取得の失敗として通知しない）
+ *
  * 「予定表・ジョブ状態のテーブルが無い」（075未適用）、および全ジョブが off の間は、何も通知しない（誤報なし）。
  *
  * 純粋関数（evaluate*・compute*・format*・dedupe）と、IO（collectMonitorInput・postSlack・runMonitor）に分ける。
  */
-import { SCRAPE_JOBS, isCatchupOffset, isScheduledDate } from "./registry.js";
+import {
+  SCRAPE_JOBS,
+  isCatchupOffset,
+  isScheduledDate,
+  isWeightOnlyOffset,
+} from "./registry.js";
 import { jstMinutesOfDay, slotWindowEnd, toJstDateString } from "./time.js";
 import { resolveTargetDate } from "./dailyJob.js";
 import { isCancellationConfirmed } from "../cancellationStatus.js";
@@ -199,12 +208,14 @@ export function computeWindowStats(
 }
 
 /**
- * ジョブごとに窓を束ねた窓内取得率。窓の外の補完のスロット（catchupOffsets）は束ねない（ファイル冒頭の説明）
+ * ジョブごとに窓を束ねた窓内取得率。窓の外の補完のスロット（catchupOffsets）・体重だけの窓（weightOnlyOffsets）は
+ * 束ねない（ファイル冒頭の説明）
  */
 export function aggregateByJob(stats, registry = SCRAPE_JOBS) {
   const byJob = new Map();
   for (const s of stats) {
     if (isCatchupOffset(registry[s.job], s.offset_min)) continue;
+    if (isWeightOnlyOffset(registry[s.job], s.offset_min)) continue;
     const j = byJob.get(s.job) ?? {
       job: s.job,
       total: 0,
@@ -262,6 +273,8 @@ export function evaluateExpired(
     ) {
       continue;
     }
+    // 体重だけの窓（発走60分前）は通知しない。体重の公開が窓より遅くても、-33 の窓が同じ行を埋める（ファイル冒頭の説明）
+    if (isWeightOnlyOffset(registry[slot.job], slot.offset_min)) continue;
     const deadline = deadlineOf(slot);
     if (!isPastWindow(slot, now, registry)) continue;
     // 想定内の未公開（後続の窓で公開が確認できた・確認待ち）は通知しない。後続の窓も取れなかったものは、ここに来る

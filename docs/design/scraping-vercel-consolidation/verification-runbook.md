@@ -1618,6 +1618,45 @@ UPDATE scrape_slots SET status = 'expired', lease_until = NULL, next_attempt_at 
 
 **未確認事項**: (1)公開の時刻の分布の尾部（-7分〜発走後）は、ページに時刻が無いため、補完のスロットの`done_at`（`ok`のレース）から、live後に測る（上の(2)）。(2)補完の窓（発走の10〜36分後）に収まらない遅い公開は、補完でも取れない（(3)で検知される）。(3)発走の7分前〜発走の間の公開は、予測の再計算ができない（`-33`は-7で終わり、補完は発走後）。必要なら、`graceMin`を26→29（-4分まで。Q-0）にする（`verify-scrape-monitor.js`の展示の許容幅の期待値も更新）。
 
+### Q-9. 体重だけの窓（`exhibition`の発走60分前のスロット。BOA-500）
+
+当日体重・調整重量は、展示航走より前（発走60分前の時点で9会場とも。2026-09-28の実測）に`beforeinfo`へ載る。PR #917（BOA-500 第1弾）で、展示前のページからも体重・調整重量だけの行を書けるようにした。この窓は、それを発走60分前から取りに行くためのもの。
+
+| 項目 | 定義 |
+|---|---|
+| 窓 | `offsets`に`-60`（`weightOnlyOffsets: [-60]`）。許容幅は既存の26分のまま＝発走60分前〜34分前。`-33`の窓（〜-7分）とは重ならない（`validateRegistry`が検査する） |
+| 完了 | 当日体重・調整重量が1艇でも非NULLの行を書けたら`ok`。展示タイムまで載っていれば、それも書いて`ok`（`-33`は`skipped_have_data`で済む） |
+| 未完了 | 表が無い（体重も未公開）は`no_values`。再試行は`weightOnlyRetrySec`（300秒）おき |
+| 気象・再計算 | 書かない・しない（予測は体重を使わない。気象は`-33`が、発走に近い観測で書く） |
+| 監視 | 窓内取得率（ジョブ別）の分母に入れず、期限切れ・未実行を通知しない（体重の公開が窓より遅くても、`-33`が同じ行を埋める。best effort の前倒し）。窓別の集計には残る |
+
+**`-33`と同じ「展示タイムが取れたら完了」にしなかった理由**: 展示前は必ず`partial`（未完了）になり、許容幅26分の間120秒おきに再試行し続ける（1レース最大15回。1日約2,000リクエストの増）。窓ごとに完了の意味を変えることで、体重が公開済みなら1レース1リクエスト、未公開でも最大6回に抑えた。
+
+**負荷（2026-09-28の本番の予定表から）**: 1日143レース。既存の展示は1日1,408回の試行（`-33`が1,264回・補完が144回）。`-60`は、体重が公開済みなら1日約144回の増（最悪でも約860回）。`odds`（`-60`は5ページ）・`race_info`（1ページ）と同じ分に動くが、同じ分に発走するレースは最大2本（5分以内でも最大4本）のため、その分の`boatrace.jp`への取得は最大14件（従来12件）。3つは別の関数で、`politeFetch`の並列度の上限は関数ごと、ブレーカーはホスト単位で共有（429/503が5件以上で開く）。
+
+**反映の時期**: スロットは朝の予定表の生成（`ensure_scrape_slots`）で作られるため、マージ・デプロイの翌日の朝から効く。
+
+**確認（live後の読み取り）**:
+
+```sql
+-- -60 の完了率・試行回数（期待: done がほぼ全て、avg_attempts が1に近い）
+SELECT offset_min, status, outcome, count(*), avg(attempts)::numeric(5,2) AS avg_attempts, max(attempts)
+  FROM scrape_slots
+ WHERE job = 'exhibition' AND race_id LIKE '<日付>%'
+ GROUP BY 1, 2, 3 ORDER BY 1, 2, 3;
+```
+
+**切り戻し**: `offsets`から`-60`を消す（レジストリの変更のみ）。`weightOnlyOffsets`・`weightOnlyRetrySec`は残す（DBに残った`offset_min=-60`のスロットは、claimされても体重だけの窓として扱われる）。残ったスロットを、すぐに止めるなら:
+
+```sql
+UPDATE scrape_slots SET status = 'expired', lease_until = NULL, next_attempt_at = NULL
+ WHERE job = 'exhibition' AND offset_min = -60 AND status IN ('pending', 'running');
+```
+
+**検証**: `npm run verify:scrape-pre-race-job`（展示航走前の実ページのフィクスチャ。変異検証つき）・`verify:scrape-monitor`・`verify:scrape-slots-sql`（窓の境界・`-33`との非重複・確定中止をRPCで）。
+
+**未確認事項**: 各会場の第1レース（朝）の体重の公開時刻。未公開なら`no_values`で最大6回再試行し、取れなければ`-33`に任せる。live後に`-60`の`outcome`・`attempts`をレース番号別に見て、1Rだけ試行が多いなら窓を見直す。
+
 ## R. ピットレポート（`pit_reports`、選手コメント）の切り替え（tasks.md T4b-17、[pit-comments/plan.md](../pit-comments/plan.md)）
 
 対象はSG・G1・G2の対象レースのみ（1日6〜18ページ）。**適用の順序: 085 → shadow → Storageバケット → live → （画面の実装後）086**。いずれも本番の変更のため、ユーザーの承認が要る。
