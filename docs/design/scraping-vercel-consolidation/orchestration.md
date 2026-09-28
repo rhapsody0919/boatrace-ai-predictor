@@ -437,6 +437,8 @@ live化の前提にしない。
 1. `CRON_SECRET` で `?chunk=5` を手動で数回叩き、`processed`・`afterRacerId`・`durationSeconds` を確認する（shadowなので書き込まない）
    → **実施済み（2026-09-28 10:14 JST）。合格**。下記「手動確認の結果」
 2. `cursor` を消して `live` にする（10/2 03:00 JST の前に）
+   → **実施済み（2026-09-28 10:26 JST、ユーザー操作）。`mode=live` / `cursor=NULL` / `last_target_date=NULL` を確認**。
+   Vercel Cron の起動は 10/1 18:00 UTC のため、この時点では自動実行されない
 3. **10/2の回は `SKIP_RACER_SEASON_ON_GHA` を立てない**。GHAと並走させ、同じ値が入ることを確認する（上書き型のupsertなので二重でも壊れない）
 4. 確認できたら変数を立て、11/2の回をVercelのみで通す
 
@@ -483,7 +485,7 @@ plan.md の見積り（1ページ約8〜10秒を同時4で約2〜2.5秒/人）�
 
 | 条件（plan.md §4.8） | 状態 |
 |---|---|
-| 1. 全取得処理がVercelへ移行済み | **残1つ**（`racer_profiles`。2026-09-28 10:07 JSTに `shadow` で登録済みで、手動の `?chunk=5` 確認 → live → `SKIP_RACER_SEASON_ON_GHA` の順に進める）。`race_status` は2026-09-28にlive化して稼働中 |
+| 1. 全取得処理がVercelへ移行済み | **達成（2026-09-28）**。`race_status`（10:06 JST）・`racer_profiles`（10:26 JST）をlive化し、shadowでの手動確認（`seasonUnchanged` 35/35）と所要時間の実測（U9）も取れた。残るのは `SKIP_RACER_SEASON_ON_GHA` で、**10/2の回はGHAと並走させ、突合後に11/2へ向けて立てる** |
 | 2. 全データセットが完了の定義A・B・Cを実測で満たす | **B: 6窓中5窓が達成**。-60は判定基準の見直し待ち（[BOA-465](https://linear.app/boat-ai/issue/BOA-465)）。**A: 2026-04〜06の結果充足率が99%未達（231レース。[BOA-468](https://linear.app/boat-ai/issue/BOA-468)）** ＋ 全データセットの網羅確認が未（[BOA-365](https://linear.app/boat-ai/issue/BOA-365)）。C: 達成 |
 | 3. 旧基盤を止めた状態で、土日を含む7日間、本番データが欠けない | **未着手**（1・2が片付いてから） |
 | 4. 取得系ワークフロー・`continue-on-error`・ドキュメント・cron-job.orgの削除 | 未着手 |
