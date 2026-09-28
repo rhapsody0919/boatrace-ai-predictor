@@ -8,9 +8,11 @@
  */
 
 import {
+  parseAheadCount,
   parseBehindCount,
   parseWorktrees,
   selectManagedWorktrees,
+  shouldAutoFastForward,
 } from "./check-git-hygiene.js";
 import { classify } from "./check-worktrees.js";
 
@@ -34,6 +36,56 @@ check("両方", parseBehindCount("2\t7"), 7);
 check("空", parseBehindCount(""), null);
 check("null", parseBehindCount(null), null);
 check("想定外の形式", parseBehindCount("abc"), null);
+
+// --- ahead の読み取り ---
+check("ahead: 進んでいる", parseAheadCount("5\t0"), 5);
+check("ahead: 遅れのみ", parseAheadCount("0\t23"), 0);
+check("ahead: null", parseAheadCount(null), null);
+
+// --- メインの master を自動で fast-forward してよいか ---
+// 他セッションの作業を壊さない条件だけで取り込む。どれか1つでも外れたら警告に回す。
+const ok = { branch: "master", trackedDirty: false, ahead: 0, behind: 7 };
+check("自動取り込み: 条件を全て満たす", shouldAutoFastForward(ok), true);
+check(
+  "自動取り込み: 別ブランチで作業中",
+  shouldAutoFastForward({ ...ok, branch: "feature/x" }),
+  false,
+);
+check(
+  "自動取り込み: detached（branchが空）",
+  shouldAutoFastForward({ ...ok, branch: "" }),
+  false,
+);
+check(
+  "自動取り込み: 追跡ファイルに未コミット変更",
+  shouldAutoFastForward({ ...ok, trackedDirty: true }),
+  false,
+);
+check(
+  "自動取り込み: status取得失敗（null）は安全側",
+  shouldAutoFastForward({ ...ok, trackedDirty: null }),
+  false,
+);
+check(
+  "自動取り込み: ローカル独自コミットあり",
+  shouldAutoFastForward({ ...ok, ahead: 1 }),
+  false,
+);
+check(
+  "自動取り込み: ahead不明（null）は安全側",
+  shouldAutoFastForward({ ...ok, ahead: null }),
+  false,
+);
+check(
+  "自動取り込み: 遅れなし",
+  shouldAutoFastForward({ ...ok, behind: 0 }),
+  false,
+);
+check(
+  "自動取り込み: behind不明",
+  shouldAutoFastForward({ ...ok, behind: null }),
+  false,
+);
 
 // --- worktree 一覧の読み取り ---
 const porcelain = [
