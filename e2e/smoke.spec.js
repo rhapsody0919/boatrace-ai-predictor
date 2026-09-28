@@ -2812,36 +2812,44 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
     await expect(table).not.toContainText("旧キャッシュ1");
   });
 });
-test.describe("静的ガイドがレース詳細の8タブに追随している（BOA-456フォローアップ）", () => {
-  // レース詳細が8タブになったあと、/how-to-use だけが追随し /about・/faq は
+test.describe("静的ガイドがレース詳細のタブ構成に追随している（BOA-456フォローアップ）", () => {
+  // レース詳細がタブ構成になったあと、/how-to-use だけが追随し /about・/faq は
   // 「結果」タブにしか触れていなかった。同じ取りこぼしを繰り返さないよう、
-  // 8タブの名前が両ページに載っていることを機械的に固定する
+  // タブの名前と**並び順**が両ページに載っていることを機械的に固定する。
+  // 正本は PredictionPanel.jsx の tabs 配列（粒度順。結果は isFinished のときだけ）
   const TABS = [
     "基本情報",
     "AI予想",
-    "枠別情報",
-    "モータ情報",
     "今節",
     "直前情報",
+    "枠別情報",
+    "モータ情報",
     "オッズ一覧",
     "結果",
   ];
 
-  test("/about に8タブがすべて載っている", async ({ page }) => {
+  test("/about に全タブが実際の並び順で載っている", async ({ page }) => {
     await page.goto("/about");
     const list = page.locator(".about-tab-list");
     await expect(list).toBeVisible();
     await expect(list.locator("li")).toHaveCount(TABS.length);
-    for (const tab of TABS) {
-      await expect(list).toContainText(tab);
+    // 並べ替え（BOA-454）に追随できていないと、名前が揃っていても順序で落ちる
+    for (const [index, tab] of TABS.entries()) {
+      await expect(list.locator("li").nth(index)).toContainText(tab);
     }
+    // 発走前は7つ・確定すると8つ、という本数の条件も落とさない
+    await expect(list.locator("li").last()).toContainText(
+      "確定するまでこのタブは出ません",
+    );
     // 詳しい手順は使い方ガイドが正本なので、そこへの導線を保つ
     await expect(
       page.locator('.about-section a[href="/how-to-use"]'),
     ).toHaveCount(1);
   });
 
-  test("/faq のタブ説明に8タブがすべて載っている", async ({ page }) => {
+  test("/faq のタブ説明に全タブが実際の並び順で載っている", async ({
+    page,
+  }) => {
     await page.goto("/faq");
     const question = page
       .locator(".faq-question")
@@ -2849,9 +2857,14 @@ test.describe("静的ガイドがレース詳細の8タブに追随している�
     await expect(question).toHaveCount(1);
     await question.click();
     const answer = page.locator(".faq-item.open .faq-answer p").first();
-    for (const tab of TABS) {
-      await expect(answer).toContainText(tab);
-    }
+    const text = await answer.innerText();
+    // 【タブ名】の登場順が実際の並び順と一致していること
+    const order = TABS.map((tab) => text.indexOf(`【${tab}】`));
+    expect(order.every((position) => position >= 0)).toBe(true);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    // 発走前7つ・確定で8つ、という本数の条件
+    expect(text).toContain("発走前は7つ");
+    expect(text).toContain("8つになります");
   });
 
   test("FAQの回答の改行が段落として表示される（空白に潰れない）", async ({
