@@ -133,6 +133,11 @@
       "guards": "朝の初期化・公式予想を、ファイル・execSync・process.exit に依存しない関数へ分けた構造"
     },
     {
+      "script": "verify-motor-championship-generation.js",
+      "tier": "ci",
+      "guards": "モータ情報「優勝した日・選手」が入れ替え前の別モーター（同じ番号）の優勝を混ぜないこと（現行モーター世代への絞り込み）"
+    },
+    {
       "script": "verify-motor-pretest.js",
       "tier": "ci",
       "guards": "前検タイム・前検順位・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）"

@@ -18,6 +18,7 @@ import TrendLineChart from "./TrendLineChart";
 import DrillDownHeader from "./DrillDownHeader";
 import MotorWakuStatsGrid from "./MotorWakuStatsGrid";
 import MotorRacerWakuDrillDown from "./MotorRacerWakuDrillDown";
+import InlineFetchError from "../InlineFetchError";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
 
@@ -49,7 +50,11 @@ function MotorConditionChart({
   const [usageHistory, setUsageHistory] = useState([]);
   const [partsHistory, setPartsHistory] = useState([]);
   const [venueMotorStats, setVenueMotorStats] = useState(null);
-  const [championshipHistory, setChampionshipHistory] = useState([]);
+  // generationStart: 現行モーターの使用開始日（不明ならnull）。wins: その日以降の優勝
+  const [championshipHistory, setChampionshipHistory] = useState({
+    generationStart: null,
+    wins: [],
+  });
   // BOA-301: 会場内順位(FR-1)・枠番別成績(FR-2/3)・選手×枠成績(FR-4)
   const [venueMotorRanking, setVenueMotorRanking] = useState(null);
   const [motorWakuStats, setMotorWakuStats] = useState([]);
@@ -624,9 +629,9 @@ function MotorConditionChart({
           <h3 className="selected-motor-heading">
             {t("analysis.motor.championshipHistoryHeading")}
           </h3>
-          {championshipHistory.length > 0 ? (
+          {championshipHistory.wins.length > 0 ? (
             <ul className="history-list">
-              {championshipHistory.map((win) => (
+              {championshipHistory.wins.map((win) => (
                 <li key={win.raceId}>
                   <span className="history-date">{win.date}</span>
                   <span translate="no" className="usage-history-player">
@@ -635,9 +640,13 @@ function MotorConditionChart({
                 </li>
               ))}
             </ul>
+          ) : championshipHistory.fetchFailed ? (
+            <InlineFetchError />
           ) : (
             <div className="empty-state">
-              {t("analysis.motor.championshipHistoryEmpty")}
+              {championshipHistory.generationStart === null
+                ? t("analysis.motor.championshipHistoryUnknownGeneration")
+                : t("analysis.motor.championshipHistoryEmpty")}
             </div>
           )}
           <p className="table-note">

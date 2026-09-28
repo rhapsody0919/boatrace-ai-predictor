@@ -14,6 +14,10 @@ import {
 } from "../../scripts/lib/dateUtils.js";
 import { groupIntoCurrentMeet } from "../utils/meetGrouping";
 import { deriveRaceStContext } from "../utils/stConsideration";
+import {
+  currentMotorGenerationStart,
+  isInMotorGeneration,
+} from "../utils/motorGeneration";
 import { isFinalStage } from "../constants/raceStageConfig";
 import { finishPositionOf } from "../components/race/basicInfoStats.js";
 import {
@@ -2923,18 +2927,35 @@ export const supabaseDataService = {
    * venue_motor_statsの優勝数は公式サイト側の集計期間内の合計回数のみで
    * 日付・選手の内訳が無いため、自社データ（race_conditions.race_stage=
    * 優勝戦を含む×race_entries×race_results）から逆算する。
-   * race_stageはBOA-226実装後に取得したレースにしか入っていない
-   * （過去レースへの遡及取得はしない方針）ため、実装直後は空になりうる
+   * race_stageはBOA-226実装後に取得したレースに入るほか、BOA-347の
+   * scripts/maintenance/backfill-race-conditions.js で過去分も遡及取得している
+   * （2025-12〜2026-02-02分を2026-09-28に実施する方針）。
+   *
+   * モーターは会場ごとに概ね年1回入れ替わり、番号は再利用されるため、
+   * 現行モーターの世代（venue_motor_start_datesの最新の使用開始日以降）の
+   * レースに限る。使用開始日が取れない会場（行が無い）は、別モーターの記録を
+   * 混ぜないよう履歴を出さず generationStart: null を返す。
+   * @returns {Promise<{generationStart: string|null, wins: Array<{raceId:string,date:string,racerId:number|null,playerName:string|null}>, fetchFailed?: boolean}>}
    */
   getVenueMotorChampionshipHistory(venueCode, motorNumber) {
     return withCache(
-      `venue-motor-championship-history-${venueCode}-${motorNumber}`,
+      // 戻り値を配列から{generationStart, wins}に変えたため、キーを変えて
+      // localStorageに残る旧形式（配列）を読まない
+      `venue-motor-championship-generation-${venueCode}-${motorNumber}`,
       async () => {
+        const failed = { generationStart: null, wins: [], fetchFailed: true };
         if (!supabase) {
           console.error("Supabase client not initialized");
-          return [];
+          return failed;
         }
         try {
+          const { data: startRows } = await supabase
+            .from("venue_motor_start_dates")
+            .select("start_date")
+            .eq("venue_code", venueCode);
+          const generationStart = currentMotorGenerationStart(startRows);
+          if (generationStart === null) return { generationStart, wins: [] };
+
           const { data: stageRows, error: stageError } = await supabase
             .from("race_conditions")
             .select("race_id, race_stage, races!inner(venue_code)")
@@ -2947,14 +2968,14 @@ export const supabaseDataService = {
             .eq("races.venue_code", venueCode);
           if (stageError) {
             console.error("race_conditions取得エラー:", stageError.message);
-            return [];
+            return failed;
           }
-          if (!stageRows || stageRows.length === 0) return [];
-
-          const raceIds = stageRows
+          const raceIds = (stageRows ?? [])
             .filter((r) => isFinalStage(r.race_stage))
-            .map((r) => r.race_id);
-          if (raceIds.length === 0) return [];
+            .map((r) => r.race_id)
+            .filter((raceId) => isInMotorGeneration(raceId, generationStart));
+          if (raceIds.length === 0) return { generationStart, wins: [] };
+
           const { data: entries, error: entriesError } = await supabase
             .from("race_entries")
             .select("race_id, boat_number, racer_id, player_name")
@@ -2962,9 +2983,11 @@ export const supabaseDataService = {
             .eq("motor_number", motorNumber);
           if (entriesError) {
             console.error("race_entries取得エラー:", entriesError.message);
-            return [];
+            return failed;
           }
-          if (!entries || entries.length === 0) return [];
+          if (!entries || entries.length === 0) {
+            return { generationStart, wins: [] };
+          }
 
           const { data: results, error: resultsError } = await supabase
             .from("race_results")
@@ -2975,13 +2998,13 @@ export const supabaseDataService = {
             );
           if (resultsError) {
             console.error("race_results取得エラー:", resultsError.message);
-            return [];
+            return failed;
           }
           const rank1ByRaceId = new Map(
             (results ?? []).map((r) => [r.race_id, r.rank1]),
           );
 
-          return entries
+          const wins = entries
             .filter((e) => rank1ByRaceId.get(e.race_id) === e.boat_number)
             .map((e) => ({
               raceId: e.race_id,
@@ -2990,9 +3013,16 @@ export const supabaseDataService = {
               playerName: e.player_name,
             }))
             .sort((a, b) => b.date.localeCompare(a.date));
+          return { generationStart, wins };
         } catch (err) {
+          // venue_motor_start_datesの匿名SELECTを開くマイグレーション104が
+          // 未適用の間は権限エラーになる。使用開始日が不明な会場と同じく
+          // 「世代が分からないので出さない」に倒す（取得失敗とは区別する）
+          if (isPermissionDeniedError(err)) {
+            return { generationStart: null, wins: [] };
+          }
           console.error("優勝履歴取得エラー(例外):", err.message);
-          return [];
+          return failed;
         }
       },
     );
