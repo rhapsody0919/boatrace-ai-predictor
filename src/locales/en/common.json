@@ -552,6 +552,8 @@
     "secondsUnit": "s",
     "detailTableTitle": "Exhibition details",
     "detailTableNote": "Avg. entry course and exhibition-fastest win rate cover the last 2 years; this-meet exhibition trend covers races since this motor was assigned",
+    "preExhibitionNote": "Weight and adjustment weight are pre-exhibition values. Tilt is published after the exhibition run",
+    "entryWeightFetchError": "Couldn't load the race card weights",
     "originalExhibitionSource": "Source: BOATCAST (BOATRACE Promotion Association) — {{items}}",
     "originalExhibitionCapturedAt": "Retrieved: {{time}}",
     "originalExhibitionNote": "Note: Values are shown exactly as retrieved (no summarising, editing or redistribution). Check BOATCAST for the latest figures.",
