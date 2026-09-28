@@ -100,9 +100,14 @@ for (const m of meets) {
       .in("race_id", raceIds),
   );
 
-  // 節の終わり（次の節が始まる前まで）に絞る
+  // 節の終わり（次の節が始まる前まで）に絞る。9日窓には**次の節の最終日**も
+  // 入りうるので、`find` で先頭を採ると窓が広がって次の節の走まで混ざる。
+  // 最も早い最終日を採る
   const finalDay =
-    conds.find((c) => c.is_final_day)?.race_id.slice(0, 10) ?? null;
+    conds
+      .filter((c) => c.is_final_day)
+      .map((c) => c.race_id.slice(0, 10))
+      .sort()[0] ?? null;
   const inMeet = (id) => !finalDay || id.slice(0, 10) <= finalDay;
 
   const stage = new Map(conds.map((c) => [c.race_id, c.race_stage ?? ""]));
