@@ -4,6 +4,7 @@
     "tier=ci   : PRごとにGitHub Actionsで毎回実行する。外部ネットワーク・実DB・実時刻に依存せず、同じコミットなら常に同じ結果を返すものだけを置く。",
     "tier=manual: 実Supabase等への接続が要るため自動実行しない。reason（なぜCIに載せないか）と command（どう実行するか）を必ず書く。",
     "runner    : 省略時は node。bash スクリプトは \"bash\" を指定する。",
+    "timeoutSec: 省略時は180秒（run-verify-registry.js の TIMEOUT_MS）。単独では通るが、負荷の高い開発機で並列実行すると上限を超えるものだけに付ける。",
     "新しい verify-* を追加したら、ここに1エントリ足すこと。未登録だと `npm run verify:ci` が失敗する（.js / .mjs / .cjs / .sh を検知する）。",
     "対象外: サブディレクトリ（content-ops-checks/ の check-*.js）、scripts/analysis/verify-*.js、scripts/verification/（verify-cache-config.js は専用ワークフローで既にPRゲートとして動いている）。"
   ],
@@ -51,7 +52,9 @@
     {
       "script": "verify-data-health-job.js",
       "tier": "ci",
-      "guards": "汎用の日次監視 data_health（完了の定義C、マイグレーション089）。PGliteでDB関数の意味論まで検証する"
+      "guards": "汎用の日次監視 data_health（完了の定義C、マイグレーション089）。PGliteでDB関数の意味論まで検証する",
+      "timeoutSec": 600,
+      "note": "PGliteの変異検証が重い（CI実測21.5秒、並行セッションで負荷の高い開発機では121秒・180秒超えも実測、2026-09-28）"
     },
     {
       "script": "verify-display-coverage.js",
