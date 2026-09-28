@@ -48,9 +48,21 @@ const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
 // （2026-09-26ユーザーフィードバック。今節は節の区切りで、こちらは節をまたぐ流れを見る）
 const RECENT_RACES_COUNT = 10;
 const GRADES = ["all", "ippan", "sgg1"];
-// 「初日」「最終日」は当初検討したが、判定に使うrace_conditions.series_day/
-// is_final_dayが実データで常にnull（generate-predictions.jsが未実装のまま
-// null固定で書き込む、2026-09-15確認）のため削除した（basicInfoStats.js参照）
+// 期間フィルタ（PERIODS）に「初日」「最終日」は**足さない**。2026-09-15時点では
+// 判定に使うrace_conditions.series_day/is_final_dayが全件nullだったため削除した
+// 経緯があるが、この2列は現在99.9%埋まっている（2026-09-28実測、2026-02-01以降
+// 36,607/36,629行＝99.94%。残る22行は当日＝スクレイプ前の分）。それでも
+// 足さない理由は2つで、いずれもデータの有無とは関係ない。
+//   1. **条件別タブで既に出している**（CONDITION_ROWSのfirstDay/finalDay、PR #831
+//      で出荷済み。basicInfoStats.js参照）。足すと同じ数字が同じタブの2箇所に出る
+//   2. **軸の意味が混ざる**。PERIODSは「今期／過去3ヶ月／直近1ヶ月」という
+//      *時間の幅* の軸で、初日・最終日は幅ではなく *条件*（当地・一般戦・波5cm以上
+//      と同じ仲間）。条件は条件別タブ側が持つ、という切り分けを崩さない
+// なお母数は足りている（初日の走数は中央24走、SMALL_SAMPLE_THRESHOLDを割るのは
+// 0.6%。2026-09-28実測）ので、将来「初日×当地×SG・G1」のような掛け合わせが
+// 欲しくなったら条件別タブ側を多軸化するのが筋。1の重複が言えるのは既定状態
+// （全国・全レース）についてで、当地やSG・G1を選ぶと条件別タブ側は絞らない
+// 集計のままなので数字は一致しない
 const PERIODS = ["current", "last3m", "last1m"];
 const PRESETS = [
   { scope: "local", grade: "ippan" },
