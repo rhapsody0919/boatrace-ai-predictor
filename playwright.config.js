@@ -53,7 +53,8 @@ export default defineConfig({
   projects: [
     {
       name: "smoke",
-      testIgnore: /layout\.spec\.js/,
+      // acceptance/ は playwright.acceptance.config.js で別に走らせる（PRゲート外）
+      testIgnore: [/layout\.spec\.js/, /acceptance\//],
     },
     {
       name: "layout-mobile",
