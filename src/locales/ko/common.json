@@ -113,7 +113,10 @@
     "pastPredictionsBreadcrumb": "지난 예측",
     "noDataForDate": "이 날짜의 예측 데이터가 아직 없습니다",
     "invalidUrl": "해당 경주를 찾을 수 없습니다. URL을 확인해 주세요",
-    "backToHome": "← 홈으로 돌아가기"
+    "backToHome": "← 홈으로 돌아가기",
+    "seriesDayFirst": "첫날",
+    "seriesDayFinal": "최종일",
+    "seriesDayNth": "{{day}}일째"
   },
   "volatility": {
     "levelHigh": "이변 가능성 높음",
