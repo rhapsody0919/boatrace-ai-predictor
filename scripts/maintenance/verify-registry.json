@@ -91,7 +91,9 @@
     {
       "script": "verify-migration-numbers.js",
       "tier": "ci",
-      "args": ["--base=origin/master"],
+      "args": [
+        "--base=origin/master"
+      ],
       "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
       "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
     },
@@ -347,6 +349,13 @@
       "guards": "「本日のデータ一覧」（BOA-402）の集計",
       "reason": "実Supabaseの morning_digest_rows を読むためPRでは実行できない（secretsが要る）。ただし generate-morning-digest.yml が生成直後に毎日実行しており、manual 5本のうちこれだけは定期的に動いている",
       "command": "node --env-file=.env.local scripts/maintenance/verify-morning-digest.js"
+    },
+    {
+      "script": "verify-pretest-row-pick.js",
+      "tier": "manual",
+      "guards": "前検タイム（motor_pretest_stats）の行の選び方の前提。節の中で値が変わらないこと・6日ルックバックが前の節を拾わないこと・カバー率（BOA-451）",
+      "reason": "実Supabaseの全期間データを読む必要があり、日々のデータ投入結果に依存するためCIでは決定的にならない",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-pretest-row-pick.js"
     },
     {
       "script": "verify-rpc-output-keys.js",

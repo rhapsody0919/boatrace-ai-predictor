@@ -484,7 +484,7 @@ function MotorConditionChart({
             {/* BOA-451 / ADR-0067: 生値をそのまま出す列（前検タイム・公式2連率）
                 の出典を表のすぐ下に1回だけ置く。集計・加工した列（期間別の
                 2連率/3連率・機力指数）は当社の計算なので出典の対象外 */}
-            <p className="table-note">
+            <p className="table-note motor-official-source-note">
               {t("analysis.motor.officialSourceNote")}
             </p>
           </div>

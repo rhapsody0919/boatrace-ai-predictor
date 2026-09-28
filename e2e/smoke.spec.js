@@ -1478,10 +1478,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await page.locator(".rmt-select-chip").nth(3).click();
     // 予選中は「今節の得点率」、予選終了後は「予選の得点率（確定）」。
     // このレース（2026-09-24 桐生3R）は9/23で予選が終わった後の一般戦
-    await expect(page.locator(".rmt-detail-score")).toContainText(
-      "の得点率",
-      { timeout: 25000 },
-    );
+    await expect(page.locator(".rmt-detail-score")).toContainText("の得点率", {
+      timeout: 25000,
+    });
     // 予選が終わった後のレースでは、早見（今日の着順で得点率がどう動くか）は
     // 出さない。準優はもう終わっていて得点率で争うものが無いため
     await expect(page.locator(".rmt-forecast-table")).toHaveCount(0);
@@ -2472,5 +2471,221 @@ test.describe("レース詳細の直前情報タブ: ピットレポート", () 
     });
     await expect(page.locator(".rpr-card")).toHaveCount(0);
     expect(pitRequests).toEqual([]);
+  });
+});
+
+// オリジナル展示（一周・半周ラップ・まわり足・直線、BOA-452 / phase a FR-4b）
+// 本番の匿名公開（マイグレーション096）は画面実装の後に適用するため、DBの状態に
+// 依存しないよう race_original_exhibition / _values の2エンドポイントだけを
+// page.routeで差し替える（ピットレポートのテストと同じやり方）
+test.describe("レース詳細の直前情報タブ: オリジナル展示", () => {
+  const RACE = "/race/2026-09-21-05-12";
+
+  const VALUES = [
+    { boat_number: 1, kind: "一周", value: 36.91 },
+    { boat_number: 1, kind: "まわり足", value: 5.66 },
+    { boat_number: 1, kind: "直線", value: 7.04 },
+    { boat_number: 2, kind: "一周", value: 37.27 },
+    { boat_number: 2, kind: "まわり足", value: 5.5 },
+    { boat_number: 2, kind: "直線", value: 6.93 },
+    { boat_number: 3, kind: "一周", value: 37.13 },
+    { boat_number: 3, kind: "まわり足", value: 5.53 },
+    { boat_number: 3, kind: "直線", value: 6.97 },
+    { boat_number: 4, kind: "一周", value: 37.63 },
+    { boat_number: 4, kind: "まわり足", value: 5.67 },
+    { boat_number: 4, kind: "直線", value: 7.13 },
+    { boat_number: 5, kind: "一周", value: 37.09 },
+    { boat_number: 5, kind: "まわり足", value: 5.4 },
+    { boat_number: 5, kind: "直線", value: 7.07 },
+    { boat_number: 6, kind: "一周", value: 37.44 },
+    { boat_number: 6, kind: "まわり足", value: 5.13 },
+    { boat_number: 6, kind: "直線", value: 7.07 },
+  ];
+
+  const routeOriginalExhibition = async (page, { header, values }) => {
+    await page.route("**/rest/v1/race_original_exhibition?*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(header),
+      }),
+    );
+    await page.route("**/rest/v1/race_original_exhibition_values*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(values),
+      }),
+    );
+  };
+
+  const openBeforeInfoTab = async (page) => {
+    await page.goto(RACE);
+    await page.click('[role="tab"]:has-text("直前情報")');
+    await expect(page.locator(".race-before-info-tab")).toBeVisible({
+      timeout: 20000,
+    });
+  };
+
+  const rowByLabel = (page, label) =>
+    page.locator(".drt-table tbody tr").filter({
+      has: page.locator(".drt-label-full", {
+        hasText: new RegExp(`^${label}$`),
+      }),
+    });
+
+  test("値があるレースで、一周・まわり足・直線の行と出典・取得時刻・再配布しない旨が出る", async ({
+    page,
+  }) => {
+    await routeOriginalExhibition(page, {
+      header: {
+        item_labels: "一周|まわり足|直線",
+        measure_status: 1,
+        updated_at: "2026-09-21T06:42:00Z",
+      },
+      values: VALUES,
+    });
+    await openBeforeInfoTab(page);
+
+    // 行が出て、値がスタブと一致する
+    await expect(rowByLabel(page, "一周")).toBeVisible({ timeout: 20000 });
+    await expect(rowByLabel(page, "一周")).toContainText("36.91");
+    await expect(rowByLabel(page, "まわり足")).toContainText("5.66");
+    await expect(rowByLabel(page, "直線")).toContainText("7.04");
+    // 一番速い艇（最小値）に印が付く: まわり足は6号艇の5.13
+    await expect(
+      rowByLabel(page, "まわり足").locator("td.drt-best"),
+    ).toHaveText("5.13");
+
+    // ADR-0067が求める3点（出典・取得時刻・再配布しない旨）
+    const source = page.locator(".rbi-source");
+    await expect(source).toBeVisible();
+    await expect(source).toContainText("BOATCAST");
+    await expect(source).toContainText("9/21 15:42");
+    await expect(source).toContainText("再配布はしていません");
+  });
+
+  test("計測項目が少ない会場では、その項目の行だけ出す（直線が無い会場で直線の行を出さない）", async ({
+    page,
+  }) => {
+    await routeOriginalExhibition(page, {
+      header: {
+        item_labels: "一周|まわり足",
+        measure_status: 1,
+        updated_at: "2026-09-21T06:42:00Z",
+      },
+      values: VALUES.filter((v) => v.kind !== "直線"),
+    });
+    await openBeforeInfoTab(page);
+
+    await expect(rowByLabel(page, "一周")).toBeVisible({ timeout: 20000 });
+    await expect(rowByLabel(page, "まわり足")).toBeVisible();
+    await expect(rowByLabel(page, "直線")).toHaveCount(0);
+  });
+
+  test("匿名に権限が無い場合（096未適用）は行も出典も出さない", async ({
+    page,
+  }) => {
+    const denied = (route) =>
+      route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({
+          code: "42501",
+          message: "permission denied for table race_original_exhibition",
+        }),
+      });
+    await page.route("**/rest/v1/race_original_exhibition?*", denied);
+    await page.route("**/rest/v1/race_original_exhibition_values*", denied);
+    await openBeforeInfoTab(page);
+
+    // 直前情報タブ自体は出たうえで、オリジナル展示の行と出典だけが出ない
+    await expect(page.locator(".drt-table")).toBeVisible({ timeout: 20000 });
+    await expect(rowByLabel(page, "一周")).toHaveCount(0);
+    await expect(rowByLabel(page, "まわり足")).toHaveCount(0);
+    await expect(rowByLabel(page, "直線")).toHaveCount(0);
+    await expect(page.locator(".rbi-source")).toHaveCount(0);
+  });
+
+  test("まだ計測されていないレースでは行も出典も出さない（「—」を並べない）", async ({
+    page,
+  }) => {
+    await routeOriginalExhibition(page, { header: null, values: [] });
+    await openBeforeInfoTab(page);
+
+    await expect(page.locator(".drt-table")).toBeVisible({ timeout: 20000 });
+    await expect(rowByLabel(page, "一周")).toHaveCount(0);
+    await expect(page.locator(".rbi-source")).toHaveCount(0);
+  });
+});
+
+// 前検タイム・公式2連率（節時点）をモータ情報タブに出す（BOA-451 / phase a FR-4a）
+test.describe("レース詳細のモータ情報タブ: 前検タイムと公式2連率", () => {
+  const RACE = "/race/2026-09-21-05-12";
+
+  const openMotorTab = async (page) => {
+    await page.goto(RACE);
+    await page.locator(".race-tabs-btn", { hasText: "モータ情報" }).click();
+    await expect(page.locator(".motor-ranking-table").first()).toBeVisible({
+      timeout: 30000,
+    });
+  };
+
+  test("前検の行が取れている節では「前検」列に秒数と節内順位が出て、出典が添えられる", async ({
+    page,
+  }) => {
+    let racerIds = [];
+    // 表示中レースの出走選手の登番を拾って、その選手ぶんの前検を返す
+    await page.route("**/rest/v1/motor_pretest_stats*", async (route) => {
+      const url = new URL(route.request().url());
+      // 実レスポンスを一度取って登番を得る（節の全選手ぶんが返る）
+      const response = await route.fetch();
+      const rows = await response.json().catch(() => []);
+      racerIds = Array.isArray(rows) ? rows.map((r) => r.racer_id) : [];
+      const stub = racerIds.map((racerId, i) => ({
+        racer_id: racerId,
+        race_date:
+          url.searchParams.get("race_date")?.slice(-10) ?? "2026-09-21",
+        pretest_time: 6.6 + i * 0.01,
+        pretest_rank: i + 1,
+        racer_class: "A1",
+      }));
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(stub),
+      });
+    });
+    await openMotorTab(page);
+
+    const table = page.locator(".motor-ranking-table").first();
+    await expect(table.locator("thead")).toContainText("前検");
+    await expect(table.locator("thead")).toContainText("公式2連率");
+    // 6艇のどれかに前検の秒数（6.60〜6.9x）が出ている
+    await expect(table.locator("td.motor-pretest-cell").first()).toHaveText(
+      /\d\.\d{2}/,
+    );
+    await expect(page.locator(".motor-official-source-note")).toContainText(
+      "BOAT RACE オフィシャルウェブサイト",
+    );
+  });
+
+  test("節に前検の行が無い開催では「前検」列ごと出さない（「-」を6つ並べない）", async ({
+    page,
+  }) => {
+    await page.route("**/rest/v1/motor_pretest_stats*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]",
+      }),
+    );
+    await openMotorTab(page);
+
+    const table = page.locator(".motor-ranking-table").first();
+    await expect(table.locator("thead")).not.toContainText("前検");
+    await expect(table.locator("td.motor-pretest-cell")).toHaveCount(0);
+    // 公式2連率は race_entries 由来なので前検が無くても出る
+    await expect(table.locator("thead")).toContainText("公式2連率");
   });
 });
