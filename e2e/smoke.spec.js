@@ -2812,6 +2812,178 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
     await expect(table).not.toContainText("旧キャッシュ1");
   });
 });
+
+// 今節展示情報のオリジナル展示（BOA-473）と、連対率の桁（BOA-474）
+//
+// 「展示情報」表のオリジナル展示（BOA-452）は `race_id=eq.<id>` で1レース分を引き、
+// 「今節展示情報」（BOA-473）は `race_id=in.(...)` で節ぶんをまとめて引く。
+// 同じテーブルなのでクエリ文字列で振り分けてスタブする
+test.describe("レース詳細の直前情報タブ: 今節のオリジナル展示", () => {
+  const RACE = "/race/2026-09-21-05-12";
+
+  // **要求された race_id から値を組み立てる**。選手の実際の節は実データ次第なので、
+  // 固定のレースIDを返すと画面側のlookup（`${raceId}-${boatNumber}`）が空振りする。
+  // 種別ごとに定数を返すので、前走も節平均も同じ値になる
+  const KIND_VALUE = { 一周: 37.0, まわり足: 5.8, 直線: 7.2 };
+  const meetBodyFor = (url) => {
+    const ids = (decodeURIComponent(url).match(/race_id=in\.\(([^)]*)\)/) ??
+      [])[1];
+    if (!ids) return [];
+    return ids
+      .split(",")
+      .map((id) => id.replace(/^"|"$/g, ""))
+      .flatMap((raceId) =>
+        [1, 2, 3, 4, 5, 6].flatMap((boat) =>
+          Object.entries(KIND_VALUE).map(([kind, value]) => ({
+            race_id: raceId,
+            boat_number: boat,
+            kind,
+            value,
+          })),
+        ),
+      );
+  };
+
+  const routeValues = async (page, { meet, single }) => {
+    await page.route("**/rest/v1/race_original_exhibition_values*", (route) => {
+      const url = route.request().url();
+      const isMeet = decodeURIComponent(url).includes("race_id=in.");
+      const spec = isMeet ? meet : single;
+      if (spec === "forbidden") {
+        return route.fulfill({
+          status: 401,
+          contentType: "application/json",
+          body: JSON.stringify({
+            code: "42501",
+            message: "permission denied for table",
+          }),
+        });
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(spec === "derive" ? meetBodyFor(url) : spec),
+      });
+    });
+    await page.route("**/rest/v1/race_original_exhibition?*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          item_labels: "一周|まわり足|直線",
+          updated_at: "2026-09-21T06:42:00Z",
+        }),
+      }),
+    );
+  };
+
+  const openBeforeInfoTab = async (page) => {
+    await page.goto(RACE);
+    await page.click('[role="tab"]:has-text("直前情報")');
+    await expect(page.locator(".race-before-info-tab")).toBeVisible({
+      timeout: 20000,
+    });
+  };
+
+  const rowByLabel = (page, label) =>
+    page.locator(".drt-table tbody tr").filter({
+      has: page.locator(".drt-label-full", {
+        hasText: new RegExp(`^${label}$`),
+      }),
+    });
+
+  test("節に値があると、今節一周・今節まわり足・今節直線の行が前走と平均で出る", async ({
+    page,
+  }) => {
+    await routeValues(page, { meet: "derive", single: [] });
+    await openBeforeInfoTab(page);
+
+    // 種別ごとに定数を返しているので、前走も節平均も同じ値になる
+    await expect(rowByLabel(page, "今節一周")).toBeVisible({ timeout: 30000 });
+    await expect(rowByLabel(page, "今節一周")).toContainText("37.00");
+    await expect(rowByLabel(page, "今節まわり足")).toContainText("5.80");
+    await expect(rowByLabel(page, "今節直線")).toContainText("7.20");
+    // 節に値が無い種別（半周ラップ）の行は作らない
+    await expect(rowByLabel(page, "今節半周ラップ")).toHaveCount(0);
+  });
+
+  test("節に値が無ければ今節の行を出さない（「—」を並べない）", async ({
+    page,
+  }) => {
+    await routeValues(page, { meet: [], single: [] });
+    await openBeforeInfoTab(page);
+
+    await expect(page.locator(".drt-table")).toBeVisible({ timeout: 20000 });
+    await expect(rowByLabel(page, "今節一周")).toHaveCount(0);
+    await expect(rowByLabel(page, "今節まわり足")).toHaveCount(0);
+    await expect(rowByLabel(page, "今節直線")).toHaveCount(0);
+  });
+
+  test("匿名に権限が無い場合（096未適用）は今節の行も出さない", async ({
+    page,
+  }) => {
+    await routeValues(page, { meet: "forbidden", single: "forbidden" });
+    await openBeforeInfoTab(page);
+
+    await expect(page.locator(".drt-table")).toBeVisible({ timeout: 20000 });
+    await expect(rowByLabel(page, "今節一周")).toHaveCount(0);
+    // 「展示情報」表のオリジナル展示（BOA-452）も出ない
+    await expect(rowByLabel(page, "一周")).toHaveCount(0);
+  });
+
+  test("節ぶんの取得は、6選手が出揃ってから1通りのID集合でしか走らない", async ({
+    page,
+  }) => {
+    const meetRequests = [];
+    await page.route("**/rest/v1/race_original_exhibition_values*", (route) => {
+      const url = decodeURIComponent(route.request().url());
+      if (url.includes("race_id=in.")) meetRequests.push(url);
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(
+          url.includes("race_id=in.") ? meetBodyFor(url) : [],
+        ),
+      });
+    });
+    await openBeforeInfoTab(page);
+    await expect(rowByLabel(page, "今節一周")).toBeVisible({ timeout: 30000 });
+    await page.waitForTimeout(3000);
+
+    // **HTTPの本数ではなく「要求したID集合が何通りあるか」を見る**。
+    // fetchAllByIn は1000行ごとに .range() でページングするので、長い節
+    // （12R×7日＝最大84レース → 84×6艇×3項目＝1,512行）では正当に2本以上になる。
+    // 守りたいのは「選手ごとに投げていない」「集合が育つたびに投げ直していない」
+    // ことなので、race_id=in.(...) の中身の種類が1通りであることを見る
+    const distinctIdSets = new Set(
+      meetRequests.map(
+        (u) => (u.match(/race_id=in\.\(([^)]*)\)/) ?? [])[1] ?? "",
+      ),
+    );
+    expect(distinctIdSets.size).toBe(1);
+  });
+});
+
+test.describe("レース詳細のモータ情報タブ: 連対率の桁（BOA-474）", () => {
+  test("2連率・公式2連率・3連率をすべて小数1桁で出す", async ({ page }) => {
+    await page.goto("/race/2026-09-21-05-12");
+    await page.locator(".race-tabs-btn", { hasText: "モータ情報" }).click();
+    const table = page.locator(".motor-ranking-table").first();
+    await expect(table).toBeVisible({ timeout: 30000 });
+
+    // 同じ節・同じモーターでも、当日の出走表更新が走る前の行は1桁で入っている。
+    // 2桁で出すと同じモーターが 54.80 と 54.84 に見えるため1桁に揃えた
+    const officialCells = table.locator("tbody tr td:nth-child(5)");
+    const count = await officialCells.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i += 1) {
+      const text = (await officialCells.nth(i).innerText()).trim();
+      if (text === "-") continue;
+      expect(text).toMatch(/^\d+\.\d$/);
+    }
+  });
+});
+
 test.describe("静的ガイドがレース詳細のタブ構成に追随している（BOA-456フォローアップ）", () => {
   // レース詳細がタブ構成になったあと、/how-to-use だけが追随し /about・/faq は
   // 「結果」タブにしか触れていなかった。同じ取りこぼしを繰り返さないよう、
@@ -2915,5 +3087,268 @@ test.describe("静的ガイドがレース詳細のタブ構成に追随して�
     // ボタンは raceCard.view =「詳細を見る」、的中はヘッダーナビ nav.hits
     expect(answers).not.toContain("データ分析を見る");
     expect(answers).not.toContain("トップページの「的中レース」タブ");
+  });
+});
+
+// 展示前の体重（BOA-484）。展示前は exhibition_data の行がまだ無いため、
+// 出走表の体重（race_entries.weight_kg）を直前情報タブに出し、チルトは展示後に
+// 公開される旨を添える。DBの状態に依存しないよう、直前情報の設定値の取得
+// （exhibition_data の select に tilt を含むもの）と出走表の体重の取得だけを差し替える
+test.describe("レース詳細の直前情報タブ: 展示前の体重", () => {
+  const RACE = "/race/2026-09-21-05-12";
+  const ENTRY_WEIGHTS = [1, 2, 3, 4, 5, 6].map((n) => ({
+    boat_number: n,
+    weight_kg: 50 + n,
+  }));
+
+  const isMaintenance = (url) =>
+    url.pathname.endsWith("/rest/v1/exhibition_data") &&
+    (url.searchParams.get("select") ?? "").includes("tilt");
+  const isEntryWeights = (url) =>
+    url.pathname.endsWith("/rest/v1/race_entries") &&
+    url.searchParams.get("select") === "boat_number,weight_kg";
+
+  const fulfillJson =
+    (body, status = 200) =>
+    (route) =>
+      route.fulfill({
+        status,
+        contentType: "application/json",
+        body: JSON.stringify(body),
+      });
+
+  const openBeforeInfoTab = async (page) => {
+    await page.goto(RACE);
+    await page.click('[role="tab"]:has-text("直前情報")');
+    await expect(page.locator(".race-before-info-tab")).toBeVisible({
+      timeout: 20000,
+    });
+  };
+
+  const rowByLabel = (page, label) =>
+    page.locator(".drt-table tbody tr").filter({
+      has: page.locator(".drt-label-full", {
+        hasText: new RegExp(`^${label}$`),
+      }),
+    });
+
+  // 展示前の注記は確定済みのレースには出さない。確定済みの過去レースを
+  // 「未確定」に見せるため、予想データの応答から結果（rank1 を持つ result）を外す
+  // （Edge API・RPC のどちらの経路でも効くよう、応答のJSONを走査する）
+  const stripResults = (value) => {
+    if (Array.isArray(value)) return value.map(stripResults);
+    if (value && typeof value === "object") {
+      return Object.fromEntries(
+        Object.entries(value).map(([k, v]) =>
+          k === "result" && v && typeof v === "object" && v.rank1 != null
+            ? [k, null]
+            : [k, stripResults(v)],
+        ),
+      );
+    }
+    return value;
+  };
+  const routeUnfinished = async (page) => {
+    const handler = async (route) => {
+      const response = await route.fetch();
+      const json = stripResults(await response.json());
+      await route.fulfill({ response, json });
+    };
+    await page.route("**/api/predictions/**", handler);
+    await page.route("**/rest/v1/rpc/get_predictions*", handler);
+  };
+
+  // routeUnfinished の route.fetch は本物の応答を待つため、アサーションが先に終わると
+  // テスト終了時にまだ応答待ちのリクエストが残り、「page closed」でテストが失敗扱いになる
+  // （2026-09-28実測。アサーションは全て通っていた）。終了時に待ちを捨てる
+  test.afterEach(async ({ page }) => {
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+  });
+
+  test("展示前（exhibition_data が空）は出走表の体重を出し、チルトは展示後に公開される旨を添える", async ({
+    page,
+  }) => {
+    await routeUnfinished(page);
+    await page.route(isMaintenance, fulfillJson([]));
+    await page.route(isEntryWeights, fulfillJson(ENTRY_WEIGHTS));
+    await openBeforeInfoTab(page);
+
+    const weightRow = rowByLabel(page, "当日体重");
+    await expect(weightRow).toBeVisible({ timeout: 20000 });
+    await expect(weightRow.locator("td.drt-cell")).toHaveText([
+      "51.0kg",
+      "52.0kg",
+      "53.0kg",
+      "54.0kg",
+      "55.0kg",
+      "56.0kg",
+    ]);
+    await expect(page.getByTestId("rbi-pre-exhibition-note")).toContainText(
+      "チルトは展示航走の後に公開されます",
+    );
+  });
+
+  test("展示後は exhibition_data の当日体重を優先し、展示前の注記を出さない", async ({
+    page,
+  }) => {
+    const maintenance = [1, 2, 3, 4, 5, 6].map((n) => ({
+      boat_number: n,
+      tilt: -0.5,
+      adjustment_weight: n === 1 ? 0.5 : 0,
+      propeller_change: null,
+      parts_changed: null,
+      today_weight: n === 1 ? 51.5 : 50 + n,
+      prev_race_no: null,
+      prev_entry_course: null,
+      prev_start_timing: null,
+      prev_finish_rank: null,
+    }));
+    await routeUnfinished(page);
+    await page.route(isMaintenance, fulfillJson(maintenance));
+    await page.route(isEntryWeights, fulfillJson(ENTRY_WEIGHTS));
+    await openBeforeInfoTab(page);
+
+    const weightRow = rowByLabel(page, "当日体重");
+    await expect(weightRow).toBeVisible({ timeout: 20000 });
+    // 1号艇は出走表（51.0）ではなく直前情報（51.5）の値
+    await expect(weightRow.locator("td.drt-cell").first()).toHaveText("51.5kg");
+    await expect(rowByLabel(page, "チルト")).toContainText("-0.5");
+    await expect(page.getByTestId("rbi-pre-exhibition-note")).toHaveCount(0);
+  });
+
+  test("出走表の体重の取得に失敗したら、未公開と区別して取得失敗を出す", async ({
+    page,
+  }) => {
+    await routeUnfinished(page);
+    await page.route(isMaintenance, fulfillJson([]));
+    await page.route(
+      isEntryWeights,
+      fulfillJson({ code: "57014", message: "canceling statement" }, 500),
+    );
+    await openBeforeInfoTab(page);
+
+    await expect(
+      page.locator(".inline-fetch-error", {
+        hasText: "出走表の体重を取得できませんでした",
+      }),
+    ).toBeVisible({ timeout: 20000 });
+    // 値が無いので展示前の注記は出さない
+    await expect(page.getByTestId("rbi-pre-exhibition-note")).toHaveCount(0);
+  });
+
+  test("体重が未公開（出走表・直前情報とも空）なら注記も取得失敗も出さない", async ({
+    page,
+  }) => {
+    await routeUnfinished(page);
+    await page.route(isMaintenance, fulfillJson([]));
+    await page.route(
+      isEntryWeights,
+      fulfillJson(ENTRY_WEIGHTS.map((r) => ({ ...r, weight_kg: null }))),
+    );
+    await openBeforeInfoTab(page);
+
+    const weightRow = rowByLabel(page, "当日体重");
+    await expect(weightRow).toBeVisible({ timeout: 20000 });
+    await expect(weightRow.locator("td.drt-cell").first()).toHaveText("—");
+    await expect(page.getByTestId("rbi-pre-exhibition-note")).toHaveCount(0);
+    await expect(
+      page.locator(".inline-fetch-error", {
+        hasText: "出走表の体重を取得できませんでした",
+      }),
+    ).toHaveCount(0);
+  });
+
+  // --- ここから /code-review の指摘に対する再現テスト（2026-09-28） ---
+
+  test("当日体重は基本情報タブ（データ出走表）にも残る（直前情報タブへ移さない）", async ({
+    page,
+  }) => {
+    const maintenance = [1, 2, 3, 4, 5, 6].map((n) => ({
+      boat_number: n,
+      tilt: 0,
+      adjustment_weight: 0,
+      propeller_change: null,
+      parts_changed: null,
+      today_weight: 50 + n,
+      prev_race_no: null,
+      prev_entry_course: null,
+      prev_start_timing: null,
+      prev_finish_rank: null,
+    }));
+    await page.route(isMaintenance, fulfillJson(maintenance));
+    await page.goto(RACE);
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const basicRow = page
+      .locator(".data-race-table .drt-table tbody tr")
+      .filter({
+        has: page.locator(".drt-label-full", { hasText: /^当日体重$/ }),
+      });
+    await expect(basicRow).toBeVisible({ timeout: 20000 });
+    await expect(basicRow.locator("td.drt-cell").first()).toHaveText("51.0kg");
+  });
+
+  test("直前情報の設定値の取得に失敗したときは、取得失敗を「チルト未公開」の注記に化けさせない", async ({
+    page,
+  }) => {
+    await routeUnfinished(page);
+    await page.route(
+      isMaintenance,
+      fulfillJson({ code: "57014", message: "canceling statement" }, 500),
+    );
+    await page.route(isEntryWeights, fulfillJson(ENTRY_WEIGHTS));
+    await openBeforeInfoTab(page);
+
+    // 体重は出走表の値で出る
+    await expect(
+      rowByLabel(page, "当日体重").locator("td.drt-cell").first(),
+    ).toHaveText("51.0kg", { timeout: 20000 });
+    await expect(page.locator(".inline-fetch-error").first()).toBeVisible();
+    await expect(page.getByTestId("rbi-pre-exhibition-note")).toHaveCount(0);
+  });
+
+  test("確定済みのレースでは、直前情報が入らなかったときも展示前の注記を出さない", async ({
+    page,
+  }) => {
+    // routeUnfinished を使わない＝結果ありの確定済みレース
+    await page.route(isMaintenance, fulfillJson([]));
+    await page.route(isEntryWeights, fulfillJson(ENTRY_WEIGHTS));
+    await openBeforeInfoTab(page);
+
+    await expect(
+      rowByLabel(page, "当日体重").locator("td.drt-cell").first(),
+    ).toHaveText("51.0kg", { timeout: 20000 });
+    await expect(page.getByTestId("rbi-pre-exhibition-note")).toHaveCount(0);
+  });
+
+  test("全艇に直前情報の体重があれば、出走表の体重の取得失敗は出さない（表示に影響しない）", async ({
+    page,
+  }) => {
+    const maintenance = [1, 2, 3, 4, 5, 6].map((n) => ({
+      boat_number: n,
+      tilt: 0,
+      adjustment_weight: 0,
+      propeller_change: null,
+      parts_changed: null,
+      today_weight: 50 + n,
+      prev_race_no: null,
+      prev_entry_course: null,
+      prev_start_timing: null,
+      prev_finish_rank: null,
+    }));
+    await page.route(isMaintenance, fulfillJson(maintenance));
+    await page.route(
+      isEntryWeights,
+      fulfillJson({ code: "57014", message: "canceling statement" }, 500),
+    );
+    await openBeforeInfoTab(page);
+
+    await expect(
+      rowByLabel(page, "当日体重").locator("td.drt-cell").first(),
+    ).toHaveText("51.0kg", { timeout: 20000 });
+    await expect(
+      page.locator(".inline-fetch-error", {
+        hasText: "出走表の体重を取得できませんでした",
+      }),
+    ).toHaveCount(0);
   });
 });

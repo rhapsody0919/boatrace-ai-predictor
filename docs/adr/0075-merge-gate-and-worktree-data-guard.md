@@ -65,6 +65,16 @@ POST .../rulesets
 - **セッション開始時に作業前提を見せる**（`scripts/maintenance/check-git-hygiene.js`、SessionStartフックから呼ぶ）。origin との乖離、worktree の本数、worktree内の保護対象データ。問題が無ければ何も出さない
 - **worktree の棚卸しは分類だけ行い、削除はしない**（`npm run check:worktrees`）。「片付けてよい / 触らない / 作業中」に分け、削除コマンドを提示するだけに留める
 
+### 追記: マージ順の台帳（2026-09-28）
+
+並行セッションが同時に複数のPRを出すと、「#901 は #902 の後に入れないと壊れる」という順序が生じる。これまではオーケストレーション役のセッションが各セッションに口頭で伝えるだけで、守られたかを確かめる手段が無かった。これも散文ではなくフックに落とす。
+
+- 台帳: `$(git rev-parse --git-common-dir)/merge-order.json`（`{"rules":[{"pr":901,"after":[902]}]}`）。全worktreeから同じファイルが見える。コミットしない。順序は数時間で役目を終える運用上の状態で、PRとして往復させるとその間に順序が変わるため
+- 更新: `node scripts/maintenance/merge-order.js add 901 --after 902` / `list` / `remove 901`。オーケストレーション役が使う
+- 判定: `gh pr merge N` の前に、N の `after` にあるPRの状態を `gh pr view` で確かめ、1つでも MERGED でなければ deny（CLOSED も止める。マージされずに閉じたなら順序の前提が崩れているので、オーケストレーション側で台帳を直す）
+- 素通し: 台帳が無い、N が台帳に無い、台帳が壊れている、gh が失敗した。既存の2検査と同じ方針。台帳の破損は `merge-order.js list` が失敗して知らせる
+- 検証: `verify-merge-order-guard.js`（tier=ci）。偽の `gh` を PATH の先頭に置いて、フックを実際に起動する。この検査が無かった版では「止める」側の4件が落ちることを確認済み
+
 ## 理由
 
 ### なぜ散文のルールを足さないか
