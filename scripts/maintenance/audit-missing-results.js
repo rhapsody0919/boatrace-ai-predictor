@@ -26,6 +26,9 @@
  * 取得先への負荷: 日ごとに開催場一覧1回（`--verify-races` を付けると、`missing` 候補だけ結果ページを1回ずつ）。
  * 逐次実行で1.4秒の待機を挟む。
  *
+ * **期間は3か月までにする。** 4か月分（約20,000レース）を一度に取ると `fetchAll` が
+ * `AbortError: This operation was aborted` で落ちる（2026-09-28の実測）。落ちるだけで部分成功にはしない。
+ *
  * 使い方:
  *   node --env-file=.env.local scripts/maintenance/audit-missing-results.js --from=2026-04-01 --to=2026-06-30
  *   node --env-file=.env.local scripts/maintenance/audit-missing-results.js --from=2026-04-01 --to=2026-06-30 --verify-races
