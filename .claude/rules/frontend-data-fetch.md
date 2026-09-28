@@ -67,3 +67,27 @@ paths:
 Supabaseのデフォルト上限は1000行。`.in()` や `.gte()` で1000行を超えうるクエリは `fetchAllByIn` 等の `.range()` ループを使う。上限に達しても**エラーにならず黙って切り捨てられる**ため、気づけない（BOA-301・BOA-372）。
 
 2026-09-23時点で `.range()` 漏れは0件。ただし選手単位の730日窓の3関数は、DBが約10ヶ月分しか無いから安全なだけ（選手1人あたり最大265行）。2年分溜まると約2倍になるので、窓を伸ばす変更をするときは実測し直す。
+
+## 6. テーブルの読み書きを増やしたら台帳を再生成する
+
+画面（`src/`）・API（`api/`）が読むテーブルを増やした、または新しいテーブルを定義したときは、
+次を実行して差分を同じPRでコミットする。
+
+```bash
+npm run generate:display-coverage
+```
+
+生成物は [`docs/reference/display-coverage.md`](../../docs/reference/display-coverage.md)（**手で編集しない**）。
+`npm run verify:display-coverage` がPRごとにCIで最新性を検査するため、忘れると落ちる。
+
+この台帳が答えるのは「**取得したデータが画面に繋がっているか**」。プロジェクトのゴールが
+「公式・各会場公式・ボートレース日和で取得しているデータを全て表示する」ことなのに対し、
+取得側には棚卸しマップが3本ある（`docs/design/scraping-vercel-consolidation/` の
+`data-catalog.md`・`job-inventory.md`・`orchestration.md`）一方で、**表示側には到達度を追う文書が
+1つも無かった**（2026-09-28に発覚）。その結果、取得しているのに読み手が無いテーブルや、
+匿名SELECT権限が無いため画面から読めないテーブルが、長く気づかれず残った。
+
+意図的に表示しないテーブルは `scripts/maintenance/display-coverage-exceptions.json` に
+**理由付きで**登録する。「今は使っていない」は理由にならない（それは表示すべきものの可能性がある）。
+本番DBの実際の権限は台帳では見ない。それは `scripts/maintenance/check-anon-access.js`
+（実接続が要るため manual tier）の担当。
