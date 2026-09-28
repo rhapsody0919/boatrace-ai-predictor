@@ -170,6 +170,51 @@ export function semifinalRaceIdsOf(rows) {
 }
 
 /**
+ * 節の**準優の枠数**（＝準優の本数 × 6）。無ければ null（画面が既定値に落とす）。
+ *
+ * 番組に残っているだけで**実際には行われなかった準優を数えない**。中止順延が
+ * あると同じ準優が2日ぶん番組に残り、枠数が倍になる（江戸川 2026-05-25開催:
+ * 5/29の11R・12Rが中止 → 5/30に同じ6名で再編成。単純に数えると 4×6 = 24枠だが
+ * 実際は12枠）。枠数はボーダー（準優の目安）と必要得点の基準なので、倍になると
+ * 「届かず」の判定まで狂う（BOA-490）。
+ *
+ * ## 判定は中止フラグ単独ではなく、**中止フラグと結果の両方**
+ *
+ * 中止・順延はマイグレーション047（BOA-254）の `races.cancellation_status` に
+ * 記録されている。2026-09-28 の実測では、準優1,528本のうち「過去日なのに結果も
+ * 中止フラグも無い」は**0本**で、フラグは取りこぼしていない。
+ *
+ * それでも**結果が無いことも併せて要求する**。`confirmed` なのに実際は行われて
+ * 結果があるレースが32本ある（すべて2026-09-12の各会場1R〜3R。BOA-512）。
+ * 準優には1本も無いが、条件を足しておけば誤って枠を減らすことが原理的に起きない。
+ *
+ * 「結果が無い準優を落とす」だけにしないのは、**予選中は準優にまだ結果が無い**ため。
+ * そこが枠数をいちばん知りたい場面で、全部落としてしまう。
+ *
+ * @param {Array<{raceId?: string, race_id?: string, raceStage?: string|null,
+ *   race_stage?: string|null}>} rows 節の全レース
+ * @param {{cancelledRaceIds?: Set<string>|Array<string>,
+ *   ranRaceIds?: Set<string>|Array<string>}} [options]
+ *   `cancelledRaceIds` は `cancellation_status === "confirmed"` の `race_id`、
+ *   `ranRaceIds` は結果がある `race_id`。どちらも省略すると従来どおり全部数える
+ * @returns {number|null}
+ */
+export function semifinalSlotsOf(rows, options = {}) {
+  const cancelled = toSet(options.cancelledRaceIds);
+  const ran = toSet(options.ranRaceIds);
+  const kept = semifinalRaceIdsOf(rows).filter(
+    (id) => !(cancelled.has(id) && !ran.has(id)),
+  );
+  return kept.length * 6 || null;
+}
+
+/** `Set` でも配列でも受けられるようにする（呼び出し側の形に合わせない） */
+function toSet(v) {
+  if (v instanceof Set) return v;
+  return new Set(Array.isArray(v) ? v : []);
+}
+
+/**
  * そのレースが**予選最終日より後の日**かどうか。
  *
  * 公式の得点率一覧は「◯日目12R終了時点」＝**日単位**で止まる。PR #871 は

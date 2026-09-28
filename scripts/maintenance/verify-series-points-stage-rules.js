@@ -20,6 +20,7 @@ import {
   isPastPrelimDay,
   prelimEndRaceIdOf,
   semifinalRaceIdsOf,
+  semifinalSlotsOf,
   computeSeriesScore,
   forecastSeriesScore,
   listSeriesFinishes,
@@ -160,6 +161,7 @@ const WAKAMATSU = [
 const wakamatsuEnd = prelimEndRaceIdOf(WAKAMATSU);
 check("若松G1の予選の締め", wakamatsuEnd, "2026-09-25-20-12");
 check("若松G1の準優は3個＝18枠", semifinalRaceIdsOf(WAKAMATSU).length * 6, 18);
+check("若松G1の枠数（中止なし）", semifinalSlotsOf(WAKAMATSU), 18);
 check(
   "若松G1: 初日のドリーム戦は算入する",
   countsForSeriesScore("ドリーム戦", "2026-09-22-20-12", wakamatsuEnd),
@@ -450,7 +452,10 @@ check("バッジ: 予選", getRaceStageKey("予選"), null);
   const rows = [];
   for (let r = 1; r <= 10; r += 1) {
     for (let b = 1; b <= 6; b += 1) {
-      rows.push({ race_id: `2026-01-01-01-${String(r).padStart(2, "0")}`, boat_number: b });
+      rows.push({
+        race_id: `2026-01-01-01-${String(r).padStart(2, "0")}`,
+        boat_number: b,
+      });
     }
   }
   const fake = {
@@ -480,7 +485,11 @@ check("バッジ: 予選", getRaceStageKey("予選"), null);
   const fetched = await fetchAllByRaceId(fake, "race_entries", "race_id", {
     pageSize: 8,
   });
-  check("ページの境目がレースの途中でも全行取れる", fetched.length, rows.length);
+  check(
+    "ページの境目がレースの途中でも全行取れる",
+    fetched.length,
+    rows.length,
+  );
   check(
     "取りこぼしたレースが無い",
     new Set(fetched.map((r) => r.race_id)).size,
@@ -500,7 +509,6 @@ check("バッジ: 予選", getRaceStageKey("予選"), null);
   }
   check("1レースがページに収まらないときは例外で落とす", threw, true);
 }
-
 
 // ---- 6. 公式の得点率一覧の読み替え（BOA-475） --------------------------------
 // 公式の得点率は (着順点 − 減点) ÷ 走数。走数の列は無いが `placements` の
@@ -634,7 +642,6 @@ check("バッジ: 予選", getRaceStageKey("予選"), null);
   );
 }
 
-
 // ---- 8. 公式値を使うかのゲート（BOA-475） ------------------------------------
 // **今回いちばんリスクのある判断**。公式の行は「予選終了時点」のスナップショット
 // なので、予選中のレースを開いているときに使うと、まだ走っていない走を含む
@@ -680,6 +687,134 @@ check("バッジ: 予選", getRaceStageKey("予選"), null);
     false,
   );
 }
+
+// ---- 中止順延で番組に2日ぶん残る準優（BOA-490） -------------------------------
+// 江戸川 2026-05-25開催の実データ。5/29の11R・12Rが中止（`races.cancellation_status`
+// が `confirmed`、結果なし）で、5/30に同じ6名ずつで再編成された。
+// 単純に数えると 4個 = 24枠だが、実際は12枠。枠数はボーダー（準優の目安）と
+// 必要得点の基準なので、倍になると「届かず」の判定まで狂う
+const EDOGAWA_POSTPONED = [
+  { race_id: "2026-05-29-03-11", race_stage: "準優勝戦" },
+  { race_id: "2026-05-29-03-12", race_stage: "準優勝戦" },
+  { race_id: "2026-05-30-03-11", race_stage: "準優勝戦" },
+  { race_id: "2026-05-30-03-12", race_stage: "準優勝戦" },
+];
+check(
+  "中止フラグを渡さなければ従来どおり全部数える",
+  semifinalSlotsOf(EDOGAWA_POSTPONED),
+  24,
+);
+check(
+  "中止で流れた準優は枠数から外す（江戸川 2026-05-25開催）",
+  semifinalSlotsOf(EDOGAWA_POSTPONED, {
+    cancelledRaceIds: ["2026-05-29-03-11", "2026-05-29-03-12"],
+    ranRaceIds: ["2026-05-30-03-11", "2026-05-30-03-12"],
+  }),
+  12,
+);
+// 津・びわこ 2026-04-30開催は3個ずつ。36枠 → 18枠
+check(
+  "3個が2日ぶん残る場合も半分になる（津・びわこ 2026-04-30開催）",
+  semifinalSlotsOf(
+    [
+      ...["10", "11", "12"].map((r) => ({
+        race_id: `2026-05-04-09-${r}`,
+        race_stage: "準優勝戦",
+      })),
+      ...["10", "11", "12"].map((r) => ({
+        race_id: `2026-05-05-09-${r}`,
+        race_stage: "準優勝戦",
+      })),
+    ],
+    {
+      cancelledRaceIds: [
+        "2026-05-04-09-10",
+        "2026-05-04-09-11",
+        "2026-05-04-09-12",
+      ],
+      ranRaceIds: ["2026-05-05-09-10", "2026-05-05-09-11", "2026-05-05-09-12"],
+    },
+  ),
+  18,
+);
+// **予選中は準優にまだ結果が無い**。「結果が無い準優を落とす」だけにすると、
+// 枠数をいちばん知りたい場面で全部落ちてしまう。中止フラグとの AND にしてある
+check(
+  "予選中（準優にまだ結果が無い）は枠数を減らさない",
+  semifinalSlotsOf(
+    [
+      { race_id: "2026-09-26-20-09", race_stage: "準優勝戦" },
+      { race_id: "2026-09-26-20-10", race_stage: "準優勝戦" },
+      { race_id: "2026-09-26-20-11", race_stage: "準優勝戦" },
+    ],
+    { cancelledRaceIds: [], ranRaceIds: [] },
+  ),
+  18,
+);
+// 中止フラグの誤検出（`confirmed` なのに実際は行われて結果がある）が32本ある
+// （すべて2026-09-12の各会場1R〜3R。BOA-512）。準優には1本も無いが、
+// 「結果が無い」も要求しておけば誤って枠を減らすことが原理的に起きない
+check(
+  "中止フラグが立っていても結果があれば数える（フラグの誤検出への保険）",
+  semifinalSlotsOf(
+    [
+      { race_id: "2026-09-26-20-09", race_stage: "準優勝戦" },
+      { race_id: "2026-09-26-20-10", race_stage: "準優勝戦" },
+      { race_id: "2026-09-26-20-11", race_stage: "準優勝戦" },
+    ],
+    {
+      cancelledRaceIds: ["2026-09-26-20-09"],
+      ranRaceIds: ["2026-09-26-20-09", "2026-09-26-20-10", "2026-09-26-20-11"],
+    },
+  ),
+  18,
+);
+// 準優が1本も行われずに優勝戦へ進んだ節（桐生 2026-02-24開催、下関 2026-03-26開催）。
+// null を返し、画面は既定の18枠に落ちる
+check(
+  "準優が全部中止なら null（画面は既定の18枠）",
+  semifinalSlotsOf(
+    [
+      { race_id: "2026-02-28-01-09", race_stage: "準優勝戦" },
+      { race_id: "2026-02-28-01-10", race_stage: "準優勝戦" },
+      { race_id: "2026-02-28-01-11", race_stage: "準優勝戦" },
+    ],
+    {
+      cancelledRaceIds: [
+        "2026-02-28-01-09",
+        "2026-02-28-01-10",
+        "2026-02-28-01-11",
+      ],
+      ranRaceIds: [],
+    },
+  ),
+  null,
+);
+check("準優が1本も無ければ null", semifinalSlotsOf([]), null);
+check("配列でなければ null", semifinalSlotsOf(null), null);
+// `Set` でも配列でも受ける（呼び出し側の形に合わせない）
+check(
+  "cancelledRaceIds に Set を渡しても同じ",
+  semifinalSlotsOf(EDOGAWA_POSTPONED, {
+    cancelledRaceIds: new Set(["2026-05-29-03-11", "2026-05-29-03-12"]),
+    ranRaceIds: new Set(["2026-05-30-03-11", "2026-05-30-03-12"]),
+  }),
+  12,
+);
+// 準優進出戦は準優の枠ではない（PR #887）。中止判定を足しても変わらない
+check(
+  "準優進出戦は中止判定を足しても枠に数えない",
+  semifinalSlotsOf(
+    [
+      { race_id: "2026-05-29-03-09", race_stage: "準優進出戦" },
+      { race_id: "2026-05-29-03-10", race_stage: "準優進出戦" },
+      { race_id: "2026-05-30-03-11", race_stage: "準優勝戦" },
+      { race_id: "2026-05-30-03-12", race_stage: "準優勝戦" },
+    ],
+    { cancelledRaceIds: [], ranRaceIds: ["2026-05-30-03-11"] },
+  ),
+  12,
+);
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);
 process.exit(failures === 0 ? 0 : 1);
