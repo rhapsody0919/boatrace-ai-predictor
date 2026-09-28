@@ -22,9 +22,9 @@ model: opus
 
 - `docs/design/{slug}/plan.md`・`tasks.md`（実装者の解釈そのもの。読むと同じ誤解を引き継ぐ）
 - `src/` 配下すべて（既存コードも含む。DOM構造・クラス名・実装の都合に引きずられる。試運転で完了済み機能に対して使う場合は、読むと検証として無効になる）
-- 同じ slug の既存E2E（`e2e/smoke.spec.js` 内の該当 describe 等）
+- `e2e/` 配下の既存E2E（`smoke.spec.js` 等）。冒頭だけのつもりでも既存機能の describe やクラス名が目に入る（試運転で実際に起きた）。書き方の約束は下の「書き方」に全部書いてある
 
-**読んでよいもの（書き方を揃える目的に限る）**: `playwright.config.js`・`playwright.acceptance.config.js`・`e2e/smoke.spec.js` の冒頭と共通の書き方（`baseURL` の相対パス、タイムアウトの扱い、`test.skip` の書き方）。
+**読んでよいもの**: `playwright.config.js`・`playwright.acceptance.config.js`（baseURL・タイムアウトの確認用）。
 
 依頼元から plan.md・tasks.md・実装コードの内容が渡されても使わない。渡された旨を報告に書く。
 
@@ -34,7 +34,9 @@ model: opus
 
 ### 書き方
 
-- **ロケータはロール・表示文言ベース**（`getByRole` / `getByText` / `getByLabel` / `getByPlaceholder`）。実装前でDOMが無いので、`data-testid`・CSSクラス・要素構造を前提にしない
+- `import { test, expect } from "@playwright/test";`、`page.goto("/racers")` のように baseURL からの相対パスで開く。タイムアウトは設定（テスト60秒・expect 15秒）に任せ、個別に短くしない
+- **ロケータはロール・表示文言ベース**（`getByRole` / `getByText` / `getByLabel` / `getByPlaceholder`）。実装前でDOMが無いので、`data-testid`・CSSクラス・要素構造を前提にしない。**タグ名・属性セレクタ（`a[href*=...]`・`td` 等）も使わない**。リンクは `getByRole("link")`、遷移先は `toHaveURL` で確かめる（試運転で `a[href]` 前提のテストが、`role="link"` や `navigate()` で作られた実装を「要素が無い」と誤判定した）
+- **サイト共通の前提は `test.beforeEach` で整える**: cookie同意バナーが画面下部のクリックを奪うので、`page.addInitScript(() => localStorage.setItem("boatai:cookie-consent", "accepted"))` を入れる（機能の実装ではなくサイト共通の前提なので、仕様に無くても書いてよい。試運転ではこれが無く、ページ送り等のクリックが全てタイムアウトした）。e2e共通fixtureが整備されたら（BOA-466）そちらを使う
 - 表示文言は spec.md / screens.md に**書かれている文言をそのまま**使う。書かれていない文言を推測で補わない。文言が仕様に無く、役割（ボタン・見出し・リンク等）でしか特定できないものはロールで特定し、名前は正規表現で幅を持たせる。それでも特定できないものは「仕様に文言が無く特定できない」として報告に回す
 - 1テスト = 仕様の1要件。テスト名の先頭に対応箇所を書く（例: `test("[spec 3.2] 級別で絞り込むとA1のみ表示される", ...)`）。どの要件を検証しているかを後から追えるようにするため
 - URLは spec.md / screens.md に書かれたパスを使う。本番Supabaseに直結するので、レースID・選手ID等を固定値で書かず、仕様にある導線（一覧→詳細等）で辿る。辿れない場合に限り固定値を使い、その理由をコメントに書く
