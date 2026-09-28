@@ -12,7 +12,10 @@ import {
   extractVenueCodeFromRaceId,
   addDaysToDateString,
 } from "../../scripts/lib/dateUtils.js";
-import { groupIntoCurrentMeet } from "../utils/meetGrouping";
+import {
+  groupIntoCurrentMeet,
+  findMeetStartDate,
+} from "../utils/meetGrouping";
 import { deriveRaceStContext } from "../utils/stConsideration";
 import { isFinalStage } from "../constants/raceStageConfig";
 import { finishPositionOf } from "../components/race/basicInfoStats.js";
@@ -6367,38 +6370,68 @@ export const supabaseDataService = {
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る
       const from = new Date(date);
       from.setDate(from.getDate() - 9);
-      const { data: entries } = await supabase
-        .from("race_entries")
-        .select("race_id, boat_number, racer_id, player_name")
-        .gte("race_id", from.toISOString().slice(0, 10))
-        // **これから走るレースも含めて**取る（2026-09-28）。得点率の集計は
-        // 「結果がまだ無いレースは分母に入れない」で弾いているので混ざらない。
-        // 必要得点（ボーダーに届くのに要る点）には**残り何走あるか**が要り、
-        // それは番組が出ている予選レースの数から数えるしかない
-        .lte("race_id", `${date}-zz`)
-        .like("race_id", `__________-${vv}-__`);
+      const windowStart = from.toISOString().slice(0, 10);
+      // 出走表と**窓ぶんの種別**を同時に取る。種別は節の初日を決めるのに要るので
+      // `meetStart` より先に要るが、窓の範囲は `meetStart` に依存しないため
+      // 往復は増えない（この2本のあとに走る並列の束から種別を外している）
+      const [entriesRes, windowConditionsRes] = await Promise.all([
+        supabase
+          .from("race_entries")
+          .select("race_id, boat_number, racer_id, player_name")
+          .gte("race_id", windowStart)
+          // **これから走るレースも含めて**取る（2026-09-28）。得点率の集計は
+          // 「結果がまだ無いレースは分母に入れない」で弾いているので混ざらない。
+          // 必要得点（ボーダーに届くのに要る点）には**残り何走あるか**が要り、
+          // それは番組が出ている予選レースの数から数えるしかない
+          .lte("race_id", `${date}-zz`)
+          .like("race_id", `__________-${vv}-__`),
+        supabase
+          .from("race_conditions")
+          .select("race_id, race_stage, is_final_day, series_day")
+          .gte("race_id", windowStart)
+          .lte("race_id", `${date}-zz`)
+          .like("race_id", `__________-${vv}-__`),
+      ]);
 
-      const rows = entries ?? [];
+      const rows = entriesRes.data ?? [];
       if (rows.length === 0) return null;
+      const windowConditions = windowConditionsRes.data ?? [];
 
-      // 日付の連続性で節を切る（表示日を含む区間だけ残す）
-      const dates = [
-        ...new Set(rows.map((r) => r.race_id.slice(0, 10))),
-      ].sort();
-      // 表示日のレースが1つも無い場合（初日の第1レース等）は直近の日から遡る
-      let meetStart = dates.includes(date) ? date : dates[dates.length - 1];
-      for (let i = dates.indexOf(meetStart); i > 0; i--) {
-        const gap =
-          (new Date(dates[i]) - new Date(dates[i - 1])) / (1000 * 60 * 60 * 24);
-        if (gap > 2) break;
-        meetStart = dates[i - 1];
+      // **節の初日は `series_day` から決める**（BOA-508）。
+      // 以前は日付の連続性（間が2日を**超えたら**別の節）で切っていたが、
+      // 節と節の間が中1日空くと連続する開催日の差がちょうど2日になり、
+      // 境目とみなされず**前の節が丸ごと混ざっていた**。2026-09-28 戸田8Rで
+      // 節内順位が6艇とも「対象外」になり、出場人数・準優の目安・必要得点が
+      // 前の節の値になった（BOA-491）。実測では3,065（会場×日）のうち59件で
+      // 前の節を跨いでいた。
+      //
+      // `race_entries` にしか無い日（種別が未取得）も拾えるよう、日付は出走表側を
+      // 基準にし、`series_day` は種別から引く
+      const seriesDayByDate = new Map();
+      for (const c of windowConditions) {
+        const d = c.race_id.slice(0, 10);
+        const prev = seriesDayByDate.get(d);
+        if (c.series_day != null && (prev == null || c.series_day < prev))
+          seriesDayByDate.set(d, c.series_day);
+        else if (!seriesDayByDate.has(d)) seriesDayByDate.set(d, null);
       }
+      const meetStart =
+        findMeetStartDate(
+          [...new Set(rows.map((r) => r.race_id.slice(0, 10)))].map((d) => ({
+            date: d,
+            seriesDay: seriesDayByDate.get(d) ?? null,
+          })),
+          date,
+        ) ?? date;
       const meetRows = rows.filter((r) => r.race_id.slice(0, 10) >= meetStart);
       const raceIds = [...new Set(meetRows.map((r) => r.race_id))];
+      // 節に絞った種別（以降は今までどおり `conditions` として使う）
+      const conditions = windowConditions.filter(
+        (c) => c.race_id.slice(0, 10) >= meetStart,
+      );
 
       const [
         results,
-        conditions,
         pretest,
         meetExhibition,
         meetStarts,
@@ -6410,17 +6443,6 @@ export const supabaseDataService = {
           "race_id",
           raceIds,
         ),
-        // 種別だけは**節の全レース**を引く（表示中レースより後も含む）。
-        // 番組は事前に決まっているので未来の情報ではなく、これが無いと
-        // 「準優が何個組まれているか（＝枠が18名か24名か）」が分からない。
-        // 表示中レース自体の種別（早見の出し分け）もここから取る
-        supabase
-          .from("race_conditions")
-          .select("race_id, race_stage, is_final_day")
-          .gte("race_id", meetStart)
-          .lte("race_id", `${date}-zz`)
-          .like("race_id", `__________-${vv}-__`)
-          .then(({ data }) => data ?? []),
         // 前検タイム（FR-4a、`motor_pretest_stats`。095で匿名SELECTを公開済み）。
         // 機力の**起点**。今節の展示順位の推移だけでは「元から悪い舟」なのか
         // 「調整が進んだ」のかが読めない。節の全選手分を1クエリで引く

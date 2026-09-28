@@ -99,3 +99,65 @@ export function groupIntoCurrentMeet(sortedAscEntries, maxGapDays = 2) {
   }
   return meet;
 }
+
+/**
+ * `series_day` から「表示中の日を含む節の初日」を求める（純関数、BOA-508）。
+ *
+ * 上の `groupIntoCurrentMeet` は**1選手分**に絞って使う前提のヒューリスティックで、
+ * **会場の全日付に当てると壊れる**（中1日の開催休みで前の節が丸ごと混ざる）。
+ * 会場単位で節を切るときはこちらを使う。
+ *
+ * ## 切り方（`verify-meet-grouping.js` が「正解」としているものと同じ規則）
+ *
+ * 開催日を昇順に見て、次のどれかで新しい節が始まったとみなす。
+ *
+ *   - `series_day === 1`      … 節の初日
+ *   - `series_day < 直前の値`  … 初日の行が無いだけ（`series_day=2` から始まる実例がある）
+ *   - 前の開催日から**2日以上空いた** … `series_day` が無い期間（2026-02より前）の保険
+ *
+ * 逆に**同じ値の連続（4→4）と飛び（5→7）は同じ節の続き**として扱う。中止順延で
+ * 実際に起きる（2026-09に同値3箇所・飛びの実例あり）。ここを厳しくすると節の
+ * 途中で切れる。
+ *
+ * ## 日付だけで切ってはいけない
+ *
+ * 節と節の間が中1日空くと、連続する開催日の差が2日になる。旧実装は
+ * 「2日を**超えたら**別の節」だったため1日の休みを跨いでしまい、前の節が丸ごと
+ * 混ざっていた（BOA-491: 2026-09-28 戸田8Rで節内順位が6艇とも「対象外」になり、
+ * 出場人数・準優の目安・必要得点が前の節の値になった）。
+ * 実測では中1日の休み12箇所が**すべて**節の境目（前日が `is_final_day`）で、
+ * 節の中に休みが入る例は0件だった。
+ *
+ * @param {Array<{date: string, seriesDay: number|null}>} days 会場の開催日
+ * @param {string} targetDate 表示中のレースの日（`YYYY-MM-DD`）
+ * @returns {string|null} 節の初日。`days` が空なら null
+ */
+export function findMeetStartDate(days, targetDate) {
+  if (!Array.isArray(days) || days.length === 0) return null;
+  const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date));
+
+  let meetStart = sorted[0].date;
+  let prevSeriesDay = null;
+  let prevDate = null;
+  let answer = null;
+
+  for (const d of sorted) {
+    const gapDays =
+      prevDate === null
+        ? 0
+        : (new Date(`${d.date}T00:00:00Z`) - new Date(`${prevDate}T00:00:00Z`)) /
+          86400000;
+    const startsByGap = prevDate !== null && gapDays >= 2;
+    const startsBySeriesDay =
+      d.seriesDay != null &&
+      (d.seriesDay === 1 ||
+        (prevSeriesDay != null && d.seriesDay < prevSeriesDay));
+    if (startsByGap || startsBySeriesDay) meetStart = d.date;
+    // 表示日以前で最後に見た節の初日が答え。表示日の行が無くても遡れる
+    if (d.date <= targetDate) answer = meetStart;
+    // 当日の `series_day` は取得前で null のことがある。null は「続き」とみなす
+    if (d.seriesDay != null) prevSeriesDay = d.seriesDay;
+    prevDate = d.date;
+  }
+  return answer ?? meetStart;
+}
