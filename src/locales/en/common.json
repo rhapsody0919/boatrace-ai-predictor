@@ -637,6 +637,9 @@
     "borderNote": "Rows above the dashed line are within the semi-final line (the card is not set yet, so this is not final).",
     "prelimOverNote": "The preliminaries ended on {{date}}. The score rate is final and today's finish will not change it.",
     "rankSourceNote": "The series rank is our own calculation. Where the official score-rate list is available we use its remarks (excluded from prizes, withdrew mid-series) to drop racers from the ranking; otherwise we infer a withdrawal from having no start on the final day of the series.",
+    "rankSourceNoteOfficial": "The score rate and series rank come from the official score-rate list as of the end of the preliminaries, including its deductions, prize exclusions and mid-series withdrawals. During the preliminaries the official list is not published yet, so our own tally is used.",
+    "sourceOfficial": "official",
+    "sourceOwn": "our own tally",
     "sparkStTitle": "Start timing this series",
     "sparkExTitle": "Trial time this series",
     "sparkBaselineSt": "Usual {{value}}",
@@ -709,7 +712,7 @@
     "viewConditions": "By condition",
     "viewMeet": "This series",
     "meetNote": "Races so far in this series. Tap a date to open that race",
-    "meetScore": "Series score rate {{rate}} ({{n}} races, our own tally)",
+    "meetScore": "Series score rate {{rate}} ({{n}} races, {{source}})",
     "meetPretest": "Pre-race trial {{time}} (trial rank {{rank}})",
     "meetPretestSource": "Pre-race trial times: BOAT RACE official website",
     "meetCompareTitle": "These six in this series (by score rate)",
@@ -754,7 +757,7 @@
     "periodAvgSt": "Avg. ST {{value}}",
     "periodFetchError": "Could not load the previous term record",
     "meetScoreForecastTitle": "How today's finish moves the score rate",
-    "meetScorePrelimOver": "Preliminary score rate {{rate}} ({{n}} runs, our calculation, final)"
+    "meetScorePrelimOver": "Preliminary score rate {{rate}} ({{n}} runs, {{source}}, final)"
   },
   "dataTable": {
     "title": "Data Race Card",

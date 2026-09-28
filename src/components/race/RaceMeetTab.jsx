@@ -136,6 +136,10 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   const tiedCount = (rank) =>
     ranking.filter((r) => r.rank !== null && r.rank === rank).length;
 
+  // 節内順位の表が公式の得点率一覧の値でできているか（出典の注記の出し分け）。
+  // サービス層が「予選終了後の表示」のときだけ公式行を渡す（BOA-475）
+  const usesOfficialScore = ranking.some((r) => r.fromOfficial);
+
   const mine = ranking.find((r) => r.racerId === selectedPlayer?.racerId);
   // ボーダーは**順位の対象になっている選手だけ**から取る。途中で離脱した
   // 選手を混ぜると公式とズレる（若松G1の実測で 5.67 → 除外すると 5.60 で
@@ -427,7 +431,13 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
               当社は全員で順位を振るため下位ほどズレる（2026-09-27に若松G1で
               実測: 得点率は6/6一致、順位は最大4つ差）。除外の判定材料が
               自社データに無いので、合わせにいかずに違いを書く */}
-          <p className="rmt-rank-note">{t("meetTab.rankSourceNote")}</p>
+          <p className="rmt-rank-note">
+            {t(
+              usesOfficialScore
+                ? "meetTab.rankSourceNoteOfficial"
+                : "meetTab.rankSourceNote",
+            )}
+          </p>
           <p className="rmt-source">{t("basicInfo.meetPretestSource")}</p>
         </div>
       )}
@@ -691,6 +701,13 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
               {
                 rate: mine.rate.toFixed(2),
                 n: mine.runs,
+                // 公式の得点率一覧がある開催では公式の値をそのまま出している。
+                // 出典を「当社計算」と書いたままにすると嘘になる（BOA-475）
+                source: t(
+                  mine.fromOfficial
+                    ? "meetTab.sourceOfficial"
+                    : "meetTab.sourceOwn",
+                ),
               },
             )}
             {showBorder && border !== undefined && (

@@ -147,7 +147,7 @@ node --env-file=.env.local scripts/analysis/race-stage-inventory.mjs
 
 ---
 
-## 5. 減点（未解決。得点率が最大1.67ズレる）
+## 5. 減点（予選終了後は公式値で解決。予選中は残る）
 
 **公式の得点率 = (着順点の合計 − 減点) ÷ 走数**。2026-09-28に実データで確定した。
 
@@ -164,9 +164,44 @@ node --env-file=.env.local scripts/analysis/race-stage-inventory.mjs
 
 **ズレるのはこの2名だけではない。** 減点を持つ選手が過大な得点率のまま上位に残るので、**その下にいる全員の節内順位がズレる**。多摩川G1では公式順位がある45名のうち**25名**が自社順位と不一致だった（得点率そのものは一致しているのに順位だけ2つ下にズレる形）。
 
-当面の緩和策は「公式の `racer_series_points` に値がある開催では、自社計算ではなく公式の得点・得点率を使う」。[BOA-475](https://linear.app/boat-ai/issue/BOA-475)。
+### 対処（BOA-475）
 
-回帰テストではこの2名を比較対象から外している（`penalty_points > 0` を除外）ため、公式との一致の分母は多摩川G1で 43（49名中、備考あり4名と減点あり2名を除く）。分母43に対して **43/43一致**。
+**公式の行がある開催では、予選終了後の表示に限って公式の値を使う。**
+
+- `getMeetScoreboard` が `racer_series_points` から `placements` / `total_points` / `penalty_points` も取り、`officialByRacer` として返す（追加クエリ0本。備考のために既に引いていた）
+- `buildMeetRanking` はそれを受け取ると、得点率・節内順位・着順の並びを公式の値で出す（`officialSeriesScore`）
+- 画面は出典を「公式」と出し分ける（`meetTab.sourceOfficial` / `rankSourceNoteOfficial`、4言語）
+
+#### 走数は `placements` の文字数から出す
+
+公式データに走数の列は無いが、`placements`（着順の文字列。日の区切りが全角空白）の空白を除いた文字数が走数になる。収録済み101行で検算し、`(得点 − 減点) ÷ 得点率` と**得点率のある94行すべてで一致**した。
+
+#### 減点99は引かない
+
+`penalty_points = 99` は**賞典除外の印**で、実際に引く点数ではない（マイグレーション064のCOMMENT）。引くと得点が負になる（実データ: 得点40・減点99）。
+
+#### 予選中は使わない（未来のデータが漏れるため）
+
+公式の行は節に1行しか無く、中身は「◯日目１２R終了時点」＝**予選終了時点のスナップショット**。レース詳細は過去日も開けるので、予選中のレースを開いているときに公式値を使うと**まだ走っていない走を含む得点率・順位**を出してしまう。そのため `getMeetScoreboard` は、表示中のレースが予選を過ぎているときだけ `officialByRacer` を渡す。
+
+**予選中の表示は従来どおり自社計算で、減点のズレが残る。** 公式の一覧が出るのも4日目以降なので、予選中は直しようが無い。
+
+#### 受け入れの実測（2026-09-28）
+
+`node --env-file=.env.local scripts/verification/verify-series-points-official.mjs`
+
+| 開催 | 順位が公式と一致 | 得点率・走数が一致 |
+|---|---|---|
+| 多摩川G1 2026-09-16 | **45/45**（対処前は20/45） | 45/45 |
+| 若松G1 2026-09-22 | **49/49** | 49/49 |
+
+画面と同じキー（`venue_code` + `meet_start_date`）で公式行を引けなかった節は**0件**。引けないと黙って自社計算に戻り「開催によって値が変わる」原因になるため、検証に含めている。
+
+#### 残っていること
+
+- **一般戦・G3は直らない**。公式の得点率一覧が出ないため（§8）
+- 減点の発生条件を自社データから導出する案は別チケット。多摩川G1の減点10（2026-09-18-05-03の2名）は原因を特定できていない
+- 自社計算そのものの回帰は、突合スクリプト（`series-points-scoring-hypotheses.mjs`）が引き続き自社計算で比較する。画面が公式優先になっても自社計算の退行を検知できるようにするため。そちらは減点のある2名を比較対象から外している（`penalty_points > 0` を除外）ので、公式との一致の分母は多摩川G1で43、**43/43一致**
 
 ---
 
@@ -256,8 +291,11 @@ node --env-file=.env.local scripts/analysis/race-stage-inventory.mjs
 # --cache で取得結果を一時ディレクトリに残して再利用する
 node --env-file=.env.local scripts/analysis/series-points-scoring-hypotheses.mjs --cache
 
-# 種別判定の回帰テスト（実DB接続なし。PRごとにCIで走る）
+# 種別判定・公式値の読み替えの回帰テスト（実DB接続なし。PRごとにCIで走る）
 npm run verify:series-points-stage
+
+# 公式値を使ったときの節内順位が公式と一致するか（実DB接続が要る）
+node --env-file=.env.local scripts/verification/verify-series-points-official.mjs
 
 # 必要得点の自己整合性 / ボーダー推定 vs 実際の準優進出者（実DB接続が要る）
 node --env-file=.env.local scripts/verification/verify-series-points-needed.mjs
