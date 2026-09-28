@@ -100,7 +100,8 @@ const MEET_ORIGINAL_KINDS = Object.freeze([
 ]);
 
 /** レース遷移直後の「まだ何も取れていない」状態。毎回新しい {} を作ると
- *  useMemo の依存が毎レンダー変わってしまうため、定数を使い回す */
+ *  useMemo の依存が毎レンダー変わってしまうため、定数を使い回す
+ *  （今節展示情報・選手の出走履歴の両方で使う） */
 const EMPTY_TREND = Object.freeze({});
 
 function RaceBeforeInfoTab({
@@ -122,32 +123,44 @@ function RaceBeforeInfoTab({
   // を選手ごとに取得する（withCacheで基本情報タブと同一キャッシュを共有するため、
   // 既にどちらかのタブを開いていれば再取得は発生しない）
   //
-  // 失敗は「空配列」に倒さず scopedStatsFailed に raceId 付きで残す（BOA-485。
-  // 「この枠からの進入コース」が失敗時に「出走なし」と誤表示しないため。
-  // .claude/rules/frontend-data-fetch.md §3）。再試行は reloadKey で行う
-  const [scopedStatsByRacer, setScopedStatsByRacer] = useState({});
-  const [scopedStatsFailedRaceId, setScopedStatsFailedRaceId] = useState(null);
+  // **raceIdとセットで持つ**（今節展示情報の fetchedMeetTrend と同じ。BOA-485）。
+  // 失敗も空配列に倒さず、同じ箱の failed に残す（「この枠からの進入コース」が
+  // 失敗時に「出走なし」と誤表示しないため。.claude/rules/frontend-data-fetch.md §3）。
+  // 再試行は reloadKey でこのセクションだけ取り直す
+  const [fetchedScopedStats, setFetchedScopedStats] = useState({
+    raceId: null,
+    byRacer: {},
+    failed: false,
+  });
   const [scopedStatsReloadKey, setScopedStatsReloadKey] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    setScopedStatsFailedRaceId(null);
+    const apply = (racerId, data, didFail) =>
+      setFetchedScopedStats((prev) => {
+        // 別のレースの結果が遅れて届いても混ぜない
+        const base =
+          prev.raceId === raceId
+            ? prev
+            : { raceId, byRacer: {}, failed: false };
+        return {
+          raceId,
+          byRacer: { ...base.byRacer, [racerId]: data },
+          failed: base.failed || didFail,
+        };
+      });
     sortedPlayers.forEach((p) => {
       if (!p.racerId) return;
       supabaseDataService
         .getRacerScopedRaceStats(p.racerId)
         .then((data) => {
-          if (!cancelled)
-            setScopedStatsByRacer((prev) => ({ ...prev, [p.racerId]: data }));
+          if (!cancelled) apply(p.racerId, data, false);
         })
         .catch((err) => {
-          // 取得失敗時にscopedStatsByRacer[p.racerId]が永久にundefinedのまま
-          // 残ると「展示タイム1位勝率」「この枠からの進入」が読み込み中のまま固まる
-          // （RaceBasicInfoTab.jsxの同種の指摘と同じ問題、2026-09-16修正）
+          // catchしないとbyRacer[p.racerId]がundefinedのまま残り、
+          // 「展示タイム1位勝率」「この枠からの進入」が読み込み中のまま固まる
           console.error("選手出走履歴取得エラー:", err?.message ?? String(err));
-          if (!cancelled) {
-            setScopedStatsByRacer((prev) => ({ ...prev, [p.racerId]: null }));
-            setScopedStatsFailedRaceId(raceId);
-          }
+          // null＝取得失敗（undefined＝取得中、配列＝取得済みと区別する）
+          if (!cancelled) apply(p.racerId, null, true);
         });
     });
     return () => {
@@ -155,9 +168,13 @@ function RaceBeforeInfoTab({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [raceId, scopedStatsReloadKey]);
-  const scopedStatsFailed = scopedStatsFailedRaceId === raceId;
+  const scopedStatsCurrent = fetchedScopedStats.raceId === raceId;
+  const scopedStatsByRacer = scopedStatsCurrent
+    ? fetchedScopedStats.byRacer
+    : EMPTY_TREND;
+  const scopedStatsFailed = scopedStatsCurrent && fetchedScopedStats.failed;
   const retryScopedStats = () => {
-    setScopedStatsByRacer({});
+    setFetchedScopedStats({ raceId: null, byRacer: {}, failed: false });
     setScopedStatsReloadKey((n) => n + 1);
   };
 
@@ -792,11 +809,11 @@ function RaceBeforeInfoTab({
                 )?.today_weight,
               ) !== null,
           ) && (
-          <InlineFetchError
-            message={t("beforeInfo.entryWeightFetchError")}
-            onRetry={() => setEntryWeightsReloadKey((k) => k + 1)}
-          />
-        )}
+            <InlineFetchError
+              message={t("beforeInfo.entryWeightFetchError")}
+              onRetry={() => setEntryWeightsReloadKey((k) => k + 1)}
+            />
+          )}
         {showPreExhibitionNote && (
           <p className="rbi-note" data-testid="rbi-pre-exhibition-note">
             {t("beforeInfo.preExhibitionNote")}
