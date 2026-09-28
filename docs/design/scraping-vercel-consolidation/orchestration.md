@@ -407,6 +407,20 @@ live化の前提にしない。
 告知が残らない（設計の既知の制約）。本ジョブの対象は「N R**以降**の中止」だけなので、**この形は早期確定の対象外**で、
 従来どおり90分ルールが確定する。退行ではないが、**カバー範囲の穴として記録する**。
 
+**live化を実施した（2026-09-28 10:06 JST、ユーザー操作）**。10:10の起動で稼働を確認:
+
+| 項目 | 値 |
+|---|---|
+| `mode` | `live` |
+| `last_tick_at` / `last_success_at` | 10:10:17 / 10:10:28 JST |
+| `last_report.mode` | `live`（10:00の`shadow`から切り替わった） |
+| `venuesParsed` | 12 |
+| `candidates` / `unrecognized` | 0 / 0 |
+| `consecutive_failures` / `last_error` | 0 / なし |
+
+本日は順延・中止の告知が無いため候補0が正しい挙動。**次の順延日に、`races.cancellation_status` が90分ルールより早く
+`confirmed` になることを確認する**（`scrape-monitor` の通知経路も稼働中）。
+
 ### `racer_profiles` — GHAが本番を担っている唯一の取得
 
 `api/cron/racer-profiles.js` とVercel Cron（`*/10 18-20 1 * *` ほか＝JST 毎月2日 03:00〜05:50）は存在するが、
