@@ -20,6 +20,7 @@ import {
 } from "../utils/motorGeneration";
 import { isFinalStage } from "../constants/raceStageConfig";
 import { finishPositionOf } from "../components/race/basicInfoStats.js";
+import { isRaceCancelled } from "../utils/raceCancellation.js";
 import {
   countsForSeriesScore,
   shouldUseOfficialSeries,
@@ -6552,12 +6553,16 @@ export const supabaseDataService = {
           .then(({ data }) => data ?? []),
       ]);
       const resultById = new Map((results ?? []).map((r) => [r.race_id, r]));
-      // 中止が確定したレース（047の `cancellation_status`）。`tentative`（中止の
-      // 疑い）は含めない——疑いの段階で枠数を減らすと、実際は行われたときに
-      // ボーダーが狂う
+      // 中止が**確定**したレース。判定は `isRaceCancelled` に集めてあるので
+      // ここで文字列を比べない（`src/utils/raceCancellation.js`。疑いの段階と
+      // 確定を各所で書き分けると必ずズレる、というのがあの関数の由来）。
+      // 中止の疑い（tentative）は含まれない——疑いで枠数を減らすと、実際は
+      // 行われたときにボーダーが狂う。列名だけスネーク→キャメルに合わせる
       const cancelledRaceIds = new Set(
         (cancellations ?? [])
-          .filter((r) => r.cancellation_status === "confirmed")
+          .filter((r) =>
+            isRaceCancelled({ cancellationStatus: r.cancellation_status }),
+          )
           .map((r) => r.race_id),
       );
       const stageById = new Map(
