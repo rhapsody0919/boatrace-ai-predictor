@@ -2191,13 +2191,14 @@ const cancellationWithResultOk = (r) =>
     cancellationWithResultOk(r),
     show(r),
   );
-  const { evaluateCountCheck } = await import("../lib/dataHealth/evaluate.js");
+  const { evaluateCountCheck } = evalMod;
   const chk = COUNT_CHECKS.find((c) => c.id === "cancellation.with_result");
   const breach = evaluateCountCheck(chk, r, { end: "2026-09-13" });
   const clean = evaluateCountCheck(chk, r.slice(1), { end: "2026-09-13" });
   check(
     "cancellation.with_result: 誤検出が1件でもあれば未達（閾値100%・母数の下限1）、0件なら正常",
     chk?.severity === "alert" &&
+      chk.days === 14 &&
       breach.status === "breach" &&
       breach.missing === 1 &&
       breach.worst?.key === "2026-09-12" &&
