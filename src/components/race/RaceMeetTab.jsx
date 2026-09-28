@@ -513,6 +513,17 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                 })
               : t("meetTab.forecastNoteNoBorder")}
           </p>
+          {/* 目安の出し方と誤差、必要得点の式は長いので折りたたむ。
+              実測の差（若松G1 0.07 / 桐生一般 0.83）まで書くのは、
+              「数位ずれる」を具体で示さないと目安の精度を過信されるため */}
+          {showBorderBadge && border !== undefined && (
+            <details className="rmt-how">
+              <summary>{t("meetTab.forecastDetailSummary")}</summary>
+              <p className="rmt-caveat">
+                {t("meetTab.forecastDetail", { slots })}
+              </p>
+            </details>
+          )}
         </div>
       )}
 
