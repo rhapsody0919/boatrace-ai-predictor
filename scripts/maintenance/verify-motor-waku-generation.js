@@ -24,6 +24,9 @@
  * 4. 戻り値の形を変えたので、キャッシュのキーが旧版と違う（localStorageに残る旧形式の
  *    配列を読むと、画面が .rows で落ちる）
  * 5. 画面が世代不明を「表示していません」に倒し、「直近180日」の文言が残っていない
+ * 6. 使用開始日以降のレースのページ送りが一意の並び（race_date, race_id）である
+ *    （世代全体で最長約1年分、1000件超の会場が16ある。同じ日のレースの並びが
+ *    不定だとページ境界で行が重複・欠落しうる）
  */
 
 import { readFileSync } from "node:fs";
@@ -99,6 +102,11 @@ const since = src.slice(
 check(
   "getRacesForVenueSince は使用開始日の当日を含む（gte）",
   since.includes('.gte("race_date", cutoff)'),
+);
+
+check(
+  "getRacesForVenueSince のページ送りが一意の並び（race_id）で行が欠けない",
+  since.includes('.order("race_id")') && since.includes(".range("),
 );
 
 // 画面

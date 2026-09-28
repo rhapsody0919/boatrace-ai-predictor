@@ -392,7 +392,11 @@ async function fetchRacesForVenueSince(venueCode, cutoff) {
       .select("race_id, race_date")
       .eq("venue_code", venueCode)
       .gte("race_date", cutoff)
+      // 同じ日のレースは race_date だけでは順序が決まらず、ページ境界で行が
+      // 重複・欠落しうる。race_id で一意に並べる（世代全体＝最長約1年分、
+      // 徳山で2148件＝3ページを読むようになったため）
       .order("race_date")
+      .order("race_id")
       .range(from, from + pageSize - 1);
 
     if (error) {
