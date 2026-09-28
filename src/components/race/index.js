@@ -24,6 +24,7 @@ export { default as RaceTabs } from "./RaceTabs";
 export { default as RaceBasicInfoTab } from "./RaceBasicInfoTab";
 export { default as RaceBeforeInfoTab } from "./RaceBeforeInfoTab";
 export { default as RacePitReportSection } from "./RacePitReportSection";
+export { default as EntryCourseDistributionCard } from "./EntryCourseDistributionCard";
 export { default as RaceAiPredictionTab } from "./RaceAiPredictionTab";
 export { default as RaceHistoryTable } from "./RaceHistoryTable";
 export { GRADE_LABELS } from "./raceGradeLabels";

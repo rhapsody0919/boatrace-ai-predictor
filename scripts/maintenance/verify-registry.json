@@ -417,6 +417,11 @@
       "guards": "sns_topic_targetsのclaim機構（ADR 0036）の並行実行時の排他",
       "reason": "実Supabaseに対する並行実行テストのため",
       "command": "node --env-file=.env.local scripts/maintenance/verify-topic-target-claim.js"
+    },
+    {
+      "script": "verify-scraped-at-on-update.js",
+      "tier": "ci",
+      "guards": "scraped_at を持つテーブルへの upsert/update が scraped_at を載せること（DEFAULT now() は INSERT でしか効かず、載せないと初回挿入時の値が残り、鮮度の指標が壊れる。BOA-463）"
     }
   ]
 }

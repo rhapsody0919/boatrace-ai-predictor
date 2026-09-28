@@ -251,6 +251,15 @@ export function isSeasonRowUnchanged(existing, row) {
 
 // 既存行の期別成績カラムだけを更新する。氏名・級別・支部・生年月日等は触らない。
 // 更新された行数を確認する（update は対象行が無くてもエラーにならないため）
+//
+// scraped_at-intentionally-not-set（BOA-463で検討し、更新しないと決めた）:
+// racer_profiles の1行は2つの取得元が混ざっている。プロフィール（氏名・生年月日・支部等）は
+// 新規選手のときだけ scrapeProfile → saveNewProfile で書かれ、既存選手では**再取得されない**
+// （runRacerProfileSync の `if (isNewProfile)`）。したがって scraped_at＝「プロフィールを取得した
+// 時刻」は初回挿入時のままで正しく、DEFAULT now() が意図どおり効いている。
+// 期別成績側の更新時刻は official_updated_at が別に持つ（toSeasonStatsRow）。
+// ここで scraped_at を打つと、プロフィールを取り直していないのに取得時刻が動き、
+// 「PATCHは期別成績の列だけを触る」という約束（verify-racer-profile-sync.js が検査）も破る。
 export async function saveSeasonStats(client, racerId, row) {
   const { data, error } = await client
     .from("racer_profiles")
@@ -267,6 +276,9 @@ export async function saveSeasonStats(client, racerId, row) {
 }
 
 // 新規選手のプロフィールを登録する（全列を送るため upsert のままでよい）
+//
+// scraped_at-intentionally-not-set: ここは新規行の挿入だけを行うため、DEFAULT now() が
+// 意図どおり効く。既存行を更新する経路は無い（呼び出し元の `if (isNewProfile)`）
 async function saveNewProfile(client, profile) {
   const { error } = await client.from("racer_profiles").upsert({
     racer_id: profile.racerId,
