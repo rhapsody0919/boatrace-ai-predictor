@@ -47,21 +47,19 @@
   color: var(--text-primary);
   font-size: var(--font-size-xs);
   line-height: 1.3;
-  white-space: nowrap;
   pointer-events: none;
+  /* 箱の幅を超えない。超える文言（英語の「Unplaced (rank unknown)」は
+     390pxで302px）は折り返す。2行でも 約31px + 余白8px で箱の56pxに収まる */
+  max-width: 100%;
 }
 
-/* 端の点では箱からはみ出すので、中央寄せをやめて端に寄せる */
-.meet-sparkline-tip.is-center {
-  transform: translateX(-50%);
+/* 点には追従させず、近い方の端に寄せる（JSX側のコメント参照） */
+.meet-sparkline-tip.x-left {
+  left: 0;
 }
 
-.meet-sparkline-tip.is-start {
-  transform: translateX(0);
-}
-
-.meet-sparkline-tip.is-end {
-  transform: translateX(-100%);
+.meet-sparkline-tip.x-right {
+  right: 0;
 }
 
 .meet-sparkline-tip.at-top {

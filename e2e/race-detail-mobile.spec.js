@@ -125,7 +125,10 @@ test("今節タブの折れ線は、点に合わせるとその走の日付・R�
   // 下の方にあり、スクロールせずにマウスを動かしても当たらない
   await spark.scrollIntoViewIfNeeded();
   const box = await spark.boundingBox();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  // 中央ではなく左寄りの点に合わせる。中央の点だと、吹き出しを点に追従させる
+  // 実装（左右中央寄せ）でもたまたま箱に収まってしまい、はみ出しの検査が
+  // 素通りする（実測: 箱308pxに対して英語の最長302pxは、中央なら3px〜305px）
+  await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2);
   await expect(tip).toHaveCount(1);
 
   await test.step("中身が下の「日別の走り」表と食い違わない", async () => {
@@ -152,8 +155,28 @@ test("今節タブの折れ線は、点に合わせるとその走の日付・R�
   });
 
   await test.step("吹き出しはグラフの箱からはみ出さない", async () => {
-    // 上に出すと見出し（平均・通常値）に、下に出すと「前走 0.09」の行に重なる
+    // 縦: 上に出すと見出し（平均・通常値）に、下に出すと「前走 0.09」の行に重なる
     const tipBox = await tip.boundingBox();
+    expect(tipBox.y).toBeGreaterThanOrEqual(box.y - 1);
+    expect(tipBox.y + tipBox.height).toBeLessThanOrEqual(
+      box.y + box.height + 1,
+    );
+    // 横: 点に追従させると長い文言（英語の「Unplaced (rank unknown)」は
+    // 390pxで302px、箱は308px）でカードの外へ出る。近い方の端に寄せている
+    expect(tipBox.x).toBeGreaterThanOrEqual(box.x - 1);
+    expect(tipBox.x + tipBox.width).toBeLessThanOrEqual(box.x + box.width + 1);
+  });
+
+  await test.step("長い文言でも箱の幅を超えない（英語）", async () => {
+    // 文言の長さに一番効くのは着順不明のとき。日本語より英語が長い
+    await page.evaluate(() => {
+      const el = document.querySelector(".meet-sparkline-tip");
+      if (el)
+        el.textContent = "9/26 R11 · Trial 6.69(3) · Unplaced (rank unknown)";
+    });
+    const tipBox = await tip.boundingBox();
+    expect(tipBox.x).toBeGreaterThanOrEqual(box.x - 1);
+    expect(tipBox.x + tipBox.width).toBeLessThanOrEqual(box.x + box.width + 1);
     expect(tipBox.y).toBeGreaterThanOrEqual(box.y - 1);
     expect(tipBox.y + tipBox.height).toBeLessThanOrEqual(
       box.y + box.height + 1,
