@@ -53,13 +53,6 @@ import "./RaceHistoryTable.css";
  * ネイティブaタグのクリック判定はブラウザが行うため、スワイプ誤爆の懸念もない
  */
 /**
- * @param {string[]} [omitColumns] 出さない列（"venue" / "raceTitle" / "grade" /
- *   "stage"）。今節タブ（FR-3）は同じ節の走しか並ばず、この4列が全行同じ値に
- *   なる。モバイルでは表が1000px超になり、肝心の進入・ST・着順が初期表示の
- *   外へ押し出されるため省く
- * @param {boolean} [compactDate] 日付を月日だけにする（`9/24`）。同じ節の走
- *   しか並ばない今節タブ向け。選手ページ・直近10走は年をまたぐので既定のまま
- *
  * ## 横スクロール（BOA-455、2026-09-28）
  *
  * 390px幅では、列を削っても削っても収まらない（今節タブで実測: 表480px /
@@ -75,6 +68,13 @@ import "./RaceHistoryTable.css";
  * 2. 狭い画面ではセルの左右余白を詰め、**着順までは初期表示に収める**
  *    （`RaceHistoryTable.css` のメディアクエリ）。着順はこの表で最も読まれる列で、
  *    半分切れているのと最初から右にあるのとでは意味が違う
+ *
+ * @param {string[]} [omitColumns] 出さない列（"venue" / "raceTitle" / "grade" /
+ *   "stage"）。今節タブ（FR-3）は同じ節の走しか並ばず、この4列が全行同じ値に
+ *   なる。モバイルでは表が1000px超になり、肝心の進入・ST・着順が初期表示の
+ *   外へ押し出されるため省く
+ * @param {boolean} [compactDate] 日付を月日だけにする（`9/24`）。同じ節の走
+ *   しか並ばない今節タブ向け。選手ページ・直近10走は年をまたぐので既定のまま
  * @param {boolean} [showExhibition] 「展示」列（展示タイムと同レース内の
  *   展示順位）を足す。今節タブが使う。**「初日→直近」の2点比較で
  *   上向き/下向きと断定する表示をやめた代わり**に、走ごとの生の数字を
@@ -95,12 +95,15 @@ function RaceHistoryTable({
 }) {
   const { t } = useTranslation();
   const shows = (key) => !omitColumns.includes(key);
-  // 列数・行数が決まってから測り直す（取得前は幅が無く、右に続くと分からない）
+  // 列数・行数が決まってから測り直す（取得前は幅が無く、右に続くと分からない）。
+  // 表の幅を変えるプロップは漏れなく並べる。1つでも抜けると、溢れが解消しても
+  // 「›」が残る／溢れているのに出ない、という取り残しが起きる
   const { ref, hasMore, update, scrollRight } = useHorizontalScrollHint([
     rows.length,
     omitColumns.join(","),
     showEntryCourse,
     showExhibition,
+    compactDate,
   ]);
   // 同じ節の走だけが並ぶ表（今節タブ）では年は毎行同じで、390pxの幅を
   // 進入・ST・着順から奪うだけになる。月日だけに縮める
