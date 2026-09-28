@@ -29,29 +29,188 @@ import { finishPositionOf } from "./basicInfoStats.js";
 
 /** 予選・一般戦の着順点 */
 export const SCORE_POINTS = { 1: 10, 2: 8, 3: 6, 4: 4, 5: 2, 6: 1 };
-/** 特別戦（ドリーム戦・選抜戦）の着順点 */
+/** ドリーム戦の着順点（SG/G1の実データで検証済み） */
 export const SPECIAL_SCORE_POINTS = { 1: 12, 2: 10, 3: 9, 4: 7, 5: 6, 6: 5 };
+/**
+ * 特選・特賞・選抜の着順点（通常配点の各着 +1）。
+ *
+ * **公式データでは照合できない**（公式の得点率一覧はSG/G1の4日目以降しか出ず、
+ * 「予選特選」「予選特賞」はSG/G1の番組に出てこない）。根拠は2つ。
+ *
+ * 1. 独立した2つの二次情報が同じ 11/9/7/5/3/2 を挙げている
+ * 2. `scripts/analysis/series-points-scoring-hypotheses.mjs` の実測。予選終了時点の
+ *    得点率上位N人（N=準優の枠数）と**実際の準優進出者**の一致で候補を比べると、
+ *    - 特選/特賞が予選期間内にある223節: 加点なし 91.79% → +1 で 92.12%
+ *      （全枠一致の節も 29 → 36）
+ *    - 選抜が予選期間内にある109節: 加点なし 91.09% → +1 で 92.30%
+ *      （全枠一致の節も 13 → 20）
+ *    「特別」「目玉」も同じ形で試したが改善しなかったので対象にしない
+ */
+export const TOKUSEN_SCORE_POINTS = { 1: 11, 2: 9, 3: 7, 4: 5, 5: 3, 6: 2 };
+
+/**
+ * `race_stage` の表記ゆれを吸収する。
+ *
+ * `race_stage` は racelist ページの表示文字列をほぼ生で保存しているため
+ * （`scripts/lib/raceStageParser.js`）、全角の英数（「桐生ＤＲ戦」）・空白・
+ * 「男子」「女子」の接尾が会場ごとに混在する。部分一致で判定する前にここを通す。
+ */
+export function normalizeStage(stage) {
+  if (!stage) return "";
+  return (
+    String(stage)
+      // 全角英数 → 半角（ＤＲ → DR）
+      .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) =>
+        String.fromCharCode(c.charCodeAt(0) - 0xfee0),
+      )
+      // 半角・全角（U+3000。ソースに直書きするとlintの no-irregular-whitespace に
+      // 当たるのでコード指定で書く）の空白を落とす
+      .replace(/\s/gu, "")
+      .replaceAll(String.fromCharCode(0x3000), "")
+      .toUpperCase()
+  );
+}
+
+/**
+ * 得点率の配点区分。
+ *
+ * - `excluded` … 勝ち上がり戦（準優・優勝戦）。得点率に算入しない
+ * - `dream` … ドリーム戦。`SPECIAL_SCORE_POINTS`
+ * - `tokusen` … 特選・特賞・選抜。`TOKUSEN_SCORE_POINTS`
+ * - `normal` … 予選・一般戦とそれ以外。`SCORE_POINTS`
+ *
+ * 会場ごとの表記は `node --env-file=.env.local scripts/analysis/race-stage-inventory.mjs`
+ * で棚卸しできる（2026-09-28時点で349種）。`normal` は「通常配点と確認できた」ではなく
+ * **「特別配点と判定する根拠が無い」** の意味。未知の表記を特別配点に寄せると
+ * 得点率が上振れするため、既定を通常配点に置いている。
+ */
+export function classifyStage(stage) {
+  const s = normalizeStage(stage);
+  if (!s) return "normal";
+  // 「準々優勝戦」「準優進出戦」も勝ち上がり戦なので先に落とす
+  if (s.includes("準優") || s.includes("優勝戦")) return "excluded";
+  // 「ドリーム」と、その略記「DR」（「桐生DR戦女子」「ツッキーDR戦」等）。
+  // 「ドラドキ」は桐生のシリーズ名で、DRを含まないので当たらない
+  if (s.includes("ドリーム") || s.includes("DR")) return "dream";
+  if (s.includes("特選") || s.includes("特賞") || s.includes("選抜"))
+    return "tokusen";
+  return "normal";
+}
 
 /**
  * 得点率に算入しないレース（勝ち上がり後のレース）。
  * 公式の得点率一覧が「◯日目12R終了時点」＝予選までで確定することに合わせる
  */
 export function isExcludedStage(stage) {
-  if (!stage) return false;
-  return stage.includes("準優") || stage.includes("優勝戦");
+  return classifyStage(stage) === "excluded";
 }
 
 /**
- * 特別戦（別配点）かどうか。
+ * その種別に使う着順点の表を返す。
  *
- * **名前に「ドリーム」「選抜」を含むものだけ**を特別戦として扱う。実データの
- * `race_stage` は「５ールドレース」「ツッキーレース」のような会場固有の自由記述が
- * 多く、それらの配点は未検証のため、確認できているものだけを別配点にする
- * （未知のものは通常配点で計算し、最悪でも数点の誤差に留める）
+ * 旧実装は「選抜」をドリーム戦と同じ 12/10/9/7/6/5 にしていたが、これは
+ * **一度も公式データで検証されていなかった**。PR #871 が公式と一致させた
+ * 若松G1・多摩川G1では、予選期間内にあった特別戦はドリーム戦だけで、
+ * 「特別選抜戦」「静波まつり選抜」はいずれも最終日（予選終了後）＝算入対象外。
+ * つまりその分岐は一般戦・G3の「予選選抜」「記者選抜戦」等にだけ効いていた。
+ * 準優進出者との一致で比べると、選抜は 12/10/9/7/6/5 と 11/9/7/5/3/2 の差が
+ * 小さい（1908枠のうち1754 vs 1761、全枠一致はどちらも20節）ので、二次情報が
+ * 挙げている「選抜戦は+1点」に合わせて後者にした（BOA-458）。
  */
-export function isSpecialStage(stage) {
-  if (!stage) return false;
-  return stage.includes("ドリーム") || stage.includes("選抜");
+export function scoreTableFor(stage) {
+  switch (classifyStage(stage)) {
+    case "dream":
+      return SPECIAL_SCORE_POINTS;
+    case "tokusen":
+      return TOKUSEN_SCORE_POINTS;
+    default:
+      return SCORE_POINTS;
+  }
+}
+
+/**
+ * 節で最後に「予選」と付いたレースの `race_id`（＝予選の締めの目印）。
+ *
+ * 種別名の部分一致をここ1か所に閉じる（BOA-457）。「予選」ラベルが1本も無い節
+ * （会場固有名だけで組まれる節）では null になり、そのときは算入範囲を切らない。
+ *
+ * @param {Array<{raceId?: string, race_id?: string, raceStage?: string|null,
+ *   race_stage?: string|null}>} rows 節の全レース
+ * @returns {string|null}
+ */
+export function prelimEndRaceIdOf(rows) {
+  return (
+    (Array.isArray(rows) ? rows : [])
+      .filter((r) => (r.raceStage ?? r.race_stage ?? "").includes("予選"))
+      .map((r) => r.raceId ?? r.race_id)
+      .sort()
+      .pop() ?? null
+  );
+}
+
+/**
+ * 節に組まれた**準優勝戦**の `race_id`（枠数の算出に使う）。
+ *
+ * 「準優進出戦」は準優勝戦の1つ前の勝ち上がり戦で、準優の枠ではない
+ * （蒲郡・丸亀の一般戦の実例: 5日目に準優進出戦4個 → 6日目に準優勝戦3個）。
+ * 単純な `includes("準優")` だと 7個 = 42枠と数えてしまうので除く（BOA-457）。
+ *
+ * @param {Array<{raceId?: string, race_id?: string, raceStage?: string|null,
+ *   race_stage?: string|null}>} rows 節の全レース
+ * @returns {string[]} `race_id` 昇順
+ */
+export function semifinalRaceIdsOf(rows) {
+  return (Array.isArray(rows) ? rows : [])
+    .filter((r) => {
+      const st = r.raceStage ?? r.race_stage ?? "";
+      return st.includes("準優") && !st.includes("準優進出");
+    })
+    .map((r) => r.raceId ?? r.race_id)
+    .sort();
+}
+
+/**
+ * そのレースが**予選最終日より後の日**かどうか。
+ *
+ * 公式の得点率一覧は「◯日目12R終了時点」＝**日単位**で止まる。PR #871 は
+ * 「種別が『予選』の最後のレース」で切ったが、それだと**すべての予選レースに
+ * 「予選」と付ける会場でしか正しくない**。丸亀の一般戦は 1R〜5R が「予選」で
+ * 6R以降が「かけうどん６」「蒼月まるる特賞」のような会場固有名なので、
+ * 最後の「予選」より後ろが丸ごと落ちていた（BOA-457）。
+ *
+ * @param {string} raceId
+ * @param {string|null} prelimEndRaceId 節で最後に「予選」と付いたレース。
+ *   null（まだ予選中で締めが分からない）なら false
+ */
+export function isPastPrelimDay(raceId, prelimEndRaceId) {
+  if (!prelimEndRaceId) return false;
+  return String(raceId).slice(0, 10) > String(prelimEndRaceId).slice(0, 10);
+}
+
+/**
+ * 得点率に算入するレースか（純関数）。
+ *
+ * 得点率・節内順位・ボーダー・必要得点・早見の**すべてがこの1本に依存する**ので、
+ * 各所で種別の部分一致を書き下ろさずここを通す（BOA-457）。3条件で落とす。
+ *
+ * 1. 勝ち上がり戦（準優・優勝戦）
+ * 2. 予選最終日より後の日
+ * 3. 種別に「一般」と付くレース。予選最終日の遅いレースが「一般特選」
+ *    「一般記者特選」のように組まれる会場（蒲郡・丸亀等）があり、これは
+ *    予選が締まった後の番組なので算入しない
+ *
+ * 逆に、予選期間内で「一般」と付かないものは**種別名が「予選」でなくても算入する**
+ * （「サンライズＸ戦」「ドラドキ３」「蒼月まるる特賞」等も番組上は予選）。
+ *
+ * この切り方は `scripts/analysis/series-points-scoring-hypotheses.mjs` で
+ * 4案を実測比較して選んだ。公式との一致はどの案でも保たれ（若松G1 49/49、
+ * 多摩川G1 41/43）、準優進出者との一致は 92.25% → 92.84%（全枠一致の節も
+ * 49 → 53）。PR #871 以前の「最初の準優より前」は 87.90% で明確に劣る。
+ */
+export function countsForSeriesScore(stage, raceId, prelimEndRaceId) {
+  if (isExcludedStage(stage)) return false;
+  if (isPastPrelimDay(raceId, prelimEndRaceId)) return false;
+  return !normalizeStage(stage).includes("一般");
 }
 
 /**
@@ -68,14 +227,11 @@ export function computeSeriesScore(meetRecords, options = {}) {
   let points = 0;
   let runs = 0;
   rows.forEach((r) => {
-    if (isExcludedStage(r.raceStage)) return;
     // **予選が終わったらそこで確定**。予選終了後の一般戦・特別選抜戦・
     // 準優・優勝戦は公式の得点率に算入されない。公式の得点率一覧も
     // 「4日目12R終了時点」と予選終了時点で止まる（2026-09-27、若松G1の
-    // 最終日に公式ページで確認）。`prelimEndRaceId` は**予選の最後の
-    // レース**なので、それより後（>）を落とす（>= だと予選最終レース自体が
-    // 落ちる）
-    if (prelimEndRaceId && String(r.raceId) > prelimEndRaceId) return;
+    // 最終日に公式ページで確認）。判定は `countsForSeriesScore` に集約
+    if (!countsForSeriesScore(r.raceStage, r.raceId, prelimEndRaceId)) return;
     // **結果がまだ無いレースは分母に入れない**。節の全選手を引く経路では
     // その日のこれから走るレースも `race_entries` に入っており、数えると
     // 「得点率4.00（4走）なのに日別の表は3行」という食い違いが出る
@@ -86,10 +242,7 @@ export function computeSeriesScore(meetRecords, options = {}) {
     runs += 1;
     const rank = finishPositionOf(r);
     if (rank === null) return; // 失格・落水・転覆は0点（分母には入れる）
-    const table = isSpecialStage(r.raceStage)
-      ? SPECIAL_SCORE_POINTS
-      : SCORE_POINTS;
-    points += table[rank] ?? 0;
+    points += scoreTableFor(r.raceStage)[rank] ?? 0;
   });
   return { points, runs, rate: runs > 0 ? points / runs : null };
 }
@@ -97,19 +250,21 @@ export function computeSeriesScore(meetRecords, options = {}) {
 /**
  * 「今日この着順を取ると得点率がこうなる」の早見（純関数）。
  *
- * 表示中のレースが特別戦かどうかは画面側が持っていないため、**予選の配点で計算する**
- * （呼び出し側はその旨を注記すること）。準優・優勝戦の日は得点率が動かないが、
- * 同じ理由で判別できないので早見は出したまま注記に委ねる。
+ * **表示中レースの種別で配点を切り替える**。ドリーム戦の日に予選配点（1着+10）で
+ * 出すと、実際は+12なので早見と翌日の得点率が食い違う。種別は
+ * `getMeetScoreboard` の `currentStage` で取れる（追加クエリ0本）。
  *
  * @param {{points: number, runs: number}} current `computeSeriesScore` の戻り値
+ * @param {string|null} [stage] 表示中レースの `race_stage`
  * @returns {Array<{rank: number, rate: number}>} 1着〜6着
  */
-export function forecastSeriesScore(current) {
+export function forecastSeriesScore(current, stage = null) {
   const points = current?.points ?? 0;
   const runs = current?.runs ?? 0;
+  const table = scoreTableFor(stage);
   return [1, 2, 3, 4, 5, 6].map((rank) => ({
     rank,
-    rate: (points + SCORE_POINTS[rank]) / (runs + 1),
+    rate: (points + table[rank]) / (runs + 1),
   }));
 }
 
@@ -130,12 +285,23 @@ export const SEMIFINAL_DEFAULT_SLOTS = 18;
  * 未実施のレース（`rank1` が無い）は含めない。失格・落水は `null` で返し、
  * 呼び出し側が「失」等に落とす（0点だが走ったことに変わりはない）。
  *
+ * **得点率に算入したレースだけを並べる**。並びは得点率の隣に出すので、
+ * 算入していない走（予選終了後の一般戦・準優等）を混ぜると
+ * 「着順1・1・2・3・2 なのに3走で9.67」という食い違いになる
+ * （2026-09-28、丸亀2026-03-04 9Rで実際にこの表示が出ていた。BOA-457）。
+ * 節の全走は下の履歴テーブルで見られる。
+ *
  * @param {Array<Object>} meetRecords 節内の走
+ * @param {{prelimEndRaceId?: string|null}} [options] `computeSeriesScore` と同じ
  * @returns {Array<number|null>} 着順（古い順）
  */
-export function listSeriesFinishes(meetRecords) {
+export function listSeriesFinishes(meetRecords, options = {}) {
+  const { prelimEndRaceId = null } = options;
   return (Array.isArray(meetRecords) ? [...meetRecords] : [])
     .filter((r) => r.rank1 !== null && r.rank1 !== undefined)
+    .filter((r) =>
+      countsForSeriesScore(r.raceStage, r.raceId, prelimEndRaceId),
+    )
     .sort((a, b) => String(a.raceId).localeCompare(String(b.raceId)))
     .map((r) => finishPositionOf(r));
 }
@@ -173,7 +339,7 @@ export function buildMeetRanking(scoreboard) {
         racerId,
         playerName,
         ...score,
-        finishes: listSeriesFinishes(runs),
+        finishes: listSeriesFinishes(runs, { prelimEndRaceId }),
       };
     })
     .filter((r) => r.rate !== null)

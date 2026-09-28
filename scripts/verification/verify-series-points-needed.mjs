@@ -3,9 +3,10 @@
 // 2026-09-28の実行結果: 1955組（レース×選手）で不整合0。
 import { supabase } from "../lib/supabaseClient.js";
 import {
-  computeSeriesScore,
   buildMeetRanking,
   pointsNeededForBorder,
+  countsForSeriesScore,
+  prelimEndRaceIdOf,
   SCORE_POINTS,
   SEMIFINAL_DEFAULT_SLOTS,
 } from "../../src/components/race/seriesPoints.js";
@@ -38,11 +39,7 @@ const { data: conds } = await supabase
 
 const stage = new Map((conds ?? []).map((c) => [c.race_id, c.race_stage ?? ""]));
 const res = new Map((results ?? []).map((r) => [r.race_id, r]));
-const prelimEnd = (conds ?? [])
-  .filter((c) => (c.race_stage ?? "").includes("予選"))
-  .map((c) => c.race_id)
-  .sort()
-  .pop();
+const prelimEnd = prelimEndRaceIdOf(conds ?? []);
 
 let checked = 0;
 const bad = [];
@@ -68,11 +65,12 @@ for (const displayed of raceIds.filter((id) => id <= prelimEnd).sort()) {
   const border = ranking[SEMIFINAL_DEFAULT_SLOTS - 1]?.rate;
   if (border === undefined) continue;
 
-  // 残りの予選走数（表示中レースを含む）
+  // 残りの予選走数（表示中レースを含む）。算入判定はサービス層と同じ共通関数
   const remaining = new Map();
   for (const e of entries ?? []) {
     if (e.race_id < displayed) continue;
-    if (!(stage.get(e.race_id) ?? "").includes("予選")) continue;
+    if (!countsForSeriesScore(stage.get(e.race_id) ?? "", e.race_id, prelimEnd))
+      continue;
     remaining.set(e.racer_id, (remaining.get(e.racer_id) ?? 0) + 1);
   }
 

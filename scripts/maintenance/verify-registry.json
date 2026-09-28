@@ -252,6 +252,11 @@
       "guards": "取得時刻の列（created_at・updated_at、マイグレーション071）を使う書き込みと計測"
     },
     {
+      "script": "verify-series-points-stage-rules.js",
+      "tier": "ci",
+      "guards": "得点率の種別判定（src/components/race/seriesPoints.js の算入範囲と配点、raceStageConfig のバッジ）。race_stage は会場の自由記述で349種あり、部分一致の判定が壊れやすい（BOA-457・BOA-458）"
+    },
+    {
       "script": "verify-sitemap-coverage.js",
       "tier": "ci",
       "guards": "AppRouter.jsx の静的ルートと generate-sitemap.js の staticPages の突き合わせ（sitemap登録漏れ）"

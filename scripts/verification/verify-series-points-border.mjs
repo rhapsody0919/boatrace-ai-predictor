@@ -1,12 +1,19 @@
 // 実行: node --env-file=.env.local scripts/verification/verify-series-points-border.mjs
 // CIには載せない（本番Supabaseへの接続と、特定の節のデータに依存するため）。
-// 2026-09-28の実行結果:
-//   若松G1   実ボーダー5.60 / 推定5.67（差0.07）。ズレの原因は途中帰郷の1名
-//   桐生一般 実ボーダー4.50 / 推定5.33（差0.83）。一般戦は得点率順だけで
-//            準優が決まらないことがある
+// 2026-09-28の実行結果（BOA-457/458の配点・算入範囲の見直し後）:
+//   若松G1   実ボーダー5.60 / 推定5.67（差0.07）。離脱者2名を除くと 5.60 で完全一致
+//   桐生一般 実ボーダー4.83 / 推定6.17（差1.33。離脱者5名を除くと 5.50 で差0.67）
+//
+// **桐生の節（2026-09-20〜25）は男女別編成**で、この検証には向かない。種別が
+// 「予選男子」「予選女子」と分かれ、準優4個＝男子2個・女子2個、優勝戦も2個ある。
+// 当社の節内順位は男女を混ぜて1本のランキングにしているため、男女別に選ばれる
+// 準優進出者とは原理的に一致しない（差が縮まないのは配点の誤りではない）。
+// 男女別編成は2026-02〜09で1節・46レースだけなので別課題として扱う。
 import { supabase } from "../lib/supabaseClient.js";
 import {
   buildMeetRanking,
+  prelimEndRaceIdOf,
+  semifinalRaceIdsOf,
   SEMIFINAL_DEFAULT_SLOTS,
 } from "../../src/components/race/seriesPoints.js";
 
@@ -38,20 +45,15 @@ for (const m of MEETS) {
 
   const stage = new Map((conds ?? []).map((c) => [c.race_id, c.race_stage ?? ""]));
   const res = new Map((results ?? []).map((r) => [r.race_id, r]));
-  const prelimEnd = (conds ?? [])
-    .filter((c) => (c.race_stage ?? "").includes("予選"))
-    .map((c) => c.race_id)
-    .sort()
-    .pop();
-  const semifinalIds = (conds ?? [])
-    .filter((c) => (c.race_stage ?? "").includes("準優"))
-    .map((c) => c.race_id)
-    .sort();
+  const prelimEnd = prelimEndRaceIdOf(conds ?? []);
+  const semifinalIds = semifinalRaceIdsOf(conds ?? []);
 
-  const past = (entries ?? []).filter((e) => e.race_id <= prelimEnd);
+  // 算入範囲の絞り込みは `buildMeetRanking`（`countsForSeriesScore`）に任せる。
+  // ここで `race_id <= prelimEnd` で切ってしまうと、予選最終日の「予選」ラベル
+  // 以降のレース（芦屋「サンライズＸ戦」等）が落ちて二重の絞り込みになる
   const ranking = buildMeetRanking({
     prelimEndRaceId: prelimEnd,
-    entries: past.map((e) => ({
+    entries: (entries ?? []).map((e) => ({
       raceId: e.race_id,
       boatNumber: e.boat_number,
       racerId: e.racer_id,

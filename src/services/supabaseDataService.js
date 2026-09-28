@@ -14,7 +14,13 @@ import {
 } from "../../scripts/lib/dateUtils.js";
 import { groupIntoCurrentMeet } from "../utils/meetGrouping";
 import { deriveRaceStContext } from "../utils/stConsideration";
+import { isFinalStage } from "../constants/raceStageConfig";
 import { finishPositionOf } from "../components/race/basicInfoStats.js";
+import {
+  countsForSeriesScore,
+  prelimEndRaceIdOf,
+  semifinalRaceIdsOf,
+} from "../components/race/seriesPoints.js";
 
 // 100円単位で賭けた場合の回収率(%)を返す（払戻合計 / (件数*100) * 100）。
 // getRacerBoatReturnRate/getRaceRacerBoatReturnRate/aggregateRacerVenueBoatStats
@@ -2884,11 +2890,13 @@ export const supabaseDataService = {
         try {
           const { data: stageRows, error: stageError } = await supabase
             .from("race_conditions")
-            .select("race_id, races!inner(venue_code)")
-            // 完全一致で絞る。ilikeの部分一致だと「準優勝戦」も「優勝戦」を
-            // 部分文字列として含むため誤ってヒットしてしまう（実データで
-            // race_stageが"優勝戦"/"準優勝戦"の2値のみ存在することを確認済み）
-            .eq("race_stage", "優勝戦")
+            .select("race_id, race_stage, races!inner(venue_code)")
+            // 「優勝戦」で終わるものをDBで粗く絞り、「準優勝戦」「準々優勝戦」の
+            // 除外は `isFinalStage` に任せる。完全一致だと会場固有の接頭が付く
+            // 「ツッキー優勝戦」「ＭＤ優勝戦」「団体・優勝戦」を取りこぼす
+            // （旧コメントは「優勝戦/準優勝戦の2値のみ」と書いていたが、
+            //  実データの race_stage は349種あった。BOA-457）
+            .like("race_stage", "%優勝戦")
             .eq("races.venue_code", venueCode);
           if (stageError) {
             console.error("race_conditions取得エラー:", stageError.message);
@@ -2896,7 +2904,10 @@ export const supabaseDataService = {
           }
           if (!stageRows || stageRows.length === 0) return [];
 
-          const raceIds = stageRows.map((r) => r.race_id);
+          const raceIds = stageRows
+            .filter((r) => isFinalStage(r.race_stage))
+            .map((r) => r.race_id);
+          if (raceIds.length === 0) return [];
           const { data: entries, error: entriesError } = await supabase
             .from("race_entries")
             .select("race_id, boat_number, racer_id, player_name")
@@ -6212,7 +6223,9 @@ export const supabaseDataService = {
       if (rows.length === 0) return null;
 
       // 日付の連続性で節を切る（表示日を含む区間だけ残す）
-      const dates = [...new Set(rows.map((r) => r.race_id.slice(0, 10)))].sort();
+      const dates = [
+        ...new Set(rows.map((r) => r.race_id.slice(0, 10))),
+      ].sort();
       // 表示日のレースが1つも無い場合（初日の第1レース等）は直近の日から遡る
       let meetStart = dates.includes(date) ? date : dates[dates.length - 1];
       for (let i = dates.indexOf(meetStart); i > 0; i--) {
@@ -6314,12 +6327,7 @@ export const supabaseDataService = {
         // 準優だった。「最初の準優より前」で切ると9/26の一般戦が入り、
         // 52人中32人の得点率が公式とズレた（公式と照合して5/5で確認）。
         // 無い（予選中でまだ予選が終わっていない）なら null
-        prelimEndRaceId:
-          [...stageById.entries()]
-            .filter(([, st]) => st?.includes("予選"))
-            .map(([id]) => id)
-            .sort()
-            .pop() ?? null,
+        prelimEndRaceId: prelimEndRaceIdOf(conditions ?? []),
         // **途中で節を離脱した選手**（途中帰郷）。公式の順位表はこの選手たちを
         // 順位から外すため、当社が全員で順位を振ると下位ほどズレる。
         //
@@ -6358,24 +6366,26 @@ export const supabaseDataService = {
         // 残り走数は**番組が出ている予選レース**からしか数えられないので、
         // 当社は当日ぶんまでで数える（翌日以降の出走表は未取得のことが多い）。
         // 画面側はその旨を注記する
+        //
+        // **算入判定は得点率と同じ `countsForSeriesScore` を通す**。
+        // 以前は「種別に『予選』を含むレース」だけを数えていたため、
+        // 予選期間内でも会場固有名のレース（芦屋「サンライズＸ戦」、桐生
+        // 「ドラドキ３」等）が残り走数から漏れ、必要得点が過大になっていた
+        // （BOA-457）
         remainingPrelimRunsByRacer: (() => {
           const byRacer = {};
+          const prelimEnd = prelimEndRaceIdOf(conditions ?? []);
           for (const e of meetRows) {
             if (e.race_id < raceId) continue;
             const st = stageById.get(e.race_id) ?? "";
-            if (!st.includes("予選")) continue;
+            if (!countsForSeriesScore(st, e.race_id, prelimEnd)) continue;
             byRacer[e.racer_id] = (byRacer[e.racer_id] ?? 0) + 1;
           }
           return byRacer;
         })(),
         // 予選が終わった日が節の何日目か（公式の「4日目12R終了時点」に合わせる）
         prelimEndDay: (() => {
-          const last =
-            [...stageById.entries()]
-              .filter(([, st]) => st?.includes("予選"))
-              .map(([id]) => id)
-              .sort()
-              .pop() ?? null;
+          const last = prelimEndRaceIdOf(conditions ?? []);
           if (!last) return null;
           // `dates` は9日窓ぶん（前節を含む）なので、節の日付だけで数える
           const meetDates = [
@@ -6383,10 +6393,9 @@ export const supabaseDataService = {
           ].sort();
           return meetDates.indexOf(last.slice(0, 10)) + 1 || null;
         })(),
-        // この節に組まれた準優勝戦の枠数（予選中はまだ0）。慣例は3個レース=18名
-        semifinalSlots:
-          [...stageById.entries()].filter(([, st]) => st?.includes("準優"))
-            .length * 6 || null,
+        // この節に組まれた準優勝戦の枠数（予選中はまだ0）。慣例は3個レース=18名。
+        // 「準優進出戦」は準優の1つ前の勝ち上がり戦なので数えない（BOA-457）
+        semifinalSlots: semifinalRaceIdsOf(conditions ?? []).length * 6 || null,
         // 節の全レースの種別が取れているか（取れていなければ枠数は目安のまま）
         stagesKnown: stageById.size > 0,
         // その日の会場の展示タイム平均（水面の重さ）。同じ6.90でも日によって
@@ -6445,9 +6454,7 @@ export const supabaseDataService = {
               exhibition: ex === null ? null : Number(ex),
               st,
               stRank:
-                st === null
-                  ? null
-                  : sameRace.filter((v) => v < st).length + 1,
+                st === null ? null : sameRace.filter((v) => v < st).length + 1,
             });
           }
           for (const id of Object.keys(byRacer)) {
