@@ -144,6 +144,7 @@ function buildRowDefs({
   pending = {},
   motorDeepLink = null,
   originalExhibition = null,
+  entryWeights = null,
 }) {
   const {
     motor,
@@ -422,20 +423,36 @@ function buildRowDefs({
     {
       // 当日体重は計量時点の実測値であり、値の高低が好走/凡走を示唆する指標では
       // ないため、他行と違いbestは持たせない（BOA-289、tilt/adjustmentWeightと同じ扱い）
+      //
+      // 直前情報タブへ移した（BOA-484）: 調整重量と同じく当日に決まる値で、
+      // 展示前から公開されるため。展示前（exhibition_data の行がまだ無い）は、
+      // 出走表の体重（race_entries.weight_kg、発走60分前に取得）を出す。
+      // 直前情報ページの体重と同じ時刻に公開され、値も一致する（getRaceEntryWeights）。
+      // entryWeights: null=渡されない（RaceCardDataTable 等。従来どおり exhibition_data のみ）、
+      // {state:"loading"|"error"|"empty"|"published"}
       key: "todayWeight",
       label: t("dataTable.rowTodayWeight"),
       shortLabel: t("review.cols.todayWeight"),
+      category: "beforeInfo",
       tab: null,
       best: null,
       render: (p) => {
         const row = maintenanceByBoat.get(p.number);
-        if (!row) return ph("motorMaintenance");
-        const weight = toNumber(row.today_weight);
-        return weight !== null ? (
-          <span className="drt-value">{weight.toFixed(1)}kg</span>
-        ) : (
-          "—"
-        );
+        const weight = toNumber(row?.today_weight);
+        if (weight !== null) {
+          return <span className="drt-value">{weight.toFixed(1)}kg</span>;
+        }
+        const entryWeight =
+          entryWeights?.state === "published"
+            ? toNumber(entryWeights.byBoat?.[p.number])
+            : null;
+        if (entryWeight !== null) {
+          return <span className="drt-value">{entryWeight.toFixed(1)}kg</span>;
+        }
+        if (entryWeights?.state === "loading") {
+          return <span className="drt-skeleton" aria-hidden="true" />;
+        }
+        return row ? "—" : ph("motorMaintenance");
       },
     },
     {
@@ -616,7 +633,7 @@ export function buildBasicIndicatorRows(args) {
 }
 
 // 直前情報タブ（RaceBeforeInfoTab）向け: 展示ST・展示タイム・オリジナル展示
-// （一周/半周ラップ/まわり足/直線、BOA-452）・チルト・調整重量・部品交換（BOA-304）
+// （一周/半周ラップ/まわり足/直線、BOA-452）・当日体重（BOA-484）・チルト・調整重量・部品交換（BOA-304）
 export function buildBeforeInfoRows(args) {
   return buildRowDefs(args).filter((row) => row.category === "beforeInfo");
 }

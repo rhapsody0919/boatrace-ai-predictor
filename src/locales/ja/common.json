@@ -295,6 +295,8 @@
     "secondsUnit": "秒",
     "detailTableTitle": "展示情報",
     "detailTableNote": "平均進入順・展示タイム1位勝率は過去2年間の集計、今節展示情報はモーター使用開始後（今節）の推移です",
+    "preExhibitionNote": "体重・調整重量は展示前の値です。チルトは展示航走の後に公開されます",
+    "entryWeightFetchError": "出走表の体重を取得できませんでした",
     "originalExhibitionSource": "出典: BOATCAST（一般財団法人BOATRACE振興会）— {{items}}",
     "originalExhibitionCapturedAt": "取得: {{time}}",
     "originalExhibitionNote": "※ 取得した値をそのまま表示しています（要約・改変・再配布はしていません）。最新の内容はBOATCASTでご確認ください。",

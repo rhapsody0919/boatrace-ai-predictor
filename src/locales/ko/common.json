@@ -552,6 +552,8 @@
     "secondsUnit": "초",
     "detailTableTitle": "전시 정보",
     "detailTableNote": "평균 진입 순위・전시 타임 1위 승률은 최근 2년간 집계이며, 이번 시리즈 전시 정보는 이 모터 사용 시작 이후(이번 시리즈)의 추이입니다",
+    "preExhibitionNote": "체중・조정 중량은 전시 전 값입니다. 틸트는 전시 항주 후에 공개됩니다",
+    "entryWeightFetchError": "출주표의 체중을 가져오지 못했습니다",
     "originalExhibitionSource": "출처: BOATCAST(일반재단법인 BOATRACE 진흥회) — {{items}}",
     "originalExhibitionCapturedAt": "취득: {{time}}",
     "originalExhibitionNote": "※ 취득한 값을 그대로 표시하고 있습니다(요약・수정・재배포하지 않았습니다). 최신 내용은 BOATCAST에서 확인해 주세요.",

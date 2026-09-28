@@ -162,6 +162,33 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   const originalExhibition =
     fetchedExhibition?.raceId === raceId ? fetchedExhibition.data : null;
 
+  // 展示前の体重（出走表の体重、BOA-484）。オリジナル展示と同じく raceId とセットで持ち、
+  // 失敗も state として残す（取得失敗を「未公開」「値なし」に化けさせない。frontend-data-fetch.md）。
+  // reloadKey は InlineFetchError の再試行用（RacePitReportSection と同じ方式）
+  const [fetchedEntryWeights, setFetchedEntryWeights] = useState(null);
+  const [entryWeightsReloadKey, setEntryWeightsReloadKey] = useState(0);
+  useEffect(() => {
+    if (!raceId) return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getRaceEntryWeights(raceId)
+      .then((data) => {
+        if (!cancelled) setFetchedEntryWeights({ raceId, data });
+      })
+      .catch((err) => {
+        console.error("出走表の体重の取得エラー:", err?.message ?? String(err));
+        if (!cancelled)
+          setFetchedEntryWeights({ raceId, data: { state: "error" } });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [raceId, entryWeightsReloadKey]);
+  const entryWeights =
+    fetchedEntryWeights?.raceId === raceId
+      ? fetchedEntryWeights.data
+      : { state: "loading" };
+
   // 展示情報の表は390pxで5号艇までしか入らない。**早期returnより前**に
   // 置く（フックの呼び出し順は毎回同じでなければならない）
   const detailScroll = useHorizontalScrollHint([sortedPlayers.length]);
@@ -273,6 +300,7 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
       analysis,
       pending: analysis.pending,
       originalExhibition,
+      entryWeights,
     }),
     ...extraRows,
   ];
@@ -287,6 +315,24 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
       tab,
       link_source: "race_before_info_tab",
     });
+
+  // 展示前の注記（BOA-484）: 体重・調整重量が出ていて、チルトがまだ1艇も出ていない間。
+  // チルトは展示航走の後に公開される（2026-09-28、9会場の展示前ページで全て空欄を確認）ため、
+  // 「—」を未取得の不具合と読まれないようにする。展示後（チルトが出た後）は出さない
+  const maintenanceRows = analysis.motorMaintenance ?? [];
+  const tiltPublished = maintenanceRows.some((r) => toNumber(r.tilt) !== null);
+  const hasPreExhibitionWeight =
+    maintenanceRows.some(
+      (r) =>
+        toNumber(r.today_weight) !== null ||
+        toNumber(r.adjustment_weight) !== null,
+    ) ||
+    (entryWeights.state === "published" &&
+      Object.keys(entryWeights.byBoat ?? {}).length > 0);
+  const showPreExhibitionNote =
+    !analysis.pending?.motorMaintenance &&
+    !tiltPublished &&
+    hasPreExhibitionWeight;
 
   const cellClass = (boat, best) =>
     `drt-cell ${best !== null && boat === best ? "drt-best" : ""}`;
@@ -541,6 +587,17 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
             </table>
           </div>
         </div>
+        {entryWeights.state === "error" && (
+          <InlineFetchError
+            message={t("beforeInfo.entryWeightFetchError")}
+            onRetry={() => setEntryWeightsReloadKey((k) => k + 1)}
+          />
+        )}
+        {showPreExhibitionNote && (
+          <p className="rbi-note" data-testid="rbi-pre-exhibition-note">
+            {t("beforeInfo.preExhibitionNote")}
+          </p>
+        )}
         <p className="rbi-note">💡 {t("beforeInfo.detailTableNote")}</p>
         {/* オリジナル展示（BOA-452 / ADR-0067）の出典。値を出したときだけ、
             表のすぐ下に1回。ピットレポート（RacePitReportSection）と同じ形で、

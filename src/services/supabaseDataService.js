@@ -4827,6 +4827,41 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定レースの出走表の体重（race_entries.weight_kg、マイグレーション081）を取得する（BOA-484）。
+   *
+   * 直前情報タブで、展示前（exhibition_data の行がまだ無い時点）に体重を出すために使う。
+   * 公式の出走表の体重は、直前情報ページの体重と同じ時刻に公開され、値も一致する
+   * （2026-09-23〜27の5,075艇で99.4%一致。差は展示の直前の再計量）。race_entries へは
+   * 発走60分前の出走表の取得（race_info スロット）で入る。朝の初期化の時点では NULL。
+   *
+   * 戻り値:
+   *   { state: "published", byBoat: { [boat_number]: number } }  1艇以上の体重がある
+   *   { state: "empty", byBoat: {}, fetchFailed: true }            まだ公開されていない
+   * empty はキャッシュさせない（fetchFailed。公開された後もリロードまで出なくなるため）。
+   * 取得の失敗は例外のまま投げる（呼び出し側で「取得失敗」として扱う）
+   */
+  getRaceEntryWeights(raceId) {
+    return withCache(`race-entry-weights-${raceId}`, async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+      const { data } = await supabase
+        .from("race_entries")
+        .select("boat_number, weight_kg")
+        .eq("race_id", raceId);
+      const byBoat = {};
+      (data ?? []).forEach((row) => {
+        const weight = parseFloat(row.weight_kg);
+        if (Number.isFinite(weight)) byBoat[row.boat_number] = weight;
+      });
+      if (Object.keys(byBoat).length === 0) {
+        return { state: "empty", byBoat: {}, fetchFailed: true };
+      }
+      return { state: "published", byBoat };
+    });
+  },
+
+  /**
    * 指定選手の展示タイム（周回タイム）の推移を取得する（BOA-164）
    * 同日複数レースは平均してグラフ用に日付単位でまとめる
    */

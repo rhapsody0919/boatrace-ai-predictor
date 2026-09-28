@@ -2812,3 +2812,131 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
     await expect(table).not.toContainText("旧キャッシュ1");
   });
 });
+
+// 展示前の体重（BOA-484）。展示前は exhibition_data の行がまだ無いため、
+// 出走表の体重（race_entries.weight_kg）を直前情報タブに出し、チルトは展示後に
+// 公開される旨を添える。DBの状態に依存しないよう、直前情報の設定値の取得
+// （exhibition_data の select に tilt を含むもの）と出走表の体重の取得だけを差し替える
+test.describe("レース詳細の直前情報タブ: 展示前の体重", () => {
+  const RACE = "/race/2026-09-21-05-12";
+  const ENTRY_WEIGHTS = [1, 2, 3, 4, 5, 6].map((n) => ({
+    boat_number: n,
+    weight_kg: 50 + n,
+  }));
+
+  const isMaintenance = (url) =>
+    url.pathname.endsWith("/rest/v1/exhibition_data") &&
+    (url.searchParams.get("select") ?? "").includes("tilt");
+  const isEntryWeights = (url) =>
+    url.pathname.endsWith("/rest/v1/race_entries") &&
+    url.searchParams.get("select") === "boat_number,weight_kg";
+
+  const fulfillJson =
+    (body, status = 200) =>
+    (route) =>
+      route.fulfill({
+        status,
+        contentType: "application/json",
+        body: JSON.stringify(body),
+      });
+
+  const openBeforeInfoTab = async (page) => {
+    await page.goto(RACE);
+    await page.click('[role="tab"]:has-text("直前情報")');
+    await expect(page.locator(".race-before-info-tab")).toBeVisible({
+      timeout: 20000,
+    });
+  };
+
+  const rowByLabel = (page, label) =>
+    page.locator(".drt-table tbody tr").filter({
+      has: page.locator(".drt-label-full", {
+        hasText: new RegExp(`^${label}$`),
+      }),
+    });
+
+  test("展示前（exhibition_data が空）は出走表の体重を出し、チルトは展示後に公開される旨を添える", async ({
+    page,
+  }) => {
+    await page.route(isMaintenance, fulfillJson([]));
+    await page.route(isEntryWeights, fulfillJson(ENTRY_WEIGHTS));
+    await openBeforeInfoTab(page);
+
+    const weightRow = rowByLabel(page, "当日体重");
+    await expect(weightRow).toBeVisible({ timeout: 20000 });
+    await expect(weightRow.locator("td.drt-cell")).toHaveText([
+      "51.0kg",
+      "52.0kg",
+      "53.0kg",
+      "54.0kg",
+      "55.0kg",
+      "56.0kg",
+    ]);
+    await expect(page.getByTestId("rbi-pre-exhibition-note")).toContainText(
+      "チルトは展示航走の後に公開されます",
+    );
+  });
+
+  test("展示後は exhibition_data の当日体重を優先し、展示前の注記を出さない", async ({
+    page,
+  }) => {
+    const maintenance = [1, 2, 3, 4, 5, 6].map((n) => ({
+      boat_number: n,
+      tilt: -0.5,
+      adjustment_weight: n === 1 ? 0.5 : 0,
+      propeller_change: null,
+      parts_changed: null,
+      today_weight: n === 1 ? 51.5 : 50 + n,
+      prev_race_no: null,
+      prev_entry_course: null,
+      prev_start_timing: null,
+      prev_finish_rank: null,
+    }));
+    await page.route(isMaintenance, fulfillJson(maintenance));
+    await page.route(isEntryWeights, fulfillJson(ENTRY_WEIGHTS));
+    await openBeforeInfoTab(page);
+
+    const weightRow = rowByLabel(page, "当日体重");
+    await expect(weightRow).toBeVisible({ timeout: 20000 });
+    // 1号艇は出走表（51.0）ではなく直前情報（51.5）の値
+    await expect(weightRow.locator("td.drt-cell").first()).toHaveText("51.5kg");
+    await expect(rowByLabel(page, "チルト")).toContainText("-0.5");
+    await expect(page.getByTestId("rbi-pre-exhibition-note")).toHaveCount(0);
+  });
+
+  test("出走表の体重の取得に失敗したら、未公開と区別して取得失敗を出す", async ({
+    page,
+  }) => {
+    await page.route(isMaintenance, fulfillJson([]));
+    await page.route(
+      isEntryWeights,
+      fulfillJson({ code: "57014", message: "canceling statement" }, 500),
+    );
+    await openBeforeInfoTab(page);
+
+    await expect(
+      page.locator(".inline-fetch-error", {
+        hasText: "出走表の体重を取得できませんでした",
+      }),
+    ).toBeVisible({ timeout: 20000 });
+    // 値が無いので展示前の注記は出さない
+    await expect(page.getByTestId("rbi-pre-exhibition-note")).toHaveCount(0);
+  });
+
+  test("体重が未公開（出走表・直前情報とも空）なら注記も取得失敗も出さない", async ({
+    page,
+  }) => {
+    await page.route(isMaintenance, fulfillJson([]));
+    await page.route(
+      isEntryWeights,
+      fulfillJson(ENTRY_WEIGHTS.map((r) => ({ ...r, weight_kg: null }))),
+    );
+    await openBeforeInfoTab(page);
+
+    const weightRow = rowByLabel(page, "当日体重");
+    await expect(weightRow).toBeVisible({ timeout: 20000 });
+    await expect(weightRow.locator("td.drt-cell").first()).toHaveText("—");
+    await expect(page.getByTestId("rbi-pre-exhibition-note")).toHaveCount(0);
+    await expect(page.locator(".inline-fetch-error")).toHaveCount(0);
+  });
+});

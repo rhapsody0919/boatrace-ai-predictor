@@ -552,6 +552,8 @@
     "secondsUnit": "秒",
     "detailTableTitle": "展示資訊",
     "detailTableNote": "平均進入順位・展示時間第1名勝率為過去2年統計，本節展示資訊為換用此馬達後（本節）的推移",
+    "preExhibitionNote": "體重・調整重量為展示前的數值。傾角於展示航行後公布",
+    "entryWeightFetchError": "無法取得出走表的體重",
     "originalExhibitionSource": "出處: BOATCAST（一般財團法人BOATRACE振興會）— {{items}}",
     "originalExhibitionCapturedAt": "擷取時間: {{time}}",
     "originalExhibitionNote": "※ 取得的數值原樣顯示（未經摘要、修改或再散布）。最新內容請至BOATCAST確認。",
