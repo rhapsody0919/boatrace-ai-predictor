@@ -239,9 +239,7 @@
     "volatilityOutcomeDetailFavorite": "（1号艇が1着）",
     "volatilityCaveat": "※1回のレース結果だけでは予測の正誤は判断できません。",
     "volatilityCaveatLink": "実測精度を見る ›",
-    "payout": "配当: {{amount}}円",
-    "notFinishedTitle": "結果はまだ確定していません",
-    "notFinishedBody": "レース終了後、このタブに着順・配当・決まり手が表示されます。"
+    "payout": "配当: {{amount}}円"
   },
   "raceTabs": {
     "basic": "基本情報",
@@ -307,6 +305,10 @@
     "rowExhibitionTopRateShort": "展示1位率",
     "rowMeetExhibition": "今節展示情報",
     "rowMeetExhibitionShort": "今節展示",
+    "rowMeetOriLap": "今節一周",
+    "rowMeetOriHalfLap": "今節半周ラップ",
+    "rowMeetOriTurn": "今節まわり足",
+    "rowMeetOriStraight": "今節直線",
     "sampleCount": "(n={{n}})",
     "noFastestExhibition": "展示1位の実績なし",
     "winRateAbbrev": "1着",

@@ -239,9 +239,7 @@
     "volatilityOutcomeDetailFavorite": "（1號艇獲得第1名）",
     "volatilityCaveat": "※單一場次的結果無法證明預測的準確與否。",
     "volatilityCaveatLink": "查看實測準確率 ›",
-    "payout": "派彩：¥{{amount}}",
-    "notFinishedTitle": "結果尚未確定",
-    "notFinishedBody": "比賽結束後，本分頁將顯示名次・派彩・獲勝方式。"
+    "payout": "派彩：¥{{amount}}"
   },
   "raceHistoryTable": {
     "date": "日期",
@@ -564,6 +562,10 @@
     "rowExhibitionTopRateShort": "展示第1率",
     "rowMeetExhibition": "本節展示資訊",
     "rowMeetExhibitionShort": "本節展示",
+    "rowMeetOriLap": "本節一周",
+    "rowMeetOriHalfLap": "本節半周單圈",
+    "rowMeetOriTurn": "本節迴旋腳",
+    "rowMeetOriStraight": "本節直線",
     "sampleCount": "(n={{n}})",
     "noFastestExhibition": "無展示第1紀錄",
     "winRateAbbrev": "第1名",

@@ -126,6 +126,12 @@
   line-height: 1.8;
   color: var(--text-secondary);
   margin: 0;
+  /* 回答データ（FAQ.jsx の faqs[].a）は「【展開予測】…\n【イン崩れ指数】…」のように
+     改行で項目を区切っている。既定の white-space: normal では改行が空白に潰れ、
+     項目が1つの段落に繋がって読めなくなっていた（2026-09-28に実測して発見。
+     8タブの説明を足したことで実害が出た）。pre-line は改行だけを残し、
+     インデント由来の空白は従来どおり詰める */
+  white-space: pre-line;
 }
 
 .faq-answer p.faq-answer-link {

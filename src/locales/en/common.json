@@ -240,9 +240,7 @@
     "volatilityOutcomeDetailFavorite": " (Lane 1 finished 1st)",
     "volatilityCaveat": "A single race result can't confirm or disprove the prediction.",
     "volatilityCaveatLink": "See measured accuracy ›",
-    "payout": "Payout: ¥{{amount}}",
-    "notFinishedTitle": "The result is not final yet",
-    "notFinishedBody": "Once the race is over, the placings, payouts and winning technique will appear on this tab."
+    "payout": "Payout: ¥{{amount}}"
   },
   "raceHistoryTable": {
     "date": "Date",
@@ -566,6 +564,10 @@
     "rowExhibitionTopRateShort": "Ex.top rate",
     "rowMeetExhibition": "This-meet exhibition",
     "rowMeetExhibitionShort": "Meet ex.",
+    "rowMeetOriLap": "Full lap (series)",
+    "rowMeetOriHalfLap": "Half lap (series)",
+    "rowMeetOriTurn": "Turn speed (series)",
+    "rowMeetOriStraight": "Straight (series)",
     "sampleCount": "(n={{n}})",
     "noFastestExhibition": "Never exhibition-fastest",
     "winRateAbbrev": "1st",

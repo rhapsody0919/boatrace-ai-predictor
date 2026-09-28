@@ -239,9 +239,7 @@
     "volatilityOutcomeDetailFavorite": "（1번 보트가 1착）",
     "volatilityCaveat": "※단일 레이스 결과만으로는 예측의 정확 여부를 판단할 수 없습니다.",
     "volatilityCaveatLink": "실측 정확도 보기 ›",
-    "payout": "배당금: ¥{{amount}}",
-    "notFinishedTitle": "결과가 아직 확정되지 않았습니다",
-    "notFinishedBody": "레이스 종료 후 이 탭에 착순・배당금・결정수가 표시됩니다."
+    "payout": "배당금: ¥{{amount}}"
   },
   "raceHistoryTable": {
     "date": "날짜",
@@ -564,6 +562,10 @@
     "rowExhibitionTopRateShort": "전시 1위율",
     "rowMeetExhibition": "이번 시리즈 전시 정보",
     "rowMeetExhibitionShort": "시리즈 전시",
+    "rowMeetOriLap": "이번 시리즈 한 바퀴",
+    "rowMeetOriHalfLap": "이번 시리즈 반 바퀴 랩",
+    "rowMeetOriTurn": "이번 시리즈 선회 발",
+    "rowMeetOriStraight": "이번 시리즈 직선",
     "sampleCount": "(n={{n}})",
     "noFastestExhibition": "전시 1위 기록 없음",
     "winRateAbbrev": "1착",

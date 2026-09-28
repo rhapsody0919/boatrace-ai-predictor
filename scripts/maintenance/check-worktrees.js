@@ -13,18 +13,21 @@
  *
  * 使い方: npm run check:worktrees
  *
- * 検証: scripts/maintenance/verify-git-hygiene.js
+ * 検証: scripts/maintenance/verify-git-hygiene.js / verify-worktree-in-use.js
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PRECIOUS_PATHS } from "../lib/preciousPaths.js";
 import { parseWorktrees, selectManagedWorktrees } from "./check-git-hygiene.js";
 
-const DEFAULT_BRANCH = "origin/master";
 const GIT_TIMEOUT_MS = 10000;
+const GH_TIMEOUT_MS = 30000;
+const LSOF_TIMEOUT_MS = 30000;
+/** マージ済みでも、この時間内に HEAD が動いた worktree は片付け対象にしない */
+const RECENT_HOURS = 24;
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -56,36 +59,136 @@ function git(args, cwd = repoRoot) {
   }
 }
 
-function isMerged(branch) {
-  try {
-    execFileSync(
-      "git",
-      ["merge-base", "--is-ancestor", branch, DEFAULT_BRANCH],
-      {
-        timeout: GIT_TIMEOUT_MS,
-        cwd: repoRoot,
-        stdio: "ignore",
-      },
-    );
-    return true;
-  } catch {
-    return false;
-  }
+/**
+ * マージ済みとみなすのは、MERGED の PR が見つかり、その PR の head が
+ * ローカルのブランチ先頭と一致するときだけ。
+ *
+ * 以前は「ブランチ先頭が origin/master の祖先（ahead=0）」をマージ済みとしていた。
+ * これは作業を始めたばかりでまだコミットしていない worktree（先頭 = origin/master）も
+ * 満たすため、2026-09-28 に稼働中セッションの worktree 4本を「片付けてよい」と表示した。
+ * PR の head との一致で見るので squash マージも拾える。マージ後にローカルで
+ * 積んだコミットがあれば先頭が一致せず、マージ済みにならない。
+ */
+export function isMergedByPr({ branch, tip, mergedPrs }) {
+  if (!branch || !tip || !mergedPrs) return false;
+  return mergedPrs.some(
+    (pr) => pr.headRefName === branch && pr.headRefOid === tip,
+  );
+}
+
+/** `lsof -d cwd -Fn` の出力から、各プロセスのカレントディレクトリを取り出す。 */
+export function parseCwdPaths(lsofOutput) {
+  if (!lsofOutput) return [];
+  return lsofOutput
+    .split("\n")
+    .filter((line) => line.startsWith("n/"))
+    .map((line) => line.slice(1));
+}
+
+/** worktree の中（サブディレクトリ含む）をカレントディレクトリにしているプロセスがあるか。 */
+export function hasProcessInside(worktreePath, cwdPaths) {
+  return cwdPaths.some(
+    (p) => p === worktreePath || p.startsWith(`${worktreePath}/`),
+  );
+}
+
+/** HEAD が直近 RECENT_HOURS 時間以内に動いたか。 */
+export function isRecentlyActive(lastActivityMs, nowMs) {
+  if (lastActivityMs == null) return false;
+  return nowMs - lastActivityMs < RECENT_HOURS * 60 * 60 * 1000;
 }
 
 /**
  * worktree 1本を分類する。
- * - blocked : 触ってはいけない（未コミット変更、または取り直しの効かないデータがある）
- * - removable: マージ済みで中身も空。消してよい
- * - active  : 未マージ。作業中
+ * - locked   : 他のセッションが使っている（git のロック、または中にプロセスがいる）
+ * - blocked  : 触ってはいけない（未コミット変更、または取り直しの効かないデータがある）
+ * - active   : マージを確認できない。作業中
+ * - recent   : マージ済みだが直近に HEAD が動いた。セッションが続いている可能性がある
+ * - removable: PR がマージ済みで中身も空。消してよい
  */
-export function classify({ merged, dirtyCount, precious, locked }) {
+export function classify({
+  merged,
+  dirtyCount,
+  precious,
+  locked,
+  inUse = false,
+  recent = false,
+}) {
   // ロックは他のセッションが今そこで作業している印。マージ済みでも触らない。
   // 2026-09-25、この判定が無かったため「片付けてよい」に他セッションの
   // 作業ツリーが2本並び、git 側のロックだけが削除を止めた。
-  if (locked) return "locked";
+  // デスクトップアプリ（Codeタブ）のセッションはロックを掛けないため、
+  // 中にプロセスがいること（inUse）も同じ扱いにする（2026-09-28）。
+  if (locked || inUse) return "locked";
   if (precious.length > 0 || dirtyCount > 0) return "blocked";
-  return merged ? "removable" : "active";
+  if (!merged) return "active";
+  return recent ? "recent" : "removable";
+}
+
+/**
+ * 全プロセスのカレントディレクトリ。`lsof +D` は配下を全走査して重いので
+ * cwd だけを見る。取得できなければ null（＝使用中かどうか分からない）。
+ */
+function listProcessCwds() {
+  try {
+    return parseCwdPaths(
+      execFileSync("lsof", ["-a", "-d", "cwd", "-Fn"], {
+        encoding: "utf8",
+        timeout: LSOF_TIMEOUT_MS,
+        stdio: ["ignore", "pipe", "ignore"],
+        maxBuffer: 16 * 1024 * 1024,
+      }),
+    );
+  } catch (err) {
+    // 権限の無いプロセスがあると lsof は非0で終わるが、読めた分の出力は有効
+    if (typeof err.stdout === "string" && err.stdout.length > 0) {
+      return parseCwdPaths(err.stdout);
+    }
+    return null;
+  }
+}
+
+/** マージ済み PR の {headRefName, headRefOid}。取得できなければ null。 */
+function listMergedPrs() {
+  try {
+    return JSON.parse(
+      execFileSync(
+        "gh",
+        [
+          "pr",
+          "list",
+          "--state",
+          "merged",
+          "--limit",
+          "1000",
+          "--json",
+          "headRefName,headRefOid",
+        ],
+        {
+          encoding: "utf8",
+          timeout: GH_TIMEOUT_MS,
+          cwd: repoRoot,
+          stdio: ["ignore", "pipe", "ignore"],
+        },
+      ),
+    );
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * HEAD と reflog の最終更新時刻（worktree 作成・checkout・commit・reset で動く）。
+ * index は自分の `git status` が書き換えうるので見ない。
+ */
+function lastHeadActivityMs(worktreePath) {
+  const gitDir = git(["rev-parse", "--absolute-git-dir"], worktreePath);
+  if (!gitDir) return null;
+  const times = ["HEAD", "logs/HEAD"]
+    .map((f) => path.join(gitDir, f))
+    .filter((f) => existsSync(f))
+    .map((f) => statSync(f).mtimeMs);
+  return times.length > 0 ? Math.max(...times) : null;
 }
 
 function main() {
@@ -96,16 +199,22 @@ function main() {
   }
 
   const entries = selectManagedWorktrees(parseWorktrees(porcelain), repoRoot);
-
-  git(["fetch", "origin", "master", "--quiet"]);
+  const mergedPrs = listMergedPrs();
+  const cwds = listProcessCwds();
+  const now = Date.now();
 
   const rows = entries.map((e) => {
+    // git status より先に読む
+    const recent = isRecentlyActive(lastHeadActivityMs(e.path), now);
     const dirty = git(["status", "--short"], e.path);
     const dirtyCount = dirty ? dirty.split("\n").filter(Boolean).length : 0;
     const precious = PRECIOUS_PATHS.filter((p) =>
       existsSync(path.join(e.path, p)),
     );
-    const merged = e.branch ? isMerged(e.branch) : false;
+    const tip = e.branch ? git(["rev-parse", e.branch]) : null;
+    const merged = isMergedByPr({ branch: e.branch, tip, mergedPrs });
+    // cwd を取れなかったときは使用中の可能性を否定できないので使用中扱い
+    const inUse = cwds === null || hasProcessInside(e.path, cwds);
     // gitが追跡しないもの（node_modules 等）が残っていると
     // `git worktree remove` は "Directory not empty" で失敗する。
     // 消してよいものではあるので削除対象からは外さず、--force が要ると示す。
@@ -117,8 +226,16 @@ function main() {
       dirtyCount,
       precious,
       merged,
+      inUse,
       needsForce,
-      kind: classify({ merged, dirtyCount, precious, locked: e.locked }),
+      kind: classify({
+        merged,
+        dirtyCount,
+        precious,
+        locked: e.locked,
+        inUse,
+        recent,
+      }),
     };
   });
 
@@ -126,18 +243,33 @@ function main() {
   const blocked = rows.filter((r) => r.kind === "blocked");
   const active = rows.filter((r) => r.kind === "active");
   const locked = rows.filter((r) => r.kind === "locked");
+  const recent = rows.filter((r) => r.kind === "recent");
 
   console.log(`worktree ${rows.length}本（メインの作業ツリーを除く）`);
   console.log(
-    `  片付けてよい: ${removable.length} / 使用中: ${locked.length} / 触らない: ${blocked.length} / 作業中: ${active.length}`,
+    `  片付けてよい: ${removable.length} / 使用中: ${locked.length} / 触らない: ${blocked.length} / 作業中: ${active.length} / 直近に操作あり: ${recent.length}`,
   );
+  if (mergedPrs === null) {
+    console.log("");
+    console.log(
+      "  gh でマージ済みPRを取得できなかったため、マージ済みを判定していません（片付け対象は0件になります）。",
+    );
+  }
+  if (cwds === null) {
+    console.log("");
+    console.log(
+      "  lsof でプロセスの作業ディレクトリを取得できなかったため、全件を使用中として扱っています。",
+    );
+  }
 
   if (locked.length > 0) {
     console.log("");
-    console.log("## 使用中（他のセッションがロックしている。触らない）");
+    console.log("## 使用中（他のセッションが使っている。触らない）");
     for (const r of locked) {
       console.log(`  ${path.basename(r.path)}  [${r.branch ?? "detached"}]`);
-      console.log(`    ${r.locked}`);
+      console.log(
+        `    ${r.locked ?? "中で動いているプロセスがある（デスクトップアプリのセッション等）"}`,
+      );
     }
     console.log("");
     console.log(
@@ -172,15 +304,29 @@ function main() {
 
   if (active.length > 0) {
     console.log("");
-    console.log("## 作業中（origin/master に未マージ）");
+    console.log(
+      "## 作業中（マージ済みPRを確認できない。コミット前の作業開始直後も含む）",
+    );
     for (const r of active) {
+      console.log(`  ${path.basename(r.path)}  [${r.branch ?? "detached"}]`);
+    }
+  }
+
+  if (recent.length > 0) {
+    console.log("");
+    console.log(
+      `## 直近${RECENT_HOURS}時間以内に操作あり（PRはマージ済み。セッションが続いている可能性があるので待つ）`,
+    );
+    for (const r of recent) {
       console.log(`  ${path.basename(r.path)}  [${r.branch ?? "detached"}]`);
     }
   }
 
   if (removable.length > 0) {
     console.log("");
-    console.log("## 片付けてよい（マージ済み・未コミットなし・データなし）");
+    console.log(
+      "## 片付けてよい（PRマージ済み・未コミットなし・データなし・使用中のプロセスなし）",
+    );
     for (const r of removable) {
       // node_modules 等が残っているものは --force が無いと
       // "Directory not empty" で失敗する
