@@ -594,7 +594,13 @@ export async function runForRaces(
         conditions: detail.conditions,
       });
     }
-    if (!detail.data) {
+    // 展示が未公開（detail.data が null）でも、当日体重・調整重量だけは公開されていることがある（BOA-500）。
+    // その場合 buildExhibitionRows（extended）が展示前の行を返すので、書いて残す。展示タイム・チルトは
+    // 後の窓（-33）で同じ行に埋まる。1行も作れないときだけ no_values（従来どおり再試行）
+    const rows = buildExhibitionRows(race.race_id, detail.page.boats, {
+      extended,
+    });
+    if (rows.length === 0) {
       outcomes.set(race.race_id, {
         ...base,
         outcome: "no_values",
@@ -602,10 +608,7 @@ export async function runForRaces(
       });
       continue;
     }
-    rowsByRace.set(
-      race.race_id,
-      buildExhibitionRows(race.race_id, detail.page.boats, { extended }),
-    );
+    rowsByRace.set(race.race_id, rows);
   }
 
   // 4) 書き込み（shadow は書かない）
@@ -637,11 +640,15 @@ export async function runForRaces(
     } else if (rows.some((row) => row.exhibition_time != null)) {
       outcomes.set(raceId, { ...common, outcome: "ok" });
     } else {
-      // 展示STだけが公開されている（展示タイム未公開）。書いた行は残し、展示タイムが入るまで再試行する
+      // 展示タイムが未公開。書いた行（展示STだけ、または展示前の当日体重・調整重量だけ）は残し、
+      // 展示タイムが入るまで再試行する
+      const hasSt = rows.some((row) => row.start_timing != null);
       outcomes.set(raceId, {
         ...common,
         outcome: "partial",
-        error: "展示タイムが未公開です（展示STのみ）",
+        error: hasSt
+          ? "展示タイムが未公開です（展示STのみ）"
+          : "展示タイムが未公開です（展示前の当日体重・調整重量のみ）",
       });
     }
   }

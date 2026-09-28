@@ -656,11 +656,33 @@ async function exhibitionShadowWritesNothing(run) {
     { mode: "live" },
     createFetcher(pagesHandler({ before: BEFORE_UNPUBLISHED_HTML })),
   );
+  const unRows = upsertsOf(dbUn, "exhibition_data").flatMap((u) => u.rows);
   check(
-    "A2 展示が未公開（展示航走前の空の表）: outcome=no_values（再試行）。展示データは書かない",
-    un.result.outcome === "no_values" &&
-      upsertsOf(dbUn, "exhibition_data").length === 0,
-    show(un.result),
+    // BOA-500: 展示航走前でも、当日体重・調整重量は公開されている。捨てずに書き、展示タイムが入るまで再試行する
+    "A2 展示航走前（当日体重・調整重量だけ公開）: その行を書き、outcome=partial（再試行。展示タイムが入るまで完了にしない）",
+    un.result.outcome === "partial" &&
+      unRows.length === 6 &&
+      unRows.every(
+        (row) =>
+          row.today_weight != null &&
+          row.adjustment_weight != null &&
+          row.exhibition_time === null &&
+          row.start_timing === null,
+      ),
+    show({ outcome: un.result.outcome, rows: unRows.length, row0: unRows[0] }),
+  );
+  const dbNone = freshDb();
+  const none = await runExhibition(
+    realExhibitionRun,
+    dbNone,
+    { mode: "live" },
+    createFetcher(pagesHandler({ before: "<html></html>" })),
+  );
+  check(
+    "A2 直前情報の表が無い（中止・未公開）: outcome=no_values（再試行）。1行も書かない",
+    none.result.outcome === "no_values" &&
+      upsertsOf(dbNone, "exhibition_data").length === 0,
+    show(none.result),
   );
   const dbSt = freshDb();
   const st = await runExhibition(
@@ -1098,9 +1120,11 @@ for (const [job, createHandleSlot, offset] of [
     fetcher: createFetcher(pagesHandler({ before: BEFORE_UNPUBLISHED_HTML })),
   });
   check(
-    "ラッパ A2: 展示が未公開（no_values）は、完了にせず、再試行に戻す",
+    // BOA-500 以降、展示航走前のページは当日体重・調整重量を書くため partial になる。
+    // 完了にせず再試行に戻す、という予定表の扱いは変わらない
+    "ラッパ A2: 展示タイムが未公開（partial）は、完了にせず、再試行に戻す",
     unpublished.store.completed.length === 0 &&
-      unpublished.store.retried[0]?.outcome === "no_values",
+      unpublished.store.retried[0]?.outcome === "partial",
     show(unpublished.store.retried),
   );
   const already = await runViaWrapper({
@@ -2022,7 +2046,8 @@ async function catchupRetriesSlowly(catchup) {
   const retryAfterSec = (x) =>
     (new Date(x.store.retried[0]?.retryAt).getTime() - NOW.getTime()) / 1000;
   return (
-    r.store.retried[0]?.outcome === "no_values" &&
+    // BOA-500 以降、展示航走前のページは当日体重・調整重量を書くため partial（未完了なのは変わらない）
+    r.store.retried[0]?.outcome === "partial" &&
     retryAfterSec(r) === 590 &&
     retryAfterSec(primary) === 110
   );
