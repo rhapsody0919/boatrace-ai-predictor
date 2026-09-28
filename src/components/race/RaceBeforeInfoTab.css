@@ -153,3 +153,9 @@
   color: var(--color-warning-text);
   font-weight: var(--font-weight-bold);
 }
+
+/* 「1コース」が375pxのセル幅で「1コー／ス」と折れて読みにくかった
+   （2026-09-28、実画面のスクショで確認）。コース表記は折り返さない */
+.race-before-info-tab .drt-entry-course {
+  white-space: nowrap;
+}

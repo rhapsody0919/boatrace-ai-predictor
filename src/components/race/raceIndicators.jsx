@@ -715,7 +715,7 @@ export function buildExhibitionCourseRow({
             ? "beforeInfo.exhibitionCourseMovedOut"
             : null;
       return (
-        <span className="drt-value" data-testid="exhibition-course">
+        <span className="drt-value drt-entry-course" data-testid="exhibition-course">
           {t("dataTable.prevResultCourse", { course })}
           {movedKey && (
             <span className="drt-sub drt-entry-moved-label">{t(movedKey)}</span>
