@@ -11,6 +11,18 @@
 import { useState } from "react";
 import "./DigestCardGrid.css";
 
+/**
+ * 列数の上限（最大3列）。枚数が列数を下回る時の空トラックを消す（BOA-460）。
+ *
+ * ここを増やすときは DigestCardGrid.css の `--n1` / `--n2` … も一緒に増やす
+ * （対応する規則が無い `--nN` は base の列数にそのまま落ちる＝空トラックが戻る）。
+ */
+const MAX_COLUMNS = 3;
+
+function columnCap(count) {
+  return Math.min(Math.max(count, 1), MAX_COLUMNS);
+}
+
 function DigestCardGrid({ rows, previewCount = 6, children }) {
   const [showAll, setShowAll] = useState(false);
   const hasMore = rows.length > previewCount;
@@ -18,7 +30,9 @@ function DigestCardGrid({ rows, previewCount = 6, children }) {
 
   return (
     <>
-      <div className="digest-grid">{visible.map(children)}</div>
+      <div className={`digest-grid digest-grid--n${columnCap(visible.length)}`}>
+        {visible.map(children)}
+      </div>
       {hasMore && (
         <button
           type="button"

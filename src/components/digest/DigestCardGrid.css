@@ -2,6 +2,15 @@
  *
  * 折りたたみで1枚が低くなったため、480px以上で2列に増やす
  * （旧: 768px以上で2列。1列のままだと低いカードが縦に長く伸びるだけになる）。
+ *
+ * 列数は固定（480px以上で2列、1024px以上で3列）。まくりは該当0〜数件の日が
+ * あるため、枚数が列数を下回るセクションでは右側に空の列が残っていた
+ * （BOA-460。1440pxで718px分の空白。`npm run test:layout` が「空トラック」として
+ * 検知する実在の崩れ）。`repeat(auto-fit, minmax(Xpx, 1fr))` に置き換えると
+ * 最小幅Xを決めることになり、「480〜1023pxで最大2列・1024px以上で最大3列」という
+ * 現行の刻みを幅で保証できなくなる（1023pxで3列入る等）。そのため
+ * **枚数の上限を `--n1` / `--n2` として受け取り、メディアクエリ側で上書きする**。
+ * 同じ詳細度なので、base より後に書く順序に意味がある。
  */
 
 .digest-grid {
@@ -14,11 +23,23 @@
   .digest-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .digest-grid--n1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 1024px) {
   .digest-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .digest-grid--n1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .digest-grid--n2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
