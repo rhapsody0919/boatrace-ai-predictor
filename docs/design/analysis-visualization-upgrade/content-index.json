@@ -2,12 +2,15 @@
   "feature": "BOA-305 レース詳細の分析可視化アップグレード（phase a: 枠別情報のST考察・逃げシミュレーション、基本情報の条件別・前期・F数バッジ、今節タブ、本日の成績サマリー移設）",
   "released": "2026-09-26",
   "content": {
-    "static_pages": [],
+    "static_pages": ["src/pages/HowToUse.jsx"],
     "note_articles": [],
-    "blog_posts": [],
+    "blog_posts": [
+      "public/blog/meet-score-rate-guide.md",
+      "public/blog/st-consideration-guide.md",
+      "public/blog/nige-simulation-guide.md"
+    ],
     "youtube_videos": [],
     "x_posts": []
   },
-  "not_applicable": true,
-  "not_applicable_reason": "2026-09-27時点で、この機能に言及している既存コンテンツが1件も無いことを確認した（public/blog/ の全記事・data/analysis/x-posts/history.json・data/analysis/tiktok-posts/history.json を「今節」「ST考察」「逃げシミュ」でgrepしていずれも0件。静的ページ側も HowToUse.jsx・About.jsx・FAQ.jsx はレース詳細の「結果」タブにしか触れておらず、phase aで追加したタブを説明していない）。このファイルは既存コンテンツの索引であり、無い以上ここは空になる。ブログ・SNSへの展開の要否と、HowToUse.jsx がレース詳細の8タブを説明していない件は BOA-456 で別途扱う（着手したらこのファイルに実物を追記して not_applicable を false に戻す）。"
+  "not_applicable": false
 }
