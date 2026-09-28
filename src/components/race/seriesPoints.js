@@ -344,6 +344,26 @@ export function listSeriesFinishes(meetRecords, options = {}) {
 }
 
 /**
+ * 公式の得点率一覧の値を使ってよいか（純関数、BOA-475）。
+ *
+ * 公式の行は節に1行しか無く、中身は「◯日目１２R終了時点」＝**予選終了時点の
+ * スナップショット**。レース詳細は過去日も開けるので、予選中のレースを開いて
+ * いるときに使うと**まだ走っていない走を含む得点率・順位**を出してしまう。
+ * 実測では予選2日目で最大47名の走数がズレ、予選最終レースでも、そのレースに
+ * 乗っている6名ぶんが先取りになる。
+ *
+ * 表示中のレースが得点率に算入される＝まだ予選の途中、なので使わない。
+ * サービス層のこの判断を回帰テストできるよう、純関数に切り出してある。
+ *
+ * @param {string|null} currentStage 表示中レースの `race_stage`
+ * @param {string} raceId 表示中のレース
+ * @param {string|null} prelimEndRaceId 節で最後に「予選」と付いたレース
+ */
+export function shouldUseOfficialSeries(currentStage, raceId, prelimEndRaceId) {
+  return !countsForSeriesScore(currentStage, raceId, prelimEndRaceId);
+}
+
+/**
  * 公式の得点率一覧（`racer_series_points`）の1行を、当社の
  * `{points, runs, rate, finishes}` に読み替える（純関数、BOA-475）。
  *
@@ -356,8 +376,13 @@ export function listSeriesFinishes(meetRecords, options = {}) {
  *
  * ## 走数は `placements` の文字数から出す
  *
- * 公式データに走数の列は無いが、`placements`（着順の文字列。日の区切りが全角空白の
- * 「３２１」「４５２」のような形）の空白を除いた文字数が走数になる。
+ * 公式データに走数の列は無いが、`placements`（着順の文字列）の空白を除いた文字数が
+ * 走数になる。**全角空白は「日の区切り」ではなく「未消化のスロット」**
+ * （1日2枠の固定スロットのうち走らなかった枠。マイグレーション064のCOMMENT）。
+ * 実データ「１□２３１□４３」（□は全角空白）は 1日目[1,空] / 2日目[2,3] /
+ * 3日目[1,空] / 4日目[4,3] の4日ぶんで、日の区切りとして読むと3グループになり
+ * 実際の走と合わない。走数（非空白の文字数）と着順の並びはどちらの読み方でも
+ * 同じだが、「日ごとに分けて出す」等でこの前提に乗ると壊れる。
  * 2026-09-28に収録済みの全101行で検算し、`(得点 − 減点) ÷ 得点率` と
  * **得点率のある94行すべてで一致**した。
  *
@@ -386,7 +411,7 @@ export function officialSeriesScore(row) {
 /**
  * 公式の `placements`（着順の文字列）を着順の配列にする（純関数）。
  *
- * 全角空白は日の区切りなので落とす。全角・半角の数字は着順、それ以外
+ * 全角空白は未消化のスロットなので落とす。全角・半角の数字は着順、それ以外
  * （「妨」＝妨害失格、「落」＝落水 等）は着順が付いていないので null にする
  * （当社の `listSeriesFinishes` と同じ形）。
  *

@@ -16,6 +16,7 @@ import {
   buildMeetRanking,
   prelimEndRaceIdOf,
   officialSeriesScore,
+  parseOfficialPlacements,
 } from "../../src/components/race/seriesPoints.js";
 
 // 取得失敗を「データなし」に化けさせない。`scripts/lib/supabaseClient.js` は
@@ -41,6 +42,55 @@ const official = await must("公式の得点率一覧", () =>
     ),
 );
 
+// (0) 走数の検算。`placements` の非空白文字数 = (得点 − 減点) / 得点率 か。
+//     **公式の列だけで完結する独立な検算**にする。読み替え関数の戻り値どうしを
+//     比べると両辺が同じ実装由来でほぼ恒真になる（2026-09-28のレビュー指摘）
+{
+  let checked = 0;
+  const bad = [];
+  for (const r of official) {
+    if (r.score_rate === null || r.total_points === null) continue;
+    const penalty = r.penalty_points === 99 ? 0 : (r.penalty_points ?? 0);
+    const derived = (r.total_points - penalty) / Number(r.score_rate);
+    const chars = parseOfficialPlacements(r.placements).length;
+    checked += 1;
+    if (Math.abs(derived - chars) > 0.02)
+      bad.push(
+        `${r.player_name?.replace(/\s+/g, "")}(${r.racer_id}) placements=${chars}文字 vs (得点−減点)/得点率=${derived.toFixed(3)}`,
+      );
+  }
+  console.log(
+    `■ 走数の検算（placements の文字数 = (得点−減点)/得点率）: ${checked - bad.length}/${checked} ${bad.length === 0 ? "✅" : "❌"}`,
+  );
+  bad.slice(0, 5).forEach((b) => console.error(`    ${b}`));
+  if (bad.length > 0) failures += bad.length;
+}
+
+// (0b) 得点率を出していない行（賞典除外・途中帰郷）も、読み替えが破綻しないこと。
+//      順位の比較からは外れるので、ここでしか見られない
+{
+  const noRate = official.filter((r) => r.score_rate === null);
+  const broken = noRate.filter((r) => {
+    const v = officialSeriesScore(r);
+    return !v || !Number.isFinite(v.rate) || v.rate < 0 || v.rate > 12;
+  });
+  console.log(
+    `■ 公式が得点率を出していない行の読み替え: ${noRate.length - broken.length}/${noRate.length} ${broken.length === 0 ? "✅" : "❌"}`,
+  );
+  broken.forEach((r) =>
+    console.error(
+      `    ${r.player_name?.replace(/\s+/g, "")}(${r.racer_id}) pts=${r.total_points} pen=${r.penalty_points} placements="${r.placements}"`,
+    ),
+  );
+  if (broken.length > 0) failures += broken.length;
+}
+
+let failures = 0;
+const fail = (msg) => {
+  failures += 1;
+  console.error(`  ❌ ${msg}`);
+};
+
 const meets = [
   ...new Map(
     official.map((r) => [
@@ -51,11 +101,6 @@ const meets = [
 ];
 console.log(`公式の行がある節: ${meets.length}（${official.length}行）\n`);
 
-let failures = 0;
-const fail = (msg) => {
-  failures += 1;
-  console.error(`  ❌ ${msg}`);
-};
 
 for (const m of meets) {
   const vv = String(m.venueCode).padStart(2, "0");

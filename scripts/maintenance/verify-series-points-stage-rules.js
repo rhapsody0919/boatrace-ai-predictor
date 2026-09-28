@@ -29,6 +29,7 @@ import {
   SPECIAL_SCORE_POINTS,
   TOKUSEN_SCORE_POINTS,
   officialSeriesScore,
+  shouldUseOfficialSeries,
   parseOfficialPlacements,
   buildMeetRanking,
 } from "../../src/components/race/seriesPoints.js";
@@ -630,6 +631,53 @@ check("バッジ: 予選", getRaceStageKey("予選"), null);
       [2, false],
       [3, false],
     ],
+  );
+}
+
+
+// ---- 8. 公式値を使うかのゲート（BOA-475） ------------------------------------
+// **今回いちばんリスクのある判断**。公式の行は「予選終了時点」のスナップショット
+// なので、予選中のレースを開いているときに使うと、まだ走っていない走を含む
+// 得点率・順位が出る（実測: 予選2日目で最大47名の走数がズレる）
+{
+  const END = "2026-09-19-05-12"; // 多摩川G1の予選最終レース
+  check(
+    "予選の初日は使わない",
+    shouldUseOfficialSeries("予選", "2026-09-16-05-01", END),
+    false,
+  );
+  check(
+    "予選最終日でも、予選の途中なら使わない",
+    shouldUseOfficialSeries("予選", "2026-09-19-05-06", END),
+    false,
+  );
+  check(
+    "予選の最終レース自体でも使わない（そのレースの結果はまだ出ていない）",
+    shouldUseOfficialSeries("予選", END, END),
+    false,
+  );
+  check(
+    "予選が終わった翌日から使う",
+    shouldUseOfficialSeries("一般", "2026-09-20-05-01", END),
+    true,
+  );
+  check(
+    "準優・優勝戦でも使う",
+    [
+      shouldUseOfficialSeries("準優勝戦", "2026-09-20-05-10", END),
+      shouldUseOfficialSeries("優勝戦", "2026-09-21-05-12", END),
+    ],
+    [true, true],
+  );
+  check(
+    "予選の締めが分からない節（予選ラベルが無い）では使わない",
+    shouldUseOfficialSeries("５ールドレース", "2026-05-01-09-05", null),
+    false,
+  );
+  check(
+    "表示中レースの種別が取れなくても、予選最終日までなら使わない",
+    shouldUseOfficialSeries(null, "2026-09-18-05-03", END),
+    false,
   );
 }
 

@@ -18,6 +18,7 @@ import { isFinalStage } from "../constants/raceStageConfig";
 import { finishPositionOf } from "../components/race/basicInfoStats.js";
 import {
   countsForSeriesScore,
+  shouldUseOfficialSeries,
   prelimEndRaceIdOf,
   semifinalRaceIdsOf,
   scoreTableFor,
@@ -6481,14 +6482,15 @@ export const supabaseDataService = {
         // 予選中は従来どおり当社計算で、減点のズレは残る（公式の行が生えるのも
         // 4日目以降なので、予選中は直しようが無い）
         officialByRacer: (() => {
-          const currentStage = stageById.get(raceId) ?? null;
-          const prelimEnd = prelimEndRaceIdOf(conditions ?? []);
-          const prelimOver = !countsForSeriesScore(
-            currentStage,
-            raceId,
-            prelimEnd,
-          );
-          if (!prelimOver) return null;
+          // 「使ってよいか」の判断は純関数に切り出してある（回帰テスト可能）
+          if (
+            !shouldUseOfficialSeries(
+              stageById.get(raceId) ?? null,
+              raceId,
+              prelimEndRaceIdOf(conditions ?? []),
+            )
+          )
+            return null;
           const rows = officialSeries ?? [];
           if (rows.length === 0) return null;
           return Object.fromEntries(rows.map((r) => [r.racer_id, r]));
