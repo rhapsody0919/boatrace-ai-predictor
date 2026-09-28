@@ -149,6 +149,18 @@ for (const [file, key] of [
     new RegExp(`${key}",\\s*\\{\\s*n: SMALL_SAMPLE_THRESHOLD`).test(jsx),
   );
 }
+// 選手別でも率に参考値の色を付ける（nだけだと大きな緑の率が目立つ。ファン評価2周目）
+check(
+  "選手×枠: 率（1着率・2連率・3連率）にも小標本の色を付ける",
+  (
+    read("src/components/analysis/MotorRacerWakuDrillDown.jsx").match(
+      /usage-history-rate \$\{isSmallSample \? "is-small-sample" : ""\}/g,
+    ) ?? []
+  ).length === 3 &&
+    read("src/components/analysis/MotorConditionChart.css").includes(
+      ".usage-history-rate.is-small-sample",
+    ),
+);
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;

@@ -238,6 +238,10 @@
   color: var(--color-success-text);
 }
 
+.usage-history-rate.is-small-sample {
+  color: var(--color-warning-text);
+}
+
 .usage-history-ranks {
   color: var(--text-secondary);
   font-size: var(--font-size-xs);
