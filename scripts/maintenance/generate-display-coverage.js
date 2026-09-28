@@ -134,15 +134,22 @@ export function collectRelations(migrations) {
       ensure(m[1], "view", file);
       noteOp(m[1], "create", seqOf(m.index));
     }
+    // DROP は `DROP TABLE a, b CASCADE;` のように複数を並べられる。
+    // 1つ目だけ拾うと2件目以降が「存在するのに読まれていない」として台帳に残る。
     for (const m of sql.matchAll(
-      /drop\s+(?:table|view|materialized\s+view)\s+(?:if\s+exists\s+)?([a-z0-9_.]+)/gi,
+      /drop\s+(?:table|view|materialized\s+view)\s+(?:if\s+exists\s+)?([a-z0-9_.,\s]+?)\s*(?:cascade|restrict)?\s*(?:;|$)/gi,
     )) {
-      noteOp(m[1], "drop", seqOf(m.index));
+      for (const rel of m[1].split(",")) {
+        const name = rel.trim();
+        if (name) noteOp(name, "drop", seqOf(m.index));
+      }
     }
 
-    // GRANT SELECT ON <rel> TO … anon …
+    // GRANT SELECT / GRANT ALL ON <rel> TO … anon …
+    // GRANT ALL も SELECT を含むため権限ありとして扱う（`ALL TABLES IN SCHEMA …` の
+    // 形は関係名に一致しないので、下の relations.get で自然に落ちる）
     for (const m of sql.matchAll(
-      /grant\s+select\s*(?:\([^)]*\))?\s+on\s+(?:table\s+)?([a-z0-9_.,\s]+?)\s+to\s+([a-z0-9_,\s]+)/gi,
+      /grant\s+(?:select|all)\s*(?:\([^)]*\))?\s+on\s+(?:table\s+)?([a-z0-9_.,\s]+?)\s+to\s+([a-z0-9_,\s]+)/gi,
     )) {
       const roles = m[2].toLowerCase();
       if (!/\banon\b/.test(roles)) continue;
@@ -250,35 +257,68 @@ async function collectCodeReferences() {
 }
 
 /**
+ * 関数定義の直後にあるドル引用符の本体を切り出す（純関数）。
+ *
+ * 引用符のタグは `$$` だけでなく `$function$`・`$data_health$` のように名前付きもありうる
+ * （docs/db-migration に実在する）。**開きタグと同じタグ**で閉じるまでを本体とする。
+ * タグが見つからない場合は null を返す。文字数で打ち切る近似にすると、後続の
+ * 無関係なSQLを本体として読み、別テーブルの参照をこの関数のものとして誤って記録する。
+ */
+export function extractFunctionBody(sqlFromFunctionStart) {
+  const open = sqlFromFunctionStart.match(/\$([a-zA-Z_]*)\$/);
+  if (!open) return null;
+  const tag = open[0];
+  const bodyStart = open.index + tag.length;
+  const end = sqlFromFunctionStart.indexOf(tag, bodyStart);
+  if (end === -1) return null;
+  return sqlFromFunctionStart.slice(bodyStart, end);
+}
+
+/**
  * RPCの本体が参照しているテーブルを辿る。
  * FROM / JOIN に現れる識別子を拾う近似で、CTE名・エイリアスは既知のテーブル名に
  * 一致しない限り落ちる（relationNames で絞るため誤検出しにくい）。
+ *
+ * **同じRPCが複数のマイグレーションで定義されている場合は、最後の定義だけを見る。**
+ * 全定義を合算すると、`CREATE OR REPLACE` で参照をやめたテーブルを「RPC経由で読んでいる」と
+ * 報告し続け、表示に繋がっていないのに「要判断」から消えてしまう（BOA-363・BOA-431 で
+ * 同型の事故が2回起きている）。
  */
 function collectRpcTableReads(migrations, rpcNames, relationNames) {
   const reads = new Map(); // table -> Set<rpc名>
   for (const rpc of rpcNames) {
+    const fnRe = new RegExp(
+      `create\\s+(?:or\\s+replace\\s+)?function\\s+(?:public\\.)?${rpc}\\s*\\(`,
+      "gi",
+    );
+    // 最後の定義を探す（マイグレーションは番号順に並んでいる。1ファイル内に複数あれば最後のもの）
+    let latest = null;
     for (const { sql } of migrations) {
-      const fnRe = new RegExp(
-        `create\\s+(?:or\\s+replace\\s+)?function\\s+(?:public\\.)?${rpc}\\s*\\(`,
-        "i",
-      );
-      const start = sql.search(fnRe);
-      if (start === -1) continue;
-      // 関数本体は $$ … $$ で囲まれる。最初の $$ 以降、次の $$ までを本体とみなす。
-      const afterStart = sql.slice(start);
-      const bodyMatch = afterStart.match(/\$\$([\s\S]*?)\$\$/);
-      const body = bodyMatch ? bodyMatch[1] : afterStart.slice(0, 4000);
-      for (const m of body.matchAll(
-        /\b(?:from|join)\s+(?:public\.)?([a-z0-9_]+)/gi,
-      )) {
-        const key = m[1].toLowerCase();
-        if (!relationNames.has(key)) continue;
-        if (!reads.has(key)) reads.set(key, new Set());
-        reads.get(key).add(rpc);
-      }
+      fnRe.lastIndex = 0;
+      for (const m of sql.matchAll(fnRe)) latest = sql.slice(m.index);
+    }
+    if (!latest) continue;
+    const body = extractFunctionBody(latest);
+    if (body === null) continue;
+    for (const m of body.matchAll(
+      /\b(?:from|join)\s+(?:public\.)?([a-z0-9_]+)/gi,
+    )) {
+      const key = m[1].toLowerCase();
+      if (!relationNames.has(key)) continue;
+      if (!reads.has(key)) reads.set(key, new Set());
+      reads.get(key).add(rpc);
     }
   }
   return reads;
+}
+
+/**
+ * Markdownの表のセルを安全にする（純関数）。
+ * 例外理由に `|` を書くと列がずれて表が壊れるため、`/` に置き換える
+ * （generate-lib-index.js の formatRow と同じ扱い）。
+ */
+export function escapeCell(value) {
+  return String(value ?? "").replace(/\|/g, "/");
 }
 
 function renderMarkdown({ rows, exceptions, counts, rpcNames }) {
@@ -356,9 +396,15 @@ function renderMarkdown({ rows, exceptions, counts, rpcNames }) {
     lines.push("|---|---|---|---|---|---|");
     for (const r of group) {
       const note = exceptions[r.name] ?? (r.grantNote || "");
-      lines.push(
-        `| \`${r.name}\` | ${r.kind === "view" ? "ビュー" : "表"} | ${r.definedIn} | ${r.refLabel} | ${r.grantLabel} | ${note} |`,
-      );
+      const cells = [
+        `\`${r.name}\``,
+        r.kind === "view" ? "ビュー" : "表",
+        r.definedIn,
+        r.refLabel,
+        r.grantLabel,
+        note,
+      ];
+      lines.push(`| ${cells.map(escapeCell).join(" | ")} |`);
     }
     lines.push("");
   }
@@ -409,11 +455,12 @@ async function main() {
       // api/ のEdge Functionsはservice_role等で読むため対象外、RPCも SECURITY DEFINER が
       // ありうるため対象外。また076（BOA-370）が新規テーブルの既定権限を剥奪する前に
       // 作られたテーブルは既定権限のままなので、076以降の定義に限って見る。
-      const definedNumber = Number(r.definedIn.slice(0, 3));
+      // 連番は3桁が基本だが `013b_…` のような枝番や `add-defense-distribution.sql` の
+      // ような連番なしも実在する。番号が読めないときは検査する側に倒す（見逃しを作らない）。
+      const definedNumber = Number(r.definedIn.match(/^(\d+)/)?.[1] ?? NaN);
       const needsExplicitGrant =
         Boolean(direct?.has("画面")) &&
-        Number.isFinite(definedNumber) &&
-        definedNumber >= 76;
+        (!Number.isFinite(definedNumber) || definedNumber >= 76);
       const grantNote =
         needsExplicitGrant && !r.grantAnon && !r.selectPolicy
           ? "画面が匿名キーで直接読むが GRANT SELECT … TO anon もSELECTポリシーも無い（076以降は明示が必要）"

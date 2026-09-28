@@ -19,7 +19,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   collectRelations,
+  escapeCell,
   extractCodeReferences,
+  extractFunctionBody,
   OUT_PATH,
   stripSqlComments,
 } from "./generate-display-coverage.js";
@@ -113,6 +115,33 @@ check(
   rel("CREATE TABLE a (); DROP TABLE a;").length,
   0,
 );
+// セルフレビューの指摘（2026-09-28）: DROP は複数名を並べられる。
+// 1つ目だけ拾うと2件目以降が「存在するのに読まれていない」として台帳に残る。
+check(
+  "DROP TABLE a, b; の2件目も削除として扱う",
+  rel("CREATE TABLE a (); CREATE TABLE b (); DROP TABLE a, b;").length,
+  0,
+);
+check(
+  "CASCADE 付きのDROPも拾う",
+  rel("CREATE TABLE a (); DROP TABLE IF EXISTS a CASCADE;").length,
+  0,
+);
+// セルフレビューの指摘: GRANT ALL も SELECT を含むので権限ありとして扱う
+check(
+  "GRANT ALL … TO anon を権限ありと判定する",
+  rel("CREATE TABLE a (); GRANT ALL ON a TO anon;").map((r) =>
+    Boolean(r.grantAnon),
+  ),
+  [true],
+);
+check(
+  "ALL TABLES IN SCHEMA の一括GRANTは特定のテーブルの権限にしない",
+  rel(
+    "CREATE TABLE a (); GRANT ALL ON ALL TABLES IN SCHEMA public TO anon;",
+  ).map((r) => Boolean(r.grantAnon)),
+  [false],
+);
 check(
   "同じファイル内で作り直されたテーブルは残す",
   rel("DROP TABLE IF EXISTS a; CREATE TABLE a (x int);").length,
@@ -151,6 +180,39 @@ check(
   extractCodeReferences('const sql = `select * from("a")`').tables,
   [],
 );
+
+// --- 関数本体の切り出し ---
+// セルフレビューの指摘（2026-09-28）: ドル引用符のタグは $$ だけでなく名前付きもありうる
+// （docs/db-migration に $data_health$ と $verify$ が実在する）。開きタグと同じタグで
+// 閉じるまでを本体にしないと、後続の無関係なSQLを本体として読み、別テーブルの参照を
+// そのRPCのものとして誤って記録する（＝表示に繋がっていないテーブルが要判断から消える）。
+check(
+  "$$ の本体を切り出す",
+  extractFunctionBody("FUNCTION f() ... AS $$ SELECT 1 FROM a; $$;"),
+  " SELECT 1 FROM a; ",
+);
+check(
+  "名前付きタグの本体を切り出す（後続のSQLを含めない）",
+  extractFunctionBody(
+    "FUNCTION f() AS $body$ SELECT 1 FROM a; $body$; SELECT 2 FROM b;",
+  ),
+  " SELECT 1 FROM a; ",
+);
+check(
+  "閉じタグが無ければ null（打ち切りで近似しない）",
+  extractFunctionBody("FUNCTION f() AS $body$ SELECT 1 FROM a;"),
+  null,
+);
+check(
+  "タグが無ければ null",
+  extractFunctionBody("FUNCTION f() RETURNS int LANGUAGE sql RETURN 1;"),
+  null,
+);
+
+// --- 表のセルの整形 ---
+// セルフレビューの指摘: 例外理由に | を書くと列がずれて表が壊れる
+check("パイプは表を壊さないよう置き換える", escapeCell("a | b"), "a / b");
+check("null は空文字にする", escapeCell(null), "");
 
 if (failures.length > 0) {
   console.error(
