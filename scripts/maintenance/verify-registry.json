@@ -54,6 +54,11 @@
       "guards": "汎用の日次監視 data_health（完了の定義C、マイグレーション089）。PGliteでDB関数の意味論まで検証する"
     },
     {
+      "script": "verify-display-coverage.js",
+      "tier": "ci",
+      "guards": "表示カバレッジ台帳（docs/reference/display-coverage.md）の最新性と抽出ロジック。取得したデータが画面に繋がっているかを、マイグレーションと src/・api/ の静的突合で追う"
+    },
+    {
       "script": "verify-data-health-report.js",
       "tier": "ci",
       "guards": "data-health-report.js の存在充足率の分母の定義（BOA-381）"
