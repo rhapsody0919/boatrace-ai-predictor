@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.js";
 
 // GA4 の page_view が1ルート1回・正しい page_location で送られることを固定する（BOA-531）。
 // 開発サーバーでは initGA が gtag を読み込まないため、window.gtag を差し替えて
