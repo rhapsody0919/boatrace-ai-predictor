@@ -5,7 +5,8 @@
  * 1. 管理画面（/admin/sns-hub・/admin/rules）用のBasic認証
  *    認証情報は環境変数（SNS_HUB_BASIC_AUTH_USER / SNS_HUB_BASIC_AUTH_PASSWORD）で管理する。
  *    /admin/rules も同じ認証情報・realmを使う（BOA-555。1回のログインで両方開ける）。
- *    未設定の場合、比較対象がundefinedになり常に認証失敗する（fail-closed、意図した挙動）。
+ *    判定は管理APIの関数側と同じ requireAdminAuth（api/_lib/adminAuth.js）を使う。
+ *    環境変数が未設定・空なら常に拒否（fail-closed）、一定時間比較、パスワードは最初の ":" で分割。
  *
  *    ⚠️ ここで守れるのはURLを直接開いたときだけ。画面のJSとデータ取得（Supabaseのanonキー）は
  *    公開バンドルに含まれるため、データそのものの保護にはならない
@@ -16,6 +17,7 @@
  */
 import { rewrite } from "@vercel/functions";
 import { resolveSnapshotPath } from "./src/config/aiCrawlerBots.js";
+import { requireAdminAuth } from "./api/_lib/adminAuth.js";
 
 export const config = {
   matcher: [
@@ -32,19 +34,6 @@ export const config = {
   ],
 };
 
-// Cache-Control: no-storeが無いと、モバイルChromeがアドレスバー入力時の
-// プリフェッチで送るリクエストへの401レスポンスをキャッシュしてしまい、
-// 実際のナビゲーション時に認証ダイアログを経由せずキャッシュ済み401が
-// そのまま表示される不具合が発生する（2026-08-29、モバイルChromeで確認）
-const UNAUTHORIZED_RESPONSE = () =>
-  new Response("Authentication required", {
-    status: 401,
-    headers: {
-      "WWW-Authenticate": 'Basic realm="SNS Marketing Hub"',
-      "Cache-Control": "no-store",
-    },
-  });
-
 const ADMIN_PATH_PREFIXES = ["/admin/sns-hub", "/api/admin/sns-hub", "/admin/rules"];
 
 const isAdminPath = (pathname) =>
@@ -52,22 +41,11 @@ const isAdminPath = (pathname) =>
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 
-function handleAdminAuth(request) {
-  const authHeader = request.headers.get("authorization");
-
-  if (authHeader?.startsWith("Basic ")) {
-    const encoded = authHeader.slice("Basic ".length);
-    const [user, password] = atob(encoded).split(":");
-
-    if (
-      user === process.env.SNS_HUB_BASIC_AUTH_USER &&
-      password === process.env.SNS_HUB_BASIC_AUTH_PASSWORD
-    ) {
-      return;
-    }
-  }
-
-  return UNAUTHORIZED_RESPONSE();
+// 認証が通れば undefined（素通り）、通らなければ 401。
+// 401 の realm・Cache-Control: no-store（モバイルChromeが401をキャッシュする不具合への対策、
+// 2026-08-29）は requireAdminAuth 側で付ける
+async function handleAdminAuth(request) {
+  return (await requireAdminAuth(request)) ?? undefined;
 }
 
 export default function middleware(request) {
