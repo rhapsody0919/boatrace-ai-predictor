@@ -372,6 +372,11 @@
       "guards": "並行セッションのオーケストレーションが決めたマージ順（台帳で先行とされたPRが未マージなら gh pr merge を止める。台帳に制約があるのに for ループ・変数・$(...)・xargs 等でPR番号を確定できない場合も止める。guard-pr-merge.js・scripts/lib/mergeOrder.js・merge-order.js）"
     },
     {
+      "script": "verify-orchestrator-hooks.js",
+      "tier": "ci",
+      "guards": "オーケストレーター（/orchestrate）のセッション記録と compact 後の状態の再注入（.claude/hooks/orchestrator-session.sh）。他のセッションに注入しないこと・jq が無くても素通しすること・settings.json の3経路の登録"
+    },
+    {
       "script": "verify-hit-verification-guidance.js",
       "tier": "ci",
       "guards": "「毎回の的中/不的中はどこで見られるか」の案内（About・FAQ・使い方ガイド）が、実際に判定を描くタブと食い違うこと（BOA-346の移設で3か所が取り残された）"

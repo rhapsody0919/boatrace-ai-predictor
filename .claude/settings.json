@@ -46,6 +46,39 @@
                         "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-branch-check.sh\""
                     }
                 ]
+            },
+            {
+                "matcher": "compact",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/orchestrator-session.sh\"",
+                        "timeout": 10
+                    }
+                ]
+            }
+        ],
+        "UserPromptSubmit": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/orchestrator-session.sh\"",
+                        "timeout": 10
+                    }
+                ]
+            }
+        ],
+        "UserPromptExpansion": [
+            {
+                "matcher": "orchestrate",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/orchestrator-session.sh\"",
+                        "timeout": 10
+                    }
+                ]
             }
         ],
         "PreToolUse": [
@@ -98,6 +131,16 @@
                     {
                         "type": "command",
                         "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/track-session-progress.sh\"",
+                        "timeout": 10
+                    }
+                ]
+            },
+            {
+                "matcher": "Skill",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/orchestrator-session.sh\"",
                         "timeout": 10
                     }
                 ]
