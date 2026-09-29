@@ -33,7 +33,7 @@ import {
 } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { flattenTests } from "./check-e2e-skips.js";
+import { flattenTests, reportProblems } from "./check-e2e-skips.js";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -73,18 +73,42 @@ function repoSlug() {
   return m[1];
 }
 
-/** ポインタの録画を e2e/recordings/ に用意する。既に同じものが展開済みなら何もしない */
-export async function ensureRecording({ quiet = false } = {}) {
+/** 手元で撮った（まだ Release に上げていない）録画の目印。global-teardown が書く */
+export const LOCAL_MARK = "local";
+
+/**
+ * ポインタの録画を e2e/recordings/ に用意する。既に同じものが展開済みなら何もしない。
+ * 手元で撮った録画が展開されているときは、黙って上書きせずに止める（force で上書き）
+ */
+export async function ensureRecording({ quiet = false, force = false } = {}) {
   const pointer = readPointer();
-  if (
-    existsSync(SOURCE_MARK) &&
-    readFileSync(SOURCE_MARK, "utf8").trim() === pointer.sha256
-  ) {
-    return pointer;
+  const mark = existsSync(SOURCE_MARK)
+    ? readFileSync(SOURCE_MARK, "utf8").trim()
+    : null;
+  if (mark === pointer.sha256) return pointer;
+  if (mark === LOCAL_MARK && !force) {
+    throw new Error(
+      [
+        "e2e/recordings/ には手元で撮った録画があります（まだ Release に上げていない）。",
+        "ポインタの録画で上書きすると失われるため止めました。",
+        "  手元の録画で再生する:       E2E_RECORDING_SOURCE=local npm run test:e2e",
+        "  採用して Release に上げる:  node scripts/maintenance/e2e-recording.js publish --skipped=N --tests=N",
+        "  捨ててポインタの録画に戻す: node scripts/maintenance/e2e-recording.js fetch --force",
+      ].join("\n"),
+    );
   }
 
   mkdirSync(CACHE_DIR, { recursive: true });
   const cached = path.join(CACHE_DIR, `${pointer.sha256}.zip`);
+  if (existsSync(cached) && sha256(readFileSync(cached)) !== pointer.sha256) {
+    // 壊れたキャッシュは消して取り直す（CI のキャッシュはキーが同じ間は上書きされないため、
+    // ここで失敗させると同じ壊れたファイルを毎回復元して落ち続ける）
+    if (!quiet)
+      console.warn(
+        `[e2e recording] キャッシュが壊れているので取り直します: ${cached}`,
+      );
+    rmSync(cached, { force: true });
+  }
   if (!existsSync(cached)) {
     const url = `https://github.com/${repoSlug()}/releases/download/${pointer.tag}/${pointer.asset ?? ASSET_NAME}`;
     if (!quiet) console.log(`[e2e recording] 取得: ${url}`);
@@ -104,14 +128,6 @@ export async function ensureRecording({ quiet = false } = {}) {
     const tmp = `${cached}.${process.pid}.tmp`;
     writeFileSync(tmp, buffer);
     renameSync(tmp, cached);
-  } else {
-    const actual = sha256(readFileSync(cached));
-    if (actual !== pointer.sha256) {
-      rmSync(cached, { force: true });
-      throw new Error(
-        `キャッシュの録画が壊れています（sha256 不一致）。消したので再実行してください: ${cached}`,
-      );
-    }
   }
 
   rmSync(RECORDINGS_DIR, { recursive: true, force: true });
@@ -148,8 +164,9 @@ export function countResults(report) {
  * 1. 撮り直した録画での再生が全件通る（失敗・レポート外のエラーが0）
  * 2. skip が現行の録画より増えていない（発走前のレースが少ない日に撮ると skip が増える）
  */
-export function judgeAdoption(counts, current) {
-  const reasons = [];
+export function judgeAdoption(counts, current, problems = []) {
+  // レポート自体が採点に足るか（途中で止まった・プロジェクトが丸ごと0件・古い）を先に見る
+  const reasons = [...problems];
   if (counts.tests === 0) reasons.push("再生で1件もテストが走っていない");
   if (counts.failed > 0) reasons.push(`再生で${counts.failed}件失敗した`);
   if (counts.errors > 0)
@@ -301,7 +318,7 @@ async function main() {
   const [command, file] = process.argv.slice(2);
   switch (command) {
     case "fetch":
-      await ensureRecording();
+      await ensureRecording({ force: process.argv.includes("--force") });
       return;
     case "publish":
       publish({ skipped: Number(arg("skipped")), tests: Number(arg("tests")) });
@@ -318,10 +335,12 @@ async function main() {
       );
       return;
     case "judge": {
-      const counts = countResults(JSON.parse(readFileSync(file, "utf8")));
+      const report = JSON.parse(readFileSync(file, "utf8"));
+      const counts = countResults(report);
+      const problems = reportProblems(report, flattenTests(report));
       const current = existsSync(POINTER_PATH) ? readPointer() : null;
       const result = {
-        ...judgeAdoption(counts, current),
+        ...judgeAdoption(counts, current, problems),
         counts,
         current: current && { tag: current.tag, skipped: current.skipped },
       };

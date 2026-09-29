@@ -3470,14 +3470,21 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
   };
   const routeUnfinished = async (page) => {
     const handler = async (route) => {
-      // route.fetch() は録画を通らないため fetchRecorded を使う（e2e/fixtures.js）
-      const response = await fetchRecorded(route);
-      const json = stripResults(await response.json());
-      await route.fulfill({
-        status: response.status(),
-        headers: response.headers(),
-        json,
-      });
+      try {
+        // route.fetch() は録画を通らないため fetchRecorded を使う（e2e/fixtures.js）
+        const response = await fetchRecorded(route);
+        const json = stripResults(await response.json());
+        await route.fulfill({
+          status: response.status(),
+          headers: response.headers(),
+          json,
+        });
+      } catch (error) {
+        // 録画に無い要求は本番へ素通しして応答を待つ（ADR-0077 の A改）。
+        // アサーションが先に終わってページが閉じた後の失敗は、テストの結果ではない
+        if (route.request().frame().page().isClosed()) return;
+        throw error;
+      }
     };
     await page.route("**/api/predictions/**", handler);
     await page.route("**/rest/v1/rpc/get_predictions*", handler);

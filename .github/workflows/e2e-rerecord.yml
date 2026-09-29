@@ -78,6 +78,8 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
           set +e
+          # 録画の実行が書いたレポートを採点しないよう、再生の前に消す
+          mv e2e-results.json record-results.json 2>/dev/null
           npx playwright test > replay.log 2>&1
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
           tail -40 replay.log
@@ -87,8 +89,13 @@ jobs:
         id: judge
         run: |
           set +e
-          RESULT=$(node scripts/maintenance/e2e-recording.js judge e2e-results.json)
+          if [ ! -f e2e-results.json ]; then
+            RESULT='{"adopt":false,"reasons":["再生のレポート（e2e-results.json）が無い。再生が途中で止まった"]}'
+          else
+            RESULT=$(node scripts/maintenance/e2e-recording.js judge e2e-results.json)
+          fi
           CODE=$?
+          if ! echo "$RESULT" | jq -e '.adopt == true' >/dev/null; then CODE=3; fi
           echo "$RESULT"
           echo "result=$RESULT" >> "$GITHUB_OUTPUT"
           if [ "$CODE" -eq 0 ]; then echo "adopt=true" >> "$GITHUB_OUTPUT"; else echo "adopt=false" >> "$GITHUB_OUTPUT"; fi
@@ -130,6 +137,7 @@ jobs:
           path: |
             record.log
             replay.log
+            record-results.json
             e2e-results.json
           retention-days: 7
 

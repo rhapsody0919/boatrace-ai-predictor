@@ -161,6 +161,13 @@ check(
   true,
 );
 
+check(
+  "レポートに問題（途中停止・プロジェクト0件）があれば不採用",
+  judgeAdoption({ tests: 10, skipped: 0, failed: 0, errors: 0 }, null, ["x"])
+    .adopt,
+  false,
+);
+
 // --- 素通し一覧（黙って本番依存に戻らないよう、PR に必ず出す）
 const rows = summarize([
   { method: "GET", url: "/rest/v1/a", test: "x", project: "smoke" },
@@ -177,6 +184,11 @@ check(
   "0件でも目印付きで出す（PRコメントを更新できるように）",
   toMarkdown([]).startsWith(MARKER),
   true,
+);
+check(
+  "E2E が走らなかったときは 0件 と書かない",
+  toMarkdown([], { ran: false }).includes("0件"),
+  false,
 );
 check(
   "素通しがあれば URL を表に出す",

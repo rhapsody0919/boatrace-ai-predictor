@@ -21,6 +21,7 @@ import { execFileSync } from "node:child_process";
 import {
   appendFileSync,
   existsSync,
+  mkdirSync,
   readdirSync,
   readFileSync,
   writeFileSync,
@@ -73,9 +74,14 @@ export function summarize(entries) {
 
 const cell = (s) => String(s).replaceAll("|", "\\|").replaceAll("\n", " ");
 
-export function toMarkdown(rows, { runUrl } = {}) {
+export function toMarkdown(rows, { runUrl, ran = true } = {}) {
   const lines = [MARKER, "## E2E: 録画に無く本番へ素通しした通信"];
-  if (rows.length === 0) {
+  if (!ran) {
+    lines.push(
+      "",
+      "**不明**。E2E が最後まで走らなかった（レポートが無い、または1件もテストが走っていない）ため、素通しの有無を判定できない。E2E の失敗を先に確認すること。",
+    );
+  } else if (rows.length === 0) {
     lines.push(
       "",
       "**0件**。全ての `/rest/v1/*`・`/api/*` を録画から返した（本番に依存していない）。",
@@ -118,6 +124,7 @@ function upsertPrComment(pr, body) {
     "test-results",
     "e2e-passthrough-comment.md",
   );
+  mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, body);
   // {owner}/{repo} は gh がカレントのリポジトリ（または GH_REPO）から埋める
   const existingId = execFileSync(
@@ -156,12 +163,26 @@ function upsertPrComment(pr, body) {
   }
 }
 
+/** E2E がテストを1件以上走らせ、レポートを書き終えたか */
+function e2eRan() {
+  const file = path.join(repoRoot, "e2e-results.json");
+  if (!existsSync(file)) return false;
+  try {
+    const stats = JSON.parse(readFileSync(file, "utf8")).stats ?? {};
+    return (
+      (stats.expected ?? 0) + (stats.unexpected ?? 0) + (stats.flaky ?? 0) > 0
+    );
+  } catch {
+    return false;
+  }
+}
+
 function main() {
   const rows = summarize(readEntries());
   const runUrl = process.env.GITHUB_RUN_ID
     ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
     : undefined;
-  const markdown = toMarkdown(rows, { runUrl });
+  const markdown = toMarkdown(rows, { runUrl, ran: e2eRan() });
   process.stdout.write(markdown);
 
   if (process.argv.includes("--summary") && process.env.GITHUB_STEP_SUMMARY) {
