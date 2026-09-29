@@ -193,9 +193,14 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
     player: p,
     runs: meetRunsByRacer[p.racerId] ?? [],
   }));
-  // **横軸がいつからいつまでか**。6行の折れ線には横軸の手がかりが何も無く、
-  // 左端が初日なのか3日目なのか読めない（2026-09-29のファン評価）。
-  // 追加取得はせず、既に持っている走の日付から出す
+  // **この節がいつからいつまでか**。6行の折れ線には日付の手がかりが何も無く、
+  // 「いつからいつまでの話か」が読めない（2026-09-29のファン評価）。
+  //
+  // ただし**横軸は行ごとに違う**。`MeetSparkline` の x は
+  // `i / (values.length - 1)` で、各行が自分の走数で左右いっぱいに伸びるため、
+  // 走数が違えば左端の日付も違う（戸田2026-09-28の実表示で点が3個/4個/5個）。
+  // なので「左が◯日」とは書かず、節の期間という事実だけを出す。
+  // 横軸をそろえる話は BOA-538。追加取得はせず、既に持っている日付から出す
   const trendDates = [
     ...new Set(
       trendRows.flatMap((r) => r.runs.map((x) => x.date).filter(Boolean)),

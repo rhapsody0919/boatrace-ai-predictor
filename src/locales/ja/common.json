@@ -442,7 +442,7 @@
     "compareTrendSt": "ST",
     "compareTrendEx": "展示",
     "compareTrendNote": "同じ節・同じ水面を走った6艇を同じ物差し（6艇の最小〜最大）で並べています。行をまたいで線の高さをそのまま見比べられます。破線は6艇の平均。上ほど速い。大きい点が前走",
-    "compareTrendRange": "左が{{from}}、右が{{to}}。",
+    "compareTrendRange": "この節は{{from}}〜{{to}}。各行の右端がその選手の前走で、走数は選手によって違います。",
     "compareTrendHint": "艇番・選手名をタップすると、下の詳細がその選手に変わります",
     "compareTrendEmpty": "推移を出せる走がまだありません",
     "prelimOverNoteDay": "予選は{{day}}日目（{{date}}）で終了。得点率はここで確定していて、今日の着順では動きません",
