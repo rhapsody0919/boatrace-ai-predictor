@@ -840,7 +840,10 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
               （2026-09-29、BOA-495） */}
           {trendRange && (
             <p className="rmt-trend-range">
-              {t("meetTab.compareTrendRange", trendRange)}
+              {/* 1日だけの節で「9/20〜9/20」と書かない（BOA-538 ファン評価） */}
+              {trendRange.from === trendRange.to
+                ? t("meetTab.compareTrendRangeOneDay", { day: trendRange.from })
+                : t("meetTab.compareTrendRange", trendRange)}
             </p>
           )}
           <p className="rmt-hint">{t("meetTab.compareTrendHint")}</p>

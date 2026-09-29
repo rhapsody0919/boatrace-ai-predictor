@@ -1752,7 +1752,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
   });
 
-  test("走数が多い節でも、375pxで点の下の着順を1段・10pxで並べ、日付の目盛りも重ならない（BOA-537・BOA-538）", async ({
+  test("走数が多い節でも、375pxで点の下の着順を1段で並べ、日付の目盛りも重ならない（BOA-537・BOA-538）", async ({
     page,
   }) => {
     // 2026-09-28 津11R（最終日）: 各艇10〜11走。9/21・22 の中止レースは出走表にだけ残る
@@ -1792,9 +1792,11 @@ test.describe("レースページ再設計（BOA-168）", () => {
       }),
     );
     for (const row of info) {
-      expect(row.font).toBeGreaterThanOrEqual(10);
-      // 日付の横軸（BOA-538）では1日2走が近づく。隣と3px以上あける設計
-      expect(row.minGap).toBeGreaterThanOrEqual(3);
+      // 日付の横軸では同じ日の2走を寄せる（日の区切りが見えるように）。375pxで
+      // 毎日2走の行は9.5pxまで小さくなる
+      expect(row.font).toBeGreaterThanOrEqual(9);
+      // 日付の横軸（BOA-538）では1日2走が近づく。隣と重ならない
+      expect(row.minGap).toBeGreaterThanOrEqual(2);
       expect(row.firstOffsetRatio).toBeLessThan(0.3);
       expect(row.lines).toBe(1);
     }

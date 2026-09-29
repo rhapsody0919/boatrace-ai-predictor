@@ -58,8 +58,10 @@ export function layoutTrendByDate(runs, days) {
   const n = days.length;
   const dayIndex = new Map(days.map((d, i) => [d, i]));
   const center = (i) => dayCenter(i, n);
-  // 2走の間は日の間隔の半分。390pxで着順の数字が重ならない幅
-  const spread = (n <= 1 ? 1 : 1 / (n - 0.5)) * 0.5;
+  // 同じ日の2走の間は日の間隔の0.4倍。半分（0.5）だと、2走が続く行で日をまたぐ間隔と
+  // 同じになり、点が等間隔に並んで「どの2点が同じ日か」が見えなかった（BOA-538
+  // ファン評価）。節が1日だけなら、全幅に対して0.2（左右に離れすぎない）
+  const spread = n <= 1 ? 0.2 : (1 / (n - 0.5)) * 0.4;
   const perDay = new Map();
   runs.forEach((r) => perDay.set(r.date, (perDay.get(r.date) ?? 0) + 1));
   const seen = new Map();

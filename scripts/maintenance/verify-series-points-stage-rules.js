@@ -626,6 +626,27 @@ check(
     );
     const one = layoutTrendByDate([{ date: "2026-09-20" }], ["2026-09-20"]);
     check("日付の横軸: 節の日が1日だけなら中央", one.xs, [0.5]);
+    // 2走が続く行でも、同じ日の2点は日をまたぐ間より近い（等間隔に見えない。ファン評価）
+    const pairs = layoutTrendByDate(
+      ["2026-09-23", "2026-09-23", "2026-09-24", "2026-09-24"].map((date) => ({
+        date,
+      })),
+      ["2026-09-23", "2026-09-24", "2026-09-25"],
+    );
+    check(
+      "日付の横軸: 同じ日の2点は、日をまたぐ間隔より近い",
+      pairs.xs[1] - pairs.xs[0] < pairs.xs[2] - pairs.xs[1],
+      true,
+    );
+    const oneDay = layoutTrendByDate(
+      [{ date: "2026-09-20" }, { date: "2026-09-20" }],
+      ["2026-09-20"],
+    );
+    check(
+      "日付の横軸: 1日だけの節の2走は中央の近くに寄る（全幅の2割）",
+      Math.abs(oneDay.xs[1] - oneDay.xs[0] - 0.2) < 1e-9,
+      true,
+    );
     check(
       "日付の目盛り: 最初の日と月が変わった日だけ「月/日」、ほかは日だけ",
       dayTickLabels([
@@ -658,7 +679,7 @@ check(
       "日付の横軸: 端の日の2走も同じ幅でずれ、0〜1に収まる",
       edge.xs.every((v) => v >= 0 && v <= 1) &&
         Math.abs(edge.xs[1] - edge.xs[0] - (edge.xs[3] - edge.xs[2])) < 1e-9 &&
-        edge.xs[1] - edge.xs[0] > 0.08,
+        edge.xs[1] - edge.xs[0] > 0.05,
       true,
     );
   }
