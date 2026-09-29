@@ -460,7 +460,13 @@ function snapshotLabel(t, snapshot, deadline) {
 }
 
 // ライブ取得の状態の1行（取得中・最新・失敗）。スナップショットだけのときは取得時刻の注記
-function LiveStatus({ entry, fallbackLabel, onRefresh, finalNote }) {
+function LiveStatus({
+  entry,
+  fallbackLabel,
+  onRefresh,
+  finalNote,
+  finalPendingUntil,
+}) {
   const { t } = useTranslation();
   if (!entry) {
     // DB のスナップショットは「取得した時点の公式表示」。公式のオッズ更新は数分遅れることがあり、
@@ -476,11 +482,9 @@ function LiveStatus({ entry, fallbackLabel, onRefresh, finalNote }) {
             className="rol-status-strong"
             data-testid={`odds-final-${finalNote}`}
           >
-            {t(
-              finalNote === "pending"
-                ? "oddsList.finalPendingNote"
-                : "oddsList.finalUnavailableNote",
-            )}
+            {finalNote === "pending"
+              ? t("oddsList.finalPendingNote", { time: finalPendingUntil })
+              : t("oddsList.finalUnavailableNote")}
           </span>
         )}
         {fallbackLabel && (
@@ -823,6 +827,12 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
         : parsedRace && parsedRace.date >= FINAL_ODDS_SINCE
           ? "unavailable"
           : null;
+  // 締切時オッズを取り直す期間の終わり（「16:24頃までに表示されます」）
+  const finalPendingUntil = deadline
+    ? formatJstTime(
+        new Date(deadline.getTime() + FINAL_ODDS_WINDOW_MS).toISOString(),
+      )
+    : null;
 
   const retrySnapshots = () => {
     setSnapshotState(null);
@@ -861,15 +871,22 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     if (snapshots.length === 0 && !finalOdds) {
       return (
         <div className="race-tabs-empty">
-          <p>{t("oddsList.emptyTitle")}</p>
-          {/* 締切後に「発走が近づくと…」とは書かない。締切時オッズがあとで入るなら予告する（BOA-547） */}
-          <p className="race-tabs-empty-body" data-testid="odds-empty-body">
-            {finalNote === "pending"
-              ? t("oddsList.finalPendingNote")
-              : openedAfterDeadline
-                ? t("oddsList.emptyAfterDeadline")
-                : t("oddsList.emptyBody")}
+          {/* 締切後に「発走が近づくと…」「まだありません」とは書かない（もう入らないのに待てば出るように読める）。
+              締切時オッズがあとで入る期間なら予告し、期間を過ぎたら記録が無いと言い切る（BOA-547） */}
+          <p data-testid="odds-empty-title">
+            {openedAfterDeadline && finalNote !== "pending"
+              ? t("oddsList.emptyTitleAfterDeadline")
+              : t("oddsList.emptyTitle")}
           </p>
+          {(!openedAfterDeadline || finalNote) && (
+            <p className="race-tabs-empty-body" data-testid="odds-empty-body">
+              {finalNote === "pending"
+                ? t("oddsList.finalPendingNote", { time: finalPendingUntil })
+                : finalNote === "unavailable"
+                  ? t("oddsList.finalUnavailableNote")
+                  : t("oddsList.emptyBody")}
+            </p>
+          )}
           {/* 当日で締切90分より前: 公式には朝からオッズが出ているため、いつ出るかと公式への導線を示す
               （ファン評価2周目） */}
           {officialOddsUrl && (
@@ -1138,7 +1155,16 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     if (!latestMap) {
       if (liveEntry?.status === "loading" || snapshotsLoading) return null;
       if (snapshotsFailed && !liveEnabled) return null;
-      return <p className="rol-no-data">{t("oddsList.noBetTypeData")}</p>;
+      // 締切時オッズがもう入らない締切後は「まだ」と書かない（BOA-547 ファン評価2周目）
+      return (
+        <p className="rol-no-data">
+          {t(
+            openedAfterDeadline && finalNote !== "pending"
+              ? "oddsList.noBetTypeDataAfterDeadline"
+              : "oddsList.noBetTypeData",
+          )}
+        </p>
+      );
     }
     return (
       <>
@@ -1209,6 +1235,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
             fallbackLabel={fallbackLabel}
             onRefresh={refreshLive}
             finalNote={finalNote}
+            finalPendingUntil={finalPendingUntil}
           />
         )
       )}

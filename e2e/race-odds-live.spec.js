@@ -619,6 +619,56 @@ test.describe("締切時オッズへの切り替えの予告（BOA-547）", () =
     await expect(page.getByTestId("odds-final-pending")).toHaveCount(0);
   });
 
+  // ---- ファン評価2周目 ----
+
+  test("予告は「何時頃までに表示されるか」を時刻で書く", async ({ page }) => {
+    await setup(page, { now: AFTER_DEADLINE }); // 締切 14:24 → 15:24 頃まで
+    await expect(page.getByTestId("odds-final-pending")).toContainText(
+      "15:24頃までに表示されます",
+    );
+  });
+
+  test("取得できなかったレース: 記録の無い券種で「まだありません」と書かない", async ({
+    page,
+  }) => {
+    const { status } = await setup(page, {
+      race: "2026-09-29-16-12",
+      now: new Date("2026-09-29T18:00:00+09:00"),
+    });
+    await expect(status).toContainText("取得できませんでした");
+    await page.getByRole("tab", { name: "2連単" }).click();
+    const noData = page.locator(".rol-no-data");
+    await expect(noData).toHaveText("この券種のオッズの記録はありません");
+  });
+
+  test("記録が1つも無いレースの1時間後: 見出しも本文も「まだ」と書かない", async ({
+    page,
+  }) => {
+    await setup(page, {
+      now: new Date("2026-09-28T15:30:00+09:00"),
+      snapshots: [],
+    });
+    await expect(page.getByTestId("odds-empty-title")).toHaveText(
+      "このレースのオッズの記録はありません",
+    );
+    await expect(page.locator(".race-tabs-empty")).not.toContainText("まだ");
+    await expect(page.getByTestId("odds-empty-body")).toHaveCount(0);
+  });
+
+  test("記録が1つも無い 9/29 以降のレースの1時間後: 締切時オッズを取得できなかったことも書く", async ({
+    page,
+  }) => {
+    await setup(page, {
+      race: "2026-09-29-16-12",
+      now: new Date("2026-09-29T18:00:00+09:00"),
+      snapshots: [],
+    });
+    await expect(page.getByTestId("odds-empty-body")).toContainText(
+      "取得できませんでした",
+    );
+    await expect(page.locator(".race-tabs-empty")).not.toContainText("まだ");
+  });
+
   test("締切から1時間を過ぎた（取り直しの期間が終わった）: 予告を出さない", async ({
     page,
   }) => {
