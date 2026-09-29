@@ -514,8 +514,10 @@ export const SEMIFINAL_SPLIT_DEFAULT_SLOTS = 12;
  *
  * 未実施のレース（`rank1` が無い）は含めない。失格・落水は `null` で返し、
  * 呼び出し側が「失」等に落とす（0点だが走ったことに変わりはない）。
- * **欠場（走っていない）は並びからも外す**（`countsAsRun`。走っていない走に
- * 「失」を出していた。BOA-489）。
+ * **欠場（走っていない）は `FINISH_ABSENT` で返す**。走っていない走に「失」を
+ * 出していた（BOA-489）ため一度は並びから外したが、外すと「欠場した」こと
+ * 自体が画面から消える（BOA-504）。呼び出し側が「欠」に落とす。
+ * 得点率・走数には入れない（`computeSeriesScore`）。
  *
  * **得点率に算入したレースだけを並べる**。並びは得点率の隣に出すので、
  * 算入していない走（予選終了後の一般戦・準優等）を混ぜると
@@ -525,16 +527,58 @@ export const SEMIFINAL_SPLIT_DEFAULT_SLOTS = 12;
  *
  * @param {Array<Object>} meetRecords 節内の走
  * @param {{prelimEndRaceId?: string|null}} [options] `computeSeriesScore` と同じ
- * @returns {Array<number|null>} 着順（古い順）
+ * @returns {Array<number|null|typeof FINISH_ABSENT>} 着順（古い順）
  */
 export function listSeriesFinishes(meetRecords, options = {}) {
   const { prelimEndRaceId = null } = options;
   return (Array.isArray(meetRecords) ? [...meetRecords] : [])
     .filter((r) => r.rank1 !== null && r.rank1 !== undefined)
     .filter((r) => countsForSeriesScore(r.raceStage, r.raceId, prelimEndRaceId))
-    .filter((r) => countsAsRun(r))
     .sort((a, b) => String(a.raceId).localeCompare(String(b.raceId)))
-    .map((r) => finishPositionOf(r));
+    .map((r) => (countsAsRun(r) ? finishPositionOf(r) : FINISH_ABSENT));
+}
+
+/** 着順の並びで「欠場」を表す値（`listSeriesFinishes`） */
+export const FINISH_ABSENT = "absent";
+
+/**
+ * 今節の走が**全て欠場**の選手を返す（純関数、BOA-504）。
+ *
+ * 走数0で得点率が出ないため `buildMeetRanking` には載らない。そのまま比較表を
+ * 組むと、6艇のうち1艇が**黙って消える**（2026-06-13 浜名湖12Rの2号艇で発生）。
+ * 画面はこの一覧で「欠場」の行を足す。
+ *
+ * **欠場と分かる走が1つ以上ある選手だけ**を返す。今節の走がまだ無い選手
+ * （初日の1走目など）は欠場ではないので含めない。母集団（男女Ｗ優勝戦の
+ * シリーズ）と算入範囲（予選まで）は `buildMeetRanking` と同じ。
+ *
+ * @param {Object|null} scoreboard `getMeetScoreboard` の戻り値
+ * @returns {Array<{racerId: number, playerName: string, finishes: Array}>}
+ */
+export function listAbsentOnlyRacers(scoreboard) {
+  const all = scoreboard?.entries;
+  if (!Array.isArray(all) || all.length === 0) return [];
+  const seriesRacerIds = scoreboard?.seriesRacerIds ?? null;
+  const inSeries = seriesRacerIds ? new Set(seriesRacerIds) : null;
+  const prelimEndRaceId = scoreboard?.prelimEndRaceId ?? null;
+  const byRacer = new Map();
+  all
+    .filter((e) => !inSeries || inSeries.has(e.racerId))
+    .forEach((e) => {
+      if (!byRacer.has(e.racerId))
+        byRacer.set(e.racerId, { playerName: e.playerName, rows: [] });
+      byRacer.get(e.racerId).rows.push(e);
+    });
+  return [...byRacer.entries()]
+    .map(([racerId, { playerName, rows }]) => ({
+      racerId,
+      playerName,
+      finishes: listSeriesFinishes(rows, { prelimEndRaceId }),
+    }))
+    .filter(
+      (r) =>
+        r.finishes.length > 0 && r.finishes.every((f) => f === FINISH_ABSENT),
+    );
 }
 
 /**

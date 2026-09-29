@@ -36,6 +36,8 @@ import {
 } from "./basicInfoStats";
 import {
   buildMeetRanking,
+  listAbsentOnlyRacers,
+  FINISH_ABSENT,
   forecastSeriesScore,
   pointsNeededForBorder,
   countsForSeriesScore,
@@ -117,6 +119,12 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   if (sortedPlayers.length === 0) return null;
 
   const ranking = buildMeetRanking(board);
+  // 今節の走が全て欠場の選手は得点率が出ず ranking に載らない。そのままだと
+  // 比較表から黙って消えるので、末尾に「欠場」の行として足す（BOA-504）
+  const rankedIds = new Set(ranking.map((r) => r.racerId));
+  const absentOnly = listAbsentOnlyRacers(board).filter(
+    (r) => !rankedIds.has(r.racerId),
+  );
   // Ｗ開催の節は母集団が半分（24人前後）になるので、既定値も分ける。
   // 通常の18を当てると「24人中18位まで」という緩すぎる線になる（BOA-511）
   const slots =
@@ -315,6 +323,79 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   // 必要得点の列を出せるか（誰か1人でも残りの予選走が分かっていれば出す）
   const hasNeeded = forecastRows.some((r) => r.needed !== null);
   const lastSt = lastOf("startTiming");
+
+  // 得点率は平均なので「1着→6着」と「3着→3着」が同じ5.00になる。
+  // 次をどう見るかは並びで変わる
+  const renderFinishes = (finishes) =>
+    finishes.length > 0 && (
+      <span className="rmt-finishes">
+        <span className="rmt-finishes-label">{t("meetTab.finishLabel")}</span>
+        {finishes.map((f, i2) => (
+          <span key={i2}>
+            {i2 > 0 && t("meetTab.finishSeparator")}
+            {/* 1着だけ強く出す。勝負駆けは「勝ちがあるか」で
+                見え方が変わり、並びの中で一番探される数字 */}
+            <span className={f === 1 ? "is-win" : undefined}>
+              {f === FINISH_ABSENT
+                ? t("meetTab.finishAbsent")
+                : (f ?? t("meetTab.finishDq"))}
+            </span>
+          </span>
+        ))}
+      </span>
+    );
+
+  // 前検は「何位か」より「何秒か」で水面を読む数字。順位だけでは会場の
+  // 出方が分からない
+  const renderPretestCell = (p) => {
+    const pt = pretestOf(p.racerId);
+    return (
+      <td className="rmt-pretest">
+        {pt?.pretest_time !== null && pt?.pretest_time !== undefined
+          ? pt.pretest_rank
+            ? t("meetTab.pretestCell", {
+                time: Number(pt.pretest_time).toFixed(2),
+                rank: pt.pretest_rank,
+              })
+            : Number(pt.pretest_time).toFixed(2)
+          : pt?.pretest_rank
+            ? t("meetTab.pretestRank", { rank: pt.pretest_rank })
+            : "—"}
+      </td>
+    );
+  };
+
+  // 比較表の行見出し（艇番・名前・級別＋着順の並び）
+  const renderPlayerHead = (p, finishes) => {
+    const color = BOAT_COLORS[p.number] || {};
+    const pt = pretestOf(p.racerId);
+    return (
+      <th scope="row">
+        <button
+          type="button"
+          className="rmt-row-select"
+          onClick={() => onFocusBoat(p.number)}
+          aria-pressed={p.number === selectedBoat}
+        >
+          <span
+            className="rmt-boat-chip"
+            style={{ background: color.bg, color: color.text }}
+          >
+            {p.number}
+          </span>
+          <span className="rmt-name" translate="no">
+            {p.name?.replace(/\s+/g, "")}
+          </span>
+          {pt?.racer_class && (
+            <span className="rmt-class" title={t("meetTab.classTitle")}>
+              {pt.racer_class}
+            </span>
+          )}
+        </button>
+        {renderFinishes(finishes)}
+      </th>
+    );
+  };
   const lastExhibition = lastOf("exhibitionTime");
 
   return (
@@ -343,9 +424,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                 .filter((x) => x.row)
                 .sort((a, b) => b.row.rate - a.row.rate)
                 .map(({ player: p, row }, i, arr) => {
-                  const color = BOAT_COLORS[p.number] || {};
                   const tied = tiedCount(row.rank);
-                  const pt = pretestOf(p.racerId);
                   const inBorder = showBorderBadge && row.rank <= slots;
                   // 目安内の最後の行に太い罫線を引く。「誰が線の上か」は
                   // 数字を突き合わせないと分からず、実際に読み落とされた
@@ -369,53 +448,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                       // ためスワイプ誤爆の懸念も無い）
                       onClick={() => onFocusBoat(p.number)}
                     >
-                      <th scope="row">
-                        <button
-                          type="button"
-                          className="rmt-row-select"
-                          onClick={() => onFocusBoat(p.number)}
-                          aria-pressed={p.number === selectedBoat}
-                        >
-                          <span
-                            className="rmt-boat-chip"
-                            style={{ background: color.bg, color: color.text }}
-                          >
-                            {p.number}
-                          </span>
-                          <span className="rmt-name" translate="no">
-                            {p.name?.replace(/\s+/g, "")}
-                          </span>
-                          {pt?.racer_class && (
-                            <span
-                              className="rmt-class"
-                              title={t("meetTab.classTitle")}
-                            >
-                              {pt.racer_class}
-                            </span>
-                          )}
-                        </button>
-                        {/* 得点率は平均なので「1着→6着」と「3着→3着」が
-                            同じ5.00になる。次をどう見るかは並びで変わる */}
-                        {row.finishes.length > 0 && (
-                          <span className="rmt-finishes">
-                            <span className="rmt-finishes-label">
-                              {t("meetTab.finishLabel")}
-                            </span>
-                            {row.finishes.map((f, i2) => (
-                              <span key={i2}>
-                                {i2 > 0 && t("meetTab.finishSeparator")}
-                                {/* 1着だけ強く出す。勝負駆けは「勝ちがあるか」で
-                                    見え方が変わり、並びの中で一番探される数字 */}
-                                <span
-                                  className={f === 1 ? "is-win" : undefined}
-                                >
-                                  {f ?? t("meetTab.finishDq")}
-                                </span>
-                              </span>
-                            ))}
-                          </span>
-                        )}
-                      </th>
+                      {renderPlayerHead(p, row.finishes)}
                       <td className="rmt-rate">
                         {row.runs < MEET_SMALL_SAMPLE_RUNS && (
                           <span
@@ -441,26 +474,39 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                           t("meetTab.rankPlain", { rank: row.rank })
                         )}
                       </td>
-                      {/* 前検は「何位か」より「何秒か」で水面を読む数字。
-                          順位だけでは会場の出方が分からない */}
-                      <td className="rmt-pretest">
-                        {pt?.pretest_time !== null &&
-                        pt?.pretest_time !== undefined
-                          ? pt.pretest_rank
-                            ? t("meetTab.pretestCell", {
-                                time: Number(pt.pretest_time).toFixed(2),
-                                rank: pt.pretest_rank,
-                              })
-                            : Number(pt.pretest_time).toFixed(2)
-                          : pt?.pretest_rank
-                            ? t("meetTab.pretestRank", {
-                                rank: pt.pretest_rank,
-                              })
-                            : "—"}
-                      </td>
+                      {renderPretestCell(p)}
                     </tr>
                   );
                 })}
+              {sortedPlayers
+                .map((p) => ({
+                  player: p,
+                  absent: absentOnly.find((r) => r.racerId === p.racerId),
+                }))
+                .filter((x) => x.absent)
+                .map(({ player: p, absent }) => (
+                  <tr
+                    key={p.number}
+                    className={[
+                      "is-absent",
+                      p.number === selectedBoat ? "is-current" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    onClick={() => onFocusBoat(p.number)}
+                  >
+                    {renderPlayerHead(p, absent.finishes)}
+                    {/* 走数0で得点率・順位は出ない。空欄や0.00にせず
+                        欠場と書く（BOA-504） */}
+                    <td className="rmt-rate">
+                      <span title={t("meetTab.absentTitle")}>
+                        {t("meetTab.absent")}
+                      </span>
+                    </td>
+                    <td className="rmt-rank">—</td>
+                    {renderPretestCell(p)}
+                  </tr>
+                ))}
             </tbody>
           </table>
           <p className="rmt-hint">{t("meetTab.rowHint")}</p>

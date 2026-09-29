@@ -520,3 +520,8 @@
   color: var(--text-secondary);
   padding: var(--spacing-1) 0;
 }
+
+/* 全走欠場の行（BOA-504）。得点率・順位が無いことが一目で分かるよう控えめに */
+.rmt-compare tr.is-absent td {
+  color: var(--text-secondary);
+}
