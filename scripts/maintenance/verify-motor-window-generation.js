@@ -301,6 +301,27 @@ check(
       (chart.match(/isPast \? raceDate : null/g) ?? []).length >= 2,
   );
 }
+// 2026-09-29 ユーザー判断 B: 使用開始日を画面に出す（ADR-0067 2026-09-28追記の改訂）。
+// 日付を伏せた注記「入れ替え後のため…」が「最近入れ替えた」と誤読されたため
+check(
+  "画面: 使用開始日の行を、期間の切り替えを出すとき（当日のレース）だけに出す",
+  /showPeriodToggle \? \(\s*<>\s*\{\/\*[\s\S]*?\*\/\}\s*\{generationStart !== null && \(/.test(
+    chart,
+  ) && chart.includes("analysis.motor.generationStartSource"),
+);
+check(
+  "画面: 切り詰めの注記と機力指数の要約に使用開始日を差し込む",
+  /periodClippedNote", \{\s*date: formatGenerationDate\(generationStart/.test(
+    chart,
+  ) &&
+    /periodSinceGeneration", \{\s*date: formatGenerationDate\(generationStart/.test(
+      chart,
+    ),
+);
+check(
+  "画面: 経過日数（◯日目）は出さない（ファンの単位は節。2026-09-29 ファン議論）",
+  !/日目/.test(chart),
+);
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;
@@ -311,6 +332,13 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     !/今日から遡|computed backward from today|從今天回溯|오늘부터 거슬러/.test(
       motor.officialModeSourceNote,
     ),
+  );
+  check(
+    `${lang}: 使用開始日の行・注記が日付（{{date}}）を受け取り、出典に BOATCAST とある`,
+    motor.generationStartLabel?.includes("{{date}}") &&
+      motor.periodClippedNote.includes("{{date}}") &&
+      motor.periodSinceGeneration.includes("{{date}}") &&
+      motor.generationStartSource?.includes("BOATCAST"),
   );
   check(
     `${lang}: 過去レース・切り詰め・入れ替え前の文言がある`,
