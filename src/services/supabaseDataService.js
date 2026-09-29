@@ -7537,17 +7537,23 @@ export const supabaseDataService = {
     if (!supabase || !raceId) return [];
     const { data, error } = await supabase
       .from("race_start_timings")
-      .select("boat_number, start_timing, is_flying, is_late_start")
+      .select(
+        "boat_number, start_timing, is_flying, is_late_start, finish_mark, finish_rank",
+      )
       .eq("race_id", raceId)
       .order("boat_number");
 
     if (error || !data) return [];
 
+    // finish_mark / finish_rank（077、2026-09-21から全件）は結果タブの着順の組み立てに使う
+    // （BOA-543）。rank1〜rank6 は公式ページの並び順のままで返還艇（F・L・欠）が混ざるため
     return data.map((row) => ({
       boatNumber: row.boat_number,
       startTiming: row.start_timing,
       isFlying: row.is_flying,
       isLateStart: row.is_late_start,
+      finishMark: row.finish_mark ?? null,
+      finishRank: row.finish_rank ?? null,
     }));
   },
 
