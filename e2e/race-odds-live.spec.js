@@ -615,6 +615,18 @@ test.describe("オッズ一覧の広い画面（BOA-530）", () => {
         .locator(".rol-block-grid")
         .evaluate((e) => e.getBoundingClientRect().width);
       expect(gridWidth).toBeGreaterThan(704);
+      // 推移パネルは表と同じ全幅（右の列を選んでも、選んだマスの真下にパネルがある。ファン評価1周目）
+      expect(trend.width).toBe(Math.round(gridWidth));
+      await page.getByRole("button", { name: /^3-1-2 / }).click(); // 閉じる
+      const right = page.getByRole("button", { name: /^4-1-2 / });
+      await right.click();
+      const rightBox = await right.boundingBox();
+      const panelBox = await page.locator(".rol-block-grid > .rol-trend").boundingBox();
+      expect(panelBox.x).toBeLessThanOrEqual(rightBox.x);
+      expect(panelBox.x + panelBox.width).toBeGreaterThanOrEqual(
+        rightBox.x + rightBox.width,
+      );
+      await right.click(); // 閉じる
 
       // 3連複: 1行目の3つ目（1=2=5）を選ぶ → 1行目の4つとも推移より上にある
       await page.getByRole("tab", { name: "3連複" }).click();
