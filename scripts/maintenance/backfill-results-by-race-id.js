@@ -20,7 +20,10 @@
 
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
 import { extractDateFromRaceId } from "../lib/dateUtils.js";
-import { scrapeAndSaveResults } from "../daily/scrape-results.js";
+import {
+  clearCancellationsWithResults,
+  scrapeAndSaveResults,
+} from "../daily/scrape-results.js";
 
 const RACE_ID_PATTERN = /^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/;
 
@@ -122,21 +125,10 @@ async function main() {
 
   const after = await fetchTargets(raceIds);
   // 結果行があるレースは開催済みなので、中止・順延の暫定(tentative)・確定(confirmed)を解除する。
-  // 結果行が無いレースは触らない
-  const restorable = after.filter(
-    (t) => t.hasResultRow && t.cancellation_status != null,
-  );
-  if (restorable.length > 0) {
-    const { error } = await supabase
-      .from("races")
-      .update({ cancellation_status: null, cancellation_check_streak: 0 })
-      .in(
-        "race_id",
-        restorable.map((t) => t.race_id),
-      )
-      .not("cancellation_status", "is", null);
-    if (error) throw new Error(`racesの中止・順延解除エラー: ${error.message}`);
-    console.log(`\n中止・順延の状態を解除: ${restorable.length}件`);
+  // 結果行が無いレースは触らない（結果の日次の catch-up と同じ処理。BOA-524）
+  const { cleared } = await clearCancellationsWithResults(supabase, raceIds);
+  if (cleared.length > 0) {
+    console.log(`\n中止・順延の状態を解除: ${cleared.length}件`);
   }
 
   const incomplete = after.filter((t) => t.hasResultRow && !t.isComplete);

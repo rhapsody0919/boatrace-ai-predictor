@@ -41,6 +41,7 @@ import {
   countsForSeriesScore,
   isExcludedStage,
   SEMIFINAL_DEFAULT_SLOTS,
+  SEMIFINAL_SPLIT_DEFAULT_SLOTS,
   MEET_SMALL_SAMPLE_RUNS,
 } from "./seriesPoints";
 import RaceHistoryTable from "./RaceHistoryTable";
@@ -116,7 +117,13 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   if (sortedPlayers.length === 0) return null;
 
   const ranking = buildMeetRanking(board);
-  const slots = board?.semifinalSlots ?? SEMIFINAL_DEFAULT_SLOTS;
+  // Ｗ開催の節は母集団が半分（24人前後）になるので、既定値も分ける。
+  // 通常の18を当てると「24人中18位まで」という緩すぎる線になる（BOA-511）
+  const slots =
+    board?.semifinalSlots ??
+    (board?.seriesRacerIds
+      ? SEMIFINAL_SPLIT_DEFAULT_SLOTS
+      : SEMIFINAL_DEFAULT_SLOTS);
   const stage = board?.currentStage ?? "";
   const isAfterPrelim = isExcludedStage(stage);
   // **表示中のレースが得点率を動かすか**。予選が締まった後の一般戦・特別選抜戦・
@@ -145,6 +152,15 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   // 選手を混ぜると公式とズレる（若松G1の実測で 5.67 → 除外すると 5.60 で
   // 実ボーダーと完全一致）
   const rankedOnly = ranking.filter((r) => !r.withdrawn);
+  // 男女Ｗ優勝戦の節か（サービス層が同じシリーズの選手だけを渡してくる）
+  const seriesSplit = Boolean(board?.seriesRacerIds);
+  // 節全体では何人いるか。分けたときに「なぜ半分になったのか」を数で示す。
+  // `buildMeetRanking` を分けずにもう一度通すだけ（追加クエリ0本・48人ぶんの計算）
+  const meetTotal = seriesSplit
+    ? buildMeetRanking({ ...board, seriesRacerIds: null }).filter(
+        (r) => !r.withdrawn,
+      ).length
+    : rankedOnly.length;
   const border = rankedOnly[slots - 1]?.rate;
   // 表のボーダー表示は「節全体の順位」なので、選んだ選手の走数に依存しない
   const showBorderBadge = !isAfterPrelim && !prelimOver && border !== undefined;
@@ -427,6 +443,23 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
               </>
             )}
           </p>
+          {/* **Ｗ優勝戦の節**は1つの節に独立した2つの勝ち上がりが同居する
+              （全期間で6節）。何も言わずに人数が半分になると「なぜ減ったのか」に
+              なるので、節全体の人数と併せて断る。準優の目安が出ていない日は
+              その語に触れない。両方の選手が乗るレース（予選終了後の消化レース。
+              実データでは多摩川に5本）では分けられないので、そちらも断る（BOA-511） */}
+          {board?.isSplitMeet && (
+            <p className="rmt-series-note">
+              {seriesSplit
+                ? t(
+                    showBorderBadge
+                      ? "meetTab.seriesSplitNote"
+                      : "meetTab.seriesSplitNoteNoBorder",
+                    { total: rankedOnly.length, meetTotal },
+                  )
+                : t("meetTab.seriesMixedNote", { total: rankedOnly.length })}
+            </p>
+          )}
           {/* 公式の順位表は52名中3名（賞典除外1・途中帰郷2）を順位から外す。
               当社は全員で順位を振るため下位ほどズレる（2026-09-27に若松G1で
               実測: 得点率は6/6一致、順位は最大4つ差）。除外の判定材料が

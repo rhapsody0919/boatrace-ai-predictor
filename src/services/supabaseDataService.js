@@ -26,6 +26,7 @@ import {
   shouldUseOfficialSeries,
   prelimEndRaceIdOf,
   semifinalSlotsOf,
+  splitMeetSeries,
   scoreTableFor,
 } from "../components/race/seriesPoints.js";
 import {
@@ -6655,7 +6656,7 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v12-${raceId}`, async () => {
+    return withCache(`meet-scoreboard-v14-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -6682,7 +6683,9 @@ export const supabaseDataService = {
           .like("race_id", `__________-${vv}-__`),
         supabase
           .from("race_conditions")
-          .select("race_id, race_stage, is_final_day, series_day")
+          // `race_title` も取る（追加クエリ0本）。男女Ｗ優勝戦＝1つの節に2シリーズが
+          // 同居する開催の検出に使う（BOA-511）。判定材料はこの列だけで足りる
+          .select("race_id, race_stage, is_final_day, series_day, race_title")
           .gte("race_id", windowStart)
           .lte("race_id", `${date}-zz`)
           .like("race_id", `__________-${vv}-__`),
@@ -6826,6 +6829,42 @@ export const supabaseDataService = {
       const stageById = new Map(
         (conditions ?? []).map((c) => [c.race_id, c.race_stage]),
       );
+      // **男女Ｗ優勝戦の節を2シリーズに分ける**（BOA-511）。同じレースを走った
+      // 選手を辿った連結成分がシリーズになる。該当しなければ null。
+      // 出走表は節ぶんを既に持っているので追加クエリ0本
+      const racersByRace = new Map();
+      for (const e of meetRows) {
+        if (!racersByRace.has(e.race_id)) racersByRace.set(e.race_id, []);
+        if (e.racer_id != null) racersByRace.get(e.race_id).push(e.racer_id);
+      }
+      const meetSeries = splitMeetSeries(conditions ?? [], racersByRace);
+      // 表示中のレースの6艇が属する側。**6艇全員が同じ側に居るときだけ**分ける。
+      // 予選終了後の消化レースには両方の選手が乗ることがあり（多摩川に5レース）、
+      // 「1人でも居る側」で決めると反対側の艇が表から消える。
+      // そういうレースでは分けずに節全体を出す（注記も出さない）
+      const currentRacers = (racersByRace.get(raceId) ?? []).filter(
+        (r) => r !== null && r !== undefined,
+      );
+      const currentSeries =
+        currentRacers.length > 0
+          ? (meetSeries?.find((set) =>
+              currentRacers.every((r) => set.has(r)),
+            ) ?? null)
+          : null;
+      // 枠数はシリーズの準優だけから出す。節全体で数えると2シリーズ合計になる
+      // 枠数を出すための、この側のレースだけの種別。
+      // **1つの準優に両側の選手が混ざらないことが前提**（実データのＷ開催6節では
+      // 準優12本すべてが 6+0 か 0+6）。`some` で絞っているので、もし混合の準優が
+      // 現れると両側の `seriesConditions` に入り、枠数が反対側の選手ごと数えられる。
+      // 予選終了後の消化レースは混ざるが、そちらは `semifinalRaceIdsOf` が
+      // 種別で落とすので枠数には効かない
+      const seriesConditions = currentSeries
+        ? (conditions ?? []).filter((c) =>
+            (racersByRace.get(c.race_id) ?? []).some((r) =>
+              currentSeries.has(r),
+            ),
+          )
+        : (conditions ?? []);
       // **本番スタートの記録があるか**（欠場の判定。BOA-489）。
       // 着順に載らない走には「失格・落水（走ったが着順が付かない。0点だが
       // 走数に入れる）」と「欠場（走っていない。走数にも入れない）」があり、
@@ -6965,10 +7004,22 @@ export const supabaseDataService = {
         // 「準優進出戦」は準優の1つ前の勝ち上がり戦なので数えない（BOA-457）。
         // 中止で流れた準優も数えない。番組に2日ぶん残る中止順延で枠数が倍になり、
         // ボーダー・必要得点・「届かず」まで狂う（BOA-490）
-        semifinalSlots: semifinalSlotsOf(conditions ?? [], {
+        semifinalSlots: semifinalSlotsOf(seriesConditions, {
           cancelledRaceIds,
           ranRaceIds: new Set(resultById.keys()),
+          // 枠数は本数 × 6 ではなく実人数で数える。多摩川のＷ準優戦は
+          // 同じ12名が2回走るヒートで、本数で数えると倍になる
+          racersByRace,
         }),
+        // **男女Ｗ優勝戦の節で、表示中の6艇が属するシリーズの選手**（BOA-511）。
+        // null なら通常の節で、画面はこれまでどおり節全体を母集団にする。
+        // 2シリーズを混ぜて順位を振ると、節内順位・出場人数・準優の目安が
+        // すべて実際の勝ち上がり争いとズレる
+        seriesRacerIds: currentSeries ? [...currentSeries] : null,
+        // **節がＷ開催か**（`seriesRacerIds` とは別）。両方の選手が乗るレースでは
+        // 分けられないので `seriesRacerIds` が null になるが、そのときも
+        // 「なぜ節全体で出しているのか」を画面が断れるようにする（BOA-511）
+        isSplitMeet: Boolean(meetSeries),
         // 節の全レースの種別が取れているか（取れていなければ枠数は目安のまま）
         stagesKnown: stageById.size > 0,
         // その日の会場の展示タイム平均（水面の重さ）。同じ6.90でも日によって

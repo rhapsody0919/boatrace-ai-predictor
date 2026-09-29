@@ -1453,8 +1453,16 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const rates = await page.locator(".rmt-rate").allInnerTexts();
     const nums = rates.map((v) => Number(v.replace(/[^0-9.]/g, "")));
     expect(nums).toEqual([...nums].sort((a, b) => b - a));
-    // 節の規模と準優の目安、公式値の出典
-    await expect(page.locator(".rmt-sub")).toContainText("節の出場は48人");
+    // 節の規模と準優の目安、公式値の出典。
+    // **この節（桐生 2026-09-20開催）はＷ優勝戦**で、独立した2つの勝ち上がりが
+    // 同居している。以前はここが「48人」＝男子24人と女子24人の合算で、
+    // 別の勝ち上がりの選手を混ぜて順位を振っていた（BOA-476／BOA-511）。
+    // 表示中の6艇と同じ側だけを母集団にするので24人になる
+    await expect(page.locator(".rmt-sub")).toContainText("節の出場は24人");
+    // 人数が半分になる理由を1行で断る（黙って半分にすると「なぜ減った」になる）
+    await expect(page.locator(".rmt-series-note")).toContainText(
+      "勝ち上がりが2つに分かれています",
+    );
     await expect(page.locator(".rmt-source")).toContainText(
       "前検タイムの出典: BOAT RACE オフィシャルウェブサイト",
     );

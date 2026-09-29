@@ -717,6 +717,109 @@ export async function confirmCancellationsForRaceIds(
   return { checked: overdueIds.length, confirmed: toConfirm };
 }
 /**
+ * 指定のレースのうち、結果（race_results の行。rank1 は NOT NULL）があるのに、中止・順延の暫定（tentative）・
+ * 確定（confirmed）が付いているものを解除する（cancellation_status を NULL、cancellation_check_streak を 0 に戻す）。
+ * 結果があるレースは開催済みで、中止の値は誤り（BOA-512: 2026-09-12 に、結果の読み取りの失敗で32本が誤って
+ * confirmed になった。結果が先に入り、確定が後から付いたため、結果の書き込みの時点では解除できない。BOA-524）。
+ *
+ * 読み取りに失敗したら、書き込まずに例外にする（confirmCancellationsForRaceIds と同じ。読めなかった集合を空と
+ * みなして判定を反転させない）。更新は、読んだ後に値が変わった行を巻き込まないよう、非NULL の行に限る。
+ *
+ * @param {import("@supabase/supabase-js").SupabaseClient} client
+ * @param {string[]} raceIds
+ * @returns {Promise<{checked: number, cleared: string[]}>}
+ */
+export async function clearCancellationsWithResults(client, raceIds) {
+  if (raceIds.length === 0) return { checked: 0, cleared: [] };
+  // .in() は GET の URL に race_id を並べるため、台風等で中止が数百件あっても URL 長の上限を超えないよう分ける
+  const CHUNK = 200;
+  const toClear = [];
+  for (let i = 0; i < raceIds.length; i += CHUNK) {
+    const ids = raceIds.slice(i, i + CHUNK);
+    const [results, races] = await Promise.all([
+      client.from("race_results").select("race_id").in("race_id", ids),
+      client
+        .from("races")
+        .select("race_id, cancellation_status")
+        .in("race_id", ids),
+    ]);
+    if (results.error) {
+      throw new Error(
+        `中止・順延の解除: race_results の取得に失敗しました: ${results.error.message}`,
+      );
+    }
+    if (races.error) {
+      throw new Error(
+        `中止・順延の解除: races の取得に失敗しました: ${races.error.message}`,
+      );
+    }
+    const hasResult = new Set((results.data ?? []).map((r) => r.race_id));
+    toClear.push(
+      ...(races.data ?? [])
+        .filter(
+          (r) => r.cancellation_status != null && hasResult.has(r.race_id),
+        )
+        .map((r) => r.race_id),
+    );
+  }
+  if (toClear.length === 0) return { checked: raceIds.length, cleared: [] };
+
+  for (let i = 0; i < toClear.length; i += CHUNK) {
+    const { error } = await client
+      .from("races")
+      .update({ cancellation_status: null, cancellation_check_streak: 0 })
+      .in("race_id", toClear.slice(i, i + CHUNK))
+      .not("cancellation_status", "is", null);
+    if (error) {
+      throw new Error(
+        `races (中止・順延の解除) 一括更新エラー: ${error.message}`,
+      );
+    }
+  }
+  console.log(
+    `  ⚠️ 結果があるのに中止・順延だったレースを解除: ${toClear.length}件（${toClear.join(", ")}）`,
+  );
+  return { checked: raceIds.length, cleared: toClear };
+}
+
+/**
+ * 期間（両端含む）の、中止・順延の暫定・確定が付いたレースを探し、結果があるものを解除する
+ * （clearCancellationsWithResults）。結果の日次の catch-up が、対象日から遡って呼ぶ。
+ * 中止・順延の付いたレースは期間あたり数十件のため、1回の読み取りで足りる（上限に達したら例外にして、黙って切り捨てない）。
+ *
+ * @param {import("@supabase/supabase-js").SupabaseClient} client
+ * @param {{from: string, to: string}} range YYYY-MM-DD
+ * @returns {Promise<{checked: number, cleared: string[]}>}
+ */
+export async function clearCancellationsWithResultsInRange(
+  client,
+  { from, to },
+) {
+  const LIMIT = 1000;
+  const { data, error } = await client
+    .from("races")
+    .select("race_id")
+    .gte("race_date", from)
+    .lte("race_date", to)
+    .not("cancellation_status", "is", null)
+    .limit(LIMIT);
+  if (error) {
+    throw new Error(
+      `中止・順延の解除: 対象レースの取得に失敗しました: ${error.message}`,
+    );
+  }
+  if ((data ?? []).length >= LIMIT) {
+    throw new Error(
+      `中止・順延の解除: 中止・順延の付いたレースが${LIMIT}件以上あります（${from}〜${to}）。期間を狭めてください`,
+    );
+  }
+  return clearCancellationsWithResults(
+    client,
+    (data ?? []).map((r) => r.race_id),
+  );
+}
+
+/**
  * predictions の的中判定を更新する（結果が新規・変更のレースだけ）。
  *
  * 変更の無いレース（再取得されただけ）は前回の実行で判定済みで、trg_update_predictions も同じ判定を行うため、
