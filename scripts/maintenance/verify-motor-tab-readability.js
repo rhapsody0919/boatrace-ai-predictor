@@ -31,6 +31,7 @@ import {
   powerIndexTone,
 } from "../../src/utils/smallSampleRate.js";
 import { officialTallyState } from "../../src/utils/motorGeneration.js";
+import { exhibitionTimeAxis } from "../../src/utils/chartDomain.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -84,7 +85,8 @@ check(
 check(
   "選手ページ: 同じ日に2回走った日は、横軸にレース番号を添える",
   racerService.includes("raceNo: Number(e.race_id.slice(-2))") &&
-    card.includes("runsOnDate.get(row.date) > 1"),
+    // 2回走った日が1日でもあれば全部の点に付ける（BOA-557。付く点と付かない点が混ざらない）
+    card.includes("runsOnDate.values()].some((n) => n > 1)"),
 );
 check(
   "選手ページ: 説明文の「）」と「、」の間に空白を入れない（1つのテンプレート文字列で組む）",
@@ -183,7 +185,7 @@ check(
 // 公式の 0.0 が「集計前」か「本当に0%」かを区別する（2026-09-29 ファン4人・ユーザー承認）
 check(
   "一覧: 公式2連率・3連率がどちらも0で、結果の出た走があり、会場公式の出走数が0（集計前）のときだけ「集計前」を添える（公式の0.0は残す）",
-  /isOfficialPending = \(row\) =>\s*Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*row\.sample_count > 0 &&\s*officialTallyState\(venueHasOfficialStats, row\.race_count\) === "pending"/.test(
+  /isOfficialPending = \(row\) =>\s*Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*\(row\.rate_source === "official" \|\| row\.sample_count > 0\) &&\s*officialTallyState\(venueHasOfficialStats, row\.race_count\) === "pending"/.test(
     chart,
   ) &&
     chart.includes('t("analysis.motor.officialPendingBadge")') &&
@@ -191,7 +193,7 @@ check(
       "official_3rate: row.motor_3rate ?? null",
     ) &&
     read("src/services/supabaseDataService.js").includes(
-      "`race-motor-breakdown-v7-",
+      "`race-motor-breakdown-v8-",
     ),
 );
 check(
@@ -290,6 +292,130 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       // 枠番別成績の展示タイムの列が、平均の値と推移の図だと分かる見出し（BOA-549）
       /平均|avg|平均|평균/i.test(motor.exhibitionTrendHeader),
   );
+}
+
+// ---- BOA-557（BOA-549 ファン評価の残り） ----
+{
+  const chart = read("src/components/analysis/MotorConditionChart.jsx");
+  const service = read("src/services/supabaseDataService.js");
+  const racerCard = read("src/components/racer/RacerMotorStatusCard.jsx");
+  const trendChart = read("src/components/analysis/TrendLineChart.jsx");
+  // 当日のレースも「このレースの直前まで」。終了後に開くとそのレース自身の結果が入り、
+  // 翌日（過去レース扱い）に開いたときと数字が変わっていた
+  check(
+    "ドリルダウンは当日のレースも「このレースの直前まで」で集計する",
+    /const beforeRaceId = selectedRace \?\? null;/.test(chart),
+  );
+  check(
+    "一覧の機力指数も当日のレースは「このレースの直前まで」",
+    /this\.getMotorPowerIndex\(\s*venueCode,\s*row\.motor_number,\s*days,\s*raceId,?\s*\)/.test(
+      service,
+    ),
+  );
+  check(
+    "過去レースの行にも公式3連率がある（「集計前」の判定）",
+    /rate_source: "official",[\s\S]{0,200}official_3rate: row\.motor_3rate/.test(
+      service,
+    ),
+  );
+  check(
+    "「集計前」の判定は、過去レースの行では走数の条件を見ない",
+    /row\.rate_source === "official" \|\| row\.sample_count > 0/.test(chart),
+  );
+  check(
+    "過去レースの一覧でも「集計前」の印と注記を出す",
+    /officialMode && isOfficialPending\(row\)/.test(chart) &&
+      !/!officialMode &&\s*breakdown\.some\(isOfficialPending\)/.test(chart),
+  );
+  // 展示タイムの縦軸の端は0.2秒の倍数（6.43 / 6.63 … や上端だけ7.10にしない）
+  // 範囲だけ渡すと recharts が5本に等分し、幅0.6秒で 6.80/6.95/7.10… になった（ファン評価）
+  const axisA = exhibitionTimeAxis([6.86, 7.31]);
+  const axisB = exhibitionTimeAxis([6.53, 7.04, null]);
+  check(
+    "展示タイムの縦軸は端も目盛りも0.2秒刻み（幅0.6秒でも0.15刻みにしない）",
+    JSON.stringify(axisA) ===
+      JSON.stringify({ domain: [6.8, 7.4], ticks: [6.8, 7, 7.2, 7.4] }) &&
+      JSON.stringify(axisB.ticks) === JSON.stringify([6.4, 6.6, 6.8, 7, 7.2]) &&
+      exhibitionTimeAxis([null]) === null,
+  );
+  check(
+    "展示タイムのグラフ（モータ情報・選手ページ）が0.2秒刻みの範囲と目盛りを使い、直線でつなぐ",
+    [chart, racerCard].every(
+      (src) =>
+        src.includes("yAxisDomain={exhibitionAxis?.domain}") &&
+        src.includes("yTicks={exhibitionAxis?.ticks}") &&
+        /dataKey: "exhibition_time",[\s\S]{0,200}type: "linear"/.test(src),
+    ) &&
+      !/dataMin - 0\.1/.test(chart + racerCard) &&
+      /ticks=\{yTicks\}/.test(trendChart),
+  );
+  check(
+    "選手ページの展示タイムも、375pxでラベルを間引かない",
+    /yTicks=\{exhibitionAxis\?\.ticks\}\s*\/\/[^\n]*\n\s*slantXLabels/.test(
+      racerCard,
+    ),
+  );
+  check(
+    "過去レースの3連率の0.0にも「集計前」を付ける",
+    /\{row\.motor_3rate\?\.toFixed\(1\)\}[\s\S]{0,300}officialMode && isOfficialPending\(row\)/.test(
+      chart,
+    ),
+  );
+  check(
+    "「このレースの直前まで」の注記を当日のレースのドリルダウンにも出す",
+    /\{selectedRace && \(\s*<p className="table-note">\s*\{t\("analysis\.motor\.drillAsOfRaceNote"\)\}/.test(
+      chart,
+    ),
+  );
+  check(
+    "使用履歴のグラフは選手名を間引かず、直線でつなぐ",
+    /slantXLabels\b/.test(chart) &&
+      /interval: 0/.test(trendChart) &&
+      !/dataKey: "rate[23]",[\s\S]{0,160}type: "monotone"/.test(
+        chart.slice(chart.indexOf("usageHistoryChartData}")),
+      ),
+  );
+  check(
+    "選手ページの展示タイムの横軸は、レース番号を全部の点に付けるか全部付けない",
+    /hasDoubleRunDay && row\.raceNo/.test(racerCard),
+  );
+  check(
+    "使用履歴のグラフの向きの説明は、グラフが出ているときだけ",
+    /usageHistoryChartData\.length > 1 &&\s*` \$\{t\("analysis\.motor\.usageHistoryChartNote"\)\}`/.test(
+      chart,
+    ),
+  );
+  // 初出走（直前までの走りが0）の空表示は、取得失敗と区別できる文言にする
+  check(
+    "初出走のドリルダウンは「データが見つかりません」でなく理由を出す（3か所）",
+    /drillFirstRun =\s*powerIndex\?\.sample_count === 0 && usageHistory\.length === 0/.test(
+      chart,
+    ) &&
+      (chart.match(/t\(emptyKey\("analysis\.motor\.[a-zA-Z]+Empty"\)\)/g) ?? [])
+        .length === 3,
+  );
+  // ダークモードでツールチップの見出しが白地に白字にならない
+  check(
+    "推移グラフのツールチップはテーマの色（背景・文字）を使う",
+    /contentStyle=\{\{[\s\S]{0,120}background: "var\(--surface-card\)"/.test(
+      trendChart,
+    ) && /labelStyle=\{\{ color: "var\(--text-primary\)" \}\}/.test(trendChart),
+  );
+  for (const lang of ["ja", "en", "zh-TW", "ko"]) {
+    const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
+      .motor;
+    check(
+      `${lang}: 公式値の更新遅れの注記が、当サイトの集計を「最新のレースまで」と言わない`,
+      !/最新のレースまで|latest race|至最新比賽|최신 레이스까지/.test(
+        motor.officialSnapshotNote,
+      ),
+    );
+    check(
+      `${lang}: 使用履歴の注記からグラフの向きの文を分け、別キーにある`,
+      typeof motor.usageHistoryChartNote === "string" &&
+        !motor.usageHistoryNote.includes(motor.usageHistoryChartNote),
+    );
+  }
 }
 
 if (failures.length > 0) {

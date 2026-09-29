@@ -22,6 +22,8 @@ function TrendLineChart({
   yAxisDomain,
   tooltipFormatter,
   yTickDecimals,
+  slantXLabels = false,
+  yTicks,
 }) {
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -30,7 +32,14 @@ function TrendLineChart({
         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
       >
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="date" />
+        {/* slantXLabels: 横軸が選手名のように長いとき、375pxで重なった目盛りが
+            間引かれて一部しか出ない（BOA-557）。斜めにして全部出す */}
+        <XAxis
+          dataKey="date"
+          {...(slantXLabels
+            ? { angle: -35, textAnchor: "end", height: 60, interval: 0 }
+            : {})}
+        />
         <YAxis
           // 回転したラベルを縦方向の中央に置く。既定（start 揃え）だと長いラベルが
           // 375px で上に切れる（「2連率・3連率 (%」。BOA-549）
@@ -41,6 +50,8 @@ function TrendLineChart({
             style: { textAnchor: "middle" },
           }}
           domain={yAxisDomain}
+          // 目盛りを明示したいとき（展示タイムの0.2秒刻み、BOA-557）
+          ticks={yTicks}
           // dataMin/dataMaxを使う可変domain（例: "dataMin - 0.1"）はJSの
           // 浮動小数点演算により目盛りが6.989999999999999のような値になることが
           // あるため、表示だけ丸める（domain自体の計算には影響しない）
@@ -52,7 +63,17 @@ function TrendLineChart({
               : value.toFixed(yTickDecimals)
           }
         />
-        <Tooltip formatter={tooltipFormatter} />
+        {/* 既定は白地で、ダークモードでは見出し（日付・選手名）が白字のまま
+            読めなかった（BOA-557 ファン評価）。配色をテーマの色にそろえる */}
+        <Tooltip
+          formatter={tooltipFormatter}
+          contentStyle={{
+            background: "var(--surface-card)",
+            borderColor: "var(--border-hairline)",
+            color: "var(--text-primary)",
+          }}
+          labelStyle={{ color: "var(--text-primary)" }}
+        />
         <Legend />
         {series.map((s) => (
           <Line

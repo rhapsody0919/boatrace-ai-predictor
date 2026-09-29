@@ -2730,7 +2730,9 @@ export const supabaseDataService = {
       // 過去レース扱い（7日TTL）になった後も読まれ続けないようにする
       // v6: 当日のレースの行に sample_count（初下ろしの判定）を追加（BOA-513）
       // v7: 当日のレースの行に official_3rate（「集計前」の判定）を追加
-      `race-motor-breakdown-v7-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
+      // v8: 過去レースの行にも official_3rate を追加し、当日の機力指数を
+      //     「このレースの直前まで」にした（BOA-557）
+      `race-motor-breakdown-v8-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -2768,6 +2770,8 @@ export const supabaseDataService = {
               ...row,
               rate_source: "official",
               official_2rate: row.motor_2rate ?? null,
+              // 公式の2連率・3連率がどちらも 0 か（「集計前」の判定、BOA-557）
+              official_3rate: row.motor_3rate ?? null,
               pretest_time: pretest?.pretest_time ?? null,
               pretest_rank: pretest?.pretest_rank ?? null,
               power_index: null,
@@ -2783,8 +2787,15 @@ export const supabaseDataService = {
         const [powerIndexes, venueMotorStatsList, pretestByRacer] =
           await Promise.all([
             Promise.all(
+              // このレースの直前まで（BOA-557）。終了後に開いてもそのレース自身の
+              // 結果を含めず、翌日に開いたときと数字をそろえる
               rows.map((row) =>
-                this.getMotorPowerIndex(venueCode, row.motor_number, days),
+                this.getMotorPowerIndex(
+                  venueCode,
+                  row.motor_number,
+                  days,
+                  raceId,
+                ),
               ),
             ),
             Promise.all(
