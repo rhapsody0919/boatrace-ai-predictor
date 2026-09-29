@@ -467,18 +467,23 @@ async function flushRaceInfo(
       console.log(`  🌤️ 気象: ${formatWeatherStats(weatherStats)}`);
       weatherByRaceId = new Map(weatherRows.map((row) => [row.race_id, row]));
     }
-    const withWeather = [];
-    const withoutWeather = [];
+    // 列の組み合わせ（気象の有無・日目の有無。順延・中止のタブの日は日目の列を含めない。BOA-501）ごとに
+    // 分けて upsert する。同じ組み合わせの行だけをまとめれば、無い列は触られない
+    const groups = new Map();
     for (const row of acc.conditionsRows) {
       const weatherRow = weatherByRaceId.get(row.race_id);
-      if (weatherRow) withWeather.push({ ...row, ...weatherRow });
-      else withoutWeather.push(row);
+      const merged = weatherRow ? { ...row, ...weatherRow } : row;
+      const key = `${weatherRow ? "w" : "-"}${"series_day" in row ? "d" : "-"}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(merged);
     }
+    const labelOf = (key) =>
+      `race_conditions${key[0] === "w" ? "" : "（気象なし）"}${key[1] === "d" ? "" : "（日目を残す）"}`;
     // weather_observed_at 列（マイグレーション069）が未適用でも書き込めるよう、共通の書き込み関数を使う
-    for (const [group, label] of [
-      [withWeather, "race_conditions"],
-      [withoutWeather, "race_conditions（気象なし）"],
-    ]) {
+    for (const [group, label] of [...groups].map(([key, rows]) => [
+      rows,
+      labelOf(key),
+    ])) {
       if (group.length > 0) {
         countRows(
           await upsertRaceConditions(client, group, {

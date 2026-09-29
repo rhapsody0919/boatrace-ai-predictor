@@ -8,7 +8,7 @@
 - 原因は2つ
   1. **#911 のバックフィル**（`race_series` からの導出）が、中止・順延を含む節で1日ぶん進んだ値を書いた: **306行（26会場日）**
   2. **出走表のページから書いた値**: 「最終日」をタブの総数にしていたため過大（津 9/28 は公式7日目なのに8）、および順延が決まる前に書かれた値のまま: **456行（38会場日）**
-- コードは BOA-501 の PR で直した（最終日＝ラベルの日目の最大値＋1、順延・中止の日は日目なし、中止・順延のある節は導出で埋めない）
+- コードは BOA-501 の PR（#950）で直した（最終日＝ラベルの日目の最大値＋1、中止・順延のある節は導出で埋めない、順延・中止のタブの日は既にある日目を上書きしない）
 
 ## 正解の出し方
 
@@ -27,7 +27,9 @@
 
 ## 本番で実行すること（ユーザー）
 
-Supabase Dashboard の SQL Editor で、1〜3 の順に実行する。書き換えるのは `race_conditions.series_day` だけ。
+**PR #950（BOA-501）のマージ後に実行する**（修正前のバックフィルの計画が、誤った導出で再実行されないように）。Supabase Dashboard の SQL Editor で、1〜3 の順に実行する。書き換えるのは `race_conditions.series_day` だけ（762行を公式の日目に、尼崎 5/16 の12行を NULL に）。
+
+津 9/22（丸一日中止）は、公式の成績ファイルに「第2日」の見出しがあるので、2 のまま残す。
 
 ### 1. 事前確認（読み取り）
 
@@ -106,6 +108,16 @@ where c.series_day is distinct from v.day;
 ```
 
 期待値（2026-09-29 に本番で確認済み）: `rows_to_fix = 762`・`venue_days = 64`・`from_911 = 306`
+
+あわせて、尼崎(13) 2026-05-16（公式の成績ファイルに会場の見出しが無い日。出典の無い値は残さない）:
+
+```sql
+select count(*) as amagasaki_rows_to_null
+from race_conditions c join races r on r.race_id = c.race_id
+where r.venue_code = 13 and r.race_date = '2026-05-16' and c.series_day is not null;
+```
+
+期待値: `amagasaki_rows_to_null = 12`
 
 ### 2. 是正（書き込み）
 
@@ -187,14 +199,20 @@ where r.race_id = c.race_id
   and c.series_day is distinct from v.day;
 -- 期待: UPDATE の件数が、直前に実行した 1 の rows_to_fix と同じ（2026-09-29 時点では 762）
 
+update race_conditions c set series_day = null
+from races r
+where r.race_id = c.race_id and r.venue_code = 13 and r.race_date = '2026-05-16'
+  and c.series_day is not null;
+-- 期待: UPDATE 12（1 の amagasaki_rows_to_null と同じ）
+
 commit;
 ```
 
-`UPDATE` の件数が、直前の 1 の `rows_to_fix` と違えば `commit` せず `rollback;` する。1 が 762 から変わっていても、書き換える先の値（公式の日目）は同じなので、1 と 2 の件数が一致していれば実行してよい（ページからの取り直しで一部が先に直った場合など）。
+どちらかの `UPDATE` の件数が、直前の 1 の値と違えば `commit` せず `rollback;` する。1 が 762 から変わっていても、書き換える先の値（公式の日目）は同じなので、1 と 2 の件数が一致していれば実行してよい（ページからの取り直しで一部が先に直った場合など）。
 
 ### 3. 事後確認（読み取り）
 
-1 の SQL を再実行する。期待値: `rows_to_fix = 0`
+1 の2つの SQL を再実行する。期待値: `rows_to_fix = 0`・`amagasaki_rows_to_null = 0`
 
 例として、津の節（公式: 順延・中止・２日目〜６日目・最終日＝7日目）:
 
@@ -206,18 +224,6 @@ group by r.race_date order by r.race_date;
 ```
 
 期待値: 9/21=1、9/22=2、9/23=2、9/24=3、9/25=4、9/26=5、9/27=6、9/28=7（是正前は 9/28 だけ 8）。9/22 は丸一日中止だが、Kファイルは会場の見出しを「第2日」として載せ、翌日も「第2日」と振り直すため、Kファイルに合わせて 2 のままにしている
-
-## 判断が要るもの（このSQLには含めていない）
-
-**丸一日中止の日に日目が入っている行**: 尼崎(13) 2026-05-16 の12行（`series_day = 2`）。公式の成績ファイルに尼崎の見出しそのものが無い日（津 9/22 のような「中止でも見出しは載る」日とは違う。節 2026-05-15〜18 の 5/16〜18 に結果が無い）。BOA-501 の新しい規則では、中止・順延の日は日目なし（NULL）。揃えるなら:
-
-```sql
-update race_conditions c set series_day = null
-from races r
-where r.race_id = c.race_id and r.venue_code = 13 and r.race_date = '2026-05-16'
-  and c.series_day is not null;
--- 期待: UPDATE 12
-```
 
 ## バックフィルについて
 

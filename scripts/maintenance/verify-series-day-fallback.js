@@ -387,13 +387,14 @@ function fallbackOnlyWithoutTabs(build = buildRaceConditionRow) {
     { fallbackSeriesDay: 3 },
   );
   return (
-    postponed.series_day === null &&
+    !("series_day" in postponed) &&
+    !("is_final_day" in postponed) &&
     noTabs.series_day === 3 &&
     fromPage.series_day === 2
   );
 }
 check(
-  "補い: タブが読めて順延・中止の日は、節からの導出があっても null のまま。タブが無いときだけ導出で補う。ページの値は常に優先",
+  "補い: タブが読めて順延・中止の日は、日目の列を行に含めない（既存の値を残す。導出でも null でも上書きしない）。タブが無いときだけ導出で補う。ページの値は常に優先",
   fallbackOnlyWithoutTabs(),
 );
 // 節の中の中止・順延（確定）: その日より前にあれば、導出しない（その日・後なら導出してよい）
