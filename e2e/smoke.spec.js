@@ -1242,6 +1242,14 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rwit-today-assumption")).toContainText(
       "枠なり",
     );
+    // 「今期」の注記は実データの開始月を書く。取得窓（730日）だけを見て
+    // 「過去2年分」と言わない（BOA-503。実データは2025年12月以降）
+    await expect(page.locator(".rwit-caveat").first()).toContainText(
+      "2025年12月以降、最大過去2年",
+    );
+    await expect(page.locator(".rwit-caveat").first()).not.toContainText(
+      "過去2年分",
+    );
 
     // 指標チップは既定では出さない（既定ビューは3指標を同時に出すため不要）。
     // toBeHidden()は要素が存在しない場合も通るため、存在することも確かめる

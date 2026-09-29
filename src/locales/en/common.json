@@ -562,7 +562,7 @@
     "periodHeader": "Period / condition",
     "nHeader": "Races",
     "allCoursesFold": "Show the record for all six courses",
-    "periodCaveat": "\"This term\" is not the official term division: it covers every race in our data (up to the past two years), so the population differs from the win rate on the official site."
+    "periodCaveat": "\"This term\" is not the official term division: it covers every race in our data (since Dec 2025, up to the past two years), so the population differs from the win rate on the official site."
   },
   "aiPredictionTab": {
     "unavailableTitle": "No AI prediction data",
@@ -811,7 +811,7 @@
       "last1m": "Last month"
     },
     "periodSummary": "▸ Filter by period",
-    "periodCaveat": "* When combined with a grade filter, \"Current term\" is not the official term division: it covers every period we have data for (up to the past two years)",
+    "periodCaveat": "* When combined with a grade filter, \"Current term\" is not the official term division: it covers every period we have data for (since Dec 2025, up to the past two years)",
     "winRateSwitchCaveat": "* When a grade or period filter is applied, \"Win rate\" is not the official win-rate points but the actual share of 1st-place finishes (%) under those conditions",
     "sampleCount": "(n={{n}})",
     "noData": "(No data)",
