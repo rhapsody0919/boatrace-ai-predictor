@@ -1712,6 +1712,42 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
   });
 
+  test("今節タブの6艇の推移は、1走の選手も前走の値が右端の列にそろい、選択中の行はホバーと区別できる（BOA-550 ファン評価）", async ({
+    page,
+  }) => {
+    // 2026-09-21 桐生3R（予選2日目）: 1走しかない選手が3人いる。線が出ない行で
+    // 前走の値が中央の列に詰まり、行の高さも半分になっていた
+    await page.goto("/race/2026-09-21-01-03");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const rows = page.locator(".rmt-trend-row");
+    await expect(rows).toHaveCount(6, { timeout: 25000 });
+    const boxes = await rows.evaluateAll((els) =>
+      els.map((el) => {
+        const last = el
+          .querySelector(".rmt-trend-last")
+          .getBoundingClientRect();
+        return {
+          hasLine: Boolean(el.querySelector(".meet-sparkline-wrap")),
+          height: Math.round(el.getBoundingClientRect().height),
+          lastRight: Math.round(last.right),
+        };
+      }),
+    );
+    // 線の無い行が実際にある（前提が崩れたらテストの意味が無い）
+    expect(boxes.some((b) => !b.hasLine)).toBe(true);
+    expect(new Set(boxes.map((b) => b.lastRight)).size).toBe(1);
+    expect(new Set(boxes.map((b) => b.height)).size).toBe(1);
+
+    // 選択中の行だけ左の帯（inset の box-shadow）が付き、ホバー中の行には付かない
+    await rows.nth(0).click();
+    await rows.nth(1).hover();
+    const shadows = await rows.evaluateAll((els) =>
+      els.slice(0, 2).map((el) => getComputedStyle(el).boxShadow),
+    );
+    expect(shadows[0]).not.toBe("none");
+    expect(shadows[1]).toBe("none");
+  });
+
   test("F数バッジが基本情報タブとST考察カードで同じ値になり、f_countが無い過去レースでは出ない（phase a T5-3）", async ({
     page,
   }) => {
