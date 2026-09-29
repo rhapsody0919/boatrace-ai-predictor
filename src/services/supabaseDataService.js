@@ -6463,7 +6463,7 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v13-${raceId}`, async () => {
+    return withCache(`meet-scoreboard-v14-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -6823,6 +6823,10 @@ export const supabaseDataService = {
         // 2シリーズを混ぜて順位を振ると、節内順位・出場人数・準優の目安が
         // すべて実際の勝ち上がり争いとズレる
         seriesRacerIds: currentSeries ? [...currentSeries] : null,
+        // **節がＷ開催か**（`seriesRacerIds` とは別）。両方の選手が乗るレースでは
+        // 分けられないので `seriesRacerIds` が null になるが、そのときも
+        // 「なぜ節全体で出しているのか」を画面が断れるようにする（BOA-511）
+        isSplitMeet: Boolean(meetSeries),
         // 節の全レースの種別が取れているか（取れていなければ枠数は目安のまま）
         stagesKnown: stageById.size > 0,
         // その日の会場の展示タイム平均（水面の重さ）。同じ6.90でも日によって

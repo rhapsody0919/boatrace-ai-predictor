@@ -154,6 +154,13 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   const rankedOnly = ranking.filter((r) => !r.withdrawn);
   // 男女Ｗ優勝戦の節か（サービス層が同じシリーズの選手だけを渡してくる）
   const seriesSplit = Boolean(board?.seriesRacerIds);
+  // 節全体では何人いるか。分けたときに「なぜ半分になったのか」を数で示す。
+  // `buildMeetRanking` を分けずにもう一度通すだけ（追加クエリ0本・48人ぶんの計算）
+  const meetTotal = seriesSplit
+    ? buildMeetRanking({ ...board, seriesRacerIds: null }).filter(
+        (r) => !r.withdrawn,
+      ).length
+    : rankedOnly.length;
   const border = rankedOnly[slots - 1]?.rate;
   // 表のボーダー表示は「節全体の順位」なので、選んだ選手の走数に依存しない
   const showBorderBadge = !isAfterPrelim && !prelimOver && border !== undefined;
@@ -436,12 +443,21 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
               </>
             )}
           </p>
-          {/* **男女Ｗ優勝戦の節**は1つの節に独立した2シリーズが同居する（全期間で
-              6節）。何も言わずに人数だけ半分にすると「なぜ減ったのか」になるので、
-              混ぜていないことを1行で断る（BOA-511） */}
-          {seriesSplit && (
+          {/* **Ｗ優勝戦の節**は1つの節に独立した2つの勝ち上がりが同居する
+              （全期間で6節）。何も言わずに人数が半分になると「なぜ減ったのか」に
+              なるので、節全体の人数と併せて断る。準優の目安が出ていない日は
+              その語に触れない。両方の選手が乗るレース（予選終了後の消化レース。
+              実データでは多摩川に5本）では分けられないので、そちらも断る（BOA-511） */}
+          {board?.isSplitMeet && (
             <p className="rmt-series-note">
-              {t("meetTab.seriesSplitNote", { total: rankedOnly.length })}
+              {seriesSplit
+                ? t(
+                    showBorderBadge
+                      ? "meetTab.seriesSplitNote"
+                      : "meetTab.seriesSplitNoteNoBorder",
+                    { total: rankedOnly.length, meetTotal },
+                  )
+                : t("meetTab.seriesMixedNote", { total: rankedOnly.length })}
             </p>
           )}
           {/* 公式の順位表は52名中3名（賞典除外1・途中帰郷2）を順位から外す。

@@ -194,6 +194,14 @@
   line-height: 1.6;
 }
 
+/* 表の下には同じ見た目の注意書きが4本並ぶ。Ｗ開催の断りだけは
+   「なぜ人数が半分なのか」の答えなので、左の罫線で見分けられるようにする
+   （色は足さない。既存の注意書きと同じ字色・字送りのまま） */
+.rmt-series-note {
+  padding-left: var(--spacing-2);
+  border-left: 2px solid var(--text-secondary);
+}
+
 .rmt-source {
   color: var(--text-secondary);
 }
