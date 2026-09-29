@@ -102,16 +102,22 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     await expect(status).toContainText("公式更新 8:14");
     await expect(status).toContainText("取得 13:55");
     await expect(status.getByRole("button", { name: "更新" })).toBeVisible();
-    expect([...new Set(calls)].sort()).toEqual(["3t", "tf"]);
+    // 開いたときは単勝・複勝、3連単、3連単の表の「2単」に使う2連単を取る
+    expect([...new Set(calls)].sort()).toEqual(["2tf", "3t", "tf"]);
     // 3連単の票0は「票なし」
     await expect(page.locator(".rol-odds.is-no-votes").first()).toContainText(
       "票なし",
     );
+    // ファン評価1周目: 「最新」の真下の「2単」はライブの2連単（スナップショットの値・「-」にしない）
+    const exacta12 = PARSED["2tf"].data.exactaAll["1-2"].toFixed(1);
+    await expect(
+      page.locator(".rol-block").first().locator(".rol-col").first(),
+    ).toContainText(`2単${exacta12}`);
 
     // 他の券種はチップを切り替えたときに取る
-    await page.getByRole("tab", { name: "2連単" }).click();
+    await page.getByRole("tab", { name: "3連複" }).click();
     await expect(status).toContainText("最新");
-    expect(calls).toContain("2tf");
+    expect(calls).toContain("3f");
   });
 
   test("単勝・複勝: 票0の艇は「票なし」、全艇票0なら注記", async ({ page }) => {
@@ -248,5 +254,92 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     await expect(table).toContainText("3.0");
     await expect(table).toContainText("1.1-1.9");
     await expect(page.locator(".rol-callout")).toHaveCount(0);
+  });
+
+  // ---- ファン評価1周目の指摘の再現テスト ----
+
+  test("締切後: スナップショットは公式表示の遅れの注記を付け、「締切時点」と断定しない", async ({
+    page,
+  }) => {
+    const atDeadline = { ...SNAPSHOT_ROW, captured_at: "2026-09-28T05:24:10Z" };
+    const { status } = await setup(page, {
+      now: AFTER_DEADLINE,
+      snapshots: [SNAPSHOT_ROW, atDeadline],
+    });
+    await expect(status).toContainText("14:24 取得（締切直前）の値");
+    await expect(status).toContainText(
+      "締切時オッズ・確定の払戻とは一致しないことがあります",
+    );
+    await expect(status).not.toContainText("締切時点");
+  });
+
+  test("推移パネル: スナップショットの時点は「締切○分前」と書く", async ({
+    page,
+  }) => {
+    await setup(page, { now: AFTER_DEADLINE });
+    await page.getByRole("button", { name: /^1-2-3 / }).click();
+    await expect(page.locator(".rol-trend-label").first()).toHaveText(
+      "締切30分前",
+    );
+  });
+
+  test("更新: CDN から同じ応答が返ったら「変化なし」を出す", async ({
+    page,
+  }) => {
+    const { status } = await setup(page);
+    await expect(status).toContainText("公式更新 8:14");
+    await status.getByRole("button", { name: "更新" }).click();
+    await expect(page.getByTestId("odds-live-unchanged")).toContainText(
+      "変化なし",
+    );
+  });
+
+  test("スナップショットが無いときの取得中は、時間がかかることを示す", async ({
+    page,
+  }) => {
+    let release;
+    const gate = new Promise((r) => (release = r));
+    const { status } = await setup(page, {
+      snapshots: [],
+      live: async (p) => {
+        await gate;
+        return liveBody(p);
+      },
+    });
+    await expect(status).toContainText("10秒ほどかかります");
+    release();
+    await expect(status).toContainText("公式更新 8:14");
+  });
+
+  test("スナップショットで票0（保存時にキーが落ちた組み合わせ）は「-」でなく「票なし」", async ({
+    page,
+  }) => {
+    const row = {
+      ...SNAPSHOT_ROW,
+      trifecta_all: { ...SNAPSHOT_ROW.trifecta_all },
+    };
+    delete row.trifecta_all["6-5-4"];
+    await setup(page, { now: AFTER_DEADLINE, snapshots: [row] });
+    await expect(
+      page.getByRole("button", { name: "6-5-4 票なし" }),
+    ).toBeVisible();
+  });
+
+  test("375px: 3連単の列の下の「合成」「2単」が2行に割れない", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await setup(page, { now: AFTER_DEADLINE });
+    await expect(page.locator(".rol-col-foot").first()).toBeVisible();
+    const broken = await page.$$eval(".rol-col-foot > span", (spans) =>
+      spans
+        .filter(
+          (s) =>
+            s.getClientRects().length > 1 ||
+            s.getBoundingClientRect().height > 20,
+        )
+        .map((s) => s.textContent),
+    );
+    expect(broken).toEqual([]);
   });
 });

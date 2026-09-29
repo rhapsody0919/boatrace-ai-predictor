@@ -133,12 +133,22 @@
 
 .rol-col-foot {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 2px;
+  gap: 0 2px;
   padding: 0 2px;
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
+}
+
+/* 狭い画面で「合成」が「合／成」と割れないよう、見出しと値はそれぞれ1かたまりで折り返す */
+.rol-col-foot > span {
+  white-space: nowrap;
+}
+
+.rol-col-foot > span:last-child {
+  margin-left: auto;
 }
 
 /* オッズ1件（バッジ群＋オッズ値。人気度で色分け） */

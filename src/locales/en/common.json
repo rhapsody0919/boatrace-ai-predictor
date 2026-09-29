@@ -634,8 +634,8 @@
       "winPlace": "Win pays on the 1st-place boat; Place pays if the boat finishes in the top 2. Place odds are a low-high range. Before the deadline few bets are in, so odds such as 1.0 can differ greatly from the final payout"
     },
     "trendTitle": "Odds trend for {{combo}}",
-    "deadlineLabel": "At deadline",
-    "minutesBeforeLabel": "{{n}} min before",
+    "deadlineLabel": "Just before deadline",
+    "minutesBeforeLabel": "{{n}} min before deadline",
     "noData": "No odds data for this combination yet",
     "noBetTypeData": "No odds data for this bet type yet",
     "emptyTitle": "No odds data yet",
@@ -644,13 +644,13 @@
     "winPlaceChip": "Win / Place",
     "boatColumn": "Boat",
     "liveTrendLabel": "Latest {{time}}",
-    "snapshotAtDeadline": "at deadline (fetched {{time}})",
+    "snapshotAtDeadline": "fetched {{time}} (just before deadline)",
     "snapshotAt": "fetched {{time}}",
     "snapshotBefore": "fetched {{time}} ({{n}} min before deadline)",
     "snapshotValues": "Showing values {{label}}",
     "liveValueLabel": "from official update {{time}}",
     "liveLoadingWith": "Fetching latest odds… showing values {{label}} for now",
-    "liveLoading": "Fetching latest odds…",
+    "liveLoading": "Fetching latest odds… (takes about 10 seconds from the official site)",
     "liveFailed": "Could not fetch the latest odds. Showing values {{label}}",
     "liveRetry": "Retry",
     "liveFinal": "Final odds at deadline",
@@ -662,7 +662,9 @@
     "liveFailedNoData": "Could not fetch the latest odds",
     "winNoVotesOrMissing": "No Win/Place bets yet (or not fetched)",
     "winAllNoVotes": "No Win/Place bets have been placed yet (the official site shows 0.0). They start coming in as the deadline approaches",
-    "allNoVotes": "No bets have been placed on this bet type yet (the official site shows 0.0). They start coming in as the deadline approaches"
+    "allNoVotes": "No bets have been placed on this bet type yet (the official site shows 0.0). They start coming in as the deadline approaches",
+    "snapshotLagNote": "These are the official values at the time of fetching. Official odds updates can lag by a few minutes, so they may differ from the final odds and payouts",
+    "liveUnchanged": "No change (refreshing within 30 seconds returns the same values)"
   },
   "meetTab": {
     "note": "Who needs a result in this series, and how the boat you pick has been running",

@@ -57,8 +57,9 @@ const BET_TYPES = [
   { id: "winPlace", dataKey: "win" },
 ].map((bt) => ({ ...bt, page: LIVE_PAGE_OF_BET_TYPE[bt.id] }));
 
-// タブを開いたときに取るページ（単勝・複勝と3連単）
-const INITIAL_LIVE_PAGES = ["tf", "3t"];
+// タブを開いたときに取るページ（単勝・複勝、3連単、3連単の表の「2単」に使う2連単）。
+// 2連単を後回しにすると、3連単の表で「最新」の真下に古い2単が並ぶ（ファン評価1周目）
+const INITIAL_LIVE_PAGES = ["tf", "3t", "2tf"];
 
 const JST_TIME = new Intl.DateTimeFormat("ja-JP", {
   timeZone: "Asia/Tokyo",
@@ -357,9 +358,12 @@ function snapshotLabel(t, snapshot, deadline) {
 function LiveStatus({ entry, fallbackLabel, onRefresh }) {
   const { t } = useTranslation();
   if (!entry) {
+    // DB のスナップショットは「取得した時点の公式表示」。公式のオッズ更新は数分遅れることがあり、
+    // 締切直前に取った値でも締切時オッズとは一致しない（BOA-496、ファン評価1周目）
     return fallbackLabel ? (
       <div className="rol-status is-snapshot" data-testid="odds-live-status">
-        {t("oddsList.snapshotValues", { label: fallbackLabel })}
+        <span>{t("oddsList.snapshotValues", { label: fallbackLabel })}</span>
+        <span className="rol-status-sub">{t("oddsList.snapshotLagNote")}</span>
       </div>
     ) : null;
   }
@@ -416,6 +420,11 @@ function LiveStatus({ entry, fallbackLabel, onRefresh }) {
       <span className="rol-status-sub">
         {t("oddsList.fetchedAt", { time: formatJstTime(result.fetchedAt) })}
       </span>
+      {entry.unchanged && (
+        <span className="rol-status-sub" data-testid="odds-live-unchanged">
+          {t("oddsList.liveUnchanged")}
+        </span>
+      )}
       {!result.final && (
         <button type="button" className="rol-status-btn" onClick={onRefresh}>
           {t("oddsList.liveRefresh")}
@@ -518,12 +527,27 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
         if (current?.requestId !== requestId) return prev;
         return {
           ...prev,
-          pages: { ...prev.pages, [page]: { ...current, ...patch } },
+          pages: {
+            ...prev.pages,
+            [page]: {
+              ...current,
+              ...(typeof patch === "function" ? patch(current) : patch),
+            },
+          },
         };
       });
     };
     fetchLiveOdds(raceId, page)
-      .then((result) => settle({ status: "ok", result }))
+      .then((result) =>
+        // 取り直しても CDN（30秒）から同じ応答が返ると見た目が変わらないため、「変化なし」を出す
+        settle((current) => ({
+          status: "ok",
+          result,
+          unchanged:
+            current?.result?.fetchedAt != null &&
+            current.result.fetchedAt === result.fetchedAt,
+        })),
+      )
       .catch((err) => {
         // 失敗は state に持つ（スナップショットへのフォールバックと「取得に失敗しました」を出す）
         console.error(
@@ -675,7 +699,10 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     (players ?? []).map((p) => [p.number, p.name?.replace(/\s+/g, "")]),
   );
 
-  const valueOf = (key) => latestMap?.[key] ?? null;
+  // スナップショットは保存時に票0（公式の0.0）を捨てている（cron の解析）。券種の表がある以上、出走艇の
+  // 組み合わせでキーが無いのは票0なので、ライブ値と同じく「票なし」として出す（ファン評価1周目）
+  const valueOf = (key) =>
+    latestMap?.[key] ?? (latestMap && !liveResult ? 0 : null);
 
   const oddsButton = (comboKey, badges, value = valueOf(comboKey)) => (
     <OddsButton

@@ -365,8 +365,8 @@
       "winPlace": "単勝は1着、複勝は2着以内に入る艇を当てる券種です。複勝は下限-上限のレンジです。締切前は票が少なく、1.0 など確定の払戻と大きくずれることがあります"
     },
     "trendTitle": "{{combo}} のオッズ推移",
-    "deadlineLabel": "締切時点",
-    "minutesBeforeLabel": "{{n}}分前",
+    "deadlineLabel": "締切直前",
+    "minutesBeforeLabel": "締切{{n}}分前",
     "noData": "この組み合わせのオッズデータはまだありません",
     "noBetTypeData": "この券種のオッズデータはまだありません",
     "emptyTitle": "オッズデータがまだありません",
@@ -375,13 +375,13 @@
     "winPlaceChip": "単勝・複勝",
     "boatColumn": "艇",
     "liveTrendLabel": "最新 {{time}}",
-    "snapshotAtDeadline": "締切時点（{{time}} 取得）",
+    "snapshotAtDeadline": "{{time}} 取得（締切直前）",
     "snapshotAt": "{{time}} 取得",
     "snapshotBefore": "{{time}} 取得（締切{{n}}分前）",
     "snapshotValues": "{{label}}の値",
     "liveValueLabel": "公式更新 {{time}}",
     "liveLoadingWith": "最新オッズを取得中… いまは {{label}}の値",
-    "liveLoading": "最新オッズを取得中…",
+    "liveLoading": "最新オッズを取得中…（公式サイトから10秒ほどかかります）",
     "liveFailed": "最新の取得に失敗しました。{{label}}の値を表示中",
     "liveRetry": "再取得",
     "liveFinal": "締切時オッズ",
@@ -393,7 +393,9 @@
     "liveFailedNoData": "最新のオッズを取得できませんでした",
     "winNoVotesOrMissing": "単勝・複勝は票なし（または未取得）です",
     "winAllNoVotes": "単勝・複勝の票がまだ入っていません（公式の表示は 0.0）。締切が近づくと入り始めます",
-    "allNoVotes": "この券種の票がまだ入っていません（公式の表示は 0.0）。締切が近づくと入り始めます"
+    "allNoVotes": "この券種の票がまだ入っていません（公式の表示は 0.0）。締切が近づくと入り始めます",
+    "snapshotLagNote": "取得した時点の公式表示です。公式のオッズ更新は数分遅れることがあり、締切時オッズ・確定の払戻とは一致しないことがあります",
+    "liveUnchanged": "変化なし（30秒以内の取り直しは同じ値です）"
   },
   "meetTab": {
     "note": "この節（開催）の6艇の勝負駆けと、選んだ1艇の走りを見ます",
