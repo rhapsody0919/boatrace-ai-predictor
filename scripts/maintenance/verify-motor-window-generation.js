@@ -319,6 +319,12 @@ check(
     ),
 );
 check(
+  "画面: 使用開始日の取得に失敗しても一覧表は出す（try/catch で null に倒す）",
+  /let venueGenerationStart = null;\s*try \{\s*venueGenerationStart =\s*await supabaseDataService\.getMotorGenerationStart/.test(
+    chart,
+  ),
+);
+check(
   "画面: 経過日数（◯日目）は出さない（ファンの単位は節。2026-09-29 ファン議論）",
   !/日目/.test(chart),
 );

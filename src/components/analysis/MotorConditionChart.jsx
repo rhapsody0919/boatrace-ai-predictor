@@ -116,8 +116,17 @@ function MotorConditionChart({
         );
         if (cancelled) return;
         const raceDate = selectedRace?.slice(0, 10) ?? null;
-        const venueGenerationStart =
-          await supabaseDataService.getMotorGenerationStart(selectedVenue);
+        // 使用開始日は、表示（1行・注記の日付）と入れ替え前の判定にだけ使う。取得が
+        // 一時的に失敗しても一覧表そのものは出す（日付の行を出さず、入れ替え前とも
+        // 判定しない）。以前は過去レースでしか呼んでいなかったので、当日のレースでは
+        // この取得の失敗が一覧表のエラーにつながらなかった
+        let venueGenerationStart = null;
+        try {
+          venueGenerationStart =
+            await supabaseDataService.getMotorGenerationStart(selectedVenue);
+        } catch (err) {
+          console.error("モーター使用開始日取得エラー:", err.message);
+        }
         if (cancelled) return;
         const preGeneration =
           raceDate !== null &&
