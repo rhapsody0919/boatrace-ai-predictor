@@ -563,11 +563,18 @@ test.describe("締切時オッズ（公式、BOA-496）", () => {
     await expect(
       page.locator(".rol-block").first().locator(".rol-col").first(),
     ).toContainText("2単-");
+    // ファン評価1周目 P2: 「2単」が「-」の理由と、表示が切り替わる理由を示す
+    await expect(page.getByTestId("odds-final-missing")).toContainText(
+      "2連単の締切時オッズ（公式）は取得できなかった",
+    );
     await page.getByRole("tab", { name: "拡連複" }).click();
     await expect(status).not.toHaveAttribute("data-state", "final");
     await expect(status).toContainText("13:54 取得（締切30分前）の値");
     await expect(status).toContainText(
       "締切時オッズ・確定の払戻とは一致しないことがあります",
+    );
+    await expect(page.getByTestId("odds-final-missing")).toContainText(
+      "この券種は締切時オッズ（公式）を取得できなかった",
     );
   });
 
@@ -579,6 +586,7 @@ test.describe("締切時オッズ（公式、BOA-496）", () => {
     });
     await expect(status).not.toHaveAttribute("data-state", "final");
     await expect(status).toContainText("14:24 取得（締切直前）の値");
+    await expect(page.getByTestId("odds-final-missing")).toHaveCount(0);
   });
 
   test("推移: 最後の点は「締切時（公式）」、0分前の記録を外し、最後の区間は点線、注記を出す", async ({
@@ -602,6 +610,8 @@ test.describe("締切時オッズ（公式、BOA-496）", () => {
     );
     await expect(page.locator(".rol-trend")).not.toContainText("締切直前");
     await expect(page.locator(".rol-sparkline-official-line")).toHaveCount(1);
+    // ファン評価1周目 P3: 点は長さ0の丸い線端（circle だと横に引き伸ばされて楕円になる）
+    await expect(page.locator("line.rol-sparkline-official")).toHaveCount(1);
     await expect(page.getByTestId("odds-trend-note")).toContainText(
       "その時点に取得した公式表示です",
     );
@@ -641,5 +651,9 @@ test.describe("締切時オッズ（公式、BOA-496）", () => {
     });
     await expect(status).toContainText("締切時オッズ（公式）");
     await expect(page.locator(".rol-block").first()).toBeVisible();
+    // ファン評価1周目 P3: ○分前の記録が無いときは「○分前の値は…」の注記を出さない
+    await page.getByRole("button", { name: /^1-2-3 / }).click();
+    await expect(page.locator(".rol-trend-item.is-official")).toBeVisible();
+    await expect(page.getByTestId("odds-trend-note")).toHaveCount(0);
   });
 });

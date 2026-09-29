@@ -273,14 +273,16 @@ function Sparkline({ points, isRange }) {
           strokeWidth="2"
         />
       )}
+      {/* 点は長さ0の丸い線端で描く（preserveAspectRatio="none" で横に引き伸ばされても円のまま。circle だと楕円になる） */}
       {(lastPoint.live || lastPoint.official) && (
-        <circle
+        <line
           className={
             lastPoint.official ? "rol-sparkline-official" : "rol-sparkline-live"
           }
-          cx={last[0]}
-          cy={last[1]}
-          r="3"
+          x1={last[0]}
+          y1={last[1]}
+          x2={last[0]}
+          y2={last[1]}
         />
       )}
     </svg>
@@ -374,7 +376,8 @@ function TrendPanel({ combo, trend, isRange, spanAll }) {
               </div>
             ))}
           </div>
-          {trend.some((p) => p.official) && (
+          {trend.some((p) => p.official) &&
+            trend.some((p) => !p.official) && (
             <p className="rol-trend-note" data-testid="odds-trend-note">
               {t("oddsList.finalTrendNote")}
             </p>
@@ -1054,6 +1057,17 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     return (
       <>
         <p className="rol-guide">{t(`oddsList.guide.${betType.id}`)}</p>
+        {/* 締切時オッズ（公式）が一部の券種だけ取れなかったとき、表示が切り替わる理由を示す（ファン評価1周目 P2） */}
+        {finalOdds && !useFinal && (
+          <p className="rol-callout" data-testid="odds-final-missing">
+            {t("oddsList.finalMissingForBetType")}
+          </p>
+        )}
+        {useFinal && betType.id === "trifecta" && !finalOdds.exactaAll && (
+          <p className="rol-callout" data-testid="odds-final-missing">
+            {t("oddsList.finalExactaMissing")}
+          </p>
+        )}
         {allNoVotes && (
           <p className="rol-callout">
             {betType.id === "winPlace"

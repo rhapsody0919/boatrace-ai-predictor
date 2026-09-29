@@ -668,7 +668,9 @@
     "finalDeadlineAt": "{{time}} 截止（JST）",
     "finalSource": "取自BOATRACE官方網站",
     "finalTrendLabel": "截止時（官方）",
-    "finalTrendNote": "「截止前○分鐘」的數值為當時擷取的官方顯示值（官方更新會延遲數分鐘）"
+    "finalTrendNote": "「截止前○分鐘」的數值為當時擷取的官方顯示值（官方更新會延遲數分鐘）",
+    "finalMissingForBetType": "此投注類型未能取得截止時賠率（官方），因此顯示截止前擷取的數值",
+    "finalExactaMissing": "未能取得二連單的截止時賠率（官方），因此「2單」顯示為「-」（二連單分頁有截止前擷取的數值）"
   },
   "meetTab": {
     "note": "本梯次6艇的勝負關鍵，以及所選艇的出賽狀況",

@@ -451,8 +451,15 @@
   font-weight: var(--font-weight-bold);
 }
 
+.rol-sparkline-live,
+.rol-sparkline-official {
+  stroke-width: 7px;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
 .rol-sparkline-live {
-  fill: var(--color-success);
+  stroke: var(--color-success);
 }
 
 /* 締切時オッズ（公式、BOA-496）: 状態の1行・推移の最後の点・最後の区間（点線）を公式の色（青）で出す */
@@ -492,7 +499,7 @@
 }
 
 .rol-sparkline-official {
-  fill: var(--color-info-text);
+  stroke: var(--color-info-text);
 }
 
 .rol-trend-note {

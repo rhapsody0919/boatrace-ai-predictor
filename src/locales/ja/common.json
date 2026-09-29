@@ -401,7 +401,9 @@
     "finalDeadlineAt": "{{time}} 締切",
     "finalSource": "BOATRACE公式から取得",
     "finalTrendLabel": "締切時（公式）",
-    "finalTrendNote": "○分前の値は、その時点に取得した公式表示です（公式の更新は数分遅れます）"
+    "finalTrendNote": "○分前の値は、その時点に取得した公式表示です（公式の更新は数分遅れます）",
+    "finalMissingForBetType": "この券種は締切時オッズ（公式）を取得できなかったため、締切前に取得した値を表示しています",
+    "finalExactaMissing": "2連単の締切時オッズ（公式）は取得できなかったため、「2単」は「-」です（2連単のタブに締切前に取得した値があります）"
   },
   "meetTab": {
     "note": "この節（開催）の6艇の勝負駆けと、選んだ1艇の走りを見ます",

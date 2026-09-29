@@ -668,7 +668,9 @@
     "finalDeadlineAt": "{{time}} 마감(JST)",
     "finalSource": "BOATRACE 공식 사이트에서 수집",
     "finalTrendLabel": "마감 시(공식)",
-    "finalTrendNote": "「마감 ○분 전」 값은 그 시점에 수집한 공식 표시값입니다(공식 갱신은 몇 분 늦습니다)"
+    "finalTrendNote": "「마감 ○분 전」 값은 그 시점에 수집한 공식 표시값입니다(공식 갱신은 몇 분 늦습니다)",
+    "finalMissingForBetType": "이 승식은 마감 시 오즈(공식)를 수집하지 못해 마감 전에 수집한 값을 표시합니다",
+    "finalExactaMissing": "2연단 마감 시 오즈(공식)를 수집하지 못해 「2연단」은 「-」로 표시됩니다(2연단 탭에 마감 전에 수집한 값이 있습니다)"
   },
   "meetTab": {
     "note": "이번 시리즈 6정의 승부처와, 선택한 정의 주행을 봅니다",
