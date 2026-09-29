@@ -20,6 +20,13 @@
       "guards": "api/admin/ 配下の全ハンドラが関数自身でBasic認証をかけること（middleware はエンコードしたパスで迂回できる。2026-09-29 本番で認証なし200を確認）。ハンドラはファイル一覧から自動列挙し、認証なし・誤認証・env未設定で401かつ外部呼び出し0回、':'入りパスワードを最初の':'で分割すること"
     },
     {
+      "script": "verify-admin-rule-performance.js",
+      "tier": "manual",
+      "guards": "管理画面 /admin/rules の運用成績（BOA-567）。RPC get_admin_rule_performance（またはその本体SQL）＋画面側の整形が、旧実装（画面で全件ページングして集計。分岐元コミットから取り出して実行）と全値（全体・ルール別34件・週別）一致すること。ルールのデータ化（src/config/venueRules.js の ruleMatches）が旧クロージャと、合成データ・実データの全予想でマッチ集合一致すること",
+      "reason": "実Supabaseの predictions・race_results を読み、本番のRPCを service key で呼ぶため。旧実装をリポジトリの履歴から取り出すため、浅いクローンのCIでは動かない",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-admin-rule-performance.js --rules --rpc"
+    },
+    {
       "script": "verify-adr-numbers.js",
       "tier": "ci",
       "guards": "docs/adr/ のADR番号の重複（並行セッションで繰り返し発生）"
