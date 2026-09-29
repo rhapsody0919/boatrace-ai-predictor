@@ -3126,7 +3126,11 @@ export const supabaseDataService = {
    * 混ぜないよう履歴を出さず generationStart: null を返す。
    * @returns {Promise<{generationStart: string|null, wins: Array<{raceId:string,date:string,racerId:number|null,playerName:string|null}>, fetchFailed?: boolean}>}
    */
-  getVenueMotorChampionshipHistory(venueCode, motorNumber, beforeRaceId = null) {
+  getVenueMotorChampionshipHistory(
+    venueCode,
+    motorNumber,
+    beforeRaceId = null,
+  ) {
     return withCache(
       // 戻り値を配列から{generationStart, wins}に変えたため、キーを変えて
       // localStorageに残る旧形式（配列）を読まない
@@ -3350,7 +3354,11 @@ export const supabaseDataService = {
 
         if (!supabase) {
           console.error("Supabase client not initialized");
-          return { generationStart: null, rows: emptyRows(), fetchFailed: true };
+          return {
+            generationStart: null,
+            rows: emptyRows(),
+            fetchFailed: true,
+          };
         }
 
         let generationStart;
@@ -3358,7 +3366,11 @@ export const supabaseDataService = {
           generationStart = await getMotorGenerationStart(venueCode);
         } catch (err) {
           console.error("モーター使用開始日取得エラー:", err.message);
-          return { generationStart: null, rows: emptyRows(), fetchFailed: true };
+          return {
+            generationStart: null,
+            rows: emptyRows(),
+            fetchFailed: true,
+          };
         }
         if (generationStart === null) {
           return { generationStart, rows: emptyRows() };
