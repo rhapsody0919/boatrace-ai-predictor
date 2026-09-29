@@ -103,6 +103,13 @@ test.describe("中止確定レースでAI予想・AI用コピーを出さない�
       timeout: 20000,
     });
 
+    // 通常レースのテストでバナーが出ることを確かめているので、ここでの0件は
+    // 「読み込み前」ではなく「出さない」を意味する。読み込み完了を待ってから数える
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator(".ai-copy-banner")).toHaveCount(0);
+    await expect(page.locator(".ai-copy-btn")).toHaveCount(0);
+    await expect(page.getByText(COPY_LABEL)).toHaveCount(0);
+
     // タブは残す（他タブと扱いを揃える）
     const aiTab = page.locator(".race-tabs-btn", { hasText: "AI予想" });
     await expect(aiTab).toBeVisible();
@@ -111,12 +118,5 @@ test.describe("中止確定レースでAI予想・AI用コピーを出さない�
       CANCELLED_TEXT,
     );
     await expect(page.locator(".prediction-result")).toHaveCount(0);
-
-    // 通常レースのテストでバナーが出ることを確かめているので、ここでの0件は
-    // 「読み込み前」ではなく「出さない」を意味する。読み込み完了を待ってから数える
-    await page.waitForLoadState("networkidle");
-    await expect(page.locator(".ai-copy-banner")).toHaveCount(0);
-    await expect(page.locator(".ai-copy-btn")).toHaveCount(0);
-    await expect(page.getByText(COPY_LABEL)).toHaveCount(0);
   });
 });
