@@ -34,7 +34,7 @@
     {
       "script": "verify-adr-references.js",
       "tier": "ci",
-      "guards": "ADRへの参照の実在（BOA-572）。git管理下のファイル中の adr/NNNN-xxx.md（docs/adr/ 内の相対リンクを含む）がファイル名まで実在すること、ADR-NNNN / ADR NNNN の番号が存在すること。確かめない範囲: 番号が実在する別件のADRを指す誤り（0050のつもりで0024と書いた等）は検出できない。番号の後に付けたADRタイトルとの食い違いも見ない。対象外: docs/archive/（書かれた時点のまま凍結した過去資料）、data/（出力データ）"
+      "guards": "ADRへの参照の実在（BOA-572）。git管理下のファイル中の adr/NNNN-xxx.md（docs/adr/ 内の相対リンクを含む）がファイル名まで実在すること、ADR-NNNN / ADR NNNN / ADRNNNN の番号が存在すること。確かめない範囲: 番号が実在する別件のADRを指す誤り（0050のつもりで0024と書いた等）は検出できない。番号の後に付けたADRタイトルとの食い違いも見ない。対象外: docs/archive/（書かれた時点のまま凍結した過去資料）、data/（出力データ）"
     },
     {
       "script": "verify-agent-definitions.js",

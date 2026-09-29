@@ -10,7 +10,7 @@
  *   1. ファイル参照: `adr/NNNN-xxx.md` の形（docs/adr/… や ../adr/… を含む）が、
  *      docs/adr/ に実在するファイル名と完全一致すること。
  *      docs/adr/ 内の相対リンク `(./)NNNN-xxx.md` も同じく照合する
- *   2. 番号参照: `ADR-NNNN` / `ADR NNNN` の番号が docs/adr/ に存在すること
+ *   2. 番号参照: `ADR-NNNN` / `ADR NNNN` / `ADRNNNN` の番号が docs/adr/ に存在すること
  *
  * 確かめないこと（機械では判定できない）:
  *   - 番号が実在する別件のADRを指している誤り（例: 0050のつもりで0024と書いた）。
@@ -52,7 +52,7 @@ const ADR_FILE_RE = /^\d{4}-.+\.md$/;
 const FILE_REF_RE = /(?<![\w])adr\/(\d{4}-[\w.-]*?\.md)/g;
 // docs/adr/ 内のMarkdownリンクで、ディレクトリを付けずに書かれたもの
 const RELATIVE_LINK_RE = /\]\((?:\.\/)?(\d{4}-[\w.-]*?\.md)(?:#[^)]*)?\)/g;
-const NUMBER_REF_RE = /(?<![\w])ADR[- ](\d{4})(?!\d)/g;
+const NUMBER_REF_RE = /(?<![\w])ADR[- ]?(\d{4})(?!\d)/g;
 
 const isExcluded = (file) =>
   EXCLUDED_PREFIXES.some(([prefix]) => file.startsWith(prefix));
@@ -107,7 +107,7 @@ function selfCheck() {
     ["src/a.js", "// docs/adr/0043-racer-grade.md", 1],
     ["docs/x.md", "[x](../adr/0043-racer-grade.md)", 1],
     ["docs/adr/0001-a.md", "[x](./0043-racer-grade.md)", 1],
-    ["docs/x.md", "（ADR-0099）と ADR 0098", 2],
+    ["docs/x.md", "（ADR-0099）と ADR 0098 と ADR0097", 3],
     ["docs/x.md", "docs/adr/0052-racer-grade.md と ADR-0052", 0],
     ["docs/x.md", "[x](0043-racer-grade.md) はADR外なので見ない", 0],
   ];
