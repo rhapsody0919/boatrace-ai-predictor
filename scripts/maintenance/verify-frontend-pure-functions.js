@@ -16,8 +16,9 @@
  * 末尾の変異検証で、各関数の要（過去に壊れた箇所を含む）を1つずつ壊したコピーに同じ検証を
  * かけ、検証が失敗する（＝歯がある）ことを確かめる。
  *
- * 期間フィルタ（last3m / last1m）は実行時の現在日時に依存するため、日付は「今日から何日前」で
- * 作り、境界から十分離す（同じコミットなら常に同じ結果になるように）。
+ * 期間フィルタ（last3m / last1m）は既定で実行時の現在日時に依存するため、日付は「今日から何日前」で
+ * 作り、境界から十分離す（同じコミットなら常に同じ結果になるように）。境界そのものを見る検証
+ * （BOA-469）は filterRecords の now で現在時刻を固定する。TZ=UTC / TZ=Asia/Tokyo の両方で通ること。
  */
 import fs from "node:fs";
 import os from "node:os";
@@ -288,6 +289,51 @@ function suiteBasicInfoStats(m, check) {
       .map((r) => r.date),
     [daysAgo(10)],
   );
+
+  // --- filterRecords: 期間の境界は JST の日付で切る（BOA-469）
+  // 以前はローカル時刻で setDate したあと toISOString()（UTC）で日付を取り出しており、
+  // JST 0〜9時は UTC では前日なので境界が1日古くなり、31日前・91日前の走が混ざった。
+  // 現在時刻を固定して、JST 早朝（UTC では前日）と JST 昼の両方で境界の前後を見る。
+  // どちらも JST 2026-09-29 の扱い: 直近1ヶ月の境界は 08-30、直近3ヶ月は 07-01
+  const boundaryRecs = [
+    "2026-06-30",
+    "2026-07-01",
+    "2026-07-02",
+    "2026-08-29",
+    "2026-08-30",
+    "2026-08-31",
+  ].map((d) => rec({ raceId: `${d}-04-01`, boatNumber: 1 }));
+  const periodDates = (period, now) =>
+    m
+      .filterRecords(boundaryRecs, {
+        venueCode: 4,
+        scope: "national",
+        grade: "all",
+        period,
+        now,
+      })
+      .map((r) => r.date);
+  for (const [label, iso] of [
+    ["JST 03:00（UTC 前日 18:00）", "2026-09-28T18:00:00Z"],
+    ["JST 12:00（UTC 同日 03:00）", "2026-09-29T03:00:00Z"],
+  ]) {
+    check(
+      `filterRecords: ${label} の直近1ヶ月は JST 30日前(08-30)から。31日前は含めない（BOA-469）`,
+      periodDates("last1m", new Date(iso)),
+      ["2026-08-30", "2026-08-31"],
+    );
+    check(
+      `filterRecords: ${label} の直近3ヶ月は JST 90日前(07-01)から。91日前は含めない（BOA-469）`,
+      periodDates("last3m", new Date(iso)),
+      [
+        "2026-07-01",
+        "2026-07-02",
+        "2026-08-29",
+        "2026-08-30",
+        "2026-08-31",
+      ],
+    );
+  }
 
   // --- computeVenueRanking: 指標連動・n>=5・平均STは昇順（d3817581）
   const venueRecords = [];
@@ -1006,6 +1052,12 @@ const MUTANTS = [
     "G2 を SG・G1 に入れる",
     'raceGrade === "SG" || raceGrade === "G1"',
     'raceGrade === "SG" || raceGrade === "G1" || raceGrade === "G2"',
+  ],
+  [
+    "basicInfoStats",
+    "期間の境界を toISOString（UTC）で切る（BOA-469 の退行）",
+    "const cutoffStr = getDaysAgoJST(days, now);",
+    'const cutoff = new Date(now);\n    cutoff.setDate(cutoff.getDate() - days);\n    const cutoffStr = cutoff.toISOString().split("T")[0];',
   ],
   [
     "raceStatus",

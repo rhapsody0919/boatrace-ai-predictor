@@ -7,10 +7,10 @@ const JST_OFFSET = 9 * 60; // UTC+9 in minutes
 
 /**
  * 現在のJST日時を取得
+ * @param {Date} [now] - 基準時刻（既定は現在時刻）
  * @returns {Date} JST日時のDateオブジェクト
  */
-export const getJSTNow = () => {
-  const now = new Date();
+export const getJSTNow = (now = new Date()) => {
   return new Date(now.getTime() + JST_OFFSET * 60 * 1000);
 };
 
@@ -44,10 +44,11 @@ export const getYesterdayJST = () => {
 /**
  * N日前の日付をJSTで取得
  * @param {number} days - 何日前か
+ * @param {Date} [now] - 基準時刻（既定は現在時刻）
  * @returns {string} YYYY-MM-DD形式
  */
-export const getDaysAgoJST = (days) => {
-  const jstNow = getJSTNow();
+export const getDaysAgoJST = (days, now = new Date()) => {
+  const jstNow = getJSTNow(now);
   const target = new Date(jstNow.getTime() - days * 24 * 60 * 60 * 1000);
   return target.toISOString().split("T")[0];
 };
@@ -80,38 +81,6 @@ export const getDateListJST = (days) => {
 export const parseDateInfo = (dateStr) => {
   const [year, month, day] = dateStr.split("-").map(Number);
   return { year, month, day };
-};
-
-/**
- * 今月の日付範囲を取得
- * @returns {Object} { start, end, year, month }
- */
-export const getThisMonthRange = () => {
-  const jstNow = getJSTNow();
-  const year = jstNow.getUTCFullYear();
-  const month = jstNow.getUTCMonth() + 1;
-  const start = `${year}-${String(month).padStart(2, "0")}-01`;
-  const end = `${year}-${String(month).padStart(2, "0")}-31`;
-  return { start, end, year, month };
-};
-
-/**
- * 先月の日付範囲を取得
- * @returns {Object} { start, end, year, month }
- */
-export const getLastMonthRange = () => {
-  const jstNow = getJSTNow();
-  let year = jstNow.getUTCFullYear();
-  let month = jstNow.getUTCMonth(); // 0-indexed, so this is already "last month"
-
-  if (month === 0) {
-    month = 12;
-    year -= 1;
-  }
-
-  const start = `${year}-${String(month).padStart(2, "0")}-01`;
-  const end = `${year}-${String(month).padStart(2, "0")}-31`;
-  return { start, end, year, month };
 };
 
 /**

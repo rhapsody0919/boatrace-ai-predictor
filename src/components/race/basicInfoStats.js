@@ -33,6 +33,7 @@
 import { isPlaceHit, isShowHit } from "../../../scripts/lib/hitCalculator.js";
 import { parseRaceId } from "../../utils/raceId.js";
 import { groupIntoCurrentMeet } from "../../utils/meetGrouping.js";
+import { getDaysAgoJST } from "../../utils/dateUtils.js";
 
 export const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
 export const SCOPES = ["local", "national"];
@@ -53,13 +54,14 @@ function matchesGrade(record, grade) {
   return gradeBucket(record.raceGrade) === grade;
 }
 
-function matchesPeriod(record, period) {
+// 境界は JST の日付で切る（BOA-469）。以前はローカル時刻で setDate したあと
+// toISOString()（UTC）で日付を取り出しており、JST 0〜9時は境界が1日古くなって
+// 31日前・91日前の走が混ざっていた
+function matchesPeriod(record, period, now) {
   if (period === "current") return true;
   if (period === "last3m" || period === "last1m") {
     const days = period === "last3m" ? 90 : 30;
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - days);
-    const cutoffStr = cutoff.toISOString().split("T")[0];
+    const cutoffStr = getDaysAgoJST(days, now);
     return record.date >= cutoffStr;
   }
   return true;
@@ -73,12 +75,16 @@ function matchesPeriod(record, period) {
  * @param {'local'|'national'} filters.scope
  * @param {'all'|'ippan'|'sgg1'} filters.grade
  * @param {'current'|'last3m'|'last1m'} filters.period
+ * @param {Date} [filters.now] - 期間の境界を決める現在時刻（検証用。既定は new Date()）
  */
-export function filterRecords(records, { venueCode, scope, grade, period }) {
+export function filterRecords(
+  records,
+  { venueCode, scope, grade, period, now = new Date() },
+) {
   return (records ?? []).filter((r) => {
     if (scope === "local" && r.venueCode !== venueCode) return false;
     if (!matchesGrade(r, grade)) return false;
-    if (!matchesPeriod(r, period)) return false;
+    if (!matchesPeriod(r, period, now)) return false;
     return true;
   });
 }
