@@ -112,7 +112,9 @@ input:focus-visible,
   border-color: var(--brand-accent-primary);
 }
 
-/* レースグリッド */
+/* レースグリッド
+   唯一の利用先（VenueRaceListPage）は VenueRaceListPage.css の固定列数で上書きされ、
+   件数も1会場1日12レースで一定のため、auto-fill の空トラックは出ない（BOA-528） */
 .race-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

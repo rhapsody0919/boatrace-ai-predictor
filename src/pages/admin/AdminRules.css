@@ -456,9 +456,11 @@
   border-bottom: 2px solid #e2e8f0;
 }
 
+/* 会場ごとの「ルールに合うレース」は0〜数件。auto-fill だと使われない列の枠が
+   残って右が空くため auto-fit にする（BOA-528） */
 .race-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 0.75rem;
 }
 

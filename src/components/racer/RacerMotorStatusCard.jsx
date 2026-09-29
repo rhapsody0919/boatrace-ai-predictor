@@ -29,8 +29,19 @@ export default function RacerMotorStatusCard({ status }) {
     preGeneration,
   } = status;
   const venueName = VENUE_NAMES[venueCode] ?? `${venueCode}`;
-  const chartData = (meetTrend ?? []).map((row) => ({
-    date: row.date.slice(5),
+  // 同じ日に2回走ると横軸に同じ日付が並び、何の違いか読めない。その日だけ
+  // レース番号を添える（BOA-513、2026-09-29 ファン評価）
+  const trendRows = meetTrend ?? [];
+  const runsOnDate = trendRows.reduce(
+    (count, row) => count.set(row.date, (count.get(row.date) ?? 0) + 1),
+    new Map(),
+  );
+  const chartData = trendRows.map((row) => ({
+    date:
+      runsOnDate.get(row.date) > 1 && row.raceNo
+        ? `${row.date.slice(5)} ${row.raceNo}R`
+        : row.date.slice(5),
+    day: row.date.slice(5),
     exhibition_time: row.exhibition_time,
   }));
 
@@ -75,8 +86,7 @@ export default function RacerMotorStatusCard({ status }) {
         <>
           <p className={`racer-motor-status-index ${indexClass}`}>
             機力指数 {powerIndex.power_index > 0 ? "+" : ""}
-            {powerIndex.power_index.toFixed(1)}
-            （
+            {powerIndex.power_index.toFixed(1)}（
             {powerIndex.clipped_by_generation
               ? "現行モーターの使用開始以降"
               : "過去90日"}
@@ -97,9 +107,9 @@ export default function RacerMotorStatusCard({ status }) {
       {chartData.length > 1 ? (
         <>
           <p className="racer-motor-status-chart-caption">
-            {preGeneration ? "直近の節" : "今節"}（{chartData[0].date}〜
-            {chartData[chartData.length - 1].date}）
-            、この選手がこのモーターで出走してからの展示タイム
+            {`${preGeneration ? "直近の節" : "今節"}（${chartData[0].day}〜${
+              chartData[chartData.length - 1].day
+            }）、この選手がこのモーターで出走してからの展示タイム`}
           </p>
           <TrendLineChart
             data={chartData}

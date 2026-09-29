@@ -25,15 +25,18 @@ BOA-512（2026-09-12 に、結果のある32本が誤って `confirmed` にな�
 | 箇所 | 用途 | 判定 | 影響 |
 |---|---|---|---|
 | `075_scrape_slots_and_job_state.sql`（`claim_scrape_slots` の手順1）、`092_claim_scrape_slots_by_offset.sql` | pending のスロットを `cancelled_race` で終端 | `= 'confirmed'` | 型Bでは結果スロットが終端され、以後スロット経路で取らない。型Aは結果スロットが done 済みで実害なし |
-| `scripts/lib/scrapeJobs/resultHandlers.js`（`createResultCatchupRun` の手順1） | 日次の再取得の対象から除く | `isCancellationConfirmed` | 型Bは再取得されない |
+| ~~`scripts/lib/scrapeJobs/resultHandlers.js`（`createResultCatchupRun` の手順1）~~ | ~~日次の再取得の対象から除く~~ → **BOA-526 で、確定中止のレースも取り直すようにした**（期待件数・未解決には数えない。取れたら手順2'が確定を外す） | — | 型Bは、当日の catch-up（23:50・00:30）で結果が公開されていれば直る |
 
 ### 画面（重さ: 中。利用者に見える）
 
+BOA-525 で `isRaceCancelled` を「確定 かつ 着順つきの結果（rank1）が無い」に変えた。型Aは画面では中止扱いしない。
+
 | 箇所 | 用途 | 判定 | 影響 |
 |---|---|---|---|
-| `src/components/race/RaceCard.jsx` | 中止バッジ。締切・カウントダウン・結果反映待ちを出さない | `isRaceCancelled` | 型Aで**的中/外れバッジと中止バッジが同時に出る**（的中/外れは `result.finished` で別に出る） |
-| `src/components/race/PredictionPanel.jsx` | 中止バナー | `isRaceCancelled` | 型Aで結果のあるレースに中止バナー |
-| `src/components/race/TodaysVolatilityHighlights.jsx` | 注目レースから除く | `isRaceCancelled` | 発走90分後以降だけ。ほぼ影響なし |
+| `src/components/race/RaceCard.jsx` | 中止バッジ。締切・カウントダウン・結果反映待ちを出さない | `isRaceCancelled`（結果あり） | 型Aは中止扱いしない（BOA-525）。以前は的中/外れバッジと中止バッジが同時に出た |
+| `src/components/race/PredictionPanel.jsx` | 中止バナー | `isRaceCancelled`（結果あり） | 型Aは中止扱いしない（BOA-525） |
+| `src/services/supabaseDataService.js`（今節の準優の枠数、`cancelledRaceIds`） | 行われなかった準優を枠数から除く | `isRaceCancelled`（結果の行を渡す） | 型Aは除かない（BOA-490 の時点で `semifinalSlotsOf` も結果の有無を見ている） |
+| `src/components/race/TodaysVolatilityHighlights.jsx` | 注目レースから除く | `isRaceCancelled`（結果なし。`get_today_races` が結果を返さない） | 型Aは除かれたまま。発走90分後以降だけ。ほぼ影響なし |
 | `api/predictions/[date].js`・`api/races/today.js`（RPC経由）、`src/services/supabaseDataService.js`、`src/pages/RaceDetailPage.jsx` | 値を渡すだけ | — | 上の3つに届く |
 
 ### 監視・予測（重さ: 中）
@@ -80,14 +83,14 @@ BOA-512（2026-09-12 に、結果のある32本が誤って `confirmed` にな�
 | ファイル | 関数 |
 |---|---|
 | `scripts/lib/cancellationStatus.js` | `isCancellationConfirmed`・`computeCancellationTransition`・定数 |
-| `src/utils/raceCancellation.js` | `isRaceCancelled`・`isCancellationSuspected`（未使用）・定数 |
+| `src/utils/raceCancellation.js` | `isRaceCancelled`・`hasRaceResult`・`isCancellationSuspected`（未使用）・定数 |
 
-どちらも結果の有無を見ない。`verify-race-cancellation-usage.js` は JS の `===`/`!==` による文字列の直比較だけを禁じており、SQL・PostgREST の文字列・truthy の判定は対象外。
+バッチ側は結果の有無を見ない。画面側の `isRaceCancelled` は、渡された `result` に1着（rank1）があれば中止扱いしない（BOA-525）。`verify-race-cancellation-usage.js` は JS の `===`/`!==` による文字列の直比較だけを禁じており、SQL・PostgREST の文字列・truthy の判定は対象外。
 
 ## 残る改善（BOA-512 では実装しない）
 
 1. ~~結果が入ったら `confirmed` を消す経路~~ → BOA-524 で実装（上の結論の1つ目）
-2. **画面で「結果があるなら中止扱いしない」**（src/。`isRaceCancelled` に結果の有無を足す等）。BOA-490（PR #916）が集計側で採った「中止が確定 かつ 結果が無い」と同じ考え方
-3. **型Bの被害を減らす**: 誤った `confirmed` が結果スロットを終端すると、以後自動では取り直されない。日次の再取得（`createResultCatchupRun`）の除外を「中止告知で確定したものだけ」に絞る等。確定の出所を列に持っていないため、設計の判断が要る
+2. ~~画面で「結果があるなら中止扱いしない」~~ → BOA-525 で実装（上の「画面」）
+3. ~~型Bの被害を減らす~~ → BOA-526 で、日次の再取得が確定中止のレースも取り直すようにした（2026-09-12 の三国 1R・2R が型Bの実例。`docs/issues/mikuni-2026-09-12-missed-results.md`）。当日中に結果が公開されない場合は、日次の照合（daily_reconcile、現在 off）の `cancelled_but_in_k` が検知の役を担う
 
 いずれも挙動が変わるため、着手の判断は別に行う。

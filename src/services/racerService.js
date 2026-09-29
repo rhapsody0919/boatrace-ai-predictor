@@ -165,6 +165,7 @@ export async function getRacerCurrentMotorStatus(racerId) {
   const meetTrend = meetEntries
     .map((e) => ({
       date: e.race_id.slice(0, 10),
+      raceNo: Number(e.race_id.slice(-2)),
       exhibition_time:
         exhibitionByKey.get(`${e.race_id}-${e.boat_number}`)?.exhibition_time ??
         null,
