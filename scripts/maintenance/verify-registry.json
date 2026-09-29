@@ -15,6 +15,11 @@
       "guards": "Kファイル方式の進入コースパーサー（scripts/lib/kfileParser.js、BOA-257）"
     },
     {
+      "script": "verify-admin-api-auth.js",
+      "tier": "ci",
+      "guards": "api/admin/ 配下の全ハンドラが関数自身でBasic認証をかけること（middleware はエンコードしたパスで迂回できる。2026-09-29 本番で認証なし200を確認）。ハンドラはファイル一覧から自動列挙し、認証なし・誤認証・env未設定で401かつ外部呼び出し0回、':'入りパスワードを最初の':'で分割すること"
+    },
+    {
       "script": "verify-adr-numbers.js",
       "tier": "ci",
       "guards": "docs/adr/ のADR番号の重複（並行セッションで繰り返し発生）"

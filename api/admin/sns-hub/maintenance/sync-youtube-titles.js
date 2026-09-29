@@ -8,7 +8,8 @@
  * 生成Routine側の修正（title必須化）・DB側のtitleバックフィルとは別に、
  * 既にYouTubeへ公開済みの動画本体のタイトルを実際に修正するための一時的な
  * 運用ツール。sns_drafts.titleが正しい値に更新された後、本番環境から1回
- * 実行する想定（`/admin/sns-hub`と同じBasic認証で保護される、middleware.js参照）。
+ * 実行する想定（`/admin/sns-hub`と同じBasic認証で保護される。middleware.js と関数先頭の
+ * requireAdminAuth の両方でかける）。
  */
 
 import {
@@ -23,6 +24,8 @@ import {
   updateYoutubeVideoTitle,
 } from "../../../_lib/youtubeUpload.js";
 
+import { requireAdminAuth } from "../../../_lib/adminAuth.js";
+
 export const config = {
   runtime: "edge",
 };
@@ -34,6 +37,10 @@ function extractVideoId(youtubeUrl) {
 }
 
 export default async function handler(req) {
+  // middleware はエンコードしたパスで迂回できるため、関数側でも必ず認証する（api/_lib/adminAuth.js）
+  const denied = await requireAdminAuth(req);
+  if (denied) return denied;
+
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }

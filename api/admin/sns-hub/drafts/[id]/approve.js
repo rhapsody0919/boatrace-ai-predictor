@@ -15,11 +15,17 @@ import {
   updateDraft,
 } from "../../../../_lib/snsHubHelpers.js";
 
+import { requireAdminAuth } from "../../../../_lib/adminAuth.js";
+
 export const config = {
   runtime: "edge",
 };
 
 export default async function handler(req) {
+  // middleware はエンコードしたパスで迂回できるため、関数側でも必ず認証する（api/_lib/adminAuth.js）
+  const denied = await requireAdminAuth(req);
+  if (denied) return denied;
+
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
