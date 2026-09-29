@@ -1170,6 +1170,10 @@ function MotorConditionChart({
         ) : (
           <p className="table-note">{t("analysis.motor.note")}</p>
         ))}
+      {/* 線の意味（BOA-494 ファン評価）。一覧で、他のタブで艇を選んでいるときだけ */}
+      {drillDownMotor === null && focusedBoat !== null && (
+        <p className="table-note">{t("analysis.motor.focusedRowNote")}</p>
+      )}
       {!drillPreGeneration && (
         <p className="table-note">{t("analysis.motor.powerIndexNote")}</p>
       )}

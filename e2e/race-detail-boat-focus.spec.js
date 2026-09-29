@@ -145,6 +145,9 @@ test("モータ情報タブも艇の選択を共有する（一覧のまま行�
     await tab(page, "モータ情報").click();
     await expect(motorRow(page, 1)).toBeVisible({ timeout: 30000 });
     await expect(page.locator(".motor-ranking-row.is-focused")).toHaveCount(0);
+    await expect(
+      page.locator(".table-note", { hasText: "線で囲んだ行は" }),
+    ).toHaveCount(0);
   });
 
   await test.step("枠別で選んだ艇を、モータ情報の一覧の行で示す", async () => {
@@ -159,6 +162,17 @@ test("モータ情報タブも艇の選択を共有する（一覧のまま行�
     await expect(page.locator(".motor-ranking-row.is-focused")).toHaveCount(1);
     // 一覧のまま（ドリルダウンに切り替わっていない）
     await expect(page.locator(".motor-ranking-row")).toHaveCount(6);
+    // 375px で表を横に送っても分かるよう、全セルに線を引く（左端の帯だけに
+    // すると1列目が画面外に出たとき消える。ファン評価）
+    const shadows = await motorRow(page, 4)
+      .locator("td")
+      .evaluateAll((tds) => tds.map((td) => getComputedStyle(td).boxShadow));
+    expect(shadows.length).toBeGreaterThan(3);
+    expect(shadows.every((sh) => sh !== "none")).toBe(true);
+    // 線の意味を注記に書く
+    await expect(
+      page.locator(".table-note", { hasText: "線で囲んだ行は" }),
+    ).toBeVisible();
   });
 
   await test.step("モータ情報で行を押すと、今節にもその艇が伝わる", async () => {
