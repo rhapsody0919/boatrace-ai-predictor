@@ -21,6 +21,7 @@ import {
 import { isFinalStage } from "../constants/raceStageConfig";
 import { finishPositionOf } from "../components/race/basicInfoStats.js";
 import { isRaceCancelled } from "../utils/raceCancellation.js";
+import { competitionRank } from "../utils/competitionRank.js";
 import {
   countsForSeriesScore,
   shouldUseOfficialSeries,
@@ -3315,9 +3316,10 @@ export const supabaseDataService = {
     return withCache(
       // asOfDate（YYYY-MM-DD）を渡すと、その日以前で最新のスナップショットで順位を
       // 出す（過去レースのドリルダウン、BOA-521）
+      // v2: 同じ値は同じ順位・tied を追加（BOA-529）
       asOfDate === null
-        ? `venue-motor-ranking-${venueCode}-${motorNumber}-${metric}`
-        : `venue-motor-ranking-asof-${venueCode}-${motorNumber}-${metric}-${asOfDate}`,
+        ? `venue-motor-ranking-v2-${venueCode}-${motorNumber}-${metric}`
+        : `venue-motor-ranking-v2-asof-${venueCode}-${motorNumber}-${metric}-${asOfDate}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -3361,21 +3363,25 @@ export const supabaseDataService = {
           // 事故率のみ低いほど良いため昇順、他は降順
           const ascending = metric === "accidentRate";
 
-          const ranked = data
-            .filter((row) => row[column] !== null && row[column] !== undefined)
-            .sort((a, b) =>
-              ascending ? a[column] - b[column] : b[column] - a[column],
-            );
-          const rankIndex = ranked.findIndex(
-            (row) => row.motor_number === motorNumber,
+          const valued = data.filter(
+            (row) => row[column] !== null && row[column] !== undefined,
           );
-          if (rankIndex === -1) return null;
+          const own = valued.find((row) => row.motor_number === motorNumber);
+          if (!own) return null;
+          // 同じ値は同じ順位（BOA-529）。並べ替えた位置を順位にすると、同値の中の
+          // 順位が DB の行順で決まっていた
+          const { rank, tied } = competitionRank(
+            valued.map((row) => Number(row[column])),
+            Number(own[column]),
+            { ascending },
+          );
 
           return {
-            rank: rankIndex + 1,
-            total: ranked.length,
+            rank,
+            tied,
+            total: valued.length,
             metric,
-            value: ranked[rankIndex][column],
+            value: own[column],
             scrapedDate: latestRow.scraped_date,
           };
         } catch (err) {
