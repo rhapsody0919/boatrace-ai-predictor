@@ -122,3 +122,50 @@ test("艇の選択が基本情報・枠別情報・今節タブで共有され�
     });
   });
 });
+
+// モータ情報タブの一覧の行（艇番の列で引く）
+const motorRow = (page, boat) =>
+  page.locator(".motor-ranking-row").filter({
+    has: page.locator("td.rank", { hasText: new RegExp(`^${boat}$`) }),
+  });
+
+test("モータ情報タブも艇の選択を共有する（一覧のまま行で示し、ドリルダウンは自動で開かない）", async ({
+  page,
+}) => {
+  // BOA-494 案A: 他のタブで選んだ艇は一覧の行で示す。一覧が主役なので、
+  // ドリルダウンは自動で開かない。行を押したら他のタブにも引き継ぐ
+  test.slow();
+
+  await page.goto(RACE_PATH, { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".race-tabs-btn").first()).toBeVisible({
+    timeout: 60000,
+  });
+
+  await test.step("何も選んでいなければ、どの行も示さない", async () => {
+    await tab(page, "モータ情報").click();
+    await expect(motorRow(page, 1)).toBeVisible({ timeout: 30000 });
+    await expect(page.locator(".motor-ranking-row.is-focused")).toHaveCount(0);
+  });
+
+  await test.step("枠別で選んだ艇を、モータ情報の一覧の行で示す", async () => {
+    await tab(page, "枠別情報").click();
+    await wakuChip(page, 4).click();
+    await expect(wakuChip(page, 4)).toHaveAttribute("aria-pressed", "true");
+
+    await tab(page, "モータ情報").click();
+    await expect(motorRow(page, 4)).toHaveClass(/is-focused/, {
+      timeout: 30000,
+    });
+    await expect(page.locator(".motor-ranking-row.is-focused")).toHaveCount(1);
+    // 一覧のまま（ドリルダウンに切り替わっていない）
+    await expect(page.locator(".motor-ranking-row")).toHaveCount(6);
+  });
+
+  await test.step("モータ情報で行を押すと、今節にもその艇が伝わる", async () => {
+    await motorRow(page, 2).click();
+    await tab(page, "今節").click();
+    await expect(meetChip(page, 2)).toHaveAttribute("aria-pressed", "true", {
+      timeout: 30000,
+    });
+  });
+});
