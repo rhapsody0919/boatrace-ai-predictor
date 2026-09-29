@@ -1,3 +1,4 @@
+import { pathToFileURL } from "node:url";
 import { supabase, fetchAll } from "../lib/supabaseClient.js";
 
 const VENUE_NAMES = {
@@ -44,16 +45,25 @@ function getNinetyDaysAgoJST() {
 // 会場×枠番ごとに「そのレースで展示タイム最速だった回数」と「その時に1着だった回数」を集計する
 // 複数艇が同タイム（同着）の場合は艇番の若い順等の恣意的なタイブレークを避けるため除外する
 // （参加数=race_countにはカウントする）
-function aggregateExhibitionTimeTop(exhibitionRows, raceResults) {
+// 展示タイムが NULL の行は集計に入れない（main の取得条件でも除くが、関数単体でも守る。BOA-520）。
+// 入れると race_count（分母）だけが増え、Math.min が NULL を 0 とみなして最速艇を決められず、
+// fastest_count（分子）が増えないため、「展示1位率」が薄まる（PR #917 で見つかった不具合）
+export function aggregateExhibitionTimeTop(
+  exhibitionRows,
+  raceResults,
+  { today = getTodayDateJST() } = {},
+) {
   const raceIdToVenue = new Map();
   const byRace = new Map();
 
-  exhibitionRows.forEach((row) => {
-    const venueCode = parseInt(row.race_id.split("-")[3], 10);
-    raceIdToVenue.set(row.race_id, venueCode);
-    if (!byRace.has(row.race_id)) byRace.set(row.race_id, []);
-    byRace.get(row.race_id).push(row);
-  });
+  exhibitionRows
+    .filter((row) => row.exhibition_time != null)
+    .forEach((row) => {
+      const venueCode = parseInt(row.race_id.split("-")[3], 10);
+      raceIdToVenue.set(row.race_id, venueCode);
+      if (!byRace.has(row.race_id)) byRace.set(row.race_id, []);
+      byRace.get(row.race_id).push(row);
+    });
 
   const rank1ByRace = new Map(raceResults.map((r) => [r.race_id, r.rank1]));
 
@@ -106,7 +116,7 @@ function aggregateExhibitionTimeTop(exhibitionRows, raceResults) {
             ((s.winWhenFastestCount / s.fastestCount) * 100).toFixed(2),
           )
         : 0,
-    last_updated: getTodayDateJST(),
+    last_updated: today,
   }));
 }
 
@@ -189,7 +199,10 @@ async function main() {
   console.log("合計挿入件数: " + totalInserted + "件");
 }
 
-main().catch((err) => {
-  console.error("エラー:", err.message);
-  process.exit(1);
-});
+// コマンドラインから直接実行されたときだけ動く（検証スクリプトが集計関数を import できるように。BOA-520）
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  main().catch((err) => {
+    console.error("エラー:", err.message);
+    process.exit(1);
+  });
+}
