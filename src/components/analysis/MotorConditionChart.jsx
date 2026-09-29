@@ -276,7 +276,10 @@ function MotorConditionChart({
       exhibition_time: row.exhibition_time,
     }));
 
-  const usageHistoryChartData = usageHistory
+  // 使用履歴は新しい順の一覧だが、グラフは推移グラフと同じく左が古く右が新しい
+  // 向きにそろえる（逆向きだと「右肩下がり＝最近悪化」と読み違える。BOA-513）
+  const usageHistoryChartData = [...usageHistory]
+    .reverse()
     .filter((meet) => meet.rate2 !== null)
     .map((meet) => ({
       date: meet.playerName?.replace(/\s+/g, "") ?? "",
@@ -617,7 +620,21 @@ function MotorConditionChart({
               各行の末尾がフェードに隠れて読めない（2026-09-29 ファン評価） */}
             <p className="table-note motor-official-source-note">
               {officialMode
-                ? t("analysis.motor.officialModeSourceNote")
+                ? t("analysis.motor.officialModeSourceNote", {
+                    // 表に出ている会場公式サイト由来の列だけを挙げる（1着率の列が無い
+                    // 会場で「1着率」に触れない。BOA-513）
+                    venueCols: [
+                      showFirstPlaceRate &&
+                        "analysis.motor.firstPlaceRateHeader",
+                      "analysis.motor.finalCountHeader",
+                      "analysis.motor.championshipCountHeader",
+                    ]
+                      .filter(Boolean)
+                      .map((key) =>
+                        t("analysis.motor.quotedLabel", { label: t(key) }),
+                      )
+                      .join(t("analysis.motor.quotedLabelSeparator")),
+                  })
                 : t("analysis.motor.officialSourceNote")}
             </p>
           </>
@@ -744,6 +761,14 @@ function MotorConditionChart({
                 },
             ].filter(Boolean)}
           />
+          {/* 鮮度・会場内順位・1着率・優出・優勝は会場公式サイトのスナップショットで、
+              節の終わりにしか更新されない。下の機力指数・使用履歴（当サイトの集計）と
+              走数が合わないことを先に断る（BOA-513、2026-09-28 ファン評価） */}
+          {(venueMotorStats || venueMotorRanking) && (
+            <p className="table-note">
+              {t("analysis.motor.officialSnapshotNote")}
+            </p>
+          )}
 
           {/* BOA-301 FR-2/3/4: 枠番別成績・展示タイム推移・選手×枠成績 */}
           {selectedWakuCourse !== null ? (
@@ -792,6 +817,9 @@ function MotorConditionChart({
             {t("analysis.motor.championshipHistoryNote")}
           </p>
 
+          <h3 className="selected-motor-heading">
+            {t("analysis.motor.rateTrendHeading")}
+          </h3>
           {chartData.length > 0 ? (
             <TrendLineChart
               data={chartData}
@@ -881,7 +909,7 @@ function MotorConditionChart({
                   <RacerGradeBadge grade={meet.grade} />
                   {meet.rate2 !== null && (
                     <span className="usage-history-rate">
-                      {t("analysis.motor.rate2Header")} {meet.rate2.toFixed(1)}%
+                      {t("analysis.motor.legend2")} {meet.rate2.toFixed(1)}%
                     </span>
                   )}
                   <span className="usage-history-ranks">

@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
+import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import "./MotorConditionChart.css";
+import "../common/HorizontalScrollHint.css";
 
 /**
  * MotorWakuStatsGrid - モーター単体の枠番（進入コース）別成績・展示タイム推移
@@ -105,6 +107,14 @@ function MotorWakuStatsGrid({
 }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(!embedded);
+  // 375px では3連率・展示タイム推移の列が右に切れる。切れていることに気づけるよう、
+  // モータ情報の一覧表と同じ横スクロールの目印を付ける（BOA-513）
+  const {
+    ref: scrollRef,
+    hasMore: scrollHasMore,
+    update: updateScroll,
+    scrollRight,
+  } = useHorizontalScrollHint([rows?.length, expanded]);
 
   if (!rows || rows.length === 0) return null;
 
@@ -139,28 +149,44 @@ function MotorWakuStatsGrid({
           n: SMALL_SAMPLE_THRESHOLD,
         })}
       </p>
-      <div className="table-wrapper">
-        <table className="motor-ranking-table motor-waku-table">
-          <thead>
-            <tr>
-              <th>{t("analysis.motor.courseHeader")}</th>
-              <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
-              <th>{t("analysis.motor.rate2Header")}</th>
-              <th>{t("analysis.motor.rate3Header")}</th>
-              <th>{t("analysis.motor.exhibitionTrendHeader")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleRows.map((row) => (
-              <MotorWakuRow
-                key={row.course}
-                row={row}
-                onSelectCourse={onSelectCourse}
-                isHighlighted={row.course === highlightCourse}
-              />
-            ))}
-          </tbody>
-        </table>
+      <div
+        className={`table-wrapper hscroll-hint${scrollHasMore ? " has-more" : ""}`}
+      >
+        {scrollHasMore && (
+          <button
+            type="button"
+            className="hscroll-more"
+            onClick={scrollRight}
+            aria-hidden="true"
+            tabIndex={-1}
+          >
+            ›
+          </button>
+        )}
+        <div className="table-scroll" ref={scrollRef} onScroll={updateScroll}>
+          <table className="motor-ranking-table motor-waku-table">
+            <thead>
+              <tr>
+                <th>{t("analysis.motor.courseHeader")}</th>
+                <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
+                {/* セルに「%」が付くので、見出しは1着率と同じく (%) を付けない（BOA-513） */}
+                <th>{t("analysis.motor.legend2")}</th>
+                <th>{t("analysis.motor.legend3")}</th>
+                <th>{t("analysis.motor.exhibitionTrendHeader")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleRows.map((row) => (
+                <MotorWakuRow
+                  key={row.course}
+                  row={row}
+                  onSelectCourse={onSelectCourse}
+                  isHighlighted={row.course === highlightCourse}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
       {embedded && !expanded && (
         <button
