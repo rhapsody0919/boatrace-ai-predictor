@@ -148,6 +148,11 @@
       "guards": "モータ情報の枠番別成績・選手×枠成績（BOA-301）が入れ替え前の別モーター（同じ番号）の成績を混ぜないこと（180日窓から現行モーター世代への置き換え）"
     },
     {
+      "script": "verify-motor-window-generation.js",
+      "tier": "ci",
+      "guards": "機力指数・2連率推移・部品交換・使用履歴の期間を現行モーター世代で切り詰めること、過去レースのモータ情報一覧表を再計算せず出走表時点の公式値にすること（BOA-329）"
+    },
+    {
       "script": "verify-motor-pretest.js",
       "tier": "ci",
       "guards": "前検タイム・前検順位・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）"
