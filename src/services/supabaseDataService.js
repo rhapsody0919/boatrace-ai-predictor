@@ -702,6 +702,18 @@ const VENUE_NAMES = {
  * が実際にこれを検知した）。
  * 失敗時は空マップを返し、バッジ側が値なしとして扱う。
  */
+/**
+ * 本日のレース一覧（getRaces の直接クエリ経路）の result を、get_today_races（110）と同じ
+ * {rank1} / null の形にする（BOA-542）。race_results は races と1対1のため、PostgREST の
+ * 埋め込みはオブジェクトで返る。配列で返る版にも備えて先頭を読む。
+ * @param {{rank1?: number|null}|Array<{rank1?: number|null}>|null|undefined} embedded
+ * @returns {{rank1: number}|null}
+ */
+function toTodayRaceResult(embedded) {
+  const row = Array.isArray(embedded) ? embedded[0] : embedded;
+  return row?.rank1 != null ? { rank1: row.rank1 } : null;
+}
+
 async function fetchVenueWinRateMap() {
   if (!supabase) return {};
   try {
@@ -1301,6 +1313,9 @@ export const supabaseDataService = {
           race_title,
           race_stage
         ),
+        race_results (
+          rank1
+        ),
         race_entries (
           boat_number,
           player_name,
@@ -1387,6 +1402,9 @@ export const supabaseDataService = {
           seriesDay: race.race_conditions?.series_day ?? null,
           isFinalDay: race.race_conditions?.is_final_day ?? null,
           raceStage: race.race_conditions?.race_stage ?? null,
+          // get_today_races（110、BOA-542）と同じ形。着順つきの結果があれば {rank1}、無ければ null。
+          // isRaceCancelled が見て、confirmed が残っていても結果のあるレースを中止扱いしない
+          result: toTodayRaceResult(race.race_results),
           volatility: volatilityByRaceId.has(race.race_id)
             ? {
                 ...volatilityByRaceId.get(race.race_id),
