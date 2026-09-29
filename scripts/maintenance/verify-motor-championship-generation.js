@@ -78,7 +78,8 @@ check(
 
 // 3. サービス層が世代の絞り込みを通っていること
 const src = readFileSync(SERVICE, "utf8");
-const begin = src.indexOf("getVenueMotorChampionshipHistory(venueCode");
+// 引数が増えて Prettier で改行されても見つかるよう、空白を挟んで探す
+const begin = src.search(/getVenueMotorChampionshipHistory\(\s*venueCode/);
 const end = src.indexOf("\n  },\n", begin);
 const body = begin >= 0 && end > begin ? src.slice(begin, end) : "";
 check("getVenueMotorChampionshipHistory が見つかる", body.length > 0);

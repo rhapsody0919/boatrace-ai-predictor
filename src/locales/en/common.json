@@ -994,7 +994,7 @@
       "pretestRank": "#{{rank}}",
       "officialRate2Header": "Official top-2 (series start)",
       "officialSourceNote": "Note: \"Trial\" and \"Official top-2 (series start)\" are shown exactly as published on the BOAT RACE Official Website (fixed when the series starts; they do not change mid-series). \"Top-2 rate\", \"Top-3 rate\" and the power index are our own recalculations over the selected period.",
-      "officialModeSourceNote": "※ For past races, \"Top-2 rate\", \"Top-3 rate\" and \"Trial\" are the BOAT RACE official website values as of the race card, and \"1st-place rate\", \"Finals\" and \"Championships\" are the latest values from each venue's official website on or before the race date. The \"Power index\" is computed backward from today, so in the list it is shown only for today's races.",
+      "officialModeSourceNote": "※ For past races, \"Top-2 rate\", \"Top-3 rate\" and \"Trial\" are the BOAT RACE official website values as of the race card, and \"1st-place rate\", \"Finals\" and \"Championships\" are the latest values from each venue's official website on or before the race date. In the list, the \"Power index\" is shown only for today's races (tap a row to see the value up to just before this race).",
       "rate2Header": "Top-2 rate (%)",
       "rate3Header": "Top-3 rate (%)",
       "powerIndexHeader": "Power index",
@@ -1058,7 +1058,7 @@
       "racerWakuEmpty": "No racers found for this motor/lane combination",
       "racerWakuNote": "💡 Counts only races since the current motor went into service where this motor was used in this lane. Values in orange come from fewer than {{n}} starts and are for reference only.",
       "drillPreGeneration": "Motor #{{n}} in this race is from before the motor changeover and is a different motor from the current #{{n}}, so its trend, power index and usage history are not shown.",
-      "drillCurrentStateNote": "💡 This shows this motor's status up to today (including races after this one). The values at race time are the Top-2/Top-3 rates in the list."
+      "drillAsOfRaceNote": "💡 This shows this motor's status up to just before this race (this race and later races are not included)."
     },
     "racerForm": {
       "title": "📈 Racer Form",

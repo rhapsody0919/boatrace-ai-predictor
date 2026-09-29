@@ -95,7 +95,7 @@ for (const [label, body] of [
   );
   check(
     `${label}: 切り詰めた開始日以降のレースだけを集める`,
-    body.includes("getRacesForVenueSince(venueCode, window.since)"),
+    /getRacesForVenueSince\(\s*venueCode,\s*window\.since[,)]/.test(body),
   );
   check(
     `${label}: 使用開始日が不明なら集計しない`,
@@ -229,9 +229,9 @@ check(
     ),
 );
 check(
-  "画面: 過去レースのドリルダウンは「このモーターの現在まで」と明示する",
+  "画面: 過去レースのドリルダウンは「このレースの直前まで」と明示する（BOA-521）",
   chart.includes("isPastSelectedRace && (") &&
-    chart.includes("analysis.motor.drillCurrentStateNote"),
+    chart.includes("analysis.motor.drillAsOfRaceNote"),
 );
 {
   // 出典の注記は横スクロール枠（右端のフェード）の外に置く（375pxで行末が隠れる）
@@ -256,9 +256,62 @@ check(
   "画面: 入れ替え前のレースでもハイライト行の説明は残す",
   chart.includes("analysis.motor.highlightNote"),
 );
+// BOA-521: 過去レースのドリルダウンは「このレースの直前まで」で集計する
+{
+  const races = slice("function getRacesForVenueSince(", "\n}\n");
+  check(
+    "getRacesForVenueSince: beforeRaceId より前のレースに限り（race_id <）、キーを分ける",
+    races.includes("races.filter((r) => r.race_id < beforeRaceId)") &&
+      races.includes("${beforeKey(beforeRaceId)}"),
+  );
+  check(
+    "motorWindowStart: beforeRaceId があれば、その日付を基準日にする",
+    windowFn.includes("beforeRaceId === null") &&
+      windowFn.includes("beforeRaceId.slice(0, 10)"),
+  );
+  for (const [label, body] of [
+    ["機力指数", methodBody("getMotorPowerIndex")],
+    ["日次系列", dailySeries],
+    ["使用履歴", methodBody("getMotorUsageHistory")],
+    ["枠番別成績", methodBody("getMotorWakuStats")],
+    ["選手×枠成績", methodBody("getMotorRacerWakuStats")],
+  ]) {
+    check(
+      `${label}: 上限（beforeRaceId）をレースの取得に通し、キャッシュのキーに入れる`,
+      /getRacesForVenueSince\([^)]*beforeRaceId,?\s*\)/.test(body) &&
+        body.includes("${beforeKey(beforeRaceId)}"),
+    );
+  }
+  const champ = methodBody("getVenueMotorChampionshipHistory");
+  check(
+    "優勝履歴: 過去レースではそのレースより前の優勝に限る",
+    champ.includes("raceId < beforeRaceId") &&
+      champ.includes("${beforeKey(beforeRaceId)}"),
+  );
+  check(
+    "会場内順位: asOfDate 以前のスナップショットで順位を出す",
+    methodBody("getVenueMotorRanking").includes(
+      '.lte("scraped_date", asOfDate ?? "9999-12-31")',
+    ),
+  );
+  check(
+    "画面: 過去レースのドリルダウンで beforeRaceId を9つの取得すべてに渡す",
+    chart.includes("const beforeRaceId = isPast ? selectedRace : null;") &&
+      (chart.match(/\bbeforeRaceId,\n/g) ?? []).length >= 7 &&
+      (chart.match(/isPast \? raceDate : null/g) ?? []).length >= 2,
+  );
+}
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;
+  // BOA-521: ドリルダウンは「このレースの直前まで」なので、一覧の注記で機力指数を
+  // 「今日から遡る指標」と説明すると食い違う（2026-09-29 ファン評価）
+  check(
+    `${lang}: 過去レースの出典注記が、機力指数を「今日から遡る」と説明していない`,
+    !/今日から遡|computed backward from today|從今天回溯|오늘부터 거슬러/.test(
+      motor.officialModeSourceNote,
+    ),
+  );
   check(
     `${lang}: 過去レース・切り詰め・入れ替え前の文言がある`,
     [
@@ -268,7 +321,7 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       "drillPreGeneration",
       "periodSinceGeneration",
       "racePreGenerationNote",
-      "drillCurrentStateNote",
+      "drillAsOfRaceNote",
       "highlightNote",
     ].every((k) => typeof motor[k] === "string" && motor[k].length > 0),
   );
