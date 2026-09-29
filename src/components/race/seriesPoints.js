@@ -550,6 +550,35 @@ export function isAbsentStartRow(row) {
   return row?.finish_mark === "欠";
 }
 
+/**
+ * 1走ぶんの着順の表示（純関数、BOA-537）。6艇の推移の点の下に出す。
+ *
+ * - フライングは「F」（本番STの is_flying）
+ * - 欠場は「欠」（本番STの着順欄が「欠」、またはそのレースに他艇のST行があるのに
+ *   自艇だけ行が無い。`isAbsentStartRow` と同じ判定）
+ * - 着順が付いていれば 1〜6
+ * - 着順が無く、本番STの着順欄に記号（転・落・妨・エ・不・L・沈 など、公式の表記）が
+ *   あればそれ
+ * - 結果が無い（未実施）・記号も無いときは null（出さない。推測で「失」と書かない）
+ *
+ * @param {Object|null} result `race_results` の1行（rank1〜rank6 は艇番）
+ * @param {number} boatNumber 艇番
+ * @param {Object|null} stRow 本番STの行（finish_mark・is_flying）
+ * @param {boolean} raceHasSt そのレースに本番STの行が1つでもあるか
+ * @returns {number|string|null}
+ */
+export function runFinishLabel(result, boatNumber, stRow, raceHasSt) {
+  if (stRow?.is_flying) return "F";
+  if (isAbsentStartRow(stRow) || (!stRow && raceHasSt && result)) return "欠";
+  if (!result) return null;
+  const pos = finishPositionOf({ ...result, boatNumber });
+  if (pos !== null) return pos;
+  const mark = stRow?.finish_mark;
+  if (typeof mark === "string" && mark !== "" && !/^[0-9]$/.test(mark))
+    return mark;
+  return null;
+}
+
 /** 着順の並びで「欠場」を表す値（`listSeriesFinishes`） */
 export const FINISH_ABSENT = "absent";
 

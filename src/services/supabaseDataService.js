@@ -29,6 +29,7 @@ import {
   splitMeetSeries,
   scoreTableFor,
   isAbsentStartRow,
+  runFinishLabel,
 } from "../components/race/seriesPoints.js";
 import {
   PRETEST_LOOKBACK_DAYS,
@@ -6820,7 +6821,8 @@ export const supabaseDataService = {
     }
     const vv = String(venueCode).padStart(2, "0");
     // v15: 本番STの「欠」の行を出走に数えない（BOA-504）
-    return withCache(`meet-scoreboard-v15-${raceId}`, async () => {
+    // v16: 推移の走に着順（finish）を足した（BOA-537）
+    return withCache(`meet-scoreboard-v16-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7247,6 +7249,13 @@ export const supabaseDataService = {
             (byRacer[e.racer_id] ??= []).push({
               raceId: e.race_id,
               date: e.race_id.slice(0, 10),
+              // その走の着順（1〜6・F・欠・転など）。推移の点の下に出す（BOA-537）
+              finish: runFinishLabel(
+                resultById.get(e.race_id) ?? null,
+                e.boat_number,
+                stRow,
+                stByRace.has(e.race_id),
+              ),
               exhibition: ex === null ? null : Number(ex),
               st,
               stRank:

@@ -69,3 +69,31 @@
 .meet-sparkline-tip.at-bottom {
   bottom: 0;
 }
+
+/* 点の下の着順（BOA-537）。点と同じ横位置に、数字を中央そろえで置く */
+.meet-sparkline-labels {
+  position: relative;
+  height: 13px;
+}
+
+.meet-sparkline-label {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 10px;
+  line-height: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* 1着は強く出す（比較表の着順の並びと同じ扱い） */
+.meet-sparkline-label.is-win {
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+}
+
+/* F・欠・転などの記号は、数字と取り違えないよう控えめに */
+.meet-sparkline-label.is-mark {
+  color: var(--text-secondary);
+}

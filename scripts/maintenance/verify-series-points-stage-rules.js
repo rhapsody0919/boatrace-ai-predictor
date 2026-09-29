@@ -38,6 +38,7 @@ import {
   listAbsentOnlyRacers,
   FINISH_ABSENT,
   isAbsentStartRow,
+  runFinishLabel,
 } from "../../src/components/race/seriesPoints.js";
 import { getRaceStageKey } from "../../src/constants/raceStageConfig.js";
 import { fetchAllByRaceId } from "../lib/meetBoundaries.js";
@@ -539,6 +540,30 @@ check(
           meetTab,
         ),
       true,
+    );
+  }
+  // 推移の点の下に出す着順（BOA-537）。数字・F・欠・公式の記号。推測で「失」と書かない
+  {
+    const res = {
+      rank1: 3,
+      rank2: 1,
+      rank3: 6,
+      rank4: 2,
+      rank5: 4,
+      rank6: null,
+    };
+    check(
+      "runFinishLabel: 着順・F・欠・公式の記号・未実施",
+      [
+        runFinishLabel(res, 1, { start_timing: 0.12 }, true),
+        runFinishLabel(res, 5, { start_timing: 0.2, is_flying: true }, true),
+        runFinishLabel(res, 5, { start_timing: null, finish_mark: "欠" }, true),
+        runFinishLabel(res, 5, null, true),
+        runFinishLabel(res, 5, { start_timing: 0.18, finish_mark: "転" }, true),
+        runFinishLabel(res, 5, { start_timing: 0.18, finish_mark: null }, true),
+        runFinishLabel(null, 1, null, false),
+      ],
+      [2, "F", "欠", "欠", "転", null, null],
     );
   }
   check(

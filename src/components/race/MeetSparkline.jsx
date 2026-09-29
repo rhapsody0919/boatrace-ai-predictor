@@ -51,10 +51,16 @@ import "./MeetSparkline.css";
  *   （6艇を同じ尺で並べるとき）。省略すると自分の最小〜最大に伸びる
  * @param {boolean} [upIsBetter] 値が小さいほど上に描く（既定 true）
  * @param {number} [height] 高さ（px）
+ * @param {Array<{text: string|number, win?: boolean, mark?: boolean}|null>} [pointLabels]
+ *   各点の下に出す短い文字（6艇の推移では着順）。`points` と同じ並び。
+ *   値（ST・展示）が無い走でも、その横位置に出す（欠場・フライングも並びに残す）
  * @param {boolean} [allowSinglePoint] 値が1つでも描く（既定 false）。6艇を
  *   並べる推移では、1走の選手の行が空白だと「取れていない」と読まれるので、
  *   前走の点を1つだけ右端（他の行の前走と同じ横位置）に置く
  */
+// 点の下の文字（着順）の帯の高さ（px）
+const LABEL_STRIP_HEIGHT = 13;
+
 function MeetSparkline({
   points,
   baseline = null,
@@ -64,6 +70,7 @@ function MeetSparkline({
   upIsBetter = true,
   height = 56,
   allowSinglePoint = false,
+  pointLabels = null,
 }) {
   // どの点に合わせているか。null は「どこにも合わせていない」
   const [activeIndex, setActiveIndex] = useState(null);
@@ -169,7 +176,7 @@ function MeetSparkline({
     <div
       className="meet-sparkline-wrap"
       ref={wrapRef}
-      style={{ height }}
+      style={{ height: pointLabels ? height + LABEL_STRIP_HEIGHT : height }}
       onPointerMove={pickNearest}
       onPointerDown={pickNearest}
       onPointerLeave={() => setActiveIndex(null)}
@@ -242,6 +249,29 @@ function MeetSparkline({
           />
         )}
       </svg>
+      {pointLabels && (
+        // 点の下の文字は HTML で置く。SVG は横に引き伸ばす（preserveAspectRatio none）
+        // ので、SVG の text にすると文字が横に潰れる。横位置は点と同じ割合で合わせる
+        <div className="meet-sparkline-labels" aria-hidden="true">
+          {pointLabels.map((lab, i) =>
+            lab === null || lab === undefined ? null : (
+              <span
+                key={i}
+                className={[
+                  "meet-sparkline-label",
+                  lab.win ? "is-win" : "",
+                  lab.mark ? "is-mark" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                style={{ left: `${((x(i) / W) * 100).toFixed(2)}%` }}
+              >
+                {lab.text}
+              </span>
+            ),
+          )}
+        </div>
+      )}
       {activeLabel && (
         <span
           className={`meet-sparkline-tip x-${tipX} at-${tipSide}`}

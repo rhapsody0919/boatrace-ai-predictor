@@ -719,6 +719,7 @@
     "compareTrendNote": "6艇跑的是同一梯次、同一水面，因此用同一把尺（6艇的最小～最大）並排，可以跨列直接比較線的高度。虛線是6艇的平均。越上面越快，大點為前一場。",
     "compareTrendRange": "橫軸為出賽順序（左為較早），並非日期刻度。此處顯示的是{{from}}〜{{to}}的出賽，各列右端為該選手的前一戰。",
     "compareTrendHint": "點選該列，下方的詳細資料會切換為該選手",
+    "compareTrendFinishNote": "點下方的數字是該場的名次（F＝偷跑，缺＝缺賽，轉・落・妨等為官方標記）。",
     "compareTrendEmpty": "尚無足夠場次可繪製走勢",
     "prelimOverNoteDay": "預賽已於第{{day}}天（{{date}}）結束。得分率就此確定，今日名次不會再改變。",
     "trendLastHeader": "前一場",
