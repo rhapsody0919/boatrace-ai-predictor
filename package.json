@@ -71,6 +71,7 @@
     "verify:gha-skip-gate": "node scripts/maintenance/verify-gha-skip-gate.js",
     "verify:weather": "node scripts/maintenance/verify-weather-parsing.js",
     "verify:course-entry-tendency": "node scripts/maintenance/verify-course-entry-tendency.js",
+    "verify:frontend-pure-functions": "node scripts/maintenance/verify-frontend-pure-functions.js",
     "verify:rpc-output-keys": "node scripts/maintenance/verify-rpc-output-keys.js",
     "verify:rpc-key-regression": "node scripts/maintenance/verify-rpc-key-regression.js",
     "verify:rls-migration": "node scripts/maintenance/verify-rls-migration.js",

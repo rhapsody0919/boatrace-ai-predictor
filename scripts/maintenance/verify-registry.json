@@ -82,6 +82,11 @@
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
     },
     {
+      "script": "verify-frontend-pure-functions.js",
+      "tier": "ci",
+      "guards": "画面側の純関数（basicInfoStats / raceStatus / courseGridStats / venueDayTrend / weatherInfo）の、過去に fix が入った箇所の回帰と変異検証（BOA-255）"
+    },
+    {
       "script": "verify-gha-skip-gate.js",
       "tier": "ci",
       "guards": "フェイルセーフ付きSKIP（scripts/lib/ghaSkipGate.js）と日次ワークフローの配線"
