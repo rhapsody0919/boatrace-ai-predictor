@@ -20,7 +20,7 @@ import MotorWakuStatsGrid from "./MotorWakuStatsGrid";
 import MotorRacerWakuDrillDown from "./MotorRacerWakuDrillDown";
 import InlineFetchError from "../InlineFetchError";
 import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
-import { powerIndexTone } from "../../utils/smallSampleRate";
+import { formatPowerIndex, powerIndexTone } from "../../utils/smallSampleRate";
 import { getTodayJST } from "../../utils/dateUtils";
 import {
   formatGenerationDate,
@@ -707,7 +707,7 @@ function MotorConditionChart({
                         >
                           {row.power_index !== null &&
                           row.power_index !== undefined
-                            ? `${row.power_index > 0 ? "+" : ""}${row.power_index.toFixed(1)}`
+                            ? formatPowerIndex(row.power_index)
                             : "-"}
                         </td>
                         {showFinalCount && (
@@ -789,7 +789,7 @@ function MotorConditionChart({
                 }`}
               >
                 {t("analysis.motor.powerIndexSummary", {
-                  index: `${powerIndex.power_index > 0 ? "+" : ""}${powerIndex.power_index.toFixed(1)}`,
+                  index: formatPowerIndex(powerIndex.power_index),
                   count: powerIndex.sample_count,
                   // 入れ替え後で期間を切り詰めたときは「過去90日」と書かない
                   // （37走が本当に90日分に見えてしまう）

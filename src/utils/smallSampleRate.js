@@ -32,3 +32,15 @@ export function powerIndexTone(index, n, threshold) {
   if (index < 0) return "bad";
   return "even";
 }
+
+/**
+ * 機力指数の符号付き表示（小数1桁）。0 に近い負の値を丸めると「-0.0」になるので、
+ * 丸めた結果が 0 なら「0.0」と出す（BOA-549）
+ * @param {number} index
+ * @returns {string} 「+12.1」「-4.1」「0.0」
+ */
+export function formatPowerIndex(index) {
+  const rounded = index.toFixed(1);
+  if (Number(rounded) === 0) return "0.0";
+  return index > 0 ? `+${rounded}` : rounded;
+}

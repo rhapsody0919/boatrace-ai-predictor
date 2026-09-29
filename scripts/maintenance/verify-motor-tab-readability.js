@@ -26,6 +26,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  formatPowerIndex,
   formatRateOrCount,
   powerIndexTone,
 } from "../../src/utils/smallSampleRate.js";
@@ -217,6 +218,14 @@ check(
       usage.includes("`motor-usage-history-v3-"),
   );
 }
+check(
+  "formatPowerIndex: 丸めて0になる負の値を「-0.0」と出さない（丸亀45号機 -0.04 → 0.0）",
+  formatPowerIndex(-0.04) === "0.0" &&
+    formatPowerIndex(12.14) === "+12.1" &&
+    formatPowerIndex(-4.1) === "-4.1" &&
+    formatPowerIndex(0) === "0.0" &&
+    !/power_index > 0 \? "\+" : ""/.test(chart + card),
+);
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;

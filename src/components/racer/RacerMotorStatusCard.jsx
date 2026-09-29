@@ -3,7 +3,7 @@ import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import TrendLineChart from "../analysis/TrendLineChart";
 import MotorStatBadgeRow from "../MotorStatBadgeRow";
 import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
-import { powerIndexTone } from "../../utils/smallSampleRate";
+import { formatPowerIndex, powerIndexTone } from "../../utils/smallSampleRate";
 import "./RacerMotorStatusCard.css";
 
 /**
@@ -94,8 +94,7 @@ export default function RacerMotorStatusCard({ status }) {
       {hasPowerIndex && (
         <>
           <p className={`racer-motor-status-index ${indexClass}`}>
-            機力指数 {powerIndex.power_index > 0 ? "+" : ""}
-            {powerIndex.power_index.toFixed(1)}（
+            機力指数 {formatPowerIndex(powerIndex.power_index)}（
             {powerIndex.clipped_by_generation
               ? "現行モーターの使用開始以降"
               : "過去90日"}
