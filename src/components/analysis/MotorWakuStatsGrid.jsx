@@ -4,6 +4,7 @@ import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import { formatGenerationDate } from "../../utils/motorGeneration";
+import { formatRateOrCount } from "../../utils/smallSampleRate";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
 
@@ -24,7 +25,8 @@ import "../common/HorizontalScrollHint.css";
  * 使用開始日そのものは画面に出さない（ADR-0067 2026-09-28追記）
  */
 function ExhibitionSparkline({ trend }) {
-  if (!trend || trend.length < 2) return null;
+  // 2点だけの直線は「推移」に読めないので、3点未満では出さない（BOA-513）
+  if (!trend || trend.length < 3) return null;
   const times = trend.map((t) => t.time);
   const min = Math.min(...times);
   const max = Math.max(...times);
@@ -67,22 +69,30 @@ function MotorWakuRow({ row, onSelectCourse, isHighlighted }) {
         <span className="motor-waku-course-badge">{row.course}</span>
       </td>
       <td className={`rate ${isSmallSample ? "is-small-sample" : ""}`}>
+        {/* n が小さいときは率でなく「2/3」で出す（BOA-513、ファン4人のパネル）。
+            分数に母数が入っているので、(n=◯) は十分な n のときだけ添える */}
         {row.raceCount > 0 ? (
           <>
-            {row.winRate.toFixed(1)}%
-            <span className="motor-waku-n">
-              {t("analysis.motor.sampleCount", { n: row.raceCount })}
-            </span>
+            {formatRateOrCount(
+              row.winRate,
+              row.raceCount,
+              SMALL_SAMPLE_THRESHOLD,
+            )}
+            {!isSmallSample && (
+              <span className="motor-waku-n">
+                {t("analysis.motor.sampleCount", { n: row.raceCount })}
+              </span>
+            )}
           </>
         ) : (
           "-"
         )}
       </td>
       <td className={`rate ${isSmallSample ? "is-small-sample" : ""}`}>
-        {row.top2Rate !== null ? `${row.top2Rate.toFixed(1)}%` : "-"}
+        {formatRateOrCount(row.top2Rate, row.raceCount, SMALL_SAMPLE_THRESHOLD)}
       </td>
       <td className={`rate ${isSmallSample ? "is-small-sample" : ""}`}>
-        {row.top3Rate !== null ? `${row.top3Rate.toFixed(1)}%` : "-"}
+        {formatRateOrCount(row.top3Rate, row.raceCount, SMALL_SAMPLE_THRESHOLD)}
       </td>
       <td className="motor-waku-exhibition-cell">
         {row.avgExhibitionTime !== null ? (

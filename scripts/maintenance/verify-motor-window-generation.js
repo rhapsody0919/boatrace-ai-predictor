@@ -115,7 +115,8 @@ check(
 );
 check(
   "日次系列のキャッシュのキーが旧版と違う（戻り値を {window, series} に変えた）",
-  dailySeries.includes("`motor-daily-series-v2-") &&
+  // 版は後から上がる（BOA-513 で v3）。v2 以上であることを見る
+  /`motor-daily-series-v([2-9]|\d{2,})-/.test(dailySeries) &&
     !src.includes("`motor-daily-series-${"),
 );
 check(
@@ -125,7 +126,9 @@ check(
 );
 check(
   "部品交換のキャッシュのキーが旧版と違う",
-  methodBody("getMotorPartsHistory").includes("`motor-parts-history-v2-"),
+  /`motor-parts-history-v([2-9]|\d{2,})-/.test(
+    methodBody("getMotorPartsHistory"),
+  ),
 );
 check(
   "使用履歴のキャッシュのキーが旧版と違う",
@@ -140,9 +143,9 @@ check(
   breakdown.includes("const past = isPastRace(raceId);"),
 );
 check(
-  "一覧表: 過去/当日をキャッシュのキーに含める（v5）",
+  "一覧表: 過去/当日をキャッシュのキーに含める（v5〜）",
   breakdown.includes(
-    '`race-motor-breakdown-v5-${past ? "official" : "recalc"}-',
+    '`race-motor-breakdown-v6-${past ? "official" : "recalc"}-',
   ),
 );
 const pastBranch = breakdown.slice(

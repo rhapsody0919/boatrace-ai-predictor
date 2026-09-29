@@ -60,3 +60,22 @@ export function isClippedByGeneration(generationStart, baseDate, days) {
   start.setUTCDate(start.getUTCDate() - days);
   return generationStart > start.toISOString().split("T")[0];
 }
+
+/**
+ * 公式の2連率・3連率が 0 のとき、それが「まだ集計されていない（新モーターで最初の節が
+ * 終わっていない）」のか「集計済みで本当に 0%」なのかを、会場公式サイトのスナップショット
+ * （venue_motor_stats の出走数＝モーター鮮度の「◯走目」）から判定する。
+ *
+ * 公式2連率・3連率がどちらも 0 で自社集計に走があるだけでは区別できない。前の節で
+ * 3着以内に一度も入らなかったモーター（例: 丸亀24号機、9/21 に2走とも6着）も同じ形になる
+ * （2026-09-29 ファン評価 P1）。
+ *
+ * @param {boolean} venueHasOfficialStats その会場に会場公式サイトの値があるか（戸田などは無い）
+ * @param {number|null|undefined} officialRaceCount このモーターの会場公式の出走数
+ * @returns {"pending"|"tallied"|"unknown"} pending: 集計前 / tallied: 集計済み /
+ *   unknown: 会場公式の値が無く区別できない（どちらとも断定しない）
+ */
+export function officialTallyState(venueHasOfficialStats, officialRaceCount) {
+  if (officialRaceCount > 0) return "tallied";
+  return venueHasOfficialStats ? "pending" : "unknown";
+}
