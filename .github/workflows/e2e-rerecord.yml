@@ -1,0 +1,169 @@
+name: E2E Re-record (録画の自動撮り直し)
+
+# PRゲートの E2E が再生する録画を、毎日 master で撮り直す（BOA-466、ADR-0077）。
+#
+# 背景: データ取得部分（supabaseDataService.js）を変える PR が1日に何本も入る。PR ごとに
+# 人手で撮り直す前提は成り立たず、撮り直さないと録画に無い通信が増えていく（PRゲートは
+# 素通しして一覧に出すが、素通しが多いほど本番依存に戻る）。
+#
+# 手順:
+#   1. 本番に繋いで全件を録画する（E2E_RECORD=1）
+#   2. 撮った録画だけで再生して全件実行する（E2E_REPLAY_STRICT=1: 録画に無い通信は abort）
+#   3. 採用条件を満たすときだけ採用する
+#      - 2 が全件通る
+#      - skip が現行の録画より増えていない（発走前のレースが少ない日に撮ると skip が増える）
+#   4. 採用したら GitHub Release に zip で添付し、ポインタ（e2e/recording.json）を master に
+#      直接 push する（push-with-retry.sh。regenerate-generated-docs.yml と同じ流儀）。
+#      GITHUB_TOKEN の push は他のワークフローを起動しない
+#   5. 古い録画 Release を消す（直近14件を残す）
+#   採用しなかった・失敗したときは Slack に通知する
+#
+# JST 11:00 = UTC 02:00。ほぼ全会場が開催中で、発走前のレースが最も多い時間帯。
+# 必要な権限: contents: write（Release の作成・削除とポインタの push）。
+# 使う Secrets: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY（本番の読み取りのみ）、SLACK_WEBHOOK_URL
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-rerecord
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  rerecord:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: 録画（本番に繋いで全件）
+        id: record
+        env:
+          CI: true
+          E2E_RECORD: '1'
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          set +e
+          npx playwright test > record.log 2>&1
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          tail -40 record.log
+          # 録画中のテストの成否は採用条件にしない（本番データでは落ちるテストがありうる）。
+          # 採用は次の「撮った録画だけでの再生」で判定する。録画そのものができていなければ落とす
+          test -f e2e/recordings/api.har
+
+      - name: 撮った録画だけで再生（録画に無い通信は abort）
+        id: replay
+        env:
+          CI: true
+          E2E_RECORDING_SOURCE: local
+          E2E_REPLAY_STRICT: '1'
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          set +e
+          # 録画の実行が書いたレポートを採点しないよう、再生の前に消す
+          mv e2e-results.json record-results.json 2>/dev/null
+          npx playwright test > replay.log 2>&1
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          tail -40 replay.log
+          exit 0
+
+      - name: 採用判定
+        id: judge
+        run: |
+          set +e
+          if [ ! -f e2e-results.json ]; then
+            RESULT='{"adopt":false,"reasons":["再生のレポート（e2e-results.json）が無い。再生が途中で止まった"]}'
+          else
+            RESULT=$(node scripts/maintenance/e2e-recording.js judge e2e-results.json)
+          fi
+          CODE=$?
+          if ! echo "$RESULT" | jq -e '.adopt == true' >/dev/null; then CODE=3; fi
+          echo "$RESULT"
+          echo "result=$RESULT" >> "$GITHUB_OUTPUT"
+          if [ "$CODE" -eq 0 ]; then echo "adopt=true" >> "$GITHUB_OUTPUT"; else echo "adopt=false" >> "$GITHUB_OUTPUT"; fi
+          {
+            echo "## E2E 録画の撮り直し"
+            echo '```json'
+            echo "$RESULT"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Release に添付してポインタを更新
+        if: steps.judge.outputs.adopt == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ steps.judge.outputs.result }}
+        run: |
+          SKIPPED=$(echo "$RESULT" | jq '.counts.skipped')
+          TESTS=$(echo "$RESULT" | jq '.counts.tests')
+          node scripts/maintenance/e2e-recording.js publish --skipped="$SKIPPED" --tests="$TESTS"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add e2e/recording.json
+          git commit -m "chore: E2Eの録画を撮り直した [automated]"
+          # master の更新と競合しても失敗しないよう rebase+リトライで push する（BOA-360）
+          bash scripts/maintenance/push-with-retry.sh
+
+      - name: 古い録画 Release を消す（直近14件を残す）
+        if: steps.judge.outputs.adopt == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/maintenance/e2e-recording.js prune --keep=14
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-rerecord-logs
+          path: |
+            record.log
+            replay.log
+            record-results.json
+            e2e-results.json
+          retention-days: 7
+
+      - name: Notify Slack (採用しなかった・失敗したとき)
+        if: always() && (failure() || steps.judge.outputs.adopt != 'true')
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RESULT: ${{ steps.judge.outputs.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "::warning::SLACK_WEBHOOK_URL が未設定のため通知できません"
+            exit 0
+          fi
+          REASONS=$(printf '%s' "$RESULT" | jq -r '.reasons // [] | join("\n")' 2>/dev/null)
+          if [ -z "$REASONS" ]; then REASONS="ワークフローが途中で失敗した（採用判定の前後）"; fi
+          PAYLOAD=$(jq -n --arg reasons "$REASONS" --arg url "$RUN_URL" '{
+            attachments: [{
+              color: "#e67e22",
+              blocks: [{
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: (":warning: *E2Eの録画を撮り直せませんでした（現行の録画のまま）*\n```" + $reasons + "```\nPRゲートは現行の録画で動き続けます。録画に無い通信は本番へ素通しされ、PRコメントに一覧が出ます。\n<" + $url + "|実行ログ>")
+                }
+              }]
+            }]
+          }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$PAYLOAD"

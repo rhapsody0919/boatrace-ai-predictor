@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.js";
 
 /**
  * 「今どの艇を見ているか」がレース詳細のタブをまたいで保たれることの固定（BOA-492）。

@@ -23,6 +23,7 @@ import { getTodayJST } from "../../utils/dateUtils";
 import {
   formatGenerationDate,
   isClippedByGeneration,
+  officialTallyState,
 } from "../../utils/motorGeneration";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
@@ -280,7 +281,29 @@ function MotorConditionChart({
     setSelectedWakuCourse(null);
   }, [selectedVenue, drillDownMotor]);
 
-  const chartData = (trendData?.trend ?? []).map((row) => ({
+  // 入れ替え直後は、公式の累計がまだ付かず 2連率・3連率とも 0 の日が続く。この先頭の
+  // 0 の点は「1回も連に絡まなかった」と読めるので描かない（BOA-513、ファン4人のパネル）
+  const firstRatedIndex = (trendData?.trend ?? []).findIndex(
+    (row) => row.motor_2rate !== 0 || row.motor_3rate !== 0,
+  );
+  // 全部の点が 0 のとき、集計前（最初の節がまだ終わっていない）なら線を引かない。
+  // 0% の横線は「一度も2着以内に来ていない」と読まれる（2026-09-29 ファン評価 P1）。
+  // 集計済みで本当に 0%（前の節で3着以内に入らなかった）なら、0 の線を引く。
+  // 区別には会場公式サイトの出走数を使う（officialTallyState）
+  const venueHasOfficialStats = breakdown.some(
+    (r) => r.race_count !== null && r.race_count !== undefined,
+  );
+  const drillTallyState = officialTallyState(
+    venueHasOfficialStats,
+    venueMotorStats?.raceCount,
+  );
+  const chartData = (
+    firstRatedIndex === -1
+      ? drillTallyState === "tallied"
+        ? (trendData?.trend ?? [])
+        : []
+      : (trendData?.trend ?? []).slice(firstRatedIndex)
+  ).map((row) => ({
     date: row.date.slice(5),
     motor_2rate: row.motor_2rate,
     motor_3rate: row.motor_3rate,
@@ -347,6 +370,14 @@ function MotorConditionChart({
   // 押し出していた（2026-09-27、ファン視点のレビュー。条件別タブで
   // n=0の行を畳んだBOA-432と同じ考え方）
   const showFirstPlaceRate = firstPlaceRates.some((v) => v !== null);
+  // 優出数・優勝数も、会場の全モーターで値が無い（会場公式サイトが出していない）ときは
+  // 列ごと畳む。「-」が並ぶと「0回」と読まれる（BOA-513、ファン4人のパネル）
+  const showFinalCount = breakdown.some(
+    (r) => r.final_count !== null && r.final_count !== undefined,
+  );
+  const showChampionshipCount = breakdown.some(
+    (r) => r.championship_count !== null && r.championship_count !== undefined,
+  );
   // 前検タイムも同じ扱い（BOA-451）。節に前検の行が無い開催では列ごと出さない
   // （ADR-0067 の 2026-09-26 追記「節に前検の行が無い場合は行ごと出さない」と同じ）
   const hasPretest = breakdown.some(
@@ -359,6 +390,15 @@ function MotorConditionChart({
     breakdown.map((r) => r.championship_count),
   );
   const firstPlaceRateRankClass = rankClassFor(firstPlaceRates);
+  // 会場公式サイト由来で、表に出ている列の名前（出典の注記に挙げる）
+  const venueColsLabel = [
+    showFirstPlaceRate && "analysis.motor.firstPlaceRateHeader",
+    showFinalCount && "analysis.motor.finalCountHeader",
+    showChampionshipCount && "analysis.motor.championshipCountHeader",
+  ]
+    .filter(Boolean)
+    .map((key) => t("analysis.motor.quotedLabel", { label: t(key) }))
+    .join(t("analysis.motor.quotedLabelSeparator"));
   // 過去レースの一覧表は出走表時点の公式値（BOA-329、2026-09-29 ユーザー判断(c)）。
   // 期間の切り替えは効かないので出さず、1行の注記に置き換える
   const officialMode = breakdown.some((r) => r.rate_source === "official");
@@ -555,8 +595,12 @@ function MotorConditionChart({
                         <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
                       )}
                       <th>{t("analysis.motor.powerIndexHeader")}</th>
-                      <th>{t("analysis.motor.finalCountHeader")}</th>
-                      <th>{t("analysis.motor.championshipCountHeader")}</th>
+                      {showFinalCount && (
+                        <th>{t("analysis.motor.finalCountHeader")}</th>
+                      )}
+                      {showChampionshipCount && (
+                        <th>{t("analysis.motor.championshipCountHeader")}</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -588,7 +632,17 @@ function MotorConditionChart({
                           基本情報タブのデータ出走表も同じ値を `toFixed(1)` で出しており、
                           ボートレース日和も1桁。再計算した2連率/3連率も、母数が数十走で
                           2桁目に意味が無いため揃える */}
-                        <td className="rate">{row.motor_2rate?.toFixed(1)}</td>
+                        <td className="rate">
+                          {row.motor_2rate?.toFixed(1)}
+                          {/* このレースより前に結果の出た走が無い新モーター（当日の
+                              レースのみ判定できる）。公式の 0.0 は消さずに添える
+                              （BOA-513、ファン4人のパネル） */}
+                          {row.sample_count === 0 && (
+                            <span className="motor-waku-n motor-first-use">
+                              {t("analysis.motor.firstUseBadge")}
+                            </span>
+                          )}
+                        </td>
                         {!officialMode && (
                           <td className="rate">
                             {row.official_2rate !== null &&
@@ -640,16 +694,20 @@ function MotorConditionChart({
                             ? `${row.power_index > 0 ? "+" : ""}${row.power_index.toFixed(1)}`
                             : "-"}
                         </td>
-                        <td
-                          className={`rate ${finalCountRankClass(row.final_count)}`}
-                        >
-                          {row.final_count ?? "-"}
-                        </td>
-                        <td
-                          className={`rate ${championshipCountRankClass(row.championship_count)}`}
-                        >
-                          {row.championship_count ?? "-"}
-                        </td>
+                        {showFinalCount && (
+                          <td
+                            className={`rate ${finalCountRankClass(row.final_count)}`}
+                          >
+                            {row.final_count ?? "-"}
+                          </td>
+                        )}
+                        {showChampionshipCount && (
+                          <td
+                            className={`rate ${championshipCountRankClass(row.championship_count)}`}
+                          >
+                            {row.championship_count ?? "-"}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -663,22 +721,18 @@ function MotorConditionChart({
               各行の末尾がフェードに隠れて読めない（2026-09-29 ファン評価） */}
             <p className="table-note motor-official-source-note">
               {officialMode
-                ? t("analysis.motor.officialModeSourceNote", {
-                    // 表に出ている会場公式サイト由来の列だけを挙げる（1着率の列が無い
-                    // 会場で「1着率」に触れない。BOA-513）
-                    venueCols: [
-                      showFirstPlaceRate &&
-                        "analysis.motor.firstPlaceRateHeader",
-                      "analysis.motor.finalCountHeader",
-                      "analysis.motor.championshipCountHeader",
-                    ]
-                      .filter(Boolean)
-                      .map((key) =>
-                        t("analysis.motor.quotedLabel", { label: t(key) }),
-                      )
-                      .join(t("analysis.motor.quotedLabelSeparator")),
-                  })
+                ? t("analysis.motor.officialModeSourceNote")
                 : t("analysis.motor.officialSourceNote")}
+              {/* 会場公式サイト由来の列（1着率・優出数・優勝数）は、表に出ているものだけを
+                  挙げる。1つも無い会場（戸田など）では文ごと出さない（BOA-513。列名が空の
+                  まま「…の値、はそのレース日以前…」と文が崩れるのを防ぐ） */}
+              {venueColsLabel &&
+                `${t(
+                  officialMode
+                    ? "analysis.motor.venueColsPastNote"
+                    : "analysis.motor.venueColsTodayNote",
+                  { venueCols: venueColsLabel },
+                )}`}
             </p>
           </>
         )}
@@ -888,7 +942,17 @@ function MotorConditionChart({
               ]}
             />
           ) : (
-            <div className="empty-state">{t("analysis.motor.trendEmpty")}</div>
+            <div className="empty-state">
+              {(trendData?.trend ?? []).length === 0
+                ? t("analysis.motor.trendEmpty")
+                : drillTallyState === "pending"
+                  ? t("analysis.motor.trendNotYetOfficial")
+                  : t("analysis.motor.trendOfficialZeroUnknown")}
+            </div>
+          )}
+          {/* 先頭の 0 を落としたとき、下の展示タイムのグラフと始まりの日がずれる理由 */}
+          {firstRatedIndex > 0 && (
+            <p className="table-note">{t("analysis.motor.trendStartNote")}</p>
           )}
 
           <h3 className="selected-motor-heading">
@@ -966,7 +1030,10 @@ function MotorConditionChart({
                           ? t("analysis.motor.usageHistoryRank", {
                               n: r.rank,
                             })
-                          : "-",
+                          : // 今日これから走るレースは「未」。欠場・失格等の「-」と区別する
+                            r.date >= getTodayJST()
+                            ? t("analysis.motor.usageHistoryNotRun")
+                            : "-",
                       )
                       .join(" ")}
                   </span>
@@ -987,7 +1054,13 @@ function MotorConditionChart({
             <ul className="history-list">
               {partsHistory.map((event, i) => (
                 <li key={`${event.date}-${i}`}>
-                  <span className="history-date">{event.date}</span>
+                  <span className="history-date">
+                    {event.date}
+                    {/* 何Rの展示で記録された交換か（そのレースの前の交換）。
+                        同じ日に複数のレースがある（BOA-513、ファン4人のパネル） */}
+                    {event.raceNos?.length > 0 &&
+                      ` ${event.raceNos.map((n) => `${n}R`).join("・")}`}
+                  </span>
                   <span className="parts-history-items">
                     {event.parts && event.parts.length > 0 && (
                       <span className="parts-history-tag">

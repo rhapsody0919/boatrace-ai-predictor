@@ -1,4 +1,12 @@
-import { test, expect } from "@playwright/test";
+import {
+  test,
+  expect,
+  applyRecording,
+  E2E_MODE,
+  e2eNow,
+  fetchRecorded,
+  e2eTodayJST,
+} from "./fixtures.js";
 
 test.describe("ホーム・基本ナビゲーション", () => {
   test("トップページが表示され、主要ナビが機能する", async ({ page }) => {
@@ -560,9 +568,7 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
   test("/races/{本日}には導線がある（本日開催中のレースのため機能する）", async ({
     page,
   }) => {
-    const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
+    const today = e2eTodayJST();
     await page.goto(`/races/${today}`);
     await page.locator(".venue-grid-card--open").first().click();
     await page.locator(".race-card .predict-btn").first().click();
@@ -666,8 +672,7 @@ test.describe("開催場一覧ページ（venue-list-redesign）", () => {
 // DBの状態に依存しないよう、Edge API・Supabase RESTはpage.routeで差し替える
 test.describe("予測データ取得失敗の扱い（失敗を「開催なし」と誤表示せずキャッシュしない）", () => {
   const NO_RACES_TEXT = "本日、このレース場での開催はありません";
-  const todayJST = () =>
-    new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const todayJST = e2eTodayJST;
 
   const predictionCacheKeys = (page) =>
     page.evaluate(() =>
@@ -677,8 +682,8 @@ test.describe("予測データ取得失敗の扱い（失敗を「開催なし�
     );
 
   const mockEdgeRaces = (date) => ({
-    generatedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    generatedAt: e2eNow().toISOString(),
+    updatedAt: e2eNow().toISOString(),
     races: [1, 2].map((n) => ({
       raceId: `${date}-05-${String(n).padStart(2, "0")}`,
       venueCode: 5,
@@ -2131,6 +2136,15 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
 // AI予想タブ（BOA-346）はVolatilityDisplayをレンダリングしない結果確定済み
 // レースでは.volatility-display-*が一切出ないため、レンダリング待ちの
 // タイムアウトで判別して次の候補へ進む
+/** 通信が落ち着くまで待つ。終わらないページもあるためタイムアウトは許容する */
+async function waitForNetworkSettled(page) {
+  await page
+    .waitForLoadState("networkidle", { timeout: 15000 })
+    .catch((error) => {
+      if (error.name !== "TimeoutError") throw error;
+    });
+}
+
 async function findRaceWithVolatilityLevel(page) {
   await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
 
@@ -2152,9 +2166,18 @@ async function findRaceWithVolatilityLevel(page) {
     } catch {
       continue;
     }
+    // バッジはカードの描画より後に届くデータで付く。カードが出た直後に数えると
+    // 通信の速さ次第で0件になり、実行ごとに見に行くレースが変わっていた
+    // （録画の再生で、録画時に訪れなかったレースを開いて発覚。BOA-466）
+    await waitForNetworkSettled(page);
 
+    // 締切を過ぎたレース（race-card--deadline-passed）は AI予想タブに
+    // VolatilityDisplay を出さないので、開いても1件あたり最大15秒の待ちで終わる。
+    // このヘルパーが探しているのは「未確定レース」なので最初から除く。
+    // 除かないと、バッジを数え損ねずに済むようになった後（上の待ち）で
+    // 締切後のレースを順に開いて60秒を使い切っていた（BOA-466）
     const badgedCards = page
-      .locator(".race-card")
+      .locator(".race-card:not(.race-card--deadline-passed)")
       .filter({ hasText: /イン崩れ確率高|本命有利/ });
     const count = await badgedCards.count();
 
@@ -2186,7 +2209,19 @@ async function findRaceWithVolatilityLevel(page) {
         await page.locator(".race-card").first().waitFor({ timeout: 10000 });
         continue;
       }
-      for (const level of ["high", "low", "standard"]) {
+      // VolatilityDisplay は予想結果の描画より後に出ることがある。その場で数えると
+      // 出る前に0件と判定して次のレースへ進み、同じデータでも実行ごとに
+      // 見つかる・見つからないが揺れた（録画の再生で同一データのまま再現。BOA-466）。
+      // 締切前のレースだけを開いているので、出るまで待ってから判定する
+      const levels = ["high", "low", "standard"];
+      await page
+        .locator(levels.map((l) => `.volatility-display-${l}`).join(", "))
+        .first()
+        .waitFor({ timeout: 10000 })
+        .catch((error) => {
+          if (error.name !== "TimeoutError") throw error;
+        });
+      for (const level of levels) {
         const el = page.locator(`.volatility-display-${level}`);
         if ((await el.count()) > 0) return level;
       }
@@ -2219,10 +2254,12 @@ test.describe("レース荒れ度ムード演出（BOA-195: race-open-animation�
 
   test("prefers-reduced-motion環境では波紋アニメーションが表示されない", async ({
     browser,
-  }) => {
+  }, testInfo) => {
     test.setTimeout(60000);
     const context = await browser.newContext({ reducedMotion: "reduce" });
     try {
+      // fixture を通らない context なので、録画の再生と時計の固定を明示的に掛ける
+      await applyRecording(context, testInfo);
       const page = await context.newPage();
       const level = await findRaceWithVolatilityLevel(page);
       test.skip(
@@ -2850,7 +2887,7 @@ test.describe("レース詳細の直前情報タブ: 展示進入", () => {
   const routeMaintenance = async (page, fulfill) => {
     await page.route("**/rest/v1/exhibition_data?*", (route) => {
       if (!route.request().url().includes("exhibition_course"))
-        return route.continue();
+        return route.fallback();
       return fulfill(route);
     });
   };
@@ -3022,7 +3059,7 @@ test.describe("レース詳細の直前情報タブ: この枠からの進入コ
     await page.route("**/rest/v1/race_results?*", (route) => {
       const url = decodeURIComponent(route.request().url());
       if (!url.includes("actual_course_1") || !url.includes("payout_win"))
-        return route.continue();
+        return route.fallback();
       return route.fulfill({
         status: 500,
         contentType: "application/json",
@@ -3048,7 +3085,7 @@ test.describe("レース詳細の直前情報タブ: この枠からの進入コ
     // 1号艇（登番3833）の出走履歴だけ即失敗、他の艇は応答を遅らせる
     await page.route("**/rest/v1/race_entries?*", async (route) => {
       const url = decodeURIComponent(route.request().url());
-      if (!url.includes("f_count")) return route.continue();
+      if (!url.includes("f_count")) return route.fallback();
       if (url.includes("racer_id=eq.3833"))
         return route.fulfill({
           status: 500,
@@ -3056,7 +3093,7 @@ test.describe("レース詳細の直前情報タブ: この枠からの進入コ
           body: JSON.stringify({ message: "stub failure" }),
         });
       await new Promise((resolve) => setTimeout(resolve, 15000));
-      return route.continue().catch(() => {});
+      return route.fallback().catch(() => {});
     });
     await openBeforeInfoTab(page);
 
@@ -3097,8 +3134,9 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
     // 表示中レースの出走選手の登番を拾って、その選手ぶんの前検を返す
     await page.route("**/rest/v1/motor_pretest_stats*", async (route) => {
       const url = new URL(route.request().url());
-      // 実レスポンスを一度取って登番を得る（節の全選手ぶんが返る）
-      const response = await route.fetch();
+      // 実レスポンスを一度取って登番を得る（節の全選手ぶんが返る）。
+      // route.fetch() は録画を通らないため fetchRecorded を使う
+      const response = await fetchRecorded(route);
       const rows = await response.json().catch(() => []);
       racerIds = Array.isArray(rows) ? rows.map((r) => r.racer_id) : [];
       const stub = racerIds.map((racerId, i) => ({
@@ -3531,9 +3569,21 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
   };
   const routeUnfinished = async (page) => {
     const handler = async (route) => {
-      const response = await route.fetch();
-      const json = stripResults(await response.json());
-      await route.fulfill({ response, json });
+      try {
+        // route.fetch() は録画を通らないため fetchRecorded を使う（e2e/fixtures.js）
+        const response = await fetchRecorded(route);
+        const json = stripResults(await response.json());
+        await route.fulfill({
+          status: response.status(),
+          headers: response.headers(),
+          json,
+        });
+      } catch (error) {
+        // 録画に無い要求は本番へ素通しして応答を待つ（ADR-0077 の A改）。
+        // アサーションが先に終わってページが閉じた後の失敗は、テストの結果ではない
+        if (route.request().frame().page().isClosed()) return;
+        throw error;
+      }
     };
     await page.route("**/api/predictions/**", handler);
     await page.route("**/rest/v1/rpc/get_predictions*", handler);
@@ -3541,9 +3591,14 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
 
   // routeUnfinished の route.fetch は本物の応答を待つため、アサーションが先に終わると
   // テスト終了時にまだ応答待ちのリクエストが残り、「page closed」でテストが失敗扱いになる
-  // （2026-09-28実測。アサーションは全て通っていた）。終了時に待ちを捨てる
+  // （2026-09-28実測。アサーションは全て通っていた）。終了時に待ちを捨てる。
+  // 録画の再生（replay）では fetchRecorded が待たずに返るうえ、ここで page のルートを
+  // 外すと context 側の routeFromHAR と競合して「Route is already handled!」で落ちる
+  // （BOA-466で実測）ため、replay では外さない。本番へ出る live と録画中（record）は従来どおり
   test.afterEach(async ({ page }) => {
-    await page.unrouteAll({ behavior: "ignoreErrors" });
+    if (E2E_MODE !== "replay") {
+      await page.unrouteAll({ behavior: "ignoreErrors" });
+    }
   });
 
   test("展示前（exhibition_data が空）は出走表の体重を出し、チルトは展示後に公開される旨を添える", async ({
