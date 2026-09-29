@@ -67,38 +67,6 @@ export function getJSTNow() {
 }
 
 /**
- * 今月の開始日と終了日をJSTで取得
- * @returns {Object} { start, end, year, month }
- */
-export function getThisMonthRange() {
-  const jstNow = getJSTNow();
-  const year = jstNow.getUTCFullYear();
-  const month = jstNow.getUTCMonth() + 1;
-  const start = `${year}-${String(month).padStart(2, "0")}-01`;
-  const end = `${year}-${String(month).padStart(2, "0")}-31`;
-  return { start, end, year, month };
-}
-
-/**
- * 先月の開始日と終了日をJSTで取得
- * @returns {Object} { start, end, year, month }
- */
-export function getLastMonthRange() {
-  const jstNow = getJSTNow();
-  let year = jstNow.getUTCFullYear();
-  let month = jstNow.getUTCMonth(); // 0-indexed, so this is "last month"
-
-  if (month === 0) {
-    month = 12;
-    year -= 1;
-  }
-
-  const start = `${year}-${String(month).padStart(2, "0")}-01`;
-  const end = `${year}-${String(month).padStart(2, "0")}-31`;
-  return { start, end, year, month };
-}
-
-/**
  * 日付文字列から年月日を抽出
  * @param {string} dateStr - YYYY-MM-DD形式
  * @returns {Object} { year, month, day }
