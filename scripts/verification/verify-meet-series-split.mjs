@@ -19,6 +19,7 @@ import { supabase } from "../lib/supabaseClient.js";
 import {
   splitMeetSeries,
   semifinalRaceIdsOf,
+  semifinalSlotsOf,
 } from "../../src/components/race/seriesPoints.js";
 import { findMeetStartDate } from "../../src/utils/meetGrouping.js";
 
@@ -50,7 +51,8 @@ async function fetchAll(table, cols, { uniqueRaceId = true } = {}) {
     if (!uniqueRaceId && data.length === 1000) {
       const last = data[data.length - 1].race_id;
       rows = data.filter((r) => r.race_id !== last);
-      if (rows.length === 0) throw new Error(`1レースで1000行を超えた: ${last}`);
+      if (rows.length === 0)
+        throw new Error(`1レースで1000行を超えた: ${last}`);
     }
     out.push(...rows);
     cursor = rows[rows.length - 1].race_id;
@@ -116,8 +118,7 @@ const fail = (msg) => {
   console.error(`❌ ${msg}`);
 };
 
-const isW = (rows) =>
-  rows.some((r) => /[ＷW]優勝戦/u.test(r.race_title ?? ""));
+const isW = (rows) => rows.some((r) => /[ＷW]優勝戦/u.test(r.race_title ?? ""));
 
 const wMeets = meets.filter((m) => isW(m.rows));
 const nonW = meets.filter((m) => !isW(m.rows));
@@ -133,9 +134,8 @@ for (const meet of wMeets.sort((a, b) => a.start.localeCompare(b.start))) {
   const semis = semifinalRaceIdsOf(meet.rows);
   const semiSplit = comps.map(
     (c) =>
-      semis.filter((sid) =>
-        (racersByRace.get(sid) ?? []).some((r) => c.has(r)),
-      ).length,
+      semis.filter((sid) => (racersByRace.get(sid) ?? []).some((r) => c.has(r)))
+        .length,
   );
   if (semiSplit.some((n) => n === 0))
     fail(
@@ -165,13 +165,33 @@ for (const meet of wMeets.sort((a, b) => a.start.localeCompare(b.start))) {
         `会場${meet.venue} ${meet.start}: 男女ラベルと一致しない（${label}）`,
       );
   }
+  // **枠数は本数×6ではなく実人数**。多摩川のＷ準優戦は同じ12名が2回走るヒートで、
+  // 本数で数えると各側24枠になるが、実際に準優を走るのは12名（BOA-511の
+  // データ精度検証で判明）。側ごとに数えて出す
+  const slots = comps.map((c) => {
+    const sideRows = meet.rows.filter((r) =>
+      (racersByRace.get(r.race_id) ?? []).some((x) => c.has(x)),
+    );
+    return semifinalSlotsOf(sideRows, { racersByRace });
+  });
+  for (const [i, n] of slots.entries()) {
+    const races = semis.filter((sid) =>
+      (racersByRace.get(sid) ?? []).some((r) => comps[i].has(r)),
+    ).length;
+    if (n !== null && n > comps[i].size)
+      fail(
+        `会場${meet.venue} ${meet.start}: 枠数${n}が側の人数${comps[i].size}を超えている（準優${races}本）`,
+      );
+  }
   console.log(
-    `  会場${meet.venue} ${meet.start}: ${comps.map((c) => c.size).join(" / ")}人、準優 ${semiSplit.join("/")}本${label}`,
+    `  会場${meet.venue} ${meet.start}: ${comps.map((c) => c.size).join(" / ")}人、準優 ${semiSplit.join("/")}本、枠数 ${slots.join("/")}${label}`,
   );
 }
 
 // ---- 4: 誤適用 -----------------------------------------------------------------
-const wrong = nonW.filter((m) => splitMeetSeries(m.rows, racersByRace) !== null);
+const wrong = nonW.filter(
+  (m) => splitMeetSeries(m.rows, racersByRace) !== null,
+);
 if (wrong.length === 0) {
   console.log(`\n✅ Ｗ優勝戦でない ${nonW.length}節には1件も適用されない`);
 } else {

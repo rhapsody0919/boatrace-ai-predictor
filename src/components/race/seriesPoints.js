@@ -208,10 +208,22 @@ export function semifinalRaceIdsOf(rows) {
  *
  * @param {Array<{raceId?: string, race_id?: string, raceStage?: string|null,
  *   race_stage?: string|null}>} rows 節の全レース
+ * ## 枠数は「本数 × 6」ではなく**準優に出た実人数**
+ *
+ * 多摩川 2026-03-20開催の「Ｗ準優戦前半」「Ｗ準優戦後半」は、**同じ12名が
+ * 顔ぶれを組み替えて2回走るヒート**だった（前半4本・後半4本で、出走者の集合は
+ * 前半と後半で完全に同一）。本数で数えると 8本 × 6 = 48枠になるが、実際に
+ * 準優を走ったのは24名。`racersByRace` を渡せば実人数で数える。
+ *
+ * 他の5節では本数 × 6 と実人数が一致するので、渡しても答えは変わらない。
+ * 渡さない呼び出し（分析スクリプト等）は従来どおり本数 × 6 に落ちる。
+ *
  * @param {{cancelledRaceIds?: Set<string>|Array<string>,
- *   ranRaceIds?: Set<string>|Array<string>}} [options]
+ *   ranRaceIds?: Set<string>|Array<string>,
+ *   racersByRace?: Map<string, Array<number>>|Object}} [options]
  *   `cancelledRaceIds` は `isRaceCancelled` が真になる `race_id`、
- *   `ranRaceIds` は結果がある `race_id`。どちらも省略すると従来どおり全部数える
+ *   `ranRaceIds` は結果がある `race_id`。どちらも省略すると従来どおり全部数える。
+ *   `racersByRace` があれば枠数を実人数で数える
  * @returns {number|null}
  */
 export function semifinalSlotsOf(rows, options = {}) {
@@ -219,6 +231,19 @@ export function semifinalSlotsOf(rows, options = {}) {
   const ran = toSet(options.ranRaceIds);
   const all = semifinalRaceIdsOf(rows);
   const kept = all.filter((id) => !(cancelled.has(id) && !ran.has(id)));
+  const racersByRace = options.racersByRace ?? null;
+  if (racersByRace) {
+    const get = (raceId) =>
+      racersByRace instanceof Map
+        ? (racersByRace.get(raceId) ?? [])
+        : (racersByRace?.[raceId] ?? []);
+    const seats = new Set();
+    for (const id of kept.length ? kept : all)
+      for (const r of get(id)) if (r !== null && r !== undefined) seats.add(r);
+    // 出走表がまだ無い準優（番組だけ出ている）は実人数が0になるので、
+    // そのときは本数から出す方に落とす
+    if (seats.size > 0) return seats.size;
+  }
   // **全部落ちたら番組どおりの本数に戻す**。中止ぶんを引くのは「振替が同じ節に
   // 残っている」ことが前提で、1本も残らないなら枠数が分かったのではなく
   // 見えなくなっただけ。呼び出し側は表示日までの番組しか持っていないので、
@@ -466,6 +491,19 @@ export function forecastSeriesScore(current, stage = null) {
  * 実数を使い、予選中で未定のときだけこの既定値を目安として使う
  */
 export const SEMIFINAL_DEFAULT_SLOTS = 18;
+
+/**
+ * **Ｗ優勝戦の節**で、準優がまだ番組に出ていないときの既定の枠数（BOA-511）。
+ *
+ * 節が2つの勝ち上がりに分かれる開催では、母集団が24人前後になる。そこに通常の
+ * 既定値18を当てると「24人中18位まで」という緩すぎる線になり、実測では
+ * 「準優の線の内側」の誤判定が285人中75人まで増えた。
+ *
+ * 実データ6節の各側の枠数は**すべて12**だった（準優に出た実人数で数えた値。
+ * 多摩川はＷ準優戦が前半4本・後半4本あるが、同じ12名が2回走るヒートなので
+ * 本数ではなく実人数で数えると他の5節と同じ12になる）。18になる側は1つも無い。
+ */
+export const SEMIFINAL_SPLIT_DEFAULT_SLOTS = 12;
 
 /**
  * 今節の着順の並びを古い順に返す（純関数）。

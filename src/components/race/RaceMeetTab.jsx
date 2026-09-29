@@ -41,6 +41,7 @@ import {
   countsForSeriesScore,
   isExcludedStage,
   SEMIFINAL_DEFAULT_SLOTS,
+  SEMIFINAL_SPLIT_DEFAULT_SLOTS,
   MEET_SMALL_SAMPLE_RUNS,
 } from "./seriesPoints";
 import RaceHistoryTable from "./RaceHistoryTable";
@@ -116,7 +117,13 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   if (sortedPlayers.length === 0) return null;
 
   const ranking = buildMeetRanking(board);
-  const slots = board?.semifinalSlots ?? SEMIFINAL_DEFAULT_SLOTS;
+  // Ｗ開催の節は母集団が半分（24人前後）になるので、既定値も分ける。
+  // 通常の18を当てると「24人中18位まで」という緩すぎる線になる（BOA-511）
+  const slots =
+    board?.semifinalSlots ??
+    (board?.seriesRacerIds
+      ? SEMIFINAL_SPLIT_DEFAULT_SLOTS
+      : SEMIFINAL_DEFAULT_SLOTS);
   const stage = board?.currentStage ?? "";
   const isAfterPrelim = isExcludedStage(stage);
   // **表示中のレースが得点率を動かすか**。予選が締まった後の一般戦・特別選抜戦・

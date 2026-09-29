@@ -6645,11 +6645,19 @@ export const supabaseDataService = {
         if (e.racer_id != null) racersByRace.get(e.race_id).push(e.racer_id);
       }
       const meetSeries = splitMeetSeries(conditions ?? [], racersByRace);
-      // 表示中のレースの6艇が属するシリーズ。1レースに両シリーズは混ざらない
-      const currentRacers = racersByRace.get(raceId) ?? [];
+      // 表示中のレースの6艇が属する側。**6艇全員が同じ側に居るときだけ**分ける。
+      // 予選終了後の消化レースには両方の選手が乗ることがあり（多摩川に5レース）、
+      // 「1人でも居る側」で決めると反対側の艇が表から消える。
+      // そういうレースでは分けずに節全体を出す（注記も出さない）
+      const currentRacers = (racersByRace.get(raceId) ?? []).filter(
+        (r) => r !== null && r !== undefined,
+      );
       const currentSeries =
-        meetSeries?.find((set) => currentRacers.some((r) => set.has(r))) ??
-        null;
+        currentRacers.length > 0
+          ? (meetSeries?.find((set) =>
+              currentRacers.every((r) => set.has(r)),
+            ) ?? null)
+          : null;
       // 枠数はシリーズの準優だけから出す。節全体で数えると2シリーズ合計になる
       const seriesConditions = currentSeries
         ? (conditions ?? []).filter((c) =>
@@ -6800,13 +6808,17 @@ export const supabaseDataService = {
         semifinalSlots: semifinalSlotsOf(seriesConditions, {
           cancelledRaceIds,
           ranRaceIds: new Set(resultById.keys()),
+          // 枠数は本数 × 6 ではなく実人数で数える。多摩川のＷ準優戦は
+          // 同じ12名が2回走るヒートで、本数で数えると倍になる
+          racersByRace,
         }),
         // **男女Ｗ優勝戦の節で、表示中の6艇が属するシリーズの選手**（BOA-511）。
         // null なら通常の節で、画面はこれまでどおり節全体を母集団にする。
         // 2シリーズを混ぜて順位を振ると、節内順位・出場人数・準優の目安が
         // すべて実際の勝ち上がり争いとズレる
         seriesRacerIds: currentSeries ? [...currentSeries] : null,
-        // 節全体の人数（注記で「◯人中」を出すときに、混ぜていないことを示す）
+        // 節がいくつの勝ち上がりに分かれているか（Ｗ開催なら2、それ以外は null）。
+        // 画面は今これを使っていないが、注記の出し分けを増やすときの材料になる
         seriesCount: meetSeries ? meetSeries.length : null,
         // 節の全レースの種別が取れているか（取れていなければ枠数は目安のまま）
         stagesKnown: stageById.size > 0,
