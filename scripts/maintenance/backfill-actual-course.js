@@ -12,6 +12,10 @@
 //   node scripts/maintenance/backfill-actual-course.js --from=2025-12-04 --to=2026-09-14 --dry-run
 //
 // 注意: race_results.actual_course_1が既に取得済みの日はスキップする（レジューム可能）。
+// 書き込むのは actual_course_1 が未取得のレースだけ（BOA-523）。同期済みのレースまで UPDATE し直すと、
+// race_results の UPDATE トリガー（trg_update_predictions）が同期済みの行にも走るため。
+// 日次のKファイル同期（直近 KFILE_SYNC_LOOKBACK_DAYS 日）より後に結果の行が作られたレース（過去日の結果の
+// バックフィル）は、日次の同期では埋まらない。結果をバックフィルしたら、このスクリプトをその期間で実行する。
 // 対象期間が長い場合、1日1リクエスト（レート制限のためsleep付き）で相応の時間がかかる。
 
 import { createClient } from "@supabase/supabase-js";
@@ -53,37 +57,51 @@ function* dateRange(from, to) {
 }
 
 /**
- * 指定日について、race_resultsにactual_course_1が未取得のレースが
- * 存在するか（＝バックフィル対象があるか）を確認する。
+ * 指定日について、race_resultsに実進入（actual_course_1〜6）が全て未取得のレースの race_id の集合を返す
+ * （空なら、バックフィル対象が無い）。1日は最大でも24会場×12レースで、上限1000行に収まる。
  */
-async function hasPendingRaces(dateStr) {
+async function fetchPendingRaceIds(dateStr) {
   const { data, error } = await supabase
     .from("race_results")
     .select("race_id")
     .gte("race_id", dateStr)
     .lt("race_id", `${dateStr}~`)
     .not("rank1", "is", null)
+    // 6列とも NULL のレースだけを未取得とみなす（1号艇が欠場したレースは actual_course_1 だけが NULL で、同期済み）
     .is("actual_course_1", null)
-    .limit(1);
+    .is("actual_course_2", null)
+    .is("actual_course_3", null)
+    .is("actual_course_4", null)
+    .is("actual_course_5", null)
+    .is("actual_course_6", null);
   if (error) {
     throw new Error(`対象確認エラー(${dateStr}): ${error.message}`);
   }
-  return (data || []).length > 0;
+  return new Set((data || []).map((r) => r.race_id));
 }
 
-async function backfillOneDay(dateStr, dryRun) {
+async function backfillOneDay(dateStr, pendingIds, dryRun) {
   const text = await fetchKFileText(dateStr);
   if (!text) {
     return { status: "no_kfile", updated: 0, notFound: 0 };
   }
 
-  const rows = parseKFileText(text, dateStr);
-  if (rows.length === 0) {
+  const parsed = parseKFileText(text, dateStr);
+  if (parsed.length === 0) {
     return { status: "no_races_parsed", updated: 0, notFound: 0 };
   }
+  // 未取得のレースだけを書く。Kファイルに載っていない未取得のレースは、埋められない（件数だけ出す）
+  const rows = parsed.filter((row) => pendingIds.has(row.race_id));
+  const notInKFile = pendingIds.size - rows.length;
 
   if (dryRun) {
-    return { status: "ok", updated: rows.length, notFound: 0, dryRun: true };
+    return {
+      status: "ok",
+      updated: rows.length,
+      notFound: 0,
+      notInKFile,
+      dryRun: true,
+    };
   }
 
   let updated = 0;
@@ -113,7 +131,7 @@ async function backfillOneDay(dateStr, dryRun) {
       notFound++;
     }
   }
-  return { status: "ok", updated, notFound };
+  return { status: "ok", updated, notFound, notInKFile };
 }
 
 async function main() {
@@ -144,24 +162,26 @@ async function main() {
   let daysError = 0;
   let totalUpdated = 0;
   let totalNotFound = 0;
+  let totalNotInKFile = 0;
 
   for (const dateStr of dateRange(options.from, options.to)) {
     try {
-      const pending = await hasPendingRaces(dateStr);
-      if (!pending) {
+      const pendingIds = await fetchPendingRaceIds(dateStr);
+      if (pendingIds.size === 0) {
         daysSkippedAlreadySynced++;
         continue;
       }
 
-      const result = await backfillOneDay(dateStr, options.dryRun);
+      const result = await backfillOneDay(dateStr, pendingIds, options.dryRun);
       if (result.status === "no_kfile" || result.status === "no_races_parsed") {
         daysNoKFile++;
       } else {
         daysProcessed++;
         totalUpdated += result.updated;
         totalNotFound += result.notFound || 0;
+        totalNotInKFile += result.notInKFile || 0;
         console.log(
-          `[${dateStr}] ${result.dryRun ? "(dry-run) " : ""}更新: ${result.updated}件${result.notFound ? `, 該当行なし: ${result.notFound}件` : ""}`,
+          `[${dateStr}] ${result.dryRun ? "(dry-run) " : ""}更新: ${result.updated}件${result.notFound ? `, 該当行なし: ${result.notFound}件` : ""}${result.notInKFile ? `, Kファイルに無い未取得: ${result.notInKFile}件` : ""}`,
         );
       }
     } catch (e) {
@@ -180,6 +200,11 @@ async function main() {
   console.log(`更新レース数合計: ${totalUpdated}件`);
   if (totalNotFound > 0) {
     console.log(`race_resultsに該当行が無かった件数: ${totalNotFound}件`);
+  }
+  if (totalNotInKFile > 0) {
+    console.log(
+      `未取得だがKファイルに無かった件数（埋められない）: ${totalNotInKFile}件`,
+    );
   }
 }
 
