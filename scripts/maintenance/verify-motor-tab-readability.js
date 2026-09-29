@@ -25,7 +25,10 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { formatRateOrCount } from "../../src/utils/smallSampleRate.js";
+import {
+  formatRateOrCount,
+  powerIndexTone,
+} from "../../src/utils/smallSampleRate.js";
 import { officialTallyState } from "../../src/utils/motorGeneration.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -176,6 +179,29 @@ check(
     read("src/components/analysis/MotorRacerWakuDrillDown.jsx"),
   ),
 );
+// ---- BOA-549: 走数が少ない機力指数（2026-09-29 ファン4人のパネル） ----
+check(
+  "powerIndexTone: n<6 は評価せず small、6以上は符号で good/bad/even、値なしは null",
+  powerIndexTone(-3.1, 4, 6) === "small" &&
+    powerIndexTone(9.5, 5, 6) === "small" &&
+    powerIndexTone(9.5, 6, 6) === "good" &&
+    powerIndexTone(-0.9, 20, 6) === "bad" &&
+    powerIndexTone(0, 20, 6) === "even" &&
+    powerIndexTone(null, 4, 6) === null,
+);
+check(
+  "機力指数: 一覧・ドリルダウン・選手ページの3か所で powerIndexTone を使い、小標本では評価の言葉を出さない",
+  (chart.match(/powerIndexTone\(/g) ?? []).length >= 2 &&
+    chart.includes('t("analysis.motor.powerIndexSmallSample")') &&
+    card.includes("powerIndexTone(") &&
+    card.includes('tone === "small"'),
+);
+check(
+  "グラフ: 縦軸のラベルを縦方向の中央に置き（375px で切れない）、展示タイムの目盛りは小数2桁にそろえる",
+  read("src/components/analysis/TrendLineChart.jsx").includes(
+    'style: { textAnchor: "middle" }',
+  ) && /exhibitionYAxis"\)\}\s*yTickDecimals=\{2\}/.test(chart),
+);
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;
@@ -192,7 +218,9 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       motor.quotedLabel?.includes("{{label}}") &&
       typeof motor.quotedLabelSeparator === "string" &&
       typeof motor.officialSnapshotNote === "string" &&
-      /90/.test(motor.usageHistoryNote),
+      /90/.test(motor.usageHistoryNote) &&
+      // 枠番別成績の展示タイムの列が、平均の値と推移の図だと分かる見出し（BOA-549）
+      /平均|avg|平均|평균/i.test(motor.exhibitionTrendHeader),
   );
 }
 

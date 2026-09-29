@@ -19,6 +19,8 @@ import DrillDownHeader from "./DrillDownHeader";
 import MotorWakuStatsGrid from "./MotorWakuStatsGrid";
 import MotorRacerWakuDrillDown from "./MotorRacerWakuDrillDown";
 import InlineFetchError from "../InlineFetchError";
+import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
+import { powerIndexTone } from "../../utils/smallSampleRate";
 import { getTodayJST } from "../../utils/dateUtils";
 import {
   formatGenerationDate,
@@ -27,6 +29,13 @@ import {
 } from "../../utils/motorGeneration";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
+
+// 機力指数の色（小標本は枠番別成績と同じ参考値の色。BOA-549）
+const POWER_INDEX_TONE_CLASS = {
+  good: "power-index-good",
+  bad: "power-index-bad",
+  small: "is-small-sample",
+};
 
 function MotorConditionChart({
   initialVenueCode = null,
@@ -390,6 +399,11 @@ function MotorConditionChart({
     breakdown.map((r) => r.championship_count),
   );
   const firstPlaceRateRankClass = rankClassFor(firstPlaceRates);
+  const drillPowerIndexTone = powerIndexTone(
+    powerIndex?.power_index,
+    powerIndex?.sample_count,
+    SMALL_SAMPLE_THRESHOLD,
+  );
   // 会場公式サイト由来で、表に出ている列の名前（出典の注記に挙げる）
   const venueColsLabel = [
     showFirstPlaceRate && "analysis.motor.firstPlaceRateHeader",
@@ -682,11 +696,13 @@ function MotorConditionChart({
                         )}
                         <td
                           className={`rate power-index ${
-                            row.power_index > 0
-                              ? "power-index-good"
-                              : row.power_index < 0
-                                ? "power-index-bad"
-                                : ""
+                            POWER_INDEX_TONE_CLASS[
+                              powerIndexTone(
+                                row.power_index,
+                                row.sample_count,
+                                SMALL_SAMPLE_THRESHOLD,
+                              )
+                            ] ?? ""
                           }`}
                         >
                           {row.power_index !== null &&
@@ -769,11 +785,7 @@ function MotorConditionChart({
             powerIndex?.power_index !== undefined && (
               <p
                 className={`power-index-summary ${
-                  powerIndex.power_index > 0
-                    ? "power-index-good"
-                    : powerIndex.power_index < 0
-                      ? "power-index-bad"
-                      : ""
+                  POWER_INDEX_TONE_CLASS[drillPowerIndexTone] ?? ""
                 }`}
               >
                 {t("analysis.motor.powerIndexSummary", {
@@ -789,12 +801,14 @@ function MotorConditionChart({
                       })
                     : t(`analysis.motor.period${periodDays}`),
                 })}
-                {" — "}
-                {powerIndex.power_index > 0
-                  ? t("analysis.motor.powerIndexGood")
-                  : powerIndex.power_index < 0
-                    ? t("analysis.motor.powerIndexBad")
-                    : ""}
+                {/* 走数が少ないときは評価の言葉を出さず、参考値と書く（BOA-549） */}
+                {drillPowerIndexTone === "small"
+                  ? t("analysis.motor.powerIndexSmallSample")
+                  : drillPowerIndexTone === "good"
+                    ? ` — ${t("analysis.motor.powerIndexGood")}`
+                    : drillPowerIndexTone === "bad"
+                      ? ` — ${t("analysis.motor.powerIndexBad")}`
+                      : ""}
               </p>
             )}
 
@@ -962,6 +976,7 @@ function MotorConditionChart({
             <TrendLineChart
               data={exhibitionChartData}
               yAxisLabel={t("analysis.motor.exhibitionYAxis")}
+              yTickDecimals={2}
               yAxisDomain={["dataMin - 0.1", "dataMax + 0.1"]}
               tooltipFormatter={(value) => value.toFixed(2)}
               series={[

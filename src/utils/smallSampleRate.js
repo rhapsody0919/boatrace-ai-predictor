@@ -14,3 +14,21 @@ export function formatRateOrCount(rate, n, threshold) {
   if (n < threshold) return `${Math.round((rate * n) / 100)}/${n}`;
   return `${rate.toFixed(1)}%`;
 }
+
+/**
+ * 機力指数の見せ方（BOA-549、2026-09-29 ファン4人のパネルで決定）。
+ * 走数が少ないと、4走でも「選手の実力より低調」と言い切ってしまう（丸亀65号機は
+ * 「3着 3着 1着 1着」で -3.1＝低調と出ていた）。n が小さいときは評価の言葉を出さず、
+ * 枠番別成績と同じ参考値の色にする。
+ * @param {number|null} index 機力指数
+ * @param {number|null} n 走数（sample_count）
+ * @param {number} threshold これ未満を小標本とみなす
+ * @returns {"good"|"bad"|"even"|"small"|null} 値が無ければ null
+ */
+export function powerIndexTone(index, n, threshold) {
+  if (index === null || index === undefined) return null;
+  if (n !== null && n !== undefined && n < threshold) return "small";
+  if (index > 0) return "good";
+  if (index < 0) return "bad";
+  return "even";
+}
