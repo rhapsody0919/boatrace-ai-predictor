@@ -26,42 +26,6 @@ function App({ tab }) {
     setActiveTab(tab);
   }, [tab]);
 
-  // Google Analytics初期化
-  useEffect(() => {
-    const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID;
-
-    if (gaId && gaId !== "%VITE_GA_MEASUREMENT_ID%") {
-      const script1 = document.createElement("script");
-      script1.async = true;
-      script1.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
-      document.head.appendChild(script1);
-
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        window.dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", gaId, {
-        page_path: window.location.pathname,
-      });
-
-      window.gtag = gtag;
-
-      console.log("Google Analytics initialized:", gaId);
-    }
-  }, []);
-
-  // ページビュー追跡（タブ切り替え時）
-  useEffect(() => {
-    if (window.gtag) {
-      window.gtag("event", "page_view", {
-        page_title: activeTab,
-        page_location: window.location.href,
-        page_path: window.location.pathname,
-      });
-    }
-  }, [activeTab]);
-
   // リトライ機能付きfetch関数（HitRacesが使用）
   const fetchWithRetry = async (url, maxRetries = 3, retryDelay = 2000) => {
     let lastError;

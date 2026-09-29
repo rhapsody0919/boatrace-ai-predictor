@@ -71,7 +71,10 @@
   line-height: 1.6;
 }
 
-/* 記事グリッド */
+/* 記事グリッド
+   このページのグリッドは件数がJSXに直書きの固定値（記事4〜5件・会場24件）で、
+   箱の幅（最大1136px）では列数が件数を超えないため auto-fill のままでよい。
+   件数を列数（最大4）より減らすときは auto-fit にする（BOA-528） */
 .article-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

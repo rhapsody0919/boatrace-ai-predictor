@@ -392,6 +392,41 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     );
   });
 
+  // BOA-497 の /code-review 指摘の再現: getRaceMotorMaintenanceBreakdown の戻り値が
+  // { state, rows } に変わった後も、直前情報の is_absent から欠場艇を除く（配列のまま読むと
+  // .filter で落ち、欠場艇のブロックが「票なし」で残る）
+  test("欠場艇（直前情報の is_absent）は3連単の1着ブロックから除く", async ({
+    page,
+  }) => {
+    await page.route(
+      (url) =>
+        url.pathname.endsWith("/rest/v1/exhibition_data") &&
+        (url.searchParams.get("select") ?? "").includes("is_absent"),
+      (route) =>
+        route.fulfill({
+          json: [1, 2, 3, 4, 5, 6].map((n) => ({
+            boat_number: n,
+            exhibition_time: n === 6 ? null : 6.7,
+            tilt: n === 6 ? null : 0,
+            adjustment_weight: 0,
+            propeller_change: null,
+            parts_changed: null,
+            today_weight: 52,
+            prev_race_no: null,
+            prev_entry_course: null,
+            prev_start_timing: null,
+            prev_finish_rank: null,
+            exhibition_course: n === 6 ? null : n,
+            is_absent: n === 6,
+            updated_at: "2026-09-28T04:50:00Z",
+          })),
+        }),
+    );
+    await setup(page, { now: AFTER_DEADLINE });
+    await expect(page.locator(".rol-block").first()).toBeVisible();
+    await expect(page.locator(".rol-block")).toHaveCount(5);
+  });
+
   test("締切90分より前の当日レース: いつ出るかと公式オッズへの導線を示す", async ({
     page,
   }) => {

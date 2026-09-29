@@ -184,10 +184,14 @@
   padding: 2rem 1rem;
 }
 
-/* 下書きカード一覧 */
+/* 下書きカード一覧
+   このファイルのカードグリッド（下書き・戦略メモ・チャネル別ルール）は、件数が
+   列数を下回りうる（下書き・戦略メモは0〜数件、チャネル別ルールは5件で
+   1200px幅なら7列分ある）。auto-fill だと使われない列の枠が残って右が空くため
+   auto-fit にする（BOA-528） */
 .draft-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1rem;
 }
 
@@ -904,7 +908,7 @@
 
 .insight-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1rem;
 }
 
@@ -1134,7 +1138,7 @@
 
 .doc-reference-channel-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 0.6rem;
 }
 

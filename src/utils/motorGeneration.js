@@ -31,3 +31,32 @@ export function currentMotorGenerationStart(rows) {
 export function isInMotorGeneration(raceId, generationStart) {
   return raceId.slice(0, 10) >= generationStart;
 }
+
+/**
+ * 使用開始日（YYYY-MM-DD）の画面表示。既定は「2026/8/6」、short で「8/6」。
+ * 数字だけの表記なので4言語で共通にする（2026-09-29 ユーザー判断 B で画面に出す）
+ * @param {string|null} date
+ * @param {{short?: boolean}} [options]
+ * @returns {string}
+ */
+export function formatGenerationDate(date, { short = false } = {}) {
+  if (!date) return "";
+  const [y, m, d] = date.split("-").map(Number);
+  return short ? `${m}/${d}` : `${y}/${m}/${d}`;
+}
+
+/**
+ * 「baseDate から days 日遡る期間」の開始が、使用開始日で切り詰められるか
+ * （generationStart > baseDate − days）。入れ替えから日が浅く、短い方の期間
+ * （直近1ヶ月）まで切り詰められると、期間の切り替えを押しても中身が変わらない
+ * @param {string|null} generationStart YYYY-MM-DD
+ * @param {string} baseDate YYYY-MM-DD
+ * @param {number} days
+ * @returns {boolean}
+ */
+export function isClippedByGeneration(generationStart, baseDate, days) {
+  if (!generationStart) return false;
+  const start = new Date(`${baseDate}T00:00:00Z`);
+  start.setUTCDate(start.getUTCDate() - days);
+  return generationStart > start.toISOString().split("T")[0];
+}

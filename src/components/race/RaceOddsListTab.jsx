@@ -505,9 +505,10 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     if (!raceId) return undefined;
     supabaseDataService
       .getRaceMotorMaintenanceBreakdown(raceId)
-      .then((rows) => {
+      // 戻り値は { state, rows }（BOA-497）。欠場は state によらず rows の is_absent で見る
+      .then(({ rows }) => {
         if (cancelled) return;
-        const absent = (rows ?? [])
+        const absent = rows
           .filter((r) => r.is_absent === true)
           .map((r) => Number(r.boat_number));
         setAbsentState({ raceId, absent, failed: false });
