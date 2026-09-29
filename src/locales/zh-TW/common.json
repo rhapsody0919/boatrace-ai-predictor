@@ -226,8 +226,6 @@
     "missingRanksNote": "※本場比賽第4名以後的名次資料尚未取得，因此部分名次未顯示",
     "cancelledTitle": "本場比賽已中止",
     "cancelledBody": "因天候或水面狀況等因素，本場比賽已中止，因此沒有結果資料。",
-    "noRaceTitle": "本場比賽未成立",
-    "noRaceBody": "因未滿足出賽條件，本場比賽未能成立。",
     "placeSectionTitle": "🎯 複勝預測驗證",
     "placePredicted": "複勝第{{rank}}名預測：{{number}}號艇",
     "placeHit": "✅ 命中！（第{{position}}名）",
@@ -242,7 +240,40 @@
     "volatilityOutcomeDetailFavorite": "（1號艇獲得第1名）",
     "volatilityCaveat": "※單一場次的結果無法證明預測的準確與否。",
     "volatilityCaveatLink": "查看實測準確率 ›",
-    "payout": "派彩：¥{{amount}}"
+    "payout": "派彩：¥{{amount}}",
+    "noRace": {
+      "title": "比賽不成立・全額退款",
+      "body": "未決定名次，比賽不成立。所有艇券全額退款",
+      "bodyWithReason": "{{reason}}。所有艇券全額退款",
+      "reason": "{{list}}，比賽不成立",
+      "group": {
+        "flying": "偷跑{{count}}艇（{{boats}}號艇）",
+        "late": "出發延遲{{count}}艇（{{boats}}號艇）",
+        "absent": "缺席{{count}}艇（{{boats}}號艇）"
+      },
+      "boatSeparator": "・",
+      "groupSeparator": "、"
+    },
+    "mark": {
+      "flying": "F（偷跑・退款）",
+      "late": "L（出發延遲・退款）",
+      "absent": "欠（缺席・退款）",
+      "capsized": "転（翻覆失格）",
+      "fell": "落（落水失格）",
+      "sank": "沈（沉沒失格）",
+      "obstruction": "妨（妨礙失格）",
+      "engineStall": "エ（引擎熄火失格）",
+      "notFinished": "不（未完賽失格）",
+      "disqualified": "失（失格）",
+      "noPosition": "無名次（比賽不成立）",
+      "refunded": "退款",
+      "noPositionPlain": "無名次"
+    },
+    "refundTag": "有退款艇",
+    "partialNoRaceTag": "部分投注類型不成立",
+    "payoutNoRace": "不成立（退款）",
+    "payoutSpecial": "特別派彩",
+    "volatilityOutcomeNotJudgeable": "不列入判定（比賽不成立）"
   },
   "raceHistoryTable": {
     "date": "日期",
@@ -453,14 +484,19 @@
     "badgeTurn": "✅ 展開命中",
     "missBadge": "❌ 未命中",
     "view": "查看詳情",
-    "dataTableExpand": "查看調子、展示、回收率"
+    "dataTableExpand": "查看調子、展示、回收率",
+    "noRace": "不成立",
+    "refundBadge": "有退款"
   },
   "turnPatternList": {
     "title": "轉彎預測",
     "caption": "可能獲得第1名的候選艇（最多3艇，依機率排序）",
     "hitTag": "命中",
     "summaryHit": "✅ 其中一項預測命中",
-    "summaryMiss": "❌ 第1名是{{winnerNumber}}號艇，不在預測名單中"
+    "summaryMiss": "❌ 第1名是{{winnerNumber}}號艇，不在預測名單中",
+    "notJudgeable": "不列入判定（比賽不成立）",
+    "notJudgeableBody": "因未決定第1名，不判定命中與否",
+    "refundedTag": "退款（不列入判定）"
   },
   "accuracyStat": {
     "withRecovery": "實測：命中率{{hitRate}}%・回收率{{recoveryRate}}%（過去{{totalRaces}}場）",

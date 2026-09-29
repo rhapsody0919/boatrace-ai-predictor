@@ -227,8 +227,6 @@
     "missingRanksNote": "* Finishing positions from 4th down have not been collected for this race, so some placings are not shown",
     "cancelledTitle": "This race was cancelled",
     "cancelledBody": "The race was cancelled due to weather or water conditions, so no result data is available.",
-    "noRaceTitle": "This race did not take place",
-    "noRaceBody": "The race did not take place because the starting conditions were not met.",
     "placeSectionTitle": "🎯 Place prediction check",
     "placePredicted": "Place pick #{{rank}}: Boat {{number}}",
     "placeHit": "✅ Hit! (finished #{{position}})",
@@ -243,7 +241,43 @@
     "volatilityOutcomeDetailFavorite": " (Lane 1 finished 1st)",
     "volatilityCaveat": "A single race result can't confirm or disprove the prediction.",
     "volatilityCaveatLink": "See measured accuracy ›",
-    "payout": "Payout: ¥{{amount}}"
+    "payout": "Payout: ¥{{amount}}",
+    "noRace": {
+      "title": "No race — all bets refunded",
+      "body": "No finishing order was decided, so the race was declared void. All tickets are refunded",
+      "bodyWithReason": "{{reason}}. All tickets are refunded",
+      "reason": "Declared void: {{list}}",
+      "group": {
+        "flying": "{{count}} false starts (boats {{boats}})",
+        "flying_one": "{{count}} false start (boat {{boats}})",
+        "late": "{{count}} late starts (boats {{boats}})",
+        "late_one": "{{count}} late start (boat {{boats}})",
+        "absent": "{{count}} scratched (boats {{boats}})",
+        "absent_one": "{{count}} scratched (boat {{boats}})"
+      },
+      "boatSeparator": ", ",
+      "groupSeparator": "; "
+    },
+    "mark": {
+      "flying": "False start (refunded)",
+      "late": "Late start (refunded)",
+      "absent": "Scratched (refunded)",
+      "capsized": "Capsized (disqualified)",
+      "fell": "Fell overboard (disqualified)",
+      "sank": "Sank (disqualified)",
+      "obstruction": "Obstruction (disqualified)",
+      "engineStall": "Engine stall (disqualified)",
+      "notFinished": "Did not finish (disqualified)",
+      "disqualified": "Disqualified",
+      "noPosition": "No finishing position (void race)",
+      "refunded": "Refunded",
+      "noPositionPlain": "No finishing position"
+    },
+    "refundTag": "Refunded boats",
+    "partialNoRaceTag": "Some bet types void",
+    "payoutNoRace": "Void (refunded)",
+    "payoutSpecial": "Special payout",
+    "volatilityOutcomeNotJudgeable": "Not judged (void race)"
   },
   "raceHistoryTable": {
     "date": "Date",
@@ -455,14 +489,19 @@
     "badgeTurn": "✅ Turn hit",
     "missBadge": "❌ Missed",
     "view": "View details",
-    "dataTableExpand": "See form, exhibition, return rate"
+    "dataTableExpand": "See form, exhibition, return rate",
+    "noRace": "Void",
+    "refundBadge": "Refunds"
   },
   "turnPatternList": {
     "title": "Turn Prediction",
     "caption": "Candidates likely to finish 1st (up to 3 boats, ranked by probability)",
     "hitTag": "Hit",
     "summaryHit": "✅ One of the top predictions hit",
-    "summaryMiss": "❌ Boat {{winnerNumber}} won, which wasn't among the top predictions"
+    "summaryMiss": "❌ Boat {{winnerNumber}} won, which wasn't among the top predictions",
+    "notJudgeable": "Not judged (void race)",
+    "notJudgeableBody": "No winner was decided, so hit/miss is not judged",
+    "refundedTag": "Refunded (not judged)"
   },
   "accuracyStat": {
     "withRecovery": "Track record: {{hitRate}}% hit rate, {{recoveryRate}}% recovery (last {{totalRaces}} races)",
