@@ -11,6 +11,7 @@ import Footer from "../components/Footer";
 import Breadcrumb from "../components/Breadcrumb";
 import UpdateStatus from "../components/UpdateStatus";
 import IntroBanner from "../components/IntroBanner";
+import HomeAiIntro from "../components/HomeAiIntro";
 import FirstVisitGuideCard from "../components/FirstVisitGuideCard";
 import { useFirstVisit } from "../hooks/useFirstVisit";
 import {
@@ -195,6 +196,9 @@ function TodayVenueGridPage() {
               </>
             )}
           </section>
+
+          {/* 何のサイトかを説明する本文と実績（集客レーン Phase3。検索向けにクロールできる本文として置く） */}
+          <HomeAiIntro />
 
           {/* ブログ記事セクション */}
           <section className="blog-preview-section">

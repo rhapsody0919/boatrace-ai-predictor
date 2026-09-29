@@ -224,11 +224,16 @@ function triosOf(boats) {
   );
 }
 
-// 2列グリッドで、選択中の要素と同じ行の直後に推移パネルを挿入する
-function withPanelAfterRow(items, selectedIdx, panel) {
+// グリッドで、選択中の要素の直後に推移パネルを挿入する。パネルは全幅（rol-span-all）で、グリッドの
+// grid-auto-flow: dense により、同じ行の残りの要素が前に詰まってパネルはその行の下に出る。列数（画面幅で
+// 1〜4列に変わる）によらず「選んだ行の直後」になる（BOA-530）
+function withPanelAfter(items, selectedIdx, panel) {
   if (selectedIdx < 0 || !panel) return items;
-  const rowEnd = Math.min(selectedIdx | 1, items.length - 1);
-  return [...items.slice(0, rowEnd + 1), panel, ...items.slice(rowEnd + 1)];
+  return [
+    ...items.slice(0, selectedIdx + 1),
+    panel,
+    ...items.slice(selectedIdx + 1),
+  ];
 }
 
 // 小さな折れ線スパークライン（MotorWakuStatsGridと同じ発想のインラインSVG）。
@@ -374,7 +379,7 @@ function OddsButton({
   );
 }
 
-function TrendPanel({ combo, trend, isRange, spanAll }) {
+function TrendPanel({ combo, trend, isRange }) {
   const { t } = useTranslation();
   const labelOf = (p) => {
     if (p.official) return t("oddsList.finalTrendLabel");
@@ -388,7 +393,7 @@ function TrendPanel({ combo, trend, isRange, spanAll }) {
     return t("oddsList.minutesBeforeLabel", { n: p.minutesBefore });
   };
   return (
-    <div className={`rol-trend${spanAll ? " rol-span-all" : ""}`}>
+    <div className="rol-trend rol-span-all">
       <div className="rol-trend-title">
         {t("oddsList.trendTitle", { combo })}
       </div>
@@ -875,7 +880,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     />
   );
 
-  const trendPanel = (spanAll) =>
+  const trendPanel = () =>
     selectedKey ? (
       <TrendPanel
         key="trend"
@@ -889,7 +894,6 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
           useFinal ? finalMap : null,
         )}
         isRange={isRange}
-        spanAll={spanAll}
       />
     ) : null;
 
@@ -906,7 +910,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
       : ((liveResult ? livePages["2tf"]?.result?.data?.exactaAll : null) ??
         latestSnapshot?.exactaAll ??
         null);
-    return boats.map((first) => {
+    const blocks = boats.map((first) => {
       const seconds = boats.filter((n) => n !== first);
       return (
         <section className="rol-block" key={first}>
@@ -952,10 +956,15 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
               );
             })}
           </div>
-          {selectedKey?.startsWith(`${first}-`) && trendPanel(false)}
         </section>
       );
     });
+    const selectedFirst = selectedKey ? Number(selectedKey.split("-")[0]) : null;
+    return (
+      <div className="rol-block-grid">
+        {withPanelAfter(blocks, boats.indexOf(selectedFirst), trendPanel())}
+      </div>
+    );
   };
 
   // 3連複: 艇番3つの組み合わせを2列で一覧
@@ -970,11 +979,11 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
       ),
     );
     return (
-      <div className="rol-two-col-grid">
-        {withPanelAfterRow(
+      <div className="rol-two-col-grid rol-trio-grid">
+        {withPanelAfter(
           items,
           combos.indexOf(selectedKey),
-          trendPanel(true),
+          trendPanel(),
         )}
       </div>
     );
@@ -1008,10 +1017,10 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     const selectedHead = selectedKey ? Number(selectedKey.split("-")[0]) : null;
     return (
       <div className="rol-two-col-grid">
-        {withPanelAfterRow(
+        {withPanelAfter(
           items,
           heads.indexOf(selectedHead),
-          trendPanel(true),
+          trendPanel(),
         )}
       </div>
     );

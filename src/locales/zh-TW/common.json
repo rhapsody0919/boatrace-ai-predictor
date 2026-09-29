@@ -221,6 +221,8 @@
       "wide": "拡連複"
     },
     "popularity": "人氣第{{rank}}名",
+    "popularityRange": "人氣第{{from}}～{{to}}名",
+    "popularityFromFinalOddsNote": "※ 單勝・複勝的人氣依截止時賠率（官方）計算（複勝依上限由低至高，相同賠率以範圍表示）。其他投注方式為官方公布。",
     "fastestStartTag": "最快",
     "courseNote": "※目前未顯示進入航線（資料準確度確認中）",
     "missingRanksNote": "※本場比賽第4名以後的名次資料尚未取得，因此部分名次未顯示",
@@ -313,6 +315,15 @@
   "home": {
     "introBannerText": "龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。| 分析轉彎預測、內道崩盤指數等45項以上數據。了解更多 →",
     "introBannerClose": "關閉",
+    "aiIntro": {
+      "title": "龍神雷達的賽艇AI預測",
+      "lead": "龍神雷達是由AI每天預測日本全國24座賽艇場所有比賽的數據分析網站。完全免費，無需註冊。",
+      "method": "我們根據選手的勝率、平均起跑時機、各水道成績、馬達成績以及風浪數據，為每場比賽提供第一彎道的展開預測，以及顯示1號艇是否容易落敗的「內道崩潰指數」。",
+      "statLabel": "展開預測的實測命中率：",
+      "statNote": "（過去{{count}}場比賽。預測的展開模式之一與實際第1名艇的水道一致的比例）",
+      "accuracyLink": "查看成績（各賽場明細，日文頁面）→",
+      "hitRacesLink": "查看展開預測命中的比賽一覽（日文頁面）→"
+    },
     "freeAccessNoticeStrong": "完全免費・無需註冊",
     "freeAccessNoticeRest": "— 無需開戶或加入會員，現在就能使用所有功能",
     "todayRaces": "今日賽事",
@@ -555,9 +566,10 @@
     "periodHeader": "期間・條件",
     "nHeader": "出賽數",
     "allCoursesFold": "查看全部6條航道的成績",
-    "periodCaveat": "※「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（最多過去2年）。與官方網站的勝率母體不同。"
+    "periodCaveat": "※「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（2025年12月以後，最多過去2年）。與官方網站的勝率母體不同。"
   },
   "aiPredictionTab": {
+    "cancelled": "本場比賽已中止，因此沒有AI預測。",
     "unavailableTitle": "尚無AI預測資料",
     "unavailableBody": "這場比賽尚未備齊AI預測所需的資料。"
   },
@@ -755,9 +767,11 @@
     "compareTrendNote": "6艇跑的是同一梯次、同一水面，因此用同一把尺（6艇的最小～最大）並排，可以跨列直接比較線的高度。虛線是6艇的平均。越上面越快，大點為前一場。",
     "compareTrendRange": "橫軸為出賽順序（左為較早），並非日期刻度。此處顯示的是{{from}}〜{{to}}的出賽，各列右端為該選手的前一戰。",
     "compareTrendHint": "點選該列，下方的詳細資料會切換為該選手",
+    "compareTrendFinishNote": "點下方的數字是該場的名次（F＝偷跑，缺＝缺賽，轉・落・妨等為官方標記）。",
     "compareTrendEmpty": "尚無足夠場次可繪製走勢",
     "prelimOverNoteDay": "預賽已於第{{day}}天（{{date}}）結束。得分率就此確定，今日名次不會再改變。",
     "trendLastHeader": "前一場",
+    "trendFinishHeader": "點下方＝名次",
     "forecastTitle": "得分率早見（今日名次會這樣變動）",
     "forecastRankHeader": "第{{rank}}名",
     "forecastNote": "有底色的格子代表取得該名次就有望達到準優門檻（第{{slots}}名＝{{rate}}）。所需得分是達到門檻所需的分數。",
@@ -802,7 +816,7 @@
       "last1m": "最近1個月"
     },
     "periodSummary": "▸ 依期間篩選",
-    "periodCaveat": "※與等級條件組合時的「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（過去2年）",
+    "periodCaveat": "※與等級條件組合時的「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（2025年12月以後，最多過去2年）",
     "winRateSwitchCaveat": "※套用等級・期間篩選後的「勝率」並非官方的勝率點數，而是該條件下實際取得第1名的比例（%）",
     "sampleCount": "(n={{n}})",
     "noData": "（無資料）",

@@ -207,7 +207,7 @@ function RaceHistoryTable({
                   {race.finishRank ??
                     (race.absent
                       ? t("basicInfo.finishAbsent")
-                      : t("basicInfo.finishUnknown"))}
+                      : (race.finishMark ?? t("basicInfo.finishUnknown")))}
                 </td>
                 <td>
                   {race.finishRank === 1 && race.winningTechnique != null

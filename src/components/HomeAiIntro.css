@@ -1,0 +1,80 @@
+/* トップの「龍神レーダーのボートレースAI予想」セクション。
+   直後のブログプレビュー（App.css の .blog-preview-section）と同じカードの見た目にそろえる */
+.home-ai-intro {
+  margin-top: 3rem;
+  padding: 2.5rem;
+  background: var(--surface-card);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+}
+
+.home-ai-intro h2 {
+  color: var(--text-primary);
+  font-size: 1.75rem;
+  margin: 0 0 1rem;
+  text-align: center;
+}
+
+.home-ai-intro p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.8;
+  max-width: 720px;
+  margin: 0 auto 0.75rem;
+}
+
+.home-ai-intro .home-ai-intro__stat {
+  color: var(--text-primary);
+}
+
+.home-ai-intro__rate {
+  font-size: 1.25rem;
+}
+
+.home-ai-intro__links {
+  list-style: none;
+  padding: 0;
+  margin: 1.25rem auto 0;
+  max-width: 720px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+}
+
+/* 既定のリンク色（#0000ee）はダークテーマの背景で読めない（axe のコントラスト違反）。
+   テーマで切り替わるブランドのアクセント色を使う */
+.home-ai-intro__links a {
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+@media (max-width: 768px) {
+  .home-ai-intro {
+    margin-top: 2rem;
+    padding: 1.5rem;
+  }
+
+  .home-ai-intro h2 {
+    font-size: 1.4rem;
+  }
+
+  .home-ai-intro p {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-ai-intro {
+    margin-top: 1.5rem;
+    padding: 1rem;
+  }
+
+  .home-ai-intro h2 {
+    font-size: 1.2rem;
+  }
+
+  .home-ai-intro p {
+    font-size: 0.85rem;
+  }
+}
