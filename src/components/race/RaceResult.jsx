@@ -368,6 +368,7 @@ function PayoutRow({
   amount,
   popularity,
   popularityTo = null,
+  popularityMarked = false,
   isBest,
   note = null,
   isVoid = false,
@@ -396,6 +397,11 @@ function PayoutRow({
             ? t("result.popularityRange", { from: popularity, to: popularityTo })
             : t("result.popularity", { rank: popularity })
           : ""}
+        {popularity && popularityMarked && (
+          <span className="rr-pop-mark" aria-hidden="true">
+            ※
+          </span>
+        )}
       </span>
       <span className="rr-amount num">
         {typeof amount === "number" ? `¥${amount.toLocaleString()}` : ""}
@@ -424,6 +430,7 @@ function PayoutRowsTable({ rows, t }) {
             amount={isNoRaceRow ? null : row.amount}
             popularity={isNoRaceRow ? null : row.popularity}
             popularityTo={isNoRaceRow ? null : (row.popularityTo ?? null)}
+            popularityMarked={!isNoRaceRow && !!row.popularityFromFinalOdds}
             isBest={
               isPayoutAmountCountable(row) &&
               maxAmount != null &&
@@ -816,7 +823,10 @@ function RaceResult({ prediction, raceId }) {
           <PayoutRowsTable rows={payoutRowsToShow} t={t} />
           {/* 単勝・複勝の人気だけは公式の発表でなく締切時オッズから出しているため、その旨を書く */}
           {hasFinalOddsPopularity && (
-            <p className="rr-note" data-testid="payout-popularity-note">
+            <p
+              className="rr-note rr-payout-popularity-note"
+              data-testid="payout-popularity-note"
+            >
               {t("result.popularityFromFinalOddsNote")}
             </p>
           )}

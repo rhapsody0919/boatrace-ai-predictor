@@ -872,11 +872,13 @@ input:focus-visible,
   color: var(--text-secondary);
 }
 
+/* 組番は1つの塊として読むため折り返さない（375pxで「5-4／-2」と割れていた。BOA-534 ファン評価1周目）。
+   狭い画面で行に収まらないときは、組番と人気を詰め、人気は2行まで折り返す */
 .rr-combo {
-  flex: 1;
+  flex: 1 0 auto;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--spacing-1);
 }
 
@@ -893,9 +895,21 @@ input:focus-visible,
 }
 
 .rr-pop {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
+  text-align: right;
+}
+
+/* 単勝・複勝の人気（締切時オッズから算出、BOA-534）。下の注記と「※」で結ぶ */
+.rr-pop-mark {
+  margin-left: 1px;
+}
+
+/* 払戻の下の注記は、表の内容の説明なので左寄せで読む（右寄せだと375pxで行頭がそろわない） */
+.rr-note.rr-payout-popularity-note {
+  text-align: left;
 }
 
 .rr-amount {

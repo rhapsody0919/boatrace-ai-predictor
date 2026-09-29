@@ -164,9 +164,9 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
     page,
   }) => {
     const root = await openResult(page, KOJIMA, FINAL_ROW);
-    await expect(popOf(root, "単勝", "1")).toHaveText("1人気");
+    await expect(popOf(root, "単勝", "1")).toHaveText("1人気※");
     // 複勝は上限の小さい順: 1号艇 1.0 → 1人気、3号艇 10.9（5号艇 10.3 の次）→ 3人気
-    await expect(popOf(root, "複勝", "1").first()).toHaveText("1人気");
+    await expect(popOf(root, "複勝", "1").first()).toHaveText("1人気※");
     await expect(
       root.locator(".rr-payout-row").filter({ hasText: "¥200" }).first(),
     ).toContainText("3人気");
@@ -188,6 +188,67 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
       root.locator(".rr-payout-row").filter({ hasText: "¥200" }).first(),
     ).toContainText("2人気");
   });
+
+  test("締切時オッズから出した人気にだけ「※」を付け、注記（左寄せ）と結ぶ（ファン評価1周目）", async ({
+    page,
+  }) => {
+    const root = await openResult(page, KOJIMA, FINAL_ROW);
+    await expect(popOf(root, "単勝", "1")).toHaveText("1人気※");
+    await expect(
+      root.locator(".rr-payout-row").filter({ hasText: "¥1,530" }).locator(".rr-pop"),
+    ).toHaveText("4人気");
+    const note = page.getByTestId("payout-popularity-note");
+    await expect(note).toContainText("※");
+    expect(await note.evaluate((e) => getComputedStyle(e).textAlign)).toBe(
+      "left",
+    );
+  });
+
+  for (const width of [360, 375]) {
+    test(`${width}px: 払戻が6桁・人気が3桁の行でも、組番が途中で折り返さず行からはみ出さない`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 });
+      const race = {
+        ...KOJIMA,
+        result: {
+          ...KOJIMA.result,
+          payoutRows: KOJIMA.result.payoutRows.map((row) =>
+            row.betType === "3tan"
+              ? { ...row, combination: "5-4-2", payout: 103540, popularity: 120 }
+              : row.betType === "3fuku"
+                ? { ...row, combination: "2-4-5", payout: 10050, popularity: 15 }
+                : row,
+          ),
+        },
+      };
+      const root = await openResult(page, race, FINAL_ROW);
+      await expect(
+        root.locator(".rr-payout-row").filter({ hasText: "¥103,540" }),
+      ).toBeVisible();
+      const problems = await root
+        .locator(".rr-payout-row")
+        .evaluateAll((rows) =>
+          rows.flatMap((row) => {
+            const out = [];
+            const items = [...row.querySelectorAll(".rr-combo-item")];
+            const tops = new Set(
+              items.map((i) => Math.round(i.getBoundingClientRect().top)),
+            );
+            if (tops.size > 1) out.push(`組番が折り返す: ${row.textContent}`);
+            const right = row.getBoundingClientRect().right;
+            for (const el of row.querySelectorAll("*")) {
+              if (el.getBoundingClientRect().right > right + 0.5) {
+                out.push(`はみ出し: ${row.textContent}`);
+                break;
+              }
+            }
+            return out;
+          }),
+        );
+      expect(problems).toEqual([]);
+    });
+  }
 
   test("締切時オッズなし: 単勝・複勝の人気は空欄、注記も出さない", async ({
     page,
