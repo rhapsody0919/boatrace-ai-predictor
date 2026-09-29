@@ -655,7 +655,14 @@ function MotorConditionChart({
                                 （2026-09-29 ファン4人のパネル・ユーザー承認） */}
                             {Number(row.official_2rate) === 0 &&
                               Number(row.official_3rate) === 0 &&
-                              row.sample_count > 0 && (
+                              row.sample_count > 0 &&
+                              // 前の節で3着以内に入らなかった「集計済みの 0%」と区別する
+                              // （会場公式の出走数が1以上なら集計済み。値の無い会場は
+                              // 断定しないので付けない。2026-09-29 ファン評価 P1）
+                              officialTallyState(
+                                venueHasOfficialStats,
+                                row.race_count,
+                              ) === "pending" && (
                                 <span className="motor-waku-n motor-official-pending">
                                   {t("analysis.motor.officialPendingBadge")}
                                 </span>

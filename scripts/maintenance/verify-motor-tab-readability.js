@@ -178,8 +178,8 @@ check(
 );
 // 公式の 0.0 が「集計前」か「本当に0%」かを区別する（2026-09-29 ファン4人・ユーザー承認）
 check(
-  "一覧: 公式2連率・3連率がどちらも0で、結果の出た走があるときは「集計前」を添える（公式の0.0は残す）",
-  /Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*row\.sample_count > 0/.test(
+  "一覧: 公式2連率・3連率がどちらも0で、結果の出た走があり、会場公式の出走数が0（集計前）のときだけ「集計前」を添える（公式の0.0は残す）",
+  /Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*row\.sample_count > 0 &&[\s\S]{0,300}?officialTallyState\(\s*venueHasOfficialStats,\s*row\.race_count,?\s*\) === "pending"/.test(
     chart,
   ) &&
     chart.includes('t("analysis.motor.officialPendingBadge")') &&
