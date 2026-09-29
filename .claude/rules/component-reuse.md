@@ -52,6 +52,7 @@ paths:
 
 ## CSS
 - `!important` は基本使わない
+- **新しいクラスはページ・部品に固有の名前にする**（`.venue-grid` ではなく `.guide-venue-grid`）。Vite は全ページの CSS を1つに結合するため、別ファイルの同名クラスはバンドル順で他ページを壊す（BOA-206・207・539）。`verify:css-collisions`（CI）が新しい衝突を落とす。詳細は `docs/reference/css-scoping.md`
 - メディアクエリで同じ要素に対する重複したスタイルを避ける
 - **件数がデータで変わるグリッドは `repeat(auto-fill, ...)` や固定列数 `repeat(N, ...)` にしない**。`auto-fit` にし、列数の上限を守るなら `DigestCardGrid.css` の `calc()` 方式にする。そのうえで件数（1件・2件・列数未満・多数）を差し替える再現テストを `e2e/layout.spec.js` に足す。PAGES の検査は本番のその日の件数しか見ないため、件数が少ない日にだけ落ちる（BOA-460・527・528で3回再発。ADR-0073 追記）
 
