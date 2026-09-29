@@ -2,7 +2,7 @@
 -- 選手ごとの最新級別・勝率のキャッシュテーブル
 -- race_history_cache（020番）と同じkey/JSONB-valueパターンを踏襲する。
 -- レース領域とドメインが異なるためrace_history_cacheには相乗りせず別テーブルにする
--- （設計判断はdocs/adr/0043-racer-grade-win-rate-cache-strategy.md参照）。
+-- （設計判断はdocs/adr/0052-racer-grade-win-rate-cache-strategy.md参照）。
 -- data は055番のRPC（get_latest_racer_grades）の結果をscripts/daily/update-racer-grade-cache.js
 -- が整形し、単一行（key='latest_grades'）のJSON配列として格納する。
 
