@@ -103,6 +103,8 @@ function buildPrediction(racePrediction, notFoundMessage) {
       // 中止・順延（BOA-254）で選手情報が存在しないレースも、この分岐に入る。
       // PredictionPanel側でcancellationStatusを見て専用メッセージに出し分ける
       cancellationStatus: racePrediction?.cancellationStatus ?? null,
+      // 結果があれば中止扱いしない（isRaceCancelled、BOA-525）ため、こちらにも渡す
+      result: racePrediction?.result ?? null,
     };
   }
 
