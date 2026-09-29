@@ -232,7 +232,9 @@ function withPanelAfterRow(items, selectedIdx, panel) {
 }
 
 // 小さな折れ線スパークライン（MotorWakuStatsGridと同じ発想のインラインSVG）。
-// 末尾がライブ値なら、その点を別色で打つ
+// 末尾がライブ値なら、その点を別色で打つ。
+// 各点の横位置は、下の値のマス（推移の点と同じ数の列）の中心に置く。点とマスを同じ列にそろえ、どの幅でも
+// 「どの点がどの値か」を位置で結べるようにする（ファン評価で3回出た指摘、BOA-547）
 function Sparkline({ points, isRange }) {
   if (points.length < 2) return null;
   const nums = points.map((p) => valueToNumber(p.value, isRange));
@@ -242,7 +244,7 @@ function Sparkline({ points, isRange }) {
   const width = 200;
   const height = 40;
   const xy = nums.map((v, i) => [
-    (i / (nums.length - 1)) * width,
+    ((i + 0.5) / nums.length) * width,
     height - ((v - min) / range) * height,
   ]);
   const toPoints = (list) =>
@@ -361,7 +363,10 @@ function TrendPanel({ combo, trend, isRange, spanAll }) {
       ) : (
         <>
           <Sparkline points={trend} isRange={isRange} />
-          <div className="rol-trend-values">
+          <div
+            className="rol-trend-values"
+            style={{ "--rol-trend-count": trend.length }}
+          >
             {trend.map((p, i) => (
               <div
                 className={`rol-trend-item${p.live ? " is-live" : ""}${p.official ? " is-official" : ""}`}

@@ -619,6 +619,69 @@ test.describe("締切時オッズ（公式、BOA-496）", () => {
     );
   });
 
+  // ファン評価で3回出た指摘の再現（BOA-547）: 推移の最後の点（締切時・公式）と「締切時（公式）」のマスの横位置が
+  // ずれる（375px では2段目の左端に落ちる）。点とマスが同じ列に並ぶことを 375・768・1440px で固定する
+  for (const width of [375, 768, 1440]) {
+    test(`推移: ${width}px で折れ線の点と値のマスの横位置がそろう（最後の点＝締切時（公式））`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      const snaps = [
+        "2026-09-28T04:24:00Z",
+        "2026-09-28T04:54:00Z",
+        "2026-09-28T05:09:00Z",
+        "2026-09-28T05:14:00Z",
+        "2026-09-28T05:19:00Z",
+      ].map((captured_at, i) => ({
+        ...SNAPSHOT_ROW,
+        captured_at,
+        trifecta_all: bump(SNAPSHOT_ROW.trifecta_all, 5 - i),
+      }));
+      await setup(page, {
+        now: AFTER_DEADLINE,
+        snapshots: [...snaps, AT_DEADLINE_ROW],
+        final: FINAL_ROW,
+      });
+      await page
+        .getByRole("button", {
+          name: `1-2-3 ${FINAL_T3["1-2-3"].toFixed(1)}`,
+          exact: true,
+        })
+        .click();
+      await expect(page.locator(".rol-trend-item")).toHaveCount(6);
+      const pos = await page.evaluate(() => {
+        const center = (r) => r.left + r.width / 2;
+        const items = [...document.querySelectorAll(".rol-trend-item")].map(
+          (el) => {
+            const r = el.getBoundingClientRect();
+            return { x: center(r), top: Math.round(r.top) };
+          },
+        );
+        const dot = document
+          .querySelector("line.rol-sparkline-official")
+          .getBoundingClientRect();
+        const poly = document.querySelector(".rol-sparkline polyline");
+        const svg = document.querySelector(".rol-sparkline");
+        const svgRect = svg.getBoundingClientRect();
+        const vbWidth = svg.viewBox.baseVal.width;
+        const firstX = Number(
+          poly.getAttribute("points").split(" ")[0].split(",")[0],
+        );
+        return {
+          items,
+          dotX: dot.left + dot.width / 2,
+          firstX: svgRect.left + (firstX / vbWidth) * svgRect.width,
+        };
+      });
+      const last = pos.items[pos.items.length - 1];
+      // 全マスが1段に並ぶ
+      expect(new Set(pos.items.map((i) => i.top)).size).toBe(1);
+      // 最後の点と「締切時（公式）」のマス、最初の点と「締切60分前」のマスの中心のずれが6px以内
+      expect(Math.abs(pos.dotX - last.x)).toBeLessThanOrEqual(6);
+      expect(Math.abs(pos.firstX - pos.items[0].x)).toBeLessThanOrEqual(6);
+    });
+  }
+
   // /code-review 指摘の再現: 一部の券種だけの行をキャッシュすると、翌日には過去レースの7日TTLで返り続け、
   // 後から Cron が埋めた券種が出ない。一部だけの行は保存せず、全券種そろった行だけ保存する
   test("キャッシュ: 一部の券種だけの行は保存せず、全券種そろった行だけ保存する", async ({

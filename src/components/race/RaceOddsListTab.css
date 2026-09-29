@@ -275,17 +275,21 @@
   stroke: var(--brand-accent-primary);
 }
 
-/* スナップショットが多い（最大9件程度）レースでも見切れないよう、
-   一定幅で自動折り返しする */
+/* 値のマスは推移の点と同じ数の列に1段で並べ、スパークラインの各点（列の中心）と横位置をそろえる
+   （折り返すと、最後の点「締切時（公式）」のマスが2段目の左端に落ち、右端の点と離れる。BOA-547）。
+   列数は --rol-trend-count＝点の数なので、空の列はできない。列の間の隙間は0（点の位置計算を列の中心に一致させる） */
 .rol-trend-values {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(3.4rem, 1fr));
-  gap: var(--spacing-2) 4px;
+  grid-template-columns: repeat(var(--rol-trend-count, 1), minmax(0, 1fr));
+  gap: 0;
   margin-top: var(--spacing-2);
 }
 
 .rol-trend-item {
   text-align: center;
+  min-width: 0;
+  padding: 2px 1px;
+  overflow-wrap: anywhere;
 }
 
 .rol-trend-value {
@@ -478,7 +482,6 @@
 }
 
 .rol-trend-item.is-official {
-  grid-column: span 2;
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--color-info) 14%, transparent);
 }
@@ -509,6 +512,10 @@
 }
 
 @media (max-width: 480px) {
+  .rol-trend-value {
+    font-size: var(--font-size-xs);
+  }
+
   .rol-boat-badge {
     width: 1.2rem;
     height: 1.2rem;
