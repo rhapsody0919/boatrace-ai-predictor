@@ -405,6 +405,16 @@
       "guards": "PRが機械生成の文書（generated-docs.js の一覧）を変更していないこと。含めると並行PRが同じファイルでコンフリクトする（ADR-0078）"
     },
     {
+      "script": "verify-e2e-har-merge.js",
+      "tier": "ci",
+      "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、素通し一覧の集計（ADR-0077）"
+    },
+    {
+      "script": "verify-e2e-recorded-network.js",
+      "tier": "ci",
+      "guards": "E2Eのspecが録画の再生（e2e/fixtures.js、ADR-0077）を素通りする書き方（@playwright/testからの直接import・route.continue()・route.fetch()）をしていないこと"
+    },
+    {
       "script": "verify-e2e-skips.js",
       "tier": "ci",
       "guards": "E2Eのskip判定（check-e2e-skips.js）。無言でskipされ続けるテストの検知が壊れないこと"

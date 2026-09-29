@@ -552,7 +552,8 @@ function fetchMotorDailySeries(
 ) {
   return withCache(
     // v2: 期間を現行モーターの世代で切り詰め、{window, series}を返す（BOA-329）
-    `motor-daily-series-v2-${venueCode}-${motorNumber}-${days}${beforeKey(beforeRaceId)}`,
+    // v3: 部品交換・プロペラ交換が記録されたレース番号（eventRaceNos）を追加（BOA-513）
+    `motor-daily-series-v3-${venueCode}-${motorNumber}-${days}${beforeKey(beforeRaceId)}`,
     async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
@@ -623,6 +624,12 @@ function fetchMotorDailySeries(
         .forEach((e) => {
           const propellerChanged = !!e.exhibition?.propeller_change;
           const parts = e.exhibition?.parts_changed ?? null;
+          // 交換が記録されたレース番号。同じ日に何Rの前の交換かを画面で示す
+          // （展示は各レースの前に行うので、そのレースの前に交換したことになる。BOA-513）
+          const eventRaceNo =
+            propellerChanged || (parts && parts.length > 0)
+              ? Number(e.race_id.slice(-2))
+              : null;
           const existing = byDate.get(e.race_date);
           if (!existing) {
             byDate.set(e.race_date, {
@@ -632,9 +639,11 @@ function fetchMotorDailySeries(
               exhibitionTime: e.exhibition?.exhibition_time ?? null,
               propellerChanged,
               parts,
+              eventRaceNos: eventRaceNo === null ? [] : [eventRaceNo],
             });
             return;
           }
+          if (eventRaceNo !== null) existing.eventRaceNos.push(eventRaceNo);
           existing.propellerChanged =
             existing.propellerChanged || propellerChanged;
           if (parts && parts.length > 0) {
@@ -2719,7 +2728,8 @@ export const supabaseDataService = {
       // v5: 過去レースは公式値（rate_source）、当日は世代で切り詰め（BOA-329）。
       // 過去/当日をキーに含める: 当日に保存した再計算の値が、日付が変わって
       // 過去レース扱い（7日TTL）になった後も読まれ続けないようにする
-      `race-motor-breakdown-v5-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
+      // v6: 当日のレースの行に sample_count（初下ろしの判定）を追加（BOA-513）
+      `race-motor-breakdown-v6-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -2792,6 +2802,8 @@ export const supabaseDataService = {
           return {
             ...row,
             rate_source: "recalc",
+            // このレースより前に結果の出た走数（機力指数の母数）。0 なら初下ろし（BOA-513）
+            sample_count: powerIndexes[i]?.sample_count ?? null,
             clipped_by_generation:
               powerIndexes[i]?.clipped_by_generation ?? false,
             motor_2rate: powerIndexes[i]?.actual_rate2 ?? row.motor_2rate,
@@ -4777,7 +4789,8 @@ export const supabaseDataService = {
   getMotorPartsHistory(venueCode, motorNumber, days = 90, beforeRaceId = null) {
     return withCache(
       // v2: 期間を現行モーターの世代で切り詰める（BOA-329）
-      `motor-parts-history-v2-${venueCode}-${motorNumber}-${days}${beforeKey(beforeRaceId)}`,
+      // v3: 交換が記録されたレース番号（raceNos）を追加（BOA-513）
+      `motor-parts-history-v3-${venueCode}-${motorNumber}-${days}${beforeKey(beforeRaceId)}`,
       async () => {
         const { series: dateSeries } = await fetchMotorDailySeries(
           venueCode,
@@ -4817,6 +4830,7 @@ export const supabaseDataService = {
           }
           events.push({
             date: d.date,
+            raceNos: d.eventRaceNos ?? [],
             propellerChanged: d.propellerChanged,
             parts: d.parts,
             interpretation,
