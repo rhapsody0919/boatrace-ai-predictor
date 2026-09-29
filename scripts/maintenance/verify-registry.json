@@ -59,7 +59,7 @@
     {
       "script": "verify-display-coverage.js",
       "tier": "ci",
-      "guards": "表示カバレッジ台帳（docs/reference/display-coverage.md）の最新性と抽出ロジック。取得したデータが画面に繋がっているかを、マイグレーションと src/・api/ の静的突合で追う"
+      "guards": "表示カバレッジ台帳（docs/reference/display-coverage.md）の抽出ロジックと、生成が成功すること・例外登録に実在しないテーブルが無いこと。最新性はmasterへのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078）"
     },
     {
       "script": "verify-data-health-report.js",
@@ -80,6 +80,11 @@
       "script": "verify-feature-contributions-dedup.js",
       "tier": "ci",
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
+    },
+    {
+      "script": "verify-frontend-pure-functions.js",
+      "tier": "ci",
+      "guards": "画面側の純関数（basicInfoStats / raceStatus / courseGridStats / venueDayTrend / weatherInfo）の、過去に fix が入った箇所の回帰と変異検証（BOA-255）"
     },
     {
       "script": "verify-gha-skip-gate.js",
@@ -111,6 +116,11 @@
       "guards": "新規マイグレーションが公開スキーマのテーブルをRLSなし・匿名書き込み可のまま作っていないか（BOA-370の再発防止）"
     },
     {
+      "script": "verify-meet-start-date.js",
+      "tier": "ci",
+      "guards": "会場単位の「節の初日」の判定（src/utils/meetGrouping.js の findMeetStartDate）。中1日の開催休みで前の節が丸ごと混ざると、節内順位・出場人数・準優の目安・必要得点が前の節の値になる（BOA-491/BOA-508）"
+    },
+    {
       "script": "verify-meet-grouping.js",
       "tier": "manual",
       "guards": "節推定（src/utils/meetGrouping.js、race_idの日付連続性）がrace_conditions.series_dayと一致し続けること。選手単位の一致率と、推定が誤りうる会場境界に前後どちらの節にも出走した選手が現れないこと（BOA-491の同型が選手単位でも起きていないかの監視）",
@@ -133,9 +143,29 @@
       "guards": "朝の初期化・公式予想を、ファイル・execSync・process.exit に依存しない関数へ分けた構造"
     },
     {
+      "script": "verify-motor-championship-generation.js",
+      "tier": "ci",
+      "guards": "モータ情報「優勝した日・選手」が入れ替え前の別モーター（同じ番号）の優勝を混ぜないこと（現行モーター世代への絞り込み）"
+    },
+    {
+      "script": "verify-motor-waku-generation.js",
+      "tier": "ci",
+      "guards": "モータ情報の枠番別成績・選手×枠成績（BOA-301）が入れ替え前の別モーター（同じ番号）の成績を混ぜないこと（180日窓から現行モーター世代への置き換え）"
+    },
+    {
+      "script": "verify-motor-window-generation.js",
+      "tier": "ci",
+      "guards": "機力指数・2連率推移・部品交換・使用履歴の期間を現行モーター世代で切り詰めること、過去レースのモータ情報一覧表を再計算せず出走表時点の公式値にすること（BOA-329）"
+    },
+    {
       "script": "verify-motor-pretest.js",
       "tier": "ci",
       "guards": "前検タイム・前検順位・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）"
+    },
+    {
+      "script": "verify-odds-live-api.js",
+      "tier": "ci",
+      "guards": "オッズのライブ取得API（api/odds/live.js、BOA-487）: オッズ更新時間・締切時オッズの検出、票0を0で返す解析、当日のみ受け付けるクエリ検証、Cache-Control"
     },
     {
       "script": "verify-opening-day-backfill.js",
@@ -334,7 +364,7 @@
     {
       "script": "verify-merge-order-guard.js",
       "tier": "ci",
-      "guards": "並行セッションのオーケストレーションが決めたマージ順（台帳で先行とされたPRが未マージなら gh pr merge を止める。guard-pr-merge.js・scripts/lib/mergeOrder.js・merge-order.js）"
+      "guards": "並行セッションのオーケストレーションが決めたマージ順（台帳で先行とされたPRが未マージなら gh pr merge を止める。台帳に制約があるのに for ループ・変数・$(...)・xargs 等でPR番号を確定できない場合も止める。guard-pr-merge.js・scripts/lib/mergeOrder.js・merge-order.js）"
     },
     {
       "script": "verify-hit-verification-guidance.js",
@@ -354,7 +384,15 @@
     {
       "script": "verify-lib-index.js",
       "tier": "ci",
-      "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）がソースと一致していること"
+      "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）の抽出ロジックと、生成が成功すること。最新性はmasterへのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078）"
+    },
+    {
+      "script": "verify-generated-docs-not-in-pr.js",
+      "tier": "ci",
+      "args": [
+        "--base=origin/master"
+      ],
+      "guards": "PRが機械生成の文書（generated-docs.js の一覧）を変更していないこと。含めると並行PRが同じファイルでコンフリクトする（ADR-0078）"
     },
     {
       "script": "verify-e2e-har-merge.js",
@@ -427,6 +465,11 @@
       "script": "verify-scraped-at-on-update.js",
       "tier": "ci",
       "guards": "scraped_at を持つテーブルへの upsert/update が scraped_at を載せること（DEFAULT now() は INSERT でしか効かず、載せないと初回挿入時の値が残り、鮮度の指標が壊れる。BOA-463）"
+    },
+    {
+      "script": "verify-series-day-fallback.js",
+      "tier": "ci",
+      "guards": "日目（race_conditions.series_day）のフォールバック（BOA-501）。ページから読めた値を節（race_series）からの導出より必ず優先すること、節が無い・読めない会場×日を勝手な値で埋めないこと、バックフィルが既存の値を上書きしないこと"
     }
   ]
 }

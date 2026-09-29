@@ -58,14 +58,27 @@ export function buildRaceEntryRows(raceId, entries, { extended = false } = {}) {
 /**
  * race_conditions の行（気象の列を除く。気象は buildWeatherRows が作る）。race_grade は races テーブルで管理する。
  *
+ * series_day は、ページ（出走表の日別タブ）から読めた値を必ず優先し、読めなかった（null）ときだけ
+ * fallbackSeriesDay で補う（BOA-501）。fallbackSeriesDay は、節（race_series）の開始日から導いた値を
+ * 呼び出し側が渡す（この関数はDBを引かない。導出は scripts/lib/raceSeriesLookup.js）。
+ * 節の途中に中止日があると導出が1日ぶん進みすぎるため、両方あるときにページ側を採るのは必須の規則。
+ * 食い違いの記録は呼び出し側が行う（update-race-info.js の accumulateRaceInfo）。
+ *
+ * is_final_day は補わない。節の終了日は予定で、順延でずれる（total_days は順延を反映しない、084）ため、
+ * 導出すると誤って「最終日」と出しかねない。
+ *
  * @param {string} raceId
  * @param {ReturnType<import("./raceListParser.js").parseRaceListPage>["meta"]} meta
- * @param {{extended?: boolean}} [options]
+ * @param {{extended?: boolean, fallbackSeriesDay?: number|null}} [options]
  */
-export function buildRaceConditionRow(raceId, meta, { extended = false } = {}) {
+export function buildRaceConditionRow(
+  raceId,
+  meta,
+  { extended = false, fallbackSeriesDay = null } = {},
+) {
   return {
     race_id: raceId,
-    series_day: meta.seriesDay,
+    series_day: meta.seriesDay ?? fallbackSeriesDay ?? null,
     is_final_day: meta.isFinalDay,
     race_title: meta.raceTitle,
     race_stage: meta.raceStage,
@@ -81,7 +94,14 @@ export function buildRaceConditionRow(raceId, meta, { extended = false } = {}) {
 
 /**
  * exhibition_data の行。展示タイム・スタート展示のSTがある艇の行を書く（旧実装と同じ）。extended では、
- * 欠場艇（体重だけがある）の行も書く（is_absent=true。他の列はNULL）。
+ * 欠場艇（体重だけがある）の行と、**展示前の行（当日体重・調整重量だけがある）** も書く（BOA-500）。
+ *
+ * 展示前の行を書く理由: 当日体重・調整重量は、展示航走より前（発走60分前の時点で全会場）に公開される。
+ * 展示タイムが出るまで捨てていると、ファンが早い時点で見られない（BOA-484の取得側）。
+ * 展示タイム・チルト・プロペラは、後の窓（-33）で同じ行に埋まる。
+ *
+ * 展示前の行を書くのを extended に限るのは、旧実装（凍結。__fixtures__/beforeinfo/legacyExhibitionParser.js）との
+ * 行の一致を保つため（欠場艇の行と同じ扱い。verify-pre-race-parsers.js が比べている）。
  *
  * @param {string} raceId
  * @param {ReturnType<import("./beforeInfoParser.js").parseBeforeInfoPage>["boats"]} boats
@@ -93,7 +113,8 @@ export function buildExhibitionRows(raceId, boats, { extended = false } = {}) {
       (b) =>
         b.exhibition_time != null ||
         b.start_timing != null ||
-        (extended && b.is_absent),
+        (extended && b.is_absent) ||
+        (extended && (b.weight_kg != null || b.adjustment_weight != null)),
     )
     .map((b) => ({
       race_id: raceId,

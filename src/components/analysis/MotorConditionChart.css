@@ -52,6 +52,24 @@
   border-color: var(--brand-accent-primary);
 }
 
+/* 現行モーターの使用開始日（期間の切り替えのすぐ上に1行）。出典は行末に小さく */
+.motor-generation-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin: 0 0 0.5rem;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+
+.motor-generation-start-source {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
 .period-toggle {
   display: flex;
   gap: 0.5rem;
@@ -236,6 +254,10 @@
 .usage-history-rate {
   font-weight: var(--font-weight-semibold);
   color: var(--color-success-text);
+}
+
+.usage-history-rate.is-small-sample {
+  color: var(--color-warning-text);
 }
 
 .usage-history-ranks {

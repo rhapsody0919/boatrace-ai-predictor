@@ -133,12 +133,22 @@
 
 .rol-col-foot {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 2px;
+  gap: 0 2px;
   padding: 0 2px;
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
+}
+
+/* 狭い画面で「合成」が「合／成」と割れないよう、見出しと値はそれぞれ1かたまりで折り返す */
+.rol-col-foot > span {
+  white-space: nowrap;
+}
+
+.rol-col-foot > span:last-child {
+  margin-left: auto;
 }
 
 /* オッズ1件（バッジ群＋オッズ値。人気度で色分け） */
@@ -291,6 +301,156 @@
 .rol-no-data {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
+}
+
+/* ライブ取得の状態の1行（BOA-487）: 最新＝緑、取得中＝灰、失敗＝橙、スナップショットのみ＝灰の注記 */
+.rol-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-3);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--border-hairline);
+}
+
+.rol-status b,
+.rol-status-strong {
+  font-weight: var(--font-weight-bold);
+}
+
+.rol-status.is-live {
+  color: var(--color-success-text);
+  background: color-mix(in srgb, var(--color-success) 10%, var(--surface-card));
+  border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
+}
+
+.rol-status.is-error {
+  color: var(--color-warning-text);
+  background: color-mix(in srgb, var(--color-warning) 10%, var(--surface-card));
+  border-color: color-mix(in srgb, var(--color-warning) 40%, transparent);
+}
+
+.rol-status-sub {
+  color: var(--text-secondary);
+}
+
+.rol-status-btn {
+  margin-left: auto;
+  padding: 2px var(--spacing-3);
+  border-radius: var(--radius-md);
+  border: var(--border-width-1) solid currentColor;
+  background: var(--surface-card);
+  color: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.rol-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+  flex: none;
+}
+
+.rol-spinner {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--text-secondary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  flex: none;
+  animation: rol-spin 1s linear infinite;
+}
+
+@keyframes rol-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rol-spinner {
+    animation: none;
+  }
+}
+
+/* 票0（公式の「0.0」）は「票なし」を灰色で出す */
+.rol-no-votes,
+.rol-odds.is-no-votes .rol-odds-value {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.rol-callout {
+  margin: 0;
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-xs);
+  color: var(--color-warning-text);
+  background: color-mix(in srgb, var(--color-warning) 10%, var(--surface-card));
+  border-radius: var(--radius-md);
+}
+
+/* 単勝・複勝の表 */
+.rol-win-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+}
+
+.rol-win-table th,
+.rol-win-table td {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+  text-align: right;
+  color: var(--text-primary);
+}
+
+.rol-win-table thead th {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+.rol-win-table th:first-child {
+  text-align: left;
+}
+
+.rol-win-table tbody td {
+  font-weight: var(--font-weight-bold);
+}
+
+.rol-win-boat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+/* 推移のうち、ライブ取得の値（末尾） */
+.rol-trend-item.is-live {
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+}
+
+.rol-trend-item.is-live .rol-trend-label {
+  color: var(--color-success-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.rol-sparkline-live {
+  fill: var(--color-success);
 }
 
 @media (max-width: 480px) {

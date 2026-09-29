@@ -506,12 +506,16 @@ function evaluate(m) {
         page.boats.filter(hasValue).map((b) => b.boat_number),
       ),
     );
+    // 展示前（当日体重・調整重量だけがある）の艇も、拡張では行を書く（BOA-500）。
+    // 展示タイム・チルトは、後の窓（-33）で同じ行に埋まる
+    const hasPreExhibition = (b) =>
+      b.weight_kg != null || b.adjustment_weight != null;
     expect(
-      `${name}: 拡張の行は、欠場艇も含む`,
+      `${name}: 拡張の行は、欠場艇と展示前（体重・調整重量だけ）の艇も含む`,
       same(
         extended.map((r) => r.boat_number),
         page.boats
-          .filter((b) => hasValue(b) || b.is_absent)
+          .filter((b) => hasValue(b) || b.is_absent || hasPreExhibition(b))
           .map((b) => b.boat_number),
       ),
     );
@@ -532,6 +536,37 @@ function evaluate(m) {
             !("is_absent" in r) &&
             !("prev_finish_mark" in r),
         ),
+    );
+  }
+
+  // 合成: 欠場艇に体重が無い場合。実ページのフィクスチャでは欠場艇にも体重があるため、展示前の艇を拾う節
+  // （BOA-500）が欠場艇も巻き込んで拾ってしまい、is_absent の節が効いているかを実ページでは確かめられない。
+  // 体重も調整重量も読めない欠場艇を合成して、is_absent の節だけで行が書かれることを確かめる
+  {
+    const absentNoWeight = [
+      {
+        boat_number: 1,
+        is_absent: true,
+        weight_kg: null,
+        adjustment_weight: null,
+        exhibition_time: null,
+        start_timing: null,
+        tilt: null,
+        propeller_text: null,
+        parts_changed: [],
+        prev_race_no: null,
+        prev_entry_course: null,
+        prev_start_timing: null,
+        prev_finish_rank: null,
+        exhibition_course: null,
+        start_flag: null,
+        prev_finish_mark: null,
+      },
+    ];
+    expect(
+      "合成: 欠場艇は、体重も調整重量も読めなくても拡張の行を書く（旧形式は書かない）",
+      m.buildExhibitionRows("R", absentNoWeight, { extended: true }).length ===
+        1 && m.buildExhibitionRows("R", absentNoWeight).length === 0,
     );
   }
 
@@ -871,7 +906,32 @@ function createDb({ tables = {}, missing = {}, throwOnProbe = false } = {}) {
       return {
         select(columns) {
           const cols = columns.split(",").map((c) => c.trim());
-          return {
+          // 日付の範囲（日目のフォールバックが読む race_series。BOA-501）。日付は YYYY-MM-DD の文字列で比較する。
+          // 絞り込みの後は await で終える（lte・gte の順に依らない）
+          const rangeFilters = [];
+          const pick = (r) =>
+            Object.fromEntries(cols.filter((c) => c in r).map((c) => [c, r[c]]));
+          const q = {
+            lte(column, value) {
+              rangeFilters.push((r) => String(r[column]) <= String(value));
+              return q;
+            },
+            gte(column, value) {
+              rangeFilters.push((r) => String(r[column]) >= String(value));
+              return q;
+            },
+            then(resolve, reject) {
+              const bad = missingIn(table, cols);
+              const result = bad
+                ? { data: null, error: selectError(table, bad) }
+                : {
+                    data: state.tables[table]
+                      .filter((r) => rangeFilters.every((f) => f(r)))
+                      .map(pick),
+                    error: null,
+                  };
+              return Promise.resolve(result).then(resolve, reject);
+            },
             limit() {
               if (throwOnProbe) throw new Error("fetch failed");
               const bad = missingIn(table, cols);
@@ -902,6 +962,7 @@ function createDb({ tables = {}, missing = {}, throwOnProbe = false } = {}) {
               });
             },
           };
+          return q;
         },
         upsert(rows, { onConflict }) {
           for (const row of rows) {
@@ -1581,7 +1642,19 @@ const mutants = [
   [
     "拡張の直前情報の行から、欠場艇を落とす",
     ROWS,
-    [["(extended && b.is_absent),", "false,"]],
+    [["(extended && b.is_absent) ||", "false ||"]],
+    "rows",
+  ],
+  [
+    // BOA-500: 展示前（当日体重・調整重量だけ）の艇の行を書かない版
+    "拡張の直前情報の行から、展示前（体重だけ）の艇を落とす",
+    ROWS,
+    [
+      [
+        "(extended && (b.weight_kg != null || b.adjustment_weight != null)),",
+        "false,",
+      ],
+    ],
     "rows",
   ],
   [

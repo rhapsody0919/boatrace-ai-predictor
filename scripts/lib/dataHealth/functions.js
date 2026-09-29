@@ -214,6 +214,26 @@ group by b.race_date
 order by 1`;
 
 /**
+ * 中止の誤検出（BOA-512）: 確定中止（cancellation_status='confirmed'）なのに、着順（rank1）のある結果が入っている
+ * レースを日別に数える。確定中止は「開催されなかった」ことを表すため、原理的に0件のはず。2026-09-12に、結果の
+ * 読み取りの一過性の失敗で「結果のあるレースを除く」ガードが外れ、32本が誤って confirmed になった（原因は PR #743 で
+ * 修正済み）。race_results は race_id が主キーのため、LEFT JOIN で行は増えない。結果の行があっても rank1 が NULL
+ * （中止・返還の行。マイグレーション078）は結果なしとして扱う。
+ * consistent_races = races − confirmed_with_result（NULL を含む論理式の否定で数えると、cancellation_status が NULL の
+ * 行を取りこぼすため、引き算で出す）
+ */
+const cancellationWithResultSql = ({ fromDate, toDate }) => `
+select r.race_date::text as d,
+    count(*) as races,
+    count(*) filter (where r.cancellation_status = 'confirmed' and rr.rank1 is not null) as confirmed_with_result,
+    count(*) - count(*) filter (where r.cancellation_status = 'confirmed' and rr.rank1 is not null) as consistent_races
+from races r
+left join race_results rr on rr.race_id = r.race_id
+where r.race_date between ${fromDate} and ${toDate}
+group by r.race_date
+order by 1`;
+
+/**
  * @typedef {Object} DataHealthFunction
  * @property {string} name 関数名（public スキーマ）
  * @property {Array<{name: string, type: "date"}>} args 引数
@@ -237,7 +257,7 @@ export const DATA_HEALTH_FUNCTIONS = Object.freeze([
     shape: "rows",
     description:
       "データ健全性の日次監視: 存在充足率（結果・着順・実進入・決まり手・レース種別・ST・展示・オッズ・全券種オッズ）の日別集計。定義は scripts/lib/dataHealth/coverageSpec.js",
-    migration: "089_data_health_functions.sql",
+    migration: "105_data_health_coverage_exhibition_row.sql",
     body: buildCoverageSql,
   },
   {
@@ -295,6 +315,15 @@ export const DATA_HEALTH_FUNCTIONS = Object.freeze([
       "データ健全性の日次監視: 出走表が過去日のデータで汚染された疑い（同一会場・同一レース番号で、直近21日以内の別の日と艇番→登録番号が完全一致するレースが2つ以上ある会場×日）。BOA-422・BOA-423",
     migration: "100_data_health_entries_duplicates.sql",
     body: entriesDuplicatesSql,
+  },
+  {
+    name: "data_health_cancellation_with_result",
+    args: FROM_TO,
+    shape: "rows",
+    description:
+      "データ健全性の日次監視: 確定中止（cancellation_status='confirmed'）なのに着順（rank1）のある結果が入っているレース（中止の誤検出。原理的に0件）。BOA-512",
+    migration: "107_data_health_cancellation_with_result.sql",
+    body: cancellationWithResultSql,
   },
   {
     name: "data_health_table_rows",

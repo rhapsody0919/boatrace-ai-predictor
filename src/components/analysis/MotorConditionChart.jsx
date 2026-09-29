@@ -18,6 +18,12 @@ import TrendLineChart from "./TrendLineChart";
 import DrillDownHeader from "./DrillDownHeader";
 import MotorWakuStatsGrid from "./MotorWakuStatsGrid";
 import MotorRacerWakuDrillDown from "./MotorRacerWakuDrillDown";
+import InlineFetchError from "../InlineFetchError";
+import { getTodayJST } from "../../utils/dateUtils";
+import {
+  formatGenerationDate,
+  isClippedByGeneration,
+} from "../../utils/motorGeneration";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
 
@@ -49,12 +55,32 @@ function MotorConditionChart({
   const [usageHistory, setUsageHistory] = useState([]);
   const [partsHistory, setPartsHistory] = useState([]);
   const [venueMotorStats, setVenueMotorStats] = useState(null);
-  const [championshipHistory, setChampionshipHistory] = useState([]);
+  // generationStart: 現行モーターの使用開始日（不明ならnull）。wins: その日以降の優勝
+  const [championshipHistory, setChampionshipHistory] = useState({
+    generationStart: null,
+    wins: [],
+  });
   // BOA-301: 会場内順位(FR-1)・枠番別成績(FR-2/3)・選手×枠成績(FR-4)
   const [venueMotorRanking, setVenueMotorRanking] = useState(null);
-  const [motorWakuStats, setMotorWakuStats] = useState([]);
-  const [motorRacerWakuStats, setMotorRacerWakuStats] = useState([]);
+  // FR-2〜4は現行モーターの世代で集計する。generationStart: 使用開始日（不明ならnull）
+  const [motorWakuStats, setMotorWakuStats] = useState({
+    generationStart: null,
+    rows: [],
+  });
+  const [motorRacerWakuStats, setMotorRacerWakuStats] = useState({
+    generationStart: null,
+    rows: [],
+  });
   const [selectedWakuCourse, setSelectedWakuCourse] = useState(null);
+  // 過去レースで、そのレースのモーターが入れ替え前（現行世代より前）か。
+  // 今の同じ番号のモーターとは別物なので、ドリルダウンの中身を出さない（BOA-329）
+  const [drillPreGeneration, setDrillPreGeneration] = useState(false);
+  // 選択中のレース自体が入れ替え前（過去レースで、レース日 < 使用開始日）か。
+  // 一覧の時点で伝え、行を押しても推移が出ないことを先に知らせる
+  const [racePreGeneration, setRacePreGeneration] = useState(false);
+  // 会場の現行モーターの使用開始日（BOATCAST bc_mst）。当日のレースで画面に出す
+  // （2026-09-29 ユーザー判断 B、ADR-0067 の 2026-09-28 追記の改訂）
+  const [generationStart, setGenerationStart] = useState(null);
   const [periodDays, setPeriodDays] = useState(90);
   const pendingInitialMotorNumber = useRef(initialMotorNumber);
   // レース/会場が変わった時だけドリルダウンをリセットする（期間トグルだけの
@@ -83,6 +109,26 @@ function MotorConditionChart({
           periodDays,
         );
         if (cancelled) return;
+        const raceDate = selectedRace?.slice(0, 10) ?? null;
+        // 使用開始日は、表示（1行・注記の日付）と入れ替え前の判定にだけ使う。取得が
+        // 一時的に失敗しても一覧表そのものは出す（日付の行を出さず、入れ替え前とも
+        // 判定しない）。以前は過去レースでしか呼んでいなかったので、当日のレースでは
+        // この取得の失敗が一覧表のエラーにつながらなかった
+        let venueGenerationStart = null;
+        try {
+          venueGenerationStart =
+            await supabaseDataService.getMotorGenerationStart(selectedVenue);
+        } catch (err) {
+          console.error("モーター使用開始日取得エラー:", err.message);
+        }
+        if (cancelled) return;
+        const preGeneration =
+          raceDate !== null &&
+          raceDate < getTodayJST() &&
+          venueGenerationStart !== null &&
+          raceDate < venueGenerationStart;
+        setGenerationStart(venueGenerationStart);
+        setRacePreGeneration(preGeneration);
         setBreakdown(data);
         // 機力バッジ等からのディープリンク（?motor=）で指定されたモーターが
         // 今回のレースに実在すれば、そのままドリルダウン画面を開く。
@@ -120,6 +166,20 @@ function MotorConditionChart({
       try {
         setLoading(true);
         setError(null);
+        setDrillPreGeneration(false);
+        const raceDate = selectedRace?.slice(0, 10) ?? null;
+        const isPast = raceDate !== null && raceDate < getTodayJST();
+        if (isPast) {
+          const generationStart =
+            await supabaseDataService.getMotorGenerationStart(selectedVenue);
+          if (generationStart !== null && raceDate < generationStart) {
+            setDrillPreGeneration(true);
+            return;
+          }
+        }
+        // 過去レースは「このレースの直前まで」で集計する（BOA-521）。今日から遡ると
+        // レース後の走りまで入り、「このときモーターはどうだったか」を振り返れない
+        const beforeRaceId = isPast ? selectedRace : null;
         const [
           trend,
           power,
@@ -135,37 +195,54 @@ function MotorConditionChart({
             selectedVenue,
             drillDownMotor,
             periodDays,
+            beforeRaceId,
           ),
           supabaseDataService.getMotorPowerIndex(
             selectedVenue,
             drillDownMotor,
             periodDays,
+            beforeRaceId,
           ),
           supabaseDataService.getMotorUsageHistory(
             selectedVenue,
             drillDownMotor,
+            beforeRaceId,
           ),
           supabaseDataService.getMotorPartsHistory(
             selectedVenue,
             drillDownMotor,
             periodDays,
+            beforeRaceId,
           ),
-          supabaseDataService.getVenueMotorStats(selectedVenue, drillDownMotor),
+          // 公式サイトのスナップショット（鮮度・優出等）は、過去レースならレース日以前の最新
+          supabaseDataService.getVenueMotorStats(
+            selectedVenue,
+            drillDownMotor,
+            isPast ? raceDate : null,
+          ),
           supabaseDataService.getVenueMotorChampionshipHistory(
             selectedVenue,
             drillDownMotor,
+            beforeRaceId,
           ),
-          // BOA-301 FR-1〜4: 会場内順位・枠番別成績・選手×枠成績は
-          // periodDays（既存の2連率/3連率推移トグル）とは独立した集計窓
-          // （固定180日、plan.md参照）のためperiodDaysを渡さない
+          // BOA-301 FR-1〜4: 会場内順位（公式の最新スナップショット）・
+          // 枠番別成績・選手×枠成績（現行モーターの世代）は、periodDays
+          // （既存の2連率/3連率推移トグル）とは独立した集計窓のため渡さない
           supabaseDataService.getVenueMotorRanking(
             selectedVenue,
             drillDownMotor,
+            undefined,
+            isPast ? raceDate : null,
           ),
-          supabaseDataService.getMotorWakuStats(selectedVenue, drillDownMotor),
+          supabaseDataService.getMotorWakuStats(
+            selectedVenue,
+            drillDownMotor,
+            beforeRaceId,
+          ),
           supabaseDataService.getMotorRacerWakuStats(
             selectedVenue,
             drillDownMotor,
+            beforeRaceId,
           ),
         ]);
         setTrendData(trend);
@@ -186,7 +263,15 @@ function MotorConditionChart({
     };
     loadTrend();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedVenue, drillDownMotor, periodDays]);
+  }, [selectedVenue, selectedRace, drillDownMotor, periodDays]);
+
+  // 過去レースでは期間を選ばせないので、90日に戻す（当日のレースで「直近1ヶ月」を
+  // 選んだまま過去レースに移ったとき、見えない切り替えの値で集計しないように）
+  useEffect(() => {
+    if (selectedRace && selectedRace.slice(0, 10) < getTodayJST()) {
+      setPeriodDays(90);
+    }
+  }, [selectedRace]);
 
   // モーター・会場が変わったらFR-4ドリルダウン（枠タップで開く選手一覧）を閉じる
   // （periodDaysトグルだけの変更では閉じない。90/30日切り替えはFR-2〜4の
@@ -271,6 +356,33 @@ function MotorConditionChart({
     breakdown.map((r) => r.championship_count),
   );
   const firstPlaceRateRankClass = rankClassFor(firstPlaceRates);
+  // 過去レースの一覧表は出走表時点の公式値（BOA-329、2026-09-29 ユーザー判断(c)）。
+  // 期間の切り替えは効かないので出さず、1行の注記に置き換える
+  const officialMode = breakdown.some((r) => r.rate_source === "official");
+  const isPastSelectedRace =
+    Boolean(selectedRace) && selectedRace.slice(0, 10) < getTodayJST();
+  // 過去レースは、一覧でもドリルダウンでも期間を選ばせない（90日固定）。
+  // ドリルダウンだけ選べると、押すだけで機力指数の評価が「実力以上」⇔「低調」に
+  // 反転し、一覧の「期間は選べません」とも食い違う（2026-09-29 ファン評価2周目）
+  const showPeriodToggle =
+    drillDownMotor === null
+      ? !officialMode
+      : !drillPreGeneration && !isPastSelectedRace;
+  // 入れ替えから1ヶ月以内は「直近1ヶ月」まで使用開始日で切り詰められ、どちらの
+  // 期間を選んでも中身が同じになる。押しても変わらないボタンは出さない
+  // （2026-09-29 ファン評価。使用開始日の行と切り詰めの注記は出す）
+  const periodChoiceHasEffect = !isClippedByGeneration(
+    generationStart,
+    getTodayJST(),
+    30,
+  );
+  // 期間を現行モーターの使用開始日で切り詰めたか（入れ替え後で期間が短い）
+  const clippedByGeneration =
+    drillDownMotor === null
+      ? breakdown.some((r) => r.clipped_by_generation)
+      : Boolean(
+          powerIndex?.clipped_by_generation || trendData?.clippedByGeneration,
+        );
 
   return (
     <div className="motor-condition-container">
@@ -329,22 +441,58 @@ function MotorConditionChart({
           </div>
         ))}
 
-      <div className="period-toggle" role="group">
-        <button
-          type="button"
-          className={`period-toggle-btn ${periodDays === 90 ? "active" : ""}`}
-          onClick={() => setPeriodDays(90)}
-        >
-          {t("analysis.motor.period90")}
-        </button>
-        <button
-          type="button"
-          className={`period-toggle-btn ${periodDays === 30 ? "active" : ""}`}
-          onClick={() => setPeriodDays(30)}
-        >
-          {t("analysis.motor.period30")}
-        </button>
-      </div>
+      {showPeriodToggle ? (
+        <>
+          {/* 現行モーターの使用開始日。いつからのモーターかが分からないと、「入れ替え後の
+              ため期間を限っています」を「最近入れ替えた」と読み違える（2026-09-29 ユーザー指摘）。
+              当日のレースだけに出す（過去レースは出走表時点の公式値で、取れるのは最新の
+              使用開始日1つだけのため、当時の日付を出せない） */}
+          {generationStart !== null && (
+            <p className="motor-generation-start">
+              {t("analysis.motor.generationStartLabel", {
+                date: formatGenerationDate(generationStart),
+              })}
+              <span className="motor-generation-start-source">
+                {t("analysis.motor.generationStartSource")}
+              </span>
+            </p>
+          )}
+          {periodChoiceHasEffect && (
+            <div className="period-toggle" role="group">
+              <button
+                type="button"
+                className={`period-toggle-btn ${periodDays === 90 ? "active" : ""}`}
+                onClick={() => setPeriodDays(90)}
+              >
+                {t("analysis.motor.period90")}
+              </button>
+              <button
+                type="button"
+                className={`period-toggle-btn ${periodDays === 30 ? "active" : ""}`}
+                onClick={() => setPeriodDays(30)}
+              >
+                {t("analysis.motor.period30")}
+              </button>
+            </div>
+          )}
+          {clippedByGeneration && (
+            <p className="table-note">
+              {t("analysis.motor.periodClippedNote", {
+                date: formatGenerationDate(generationStart, { short: true }),
+              })}
+            </p>
+          )}
+        </>
+      ) : (
+        officialMode &&
+        drillDownMotor === null && (
+          <p className="table-note">
+            {t("analysis.motor.periodOfficialNote")}
+            {racePreGeneration &&
+              ` ${t("analysis.motor.racePreGenerationNote")}`}
+          </p>
+        )
+      )}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
       {error && (
@@ -357,68 +505,74 @@ function MotorConditionChart({
         !error &&
         drillDownMotor === null &&
         breakdown.length > 0 && (
-          <div
-            className={`table-wrapper hscroll-hint${rankingScroll.hasMore ? " has-more" : ""}`}
-          >
-            {rankingScroll.hasMore && (
-              <button
-                type="button"
-                className="hscroll-more"
-                onClick={rankingScroll.scrollRight}
-                /* 装飾兼ショートカット。表自体は指でスワイプできるので
-                   支援技術には出さない */
-                aria-hidden="true"
-                tabIndex={-1}
-              >
-                ›
-              </button>
-            )}
+          <>
             <div
-              className="table-scroll"
-              ref={rankingScroll.ref}
-              onScroll={rankingScroll.update}
+              className={`table-wrapper hscroll-hint${rankingScroll.hasMore ? " has-more" : ""}`}
             >
-              <table className="motor-ranking-table">
-                <thead>
-                  <tr>
-                    <th>{t("analysis.laneHeader")}</th>
-                    <th>{t("table.playerName")}</th>
-                    <th>{t("analysis.motor.motorNumberHeader")}</th>
-                    {/* BOA-451: 「公式2連率（節時点）」は再計算した2連率の**すぐ右**に
+              {rankingScroll.hasMore && (
+                <button
+                  type="button"
+                  className="hscroll-more"
+                  onClick={rankingScroll.scrollRight}
+                  /* 装飾兼ショートカット。表自体は指でスワイプできるので
+                   支援技術には出さない */
+                  aria-hidden="true"
+                  tabIndex={-1}
+                >
+                  ›
+                </button>
+              )}
+              <div
+                className="table-scroll"
+                ref={rankingScroll.ref}
+                onScroll={rankingScroll.update}
+              >
+                <table className="motor-ranking-table">
+                  <thead>
+                    <tr>
+                      <th>{t("analysis.laneHeader")}</th>
+                      <th>{t("table.playerName")}</th>
+                      <th>{t("analysis.motor.motorNumberHeader")}</th>
+                      {/* BOA-451: 「公式2連率（節時点）」は再計算した2連率の**すぐ右**に
                       置く。この2つを見比べられることが追加の目的なので隣り合わせる。
                       前検は「起点」なので3連率の右（機力指数の手前）。
                       **2連率より左に列を足さない**のが肝心で、390pxでは左から3列で
                       画面が埋まるため、手前に足すと肝心の2連率・機力指数が画面外へ
                       押し出される（1着率の列を条件表示にしたのと同じ理由、2026-09-27） */}
-                    <th>{t("analysis.motor.rate2Header")}</th>
-                    <th>{t("analysis.motor.officialRate2Header")}</th>
-                    <th>{t("analysis.motor.rate3Header")}</th>
-                    {hasPretest && (
-                      <th>{t("analysis.motor.pretestTimeHeader")}</th>
-                    )}
-                    {showFirstPlaceRate && (
-                      <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
-                    )}
-                    <th>{t("analysis.motor.powerIndexHeader")}</th>
-                    <th>{t("analysis.motor.finalCountHeader")}</th>
-                    <th>{t("analysis.motor.championshipCountHeader")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {breakdown.map((row, i) => (
-                    <tr
-                      key={row.boat_number}
-                      className={`motor-ranking-row ${row.motor_2rate === bestMotor2Rate ? "best-motor" : ""}`}
-                      onClick={() => setDrillDownMotor(row.motor_number)}
-                    >
-                      <td className="rank">{row.boat_number}</td>
-                      <td translate="no">
-                        {row.player_name?.replace(/\s+/g, "")}
-                      </td>
-                      <td className="motor-num">
-                        {t("analysis.motor.motorUnit", { n: row.motor_number })}
-                      </td>
-                      {/* 連対率は**小数1桁**で出す（BOA-474、2026-09-28）。
+                      <th>{t("analysis.motor.rate2Header")}</th>
+                      {/* 過去レースは2連率の列そのものが公式値なので、同じ値の列を畳む */}
+                      {!officialMode && (
+                        <th>{t("analysis.motor.officialRate2Header")}</th>
+                      )}
+                      <th>{t("analysis.motor.rate3Header")}</th>
+                      {hasPretest && (
+                        <th>{t("analysis.motor.pretestTimeHeader")}</th>
+                      )}
+                      {showFirstPlaceRate && (
+                        <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
+                      )}
+                      <th>{t("analysis.motor.powerIndexHeader")}</th>
+                      <th>{t("analysis.motor.finalCountHeader")}</th>
+                      <th>{t("analysis.motor.championshipCountHeader")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {breakdown.map((row, i) => (
+                      <tr
+                        key={row.boat_number}
+                        className={`motor-ranking-row ${row.motor_2rate === bestMotor2Rate ? "best-motor" : ""}`}
+                        onClick={() => setDrillDownMotor(row.motor_number)}
+                      >
+                        <td className="rank">{row.boat_number}</td>
+                        <td translate="no">
+                          {row.player_name?.replace(/\s+/g, "")}
+                        </td>
+                        <td className="motor-num">
+                          {t("analysis.motor.motorUnit", {
+                            n: row.motor_number,
+                          })}
+                        </td>
+                        {/* 連対率は**小数1桁**で出す（BOA-474、2026-09-28）。
                           `official_2rate`（`race_entries.motor_2rate`）は、同じ節・同じ
                           モーターでもレースによって桁数が違う。出走表の行は二段階で埋まり、
                           前夜の初期投入（番組表＝Bファイル由来）は**1桁**、発走60分前ごろの
@@ -431,87 +585,114 @@ function MotorConditionChart({
                           基本情報タブのデータ出走表も同じ値を `toFixed(1)` で出しており、
                           ボートレース日和も1桁。再計算した2連率/3連率も、母数が数十走で
                           2桁目に意味が無いため揃える */}
-                      <td className="rate">{row.motor_2rate?.toFixed(1)}</td>
-                      <td className="rate">
-                        {row.official_2rate !== null &&
-                        row.official_2rate !== undefined
-                          ? Number(row.official_2rate).toFixed(1)
-                          : "-"}
-                      </td>
-                      <td className="rate">{row.motor_3rate?.toFixed(1)}</td>
-                      {hasPretest && (
-                        <td className="rate motor-pretest-cell">
-                          {row.pretest_time !== null &&
-                          row.pretest_time !== undefined ? (
-                            <>
-                              {Number(row.pretest_time).toFixed(2)}
-                              {row.pretest_rank ? (
-                                <span className="motor-waku-n">
-                                  {t("analysis.motor.pretestRank", {
-                                    rank: row.pretest_rank,
-                                  })}
-                                </span>
-                              ) : null}
-                            </>
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-                      )}
-                      {showFirstPlaceRate && (
+                        <td className="rate">{row.motor_2rate?.toFixed(1)}</td>
+                        {!officialMode && (
+                          <td className="rate">
+                            {row.official_2rate !== null &&
+                            row.official_2rate !== undefined
+                              ? Number(row.official_2rate).toFixed(1)
+                              : "-"}
+                          </td>
+                        )}
+                        <td className="rate">{row.motor_3rate?.toFixed(1)}</td>
+                        {hasPretest && (
+                          <td className="rate motor-pretest-cell">
+                            {row.pretest_time !== null &&
+                            row.pretest_time !== undefined ? (
+                              <>
+                                {Number(row.pretest_time).toFixed(2)}
+                                {row.pretest_rank ? (
+                                  <span className="motor-waku-n">
+                                    {t("analysis.motor.pretestRank", {
+                                      rank: row.pretest_rank,
+                                    })}
+                                  </span>
+                                ) : null}
+                              </>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                        )}
+                        {showFirstPlaceRate && (
+                          <td
+                            className={`rate ${firstPlaceRateRankClass(firstPlaceRates[i])}`}
+                          >
+                            {firstPlaceRates[i] !== null
+                              ? `${firstPlaceRates[i].toFixed(1)}%`
+                              : "-"}
+                          </td>
+                        )}
                         <td
-                          className={`rate ${firstPlaceRateRankClass(firstPlaceRates[i])}`}
+                          className={`rate power-index ${
+                            row.power_index > 0
+                              ? "power-index-good"
+                              : row.power_index < 0
+                                ? "power-index-bad"
+                                : ""
+                          }`}
                         >
-                          {firstPlaceRates[i] !== null
-                            ? `${firstPlaceRates[i].toFixed(1)}%`
+                          {row.power_index !== null &&
+                          row.power_index !== undefined
+                            ? `${row.power_index > 0 ? "+" : ""}${row.power_index.toFixed(1)}`
                             : "-"}
                         </td>
-                      )}
-                      <td
-                        className={`rate power-index ${
-                          row.power_index > 0
-                            ? "power-index-good"
-                            : row.power_index < 0
-                              ? "power-index-bad"
-                              : ""
-                        }`}
-                      >
-                        {row.power_index !== null &&
-                        row.power_index !== undefined
-                          ? `${row.power_index > 0 ? "+" : ""}${row.power_index.toFixed(1)}`
-                          : "-"}
-                      </td>
-                      <td
-                        className={`rate ${finalCountRankClass(row.final_count)}`}
-                      >
-                        {row.final_count ?? "-"}
-                      </td>
-                      <td
-                        className={`rate ${championshipCountRankClass(row.championship_count)}`}
-                      >
-                        {row.championship_count ?? "-"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <td
+                          className={`rate ${finalCountRankClass(row.final_count)}`}
+                        >
+                          {row.final_count ?? "-"}
+                        </td>
+                        <td
+                          className={`rate ${championshipCountRankClass(row.championship_count)}`}
+                        >
+                          {row.championship_count ?? "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
             {/* BOA-451 / ADR-0067: 生値をそのまま出す列（前検タイム・公式2連率）
-                の出典を表のすぐ下に1回だけ置く。集計・加工した列（期間別の
-                2連率/3連率・機力指数）は当社の計算なので出典の対象外 */}
+              の出典を表のすぐ下に1回だけ置く。集計・加工した列（期間別の
+              2連率/3連率・機力指数）は当社の計算なので出典の対象外。
+              横スクロールの枠（右端のフェード）の外に置く。枠の中だと375pxで
+              各行の末尾がフェードに隠れて読めない（2026-09-29 ファン評価） */}
             <p className="table-note motor-official-source-note">
-              {t("analysis.motor.officialSourceNote")}
+              {officialMode
+                ? t("analysis.motor.officialModeSourceNote")
+                : t("analysis.motor.officialSourceNote")}
             </p>
-          </div>
+          </>
         )}
 
-      {!loading && !error && drillDownMotor !== null && (
+      {!loading && !error && drillDownMotor !== null && drillPreGeneration && (
         <>
           <DrillDownHeader
             onBack={() => setDrillDownMotor(null)}
             backLabel={t("analysis.backToList")}
             heading={t("analysis.motor.trendHeading", { n: drillDownMotor })}
           />
+          <div className="empty-state">
+            {t("analysis.motor.drillPreGeneration", { n: drillDownMotor })}
+          </div>
+        </>
+      )}
+
+      {!loading && !error && drillDownMotor !== null && !drillPreGeneration && (
+        <>
+          <DrillDownHeader
+            onBack={() => setDrillDownMotor(null)}
+            backLabel={t("analysis.backToList")}
+            heading={t("analysis.motor.trendHeading", { n: drillDownMotor })}
+          />
+          {/* 過去レースのドリルダウンは「このレースの直前まで」で集計する（BOA-521）。
+              期間の切り替えは出さないので、どこまでの集計かをここで示す */}
+          {isPastSelectedRace && (
+            <p className="table-note">
+              {t("analysis.motor.drillAsOfRaceNote")}
+            </p>
+          )}
 
           {powerIndex?.power_index !== null &&
             powerIndex?.power_index !== undefined && (
@@ -527,7 +708,15 @@ function MotorConditionChart({
                 {t("analysis.motor.powerIndexSummary", {
                   index: `${powerIndex.power_index > 0 ? "+" : ""}${powerIndex.power_index.toFixed(1)}`,
                   count: powerIndex.sample_count,
-                  period: t(`analysis.motor.period${periodDays}`),
+                  // 入れ替え後で期間を切り詰めたときは「過去90日」と書かない
+                  // （37走が本当に90日分に見えてしまう）
+                  period: powerIndex.clipped_by_generation
+                    ? t("analysis.motor.periodSinceGeneration", {
+                        date: formatGenerationDate(generationStart, {
+                          short: true,
+                        }),
+                      })
+                    : t(`analysis.motor.period${periodDays}`),
                 })}
                 {" — "}
                 {powerIndex.power_index > 0
@@ -607,14 +796,16 @@ function MotorConditionChart({
           {selectedWakuCourse !== null ? (
             <MotorRacerWakuDrillDown
               course={selectedWakuCourse}
-              rows={motorRacerWakuStats.filter(
+              rows={motorRacerWakuStats.rows.filter(
                 (r) => r.course === selectedWakuCourse,
               )}
               onBack={() => setSelectedWakuCourse(null)}
             />
           ) : (
             <MotorWakuStatsGrid
-              rows={motorWakuStats}
+              rows={motorWakuStats.rows}
+              generationStart={motorWakuStats.generationStart}
+              fetchFailed={motorWakuStats.fetchFailed}
               embedded={embedded}
               highlightCourse={todayHighlightCourse}
               onSelectCourse={setSelectedWakuCourse}
@@ -624,9 +815,9 @@ function MotorConditionChart({
           <h3 className="selected-motor-heading">
             {t("analysis.motor.championshipHistoryHeading")}
           </h3>
-          {championshipHistory.length > 0 ? (
+          {championshipHistory.wins.length > 0 ? (
             <ul className="history-list">
-              {championshipHistory.map((win) => (
+              {championshipHistory.wins.map((win) => (
                 <li key={win.raceId}>
                   <span className="history-date">{win.date}</span>
                   <span translate="no" className="usage-history-player">
@@ -635,9 +826,13 @@ function MotorConditionChart({
                 </li>
               ))}
             </ul>
+          ) : championshipHistory.fetchFailed ? (
+            <InlineFetchError />
           ) : (
             <div className="empty-state">
-              {t("analysis.motor.championshipHistoryEmpty")}
+              {championshipHistory.generationStart === null
+                ? t("analysis.motor.championshipHistoryUnknownGeneration")
+                : t("analysis.motor.championshipHistoryEmpty")}
             </div>
           )}
           <p className="table-note">
@@ -798,8 +993,17 @@ function MotorConditionChart({
         </>
       )}
 
-      <p className="table-note">{t("analysis.motor.note")}</p>
-      <p className="table-note">{t("analysis.motor.powerIndexNote")}</p>
+      {/* 「行を押すと推移」は一覧でだけ、入れ替え前のレースでは出さない
+          （押しても推移が出ないため） */}
+      {drillDownMotor === null &&
+        (racePreGeneration ? (
+          <p className="table-note">{t("analysis.motor.highlightNote")}</p>
+        ) : (
+          <p className="table-note">{t("analysis.motor.note")}</p>
+        ))}
+      {!drillPreGeneration && (
+        <p className="table-note">{t("analysis.motor.powerIndexNote")}</p>
+      )}
     </div>
   );
 }

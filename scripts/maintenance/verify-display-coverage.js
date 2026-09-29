@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * verify-display-coverage.js — 表示カバレッジ台帳がソースと一致しているかを機械検査する。
+ * verify-display-coverage.js — 表示カバレッジ台帳の生成が成功するかを機械検査する。
  *
  * 台帳（docs/reference/display-coverage.md）は
  * scripts/maintenance/generate-display-coverage.js がマイグレーションと src/・api/ から生成する。
@@ -8,10 +8,15 @@
  * なぜ検査するか: 手で書いた台帳は必ず陳腐化する。取得側は台帳を3本持っていたのに、
  * orchestration.md 自身が「WS4bが『未着手』のままだが実際には21ジョブがliveで稼働していた。
  * この乖離自体が、オーケストレーションの記録として直すべき点」と書いている。
- * 共通ロジック索引（verify-lib-index.js）・ER図（ADR-0065）と同じ方式で最新性を担保する。
+ * 共通ロジック索引（verify-lib-index.js）・ER図（ADR-0065）と同じくソースから生成する。
  *
- * 併せて、抽出のロジック（SQLコメントの除去・関係の収集・コードの参照抽出）も
- * 固定の入力で検証する。抽出が壊れると台帳が静かに空になり、最新性の検査も通ってしまうため。
+ * 生成物はPRに含めず、masterへのマージ後に regenerate-generated-docs.yml が
+ * 作り直してコミットする（ADR-0078。PRに含めると並行するPRが同じファイルでコンフリクトする）。
+ * PRで見るのは「抽出ロジックが正しいか」「生成が成功するか」「例外登録に実在しない
+ * テーブルが無いか」だけ。生成物をPRに含めていないことは verify-generated-docs-not-in-pr.js が見る。
+ *
+ * 抽出のロジック（SQLコメントの除去・関係の収集・コードの参照抽出）は固定の入力で検証する。
+ * 抽出が壊れると台帳が静かに空になるため。
  */
 
 import { execFileSync } from "node:child_process";
@@ -254,13 +259,13 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-// --- 生成物がソースと一致しているか ---
+// --- 生成が成功するか（書き込みはしない） ---
 try {
   execFileSync(
     "node",
     [
       path.join(repoRoot, "scripts/maintenance/generate-display-coverage.js"),
-      "--check",
+      "--dry-run",
     ],
     { stdio: "inherit", cwd: repoRoot },
   );
@@ -269,5 +274,5 @@ try {
 }
 
 console.log(
-  `OK: 抽出ロジック${checked}件と、${path.relative(repoRoot, OUT_PATH)} の最新性を検証`,
+  `OK: 抽出ロジック${checked}件と、${path.relative(repoRoot, OUT_PATH)} を生成できることを検証`,
 );

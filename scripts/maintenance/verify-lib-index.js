@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 /**
- * verify-lib-index.js — 共通ロジックの索引がソースと一致しているかを機械検査する。
+ * verify-lib-index.js — 共通ロジックの索引の生成が成功するかを機械検査する。
  *
  * 索引（docs/reference/shared-logic-index.md）は
- * scripts/maintenance/generate-lib-index.js がソースから生成する。手で書いた索引は
- * 必ず陳腐化し、陳腐化した索引は「無い」より悪い（既にあるものを無いと判断させる）ため、
- * ER図（ADR-0065）と同じく生成物の最新性をCIで担保する。
+ * scripts/maintenance/generate-lib-index.js がソースから生成する。
+ * 生成物はPRに含めず、masterへのマージ後に regenerate-generated-docs.yml が
+ * 作り直してコミットする（ADR-0078）。以前はPRで「コミット済みの生成物がソースと一致するか」
+ * を見ていたが、それだと生成物をPRに含めることになり、並行するPRが同じファイルで
+ * コンフリクトしていた。PRで見るのは「抽出ロジックが正しいか」と「生成が成功するか」だけにする。
+ * 生成物をPRに含めていないことは verify-generated-docs-not-in-pr.js が見る。
  *
- * 併せて、抽出のロジック（モジュールの役割の1行・exportの名前・行の整形）も
- * 固定の入力で検証する。抽出が壊れると索引が静かに空になり、検査も通ってしまうため。
+ * 抽出のロジック（モジュールの役割の1行・exportの名前・行の整形）は固定の入力で検証する。
+ * 抽出が壊れると索引が静かに空になるため。
  */
 
 import { execFileSync } from "node:child_process";
@@ -105,13 +108,13 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-// --- 生成物がソースと一致しているか ---
+// --- 生成が成功するか（書き込みはしない） ---
 try {
   execFileSync(
     "node",
     [
       path.join(repoRoot, "scripts/maintenance/generate-lib-index.js"),
-      "--check",
+      "--dry-run",
     ],
     { stdio: "inherit", cwd: repoRoot },
   );
@@ -120,5 +123,5 @@ try {
 }
 
 console.log(
-  `OK: 索引の抽出ロジック${checked}件と、${OUTPUT_PATH} の最新性を検証`,
+  `OK: 索引の抽出ロジック${checked}件と、${OUTPUT_PATH} を生成できることを検証`,
 );

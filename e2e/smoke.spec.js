@@ -1458,8 +1458,16 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const rates = await page.locator(".rmt-rate").allInnerTexts();
     const nums = rates.map((v) => Number(v.replace(/[^0-9.]/g, "")));
     expect(nums).toEqual([...nums].sort((a, b) => b - a));
-    // 節の規模と準優の目安、公式値の出典
-    await expect(page.locator(".rmt-sub")).toContainText("節の出場は48人");
+    // 節の規模と準優の目安、公式値の出典。
+    // **この節（桐生 2026-09-20開催）はＷ優勝戦**で、独立した2つの勝ち上がりが
+    // 同居している。以前はここが「48人」＝男子24人と女子24人の合算で、
+    // 別の勝ち上がりの選手を混ぜて順位を振っていた（BOA-476／BOA-511）。
+    // 表示中の6艇と同じ側だけを母集団にするので24人になる
+    await expect(page.locator(".rmt-sub")).toContainText("節の出場は24人");
+    // 人数が半分になる理由を1行で断る（黙って半分にすると「なぜ減った」になる）
+    await expect(page.locator(".rmt-series-note")).toContainText(
+      "勝ち上がりが2つに分かれています",
+    );
     await expect(page.locator(".rmt-source")).toContainText(
       "前検タイムの出典: BOAT RACE オフィシャルウェブサイト",
     );
@@ -3050,7 +3058,9 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
 
     const table = page.locator(".motor-ranking-table").first();
     await expect(table.locator("thead")).toContainText("前検");
-    await expect(table.locator("thead")).toContainText("公式2連率");
+    // 過去レースは2連率の列そのものが出走表時点の公式値なので、同じ値になる
+    // 「公式2連率（節時点）」の列は畳む（BOA-329、2026-09-29 ユーザー判断(c)）
+    await expect(table.locator("thead")).not.toContainText("公式2連率");
     // 6艇のどれかに前検の秒数（6.60〜6.9x）が出ている
     await expect(table.locator("td.motor-pretest-cell").first()).toHaveText(
       /\d\.\d{2}/,
@@ -3075,8 +3085,14 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
     const table = page.locator(".motor-ranking-table").first();
     await expect(table.locator("thead")).not.toContainText("前検");
     await expect(table.locator("td.motor-pretest-cell")).toHaveCount(0);
-    // 公式2連率は race_entries 由来なので前検が無くても出る
-    await expect(table.locator("thead")).toContainText("公式2連率");
+    // 過去レースでは2連率の列が race_entries 由来の公式値で、前検が無くても出る。
+    // 期間の切り替えは出さず、公式値である旨の注記に置き換える（BOA-329）
+    await expect(table.locator("thead")).toContainText("2連率");
+    await expect(table.locator("thead")).not.toContainText("公式2連率");
+    await expect(page.locator(".period-toggle")).toHaveCount(0);
+    await expect(
+      page.getByText("出走表時点の公式値で表示しています"),
+    ).toBeVisible();
   });
 
   test("旧形状のキャッシュが残っていても「前検」列が出る（キャッシュキーの版を上げている）", async ({
@@ -3530,6 +3546,80 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
     await expect(page.getByTestId("rbi-pre-exhibition-note")).toHaveCount(0);
   });
 
+  // BOA-497: 展示前の途中の結果をキャッシュしない。以前は当日分30分・過去分7日、
+  // localStorage に残り、展示後に値が入っても再訪問・リロードで「—」のまま出た
+  const maintenanceRow = (n, exhibited) => ({
+    boat_number: n,
+    exhibition_time: exhibited ? 6.7 : null,
+    tilt: exhibited ? -0.5 : null,
+    adjustment_weight: 0,
+    propeller_change: null,
+    parts_changed: null,
+    today_weight: 50 + n,
+    prev_race_no: null,
+    prev_entry_course: null,
+    prev_start_timing: null,
+    prev_finish_rank: null,
+    exhibition_course: exhibited ? n : null,
+    is_absent: false,
+    updated_at: "2026-09-21T07:12:56Z",
+  });
+  const tiltCells = (page) => rowByLabel(page, "チルト").locator("td.drt-cell");
+
+  test("展示前（体重だけの行）に開いた後、展示後に開き直すとチルトが出る", async ({
+    page,
+  }) => {
+    let exhibited = false;
+    let requests = 0;
+    await page.route(isMaintenance, (route) => {
+      requests += 1;
+      return fulfillJson(
+        [1, 2, 3, 4, 5, 6].map((n) => maintenanceRow(n, exhibited)),
+      )(route);
+    });
+    await openBeforeInfoTab(page);
+    await expect(tiltCells(page).first()).toHaveText("—", { timeout: 20000 });
+
+    exhibited = true;
+    await openBeforeInfoTab(page);
+    await expect(tiltCells(page).first()).toContainText("-0.5", {
+      timeout: 20000,
+    });
+    expect(requests).toBeGreaterThanOrEqual(2);
+  });
+
+  test("一部の艇だけ展示タイムが入った途中の結果もキャッシュせず、揃った後はキャッシュする", async ({
+    page,
+  }) => {
+    let stage = "partial";
+    let requests = 0;
+    await page.route(isMaintenance, (route) => {
+      requests += 1;
+      return fulfillJson(
+        [1, 2, 3, 4, 5, 6].map((n) =>
+          maintenanceRow(n, stage === "complete" || n <= 3),
+        ),
+      )(route);
+    });
+    await openBeforeInfoTab(page);
+    await expect(tiltCells(page).nth(3)).toHaveText("—", { timeout: 20000 });
+
+    stage = "complete";
+    await openBeforeInfoTab(page);
+    await expect(tiltCells(page).nth(3)).toContainText("-0.5", {
+      timeout: 20000,
+    });
+
+    // 揃った結果は保存される: 応答を途中の状態へ戻しても、開き直しで値が残り、取り直さない
+    const afterComplete = requests;
+    stage = "partial";
+    await openBeforeInfoTab(page);
+    await expect(tiltCells(page).nth(3)).toContainText("-0.5", {
+      timeout: 20000,
+    });
+    expect(requests).toBe(afterComplete);
+  });
+
   test("出走表の体重の取得に失敗したら、未公開と区別して取得失敗を出す", async ({
     page,
   }) => {
@@ -3664,5 +3754,120 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
         hasText: "出走表の体重を取得できませんでした",
       }),
     ).toHaveCount(0);
+  });
+});
+
+test.describe("レース詳細の見出し: 開催の何日目か（BOA-488）", () => {
+  // race_conditions.series_day / is_final_day の実データ（確定済みの過去レース）。
+  // 2026-09-22 常滑は節の初日、2026-09-26 常滑は5日目、2026-09-24 戸田は7日目で最終日
+  for (const [raceId, label] of [
+    ["2026-09-22-08-02", "初日"],
+    ["2026-09-26-08-02", "5日目"],
+    ["2026-09-24-02-02", "最終日"],
+  ]) {
+    test(`${raceId} の見出しに「${label}」が出る`, async ({ page }) => {
+      await page.goto(`/race/${raceId}`);
+      const badge = page.locator(".page-header h1 .race-detail-series-day");
+      await expect(badge).toHaveText(label, { timeout: 25000 });
+    });
+  }
+
+  test("英語版では訳語で出る", async ({ page }) => {
+    await page.goto("/en/race/2026-09-24-02-02");
+    await expect(
+      page.locator(".page-header h1 .race-detail-series-day"),
+    ).toHaveText("Last day", { timeout: 25000 });
+  });
+});
+
+test.describe("レース詳細の見出し: グレードとレース種別（BOA-509）", () => {
+  // 実データ（確定済みの過去レース）。2026-09-27 若松12RはG1ヤングダービーの優勝戦、
+  // 戸田は一般（ippan）の「ＴＡＭＲＯＮＣＵＰ」で、2Rが予選・5Rが企画レース「ウインウイン５」
+  const h1 = (page) => page.locator(".page-header h1");
+  const kicker = (page) => page.locator(".race-detail-kicker");
+
+  test("G1優勝戦: グレードバッジ・節タイトル・優勝戦チップが出る", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-09-27-20-12");
+    await expect(h1(page).locator(".race-detail-stage")).toHaveText(/優勝戦/, {
+      timeout: 25000,
+    });
+    await expect(h1(page).locator(".race-detail-stage--final")).toBeVisible();
+    await expect(kicker(page).locator(".race-detail-grade")).toHaveText("G1");
+    // 全角英数は NFKC で半角にする（DBは「第１３回ヤングダービー」）
+    await expect(kicker(page)).toContainText("第13回ヤングダービー");
+    // 種別チップは h1 のアクセシブルネームに含まれる
+    await expect(
+      page.getByRole("heading", { level: 1, name: /若松 12R.*優勝戦/ }),
+    ).toBeVisible();
+  });
+
+  test("分類できない企画レース名は公式表記のまま出す", async ({ page }) => {
+    await page.goto("/race/2026-09-27-02-05");
+    const chip = h1(page).locator(".race-detail-stage");
+    await expect(chip).toHaveText("ウインウイン5", { timeout: 25000 });
+    await expect(chip).toHaveClass(/race-detail-stage--raw/);
+    await expect(chip).toHaveAttribute("translate", "no");
+    // 種別名と見分けがつかないため、何の名前かをツールチップで補う（ファン評価 P2）
+    await expect(chip).toHaveAttribute("title", "会場独自のレース名");
+  });
+
+  // ファン評価 P1: 予選期間の「予選特賞」と予選落ち組の「一般特選」を
+  // 同じ「特別戦」にまとめない（得点率に入るかどうかが逆になるため）
+  for (const [raceId, label, official] of [
+    ["2026-09-20-03-09", "予選特別戦", "予選特賞"],
+    ["2026-09-25-10-09", "一般特選", null],
+    ["2026-09-20-14-10", "選抜戦", null],
+    // ファン評価3周目: 予選期間の「予選選抜」は最終日の選抜戦と分ける
+    ["2026-09-17-15-11", "予選特別戦", "予選選抜"],
+  ]) {
+    test(`${raceId} の種別は「${label}」`, async ({ page }) => {
+      await page.goto(`/race/${raceId}`);
+      const chip = h1(page).locator(".race-detail-stage");
+      await expect(chip).toHaveText(label, { timeout: 25000 });
+      if (official) {
+        await expect(chip).toHaveAttribute("title", `公式表記: ${official}`);
+      }
+    });
+  }
+
+  test("一般（ippan）はグレードバッジを出さず、節タイトルだけ出す", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-09-27-02-02");
+    await expect(h1(page).locator(".race-detail-stage")).toHaveText("予選", {
+      timeout: 25000,
+    });
+    await expect(kicker(page)).toContainText("TAMRONCUP");
+    await expect(kicker(page).locator(".race-detail-grade")).toHaveCount(0);
+  });
+
+  test("race_conditions 欠損レースは節タイトルを同会場の他レースで補い、種別は出さない", async ({
+    page,
+  }) => {
+    // 2026-09-04 浜名湖9R は race_conditions に series_day=6 だけが入り、
+    // is_final_day・race_title・race_stage が null（BOA-347）。同じ日の他レースは最終日
+    await page.goto("/race/2026-09-04-06-09");
+    await expect(kicker(page)).toContainText("クラウンメロン杯", {
+      timeout: 25000,
+    });
+    await expect(h1(page).locator(".race-detail-stage")).toHaveCount(0);
+    // is_final_day も項目ごとに補う（ファン評価2周目 P1、「6日目」と出ていた）
+    await expect(h1(page).locator(".race-detail-series-day")).toHaveText(
+      "最終日",
+    );
+  });
+
+  test("英語版は分類名を訳し、公式表記はツールチップに残す", async ({
+    page,
+  }) => {
+    await page.goto("/en/race/2026-09-27-20-12");
+    const chip = h1(page).locator(".race-detail-stage");
+    await expect(chip).toHaveText(/Final/, { timeout: 25000 });
+    await expect(chip).toHaveAttribute("title", /優勝戦/);
+    await expect(
+      kicker(page).locator(".race-detail-kicker__title"),
+    ).toHaveAttribute("translate", "no");
   });
 });

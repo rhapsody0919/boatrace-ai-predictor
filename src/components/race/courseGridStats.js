@@ -21,7 +21,9 @@
  * 同じサイト内で艇番基準と実進入コース基準が混在する点は横断課題として
  * BOA-302 が起票済み（重複起票しない）。グリッドには「実進入コース基準」と注記する。
  */
-import { filterRecords, computeRates } from "./basicInfoStats";
+// 拡張子付きで書く。Nodeから直接importして検証するため
+// （scripts/maintenance/verify-frontend-pure-functions.js）
+import { filterRecords, computeRates } from "./basicInfoStats.js";
 
 export const GRID_COURSES = [1, 2, 3, 4, 5, 6];
 

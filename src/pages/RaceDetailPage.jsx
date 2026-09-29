@@ -27,7 +27,68 @@ import { parseRaceId } from "../utils/raceId";
 import { getTodayJST } from "../utils/dateUtils";
 import { getRaceStatus } from "../utils/raceStatus";
 import { formatDateLocalized } from "../utils/formatters";
+import { GRADE_CONFIG } from "../constants/gradeConfig";
+import {
+  getRaceStageBadge,
+  getRaceStageCategory,
+} from "../constants/raceStageConfig";
 import "./RaceDetailPage.css";
+
+// 開催の何日目かの表示ラベル（BOA-488）。値が無ければnull（「—」も出さない）。
+// 初日と最終日が同時に立つ1日開催は実在しないため、判定順は仕様の記載順に従う
+function getSeriesDayLabel(seriesDay, isFinalDay, t) {
+  if (seriesDay === 1) return t("raceDetailPage.seriesDayFirst");
+  if (isFinalDay === true) return t("raceDetailPage.seriesDayFinal");
+  if (Number.isInteger(seriesDay) && seriesDay > 1) {
+    return t("raceDetailPage.seriesDayNth", { day: seriesDay });
+  }
+  return null;
+}
+
+// 見出しの種別チップ（BOA-509）。分類できたものは分類名、できないもの
+// （会場の企画レース名）は公式表記のまま出す。race_stage はレースごとの値なので
+// 他レースで補わない（無ければ出さない）
+const SPECIAL_STAGE_KEYS = new Set([
+  "dream",
+  "selection",
+  "qualifierSpecial",
+  "generalSpecial",
+  "special",
+]);
+
+function getStageChip(raceStage, t) {
+  if (!raceStage) return null;
+  const official = raceStage.normalize("NFKC");
+  const category = getRaceStageCategory(raceStage);
+  if (!category) {
+    // 企画レース名は種別名と見分けがつかないので、何の名前かをツールチップで補う
+    return {
+      variant: "raw",
+      label: official,
+      title: t("raceStage.venueOriginal"),
+      isOfficial: true,
+    };
+  }
+  const label = t(category.i18nKey);
+  const variant =
+    category.key === "final" || category.key === "semifinal"
+      ? category.key
+      : SPECIAL_STAGE_KEYS.has(category.key)
+        ? "special"
+        : "plain";
+  return {
+    variant,
+    label,
+    // 優勝戦・準優勝戦は RaceCard のバッジと同じ絵文字を添える
+    emoji: getRaceStageBadge(raceStage)?.emoji,
+    // 分類名と公式表記が同じ（「予選」「優勝戦」等）ならツールチップは出さない
+    title:
+      label === official
+        ? undefined
+        : t("raceStage.officialName", { name: official }),
+    isOfficial: false,
+  };
+}
 
 // rawData（getPredictionsのrace）からPredictionSection用のprediction objectを構築
 // （RaceDetail.jsxのprocessRacePredictionと同じロジック）
@@ -164,6 +225,31 @@ function RaceDetailPage() {
   const prediction = racePrediction
     ? buildPrediction(racePrediction, t("errors.noPredictionData"))
     : null;
+  // 取得失敗時は racePrediction が null になり、ページ全体が DataFetchError を出す。
+  // ここでの null は「取得できたが値が無い」だけなので、何も出さない。
+  // series_day はレース単位で出走表の取得時に書き込まれるため、当日はまだ
+  // 埋まっていないレースが残る（2026-09-28昼の実測で144R中52Rがnull。
+  // 丸亀は1Rだけ3日目で2〜12Rがnull）。日目は会場・日付単位で
+  // 同じ値なので、自レースに無ければ同じ会場の他レースの値を使う（追加クエリなし）。
+  // series_day・is_final_day・race_title はそれぞれ単独で欠けることがあるため
+  // 項目ごとに補う。2026-09-04 浜名湖9R・11R は series_day=6 だけ入り
+  // is_final_day・race_title・race_stage が null で、レースごとにまとめて補うと
+  // 同じ日の12Rが「最終日」なのに「6日目」と出た（BOA-509 ファン評価 P1）
+  const venueValue = (key) =>
+    racePrediction?.[key] ??
+    venueRaces.find((r) => r.rawData[key] != null)?.rawData[key] ??
+    null;
+  const seriesDayLabel = racePrediction
+    ? getSeriesDayLabel(venueValue("seriesDay"), venueValue("isFinalDay"), t)
+    : null;
+  // 節タイトル（BOA-509）
+  const rawSeriesTitle = racePrediction ? venueValue("raceTitle") : null;
+  const seriesTitle = rawSeriesTitle ? rawSeriesTitle.normalize("NFKC") : null;
+  // 一般（ippan）は GRADE_CONFIG に無いのでバッジを出さない（BOA-96 と同じ）
+  const gradeConfig = GRADE_CONFIG[racePrediction?.raceGrade];
+  const stageChip = racePrediction
+    ? getStageChip(racePrediction.raceStage, t)
+    : null;
   const status = getRaceStatus(
     { startTime: racePrediction?.startTime, result: racePrediction?.result },
     nowHHMM,
@@ -223,9 +309,54 @@ function RaceDetailPage() {
         <Breadcrumb items={breadcrumbItems} />
 
         <div className="race-detail-page-v2__container">
+          {(gradeConfig || seriesTitle) && (
+            <p className="race-detail-kicker">
+              {gradeConfig && (
+                <span
+                  className="race-detail-grade"
+                  style={{ backgroundColor: gradeConfig.color }}
+                  translate="no"
+                >
+                  {gradeConfig.label}
+                </span>
+              )}
+              {seriesTitle && (
+                <span
+                  className="race-detail-kicker__title"
+                  title={seriesTitle}
+                  translate="no"
+                >
+                  {seriesTitle}
+                </span>
+              )}
+            </p>
+          )}
           <header className="page-header">
             <h1>
               🚤 {venueName} {parsed.raceNo}R
+              {stageChip && (
+                <>
+                  {" "}
+                  <span
+                    className={`race-detail-stage race-detail-stage--${stageChip.variant}`}
+                    title={stageChip.title}
+                    translate={stageChip.isOfficial ? "no" : undefined}
+                  >
+                    {stageChip.emoji && (
+                      <span aria-hidden="true">{stageChip.emoji} </span>
+                    )}
+                    {stageChip.label}
+                  </span>
+                </>
+              )}
+              {seriesDayLabel && (
+                <>
+                  {" "}
+                  <span className="race-detail-series-day">
+                    {seriesDayLabel}
+                  </span>
+                </>
+              )}
               {!isToday &&
                 ` (${formatDateLocalized(date, i18n.resolvedLanguage)})`}
             </h1>

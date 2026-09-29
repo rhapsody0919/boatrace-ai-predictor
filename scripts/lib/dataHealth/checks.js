@@ -129,6 +129,16 @@ export const COUNT_CHECKS = Object.freeze([
   },
 
   // 節・選手の期別成績。取り込み前（テーブルが空）は「未導入」。取り込み後（過去分のバックフィル済み）に有効になる
+  //
+  // race_series.covered は、日目（race_conditions.series_day）のフォールバック（BOA-501）の見張りも兼ねる。
+  // 日目は、出走表ページから読めなかったとき節（race_series）から導く（scripts/lib/raceSeriesLookup.js）ため、
+  // 節の行が無い会場×日ができると、日目が黙って NULL のまま残る。それはこの項目が検知する
+  // （2026-09-28 の実測で、2026-09-01〜28 の全会場×日が covered=100%）。
+  //
+  // 症状そのもの（series_day の充足率）を見る pre_race.series_day は、まだ足していない。
+  // data_health_pre_race_fields（089）が series_day を返さないうちに登録表へ足すと、evaluate.js が
+  // 欠けた列を 0 と読んで（sum の `?? 0`）、分母だけがある＝充足率0% の誤報になる。
+  // 足すなら、関数を CREATE OR REPLACE するマイグレーションを本番へ適用してからにする。
   {
     id: "race_series.covered",
     label: "節(開催のあった会場×日を覆う)",
@@ -172,6 +182,27 @@ export const COUNT_CHECKS = Object.freeze([
     // 前日の結果が確定してから判定する（関数が、結果のあるレースだけを対象にする）
     lagDays: 1,
     note: "汚染は1会場日でも異常のため、閾値は100%。2025-12-02〜2026-09-25の実測で誤検知0（判定はレース単位の一致が2件以上）",
+  },
+
+  // 中止の誤検出（BOA-512）。確定中止（cancellation_status='confirmed'）は「開催されなかった」ことを表すため、
+  // 着順のある結果と同居するのは原理的に0件。2026-09-12に、結果の読み取りの一過性の失敗で32本が誤って confirmed に
+  // なった（原因は PR #743 で修正済み。読み取りの失敗を例外にした）。誤った confirmed は、予定表のスロットを
+  // cancelled_race で終端させ、集計の分母（is distinct from 'confirmed'）から外し、画面に中止バッジを出すため、
+  // 1件でも異常。閾値は100%。確定中止は発走90分後に付き、結果はそれより前に入るため、前日分は 06:30 JST に確定済み
+  {
+    id: "cancellation.with_result",
+    label: "中止の誤検出(確定中止なのに結果がある)",
+    classification: "count",
+    severity: "alert",
+    fn: "data_health_cancellation_with_result",
+    numerator: "consistent_races",
+    denominator: "races",
+    threshold: 1,
+    minDenominator: 1,
+    // 結果は翌日以降にも書かれる（日次の再取得・Kファイル同期・手動の補修）。後から結果が入って矛盾が生じた日も拾うため、
+    // 日次の上限（14日）まで遡る。それより古い日は見ない（全期間の集計は、日次の関数の期間の上限32日を超える）
+    days: 14,
+    note: "原理的に0件のため閾値は100%。2026-09-12の32件（修正SQLの適用前）で、この定義が過不足なく拾うことを本番で確認済み。後から結果が入る日を拾うため14日遡る",
   },
 
   // 月別の結果充足率（全期間）。**2026-09-28に全10か月が100.00%になったため、severity を info から

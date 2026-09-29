@@ -18,6 +18,20 @@
   color: var(--text-primary);
 }
 
+/* BOA-488: 見出しの「初日」「N日目」「最終日」。レース番号の直後に小さく添える */
+.race-detail-series-day {
+  display: inline-block;
+  margin-left: 0.15em;
+  padding: 0.1em 0.5em;
+  border-radius: 999px;
+  font-size: 0.6em;
+  font-weight: 600;
+  vertical-align: middle;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+}
+
 /* BOA-334: 見出しの締切時刻表示。h2本体より一段小さく・控えめな色にする */
 .prediction-section-deadline {
   margin-left: 0.5em;
@@ -44,4 +58,81 @@
   .race-detail-page-v2__container .page-header h1 {
     font-size: 1.2rem;
   }
+}
+
+/* BOA-509: h1 の上に［グレード］節タイトル。長い節タイトルは1行で省略記号 */
+.race-detail-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  margin: 0.25rem 0 0.1rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.race-detail-grade {
+  flex: none;
+  padding: 0.1em 0.5em;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+.race-detail-kicker__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* BOA-509: h1 内の種別チップ。優勝戦・準優勝戦は RaceCard と同じ色、
+   特別戦・ドリーム戦は金の枠線、予選・一般・企画名は中立の枠線 */
+.race-detail-stage {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0.1em 0.55em;
+  border-radius: 6px;
+  font-size: 0.6em;
+  font-weight: 700;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+}
+
+.race-detail-stage--final {
+  color: #fff;
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.race-detail-stage--semifinal {
+  color: #fff;
+  background: #c2410c;
+  border-color: #c2410c;
+}
+
+/* 予選・一般・準優進出戦。日目バッジ（塗り＋薄い枠）と見分けるため、
+   塗らずに濃い枠にする（ファン評価2周目 P2、ダークで同じ塊に見えた） */
+.race-detail-stage--plain {
+  background: transparent;
+  border-color: var(--text-secondary);
+}
+
+.race-detail-stage--special {
+  color: var(--brand-accent-primary);
+  border-color: var(--brand-accent-primary);
+}
+
+/* 会場の企画レース名。種別名・日目バッジと見分けるため破線にする（ファン評価 P2） */
+.race-detail-stage--raw {
+  font-weight: 500;
+  border-style: dashed;
+  border-color: var(--text-secondary);
 }
