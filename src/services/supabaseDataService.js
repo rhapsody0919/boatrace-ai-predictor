@@ -2972,7 +2972,8 @@ export const supabaseDataService = {
   getMotorUsageHistory(venueCode, motorNumber, beforeRaceId = null) {
     return withCache(
       // v2: 期間を現行モーターの世代で切り詰める（BOA-329）
-      `motor-usage-history-v2-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
+      // v3: 着順の付かなかった走（失格等）も分母に数える（BOA-549）
+      `motor-usage-history-v3-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -3017,7 +3018,9 @@ export const supabaseDataService = {
           resultChunks.map((chunk) =>
             supabase
               .from("race_results")
-              .select("race_id, rank1, rank2, rank3, rank4, rank5, rank6")
+              .select(
+                "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race",
+              )
               .in("race_id", chunk),
           ),
         );
@@ -3070,10 +3073,18 @@ export const supabaseDataService = {
             const races = meet.entries.map((e) => {
               const result = resultByRaceId.get(e.race_id);
               const rank = rankOf(result, e.boat_number);
+              // 着順の付かなかった走（失格・転覆等）も、結果の出たレースなら1走に数える。
+              // 機力指数・枠番別成績と同じ数え方にそろえる（BOA-549。以前は節の2連率
+              // だけ分母から外していて、同じモーターの2連率が画面の中で食い違った）。
+              // 公式のモーター2連率は選手責任外の失格（S0）・欠場を数えないが、2026年の
+              // データにはそれを見分ける列が無い（実測では着順なしの走の約76%が公式でも
+              // 出走に数えられていた）。公式の成績コードの取り込みは別チケット
               if (rank !== null) {
                 n += 1;
                 if (rank <= 2) hits2 += 1;
                 if (rank <= 3) hits3 += 1;
+              } else if (isUsableRaceResult(result)) {
+                n += 1;
               }
               return { date: e.race_id.slice(0, 10), rank };
             });
