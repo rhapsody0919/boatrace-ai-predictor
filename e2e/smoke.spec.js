@@ -1757,6 +1757,46 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
   });
 
+  test("走数が多い節でも、375pxで点の下の着順が読める間隔を保つ（BOA-537 ファン評価2周目）", async ({
+    page,
+  }) => {
+    // 2026-09-28 津11R（最終日）: 各艇10〜11走。9/21・22 の中止レースは出走表にだけ残る
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/race/2026-09-28-09-11");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const rows = page.locator(".rmt-trend-row");
+    await expect(rows).toHaveCount(6, { timeout: 25000 });
+    const info = await rows.evaluateAll((els) =>
+      els.map((r) => {
+        const labels = [...r.querySelectorAll(".meet-sparkline-label")];
+        const wrap = r
+          .querySelector(".meet-sparkline-wrap")
+          .getBoundingClientRect();
+        const gaps = [];
+        for (const lower of [false, true]) {
+          const ls = labels
+            .filter((e) => e.classList.contains("is-lower") === lower)
+            .map((x) => x.getBoundingClientRect());
+          for (let i = 1; i < ls.length; i += 1)
+            gaps.push(ls[i].left - ls[i - 1].right);
+        }
+        return {
+          font: labels[0]
+            ? parseFloat(getComputedStyle(labels[0]).fontSize)
+            : 0,
+          minGap: Math.min(...gaps),
+          // 最初の着順が左端近くにある（中止レースの空きで右に寄らない）
+          firstOffset: labels[0].getBoundingClientRect().left - wrap.left,
+        };
+      }),
+    );
+    for (const row of info) {
+      expect(row.font).toBeGreaterThanOrEqual(10);
+      expect(row.minGap).toBeGreaterThanOrEqual(6);
+      expect(row.firstOffset).toBeLessThan(10);
+    }
+  });
+
   test("着順が付かない走は、推移・比較表・日別の表で同じ公式の記号になる（BOA-537 ファン評価）", async ({
     page,
   }) => {

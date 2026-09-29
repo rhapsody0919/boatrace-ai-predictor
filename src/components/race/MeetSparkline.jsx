@@ -89,7 +89,26 @@ function MeetSparkline({
 
   const values = (points ?? []).map((p) => p.value);
   const numeric = values.filter((v) => typeof v === "number");
-  if (numeric.length < (allowSinglePoint ? 1 : 2)) return null;
+  const canDraw = numeric.length >= (allowSinglePoint ? 1 : 2);
+
+  // 箱の実際の幅（px）。点の下の着順の間隔を実寸で測り、詰まるときだけ2段に
+  // 振り分ける（BOA-537 ファン評価2周目。走数で一律に字を小さくすると、PCでも
+  // 小さくなり、375pxでは間隔1px前後まで詰まった）
+  const [boxWidth, setBoxWidth] = useState(0);
+  const hasLabels = Boolean(pointLabels);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!canDraw || !hasLabels || !el) return undefined;
+    setBoxWidth(el.getBoundingClientRect().width);
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver((entries) => {
+      setBoxWidth(entries[0]?.contentRect.width ?? 0);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [canDraw, hasLabels]);
+
+  if (!canDraw) return null;
 
   const refNumeric = (referenceSeries ?? []).filter(
     (v) => typeof v === "number",
@@ -131,6 +150,12 @@ function MeetSparkline({
     .filter(Boolean);
   const path = drawn.map((d) => `${x(d.i).toFixed(2)},${y(d.v).toFixed(2)}`);
   const lastIndex = drawn.length - 1;
+  // 点の下の着順の間隔（px）。全角1文字（約10px）と余白が収まらなければ2段にする
+  const labelGapPx =
+    values.length > 1 && boxWidth > 0
+      ? (boxWidth * (innerW / W)) / (values.length - 1)
+      : Infinity;
+  const staggerLabels = Boolean(pointLabels) && labelGapPx < 14;
 
   // 値のある点のうち、ポインタの横位置に最も近いものを選ぶ。
   // viewBox は `preserveAspectRatio="none"` で横に引き伸ばされるため、
@@ -176,7 +201,11 @@ function MeetSparkline({
     <div
       className="meet-sparkline-wrap"
       ref={wrapRef}
-      style={{ height: pointLabels ? height + LABEL_STRIP_HEIGHT : height }}
+      style={{
+        height: pointLabels
+          ? height + LABEL_STRIP_HEIGHT * (staggerLabels ? 2 : 1)
+          : height,
+      }}
       onPointerMove={pickNearest}
       onPointerDown={pickNearest}
       onPointerLeave={() => setActiveIndex(null)}
@@ -255,7 +284,7 @@ function MeetSparkline({
         // 走数が多い（10走以上）と375pxで数字の間隔が10px前後まで詰まる。字を
         // 小さくして、全角の記号（落・欠など）どうしが接しないようにする（BOA-537）
         <div
-          className={`meet-sparkline-labels${pointLabels.length >= 10 ? " is-dense" : ""}`}
+          className={`meet-sparkline-labels${staggerLabels ? " is-staggered" : ""}`}
           aria-hidden="true"
         >
           {pointLabels.map((lab, i) =>
@@ -266,6 +295,8 @@ function MeetSparkline({
                   "meet-sparkline-label",
                   lab.win ? "is-win" : "",
                   lab.mark ? "is-mark" : "",
+                  // 2段にするときは1つおきに下の段へ（隣どうしの間隔が倍になる）
+                  staggerLabels && i % 2 === 1 ? "is-lower" : "",
                 ]
                   .filter(Boolean)
                   .join(" ")}

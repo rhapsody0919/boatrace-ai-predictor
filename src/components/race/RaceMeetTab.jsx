@@ -197,9 +197,18 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   // 縦の物差しを共通にして初めて比較になる
   const meetRunsByRacer = board?.meetRunsByRacer ?? {};
   const trendKey = trendMetric === "st" ? "st" : "exhibition";
+  // 中身の無い走（ST・展示・着順のどれも無い）は外す。中止になった日のレースは
+  // 出走表にだけ残り、点の無い空きの位置を取って線を片側に寄せていた
+  // （津 2026-09-21・22 は中止。2026-09-28 の最終日で、飯山泰の線が右7割に詰まった。
+  // BOA-537 ファン評価2周目）
   const trendRows = sortedPlayers.map((p) => ({
     player: p,
-    runs: meetRunsByRacer[p.racerId] ?? [],
+    runs: (meetRunsByRacer[p.racerId] ?? []).filter(
+      (x) =>
+        x.st !== null ||
+        x.exhibition !== null ||
+        (x.finish !== null && x.finish !== undefined),
+    ),
   }));
   // **このグラフが何を描いているか**。6行の折れ線には日付の手がかりが何も無く、
   // 「いつからいつまでの話か」が読めない（2026-09-29のファン評価）。
