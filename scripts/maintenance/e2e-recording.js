@@ -133,9 +133,12 @@ export function countResults(report) {
   return {
     tests: tests.length,
     skipped: by("skipped"),
-    failed: tests.filter(
-      (t) => t.status === "unexpected" || t.status === "flaky",
-    ).length,
+    // flaky（1回目に落ちて CI のリトライで通った）は失敗に数えない。録画に無い通信は
+    // strict で abort されるので、録画の不足ならリトライでも落ちて unexpected になる。
+    // 1回目だけの失敗は録画ではなく実行環境の負荷によるもの（2026-09-29 の手元検証で、
+    // 負荷平均40の中でハンバーガーメニューの遷移が1件タイムアウト→リトライで通過）
+    failed: by("unexpected"),
+    flaky: by("flaky"),
     errors: (report.errors ?? []).length,
   };
 }

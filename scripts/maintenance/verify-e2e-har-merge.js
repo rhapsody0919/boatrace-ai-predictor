@@ -125,7 +125,13 @@ const report = (statuses) => ({
 const counts = countResults(
   report(["expected", "skipped", "unexpected", "flaky"]),
 );
-check("件数の数え方", counts, { tests: 4, skipped: 1, failed: 2, errors: 0 });
+check("件数の数え方（flaky は失敗に数えない）", counts, {
+  tests: 4,
+  skipped: 1,
+  failed: 1,
+  flaky: 1,
+  errors: 0,
+});
 check(
   "全件通過・skip 同数なら採用",
   judgeAdoption({ tests: 10, skipped: 1, failed: 0, errors: 0 }, { skipped: 1 })
