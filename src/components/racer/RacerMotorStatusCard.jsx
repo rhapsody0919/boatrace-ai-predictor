@@ -26,6 +26,7 @@ export default function RacerMotorStatusCard({ status }) {
     meetTrend,
     latestPartsEvent,
     venueMotorStats,
+    preGeneration,
   } = status;
   const venueName = VENUE_NAMES[venueCode] ?? `${venueCode}`;
   const chartData = (meetTrend ?? []).map((row) => ({
@@ -45,7 +46,10 @@ export default function RacerMotorStatusCard({ status }) {
 
   return (
     <div className="racer-motor-status-card">
-      <h2 className="racer-motor-status-title">🔧 今節のモーター状況</h2>
+      {/* 直近出走が入れ替え前（数ヶ月前）なら「今節」とは呼ばない */}
+      <h2 className="racer-motor-status-title">
+        🔧 {preGeneration ? "直近出走のモーター状況" : "今節のモーター状況"}
+      </h2>
       <p className="racer-motor-status-subtitle">
         {venueName}・{motorNumber}号機
       </p>
@@ -72,7 +76,11 @@ export default function RacerMotorStatusCard({ status }) {
           <p className={`racer-motor-status-index ${indexClass}`}>
             機力指数 {powerIndex.power_index > 0 ? "+" : ""}
             {powerIndex.power_index.toFixed(1)}
-            （過去90日・{powerIndex.sample_count}走の平均） —{" "}
+            （
+            {powerIndex.clipped_by_generation
+              ? "現行モーターの使用開始以降"
+              : "過去90日"}
+            ・{powerIndex.sample_count}走の平均） —{" "}
             {powerIndex.power_index > 0
               ? "実力以上に走っている"
               : powerIndex.power_index < 0
@@ -89,7 +97,8 @@ export default function RacerMotorStatusCard({ status }) {
       {chartData.length > 1 ? (
         <>
           <p className="racer-motor-status-chart-caption">
-            今節（{chartData[0].date}〜{chartData[chartData.length - 1].date}）
+            {preGeneration ? "直近の節" : "今節"}（{chartData[0].date}〜
+            {chartData[chartData.length - 1].date}）
             、この選手がこのモーターで出走してからの展示タイム
           </p>
           <TrendLineChart
@@ -123,12 +132,21 @@ export default function RacerMotorStatusCard({ status }) {
         </p>
       )}
 
-      <Link
-        to={`/winning-technique?venue_code=${venueCode}&race_id=${raceId}&tab=motor&motor=${motorNumber}`}
-        className="racer-motor-status-link"
-      >
-        → モーター調子で詳しく見る（このモーターの通算成績）
-      </Link>
+      {/* 直近出走が入れ替え前なら、リンク先は「入れ替え前のため表示していません」の
+          行き止まりになる。理由を書き、リンクは出さない（BOA-329、2026-09-29 ファン評価） */}
+      {preGeneration ? (
+        <p className="racer-motor-status-note">
+          💡
+          この出走のあと会場のモーターが入れ替わったため、このモーターは現在の同じ番号のモーターとは別です。機力指数・通算成績は表示していません。
+        </p>
+      ) : (
+        <Link
+          to={`/winning-technique?venue_code=${venueCode}&race_id=${raceId}&tab=motor&motor=${motorNumber}`}
+          className="racer-motor-status-link"
+        >
+          → モーター調子で詳しく見る（このモーターの通算成績）
+        </Link>
+      )}
     </div>
   );
 }
