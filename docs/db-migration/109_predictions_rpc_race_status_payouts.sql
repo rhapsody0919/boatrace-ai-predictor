@@ -21,7 +21,9 @@
 --        'refundBoats' race_results.refund_boats（返還艇の枠番の配列。NULL=未判定）
 --        'remark'      race_results.remark（備考。「【返還艇あり】」等）
 --        'payoutRows'  race_payouts の行の配列（betType・seq・combination・payout・payoutStatus・popularity）。
---                      行が無ければ NULL
+--                      行が無ければ NULL。**light 版は race_status が no_race / partial_refund のレースだけ**
+--                      （通常のレースは NULL。画面は旧 payout_* 列で払戻を出す。一覧の初期表示の容量を抑えるため。
+--                      2026-09-29 ユーザー判断。2026-09-28 の実測で light は 070 の 782,398 字 → 絞らないと 961,251 字（+22.9%）、絞ると 797,866 字（+2.0%））
 --
 -- 土台にした定義: 070 の2関数。2026-09-29 に本番の pg_get_functiondef の md5 が、070 のファイル本文から
 --   組み立てた定義の md5 と完全に一致することを確認した（本番は 070 のまま。070 以降にこの2関数を
@@ -280,7 +282,8 @@ BEGIN
   ) INTO result;
 
 -- ----------------------------------------------------------------------------
--- 2b. get_predictions_by_date_light（result に raceStatus・refundBoats・remark・payoutRows を足すのみ）
+-- 2b. get_predictions_by_date_light（result に raceStatus・refundBoats・remark・payoutRows を足すのみ。
+--     payoutRows は race_status が no_race / partial_refund のレースだけ。通常のレースは NULL）
 -- ----------------------------------------------------------------------------
   RETURN result;
 END;
@@ -471,20 +474,24 @@ BEGIN
                 'raceStatus', res.race_status,
                 'refundBoats', res.refund_boats,
                 'remark', res.remark,
-                'payoutRows', (
-                  SELECT json_agg(
-                    json_build_object(
-                      'betType', pp.bet_type,
-                      'seq', pp.seq,
-                      'combination', pp.combination,
-                      'payout', pp.payout,
-                      'payoutStatus', pp.payout_status,
-                      'popularity', pp.popularity
-                    ) ORDER BY pp.bet_type, pp.seq
+                -- light 版は、不成立・一部返還のレースだけ払戻明細を返す（通常のレースは NULL。
+                -- 画面は旧 payout_* 列で払戻を出す）。一覧の初期表示の容量を抑えるため（2026-09-29 ユーザー判断）
+                'payoutRows', CASE
+                  WHEN res.race_status IN ('no_race', 'partial_refund') THEN (
+                    SELECT json_agg(
+                      json_build_object(
+                        'betType', pp.bet_type,
+                        'seq', pp.seq,
+                        'combination', pp.combination,
+                        'payout', pp.payout,
+                        'payoutStatus', pp.payout_status,
+                        'popularity', pp.popularity
+                      ) ORDER BY pp.bet_type, pp.seq
+                    )
+                    FROM race_payouts pp
+                    WHERE pp.race_id = r.race_id
                   )
-                  FROM race_payouts pp
-                  WHERE pp.race_id = r.race_id
-                )
+                END
               )
               FROM race_results res
               WHERE res.race_id = r.race_id
@@ -524,6 +531,11 @@ BEGIN
       OR p.prosrc NOT LIKE '%''refundBoats'', res.refund_boats%'
       OR p.prosrc NOT LIKE '%''remark'', res.remark%'
       OR p.prosrc NOT LIKE '%''payoutRows''%FROM race_payouts pp%'
+      -- light 版だけ、払戻明細を不成立・一部返還に絞る（full 版は絞らない）
+      OR (p.proname = 'get_predictions_by_date_light'
+          AND p.prosrc NOT LIKE '%''payoutRows'', CASE%WHEN res.race_status IN (''no_race'', ''partial_refund'')%')
+      OR (p.proname = 'get_predictions_by_date'
+          AND p.prosrc LIKE '%''payoutRows'', CASE%')
       OR p.prosrc NOT LIKE '%''cancellationStatus''%'
       OR p.prosrc NOT LIKE '%''raceStage''%'
       OR p.prosrc NOT LIKE '%''weather''%'

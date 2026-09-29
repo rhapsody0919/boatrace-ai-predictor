@@ -510,3 +510,98 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
     );
   });
 });
+
+test.describe("light 版だけが届いた状態（BOA-543、2026-09-29 ユーザー判断）", () => {
+  // light 版の RPC は、payoutRows を不成立・一部返還のレースだけに絞る（通常のレースは NULL）。
+  // 詳細ページは light を先に描画するため、full が届く前でも払戻が欠けないことを固定する
+  const NORMAL_SAME_DAY = {
+    date: "2026-09-24",
+    venueCode: 1,
+    venue: "桐生",
+    raceNumber: 9,
+    result: {
+      rank1: 1,
+      rank2: 6,
+      rank3: 2,
+      winningTechnique: "逃げ",
+      raceStatus: "normal",
+      refundBoats: [],
+      // light では payoutRows が null。旧 payout_* 列で払戻を出す
+      payoutRows: null,
+      payoutWin: 110,
+      payoutPlace1: 120,
+      payoutTrio: 3050,
+      popularityTrio: 10,
+      payoutTrifecta: 1040,
+      popularityTrifecta: 6,
+      payoutExacta: 1080,
+      popularityExacta: 4,
+      payoutQuinella: 840,
+      popularityQuinella: 4,
+      payoutWide1: 160,
+      popularityWide1: 2,
+      payoutWide2: 180,
+      popularityWide2: 3,
+      payoutWide3: 620,
+      popularityWide3: 11,
+    },
+  };
+
+  async function setupLightOnly(page) {
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai-language", "ja"),
+    );
+    await page.route("**/api/predictions/**", (route) => {
+      if (route.request().url().includes("light=true")) {
+        return route.fulfill({ json: edgeData([KIRYU, NORMAL_SAME_DAY]) });
+      }
+      // full 版は届かないまま（light だけで描画された状態を固定する）
+      return new Promise(() => {});
+    });
+    await page.route("**/rest/v1/**", (route) =>
+      route.fulfill({ status: 200, json: [] }),
+    );
+    await page.route("**/rest/v1/race_start_timings**", (route) =>
+      route.fulfill({ status: 200, json: KIRYU.startTimings }),
+    );
+  }
+
+  test("一部返還: light の payoutRows で不成立の勝式を「不成立（返還）」と出す", async ({
+    page,
+  }) => {
+    await setupLightOnly(page);
+    await page.goto(`/race/${raceIdOf(KIRYU)}`);
+    const root = page.locator(".race-result");
+    await expect(root.locator(".rr-payout-table")).toBeVisible({
+      timeout: 20000,
+    });
+    const payouts = await readPayouts(root);
+    expect(payouts).toContain("3連複 不成立（返還）");
+    expect(payouts).toContain("拡連複 不成立（返還）");
+    expect(payouts).toContain("3連単 2-1-4 3人気 ¥870 best");
+  });
+
+  test("通常: light に payoutRows が無くても旧列で払戻を出す", async ({
+    page,
+  }) => {
+    await setupLightOnly(page);
+    await page.goto(`/race/${raceIdOf(NORMAL_SAME_DAY)}`);
+    const root = page.locator(".race-result");
+    await expect(root.locator(".rr-payout-table")).toBeVisible({
+      timeout: 20000,
+    });
+    const payouts = await readPayouts(root);
+    expect(payouts).toEqual([
+      "単勝 1 ¥110",
+      "複勝 1 ¥120",
+      "3連単 1-6-2 10人気 ¥3,050 best",
+      "3連複 1=2=6 6人気 ¥1,040",
+      "2連単 1-6 4人気 ¥1,080",
+      "2連複 1=6 4人気 ¥840",
+      "拡連複 1=6 2人気 ¥160",
+      "拡連複 1=2 3人気 ¥180",
+      "拡連複 2=6 11人気 ¥620",
+    ]);
+    await expect(root.locator(".rr-payout-table")).not.toContainText("不成立");
+  });
+});
