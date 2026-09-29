@@ -80,3 +80,8 @@
     margin: var(--spacing-2) 0;
   }
 }
+
+/* 走数が少ない機力指数は参考値の色（BOA-549） */
+.racer-motor-status-index.is-small-sample {
+  color: var(--color-warning-text);
+}

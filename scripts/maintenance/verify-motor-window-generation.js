@@ -132,7 +132,9 @@ check(
 );
 check(
   "使用履歴のキャッシュのキーが旧版と違う",
-  methodBody("getMotorUsageHistory").includes("`motor-usage-history-v2-"),
+  /`motor-usage-history-v([2-9]|\\d{2,})-/.test(
+    methodBody("getMotorUsageHistory"),
+  ),
 );
 
 // 4. 一覧表
