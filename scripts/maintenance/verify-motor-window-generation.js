@@ -304,6 +304,14 @@ check(
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;
+  // BOA-521: ドリルダウンは「このレースの直前まで」なので、一覧の注記で機力指数を
+  // 「今日から遡る指標」と説明すると食い違う（2026-09-29 ファン評価）
+  check(
+    `${lang}: 過去レースの出典注記が、機力指数を「今日から遡る」と説明していない`,
+    !/今日から遡|computed backward from today|從今天回溯|오늘부터 거슬러/.test(
+      motor.officialModeSourceNote,
+    ),
+  );
   check(
     `${lang}: 過去レース・切り詰め・入れ替え前の文言がある`,
     [
