@@ -460,6 +460,11 @@
       "script": "verify-series-day-fallback.js",
       "tier": "ci",
       "guards": "日目（race_conditions.series_day）のフォールバック（BOA-501）。ページから読めた値を節（race_series）からの導出より必ず優先すること、節が無い・読めない会場×日を勝手な値で埋めないこと、バックフィルが既存の値を上書きしないこと"
+    },
+    {
+      "script": "verify-outcome-distribution-payout.js",
+      "tier": "ci",
+      "guards": "出目分布・逃げ成功時分布の「3連単」の平均配当が3連単の列（payout_trio。列名と中身が逆）で集計されること、配当の無いレースを平均の分母に入れないこと、ルールの追跡の3連複の払戻が payout_trifecta であること（BOA-535。実データ・江戸川456レースのフィクスチャで、本番のSQLの値と照合）"
     }
   ]
 }

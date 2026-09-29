@@ -205,7 +205,7 @@ rank3: number        # 3着の艇番
 payout_win: number   # 単勝払戻金
 payout_place_1: number  # 複勝払戻金（1着艇）
 payout_place_2: number  # 複勝払戻金（2着艇）
-payout_trio: number  # 3連複払戻金
+payout_trifecta: number  # 3連複払戻金（列名と中身が逆: payout_trifecta=3連複、payout_trio=3連単）
 \`\`\`
 
 ---
