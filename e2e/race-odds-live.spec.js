@@ -226,4 +226,27 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     expect(calls).toEqual([]);
     await expect(status.getByRole("button")).toHaveCount(0);
   });
+
+  // /code-review の指摘の再現: 単勝が全艇 null の行が最新でも、単勝の値を持つ直前の行を出す
+  // （全艇 null の行を「最新」とみなして、表を全て「-」にしない）
+  test("単勝・複勝（スナップショット）: 単勝が全艇 null の最新行より、値を持つ行を使う", async ({
+    page,
+  }) => {
+    const nullWinRow = { ...SNAPSHOT_ROW, captured_at: "2026-09-28T05:19:00Z" };
+    for (let n = 1; n <= 6; n++) {
+      nullWinRow[`odds_win_${n}`] = null;
+      nullWinRow[`odds_place_${n}_low`] = null;
+      nullWinRow[`odds_place_${n}_high`] = null;
+    }
+    const { status } = await setup(page, {
+      now: AFTER_DEADLINE,
+      snapshots: [SNAPSHOT_ROW, nullWinRow],
+    });
+    await page.getByRole("tab", { name: "単勝・複勝" }).click();
+    await expect(status).toContainText("13:54 取得（締切30分前）の値");
+    const table = page.locator(".rol-win-table");
+    await expect(table).toContainText("3.0");
+    await expect(table).toContainText("1.1-1.9");
+    await expect(page.locator(".rol-callout")).toHaveCount(0);
+  });
 });

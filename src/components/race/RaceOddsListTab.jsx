@@ -167,8 +167,18 @@ function buildTrend(snapshots, betType, key, deadline, live) {
 // 券種ごとに最新の「その券種の値を持つ」スナップショットを使う。全通り系5列は
 // 個別取得で、最新行に選択中の券種だけnullのことがある（一部券種の取得失敗や
 // FR-4以前のレース）ため、単純に末尾行を使うと表全体が空になる
+// 単勝（win）はどの行でも艇番→値のオブジェクトが入る（全艇 null でも truthy）ため、値を1艇でも持つ最新行を
+// 選ぶ。全ての行で全艇 null なら最新行（「票なし（または未取得）」の注記を出すため）
 function latestSnapshotWith(snapshots, dataKey) {
-  return [...snapshots].reverse().find((s) => s[dataKey]) ?? null;
+  const reversed = [...snapshots].reverse();
+  if (dataKey === "win") {
+    return (
+      reversed.find((s) => Object.values(s.win ?? {}).some((v) => v != null)) ??
+      reversed[0] ??
+      null
+    );
+  }
+  return reversed.find((s) => s[dataKey]) ?? null;
 }
 
 // 出走艇。出走表（players）の艇から、欠場（直前情報の is_absent）の艇を除く。
