@@ -317,8 +317,41 @@ function BlockHead({ n, name }) {
   );
 }
 
+// 文字列のおおよその幅（em）。全角（漢字・かな・ハングル）は1em、それ以外（数字・英字・記号）は0.6em
+const approxEm = (text) =>
+  [...text].reduce(
+    (sum, ch) =>
+      sum + (/[\u1100-\u11ff\u3000-\u9fff\uac00-\ud7af\uff00-\uffef]/.test(ch) ? 1 : 0.6),
+    0,
+  );
+
+// 3連単の列の下の1行（「合成 144.6」「2単 963.7」）。見出し＋すき間＋値のおおよその幅を CSS に渡し、
+// 値が長い（4〜5桁）列や狭い画面では、列の幅に収まるまで文字を小さくする（BOA-552）
+function ColFoot({ label, value }) {
+  const em = approxEm(label) + 0.4 + approxEm(value);
+  return (
+    <div className="rol-col-foot" style={{ "--rol-foot-em": em }}>
+      <span>{label}</span>
+      <span>{value}</span>
+    </div>
+  );
+}
+
+// 画面に出す組番の書き方。キーは券種によらず "1-2-3" だが、順不同の券種（3連複・2連複・拡連複）は
+// 結果タブの払戻と同じく "1=2=3" と書く（BOA-552）
+const comboLabel = (comboKey, ordered) =>
+  ordered ? comboKey : comboKey.replaceAll("-", "=");
+
 // オッズ1件のタップ領域（左に艇番バッジ群、右にオッズ。人気度で色分け）
-function OddsButton({ comboKey, value, isRange, selected, onSelect, badges }) {
+function OddsButton({
+  comboKey,
+  label,
+  value,
+  isRange,
+  selected,
+  onSelect,
+  badges,
+}) {
   const { t } = useTranslation();
   const noVotes = isNoVotes(value, isRange);
   const bucket = heatBucket(valueToNumber(value, isRange));
@@ -331,8 +364,9 @@ function OddsButton({ comboKey, value, isRange, selected, onSelect, badges }) {
       className={`rol-odds${bucket !== null ? ` rol-heat-${bucket}` : ""}${noVotes ? " is-no-votes" : ""}${selected ? " is-selected" : ""}`}
       onClick={() => onSelect(comboKey)}
       disabled={value == null}
-      aria-label={`${comboKey} ${text}`}
+      aria-label={`${label} ${text}`}
       aria-pressed={selected}
+      style={{ "--rol-odds-em": approxEm(text) }}
     >
       <span className="rol-odds-badges">{badges}</span>
       <span className="rol-odds-value">{text}</span>
@@ -832,6 +866,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     <OddsButton
       key={comboKey}
       comboKey={comboKey}
+      label={comboLabel(comboKey, betType.ordered)}
       value={value}
       isRange={isRange}
       selected={comboKey === selectedKey}
@@ -844,7 +879,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     selectedKey ? (
       <TrendPanel
         key="trend"
-        combo={selectedKey}
+        combo={comboLabel(selectedKey, betType.ordered)}
         trend={buildTrend(
           snapshots ?? [],
           betType,
@@ -897,22 +932,22 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
                       <BoatBadge n={third} size="xs" />,
                     ),
                   )}
-                  <div className="rol-col-foot">
-                    <span>{t("oddsList.compositeLabel")}</span>
-                    <span>{formatValue(composite) ?? "-"}</span>
-                  </div>
-                  <div className="rol-col-foot">
-                    <span>{t("oddsList.exactaShortLabel")}</span>
-                    <span>
-                      {exacta === 0 ||
+                  <ColFoot
+                    label={t("oddsList.compositeLabel")}
+                    value={formatValue(composite) ?? "-"}
+                  />
+                  <ColFoot
+                    label={t("oddsList.exactaShortLabel")}
+                    value={
+                      exacta === 0 ||
                       (exacta === null &&
                         exactaMap &&
                         !liveResult2tf &&
                         !useFinal)
                         ? t("oddsList.noVotes")
-                        : (formatValue(exacta) ?? "-")}
-                    </span>
-                  </div>
+                        : (formatValue(exacta) ?? "-")
+                    }
+                  />
                 </div>
               );
             })}

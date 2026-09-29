@@ -1682,6 +1682,76 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
   });
 
+  test("今節タブの6艇の推移は、行のどこを押しても選手が切り替わる（BOA-550）", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-09-24-01-03");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    await expect(page.locator(".rmt-trend-row")).toHaveCount(6, {
+      timeout: 25000,
+    });
+    // 行のどこを押しても選手が切り替わる（BOA-550）。以前は艇番・選手名だけが押せて、
+    // いちばん大きい的の折れ線を押しても何も起きなかった。3行目の折れ線の上を押す
+    const trendRow = page.locator(".rmt-trend-row").nth(2);
+    // 座標で押すと画面下の固定バーに当たることがあるので、ロケーターで押す
+    // （見える位置までスクロールしてから押す）
+    const spark = trendRow.locator(".meet-sparkline-wrap");
+    const box = await spark.boundingBox();
+    await spark.click({
+      position: { x: box.width * 0.6, y: box.height / 2 },
+    });
+    await expect(trendRow).toHaveAttribute("aria-pressed", "true");
+    // 右端の前走の値を押しても切り替わる
+    const lastRow = page.locator(".rmt-trend-row").nth(4);
+    await lastRow.locator(".rmt-trend-last").click();
+    await expect(lastRow).toHaveAttribute("aria-pressed", "true");
+    await expect(trendRow).toHaveAttribute("aria-pressed", "false");
+    // 案内文も「行をタップ」にそろえる（艇番・選手名だけが押せた頃の文言が残っていた）
+    await expect(page.locator(".rmt-hint").last()).toContainText(
+      "行をタップすると",
+    );
+  });
+
+  test("今節タブの6艇の推移は、1走の選手も前走の値が右端の列にそろい、選択中の行はホバーと区別できる（BOA-550 ファン評価）", async ({
+    page,
+  }) => {
+    // 2026-09-21 桐生3R（予選2日目）: 1走しかない選手が3人いる。線が出ない行で
+    // 前走の値が中央の列に詰まり、行の高さも半分になっていた
+    await page.goto("/race/2026-09-21-01-03");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const rows = page.locator(".rmt-trend-row");
+    await expect(rows).toHaveCount(6, { timeout: 25000 });
+    const boxes = await rows.evaluateAll((els) =>
+      els.map((el) => {
+        const last = el
+          .querySelector(".rmt-trend-last")
+          .getBoundingClientRect();
+        return {
+          hasLine: Boolean(el.querySelector(".meet-sparkline-wrap")),
+          dots: el.querySelectorAll(".meet-sparkline > circle").length,
+          height: Math.round(el.getBoundingClientRect().height),
+          lastRight: Math.round(last.right),
+        };
+      }),
+    );
+    // 1走の行が実際にある（前提が崩れたらテストの意味が無い）。1走でも行が
+    // 空白にならず、前走の点が1つだけ出る（2周目のファン評価で空白が
+    // 「取れていない」と読まれた）
+    expect(boxes.some((b) => b.dots === 1)).toBe(true);
+    expect(boxes.every((b) => b.hasLine && b.dots >= 1)).toBe(true);
+    expect(new Set(boxes.map((b) => b.lastRight)).size).toBe(1);
+    expect(new Set(boxes.map((b) => b.height)).size).toBe(1);
+
+    // 選択中の行だけ左の帯（inset の box-shadow）が付き、ホバー中の行には付かない
+    await rows.nth(0).click();
+    await rows.nth(1).hover();
+    const shadows = await rows.evaluateAll((els) =>
+      els.slice(0, 2).map((el) => getComputedStyle(el).boxShadow),
+    );
+    expect(shadows[0]).not.toBe("none");
+    expect(shadows[1]).toBe("none");
+  });
+
   test("F数バッジが基本情報タブとST考察カードで同じ値になり、f_countが無い過去レースでは出ない（phase a T5-3）", async ({
     page,
   }) => {

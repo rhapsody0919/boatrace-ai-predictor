@@ -25,6 +25,15 @@ import {
   perDay,
   formatDelta,
 } from "../lib/reportComparison.js";
+import {
+  CLUSTER_LABELS,
+  TRACKED_QUERIES,
+  landingSplit,
+  summarizeClusters,
+  trackedQueryWeekly,
+  weekStartOf,
+  weeklySeries,
+} from "../lib/seoKeywordKpi.js";
 
 // .env.local を読み込む（プロジェクト共通パターン: scripts/lib/supabaseClient.js と同様）
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -60,22 +69,39 @@ function formatDate(d) {
 }
 
 // Search Consoleは直近2-3日分のデータが未確定のため、集計対象から除外する
-async function queryDimensions(dimensions, rowLimit) {
+function dateWindow(days) {
   const endDate = new Date();
   endDate.setDate(endDate.getDate() - 3);
   const startDate = new Date(endDate);
-  startDate.setDate(startDate.getDate() - DAYS);
+  startDate.setDate(startDate.getDate() - days);
+  return { startDate: formatDate(startDate), endDate: formatDate(endDate) };
+}
+
+// requireComplete: 全件が要る集計（KPI）で使う。上限ちょうどで返ってきたら取りこぼしなので止める。
+// 既存の「上位N件だけ見る」呼び出し（topPages 等）は上限で切れるのが仕様なので false のまま
+async function queryDimensions(
+  dimensions,
+  rowLimit,
+  { days = DAYS, requireComplete = false } = {},
+) {
+  const { startDate, endDate } = dateWindow(days);
 
   const res = await searchconsole.searchanalytics.query({
     siteUrl: SITE_URL,
     requestBody: {
-      startDate: formatDate(startDate),
-      endDate: formatDate(endDate),
+      startDate,
+      endDate,
       dimensions,
       rowLimit,
     },
   });
-  return res.data.rows ?? [];
+  const rows = res.data.rows ?? [];
+  if (requireComplete && rows.length === rowLimit) {
+    throw new Error(
+      `Search Console の取得行数が上限（${rowLimit}）に達しました（dimensions=${dimensions.join(",")}）。rowLimit を上げるかページングを実装してください`,
+    );
+  }
+  return rows;
 }
 
 function printRows(rows, keyWidth) {
@@ -192,6 +218,127 @@ function printTopQueriesForPages(pages, pageQueriesMap, label) {
       );
     }
   }
+}
+
+// SEOワード戦略のKPI（集客レーン、2026-09-29。docs/operation/search-console-report.md「SEOワード戦略のKPI」）
+// 8/31以降の週次を基準にし、施策は投入日（seo-measures.json）の前後の週で比べる
+const KPI_WEEKS = 12;
+const KPI_ROW_LIMIT = 25000;
+const MEASURES_PATH = path.join(
+  process.cwd(),
+  "data",
+  "analysis",
+  "search-console",
+  "seo-measures.json",
+);
+
+function loadMeasures() {
+  if (!fs.existsSync(MEASURES_PATH)) return [];
+  const parsed = JSON.parse(fs.readFileSync(MEASURES_PATH, "utf8"));
+  if (!Array.isArray(parsed.entries)) {
+    throw new Error(`${MEASURES_PATH} に entries 配列がありません`);
+  }
+  return parsed.entries;
+}
+
+const pct = (v) => `${(v * 100).toFixed(1)}%`;
+const pos = (v) => (v === null ? "-" : v.toFixed(1));
+
+async function buildSeoKpi() {
+  const kpiDays = KPI_WEEKS * 7;
+  const opts = { days: kpiDays, requireComplete: true };
+  const [dateRows, queryDateRows, queryRows, pageRows] = await Promise.all([
+    queryDimensions(["date"], KPI_ROW_LIMIT, opts),
+    queryDimensions(["query", "date"], KPI_ROW_LIMIT, opts),
+    queryDimensions(["query"], KPI_ROW_LIMIT, { requireComplete: true }),
+    queryDimensions(["page"], KPI_ROW_LIMIT, { requireComplete: true }),
+  ]);
+  const measures = loadMeasures();
+  const siteWeekly = weeklySeries(dateRows, 0);
+  const tracked = trackedQueryWeekly(queryDateRows, TRACKED_QUERIES);
+  const clusters = summarizeClusters(queryRows);
+  const landing = landingSplit(pageRows);
+  const namedClicks = queryRows.reduce((sum, r) => sum + r.clicks, 0);
+  // クラスタ集計（過去DAYS日）と同じ期間のサイト合計。匿名化クエリの比率を見るために出す
+  const { startDate: clusterStart } = dateWindow(DAYS);
+  const totalClicks = dateRows
+    .filter((r) => r.keys[0] >= clusterStart)
+    .reduce((sum, r) => sum + r.clicks, 0);
+
+  const measuresByWeek = new Map();
+  for (const m of measures) {
+    const w = weekStartOf(m.date);
+    if (!measuresByWeek.has(w)) measuresByWeek.set(w, []);
+    measuresByWeek.get(w).push(m.id);
+  }
+  // 集計期間の端の週は7日に満たない。主要クエリの週次で前後比較するときに誤読しないよう印を付ける
+  const partialWeeks = new Set(
+    siteWeekly.filter((w) => w.days < 7).map((w) => w.week),
+  );
+  const partial = (week) => (partialWeeks.has(week) ? "（7日未満の週）" : "");
+  const mark = (week) =>
+    measuresByWeek.has(week)
+      ? `  ← ${measuresByWeek.get(week).join(", ")}`
+      : "";
+
+  console.log(`\n## SEOワード戦略のKPI（直近${KPI_WEEKS}週、週は月曜始まり）`);
+  console.log(`\n### サイト全体（週次）`);
+  for (const w of siteWeekly) {
+    console.log(
+      `  ${w.week}（${w.days}日） クリック/日:${(w.clicks / w.days).toFixed(1).padStart(6)} 表示/日:${(w.impressions / w.days).toFixed(0).padStart(6)} CTR:${pct(w.ctr).padStart(6)} 順位:${pos(w.position)}${mark(w.week)}`,
+    );
+  }
+
+  console.log(`\n### 主要クエリ（週次。KPIはこの単位で判定する）`);
+  for (const [query, series] of Object.entries(tracked)) {
+    console.log(`  ${query}`);
+    if (series.length === 0) {
+      console.log("    （データなし）");
+      continue;
+    }
+    for (const w of series) {
+      console.log(
+        `    ${w.week} クリック:${String(w.clicks).padStart(4)} 表示:${String(w.impressions).padStart(5)} CTR:${pct(w.ctr).padStart(6)} 順位:${pos(w.position)}${partial(w.week)}${mark(w.week)}`,
+      );
+    }
+  }
+
+  console.log(
+    `\n### クエリのクラスタ（過去${DAYS}日。名前の出るクエリのクリック ${namedClicks} / サイト合計 ${totalClicks}）`,
+  );
+  for (const [key, c] of Object.entries(clusters)) {
+    console.log(
+      `  ${CLUSTER_LABELS[key].padEnd(28)} クリック:${String(c.clicks).padStart(5)} 表示:${String(c.impressions).padStart(6)} CTR:${pct(c.ctr).padStart(6)} 順位:${pos(c.position)} 語数:${c.queries}`,
+    );
+  }
+
+  console.log(`\n### 着地ページ（過去${DAYS}日、絶対数）`);
+  const landingLabels = {
+    root: "トップ /",
+    venue: "会場ページ /venue/*",
+    today: "/today",
+    blog: "ブログ /blog/*",
+    otherJa: "その他の日本語ページ",
+    i18n: "多言語 /en・/ko・/zh-TW",
+  };
+  for (const [key, label] of Object.entries(landingLabels)) {
+    const g = landing[key];
+    console.log(
+      `  ${label.padEnd(24)} クリック:${String(g.clicks).padStart(5)} 表示:${String(g.impressions).padStart(6)} 順位:${pos(g.position)}`,
+    );
+  }
+  console.log(`  トップ以外の着地クリック: ${landing.nonRootClicks}`);
+
+  return {
+    weeks: KPI_WEEKS,
+    namedClicks,
+    totalClicks,
+    siteWeekly,
+    trackedQueries: tracked,
+    clusters,
+    landing,
+    measures,
+  };
 }
 
 async function main() {
@@ -404,6 +551,8 @@ async function main() {
     "タイトル/メタディスクリプション改善候補",
   );
 
+  const seoKpi = await buildSeoKpi();
+
   // JSON 保存（推移比較用）
   fs.mkdirSync(outDir, { recursive: true });
   const outPath = path.join(outDir, `report-${today}.json`);
@@ -418,6 +567,7 @@ async function main() {
         topPages,
         venuePages,
         featurePages,
+        seoKpi,
       },
       null,
       2,

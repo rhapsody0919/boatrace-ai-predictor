@@ -545,3 +545,54 @@ test.describe("レイアウト: /blog はカテゴリで絞って件数が列数
     expectNoWastedGrids({ found, gridsChecked: total - 1 });
   });
 });
+
+/**
+ * BOA-539 の再現テスト。
+ *
+ * `/guide`（src/pages/ContentHub.css）とホーム（src/components/race/VenueGrid.css）が、
+ * 同じ詳細度の `.venue-grid` を別々に定義していた。CSSは全ページ分が1つのバンドルに
+ * 結合され、ContentHub.css が後に来るため、ホームの会場グリッドに `/guide` 側の
+ * `repeat(auto-fill, minmax(100px, 1fr))` が効いていた（修正前の実測: 1024pxで8列・
+ * 1440pxで12列・1920pxで16列。VenueGrid.css の指定は4列）。
+ * 読み込み順だけで決まるため、どのページから開いても同じ結果になる。ここでは
+ * 両ページのCSSが確実に適用済みになる「/guide → SPA遷移でホーム」の順で測る。
+ * `/guide` 側は `.guide-venue-grid` に改名して名前空間を分けた。
+ *
+ * 期待値は VenueGrid.css の指定（421px以上で4列、420px以下で3列、320px以下で2列）
+ */
+function expectedHomeVenueColumns(width) {
+  if (width <= 320) return 2;
+  if (width <= 420) return 3;
+  return 4;
+}
+
+test.describe("レイアウト: ホームの会場グリッドに /guide の指定が効かない（BOA-539）", () => {
+  test("/guide からSPA遷移で戻ったホームの会場グリッドが意図した列数になる", async ({
+    page,
+  }) => {
+    await gotoAndSettle(page, "/guide");
+    // /guide の会場リンク（24場）が描画され、ContentHub.css が適用済みであること
+    await expect(
+      page.locator('.venue-section a[href^="/blog/venue-"]'),
+    ).toHaveCount(24);
+
+    // ヘッダーのロゴは navigate("/") のSPA遷移（ページを再読み込みしない）
+    await page.locator(".app-header .logo").click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(
+      page.locator(".venue-grid .venue-grid-card").first(),
+    ).toBeAttached({ timeout: 30000 });
+
+    const grid = await page.evaluate(() => {
+      const cs = getComputedStyle(document.querySelector(".venue-grid"));
+      return {
+        width: window.innerWidth,
+        columns: cs.gridTemplateColumns.split(" ").filter(Boolean).length,
+        gridTemplateColumns: cs.gridTemplateColumns,
+      };
+    });
+    expect(grid.columns, JSON.stringify(grid)).toBe(
+      expectedHomeVenueColumns(grid.width),
+    );
+  });
+});

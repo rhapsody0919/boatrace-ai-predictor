@@ -15,6 +15,11 @@
       "guards": "Kファイル方式の進入コースパーサー（scripts/lib/kfileParser.js、BOA-257）"
     },
     {
+      "script": "verify-admin-api-auth.js",
+      "tier": "ci",
+      "guards": "api/admin/ 配下の全ハンドラが関数自身でBasic認証をかけること（middleware はエンコードしたパスで迂回できる。2026-09-29 本番で認証なし200を確認）。ハンドラはファイル一覧から自動列挙し、認証なし・誤認証・env未設定で401かつ外部呼び出し0回、':'入りパスワードを最初の':'で分割すること"
+    },
+    {
       "script": "verify-adr-numbers.js",
       "tier": "ci",
       "guards": "docs/adr/ のADR番号の重複（並行セッションで繰り返し発生）"
@@ -314,6 +319,11 @@
       "guards": "取得時刻の列（created_at・updated_at、マイグレーション071）を使う書き込みと計測"
     },
     {
+      "script": "verify-seo-keyword-kpi.js",
+      "tier": "ci",
+      "guards": "SEOワード戦略のKPI集計（scripts/lib/seoKeywordKpi.js）のクラスタ分け・週の丸め・着地ページ分類。崩れると旧名系とAI予想一般が混ざり施策の効果を取り違える"
+    },
+    {
       "script": "verify-series-points-stage-rules.js",
       "tier": "ci",
       "guards": "得点率の種別判定（src/components/race/seriesPoints.js の算入範囲と配点、raceStageConfig のバッジ）。race_stage は会場の自由記述で349種あり、部分一致の判定が壊れやすい（BOA-457・BOA-458）"
@@ -500,6 +510,11 @@
       "script": "verify-exhibition-time-top-stats.js",
       "tier": "ci",
       "guards": "展示タイム1位率の集計（update-exhibition-time-top-stats.js）が、展示タイムが NULL の行（展示ST先行・展示前の体重だけの行・展示なし）を分母に入れないこと、同着の最速を数えないこと（BOA-520。PR #917 で見つかった率の薄まり）"
+    },
+    {
+      "script": "verify-middleware-routing.js",
+      "tier": "ci",
+      "guards": "middleware.js の管理画面Basic認証（/admin/rules・/admin/sns-hub は認証なしで401、一般ページは素通り、環境変数未設定なら拒否）と、AIスナップショット配信の経路（resolveSnapshotPath が返すパスが config.matcher に一致し、管理画面がスナップショットに振り分けられないこと）。BOA-555で /admin/rules が本番で認証なしに開けていた"
     }
   ]
 }
