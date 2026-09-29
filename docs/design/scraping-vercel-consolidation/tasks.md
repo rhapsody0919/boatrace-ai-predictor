@@ -472,7 +472,7 @@ BOA-405（[predictions-write-optimization.md](./predictions-write-optimization.m
 ### T4b-21 日次の照合（N29）: 前日の結果・払戻・着順・進入を、DBとKファイルで突き合わせる
 
 - [x] **T4b-21-1**（コード実装済み。`scripts/lib/dailyReconcile.js`・`dailyReconcileJob.js`・`api/cron/daily-reconcile.js`・レジストリ`daily_reconcile`・`vercel.json`のcron・`raceResultAudit.js`の`kVenuesToRaceFacts`（進入・払戻明細を追加。既存の返り値は不変）。検証: `npm run verify:daily-reconcile`。変異検証済み。**新しい取得先・テーブルは無い**） 前日Dの1レースごとに、結果の有無・rank1〜6・払戻（旧15列と`race_payouts`）・進入を、Kファイル（別の公式ファイル）と突き合わせ、不一致（レースID・項目・DB値・K値）を`last_report`に上限30件で残し、閾値（1レース）以上で`alerts`に出す。Kが未取得・会場が未展開のものは「照合不能」、確定中止は「除外」、Kファイル同期の前の`rank4〜6`・進入は「同期待ち」として、不一致に混ぜない
-- [ ] **T4b-21-2** (ユーザー承認) `scrape_job_state`の`daily_reconcile`を`shadow`にし、3日（土日を含む）、`last_report`（`summary`・`mismatches`・`wouldAlert`）を確認する。**前提**: `kfile_sync`が`live`（rank4〜6・進入が07:00・12:00に同期される）。runbook T-6
+- [ ] **T4b-21-2** (ユーザー承認) `scrape_job_state`の`daily_reconcile`を`shadow`にし、3日（土日を含む）、`last_report`（`summary`・`mismatches`・`wouldAlert`）を確認する。**前提**: `kfile_sync`が`live`（rank4〜6・進入が07:00・12:00に同期される）。runbook T-6。**2026-09-29 12:58 JST（03:58 UTC）にユーザーが`shadow`にした**（ユーザー承認・ユーザー実行。本番の`scrape_job_state`で`mode=shadow`・`updated_at 2026-09-29 03:58:10 UTC`を確認）。それまでは`off`の行が実在した（`updated_at 2026-09-21 23:00 UTC`、cronの起動時刻）。最初の照合は2026-09-30 08:00 JST（対象は前日）。3日（土日を含む）の確認は未了
 - [ ] **T4b-21-3** (ユーザー承認) `live`にする。不一致の通知の実受信を確認する（runbook T-7）。`shadow`の間に見つかった実際の不整合（2026-09-18の江戸川11R 2連複、2026-09-11の第1日3会場36レース。plan.md §15.2）の扱い（修正・別チケット）は、ユーザーが判断する
 
 データ項目: 日次の照合結果（`scrape_job_state.last_report`。新規テーブルは無い）。

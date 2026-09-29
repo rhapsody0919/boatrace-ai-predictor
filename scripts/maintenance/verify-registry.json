@@ -158,6 +158,11 @@
       "guards": "機力指数・2連率推移・部品交換・使用履歴の期間を現行モーター世代で切り詰めること、過去レースのモータ情報一覧表を再計算せず出走表時点の公式値にすること（BOA-329）"
     },
     {
+      "script": "verify-motor-tab-readability.js",
+      "tier": "ci",
+      "guards": "モータ情報タブ・選手ページのモーター状況の読み違いを防ぐ見せ方（横スクロールの目印、見出しの(%)、出典注記の列、推移グラフの軸名と見出し、使用履歴グラフの向き、公式値の更新遅れの注記、同日2走のレース番号）（BOA-513）"
+    },
+    {
       "script": "verify-motor-pretest.js",
       "tier": "ci",
       "guards": "前検タイム・前検順位・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）"
@@ -460,6 +465,11 @@
       "script": "verify-series-day-fallback.js",
       "tier": "ci",
       "guards": "日目（race_conditions.series_day）のフォールバック（BOA-501）。ページから読めた値を節（race_series）からの導出より必ず優先すること、節が無い・読めない会場×日を勝手な値で埋めないこと、バックフィルが既存の値を上書きしないこと"
+    },
+    {
+      "script": "verify-outcome-distribution-payout.js",
+      "tier": "ci",
+      "guards": "出目分布・逃げ成功時分布の「3連単」の平均配当が3連単の列（payout_trio。列名と中身が逆）で集計されること、配当の無いレースを平均の分母に入れないこと、ルールの追跡の3連複の払戻が payout_trifecta であること（BOA-535。実データ・江戸川456レースのフィクスチャで、本番のSQLの値と照合）"
     }
   ]
 }
