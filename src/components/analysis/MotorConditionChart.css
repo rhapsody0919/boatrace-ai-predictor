@@ -328,6 +328,22 @@
   background-color: color-mix(in srgb, var(--brand-accent-primary) 24%, transparent);
 }
 
+/* 他のタブで選んでいる艇（BOA-494）。最良モーターの背景色と重なっても区別できる
+   よう、背景ではなく線で示す。375pxで表を横に送ると1列目が見えなくなるので、
+   左の帯だけでなく全セルの上下にも線を引く（ファン評価） */
+.motor-ranking-row.is-focused > td {
+  box-shadow:
+    inset 0 2px 0 var(--brand-accent-primary),
+    inset 0 -2px 0 var(--brand-accent-primary);
+}
+
+.motor-ranking-row.is-focused > td:first-child {
+  box-shadow:
+    inset 3px 0 0 var(--brand-accent-primary),
+    inset 0 2px 0 var(--brand-accent-primary),
+    inset 0 -2px 0 var(--brand-accent-primary);
+}
+
 /* 優出数・優勝数・1着率の1位・2位セル強調（kyoteibiyori等の出走表に倣う、BOA-264追加調査） */
 .motor-stat-rank1 {
   background-color: color-mix(in srgb, var(--brand-accent-primary) 28%, transparent);

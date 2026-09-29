@@ -1143,6 +1143,7 @@
       "partsHistoryNote": "💡 A parts or propeller change alone can be either a sign of declining motor performance or a sign of improvement right after maintenance. The badge compares average exhibition time before and after the change as a rough guide only, and does not guarantee results.",
       "note": "💡 Click a table row to see that motor's trend across meets. The highlighted row is the boat with the highest motor top-2 rate in this race.",
       "highlightNote": "💡 The highlighted row is the boat with the highest Top-2 rate in this race.",
+      "focusedRowNote": "The outlined row is the boat you selected on another tab.",
       "venueRankLabel": "Rank in venue (venue's official top-2 rate)",
       "venueRankBadge": "#{{rank}} of {{total}} motors ({{value}}%)",
       "venueRankBadgeTied": "#{{rank}} (tied) of {{total}} motors ({{value}}%)",
