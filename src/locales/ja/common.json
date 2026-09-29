@@ -288,6 +288,7 @@
     "result": "結果"
   },
   "aiPredictionTab": {
+    "cancelled": "このレースは中止のため、AI予想はありません",
     "unavailableTitle": "AI予想データがありません",
     "unavailableBody": "このレースはAI予想の対象データが揃っていません。"
   },
