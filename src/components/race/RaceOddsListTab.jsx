@@ -154,11 +154,10 @@ function buildTrend(snapshots, betType, key, deadline, live) {
     .filter(Boolean);
   const liveValue = live?.data?.[betType.dataKey]?.[key];
   if (liveValue != null) {
+    // 時点はスナップショットと同じ「締切○分前」でそろえる（取得した時刻から数える。ファン評価2周目）
     points.push({
       live: true,
-      time:
-        formatOfficialTime(live.officialUpdatedAt) ??
-        formatJstTime(live.fetchedAt),
+      minutesBefore: minutesBeforeOf(live.fetchedAt, deadline),
       value: liveValue,
     });
   }
@@ -309,7 +308,11 @@ function OddsButton({ comboKey, value, isRange, selected, onSelect, badges }) {
 function TrendPanel({ combo, trend, isRange, spanAll }) {
   const { t } = useTranslation();
   const labelOf = (p) => {
-    if (p.live) return t("oddsList.liveTrendLabel", { time: p.time ?? "" });
+    if (p.live) {
+      return p.minutesBefore === null
+        ? t("oddsList.liveLatest")
+        : t("oddsList.liveTrendLabel", { n: p.minutesBefore });
+    }
     if (p.minutesBefore === null) return "-";
     if (p.minutesBefore === 0) return t("oddsList.deadlineLabel");
     return t("oddsList.minutesBeforeLabel", { n: p.minutesBefore });
@@ -411,15 +414,17 @@ function LiveStatus({ entry, fallbackLabel, onRefresh }) {
       <span className="rol-status-strong">
         {result.final ? t("oddsList.liveFinal") : t("oddsList.liveLatest")}
       </span>
+      {/* 取得した時刻を主に出す。取得中の「いまは○:○○取得の値」から時刻が戻ったように見えないよう、
+          公式の「オッズ更新時間」は補足にする（ファン評価2周目） */}
+      <b>
+        {t("oddsList.fetchedAt", { time: formatJstTime(result.fetchedAt) })}
+      </b>
       {result.officialUpdatedAt && (
-        <span>
+        <span className="rol-status-sub">
           {t("oddsList.officialUpdated")}{" "}
-          <b>{formatOfficialTime(result.officialUpdatedAt)}</b>
+          {formatOfficialTime(result.officialUpdatedAt)}
         </span>
       )}
-      <span className="rol-status-sub">
-        {t("oddsList.fetchedAt", { time: formatJstTime(result.fetchedAt) })}
-      </span>
       {entry.unchanged && (
         <span className="rol-status-sub" data-testid="odds-live-unchanged">
           {t("oddsList.liveUnchanged")}
@@ -651,6 +656,18 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     ],
   });
 
+  // 当日・締切前で、まだライブ取得の対象（締切90分前以内）に入っていないレースだけ、公式のオッズへの導線を出す
+  const parsedRace = parseRaceId(raceId);
+  const beforeLiveWindow =
+    !liveEnabled &&
+    !!parsedRace &&
+    !!deadline &&
+    parsedRace.date === todayJst(openedAtMs) &&
+    deadline.getTime() > openedAtMs;
+  const officialOddsUrl = beforeLiveWindow
+    ? `https://www.boatrace.jp/owpc/pc/race/oddstf?rno=${parsedRace.raceNo}&jcd=${String(parsedRace.venueCode).padStart(2, "0")}&hd=${parsedRace.date.replace(/-/g, "")}`
+    : null;
+
   const retrySnapshots = () => {
     setSnapshotState(null);
     setSnapshotReloadKey((k) => k + 1);
@@ -690,6 +707,23 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
         <div className="race-tabs-empty">
           <p>{t("oddsList.emptyTitle")}</p>
           <p className="race-tabs-empty-body">{t("oddsList.emptyBody")}</p>
+          {/* 当日で締切90分より前: 公式には朝からオッズが出ているため、いつ出るかと公式への導線を示す
+              （ファン評価2周目） */}
+          {officialOddsUrl && (
+            <p
+              className="race-tabs-empty-body"
+              data-testid="odds-before-window"
+            >
+              {t("oddsList.liveFromNote")}{" "}
+              <a
+                href={officialOddsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t("oddsList.officialOddsLink")}
+              </a>
+            </p>
+          )}
         </div>
       );
     }
@@ -701,8 +735,10 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
 
   // スナップショットは保存時に票0（公式の0.0）を捨てている（cron の解析）。券種の表がある以上、出走艇の
   // 組み合わせでキーが無いのは票0なので、ライブ値と同じく「票なし」として出す（ファン評価1周目）
+  // レンジ型（拡連複）は {low:0, high:0} で表す（数値の 0 を渡すと formatValue が落ちる。ファン評価2周目 P0）
   const valueOf = (key) =>
-    latestMap?.[key] ?? (latestMap && !liveResult ? 0 : null);
+    latestMap?.[key] ??
+    (latestMap && !liveResult ? (isRange ? { low: 0, high: 0 } : 0) : null);
 
   const oddsButton = (comboKey, badges, value = valueOf(comboKey)) => (
     <OddsButton
@@ -738,6 +774,8 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     // 2連単オッズは、3連単と同じ時点の値を使う（別時刻の値が同じ列に並ばないように）。
     // ライブ表示中は2連単のライブ値（取得済みなら）、スナップショット表示中は同じ行の値
     // （2連単のページはチップを切り替えるまで取らないため、未取得の間はスナップショットの値を出す）
+    // スナップショットの2連単でキーが無い組は、保存時に落ちた票0（セルと同じく「票なし」）
+    const liveResult2tf = !!(liveResult && livePages["2tf"]?.result);
     const exactaMap =
       (liveResult ? livePages["2tf"]?.result?.data?.exactaAll : null) ??
       latestSnapshot?.exactaAll ??
@@ -775,7 +813,8 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
                   <div className="rol-col-foot">
                     <span>{t("oddsList.exactaShortLabel")}</span>
                     <span>
-                      {exacta === 0
+                      {exacta === 0 ||
+                      (exacta === null && exactaMap && !liveResult2tf)
                         ? t("oddsList.noVotes")
                         : (formatValue(exacta) ?? "-")}
                     </span>
@@ -850,21 +889,17 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
   };
 
   // 単勝・複勝: 艇ごとの表。票0（公式の0.0）は「票なし」。スナップショットの null は、票0と未取得を
-  // 保存時に区別していないため、全艇 null なら「票なし（または未取得）」の注記を出す
+  // 保存時に区別していない（scrape-odds.js が 0.0 を null にし、取得漏れも null）。実際に、公式の締切時
+  // オッズが27.3の艇が全行 null だった例がある（江戸川8R 9/28、ファン評価1・2周目で同じ指摘）。
+  // 「票なし」と断定せず「-」とし、注記で「票なし（または未取得）」と説明する
   const renderWinPlace = () => {
     const winOf = (n) => latestMap?.[String(n)] ?? null;
     const placeOf = (n) => placeMap?.[String(n)] ?? null;
-    const snapshotAllNull =
-      !liveResult && boats.every((n) => winOf(n) === null);
+    const snapshotHasNull =
+      !liveResult &&
+      boats.some((n) => winOf(n) === null || placeOf(n) === null);
     const cell = (value, range) => {
-      if (value == null) {
-        // スナップショットの null は（全艇 null でなければ）票0として出す。ライブのキー無しは「-」
-        return !liveResult && !snapshotAllNull ? (
-          <span className="rol-no-votes">{t("oddsList.noVotes")}</span>
-        ) : (
-          "-"
-        );
-      }
+      if (value == null) return "-";
       if (isNoVotes(value, range)) {
         return <span className="rol-no-votes">{t("oddsList.noVotes")}</span>;
       }
@@ -899,7 +934,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
             ))}
           </tbody>
         </table>
-        {snapshotAllNull && (
+        {snapshotHasNull && (
           <p className="rol-callout">{t("oddsList.winNoVotesOrMissing")}</p>
         )}
       </>

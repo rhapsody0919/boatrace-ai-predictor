@@ -8,7 +8,7 @@ import { parseLiveOddsPage } from "../scripts/lib/liveOdds.js";
  * ライブ API（/api/odds/live）と race_odds のスナップショットは route でモックし、ページの時計を
  * レースの締切前に固定する（公式・DBの状態に左右されない）。出走表などタブ以外は本番の Supabase を読む。
  *
- * - 成功: 「最新 公式更新 8:14 取得 13:55 [更新]」に差し替わる
+ * - 成功: 「最新 13:55 取得 公式更新 8:14 [更新]」に差し替わる
  * - 取得中: スナップショットを出したまま「最新オッズを取得中… いまは○取得の値」
  * - 失敗: スナップショットのまま「最新の取得に失敗しました」＋再取得。スナップショットも無ければ InlineFetchError
  * - 票0: 「票なし」。全艇票0なら注記
@@ -100,7 +100,7 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     const { calls, status } = await setup(page);
     await expect(status).toContainText("最新");
     await expect(status).toContainText("公式更新 8:14");
-    await expect(status).toContainText("取得 13:55");
+    await expect(status).toContainText("13:55 取得");
     await expect(status.getByRole("button", { name: "更新" })).toBeVisible();
     // 開いたときは単勝・複勝、3連単、3連単の表の「2単」に使う2連単を取る
     expect([...new Set(calls)].sort()).toEqual(["2tf", "3t", "tf"]);
@@ -203,8 +203,9 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     await expect(status).toContainText("公式更新 8:14");
     await expect(page.locator(".rol-block").first()).toBeVisible();
     await page.getByRole("button", { name: /^1-2-3 / }).click();
+    // ファン評価2周目: 最新の点もスナップショットと同じ「締切○分前」（13:55:10 取得、締切 14:24）
     await expect(page.locator(".rol-trend-item.is-live")).toContainText(
-      "最新 8:14",
+      "最新（締切29分前）",
     );
   });
 
@@ -253,7 +254,10 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     const table = page.locator(".rol-win-table");
     await expect(table).toContainText("3.0");
     await expect(table).toContainText("1.1-1.9");
-    await expect(page.locator(".rol-callout")).toHaveCount(0);
+    // この行でも4号艇の単勝は null（票0か未取得か区別できない）→「-」＋注記
+    await expect(page.locator(".rol-callout")).toContainText(
+      "票なし（または未取得）",
+    );
   });
 
   // ---- ファン評価1周目の指摘の再現テスト ----
@@ -341,5 +345,66 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
         .map((s) => s.textContent),
     );
     expect(broken).toEqual([]);
+  });
+
+  // ---- ファン評価2周目の指摘の再現テスト ----
+
+  test("拡連複（スナップショット）: キーの無い組があってもページが落ちず「票なし」", async ({
+    page,
+  }) => {
+    const wide = { ...PARSED.k.data.wideAll };
+    delete wide["3-5"];
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await setup(page, {
+      now: AFTER_DEADLINE,
+      snapshots: [{ ...SNAPSHOT_ROW, wide_all: wide }],
+    });
+    await page.getByRole("tab", { name: "拡連複" }).click();
+    await expect(
+      page.getByRole("button", { name: "3-5 票なし" }),
+    ).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test("単勝・複勝（スナップショット）: 単勝の null は「票なし」と断定せず「-」と注記", async ({
+    page,
+  }) => {
+    await setup(page, { now: AFTER_DEADLINE });
+    await page.getByRole("tab", { name: "単勝・複勝" }).click();
+    const row4 = page.locator(".rol-win-table tbody tr").filter({
+      has: page.locator(".rol-boat-badge", { hasText: /^4$/ }),
+    });
+    await expect(row4.locator("td").first()).toHaveText("-");
+    await expect(page.locator(".rol-win-table")).not.toContainText("票なし");
+    await expect(page.locator(".rol-callout")).toContainText(
+      "票なし（または未取得）",
+    );
+  });
+
+  test("取得中→最新で、主に出す時刻が戻らない（取得時刻を主に、公式更新は補足）", async ({
+    page,
+  }) => {
+    const { status } = await setup(page);
+    await expect(status.locator("b")).toHaveText("13:55 取得");
+    await expect(status.locator(".rol-status-sub").first()).toContainText(
+      "公式更新 8:14",
+    );
+  });
+
+  test("締切90分より前の当日レース: いつ出るかと公式オッズへの導線を示す", async ({
+    page,
+  }) => {
+    const { calls } = await setup(page, {
+      now: new Date("2026-09-28T12:30:00+09:00"),
+      snapshots: [],
+    });
+    const note = page.getByTestId("odds-before-window");
+    await expect(note).toContainText("締切90分前から");
+    await expect(note.getByRole("link")).toHaveAttribute(
+      "href",
+      "https://www.boatrace.jp/owpc/pc/race/oddstf?rno=8&jcd=03&hd=20260928",
+    );
+    expect(calls).toEqual([]);
   });
 });

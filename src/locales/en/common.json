@@ -643,7 +643,7 @@
     "noVotes": "No bets",
     "winPlaceChip": "Win / Place",
     "boatColumn": "Boat",
-    "liveTrendLabel": "Latest {{time}}",
+    "liveTrendLabel": "Latest ({{n}} min before deadline)",
     "snapshotAtDeadline": "fetched {{time}} (just before deadline)",
     "snapshotAt": "fetched {{time}}",
     "snapshotBefore": "fetched {{time}} ({{n}} min before deadline)",
@@ -660,11 +660,13 @@
     "liveRefresh": "Refresh",
     "fetchFailed": "Could not load odds",
     "liveFailedNoData": "Could not fetch the latest odds",
-    "winNoVotesOrMissing": "No Win/Place bets yet (or not fetched)",
+    "winNoVotesOrMissing": "\"-\" means no bets (or not fetched). It may differ from the official final odds",
     "winAllNoVotes": "No Win/Place bets have been placed yet (the official site shows 0.0). They start coming in as the deadline approaches",
     "allNoVotes": "No bets have been placed on this bet type yet (the official site shows 0.0). They start coming in as the deadline approaches",
     "snapshotLagNote": "These are the official values at the time of fetching. Official odds updates can lag by a few minutes, so they may differ from the final odds and payouts",
-    "liveUnchanged": "No change (refreshing within 30 seconds returns the same values)"
+    "liveUnchanged": "No change (refreshing within 30 seconds returns the same values)",
+    "liveFromNote": "From 90 minutes before the deadline, this tab shows the latest official odds.",
+    "officialOddsLink": "See odds on the official site"
   },
   "meetTab": {
     "note": "Who needs a result in this series, and how the boat you pick has been running",
