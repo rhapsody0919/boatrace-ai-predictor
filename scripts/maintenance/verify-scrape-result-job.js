@@ -25,6 +25,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   buildRaceResultRow,
+  clearCancellationsWithResults,
+  clearCancellationsWithResultsInRange,
   confirmCancellationsForRaceIds,
   fetchRaceResultHtml,
   isResultComplete,
@@ -162,6 +164,10 @@ function createFakeDb(initial = {}, { failOn = [], readError = {} } = {}) {
       },
       lt(col, val) {
         s.filters.push((r) => r[col] < val);
+        return q;
+      },
+      lte(col, val) {
+        s.filters.push((r) => r[col] <= val);
         return q;
       },
       is(col, val) {
@@ -424,7 +430,10 @@ check(
 {
   // shadow の集計スクリプト（check-result-shadow.js）の比較: DBの行から同じ関数で計算したダイジェストと比べる
   const dbRow = { ...rowA, id: 99, actual_course_1: 1 };
-  const dbTimings = timingsA.map((t) => ({ ...t, updated_at: "2026-09-19T06:10:00+00:00" }));
+  const dbTimings = timingsA.map((t) => ({
+    ...t,
+    updated_at: "2026-09-19T06:10:00+00:00",
+  }));
   const cmp = compareShadowDigests(
     [
       { race_id: RACE_A, result_digest: digestA },
@@ -433,7 +442,10 @@ check(
       { race_id: "2026-09-19-01-02", result_digest: null },
     ],
     [dbRow, { ...buildRaceResultRow(RACE_B, parsedB) }],
-    [...dbTimings, ...parsedB.startTimings.map((st) => ({ race_id: RACE_B, ...st }))],
+    [
+      ...dbTimings,
+      ...parsedB.startTimings.map((st) => ({ race_id: RACE_B, ...st })),
+    ],
   );
   check(
     "check-result-shadow: 一致（桐生1R）・不一致（宮島12Rは別のdigest）・DBに行なし・digest未記録を、別々に数える",
@@ -448,7 +460,11 @@ check(
   t[0].start_timing = 0.99;
   check(
     "check-result-shadow: DBのスタート情報が1つ違えば不一致になる（結果の行だけでなくSTも比べている）",
-    compareShadowDigests([{ race_id: RACE_A, result_digest: digestA }], [dbRow], t).mismatched.length === 1,
+    compareShadowDigests(
+      [{ race_id: RACE_A, result_digest: digestA }],
+      [dbRow],
+      t,
+    ).mismatched.length === 1,
   );
 }
 
@@ -1100,6 +1116,125 @@ check(
   );
 }
 {
+  // clearCancellationsWithResults（BOA-524）: 結果があるのに中止・順延（暫定・確定）が付いたレースを解除する。
+  // 2026-09-12 は、結果が先に入り、確定が後から付いた（結果の書き込みの時点では解除できない）
+  const mk = (extra = {}) =>
+    createFakeDb(
+      {
+        race_results: [
+          { race_id: "R1" },
+          { race_id: "R3" },
+          { race_id: "R4" },
+          { race_id: "R6" },
+        ],
+        races: [
+          // 確定・結果あり（誤り）
+          {
+            race_id: "R1",
+            race_date: "2026-09-12",
+            cancellation_status: "confirmed",
+            cancellation_check_streak: 0,
+          },
+          // 確定・結果なし（本物の中止）
+          {
+            race_id: "R2",
+            race_date: "2026-09-12",
+            cancellation_status: "confirmed",
+            cancellation_check_streak: 0,
+          },
+          // 暫定・結果あり
+          {
+            race_id: "R3",
+            race_date: "2026-09-12",
+            cancellation_status: "tentative",
+            cancellation_check_streak: 2,
+          },
+          // 中止でない・結果あり
+          {
+            race_id: "R4",
+            race_date: "2026-09-12",
+            cancellation_status: null,
+            cancellation_check_streak: 0,
+          },
+          // 期間の外（2026-08-01）の確定・結果なし
+          {
+            race_id: "R5",
+            race_date: "2026-08-01",
+            cancellation_status: "confirmed",
+            cancellation_check_streak: 0,
+          },
+          // 期間の外の確定・結果あり（範囲の検索では触らない）
+          {
+            race_id: "R6",
+            race_date: "2026-08-01",
+            cancellation_status: "confirmed",
+            cancellation_check_streak: 0,
+          },
+        ],
+      },
+      extra,
+    );
+  const statusOf = (db, id) => db.tables.races.find((x) => x.race_id === id);
+  const db = mk();
+  const r = await clearCancellationsWithResults(db, ["R1", "R2", "R3", "R4"]);
+  check(
+    "解除（BOA-524）: 結果のある確定（R1）・暫定（R3）だけを NULL・streak 0 に戻す。結果の無い確定（R2）と、中止でないレース（R4）は触らない",
+    same(r.cleared.sort(), ["R1", "R3"]) &&
+      statusOf(db, "R1").cancellation_status === null &&
+      statusOf(db, "R3").cancellation_status === null &&
+      statusOf(db, "R3").cancellation_check_streak === 0 &&
+      statusOf(db, "R2").cancellation_status === "confirmed",
+    show(r),
+  );
+  for (const table of ["race_results", "races"]) {
+    const bad = mk({ readError: { [table]: "接続断" } });
+    let err = null;
+    try {
+      await clearCancellationsWithResults(bad, ["R1", "R2"]);
+    } catch (e) {
+      err = e;
+    }
+    check(
+      `解除: ${table} の読み取りに失敗したら例外・書き込みなし（読めなかった集合を空とみなさない。BOA-512 の反転の再発防止）`,
+      err && new RegExp(table).test(err.message) && bad.writes.length === 0,
+    );
+  }
+  const none = mk();
+  const rn = await clearCancellationsWithResults(none, []);
+  check(
+    "解除: 対象0件は読み書きしない",
+    rn.cleared.length === 0 &&
+      none.reads.length === 0 &&
+      none.writes.length === 0,
+  );
+  const dbR = mk();
+  const rr = await clearCancellationsWithResultsInRange(dbR, {
+    from: "2026-09-10",
+    to: "2026-09-12",
+  });
+  check(
+    "範囲の解除: 期間（両端含む）の中止・順延の付いたレースだけを調べ、結果のあるもの（R1・R3）を解除する。期間の外（R6）は触らない",
+    same(rr.cleared.sort(), ["R1", "R3"]) &&
+      statusOf(dbR, "R6").cancellation_status === "confirmed" &&
+      statusOf(dbR, "R2").cancellation_status === "confirmed",
+    show(rr),
+  );
+  const badR = mk({ readError: { races: "接続断" } });
+  let errR = null;
+  try {
+    await clearCancellationsWithResultsInRange(badR, {
+      from: "2026-09-10",
+      to: "2026-09-12",
+    });
+  } catch (e) {
+    errR = e;
+  }
+  check(
+    "範囲の解除: 対象レースの読み取りに失敗したら例外・書き込みなし",
+    errR && badR.writes.length === 0,
+  );
+}
+{
   // onTick の失敗: 500・失敗を記録・でもスロットの処理は続ける
   const r = await runResultJob({
     mode: "live",
@@ -1345,7 +1480,11 @@ const kDb = () =>
       },
     });
     const probeDb = kDb();
-    const p = await probeRun({ ...ctx("shadow"), client: probeDb, query: { probeDate: K_DATE } });
+    const p = await probeRun({
+      ...ctx("shadow"),
+      client: probeDb,
+      query: { probeDate: K_DATE },
+    });
     check(
       "kfile-sync probe: ?probeDate= の日のKファイルを politeFetch でダウンロード・解析し、レース数を返す。同期は呼ばず、書き込みなし・対象日は処理済みにしない",
       asked?.date === K_DATE &&
@@ -1365,7 +1504,10 @@ const kDb = () =>
     } catch (e) {
       bad = e;
     }
-    check("kfile-sync probe: 日付の形式が不正なら例外（ダウンロードしない）", bad !== null);
+    check(
+      "kfile-sync probe: 日付の形式が不正なら例外（ダウンロードしない）",
+      bad !== null,
+    );
   }
   // ラッパ経由: 対象日の冪等（完了したら12:00は何もしない・incompleteなら12:00がもう一度処理する）
   const run = createKFileSyncRun({
@@ -1521,10 +1663,15 @@ const catchupCtx = (
 {
   const spyConfirm = [];
   const spyHits = [];
+  const spyClear = [];
   const runner = createResultCatchupRun({
     confirm: async (client, ids) => {
       spyConfirm.push(ids);
       return { checked: ids.length, confirmed: ids.slice(0, 1) };
+    },
+    clearWithResults: async (client, range) => {
+      spyClear.push(range);
+      return { checked: 0, cleared: ["2026-09-12-10-01"] };
     },
     fixHitFlags: async (from, to) => {
       spyHits.push([from, to]);
@@ -1551,6 +1698,13 @@ const catchupCtx = (
     show({ spyConfirm, spyHits }),
   );
   check(
+    "catch-up（BOA-524）: live は、結果があるのに中止・順延のレースの解除を、対象日から14日遡って（9/6〜9/19）呼び、件数を report・body に出す",
+    same(spyClear, [{ from: "2026-09-06", to: "2026-09-19" }]) &&
+      same(r.report.clearedCancellations, ["2026-09-12-10-01"]) &&
+      r.body.clearedCancellations === 1,
+    show({ spyClear, report: r.report.clearedCancellations }),
+  );
+  check(
     "catch-up: 対象日の結果のスロットに未完了（pending・running）が無ければ、incomplete でない",
     r.incomplete === false,
   );
@@ -1573,12 +1727,14 @@ const catchupCtx = (
   // shadow: 取得・解析のみ。確定・的中フラグの補完・書き込みをしない
   spyConfirm.length = 0;
   spyHits.length = 0;
+  spyClear.length = 0;
   const dbS = catchupDb();
   const rs = await runner(catchupCtx(dbS, { mode: "shadow" }));
   check(
-    "catch-up shadow: 再取得は取得・解析のみ。データテーブルへ書かず、確定・的中フラグの補完も呼ばない",
+    "catch-up shadow: 再取得は取得・解析のみ。データテーブルへ書かず、確定・中止の解除・的中フラグの補完も呼ばない",
     dbS.writes.length === 0 &&
       spyConfirm.length === 0 &&
+      spyClear.length === 0 &&
       spyHits.length === 0 &&
       rs.rowsWritten === 0 &&
       rs.rowsParsed === 1,
@@ -1820,7 +1976,8 @@ const catchupCtx = (
     24 * 60; // 翌分
   check(
     `最終レース（22:45発走）の結果スロットの期限+許容幅（翌 00:${String(lastRaceDeadlineEnd).padStart(2, "0")}）を、cron が超えて起動する（期限切れ処理・確定まで届く）`,
-    lastRaceDeadlineEnd === 15 && rt.has((24 * 60 + lastRaceDeadlineEnd + 1) % 1440),
+    lastRaceDeadlineEnd === 15 &&
+      rt.has((24 * 60 + lastRaceDeadlineEnd + 1) % 1440),
   );
   check(
     "kfile-sync の cron: JST 07:00 と 12:00 の2回（本体と補足）",

@@ -11,7 +11,7 @@ BOA-512（2026-09-12 に、結果のある32本が誤って `confirmed` にな�
 
 ## 結論
 
-- **`confirmed` を自動で消す経路は無い。** DBトリガーも無く、結果を書く経路（スロットの `runForRaces`・`scrapeAndSaveResults`・Kファイル同期）はどれも `cancellation_status` を見ない。消せるのは手動の `backfill-results-by-race-id.js`（結果の行があれば `null` に戻す）だけ
+- ~~`confirmed` を自動で消す経路は無い~~ → **BOA-524 で追加した**: 結果の日次の catch-up（23:50 JST）が、直近14日の「結果があるのに中止・順延（暫定・確定）」を `null` に戻す（`clearCancellationsWithResultsInRange`）。結果を書く経路（スロットの `runForRaces`・`scrapeAndSaveResults`・Kファイル同期）は、引き続き `cancellation_status` を見ない（2026-09-12 は結果が先に入り、確定が後から付いたため、書き込みの時点では解除できない）。手動の `backfill-results-by-race-id.js` も同じ関数（`clearCancellationsWithResults`）を使う
 - `update-race-info.js` の遷移（`computeCancellationTransition`）は `tentative` だけを扱い、`confirmed` には触らない
 - 結果の有無と AND している読み手は3つだけ: `delete-cancelled-race-predictions.js`・`data-health-report.js`（窓内取得率・検知の遅れ）・`dailyReconcile.js`（Kファイルと矛盾したら `cancelled_but_in_k` として検知する）
 - 型Aの自動検知は、これまで `dailyReconcile` の `cancelled_but_in_k` だけだった。BOA-512 で `data_health` の `cancellation.with_result` を足した
@@ -72,7 +72,8 @@ BOA-512（2026-09-12 に、結果のある32本が誤って `confirmed` にな�
 | `scripts/daily/update-race-info.js` | `tentative` / `null` | 選手0人が3回続いたら `tentative`、選手が取れたら `null`。`confirmed` には触らない |
 | `scripts/maintenance/audit-missing-results.js`（手動 `--apply`） | `confirmed` | 結果が無く、結果ページが中止表示 |
 | `scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js`（手動・一回限り） | `confirmed` | 結果が無く、Kファイルにその会場が無い |
-| `scripts/maintenance/backfill-results-by-race-id.js`（手動） | `null` | 再取得後に結果の行があるもの。**`confirmed` を消す唯一の経路** |
+| `scripts/lib/scrapeJobs/resultHandlers.js`（`createResultCatchupRun`、日次23:50）→ `scripts/daily/scrape-results.js`（`clearCancellationsWithResultsInRange`） | `null`（streak も 0） | 直近14日で、結果の行があるのに暫定・確定が付いたもの（BOA-524） |
+| `scripts/maintenance/backfill-results-by-race-id.js`（手動） | `null` | 再取得後に結果の行があるもの（同じ `clearCancellationsWithResults` を使う） |
 
 ## ヘルパー
 
@@ -85,7 +86,7 @@ BOA-512（2026-09-12 に、結果のある32本が誤って `confirmed` にな�
 
 ## 残る改善（BOA-512 では実装しない）
 
-1. **結果が入ったら `confirmed` を消す経路**（scripts/。型Aの自己修復）。結果（rank1 あり）の書き込みの後に、そのレースの `cancellation_status` を `null` に戻す。`backfill-results-by-race-id.js` と同じ処理を自動経路にも入れる形
+1. ~~結果が入ったら `confirmed` を消す経路~~ → BOA-524 で実装（上の結論の1つ目）
 2. **画面で「結果があるなら中止扱いしない」**（src/。`isRaceCancelled` に結果の有無を足す等）。BOA-490（PR #916）が集計側で採った「中止が確定 かつ 結果が無い」と同じ考え方
 3. **型Bの被害を減らす**: 誤った `confirmed` が結果スロットを終端すると、以後自動では取り直されない。日次の再取得（`createResultCatchupRun`）の除外を「中止告知で確定したものだけ」に絞る等。確定の出所を列に持っていないため、設計の判断が要る
 
