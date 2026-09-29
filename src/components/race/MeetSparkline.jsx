@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./MeetSparkline.css";
+import { SPARK_VIEW_W, SPARK_PAD_X } from "../../utils/trendDateLayout";
 
 /**
  * 今節の走順に並べた小さな折れ線（軸なし）。
@@ -54,6 +55,10 @@ import "./MeetSparkline.css";
  * @param {Array<{text: string|number, win?: boolean, mark?: boolean}|null>} [pointLabels]
  *   各点の下に出す短い文字（6艇の推移では着順）。`points` と同じ並び。
  *   値（ST・展示）が無い走でも、その横位置に出す（欠場・フライングも並びに残す）
+ * @param {Array<number>} [xPositions] 各点の横位置（0〜1の割合）。日付の横軸で
+ *   6行をそろえるときに渡す（BOA-538）。省略すると走った順で左右いっぱい
+ * @param {Array<boolean>} [breakBefore] その点の前で線を切るか（走っていない日を
+ *   またぐとき）。`points` と同じ並び
  * @param {boolean} [allowSinglePoint] 値が1つでも描く（既定 false）。6艇を
  *   並べる推移では、1走の選手の行が空白だと「取れていない」と読まれるので、
  *   前走の点を1つだけ右端（他の行の前走と同じ横位置）に置く
@@ -71,6 +76,8 @@ function MeetSparkline({
   height = 56,
   allowSinglePoint = false,
   pointLabels = null,
+  xPositions = null,
+  breakBefore = null,
 }) {
   // どの点に合わせているか。null は「どこにも合わせていない」
   const [activeIndex, setActiveIndex] = useState(null);
@@ -110,15 +117,21 @@ function MeetSparkline({
   // この値が実際の表示幅から離れるほど点（circle）が楕円に歪む。
   // 390px幅の端末での実表示が約340pxなので、それに近い値にして歪みを消す
   // （100にしていたときは3.4倍に引き伸ばされて明らかに潰れていた）
-  const W = 340;
+  const W = SPARK_VIEW_W;
   const padY = 6;
   // 左右にも余白を取る。0だと両端の点（前走を含む）が半分見切れる
-  const padX = 5;
+  const padX = SPARK_PAD_X;
   const innerH = height - padY * 2;
   const innerW = W - padX * 2;
   // 1走だけのときは右端（他の行の「前走」と同じ横位置）に置く
+  // xPositions（0〜1の割合）を渡すと横位置を外から決める（日付の横軸、BOA-538）。
+  // 無ければ従来どおり走った順で左右いっぱいに並べる
   const x = (i) =>
-    values.length === 1 ? W - padX : padX + (i / (values.length - 1)) * innerW;
+    xPositions
+      ? padX + (xPositions[i] ?? 0) * innerW
+      : values.length === 1
+        ? W - padX
+        : padX + (i / (values.length - 1)) * innerW;
   const y = (v) => {
     const ratio = (v - min) / span;
     // upIsBetter: 小さい値（速い）を上に
@@ -129,7 +142,20 @@ function MeetSparkline({
   const drawn = values
     .map((v, i) => (typeof v === "number" ? { i, v } : null))
     .filter(Boolean);
-  const path = drawn.map((d) => `${x(d.i).toFixed(2)},${y(d.v).toFixed(2)}`);
+  // 線は、走っていない日をまたぐところで切る（breakBefore、BOA-538）。
+  // 値の無い走（欠場など）は従来どおり前後をつなぐ
+  const segments = [];
+  drawn.forEach((d, k) => {
+    const prev = drawn[k - 1];
+    const cut =
+      prev &&
+      breakBefore &&
+      breakBefore.slice(prev.i + 1, d.i + 1).some(Boolean);
+    if (k === 0 || cut) segments.push([]);
+    segments[segments.length - 1].push(
+      `${x(d.i).toFixed(2)},${y(d.v).toFixed(2)}`,
+    );
+  });
   const lastIndex = drawn.length - 1;
 
   // 値のある点のうち、ポインタの横位置に最も近いものを選ぶ。
@@ -218,12 +244,15 @@ function MeetSparkline({
             vectorEffect="non-scaling-stroke"
           />
         )}
-        <polyline
-          className="meet-sparkline-line"
-          points={path.join(" ")}
-          stroke={color}
-          vectorEffect="non-scaling-stroke"
-        />
+        {segments.map((seg, k) => (
+          <polyline
+            key={k}
+            className="meet-sparkline-line"
+            points={seg.join(" ")}
+            stroke={color}
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
         {drawn.map((d, idx) => (
           <circle
             key={d.i}

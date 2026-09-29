@@ -48,6 +48,11 @@ import {
 } from "./seriesPoints";
 import RaceHistoryTable from "./RaceHistoryTable";
 import MeetSparkline from "./MeetSparkline";
+import {
+  dayCenter,
+  layoutTrendByDate,
+  sparkLeftPercent,
+} from "../../utils/trendDateLayout";
 import "./RaceMeetTab.css";
 import "../common/HorizontalScrollHint.css";
 
@@ -197,7 +202,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   // 縦の物差しを共通にして初めて比較になる
   const meetRunsByRacer = board?.meetRunsByRacer ?? {};
   const trendKey = trendMetric === "st" ? "st" : "exhibition";
-  const trendRows = sortedPlayers.map((p) => ({
+  const trendRowsRaw = sortedPlayers.map((p) => ({
     player: p,
     runs: meetRunsByRacer[p.racerId] ?? [],
   }));
@@ -219,9 +224,15 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   // 横軸をそろえる話は BOA-538。追加取得はせず、既に持っている日付から出す
   const trendDates = [
     ...new Set(
-      trendRows.flatMap((r) => r.runs.map((x) => x.date).filter(Boolean)),
+      trendRowsRaw.flatMap((r) => r.runs.map((x) => x.date).filter(Boolean)),
     ),
   ].sort();
+  // 横軸は日付（BOA-538）。節の日（6艇のうち誰かが走った日）を等間隔に並べ、
+  // 各走をその日の位置に置く。1日2走は左右にずらし、走らなかった日で線を切る
+  const trendRows = trendRowsRaw.map((r) => ({
+    ...r,
+    layout: layoutTrendByDate(r.runs, trendDates),
+  }));
   // 表の日付（9/22）と同じ形。`slice` だけだと「09/22」でゼロ埋めが残る
   const mdOf = (d) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`;
   // **線が1本も引けないときは出さない**。初日で各艇1走だと点が1個ずつになり、
@@ -738,13 +749,28 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
           {/* 右端の数値が何か分からない、という指摘（2026-09-27）。列見出しを出す */}
           <div className="rmt-trend-head">
             <span />
-            <span />
+            {/* 日付の目盛り（点と同じ横位置）。縦のガイド線は引かない */}
+            <span className="rmt-trend-days" aria-hidden="true">
+              {trendDates.map((d, i) => (
+                <span
+                  key={d}
+                  className="rmt-trend-day"
+                  style={{
+                    left: `${sparkLeftPercent(
+                      dayCenter(i, trendDates.length),
+                    ).toFixed(2)}%`,
+                  }}
+                >
+                  {mdOf(d)}
+                </span>
+              ))}
+            </span>
             <span className="rmt-trend-last">
               {t("meetTab.trendLastHeader")}
             </span>
           </div>
           <ul className="rmt-trend-rows">
-            {trendRows.map(({ player: p, runs }) => {
+            {trendRows.map(({ player: p, runs, layout }) => {
               const color = BOAT_COLORS[p.number] || {};
               const vals = runs.map((r) => r[trendKey]);
               const last = [...vals]
@@ -784,6 +810,8 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                       height={34}
                       // 1走の選手も前走の点を出す（空白だと取れていないと読まれる）
                       allowSinglePoint
+                      xPositions={layout.xs}
+                      breakBefore={layout.breakBefore}
                       // 各走の着順を点の下に出す（BOA-537。ファン4人のパネル）
                       pointLabels={runs.map((r) =>
                         r.finish === null || r.finish === undefined
