@@ -23,21 +23,31 @@ since="$(date -u -v-14d +%Y-%m-%d 2>/dev/null || date -u -d '14 days ago' +%Y-%m
 
 git fetch -q origin 2>/dev/null || echo "注意: git fetch に失敗（origin/master が古い可能性あり）"
 
-gh pr list --state open --limit 50 \
+# gh が失敗したとき（認証切れ・ネットワーク）に、空のスナップショットで前回分を上書きしないよう、
+# パイプにせず終了コードを見てから書く
+pr_ok=1
+if prs="$(gh pr list --state open --limit 50 \
   --json number,title,mergeStateStatus,isDraft,headRefOid,updatedAt,statusCheckRollup \
-  --jq ".[] | select(.updatedAt > \"$since\") | [.number, .mergeStateStatus, (if .isDraft then \"draft\" else \"ready\" end), .headRefOid[0:8], ([.statusCheckRollup[]? | select(.name==\"e2e\" or .name==\"verify\") | \"\(.name)=\(.conclusion // .status)\"] | sort | join(\",\")), .title[0:60]] | @tsv" \
-  | sort -n >"$now_file" || echo "注意: gh pr list に失敗"
+  --jq ".[] | select(.updatedAt > \"$since\") | [.number, .mergeStateStatus, (if .isDraft then \"draft\" else \"ready\" end), .headRefOid[0:8], ([.statusCheckRollup[]? | select(.name==\"e2e\" or .name==\"verify\") | \"\(.name)=\(.conclusion // .status)\"] | sort | join(\",\")), .title[0:60]] | @tsv")"; then
+  printf '%s\n' "$prs" | sed '/^$/d' | sort -n >"$now_file"
+else
+  pr_ok=0
+fi
 
 echo "## master HEAD: $(git log origin/master --oneline -1)"
 echo "## 直近1時間の master へのマージ"
 git log origin/master --since='1 hour ago' --format='  %h %s' | head -10
 echo "## オープンPR（${since} 以降に更新されたもの）"
-cat "$now_file"
-if [ -f "$prev_file" ]; then
-  echo "## 前回からの変化"
-  diff <(cut -f1-5 "$prev_file") <(cut -f1-5 "$now_file") | grep '^[<>]' || echo "  変化なし"
+if [ "$pr_ok" -eq 1 ]; then
+  cat "$now_file"
+  if [ -f "$prev_file" ]; then
+    echo "## 前回からの変化"
+    diff <(cut -f1-5 "$prev_file") <(cut -f1-5 "$now_file") | grep '^[<>]' || echo "  変化なし"
+  fi
+  cp "$now_file" "$prev_file"
+else
+  echo "  NG: gh pr list に失敗（前回のスナップショットは残した。gh auth status を確認）"
 fi
-cp "$now_file" "$prev_file"
 
 # マージ順の台帳。merge-order.js list の出力は「#901 ← #902, #903 の後」「#905（制約なし）」の形
 echo "## マージ順の台帳: 未解消の制約"

@@ -119,6 +119,11 @@ recorded=$(sed -n 's/^orchestrator_session:[[:space:]]*//p' "$state" | head -1)
   echo "  オープンPRの状態と前回との差分、マージ順の台帳の未解消の制約、regenerate-generated-docs.yml・e2e-rerecord.yml の失敗、master の CI の失敗を出す。"
   echo ""
   echo "---- state.md ----"
-  head -c 8000 "$state"
-} | jq -Rs '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: .}}'
+  cat "$state"
+} | jq -Rs --arg path "$state" '
+  # additionalContext は1フィールド10,000文字が上限。超える分は黙って落とさず、切ったことと全文の場所を書く
+  (if length > 9500
+   then .[:9500] + "\n\n（ここで切り詰めた。state.md の残りは Read で読むこと: " + $path + "）"
+   else . end) as $ctx
+  | {hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $ctx}}'
 exit 0

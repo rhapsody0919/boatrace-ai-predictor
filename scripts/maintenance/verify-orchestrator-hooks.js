@@ -251,6 +251,33 @@ try {
     String(ctx.length),
   );
 
+  // 4'. 上限（10,000文字）を超える state.md は、黙って落とさず切り詰めたことと全文の場所を書く
+  const normal = readState() ?? "";
+  writeFileSync(
+    stateFile,
+    `${normal}\n- ${"確認待ちの長い行".repeat(1500)}\n## 末尾の節\n`,
+  );
+  r = run(start("sess-c"));
+  let big = "";
+  try {
+    big = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
+  } catch {
+    // 下の check で落とす
+  }
+  check(
+    "4'. 長い state.md でも上限に収まる",
+    big.length <= 10000,
+    String(big.length),
+  );
+  check(
+    "4'. 切り詰めたことを書く",
+    big.includes("切り詰めた"),
+    big.slice(-200),
+  );
+  check("4'. 全文の場所を書く", big.includes(stateFile), big.slice(-200));
+  check("4'. 冒頭の記録は残る", big.includes("orchestrator_session: sess-c"));
+  writeFileSync(stateFile, normal);
+
   // 5. 不一致なら何も出ない（compact 以外の source も同様）
   r = run(start("sess-other"));
   check("5. 不一致の compact で exit 0", r.code === 0);
