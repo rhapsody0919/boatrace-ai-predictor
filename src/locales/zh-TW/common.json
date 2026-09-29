@@ -221,6 +221,7 @@
       "wide": "拡連複"
     },
     "popularity": "人氣第{{rank}}名",
+    "popularityFromFinalOddsNote": "單勝・複勝的人氣是依截止時賠率（官方）計算（複勝依下限由低至高）。其他投注方式的人氣為官方公布",
     "fastestStartTag": "最快",
     "courseNote": "※目前未顯示進入航線（資料準確度確認中）",
     "missingRanksNote": "※本場比賽第4名以後的名次資料尚未取得，因此部分名次未顯示",

@@ -439,6 +439,56 @@ function PayoutRowsTable({ rows, t }) {
   );
 }
 
+// 単勝・複勝の人気（BOA-534）。公式の払戻（race_payouts）は3連単〜拡連複にだけ人気が付き、単勝・複勝には
+// 付かない（公式の結果ページにも出ない）。そこで締切時オッズ（race_odds_final、BOA-496）から順位を出す。
+// - 単勝: オッズの小さい順
+// - 複勝: 下限の小さい順、同じ下限なら上限の小さい順（公式に複勝の人気順の定めが見当たらないため、
+//   「最低でもこれだけ付く」下限を主にする。オッズ一覧の色分けも下限が基準）
+// - 同じオッズは同じ順位（1, 1, 3 …）。票なし（0.0）・欠場（キーなし）は順位を付けない
+function popularityFromFinalOdds(map, boat, isRange) {
+  const valid = (v) =>
+    v != null && (isRange ? v.low > 0 : typeof v === "number" && v > 0);
+  const mine = map?.[String(boat)];
+  if (!valid(mine)) return null;
+  const sortKey = (v) => (isRange ? [v.low, v.high] : [v, 0]);
+  const [a0, a1] = sortKey(mine);
+  const better = Object.values(map).filter((v) => {
+    if (!valid(v)) return false;
+    const [b0, b1] = sortKey(v);
+    return b0 < a0 || (b0 === a0 && b1 < a1);
+  });
+  return better.length + 1;
+}
+
+// 払戻の行のうち、単勝・複勝で公式の人気が無い行に、締切時オッズから出した人気を補う。
+// 払戻のある行（paid）だけ。不成立・特払・金額なしの行、締切時オッズが無いレースでは付けない
+function withFinalOddsPopularity(rows, finalOdds) {
+  if (!rows || !finalOdds) return rows;
+  const sources = {
+    win: { map: finalOdds.win, isRange: false },
+    place: { map: finalOdds.place, isRange: true },
+  };
+  return rows.map((row) => {
+    const source = sources[row.typeKey];
+    if (
+      !source?.map ||
+      row.status !== PAYOUT_STATUS.PAID ||
+      row.popularity != null ||
+      row.boats.length !== 1
+    ) {
+      return row;
+    }
+    const popularity = popularityFromFinalOdds(
+      source.map,
+      row.boats[0],
+      source.isRange,
+    );
+    return popularity == null
+      ? row
+      : { ...row, popularity, popularityFromFinalOdds: true };
+  });
+}
+
 // 払戻明細（payoutRows）が届いていない（RPC未適用・過去データ・直接クエリのフォールバック・
 // 軽量版の取得直後）ときの払戻表。旧 payout_* 列の payouts を払戻明細と同じ行の形に直す。
 // 旧列では不成立の勝式が NULL になる（078）ため、成立状態が分かっているときだけ補う:
@@ -501,6 +551,11 @@ function RaceResult({ prediction, raceId }) {
     failed: false,
   });
   const [reloadKey, setReloadKey] = useState(0);
+  // 締切時オッズ（公式、BOA-496）。単勝・複勝の人気を出すためだけに使う（BOA-534）。取れなくても払戻は出す
+  const [finalOddsState, setFinalOddsState] = useState({
+    raceId: null,
+    data: null,
+  });
   const reducedMotion = useMemo(
     () =>
       typeof window !== "undefined" &&
@@ -536,6 +591,24 @@ function RaceResult({ prediction, raceId }) {
       cancelled = true;
     };
   }, [finished, raceId, reloadKey]);
+
+  useEffect(() => {
+    if (!finished || !raceId) return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getRaceFinalOdds(raceId)
+      .then((data) => {
+        if (!cancelled) setFinalOddsState({ raceId, data });
+      })
+      .catch((err) => {
+        // 単勝・複勝の人気を出さないだけ（公式の払戻と他の券種の人気はそのまま出す）
+        console.error("締切時オッズ取得エラー:", err?.message ?? String(err));
+        if (!cancelled) setFinalOddsState({ raceId, data: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [finished, raceId]);
 
   const isCurrentRace = startTimingState.raceId === raceId;
   const startTimings = isCurrentRace ? startTimingState.data : null;
@@ -597,8 +670,13 @@ function RaceResult({ prediction, raceId }) {
 
   // 払戻は払戻明細（race_payouts、payoutRows）を正とする。届いていないときだけ旧 payout_* 列から
   // 同じ行の形を組み立てる（legacyPayoutRows）
-  const payoutRowsToShow =
-    result.payoutRows ?? legacyPayoutRows(result.payouts, outcome);
+  const payoutRowsToShow = withFinalOddsPopularity(
+    result.payoutRows ?? legacyPayoutRows(result.payouts, outcome),
+    finalOddsState.raceId === raceId ? finalOddsState.data : null,
+  );
+  const hasFinalOddsPopularity = (payoutRowsToShow ?? []).some(
+    (row) => row.popularityFromFinalOdds,
+  );
 
   const rowClassName = (position) => {
     if (position == null) return "rr-row is-unranked";
@@ -722,6 +800,12 @@ function RaceResult({ prediction, raceId }) {
             {t("result.payoutSectionTitle")}
           </div>
           <PayoutRowsTable rows={payoutRowsToShow} t={t} />
+          {/* 単勝・複勝の人気だけは公式の発表でなく締切時オッズから出しているため、その旨を書く */}
+          {hasFinalOddsPopularity && (
+            <p className="rr-note" data-testid="payout-popularity-note">
+              {t("result.popularityFromFinalOddsNote")}
+            </p>
+          )}
         </>
       )}
 

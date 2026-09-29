@@ -221,6 +221,7 @@
       "wide": "확연복"
     },
     "popularity": "인기 {{rank}}위",
+    "popularityFromFinalOddsNote": "단승·복승의 인기는 마감 시 오즈(공식)로 산출했습니다(복승은 하한이 낮은 순). 다른 권종의 인기는 공식 발표입니다",
     "fastestStartTag": "최속",
     "courseNote": "※진입 코스는 현재 표시하지 않습니다(데이터 정확도 확인 중입니다)",
     "missingRanksNote": "※이 레이스는 4착 이하의 착순 데이터가 수집되지 않아 일부 착순을 표시하지 않습니다",
