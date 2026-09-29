@@ -98,12 +98,3 @@
   color: var(--text-secondary);
 }
 
-/* 間隔が詰まる行（375pxで10走以上など）は、1つおきに下の段へ振り分ける。
-   字は小さくしない（BOA-537 ファン評価2周目） */
-.meet-sparkline-labels.is-staggered {
-  height: 26px;
-}
-
-.meet-sparkline-label.is-lower {
-  top: 13px;
-}

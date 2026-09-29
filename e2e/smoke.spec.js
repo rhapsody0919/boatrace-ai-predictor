@@ -1757,7 +1757,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
   });
 
-  test("走数が多い節でも、375pxで点の下の着順が読める間隔を保つ（BOA-537 ファン評価2周目）", async ({
+  test("走数が多い節でも、375pxで点の下の着順を1段・10pxで読める間隔に並べる（BOA-537 ファン評価2・3周目）", async ({
     page,
   }) => {
     // 2026-09-28 津11R（最終日）: 各艇10〜11走。9/21・22 の中止レースは出走表にだけ残る
@@ -1787,6 +1787,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
           minGap: Math.min(...gaps),
           // 最初の着順が左端近くにある（中止レースの空きで右に寄らない）
           firstOffset: labels[0].getBoundingClientRect().left - wrap.left,
+          // 全走を1段に並べる（2段に振り分けると段ごとに読んで順番を読み違える）
+          lines: new Set(
+            labels.map((x) => Math.round(x.getBoundingClientRect().top)),
+          ).size,
         };
       }),
     );
@@ -1794,6 +1798,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
       expect(row.font).toBeGreaterThanOrEqual(10);
       expect(row.minGap).toBeGreaterThanOrEqual(6);
       expect(row.firstOffset).toBeLessThan(10);
+      expect(row.lines).toBe(1);
     }
   });
 

@@ -91,9 +91,8 @@ function MeetSparkline({
   const numeric = values.filter((v) => typeof v === "number");
   const canDraw = numeric.length >= (allowSinglePoint ? 1 : 2);
 
-  // 箱の実際の幅（px）。点の下の着順の間隔を実寸で測り、詰まるときだけ2段に
-  // 振り分ける（BOA-537 ファン評価2周目。走数で一律に字を小さくすると、PCでも
-  // 小さくなり、375pxでは間隔1px前後まで詰まった）
+  // 箱の実際の幅（px）。点の下の着順の間隔を実寸で測り、詰まる行だけ字を小さくする
+  // （BOA-537 ファン評価2周目。走数で一律に字を小さくすると、PCでも小さくなった）
   const [boxWidth, setBoxWidth] = useState(0);
   const hasLabels = Boolean(pointLabels);
   useEffect(() => {
@@ -150,12 +149,20 @@ function MeetSparkline({
     .filter(Boolean);
   const path = drawn.map((d) => `${x(d.i).toFixed(2)},${y(d.v).toFixed(2)}`);
   const lastIndex = drawn.length - 1;
-  // 点の下の着順の間隔（px）。全角1文字（約10px）と余白が収まらなければ2段にする
+  // 点の下の着順の間隔（px）
   const labelGapPx =
     values.length > 1 && boxWidth > 0
       ? (boxWidth * (innerW / W)) / (values.length - 1)
       : Infinity;
-  const staggerLabels = Boolean(pointLabels) && labelGapPx < 14;
+  // 間隔が足りない行は、間引かずに字を小さくして全走を1段に並べる。2段に振り分けると
+  // 段ごとに左から読んで順番を読み違える（BOA-537 ファン評価3周目）。
+  // 全角1文字は字の大きさとほぼ同じ幅なので、間隔より3px小さくすれば隣と接しない。
+  // 7px を下限にする（それ以下は読めない）。375px（線の幅149px）では、12走までは10px、
+  // 13〜15走で小さくなり、16走以上は7pxのまま数字どうしが接しうる。1節は多くて12走前後
+  const labelFontPx =
+    pointLabels && labelGapPx < 13
+      ? Math.max(7, Math.floor((labelGapPx - 3) * 2) / 2)
+      : null;
 
   // 値のある点のうち、ポインタの横位置に最も近いものを選ぶ。
   // viewBox は `preserveAspectRatio="none"` で横に引き伸ばされるため、
@@ -201,11 +208,7 @@ function MeetSparkline({
     <div
       className="meet-sparkline-wrap"
       ref={wrapRef}
-      style={{
-        height: pointLabels
-          ? height + LABEL_STRIP_HEIGHT * (staggerLabels ? 2 : 1)
-          : height,
-      }}
+      style={{ height: pointLabels ? height + LABEL_STRIP_HEIGHT : height }}
       onPointerMove={pickNearest}
       onPointerDown={pickNearest}
       onPointerLeave={() => setActiveIndex(null)}
@@ -283,10 +286,7 @@ function MeetSparkline({
         // ので、SVG の text にすると文字が横に潰れる。横位置は点と同じ割合で合わせる
         // 走数が多い（10走以上）と375pxで数字の間隔が10px前後まで詰まる。字を
         // 小さくして、全角の記号（落・欠など）どうしが接しないようにする（BOA-537）
-        <div
-          className={`meet-sparkline-labels${staggerLabels ? " is-staggered" : ""}`}
-          aria-hidden="true"
-        >
+        <div className="meet-sparkline-labels" aria-hidden="true">
           {pointLabels.map((lab, i) =>
             lab === null || lab === undefined ? null : (
               <span
@@ -295,12 +295,13 @@ function MeetSparkline({
                   "meet-sparkline-label",
                   lab.win ? "is-win" : "",
                   lab.mark ? "is-mark" : "",
-                  // 2段にするときは1つおきに下の段へ（隣どうしの間隔が倍になる）
-                  staggerLabels && i % 2 === 1 ? "is-lower" : "",
                 ]
                   .filter(Boolean)
                   .join(" ")}
-                style={{ left: `${((x(i) / W) * 100).toFixed(2)}%` }}
+                style={{
+                  left: `${((x(i) / W) * 100).toFixed(2)}%`,
+                  ...(labelFontPx ? { fontSize: `${labelFontPx}px` } : {}),
+                }}
               >
                 {lab.text}
               </span>

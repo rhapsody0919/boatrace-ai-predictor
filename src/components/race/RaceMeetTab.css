@@ -546,3 +546,17 @@
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
 }
+
+/* スマホでは名前の列を詰めて、推移の線と着順の段に幅を回す（BOA-537 ファン評価3周目）。
+   7.5em（120px）だと 375px で線の幅が109pxしかなく、名前の右に約64pxの空きが
+   あった。5em でも5文字の名前と艇番が入る。長い名前は省略記号で切る */
+@media (max-width: 480px) {
+  .rmt-trend-row,
+  .rmt-trend-head {
+    grid-template-columns: 5em 1fr 3em;
+  }
+
+  .rmt-trend-label .rmt-name {
+    white-space: nowrap;
+  }
+}
