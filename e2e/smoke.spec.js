@@ -1712,6 +1712,48 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
   });
 
+  test("今節タブの6艇の推移で、各走の着順を点の下に同じ横位置で出す（BOA-537）", async ({
+    page,
+  }) => {
+    // 2026-06-20 尼崎12R: 4号艇 谷津幸宏は 6/17 11R を欠場（着順の並び 5・欠・1・3・2・1）
+    await page.goto("/race/2026-06-20-13-12");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const rows = page.locator(".rmt-trend-row");
+    await expect(rows).toHaveCount(6, { timeout: 25000 });
+    const yatsu = rows.filter({ hasText: "谷津" });
+    await expect(yatsu.locator(".meet-sparkline-label")).toHaveText([
+      "5",
+      "欠",
+      "1",
+      "3",
+      "2",
+      "1",
+    ]);
+    // 1着は強調、欠などの記号は控えめ
+    await expect(yatsu.locator(".meet-sparkline-label").nth(2)).toHaveClass(
+      /is-win/,
+    );
+    await expect(yatsu.locator(".meet-sparkline-label").nth(1)).toHaveClass(
+      /is-mark/,
+    );
+    // 数字どうしが重ならない（各行）
+    const overlaps = await rows.evaluateAll((els) =>
+      els.map((r) => {
+        const ls = [...r.querySelectorAll(".meet-sparkline-label")].map((x) =>
+          x.getBoundingClientRect(),
+        );
+        let n = 0;
+        for (let i = 1; i < ls.length; i += 1)
+          if (ls[i].left < ls[i - 1].right) n += 1;
+        return n;
+      }),
+    );
+    expect(overlaps.every((n) => n === 0)).toBe(true);
+    await expect(page.locator(".rmt-spark-note").first()).toContainText(
+      "点の下の数字はその走の着順です",
+    );
+  });
+
   test("今節タブの6艇の推移は、1走の選手も前走の値が右端の列にそろい、選択中の行はホバーと区別できる（BOA-550 ファン評価）", async ({
     page,
   }) => {
