@@ -31,6 +31,7 @@ import {
   powerIndexTone,
 } from "../../src/utils/smallSampleRate.js";
 import { officialTallyState } from "../../src/utils/motorGeneration.js";
+import { EXHIBITION_TIME_DOMAIN } from "../../src/utils/chartDomain.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -84,7 +85,8 @@ check(
 check(
   "選手ページ: 同じ日に2回走った日は、横軸にレース番号を添える",
   racerService.includes("raceNo: Number(e.race_id.slice(-2))") &&
-    card.includes("runsOnDate.get(row.date) > 1"),
+    // 2回走った日が1日でもあれば全部の点に付ける（BOA-557。付く点と付かない点が混ざらない）
+    card.includes("runsOnDate.values()].some((n) => n > 1)"),
 );
 check(
   "選手ページ: 説明文の「）」と「、」の間に空白を入れない（1つのテンプレート文字列で組む）",
@@ -183,7 +185,7 @@ check(
 // 公式の 0.0 が「集計前」か「本当に0%」かを区別する（2026-09-29 ファン4人・ユーザー承認）
 check(
   "一覧: 公式2連率・3連率がどちらも0で、結果の出た走があり、会場公式の出走数が0（集計前）のときだけ「集計前」を添える（公式の0.0は残す）",
-  /isOfficialPending = \(row\) =>\s*Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*row\.sample_count > 0 &&\s*officialTallyState\(venueHasOfficialStats, row\.race_count\) === "pending"/.test(
+  /isOfficialPending = \(row\) =>\s*Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*\(row\.rate_source === "official" \|\| row\.sample_count > 0\) &&\s*officialTallyState\(venueHasOfficialStats, row\.race_count\) === "pending"/.test(
     chart,
   ) &&
     chart.includes('t("analysis.motor.officialPendingBadge")') &&
@@ -191,7 +193,7 @@ check(
       "official_3rate: row.motor_3rate ?? null",
     ) &&
     read("src/services/supabaseDataService.js").includes(
-      "`race-motor-breakdown-v7-",
+      "`race-motor-breakdown-v8-",
     ),
 );
 check(
@@ -290,6 +292,80 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       // 枠番別成績の展示タイムの列が、平均の値と推移の図だと分かる見出し（BOA-549）
       /平均|avg|平均|평균/i.test(motor.exhibitionTrendHeader),
   );
+}
+
+// ---- BOA-557（BOA-549 ファン評価の残り） ----
+{
+  const chart = read("src/components/analysis/MotorConditionChart.jsx");
+  const service = read("src/services/supabaseDataService.js");
+  const racerCard = read("src/components/racer/RacerMotorStatusCard.jsx");
+  const trendChart = read("src/components/analysis/TrendLineChart.jsx");
+  // 当日のレースも「このレースの直前まで」。終了後に開くとそのレース自身の結果が入り、
+  // 翌日（過去レース扱い）に開いたときと数字が変わっていた
+  check(
+    "ドリルダウンは当日のレースも「このレースの直前まで」で集計する",
+    /const beforeRaceId = selectedRace \?\? null;/.test(chart),
+  );
+  check(
+    "一覧の機力指数も当日のレースは「このレースの直前まで」",
+    /this\.getMotorPowerIndex\(\s*venueCode,\s*row\.motor_number,\s*days,\s*raceId,?\s*\)/.test(
+      service,
+    ),
+  );
+  check(
+    "過去レースの行にも公式3連率がある（「集計前」の判定）",
+    /rate_source: "official",[\s\S]{0,200}official_3rate: row\.motor_3rate/.test(
+      service,
+    ),
+  );
+  check(
+    "「集計前」の判定は、過去レースの行では走数の条件を見ない",
+    /row\.rate_source === "official" \|\| row\.sample_count > 0/.test(chart),
+  );
+  check(
+    "過去レースの一覧でも「集計前」の印と注記を出す",
+    /officialMode && isOfficialPending\(row\)/.test(chart) &&
+      !/!officialMode &&\s*breakdown\.some\(isOfficialPending\)/.test(chart),
+  );
+  // 展示タイムの縦軸の端は0.2秒の倍数（6.43 / 6.63 … や上端だけ7.10にしない）
+  const [lo, hi] = EXHIBITION_TIME_DOMAIN;
+  check(
+    "展示タイムの縦軸の端が0.2秒の倍数で、上下に余白がある",
+    lo(6.53) === 6.4 && hi(7.04) === 7.2 && lo(6.6) === 6.4 && hi(6.9) === 7,
+  );
+  check(
+    "展示タイムのグラフ（モータ情報・選手ページ）が丸めた範囲を使う",
+    chart.includes("yAxisDomain={EXHIBITION_TIME_DOMAIN}") &&
+      racerCard.includes("yAxisDomain={EXHIBITION_TIME_DOMAIN}") &&
+      !/dataMin - 0\.1/.test(chart + racerCard),
+  );
+  check(
+    "使用履歴のグラフは選手名を間引かず、直線でつなぐ",
+    /slantXLabels\b/.test(chart) &&
+      /interval: 0/.test(trendChart) &&
+      !/dataKey: "rate[23]",[\s\S]{0,160}type: "monotone"/.test(
+        chart.slice(chart.indexOf("usageHistoryChartData}")),
+      ),
+  );
+  check(
+    "選手ページの展示タイムの横軸は、レース番号を全部の点に付けるか全部付けない",
+    /hasDoubleRunDay && row\.raceNo/.test(racerCard),
+  );
+  check(
+    "使用履歴のグラフの向きの説明は、グラフが出ているときだけ",
+    /usageHistoryChartData\.length > 1 &&\s*` \$\{t\("analysis\.motor\.usageHistoryChartNote"\)\}`/.test(
+      chart,
+    ),
+  );
+  for (const lang of ["ja", "en", "zh-TW", "ko"]) {
+    const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
+      .motor;
+    check(
+      `${lang}: 使用履歴の注記からグラフの向きの文を分け、別キーにある`,
+      typeof motor.usageHistoryChartNote === "string" &&
+        !motor.usageHistoryNote.includes(motor.usageHistoryChartNote),
+    );
+  }
 }
 
 if (failures.length > 0) {

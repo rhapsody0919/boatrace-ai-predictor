@@ -4,6 +4,7 @@ import TrendLineChart from "../analysis/TrendLineChart";
 import MotorStatBadgeRow from "../MotorStatBadgeRow";
 import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
 import { formatPowerIndex, powerIndexTone } from "../../utils/smallSampleRate";
+import { EXHIBITION_TIME_DOMAIN } from "../../utils/chartDomain";
 import "./RacerMotorStatusCard.css";
 
 /**
@@ -31,16 +32,18 @@ export default function RacerMotorStatusCard({ status }) {
     preGeneration,
   } = status;
   const venueName = VENUE_NAMES[venueCode] ?? `${venueCode}`;
-  // 同じ日に2回走ると横軸に同じ日付が並び、何の違いか読めない。その日だけ
-  // レース番号を添える（BOA-513、2026-09-29 ファン評価）
+  // 同じ日に2回走ると横軸に同じ日付が並び、何の違いか読めない。レース番号を
+  // 添える（BOA-513）。その日だけに付けると、付く点と付かない点が混ざって
+  // 読みにくいので、1日でも2回走った日があれば全部の点に付ける（BOA-557）
   const trendRows = meetTrend ?? [];
   const runsOnDate = trendRows.reduce(
     (count, row) => count.set(row.date, (count.get(row.date) ?? 0) + 1),
     new Map(),
   );
+  const hasDoubleRunDay = [...runsOnDate.values()].some((n) => n > 1);
   const chartData = trendRows.map((row) => ({
     date:
-      runsOnDate.get(row.date) > 1 && row.raceNo
+      hasDoubleRunDay && row.raceNo
         ? `${row.date.slice(5)} ${row.raceNo}R`
         : row.date.slice(5),
     day: row.date.slice(5),
@@ -126,7 +129,8 @@ export default function RacerMotorStatusCard({ status }) {
           <TrendLineChart
             data={chartData}
             yAxisLabel="展示タイム (秒)"
-            yAxisDomain={["dataMin - 0.1", "dataMax + 0.1"]}
+            yAxisDomain={EXHIBITION_TIME_DOMAIN}
+            yTickDecimals={2}
             tooltipFormatter={(value) => value.toFixed(2)}
             series={[
               {

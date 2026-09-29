@@ -22,6 +22,7 @@ function TrendLineChart({
   yAxisDomain,
   tooltipFormatter,
   yTickDecimals,
+  slantXLabels = false,
 }) {
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -30,7 +31,14 @@ function TrendLineChart({
         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
       >
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="date" />
+        {/* slantXLabels: 横軸が選手名のように長いとき、375pxで重なった目盛りが
+            間引かれて一部しか出ない（BOA-557）。斜めにして全部出す */}
+        <XAxis
+          dataKey="date"
+          {...(slantXLabels
+            ? { angle: -35, textAnchor: "end", height: 60, interval: 0 }
+            : {})}
+        />
         <YAxis
           // 回転したラベルを縦方向の中央に置く。既定（start 揃え）だと長いラベルが
           // 375px で上に切れる（「2連率・3連率 (%」。BOA-549）

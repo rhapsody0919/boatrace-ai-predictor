@@ -15,6 +15,7 @@ import RacerGradeBadge from "../racer/RacerGradeBadge";
 import MotorStatBadgeRow from "../MotorStatBadgeRow";
 import MotorRecordStatCards from "../MotorRecordStatCards";
 import TrendLineChart from "./TrendLineChart";
+import { EXHIBITION_TIME_DOMAIN } from "../../utils/chartDomain";
 import DrillDownHeader from "./DrillDownHeader";
 import MotorWakuStatsGrid from "./MotorWakuStatsGrid";
 import MotorRacerWakuDrillDown from "./MotorRacerWakuDrillDown";
@@ -187,9 +188,12 @@ function MotorConditionChart({
             return;
           }
         }
-        // 過去レースは「このレースの直前まで」で集計する（BOA-521）。今日から遡ると
-        // レース後の走りまで入り、「このときモーターはどうだったか」を振り返れない
-        const beforeRaceId = isPast ? selectedRace : null;
+        // 「このレースの直前まで」で集計する。過去レース（BOA-521）は今日から遡ると
+        // レース後の走りまで入り、「このときモーターはどうだったか」を振り返れない。
+        // 当日のレースも同じにする（BOA-557）。終了後に開くとそのレース自身の結果が
+        // 入り、翌日（過去レース扱い）に開いたときと数字が変わっていた。発走前は
+        // 直前までの結果＝今までの結果なので、見える数字は変わらない
+        const beforeRaceId = selectedRace ?? null;
         const [
           trend,
           power,
@@ -306,10 +310,12 @@ function MotorConditionChart({
   // 公式の2連率・3連率がどちらも 0 で、このレースより前に結果の出た走があり、会場公式の
   // 出走数が 0（前の節で3着以内に入らなかった「集計済みの 0%」と区別する。値の無い
   // 会場は断定しないので付けない。2026-09-29 ファン4人のパネル・ユーザー承認、ファン評価 P1）
+  // 過去レースの行（公式値）は自社の走数を持たないので、走数の条件は見ない
+  // （BOA-557。会場公式の出走数がレース日時点で 0 なら、公式の累計はまだ付いていない）
   const isOfficialPending = (row) =>
     Number(row.official_2rate) === 0 &&
     Number(row.official_3rate) === 0 &&
-    row.sample_count > 0 &&
+    (row.rate_source === "official" || row.sample_count > 0) &&
     officialTallyState(venueHasOfficialStats, row.race_count) === "pending";
   const drillTallyState = officialTallyState(
     venueHasOfficialStats,
@@ -665,6 +671,13 @@ function MotorConditionChart({
                               {t("analysis.motor.firstUseBadge")}
                             </span>
                           )}
+                          {/* 過去レースはこの列が公式の2連率なので、「集計前」もここに
+                              添える（当日は公式2連率の列に添える。BOA-557） */}
+                          {officialMode && isOfficialPending(row) && (
+                            <span className="motor-waku-n motor-official-pending">
+                              {t("analysis.motor.officialPendingBadge")}
+                            </span>
+                          )}
                         </td>
                         {!officialMode && (
                           <td className="rate">
@@ -758,8 +771,7 @@ function MotorConditionChart({
                 ? t("analysis.motor.officialModeSourceNote")
                 : t("analysis.motor.officialSourceNote")}
               {/* 「集計前」の意味は、印が付いている行があるときだけ書く（ファン評価 P2） */}
-              {!officialMode &&
-                breakdown.some(isOfficialPending) &&
+              {breakdown.some(isOfficialPending) &&
                 t("analysis.motor.officialPendingNote")}
               {/* 会場公式サイト由来の列（1着率・優出数・優勝数）は、表に出ているものだけを
                   挙げる。1つも無い会場（戸田など）では文ごと出さない（BOA-513。列名が空の
@@ -1012,7 +1024,7 @@ function MotorConditionChart({
               data={exhibitionChartData}
               yAxisLabel={t("analysis.motor.exhibitionYAxis")}
               yTickDecimals={2}
-              yAxisDomain={["dataMin - 0.1", "dataMax + 0.1"]}
+              yAxisDomain={EXHIBITION_TIME_DOMAIN}
               tooltipFormatter={(value) => value.toFixed(2)}
               series={[
                 {
@@ -1039,19 +1051,22 @@ function MotorConditionChart({
             <TrendLineChart
               data={usageHistoryChartData}
               yAxisLabel={t("analysis.motor.yAxis")}
+              slantXLabels
               tooltipFormatter={(value) => `${value.toFixed(1)}%`}
               series={[
                 {
                   dataKey: "rate2",
                   name: t("analysis.motor.legend2"),
                   stroke: "var(--brand-accent-primary)",
-                  type: "monotone",
+                  // 点は選手（節）ごとの別々の値。曲線でつなぐと間に値があるように
+                  // 見えるので直線にする（BOA-557）
+                  type: "linear",
                 },
                 {
                   dataKey: "rate3",
                   name: t("analysis.motor.legend3"),
                   stroke: "var(--brand-accent-secondary)",
-                  type: "monotone",
+                  type: "linear",
                 },
               ]}
             />
@@ -1095,7 +1110,12 @@ function MotorConditionChart({
               {t("analysis.motor.usageHistoryEmpty")}
             </div>
           )}
-          <p className="table-note">{t("analysis.motor.usageHistoryNote")}</p>
+          <p className="table-note">
+            {t("analysis.motor.usageHistoryNote")}
+            {/* グラフの向きの説明は、グラフが出ているとき（2節以上）だけ（BOA-557） */}
+            {usageHistoryChartData.length > 1 &&
+              ` ${t("analysis.motor.usageHistoryChartNote")}`}
+          </p>
 
           <h3 className="selected-motor-heading">
             {t("analysis.motor.partsHistoryHeading")}
