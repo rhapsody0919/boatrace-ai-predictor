@@ -61,8 +61,10 @@ function TurnPatternList({ patterns, result = null }) {
         <p className="turn-pattern-caption">{t("turnPatternList.caption")}</p>
       )}
       {displayPatterns.map((pattern, index) => {
+        // 不成立のレースは行ごとの印を付けず、まとめの「判定対象外（不成立）」だけにする
         const isRefunded =
           isResultMode &&
+          !isNotJudgeable &&
           judgement.refundedCourses.includes(pattern.winnerCourse);
         const isMatch =
           isResultMode &&

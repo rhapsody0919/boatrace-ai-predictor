@@ -465,6 +465,9 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
       "判定対象外（不成立）",
     );
     await expect(tab.locator(".turn-pattern-hit-tag")).toHaveCount(0);
+    // 不成立は行ごとの「返還」印を付けず、まとめの1行だけにする（モックどおり）
+    await expect(tab.locator(".turn-pattern-void-tag")).toHaveCount(0);
+    await expect(tab.locator(".turn-pattern-row--void")).toHaveCount(3);
     await expect(tab).not.toContainText("的中しました");
     await expect(tab.locator(".result-volatility-line").nth(1)).toContainText(
       "判定対象外（不成立）",
