@@ -144,10 +144,12 @@
   font-weight: 600;
 }
 
-/* Blog Grid */
+/* Blog Grid
+   カテゴリで絞ると件数が列数を下回る（1〜3件のカテゴリがある）。auto-fill だと
+   使われない列の枠が残って右が空くため auto-fit にする（BOA-528） */
 .blog-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 2rem;
   margin-top: 2rem;
 }

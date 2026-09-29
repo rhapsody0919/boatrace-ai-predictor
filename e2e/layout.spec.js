@@ -251,12 +251,20 @@ async function capDigestRowsPerSection(page, perSection) {
 }
 
 test.describe("レイアウト: /today はカードが列数より少なくても幅を余らせない（BOA-460）", () => {
-  for (const perSection of [1, 2]) {
+  // 1・2枚は上限列数（480px以上2列・1024px以上3列）を下回る側、3枚は1024px以上で
+  // ちょうど、6枚（「もっと見る」の手前まで）は上限を超えて2行になる側（BOA-528）
+  for (const perSection of [1, 2, 3, 6]) {
     test(`セクションのカードが${perSection}枚のとき空トラックが出ない`, async ({
       page,
     }) => {
       await capDigestRowsPerSection(page, perSection);
       await gotoAndSettle(page, `/today?date=${DIGEST_FIXED_DATE}`);
+      // networkidle はデータが届いた合図にならない。goto が遅いと、Supabase への
+      // 要求を出す前に一度 idle になり、その後の waitForLoadState は即座に返る。
+      // 2026-09-28/29 の手元実行で、カードが描画される前に数えて0枚になった（BOA-528）
+      await expect(page.locator(".digest-grid").first()).toBeVisible({
+        timeout: 30000,
+      });
 
       // 絞り込みが効いていない・カードが1枚も出ていない状態で
       // 「空トラックが無い」と判定してしまうのを防ぐ（無言の空振り対策）
@@ -446,4 +454,49 @@ test.describe("レイアウト: /hit-races は的中が列数より少なくて�
       expectNoWastedGrids(await inspectGrids(page));
     });
   }
+});
+
+/**
+ * BOA-528 の再現テスト（/blog のカテゴリ絞り込み）。
+ *
+ * `/blog` の記事一覧（`.blog-grid`）は `repeat(auto-fill, minmax(320px, 1fr))` で
+ * 並んでいた。上の PAGES は「すべて」（121件）のまま測るため列が埋まって通るが、
+ * カテゴリで絞ると件数が列数を下回る（「リスク管理」1件・「実績分析」2件・
+ * 「上級者向け」3件）。1440px以上は3列なので、1件のカテゴリで右に2列分の空白が残る。
+ *
+ * 記事はバンドルされた静的データ（src/data/blogPosts.js）なので、本番データにも
+ * 通信にも依存しない。カテゴリを全部押して、そのたびにグリッドを検査する。
+ */
+test.describe("レイアウト: /blog はカテゴリで絞って件数が列数より少なくても幅を余らせない（BOA-528）", () => {
+  test("どのカテゴリでも空トラックが出ない", async ({ page }) => {
+    await gotoAndSettle(page, "/blog");
+    const grid = page.locator(".blog-grid");
+    await expect(grid.locator(":scope > *").first()).toBeVisible();
+
+    const buttons = page.locator(".category-filter button");
+    const total = await buttons.count();
+    expect(total, "カテゴリのボタンが見つかりません").toBeGreaterThan(1);
+
+    const counts = {};
+    const found = [];
+    // 先頭は「すべて」。PAGES の検査で見ているので飛ばす
+    for (let i = 1; i < total; i += 1) {
+      const button = buttons.nth(i);
+      const category = (await button.textContent()).trim();
+      await button.click();
+      await expect(button).toHaveClass(/active/);
+      counts[category] = await grid.locator(":scope > *").count();
+      const result = await inspectGrids(page);
+      for (const f of result.found) found.push({ category, ...f });
+    }
+
+    // 件数の少ないカテゴリが無くなると、このテストは何も検査しなくなる
+    // （無言の空振り対策）。1440px以上の3列を下回るカテゴリが残っていることを確かめる
+    expect(
+      Math.min(...Object.values(counts)),
+      `列数を下回るカテゴリがありません: ${JSON.stringify(counts)}`,
+    ).toBeLessThanOrEqual(2);
+
+    expectNoWastedGrids({ found, gridsChecked: total - 1 });
+  });
 });
