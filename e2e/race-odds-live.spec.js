@@ -69,12 +69,21 @@ const SNAPSHOT_ROW = (() => {
 
 async function setup(
   page,
-  { now = BEFORE_DEADLINE, snapshots = [SNAPSHOT_ROW], live } = {},
+  {
+    now = BEFORE_DEADLINE,
+    snapshots = [SNAPSHOT_ROW],
+    live,
+    final = null,
+  } = {},
 ) {
   await page.clock.setFixedTime(now);
   const calls = [];
   await page.route("**/rest/v1/race_odds**", (route) =>
     route.fulfill({ json: snapshots }),
+  );
+  // 締切時オッズ（公式、BOA-496）。後から登録した route が優先される（race_odds** にも一致するため分ける）
+  await page.route("**/rest/v1/race_odds_final**", (route) =>
+    route.fulfill({ json: final ? [final] : [] }),
   );
   await page.route("**/api/odds/live**", async (route) => {
     const p = new URL(route.request().url()).searchParams.get("page");
@@ -441,5 +450,275 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
       "https://www.boatrace.jp/owpc/pc/race/oddstf?rno=8&jcd=03&hd=20260928",
     );
     expect(calls).toEqual([]);
+  });
+});
+
+/**
+ * 締切時オッズ（公式、BOA-496）の固定。race_odds_final を route でモックする。
+ *
+ * - あり: 表は締切時オッズだけ（記録値と混ぜない）。状態の1行は「締切時オッズ（公式）｜14:24 締切｜BOATRACE公式から取得」、
+ *   更新ボタンなし
+ * - 一部の券種だけ: 取れた券種は締切時オッズ、取れなかった券種は従来の表示（記録値と注記）。3連単の表の「2単」は、
+ *   締切時の2連単が無ければ「-」（記録値を混ぜない）
+ * - なし: 従来の表示のまま
+ * - 推移: 最後の点は「締切時（公式）」、0分前の記録は外す、最後の区間は点線、パネルの下に注記
+ */
+test.describe("締切時オッズ（公式、BOA-496）", () => {
+  test.slow();
+
+  // 締切時オッズ: 記録（スナップショット）と区別できるよう、値を変えて作る
+  const bump = (map, add) =>
+    Object.fromEntries(
+      Object.entries(map).map(([k, v]) => [
+        k,
+        typeof v === "number"
+          ? Math.round((v + add) * 10) / 10
+          : { low: v.low + add, high: v.high + add },
+      ]),
+    );
+  const FINAL_T3 = bump(SNAPSHOT_ROW.trifecta_all, 1);
+  const FINAL_EXACTA = bump(PARSED["2tf"].data.exactaAll, 2);
+  const FINAL_ROW = {
+    captured_at: "2026-09-28T05:31:00Z",
+    win_all: { 1: 1.3, 2: 3.2, 3: 6.0, 4: 0, 5: 27.3, 6: 18.2 },
+    place_all: Object.fromEntries(
+      [1, 2, 3, 4, 5, 6].map((n) => [n, { low: 1.0 + n, high: 2.0 + n }]),
+    ),
+    trifecta_all: FINAL_T3,
+    trio_all: bump(PARSED["3f"].data.trioAll, 1),
+    exacta_all: FINAL_EXACTA,
+    quinella_all: bump(PARSED["2tf"].data.quinellaAll, 1),
+    wide_all: bump(PARSED.k.data.wideAll, 1),
+  };
+  // 締切直前（0分前）の記録
+  const AT_DEADLINE_ROW = {
+    ...SNAPSHOT_ROW,
+    captured_at: "2026-09-28T05:24:10Z",
+    trifecta_all: bump(SNAPSHOT_ROW.trifecta_all, 0.5),
+  };
+
+  test("あり: 表は締切時オッズだけ。状態の1行は公式・締切時刻・出典で、更新ボタンなし", async ({
+    page,
+  }) => {
+    const { calls, status } = await setup(page, {
+      now: AFTER_DEADLINE,
+      snapshots: [SNAPSHOT_ROW, AT_DEADLINE_ROW],
+      final: FINAL_ROW,
+    });
+    await expect(status).toHaveAttribute("data-state", "final");
+    await expect(status).toContainText("締切時オッズ（公式）");
+    await expect(status).toContainText("14:24 締切");
+    await expect(status).toContainText("BOATRACE公式から取得");
+    await expect(status).not.toContainText("取得（締切");
+    await expect(status.getByRole("button")).toHaveCount(0);
+    expect(calls).toEqual([]);
+    const v123 = FINAL_T3["1-2-3"].toFixed(1);
+    await expect(
+      page.getByRole("button", { name: `1-2-3 ${v123}`, exact: true }),
+    ).toBeVisible();
+    // 「2単」も締切時オッズ（記録の行には2連単が無い）
+    await expect(
+      page.locator(".rol-block").first().locator(".rol-col").first(),
+    ).toContainText(`2単${FINAL_EXACTA["1-2"].toFixed(1)}`);
+  });
+
+  test("あり（単勝・複勝）: 票0は「票なし」、「未取得」の注記は出さない", async ({
+    page,
+  }) => {
+    const { status } = await setup(page, {
+      now: AFTER_DEADLINE,
+      final: FINAL_ROW,
+    });
+    await page.getByRole("tab", { name: "単勝・複勝" }).click();
+    await expect(status).toContainText("締切時オッズ（公式）");
+    const table = page.locator(".rol-win-table");
+    await expect(table).toContainText("27.3");
+    await expect(table).toContainText("5.0-6.0");
+    const row4 = table.locator("tbody tr").filter({
+      has: page.locator(".rol-boat-badge", { hasText: /^4$/ }),
+    });
+    await expect(row4.locator("td").first()).toHaveText("票なし");
+    await expect(page.locator(".rol-callout")).toHaveCount(0);
+    // ファン評価2周目 P2: 締切時オッズの表の上に「締切前は票が少なく…ずれる」を出さない
+    await expect(page.locator(".rol-guide")).not.toContainText("締切前");
+  });
+
+  test("一部の券種だけ: 取れなかった券種は従来の表示。3連単の「2単」は記録値を混ぜず「-」", async ({
+    page,
+  }) => {
+    const { status } = await setup(page, {
+      now: AFTER_DEADLINE,
+      snapshots: [
+        {
+          ...SNAPSHOT_ROW,
+          exacta_all: PARSED["2tf"].data.exactaAll,
+          wide_all: PARSED.k.data.wideAll,
+        },
+      ],
+      final: {
+        ...FINAL_ROW,
+        exacta_all: null,
+        wide_all: null,
+      },
+    });
+    await expect(status).toContainText("締切時オッズ（公式）");
+    await expect(
+      page.locator(".rol-block").first().locator(".rol-col").first(),
+    ).toContainText("2単-");
+    // ファン評価1周目 P2: 「2単」が「-」の理由と、表示が切り替わる理由を示す
+    await expect(page.getByTestId("odds-final-missing")).toContainText(
+      "2連単の締切時オッズ（公式）は取得できなかった",
+    );
+    await page.getByRole("tab", { name: "拡連複" }).click();
+    await expect(status).not.toHaveAttribute("data-state", "final");
+    await expect(status).toContainText("13:54 取得（締切30分前）の値");
+    await expect(status).toContainText(
+      "締切時オッズ・確定の払戻とは一致しないことがあります",
+    );
+    await expect(page.getByTestId("odds-final-missing")).toContainText(
+      "この券種は締切時オッズ（公式）を取得できなかった",
+    );
+  });
+
+  test("なし: 従来の表示（記録値と注記）のまま", async ({ page }) => {
+    const { status } = await setup(page, {
+      now: AFTER_DEADLINE,
+      snapshots: [SNAPSHOT_ROW, AT_DEADLINE_ROW],
+      final: null,
+    });
+    await expect(status).not.toHaveAttribute("data-state", "final");
+    await expect(status).toContainText("14:24 取得（締切直前）の値");
+    await expect(page.getByTestId("odds-final-missing")).toHaveCount(0);
+  });
+
+  test("推移: 最後の点は「締切時（公式）」、0分前の記録を外し、最後の区間は点線、注記を出す", async ({
+    page,
+  }) => {
+    await setup(page, {
+      now: AFTER_DEADLINE,
+      snapshots: [SNAPSHOT_ROW, AT_DEADLINE_ROW],
+      final: FINAL_ROW,
+    });
+    await page
+      .getByRole("button", {
+        name: `1-2-3 ${FINAL_T3["1-2-3"].toFixed(1)}`,
+        exact: true,
+      })
+      .click();
+    const labels = page.locator(".rol-trend-label");
+    await expect(labels).toHaveText(["締切30分前", "締切時（公式）"]);
+    await expect(page.locator(".rol-trend-item.is-official")).toContainText(
+      FINAL_T3["1-2-3"].toFixed(1),
+    );
+    await expect(page.locator(".rol-trend")).not.toContainText("締切直前");
+    await expect(page.locator(".rol-sparkline-official-line")).toHaveCount(1);
+    // ファン評価1周目 P3: 点は長さ0の丸い線端（circle だと横に引き伸ばされて楕円になる）
+    await expect(page.locator("line.rol-sparkline-official")).toHaveCount(1);
+    await expect(page.getByTestId("odds-trend-note")).toContainText(
+      "その時点に取得した公式表示です",
+    );
+  });
+
+  // ファン評価で3回出た指摘の再現（BOA-547）: 推移の最後の点（締切時・公式）と「締切時（公式）」のマスの横位置が
+  // ずれる（375px では2段目の左端に落ちる）。点とマスが同じ列に並ぶことを 375・768・1440px で固定する
+  for (const width of [375, 768, 1440]) {
+    test(`推移: ${width}px で折れ線の点と値のマスの横位置がそろう（最後の点＝締切時（公式））`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      const snaps = [
+        "2026-09-28T04:24:00Z",
+        "2026-09-28T04:54:00Z",
+        "2026-09-28T05:09:00Z",
+        "2026-09-28T05:14:00Z",
+        "2026-09-28T05:19:00Z",
+      ].map((captured_at, i) => ({
+        ...SNAPSHOT_ROW,
+        captured_at,
+        trifecta_all: bump(SNAPSHOT_ROW.trifecta_all, 5 - i),
+      }));
+      await setup(page, {
+        now: AFTER_DEADLINE,
+        snapshots: [...snaps, AT_DEADLINE_ROW],
+        final: FINAL_ROW,
+      });
+      await page
+        .getByRole("button", {
+          name: `1-2-3 ${FINAL_T3["1-2-3"].toFixed(1)}`,
+          exact: true,
+        })
+        .click();
+      await expect(page.locator(".rol-trend-item")).toHaveCount(6);
+      const pos = await page.evaluate(() => {
+        const center = (r) => r.left + r.width / 2;
+        const items = [...document.querySelectorAll(".rol-trend-item")].map(
+          (el) => {
+            const r = el.getBoundingClientRect();
+            return { x: center(r), top: Math.round(r.top) };
+          },
+        );
+        const dot = document
+          .querySelector("line.rol-sparkline-official")
+          .getBoundingClientRect();
+        const poly = document.querySelector(".rol-sparkline polyline");
+        const svg = document.querySelector(".rol-sparkline");
+        const svgRect = svg.getBoundingClientRect();
+        const vbWidth = svg.viewBox.baseVal.width;
+        const firstX = Number(
+          poly.getAttribute("points").split(" ")[0].split(",")[0],
+        );
+        return {
+          items,
+          dotX: dot.left + dot.width / 2,
+          firstX: svgRect.left + (firstX / vbWidth) * svgRect.width,
+        };
+      });
+      const last = pos.items[pos.items.length - 1];
+      // 全マスが1段に並ぶ
+      expect(new Set(pos.items.map((i) => i.top)).size).toBe(1);
+      // 最後の点と「締切時（公式）」のマス、最初の点と「締切60分前」のマスの中心のずれが6px以内
+      expect(Math.abs(pos.dotX - last.x)).toBeLessThanOrEqual(6);
+      expect(Math.abs(pos.firstX - pos.items[0].x)).toBeLessThanOrEqual(6);
+    });
+  }
+
+  // /code-review 指摘の再現: 一部の券種だけの行をキャッシュすると、翌日には過去レースの7日TTLで返り続け、
+  // 後から Cron が埋めた券種が出ない。一部だけの行は保存せず、全券種そろった行だけ保存する
+  test("キャッシュ: 一部の券種だけの行は保存せず、全券種そろった行だけ保存する", async ({
+    page,
+  }) => {
+    const cacheKey = `boatai:race-odds-final-v1-${RACE}`;
+    const { status } = await setup(page, {
+      now: AFTER_DEADLINE,
+      final: { ...FINAL_ROW, wide_all: null },
+    });
+    await expect(status).toContainText("締切時オッズ（公式）");
+    expect(
+      await page.evaluate((k) => localStorage.getItem(k), cacheKey),
+    ).toBeNull();
+
+    const page2 = await page.context().newPage();
+    const second = await setup(page2, {
+      now: AFTER_DEADLINE,
+      final: FINAL_ROW,
+    });
+    await expect(second.status).toContainText("締切時オッズ（公式）");
+    expect(
+      await page2.evaluate((k) => localStorage.getItem(k), cacheKey),
+    ).not.toBeNull();
+  });
+
+  test("記録が無くても締切時オッズだけで表を出す", async ({ page }) => {
+    const { status } = await setup(page, {
+      now: AFTER_DEADLINE,
+      snapshots: [],
+      final: FINAL_ROW,
+    });
+    await expect(status).toContainText("締切時オッズ（公式）");
+    await expect(page.locator(".rol-block").first()).toBeVisible();
+    // ファン評価1周目 P3: ○分前の記録が無いときは「○分前の値は…」の注記を出さない
+    await page.getByRole("button", { name: /^1-2-3 / }).click();
+    await expect(page.locator(".rol-trend-item.is-official")).toBeVisible();
+    await expect(page.getByTestId("odds-trend-note")).toHaveCount(0);
   });
 });

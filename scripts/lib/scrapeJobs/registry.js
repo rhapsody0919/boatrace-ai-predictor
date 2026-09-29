@@ -108,6 +108,23 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 300,
     hosts: ["boatrace.jp"],
   },
+  // A3b 締切時オッズ（公式）の取り直し（BOA-496）。締切（races.start_time）の5分後が期限、許容幅55分（締切60分後まで）。
+  // 公式のページが「締切時オッズ」表示に変わっていなければ、単勝1ページの確認だけで no_values にし、5分おきに再試行する
+  // （1レース最大12回×1ページ）。変わっていれば5ページを並列に取り、race_odds_final（マイグレーション108）へ保存する。
+  // 券種ごとに成否を判定し、取れなかった券種だけを再試行で取り直す。race_odds・prediction_odds の導出には触れない。
+  // 実装: scripts/lib/scrapeJobs/finalOddsHandlers.js、api/cron/odds-final.js
+  odds_final: {
+    kind: "window",
+    offsets: [5],
+    graceMin: 55,
+    retrySec: 300,
+    leaseSec: 120,
+    claimLimit: 24,
+    concurrency: 4,
+    slotSecEstimate: 12,
+    maxDurationSec: 300,
+    hosts: ["boatrace.jp"],
+  },
   // A6 結果取得。発走5分後から90分後まで、5分おきに再試行
   result: {
     kind: "window",

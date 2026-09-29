@@ -25,6 +25,11 @@
  * 票0（公式の「0.0」）は「票なし」と出す。締切前は票が少なく、1.0 など確定払戻と大きくずれる値が出る
  * （BOA-496）ため、ガイド文で注意する。
  *
+ * 締切時オッズ（公式、BOA-496）: 締切後に Cron が公式の「締切時オッズ」表示を取り直して保存した値
+ * （race_odds_final）がある券種は、表をその値だけで出す（締切直前の記録値と1つの表に混ぜない）。状態の1行は
+ * 「締切時オッズ（公式）」、推移の最後の点は「締切時（公式）」（0分前の記録は推移から外す）。取れなかった
+ * レース・券種は従来の表示（記録値と注記）のまま。
+ *
  * 免責文言（BOA-311指示#1）: スクレイピング取得値のため、実際の投票内容は
  * 主催者発行のものと照合するよう明記する。
  */
@@ -140,8 +145,10 @@ function minutesBeforeOf(iso, deadline) {
 }
 
 // スナップショット履歴から指定キーの推移（発走までの残り分数付き）を作る。
-// ライブ値があれば末尾に「最新 8:14」として足す（スナップショットが無くてもライブ値だけで出す）
-function buildTrend(snapshots, betType, key, deadline, live) {
+// ライブ値があれば末尾に「最新 8:14」として足す（スナップショットが無くてもライブ値だけで出す）。
+// 締切時オッズ（公式）の表（finalMap）があれば、0分前（締切直前）の記録を外し、末尾に「締切時（公式）」を足す
+// （同じ時点を指す2つの値を並べない。記録は公式の更新の遅れを含むため）
+function buildTrend(snapshots, betType, key, deadline, live, finalMap) {
   const points = snapshots
     .map((snap) => {
       const raw = snap[betType.dataKey]?.[key];
@@ -151,7 +158,13 @@ function buildTrend(snapshots, betType, key, deadline, live) {
         value: raw,
       };
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((p) => !finalMap || p.minutesBefore !== 0);
+  if (finalMap) {
+    const finalValue = finalMap[key];
+    if (finalValue != null) points.push({ official: true, value: finalValue });
+    return points;
+  }
   const liveValue = live?.data?.[betType.dataKey]?.[key];
   if (liveValue != null) {
     // 時点はスナップショットと同じ「締切○分前」でそろえる（取得した時刻から数える。ファン評価2周目）
@@ -219,7 +232,9 @@ function withPanelAfterRow(items, selectedIdx, panel) {
 }
 
 // 小さな折れ線スパークライン（MotorWakuStatsGridと同じ発想のインラインSVG）。
-// 末尾がライブ値なら、その点を別色で打つ
+// 末尾がライブ値なら、その点を別色で打つ。
+// 各点の横位置は、下の値のマス（推移の点と同じ数の列）の中心に置く。点とマスを同じ列にそろえ、どの幅でも
+// 「どの点がどの値か」を位置で結べるようにする（ファン評価で3回出た指摘、BOA-547）
 function Sparkline({ points, isRange }) {
   if (points.length < 2) return null;
   const nums = points.map((p) => valueToNumber(p.value, isRange));
@@ -229,13 +244,17 @@ function Sparkline({ points, isRange }) {
   const width = 200;
   const height = 40;
   const xy = nums.map((v, i) => [
-    (i / (nums.length - 1)) * width,
+    ((i + 0.5) / nums.length) * width,
     height - ((v - min) / range) * height,
   ]);
-  const coords = xy
-    .map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`)
-    .join(" ");
+  const toPoints = (list) =>
+    list.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
   const last = xy[xy.length - 1];
+  const lastPoint = points[points.length - 1];
+  // 末尾が締切時オッズ（公式）なら、記録の折れ線は1つ手前まで。最後の区間を点線にし、点を青で打つ
+  // （記録の推移と別の時点・出どころのため）
+  const recorded = lastPoint.official ? xy.slice(0, -1) : xy;
+  const prev = xy[xy.length - 2];
   return (
     <svg
       className="rol-sparkline"
@@ -243,13 +262,29 @@ function Sparkline({ points, isRange }) {
       preserveAspectRatio="none"
       aria-hidden="true"
     >
-      <polyline points={coords} fill="none" strokeWidth="2" />
-      {points[points.length - 1].live && (
-        <circle
-          className="rol-sparkline-live"
-          cx={last[0]}
-          cy={last[1]}
-          r="3"
+      {recorded.length >= 2 && (
+        <polyline points={toPoints(recorded)} fill="none" strokeWidth="2" />
+      )}
+      {lastPoint.official && (
+        <line
+          className="rol-sparkline-official-line"
+          x1={prev[0]}
+          y1={prev[1]}
+          x2={last[0]}
+          y2={last[1]}
+          strokeWidth="2"
+        />
+      )}
+      {/* 点は長さ0の丸い線端で描く（preserveAspectRatio="none" で横に引き伸ばされても円のまま。circle だと楕円になる） */}
+      {(lastPoint.live || lastPoint.official) && (
+        <line
+          className={
+            lastPoint.official ? "rol-sparkline-official" : "rol-sparkline-live"
+          }
+          x1={last[0]}
+          y1={last[1]}
+          x2={last[0]}
+          y2={last[1]}
         />
       )}
     </svg>
@@ -308,6 +343,7 @@ function OddsButton({ comboKey, value, isRange, selected, onSelect, badges }) {
 function TrendPanel({ combo, trend, isRange, spanAll }) {
   const { t } = useTranslation();
   const labelOf = (p) => {
+    if (p.official) return t("oddsList.finalTrendLabel");
     if (p.live) {
       return p.minutesBefore === null
         ? t("oddsList.liveLatest")
@@ -327,10 +363,13 @@ function TrendPanel({ combo, trend, isRange, spanAll }) {
       ) : (
         <>
           <Sparkline points={trend} isRange={isRange} />
-          <div className="rol-trend-values">
+          <div
+            className="rol-trend-values"
+            style={{ "--rol-trend-count": trend.length }}
+          >
             {trend.map((p, i) => (
               <div
-                className={`rol-trend-item${p.live ? " is-live" : ""}`}
+                className={`rol-trend-item${p.live ? " is-live" : ""}${p.official ? " is-official" : ""}`}
                 key={i}
               >
                 <div className="rol-trend-value">
@@ -342,8 +381,32 @@ function TrendPanel({ combo, trend, isRange, spanAll }) {
               </div>
             ))}
           </div>
+          {trend.some((p) => p.official) &&
+            trend.some((p) => !p.official) && (
+            <p className="rol-trend-note" data-testid="odds-trend-note">
+              {t("oddsList.finalTrendNote")}
+            </p>
+          )}
         </>
       )}
+    </div>
+  );
+}
+
+// 締切時オッズ（公式）を表示しているときの状態の1行（BOA-496）。更新ボタンは出さない（値はもう変わらない）
+function FinalStatus({ deadline }) {
+  const { t } = useTranslation();
+  const time = deadline ? formatJstTime(deadline.toISOString()) : null;
+  return (
+    <div
+      className="rol-status is-official"
+      data-testid="odds-live-status"
+      data-state="final"
+    >
+      <span className="rol-official-dot" aria-hidden="true" />
+      <span className="rol-status-strong">{t("oddsList.liveFinal")}</span>
+      {time && <b>{t("oddsList.finalDeadlineAt", { time })}</b>}
+      <span className="rol-status-sub">{t("oddsList.finalSource")}</span>
     </div>
   );
 }
@@ -485,10 +548,15 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
   useEffect(() => {
     let cancelled = false;
     if (!raceId) return undefined;
-    supabaseDataService
-      .getRaceOddsSnapshots(raceId)
-      .then((data) => {
-        if (!cancelled) setSnapshotState({ raceId, data, failed: false });
+    // 締切時オッズ（公式、BOA-496）も同時に取る。どちらかの失敗は「データなし」にせず、まとめて再取得できるようにする
+    Promise.all([
+      supabaseDataService.getRaceOddsSnapshots(raceId),
+      supabaseDataService.getRaceFinalOdds(raceId),
+    ])
+      .then(([data, final]) => {
+        if (!cancelled) {
+          setSnapshotState({ raceId, data, final, failed: false });
+        }
       })
       .catch((err) => {
         // 取得失敗を「データなし」にしない。失敗として持ち、再取得できるようにする
@@ -611,12 +679,19 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
   const snapshotsFailed =
     snapshotState?.raceId === raceId && snapshotState.failed;
   const snapshotsLoading = !snapshots && !snapshotsFailed;
+  const finalOdds =
+    snapshotState?.raceId === raceId && !snapshotState.failed
+      ? (snapshotState.final ?? null)
+      : null;
   const absentBoats = new Set(
     absentState?.raceId === raceId ? absentState.absent : [],
   );
 
   const liveEntry = liveEnabled ? (livePages[betType.page] ?? null) : null;
-  const liveResult = liveEntry?.result ?? null;
+  // 締切時オッズ（公式）がこの券種にあれば、表・推移をその値で出す（ライブ取得・スナップショットより優先）
+  const finalMap = finalOdds?.[betType.dataKey] ?? null;
+  const useFinal = !!finalMap;
+  const liveResult = useFinal ? null : (liveEntry?.result ?? null);
   const deadline = getDeadlineDate(raceId, raceStartTime);
   const isRange = !!betType.isRange;
 
@@ -627,15 +702,19 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     ? snapshotLabel(t, latestSnapshot, deadline)
     : null;
 
-  // 表示する値: ライブ値があればライブ、無ければ最新スナップショット
-  const latestMap = liveResult
-    ? (liveResult.data?.[betType.dataKey] ?? null)
-    : (latestSnapshot?.[betType.dataKey] ?? null);
+  // 表示する値: 締切時オッズ（公式）があればそれ、無ければライブ値、無ければ最新スナップショット
+  const latestMap = useFinal
+    ? finalMap
+    : liveResult
+      ? (liveResult.data?.[betType.dataKey] ?? null)
+      : (latestSnapshot?.[betType.dataKey] ?? null);
   const placeMap =
     betType.id === "winPlace"
-      ? liveResult
-        ? (liveResult.data?.place ?? null)
-        : (latestSnapshot?.place ?? null)
+      ? useFinal
+        ? (finalOdds.place ?? null)
+        : liveResult
+          ? (liveResult.data?.place ?? null)
+          : (latestSnapshot?.place ?? null)
       : null;
 
   // 出走艇（全券種の最新値＋ライブ値のキーから、欠場の記録が無い過去レースの欠場艇を除く）
@@ -653,6 +732,9 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
         Object.entries(entry.result?.data ?? {})
           .filter(([key]) => key !== "win" && key !== "place")
           .map(([, map]) => map),
+      ),
+      ...BET_TYPES.filter((bt) => bt.id !== "winPlace").map(
+        (bt) => finalOdds?.[bt.dataKey] ?? null,
       ),
     ],
   });
@@ -703,7 +785,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
         </div>
       );
     }
-    if (snapshots.length === 0) {
+    if (snapshots.length === 0 && !finalOdds) {
       return (
         <div className="race-tabs-empty">
           <p>{t("oddsList.emptyTitle")}</p>
@@ -737,9 +819,14 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
   // スナップショットは保存時に票0（公式の0.0）を捨てている（cron の解析）。券種の表がある以上、出走艇の
   // 組み合わせでキーが無いのは票0なので、ライブ値と同じく「票なし」として出す（ファン評価1周目）
   // レンジ型（拡連複）は {low:0, high:0} で表す（数値の 0 を渡すと formatValue が落ちる。ファン評価2周目 P0）
+  // 締切時オッズ（公式）は票0を 0 のまま保存しているため、キーが無いのは欠場・未発売（「-」）
   const valueOf = (key) =>
     latestMap?.[key] ??
-    (latestMap && !liveResult ? (isRange ? { low: 0, high: 0 } : 0) : null);
+    (latestMap && !liveResult && !useFinal
+      ? isRange
+        ? { low: 0, high: 0 }
+        : 0
+      : null);
 
   const oddsButton = (comboKey, badges, value = valueOf(comboKey)) => (
     <OddsButton
@@ -764,6 +851,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
           selectedKey,
           deadline,
           liveResult,
+          useFinal ? finalMap : null,
         )}
         isRange={isRange}
         spanAll={spanAll}
@@ -776,11 +864,13 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     // ライブ表示中は2連単のライブ値（取得済みなら）、スナップショット表示中は同じ行の値
     // （2連単のページはチップを切り替えるまで取らないため、未取得の間はスナップショットの値を出す）
     // スナップショットの2連単でキーが無い組は、保存時に落ちた票0（セルと同じく「票なし」）
+    // 締切時オッズ（公式）の表では、2連単も締切時オッズだけを使う（取れていなければ「-」。記録値を混ぜない）
     const liveResult2tf = !!(liveResult && livePages["2tf"]?.result);
-    const exactaMap =
-      (liveResult ? livePages["2tf"]?.result?.data?.exactaAll : null) ??
-      latestSnapshot?.exactaAll ??
-      null;
+    const exactaMap = useFinal
+      ? (finalOdds.exactaAll ?? null)
+      : ((liveResult ? livePages["2tf"]?.result?.data?.exactaAll : null) ??
+        latestSnapshot?.exactaAll ??
+        null);
     return boats.map((first) => {
       const seconds = boats.filter((n) => n !== first);
       return (
@@ -815,7 +905,10 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
                     <span>{t("oddsList.exactaShortLabel")}</span>
                     <span>
                       {exacta === 0 ||
-                      (exacta === null && exactaMap && !liveResult2tf)
+                      (exacta === null &&
+                        exactaMap &&
+                        !liveResult2tf &&
+                        !useFinal)
                         ? t("oddsList.noVotes")
                         : (formatValue(exacta) ?? "-")}
                     </span>
@@ -898,6 +991,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     const placeOf = (n) => placeMap?.[String(n)] ?? null;
     const snapshotHasNull =
       !liveResult &&
+      !useFinal &&
       boats.some((n) => winOf(n) === null || placeOf(n) === null);
     const cell = (value, range) => {
       if (value == null) return "-";
@@ -967,7 +1061,25 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     }
     return (
       <>
-        <p className="rol-guide">{t(`oddsList.guide.${betType.id}`)}</p>
+        {/* 締切時オッズ（公式）の単勝・複勝では、「締切前は…ずれる」の注意を出さない（ファン評価2周目 P2） */}
+        <p className="rol-guide">
+          {t(
+            useFinal && betType.id === "winPlace"
+              ? "oddsList.guide.winPlaceFinal"
+              : `oddsList.guide.${betType.id}`,
+          )}
+        </p>
+        {/* 締切時オッズ（公式）が一部の券種だけ取れなかったとき、表示が切り替わる理由を示す（ファン評価1周目 P2） */}
+        {finalOdds && !useFinal && (
+          <p className="rol-callout" data-testid="odds-final-missing">
+            {t("oddsList.finalMissingForBetType")}
+          </p>
+        )}
+        {useFinal && betType.id === "trifecta" && !finalOdds.exactaAll && (
+          <p className="rol-callout" data-testid="odds-final-missing">
+            {t("oddsList.finalExactaMissing")}
+          </p>
+        )}
         {allNoVotes && (
           <p className="rol-callout">
             {betType.id === "winPlace"
@@ -1007,12 +1119,16 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
         ))}
       </div>
 
-      {!liveFailedWithoutData && (
-        <LiveStatus
-          entry={liveEntry}
-          fallbackLabel={fallbackLabel}
-          onRefresh={refreshLive}
-        />
+      {useFinal ? (
+        <FinalStatus deadline={deadline} />
+      ) : (
+        !liveFailedWithoutData && (
+          <LiveStatus
+            entry={liveEntry}
+            fallbackLabel={fallbackLabel}
+            onRefresh={refreshLive}
+          />
+        )
       )}
       {renderBody()}
     </div>

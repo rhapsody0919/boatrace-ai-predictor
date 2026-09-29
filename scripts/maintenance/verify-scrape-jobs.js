@@ -214,6 +214,7 @@ check(
     "boatcast_oriten",
     "exhibition",
     "odds",
+    "odds_final",
     "pcexpect",
     "pit_reports",
     "pseudo",

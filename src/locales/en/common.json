@@ -631,7 +631,8 @@
       "exacta": "Each block is the 1st-place boat and the boat number on each row is 2nd (30 combinations)",
       "quinella": "Each block is the lower boat number and each row is the partner boat (15 combinations, order does not matter)",
       "wide": "Each block is the lower boat number and each row is the partner boat. Odds are shown as a low-high range (15 combinations, order does not matter)",
-      "winPlace": "Win pays on the 1st-place boat; Place pays if the boat finishes in the top 2. Place odds are a low-high range. Before the deadline few bets are in, so odds such as 1.0 can differ greatly from the final payout"
+      "winPlace": "Win pays on the 1st-place boat; Place pays if the boat finishes in the top 2. Place odds are a low-high range. Before the deadline few bets are in, so odds such as 1.0 can differ greatly from the final payout",
+      "winPlaceFinal": "Win pays on the 1st-place boat; Place pays if the boat finishes in the top 2. Place odds are a low-high range"
     },
     "trendTitle": "Odds trend for {{combo}}",
     "deadlineLabel": "Just before deadline",
@@ -653,7 +654,7 @@
     "liveLoading": "Fetching latest odds… (takes about 10 seconds from the official site)",
     "liveFailed": "Could not fetch the latest odds. Showing values {{label}}",
     "liveRetry": "Retry",
-    "liveFinal": "Final odds at deadline",
+    "liveFinal": "Final odds at deadline (official)",
     "liveLatest": "Latest",
     "officialUpdated": "Official update",
     "fetchedAt": "fetched {{time}}",
@@ -666,7 +667,13 @@
     "snapshotLagNote": "These are the official values at the time of fetching. Official odds updates can lag by a few minutes, so they may differ from the final odds and payouts",
     "liveUnchanged": "No change (refreshing within 30 seconds returns the same values)",
     "liveFromNote": "From 90 minutes before the deadline, this tab shows the latest official odds.",
-    "officialOddsLink": "See odds on the official site"
+    "officialOddsLink": "See odds on the official site",
+    "finalDeadlineAt": "Deadline {{time}} JST",
+    "finalSource": "From the official BOATRACE site",
+    "finalTrendLabel": "At deadline (official)",
+    "finalTrendNote": "\"N min before\" values are the official display at the time we fetched them (official updates lag by a few minutes)",
+    "finalMissingForBetType": "We could not fetch the official final odds for this bet type, so values fetched before the deadline are shown",
+    "finalExactaMissing": "We could not fetch the official final exacta odds, so \"Ex.\" shows \"-\" (the Exacta tab has values fetched before the deadline)"
   },
   "meetTab": {
     "note": "Who needs a result in this series, and how the boat you pick has been running",

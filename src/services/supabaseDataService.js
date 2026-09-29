@@ -271,6 +271,19 @@ const cache = {
  */
 const inflightRequests = new Map();
 
+/**
+ * オッズ（race_odds・race_odds_final）のキャッシュTTL。本日以降のレースは、発走前は数分おきに、締切後は締切時オッズが
+ * 後から入るため短く（3分）する（既定の30分だと、取得前に開いて得た空の結果が30分固定される）。過去レースは追加取得が
+ * 無いため既定（withCache がキーの日付から推定する長いTTL）に任せる
+ */
+function raceOddsCacheTtl(raceId) {
+  const dateMatch = String(raceId).match(/^(\d{4}-\d{2}-\d{2})-/);
+  const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+  return dateMatch && dateMatch[1] < todayJst ? undefined : 3 * 60 * 1000;
+}
+
 function withCache(key, fetcher, ttl) {
   const effectiveTtl = ttl ?? inferTtlFromKey(key);
   const cached = cache.get(key, effectiveTtl);
@@ -5582,16 +5595,7 @@ export const supabaseDataService = {
    * オッズ一覧タブでは無意味なため除外する
    */
   getRaceOddsSnapshots(raceId) {
-    // オッズは発走前に数分おきに更新されるため、本日以降のレースは短いTTLにする
-    // （既定の30分だと、オッズ取得前に開いて得た空配列や、窓が増える前の
-    // スナップショットが30分間固定される）。過去レースは追加取得が無いため
-    // 既定（withCacheがキーの日付から推定する長いTTL）に任せる
-    const dateMatch = String(raceId).match(/^(\d{4}-\d{2}-\d{2})-/);
-    const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
-    const ttl =
-      dateMatch && dateMatch[1] < todayJst ? undefined : 3 * 60 * 1000;
+    const ttl = raceOddsCacheTtl(raceId);
 
     // v2: 単勝・複勝（odds_win_N・odds_place_N_low/high）を足した（BOA-487）。キーを変えないと、
     // localStorage に残った旧形（単勝なし）が過去レースで最大7日返る
@@ -5659,6 +5663,66 @@ export const supabaseDataService = {
             win: winOf(row),
             place: placeOf(row),
           }));
+      },
+      ttl,
+    );
+  },
+
+  /**
+   * 指定レースの締切時オッズ（公式）を取得する（BOA-496）。締切の後に Cron（api/cron/odds-final.js）が公式の
+   * 「締切時オッズ」表示のページを取り直して race_odds_final に保存した値。券種ごとに取れたものだけが入る
+   * （取れなかった券種は null）。票0は 0 のまま（スナップショットと違い、キーが無いのは欠場・未発売）。
+   *
+   * 戻り値: { capturedAt, win, place, trifectaAll, trioAll, exactaAll, quinellaAll, wideAll }、行が無ければ null。
+   * 本日のレースは、締切後に値が入るため短いTTLにする（getRaceOddsSnapshots と同じ理由）
+   */
+  getRaceFinalOdds(raceId) {
+    const ttl = raceOddsCacheTtl(raceId);
+    return withCache(
+      `race-odds-final-v1-${raceId}`,
+      async () => {
+        if (!supabase) {
+          throw new Error("Supabase client not initialized");
+        }
+        const nonEmpty = (v) =>
+          v && typeof v === "object" && Object.keys(v).length > 0 ? v : null;
+        let data;
+        try {
+          ({ data } = await supabase
+            .from("race_odds_final")
+            .select(
+              "captured_at, win_all, place_all, trifecta_all, trio_all, exacta_all, quinella_all, wide_all",
+            )
+            .eq("race_id", raceId)
+            .maybeSingle());
+        } catch (err) {
+          // マイグレーション108が未適用（テーブルが無い）のときだけ「締切時オッズなし」に倒す。画面は従来の
+          // スナップショットの表示のまま動く（適用とデプロイの順序を問わないため）。それ以外は上流に流す
+          if (err?.code === "PGRST205" || err?.code === "42P01") return null;
+          throw err;
+        }
+        if (!data) return null;
+        const final = {
+          capturedAt: data.captured_at,
+          win: nonEmpty(data.win_all),
+          place: nonEmpty(data.place_all),
+          trifectaAll: nonEmpty(data.trifecta_all),
+          trioAll: nonEmpty(data.trio_all),
+          exactaAll: nonEmpty(data.exacta_all),
+          quinellaAll: nonEmpty(data.quinella_all),
+          wideAll: nonEmpty(data.wide_all),
+        };
+        // 一部の券種だけの行は、Cron の再試行で後から埋まる。キャッシュに保存しない（withCache は TTL を読み出し時に
+        // キーの日付から決め直すため、今日3分で保存した途中の行が、翌日には過去レースの7日TTLで返り続ける）
+        const complete = [
+          final.win,
+          final.trifectaAll,
+          final.trioAll,
+          final.exactaAll,
+          final.quinellaAll,
+          final.wideAll,
+        ].every(Boolean);
+        return complete ? final : { ...final, fetchFailed: true };
       },
       ttl,
     );
