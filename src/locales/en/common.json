@@ -1064,6 +1064,7 @@
       "freshnessRaceBadge": "Race {{raceCount}}",
       "freshnessMeetBadge": "Meet {{meetCount}}",
       "officialSnapshotNote": "💡 \"Freshness\", \"venue rank\", \"1st-place rate\", \"Finals\" and \"Championships\" are values from each venue's official website and are updated only at the end of a meet, so the number of starts may not match the power index and usage history below (our own tally, up to the latest race).",
+      "venueRankRoundingNote": "The top-2 rate shown with the venue rank is the venue's official value, which truncates the second decimal, so it can differ from the rate in the list by 0.1.",
       "legend2": "Top-2 rate",
       "legend3": "Top-3 rate",
       "trendHeading": "Motor {{n}} trend",

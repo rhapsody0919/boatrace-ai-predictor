@@ -1059,6 +1059,7 @@
       "freshnessRaceBadge": "{{raceCount}}走目",
       "freshnessMeetBadge": "{{meetCount}}節目",
       "officialSnapshotNote": "💡 「モーター鮮度」「会場内順位」「1着率」「優出数」「優勝数」は会場公式サイトの値で、節の終わりにしか更新されません。そのため、下の機力指数・使用履歴（当サイトの集計、最新のレースまで）と走数が合わないことがあります。",
+      "venueRankRoundingNote": "会場内順位に添えた2連率は会場公式サイトの値で、小数2桁目を切り捨てるため、一覧の2連率と0.1違うことがあります。",
       "legend2": "2連率",
       "legend3": "3連率",
       "trendHeading": "{{n}}号機の推移",

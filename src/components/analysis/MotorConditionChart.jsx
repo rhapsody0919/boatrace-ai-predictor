@@ -927,6 +927,11 @@ function MotorConditionChart({
           {(venueMotorStats || venueMotorRanking) && (
             <p className="table-note">
               {t("analysis.motor.officialSnapshotNote")}
+              {/* 会場内順位に添えた値は会場公式サイトの2連率で、小数2桁目を切り捨てる。
+                  一覧（BOAT RACE公式、四捨五入）と0.1違うことがある（BOA-529 ファン評価3周目。
+                  大村32号機: 一覧26.1／会場公式26.0） */}
+              {venueMotorRanking &&
+                ` ${t("analysis.motor.venueRankRoundingNote")}`}
             </p>
           )}
 

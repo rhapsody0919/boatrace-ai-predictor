@@ -325,11 +325,18 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       /venueMotorRanking\.tied > 1\s*\?\s*"analysis\.motor\.venueRankBadgeTied"/.test(
         chart,
       ) &&
-      /value: Number\(venueMotorRanking\.value\)\.toFixed\(1\)/.test(chart),
+      /value: Number\(venueMotorRanking\.value\)\.toFixed\(1\)/.test(chart) &&
+      /venueMotorRanking &&\s*` \$\{t\("analysis\.motor\.venueRankRoundingNote"\)\}`/.test(
+        chart,
+      ),
   );
   for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
       .motor;
+    check(
+      `${lang}: 会場内順位の値が一覧と0.1違いうる理由（会場公式は切り捨て）の注記がある`,
+      /0\.1/.test(motor.venueRankRoundingNote ?? ""),
+    );
     check(
       `${lang}: 会場内順位の見出しに基準（2連率）が書いてある`,
       /2連率|top-2|2연대율/.test(motor.venueRankLabel),

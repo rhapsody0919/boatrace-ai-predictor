@@ -1059,6 +1059,7 @@
       "freshnessRaceBadge": "第{{raceCount}}場",
       "freshnessMeetBadge": "第{{meetCount}}節",
       "officialSnapshotNote": "💡「馬達新鮮度」「場內排名」「第1名率」「優出數」「優勝數」為各場地官方網站的數值，僅在節結束時更新，因此可能與下方機力指數・使用履歷（本站統計，至最新比賽）的出賽數不一致。",
+      "venueRankRoundingNote": "場內排名旁的2連率為場地官方網站的數值，因小數第2位無條件捨去，可能與列表的2連率相差0.1。",
       "legend2": "2連率",
       "legend3": "3連率",
       "trendHeading": "{{n}}號機的走勢",
