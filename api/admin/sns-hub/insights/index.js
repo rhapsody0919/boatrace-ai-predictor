@@ -2,7 +2,7 @@
  * Vercel Edge Function: SNSマーケティングハブ「戦略メモ」insight一覧取得
  * GET /api/admin/sns-hub/insights?status=proposed
  *
- * middleware.js のBasic認証配下にあるため、この関数自体は認証チェックを行わない。
+ * middleware.js のBasic認証に加え、関数先頭の requireAdminAuth でも認証する（多層防御）。
  * service role keyでSupabaseにアクセスする（ADR 0021の役割分担を踏襲）。
  */
 
@@ -12,6 +12,8 @@ import {
   jsonResponse,
   isConfigured,
 } from "../../../_lib/snsHubHelpers.js";
+
+import { requireAdminAuth } from "../../../_lib/adminAuth.js";
 
 export const config = {
   runtime: "edge",
@@ -74,6 +76,10 @@ async function countDraftsByInsightId() {
 }
 
 export default async function handler(req) {
+  // middleware はエンコードしたパスで迂回できるため、関数側でも必ず認証する（api/_lib/adminAuth.js）
+  const denied = await requireAdminAuth(req);
+  if (denied) return denied;
+
   if (req.method !== "GET") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }

@@ -3,8 +3,11 @@
  * GET /api/admin/sns-hub/approvers
  *
  * 承認者はタップ選択式（自由入力不可、spec.md要件12）。
- * middleware.js のBasic認証配下。service role keyでアクセス（ADR 0021）。
+ * middleware.js のBasic認証に加え、関数先頭の requireAdminAuth でも認証する（多層防御）。
+ * service role keyでアクセス（ADR 0021）。
  */
+
+import { requireAdminAuth } from "../../../_lib/adminAuth.js";
 
 export const config = {
   runtime: "edge",
@@ -21,6 +24,10 @@ function jsonResponse(body, status = 200) {
 }
 
 export default async function handler(req) {
+  // middleware はエンコードしたパスで迂回できるため、関数側でも必ず認証する（api/_lib/adminAuth.js）
+  const denied = await requireAdminAuth(req);
+  if (denied) return denied;
+
   if (req.method !== "GET") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
