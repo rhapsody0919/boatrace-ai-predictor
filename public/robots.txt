@@ -2,6 +2,7 @@
 
 User-agent: *
 Allow: /
+Disallow: /admin
 
 # Sitemaps
 Sitemap: https://www.boat-ai.jp/sitemap.xml

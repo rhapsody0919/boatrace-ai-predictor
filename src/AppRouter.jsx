@@ -228,9 +228,10 @@ function LocalizedRoutes({ lng = "ja" }) {
         )}
       <Route path="responsible-gambling" element={<ResponsibleGambling />} />
 
-      {/* Admin Pages (Hidden) */}
-      <Route path="admin/rules" element={<AdminRules />} />
-      <Route path="admin/sns-hub" element={<SnsHubAdmin />} />
+      {/* Admin Pages (Hidden)。Basic認証は middleware.js の matcher（大文字小文字を区別する）で
+          かけるため、ここも区別させる。区別しないと /ADMIN/RULES が認証を通らずに開ける（BOA-555） */}
+      <Route path="admin/rules" caseSensitive element={<AdminRules />} />
+      <Route path="admin/sns-hub" caseSensitive element={<SnsHubAdmin />} />
 
       {/* α版・動線非公開ページ（Watson/Mycroft等の実験モデルが継続開発中のため維持） */}
       <Route path="holmes" element={<Holmes />} />
