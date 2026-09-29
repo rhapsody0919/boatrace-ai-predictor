@@ -710,6 +710,7 @@
     "liveStale": "{{n}}分鐘前的值",
     "liveAfterDeadline": "已截止",
     "liveAfterDeadlineNote": "此為截止前擷取的值。按「更新」可取得截止後的官方賠率",
+    "liveAfterDeadlinePendingNote": "已於截止後擷取，但官方尚未切換為截止時賠率。請稍候再按「更新」",
     "liveFromTime": "{{time}}（截止前90分鐘）起，本分頁會顯示官方最新賠率。",
     "rangeTrendNote": "折線為下限的走勢（數值為下限-上限）",
     "refreshingNote": "淡色顯示為取得最新賠率期間的前次數值"

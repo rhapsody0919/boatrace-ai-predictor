@@ -438,6 +438,7 @@
     "liveStale": "{{n}}分前の値",
     "liveAfterDeadline": "締切済み",
     "liveAfterDeadlineNote": "締切前に取得した値です。「更新」で締切後の公式オッズを取得します",
+    "liveAfterDeadlinePendingNote": "締切後に取得しましたが、公式はまだ締切時オッズになっていません。少し待ってから「更新」してください",
     "liveFromTime": "{{time}}（締切90分前）から、このタブで公式の最新オッズを表示します。",
     "rangeTrendNote": "線は下限の推移です（値は下限-上限）",
     "refreshingNote": "薄い表示は、最新を取得中のあいだの前回の値です"

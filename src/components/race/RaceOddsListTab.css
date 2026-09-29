@@ -318,8 +318,20 @@
   overflow-wrap: anywhere;
 }
 
+/* 値は折り返さない。拡連複の「1.4-2.7」がハイフンで「1.4-／2.7」と割れたり、隣の値とくっついて読めたり
+   しないよう、マスの幅に収まるまで文字を小さくする（--rol-trend-em は値のおおよその幅。TrendPanel が渡す。
+   ＋0.8em は両隣とのすき間。BOA-532 ファン評価2周目） */
+.rol-trend-item {
+  container-type: inline-size;
+}
+
 .rol-trend-value {
-  font-size: var(--font-size-sm);
+  --rol-trend-value-size: var(--font-size-sm);
+  font-size: min(
+    var(--rol-trend-value-size),
+    calc(100cqi / (var(--rol-trend-em, 4) + 0.8))
+  );
+  white-space: nowrap;
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
@@ -547,7 +559,7 @@
   }
 
   .rol-trend-value {
-    font-size: var(--font-size-xs);
+    --rol-trend-value-size: var(--font-size-xs);
   }
 
   .rol-boat-badge {

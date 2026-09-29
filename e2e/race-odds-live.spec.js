@@ -639,6 +639,117 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     release();
   });
 
+  // ---- BOA-532 ファン評価2周目 ----
+
+  test("推移の最後の点（ライブ値）: 緑の「最新」は状態の1行が「最新」のあいだだけ。締切時オッズ（公式）なら「締切時（公式）」", async ({
+    page,
+  }) => {
+    const { status } = await setup(page, {
+      installClock: true,
+      live: async (p, all) =>
+        all.length <= 3
+          ? liveBody(p)
+          : liveBody(p, {
+              fetchedAt: "2026-09-28T05:30:00Z",
+              officialUpdatedAt: "14:26",
+              final: true,
+            }),
+    });
+    await expect(status).toContainText("公式更新 8:14");
+    await page.getByRole("button", { name: /^1-2-3 / }).click();
+    const last = page.locator(".rol-trend-item").last();
+    await expect(last).toHaveClass(/is-live/);
+    await expect(last).toContainText(`最新${ZW}（締切${ZW}29分前）`);
+    // 4分後: 状態の1行は「○分前の値」。推移の最後の点も緑の「最新」にしない
+    await page.clock.fastForward("04:00");
+    await expect(status).toHaveAttribute("data-freshness", "stale");
+    await expect(last).not.toHaveClass(/is-live/);
+    await expect(last).toContainText(`締切${ZW}29分前`);
+    await expect(last).not.toContainText("最新");
+    // 締切後に「更新」→ 公式の締切時オッズ
+    await page.clock.fastForward("30:00");
+    await status.getByRole("button", { name: "更新" }).click();
+    await expect(status).toHaveAttribute("data-freshness", "final");
+    // 推移パネルは開いたまま（1-2-3 を選んだまま）
+    const lastFinal = page.locator(".rol-trend-item").last();
+    await expect(lastFinal).toHaveClass(/is-official/);
+    await expect(lastFinal).toContainText(`締切時${ZW}（公式）`);
+  });
+
+  test("締切後に取った値が公式の締切時オッズでないとき、「締切前に取得した値」と書かない", async ({
+    page,
+  }) => {
+    const { status } = await setup(page, {
+      installClock: true,
+      live: async (p, all) =>
+        all.length <= 3
+          ? liveBody(p)
+          : liveBody(p, {
+              fetchedAt: "2026-09-28T05:29:00Z", // 14:29（締切 14:24 の後）
+              officialUpdatedAt: "14:23",
+              final: false,
+            }),
+    });
+    await expect(status).toContainText("公式更新 8:14");
+    await page.clock.fastForward("34:00");
+    await status.getByRole("button", { name: "更新" }).click();
+    await expect(status).toContainText("14:29 取得");
+    await expect(status).toHaveAttribute(
+      "data-freshness",
+      "after-deadline-pending",
+    );
+    await expect(status).toContainText("公式はまだ締切時オッズになっていません");
+    await expect(status).not.toContainText("締切前に取得した値");
+    // 推移の最後の点は「締切○分前」でなく取得時刻
+    await page.getByRole("button", { name: /^1-2-3 / }).click();
+    await expect(page.locator(".rol-trend-item").last()).toContainText(
+      "14:29 取得",
+    );
+  });
+
+  for (const width of [320, 375]) {
+    test(`${width}px: 拡連複の推移の値（下限-上限）が折れず、隣の値とくっつかない`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 812 });
+      const wide = Object.fromEntries(
+        Object.keys(PARSED.k.data.wideAll).map((k) => [
+          k,
+          { low: 12.3, high: 45.6 },
+        ]),
+      );
+      const rows = [60, 30, 15, 10, 5, 1].map((m) => ({
+        ...SNAPSHOT_ROW,
+        captured_at: new Date(
+          Date.parse("2026-09-28T05:24:00Z") - m * 60000,
+        ).toISOString(),
+        wide_all: wide,
+      }));
+      await setup(page, { now: AFTER_DEADLINE, snapshots: rows });
+      await page.getByRole("tab", { name: "拡連複" }).click();
+      await page.getByRole("button", { name: /^1=2 / }).click();
+      await expect(page.locator(".rol-trend-value")).toHaveCount(6);
+      const boxes = await page.$$eval(".rol-trend-value", (els) =>
+        els.map((e) => {
+          const r = document.createRange();
+          r.selectNodeContents(e);
+          const rects = [...r.getClientRects()];
+          const b = r.getBoundingClientRect();
+          return {
+            text: e.textContent,
+            lines: new Set(rects.map((x) => Math.round(x.top))).size,
+            left: b.left,
+            right: b.right,
+          };
+        }),
+      );
+      for (const b of boxes) expect(b.lines, b.text).toBe(1);
+      for (let i = 1; i < boxes.length; i++) {
+        expect(boxes[i].left - boxes[i - 1].right).toBeGreaterThanOrEqual(4);
+      }
+    });
+  }
+
   test("取得中の「薄い表示は…」の注記は表の上に出す", async ({ page }) => {
     let release;
     const gate = new Promise((r) => (release = r));

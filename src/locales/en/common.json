@@ -715,6 +715,7 @@
     "liveStale": "Values from {{n}} min ago",
     "liveAfterDeadline": "Deadline passed",
     "liveAfterDeadlineNote": "Fetched before the deadline. Tap Refresh to get the official odds after the deadline",
+    "liveAfterDeadlinePendingNote": "Fetched after the deadline, but the official site has not switched to the final odds yet. Wait a little and tap Refresh",
     "liveFromTime": "From {{time}} (90 minutes before the deadline), this tab shows the latest official odds.",
     "rangeTrendNote": "The line shows the lower bound (values are low-high)",
     "refreshingNote": "Faded values are the previous values while the latest odds load"

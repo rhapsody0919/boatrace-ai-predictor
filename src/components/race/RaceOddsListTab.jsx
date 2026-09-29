@@ -148,7 +148,34 @@ function minutesBeforeOf(iso, deadline) {
 // ライブ値があれば末尾に「最新 8:14」として足す（スナップショットが無くてもライブ値だけで出す）。
 // 締切時オッズ（公式）の表（finalMap）があれば、0分前（締切直前）の記録を外し、末尾に「締切時（公式）」を足す
 // （同じ時点を指す2つの値を並べない。記録は公式の更新の遅れを含むため）
-function buildTrend(snapshots, betType, key, deadline, live, finalMap) {
+// 取得から何分たったら「最新」をやめて「○分前の値」と書くか（自動では取り直さないため、表示だけ言い換える。
+// BOA-532）
+const LIVE_STALE_MS = 3 * 60 * 1000;
+
+// ライブ取得した値の鮮度。状態の1行と推移パネルの最後の点で同じ判断を使う（ファン評価2周目: 状態の1行が
+// 「○分前の値」「締切済み」になっても、推移の最後の点が緑の「最新」のままだった）
+//   final: 公式の締切時オッズ / after-deadline: 締切前に取った値で、いまは締切後 /
+//   after-deadline-pending: 締切後に取ったが、公式がまだ締切時オッズになっていない / stale / fresh
+function liveFreshnessOf(result, nowMs, deadline) {
+  if (result.final) return "final";
+  const fetchedMs = Date.parse(result.fetchedAt);
+  if (deadline && nowMs >= deadline.getTime()) {
+    return fetchedMs >= deadline.getTime()
+      ? "after-deadline-pending"
+      : "after-deadline";
+  }
+  return nowMs - fetchedMs >= LIVE_STALE_MS ? "stale" : "fresh";
+}
+
+function buildTrend(
+  snapshots,
+  betType,
+  key,
+  deadline,
+  live,
+  finalMap,
+  liveFreshness,
+) {
   const points = snapshots
     .map((snap) => {
       const raw = snap[betType.dataKey]?.[key];
@@ -166,14 +193,26 @@ function buildTrend(snapshots, betType, key, deadline, live, finalMap) {
     return points;
   }
   const liveValue = live?.data?.[betType.dataKey]?.[key];
-  if (liveValue != null) {
-    // 時点はスナップショットと同じ「締切○分前」でそろえる（取得した時刻から数える。ファン評価2周目）
-    points.push({
-      live: true,
-      minutesBefore: minutesBeforeOf(live.fetchedAt, deadline),
-      value: liveValue,
-    });
+  if (liveValue == null) return points;
+  // ライブで取れた公式の締切時オッズは、DB の締切時オッズと同じ「締切時（公式）」の点にする（0分前の記録は外す）
+  if (liveFreshness === "final") {
+    return [
+      ...points.filter((p) => p.minutesBefore !== 0),
+      { official: true, value: liveValue },
+    ];
   }
+  // 締切後に取った値（公式がまだ締切時オッズでない）は「締切○分前」で表せないため、取得時刻で書く
+  if (liveFreshness === "after-deadline-pending") {
+    points.push({ atTime: formatJstTime(live.fetchedAt), value: liveValue });
+    return points;
+  }
+  // 時点はスナップショットと同じ「締切○分前」でそろえる（取得した時刻から数える。ファン評価2周目）。
+  // 緑の「最新」は、状態の1行が「最新」のあいだだけ
+  points.push({
+    live: liveFreshness === "fresh",
+    minutesBefore: minutesBeforeOf(live.fetchedAt, deadline),
+    value: liveValue,
+  });
   return points;
 }
 
@@ -378,6 +417,7 @@ function TrendPanel({ combo, trend, isRange, spanAll }) {
   const { t } = useTranslation();
   const labelOf = (p) => {
     if (p.official) return t("oddsList.finalTrendLabel");
+    if (p.atTime) return t("oddsList.fetchedAt", { time: p.atTime });
     if (p.live) {
       return p.minutesBefore === null
         ? t("oddsList.liveLatest")
@@ -387,6 +427,10 @@ function TrendPanel({ combo, trend, isRange, spanAll }) {
     if (p.minutesBefore === 0) return t("oddsList.deadlineLabel");
     return t("oddsList.minutesBeforeLabel", { n: p.minutesBefore });
   };
+  const valueText = (p) =>
+    isNoVotes(p.value, isRange)
+      ? t("oddsList.noVotes")
+      : (formatValue(p.value, isRange) ?? "-");
   return (
     <div className={`rol-trend${spanAll ? " rol-span-all" : ""}`}>
       <div className="rol-trend-title">
@@ -406,10 +450,11 @@ function TrendPanel({ combo, trend, isRange, spanAll }) {
                 className={`rol-trend-item${p.live ? " is-live" : ""}${p.official ? " is-official" : ""}`}
                 key={i}
               >
-                <div className="rol-trend-value">
-                  {isNoVotes(p.value, isRange)
-                    ? t("oddsList.noVotes")
-                    : formatValue(p.value, isRange)}
+                <div
+                  className="rol-trend-value"
+                  style={{ "--rol-trend-em": approxEm(valueText(p)) }}
+                >
+                  {valueText(p)}
                 </div>
                 <div className="rol-trend-label">{labelOf(p)}</div>
               </div>
@@ -458,10 +503,6 @@ function snapshotLabel(t, snapshot, deadline) {
   if (n === null) return t("oddsList.snapshotAt", { time });
   return t("oddsList.snapshotBefore", { time, n });
 }
-
-// 取得から何分たったら「最新」をやめて「○分前の値」と書くか（自動では取り直さないため、表示だけ言い換える。
-// BOA-532）
-const LIVE_STALE_MS = 3 * 60 * 1000;
 
 // ライブ取得の状態の1行（取得中・最新・失敗）。スナップショットだけのときは取得時刻の注記。
 // 取得から時間がたつと「最新」を「○分前の値」に、締切を過ぎたら「締切済み」に言い換える（BOA-532）
@@ -514,16 +555,9 @@ function LiveStatus({ entry, fallbackLabel, onRefresh, nowMs, deadline }) {
   }
   const { result } = entry;
   const ageMs = nowMs - Date.parse(result.fetchedAt);
+  const freshness = liveFreshnessOf(result, nowMs, deadline);
   const afterDeadline =
-    !result.final && !!deadline && nowMs >= deadline.getTime();
-  const stale = !result.final && !afterDeadline && ageMs >= LIVE_STALE_MS;
-  const freshness = result.final
-    ? "final"
-    : afterDeadline
-      ? "after-deadline"
-      : stale
-        ? "stale"
-        : "fresh";
+    freshness === "after-deadline" || freshness === "after-deadline-pending";
   return (
     <div
       // 「○分前の値」「締切済み」は緑の「最新」の見た目（is-live）にしない。ライブで取れた締切時オッズは、
@@ -543,7 +577,7 @@ function LiveStatus({ entry, fallbackLabel, onRefresh, nowMs, deadline }) {
           ? t("oddsList.liveFinal")
           : afterDeadline
             ? t("oddsList.liveAfterDeadline")
-            : stale
+            : freshness === "stale"
               ? t("oddsList.liveStale", { n: Math.floor(ageMs / 60000) })
               : t("oddsList.liveLatest")}
       </span>
@@ -565,7 +599,11 @@ function LiveStatus({ entry, fallbackLabel, onRefresh, nowMs, deadline }) {
       )}
       {afterDeadline && (
         <span className="rol-status-sub">
-          {t("oddsList.liveAfterDeadlineNote")}
+          {t(
+            freshness === "after-deadline-pending"
+              ? "oddsList.liveAfterDeadlinePendingNote"
+              : "oddsList.liveAfterDeadlineNote",
+          )}
         </span>
       )}
       {!result.final && (
@@ -949,6 +987,7 @@ function RaceOddsListTabBody({ raceId, raceStartTime, players }) {
           deadline,
           liveResult,
           useFinal ? finalMap : null,
+          liveResult ? liveFreshnessOf(liveResult, nowMs, deadline) : null,
         )}
         isRange={isRange}
         spanAll={spanAll}
