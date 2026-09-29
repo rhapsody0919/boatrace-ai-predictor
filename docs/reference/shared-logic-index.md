@@ -1,7 +1,7 @@
 # 共通ロジックの索引
 
-**このファイルは `scripts/maintenance/generate-lib-index.js` が生成する。手で編集しない。**
-内容がソースとずれていると `npm run verify:lib-index` がCIで落ちる。
+**このファイルは `scripts/maintenance/generate-lib-index.js` が生成する。手で編集しない。PRにも含めない。**
+masterへのマージ後に `regenerate-generated-docs.yml` が作り直してコミットする（ADR-0078）。
 
 ## 使い方
 
