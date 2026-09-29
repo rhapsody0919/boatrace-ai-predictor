@@ -1,7 +1,7 @@
 # 表示カバレッジ台帳（機械生成）
 
-**このファイルは手で編集しない。** `node scripts/maintenance/generate-display-coverage.js` が生成し、
-`npm run verify:display-coverage` がPRごとに最新かどうかを検査する（Quality Gates CI）。
+**このファイルは手で編集しない。PRにも含めない。** `node scripts/maintenance/generate-display-coverage.js` が生成し、
+masterへのマージ後に `regenerate-generated-docs.yml` が作り直してコミットする（ADR-0078）。
 
 ゴール「公式サイト・各会場の公式サイト・ボートレース日和で取得しているデータを全て表示できるようにする」に対し、
 **取得したデータが画面に繋がっているか**を、マイグレーションと `src/` の静的な突き合わせで見る。

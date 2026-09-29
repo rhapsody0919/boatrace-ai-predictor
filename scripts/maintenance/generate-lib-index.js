@@ -10,8 +10,9 @@
  * 「この処理をするヘルパーは既にあるか」を調べる導線が grep しかない。
  * worktree が数十本ある状態では grep 自体も重く、探すより書く方が早くなってしまう。
  *
- * 手で書いた索引は必ず陳腐化するので、ER図（ADR-0065）と同じく**ソースから生成し、
- * 最新かどうかをCIで検査する**方式にする（verify-lib-index.js）。
+ * 手で書いた索引は必ず陳腐化するので、ER図（ADR-0065）と同じく**ソースから生成する**。
+ * 生成物はPRに含めず、masterへのマージ後に regenerate-generated-docs.yml が作り直して
+ * コミットする（ADR-0078。PRに含めると、並行するPRが同じファイルでコンフリクトするため）。
  *
  * ## 何を載せるか
  *
@@ -19,8 +20,8 @@
  * 全関数を説明付きで並べると4万字を超えて、実装前に読める大きさでなくなるため。
  * 名前で当たりをつけてファイルを開く、という使い方を想定している。
  *
- * 使い方: node scripts/maintenance/generate-lib-index.js [--check]
- *   --check: 書き込まず、既存ファイルと一致するかだけを見る（verify-lib-index.js が使う）
+ * 使い方: node scripts/maintenance/generate-lib-index.js [--dry-run]
+ *   --dry-run: 生成までを行い、書き込まない（verify-lib-index.js が「生成が成功するか」を見るのに使う）
  */
 
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -118,8 +119,8 @@ function build() {
   const lines = [
     "# 共通ロジックの索引",
     "",
-    "**このファイルは `scripts/maintenance/generate-lib-index.js` が生成する。手で編集しない。**",
-    "内容がソースとずれていると `npm run verify:lib-index` がCIで落ちる。",
+    "**このファイルは `scripts/maintenance/generate-lib-index.js` が生成する。手で編集しない。PRにも含めない。**",
+    "masterへのマージ後に `regenerate-generated-docs.yml` が作り直してコミットする（ADR-0078）。",
     "",
     "## 使い方",
     "",
@@ -154,34 +155,28 @@ function build() {
   lines.push("---", "");
   lines.push(`対象 ${totalFiles} ファイル / export ${totalExports} 件。`);
   lines.push("");
-  return lines.join("\n");
+  return { content: lines.join("\n"), totalFiles, totalExports };
 }
 
 function main() {
-  const content = build();
+  const { content, totalFiles, totalExports } = build();
   const outFile = path.join(repoRoot, OUTPUT_PATH);
 
-  if (process.argv.includes("--check")) {
-    let current = "";
-    try {
-      current = readFileSync(outFile, "utf8");
-    } catch {
-      console.error(`NG: ${OUTPUT_PATH} がありません。次で生成してください:`);
-      console.error("  node scripts/maintenance/generate-lib-index.js");
-      process.exit(1);
-    }
-    if (current !== content) {
-      console.error(
-        `NG: ${OUTPUT_PATH} がソースと一致しません。次で作り直してください:`,
-      );
-      console.error("  node scripts/maintenance/generate-lib-index.js");
-      process.exit(1);
-    }
-    console.log(`OK: ${OUTPUT_PATH} はソースと一致している`);
-  } else {
-    writeFileSync(outFile, content, "utf8");
-    console.log(`生成: ${OUTPUT_PATH}`);
+  // 抽出が壊れると索引が静かに空になる。PRでは生成物を比較しない（ADR-0078）ため、
+  // 空の索引を「生成できた」と扱わないよう、ここで落とす。
+  if (totalFiles === 0 || totalExports === 0) {
+    console.error(
+      `NG: 索引が空です（ファイル ${totalFiles} 件 / export ${totalExports} 件）。抽出ロジックか対象ディレクトリの指定が壊れています`,
+    );
+    process.exit(1);
   }
+
+  if (process.argv.includes("--dry-run")) {
+    console.log(`OK: ${OUTPUT_PATH} を生成できる（書き込みはしない）`);
+    return;
+  }
+  writeFileSync(outFile, content, "utf8");
+  console.log(`生成: ${OUTPUT_PATH}`);
 }
 
 // 抽出のロジックは verify-lib-index.js から import して検証するため、

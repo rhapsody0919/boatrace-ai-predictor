@@ -1,0 +1,76 @@
+name: Regenerate Generated Docs
+
+# 機械生成の文書（scripts/maintenance/generated-docs.js の一覧）を、masterへのpushごとに
+# 作り直し、差分があればコミットする（ADR-0078）。
+#
+# 背景: 生成物をPRに含めていたころは、PRがマージされるたびにmaster側の生成物が変わり、
+# 並行している他のPRが同じファイルでコンフリクトしていた。GitHubのマージ（mergeable判定・
+# Mergeボタン・gh pr merge）は .gitattributes のマージドライバを使わないため、
+# 属性（merge=ours 等）では解消できない。そこで生成物はPRに含めず（verify-generated-docs-not-in-pr.js
+# が検査）、マージ後にここで作り直す。
+#
+# このワークフローが作るコミットは GITHUB_TOKEN で push するため、他のワークフロー
+# （このワークフロー自身・Quality Gates）を起動しない。無限ループにはならない。
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+# 実行中のものは止めない（push の途中で止めると中途半端になるため）。
+# 待機中のものは新しい push で置き換わるので、最終的に最新の master から1回作り直される。
+concurrency:
+  group: regenerate-generated-docs
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # 起動したコミットではなく、その時点の master の先端から作り直す
+      # （待機中に後続の push があっても、最新のソースを反映させるため）
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+
+      # 生成スクリプトは Node 標準モジュールだけを使うので npm ci は不要
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Regenerate
+        run: node scripts/maintenance/generated-docs.js regenerate
+
+      - name: Commit and push if changed
+        run: |
+          mapfile -t paths < <(node scripts/maintenance/generated-docs.js paths)
+          git add -- "${paths[@]}"
+          if git diff --staged --quiet; then
+            echo "生成物に差分なし"
+            exit 0
+          fi
+          git diff --staged --stat
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -m "chore: 機械生成の文書を再生成 [automated]"
+          # master の更新と競合しても失敗しないよう rebase+リトライで push する（BOA-360）
+          bash scripts/maintenance/push-with-retry.sh
+
+      - name: Notify Slack on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "::warning::SLACK_WEBHOOK_URL が未設定のため通知できません"
+            exit 0
+          fi
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\": \"機械生成の文書（共通ロジック索引・表示カバレッジ台帳）の再生成に失敗しました。masterの生成物が古いままです: ${RUN_URL}\"}"
