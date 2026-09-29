@@ -1055,7 +1055,7 @@
       "racerWakuEmpty": "No racers found for this motor/lane combination",
       "racerWakuNote": "💡 Counts only races since the current motor went into service where this motor was used in this lane. Values in orange come from fewer than {{n}} starts and are for reference only.",
       "drillPreGeneration": "Motor #{{n}} in this race is from before the motor changeover and is a different motor from the current #{{n}}, so its trend, power index and usage history are not shown.",
-      "drillCurrentStateNote": "💡 This shows this motor's status up to today (including races after this one). The values at race time are the Top-2/Top-3 rates in the list."
+      "drillAsOfRaceNote": "💡 This shows this motor's status up to just before this race (this race and later races are not included)."
     },
     "racerForm": {
       "title": "📈 Racer Form",

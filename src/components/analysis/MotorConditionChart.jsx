@@ -151,7 +151,8 @@ function MotorConditionChart({
         setError(null);
         setDrillPreGeneration(false);
         const raceDate = selectedRace?.slice(0, 10) ?? null;
-        if (raceDate !== null && raceDate < getTodayJST()) {
+        const isPast = raceDate !== null && raceDate < getTodayJST();
+        if (isPast) {
           const generationStart =
             await supabaseDataService.getMotorGenerationStart(selectedVenue);
           if (generationStart !== null && raceDate < generationStart) {
@@ -159,6 +160,9 @@ function MotorConditionChart({
             return;
           }
         }
+        // 過去レースは「このレースの直前まで」で集計する（BOA-521）。今日から遡ると
+        // レース後の走りまで入り、「このときモーターはどうだったか」を振り返れない
+        const beforeRaceId = isPast ? selectedRace : null;
         const [
           trend,
           power,
@@ -174,25 +178,35 @@ function MotorConditionChart({
             selectedVenue,
             drillDownMotor,
             periodDays,
+            beforeRaceId,
           ),
           supabaseDataService.getMotorPowerIndex(
             selectedVenue,
             drillDownMotor,
             periodDays,
+            beforeRaceId,
           ),
           supabaseDataService.getMotorUsageHistory(
             selectedVenue,
             drillDownMotor,
+            beforeRaceId,
           ),
           supabaseDataService.getMotorPartsHistory(
             selectedVenue,
             drillDownMotor,
             periodDays,
+            beforeRaceId,
           ),
-          supabaseDataService.getVenueMotorStats(selectedVenue, drillDownMotor),
+          // 公式サイトのスナップショット（鮮度・優出等）は、過去レースならレース日以前の最新
+          supabaseDataService.getVenueMotorStats(
+            selectedVenue,
+            drillDownMotor,
+            isPast ? raceDate : null,
+          ),
           supabaseDataService.getVenueMotorChampionshipHistory(
             selectedVenue,
             drillDownMotor,
+            beforeRaceId,
           ),
           // BOA-301 FR-1〜4: 会場内順位（公式の最新スナップショット）・
           // 枠番別成績・選手×枠成績（現行モーターの世代）は、periodDays
@@ -200,11 +214,18 @@ function MotorConditionChart({
           supabaseDataService.getVenueMotorRanking(
             selectedVenue,
             drillDownMotor,
+            undefined,
+            isPast ? raceDate : null,
           ),
-          supabaseDataService.getMotorWakuStats(selectedVenue, drillDownMotor),
+          supabaseDataService.getMotorWakuStats(
+            selectedVenue,
+            drillDownMotor,
+            beforeRaceId,
+          ),
           supabaseDataService.getMotorRacerWakuStats(
             selectedVenue,
             drillDownMotor,
+            beforeRaceId,
           ),
         ]);
         setTrendData(trend);
@@ -622,12 +643,11 @@ function MotorConditionChart({
             backLabel={t("analysis.backToList")}
             heading={t("analysis.motor.trendHeading", { n: drillDownMotor })}
           />
-          {/* 過去レースでも、ドリルダウンは「このモーターの現在まで」を見る画面
-              （一覧は出走表時点の公式値）。レース時点の状態と読み違えないよう
-              明示する（2026-09-29 ファン評価 P1。レース日で締め切った集計は別チケット） */}
+          {/* 過去レースのドリルダウンは「このレースの直前まで」で集計する（BOA-521）。
+              期間の切り替えは出さないので、どこまでの集計かをここで示す */}
           {isPastSelectedRace && (
             <p className="table-note">
-              {t("analysis.motor.drillCurrentStateNote")}
+              {t("analysis.motor.drillAsOfRaceNote")}
             </p>
           )}
 

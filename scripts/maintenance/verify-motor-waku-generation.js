@@ -64,7 +64,7 @@ for (const name of ["getMotorWakuStats", "getMotorRacerWakuStats"]) {
   );
   check(
     `${name}: 使用開始日以降のレースだけを集める（getRacesForVenueSince）`,
-    body.includes("getRacesForVenueSince(venueCode, generationStart)"),
+    /getRacesForVenueSince\(\s*venueCode,\s*generationStart[,)]/.test(body),
   );
   check(
     `${name}: 日数の窓（getRacesForVenue(venueCode, days)）を使わない`,

@@ -355,17 +355,39 @@ async function fetchAllByIn(table, select, column, values) {
 }
 
 /**
+ * 過去レースのモータ情報を「そのレースの直前まで」で集計するときの、キャッシュの
+ * キーの接尾辞（BOA-521）。末尾が race_id になるので、inferTtlFromKey() が
+ * 過去レースとして長いTTLを付ける（締め切った集計は後から変わらない）
+ */
+function beforeKey(beforeRaceId) {
+  return beforeRaceId ? `-before-${beforeRaceId}` : "";
+}
+
+/**
  * 会場の、指定日（YYYY-MM-DD、当日を含む）以降のレース（BOA-151、複数メソッドで
  * 共有するためキャッシュする）。モーターの集計は、期間の開始を現行モーターの世代で
- * 切り詰めた日（motorWindowStart）から呼ぶ
+ * 切り詰めた日（motorWindowStart）から呼ぶ。
+ * beforeRaceId を渡すと、そのレースより前（race_id < beforeRaceId）に限る（BOA-521。
+ * 会場を固定すれば race_id の文字列順は時系列順と一致するので、同じ日のそれより
+ * 後のレースと、そのレース自身は入らない）
  */
-function getRacesForVenueSince(venueCode, sinceDate) {
-  return withCache(`races-for-venue-since-${venueCode}-${sinceDate}`, () =>
-    fetchRacesForVenueSince(venueCode, sinceDate),
+function getRacesForVenueSince(venueCode, sinceDate, beforeRaceId = null) {
+  return withCache(
+    `races-for-venue-since-${venueCode}-${sinceDate}${beforeKey(beforeRaceId)}`,
+    async () => {
+      const races = await fetchRacesForVenueSince(
+        venueCode,
+        sinceDate,
+        beforeRaceId?.slice(0, 10) ?? null,
+      );
+      return beforeRaceId === null
+        ? races
+        : races.filter((r) => r.race_id < beforeRaceId);
+    },
   );
 }
 
-async function fetchRacesForVenueSince(venueCode, cutoff) {
+async function fetchRacesForVenueSince(venueCode, cutoff, untilDate = null) {
   if (!supabase) return [];
 
   // BOA-301データ精度検証(2026-09-16)で発覚: Supabaseのデフォルトlimit(1000行)
@@ -382,6 +404,7 @@ async function fetchRacesForVenueSince(venueCode, cutoff) {
       .select("race_id, race_date")
       .eq("venue_code", venueCode)
       .gte("race_date", cutoff)
+      .lte("race_date", untilDate ?? "9999-12-31")
       // 同じ日のレースは race_date だけでは順序が決まらず、ページ境界で行が
       // 重複・欠落しうる。race_id で一意に並べる（世代全体＝最長約1年分、
       // 徳山で2148件＝3ページを読むようになったため）
@@ -446,17 +469,23 @@ function isPastRace(raceId) {
  * モーターの成績を「過去days日」で集計するときの開始日。現行モーターの世代
  * （使用開始日以降）で切り詰める（BOA-329）。入れ替え前の同じ番号の別モーターを
  * 混ぜないため。
- * - since: max(使用開始日, 今日−days)。使用開始日が不明なら null（集計しない）
+ * - since: max(使用開始日, 基準日−days)。使用開始日が不明なら null（集計しない）
  * - clippedByGeneration: 使用開始日で切り詰めたか（画面で注記を出す）
+ * 基準日は今日（JST）。beforeRaceId を渡すとそのレースの日付（BOA-521。過去レースの
+ * ドリルダウンを「そのレースの直前まで」で集計する）
  * 使用開始日の取得エラー（権限以外）は例外にする
  * @returns {Promise<{since:string|null, generationStart:string|null, clippedByGeneration:boolean}>}
  */
-async function motorWindowStart(venueCode, days) {
+async function motorWindowStart(venueCode, days, beforeRaceId = null) {
   const generationStart = await getMotorGenerationStart(venueCode);
   if (generationStart === null) {
     return { since: null, generationStart, clippedByGeneration: false };
   }
-  const daysAgo = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const daysAgo = new Date(
+    beforeRaceId === null
+      ? Date.now() + 9 * 60 * 60 * 1000
+      : `${beforeRaceId.slice(0, 10)}T00:00:00Z`,
+  );
   daysAgo.setUTCDate(daysAgo.getUTCDate() - days);
   const windowStart = daysAgo.toISOString().split("T")[0];
   const clippedByGeneration = generationStart > windowStart;
@@ -477,19 +506,28 @@ const INTERPRETATION_WINDOW_DAYS = 3; // 前後何日分の平均で比較する
  * 必要とするため共通化（BOA-221）。withCacheで結果を共有することで、両関数が
  * 同じ(venueCode, motorNumber, days)を同時に要求した場合の二重フェッチも防ぐ
  */
-function fetchMotorDailySeries(venueCode, motorNumber, days) {
+function fetchMotorDailySeries(
+  venueCode,
+  motorNumber,
+  days,
+  beforeRaceId = null,
+) {
   return withCache(
     // v2: 期間を現行モーターの世代で切り詰め、{window, series}を返す（BOA-329）
-    `motor-daily-series-v2-${venueCode}-${motorNumber}-${days}`,
+    `motor-daily-series-v2-${venueCode}-${motorNumber}-${days}${beforeKey(beforeRaceId)}`,
     async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return { window: null, series: [] };
       }
 
-      const window = await motorWindowStart(venueCode, days);
+      const window = await motorWindowStart(venueCode, days, beforeRaceId);
       if (window.since === null) return { window, series: [] };
-      const races = await getRacesForVenueSince(venueCode, window.since);
+      const races = await getRacesForVenueSince(
+        venueCode,
+        window.since,
+        beforeRaceId,
+      );
       if (races.length === 0) return { window, series: [] };
 
       const raceDateById = new Map(races.map((r) => [r.race_id, r.race_date]));
@@ -2751,11 +2789,11 @@ export const supabaseDataService = {
    * 同じ番号の別モーターを混ぜない）。使用開始日が不明な会場は集計せず
    * generation_unknown: true を返す
    */
-  getMotorPowerIndex(venueCode, motorNumber, days = 90) {
+  getMotorPowerIndex(venueCode, motorNumber, days = 90, beforeRaceId = null) {
     return withCache(
       // v3: 期間を現行モーターの世代で切り詰め、generation_unknown・
       // clipped_by_generationを追加（BOA-329）
-      `motor-power-index-v3-${venueCode}-${motorNumber}-${days}`,
+      `motor-power-index-v3-${venueCode}-${motorNumber}-${days}${beforeKey(beforeRaceId)}`,
       async () => {
         const empty = {
           venue_code: venueCode,
@@ -2773,7 +2811,7 @@ export const supabaseDataService = {
           return empty;
         }
 
-        const window = await motorWindowStart(venueCode, days);
+        const window = await motorWindowStart(venueCode, days, beforeRaceId);
         if (window.since === null) {
           return { ...empty, generation_unknown: true };
         }
@@ -2781,7 +2819,11 @@ export const supabaseDataService = {
           ...empty,
           clipped_by_generation: window.clippedByGeneration,
         };
-        const races = await getRacesForVenueSince(venueCode, window.since);
+        const races = await getRacesForVenueSince(
+          venueCode,
+          window.since,
+          beforeRaceId,
+        );
         if (races.length === 0) return windowed;
 
         const raceIds = races.map((r) => r.race_id);
@@ -2873,19 +2915,23 @@ export const supabaseDataService = {
    * 入れ替え前の同じ番号の別モーターに乗った選手を出さない）。使用開始日が
    * 不明な会場は空
    */
-  getMotorUsageHistory(venueCode, motorNumber) {
+  getMotorUsageHistory(venueCode, motorNumber, beforeRaceId = null) {
     return withCache(
       // v2: 期間を現行モーターの世代で切り詰める（BOA-329）
-      `motor-usage-history-v2-${venueCode}-${motorNumber}`,
+      `motor-usage-history-v2-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
           return [];
         }
 
-        const window = await motorWindowStart(venueCode, 90);
+        const window = await motorWindowStart(venueCode, 90, beforeRaceId);
         if (window.since === null) return [];
-        const races = await getRacesForVenueSince(venueCode, window.since);
+        const races = await getRacesForVenueSince(
+          venueCode,
+          window.since,
+          beforeRaceId,
+        );
         if (races.length === 0) return [];
 
         const raceIds = races.map((r) => r.race_id);
@@ -3080,11 +3126,11 @@ export const supabaseDataService = {
    * 混ぜないよう履歴を出さず generationStart: null を返す。
    * @returns {Promise<{generationStart: string|null, wins: Array<{raceId:string,date:string,racerId:number|null,playerName:string|null}>, fetchFailed?: boolean}>}
    */
-  getVenueMotorChampionshipHistory(venueCode, motorNumber) {
+  getVenueMotorChampionshipHistory(venueCode, motorNumber, beforeRaceId = null) {
     return withCache(
       // 戻り値を配列から{generationStart, wins}に変えたため、キーを変えて
       // localStorageに残る旧形式（配列）を読まない
-      `venue-motor-championship-generation-${venueCode}-${motorNumber}`,
+      `venue-motor-championship-generation-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
       async () => {
         const failed = { generationStart: null, wins: [], fetchFailed: true };
         if (!supabase) {
@@ -3112,7 +3158,9 @@ export const supabaseDataService = {
           const raceIds = (stageRows ?? [])
             .filter((r) => isFinalStage(r.race_stage))
             .map((r) => r.race_id)
-            .filter((raceId) => isInMotorGeneration(raceId, generationStart));
+            .filter((raceId) => isInMotorGeneration(raceId, generationStart))
+            // 過去レースのドリルダウンは、そのレースより前の優勝に限る（BOA-521）
+            .filter((raceId) => beforeRaceId === null || raceId < beforeRaceId);
           if (raceIds.length === 0) return { generationStart, wins: [] };
 
           const { data: entries, error: entriesError } = await supabase
@@ -3176,9 +3224,18 @@ export const supabaseDataService = {
    * @param {'winRate'|'top2Rate'|'top3Rate'|'accidentRate'} metric
    * @returns {Promise<{rank:number,total:number,metric:string,value:number,scrapedDate:string}|null>}
    */
-  getVenueMotorRanking(venueCode, motorNumber, metric = "top2Rate") {
+  getVenueMotorRanking(
+    venueCode,
+    motorNumber,
+    metric = "top2Rate",
+    asOfDate = null,
+  ) {
     return withCache(
-      `venue-motor-ranking-${venueCode}-${motorNumber}-${metric}`,
+      // asOfDate（YYYY-MM-DD）を渡すと、その日以前で最新のスナップショットで順位を
+      // 出す（過去レースのドリルダウン、BOA-521）
+      asOfDate === null
+        ? `venue-motor-ranking-${venueCode}-${motorNumber}-${metric}`
+        : `venue-motor-ranking-asof-${venueCode}-${motorNumber}-${metric}-${asOfDate}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -3189,6 +3246,7 @@ export const supabaseDataService = {
             .from("venue_motor_stats")
             .select("scraped_date")
             .eq("venue_code", venueCode)
+            .lte("scraped_date", asOfDate ?? "9999-12-31")
             .order("scraped_date", { ascending: false })
             .limit(1)
             .maybeSingle();
@@ -3273,11 +3331,11 @@ export const supabaseDataService = {
    *   top2Rate:number|null, top3Rate:number|null, avgExhibitionTime:number|null,
    *   exhibitionTrend:Array<{raceId:string,time:number}>}>}>}
    */
-  getMotorWakuStats(venueCode, motorNumber) {
+  getMotorWakuStats(venueCode, motorNumber, beforeRaceId = null) {
     return withCache(
       // 戻り値を配列から{generationStart, rows}に変えたため、キーを変えて
       // localStorageに残る旧形式（配列）を読まない
-      `motor-waku-stats-generation-${venueCode}-${motorNumber}`,
+      `motor-waku-stats-generation-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
       async () => {
         const emptyRows = () =>
           Array.from({ length: 6 }, (_, i) => ({
@@ -3306,7 +3364,11 @@ export const supabaseDataService = {
           return { generationStart, rows: emptyRows() };
         }
 
-        const races = await getRacesForVenueSince(venueCode, generationStart);
+        const races = await getRacesForVenueSince(
+          venueCode,
+          generationStart,
+          beforeRaceId,
+        );
         if (races.length === 0) return { generationStart, rows: emptyRows() };
 
         const raceIds = races.map((r) => r.race_id);
@@ -3443,10 +3505,10 @@ export const supabaseDataService = {
    *   rows:Array<{racerId:number, playerName:string, course:number,
    *   raceCount:number, winRate:number|null, top2Rate:number|null, top3Rate:number|null}>}>}
    */
-  getMotorRacerWakuStats(venueCode, motorNumber) {
+  getMotorRacerWakuStats(venueCode, motorNumber, beforeRaceId = null) {
     return withCache(
       // 戻り値の形を変えたためキーも変える（getMotorWakuStatsと同じ理由）
-      `motor-racer-waku-stats-generation-${venueCode}-${motorNumber}`,
+      `motor-racer-waku-stats-generation-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -3462,7 +3524,11 @@ export const supabaseDataService = {
         }
         if (generationStart === null) return { generationStart, rows: [] };
 
-        const races = await getRacesForVenueSince(venueCode, generationStart);
+        const races = await getRacesForVenueSince(
+          venueCode,
+          generationStart,
+          beforeRaceId,
+        );
         if (races.length === 0) return { generationStart, rows: [] };
 
         const raceIds = races.map((r) => r.race_id);
@@ -4614,19 +4680,25 @@ export const supabaseDataService = {
    * race_entries.motor_2rate/3rate は節単位でのみ更新されるため、
    * 日付単位でdedupeして推移として扱う
    */
-  getMotorConditionTrend(venueCode, motorNumber, days = 90) {
+  getMotorConditionTrend(
+    venueCode,
+    motorNumber,
+    days = 90,
+    beforeRaceId = null,
+  ) {
     return withCache(
       // v2: 展示タイム(exhibition_time)を追加(BOA-265軸B)。旧キャッシュ形状には
       // 無いフィールドのため、旧キーのままだと古いキャッシュがしばらく残ってしまう。
       // daysも末尾以外に含める（BOA-283の期間切り替え）
       // v3: 期間を現行モーターの世代で切り詰め、generationUnknown・
       // clippedByGenerationを追加（BOA-329）
-      `motor-condition-v3-${venueCode}-${motorNumber}-${days}`,
+      `motor-condition-v3-${venueCode}-${motorNumber}-${days}${beforeKey(beforeRaceId)}`,
       async () => {
         const { window, series } = await fetchMotorDailySeries(
           venueCode,
           motorNumber,
           days,
+          beforeRaceId,
         );
         return {
           venue_code: venueCode,
@@ -4652,15 +4724,16 @@ export const supabaseDataService = {
    * 実測値で、motor_2rate（公式サイトの「モーター交換時からの累積」値）と違い
    * イベント前後で単純比較できるため、この目的にはこちらを使う
    */
-  getMotorPartsHistory(venueCode, motorNumber, days = 90) {
+  getMotorPartsHistory(venueCode, motorNumber, days = 90, beforeRaceId = null) {
     return withCache(
       // v2: 期間を現行モーターの世代で切り詰める（BOA-329）
-      `motor-parts-history-v2-${venueCode}-${motorNumber}-${days}`,
+      `motor-parts-history-v2-${venueCode}-${motorNumber}-${days}${beforeKey(beforeRaceId)}`,
       async () => {
         const { series: dateSeries } = await fetchMotorDailySeries(
           venueCode,
           motorNumber,
           days,
+          beforeRaceId,
         );
 
         const avgOf = (list) => {
