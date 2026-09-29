@@ -1894,7 +1894,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".venue-tendency-panel")).toHaveCount(0);
     await expect(page.locator(".embedded-analysis-section")).toHaveCount(0);
 
-    // 3連単: オッズをタップするとそのブロック内に推移が表示され、再タップで閉じる
+    // 3連単: オッズをタップするとそのブロックの行の直後に推移が表示され、再タップで閉じる
     await page.locator(".rol-odds[class*='rol-heat-']").first().click();
     await expect(page.locator(".rol-trend")).toBeVisible();
     await expect(page.locator(".rol-trend-item").first()).toBeVisible();
@@ -1904,11 +1904,31 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 3連複: 艇番3つの全20通りが一覧で表示される
     await page.locator(".rol-chip", { hasText: "3連複" }).click();
     await expect(page.locator(".rol-two-col-grid > .rol-odds")).toHaveCount(20);
-    // 推移パネルは選択した行（先頭の2件=1行目）の直後に全幅で挿入される
-    await page.locator(".rol-two-col-grid > .rol-odds").first().click();
-    await expect(
-      page.locator(".rol-two-col-grid > .rol-odds + .rol-odds + .rol-trend"),
-    ).toBeVisible();
+    // 推移パネルは選択した行（1行目。列数は画面幅で2〜4列）の直後に全幅で出る。DOM では選択した要素の直後に
+    // 置き、grid-auto-flow: dense で同じ行の残りが前に詰まる（BOA-530）ため、見た目の位置で確かめる
+    const trioCells = page.locator(".rol-two-col-grid > .rol-odds");
+    await trioCells.first().click();
+    await expect(page.locator(".rol-two-col-grid > .rol-trend")).toBeVisible();
+    const placement = await page
+      .locator(".rol-two-col-grid")
+      .evaluate((grid) => {
+        const cells = [...grid.querySelectorAll(":scope > .rol-odds")].map(
+          (c) => c.getBoundingClientRect(),
+        );
+        const trend = grid
+          .querySelector(":scope > .rol-trend")
+          .getBoundingClientRect();
+        const firstRow = cells.filter((c) => c.top === cells[0].top);
+        const rest = cells.filter((c) => c.top !== cells[0].top);
+        return {
+          firstRowAbove: firstRow.every((c) => c.bottom <= trend.top),
+          restBelow: rest.every((c) => c.top >= trend.bottom),
+          firstRowCount: firstRow.length,
+        };
+      });
+    expect(placement.firstRowCount).toBeGreaterThanOrEqual(2);
+    expect(placement.firstRowAbove).toBe(true);
+    expect(placement.restBelow).toBe(true);
 
     // 2連単: 1着ごとの6ブロック（全30通り）。タップで推移が表示される
     await page.locator(".rol-chip", { hasText: "2連単" }).click();

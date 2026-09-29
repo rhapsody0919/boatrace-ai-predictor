@@ -570,6 +570,95 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
  * - なし: 従来の表示のまま
  * - 推移: 最後の点は「締切時（公式）」、0分前の記録は外す、最後の区間は点線、パネルの下に注記
  */
+// BOA-530: 1440px で表が 44rem に留まり右側が空いていた。1024px以上は表をブロックごとに複数列に並べ、
+// 推移パネルは列数によらず選んだ行の直後に全幅で出す
+test.describe("オッズ一覧の広い画面（BOA-530）", () => {
+  test.slow();
+
+  const rowsOf = (page, selector) =>
+    page.$$eval(selector, (els) =>
+      els.map((e) => {
+        const b = e.getBoundingClientRect();
+        return {
+          trend: e.classList.contains("rol-trend"),
+          top: Math.round(b.top),
+          bottom: Math.round(b.bottom),
+          left: Math.round(b.left),
+          width: Math.round(b.width),
+        };
+      }),
+    );
+
+  for (const width of [1024, 1440]) {
+    test(`${width}px: 3連単は1着ブロックを2列、3連複は4列に並べ、推移は選んだ行の直後`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await setup(page, {
+        now: AFTER_DEADLINE,
+        snapshots: [
+          { ...SNAPSHOT_ROW, trio_all: PARSED["3f"].data.trioAll },
+        ],
+      });
+      // 3連単: 3号艇のブロック（2段目の左）の組を選ぶ → 2段目（3・4号艇）の下、3段目（5・6号艇）の上に推移
+      await page.getByRole("button", { name: /^3-1-2 / }).click();
+      const t3 = await rowsOf(page, ".rol-block-grid > *");
+      const blocks = t3.filter((x) => !x.trend);
+      const trend = t3.find((x) => x.trend);
+      expect(blocks).toHaveLength(6);
+      expect(new Set(blocks.map((b) => b.top)).size).toBe(3);
+      expect(blocks[2].top).toBe(blocks[3].top);
+      expect(trend.top).toBeGreaterThan(blocks[3].bottom);
+      expect(trend.bottom).toBeLessThan(blocks[4].top);
+      // 表は従来の 44rem（704px）より広く使う
+      const gridWidth = await page
+        .locator(".rol-block-grid")
+        .evaluate((e) => e.getBoundingClientRect().width);
+      expect(gridWidth).toBeGreaterThan(704);
+      // 推移パネルは表と同じ全幅（右の列を選んでも、選んだマスの真下にパネルがある。ファン評価1周目）
+      expect(trend.width).toBe(Math.round(gridWidth));
+      await page.getByRole("button", { name: /^3-1-2 / }).click(); // 閉じる
+      const right = page.getByRole("button", { name: /^4-1-2 / });
+      await right.click();
+      const rightBox = await right.boundingBox();
+      const panelBox = await page.locator(".rol-block-grid > .rol-trend").boundingBox();
+      expect(panelBox.x).toBeLessThanOrEqual(rightBox.x);
+      expect(panelBox.x + panelBox.width).toBeGreaterThanOrEqual(
+        rightBox.x + rightBox.width,
+      );
+      await right.click(); // 閉じる
+
+      // 3連複: 1行目の3つ目（1=2=5）を選ぶ → 1行目の4つとも推移より上にある
+      await page.getByRole("tab", { name: "3連複" }).click();
+      await page.getByRole("button", { name: /^1=2=5 / }).click();
+      const t3f = await rowsOf(page, ".rol-trio-grid > *");
+      const cells = t3f.filter((x) => !x.trend);
+      const trioTrend = t3f.find((x) => x.trend);
+      expect(new Set(cells.slice(0, 4).map((c) => c.top)).size).toBe(1);
+      expect(cells[4].top).toBeGreaterThan(cells[0].top);
+      expect(trioTrend.top).toBeGreaterThan(cells[3].bottom);
+      expect(trioTrend.bottom).toBeLessThan(cells[4].top);
+    });
+  }
+
+  test("375px: 3連単は1列のまま、推移は選んだブロックの直後", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await setup(page, { now: AFTER_DEADLINE });
+    await page.getByRole("button", { name: /^3-1-2 / }).click();
+    const t3 = await rowsOf(page, ".rol-block-grid > *");
+    expect(t3.map((x) => x.trend)).toEqual([
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+    ]);
+    expect(new Set(t3.map((x) => x.left)).size).toBe(1);
+  });
+});
+
 test.describe("締切時オッズ（公式、BOA-496）", () => {
   test.slow();
 

@@ -4,9 +4,21 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
-  /* 広い画面で数字同士が離れて読みづらくならないよう、スマホ縦持ち相当の幅に留める */
+  /* 広い画面で数字同士が離れて読みづらくならないよう、スマホ縦持ち相当の幅に留める
+     （1024px以上では、表をブロックごとに複数列に並べて右側の余白を使う。下の @media） */
   max-width: 44rem;
 }
+
+/* 3連単の1着ブロックの並び（1024px以上で2列） */
+.rol-block-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-flow: row dense;
+  gap: var(--spacing-3);
+  align-items: start;
+}
+
+
 
 .rol-subtitle {
   margin: 0;
@@ -226,6 +238,7 @@
 .rol-two-col-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: row dense;
   gap: var(--spacing-2);
   align-items: start;
 }
@@ -565,5 +578,32 @@
 
   .rol-odds {
     padding: 2px;
+  }
+}
+
+/* 1024px以上: 表（ブロック・組み合わせの並び）だけを全幅に広げ、ブロックを複数列に並べる。
+   1ブロックの幅は従来（44rem）と同程度以下に保ち、数字同士が離れないようにする。説明文・状態の1行・
+   単勝複勝の表は、読みやすさのため従来の幅のまま（BOA-530）。推移パネルは表と同じ全幅にする
+   （44remに留めると左に寄り、右の列の組番を選んだときに選んだマスから離れて左のブロックの推移に見える。
+   ファン評価1周目） */
+@media (min-width: 1024px) {
+  .race-odds-list-tab {
+    max-width: none;
+  }
+
+  .race-odds-list-tab > :not(.rol-block-grid, .rol-two-col-grid) {
+    max-width: 44rem;
+  }
+
+  .rol-block-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rol-two-col-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .rol-trio-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
