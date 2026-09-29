@@ -1,6 +1,7 @@
 import { test as base, expect } from "@playwright/test";
 import { createHash } from "node:crypto";
 import {
+  appendFileSync,
   existsSync,
   linkSync,
   mkdirSync,
@@ -30,8 +31,10 @@ import {
  * ## 3つのモード
  *
  *   replay（既定）  e2e/recordings/api.har から応答を返し、ブラウザ時計を録画時刻に固定する。
- *                   録画に無い /rest/v1/*・/api/* は abort（素通ししない）。
- *                   それ以外の外部ホスト（GA・フォント等）も abort する
+ *                   録画は GitHub Release から global-setup が取得する（e2e/recording.json がポインタ）。
+ *                   録画に無い /rest/v1/*・/api/* は本番へ素通しし、一覧に残す（A改）。
+ *                   E2E_REPLAY_STRICT=1 なら abort する。
+ *                   それ以外の外部ホスト（GA・フォント等）は abort する
  *   record          E2E_RECORD=1。本番へ繋いだまま、テストごとに応答を HAR に書き出す。
  *                   時計は global-setup が決めた録画時刻に固定する（replay と同じURLになるように）
  *   live            E2E_LIVE=1。従来どおり本番データ・実時刻で実行する（定期実行用）
@@ -73,6 +76,12 @@ export const RECORD_CACHE_DIR = path.join(
 /** record モードで、replay 時に止められる外部通信を書き出すファイル名の接頭辞 */
 export const RAW_EXTERNAL_PREFIX = "external-requests-";
 let recordSeq = 0;
+
+/**
+ * E2E_REPLAY_STRICT=1: 録画に無いリクエストを本番へ素通しせず abort する。
+ * 自動撮り直し（e2e-rerecord.yml）が、撮り直した録画だけで全件通るかを確かめるのに使う
+ */
+export const STRICT_REPLAY = process.env.E2E_REPLAY_STRICT === "1";
 
 export const E2E_MODE =
   process.env.E2E_LIVE === "1"
@@ -279,21 +288,33 @@ async function recordThrough(request, fetchResponse) {
  * APIResponse そのものではないので、route.fulfill には { response } ではなく
  * status・headers を明示して渡すこと。
  */
-export async function fetchRecorded(route) {
+export async function fetchRecorded(route, options = {}) {
   const request = route.request();
-  if (E2E_MODE === "live") return route.fetch();
-  if (E2E_MODE === "record") return recordThrough(request, () => route.fetch());
-
-  const url = canonicalUrl(request.url());
-  const entry = replayHar(test.info()).keys.get(
-    harKey(request.method(), url, request.postData()),
-  );
-  if (!entry) {
-    throw new Error(
-      `録画に無いリクエストです（npm run test:e2e:record で撮り直してください）: ${request.method()} ${url}`,
+  // options.url で取り先を差し替えられる（route.fetch({ url }) と同じ）
+  const url = options.url ?? request.url();
+  if (E2E_MODE === "live") return route.fetch(options);
+  if (E2E_MODE === "record") {
+    return recordThrough(
+      {
+        method: () => request.method(),
+        url: () => url,
+        postData: () => request.postData(),
+      },
+      () => route.fetch(options),
     );
   }
-  return entryToResponse(entry);
+
+  const key = harKey(request.method(), canonicalUrl(url), request.postData());
+  const entry = replayHar(test.info()).keys.get(key);
+  if (entry) return entryToResponse(entry);
+  // 録画に無い: strict なら失敗、既定は本番へ素通しして一覧に残す（A改）
+  if (STRICT_REPLAY) {
+    throw new Error(
+      `録画に無いリクエストです（E2E_REPLAY_STRICT=1）: ${request.method()} ${url}`,
+    );
+  }
+  notePassthrough(test.info(), request.method(), url);
+  return route.fetch(options);
 }
 
 /**
@@ -361,14 +382,12 @@ export async function applyRecording(context, testInfo) {
   const { file, keys } = replayHar(testInfo);
   await context.routeFromHAR(file, {
     url: RECORDED_URL,
-    notFound: "abort",
+    // 録画に無いものは、strict なら abort、既定は本番へ素通しする（A改）。
+    // 素通しは黙って本番依存に戻らないよう、必ず一覧に残す（notePassthrough）
+    notFound: STRICT_REPLAY ? "abort" : "fallback",
   });
-  // 録画に無くて abort されるリクエストを覚えておき、テストが落ちたときに出す
-  // （「録画漏れ」と「実バグ」を切り分けるため）
-  const misses = new Set();
-  missesByContext.set(context, misses);
   // HAR の対象外で、ローカルdevサーバー以外へ出ていく通信（GA・外部フォント・
-  // 外部画像等）も止める。登録順が後の route が先に評価されるため、
+  // 外部画像等）は止める。登録順が後の route が先に評価されるため、
   // 対象URLは fallback で HAR 側へ回す
   await context.route(
     (url) =>
@@ -383,19 +402,44 @@ export async function applyRecording(context, testInfo) {
       // fallback で URL を差し替えると、後ろの routeFromHAR はその URL で引く
       const url = canonicalUrl(request.url());
       const key = harKey(request.method(), url, request.postData());
-      if (!keys.has(key)) {
-        misses.add(`${request.method()} ${url}`);
-        // fixture を通らない context（browser.newContext）の分もその場で見られるように
-        if (process.env.E2E_DEBUG_MISSES) {
-          console.log(`[e2e replay] 録画に無い: ${request.method()} ${url}`);
-        }
-      }
+      if (!keys.has(key)) notePassthrough(testInfo, request.method(), url);
       return url === request.url() ? route.fallback() : route.fallback({ url });
     },
   );
 }
 
-const missesByContext = new WeakMap();
+/**
+ * 再生中に録画に無かったリクエストを書き残す（A改）。
+ * 全ワーカー分を test-results/.e2e-passthrough/ に JSON Lines で出し、
+ * scripts/maintenance/report-e2e-passthrough.js が集計して step summary と PR コメントに出す
+ */
+export const PASSTHROUGH_DIR = path.join(
+  repoRoot,
+  "test-results",
+  ".e2e-passthrough",
+);
+function notePassthrough(testInfo, method, url) {
+  const line = {
+    method,
+    url: url.replace(/^http:\/\/localhost:\d+/, ""),
+    test: [path.basename(testInfo.file), ...testInfo.titlePath.slice(1)].join(
+      " › ",
+    ),
+    project: testInfo.project.name,
+    strict: STRICT_REPLAY,
+  };
+  mkdirSync(PASSTHROUGH_DIR, { recursive: true });
+  appendFileSync(
+    path.join(PASSTHROUGH_DIR, `${process.pid}.jsonl`),
+    `${JSON.stringify(line)}\n`,
+  );
+  if (process.env.E2E_DEBUG_MISSES) {
+    console.log(
+      `[e2e replay] 録画に無い: ${method} ${line.url}（${line.test}）`,
+    );
+  }
+}
+
 const inflightByContext = new WeakMap();
 const INFLIGHT_WAIT_MS = 30000;
 
@@ -418,22 +462,6 @@ export const test = base.extend({
     await applyRecording(context, testInfo);
     await use(context);
     await waitForInflight(context);
-    // 落ちたテストでだけ出す。E2E_DEBUG_MISSES=1 なら通ったテストでも出す
-    const misses = missesByContext.get(context);
-    if (
-      misses?.size &&
-      (process.env.E2E_DEBUG_MISSES ||
-        testInfo.status !== testInfo.expectedStatus)
-    ) {
-      const body = [...misses].join("\n");
-      console.log(
-        `[e2e replay] 録画に無く abort したリクエスト（${testInfo.title}）:\n${body}`,
-      );
-      await testInfo.attach("録画に無いリクエスト", {
-        body,
-        contentType: "text/plain",
-      });
-    }
   },
 });
 

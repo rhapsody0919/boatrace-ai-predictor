@@ -1,15 +1,26 @@
 name: E2E Smoke Test
 
-# PRゲート。本番へは繋がず、e2e/recordings/ の録画（HAR）を再生し、ブラウザ時計を
-# 録画時刻に固定して実行する（BOA-466、ADR-0077）。以前は本番Supabase・本番 /api に
-# 直結しており、当日データと実行時刻で結果が変わっていた（直近30回で失敗14回）。
-# 本番データでの実行は e2e-live.yml が開催時間帯に定期実行する。
-# 録画の撮り直し: npm run test:e2e:record
+# PRゲート。録画（HAR）を再生し、ブラウザ時計を録画時刻に固定して実行する（BOA-466、ADR-0077）。
+# 以前は本番Supabase・本番 /api に直結しており、当日データと実行時刻で結果が変わっていた
+# （直近30回で失敗14回）。
+#
+# - 録画の本体は GitHub Release の添付。リポジトリには e2e/recording.json（ポインタ）だけがあり、
+#   global-setup が取得して sha256 を照合する
+# - 録画に無い /rest/v1/*・/api/* は本番へ素通しする（A改）。素通しした通信は
+#   step summary と PR コメント（1件を更新し続ける）に必ず一覧で出す
+# - 録画は e2e-rerecord.yml が毎日 JST11:00 に master で撮り直す
+# - 本番データ・実時刻での実行は e2e-live.yml が JST14:00 に行う
 
 on:
   pull_request:
     branches:
       - master
+
+permissions:
+  contents: read
+  # 素通し一覧の PR コメントを作成・更新する
+  issues: write
+  pull-requests: write
 
 jobs:
   e2e:
@@ -30,12 +41,27 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      # Supabase のオリジンは録画（e2e/recordings/meta.json）から playwright.config.js が
-      # 設定し、録画に無い通信は abort するため、本番の接続情報は渡さない
+      # 録画の zip はポインタの sha256 ごとにキャッシュする（同じ録画を毎回ダウンロードしない）
+      - name: Cache E2E recording
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.cache/boatai-e2e-recording
+          key: e2e-recording-${{ hashFiles('e2e/recording.json') }}
+
+      # 録画に無い通信は本番へ素通しするので、本番の読み取り用キー（anon）を渡す
       - name: Run E2E smoke tests (録画の再生)
         env:
           CI: true
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run test:e2e
+
+      # テストが落ちても素通しの状況は見たいので always() で動かす
+      - name: Report passthrough requests (録画に無く本番へ素通しした通信)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/maintenance/report-e2e-passthrough.js --summary --pr=${{ github.event.pull_request.number }}
 
       # skipされたテストを数える。データ依存の test.skip() が常に真になると
       # そのテストは無言で無効化され、緑のまま何も検証しない状態が続く。

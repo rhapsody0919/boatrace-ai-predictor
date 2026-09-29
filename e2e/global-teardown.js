@@ -115,6 +115,9 @@ export function bundleRecordings(
     entries: har.log.entries.length,
   };
   writeFileSync(META_PATH, JSON.stringify(meta, null, 2) + "\n");
+  // 手元で撮った録画は、まだ Release のどのポインタとも一致しない。
+  // 展開元の目印を消しておかないと、次の再生がポインタの録画だと誤認する
+  rmSync(path.join(RECORDINGS_DIR, ".source-sha256"), { force: true });
 
   const external = new Set(
     named(RAW_EXTERNAL_PREFIX, ".json").flatMap((f) =>

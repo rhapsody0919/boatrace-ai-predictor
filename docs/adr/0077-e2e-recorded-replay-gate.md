@@ -29,9 +29,8 @@
 共通fixture `e2e/fixtures.js` で `test` を extend し、全specの import をそこへ切り替えた。fixture は `context` に次を掛ける。
 
 - `context.clock.setFixedTime(録画時刻)`: `Date` だけを固定し、`setTimeout` 等のタイマーは実時間で進める。既存の `waitFor`・アニメーション・リトライ間隔の待機はそのまま動く（`clock.install` はタイマーも止めるため採らなかった）
-- `context.routeFromHAR(e2e/recordings/api.har, { url: /rest/v1/ と localhost の /api/, notFound: "abort" })`: 録画に無いリクエストはテスト失敗にする。素通ししない
-- それ以外の外部ホスト（ローカルdevサーバー以外）への通信も abort する。録画時に観測したのは Google Fonts・AdSense・YouTube埋め込み・Googleマップ・OpenStreetMapタイル等17オリジンで、どれもアサーションの対象ではない（通しても当日の広告・地図タイルで結果が揺れるだけ）
-- 落ちたテストでは、録画に無くて abort したリクエストをログと添付に出す（録画漏れと実バグの切り分け用。`E2E_DEBUG_MISSES=1` で通ったテストでも出す）
+- `context.routeFromHAR(api.har, { url: /rest/v1/ と localhost の /api/, notFound: "fallback" })`: 録画に無いリクエストは**本番へ素通しする**（下記「5. A改」）。`E2E_REPLAY_STRICT=1` のときは abort する（自動撮り直しの検証用）
+- それ以外の外部ホスト（ローカルdevサーバー以外）への通信は abort する。録画時に観測したのは Google Fonts・AdSense・YouTube埋め込み・Googleマップ・OpenStreetMapタイル等17オリジンで、どれもアサーションの対象ではない（通しても当日の広告・地図タイルで結果が揺れるだけ）
 
 時計を固定するのは、フロントが「今」から組み立てるクエリ（日付・時刻）を録画時と同じURLにするため。Node側で当日の日付を組み立てていた箇所（`smoke.spec.js` の `/races/{本日}` 等）も `e2eNow()` / `e2eTodayJST()` に置き換えた。
 
@@ -61,7 +60,37 @@ HAR は context に登録し、spec 側の `page.route` は page に登録され
 
 例外が1つある。page.route の中で `route.fetch()`（実応答を取ってから加工する）を使うと、そのリクエストはブラウザの通信経路を通らずに直接ネットワークへ出るため、context の HAR では録画も再生もされない。再生時は本番へ出ようとして失敗した（`layout.spec.js` の BOA-460 再現テスト10件、`smoke.spec.js` の前検テスト1件）。`e2e/fixtures.js` の `fetchRecorded(route)` を代わりに使う。録画時は `route.fetch()` の結果を HAR に書き足し、再生時は録画から同じ応答を返す。`APIResponse` そのものではないので、`route.fulfill` には `status`・`headers` を明示して渡す。`route.continue()` も同じく context のルートを飛ばすので `route.fallback()` にする。導入初日に master 側で `route.continue()` 4箇所・`route.fetch()` 1箇所が新たに入ったため、`scripts/maintenance/verify-e2e-recorded-network.js`（Quality Gates で実行）で機械検査する。
 
-もう1つ、テスト終了時の `page.unrouteAll()` は、context 側の録画の再生と競合して `Route is already handled!` で落ちる（実測: 展示前の体重テスト5件）。このフックは本番の応答待ちを捨てるためのものなので、live モードでだけ呼ぶ。
+もう1つ、テスト終了時の `page.unrouteAll()` は、context 側の録画の再生と競合して `Route is already handled!` で落ちる（実測: 展示前の体重テスト5件）。このフックは本番の応答待ちを捨てるためのものなので、replay では呼ばない。
+
+### 5. A改: 録画に無い通信は素通しし、必ず一覧に出す（2026-09-29 改訂）
+
+当初は録画に無い通信を abort していた。ところが、データ取得部分（`supabaseDataService.js`）を変える PR が1日に7本入り、PR ごとに撮り直す前提が成り立たなかった（導入初日だけで master 側の変更による撮り直しが3回要った）。そこで次に改めた。
+
+- 録画に無い `/rest/v1/*`・`/api/*` は本番へ素通しする。CI には本番の読み取り用キー（anon）を渡す
+- 素通しした通信は、メソッド・URL・どのテストかを `test-results/.e2e-passthrough/*.jsonl` に書き、`scripts/maintenance/report-e2e-passthrough.js` が GitHub Actions の step summary と PR コメント（目印付きの1件を更新し続ける）に出す。黙って本番依存に戻らないようにするため。0件でも「0件」と出す
+- 素通しは失敗にしない。新しいクエリを足した PR では素通しが出るのが想定どおりで、翌日の自動撮り直しで録画に入る
+
+### 6. 録画は毎日自動で撮り直す（`.github/workflows/e2e-rerecord.yml`）
+
+毎日 JST11:00（UTC02:00）と `workflow_dispatch` で、master で全件を録画する。
+
+1. 本番に繋いで全件を録画する
+2. 撮った録画だけで再生して全件実行する（`E2E_REPLAY_STRICT=1`: 録画に無い通信は abort＝録画が自己完結しているかを見る）
+3. 採用条件（`scripts/maintenance/e2e-recording.js judge`）
+   - 2 が全件通る（失敗・flaky・テスト外のエラーが0）
+   - skip が現行の録画（ポインタに記録した件数）より増えていない。発走前のレースが少ない日に撮ると skip が増えるため
+4. 採用したら Release に添付してポインタを master に直接 push する（`push-with-retry.sh`。GITHUB_TOKEN の push は他のワークフローを起動しない）。直近14件を残して古い Release を消す
+5. 採用しなかった・失敗したときは Slack に通知する。PRゲートは現行の録画のまま動き続ける
+
+### 7. 録画の本体は GitHub Release に置く
+
+本体（`api.har` と `bodies/`、約90MB）はリポジトリに置かない。撮り直しのたびに圧縮後10〜12MB ずつ履歴が増え、毎日撮り直す運用では1年で約4GBになる。
+
+- 採用した録画は、タグ `e2e-recording-YYYYMMDD-HHMM`（JSTの録画時刻）の Release に `e2e-recording.zip` として添付する（prerelease・latest にしない）
+- リポジトリには `e2e/recording.json`（タグ・sha256・バイト数・録画時刻・Supabaseのオリジン・件数・skip件数）だけを置く
+- 再生の前に `global-setup.js` がポインタの zip を取得し、sha256 を照合して `e2e/recordings/`（gitignore）に展開する。zip は `node_modules/.cache/boatai-e2e-recording/<sha256>.zip` にキャッシュし、CI では `actions/cache` でポインタのハッシュをキーに保存する。リポジトリは公開なので取得に認証は要らない
+- 手元で撮った録画をそのまま再生するときは `E2E_RECORDING_SOURCE=local`。手元で撮った録画を採用するときは `node scripts/maintenance/e2e-recording.js publish --skipped=N --tests=N`
+- 必要な権限: 撮り直しのワークフローは `contents: write`（Release の作成・削除とポインタの push）。Supabase は既存の `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`（anon キーでの読み取りのみ）で足り、新しいキーは要らない
 
 ## サイズ
 
@@ -76,7 +105,7 @@ HAR は context に登録し、spec 側の `page.route` は page に登録され
 
 本文を1本の HAR に埋め込むと101MBになり、GitHub の1ファイル上限（100MB）を超えた。`.zip`（routeFromHAR が対応）なら約8MBだが、撮り直すたびに全体が別のバイナリになり、履歴が毎回約8MBずつ増える。本文を内容の sha1 で名付けたファイルに分けると、撮り直しで変わらない本文（過去日付の予測データ等）は同じblobのまま再利用され、増えるのは変わった本文だけになる。当日の日付に依存する本文は録画1回あたり約8.5MB（圧縮前）で、撮り直しごとの増分はおおむねこの規模になる見込み。
 
-`.gitattributes` で `e2e/recordings/**` を `-diff linguist-generated` にし、PRの差分表示から外した。
+その後（2026-09-29）、本体はリポジトリに置かず GitHub Release に移した（決定7）。上の数値はリポジトリに置いていた場合の見積もりで、Release 方式ではリポジトリに入るのはポインタ（1KB未満）だけになる。
 
 ## 対象外
 
@@ -85,6 +114,7 @@ HAR は context に登録し、spec 側の `page.route` は page に登録され
 ## トレードオフ
 
 - **PRでは本番データ側の変化を検知できない**。RPCの応答形の変化・当日データの欠けは e2e-live.yml の定期実行でしか分からない。検知は最大1日遅れる
-- **新しい通信を足した変更は、録画の撮り直しが要る**。録画外は abort されるので、撮り直さないと落ちる（素通しにしなかった代償。素通しにすると当日データ依存が静かに戻る）
-- **録画は古くなる**。フロントが期待する応答形が変わっても、古い録画のままだとPRは通る。撮り直しの目安は、応答形を変える変更（RPC・API）を入れたとき
+- **新しい通信を足した PR では、その通信だけ本番に依存する**。素通しは一覧に出るが、失敗にはしない。翌日の自動撮り直しまでは、その部分は当日データで揺れうる
+- **録画は最大1日古い**。自動撮り直しが採用されない日が続くと古いまま残る（Slack に通知される）
+- **撮り直しの採用は skip 件数で判定する**。skip が同数でも中身（どのテストが skip したか）が入れ替わる場合は見ていない
 - 録画中にデータが更新されると、テストによって見ている時点が数分ずれる（重複は最も早い応答を残すので、同じURLは1つの応答に揃う）

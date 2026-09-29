@@ -1,4 +1,4 @@
-import { test, expect, fetchRecorded } from "./fixtures.js";
+import { test, expect, e2eTodayJST, fetchRecorded } from "./fixtures.js";
 
 /**
  * 画面幅ごとのレイアウト崩れを機械的に検知する。
@@ -56,16 +56,48 @@ const TRAILING_GAP_THRESHOLD_PX = 40;
 /** 横スクロールの許容誤差（スクロールバー・小数丸めの分） */
 const OVERFLOW_TOLERANCE_PX = 2;
 
+/**
+ * ページごとに「データが描画された」とみなす要素。gotoAndSettle はこれが見えるまで待つ。
+ *
+ * networkidle だけでは足りない。一度 idle に達すると以後の waitForLoadState は待たず、
+ * マシンの負荷で goto が遅いと、データの要求を出す前に idle に達して計測に進み、
+ * グリッドが0個のまま「崩れ無し」と判定していた（#936 の分析: goto 21.1秒 → idle 15ms →
+ * 差し替え完了 25.7秒 → 計測 27.5秒で .digest-grid 0個）。
+ * 静的なページ（/about・/faq・/how-to-use・/blog・/en/venues）は、データを待つ必要が無いので載せない。
+ * 選んだ要素は 2026-09-29 の録画の再生で、各ページの主データとして描画されるものを実測した
+ */
+const READY_SELECTORS = {
+  "/": ".venue-grid .venue-grid-card",
+  "/accuracy": ".turn-accuracy-venue-table",
+  "/winning-technique": ".winning-technique-table",
+  "/races": ".dates-list .date-card",
+  "/hit-races": ".race-cards-grid",
+  "/racers": ".racer-compact-row, .racer-table",
+  "/today": ".digest-grid",
+  "/races/2026-08-11": ".venue-grid-card--open",
+  "/race/2026-09-21-02-05": ".rbit-bar-row",
+  "/racer/4320": ".racer-stat-cards-grid",
+};
+
 async function gotoAndSettle(page, path) {
   await page.goto(path, { waitUntil: "domcontentloaded" });
-  // Supabase由来のカード・バッジが描画される前に測ると、アイテム数が0のまま
-  // 判定してしまう。通信が終わらないページもあるためタイムアウトは許容する
+  await expect(page.locator(".app-header")).toBeVisible();
+  const ready = READY_SELECTORS[path];
+  if (ready) {
+    // 表示の有無ではなく DOM に入ったかで見る（折りたたみ・幅ごとの出し分けで
+    // 非表示になっている要素でも、データが届いたことは分かる）
+    await expect(
+      page.locator(ready).first(),
+      `${path} の主データ（${ready}）が描画されていません`,
+    ).toBeAttached({ timeout: 30000 });
+  }
+  // 主データの後に届く付随データ（バッジ・件数）も待つ。通信が終わらないページもあるため
+  // タイムアウトは許容する（主データは上で確認済み）
   await page
     .waitForLoadState("networkidle", { timeout: 15000 })
     .catch((error) => {
       if (error.name !== "TimeoutError") throw error;
     });
-  await expect(page.locator(".app-header")).toBeVisible();
 }
 
 test.describe("レイアウト: 横スクロールが発生しない", () => {
@@ -388,9 +420,8 @@ function isSupabaseRowHit(row) {
  * 返り値の `available` に固定日の的中件数が入る（ケースを作れたかの確認用）
  */
 async function serveFixedHitRaces(page, hits) {
-  const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  // ブラウザの時計は録画時刻に固定されている（e2e/fixtures.js）。Node 側の「今日」も揃える
+  const todayJst = e2eTodayJST();
   const state = { available: null };
   const pick = (hitRows) => {
     state.available = hitRows.length;
@@ -400,10 +431,15 @@ async function serveFixedHitRaces(page, hits) {
   await page.route(`**/api/predictions/${todayJst}*`, async (route) => {
     const url = new URL(route.request().url());
     url.pathname = `/api/predictions/${HIT_RACES_FIXED_DATE}`;
-    const response = await route.fetch({ url: url.toString() });
+    // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+    const response = await fetchRecorded(route, { url: url.toString() });
     const body = await response.json();
     const races = pick((body.races || []).filter(isEdgeRaceHit));
-    await route.fulfill({ response, json: { ...body, races } });
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json: { ...body, races },
+    });
   });
 
   await page.route(/\/rest\/v1\/races\?.*race_date=eq\./, async (route) => {
@@ -413,12 +449,16 @@ async function serveFixedHitRaces(page, hits) {
       return;
     }
     url.searchParams.set("race_date", `eq.${HIT_RACES_FIXED_DATE}`);
-    const response = await route.fetch({ url: url.toString() });
+    const response = await fetchRecorded(route, { url: url.toString() });
     const rows = await response.json();
     const kept = pick(
       (Array.isArray(rows) ? rows : []).filter(isSupabaseRowHit),
     );
-    await route.fulfill({ response, json: kept });
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json: kept,
+    });
   });
   return state;
 }

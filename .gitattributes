@@ -1,3 +1,0 @@
-# E2Eの録画（npm run test:e2e:record が機械生成。ADR-0077）。
-# 本文は数MBのJSONが数百本あるため、PRの差分表示と言語統計から外す
-e2e/recordings/** -diff linguist-generated=true

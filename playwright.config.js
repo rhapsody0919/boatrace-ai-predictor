@@ -19,23 +19,24 @@ function derivePortFromCwd() {
 const isReplay = process.env.E2E_LIVE !== "1" && process.env.E2E_RECORD !== "1";
 
 // replay では、フロントが叩く Supabase のオリジンを録画時と揃える
-// （HAR はURLの完全一致で引くため）。Vite は既存の環境変数を .env より優先する
+// （HAR はURLの完全一致で引くため）。Vite は既存の環境変数を .env より優先する。
+// 録画の本体は GitHub Release にあり、ここ（設定の読み込み時）ではまだ取得していないので、
+// ポインタ（e2e/recording.json）から読む。E2E_RECORDING_SOURCE=local（手元で撮った録画を
+// そのまま再生する）のときは e2e/recordings/meta.json から読む。
+// anon キーは上書きしない。録画に無い通信は本番へ素通しするため、実キーが要る（ADR-0077）
 function replayServerEnv() {
   if (!isReplay) return undefined;
-  let meta;
+  const local = process.env.E2E_RECORDING_SOURCE === "local";
+  const file = local ? "e2e/recordings/meta.json" : "e2e/recording.json";
+  let source;
   try {
-    meta = JSON.parse(readFileSync("e2e/recordings/meta.json", "utf8"));
+    source = JSON.parse(readFileSync(file, "utf8"));
   } catch (error) {
     throw new Error(
-      `e2e/recordings/meta.json を読めません。npm run test:e2e:record で録画してください: ${error.message}`,
+      `${file} を読めません（E2Eの録画が無い）: ${error.message}`,
     );
   }
-  return {
-    ...process.env,
-    VITE_SUPABASE_URL: meta.supabaseOrigin,
-    // 再生時は本番へ出ないので実キーは要らない。未設定でもクライアントを作れるようにする
-    VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || "e2e-replay",
-  };
+  return { ...process.env, VITE_SUPABASE_URL: source.supabaseOrigin };
 }
 
 const explicitPort = process.env.PW_PORT;

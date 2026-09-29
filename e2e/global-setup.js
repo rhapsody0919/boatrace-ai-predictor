@@ -2,10 +2,12 @@ import { readFileSync, rmSync } from "node:fs";
 import {
   E2E_MODE,
   META_PATH,
+  PASSTHROUGH_DIR,
   RECORD_CACHE_DIR,
   RECORD_PARTIAL_ENV,
   RECORDED_AT_ENV,
 } from "./fixtures.js";
+import { ensureRecording } from "../scripts/maintenance/e2e-recording.js";
 
 /** テストを絞り込む引数。これがあると一部のテストしか走らない */
 const FILTER_FLAGS = new Set([
@@ -60,12 +62,22 @@ export function isPartialRun(argv) {
  * 対象を絞った録画（部分録画）は既存の録画に書き足すので、時計も既存の録画時刻に
  * 合わせる（別の時刻で取った応答が混ざると、URLが食い違う）。
  */
-export default function globalSetup() {
+export default async function globalSetup() {
+  // 前回の実行の素通し一覧を持ち越さない
+  rmSync(PASSTHROUGH_DIR, { recursive: true, force: true });
+  const useLocal = process.env.E2E_RECORDING_SOURCE === "local";
+  if (E2E_MODE === "replay") {
+    // 録画の本体は GitHub Release にある。ポインタの録画を取得・展開する
+    if (!useLocal) await ensureRecording();
+    return;
+  }
   if (E2E_MODE !== "record") return;
   // 前回の録画で取った応答を持ち越さない
   rmSync(RECORD_CACHE_DIR, { recursive: true, force: true });
   const partial = isPartialRun(process.argv);
   if (partial) {
+    // 部分録画は既存の録画に書き足すので、先にその録画を用意する
+    if (!useLocal) await ensureRecording();
     let recordedAt;
     try {
       recordedAt = JSON.parse(readFileSync(META_PATH, "utf8")).recordedAt;

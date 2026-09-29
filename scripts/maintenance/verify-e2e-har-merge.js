@@ -9,6 +9,8 @@
 
 import { canonicalUrl, harKey, mergeHarLogs } from "../../e2e/har-merge.js";
 import { isPartialRun } from "../../e2e/global-setup.js";
+import { countResults, judgeAdoption } from "./e2e-recording.js";
+import { summarize, toMarkdown, MARKER } from "./report-e2e-passthrough.js";
 
 const failures = [];
 let checked = 0;
@@ -105,6 +107,74 @@ check("--project は部分", isPartialRun(argv("--project=smoke")), true);
 check(
   "値を取らないフラグの後の spec 指定も部分",
   isPartialRun(argv("--headed", "e2e/a.spec.js")),
+  true,
+);
+
+// --- 自動撮り直しの採用判定（全件通過・skip が増えていない）
+const report = (statuses) => ({
+  suites: [
+    {
+      title: "a.spec.js",
+      specs: statuses.map((status, i) => ({
+        title: `t${i}`,
+        tests: [{ status }],
+      })),
+    },
+  ],
+});
+const counts = countResults(
+  report(["expected", "skipped", "unexpected", "flaky"]),
+);
+check("件数の数え方", counts, { tests: 4, skipped: 1, failed: 2, errors: 0 });
+check(
+  "全件通過・skip 同数なら採用",
+  judgeAdoption({ tests: 10, skipped: 1, failed: 0, errors: 0 }, { skipped: 1 })
+    .adopt,
+  true,
+);
+check(
+  "skip が増えたら不採用",
+  judgeAdoption({ tests: 10, skipped: 2, failed: 0, errors: 0 }, { skipped: 1 })
+    .adopt,
+  false,
+);
+check(
+  "失敗があれば不採用",
+  judgeAdoption({ tests: 10, skipped: 0, failed: 1, errors: 0 }, { skipped: 5 })
+    .adopt,
+  false,
+);
+check(
+  "1件も走っていなければ不採用",
+  judgeAdoption({ tests: 0, skipped: 0, failed: 0, errors: 0 }, null).adopt,
+  false,
+);
+check(
+  "現行の録画が無ければ skip は比べない",
+  judgeAdoption({ tests: 10, skipped: 3, failed: 0, errors: 0 }, null).adopt,
+  true,
+);
+
+// --- 素通し一覧（黙って本番依存に戻らないよう、PR に必ず出す）
+const rows = summarize([
+  { method: "GET", url: "/rest/v1/a", test: "x", project: "smoke" },
+  { method: "GET", url: "/rest/v1/a", test: "y", project: "smoke" },
+  { method: "GET", url: "/rest/v1/a", test: "x", project: "smoke" },
+  { method: "POST", url: "/rest/v1/rpc/b", test: "z", project: "layout-wide" },
+]);
+check("同じ通信は1行にまとめ、テストを重複なく並べる", rows[0].tests, [
+  "[smoke] x",
+  "[smoke] y",
+]);
+check("通信の種類数", rows.length, 2);
+check(
+  "0件でも目印付きで出す（PRコメントを更新できるように）",
+  toMarkdown([]).startsWith(MARKER),
+  true,
+);
+check(
+  "素通しがあれば URL を表に出す",
+  toMarkdown(rows).includes("/rest/v1/rpc/b"),
   true,
 );
 

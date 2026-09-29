@@ -397,7 +397,7 @@
     {
       "script": "verify-e2e-har-merge.js",
       "tier": "ci",
-      "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）と部分録画の判定（ADR-0077）"
+      "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、素通し一覧の集計（ADR-0077）"
     },
     {
       "script": "verify-e2e-recorded-network.js",

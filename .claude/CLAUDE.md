@@ -146,7 +146,7 @@ DB設計時のER図生成規律・長時間実装時の再開規律は`.claude/r
 1. `/code-review` でセルフレビューを実行
 2. **新規のデータ集計・分析機能（新しい統計・ランキング・傾向表示等）を含む場合は、データの正確性を複数の視点で検証する**（詳細は `.claude/rules/analysis.md` の「データ精度の検証」を参照）。コードレビューとは別に「集計結果が実データと一致しているか」だけを見る検証を必ず行う。実データの見た目・コードスタイルが正しくても、集計ロジックの誤り（スケール不一致、JOIN漏れ、期間ズレ等）は見た目だけのレビューでは発見できないため、独立した検証ステップとして扱う
 3. 指摘事項を修正してコミット・push（判断が分かれる指摘は修正せず報告に含める）。**修正する指摘は先に実在を検証し、同じPRで再現テストを追加して固定する。同じ指摘が再発したら修正をやめて原因分析する**。新しいページ・分析タブ・主要コンポーネントの追加では、洗い出し（独立サブエージェント・修正禁止）→検証→振り分け→修正→回帰確認の5段階で行う。詳細・例外・終了条件は `.claude/rules/review-fix-cycle.md`（BOA-464）
-4. `npm run build` を実行し、ビルドエラーが無いことを確認する。既存のページ挙動・共通コンポーネント（Header、LanguageSwitcher、`src/components/race/` 等）・ルーティングに影響しうる変更の場合は `npm run test:e2e`（Playwright）も実行し、デグレが無いことを確認する。新しい主要導線を追加した場合はスモークテストにも追記する。E2Eは既定で録画（`e2e/recordings/api.har`）を再生し、録画に無い `/rest/v1/*`・`/api/*` は abort する。新しいクエリ・API呼び出しを足した変更は `npm run test:e2e:record` で撮り直し、録画も同じPRに含める。spec では `@playwright/test` ではなく `e2e/fixtures.js` から `test` を import し、page.route 内で実応答を加工するときは `route.fetch()` ではなく `fetchRecorded(route)` を使う（`route.fetch()` は録画を通らない。ADR-0077）。
+4. `npm run build` を実行し、ビルドエラーが無いことを確認する。既存のページ挙動・共通コンポーネント（Header、LanguageSwitcher、`src/components/race/` 等）・ルーティングに影響しうる変更の場合は `npm run test:e2e`（Playwright）も実行し、デグレが無いことを確認する。新しい主要導線を追加した場合はスモークテストにも追記する。E2Eは既定で録画を再生する（本体は GitHub Release、`e2e/recording.json` がポインタ。録画は毎日 JST11:00 に `e2e-rerecord.yml` が撮り直す）。録画に無い `/rest/v1/*`・`/api/*` は本番へ素通しし、PR コメントと step summary に一覧が出る。新しいクエリを足した PR で素通しが出るのは想定どおりで、PR ごとの撮り直しは不要。spec では `@playwright/test` ではなく `e2e/fixtures.js` から `test` を import し、page.route 内で実応答を加工するときは `route.fetch()` ではなく `fetchRecorded(route)` を使う（`route.fetch()` は録画を通らない。ADR-0077）。
 
    **CSS・レイアウトを変更した場合は `npm run test:layout`（`e2e/layout.spec.js`）を実行する**。375 / 768 / 1024 / 1440 / 1920px の5軸で、横スクロールの発生と、グリッドの「空トラック」（アイテム数より列数が多い）・「使い残し」（箱の幅に対してトラック合計が足りない）を検知する。既存の `smoke.spec.js` は従来どおり既定ビューポート1軸のみ。2026-09-25まですべてのE2Eが1280px幅でしか走っておらず、トップページのブログ一覧が1440px以上で右側に334〜726pxの空白を作る状態が放置されていた（ADR-0073）。**幅の軸は「ブレークポイントの境界」と「レイアウトが切り替わる帯の中」の両方を通す**。実際に、最初に選んだ3軸（375/1440/1920）が769〜1255pxの帯を飛び越していたため、修正で入れた同種の崩れ（1024pxで右168px）を検知できなかった。
 
@@ -229,9 +229,9 @@ SEO・集客施策を検討・実装する際は、その施策が「JS実行後
 
 ## よく使うコマンド
 
-E2Eは既定（`npm run test:e2e`）で録画（`e2e/recordings/`）を再生し、時計を録画時刻に固定する（ADR-0077）。
+E2Eは既定（`npm run test:e2e`）で録画を再生し、時計を録画時刻に固定する（ADR-0077）。録画は GitHub Release から自動で取得する。
 ```bash
-npm run test:e2e:record  # E2Eの録画を撮り直す。発走前のレースがある時間帯（JST10〜15時目安）に実行する
+npm run test:e2e:record  # E2Eの録画を手元で撮り直す（通常は不要。e2e-rerecord.yml が毎日JST11時に撮り直して採用する）
 npm run test:e2e:live    # 本番データ・実時刻でE2E（旧挙動。e2e-live.yml がJST14時に定期実行）
 ```
 
