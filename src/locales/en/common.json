@@ -653,7 +653,7 @@
     "liveLoading": "Fetching latest odds… (takes about 10 seconds from the official site)",
     "liveFailed": "Could not fetch the latest odds. Showing values {{label}}",
     "liveRetry": "Retry",
-    "liveFinal": "Final odds at deadline",
+    "liveFinal": "Final odds at deadline (official)",
     "liveLatest": "Latest",
     "officialUpdated": "Official update",
     "fetchedAt": "fetched {{time}}",
@@ -666,7 +666,12 @@
     "snapshotLagNote": "These are the official values at the time of fetching. Official odds updates can lag by a few minutes, so they may differ from the final odds and payouts",
     "liveUnchanged": "No change (refreshing within 30 seconds returns the same values)",
     "liveFromNote": "From 90 minutes before the deadline, this tab shows the latest official odds.",
-    "officialOddsLink": "See odds on the official site"
+    "officialOddsLink": "See odds on the official site",
+    "finalOfficial": "Final odds at deadline (official)",
+    "finalDeadlineAt": "Deadline {{time}} JST",
+    "finalSource": "From the official BOATRACE site",
+    "finalTrendLabel": "At deadline (official)",
+    "finalTrendNote": "\"N min before\" values are the official display at the time we fetched them (official updates lag by a few minutes)"
   },
   "meetTab": {
     "note": "Who needs a result in this series, and how the boat you pick has been running",

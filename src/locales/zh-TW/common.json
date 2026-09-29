@@ -651,7 +651,7 @@
     "liveLoading": "正在取得最新賠率…（從官方網站取得約需10秒）",
     "liveFailed": "無法取得最新賠率。目前顯示 {{label}} 的數值",
     "liveRetry": "重新取得",
-    "liveFinal": "截止時賠率",
+    "liveFinal": "截止時賠率（官方）",
     "liveLatest": "最新",
     "officialUpdated": "官方更新",
     "fetchedAt": "{{time}} 擷取",
@@ -664,7 +664,12 @@
     "snapshotLagNote": "此為擷取當時的官方顯示值。官方賠率更新可能延遲數分鐘，可能與截止時賠率及最終派彩不一致",
     "liveUnchanged": "無變化（30秒內重新取得會是相同數值）",
     "liveFromNote": "截止前90分鐘起，本分頁會顯示官方最新賠率。",
-    "officialOddsLink": "查看官方網站的賠率"
+    "officialOddsLink": "查看官方網站的賠率",
+    "finalOfficial": "截止時賠率（官方）",
+    "finalDeadlineAt": "{{time}} 截止（JST）",
+    "finalSource": "取自BOATRACE官方網站",
+    "finalTrendLabel": "截止時（官方）",
+    "finalTrendNote": "「截止前○分鐘」的數值為當時擷取的官方顯示值（官方更新會延遲數分鐘）"
   },
   "meetTab": {
     "note": "本梯次6艇的勝負關鍵，以及所選艇的出賽狀況",

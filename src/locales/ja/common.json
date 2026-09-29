@@ -384,7 +384,7 @@
     "liveLoading": "最新オッズを取得中…（公式サイトから10秒ほどかかります）",
     "liveFailed": "最新の取得に失敗しました。{{label}}の値を表示中",
     "liveRetry": "再取得",
-    "liveFinal": "締切時オッズ",
+    "liveFinal": "締切時オッズ（公式）",
     "liveLatest": "最新",
     "officialUpdated": "公式更新",
     "fetchedAt": "{{time}} 取得",
@@ -397,7 +397,12 @@
     "snapshotLagNote": "取得した時点の公式表示です。公式のオッズ更新は数分遅れることがあり、締切時オッズ・確定の払戻とは一致しないことがあります",
     "liveUnchanged": "変化なし（30秒以内の取り直しは同じ値です）",
     "liveFromNote": "締切90分前から、このタブで公式の最新オッズを表示します。",
-    "officialOddsLink": "公式サイトのオッズを見る"
+    "officialOddsLink": "公式サイトのオッズを見る",
+    "finalOfficial": "締切時オッズ（公式）",
+    "finalDeadlineAt": "{{time}} 締切",
+    "finalSource": "BOATRACE公式から取得",
+    "finalTrendLabel": "締切時（公式）",
+    "finalTrendNote": "○分前の値は、その時点に取得した公式表示です（公式の更新は数分遅れます）"
   },
   "meetTab": {
     "note": "この節（開催）の6艇の勝負駆けと、選んだ1艇の走りを見ます",

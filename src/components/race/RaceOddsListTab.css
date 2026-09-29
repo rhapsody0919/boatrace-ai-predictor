@@ -453,6 +453,52 @@
   fill: var(--color-success);
 }
 
+/* 締切時オッズ（公式、BOA-496）: 状態の1行・推移の最後の点・最後の区間（点線）を公式の色（青）で出す */
+.rol-status.is-official {
+  color: var(--color-info-text);
+  background: color-mix(in srgb, var(--color-info) 10%, var(--surface-card));
+  border-color: color-mix(in srgb, var(--color-info) 40%, transparent);
+}
+
+.rol-official-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-info-text);
+  flex: none;
+}
+
+.rol-trend-item.is-official {
+  grid-column: span 2;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-info) 14%, transparent);
+}
+
+.rol-trend-item.is-official .rol-trend-value,
+.rol-trend-item.is-official .rol-trend-label {
+  color: var(--color-info-text);
+}
+
+.rol-trend-item.is-official .rol-trend-label {
+  font-weight: var(--font-weight-bold);
+}
+
+.rol-sparkline-official-line {
+  stroke: var(--color-info-text);
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.rol-sparkline-official {
+  fill: var(--color-info-text);
+}
+
+.rol-trend-note {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
 @media (max-width: 480px) {
   .rol-boat-badge {
     width: 1.2rem;

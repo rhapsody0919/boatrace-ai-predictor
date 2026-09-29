@@ -5651,6 +5651,60 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定レースの締切時オッズ（公式）を取得する（BOA-496）。締切の後に Cron（api/cron/odds-final.js）が公式の
+   * 「締切時オッズ」表示のページを取り直して race_odds_final に保存した値。券種ごとに取れたものだけが入る
+   * （取れなかった券種は null）。票0は 0 のまま（スナップショットと違い、キーが無いのは欠場・未発売）。
+   *
+   * 戻り値: { capturedAt, win, place, trifectaAll, trioAll, exactaAll, quinellaAll, wideAll }、行が無ければ null。
+   * 本日のレースは、締切後に値が入るため短いTTLにする（getRaceOddsSnapshots と同じ理由）
+   */
+  getRaceFinalOdds(raceId) {
+    const dateMatch = String(raceId).match(/^(\d{4}-\d{2}-\d{2})-/);
+    const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+    const ttl =
+      dateMatch && dateMatch[1] < todayJst ? undefined : 3 * 60 * 1000;
+    return withCache(
+      `race-odds-final-v1-${raceId}`,
+      async () => {
+        if (!supabase) {
+          throw new Error("Supabase client not initialized");
+        }
+        const nonEmpty = (v) =>
+          v && typeof v === "object" && Object.keys(v).length > 0 ? v : null;
+        let data;
+        try {
+          ({ data } = await supabase
+            .from("race_odds_final")
+            .select(
+              "captured_at, win_all, place_all, trifecta_all, trio_all, exacta_all, quinella_all, wide_all",
+            )
+            .eq("race_id", raceId)
+            .maybeSingle());
+        } catch (err) {
+          // マイグレーション108が未適用（テーブルが無い）のときだけ「締切時オッズなし」に倒す。画面は従来の
+          // スナップショットの表示のまま動く（適用とデプロイの順序を問わないため）。それ以外は上流に流す
+          if (err?.code === "PGRST205" || err?.code === "42P01") return null;
+          throw err;
+        }
+        if (!data) return null;
+        return {
+          capturedAt: data.captured_at,
+          win: nonEmpty(data.win_all),
+          place: nonEmpty(data.place_all),
+          trifectaAll: nonEmpty(data.trifecta_all),
+          trioAll: nonEmpty(data.trio_all),
+          exactaAll: nonEmpty(data.exacta_all),
+          quinellaAll: nonEmpty(data.quinella_all),
+          wideAll: nonEmpty(data.wide_all),
+        };
+      },
+      ttl,
+    );
+  },
+
+  /**
    * unifiedモデルの実測精度（複勝的中率・回収率、展開的中率）を取得する（BOA-179関連）
    * scripts/daily/calculate-unified-model-accuracy.js が日次で accuracy_cache に
    * 保存した集計値を読むだけなので軽量。AIデータ分析の複勝予想/展開予測カードで
