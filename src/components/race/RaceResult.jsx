@@ -367,6 +367,7 @@ function PayoutRow({
   separator,
   amount,
   popularity,
+  popularityTo = null,
   isBest,
   note = null,
   isVoid = false,
@@ -390,7 +391,11 @@ function PayoutRow({
         )}
       </span>
       <span className="rr-pop">
-        {popularity ? t("result.popularity", { rank: popularity }) : ""}
+        {popularity
+          ? popularityTo
+            ? t("result.popularityRange", { from: popularity, to: popularityTo })
+            : t("result.popularity", { rank: popularity })
+          : ""}
       </span>
       <span className="rr-amount num">
         {typeof amount === "number" ? `¥${amount.toLocaleString()}` : ""}
@@ -418,6 +423,7 @@ function PayoutRowsTable({ rows, t }) {
             separator={row.separator}
             amount={isNoRaceRow ? null : row.amount}
             popularity={isNoRaceRow ? null : row.popularity}
+            popularityTo={isNoRaceRow ? null : (row.popularityTo ?? null)}
             isBest={
               isPayoutAmountCountable(row) &&
               maxAmount != null &&
@@ -441,23 +447,27 @@ function PayoutRowsTable({ rows, t }) {
 
 // 単勝・複勝の人気（BOA-534）。公式の払戻（race_payouts）は3連単〜拡連複にだけ人気が付き、単勝・複勝には
 // 付かない（公式の結果ページにも出ない）。そこで締切時オッズ（race_odds_final、BOA-496）から順位を出す。
-// - 単勝: オッズの小さい順
-// - 複勝: 下限の小さい順、同じ下限なら上限の小さい順（公式に複勝の人気順の定めが見当たらないため、
-//   「最低でもこれだけ付く」下限を主にする。オッズ一覧の色分けも下限が基準）
-// - 同じオッズは同じ順位（1, 1, 3 …）。票なし（0.0）・欠場（キーなし）は順位を付けない
+// - 単勝: オッズの小さい順（2連単・3連単で、締切時オッズの小さい順が公式の人気と40/40件一致）
+// - 複勝: 上限の小さい順、同じ上限なら下限の小さい順。公式は複勝の人気を出さないため、同じ幅のあるオッズの
+//   拡連複で公式の人気と比べた（9/29 の40レース・120件）: 上限→下限 114件一致、下限→上限 100件一致。
+//   上限は「相手が最も票の少ない艇」のときの値で、自分の票数に対して単調になりやすい
+// - 公式は丸める前の票数で順位を付けるため、同じオッズの艇どうしの順位はオッズからは決まらない。
+//   同じオッズの艇がいるときは「4〜5人気」のように幅で返す（{ from, to }）。票なし（0.0）・欠場（キーなし）は
+//   順位を付けない
 function popularityFromFinalOdds(map, boat, isRange) {
   const valid = (v) =>
     v != null && (isRange ? v.low > 0 : typeof v === "number" && v > 0);
   const mine = map?.[String(boat)];
   if (!valid(mine)) return null;
-  const sortKey = (v) => (isRange ? [v.low, v.high] : [v, 0]);
+  const sortKey = (v) => (isRange ? [v.high, v.low] : [v, 0]);
   const [a0, a1] = sortKey(mine);
-  const better = Object.values(map).filter((v) => {
-    if (!valid(v)) return false;
-    const [b0, b1] = sortKey(v);
-    return b0 < a0 || (b0 === a0 && b1 < a1);
-  });
-  return better.length + 1;
+  const others = Object.entries(map)
+    .filter(([key, v]) => key !== String(boat) && valid(v))
+    .map(([, v]) => sortKey(v));
+  const better = others.filter(([b0, b1]) => b0 < a0 || (b0 === a0 && b1 < a1));
+  const tied = others.filter(([b0, b1]) => b0 === a0 && b1 === a1);
+  const from = better.length + 1;
+  return { from, to: from + tied.length };
 }
 
 // 払戻の行のうち、単勝・複勝で公式の人気が無い行に、締切時オッズから出した人気を補う。
@@ -483,9 +493,13 @@ function withFinalOddsPopularity(rows, finalOdds) {
       row.boats[0],
       source.isRange,
     );
-    return popularity == null
-      ? row
-      : { ...row, popularity, popularityFromFinalOdds: true };
+    if (popularity == null) return row;
+    return {
+      ...row,
+      popularity: popularity.from,
+      popularityTo: popularity.to > popularity.from ? popularity.to : null,
+      popularityFromFinalOdds: true,
+    };
   });
 }
 

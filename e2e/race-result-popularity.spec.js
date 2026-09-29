@@ -4,7 +4,8 @@ import { test, expect } from "./fixtures.js";
  * 結果タブの払戻で、単勝・複勝の人気を締切時オッズ（race_odds_final）から出す（BOA-534）。
  *
  * 公式の払戻（race_payouts）は3連単〜拡連複にだけ人気が付き、単勝・複勝は popularity が NULL。
- * 単勝はオッズの小さい順、複勝は下限の小さい順（同じ下限なら上限）、同じオッズは同じ順位。
+ * 単勝はオッズの小さい順、複勝は上限の小さい順（同じ上限なら下限）。同じオッズの艇がいるときは、
+ * 公式（票数で差を付ける）の順位がオッズからは決まらないため「2〜3人気」と幅で出す。
  * 値は児島 2026-09-29 12R の本番データ（race_payouts・race_odds_final、2026-09-30 に確認）。
  */
 
@@ -142,6 +143,15 @@ async function openResult(page, race, finalRow) {
   return root;
 }
 
+// 複勝の並べ方: 下限の順（5号艇 1.9 < 4号艇 2.2）と上限の順（4号艇 10.0 < 5号艇 10.3）で入れ替わる例
+const REORDERED = {
+  ...FINAL_ROW,
+  place_all: {
+    ...FINAL_ROW.place_all,
+    3: { low: 2.5, high: 9.0 },
+  },
+};
+
 const popOf = (root, type, combo) =>
   root
     .locator(".rr-payout-row")
@@ -155,7 +165,7 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
   }) => {
     const root = await openResult(page, KOJIMA, FINAL_ROW);
     await expect(popOf(root, "単勝", "1")).toHaveText("1人気");
-    // 複勝は下限の小さい順: 1号艇 1.0 → 1人気、3号艇 2.0（5号艇 1.9 の次）→ 3人気
+    // 複勝は上限の小さい順: 1号艇 1.0 → 1人気、3号艇 10.9（5号艇 10.3 の次）→ 3人気
     await expect(popOf(root, "複勝", "1").first()).toHaveText("1人気");
     await expect(
       root.locator(".rr-payout-row").filter({ hasText: "¥200" }).first(),
@@ -169,6 +179,16 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
     );
   });
 
+  test("複勝は上限の小さい順（下限の順とは違う並びになる例）", async ({
+    page,
+  }) => {
+    // 3号艇: 下限 2.5 は6艇中5番目だが、上限 9.0 は1号艇（1.0）の次 → 2人気
+    const root = await openResult(page, KOJIMA, REORDERED);
+    await expect(
+      root.locator(".rr-payout-row").filter({ hasText: "¥200" }).first(),
+    ).toContainText("2人気");
+  });
+
   test("締切時オッズなし: 単勝・複勝の人気は空欄、注記も出さない", async ({
     page,
   }) => {
@@ -180,7 +200,7 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
     await expect(page.getByTestId("payout-popularity-note")).toHaveCount(0);
   });
 
-  test("同じオッズは同じ順位（複勝の下限・上限が同じ艇が並ぶ）", async ({
+  test("同じオッズの艇がいるときは順位を幅で出す（複勝の上限・下限が同じ艇が並ぶ）", async ({
     page,
   }) => {
     const tied = {
@@ -191,10 +211,10 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
       },
     };
     const root = await openResult(page, KOJIMA, tied);
-    // 1号艇 1.0 が1人気、3号艇と5号艇（2.0-10.9）が同じ2人気
+    // 1号艇 1.0 が1人気、3号艇と5号艇（2.0-10.9）は並ぶため「2〜3人気」
     await expect(
       root.locator(".rr-payout-row").filter({ hasText: "¥200" }).first(),
-    ).toContainText("2人気");
+    ).toContainText("2〜3人気");
   });
 
   test("不成立の券種には人気を出さない（単勝・複勝が不成立）", async ({
