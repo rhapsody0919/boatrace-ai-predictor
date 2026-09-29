@@ -26,6 +26,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatRateOrCount } from "../../src/utils/smallSampleRate.js";
+import { officialTallyState } from "../../src/utils/motorGeneration.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -142,10 +143,21 @@ check(
   );
 }
 // ---- BOA-513 PR2 ファン評価1周目（2026-09-29） ----
+// 公式 0/0 が「集計前」か「集計済みの 0%」かは、会場公式の出走数で分ける
+// （丸亀24号機は 9/21 に2走とも6着＝集計済みの 0%。2026-09-29 ファン評価 P1）
 check(
-  "推移グラフ: 全部の点が 0（公式の累計がまだ無い）なら線を引かず、その旨を出す",
-  /firstRatedIndex === -1\s*\?\s*\[\]/.test(chart) &&
-    chart.includes('t("analysis.motor.trendNotYetOfficial")'),
+  "officialTallyState: 会場公式の出走数が1以上なら集計済み、値のある会場で0/無しなら集計前、値の無い会場は不明",
+  officialTallyState(true, 2) === "tallied" &&
+    officialTallyState(false, 2) === "tallied" &&
+    officialTallyState(true, 0) === "pending" &&
+    officialTallyState(true, null) === "pending" &&
+    officialTallyState(false, null) === "unknown",
+);
+check(
+  "推移グラフ: 全部の点が 0 のとき、集計前なら線を引かず、集計済みなら 0 の線を引き、不明なら断定しない",
+  /firstRatedIndex === -1\s*\?\s*drillTallyState === "tallied"/.test(chart) &&
+    chart.includes('t("analysis.motor.trendNotYetOfficial")') &&
+    chart.includes('t("analysis.motor.trendOfficialZeroUnknown")'),
 );
 check(
   "推移グラフ: 先頭の 0 を落としたときは、展示タイムと始まりがずれる理由を書く",

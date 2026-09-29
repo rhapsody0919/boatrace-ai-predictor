@@ -23,6 +23,7 @@ import { getTodayJST } from "../../utils/dateUtils";
 import {
   formatGenerationDate,
   isClippedByGeneration,
+  officialTallyState,
 } from "../../utils/motorGeneration";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
@@ -285,11 +286,22 @@ function MotorConditionChart({
   const firstRatedIndex = (trendData?.trend ?? []).findIndex(
     (row) => row.motor_2rate !== 0 || row.motor_3rate !== 0,
   );
-  // 全部の点が 0（最初の節がまだ終わらず公式の累計が付いていない）なら線を引かない。
-  // 0% の横線は「一度も2着以内に来ていない」と読まれる（2026-09-29 ファン評価 P1）
+  // 全部の点が 0 のとき、集計前（最初の節がまだ終わっていない）なら線を引かない。
+  // 0% の横線は「一度も2着以内に来ていない」と読まれる（2026-09-29 ファン評価 P1）。
+  // 集計済みで本当に 0%（前の節で3着以内に入らなかった）なら、0 の線を引く。
+  // 区別には会場公式サイトの出走数を使う（officialTallyState）
+  const venueHasOfficialStats = breakdown.some(
+    (r) => r.race_count !== null && r.race_count !== undefined,
+  );
+  const drillTallyState = officialTallyState(
+    venueHasOfficialStats,
+    venueMotorStats?.raceCount,
+  );
   const chartData = (
     firstRatedIndex === -1
-      ? []
+      ? drillTallyState === "tallied"
+        ? (trendData?.trend ?? [])
+        : []
       : (trendData?.trend ?? []).slice(firstRatedIndex)
   ).map((row) => ({
     date: row.date.slice(5),
@@ -931,9 +943,11 @@ function MotorConditionChart({
             />
           ) : (
             <div className="empty-state">
-              {(trendData?.trend ?? []).length > 0
-                ? t("analysis.motor.trendNotYetOfficial")
-                : t("analysis.motor.trendEmpty")}
+              {(trendData?.trend ?? []).length === 0
+                ? t("analysis.motor.trendEmpty")
+                : drillTallyState === "pending"
+                  ? t("analysis.motor.trendNotYetOfficial")
+                  : t("analysis.motor.trendOfficialZeroUnknown")}
             </div>
           )}
           {/* 先頭の 0 を落としたとき、下の展示タイムのグラフと始まりの日がずれる理由 */}
