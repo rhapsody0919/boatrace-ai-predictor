@@ -3,7 +3,15 @@
  * 本日（`/venue/:venueCode`）と過去日付（`/races/:date/:venueCode`）の両方で使う。
  * 1R〜12Rを一覧表示し、各レースカードからレース詳細（/race/:raceId）へ遷移する。
  */
-import { useParams, Link, useNavigate, Navigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import {
+  useParams,
+  Link,
+  useNavigate,
+  Navigate,
+  useLocation,
+  useNavigationType,
+} from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
@@ -18,7 +26,8 @@ import {
 } from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { useNowHHMM } from "../hooks/useNowHHMM";
-import { getTodayJST } from "../utils/dateUtils";
+import { getNowHHMMJST, getTodayJST } from "../utils/dateUtils";
+import { getRaceStatus, RACE_STATUS } from "../utils/raceStatus";
 import { formatDate } from "../utils/formatters";
 import "./VenueRaceListPage.css";
 
@@ -39,6 +48,32 @@ function VenueRaceListPage() {
   const { races: allRaces, loading, error } = useDatePredictions(date);
   // Hooksはearly returnより前で無条件に呼ぶ必要があるため、venueCode不正時のNavigateより前に置く
   const nowHHMM = useNowHHMM(isToday);
+  // 次の発走レースの位置は、開いた時点の時刻で決めて固定する（読んでいる途中でカードが動いたり
+  // 再スクロールしたりしないように。開き直すと新しい位置になる。BOA-546）
+  const [openedHHMM] = useState(() => (isToday ? getNowHHMMJST() : null));
+  // ブラウザの戻る・進む（履歴の移動）で来たときは自動スクロールしない（ブラウザのスクロール位置の復元を優先）。
+  // ページを最初に開いたときも react-router は "POP" になるため、履歴の移動かは location.key で見分ける
+  // （最初に開いたページは "default"）
+  const navigationType = useNavigationType();
+  const location = useLocation();
+  const cameFromHistory =
+    navigationType === "POP" && location.key !== "default";
+  const venueCardsRef = useRef(null);
+  const scrolledRef = useRef(false);
+  // 会場カードを次の発走レースの直前に差し込んだら、そこまで1回だけスクロールする（BOA-546）
+  useEffect(() => {
+    if (scrolledRef.current || cameFromHistory) return;
+    const el = venueCardsRef.current;
+    if (!el) return;
+    scrolledRef.current = true;
+    // sticky ヘッダーに隠れない位置へ（ヘッダーはスクロールすると低くなるため、いまの高さで少し余裕を持たせる）
+    const headerHeight =
+      document.querySelector(".app-header")?.getBoundingClientRect().height ??
+      0;
+    window.scrollTo({
+      top: el.getBoundingClientRect().top + window.scrollY - headerHeight - 8,
+    });
+  });
 
   if (!Number.isInteger(venueCode) || venueCode < 1 || venueCode > 24) {
     return <Navigate to={isToday ? "/" : `/races/${date}`} replace />;
@@ -56,6 +91,21 @@ function VenueRaceListPage() {
       startTime: race.startTime,
       rawData: race,
     }));
+
+  // 会場カード2枚（この会場の特徴・この日の水面傾向）を差し込む位置（BOA-546）。本日ビューで、最初の
+  // 発走前（UPCOMING）のレースの直前。締切後・結果待ちのレースはその上に残る（もう舟券を買えないため）。
+  // 1Rが発走前（先頭）・発走前のレースが無い（全レース締切後）・過去日付は、従来どおり最上部
+  const nextRaceIndex =
+    openedHHMM == null
+      ? -1
+      : venueRaces.findIndex(
+          (race) =>
+            getRaceStatus(
+              { startTime: race.startTime, result: race.rawData?.result },
+              openedHHMM,
+            ) === RACE_STATUS.UPCOMING,
+        );
+  const cardsBeforeIndex = nextRaceIndex > 0 ? nextRaceIndex : null;
 
   const backLink = isToday ? localize("/") : `/races/${date}`;
   const breadcrumbItems = isToday
@@ -88,6 +138,18 @@ function VenueRaceListPage() {
     ? t("home.noRacesToday")
     : "このレース場のデータはありません";
 
+  const venueCards = (
+    <>
+      <VenueCharacteristicsCard venueCode={venueCode} />
+
+      {/* この日の水面傾向（phase a FR-5 / BOA-222）。直上の
+          VenueCharacteristicsCard は過去90日のベースラインで、
+          こちらはこの日1日分。カードの注記で日付とレース数を明示する */}
+      <VenueDaySummaryCard venueCode={venueCode} date={date} />
+    </>
+  );
+  const showCardsInGrid = !loading && !error && cardsBeforeIndex != null;
+
   return (
     <>
       <title>{metaTitle}</title>
@@ -109,12 +171,9 @@ function VenueRaceListPage() {
             </Link>
           </header>
 
-          <VenueCharacteristicsCard venueCode={venueCode} />
-
-          {/* この日の水面傾向（phase a FR-5 / BOA-222）。直上の
-              VenueCharacteristicsCard は過去90日のベースラインで、
-              こちらはこの日1日分。カードの注記で日付とレース数を明示する */}
-          <VenueDaySummaryCard venueCode={venueCode} date={date} />
+          {/* 本日ビューでは、レースの並びが決まるまで会場カードを出さない（最上部に出してから次の発走レースの
+              直前へ移すと、カードが飛んで見える＝レイアウトシフト） */}
+          {!(isToday && loading) && !showCardsInGrid && venueCards}
 
           {loading ? (
             <LoadingScreen
@@ -134,14 +193,24 @@ function VenueRaceListPage() {
           ) : (
             <section className="race-list-section">
               <div className="race-grid">
-                {venueRaces.map((race) => (
+                {venueRaces.map((race, index) => [
+                  showCardsInGrid && index === cardsBeforeIndex && (
+                    <div
+                      key="venue-cards"
+                      ref={venueCardsRef}
+                      className="venue-race-list__next-race-cards"
+                      data-testid="venue-next-race-cards"
+                    >
+                      {venueCards}
+                    </div>
+                  ),
                   <RaceCard
                     key={race.id}
                     race={race}
                     nowHHMM={nowHHMM}
                     onAnalyzeRace={(r) => navigate(localize(`/race/${r.id}`))}
-                  />
-                ))}
+                  />,
+                ])}
               </div>
             </section>
           )}
