@@ -11,8 +11,8 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 | 区分 | 件数 |
 |---|---|
-| テーブル・ビューの定義 | 79 |
-| 読んでいる（テーブルを直接） | 52 |
+| テーブル・ビューの定義 | 80 |
+| 読んでいる（テーブルを直接） | 53 |
 | 読んでいる（RPC経由のみ） | 0 |
 | 画面から読んでいない（例外登録あり） | 23 |
 | **画面から読んでいない（例外登録なし＝要判断）** | **4** |
@@ -61,7 +61,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `venue_course_technique_baseline` | 表 | 098_morning_data_digest.sql | なし | GRANT（098_morning_data_digest.sql） | 会場×グレード×実進入コースの決まり手ベースライン（098）。上と同じく集計の中間テーブル |
 | `venue_entry_course_stats` | 表 | 064_venue_entry_course_stats.sql | なし | 記述なし | 「表示には使わず、自前計算の全国値の検証にのみ使う」とユーザー判断済み（BOA-293、orchestration.md）。読み手が無いことは既知 |
 
-## 画面から読んでいる（52件）
+## 画面から読んでいる（53件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -86,6 +86,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `race_entries` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_exhibition_trend(画面), get_race_return_rate(画面), get_race_st_predictability(画面), get_race_technique_profile(画面), get_today_races(API) | ポリシー（001_schema.sql） |  |
 | `race_history_cache` | 表 | 020_race_history_cache.sql | API・画面が直接 | GRANT（020_race_history_cache.sql） |  |
 | `race_odds` | 表 | 001_schema.sql | 画面が直接 | ポリシー（076_enable_rls_on_public_tables.sql） |  |
+| `race_odds_final` | 表 | 108_race_odds_final.sql | 画面が直接 | GRANT（108_race_odds_final.sql） |  |
 | `race_original_exhibition` | 表 | 091_boatcast_original_exhibition.sql | 画面が直接 | GRANT（096_original_exhibition_public_read.sql） |  |
 | `race_original_exhibition_values` | 表 | 091_boatcast_original_exhibition.sql | 画面が直接 | GRANT（096_original_exhibition_public_read.sql） |  |
 | `race_pit_comments` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
