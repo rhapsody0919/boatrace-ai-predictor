@@ -14,11 +14,16 @@
  *
  * 3連複(odds3f)では重複組み合わせのセクションに is-disabled セルが入る。
  *
+ * 票がまだ0の組み合わせは公式が「0.0」と表示する。既定（cron の保存用）では、オッズとして確定していない
+ * ため捨てる。keepZero=true（ライブ表示用、BOA-487）なら 0 のまま残し、「票なし」と「欠場・未発売」
+ * （セルが数値でない＝キー自体が無い）を画面で区別できるようにする。
+ *
  * @param {import('cheerio').CheerioAPI} $
  * @param {boolean} sortBoats - true なら艇番を昇順ソート（3連複用）
+ * @param {{keepZero?: boolean}} [options]
  * @returns {Map<string, number>} "A-B-C" -> odds
  */
-export function parseOddsTable($, sortBoats) {
+export function parseOddsTable($, sortBoats, { keepZero = false } = {}) {
   const map = new Map();
   const mainTable = $("table")
     .filter((_, t) => $(t).find(".oddsPoint").length > 0)
@@ -73,7 +78,12 @@ export function parseOddsTable($, sortBoats) {
       const first = section + 1;
       const second = current2nd[section];
 
-      if (second && third && !isNaN(odds) && odds > 0) {
+      if (
+        second &&
+        third &&
+        !isNaN(odds) &&
+        (odds > 0 || (keepZero && odds === 0))
+      ) {
         const key = sortBoats
           ? [first, second, third].sort((a, b) => a - b).join("-")
           : `${first}-${second}-${third}`;
@@ -88,19 +98,21 @@ export function parseOddsTable($, sortBoats) {
 /**
  * odds3t ページから全120通りの3連単オッズをパース
  * @param {import('cheerio').CheerioAPI} $
+ * @param {{keepZero?: boolean}} [options]
  * @returns {Map<string, number>} "1-2-3" -> odds
  */
-export function parseTrifectaAll($) {
-  return parseOddsTable($, false);
+export function parseTrifectaAll($, options) {
+  return parseOddsTable($, false, options);
 }
 
 /**
  * odds3f ページから全3連複オッズをパース
  * @param {import('cheerio').CheerioAPI} $
+ * @param {{keepZero?: boolean}} [options]
  * @returns {Map<string, number>} "1-2-3"（昇順ソート済み）-> odds
  */
-export function parseTrioAll($) {
-  return parseOddsTable($, true);
+export function parseTrioAll($, options) {
+  return parseOddsTable($, true, options);
 }
 
 /**
@@ -157,19 +169,30 @@ function parseSingleOddsValue(text) {
   return !isNaN(odds) && odds > 0 ? odds : null;
 }
 
+// 票0（「0.0」）を 0 のまま残す版（ライブ表示用、BOA-487）
+function parseSingleOddsValueKeepZero(text) {
+  const odds = parseFloat(text);
+  if (isNaN(odds)) return null;
+  return odds >= 0 ? odds : null;
+}
+
 /**
  * 「下限-上限」のレンジ表示オッズをパースする（例: "1.5-1.9"、複勝・拡連複で共通）。
  * scrapePlaceOdds（scrape-odds.js）と同じロジックのため共通化し、両方から呼ぶ
+ * keepZero=true なら、票0の「0.0-0.0」を {low: 0, high: 0} として残す（ライブ表示用、BOA-487）
  * @param {string} text
+ * @param {{keepZero?: boolean}} [options]
  * @returns {{low: number, high: number}|null}
  */
-export function parseRangeOddsValue(text) {
+export function parseRangeOddsValue(text, { keepZero = false } = {}) {
   const normalized = text.replace(/[－ー−]/g, "-");
   const parts = normalized.split("-");
   if (parts.length !== 2) return null;
   const low = parseFloat(parts[0]);
   const high = parseFloat(parts[1]);
-  if (isNaN(low) || isNaN(high) || low <= 0 || high < low) return null;
+  if (isNaN(low) || isNaN(high) || high < low) return null;
+  if (keepZero && low === 0 && high === 0) return { low: 0, high: 0 };
+  if (low <= 0) return null;
   return { low, high };
 }
 
@@ -195,39 +218,71 @@ function getOddsTfTable($, wantExacta) {
 /**
  * odds2tfページから全30通りの2連単オッズをパース
  * @param {import('cheerio').CheerioAPI} $
+ * @param {{keepZero?: boolean}} [options]
  * @returns {Map<string, number>} "1-2" -> odds
  */
-export function parseExactaAll($) {
+export function parseExactaAll($, { keepZero = false } = {}) {
   return parseTwoBoatOddsTable(
     $,
     getOddsTfTable($, true),
     false,
-    parseSingleOddsValue,
+    keepZero ? parseSingleOddsValueKeepZero : parseSingleOddsValue,
   );
 }
 
 /**
  * odds2tfページから全15通りの2連複オッズをパース
  * @param {import('cheerio').CheerioAPI} $
+ * @param {{keepZero?: boolean}} [options]
  * @returns {Map<string, number>} "1-2"（昇順ソート済み）-> odds
  */
-export function parseQuinellaAll($) {
+export function parseQuinellaAll($, { keepZero = false } = {}) {
   return parseTwoBoatOddsTable(
     $,
     getOddsTfTable($, false),
     true,
-    parseSingleOddsValue,
+    keepZero ? parseSingleOddsValueKeepZero : parseSingleOddsValue,
   );
 }
 
 /**
  * oddskページから全15通りの拡連複オッズをパース（下限-上限のレンジ値）
  * @param {import('cheerio').CheerioAPI} $
+ * @param {{keepZero?: boolean}} [options]
  * @returns {Map<string, {low: number, high: number}>} "1-2"（昇順ソート済み）-> {low, high}
  */
-export function parseWideAll($) {
+export function parseWideAll($, { keepZero = false } = {}) {
   const table = $("table")
     .filter((_, t) => $(t).find(".oddsPoint").length > 0)
     .first();
-  return parseTwoBoatOddsTable($, table, true, parseRangeOddsValue);
+  return parseTwoBoatOddsTable($, table, true, (text) =>
+    parseRangeOddsValue(text, { keepZero }),
+  );
+}
+
+/**
+ * 公式オッズページの「オッズ更新時間」（発売中のページだけにある。例: " 8:14"）を "HH:MM" で返す。
+ * 締切後のページ（「締切時オッズ」表示）や未公開のページには無いので null（BOA-487、BOA-496 でも使う）。
+ * 全券種のページ（oddstf/odds3t/odds3f/odds2tf/oddsk）で同じ `.tab4_refreshText` に出る。
+ *
+ * @param {import('cheerio').CheerioAPI} $
+ * @returns {string|null} "08:14" 形式（JST。日付は含まない）
+ */
+export function parseOddsUpdatedAt($) {
+  const text = $(".tab4_refreshText").first().text();
+  const m = text.match(/(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  const hour = Number(m[1]);
+  const minute = Number(m[2]);
+  if (hour > 23 || minute > 59) return null;
+  return `${String(hour).padStart(2, "0")}:${m[2]}`;
+}
+
+/**
+ * 締切時オッズ（最終）のページか。公式は締切後、「オッズ更新時間」の代わりに `.tab4_time`（「締切時オッズ」）を出す
+ * @param {import('cheerio').CheerioAPI} $
+ * @returns {boolean}
+ */
+export function isFinalOdds($) {
+  return $(".tab4_time").length > 0;
 }
