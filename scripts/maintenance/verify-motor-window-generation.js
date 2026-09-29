@@ -38,6 +38,10 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  formatGenerationDate,
+  isClippedByGeneration,
+} from "../../src/utils/motorGeneration.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -301,6 +305,63 @@ check(
       (chart.match(/isPast \? raceDate : null/g) ?? []).length >= 2,
   );
 }
+// 2026-09-29 ユーザー判断 B: 使用開始日を画面に出す（ADR-0067 2026-09-28追記の改訂）。
+// 日付を伏せた注記「入れ替え後のため…」が「最近入れ替えた」と誤読されたため
+check(
+  "画面: 使用開始日の行を、期間の切り替えを出すとき（当日のレース）だけに出す",
+  /showPeriodToggle \? \(\s*<>\s*\{\/\*[\s\S]*?\*\/\}\s*\{generationStart !== null && \(/.test(
+    chart,
+  ) && chart.includes("analysis.motor.generationStartSource"),
+);
+check(
+  "画面: 切り詰めの注記と機力指数の要約に使用開始日を差し込む",
+  /periodClippedNote", \{\s*date: formatGenerationDate\(generationStart/.test(
+    chart,
+  ) &&
+    /periodSinceGeneration", \{\s*date: formatGenerationDate\(generationStart/.test(
+      chart,
+    ),
+);
+check(
+  "画面: 使用開始日の取得に失敗しても一覧表は出す（try/catch で null に倒す）",
+  /let venueGenerationStart = null;\s*try \{\s*venueGenerationStart =\s*await supabaseDataService\.getMotorGenerationStart/.test(
+    chart,
+  ),
+);
+// 入れ替えから1ヶ月以内は「直近1ヶ月」まで切り詰められ、切り替えても中身が変わらない
+// （2026-09-29 ファン評価。丸亀 9/17 入れ替え → 9/29 は両方とも 9/17 以降）
+check(
+  "isClippedByGeneration: 丸亀（9/17〜）は 9/29 時点で30日も切り詰め、戸田（8/6〜）は切り詰めない",
+  isClippedByGeneration("2026-09-17", "2026-09-29", 30) === true &&
+    isClippedByGeneration("2026-08-06", "2026-09-29", 30) === false &&
+    isClippedByGeneration("2026-08-06", "2026-09-29", 90) === true &&
+    isClippedByGeneration(null, "2026-09-29", 30) === false,
+);
+check(
+  "isClippedByGeneration: 境界（使用開始日 = 基準日−days）は切り詰めない",
+  isClippedByGeneration("2026-08-30", "2026-09-29", 30) === false &&
+    isClippedByGeneration("2026-08-31", "2026-09-29", 30) === true,
+);
+check(
+  "formatGenerationDate: 2026/8/6 と 8/6（先頭の0を付けない）",
+  formatGenerationDate("2026-08-06") === "2026/8/6" &&
+    formatGenerationDate("2026-08-06", { short: true }) === "8/6" &&
+    formatGenerationDate(null) === "",
+);
+check(
+  "画面: 両方の期間が切り詰められるときは、期間の切り替えボタンを出さない",
+  /periodChoiceHasEffect && \(\s*<div className="period-toggle"/.test(chart),
+);
+check(
+  "画面: 枠番別成績の注記にも使用開始日を入れる",
+  read("src/components/analysis/MotorWakuStatsGrid.jsx").includes(
+    "date: formatGenerationDate(generationStart, { short: true })",
+  ),
+);
+check(
+  "画面: 経過日数（◯日目）は出さない（ファンの単位は節。2026-09-29 ファン議論）",
+  !/日目/.test(chart),
+);
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;
@@ -311,6 +372,13 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     !/今日から遡|computed backward from today|從今天回溯|오늘부터 거슬러/.test(
       motor.officialModeSourceNote,
     ),
+  );
+  check(
+    `${lang}: 使用開始日の行・注記が日付（{{date}}）を受け取り、出典に BOATCAST とある`,
+    motor.generationStartLabel?.includes("{{date}}") &&
+      motor.periodClippedNote.includes("{{date}}") &&
+      motor.periodSinceGeneration.includes("{{date}}") &&
+      motor.generationStartSource?.includes("BOATCAST"),
   );
   check(
     `${lang}: 過去レース・切り詰め・入れ替え前の文言がある`,

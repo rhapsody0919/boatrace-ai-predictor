@@ -20,6 +20,10 @@ import MotorWakuStatsGrid from "./MotorWakuStatsGrid";
 import MotorRacerWakuDrillDown from "./MotorRacerWakuDrillDown";
 import InlineFetchError from "../InlineFetchError";
 import { getTodayJST } from "../../utils/dateUtils";
+import {
+  formatGenerationDate,
+  isClippedByGeneration,
+} from "../../utils/motorGeneration";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
 
@@ -74,6 +78,9 @@ function MotorConditionChart({
   // 選択中のレース自体が入れ替え前（過去レースで、レース日 < 使用開始日）か。
   // 一覧の時点で伝え、行を押しても推移が出ないことを先に知らせる
   const [racePreGeneration, setRacePreGeneration] = useState(false);
+  // 会場の現行モーターの使用開始日（BOATCAST bc_mst）。当日のレースで画面に出す
+  // （2026-09-29 ユーザー判断 B、ADR-0067 の 2026-09-28 追記の改訂）
+  const [generationStart, setGenerationStart] = useState(null);
   const [periodDays, setPeriodDays] = useState(90);
   const pendingInitialMotorNumber = useRef(initialMotorNumber);
   // レース/会場が変わった時だけドリルダウンをリセットする（期間トグルだけの
@@ -103,14 +110,24 @@ function MotorConditionChart({
         );
         if (cancelled) return;
         const raceDate = selectedRace?.slice(0, 10) ?? null;
-        let preGeneration = false;
-        if (raceDate !== null && raceDate < getTodayJST()) {
-          const generationStart =
+        // 使用開始日は、表示（1行・注記の日付）と入れ替え前の判定にだけ使う。取得が
+        // 一時的に失敗しても一覧表そのものは出す（日付の行を出さず、入れ替え前とも
+        // 判定しない）。以前は過去レースでしか呼んでいなかったので、当日のレースでは
+        // この取得の失敗が一覧表のエラーにつながらなかった
+        let venueGenerationStart = null;
+        try {
+          venueGenerationStart =
             await supabaseDataService.getMotorGenerationStart(selectedVenue);
-          if (cancelled) return;
-          preGeneration =
-            generationStart !== null && raceDate < generationStart;
+        } catch (err) {
+          console.error("モーター使用開始日取得エラー:", err.message);
         }
+        if (cancelled) return;
+        const preGeneration =
+          raceDate !== null &&
+          raceDate < getTodayJST() &&
+          venueGenerationStart !== null &&
+          raceDate < venueGenerationStart;
+        setGenerationStart(venueGenerationStart);
         setRacePreGeneration(preGeneration);
         setBreakdown(data);
         // 機力バッジ等からのディープリンク（?motor=）で指定されたモーターが
@@ -351,6 +368,14 @@ function MotorConditionChart({
     drillDownMotor === null
       ? !officialMode
       : !drillPreGeneration && !isPastSelectedRace;
+  // 入れ替えから1ヶ月以内は「直近1ヶ月」まで使用開始日で切り詰められ、どちらの
+  // 期間を選んでも中身が同じになる。押しても変わらないボタンは出さない
+  // （2026-09-29 ファン評価。使用開始日の行と切り詰めの注記は出す）
+  const periodChoiceHasEffect = !isClippedByGeneration(
+    generationStart,
+    getTodayJST(),
+    30,
+  );
   // 期間を現行モーターの使用開始日で切り詰めたか（入れ替え後で期間が短い）
   const clippedByGeneration =
     drillDownMotor === null
@@ -418,25 +443,43 @@ function MotorConditionChart({
 
       {showPeriodToggle ? (
         <>
-          <div className="period-toggle" role="group">
-            <button
-              type="button"
-              className={`period-toggle-btn ${periodDays === 90 ? "active" : ""}`}
-              onClick={() => setPeriodDays(90)}
-            >
-              {t("analysis.motor.period90")}
-            </button>
-            <button
-              type="button"
-              className={`period-toggle-btn ${periodDays === 30 ? "active" : ""}`}
-              onClick={() => setPeriodDays(30)}
-            >
-              {t("analysis.motor.period30")}
-            </button>
-          </div>
+          {/* 現行モーターの使用開始日。いつからのモーターかが分からないと、「入れ替え後の
+              ため期間を限っています」を「最近入れ替えた」と読み違える（2026-09-29 ユーザー指摘）。
+              当日のレースだけに出す（過去レースは出走表時点の公式値で、取れるのは最新の
+              使用開始日1つだけのため、当時の日付を出せない） */}
+          {generationStart !== null && (
+            <p className="motor-generation-start">
+              {t("analysis.motor.generationStartLabel", {
+                date: formatGenerationDate(generationStart),
+              })}
+              <span className="motor-generation-start-source">
+                {t("analysis.motor.generationStartSource")}
+              </span>
+            </p>
+          )}
+          {periodChoiceHasEffect && (
+            <div className="period-toggle" role="group">
+              <button
+                type="button"
+                className={`period-toggle-btn ${periodDays === 90 ? "active" : ""}`}
+                onClick={() => setPeriodDays(90)}
+              >
+                {t("analysis.motor.period90")}
+              </button>
+              <button
+                type="button"
+                className={`period-toggle-btn ${periodDays === 30 ? "active" : ""}`}
+                onClick={() => setPeriodDays(30)}
+              >
+                {t("analysis.motor.period30")}
+              </button>
+            </div>
+          )}
           {clippedByGeneration && (
             <p className="table-note">
-              {t("analysis.motor.periodClippedNote")}
+              {t("analysis.motor.periodClippedNote", {
+                date: formatGenerationDate(generationStart, { short: true }),
+              })}
             </p>
           )}
         </>
@@ -668,7 +711,11 @@ function MotorConditionChart({
                   // 入れ替え後で期間を切り詰めたときは「過去90日」と書かない
                   // （37走が本当に90日分に見えてしまう）
                   period: powerIndex.clipped_by_generation
-                    ? t("analysis.motor.periodSinceGeneration")
+                    ? t("analysis.motor.periodSinceGeneration", {
+                        date: formatGenerationDate(generationStart, {
+                          short: true,
+                        }),
+                      })
                     : t(`analysis.motor.period${periodDays}`),
                 })}
                 {" — "}
