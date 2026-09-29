@@ -30,6 +30,8 @@ import {
   splitMeetSeries,
   scoreTableFor,
   isAbsentStartRow,
+  runFinishLabel,
+  officialMarkOf,
 } from "../components/race/seriesPoints.js";
 import { PAYOUT_BET_TYPES } from "../utils/raceOutcome.js";
 import {
@@ -801,8 +803,7 @@ function buildPayoutRows(rows) {
       };
     })
     .sort(
-      (a, b) =>
-        order.get(a.betType) - order.get(b.betType) || a.seq - b.seq,
+      (a, b) => order.get(a.betType) - order.get(b.betType) || a.seq - b.seq,
     );
 }
 
@@ -4254,7 +4255,8 @@ export const supabaseDataService = {
     // v4: 展示は絶対値でなく同レース内の順位で見ることにしたので
     // exhibitionRank を足した（水面の影響を相殺するため）
     // v5: 欠場（absent）を足した（BOA-504）
-    return withCache(`racer-scoped-race-stats-v5-${racerId}`, async () => {
+    // v6: 着順が付かない走の公式の記号（finishMark）を足した（BOA-537）
+    return withCache(`racer-scoped-race-stats-v6-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4449,6 +4451,9 @@ export const supabaseDataService = {
             // 本番STの行そのものが無い欠場もある（他の艇の行はあるのに自艇だけ無い。
             // 2026-06-13 浜名湖5R・12Rの中岡正彦）。着順が付いた走は表示側が着順を
             // 優先するので、ここで欠場扱いにしても「着順あり」の走は変わらない
+            // 着順が付かない走の公式の記号（落・転・妨など）。履歴の表で「着外」と
+            // 書かずに記号で出す（BOA-537）
+            finishMark: officialMarkOf(st?.finish_mark),
             absent:
               isAbsentStartRow(st) || (!st && stRowsByRace.has(entry.race_id)),
             startTiming:
@@ -6875,7 +6880,9 @@ export const supabaseDataService = {
     }
     const vv = String(venueCode).padStart(2, "0");
     // v15: 本番STの「欠」の行を出走に数えない（BOA-504）
-    return withCache(`meet-scoreboard-v15-${raceId}`, async () => {
+    // v16: 推移の走に着順（finish）を足した（BOA-537）
+    // v17: 着順の並びの材料に公式の記号（finishMark）を足した（BOA-537）
+    return withCache(`meet-scoreboard-v17-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7105,6 +7112,12 @@ export const supabaseDataService = {
           .map((r) => `${r.race_id}|${r.boat_number}`),
       );
       const racesWithSt = new Set((meetStarts ?? []).map((r) => r.race_id));
+      // 着順が付かない走の公式の記号（落・転・妨など）。着順の並びに記号で出す（BOA-537）
+      const markByKey = new Map(
+        (meetStarts ?? [])
+          .filter((r) => officialMarkOf(r.finish_mark))
+          .map((r) => [`${r.race_id}|${r.boat_number}`, r.finish_mark]),
+      );
 
       return {
         meetStart,
@@ -7302,6 +7315,13 @@ export const supabaseDataService = {
             (byRacer[e.racer_id] ??= []).push({
               raceId: e.race_id,
               date: e.race_id.slice(0, 10),
+              // その走の着順（1〜6・F・欠・転など）。推移の点の下に出す（BOA-537）
+              finish: runFinishLabel(
+                resultById.get(e.race_id) ?? null,
+                e.boat_number,
+                stRow,
+                stByRace.has(e.race_id),
+              ),
               exhibition: ex === null ? null : Number(ex),
               st,
               stRank:
@@ -7333,6 +7353,7 @@ export const supabaseDataService = {
             playerName: e.player_name,
             raceStage: stageById.get(e.race_id) ?? null,
             // 欠場を走数から外すための材料（BOA-489）
+            finishMark: markByKey.get(`${e.race_id}|${e.boat_number}`) ?? null,
             started:
               !racesWithSt.has(e.race_id) ||
               startedKeys.has(`${e.race_id}|${e.boat_number}`),

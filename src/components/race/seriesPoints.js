@@ -531,11 +531,21 @@ export const SEMIFINAL_SPLIT_DEFAULT_SLOTS = 12;
  */
 export function listSeriesFinishes(meetRecords, options = {}) {
   const { prelimEndRaceId = null } = options;
-  return (Array.isArray(meetRecords) ? [...meetRecords] : [])
-    .filter((r) => r.rank1 !== null && r.rank1 !== undefined)
-    .filter((r) => countsForSeriesScore(r.raceStage, r.raceId, prelimEndRaceId))
-    .sort((a, b) => String(a.raceId).localeCompare(String(b.raceId)))
-    .map((r) => (countsAsRun(r) ? finishPositionOf(r) : FINISH_ABSENT));
+  return (
+    (Array.isArray(meetRecords) ? [...meetRecords] : [])
+      .filter((r) => r.rank1 !== null && r.rank1 !== undefined)
+      .filter((r) =>
+        countsForSeriesScore(r.raceStage, r.raceId, prelimEndRaceId),
+      )
+      .sort((a, b) => String(a.raceId).localeCompare(String(b.raceId)))
+      // 着順が付かない走は、公式の記号（落・転・妨など）があればそれを出す。
+      // 無ければ null（画面は「失」）。推移の点の下と同じ表記にそろえる（BOA-537）
+      .map((r) =>
+        countsAsRun(r)
+          ? (finishPositionOf(r) ?? officialMarkOf(r.finishMark))
+          : FINISH_ABSENT,
+      )
+  );
 }
 
 /**
@@ -548,6 +558,43 @@ export function listSeriesFinishes(meetRecords, options = {}) {
  */
 export function isAbsentStartRow(row) {
   return row?.finish_mark === "欠";
+}
+
+/**
+ * 1走ぶんの着順の表示（純関数、BOA-537）。6艇の推移の点の下に出す。
+ *
+ * - フライングは「F」（本番STの is_flying）
+ * - 欠場は「欠」（本番STの着順欄が「欠」、またはそのレースに他艇のST行があるのに
+ *   自艇だけ行が無い。`isAbsentStartRow` と同じ判定）
+ * - 着順が付いていれば 1〜6
+ * - 着順が無く、本番STの着順欄に記号（転・落・妨・エ・不・L・沈 など、公式の表記）が
+ *   あればそれ
+ * - 結果が無い（未実施）・記号も無いときは null（出さない。推測で「失」と書かない）
+ *
+ * @param {Object|null} result `race_results` の1行（rank1〜rank6 は艇番）
+ * @param {number} boatNumber 艇番
+ * @param {Object|null} stRow 本番STの行（finish_mark・is_flying）
+ * @param {boolean} raceHasSt そのレースに本番STの行が1つでもあるか
+ * @returns {number|string|null}
+ */
+/**
+ * 本番STの着順欄の値が、着順でない公式の記号（転・落・妨・エ・不・L・沈 など）か
+ * （純関数、BOA-537）。数字・空・null は記号ではない。欠場（「欠」）もここでは
+ * 記号として返すので、欠場の扱いは呼び出し側で先に済ませる
+ */
+export function officialMarkOf(mark) {
+  return typeof mark === "string" && mark !== "" && !/^[0-9０-９]$/u.test(mark)
+    ? mark
+    : null;
+}
+
+export function runFinishLabel(result, boatNumber, stRow, raceHasSt) {
+  if (stRow?.is_flying) return "F";
+  if (isAbsentStartRow(stRow) || (!stRow && raceHasSt && result)) return "欠";
+  if (!result) return null;
+  const pos = finishPositionOf({ ...result, boatNumber });
+  if (pos !== null) return pos;
+  return officialMarkOf(stRow?.finish_mark);
 }
 
 /** 着順の並びで「欠場」を表す値（`listSeriesFinishes`） */
@@ -677,7 +724,9 @@ export function parseOfficialPlacements(placements) {
       const half = /[\uFF10-\uFF19]/u.test(c)
         ? String.fromCharCode(c.charCodeAt(0) - 0xfee0)
         : c;
-      return /^[1-6]$/u.test(half) ? Number(half) : null;
+      // 着順でない記号（妨・落 など）はそのまま返す。画面は記号のまま出す
+      // （推移の点の下・日別の表と表記をそろえる。BOA-537）
+      return /^[1-6]$/u.test(half) ? Number(half) : half;
     });
 }
 

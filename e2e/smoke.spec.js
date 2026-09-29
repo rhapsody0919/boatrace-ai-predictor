@@ -1712,6 +1712,121 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
   });
 
+  test("今節タブの6艇の推移で、各走の着順を点の下に同じ横位置で出す（BOA-537）", async ({
+    page,
+  }) => {
+    // 2026-06-20 尼崎12R: 4号艇 谷津幸宏は 6/17 11R を欠場（着順の並び 5・欠・1・3・2・1）
+    await page.goto("/race/2026-06-20-13-12");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const rows = page.locator(".rmt-trend-row");
+    await expect(rows).toHaveCount(6, { timeout: 25000 });
+    const yatsu = rows.filter({ hasText: "谷津" });
+    await expect(yatsu.locator(".meet-sparkline-label")).toHaveText([
+      "5",
+      "欠",
+      "1",
+      "3",
+      "2",
+      "1",
+    ]);
+    // 1着は強調、欠などの記号は控えめ
+    await expect(yatsu.locator(".meet-sparkline-label").nth(2)).toHaveClass(
+      /is-win/,
+    );
+    await expect(yatsu.locator(".meet-sparkline-label").nth(1)).toHaveClass(
+      /is-mark/,
+    );
+    // 数字どうしが重ならない（各行）
+    const overlaps = await rows.evaluateAll((els) =>
+      els.map((r) => {
+        const ls = [...r.querySelectorAll(".meet-sparkline-label")].map((x) =>
+          x.getBoundingClientRect(),
+        );
+        let n = 0;
+        for (let i = 1; i < ls.length; i += 1)
+          if (ls[i].left < ls[i - 1].right) n += 1;
+        return n;
+      }),
+    );
+    expect(overlaps.every((n) => n === 0)).toBe(true);
+    await expect(page.locator(".rmt-spark-note").first()).toContainText(
+      "点の下の数字はその走の着順です",
+    );
+    await expect(page.locator(".rmt-trend-head-sub")).toHaveText(
+      "点の下＝着順",
+    );
+  });
+
+  test("走数が多い節でも、375pxで点の下の着順を1段・10pxで読める間隔に並べる（BOA-537 ファン評価2・3周目）", async ({
+    page,
+  }) => {
+    // 2026-09-28 津11R（最終日）: 各艇10〜11走。9/21・22 の中止レースは出走表にだけ残る
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/race/2026-09-28-09-11");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const rows = page.locator(".rmt-trend-row");
+    await expect(rows).toHaveCount(6, { timeout: 25000 });
+    const info = await rows.evaluateAll((els) =>
+      els.map((r) => {
+        const labels = [...r.querySelectorAll(".meet-sparkline-label")];
+        const wrap = r
+          .querySelector(".meet-sparkline-wrap")
+          .getBoundingClientRect();
+        const gaps = [];
+        for (const lower of [false, true]) {
+          const ls = labels
+            .filter((e) => e.classList.contains("is-lower") === lower)
+            .map((x) => x.getBoundingClientRect());
+          for (let i = 1; i < ls.length; i += 1)
+            gaps.push(ls[i].left - ls[i - 1].right);
+        }
+        return {
+          font: labels[0]
+            ? parseFloat(getComputedStyle(labels[0]).fontSize)
+            : 0,
+          minGap: Math.min(...gaps),
+          // 最初の着順が左端近くにある（中止レースの空きで右に寄らない）
+          firstOffset: labels[0].getBoundingClientRect().left - wrap.left,
+          // 全走を1段に並べる（2段に振り分けると段ごとに読んで順番を読み違える）
+          lines: new Set(
+            labels.map((x) => Math.round(x.getBoundingClientRect().top)),
+          ).size,
+        };
+      }),
+    );
+    for (const row of info) {
+      expect(row.font).toBeGreaterThanOrEqual(10);
+      expect(row.minGap).toBeGreaterThanOrEqual(6);
+      expect(row.firstOffset).toBeLessThan(10);
+      expect(row.lines).toBe(1);
+    }
+  });
+
+  test("着順が付かない走は、推移・比較表・日別の表で同じ公式の記号になる（BOA-537 ファン評価）", async ({
+    page,
+  }) => {
+    // 2026-09-25 桐生12R: 6号艇 嶋田有里の 9/21 11R は公式の結果が「落」
+    await page.goto("/race/2026-09-25-01-12");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const rows = page.locator(".rmt-trend-row");
+    await expect(rows).toHaveCount(6, { timeout: 25000 });
+    const shimada = rows.filter({ hasText: "嶋田" });
+    await expect(shimada.locator(".meet-sparkline-label").nth(2)).toHaveText(
+      "落",
+    );
+    // 比較表の着順の並びも「落」（以前は「失」）
+    await expect(
+      page
+        .locator(".rmt-compare tr", { hasText: "嶋田" })
+        .locator(".rmt-finishes"),
+    ).toContainText("落");
+    // 日別の表も「落」（以前は「着外(順位不明)」）
+    await shimada.click();
+    await expect(
+      page.locator("tr", { hasText: "9/21" }).filter({ hasText: "11R" }),
+    ).toContainText("落");
+  });
+
   test("今節タブの6艇の推移は、1走の選手も前走の値が右端の列にそろい、選択中の行はホバーと区別できる（BOA-550 ファン評価）", async ({
     page,
   }) => {
