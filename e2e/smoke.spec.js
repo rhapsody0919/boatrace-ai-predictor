@@ -1706,6 +1706,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await lastRow.locator(".rmt-trend-last").click();
     await expect(lastRow).toHaveAttribute("aria-pressed", "true");
     await expect(trendRow).toHaveAttribute("aria-pressed", "false");
+    // 案内文も「行をタップ」にそろえる（艇番・選手名だけが押せた頃の文言が残っていた）
+    await expect(page.locator(".rmt-hint").last()).toContainText(
+      "行をタップすると",
+    );
   });
 
   test("F数バッジが基本情報タブとST考察カードで同じ値になり、f_countが無い過去レースでは出ない（phase a T5-3）", async ({
