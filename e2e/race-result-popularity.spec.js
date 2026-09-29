@@ -255,6 +255,20 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
                 p.bottom > a.top;
               if (overlap) out.push(`人気と金額が重なる: ${row.textContent}`);
             }
+            // 金額が組番（3着の艇番）に重ならない（ファン評価3周目: 320pxで最大16px重なっていた）
+            const amountBox = row.querySelector(".rr-amount").getBoundingClientRect();
+            const lastItem = items[items.length - 1];
+            if (lastItem && amountBox.width > 0) {
+              const c = lastItem.getBoundingClientRect();
+              if (
+                c.right > amountBox.left &&
+                c.left < amountBox.right &&
+                c.bottom > amountBox.top &&
+                c.top < amountBox.bottom
+              ) {
+                out.push(`金額と組番が重なる: ${row.textContent}`);
+              }
+            }
             const right = row.getBoundingClientRect().right;
             for (const el of row.querySelectorAll("*")) {
               if (el.getBoundingClientRect().right > right + 0.5) {

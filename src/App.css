@@ -935,6 +935,7 @@ input:focus-visible,
   }
 }
 
+
 /* 単勝・複勝の人気（締切時オッズから算出、BOA-534）。下の注記と「※」で結ぶ */
 .rr-pop-mark {
   margin-left: 1px;
@@ -955,6 +956,18 @@ input:focus-visible,
 
 .rr-payout-row.is-best .rr-amount {
   color: var(--brand-accent-primary);
+}
+
+/* 320px帯では、組番3艇と5〜6桁の払戻が1行に収まらず、金額が3着の艇番に重なる（BOA-534 ファン評価3周目）。
+   券種名の列を詰め、金額の文字を小さくして収める */
+@media (max-width: 359px) {
+  .rr-payout-row {
+    grid-template-columns: 2.8rem minmax(0, 1fr) auto;
+  }
+
+  .rr-amount {
+    font-size: var(--font-size-sm);
+  }
 }
 
 /* BOA-543: 不成立（返還）・特払は組番の位置に文言を出す */
