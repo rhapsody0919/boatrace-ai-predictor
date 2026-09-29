@@ -293,6 +293,15 @@ function MotorConditionChart({
   const venueHasOfficialStats = breakdown.some(
     (r) => r.race_count !== null && r.race_count !== undefined,
   );
+  // 一覧の「公式2連率 0.0」が、新モーターで公式の累計がまだ付いていない（集計前）か。
+  // 公式の2連率・3連率がどちらも 0 で、このレースより前に結果の出た走があり、会場公式の
+  // 出走数が 0（前の節で3着以内に入らなかった「集計済みの 0%」と区別する。値の無い
+  // 会場は断定しないので付けない。2026-09-29 ファン4人のパネル・ユーザー承認、ファン評価 P1）
+  const isOfficialPending = (row) =>
+    Number(row.official_2rate) === 0 &&
+    Number(row.official_3rate) === 0 &&
+    row.sample_count > 0 &&
+    officialTallyState(venueHasOfficialStats, row.race_count) === "pending";
   const drillTallyState = officialTallyState(
     venueHasOfficialStats,
     venueMotorStats?.raceCount,
@@ -649,6 +658,15 @@ function MotorConditionChart({
                             row.official_2rate !== undefined
                               ? Number(row.official_2rate).toFixed(1)
                               : "-"}
+                            {/* 公式の2連率・3連率がどちらも 0 なのに、このレースより前に
+                                結果の出た走がある＝新モーターで公式の累計がまだ付いていない。
+                                公式の 0.0 は残し、「本当に0%」と読まれないよう印を添える
+                                （2026-09-29 ファン4人のパネル・ユーザー承認） */}
+                            {isOfficialPending(row) && (
+                              <span className="motor-waku-n motor-official-pending">
+                                {t("analysis.motor.officialPendingBadge")}
+                              </span>
+                            )}
                           </td>
                         )}
                         <td className="rate">{row.motor_3rate?.toFixed(1)}</td>
@@ -723,6 +741,10 @@ function MotorConditionChart({
               {officialMode
                 ? t("analysis.motor.officialModeSourceNote")
                 : t("analysis.motor.officialSourceNote")}
+              {/* 「集計前」の意味は、印が付いている行があるときだけ書く（ファン評価 P2） */}
+              {!officialMode &&
+                breakdown.some(isOfficialPending) &&
+                t("analysis.motor.officialPendingNote")}
               {/* 会場公式サイト由来の列（1着率・優出数・優勝数）は、表に出ているものだけを
                   挙げる。1つも無い会場（戸田など）では文ごと出さない（BOA-513。列名が空の
                   まま「…の値、はそのレース日以前…」と文が崩れるのを防ぐ） */}

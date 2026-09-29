@@ -2729,7 +2729,8 @@ export const supabaseDataService = {
       // 過去/当日をキーに含める: 当日に保存した再計算の値が、日付が変わって
       // 過去レース扱い（7日TTL）になった後も読まれ続けないようにする
       // v6: 当日のレースの行に sample_count（初下ろしの判定）を追加（BOA-513）
-      `race-motor-breakdown-v6-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
+      // v7: 当日のレースの行に official_3rate（「集計前」の判定）を追加
+      `race-motor-breakdown-v7-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -2804,6 +2805,9 @@ export const supabaseDataService = {
             rate_source: "recalc",
             // このレースより前に結果の出た走数（機力指数の母数）。0 なら初下ろし（BOA-513）
             sample_count: powerIndexes[i]?.sample_count ?? null,
+            // 差し替える前の公式3連率（節の開始時点）。公式2連率とあわせて、新モーターで
+            // 公式の累計がまだ付いていない（どちらも 0）かの判定に使う
+            official_3rate: row.motor_3rate ?? null,
             clipped_by_generation:
               powerIndexes[i]?.clipped_by_generation ?? false,
             motor_2rate: powerIndexes[i]?.actual_rate2 ?? row.motor_2rate,
