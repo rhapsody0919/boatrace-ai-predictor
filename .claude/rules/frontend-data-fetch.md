@@ -68,17 +68,17 @@ Supabaseのデフォルト上限は1000行。`.in()` や `.gte()` で1000行を�
 
 2026-09-23時点で `.range()` 漏れは0件。ただし選手単位の730日窓の3関数は、DBが約10ヶ月分しか無いから安全なだけ（選手1人あたり最大265行）。2年分溜まると約2倍になるので、窓を伸ばす変更をするときは実測し直す。
 
-## 6. テーブルの読み書きを増やしたら台帳を再生成する
+## 6. 表示カバレッジ台帳はPRに含めない（マージ後にCIが作り直す）
 
-画面（`src/`）・API（`api/`）が読むテーブルを増やした、または新しいテーブルを定義したときは、
-次を実行して差分を同じPRでコミットする。
+生成物 [`docs/reference/display-coverage.md`](../../docs/reference/display-coverage.md) は**手で編集しない。PRにも含めない**。
+画面（`src/`）・API（`api/`）が読むテーブルを増やした、または新しいテーブルを定義しても、
+台帳の更新はmasterへのマージ後に `regenerate-generated-docs.yml` が行う（ADR-0078）。
+PRに含めると、並行する他のPRが同じファイルでコンフリクトする。PRで台帳を変更すると
+`verify-generated-docs-not-in-pr.js` がCIで落とす。
 
-```bash
-npm run generate:display-coverage
-```
-
-生成物は [`docs/reference/display-coverage.md`](../../docs/reference/display-coverage.md)（**手で編集しない**）。
-`npm run verify:display-coverage` がPRごとにCIで最新性を検査するため、忘れると落ちる。
+変更の影響を手元で見たいときは `npm run generate:display-coverage` で作り直して差分を読み、
+コミットせずに `git checkout -- docs/reference/display-coverage.md` で戻す。
+PRで検査するのは抽出ロジックと「生成が成功するか」（`npm run verify:display-coverage`）。
 
 この台帳が答えるのは「**取得したデータが画面に繋がっているか**」。プロジェクトのゴールが
 「公式・各会場公式・ボートレース日和で取得しているデータを全て表示する」ことなのに対し、

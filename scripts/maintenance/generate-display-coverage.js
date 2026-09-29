@@ -20,7 +20,9 @@
  * orchestration.md 自身が「WS4bが『未着手』のままだが実際には21ジョブがliveで稼働していた。
  * **この乖離自体が、オーケストレーションの記録として直すべき点**」と書いている。
  * そこでER図（ADR-0065）・共通ロジック索引（generate-lib-index.js）と同じく
- * **ソースから生成し、最新かどうかをCIで検査する**方式にする（verify-display-coverage.js）。
+ * **ソースから生成する**方式にする。生成物はPRに含めず、masterへのマージ後に
+ * regenerate-generated-docs.yml が作り直してコミットする（ADR-0078。PRに含めると、
+ * 並行するPRが同じファイルでコンフリクトするため）。
  *
  * ## 何を見るか
  *
@@ -40,8 +42,8 @@
  * アーカイブ）もあるため、意図的に表示しないものは display-coverage-exceptions.json に
  * 理由付きで登録し、生成物にその理由が出るようにしている。
  *
- * 使い方: node scripts/maintenance/generate-display-coverage.js [--check]
- *   --check: 書き込まず、既存ファイルと一致するかだけを見る（verify-display-coverage.js が使う）
+ * 使い方: node scripts/maintenance/generate-display-coverage.js [--dry-run]
+ *   --dry-run: 生成と例外登録の検査までを行い、書き込まない（verify-display-coverage.js が使う）
  */
 
 import { promises as fs } from "fs";
@@ -339,10 +341,10 @@ function renderMarkdown({ rows, exceptions, counts, rpcNames }) {
   lines.push("# 表示カバレッジ台帳（機械生成）");
   lines.push("");
   lines.push(
-    "**このファイルは手で編集しない。** `node scripts/maintenance/generate-display-coverage.js` が生成し、",
+    "**このファイルは手で編集しない。PRにも含めない。** `node scripts/maintenance/generate-display-coverage.js` が生成し、",
   );
   lines.push(
-    "`npm run verify:display-coverage` がPRごとに最新かどうかを検査する（Quality Gates CI）。",
+    "masterへのマージ後に `regenerate-generated-docs.yml` が作り直してコミットする（ADR-0078）。",
   );
   lines.push("");
   lines.push(
@@ -426,7 +428,7 @@ function renderMarkdown({ rows, exceptions, counts, rpcNames }) {
 }
 
 async function main() {
-  const check = process.argv.includes("--check");
+  const dryRun = process.argv.includes("--dry-run");
 
   const migrations = await readMigrations();
   const relations = collectRelations(migrations);
@@ -496,36 +498,27 @@ async function main() {
   // 例外に書かれているのに実在しないテーブルは、リネーム・削除の取り残し
   const stale = Object.keys(exceptions).filter((t) => !relationNames.has(t));
 
-  if (check) {
-    let existing = null;
-    try {
-      existing = await fs.readFile(OUT_PATH, "utf8");
-    } catch {
-      console.error(
-        `NG: ${path.relative(ROOT, OUT_PATH)} が存在しません。` +
-          "`node scripts/maintenance/generate-display-coverage.js` を実行してコミットしてください。",
-      );
-      process.exit(1);
-    }
-    const problems = [];
-    if (existing !== markdown) {
-      problems.push(
-        `${path.relative(ROOT, OUT_PATH)} が最新ではありません。` +
-          "`node scripts/maintenance/generate-display-coverage.js` を実行して差分をコミットしてください。",
-      );
-    }
+  // 抽出が壊れると台帳が静かに空になる。PRでは生成物を比較しない（ADR-0078）ため、
+  // 空の台帳を「生成できた」と扱わないよう、書き込む前に落とす
+  if (counts.total === 0) {
+    console.error(
+      "NG: テーブル・ビューの定義を1件も拾えませんでした。docs/db-migration/ の読み込みか抽出ロジックが壊れています",
+    );
+    process.exit(1);
+  }
+
+  if (dryRun) {
+    // 例外に実在しないテーブルが残っているのはソース側（例外登録）の誤り。
+    // PRで落として直させる。master上の再生成（書き込みモード）では注意の表示に留め、
+    // 台帳の更新自体は止めない（2本のPRの組み合わせで起きうるため）
     if (stale.length > 0) {
-      problems.push(
-        `display-coverage-exceptions.json に、実在しないテーブルが${stale.length}件あります: ${stale.join(", ")}`,
+      console.error(
+        `NG: display-coverage-exceptions.json に、実在しないテーブルが${stale.length}件あります: ${stale.join(", ")}`,
       );
-    }
-    if (problems.length > 0) {
-      console.error("NG: 表示カバレッジ台帳の検査に失敗しました。\n");
-      for (const p of problems) console.error(`  - ${p}`);
       process.exit(1);
     }
     console.log(
-      `OK: 表示カバレッジ台帳は最新（${counts.total}件のうち、` +
+      `OK: 表示カバレッジ台帳を生成できる（書き込みはしない。${counts.total}件のうち、` +
         `画面から読んでいない・例外登録なしが${counts.unreadUnexplained}件、` +
         `権限の記述が無いのに読んでいるものが${counts.readWithoutGrant}件）。`,
     );

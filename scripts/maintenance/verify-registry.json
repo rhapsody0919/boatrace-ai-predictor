@@ -59,7 +59,7 @@
     {
       "script": "verify-display-coverage.js",
       "tier": "ci",
-      "guards": "表示カバレッジ台帳（docs/reference/display-coverage.md）の最新性と抽出ロジック。取得したデータが画面に繋がっているかを、マイグレーションと src/・api/ の静的突合で追う"
+      "guards": "表示カバレッジ台帳（docs/reference/display-coverage.md）の抽出ロジックと、生成が成功すること・例外登録に実在しないテーブルが無いこと。最新性はmasterへのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078）"
     },
     {
       "script": "verify-data-health-report.js",
@@ -379,7 +379,15 @@
     {
       "script": "verify-lib-index.js",
       "tier": "ci",
-      "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）がソースと一致していること"
+      "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）の抽出ロジックと、生成が成功すること。最新性はmasterへのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078）"
+    },
+    {
+      "script": "verify-generated-docs-not-in-pr.js",
+      "tier": "ci",
+      "args": [
+        "--base=origin/master"
+      ],
+      "guards": "PRが機械生成の文書（generated-docs.js の一覧）を変更していないこと。含めると並行PRが同じファイルでコンフリクトする（ADR-0078）"
     },
     {
       "script": "verify-e2e-skips.js",
