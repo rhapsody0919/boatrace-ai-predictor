@@ -764,6 +764,19 @@ function MotorConditionChart({
               {/* 会場公式サイト由来の列（1着率・優出数・優勝数）は、表に出ているものだけを
                   挙げる。1つも無い会場（戸田など）では文ごと出さない（BOA-513。列名が空の
                   まま「…の値、はそのレース日以前…」と文が崩れるのを防ぐ） */}
+              {/* 一覧のオレンジ色の機力指数の意味（6走未満の参考値）。該当する行が
+                  あるときだけ書く（2026-09-29 ファン評価） */}
+              {breakdown.some(
+                (r) =>
+                  powerIndexTone(
+                    r.power_index,
+                    r.sample_count,
+                    SMALL_SAMPLE_THRESHOLD,
+                  ) === "small",
+              ) &&
+                t("analysis.motor.powerIndexSmallSampleNote", {
+                  n: SMALL_SAMPLE_THRESHOLD,
+                })}
               {venueColsLabel &&
                 `${t(
                   officialMode

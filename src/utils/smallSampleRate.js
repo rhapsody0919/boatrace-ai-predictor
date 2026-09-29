@@ -28,9 +28,11 @@ export function formatRateOrCount(rate, n, threshold) {
 export function powerIndexTone(index, n, threshold) {
   if (index === null || index === undefined) return null;
   if (n !== null && n !== undefined && n < threshold) return "small";
+  // 小数1桁に丸めて 0 になる値は「0.0」と出すので、良い・悪いと言わない
+  // （「0.0 — 選手の実力より低調」と赤で出ていた。2026-09-29 ファン評価）
+  if (Number(index.toFixed(1)) === 0) return "even";
   if (index > 0) return "good";
-  if (index < 0) return "bad";
-  return "even";
+  return "bad";
 }
 
 /**

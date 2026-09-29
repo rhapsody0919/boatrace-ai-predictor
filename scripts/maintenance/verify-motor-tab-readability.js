@@ -208,6 +208,10 @@ check(
     powerIndexTone(9.5, 6, 6) === "good" &&
     powerIndexTone(-0.9, 20, 6) === "bad" &&
     powerIndexTone(0, 20, 6) === "even" &&
+    // 丸めて 0.0 になる値は良い・悪いと言わない（丸亀45号機 -0.04 が「低調」と出ていた）
+    powerIndexTone(-0.04, 13, 6) === "even" &&
+    powerIndexTone(0.04, 13, 6) === "even" &&
+    powerIndexTone(0.05, 13, 6) === "good" &&
     powerIndexTone(null, 4, 6) === null,
 );
 check(
@@ -246,6 +250,14 @@ check(
     formatPowerIndex(0) === "0.0" &&
     !/power_index > 0 \? "\+" : ""/.test(chart + card),
 );
+check(
+  "一覧: オレンジ色の機力指数がある行があるときは、表の下の注記で意味（6走未満の参考値）を書く",
+  chart.includes('t("analysis.motor.powerIndexSmallSampleNote"'),
+);
+check(
+  "選手ページ: 参考値の文言をレースページと同じ「— 走数が少ないため参考値」にそろえる",
+  card.includes('" — 走数が少ないため参考値"'),
+);
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;
@@ -273,6 +285,8 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       typeof motor.quotedLabelSeparator === "string" &&
       typeof motor.officialSnapshotNote === "string" &&
       /90/.test(motor.usageHistoryNote) &&
+      // 使用履歴の「-」（着順の付かない走）と「未」の意味・数え方を書く（BOA-549）
+      /「-」|"-"/.test(motor.usageHistoryNote) &&
       // 枠番別成績の展示タイムの列が、平均の値と推移の図だと分かる見出し（BOA-549）
       /平均|avg|平均|평균/i.test(motor.exhibitionTrendHeader),
   );

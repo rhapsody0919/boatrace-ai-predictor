@@ -100,7 +100,7 @@ export default function RacerMotorStatusCard({ status }) {
               : "過去90日"}
             ・{powerIndex.sample_count}走の平均）
             {tone === "small"
-              ? `（${powerIndex.sample_count}走のため参考値）`
+              ? " — 走数が少ないため参考値"
               : ` — ${
                   tone === "good"
                     ? "実力以上に走っている"
