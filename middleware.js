@@ -2,7 +2,7 @@
  * ルーティングミドルウェア。以下2つの関心事を1ファイルで扱う（Vercelはmiddleware.jsを
  * 1つしか置けない制約のため、matcherで対象パスを絞りつつパスで分岐する）。
  *
- * 1. 管理画面（/admin/sns-hub・/admin/rules）用のBasic認証
+ * 1. 管理画面（/admin/sns-hub・/admin/rules）と管理API（/api/admin/sns-hub・/api/admin/rules）用のBasic認証
  *    認証情報は環境変数（SNS_HUB_BASIC_AUTH_USER / SNS_HUB_BASIC_AUTH_PASSWORD）で管理する。
  *    /admin/rules も同じ認証情報・realmを使う（BOA-555。1回のログインで両方開ける）。
  *    判定は管理APIの関数側と同じ requireAdminAuth（api/_lib/adminAuth.js）を使う。
@@ -24,6 +24,7 @@ export const config = {
     "/admin/sns-hub",
     "/admin/sns-hub/:path*",
     "/api/admin/sns-hub/:path*",
+    "/api/admin/rules/:path*",
     "/admin/rules",
     "/admin/rules/:path*",
     "/blog/:path*",
@@ -34,7 +35,12 @@ export const config = {
   ],
 };
 
-const ADMIN_PATH_PREFIXES = ["/admin/sns-hub", "/api/admin/sns-hub", "/admin/rules"];
+const ADMIN_PATH_PREFIXES = [
+  "/admin/sns-hub",
+  "/api/admin/sns-hub",
+  "/admin/rules",
+  "/api/admin/rules",
+];
 
 const isAdminPath = (pathname) =>
   ADMIN_PATH_PREFIXES.some(

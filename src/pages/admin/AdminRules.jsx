@@ -6,8 +6,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  getTopPerformingRules,
-  getOverallPerformance,
   getTodaysMatchingRaces,
   getRulePerformanceByVenue,
   getAvailableVenues,
@@ -15,10 +13,8 @@ import {
   getReliabilityName,
   getVenueName
 } from '../../services/ruleMatchService'
-import {
-  getRuleApplicationHistory,
-  getWeeklyPerformance
-} from '../../services/adminRuleService'
+import { getRuleApplicationHistory } from '../../services/adminRuleService'
+import { fetchRulePerformance } from '../../services/adminRulePerformance'
 import './AdminRules.css'
 
 // タブ定義
@@ -99,17 +95,16 @@ function AdminRules() {
     setLoading(true)
     setError(null)
     try {
-      const [rulesData, overallData, todaysData, weeklyDataResult] = await Promise.all([
-        getTopPerformingRules({ minSamples: 0 }),
-        getOverallPerformance(),
-        getTodaysMatchingRaces(today),
-        getWeeklyPerformance()
+      // 運用成績（全体・ルール別・週別）は /api/admin/rules/performance の1回の取得にまとめた（BOA-567）
+      const [performance, todaysData] = await Promise.all([
+        fetchRulePerformance(),
+        getTodaysMatchingRaces(today)
       ])
 
-      setAllRules(rulesData)
-      setOverallPerformance(overallData)
+      setAllRules(performance.rules)
+      setOverallPerformance(performance.overall)
       setTodaysRaces(todaysData)
-      setWeeklyData(weeklyDataResult)
+      setWeeklyData(performance.weekly)
     } catch (err) {
       console.error('データ読み込みエラー:', err)
       setError(err.message)
