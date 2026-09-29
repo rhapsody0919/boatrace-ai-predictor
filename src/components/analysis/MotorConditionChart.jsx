@@ -378,6 +378,15 @@ function MotorConditionChart({
     breakdown.map((r) => r.championship_count),
   );
   const firstPlaceRateRankClass = rankClassFor(firstPlaceRates);
+  // 会場公式サイト由来で、表に出ている列の名前（出典の注記に挙げる）
+  const venueColsLabel = [
+    showFirstPlaceRate && "analysis.motor.firstPlaceRateHeader",
+    showFinalCount && "analysis.motor.finalCountHeader",
+    showChampionshipCount && "analysis.motor.championshipCountHeader",
+  ]
+    .filter(Boolean)
+    .map((key) => t("analysis.motor.quotedLabel", { label: t(key) }))
+    .join(t("analysis.motor.quotedLabelSeparator"));
   // 過去レースの一覧表は出走表時点の公式値（BOA-329、2026-09-29 ユーザー判断(c)）。
   // 期間の切り替えは効かないので出さず、1行の注記に置き換える
   const officialMode = breakdown.some((r) => r.rate_source === "official");
@@ -711,23 +720,18 @@ function MotorConditionChart({
               各行の末尾がフェードに隠れて読めない（2026-09-29 ファン評価） */}
             <p className="table-note motor-official-source-note">
               {officialMode
-                ? t("analysis.motor.officialModeSourceNote", {
-                    // 表に出ている会場公式サイト由来の列だけを挙げる（1着率の列が無い
-                    // 会場で「1着率」に触れない。BOA-513）
-                    venueCols: [
-                      showFirstPlaceRate &&
-                        "analysis.motor.firstPlaceRateHeader",
-                      showFinalCount && "analysis.motor.finalCountHeader",
-                      showChampionshipCount &&
-                        "analysis.motor.championshipCountHeader",
-                    ]
-                      .filter(Boolean)
-                      .map((key) =>
-                        t("analysis.motor.quotedLabel", { label: t(key) }),
-                      )
-                      .join(t("analysis.motor.quotedLabelSeparator")),
-                  })
+                ? t("analysis.motor.officialModeSourceNote")
                 : t("analysis.motor.officialSourceNote")}
+              {/* 会場公式サイト由来の列（1着率・優出数・優勝数）は、表に出ているものだけを
+                  挙げる。1つも無い会場（戸田など）では文ごと出さない（BOA-513。列名が空の
+                  まま「…の値、はそのレース日以前…」と文が崩れるのを防ぐ） */}
+              {venueColsLabel &&
+                `${t(
+                  officialMode
+                    ? "analysis.motor.venueColsPastNote"
+                    : "analysis.motor.venueColsTodayNote",
+                  { venueCols: venueColsLabel },
+                )}`}
             </p>
           </>
         )}

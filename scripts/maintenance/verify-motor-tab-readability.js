@@ -60,7 +60,7 @@ check(
 );
 check(
   "過去レースの出典注記は、表に出ている会場公式の列だけを挙げる（1着率の列が無ければ触れない）",
-  /officialModeSourceNote", \{\s*\/\/[^\n]*\n[\s\S]*?venueCols: \[\s*showFirstPlaceRate &&\s*"analysis\.motor\.firstPlaceRateHeader"/.test(
+  /venueColsLabel = \[\s*showFirstPlaceRate && "analysis\.motor\.firstPlaceRateHeader"/.test(
     chart,
   ),
 );
@@ -112,7 +112,9 @@ check(
   "優出数・優勝数は、会場の全モーターで値が無いとき列ごと畳む（見出し・セル・出典注記）",
   chart.includes("showFinalCount && (") &&
     chart.includes("showChampionshipCount && (") &&
-    chart.includes('showFinalCount && "analysis.motor.finalCountHeader"'),
+    chart.includes('showFinalCount && "analysis.motor.finalCountHeader"') &&
+    // 列が1つも無い会場（戸田など）では、列名の文ごと出さない（文が崩れない）
+    /\{venueColsLabel &&\s*`\$\{t\(/.test(chart),
 );
 check(
   "結果の出た走が無い新モーター（sample_count === 0）に「初下ろし」を添える",
@@ -185,7 +187,9 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   );
   check(
     `${lang}: 出典注記が {{venueCols}} を受け取り、見出し・区切り・更新遅れの注記・使用履歴の期間がある`,
-    motor.officialModeSourceNote.includes("{{venueCols}}") &&
+    !motor.officialModeSourceNote.includes("{{venueCols}}") &&
+      motor.venueColsPastNote?.includes("{{venueCols}}") &&
+      motor.venueColsTodayNote?.includes("{{venueCols}}") &&
       typeof motor.rateTrendHeading === "string" &&
       motor.quotedLabel?.includes("{{label}}") &&
       typeof motor.quotedLabelSeparator === "string" &&
