@@ -330,6 +330,10 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
       .motor;
     check(
+      `${lang}: 会場内順位の見出しに基準（2連率）が書いてある`,
+      /2連率|top-2|2연대율/.test(motor.venueRankLabel),
+    );
+    check(
       `${lang}: 同順位の会場内順位の文言がある`,
       /\{\{rank\}\}/.test(motor.venueRankBadgeTied ?? "") &&
         /\{\{total\}\}/.test(motor.venueRankBadgeTied ?? ""),
