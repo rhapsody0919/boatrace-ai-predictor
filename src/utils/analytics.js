@@ -34,6 +34,10 @@ export const initGA = () => {
     return;
   }
 
+  // 管理画面から開いたときは gtag 自体を読み込まない。page_view を止めるだけでは、
+  // session_start・user_engagement・scroll が /admin のURLで送られ続けるため（BOA-531）
+  if (isExcludedFromPageView(window.location.pathname)) return;
+
   // GA4スクリプトを動的に読み込み
   const script = document.createElement("script");
   script.async = true;
