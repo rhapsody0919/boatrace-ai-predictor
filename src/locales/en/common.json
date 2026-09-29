@@ -736,7 +736,8 @@
     "withdrawn": "N/A",
     "withdrawnTitle": "No start on the final day of the series, so treated as having withdrawn (the official table also drops mid-series withdrawals from the ranking)",
     "absent": "Absent",
-    "absentTitle": "Absent from every race so far this series, so no score rate or series rank (0 starts)"
+    "absentTitle": "Absent from every race so far this series, so no score rate or series rank (0 starts)",
+    "absentNote": "\"Absent\" marks a racer who has not started any race so far this series. With 0 starts, there is no score rate or series rank."
   },
   "basicInfo": {
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",
@@ -776,6 +777,7 @@
     "noVenueData": "No record by venue available (below the minimum number of races)",
     "trendNote": "The last 10 races, regardless of the grade and period filters above. Tap a date to open that race",
     "finishUnknown": "Unplaced (rank unknown)",
+    "finishAbsent": "Absent",
     "venueRankingFor": "{{metric}} ranking",
     "currentVenueRank": "{{venue}}, this meet's venue, ranks {{rank}} of {{total}}",
     "viewConditions": "By condition",

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 /**
  * verify-series-points-stage-rules.js — 得点率の「種別判定」の回帰テスト
  * （BOA-457 / BOA-458）。
@@ -36,6 +37,7 @@ import {
   buildMeetRanking,
   listAbsentOnlyRacers,
   FINISH_ABSENT,
+  isAbsentStartRow,
 } from "../../src/components/race/seriesPoints.js";
 import { getRaceStageKey } from "../../src/constants/raceStageConfig.js";
 import { fetchAllByRaceId } from "../lib/meetBoundaries.js";
@@ -490,6 +492,34 @@ check(
     buildMeetRanking(board).find((r) => r.racerId === 3003).finishes,
     [FINISH_ABSENT, 1],
   );
+  // 本番STの行は欠場の艇にもあり、finish_mark が「欠」（2026-06-05 芦屋7R の
+  // 久永祥平・2026-06-20 尼崎12R の谷津幸宏で、一部欠場が「失」・分母入りになっていた）
+  check(
+    "本番STの行が「欠」なら欠場、出遅れ「L」やST付きの行は出走",
+    [
+      isAbsentStartRow({ start_timing: null, finish_mark: "欠" }),
+      isAbsentStartRow({ start_timing: null, finish_mark: "L" }),
+      isAbsentStartRow({ start_timing: 0.15, finish_mark: null }),
+      isAbsentStartRow(null),
+    ],
+    [true, false, false, false],
+  );
+  {
+    const service = readFileSync(
+      new URL("../../src/services/supabaseDataService.js", import.meta.url),
+      "utf8",
+    );
+    check(
+      "今節の出走判定は、本番STの「欠」の行を出走に数えない",
+      /\.filter\(\(r\) => !isAbsentStartRow\(r\)\)\s*\.map\(\(r\) => `\$\{r\.race_id\}\|\$\{r\.boat_number\}`\)/.test(
+        service,
+      ) &&
+        /select\("race_id, boat_number, start_timing, is_flying, finish_mark"\)/.test(
+          service,
+        ),
+      true,
+    );
+  }
   check(
     "男女Ｗ優勝戦の節では別シリーズの全走欠場者を返さない",
     listAbsentOnlyRacers({ ...board, seriesRacerIds: [1001, 3003] }),

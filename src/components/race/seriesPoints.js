@@ -538,6 +538,18 @@ export function listSeriesFinishes(meetRecords, options = {}) {
     .map((r) => (countsAsRun(r) ? finishPositionOf(r) : FINISH_ABSENT));
 }
 
+/**
+ * 本番STの行が「欠場」か（純関数、BOA-504）。
+ *
+ * `race_start_timings` は欠場した艇にも行を持ち、`start_timing` が null・
+ * `finish_mark` が「欠」になる（2026-06以降の実測: ST空の27行のうち25行が「欠」、
+ * 2行は「L」＝出遅れで、これは走っている）。行の有無だけで「走った」と判定すると
+ * 欠場を1走に数え、得点率の分母に入れて着順の並びに「失」を出す
+ */
+export function isAbsentStartRow(row) {
+  return row?.finish_mark === "欠";
+}
+
 /** 着順の並びで「欠場」を表す値（`listSeriesFinishes`） */
 export const FINISH_ABSENT = "absent";
 

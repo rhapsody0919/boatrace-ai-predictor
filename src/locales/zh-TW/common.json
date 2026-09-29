@@ -734,7 +734,8 @@
     "withdrawn": "不列入",
     "withdrawnTitle": "梯次最後一天沒有出賽，視為中途離開（官方名次表同樣會將中途歸鄉的選手排除在名次之外）",
     "absent": "缺賽",
-    "absentTitle": "本梯次至今全部缺賽，出賽數為0，因此沒有得分率與梯次內名次"
+    "absentTitle": "本梯次至今全部缺賽，出賽數為0，因此沒有得分率與梯次內名次",
+    "absentNote": "「缺賽」表示本梯次至今全部缺賽的選手。出賽數為0，因此沒有得分率與梯次內名次。"
   },
   "basicInfo": {
     "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近10場・擅長賽場・依條件）",
@@ -774,6 +775,7 @@
     "noVenueData": "沒有各賽場的成績資料（未達規定場次）",
     "trendNote": "最近10場（不受上方等級・期間條件影響，一律顯示最新10場。點選日期可前往該場詳情）",
     "finishUnknown": "名次外（名次不明）",
+    "finishAbsent": "缺賽",
     "venueRankingFor": "{{metric}}排行",
     "currentVenueRank": "本節的{{venue}}在全{{total}}個賽場中排名第{{rank}}",
     "viewConditions": "依條件",

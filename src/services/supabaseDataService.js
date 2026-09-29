@@ -28,6 +28,7 @@ import {
   semifinalSlotsOf,
   splitMeetSeries,
   scoreTableFor,
+  isAbsentStartRow,
 } from "../components/race/seriesPoints.js";
 import {
   PRETEST_LOOKBACK_DAYS,
@@ -4186,7 +4187,8 @@ export const supabaseDataService = {
     // exhibitionTime を足した。同じ理由で版を上げる
     // v4: 展示は絶対値でなく同レース内の順位で見ることにしたので
     // exhibitionRank を足した（水面の影響を相殺するため）
-    return withCache(`racer-scoped-race-stats-v4-${racerId}`, async () => {
+    // v5: 欠場（absent）を足した（BOA-504）
+    return withCache(`racer-scoped-race-stats-v5-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4246,7 +4248,8 @@ export const supabaseDataService = {
         ),
         fetchAllByIn(
           "race_start_timings",
-          "race_id, boat_number, start_timing, is_flying",
+          // finish_mark: 欠場の走を「着外」でなく「欠場」と出すため（BOA-504）
+          "race_id, boat_number, start_timing, is_flying, finish_mark",
           "race_id",
           raceIds,
         ),
@@ -4376,6 +4379,8 @@ export const supabaseDataService = {
             payoutWin: result.payout_win ?? null,
             // フライングは異常値のため平均ST計算から除外する（RaceResult.jsx等と
             // 同じ扱い）。未計測・未取得レースはnullのまま
+            // 欠場（本番STの行の着順が「欠」）。履歴の表で「着外」と区別する（BOA-504）
+            absent: isAbsentStartRow(st),
             startTiming:
               st && !st.is_flying && st.start_timing != null
                 ? st.start_timing
@@ -6799,7 +6804,8 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v14-${raceId}`, async () => {
+    // v15: 本番STの「欠」の行を出走に数えない（BOA-504）
+    return withCache(`meet-scoreboard-v15-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -6936,7 +6942,8 @@ export const supabaseDataService = {
         // フライングは異常値なので呼び出し側で落とす
         supabase
           .from("race_start_timings")
-          .select("race_id, boat_number, start_timing, is_flying")
+          // finish_mark: 欠場の行（「欠」）を出走から外すため（BOA-504）
+          .select("race_id, boat_number, start_timing, is_flying, finish_mark")
           .gte("race_id", meetStart)
           .lt("race_id", raceId)
           .like("race_id", `__________-${vv}-__`)
@@ -7021,8 +7028,11 @@ export const supabaseDataService = {
       // STが1行も無いレースは**取得漏れ**の可能性があるため、全艇を出走扱いに
       // 倒す（欠場扱いにするとレースが丸ごと得点率から消えて、いま直そうと
       // している誤差より大きく狂う）
+      // 欠場の艇にも行がある（finish_mark が「欠」）ので、それは出走に数えない（BOA-504）
       const startedKeys = new Set(
-        (meetStarts ?? []).map((r) => `${r.race_id}|${r.boat_number}`),
+        (meetStarts ?? [])
+          .filter((r) => !isAbsentStartRow(r))
+          .map((r) => `${r.race_id}|${r.boat_number}`),
       );
       const racesWithSt = new Set((meetStarts ?? []).map((r) => r.race_id));
 

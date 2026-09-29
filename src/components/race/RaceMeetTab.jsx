@@ -282,7 +282,9 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
         : shown,
       finish:
         row.finishRank == null
-          ? t("basicInfo.finishUnknown")
+          ? row.absent
+            ? t("basicInfo.finishAbsent")
+            : t("basicInfo.finishUnknown")
           : t("meetTab.sparkTipFinish", { finish: row.finishRank }),
     });
   };
@@ -515,6 +517,9 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
               <>{t("meetTab.smallSampleLegend")} </>
             )}
             {t("meetTab.compareSub", { total: rankedOnly.length })}
+            {/* 「欠場」の理由。セルの title はタッチ端末で読めないので本文にも書く
+                （BOA-504 ファン評価） */}
+            {absentOnly.length > 0 && <> {t("meetTab.absentNote")}</>}
             {showBorderBadge && (
               <>
                 {" "}
