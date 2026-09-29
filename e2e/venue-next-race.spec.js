@@ -313,8 +313,15 @@ test.describe("カードを動かさない・スクロールしない場合", ()
     page,
   }) => {
     await open(page, { at: "14:00" });
-    await page.mouse.wheel(0, -2000); // ユーザーが上へ戻って読む
+    // ユーザーが上へ戻って読む（ホイールで着地点の合わせ直しを止め、滑らかなスクロールが落ち着いてから位置を決める）
+    await page.mouse.wheel(0, -2000);
+    await page.waitForTimeout(800);
     await page.evaluate(() => window.scrollTo(0, 1200));
+    await expect
+      .poll(() =>
+        page.evaluate(() => sessionStorage.getItem("venueScrollY:/venue/5")),
+      )
+      .toBe("1200");
     await page.reload();
     await expect(page.locator(".race-card")).toHaveCount(12, { timeout: 20000 });
     await expect

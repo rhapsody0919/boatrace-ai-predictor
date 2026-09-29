@@ -102,21 +102,13 @@ function VenueRaceListPage() {
         // 保存できない環境では、開き直したときに次のレースへ移るだけ
       }
     };
-    // 離れるときだけに頼らず、スクロールのたびに（1フレームに1回）保存する
-    let frame = 0;
-    const onScroll = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        save();
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
+    // 離れるときだけに頼らず、スクロールのたびに保存する（描画が止まるタブでも保存されるよう、
+    // requestAnimationFrame を介さず同期的に書く。sessionStorage への書き込みは軽い）
+    window.addEventListener("scroll", save, { passive: true });
     window.addEventListener("pagehide", save);
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", save);
       window.removeEventListener("pagehide", save);
-      if (frame) window.cancelAnimationFrame(frame);
       save();
     };
   }, [scrollKey]);
