@@ -1063,7 +1063,7 @@
       "freshnessLabel": "Motor freshness",
       "freshnessRaceBadge": "Race {{raceCount}}",
       "freshnessMeetBadge": "Meet {{meetCount}}",
-      "officialSnapshotNote": "💡 \"Freshness\", \"venue rank\", \"1st-place rate\", \"Finals\" and \"Championships\" are values from each venue's official website and are updated only at the end of a meet, so the number of starts may not match the power index and usage history below (our own tally, up to the latest race).",
+      "officialSnapshotNote": "💡 \"Freshness\", \"venue rank\", \"1st-place rate\", \"Finals\" and \"Championships\" are values from each venue's official website and are updated only at the end of a meet, so the number of starts may not match the power index and usage history below (our own tally, up to just before this race).",
       "legend2": "Top-2 rate",
       "legend3": "Top-3 rate",
       "trendHeading": "Motor {{n}} trend",

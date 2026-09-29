@@ -238,8 +238,9 @@ check(
     ),
 );
 check(
-  "画面: 過去レースのドリルダウンは「このレースの直前まで」と明示する（BOA-521）",
-  chart.includes("isPastSelectedRace && (") &&
+  // 当日のレースも「直前まで」で集計するので、注記も当日から出す（BOA-557）
+  "画面: ドリルダウンは（過去・当日とも）「このレースの直前まで」と明示する（BOA-521）",
+  chart.includes("{selectedRace && (") &&
     chart.includes("analysis.motor.drillAsOfRaceNote"),
 );
 {

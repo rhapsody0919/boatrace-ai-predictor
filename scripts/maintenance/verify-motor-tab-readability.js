@@ -31,7 +31,7 @@ import {
   powerIndexTone,
 } from "../../src/utils/smallSampleRate.js";
 import { officialTallyState } from "../../src/utils/motorGeneration.js";
-import { EXHIBITION_TIME_DOMAIN } from "../../src/utils/chartDomain.js";
+import { exhibitionTimeAxis } from "../../src/utils/chartDomain.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -328,16 +328,44 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       !/!officialMode &&\s*breakdown\.some\(isOfficialPending\)/.test(chart),
   );
   // 展示タイムの縦軸の端は0.2秒の倍数（6.43 / 6.63 … や上端だけ7.10にしない）
-  const [lo, hi] = EXHIBITION_TIME_DOMAIN;
+  // 範囲だけ渡すと recharts が5本に等分し、幅0.6秒で 6.80/6.95/7.10… になった（ファン評価）
+  const axisA = exhibitionTimeAxis([6.86, 7.31]);
+  const axisB = exhibitionTimeAxis([6.53, 7.04, null]);
   check(
-    "展示タイムの縦軸の端が0.2秒の倍数で、上下に余白がある",
-    lo(6.53) === 6.4 && hi(7.04) === 7.2 && lo(6.6) === 6.4 && hi(6.9) === 7,
+    "展示タイムの縦軸は端も目盛りも0.2秒刻み（幅0.6秒でも0.15刻みにしない）",
+    JSON.stringify(axisA) ===
+      JSON.stringify({ domain: [6.8, 7.4], ticks: [6.8, 7, 7.2, 7.4] }) &&
+      JSON.stringify(axisB.ticks) === JSON.stringify([6.4, 6.6, 6.8, 7, 7.2]) &&
+      exhibitionTimeAxis([null]) === null,
   );
   check(
-    "展示タイムのグラフ（モータ情報・選手ページ）が丸めた範囲を使う",
-    chart.includes("yAxisDomain={EXHIBITION_TIME_DOMAIN}") &&
-      racerCard.includes("yAxisDomain={EXHIBITION_TIME_DOMAIN}") &&
-      !/dataMin - 0\.1/.test(chart + racerCard),
+    "展示タイムのグラフ（モータ情報・選手ページ）が0.2秒刻みの範囲と目盛りを使い、直線でつなぐ",
+    [chart, racerCard].every(
+      (src) =>
+        src.includes("yAxisDomain={exhibitionAxis?.domain}") &&
+        src.includes("yTicks={exhibitionAxis?.ticks}") &&
+        /dataKey: "exhibition_time",[\s\S]{0,200}type: "linear"/.test(src),
+    ) &&
+      !/dataMin - 0\.1/.test(chart + racerCard) &&
+      /ticks=\{yTicks\}/.test(trendChart),
+  );
+  check(
+    "選手ページの展示タイムも、375pxでラベルを間引かない",
+    /yTicks=\{exhibitionAxis\?\.ticks\}\s*\/\/[^\n]*\n\s*slantXLabels/.test(
+      racerCard,
+    ),
+  );
+  check(
+    "過去レースの3連率の0.0にも「集計前」を付ける",
+    /\{row\.motor_3rate\?\.toFixed\(1\)\}[\s\S]{0,300}officialMode && isOfficialPending\(row\)/.test(
+      chart,
+    ),
+  );
+  check(
+    "「このレースの直前まで」の注記を当日のレースのドリルダウンにも出す",
+    /\{selectedRace && \(\s*<p className="table-note">\s*\{t\("analysis\.motor\.drillAsOfRaceNote"\)\}/.test(
+      chart,
+    ),
   );
   check(
     "使用履歴のグラフは選手名を間引かず、直線でつなぐ",
@@ -360,6 +388,12 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
       .motor;
+    check(
+      `${lang}: 公式値の更新遅れの注記が、当サイトの集計を「最新のレースまで」と言わない`,
+      !/最新のレースまで|latest race|至最新比賽|최신 레이스까지/.test(
+        motor.officialSnapshotNote,
+      ),
+    );
     check(
       `${lang}: 使用履歴の注記からグラフの向きの文を分け、別キーにある`,
       typeof motor.usageHistoryChartNote === "string" &&

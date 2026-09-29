@@ -4,7 +4,7 @@ import TrendLineChart from "../analysis/TrendLineChart";
 import MotorStatBadgeRow from "../MotorStatBadgeRow";
 import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
 import { formatPowerIndex, powerIndexTone } from "../../utils/smallSampleRate";
-import { EXHIBITION_TIME_DOMAIN } from "../../utils/chartDomain";
+import { exhibitionTimeAxis } from "../../utils/chartDomain";
 import "./RacerMotorStatusCard.css";
 
 /**
@@ -49,6 +49,9 @@ export default function RacerMotorStatusCard({ status }) {
     day: row.date.slice(5),
     exhibition_time: row.exhibition_time,
   }));
+  const exhibitionAxis = exhibitionTimeAxis(
+    chartData.map((row) => row.exhibition_time),
+  );
 
   const hasPowerIndex =
     powerIndex?.power_index !== null && powerIndex?.power_index !== undefined;
@@ -129,7 +132,10 @@ export default function RacerMotorStatusCard({ status }) {
           <TrendLineChart
             data={chartData}
             yAxisLabel="展示タイム (秒)"
-            yAxisDomain={EXHIBITION_TIME_DOMAIN}
+            yAxisDomain={exhibitionAxis?.domain}
+            yTicks={exhibitionAxis?.ticks}
+            // 375pxでもレース番号付きのラベルを間引かない（BOA-557）
+            slantXLabels
             yTickDecimals={2}
             tooltipFormatter={(value) => value.toFixed(2)}
             series={[
@@ -137,7 +143,7 @@ export default function RacerMotorStatusCard({ status }) {
                 dataKey: "exhibition_time",
                 name: "展示タイム",
                 stroke: "var(--brand-accent-primary)",
-                type: "monotone",
+                type: "linear",
               },
             ]}
           />

@@ -15,7 +15,7 @@ import RacerGradeBadge from "../racer/RacerGradeBadge";
 import MotorStatBadgeRow from "../MotorStatBadgeRow";
 import MotorRecordStatCards from "../MotorRecordStatCards";
 import TrendLineChart from "./TrendLineChart";
-import { EXHIBITION_TIME_DOMAIN } from "../../utils/chartDomain";
+import { exhibitionTimeAxis } from "../../utils/chartDomain";
 import DrillDownHeader from "./DrillDownHeader";
 import MotorWakuStatsGrid from "./MotorWakuStatsGrid";
 import MotorRacerWakuDrillDown from "./MotorRacerWakuDrillDown";
@@ -339,6 +339,9 @@ function MotorConditionChart({
       date: row.date.slice(5),
       exhibition_time: row.exhibition_time,
     }));
+  const exhibitionAxis = exhibitionTimeAxis(
+    exhibitionChartData.map((row) => row.exhibition_time),
+  );
 
   // 使用履歴は新しい順の一覧だが、グラフは推移グラフと同じく左が古く右が新しい
   // 向きにそろえる（逆向きだと「右肩下がり＝最近悪化」と読み違える。BOA-513）
@@ -696,7 +699,16 @@ function MotorConditionChart({
                             )}
                           </td>
                         )}
-                        <td className="rate">{row.motor_3rate?.toFixed(1)}</td>
+                        <td className="rate">
+                          {row.motor_3rate?.toFixed(1)}
+                          {/* 過去レースは3連率も公式値。2連率だけに印を付けると、3連率の
+                              0.0 を「3着以内が一度も無い」と読まれる（BOA-557 ファン評価） */}
+                          {officialMode && isOfficialPending(row) && (
+                            <span className="motor-waku-n motor-official-pending">
+                              {t("analysis.motor.officialPendingBadge")}
+                            </span>
+                          )}
+                        </td>
                         {hasPretest && (
                           <td className="rate motor-pretest-cell">
                             {row.pretest_time !== null &&
@@ -822,7 +834,9 @@ function MotorConditionChart({
           />
           {/* 過去レースのドリルダウンは「このレースの直前まで」で集計する（BOA-521）。
               期間の切り替えは出さないので、どこまでの集計かをここで示す */}
-          {isPastSelectedRace && (
+          {/* 当日のレースも「このレースの直前まで」（BOA-557）。終了後に開いて、
+              そのレースの結果が無いことを「データの遅れ」と読まれないように */}
+          {selectedRace && (
             <p className="table-note">
               {t("analysis.motor.drillAsOfRaceNote")}
             </p>
@@ -1024,14 +1038,16 @@ function MotorConditionChart({
               data={exhibitionChartData}
               yAxisLabel={t("analysis.motor.exhibitionYAxis")}
               yTickDecimals={2}
-              yAxisDomain={EXHIBITION_TIME_DOMAIN}
+              yAxisDomain={exhibitionAxis?.domain}
+              yTicks={exhibitionAxis?.ticks}
               tooltipFormatter={(value) => value.toFixed(2)}
               series={[
                 {
                   dataKey: "exhibition_time",
                   name: t("analysis.motor.exhibitionLegend"),
                   stroke: "var(--brand-accent-primary)",
-                  type: "monotone",
+                  // 点はレースごとの別々の値。曲線だと間に値があるように見える
+                  type: "linear",
                 },
               ]}
             />
