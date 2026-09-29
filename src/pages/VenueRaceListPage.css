@@ -46,6 +46,35 @@
   min-width: 0;
 }
 
+/* 会場カードの先頭の目印（ここから発走前のレース・次のレースへの近道）。直前のグリッドの行が途中で
+   終わっても、そこが「締切済みのレースの終わり」だと分かるようにする（ファン評価1周目） */
+.venue-race-list__next-race-marker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.venue-race-list__next-race-jump {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-link, var(--brand-accent-primary));
+  text-decoration: underline;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
 /* 2カラム時、カードヘッダー（会場名+バッジ群+レース番号）が横一列に収まらず
    会場名が「多摩」「川」のように意味の切れ目を無視して折り返すことがあった。
    バッジ群を下の行に逃がし、会場名自体は折り返さないようにする */

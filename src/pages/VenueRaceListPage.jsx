@@ -31,6 +31,16 @@ import { getRaceStatus, RACE_STATUS } from "../utils/raceStatus";
 import { formatDate } from "../utils/formatters";
 import "./VenueRaceListPage.css";
 
+// sticky ヘッダーに隠れない位置へスクロールする（ヘッダーはスクロールすると低くなるため、いまの高さで少し余裕を持たせる）
+function scrollBelowHeader(el) {
+  if (!el) return;
+  const headerHeight =
+    document.querySelector(".app-header")?.getBoundingClientRect().height ?? 0;
+  window.scrollTo({
+    top: el.getBoundingClientRect().top + window.scrollY - headerHeight - 8,
+  });
+}
+
 function VenueRaceListPage() {
   const { date: dateParam, venueCode: venueCodeParam } = useParams();
   const { t } = useTranslation();
@@ -58,21 +68,34 @@ function VenueRaceListPage() {
   const location = useLocation();
   const cameFromHistory =
     navigationType === "POP" && location.key !== "default";
+  // リロード（これも "POP"）で開いたときも、読んでいた位置へ戻すブラウザの復元を優先する（ファン評価1周目）。
+  // リロードは location.key が "default" に戻ることがあり、履歴の移動と見分けられない。そこで、このタブで
+  // 一度自動スクロールした会場ページを "POP" で開き直したときはスクロールしない（sessionStorage に記録）
+  const autoScrollKey = `venueAutoScrolled:${location.pathname}`;
+  const [reopenedInTab] = useState(() => {
+    try {
+      return (
+        navigationType === "POP" &&
+        window.sessionStorage.getItem(autoScrollKey) === "1"
+      );
+    } catch {
+      return false;
+    }
+  });
   const venueCardsRef = useRef(null);
   const scrolledRef = useRef(false);
   // 会場カードを次の発走レースの直前に差し込んだら、そこまで1回だけスクロールする（BOA-546）
   useEffect(() => {
-    if (scrolledRef.current || cameFromHistory) return;
+    if (scrolledRef.current || cameFromHistory || reopenedInTab) return;
     const el = venueCardsRef.current;
     if (!el) return;
     scrolledRef.current = true;
-    // sticky ヘッダーに隠れない位置へ（ヘッダーはスクロールすると低くなるため、いまの高さで少し余裕を持たせる）
-    const headerHeight =
-      document.querySelector(".app-header")?.getBoundingClientRect().height ??
-      0;
-    window.scrollTo({
-      top: el.getBoundingClientRect().top + window.scrollY - headerHeight - 8,
-    });
+    scrollBelowHeader(el);
+    try {
+      window.sessionStorage.setItem(autoScrollKey, "1");
+    } catch {
+      // 保存できない環境（プライベートモード等）では、リロード時にもう一度スクロールするだけ
+    }
   });
 
   if (!Number.isInteger(venueCode) || venueCode < 1 || venueCode > 24) {
@@ -201,6 +224,34 @@ function VenueRaceListPage() {
                       className="venue-race-list__next-race-cards"
                       data-testid="venue-next-race-cards"
                     >
+                      {/* 自動スクロールで着いた位置で、ここがどこか（上は締切済み、下から発走前）と次のレースを示す。
+                          会場カードは縦に長く、次のレースが最初の1画面に入らないため、そこへの近道も置く
+                          （ファン評価1周目） */}
+                      <p
+                        className="venue-race-list__next-race-marker"
+                        data-testid="venue-next-race-marker"
+                      >
+                        <span>
+                          {t("venueRaceList.nextRaceMarker", {
+                            race: race.raceNumber,
+                            time: race.startTime,
+                          })}
+                        </span>
+                        {/* 会場カードの直後（グリッドの次の要素）が次のレースのカード */}
+                        <button
+                          type="button"
+                          className="venue-race-list__next-race-jump"
+                          onClick={() =>
+                            scrollBelowHeader(
+                              venueCardsRef.current?.nextElementSibling,
+                            )
+                          }
+                        >
+                          {t("venueRaceList.jumpToNextRace", {
+                            race: race.raceNumber,
+                          })}
+                        </button>
+                      </p>
                       {venueCards}
                     </div>
                   ),

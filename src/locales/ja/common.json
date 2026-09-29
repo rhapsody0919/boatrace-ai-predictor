@@ -84,7 +84,9 @@
     "title": "レース一覧",
     "metaTitle": "{{venue}}の本日のレース一覧・AIデータ分析 - 龍神レーダー",
     "metaDescription": "{{venue}}ボートレース場の本日の全レース一覧。締切時刻・グレードを確認し、各レースのAIデータ分析へ進めます。",
-    "backToVenues": "← 会場一覧に戻る"
+    "backToVenues": "← 会場一覧に戻る",
+    "nextRaceMarker": "▼ ここから発走前のレース（次は{{race}}R {{time}}）",
+    "jumpToNextRace": "{{race}}Rへ"
   },
   "venueCharacteristics": {
     "title": "この会場の特徴（過去90日）",

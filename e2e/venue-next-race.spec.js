@@ -116,6 +116,34 @@ for (const width of [375, 1440]) {
   });
 }
 
+test.describe("着いた位置の目印（ファン評価1周目）", () => {
+  test.use({ viewport: { width: 375, height: 800 } });
+
+  test("会場カードの先頭に「ここから発走前・次は9R 14:30」と、9Rへの近道を出す", async ({
+    page,
+  }) => {
+    await open(page, { at: "14:00" });
+    const marker = page.getByTestId("venue-next-race-marker");
+    await expect(marker).toContainText("ここから発走前のレース（次は9R 14:30）");
+    // 着いた直後の1画面に目印が入っている
+    await expect
+      .poll(() => marker.evaluate((e) => e.getBoundingClientRect().top))
+      .toBeLessThan(200);
+    await marker.getByRole("button", { name: "9Rへ" }).click();
+    // 9Rのカードがヘッダーのすぐ下に来る
+    const headerBottom = await page
+      .locator(".app-header")
+      .evaluate((e) => e.getBoundingClientRect().bottom);
+    const nineR = page.locator(".race-card").filter({ hasText: "9R" }).first();
+    await expect
+      .poll(() => nineR.evaluate((e) => e.getBoundingClientRect().top))
+      .toBeLessThan(headerBottom + 40);
+    expect(
+      await nineR.evaluate((e) => e.getBoundingClientRect().top),
+    ).toBeGreaterThanOrEqual(headerBottom - 1);
+  });
+});
+
 test.describe("カードを動かさない・スクロールしない場合", () => {
   test.use({ viewport: { width: 375, height: 800 } });
 
@@ -150,6 +178,20 @@ test.describe("カードを動かさない・スクロールしない場合", ()
     await page.clock.fastForward("01:00:00"); // 15:00（次は 11R）
     await page.waitForTimeout(500);
     expect(await cardsPosition(page)).toBe("9");
+  });
+
+  test("リロードで開いたときは自動スクロールしない（読んでいた位置の復元を優先）", async ({
+    page,
+  }) => {
+    await open(page, { at: "14:00" });
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(0);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.reload();
+    await expect(page.locator(".race-card")).toHaveCount(12, { timeout: 20000 });
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => window.scrollY)).toBeLessThan(100);
   });
 
   test("ブラウザの戻るで来たときは自動スクロールしない", async ({ page }) => {

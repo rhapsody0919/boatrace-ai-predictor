@@ -84,7 +84,9 @@
     "title": "경주 일람",
     "metaTitle": "{{venue}} 오늘의 경주 일람・AI 데이터 분석 - 용신 레이더",
     "metaDescription": "{{venue}} 경정장의 오늘 전체 경주 일람. 마감 시각과 등급을 확인하고 각 경주의 AI 데이터 분석을 볼 수 있습니다.",
-    "backToVenues": "← 경정장 목록으로"
+    "backToVenues": "← 경정장 목록으로",
+    "nextRaceMarker": "▼ 여기부터 발주 전 레이스(다음은 {{race}}R {{time}})",
+    "jumpToNextRace": "{{race}}R로"
   },
   "venueCharacteristics": {
     "title": "이 경정장의 특징 (최근 90일)",

@@ -85,7 +85,9 @@
     "title": "Race list",
     "metaTitle": "Today's races at {{venue}} - AI data analysis | Ryujin Radar",
     "metaDescription": "All of today's races at {{venue}} boat race stadium. Check deadlines and grades, then view AI data analysis for each race.",
-    "backToVenues": "← Back to venues"
+    "backToVenues": "← Back to venues",
+    "nextRaceMarker": "▼ Upcoming races start here (next: R{{race}} {{time}})",
+    "jumpToNextRace": "Go to R{{race}}"
   },
   "venueCharacteristics": {
     "title": "This Venue's Tendencies (last 90 days)",
