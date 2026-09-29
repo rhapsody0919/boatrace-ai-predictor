@@ -398,7 +398,6 @@
     "liveUnchanged": "変化なし（30秒以内の取り直しは同じ値です）",
     "liveFromNote": "締切90分前から、このタブで公式の最新オッズを表示します。",
     "officialOddsLink": "公式サイトのオッズを見る",
-    "finalOfficial": "締切時オッズ（公式）",
     "finalDeadlineAt": "{{time}} 締切",
     "finalSource": "BOATRACE公式から取得",
     "finalTrendLabel": "締切時（公式）",

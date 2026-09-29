@@ -356,6 +356,32 @@ const SLOT = {
   );
 }
 {
+  // /code-review 指摘の再現: 途中のページでブレーカーが開いても、取れたページを捨てずに保存してから投げ直す
+  const env = makeEnv({
+    throwFor: {
+      "2tf": new BreakerOpenError("boatrace.jp", NOW.getTime() + 60000),
+    },
+  });
+  let thrown = null;
+  try {
+    await env.handler(SLOT, env.ctx());
+  } catch (error) {
+    thrown = error;
+  }
+  const row = env.saved[0] ?? {};
+  check(
+    "(c) 途中のページ（2tf）でブレーカー → 取れた券種（単勝・3連単・3連複・拡連複）を保存してから BreakerOpenError を投げる",
+    thrown instanceof BreakerOpenError &&
+      env.saved.length === 1 &&
+      count(row.win_all) === 6 &&
+      count(row.trifecta_all) === 120 &&
+      count(row.trio_all) === 20 &&
+      count(row.wide_all) === 15 &&
+      !("exacta_all" in row),
+    show({ thrown: String(thrown), keys: Object.keys(row) }),
+  );
+}
+{
   const env = makeEnv({ throwFor: { tf: new Error("timeout") } });
   const r = await env.handler(SLOT, env.ctx());
   check(

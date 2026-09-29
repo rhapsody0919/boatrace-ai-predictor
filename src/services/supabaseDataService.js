@@ -271,6 +271,19 @@ const cache = {
  */
 const inflightRequests = new Map();
 
+/**
+ * オッズ（race_odds・race_odds_final）のキャッシュTTL。本日以降のレースは、発走前は数分おきに、締切後は締切時オッズが
+ * 後から入るため短く（3分）する（既定の30分だと、取得前に開いて得た空の結果が30分固定される）。過去レースは追加取得が
+ * 無いため既定（withCache がキーの日付から推定する長いTTL）に任せる
+ */
+function raceOddsCacheTtl(raceId) {
+  const dateMatch = String(raceId).match(/^(\d{4}-\d{2}-\d{2})-/);
+  const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+  return dateMatch && dateMatch[1] < todayJst ? undefined : 3 * 60 * 1000;
+}
+
 function withCache(key, fetcher, ttl) {
   const effectiveTtl = ttl ?? inferTtlFromKey(key);
   const cached = cache.get(key, effectiveTtl);
@@ -5568,16 +5581,7 @@ export const supabaseDataService = {
    * オッズ一覧タブでは無意味なため除外する
    */
   getRaceOddsSnapshots(raceId) {
-    // オッズは発走前に数分おきに更新されるため、本日以降のレースは短いTTLにする
-    // （既定の30分だと、オッズ取得前に開いて得た空配列や、窓が増える前の
-    // スナップショットが30分間固定される）。過去レースは追加取得が無いため
-    // 既定（withCacheがキーの日付から推定する長いTTL）に任せる
-    const dateMatch = String(raceId).match(/^(\d{4}-\d{2}-\d{2})-/);
-    const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
-    const ttl =
-      dateMatch && dateMatch[1] < todayJst ? undefined : 3 * 60 * 1000;
+    const ttl = raceOddsCacheTtl(raceId);
 
     // v2: 単勝・複勝（odds_win_N・odds_place_N_low/high）を足した（BOA-487）。キーを変えないと、
     // localStorage に残った旧形（単勝なし）が過去レースで最大7日返る
@@ -5659,12 +5663,7 @@ export const supabaseDataService = {
    * 本日のレースは、締切後に値が入るため短いTTLにする（getRaceOddsSnapshots と同じ理由）
    */
   getRaceFinalOdds(raceId) {
-    const dateMatch = String(raceId).match(/^(\d{4}-\d{2}-\d{2})-/);
-    const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
-    const ttl =
-      dateMatch && dateMatch[1] < todayJst ? undefined : 3 * 60 * 1000;
+    const ttl = raceOddsCacheTtl(raceId);
     return withCache(
       `race-odds-final-v1-${raceId}`,
       async () => {
@@ -5689,7 +5688,7 @@ export const supabaseDataService = {
           throw err;
         }
         if (!data) return null;
-        return {
+        const final = {
           capturedAt: data.captured_at,
           win: nonEmpty(data.win_all),
           place: nonEmpty(data.place_all),
@@ -5699,6 +5698,17 @@ export const supabaseDataService = {
           quinellaAll: nonEmpty(data.quinella_all),
           wideAll: nonEmpty(data.wide_all),
         };
+        // 一部の券種だけの行は、Cron の再試行で後から埋まる。キャッシュに保存しない（withCache は TTL を読み出し時に
+        // キーの日付から決め直すため、今日3分で保存した途中の行が、翌日には過去レースの7日TTLで返り続ける）
+        const complete = [
+          final.win,
+          final.trifectaAll,
+          final.trioAll,
+          final.exactaAll,
+          final.quinellaAll,
+          final.wideAll,
+        ].every(Boolean);
+        return complete ? final : { ...final, fetchFailed: true };
       },
       ttl,
     );

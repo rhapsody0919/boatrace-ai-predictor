@@ -667,7 +667,6 @@
     "liveUnchanged": "No change (refreshing within 30 seconds returns the same values)",
     "liveFromNote": "From 90 minutes before the deadline, this tab shows the latest official odds.",
     "officialOddsLink": "See odds on the official site",
-    "finalOfficial": "Final odds at deadline (official)",
     "finalDeadlineAt": "Deadline {{time}} JST",
     "finalSource": "From the official BOATRACE site",
     "finalTrendLabel": "At deadline (official)",

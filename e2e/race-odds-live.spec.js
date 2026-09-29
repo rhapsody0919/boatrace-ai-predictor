@@ -607,6 +607,32 @@ test.describe("締切時オッズ（公式、BOA-496）", () => {
     );
   });
 
+  // /code-review 指摘の再現: 一部の券種だけの行をキャッシュすると、翌日には過去レースの7日TTLで返り続け、
+  // 後から Cron が埋めた券種が出ない。一部だけの行は保存せず、全券種そろった行だけ保存する
+  test("キャッシュ: 一部の券種だけの行は保存せず、全券種そろった行だけ保存する", async ({
+    page,
+  }) => {
+    const cacheKey = `boatai:race-odds-final-v1-${RACE}`;
+    const { status } = await setup(page, {
+      now: AFTER_DEADLINE,
+      final: { ...FINAL_ROW, wide_all: null },
+    });
+    await expect(status).toContainText("締切時オッズ（公式）");
+    expect(
+      await page.evaluate((k) => localStorage.getItem(k), cacheKey),
+    ).toBeNull();
+
+    const page2 = await page.context().newPage();
+    const second = await setup(page2, {
+      now: AFTER_DEADLINE,
+      final: FINAL_ROW,
+    });
+    await expect(second.status).toContainText("締切時オッズ（公式）");
+    expect(
+      await page2.evaluate((k) => localStorage.getItem(k), cacheKey),
+    ).not.toBeNull();
+  });
+
   test("記録が無くても締切時オッズだけで表を出す", async ({ page }) => {
     const { status } = await setup(page, {
       now: AFTER_DEADLINE,

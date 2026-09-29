@@ -245,28 +245,25 @@ function Sparkline({ points, isRange }) {
     (i / (nums.length - 1)) * width,
     height - ((v - min) / range) * height,
   ]);
-  const coords = xy
-    .map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`)
-    .join(" ");
+  const toPoints = (list) =>
+    list.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
   const last = xy[xy.length - 1];
-  // 末尾が締切時オッズ（公式）なら、最後の区間を点線にし、点を青で打つ（記録の推移と別の時点・出どころのため）
-  if (points[points.length - 1].official) {
-    const prev = xy[xy.length - 2];
-    const recorded = xy
-      .slice(0, -1)
-      .map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`)
-      .join(" ");
-    return (
-      <svg
-        className="rol-sparkline"
-        viewBox={`0 0 ${width} ${height}`}
-        preserveAspectRatio="none"
-        aria-hidden="true"
-        data-testid="odds-trend-sparkline"
-      >
-        {xy.length > 2 && (
-          <polyline points={recorded} fill="none" strokeWidth="2" />
-        )}
+  const lastPoint = points[points.length - 1];
+  // 末尾が締切時オッズ（公式）なら、記録の折れ線は1つ手前まで。最後の区間を点線にし、点を青で打つ
+  // （記録の推移と別の時点・出どころのため）
+  const recorded = lastPoint.official ? xy.slice(0, -1) : xy;
+  const prev = xy[xy.length - 2];
+  return (
+    <svg
+      className="rol-sparkline"
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      {recorded.length >= 2 && (
+        <polyline points={toPoints(recorded)} fill="none" strokeWidth="2" />
+      )}
+      {lastPoint.official && (
         <line
           className="rol-sparkline-official-line"
           x1={prev[0]}
@@ -275,26 +272,12 @@ function Sparkline({ points, isRange }) {
           y2={last[1]}
           strokeWidth="2"
         />
+      )}
+      {(lastPoint.live || lastPoint.official) && (
         <circle
-          className="rol-sparkline-official"
-          cx={last[0]}
-          cy={last[1]}
-          r="3"
-        />
-      </svg>
-    );
-  }
-  return (
-    <svg
-      className="rol-sparkline"
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="none"
-      aria-hidden="true"
-    >
-      <polyline points={coords} fill="none" strokeWidth="2" />
-      {points[points.length - 1].live && (
-        <circle
-          className="rol-sparkline-live"
+          className={
+            lastPoint.official ? "rol-sparkline-official" : "rol-sparkline-live"
+          }
           cx={last[0]}
           cy={last[1]}
           r="3"
@@ -413,7 +396,7 @@ function FinalStatus({ deadline }) {
       data-state="final"
     >
       <span className="rol-official-dot" aria-hidden="true" />
-      <span className="rol-status-strong">{t("oddsList.finalOfficial")}</span>
+      <span className="rol-status-strong">{t("oddsList.liveFinal")}</span>
       {time && <b>{t("oddsList.finalDeadlineAt", { time })}</b>}
       <span className="rol-status-sub">{t("oddsList.finalSource")}</span>
     </div>

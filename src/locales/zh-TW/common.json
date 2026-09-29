@@ -665,7 +665,6 @@
     "liveUnchanged": "無變化（30秒內重新取得會是相同數值）",
     "liveFromNote": "截止前90分鐘起，本分頁會顯示官方最新賠率。",
     "officialOddsLink": "查看官方網站的賠率",
-    "finalOfficial": "截止時賠率（官方）",
     "finalDeadlineAt": "{{time}} 截止（JST）",
     "finalSource": "取自BOATRACE官方網站",
     "finalTrendLabel": "截止時（官方）",

@@ -665,7 +665,6 @@
     "liveUnchanged": "변화 없음(30초 이내에 다시 가져오면 같은 값입니다)",
     "liveFromNote": "마감 90분 전부터 이 탭에서 공식 최신 오즈를 표시합니다.",
     "officialOddsLink": "공식 사이트에서 오즈 보기",
-    "finalOfficial": "마감 시 오즈(공식)",
     "finalDeadlineAt": "{{time}} 마감(JST)",
     "finalSource": "BOATRACE 공식 사이트에서 수집",
     "finalTrendLabel": "마감 시(공식)",

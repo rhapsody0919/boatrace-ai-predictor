@@ -215,8 +215,23 @@ export function createFinalOddsSlotHandler({
             : "オッズがありません（中止・順延・発売前の可能性）",
       };
     }
-    const rest = await Promise.all(
+    // 途中でブレーカーが開いても、取れたページは保存してから投げ直す（再試行で同じページを取り直さない。
+    // ブレーカーが開くのは公式が混んでいるときで、取り直しのリクエストを増やさない）
+    const settled = await Promise.allSettled(
       pending.slice(1).map((page) => fetchPage(ctx.politeFetch, target, page)),
+    );
+    const breakerError = settled.find(
+      (s) => s.status === "rejected" && s.reason instanceof BreakerOpenError,
+    )?.reason;
+    const rest = settled.map((s, i) =>
+      s.status === "fulfilled"
+        ? s.value
+        : {
+            page: pending[i + 1],
+            status: "error",
+            patch: {},
+            error: s.reason?.message ?? String(s.reason),
+          },
     );
     const results = [first, ...rest];
 
@@ -234,6 +249,7 @@ export function createFinalOddsSlotHandler({
         captured_at: ctx.now().toISOString(),
       });
     }
+    if (breakerError) throw breakerError;
 
     const common = {
       ...base,
