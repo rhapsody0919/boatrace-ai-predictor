@@ -185,12 +185,12 @@ where r.race_id = c.race_id
   and v.venue_code = r.venue_code
   and v.race_date = r.race_date
   and c.series_day is distinct from v.day;
--- 期待: UPDATE 762
+-- 期待: UPDATE の件数が、直前に実行した 1 の rows_to_fix と同じ（2026-09-29 時点では 762）
 
 commit;
 ```
 
-`UPDATE` の件数が 762 でなければ `commit` せず `rollback;` する。
+`UPDATE` の件数が、直前の 1 の `rows_to_fix` と違えば `commit` せず `rollback;` する。1 が 762 から変わっていても、書き換える先の値（公式の日目）は同じなので、1 と 2 の件数が一致していれば実行してよい（ページからの取り直しで一部が先に直った場合など）。
 
 ### 3. 事後確認（読み取り）
 
