@@ -176,8 +176,13 @@ export const CANCELLATION_CLEAR_LOOKBACK_DAYS = 14;
 /**
  * 結果のcatch-upの run（日次。対象日 ctx.targetDate＝23:50 JST の日付）。
  *
- *   1. 対象日に expired になった結果のスロットのうち、中止・順延の確定でないレースを、再取得して補填する
- *      （live は書き込み、shadow は取得・解析のみ）
+ *   1. 対象日に expired になった結果のスロットと、中止・順延の確定で終端された（cancelled_race）結果のスロットの
+ *      レースを、再取得して補填する（live は書き込み、shadow は取得・解析のみ）。
+ *      中止・順延の確定のレースも取り直す（BOA-526）: 確定は「発走+90分で結果が無い」で付くため、結果の取得窓
+ *      （発走+5〜90分）で取り逃したレースは、窓が切れると同時に確定される。確定を除外すると、取り逃しを拾う経路が
+ *      無くなる（2026-09-12 の三国1R・2Rは、実際には開催されていたのに、結果が無いまま確定のまま残った）。
+ *      取り直して結果が取れれば書き込み、2' が確定を外す。本当の中止は結果ページが無く、取れないだけ。
+ *      確定のレースは「取れればよい」追加分として、期待件数（0件エラーの判定）・未解決の一覧に入れない
  *   2. live: 発走+90分を超えて結果の無いレースを、中止・順延「確定」にする（onTick の取りこぼしの補填。
  *      1 の再取得の後に行う＝再取得で結果が取れたレースを、中止にしない）
  *   2'. live（3 の後に実行）: 直近 CANCELLATION_CLEAR_LOOKBACK_DAYS 日の、結果があるのに中止・順延（暫定・確定）が付いたレースを
@@ -204,13 +209,13 @@ export function createResultCatchupRun({
     const live = ctx.mode === "live";
     const client = ctx.client;
 
-    // 1) expired のスロット
+    // 1) expired のスロットと、確定中止で終端された（cancelled_race）スロット
     const expired = await client
       .from("scrape_slots")
       .select("race_id, races(cancellation_status)")
       .eq("job", "result")
       .eq("race_date", date)
-      .eq("status", "expired");
+      .or("status.eq.expired,outcome.eq.cancelled_race");
     if (expired.error) {
       throw new Error(
         `結果のcatch-up: expired のスロットの取得に失敗しました: ${expired.error.message}`,
@@ -221,12 +226,12 @@ export function createResultCatchupRun({
       return isCancellationConfirmed(race?.cancellation_status);
     };
     const candidateIds = [
-      ...new Set(
-        (expired.data ?? [])
-          .filter((row) => !isConfirmedCancel(row))
-          .map((row) => row.race_id),
-      ),
+      ...new Set((expired.data ?? []).map((row) => row.race_id)),
     ];
+    // 確定中止のレース（取れればよい追加分。期待件数・未解決に入れない）
+    const confirmedIds = new Set(
+      (expired.data ?? []).filter(isConfirmedCancel).map((row) => row.race_id),
+    );
     const races = candidateIds.map((id) => {
       const { race_id, venue_code, race_number } = parseRaceId(id);
       return { race_id, venue_code, race_number };
@@ -246,16 +251,22 @@ export function createResultCatchupRun({
     const outcomes = {};
     for (const r of results)
       outcomes[r.outcome] = (outcomes[r.outcome] ?? 0) + 1;
-    const obtained = results.filter((r) =>
-      ["ok", "partial", "skipped_have_data"].includes(r.outcome),
-    ).length;
+    const isObtained = (r) =>
+      ["ok", "partial", "skipped_have_data"].includes(r.outcome);
+    // 期待件数・0件エラー・未解決は、確定中止でないレースだけで数える（確定中止は、取れればよい追加分）
+    const primary = results.filter((r) => !confirmedIds.has(r.race_id));
+    const obtained = primary.filter(isObtained).length;
     const rowsWritten = results.reduce(
       (sum, r) => sum + (r.rowsWritten ?? 0),
       0,
     );
-    const unresolved = results
+    const unresolved = primary
       .filter((r) => !["ok", "skipped_have_data"].includes(r.outcome))
       .map((r) => ({ race_id: r.race_id, outcome: r.outcome, error: r.error }));
+    // 確定中止のレースのうち、取り直して結果が取れたもの（2' が確定を外す。発生したら取り逃しがあった証拠）
+    const recoveredFromCancellation = results
+      .filter((r) => confirmedIds.has(r.race_id) && isObtained(r))
+      .map((r) => r.race_id);
 
     // 2) 中止・順延の確定の取りこぼし（live のみ）
     let confirmed = 0;
@@ -316,13 +327,15 @@ export function createResultCatchupRun({
 
     return {
       rowsWritten: live ? rowsWritten : 0,
-      rowsExpected: races.length,
+      rowsExpected: races.length - confirmedIds.size,
       rowsParsed: obtained,
       incomplete: openSlots > 0,
       report: {
         date,
         mode: ctx.mode,
         candidates: races.length,
+        retriedConfirmedCancellations: confirmedIds.size,
+        recoveredFromCancellation,
         outcomes,
         unresolved,
         confirmedCancellations: confirmed,
@@ -332,6 +345,8 @@ export function createResultCatchupRun({
       },
       body: {
         candidates: races.length,
+        retriedConfirmedCancellations: confirmedIds.size,
+        recoveredFromCancellation: recoveredFromCancellation.length,
         outcomes,
         confirmedCancellations: confirmed,
         clearedCancellations: clearedCancellations?.length ?? null,

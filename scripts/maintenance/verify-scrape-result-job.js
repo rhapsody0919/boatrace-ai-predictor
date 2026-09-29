@@ -1682,15 +1682,74 @@ const catchupCtx = (
   const polite = politeFor();
   const r = await runner(catchupCtx(db, { polite }));
   check(
-    "catch-up: 対象日の expired のうち、確定中止・他の日を除く1件（桐生1R）だけを再取得し、live なので書き込む",
-    polite.calls.length === 1 &&
-      polite.calls[0].includes("jcd=05") &&
+    "catch-up: 対象日の expired を、確定中止（宮島12R）も含めて再取得する（BOA-526）。他の日は除く。live なので書き込む。期待件数・取得件数は確定中止でない1件（桐生1R）だけで数える",
+    polite.calls.length === 2 &&
+      polite.calls.some((u) => u.includes("jcd=05")) &&
+      polite.calls.some((u) => u.includes("jcd=17")) &&
       r.rowsExpected === 1 &&
       r.rowsParsed === 1 &&
-      r.rowsWritten === 7 &&
-      db.tables.race_results.length === 1,
+      db.tables.race_results.length === 2 &&
+      r.report.retriedConfirmedCancellations === 1,
     show(r.report),
   );
+  check(
+    "catch-up（BOA-526）: 確定中止のレースを取り直して結果が取れたら（取り逃しだった）、書き込み、recoveredFromCancellation に出す",
+    same(r.report.recoveredFromCancellation, [RACE_B]) &&
+      db.tables.race_results.some((x) => x.race_id === RACE_B) &&
+      r.body.recoveredFromCancellation === 1,
+    show(r.report),
+  );
+  {
+    // 本当の中止（確定中止のレースの結果ページが無い）: 取れないだけで、失敗にも未解決にもしない
+    // （上の検証が数える spy を増やさないよう、別のランナーを使う）
+    const quietRunner = createResultCatchupRun({
+      confirm: async () => ({ checked: 0, confirmed: [] }),
+      clearWithResults: async () => ({ checked: 0, cleared: [] }),
+      fixHitFlags: async () => ({ missing: 0, fixed: 0 }),
+    });
+    const dbT = catchupDb();
+    const rt = await quietRunner(
+      catchupCtx(dbT, {
+        polite: politeFor((url) =>
+          url.includes("jcd=17") ? HTML_NONE : URL_TO_HTML(url),
+        ),
+      }),
+    );
+    check(
+      "catch-up（BOA-526）: 確定中止のレースの結果ページが無い（本当の中止）なら、書き込まず、未解決の一覧にも入れず、期待件数にも数えない",
+      rt.rowsExpected === 1 &&
+        rt.rowsParsed === 1 &&
+        rt.report.unresolved.length === 0 &&
+        rt.report.recoveredFromCancellation.length === 0 &&
+        !dbT.tables.race_results.some((x) => x.race_id === RACE_B),
+      show(rt.report),
+    );
+    // 本当の中止だけの日（確定中止でない再取得の対象が0件）は、0件エラーにしない
+    const dbO = catchupDb();
+    dbO.tables.scrape_slots = dbO.tables.scrape_slots.filter(
+      (x) => x.race_id !== RACE_A,
+    );
+    const ro = await quietRunner(
+      catchupCtx(dbO, { polite: politeFor(() => HTML_NONE) }),
+    );
+    const storeO = createMemoryStore({
+      rows: { result_catchup: { job: "result_catchup", mode: "live" } },
+    });
+    const wrappedO = await runScrapeJob({
+      job: "result_catchup",
+      store: storeO,
+      run: async () => ro,
+      now: () => new Date("2026-09-19T14:50:00Z"),
+      client: dbO,
+      politeFetch: () => {},
+      worker: "w",
+    });
+    check(
+      "catch-up（BOA-526）: 取り直しの対象が確定中止だけで、全て取れない日（本当の中止の日）は、0件エラーにしない（期待件数0）",
+      ro.rowsExpected === 0 && wrappedO.status === 200,
+      show({ report: ro.report, body: wrappedO.body }),
+    );
+  }
   check(
     "catch-up: live は、発走+90分を超えた未確定のレース（23:50時点で 14:30・20:00 発走。22:45 は対象外）を確定の処理に渡し、的中フラグを直近10日（9/10〜9/19）で補完する",
     same(spyConfirm, [[RACE_A, "2026-09-19-01-12"]]) &&
@@ -1731,6 +1790,10 @@ const catchupCtx = (
       fixHitFlags: async () => ({ missing: 0, fixed: 0 }),
     });
     const dbC = catchupDb();
+    // 確定中止の宮島12R は、ここでは本当の中止（結果ページが無い）とする
+    const pNoB = politeFor((url) =>
+      url.includes("jcd=17") ? HTML_NONE : URL_TO_HTML(url),
+    );
     dbC.tables.races.push(
       {
         race_id: "2026-09-12-10-01",
@@ -1749,7 +1812,7 @@ const catchupCtx = (
       { race_id: "2026-09-12-10-01" },
       { race_id: "2026-09-05-10-01" },
     );
-    const rc = await realRunner(catchupCtx(dbC));
+    const rc = await realRunner(catchupCtx(dbC, { polite: pNoB }));
     const st = (id) =>
       dbC.tables.races.find((x) => x.race_id === id).cancellation_status;
     check(
