@@ -363,6 +363,7 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
   for (const [label, trifectaOdds, exactaOdds] of [
     ["3桁", 999.9, 963.7], // 合成＝250.0（3着4艇の調和平均）
     ["4〜5桁", 4000.0, 12345.6], // 合成＝1000.0
+    ["5桁のマス", 40000.0, 12345.6], // 3連単のマス自体が5桁（ファン評価2周目: マスが折れて段違い）
   ]) {
     for (const width of [375, 360, 320]) {
       test(`${width}px: 合成・2単が${label}でも、見出しと値が離れて1行に収まり、列ごとに段違いにならない`, async ({
@@ -408,6 +409,17 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
                 if (!f.sameLine) out.push(`block${bi} 2行: ${f.text}`);
                 if (!f.apart) out.push(`block${bi} くっつき: ${f.text}`);
                 if (!f.inside) out.push(`block${bi} はみ出し: ${f.text}`);
+              }
+            }
+            // オッズのマスが折り返さない（艇番と値が同じ行）
+            for (const cell of block.querySelectorAll(".rol-odds")) {
+              const b = cell.querySelector(".rol-odds-badges").getBoundingClientRect();
+              const v = cell.querySelector(".rol-odds-value").getBoundingClientRect();
+              if (v.top >= b.bottom - 1 || v.left < b.right) {
+                out.push(`block${bi} マスが折れる: ${cell.textContent}`);
+              }
+              if (v.right > cell.getBoundingClientRect().right + 0.5) {
+                out.push(`block${bi} マスからはみ出し: ${cell.textContent}`);
               }
             }
             // 「合成」の行、「2単」の行がそれぞれブロック内で同じ高さ

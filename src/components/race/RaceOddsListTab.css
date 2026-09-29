@@ -170,7 +170,7 @@
   align-items: center;
   justify-content: space-between;
   /* 狭い画面で桁数の多いオッズ（4〜5桁）がバッジの横に収まらないとき、
-     数字を切らずに次の行へ折り返す（通常のセルは1行のまま） */
+     数字を切らずに次の行へ折り返す（通常のセルは1行のまま。3連単の表は下で折り返さず縮める） */
   flex-wrap: wrap;
   gap: 2px;
   width: 100%;
@@ -203,6 +203,22 @@
 
 .rol-odds-value {
   margin-left: auto;
+}
+
+/* 3連単の表（5列）では、4〜5桁のオッズでもマスを折り返さない。折り返すとそのマスだけ高くなり、
+   列の下の「合成」「2単」の行が列ごとに段違いになる（BOA-552 ファン評価2周目）。代わりに、値が
+   バッジの横に収まるまで文字を小さくする（--rol-odds-em は値のおおよその幅。OddsButton が渡す。
+   引く量はバッジ（最大1rem）＋左右の余白とすき間） */
+.rol-col .rol-odds {
+  flex-wrap: nowrap;
+}
+
+.rol-col .rol-odds-value {
+  white-space: nowrap;
+  font-size: min(
+    var(--font-size-2xs),
+    calc((100cqi - 1rem - 8px) / (var(--rol-odds-em, 4) + 0.3))
+  );
 }
 
 /* 3連複の一覧・2連単/2連複/拡連複のブロックは2列に並べる。推移パネルは

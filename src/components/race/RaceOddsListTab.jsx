@@ -366,6 +366,7 @@ function OddsButton({
       disabled={value == null}
       aria-label={`${label} ${text}`}
       aria-pressed={selected}
+      style={{ "--rol-odds-em": approxEm(text) }}
     >
       <span className="rol-odds-badges">{badges}</span>
       <span className="rol-odds-value">{text}</span>
