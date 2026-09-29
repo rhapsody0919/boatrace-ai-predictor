@@ -226,8 +226,6 @@
     "missingRanksNote": "※이 레이스는 4착 이하의 착순 데이터가 수집되지 않아 일부 착순을 표시하지 않습니다",
     "cancelledTitle": "이 레이스는 중지되었습니다",
     "cancelledBody": "날씨나 수면 상태 등으로 인해 레이스가 중지되어 결과 데이터가 없습니다.",
-    "noRaceTitle": "이 레이스는 불성립되었습니다",
-    "noRaceBody": "출주 조건을 충족하지 못해 이 레이스는 불성립되었습니다.",
     "placeSectionTitle": "🎯 복승 예측 검증",
     "placePredicted": "복승 {{rank}}위 예측: {{number}}호정",
     "placeHit": "✅ 적중!（{{position}}착）",
@@ -242,7 +240,40 @@
     "volatilityOutcomeDetailFavorite": "（1번 보트가 1착）",
     "volatilityCaveat": "※단일 레이스 결과만으로는 예측의 정확 여부를 판단할 수 없습니다.",
     "volatilityCaveatLink": "실측 정확도 보기 ›",
-    "payout": "배당금: ¥{{amount}}"
+    "payout": "배당금: ¥{{amount}}",
+    "noRace": {
+      "title": "레이스 불성립・전액 반환",
+      "body": "착순이 정해지지 않아 불성립. 주권은 모두 반환",
+      "bodyWithReason": "{{reason}}. 주권은 모두 반환",
+      "reason": "{{list}}로 불성립",
+      "group": {
+        "flying": "플라잉 {{count}}정({{boats}}호정)",
+        "late": "출발 지연 {{count}}정({{boats}}호정)",
+        "absent": "결장 {{count}}정({{boats}}호정)"
+      },
+      "boatSeparator": "・",
+      "groupSeparator": ", "
+    },
+    "mark": {
+      "flying": "플라잉(반환)",
+      "late": "출발 지연(반환)",
+      "absent": "결장(반환)",
+      "capsized": "전복(실격)",
+      "fell": "낙수(실격)",
+      "sank": "침몰(실격)",
+      "obstruction": "방해(실격)",
+      "engineStall": "엔진 정지(실격)",
+      "notFinished": "미완주(실격)",
+      "disqualified": "실격",
+      "noPosition": "착순 없음(불성립)",
+      "refunded": "반환",
+      "noPositionPlain": "착순 없음"
+    },
+    "refundTag": "반환정 있음",
+    "partialNoRaceTag": "일부 승식 불성립",
+    "payoutNoRace": "불성립(반환)",
+    "payoutSpecial": "특별 지급",
+    "volatilityOutcomeNotJudgeable": "판정 대상 외(불성립)"
   },
   "raceHistoryTable": {
     "date": "날짜",
@@ -453,14 +484,19 @@
     "badgeTurn": "✅ 전개 적중",
     "missBadge": "❌ 미적중",
     "view": "상세 보기",
-    "dataTableExpand": "컨디션・전시・회수율까지 보기"
+    "dataTableExpand": "컨디션・전시・회수율까지 보기",
+    "noRace": "불성립",
+    "refundBadge": "반환 있음"
   },
   "turnPatternList": {
     "title": "전개 예측",
     "caption": "1착이 될 가능성이 높은 정의 후보입니다（최대 3정・확률순）",
     "hitTag": "적중",
     "summaryHit": "✅ 상위 예측 중 하나가 적중했습니다",
-    "summaryMiss": "❌ 상위 예측에 없던 {{winnerNumber}}호정이 1착이었습니다"
+    "summaryMiss": "❌ 상위 예측에 없던 {{winnerNumber}}호정이 1착이었습니다",
+    "notJudgeable": "판정 대상 외(불성립)",
+    "notJudgeableBody": "1착이 정해지지 않아 적중 여부를 판정하지 않습니다",
+    "refundedTag": "반환(판정 대상 외)"
   },
   "accuracyStat": {
     "withRecovery": "실측: 적중률{{hitRate}}%・회수율{{recoveryRate}}%（지난{{totalRaces}}경주）",
@@ -1100,6 +1136,7 @@
       "partsHistoryNote": "💡 부품 교환・프로펠러 교환은 그 자체만으로는 기력 저하의 신호일 수도, 정비 직후의 호전 신호일 수도 있습니다. 배지는 교환 전후 평균 전시 타임을 비교한 참고값이며 결과를 보장하지 않습니다.",
       "note": "💡 표의 행을 클릭하면 해당 모터의 회차별 추이를 볼 수 있습니다. 강조 표시된 행은 이 레이스에서 2연대율이 가장 높은 보트입니다.",
       "highlightNote": "💡 강조된 행은 이 레이스에서 2연대율이 가장 높은 정입니다.",
+      "focusedRowNote": "선으로 둘러싼 행은 다른 탭에서 선택한 보트입니다.",
       "venueRankLabel": "장내 순위(경주장 공식 2연대율)",
       "venueRankBadge": "{{total}}대 중 {{rank}}위 ({{value}}%)",
       "venueRankBadgeTied": "{{total}}대 중 {{rank}}위 타이 ({{value}}%)",

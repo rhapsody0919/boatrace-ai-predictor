@@ -43,6 +43,10 @@ function MotorConditionChart({
   initialRaceId = null,
   initialMotorNumber = null,
   embedded = false,
+  // レース詳細で「今どの艇を見ているか」をタブ間で共有する（BOA-492/BOA-494）。
+  // /winning-technique は渡さないので、そちらの挙動は変わらない
+  focusedBoat = null,
+  onFocusBoat = null,
 }) {
   const { t } = useTranslation();
   const {
@@ -645,8 +649,22 @@ function MotorConditionChart({
                     {breakdown.map((row, i) => (
                       <tr
                         key={row.boat_number}
-                        className={`motor-ranking-row ${row.motor_2rate === bestMotor2Rate ? "best-motor" : ""}`}
-                        onClick={() => setDrillDownMotor(row.motor_number)}
+                        className={[
+                          "motor-ranking-row",
+                          row.motor_2rate === bestMotor2Rate
+                            ? "best-motor"
+                            : "",
+                          // 他のタブで選んだ艇は、一覧のまま行で示す（ドリルダウンは
+                          // 自動で開かない。一覧が主役で、初回の表示を変えない。BOA-494 案A）
+                          row.boat_number === focusedBoat ? "is-focused" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        onClick={() => {
+                          setDrillDownMotor(row.motor_number);
+                          // 行を押したら、他のタブにもその艇の選択を引き継ぐ
+                          onFocusBoat?.(row.boat_number);
+                        }}
                       >
                         <td className="rank">{row.boat_number}</td>
                         <td translate="no">
@@ -1209,6 +1227,10 @@ function MotorConditionChart({
         ) : (
           <p className="table-note">{t("analysis.motor.note")}</p>
         ))}
+      {/* 線の意味（BOA-494 ファン評価）。一覧で、他のタブで艇を選んでいるときだけ */}
+      {drillDownMotor === null && focusedBoat !== null && (
+        <p className="table-note">{t("analysis.motor.focusedRowNote")}</p>
+      )}
       {!drillPreGeneration && (
         <p className="table-note">{t("analysis.motor.powerIndexNote")}</p>
       )}

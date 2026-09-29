@@ -226,8 +226,6 @@
     "missingRanksNote": "※このレースは4着以下の着順データが未取得のため、一部の着順を表示していません",
     "cancelledTitle": "このレースは中止となりました",
     "cancelledBody": "天候・水面状況等によりレースが中止されたため、結果データはありません。",
-    "noRaceTitle": "このレースは不成立でした",
-    "noRaceBody": "出走条件を満たさなかったため、このレースは不成立となりました。",
     "placeSectionTitle": "🎯 複勝予想の検証",
     "placePredicted": "複勝{{rank}}位予想: {{number}}号艇",
     "placeHit": "✅ 的中！（{{position}}着）",
@@ -242,7 +240,40 @@
     "volatilityOutcomeDetailFavorite": "（1号艇が1着）",
     "volatilityCaveat": "※1回のレース結果だけでは予測の正誤は判断できません。",
     "volatilityCaveatLink": "実測精度を見る ›",
-    "payout": "配当: {{amount}}円"
+    "payout": "配当: {{amount}}円",
+    "noRace": {
+      "title": "レース不成立・全額返還",
+      "body": "着順が決まらず不成立。舟券はすべて返還",
+      "bodyWithReason": "{{reason}}。舟券はすべて返還",
+      "reason": "{{list}}で不成立",
+      "group": {
+        "flying": "フライング{{count}}艇（{{boats}}号艇）",
+        "late": "出遅れ{{count}}艇（{{boats}}号艇）",
+        "absent": "欠場{{count}}艇（{{boats}}号艇）"
+      },
+      "boatSeparator": "・",
+      "groupSeparator": "、"
+    },
+    "mark": {
+      "flying": "F（フライング・返還）",
+      "late": "L（出遅れ・返還）",
+      "absent": "欠（欠場・返還）",
+      "capsized": "転（転覆失格）",
+      "fell": "落（落水失格）",
+      "sank": "沈（沈没失格）",
+      "obstruction": "妨（妨害失格）",
+      "engineStall": "エ（エンスト失格）",
+      "notFinished": "不（不完走失格）",
+      "disqualified": "失（失格）",
+      "noPosition": "着順なし（不成立）",
+      "refunded": "返還",
+      "noPositionPlain": "着順なし"
+    },
+    "refundTag": "返還艇あり",
+    "partialNoRaceTag": "不成立の勝式あり",
+    "payoutNoRace": "不成立（返還）",
+    "payoutSpecial": "特払",
+    "volatilityOutcomeNotJudgeable": "判定対象外（不成立）"
   },
   "raceTabs": {
     "basic": "基本情報",
@@ -814,14 +845,19 @@
     "badgeTurn": "✅ 展開的中",
     "missBadge": "❌ 外れ",
     "view": "詳細を見る",
-    "dataTableExpand": "調子・展示・回収率まで見る"
+    "dataTableExpand": "調子・展示・回収率まで見る",
+    "noRace": "不成立",
+    "refundBadge": "返還あり"
   },
   "turnPatternList": {
     "title": "展開予測",
     "caption": "1着になりそうな艇の候補です（最大3艇・確率順）",
     "hitTag": "的中",
     "summaryHit": "✅ 上位予想の1つが的中しました",
-    "summaryMiss": "❌ 上位予想に無い{{winnerNumber}}号艇が1着でした"
+    "summaryMiss": "❌ 上位予想に無い{{winnerNumber}}号艇が1着でした",
+    "notJudgeable": "判定対象外（不成立）",
+    "notJudgeableBody": "1着が決まらなかったため、的中・外れを判定しません",
+    "refundedTag": "返還（判定対象外）"
   },
   "accuracyStat": {
     "withRecovery": "実測: 的中率{{hitRate}}%・回収率{{recoveryRate}}%（過去{{totalRaces}}レース）",
@@ -1100,6 +1136,7 @@
       "partsHistoryNote": "💡 部品交換・プロペラ交換は単独では機力低下のサインにも整備直後の好転サインにもなり得ます。交換前後の展示タイム平均を比較した目安を添えていますが、参考値であり結果を保証するものではありません。",
       "note": "💡 表の行をクリックするとそのモーターの節ごとの推移が見られます。ハイライトされた行はこのレースで最も2連率が高い艇です。",
       "highlightNote": "💡 ハイライトされた行は、このレースで最も2連率が高い艇です。",
+      "focusedRowNote": "線で囲んだ行は、他のタブで選んでいる艇です。",
       "venueRankLabel": "会場内順位（会場公式の2連率）",
       "venueRankBadge": "{{rank}}位／{{total}}機中（{{value}}%）",
       "venueRankBadgeTied": "{{rank}}位タイ／{{total}}機中（{{value}}%）",

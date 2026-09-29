@@ -119,13 +119,14 @@ function PredictionPanel({
   const [activeMainTab, setActiveMainTab] = useState(() =>
     prediction?.result?.finished ? "result" : "basic",
   );
-  // 「今どの艇を見ているか」を基本情報・枠別情報・今節の3タブで共有する（BOA-492）。
+  // 「今どの艇を見ているか」を基本情報・枠別情報・今節・モータ情報の4タブで共有する（BOA-492、モータ情報は BOA-494）。
   // 各タブが自前で持っていた頃は、基本情報で4号艇を開いてから枠別へ移ると1号艇に
   // 戻って選び直しが要った。RaceTabsは非アクティブタブをアンマウントするため、
   // 枠別→今節→枠別と戻っただけでも消えていた。
   // null は「まだどの艇も選んでいない」。基本情報タブは null なら何も展開せず、
   // 枠別・今節は null なら従来どおり1号艇にフォールバックする（初回表示は3タブとも
-  // 現状のまま変わらない）
+  // 現状のまま変わらない）。モータ情報は一覧のまま選んだ艇の行を示し、ドリルダウンは
+  // 自動で開かない（BOA-494 案A。一覧が主役）
   // レースが変われば選択は無効（次のレースの4号艇は別人）。RaceTabsはkeyで作り直される
   // が、PredictionPanel自体は再マウントされないため、どのレースの選択かを一緒に持って
   // 描画時に判定する
@@ -427,6 +428,8 @@ function PredictionPanel({
                   embedded
                   initialVenueCode={venueCode}
                   initialRaceId={analysisRaceId}
+                  focusedBoat={focusedBoat}
+                  onFocusBoat={handleFocusBoat}
                 />
               ),
             },

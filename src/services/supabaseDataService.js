@@ -32,6 +32,7 @@ import {
   isAbsentStartRow,
   runFinishLabel,
 } from "../components/race/seriesPoints.js";
+import { PAYOUT_BET_TYPES } from "../utils/raceOutcome.js";
 import {
   PRETEST_LOOKBACK_DAYS,
   pickFirstPretestByRacer,
@@ -770,6 +771,42 @@ function buildWeather(conditions) {
   };
 }
 
+/**
+ * RPC の payoutRows（race_payouts の行の配列）を、結果タブの払戻表の行へ変換する（BOA-543）。
+ * status: paid=通常 / special=特払 / no_amount=組番のみ（払戻金が空欄）/ no_race=不成立（返還）。
+ * combination は「1-2-5」（079）。配列でなければ null（旧列へのフォールバック）
+ */
+function buildPayoutRows(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  const order = new Map(PAYOUT_BET_TYPES.map((b, i) => [b.betType, i]));
+  const known = rows.filter((row) => order.has(row?.betType));
+  // 知らない勝式しか無い（将来の追加等）ときは、空の払戻表を出さず旧列にフォールバックさせる
+  if (known.length === 0) return null;
+  return known
+    .map((row) => {
+      const meta = PAYOUT_BET_TYPES[order.get(row.betType)];
+      return {
+        betType: row.betType,
+        typeKey: meta.typeKey,
+        separator: meta.separator,
+        seq: Number(row.seq) || 1,
+        boats: row.combination
+          ? String(row.combination)
+              .split("-")
+              .map(Number)
+              .filter((n) => Number.isInteger(n))
+          : [],
+        amount: typeof row.payout === "number" ? row.payout : null,
+        status: row.payoutStatus ?? null,
+        popularity: row.popularity ?? null,
+      };
+    })
+    .sort(
+      (a, b) =>
+        order.get(a.betType) - order.get(b.betType) || a.seq - b.seq,
+    );
+}
+
 function buildRaceResult(r) {
   if (!r || !r.rank1) return null;
 
@@ -782,7 +819,15 @@ function buildRaceResult(r) {
   return {
     finished: true,
     isCancelled: r.isCancelled || false,
-    isNoRace: r.isNoRace || false,
+    // レースの成立状態と返還艇（078。109でRPCに追加）。判定は src/utils/raceOutcome.js を通す。
+    // 旧フラグ isNoRace（is_no_race）は全行 false で機能していないため持たない（BOA-543）。
+    // RPC未適用・078以前の行は null（＝未判定。今までどおり通常のレースとして扱う）
+    raceStatus: r.raceStatus ?? null,
+    refundBoats: Array.isArray(r.refundBoats) ? r.refundBoats : null,
+    remark: r.remark ?? null,
+    // 払戻明細（race_payouts、109でRPCに追加）。無ければ null で、結果タブは旧 payout_* 列の
+    // payouts にフォールバックする（RPC未適用・過去データ・直接クエリのフォールバック経路）
+    payoutRows: buildPayoutRows(r.payoutRows),
     rank1: r.rank1,
     rank2: r.rank2,
     rank3: r.rank3,
@@ -1479,7 +1524,9 @@ export const supabaseDataService = {
           race_time_5,
           race_time_6,
           is_cancelled,
-          is_no_race,
+          race_status,
+          refund_boats,
+          remark,
           payout_win,
           payout_place_1,
           payout_place_2,
@@ -1750,7 +1797,9 @@ export const supabaseDataService = {
                 raceTime5: result.race_time_5,
                 raceTime6: result.race_time_6,
                 isCancelled: result.is_cancelled,
-                isNoRace: result.is_no_race,
+                raceStatus: result.race_status,
+                refundBoats: result.refund_boats,
+                remark: result.remark,
                 winningTechnique: result.winning_technique,
                 payoutWin: result.payout_win,
                 payoutPlace1: result.payout_place_1,
