@@ -25,7 +25,13 @@
  *    台帳（scripts/lib/mergeOrder.js）で「このPRは #N の後に」とされていれば、#N が MERGED に
  *    なるまで止める。台帳が無い・PRが台帳に無い・台帳が読めない・ghが失敗した場合は素通し。
  *
- * 判定できない場合（PR番号が読めない、ghが応答しない等）は素通しする。
+ *    ただし台帳に順序の制約が1つでもあるのに、コマンドからマージ対象のPR番号を確定できない場合は
+ *    止める（fail-closed）。`for n in 917 918; do gh pr merge $n; done`・`gh pr merge "$PR"`・
+ *    `$(...)`・xargs のように番号がシェルの展開で決まる書き方は、フックの時点では番号が読めない。
+ *    2026-09-29 にこれで素通しし、#918 が先行の #917 より先にマージされた。
+ *    1つのコマンドに `gh pr merge` が複数あれば、全部を確定できたときだけ通し、全部を検査する。
+ *
+ * それ以外で判定できない場合（台帳に制約が無いときの番号不明、ghが応答しない等）は素通しする。
  * 止めるべきものを見逃す方が、止めるべきでないものを止めて作業を詰まらせるより軽いため。
  *
  * 検証: scripts/maintenance/verify-guard-pr-merge.js
@@ -63,7 +69,17 @@ const VALUE_OPTIONS = new Set([
   "--subject",
   "--match-head-commit",
   "--author-email",
+  "-R",
+  "--repo",
 ]);
+/** 番号がシェルの展開で決まる印（変数・コマンド置換・xargs/find の置換文字列）。 */
+const SHELL_EXPANSION = /[$`{}]/;
+/** gh が位置引数として受け付けるブランチ名（`OWNER:BRANCH` を含む）。 */
+const BRANCH_NAME = /^[\w./:-]+$/;
+/** 引数を標準入力などから補って別のコマンドを起動するコマンド。 */
+const ARG_FEEDERS = /(?:^|\s)(?:xargs|parallel)(?=\s|$)|\s-exec(?:dir)?(?=\s)/;
+/** gh pr merge より前にループの本体が始まっているか（`for ...; do gh pr merge`）。 */
+const LOOP = /\b(?:for|while|until)\b[\s\S]*\bdo\b/;
 
 /**
  * このスクリプトが置かれているリポジトリのルート。
@@ -95,19 +111,27 @@ const gh = (args) => run("gh", args);
 const gitIn = (args, cwd) => run("git", args, cwd);
 
 /**
- * `gh pr merge 123 --merge` の 123。番号が無ければ null（呼び出し側が現在のブランチのPRを引く）。
+ * 1つの `gh pr merge` の引数部分から、マージ対象を読む。
+ *   { kind: "number", pr }   番号・PRのURL
+ *   { kind: "branch", name } ブランチ名（gh でそのブランチのPRに解決する）
+ *   { kind: "current" }      位置引数なし（現在のブランチのPR）
+ *   { kind: "unresolved" }   番号がシェルの展開で決まる等、フックの時点では確定できない
  *
  * gh は位置引数の位置を問わないので `gh pr merge --merge 123` も有効。先頭だけ見ると
  * 番号を取り逃がし、カレントブランチの別のPRのチェック結果で判定してしまう。
- * 番号・PRのURL・ブランチ名のいずれも来るので、番号かURLのときだけ返す。
  */
-export function extractExplicitPrNumber(command) {
-  const m = command.match(/\bgh\s+pr\s+merge\b([^\n;&|]*)/);
-  if (!m) return null;
+function parseMergeArgs(args, inLoop) {
   // 引用符で囲まれた値は中に空白を含む（`-b "fix 42"`）。そのまま空白で割ると
   // 値の断片を位置引数と読んでしまうので、1トークンに潰してから割る。
-  const tokens = m[1]
-    .replace(/"[^"]*"|'[^']*'/g, "__quoted__")
+  // ただし二重引用符の中の $ や ` は展開されるので、潰しても展開の印は残す（`"$PR"` を見逃さない）。
+  const tokens = args
+    .replace(/"([^"]*)"|'([^']*)'/g, (_, dq, sq) => {
+      const value = dq ?? sq;
+      if (!/\s/.test(value)) return value;
+      return dq !== undefined && SHELL_EXPANSION.test(value)
+        ? "$__quoted__"
+        : "__quoted__";
+    })
     .trim()
     .split(/\s+/)
     .filter(Boolean);
@@ -119,13 +143,33 @@ export function extractExplicitPrNumber(command) {
       if (VALUE_OPTIONS.has(name) && !token.includes("=")) i += 1;
       continue;
     }
+    if (SHELL_EXPANSION.test(token)) return { kind: "unresolved" };
     const byNumber = token.match(/^(\d+)$/);
-    if (byNumber) return byNumber[1];
+    if (byNumber) return { kind: "number", pr: byNumber[1] };
     const byUrl = token.match(/^https?:\/\/\S*?\/pull\/(\d+)\/?$/);
-    if (byUrl) return byUrl[1];
-    return null; // ブランチ名など、番号に解決できない位置引数
+    if (byUrl) return { kind: "number", pr: byUrl[1] };
+    if (BRANCH_NAME.test(token)) return { kind: "branch", name: token };
+    return { kind: "unresolved" };
   }
-  return null;
+  // ループの本体の中の位置引数なしは、繰り返しごとに別のブランチで走りうる
+  return inLoop ? { kind: "unresolved" } : { kind: "current" };
+}
+
+/** コマンド中のすべての `gh pr merge` について、マージ対象を読む（形は parseMergeArgs）。 */
+export function extractMergeTargets(command) {
+  const targets = [];
+  for (const m of command.matchAll(/\bgh\s+pr\s+merge\b([^\n;&|]*)/g)) {
+    const before = command.slice(0, m.index);
+    // 同じ単純コマンドの中で gh より前にある部分（`echo 1 | xargs -n1 gh pr merge` の ` xargs -n1 `）。
+    // xargs 等は位置引数を後から足すので、書かれた引数からは番号が分からない。
+    const lead = before.slice(before.search(/[^\n;&|]*$/));
+    targets.push(
+      ARG_FEEDERS.test(lead)
+        ? { kind: "unresolved" }
+        : parseMergeArgs(m[1], LOOP.test(before)),
+    );
+  }
+  return targets;
 }
 
 /** コマンドが worktree ごと消す形の `--delete-branch` / `-d` を含むか。 */
@@ -209,19 +253,53 @@ export function judgeChecks(pr, checks) {
   return null;
 }
 
-function checkMergeOrder(pr) {
+/** 台帳を読む。無い・壊れている場合は空の台帳（台帳の不調で作業は止めない。CLIの list で気づける）。 */
+function loadLedger() {
   const file = ledgerPath(repoRoot);
-  if (!file) return null;
-  let prerequisites;
+  if (!file) return { rules: [] };
   try {
-    prerequisites = prerequisitesOf(readLedger(file), pr);
+    return readLedger(file);
   } catch {
-    return null; // 台帳が壊れていても作業は止めない（CLIの list で気づける）
+    return { rules: [] };
   }
+}
+
+/** 台帳に順序の制約が1つでもあるか。無ければ番号が分からなくても止める理由が無い。 */
+export function hasOrderConstraints(ledger) {
+  return ledger.rules.some((r) => r.after.length > 0);
+}
+
+/**
+ * マージ対象の一部を確定できなかったときの判定。止める必要が無ければ null。
+ * resolved は各 `gh pr merge` のPR番号（確定できなければ null）。
+ */
+export function judgeUnresolved(resolved, ledger) {
+  if (!resolved.includes(null) || !hasOrderConstraints(ledger)) return null;
+  return {
+    decision: "deny",
+    reason:
+      "コマンドからマージ対象のPR番号を確定できません（シェル変数・$(...)・xargs・ループ等で番号が" +
+      "実行時に決まる書き方か、PRに解決できないブランチ名）。マージ順の台帳に順序の制約があり、" +
+      "番号が分からないと順序を守れているか判定できないため止めます。" +
+      "PR 番号をリテラルで1件ずつ書いて（gh pr merge 918 --squash）、1コマンドに1件ずつ再実行してください" +
+      "（台帳: node scripts/maintenance/merge-order.js list）。",
+  };
+}
+
+function checkMergeOrder(pr, ledger) {
+  const prerequisites = prerequisitesOf(ledger, pr);
   if (prerequisites.length === 0) return null;
   const states = {};
   for (const n of prerequisites) {
-    const state = gh(["pr", "view", String(n), "--json", "state", "-q", ".state"]);
+    const state = gh([
+      "pr",
+      "view",
+      String(n),
+      "--json",
+      "state",
+      "-q",
+      ".state",
+    ]);
     if (state) states[n] = state;
   }
   return judgeMergeOrder(pr, prerequisites, states);
@@ -286,6 +364,15 @@ function checkWorktreeData(pr, command) {
   return judgeWorktree(wt, precious, dirtyCount);
 }
 
+/** マージ対象をPR番号（文字列）にする。確定できなければ null。 */
+function resolveTarget(target) {
+  if (target.kind === "number") return target.pr;
+  if (target.kind === "unresolved") return null;
+  const where = target.kind === "branch" ? [target.name] : [];
+  const n = gh(["pr", "view", ...where, "--json", "number", "-q", ".number"]);
+  return n && /^\d+$/.test(n) ? n : null;
+}
+
 function main() {
   let payload;
   try {
@@ -297,19 +384,22 @@ function main() {
   if (typeof command !== "string" || !/\bgh\s+pr\s+merge\b/.test(command))
     respond("allow");
 
-  const pr =
-    extractExplicitPrNumber(command) ??
-    gh(["pr", "view", "--json", "number", "-q", ".number"]);
-  if (!pr || !/^\d+$/.test(pr)) respond("allow");
+  const resolved = extractMergeTargets(command).map(resolveTarget);
+  const ledger = loadLedger();
+  const unresolved = judgeUnresolved(resolved, ledger);
+  if (unresolved) respond(unresolved.decision, unresolved.reason);
 
-  const order = checkMergeOrder(pr);
-  if (order) respond(order.decision, order.reason);
+  // 台帳に制約が無ければ、確定できなかったものは従来どおり検査せずに通す
+  for (const pr of new Set(resolved.filter(Boolean))) {
+    const order = checkMergeOrder(pr, ledger);
+    if (order) respond(order.decision, order.reason);
 
-  const gate = checkQualityGate(pr);
-  if (gate) respond(gate.decision, gate.reason);
+    const gate = checkQualityGate(pr);
+    if (gate) respond(gate.decision, gate.reason);
 
-  const data = checkWorktreeData(pr, command);
-  if (data) respond(data.decision, data.reason);
+    const data = checkWorktreeData(pr, command);
+    if (data) respond(data.decision, data.reason);
+  }
 
   respond("allow");
 }
