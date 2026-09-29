@@ -61,9 +61,27 @@ test.describe("GA4 page_view の送信経路", () => {
     expect((await pageViews(page))[0].page_location).toBe(`${baseURL}/`);
   });
 
-  test("管理画面（/admin）は計測しない", async ({ page }) => {
+  test("管理画面（/admin）は直接開いてもSPA遷移でも計測しない", async ({
+    page,
+  }) => {
     await page.goto("/admin/rules");
     await page.waitForTimeout(1500);
     expect(await pageViews(page)).toHaveLength(0);
+
+    // 公開ページから SPA 遷移で入った場合も送らない（旧実装は config で送っていた）
+    await page.goto("/");
+    await expect.poll(() => pageViews(page).then((v) => v.length)).toBe(1);
+    await page.evaluate(() => {
+      window.history.pushState({}, "", "/admin/sns-hub");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await expect(page).toHaveURL(/\/admin\/sns-hub$/);
+    await page.waitForTimeout(1500);
+    const adminCalls = await page.evaluate(() =>
+      window.__gaCalls.filter((args) =>
+        JSON.stringify(args).includes("/admin"),
+      ),
+    );
+    expect(adminCalls).toHaveLength(0);
   });
 });
