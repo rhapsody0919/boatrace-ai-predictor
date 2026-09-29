@@ -10,6 +10,9 @@
  *   (b) 素通しする場合: 台帳が無い・PRが台帳に無い・台帳が壊れている・gh が失敗する
  *   (c) 判定の純関数と台帳の形式検査
  *   (d) CLI: add（既存の after に足す）・list・remove と、不正な入力の拒否
+ *   (e) 台帳に制約があるのに、PR番号がシェルの展開で決まる書き方（for ループの $n・"$PR"・$(...)・xargs 等）
+ *       ならフックが止める。番号を確定できる書き方と、台帳が空の場合は従来どおり
+ *       （番号不明を素通ししていた版では、止める側の13件が落ちることを確認済み）
  */
 import { spawnSync } from "node:child_process";
 import {
@@ -17,6 +20,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -58,6 +62,18 @@ if [ "$1 $2" = "pr checks" ]; then
   echo '[{"name":"verify","state":"SUCCESS"},{"name":"e2e","state":"SUCCESS"}]'
   exit 0
 fi
+if [ "$1 $2 $3" = "pr view --json" ] && [ "$4" = "number" ]; then
+  # FAKE_GH_CURRENT_DIR があれば、そのディレクトリで起動されたときだけ現在のブランチのPRがある
+  [ -n "$FAKE_GH_CURRENT_DIR" ] && [ "$(pwd -P)" != "$FAKE_GH_CURRENT_DIR" ] && exit 1
+  [ -n "$FAKE_GH_CURRENT" ] && { echo "$FAKE_GH_CURRENT"; exit 0; }
+  exit 1
+fi
+if [ "$1 $2" = "pr view" ] && [ "$4 $5" = "--json number" ]; then
+  for kv in \${FAKE_GH_BRANCHES//,/ }; do
+    [ "\${kv%%=*}" = "$3" ] && { echo "\${kv#*=}"; exit 0; }
+  done
+  exit 1
+fi
 if [ "$1 $2" = "pr view" ] && [ "$4 $5" = "--json state" ]; then
   [ -n "$FAKE_GH_FAIL" ] && exit 1
   for kv in \${FAKE_GH_STATES//,/ }; do
@@ -75,9 +91,9 @@ const writeRaw = (text) => writeFileSync(ledgerFile, text);
 const writeRules = (rules) => writeRaw(JSON.stringify({ rules }));
 
 /** フックとして起動する。deny なら理由、素通しなら null */
-function runGuard(command, env = {}) {
+function runGuard(command, env = {}, payload = {}) {
   const r = spawnSync(process.execPath, [GUARD], {
-    input: JSON.stringify({ tool_input: { command } }),
+    input: JSON.stringify({ ...payload, tool_input: { command } }),
     encoding: "utf8",
     env: {
       ...process.env,
@@ -85,6 +101,9 @@ function runGuard(command, env = {}) {
       MERGE_ORDER_LEDGER: ledgerFile,
       FAKE_GH_STATES: "",
       FAKE_GH_FAIL: "",
+      FAKE_GH_CURRENT: "",
+      FAKE_GH_CURRENT_DIR: "",
+      FAKE_GH_BRANCHES: "",
       ...env,
     },
     timeout: 60_000,
@@ -160,6 +179,150 @@ writeRaw("{ 壊れたJSON");
 check(
   "(b) 台帳が壊れていたら素通し",
   runGuard("gh pr merge 901", { FAKE_GH_STATES: "902=OPEN" }) === null,
+);
+
+// ---------------------------------------------------------------------------
+// (e) PR番号がシェルの展開で決まる書き方（fail-closed）
+//     2026-09-29、`for n in 917 918; do gh pr merge $n ...; done` で番号を読めずに素通しし、
+//     #918 が #917 より先にマージされた。台帳に順序の制約があるのに番号を確定できなければ止める。
+// ---------------------------------------------------------------------------
+writeRules([{ pr: 918, after: [917] }]);
+{
+  const open917 = { FAKE_GH_STATES: "917=OPEN" };
+  const isUnresolvedDeny = (r) =>
+    typeof r === "string" &&
+    r.startsWith("deny:") &&
+    r.includes("リテラルで1件ずつ");
+  for (const [label, command] of [
+    [
+      "変数 $n の for ループ",
+      "for n in 917 918; do gh pr merge $n --squash; done",
+    ],
+    ["${n} の形", "for n in 917 918; do gh pr merge ${n} --squash; done"],
+    ['"$PR"', 'gh pr merge "$PR" --squash'],
+    [
+      "$(...)",
+      "gh pr merge $(gh pr list --head fix/x --json number -q '.[0].number') --squash",
+    ],
+    ["バッククォート", "gh pr merge `cat pr.txt` --squash"],
+    [
+      "xargs（番号がパイプから来る）",
+      "echo 917 918 | xargs -n1 gh pr merge --squash",
+    ],
+    [
+      "xargs -I{}",
+      "printf '917\\n918\\n' | xargs -I{} gh pr merge {} --squash",
+    ],
+    [
+      "while read",
+      'gh pr list -q .[].number | while read n; do gh pr merge "$n"; done',
+    ],
+    [
+      "リテラルと展開の混在（1つでも確定できなければ止める）",
+      "gh pr merge 917 --squash && gh pr merge $n --squash",
+    ],
+  ]) {
+    const r = runGuard(command, open917);
+    check(`(e) ${label} は止める`, isUnresolvedDeny(r), String(r));
+  }
+  check(
+    "(e) リテラル番号の複数行: 2件目（#918）の先行 #917 が未マージなら止める",
+    runGuard(
+      "gh pr merge 917 --squash\ngh pr merge 918 --squash",
+      open917,
+    )?.includes("#917（OPEN）"),
+  );
+  check(
+    "(e) リテラル番号の複数行: 先行がマージ済みなら素通し",
+    runGuard("gh pr merge 917 --squash\ngh pr merge 918 --squash", {
+      FAKE_GH_STATES: "917=MERGED",
+    }) === null,
+  );
+  // 番号を確定できる書き方の挙動は変えない
+  check(
+    "(e) リテラル番号（台帳に無いPR）は素通し",
+    runGuard("gh pr merge 777 --squash", open917) === null,
+  );
+  check(
+    "(e) 引用符で囲んだリテラル番号は確定できる",
+    runGuard('gh pr merge "777" --squash', open917) === null,
+  );
+  check(
+    "(e) URL 形式は確定できる",
+    runGuard(
+      "gh pr merge https://github.com/o/r/pull/777 --squash",
+      open917,
+    ) === null,
+  );
+  check(
+    "(e) ブランチ名はそのブランチのPRに解決して判定する",
+    runGuard("gh pr merge fix/x --squash", {
+      ...open917,
+      FAKE_GH_BRANCHES: "fix/x=918",
+    })?.includes("#917（OPEN）"),
+  );
+  check(
+    "(e) 番号なし（現在のブランチ）は現在のブランチのPRで判定する",
+    runGuard("gh pr merge --squash", {
+      ...open917,
+      FAKE_GH_CURRENT: "918",
+    })?.includes("#917（OPEN）"),
+  );
+  check(
+    "(e) ブランチ名がPRに解決できなければ止める",
+    isUnresolvedDeny(runGuard("gh pr merge fix/none --squash", open917)),
+  );
+  check(
+    "(e) 番号なしで現在のブランチのPRが引けなければ止める",
+    isUnresolvedDeny(runGuard("gh pr merge --squash", open917)),
+  );
+  // worktree のセッションでは、現在のブランチはコマンドが走るディレクトリ（payload の cwd）のもの
+  // （/code-review の指摘で追加。フックの置き場所で引くと別のブランチのPRを見る）
+  check(
+    "(e) 番号なしは payload の cwd で現在のブランチのPRを引く",
+    runGuard(
+      "gh pr merge --squash",
+      {
+        ...open917,
+        FAKE_GH_CURRENT: "918",
+        FAKE_GH_CURRENT_DIR: realpathSync(work),
+      },
+      { cwd: work },
+    )?.includes("#917（OPEN）"),
+  );
+  check(
+    "(e) cd の後の番号なしは確定できないので止める",
+    isUnresolvedDeny(
+      runGuard("cd ../wt && gh pr merge --squash", {
+        ...open917,
+        FAKE_GH_CURRENT: "918",
+      }),
+    ),
+  );
+  check(
+    '(e) 空の引用符の値（-b ""）の後のリテラル番号で判定する',
+    runGuard('gh pr merge -b "" 918 --squash', {
+      ...open917,
+      FAKE_GH_CURRENT: "777",
+    })?.includes("#917（OPEN）"),
+  );
+}
+// 台帳が空（または順序の制約が1つも無い）なら従来どおり素通し
+rmSync(ledgerFile, { force: true });
+for (const [label, command] of [
+  ["for ループ", "for n in 917 918; do gh pr merge $n --squash; done"],
+  ['"$PR"', 'gh pr merge "$PR" --squash'],
+  ["xargs", "echo 917 918 | xargs -n1 gh pr merge --squash"],
+]) {
+  check(
+    `(e) 台帳が無ければ ${label} も素通し`,
+    runGuard(command, { FAKE_GH_STATES: "917=OPEN" }) === null,
+  );
+}
+writeRules([{ pr: 905, after: [] }]);
+check(
+  "(e) 順序の制約が無い台帳なら展開も素通し",
+  runGuard('gh pr merge "$PR"', { FAKE_GH_STATES: "917=OPEN" }) === null,
 );
 
 // ---------------------------------------------------------------------------

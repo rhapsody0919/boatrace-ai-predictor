@@ -82,6 +82,11 @@
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
     },
     {
+      "script": "verify-frontend-pure-functions.js",
+      "tier": "ci",
+      "guards": "画面側の純関数（basicInfoStats / raceStatus / courseGridStats / venueDayTrend / weatherInfo）の、過去に fix が入った箇所の回帰と変異検証（BOA-255）"
+    },
+    {
       "script": "verify-gha-skip-gate.js",
       "tier": "ci",
       "guards": "フェイルセーフ付きSKIP（scripts/lib/ghaSkipGate.js）と日次ワークフローの配線"
@@ -148,9 +153,19 @@
       "guards": "モータ情報の枠番別成績・選手×枠成績（BOA-301）が入れ替え前の別モーター（同じ番号）の成績を混ぜないこと（180日窓から現行モーター世代への置き換え）"
     },
     {
+      "script": "verify-motor-window-generation.js",
+      "tier": "ci",
+      "guards": "機力指数・2連率推移・部品交換・使用履歴の期間を現行モーター世代で切り詰めること、過去レースのモータ情報一覧表を再計算せず出走表時点の公式値にすること（BOA-329）"
+    },
+    {
       "script": "verify-motor-pretest.js",
       "tier": "ci",
       "guards": "前検タイム・前検順位・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）"
+    },
+    {
+      "script": "verify-odds-live-api.js",
+      "tier": "ci",
+      "guards": "オッズのライブ取得API（api/odds/live.js、BOA-487）: オッズ更新時間・締切時オッズの検出、票0を0で返す解析、当日のみ受け付けるクエリ検証、Cache-Control"
     },
     {
       "script": "verify-opening-day-backfill.js",
@@ -349,7 +364,7 @@
     {
       "script": "verify-merge-order-guard.js",
       "tier": "ci",
-      "guards": "並行セッションのオーケストレーションが決めたマージ順（台帳で先行とされたPRが未マージなら gh pr merge を止める。guard-pr-merge.js・scripts/lib/mergeOrder.js・merge-order.js）"
+      "guards": "並行セッションのオーケストレーションが決めたマージ順（台帳で先行とされたPRが未マージなら gh pr merge を止める。台帳に制約があるのに for ループ・変数・$(...)・xargs 等でPR番号を確定できない場合も止める。guard-pr-merge.js・scripts/lib/mergeOrder.js・merge-order.js）"
     },
     {
       "script": "verify-hit-verification-guidance.js",

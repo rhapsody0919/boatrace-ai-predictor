@@ -1453,8 +1453,16 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const rates = await page.locator(".rmt-rate").allInnerTexts();
     const nums = rates.map((v) => Number(v.replace(/[^0-9.]/g, "")));
     expect(nums).toEqual([...nums].sort((a, b) => b - a));
-    // 節の規模と準優の目安、公式値の出典
-    await expect(page.locator(".rmt-sub")).toContainText("節の出場は48人");
+    // 節の規模と準優の目安、公式値の出典。
+    // **この節（桐生 2026-09-20開催）はＷ優勝戦**で、独立した2つの勝ち上がりが
+    // 同居している。以前はここが「48人」＝男子24人と女子24人の合算で、
+    // 別の勝ち上がりの選手を混ぜて順位を振っていた（BOA-476／BOA-511）。
+    // 表示中の6艇と同じ側だけを母集団にするので24人になる
+    await expect(page.locator(".rmt-sub")).toContainText("節の出場は24人");
+    // 人数が半分になる理由を1行で断る（黙って半分にすると「なぜ減った」になる）
+    await expect(page.locator(".rmt-series-note")).toContainText(
+      "勝ち上がりが2つに分かれています",
+    );
     await expect(page.locator(".rmt-source")).toContainText(
       "前検タイムの出典: BOAT RACE オフィシャルウェブサイト",
     );
@@ -3012,7 +3020,9 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
 
     const table = page.locator(".motor-ranking-table").first();
     await expect(table.locator("thead")).toContainText("前検");
-    await expect(table.locator("thead")).toContainText("公式2連率");
+    // 過去レースは2連率の列そのものが出走表時点の公式値なので、同じ値になる
+    // 「公式2連率（節時点）」の列は畳む（BOA-329、2026-09-29 ユーザー判断(c)）
+    await expect(table.locator("thead")).not.toContainText("公式2連率");
     // 6艇のどれかに前検の秒数（6.60〜6.9x）が出ている
     await expect(table.locator("td.motor-pretest-cell").first()).toHaveText(
       /\d\.\d{2}/,
@@ -3037,8 +3047,14 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
     const table = page.locator(".motor-ranking-table").first();
     await expect(table.locator("thead")).not.toContainText("前検");
     await expect(table.locator("td.motor-pretest-cell")).toHaveCount(0);
-    // 公式2連率は race_entries 由来なので前検が無くても出る
-    await expect(table.locator("thead")).toContainText("公式2連率");
+    // 過去レースでは2連率の列が race_entries 由来の公式値で、前検が無くても出る。
+    // 期間の切り替えは出さず、公式値である旨の注記に置き換える（BOA-329）
+    await expect(table.locator("thead")).toContainText("2連率");
+    await expect(table.locator("thead")).not.toContainText("公式2連率");
+    await expect(page.locator(".period-toggle")).toHaveCount(0);
+    await expect(
+      page.getByText("出走表時点の公式値で表示しています"),
+    ).toBeVisible();
   });
 
   test("旧形状のキャッシュが残っていても「前検」列が出る（キャッシュキーの版を上げている）", async ({

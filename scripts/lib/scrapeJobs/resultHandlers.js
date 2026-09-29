@@ -16,6 +16,7 @@
  */
 import {
   KFILE_SYNC_LOOKBACK_DAYS,
+  clearCancellationsWithResultsInRange,
   confirmCancellationsForRaceIds,
   fetchRaceResultHtml,
   fixMissingHitFlags,
@@ -169,6 +170,9 @@ export function createResultOnTick({
   };
 }
 
+/** 結果があるのに中止・順延が付いたレースを探す期間（日。対象日を含む）。日次監視 data_health の cancellation.with_result と同じ */
+export const CANCELLATION_CLEAR_LOOKBACK_DAYS = 14;
+
 /**
  * 結果のcatch-upの run（日次。対象日 ctx.targetDate＝23:50 JST の日付）。
  *
@@ -176,6 +180,9 @@ export function createResultOnTick({
  *      （live は書き込み、shadow は取得・解析のみ）
  *   2. live: 発走+90分を超えて結果の無いレースを、中止・順延「確定」にする（onTick の取りこぼしの補填。
  *      1 の再取得の後に行う＝再取得で結果が取れたレースを、中止にしない）
+ *   2'. live（3 の後に実行）: 直近 CANCELLATION_CLEAR_LOOKBACK_DAYS 日の、結果があるのに中止・順延（暫定・確定）が付いたレースを
+ *      解除する（BOA-524。結果の読み取りの失敗等で誤って確定したものを自己修復する。2026-09-12 の32本は、結果が先に
+ *      入り、確定が後から付いたため、結果の書き込みの時点では解除できない。後から結果が入った日も拾うため遡る）
  *   3. live: 直近10日の的中フラグの欠落を補完する（fixMissingHitFlags。従来は結果取得のたびに行っていた重い
  *      スキャンを、日次に1回へ）
  *   4. 対象日の結果のスロットに、まだ pending・running のものがあれば incomplete（対象日を処理済みにしない）
@@ -186,6 +193,7 @@ export function createResultOnTick({
 export function createResultCatchupRun({
   run = runForRaces,
   confirm = confirmCancellationsForRaceIds,
+  clearWithResults = clearCancellationsWithResultsInRange,
   fixHitFlags = fixMissingHitFlags,
 } = {}) {
   return async function catchup(ctx) {
@@ -280,6 +288,18 @@ export function createResultCatchupRun({
       hitFlags = await fixHitFlags(addDays(date, -9), date, { client });
     }
 
+    // 2') 結果があるのに中止・順延が付いたレースの解除（live のみ。2 の確定の後に行う。読み取りの失敗は例外にするが、
+    //    それで的中フラグの補完（3）を止めないよう、3 の後に置く）
+    let clearedCancellations = null;
+    if (live) {
+      clearedCancellations = (
+        await clearWithResults(client, {
+          from: addDays(date, -(CANCELLATION_CLEAR_LOOKBACK_DAYS - 1)),
+          to: date,
+        })
+      ).cleared;
+    }
+
     // 4) まだ未完了のスロット（最終レースの期限は、この起動の後）
     const open = await client
       .from("scrape_slots")
@@ -306,6 +326,7 @@ export function createResultCatchupRun({
         outcomes,
         unresolved,
         confirmedCancellations: confirmed,
+        clearedCancellations,
         hitFlags,
         openSlots,
       },
@@ -313,6 +334,7 @@ export function createResultCatchupRun({
         candidates: races.length,
         outcomes,
         confirmedCancellations: confirmed,
+        clearedCancellations: clearedCancellations?.length ?? null,
         hitFlags,
         openSlots,
       },

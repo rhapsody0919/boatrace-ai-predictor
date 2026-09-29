@@ -87,10 +87,14 @@ async function getFinishedRaceIds(date) {
  * 行そのものが無いこと（未公開）を呼び出し側が区別できるようにするため、
  * 値が null の艇も詰めずにそのまま並べる（isWinOddsUnpublished 参照。BOA-486）
  *
+ * keepZero=true（ライブ表示用、BOA-487）なら、票0の「0.0」を 0 のまま返す（既定は null。race_odds への
+ * 保存は従来どおり null）。
+ *
  * @param {CheerioAPI} $ - cheerio インスタンス
- * @returns {Array<number|null>} 艇1〜6の単勝オッズ（取得失敗・票0は null）
+ * @param {{keepZero?: boolean}} [options]
+ * @returns {Array<number|null>} 艇1〜6の単勝オッズ（取得失敗・票0は null。keepZero なら票0は 0）
  */
-function scrapeWinOdds($) {
+export function scrapeWinOdds($, { keepZero = false } = {}) {
   const winOdds = [];
   $(".oddsPoint").each((i, el) => {
     if (i >= 6) return false;
@@ -98,7 +102,8 @@ function scrapeWinOdds($) {
     const val = parseFloat(text);
     // 0 以下はオッズ未確定として null に変換（有効な単勝オッズは必ず 1.0 以上）。
     // 公式ページは票がまだ0の艇を「0.0」と表示するため、null は「未公開」を意味しない
-    winOdds.push(!isNaN(val) && val > 0 ? val : null);
+    if (keepZero && val === 0) winOdds.push(0);
+    else winOdds.push(!isNaN(val) && val > 0 ? val : null);
   });
   return winOdds;
 }
@@ -126,16 +131,17 @@ export function isWinOddsUnpublished(winOdds) {
  * 複勝オッズは「下限-上限」のレンジ表示（例: "3.9-4.6"）
  *
  * @param {CheerioAPI} $ - cheerio インスタンス（scrapeWinOddsと同じページ）
+ * @param {{keepZero?: boolean}} [options] keepZero=true なら票0の「0.0-0.0」を {low: 0, high: 0} で返す（BOA-487）
  * @returns {Array<{low: number, high: number}|null>} 艇1〜6の複勝オッズ（取得失敗はnull）
  */
-function scrapePlaceOdds($) {
+export function scrapePlaceOdds($, { keepZero = false } = {}) {
   const placeOdds = [];
   $(".oddsPoint").each((i, el) => {
     if (i < 6 || i >= 12) return;
     // 2026-08-14修正（BOA-186）: 全角ハイフンを正規化する。未対応だとsplit("-")が
     // 1要素になり、high=lowにフォールバックして「幅ゼロの点オッズ」が有効値として
     // 黙って保存されてしまう（nullと区別できない）。parseRangeOddsValueに集約済み
-    placeOdds.push(parseRangeOddsValue($(el).text().trim()));
+    placeOdds.push(parseRangeOddsValue($(el).text().trim(), { keepZero }));
   });
   return placeOdds;
 }
