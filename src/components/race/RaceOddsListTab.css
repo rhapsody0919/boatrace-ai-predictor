@@ -131,18 +131,28 @@
   padding-bottom: 2px;
 }
 
+/* 見出しと値は折り返さず1行に置く。折り返すと値が3桁（100倍超）の列だけ2行になり、同じブロックの
+   「2単」の行が列ごとに段違いになる（BOA-552）。値が長い（4〜5桁）列や狭い画面では、列の幅に収まる
+   ところまで文字を小さくする（--rol-foot-em は見出し＋すき間＋値のおおよその幅。ColFoot が計算する）。
+   文字の大きさが列ごとに違っても行の高さはそろうよう、行の高さは固定する */
+.rol-col {
+  container-type: inline-size;
+}
+
 .rol-col-foot {
   display: flex;
-  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 0 2px;
-  padding: 0 2px;
-  font-size: var(--font-size-2xs);
+  gap: 0.2em;
+  padding: 0;
+  font-size: min(
+    var(--font-size-2xs),
+    calc(100cqi / var(--rol-foot-em, 5.5))
+  );
+  line-height: 16px;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
-/* 狭い画面で「合成」が「合／成」と割れないよう、見出しと値はそれぞれ1かたまりで折り返す */
 .rol-col-foot > span {
   white-space: nowrap;
 }
@@ -160,7 +170,7 @@
   align-items: center;
   justify-content: space-between;
   /* 狭い画面で桁数の多いオッズ（4〜5桁）がバッジの横に収まらないとき、
-     数字を切らずに次の行へ折り返す（通常のセルは1行のまま） */
+     数字を切らずに次の行へ折り返す（通常のセルは1行のまま。3連単の表は下で折り返さず縮める） */
   flex-wrap: wrap;
   gap: 2px;
   width: 100%;
@@ -193,6 +203,22 @@
 
 .rol-odds-value {
   margin-left: auto;
+}
+
+/* 3連単の表（5列）では、4〜5桁のオッズでもマスを折り返さない。折り返すとそのマスだけ高くなり、
+   列の下の「合成」「2単」の行が列ごとに段違いになる（BOA-552 ファン評価2周目）。代わりに、値が
+   バッジの横に収まるまで文字を小さくする（--rol-odds-em は値のおおよその幅。OddsButton が渡す。
+   引く量はバッジ（最大1rem）＋左右の余白とすき間） */
+.rol-col .rol-odds {
+  flex-wrap: nowrap;
+}
+
+.rol-col .rol-odds-value {
+  white-space: nowrap;
+  font-size: min(
+    var(--font-size-2xs),
+    calc((100cqi - 1rem - 8px) / (var(--rol-odds-em, 4) + 0.3))
+  );
 }
 
 /* 3連複の一覧・2連単/2連複/拡連複のブロックは2列に並べる。推移パネルは
@@ -512,6 +538,11 @@
 }
 
 @media (max-width: 480px) {
+  /* 列の下の「合成」＋値の文字を小さくしすぎないよう、左右の余白を1pxずつ詰める（BOA-552） */
+  .rol-col {
+    padding: 3px 2px;
+  }
+
   .rol-trend-value {
     font-size: var(--font-size-xs);
   }
