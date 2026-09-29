@@ -204,7 +204,9 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   check(
     `${lang}: 集計前の説明を「入れ替え後の最初の節」でなく、モーターが初めて使われた節で言う`,
     !/入れ替え後の最初の節|first meet since the changeover|更換後第一節|교체 후 첫 절/.test(
-      motor.officialPendingNote + motor.trendNotYetOfficial,
+      motor.officialPendingNote +
+        motor.trendNotYetOfficial +
+        motor.trendOfficialZeroUnknown,
     ),
   );
   check(

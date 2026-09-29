@@ -1059,7 +1059,7 @@
       "rateTrendHeading": "Top-2 / Top-3 rate trend (official cumulative)",
       "trendEmpty": "No trend data found for this motor",
       "trendNotYetOfficial": "The official cumulative Top-2/Top-3 rates are not available yet (they appear after the first meet this motor has been used in ends). See the usage history below for this motor's runs.",
-      "trendOfficialZeroUnknown": "The official Top-2/Top-3 rates are 0.0%. If the first meet since the changeover is still in progress, they may simply not be tallied yet (this venue does not publish start counts, so we cannot tell). See the usage history below for this motor's runs.",
+      "trendOfficialZeroUnknown": "The official Top-2/Top-3 rates are 0.0%. If this motor is still in the first meet it has been used in, they may simply not be tallied yet (this venue does not publish start counts, so we cannot tell). See the usage history below for this motor's runs.",
       "trendStartNote": "💡 The official cumulative rates start after the first meet since the changeover, so this chart starts from that date (later than the trial-time chart).",
       "yAxis": "Top-2 / Top-3 rate (%)",
       "exhibitionTrendHeading": "Trial run time trend",
