@@ -441,6 +441,8 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
   }));
   const requestSeq = useRef(INITIAL_LIVE_PAGES.length);
   const mounted = useRef(true);
+  // 初回取得を1回だけにする（開発時の StrictMode は効果を2回走らせ、公式へ同じページを2回取りに行くため）
+  const initialFetchStarted = useRef(false);
   const [betTypeId, setBetTypeId] = useState(BET_TYPES[0].id);
   // 推移を表示中の組み合わせキー（券種内で一意。例: "1-2-3"）
   const [selectedKey, setSelectedKey] = useState(null);
@@ -541,7 +543,8 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
 
   // 開いたときの初回取得（単勝・複勝と3連単を並列に）。以降は「更新」ボタンで取り直す（自動更新しない）
   useEffect(() => {
-    if (!liveEnabled) return;
+    if (!liveEnabled || initialFetchStarted.current) return;
+    initialFetchStarted.current = true;
     INITIAL_LIVE_PAGES.forEach((page, i) => runLiveFetch(page, i + 1));
     // 開いたときの1回だけ
     // eslint-disable-next-line react-hooks/exhaustive-deps
