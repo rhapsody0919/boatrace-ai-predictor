@@ -628,6 +628,17 @@ function MotorConditionChart({
                             row.official_2rate !== undefined
                               ? Number(row.official_2rate).toFixed(1)
                               : "-"}
+                            {/* 公式の2連率・3連率がどちらも 0 なのに、このレースより前に
+                                結果の出た走がある＝新モーターで公式の累計がまだ付いていない。
+                                公式の 0.0 は残し、「本当に0%」と読まれないよう印を添える
+                                （2026-09-29 ファン4人のパネル・ユーザー承認） */}
+                            {Number(row.official_2rate) === 0 &&
+                              Number(row.official_3rate) === 0 &&
+                              row.sample_count > 0 && (
+                                <span className="motor-waku-n motor-official-pending">
+                                  {t("analysis.motor.officialPendingBadge")}
+                                </span>
+                              )}
                           </td>
                         )}
                         <td className="rate">{row.motor_3rate?.toFixed(1)}</td>

@@ -162,6 +162,20 @@ check(
     read("src/components/analysis/MotorRacerWakuDrillDown.jsx"),
   ),
 );
+// 公式の 0.0 が「集計前」か「本当に0%」かを区別する（2026-09-29 ファン4人・ユーザー承認）
+check(
+  "一覧: 公式2連率・3連率がどちらも0で、結果の出た走があるときは「集計前」を添える（公式の0.0は残す）",
+  /Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*row\.sample_count > 0/.test(
+    chart,
+  ) &&
+    chart.includes('t("analysis.motor.officialPendingBadge")') &&
+    read("src/services/supabaseDataService.js").includes(
+      "official_3rate: row.motor_3rate ?? null",
+    ) &&
+    read("src/services/supabaseDataService.js").includes(
+      "`race-motor-breakdown-v7-",
+    ),
+);
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;
