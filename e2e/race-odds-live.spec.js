@@ -76,6 +76,7 @@ async function setup(
     snapshots = [SNAPSHOT_ROW],
     live,
     final = null,
+    race = RACE,
     // true: 時計を止めずに進められるようにする（page.clock.fastForward で「○分前の値」等を確かめる）
     installClock = false,
   } = {},
@@ -96,7 +97,7 @@ async function setup(
     const body = live ? await live(p, calls) : liveBody(p);
     return route.fulfill({ json: body });
   });
-  await page.goto(`/race/${RACE}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`/race/${race}`, { waitUntil: "domcontentloaded" });
   await page
     .locator(".race-tabs-btn", { hasText: "オッズ一覧" })
     .click({ timeout: 60000 });
@@ -923,6 +924,117 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
  * - なし: 従来の表示のまま
  * - 推移: 最後の点は「締切時（公式）」、0分前の記録は外す、最後の区間は点線、パネルの下に注記
  */
+// BOA-547: 締切直後〜締切時オッズ（公式）の保存（締切5分後〜最大60分後）までは記録値の表示になり、保存後に
+// 締切時オッズへ入れ替わる。その間は、あとで切り替わることを予告する
+test.describe("締切時オッズへの切り替えの予告（BOA-547）", () => {
+  test.slow();
+
+  test("締切後1時間以内で締切時オッズがまだ無い: 予告を出す", async ({
+    page,
+  }) => {
+    const { status } = await setup(page, { now: AFTER_DEADLINE }); // 締切16分後
+    await expect(status).toContainText("13:54 取得");
+    const pending = page.getByTestId("odds-final-pending");
+    await expect(pending).toContainText("開き直すと切り替わります");
+    // 長い注意書きに埋もれないよう、状態の1行の先頭に置く（ファン評価1周目 P3）
+    await expect(status.locator(":scope > *").first()).toHaveAttribute(
+      "data-testid",
+      "odds-final-pending",
+    );
+  });
+
+  test("この券種の記録が無くても、締切後1時間以内なら予告を出す（ファン評価1周目 P2）", async ({
+    page,
+  }) => {
+    await setup(page, { now: AFTER_DEADLINE }); // スナップショットは3連単・単勝複勝だけ
+    await page.getByRole("tab", { name: "2連単" }).click();
+    await expect(page.locator(".rol-no-data")).toBeVisible();
+    await expect(page.getByTestId("odds-final-pending")).toBeVisible();
+  });
+
+  test("記録が1つも無いレースの締切後: 「発走が近づくと」と書かず、予告を出す（ファン評価1周目 P2）", async ({
+    page,
+  }) => {
+    await setup(page, { now: AFTER_DEADLINE, snapshots: [] });
+    const body = page.getByTestId("odds-empty-body");
+    await expect(body).toContainText("開き直すと切り替わります");
+    await expect(body).not.toContainText("発走が近づくと");
+  });
+
+  test("締切時オッズの保存を始めた日以降で、1時間を過ぎても無い: 取得できなかったと書く（ファン評価1周目 P3）", async ({
+    page,
+  }) => {
+    const { status } = await setup(page, {
+      race: "2026-09-29-16-12", // 児島12R（締切 16:50）
+      now: new Date("2026-09-29T18:00:00+09:00"),
+    });
+    await expect(status).toContainText("取得できませんでした");
+    await expect(page.getByTestId("odds-final-pending")).toHaveCount(0);
+  });
+
+  // ---- ファン評価2周目 ----
+
+  test("予告は「何時頃までに表示されるか」を時刻で書く", async ({ page }) => {
+    await setup(page, { now: AFTER_DEADLINE }); // 締切 14:24 → 15:24 頃まで
+    await expect(page.getByTestId("odds-final-pending")).toContainText(
+      "15:24頃までに表示されます",
+    );
+  });
+
+  test("取得できなかったレース: 記録の無い券種で「まだありません」と書かない", async ({
+    page,
+  }) => {
+    const { status } = await setup(page, {
+      race: "2026-09-29-16-12",
+      now: new Date("2026-09-29T18:00:00+09:00"),
+    });
+    await expect(status).toContainText("取得できませんでした");
+    await page.getByRole("tab", { name: "2連単" }).click();
+    const noData = page.locator(".rol-no-data");
+    await expect(noData).toHaveText("この券種のオッズの記録はありません");
+  });
+
+  test("記録が1つも無いレースの1時間後: 見出しも本文も「まだ」と書かない", async ({
+    page,
+  }) => {
+    await setup(page, {
+      now: new Date("2026-09-28T15:30:00+09:00"),
+      snapshots: [],
+    });
+    await expect(page.getByTestId("odds-empty-title")).toHaveText(
+      "このレースのオッズの記録はありません",
+    );
+    await expect(page.locator(".race-tabs-empty")).not.toContainText("まだ");
+    await expect(page.getByTestId("odds-empty-body")).toHaveCount(0);
+  });
+
+  test("記録が1つも無い 9/29 以降のレースの1時間後: 締切時オッズを取得できなかったことも書く", async ({
+    page,
+  }) => {
+    await setup(page, {
+      race: "2026-09-29-16-12",
+      now: new Date("2026-09-29T18:00:00+09:00"),
+      snapshots: [],
+    });
+    await expect(page.getByTestId("odds-empty-body")).toContainText(
+      "取得できませんでした",
+    );
+    await expect(page.locator(".race-tabs-empty")).not.toContainText("まだ");
+  });
+
+  test("締切から1時間を過ぎた（取り直しの期間が終わった）: 予告を出さない", async ({
+    page,
+  }) => {
+    const { status } = await setup(page, {
+      now: new Date("2026-09-28T15:30:00+09:00"),
+    });
+    await expect(status).toContainText("取得");
+    await expect(page.getByTestId("odds-final-pending")).toHaveCount(0);
+    // 保存を始める前（9/28）のレースは「取得できませんでした」とも書かない
+    await expect(page.getByTestId("odds-final-unavailable")).toHaveCount(0);
+  });
+});
+
 // BOA-530: 1440px で表が 44rem に留まり右側が空いていた。1024px以上は表をブロックごとに複数列に並べ、
 // 推移パネルは列数によらず選んだ行の直後に全幅で出す
 test.describe("オッズ一覧の広い画面（BOA-530）", () => {
