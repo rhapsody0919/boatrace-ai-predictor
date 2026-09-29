@@ -19,7 +19,7 @@
  * 手で書いた台帳では同じことが起きる。取得側は台帳を持っていたのに、
  * orchestration.md 自身が「WS4bが『未着手』のままだが実際には21ジョブがliveで稼働していた。
  * **この乖離自体が、オーケストレーションの記録として直すべき点**」と書いている。
- * そこでER図（ADR-0065）・共通ロジック索引（generate-lib-index.js）と同じく
+ * そこでER図（generate-er-diagram.js）・共通ロジック索引（generate-lib-index.js）と同じく
  * **ソースから生成する**方式にする。生成物はPRに含めず、masterへのマージ後に
  * regenerate-generated-docs.yml が作り直してコミットする（ADR-0078。PRに含めると、
  * 並行するPRが同じファイルでコンフリクトするため）。

@@ -10,7 +10,7 @@
  * 「この処理をするヘルパーは既にあるか」を調べる導線が grep しかない。
  * worktree が数十本ある状態では grep 自体も重く、探すより書く方が早くなってしまう。
  *
- * 手で書いた索引は必ず陳腐化するので、ER図（ADR-0065）と同じく**ソースから生成する**。
+ * 手で書いた索引は必ず陳腐化するので、ER図（generate-er-diagram.js、.claude/rules/sdd-workflow.md）と同じく**ソースから生成する**。
  * 生成物はPRに含めず、masterへのマージ後に regenerate-generated-docs.yml が作り直して
  * コミットする（ADR-0078。PRに含めると、並行するPRが同じファイルでコンフリクトするため）。
  *
