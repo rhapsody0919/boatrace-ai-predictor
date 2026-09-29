@@ -102,17 +102,20 @@ for (const width of [375, 1440]) {
         page.locator(".race-grid").evaluate((e) => e.getBoundingClientRect().width),
       ]);
       expect(Math.abs(hw - gw)).toBeLessThan(1);
-      // スクロールして、目印（会場カードの下）がヘッダーのすぐ下に来て、次のレース（9R）が1画面目に入る
+      // スクロールして、会場カード（折りたたみ）の先頭がヘッダーのすぐ下に来て、目印と次のレース（9R）が1画面目に入る
       const marker = page.getByTestId("venue-next-race-marker");
       const headerBottom = await page
         .locator(".app-header")
         .evaluate((e) => e.getBoundingClientRect().bottom);
       await expect
-        .poll(() => marker.evaluate((e) => e.getBoundingClientRect().top))
+        .poll(() => holder.evaluate((e) => e.getBoundingClientRect().top))
         .toBeLessThan(headerBottom + 40);
       expect(
-        await marker.evaluate((e) => e.getBoundingClientRect().top),
+        await holder.evaluate((e) => e.getBoundingClientRect().top),
       ).toBeGreaterThanOrEqual(headerBottom - 1);
+      expect(
+        await marker.evaluate((e) => e.getBoundingClientRect().bottom),
+      ).toBeLessThan(page.viewportSize().height);
       const nineR = page.locator(".race-grid > .race-card").nth(8);
       await expect(nineR).toContainText("9R");
       expect(
@@ -181,13 +184,81 @@ test.describe("着いた位置の目印（ファン評価1・2周目）", () => 
     });
     await open(page, { at: "14:00" });
     await page.waitForTimeout(2500);
+    const holder = page.getByTestId("venue-next-race-cards");
     const marker = page.getByTestId("venue-next-race-marker");
     const headerBottom = await page
       .locator(".app-header")
       .evaluate((e) => e.getBoundingClientRect().bottom);
-    const top = await marker.evaluate((e) => e.getBoundingClientRect().top);
+    const top = await holder.evaluate((e) => e.getBoundingClientRect().top);
     expect(top).toBeGreaterThanOrEqual(headerBottom - 1);
     expect(top).toBeLessThan(headerBottom + 40);
+    expect(
+      await marker.evaluate((e) => e.getBoundingClientRect().bottom),
+    ).toBeLessThan(page.viewportSize().height);
+  });
+});
+
+test.describe("差し込んだ会場カードの折りたたみ（ユーザー判断）", () => {
+  test.use({ viewport: { width: 375, height: 800 } });
+
+  test("見出しと要約1行に折りたたみ、目印と次のレース（9R）と一緒に1画面に入る", async ({
+    page,
+  }) => {
+    await open(page, { at: "14:00" });
+    const holder = page.getByTestId("venue-next-race-cards");
+    const details = holder.locator("details.collapsible-section");
+    await expect(details).toHaveCount(2);
+    for (const d of await details.all()) {
+      expect(await d.evaluate((e) => e.open)).toBe(false);
+    }
+    await expect(page.getByTestId("venue-characteristics-teaser")).toContainText(
+      "1号艇の1着率",
+    );
+    await expect(page.getByTestId("venue-day-summary-teaser")).toContainText(
+      "確定",
+    );
+    // 会場カードの見出し・目印・9R が1画面（高さ800）に入る
+    const headerBottom = await page
+      .locator(".app-header")
+      .evaluate((e) => e.getBoundingClientRect().bottom);
+    const holderTop = await holder.evaluate(
+      (e) => e.getBoundingClientRect().top,
+    );
+    const nineRTop = await page
+      .locator(".race-grid > .race-card")
+      .nth(8)
+      .evaluate((e) => e.getBoundingClientRect().top);
+    expect(holderTop).toBeGreaterThanOrEqual(headerBottom - 1);
+    expect(nineRTop).toBeLessThan(800 - 100);
+  });
+
+  test("見出しを1タップで開閉でき、開いた状態はこのタブで覚える", async ({
+    page,
+  }) => {
+    await open(page, { at: "14:00" });
+    const first = page
+      .getByTestId("venue-next-race-cards")
+      .locator("details.collapsible-section")
+      .first();
+    await first.locator("summary").click();
+    expect(await first.evaluate((e) => e.open)).toBe(true);
+    await expect(first.locator(".venue-hud-row")).toHaveCount(6);
+    await page.reload();
+    await expect(page.locator(".race-card")).toHaveCount(12, { timeout: 20000 });
+    const again = page
+      .getByTestId("venue-next-race-cards")
+      .locator("details.collapsible-section")
+      .first();
+    await expect(again).toBeVisible();
+    expect(await again.evaluate((e) => e.open)).toBe(true);
+  });
+
+  test("最上部に置くとき（1R発走前）は折りたたまず従来どおり全部を出す", async ({
+    page,
+  }) => {
+    await open(page, { at: "09:00" });
+    await expect(page.locator("details.collapsible-section")).toHaveCount(0);
+    await expect(page.locator(".venue-hud-row")).toHaveCount(6);
   });
 });
 
@@ -227,17 +298,18 @@ test.describe("カードを動かさない・スクロールしない場合", ()
     expect(await cardsPosition(page)).toBe("9");
   });
 
-  test("リロードしたときは、開いたときと同じく次のレースの目印へ移る（最上部に戻さない）", async ({
+  test("リロードしたときは、読んでいた位置に戻す（ユーザー判断）", async ({
     page,
   }) => {
     await open(page, { at: "14:00" });
-    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.mouse.wheel(0, -2000); // ユーザーが上へ戻って読む
+    await page.evaluate(() => window.scrollTo(0, 1200));
     await page.reload();
     await expect(page.locator(".race-card")).toHaveCount(12, { timeout: 20000 });
-    const marker = page.getByTestId("venue-next-race-marker");
     await expect
-      .poll(() => marker.evaluate((e) => e.getBoundingClientRect().top))
-      .toBeLessThan(200);
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(1150);
+    expect(await page.evaluate(() => window.scrollY)).toBeLessThan(1250);
   });
 
   test("ブラウザの戻るで来たときは自動スクロールしない", async ({ page }) => {

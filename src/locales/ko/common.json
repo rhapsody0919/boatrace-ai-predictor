@@ -90,6 +90,7 @@
     "allClosedMarker": "{{venue}} 오늘 레이스는 모두 마감"
   },
   "venueCharacteristics": {
+    "collapsedTeaser": "{{summary}} / 1호정 1착률 {{rate}}%",
     "title": "이 경정장의 특징 (최근 90일)",
     "note": "AI 데이터 분석이 참고하는 것과 동일한 경정장별 데이터입니다. 번호별 1착률과, 우승 시 가장 많이 나온 결정수를 확인할 수 있습니다.",
     "nationalAverageTooltip": "전국 평균 {{value}}%",
@@ -1760,6 +1761,8 @@
     "legend": "위는 실제 진입 코스, 가운데는 착순, 아래는 ST와 그 경주에서의 ST 순위"
   },
   "venueDaySummary": {
+    "collapsedTeaser": "확정 {{n}}R · 1호정 도망 비율 {{rate}}%",
+    "collapsedTeaserNoNige": "확정 {{n}}R",
     "title": "이날의 수면 경향",
     "note": "{{date}} {{venue}}에서 확정된 {{n}}경주의 집계입니다",
     "ledeDay": "확정된 {{n}}경주의 결정타는 {{techniques}}입니다.",

@@ -90,6 +90,7 @@
     "allClosedMarker": "{{venue}}　今日比賽皆已截止"
   },
   "venueCharacteristics": {
+    "collapsedTeaser": "{{summary}}／1號艇第1名率 {{rate}}%",
     "title": "本賽場的特徵（近90天）",
     "note": "與AI數據分析所參考的相同賽場數據。可查看各艇號的第1名機率，以及獲勝時最常見的獲勝方式。",
     "nationalAverageTooltip": "全國平均{{value}}%",
@@ -1760,6 +1761,8 @@
     "legend": "上排為實際進入的航道，中排為名次，下排為起跑時間與該場的起跑順位"
   },
   "venueDaySummary": {
+    "collapsedTeaser": "已確定{{n}}R・1號艇逃脫率{{rate}}%",
+    "collapsedTeaserNoNige": "已確定{{n}}R",
     "title": "這一天的水面傾向",
     "note": "{{date}}在{{venue}}已確定的{{n}}場比賽統計",
     "ledeDay": "已確定{{n}}場的決勝手法為 {{techniques}}。",

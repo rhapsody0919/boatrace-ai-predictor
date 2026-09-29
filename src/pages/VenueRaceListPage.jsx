@@ -31,6 +31,9 @@ import { getRaceStatus, RACE_STATUS } from "../utils/raceStatus";
 import { formatDate } from "../utils/formatters";
 import "./VenueRaceListPage.css";
 
+// 着いた1画面目に見せる次のレースのカードの高さ（見出し・締切・状態が読める程度）
+const NEXT_RACE_PEEK_PX = 160;
+
 // ユーザーが自分でスクロールし始めたことを示すイベント（着地点の合わせ直しをやめる）
 const USER_SCROLL_EVENTS = ["wheel", "touchstart", "keydown", "pointerdown"];
 
@@ -64,14 +67,36 @@ function VenueRaceListPage() {
   // 次の発走レースの位置は、開いた時点の時刻で決めて固定する（読んでいる途中でカードが動いたり
   // 再スクロールしたりしないように。開き直すと新しい位置になる。BOA-546）
   const [openedHHMM] = useState(() => (isToday ? getNowHHMMJST() : null));
-  // ブラウザの戻る・進む（履歴の移動）で来たときは自動スクロールしない（ブラウザのスクロール位置の復元を優先）。
-  // ページを最初に開いたときも react-router は "POP" になるため、履歴の移動かは location.key で見分ける
-  // （最初に開いたページ・リロードは "default"）。リロードは、一覧を後から読み込むためブラウザが元の位置を
-  // 復元できず最上部に戻るので、開いたときと同じく次のレースへ移す（ファン評価2周目）
+  // ブラウザの戻る・進む・リロード（どれも react-router では "POP"）で開き直したときは、読んでいた位置に戻す
+  // （ユーザー判断: リロードで次のレースへ飛ばさない）。一覧を後から読み込むため、ブラウザの位置の復元は効かない。
+  // そこで、ページを離れるとき（アプリ内の移動・リロード）の位置をこのタブに保存し、一覧を出した後に戻す。
+  // 保存が無い "POP"（最初に開いたページ等）は、新しく開いたときと同じく次のレースへ移す
   const navigationType = useNavigationType();
   const location = useLocation();
-  const cameFromHistory =
-    navigationType === "POP" && location.key !== "default";
+  const scrollKey = `venueScrollY:${location.pathname}`;
+  const [savedScrollY] = useState(() => {
+    if (navigationType !== "POP") return null;
+    try {
+      const v = window.sessionStorage.getItem(scrollKey);
+      return v == null ? null : Number(v);
+    } catch {
+      return null;
+    }
+  });
+  useEffect(() => {
+    const save = () => {
+      try {
+        window.sessionStorage.setItem(scrollKey, String(window.scrollY));
+      } catch {
+        // 保存できない環境では、開き直したときに次のレースへ移るだけ
+      }
+    };
+    window.addEventListener("pagehide", save);
+    return () => {
+      window.removeEventListener("pagehide", save);
+      save();
+    };
+  }, [scrollKey]);
   const gridRef = useRef(null);
   const markerRef = useRef(null);
   const scrolledRef = useRef(false);
@@ -79,7 +104,14 @@ function VenueRaceListPage() {
   // 自分でデータを読み込むため、読み込みで高さが変わると目印が画面の下へ押し出される（ファン評価2周目）。
   // 着いてから5秒間は、ユーザーが操作するまで高さの変化に合わせて位置を合わせ直す
   useEffect(() => {
-    if (scrolledRef.current || cameFromHistory) return undefined;
+    if (scrolledRef.current) return undefined;
+    if (savedScrollY != null) {
+      // 一覧（レースのカード）を出してから、読んでいた位置に戻す
+      if (!gridRef.current) return undefined;
+      scrolledRef.current = true;
+      window.scrollTo({ top: savedScrollY });
+      return undefined;
+    }
     const marker = markerRef.current;
     if (!marker) return undefined;
     scrolledRef.current = true;
@@ -89,8 +121,20 @@ function VenueRaceListPage() {
     // ユーザーの操作とみなさず合わせ直す
     let expectedY = 0;
     let lastResizeAt = 0;
+    // 着地点: 会場カード（折りたたみ）＋目印＋次のレースの頭が1画面に入るなら会場カードの先頭。
+    // 開いた状態を覚えていて入らないときは、次のレースを優先して目印に着く
+    const holder = marker.parentElement;
+    const target = () => {
+      const header =
+        document.querySelector(".app-header")?.getBoundingClientRect()
+          .height ?? 0;
+      const fits =
+        holder.getBoundingClientRect().height + NEXT_RACE_PEEK_PX <=
+        window.innerHeight - header;
+      return fits ? holder : marker;
+    };
     const realign = () => {
-      scrollBelowHeader(marker);
+      scrollBelowHeader(target());
       expectedY = window.scrollY;
     };
     realign();
@@ -99,7 +143,7 @@ function VenueRaceListPage() {
       lastResizeAt = Date.now();
       realign();
     });
-    observer.observe(marker.parentElement);
+    observer.observe(holder);
     const onScroll = () => {
       if (Math.abs(window.scrollY - expectedY) <= 2) return;
       if (Date.now() - lastResizeAt < 300) realign();
@@ -197,17 +241,26 @@ function VenueRaceListPage() {
     ? t("home.noRacesToday")
     : "このレース場のデータはありません";
 
+  const showCardsInGrid = !loading && !error && cardsBeforeIndex != null;
+  // 次のレースの直上に差し込むときは、見出しと要約1行に折りたたむ（会場カードと次のレースを1画面に入れる。
+  // ファン評価3周目を受けたユーザー判断）。最上部に置くときは従来どおり全部を出す
   const venueCards = (
     <>
-      <VenueCharacteristicsCard venueCode={venueCode} />
+      <VenueCharacteristicsCard
+        venueCode={venueCode}
+        collapsible={showCardsInGrid}
+      />
 
       {/* この日の水面傾向（phase a FR-5 / BOA-222）。直上の
           VenueCharacteristicsCard は過去90日のベースラインで、
           こちらはこの日1日分。カードの注記で日付とレース数を明示する */}
-      <VenueDaySummaryCard venueCode={venueCode} date={date} />
+      <VenueDaySummaryCard
+        venueCode={venueCode}
+        date={date}
+        collapsible={showCardsInGrid}
+      />
     </>
   );
-  const showCardsInGrid = !loading && !error && cardsBeforeIndex != null;
 
   return (
     <>

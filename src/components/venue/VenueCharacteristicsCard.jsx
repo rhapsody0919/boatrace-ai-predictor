@@ -18,12 +18,17 @@ import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "../race/raceIndicators";
 import { BOAT_COLORS } from "../../utils/colors";
 import InlineFetchError from "../InlineFetchError";
+import CollapsibleSection from "./CollapsibleSection";
 import "./VenueCharacteristicsCard.css";
 
 // このサンプル数を下回る会場は表示しない（ノイズが大きいため）
 const MIN_TOTAL_RACES = 20;
 
-export default function VenueCharacteristicsCard({ venueCode }) {
+// collapsible: 会場ページで次のレースの直上に差し込むとき、見出しと要約1行に折りたたむ（BOA-546）
+export default function VenueCharacteristicsCard({
+  venueCode,
+  collapsible = false,
+}) {
   const { t } = useTranslation();
   const [outcomeData, setOutcomeData] = useState(null);
   const [techniqueData, setTechniqueData] = useState(null);
@@ -94,96 +99,128 @@ export default function VenueCharacteristicsCard({ venueCode }) {
   const hasAnyWinRate = boatRows.some((row) => row.winRate > 0);
   if (!hasAnyWinRate) return null;
 
+  const venueSummary = venueInfo
+    ? `${t(`venueCharacteristics.waterType.${venueInfo.waterType}`)} ・ ${t(`venueCharacteristics.cluster.${venueInfo.cluster}`)}`
+    : null;
+  // 折りたたんだ見出しの要約1行: 水面・傾向と、1号艇の1着率（中身の代表値）
+  const collapsedTeaser = t("venueCharacteristics.collapsedTeaser", {
+    summary: venueSummary ?? "",
+    rate: boatRows[0].winRate.toFixed(1),
+  });
+
   return (
-    <div className="venue-characteristics-card">
+    <div
+      className={`venue-characteristics-card${collapsible ? " is-collapsible" : ""}`}
+    >
       <div className="venue-hud-scanbar" aria-hidden="true" />
-      <h2>{t("venueCharacteristics.title")}</h2>
-      {venueInfo && (
-        <p className="venue-characteristics-summary">
-          {t(`venueCharacteristics.waterType.${venueInfo.waterType}`)}
-          {" ・ "}
-          {t(`venueCharacteristics.cluster.${venueInfo.cluster}`)}
+      <CollapsibleSection
+        collapsible={collapsible}
+        storageKey="venueCharacteristics"
+        summary={
+          <span className="venue-characteristics-collapsed-head">
+            <h2>{t("venueCharacteristics.title")}</h2>
+            <span
+              className="venue-characteristics-teaser"
+              data-testid="venue-characteristics-teaser"
+            >
+              {collapsedTeaser}
+            </span>
+          </span>
+        }
+      >
+        {!collapsible && <h2>{t("venueCharacteristics.title")}</h2>}
+        {venueSummary && (
+          <p className="venue-characteristics-summary">{venueSummary}</p>
+        )}
+        <p className="venue-characteristics-note">
+          {t("venueCharacteristics.note")}
         </p>
-      )}
-      <p className="venue-characteristics-note">
-        {t("venueCharacteristics.note")}
-      </p>
-      <div className="venue-hud-header-row" aria-hidden="true">
-        <span />
-        <span className="venue-hud-axis-labels">
-          <span>0</span>
-          <span>25</span>
-          <span>50</span>
-          <span>75</span>
-          <span>100%</span>
-        </span>
-        <span className="venue-hud-header-technique">
-          {t("venueCharacteristics.techniqueHeader")}
-        </span>
-      </div>
-      <div className="venue-hud-rows">
-        {boatRows.map((row, index) => {
-          const boatColor = BOAT_COLORS[row.boat] ?? {};
-          return (
-            <div className="venue-hud-row" key={row.boat}>
-              <span
-                className="venue-hud-lane"
-                style={{ background: boatColor.bg, color: boatColor.text }}
-              >
-                {row.boat}
-              </span>
-              <span className="venue-hud-track">
-                <span className="venue-hud-grid-line" style={{ left: "25%" }} />
-                <span className="venue-hud-grid-line" style={{ left: "50%" }} />
-                <span className="venue-hud-grid-line" style={{ left: "75%" }} />
+        <div className="venue-hud-header-row" aria-hidden="true">
+          <span />
+          <span className="venue-hud-axis-labels">
+            <span>0</span>
+            <span>25</span>
+            <span>50</span>
+            <span>75</span>
+            <span>100%</span>
+          </span>
+          <span className="venue-hud-header-technique">
+            {t("venueCharacteristics.techniqueHeader")}
+          </span>
+        </div>
+        <div className="venue-hud-rows">
+          {boatRows.map((row, index) => {
+            const boatColor = BOAT_COLORS[row.boat] ?? {};
+            return (
+              <div className="venue-hud-row" key={row.boat}>
                 <span
-                  className="venue-hud-fill"
-                  style={{
-                    width: `${row.winRate}%`,
-                    animationDelay: `${index * 0.08}s`,
-                  }}
-                />
-                <span
-                  className="venue-hud-own-label"
-                  style={{ left: `${row.winRate}%` }}
+                  className="venue-hud-lane"
+                  style={{ background: boatColor.bg, color: boatColor.text }}
                 >
-                  {row.winRate.toFixed(1)}%
-                  <span className="venue-hud-own-label-line" />
+                  {row.boat}
                 </span>
-                {row.national != null && (
-                  <>
-                    <span
-                      className="venue-hud-national-tick"
-                      style={{ left: `${row.national}%` }}
-                    />
-                    <span
-                      className="venue-hud-national-label"
-                      style={{ left: `${row.national}%` }}
-                    >
-                      <span className="venue-hud-national-label-line" />
-                      {t("venueCharacteristics.nationalAverageTooltip", {
-                        value: row.national.toFixed(1),
-                      })}
-                    </span>
-                  </>
-                )}
-              </span>
-              <span className="venue-hud-technique">
-                {row.topTechnique
-                  ? `${translateTechnique(t, row.topTechnique.technique)} ${row.topTechnique.percentage.toFixed(0)}%`
-                  : "-"}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      <p className="venue-characteristics-footnote">
-        {t("venueCharacteristics.footnote", {
-          count: outcomeData.total_races,
-          date:
-            outcomeData.last_updated ?? t("venueCharacteristics.unknownDate"),
-        })}
-      </p>
+                <span className="venue-hud-track">
+                  <span
+                    className="venue-hud-grid-line"
+                    style={{ left: "25%" }}
+                  />
+                  <span
+                    className="venue-hud-grid-line"
+                    style={{ left: "50%" }}
+                  />
+                  <span
+                    className="venue-hud-grid-line"
+                    style={{ left: "75%" }}
+                  />
+                  <span
+                    className="venue-hud-fill"
+                    style={{
+                      width: `${row.winRate}%`,
+                      animationDelay: `${index * 0.08}s`,
+                    }}
+                  />
+                  <span
+                    className="venue-hud-own-label"
+                    style={{ left: `${row.winRate}%` }}
+                  >
+                    {row.winRate.toFixed(1)}%
+                    <span className="venue-hud-own-label-line" />
+                  </span>
+                  {row.national != null && (
+                    <>
+                      <span
+                        className="venue-hud-national-tick"
+                        style={{ left: `${row.national}%` }}
+                      />
+                      <span
+                        className="venue-hud-national-label"
+                        style={{ left: `${row.national}%` }}
+                      >
+                        <span className="venue-hud-national-label-line" />
+                        {t("venueCharacteristics.nationalAverageTooltip", {
+                          value: row.national.toFixed(1),
+                        })}
+                      </span>
+                    </>
+                  )}
+                </span>
+                <span className="venue-hud-technique">
+                  {row.topTechnique
+                    ? `${translateTechnique(t, row.topTechnique.technique)} ${row.topTechnique.percentage.toFixed(0)}%`
+                    : "-"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <p className="venue-characteristics-footnote">
+          {t("venueCharacteristics.footnote", {
+            count: outcomeData.total_races,
+            date:
+              outcomeData.last_updated ?? t("venueCharacteristics.unknownDate"),
+          })}
+        </p>
+      </CollapsibleSection>
     </div>
   );
 }
