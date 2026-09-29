@@ -86,18 +86,51 @@ export function findSeriesFor(byVenue, venueCode, date) {
 }
 
 /**
+ * 会場の節の中（開始日以降・指定日より前）に、中止・順延（確定）のレースがあるか（BOA-501）。
+ *
+ * @param {Array<{venue_code: number, race_date: string}>} cancelledRaces cancellation_status='confirmed' のレース
+ * @param {number} venueCode
+ * @param {string} startDate YYYY-MM-DD
+ * @param {string} date YYYY-MM-DD（この日は含めない）
+ */
+export function hasCancellationBefore(
+  cancelledRaces,
+  venueCode,
+  startDate,
+  date,
+) {
+  return cancelledRaces.some(
+    (r) =>
+      r.venue_code === venueCode &&
+      r.race_date >= startDate &&
+      r.race_date < date,
+  );
+}
+
+/**
  * ある1日について、会場コード → 何日目 の対応を作る（純関数）。
  *
  * @param {Array<{venue_code: number, start_date: string, end_date: string}>} seriesRows
  * @param {string} date YYYY-MM-DD
  * @returns {Map<number, number>} 導出できた会場だけを持つ
  */
-export function buildSeriesDayByVenue(seriesRows, date) {
+export function buildSeriesDayByVenue(
+  seriesRows,
+  date,
+  { cancelledRaces = [] } = {},
+) {
   const byVenue = indexSeriesByVenue(seriesRows);
   const result = new Map();
   for (const venueCode of byVenue.keys()) {
     const series = findSeriesFor(byVenue, venueCode, date);
     if (!series) continue;
+    // 節の中で、その日より前に中止・順延（確定）のレースがあれば、導出しない。公式は中止・順延の日に日目を
+    // 振らないため、暦日からの引き算とずれる（津 2026-09-23 は公式2日目・導出3。BOA-501）
+    if (
+      hasCancellationBefore(cancelledRaces, venueCode, series.start_date, date)
+    ) {
+      continue;
+    }
     const day = deriveSeriesDay(date, series.start_date);
     if (day !== null) result.set(venueCode, day);
   }
@@ -130,7 +163,23 @@ export async function loadSeriesDayByVenue(date, { client }) {
       .lte("start_date", date)
       .gte("end_date", date);
     if (error) return warn(error.message);
-    return buildSeriesDayByVenue(data ?? [], date);
+    const seriesRows = data ?? [];
+    if (seriesRows.length === 0) return new Map();
+    // 節の中の中止・順延（確定）。読めなければ、ずれた日目を書くより、補わない方を選ぶ（空の Map）
+    const minStart = seriesRows.reduce(
+      (m, r) => (r.start_date < m ? r.start_date : m),
+      date,
+    );
+    const cancelled = await client
+      .from("races")
+      .select("venue_code, race_date")
+      .eq("cancellation_status", "confirmed")
+      .gte("race_date", minStart)
+      .lt("race_date", date);
+    if (cancelled.error) return warn(cancelled.error.message);
+    return buildSeriesDayByVenue(seriesRows, date, {
+      cancelledRaces: cancelled.data ?? [],
+    });
   } catch (e) {
     // 例外（通信の断・テーブル未適用など）でも、呼び出し側を止めない
     return warn(e?.message ?? String(e));
@@ -148,10 +197,12 @@ export async function loadSeriesDayByVenue(date, { client }) {
  * @param {Array<{race_id: string, race_date: string, venue_code: number}>} input.races 中止確定を除いた対象レース
  * @param {Map<string, number|null>} input.existingSeriesDay race_id → 既存の series_day（行が無い race_id は持たない）
  * @param {Array<{venue_code: number, start_date: string, end_date: string}>} input.seriesRows
+ * @param {Array<{venue_code: number, race_date: string}>} [input.cancelledRaces] 中止・順延（確定）のレース。
+ *   節の中でその日より前にあれば、そのレースは埋めない（skipped の series_has_cancellation）
  * @returns {{
  *   inserts: Array<{race_id: string, series_day: number}>,
  *   updates: Array<{race_id: string, series_day: number}>,
- *   skipped: Array<{race_id: string, race_date: string, venue_code: number, reason: "no_series"|"bad_dates"}>,
+ *   skipped: Array<{race_id: string, race_date: string, venue_code: number, reason: "no_series"|"bad_dates"|"series_has_cancellation"}>,
  *   alreadyFilled: number,
  * }}
  */
@@ -159,6 +210,7 @@ export function planSeriesDayBackfill({
   races,
   existingSeriesDay,
   seriesRows,
+  cancelledRaces = [],
 }) {
   const byVenue = indexSeriesByVenue(seriesRows);
   const inserts = [];
@@ -175,6 +227,18 @@ export function planSeriesDayBackfill({
     const series = findSeriesFor(byVenue, race.venue_code, race.race_date);
     if (!series) {
       skipped.push({ ...race, reason: "no_series" });
+      continue;
+    }
+    // 節の中で、その日より前に中止・順延（確定）があれば、導出はずれるため埋めない（BOA-501）
+    if (
+      hasCancellationBefore(
+        cancelledRaces,
+        race.venue_code,
+        series.start_date,
+        race.race_date,
+      )
+    ) {
+      skipped.push({ ...race, reason: "series_has_cancellation" });
       continue;
     }
     const seriesDay = deriveSeriesDay(race.race_date, series.start_date);

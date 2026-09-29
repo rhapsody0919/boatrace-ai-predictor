@@ -215,6 +215,10 @@ function createDb({ tables = {}, failUpsert = {}, failSelect = {} } = {}) {
               filters.push((r) => String(r[c]) >= String(v));
               return q;
             },
+            lt(c, v) {
+              filters.push((r) => String(r[c]) < String(v));
+              return q;
+            },
             limit(n) {
               limit = n;
               return q;
