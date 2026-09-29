@@ -1,4 +1,8 @@
 import { supabase } from "../lib/supabaseClient.js";
+import {
+  TRIFECTA_PAYOUT_COLUMN,
+  aggregateOutcomeDistribution,
+} from "../lib/outcomeDistribution.js";
 
 const VENUE_NAMES = {
   "01": "桐生",
@@ -52,7 +56,7 @@ async function fetchAllRaceResults() {
   while (true) {
     const { data, error } = await supabase
       .from("race_results")
-      .select("race_id, rank1, rank2, rank3, payout_trifecta")
+      .select(`race_id, rank1, rank2, rank3, ${TRIFECTA_PAYOUT_COLUMN}`)
       .eq("is_cancelled", false)
       .eq("is_no_race", false)
       .not("rank1", "is", null)
@@ -83,73 +87,14 @@ async function fetchAllRaceResults() {
   return allResults;
 }
 
+// 集計は共通の純粋関数（3連単の配当＝payout_trio。列名と中身が逆。BOA-535）
 async function aggregateByVenue(raceResults) {
-  const venueData = {};
-
-  // venue_code ごとにグループ化
-  raceResults.forEach((result) => {
-    const parts = result.race_id.split("-");
-    const venueCode = parseInt(parts[3]);
-
-    if (!venueData[venueCode]) {
-      venueData[venueCode] = [];
-    }
-
-    venueData[venueCode].push(result);
+  return aggregateOutcomeDistribution(raceResults, {
+    today: getTodayDateJST(),
   });
-
-  // 各venue_code の集計
-  const aggregated = {};
-
-  for (const venueCode in venueData) {
-    const results = venueData[venueCode];
-    const patterns = {};
-    let totalRaces = results.length;
-
-    // パターン集計
-    results.forEach((result) => {
-      const pattern = result.rank1 + "-" + result.rank2 + "-" + result.rank3;
-      if (!patterns[pattern]) {
-        patterns[pattern] = { count: 0, totalPayout: 0 };
-      }
-      patterns[pattern].count++;
-      if (result.payout_trifecta) {
-        patterns[pattern].totalPayout += result.payout_trifecta;
-      }
-    });
-
-    // venue_code ごとのレコードを作成
-    const records = [];
-    for (const pattern in patterns) {
-      const parts = pattern.split("-");
-      const firstBoat = parseInt(parts[0]);
-      const secondBoat = parseInt(parts[1]);
-      const thirdBoat = parseInt(parts[2]);
-      const count = patterns[pattern].count;
-      const probability = ((count / totalRaces) * 100).toFixed(2);
-      const avgPayout = Math.round(patterns[pattern].totalPayout / count);
-
-      records.push({
-        venue_code: parseInt(venueCode),
-        first_boat: firstBoat,
-        second_boat: secondBoat,
-        third_boat: thirdBoat,
-        count_90days: count,
-        total_races: totalRaces,
-        probability: parseFloat(probability),
-        avg_payout: avgPayout,
-        last_updated: getTodayDateJST(),
-      });
-    }
-
-    aggregated[venueCode] = records;
-  }
-
-  return aggregated;
 }
 
 async function upsertOutcomeDistribution(aggregated) {
-  const today = getTodayDateJST();
   let totalInserted = 0;
 
   for (const venueCode in aggregated) {

@@ -9,6 +9,7 @@
  * 3. 結果が確定したレースの的中・払戻を更新
  */
 
+import { pathToFileURL } from 'node:url';
 import { supabase, isSupabaseEnabled } from './lib/supabaseClient.js';
 
 // ルール定義（ruleMatchService.jsと同期させる必要あり）
@@ -81,16 +82,18 @@ function getMatchingRulesForPrediction(prediction, venueCode, raceNo) {
   return matched;
 }
 
-function calculatePayout(prediction, result, betType) {
+export function calculatePayout(prediction, result, betType) {
   if (!result) return { hit: null, payout: null };
 
   const top3 = [prediction.top_pick, prediction.top_2nd, prediction.top_3rd];
   const predSorted = [...top3].filter(Boolean).sort((a, b) => a - b).join('-');
   const resultSorted = [result.rank1, result.rank2, result.rank3].sort((a, b) => a - b).join('-');
 
+  // 'trio' は3連複（順不同）。race_results の列名は中身と逆で、3連複の配当は payout_trifecta
+  // （payout_trio は3連単。docs/db-migration/079_race_payouts.sql:29、BOA-535）
   if (betType === 'trio') {
     const hit = predSorted === resultSorted;
-    return { hit, payout: hit ? (result.payout_trio || 0) : 0 };
+    return { hit, payout: hit ? (result.payout_trifecta || 0) : 0 };
   }
 
   if (betType === 'win') {
@@ -257,6 +260,9 @@ async function trackRules(targetDate) {
   console.log('\n=== 完了 ===');
 }
 
-// コマンドライン引数から日付を取得
-const targetDate = process.argv[2];
-trackRules(targetDate).catch(console.error);
+// コマンドラインから直接実行されたときだけ動く（検証スクリプトが calculatePayout を import できるように。BOA-535）
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  // コマンドライン引数から日付を取得
+  const targetDate = process.argv[2];
+  trackRules(targetDate).catch(console.error);
+}
