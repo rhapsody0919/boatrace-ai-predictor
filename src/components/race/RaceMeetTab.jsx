@@ -695,37 +695,42 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                 .reverse()
                 .find((v) => typeof v === "number");
               return (
-                <li key={p.number} className="rmt-trend-row">
+                <li key={p.number}>
+                  {/* 行全体を1つのボタンにする。以前は艇番・選手名だけが押せて、
+                      いちばん大きい的の折れ線と右端の値を押しても何も起きなかった。
+                      すぐ上の表は「行をタップ」で切り替わるので、そろえる（BOA-550） */}
                   <button
                     type="button"
-                    className="rmt-trend-label"
+                    className="rmt-trend-row"
                     onClick={() => onFocusBoat(p.number)}
                     aria-pressed={p.number === selectedBoat}
                   >
-                    <span
-                      className="rmt-boat-chip"
-                      style={{ background: color.bg, color: color.text }}
-                    >
-                      {p.number}
+                    <span className="rmt-trend-label">
+                      <span
+                        className="rmt-boat-chip"
+                        style={{ background: color.bg, color: color.text }}
+                      >
+                        {p.number}
+                      </span>
+                      <span className="rmt-name" translate="no">
+                        {p.name?.replace(/\s+/g, "")}
+                      </span>
                     </span>
-                    <span className="rmt-name" translate="no">
-                      {p.name?.replace(/\s+/g, "")}
+                    <MeetSparkline
+                      points={vals.map((v) => ({ value: v }))}
+                      domain={trendDomain}
+                      baseline={trendMean}
+                      // 線は公式の艇色そのままだと1号艇（白）が背景に溶ける
+                      color={
+                        BOAT_LINE_COLORS[p.number] ||
+                        "var(--brand-accent-primary)"
+                      }
+                      height={34}
+                    />
+                    <span className="rmt-trend-last">
+                      {typeof last === "number" ? last.toFixed(2) : "—"}
                     </span>
                   </button>
-                  <MeetSparkline
-                    points={vals.map((v) => ({ value: v }))}
-                    domain={trendDomain}
-                    baseline={trendMean}
-                    // 線は公式の艇色そのままだと1号艇（白）が背景に溶ける
-                    color={
-                      BOAT_LINE_COLORS[p.number] ||
-                      "var(--brand-accent-primary)"
-                    }
-                    height={34}
-                  />
-                  <span className="rmt-trend-last">
-                    {typeof last === "number" ? last.toFixed(2) : "—"}
-                  </span>
                 </li>
               );
             })}

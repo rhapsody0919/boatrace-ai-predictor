@@ -1682,6 +1682,32 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
   });
 
+  test("今節タブの6艇の推移は、行のどこを押しても選手が切り替わる（BOA-550）", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-09-24-01-03");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    await expect(page.locator(".rmt-trend-row")).toHaveCount(6, {
+      timeout: 25000,
+    });
+    // 行のどこを押しても選手が切り替わる（BOA-550）。以前は艇番・選手名だけが押せて、
+    // いちばん大きい的の折れ線を押しても何も起きなかった。3行目の折れ線の上を押す
+    const trendRow = page.locator(".rmt-trend-row").nth(2);
+    // 座標で押すと画面下の固定バーに当たることがあるので、ロケーターで押す
+    // （見える位置までスクロールしてから押す）
+    const spark = trendRow.locator(".meet-sparkline-wrap");
+    const box = await spark.boundingBox();
+    await spark.click({
+      position: { x: box.width * 0.6, y: box.height / 2 },
+    });
+    await expect(trendRow).toHaveAttribute("aria-pressed", "true");
+    // 右端の前走の値を押しても切り替わる
+    const lastRow = page.locator(".rmt-trend-row").nth(4);
+    await lastRow.locator(".rmt-trend-last").click();
+    await expect(lastRow).toHaveAttribute("aria-pressed", "true");
+    await expect(trendRow).toHaveAttribute("aria-pressed", "false");
+  });
+
   test("F数バッジが基本情報タブとST考察カードで同じ値になり、f_countが無い過去レースでは出ない（phase a T5-3）", async ({
     page,
   }) => {
