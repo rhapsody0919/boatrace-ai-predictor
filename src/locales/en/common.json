@@ -222,6 +222,8 @@
       "wide": "Wide"
     },
     "popularity": "#{{rank}} favorite",
+    "popularityRange": "#{{from}}–{{to}} favorite",
+    "popularityFromFinalOddsNote": "※ Win and place favorites are calculated from the official final odds (place: by upper bound; ties shown as a range). Other bet types show the official favorites.",
     "fastestStartTag": "Fastest",
     "courseNote": "※Approach course is not shown yet (data accuracy under review).",
     "missingRanksNote": "* Finishing positions from 4th down have not been collected for this race, so some placings are not shown",

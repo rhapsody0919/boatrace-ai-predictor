@@ -872,11 +872,13 @@ input:focus-visible,
   color: var(--text-secondary);
 }
 
+/* 組番は1つの塊として読むため折り返さない（375pxで「5-4／-2」と割れていた。BOA-534 ファン評価1周目）。
+   狭い画面では人気を払戻金額の下に置いて横幅を空ける（下の @media） */
 .rr-combo {
-  flex: 1;
+  flex: 1 0 auto;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--spacing-1);
 }
 
@@ -896,6 +898,52 @@ input:focus-visible,
   flex: 0 0 auto;
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
+  text-align: right;
+  /* 「82人気」を「82／人／気」と割らない */
+  white-space: nowrap;
+}
+
+/* 狭い画面では、人気を払戻金額の下に右寄せで置く。1行に並べると、組番（折り返さない）と5〜6桁の払戻に
+   押されて「82／人／気」と縦に割れる（BOA-534 ファン評価2周目） */
+@media (max-width: 480px) {
+  .rr-payout-row {
+    display: grid;
+    grid-template-columns: 3.4rem minmax(0, 1fr) auto;
+    grid-template-areas:
+      "type combo amount"
+      "type combo pop";
+    align-items: center;
+    column-gap: var(--spacing-2);
+    row-gap: 0;
+  }
+
+  .rr-payout-type {
+    grid-area: type;
+  }
+
+  .rr-combo {
+    grid-area: combo;
+  }
+
+  .rr-amount {
+    grid-area: amount;
+    text-align: right;
+  }
+
+  .rr-pop {
+    grid-area: pop;
+  }
+}
+
+
+/* 単勝・複勝の人気（締切時オッズから算出、BOA-534）。下の注記と「※」で結ぶ */
+.rr-pop-mark {
+  margin-left: 1px;
+}
+
+/* 払戻の下の注記は、表の内容の説明なので左寄せで読む（右寄せだと375pxで行頭がそろわない） */
+.rr-note.rr-payout-popularity-note {
+  text-align: left;
 }
 
 .rr-amount {
@@ -908,6 +956,18 @@ input:focus-visible,
 
 .rr-payout-row.is-best .rr-amount {
   color: var(--brand-accent-primary);
+}
+
+/* 320px帯では、組番3艇と5〜6桁の払戻が1行に収まらず、金額が3着の艇番に重なる（BOA-534 ファン評価3周目）。
+   券種名の列を詰め、金額の文字を小さくして収める */
+@media (max-width: 359px) {
+  .rr-payout-row {
+    grid-template-columns: 2.8rem minmax(0, 1fr) auto;
+  }
+
+  .rr-amount {
+    font-size: var(--font-size-sm);
+  }
 }
 
 /* BOA-543: 不成立（返還）・特払は組番の位置に文言を出す */
