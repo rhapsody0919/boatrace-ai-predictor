@@ -102,6 +102,18 @@ function LegacyModelPageRedirect() {
   return <Navigate to="/" replace />;
 }
 
+// 管理画面は、ブラウザのURLが middleware.js の matcher と同じ綴りのときだけ描画する（BOA-555）。
+// Basic認証は middleware がかけるが、Vercel の matcher は生のURLで照合し、React Router は
+// デコード後・大文字小文字を区別せずに照合する。そのため /admin/rule%73 や /ADMIN/RULES は
+// 認証を通らずに index.html が返り、そのまま管理画面を描画してしまう。綴りが違えばトップへ戻す
+function AdminRouteGuard({ path, children }) {
+  return window.location.pathname === path ? (
+    children
+  ) : (
+    <Navigate to="/" replace />
+  );
+}
+
 // ルート変更時にAuto Adsを再スキャン
 function AdRefresh() {
   const location = useLocation();
@@ -228,10 +240,23 @@ function LocalizedRoutes({ lng = "ja" }) {
         )}
       <Route path="responsible-gambling" element={<ResponsibleGambling />} />
 
-      {/* Admin Pages (Hidden)。Basic認証は middleware.js の matcher（大文字小文字を区別する）で
-          かけるため、ここも区別させる。区別しないと /ADMIN/RULES が認証を通らずに開ける（BOA-555） */}
-      <Route path="admin/rules" caseSensitive element={<AdminRules />} />
-      <Route path="admin/sns-hub" caseSensitive element={<SnsHubAdmin />} />
+      {/* Admin Pages (Hidden)。Basic認証は middleware.js。綴り違いの回避は AdminRouteGuard で塞ぐ */}
+      <Route
+        path="admin/rules"
+        element={
+          <AdminRouteGuard path="/admin/rules">
+            <AdminRules />
+          </AdminRouteGuard>
+        }
+      />
+      <Route
+        path="admin/sns-hub"
+        element={
+          <AdminRouteGuard path="/admin/sns-hub">
+            <SnsHubAdmin />
+          </AdminRouteGuard>
+        }
+      />
 
       {/* α版・動線非公開ページ（Watson/Mycroft等の実験モデルが継続開発中のため維持） */}
       <Route path="holmes" element={<Holmes />} />
