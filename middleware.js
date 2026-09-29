@@ -2,9 +2,13 @@
  * ルーティングミドルウェア。以下2つの関心事を1ファイルで扱う（Vercelはmiddleware.jsを
  * 1つしか置けない制約のため、matcherで対象パスを絞りつつパスで分岐する）。
  *
- * 1. SNSマーケティングハブ管理画面（/admin/sns-hub）用のBasic認証
+ * 1. 管理画面（/admin/sns-hub・/admin/rules）用のBasic認証
  *    認証情報は環境変数（SNS_HUB_BASIC_AUTH_USER / SNS_HUB_BASIC_AUTH_PASSWORD）で管理する。
+ *    /admin/rules も同じ認証情報・realmを使う（BOA-555。1回のログインで両方開ける）。
  *    未設定の場合、比較対象がundefinedになり常に認証失敗する（fail-closed、意図した挙動）。
+ *
+ *    ⚠️ ここで守れるのはURLを直接開いたときだけ。画面のJSとデータ取得（Supabaseのanonキー）は
+ *    公開バンドルに含まれるため、データそのものの保護にはならない
  *
  * 2. AIクローラー・SNSシェアボット向け静的スナップショット配信（ADR 0032）
  *    対象ボットのリクエストのみ、ビルド時生成済みの静的HTML（dist/ai-snapshots/）へ
@@ -18,6 +22,8 @@ export const config = {
     "/admin/sns-hub",
     "/admin/sns-hub/:path*",
     "/api/admin/sns-hub/:path*",
+    "/admin/rules",
+    "/admin/rules/:path*",
     "/blog/:path*",
     "/winning-technique",
     // resolveSnapshotPath に対象を足すだけでは配信されない。Vercel は
@@ -39,7 +45,14 @@ const UNAUTHORIZED_RESPONSE = () =>
     },
   });
 
-function handleSnsHubAuth(request) {
+const ADMIN_PATH_PREFIXES = ["/admin/sns-hub", "/api/admin/sns-hub", "/admin/rules"];
+
+const isAdminPath = (pathname) =>
+  ADMIN_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+
+function handleAdminAuth(request) {
   const authHeader = request.headers.get("authorization");
 
   if (authHeader?.startsWith("Basic ")) {
@@ -60,11 +73,8 @@ function handleSnsHubAuth(request) {
 export default function middleware(request) {
   const url = new URL(request.url);
 
-  if (
-    url.pathname.startsWith("/admin/sns-hub") ||
-    url.pathname.startsWith("/api/admin/sns-hub")
-  ) {
-    return handleSnsHubAuth(request);
+  if (isAdminPath(url.pathname)) {
+    return handleAdminAuth(request);
   }
 
   const snapshotPath = resolveSnapshotPath(
