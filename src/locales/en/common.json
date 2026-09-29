@@ -631,7 +631,8 @@
       "exacta": "Each block is the 1st-place boat and the boat number on each row is 2nd (30 combinations)",
       "quinella": "Each block is the lower boat number and each row is the partner boat (15 combinations, order does not matter)",
       "wide": "Each block is the lower boat number and each row is the partner boat. Odds are shown as a low-high range (15 combinations, order does not matter)",
-      "winPlace": "Win pays on the 1st-place boat; Place pays if the boat finishes in the top 2. Place odds are a low-high range. Before the deadline few bets are in, so odds such as 1.0 can differ greatly from the final payout"
+      "winPlace": "Win pays on the 1st-place boat; Place pays if the boat finishes in the top 2. Place odds are a low-high range. Before the deadline few bets are in, so odds such as 1.0 can differ greatly from the final payout",
+      "winPlaceFinal": "Win pays on the 1st-place boat; Place pays if the boat finishes in the top 2. Place odds are a low-high range"
     },
     "trendTitle": "Odds trend for {{combo}}",
     "deadlineLabel": "Just before deadline",

@@ -539,6 +539,8 @@ test.describe("締切時オッズ（公式、BOA-496）", () => {
     });
     await expect(row4.locator("td").first()).toHaveText("票なし");
     await expect(page.locator(".rol-callout")).toHaveCount(0);
+    // ファン評価2周目 P2: 締切時オッズの表の上に「締切前は票が少なく…ずれる」を出さない
+    await expect(page.locator(".rol-guide")).not.toContainText("締切前");
   });
 
   test("一部の券種だけ: 取れなかった券種は従来の表示。3連単の「2単」は記録値を混ぜず「-」", async ({

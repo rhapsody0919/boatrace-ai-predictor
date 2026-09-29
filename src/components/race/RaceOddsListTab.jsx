@@ -1056,7 +1056,14 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     }
     return (
       <>
-        <p className="rol-guide">{t(`oddsList.guide.${betType.id}`)}</p>
+        {/* 締切時オッズ（公式）の単勝・複勝では、「締切前は…ずれる」の注意を出さない（ファン評価2周目 P2） */}
+        <p className="rol-guide">
+          {t(
+            useFinal && betType.id === "winPlace"
+              ? "oddsList.guide.winPlaceFinal"
+              : `oddsList.guide.${betType.id}`,
+          )}
+        </p>
         {/* 締切時オッズ（公式）が一部の券種だけ取れなかったとき、表示が切り替わる理由を示す（ファン評価1周目 P2） */}
         {finalOdds && !useFinal && (
           <p className="rol-callout" data-testid="odds-final-missing">
