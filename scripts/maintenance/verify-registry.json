@@ -359,7 +359,7 @@
     {
       "script": "verify-merge-order-guard.js",
       "tier": "ci",
-      "guards": "並行セッションのオーケストレーションが決めたマージ順（台帳で先行とされたPRが未マージなら gh pr merge を止める。guard-pr-merge.js・scripts/lib/mergeOrder.js・merge-order.js）"
+      "guards": "並行セッションのオーケストレーションが決めたマージ順（台帳で先行とされたPRが未マージなら gh pr merge を止める。台帳に制約があるのに for ループ・変数・$(...)・xargs 等でPR番号を確定できない場合も止める。guard-pr-merge.js・scripts/lib/mergeOrder.js・merge-order.js）"
     },
     {
       "script": "verify-hit-verification-guidance.js",
