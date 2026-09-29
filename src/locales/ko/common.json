@@ -1091,6 +1091,7 @@
       "highlightNote": "💡 강조된 행은 이 레이스에서 2연대율이 가장 높은 정입니다.",
       "venueRankLabel": "장내 순위",
       "venueRankBadge": "{{total}}대 중 {{rank}}위",
+      "venueRankBadgeTied": "{{total}}대 중 {{rank}}위 타이",
       "sampleCount": "(n={{n}})",
       "firstUseBadge": "첫 사용",
       "officialPendingBadge": "집계 전",

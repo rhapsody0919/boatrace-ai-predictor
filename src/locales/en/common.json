@@ -1096,6 +1096,7 @@
       "highlightNote": "💡 The highlighted row is the boat with the highest Top-2 rate in this race.",
       "venueRankLabel": "Rank in venue",
       "venueRankBadge": "#{{rank}} of {{total}} motors",
+      "venueRankBadgeTied": "#{{rank}} (tied) of {{total}} motors",
       "sampleCount": "(n={{n}})",
       "firstUseBadge": "First use",
       "officialPendingBadge": "Not yet tallied",

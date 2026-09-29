@@ -31,6 +31,7 @@ import {
   powerIndexTone,
 } from "../../src/utils/smallSampleRate.js";
 import { officialTallyState } from "../../src/utils/motorGeneration.js";
+import { competitionRank } from "../../src/utils/competitionRank.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -290,6 +291,50 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       // 枠番別成績の展示タイムの列が、平均の値と推移の図だと分かる見出し（BOA-549）
       /平均|avg|平均|평균/i.test(motor.exhibitionTrendHeader),
   );
+}
+
+// ---- BOA-529: 会場内順位の同値は同じ順位 ----
+{
+  // 丸亀 2026-09-28 のスナップショット: 11号機の2連率44.4は5基が同値、上に10基
+  const values = [
+    60, 58, 55, 52, 50, 49, 48, 47, 46, 45, 44.4, 44.4, 44.4, 44.4, 44.4, 40,
+  ];
+  check(
+    "competitionRank: 同値5基・上に10基なら11位で5基タイ（行順に依存しない）",
+    JSON.stringify(competitionRank(values, 44.4)) ===
+      JSON.stringify({ rank: 11, tied: 5 }) &&
+      JSON.stringify(competitionRank([...values].reverse(), 44.4)) ===
+        JSON.stringify({ rank: 11, tied: 5 }),
+  );
+  check(
+    "competitionRank: 同値の次は飛ばす（1, 2, 2, 4）",
+    competitionRank([9, 8, 8, 7], 7).rank === 4 &&
+      competitionRank([9, 8, 8, 7], 8).rank === 2,
+  );
+  check(
+    "competitionRank: 小さいほど良い指標（事故率）は昇順",
+    competitionRank([0.1, 0.2, 0.2, 0.5], 0.5, { ascending: true }).rank === 4,
+  );
+  const service = read("src/services/supabaseDataService.js");
+  const chart = read("src/components/analysis/MotorConditionChart.jsx");
+  check(
+    "会場内順位は competitionRank で出し、同値なら「◯位タイ」の文言を使う",
+    /competitionRank\(\s*valued\.map/.test(service) &&
+      !/rank: rankIndex \+ 1/.test(service) &&
+      service.includes("`venue-motor-ranking-v2-") &&
+      /venueMotorRanking\.tied > 1\s*\?\s*"analysis\.motor\.venueRankBadgeTied"/.test(
+        chart,
+      ),
+  );
+  for (const lang of ["ja", "en", "zh-TW", "ko"]) {
+    const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
+      .motor;
+    check(
+      `${lang}: 同順位の会場内順位の文言がある`,
+      /\{\{rank\}\}/.test(motor.venueRankBadgeTied ?? "") &&
+        /\{\{total\}\}/.test(motor.venueRankBadgeTied ?? ""),
+    );
+  }
 }
 
 if (failures.length > 0) {

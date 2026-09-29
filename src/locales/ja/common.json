@@ -1091,6 +1091,7 @@
       "highlightNote": "💡 ハイライトされた行は、このレースで最も2連率が高い艇です。",
       "venueRankLabel": "会場内順位",
       "venueRankBadge": "{{rank}}位／{{total}}機中",
+      "venueRankBadgeTied": "{{rank}}位タイ／{{total}}機中",
       "sampleCount": "(n={{n}})",
       "firstUseBadge": "初下ろし",
       "officialPendingBadge": "集計前",

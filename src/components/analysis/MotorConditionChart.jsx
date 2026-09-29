@@ -876,10 +876,16 @@ function MotorConditionChart({
             badges={[
               venueMotorRanking && {
                 key: "venueRank",
-                text: t("analysis.motor.venueRankBadge", {
-                  rank: venueMotorRanking.rank,
-                  total: venueMotorRanking.total,
-                }),
+                // 同じ値のモーターがあれば「◯位タイ」（BOA-529。今節タブの順位と同じ）
+                text: t(
+                  venueMotorRanking.tied > 1
+                    ? "analysis.motor.venueRankBadgeTied"
+                    : "analysis.motor.venueRankBadge",
+                  {
+                    rank: venueMotorRanking.rank,
+                    total: venueMotorRanking.total,
+                  },
+                ),
               },
             ].filter(Boolean)}
           />
