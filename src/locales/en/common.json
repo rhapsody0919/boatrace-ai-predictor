@@ -693,6 +693,7 @@
     "classTitle": "Class",
     "finishSeparator": "-",
     "finishDq": "DQ",
+    "finishAbsent": "Abs",
     "smallSampleLegend": "⚠ = fewer than three runs (the score rate still swings).",
     "finishLabel": "Finishes",
     "borderNote": "Rows above the dashed line are within the semi-final line (the card is not set yet, so this is not final).",
@@ -733,7 +734,12 @@
     "forecastDetailSummary": "How the line and the points needed are derived",
     "forecastDetail": "The line is the score rate of the {{slots}}th racer when the preliminaries ended. It can differ from the real border by a few places (measured: 0.07 at Wakamatsu G1, 0.83 at a Kiryu general meet — we cannot exclude racers who withdrew mid-series or were excluded from prizes, and general meets do not always pick semi-finalists purely by score rate). Points needed = line x (runs so far + remaining runs) - points so far, where remaining runs are the carded preliminary races for today (some racers run twice, so it differs per racer). It assumes a clean finish, and we never call it a lock.",
     "withdrawn": "N/A",
-    "withdrawnTitle": "No start on the final day of the series, so treated as having withdrawn (the official table also drops mid-series withdrawals from the ranking)"
+    "withdrawnTitle": "No start on the final day of the series, so treated as having withdrawn (the official table also drops mid-series withdrawals from the ranking)",
+    "absent": "Absent",
+    "absentTitle": "Absent from every race so far this series, so no score rate or series rank (0 starts)",
+    "absentNote": "\"Absent\" marks a racer who has not started any race so far this series. With 0 starts, there is no score rate or series rank.",
+    "absentDetail": "Absent from every race so far this series (no score rate or series rank).",
+    "finishAbsentNote": "\"Abs\" in the finishes is a race the racer missed; it is not counted in the score rate."
   },
   "basicInfo": {
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",
@@ -773,6 +779,7 @@
     "noVenueData": "No record by venue available (below the minimum number of races)",
     "trendNote": "The last 10 races, regardless of the grade and period filters above. Tap a date to open that race",
     "finishUnknown": "Unplaced (rank unknown)",
+    "finishAbsent": "Absent",
     "venueRankingFor": "{{metric}} ranking",
     "currentVenueRank": "{{venue}}, this meet's venue, ranks {{rank}} of {{total}}",
     "viewConditions": "By condition",
