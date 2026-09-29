@@ -1037,6 +1037,41 @@ test.describe("締切時オッズへの切り替えの予告（BOA-547）", () =
 
 // BOA-530: 1440px で表が 44rem に留まり右側が空いていた。1024px以上は表をブロックごとに複数列に並べ、
 // 推移パネルは列数によらず選んだ行の直後に全幅で出す
+// BOA-577: 公式は1000倍以上を小数なしで出す（「1364」、実際は 1364.4 等）。「1364.0」と無い精度を示さない
+test.describe("1000倍以上のオッズの表記（BOA-577）", () => {
+  test.slow();
+
+  test("1000倍以上は小数なし（表・合成・2単・推移）、1000倍未満は小数1桁のまま", async ({
+    page,
+  }) => {
+    const trifecta = { ...SNAPSHOT_ROW.trifecta_all, "1-2-3": 1364 };
+    // 1号艇が1着・2号艇が2着の列の合成が1000倍を超えるよう、残りの3着も大きくする
+    trifecta["1-2-5"] = 8000;
+    trifecta["1-2-6"] = 8000;
+    trifecta["1-2-4"] = 8000;
+    // 1号艇が1着・3号艇が2着の列は4点とも8000倍 → 合成2000倍（1000倍以上なので小数なし）
+    for (const third of [2, 4, 5, 6]) trifecta[`1-3-${third}`] = 8000;
+    const exacta = { ...PARSED["2tf"].data.exactaAll, "1-2": 2345 };
+    await setup(page, {
+      now: AFTER_DEADLINE,
+      snapshots: [{ ...SNAPSHOT_ROW, trifecta_all: trifecta, exacta_all: exacta }],
+    });
+    const cell = page.getByRole("button", { name: /^1-2-3 / });
+    await expect(cell).toHaveAccessibleName("1-2-3 1364");
+    const col = page.locator(".rol-block").first().locator(".rol-col").first();
+    await expect(col).toContainText("2単2345");
+    await expect(col).not.toContainText(".0合成");
+    // 合成（1/(1/1364+3/8000)≈902.4 は1000未満なので小数1桁）
+    await expect(col).toContainText("合成902.4");
+    const col3 = page.locator(".rol-block").first().locator(".rol-col").nth(1);
+    await expect(col3).toContainText("合成2000");
+    await expect(col3).not.toContainText("合成2000.0");
+    await cell.click();
+    await expect(page.locator(".rol-trend-item").last()).toContainText("1364");
+    await expect(page.locator(".rol-trend")).not.toContainText("1364.0");
+  });
+});
+
 test.describe("オッズ一覧の広い画面（BOA-530）", () => {
   test.slow();
 

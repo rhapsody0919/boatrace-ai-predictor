@@ -114,11 +114,17 @@ function isNoVotes(value, isRange) {
   return valueToNumber(value, isRange) === 0;
 }
 
+// オッズ1つの表記。公式は1000倍以上を小数なしで出す（「1364」。実際の値は 1364.4 等で、公式の表示で
+// 切り捨てられている）。こちらも同じ桁で出し、「1364.0」と無い精度を示さない（BOA-577）
+function formatOdds(n) {
+  return n >= 1000 ? String(Math.floor(n)) : n.toFixed(1);
+}
+
 function formatValue(value, isRange) {
   if (value == null) return null;
   return isRange
-    ? `${value.low.toFixed(1)}-${value.high.toFixed(1)}`
-    : value.toFixed(1);
+    ? `${formatOdds(value.low)}-${formatOdds(value.high)}`
+    : formatOdds(value);
 }
 
 // 合成オッズ: 各組み合わせのオッズの逆数の和の逆数（「そのうちどれか」を
