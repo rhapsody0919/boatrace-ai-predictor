@@ -20,18 +20,12 @@ import MotorWakuStatsGrid from "./MotorWakuStatsGrid";
 import MotorRacerWakuDrillDown from "./MotorRacerWakuDrillDown";
 import InlineFetchError from "../InlineFetchError";
 import { getTodayJST } from "../../utils/dateUtils";
+import {
+  formatGenerationDate,
+  isClippedByGeneration,
+} from "../../utils/motorGeneration";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
-
-/**
- * 使用開始日（YYYY-MM-DD）の表示。既定は「2026/8/6」、short で「8/6」。
- * 数字だけの表記なので4言語で共通にする
- */
-function formatGenerationDate(date, { short = false } = {}) {
-  if (!date) return "";
-  const [y, m, d] = date.split("-").map(Number);
-  return short ? `${m}/${d}` : `${y}/${m}/${d}`;
-}
 
 function MotorConditionChart({
   initialVenueCode = null,
@@ -374,6 +368,14 @@ function MotorConditionChart({
     drillDownMotor === null
       ? !officialMode
       : !drillPreGeneration && !isPastSelectedRace;
+  // 入れ替えから1ヶ月以内は「直近1ヶ月」まで使用開始日で切り詰められ、どちらの
+  // 期間を選んでも中身が同じになる。押しても変わらないボタンは出さない
+  // （2026-09-29 ファン評価。使用開始日の行と切り詰めの注記は出す）
+  const periodChoiceHasEffect = !isClippedByGeneration(
+    generationStart,
+    getTodayJST(),
+    30,
+  );
   // 期間を現行モーターの使用開始日で切り詰めたか（入れ替え後で期間が短い）
   const clippedByGeneration =
     drillDownMotor === null
@@ -455,22 +457,24 @@ function MotorConditionChart({
               </span>
             </p>
           )}
-          <div className="period-toggle" role="group">
-            <button
-              type="button"
-              className={`period-toggle-btn ${periodDays === 90 ? "active" : ""}`}
-              onClick={() => setPeriodDays(90)}
-            >
-              {t("analysis.motor.period90")}
-            </button>
-            <button
-              type="button"
-              className={`period-toggle-btn ${periodDays === 30 ? "active" : ""}`}
-              onClick={() => setPeriodDays(30)}
-            >
-              {t("analysis.motor.period30")}
-            </button>
-          </div>
+          {periodChoiceHasEffect && (
+            <div className="period-toggle" role="group">
+              <button
+                type="button"
+                className={`period-toggle-btn ${periodDays === 90 ? "active" : ""}`}
+                onClick={() => setPeriodDays(90)}
+              >
+                {t("analysis.motor.period90")}
+              </button>
+              <button
+                type="button"
+                className={`period-toggle-btn ${periodDays === 30 ? "active" : ""}`}
+                onClick={() => setPeriodDays(30)}
+              >
+                {t("analysis.motor.period30")}
+              </button>
+            </div>
+          )}
           {clippedByGeneration && (
             <p className="table-note">
               {t("analysis.motor.periodClippedNote", {

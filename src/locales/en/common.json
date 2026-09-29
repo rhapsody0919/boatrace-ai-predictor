@@ -1049,7 +1049,7 @@
       "venueRankBadge": "#{{rank}} of {{total}} motors",
       "sampleCount": "(n={{n}})",
       "wakuStatsHeading": "Results by lane",
-      "wakuStatsWindowNote": "💡 Window: since the current motor went into service (the previous motor with the same number is excluded). Values in orange come from fewer than {{n}} starts and are for reference only.",
+      "wakuStatsWindowNote": "💡 Window: since the {{date}} motor changeover (the previous motor with the same number is excluded). Values in orange come from fewer than {{n}} starts and are for reference only.",
       "wakuStatsUnknownGeneration": "Not shown because the start date of the current motor is unavailable (to avoid mixing in results from the previous motor with the same number).",
       "courseHeader": "Lane",
       "exhibitionTrendHeader": "Trial run time trend",
