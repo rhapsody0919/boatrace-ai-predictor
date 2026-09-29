@@ -58,10 +58,17 @@ export function buildRaceEntryRows(raceId, entries, { extended = false } = {}) {
 /**
  * race_conditions の行（気象の列を除く。気象は buildWeatherRows が作る）。race_grade は races テーブルで管理する。
  *
- * series_day は、ページ（出走表の日別タブ）から読めた値を必ず優先し、読めなかった（null）ときだけ
- * fallbackSeriesDay で補う（BOA-501）。fallbackSeriesDay は、節（race_series）の開始日から導いた値を
- * 呼び出し側が渡す（この関数はDBを引かない。導出は scripts/lib/raceSeriesLookup.js）。
- * 節の途中に中止日があると導出が1日ぶん進みすぎるため、両方あるときにページ側を採るのは必須の規則。
+ * series_day は、ページ（出走表の日別タブ）のラベルから読む（BOA-501）。fallbackSeriesDay（節の開始日から
+ * 導いた値。この関数はDBを引かない。導出は scripts/lib/raceSeriesLookup.js）で補うのは、**日程タブ自体が
+ * 読めなかったとき（meta.seriesDayTabsFound が false）だけ**。
+ *
+ * タブが読めて選択中が「順延」「中止」の日は、**series_day・is_final_day の列を行に含めない**（既存の値を
+ * 上書きしない。行が新規なら NULL）。当日に取った値（例: 津 9/21 の「初日」）は、ファンがその日に見た表示で、
+ * 公式の成績ファイルの「第1日」とも一致する。順延・中止が決まった後に取り直した「順延」の表示で null に
+ * 上書きすると、両方と食い違う（BOA-501。導出で埋めるのも、公式に無い日目を作るため行わない）。
+ * 列の組み合わせが違う行は、呼び出し側が別々に upsert する（PostgREST の一括 upsert は、キーの無い行に
+ * NULL を書くため。update-race-info.js）。
+ * 節の途中に中止・順延の日があると導出はずれるため、両方あるときにページ側を採るのは必須の規則。
  * 食い違いの記録は呼び出し側が行う（update-race-info.js の accumulateRaceInfo）。
  *
  * is_final_day は補わない。節の終了日は予定で、順延でずれる（total_days は順延を反映しない、084）ため、
@@ -76,10 +83,16 @@ export function buildRaceConditionRow(
   meta,
   { extended = false, fallbackSeriesDay = null } = {},
 ) {
+  // 順延・中止のタブの日は、日目の列を含めない（既存の値を残す）
+  const keepExistingDay = meta.seriesDayTabsFound && meta.seriesDay == null;
   return {
     race_id: raceId,
-    series_day: meta.seriesDay ?? fallbackSeriesDay ?? null,
-    is_final_day: meta.isFinalDay,
+    ...(keepExistingDay
+      ? {}
+      : {
+          series_day: meta.seriesDay ?? fallbackSeriesDay ?? null,
+          is_final_day: meta.isFinalDay,
+        }),
     race_title: meta.raceTitle,
     race_stage: meta.raceStage,
     ...(extended

@@ -180,6 +180,26 @@ check(
     read("src/components/analysis/MotorRacerWakuDrillDown.jsx"),
   ),
 );
+// 公式の 0.0 が「集計前」か「本当に0%」かを区別する（2026-09-29 ファン4人・ユーザー承認）
+check(
+  "一覧: 公式2連率・3連率がどちらも0で、結果の出た走があり、会場公式の出走数が0（集計前）のときだけ「集計前」を添える（公式の0.0は残す）",
+  /isOfficialPending = \(row\) =>\s*Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*row\.sample_count > 0 &&\s*officialTallyState\(venueHasOfficialStats, row\.race_count\) === "pending"/.test(
+    chart,
+  ) &&
+    chart.includes('t("analysis.motor.officialPendingBadge")') &&
+    read("src/services/supabaseDataService.js").includes(
+      "official_3rate: row.motor_3rate ?? null",
+    ) &&
+    read("src/services/supabaseDataService.js").includes(
+      "`race-motor-breakdown-v7-",
+    ),
+);
+check(
+  "一覧: 「集計前」の印が付く行があるときは、表の下の注記でその意味を書く（ファン評価 P2）",
+  /breakdown\.some\(isOfficialPending\) &&\s*t\("analysis\.motor\.officialPendingNote"\)/.test(
+    chart,
+  ),
+);
 // ---- BOA-549: 走数が少ない機力指数（2026-09-29 ファン4人のパネル） ----
 check(
   "powerIndexTone: n<6 は評価せず small、6以上は符号で good/bad/even、値なしは null",
@@ -229,6 +249,16 @@ check(
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;
+  // 「入れ替え後の最初の節」ではなくモーター単位で言う。丸亀は入れ替え後の最初の節が
+  // 終わった後も、その後に初めて使われたモーターが集計前になる（ファン評価2周目 P2）
+  check(
+    `${lang}: 集計前の説明を「入れ替え後の最初の節」でなく、モーターが初めて使われた節で言う`,
+    !/入れ替え後の最初の節|first meet since the changeover|更換後第一節|교체 후 첫 절/.test(
+      motor.officialPendingNote +
+        motor.trendNotYetOfficial +
+        motor.trendOfficialZeroUnknown,
+    ),
+  );
   check(
     `${lang}: 縦軸の名前が「出現率」でない（2連率・3連率を指す）`,
     !/出現率|Occurrence|出現率|출현율/.test(motor.yAxis),

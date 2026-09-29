@@ -67,43 +67,79 @@ function parseGrade($) {
 }
 
 /**
- * 日程タブ（`.tab2_inner`）から開催の何日目かを取得する（BOA-226、series_day/is_final_day。旧実装と同じ規則）。
+ * 日程タブ（`.tab2_inner`）から開催の何日目かを取得する（BOA-226・BOA-501）。
  *
  * 日程タブは開催日数分の`<li>`が並び、当日に対応する要素だけ`<li class="is-active2">`で囲まれる
  * （過去日はリンク付き`<a>`、未来日はリンク無し`<span>`だが、当日判定にリンクの有無は使えない）。
- * ラベルは「初日」「Ｎ日目」「最終日」の3パターン（全角数字）。
+ * ラベルは「初日」「Ｎ日目」「最終日」（全角数字）に加え、中止・順延のある節では「順延」「中止」が入る
+ * （例: 津 2026-09-21〜28 は `順延, 中止, ２日目, …, ６日目, 最終日`）。
+ *
+ * 公式は中止・順延の日に日目を振らないため、日目はラベルそのものから読む（タブの位置や暦日から数えない）:
+ *   - 「初日」は 1、「Ｎ日目」は N
+ *   - 「最終日」は、タブのラベルにある日目の最大値 + 1（初日を1として数える）。以前はタブの総数にしていたが、
+ *     順延・中止のタブが混ざると過大になった（津 9/28 は公式7日目なのに 8。BOA-501）。中止・順延の無い節では
+ *     タブの総数と一致する
+ *   - 「順延」「中止」など日目の無いラベルの日は、seriesDay・isFinalDay とも null（開催の日目が無い）。
+ *     呼び出し側は、この日を節からの導出で埋めてはならない（tabsFound で区別する）
+ *
+ * @returns {{seriesDay: number|null, isFinalDay: boolean|null, totalDays: number|null, tabsFound: boolean, dayLabel: string|null}}
+ *   tabsFound: 日程タブがあり、選択中のタブのラベルが読めた（ページとして日目の情報がある）
  */
 export function scrapeSeriesDay($) {
   const tabs = $(".tab2_inner");
   const totalDays = tabs.length;
   if (totalDays === 0) {
-    return { seriesDay: null, isFinalDay: null, totalDays: null };
+    return {
+      seriesDay: null,
+      isFinalDay: null,
+      totalDays: null,
+      tabsFound: false,
+      dayLabel: null,
+    };
   }
 
+  const labels = [];
   let label = null;
   tabs.each((i, el) => {
     const $el = $(el);
-    if ($el.closest("li").hasClass("is-active2")) {
-      label = $el.find("span").first().text().trim();
-      return false;
+    const text = $el.find("span").first().text().trim();
+    labels.push(text);
+    if (label === null && $el.closest("li").hasClass("is-active2")) {
+      label = text;
     }
   });
-  if (!label) return { seriesDay: null, isFinalDay: null, totalDays };
+  if (!label) {
+    return {
+      seriesDay: null,
+      isFinalDay: null,
+      totalDays,
+      tabsFound: false,
+      dayLabel: null,
+    };
+  }
 
+  const dayOf = (text) => {
+    if (text === "初日") return 1;
+    const match = text.match(/([０-９0-9]+)日目/);
+    if (!match) return null;
+    const n = parseInt(normalizeDigits(match[1]), 10);
+    return isNaN(n) ? null : n;
+  };
   const isFinalDay = label === "最終日";
   let seriesDay = null;
-  if (label === "初日") {
-    seriesDay = 1;
-  } else if (isFinalDay) {
-    seriesDay = totalDays;
+  if (isFinalDay) {
+    const days = labels.map(dayOf).filter((n) => n !== null);
+    seriesDay = (days.length > 0 ? Math.max(...days) : 0) + 1;
   } else {
-    const match = label.match(/([０-９]+)日目/);
-    if (match) {
-      const n = parseInt(normalizeDigits(match[1]), 10);
-      seriesDay = isNaN(n) ? null : n;
-    }
+    seriesDay = dayOf(label);
   }
-  return { seriesDay, isFinalDay, totalDays };
+  return {
+    seriesDay,
+    isFinalDay: seriesDay === null ? null : isFinalDay,
+    totalDays,
+    tabsFound: true,
+    dayLabel: label,
+  };
 }
 
 /**
@@ -114,7 +150,7 @@ export function scrapeRaceMeta($) {
   const { gradeClass, raceGrade } = parseGrade($);
   const raceTitle = $(".heading2_titleName").text().trim() || null;
   const raceStage = scrapeRaceStage($);
-  const { seriesDay, isFinalDay, totalDays } = scrapeSeriesDay($);
+  const { seriesDay, isFinalDay, totalDays, tabsFound } = scrapeSeriesDay($);
   const detailText = normalizeDigits(
     $(".title16_titleDetail__add2020").text(),
   ).replace(/\s+/g, " ");
@@ -137,6 +173,8 @@ export function scrapeRaceMeta($) {
     seriesDay,
     isFinalDay,
     totalDays,
+    // 日程タブがあり選択中のラベルが読めたか（順延・中止の日は、seriesDay が null でも true。BOA-501）
+    seriesDayTabsFound: tabsFound,
     distanceM: distance ? parseInt(distance[1], 10) : null,
     labels,
   };

@@ -215,6 +215,10 @@ function createDb({ tables = {}, failUpsert = {}, failSelect = {} } = {}) {
               filters.push((r) => String(r[c]) >= String(v));
               return q;
             },
+            lt(c, v) {
+              filters.push((r) => String(r[c]) < String(v));
+              return q;
+            },
             limit(n) {
               limit = n;
               return q;
@@ -1229,6 +1233,39 @@ for (const [job, createHandleSlot, offset] of [
       db,
       fetcher: createFetcher(pagesHandler({ list })),
     });
+
+  // 順延・中止のタブの日（BOA-501）: 順延が決まった後に取り直すと、選択中のタブが「順延」になる。
+  // 既に入っている日目（当日に見えた「初日」等。公式の成績ファイルとも一致）を null で上書きしない
+  const LIST_POSTPONED_HTML = (() => {
+    const $ = cheerio.load(LIST_HTML);
+    $("li.is-active2 .tab2_inner span").first().text("順延");
+    return $.html();
+  })();
+  {
+    const dbKept = dbWith(SERIES);
+    dbKept.state.tables.race_conditions = [
+      { race_id: RACE, series_day: 1, is_final_day: false },
+    ];
+    const kept = await runRaceInfo({ db: dbKept, list: LIST_POSTPONED_HTML });
+    const keptRow = dbKept.state.tables.race_conditions.find(
+      (r) => r.race_id === RACE,
+    );
+    const dbNew = dbWith(SERIES);
+    const fresh = await runRaceInfo({ db: dbNew, list: LIST_POSTPONED_HTML });
+    const freshRow = dbNew.state.tables.race_conditions?.find(
+      (r) => r.race_id === RACE,
+    );
+    check(
+      "日目（BOA-501）: 選択中のタブが「順延」のページを取り直しても、既に入っている日目（1）と最終日の印を上書きしない（節からの導出3でも埋めない）。行が新規なら日目は入れない。レース名などは更新する",
+      keptRow?.series_day === 1 &&
+        keptRow?.is_final_day === false &&
+        kept.store.completed[0]?.outcome === "ok" &&
+        freshRow != null &&
+        freshRow.series_day == null &&
+        fresh.store.completed[0]?.outcome === "ok",
+      show({ keptRow, freshRow }),
+    );
+  }
 
   const noTabs = await runRaceInfo({
     db: dbWith(SERIES),

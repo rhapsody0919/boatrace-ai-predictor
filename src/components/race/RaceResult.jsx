@@ -13,6 +13,7 @@ import { BOAT_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { parseRaceId } from "../../utils/raceId";
 import VenueDaySummaryCard from "./VenueDaySummaryCard";
+import InlineFetchError from "../InlineFetchError";
 
 // スタートのダイナミック演出（全艇が号砲と同時に走り出し、実ST比例の位置×時間で到達）の調整定数。
 // 到達位置は0〜0.15秒の固定レンジで正規化する（レースが違っても位置の見た目の意味を揃えるため）。
@@ -208,6 +209,67 @@ function StartTimingTrack({
   );
 }
 
+// 結果表の行を組み立てる（BOA-543）。rank1〜rank6 は公式ページの並び順のままで、
+// 返還艇（F・L・欠）や不成立レースの艇も着順の列に入っている（浜名湖 2026-09-14 6R の
+// rank=4-1-2 はうち1・2号艇がF）。そのため race_start_timings の finish_rank・finish_mark が
+// あるときはそちらで着順を組み立て、着が数字でない艇（F・L・欠・落・転・妨・＿ 等）は
+// 着順から外して公式の記号のまま末尾に並べる。finish_mark が1行も無い（2026-09-21より前の
+// 大半・取得失敗・読み込み中）ときは従来どおり rank1〜 を着順として使う
+function buildResultRows(result, startTimings) {
+  // レースタイムは race_time1〜6 が rank1〜6 と同じ並びで入っているため、艇→列の位置で引く
+  const rankIndexByBoat = new Map();
+  [1, 2, 3, 4, 5, 6].forEach((position) => {
+    const boat = result[`rank${position}`];
+    if (boat && !rankIndexByBoat.has(boat)) {
+      rankIndexByBoat.set(boat, position - 1);
+    }
+  });
+  const timeOf = (boat) =>
+    rankIndexByBoat.has(boat)
+      ? (result.raceTimes?.[rankIndexByBoat.get(boat)] ?? null)
+      : null;
+
+  const hasFinishData = (startTimings ?? []).some(
+    (st) => st.finishMark != null,
+  );
+  if (!hasFinishData) {
+    return [1, 2, 3, 4, 5, 6]
+      .map((position) => ({ position, boat: result[`rank${position}`] }))
+      .filter((row) => row.boat)
+      .map(({ position, boat }) => ({
+        key: `rank-${position}`,
+        boat,
+        position,
+        mark: null,
+        time: result.raceTimes?.[position - 1] ?? null,
+      }));
+  }
+
+  const isRanked = (st) =>
+    st.finishRank != null && /^[1-6]$/.test(String(st.finishMark ?? ""));
+  const ranked = startTimings
+    .filter(isRanked)
+    .sort((a, b) => a.finishRank - b.finishRank || a.boatNumber - b.boatNumber)
+    .map((st) => ({
+      key: `boat-${st.boatNumber}`,
+      boat: st.boatNumber,
+      position: st.finishRank,
+      mark: null,
+      time: timeOf(st.boatNumber),
+    }));
+  const unranked = startTimings
+    .filter((st) => !isRanked(st))
+    .sort((a, b) => a.boatNumber - b.boatNumber)
+    .map((st) => ({
+      key: `boat-${st.boatNumber}`,
+      boat: st.boatNumber,
+      position: null,
+      mark: st.finishMark ?? "—",
+      time: timeOf(st.boatNumber),
+    }));
+  return [...ranked, ...unranked];
+}
+
 function PayoutRow({
   typeLabel,
   boats,
@@ -240,7 +302,14 @@ function RaceResult({ prediction, raceId }) {
   // 会場コードと開催日は raceId から導出する（propsを増やさない）
   const parsedRaceId = parseRaceId(raceId);
   const { t } = useTranslation();
-  const [startTimings, setStartTimings] = useState(null);
+  // 取得結果は raceId とセットで持つ（別レースへ移ったとき前レースのデータを混ぜない）。
+  // 失敗も state に残し、「データなし」と区別して InlineFetchError を出す（frontend-data-fetch.md）
+  const [startTimingState, setStartTimingState] = useState({
+    raceId: null,
+    data: null,
+    failed: false,
+  });
+  const [reloadKey, setReloadKey] = useState(0);
   const reducedMotion = useMemo(
     () =>
       typeof window !== "undefined" &&
@@ -254,27 +323,32 @@ function RaceResult({ prediction, raceId }) {
   // スタート情報は1対多テーブル（race_start_timings）のため、一覧取得のRPCには
   // 含めず結果確定後にレース単位で個別フェッチする（BOA-238）
   useEffect(() => {
-    if (!finished || !raceId) {
-      setStartTimings(null);
-      return undefined;
-    }
+    if (!finished || !raceId) return undefined;
     let cancelled = false;
     supabaseDataService
       .getRaceStartTimings(raceId)
       .then((data) => {
-        if (!cancelled) setStartTimings(data);
+        if (!cancelled) setStartTimingState({ raceId, data, failed: false });
       })
       .catch((err) => {
-        // 取得失敗時はST列を空欄にする（レイアウトは維持）。未処理のPromise拒否にしない
+        // 取得失敗時はST列を空欄にし、着順は rank1〜 の表示に倒す（レイアウトは維持）。
+        // 失敗したことは state に残して InlineFetchError を出す
         console.error(
           "スタートタイミング取得エラー:",
           err?.message ?? String(err),
         );
+        if (!cancelled) {
+          setStartTimingState({ raceId, data: null, failed: true });
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [finished, raceId]);
+  }, [finished, raceId, reloadKey]);
+
+  const isCurrentRace = startTimingState.raceId === raceId;
+  const startTimings = isCurrentRace ? startTimingState.data : null;
+  const startTimingFailed = isCurrentRace && startTimingState.failed;
 
   if (!prediction || !result || !finished) {
     return null;
@@ -307,10 +381,8 @@ function RaceResult({ prediction, raceId }) {
   const findPlayer = (boat) => players.find((p) => p.number === boat);
 
   // 統一結果テーブルの行（着／艇／選手名／ST／タイム）。バックフィルしていない過去データは
-  // rank4以降が無いため、その場合は3行のみになる
-  const rows = [1, 2, 3, 4, 5, 6]
-    .map((position) => ({ position, boat: result[`rank${position}`] }))
-    .filter((row) => row.boat);
+  // rank4以降が無いため、その場合は3行のみになる。返還艇の行も数に含める（BOA-543）
+  const rows = buildResultRows(result, startTimings);
 
   const startTimingByBoat = new Map(
     (startTimings ?? []).map((st) => [st.boatNumber, st]),
@@ -342,6 +414,7 @@ function RaceResult({ prediction, raceId }) {
     : null;
 
   const rowClassName = (position) => {
+    if (position == null) return "rr-row is-unranked";
     if (position === 1) return "rr-row is-winner";
     if (position === 2) return "rr-row is-second";
     if (position === 3) return "rr-row is-third";
@@ -362,10 +435,9 @@ function RaceResult({ prediction, raceId }) {
       </div>
 
       <div className="rr-table">
-        {rows.map(({ position, boat }) => {
+        {rows.map(({ key, position, boat, mark, time }) => {
           const player = findPlayer(boat);
           const st = startTimingByBoat.get(boat);
-          const time = result.raceTimes?.[position - 1];
           const isFastest =
             Boolean(st) &&
             !st.isFlying &&
@@ -373,8 +445,10 @@ function RaceResult({ prediction, raceId }) {
             st.startTiming === fastestStartTiming;
 
           return (
-            <div className={rowClassName(position)} key={position}>
-              <span className="rr-pos">{t(`result.rank${position}`)}</span>
+            <div className={rowClassName(position)} key={key}>
+              <span className="rr-pos">
+                {position != null ? t(`result.rank${position}`) : mark}
+              </span>
               <BoatChip number={boat} />
               <span className="rr-name">
                 {player?.name}
@@ -409,6 +483,9 @@ function RaceResult({ prediction, raceId }) {
           );
         })}
       </div>
+      {startTimingFailed && (
+        <InlineFetchError onRetry={() => setReloadKey((key) => key + 1)} />
+      )}
       <p className="rr-note">{t("result.courseNote")}</p>
       {rows.length < 6 && (
         <p className="rr-note rr-note-missing-ranks">
