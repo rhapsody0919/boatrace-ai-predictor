@@ -628,7 +628,7 @@ export default function RacerPerformanceStats({
       {!vcVenueFixed && !vcBoatFixed && hasVenueStats && (
         <div className="racer-technique-profile">
           <h3>
-            会場別成績（当地成績、過去2年・出走5走以上）
+            会場別成績（当地成績、2025年12月以降・最大過去2年・出走5走以上）
             <span className="h3-hint">会場名をクリックで絞り込み →</span>
           </h3>
           <StatBreakdownTable
@@ -699,7 +699,8 @@ export default function RacerPerformanceStats({
             />
           ) : (
             <p className="racer-stat-note">
-              {vcLabel}: 該当する出走がありません（対象期間: 過去2年）
+              {vcLabel}: 該当する出走がありません（対象期間:
+              2025年12月以降、最大過去2年）
             </p>
           )}
         </div>
@@ -729,7 +730,8 @@ export default function RacerPerformanceStats({
             />
           ) : (
             <p className="racer-stat-note">
-              {vcLabel}: 該当する出走がありません（対象期間: 過去2年）
+              {vcLabel}: 該当する出走がありません（対象期間:
+              2025年12月以降、最大過去2年）
             </p>
           )}
         </div>
@@ -778,7 +780,8 @@ export default function RacerPerformanceStats({
         vcData &&
         vcData.n === 0 && (
           <p className="racer-stat-note">
-            {vcLabel}: 該当する出走がありません（対象期間: 過去2年）
+            {vcLabel}: 該当する出走がありません（対象期間:
+            2025年12月以降、最大過去2年）
           </p>
         )}
 
@@ -853,7 +856,8 @@ export default function RacerPerformanceStats({
       {showTechniqueSection && (
         <div className="racer-technique-profile">
           <h3>
-            決まり手傾向（{hasVcData ? "過去2年" : "過去90日"}・勝利時）
+            決まり手傾向（
+            {hasVcData ? "2025年12月以降・最大過去2年" : "過去90日"}・勝利時）
             {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
           </h3>
           {displayTechniques.length > 0 ? (
@@ -879,7 +883,8 @@ export default function RacerPerformanceStats({
         : exhibitionChartData.length > 0) && (
         <div className="racer-stat-chart">
           <h3>
-            展示タイムの推移（{hasVcData ? "過去2年" : "過去90日"}）
+            展示タイムの推移（
+            {hasVcData ? "2026年3月以降・最大過去2年" : "過去90日"}）
             {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
           </h3>
           <ResponsiveContainer width="100%" height={200}>

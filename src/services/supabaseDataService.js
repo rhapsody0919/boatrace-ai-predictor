@@ -4085,7 +4085,13 @@ export const supabaseDataService = {
       }
 
       // 過去2年分を対象（他のracer_id単体集計は90〜180日窓だが、
-      // 会場別成績は会場ごとの出走機会自体が少ないため長めに取る）
+      // 会場別成績は会場ごとの出走機会自体が少ないため長めに取る）。
+      // 窓は730日だが、DBは2025-12-02からしか無いので実際はそれ以降になる。
+      // 画面の注記は「2025年12月以降・最大過去2年」と開始月を直書きしている
+      // （BOA-503。getRacerScopedRaceStats/getRacerRaceHistoryも同じ窓）。
+      // 2027-12-03以降は窓の始点がデータの開始日を越えて直書きが誤りになるため、
+      // その時点で注記（locales の basicInfo/wakuInfo.periodCaveat、
+      // beforeInfo.detailTableNote、termHints.js、RacerPerformanceStats.jsx）を見直す
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - 730);
       const cutoffStr = cutoffDate.toISOString().split("T")[0];
