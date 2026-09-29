@@ -163,10 +163,17 @@
   gap: 0.5rem;
 }
 
-/* レースカードグリッド */
+/* レースカードグリッド
+ *
+ * auto-fit にする（auto-fill だとカードが足りなくても列の枠が作られる）。
+ * 的中件数はその日の結果次第で0〜数十件と変わり、列数（1440pxで4列・1920pxで6列）を
+ * 下回る日は右側に空の列が残っていた（1920pxでカード5枚・6列で右307px、BOA-527）。
+ * auto-fit なら使われない列は潰れ、カードが箱の幅いっぱいに広がる。
+ * カード幅の上限を固定pxで抑えると列数の刻みが粗くなり別の幅で余白が出るため、
+ * トラックは 1fr のままにする（ADR-0073） */
 .race-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1rem;
 }
 
@@ -356,7 +363,7 @@
   }
 
   .race-cards-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
 }
 
