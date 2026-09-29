@@ -25,6 +25,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { formatRateOrCount } from "../../src/utils/smallSampleRate.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -85,6 +86,59 @@ check(
   /\}）、この選手がこのモーターで出走してからの展示タイム`/.test(card),
 );
 
+// ---- BOA-513 PR2: ファン4人のパネルで決めた表示（2026-09-29 ユーザー承認） ----
+check(
+  "formatRateOrCount: n<6 は「該当数/出走数」、6以上は %、出走なしは「-」",
+  formatRateOrCount(66.66666, 3, 6) === "2/3" &&
+    formatRateOrCount(100, 1, 6) === "1/1" &&
+    formatRateOrCount(0, 5, 6) === "0/5" &&
+    formatRateOrCount(50, 6, 6) === "50.0%" &&
+    formatRateOrCount(null, 0, 6) === "-",
+);
+check(
+  "枠番別成績・選手×枠成績の率を formatRateOrCount で出す（n<6 の率を % で出さない）",
+  (grid.match(/formatRateOrCount\(/g) ?? []).length >= 3 &&
+    (
+      read("src/components/analysis/MotorRacerWakuDrillDown.jsx").match(
+        /formatRateOrCount\(/g,
+      ) ?? []
+    ).length >= 3,
+);
+check(
+  "展示タイムのスパークラインは3点未満なら出さない",
+  grid.includes("trend.length < 3) return null"),
+);
+check(
+  "優出数・優勝数は、会場の全モーターで値が無いとき列ごと畳む（見出し・セル・出典注記）",
+  chart.includes("showFinalCount && (") &&
+    chart.includes("showChampionshipCount && (") &&
+    chart.includes('showFinalCount && "analysis.motor.finalCountHeader"'),
+);
+check(
+  "結果の出た走が無い新モーター（sample_count === 0）に「初下ろし」を添える",
+  chart.includes("row.sample_count === 0 && (") &&
+    chart.includes('t("analysis.motor.firstUseBadge")') &&
+    /sample_count: powerIndexes\[i\]\?\.sample_count/.test(
+      read("src/services/supabaseDataService.js"),
+    ),
+);
+check(
+  "推移グラフは、入れ替え直後の 2連率・3連率とも 0 の先頭の点を描かない",
+  /findIndex\(\s*\(row\) => row\.motor_2rate !== 0 \|\| row\.motor_3rate !== 0/.test(
+    chart,
+  ),
+);
+{
+  const svc = read("src/services/supabaseDataService.js");
+  check(
+    "部品交換に、交換が記録されたレース番号を添える（キャッシュのキーも上げる）",
+    svc.includes("eventRaceNos") &&
+      svc.includes("raceNos: d.eventRaceNos") &&
+      svc.includes("`motor-daily-series-v3-") &&
+      svc.includes("`motor-parts-history-v3-") &&
+      chart.includes("event.raceNos.map((n) => `${n}R`)"),
+  );
+}
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;

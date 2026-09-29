@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import DrillDownHeader from "./DrillDownHeader";
 import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
+import { formatRateOrCount } from "../../utils/smallSampleRate";
 import "./MotorConditionChart.css";
 
 /**
@@ -45,19 +46,31 @@ function MotorRacerWakuDrillDown({ course, rows, onBack }) {
                   className={`usage-history-rate ${isSmallSample ? "is-small-sample" : ""}`}
                 >
                   {t("analysis.motor.firstPlaceRateHeader")}{" "}
-                  {row.winRate !== null ? `${row.winRate.toFixed(1)}%` : "-"}
+                  {formatRateOrCount(
+                    row.winRate,
+                    row.raceCount,
+                    SMALL_SAMPLE_THRESHOLD,
+                  )}
                 </span>
                 <span
                   className={`usage-history-rate ${isSmallSample ? "is-small-sample" : ""}`}
                 >
                   {t("analysis.motor.legend2")}{" "}
-                  {row.top2Rate !== null ? `${row.top2Rate.toFixed(1)}%` : "-"}
+                  {formatRateOrCount(
+                    row.top2Rate,
+                    row.raceCount,
+                    SMALL_SAMPLE_THRESHOLD,
+                  )}
                 </span>
                 <span
                   className={`usage-history-rate ${isSmallSample ? "is-small-sample" : ""}`}
                 >
                   {t("analysis.motor.legend3")}{" "}
-                  {row.top3Rate !== null ? `${row.top3Rate.toFixed(1)}%` : "-"}
+                  {formatRateOrCount(
+                    row.top3Rate,
+                    row.raceCount,
+                    SMALL_SAMPLE_THRESHOLD,
+                  )}
                 </span>
               </li>
             );

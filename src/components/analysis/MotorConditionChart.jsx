@@ -280,11 +280,18 @@ function MotorConditionChart({
     setSelectedWakuCourse(null);
   }, [selectedVenue, drillDownMotor]);
 
-  const chartData = (trendData?.trend ?? []).map((row) => ({
-    date: row.date.slice(5),
-    motor_2rate: row.motor_2rate,
-    motor_3rate: row.motor_3rate,
-  }));
+  // 入れ替え直後は、公式の累計がまだ付かず 2連率・3連率とも 0 の日が続く。この先頭の
+  // 0 の点は「1回も連に絡まなかった」と読めるので描かない（BOA-513、ファン4人のパネル）
+  const firstRatedIndex = (trendData?.trend ?? []).findIndex(
+    (row) => row.motor_2rate !== 0 || row.motor_3rate !== 0,
+  );
+  const chartData = (trendData?.trend ?? [])
+    .slice(firstRatedIndex === -1 ? 0 : firstRatedIndex)
+    .map((row) => ({
+      date: row.date.slice(5),
+      motor_2rate: row.motor_2rate,
+      motor_3rate: row.motor_3rate,
+    }));
 
   const exhibitionChartData = (trendData?.trend ?? [])
     .filter((row) => row.exhibition_time !== null)
@@ -347,6 +354,14 @@ function MotorConditionChart({
   // 押し出していた（2026-09-27、ファン視点のレビュー。条件別タブで
   // n=0の行を畳んだBOA-432と同じ考え方）
   const showFirstPlaceRate = firstPlaceRates.some((v) => v !== null);
+  // 優出数・優勝数も、会場の全モーターで値が無い（会場公式サイトが出していない）ときは
+  // 列ごと畳む。「-」が並ぶと「0回」と読まれる（BOA-513、ファン4人のパネル）
+  const showFinalCount = breakdown.some(
+    (r) => r.final_count !== null && r.final_count !== undefined,
+  );
+  const showChampionshipCount = breakdown.some(
+    (r) => r.championship_count !== null && r.championship_count !== undefined,
+  );
   // 前検タイムも同じ扱い（BOA-451）。節に前検の行が無い開催では列ごと出さない
   // （ADR-0067 の 2026-09-26 追記「節に前検の行が無い場合は行ごと出さない」と同じ）
   const hasPretest = breakdown.some(
@@ -555,8 +570,12 @@ function MotorConditionChart({
                         <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
                       )}
                       <th>{t("analysis.motor.powerIndexHeader")}</th>
-                      <th>{t("analysis.motor.finalCountHeader")}</th>
-                      <th>{t("analysis.motor.championshipCountHeader")}</th>
+                      {showFinalCount && (
+                        <th>{t("analysis.motor.finalCountHeader")}</th>
+                      )}
+                      {showChampionshipCount && (
+                        <th>{t("analysis.motor.championshipCountHeader")}</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -588,7 +607,17 @@ function MotorConditionChart({
                           基本情報タブのデータ出走表も同じ値を `toFixed(1)` で出しており、
                           ボートレース日和も1桁。再計算した2連率/3連率も、母数が数十走で
                           2桁目に意味が無いため揃える */}
-                        <td className="rate">{row.motor_2rate?.toFixed(1)}</td>
+                        <td className="rate">
+                          {row.motor_2rate?.toFixed(1)}
+                          {/* このレースより前に結果の出た走が無い新モーター（当日の
+                              レースのみ判定できる）。公式の 0.0 は消さずに添える
+                              （BOA-513、ファン4人のパネル） */}
+                          {row.sample_count === 0 && (
+                            <span className="motor-waku-n motor-first-use">
+                              {t("analysis.motor.firstUseBadge")}
+                            </span>
+                          )}
+                        </td>
                         {!officialMode && (
                           <td className="rate">
                             {row.official_2rate !== null &&
@@ -640,16 +669,20 @@ function MotorConditionChart({
                             ? `${row.power_index > 0 ? "+" : ""}${row.power_index.toFixed(1)}`
                             : "-"}
                         </td>
-                        <td
-                          className={`rate ${finalCountRankClass(row.final_count)}`}
-                        >
-                          {row.final_count ?? "-"}
-                        </td>
-                        <td
-                          className={`rate ${championshipCountRankClass(row.championship_count)}`}
-                        >
-                          {row.championship_count ?? "-"}
-                        </td>
+                        {showFinalCount && (
+                          <td
+                            className={`rate ${finalCountRankClass(row.final_count)}`}
+                          >
+                            {row.final_count ?? "-"}
+                          </td>
+                        )}
+                        {showChampionshipCount && (
+                          <td
+                            className={`rate ${championshipCountRankClass(row.championship_count)}`}
+                          >
+                            {row.championship_count ?? "-"}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -669,8 +702,9 @@ function MotorConditionChart({
                     venueCols: [
                       showFirstPlaceRate &&
                         "analysis.motor.firstPlaceRateHeader",
-                      "analysis.motor.finalCountHeader",
-                      "analysis.motor.championshipCountHeader",
+                      showFinalCount && "analysis.motor.finalCountHeader",
+                      showChampionshipCount &&
+                        "analysis.motor.championshipCountHeader",
                     ]
                       .filter(Boolean)
                       .map((key) =>
@@ -987,7 +1021,13 @@ function MotorConditionChart({
             <ul className="history-list">
               {partsHistory.map((event, i) => (
                 <li key={`${event.date}-${i}`}>
-                  <span className="history-date">{event.date}</span>
+                  <span className="history-date">
+                    {event.date}
+                    {/* 何Rの展示で記録された交換か（そのレースの前の交換）。
+                        同じ日に複数のレースがある（BOA-513、ファン4人のパネル） */}
+                    {event.raceNos?.length > 0 &&
+                      ` ${event.raceNos.map((n) => `${n}R`).join("・")}`}
+                  </span>
                   <span className="parts-history-items">
                     {event.parts && event.parts.length > 0 && (
                       <span className="parts-history-tag">
