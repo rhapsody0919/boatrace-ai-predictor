@@ -323,6 +323,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   // 必要得点の列を出せるか（誰か1人でも残りの予選走が分かっていれば出す）
   const hasNeeded = forecastRows.some((r) => r.needed !== null);
   const lastSt = lastOf("startTiming");
+  const lastExhibition = lastOf("exhibitionTime");
 
   // 得点率は平均なので「1着→6着」と「3着→3着」が同じ5.00になる。
   // 次をどう見るかは並びで変わる
@@ -396,7 +397,6 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
       </th>
     );
   };
-  const lastExhibition = lastOf("exhibitionTime");
 
   return (
     <div className="race-meet-tab">
