@@ -203,7 +203,12 @@ function RaceHistoryTable({
                       : Number(race.startTiming).toFixed(2)
                     : "-"}
                 </td>
-                <td>{race.finishRank ?? t("basicInfo.finishUnknown")}</td>
+                <td>
+                  {race.finishRank ??
+                    (race.absent
+                      ? t("basicInfo.finishAbsent")
+                      : t("basicInfo.finishUnknown"))}
+                </td>
                 <td>
                   {race.finishRank === 1 && race.winningTechnique != null
                     ? translateTechnique(t, race.winningTechnique)

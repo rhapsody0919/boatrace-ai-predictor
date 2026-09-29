@@ -164,17 +164,17 @@ function ContentHub() {
             <p className="section-desc">
               全国24会場それぞれの特徴と狙い目を解説。水面特性、イン勝率、おすすめの賭け方を紹介。
             </p>
-            <div className="venue-grid">
+            <div className="guide-venue-grid">
               {venues.map((venue) => (
                 <Link
                   key={venue.code}
                   to={`/blog/venue-${venue.id}`}
-                  className="venue-card"
+                  className="guide-venue-card"
                 >
-                  <span className="venue-code">
+                  <span className="guide-venue-code">
                     {String(venue.code).padStart(2, "0")}
                   </span>
-                  <span className="venue-name">{venue.name}</span>
+                  <span className="guide-venue-name">{venue.name}</span>
                 </Link>
               ))}
             </div>
