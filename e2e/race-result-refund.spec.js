@@ -131,7 +131,7 @@ test.describe("結果タブで返還艇を着順に出さない（BOA-543）", (
       [1, 2, 3, 4, 5, 6].map((boat) =>
         expect.objectContaining({
           boat: String(boat),
-          pos: boat === 4 ? "_" : "F",
+          pos: boat === 4 ? "—" : "F", // 「＿」は罫線と見分けにくいので「—」で出す（BOA-543）
         }),
       ),
     );

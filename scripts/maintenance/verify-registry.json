@@ -92,6 +92,11 @@
       "guards": "画面側の純関数（basicInfoStats / raceStatus / courseGridStats / venueDayTrend / weatherInfo）の、過去に fix が入った箇所の回帰と変異検証（BOA-255）"
     },
     {
+      "script": "verify-race-outcome.js",
+      "tier": "ci",
+      "guards": "不成立・返還の判定関数（src/utils/raceOutcome.js）の回帰と変異検証、画面側が展開予測の的中を rank1 の直接比較・旧フラグ isNoRace で判定していないこと（BOA-543）"
+    },
+    {
       "script": "verify-gha-skip-gate.js",
       "tier": "ci",
       "guards": "フェイルセーフ付きSKIP（scripts/lib/ghaSkipGate.js）と日次ワークフローの配線"
@@ -314,6 +319,11 @@
       "guards": "取得時刻の列（created_at・updated_at、マイグレーション071）を使う書き込みと計測"
     },
     {
+      "script": "verify-seo-keyword-kpi.js",
+      "tier": "ci",
+      "guards": "SEOワード戦略のKPI集計（scripts/lib/seoKeywordKpi.js）のクラスタ分け・週の丸め・着地ページ分類。崩れると旧名系とAI予想一般が混ざり施策の効果を取り違える"
+    },
+    {
       "script": "verify-series-points-stage-rules.js",
       "tier": "ci",
       "guards": "得点率の種別判定（src/components/race/seriesPoints.js の算入範囲と配点、raceStageConfig のバッジ）。race_stage は会場の自由記述で349種あり、部分一致の判定が壊れやすい（BOA-457・BOA-458）"
@@ -504,7 +514,7 @@
     {
       "script": "verify-middleware-routing.js",
       "tier": "ci",
-      "guards": "middleware.js の管理画面Basic認証（/admin/rules・/admin/sns-hub は認証なしで401、一般ページは素通り、環境変数未設定なら拒否）と、AIスナップショット配信の経路（resolveSnapshotPath が返すパスが config.matcher に一致し、管理画面がスナップショットに振り分けられないこと）。BOA-555で /admin/rules が本番で認証なしに開けていた"
+      "guards": "middleware.js の管理画面Basic認証（/admin/rules・/admin/sns-hub は認証なしで401、一般ページは素通り、環境変数が未設定・空なら拒否、':'入りパスワードは最初の':'で分割、UTF-8で復号、壊れたbase64で例外を出さず401。判定は api/_lib/adminAuth.js の requireAdminAuth と共有）と、AIスナップショット配信の経路（resolveSnapshotPath が返すパスが config.matcher に一致し、管理画面がスナップショットに振り分けられないこと）。BOA-555で /admin/rules が本番で認証なしに開けていた"
     }
   ]
 }

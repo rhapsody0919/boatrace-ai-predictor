@@ -424,34 +424,49 @@
   gap: var(--spacing-1);
 }
 
+/* 行全体が1つのボタン（BOA-550）。名前・線・前走値のどこを押しても選手が切り替わる */
 .rmt-trend-row {
   display: grid;
   /* 名前・線・前走値。名前は固定幅にして6行の線の左端を揃える */
   grid-template-columns: 7.5em 1fr 3em;
   align-items: center;
   gap: var(--spacing-2);
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  /* 1走しかない選手は線が出ない。行の高さを線のある行と揃える（2026-09-29 ファン評価） */
+  min-height: 34px;
+}
+
+.rmt-trend-row:hover {
+  background: color-mix(in srgb, var(--brand-accent-primary) 5%, transparent);
+}
+
+.rmt-trend-row[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--brand-accent-primary) 10%, transparent);
+  /* 背景の濃さだけだとホバー中の行と見分けがつかない（2026-09-29 ファン評価）。
+     選択中だけ左に帯を付ける */
+  box-shadow: inset 3px 0 0 var(--brand-accent-primary);
 }
 
 .rmt-trend-label {
   display: flex;
   align-items: center;
-  /* 押せる範囲を行の高さいっぱいにする。中身なりだと18pxしかなく、
-     片手スマホで外れる（2026-09-29のファン評価で実測120×18px） */
-  align-self: stretch;
-  width: 100%;
   gap: var(--spacing-1);
   min-width: 0;
-  padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
   font-size: var(--font-size-2xs);
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
 }
 
 .rmt-trend-last {
+  /* 線が無い行（1走のみ）でも前走の値を右端の列に置く。無指定だと
+     中央の列に詰まり、6艇の前走が縦に揃わない（2026-09-29 ファン評価） */
+  grid-column: 3;
   font-size: var(--font-size-2xs);
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -519,4 +534,9 @@
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   padding: var(--spacing-1) 0;
+}
+
+/* 全走欠場の行（BOA-504）。得点率・順位が無いことが一目で分かるよう控えめに */
+.rmt-compare tr.is-absent td {
+  color: var(--text-secondary);
 }

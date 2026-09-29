@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 /**
  * verify-series-points-stage-rules.js — 得点率の「種別判定」の回帰テスト
  * （BOA-457 / BOA-458）。
@@ -34,6 +35,9 @@ import {
   shouldUseOfficialSeries,
   parseOfficialPlacements,
   buildMeetRanking,
+  listAbsentOnlyRacers,
+  FINISH_ABSENT,
+  isAbsentStartRow,
 } from "../../src/components/race/seriesPoints.js";
 import { getRaceStageKey } from "../../src/constants/raceStageConfig.js";
 import { fetchAllByRaceId } from "../lib/meetBoundaries.js";
@@ -376,13 +380,14 @@ check(
     withPrelim,
   );
   check("欠場は走数にも入れない", absent, { points: 0, runs: 0, rate: null });
+  // 並びには「欠」として残す。外すと欠場したこと自体が画面から消える（BOA-504）
   check(
-    "欠場は着順の並びにも出さない",
+    "欠場は着順の並びに FINISH_ABSENT で出す（失格とは区別）",
     listSeriesFinishes(
       [{ ...base, raceId: "2026-09-23-20-01", boatNumber: 6, started: false }],
       withPrelim,
     ),
-    [],
+    [FINISH_ABSENT],
   );
   check(
     "失格・落水は着順の並びに null で出す",
@@ -408,6 +413,139 @@ check(
     runs: 1,
     rate: 10,
   });
+
+  // ---- 3c. 全走欠場の選手が比較表から消えない（BOA-504） ----
+  // 2026-06-13 浜名湖12Rの2号艇（中岡正彦）は今節の走が全て欠場で、走数0の
+  // ため順位表に載らず、6艇の比較表から黙って消えていた
+  const board = {
+    prelimEndRaceId: "2026-09-25-20-12",
+    entries: [
+      // 走った選手（1着）
+      {
+        ...base,
+        raceId: "2026-09-23-20-01",
+        boatNumber: 1,
+        racerId: 1001,
+        playerName: "走者",
+        started: true,
+      },
+      // 全走欠場の選手（2走とも欠場）
+      {
+        ...base,
+        raceId: "2026-09-23-20-01",
+        boatNumber: 6,
+        racerId: 2002,
+        playerName: "欠場者",
+        started: false,
+      },
+      {
+        ...base,
+        raceId: "2026-09-23-20-05",
+        boatNumber: 6,
+        racerId: 2002,
+        playerName: "欠場者",
+        started: false,
+      },
+      // 1走は欠場・1走は走った選手（全走欠場ではない）
+      {
+        ...base,
+        raceId: "2026-09-23-20-02",
+        boatNumber: 6,
+        racerId: 3003,
+        playerName: "混在",
+        started: false,
+      },
+      {
+        ...base,
+        raceId: "2026-09-23-20-06",
+        boatNumber: 1,
+        racerId: 3003,
+        playerName: "混在",
+        started: true,
+      },
+      // まだ結果が無い走しかない選手（欠場ではない）
+      {
+        raceStage: "予選",
+        raceId: "2026-09-23-20-12",
+        boatNumber: 6,
+        racerId: 4004,
+        playerName: "未走",
+        rank1: null,
+        started: false,
+      },
+    ],
+  };
+  check(
+    "全走欠場の選手だけを返す（走った選手・一部欠場・未走は含めない）",
+    listAbsentOnlyRacers(board).map((r) => [r.racerId, r.finishes]),
+    [[2002, [FINISH_ABSENT, FINISH_ABSENT]]],
+  );
+  check(
+    "全走欠場の選手は順位表には載らない（走数0で得点率が出ない）",
+    buildMeetRanking(board)
+      .map((r) => r.racerId)
+      .sort(),
+    [1001, 3003],
+  );
+  check(
+    "一部欠場の選手の並びは欠場の位置も残す",
+    buildMeetRanking(board).find((r) => r.racerId === 3003).finishes,
+    [FINISH_ABSENT, 1],
+  );
+  // 本番STの行は欠場の艇にもあり、finish_mark が「欠」（2026-06-05 芦屋7R の
+  // 久永祥平・2026-06-20 尼崎12R の谷津幸宏で、一部欠場が「失」・分母入りになっていた）
+  check(
+    "本番STの行が「欠」なら欠場、出遅れ「L」やST付きの行は出走",
+    [
+      isAbsentStartRow({ start_timing: null, finish_mark: "欠" }),
+      isAbsentStartRow({ start_timing: null, finish_mark: "L" }),
+      isAbsentStartRow({ start_timing: 0.15, finish_mark: null }),
+      isAbsentStartRow(null),
+    ],
+    [true, false, false, false],
+  );
+  {
+    const service = readFileSync(
+      new URL("../../src/services/supabaseDataService.js", import.meta.url),
+      "utf8",
+    );
+    check(
+      "今節の出走判定は、本番STの「欠」の行を出走に数えない",
+      /\.filter\(\(r\) => !isAbsentStartRow\(r\)\)\s*\.map\(\(r\) => `\$\{r\.race_id\}\|\$\{r\.boat_number\}`\)/.test(
+        service,
+      ) &&
+        /select\("race_id, boat_number, start_timing, is_flying, finish_mark"\)/.test(
+          service,
+        ),
+      true,
+    );
+    // 本番STの行そのものが無い欠場（他艇の行はある）も、履歴で「欠場」と出す
+    // （2026-06-13 浜名湖5R・12R の中岡正彦が「着外(順位不明)」になっていた）
+    check(
+      "選手の履歴は、本番STの行が無い欠場も欠場として扱う",
+      /absent:\s*isAbsentStartRow\(st\) \|\|\s*\(!st && stRowsByRace\.has\(entry\.race_id\)\)/.test(
+        service,
+      ),
+      true,
+    );
+    const meetTab = readFileSync(
+      new URL("../../src/components/race/RaceMeetTab.jsx", import.meta.url),
+      "utf8",
+    );
+    check(
+      "全走欠場の選手を選んだ詳細に欠場の見出し、「欠」があれば意味の注記を出す",
+      meetTab.includes('t("meetTab.absentDetail")') &&
+        /r\.finishes\.includes\(FINISH_ABSENT\)[\s\S]{0,80}t\("meetTab\.finishAbsentNote"\)/.test(
+          meetTab,
+        ),
+      true,
+    );
+  }
+  check(
+    "男女Ｗ優勝戦の節では別シリーズの全走欠場者を返さない",
+    listAbsentOnlyRacers({ ...board, seriesRacerIds: [1001, 3003] }),
+    [],
+  );
 }
 
 // 「届かず」の判定に使う上限は、残りレースの種別ごとの1着の点で出す。

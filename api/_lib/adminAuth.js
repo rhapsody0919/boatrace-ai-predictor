@@ -7,7 +7,9 @@
  * middleware を通らずに関数へ届き、認証なしで 200 を返すことを確認した。
  * そのため各ハンドラの先頭でもこの関数を呼び、関数自身で認証を完結させる（多層防御）。
  *
- * 認証情報・realm は middleware.js と同じ（SNS_HUB_BASIC_AUTH_USER / SNS_HUB_BASIC_AUTH_PASSWORD）。
+ * middleware.js（/admin/sns-hub・/admin/rules・/api/admin/sns-hub の入口）もこの関数で判定する。
+ * 判定ロジックを1か所に置き、入口と関数側で食い違わないようにするため。
+ * 認証情報は SNS_HUB_BASIC_AUTH_USER / SNS_HUB_BASIC_AUTH_PASSWORD。
  * どちらかが未設定・空なら常に拒否する（fail-closed）。
  * Edge ランタイムで動かすため、Node の crypto.timingSafeEqual ではなく Web Crypto を使う。
  */
@@ -19,7 +21,8 @@ function unauthorizedResponse() {
     status: 401,
     headers: {
       "WWW-Authenticate": `Basic realm="${ADMIN_AUTH_REALM}"`,
-      // middleware.js と同じ理由（モバイルChromeが401をキャッシュする不具合）で付ける
+      // 無いと、モバイルChromeがアドレスバー入力時のプリフェッチで受けた401をキャッシュし、
+      // 実際のナビゲーションで認証ダイアログを出さずに401を表示する（2026-08-29確認）
       "Cache-Control": "no-store",
     },
   });

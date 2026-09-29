@@ -81,6 +81,44 @@
   color: var(--text-primary);
 }
 
+/* BOA-543: 判定対象外（不成立のレース・返還艇の候補）。候補は残し、枠を点線・文字を弱めて区別する
+   （opacity で薄くすると艇番の文字のコントラストが基準を割るため使わない） */
+.turn-pattern-row--void {
+  border-style: dashed;
+}
+
+.turn-pattern-row--void .turn-pattern-technique,
+.turn-pattern-row--void .turn-pattern-prob {
+  color: var(--text-secondary);
+}
+
+.turn-pattern-void-tag {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+  border: var(--border-width-1) solid var(--border-hairline);
+  padding: 2px var(--spacing-2);
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+}
+
+.turn-pattern-summary--void {
+  color: var(--text-primary);
+}
+
+.turn-pattern-summary-title {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+}
+
+.turn-pattern-summary-body {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
 @media (max-width: 480px) {
   .turn-pattern-row {
     padding: var(--spacing-1) var(--spacing-2);

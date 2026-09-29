@@ -29,7 +29,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
 | `external_predictions` | 表 | 021_external_predictions.sql | なし | GRANT（021_external_predictions.sql） |  |
-| `race_payouts` | 表 | 079_race_payouts.sql | なし | 記述なし |  |
+| `race_payouts` | 表 | 079_race_payouts.sql | なし | GRANT（109_predictions_rpc_race_status_payouts.sql） |  |
 | `race_series` | 表 | 084_race_series.sql | なし | GRANT（095_phase_a_numeric_public_read.sql） |  |
 | `race_special_notes` | 表 | 060_race_special_notes.sql | なし | 記述なし |  |
 

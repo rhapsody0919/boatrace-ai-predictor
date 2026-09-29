@@ -1,0 +1,40 @@
+{
+  "$comment": "SEO施策・検索流入に影響した出来事の投入日台帳。search-console-report.js が週次KPIの横に表示し、施策の前後の週を比べるのに使う。施策のPRをマージしたら、本番反映日を date に1行足す（kind: measure）。外部要因・障害は kind: event。",
+  "entries": [
+    {
+      "date": "2026-07-07",
+      "kind": "event",
+      "id": "i18n-navigator-detection",
+      "description": "i18n基盤導入。/ の言語をブラウザ言語で判定し、Googlebotに英語版を返すようになった（8/18修正）",
+      "ref": "b3cda6a52"
+    },
+    {
+      "date": "2026-07-13",
+      "kind": "event",
+      "id": "en-routing-hreflang",
+      "description": "/en ルーティング・hreflang導入、index.html の静的 description・canonical を削除",
+      "ref": "b01529470"
+    },
+    {
+      "date": "2026-08-18",
+      "kind": "event",
+      "id": "fix-root-always-ja",
+      "description": "/ の初回訪問で常に日本語を返すよう修正（英語版インデックスの解消）",
+      "ref": "0213b2e5e"
+    },
+    {
+      "date": "2026-08-20",
+      "kind": "event",
+      "id": "rebrand-ryujin-radar",
+      "description": "BoatAI→龍神レーダーにリブランド。title から旧名「BoatAI（ボートアイ）」が消えた",
+      "ref": "a09fd4c97"
+    },
+    {
+      "date": "2026-09-29",
+      "kind": "event",
+      "id": "ga4-pageview-dedup",
+      "description": "GA4 page_view の誤帰属を修正（BOA-531）。これ以前の GA4 PV は比較に使わない",
+      "ref": "PR#935"
+    }
+  ]
+}

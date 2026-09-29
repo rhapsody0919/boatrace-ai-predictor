@@ -21,6 +21,7 @@ import {
 import { isFinalStage } from "../constants/raceStageConfig";
 import { finishPositionOf } from "../components/race/basicInfoStats.js";
 import { isRaceCancelled } from "../utils/raceCancellation.js";
+import { competitionRank } from "../utils/competitionRank.js";
 import {
   countsForSeriesScore,
   shouldUseOfficialSeries,
@@ -28,7 +29,9 @@ import {
   semifinalSlotsOf,
   splitMeetSeries,
   scoreTableFor,
+  isAbsentStartRow,
 } from "../components/race/seriesPoints.js";
+import { PAYOUT_BET_TYPES } from "../utils/raceOutcome.js";
 import {
   PRETEST_LOOKBACK_DAYS,
   pickFirstPretestByRacer,
@@ -767,6 +770,42 @@ function buildWeather(conditions) {
   };
 }
 
+/**
+ * RPC の payoutRows（race_payouts の行の配列）を、結果タブの払戻表の行へ変換する（BOA-543）。
+ * status: paid=通常 / special=特払 / no_amount=組番のみ（払戻金が空欄）/ no_race=不成立（返還）。
+ * combination は「1-2-5」（079）。配列でなければ null（旧列へのフォールバック）
+ */
+function buildPayoutRows(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  const order = new Map(PAYOUT_BET_TYPES.map((b, i) => [b.betType, i]));
+  const known = rows.filter((row) => order.has(row?.betType));
+  // 知らない勝式しか無い（将来の追加等）ときは、空の払戻表を出さず旧列にフォールバックさせる
+  if (known.length === 0) return null;
+  return known
+    .map((row) => {
+      const meta = PAYOUT_BET_TYPES[order.get(row.betType)];
+      return {
+        betType: row.betType,
+        typeKey: meta.typeKey,
+        separator: meta.separator,
+        seq: Number(row.seq) || 1,
+        boats: row.combination
+          ? String(row.combination)
+              .split("-")
+              .map(Number)
+              .filter((n) => Number.isInteger(n))
+          : [],
+        amount: typeof row.payout === "number" ? row.payout : null,
+        status: row.payoutStatus ?? null,
+        popularity: row.popularity ?? null,
+      };
+    })
+    .sort(
+      (a, b) =>
+        order.get(a.betType) - order.get(b.betType) || a.seq - b.seq,
+    );
+}
+
 function buildRaceResult(r) {
   if (!r || !r.rank1) return null;
 
@@ -779,7 +818,15 @@ function buildRaceResult(r) {
   return {
     finished: true,
     isCancelled: r.isCancelled || false,
-    isNoRace: r.isNoRace || false,
+    // レースの成立状態と返還艇（078。109でRPCに追加）。判定は src/utils/raceOutcome.js を通す。
+    // 旧フラグ isNoRace（is_no_race）は全行 false で機能していないため持たない（BOA-543）。
+    // RPC未適用・078以前の行は null（＝未判定。今までどおり通常のレースとして扱う）
+    raceStatus: r.raceStatus ?? null,
+    refundBoats: Array.isArray(r.refundBoats) ? r.refundBoats : null,
+    remark: r.remark ?? null,
+    // 払戻明細（race_payouts、109でRPCに追加）。無ければ null で、結果タブは旧 payout_* 列の
+    // payouts にフォールバックする（RPC未適用・過去データ・直接クエリのフォールバック経路）
+    payoutRows: buildPayoutRows(r.payoutRows),
     rank1: r.rank1,
     rank2: r.rank2,
     rank3: r.rank3,
@@ -1476,7 +1523,9 @@ export const supabaseDataService = {
           race_time_5,
           race_time_6,
           is_cancelled,
-          is_no_race,
+          race_status,
+          refund_boats,
+          remark,
           payout_win,
           payout_place_1,
           payout_place_2,
@@ -1747,7 +1796,9 @@ export const supabaseDataService = {
                 raceTime5: result.race_time_5,
                 raceTime6: result.race_time_6,
                 isCancelled: result.is_cancelled,
-                isNoRace: result.is_no_race,
+                raceStatus: result.race_status,
+                refundBoats: result.refund_boats,
+                remark: result.remark,
                 winningTechnique: result.winning_technique,
                 payoutWin: result.payout_win,
                 payoutPlace1: result.payout_place_1,
@@ -2730,7 +2781,9 @@ export const supabaseDataService = {
       // 過去レース扱い（7日TTL）になった後も読まれ続けないようにする
       // v6: 当日のレースの行に sample_count（初下ろしの判定）を追加（BOA-513）
       // v7: 当日のレースの行に official_3rate（「集計前」の判定）を追加
-      `race-motor-breakdown-v7-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
+      // v8: 過去レースの行にも official_3rate を追加し、当日の機力指数を
+      //     「このレースの直前まで」にした（BOA-557）
+      `race-motor-breakdown-v8-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -2768,6 +2821,8 @@ export const supabaseDataService = {
               ...row,
               rate_source: "official",
               official_2rate: row.motor_2rate ?? null,
+              // 公式の2連率・3連率がどちらも 0 か（「集計前」の判定、BOA-557）
+              official_3rate: row.motor_3rate ?? null,
               pretest_time: pretest?.pretest_time ?? null,
               pretest_rank: pretest?.pretest_rank ?? null,
               power_index: null,
@@ -2783,8 +2838,15 @@ export const supabaseDataService = {
         const [powerIndexes, venueMotorStatsList, pretestByRacer] =
           await Promise.all([
             Promise.all(
+              // このレースの直前まで（BOA-557）。終了後に開いてもそのレース自身の
+              // 結果を含めず、翌日に開いたときと数字をそろえる
               rows.map((row) =>
-                this.getMotorPowerIndex(venueCode, row.motor_number, days),
+                this.getMotorPowerIndex(
+                  venueCode,
+                  row.motor_number,
+                  days,
+                  raceId,
+                ),
               ),
             ),
             Promise.all(
@@ -3302,9 +3364,10 @@ export const supabaseDataService = {
     return withCache(
       // asOfDate（YYYY-MM-DD）を渡すと、その日以前で最新のスナップショットで順位を
       // 出す（過去レースのドリルダウン、BOA-521）
+      // v2: 同じ値は同じ順位・tied を追加（BOA-529）
       asOfDate === null
-        ? `venue-motor-ranking-${venueCode}-${motorNumber}-${metric}`
-        : `venue-motor-ranking-asof-${venueCode}-${motorNumber}-${metric}-${asOfDate}`,
+        ? `venue-motor-ranking-v2-${venueCode}-${motorNumber}-${metric}`
+        : `venue-motor-ranking-v2-asof-${venueCode}-${motorNumber}-${metric}-${asOfDate}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -3348,21 +3411,25 @@ export const supabaseDataService = {
           // 事故率のみ低いほど良いため昇順、他は降順
           const ascending = metric === "accidentRate";
 
-          const ranked = data
-            .filter((row) => row[column] !== null && row[column] !== undefined)
-            .sort((a, b) =>
-              ascending ? a[column] - b[column] : b[column] - a[column],
-            );
-          const rankIndex = ranked.findIndex(
-            (row) => row.motor_number === motorNumber,
+          const valued = data.filter(
+            (row) => row[column] !== null && row[column] !== undefined,
           );
-          if (rankIndex === -1) return null;
+          const own = valued.find((row) => row.motor_number === motorNumber);
+          if (!own) return null;
+          // 同じ値は同じ順位（BOA-529）。並べ替えた位置を順位にすると、同値の中の
+          // 順位が DB の行順で決まっていた
+          const { rank, tied } = competitionRank(
+            valued.map((row) => Number(row[column])),
+            Number(own[column]),
+            { ascending },
+          );
 
           return {
-            rank: rankIndex + 1,
-            total: ranked.length,
+            rank,
+            tied,
+            total: valued.length,
             metric,
-            value: ranked[rankIndex][column],
+            value: own[column],
             scrapedDate: latestRow.scraped_date,
           };
         } catch (err) {
@@ -4192,7 +4259,8 @@ export const supabaseDataService = {
     // exhibitionTime を足した。同じ理由で版を上げる
     // v4: 展示は絶対値でなく同レース内の順位で見ることにしたので
     // exhibitionRank を足した（水面の影響を相殺するため）
-    return withCache(`racer-scoped-race-stats-v4-${racerId}`, async () => {
+    // v5: 欠場（absent）を足した（BOA-504）
+    return withCache(`racer-scoped-race-stats-v5-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4252,7 +4320,8 @@ export const supabaseDataService = {
         ),
         fetchAllByIn(
           "race_start_timings",
-          "race_id, boat_number, start_timing, is_flying",
+          // finish_mark: 欠場の走を「着外」でなく「欠場」と出すため（BOA-504）
+          "race_id, boat_number, start_timing, is_flying, finish_mark",
           "race_id",
           raceIds,
         ),
@@ -4382,6 +4451,12 @@ export const supabaseDataService = {
             payoutWin: result.payout_win ?? null,
             // フライングは異常値のため平均ST計算から除外する（RaceResult.jsx等と
             // 同じ扱い）。未計測・未取得レースはnullのまま
+            // 欠場（本番STの行の着順が「欠」）。履歴の表で「着外」と区別する（BOA-504）
+            // 本番STの行そのものが無い欠場もある（他の艇の行はあるのに自艇だけ無い。
+            // 2026-06-13 浜名湖5R・12Rの中岡正彦）。着順が付いた走は表示側が着順を
+            // 優先するので、ここで欠場扱いにしても「着順あり」の走は変わらない
+            absent:
+              isAbsentStartRow(st) || (!st && stRowsByRace.has(entry.race_id)),
             startTiming:
               st && !st.is_flying && st.start_timing != null
                 ? st.start_timing
@@ -6805,7 +6880,8 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v14-${raceId}`, async () => {
+    // v15: 本番STの「欠」の行を出走に数えない（BOA-504）
+    return withCache(`meet-scoreboard-v15-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -6942,7 +7018,8 @@ export const supabaseDataService = {
         // フライングは異常値なので呼び出し側で落とす
         supabase
           .from("race_start_timings")
-          .select("race_id, boat_number, start_timing, is_flying")
+          // finish_mark: 欠場の行（「欠」）を出走から外すため（BOA-504）
+          .select("race_id, boat_number, start_timing, is_flying, finish_mark")
           .gte("race_id", meetStart)
           .lt("race_id", raceId)
           .like("race_id", `__________-${vv}-__`)
@@ -7027,8 +7104,11 @@ export const supabaseDataService = {
       // STが1行も無いレースは**取得漏れ**の可能性があるため、全艇を出走扱いに
       // 倒す（欠場扱いにするとレースが丸ごと得点率から消えて、いま直そうと
       // している誤差より大きく狂う）
+      // 欠場の艇にも行がある（finish_mark が「欠」）ので、それは出走に数えない（BOA-504）
       const startedKeys = new Set(
-        (meetStarts ?? []).map((r) => `${r.race_id}|${r.boat_number}`),
+        (meetStarts ?? [])
+          .filter((r) => !isAbsentStartRow(r))
+          .map((r) => `${r.race_id}|${r.boat_number}`),
       );
       const racesWithSt = new Set((meetStarts ?? []).map((r) => r.race_id));
 
