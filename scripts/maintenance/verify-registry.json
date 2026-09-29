@@ -45,6 +45,11 @@
       "guards": "docs/design/{slug}/content-index.json の形式（フローA-2のトレーサビリティ索引）"
     },
     {
+      "script": "verify-css-class-collisions.js",
+      "tier": "ci",
+      "guards": "src/ の別々の CSS ファイルが同じクラス名をスコープせずに（同じ詳細度で）定義すること。Vite が全ページの CSS を1つに結合するため、バンドル順で他ページの見た目が壊れる（BOA-206・207・539。#961 はホームの会場グリッドが PC 幅で 8〜16 列になった）。既存の衝突は css-class-collisions-allowlist.json に載せ、新規の衝突と解消済みの許可リストの残骸で失敗する。#961 の修正前の CSS を検出できることを自己テストで毎回確かめる"
+    },
+    {
       "script": "verify-course-entry-tendency.js",
       "tier": "ci",
       "guards": "進入コース傾向の集計ロジック（scripts/lib/courseEntryTendency.js、BOA-284）"
