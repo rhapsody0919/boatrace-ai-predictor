@@ -374,7 +374,7 @@
     {
       "script": "verify-race-cancellation-usage.js",
       "tier": "ci",
-      "guards": "開催中止の判定が共通関数を通らず生の文字列比較で書かれること（BOA-418）"
+      "guards": "開催中止の判定が共通関数を通らず生の文字列比較で書かれること（BOA-418）と、画面の判定が結果のあるレースを中止扱いすること（BOA-525）"
     },
     {
       "script": "verify-i18n-consistency.js",
