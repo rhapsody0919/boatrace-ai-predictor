@@ -20,6 +20,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -62,6 +63,8 @@ if [ "$1 $2" = "pr checks" ]; then
   exit 0
 fi
 if [ "$1 $2 $3" = "pr view --json" ] && [ "$4" = "number" ]; then
+  # FAKE_GH_CURRENT_DIR があれば、そのディレクトリで起動されたときだけ現在のブランチのPRがある
+  [ -n "$FAKE_GH_CURRENT_DIR" ] && [ "$(pwd -P)" != "$FAKE_GH_CURRENT_DIR" ] && exit 1
   [ -n "$FAKE_GH_CURRENT" ] && { echo "$FAKE_GH_CURRENT"; exit 0; }
   exit 1
 fi
@@ -88,9 +91,9 @@ const writeRaw = (text) => writeFileSync(ledgerFile, text);
 const writeRules = (rules) => writeRaw(JSON.stringify({ rules }));
 
 /** フックとして起動する。deny なら理由、素通しなら null */
-function runGuard(command, env = {}) {
+function runGuard(command, env = {}, payload = {}) {
   const r = spawnSync(process.execPath, [GUARD], {
-    input: JSON.stringify({ tool_input: { command } }),
+    input: JSON.stringify({ ...payload, tool_input: { command } }),
     encoding: "utf8",
     env: {
       ...process.env,
@@ -99,6 +102,7 @@ function runGuard(command, env = {}) {
       FAKE_GH_STATES: "",
       FAKE_GH_FAIL: "",
       FAKE_GH_CURRENT: "",
+      FAKE_GH_CURRENT_DIR: "",
       FAKE_GH_BRANCHES: "",
       ...env,
     },
@@ -271,6 +275,36 @@ writeRules([{ pr: 918, after: [917] }]);
   check(
     "(e) 番号なしで現在のブランチのPRが引けなければ止める",
     isUnresolvedDeny(runGuard("gh pr merge --squash", open917)),
+  );
+  // worktree のセッションでは、現在のブランチはコマンドが走るディレクトリ（payload の cwd）のもの
+  // （/code-review の指摘で追加。フックの置き場所で引くと別のブランチのPRを見る）
+  check(
+    "(e) 番号なしは payload の cwd で現在のブランチのPRを引く",
+    runGuard(
+      "gh pr merge --squash",
+      {
+        ...open917,
+        FAKE_GH_CURRENT: "918",
+        FAKE_GH_CURRENT_DIR: realpathSync(work),
+      },
+      { cwd: work },
+    )?.includes("#917（OPEN）"),
+  );
+  check(
+    "(e) cd の後の番号なしは確定できないので止める",
+    isUnresolvedDeny(
+      runGuard("cd ../wt && gh pr merge --squash", {
+        ...open917,
+        FAKE_GH_CURRENT: "918",
+      }),
+    ),
+  );
+  check(
+    '(e) 空の引用符の値（-b ""）の後のリテラル番号で判定する',
+    runGuard('gh pr merge -b "" 918 --squash', {
+      ...open917,
+      FAKE_GH_CURRENT: "777",
+    })?.includes("#917（OPEN）"),
   );
 }
 // 台帳が空（または順序の制約が1つも無い）なら従来どおり素通し

@@ -31,7 +31,9 @@
  *    2026-09-29 にこれで素通しし、#918 が先行の #917 より先にマージされた。
  *    1つのコマンドに `gh pr merge` が複数あれば、全部を確定できたときだけ通し、全部を検査する。
  *
- * それ以外で判定できない場合（台帳に制約が無いときの番号不明、ghが応答しない等）は素通しする。
+ *    ブランチ名・位置引数なしを gh でPRに解決できない場合も、確定できないものとして同じく止める。
+ *
+ * それ以外で判定できない場合（台帳に制約が無いときの番号不明、検査中にghが応答しない等）は素通しする。
  * 止めるべきものを見逃す方が、止めるべきでないものを止めて作業を詰まらせるより軽いため。
  *
  * 検証: scripts/maintenance/verify-guard-pr-merge.js
@@ -78,8 +80,17 @@ const SHELL_EXPANSION = /[$`{}]/;
 const BRANCH_NAME = /^[\w./:-]+$/;
 /** 引数を標準入力などから補って別のコマンドを起動するコマンド。 */
 const ARG_FEEDERS = /(?:^|\s)(?:xargs|parallel)(?=\s|$)|\s-exec(?:dir)?(?=\s)/;
-/** gh pr merge より前にループの本体が始まっているか（`for ...; do gh pr merge`）。 */
-const LOOP = /\b(?:for|while|until)\b[\s\S]*\bdo\b/;
+/** 作業ディレクトリやブランチを変えるコマンド。この後の番号なしの merge は、フックからは対象が分からない。 */
+const CHANGES_CONTEXT = /\b(?:cd|pushd)\b|\bgit\s+(?:checkout|switch)\b/;
+
+/** gh pr merge より前でループの本体が閉じずに続いているか（`for ...; do gh pr merge`）。 */
+function insideLoop(before) {
+  const count = (re) => (before.match(re) ?? []).length;
+  return (
+    /\b(?:for|while|until)\b/.test(before) &&
+    count(/\bdo\b/g) > count(/\bdone\b/g)
+  );
+}
 
 /**
  * このスクリプトが置かれているリポジトリのルート。
@@ -120,14 +131,15 @@ const gitIn = (args, cwd) => run("git", args, cwd);
  * gh は位置引数の位置を問わないので `gh pr merge --merge 123` も有効。先頭だけ見ると
  * 番号を取り逃がし、カレントブランチの別のPRのチェック結果で判定してしまう。
  */
-function parseMergeArgs(args, inLoop) {
+function parseMergeArgs(args, currentUnknown) {
   // 引用符で囲まれた値は中に空白を含む（`-b "fix 42"`）。そのまま空白で割ると
   // 値の断片を位置引数と読んでしまうので、1トークンに潰してから割る。
   // ただし二重引用符の中の $ や ` は展開されるので、潰しても展開の印は残す（`"$PR"` を見逃さない）。
   const tokens = args
     .replace(/"([^"]*)"|'([^']*)'/g, (_, dq, sq) => {
       const value = dq ?? sq;
-      if (!/\s/.test(value)) return value;
+      // 空の値（-b ""）を消すと、次の番号が -b の値に読まれてしまう
+      if (value && !/\s/.test(value)) return value;
       return dq !== undefined && SHELL_EXPANSION.test(value)
         ? "$__quoted__"
         : "__quoted__";
@@ -151,8 +163,9 @@ function parseMergeArgs(args, inLoop) {
     if (BRANCH_NAME.test(token)) return { kind: "branch", name: token };
     return { kind: "unresolved" };
   }
-  // ループの本体の中の位置引数なしは、繰り返しごとに別のブランチで走りうる
-  return inLoop ? { kind: "unresolved" } : { kind: "current" };
+  // 位置引数なしは「現在のブランチのPR」だが、ループの本体の中や cd・git switch の後では、
+  // フックが見る現在のブランチと実際に merge が走るブランチが一致しない
+  return currentUnknown ? { kind: "unresolved" } : { kind: "current" };
 }
 
 /** コマンド中のすべての `gh pr merge` について、マージ対象を読む（形は parseMergeArgs）。 */
@@ -166,7 +179,10 @@ export function extractMergeTargets(command) {
     targets.push(
       ARG_FEEDERS.test(lead)
         ? { kind: "unresolved" }
-        : parseMergeArgs(m[1], LOOP.test(before)),
+        : parseMergeArgs(
+            m[1],
+            insideLoop(before) || CHANGES_CONTEXT.test(before),
+          ),
     );
   }
   return targets;
@@ -365,11 +381,15 @@ function checkWorktreeData(pr, command) {
 }
 
 /** マージ対象をPR番号（文字列）にする。確定できなければ null。 */
-function resolveTarget(target) {
+function resolveTarget(target, cwd) {
   if (target.kind === "number") return target.pr;
   if (target.kind === "unresolved") return null;
   const where = target.kind === "branch" ? [target.name] : [];
-  const n = gh(["pr", "view", ...where, "--json", "number", "-q", ".number"]);
+  const n = run(
+    "gh",
+    ["pr", "view", ...where, "--json", "number", "-q", ".number"],
+    cwd,
+  );
   return n && /^\d+$/.test(n) ? n : null;
 }
 
@@ -384,7 +404,14 @@ function main() {
   if (typeof command !== "string" || !/\bgh\s+pr\s+merge\b/.test(command))
     respond("allow");
 
-  const resolved = extractMergeTargets(command).map(resolveTarget);
+  // 「現在のブランチ」はコマンドが走るディレクトリ（worktree）のもの。フックの置き場所ではない
+  const cwd =
+    typeof payload.cwd === "string" && existsSync(payload.cwd)
+      ? payload.cwd
+      : repoRoot;
+  const resolved = extractMergeTargets(command).map((t) =>
+    resolveTarget(t, cwd),
+  );
   const ledger = loadLedger();
   const unresolved = judgeUnresolved(resolved, ledger);
   if (unresolved) respond(unresolved.decision, unresolved.reason);

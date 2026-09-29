@@ -139,6 +139,33 @@ check(
   [num("917"), num("918"), UNRESOLVED],
 );
 
+// /code-review の指摘で追加（PR #929）
+check(
+  "空の引用符の値を消さない（-b が番号を値として食わない）",
+  first('gh pr merge -b "" 918 --squash'),
+  num("918"),
+);
+check(
+  "終わったループの後の番号なしは現在のブランチ",
+  first("for f in a; do echo $f; done; gh pr merge --squash"),
+  CURRENT,
+);
+check(
+  "cd の後の番号なしは確定できない（フックの作業ディレクトリと違う）",
+  first("cd ../wt && gh pr merge --squash"),
+  UNRESOLVED,
+);
+check(
+  "ブランチを切り替えた後の番号なしは確定できない",
+  first("git switch fix/x && gh pr merge --squash"),
+  UNRESOLVED,
+);
+check(
+  "cd の後でもリテラル番号は確定できる",
+  first("cd ../wt && gh pr merge 918"),
+  num("918"),
+);
+
 // --- 番号を確定できなかったときの判定 ---
 const constrained = { rules: [{ pr: 918, after: [917] }] };
 check("順序の制約あり", hasOrderConstraints(constrained), true);
