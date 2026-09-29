@@ -24,8 +24,12 @@ const SOURCES = {
     supabaseDataService.getRaceStPredictabilityBreakdown(raceId),
   exhibitionTime: (raceId) =>
     supabaseDataService.getRaceExhibitionTimeBreakdown(raceId),
+  // サービス層は { state, rows } を返す（state は展示前の結果をキャッシュさせないための
+  // 区別、BOA-497）。画面は行だけを使うので、ここで配列に戻す
   motorMaintenance: (raceId) =>
-    supabaseDataService.getRaceMotorMaintenanceBreakdown(raceId),
+    supabaseDataService
+      .getRaceMotorMaintenanceBreakdown(raceId)
+      .then((result) => result.rows),
   techniqueProfile: (raceId) =>
     supabaseDataService.getRaceTechniqueProfileBreakdown(raceId),
   returnRate: (raceId) =>
