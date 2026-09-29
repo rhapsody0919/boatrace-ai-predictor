@@ -8,7 +8,7 @@
  * なぜ検査するか: 手で書いた台帳は必ず陳腐化する。取得側は台帳を3本持っていたのに、
  * orchestration.md 自身が「WS4bが『未着手』のままだが実際には21ジョブがliveで稼働していた。
  * この乖離自体が、オーケストレーションの記録として直すべき点」と書いている。
- * 共通ロジック索引（verify-lib-index.js）・ER図（ADR-0065）と同じくソースから生成する。
+ * 共通ロジック索引（verify-lib-index.js）・ER図（generate-er-diagram.js）と同じくソースから生成する。
  *
  * 生成物はPRに含めず、masterへのマージ後に regenerate-generated-docs.yml が
  * 作り直してコミットする（ADR-0078。PRに含めると並行するPRが同じファイルでコンフリクトする）。
