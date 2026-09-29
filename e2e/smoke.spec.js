@@ -1757,7 +1757,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
   });
 
-  test("走数が多い節でも、375pxで点の下の着順を1段・10pxで読める間隔に並べる（BOA-537 ファン評価2・3周目）", async ({
+  test("走数が多い節でも、375pxで点の下の着順を1段・10pxで並べ、日付の目盛りも重ならない（BOA-537・BOA-538）", async ({
     page,
   }) => {
     // 2026-09-28 津11R（最終日）: 各艇10〜11走。9/21・22 の中止レースは出走表にだけ残る
@@ -1785,8 +1785,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
             ? parseFloat(getComputedStyle(labels[0]).fontSize)
             : 0,
           minGap: Math.min(...gaps),
-          // 最初の着順が左端近くにある（中止レースの空きで右に寄らない）
-          firstOffset: labels[0].getBoundingClientRect().left - wrap.left,
+          // 最初の着順が左側3割の中にある（中止レースの空きで右に寄らない）。
+          // 日付の横軸（BOA-538）では、初日に走っていない選手は2日目の位置から始まる
+          firstOffsetRatio:
+            (labels[0].getBoundingClientRect().left - wrap.left) / wrap.width,
           // 全走を1段に並べる（2段に振り分けると段ごとに読んで順番を読み違える）
           lines: new Set(
             labels.map((x) => Math.round(x.getBoundingClientRect().top)),
@@ -1796,10 +1798,22 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
     for (const row of info) {
       expect(row.font).toBeGreaterThanOrEqual(10);
-      expect(row.minGap).toBeGreaterThanOrEqual(6);
-      expect(row.firstOffset).toBeLessThan(10);
+      // 日付の横軸（BOA-538）では1日2走が近づく。隣と3px以上あける設計
+      expect(row.minGap).toBeGreaterThanOrEqual(3);
+      expect(row.firstOffsetRatio).toBeLessThan(0.3);
       expect(row.lines).toBe(1);
     }
+    // 日付の目盛り（BOA-538）: 最初の日だけ「月/日」、ほかは日だけで、隣と重ならない
+    const days = await page.locator(".rmt-trend-day").evaluateAll((els) =>
+      els.map((e) => {
+        const r = e.getBoundingClientRect();
+        return { text: e.textContent, left: r.left, right: r.right };
+      }),
+    );
+    expect(days[0].text).toMatch(/^\d+\/\d+$/);
+    expect(days.slice(1).every((d) => /^\d+$/.test(d.text))).toBe(true);
+    for (let i = 1; i < days.length; i += 1)
+      expect(days[i].left).toBeGreaterThan(days[i - 1].right);
   });
 
   test("着順が付かない走は、推移・比較表・日別の表で同じ公式の記号になる（BOA-537 ファン評価）", async ({

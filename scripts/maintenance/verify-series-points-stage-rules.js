@@ -42,6 +42,11 @@ import {
   officialMarkOf,
 } from "../../src/components/race/seriesPoints.js";
 import { getRaceStageKey } from "../../src/constants/raceStageConfig.js";
+import {
+  dayCenter,
+  dayTickLabels,
+  layoutTrendByDate,
+} from "../../src/utils/trendDateLayout.js";
 import { fetchAllByRaceId } from "../lib/meetBoundaries.js";
 
 let failures = 0;
@@ -596,6 +601,67 @@ check(
     ),
     ["落", null],
   );
+  // 6艇の推移の横軸を日付にする配置（BOA-538）
+  {
+    const days = ["2026-09-20", "2026-09-21", "2026-09-22", "2026-09-23"];
+    const a = layoutTrendByDate(
+      [
+        { date: "2026-09-20" },
+        { date: "2026-09-21" },
+        { date: "2026-09-21" },
+        { date: "2026-09-23" },
+      ],
+      days,
+    );
+    check(
+      "日付の横軸: 日の位置に置き、1日2走は左右にずらし、走らない日をまたぐと線を切る",
+      [
+        Math.abs(a.xs[0] - dayCenter(0, 4)) < 1e-9,
+        a.xs[1] < dayCenter(1, 4) && a.xs[2] > dayCenter(1, 4),
+        Math.abs((a.xs[1] + a.xs[2]) / 2 - dayCenter(1, 4)) < 1e-9,
+        Math.abs(a.xs[3] - dayCenter(3, 4)) < 1e-9,
+        a.breakBefore,
+      ],
+      [true, true, true, true, [false, false, false, true]],
+    );
+    const one = layoutTrendByDate([{ date: "2026-09-20" }], ["2026-09-20"]);
+    check("日付の横軸: 節の日が1日だけなら中央", one.xs, [0.5]);
+    check(
+      "日付の目盛り: 最初の日と月が変わった日だけ「月/日」、ほかは日だけ",
+      dayTickLabels([
+        "2026-09-28",
+        "2026-09-29",
+        "2026-09-30",
+        "2026-10-01",
+        "2026-10-02",
+      ]),
+      ["9/28", "29", "30", "10/1", "2"],
+    );
+    // 端の日の2走も、ずらした両方が 0〜1 の中に収まる（端で潰れて重ならない）
+    const edge = layoutTrendByDate(
+      [
+        { date: "2026-09-20" },
+        { date: "2026-09-20" },
+        { date: "2026-09-25" },
+        { date: "2026-09-25" },
+      ],
+      [
+        "2026-09-20",
+        "2026-09-21",
+        "2026-09-22",
+        "2026-09-23",
+        "2026-09-24",
+        "2026-09-25",
+      ],
+    );
+    check(
+      "日付の横軸: 端の日の2走も同じ幅でずれ、0〜1に収まる",
+      edge.xs.every((v) => v >= 0 && v <= 1) &&
+        Math.abs(edge.xs[1] - edge.xs[0] - (edge.xs[3] - edge.xs[2])) < 1e-9 &&
+        edge.xs[1] - edge.xs[0] > 0.08,
+      true,
+    );
+  }
   check(
     "男女Ｗ優勝戦の節では別シリーズの全走欠場者を返さない",
     listAbsentOnlyRacers({ ...board, seriesRacerIds: [1001, 3003] }),

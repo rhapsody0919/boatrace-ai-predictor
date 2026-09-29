@@ -760,7 +760,7 @@
     "compareTrendSt": "ST",
     "compareTrendEx": "Trial",
     "compareTrendNote": "All six ran the same series on the same water, so they share one scale (the min-max across the six) and you can compare the heights of the lines across rows directly. The dashed line is the average of the six. Higher is faster; the large dot is the latest run.",
-    "compareTrendRange": "The horizontal axis is the order of runs (oldest on the left), not a date scale. These lines cover {{from}}–{{to}}, and the right end of each row is that racer's last run.",
+    "compareTrendRange": "The horizontal axis is the date ({{from}}–{{to}}). On days with two races the dots are shifted left and right, and the line breaks on days the racer did not race. The last dot in each row is the racer's previous race.",
     "compareTrendHint": "Tap a row to switch the details below to that racer",
     "compareTrendFinishNote": "The number under each dot is the finish in that race (F = flying start, Abs = absent; other marks follow the official notation).",
     "compareTrendEmpty": "Not enough runs yet to draw a trend",
