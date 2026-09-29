@@ -702,18 +702,6 @@ const VENUE_NAMES = {
  * が実際にこれを検知した）。
  * 失敗時は空マップを返し、バッジ側が値なしとして扱う。
  */
-/**
- * 本日のレース一覧（getRaces の直接クエリ経路）の result を、get_today_races（110）と同じ
- * {rank1} / null の形にする（BOA-542）。race_results は races と1対1のため、PostgREST の
- * 埋め込みはオブジェクトで返る。配列で返る版にも備えて先頭を読む。
- * @param {{rank1?: number|null}|Array<{rank1?: number|null}>|null|undefined} embedded
- * @returns {{rank1: number}|null}
- */
-function toTodayRaceResult(embedded) {
-  const row = Array.isArray(embedded) ? embedded[0] : embedded;
-  return row?.rank1 != null ? { rank1: row.rank1 } : null;
-}
-
 async function fetchVenueWinRateMap() {
   if (!supabase) return {};
   try {
@@ -730,6 +718,18 @@ async function fetchVenueWinRateMap() {
     );
     return {};
   }
+}
+
+/**
+ * 本日のレース一覧（getRaces の直接クエリ経路）の result を、get_today_races（110）と同じ
+ * {rank1} / null の形にする（BOA-542）。race_results は races と1対1のため、PostgREST の
+ * 埋め込みはオブジェクトで返る。配列で返る版にも備えて先頭を読む。
+ * @param {{rank1?: number|null}|Array<{rank1?: number|null}>|null|undefined} embedded
+ * @returns {{rank1: number}|null}
+ */
+function toTodayRaceResult(embedded) {
+  const row = Array.isArray(embedded) ? embedded[0] : embedded;
+  return row?.rank1 != null ? { rank1: row.rank1 } : null;
 }
 
 /**
@@ -813,8 +813,7 @@ function buildPayoutRows(rows) {
       };
     })
     .sort(
-      (a, b) =>
-        order.get(a.betType) - order.get(b.betType) || a.seq - b.seq,
+      (a, b) => order.get(a.betType) - order.get(b.betType) || a.seq - b.seq,
     );
 }
 
