@@ -415,6 +415,11 @@ function TrendPanel({ combo, trend, isRange, spanAll }) {
               </div>
             ))}
           </div>
+          {isRange && (
+            <p className="rol-trend-note" data-testid="odds-trend-range-note">
+              {t("oddsList.rangeTrendNote")}
+            </p>
+          )}
           {trend.some((p) => p.official) &&
             trend.some((p) => !p.official) && (
             <p className="rol-trend-note" data-testid="odds-trend-note">
@@ -454,8 +459,13 @@ function snapshotLabel(t, snapshot, deadline) {
   return t("oddsList.snapshotBefore", { time, n });
 }
 
-// ライブ取得の状態の1行（取得中・最新・失敗）。スナップショットだけのときは取得時刻の注記
-function LiveStatus({ entry, fallbackLabel, onRefresh }) {
+// 取得から何分たったら「最新」をやめて「○分前の値」と書くか（自動では取り直さないため、表示だけ言い換える。
+// BOA-532）
+const LIVE_STALE_MS = 3 * 60 * 1000;
+
+// ライブ取得の状態の1行（取得中・最新・失敗）。スナップショットだけのときは取得時刻の注記。
+// 取得から時間がたつと「最新」を「○分前の値」に、締切を過ぎたら「締切済み」に言い換える（BOA-532）
+function LiveStatus({ entry, fallbackLabel, onRefresh, nowMs, deadline }) {
   const { t } = useTranslation();
   if (!entry) {
     // DB のスナップショットは「取得した時点の公式表示」。公式のオッズ更新は数分遅れることがあり、
@@ -505,11 +515,29 @@ function LiveStatus({ entry, fallbackLabel, onRefresh }) {
     );
   }
   const { result } = entry;
+  const ageMs = nowMs - Date.parse(result.fetchedAt);
+  const afterDeadline =
+    !result.final && !!deadline && nowMs >= deadline.getTime();
+  const stale = !result.final && !afterDeadline && ageMs >= LIVE_STALE_MS;
+  const freshness = afterDeadline ? "after-deadline" : stale ? "stale" : "fresh";
   return (
-    <div className="rol-status is-live" data-testid="odds-live-status">
-      <span className="rol-live-dot" aria-hidden="true" />
+    <div
+      // 「○分前の値」「締切済み」は緑の「最新」の見た目（is-live）にしない
+      className={`rol-status${freshness === "fresh" ? " is-live" : ""}`}
+      data-testid="odds-live-status"
+      data-freshness={freshness}
+    >
+      {freshness === "fresh" && (
+        <span className="rol-live-dot" aria-hidden="true" />
+      )}
       <span className="rol-status-strong">
-        {result.final ? t("oddsList.liveFinal") : t("oddsList.liveLatest")}
+        {result.final
+          ? t("oddsList.liveFinal")
+          : afterDeadline
+            ? t("oddsList.liveAfterDeadline")
+            : stale
+              ? t("oddsList.liveStale", { n: Math.floor(ageMs / 60000) })
+              : t("oddsList.liveLatest")}
       </span>
       {/* 取得した時刻を主に出す。取得中の「いまは○:○○取得の値」から時刻が戻ったように見えないよう、
           公式の「オッズ更新時間」は補足にする（ファン評価2周目） */}
@@ -525,6 +553,11 @@ function LiveStatus({ entry, fallbackLabel, onRefresh }) {
       {entry.unchanged && (
         <span className="rol-status-sub" data-testid="odds-live-unchanged">
           {t("oddsList.liveUnchanged")}
+        </span>
+      )}
+      {afterDeadline && (
+        <span className="rol-status-sub">
+          {t("oddsList.liveAfterDeadlineNote")}
         </span>
       )}
       {!result.final && (
@@ -546,6 +579,13 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
   // タブを開いた時刻でライブ取得の対象かを決める（表示中に締切を過ぎても、開いた時点の判断を保つ）
   const [openedAtMs] = useState(() => Date.now());
   const liveEnabled = isLiveOddsTarget(raceId, raceStartTime, openedAtMs);
+  // 状態の1行の「最新」「○分前の値」「締切済み」を時間とともに言い換えるための現在時刻（30秒ごと）
+  const [nowMs, setNowMs] = useState(openedAtMs);
+  useEffect(() => {
+    if (!liveEnabled) return undefined;
+    const id = setInterval(() => setNowMs(Date.now()), 30 * 1000);
+    return () => clearInterval(id);
+  }, [liveEnabled]);
   // ライブ取得の結果（page → {status, result, requestId}）。result は直近の成功（取り直し中・失敗時も保持）。
   // 開いたときに取るページは、初期値から loading にしておく（効果の中で同期的に setState しないため）。
   // requestId は、取り直しが重なったときに最後の要求の結果だけを使うための番号
@@ -791,9 +831,13 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
   };
   const refreshLive = () => startLiveFetch(betType.page);
 
+  // 単勝・複勝の表はタップできない（推移なし）ため、「タップすると推移」の一文を出さない（BOA-532）
+  const subtitle = t(
+    betType.id === "winPlace" ? "oddsList.subtitleWinPlace" : "oddsList.subtitle",
+  );
   const header = (
     <>
-      <p className="rol-subtitle">{t("oddsList.subtitle")}</p>
+      <p className="rol-subtitle">{subtitle}</p>
       <p className="rol-disclaimer">⚠️ {t("oddsList.disclaimer")}</p>
     </>
   );
@@ -803,7 +847,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     if (snapshotsLoading) {
       return (
         <div className="race-odds-list-tab">
-          <p className="rol-subtitle">{t("oddsList.subtitle")}</p>
+          <p className="rol-subtitle">{subtitle}</p>
           <p className="rol-no-data">{t("oddsList.loading")}</p>
         </div>
       );
@@ -823,15 +867,18 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
       return (
         <div className="race-tabs-empty">
           <p>{t("oddsList.emptyTitle")}</p>
-          <p className="race-tabs-empty-body">{t("oddsList.emptyBody")}</p>
-          {/* 当日で締切90分より前: 公式には朝からオッズが出ているため、いつ出るかと公式への導線を示す
-              （ファン評価2周目） */}
-          {officialOddsUrl && (
+          {/* 当日で締切90分より前: 公式には朝からオッズが出ているため、いつ出るか（時刻）と公式への導線を示す
+              （ファン評価2周目）。「発走が近づくと…」の一般的な説明とは重複するため、こちらだけ出す（BOA-532） */}
+          {officialOddsUrl ? (
             <p
               className="race-tabs-empty-body"
               data-testid="odds-before-window"
             >
-              {t("oddsList.liveFromNote")}{" "}
+              {t("oddsList.liveFromTime", {
+                time: formatJstTime(
+                  new Date(deadline.getTime() - LIVE_WINDOW_MS).toISOString(),
+                ),
+              })}{" "}
               <a
                 href={officialOddsUrl}
                 target="_blank"
@@ -840,6 +887,8 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
                 {t("oddsList.officialOddsLink")}
               </a>
             </p>
+          ) : (
+            <p className="race-tabs-empty-body">{t("oddsList.emptyBody")}</p>
           )}
         </div>
       );
@@ -1129,12 +1178,25 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
         {betType.id !== "winPlace" && (
           <p className="rol-legend">💡 {t("oddsList.legend")}</p>
         )}
+        {refreshing && (
+          <p className="rol-legend" data-testid="odds-refreshing-note">
+            {t("oddsList.refreshingNote")}
+          </p>
+        )}
       </>
     );
   };
 
+  // 最新を取得中で、表はいったん前回の値（スナップショット・前回のライブ値）を出しているとき。値を薄くし、
+  // 取得後に変わる値だと分かるようにする（3連複・拡連複は切り替えてから8〜11秒かかる。BOA-532）
+  const refreshing =
+    !useFinal && liveEntry?.status === "loading" && !!latestMap;
+
   return (
-    <div className="race-odds-list-tab">
+    <div
+      className={`race-odds-list-tab${refreshing ? " is-refreshing" : ""}`}
+      aria-busy={refreshing}
+    >
       {header}
 
       <div className="rol-bet-type-tabs" role="tablist">
@@ -1162,6 +1224,8 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
             entry={liveEntry}
             fallbackLabel={fallbackLabel}
             onRefresh={refreshLive}
+            nowMs={nowMs}
+            deadline={deadline}
           />
         )
       )}

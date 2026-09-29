@@ -17,6 +17,8 @@ import { parseLiveOddsPage } from "../scripts/lib/liveOdds.js";
  */
 
 const RACE = "2026-09-28-03-08"; // 江戸川8R（締切 14:24）
+// 推移の時点ラベルは、語の途中で折れないよう文言に改行位置（ゼロ幅スペース）を入れている（BOA-532）
+const ZW = "\u200b";
 const BEFORE_DEADLINE = new Date("2026-09-28T13:55:00+09:00");
 const AFTER_DEADLINE = new Date("2026-09-28T14:40:00+09:00");
 
@@ -74,9 +76,12 @@ async function setup(
     snapshots = [SNAPSHOT_ROW],
     live,
     final = null,
+    // true: 時計を止めずに進められるようにする（page.clock.fastForward で「○分前の値」等を確かめる）
+    installClock = false,
   } = {},
 ) {
-  await page.clock.setFixedTime(now);
+  if (installClock) await page.clock.install({ time: now });
+  else await page.clock.setFixedTime(now);
   const calls = [];
   await page.route("**/rest/v1/race_odds**", (route) =>
     route.fulfill({ json: snapshots }),
@@ -214,7 +219,7 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     await page.getByRole("button", { name: /^1-2-3 / }).click();
     // ファン評価2周目: 最新の点もスナップショットと同じ「締切○分前」（13:55:10 取得、締切 14:24）
     await expect(page.locator(".rol-trend-item.is-live")).toContainText(
-      "最新（締切29分前）",
+      `最新${ZW}（締切${ZW}29分前）`,
     );
   });
 
@@ -292,7 +297,7 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     await setup(page, { now: AFTER_DEADLINE });
     await page.getByRole("button", { name: /^1-2-3 / }).click();
     await expect(page.locator(".rol-trend-label").first()).toHaveText(
-      "締切30分前",
+      `締切${ZW}30分前`,
     );
   });
 
@@ -463,6 +468,127 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     }
   });
 
+  // ---- BOA-532（ファン評価3周目の残り）----
+
+  test("状態の1行: 取得から3分たつと「○分前の値」、締切を過ぎると「締切済み」に言い換える（自動では取り直さない）", async ({
+    page,
+  }) => {
+    const { calls, status } = await setup(page, { installClock: true });
+    await expect(status).toHaveAttribute("data-freshness", "fresh");
+    await expect(status).toContainText("最新");
+    const fetched = calls.length;
+    // 13:55:10 取得 → 13:59 に進める（約4分後）
+    await page.clock.fastForward("04:00");
+    await expect(status).toHaveAttribute("data-freshness", "stale");
+    await expect(status.locator(".rol-status-strong")).toHaveText(
+      /^[34]分前の値$/,
+    );
+    await expect(status).not.toHaveClass(/is-live/);
+    await expect(status.getByRole("button", { name: "更新" })).toBeVisible();
+    // 締切（14:24）を過ぎる
+    await page.clock.fastForward("30:00");
+    await expect(status).toHaveAttribute("data-freshness", "after-deadline");
+    await expect(status.locator(".rol-status-strong")).toHaveText("締切済み");
+    await expect(status).toContainText("締切前に取得した値です");
+    expect(calls.length).toBe(fetched);
+  });
+
+  test("最新を取得中は、前回の値を薄く出し、その旨を注記する", async ({
+    page,
+  }) => {
+    let release;
+    const gate = new Promise((r) => (release = r));
+    const { status } = await setup(page, {
+      live: async (p) => {
+        if (p === "3t") await gate;
+        return liveBody(p);
+      },
+    });
+    const root = page.locator(".race-odds-list-tab");
+    await expect(root).toHaveClass(/is-refreshing/);
+    await expect(root).toHaveAttribute("aria-busy", "true");
+    await expect(page.getByTestId("odds-refreshing-note")).toBeVisible();
+    const opacity = await page
+      .locator(".rol-odds-value")
+      .first()
+      .evaluate((e) => getComputedStyle(e).opacity);
+    expect(Number(opacity)).toBeLessThan(1);
+    release();
+    await expect(status).toContainText("公式更新");
+    await expect(root).not.toHaveClass(/is-refreshing/);
+    await expect(page.getByTestId("odds-refreshing-note")).toHaveCount(0);
+  });
+
+  test("単勝・複勝は表をタップできないため、冒頭に「タップすると推移」を出さない", async ({
+    page,
+  }) => {
+    await setup(page, { now: AFTER_DEADLINE });
+    const subtitle = page.locator(".rol-subtitle");
+    await expect(subtitle).toContainText("タップすると推移");
+    await page.getByRole("tab", { name: "単勝・複勝" }).click();
+    await expect(subtitle).not.toContainText("タップ");
+  });
+
+  test("拡連複の推移: 線が下限の推移であることを書く", async ({ page }) => {
+    await setup(page, {
+      now: AFTER_DEADLINE,
+      snapshots: [{ ...SNAPSHOT_ROW, wide_all: PARSED.k.data.wideAll }],
+    });
+    await page.getByRole("tab", { name: "拡連複" }).click();
+    await page.getByRole("button", { name: /^1=2 / }).click();
+    await expect(page.getByTestId("odds-trend-range-note")).toContainText(
+      "下限の推移",
+    );
+    await page.getByRole("tab", { name: "3連単" }).click();
+    await page.getByRole("button", { name: /^1-2-3 / }).click();
+    await expect(page.getByTestId("odds-trend-range-note")).toHaveCount(0);
+  });
+
+  for (const width of [320, 375]) {
+    test(`${width}px: 推移の時点ラベルが「締切58分／前」のように語の途中で折れない`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 812 });
+      const rows = [60, 30, 15, 10, 5, 1].map((m, i) => ({
+        ...SNAPSHOT_ROW,
+        captured_at: new Date(
+          Date.parse("2026-09-28T05:24:00Z") - m * 60000 - i * 1000,
+        ).toISOString(),
+      }));
+      await setup(page, { now: AFTER_DEADLINE, snapshots: rows });
+      await page.getByRole("button", { name: /^1-2-3 / }).click();
+      await expect(page.locator(".rol-trend-label").first()).toBeVisible();
+      const broken = await page.$$eval(".rol-trend-label", (labels) =>
+        labels.flatMap((label) => {
+          const text = label.firstChild;
+          // 改行位置（ゼロ幅スペース）で区切った各かたまりが、それぞれ1行に収まっているか
+          const chunks = [];
+          let start = 0;
+          for (let i = 0; i <= text.length; i++) {
+            if (i === text.length || text.data[i] === "\u200b") {
+              chunks.push([start, i]);
+              start = i + 1;
+            }
+          }
+          return chunks
+            .filter(([a, b]) => b > a)
+            .filter(([a, b]) => {
+              const tops = new Set();
+              for (let i = a; i < b; i++) {
+                const r = document.createRange();
+                r.setStart(text, i);
+                r.setEnd(text, i + 1);
+                tops.add(Math.round(r.getBoundingClientRect().top));
+              }
+              return tops.size > 1;
+            })
+            .map(([a, b]) => text.data.slice(a, b));
+        }),
+      );
+      expect(broken).toEqual([]);
+    });
+  }
+
   // ---- ファン評価2周目の指摘の再現テスト ----
 
   test("拡連複（スナップショット）: キーの無い組があってもページが落ちず「票なし」", async ({
@@ -551,7 +677,11 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
       snapshots: [],
     });
     const note = page.getByTestId("odds-before-window");
-    await expect(note).toContainText("締切90分前から");
+    // 表示開始の時刻を時刻で示す（締切 14:24 の90分前）。「発走が近づくと…」の一般的な説明は重ねない（BOA-532）
+    await expect(note).toContainText("12:54（締切90分前）から");
+    await expect(page.locator(".race-tabs-empty")).not.toContainText(
+      "発走が近づくと",
+    );
     await expect(note.getByRole("link")).toHaveAttribute(
       "href",
       "https://www.boatrace.jp/owpc/pc/race/oddstf?rno=8&jcd=03&hd=20260928",
@@ -713,11 +843,11 @@ test.describe("締切時オッズ（公式、BOA-496）", () => {
       })
       .click();
     const labels = page.locator(".rol-trend-label");
-    await expect(labels).toHaveText(["締切30分前", "締切時（公式）"]);
+    await expect(labels).toHaveText([`締切${ZW}30分前`, `締切時${ZW}（公式）`]);
     await expect(page.locator(".rol-trend-item.is-official")).toContainText(
       FINAL_T3["1-2-3"].toFixed(1),
     );
-    await expect(page.locator(".rol-trend")).not.toContainText("締切直前");
+    await expect(page.locator(".rol-trend")).not.toContainText(`締切${ZW}直前`);
     await expect(page.locator(".rol-sparkline-official-line")).toHaveCount(1);
     // ファン評価1周目 P3: 点は長さ0の丸い線端（circle だと横に引き伸ばされて楕円になる）
     await expect(page.locator("line.rol-sparkline-official")).toHaveCount(1);

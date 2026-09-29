@@ -328,6 +328,9 @@
 .rol-trend-label {
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
+  /* 「締切58分／前」のように語の途中で折れないよう、文言に入れた改行位置（ゼロ幅スペース・空白）でだけ
+     折る（BOA-532）。それでも収まらない長さは、親の overflow-wrap: anywhere で折る */
+  word-break: keep-all;
 }
 
 .rol-no-data {
@@ -565,5 +568,21 @@
 
   .rol-odds {
     padding: 2px;
+  }
+}
+
+/* 最新を取得中のあいだ、前回の値を薄く出す（BOA-532） */
+.race-odds-list-tab.is-refreshing .rol-odds-value,
+.race-odds-list-tab.is-refreshing .rol-col-foot,
+.race-odds-list-tab.is-refreshing .rol-win-table td {
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .race-odds-list-tab.is-refreshing .rol-odds-value,
+  .race-odds-list-tab.is-refreshing .rol-col-foot,
+  .race-odds-list-tab.is-refreshing .rol-win-table td {
+    transition: none;
   }
 }
