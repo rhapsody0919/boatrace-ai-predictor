@@ -147,7 +147,7 @@ check(
 check(
   "一覧表: 過去/当日をキャッシュのキーに含める（v5〜）",
   breakdown.includes(
-    '`race-motor-breakdown-v7-${past ? "official" : "recalc"}-',
+    '`race-motor-breakdown-v8-${past ? "official" : "recalc"}-',
   ),
 );
 const pastBranch = breakdown.slice(
@@ -238,8 +238,9 @@ check(
     ),
 );
 check(
-  "画面: 過去レースのドリルダウンは「このレースの直前まで」と明示する（BOA-521）",
-  chart.includes("isPastSelectedRace && (") &&
+  // 当日のレースも「直前まで」で集計するので、注記も当日から出す（BOA-557）
+  "画面: ドリルダウンは（過去・当日とも）「このレースの直前まで」と明示する（BOA-521）",
+  chart.includes("{selectedRace && (") &&
     chart.includes("analysis.motor.drillAsOfRaceNote"),
 );
 {
@@ -304,8 +305,9 @@ check(
     ),
   );
   check(
-    "画面: 過去レースのドリルダウンで beforeRaceId を9つの取得すべてに渡す",
-    chart.includes("const beforeRaceId = isPast ? selectedRace : null;") &&
+    // 当日のレースも「このレースの直前まで」（BOA-557）
+    "画面: ドリルダウンで beforeRaceId（過去・当日とも表示中のレース）を9つの取得すべてに渡す",
+    chart.includes("const beforeRaceId = selectedRace ?? null;") &&
       (chart.match(/\bbeforeRaceId,\n/g) ?? []).length >= 7 &&
       (chart.match(/isPast \? raceDate : null/g) ?? []).length >= 2,
   );

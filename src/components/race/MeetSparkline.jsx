@@ -51,6 +51,9 @@ import "./MeetSparkline.css";
  *   （6艇を同じ尺で並べるとき）。省略すると自分の最小〜最大に伸びる
  * @param {boolean} [upIsBetter] 値が小さいほど上に描く（既定 true）
  * @param {number} [height] 高さ（px）
+ * @param {boolean} [allowSinglePoint] 値が1つでも描く（既定 false）。6艇を
+ *   並べる推移では、1走の選手の行が空白だと「取れていない」と読まれるので、
+ *   前走の点を1つだけ右端（他の行の前走と同じ横位置）に置く
  */
 function MeetSparkline({
   points,
@@ -60,6 +63,7 @@ function MeetSparkline({
   color = "var(--brand-accent-primary)",
   upIsBetter = true,
   height = 56,
+  allowSinglePoint = false,
 }) {
   // どの点に合わせているか。null は「どこにも合わせていない」
   const [activeIndex, setActiveIndex] = useState(null);
@@ -78,7 +82,7 @@ function MeetSparkline({
 
   const values = (points ?? []).map((p) => p.value);
   const numeric = values.filter((v) => typeof v === "number");
-  if (numeric.length < 2) return null;
+  if (numeric.length < (allowSinglePoint ? 1 : 2)) return null;
 
   const refNumeric = (referenceSeries ?? []).filter(
     (v) => typeof v === "number",
@@ -105,8 +109,9 @@ function MeetSparkline({
   const padX = 5;
   const innerH = height - padY * 2;
   const innerW = W - padX * 2;
+  // 1走だけのときは右端（他の行の「前走」と同じ横位置）に置く
   const x = (i) =>
-    values.length === 1 ? W / 2 : padX + (i / (values.length - 1)) * innerW;
+    values.length === 1 ? W - padX : padX + (i / (values.length - 1)) * innerW;
   const y = (v) => {
     const ratio = (v - min) / span;
     // upIsBetter: 小さい値（速い）を上に
