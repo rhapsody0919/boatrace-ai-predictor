@@ -51,10 +51,16 @@ import "./MeetSparkline.css";
  *   （6艇を同じ尺で並べるとき）。省略すると自分の最小〜最大に伸びる
  * @param {boolean} [upIsBetter] 値が小さいほど上に描く（既定 true）
  * @param {number} [height] 高さ（px）
+ * @param {Array<{text: string|number, win?: boolean, mark?: boolean}|null>} [pointLabels]
+ *   各点の下に出す短い文字（6艇の推移では着順）。`points` と同じ並び。
+ *   値（ST・展示）が無い走でも、その横位置に出す（欠場・フライングも並びに残す）
  * @param {boolean} [allowSinglePoint] 値が1つでも描く（既定 false）。6艇を
  *   並べる推移では、1走の選手の行が空白だと「取れていない」と読まれるので、
  *   前走の点を1つだけ右端（他の行の前走と同じ横位置）に置く
  */
+// 点の下の文字（着順）の帯の高さ（px）
+const LABEL_STRIP_HEIGHT = 13;
+
 function MeetSparkline({
   points,
   baseline = null,
@@ -64,6 +70,7 @@ function MeetSparkline({
   upIsBetter = true,
   height = 56,
   allowSinglePoint = false,
+  pointLabels = null,
 }) {
   // どの点に合わせているか。null は「どこにも合わせていない」
   const [activeIndex, setActiveIndex] = useState(null);
@@ -82,7 +89,25 @@ function MeetSparkline({
 
   const values = (points ?? []).map((p) => p.value);
   const numeric = values.filter((v) => typeof v === "number");
-  if (numeric.length < (allowSinglePoint ? 1 : 2)) return null;
+  const canDraw = numeric.length >= (allowSinglePoint ? 1 : 2);
+
+  // 箱の実際の幅（px）。点の下の着順の間隔を実寸で測り、詰まる行だけ字を小さくする
+  // （BOA-537 ファン評価2周目。走数で一律に字を小さくすると、PCでも小さくなった）
+  const [boxWidth, setBoxWidth] = useState(0);
+  const hasLabels = Boolean(pointLabels);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!canDraw || !hasLabels || !el) return undefined;
+    setBoxWidth(el.getBoundingClientRect().width);
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver((entries) => {
+      setBoxWidth(entries[0]?.contentRect.width ?? 0);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [canDraw, hasLabels]);
+
+  if (!canDraw) return null;
 
   const refNumeric = (referenceSeries ?? []).filter(
     (v) => typeof v === "number",
@@ -124,6 +149,20 @@ function MeetSparkline({
     .filter(Boolean);
   const path = drawn.map((d) => `${x(d.i).toFixed(2)},${y(d.v).toFixed(2)}`);
   const lastIndex = drawn.length - 1;
+  // 点の下の着順の間隔（px）
+  const labelGapPx =
+    values.length > 1 && boxWidth > 0
+      ? (boxWidth * (innerW / W)) / (values.length - 1)
+      : Infinity;
+  // 間隔が足りない行は、間引かずに字を小さくして全走を1段に並べる。2段に振り分けると
+  // 段ごとに左から読んで順番を読み違える（BOA-537 ファン評価3周目）。
+  // 全角1文字は字の大きさとほぼ同じ幅なので、間隔より3px小さくすれば隣と接しない。
+  // 7px を下限にする（それ以下は読めない）。375px（線の幅149px）では、12走までは10px、
+  // 13〜15走で小さくなり、16走以上は7pxのまま数字どうしが接しうる。1節は多くて12走前後
+  const labelFontPx =
+    pointLabels && labelGapPx < 13
+      ? Math.max(7, Math.floor((labelGapPx - 3) * 2) / 2)
+      : null;
 
   // 値のある点のうち、ポインタの横位置に最も近いものを選ぶ。
   // viewBox は `preserveAspectRatio="none"` で横に引き伸ばされるため、
@@ -169,7 +208,7 @@ function MeetSparkline({
     <div
       className="meet-sparkline-wrap"
       ref={wrapRef}
-      style={{ height }}
+      style={{ height: pointLabels ? height + LABEL_STRIP_HEIGHT : height }}
       onPointerMove={pickNearest}
       onPointerDown={pickNearest}
       onPointerLeave={() => setActiveIndex(null)}
@@ -242,6 +281,34 @@ function MeetSparkline({
           />
         )}
       </svg>
+      {pointLabels && (
+        // 点の下の文字は HTML で置く。SVG は横に引き伸ばす（preserveAspectRatio none）
+        // ので、SVG の text にすると文字が横に潰れる。横位置は点と同じ割合で合わせる
+        // 走数が多い（10走以上）と375pxで数字の間隔が10px前後まで詰まる。字を
+        // 小さくして、全角の記号（落・欠など）どうしが接しないようにする（BOA-537）
+        <div className="meet-sparkline-labels" aria-hidden="true">
+          {pointLabels.map((lab, i) =>
+            lab === null || lab === undefined ? null : (
+              <span
+                key={i}
+                className={[
+                  "meet-sparkline-label",
+                  lab.win ? "is-win" : "",
+                  lab.mark ? "is-mark" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                style={{
+                  left: `${((x(i) / W) * 100).toFixed(2)}%`,
+                  ...(labelFontPx ? { fontSize: `${labelFontPx}px` } : {}),
+                }}
+              >
+                {lab.text}
+              </span>
+            ),
+          )}
+        </div>
+      )}
       {activeLabel && (
         <span
           className={`meet-sparkline-tip x-${tipX} at-${tipSide}`}

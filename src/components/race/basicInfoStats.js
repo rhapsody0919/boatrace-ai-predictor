@@ -213,6 +213,8 @@ export function getRecentRaces(records, count = 5) {
     startTiming: r.startTiming ?? null,
     // 欠場の走（BOA-504）。着順が無いので、表示側が「着外」でなく「欠場」と出す
     absent: r.absent === true,
+    // 着順が付かない走の公式の記号（落・転・妨など、BOA-537）
+    finishMark: r.finishMark ?? null,
     // 4〜6着はBOA-238以降のみ保存されているため、rank4〜6が未バックフィルの
     // 過去レースではnullになる（"unknown"として表示側が「着外」等に読み替える）
     finishRank: finishPositionOf(r),

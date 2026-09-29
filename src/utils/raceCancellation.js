@@ -51,8 +51,9 @@ export function hasRaceResult(entity) {
  * （BOA-525。集計側の BOA-490 と同じ考え方）。
  *
  * `cancellationStatus` と、あれば `result` を持つものなら何でも受ける
- * （レース・予想・RPCの戻り）。`result` を持たない呼び出し元（今日のレース一覧 RPC 等）
- * では、従来どおり `cancellationStatus` だけで決まる。
+ * （レース・予想・RPCの戻り。今日のレース一覧 RPC get_today_races も 110 で result.rank1 を
+ * 返す。BOA-542）。`result` を持たない呼び出し元（110 未適用の get_today_races 等）では、
+ * 従来どおり `cancellationStatus` だけで決まる。
  * null / undefined は「中止ではない」に倒す（データ未取得を中止として扱わない）。
  *
  * @param {{cancellationStatus?: string|null, result?: {rank1?: number|null}|null}|null|undefined} entity

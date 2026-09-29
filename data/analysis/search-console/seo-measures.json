@@ -35,6 +35,13 @@
       "id": "ga4-pageview-dedup",
       "description": "GA4 page_view の誤帰属を修正（BOA-531）。これ以前の GA4 PV は比較に使わない",
       "ref": "PR#935"
+    },
+    {
+      "date": "2026-09-30",
+      "kind": "measure",
+      "id": "home-ai-intro",
+      "description": "トップに「龍神レーダーのボートレースAI予想」の説明・展開予測の実測的中率・/accuracy と /hit-races へのリンクを常時表示。ja の meta description を修正し「競艇」を追加（本番反映 06:55 JST ごろ）",
+      "ref": "PR#976"
     }
   ]
 }

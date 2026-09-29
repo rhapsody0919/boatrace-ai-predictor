@@ -226,6 +226,8 @@
       "wide": "Wide"
     },
     "popularity": "#{{rank}} favorite",
+    "popularityRange": "#{{from}}–{{to}} favorite",
+    "popularityFromFinalOddsNote": "※ Win and place favorites are calculated from the official final odds (place: by upper bound; ties shown as a range). Other bet types show the official favorites.",
     "fastestStartTag": "Fastest",
     "courseNote": "※Approach course is not shown yet (data accuracy under review).",
     "missingRanksNote": "* Finishing positions from 4th down have not been collected for this race, so some placings are not shown",
@@ -321,6 +323,15 @@
   "home": {
     "introBannerText": "Ryujin Radar - Visualize boat racing. When in doubt, trust the data. | 45+ data points analyzed, including turn predictions and the Upset Index. Learn more →",
     "introBannerClose": "Close",
+    "aiIntro": {
+      "title": "Ryujin Radar's AI Boat Race Predictions",
+      "lead": "Ryujin Radar is a data analysis site where AI predicts every race held at all 24 boat race venues in Japan, every day. It is completely free, with no sign-up required.",
+      "method": "From each racer's win rate, average start timing and results by course, motor performance, and wind and wave data, we publish a first-turn development forecast and an \"inside upset index\" that shows how likely boat 1 is to lose, for every race.",
+      "statLabel": "Measured hit rate of the development forecast:",
+      "statNote": "(last {{count}} races; the share of races where one of the forecast patterns matched the course of the actual winner)",
+      "accuracyLink": "See our track record (breakdown by venue, in Japanese) →",
+      "hitRacesLink": "See races where the forecast was correct (in Japanese) →"
+    },
     "freeAccessNoticeStrong": "100% Free, No Sign-up",
     "freeAccessNoticeRest": "— use every feature right now, no bank account or membership required",
     "todayRaces": "Today's Races",
@@ -564,9 +575,10 @@
     "periodHeader": "Period / condition",
     "nHeader": "Races",
     "allCoursesFold": "Show the record for all six courses",
-    "periodCaveat": "\"This term\" is not the official term division: it covers every race in our data (up to the past two years), so the population differs from the win rate on the official site."
+    "periodCaveat": "\"This term\" is not the official term division: it covers every race in our data (since Dec 2025, up to the past two years), so the population differs from the win rate on the official site."
   },
   "aiPredictionTab": {
+    "cancelled": "This race was cancelled, so there is no AI prediction.",
     "unavailableTitle": "No AI prediction data",
     "unavailableBody": "This race doesn't have the data needed for an AI prediction."
   },
@@ -692,7 +704,6 @@
     "snapshotAt": "fetched {{time}}",
     "snapshotBefore": "fetched {{time}} ({{n}} min before deadline)",
     "snapshotValues": "Showing values {{label}}",
-    "liveValueLabel": "from official update {{time}}",
     "liveLoadingWith": "Fetching latest odds… showing values {{label}} for now",
     "liveLoading": "Fetching latest odds… (takes about 10 seconds from the official site)",
     "liveFailed": "Could not fetch the latest odds. Showing values {{label}}",
@@ -708,15 +719,26 @@
     "winAllNoVotes": "No Win/Place bets have been placed yet (the official site shows 0.0). They start coming in as the deadline approaches",
     "allNoVotes": "No bets have been placed on this bet type yet (the official site shows 0.0). They start coming in as the deadline approaches",
     "snapshotLagNote": "These are the official values at the time of fetching. Official odds updates can lag by a few minutes, so they may differ from the final odds and payouts",
+    "finalPendingNote": "The official final odds will appear by about {{time}} (reload the page to see them)",
+    "emptyTitleAfterDeadline": "There are no recorded odds for this race",
+    "noBetTypeDataAfterDeadline": "There are no recorded odds for this bet type",
+    "finalUnavailableNote": "We could not fetch the official final odds for this race",
     "liveUnchanged": "No change (refreshing within 30 seconds returns the same values)",
-    "liveFromNote": "From 90 minutes before the deadline, this tab shows the latest official odds.",
     "officialOddsLink": "See odds on the official site",
     "finalDeadlineAt": "Deadline {{time}} JST",
     "finalSource": "From the official BOATRACE site",
     "finalTrendLabel": "At deadline (official)",
     "finalTrendNote": "\"N min before\" values are the official display at the time we fetched them (official updates lag by a few minutes)",
     "finalMissingForBetType": "We could not fetch the official final odds for this bet type, so values fetched before the deadline are shown",
-    "finalExactaMissing": "We could not fetch the official final exacta odds, so \"Ex.\" shows \"-\" (the Exacta tab has values fetched before the deadline)"
+    "finalExactaMissing": "We could not fetch the official final exacta odds, so \"Ex.\" shows \"-\" (the Exacta tab has values fetched before the deadline)",
+    "subtitleWinPlace": "Switch bet types to see odds for every combination",
+    "liveStale": "Values from {{n}} min ago",
+    "liveAfterDeadline": "Deadline passed",
+    "liveAfterDeadlineNote": "Fetched before the deadline. Tap Refresh to get the official odds after the deadline",
+    "liveAfterDeadlinePendingNote": "Fetched after the deadline, but the official site has not switched to the final odds yet. Wait a little and tap Refresh",
+    "liveFromTime": "From {{time}} (90 minutes before the deadline), this tab shows the latest official odds.",
+    "rangeTrendNote": "The line shows the lower bound (values are low-high)",
+    "refreshingNote": "Faded values are the previous values while the latest odds load"
   },
   "meetTab": {
     "note": "Who needs a result in this series, and how the boat you pick has been running",
@@ -764,9 +786,11 @@
     "compareTrendNote": "All six ran the same series on the same water, so they share one scale (the min-max across the six) and you can compare the heights of the lines across rows directly. The dashed line is the average of the six. Higher is faster; the large dot is the latest run.",
     "compareTrendRange": "The horizontal axis is the order of runs (oldest on the left), not a date scale. These lines cover {{from}}–{{to}}, and the right end of each row is that racer's last run.",
     "compareTrendHint": "Tap a row to switch the details below to that racer",
+    "compareTrendFinishNote": "The number under each dot is the finish in that race (F = flying start, Abs = absent; other marks follow the official notation).",
     "compareTrendEmpty": "Not enough runs yet to draw a trend",
     "prelimOverNoteDay": "The preliminaries ended on day {{day}} ({{date}}). The score rate is final and today's finish will not change it.",
     "trendLastHeader": "Last",
+    "trendFinishHeader": "Below dots: finish",
     "forecastTitle": "Score-rate outlook (how today's finish moves it)",
     "forecastRankHeader": "{{rank}}",
     "forecastNote": "A highlighted cell means that finish should reach the semi-final line ({{slots}}th = {{rate}}). \"Points needed\" is what it takes to reach that line.",
@@ -811,7 +835,7 @@
       "last1m": "Last month"
     },
     "periodSummary": "▸ Filter by period",
-    "periodCaveat": "* When combined with a grade filter, \"Current term\" is not the official term division: it covers every period we have data for (up to the past two years)",
+    "periodCaveat": "* When combined with a grade filter, \"Current term\" is not the official term division: it covers every period we have data for (since Dec 2025, up to the past two years)",
     "winRateSwitchCaveat": "* When a grade or period filter is applied, \"Win rate\" is not the official win-rate points but the actual share of 1st-place finishes (%) under those conditions",
     "sampleCount": "(n={{n}})",
     "noData": "(No data)",

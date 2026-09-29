@@ -4,9 +4,21 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
-  /* 広い画面で数字同士が離れて読みづらくならないよう、スマホ縦持ち相当の幅に留める */
+  /* 広い画面で数字同士が離れて読みづらくならないよう、スマホ縦持ち相当の幅に留める
+     （1024px以上では、表をブロックごとに複数列に並べて右側の余白を使う。下の @media） */
   max-width: 44rem;
 }
+
+/* 3連単の1着ブロックの並び（1024px以上で2列） */
+.rol-block-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-flow: row dense;
+  gap: var(--spacing-3);
+  align-items: start;
+}
+
+
 
 .rol-subtitle {
   margin: 0;
@@ -226,6 +238,7 @@
 .rol-two-col-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: row dense;
   gap: var(--spacing-2);
   align-items: start;
 }
@@ -318,8 +331,20 @@
   overflow-wrap: anywhere;
 }
 
+/* 値は折り返さない。拡連複の「1.4-2.7」がハイフンで「1.4-／2.7」と割れたり、隣の値とくっついて読めたり
+   しないよう、マスの幅に収まるまで文字を小さくする（--rol-trend-em は値のおおよその幅。TrendPanel が渡す。
+   ＋0.8em は両隣とのすき間。BOA-532 ファン評価2周目） */
+.rol-trend-item {
+  container-type: inline-size;
+}
+
 .rol-trend-value {
-  font-size: var(--font-size-sm);
+  --rol-trend-value-size: var(--font-size-sm);
+  font-size: min(
+    var(--rol-trend-value-size),
+    calc(100cqi / (var(--rol-trend-em, 4) + 0.8))
+  );
+  white-space: nowrap;
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
@@ -328,6 +353,9 @@
 .rol-trend-label {
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
+  /* 「締切58分／前」のように語の途中で折れないよう、文言に入れた改行位置（ゼロ幅スペース・空白）でだけ
+     折る（BOA-532）。それでも収まらない長さは、親の overflow-wrap: anywhere で折る */
+  word-break: keep-all;
 }
 
 .rol-no-data {
@@ -544,7 +572,7 @@
   }
 
   .rol-trend-value {
-    font-size: var(--font-size-xs);
+    --rol-trend-value-size: var(--font-size-xs);
   }
 
   .rol-boat-badge {
@@ -565,5 +593,48 @@
 
   .rol-odds {
     padding: 2px;
+  }
+}
+
+/* 最新を取得中のあいだ、前回の値を薄く出す（BOA-532） */
+.race-odds-list-tab.is-refreshing .rol-odds-value,
+.race-odds-list-tab.is-refreshing .rol-col-foot,
+.race-odds-list-tab.is-refreshing .rol-win-table td {
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .race-odds-list-tab.is-refreshing .rol-odds-value,
+  .race-odds-list-tab.is-refreshing .rol-col-foot,
+  .race-odds-list-tab.is-refreshing .rol-win-table td {
+    transition: none;
+  }
+}
+
+/* 1024px以上: 表（ブロック・組み合わせの並び）だけを全幅に広げ、ブロックを複数列に並べる。
+   1ブロックの幅は従来（44rem）と同程度以下に保ち、数字同士が離れないようにする。説明文・状態の1行・
+   単勝複勝の表は、読みやすさのため従来の幅のまま（BOA-530）。推移パネルは表と同じ全幅にする
+   （44remに留めると左に寄り、右の列の組番を選んだときに選んだマスから離れて左のブロックの推移に見える。
+   ファン評価1周目） */
+@media (min-width: 1024px) {
+  .race-odds-list-tab {
+    max-width: none;
+  }
+
+  .race-odds-list-tab > :not(.rol-block-grid, .rol-two-col-grid) {
+    max-width: 44rem;
+  }
+
+  .rol-block-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rol-two-col-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .rol-trio-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

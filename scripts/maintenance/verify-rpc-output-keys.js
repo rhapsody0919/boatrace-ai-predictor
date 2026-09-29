@@ -159,8 +159,13 @@ const MIGRATION_109_RESULT_KEYS = [
   "payoutRows",
 ];
 
-/** 台帳で 109 が「適用済み」か（行の3列目）。台帳が読めなければ適用済みとみなす（厳しい側に倒す） */
-function isMigration109Applied() {
+/**
+ * 台帳でそのマイグレーションが「適用済み」か（行の3列目）。台帳が読めなければ適用済みとみなす
+ * （厳しい側に倒す）。コードを先にマージしてよい設計のマイグレーション（109・110）で、適用待ちの
+ * 既知の欠落を失敗にしないために使う
+ * @param {number} number
+ */
+function isMigrationApplied(number) {
   try {
     const ledger = readFileSync(
       path.join(
@@ -169,7 +174,9 @@ function isMigration109Applied() {
       ),
       "utf8",
     );
-    const row = ledger.split("\n").find((line) => /^\|\s*109\s*\|/.test(line));
+    const row = ledger
+      .split("\n")
+      .find((line) => new RegExp(`^\\|\\s*${number}\\s*\\|`).test(line));
     if (!row) return true;
     const status = row.split("|")[3] ?? "";
     return status.includes("適用済み");
@@ -189,6 +196,10 @@ const TODAY_RACE_KEYS = [
   "raceStage",
   "cancellationStatus",
 ];
+
+// 110（BOA-542）: 着順つきの結果の有無（{rank1} / null）。109 と同じく、台帳で 110 が「適用済み」に
+// なるまでは欠落を WARN にとどめ、適用済みになった後は失敗にする
+const MIGRATION_110_TODAY_RACE_KEYS = ["result"];
 
 /**
  * 要素配列のうち、期待キーを持たない要素の件数をキーごとに数える。
@@ -284,7 +295,8 @@ async function main() {
   );
 
   let failed = false;
-  const migration109Applied = isMigration109Applied();
+  const migration109Applied = isMigrationApplied(109);
+  const migration110Applied = isMigrationApplied(110);
   // weather は「気象が非nullのレースが無い日」だと検査対象が空になる。他の入れ子（SKIP）と違い、
   // 070（observedAt）の検証そのものなので、黙って OK にせず、最後の出力で未検証を明示する
   let weatherUnverified = false;
@@ -339,7 +351,25 @@ async function main() {
   if (todayUnverified) {
     console.log("  [WARN] 本日のレースが0件のため未検証");
   } else {
-    failed = reportGroup("レース", todayRaces, TODAY_RACE_KEYS) || failed;
+    failed =
+      reportGroup(
+        "レース",
+        todayRaces,
+        migration110Applied
+          ? [...TODAY_RACE_KEYS, ...MIGRATION_110_TODAY_RACE_KEYS]
+          : TODAY_RACE_KEYS,
+      ) || failed;
+    if (!migration110Applied) {
+      const missing110 = findMissingKeys(
+        todayRaces,
+        MIGRATION_110_TODAY_RACE_KEYS,
+      );
+      console.log(
+        missing110.length === 0
+          ? "  [WARN] レース: 110 の result は出ているが、台帳（APPLIED.md）の110が「適用済み」になっていない。台帳を更新する"
+          : "  [WARN] レース: 110 は台帳で未適用のため、result の欠落は失敗にしない",
+      );
+    }
   }
 
   if (failed) {

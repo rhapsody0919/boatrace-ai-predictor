@@ -225,6 +225,8 @@
       "wide": "확연복"
     },
     "popularity": "인기 {{rank}}위",
+    "popularityRange": "인기 {{from}}~{{to}}위",
+    "popularityFromFinalOddsNote": "※ 단승·복승의 인기는 마감 시 오즈(공식)로 산출(복승은 상한이 낮은 순, 같은 오즈는 범위로 표시). 다른 권종은 공식 발표.",
     "fastestStartTag": "최속",
     "courseNote": "※진입 코스는 현재 표시하지 않습니다(데이터 정확도 확인 중입니다)",
     "missingRanksNote": "※이 레이스는 4착 이하의 착순 데이터가 수집되지 않아 일부 착순을 표시하지 않습니다",
@@ -317,6 +319,15 @@
   "home": {
     "introBannerText": "용신 레이더 - 경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요. | 전개 예측・인코스 붕괴 지수 등 45개 이상의 데이터를 분석. 자세히 보기 →",
     "introBannerClose": "닫기",
+    "aiIntro": {
+      "title": "용신 레이더의 경정 AI 예측",
+      "lead": "용신 레이더는 일본 전국 24개 경정장에서 열리는 모든 경주를 AI가 매일 예측하는 데이터 분석 사이트입니다. 완전 무료이며 회원가입이 필요 없습니다.",
+      "method": "선수의 승률, 평균 스타트 타이밍, 코스별 성적, 모터 성적, 바람과 파도 데이터를 바탕으로 경주마다 1마크 전개 예측과 1호정이 무너지기 쉬운지를 나타내는 '인 붕괴 지수'를 제공합니다.",
+      "statLabel": "전개 예측의 실측 적중률:",
+      "statNote": "(최근 {{count}}경주. 예측한 전개 패턴 중 하나가 실제 1착정의 코스와 일치한 비율)",
+      "accuracyLink": "성적(경정장별 내역, 일본어 페이지) 보기 →",
+      "hitRacesLink": "전개 예측이 적중한 경주 목록 보기(일본어 페이지) →"
+    },
     "freeAccessNoticeStrong": "완전 무료・가입 불필요",
     "freeAccessNoticeRest": "— 계좌 개설이나 회원 가입 없이 지금 바로 모든 기능을 이용하세요",
     "todayRaces": "오늘의 경주",
@@ -559,9 +570,10 @@
     "periodHeader": "기간·조건",
     "nHeader": "주수",
     "allCoursesFold": "전체 6개 코스 성적 보기",
-    "periodCaveat": "※'이번 기'는 공식 기 구분이 아니라 당사 데이터로 확인할 수 있는 전체 기간(최대 과거 2년)을 대상으로 합니다. 공식 사이트의 승률과는 모집단이 다릅니다."
+    "periodCaveat": "※'이번 기'는 공식 기 구분이 아니라 당사 데이터로 확인할 수 있는 전체 기간(2025년 12월 이후, 최대 과거 2년)을 대상으로 합니다. 공식 사이트의 승률과는 모집단이 다릅니다."
   },
   "aiPredictionTab": {
+    "cancelled": "이 경주는 중지되어 AI 예상이 없습니다",
     "unavailableTitle": "AI 예상 데이터가 없습니다",
     "unavailableBody": "이 경주는 AI 예상에 필요한 데이터가 아직 준비되지 않았습니다."
   },
@@ -687,7 +699,6 @@
     "snapshotAt": "{{time}} 수집",
     "snapshotBefore": "{{time}} 수집(마감 {{n}}분 전)",
     "snapshotValues": "{{label}} 값을 표시 중",
-    "liveValueLabel": "공식 갱신 {{time}}",
     "liveLoadingWith": "최신 오즈를 가져오는 중… 지금은 {{label}} 값",
     "liveLoading": "최신 오즈를 가져오는 중…(공식 사이트에서 10초 정도 걸립니다)",
     "liveFailed": "최신 오즈를 가져오지 못했습니다. {{label}} 값을 표시 중",
@@ -703,15 +714,26 @@
     "winAllNoVotes": "단승・복승 투표가 아직 없습니다(공식 표시는 0.0). 마감이 가까워지면 들어오기 시작합니다",
     "allNoVotes": "이 권종의 투표가 아직 없습니다(공식 표시는 0.0). 마감이 가까워지면 들어오기 시작합니다",
     "snapshotLagNote": "수집 시점의 공식 표시값입니다. 공식 오즈 갱신은 몇 분 늦을 수 있어 마감 시 오즈・확정 배당과 다를 수 있습니다",
+    "finalPendingNote": "마감 시 오즈(공식)는 {{time}}경까지 표시됩니다(페이지를 다시 열면 바뀝니다)",
+    "emptyTitleAfterDeadline": "이 레이스의 오즈 기록이 없습니다",
+    "noBetTypeDataAfterDeadline": "이 권종의 오즈 기록이 없습니다",
+    "finalUnavailableNote": "이 레이스는 마감 시 오즈(공식)를 수집하지 못했습니다",
     "liveUnchanged": "변화 없음(30초 이내에 다시 가져오면 같은 값입니다)",
-    "liveFromNote": "마감 90분 전부터 이 탭에서 공식 최신 오즈를 표시합니다.",
     "officialOddsLink": "공식 사이트에서 오즈 보기",
     "finalDeadlineAt": "{{time}} 마감(JST)",
     "finalSource": "BOATRACE 공식 사이트에서 수집",
     "finalTrendLabel": "마감 시(공식)",
     "finalTrendNote": "「마감 ○분 전」 값은 그 시점에 수집한 공식 표시값입니다(공식 갱신은 몇 분 늦습니다)",
     "finalMissingForBetType": "이 승식은 마감 시 오즈(공식)를 수집하지 못해 마감 전에 수집한 값을 표시합니다",
-    "finalExactaMissing": "2연단 마감 시 오즈(공식)를 수집하지 못해 「2연단」은 「-」로 표시됩니다(2연단 탭에 마감 전에 수집한 값이 있습니다)"
+    "finalExactaMissing": "2연단 마감 시 오즈(공식)를 수집하지 못해 「2연단」은 「-」로 표시됩니다(2연단 탭에 마감 전에 수집한 값이 있습니다)",
+    "subtitleWinPlace": "권종을 전환하여 모든 조합의 오즈를 확인할 수 있습니다",
+    "liveStale": "{{n}}분 전의 값",
+    "liveAfterDeadline": "마감됨",
+    "liveAfterDeadlineNote": "마감 전에 수집한 값입니다. \"갱신\"을 누르면 마감 후 공식 오즈를 가져옵니다",
+    "liveAfterDeadlinePendingNote": "마감 후에 수집했지만 공식 사이트가 아직 마감 시 오즈로 바뀌지 않았습니다. 잠시 후 \"갱신\"을 눌러 주세요",
+    "liveFromTime": "{{time}}(마감 90분 전)부터 이 탭에서 공식 최신 오즈를 표시합니다.",
+    "rangeTrendNote": "선은 하한의 추이입니다(값은 하한-상한)",
+    "refreshingNote": "흐린 값은 최신 오즈를 가져오는 동안의 이전 값입니다"
   },
   "meetTab": {
     "note": "이번 시리즈 6정의 승부처와, 선택한 정의 주행을 봅니다",
@@ -759,9 +781,11 @@
     "compareTrendNote": "같은 시리즈·같은 수면을 달린 6정을 같은 잣대(6정의 최소~최대)로 늘어놓았습니다. 행을 넘어 선의 높이를 그대로 비교할 수 있습니다. 점선은 6정의 평균. 위일수록 빠르고, 큰 점이 직전 주행입니다.",
     "compareTrendRange": "가로축은 출주 순서(왼쪽이 오래된 것)이며 날짜 눈금이 아닙니다. 여기 나오는 것은 {{from}}〜{{to}}의 출주이고, 각 행의 오른쪽 끝이 그 선수의 직전 출주입니다.",
     "compareTrendHint": "행을 탭하면 아래 상세가 그 선수로 바뀝니다",
+    "compareTrendFinishNote": "점 아래 숫자는 그 경주의 착순입니다(F=플라잉, 결=결장, 전·락·방 등은 공식 표기).",
     "compareTrendEmpty": "추이를 그릴 주행이 아직 없습니다",
     "prelimOverNoteDay": "예선은 {{day}}일째({{date}})에 끝났습니다. 득점률은 여기서 확정되어 오늘 착순으로는 바뀌지 않습니다.",
     "trendLastHeader": "직전",
+    "trendFinishHeader": "점 아래=착순",
     "forecastTitle": "득점률 조견(오늘 착순에 따른 변화)",
     "forecastRankHeader": "{{rank}}착",
     "forecastNote": "색이 들어간 칸은 그 착순이면 준우승전 기준({{slots}}위＝{{rate}})에 닿을 전망이라는 뜻입니다. 필요 득점은 기준에 닿는 데 드는 점수입니다.",
@@ -806,7 +830,7 @@
       "last1m": "최근 1개월"
     },
     "periodSummary": "▸ 기간으로 좁히기",
-    "periodCaveat": "※등급 조건과 조합한 「이번 기」는 공식 기 구분이 아니라, 당사 데이터로 확인할 수 있는 전체 기간(최근 2년)을 대상으로 합니다",
+    "periodCaveat": "※등급 조건과 조합한 「이번 기」는 공식 기 구분이 아니라, 당사 데이터로 확인할 수 있는 전체 기간(2025년 12월 이후, 최대 과거 2년)을 대상으로 합니다",
     "winRateSwitchCaveat": "※등급・기간을 좁힌 「승률」은 공식 승률 점수가 아니라, 해당 조건에서 실제로 1착이 된 비율(%)을 표시합니다",
     "sampleCount": "(n={{n}})",
     "noData": "(데이터 없음)",

@@ -197,9 +197,18 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   // 縦の物差しを共通にして初めて比較になる
   const meetRunsByRacer = board?.meetRunsByRacer ?? {};
   const trendKey = trendMetric === "st" ? "st" : "exhibition";
+  // 中身の無い走（ST・展示・着順のどれも無い）は外す。中止になった日のレースは
+  // 出走表にだけ残り、点の無い空きの位置を取って線を片側に寄せていた
+  // （津 2026-09-21・22 は中止。2026-09-28 の最終日で、飯山泰の線が右7割に詰まった。
+  // BOA-537 ファン評価2周目）
   const trendRows = sortedPlayers.map((p) => ({
     player: p,
-    runs: meetRunsByRacer[p.racerId] ?? [],
+    runs: (meetRunsByRacer[p.racerId] ?? []).filter(
+      (x) =>
+        x.st !== null ||
+        x.exhibition !== null ||
+        (x.finish !== null && x.finish !== undefined),
+    ),
   }));
   // **このグラフが何を描いているか**。6行の折れ線には日付の手がかりが何も無く、
   // 「いつからいつまでの話か」が読めない（2026-09-29のファン評価）。
@@ -284,7 +293,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
         row.finishRank == null
           ? row.absent
             ? t("basicInfo.finishAbsent")
-            : t("basicInfo.finishUnknown")
+            : (row.finishMark ?? t("basicInfo.finishUnknown"))
           : t("meetTab.sparkTipFinish", { finish: row.finishRank }),
     });
   };
@@ -738,7 +747,11 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
           {/* 右端の数値が何か分からない、という指摘（2026-09-27）。列見出しを出す */}
           <div className="rmt-trend-head">
             <span />
-            <span />
+            {/* 点の下の数字が着順だと行の中で分かるように。日別の表の「0.17(4)」の
+                括弧（ST順位）と取り違えられた（BOA-537 ファン評価） */}
+            <span className="rmt-trend-head-sub">
+              {t("meetTab.trendFinishHeader")}
+            </span>
             <span className="rmt-trend-last">
               {t("meetTab.trendLastHeader")}
             </span>
@@ -784,6 +797,16 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                       height={34}
                       // 1走の選手も前走の点を出す（空白だと取れていないと読まれる）
                       allowSinglePoint
+                      // 各走の着順を点の下に出す（BOA-537。ファン4人のパネル）
+                      pointLabels={runs.map((r) =>
+                        r.finish === null || r.finish === undefined
+                          ? null
+                          : {
+                              text: r.finish,
+                              win: r.finish === 1,
+                              mark: typeof r.finish === "string",
+                            },
+                      )}
                     />
                     <span className="rmt-trend-last">
                       {typeof last === "number" ? last.toFixed(2) : "—"}
@@ -802,6 +825,9 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
             </p>
           )}
           <p className="rmt-hint">{t("meetTab.compareTrendHint")}</p>
+          <p className="rmt-spark-note">
+            {t("meetTab.compareTrendFinishNote")}
+          </p>
           <p className="rmt-spark-note">{t("meetTab.compareTrendNote")}</p>
         </div>
       )}
