@@ -357,60 +357,70 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
   });
 
   // BOA-552: 合成が100倍超（3桁）の列だけ値が次の行に落ち、同じブロックの「2単」が列ごとに段違いになっていた。
-  // 既存の上のテストは1号艇ブロック（小さい値）しか通らず検知できなかったため、全列を大きな値にして見る
-  for (const [label, odds] of [
-    ["3桁", 999.9],
-    ["4桁", 4000.0], // 合成＝1000.0（3着4艇の調和平均）
+  // 既存の上のテストは1号艇ブロック（小さい値）しか通らず検知できなかったため、全列を大きな値にして見る。
+  // 4桁（合成1000.0）・5桁（2単12345.6）は、360px（Androidで多い幅）・320pxで見出しとくっつく／隣の列へ
+  // はみ出す指摘があった（ファン評価1周目）
+  for (const [label, trifectaOdds, exactaOdds] of [
+    ["3桁", 999.9, 963.7], // 合成＝250.0（3着4艇の調和平均）
+    ["4〜5桁", 4000.0, 12345.6], // 合成＝1000.0
   ]) {
-    test(`375px: 合成・2単が${label}でも、見出しと値が1行で、列ごとに段違いにならない`, async ({
-      page,
-    }) => {
-      await page.setViewportSize({ width: 375, height: 812 });
-      const trifecta = Object.fromEntries(
-        Object.keys(SNAPSHOT_ROW.trifecta_all).map((k) => [k, odds]),
-      );
-      const exacta = Object.fromEntries(
-        Object.keys(PARSED["2tf"].data.exactaAll).map((k) => [k, 963.7]),
-      );
-      await setup(page, {
-        now: AFTER_DEADLINE,
-        snapshots: [
-          { ...SNAPSHOT_ROW, trifecta_all: trifecta, exacta_all: exacta },
-        ],
-      });
-      await expect(page.locator(".rol-col-foot").first()).toBeVisible();
-      const problems = await page.$$eval(".rol-block", (blocks) =>
-        blocks.flatMap((block, bi) => {
-          const feet = [...block.querySelectorAll(".rol-col")].map((col) =>
-            [...col.querySelectorAll(".rol-col-foot")].map((f) => {
-              const [head, value] = f.querySelectorAll("span");
-              return {
-                text: f.textContent,
-                sameLine:
-                  head.getBoundingClientRect().top ===
-                  value.getBoundingClientRect().top,
-                overflow: f.scrollWidth > f.clientWidth,
-                top: Math.round(f.getBoundingClientRect().top),
-              };
-            }),
-          );
-          const out = [];
-          for (const col of feet) {
-            for (const f of col) {
-              if (!f.sameLine) out.push(`block${bi} 2行: ${f.text}`);
-              if (f.overflow) out.push(`block${bi} はみ出し: ${f.text}`);
+    for (const width of [375, 360, 320]) {
+      test(`${width}px: 合成・2単が${label}でも、見出しと値が離れて1行に収まり、列ごとに段違いにならない`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: 812 });
+        const trifecta = Object.fromEntries(
+          Object.keys(SNAPSHOT_ROW.trifecta_all).map((k) => [k, trifectaOdds]),
+        );
+        const exacta = Object.fromEntries(
+          Object.keys(PARSED["2tf"].data.exactaAll).map((k) => [
+            k,
+            exactaOdds,
+          ]),
+        );
+        await setup(page, {
+          now: AFTER_DEADLINE,
+          snapshots: [
+            { ...SNAPSHOT_ROW, trifecta_all: trifecta, exacta_all: exacta },
+          ],
+        });
+        await expect(page.locator(".rol-col-foot").first()).toBeVisible();
+        const problems = await page.$$eval(".rol-block", (blocks) =>
+          blocks.flatMap((block, bi) => {
+            const feet = [...block.querySelectorAll(".rol-col")].map((col) =>
+              [...col.querySelectorAll(".rol-col-foot")].map((f) => {
+                const [head, value] = f.querySelectorAll("span");
+                const h = head.getBoundingClientRect();
+                const v = value.getBoundingClientRect();
+                const box = f.getBoundingClientRect();
+                return {
+                  text: f.textContent,
+                  sameLine: h.top === v.top,
+                  apart: v.left - h.right >= 1,
+                  inside: h.left >= box.left - 0.5 && v.right <= box.right + 0.5,
+                  top: Math.round(box.top),
+                };
+              }),
+            );
+            const out = [];
+            for (const col of feet) {
+              for (const f of col) {
+                if (!f.sameLine) out.push(`block${bi} 2行: ${f.text}`);
+                if (!f.apart) out.push(`block${bi} くっつき: ${f.text}`);
+                if (!f.inside) out.push(`block${bi} はみ出し: ${f.text}`);
+              }
             }
-          }
-          // 「合成」の行、「2単」の行がそれぞれブロック内で同じ高さ
-          for (const row of [0, 1]) {
-            const tops = new Set(feet.map((col) => col[row]?.top));
-            if (tops.size > 1) out.push(`block${bi} 行${row} 段違い`);
-          }
-          return out;
-        }),
-      );
-      expect(problems).toEqual([]);
-    });
+            // 「合成」の行、「2単」の行がそれぞれブロック内で同じ高さ
+            for (const row of [0, 1]) {
+              const tops = new Set(feet.map((col) => col[row]?.top));
+              if (tops.size > 1) out.push(`block${bi} 行${row} 段違い`);
+            }
+            return out;
+          }),
+        );
+        expect(problems).toEqual([]);
+      });
+    }
   }
 
   test("3連複・2連複・拡連複: 推移の見出しとボタン名は「1=2=3」、3連単は「1-2-3」（BOA-552）", async ({
