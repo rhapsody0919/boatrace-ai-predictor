@@ -22,10 +22,27 @@ import OutcomePatternPreview from "./OutcomePatternPreview";
 import { getVolatilityLevel } from "../../utils/volatilityLevel";
 import { isJudgeable } from "../../utils/raceOutcome";
 
-function RaceAiPredictionTab({ prediction, venueCode, venueName, raceId }) {
+function RaceAiPredictionTab({
+  prediction,
+  venueCode,
+  venueName,
+  raceId,
+  isCancelled = false,
+}) {
   const { t } = useTranslation();
   const result = prediction?.result;
   const finished = Boolean(result?.finished);
+
+  // 中止確定のレースは開催されないので、展開予測・イン崩れ指数を出さない（BOA-424）。
+  // predictions は中止前に作られて残っていることがある（BOA-411）ため、データの有無では判定しない。
+  // タブ自体は残し、他タブの空状態と同じ形で案内する
+  if (isCancelled) {
+    return (
+      <div className="race-tabs-empty" data-testid="ai-prediction-cancelled">
+        <p>{t("aiPredictionTab.cancelled")}</p>
+      </div>
+    );
+  }
 
   const turnPatterns = prediction?.turnPrediction?.patterns;
   const hasTurnPrediction =

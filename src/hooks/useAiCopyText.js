@@ -17,6 +17,7 @@ import {
   AI_COPY_PROMPT_TYPES,
   getAiCopyPromptText,
 } from "../utils/aiCopyPrompts";
+import { isRaceCancelled } from "../utils/raceCancellation";
 
 const DASH = "—";
 
@@ -338,6 +339,12 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
 
   // analysisは複数クエリの並列取得（30分TTLキャッシュ）で、DataRaceTableと
   // 同じソースを共有する。読み込み未完了のままコピーすると本来値が有る行まで
-  // 「—」として出力されうるため、読み込み完了までボタン自体を出さない
-  return { buildText, isReady: players.length > 0 && !analysis.loading };
+  // 「—」として出力されうるため、読み込み完了までボタン自体を出さない。
+  // 中止確定のレースは分析する対象が無いので出さない（BOA-424。呼び出し側の
+  // PredictionPanel でも隠しているが、別の画面から使われたときの保険）
+  return {
+    buildText,
+    isReady:
+      players.length > 0 && !analysis.loading && !isRaceCancelled(prediction),
+  };
 }

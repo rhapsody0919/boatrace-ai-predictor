@@ -23,9 +23,9 @@ function flattenRaces(venuesData) {
       // 開催中止・打ち切り確定のレースは注目レースとして提示しない
       // （BOA-411調査中に発見。isCancelledの判定基準はPredictionPanel.jsx/
       // RaceCard.jsxと同じくconfirmedのみ。tentativeは暫定検知でまだ確定していないため対象外）。
-      // 本日のレース（get_today_races）は結果を持たないため、「結果があれば中止扱い
-      // しない」（BOA-525）はここでは効かない。誤った確定は発走90分後以降にしか
-      // 付かないため、影響は終わったレースが注目レースの一覧から1本漏れるだけ
+      // 結果（result.rank1）があれば confirmed が残っていても中止扱いしない（BOA-525）。
+      // result は get_today_races（110）と直接クエリの代替経路の両方が返す（BOA-542）。
+      // 110 が未適用の間は result が届かず、従来どおり confirmed だけで決まる
       if (isRaceCancelled(race)) continue;
       // isFallbackは会場内サンプル数不足によるプレースホルダ値（0.5）のため、
       // 「注意度が高い/低い」の根拠として提示すると誤解を招く。除外する
