@@ -367,6 +367,8 @@ function PayoutRow({
   separator,
   amount,
   popularity,
+  popularityTo = null,
+  popularityMarked = false,
   isBest,
   note = null,
   isVoid = false,
@@ -390,7 +392,16 @@ function PayoutRow({
         )}
       </span>
       <span className="rr-pop">
-        {popularity ? t("result.popularity", { rank: popularity }) : ""}
+        {popularity
+          ? popularityTo
+            ? t("result.popularityRange", { from: popularity, to: popularityTo })
+            : t("result.popularity", { rank: popularity })
+          : ""}
+        {popularity && popularityMarked && (
+          <span className="rr-pop-mark" aria-hidden="true">
+            ※
+          </span>
+        )}
       </span>
       <span className="rr-amount num">
         {typeof amount === "number" ? `¥${amount.toLocaleString()}` : ""}
@@ -418,6 +429,8 @@ function PayoutRowsTable({ rows, t }) {
             separator={row.separator}
             amount={isNoRaceRow ? null : row.amount}
             popularity={isNoRaceRow ? null : row.popularity}
+            popularityTo={isNoRaceRow ? null : (row.popularityTo ?? null)}
+            popularityMarked={!isNoRaceRow && !!row.popularityFromFinalOdds}
             isBest={
               isPayoutAmountCountable(row) &&
               maxAmount != null &&
@@ -437,6 +450,64 @@ function PayoutRowsTable({ rows, t }) {
       })}
     </div>
   );
+}
+
+// 単勝・複勝の人気（BOA-534）。公式の払戻（race_payouts）は3連単〜拡連複にだけ人気が付き、単勝・複勝には
+// 付かない（公式の結果ページにも出ない）。そこで締切時オッズ（race_odds_final、BOA-496）から順位を出す。
+// - 単勝: オッズの小さい順（2連単・3連単で、締切時オッズの小さい順が公式の人気と40/40件一致）
+// - 複勝: 上限の小さい順、同じ上限なら下限の小さい順。公式は複勝の人気を出さないため、同じ幅のあるオッズの
+//   拡連複で公式の人気と比べた（9/29 の40レース・120件）: 上限→下限 114件一致、下限→上限 100件一致。
+//   上限は「相手が最も票の少ない艇」のときの値で、自分の票数に対して単調になりやすい
+// - 公式は丸める前の票数で順位を付けるため、同じオッズの艇どうしの順位はオッズからは決まらない。
+//   同じオッズの艇がいるときは「4〜5人気」のように幅で返す（{ from, to }）。票なし（0.0）・欠場（キーなし）は
+//   順位を付けない
+function popularityFromFinalOdds(map, boat, isRange) {
+  const valid = (v) =>
+    v != null && (isRange ? v.low > 0 : typeof v === "number" && v > 0);
+  const mine = map?.[String(boat)];
+  if (!valid(mine)) return null;
+  const sortKey = (v) => (isRange ? [v.high, v.low] : [v, 0]);
+  const [a0, a1] = sortKey(mine);
+  const others = Object.entries(map)
+    .filter(([key, v]) => key !== String(boat) && valid(v))
+    .map(([, v]) => sortKey(v));
+  const better = others.filter(([b0, b1]) => b0 < a0 || (b0 === a0 && b1 < a1));
+  const tied = others.filter(([b0, b1]) => b0 === a0 && b1 === a1);
+  const from = better.length + 1;
+  return { from, to: from + tied.length };
+}
+
+// 払戻の行のうち、単勝・複勝で公式の人気が無い行に、締切時オッズから出した人気を補う。
+// 払戻のある行（paid）だけ。不成立・特払・金額なしの行、締切時オッズが無いレースでは付けない
+function withFinalOddsPopularity(rows, finalOdds) {
+  if (!rows || !finalOdds) return rows;
+  const sources = {
+    win: { map: finalOdds.win, isRange: false },
+    place: { map: finalOdds.place, isRange: true },
+  };
+  return rows.map((row) => {
+    const source = sources[row.typeKey];
+    if (
+      !source?.map ||
+      row.status !== PAYOUT_STATUS.PAID ||
+      row.popularity != null ||
+      row.boats.length !== 1
+    ) {
+      return row;
+    }
+    const popularity = popularityFromFinalOdds(
+      source.map,
+      row.boats[0],
+      source.isRange,
+    );
+    if (popularity == null) return row;
+    return {
+      ...row,
+      popularity: popularity.from,
+      popularityTo: popularity.to > popularity.from ? popularity.to : null,
+      popularityFromFinalOdds: true,
+    };
+  });
 }
 
 // 払戻明細（payoutRows）が届いていない（RPC未適用・過去データ・直接クエリのフォールバック・
@@ -501,6 +572,11 @@ function RaceResult({ prediction, raceId }) {
     failed: false,
   });
   const [reloadKey, setReloadKey] = useState(0);
+  // 締切時オッズ（公式、BOA-496）。単勝・複勝の人気を出すためだけに使う（BOA-534）。取れなくても払戻は出す
+  const [finalOddsState, setFinalOddsState] = useState({
+    raceId: null,
+    data: null,
+  });
   const reducedMotion = useMemo(
     () =>
       typeof window !== "undefined" &&
@@ -536,6 +612,24 @@ function RaceResult({ prediction, raceId }) {
       cancelled = true;
     };
   }, [finished, raceId, reloadKey]);
+
+  useEffect(() => {
+    if (!finished || !raceId) return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getRaceFinalOdds(raceId)
+      .then((data) => {
+        if (!cancelled) setFinalOddsState({ raceId, data });
+      })
+      .catch((err) => {
+        // 単勝・複勝の人気を出さないだけ（公式の払戻と他の券種の人気はそのまま出す）
+        console.error("締切時オッズ取得エラー:", err?.message ?? String(err));
+        if (!cancelled) setFinalOddsState({ raceId, data: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [finished, raceId]);
 
   const isCurrentRace = startTimingState.raceId === raceId;
   const startTimings = isCurrentRace ? startTimingState.data : null;
@@ -597,8 +691,13 @@ function RaceResult({ prediction, raceId }) {
 
   // 払戻は払戻明細（race_payouts、payoutRows）を正とする。届いていないときだけ旧 payout_* 列から
   // 同じ行の形を組み立てる（legacyPayoutRows）
-  const payoutRowsToShow =
-    result.payoutRows ?? legacyPayoutRows(result.payouts, outcome);
+  const payoutRowsToShow = withFinalOddsPopularity(
+    result.payoutRows ?? legacyPayoutRows(result.payouts, outcome),
+    finalOddsState.raceId === raceId ? finalOddsState.data : null,
+  );
+  const hasFinalOddsPopularity = (payoutRowsToShow ?? []).some(
+    (row) => row.popularityFromFinalOdds,
+  );
 
   const rowClassName = (position) => {
     if (position == null) return "rr-row is-unranked";
@@ -722,6 +821,15 @@ function RaceResult({ prediction, raceId }) {
             {t("result.payoutSectionTitle")}
           </div>
           <PayoutRowsTable rows={payoutRowsToShow} t={t} />
+          {/* 単勝・複勝の人気だけは公式の発表でなく締切時オッズから出しているため、その旨を書く */}
+          {hasFinalOddsPopularity && (
+            <p
+              className="rr-note rr-payout-popularity-note"
+              data-testid="payout-popularity-note"
+            >
+              {t("result.popularityFromFinalOddsNote")}
+            </p>
+          )}
         </>
       )}
 
