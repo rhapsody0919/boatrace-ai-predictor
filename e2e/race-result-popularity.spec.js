@@ -204,8 +204,8 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
     );
   });
 
-  for (const width of [360, 375]) {
-    test(`${width}px: 払戻が6桁・人気が3桁の行でも、組番が途中で折り返さず行からはみ出さない`, async ({
+  for (const width of [320, 360, 375]) {
+    test(`${width}px: 払戻が6桁・人気が3桁の行でも、組番・人気が途中で折り返さず行からはみ出さない`, async ({
       page,
     }) => {
       await page.setViewportSize({ width, height: 800 });
@@ -236,6 +236,25 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
               items.map((i) => Math.round(i.getBoundingClientRect().top)),
             );
             if (tops.size > 1) out.push(`組番が折り返す: ${row.textContent}`);
+            // 人気は1行（「82／人／気」と割れない）で、払戻金額と重ならない（ファン評価2周目）
+            const pop = row.querySelector(".rr-pop");
+            const amount = row.querySelector(".rr-amount");
+            if (pop && pop.textContent.trim()) {
+              const range = document.createRange();
+              range.selectNodeContents(pop);
+              const lines = new Set(
+                [...range.getClientRects()].map((r) => Math.round(r.top)),
+              );
+              if (lines.size > 1) out.push(`人気が割れる: ${row.textContent}`);
+              const p = pop.getBoundingClientRect();
+              const a = amount.getBoundingClientRect();
+              const overlap =
+                p.left < a.right &&
+                p.right > a.left &&
+                p.top < a.bottom &&
+                p.bottom > a.top;
+              if (overlap) out.push(`人気と金額が重なる: ${row.textContent}`);
+            }
             const right = row.getBoundingClientRect().right;
             for (const el of row.querySelectorAll("*")) {
               if (el.getBoundingClientRect().right > right + 0.5) {
