@@ -168,6 +168,8 @@ const TODA = {
     rank2: 2,
     rank3: 3,
     payoutWin: 100,
+    payoutExacta: 100,
+    popularityExacta: 1,
     raceStatus: "partial_refund",
     refundBoats: [3, 4, 5, 6],
     remark: "【返還艇あり】",
@@ -341,6 +343,18 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
       "—:4:返還",
       "—:5:返還",
       "—:6:返還",
+    ]);
+    // 払戻明細（payoutRows）が無い経路（直接クエリ・RPC未適用）でも、旧列に無い勝式を
+    // 黙って消さず「不成立（返還）」で出す（/code-review の指摘、BOA-543）
+    const payouts = await readPayouts(root);
+    expect(payouts.map((p) => p.replace(/ best$/, ""))).toEqual([
+      "単勝 1 ¥100",
+      "複勝 不成立（返還）",
+      "3連単 不成立（返還）",
+      "3連複 不成立（返還）",
+      "2連単 1-2 1人気 ¥100",
+      "2連複 不成立（返還）",
+      "拡連複 不成立（返還）",
     ]);
   });
 

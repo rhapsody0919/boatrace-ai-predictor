@@ -776,8 +776,10 @@ function buildWeather(conditions) {
 function buildPayoutRows(rows) {
   if (!Array.isArray(rows) || rows.length === 0) return null;
   const order = new Map(PAYOUT_BET_TYPES.map((b, i) => [b.betType, i]));
-  return rows
-    .filter((row) => order.has(row?.betType))
+  const known = rows.filter((row) => order.has(row?.betType));
+  // 知らない勝式しか無い（将来の追加等）ときは、空の払戻表を出さず旧列にフォールバックさせる
+  if (known.length === 0) return null;
+  return known
     .map((row) => {
       const meta = PAYOUT_BET_TYPES[order.get(row.betType)];
       return {

@@ -435,16 +435,55 @@ function PayoutRowsTable({ rows, t }) {
   );
 }
 
-// 不成立で払戻明細が届いていない（RPC未適用・直接クエリのフォールバック）ときの払戻表。
-// 不成立は全勝式が不成立なので、7勝式すべてを「不成立（返還）」で出す
-const NO_RACE_PAYOUT_ROWS = PAYOUT_BET_TYPES.map((b) => ({
-  ...b,
-  seq: 1,
-  boats: [],
-  amount: null,
-  status: PAYOUT_STATUS.NO_RACE,
-  popularity: null,
-}));
+// 払戻明細（payoutRows）が届いていない（RPC未適用・過去データ・直接クエリのフォールバック・
+// 軽量版の取得直後）ときの払戻表。旧 payout_* 列の payouts を払戻明細と同じ行の形に直す。
+// 旧列では不成立の勝式が NULL になる（078）ため、成立状態が分かっているときだけ補う:
+// - 不成立: 7勝式すべて「不成立（返還）」
+// - 一部返還: 旧列に無い勝式を「不成立（返還）」（BOA-543 の「黙って消える」を直接クエリ経路でも起こさない）
+// 成立状態が分からない（unknown）・通常のときは、今までどおり旧列にある勝式だけを出す
+function legacyPayoutRows(payouts, outcome) {
+  const meta = new Map(PAYOUT_BET_TYPES.map((b) => [b.typeKey, b]));
+  const paid = (typeKey, seq, entry) =>
+    entry && typeof entry.amount === "number"
+      ? {
+          ...meta.get(typeKey),
+          seq,
+          boats: entry.boats ?? (entry.boat != null ? [entry.boat] : []),
+          amount: entry.amount,
+          status: PAYOUT_STATUS.PAID,
+          popularity: entry.popularity ?? null,
+        }
+      : null;
+  const noRace = (typeKey) => ({
+    ...meta.get(typeKey),
+    seq: 1,
+    boats: [],
+    amount: null,
+    status: PAYOUT_STATUS.NO_RACE,
+    popularity: null,
+  });
+  if (outcome === RACE_OUTCOME.NO_RACE) {
+    return PAYOUT_BET_TYPES.map((b) => noRace(b.typeKey));
+  }
+  // 英語の正しい賭式名はTrifecta=着順通り(3連単)/Trio=順不同(3連複)。旧列由来の payouts の
+  // キーは sanrentan=3連単・sanrenpuku=3連複（buildRaceResult() のコメント参照）
+  const byType = {
+    win: [paid("win", 1, payouts?.win)],
+    place: (payouts?.place ?? []).map((e, i) => paid("place", i + 1, e)),
+    trifecta: [paid("trifecta", 1, payouts?.sanrentan)],
+    trio: [paid("trio", 1, payouts?.sanrenpuku)],
+    exacta: [paid("exacta", 1, payouts?.exacta)],
+    quinella: [paid("quinella", 1, payouts?.quinella)],
+    wide: (payouts?.wide ?? []).map((e, i) => paid("wide", i + 1, e)),
+  };
+  const hasAnyPaid = Object.values(byType).some((rows) => rows.some(Boolean));
+  if (!hasAnyPaid) return null;
+  return PAYOUT_BET_TYPES.flatMap((b) => {
+    const rows = byType[b.typeKey].filter(Boolean);
+    if (rows.length > 0) return rows;
+    return outcome === RACE_OUTCOME.PARTIAL_REFUND ? [noRace(b.typeKey)] : [];
+  });
+}
 
 function RaceResult({ prediction, raceId }) {
   // 会場コードと開催日は raceId から導出する（propsを増やさない）
@@ -526,7 +565,8 @@ function RaceResult({ prediction, raceId }) {
   const isPartialRefund = outcome === RACE_OUTCOME.PARTIAL_REFUND;
   // スタート情報（着欄の記号）を読み込んでいる間は、rank1〜 の並び（返還艇が混ざる）を
   // 一瞬でも着順として見せないよう、表の代わりにスケルトンを出す（BOA-543）
-  const isLoadingStartTimings = !isCurrentRace;
+  // raceId が無いときは取得自体をしない（useEffect が早期 return する）ので、読み込み中にしない
+  const isLoadingStartTimings = Boolean(raceId) && !isCurrentRace;
 
   // 統一結果テーブルの行（着／艇／選手名／ST／タイム）。バックフィルしていない過去データは
   // rank4以降が無いため、その場合は3行のみになる。返還艇の行も数に含める（BOA-543）
@@ -551,24 +591,10 @@ function RaceResult({ prediction, raceId }) {
     ? Math.min(...nonFlyingStartTimings.map((st) => st.startTiming))
     : null;
 
-  // 払戻は払戻明細（race_payouts、payoutRows）を正とする。届いていない（RPC未適用・過去データ・
-  // 直接クエリのフォールバック）ときだけ旧 payout_* 列の payouts を使う。不成立は明細が無くても
-  // 全勝式が不成立なので、7勝式すべてを「不成立（返還）」で出す
+  // 払戻は払戻明細（race_payouts、payoutRows）を正とする。届いていないときだけ旧 payout_* 列から
+  // 同じ行の形を組み立てる（legacyPayoutRows）
   const payoutRowsToShow =
-    result.payoutRows ?? (isNoRace ? NO_RACE_PAYOUT_ROWS : null);
-  const payouts = result.payouts || {};
-  const payoutAmounts = [
-    payouts.win?.amount,
-    ...(payouts.place || []).map((entry) => entry.amount),
-    payouts.sanrenpuku?.amount,
-    payouts.sanrentan?.amount,
-    payouts.exacta?.amount,
-    payouts.quinella?.amount,
-    ...(payouts.wide || []).map((entry) => entry.amount),
-  ].filter((amount) => typeof amount === "number");
-  const maxPayoutAmount = payoutAmounts.length
-    ? Math.max(...payoutAmounts)
-    : null;
+    result.payoutRows ?? legacyPayoutRows(result.payouts, outcome);
 
   const rowClassName = (position) => {
     if (position == null) return "rr-row is-unranked";
@@ -579,7 +605,7 @@ function RaceResult({ prediction, raceId }) {
   };
 
   return (
-    <div className={`race-result${isNoRace ? " is-no-race" : ""}`}>
+    <div className="race-result">
       <div className="rr-head">
         <div className="rr-title">
           <h4>
@@ -692,94 +718,6 @@ function RaceResult({ prediction, raceId }) {
             {t("result.payoutSectionTitle")}
           </div>
           <PayoutRowsTable rows={payoutRowsToShow} t={t} />
-        </>
-      )}
-
-      {!payoutRowsToShow && payouts.win && (
-        <>
-          <div className="rr-section-title">
-            {t("result.payoutSectionTitle")}
-          </div>
-          <div className="rr-payout-table">
-            <PayoutRow
-              typeLabel={t("result.payoutType.win")}
-              boats={payouts.win.boats}
-              separator=""
-              amount={payouts.win.amount}
-              isBest={payouts.win.amount === maxPayoutAmount}
-              t={t}
-            />
-            {payouts.place.map((entry) => (
-              <PayoutRow
-                key={entry.boat}
-                typeLabel={t("result.payoutType.place")}
-                boats={[entry.boat]}
-                separator=""
-                amount={entry.amount}
-                isBest={entry.amount === maxPayoutAmount}
-                t={t}
-              />
-            ))}
-            {/* 英語の正しい賭式名はTrifecta=着順通り(3連単)/Trio=順不同(3連複)。
-                JSのキー名はsanrenpuku(3連複)/sanrentan(3連単)という曖昧さの無い名前にしているため
-                表示ラベルのi18nキーとJSキー名が逆対応になる点に注意（buildRaceResult()のコメント参照） */}
-            {payouts.sanrenpuku && (
-              <PayoutRow
-                typeLabel={t("result.payoutType.trio")}
-                boats={payouts.sanrenpuku.boats}
-                separator="="
-                amount={payouts.sanrenpuku.amount}
-                popularity={payouts.sanrenpuku.popularity}
-                isBest={payouts.sanrenpuku.amount === maxPayoutAmount}
-                t={t}
-              />
-            )}
-            {payouts.sanrentan && (
-              <PayoutRow
-                typeLabel={t("result.payoutType.trifecta")}
-                boats={payouts.sanrentan.boats}
-                separator="-"
-                amount={payouts.sanrentan.amount}
-                popularity={payouts.sanrentan.popularity}
-                isBest={payouts.sanrentan.amount === maxPayoutAmount}
-                t={t}
-              />
-            )}
-            {payouts.exacta && (
-              <PayoutRow
-                typeLabel={t("result.payoutType.exacta")}
-                boats={payouts.exacta.boats}
-                separator="-"
-                amount={payouts.exacta.amount}
-                popularity={payouts.exacta.popularity}
-                isBest={payouts.exacta.amount === maxPayoutAmount}
-                t={t}
-              />
-            )}
-            {payouts.quinella && (
-              <PayoutRow
-                typeLabel={t("result.payoutType.quinella")}
-                boats={payouts.quinella.boats}
-                separator="="
-                amount={payouts.quinella.amount}
-                popularity={payouts.quinella.popularity}
-                isBest={payouts.quinella.amount === maxPayoutAmount}
-                t={t}
-              />
-            )}
-            {payouts.wide.map((entry, index) => (
-              <PayoutRow
-                key={index}
-                typeLabel={t("result.payoutType.wide")}
-                boats={entry.boats}
-                separator="="
-                amount={entry.amount}
-                popularity={entry.popularity}
-                isBest={entry.amount === maxPayoutAmount}
-                t={t}
-              />
-            ))}
-          </div>
         </>
       )}
 

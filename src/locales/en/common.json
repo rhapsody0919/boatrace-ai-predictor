@@ -248,9 +248,12 @@
       "bodyWithReason": "{{reason}}. All tickets are refunded",
       "reason": "Declared void: {{list}}",
       "group": {
-        "flying": "{{count}} false starts (boat {{boats}})",
-        "late": "{{count}} late starts (boat {{boats}})",
-        "absent": "{{count}} scratched (boat {{boats}})"
+        "flying": "{{count}} false starts (boats {{boats}})",
+        "flying_one": "{{count}} false start (boat {{boats}})",
+        "late": "{{count}} late starts (boats {{boats}})",
+        "late_one": "{{count}} late start (boat {{boats}})",
+        "absent": "{{count}} scratched (boats {{boats}})",
+        "absent_one": "{{count}} scratched (boat {{boats}})"
       },
       "boatSeparator": ", ",
       "groupSeparator": "; "
