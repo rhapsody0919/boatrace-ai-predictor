@@ -809,6 +809,105 @@ test.describe("予測データ取得失敗の扱い（失敗を「開催なし�
   });
 });
 
+// 誤って中止が確定（cancellation_status='confirmed'）のまま残った、結果のあるレースに
+// 中止バッジ・中止バナーを出さない（BOA-525）。2026-09-12 に32本がこの状態になり、
+// 的中/外れバッジと中止バッジが同時に出た（BOA-512）。本番データはBOA-512/524で直った
+// ため、DBに依存しないようEdge API・Supabase RESTを差し替えて再現する。
+// 本当に中止されたレース（確定かつ結果なし）には中止表示が出続けることも併せて確かめる
+test.describe("結果のあるレースを中止扱いしない（BOA-525）", () => {
+  const DATE = "2026-09-12";
+  const entries = [1, 2, 3, 4, 5, 6].map((i) => ({
+    number: i,
+    name: `テスト選手${i}`,
+    grade: "B1",
+    age: 30,
+    winRate: 5.0,
+    localWinRate: 5.0,
+    motorNumber: i,
+    motor2Rate: 35,
+    boatNumber: i,
+    boat2Rate: 35,
+  }));
+  const unified = {
+    topPick: 1,
+    top3: [1, 2, 3],
+    confidence: 50,
+    turnPrediction: {
+      patterns: [{ technique: "逃げ", winnerCourse: 1, probability: 0.6 }],
+    },
+  };
+  const race = (n, { cancellationStatus, result }) => ({
+    raceId: `${DATE}-05-${String(n).padStart(2, "0")}`,
+    venueCode: 5,
+    venue: "多摩川",
+    raceNumber: n,
+    startTime: `1${n}:00`,
+    cancellationStatus,
+    entries,
+    predictions: { unified },
+    exhibitionData: [],
+    result,
+  });
+  const edgeData = {
+    generatedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    races: [
+      // 1R: 誤った確定が残っているが、結果（1着あり）がある → 実施済み
+      race(1, {
+        cancellationStatus: "confirmed",
+        result: { rank1: 1, rank2: 2, rank3: 3, payoutWin: 150 },
+      }),
+      // 2R: 本当に中止（確定・結果なし）
+      race(2, { cancellationStatus: "confirmed", result: null }),
+    ],
+  };
+
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai-language", "ja"),
+    );
+    await page.route("**/api/predictions/**", (route) =>
+      route.fulfill({ json: edgeData }),
+    );
+    await page.route("**/rest/v1/**", (route) =>
+      route.fulfill({ status: 200, json: [] }),
+    );
+  });
+
+  test("レース一覧: 結果のあるレースは的中/外れだけを出し、中止バッジを出さない", async ({
+    page,
+  }) => {
+    await page.goto(`/races/${DATE}/5`);
+    const cards = page.locator(".race-card");
+    await expect(cards).toHaveCount(2, { timeout: 20000 });
+
+    const ran = cards.nth(0);
+    await expect(ran).toContainText("展開的中");
+    await expect(ran.locator(".race-card-header")).not.toContainText("中止");
+
+    const cancelled = cards.nth(1);
+    await expect(cancelled.locator(".race-card-header")).toContainText("中止");
+  });
+
+  test("レース詳細: 結果のあるレースに中止バナーを出さず、本当の中止には出す", async ({
+    page,
+  }) => {
+    const BANNER = "このレースは中止となりました";
+    await page.goto(`/race/${DATE}-05-01`);
+    await expect(page.locator("h1").first()).toBeVisible({ timeout: 20000 });
+    // 結果タブ等の描画を待つ（中止バナーは同じパネル内に出る）
+    await expect(page.getByText("テスト選手1").first()).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByText(BANNER)).toHaveCount(0);
+
+    await page.goto(`/race/${DATE}-05-02`);
+    await expect(page.getByText(BANNER).first()).toBeVisible({
+      timeout: 20000,
+    });
+  });
+});
+
 test.describe("レースページ再設計（BOA-168）", () => {
   test("トップページでレース選択→データ出走表と「AI予想」タブ（展開予測/イン崩れ）が表示される（BOA-346）", async ({
     page,

@@ -21,16 +21,48 @@ export const CANCELLATION_CONFIRMED = "confirmed";
 export const CANCELLATION_TENTATIVE = "tentative";
 
 /**
- * 開催中止が確定しているか。
+ * 着順つきの結果があるか（＝レースは行われた）。
  *
- * `cancellationStatus` を持つものなら何でも受ける（レース・予想・RPCの戻り）。
+ * 「結果がある」は **1着の艇番（rank1）が入っている** こと。
+ * - `result` は画面の結果オブジェクト（buildRaceResult の戻り。rank1 が無ければ
+ *   result 自体が null）でも、`race_results` の生の行でもよい。どちらも `rank1` を持つ
+ * - 返還（race_status='partial_refund'）・不成立（'no_race'）の行も rank1 を持つ。
+ *   不成立は「舟券が成立しなかった」だけでレースは行われているので、中止ではない
+ * - 本当の中止・順延は結果ページ自体が無く、`race_results` の行が無い（078 の設計）
+ *
+ * 2026-09-29 の本番実測: `race_results` 46,451行はすべて rank1 が非NULL、
+ * `cancellation_status='confirmed'` の531レースはすべて結果の行が無い。
+ *
+ * @param {{result?: {rank1?: number|null}|null}|null|undefined} entity
+ * @returns {boolean}
+ */
+export function hasRaceResult(entity) {
+  return entity?.result?.rank1 != null;
+}
+
+/**
+ * 開催中止として扱うか。
+ *
+ * **中止が確定（confirmed） かつ 着順つきの結果が無い** とき真。
+ * `confirmed` は「中止・順延」と「発走90分後までに結果が取れなかった」の両方を表し
+ * （マイグレーション047）、結果が後から入っても自動では消えないことがある
+ * （BOA-512: 2026-09-12 に結果のある32本が confirmed のまま残り、的中/外れバッジと
+ * 中止バッジが同時に出た）。結果があるなら行われたレースなので、中止扱いしない
+ * （BOA-525。集計側の BOA-490 と同じ考え方）。
+ *
+ * `cancellationStatus` と、あれば `result` を持つものなら何でも受ける
+ * （レース・予想・RPCの戻り）。`result` を持たない呼び出し元（今日のレース一覧 RPC 等）
+ * では、従来どおり `cancellationStatus` だけで決まる。
  * null / undefined は「中止ではない」に倒す（データ未取得を中止として扱わない）。
  *
- * @param {{cancellationStatus?: string|null}|null|undefined} entity
+ * @param {{cancellationStatus?: string|null, result?: {rank1?: number|null}|null}|null|undefined} entity
  * @returns {boolean}
  */
 export function isRaceCancelled(entity) {
-  return entity?.cancellationStatus === CANCELLATION_CONFIRMED;
+  return (
+    entity?.cancellationStatus === CANCELLATION_CONFIRMED &&
+    !hasRaceResult(entity)
+  );
 }
 
 /**

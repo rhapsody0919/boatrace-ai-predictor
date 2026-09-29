@@ -44,6 +44,7 @@ import {
   isCancellationConfirmed,
 } from "../lib/cancellationStatus.js";
 import {
+  hasRaceResult,
   isCancellationSuspected,
   isRaceCancelled,
 } from "../../src/utils/raceCancellation.js";
@@ -117,7 +118,9 @@ for (const file of files) {
 // 静的検査だけだと、全員が共通関数を呼んでいても、その関数が誤っていれば
 // 全箇所が一斉に誤る。画面側とバッチ側の2実装が同じ答えを返すことも確かめる。
 const judgementFailures = [];
+let judgementCount = 0;
 function expect(label, actual, expected) {
+  judgementCount += 1;
   if (actual !== expected) {
     judgementFailures.push(
       `${label}: 期待 ${JSON.stringify(expected)} / 実際 ${JSON.stringify(actual)}`,
@@ -159,6 +162,53 @@ expect(
   false,
 );
 
+// 結果（1着あり）があれば、確定が残っていても中止扱いしない（BOA-525）。
+// 2026-09-12 に結果のある32本が confirmed のまま残り、的中/外れと中止が同時に出た（BOA-512）
+expect(
+  "画面: 確定でも結果（画面の形）があれば中止ではない",
+  isRaceCancelled({
+    cancellationStatus: "confirmed",
+    result: { finished: true, rank1: 1, rank2: 2, rank3: 3 },
+  }),
+  false,
+);
+expect(
+  "画面: 確定でも結果（race_results の行）があれば中止ではない",
+  isRaceCancelled({
+    cancellationStatus: "confirmed",
+    result: { race_id: "2026-09-12-05-01", rank1: 4, rank2: 1 },
+  }),
+  false,
+);
+expect(
+  "画面: 不成立（no_race）でも1着があれば行われたレース",
+  isRaceCancelled({
+    cancellationStatus: "confirmed",
+    result: { rank1: 1, race_status: "no_race" },
+  }),
+  false,
+);
+// 本当に中止されたレース（結果の行が無い）は中止のまま。退行の検知
+expect(
+  "画面: 確定かつ結果null",
+  isRaceCancelled({ cancellationStatus: "confirmed", result: null }),
+  true,
+);
+expect(
+  "画面: 確定かつ1着が無い結果",
+  isRaceCancelled({ cancellationStatus: "confirmed", result: { rank1: null } }),
+  true,
+);
+expect(
+  "画面: 疑いは結果の有無にかかわらず中止扱いしない",
+  isRaceCancelled({ cancellationStatus: "tentative", result: null }),
+  false,
+);
+expect("結果: 1着あり", hasRaceResult({ result: { rank1: 6 } }), true);
+expect("結果: 1着なし", hasRaceResult({ result: { rank1: null } }), false);
+expect("結果: resultなし", hasRaceResult({}), false);
+expect("結果: entityがnull", hasRaceResult(null), false);
+
 // 画面とバッチで状態名がズレたら、片方だけ中止を見落とす
 expect(
   "画面とバッチで同じ状態名を見ている",
@@ -194,5 +244,5 @@ if (violations.length > 0) {
 }
 
 console.log(
-  `OK: 開催中止の判定（画面・バッチの関数13件）と、生の文字列比較なし（${files.length}ファイルを検査）`,
+  `OK: 開催中止の判定（画面・バッチの関数${judgementCount}件）と、生の文字列比較なし（${files.length}ファイルを検査）`,
 );

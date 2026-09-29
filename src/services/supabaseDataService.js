@@ -6878,15 +6878,19 @@ export const supabaseDataService = {
           .then(({ data }) => data ?? []),
       ]);
       const resultById = new Map((results ?? []).map((r) => [r.race_id, r]));
-      // 中止が**確定**したレース。判定は `isRaceCancelled` に集めてあるので
+      // 中止が**確定**し、結果も無いレース。判定は `isRaceCancelled` に集めてあるので
       // ここで文字列を比べない（`src/utils/raceCancellation.js`。疑いの段階と
       // 確定を各所で書き分けると必ずズレる、というのがあの関数の由来）。
       // 中止の疑い（tentative）は含まれない——疑いで枠数を減らすと、実際は
-      // 行われたときにボーダーが狂う。列名だけスネーク→キャメルに合わせる
+      // 行われたときにボーダーが狂う。結果の行を渡すので、誤って確定が残った
+      // 実施済みのレースも含まれない（BOA-525）。列名だけスネーク→キャメルに合わせる
       const cancelledRaceIds = new Set(
         (cancellations ?? [])
           .filter((r) =>
-            isRaceCancelled({ cancellationStatus: r.cancellation_status }),
+            isRaceCancelled({
+              cancellationStatus: r.cancellation_status,
+              result: resultById.get(r.race_id) ?? null,
+            }),
           )
           .map((r) => r.race_id),
       );
