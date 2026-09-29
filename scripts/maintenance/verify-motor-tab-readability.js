@@ -324,7 +324,8 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       service.includes("`venue-motor-ranking-v2-") &&
       /venueMotorRanking\.tied > 1\s*\?\s*"analysis\.motor\.venueRankBadgeTied"/.test(
         chart,
-      ),
+      ) &&
+      /value: Number\(venueMotorRanking\.value\)\.toFixed\(1\)/.test(chart),
   );
   for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
@@ -336,7 +337,11 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     check(
       `${lang}: 同順位の会場内順位の文言がある`,
       /\{\{rank\}\}/.test(motor.venueRankBadgeTied ?? "") &&
-        /\{\{total\}\}/.test(motor.venueRankBadgeTied ?? ""),
+        /\{\{total\}\}/.test(motor.venueRankBadgeTied ?? "") &&
+        // 何の値の順位かを数字で示す（当日は一覧に2連率が2列ある。ファン評価2周目）
+        [motor.venueRankBadge, motor.venueRankBadgeTied].every((s) =>
+          s.includes("{{value}}"),
+        ),
     );
   }
 }

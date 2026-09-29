@@ -884,6 +884,10 @@ function MotorConditionChart({
                   {
                     rank: venueMotorRanking.rank,
                     total: venueMotorRanking.total,
+                    // 何の値の順位かを数字で示す。当日のレースは一覧に「2連率（期間の
+                    // 再計算）」と「公式2連率」の2列があり、どちらの順位か読めなかった
+                    // （BOA-529 ファン評価2周目）
+                    value: Number(venueMotorRanking.value).toFixed(1),
                   },
                 ),
               },
