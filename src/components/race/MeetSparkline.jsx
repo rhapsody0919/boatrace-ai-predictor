@@ -252,7 +252,12 @@ function MeetSparkline({
       {pointLabels && (
         // 点の下の文字は HTML で置く。SVG は横に引き伸ばす（preserveAspectRatio none）
         // ので、SVG の text にすると文字が横に潰れる。横位置は点と同じ割合で合わせる
-        <div className="meet-sparkline-labels" aria-hidden="true">
+        // 走数が多い（10走以上）と375pxで数字の間隔が10px前後まで詰まる。字を
+        // 小さくして、全角の記号（落・欠など）どうしが接しないようにする（BOA-537）
+        <div
+          className={`meet-sparkline-labels${pointLabels.length >= 10 ? " is-dense" : ""}`}
+          aria-hidden="true"
+        >
           {pointLabels.map((lab, i) =>
             lab === null || lab === undefined ? null : (
               <span

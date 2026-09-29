@@ -540,3 +540,9 @@
 .rmt-compare tr.is-absent td {
   color: var(--text-secondary);
 }
+
+/* 推移の見出しの「点の下＝着順」（BOA-537）。線の列の左に小さく */
+.rmt-trend-head-sub {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}

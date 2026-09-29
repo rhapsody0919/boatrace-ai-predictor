@@ -39,6 +39,7 @@ import {
   FINISH_ABSENT,
   isAbsentStartRow,
   runFinishLabel,
+  officialMarkOf,
 } from "../../src/components/race/seriesPoints.js";
 import { getRaceStageKey } from "../../src/constants/raceStageConfig.js";
 import { fetchAllByRaceId } from "../lib/meetBoundaries.js";
@@ -566,6 +567,35 @@ check(
       [2, "F", "欠", "欠", "転", null, null],
     );
   }
+  // 着順が付かない走は、比較表の並び・推移・日別の表で同じ公式の記号を出す（BOA-537）
+  check(
+    "officialMarkOf: 記号だけを返す（数字・空・null は記号でない）",
+    [
+      officialMarkOf("落"),
+      officialMarkOf("転"),
+      officialMarkOf("3"),
+      officialMarkOf(""),
+      officialMarkOf(null),
+    ],
+    ["落", "転", null, null, null],
+  );
+  check(
+    "着順の並び: 着順の無い走は公式の記号（無ければ null＝画面は「失」）",
+    listSeriesFinishes(
+      [
+        {
+          ...base,
+          raceId: "2026-09-23-20-01",
+          boatNumber: 6,
+          started: true,
+          finishMark: "落",
+        },
+        { ...base, raceId: "2026-09-23-20-02", boatNumber: 6, started: true },
+      ],
+      withPrelim,
+    ),
+    ["落", null],
+  );
   check(
     "男女Ｗ優勝戦の節では別シリーズの全走欠場者を返さない",
     listAbsentOnlyRacers({ ...board, seriesRacerIds: [1001, 3003] }),
@@ -684,9 +714,11 @@ check("バッジ: 予選", getRaceStageKey("予選"), null);
     [3, 2, 1, 4, 5, 2],
   );
   check(
-    "着順が付いていない走（妨・落）は null にする",
+    // 以前は null（画面は「失」）にしていたが、推移の点の下・日別の表と表記を
+    // そろえるため記号のまま返す（BOA-537 ファン評価）
+    "着順が付いていない走（妨・落）は公式の記号のまま返す",
     parseOfficialPlacements("２２落"),
-    [2, 2, null],
+    [2, 2, "落"],
   );
   check("placements が無ければ空", parseOfficialPlacements(null), []);
 

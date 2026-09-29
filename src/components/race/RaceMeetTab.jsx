@@ -284,7 +284,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
         row.finishRank == null
           ? row.absent
             ? t("basicInfo.finishAbsent")
-            : t("basicInfo.finishUnknown")
+            : (row.finishMark ?? t("basicInfo.finishUnknown"))
           : t("meetTab.sparkTipFinish", { finish: row.finishRank }),
     });
   };
@@ -738,7 +738,11 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
           {/* 右端の数値が何か分からない、という指摘（2026-09-27）。列見出しを出す */}
           <div className="rmt-trend-head">
             <span />
-            <span />
+            {/* 点の下の数字が着順だと行の中で分かるように。日別の表の「0.17(4)」の
+                括弧（ST順位）と取り違えられた（BOA-537 ファン評価） */}
+            <span className="rmt-trend-head-sub">
+              {t("meetTab.trendFinishHeader")}
+            </span>
             <span className="rmt-trend-last">
               {t("meetTab.trendLastHeader")}
             </span>

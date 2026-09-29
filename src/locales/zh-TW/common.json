@@ -759,6 +759,7 @@
     "compareTrendEmpty": "尚無足夠場次可繪製走勢",
     "prelimOverNoteDay": "預賽已於第{{day}}天（{{date}}）結束。得分率就此確定，今日名次不會再改變。",
     "trendLastHeader": "前一場",
+    "trendFinishHeader": "點下方＝名次",
     "forecastTitle": "得分率早見（今日名次會這樣變動）",
     "forecastRankHeader": "第{{rank}}名",
     "forecastNote": "有底色的格子代表取得該名次就有望達到準優門檻（第{{slots}}名＝{{rate}}）。所需得分是達到門檻所需的分數。",

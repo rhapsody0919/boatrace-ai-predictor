@@ -1752,6 +1752,34 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rmt-spark-note").first()).toContainText(
       "点の下の数字はその走の着順です",
     );
+    await expect(page.locator(".rmt-trend-head-sub")).toHaveText(
+      "点の下＝着順",
+    );
+  });
+
+  test("着順が付かない走は、推移・比較表・日別の表で同じ公式の記号になる（BOA-537 ファン評価）", async ({
+    page,
+  }) => {
+    // 2026-09-25 桐生12R: 6号艇 嶋田有里の 9/21 11R は公式の結果が「落」
+    await page.goto("/race/2026-09-25-01-12");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const rows = page.locator(".rmt-trend-row");
+    await expect(rows).toHaveCount(6, { timeout: 25000 });
+    const shimada = rows.filter({ hasText: "嶋田" });
+    await expect(shimada.locator(".meet-sparkline-label").nth(2)).toHaveText(
+      "落",
+    );
+    // 比較表の着順の並びも「落」（以前は「失」）
+    await expect(
+      page
+        .locator(".rmt-compare tr", { hasText: "嶋田" })
+        .locator(".rmt-finishes"),
+    ).toContainText("落");
+    // 日別の表も「落」（以前は「着外(順位不明)」）
+    await shimada.click();
+    await expect(
+      page.locator("tr", { hasText: "9/21" }).filter({ hasText: "11R" }),
+    ).toContainText("落");
   });
 
   test("今節タブの6艇の推移は、1走の選手も前走の値が右端の列にそろい、選択中の行はホバーと区別できる（BOA-550 ファン評価）", async ({

@@ -759,6 +759,7 @@
     "compareTrendEmpty": "추이를 그릴 주행이 아직 없습니다",
     "prelimOverNoteDay": "예선은 {{day}}일째({{date}})에 끝났습니다. 득점률은 여기서 확정되어 오늘 착순으로는 바뀌지 않습니다.",
     "trendLastHeader": "직전",
+    "trendFinishHeader": "점 아래=착순",
     "forecastTitle": "득점률 조견(오늘 착순에 따른 변화)",
     "forecastRankHeader": "{{rank}}착",
     "forecastNote": "색이 들어간 칸은 그 착순이면 준우승전 기준({{slots}}위＝{{rate}})에 닿을 전망이라는 뜻입니다. 필요 득점은 기준에 닿는 데 드는 점수입니다.",

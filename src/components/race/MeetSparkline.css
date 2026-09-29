@@ -97,3 +97,8 @@
 .meet-sparkline-label.is-mark {
   color: var(--text-secondary);
 }
+
+/* 10走以上の節（375pxで間隔10px前後）。全角の記号どうしが接しない大きさにする */
+.meet-sparkline-labels.is-dense .meet-sparkline-label {
+  font-size: 8.5px;
+}

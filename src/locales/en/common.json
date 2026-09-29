@@ -764,6 +764,7 @@
     "compareTrendEmpty": "Not enough runs yet to draw a trend",
     "prelimOverNoteDay": "The preliminaries ended on day {{day}} ({{date}}). The score rate is final and today's finish will not change it.",
     "trendLastHeader": "Last",
+    "trendFinishHeader": "Below dots: finish",
     "forecastTitle": "Score-rate outlook (how today's finish moves it)",
     "forecastRankHeader": "{{rank}}",
     "forecastNote": "A highlighted cell means that finish should reach the semi-final line ({{slots}}th = {{rate}}). \"Points needed\" is what it takes to reach that line.",
