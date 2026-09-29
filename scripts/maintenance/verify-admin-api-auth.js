@@ -11,8 +11,8 @@
  *
  * 実行: node scripts/maintenance/verify-admin-api-auth.js
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { registerHooks } from "node:module";
+import { readdirSync, statSync } from "node:fs";
+import { register } from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -22,20 +22,21 @@ const ROOT = path.resolve(
 );
 const ADMIN_DIR = path.join(ROOT, "api/admin");
 
-// Vercel のバンドラは import 属性なしの JSON import を許すが、Node 単体では通らないので読み替える
-registerHooks({
-  load(url, context, nextLoad) {
-    if (url.startsWith("file:") && url.endsWith(".json")) {
-      const source = readFileSync(fileURLToPath(url), "utf8");
-      return {
-        format: "module",
-        source: `export default ${source};`,
-        shortCircuit: true,
-      };
-    }
-    return nextLoad(url, context);
-  },
-});
+// Vercel のバンドラは import 属性なしの JSON import を許すが、Node 単体では通らないので読み替える。
+// CI（Quality Gates）は Node 20 なので、22.15 以降にしか無い registerHooks ではなく
+// 20.6 以降にある module.register（別スレッドのローダー）を使う
+const JSON_LOADER = `
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+export async function load(url, context, nextLoad) {
+  if (url.startsWith("file:") && url.endsWith(".json")) {
+    const source = readFileSync(fileURLToPath(url), "utf8");
+    return { format: "module", source: "export default " + source + ";", shortCircuit: true };
+  }
+  return nextLoad(url, context);
+}
+`;
+register(`data:text/javascript,${encodeURIComponent(JSON_LOADER)}`);
 
 // モジュール読み込み時に env を読むハンドラがあるため、import 前に「設定済み」にしておく
 Object.assign(process.env, {
