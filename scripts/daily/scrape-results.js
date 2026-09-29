@@ -731,38 +731,50 @@ export async function confirmCancellationsForRaceIds(
  */
 export async function clearCancellationsWithResults(client, raceIds) {
   if (raceIds.length === 0) return { checked: 0, cleared: [] };
-  const [results, races] = await Promise.all([
-    client.from("race_results").select("race_id").in("race_id", raceIds),
-    client
-      .from("races")
-      .select("race_id, cancellation_status")
-      .in("race_id", raceIds),
-  ]);
-  if (results.error) {
-    throw new Error(
-      `中止・順延の解除: race_results の取得に失敗しました: ${results.error.message}`,
+  // .in() は GET の URL に race_id を並べるため、台風等で中止が数百件あっても URL 長の上限を超えないよう分ける
+  const CHUNK = 200;
+  const toClear = [];
+  for (let i = 0; i < raceIds.length; i += CHUNK) {
+    const ids = raceIds.slice(i, i + CHUNK);
+    const [results, races] = await Promise.all([
+      client.from("race_results").select("race_id").in("race_id", ids),
+      client
+        .from("races")
+        .select("race_id, cancellation_status")
+        .in("race_id", ids),
+    ]);
+    if (results.error) {
+      throw new Error(
+        `中止・順延の解除: race_results の取得に失敗しました: ${results.error.message}`,
+      );
+    }
+    if (races.error) {
+      throw new Error(
+        `中止・順延の解除: races の取得に失敗しました: ${races.error.message}`,
+      );
+    }
+    const hasResult = new Set((results.data ?? []).map((r) => r.race_id));
+    toClear.push(
+      ...(races.data ?? [])
+        .filter(
+          (r) => r.cancellation_status != null && hasResult.has(r.race_id),
+        )
+        .map((r) => r.race_id),
     );
   }
-  if (races.error) {
-    throw new Error(
-      `中止・順延の解除: races の取得に失敗しました: ${races.error.message}`,
-    );
-  }
-  const hasResult = new Set((results.data ?? []).map((r) => r.race_id));
-  const toClear = (races.data ?? [])
-    .filter((r) => r.cancellation_status != null && hasResult.has(r.race_id))
-    .map((r) => r.race_id);
   if (toClear.length === 0) return { checked: raceIds.length, cleared: [] };
 
-  const { error } = await client
-    .from("races")
-    .update({ cancellation_status: null, cancellation_check_streak: 0 })
-    .in("race_id", toClear)
-    .not("cancellation_status", "is", null);
-  if (error) {
-    throw new Error(
-      `races (中止・順延の解除) 一括更新エラー: ${error.message}`,
-    );
+  for (let i = 0; i < toClear.length; i += CHUNK) {
+    const { error } = await client
+      .from("races")
+      .update({ cancellation_status: null, cancellation_check_streak: 0 })
+      .in("race_id", toClear.slice(i, i + CHUNK))
+      .not("cancellation_status", "is", null);
+    if (error) {
+      throw new Error(
+        `races (中止・順延の解除) 一括更新エラー: ${error.message}`,
+      );
+    }
   }
   console.log(
     `  ⚠️ 結果があるのに中止・順延だったレースを解除: ${toClear.length}件（${toClear.join(", ")}）`,

@@ -1724,6 +1724,86 @@ const catchupCtx = (
     "catch-up: 未完了のスロット（最終レース。期限は翌00:15）があれば incomplete（対象日を処理済みにしない）",
     r2.incomplete === true && r2.report.openSlots === 1,
   );
+  // 通し（BOA-524）: 実際の解除の関数で、2026-09-12 型（結果が先・確定が後）のレースが直る。期間の外は触らない
+  {
+    const realRunner = createResultCatchupRun({
+      confirm: async () => ({ checked: 0, confirmed: [] }),
+      fixHitFlags: async () => ({ missing: 0, fixed: 0 }),
+    });
+    const dbC = catchupDb();
+    dbC.tables.races.push(
+      {
+        race_id: "2026-09-12-10-01",
+        race_date: "2026-09-12",
+        cancellation_status: "confirmed",
+        cancellation_check_streak: 0,
+      },
+      {
+        race_id: "2026-09-05-10-01",
+        race_date: "2026-09-05",
+        cancellation_status: "confirmed",
+        cancellation_check_streak: 0,
+      },
+    );
+    dbC.tables.race_results.push(
+      { race_id: "2026-09-12-10-01" },
+      { race_id: "2026-09-05-10-01" },
+    );
+    const rc = await realRunner(catchupCtx(dbC));
+    const st = (id) =>
+      dbC.tables.races.find((x) => x.race_id === id).cancellation_status;
+    check(
+      "catch-up 通し（BOA-524）: 14日以内（9/12）の「結果があるのに確定中止」を解除し、期間の外（9/5）と結果の無い確定中止は触らない",
+      st("2026-09-12-10-01") === null &&
+        st("2026-09-05-10-01") === "confirmed" &&
+        st(RACE_B) === "confirmed" &&
+        same(rc.report.clearedCancellations, ["2026-09-12-10-01"]),
+      show(rc.report),
+    );
+    // 解除の読み取りが失敗しても、的中フラグの補完は済んでから例外になる
+    const hitCalls = [];
+    const failRunner = createResultCatchupRun({
+      confirm: async () => ({ checked: 0, confirmed: [] }),
+      clearWithResults: async () => {
+        throw new Error("解除の読み取りに失敗（テスト）");
+      },
+      fixHitFlags: async (from, to) => {
+        hitCalls.push([from, to]);
+        return { missing: 0, fixed: 0 };
+      },
+    });
+    let failErr = null;
+    try {
+      await failRunner(catchupCtx(catchupDb()));
+    } catch (e) {
+      failErr = e;
+    }
+    check(
+      "catch-up: 解除が失敗したら例外（握りつぶさない）。ただし的中フラグの補完は先に済んでいる",
+      /解除の読み取り/.test(failErr?.message ?? "") && hitCalls.length === 1,
+    );
+  }
+  {
+    // 解除: 対象が多いときは分けて読み書きする（URL長の上限対策）。450件 → 200・200・50
+    const ids = Array.from({ length: 450 }, (_, i) => `X${i}`);
+    const dbL = createFakeDb({
+      races: ids.map((race_id) => ({
+        race_id,
+        cancellation_status: "confirmed",
+        cancellation_check_streak: 0,
+      })),
+      race_results: ids.map((race_id) => ({ race_id })),
+    });
+    const rl = await clearCancellationsWithResults(dbL, ids);
+    check(
+      "解除: 450件を200件ずつ3回に分けて読み（race_results・races で6回）、3回に分けて更新し、全件を解除する",
+      rl.cleared.length === 450 &&
+        dbL.reads.length === 6 &&
+        dbL.writes.filter((w) => w.table === "races").length === 3 &&
+        dbL.tables.races.every((r) => r.cancellation_status === null),
+      show({ reads: dbL.reads.length, writes: dbL.writes.length }),
+    );
+  }
   // shadow: 取得・解析のみ。確定・的中フラグの補完・書き込みをしない
   spyConfirm.length = 0;
   spyHits.length = 0;
