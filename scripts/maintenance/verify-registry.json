@@ -163,6 +163,11 @@
       "guards": "前検タイム・前検順位・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）"
     },
     {
+      "script": "verify-final-odds-job.js",
+      "tier": "ci",
+      "guards": "締切時オッズ（公式）の取り直し（api/cron/odds-final.js、BOA-496）: 締切後の実ページの解析・票0を0で保存・締切前は1ページだけで再試行・券種ごとの成否と取れた列だけの保存・再試行で未保存のページだけ取る・レジストリとcronの設定"
+    },
+    {
       "script": "verify-odds-live-api.js",
       "tier": "ci",
       "guards": "オッズのライブ取得API（api/odds/live.js、BOA-487）: オッズ更新時間・締切時オッズの検出、票0を0で返す解析、当日のみ受け付けるクエリ検証、Cache-Control"

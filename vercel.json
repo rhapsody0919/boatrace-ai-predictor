@@ -91,6 +91,10 @@
       "schedule": "* 22-23,0-14 * * *"
     },
     {
+      "path": "/api/cron/odds-final",
+      "schedule": "*/5 22-23,0-14 * * *"
+    },
+    {
       "path": "/api/cron/race-info",
       "schedule": "* 22-23,0-14 * * *"
     },
