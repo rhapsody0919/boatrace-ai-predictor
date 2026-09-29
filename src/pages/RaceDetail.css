@@ -172,7 +172,8 @@
    存在し、意図的に異なるデザイン（余白・配色）を与えている。CSSが全ページ分
    1つのバンドルに結合されビルド順で意図しない側が勝つ事故が過去にあったため
    （BOA-206/BOA-207）、.race-detail-page配下に限定する詳細度スコープで
-   確実に自ページのスタイルが勝つようにする */
+   確実に自ページのスタイルが勝つようにする。
+   なお 2026-09-29 時点で .race-detail-page 配下に .race-grid を出す画面は無い（BOA-528） */
 .race-detail-page .race-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
