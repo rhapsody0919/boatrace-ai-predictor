@@ -46,15 +46,15 @@
   min-width: 0;
 }
 
-/* 会場カードの先頭の目印（ここから発走前のレース・次のレースへの近道）。直前のグリッドの行が途中で
-   終わっても、そこが「締切済みのレースの終わり」だと分かるようにする（ファン評価1周目） */
+/* 会場カードの下（次のレースのカードの直上）の目印（会場名・次の締切・そのレースへの近道）。
+   自動スクロールの着地点（BOA-546 ファン評価1・2周目） */
 .venue-race-list__next-race-marker {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: 0.25rem 1rem;
-  margin: 0 0 0.75rem;
+  margin: 0.75rem 0 0;
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius-md);
   background: var(--surface-card);

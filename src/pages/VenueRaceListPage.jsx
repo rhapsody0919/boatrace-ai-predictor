@@ -31,6 +31,9 @@ import { getRaceStatus, RACE_STATUS } from "../utils/raceStatus";
 import { formatDate } from "../utils/formatters";
 import "./VenueRaceListPage.css";
 
+// ユーザーが自分でスクロールし始めたことを示すイベント（着地点の合わせ直しをやめる）
+const USER_SCROLL_EVENTS = ["wheel", "touchstart", "keydown", "pointerdown"];
+
 // sticky ヘッダーに隠れない位置へスクロールする（ヘッダーはスクロールすると低くなるため、いまの高さで少し余裕を持たせる）
 function scrollBelowHeader(el) {
   if (!el) return;
@@ -63,39 +66,59 @@ function VenueRaceListPage() {
   const [openedHHMM] = useState(() => (isToday ? getNowHHMMJST() : null));
   // ブラウザの戻る・進む（履歴の移動）で来たときは自動スクロールしない（ブラウザのスクロール位置の復元を優先）。
   // ページを最初に開いたときも react-router は "POP" になるため、履歴の移動かは location.key で見分ける
-  // （最初に開いたページは "default"）
+  // （最初に開いたページ・リロードは "default"）。リロードは、一覧を後から読み込むためブラウザが元の位置を
+  // 復元できず最上部に戻るので、開いたときと同じく次のレースへ移す（ファン評価2周目）
   const navigationType = useNavigationType();
   const location = useLocation();
   const cameFromHistory =
     navigationType === "POP" && location.key !== "default";
-  // リロード（これも "POP"）で開いたときも、読んでいた位置へ戻すブラウザの復元を優先する（ファン評価1周目）。
-  // リロードは location.key が "default" に戻ることがあり、履歴の移動と見分けられない。そこで、このタブで
-  // 一度自動スクロールした会場ページを "POP" で開き直したときはスクロールしない（sessionStorage に記録）
-  const autoScrollKey = `venueAutoScrolled:${location.pathname}`;
-  const [reopenedInTab] = useState(() => {
-    try {
-      return (
-        navigationType === "POP" &&
-        window.sessionStorage.getItem(autoScrollKey) === "1"
-      );
-    } catch {
-      return false;
-    }
-  });
-  const venueCardsRef = useRef(null);
+  const gridRef = useRef(null);
+  const markerRef = useRef(null);
   const scrolledRef = useRef(false);
-  // 会場カードを次の発走レースの直前に差し込んだら、そこまで1回だけスクロールする（BOA-546）
+  // 次のレースの目印（次のレースのカードの直上）まで1回だけスクロールする（BOA-546）。直上の会場カードは
+  // 自分でデータを読み込むため、読み込みで高さが変わると目印が画面の下へ押し出される（ファン評価2周目）。
+  // 着いてから5秒間は、ユーザーが操作するまで高さの変化に合わせて位置を合わせ直す
   useEffect(() => {
-    if (scrolledRef.current || cameFromHistory || reopenedInTab) return;
-    const el = venueCardsRef.current;
-    if (!el) return;
+    if (scrolledRef.current || cameFromHistory) return undefined;
+    const marker = markerRef.current;
+    if (!marker) return undefined;
     scrolledRef.current = true;
-    scrollBelowHeader(el);
-    try {
-      window.sessionStorage.setItem(autoScrollKey, "1");
-    } catch {
-      // 保存できない環境（プライベートモード等）では、リロード時にもう一度スクロールするだけ
-    }
+    // 自分で合わせた位置。これと違う位置へのスクロールは、ユーザーの操作（スクロールバーのドラッグ等も含む）
+    // とみなして合わせ直しをやめる
+    // 高さが変わった直後のずれは、ブラウザのスクロール位置の自動調整（scroll anchoring）によるものなので、
+    // ユーザーの操作とみなさず合わせ直す
+    let expectedY = 0;
+    let lastResizeAt = 0;
+    const realign = () => {
+      scrollBelowHeader(marker);
+      expectedY = window.scrollY;
+    };
+    realign();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(() => {
+      lastResizeAt = Date.now();
+      realign();
+    });
+    observer.observe(marker.parentElement);
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - expectedY) <= 2) return;
+      if (Date.now() - lastResizeAt < 300) realign();
+      else stop();
+    };
+    const stop = () => {
+      observer.disconnect();
+      clearTimeout(timer);
+      window.removeEventListener("scroll", onScroll);
+      USER_SCROLL_EVENTS.forEach((type) =>
+        window.removeEventListener(type, stop),
+      );
+    };
+    const timer = setTimeout(stop, 5000);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    USER_SCROLL_EVENTS.forEach((type) =>
+      window.addEventListener(type, stop, { passive: true }),
+    );
+    return undefined;
   });
 
   if (!Number.isInteger(venueCode) || venueCode < 1 || venueCode > 24) {
@@ -129,6 +152,19 @@ function VenueRaceListPage() {
             ) === RACE_STATUS.UPCOMING,
         );
   const cardsBeforeIndex = nextRaceIndex > 0 ? nextRaceIndex : null;
+  // 目印の「次の締切」は、いまの時刻で決める（位置は固定だが、開いたまま時間がたつと、開いた時点の「次」は
+  // 締切を過ぎている。ファン評価2周目 P1）
+  const liveNextIndex =
+    nowHHMM == null
+      ? -1
+      : venueRaces.findIndex(
+          (race) =>
+            getRaceStatus(
+              { startTime: race.startTime, result: race.rawData?.result },
+              nowHHMM,
+            ) === RACE_STATUS.UPCOMING,
+        );
+  const liveNextRace = liveNextIndex >= 0 ? venueRaces[liveNextIndex] : null;
 
   const backLink = isToday ? localize("/") : `/races/${date}`;
   const breadcrumbItems = isToday
@@ -215,44 +251,52 @@ function VenueRaceListPage() {
             </div>
           ) : (
             <section className="race-list-section">
-              <div className="race-grid">
+              <div className="race-grid" ref={gridRef}>
                 {venueRaces.map((race, index) => [
                   showCardsInGrid && index === cardsBeforeIndex && (
                     <div
                       key="venue-cards"
-                      ref={venueCardsRef}
                       className="venue-race-list__next-race-cards"
                       data-testid="venue-next-race-cards"
                     >
-                      {/* 自動スクロールで着いた位置で、ここがどこか（上は締切済み、下から発走前）と次のレースを示す。
-                          会場カードは縦に長く、次のレースが最初の1画面に入らないため、そこへの近道も置く
-                          （ファン評価1周目） */}
+                      {venueCards}
+                      {/* 次のレースの目印（自動スクロールの着地点）。会場名と、いまの時刻で決めた次の締切を出し、
+                          そのレースのカードへの近道を置く。会場カードは縦に長いため、目印は会場カードの下＝次の
+                          レースのカードの直上に置き、着いた1画面目に次のレースが入るようにする（ファン評価2周目） */}
                       <p
+                        ref={markerRef}
                         className="venue-race-list__next-race-marker"
                         data-testid="venue-next-race-marker"
                       >
                         <span>
-                          {t("venueRaceList.nextRaceMarker", {
-                            race: race.raceNumber,
-                            time: race.startTime,
-                          })}
+                          {liveNextRace
+                            ? t("venueRaceList.nextDeadlineMarker", {
+                                venue: venueName,
+                                race: liveNextRace.raceNumber,
+                                time: liveNextRace.startTime,
+                              })
+                            : t("venueRaceList.allClosedMarker", {
+                                venue: venueName,
+                              })}
                         </span>
-                        {/* 会場カードの直後（グリッドの次の要素）が次のレースのカード */}
-                        <button
-                          type="button"
-                          className="venue-race-list__next-race-jump"
-                          onClick={() =>
-                            scrollBelowHeader(
-                              venueCardsRef.current?.nextElementSibling,
-                            )
-                          }
-                        >
-                          {t("venueRaceList.jumpToNextRace", {
-                            race: race.raceNumber,
-                          })}
-                        </button>
+                        {liveNextRace && (
+                          <button
+                            type="button"
+                            className="venue-race-list__next-race-jump"
+                            onClick={() =>
+                              scrollBelowHeader(
+                                gridRef.current?.querySelectorAll(
+                                  ":scope > .race-card",
+                                )[liveNextIndex],
+                              )
+                            }
+                          >
+                            {t("venueRaceList.jumpToNextRace", {
+                              race: liveNextRace.raceNumber,
+                            })}
+                          </button>
+                        )}
                       </p>
-                      {venueCards}
                     </div>
                   ),
                   <RaceCard
