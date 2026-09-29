@@ -372,11 +372,12 @@ function BlockHead({ n, name }) {
   );
 }
 
-// 文字列のおおよその幅（em）。全角（漢字・かな・ハングル）は1em、それ以外（数字・英字・記号）は0.6em
+// 文字列のおおよその幅（em）。全角（漢字・かな・ハングル）は1em、それ以外（数字・英字・記号）は0.65em
+// （太字の数字は約0.6em。1000倍以上を小数なしにして文字数が減ると見積もりの余裕も減るため、少し広めに取る。BOA-577）
 const approxEm = (text) =>
   [...text].reduce(
     (sum, ch) =>
-      sum + (/[\u1100-\u11ff\u3000-\u9fff\uac00-\ud7af\uff00-\uffef]/.test(ch) ? 1 : 0.6),
+      sum + (/[\u1100-\u11ff\u3000-\u9fff\uac00-\ud7af\uff00-\uffef]/.test(ch) ? 1 : 0.65),
     0,
   );
 
