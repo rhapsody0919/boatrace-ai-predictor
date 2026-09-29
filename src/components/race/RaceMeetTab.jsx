@@ -193,18 +193,21 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
     player: p,
     runs: meetRunsByRacer[p.racerId] ?? [],
   }));
-  // **この節がいつからいつまでか**。6行の折れ線には日付の手がかりが何も無く、
+  // **このグラフが何を描いているか**。6行の折れ線には日付の手がかりが何も無く、
   // 「いつからいつまでの話か」が読めない（2026-09-29のファン評価）。
   //
-  // ただし**横軸は行ごとに違う**。`MeetSparkline` の x は
-  // `i / (values.length - 1)` で、各行が自分の走数で左右いっぱいに伸びるため、
-  // 走数が違えば左端の日付も違う（戸田2026-09-28の実表示で点が3個/4個/5個）。
-  // なので「左が◯日」とは書かない。
+  // 文言は3回書き直した。書けないことが3つある。
   //
-  // **「この節は◯〜◯」とも書かない**。`meetRunsByRacer` は表示中レースの
-  // 直前までしか持たないので、その日の1Rでは当日が入らず、節の期間を名乗ると
-  // 短く出る（戸田 2026-09-28 の1Rで「9/26〜9/27」と出た）。
-  // グラフが何を描いているかだけを言う。
+  // 1. **「左が◯日」**とは書けない。`MeetSparkline` の x は
+  //    `i / (values.length - 1)` で、各行が自分の走数で左右いっぱいに伸びる。
+  //    走数が違えば左端の日付も違う（戸田2026-09-28で点が3個/4個/5個）
+  // 2. **「この節は◯〜◯」**とも書けない。`meetRunsByRacer` は表示中レースの
+  //    直前までしか持たず、その日の1Rでは当日が入らない（戸田2026-09-28の1Rで
+  //    「9/26〜9/27」と出た）
+  // 3. **日付だけを名乗ってもいけない**。横位置＝時間と読まれ、行をまたいで
+  //    「同じ日」と比べてしまう。実際は x は走った順で、同じ9/27の2走が
+  //    横幅いっぱいに離れて描かれる。**先に「走った順」と断る**
+  //
   // 横軸をそろえる話は BOA-538。追加取得はせず、既に持っている日付から出す
   const trendDates = [
     ...new Set(
@@ -213,8 +216,15 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   ].sort();
   // 表の日付（9/22）と同じ形。`slice` だけだと「09/22」でゼロ埋めが残る
   const mdOf = (d) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`;
+  // **線が1本も引けないときは出さない**。初日で各艇1走だと点が1個ずつになり、
+  // 折れ線が描かれないのに「◯〜◯の走」「走った順」と言うことになる
+  // （戸田 2026-09-26 の11Rで、6行とも線が無い状態で出ていた）。
+  // 2点以上ある行が1つも無ければ、説明することが無い
+  const hasAnyLine = trendRows.some(
+    (r) => r.runs.filter((x) => typeof x[trendKey] === "number").length >= 2,
+  );
   const trendRange =
-    trendDates.length > 0
+    trendDates.length > 0 && hasAnyLine
       ? {
           from: mdOf(trendDates[0]),
           to: mdOf(trendDates[trendDates.length - 1]),
