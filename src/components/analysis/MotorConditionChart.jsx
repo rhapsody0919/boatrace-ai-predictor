@@ -285,13 +285,17 @@ function MotorConditionChart({
   const firstRatedIndex = (trendData?.trend ?? []).findIndex(
     (row) => row.motor_2rate !== 0 || row.motor_3rate !== 0,
   );
-  const chartData = (trendData?.trend ?? [])
-    .slice(firstRatedIndex === -1 ? 0 : firstRatedIndex)
-    .map((row) => ({
-      date: row.date.slice(5),
-      motor_2rate: row.motor_2rate,
-      motor_3rate: row.motor_3rate,
-    }));
+  // 全部の点が 0（最初の節がまだ終わらず公式の累計が付いていない）なら線を引かない。
+  // 0% の横線は「一度も2着以内に来ていない」と読まれる（2026-09-29 ファン評価 P1）
+  const chartData = (
+    firstRatedIndex === -1
+      ? []
+      : (trendData?.trend ?? []).slice(firstRatedIndex)
+  ).map((row) => ({
+    date: row.date.slice(5),
+    motor_2rate: row.motor_2rate,
+    motor_3rate: row.motor_3rate,
+  }));
 
   const exhibitionChartData = (trendData?.trend ?? [])
     .filter((row) => row.exhibition_time !== null)
@@ -922,7 +926,15 @@ function MotorConditionChart({
               ]}
             />
           ) : (
-            <div className="empty-state">{t("analysis.motor.trendEmpty")}</div>
+            <div className="empty-state">
+              {(trendData?.trend ?? []).length > 0
+                ? t("analysis.motor.trendNotYetOfficial")
+                : t("analysis.motor.trendEmpty")}
+            </div>
+          )}
+          {/* 先頭の 0 を落としたとき、下の展示タイムのグラフと始まりの日がずれる理由 */}
+          {firstRatedIndex > 0 && (
+            <p className="table-note">{t("analysis.motor.trendStartNote")}</p>
           )}
 
           <h3 className="selected-motor-heading">
@@ -1000,7 +1012,10 @@ function MotorConditionChart({
                           ? t("analysis.motor.usageHistoryRank", {
                               n: r.rank,
                             })
-                          : "-",
+                          : // 今日これから走るレースは「未」。欠場・失格等の「-」と区別する
+                            r.date >= getTodayJST()
+                            ? t("analysis.motor.usageHistoryNotRun")
+                            : "-",
                       )
                       .join(" ")}
                   </span>

@@ -139,6 +139,29 @@ check(
       chart.includes("event.raceNos.map((n) => `${n}R`)"),
   );
 }
+// ---- BOA-513 PR2 ファン評価1周目（2026-09-29） ----
+check(
+  "推移グラフ: 全部の点が 0（公式の累計がまだ無い）なら線を引かず、その旨を出す",
+  /firstRatedIndex === -1\s*\?\s*\[\]/.test(chart) &&
+    chart.includes('t("analysis.motor.trendNotYetOfficial")'),
+);
+check(
+  "推移グラフ: 先頭の 0 を落としたときは、展示タイムと始まりがずれる理由を書く",
+  chart.includes("firstRatedIndex > 0 && (") &&
+    chart.includes('t("analysis.motor.trendStartNote")'),
+);
+check(
+  "使用履歴: 今日これから走るレースは「未」と出し、欠場等の「-」と区別する",
+  /r\.date >= getTodayJST\(\)\s*\?\s*t\("analysis\.motor\.usageHistoryNotRun"\)/.test(
+    chart,
+  ),
+);
+check(
+  "選手×枠成績: n<6 では (n=◯) を付けない（分数に走数が入る）",
+  /\{!isSmallSample && \(\s*<span className="motor-waku-n">/.test(
+    read("src/components/analysis/MotorRacerWakuDrillDown.jsx"),
+  ),
+);
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;

@@ -37,11 +37,12 @@ function MotorRacerWakuDrillDown({ course, rows, onBack }) {
                 >
                   {row.playerName?.replace(/\s+/g, "")}
                 </Link>
-                <span
-                  className={`motor-waku-n ${isSmallSample ? "is-small-sample" : ""}`}
-                >
-                  {t("analysis.motor.sampleCount", { n: row.raceCount })}
-                </span>
+                {/* n<6 は率を「2/3」で出し、分母に走数が入るので (n=◯) は付けない */}
+                {!isSmallSample && (
+                  <span className="motor-waku-n">
+                    {t("analysis.motor.sampleCount", { n: row.raceCount })}
+                  </span>
+                )}
                 <span
                   className={`usage-history-rate ${isSmallSample ? "is-small-sample" : ""}`}
                 >
