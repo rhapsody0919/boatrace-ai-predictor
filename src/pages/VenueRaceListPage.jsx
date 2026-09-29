@@ -83,6 +83,17 @@ function VenueRaceListPage() {
       return null;
     }
   });
+  // ブラウザ自身のスクロール位置の復元は、一覧を後から読み込むため効かないうえ、読み込み後にこちらの復元を
+  // 上書きして最上部へ戻すことがある。このページを開いている間は止め、戻る・進む・リロードの位置はすべて
+  // 自前で保存・復元する（離れるときに元へ戻す）
+  useEffect(() => {
+    if (!("scrollRestoration" in window.history)) return undefined;
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    return () => {
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
   useEffect(() => {
     const save = () => {
       try {
@@ -91,9 +102,21 @@ function VenueRaceListPage() {
         // 保存できない環境では、開き直したときに次のレースへ移るだけ
       }
     };
+    // 離れるときだけに頼らず、スクロールのたびに（1フレームに1回）保存する
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        save();
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("pagehide", save);
     return () => {
+      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("pagehide", save);
+      if (frame) window.cancelAnimationFrame(frame);
       save();
     };
   }, [scrollKey]);
@@ -110,6 +133,25 @@ function VenueRaceListPage() {
       if (!gridRef.current) return undefined;
       scrolledRef.current = true;
       window.scrollTo({ top: savedScrollY });
+      // 直後に高さの変化などで位置がずれたら、ユーザーが操作していなければ1回だけ戻し直す
+      let touched = false;
+      const markTouched = () => {
+        touched = true;
+      };
+      USER_SCROLL_EVENTS.forEach((type) =>
+        window.addEventListener(type, markTouched, {
+          passive: true,
+          once: true,
+        }),
+      );
+      setTimeout(() => {
+        USER_SCROLL_EVENTS.forEach((type) =>
+          window.removeEventListener(type, markTouched),
+        );
+        if (!touched && Math.abs(window.scrollY - savedScrollY) > 50) {
+          window.scrollTo({ top: savedScrollY });
+        }
+      }, 500);
       return undefined;
     }
     const marker = markerRef.current;

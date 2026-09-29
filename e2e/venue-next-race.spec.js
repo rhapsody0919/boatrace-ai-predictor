@@ -154,24 +154,35 @@ test.describe("着いた位置の目印（ファン評価1・2周目）", () => 
     const marker = page.getByTestId("venue-next-race-marker");
     await expect(marker).toContainText("次の締切 12R 16:00");
     expect(await cardsPosition(page)).toBe("9");
+    // 会場カード（この日の水面傾向）の読み込みが終わってから押す（押した後に上が伸びると12Rが押し下げられる）
+    await expect(page.getByTestId("venue-day-summary-teaser")).toBeVisible({
+      timeout: 20000,
+    });
     await marker.getByRole("button", { name: "12Rへ" }).click();
     // 12R は最後のカードなので、ヘッダーの直下まで来るか、ページの末端までスクロールする
     const twelveR = page.locator(".race-grid > .race-card").nth(11);
     const headerBottom = await page
       .locator(".app-header")
       .evaluate((e) => e.getBoundingClientRect().bottom);
+    // （押した後に会場カードの読み込みでページが伸びることがあるため、どちらかを満たせばよい）
     await expect
       .poll(() =>
-        page.evaluate(
-          () =>
-            window.scrollY + window.innerHeight >=
-            document.documentElement.scrollHeight - 2,
+        twelveR.evaluate(
+          (e, hb) => {
+            const top = e.getBoundingClientRect().top;
+            const atBottom =
+              window.scrollY + window.innerHeight >=
+              document.documentElement.scrollHeight - 2;
+            return (
+              top >= hb - 1 &&
+              top < window.innerHeight &&
+              (atBottom || top < hb + 40)
+            );
+          },
+          headerBottom,
         ),
       )
       .toBe(true);
-    const top = await twelveR.evaluate((e) => e.getBoundingClientRect().top);
-    expect(top).toBeGreaterThanOrEqual(headerBottom - 1);
-    expect(top).toBeLessThan(page.viewportSize().height);
   });
 
   test("会場カードの読み込みが遅くても、着いた後に目印が画面外へ押し出されない", async ({
