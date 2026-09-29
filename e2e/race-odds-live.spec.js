@@ -570,6 +570,32 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
  * - なし: 従来の表示のまま
  * - 推移: 最後の点は「締切時（公式）」、0分前の記録は外す、最後の区間は点線、パネルの下に注記
  */
+// BOA-547: 締切直後〜締切時オッズ（公式）の保存（締切5分後〜最大60分後）までは記録値の表示になり、保存後に
+// 締切時オッズへ入れ替わる。その間は、あとで切り替わることを予告する
+test.describe("締切時オッズへの切り替えの予告（BOA-547）", () => {
+  test.slow();
+
+  test("締切後1時間以内で締切時オッズがまだ無い: 予告を出す", async ({
+    page,
+  }) => {
+    const { status } = await setup(page, { now: AFTER_DEADLINE }); // 締切16分後
+    await expect(status).toContainText("13:54 取得");
+    await expect(page.getByTestId("odds-final-pending")).toContainText(
+      "締切時オッズの表示に切り替わります",
+    );
+  });
+
+  test("締切から1時間を過ぎた（取り直しの期間が終わった）: 予告を出さない", async ({
+    page,
+  }) => {
+    const { status } = await setup(page, {
+      now: new Date("2026-09-28T15:30:00+09:00"),
+    });
+    await expect(status).toContainText("取得");
+    await expect(page.getByTestId("odds-final-pending")).toHaveCount(0);
+  });
+});
+
 test.describe("締切時オッズ（公式、BOA-496）", () => {
   test.slow();
 

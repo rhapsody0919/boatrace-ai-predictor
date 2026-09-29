@@ -704,6 +704,7 @@
     "winAllNoVotes": "No Win/Place bets have been placed yet (the official site shows 0.0). They start coming in as the deadline approaches",
     "allNoVotes": "No bets have been placed on this bet type yet (the official site shows 0.0). They start coming in as the deadline approaches",
     "snapshotLagNote": "These are the official values at the time of fetching. Official odds updates can lag by a few minutes, so they may differ from the final odds and payouts",
+    "finalPendingNote": "The official final odds are fetched a while after the deadline (up to an hour). Reopen this tab after that to see them",
     "liveUnchanged": "No change (refreshing within 30 seconds returns the same values)",
     "liveFromNote": "From 90 minutes before the deadline, this tab shows the latest official odds.",
     "officialOddsLink": "See odds on the official site",

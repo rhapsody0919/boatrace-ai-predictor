@@ -50,6 +50,8 @@ const BOAT_NUMBERS = [1, 2, 3, 4, 5, 6];
 
 // ライブ取得の対象: 締切までこの時間以内の、当日のレース
 const LIVE_WINDOW_MS = 90 * 60 * 1000;
+// 締切時オッズ（公式）を取り直す期間。締切の5分後から、最大60分後まで（api/cron/odds-final.js）
+const FINAL_ODDS_WINDOW_MS = 60 * 60 * 1000;
 
 // 券種定義。dataKeyはgetRaceOddsSnapshots（スナップショット行）と /api/odds/live の data の両方のキー。
 // ordered=false（trio/quinella/wide）は艇番昇順ソート済みキー（ADR-0054）
@@ -455,7 +457,7 @@ function snapshotLabel(t, snapshot, deadline) {
 }
 
 // ライブ取得の状態の1行（取得中・最新・失敗）。スナップショットだけのときは取得時刻の注記
-function LiveStatus({ entry, fallbackLabel, onRefresh }) {
+function LiveStatus({ entry, fallbackLabel, onRefresh, finalPending }) {
   const { t } = useTranslation();
   if (!entry) {
     // DB のスナップショットは「取得した時点の公式表示」。公式のオッズ更新は数分遅れることがあり、
@@ -464,6 +466,13 @@ function LiveStatus({ entry, fallbackLabel, onRefresh }) {
       <div className="rol-status is-snapshot" data-testid="odds-live-status">
         <span>{t("oddsList.snapshotValues", { label: fallbackLabel })}</span>
         <span className="rol-status-sub">{t("oddsList.snapshotLagNote")}</span>
+        {/* 締切直後〜締切時オッズ（公式）の保存まで（締切5分後から最大60分後まで取り直す）は、記録値で出ている
+            ことと、あとで締切時オッズに切り替わることを予告する（BOA-547） */}
+        {finalPending && (
+          <span className="rol-status-sub" data-testid="odds-final-pending">
+            {t("oddsList.finalPendingNote")}
+          </span>
+        )}
       </div>
     ) : null;
   }
@@ -784,6 +793,14 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
   const officialOddsUrl = beforeLiveWindow
     ? `https://www.boatrace.jp/owpc/pc/race/oddstf?rno=${parsedRace.raceNo}&jcd=${String(parsedRace.venueCode).padStart(2, "0")}&hd=${parsedRace.date.replace(/-/g, "")}`
     : null;
+
+  // 締切後で、締切時オッズ（公式）をまだ保存していない（cron が締切5分後〜60分後に取り直す）あいだ
+  const finalPending =
+    !finalOdds &&
+    !!snapshots &&
+    !!deadline &&
+    openedAtMs > deadline.getTime() &&
+    openedAtMs - deadline.getTime() <= FINAL_ODDS_WINDOW_MS;
 
   const retrySnapshots = () => {
     setSnapshotState(null);
@@ -1162,6 +1179,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
             entry={liveEntry}
             fallbackLabel={fallbackLabel}
             onRefresh={refreshLive}
+            finalPending={finalPending}
           />
         )
       )}
