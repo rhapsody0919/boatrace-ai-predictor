@@ -139,6 +139,12 @@ const PREDICTION_NESTED_CHECKS = [
       "popularityWide1",
       "popularityWide2",
       "popularityWide3",
+      // 109（BOA-543）: レースの成立状態・返還艇・備考・払戻明細。値が null（未判定・明細なし）でも
+      // キーは出る。109 の適用前はこの4キーが欠落として NG になる（適用漏れの検知）
+      "raceStatus",
+      "refundBoats",
+      "remark",
+      "payoutRows",
     ],
   },
 ];
