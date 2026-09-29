@@ -1728,13 +1728,17 @@ test.describe("レースページ再設計（BOA-168）", () => {
           .getBoundingClientRect();
         return {
           hasLine: Boolean(el.querySelector(".meet-sparkline-wrap")),
+          dots: el.querySelectorAll(".meet-sparkline > circle").length,
           height: Math.round(el.getBoundingClientRect().height),
           lastRight: Math.round(last.right),
         };
       }),
     );
-    // 線の無い行が実際にある（前提が崩れたらテストの意味が無い）
-    expect(boxes.some((b) => !b.hasLine)).toBe(true);
+    // 1走の行が実際にある（前提が崩れたらテストの意味が無い）。1走でも行が
+    // 空白にならず、前走の点が1つだけ出る（2周目のファン評価で空白が
+    // 「取れていない」と読まれた）
+    expect(boxes.some((b) => b.dots === 1)).toBe(true);
+    expect(boxes.every((b) => b.hasLine && b.dots >= 1)).toBe(true);
     expect(new Set(boxes.map((b) => b.lastRight)).size).toBe(1);
     expect(new Set(boxes.map((b) => b.height)).size).toBe(1);
 

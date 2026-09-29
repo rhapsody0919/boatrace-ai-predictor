@@ -726,6 +726,8 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                         "var(--brand-accent-primary)"
                       }
                       height={34}
+                      // 1走の選手も前走の点を出す（空白だと取れていないと読まれる）
+                      allowSinglePoint
                     />
                     <span className="rmt-trend-last">
                       {typeof last === "number" ? last.toFixed(2) : "—"}
