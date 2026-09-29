@@ -300,6 +300,30 @@ function withCache(key, fetcher, ttl) {
 }
 
 /**
+ * getRaceMotorMaintenanceBreakdown の戻り値を作る（BOA-497）。
+ *
+ * exhibition_data は1レースの中で段階的に埋まる。展示前は行が無いか、当日体重・調整重量
+ * だけの行（BOA-500）、会場によっては展示タイムより先に展示STだけの行（BOA-356）。
+ * チルト・展示タイム・展示進入はその後に同じ行へ入る。
+ * 途中の状態をキャッシュすると、値が入った後も本日分は30分、リロードしても「—」のまま出る。
+ *
+ *   { state: "complete", rows }                      6艇以上の行があり、欠場以外の全艇に展示タイムがある
+ *   { state: "partial",  rows, fetchFailed: true }   それ以外（展示前・書き込み途中・欠測）
+ * partial は fetchFailed を付けて withCache に保存させない（frontend-data-fetch.md §4）。
+ * 確定後も揃わないレース（欠測・取得漏れ）は毎回取り直すが、1クエリなので許容する。
+ * 行の中身は state によらず同じで、画面は rows だけを見る
+ */
+const FULL_FIELD_SIZE = 6;
+function toMaintenanceResult(rows) {
+  const complete =
+    rows.length >= FULL_FIELD_SIZE &&
+    rows.every((row) => row.is_absent === true || row.exhibition_time != null);
+  return complete
+    ? { state: "complete", rows }
+    : { state: "partial", rows, fetchFailed: true };
+}
+
+/**
  * getPredictions()の取得失敗を表す空レスポンス。
  * races: [] は既存の呼び出し側（HitRaces等、`data.races || []`で読むもの）を壊さない
  * ための互換値で、「取得に成功したが開催なし（fetchFailedなし）」との区別は
@@ -4967,13 +4991,11 @@ export const supabaseDataService = {
    * 巻き添えで表示できなくなる。これを避けるため、失敗時は新列を除いた旧列のみで再取得する
    */
   getRaceMotorMaintenanceBreakdown(raceId) {
-    // v2: 展示進入（exhibition_course、マイグレーション082）・欠場（is_absent）・
-    // 取得時刻（updated_at）を足した（BOA-485）。キーを変えないと、localStorage に
-    // 残った旧形（列なし）が過去レースで最大7日返り、展示進入が「—」のまま出る
-    return withCache(`race-motor-maintenance-v2-${raceId}`, async () => {
+    // v3: 戻り値を配列から { state, rows } に変えた（BOA-497）。v2 は展示進入等の列を
+    // 足したとき（BOA-485）。キーを変えないと localStorage に残った旧形（配列）が返る
+    return withCache(`race-motor-maintenance-v3-${raceId}`, async () => {
       if (!supabase) {
-        console.error("Supabase client not initialized");
-        return [];
+        throw new Error("Supabase client not initialized");
       }
 
       // supabaseClient.js が .throwOnError() を既定で適用するため、取得エラーは例外になる。
@@ -4985,8 +5007,9 @@ export const supabaseDataService = {
           .from("exhibition_data")
           .select(
             // exhibition_course/is_absent/updated_at は直前情報タブの「展示進入」用
-            // （BOA-485）。同じ行の別列なので、クエリ本数は増やさない（BOA-357）
-            "boat_number, tilt, adjustment_weight, propeller_change, parts_changed, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank, exhibition_course, is_absent, updated_at",
+            // （BOA-485）。同じ行の別列なので、クエリ本数は増やさない（BOA-357）。
+            // exhibition_time はキャッシュしてよいか（展示後か）の判定用（BOA-497）
+            "boat_number, exhibition_time, tilt, adjustment_weight, propeller_change, parts_changed, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank, exhibition_course, is_absent, updated_at",
           )
           .eq("race_id", raceId));
       } catch (error) {
@@ -4999,13 +5022,13 @@ export const supabaseDataService = {
         const { data: legacyData } = await supabase
           .from("exhibition_data")
           .select(
-            "boat_number, tilt, adjustment_weight, propeller_change, parts_changed",
+            "boat_number, exhibition_time, tilt, adjustment_weight, propeller_change, parts_changed",
           )
           .eq("race_id", raceId);
-        return legacyData ?? [];
+        return toMaintenanceResult(legacyData ?? []);
       }
 
-      return data ?? [];
+      return toMaintenanceResult(data ?? []);
     });
   },
 

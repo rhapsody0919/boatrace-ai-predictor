@@ -3482,6 +3482,80 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
     await expect(page.getByTestId("rbi-pre-exhibition-note")).toHaveCount(0);
   });
 
+  // BOA-497: 展示前の途中の結果をキャッシュしない。以前は当日分30分・過去分7日、
+  // localStorage に残り、展示後に値が入っても再訪問・リロードで「—」のまま出た
+  const maintenanceRow = (n, exhibited) => ({
+    boat_number: n,
+    exhibition_time: exhibited ? 6.7 : null,
+    tilt: exhibited ? -0.5 : null,
+    adjustment_weight: 0,
+    propeller_change: null,
+    parts_changed: null,
+    today_weight: 50 + n,
+    prev_race_no: null,
+    prev_entry_course: null,
+    prev_start_timing: null,
+    prev_finish_rank: null,
+    exhibition_course: exhibited ? n : null,
+    is_absent: false,
+    updated_at: "2026-09-21T07:12:56Z",
+  });
+  const tiltCells = (page) => rowByLabel(page, "チルト").locator("td.drt-cell");
+
+  test("展示前（体重だけの行）に開いた後、展示後に開き直すとチルトが出る", async ({
+    page,
+  }) => {
+    let exhibited = false;
+    let requests = 0;
+    await page.route(isMaintenance, (route) => {
+      requests += 1;
+      return fulfillJson(
+        [1, 2, 3, 4, 5, 6].map((n) => maintenanceRow(n, exhibited)),
+      )(route);
+    });
+    await openBeforeInfoTab(page);
+    await expect(tiltCells(page).first()).toHaveText("—", { timeout: 20000 });
+
+    exhibited = true;
+    await openBeforeInfoTab(page);
+    await expect(tiltCells(page).first()).toContainText("-0.5", {
+      timeout: 20000,
+    });
+    expect(requests).toBeGreaterThanOrEqual(2);
+  });
+
+  test("一部の艇だけ展示タイムが入った途中の結果もキャッシュせず、揃った後はキャッシュする", async ({
+    page,
+  }) => {
+    let stage = "partial";
+    let requests = 0;
+    await page.route(isMaintenance, (route) => {
+      requests += 1;
+      return fulfillJson(
+        [1, 2, 3, 4, 5, 6].map((n) =>
+          maintenanceRow(n, stage === "complete" || n <= 3),
+        ),
+      )(route);
+    });
+    await openBeforeInfoTab(page);
+    await expect(tiltCells(page).nth(3)).toHaveText("—", { timeout: 20000 });
+
+    stage = "complete";
+    await openBeforeInfoTab(page);
+    await expect(tiltCells(page).nth(3)).toContainText("-0.5", {
+      timeout: 20000,
+    });
+
+    // 揃った結果は保存される: 応答を途中の状態へ戻しても、開き直しで値が残り、取り直さない
+    const afterComplete = requests;
+    stage = "partial";
+    await openBeforeInfoTab(page);
+    await expect(tiltCells(page).nth(3)).toContainText("-0.5", {
+      timeout: 20000,
+    });
+    expect(requests).toBe(afterComplete);
+  });
+
   test("出走表の体重の取得に失敗したら、未公開と区別して取得失敗を出す", async ({
     page,
   }) => {
