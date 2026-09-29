@@ -519,6 +519,27 @@ check(
         ),
       true,
     );
+    // 本番STの行そのものが無い欠場（他艇の行はある）も、履歴で「欠場」と出す
+    // （2026-06-13 浜名湖5R・12R の中岡正彦が「着外(順位不明)」になっていた）
+    check(
+      "選手の履歴は、本番STの行が無い欠場も欠場として扱う",
+      /absent:\s*isAbsentStartRow\(st\) \|\|\s*\(!st && stRowsByRace\.has\(entry\.race_id\)\)/.test(
+        service,
+      ),
+      true,
+    );
+    const meetTab = readFileSync(
+      new URL("../../src/components/race/RaceMeetTab.jsx", import.meta.url),
+      "utf8",
+    );
+    check(
+      "全走欠場の選手を選んだ詳細に欠場の見出し、「欠」があれば意味の注記を出す",
+      meetTab.includes('t("meetTab.absentDetail")') &&
+        /r\.finishes\.includes\(FINISH_ABSENT\)[\s\S]{0,80}t\("meetTab\.finishAbsentNote"\)/.test(
+          meetTab,
+        ),
+      true,
+    );
   }
   check(
     "男女Ｗ優勝戦の節では別シリーズの全走欠場者を返さない",

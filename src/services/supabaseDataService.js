@@ -4380,7 +4380,11 @@ export const supabaseDataService = {
             // フライングは異常値のため平均ST計算から除外する（RaceResult.jsx等と
             // 同じ扱い）。未計測・未取得レースはnullのまま
             // 欠場（本番STの行の着順が「欠」）。履歴の表で「着外」と区別する（BOA-504）
-            absent: isAbsentStartRow(st),
+            // 本番STの行そのものが無い欠場もある（他の艇の行はあるのに自艇だけ無い。
+            // 2026-06-13 浜名湖5R・12Rの中岡正彦）。着順が付いた走は表示側が着順を
+            // 優先するので、ここで欠場扱いにしても「着順あり」の走は変わらない
+            absent:
+              isAbsentStartRow(st) || (!st && stRowsByRace.has(entry.race_id)),
             startTiming:
               st && !st.is_flying && st.start_timing != null
                 ? st.start_timing

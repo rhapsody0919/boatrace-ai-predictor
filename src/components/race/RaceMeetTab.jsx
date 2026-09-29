@@ -520,6 +520,11 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
             {/* 「欠場」の理由。セルの title はタッチ端末で読めないので本文にも書く
                 （BOA-504 ファン評価） */}
             {absentOnly.length > 0 && <> {t("meetTab.absentNote")}</>}
+            {/* 着順の並びの「欠」の意味と、得点率の分母から外していること
+                （一部欠場の開催でも書く。BOA-504 ファン評価） */}
+            {[...ranking, ...absentOnly].some((r) =>
+              r.finishes.includes(FINISH_ABSENT),
+            ) && <> {t("meetTab.finishAbsentNote")}</>}
             {showBorderBadge && (
               <>
                 {" "}
@@ -822,6 +827,12 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
       </div>
 
       <div className="rmt-card">
+        {/* 全走欠場の選手は得点率の見出しが出ない。何も書かないと「取り忘れ」と
+            読まれるので、欠場だと書く（BOA-504 ファン評価） */}
+        {!mine &&
+          absentOnly.some((r) => r.racerId === selectedPlayer?.racerId) && (
+            <p className="rmt-detail-score">{t("meetTab.absentDetail")}</p>
+          )}
         {mine && (
           <p className="rmt-detail-score">
             {t(
