@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import TrendLineChart from "../analysis/TrendLineChart";
 import MotorStatBadgeRow from "../MotorStatBadgeRow";
+import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
+import { formatPowerIndex, powerIndexTone } from "../../utils/smallSampleRate";
 import "./RacerMotorStatusCard.css";
 
 /**
@@ -47,13 +49,20 @@ export default function RacerMotorStatusCard({ status }) {
 
   const hasPowerIndex =
     powerIndex?.power_index !== null && powerIndex?.power_index !== undefined;
-  const indexClass = hasPowerIndex
-    ? powerIndex.power_index > 0
-      ? "power-index-good"
-      : powerIndex.power_index < 0
-        ? "power-index-bad"
-        : ""
-    : "";
+  // 走数が少ないときは評価の言葉を出さず、参考値の色にする（BOA-549）
+  const tone = hasPowerIndex
+    ? powerIndexTone(
+        powerIndex.power_index,
+        powerIndex.sample_count,
+        SMALL_SAMPLE_THRESHOLD,
+      )
+    : null;
+  const indexClass =
+    {
+      good: "power-index-good",
+      bad: "power-index-bad",
+      small: "is-small-sample",
+    }[tone] ?? "";
 
   return (
     <div className="racer-motor-status-card">
@@ -85,17 +94,20 @@ export default function RacerMotorStatusCard({ status }) {
       {hasPowerIndex && (
         <>
           <p className={`racer-motor-status-index ${indexClass}`}>
-            機力指数 {powerIndex.power_index > 0 ? "+" : ""}
-            {powerIndex.power_index.toFixed(1)}（
+            機力指数 {formatPowerIndex(powerIndex.power_index)}（
             {powerIndex.clipped_by_generation
               ? "現行モーターの使用開始以降"
               : "過去90日"}
-            ・{powerIndex.sample_count}走の平均） —{" "}
-            {powerIndex.power_index > 0
-              ? "実力以上に走っている"
-              : powerIndex.power_index < 0
-                ? "選手の実力より低調"
-                : "実力相応"}
+            ・{powerIndex.sample_count}走の平均）
+            {tone === "small"
+              ? " — 走数が少ないため参考値"
+              : ` — ${
+                  tone === "good"
+                    ? "実力以上に走っている"
+                    : tone === "bad"
+                      ? "選手の実力より低調"
+                      : "実力相応"
+                }`}
           </p>
           <p className="racer-motor-status-note">
             💡

@@ -25,7 +25,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { formatRateOrCount } from "../../src/utils/smallSampleRate.js";
+import {
+  formatPowerIndex,
+  formatRateOrCount,
+  powerIndexTone,
+} from "../../src/utils/smallSampleRate.js";
 import { officialTallyState } from "../../src/utils/motorGeneration.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -196,6 +200,64 @@ check(
     chart,
   ),
 );
+// ---- BOA-549: 走数が少ない機力指数（2026-09-29 ファン4人のパネル） ----
+check(
+  "powerIndexTone: n<6 は評価せず small、6以上は符号で good/bad/even、値なしは null",
+  powerIndexTone(-3.1, 4, 6) === "small" &&
+    powerIndexTone(9.5, 5, 6) === "small" &&
+    powerIndexTone(9.5, 6, 6) === "good" &&
+    powerIndexTone(-0.9, 20, 6) === "bad" &&
+    powerIndexTone(0, 20, 6) === "even" &&
+    // 丸めて 0.0 になる値は良い・悪いと言わない（丸亀45号機 -0.04 が「低調」と出ていた）
+    powerIndexTone(-0.04, 13, 6) === "even" &&
+    powerIndexTone(0.04, 13, 6) === "even" &&
+    powerIndexTone(0.05, 13, 6) === "good" &&
+    powerIndexTone(null, 4, 6) === null,
+);
+check(
+  "機力指数: 一覧・ドリルダウン・選手ページの3か所で powerIndexTone を使い、小標本では評価の言葉を出さない",
+  (chart.match(/powerIndexTone\(/g) ?? []).length >= 2 &&
+    chart.includes('t("analysis.motor.powerIndexSmallSample")') &&
+    card.includes("powerIndexTone(") &&
+    card.includes('tone === "small"'),
+);
+check(
+  "グラフ: 縦軸のラベルを縦方向の中央に置き（375px で切れない）、展示タイムの目盛りは小数2桁にそろえる",
+  read("src/components/analysis/TrendLineChart.jsx").includes(
+    'style: { textAnchor: "middle" }',
+  ) && /exhibitionYAxis"\)\}\s*yTickDecimals=\{2\}/.test(chart),
+);
+{
+  // 使用履歴の節ごとの2連率も、着順の付かなかった走を分母に数える（機力指数・枠番別と
+  // そろえる。BOA-549、戸田14号機で 4/6 と 22/38 が食い違っていた）
+  const svc = read("src/services/supabaseDataService.js");
+  const usage = svc.slice(
+    svc.indexOf("  getMotorUsageHistory("),
+    svc.indexOf("\n  },\n", svc.indexOf("  getMotorUsageHistory(")),
+  );
+  check(
+    "使用履歴: 着順の付かなかった走も、結果の出たレースなら分母に数える（キャッシュのキーも上げる）",
+    /\} else if \(isUsableRaceResult\(result\)\) \{\s*n \+= 1;/.test(usage) &&
+      usage.includes("is_cancelled, is_no_race") &&
+      usage.includes("`motor-usage-history-v3-"),
+  );
+}
+check(
+  "formatPowerIndex: 丸めて0になる負の値を「-0.0」と出さない（丸亀45号機 -0.04 → 0.0）",
+  formatPowerIndex(-0.04) === "0.0" &&
+    formatPowerIndex(12.14) === "+12.1" &&
+    formatPowerIndex(-4.1) === "-4.1" &&
+    formatPowerIndex(0) === "0.0" &&
+    !/power_index > 0 \? "\+" : ""/.test(chart + card),
+);
+check(
+  "一覧: オレンジ色の機力指数がある行があるときは、表の下の注記で意味（6走未満の参考値）を書く",
+  chart.includes('t("analysis.motor.powerIndexSmallSampleNote"'),
+);
+check(
+  "選手ページ: 参考値の文言をレースページと同じ「— 走数が少ないため参考値」にそろえる",
+  card.includes('" — 走数が少ないため参考値"'),
+);
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;
@@ -222,7 +284,11 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       motor.quotedLabel?.includes("{{label}}") &&
       typeof motor.quotedLabelSeparator === "string" &&
       typeof motor.officialSnapshotNote === "string" &&
-      /90/.test(motor.usageHistoryNote),
+      /90/.test(motor.usageHistoryNote) &&
+      // 使用履歴の「-」（着順の付かない走）と「未」の意味・数え方を書く（BOA-549）
+      /「-」|"-"/.test(motor.usageHistoryNote) &&
+      // 枠番別成績の展示タイムの列が、平均の値と推移の図だと分かる見出し（BOA-549）
+      /平均|avg|平均|평균/i.test(motor.exhibitionTrendHeader),
   );
 }
 

@@ -560,3 +560,9 @@ td.rate.is-small-sample {
     height: 18px;
   }
 }
+
+/* 走数が少ない機力指数は、枠番別成績と同じ参考値の色（BOA-549） */
+.motor-ranking-table td.power-index.is-small-sample,
+.power-index-summary.is-small-sample {
+  color: var(--color-warning-text);
+}

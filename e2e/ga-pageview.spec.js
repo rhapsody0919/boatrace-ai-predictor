@@ -64,9 +64,23 @@ test.describe("GA4 page_view の送信経路", () => {
   test("管理画面（/admin）は直接開いてもSPA遷移でも計測しない", async ({
     page,
   }) => {
+    // /admin/rules は表示時に 2026-01-16 以降の predictions を1000件ずつ全件ページングする
+    // （ruleMatchService・adminRuleService。3系統が並行し、1万件超）。このテストが見るのは
+    // GA の送信だけでデータは要らない。取らせると 1.5 秒の待機中に途中まで進んで打ち切られ、
+    // 録画に入らない後半のページが毎回本番へ素通しする（BOA-551）ため、空で返す。
+    // page.route の fulfill は context の録画・再生より先に評価されるので録画も汚さない
+    const PREDICTIONS = /\/rest\/v1\/predictions\?/;
+    const emptyPredictions = (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]",
+      });
+    await page.route(PREDICTIONS, emptyPredictions);
     await page.goto("/admin/rules");
     await page.waitForTimeout(1500);
     expect(await pageViews(page)).toHaveLength(0);
+    await page.unroute(PREDICTIONS, emptyPredictions);
 
     // 公開ページから SPA 遷移で入った場合も送らない（旧実装は config で送っていた）
     await page.goto("/");

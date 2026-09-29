@@ -77,10 +77,31 @@ async function loadPlan({ from, to }) {
   const existingSeriesDay = new Map(
     conditions.map((c) => [c.race_id, c.series_day]),
   );
+  // 節の中の中止・順延（確定）。その日より前にあれば導出はずれるため、埋めない（BOA-501）
+  const minStart = seriesRows.reduce(
+    (m, r) => (r.start_date < m ? r.start_date : m),
+    from,
+  );
+  const cancelledRaces = await fetchAll(
+    "races",
+    "venue_code, race_date",
+    (q) =>
+      q
+        .eq("cancellation_status", "confirmed")
+        .gte("race_date", minStart)
+        .lte("race_date", to)
+        .order("race_id"),
+    { throwOnError: true },
+  );
   return {
     races,
     seriesRows,
-    ...planSeriesDayBackfill({ races, existingSeriesDay, seriesRows }),
+    ...planSeriesDayBackfill({
+      races,
+      existingSeriesDay,
+      seriesRows,
+      cancelledRaces,
+    }),
   };
 }
 

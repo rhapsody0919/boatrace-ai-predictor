@@ -7,10 +7,10 @@ const JST_OFFSET = 9 * 60; // UTC+9 in minutes
 
 /**
  * 現在のJST日時を取得
+ * @param {Date} [now] - 基準時刻（既定は現在時刻）
  * @returns {Date} JST日時のDateオブジェクト
  */
-export const getJSTNow = () => {
-  const now = new Date();
+export const getJSTNow = (now = new Date()) => {
   return new Date(now.getTime() + JST_OFFSET * 60 * 1000);
 };
 
@@ -44,10 +44,11 @@ export const getYesterdayJST = () => {
 /**
  * N日前の日付をJSTで取得
  * @param {number} days - 何日前か
+ * @param {Date} [now] - 基準時刻（既定は現在時刻）
  * @returns {string} YYYY-MM-DD形式
  */
-export const getDaysAgoJST = (days) => {
-  const jstNow = getJSTNow();
+export const getDaysAgoJST = (days, now = new Date()) => {
+  const jstNow = getJSTNow(now);
   const target = new Date(jstNow.getTime() - days * 24 * 60 * 60 * 1000);
   return target.toISOString().split("T")[0];
 };
@@ -83,38 +84,6 @@ export const parseDateInfo = (dateStr) => {
 };
 
 /**
- * 今月の日付範囲を取得
- * @returns {Object} { start, end, year, month }
- */
-export const getThisMonthRange = () => {
-  const jstNow = getJSTNow();
-  const year = jstNow.getUTCFullYear();
-  const month = jstNow.getUTCMonth() + 1;
-  const start = `${year}-${String(month).padStart(2, "0")}-01`;
-  const end = `${year}-${String(month).padStart(2, "0")}-31`;
-  return { start, end, year, month };
-};
-
-/**
- * 先月の日付範囲を取得
- * @returns {Object} { start, end, year, month }
- */
-export const getLastMonthRange = () => {
-  const jstNow = getJSTNow();
-  let year = jstNow.getUTCFullYear();
-  let month = jstNow.getUTCMonth(); // 0-indexed, so this is already "last month"
-
-  if (month === 0) {
-    month = 12;
-    year -= 1;
-  }
-
-  const start = `${year}-${String(month).padStart(2, "0")}-01`;
-  const end = `${year}-${String(month).padStart(2, "0")}-31`;
-  return { start, end, year, month };
-};
-
-/**
  * 日付が今日かどうかを判定
  * @param {string} dateStr - YYYY-MM-DD形式
  * @returns {boolean}
@@ -145,14 +114,19 @@ export const formatDateJP = (dateStr) => {
 
 /**
  * 日付が指定日数以内かどうかを判定
+ * JSTの今日を含む直近 days 日（days=7 なら今日と6日前まで）なら true。未来の日付は false。
+ * new Date("YYYY-MM-DD") は UTC 0時として解釈され、getJSTNow() も UTC に9時間足した値なので、
+ * 両者の差は「JSTの日付の差＋JSTで今日経過した時間」になり、実行環境のタイムゾーンに依存しない
+ * （BOA-554 で TZ=UTC / Asia/Tokyo・JST 03:00 / 12:00 を検証済み）
  * @param {string} dateStr - YYYY-MM-DD形式
  * @param {number} days - 日数
+ * @param {Date} [now] - 基準時刻（既定は現在時刻）
  * @returns {boolean}
  */
-export const isWithinDays = (dateStr, days) => {
+export const isWithinDays = (dateStr, days, now = new Date()) => {
   if (!dateStr) return false;
   const postDate = new Date(dateStr);
-  const jstNow = getJSTNow();
+  const jstNow = getJSTNow(now);
   const diffMs = jstNow.getTime() - postDate.getTime();
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
   return diffDays <= days && diffDays >= 0;
