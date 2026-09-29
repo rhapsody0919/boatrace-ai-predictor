@@ -87,6 +87,8 @@ const FIX = (name) =>
 const HTML_A = FIX("raceresult-2026-09-19-05-01.html"); // 桐生1R（決まり手・ST・払戻あり）
 const HTML_B = FIX("raceresult-2026-09-19-17-12.html"); // 宮島12R
 const HTML_NONE = FIX("raceresult-unpublished-2026-09-25-05-01.html"); // 未公開（着順テーブルなし）
+// 本当の中止（2026-09-21 江戸川1R。公式の結果ページは「レース中止」の表示だけで、着順が無い。BOA-526）
+const HTML_CANCELLED = FIX("raceresult-cancelled-2026-09-21-03-01.html");
 const HTML_PARTIAL = HTML_A.replaceAll("決まり手", "決まりX"); // 決まり手が未公開の状態を模す
 
 const RACE_A = "2026-09-19-05-01";
@@ -1711,7 +1713,7 @@ const catchupCtx = (
     const rt = await quietRunner(
       catchupCtx(dbT, {
         polite: politeFor((url) =>
-          url.includes("jcd=17") ? HTML_NONE : URL_TO_HTML(url),
+          url.includes("jcd=17") ? HTML_CANCELLED : URL_TO_HTML(url),
         ),
       }),
     );
@@ -1730,7 +1732,7 @@ const catchupCtx = (
       (x) => x.race_id !== RACE_A,
     );
     const ro = await quietRunner(
-      catchupCtx(dbO, { polite: politeFor(() => HTML_NONE) }),
+      catchupCtx(dbO, { polite: politeFor(() => HTML_CANCELLED) }),
     );
     const storeO = createMemoryStore({
       rows: { result_catchup: { job: "result_catchup", mode: "live" } },
@@ -1792,7 +1794,7 @@ const catchupCtx = (
     const dbC = catchupDb();
     // 確定中止の宮島12R は、ここでは本当の中止（結果ページが無い）とする
     const pNoB = politeFor((url) =>
-      url.includes("jcd=17") ? HTML_NONE : URL_TO_HTML(url),
+      url.includes("jcd=17") ? HTML_CANCELLED : URL_TO_HTML(url),
     );
     dbC.tables.races.push(
       {
