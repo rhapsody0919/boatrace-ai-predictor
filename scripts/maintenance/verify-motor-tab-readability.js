@@ -199,6 +199,14 @@ check(
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;
+  // 「入れ替え後の最初の節」ではなくモーター単位で言う。丸亀は入れ替え後の最初の節が
+  // 終わった後も、その後に初めて使われたモーターが集計前になる（ファン評価2周目 P2）
+  check(
+    `${lang}: 集計前の説明を「入れ替え後の最初の節」でなく、モーターが初めて使われた節で言う`,
+    !/入れ替え後の最初の節|first meet since the changeover|更換後第一節|교체 후 첫 절/.test(
+      motor.officialPendingNote + motor.trendNotYetOfficial,
+    ),
+  );
   check(
     `${lang}: 縦軸の名前が「出現率」でない（2連率・3連率を指す）`,
     !/出現率|Occurrence|出現率|출현율/.test(motor.yAxis),
