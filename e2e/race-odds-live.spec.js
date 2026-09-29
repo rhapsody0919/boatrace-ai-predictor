@@ -356,6 +356,91 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     expect(broken).toEqual([]);
   });
 
+  // BOA-552: 合成が100倍超（3桁）の列だけ値が次の行に落ち、同じブロックの「2単」が列ごとに段違いになっていた。
+  // 既存の上のテストは1号艇ブロック（小さい値）しか通らず検知できなかったため、全列を大きな値にして見る
+  for (const [label, odds] of [
+    ["3桁", 999.9],
+    ["4桁", 4000.0], // 合成＝1000.0（3着4艇の調和平均）
+  ]) {
+    test(`375px: 合成・2単が${label}でも、見出しと値が1行で、列ごとに段違いにならない`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 375, height: 812 });
+      const trifecta = Object.fromEntries(
+        Object.keys(SNAPSHOT_ROW.trifecta_all).map((k) => [k, odds]),
+      );
+      const exacta = Object.fromEntries(
+        Object.keys(PARSED["2tf"].data.exactaAll).map((k) => [k, 963.7]),
+      );
+      await setup(page, {
+        now: AFTER_DEADLINE,
+        snapshots: [
+          { ...SNAPSHOT_ROW, trifecta_all: trifecta, exacta_all: exacta },
+        ],
+      });
+      await expect(page.locator(".rol-col-foot").first()).toBeVisible();
+      const problems = await page.$$eval(".rol-block", (blocks) =>
+        blocks.flatMap((block, bi) => {
+          const feet = [...block.querySelectorAll(".rol-col")].map((col) =>
+            [...col.querySelectorAll(".rol-col-foot")].map((f) => {
+              const [head, value] = f.querySelectorAll("span");
+              return {
+                text: f.textContent,
+                sameLine:
+                  head.getBoundingClientRect().top ===
+                  value.getBoundingClientRect().top,
+                overflow: f.scrollWidth > f.clientWidth,
+                top: Math.round(f.getBoundingClientRect().top),
+              };
+            }),
+          );
+          const out = [];
+          for (const col of feet) {
+            for (const f of col) {
+              if (!f.sameLine) out.push(`block${bi} 2行: ${f.text}`);
+              if (f.overflow) out.push(`block${bi} はみ出し: ${f.text}`);
+            }
+          }
+          // 「合成」の行、「2単」の行がそれぞれブロック内で同じ高さ
+          for (const row of [0, 1]) {
+            const tops = new Set(feet.map((col) => col[row]?.top));
+            if (tops.size > 1) out.push(`block${bi} 行${row} 段違い`);
+          }
+          return out;
+        }),
+      );
+      expect(problems).toEqual([]);
+    });
+  }
+
+  test("3連複・2連複・拡連複: 推移の見出しとボタン名は「1=2=3」、3連単は「1-2-3」（BOA-552）", async ({
+    page,
+  }) => {
+    await setup(page, {
+      now: AFTER_DEADLINE,
+      snapshots: [
+        {
+          ...SNAPSHOT_ROW,
+          trio_all: PARSED["3f"].data.trioAll,
+          quinella_all: PARSED["2tf"].data.quinellaAll,
+          wide_all: PARSED.k.data.wideAll,
+        },
+      ],
+    });
+    const title = page.locator(".rol-trend-title");
+    await page.getByRole("button", { name: /^1-2-3 / }).click();
+    await expect(title).toHaveText("1-2-3 のオッズ推移");
+    for (const [tab, name] of [
+      ["3連複", "1=2=3"],
+      ["2連複", "1=2"],
+      ["拡連複", "1=2"],
+    ]) {
+      await page.getByRole("tab", { name: tab }).click();
+      await page.getByRole("button", { name: new RegExp(`^${name} `) }).click();
+      await expect(title).toHaveText(`${name} のオッズ推移`);
+    }
+  });
+
   // ---- ファン評価2周目の指摘の再現テスト ----
 
   test("拡連複（スナップショット）: キーの無い組があってもページが落ちず「票なし」", async ({
@@ -371,7 +456,7 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     });
     await page.getByRole("tab", { name: "拡連複" }).click();
     await expect(
-      page.getByRole("button", { name: "3-5 票なし" }),
+      page.getByRole("button", { name: "3=5 票なし" }),
     ).toBeVisible();
     expect(errors).toEqual([]);
   });

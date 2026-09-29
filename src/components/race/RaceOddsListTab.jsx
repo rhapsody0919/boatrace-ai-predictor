@@ -317,8 +317,21 @@ function BlockHead({ n, name }) {
   );
 }
 
+// 画面に出す組番の書き方。キーは券種によらず "1-2-3" だが、順不同の券種（3連複・2連複・拡連複）は
+// 結果タブの払戻と同じく "1=2=3" と書く（BOA-552）
+const comboLabel = (comboKey, ordered) =>
+  ordered ? comboKey : comboKey.replaceAll("-", "=");
+
 // オッズ1件のタップ領域（左に艇番バッジ群、右にオッズ。人気度で色分け）
-function OddsButton({ comboKey, value, isRange, selected, onSelect, badges }) {
+function OddsButton({
+  comboKey,
+  label,
+  value,
+  isRange,
+  selected,
+  onSelect,
+  badges,
+}) {
   const { t } = useTranslation();
   const noVotes = isNoVotes(value, isRange);
   const bucket = heatBucket(valueToNumber(value, isRange));
@@ -331,7 +344,7 @@ function OddsButton({ comboKey, value, isRange, selected, onSelect, badges }) {
       className={`rol-odds${bucket !== null ? ` rol-heat-${bucket}` : ""}${noVotes ? " is-no-votes" : ""}${selected ? " is-selected" : ""}`}
       onClick={() => onSelect(comboKey)}
       disabled={value == null}
-      aria-label={`${comboKey} ${text}`}
+      aria-label={`${label} ${text}`}
       aria-pressed={selected}
     >
       <span className="rol-odds-badges">{badges}</span>
@@ -832,6 +845,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     <OddsButton
       key={comboKey}
       comboKey={comboKey}
+      label={comboLabel(comboKey, betType.ordered)}
       value={value}
       isRange={isRange}
       selected={comboKey === selectedKey}
@@ -844,7 +858,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     selectedKey ? (
       <TrendPanel
         key="trend"
-        combo={selectedKey}
+        combo={comboLabel(selectedKey, betType.ordered)}
         trend={buildTrend(
           snapshots ?? [],
           betType,

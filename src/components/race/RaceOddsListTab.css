@@ -131,18 +131,20 @@
   padding-bottom: 2px;
 }
 
+/* 見出しと値は折り返さず1行に置く。折り返すと値が3桁（100倍超）の列だけ2行になり、同じブロックの
+   「2単」の行が列ごとに段違いになる（BOA-552）。375pxでは列の中身が約58pxで、「合成」＋4桁の値
+   （1000.0、約57px）まで1行に収まるよう、左右の余白と見出し・値の間のすき間は取らない */
 .rol-col-foot {
   display: flex;
-  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 0 2px;
-  padding: 0 2px;
+  gap: 0;
+  padding: 0;
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
-/* 狭い画面で「合成」が「合／成」と割れないよう、見出しと値はそれぞれ1かたまりで折り返す */
+/* 狭い画面で「合成」が「合／成」と割れないよう、見出しと値はそれぞれ1かたまりにする */
 .rol-col-foot > span {
   white-space: nowrap;
 }
@@ -512,6 +514,11 @@
 }
 
 @media (max-width: 480px) {
+  /* 列の下の「合成」＋4桁の値（1000.0）を1行に収めるため、左右の余白を1pxずつ詰める（BOA-552） */
+  .rol-col {
+    padding: 3px 2px;
+  }
+
   .rol-trend-value {
     font-size: var(--font-size-xs);
   }
