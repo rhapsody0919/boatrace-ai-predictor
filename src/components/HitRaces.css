@@ -119,9 +119,10 @@
   color: var(--podium-bronze-text);
 }
 
-/* ボートレース場名。.venue-nameはsrc/pages/ContentHub.cssにも同名クラスがあり、
+/* ボートレース場名。.venue-nameはかつてsrc/pages/ContentHub.cssにも同名クラスがあり、
    CSSが全ページ分1つのバンドルに結合されるためビルド順で固定値(#1e293b)が
-   意図せず勝つ（詳細はBOA-207参照）。親スコープで詳細度を上げて確実にトークンを効かせる */
+   意図せず勝っていた（詳細はBOA-207参照。ContentHub側はBOA-539で.guide-venue-nameに改名済み）。
+   親スコープで詳細度を上げて確実にトークンを効かせる */
 .venue-stats-table .venue-name {
   font-weight: 500;
   color: var(--text-primary);
