@@ -211,9 +211,8 @@ function missingPayoutExcluded(aggregate = aggregateOutcomeDistribution) {
   }
 }
 
-{
-  // (e) ルールの追跡: 3連複（順不同）の的中の払戻は payout_trifecta（3連複）
-  const pred = { top_pick: 2, top_2nd: 1, top_3rd: 3 };
+/** 観測: ルールの追跡の3連複（betType 'trio'。順不同）の的中の払戻が payout_trifecta（3連複）。外れは0 */
+function trioPayoutIsTrifectaColumn(calc = calculatePayout) {
   const result = {
     rank1: 1,
     rank2: 2,
@@ -221,19 +220,20 @@ function missingPayoutExcluded(aggregate = aggregateOutcomeDistribution) {
     payout_trifecta: 380,
     payout_trio: 1010,
   };
-  const hit = calculatePayout(pred, result, "trio");
-  const miss = calculatePayout(
-    { top_pick: 4, top_2nd: 5, top_3rd: 6 },
-    result,
-    "trio",
+  const hit = calc({ top_pick: 2, top_2nd: 1, top_3rd: 3 }, result, "trio");
+  const miss = calc({ top_pick: 4, top_2nd: 5, top_3rd: 6 }, result, "trio");
+  return (
+    hit.hit === true &&
+    hit.payout === 380 &&
+    miss.hit === false &&
+    miss.payout === 0
   );
+}
+
+{
   check(
     "(e) ルールの追跡: 3連複（betType 'trio'。順不同）の的中の払戻は payout_trifecta（3連複 380円）。外れは0",
-    hit.hit === true &&
-      hit.payout === 380 &&
-      miss.hit === false &&
-      miss.payout === 0,
-    show({ hit, miss }),
+    trioPayoutIsTrifectaColumn(),
   );
 }
 
@@ -262,20 +262,17 @@ function missingPayoutExcluded(aggregate = aggregateOutcomeDistribution) {
     "変異検証: 「配当の無いレースを0円として平均に入れる」版（2026-09-29 までの実装）では、(c) が失敗する",
     !missingPayoutExcluded(countMissingAsZero),
   );
-  const oldTrio = (prediction, result) => {
-    const r = calculatePayout(
+  // 2026-09-29 までの実装（3連複の払戻に payout_trio＝3連単を使う）を、入力の列を差し替えて再現する
+  const oldCalculatePayout = (prediction, result, betType) =>
+    calculatePayout(
       prediction,
       { ...result, payout_trifecta: result.payout_trio },
-      "trio",
+      betType,
     );
-    return r;
-  };
   check(
-    "変異検証: 「3連複の払戻に payout_trio（3連単）を使う」版では、(e) の払戻が 1,010円になり失敗する",
-    oldTrio(
-      { top_pick: 2, top_2nd: 1, top_3rd: 3 },
-      { rank1: 1, rank2: 2, rank3: 3, payout_trifecta: 380, payout_trio: 1010 },
-    ).payout === 1010,
+    "変異検証: 「3連複の払戻に payout_trio（3連単）を使う」版（2026-09-29 までの実装）では、(e) が失敗する",
+    trioPayoutIsTrifectaColumn() &&
+      !trioPayoutIsTrifectaColumn(oldCalculatePayout),
   );
 }
 
