@@ -2380,7 +2380,7 @@ async function catchupRetriesSlowly(catchup) {
     !(await raceInfoFetchesOnlyRacelist(withWeather(realRaceInfoRun))),
   );
   // ダイジェストが選手を無視する版（艇の列を空にして計算）
-  const blindDigest = ({ entries, condition, raceGrade }) =>
+  const blindDigest = ({ condition, raceGrade }) =>
     computeRaceInfoDigest({ entries: [], condition, raceGrade });
   const a = blindDigest({
     entries: [{ boat_number: 1, racer_id: 1 }],
