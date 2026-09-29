@@ -52,7 +52,9 @@ const VENUE_NAMES = [
   "大村",
 ];
 
-const AI_PATTERN = /ai|ａｉ|a\s+i\b|えーあい|エーアイ/i;
+// 英単語の一部（rain・main・training）に当たらないよう、ai の前後に英字が続く形は除く
+const AI_PATTERN =
+  /(^|[^a-z])ai($|[^a-z])|ａｉ|(^|[^a-z])a\s+i($|[^a-z])|えーあい|エーアイ/i;
 const TODAY_PATTERN = /今日|本日|きょう/;
 const PREDICTION_PATTERN = /予想|予測|無料|当たる|的中|全\s*レース/;
 
@@ -65,9 +67,11 @@ export function classifyQuery(query) {
   const q = query.toLowerCase().replace(/\s+/g, " ").trim();
   if (NEW_BRAND_PATTERN.test(q)) return "new_brand";
   if (OLD_BRAND_PATTERN.test(q)) return "old_brand";
-  // 津 は1文字で他の語に混ざりやすいため、会場判定は「津」単独の語か「津競艇」等の形に限る
+  // 津 は1文字で他の語に混ざりやすいため、会場判定は「津」単独の語か「津競艇」「ボートレース津」等の形に限る
   const hasVenue = VENUE_NAMES.some((v) =>
-    v === "津" ? /(^|\s)津(\s|競艇|ボート|$)/.test(q) : q.includes(v),
+    v === "津"
+      ? /(^|\s|ボートレース)津(\s|競艇|ボート|$)/.test(q)
+      : q.includes(v),
   );
   if (hasVenue && AI_PATTERN.test(q)) return "venue_ai";
   if (TODAY_PATTERN.test(q)) return "today";

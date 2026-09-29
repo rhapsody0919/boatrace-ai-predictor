@@ -61,6 +61,8 @@ const cases = [
   ["津競艇 ai予想", "venue_ai"],
   // 「津」は1文字なので、他の語の一部では会場とみなさない
   ["津々浦々 ai", "ai_general"],
+  // 公式の場名表記「ボートレース津」も会場として拾う（code-review 指摘）
+  ["ボートレース津 ai予想", "venue_ai"],
   ["競艇 荒れるレース 今日", "today"],
   ["本日のボートレース 無料予想", "today"],
   ["競艇 全レース予想 無料", "prediction"],
@@ -68,6 +70,11 @@ const cases = [
   ["スジ舟券", "other"],
   ["競艇 オッズ 見方", "other"],
   ["kyotei", "other"],
+  // 英単語の一部の ai（rain・main・training）は AI と数えない（code-review 指摘）
+  ["boat race training", "other"],
+  ["kyotei main event", "other"],
+  ["aiボート", "ai_general"],
+  ["ai 競艇予想", "ai_general"],
 ];
 for (const [q, expected] of cases)
   check(`classify「${q}」`, classifyQuery(q), expected);
