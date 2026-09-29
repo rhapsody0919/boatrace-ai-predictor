@@ -319,6 +319,15 @@
   "home": {
     "introBannerText": "Ryujin Radar - Visualize boat racing. When in doubt, trust the data. | 45+ data points analyzed, including turn predictions and the Upset Index. Learn more →",
     "introBannerClose": "Close",
+    "aiIntro": {
+      "title": "Ryujin Radar's AI Boat Race Predictions",
+      "lead": "Ryujin Radar is a data analysis site where AI predicts every race held at all 24 boat race venues in Japan, every day. It is completely free, with no sign-up required.",
+      "method": "From each racer's win rate, average start timing and results by course, motor performance, and wind and wave data, we publish a first-turn development forecast and an \"inside upset index\" that shows how likely boat 1 is to lose, for every race.",
+      "statLabel": "Measured hit rate of the development forecast:",
+      "statNote": "(last {{count}} races; the share of races where one of the forecast patterns matched the course of the actual winner)",
+      "accuracyLink": "See our track record (breakdown by venue, in Japanese) →",
+      "hitRacesLink": "See races where the forecast was correct (in Japanese) →"
+    },
     "freeAccessNoticeStrong": "100% Free, No Sign-up",
     "freeAccessNoticeRest": "— use every feature right now, no bank account or membership required",
     "todayRaces": "Today's Races",
