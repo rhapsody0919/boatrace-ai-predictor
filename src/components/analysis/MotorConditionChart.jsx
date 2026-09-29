@@ -339,6 +339,12 @@ function MotorConditionChart({
       date: row.date.slice(5),
       exhibition_time: row.exhibition_time,
     }));
+  // このレースがこのモーターの初出走（直前までの走りが0）。「データが見つかりません」
+  // だと取得失敗と区別できないので、理由を書く（BOA-557 ファン評価2周目）
+  const drillFirstRun =
+    powerIndex?.sample_count === 0 && usageHistory.length === 0;
+  const emptyKey = (key) =>
+    drillFirstRun ? "analysis.motor.drillFirstRunEmpty" : key;
   const exhibitionAxis = exhibitionTimeAxis(
     exhibitionChartData.map((row) => row.exhibition_time),
   );
@@ -1019,7 +1025,7 @@ function MotorConditionChart({
           ) : (
             <div className="empty-state">
               {(trendData?.trend ?? []).length === 0
-                ? t("analysis.motor.trendEmpty")
+                ? t(emptyKey("analysis.motor.trendEmpty"))
                 : drillTallyState === "pending"
                   ? t("analysis.motor.trendNotYetOfficial")
                   : t("analysis.motor.trendOfficialZeroUnknown")}
@@ -1053,7 +1059,7 @@ function MotorConditionChart({
             />
           ) : (
             <div className="empty-state">
-              {t("analysis.motor.exhibitionTrendEmpty")}
+              {t(emptyKey("analysis.motor.exhibitionTrendEmpty"))}
             </div>
           )}
           <p className="table-note">
@@ -1123,7 +1129,7 @@ function MotorConditionChart({
             </ul>
           ) : (
             <div className="empty-state">
-              {t("analysis.motor.usageHistoryEmpty")}
+              {t(emptyKey("analysis.motor.usageHistoryEmpty"))}
             </div>
           )}
           <p className="table-note">

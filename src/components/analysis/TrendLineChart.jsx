@@ -63,7 +63,17 @@ function TrendLineChart({
               : value.toFixed(yTickDecimals)
           }
         />
-        <Tooltip formatter={tooltipFormatter} />
+        {/* 既定は白地で、ダークモードでは見出し（日付・選手名）が白字のまま
+            読めなかった（BOA-557 ファン評価）。配色をテーマの色にそろえる */}
+        <Tooltip
+          formatter={tooltipFormatter}
+          contentStyle={{
+            background: "var(--surface-card)",
+            borderColor: "var(--border-hairline)",
+            color: "var(--text-primary)",
+          }}
+          labelStyle={{ color: "var(--text-primary)" }}
+        />
         <Legend />
         {series.map((s) => (
           <Line

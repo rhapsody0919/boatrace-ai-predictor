@@ -385,6 +385,22 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       chart,
     ),
   );
+  // 初出走（直前までの走りが0）の空表示は、取得失敗と区別できる文言にする
+  check(
+    "初出走のドリルダウンは「データが見つかりません」でなく理由を出す（3か所）",
+    /drillFirstRun =\s*powerIndex\?\.sample_count === 0 && usageHistory\.length === 0/.test(
+      chart,
+    ) &&
+      (chart.match(/t\(emptyKey\("analysis\.motor\.[a-zA-Z]+Empty"\)\)/g) ?? [])
+        .length === 3,
+  );
+  // ダークモードでツールチップの見出しが白地に白字にならない
+  check(
+    "推移グラフのツールチップはテーマの色（背景・文字）を使う",
+    /contentStyle=\{\{[\s\S]{0,120}background: "var\(--surface-card\)"/.test(
+      trendChart,
+    ) && /labelStyle=\{\{ color: "var\(--text-primary\)" \}\}/.test(trendChart),
+  );
   for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
       .motor;

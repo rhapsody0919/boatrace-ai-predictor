@@ -1082,6 +1082,7 @@
       "usageHistoryRank": "{{n}}th",
       "usageHistoryNotRun": "Upcoming",
       "usageHistoryEmpty": "No usage history found for this motor",
+      "drillFirstRunEmpty": "This race is the motor's first start (there are no earlier races yet).",
       "usageHistoryNote": "💡 Racers who used this motor in the last 90 days (limited to since the current motor went into service), grouped by meet (consecutive race days), newest first. Top-2/Top-3 rates are this motor's own results in that meet. Badges show each racer's class. \"-\" is a start without a finishing position (disqualification, capsize, etc.) and counts as a start in the Top-2 rate. \"Upcoming\" is a race not yet run and is not counted.",
       "usageHistoryChartNote": "The chart runs from oldest (left) to newest (right).",
       "partsHistoryHeading": "🔧 Parts / propeller change history",
