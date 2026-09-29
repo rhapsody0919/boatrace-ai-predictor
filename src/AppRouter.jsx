@@ -5,7 +5,7 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   SUPPORTED_LANGUAGES,
@@ -113,18 +113,21 @@ function AdRefresh() {
   return null;
 }
 
-// SPA のルート変更を GA4 のページビューとして送信
-// （初期ロードは initGA の config が送信するため、パス変更時のみ）
+// 初回表示を含む全てのルート変更を GA4 のページビューとして送信する（BOA-531）。
+// 少し待ってから送るのは、直後に別URLへ置き換わる経由地を数えないため
+// （InitialLanguageRedirect の / → /en/、LocalizedLayout の location.replace 等）。
+// 待つ間にURLが変われば cleanup で取り消され、最終的なURLだけが1回送られる
+const PAGE_VIEW_SETTLE_MS = 500;
+
 function PageViewTracker() {
   const { pathname, search } = useLocation();
-  const isFirst = useRef(true);
 
   useEffect(() => {
-    if (isFirst.current) {
-      isFirst.current = false;
-      return;
-    }
-    trackPageView(`${pathname}${search}`);
+    const id = setTimeout(
+      () => trackPageView(`${pathname}${search}`),
+      PAGE_VIEW_SETTLE_MS,
+    );
+    return () => clearTimeout(id);
   }, [pathname, search]);
 
   return null;

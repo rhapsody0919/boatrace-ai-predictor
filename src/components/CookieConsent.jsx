@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getCookieConsent, setCookieConsent, initGA, initAdSense } from '../utils/analytics';
+import { getCookieConsent, setCookieConsent, initGA, initAdSense, trackPageView } from '../utils/analytics';
 import './CookieConsent.css';
 
 export default function CookieConsent() {
@@ -11,6 +11,8 @@ export default function CookieConsent() {
   const handleAccept = () => {
     setCookieConsent('accepted');
     initGA();
+    // 同意前に表示したページは gtag が無く送れていないため、ここで1回送る
+    trackPageView(`${window.location.pathname}${window.location.search}`);
     initAdSense();
     setVisible(false);
   };

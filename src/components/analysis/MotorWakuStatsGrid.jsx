@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
+import { formatGenerationDate } from "../../utils/motorGeneration";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
 
@@ -147,6 +148,7 @@ function MotorWakuStatsGrid({
       <p className="table-note">
         {t("analysis.motor.wakuStatsWindowNote", {
           n: SMALL_SAMPLE_THRESHOLD,
+          date: formatGenerationDate(generationStart, { short: true }),
         })}
       </p>
       <div
