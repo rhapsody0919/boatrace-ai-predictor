@@ -87,6 +87,11 @@
       "guards": "画面側の純関数（basicInfoStats / raceStatus / courseGridStats / venueDayTrend / weatherInfo）の、過去に fix が入った箇所の回帰と変異検証（BOA-255）"
     },
     {
+      "script": "verify-race-outcome.js",
+      "tier": "ci",
+      "guards": "不成立・返還の判定関数（src/utils/raceOutcome.js）の回帰と変異検証、画面側が展開予測の的中を rank1 の直接比較・旧フラグ isNoRace で判定していないこと（BOA-543）"
+    },
+    {
       "script": "verify-gha-skip-gate.js",
       "tier": "ci",
       "guards": "フェイルセーフ付きSKIP（scripts/lib/ghaSkipGate.js）と日次ワークフローの配線"

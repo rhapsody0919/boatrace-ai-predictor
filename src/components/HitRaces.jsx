@@ -8,6 +8,7 @@ import { formatDateShort } from "../utils/formatters";
 import { getJSTDateInfo, getDateListJST } from "../utils/dateUtils";
 import { HitRaceCard, HitStats, VenueStatsTable } from "./hits";
 import "./HitRaces.css";
+import { TURN_JUDGEMENT, judgeTurnPrediction } from "../utils/raceOutcome";
 
 /**
  * 予測データから展開予測的中レースを抽出する（BOA-174、unified一本化）
@@ -19,15 +20,16 @@ function extractHitRaces(predictions) {
   return predictions
     .filter((race) => {
       if (!race.result || !race.result.finished) return false;
+      // 的中の判定は RaceCard・TurnPatternList と同じ関数を通す（不成立は判定対象外。BOA-543）
       const patterns = race.unified?.turnPrediction?.patterns;
-      if (!Array.isArray(patterns) || patterns.length === 0) return false;
-      return patterns.some((p) => p.winnerCourse === race.result.rank1);
+      return (
+        judgeTurnPrediction(patterns, race.result).status === TURN_JUDGEMENT.HIT
+      );
     })
     .map((race) => {
       const patterns = race.unified.turnPrediction.patterns;
-      const matchedPattern = patterns.find(
-        (p) => p.winnerCourse === race.result.rank1,
-      );
+      const { winner } = judgeTurnPrediction(patterns, race.result);
+      const matchedPattern = patterns.find((p) => p.winnerCourse === winner);
 
       const parts = race.raceId.split("-");
       const date = `${parts[0]}-${parts[1]}-${parts[2]}`;
@@ -40,7 +42,7 @@ function extractHitRaces(predictions) {
         raceNumber: parseInt(raceNo),
         date,
         placeCode: parseInt(placeCode),
-        winnerCourse: race.result.rank1,
+        winnerCourse: winner,
         matchedPattern,
         result: race.result,
       };

@@ -20,6 +20,7 @@ import TurnPatternList from "./TurnPatternList";
 import PredictionCard from "./PredictionCard";
 import OutcomePatternPreview from "./OutcomePatternPreview";
 import { getVolatilityLevel } from "../../utils/volatilityLevel";
+import { isJudgeable } from "../../utils/raceOutcome";
 
 function RaceAiPredictionTab({ prediction, venueCode, venueName, raceId }) {
   const { t } = useTranslation();
@@ -38,6 +39,8 @@ function RaceAiPredictionTab({ prediction, venueCode, venueName, raceId }) {
       : getVolatilityLevel(prediction.volatilityPercentile);
     const showVolatilityOutcome =
       volatilityLevel === "high" || volatilityLevel === "low";
+    // 不成立のレースは1着が決まっていないので、振り返りも「判定対象外」にする（BOA-543）
+    const canJudge = isJudgeable(result);
     const isUpset = result.rank1 !== 1;
     const volatilityPercentileValue = Math.round(
       (prediction.volatilityPercentile ?? 0) * 100,
@@ -80,16 +83,22 @@ function RaceAiPredictionTab({ prediction, venueCode, venueName, raceId }) {
             <p className="result-volatility-line">
               {t("result.volatilityOutcomeLabel")}
               {": "}
-              <strong>
-                {isUpset
-                  ? t("result.volatilityOutcomeCollapsed")
-                  : t("result.volatilityOutcomeSolid")}
-              </strong>
-              {isUpset
-                ? t("result.volatilityOutcomeDetailUpset", {
-                    winner: result.rank1,
-                  })
-                : t("result.volatilityOutcomeDetailFavorite")}
+              {canJudge ? (
+                <>
+                  <strong>
+                    {isUpset
+                      ? t("result.volatilityOutcomeCollapsed")
+                      : t("result.volatilityOutcomeSolid")}
+                  </strong>
+                  {isUpset
+                    ? t("result.volatilityOutcomeDetailUpset", {
+                        winner: result.rank1,
+                      })
+                    : t("result.volatilityOutcomeDetailFavorite")}
+                </>
+              ) : (
+                <strong>{t("result.volatilityOutcomeNotJudgeable")}</strong>
+              )}
             </p>
             <p className="result-volatility-caveat">
               {t("result.volatilityCaveat")}{" "}
@@ -105,10 +114,7 @@ function RaceAiPredictionTab({ prediction, venueCode, venueName, raceId }) {
             <h5 className="result-verify-title">
               {t("result.turnSectionTitle")}
             </h5>
-            <TurnPatternList
-              patterns={turnPatterns}
-              actualWinner={result.rank1}
-            />
+            <TurnPatternList patterns={turnPatterns} result={result} />
           </div>
         )}
       </div>
