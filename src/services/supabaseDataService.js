@@ -6659,6 +6659,12 @@ export const supabaseDataService = {
             ) ?? null)
           : null;
       // 枠数はシリーズの準優だけから出す。節全体で数えると2シリーズ合計になる
+      // 枠数を出すための、この側のレースだけの種別。
+      // **1つの準優に両側の選手が混ざらないことが前提**（実データのＷ開催6節では
+      // 準優12本すべてが 6+0 か 0+6）。`some` で絞っているので、もし混合の準優が
+      // 現れると両側の `seriesConditions` に入り、枠数が反対側の選手ごと数えられる。
+      // 予選終了後の消化レースは混ざるが、そちらは `semifinalRaceIdsOf` が
+      // 種別で落とすので枠数には効かない
       const seriesConditions = currentSeries
         ? (conditions ?? []).filter((c) =>
             (racersByRace.get(c.race_id) ?? []).some((r) =>
@@ -6817,9 +6823,6 @@ export const supabaseDataService = {
         // 2シリーズを混ぜて順位を振ると、節内順位・出場人数・準優の目安が
         // すべて実際の勝ち上がり争いとズレる
         seriesRacerIds: currentSeries ? [...currentSeries] : null,
-        // 節がいくつの勝ち上がりに分かれているか（Ｗ開催なら2、それ以外は null）。
-        // 画面は今これを使っていないが、注記の出し分けを増やすときの材料になる
-        seriesCount: meetSeries ? meetSeries.length : null,
         // 節の全レースの種別が取れているか（取れていなければ枠数は目安のまま）
         stagesKnown: stageById.size > 0,
         // その日の会場の展示タイム平均（水面の重さ）。同じ6.90でも日によって
