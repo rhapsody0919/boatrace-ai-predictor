@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.js";
 
 /**
  * レース詳細ページを390px幅で見たときの固定（BOA-455）。

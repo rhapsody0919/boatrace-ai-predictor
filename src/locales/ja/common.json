@@ -1083,6 +1083,7 @@
       "sampleCount": "(n={{n}})",
       "firstUseBadge": "初下ろし",
       "officialPendingBadge": "集計前",
+      "officialPendingNote": "「集計前」は、新しいモーターで公式の2連率の累計がまだ付いていない（入れ替え後の最初の節が終わるまで0.0のまま）ことを示します。",
       "wakuStatsHeading": "枠番別成績",
       "wakuStatsWindowNote": "💡 集計期間: {{date}}のモーター入れ替え以降（入れ替え前の同じ番号の別モーターは含めません）。オレンジ色の値は{{n}}走未満のため参考値です。",
       "wakuStatsUnknownGeneration": "現行モーターの使用開始日が取得できていないため、表示していません（入れ替え前の別モーターの成績が混ざるのを避けるため）",

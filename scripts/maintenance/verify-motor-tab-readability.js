@@ -179,7 +179,7 @@ check(
 // 公式の 0.0 が「集計前」か「本当に0%」かを区別する（2026-09-29 ファン4人・ユーザー承認）
 check(
   "一覧: 公式2連率・3連率がどちらも0で、結果の出た走があり、会場公式の出走数が0（集計前）のときだけ「集計前」を添える（公式の0.0は残す）",
-  /Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*row\.sample_count > 0 &&[\s\S]{0,300}?officialTallyState\(\s*venueHasOfficialStats,\s*row\.race_count,?\s*\) === "pending"/.test(
+  /isOfficialPending = \(row\) =>\s*Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*row\.sample_count > 0 &&\s*officialTallyState\(venueHasOfficialStats, row\.race_count\) === "pending"/.test(
     chart,
   ) &&
     chart.includes('t("analysis.motor.officialPendingBadge")') &&
@@ -189,6 +189,12 @@ check(
     read("src/services/supabaseDataService.js").includes(
       "`race-motor-breakdown-v7-",
     ),
+);
+check(
+  "一覧: 「集計前」の印が付く行があるときは、表の下の注記でその意味を書く（ファン評価 P2）",
+  /breakdown\.some\(isOfficialPending\) &&\s*t\("analysis\.motor\.officialPendingNote"\)/.test(
+    chart,
+  ),
 );
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis

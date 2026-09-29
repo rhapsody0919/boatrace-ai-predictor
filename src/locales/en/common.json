@@ -1088,6 +1088,7 @@
       "sampleCount": "(n={{n}})",
       "firstUseBadge": "First use",
       "officialPendingBadge": "Not yet tallied",
+      "officialPendingNote": " \"Not yet tallied\" means the motor is new and its official cumulative Top-2 rate is not available yet (it stays 0.0 until the first meet since the changeover ends).",
       "wakuStatsHeading": "Results by lane",
       "wakuStatsWindowNote": "💡 Window: since the {{date}} motor changeover (the previous motor with the same number is excluded). Values in orange come from fewer than {{n}} starts and are for reference only.",
       "wakuStatsUnknownGeneration": "Not shown because the start date of the current motor is unavailable (to avoid mixing in results from the previous motor with the same number).",

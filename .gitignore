@@ -75,3 +75,6 @@ sns-video-studio/remotion/node_modules/
 sns-video-studio/remotion/out/
 sns-video-studio/archive/
 sns-video-studio/published/
+
+# E2Eの録画の本体（GitHub Release の添付。e2e/recording.json がポインタ。ADR-0077）
+e2e/recordings/
