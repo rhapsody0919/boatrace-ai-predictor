@@ -688,7 +688,6 @@
     "snapshotAt": "fetched {{time}}",
     "snapshotBefore": "fetched {{time}} ({{n}} min before deadline)",
     "snapshotValues": "Showing values {{label}}",
-    "liveValueLabel": "from official update {{time}}",
     "liveLoadingWith": "Fetching latest odds… showing values {{label}} for now",
     "liveLoading": "Fetching latest odds… (takes about 10 seconds from the official site)",
     "liveFailed": "Could not fetch the latest odds. Showing values {{label}}",

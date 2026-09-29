@@ -411,7 +411,6 @@
     "snapshotAt": "{{time}} 取得",
     "snapshotBefore": "{{time}} 取得（締切{{n}}分前）",
     "snapshotValues": "{{label}}の値",
-    "liveValueLabel": "公式更新 {{time}}",
     "liveLoadingWith": "最新オッズを取得中… いまは {{label}}の値",
     "liveLoading": "最新オッズを取得中…（公式サイトから10秒ほどかかります）",
     "liveFailed": "最新の取得に失敗しました。{{label}}の値を表示中",

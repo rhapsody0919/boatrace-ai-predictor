@@ -415,7 +415,7 @@ function TrendPanel({ combo, trend, isRange, spanAll }) {
               </div>
             ))}
           </div>
-          {isRange && (
+          {isRange && trend.length >= 2 && (
             <p className="rol-trend-note" data-testid="odds-trend-range-note">
               {t("oddsList.rangeTrendNote")}
             </p>
@@ -477,12 +477,10 @@ function LiveStatus({ entry, fallbackLabel, onRefresh, nowMs, deadline }) {
       </div>
     ) : null;
   }
+  // 取得中・失敗の「いまは○○の値」は、表示中だった状態の1行と同じく取得時刻で書く（公式更新時刻にすると、
+  // 「更新」を押した瞬間に時刻が前に戻ったように見える。ファン評価1周目、BOA-532）
   const liveLabel = entry.result
-    ? t("oddsList.liveValueLabel", {
-        time:
-          formatOfficialTime(entry.result.officialUpdatedAt) ??
-          formatJstTime(entry.result.fetchedAt),
-      })
+    ? t("oddsList.fetchedAt", { time: formatJstTime(entry.result.fetchedAt) })
     : fallbackLabel;
   if (entry.status === "loading") {
     return (
@@ -519,16 +517,26 @@ function LiveStatus({ entry, fallbackLabel, onRefresh, nowMs, deadline }) {
   const afterDeadline =
     !result.final && !!deadline && nowMs >= deadline.getTime();
   const stale = !result.final && !afterDeadline && ageMs >= LIVE_STALE_MS;
-  const freshness = afterDeadline ? "after-deadline" : stale ? "stale" : "fresh";
+  const freshness = result.final
+    ? "final"
+    : afterDeadline
+      ? "after-deadline"
+      : stale
+        ? "stale"
+        : "fresh";
   return (
     <div
-      // 「○分前の値」「締切済み」は緑の「最新」の見た目（is-live）にしない
-      className={`rol-status${freshness === "fresh" ? " is-live" : ""}`}
+      // 「○分前の値」「締切済み」は緑の「最新」の見た目（is-live）にしない。ライブで取れた締切時オッズは、
+      // DB の締切時オッズ（FinalStatus）と同じ公式の見た目にする（ファン評価1周目）
+      className={`rol-status${freshness === "fresh" ? " is-live" : freshness === "final" ? " is-official" : ""}`}
       data-testid="odds-live-status"
       data-freshness={freshness}
     >
       {freshness === "fresh" && (
         <span className="rol-live-dot" aria-hidden="true" />
+      )}
+      {freshness === "final" && (
+        <span className="rol-official-dot" aria-hidden="true" />
       )}
       <span className="rol-status-strong">
         {result.final
@@ -569,7 +577,7 @@ function LiveStatus({ entry, fallbackLabel, onRefresh, nowMs, deadline }) {
   );
 }
 
-function RaceOddsListTab({ raceId, raceStartTime, players }) {
+function RaceOddsListTabBody({ raceId, raceStartTime, players }) {
   const { t } = useTranslation();
   // スナップショット（DB）の取得結果。raceId とセットで持つ（frontend-data-fetch.md §3）
   const [snapshotState, setSnapshotState] = useState(null);
@@ -829,7 +837,12 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     setSnapshotState(null);
     setSnapshotReloadKey((k) => k + 1);
   };
-  const refreshLive = () => startLiveFetch(betType.page);
+  // 3連単の表は列の下に2連単（2単）も出すため、2連単も一緒に取り直す（3連単だけ新しくなり、2単が前回の値の
+  // まま同じ列に並ばないように。ファン評価1周目、BOA-532）
+  const refreshLive = () => {
+    startLiveFetch(betType.page);
+    if (betType.id === "trifecta") startLiveFetch("2tf");
+  };
 
   // 単勝・複勝の表はタップできない（推移なし）ため、「タップすると推移」の一文を出さない（BOA-532）
   const subtitle = t(
@@ -1153,6 +1166,12 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
               : `oddsList.guide.${betType.id}`,
           )}
         </p>
+        {/* 取得中の薄い表示の意味は、表の上（状態の1行の近く）で示す（ファン評価1周目） */}
+        {refreshing && (
+          <p className="rol-callout" data-testid="odds-refreshing-note">
+            {t("oddsList.refreshingNote")}
+          </p>
+        )}
         {/* 締切時オッズ（公式）が一部の券種だけ取れなかったとき、表示が切り替わる理由を示す（ファン評価1周目 P2） */}
         {finalOdds && !useFinal && (
           <p className="rol-callout" data-testid="odds-final-missing">
@@ -1177,11 +1196,6 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
         {["exacta", "quinella", "wide"].includes(betType.id) && renderPairs()}
         {betType.id !== "winPlace" && (
           <p className="rol-legend">💡 {t("oddsList.legend")}</p>
-        )}
-        {refreshing && (
-          <p className="rol-legend" data-testid="odds-refreshing-note">
-            {t("oddsList.refreshingNote")}
-          </p>
         )}
       </>
     );
@@ -1232,6 +1246,25 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
       {renderBody()}
     </div>
   );
+}
+
+// 当日・締切90分より前に開いたときは、ライブ取得の対象になる時刻（締切90分前）に中身を作り直し、その時点の
+// 判断でライブ取得を始める。開いた時刻で対象かを決めるため、作り直さないと「12:54から表示します」と書いた
+// まま、時刻を過ぎても表示が始まらない（ファン評価1周目、BOA-532）
+function RaceOddsListTab(props) {
+  const { raceId, raceStartTime } = props;
+  const [epoch, setEpoch] = useState(0);
+  useEffect(() => {
+    const now = Date.now();
+    const parsed = parseRaceId(raceId);
+    const deadline = getDeadlineDate(raceId, raceStartTime);
+    if (!parsed || !deadline || parsed.date !== todayJst(now)) return undefined;
+    const startsInMs = deadline.getTime() - LIVE_WINDOW_MS - now;
+    if (startsInMs <= 0) return undefined;
+    const id = setTimeout(() => setEpoch((e) => e + 1), startsInMs + 1000);
+    return () => clearTimeout(id);
+  }, [raceId, raceStartTime, epoch]);
+  return <RaceOddsListTabBody key={epoch} {...props} />;
 }
 
 export default RaceOddsListTab;

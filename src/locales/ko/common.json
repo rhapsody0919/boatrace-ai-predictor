@@ -683,7 +683,6 @@
     "snapshotAt": "{{time}} 수집",
     "snapshotBefore": "{{time}} 수집(마감 {{n}}분 전)",
     "snapshotValues": "{{label}} 값을 표시 중",
-    "liveValueLabel": "공식 갱신 {{time}}",
     "liveLoadingWith": "최신 오즈를 가져오는 중… 지금은 {{label}} 값",
     "liveLoading": "최신 오즈를 가져오는 중…(공식 사이트에서 10초 정도 걸립니다)",
     "liveFailed": "최신 오즈를 가져오지 못했습니다. {{label}} 값을 표시 중",

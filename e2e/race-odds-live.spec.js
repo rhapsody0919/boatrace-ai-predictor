@@ -529,10 +529,20 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     await expect(subtitle).not.toContainText("タップ");
   });
 
-  test("拡連複の推移: 線が下限の推移であることを書く", async ({ page }) => {
+  test("拡連複の推移: 線が下限の推移であることを書く（点が1つで線が無いときは書かない）", async ({
+    page,
+  }) => {
+    const wideRow = (capturedAt) => ({
+      ...SNAPSHOT_ROW,
+      captured_at: capturedAt,
+      wide_all: PARSED.k.data.wideAll,
+    });
     await setup(page, {
       now: AFTER_DEADLINE,
-      snapshots: [{ ...SNAPSHOT_ROW, wide_all: PARSED.k.data.wideAll }],
+      snapshots: [
+        wideRow("2026-09-28T04:54:00Z"),
+        wideRow("2026-09-28T05:09:00Z"),
+      ],
     });
     await page.getByRole("tab", { name: "拡連複" }).click();
     await page.getByRole("button", { name: /^1=2 / }).click();
@@ -542,6 +552,108 @@ test.describe("オッズ一覧のライブ取得（BOA-487）", () => {
     await page.getByRole("tab", { name: "3連単" }).click();
     await page.getByRole("button", { name: /^1-2-3 / }).click();
     await expect(page.getByTestId("odds-trend-range-note")).toHaveCount(0);
+  });
+
+  test("拡連複の推移: 点が1つ（線が無い）なら「線は下限の推移」を書かない", async ({
+    page,
+  }) => {
+    await setup(page, {
+      now: AFTER_DEADLINE,
+      snapshots: [{ ...SNAPSHOT_ROW, wide_all: PARSED.k.data.wideAll }],
+    });
+    await page.getByRole("tab", { name: "拡連複" }).click();
+    await page.getByRole("button", { name: /^1=2 / }).click();
+    await expect(page.locator(".rol-trend-item")).toHaveCount(1);
+    await expect(page.getByTestId("odds-trend-range-note")).toHaveCount(0);
+  });
+
+  // ---- BOA-532 ファン評価1周目 ----
+
+  test("締切90分前の時刻を過ぎると、開いたままでもライブ取得が始まる", async ({
+    page,
+  }) => {
+    const { calls, status } = await setup(page, {
+      now: new Date("2026-09-28T12:50:00+09:00"),
+      snapshots: [],
+      installClock: true,
+    });
+    await expect(page.getByTestId("odds-before-window")).toContainText(
+      "12:54（締切90分前）から",
+    );
+    expect(calls).toEqual([]);
+    await page.clock.fastForward("06:00"); // 12:56
+    await expect(status).toContainText("公式更新 8:14");
+    expect([...new Set(calls)].sort()).toEqual(["2tf", "3t", "tf"]);
+    await expect(page.getByTestId("odds-before-window")).toHaveCount(0);
+  });
+
+  test("締切後に「更新」: 3連単と一緒に2連単も取り直し、「2単」も締切時オッズにそろう。締切時は公式の見た目", async ({
+    page,
+  }) => {
+    const exactaFinal = Object.fromEntries(
+      Object.keys(PARSED["2tf"].data.exactaAll).map((k) => [k, 99.9]),
+    );
+    const { calls, status } = await setup(page, {
+      installClock: true,
+      live: async (p, all) =>
+        all.length <= 3
+          ? liveBody(p)
+          : liveBody(p, {
+              fetchedAt: "2026-09-28T05:30:00Z", // 14:30
+              officialUpdatedAt: "14:26",
+              final: true,
+              data:
+                p === "2tf"
+                  ? { ...PARSED["2tf"].data, exactaAll: exactaFinal }
+                  : PARSED[p].data,
+            }),
+    });
+    await expect(status).toContainText("公式更新 8:14");
+    await page.clock.fastForward("34:00"); // 14:29（締切 14:24 の後）
+    await expect(status).toHaveAttribute("data-freshness", "after-deadline");
+    await status.getByRole("button", { name: "更新" }).click();
+    await expect(status).toHaveAttribute("data-freshness", "final");
+    await expect(status).toHaveClass(/is-official/);
+    await expect(status).not.toHaveClass(/is-live/);
+    expect(calls.filter((c) => c === "2tf")).toHaveLength(2);
+    await expect(
+      page.locator(".rol-block").first().locator(".rol-col").first(),
+    ).toContainText("2単99.9");
+  });
+
+  test("「更新」を押した取得中も、いまの値の時刻は取得時刻（公式更新時刻に戻らない）", async ({
+    page,
+  }) => {
+    let release;
+    const gate = new Promise((r) => (release = r));
+    const { status } = await setup(page, {
+      live: async (p, all) => {
+        if (all.length > 3 && p === "3t") await gate;
+        return liveBody(p);
+      },
+    });
+    await expect(status).toContainText("13:55 取得");
+    await status.getByRole("button", { name: "更新" }).click();
+    await expect(status).toContainText("いまは 13:55 取得の値");
+    await expect(status).not.toContainText("公式更新 8:14の値");
+    release();
+  });
+
+  test("取得中の「薄い表示は…」の注記は表の上に出す", async ({ page }) => {
+    let release;
+    const gate = new Promise((r) => (release = r));
+    await setup(page, {
+      live: async (p) => {
+        if (p === "3t") await gate;
+        return liveBody(p);
+      },
+    });
+    const note = page.getByTestId("odds-refreshing-note");
+    await expect(note).toBeVisible();
+    const noteBox = await note.boundingBox();
+    const blockBox = await page.locator(".rol-block").first().boundingBox();
+    expect(noteBox.y + noteBox.height).toBeLessThanOrEqual(blockBox.y);
+    release();
   });
 
   for (const width of [320, 375]) {

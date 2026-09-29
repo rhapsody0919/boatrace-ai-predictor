@@ -683,7 +683,6 @@
     "snapshotAt": "{{time}} 擷取",
     "snapshotBefore": "{{time}} 擷取（截止前{{n}}分鐘）",
     "snapshotValues": "目前顯示 {{label}} 的數值",
-    "liveValueLabel": "官方更新 {{time}}",
     "liveLoadingWith": "正在取得最新賠率… 目前顯示 {{label}} 的數值",
     "liveLoading": "正在取得最新賠率…（從官方網站取得約需10秒）",
     "liveFailed": "無法取得最新賠率。目前顯示 {{label}} 的數值",
