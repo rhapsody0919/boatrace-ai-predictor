@@ -30,6 +30,11 @@ import {
   upsertChangedRows,
 } from "../lib/unchangedRows.js";
 import { buildResultWeatherRows } from "../lib/beforeinfoWeather.js";
+import {
+  OFFICIAL_FINISH_CODE_COLUMN,
+  buildOfficialFinishCodeRows,
+} from "../lib/officialFinishCode.js";
+import { isColumnMissingError } from "../lib/optionalColumns.js";
 import { parseRaceResultPage } from "../lib/raceResultParser.js";
 import {
   buildPayoutRows,
@@ -587,7 +592,167 @@ export async function syncRank456FromKFile(
 }
 
 /**
- * 指定日のKファイル同期（進入コース＋rank4〜6）。同じ日のKファイルを、1回だけダウンロードして両方に使う
+ * 指定日について、公式成績ファイル（Kファイル）の艇ごとの成績コード（01〜06・F・L0・L1・K0・K1・S0・S1・S2 等）を
+ * race_start_timings.official_finish_code に書く（BOA-553。マイグレーション110）。
+ *
+ * 対象は、結果のある（rank1 あり）レースのうち、成績コードが入っていない艇がある日。無ければダウンロードしない。
+ * 書くのは official_finish_code の列だけで、変更のある行だけ（filterUnchangedRows）。既存の列（ST・着順・進入等）は
+ * 触らない（列の組み合わせが全行で同じ upsert のため、無い列は書かれない）。
+ * insertMissing=false のときは、race_start_timings に行が無い艇（2026-02・03 の大半、欠場艇の一部）は挿入せず、
+ * 件数だけ返す（missingRows）。列が未適用（110 が未適用）のDBでは、何もせず status=column_missing を返す。
+ *
+ * @param {string} dateStr YYYY-MM-DD
+ * @param {Object} [options] syncActualCourseFromKFile と同じ（dryRun・client・loadText）に加え insertMissing
+ * @returns {Promise<{updated: number, status: string, parsed: number, pending: number, missingRows?: number, error?: string}>}
+ */
+export async function syncOfficialFinishCodeFromKFile(
+  dateStr,
+  {
+    dryRun = false,
+    client = supabase,
+    loadText = () => fetchKFileText(dateStr),
+    insertMissing = false,
+  } = {},
+) {
+  const column = OFFICIAL_FINISH_CODE_COLUMN;
+  // 結果のあるレースと、その日の race_start_timings（成績コードの有無）
+  const [results, timings] = await Promise.all([
+    client
+      .from("race_results")
+      .select("race_id")
+      .gte("race_id", dateStr)
+      .lt("race_id", `${dateStr}~`)
+      .not("rank1", "is", null),
+    client
+      .from("race_start_timings")
+      .select(`race_id, boat_number, ${column}`)
+      .gte("race_id", dateStr)
+      .lt("race_id", `${dateStr}~`),
+  ]);
+  for (const r of [results, timings]) {
+    if (r.error && isColumnMissingError(r.error, [column])) {
+      console.warn(
+        `  ⚠️ 成績コード: race_start_timings.${column} が未適用のため、同期しません（マイグレーション110）`,
+      );
+      return { updated: 0, parsed: 0, pending: 0, status: "column_missing" };
+    }
+    if (r.error) {
+      console.error(
+        `  ⚠️ 成績コード対象確認エラー(${dateStr}): ${r.error.message}`,
+      );
+      return {
+        updated: 0,
+        parsed: 0,
+        pending: 0,
+        status: "pending_check_failed",
+        error: r.error.message,
+      };
+    }
+  }
+  const withResult = new Set((results.data ?? []).map((r) => r.race_id));
+  const rowsByRace = new Map();
+  for (const t of timings.data ?? []) {
+    if (!rowsByRace.has(t.race_id)) rowsByRace.set(t.race_id, []);
+    rowsByRace.get(t.race_id).push(t);
+  }
+  // 未同期: 結果のあるレースで、成績コードの無い行がある、または（挿入するなら）6艇に満たない
+  const pending = [...withResult].filter((raceId) => {
+    const rows = rowsByRace.get(raceId) ?? [];
+    return (
+      rows.some((r) => r[column] == null) || (insertMissing && rows.length < 6)
+    );
+  });
+  if (pending.length === 0) {
+    return { updated: 0, parsed: 0, pending: 0, status: "nothing_pending" };
+  }
+
+  let text;
+  try {
+    text = await loadText();
+  } catch (e) {
+    console.error(`  ⚠️ Kファイル取得エラー(${dateStr}): ${e.message}`);
+    return {
+      updated: 0,
+      parsed: 0,
+      pending: pending.length,
+      status: "kfile_error",
+      error: e.message,
+    };
+  }
+  if (!text) {
+    console.log(`  成績コード: Kファイル未公開/開催なし (${dateStr})`);
+    return {
+      updated: 0,
+      parsed: 0,
+      pending: pending.length,
+      status: "kfile_unavailable",
+    };
+  }
+
+  const pendingSet = new Set(pending);
+  const parsed = buildOfficialFinishCodeRows(text, dateStr).filter((r) =>
+    pendingSet.has(r.race_id),
+  );
+  if (parsed.length === 0) {
+    console.log(
+      `  成績コード: Kファイルから対象レースを抽出できず (${dateStr})`,
+    );
+    return {
+      updated: 0,
+      parsed: 0,
+      pending: pending.length,
+      status: "no_races_parsed",
+    };
+  }
+  const existingKeys = new Set(
+    (timings.data ?? []).map((t) => `${t.race_id}|${t.boat_number}`),
+  );
+  const target = insertMissing
+    ? parsed
+    : parsed.filter((r) => existingKeys.has(`${r.race_id}|${r.boat_number}`));
+  const missingRows = parsed.length - target.length;
+  // 変更のある行だけ（既に同じコードの行は書かない）
+  const current = new Map(
+    (timings.data ?? []).map((t) => [
+      `${t.race_id}|${t.boat_number}`,
+      t[column],
+    ]),
+  );
+  const toWrite = target.filter(
+    (r) => current.get(`${r.race_id}|${r.boat_number}`) !== r[column],
+  );
+  if (!dryRun && toWrite.length > 0) {
+    const { error } = await client
+      .from("race_start_timings")
+      .upsert(toWrite, { onConflict: "race_id,boat_number" });
+    if (error) {
+      console.error(
+        `  ⚠️ 成績コード書き込みエラー(${dateStr}): ${error.message}`,
+      );
+      return {
+        updated: 0,
+        parsed: parsed.length,
+        pending: pending.length,
+        missingRows,
+        status: "write_error",
+        error: error.message,
+      };
+    }
+  }
+  console.log(
+    `  ✅ ${dryRun ? "[DRY-RUN] " : ""}成績コード(Kファイル方式): ${toWrite.length}艇を更新 (${dateStr}, 対象${pending.length}レース${missingRows > 0 ? `, 行の無い艇${missingRows}（挿入しない）` : ""})`,
+  );
+  return {
+    updated: toWrite.length,
+    parsed: parsed.length,
+    pending: pending.length,
+    missingRows,
+    status: "synced",
+  };
+}
+
+/**
+ * 指定日のKファイル同期（進入コース＋rank4〜6＋成績コード）。同じ日のKファイルを、1回だけダウンロードして両方に使う
  * （D4の解消。従来は、2つの同期が同じ日を別々にダウンロードしていた）。どちらも、未同期のレースが無ければ
  * ダウンロードしない。Vercel Cron の kfile-sync と、GitHub Actions・CLIの両方から呼ぶ。
  *
@@ -628,7 +793,19 @@ export async function syncKFileForDate(
     client,
     loadText,
   });
-  return { date: dateStr, downloads, actualCourse, rank456 };
+  // 成績コード（BOA-553）。同じKファイルを使う（ダウンロードは1回のまま）
+  const officialFinishCode = await syncOfficialFinishCodeFromKFile(dateStr, {
+    dryRun,
+    client,
+    loadText,
+  });
+  return {
+    date: dateStr,
+    downloads,
+    actualCourse,
+    rank456,
+    officialFinishCode,
+  };
 }
 /**
  * 発走90分超で結果が取得できていないレースを中止・順延「確定」として扱う（BOA-254 FR2）。
