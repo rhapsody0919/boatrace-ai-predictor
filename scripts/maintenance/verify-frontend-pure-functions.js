@@ -12,6 +12,7 @@
  *   3. src/components/race/courseGridStats.js … 枠別情報タブのコース別成績
  *   4. src/components/race/venueDayTrend.js   … 「この日の水面傾向」の1行要約
  *   5. src/components/race/weatherInfo.js     … 気象の観測時刻の表示
+ *   6. src/utils/dateUtils.js                 … ブログ一覧の NEW バッジ（isWithinDays）
  *
  * 末尾の変異検証で、各関数の要（過去に壊れた箇所を含む）を1つずつ壊したコピーに同じ検証を
  * かけ、検証が失敗する（＝歯がある）ことを確かめる。
@@ -24,6 +25,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { getDaysAgoJST } from "../../src/utils/dateUtils.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "../..");
@@ -34,17 +36,16 @@ const TARGETS = {
   courseGridStats: "src/components/race/courseGridStats.js",
   venueDayTrend: "src/components/race/venueDayTrend.js",
   weatherInfo: "src/components/race/weatherInfo.js",
+  dateUtils: "src/utils/dateUtils.js",
 };
 
 const show = (v) => JSON.stringify(v);
 const r2 = (v) =>
   v === null || v === undefined ? v : Math.round(v * 100) / 100;
 
-function daysAgo(days) {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return d.toISOString().split("T")[0];
-}
+// JST の今日から days 日前（BOA-554: 以前はローカル時刻で setDate したあと toISOString（UTC）で
+// 取り出しており、JST 0〜9時は1日古くなった。境界から離して使うので実害は無かった）
+const daysAgo = (days) => getDaysAgoJST(days);
 
 /**
  * getRacerScopedRaceStats の1行と同じ形のレコードを作る。
@@ -325,13 +326,7 @@ function suiteBasicInfoStats(m, check) {
     check(
       `filterRecords: ${label} の直近3ヶ月は JST 90日前(07-01)から。91日前は含めない（BOA-469）`,
       periodDates("last3m", new Date(iso)),
-      [
-        "2026-07-01",
-        "2026-07-02",
-        "2026-08-29",
-        "2026-08-30",
-        "2026-08-31",
-      ],
+      ["2026-07-01", "2026-07-02", "2026-08-29", "2026-08-30", "2026-08-31"],
     );
   }
 
@@ -949,12 +944,43 @@ function suiteWeatherInfo(m, check) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// 6. dateUtils.js
+// ---------------------------------------------------------------------------
+function suiteDateUtils(m, check) {
+  // --- isWithinDays: ブログ一覧（src/pages/Blog.jsx）の NEW バッジ（7日以内）（BOA-554）
+  // 「JST の今日を含む直近7日」= JST 2026-09-29 なら 09-23〜09-29。09-22 と未来の 09-30 は含めない。
+  // new Date("YYYY-MM-DD") は UTC 0時なので、JST にずらした現在時刻との差は実行環境の TZ に
+  // 依存しない。JST 早朝（UTC では前日）と昼の両方で、古い側・新しい側の境界の前後を見る
+  const dates = [
+    "2026-09-21",
+    "2026-09-22",
+    "2026-09-23",
+    "2026-09-24",
+    "2026-09-28",
+    "2026-09-29",
+    "2026-09-30",
+  ];
+  for (const [label, iso] of [
+    ["JST 03:00（UTC 前日 18:00）", "2026-09-28T18:00:00Z"],
+    ["JST 12:00（UTC 同日 03:00）", "2026-09-29T03:00:00Z"],
+  ]) {
+    check(
+      `isWithinDays: ${label} の7日以内は JST 09-23〜09-29（6日前〜今日）。7日前・明日は含めない（BOA-554）`,
+      dates.filter((d) => m.isWithinDays(d, 7, new Date(iso))),
+      ["2026-09-23", "2026-09-24", "2026-09-28", "2026-09-29"],
+    );
+  }
+  check("isWithinDays: 日付が空なら false", m.isWithinDays("", 7), false);
+}
+
 const SUITES = {
   basicInfoStats: suiteBasicInfoStats,
   raceStatus: suiteRaceStatus,
   courseGridStats: suiteCourseGridStats,
   venueDayTrend: suiteVenueDayTrend,
   weatherInfo: suiteWeatherInfo,
+  dateUtils: suiteDateUtils,
 };
 
 // ---------------------------------------------------------------------------
@@ -1131,6 +1157,13 @@ const MUTANTS = [
     "if (Number.isNaN(date.getTime())) return null;",
     "",
   ],
+  [
+    "dateUtils",
+    "isWithinDays を JST にずらさない（UTC の現在時刻と比べる）",
+    "const jstNow = getJSTNow(now);\n  const diffMs",
+    "const jstNow = now;\n  const diffMs",
+  ],
+  ["dateUtils", "isWithinDays の未来日の除外を外す", " && diffDays >= 0;", ";"],
 ];
 
 const MUTANT_DIR = fs.mkdtempSync(

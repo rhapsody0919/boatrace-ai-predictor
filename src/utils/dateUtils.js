@@ -114,14 +114,19 @@ export const formatDateJP = (dateStr) => {
 
 /**
  * 日付が指定日数以内かどうかを判定
+ * JSTの今日を含む直近 days 日（days=7 なら今日と6日前まで）なら true。未来の日付は false。
+ * new Date("YYYY-MM-DD") は UTC 0時として解釈され、getJSTNow() も UTC に9時間足した値なので、
+ * 両者の差は「JSTの日付の差＋JSTで今日経過した時間」になり、実行環境のタイムゾーンに依存しない
+ * （BOA-554 で TZ=UTC / Asia/Tokyo・JST 03:00 / 12:00 を検証済み）
  * @param {string} dateStr - YYYY-MM-DD形式
  * @param {number} days - 日数
+ * @param {Date} [now] - 基準時刻（既定は現在時刻）
  * @returns {boolean}
  */
-export const isWithinDays = (dateStr, days) => {
+export const isWithinDays = (dateStr, days, now = new Date()) => {
   if (!dateStr) return false;
   const postDate = new Date(dateStr);
-  const jstNow = getJSTNow();
+  const jstNow = getJSTNow(now);
   const diffMs = jstNow.getTime() - postDate.getTime();
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
   return diffDays <= days && diffDays >= 0;
