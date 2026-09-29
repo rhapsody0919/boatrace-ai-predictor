@@ -1039,6 +1039,7 @@
       "partsHistoryEmpty": "No parts or propeller change records found for this motor",
       "partsHistoryNote": "💡 A parts or propeller change alone can be either a sign of declining motor performance or a sign of improvement right after maintenance. The badge compares average exhibition time before and after the change as a rough guide only, and does not guarantee results.",
       "note": "💡 Click a table row to see that motor's trend across meets. The highlighted row is the boat with the highest motor top-2 rate in this race.",
+      "highlightNote": "💡 The highlighted row is the boat with the highest Top-2 rate in this race.",
       "venueRankLabel": "Rank in venue",
       "venueRankBadge": "#{{rank}} of {{total}} motors",
       "sampleCount": "(n={{n}})",

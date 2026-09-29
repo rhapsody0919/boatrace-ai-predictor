@@ -227,6 +227,14 @@ function MotorConditionChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVenue, selectedRace, drillDownMotor, periodDays]);
 
+  // 過去レースでは期間を選ばせないので、90日に戻す（当日のレースで「直近1ヶ月」を
+  // 選んだまま過去レースに移ったとき、見えない切り替えの値で集計しないように）
+  useEffect(() => {
+    if (selectedRace && selectedRace.slice(0, 10) < getTodayJST()) {
+      setPeriodDays(90);
+    }
+  }, [selectedRace]);
+
   // モーター・会場が変わったらFR-4ドリルダウン（枠タップで開く選手一覧）を閉じる
   // （periodDaysトグルだけの変更では閉じない。90/30日切り替えはFR-2〜4の
   // 集計窓とは無関係なため）
@@ -315,8 +323,13 @@ function MotorConditionChart({
   const officialMode = breakdown.some((r) => r.rate_source === "official");
   const isPastSelectedRace =
     Boolean(selectedRace) && selectedRace.slice(0, 10) < getTodayJST();
+  // 過去レースは、一覧でもドリルダウンでも期間を選ばせない（90日固定）。
+  // ドリルダウンだけ選べると、押すだけで機力指数の評価が「実力以上」⇔「低調」に
+  // 反転し、一覧の「期間は選べません」とも食い違う（2026-09-29 ファン評価2周目）
   const showPeriodToggle =
-    drillDownMotor === null ? !officialMode : !drillPreGeneration;
+    drillDownMotor === null
+      ? !officialMode
+      : !drillPreGeneration && !isPastSelectedRace;
   // 期間を現行モーターの使用開始日で切り詰めたか（入れ替え後で期間が短い）
   const clippedByGeneration =
     drillDownMotor === null
@@ -915,9 +928,12 @@ function MotorConditionChart({
 
       {/* 「行を押すと推移」は一覧でだけ、入れ替え前のレースでは出さない
           （押しても推移が出ないため） */}
-      {drillDownMotor === null && !racePreGeneration && (
-        <p className="table-note">{t("analysis.motor.note")}</p>
-      )}
+      {drillDownMotor === null &&
+        (racePreGeneration ? (
+          <p className="table-note">{t("analysis.motor.highlightNote")}</p>
+        ) : (
+          <p className="table-note">{t("analysis.motor.note")}</p>
+        ))}
       {!drillPreGeneration && (
         <p className="table-note">{t("analysis.motor.powerIndexNote")}</p>
       )}

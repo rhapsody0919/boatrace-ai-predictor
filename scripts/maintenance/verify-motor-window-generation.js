@@ -182,7 +182,7 @@ const chart = read("src/components/analysis/MotorConditionChart.jsx");
 check(
   "画面: 過去レース（rate_source: official）では期間の切り替えを出さず注記に置き換える",
   chart.includes('breakdown.some((r) => r.rate_source === "official")') &&
-    chart.includes("drillDownMotor === null ? !officialMode") &&
+    /drillDownMotor === null\s*\?\s*!officialMode/.test(chart) &&
     chart.includes("analysis.motor.periodOfficialNote"),
 );
 check(
@@ -224,7 +224,9 @@ check(
   "画面: 入れ替え前のレースは一覧の時点で伝え、「行を押すと推移」の案内を出さない",
   chart.includes("setRacePreGeneration(preGeneration)") &&
     chart.includes("analysis.motor.racePreGenerationNote") &&
-    chart.includes("drillDownMotor === null && !racePreGeneration"),
+    /racePreGeneration \? \(\s*<p className="table-note">\{t\("analysis\.motor\.highlightNote"\)\}/.test(
+      chart,
+    ),
 );
 check(
   "画面: 過去レースのドリルダウンは「このモーターの現在まで」と明示する",
@@ -243,6 +245,17 @@ check(
     wrapperStart >= 0 && noteAt > wrapperStart && closes > opens,
   );
 }
+check(
+  "画面: 過去レースはドリルダウンでも期間を選ばせない（90日に戻す）",
+  chart.includes("!drillPreGeneration && !isPastSelectedRace") &&
+    /selectedRace\.slice\(0, 10\) < getTodayJST\(\)\) \{\s*setPeriodDays\(90\)/.test(
+      chart,
+    ),
+);
+check(
+  "画面: 入れ替え前のレースでもハイライト行の説明は残す",
+  chart.includes("analysis.motor.highlightNote"),
+);
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;
@@ -256,6 +269,7 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       "periodSinceGeneration",
       "racePreGenerationNote",
       "drillCurrentStateNote",
+      "highlightNote",
     ].every((k) => typeof motor[k] === "string" && motor[k].length > 0),
   );
 }
