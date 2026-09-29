@@ -709,6 +709,8 @@
     "compareTrendSt": "ST",
     "compareTrendEx": "전시",
     "compareTrendNote": "같은 시리즈·같은 수면을 달린 6정을 같은 잣대(6정의 최소~최대)로 늘어놓았습니다. 행을 넘어 선의 높이를 그대로 비교할 수 있습니다. 점선은 6정의 평균. 위일수록 빠르고, 큰 점이 직전 주행입니다.",
+    "compareTrendRange": "왼쪽이 {{from}}, 오른쪽이 {{to}}.",
+    "compareTrendHint": "정번호나 선수명을 탭하면 아래 상세가 그 선수로 바뀝니다",
     "compareTrendEmpty": "추이를 그릴 주행이 아직 없습니다",
     "prelimOverNoteDay": "예선은 {{day}}일째({{date}})에 끝났습니다. 득점률은 여기서 확정되어 오늘 착순으로는 바뀌지 않습니다.",
     "trendLastHeader": "직전",

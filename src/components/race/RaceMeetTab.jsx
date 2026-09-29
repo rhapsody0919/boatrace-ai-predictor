@@ -193,6 +193,23 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
     player: p,
     runs: meetRunsByRacer[p.racerId] ?? [],
   }));
+  // **横軸がいつからいつまでか**。6行の折れ線には横軸の手がかりが何も無く、
+  // 左端が初日なのか3日目なのか読めない（2026-09-29のファン評価）。
+  // 追加取得はせず、既に持っている走の日付から出す
+  const trendDates = [
+    ...new Set(
+      trendRows.flatMap((r) => r.runs.map((x) => x.date).filter(Boolean)),
+    ),
+  ].sort();
+  // 表の日付（9/22）と同じ形。`slice` だけだと「09/22」でゼロ埋めが残る
+  const mdOf = (d) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`;
+  const trendRange =
+    trendDates.length > 0
+      ? {
+          from: mdOf(trendDates[0]),
+          to: mdOf(trendDates[trendDates.length - 1]),
+        }
+      : null;
   const trendValues = trendRows
     .flatMap((r) => r.runs.map((x) => x[trendKey]))
     .filter((v) => typeof v === "number");
@@ -693,6 +710,15 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
               );
             })}
           </ul>
+          {/* 横軸の期間と、行を押すと下が変わること。どちらも
+              「点を押したら情報が出る」より先に要る、というファン評価の結論
+              （2026-09-29、BOA-495） */}
+          {trendRange && (
+            <p className="rmt-trend-range">
+              {t("meetTab.compareTrendRange", trendRange)}
+            </p>
+          )}
+          <p className="rmt-hint">{t("meetTab.compareTrendHint")}</p>
           <p className="rmt-spark-note">{t("meetTab.compareTrendNote")}</p>
         </div>
       )}

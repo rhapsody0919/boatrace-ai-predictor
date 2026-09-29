@@ -248,6 +248,15 @@
   color: var(--text-secondary);
 }
 
+/* 6艇推移の横軸の期間。折れ線のすぐ下に置き、他の注意書きより先に目に入るよう
+   字色だけ本文寄りにする（大きさは他の注記と同じ） */
+.rmt-trend-range {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
 .rmt-hint {
   margin: var(--spacing-2) 0 0;
   font-size: var(--font-size-2xs);

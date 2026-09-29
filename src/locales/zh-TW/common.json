@@ -709,6 +709,8 @@
     "compareTrendSt": "ST",
     "compareTrendEx": "展示",
     "compareTrendNote": "6艇跑的是同一梯次、同一水面，因此用同一把尺（6艇的最小～最大）並排，可以跨列直接比較線的高度。虛線是6艇的平均。越上面越快，大點為前一場。",
+    "compareTrendRange": "左端為{{from}}，右端為{{to}}。",
+    "compareTrendHint": "點選艇號或選手名，下方的詳細資料會切換為該選手",
     "compareTrendEmpty": "尚無足夠場次可繪製走勢",
     "prelimOverNoteDay": "預賽已於第{{day}}天（{{date}}）結束。得分率就此確定，今日名次不會再改變。",
     "trendLastHeader": "前一場",

@@ -1506,6 +1506,16 @@ test.describe("レースページ再設計（BOA-168）", () => {
 
     // 6艇の推移（同じ縦の物差しで並べる）。ST/展示を切り替えられる
     await expect(page.locator(".rmt-trend-row")).toHaveCount(6);
+    // **横軸がいつからいつまでか**を出す。折れ線には横軸の手がかりが何も無く、
+    // 左端が初日なのか3日目なのか読めない、というファン評価の結論（BOA-495）。
+    // 選択艇側の56pxグラフには元から軸に日付が出ており、6艇側だけ無かった
+    await expect(page.locator(".rmt-trend-range")).toHaveText(
+      /^左が\d+\/\d+、右が\d+\/\d+。$/,
+    );
+    // 行を押すと下の詳細が変わることを、グラフ側にも書く（表側にだけあった）
+    await expect(page.locator(".rmt-hint").last()).toContainText(
+      "下の詳細がその選手に変わります",
+    );
     await page.locator(".rmt-metric-chip", { hasText: "展示" }).click();
     await expect(
       page.locator(".rmt-metric-chip", { hasText: "展示" }),
