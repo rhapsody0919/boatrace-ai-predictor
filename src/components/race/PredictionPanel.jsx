@@ -167,6 +167,9 @@ function PredictionPanel({
   // 中止・順延の確定検知（BOA-254）。暫定検知（"tentative"）はまだ誤検出の
   // 可能性があるため、既存の受付中/結果反映待ち表示のまま変更しない
   const isCancelled = isRaceCancelled(prediction);
+  // AI用にコピー（BOA-194）はこれから走るレースを外部AIで分析するためのもの。
+  // 結果確定済みと中止確定（BOA-424）では出さない
+  const showAiCopy = !isFinished && !isCancelled;
 
   // データ出走表・枠番傾向・分析ツール群（レース前の予想材料）を表示するか。
   // 結果/直前情報/モータ情報/AI予想の各タブは、それぞれのタブ内で同種の情報を
@@ -307,8 +310,8 @@ function PredictionPanel({
         )
       )}
 
-      {/* AI用にコピー（BOA-194）: 結果未確定レースのみ、外部AIツールで独自分析したいユーザー向け */}
-      {!isFinished && (
+      {/* AI用にコピー（BOA-194）: 結果未確定・中止でないレースのみ、外部AIツールで独自分析したいユーザー向け */}
+      {showAiCopy && (
         <AiCopyBanner
           raceId={analysisRaceId}
           prediction={prediction}
@@ -366,6 +369,7 @@ function PredictionPanel({
                   venueCode={venueCode}
                   venueName={venueName}
                   raceId={analysisRaceId}
+                  isCancelled={isCancelled}
                 />
               ),
             },
@@ -557,7 +561,7 @@ function PredictionPanel({
         </>
       )}
 
-      {!isFinished && (
+      {showAiCopy && (
         <AiCopyButton
           variant="inline"
           raceId={analysisRaceId}
@@ -568,7 +572,7 @@ function PredictionPanel({
           onCopy={showAiCopyToast}
         />
       )}
-      {!isFinished && (
+      {showAiCopy && (
         <Toast
           message={aiCopyToast.message}
           type={aiCopyToast.type}

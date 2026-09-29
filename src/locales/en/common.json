@@ -563,6 +563,7 @@
     "periodCaveat": "\"This term\" is not the official term division: it covers every race in our data (up to the past two years), so the population differs from the win rate on the official site."
   },
   "aiPredictionTab": {
+    "cancelled": "This race was cancelled, so there is no AI prediction.",
     "unavailableTitle": "No AI prediction data",
     "unavailableBody": "This race doesn't have the data needed for an AI prediction."
   },

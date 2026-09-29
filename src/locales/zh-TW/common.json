@@ -558,6 +558,7 @@
     "periodCaveat": "※「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（最多過去2年）。與官方網站的勝率母體不同。"
   },
   "aiPredictionTab": {
+    "cancelled": "本場比賽已中止，因此沒有AI預測。",
     "unavailableTitle": "尚無AI預測資料",
     "unavailableBody": "這場比賽尚未備齊AI預測所需的資料。"
   },

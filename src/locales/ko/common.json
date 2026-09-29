@@ -558,6 +558,7 @@
     "periodCaveat": "※'이번 기'는 공식 기 구분이 아니라 당사 데이터로 확인할 수 있는 전체 기간(최대 과거 2년)을 대상으로 합니다. 공식 사이트의 승률과는 모집단이 다릅니다."
   },
   "aiPredictionTab": {
+    "cancelled": "이 경주는 중지되어 AI 예상이 없습니다",
     "unavailableTitle": "AI 예상 데이터가 없습니다",
     "unavailableBody": "이 경주는 AI 예상에 필요한 데이터가 아직 준비되지 않았습니다."
   },
