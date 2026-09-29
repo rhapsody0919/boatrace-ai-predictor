@@ -270,7 +270,8 @@
       "notFinished": "Did not finish (disqualified)",
       "disqualified": "Disqualified",
       "noPosition": "No finishing position (void race)",
-      "refunded": "Refunded"
+      "refunded": "Refunded",
+      "noPositionPlain": "No finishing position"
     },
     "refundTag": "Refunded boats",
     "partialNoRaceTag": "Some bet types void",

@@ -414,6 +414,12 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
     const rows = await readRows(root);
     expect(rows.filter((r) => r.podium)).toHaveLength(0);
     expect(rows.map((r) => r.pos)).not.toContain("2着");
+    // 成立状態が届いていないのに「（不成立）」と書かない（同じページの的中表示と食い違うため。
+    // ファン評価 第1周 指摘1）
+    expect(rows.find((r) => r.boat === "4")).toMatchObject({
+      pos: "—",
+      label: "着順なし",
+    });
   });
 
   test("読み込み中: スタート情報が届くまで rank1〜 の着順を出さない", async ({

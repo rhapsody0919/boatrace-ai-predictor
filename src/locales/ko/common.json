@@ -266,7 +266,8 @@
       "notFinished": "미완주(실격)",
       "disqualified": "실격",
       "noPosition": "착순 없음(불성립)",
-      "refunded": "반환"
+      "refunded": "반환",
+      "noPositionPlain": "착순 없음"
     },
     "refundTag": "반환정 있음",
     "partialNoRaceTag": "일부 승식 불성립",

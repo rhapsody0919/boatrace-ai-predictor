@@ -266,7 +266,8 @@
       "notFinished": "不（未完賽失格）",
       "disqualified": "失（失格）",
       "noPosition": "無名次（比賽不成立）",
-      "refunded": "退款"
+      "refunded": "退款",
+      "noPositionPlain": "無名次"
     },
     "refundTag": "有退款艇",
     "partialNoRaceTag": "部分投注類型不成立",

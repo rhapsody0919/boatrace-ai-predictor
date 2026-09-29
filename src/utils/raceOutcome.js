@@ -166,7 +166,8 @@ export function normalizeFinishMark(mark) {
 
 /**
  * 払戻明細（race_payouts.bet_type、079）→ 画面の勝式キー（i18n の result.payoutType.*）と組番の区切り。
- * 並びは公式の結果ページの払戻表と同じ（単勝・複勝・3連単・3連複・2連単・2連複・拡連複）。
+ * 並びは単勝・複勝・3連単・3連複・2連単・2連複・拡連複（ユーザー承認のモックどおり。公式PC版の結果ページは
+ * 3連単・3連複・2連単・2連複・拡連複・単勝・複勝の順で、公式とは違う。ファン評価 第1周 指摘2で判明）。
  * race_results の payout_trio=3連単・payout_trifecta=3連複 の逆転は持ち込まない
  */
 export const PAYOUT_BET_TYPES = Object.freeze([

@@ -266,7 +266,8 @@
       "notFinished": "不（不完走失格）",
       "disqualified": "失（失格）",
       "noPosition": "着順なし（不成立）",
-      "refunded": "返還"
+      "refunded": "返還",
+      "noPositionPlain": "着順なし"
     },
     "refundTag": "返還艇あり",
     "partialNoRaceTag": "不成立の勝式あり",

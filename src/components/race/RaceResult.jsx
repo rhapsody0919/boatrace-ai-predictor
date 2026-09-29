@@ -317,6 +317,10 @@ function buildResultRows(result, startTimings, boatsInRace) {
 // 着欄の記号の短いラベル（「F（フライング・返還）」等）。記号が分からない返還艇は「返還」、
 // 不成立で記号の無い艇は「着順なし（不成立）」。意味は src/utils/raceOutcome.js の FINISH_MARKS
 function markLabel(t, row, isNoRace) {
+  // 「＿」は不成立のレースにしか出ない記号だが、成立状態が届いていない（109未適用）ときに
+  // 「（不成立）」と書くと、同じページの的中表示（成立状態を知らない）と食い違う。そのときは
+  // 「着順なし」だけにする（ファン評価 第1周 指摘1）
+  if (row.mark === "_" && !isNoRace) return t("result.mark.noPositionPlain");
   const info = row.mark ? FINISH_MARKS[row.mark] : null;
   if (info) return t(`result.mark.${info.key}`);
   if (row.refunded) return t("result.mark.refunded");
