@@ -908,10 +908,20 @@ function MotorConditionChart({
             badges={[
               venueMotorRanking && {
                 key: "venueRank",
-                text: t("analysis.motor.venueRankBadge", {
-                  rank: venueMotorRanking.rank,
-                  total: venueMotorRanking.total,
-                }),
+                // 同じ値のモーターがあれば「◯位タイ」（BOA-529。今節タブの順位と同じ）
+                text: t(
+                  venueMotorRanking.tied > 1
+                    ? "analysis.motor.venueRankBadgeTied"
+                    : "analysis.motor.venueRankBadge",
+                  {
+                    rank: venueMotorRanking.rank,
+                    total: venueMotorRanking.total,
+                    // 何の値の順位かを数字で示す。当日のレースは一覧に「2連率（期間の
+                    // 再計算）」と「公式2連率」の2列があり、どちらの順位か読めなかった
+                    // （BOA-529 ファン評価2周目）
+                    value: Number(venueMotorRanking.value).toFixed(1),
+                  },
+                ),
               },
             ].filter(Boolean)}
           />
@@ -949,6 +959,11 @@ function MotorConditionChart({
           {(venueMotorStats || venueMotorRanking) && (
             <p className="table-note">
               {t("analysis.motor.officialSnapshotNote")}
+              {/* 会場内順位に添えた値は会場公式サイトの2連率で、小数2桁目を切り捨てる。
+                  一覧（BOAT RACE公式、四捨五入）と0.1違うことがある（BOA-529 ファン評価3周目。
+                  大村32号機: 一覧26.1／会場公式26.0） */}
+              {venueMotorRanking &&
+                ` ${t("analysis.motor.venueRankRoundingNote")}`}
             </p>
           )}
 
