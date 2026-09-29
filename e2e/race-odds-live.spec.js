@@ -74,6 +74,7 @@ async function setup(
     snapshots = [SNAPSHOT_ROW],
     live,
     final = null,
+    race = RACE,
   } = {},
 ) {
   await page.clock.setFixedTime(now);
@@ -91,7 +92,7 @@ async function setup(
     const body = live ? await live(p, calls) : liveBody(p);
     return route.fulfill({ json: body });
   });
-  await page.goto(`/race/${RACE}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`/race/${race}`, { waitUntil: "domcontentloaded" });
   await page
     .locator(".race-tabs-btn", { hasText: "オッズ一覧" })
     .click({ timeout: 60000 });
@@ -580,9 +581,42 @@ test.describe("締切時オッズへの切り替えの予告（BOA-547）", () =
   }) => {
     const { status } = await setup(page, { now: AFTER_DEADLINE }); // 締切16分後
     await expect(status).toContainText("13:54 取得");
-    await expect(page.getByTestId("odds-final-pending")).toContainText(
-      "締切時オッズの表示に切り替わります",
+    const pending = page.getByTestId("odds-final-pending");
+    await expect(pending).toContainText("開き直すと切り替わります");
+    // 長い注意書きに埋もれないよう、状態の1行の先頭に置く（ファン評価1周目 P3）
+    await expect(status.locator(":scope > *").first()).toHaveAttribute(
+      "data-testid",
+      "odds-final-pending",
     );
+  });
+
+  test("この券種の記録が無くても、締切後1時間以内なら予告を出す（ファン評価1周目 P2）", async ({
+    page,
+  }) => {
+    await setup(page, { now: AFTER_DEADLINE }); // スナップショットは3連単・単勝複勝だけ
+    await page.getByRole("tab", { name: "2連単" }).click();
+    await expect(page.locator(".rol-no-data")).toBeVisible();
+    await expect(page.getByTestId("odds-final-pending")).toBeVisible();
+  });
+
+  test("記録が1つも無いレースの締切後: 「発走が近づくと」と書かず、予告を出す（ファン評価1周目 P2）", async ({
+    page,
+  }) => {
+    await setup(page, { now: AFTER_DEADLINE, snapshots: [] });
+    const body = page.getByTestId("odds-empty-body");
+    await expect(body).toContainText("開き直すと切り替わります");
+    await expect(body).not.toContainText("発走が近づくと");
+  });
+
+  test("締切時オッズの保存を始めた日以降で、1時間を過ぎても無い: 取得できなかったと書く（ファン評価1周目 P3）", async ({
+    page,
+  }) => {
+    const { status } = await setup(page, {
+      race: "2026-09-29-16-12", // 児島12R（締切 16:50）
+      now: new Date("2026-09-29T18:00:00+09:00"),
+    });
+    await expect(status).toContainText("取得できませんでした");
+    await expect(page.getByTestId("odds-final-pending")).toHaveCount(0);
   });
 
   test("締切から1時間を過ぎた（取り直しの期間が終わった）: 予告を出さない", async ({
@@ -593,6 +627,8 @@ test.describe("締切時オッズへの切り替えの予告（BOA-547）", () =
     });
     await expect(status).toContainText("取得");
     await expect(page.getByTestId("odds-final-pending")).toHaveCount(0);
+    // 保存を始める前（9/28）のレースは「取得できませんでした」とも書かない
+    await expect(page.getByTestId("odds-final-unavailable")).toHaveCount(0);
   });
 });
 
