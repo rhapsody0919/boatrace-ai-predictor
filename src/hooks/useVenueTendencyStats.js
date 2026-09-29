@@ -1,6 +1,6 @@
 /**
  * useVenueTendencyStats - 会場×枠番単位の傾向データを並列取得するフック
- * （race-detail-analysis-integration FR-2、ADR-0024）
+ * （race-detail-analysis-integration FR-2、ADR-0050）
  *
  * useRaceAnalysisData（raceId単位）とは責務を分離し、venueCodeのみで完結する
  * 4つの会場統計（決まり手・トップ発走率・負け決まり手・展示最速転換率）を束ねる。

@@ -4107,7 +4107,7 @@ export const supabaseDataService = {
   /**
    * 選手ごとの最新級別・勝率（race_entriesの最新行、ADR-0023準拠）を
    * racer_grade_cache（scripts/daily/update-racer-grade-cache.jsが夜間更新）
-   * から取得する（docs/adr/0043-racer-grade-win-rate-cache-strategy.md）
+   * から取得する（docs/adr/0052-racer-grade-win-rate-cache-strategy.md）
    */
   getRacerGradeCache() {
     return withCache(

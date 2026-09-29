@@ -1,7 +1,7 @@
 // Racer Grade Cache Update Script
 // 選手ごとの最新級別・勝率（race_entriesの最新行、ADR-0023準拠）を
 // get_latest_racer_grades() RPC（docs/db-migration/055番）で一括取得し、
-// racer_grade_cache に保存する（docs/design/racer-search-and-list/、ADR-0043）
+// racer_grade_cache に保存する（docs/design/racer-search-and-list/、ADR-0052）
 
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
 
