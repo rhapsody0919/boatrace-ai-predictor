@@ -1902,6 +1902,17 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(stBadges).toHaveCount(3);
     await expect(stBadges.nth(0)).toHaveText("F2");
     await expect(stBadges.nth(1)).toHaveText("F1");
+    // 6艇すべての出走履歴を取り終えるまで待つ。カードは1艇分でも揃えば表を出し、
+    // バッジは race_entries.f_count から出るので、上の確認は履歴の取得を待たない。
+    // 履歴は選手ごとに race_start_timings を1000行ずつページングしており（2年窓で
+    // 1000行を超える選手がいる）、待たずに次のレースへ移ると2ページ目が録画に入らず、
+    // 速い再生でだけ出て本番へ素通りしていた（BOA-556）。走数は取得前「—」、
+    // 取得後は数字（0を含む）になる
+    await expect(page.locator(".rsc-grid .rsc-runs")).toHaveText(
+      Array(6).fill(/^\d+$/),
+      // 録画（本番に繋ぐ）では6選手分の2年窓を取るので、他の待ちと同じ長さにする
+      { timeout: 25000 },
+    );
 
     // f_count が無い期間（2026-09-20以前）はバッジも空欄も出さない
     await page.goto("/race/2026-09-10-01-01");
