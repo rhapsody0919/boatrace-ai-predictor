@@ -15,6 +15,7 @@
  *
  * Fの走はST順位を付けず「F」と出す（順位づけの対象外にしているため）。
  */
+import { useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { finishPositionOf } from "./basicInfoStats";
@@ -31,6 +32,14 @@ function rankClass(rank) {
 function RecentRunsBar({ runs }) {
   const { t } = useTranslation();
   const list = Array.isArray(runs) ? runs : [];
+  // 古い順（左が古い）に並ぶので、横に収まらない幅では開いたときに右端（最新）を
+  // 見せる。左端から見せると、いちばん知りたい直近の走が画面の外になる（BOA-601）
+  const stripRef = useRef(null);
+  const lastId = list[list.length - 1]?.raceId ?? null;
+  useLayoutEffect(() => {
+    const el = stripRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [list.length, lastId]);
   if (list.length === 0) return null;
 
   return (
@@ -39,7 +48,7 @@ function RecentRunsBar({ runs }) {
         <span>{t("recentRuns.older")}</span>
         <span>{t("recentRuns.newer")}</span>
       </div>
-      <div className="rrb-strip">
+      <div className="rrb-strip" ref={stripRef}>
         {list.map((r) => {
           const rank = finishPositionOf(r);
           const course = r.actualCourse ?? null;

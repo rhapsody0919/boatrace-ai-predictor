@@ -1576,6 +1576,42 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const ids = await items.evaluateAll((els) => els.map((e) => e.title));
     expect(ids.length).toBeGreaterThan(1);
     expect(ids).toEqual([...ids].sort());
+
+    // 375pxでは1段の横スクロールで、開いたときに右端（最新）が見えている。
+    // 以前は5本×2段に折り返し、最新の走が2段目の右下に回っていた（ファン評価1周目）
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    const mBtn = page.getByRole("button", { name: /今期/ }).first();
+    await mBtn.waitFor({ timeout: 30000 });
+    await mBtn.click();
+    const strip = page.locator(".rrb-strip").first();
+    await expect(strip.locator(".rrb-item").first()).toBeAttached({
+      timeout: 30000,
+    });
+    const view = await strip.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const items = [...el.querySelectorAll(".rrb-item")];
+      const inView = (i) => {
+        const r = i.getBoundingClientRect();
+        return r.right <= box.right + 1 && r.left >= box.left - 1;
+      };
+      const rows = new Set(
+        items.map((i) => Math.round(i.getBoundingClientRect().top)),
+      );
+      return { rows: rows.size, lastInView: inView(items[items.length - 1]) };
+    });
+    expect(view).toEqual({ rows: 1, lastInView: true });
+    // 左端（いちばん古い走）までスクロールで戻れる
+    const firstReachable = await strip.evaluate((el) => {
+      el.scrollLeft = 0;
+      const box = el.getBoundingClientRect();
+      return (
+        el.querySelector(".rrb-item").getBoundingClientRect().left >=
+        box.left - 1
+      );
+    });
+    expect(firstReachable).toBe(true);
   });
 
   test("「今節」タブで6艇の勝負駆けと選んだ1艇の走りが出て、節をまたがない（phase a T6-1）", async ({

@@ -12,16 +12,29 @@
   margin-bottom: 2px;
 }
 
-/* モバイルでは10本が横に並ばないため折り返す（5本×2段になる） */
+/* 1段に並べ、入りきらなければ横にスクロールする（開いたときは右端＝最新まで
+   送る。RecentRunsBar.jsx）。以前は5本×2段に折り返していたが、古い順に並べると
+   最新の走が2段目の右下に回り、「新しい」の文字が1段目の右端（最新ではない走）の
+   上に来た。2段目の数本だけが横に引き伸ばされる崩れもあった（BOA-601） */
 .rrb-strip {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 3px;
+  overflow-x: auto;
+}
+
+/* 走数が少ないときは右（新しい側）に寄せる。justify-content: flex-end で寄せると、
+   あふれたときに左端がスクロールで戻れない側へはみ出すので、1本目の auto の
+   余白で寄せる（あふれたときは余白が0になり、左からスクロールできる） */
+.rrb-item:first-child {
+  margin-left: auto;
 }
 
 .rrb-item {
-  flex: 1 1 calc(20% - 3px);
+  /* 走数が少ないときに1本が全幅へ伸びないよう上限を持たせる */
+  flex: 1 1 46px;
   min-width: 46px;
+  max-width: 96px;
   display: flex;
   flex-direction: column;
   align-items: center;
