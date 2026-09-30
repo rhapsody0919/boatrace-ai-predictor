@@ -1593,16 +1593,20 @@ test.describe("レースページ再設計（BOA-168）", () => {
       .locator(".rmt-forecast-table tr")
       .filter({ hasText: "塩田" })
       .first();
-    await expect(shiota.locator(".rmt-needed-runs")).toHaveText("2走で", {
+    await expect(shiota.locator(".rmt-needed-runs")).toHaveText("今日2走で", {
       timeout: 30000,
     });
-    // 2走残る選手は「残りを全部6着でも届くか」で色を付ける（ファン評価1周目）。
     // 以前は町田が6着でも色付きで、同じ行の「必要得点7（2走で）」と逆だった
+    // （ファン評価1周目）
     const machida = page
       .locator(".rmt-forecast-table tr")
       .filter({ hasText: "町田" })
       .first();
-    await expect(machida.locator("td").last()).not.toHaveClass(/is-in-border/);
+    // 今日2走残る選手の行は色を付けない（2周目: 「7.00なのに色なし」と
+    // 読まれた基準のずれをなくす）。1走だけの選手（浜野）は従来どおり
+    await expect(machida.locator("td.is-in-border:not(.rmt-rate)")).toHaveCount(
+      0,
+    );
     // 走数は2行目に小さく出し、375pxで早見の3着まで最初の画面に入る
     await page.setViewportSize({ width: 375, height: 812 });
     const third = await page.locator(".rmt-forecast-scroll").evaluate((el) => {

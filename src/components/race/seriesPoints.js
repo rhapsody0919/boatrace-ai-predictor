@@ -471,29 +471,17 @@ export function computeSeriesScore(meetRecords, options = {}) {
  * 出すと、実際は+12なので早見と翌日の得点率が食い違う。種別は
  * `getMeetScoreboard` の `currentStage` で取れる（追加クエリ0本）。
  *
- * `worstRate` は、今日の予選がまだ2走以上残っている選手のための値（BOA-596）。
- * 表示中のレースをその着順で走り、**残りの走を全部6着（予選配点の1点）で終えた**
- * ときの得点率。早見のセルを「届く」と色付けするのはこちらで判定する。
- * `rate`（次の1走だけの得点率）で判定すると、2走残る選手は6着でも一時的に
- * 目安を超えて「届く」と色が付き、同じ行の「必要得点7（2走で）」と逆の意味になった
- * （尼崎 2026-09-27 5R の町田）。残りが1走なら `worstRate` は `rate` と同じ。
- *
  * @param {{points: number, runs: number}} current `computeSeriesScore` の戻り値
  * @param {string|null} [stage] 表示中レースの `race_stage`
- * @param {number} [remaining] 今日の残りの予選走数（表示中のレースを含む）。既定1
- * @returns {Array<{rank: number, rate: number, worstRate: number}>} 1着〜6着
+ * @returns {Array<{rank: number, rate: number}>} 1着〜6着
  */
-export function forecastSeriesScore(current, stage = null, remaining = 1) {
+export function forecastSeriesScore(current, stage = null) {
   const points = current?.points ?? 0;
   const runs = current?.runs ?? 0;
   const table = scoreTableFor(stage);
-  // 表示中のレースの後に残る走。どの種別でも6着の最低点は予選配点の1点以上
-  const after = Math.max(0, (remaining ?? 1) - 1);
   return [1, 2, 3, 4, 5, 6].map((rank) => ({
     rank,
     rate: (points + table[rank]) / (runs + 1),
-    worstRate:
-      (points + table[rank] + after * SCORE_POINTS[6]) / (runs + 1 + after),
   }));
 }
 

@@ -318,12 +318,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
             player,
             row,
             // 表示中レースの種別で配点を切り替える（ドリーム戦は1着+12）
-            // 残りが2走以上なら、色付けは「残りを全部6着でも届くか」で判定する
-            cells: forecastSeriesScore(
-              row,
-              stage,
-              remainingPrelimRuns[player.racerId] ?? 1,
-            ),
+            cells: forecastSeriesScore(row, stage),
             // 公式の「必要得点」＝準優ボーダーをクリアするのに要る得点。
             // 残り走数は**当日の番組が出ている予選レース**から数える
             // （翌日以降の出走表は未取得のことが多い）
@@ -707,7 +702,13 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                               className={
                                 showBorderBadge &&
                                 border !== undefined &&
-                                f.worstRate >= border
+                                // 今日2走以上残る選手の行は色を付けない。セルの数字は
+                                // 「次の1走だけ」の得点率で、準優に届くかは残りの
+                                // 走次第なので、その着で届くとは言えない。1周目は
+                                // 「残りを全部6着でも届くか」で塗ったが、数字と色の
+                                // 基準がずれ「7.00なのに色なし」と読まれた（BOA-596）
+                                remaining <= 1 &&
+                                f.rate >= border
                                   ? "is-in-border"
                                   : undefined
                               }
