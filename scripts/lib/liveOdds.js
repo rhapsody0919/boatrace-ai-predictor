@@ -36,7 +36,12 @@ const ALLOWED_PARAMS = new Set(["raceId", "page"]);
 const RACE_ID_RE = /^(\d{4}-\d{2}-\d{2})-(\d{2})-(\d{2})$/;
 
 // Cache-Control（CDN に集約し、公式へのアクセスを1レース×1ページあたり最大30秒に1回に抑える）
+// 締切まで10分以内（または締切時刻が読めない）は、鮮度が舟券の判断に直結するため stale-while-revalidate は60秒。
+// それより前は120秒にし、30秒を過ぎた後も古い値をすぐ返して裏で取り直す範囲を広げる。公式の入口（Akamai）で
+// 1リクエストごとに約8秒待たされるため、取り直しを待つ閲覧者を減らす（BOA-573。公式への要求数は増えない）
 export const CACHE_OK = "public, s-maxage=30, stale-while-revalidate=60";
+export const CACHE_OK_EARLY = "public, s-maxage=30, stale-while-revalidate=120";
+export const EARLY_CACHE_MINUTES = 10;
 export const CACHE_FINAL = "public, s-maxage=300, stale-while-revalidate=60";
 export const CACHE_UPSTREAM_ERROR = "public, s-maxage=10";
 export const CACHE_NO_STORE = "no-store";
@@ -103,9 +108,27 @@ const mapToObject = (map) => Object.fromEntries(map);
  * @returns {{published: boolean, officialUpdatedAt: string|null, final: boolean, data: Record<string, unknown>}}
  *   published=false は、オッズのセル（.oddsPoint）が1件も無い（発売前・中止・順延）
  */
+// 「締切予定時刻」の行（同じ日の12レース分）。レース番号の位置のまま返す（時刻の無いレースは null）
+function parseDeadlineTimes($) {
+  const row = $("tbody tr")
+    .filter((_, tr) =>
+      $(tr).find("td").first().text().includes("締切予定時刻"),
+    )
+    .first();
+  return row
+    .find("td")
+    .toArray()
+    .slice(1)
+    .map((td) => {
+      const t = $(td).text().trim();
+      return /^\d{1,2}:\d{2}$/.test(t) ? t : null;
+    });
+}
+
 export function parseLiveOddsPage(page, html) {
   const $ = cheerio.load(html);
   const published = $(".oddsPoint").length > 0;
+  const deadlineTimes = parseDeadlineTimes($);
   const officialUpdatedAt = parseOddsUpdatedAt($);
   const final = isFinalOdds($);
   const opts = { keepZero: true };
@@ -137,7 +160,7 @@ export function parseLiveOddsPage(page, html) {
         throw new Error(`未知の page: ${page}`);
     }
   }
-  return { published, officialUpdatedAt, final, data };
+  return { published, officialUpdatedAt, final, data, deadlineTimes };
 }
 
 const json = (status, cacheControl, body) => ({ status, cacheControl, body });
@@ -162,6 +185,30 @@ export function upstreamErrorResponse(reason, retryAfterSec) {
   });
 }
 
+/** 締切までの分（締切時刻が読めなければ null） */
+export function minutesToDeadline(target, parsed, now) {
+  const hhmm = parsed.deadlineTimes?.[target.raceNo - 1];
+  if (!hhmm || !target.date) return null;
+  const [h, m] = hhmm.split(":");
+  const deadline = new Date(
+    `${target.date}T${h.padStart(2, "0")}:${m}:00+09:00`,
+  );
+  return (deadline.getTime() - now.getTime()) / 60000;
+}
+
+// 120秒の応答は CDN に最大150秒（s-maxage 30＋120）残るため、締切10分前以降に食い込まないよう、
+// 締切まで「10分＋150秒」を超えるときだけ付ける（/code-review の指摘）
+const EARLY_CACHE_LIFETIME_MINUTES = (30 + 120) / 60;
+
+function cacheControlFor(target, parsed, now) {
+  if (parsed.final) return CACHE_FINAL;
+  const minutes = minutesToDeadline(target, parsed, now);
+  return minutes !== null &&
+    minutes > EARLY_CACHE_MINUTES + EARLY_CACHE_LIFETIME_MINUTES
+    ? CACHE_OK_EARLY
+    : CACHE_OK;
+}
+
 /**
  * 取得・解析の結果から応答を組み立てる
  *
@@ -171,7 +218,7 @@ export function upstreamErrorResponse(reason, retryAfterSec) {
  */
 export function successResponse(target, parsed, fetchedAt) {
   if (!parsed.published) return upstreamErrorResponse("not_on_sale", 60);
-  return json(200, parsed.final ? CACHE_FINAL : CACHE_OK, {
+  return json(200, cacheControlFor(target, parsed, fetchedAt), {
     ok: true,
     raceId: target.raceId,
     page: target.page,

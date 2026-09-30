@@ -178,6 +178,9 @@
   "functions": {
     "api/cron/*.js": {
       "regions": ["syd1"]
+    },
+    "api/odds/live.js": {
+      "regions": ["syd1"]
     }
   },
   "rewrites": [
