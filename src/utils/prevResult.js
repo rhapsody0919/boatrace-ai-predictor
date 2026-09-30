@@ -3,6 +3,8 @@
  * JSX を含まない純関数なので、ここに置いて単体テストする
  */
 
+import { FINISH_MARKS, normalizeFinishMark } from "./raceOutcome.js";
+
 const toNumber = (value) => {
   if (value === null || value === undefined || value === "") return null;
   const n = Number(value);
@@ -23,7 +25,9 @@ export const PREV_RESULT_AVAILABLE_FROM = "2026-09-16";
  * 前走成績の1マスに何を出すか（純関数、BOA-569）。
  *
  * - 前走があり着順も有る → { kind: "rank", rank, course }
- * - 前走があり着順が無い（失・F・転など）→ { kind: "mark", mark, course }（記号が無ければ unknown）
+ * - 前走があり着順が無い（失・F・転など）→ { kind: "mark", mark, markKey, course }（記号が無ければ unknown）。
+ *   markKey は FINISH_MARKS の key（i18n の dataTable.prevMark.<key>）。日本語以外の画面で
+ *   「エ」「転」を生のまま出さないため（BOA-569 ファン評価2周目）。知らない記号は null
  * - 前走が空で、取得漏れが無い日（または 1R）→ { kind: "firstToday" }（その日の最初の走）
  * - それ以外（取得が始まる前の空）→ { kind: "unknown" }
  *
@@ -36,9 +40,9 @@ export function prevResultState(row, raceId) {
   if (prevNo !== null) {
     const rank = toNumber(row?.prev_finish_rank);
     if (rank !== null) return { kind: "rank", rank, course };
-    const mark = row?.prev_finish_mark;
-    return typeof mark === "string" && mark !== "" && !/^[0-9]$/.test(mark)
-      ? { kind: "mark", mark, course }
+    const mark = normalizeFinishMark(row?.prev_finish_mark);
+    return mark !== null && !/^[0-9]$/.test(mark)
+      ? { kind: "mark", mark, markKey: FINISH_MARKS[mark]?.key ?? null, course }
       : { kind: "unknown" };
   }
   const raceDate = (raceId ?? "").slice(0, 10);

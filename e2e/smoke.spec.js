@@ -1811,7 +1811,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     }
   });
 
-  test("375pxで履歴の表の着順が初期表示に入り、前走成績を未取得のときに「今節初戦」と言い切らない（BOA-569）", async ({
+  test("375pxで履歴の表の着順が初期表示に入り、本日の前走を未取得のときに「今節初戦」と言い切らない（BOA-569）", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
@@ -1843,20 +1843,37 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 「今節初戦」と出ていた
     await page.goto("/race/2026-06-22-13-12");
     await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
-    const prevRow = page.locator("tr", { hasText: "前走成績" }).first();
+    const prevRow = page.locator("tr", { hasText: "本日の前走" }).first();
     await prevRow.waitFor({ timeout: 30000 });
     await expect(prevRow).not.toContainText("今節初戦");
 
-    // 前走の列は「同じ日の前の走」。4日目の5R（2026-09-26 津）で、その日まだ
-    // 走っていない5艇は「本日初走」、1R を走った6号艇だけ前走が出る
-    // （以前は5艇に「今節初戦」と出ていた。ファン評価）
+    // 前走の列は「同じ日の前の走」なので見出しを「本日の前走」にする。4日目の5R
+    // （2026-09-26 津）で、その日まだ走っていない5艇は「初走」、1R を走った6号艇
+    // だけ前走が出る（以前は5艇に「今節初戦」と出ていた。ファン評価）
     await page.goto("/race/2026-09-26-09-05");
     await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
-    const prevRow2 = page.locator("tr", { hasText: "前走成績" }).first();
+    const prevRow2 = page.locator("tr", { hasText: "本日の前走" }).first();
     await prevRow2.waitFor({ timeout: 30000 });
     await expect(prevRow2).not.toContainText("今節初戦");
-    await expect(prevRow2).toContainText("本日初走");
+    await expect(prevRow2).toContainText("初走");
     await expect(prevRow2).toContainText(/\d着/);
+
+    // 英語の画面で公式の記号（エ＝エンスト）を生のまま出さない（ファン評価2周目）。
+    // 2026-09-30 戸田9R: 前の走がエンスト失格の艇がいる
+    await page.goto("/en/race/2026-09-30-02-09");
+    await page.locator(".race-tabs-btn", { hasText: "Basic Info" }).click();
+    const enRow = page.locator("tr", { hasText: "Earlier race today" }).first();
+    await enRow.waitFor({ timeout: 30000 });
+    await expect(enRow).toContainText("Eng");
+    await expect(enRow).not.toContainText("エ");
+
+    // 「今節の展示」が無い艇は「今節初戦」のまま（本日の前走の「初走」と取り違えない）。
+    // 2026-09-21 津1R は節の初日
+    await page.goto("/race/2026-09-21-09-01");
+    await page.locator(".race-tabs-btn", { hasText: "直前情報" }).click();
+    const meetRow = page.locator("tr", { hasText: "今節展示情報" }).first();
+    await meetRow.waitFor({ timeout: 30000 });
+    await expect(meetRow).toContainText("今節初戦");
   });
 
   test("着順が付かない走は、推移・比較表・日別の表で同じ公式の記号になる（BOA-537 ファン評価）", async ({

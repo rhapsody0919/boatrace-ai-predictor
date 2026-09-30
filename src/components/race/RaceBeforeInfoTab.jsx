@@ -382,7 +382,7 @@ function RaceBeforeInfoTab({
               if (!v)
                 return (
                   <span className="drt-sub">
-                    {t("dataTable.prevResultNoRace")}
+                    {t("dataTable.meetFirstRace")}
                   </span>
                 );
               return (
@@ -454,7 +454,7 @@ function RaceBeforeInfoTab({
         const trend = (state ?? []).filter((e) => e.exhibitionTime !== null);
         if (trend.length === 0)
           return (
-            <span className="drt-sub">{t("dataTable.prevResultNoRace")}</span>
+            <span className="drt-sub">{t("dataTable.meetFirstRace")}</span>
           );
         const prev = trend[trend.length - 1].exhibitionTime;
         const avg =

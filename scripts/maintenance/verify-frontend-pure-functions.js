@@ -997,7 +997,20 @@ function suitePrevResult(m, check) {
   check(
     "prevResultState: 前走に着順が無ければ公式の記号（失・F など）。「—」にしない",
     m.prevResultState(dq, "2026-09-26-11-11"),
-    { kind: "mark", mark: "失", course: 5 },
+    { kind: "mark", mark: "失", markKey: "disqualified", course: 5 },
+  );
+  check(
+    "prevResultState: 記号は全角を半角にそろえ、訳すための key を返す。知らない記号は key が null（BOA-569 ファン評価2周目）",
+    [
+      m.prevResultState({ ...dq, prev_finish_mark: "Ｆ" }, "2026-09-26-11-11"),
+      m.prevResultState({ ...dq, prev_finish_mark: "エ" }, "2026-09-26-11-11"),
+      m.prevResultState({ ...dq, prev_finish_mark: "？" }, "2026-09-26-11-11"),
+    ],
+    [
+      { kind: "mark", mark: "F", markKey: "flying", course: 5 },
+      { kind: "mark", mark: "エ", markKey: "engineStall", course: 5 },
+      { kind: "mark", mark: "？", markKey: null, course: 5 },
+    ],
   );
   check(
     "prevResultState: 取得漏れが無い日（2026-09-16〜）の空は「本日初走」（今節初戦ではない）",

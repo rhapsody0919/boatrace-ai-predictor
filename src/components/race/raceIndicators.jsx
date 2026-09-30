@@ -531,7 +531,8 @@ function buildRowDefs({
       },
     },
     {
-      // 前走成績（今節内の直近レースの着順・進入コース）は事実の記録であり、
+      // 本日の前走（同じ日にこのレースより前に走ったレースの着順・進入コース。
+      // prevResult.js 参照。今節の前走ではない）は事実の記録であり、
       // bestは持たせない（BOA-289、tilt/adjustmentWeightと同じ扱い）
       key: "prevResult",
       label: t("dataTable.rowPrevResult"),
@@ -550,9 +551,16 @@ function buildRowDefs({
         if (state.kind === "unknown") return "—";
         return (
           <span className="drt-value">
-            {state.kind === "rank"
-              ? t("review.finishPosition", { position: state.rank })
-              : state.mark}
+            {state.kind === "rank" ? (
+              t("review.finishPosition", { position: state.rank })
+            ) : state.markKey ? (
+              // 記号は言語ごとの短い表記で出し、意味は title で補う
+              <abbr title={t(`result.mark.${state.markKey}`)}>
+                {t(`dataTable.prevMark.${state.markKey}`)}
+              </abbr>
+            ) : (
+              state.mark
+            )}
             {state.course !== null && (
               <span className="drt-sub">
                 {" "}
