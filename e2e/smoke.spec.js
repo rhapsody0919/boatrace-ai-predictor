@@ -1946,6 +1946,11 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const raceId = "2026-09-26-09-05";
     await page.goto(`/race/${raceId}`);
     await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    // 数字は「このレースの時点」なので、見出しも「本日」と言わない（ファン評価1周目）
+    await expect(page.getByText("このレースの想定進入").first()).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(page.getByText("本日の想定進入")).toHaveCount(0);
     const btn = page.getByRole("button", { name: /直近1ヶ月/ }).first();
     await btn.waitFor({ timeout: 30000 });
     await btn.click();

@@ -537,7 +537,7 @@
     "result": "Result"
   },
   "wakuInfo": {
-    "note": "Pick a racer to compare their record in today's expected course across periods and conditions. Tap the period name on the left to see the last 10 finishes from that course. Use the fold below the table to compare all six courses.",
+    "note": "Pick a racer to compare their record in expected course in this race across periods and conditions. Tap the period name on the left to see the last 10 finishes from that course. Use the fold below the table to compare all six courses.",
     "boatLabel": "Racer (boat #)",
     "metricLabel": "Metric",
     "metrics": {
@@ -568,8 +568,8 @@
     },
     "smallSampleTitle": "Small sample; treat as a rough guide",
     "gridTitleWithMetric": "Record by course: {{metric}}",
-    "todayMark": "today",
-    "todayCourseHeading": "Today's expected start: course {{course}}",
+    "todayMark": "est.",
+    "todayCourseHeading": "Expected start in this race: course {{course}}",
     "wakuNariAssumption": "assuming a straight start from the assigned lane",
     "wakuNariRate": "This racer starts from the assigned lane {{rate}}% of the time (last {{n}} races)",
     "periodHeader": "Period / condition",
@@ -1749,7 +1749,7 @@
   "stConsideration": {
     "title": "Start timing",
     "subtitle": "Lower figure is the gap from the average for the same course and class",
-    "window": "Period {{start}}-{{end}}",
+    "window": "Average compared against: {{start}}-{{end}}",
     "gradeRow": "Class",
     "runsRow": "Starts",
     "stable": "Consistent",

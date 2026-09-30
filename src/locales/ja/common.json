@@ -614,7 +614,7 @@
     "meetScorePrelimOver": "予選の得点率 {{rate}}（{{n}}走・{{source}}・確定）"
   },
   "wakuInfo": {
-    "note": "選手を選ぶと、その選手が本日入る想定コースでの成績を期間・条件ごとに比較できます。左端の期間名をタップするとそのコースの直近10走の着順が開きます。全コース（1〜6）の比較は表の下の折りたたみから開けます",
+    "note": "選手を選ぶと、その選手がこのレースで入る想定コースでの成績を期間・条件ごとに比較できます。左端の期間名をタップするとそのコースの直近10走の着順が開きます。全コース（1〜6）の比較は表の下の折りたたみから開けます",
     "boatLabel": "選手（艇番）",
     "metricLabel": "指標",
     "metrics": {
@@ -645,8 +645,8 @@
     },
     "smallSampleTitle": "サンプルが少ないため参考値です",
     "gridTitleWithMetric": "コース別成績：{{metric}}",
-    "todayMark": "今日",
-    "todayCourseHeading": "本日の想定進入：{{course}}コース",
+    "todayMark": "想定",
+    "todayCourseHeading": "このレースの想定進入：{{course}}コース",
     "wakuNariAssumption": "※枠なり進入時",
     "wakuNariRate": "この選手の枠なり進入率は{{rate}}％（直近{{n}}走）",
     "periodHeader": "期間・条件",
@@ -1741,7 +1741,7 @@
   "stConsideration": {
     "title": "ST考察",
     "subtitle": "下段は同じコース・同じ級別の平均との差",
-    "window": "集計期間 {{start}}〜{{end}}",
+    "window": "比べる平均の集計期間 {{start}}〜{{end}}",
     "gradeRow": "級別",
     "runsRow": "走数",
     "stable": "安定率",

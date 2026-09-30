@@ -532,7 +532,7 @@
     "result": "결과"
   },
   "wakuInfo": {
-    "note": "선수를 선택하면 그 선수가 오늘 들어갈 예상 코스의 성적을 기간·조건별로 비교할 수 있습니다. 왼쪽의 기간 이름을 누르면 해당 코스의 최근 10주 착순이 열립니다. 전체 6개 코스 비교는 표 아래 접힌 영역에서 열 수 있습니다.",
+    "note": "선수를 선택하면 그 선수가 이 경주에서 들어갈 예상 코스의 성적을 기간·조건별로 비교할 수 있습니다. 왼쪽의 기간 이름을 누르면 해당 코스의 최근 10주 착순이 열립니다. 전체 6개 코스 비교는 표 아래 접힌 영역에서 열 수 있습니다.",
     "boatLabel": "선수(번호)",
     "metricLabel": "지표",
     "metrics": {
@@ -563,8 +563,8 @@
     },
     "smallSampleTitle": "표본이 적어 참고값입니다",
     "gridTitleWithMetric": "코스별 성적: {{metric}}",
-    "todayMark": "오늘",
-    "todayCourseHeading": "오늘의 예상 진입: {{course}}코스",
+    "todayMark": "예상",
+    "todayCourseHeading": "이 경주의 예상 진입: {{course}}코스",
     "wakuNariAssumption": "※정해진 레인대로 진입할 경우",
     "wakuNariRate": "이 선수가 정해진 레인대로 진입한 비율은 {{rate}}%입니다(최근 {{n}}주)",
     "periodHeader": "기간·조건",
@@ -1741,7 +1741,7 @@
   "stConsideration": {
     "title": "ST 고찰",
     "subtitle": "아래는 같은 코스·같은 급별 평균과의 차이",
-    "window": "집계 기간 {{start}}〜{{end}}",
+    "window": "비교 평균의 집계 기간 {{start}}〜{{end}}",
     "gradeRow": "급별",
     "runsRow": "출주수",
     "stable": "안정률",
