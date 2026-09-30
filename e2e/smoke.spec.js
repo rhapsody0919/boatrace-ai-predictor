@@ -420,12 +420,27 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
       timeout: 15000,
     });
 
-    const rowCount = await page.locator(".motor-ranking-row").count();
+    const rows = page.locator(".motor-ranking-row");
+    const rowCount = await rows.count();
     if (rowCount > 0) {
-      await page.locator(".motor-ranking-row").first().click();
-      await expect(page.locator(".selected-motor-heading")).toBeVisible({
-        timeout: 10000,
-      });
+      // 90日平均（4列目）が出ている選手を選ぶ。平均は推移と同じ直近90日の展示タイムから
+      // 出すため、平均があれば推移グラフは必ず描ける（新人等で平均が無い選手は空状態になる）
+      const rowWithAvg = page
+        .locator(".motor-ranking-row:not(.non-clickable-row)")
+        .filter({
+          has: page.locator("td:nth-child(4)", { hasText: /^\d+\.\d{2}$/ }),
+        })
+        .first();
+      await expect(rowWithAvg).toBeVisible();
+      await rowWithAvg.click();
+      // 見出し（.selected-motor-heading）はクリック直後の1回の描画で一瞬出て、推移の取得中
+      // （.loading-state）は消える。見出しだけで終えると推移の要求が録画に入らず、strict
+      // 再生で落ちる（BOA-594）。取得が終わってからしか描かれない推移の点まで待つ
+      await expect(
+        page.locator(".motor-condition-container .recharts-line-dot").first(),
+      ).toBeVisible({ timeout: 10000 });
+      await expect(page.locator(".loading-state")).toHaveCount(0);
+      await expect(page.locator(".selected-motor-heading")).toBeVisible();
     }
   });
 
