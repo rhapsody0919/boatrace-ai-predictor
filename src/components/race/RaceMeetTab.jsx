@@ -815,6 +815,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                       // 1走の選手も前走の点を出す（空白だと取れていないと読まれる）
                       allowSinglePoint
                       xPositions={layout.xs}
+                      xCenters={layout.centers}
                       breakBefore={layout.breakBefore}
                       // 各走の着順を点の下に出す（BOA-537。ファン4人のパネル）
                       pointLabels={runs.map((r) =>

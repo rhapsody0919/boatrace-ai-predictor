@@ -57,12 +57,18 @@ import { SPARK_VIEW_W, SPARK_PAD_X } from "../../utils/trendDateLayout";
  *   値（ST・展示）が無い走でも、その横位置に出す（欠場・フライングも並びに残す）
  * @param {Array<number>} [xPositions] 各点の横位置（0〜1の割合）。日付の横軸で
  *   6行をそろえるときに渡す（BOA-538）。省略すると走った順で左右いっぱい
+ * @param {Array<number>} [xCenters] 各点の「日の位置」（0〜1）。渡すと、日の位置からの
+ *   ずれを画面上で最大8pxにする。広い画面で同じ日の2走が離れすぎ、2点ずつの組に
+ *   見えなくなるのを防ぐ（BOA-538 ファン評価2周目）
  * @param {Array<boolean>} [breakBefore] その点の前で線を切るか（走っていない日を
  *   またぐとき）。`points` と同じ並び
  * @param {boolean} [allowSinglePoint] 値が1つでも描く（既定 false）。6艇を
  *   並べる推移では、1走の選手の行が空白だと「取れていない」と読まれるので、
  *   前走の点を1つだけ右端（他の行の前走と同じ横位置）に置く
  */
+// 日付の横軸で、同じ日の2走を日の位置から左右にずらす最大幅（px、BOA-538）
+const MAX_DAY_OFFSET_PX = 8;
+
 // 点の下の文字（着順）の帯の高さ（px）
 const LABEL_STRIP_HEIGHT = 13;
 
@@ -77,6 +83,7 @@ function MeetSparkline({
   allowSinglePoint = false,
   pointLabels = null,
   xPositions = null,
+  xCenters = null,
   breakBefore = null,
 }) {
   // どの点に合わせているか。null は「どこにも合わせていない」
@@ -101,7 +108,8 @@ function MeetSparkline({
   // 箱の実際の幅（px）。点の下の着順の間隔を実寸で測り、詰まる行だけ字を小さくする
   // （BOA-537 ファン評価2周目。走数で一律に字を小さくすると、PCでも小さくなった）
   const [boxWidth, setBoxWidth] = useState(0);
-  const hasLabels = Boolean(pointLabels);
+  // 着順の間隔・日の位置からのずれの上限の両方に箱の実寸を使う
+  const hasLabels = Boolean(pointLabels) || Boolean(xCenters);
   useEffect(() => {
     const el = wrapRef.current;
     if (!canDraw || !hasLabels || !el) return undefined;
@@ -142,11 +150,23 @@ function MeetSparkline({
   const innerH = height - padY * 2;
   const innerW = W - padX * 2;
   // 1走だけのときは右端（他の行の「前走」と同じ横位置）に置く
+  // 日の位置からのずれの上限（割合）。箱の幅が分かるまでは上限をかけない
+  const maxOffsetFrac =
+    xCenters && boxWidth > 0
+      ? MAX_DAY_OFFSET_PX / (boxWidth * (innerW / W))
+      : Infinity;
+  const cappedFrac = (i) => {
+    const v = xPositions?.[i] ?? 0;
+    const c = xCenters?.[i];
+    if (c === undefined || c === null) return v;
+    const d = v - c;
+    return c + Math.max(-maxOffsetFrac, Math.min(maxOffsetFrac, d));
+  };
   // xPositions（0〜1の割合）を渡すと横位置を外から決める（日付の横軸、BOA-538）。
   // 無ければ従来どおり走った順で左右いっぱいに並べる
   const x = (i) =>
     xPositions
-      ? padX + (xPositions[i] ?? 0) * innerW
+      ? padX + cappedFrac(i) * innerW
       : values.length === 1
         ? W - padX
         : padX + (i / (values.length - 1)) * innerW;
@@ -179,7 +199,8 @@ function MeetSparkline({
   // 日付の横軸（xPositions）では1日2走が近づくので、実際の横位置の最小の差で測る
   const minStepFrac = xPositions
     ? Math.min(
-        ...xPositions.slice(1).map((v, i) => v - xPositions[i]),
+        // 日の位置からのずれに上限をかけた後の位置で測る
+        ...xPositions.slice(1).map((_, i) => cappedFrac(i + 1) - cappedFrac(i)),
         Infinity,
       )
     : values.length > 1

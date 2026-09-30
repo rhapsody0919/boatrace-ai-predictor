@@ -634,6 +634,14 @@ check(
       ["2026-09-23", "2026-09-24", "2026-09-25"],
     );
     check(
+      "日付の横軸: 各走の日の位置（centers）を返し、同じ日の2走は同じ位置",
+      [
+        pairs.centers[0] === pairs.centers[1],
+        pairs.centers[2] === pairs.centers[3],
+      ],
+      [true, true],
+    );
+    check(
       "日付の横軸: 同じ日の2点は、日をまたぐ間隔より近い",
       pairs.xs[1] - pairs.xs[0] < pairs.xs[2] - pairs.xs[1],
       true,

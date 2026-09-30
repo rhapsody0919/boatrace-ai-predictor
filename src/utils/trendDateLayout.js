@@ -41,7 +41,8 @@ export function sparkLeftPercent(frac) {
  *
  * @param {Array<{date: string}>} runs その選手の走（古い順）
  * @param {Array<string>} days 節の日（YYYY-MM-DD、昇順、重複なし）
- * @returns {{xs: Array<number>, breakBefore: Array<boolean>}} xs は 0〜1 の割合
+ * @returns {{xs: Array<number>, centers: Array<number>, breakBefore: Array<boolean>}}
+ *   xs は各走の横位置、centers はその走の日の位置（どちらも 0〜1 の割合）
  */
 /**
  * 節の i 日目（0始まり、全 n 日）の横位置（0〜1）。両端には同じ日の2走を
@@ -65,13 +66,15 @@ export function layoutTrendByDate(runs, days) {
   const perDay = new Map();
   runs.forEach((r) => perDay.set(r.date, (perDay.get(r.date) ?? 0) + 1));
   const seen = new Map();
-  const xs = runs.map((r) => {
-    const i = dayIndex.get(r.date) ?? 0;
+  // その走の日の位置（centers）も返す。描く側が画面の幅に合わせて、日の位置から
+  // のずれに上限（px）をかけられるように（広い画面で2走が離れすぎないため）
+  const centers = runs.map((r) => center(dayIndex.get(r.date) ?? 0));
+  const xs = runs.map((r, j) => {
     const m = perDay.get(r.date) ?? 1;
     const k = seen.get(r.date) ?? 0;
     seen.set(r.date, k + 1);
     const offset = m > 1 ? (k / (m - 1) - 0.5) * spread : 0;
-    return Math.min(1, Math.max(0, center(i) + offset));
+    return Math.min(1, Math.max(0, centers[j] + offset));
   });
   const breakBefore = runs.map((r, j) => {
     if (j === 0) return false;
@@ -79,5 +82,5 @@ export function layoutTrendByDate(runs, days) {
     const cur = dayIndex.get(r.date) ?? 0;
     return cur - prev > 1;
   });
-  return { xs, breakBefore };
+  return { xs, centers, breakBefore };
 }
