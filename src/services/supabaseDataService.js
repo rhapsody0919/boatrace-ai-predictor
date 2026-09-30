@@ -4790,6 +4790,10 @@ export const supabaseDataService = {
             startTiming: st?.start_timing ?? null,
             isFlying: st?.is_flying === true,
             finishMark: st?.finish_mark ?? null,
+            // 公式の着欄が数字でない（F・L・欠・落・転・妨・エ・不・失・沈・＿ など）走は着順が付かない。
+            // race_results の rank1〜6 には、完走が3艇未満のレースで返還艇（F等）が入っていることがある
+            // （43件、BOA-576 のデータ精度検証）。着欄の記号を優先し、着順・勝率には数えない
+            unranked: isUnrankedFinishMark(st?.finish_mark),
           };
         })
         .filter(Boolean)
@@ -8080,7 +8084,13 @@ function isPermissionDeniedError(error) {
  * 共通化（ADR-0063、BOA-159レビューで発見）。
  * @returns {boolean} 勝利（1着）だったか
  */
+// 公式の着欄の記号が数字でない（着順が付かない走）か。記号が無い（未取得）ときは着順に従う
+function isUnrankedFinishMark(mark) {
+  return typeof mark === "string" && mark !== "" && !/^[1-6]$/.test(mark);
+}
+
 function tallyWinPlaceShow(totals, row) {
+  if (row.unranked) return false;
   const isWin = row.rank1 === row.boatNumber;
   if (isWin) totals.win += 1;
   if (isPlaceHit(row.boatNumber, row.rank1, row.rank2)) totals.top2 += 1;
@@ -8138,7 +8148,7 @@ export function aggregateRacerVenueBoatStats(
       }
       returnSum += row.payoutWin ?? 0;
       placeReturnSum += row.payoutPlace1 ?? 0;
-    } else if (row.rank2 === row.boatNumber) {
+    } else if (!row.unranked && row.rank2 === row.boatNumber) {
       placeReturnSum += row.payoutPlace2 ?? 0;
     }
 
@@ -8176,7 +8186,7 @@ export function aggregateRacerVenueBoatStats(
       boatNumber: row.boatNumber,
       startTiming: row.startTiming ?? null,
       isFlying: row.isFlying === true,
-      finishRank: finishPositionOf(row),
+      finishRank: row.unranked ? null : finishPositionOf(row),
       finishMark: row.finishMark ?? null,
       absent: row.finishMark === "欠",
       winningTechnique: row.winningTechnique,

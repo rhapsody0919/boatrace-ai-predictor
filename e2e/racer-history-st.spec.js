@@ -25,3 +25,35 @@ test("選手ページの履歴: 本番STと公式の記号を出す", async ({ p
   await expect(r0921).toContainText("落");
   await expect(r0921).not.toContainText("着外");
 });
+
+// 完走が3艇未満のレースでは race_results の rank に返還艇（F）が入っていることがある。着欄に公式の記号がある走は、
+// 着順より記号を優先する（「3着」と「F0.06」が同じ行に並ばない。BOA-576 のデータ精度検証）。
+// 選手4069: 2026-09-22 児島1R は F0.01（公式も F.01）
+test("選手ページの履歴: フライングの走は着順でなく F を出し、ST も F 付きで出す", async ({
+  page,
+}) => {
+  await page.goto("/racer/4069");
+  const row = page
+    .locator("tr")
+    .filter({ hasText: "2026-09-22" })
+    .filter({ has: page.locator("td", { hasText: /^1R$/ }) });
+  await expect(row).toBeVisible({ timeout: 30000 });
+  await expect(row).toContainText("F0.01");
+});
+
+// 2026-09-19 戸田9R: 公式の完走は1・2号艇だけで3号艇はF0.04。race_results は rank 1-2-3 で、修正前は「3着」
+test("選手ページの履歴: race_results の着順に入った返還艇（F）は「3」でなく「F」と出す", async ({
+  page,
+}) => {
+  await page.goto("/racer/3928");
+  const row = page
+    .locator("tr")
+    .filter({ hasText: "2026-09-19" })
+    .filter({ has: page.locator("td", { hasText: /^9R$/ }) });
+  await expect(row).toBeVisible({ timeout: 30000 });
+  await expect(row).toContainText("F0.04");
+  // ST の次の列が着欄
+  const cells = await row.locator("td").allTextContents();
+  const stAt = cells.indexOf("F0.04");
+  expect(cells[stAt + 1]).toBe("F");
+});
