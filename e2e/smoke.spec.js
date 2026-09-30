@@ -1428,9 +1428,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rsc-grid thead th.rsc-boat-th")).toHaveCount(6);
 
     // 集計期間が実測値で表示される（「直近1年」のような固定文言にしない）
-    await expect(page.locator(".rsc-window")).toContainText(
-      /\d{4}-\d{2}-\d{2}/,
-    );
+    await expect(
+      page.locator(".rsc-window:not(.rsc-own-window)"),
+    ).toContainText(/\d{4}-\d{2}-\d{2}/);
 
     // 差が表示され、方向（良い/悪い）で色分けされる。
     // どちらの向きが何件出るかは対象レースの選手次第なので、件数の内訳は問わない
@@ -1951,6 +1951,11 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 30000,
     });
     await expect(page.getByText("本日の想定進入")).toHaveCount(0);
+    // 選手側の値の集計範囲も画面に出す（2周目: 日付が平均の期間しか無く、
+    // 選手の数字にもレース後の走が入っていると読まれた）
+    await expect(
+      page.getByText("選手の値は、このレースより前の走で集計しています"),
+    ).toBeVisible();
     const btn = page.getByRole("button", { name: /直近1ヶ月/ }).first();
     await btn.waitFor({ timeout: 30000 });
     await btn.click();

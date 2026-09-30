@@ -537,7 +537,7 @@
     "result": "Result"
   },
   "wakuInfo": {
-    "note": "Pick a racer to compare their record in expected course in this race across periods and conditions. Tap the period name on the left to see the last 10 finishes from that course. Use the fold below the table to compare all six courses.",
+    "note": "Pick a racer to compare their record in the expected course in this race across periods and conditions. Tap the period name on the left to see the last 10 finishes from that course. Use the fold below the table to compare all six courses. Figures count only races before this one (the last 3 months and last month are counted back from this race's date).",
     "boatLabel": "Racer (boat #)",
     "metricLabel": "Metric",
     "metrics": {
@@ -1749,7 +1749,8 @@
   "stConsideration": {
     "title": "Start timing",
     "subtitle": "Lower figure is the gap from the average for the same course and class",
-    "window": "Average compared against: {{start}}-{{end}}",
+    "window": "Average compared against: {{start}} to {{end}}",
+    "ownWindow": "The racer's figures count only races before this one",
     "gradeRow": "Class",
     "runsRow": "Starts",
     "stable": "Consistent",
