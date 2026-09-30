@@ -29,6 +29,7 @@ import { useNowHHMM } from "../hooks/useNowHHMM";
 import { getNowHHMMJST, getTodayJST } from "../utils/dateUtils";
 import { getRaceStatus, RACE_STATUS } from "../utils/raceStatus";
 import { formatDate } from "../utils/formatters";
+import { getVenueSeriesTitle } from "../utils/venueSeriesTitle";
 import "./VenueRaceListPage.css";
 
 // 着いた1画面目に見せる次のレースのカードの高さ（見出し・締切・状態が読める程度）
@@ -160,8 +161,8 @@ function VenueRaceListPage() {
     const holder = marker.parentElement;
     const target = () => {
       const header =
-        document.querySelector(".app-header")?.getBoundingClientRect()
-          .height ?? 0;
+        document.querySelector(".app-header")?.getBoundingClientRect().height ??
+        0;
       const fits =
         holder.getBoundingClientRect().height + NEXT_RACE_PEEK_PX <=
         window.innerHeight - header;
@@ -265,11 +266,24 @@ function VenueRaceListPage() {
   // 「本日」を前提にしたi18nの見出しをそのまま使い回さず日付入りの日本語文言にする
   // （VenueGridPageのPastVenueGridPageと同じ方針。BOA-XXX的発見: 過去日付ページでも
   // 「本日のレース一覧」というタイトルになっていた実装漏れの修正）
+  // SG・G1 開催中は節タイトルを title・description に入れる（ja は「{会場}競艇のAI予想 {節タイトル}」。他言語は従来の文言に節タイトルを括弧書きで添える）
+  const seriesTitle = getVenueSeriesTitle(venueRaces.map((r) => r.rawData));
+  const todayMetaParams = { venue: venueName, series: seriesTitle };
   const metaTitle = isToday
-    ? t("venueRaceList.metaTitle", { venue: venueName })
+    ? t(
+        seriesTitle
+          ? "venueRaceList.metaTitleSeries"
+          : "venueRaceList.metaTitle",
+        todayMetaParams,
+      )
     : `${venueName} ${formatDate(date)}のレース一覧・AIデータ分析 - 龍神レーダー`;
   const metaDescription = isToday
-    ? t("venueRaceList.metaDescription", { venue: venueName })
+    ? t(
+        seriesTitle
+          ? "venueRaceList.metaDescriptionSeries"
+          : "venueRaceList.metaDescription",
+        todayMetaParams,
+      )
     : `${venueName}ボートレース場の${formatDate(date)}の全レース一覧。各レースのAIデータ分析・結果を確認できます。`;
   const noRacesMessage = isToday
     ? t("home.noRacesToday")
@@ -309,8 +323,10 @@ function VenueRaceListPage() {
         <div className="venue-race-list-container">
           <header className="page-header">
             <h1>
-              🏁 {venueName} {t("venueRaceList.title")}
-              {!isToday && ` (${formatDate(date)})`}
+              🏁 {venueName}{" "}
+              {isToday
+                ? t("venueRaceList.todayTitle")
+                : `${t("venueRaceList.title")} (${formatDate(date)})`}
             </h1>
             <Link to={backLink} className="back-link">
               {t("venueRaceList.backToVenues")}

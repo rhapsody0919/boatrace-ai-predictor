@@ -82,12 +82,15 @@
   },
   "venueRaceList": {
     "title": "レース一覧",
-    "metaTitle": "{{venue}}の本日のレース一覧・AIデータ分析 - 龍神レーダー",
-    "metaDescription": "{{venue}}ボートレース場の本日の全レース一覧。締切時刻・グレードを確認し、各レースのAIデータ分析へ進めます。",
+    "metaTitle": "{{venue}}競艇のAI予想｜本日の全レース - 龍神レーダー",
+    "metaDescription": "{{venue}}競艇（ボートレース{{venue}}）の本日の全レースをAIが予想。1マークの展開予測・イン崩れ指数と締切時刻を無料・登録不要で確認できます。",
     "backToVenues": "← 会場一覧に戻る",
     "jumpToNextRace": "{{race}}Rへ",
     "nextDeadlineMarker": "{{venue}}　次の締切 {{race}}R {{time}}",
-    "allClosedMarker": "{{venue}}　本日のレースはすべて締切済み"
+    "allClosedMarker": "{{venue}}　本日のレースはすべて締切済み",
+    "todayTitle": "本日のレース・AI予想",
+    "metaTitleSeries": "{{venue}}競艇のAI予想 {{series}}｜本日の全レース - 龍神レーダー",
+    "metaDescriptionSeries": "{{venue}}競艇（ボートレース{{venue}}）で{{series}}開催中。本日の全レースをAIが予想し、1マークの展開予測・イン崩れ指数を無料・登録不要で公開しています。"
   },
   "venueCharacteristics": {
     "collapsedTeaser": "{{summary}}／1号艇の1着率 {{rate}}%",

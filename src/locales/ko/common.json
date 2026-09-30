@@ -87,7 +87,10 @@
     "backToVenues": "← 경정장 목록으로",
     "jumpToNextRace": "{{race}}R로",
     "nextDeadlineMarker": "{{venue}} 다음 마감 {{race}}R {{time}}",
-    "allClosedMarker": "{{venue}} 오늘 레이스는 모두 마감"
+    "allClosedMarker": "{{venue}} 오늘 레이스는 모두 마감",
+    "todayTitle": "오늘의 경주・AI 예측",
+    "metaTitleSeries": "{{venue}} 오늘의 경주 일람({{series}})・AI 데이터 분석 - 용신 레이더",
+    "metaDescriptionSeries": "{{series}} 개최 중인 {{venue}} 경정장의 오늘 전체 경주 일람. 마감 시각과 등급을 확인하고 각 경주의 AI 데이터 분석을 볼 수 있습니다."
   },
   "venueCharacteristics": {
     "collapsedTeaser": "{{summary}} / 1호정 1착률 {{rate}}%",

@@ -371,6 +371,11 @@
       "guards": "会場別モーター成績パーサー（BOA-264）"
     },
     {
+      "script": "verify-venue-series-title.js",
+      "tier": "ci",
+      "guards": "会場ページの title に節タイトルを入れる判定（SG・G1のみ、先頭レースの値、NFKC）。崩れると一般戦の title が長くなるか、SG開催週の検索需要を取り逃す"
+    },
+    {
       "script": "verify-weather-parsing.js",
       "tier": "ci",
       "guards": "水面気象情報の解析と race_conditions への反映（BOA-358）"
