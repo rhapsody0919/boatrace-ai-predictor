@@ -1780,6 +1780,7 @@
     "dateLabel": "{{month}}/{{day}} 第{{race}}場",
     "older": "較舊",
     "newer": "較新",
+    "hiddenOlder": "（← 左側還有{{n}}場）",
     "flying": "F",
     "stRank": "(第{{n}})",
     "legend": "上排為實際進入的航道，中排為名次，下排為起跑時間與該場的起跑順位"

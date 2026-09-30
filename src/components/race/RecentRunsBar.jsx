@@ -15,7 +15,7 @@
  *
  * Fの走はST順位を付けず「F」と出す（順位づけの対象外にしているため）。
  */
-import { useLayoutEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { finishPositionOf } from "./basicInfoStats";
@@ -36,19 +36,40 @@ function RecentRunsBar({ runs }) {
   // 見せる。左端から見せると、いちばん知りたい直近の走が画面の外になる（BOA-601）
   const stripRef = useRef(null);
   const lastId = list[list.length - 1]?.raceId ?? null;
+  // 左に隠れている（見えていない古い）走の本数。375pxでは10走のうち5〜6本しか
+  // 見えず、「古い」の下が一番古い走だと読まれた（ファン評価3周目）ので、
+  // 軸に「左にあと◯走」と出す
+  const [hiddenOlder, setHiddenOlder] = useState(0);
+  const measureHidden = useCallback(() => {
+    const el = stripRef.current;
+    if (!el) return;
+    const left = el.getBoundingClientRect().left;
+    const hidden = [...el.children].filter(
+      (c) => c.getBoundingClientRect().left < left - 1,
+    ).length;
+    setHiddenOlder(hidden);
+  }, []);
   useLayoutEffect(() => {
     const el = stripRef.current;
     if (el) el.scrollLeft = el.scrollWidth;
-  }, [list.length, lastId]);
+    measureHidden();
+  }, [list.length, lastId, measureHidden]);
   if (list.length === 0) return null;
 
   return (
     <div className="rrb">
       <div className="rrb-axis">
-        <span>{t("recentRuns.older")}</span>
+        <span>
+          {t("recentRuns.older")}
+          {hiddenOlder > 0 && (
+            <span className="rrb-hidden-older">
+              {t("recentRuns.hiddenOlder", { n: hiddenOlder })}
+            </span>
+          )}
+        </span>
         <span>{t("recentRuns.newer")}</span>
       </div>
-      <div className="rrb-strip" ref={stripRef}>
+      <div className="rrb-strip" ref={stripRef} onScroll={measureHidden}>
         {list.map((r) => {
           const rank = finishPositionOf(r);
           const course = r.actualCourse ?? null;

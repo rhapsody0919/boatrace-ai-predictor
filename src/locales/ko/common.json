@@ -1780,6 +1780,7 @@
     "dateLabel": "{{month}}/{{day}} {{race}}R",
     "older": "오래됨",
     "newer": "최근",
+    "hiddenOlder": " (← 왼쪽에 {{n}}경주 더)",
     "flying": "F",
     "stRank": "({{n}}위)",
     "legend": "위는 실제 진입 코스, 가운데는 착순, 아래는 ST와 그 경주에서의 ST 순위"

@@ -16,6 +16,12 @@
    送る。RecentRunsBar.jsx）。以前は5本×2段に折り返していたが、古い順に並べると
    最新の走が2段目の右下に回り、「新しい」の文字が1段目の右端（最新ではない走）の
    上に来た。2段目の数本だけが横に引き伸ばされる崩れもあった（BOA-601） */
+.rrb-hidden-older {
+  margin-left: var(--spacing-1);
+  font-weight: var(--font-weight-semibold);
+  color: var(--brand-accent-secondary);
+}
+
 .rrb-strip {
   display: flex;
   flex-wrap: nowrap;

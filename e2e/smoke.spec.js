@@ -1602,6 +1602,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
       return { rows: rows.size, lastInView: inView(items[items.length - 1]) };
     });
     expect(view).toEqual({ rows: 1, lastInView: true });
+    // 左に隠れた古い走の本数を軸に出す（3周目: 「古い」の下が一番古い走に見えた）
+    await expect(page.locator(".rrb-hidden-older").first()).toHaveText(
+      /左にあと\d+走/,
+    );
     // 左端（いちばん古い走）までスクロールで戻れる
     const firstReachable = await strip.evaluate((el) => {
       el.scrollLeft = 0;
@@ -1612,6 +1616,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
       );
     });
     expect(firstReachable).toBe(true);
+    await expect(page.locator(".rrb-hidden-older")).toHaveCount(0);
     // 左端まで戻した状態で別の期間を押しても、右端（最新）が見える位置で開く
     // （ファン評価2周目: 件数と最新の走が同じ期間だと送り直されなかった）
     await page
