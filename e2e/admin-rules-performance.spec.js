@@ -78,7 +78,7 @@ test.describe("管理画面 /admin/rules の運用成績", () => {
       fulfillJson({ error: "get_admin_rule_performance 呼び出しエラー" }, 500),
     );
     await page.goto("/admin/rules");
-    await expect(page.locator(".error-state")).toContainText(
+    await expect(page.locator(".admin-rules-error-state")).toContainText(
       "get_admin_rule_performance 呼び出しエラー",
     );
   });

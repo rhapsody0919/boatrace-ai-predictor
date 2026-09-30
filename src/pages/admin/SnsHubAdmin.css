@@ -44,15 +44,16 @@
   margin: 0;
 }
 
-.loading-state,
-.error-state,
+/* ローディング・エラー・タブ・タブ内容は sns-hub- 接頭辞（AdminRules.css と同名だったため、BOA-570） */
+.sns-hub-loading-state,
+.sns-hub-error-state,
 .empty-state {
   text-align: center;
   padding: 3rem 1rem;
   color: var(--color-gray-500);
 }
 
-.loading-state .spinner {
+.sns-hub-loading-state .spinner {
   width: 40px;
   height: 40px;
   border: 3px solid var(--color-gray-200);
@@ -68,7 +69,7 @@
   }
 }
 
-.error-state button {
+.sns-hub-error-state button {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
   background: var(--color-primary-500);
@@ -115,7 +116,7 @@
   cursor: not-allowed;
 }
 
-.tab-btn {
+.sns-hub-tab-btn {
   padding: 0.6rem 1.25rem;
   background: white;
   border: 1px solid var(--color-gray-200);
@@ -128,19 +129,19 @@
   transition: all 0.15s;
 }
 
-.tab-btn:hover {
+.sns-hub-tab-btn:hover {
   background: var(--color-gray-100);
   color: var(--color-gray-800);
 }
 
-.tab-btn.active {
+.sns-hub-tab-btn.active {
   background: var(--color-primary-500);
   border-color: var(--color-primary-500);
   color: white;
 }
 
 /* プラットフォームタブ内のステータス副フィルタ（2026-09-01追加）。
-   主タブ(.tab-btn)より軽い見た目にして、階層が違うことを示す */
+   主タブ(.sns-hub-tab-btn)より軽い見た目にして、階層が違うことを示す */
 .status-filter-row {
   display: flex;
   gap: 0.4rem;
@@ -171,7 +172,7 @@
   color: white;
 }
 
-.tab-content {
+.sns-hub-tab-content {
   background: white;
   border-radius: 12px;
   padding: 1rem;
@@ -1236,7 +1237,7 @@
     gap: 0.35rem;
   }
 
-  .tab-btn {
+  .sns-hub-tab-btn {
     padding: 0.5rem 0.75rem;
     font-size: 0.8rem;
   }
@@ -1246,7 +1247,7 @@
     font-size: 0.8rem;
   }
 
-  .tab-content {
+  .sns-hub-tab-content {
     padding: 0.5rem;
   }
 }

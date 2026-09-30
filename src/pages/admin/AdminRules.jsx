@@ -168,7 +168,7 @@ function AdminRules() {
           <h1>ルール成績ダッシュボード</h1>
           <p className="admin-badge">管理者用</p>
         </div>
-        <div className="loading-state">
+        <div className="admin-rules-loading-state">
           <div className="spinner" />
           <p>データを読み込み中...</p>
         </div>
@@ -183,7 +183,7 @@ function AdminRules() {
           <h1>ルール成績ダッシュボード</h1>
           <p className="admin-badge">管理者用</p>
         </div>
-        <div className="error-state">
+        <div className="admin-rules-error-state">
           <p>エラーが発生しました: {error}</p>
           <button onClick={loadInitialData}>再読み込み</button>
         </div>
@@ -232,7 +232,7 @@ function AdminRules() {
         {TABS.map(tab => (
           <button
             key={tab.id}
-            className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+            className={`admin-rules-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
             onClick={() => setActiveTab(tab.id)}
           >
             {tab.label}
@@ -241,7 +241,7 @@ function AdminRules() {
       </div>
 
       {/* タブコンテンツ */}
-      <div className="tab-content">
+      <div className="admin-rules-tab-content">
         {activeTab === 'overview' && (
           <OverviewTab
             rules={sortedRules}
