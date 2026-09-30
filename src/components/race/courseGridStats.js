@@ -95,9 +95,15 @@ export function getCourseRecentRuns(
     grade: row.grade,
     period: row.period,
   });
-  return filtered
-    .filter((r) => r.actualCourse === course)
-    .slice(-count);
+  return (
+    filtered
+      .filter((r) => r.actualCourse === course)
+      // race_id（YYYY-MM-DD-VV-RR）で並べ直してから切る。records は日付だけで並んで
+      // いることがあり（BOA-588）、同じ日の2走の左右が読み込むたびに入れ替わった
+      // （ファン評価2周目）
+      .sort((a, b) => a.raceId.localeCompare(b.raceId))
+      .slice(-count)
+  );
 }
 
 /** 既定ビュー（今日の想定コース）で同時に出す3指標 */

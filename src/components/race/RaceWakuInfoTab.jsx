@@ -456,7 +456,17 @@ function RaceWakuInfoTab({
                     {t("wakuInfo.noRecentFinishes")}
                   </p>
                 ) : (
-                  <RecentRunsBar runs={recentRuns} />
+                  <RecentRunsBar
+                    // 押した行・コースが変わったら作り直す。作り直さないと、
+                    // 件数と最新の走が同じ期間に切り替えたとき、右端（最新）へ
+                    // 送り直されない（BOA-601 ファン評価2周目）
+                    key={
+                      openCell
+                        ? `${openCell.rowKey}-${openCell.course}`
+                        : "none"
+                    }
+                    runs={recentRuns}
+                  />
                 )}
               </div>
             )}
@@ -611,7 +621,17 @@ function RaceWakuInfoTab({
                         {t("wakuInfo.noRecentFinishes")}
                       </p>
                     ) : (
-                      <RecentRunsBar runs={recentRuns} />
+                      <RecentRunsBar
+                        // 押した行・コースが変わったら作り直す。作り直さないと、
+                        // 件数と最新の走が同じ期間に切り替えたとき、右端（最新）へ
+                        // 送り直されない（BOA-601 ファン評価2周目）
+                        key={
+                          openCell
+                            ? `${openCell.rowKey}-${openCell.course}`
+                            : "none"
+                        }
+                        runs={recentRuns}
+                      />
                     )}
                   </div>
                 )}

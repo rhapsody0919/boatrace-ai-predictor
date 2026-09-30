@@ -1612,6 +1612,22 @@ test.describe("レースページ再設計（BOA-168）", () => {
       );
     });
     expect(firstReachable).toBe(true);
+    // 左端まで戻した状態で別の期間を押しても、右端（最新）が見える位置で開く
+    // （ファン評価2周目: 件数と最新の走が同じ期間だと送り直されなかった）
+    await page
+      .getByRole("button", { name: /直近3ヶ月/ })
+      .first()
+      .click();
+    await expect
+      .poll(() =>
+        page
+          .locator(".rrb-strip")
+          .first()
+          .evaluate(
+            (el) => el.scrollLeft + el.clientWidth >= el.scrollWidth - 1,
+          ),
+      )
+      .toBe(true);
   });
 
   test("「今節」タブで6艇の勝負駆けと選んだ1艇の走りが出て、節をまたがない（phase a T6-1）", async ({

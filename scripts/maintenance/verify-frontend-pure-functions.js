@@ -825,6 +825,20 @@ function suiteCourseGridStats(m, check) {
       .map((r) => r.raceId),
     ["2026-09-10-04-01", "2026-09-11-04-01"],
   );
+  // 同じ日の2走は、records が日付だけで並んでいても R の順にそろえる（ファン評価2周目）
+  check(
+    "getCourseRecentRuns: 同じ日の2走は R の小さい順（入力が日の中で逆順でも）",
+    m
+      .getCourseRecentRuns(
+        [
+          rec({ raceId: "2026-09-12-04-09", boatNumber: 2, actualCourse: 2 }),
+          rec({ raceId: "2026-09-12-04-04", boatNumber: 2, actualCourse: 2 }),
+        ],
+        { venueCode: 4, rowKey: "current", course: 2 },
+      )
+      .map((r) => r.raceId),
+    ["2026-09-12-04-04", "2026-09-12-04-09"],
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1124,8 +1138,8 @@ const MUTANTS = [
   [
     "courseGridStats",
     "直近走を新しい順に戻す（BOA-601 の退行: 帯の「古い→新しい」と逆になる）",
-    ".slice(-count);",
-    ".slice(-count)\n    .reverse();",
+    ".slice(-count)\n  );",
+    ".slice(-count)\n      .reverse()\n  );",
   ],
   [
     "venueDayTrend",
