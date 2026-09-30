@@ -912,7 +912,7 @@ export default function RacerPerformanceStats({
       {hasVcData && vcData.stN > 1 && (
         <div className="racer-stat-chart">
           <h3>
-            STの推移
+            STの推移（2026年3月以降・最大過去2年）
             {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
           </h3>
           <ResponsiveContainer width="100%" height={200}>
