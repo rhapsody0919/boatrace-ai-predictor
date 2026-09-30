@@ -5,6 +5,8 @@ import {
   SUPPORTED_LANGUAGES,
   DEFAULT_LANGUAGE,
   localizePath,
+  parseLangFromPath,
+  getAvailableLanguages,
 } from "../src/config/languages.js";
 import { VENUE_GUIDES_EN } from "../src/data/venueGuidesEn.js";
 import { VENUE_REGIONS } from "../src/data/venueRegions.js";
@@ -497,6 +499,25 @@ async function getLatestRaceDates() {
   return result;
 }
 
+// 言語版の組（hreflang）。画面の HreflangTags と同じ getAvailableLanguages で決める。
+// 画面の hreflang は JS 実行後にしか無く、日本語の検索に /en/・/ko/ が出ていた（BOA-560）。
+// 1言語しか無いページは出さない（画面も出さない）
+function alternatesFor(loc) {
+  const { basePath } = parseLangFromPath(loc);
+  const languages = getAvailableLanguages(basePath);
+  if (languages.length < 2) return [];
+  const urlFor = (code) => `${SITE_URL}${localizePath(basePath, code)}`;
+  return [
+    ...languages.map(({ code, hreflang }) => ({
+      hreflang,
+      href: urlFor(code),
+    })),
+    ...(languages.some(({ code }) => code === DEFAULT_LANGUAGE)
+      ? [{ hreflang: "x-default", href: urlFor(DEFAULT_LANGUAGE) }]
+      : []),
+  ];
+}
+
 // sitemap.xmlの生成
 async function generateSitemap() {
   const blogPosts = getBlogPosts();
@@ -542,10 +563,15 @@ async function generateSitemap() {
   ];
 
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-  xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+  xml +=
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n';
 
   allPages.forEach((page) => {
-    xml += renderUrlEntry(SITE_URL, { ...page, lastmod: resolveLastmod(page) });
+    xml += renderUrlEntry(SITE_URL, {
+      ...page,
+      lastmod: resolveLastmod(page),
+      alternates: alternatesFor(page.loc),
+    });
   });
 
   xml += "</urlset>\n";

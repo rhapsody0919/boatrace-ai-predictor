@@ -353,7 +353,7 @@
     {
       "script": "verify-sitemap-lastmod.js",
       "tier": "ci",
-      "guards": "sitemap.xml の lastmod を実際の更新日（記事の md の最終コミット日・開催日）から取ること。生成日や mtime に戻ると、Google が lastmod を再クロールの合図として使わなくなる（BOA-599）"
+      "guards": "sitemap.xml の lastmod を実際の更新日（記事の md の最終コミット日・開催日）から取ること。生成日や mtime に戻ると、Google が lastmod を再クロールの合図として使わなくなる（BOA-599）。あわせて、言語版の組（hreflang）を xhtml:link で出すこと（BOA-560）"
     },
     {
       "script": "verify-unchanged-rows.js",
