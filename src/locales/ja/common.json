@@ -687,7 +687,9 @@
     "venueGuideDesc": "会場の特徴と狙い目を詳しく解説",
     "analysisToolsLink": "データ分析ツールでこのレースをさらに分析する",
     "awaitingResultBanner": "締切を過ぎましたが、結果はまだ反映されていません（データは1時間おきに更新されます）",
-    "cancelledBanner": "このレースは中止となりました"
+    "cancelledBanner": "このレースは中止となりました",
+    "shareCancelled": "🏁 龍神レーダー【{{date}}{{venue}}{{raceNo}}R】\n\nこのレースは中止になりました",
+    "shareNoPrediction": "🏁 龍神レーダー【{{date}}{{venue}}{{raceNo}}R】\n\n出走表とデータ分析を無料で公開中"
   },
   "home": {
     "introBannerText": "龍神レーダー - ボートレースを見える化。迷ったら、データを信じる。| 展開予測・イン崩れ指数など45項目のデータを分析。詳しくはこちら →",
