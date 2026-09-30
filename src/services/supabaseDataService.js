@@ -7208,8 +7208,18 @@ export const supabaseDataService = {
 
           // 備考が無い節は推定する。**今節F（表示中のレースより前）は賞典除外**
           // （flyingRacerIdsInMeet のコメント参照、BOA-587）。`meetStarts` は
-          // 節の頭〜表示中レースの直前なので、まだ切っていないFは入らない
-          const flying = flyingRacerIdsInMeet(meetStarts ?? [], meetRows);
+          // 節の頭〜表示中レースの直前なので、まだ切っていないFは入らない。
+          // **予選が終わった後のレースでは、予選終了までのFだけで判定する**。
+          // 順位は予選終了で確定しているのに、準優・優勝戦のFで最終日の
+          // レースごとに節内順位が動いていた（ファン評価1周目: 桐生9/24で
+          // 1〜8Rは47人、9〜12Rは45人）
+          const prelimEndForFlying = prelimEndRaceIdOf(conditions ?? []);
+          const flying = flyingRacerIdsInMeet(
+            (meetStarts ?? []).filter(
+              (r) => !prelimEndForFlying || r.race_id <= prelimEndForFlying,
+            ),
+            meetRows,
+          );
           const reasons = Object.fromEntries(
             flying.map((id) => [id, "flying"]),
           );

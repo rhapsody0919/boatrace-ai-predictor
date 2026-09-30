@@ -1567,6 +1567,36 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(forecast.locator(".rmt-needed")).toHaveText(
       "賞典除外（今節F）",
     );
+    // 順位が無い（null）選手を「目安の中」と扱わない（ファン評価1周目 P0/P1）。
+    // `null <= 18` が true になり、詳細に「準優の目安（18位）の中」、表の点線が
+    // 浜野の下、早見の1着のセルが「届く」色になっていた
+    await expect(hamano).not.toHaveClass(/is-in-border|is-border-edge/);
+    await expect(forecast.locator("td.is-in-border")).toHaveCount(0);
+    await hamano.click();
+    await expect(page.locator(".rmt-detail-border")).not.toContainText("の中");
+    await expect(page.locator(".rmt-detail-border")).toContainText("賞典除外");
+  });
+
+  test("予選が終わった後は、予選終了までのFだけで賞典除外を判定し、最終日のレースごとに順位が動かない（BOA-587）", async ({
+    page,
+  }) => {
+    // 2026-09-24 桐生（Ｗ優勝戦の最終日）。8R の準優で武田光史がFを切っても、
+    // 予選の順位は9/23で確定しているので、8R より後のレースでも人数は変わらない
+    // （以前は 1〜8R が47人、9〜12R が45人になっていた）
+    const totals = [];
+    for (const r of ["03", "12"]) {
+      await page.goto(`/race/2026-09-24-01-${r}`);
+      await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+      const sub = page.locator(".rmt-sub").first();
+      await expect(sub).toContainText("節の出場は", { timeout: 30000 });
+      totals.push(
+        await page.locator(".rmt-series-note, .rmt-sub").allInnerTexts(),
+      );
+    }
+    const total = (texts) =>
+      texts.join(" ").match(/節全体は(\d+)人/)?.[1] ?? null;
+    expect(total(totals[0])).not.toBeNull();
+    expect(total(totals[1])).toBe(total(totals[0]));
   });
 
   test("「今節」タブで6艇の勝負駆けと選んだ1艇の走りが出て、節をまたがない（phase a T6-1）", async ({
