@@ -447,6 +447,26 @@ function suiteBasicInfoStats(m, check) {
     50,
   );
 
+  // --- lastStartTiming（BOA-597）: 前走のST。直前がFならFで、Fを飛ばさない
+  const stOf = { valueOf: (r) => r.st, isFlying: (r) => r.f === true };
+  check(
+    "lastStartTiming: 直前がFならF、欠場（ST無し・F無し）は飛ばす、何も無ければ null",
+    [
+      m.lastStartTiming([{ st: 0.09 }, { st: null, f: true }], stOf),
+      m.lastStartTiming([{ st: 0.12 }, { st: null }], stOf),
+      m.lastStartTiming([{ st: null, f: true }, { st: 0.15 }], stOf),
+      m.lastStartTiming([{ st: null }], stOf),
+      m.lastStartTiming(null, stOf),
+    ],
+    [
+      { flying: true, value: null },
+      { flying: false, value: 0.12 },
+      { flying: false, value: 0.15 },
+      null,
+      null,
+    ],
+  );
+
   // --- buildConditionRows（phase a FR-2）
   const condRecords = [
     rec({

@@ -1561,6 +1561,23 @@ test.describe("レースページ再設計（BOA-168）", () => {
     ).not.toContainText("0.0%");
   });
 
+  test("今節タブのSTの前走は、直前の走がFならFと出し、Fを飛ばして1つ前の走のSTを出さない（BOA-597）", async ({
+    page,
+  }) => {
+    // 2026-09-30 平和島11R: 古川誠之は同じ日の4RでF。以前は推移の右端と詳細が
+    // 「前走 0.09」（9/29 11R の値）になっていた
+    await page.goto("/race/2026-09-30-04-11");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const row = page.locator(".rmt-trend-row").filter({ hasText: "古川" });
+    await expect(row.locator(".rmt-trend-last")).toHaveText("F", {
+      timeout: 30000,
+    });
+    await row.click();
+    await expect(page.locator(".rmt-spark-foot").first()).toContainText(
+      "前走 F",
+    );
+  });
+
   test("「今節」タブで6艇の勝負駆けと選んだ1艇の走りが出て、節をまたがない（phase a T6-1）", async ({
     page,
   }) => {

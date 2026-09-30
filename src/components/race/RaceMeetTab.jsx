@@ -32,6 +32,7 @@ import {
   buildMeetResults,
   buildMeetTrend,
   getRecentRaces,
+  lastStartTiming,
   MEET_ST_DIFF_THRESHOLD,
 } from "./basicInfoStats";
 import {
@@ -333,7 +334,11 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
       : [];
   // 必要得点の列を出せるか（誰か1人でも残りの予選走が分かっていれば出す）
   const hasNeeded = forecastRows.some((r) => r.needed !== null);
-  const lastSt = lastOf("startTiming");
+  // STの前走は、直前がFならFと出す（数値のある最後の走を採るとFを飛ばす。BOA-597）
+  const lastSt = lastStartTiming(meet, {
+    valueOf: (r) => r.startTiming,
+    isFlying: (r) => r.isFlying === true,
+  });
   const lastExhibition = lastOf("exhibitionTime");
 
   // 得点率は平均なので「1着→6着」と「3着→3着」が同じ5.00になる。
@@ -760,9 +765,12 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
             {trendRows.map(({ player: p, runs }) => {
               const color = BOAT_COLORS[p.number] || {};
               const vals = runs.map((r) => r[trendKey]);
-              const last = [...vals]
-                .reverse()
-                .find((v) => typeof v === "number");
+              // 右端の「前走」。STは直前がFならFと出す（BOA-597）。展示はFでも
+              // 走っている（展示タイムはある）ので、数値のある最後の走のまま
+              const lastRun = lastStartTiming(runs, {
+                valueOf: (r) => r[trendKey],
+                isFlying: (r) => trendKey === "st" && r.finish === "F",
+              });
               return (
                 <li key={p.number}>
                   {/* 行全体を1つのボタンにする。以前は艇番・選手名だけが押せて、
@@ -809,7 +817,11 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                       )}
                     />
                     <span className="rmt-trend-last">
-                      {typeof last === "number" ? last.toFixed(2) : "—"}
+                      {lastRun === null
+                        ? "—"
+                        : lastRun.flying
+                          ? "F"
+                          : lastRun.value.toFixed(2)}
                     </span>
                   </button>
                 </li>
@@ -965,7 +977,9 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                   <span>
                     {lastSt === null
                       ? "—"
-                      : t("meetTab.sparkLast", { value: lastSt.toFixed(2) })}
+                      : t("meetTab.sparkLast", {
+                          value: lastSt.flying ? "F" : lastSt.value.toFixed(2),
+                        })}
                   </span>
                 </div>
               </div>
