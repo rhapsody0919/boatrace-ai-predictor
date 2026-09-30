@@ -551,10 +551,12 @@
 
 .rbit-period-diff {
   /* 375pxで2連対率の括弧が「前期から / −12.3pt）」と途中で割れるので、
-     括弧ごと次の行へ送る。inline-block にすると en・ko の文言の先頭の空白が
-     消えて「6.71(출주표」とくっつくので、インラインのまま折り返しだけ止める */
-  white-space: nowrap;
-  margin-left: 2px;
+     inline-block で括弧ごと次の行へ送る。折り返し自体は止めない（nowrap にすると
+     英語の長い文言が375px以下で枠からはみ出して切れた）。inline-block は先頭の
+     空白を消すので、値との間は文言の空白ではなく margin で空ける */
+  display: inline-block;
+  max-width: 100%;
+  margin-left: 0.25em;
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;

@@ -1537,8 +1537,28 @@ test.describe("レースページ再設計（BOA-168）", () => {
       { timeout: 25000 },
     );
     await expect(page.locator(".rbit-period-note")).toContainText(
-      "2026-08-01から出します",
+      "2026-08-01以降のレースで出します",
     );
+
+    // 英語の長い文言が375pxで枠からはみ出して切れない（ファン評価3周目。
+    // 括弧を折り返し禁止にしていたときは右へ32pxはみ出していた）
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/en/race/2026-09-21-02-05");
+    await page.locator(".race-tabs-btn", { hasText: "Basic Info" }).click();
+    await page.locator(".rbit-bar-row").first().click();
+    await page.locator(".rbit-expanded-tab").nth(2).click();
+    await expect(page.locator(".rbit-period-diff").nth(1)).toBeVisible({
+      timeout: 25000,
+    });
+    const overflow = await page.evaluate(() => {
+      const box = document
+        .querySelector(".rbit-period")
+        .getBoundingClientRect();
+      return [...document.querySelectorAll(".rbit-period-diff")].map(
+        (e) => e.getBoundingClientRect().right - box.right,
+      );
+    });
+    for (const px of overflow) expect(px).toBeLessThanOrEqual(0.5);
   });
 
   test("勝率が全行1%未満に潰れる選手には3連対率への導線を出す（phase a T5-2、ファン視点レビュー指摘D）", async ({
