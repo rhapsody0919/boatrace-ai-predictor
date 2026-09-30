@@ -1108,6 +1108,9 @@ test.describe("オッズ一覧の広い画面（BOA-530）", () => {
       });
       // 3連単: 3号艇のブロック（2段目の左）の組を選ぶ → 2段目（3・4号艇）の下、3段目（5・6号艇）の上に推移
       await page.getByRole("button", { name: /^3-1-2 / }).click();
+      // 推移パネルが描かれてから測る。rowsOf（$$eval）は自動で待たないため、
+      // 全件実行の負荷で描画前に測り、推移が undefined になった（3連複側で実測）
+      await expect(page.locator(".rol-block-grid > .rol-trend")).toBeVisible();
       const t3 = await rowsOf(page, ".rol-block-grid > *");
       const blocks = t3.filter((x) => !x.trend);
       const trend = t3.find((x) => x.trend);
@@ -1137,6 +1140,7 @@ test.describe("オッズ一覧の広い画面（BOA-530）", () => {
       // 3連複: 1行目の3つ目（1=2=5）を選ぶ → 1行目の4つとも推移より上にある
       await page.getByRole("tab", { name: "3連複" }).click();
       await page.getByRole("button", { name: /^1=2=5 / }).click();
+      await expect(page.locator(".rol-trio-grid > .rol-trend")).toBeVisible();
       const t3f = await rowsOf(page, ".rol-trio-grid > *");
       const cells = t3f.filter((x) => !x.trend);
       const trioTrend = t3f.find((x) => x.trend);
@@ -1151,6 +1155,7 @@ test.describe("オッズ一覧の広い画面（BOA-530）", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await setup(page, { now: AFTER_DEADLINE });
     await page.getByRole("button", { name: /^3-1-2 / }).click();
+    await expect(page.locator(".rol-block-grid > .rol-trend")).toBeVisible();
     const t3 = await rowsOf(page, ".rol-block-grid > *");
     expect(t3.map((x) => x.trend)).toEqual([
       false,
