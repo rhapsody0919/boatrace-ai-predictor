@@ -177,6 +177,15 @@
   margin-right: 2px;
 }
 
+/* 「賞典除外（今節F）」は長いので、順位の列だけ2行に折り返す。
+   1行のままだと375pxで表が16px右にはみ出す（BOA-587） */
+.rmt-compare .rmt-excluded {
+  display: inline-block;
+  max-width: 4.5em;
+  white-space: normal;
+  line-height: var(--line-height-tight);
+}
+
 .rmt-rank,
 .rmt-pretest {
   font-size: var(--font-size-xs);

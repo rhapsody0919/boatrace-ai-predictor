@@ -51,6 +51,15 @@ import MeetSparkline from "./MeetSparkline";
 import "./RaceMeetTab.css";
 import "../common/HorizontalScrollHint.css";
 
+// 順位の対象外の理由 → 画面の文言キー（meetTab.<key> と meetTab.<key>Title）。BOA-587
+const EXCLUDED_LABEL_KEY = {
+  withdrawn: "withdrawn",
+  awardExcluded: "awardExcluded",
+  flying: "flyingExcluded",
+};
+// 準優・優勝戦に乗れない（必要得点を出さない）理由
+const AWARD_EXCLUDED_REASONS = new Set(["awardExcluded", "flying"]);
+
 function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
@@ -472,10 +481,18 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                         {row.rate.toFixed(2)}
                       </td>
                       <td className="rmt-rank">
-                        {/* 途中で節を離脱した選手は順位の対象外（公式も同じ） */}
+                        {/* 途中で節を離脱した選手・賞典除外の選手は順位の対象外
+                            （公式も同じ）。理由で説明を出し分ける（BOA-587） */}
                         {row.rank === null ? (
-                          <span title={t("meetTab.withdrawnTitle")}>
-                            {t("meetTab.withdrawn")}
+                          <span
+                            className="rmt-excluded"
+                            title={t(
+                              `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason] ?? "withdrawn"}Title`,
+                            )}
+                          >
+                            {t(
+                              `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason] ?? "withdrawn"}`,
+                            )}
                           </span>
                         ) : tied > 1 ? (
                           <span title={t("meetTab.rankTiedTitle", { tied })}>
@@ -668,13 +685,19 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                         </td>
                         {hasNeeded && (
                           <td className="rmt-needed">
-                            {needed === null
-                              ? "—"
-                              : needed.reachable
-                                ? t("meetTab.neededPoints", {
-                                    points: needed.needed,
-                                  })
-                                : t("meetTab.neededUnreachable")}
+                            {/* 賞典除外の選手は準優に乗れないので、必要得点を
+                                出さない（BOA-587） */}
+                            {AWARD_EXCLUDED_REASONS.has(row.excludedReason)
+                              ? t(
+                                  `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason]}`,
+                                )
+                              : needed === null
+                                ? "—"
+                                : needed.reachable
+                                  ? t("meetTab.neededPoints", {
+                                      points: needed.needed,
+                                    })
+                                  : t("meetTab.neededUnreachable")}
                           </td>
                         )}
                         {cells.map((f) => (

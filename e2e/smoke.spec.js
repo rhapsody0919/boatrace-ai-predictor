@@ -1546,6 +1546,29 @@ test.describe("レースページ再設計（BOA-168）", () => {
     ).not.toContainText("0.0%");
   });
 
+  test("今節Fの選手は賞典除外として順位から外し、必要得点を出さない（BOA-587）", async ({
+    page,
+  }) => {
+    // 2026-09-27 尼崎5R（4日目の予選）: 浜野孝志は前日9/26 4R（予選）でFを切っている。
+    // 尼崎のこの節は公式の備考が無いので、今節Fから賞典除外と判定する
+    await page.goto("/race/2026-09-27-13-05");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const hamano = page
+      .locator(".rmt-compare tr")
+      .filter({ hasText: "浜野" })
+      .first();
+    await hamano.waitFor({ timeout: 30000 });
+    await expect(hamano.locator(".rmt-rank")).toHaveText("賞典除外（今節F）");
+    // 得点率早見の必要得点も数字でなく賞典除外（以前は必要得点の数字を出していた）
+    const forecast = page
+      .locator(".rmt-forecast-table tr")
+      .filter({ hasText: "浜野" })
+      .first();
+    await expect(forecast.locator(".rmt-needed")).toHaveText(
+      "賞典除外（今節F）",
+    );
+  });
+
   test("「今節」タブで6艇の勝負駆けと選んだ1艇の走りが出て、節をまたがない（phase a T6-1）", async ({
     page,
   }) => {
@@ -1569,8 +1592,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // **この節（桐生 2026-09-20開催）はＷ優勝戦**で、独立した2つの勝ち上がりが
     // 同居している。以前はここが「48人」＝男子24人と女子24人の合算で、
     // 別の勝ち上がりの選手を混ぜて順位を振っていた（BOA-476／BOA-511）。
-    // 表示中の6艇と同じ側だけを母集団にするので24人になる
-    await expect(page.locator(".rmt-sub")).toContainText("節の出場は24人");
+    // 表示中の6艇と同じ側だけを母集団にするので24人。さらに 9/22 5R（予選男子）で
+    // Fを切った大澤普司は賞典除外として順位の対象から外すので23人（BOA-587）
+    await expect(page.locator(".rmt-sub")).toContainText("節の出場は23人");
     // 人数が半分になる理由を1行で断る（黙って半分にすると「なぜ減った」になる）
     await expect(page.locator(".rmt-series-note")).toContainText(
       "勝ち上がりが2つに分かれています",
