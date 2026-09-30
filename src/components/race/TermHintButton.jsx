@@ -6,6 +6,8 @@ import "./TermHintButton.css";
 
 const POPOVER_WIDTH = 220;
 const VIEWPORT_MARGIN = 8;
+// 下にこれだけの高さが無ければ、上に余裕があるとき上に開く
+const MIN_COMFORTABLE_HEIGHT = 320;
 
 export default function TermHintButton({ termKey }) {
   const { i18n } = useTranslation();
@@ -43,13 +45,21 @@ export default function TermHintButton({ termKey }) {
       Math.max(rect.left, VIEWPORT_MARGIN),
       window.innerWidth - POPOVER_WIDTH - VIEWPORT_MARGIN,
     );
-    const top = rect.bottom + 6;
-    // 長い説明（Fバッジの説明等）が画面の下端で切れないよう、収まらない分は中でスクロールさせる
-    setPosition({
-      top,
-      left,
-      maxHeight: Math.max(window.innerHeight - top - VIEWPORT_MARGIN, 120),
-    });
+    // 下に十分な余白が無ければ上に開く。長い説明（Fバッジの説明等）が画面下で
+    // 120px の枠に押し込められ、肝心の後半が読めなかった（BOA-440 ファン評価2周目）。
+    // 開いた側に収まらない分は中でスクロールさせる
+    const spaceBelow = window.innerHeight - rect.bottom - 6 - VIEWPORT_MARGIN;
+    const spaceAbove = rect.top - 6 - VIEWPORT_MARGIN;
+    const openUp = spaceBelow < MIN_COMFORTABLE_HEIGHT && spaceAbove > spaceBelow;
+    setPosition(
+      openUp
+        ? {
+            bottom: window.innerHeight - rect.top + 6,
+            left,
+            maxHeight: spaceAbove,
+          }
+        : { top: rect.bottom + 6, left, maxHeight: Math.max(spaceBelow, 120) },
+    );
   };
 
   return (
@@ -70,6 +80,7 @@ export default function TermHintButton({ termKey }) {
             className="term-hint__popover"
             style={{
               top: position.top,
+              bottom: position.bottom,
               left: position.left,
               maxHeight: position.maxHeight,
             }}

@@ -120,4 +120,64 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     expect(r.front, r.frontEl).toBe(true);
     expect(r.scrollable).toBe(true);
   });
+
+  test("1440px: 画面の下の方で開いた「?」は上に開き、説明が全文そのまま見える（ファン評価2周目）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/race/2026-09-27-22-07");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    await page
+      .locator(".rsc-card")
+      .waitFor({ state: "visible", timeout: 25000 });
+    await page.evaluate(() =>
+      document.querySelectorAll(".cookie-consent").forEach((el) => el.remove()),
+    );
+    await page
+      .locator(".rsc-label-th .term-hint__button")
+      .first()
+      .waitFor({ timeout: 25000 });
+    // 「?」を画面の下（y≈780）に持ってくる
+    await page.evaluate(() => {
+      const b = document
+        .querySelector(".rsc-label-th .term-hint__button")
+        .getBoundingClientRect();
+      window.scrollBy(0, b.top - 780);
+    });
+    await page.locator(".rsc-label-th .term-hint__button").first().click();
+    const pop = page.locator(".term-hint__popover");
+    await expect(pop).toContainText("今節");
+    const r = await pop.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      return {
+        top: box.top,
+        bottom: box.bottom,
+        vh: window.innerHeight,
+        fits: el.scrollHeight <= el.clientHeight + 1,
+      };
+    });
+    expect(r.top).toBeGreaterThanOrEqual(0);
+    expect(r.bottom).toBeLessThanOrEqual(r.vh);
+    expect(r.fits).toBe(true);
+  });
+
+  test("375px: ST考察の表が画面に収まり、6号艇の「今節」の印が切れない（ファン評価2周目）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/race/2026-09-27-22-07");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    const meet = page.locator(".rsc-grid .flying-badge-meet").first();
+    await expect(meet).toBeVisible({ timeout: 25000 });
+    const r = await page.evaluate(() => {
+      const w = document.querySelector(".rsc-grid-wrapper");
+      const wb = w.getBoundingClientRect();
+      const mb = document
+        .querySelector(".rsc-grid .flying-badge-meet")
+        .getBoundingClientRect();
+      return { sw: w.scrollWidth, cw: w.clientWidth, right: mb.right, wright: wb.right };
+    });
+    expect(r.sw).toBeLessThanOrEqual(r.cw);
+    expect(r.right).toBeLessThanOrEqual(r.wright);
+  });
 });
