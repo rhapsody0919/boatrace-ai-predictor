@@ -20,7 +20,7 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     ).toHaveCount(2);
     await expect(basic.filter({ hasText: "今節" }).first()).toHaveAttribute(
       "title",
-      /今節（この開催の前日まで）/,
+      /今節の初日から前日まで.*当日のFは含みません/,
     );
     // 「今節はもう走らない」と読める言い方をしない（Fを切っても節の残りは出走する）
     const titles = await basic.evaluateAll((els) =>
@@ -58,5 +58,66 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
         .evaluate((el) => getComputedStyle(el).backgroundColor),
     ]);
     expect(lateBg).not.toBe(fBg);
+  });
+
+  test("基本情報タブにバッジの凡例が出て、スマホでも「今節」「L」の意味が分かる（ファン評価1周目）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/race/2026-09-25-01-07");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
+      timeout: 25000,
+    });
+    const legend = page.locator(".rbit-note", { hasText: "今節" });
+    await expect(legend).toBeVisible();
+    await expect(legend).toContainText("準優勝戦・優勝戦に進めません");
+    await expect(legend).toContainText("当日のFは含みません");
+    await expect(legend).toContainText("L＝");
+  });
+
+  test("375px: ST考察の級別の説明が下部ナビに隠れず、末尾まで読める（ファン評価1周目）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/race/2026-09-27-22-07");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    await page
+      .locator(".rsc-card")
+      .waitFor({ state: "visible", timeout: 25000 });
+    const button = page
+      .locator(".rsc-label-th", { hasText: "級別" })
+      .locator(".term-hint__button");
+    await button.scrollIntoViewIfNeeded();
+    // クッキー同意バナー（初回だけ出る）は下部ナビより前面にあるので外して、ナビとの重なりだけを見る
+    await page.evaluate(() =>
+      document.querySelectorAll(".cookie-consent").forEach((el) => el.remove()),
+    );
+    // 画面の下の方で開く（ナビと重なりやすい位置）
+    await page.evaluate(() => {
+      const b = document
+        .querySelector(".rsc-label-th .term-hint__button")
+        .getBoundingClientRect();
+      window.scrollBy(0, b.top - (window.innerHeight - 260));
+    });
+    await button.click();
+    const pop = page.locator(".term-hint__popover");
+    await expect(pop).toContainText("賞典除外");
+    const r = await pop.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      // 見えている範囲の下端近くで、最前面の要素がポップオーバー自身か
+      const y = Math.min(box.bottom, window.innerHeight) - 4;
+      const top = document.elementFromPoint(box.left + 20, y);
+      return {
+        bottom: box.bottom,
+        vh: window.innerHeight,
+        front: el.contains(top),
+        frontEl: top?.className ?? String(top),
+        scrollable: el.scrollHeight <= el.clientHeight || getComputedStyle(el).overflowY === "auto",
+      };
+    });
+    expect(r.bottom).toBeLessThanOrEqual(r.vh);
+    expect(r.front, r.frontEl).toBe(true);
+    expect(r.scrollable).toBe(true);
   });
 });

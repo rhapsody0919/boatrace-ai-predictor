@@ -43,7 +43,13 @@ export default function TermHintButton({ termKey }) {
       Math.max(rect.left, VIEWPORT_MARGIN),
       window.innerWidth - POPOVER_WIDTH - VIEWPORT_MARGIN,
     );
-    setPosition({ top: rect.bottom + 6, left });
+    const top = rect.bottom + 6;
+    // 長い説明（Fバッジの説明等）が画面の下端で切れないよう、収まらない分は中でスクロールさせる
+    setPosition({
+      top,
+      left,
+      maxHeight: Math.max(window.innerHeight - top - VIEWPORT_MARGIN, 120),
+    });
   };
 
   return (
@@ -62,7 +68,11 @@ export default function TermHintButton({ termKey }) {
           <span
             ref={popoverRef}
             className="term-hint__popover"
-            style={{ top: position.top, left: position.left }}
+            style={{
+              top: position.top,
+              left: position.left,
+              maxHeight: position.maxHeight,
+            }}
           >
             {explanation}
           </span>,

@@ -909,6 +909,12 @@ function RaceBasicInfoTab({
           );
         })}
       </div>
+      {/* Fバッジ・Lバッジの凡例。選手名の行は <button> で「?」を置けず、説明は
+          title（ホバー）だけになるため、スマホでは意味を知る手段が無かった
+          （BOA-440 ファン評価1周目）。バッジが1つも無いレースでは出さない */}
+      {(officialRates ?? []).some(
+        (r) => (r.f_count ?? 0) > 0 || (r.l_count ?? 0) > 0,
+      ) && <p className="rbit-note">{t("flyingBadge.legend")}</p>}
     </div>
   );
 }
