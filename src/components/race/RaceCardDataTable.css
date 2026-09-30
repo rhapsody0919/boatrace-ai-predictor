@@ -41,6 +41,12 @@
   line-height: var(--line-height-tight);
 }
 
+/* 姓・名の塊。収まれば1行（間は空けない）、収まらなければ境目で折り返す。
+   塊そのものが列より長い（4文字の姓など）ときだけ中で折れる */
+.rcdt-name-part {
+  display: inline-block;
+}
+
 .rcdt-label-th {
   background: var(--surface-page);
 }
@@ -137,11 +143,14 @@
     padding: 3px 1px;
   }
 
-  .rcdt-name-th {
-    font-size: 9.5px;
-  }
-
   .rcdt-label-cell {
     font-size: 10px;
+  }
+
+  /* 3文字の姓（向井田 等）は10.5pxで約31px。1pxの余白でも列（約34px）から溢れて
+     姓の中で折れるので、名前の行だけ左右の余白を無くす（上の th 一括指定より強くする） */
+  .rcdt-table .rcdt-name-th {
+    padding-left: 0;
+    padding-right: 0;
   }
 }

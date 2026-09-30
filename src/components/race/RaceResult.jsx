@@ -213,16 +213,17 @@ function StartTimingTrack({
       />
       <span
         ref={dotRef}
-        className="rr-st-dot"
-        style={{
-          left: reducedMotion ? `${finalPosition}%` : "0%",
-          background: markerColor,
-          outline:
-            boatNumber === 1 && !isFlying
-              ? "1px solid var(--border-hairline)"
-              : "none",
-        }}
-      />
+        className={`rr-st-dot${boatNumber === 1 && !isFlying ? " is-white" : ""}`}
+        style={{ left: reducedMotion ? `${finalPosition}%` : "0%" }}
+      >
+        {/* 形（clip-path）は子に持たせる。親に付けた輪郭（drop-shadow）が
+            clip-path で切り取られないようにするため（1号艇の白が1着行の
+            クリーム地・トラックに埋もれていた。BOA-559 ファン評価2周目） */}
+        <span
+          className="rr-st-dot-shape"
+          style={{ background: markerColor }}
+        />
+      </span>
       <span
         ref={impactRef}
         className="rr-st-impact"

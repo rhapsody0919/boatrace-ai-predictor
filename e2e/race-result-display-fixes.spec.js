@@ -200,5 +200,50 @@ for (const width of [768, 1024, 1440]) {
       ws.filter((w) => w.scrollWidth > w.clientWidth + 1).length,
     );
     expect(overflow).toBe(0);
+
+    // 名前は姓と名の境目で折り返し、名前の途中（「小森信/雄」）では折れない。
+    // 文字も10.5pxより小さくしない（ファン評価2周目: 9.5pxまで縮み、途中で折れていた）
+    const names = await page.$$eval(".rcdt-name-th", (ths) =>
+      ths.map((th) => ({
+        text: th.textContent,
+        fontSize: parseFloat(getComputedStyle(th).fontSize),
+        parts: [...th.querySelectorAll(".rcdt-name-part")].map((p) => ({
+          chars: p.textContent.length,
+          lines: Math.round(
+            p.getBoundingClientRect().height /
+              parseFloat(getComputedStyle(p).lineHeight),
+          ),
+        })),
+      })),
+    );
+    expect(names.length).toBeGreaterThan(0);
+    for (const n of names) {
+      expect(n.fontSize, n.text).toBeGreaterThanOrEqual(10.5);
+      expect(n.parts.length, n.text).toBeGreaterThanOrEqual(1);
+      // 3文字以下の塊（姓・名のほぼ全て）は1行に収まる
+      for (const part of n.parts.filter((p) => p.chars <= 3)) {
+        expect(part.lines, n.text).toBe(1);
+      }
+    }
   });
 }
+
+test("1号艇（白）のST矢印に輪郭が付き、形が切り取られない", async ({ page }) => {
+  // 戸田 2026-09-19 9R: 1着が1号艇（ST 0.01）で、1着行のクリーム地に白い矢印が乗る
+  await page.goto("/race/2026-09-19-02-09");
+  await page.locator(".race-tabs-btn", { hasText: "結果" }).click();
+  const white = page.locator(".rr-st-dot.is-white");
+  await expect(white.first()).toBeAttached({ timeout: 30000 });
+  const style = await white
+    .first()
+    .evaluate((el) => ({
+      filter: getComputedStyle(el).filter,
+      clip: getComputedStyle(el).clipPath,
+      shapeClip: getComputedStyle(el.querySelector(".rr-st-dot-shape"))
+        .clipPath,
+    }));
+  // 輪郭（drop-shadow）は親、形（clip-path）は子。親に clip-path があると輪郭ごと切れる
+  expect(style.filter).toContain("drop-shadow");
+  expect(style.clip).toBe("none");
+  expect(style.shapeClip).toContain("polygon");
+});
