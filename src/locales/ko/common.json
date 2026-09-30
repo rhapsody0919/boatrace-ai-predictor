@@ -912,7 +912,7 @@
     "rowPartsChanged": "부품 교환",
     "rowPrevResult": "직전 경주 성적",
     "prevResultCourse": "{{course}}코스",
-    "prevResultNoRace": "이번 시리즈 첫 경주",
+    "prevResultNoRace": "오늘 첫 출주",
     "rowTechnique": "결정수 유형",
     "rowReturnRate": "단승 회수율",
     "noWins": "승리 없음",

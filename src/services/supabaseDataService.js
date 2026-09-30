@@ -5341,7 +5341,8 @@ export const supabaseDataService = {
   getRaceMotorMaintenanceBreakdown(raceId) {
     // v3: 戻り値を配列から { state, rows } に変えた（BOA-497）。v2 は展示進入等の列を
     // 足したとき（BOA-485）。キーを変えないと localStorage に残った旧形（配列）が返る
-    return withCache(`race-motor-maintenance-v3-${raceId}`, async () => {
+    // v4: prev_finish_mark（前走の着順が無いときの公式の記号）を足した（BOA-569）
+    return withCache(`race-motor-maintenance-v4-${raceId}`, async () => {
       if (!supabase) {
         throw new Error("Supabase client not initialized");
       }
@@ -5357,7 +5358,7 @@ export const supabaseDataService = {
             // exhibition_course/is_absent/updated_at は直前情報タブの「展示進入」用
             // （BOA-485）。同じ行の別列なので、クエリ本数は増やさない（BOA-357）。
             // exhibition_time はキャッシュしてよいか（展示後か）の判定用（BOA-497）
-            "boat_number, exhibition_time, tilt, adjustment_weight, propeller_change, parts_changed, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank, exhibition_course, is_absent, updated_at",
+            "boat_number, exhibition_time, tilt, adjustment_weight, propeller_change, parts_changed, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank, prev_finish_mark, exhibition_course, is_absent, updated_at",
           )
           .eq("race_id", raceId));
       } catch (error) {

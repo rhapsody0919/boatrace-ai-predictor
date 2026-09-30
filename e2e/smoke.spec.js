@@ -1846,6 +1846,17 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const prevRow = page.locator("tr", { hasText: "前走成績" }).first();
     await prevRow.waitFor({ timeout: 30000 });
     await expect(prevRow).not.toContainText("今節初戦");
+
+    // 前走の列は「同じ日の前の走」。4日目の5R（2026-09-26 津）で、その日まだ
+    // 走っていない5艇は「本日初走」、1R を走った6号艇だけ前走が出る
+    // （以前は5艇に「今節初戦」と出ていた。ファン評価）
+    await page.goto("/race/2026-09-26-09-05");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const prevRow2 = page.locator("tr", { hasText: "前走成績" }).first();
+    await prevRow2.waitFor({ timeout: 30000 });
+    await expect(prevRow2).not.toContainText("今節初戦");
+    await expect(prevRow2).toContainText("本日初走");
+    await expect(prevRow2).toContainText(/\d着/);
   });
 
   test("着順が付かない走は、推移・比較表・日別の表で同じ公式の記号になる（BOA-537 ファン評価）", async ({

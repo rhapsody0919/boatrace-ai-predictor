@@ -37,6 +37,7 @@ const TARGETS = {
   venueDayTrend: "src/components/race/venueDayTrend.js",
   weatherInfo: "src/components/race/weatherInfo.js",
   dateUtils: "src/utils/dateUtils.js",
+  prevResult: "src/utils/prevResult.js",
 };
 
 const show = (v) => JSON.stringify(v);
@@ -974,7 +975,53 @@ function suiteDateUtils(m, check) {
   check("isWithinDays: 日付が空なら false", m.isWithinDays("", 7), false);
 }
 
+// --- prevResult（BOA-569）: 前走成績の読み方。prev_* は「同じ日の前の走」
+function suitePrevResult(m, check) {
+  const withPrev = {
+    prev_race_no: 6,
+    prev_entry_course: 5,
+    prev_finish_rank: 3,
+  };
+  const dq = {
+    prev_race_no: 6,
+    prev_entry_course: 5,
+    prev_finish_rank: null,
+    prev_finish_mark: "失",
+  };
+  const empty = { prev_race_no: null, prev_finish_rank: null };
+  check(
+    "prevResultState: 前走に着順があれば着順と進入コース",
+    m.prevResultState(withPrev, "2026-09-26-11-11"),
+    { kind: "rank", rank: 3, course: 5 },
+  );
+  check(
+    "prevResultState: 前走に着順が無ければ公式の記号（失・F など）。「—」にしない",
+    m.prevResultState(dq, "2026-09-26-11-11"),
+    { kind: "mark", mark: "失", course: 5 },
+  );
+  check(
+    "prevResultState: 取得漏れが無い日（2026-09-16〜）の空は「本日初走」（今節初戦ではない）",
+    m.prevResultState(empty, "2026-09-26-09-05"),
+    { kind: "firstToday" },
+  );
+  check(
+    "prevResultState: 1R は日付に関わらず「本日初走」",
+    m.prevResultState(empty, "2026-06-22-13-01"),
+    { kind: "firstToday" },
+  );
+  check(
+    "prevResultState: 取得が揃う前（〜2026-09-15）の空は不明（「—」）",
+    [
+      m.prevResultState(empty, "2026-06-22-13-12"),
+      m.prevResultState(empty, "2026-09-15-02-05"),
+      m.prevResultState(empty, null),
+    ],
+    [{ kind: "unknown" }, { kind: "unknown" }, { kind: "unknown" }],
+  );
+}
+
 const SUITES = {
+  prevResult: suitePrevResult,
   basicInfoStats: suiteBasicInfoStats,
   raceStatus: suiteRaceStatus,
   courseGridStats: suiteCourseGridStats,

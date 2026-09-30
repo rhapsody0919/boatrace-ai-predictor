@@ -917,7 +917,7 @@
     "rowPartsChanged": "Parts changed",
     "rowPrevResult": "Previous race",
     "prevResultCourse": "Course {{course}}",
-    "prevResultNoRace": "First race of the event",
+    "prevResultNoRace": "First race today",
     "rowTechnique": "Winning style",
     "rowReturnRate": "Win return rate",
     "noWins": "No wins",
