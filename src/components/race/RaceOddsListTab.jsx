@@ -116,8 +116,10 @@ function isNoVotes(value, isRange) {
 
 // オッズ1つの表記。公式は1000倍以上を小数なしで出す（「1364」。実際の値は 1364.4 等で、公式の表示で
 // 切り捨てられている）。こちらも同じ桁で出し、「1364.0」と無い精度を示さない（BOA-577）
+// 合成オッズのような計算値は、小数1桁に丸めてから判定する（999.96 を「1000.0」と出さない）
 function formatOdds(n) {
-  return n >= 1000 ? String(Math.floor(n)) : n.toFixed(1);
+  const rounded = Math.round(n * 10) / 10;
+  return rounded >= 1000 ? String(Math.floor(rounded)) : rounded.toFixed(1);
 }
 
 function formatValue(value, isRange) {

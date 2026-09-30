@@ -1051,6 +1051,8 @@ test.describe("1000倍以上のオッズの表記（BOA-577）", () => {
     trifecta["1-2-4"] = 8000;
     // 1号艇が1着・3号艇が2着の列は4点とも8000倍 → 合成2000倍（1000倍以上なので小数なし）
     for (const third of [2, 4, 5, 6]) trifecta[`1-3-${third}`] = 8000;
+    // 1号艇が1着・4号艇が2着の列は4点とも3999.8倍 → 合成999.95
+    for (const third of [2, 3, 5, 6]) trifecta[`1-4-${third}`] = 3999.8;
     const exacta = { ...PARSED["2tf"].data.exactaAll, "1-2": 2345 };
     await setup(page, {
       now: AFTER_DEADLINE,
@@ -1066,6 +1068,10 @@ test.describe("1000倍以上のオッズの表記（BOA-577）", () => {
     const col3 = page.locator(".rol-block").first().locator(".rol-col").nth(1);
     await expect(col3).toContainText("合成2000");
     await expect(col3).not.toContainText("合成2000.0");
+    // 合成が 999.95 以上 1000 未満（小数1桁に丸めると1000）: 「1000.0」でなく「1000」（/code-review の指摘）
+    const col4 = page.locator(".rol-block").first().locator(".rol-col").nth(2);
+    await expect(col4).toContainText("合成1000");
+    await expect(col4).not.toContainText("合成1000.0");
     await cell.click();
     await expect(page.locator(".rol-trend-item").last()).toContainText("1364");
     await expect(page.locator(".rol-trend")).not.toContainText("1364.0");
