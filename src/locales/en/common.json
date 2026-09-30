@@ -751,6 +751,7 @@
     "rankPlain": "{{rank}}",
     "pretestRank": "{{rank}}",
     "compareSub": "{{total}} racers in this series.",
+    "compareSubExcluded": "{{all}} racers in this series ({{total}} ranked; {{excluded}} excluded from prizes or withdrawn).",
     "borderLine": "The semi-final line is {{slots}}th ({{rate}}).",
     "rankTiedTitle": "{{tied}} racers tied",
     "pretestCell": "{{time}} (#{{rank}})",

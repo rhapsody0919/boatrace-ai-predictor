@@ -465,6 +465,7 @@
     "rankPlain": "{{rank}}位",
     "pretestRank": "{{rank}}位",
     "compareSub": "節の出場は{{total}}人。",
+    "compareSubExcluded": "節の出場は{{all}}人（順位の対象は{{total}}人。賞典除外・途中帰郷の{{excluded}}人を除く）。",
     "borderLine": "準優の目安は{{slots}}位（{{rate}}）。",
     "rankTiedTitle": "同率{{tied}}人",
     "pretestCell": "{{time}}（{{rank}}位）",

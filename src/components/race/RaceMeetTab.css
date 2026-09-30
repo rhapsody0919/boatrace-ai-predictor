@@ -177,9 +177,11 @@
   margin-right: 2px;
 }
 
-/* 「賞典除外（今節F）」は長いので、順位の列だけ2行に折り返す。
-   1行のままだと375pxで表が16px右にはみ出す（BOA-587） */
-.rmt-compare .rmt-excluded {
+/* 「賞典除外（今節F）」は長いので、順位の列と早見の必要得点の列だけ2行に
+   折り返す。1行のままだと375pxで表が16px右にはみ出し、早見は着順の列が
+   画面外へ押し出された（BOA-587） */
+.rmt-compare .rmt-excluded,
+.rmt-forecast-table .rmt-excluded {
   display: inline-block;
   max-width: 4.5em;
   white-space: normal;

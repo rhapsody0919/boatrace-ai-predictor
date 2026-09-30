@@ -746,6 +746,7 @@
     "rankPlain": "{{rank}}위",
     "pretestRank": "{{rank}}위",
     "compareSub": "이번 시리즈 출전 {{total}}명.",
+    "compareSubExcluded": "이번 시리즈 출전 {{all}}명(순위 대상 {{total}}명. 상전 제외·중도 귀향 {{excluded}}명 제외).",
     "borderLine": "준우승전 기준은 {{slots}}위({{rate}}).",
     "rankTiedTitle": "동률 {{tied}}명",
     "pretestCell": "{{time}}（{{rank}}위）",

@@ -746,6 +746,7 @@
     "rankPlain": "第{{rank}}名",
     "pretestRank": "第{{rank}}名",
     "compareSub": "本梯次共{{total}}人。",
+    "compareSubExcluded": "本梯次共{{all}}人（列入名次{{total}}人，不含獎典除外・中途歸鄉{{excluded}}人）。",
     "borderLine": "準優門檻為第{{slots}}名（{{rate}}）。",
     "rankTiedTitle": "同分{{tied}}人",
     "pretestCell": "{{time}}（第{{rank}}名）",

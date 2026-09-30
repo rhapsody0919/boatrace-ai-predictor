@@ -1575,6 +1575,14 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await hamano.click();
     await expect(page.locator(".rmt-detail-border")).not.toContainText("の中");
     await expect(page.locator(".rmt-detail-border")).toContainText("賞典除外");
+
+    // 375pxの早見で、除外の文言1件のために必要得点の列が広がり、着順の列が
+    // 画面外へ押し出されない（ファン評価2周目: 表幅398px／枠293px）
+    await page.setViewportSize({ width: 375, height: 812 });
+    const widths = await page
+      .locator(".rmt-forecast-scroll")
+      .evaluate((el) => [el.scrollWidth, el.clientWidth]);
+    expect(widths[0]).toBeLessThanOrEqual(360);
   });
 
   test("予選が終わった後は、予選終了までのFだけで賞典除外を判定し、最終日のレースごとに順位が動かない（BOA-587）", async ({
@@ -1593,6 +1601,16 @@ test.describe("レースページ再設計（BOA-168）", () => {
         await page.locator(".rmt-series-note, .rmt-sub").allInnerTexts(),
       );
     }
+    // 予選が終わった後のレースでも、除外の選手の詳細に理由が出る（ファン評価2周目）。
+    // 7R の大澤普司は 9/22（予選）でF
+    await page.goto("/race/2026-09-24-01-07");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    await page
+      .locator(".rmt-compare tr")
+      .filter({ hasText: "大澤" })
+      .first()
+      .click({ timeout: 30000 });
+    await expect(page.locator(".rmt-detail-border")).toContainText("賞典除外");
     const total = (texts) =>
       texts.join(" ").match(/節全体は(\d+)人/)?.[1] ?? null;
     expect(total(totals[0])).not.toBeNull();
@@ -1624,7 +1642,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 別の勝ち上がりの選手を混ぜて順位を振っていた（BOA-476／BOA-511）。
     // 表示中の6艇と同じ側だけを母集団にするので24人。さらに 9/22 5R（予選男子）で
     // Fを切った大澤普司は賞典除外として順位の対象から外すので23人（BOA-587）
-    await expect(page.locator(".rmt-sub")).toContainText("節の出場は23人");
+    // 除外の選手も節は走っているので「出場」は24人のまま、順位の対象を分けて書く
+    await expect(page.locator(".rmt-sub")).toContainText(
+      "節の出場は24人（順位の対象は23人",
+    );
     // 人数が半分になる理由を1行で断る（黙って半分にすると「なぜ減った」になる）
     await expect(page.locator(".rmt-series-note")).toContainText(
       "勝ち上がりが2つに分かれています",

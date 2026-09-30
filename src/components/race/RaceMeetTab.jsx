@@ -548,7 +548,16 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
             {ranking.some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS) && (
               <>{t("meetTab.smallSampleLegend")} </>
             )}
-            {t("meetTab.compareSub", { total: rankedOnly.length })}
+            {/* 賞典除外・途中帰郷の選手も節は走っているので、「出場」から外さない。
+                順位の対象の人数と分けて書く（ファン評価2周目: 出場50人なのに
+                前検51位の選手がいた） */}
+            {rankedOnly.length < ranking.length
+              ? t("meetTab.compareSubExcluded", {
+                  all: ranking.length,
+                  total: rankedOnly.length,
+                  excluded: ranking.length - rankedOnly.length,
+                })
+              : t("meetTab.compareSub", { total: rankedOnly.length })}
             {/* 「欠場」の理由。セルの title はタッチ端末で読めないので本文にも書く
                 （BOA-504 ファン評価） */}
             {absentOnly.length > 0 && <> {t("meetTab.absentNote")}</>}
@@ -694,17 +703,21 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                           <td className="rmt-needed">
                             {/* 賞典除外の選手は準優に乗れないので、必要得点を
                                 出さない（BOA-587） */}
-                            {AWARD_EXCLUDED_REASONS.has(row.excludedReason)
-                              ? t(
+                            {AWARD_EXCLUDED_REASONS.has(row.excludedReason) ? (
+                              <span className="rmt-excluded">
+                                {t(
                                   `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason]}`,
-                                )
-                              : needed === null
-                                ? "—"
-                                : needed.reachable
-                                  ? t("meetTab.neededPoints", {
-                                      points: needed.needed,
-                                    })
-                                  : t("meetTab.neededUnreachable")}
+                                )}
+                              </span>
+                            ) : needed === null ? (
+                              "—"
+                            ) : needed.reachable ? (
+                              t("meetTab.neededPoints", {
+                                points: needed.needed,
+                              })
+                            ) : (
+                              t("meetTab.neededUnreachable")
+                            )}
                           </td>
                         )}
                         {cells.map((f) => (
@@ -914,6 +927,16 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                     : "meetTab.sourceOwn",
                 ),
               },
+            )}
+            {/* 順位の対象外（賞典除外・途中帰郷）の理由は、予選が終わった後も出す。
+                目安の行は予選中しか出ないので、そちらに頼ると最終日に消えていた
+                （ファン評価2周目） */}
+            {mine.withdrawn && !(showBorder && border !== undefined) && (
+              <span className="rmt-detail-border">
+                {t(
+                  `meetTab.${EXCLUDED_LABEL_KEY[mine.excludedReason] ?? "withdrawn"}Title`,
+                )}
+              </span>
             )}
             {showBorder && border !== undefined && (
               <span className="rmt-detail-border">
