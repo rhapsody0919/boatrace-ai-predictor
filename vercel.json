@@ -183,6 +183,13 @@
       "regions": ["syd1"]
     }
   },
+  "redirects": [
+    {
+      "source": "/outcome-distribution",
+      "destination": "/winning-technique?tab=outcome",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!api/).*)",
