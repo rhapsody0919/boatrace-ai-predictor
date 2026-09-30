@@ -57,3 +57,35 @@ test("選手ページの履歴: race_results の着順に入った返還艇（F�
   const stAt = cells.indexOf("F0.04");
   expect(cells[stAt + 1]).toBe("F");
 });
+
+// 本番STは2025-12から、展示タイムは2026-03からある。ST推移の見出しを「2025年12月以降」にし、
+// 展示タイムの推移は展示がある走だけで横軸を作る（見出しの期間と横軸の始まりが食い違っていた。
+// PR #996 ファン評価1周目）
+test("選手ページ: STの推移・展示タイムの推移の見出しと横軸の始まりが合う", async ({
+  page,
+}) => {
+  await page.goto("/racer/5250");
+  const chartOf = (title) =>
+    page.locator(".racer-stat-chart").filter({
+      has: page.locator("h3", { hasText: title }),
+    });
+  const st = chartOf("STの推移");
+  await expect(st).toBeVisible({ timeout: 30000 });
+  await expect(st.locator("h3")).toContainText("2025年12月以降");
+  // 横軸の日付ラベル（"25-12-27" 形式）のうち最初のもの。recharts の版で
+  // 目盛りラベルの入れ物のクラスが変わるので、svg 内の日付形式の文字で取る
+  const firstTick = (chart) =>
+    chart
+      .locator("svg text")
+      .evaluateAll(
+        (els) =>
+          els
+            .map((el) => el.textContent.trim())
+            .find((t) => /^\d{2}-\d{2}-\d{2}$/.test(t)) ?? null,
+      );
+  // 5250 の本番STは 2025-12-27 から、展示タイムは 2026-03 から
+  expect(await firstTick(st)).toMatch(/^25-12-/);
+  const ex = chartOf("展示タイムの推移");
+  await expect(ex.locator("h3")).toContainText("2026年3月以降");
+  expect(await firstTick(ex)).toMatch(/^26-/);
+});
