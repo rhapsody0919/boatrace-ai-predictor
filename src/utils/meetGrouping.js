@@ -65,11 +65,15 @@
  * 呼び出し元3つの絞り方はそれぞれ違う。
  *
  *   - `basicInfoStats.buildMeetResults`: 選手＋**会場**＋表示中レースの目印
- *   - `racerService.getCurrentMeetRaceEntries`: 選手＋**モーター番号**＋直近30走
- *   - `getRacerMeetExhibitionTrendBefore`: 同じ＋表示中レースより前
+ *     （`groupIntoMeetBeforeRace`）
+ *   - `getRacerMeetExhibitionTrendBefore`: 選手＋モーター番号＋**会場**＋表示中
+ *     レースの目印（`groupIntoMeetBeforeRace`）
+ *   - `racerService.getCurrentMeetRaceEntries`: 選手＋モーター番号＋**会場**＋直近30走
  *
- * 後者2つは会場ではなくモーター番号で絞る（モーターは会場固有なので実質的に
- * 会場フィルタとして働く）。一致率を実測したのは1つ目の形。
+ * **モーター番号は会場フィルタの代わりにならない**。番号は会場ごとに振られるので、
+ * 別会場の同じ番号のモーターの節が混ざる（BOA-591: 2026-09-21 津1Rで、節の初戦の
+ * 2号艇に2ヶ月前の蒲郡の展示タイムが「前走・平均」として出た）。会場で絞り、
+ * 表示中のレースを目印に足してから切る。一致率を実測したのはこの形。
  *
  * これを**会場の全日付に当てると壊れる**。中1日の開催休みで前の節が丸ごと混ざる。
  * `supabaseDataService.getMeetScoreboard` が、この関数を呼ぶ代わりに**同じ
@@ -98,6 +102,37 @@ export function groupIntoCurrentMeet(sortedAscEntries, maxGapDays = 2) {
     meet.unshift(sortedAscEntries[i]);
   }
   return meet;
+}
+
+/**
+ * 表示中のレース（`beforeRaceId`）と**同じ会場・同じ節**で、それより前の走だけを
+ * 抜き出す（純関数、BOA-591）。
+ *
+ * `groupIntoCurrentMeet` をそのまま呼ぶと2つずれる。
+ *
+ * 1. **会場で絞らない**と、別会場の節が地続きのとき1つの節として繋がる。race_id の
+ *    会場コード（`YYYY-MM-DD-VV-RR` の VV）で絞る
+ * 2. **表示中のレースを目印に足さない**と「表示中のレースより前の最後のまとまり」を
+ *    返す。節の初戦（今節の走がまだ無い）で、何ヶ月も前の前の節を今節として拾う
+ *
+ * @param {Array<{race_id: string}>} entries 1選手分。順序は問わない
+ * @param {string} beforeRaceId 表示中のレース（`YYYY-MM-DD-VV-RR`）。結果には含めない
+ * @returns {Array} 抜き出した走（race_id 昇順、入力の要素そのまま）
+ */
+export function groupIntoMeetBeforeRace(entries, beforeRaceId) {
+  if (!Array.isArray(entries) || typeof beforeRaceId !== "string") return [];
+  const venue = beforeRaceId.slice(11, 13);
+  if (!venue) return [];
+  const upto = entries
+    .filter(
+      (e) =>
+        typeof e?.race_id === "string" &&
+        e.race_id.slice(11, 13) === venue &&
+        e.race_id < beforeRaceId,
+    )
+    .sort((a, b) => a.race_id.localeCompare(b.race_id));
+  const ANCHOR = { race_id: beforeRaceId };
+  return groupIntoCurrentMeet([...upto, ANCHOR]).filter((e) => e !== ANCHOR);
 }
 
 /**

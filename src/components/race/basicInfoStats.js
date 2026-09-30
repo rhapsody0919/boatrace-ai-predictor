@@ -32,7 +32,7 @@
  */
 import { isPlaceHit, isShowHit } from "../../../scripts/lib/hitCalculator.js";
 import { parseRaceId } from "../../utils/raceId.js";
-import { groupIntoCurrentMeet } from "../../utils/meetGrouping.js";
+import { groupIntoMeetBeforeRace } from "../../utils/meetGrouping.js";
 import { getDaysAgoJST } from "../../utils/dateUtils.js";
 
 export const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
@@ -566,17 +566,10 @@ export function buildMeetResults(records, { raceId, venueCode }) {
   // **表示中のレースより前**だけ。`date <= date` だと同じ日の後のレースまで入り、
   // 5Rを見ているのに同じ日の9Rが「今節のこれまでの走り」に出る（2026-09-20 桐生5Rで発生）。
   // race_id は `YYYY-MM-DD-VV-RR` の固定長なので文字列比較でレース単位に切れる
-  const upto = all
-    .filter((r) => r.venueCode === venueCode && r.raceId < raceId)
-    .sort((a, b) => a.raceId.localeCompare(b.raceId));
-
-  const anchored = [
-    ...upto.map((r) => ({ race_id: r.raceId, record: r })),
-    { race_id: raceId, record: null },
-  ];
-  return groupIntoCurrentMeet(anchored)
-    .filter((m) => m.record !== null)
-    .map((m) => m.record);
+  const candidates = all
+    .filter((r) => r.venueCode === venueCode)
+    .map((r) => ({ race_id: r.raceId, record: r }));
+  return groupIntoMeetBeforeRace(candidates, raceId).map((m) => m.record);
 }
 
 /** 今節の平均STが通常値とこれだけ違えば「踏んでいる／慎重」と言い切る閾値（秒） */
