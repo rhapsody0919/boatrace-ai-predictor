@@ -12,17 +12,33 @@
   white-space: nowrap;
 }
 
+/* 今節の印付き。ST考察カードの6列（375pxで1列約50px）には1行で収まらないため、
+   収まらないときだけ「F1」の下に「今節」を折り返す */
+.flying-badge.has-meet {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 1px 2px;
+  max-width: 100%;
+}
+
 .flying-badge.is-f2 {
   color: var(--color-white);
   background: var(--color-error);
 }
 
-/* 「今節」の印（BOA-440）。同じバッジの中に区切って入れ、F本数と続けて読ませる */
+/* 「今節」の印（BOA-440）。同じバッジの中に一段明るい地で入れ、F本数と続けて読ませる。
+   折り返したときも区切りが崩れないよう、罫線ではなく地の色で分ける */
 .flying-badge-meet {
-  margin-left: 2px;
-  padding-left: 2px;
-  border-left: 1px solid currentColor;
+  padding: 0 2px;
   font-size: 0.6rem;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: var(--radius-sm);
+}
+
+.flying-badge.is-f2 .flying-badge-meet {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* L（出遅れ）。F の金・赤と取り違えないよう灰にする */

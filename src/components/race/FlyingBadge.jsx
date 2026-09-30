@@ -38,7 +38,7 @@ function FlyingBadge({ count, currentMeet = false, lateCount }) {
     <>
       {hasF && (
         <span
-          className={`flying-badge${count >= 2 ? " is-f2" : ""}`}
+          className={`flying-badge${count >= 2 ? " is-f2" : ""}${currentMeet ? " has-meet" : ""}`}
           title={
             currentMeet
               ? t("flyingBadge.titleCurrentMeet", { n: count })
