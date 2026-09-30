@@ -134,22 +134,22 @@ function StartTimingTrack({
           {
             offset: 0,
             left: "0%",
-            transform: "translate(-50%, -50%) scale(0.7)",
+            transform: "translate(-100%, -50%) scale(0.7)",
           },
           {
             offset: overshoot,
             left: `${finalPosition}%`,
-            transform: "translate(-50%, -50%) scale(1.35)",
+            transform: "translate(-100%, -50%) scale(1.35)",
           },
           {
             offset: arrivalFraction,
             left: `${finalPosition}%`,
-            transform: "translate(-50%, -50%) scale(1)",
+            transform: "translate(-100%, -50%) scale(1)",
           },
           {
             offset: 1,
             left: `${finalPosition}%`,
-            transform: "translate(-50%, -50%) scale(1)",
+            transform: "translate(-100%, -50%) scale(1)",
           },
         ],
         { ...baseOptions, easing: "cubic-bezier(0.15, 0.85, 0.25, 1)" },
@@ -825,6 +825,11 @@ function RaceResult({ prediction, raceId }) {
       )}
       {startTimingFailed && (
         <InlineFetchError onRetry={() => setReloadKey((key) => key + 1)} />
+      )}
+      {/* ST図の読み方。初見では黄線が何か・どちらが早いかが分からない
+          （BOA-559 ファン評価3周目） */}
+      {validStartTimings.length > 0 && (
+        <p className="rr-note rr-st-legend">{t("result.stLegend")}</p>
       )}
       <p className="rr-note">{t("result.courseNote")}</p>
       {!isLoadingStartTimings && !isNoRace && rows.length < 6 && (

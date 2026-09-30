@@ -785,7 +785,9 @@ input:focus-visible,
   top: 50%;
   width: 16px;
   height: 9px;
-  transform: translate(-50%, -50%);
+  /* 舳先（右端）を位置に合わせる。中心を合わせると、ST0.01の正常な艇でも舳先が
+     スタートラインを8px越え、フライングに見えた（BOA-559 ファン評価3周目） */
+  transform: translate(-100%, -50%);
 }
 
 .rr-st-dot-shape {

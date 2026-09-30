@@ -247,3 +247,69 @@ test("1号艇（白）のST矢印に輪郭が付き、形が切り取られな�
   expect(style.clip).toBe("none");
   expect(style.shapeClip).toContain("polygon");
 });
+
+test("正常なST0.01の矢印の舳先はスタートラインを越えず、フライングの矢印だけが越える", async ({
+  page,
+}) => {
+  // 戸田 2026-09-19 9R: 1号艇 .01（正常・1着）、2号艇 .02、3〜6号艇はF。
+  // 矢印の中心を位置に合わせていたため、0.01の舳先がラインを4px越えてフライングに見えた（ファン評価3周目）
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/race/2026-09-19-02-09");
+  await page.locator(".race-tabs-btn", { hasText: "結果" }).click();
+  const rows = page.locator(".rr-row");
+  await expect(rows.first().locator(".rr-st-dot")).toBeAttached({
+    timeout: 30000,
+  });
+  const boxes = await rows.evaluateAll((els) =>
+    els
+      .filter((row) => row.querySelector(".rr-st-dot"))
+      .map((row) => {
+        const dot = row.querySelector(".rr-st-dot").getBoundingClientRect();
+        const line = row.querySelector(".rr-st-line").getBoundingClientRect();
+        return {
+          value: row.querySelector(".rr-st-value").textContent.trim(),
+          tip: dot.right,
+          lineLeft: line.left,
+          lineRight: line.right,
+        };
+      }),
+  );
+  expect(boxes.length).toBe(6);
+  for (const b of boxes) {
+    if (b.value.startsWith("F"))
+      expect(b.tip, b.value).toBeGreaterThan(b.lineRight);
+    else expect(b.tip, b.value).toBeLessThanOrEqual(b.lineLeft + 0.5);
+  }
+  // 読み方の凡例が出る
+  await expect(page.locator(".rr-st-legend")).toContainText("スタートライン");
+});
+
+// 姓と名は常に別の行にする。inline-block だと、日本語は1文字ごとに折り返せるため名の塊が前の行の余りに
+// 縮んで入り、名の途中で折れた（ファン評価3周目）。なお6文字の名前（「安河内鈴之介」）は元データに
+// 姓と名の間の空白が無く境目が分からないため、この扱いの対象外（幅で折り返す）
+for (const width of [375, 1440]) {
+  test(`${width}px: 一覧カードの名前は姓と名を別の行に置き、どちらも途中で折れない`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/races/2026-09-14/7");
+    const th = page
+      .locator(".rcdt-name-th")
+      .filter({ hasText: "中山翔太" })
+      .first();
+    await expect(th).toBeVisible({ timeout: 30000 });
+    const parts = await th.locator(".rcdt-name-part").evaluateAll((els) =>
+      els.map((el) => ({
+        text: el.textContent,
+        top: Math.round(el.getBoundingClientRect().top),
+        lines: Math.round(
+          el.getBoundingClientRect().height /
+            parseFloat(getComputedStyle(el).lineHeight),
+        ),
+      })),
+    );
+    expect(parts.map((p) => p.text)).toEqual(["中山", "翔太"]);
+    expect(parts[1].top).toBeGreaterThan(parts[0].top);
+    expect(parts.map((p) => p.lines)).toEqual([1, 1]);
+  });
+}
