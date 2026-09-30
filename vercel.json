@@ -186,14 +186,6 @@
   "redirects": [
     {
       "source": "/outcome-distribution",
-      "has": [
-        { "type": "query", "key": "venue_code", "value": "(?<vc>[0-9]{1,2})" }
-      ],
-      "destination": "/winning-technique?tab=outcome&venue_code=:vc",
-      "permanent": true
-    },
-    {
-      "source": "/outcome-distribution",
       "destination": "/winning-technique?tab=outcome",
       "permanent": true
     }
