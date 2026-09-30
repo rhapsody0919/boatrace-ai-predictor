@@ -37,6 +37,7 @@ import {
   computeVenueRanking,
   buildConditionRows,
   pickPeriodStats,
+  periodDiff,
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
@@ -682,6 +683,33 @@ function RaceBasicInfoTab({
                         periodStats,
                         player?.racerId,
                       );
+                      // 前期と今期の差（BOA-439）。今期は上のバーと同じ公式値
+                      // （race_entries、追加クエリ無し）。平均STは今期の公式値を
+                      // 持っていないので差は出さない
+                      const nowRow = officialRowFor(player?.number);
+                      const winDiff = period
+                        ? periodDiff(period.winRate, nowRow?.win_rate, 2)
+                        : null;
+                      const top2Diff = period
+                        ? periodDiff(period.top2Rate, nowRow?.global_2rate, 1)
+                        : null;
+                      const diffLabel = (d, unit = "") =>
+                        d && (
+                          <span
+                            className={`rbit-period-diff${
+                              d.sign > 0
+                                ? " is-up"
+                                : d.sign < 0
+                                  ? " is-down"
+                                  : ""
+                            }`}
+                          >
+                            {t("basicInfo.periodVsCurrent", {
+                              current: `${d.current}${unit}`,
+                              diff: `${d.diff}${unit}`,
+                            })}
+                          </span>
+                        );
                       return (
                         <div className="rbit-conditions">
                           {/* 値は全行とも自社集計。既定状態（勝率・全レース・今期）では
@@ -869,6 +897,7 @@ function RaceBasicInfoTab({
                                         ? "—"
                                         : period.winRate.toFixed(2),
                                   })}
+                                  {diffLabel(winDiff)}
                                 </span>
                                 <span>
                                   {/* 単位は値側に付ける。i18n側に「%」を残すと
@@ -880,6 +909,7 @@ function RaceBasicInfoTab({
                                         ? "—"
                                         : `${period.top2Rate.toFixed(1)}%`,
                                   })}
+                                  {diffLabel(top2Diff, "%")}
                                 </span>
                                 <span>
                                   {t("basicInfo.periodAvgSt", {

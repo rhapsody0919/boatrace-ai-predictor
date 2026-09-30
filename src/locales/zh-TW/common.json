@@ -890,6 +890,7 @@
     "periodWinRate": "勝率 {{value}}",
     "periodTop2Rate": "2連對率 {{value}}",
     "periodAvgSt": "平均ST {{value}}",
+    "periodVsCurrent": "（本期 {{current}}，{{diff}}）",
     "periodFetchError": "無法取得前期成績",
     "meetScoreForecastTitle": "今日名次會讓得分率這樣變動",
     "meetScorePrelimOver": "預賽得分率 {{rate}}（{{n}}場・{{source}}・已確定）"

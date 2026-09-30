@@ -890,6 +890,7 @@
     "periodWinRate": "승률 {{value}}",
     "periodTop2Rate": "2연대율 {{value}}",
     "periodAvgSt": "평균 ST {{value}}",
+    "periodVsCurrent": " (이번 기 {{current}}, {{diff}})",
     "periodFetchError": "전기 성적을 가져오지 못했습니다",
     "meetScoreForecastTitle": "오늘 착순에 따른 득점률 변화",
     "meetScorePrelimOver": "예선 득점률 {{rate}}（{{n}}주・{{source}}・확정）"

@@ -1484,6 +1484,11 @@ test.describe("レースページ再設計（BOA-168）", () => {
       /\d{4}-\d{2}-\d{2}/,
     );
     await expect(page.locator(".rbit-period-values")).toContainText("勝率");
+    // 前期の横に今期（上のバーと同じ公式値）と差を添える（BOA-439）。
+    // 平均STは今期の公式値を持っていないので差を出さない
+    await expect(page.locator(".rbit-period-diff").first()).toHaveText(
+      /^（今期 \d+\.\d{2}、[+−±]\d+\.\d{2}）$/,
+    );
 
     // この表が全コース込みであることと、今日の枠での走数を常時出す
     // （ボートレースファンのレビュー指摘A: 外枠専業の選手と枠が均等に回る選手で

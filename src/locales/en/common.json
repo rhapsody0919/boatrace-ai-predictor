@@ -895,6 +895,7 @@
     "periodWinRate": "Win pts {{value}}",
     "periodTop2Rate": "Top-2 rate {{value}}",
     "periodAvgSt": "Avg. ST {{value}}",
+    "periodVsCurrent": " (this term {{current}}, {{diff}})",
     "periodFetchError": "Could not load the previous term record",
     "meetScoreForecastTitle": "How today's finish moves the score rate",
     "meetScorePrelimOver": "Preliminary score rate {{rate}} ({{n}} runs, {{source}}, final)"

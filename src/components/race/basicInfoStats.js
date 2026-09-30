@@ -517,6 +517,35 @@ export function buildConditionRows(records, { venueCode, metric }) {
  *            starts: number|null, calcFrom: string|null, calcTo: string|null}|null}
  *   該当が無ければ null（呼び出し側は枠ごと出さない）
  */
+/**
+ * 前期と今期の差（純関数、BOA-439）。どちらも公式の値（勝率は点、2連対率は%）。
+ * 自社集計の1着率%と混ぜない。どちらかが無ければ null。
+ *
+ * @param {number|null} prev 前期の値
+ * @param {number|string|null} current 今期の値（race_entries は文字列で返ることがある）
+ * @param {number} digits 小数の桁（勝率2・2連対率1）
+ * @returns {{current: string, diff: string, sign: -1|0|1}|null}
+ */
+export function periodDiff(prev, current, digits) {
+  if (prev === null || prev === undefined) return null;
+  if (current === null || current === undefined || current === "") return null;
+  const cur = Number(current);
+  if (!Number.isFinite(cur) || !Number.isFinite(prev)) return null;
+  // 表示する桁に丸めてから引く。丸める前で引くと「25.6 → 今期31.3（+5.6）」のように、
+  // 画面の数字どうしを引いた値と食い違う
+  const scale = 10 ** digits;
+  const round = (v) => Math.round(v * scale);
+  const d = (round(cur) - round(prev)) / scale;
+  const sign = d > 0 ? 1 : d < 0 ? -1 : 0;
+  const abs = Math.abs(d).toFixed(digits);
+  // 負号は全角のマイナス記号（−）。ハイフンより数字と並べて読みやすい
+  return {
+    current: (round(cur) / scale).toFixed(digits),
+    diff: sign > 0 ? `+${abs}` : sign < 0 ? `−${abs}` : `±${abs}`,
+    sign,
+  };
+}
+
 export function pickPeriodStats(rows, racerId) {
   if (!Array.isArray(rows) || !racerId) return null;
   const row = rows.find((r) => r.racer_id === racerId);

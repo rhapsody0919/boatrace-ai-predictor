@@ -447,6 +447,31 @@ function suiteBasicInfoStats(m, check) {
     50,
   );
 
+  // --- periodDiff（BOA-439）: 前期と今期の差。どちらも公式値
+  check(
+    "periodDiff: 今期の値と、符号つきの差（勝率は小数2桁・2連対率は1桁）",
+    [
+      m.periodDiff(4.5, "4.12", 2),
+      m.periodDiff(25.6, 31.25, 1),
+      m.periodDiff(4.5, 4.5, 2),
+    ],
+    [
+      { current: "4.12", diff: "−0.38", sign: -1 },
+      { current: "31.3", diff: "+5.7", sign: 1 },
+      { current: "4.50", diff: "±0.00", sign: 0 },
+    ],
+  );
+  check(
+    "periodDiff: どちらかが無ければ null（出走0の新人・今期の値が無いとき）",
+    [
+      m.periodDiff(null, 4.1, 2),
+      m.periodDiff(4.5, null, 2),
+      m.periodDiff(4.5, "", 2),
+      m.periodDiff(4.5, "abc", 2),
+    ],
+    [null, null, null, null],
+  );
+
   // --- buildConditionRows（phase a FR-2）
   const condRecords = [
     rec({

@@ -541,3 +541,11 @@
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
 }
+
+/* 前期の値の横に添える今期との差（BOA-439）。向きは符号（+/−）で示し、色だけに頼らない */
+.rbit-period-diff {
+  margin-left: 2px;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
