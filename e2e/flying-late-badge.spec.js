@@ -71,9 +71,12 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     });
     const legend = page.locator(".rbit-note", { hasText: "今節" });
     await expect(legend).toBeVisible();
-    await expect(legend).toContainText("準優勝戦・優勝戦に進めません");
+    await expect(legend).toContainText("準優勝戦・優勝戦には進めません");
     await expect(legend).toContainText("当日のFは含みません");
     await expect(legend).toContainText("L＝");
+    // 「F2 今節」を「2本とも今節」と読ませない（バッジの説明・「?」と同じ「そのうち」で書く。3周目）
+    await expect(legend).toContainText("そのうち今節の初日から前日まで");
+    await expect(legend).toContainText("節の残りのレースには出走します");
   });
 
   test("375px: ST考察の級別の説明が下部ナビに隠れず、末尾まで読める（ファン評価1周目）", async ({
@@ -103,6 +106,10 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     await button.click();
     const pop = page.locator(".term-hint__popover");
     await expect(pop).toContainText("賞典除外");
+    // 要点（今節の印・賞典除外）は先頭の方に置く。後半だと小さな枠で読まれない（3周目）
+    const text = await pop.textContent();
+    expect(text.indexOf("「今節」の印")).toBeLessThan(40);
+    expect(text.indexOf("賞典除外")).toBeLessThan(text.indexOf("あっせん停止"));
     const r = await pop.evaluate((el) => {
       const box = el.getBoundingClientRect();
       // 見えている範囲の下端近くで、最前面の要素がポップオーバー自身か
