@@ -1938,6 +1938,28 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".flying-badge")).toHaveCount(0);
   });
 
+  test("過去のレースでは、枠別情報の逃げ・決まり手が今日時点の集計だと明記する（BOA-608）", async ({
+    page,
+  }) => {
+    // 会場の逃げ・決まり手は「今日から見た直近の期間」の事前集計しか無い。
+    // 以前は6月のレースでも9月のレースでも同じ値が、何の断りもなく出ていた
+    await page.goto("/race/2026-09-26-09-05");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    const note = page.getByText(
+      /今日時点の集計です（期間 \d{4}-\d{2}-\d{2}〜\d{4}-\d{2}-\d{2}）/,
+    );
+    await expect(note.first()).toBeVisible({ timeout: 30000 });
+    await expect(note).toHaveCount(2);
+
+    // 当日のレース（E2E の時計は録画時刻の 2026-09-29）では出さない
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    await expect(page.locator(".nsc-card, .rwit-card").first()).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(page.getByText(/今日時点の集計です/)).toHaveCount(0);
+  });
+
   test("枠別情報タブのST分布・ST履歴が折りたたみで開き、平均と重ねて表示される（phase a T3-3）", async ({
     page,
   }) => {
