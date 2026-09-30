@@ -51,17 +51,17 @@
       "ref": "PR#1009"
     },
     {
-      "date": "2026-09-30",
+      "date": "2026-10-01",
       "kind": "measure",
       "id": "sitemap-lastmod-actual",
-      "description": "sitemap の lastmod を、全URL共通の生成日から各ページの実際の更新日にした（BOA-599）。サイトマップへの反映は 9/30 23:30 JST の自動生成から",
+      "description": "sitemap の lastmod を、全URL共通の生成日から各ページの実際の更新日にした（BOA-599）。9/30 マージ、サイトマップへの反映は 10/1 04:30 JST の自動生成（513URL 中 lastmod 407件、日付がばらけたことを確認）",
       "ref": "PR#1011"
     },
     {
-      "date": "2026-09-30",
+      "date": "2026-10-01",
       "kind": "measure",
       "id": "sitemap-hreflang",
-      "description": "sitemap に hreflang（xhtml:link）を入れた（BOA-560。日本語クエリで /en/・/ko/ が出る件）。サイトマップへの反映は 9/30 23:30 JST の自動生成から",
+      "description": "sitemap に hreflang（xhtml:link）を入れた（BOA-560。日本語クエリで /en/・/ko/ が出る件）。9/30 マージ、サイトマップへの反映は 10/1 04:30 JST の自動生成（xhtml:link 1,339本を確認）",
       "ref": "PR#1012"
     }
   ]
