@@ -362,6 +362,13 @@
   font-weight: var(--font-weight-bold);
 }
 
+.rmt-needed-runs {
+  display: block;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
 .rmt-forecast-table td.rmt-needed {
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);

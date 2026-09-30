@@ -1319,5 +1319,24 @@ check(
   6,
 );
 
+// ---- 早見の色付けは残りの走を全部6着にした得点率で判定する（BOA-596） ----
+{
+  // 町田（尼崎 2026-09-27 5R）の形: 5走で37点、今日2走残り。6着なら 38/6=6.33 で
+  // 目安6.17を一時的に超えるが、残り1走も6着だと 39/7=5.57 で届かない
+  const cells = forecastSeriesScore({ points: 37, runs: 5 }, "予選", 2);
+  check(
+    "残り2走: 6着の worstRate は残りも6着の得点率（6着で「届く」と色を付けない）",
+    [cells[5].rate.toFixed(2), cells[5].worstRate.toFixed(2)],
+    ["6.33", "5.57"],
+  );
+  check(
+    "残り1走（既定）: worstRate は rate と同じ",
+    forecastSeriesScore({ points: 37, runs: 5 }, "予選").map(
+      (c) => c.worstRate === c.rate,
+    ),
+    [true, true, true, true, true, true],
+  );
+}
+
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);
 process.exit(failures === 0 ? 0 : 1);

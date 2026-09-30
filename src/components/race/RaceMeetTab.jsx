@@ -318,7 +318,12 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
             player,
             row,
             // 表示中レースの種別で配点を切り替える（ドリーム戦は1着+12）
-            cells: forecastSeriesScore(row, stage),
+            // 残りが2走以上なら、色付けは「残りを全部6着でも届くか」で判定する
+            cells: forecastSeriesScore(
+              row,
+              stage,
+              remainingPrelimRuns[player.racerId] ?? 1,
+            ),
             // 公式の「必要得点」＝準優ボーダーをクリアするのに要る得点。
             // 残り走数は**当日の番組が出ている予選レース**から数える
             // （翌日以降の出走表は未取得のことが多い）
@@ -669,22 +674,31 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                           </td>
                           {hasNeeded && (
                             <td className="rmt-needed">
-                              {needed === null
-                                ? "—"
-                                : needed.reachable
-                                  ? // 必要得点は今日の残りの予選ぶん（1日2走ある選手もいる）
-                                    // を足した点数。横の早見は次の1走だけなので、2走以上
-                                    // 残っていれば走数を添える。無いと「1着でも目安に
-                                    // 届かないのに必要得点17」と食い違って読める（BOA-596）
-                                    remaining > 1
-                                    ? t("meetTab.neededPointsRuns", {
-                                        points: needed.needed,
+                              {needed === null ? (
+                                "—"
+                              ) : needed.reachable ? (
+                                // 必要得点は今日の残りの予選ぶん（1日2走ある選手もいる）
+                                // を足した点数。横の早見は次の1走だけなので、2走以上
+                                // 残っていれば走数を添える。無いと「1着でも目安に
+                                // 届かないのに必要得点17」と食い違って読める（BOA-596）
+                                <>
+                                  {t("meetTab.neededPoints", {
+                                    points: needed.needed,
+                                  })}
+                                  {/* 走数は2行目に小さく出す。1行に並べると
+                                        375pxで列が広がり、早見の3着以降が
+                                        最初の画面から外れた（ファン評価1周目） */}
+                                  {remaining > 1 && (
+                                    <span className="rmt-needed-runs">
+                                      {t("meetTab.neededPointsRuns", {
                                         runs: remaining,
-                                      })
-                                    : t("meetTab.neededPoints", {
-                                        points: needed.needed,
-                                      })
-                                  : t("meetTab.neededUnreachable")}
+                                      })}
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                t("meetTab.neededUnreachable")
+                              )}
                             </td>
                           )}
                           {cells.map((f) => (
@@ -693,7 +707,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                               className={
                                 showBorderBadge &&
                                 border !== undefined &&
-                                f.rate >= border
+                                f.worstRate >= border
                                   ? "is-in-border"
                                   : undefined
                               }
