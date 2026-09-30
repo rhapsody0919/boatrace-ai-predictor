@@ -29,6 +29,7 @@ import {
   handleLiveOddsRequest,
   liveOddsUrl,
   CACHE_OK,
+  CACHE_OK_EARLY,
   CACHE_FINAL,
   CACHE_UPSTREAM_ERROR,
   CACHE_NO_STORE,
@@ -254,9 +255,9 @@ const fetcher = (fn) => {
   const f1 = fetcher(() => htmlResponse(T3_PREDEADLINE));
   const r1 = await run({ raceId: TODAY_RACE, page: "3t" }, f1);
   check(
-    "成功: 200・s-maxage=30・本文の形（ok/raceId/page/fetchedAt/officialUpdatedAt/final/data）",
+    "成功（締切51分前）: 200・s-maxage=30, stale-while-revalidate=120・本文の形（ok/raceId/page/fetchedAt/officialUpdatedAt/final/data）",
     r1.status === 200 &&
-      r1.cacheControl === CACHE_OK &&
+      r1.cacheControl === CACHE_OK_EARLY &&
       show(Object.keys(r1.body)) ===
         show([
           "ok",
@@ -274,6 +275,47 @@ const fetcher = (fn) => {
       Object.keys(r1.body.data.trifectaAll).length === 120,
     show({ ...r1, body: { ...r1.body, data: "…" } }),
   );
+  // BOA-573: 締切まで10分以内は stale-while-revalidate を60秒のまま（鮮度優先）。締切時刻が読めないときも60秒
+  {
+    const near = await handleLiveOddsRequest({
+      query: { raceId: TODAY_RACE, page: "3t" },
+      politeFetch: fetcher(() => htmlResponse(T3_PREDEADLINE)),
+      now: () => new Date("2026-09-29T09:01:00+09:00"), // 2R 締切 09:10 の9分前
+    });
+    check(
+      "締切まで10分以内（9分前）: stale-while-revalidate=60 のまま",
+      near.cacheControl === CACHE_OK,
+      near.cacheControl,
+    );
+    const edge = await handleLiveOddsRequest({
+      query: { raceId: TODAY_RACE, page: "3t" },
+      politeFetch: fetcher(() => htmlResponse(T3_PREDEADLINE)),
+      now: () => new Date("2026-09-29T08:59:00+09:00"), // 11分前
+    });
+    check(
+      "締切まで10分超（11分前）: stale-while-revalidate=120",
+      edge.cacheControl === CACHE_OK_EARLY,
+      edge.cacheControl,
+    );
+    const noDeadline = await handleLiveOddsRequest({
+      query: { raceId: TODAY_RACE, page: "3t" },
+      politeFetch: fetcher(() =>
+        htmlResponse(T3_PREDEADLINE.replace("締切予定時刻", "（見出しなし）")),
+      ),
+      now: () => NOW,
+    });
+    check(
+      "締切時刻が読めない: stale-while-revalidate=60（鮮度優先に倒す）",
+      noDeadline.cacheControl === CACHE_OK,
+      noDeadline.cacheControl,
+    );
+    const t3 = parseLiveOddsPage("3t", T3_PREDEADLINE);
+    check(
+      "締切予定時刻をレース番号の位置で読む（2R=09:10、12R=14:29）",
+      t3.deadlineTimes?.[1] === "09:10" && t3.deadlineTimes?.[11] === "14:29",
+      show(t3.deadlineTimes),
+    );
+  }
   check(
     "成功: 取得したURLは公式の odds3t の1ページだけ",
     show(f1.calls) ===
