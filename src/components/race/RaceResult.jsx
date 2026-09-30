@@ -27,7 +27,7 @@ import {
 } from "../../utils/raceOutcome";
 
 // スタートのダイナミック演出（全艇が号砲と同時に走り出し、実ST比例の位置×時間で到達）の調整定数。
-// 到達位置は0〜0.15秒の固定レンジで正規化する（レースが違っても位置の見た目の意味を揃えるため）。
+// 到達位置は0〜0.30秒（フライングは0〜0.15秒）の固定レンジで正規化する（レースが違っても位置の見た目の意味を揃えるため）。
 // 到達までの時間はこのレース内の最遅STを基準（6秒）に相対比例させる（このレースだけの相対値）。
 // 周期7秒: 最遅艇が6秒で到達し、そこから1秒静止してループする
 const START_ANIM = {
@@ -35,7 +35,11 @@ const START_ANIM = {
   MAX_ARRIVAL_MS: 6000,
   LINE_PERCENT: 84,
   POSITION_RANGE_PERCENT: 76,
-  POSITION_MAX_SECONDS: 0.15,
+  // 遅い側は0.30まで位置で差をつける（0.15で頭打ちにすると、0.16と0.27が同じ位置に重なっていた。
+  // 平均STは0.15前後で、普通のレースでも半分近くの艇が左端に重なる。BOA-559 ファン評価1周目）
+  POSITION_MAX_SECONDS: 0.3,
+  // フライングは0.15までで位置の差をつける（F0.15で98%）
+  FLYING_MAX_SECONDS: 0.15,
   OVERSHOOT_RATIO: 0.72,
   STREAK_FADE_IN_RATIO: 0.26,
   IMPACT_FLASH_DELTA: 0.001,
@@ -50,11 +54,10 @@ const START_ANIM = {
 // 手前（遅いスタート）に描かれてしまう（浜名湖 9/14 6R の F0.11 が最も遅い艇に見えた。BOA-559）。
 // F はラインより先に置く
 function getFinalPositionPercent(startTiming, isFlying = false) {
-  const clamped = Math.min(
-    Math.max(startTiming, 0),
-    START_ANIM.POSITION_MAX_SECONDS,
-  );
-  const ratio = clamped / START_ANIM.POSITION_MAX_SECONDS;
+  const max = isFlying
+    ? START_ANIM.FLYING_MAX_SECONDS
+    : START_ANIM.POSITION_MAX_SECONDS;
+  const ratio = Math.min(Math.max(startTiming, 0), max) / max;
   return isFlying
     ? START_ANIM.LINE_PERCENT + ratio * START_ANIM.FLYING_RANGE_PERCENT
     : START_ANIM.LINE_PERCENT - ratio * START_ANIM.POSITION_RANGE_PERCENT;

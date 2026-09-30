@@ -10,7 +10,8 @@ import { test, expect } from "./fixtures.js";
 const entries = [1, 2, 3, 4, 5, 6].map((i) => ({
   number: i,
   // 公式の元データと同じく、姓と名の間を全角スペースで詰めた名前（BOA-559）
-  name: i === 1 ? "丹下　　　将" : `テスト選手${i}`,
+  name:
+    i === 1 ? "丹下　　　将" : i === 2 ? "土屋　実沙希" : `テスト選手${i}`,
   grade: "B1",
   age: 30,
   winRate: 5.0,
@@ -138,8 +139,52 @@ test("375px: 全角スペースで詰めた選手名は空白を1つにまとめ
     .filter({ has: page.locator(".rr-boat-chip", { hasText: /^1$/ }) });
   const name = row1.locator(".rr-name-text");
   await expect(name).toHaveText("丹下 将B1");
-  const clipped = await name.evaluate((e) => e.scrollWidth > e.clientWidth);
-  expect(clipped).toBe(false);
+  // 5文字の名前（「土屋 実沙希」）も級別まで切れない（級別は名前の下の行。ファン評価1周目）
+  const names = table.locator(".rr-name-text");
+  const clipped = await names.evaluateAll((els) =>
+    els
+      .filter((e) => e.scrollWidth > e.clientWidth)
+      .map((e) => e.textContent),
+  );
+  expect(clipped).toEqual([]);
+  await expect(table).toContainText("土屋 実沙希");
+});
+
+test("STが0.15より遅い艇も、遅いほどラインから離れて描く（0.16と0.27が重ならない）", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const table = await openResult(page, {
+    race: {
+      date: "2026-09-29",
+      venueCode: 16,
+      venue: "児島",
+      raceNumber: 12,
+      result: { rank1: 1, rank2: 2, rank3: 3, rank4: 4, rank5: 5, rank6: 6 },
+    },
+    startTimings: [
+      st(1, 0.18, "1", 1),
+      st(2, 0.16, "2", 2),
+      st(3, 0.12, "3", 3),
+      st(4, 0.12, "4", 4),
+      st(5, 0.2, "5", 5),
+      st(6, 0.27, "6", 6),
+    ],
+  });
+  await expect(table.locator(".rr-row")).toHaveCount(6);
+  const left = await table.locator(".rr-row").evaluateAll((rows) =>
+    Object.fromEntries(
+      rows.map((row) => [
+        row.querySelector(".rr-boat-chip")?.textContent.trim(),
+        parseFloat(row.querySelector(".rr-st-dot")?.style.left ?? "NaN"),
+      ]),
+    ),
+  );
+  // 遅いほど左（ラインから離れる）: 0.12 > 0.16 > 0.18 > 0.20 > 0.27
+  expect(left["3"]).toBeGreaterThan(left["2"]);
+  expect(left["2"]).toBeGreaterThan(left["1"]);
+  expect(left["1"]).toBeGreaterThan(left["5"]);
+  expect(left["5"]).toBeGreaterThan(left["6"]);
 });
 
 for (const width of [768, 1024, 1440]) {

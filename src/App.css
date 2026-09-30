@@ -1154,6 +1154,14 @@ input:focus-visible,
     font-size: 0.8rem;
   }
 
+  /* 級別は名前の下の行に置く。1行に並べると5文字の名前（「土屋 実沙希」）で級別が切れて見えない
+     （BOA-559 ファン評価1周目） */
+  .rr-name-text small {
+    display: block;
+    margin-left: 0;
+    line-height: 1.2;
+  }
+
   .accuracy-check {
     margin: 0.4rem 0 0;
     gap: 0.4rem;
