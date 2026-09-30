@@ -307,13 +307,18 @@ function RaceWakuInfoTab({
   const raceIsPast = isRaceBeforeTodayJST(raceId);
   const techniqueAsOf =
     raceIsPast && techniqueStats?.last_updated
-      ? {
-          start: getDaysAgoJST(
-            90,
-            new Date(`${techniqueStats.last_updated}T12:00:00+09:00`),
-          ),
-          end: techniqueStats.last_updated,
-        }
+      ? (() => {
+          // last_updated は集計ジョブを動かした日（JST）。ジョブは深夜に動き、
+          // その日から90日前以降の確定した結果（＝前日まで）を数える
+          // （scripts/daily/update-winning-technique-stats.js）
+          const ranOn = new Date(
+            `${techniqueStats.last_updated}T12:00:00+09:00`,
+          );
+          return {
+            start: getDaysAgoJST(90, ranOn),
+            end: getDaysAgoJST(1, ranOn),
+          };
+        })()
       : null;
 
   return (

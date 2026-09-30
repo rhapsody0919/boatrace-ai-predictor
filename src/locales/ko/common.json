@@ -549,7 +549,7 @@
     "fetchError": "최근 10경기를 가져오지 못했습니다. 잠시 후 다시 시도해 주세요",
     "recentFinishesNote": "{{course}}코스(실제로 진입한 코스)에서 출주한 최근 10경기",
     "kimariteTitle": "결정수 경향(전 선수・최근 90일)",
-    "venueStatsAsOfToday": "※ 오늘 시점의 집계입니다(기간 {{start}}〜{{end}}). 이 경주 날짜 시점의 값이 아닙니다",
+    "venueStatsAsOfToday": "※ 최신 집계입니다(기간 {{start}}〜{{end}}). 이 경주 날짜 시점의 값이 아닙니다",
     "kimariteCaveat": "※이 경기장의 모든 경주・모든 선수를 합산한 결정수 비율입니다(선수 개인의 실적이 아닙니다)",
     "gridTitle": "코스별 성적",
     "gridSubtitle": "실제 진입 코스 기준. 셀을 누르면 해당 코스의 최근 10주가 열립니다",
