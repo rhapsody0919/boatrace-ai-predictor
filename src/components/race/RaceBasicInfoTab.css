@@ -545,8 +545,8 @@
 /* 前期の値の横に添える今期との差（BOA-439）。向きは符号（+/−）で示し、色だけに頼らない */
 .rbit-period-diff {
   /* 375pxで2連対率の括弧が「前期から / −12.3pt）」と途中で割れるので、
-     括弧ごと次の行へ送る */
-  display: inline-block;
+     括弧ごと次の行へ送る。inline-block にすると en・ko の文言の先頭の空白が
+     消えて「6.71(출주표」とくっつくので、インラインのまま折り返しだけ止める */
   white-space: nowrap;
   margin-left: 2px;
   font-size: var(--font-size-2xs);
