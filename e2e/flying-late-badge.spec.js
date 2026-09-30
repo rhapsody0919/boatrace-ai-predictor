@@ -20,7 +20,7 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     ).toHaveCount(2);
     await expect(basic.filter({ hasText: "今節" }).first()).toHaveAttribute(
       "title",
-      /うち1本は今節/,
+      /今節（この開催の前日まで）/,
     );
     // 「今節はもう走らない」と読める言い方をしない（Fを切っても節の残りは出走する）
     const titles = await basic.evaluateAll((els) =>
