@@ -462,6 +462,16 @@ function suiteBasicInfoStats(m, check) {
     ],
   );
   check(
+    "periodDiffShownFrom: 期の初めから3か月後の1日から差を出す（年をまたぐ期も）",
+    [
+      m.periodDiffShownFrom("2026-04-30"),
+      m.periodDiffShownFrom("2025-10-31"),
+      m.periodDiffShownFrom(null),
+      m.periodDiffShownFrom("2026/04/30"),
+    ],
+    ["2026-08-01", "2026-02-01", null, null],
+  );
+  check(
     "periodDiff: どちらかが無ければ null（出走0の新人・出走表の値が無いとき）",
     [
       m.periodDiff(null, 4.1, 2),

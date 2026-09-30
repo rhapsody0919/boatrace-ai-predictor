@@ -1496,6 +1496,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(periodDiffs.nth(1)).toHaveText(
       /^（出走表・全国 \d+\.\d%、前期から[+−±]\d+\.\dpt）$/,
     );
+    await expect(page.locator(".rbit-period-note")).toHaveCount(0);
 
     // この表が全コース込みであることと、今日の枠での走数を常時出す
     // （ボートレースファンのレビュー指摘A: 外枠専業の選手と枠が均等に回る選手で
@@ -1524,6 +1525,20 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(how.locator("p").first()).toBeVisible();
     await expect(how).toContainText("最終日は優勝戦を含み");
     await expect(how).toContainText("母数が他の行と違います");
+
+    // 期が替わって3か月は差を出さない（ファン評価2周目）。出走表の勝率は期の区切りで
+    // 数え直されず、5月の値の大半は前期と同じ期間の成績のため
+    await page.goto("/race/2026-05-02-02-04");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await page.locator(".rbit-bar-row").nth(1).click();
+    await page.locator(".rbit-expanded-tab", { hasText: "条件別" }).click();
+    await expect(page.locator(".rbit-period-diff").first()).toHaveText(
+      /^（出走表・全国 \d+\.\d{2}）$/,
+      { timeout: 25000 },
+    );
+    await expect(page.locator(".rbit-period-note")).toContainText(
+      "2026-08-01から出します",
+    );
   });
 
   test("勝率が全行1%未満に潰れる選手には3連対率への導線を出す（phase a T5-2、ファン視点レビュー指摘D）", async ({

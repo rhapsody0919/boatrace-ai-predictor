@@ -610,6 +610,8 @@
     "periodTop2Rate": "2連対率 {{value}}",
     "periodAvgSt": "平均ST {{value}}",
     "periodVsCurrent": "（出走表・全国 {{current}}、前期から{{diff}}）",
+    "periodCurrentOnly": "（出走表・全国 {{current}}）",
+    "periodDiffWithheldNote": "※期が替わって3か月は、出走表の値の大半が前期と同じ期間の成績なので、前期との差は出していません（{{date}}から出します）",
     "periodFetchError": "前期成績を取得できませんでした",
     "meetScoreForecastTitle": "今日の着順で得点率はこう動く",
     "meetScorePrelimOver": "予選の得点率 {{rate}}（{{n}}走・{{source}}・確定）"

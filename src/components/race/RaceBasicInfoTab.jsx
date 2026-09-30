@@ -38,6 +38,7 @@ import {
   buildConditionRows,
   pickPeriodStats,
   periodDiff,
+  periodDiffShownFrom,
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
@@ -696,6 +697,15 @@ function RaceBasicInfoTab({
                       const top2Diff = period
                         ? periodDiff(period.top2Rate, nowRow?.global_2rate, 1)
                         : null;
+                      // 期の初めから3か月は差を出さず、出走表の値だけを並べる
+                      // （periodDiffShownFrom のコメント参照）
+                      const diffShownFrom = periodDiffShownFrom(
+                        period?.calcTo ?? null,
+                      );
+                      const raceDate = (raceId ?? "").slice(0, 10);
+                      const diffWithheld = Boolean(
+                        diffShownFrom && raceDate && raceDate < diffShownFrom,
+                      );
                       // 2連対率の差は率の変化ではなくポイント差なので pt を付ける
                       const diffLabel = (d, unit = "", diffUnit = unit) =>
                         d && (
@@ -708,10 +718,14 @@ function RaceBasicInfoTab({
                                   : ""
                             }`}
                           >
-                            {t("basicInfo.periodVsCurrent", {
-                              current: `${d.current}${unit}`,
-                              diff: `${d.diff}${diffUnit}`,
-                            })}
+                            {diffWithheld
+                              ? t("basicInfo.periodCurrentOnly", {
+                                  current: `${d.current}${unit}`,
+                                })
+                              : t("basicInfo.periodVsCurrent", {
+                                  current: `${d.current}${unit}`,
+                                  diff: `${d.diff}${diffUnit}`,
+                                })}
                           </span>
                         );
                       return (
@@ -924,6 +938,13 @@ function RaceBasicInfoTab({
                                   })}
                                 </span>
                               </div>
+                              {diffWithheld && (winDiff || top2Diff) && (
+                                <p className="rbit-period-note">
+                                  {t("basicInfo.periodDiffWithheldNote", {
+                                    date: diffShownFrom,
+                                  })}
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>
