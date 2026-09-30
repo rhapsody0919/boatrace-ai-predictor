@@ -563,12 +563,9 @@ export function buildMeetResults(records, { raceId, venueCode }) {
   const date = (raceId ?? "").slice(0, 10);
   if (!date || venueCode === null || venueCode === undefined) return [];
 
-  // **表示中のレースより前**だけ。`date <= date` だと同じ日の後のレースまで入り、
-  // 5Rを見ているのに同じ日の9Rが「今節のこれまでの走り」に出る（2026-09-20 桐生5Rで発生）。
-  // race_id は `YYYY-MM-DD-VV-RR` の固定長なので文字列比較でレース単位に切れる
-  const candidates = all
-    .filter((r) => r.venueCode === venueCode)
-    .map((r) => ({ race_id: r.raceId, record: r }));
+  // 会場で絞る・表示中のレースより前だけにする・表示中のレースを目印に足す、の3つは
+  // `groupIntoMeetBeforeRace` が行う（直前情報タブの今節展示情報と同じ切り方、BOA-591）
+  const candidates = all.map((r) => ({ race_id: r.raceId, record: r }));
   return groupIntoMeetBeforeRace(candidates, raceId).map((m) => m.record);
 }
 

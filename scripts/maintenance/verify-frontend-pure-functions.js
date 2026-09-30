@@ -37,6 +37,7 @@ const TARGETS = {
   venueDayTrend: "src/components/race/venueDayTrend.js",
   weatherInfo: "src/components/race/weatherInfo.js",
   dateUtils: "src/utils/dateUtils.js",
+  meetGrouping: "src/utils/meetGrouping.js",
 };
 
 const show = (v) => JSON.stringify(v);
@@ -974,6 +975,45 @@ function suiteDateUtils(m, check) {
   check("isWithinDays: 日付が空なら false", m.isWithinDays("", 7), false);
 }
 
+/**
+ * groupIntoMeetBeforeRace（BOA-591）。直前情報タブの今節展示情報と今節タブが共有する
+ * 「表示中レースより前の今節」の切り出し。入力は1選手分（モーター番号で引いた形）
+ */
+function suiteMeetGrouping(m, check) {
+  const rows = (ids) => ids.map((race_id) => ({ race_id }));
+  const ids = (xs) => xs.map((x) => x.race_id);
+  const entries = rows([
+    "2026-07-05-07-12", // 別会場・2ヶ月前（同じモーター番号）
+    "2026-09-12-01-03", // 同じ会場の前節（間が空いている）
+    "2026-09-17-16-03", // 別会場・地続き
+    "2026-09-18-01-02", // 今節1日目
+    "2026-09-19-01-08", // 今節2日目
+    "2026-09-19-02-04", // 別会場・地続き
+    "2026-09-20-01-01", // 今節3日目・表示中より前
+    "2026-09-20-01-09", // 今節3日目・表示中より後
+  ]);
+  check(
+    "groupIntoMeetBeforeRace: 同じ会場・同じ節で、表示中のレースより前だけ",
+    ids(m.groupIntoMeetBeforeRace(entries, "2026-09-20-01-05")),
+    ["2026-09-18-01-02", "2026-09-19-01-08", "2026-09-20-01-01"],
+  );
+  check(
+    "groupIntoMeetBeforeRace: 節の初戦で、別会場の前の節を拾わない（2026-09-21 津1R）",
+    ids(
+      m.groupIntoMeetBeforeRace(
+        rows(["2026-07-05-07-12", "2026-07-06-07-09"]),
+        "2026-09-21-09-01",
+      ),
+    ),
+    [],
+  );
+  check(
+    "groupIntoMeetBeforeRace: 節の初戦で、同じ会場の前の節を拾わない",
+    ids(m.groupIntoMeetBeforeRace(entries, "2026-09-26-01-01")),
+    [],
+  );
+}
+
 const SUITES = {
   basicInfoStats: suiteBasicInfoStats,
   raceStatus: suiteRaceStatus,
@@ -981,6 +1021,7 @@ const SUITES = {
   venueDayTrend: suiteVenueDayTrend,
   weatherInfo: suiteWeatherInfo,
   dateUtils: suiteDateUtils,
+  meetGrouping: suiteMeetGrouping,
 };
 
 // ---------------------------------------------------------------------------
@@ -1007,16 +1048,22 @@ const MUTANTS = [
     "raceTitle: null,",
   ],
   [
-    "basicInfoStats",
+    "meetGrouping",
     "今節を日付単位で切る（桐生5Rの退行）",
-    "r.raceId < raceId",
-    "r.raceId.slice(0, 10) <= date",
+    "e.race_id < beforeRaceId,",
+    "e.race_id.slice(0, 10) <= beforeRaceId.slice(0, 10),",
   ],
   [
-    "basicInfoStats",
-    "今節の会場絞り込みを外す",
-    "r.venueCode === venueCode && r.raceId",
-    "r.raceId",
+    "meetGrouping",
+    "今節の会場絞り込みを外す（BOA-591 の退行）",
+    "e.race_id.slice(11, 13) === venue &&",
+    "",
+  ],
+  [
+    "meetGrouping",
+    "表示中のレースを目印に足さない（BOA-591 の退行）",
+    "groupIntoCurrentMeet([...upto, ANCHOR])",
+    "groupIntoCurrentMeet(upto)",
   ],
   [
     "basicInfoStats",

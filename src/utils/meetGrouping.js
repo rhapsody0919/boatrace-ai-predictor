@@ -128,6 +128,9 @@ export function groupIntoMeetBeforeRace(entries, beforeRaceId) {
       (e) =>
         typeof e?.race_id === "string" &&
         e.race_id.slice(11, 13) === venue &&
+        // **表示中のレースより前**だけ。日付単位（`<=` 同じ日）で切ると、5Rを見て
+        // いるのに同じ日の9Rが入る（2026-09-20 桐生5Rで発生）。race_id は固定長
+        // なので文字列比較でレース単位に切れる
         e.race_id < beforeRaceId,
     )
     .sort((a, b) => a.race_id.localeCompare(b.race_id));
