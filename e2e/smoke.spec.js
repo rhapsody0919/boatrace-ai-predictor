@@ -1910,6 +1910,8 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 取得後は数字（0を含む）になる
     await expect(page.locator(".rsc-grid .rsc-runs")).toHaveText(
       Array(6).fill(/^\d+$/),
+      // 録画（本番に繋ぐ）では6選手分の2年窓を取るので、他の待ちと同じ長さにする
+      { timeout: 25000 },
     );
 
     // f_count が無い期間（2026-09-20以前）はバッジも空欄も出さない
