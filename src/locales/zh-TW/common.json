@@ -756,6 +756,7 @@
     "finishAbsent": "缺",
     "smallSampleLegend": "⚠ 表示未滿3場（得分率仍不穩定）。",
     "finishLabel": "名次",
+    "finishLabelPrelim": "預賽名次",
     "borderNote": "虛線以上為準優門檻之內（賽程尚未排定，並非確定）。",
     "prelimOverNote": "預賽已於{{date}}結束。得分率就此確定，今日名次不會再改變。",
     "seriesSplitNote": "本梯次為Ｗ優勝戰，晉級路線分為兩組（本梯次共{{meetTotal}}人）。梯次名次與準優門檻，僅以與顯示中6艇同樣以該優勝戰為目標的{{total}}人計算。",

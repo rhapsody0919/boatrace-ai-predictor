@@ -1720,6 +1720,34 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
   });
 
+  test("比較表の着順の見出しは、予選が終わった後は「予選の着順」になる（BOA-568）", async ({
+    page,
+  }) => {
+    // 2026-09-29 戸田12R（準優勝戦）: 予選は 9/28 で終了。山田康二の 9/29 3R（一般戦）は
+    // 得点率に数えないので並びに入らない（6走）。見出しでそれと分かるようにする
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const yamada = page.locator(".rmt-compare tr", { hasText: "山田" });
+    await expect(yamada.locator(".rmt-finishes-label")).toHaveText(
+      "予選の着順",
+      {
+        timeout: 25000,
+      },
+    );
+    await expect(
+      yamada.locator(".rmt-finishes > span:not(.rmt-finishes-label)"),
+    ).toHaveCount(6);
+    // 予選中のレースでは従来どおり「着順」
+    await page.goto("/race/2026-09-21-01-03");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    await expect(page.locator(".rmt-finishes-label").first()).toHaveText(
+      "着順",
+      {
+        timeout: 25000,
+      },
+    );
+  });
+
   test("今節タブの6艇の推移で、各走の着順を点の下に同じ横位置で出す（BOA-537）", async ({
     page,
   }) => {

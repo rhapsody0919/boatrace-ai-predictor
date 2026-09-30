@@ -761,6 +761,7 @@
     "finishAbsent": "Abs",
     "smallSampleLegend": "⚠ = fewer than three runs (the score rate still swings).",
     "finishLabel": "Finishes",
+    "finishLabelPrelim": "Qualifying finishes",
     "borderNote": "Rows above the dashed line are within the semi-final line (the card is not set yet, so this is not final).",
     "prelimOverNote": "The preliminaries ended on {{date}}. The score rate is final and today's finish will not change it.",
     "seriesSplitNote": "This meet has two finals, so the path to the final splits in two ({{meetTotal}} racers in the meet). The meet rank and the semi-final line are calculated among the {{total}} racers heading for the same final as the six boats shown.",
