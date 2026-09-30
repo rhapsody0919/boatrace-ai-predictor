@@ -18,15 +18,26 @@ name: E2E Re-record (録画の自動撮り直し)
 #   5. 古い録画 Release を消す（直近14件を残す）
 #   採用しなかった・失敗したときは Slack に通知する
 #
-# JST 11:00 = UTC 02:00。ほぼ全会場が開催中で、発走前のレースが最も多い時間帯。
+# 起動は1日2回（本命 JST10:23 = UTC01:23、予備 JST12:47 = UTC03:47）。
+# GitHub の schedule は負荷で遅れ、取りこぼされることもある。毎時0分は負荷が集中するため
+# 0分を避ける（公式: "High load times include the start of every hour" /
+# "schedule your workflow to run at a different time of the hour"）。
+# 2026-09-30 は '0 2 * * *'（JST11:00）が JST17:15 に起動した。このリポジトリの他の
+# 定期実行も1〜4時間の遅れが常態のため、0分を避けるだけでは足りず、予備の起動を置く。
+# 予備の起動は、その日（JST）の録画を採用済みなら何もせず終わる。遅れて JST19時以降に
+# 起動したときも撮らない（発走前のレースが夜間開催の数場だけになる）。判定は
+# scripts/maintenance/e2e-recording.js gate。workflow_dispatch は判定せずに撮る。
 # 必要な権限: contents: write（Release の作成・削除とポインタの push）。
 # 使う Secrets: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY（本番の読み取りのみ）、SLACK_WEBHOOK_URL
 
 on:
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '23 1 * * *' # JST 10:23（本命）
+    - cron: '47 3 * * *' # JST 12:47（予備。本命が採用済みなら何もしない）
   workflow_dispatch:
 
+# 本命が遅れて予備と重なっても、同時には走らせない（予備は本命の終了を待ち、
+# checkout した master のポインタで「採用済み」を判定する）
 concurrency:
   group: e2e-rerecord
   cancel-in-progress: false
@@ -48,12 +59,36 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      # checkout の後に判定する。本命が採用して push したポインタを、予備はここで読む
+      - name: 撮り直すか（定期実行のみ）
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" != "schedule" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          RESULT=$(node scripts/maintenance/e2e-recording.js gate)
+          echo "$RESULT"
+          echo "run=$(echo "$RESULT" | jq -r '.run')" >> "$GITHUB_OUTPUT"
+          # 採用済みで空振りしたときは通知しない。遅れて撮れなかったときは通知する
+          echo "notify=$(echo "$RESULT" | jq -r '.notify')" >> "$GITHUB_OUTPUT"
+          echo "result=$RESULT" >> "$GITHUB_OUTPUT"
+          REASON=$(echo "$RESULT" | jq -r '.reasons | join("; ")')
+          if [ -n "$REASON" ]; then
+            echo "## E2E 録画の撮り直し: 撮らずに終了（$REASON）" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - run: npm ci
+        if: steps.gate.outputs.run == 'true'
 
       - run: npx playwright install --with-deps chromium
+        if: steps.gate.outputs.run == 'true'
 
       - name: 録画（本番に繋いで全件）
         id: record
+        if: steps.gate.outputs.run == 'true'
         env:
           CI: true
           E2E_RECORD: '1'
@@ -70,6 +105,7 @@ jobs:
 
       - name: 撮った録画だけで再生（録画に無い通信は abort）
         id: replay
+        if: steps.gate.outputs.run == 'true'
         env:
           CI: true
           E2E_RECORDING_SOURCE: local
@@ -87,6 +123,7 @@ jobs:
 
       - name: 採用判定
         id: judge
+        if: steps.gate.outputs.run == 'true'
         run: |
           set +e
           if [ ! -f e2e-results.json ]; then
@@ -129,8 +166,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/maintenance/e2e-recording.js prune --keep=14
 
+      # 再生で落ちたテストの trace・error-context も残す。どの通信が録画に無くて
+      # abort されたかは trace でしか分からない（2026-09-30 は残しておらず特定できなかった）。
+      # test-results は再生の実行が作り直すので、ここにあるのは再生の失敗分だけ
       - name: Upload logs
-        if: always()
+        if: always() && steps.gate.outputs.run == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: e2e-rerecord-logs
@@ -139,13 +179,17 @@ jobs:
             replay.log
             record-results.json
             e2e-results.json
+            test-results/**/trace.zip
+            test-results/**/error-context.md
           retention-days: 7
 
       - name: Notify Slack (採用しなかった・失敗したとき)
-        if: always() && (failure() || steps.judge.outputs.adopt != 'true')
+        if: >-
+          always() && (failure() || steps.gate.outputs.notify == 'true' ||
+          (steps.gate.outputs.run == 'true' && steps.judge.outputs.adopt != 'true'))
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          RESULT: ${{ steps.judge.outputs.result }}
+          RESULT: ${{ steps.judge.outputs.result || steps.gate.outputs.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ -z "$SLACK_WEBHOOK_URL" ]; then

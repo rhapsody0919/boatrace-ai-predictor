@@ -9,7 +9,7 @@
 
 import { canonicalUrl, harKey, mergeHarLogs } from "../../e2e/har-merge.js";
 import { isPartialRun } from "../../e2e/global-setup.js";
-import { countResults, judgeAdoption } from "./e2e-recording.js";
+import { countResults, judgeAdoption, scheduleGate } from "./e2e-recording.js";
 import { summarize, toMarkdown, MARKER } from "./report-e2e-passthrough.js";
 
 const failures = [];
@@ -108,6 +108,59 @@ check(
   "値を取らないフラグの後の spec 指定も部分",
   isPartialRun(argv("--headed", "e2e/a.spec.js")),
   true,
+);
+
+// --- 定期実行の起動判定（今日の採用済みは空振り・遅すぎる起動は撮らない）
+const jst = (s) => new Date(`${s}+09:00`);
+const adoptedAt = (s) => ({
+  tag: "e2e-recording-x",
+  recordedAt: jst(s).toISOString(),
+});
+check(
+  "今日（JST）の録画を採用済みなら撮らない",
+  scheduleGate(jst("2026-09-30T12:47:00"), adoptedAt("2026-09-30T10:30:00"))
+    .run,
+  false,
+);
+check(
+  "JST の日付で比べる（UTC では前日の 00:30 JST 録画も今日扱い）",
+  scheduleGate(jst("2026-09-30T10:23:00"), adoptedAt("2026-09-30T00:30:00"))
+    .run,
+  false,
+);
+check(
+  "前日の録画なら撮る",
+  scheduleGate(jst("2026-09-30T10:23:00"), adoptedAt("2026-09-29T15:04:00"))
+    .run,
+  true,
+);
+check(
+  "JST 18時台はまだ撮る",
+  scheduleGate(jst("2026-09-30T18:59:00"), adoptedAt("2026-09-29T15:04:00"))
+    .run,
+  true,
+);
+check(
+  "JST 19時以降の起動は撮らない",
+  scheduleGate(jst("2026-09-30T19:00:00"), adoptedAt("2026-09-29T15:04:00"))
+    .run,
+  false,
+);
+check(
+  "ポインタが無くても判定できる",
+  scheduleGate(jst("2026-09-30T10:23:00"), null).run,
+  true,
+);
+
+check(
+  "採用済みでの空振りは通知しない・遅れて撮れなかったときは通知する",
+  [
+    scheduleGate(jst("2026-09-30T12:47:00"), adoptedAt("2026-09-30T10:30:00"))
+      .notify,
+    scheduleGate(jst("2026-09-30T19:30:00"), adoptedAt("2026-09-29T15:04:00"))
+      .notify,
+  ],
+  [false, true],
 );
 
 // --- 自動撮り直しの採用判定（全件通過・skip が増えていない）

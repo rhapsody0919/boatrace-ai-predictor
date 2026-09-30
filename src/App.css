@@ -114,7 +114,8 @@ input:focus-visible,
 
 /* レースグリッド
    唯一の利用先（VenueRaceListPage）は VenueRaceListPage.css の固定列数で上書きされ、
-   件数も1会場1日12レースで一定のため、auto-fill の空トラックは出ない（BOA-528） */
+   件数も1会場1日12レースで一定のため、auto-fill の空トラックは出ない（BOA-528）。
+   同じ理由で 1024px・768px の @media の上書きは効いていなかったため削除した（BOA-570） */
 .race-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -333,11 +334,6 @@ input:focus-visible,
     padding: 1.5rem 1rem;
   }
 
-  .race-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.25rem;
-  }
-
   .prediction-result {
     padding: 2rem;
   }
@@ -370,11 +366,6 @@ input:focus-visible,
   .race-list-section select {
     font-size: 1rem;
     padding: 0.875rem 1rem;
-  }
-
-  .race-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
   }
 
   .race-list-section .race-card {
@@ -1597,11 +1588,6 @@ input:focus-visible,
     height: 36px;
     line-height: 36px;
     font-size: 1rem;
-  }
-
-  /* グリッドを1カラムに */
-  .race-cards-grid {
-    grid-template-columns: 1fr;
   }
 }
 

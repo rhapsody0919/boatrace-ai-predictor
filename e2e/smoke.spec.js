@@ -420,12 +420,27 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
       timeout: 15000,
     });
 
-    const rowCount = await page.locator(".motor-ranking-row").count();
+    const rows = page.locator(".motor-ranking-row");
+    const rowCount = await rows.count();
     if (rowCount > 0) {
-      await page.locator(".motor-ranking-row").first().click();
-      await expect(page.locator(".selected-motor-heading")).toBeVisible({
-        timeout: 10000,
-      });
+      // 90日平均（4列目）が出ている選手を選ぶ。平均は推移と同じ直近90日の展示タイムから
+      // 出すため、平均があれば推移グラフは必ず描ける（新人等で平均が無い選手は空状態になる）
+      const rowWithAvg = page
+        .locator(".motor-ranking-row:not(.non-clickable-row)")
+        .filter({
+          has: page.locator("td:nth-child(4)", { hasText: /^\d+\.\d{2}$/ }),
+        })
+        .first();
+      await expect(rowWithAvg).toBeVisible();
+      await rowWithAvg.click();
+      // 見出し（.selected-motor-heading）はクリック直後の1回の描画で一瞬出て、推移の取得中
+      // （.loading-state）は消える。見出しだけで終えると推移の要求が録画に入らず、strict
+      // 再生で落ちる（BOA-594）。取得が終わってからしか描かれない推移の点まで待つ
+      await expect(
+        page.locator(".motor-condition-container .recharts-line-dot").first(),
+      ).toBeVisible({ timeout: 10000 });
+      await expect(page.locator(".loading-state")).toHaveCount(0);
+      await expect(page.locator(".selected-motor-heading")).toBeVisible();
     }
   });
 
@@ -1902,6 +1917,17 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(stBadges).toHaveCount(3);
     await expect(stBadges.nth(0)).toHaveText("F2");
     await expect(stBadges.nth(1)).toHaveText("F1");
+    // 6艇すべての出走履歴を取り終えるまで待つ。カードは1艇分でも揃えば表を出し、
+    // バッジは race_entries.f_count から出るので、上の確認は履歴の取得を待たない。
+    // 履歴は選手ごとに race_start_timings を1000行ずつページングしており（2年窓で
+    // 1000行を超える選手がいる）、待たずに次のレースへ移ると2ページ目が録画に入らず、
+    // 速い再生でだけ出て本番へ素通りしていた（BOA-556）。走数は取得前「—」、
+    // 取得後は数字（0を含む）になる
+    await expect(page.locator(".rsc-grid .rsc-runs")).toHaveText(
+      Array(6).fill(/^\d+$/),
+      // 録画（本番に繋ぐ）では6選手分の2年窓を取るので、他の待ちと同じ長さにする
+      { timeout: 25000 },
+    );
 
     // f_count が無い期間（2026-09-20以前）はバッジも空欄も出さない
     await page.goto("/race/2026-09-10-01-01");
@@ -2377,7 +2403,14 @@ async function findRaceWithVolatilityLevel(page) {
 
   await page.goto("/");
   try {
-    await page.locator(".venue-grid").waitFor({ timeout: 10000 });
+    // `.venue-grid` は読み込み中のスケルトン（VenueGridSkeleton）にも付いている。
+    // それを待つと、会場カードが描画される前に数えて0会場＝skip になり、負荷の高い
+    // 全件実行でだけ skip が出た（2026-09-30 の自動撮り直しが不採用になった原因。
+    // 単体実行では再現しない）。スケルトンではない実物のカードを待つ
+    await page
+      .locator(".venue-grid-card--open, .venue-grid-card--closed")
+      .first()
+      .waitFor({ timeout: 10000 });
   } catch {
     return null;
   }
