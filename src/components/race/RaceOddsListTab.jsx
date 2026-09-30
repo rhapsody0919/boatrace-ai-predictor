@@ -114,11 +114,19 @@ function isNoVotes(value, isRange) {
   return valueToNumber(value, isRange) === 0;
 }
 
+// オッズ1つの表記。公式は1000倍以上を小数なしで出す（「1364」。実際の値は 1364.4 等で、公式の表示で
+// 切り捨てられている）。こちらも同じ桁で出し、「1364.0」と無い精度を示さない（BOA-577）
+// 合成オッズのような計算値は、小数1桁に丸めてから判定する（999.96 を「1000.0」と出さない）
+function formatOdds(n) {
+  const rounded = Math.round(n * 10) / 10;
+  return rounded >= 1000 ? String(Math.floor(rounded)) : rounded.toFixed(1);
+}
+
 function formatValue(value, isRange) {
   if (value == null) return null;
   return isRange
-    ? `${value.low.toFixed(1)}-${value.high.toFixed(1)}`
-    : value.toFixed(1);
+    ? `${formatOdds(value.low)}-${formatOdds(value.high)}`
+    : formatOdds(value);
 }
 
 // 合成オッズ: 各組み合わせのオッズの逆数の和の逆数（「そのうちどれか」を
@@ -366,11 +374,12 @@ function BlockHead({ n, name }) {
   );
 }
 
-// 文字列のおおよその幅（em）。全角（漢字・かな・ハングル）は1em、それ以外（数字・英字・記号）は0.6em
+// 文字列のおおよその幅（em）。全角（漢字・かな・ハングル）は1em、それ以外（数字・英字・記号）は0.65em
+// （太字の数字は約0.6em。1000倍以上を小数なしにして文字数が減ると見積もりの余裕も減るため、少し広めに取る。BOA-577）
 const approxEm = (text) =>
   [...text].reduce(
     (sum, ch) =>
-      sum + (/[\u1100-\u11ff\u3000-\u9fff\uac00-\ud7af\uff00-\uffef]/.test(ch) ? 1 : 0.6),
+      sum + (/[\u1100-\u11ff\u3000-\u9fff\uac00-\ud7af\uff00-\uffef]/.test(ch) ? 1 : 0.65),
     0,
   );
 
