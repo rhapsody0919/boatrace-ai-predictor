@@ -447,6 +447,29 @@ function suiteBasicInfoStats(m, check) {
     50,
   );
 
+  // --- recordsBeforeRace（BOA-603）: 表示中のレースより前の走だけ
+  check(
+    "recordsBeforeRace: 表示中のレース自身と後日の走を外す。取得前・失敗・raceId無しはそのまま",
+    [
+      m
+        .recordsBeforeRace(
+          [
+            { raceId: "2026-09-25-09-03" },
+            { raceId: "2026-09-26-09-04" },
+            { raceId: "2026-09-26-09-05" },
+            { raceId: "2026-09-26-09-11" },
+            { raceId: "2026-09-28-09-11" },
+          ],
+          "2026-09-26-09-05",
+        )
+        .map((r) => r.raceId),
+      m.recordsBeforeRace(undefined, "2026-09-26-09-05"),
+      m.recordsBeforeRace(null, "2026-09-26-09-05"),
+      m.recordsBeforeRace([{ raceId: "2026-09-28-09-11" }], null).length,
+    ],
+    [["2026-09-25-09-03", "2026-09-26-09-04"], undefined, null, 1],
+  );
+
   // --- buildConditionRows（phase a FR-2）
   const condRecords = [
     rec({
@@ -824,6 +847,34 @@ function suiteCourseGridStats(m, check) {
       })
       .map((r) => r.raceId),
     ["2026-09-11-04-01", "2026-09-10-04-01"],
+  );
+  // 「直近1ヶ月」の起点をレースの日にそろえる（BOA-603）。今日（2026-10-01）を
+  // 起点にすると、9/5 のレースでは 8/10 の走が期間の外に落ちる
+  const periodRecs = [
+    rec({ raceId: "2026-08-10-04-01", boatNumber: 2, actualCourse: 2 }),
+    rec({ raceId: "2026-09-03-04-01", boatNumber: 2, actualCourse: 2 }),
+  ];
+  check(
+    "getCourseRecentRuns: 直近1ヶ月の起点に now（レースの日）を使う",
+    [
+      m
+        .getCourseRecentRuns(periodRecs, {
+          venueCode: 4,
+          rowKey: "last1m",
+          course: 2,
+          now: new Date("2026-09-05T12:00:00+09:00"),
+        })
+        .map((r) => r.raceId),
+      m
+        .getCourseRecentRuns(periodRecs, {
+          venueCode: 4,
+          rowKey: "last1m",
+          course: 2,
+          now: new Date("2026-10-01T12:00:00+09:00"),
+        })
+        .map((r) => r.raceId),
+    ],
+    [["2026-09-03-04-01", "2026-08-10-04-01"], ["2026-09-03-04-01"]],
   );
 }
 

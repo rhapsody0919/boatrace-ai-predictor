@@ -46,7 +46,7 @@ import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "./raceIndicators";
-import { SMALL_SAMPLE_THRESHOLD } from "./basicInfoStats";
+import { SMALL_SAMPLE_THRESHOLD, recordsBeforeRace } from "./basicInfoStats";
 import {
   GRID_COURSES,
   GRID_ROWS,
@@ -252,19 +252,37 @@ function RaceWakuInfoTab({
 
   if (sortedPlayers.length === 0) return null;
 
-  const scopedRecords = selectedRacerId ? scopedByRacer[selectedRacerId] : null;
+  // 表示中のレースより前の走だけを使う（BOA-603）。過去のレースを開いたとき、
+  // そのレース自身と後日の走がコース別成績・直近走の帯・ST考察に入り、結果を
+  // 知った状態の数字になっていた
+  const scopedBefore = Object.fromEntries(
+    Object.entries(scopedByRacer).map(([id, records]) => [
+      id,
+      recordsBeforeRace(records, raceId),
+    ]),
+  );
+  const scopedRecords = selectedRacerId ? scopedBefore[selectedRacerId] : null;
+  // 「直近3ヶ月・直近1ヶ月」の起点もレースの日にそろえる。今日を起点にすると、
+  // 過去のレースでは期間がずれる（BOA-603）。当日のレースは今日と同じ日付になる
+  const periodAnchor = raceId
+    ? new Date(`${raceId.slice(0, 10)}T12:00:00+09:00`)
+    : new Date();
   // 本日の想定進入コース。レース前に実際の進入は確定しないため枠なり進入を仮定する
   // （ST考察カードの entryCourseOf と同じ前提）。仮定であることは画面に明記し、
   // その選手の枠なり進入率も併記して読み手が確度を自分で判断できるようにする
   const todayCourse = selectedPlayer?.number ?? null;
   const todayRows = Array.isArray(scopedRecords)
-    ? buildTodayCourseRows(scopedRecords, { venueCode, course: todayCourse })
+    ? buildTodayCourseRows(scopedRecords, {
+        venueCode,
+        course: todayCourse,
+        now: periodAnchor,
+      })
     : [];
   const wakuNari = computeWakuNariRate(
     Array.isArray(scopedRecords) ? scopedRecords : [],
   );
   const grid = Array.isArray(scopedRecords)
-    ? buildCourseGrid(scopedRecords, { venueCode, metric })
+    ? buildCourseGrid(scopedRecords, { venueCode, metric, now: periodAnchor })
     : [];
   const recentRuns =
     openCell && Array.isArray(scopedRecords)
@@ -272,6 +290,7 @@ function RaceWakuInfoTab({
           venueCode,
           rowKey: openCell.rowKey,
           course: openCell.course,
+          now: periodAnchor,
         })
       : [];
 
@@ -630,7 +649,7 @@ function RaceWakuInfoTab({
           あることからコース別＝枠なり進入想定の集計と判断した。spec.md FR-1） */}
       <RaceStConsiderationCard
         players={sortedPlayers}
-        scopedByRacer={scopedByRacer}
+        scopedByRacer={scopedBefore}
         baseline={baseline}
         entryCourseOf={(p) => p.number}
         fCountByBoat={fCountByBoat}

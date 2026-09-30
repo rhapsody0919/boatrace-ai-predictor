@@ -68,6 +68,29 @@ function matchesPeriod(record, period, now) {
 }
 
 /**
+ * 表示中のレースより前の走だけに絞る（純関数、BOA-603）。
+ *
+ * `getRacerScopedRaceStats` は選手の**今までの全走**を返す（キャッシュも選手単位）。
+ * そのまま使うと、過去のレースを開いたときに**そのレース自身と後日の走**が集計に
+ * 入り、結果を知った状態の数字（例: 津 2026-09-26 5R の1号艇の「直近1ヶ月」に
+ * 9/26 5R の3着と 9/28 の1着）を出してしまう。race_id は `YYYY-MM-DD-VV-RR` の
+ * 固定長なので、文字列の比較でレース単位に切れる。
+ *
+ * 取得前（undefined）・取得失敗（null）はそのまま返す。呼び出し側がそれぞれ
+ * 「読み込み中」「取得できませんでした」を出し分けているため。
+ *
+ * @param {Array<Object>|null|undefined} records
+ * @param {string|null} raceId 表示中のレース。無ければ絞らない
+ * @returns {Array<Object>|null|undefined}
+ */
+export function recordsBeforeRace(records, raceId) {
+  if (!Array.isArray(records) || !raceId) return records;
+  return records.filter(
+    (r) => typeof r.raceId === "string" && r.raceId < raceId,
+  );
+}
+
+/**
  * 会場・グレード・期間でrecordsを絞り込む
  * @param {Array} records - getRacerScopedRaceStatsの戻り値
  * @param {Object} filters
