@@ -1572,10 +1572,18 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(row.locator(".rmt-trend-last")).toHaveText("F", {
       timeout: 30000,
     });
+    // 前走が F なので、1つ前の走に「前走」の大きい点（r=3.2）を付けない
+    // （ファン評価1周目: 右端は F なのに大きい点が 0.09 の走に付いていた）
+    await expect(row.locator('circle[r="3.2"]')).toHaveCount(0);
+    const other = page.locator(".rmt-trend-row").filter({ hasNotText: "古川" });
+    await expect(other.first().locator('circle[r="3.2"]')).toHaveCount(1);
     await row.click();
     await expect(page.locator(".rmt-spark-foot").first()).toContainText(
       "前走 F",
     );
+    await expect(
+      page.locator(".rmt-spark").first().locator('circle[r="3.2"]'),
+    ).toHaveCount(0);
   });
 
   test("「今節」タブで6艇の勝負駆けと選んだ1艇の走りが出て、節をまたがない（phase a T6-1）", async ({

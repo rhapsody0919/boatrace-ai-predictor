@@ -57,6 +57,8 @@ import "./MeetSparkline.css";
  * @param {boolean} [allowSinglePoint] 値が1つでも描く（既定 false）。6艇を
  *   並べる推移では、1走の選手の行が空白だと「取れていない」と読まれるので、
  *   前走の点を1つだけ右端（他の行の前走と同じ横位置）に置く
+ * @param {boolean} [markLast] 最後の点を「前走」として大きく描く（既定 true）。
+ *   前走が F・L（値が無い）のときは false にする。1つ前の走が前走に見えるため
  */
 // 点の下の文字（着順）の帯の高さ（px）
 const LABEL_STRIP_HEIGHT = 13;
@@ -71,6 +73,7 @@ function MeetSparkline({
   height = 56,
   allowSinglePoint = false,
   pointLabels = null,
+  markLast = true,
 }) {
   // どの点に合わせているか。null は「どこにも合わせていない」
   const [activeIndex, setActiveIndex] = useState(null);
@@ -262,7 +265,7 @@ function MeetSparkline({
             cx={x(d.i)}
             cy={y(d.v)}
             // 前走だけ大きくする（「今どこにいるか」が一番知りたい点）
-            r={idx === lastIndex ? 3.2 : 2}
+            r={markLast && idx === lastIndex ? 3.2 : 2}
             fill={color}
             vectorEffect="non-scaling-stroke"
           />

@@ -447,21 +447,23 @@ function suiteBasicInfoStats(m, check) {
     50,
   );
 
-  // --- lastStartTiming（BOA-597）: 前走のST。直前がFならFで、Fを飛ばさない
-  const stOf = { valueOf: (r) => r.st, isFlying: (r) => r.f === true };
+  // --- lastStartTiming（BOA-597）: 前走のST。直前が F・L ならその記号で、飛ばさない
+  const stOf = { valueOf: (r) => r.st, markOf: (r) => r.mark ?? null };
   check(
-    "lastStartTiming: 直前がFならF、欠場（ST無し・F無し）は飛ばす、何も無ければ null",
+    "lastStartTiming: 直前が F・L ならその記号、欠場（ST無し・記号無し）は飛ばす、何も無ければ null",
     [
-      m.lastStartTiming([{ st: 0.09 }, { st: null, f: true }], stOf),
+      m.lastStartTiming([{ st: 0.09 }, { st: null, mark: "F" }], stOf),
+      m.lastStartTiming([{ st: 0.09 }, { st: null, mark: "L" }], stOf),
       m.lastStartTiming([{ st: 0.12 }, { st: null }], stOf),
-      m.lastStartTiming([{ st: null, f: true }, { st: 0.15 }], stOf),
+      m.lastStartTiming([{ st: null, mark: "F" }, { st: 0.15 }], stOf),
       m.lastStartTiming([{ st: null }], stOf),
       m.lastStartTiming(null, stOf),
     ],
     [
-      { flying: true, value: null },
-      { flying: false, value: 0.12 },
-      { flying: false, value: 0.15 },
+      { mark: "F", value: null },
+      { mark: "L", value: null },
+      { mark: null, value: 0.12 },
+      { mark: null, value: 0.15 },
       null,
       null,
     ],
