@@ -737,17 +737,18 @@ async function main() {
           continue;
         }
 
-        const ok = await upsertRacerStats(record, dryRun);
-        if (ok) succeeded++;
-        else failedIds.push(id);
+        let ok = await upsertRacerStats(record, dryRun);
 
-        // 会場指定がある場合は会場別統計も算出
+        // 会場指定がある場合は会場別統計も算出（失敗は全会場と同じく失敗に数える）
         if (venueCode) {
           const venueRecord = await aggregateRacer(id, venueCode);
-          if (venueRecord) {
-            await upsertRacerStats(venueRecord, dryRun);
+          if (venueRecord && !(await upsertRacerStats(venueRecord, dryRun))) {
+            ok = false;
           }
         }
+
+        if (ok) succeeded++;
+        else failedIds.push(id);
       } catch (err) {
         console.error(`  集計エラー (racer=${id}): ${err.message}`);
         failedIds.push(id);
