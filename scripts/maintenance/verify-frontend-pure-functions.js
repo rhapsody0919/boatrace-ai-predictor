@@ -447,9 +447,9 @@ function suiteBasicInfoStats(m, check) {
     50,
   );
 
-  // --- periodDiff（BOA-439）: 前期と今期の差。どちらも公式値
+  // --- periodDiff（BOA-439）: 前期と出走表の値の差。どちらも公式値
   check(
-    "periodDiff: 今期の値と、符号つきの差（勝率は小数2桁・2連対率は1桁）",
+    "periodDiff: 出走表の値と、符号つきの差（勝率は小数2桁・2連対率は1桁）",
     [
       m.periodDiff(4.5, "4.12", 2),
       m.periodDiff(25.6, 31.25, 1),
@@ -462,7 +462,7 @@ function suiteBasicInfoStats(m, check) {
     ],
   );
   check(
-    "periodDiff: どちらかが無ければ null（出走0の新人・今期の値が無いとき）",
+    "periodDiff: どちらかが無ければ null（出走0の新人・出走表の値が無いとき）",
     [
       m.periodDiff(null, 4.1, 2),
       m.periodDiff(4.5, null, 2),

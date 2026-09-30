@@ -683,9 +683,12 @@ function RaceBasicInfoTab({
                         periodStats,
                         player?.racerId,
                       );
-                      // 前期と今期の差（BOA-439）。今期は上のバーと同じ公式値
-                      // （race_entries、追加クエリ無し）。平均STは今期の公式値を
-                      // 持っていないので差は出さない
+                      // 前期と出走表の値の差（BOA-439）。出走表の値は上のバーの
+                      // 既定（全国・今期）と同じ公式値（race_entries、追加クエリ無し）。
+                      // 「今期」とは呼ばない: 出走表の勝率は期が替わっても数え直されず、
+                      // 5月は直前の期の確定値との差が平均0.12しかない（9月は0.38。
+                      // 2026-09-30実測）。バーを当地に切り替えても全国のままなので
+                      // 「全国」も明記する。平均STは出走表の値が無いので差は出さない
                       const nowRow = officialRowFor(player?.number);
                       const winDiff = period
                         ? periodDiff(period.winRate, nowRow?.win_rate, 2)
@@ -693,7 +696,8 @@ function RaceBasicInfoTab({
                       const top2Diff = period
                         ? periodDiff(period.top2Rate, nowRow?.global_2rate, 1)
                         : null;
-                      const diffLabel = (d, unit = "") =>
+                      // 2連対率の差は率の変化ではなくポイント差なので pt を付ける
+                      const diffLabel = (d, unit = "", diffUnit = unit) =>
                         d && (
                           <span
                             className={`rbit-period-diff${
@@ -706,7 +710,7 @@ function RaceBasicInfoTab({
                           >
                             {t("basicInfo.periodVsCurrent", {
                               current: `${d.current}${unit}`,
-                              diff: `${d.diff}${unit}`,
+                              diff: `${d.diff}${diffUnit}`,
                             })}
                           </span>
                         );
@@ -909,7 +913,7 @@ function RaceBasicInfoTab({
                                         ? "—"
                                         : `${period.top2Rate.toFixed(1)}%`,
                                   })}
-                                  {diffLabel(top2Diff, "%")}
+                                  {diffLabel(top2Diff, "%", "pt")}
                                 </span>
                                 <span>
                                   {t("basicInfo.periodAvgSt", {

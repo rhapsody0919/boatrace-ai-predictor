@@ -505,24 +505,11 @@ export function buildConditionRows(records, { venueCode, metric }) {
 }
 
 /**
- * 「前期」（`racer_period_stats`）の1選手分を表示用に整える（純関数）。
- *
- * **指標の列に混ぜない**。`win_rate` は公式勝率（点、実測1.07〜8.24）で、
- * `computeRates` の `winRate`（1着率、%）とは単位が違う。`top3_rate` に
- * 相当する列も無い。呼び出し側は固定3値＋算出期間の別枠として描画する。
- *
- * @param {Array<Object>|{state: string}} rows `getRacerPeriodStats` の戻り値
- * @param {number|null} racerId
- * @returns {{winRate: number|null, top2Rate: number|null, avgSt: number|null,
- *            starts: number|null, calcFrom: string|null, calcTo: string|null}|null}
- *   該当が無ければ null（呼び出し側は枠ごと出さない）
- */
-/**
- * 前期と今期の差（純関数、BOA-439）。どちらも公式の値（勝率は点、2連対率は%）。
+ * 前期と出走表の値の差（純関数、BOA-439）。どちらも公式の値（勝率は点、2連対率は%）。
  * 自社集計の1着率%と混ぜない。どちらかが無ければ null。
  *
  * @param {number|null} prev 前期の値
- * @param {number|string|null} current 今期の値（race_entries は文字列で返ることがある）
+ * @param {number|string|null} current 出走表の値（race_entries は文字列で返ることがある）
  * @param {number} digits 小数の桁（勝率2・2連対率1）
  * @returns {{current: string, diff: string, sign: -1|0|1}|null}
  */
@@ -531,7 +518,7 @@ export function periodDiff(prev, current, digits) {
   if (current === null || current === undefined || current === "") return null;
   const cur = Number(current);
   if (!Number.isFinite(cur) || !Number.isFinite(prev)) return null;
-  // 表示する桁に丸めてから引く。丸める前で引くと「25.6 → 今期31.3（+5.6）」のように、
+  // 表示する桁に丸めてから引く。丸める前で引くと「25.6 → 出走表31.3（+5.6）」のように、
   // 画面の数字どうしを引いた値と食い違う
   const scale = 10 ** digits;
   const round = (v) => Math.round(v * scale);
@@ -546,6 +533,19 @@ export function periodDiff(prev, current, digits) {
   };
 }
 
+/**
+ * 「前期」（`racer_period_stats`）の1選手分を表示用に整える（純関数）。
+ *
+ * **指標の列に混ぜない**。`win_rate` は公式勝率（点、実測1.07〜8.24）で、
+ * `computeRates` の `winRate`（1着率、%）とは単位が違う。`top3_rate` に
+ * 相当する列も無い。呼び出し側は固定3値＋算出期間の別枠として描画する。
+ *
+ * @param {Array<Object>|{state: string}} rows `getRacerPeriodStats` の戻り値
+ * @param {number|null} racerId
+ * @returns {{winRate: number|null, top2Rate: number|null, avgSt: number|null,
+ *            starts: number|null, calcFrom: string|null, calcTo: string|null}|null}
+ *   該当が無ければ null（呼び出し側は枠ごと出さない）
+ */
 export function pickPeriodStats(rows, racerId) {
   if (!Array.isArray(rows) || !racerId) return null;
   const row = rows.find((r) => r.racer_id === racerId);

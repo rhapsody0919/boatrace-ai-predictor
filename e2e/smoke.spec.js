@@ -1484,10 +1484,17 @@ test.describe("レースページ再設計（BOA-168）", () => {
       /\d{4}-\d{2}-\d{2}/,
     );
     await expect(page.locator(".rbit-period-values")).toContainText("勝率");
-    // 前期の横に今期（上のバーと同じ公式値）と差を添える（BOA-439）。
-    // 平均STは今期の公式値を持っていないので差を出さない
-    await expect(page.locator(".rbit-period-diff").first()).toHaveText(
-      /^（今期 \d+\.\d{2}、[+−±]\d+\.\d{2}）$/,
+    // 前期の横に出走表の値（上のバーの既定と同じ公式値）と差を添える（BOA-439）。
+    // 平均STは出走表の値が無いので差を出さない。
+    // ファン評価で出た3点を固定する: 出走表の勝率は期替わりで数え直されないので
+    // 「今期」と呼ばない／バーを当地にしても全国のままなので「全国」と書く／
+    // 差の向きを「前期から」で示す。2連対率の差はポイント差なので pt
+    const periodDiffs = page.locator(".rbit-period-diff");
+    await expect(periodDiffs.first()).toHaveText(
+      /^（出走表・全国 \d+\.\d{2}、前期から[+−±]\d+\.\d{2}）$/,
+    );
+    await expect(periodDiffs.nth(1)).toHaveText(
+      /^（出走表・全国 \d+\.\d%、前期から[+−±]\d+\.\dpt）$/,
     );
 
     // この表が全コース込みであることと、今日の枠での走数を常時出す
