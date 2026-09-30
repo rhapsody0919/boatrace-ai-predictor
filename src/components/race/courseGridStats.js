@@ -80,7 +80,9 @@ export function buildCourseGrid(records, { venueCode, metric }) {
  *
  * @param {Array<Object>} records `getRacerScopedRaceStats` の戻り値
  * @param {{venueCode: number|null, rowKey: string, course: number, count?: number}} options
- * @returns {Array<Object>} 新しい順（左が新しい）
+ * @returns {Array<Object>} 古い順（左が古い）。`RecentRunsBar` が左に「古い」、右に
+ *   「新しい」と書くのと、今節の推移（左が古い）に向きをそろえる。以前は新しい順を
+ *   返していて、帯の「古い→新しい」と実際の並びが逆だった（BOA-601）
  */
 export function getCourseRecentRuns(
   records,
@@ -95,8 +97,7 @@ export function getCourseRecentRuns(
   });
   return filtered
     .filter((r) => r.actualCourse === course)
-    .slice(-count)
-    .reverse();
+    .slice(-count);
 }
 
 /** 既定ビュー（今日の想定コース）で同時に出す3指標 */

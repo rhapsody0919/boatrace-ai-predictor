@@ -815,7 +815,7 @@ function suiteCourseGridStats(m, check) {
   });
 
   check(
-    "getCourseRecentRuns: 実進入コースで絞り、新しい順",
+    "getCourseRecentRuns: 実進入コースで絞り、古い順（帯の「古い→新しい」と同じ向き。BOA-601）",
     m
       .getCourseRecentRuns(records, {
         venueCode: 4,
@@ -823,7 +823,7 @@ function suiteCourseGridStats(m, check) {
         course: 2,
       })
       .map((r) => r.raceId),
-    ["2026-09-11-04-01", "2026-09-10-04-01"],
+    ["2026-09-10-04-01", "2026-09-11-04-01"],
   );
 }
 
@@ -1123,9 +1123,9 @@ const MUTANTS = [
   ],
   [
     "courseGridStats",
-    "直近走を古い順にする",
-    ".slice(-count)\n    .reverse();",
+    "直近走を新しい順に戻す（BOA-601 の退行: 帯の「古い→新しい」と逆になる）",
     ".slice(-count);",
+    ".slice(-count)\n    .reverse();",
   ],
   [
     "venueDayTrend",
