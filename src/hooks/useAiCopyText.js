@@ -161,7 +161,11 @@ function buildRows(t, players, analysis, raceId) {
       values: players.map((p) => {
         // データ出走表と同じ読み方にそろえる（prevResult.js、BOA-569）。
         // 着順が無いだけで「初走」と書くと、F・転の走や取得前の日を取り違える
-        const state = prevResultState(maintenanceByBoat.get(p.number), raceId);
+        // 直前情報の発表前は行そのものが無い。空の行と同じに読むと
+        // 2026-09-16 以降は「初走」と書いてしまうので、データ出走表と同じく「—」
+        const row = maintenanceByBoat.get(p.number);
+        if (!row) return DASH;
+        const state = prevResultState(row, raceId);
         if (state.kind === "firstToday") return t("dataTable.prevResultNoRace");
         if (state.kind === "unknown") return DASH;
         const head =
