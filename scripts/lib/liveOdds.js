@@ -196,10 +196,15 @@ export function minutesToDeadline(target, parsed, now) {
   return (deadline.getTime() - now.getTime()) / 60000;
 }
 
+// 120秒の応答は CDN に最大150秒（s-maxage 30＋120）残るため、締切10分前以降に食い込まないよう、
+// 締切まで「10分＋150秒」を超えるときだけ付ける（/code-review の指摘）
+const EARLY_CACHE_LIFETIME_MINUTES = (30 + 120) / 60;
+
 function cacheControlFor(target, parsed, now) {
   if (parsed.final) return CACHE_FINAL;
   const minutes = minutesToDeadline(target, parsed, now);
-  return minutes !== null && minutes > EARLY_CACHE_MINUTES
+  return minutes !== null &&
+    minutes > EARLY_CACHE_MINUTES + EARLY_CACHE_LIFETIME_MINUTES
     ? CACHE_OK_EARLY
     : CACHE_OK;
 }

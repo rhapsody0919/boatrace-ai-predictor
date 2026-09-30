@@ -290,12 +290,23 @@ const fetcher = (fn) => {
     const edge = await handleLiveOddsRequest({
       query: { raceId: TODAY_RACE, page: "3t" },
       politeFetch: fetcher(() => htmlResponse(T3_PREDEADLINE)),
-      now: () => new Date("2026-09-29T08:59:00+09:00"), // 11分前
+      now: () => new Date("2026-09-29T08:57:00+09:00"), // 13分前
     });
     check(
-      "締切まで10分超（11分前）: stale-while-revalidate=120",
+      "締切まで10分＋150秒超（13分前）: stale-while-revalidate=120",
       edge.cacheControl === CACHE_OK_EARLY,
       edge.cacheControl,
+    );
+    // 11分前: 120秒で返すと最大150秒残り締切10分前以降に食い込むため、60秒のまま（/code-review の指摘）
+    const eleven = await handleLiveOddsRequest({
+      query: { raceId: TODAY_RACE, page: "3t" },
+      politeFetch: fetcher(() => htmlResponse(T3_PREDEADLINE)),
+      now: () => new Date("2026-09-29T08:59:00+09:00"),
+    });
+    check(
+      "締切11分前: 締切10分前以降に食い込まないよう stale-while-revalidate=60",
+      eleven.cacheControl === CACHE_OK,
+      eleven.cacheControl,
     );
     const noDeadline = await handleLiveOddsRequest({
       query: { raceId: TODAY_RACE, page: "3t" },
