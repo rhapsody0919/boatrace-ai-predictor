@@ -814,7 +814,7 @@ function RaceBasicInfoTab({
                                 {t("basicInfo.conditionsFinalDayCaveat")}
                               </p>
                             )}
-                            {/* 母数が他行と違う行（波・F持ち時・F無し時）は、
+                            {/* 母数が他行と違う行（初日・最終日・波・F持ち時・F無し時）は、
                                 条件を判定できた走数を添えて「他行と比べない」と読ませる */}
                             {condRows.some((r) => r.baseN !== null) && (
                               <p className="rbit-conditions-caveat">
