@@ -85,9 +85,13 @@
     "title": "Race list",
     "metaTitle": "Today's races at {{venue}} - AI data analysis | Ryujin Radar",
     "metaDescription": "All of today's races at {{venue}} boat race stadium. Check deadlines and grades, then view AI data analysis for each race.",
-    "backToVenues": "← Back to venues"
+    "backToVenues": "← Back to venues",
+    "jumpToNextRace": "Go to R{{race}}",
+    "nextDeadlineMarker": "{{venue}}: next deadline R{{race}} {{time}}",
+    "allClosedMarker": "{{venue}}: all races today have closed"
   },
   "venueCharacteristics": {
+    "collapsedTeaser": "{{summary}} / Boat 1 win rate {{rate}}%",
     "title": "This Venue's Tendencies (last 90 days)",
     "note": "Same venue-level data our AI data analysis uses. See each boat's 1st-place rate and its most common winning technique.",
     "nationalAverageTooltip": "National average: {{value}}%",
@@ -1789,6 +1793,8 @@
     "legend": "Top: course actually taken. Middle: finish. Bottom: start timing and its rank in that race"
   },
   "venueDaySummary": {
+    "collapsedTeaser": "{{n}} races settled / Boat 1 nige rate {{rate}}%",
+    "collapsedTeaserNoNige": "{{n}} races settled",
     "title": "Water tendencies on this day",
     "note": "Based on {{n}} races settled at {{venue}} on {{date}}",
     "ledeDay": "Across the {{n}} settled races: {{techniques}}.",

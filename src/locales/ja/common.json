@@ -84,9 +84,13 @@
     "title": "レース一覧",
     "metaTitle": "{{venue}}の本日のレース一覧・AIデータ分析 - 龍神レーダー",
     "metaDescription": "{{venue}}ボートレース場の本日の全レース一覧。締切時刻・グレードを確認し、各レースのAIデータ分析へ進めます。",
-    "backToVenues": "← 会場一覧に戻る"
+    "backToVenues": "← 会場一覧に戻る",
+    "jumpToNextRace": "{{race}}Rへ",
+    "nextDeadlineMarker": "{{venue}}　次の締切 {{race}}R {{time}}",
+    "allClosedMarker": "{{venue}}　本日のレースはすべて締切済み"
   },
   "venueCharacteristics": {
+    "collapsedTeaser": "{{summary}}／1号艇の1着率 {{rate}}%",
     "title": "この会場の特徴（過去90日）",
     "note": "AIデータ分析が参照しているのと同じ会場別データです。枠番ごとの1着率と、勝った際に多い決まり手を確認できます。",
     "nationalAverageTooltip": "全国平均{{value}}%",
@@ -1781,6 +1785,8 @@
     "legend": "上段は実際に進入したコース、中段は着順、下段はSTとそのレース内でのST順位"
   },
   "venueDaySummary": {
+    "collapsedTeaser": "確定{{n}}R・1号艇の逃げ率{{rate}}%",
+    "collapsedTeaserNoNige": "確定{{n}}R",
     "title": "この日の水面傾向",
     "note": "{{date}}に{{venue}}で確定した{{n}}レースの集計です",
     "ledeDay": "確定{{n}}Rの決まり手は {{techniques}}。",
