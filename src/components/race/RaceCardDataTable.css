@@ -4,6 +4,8 @@
 
 .rcdt {
   margin-top: 0.75rem;
+  /* カードの幅に合わせて表を詰めるため（下の @container） */
+  container-type: inline-size;
 }
 
 .rcdt-table-wrapper {
@@ -118,5 +120,28 @@
 @media (max-width: 480px) {
   .rcdt-table {
     font-size: 10.5px;
+  }
+}
+
+/* 多列グリッドのカード（768〜1440pxで約250〜310px）では、表の最小幅（約330px）が収まらず6号艇の列が
+   切れていた（ページ全体は横スクロールしないので気づきにくい。BOA-559）。カードが狭いときは最小幅を外し、
+   文字と余白を詰めて7列を収める */
+@container (max-width: 340px) {
+  .rcdt-table {
+    min-width: 0;
+    font-size: 10px;
+  }
+
+  .rcdt-table th,
+  .rcdt-table td {
+    padding: 3px 1px;
+  }
+
+  .rcdt-name-th {
+    font-size: 9.5px;
+  }
+
+  .rcdt-label-cell {
+    font-size: 10px;
   }
 }

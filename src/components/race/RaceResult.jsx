@@ -40,18 +40,30 @@ const START_ANIM = {
   STREAK_FADE_IN_RATIO: 0.26,
   IMPACT_FLASH_DELTA: 0.001,
   IMPACT_EXPAND_DELTA: 0.0703,
+  // フライング艇はスタートライン（84%）より先、F0.15 で98%まで（BOA-559）
+  FLYING_RANGE_PERCENT: 14,
+  // フライング艇は号砲の時点で既にラインを越えているため、最も早く到達させる（周期に対する割合）
+  FLYING_ARRIVAL_FRACTION: 0.04,
 };
 
-function getFinalPositionPercent(startTiming) {
+// フライング艇（F）の ST は「号砲より何秒早くラインを越えたか」。遅れた艇と同じ式で置くと、ラインの
+// 手前（遅いスタート）に描かれてしまう（浜名湖 9/14 6R の F0.11 が最も遅い艇に見えた。BOA-559）。
+// F はラインより先に置く
+function getFinalPositionPercent(startTiming, isFlying = false) {
   const clamped = Math.min(
     Math.max(startTiming, 0),
     START_ANIM.POSITION_MAX_SECONDS,
   );
-  return (
-    START_ANIM.LINE_PERCENT -
-    (clamped / START_ANIM.POSITION_MAX_SECONDS) *
-      START_ANIM.POSITION_RANGE_PERCENT
-  );
+  const ratio = clamped / START_ANIM.POSITION_MAX_SECONDS;
+  return isFlying
+    ? START_ANIM.LINE_PERCENT + ratio * START_ANIM.FLYING_RANGE_PERCENT
+    : START_ANIM.LINE_PERCENT - ratio * START_ANIM.POSITION_RANGE_PERCENT;
+}
+
+// 選手名は公式の元データで姓と名の間を全角スペースで詰めてある（「丹下　　　将」）。そのまま出すと
+// 375pxで姓だけに切れ、級別も見えなくなるため、空白を1つにまとめる（BOA-559）
+function displayName(name) {
+  return name ? name.replace(/[\s\u3000]+/g, " ").trim() : name;
 }
 
 function BoatChip({ number }) {
@@ -81,11 +93,12 @@ function StartTimingTrack({
   const impactRef = useRef(null);
   const color = BOAT_COLORS[boatNumber] || BOAT_COLORS[1];
   const markerColor = isFlying ? "var(--color-error-text)" : color.bg;
-  const finalPosition = getFinalPositionPercent(startTiming);
+  const finalPosition = getFinalPositionPercent(startTiming, isFlying);
   // 到達オフセットは周期(7秒)全体に対する割合。最遅艇でもMAX_ARRIVAL_MS(6秒)/CYCLE_MS(7秒)を
   // 超えないため、この後の号砲フラッシュ・衝撃波の追加オフセットが必ず1未満に収まる
-  const arrivalFraction =
-    maxStartTiming > 0
+  const arrivalFraction = isFlying
+    ? START_ANIM.FLYING_ARRIVAL_FRACTION
+    : maxStartTiming > 0
       ? Math.min(startTiming / maxStartTiming, 1) *
         (START_ANIM.MAX_ARRIVAL_MS / START_ANIM.CYCLE_MS)
       : 0;
@@ -680,11 +693,12 @@ function RaceResult({ prediction, raceId }) {
   const validStartTimings = (startTimings ?? []).filter(
     (st) => st.startTiming != null,
   );
-  const maxStartTiming = validStartTimings.length
-    ? Math.max(...validStartTimings.map((st) => st.startTiming))
-    : 0;
-  // フライングは異常値のため「最速」判定からは除外する（update-top-start-stats.jsと同じ扱い）
+  // フライングは異常値のため「最速」判定・到達タイミングの基準（最遅ST）からは除外する
+  // （update-top-start-stats.jsと同じ扱い。BOA-559）
   const nonFlyingStartTimings = validStartTimings.filter((st) => !st.isFlying);
+  const maxStartTiming = nonFlyingStartTimings.length
+    ? Math.max(...nonFlyingStartTimings.map((st) => st.startTiming))
+    : 0;
   const fastestStartTiming = nonFlyingStartTimings.length
     ? Math.min(...nonFlyingStartTimings.map((st) => st.startTiming))
     : null;
@@ -770,7 +784,7 @@ function RaceResult({ prediction, raceId }) {
                 <BoatChip number={boat} />
                 <span className="rr-name">
                   <span className="rr-name-text" translate="no">
-                    {player?.name}
+                    {displayName(player?.name)}
                     {player?.grade && <small>{player.grade}</small>}
                   </span>
                   {label && <span className="rr-mark-label">{label}</span>}

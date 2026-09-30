@@ -1,0 +1,159 @@
+import { test, expect } from "./fixtures.js";
+
+/**
+ * 結果タブ・一覧カードの既存の表示崩れ（BOA-559）。
+ * 1. フライング艇のスタート矢印が、ラインの手前（遅いスタート）に描かれていた
+ * 2. 375px で、全角スペースで詰めた選手名（「丹下　　　将」）が姓だけに切れ、級別も見えない
+ * 3. 一覧カードの出走表で、768px 以上だと6号艇の列が切れる（表の最小幅がカードより広い）
+ */
+
+const entries = [1, 2, 3, 4, 5, 6].map((i) => ({
+  number: i,
+  // 公式の元データと同じく、姓と名の間を全角スペースで詰めた名前（BOA-559）
+  name: i === 1 ? "丹下　　　将" : `テスト選手${i}`,
+  grade: "B1",
+  age: 30,
+  winRate: 5.0,
+  localWinRate: 5.0,
+  motorNumber: i,
+  motor2Rate: 35,
+  boatNumber: i,
+  boat2Rate: 35,
+}));
+
+function edgeData({ date, venueCode, venue, raceNumber, result }) {
+  return {
+    generatedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    races: [
+      {
+        raceId: `${date}-${String(venueCode).padStart(2, "0")}-${String(raceNumber).padStart(2, "0")}`,
+        venueCode,
+        venue,
+        raceNumber,
+        startTime: "13:00",
+        entries,
+        predictions: {
+          unified: {
+            topPick: 1,
+            top3: [1, 2, 3],
+            confidence: 50,
+            turnPrediction: {
+              patterns: [
+                { technique: "逃げ", winnerCourse: 1, probability: 0.6 },
+              ],
+            },
+          },
+        },
+        exhibitionData: [],
+        result,
+      },
+    ],
+  };
+}
+
+// race_start_timings の行（本番の値そのまま。2026-09-29 に execute_sql で確認）
+const st = (boat, startTiming, finishMark, finishRank) => ({
+  boat_number: boat,
+  start_timing: startTiming,
+  is_flying: finishMark === "F",
+  is_late_start: false,
+  finish_mark: finishMark,
+  finish_rank: finishRank,
+});
+
+async function openResult(page, { race, startTimings }) {
+  await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
+  await page.route("**/api/predictions/**", (route) =>
+    route.fulfill({ json: edgeData(race) }),
+  );
+  await page.route("**/rest/v1/**", (route) =>
+    route.fulfill({ status: 200, json: [] }),
+  );
+  // 後から登録したルートが優先される
+  await page.route("**/rest/v1/race_start_timings**", (route) =>
+    route.fulfill({ status: 200, json: startTimings }),
+  );
+  const raceId = edgeData(race).races[0].raceId;
+  await page.goto(`/race/${raceId}`);
+  const table = page.locator(".race-result .rr-table");
+  await expect(table).toBeVisible({ timeout: 20000 });
+  return table;
+}
+
+
+// 浜名湖 2026-09-14 6R（不成立。1・2・3・5・6号艇がF、4号艇は0.02）
+const HAMANAKO = {
+  date: "2026-09-14",
+  venueCode: 6,
+  venue: "浜名湖",
+  raceNumber: 6,
+  result: { rank1: 4, rank2: 1, rank3: 2 },
+};
+const HAMANAKO_ST = [
+  st(1, 0.11, "F", null),
+  st(2, 0.09, "F", null),
+  st(3, 0.03, "F", null),
+  st(4, 0.02, "_", null),
+  st(5, 0.03, "F", null),
+  st(6, 0.01, "F", null),
+];
+
+test("フライング艇の矢印はスタートラインより先に、遅れていない艇はラインの手前に描く", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const table = await openResult(page, {
+    race: HAMANAKO,
+    startTimings: HAMANAKO_ST,
+  });
+  await expect(table.locator(".rr-row")).toHaveCount(6);
+  const dots = await table.locator(".rr-row").evaluateAll((rows) =>
+    rows.map((row) => {
+      const boat = row.querySelector(".rr-boat-chip")?.textContent.trim();
+      const dot = row.querySelector(".rr-st-dot");
+      return { boat, left: parseFloat(dot?.style.left ?? "NaN") };
+    }),
+  );
+  const LINE = 84;
+  for (const d of dots) {
+    if (d.boat === "4") expect(d.left, d.boat).toBeLessThan(LINE);
+    else expect(d.left, d.boat).toBeGreaterThan(LINE);
+  }
+  // F0.11（1号艇）は F0.01（6号艇）より先
+  const left = (b) => dots.find((d) => d.boat === b).left;
+  expect(left("1")).toBeGreaterThan(left("6"));
+});
+
+test("375px: 全角スペースで詰めた選手名は空白を1つにまとめ、名前と級別が切れずに見える", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  const table = await openResult(page, {
+    race: HAMANAKO,
+    startTimings: HAMANAKO_ST,
+  });
+  const row1 = table
+    .locator(".rr-row")
+    .filter({ has: page.locator(".rr-boat-chip", { hasText: /^1$/ }) });
+  const name = row1.locator(".rr-name-text");
+  await expect(name).toHaveText("丹下 将B1");
+  const clipped = await name.evaluate((e) => e.scrollWidth > e.clientWidth);
+  expect(clipped).toBe(false);
+});
+
+for (const width of [768, 1024, 1440]) {
+  test(`${width}px: 一覧カードの出走表は6号艇の列まで切れずに収まる`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/races/2026-09-14/6");
+    await expect(page.locator(".rcdt-table").first()).toBeVisible({
+      timeout: 30000,
+    });
+    const overflow = await page.$$eval(".rcdt-table-wrapper", (ws) =>
+      ws.filter((w) => w.scrollWidth > w.clientWidth + 1).length,
+    );
+    expect(overflow).toBe(0);
+  });
+}
