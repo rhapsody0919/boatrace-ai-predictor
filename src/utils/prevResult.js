@@ -22,6 +22,20 @@ const toNumber = (value) => {
 export const PREV_RESULT_AVAILABLE_FROM = "2026-09-16";
 
 /**
+ * 公式の記号（着順が付かない走の F・転・エ など）を、訳すための key に引く
+ * （i18n の dataTable.prevMark.<key> / result.mark.<key>）。全角の Ｆ・Ｌ は半角にそろえる。
+ * 知らない記号・空は null（呼び出し側は記号をそのまま出す）。データ出走表と
+ * 直近の出走履歴で同じ表記にするための共通の入口（BOA-569 ファン評価3周目）
+ *
+ * @param {string|null} mark
+ * @returns {string|null}
+ */
+export function finishMarkKeyOf(mark) {
+  const m = normalizeFinishMark(mark);
+  return m === null ? null : (FINISH_MARKS[m]?.key ?? null);
+}
+
+/**
  * 前走成績の1マスに何を出すか（純関数、BOA-569）。
  *
  * - 前走があり着順も有る → { kind: "rank", rank, course }
@@ -42,7 +56,7 @@ export function prevResultState(row, raceId) {
     if (rank !== null) return { kind: "rank", rank, course };
     const mark = normalizeFinishMark(row?.prev_finish_mark);
     return mark !== null && !/^[0-9]$/.test(mark)
-      ? { kind: "mark", mark, markKey: FINISH_MARKS[mark]?.key ?? null, course }
+      ? { kind: "mark", mark, markKey: finishMarkKeyOf(mark), course }
       : { kind: "unknown" };
   }
   const raceDate = (raceId ?? "").slice(0, 10);

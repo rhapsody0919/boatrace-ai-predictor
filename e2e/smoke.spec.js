@@ -1866,6 +1866,12 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await enRow.waitFor({ timeout: 30000 });
     await expect(enRow).toContainText("Eng");
     await expect(enRow).not.toContainText("エ");
+    // 同じ走を直近の出走履歴でも同じ表記にする（ファン評価3周目。以前は履歴だけ「エ」）
+    await page.locator(".rbit-bar-row").nth(5).click();
+    const enHistory = page.locator(".race-history-table").first();
+    await enHistory.waitFor({ timeout: 30000 });
+    await expect(enHistory).toContainText("Eng");
+    await expect(enHistory).not.toContainText("エ");
 
     // 「今節の展示」が無い艇は「今節初戦」のまま（本日の前走の「初走」と取り違えない）。
     // 2026-09-21 津1R は節の初日

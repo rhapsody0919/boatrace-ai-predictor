@@ -234,6 +234,11 @@ thead tr:last-child:not(:first-child) .drt-label-th {
   color: var(--text-secondary);
 }
 
+/* 「5コース」「今節初戦」を語の途中で折らない（375pxで「5コー／ス」になっていた） */
+.drt-nowrap {
+  white-space: nowrap;
+}
+
 /* 小標本（n<6）の視覚的区別（BOA-304、RaceBasicInfoTabのis-small-sampleと
    同じ配色規約: RaceBasicInfoTab.css参照） */
 .drt-n-small-sample {

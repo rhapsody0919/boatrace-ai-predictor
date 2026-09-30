@@ -562,7 +562,7 @@ function buildRowDefs({
               state.mark
             )}
             {state.course !== null && (
-              <span className="drt-sub">
+              <span className="drt-sub drt-nowrap">
                 {" "}
                 {t("dataTable.prevResultCourse", { course: state.course })}
               </span>

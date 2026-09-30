@@ -1013,6 +1013,18 @@ function suitePrevResult(m, check) {
     ],
   );
   check(
+    "finishMarkKeyOf: 履歴表とデータ出走表で同じ key に引く。数字・空・知らない記号は null（BOA-569 ファン評価3周目）",
+    [
+      m.finishMarkKeyOf("エ"),
+      m.finishMarkKeyOf("落"),
+      m.finishMarkKeyOf("Ｌ"),
+      m.finishMarkKeyOf("3"),
+      m.finishMarkKeyOf(""),
+      m.finishMarkKeyOf(null),
+    ],
+    ["engineStall", "fell", "late", null, null, null],
+  );
+  check(
     "prevResultState: 取得漏れが無い日（2026-09-16〜）の空は「本日初走」（今節初戦ではない）",
     m.prevResultState(empty, "2026-09-26-09-05"),
     { kind: "firstToday" },

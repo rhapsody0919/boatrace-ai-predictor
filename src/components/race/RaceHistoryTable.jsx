@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { GRADE_LABELS } from "./raceGradeLabels";
 import { translateTechnique } from "./raceIndicators";
 import { formatPayout } from "../../utils/formatters";
+import { finishMarkKeyOf } from "../../utils/prevResult";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import "../common/HorizontalScrollHint.css";
 import "./RaceHistoryTable.css";
@@ -95,6 +96,18 @@ function RaceHistoryTable({
   compactDate = false,
 }) {
   const { t } = useTranslation();
+  // 公式の記号はデータ出走表の「本日の前走」と同じ表記にする。日本語以外の
+  // ページで「エ」「落」を生のまま出さない（BOA-569 ファン評価3周目）
+  const renderFinishMark = (mark) => {
+    const key = finishMarkKeyOf(mark);
+    return key ? (
+      <abbr title={t(`result.mark.${key}`)}>
+        {t(`dataTable.prevMark.${key}`)}
+      </abbr>
+    ) : (
+      mark
+    );
+  };
   const shows = (key) => !omitColumns.includes(key);
   // 列数・行数が決まってから測り直す（取得前は幅が無く、右に続くと分からない）。
   // 表の幅を変えるプロップは漏れなく並べる。1つでも抜けると、溢れが解消しても
@@ -172,7 +185,9 @@ function RaceHistoryTable({
                   {race.finishRank ??
                     (race.absent
                       ? t("basicInfo.finishAbsent")
-                      : (race.finishMark ?? t("basicInfo.finishUnknown")))}
+                      : race.finishMark
+                        ? renderFinishMark(race.finishMark)
+                        : t("basicInfo.finishUnknown"))}
                 </td>
                 {shows("raceTitle") && <td>{race.raceTitle ?? "-"}</td>}
                 {shows("grade") && (
