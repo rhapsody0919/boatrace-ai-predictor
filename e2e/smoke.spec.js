@@ -1561,6 +1561,43 @@ test.describe("レースページ再設計（BOA-168）", () => {
     ).not.toContainText("0.0%");
   });
 
+  test("今節タブ: en・zh-TW の375pxで6艇の表がカードからはみ出さず、必要得点に残りの走数を添える（BOA-596）", async ({
+    page,
+  }) => {
+    // 以前は en で9px、zh-TW で20px、表がカードの右へはみ出していた
+    // （列見出し「Score rate」「Series rank」と「第12名並列」「6.86（第34名）」が長い）
+    await page.setViewportSize({ width: 375, height: 812 });
+    for (const lang of ["en", "zh-TW"]) {
+      await page.goto(`/${lang}/race/2026-09-26-13-04`);
+      await page.locator(".race-tabs-btn").nth(2).click();
+      const table = page.locator(".rmt-compare");
+      await table.waitFor({ timeout: 30000 });
+      const over = await table.evaluate((t) => {
+        const card = t.closest(".rmt-card") ?? t.parentElement;
+        const right = card.getBoundingClientRect().right;
+        return Math.max(
+          ...[...t.querySelectorAll("tr")].map(
+            (tr) => tr.getBoundingClientRect().right - right,
+          ),
+        );
+      });
+      expect(over).toBeLessThanOrEqual(0.5);
+    }
+
+    // 必要得点は今日の残りの予選ぶんを足した点数。早見は次の1走だけなので、
+    // 2走残っていれば走数を添える（尼崎 2026-09-27 5R の塩田: 1着でも6.00で
+    // 目安6.17に届かないのに、必要得点は17だけと出ていた）
+    await page.goto("/race/2026-09-27-13-05");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const shiota = page
+      .locator(".rmt-forecast-table tr")
+      .filter({ hasText: "塩田" })
+      .first();
+    await expect(shiota.locator(".rmt-needed")).toHaveText(/^\d+（2走で）$/, {
+      timeout: 30000,
+    });
+  });
+
   test("「今節」タブで6艇の勝負駆けと選んだ1艇の走りが出て、節をまたがない（phase a T6-1）", async ({
     page,
   }) => {

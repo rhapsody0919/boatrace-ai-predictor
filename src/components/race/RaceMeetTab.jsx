@@ -624,76 +624,87 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {forecastRows.map(({ player: p, row, cells, needed }) => {
-                    const color = BOAT_COLORS[p.number] || {};
-                    return (
-                      <tr
-                        key={p.number}
-                        className={
-                          p.number === selectedBoat ? "is-current" : ""
-                        }
-                        onClick={() => onFocusBoat(p.number)}
-                      >
-                        <th scope="row">
-                          <button
-                            type="button"
-                            className="rmt-row-select"
-                            onClick={() => onFocusBoat(p.number)}
-                            aria-pressed={p.number === selectedBoat}
-                          >
-                            <span
-                              className="rmt-boat-chip"
-                              style={{
-                                background: color.bg,
-                                color: color.text,
-                              }}
-                            >
-                              {p.number}
-                            </span>
-                            <span className="rmt-name" translate="no">
-                              {p.name?.replace(/\s+/g, "")}
-                            </span>
-                          </button>
-                        </th>
-                        <td
-                          className={`rmt-rate${
-                            showBorderBadge &&
-                            border !== undefined &&
-                            row.rate >= border
-                              ? " is-in-border"
-                              : ""
-                          }`}
+                  {forecastRows.map(
+                    ({ player: p, row, cells, needed, remaining }) => {
+                      const color = BOAT_COLORS[p.number] || {};
+                      return (
+                        <tr
+                          key={p.number}
+                          className={
+                            p.number === selectedBoat ? "is-current" : ""
+                          }
+                          onClick={() => onFocusBoat(p.number)}
                         >
-                          {row.rate.toFixed(2)}
-                        </td>
-                        {hasNeeded && (
-                          <td className="rmt-needed">
-                            {needed === null
-                              ? "—"
-                              : needed.reachable
-                                ? t("meetTab.neededPoints", {
-                                    points: needed.needed,
-                                  })
-                                : t("meetTab.neededUnreachable")}
-                          </td>
-                        )}
-                        {cells.map((f) => (
+                          <th scope="row">
+                            <button
+                              type="button"
+                              className="rmt-row-select"
+                              onClick={() => onFocusBoat(p.number)}
+                              aria-pressed={p.number === selectedBoat}
+                            >
+                              <span
+                                className="rmt-boat-chip"
+                                style={{
+                                  background: color.bg,
+                                  color: color.text,
+                                }}
+                              >
+                                {p.number}
+                              </span>
+                              <span className="rmt-name" translate="no">
+                                {p.name?.replace(/\s+/g, "")}
+                              </span>
+                            </button>
+                          </th>
                           <td
-                            key={f.rank}
-                            className={
+                            className={`rmt-rate${
                               showBorderBadge &&
                               border !== undefined &&
-                              f.rate >= border
-                                ? "is-in-border"
-                                : undefined
-                            }
+                              row.rate >= border
+                                ? " is-in-border"
+                                : ""
+                            }`}
                           >
-                            {f.rate.toFixed(2)}
+                            {row.rate.toFixed(2)}
                           </td>
-                        ))}
-                      </tr>
-                    );
-                  })}
+                          {hasNeeded && (
+                            <td className="rmt-needed">
+                              {needed === null
+                                ? "—"
+                                : needed.reachable
+                                  ? // 必要得点は今日の残りの予選ぶん（1日2走ある選手もいる）
+                                    // を足した点数。横の早見は次の1走だけなので、2走以上
+                                    // 残っていれば走数を添える。無いと「1着でも目安に
+                                    // 届かないのに必要得点17」と食い違って読める（BOA-596）
+                                    remaining > 1
+                                    ? t("meetTab.neededPointsRuns", {
+                                        points: needed.needed,
+                                        runs: remaining,
+                                      })
+                                    : t("meetTab.neededPoints", {
+                                        points: needed.needed,
+                                      })
+                                  : t("meetTab.neededUnreachable")}
+                            </td>
+                          )}
+                          {cells.map((f) => (
+                            <td
+                              key={f.rank}
+                              className={
+                                showBorderBadge &&
+                                border !== undefined &&
+                                f.rate >= border
+                                  ? "is-in-border"
+                                  : undefined
+                              }
+                            >
+                              {f.rate.toFixed(2)}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    },
+                  )}
                 </tbody>
               </table>
             </div>
