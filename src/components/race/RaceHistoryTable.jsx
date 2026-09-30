@@ -65,9 +65,10 @@ import "./RaceHistoryTable.css";
  * 1. 右に続くことを知らせる（`useHorizontalScrollHint`。モータ情報タブ・
  *    直前情報タブ・タブバーと同じ手がかり）。黙って切れるのが実害であり、
  *    スクロールすること自体は実害ではない
- * 2. 狭い画面ではセルの左右余白を詰め、**着順までは初期表示に収める**
- *    （`RaceHistoryTable.css` のメディアクエリ）。着順はこの表で最も読まれる列で、
- *    半分切れているのと最初から右にあるのとでは意味が違う
+ * 2. **着順はR番号のすぐ右に置く**（BOA-569）。着順はこの表で最も読まれる列で、
+ *    右端寄りだと 375px では初期表示の外（直近10走）か、横スクロールのぼかしの下
+ *    （今節タブ）になった。狭い画面ではセルの左右余白も詰める
+ *    （`RaceHistoryTable.css` のメディアクエリ）
  *
  * @param {string[]} [omitColumns] 出さない列（"venue" / "raceTitle" / "grade" /
  *   "stage"）。今節タブ（FR-3）は同じ節の走しか並ばず、この4列が全行同じ値に
@@ -136,6 +137,7 @@ function RaceHistoryTable({
               <th>{t("raceHistoryTable.date")}</th>
               {shows("venue") && <th>{t("raceHistoryTable.venue")}</th>}
               <th>{t("raceHistoryTable.raceNo")}</th>
+              <th>{t("raceHistoryTable.finish")}</th>
               {shows("raceTitle") && <th>{t("raceHistoryTable.raceTitle")}</th>}
               {shows("grade") && <th>{t("raceHistoryTable.grade")}</th>}
               {shows("stage") && <th>{t("raceHistoryTable.stage")}</th>}
@@ -143,7 +145,6 @@ function RaceHistoryTable({
               {showEntryCourse && <th>{t("raceHistoryTable.entryCourse")}</th>}
               {showExhibition && <th>{t("raceHistoryTable.exhibition")}</th>}
               <th>{t("raceHistoryTable.startTiming")}</th>
-              <th>{t("raceHistoryTable.finish")}</th>
               <th>{t("raceHistoryTable.technique")}</th>
               <th>{t("raceHistoryTable.payout")}</th>
             </tr>
@@ -163,6 +164,16 @@ function RaceHistoryTable({
                   <td>{t(`venues.${race.venueCode}`, race.venueCode)}</td>
                 )}
                 <td>{race.raceNo !== null ? `${race.raceNo}R` : "-"}</td>
+                {/* 着順はこの表で最も読まれる列なので、R番号のすぐ右に置く。
+                    以前は右から3番目で、375px の直近10走（11列・930px）では
+                    右へ約640px送らないと見えず、今節タブの日別の表では横スクロールの
+                    ぼかしに重なっていた（BOA-569） */}
+                <td>
+                  {race.finishRank ??
+                    (race.absent
+                      ? t("basicInfo.finishAbsent")
+                      : (race.finishMark ?? t("basicInfo.finishUnknown")))}
+                </td>
                 {shows("raceTitle") && <td>{race.raceTitle ?? "-"}</td>}
                 {shows("grade") && (
                   <td>
@@ -202,12 +213,6 @@ function RaceHistoryTable({
                         })
                       : Number(race.startTiming).toFixed(2)
                     : "-"}
-                </td>
-                <td>
-                  {race.finishRank ??
-                    (race.absent
-                      ? t("basicInfo.finishAbsent")
-                      : (race.finishMark ?? t("basicInfo.finishUnknown")))}
                 </td>
                 <td>
                   {race.finishRank === 1 && race.winningTechnique != null

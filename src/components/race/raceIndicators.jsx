@@ -540,9 +540,21 @@ function buildRowDefs({
         if (!row) return ph("motorMaintenance");
         const rank = toNumber(row.prev_finish_rank);
         if (rank === null) {
-          return (
-            <span className="drt-sub">{t("dataTable.prevResultNoRace")}</span>
+          // 「今節初戦」と言い切るのは、同じレースの他の艇に前走の記録がある
+          // （＝このレースでは前走を取得できている）のに、この艇だけ無いときだけ。
+          // 前走の列は古いレースほど埋まっていない（2026-07・08 は0件、09-28 でも
+          // 864行中317行）。6艇とも無いときは未取得なので「—」にする。前走はあるが
+          // 着順が無い（欠場・失格など）ときも「—」（BOA-569。優勝戦で6艇とも
+          // 「今節初戦」と出ていた）
+          const raceHasPrev = [...maintenanceByBoat.values()].some(
+            (r) => toNumber(r?.prev_race_no) !== null,
           );
+          if (toNumber(row.prev_race_no) === null && raceHasPrev) {
+            return (
+              <span className="drt-sub">{t("dataTable.prevResultNoRace")}</span>
+            );
+          }
+          return "—";
         }
         const course = toNumber(row.prev_entry_course);
         return (
