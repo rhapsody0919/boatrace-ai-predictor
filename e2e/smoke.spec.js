@@ -2377,7 +2377,14 @@ async function findRaceWithVolatilityLevel(page) {
 
   await page.goto("/");
   try {
-    await page.locator(".venue-grid").waitFor({ timeout: 10000 });
+    // `.venue-grid` は読み込み中のスケルトン（VenueGridSkeleton）にも付いている。
+    // それを待つと、会場カードが描画される前に数えて0会場＝skip になり、負荷の高い
+    // 全件実行でだけ skip が出た（2026-09-30 の自動撮り直しが不採用になった原因。
+    // 単体実行では再現しない）。スケルトンではない実物のカードを待つ
+    await page
+      .locator(".venue-grid-card--open, .venue-grid-card--closed")
+      .first()
+      .waitFor({ timeout: 10000 });
   } catch {
     return null;
   }
