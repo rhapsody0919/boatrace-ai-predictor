@@ -72,7 +72,11 @@ HAR は context に登録し、spec 側の `page.route` は page に登録され
 
 ### 6. 録画は毎日自動で撮り直す（`.github/workflows/e2e-rerecord.yml`）
 
-毎日 JST11:00（UTC02:00）と `workflow_dispatch` で、master で全件を録画する。
+毎日2回（本命 JST10:23 = UTC01:23、予備 JST12:47 = UTC03:47）と `workflow_dispatch` で、master で全件を録画する。
+
+- 当初は JST11:00（`'0 2 * * *'`）の1回だけだったが、2026-09-30 は JST17:15 に起動した。GitHub の schedule は負荷で遅れ、取りこぼされることもあり、毎時0分に負荷が集中する（[公式](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule)）。このリポジトリの他の定期実行も1〜4時間の遅れが常態のため、0分を避けたうえで予備の起動を置く
+- 定期実行は、録画の前に `scripts/maintenance/e2e-recording.js gate` で撮るかを決める。その日（JST）の録画を採用済みなら撮らない（予備の空振り。通知しない）。JST19時以降に起動したら撮らない（発走前のレースが夜間開催の数場だけになる。通知する）。`workflow_dispatch` は判定せずに撮る
+- 本命が遅れて予備と重なっても、`concurrency`（`cancel-in-progress: false`）で直列になる。予備は本命の終了後に checkout した master のポインタで判定する
 
 1. 本番に繋いで全件を録画する
 2. 撮った録画だけで再生して全件実行する（`E2E_REPLAY_STRICT=1`: 録画に無い通信は abort＝録画が自己完結しているかを見る）
