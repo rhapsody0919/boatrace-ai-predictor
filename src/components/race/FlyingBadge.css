@@ -9,9 +9,24 @@
   color: var(--color-black);
   background: var(--color-warning);
   border-radius: var(--radius-sm);
+  white-space: nowrap;
 }
 
 .flying-badge.is-f2 {
   color: var(--color-white);
   background: var(--color-error);
+}
+
+/* 「今節」の印（BOA-440）。同じバッジの中に区切って入れ、F本数と続けて読ませる */
+.flying-badge-meet {
+  margin-left: 2px;
+  padding-left: 2px;
+  border-left: 1px solid currentColor;
+  font-size: 0.6rem;
+}
+
+/* L（出遅れ）。F の金・赤と取り違えないよう灰にする */
+.flying-badge.is-late {
+  color: var(--color-white);
+  background: var(--color-gray-600);
 }

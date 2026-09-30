@@ -1744,7 +1744,10 @@
     "noticeHeading": "⚠️ Notes"
   },
   "flyingBadge": {
-    "title": "{{n}} false start(s) this term, as printed on the race card. Resets when the term changes (May 1 / Nov 1)"
+    "title": "{{n}} false start(s) this term, as printed on the race card. Resets when the term changes (May 1 / Nov 1)",
+    "titleCurrentMeet": "{{n}} false start(s) this term, as printed on the race card. One of them was in an earlier day of this meet. Resets when the term changes (May 1 / Nov 1)",
+    "currentMeet": "this meet",
+    "lateTitle": "{{n}} late start(s) (L) this term, as printed on the race card: crossing the start line 1 second or more late. Counted separately from false starts"
   },
   "stConsideration": {
     "title": "Start timing",
