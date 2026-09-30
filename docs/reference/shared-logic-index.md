@@ -77,7 +77,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/kelly-criterion.js` | — | kellyFraction, halfKelly, quarterKelly |
 | `scripts/lib/kfileParser.js` | 公式成績ファイル（Kファイル）のダウンロード・解凍・パース（BOA-257） | fetchKFileText, parseKFileText, parseKFileRankings, _internal |
 | `scripts/lib/latestByRaceId.js` | 行の配列から、IDフィールド（既定はrace_id）ごとにタイムスタンプフィールド | latestByRaceId |
-| `scripts/lib/liveOdds.js` | オッズのライブ取得（BOA-487）の純粋部分。api/odds/live.js から使う。 | validateLiveOddsQuery, liveOddsUrl, parseLiveOddsPage, badRequestResponse, upstreamErrorResponse ほか7件 |
+| `scripts/lib/liveOdds.js` | オッズのライブ取得（BOA-487）の純粋部分。api/odds/live.js から使う。 | validateLiveOddsQuery, liveOddsUrl, parseLiveOddsPage, badRequestResponse, upstreamErrorResponse ほか10件 |
 | `scripts/lib/meetBoundaries.js` | 節（開催）の切り出しと、全レースの一括取得。 | buildMeets, fetchAllByRaceId |
 | `scripts/lib/mergeOrder.js` | マージ順の台帳。「PR 901 は 902 のマージ後に」という順序を、並行セッションのオーケストレーションが | ledgerPath, parseLedger, readLedger, writeLedger, prerequisitesOf ほか3件 |
 | `scripts/lib/monthlyScheduleParser.js` | 月間スケジュール（boatrace.jp race/monthlyschedule）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | buildMonthlyScheduleUrl, parseYm, listYms, parseMonthlySchedule, mergeMonthlySchedules ほか8件 |
@@ -248,4 +248,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 213 ファイル / export 1068 件。
+対象 213 ファイル / export 1071 件。
