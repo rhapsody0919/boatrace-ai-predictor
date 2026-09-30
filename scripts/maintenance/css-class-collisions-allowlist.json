@@ -35,13 +35,6 @@
       ]
     },
     {
-      "class": "error-state",
-      "files": [
-        "src/pages/admin/AdminRules.css",
-        "src/pages/admin/SnsHubAdmin.css"
-      ]
-    },
-    {
       "class": "expand-button",
       "files": [
         "src/components/analysis/OutcomeDistributionTable.css",
@@ -60,13 +53,6 @@
       "files": [
         "src/components/race/OutcomePatternPreview.css",
         "src/pages/BlogPost.css"
-      ]
-    },
-    {
-      "class": "loading-state",
-      "files": [
-        "src/pages/admin/AdminRules.css",
-        "src/pages/admin/SnsHubAdmin.css"
       ]
     },
     {
@@ -98,13 +84,6 @@
       ]
     },
     {
-      "class": "race-grid",
-      "files": [
-        "src/App.css",
-        "src/pages/RaceDetail.css"
-      ]
-    },
-    {
       "class": "race-list-section",
       "files": [
         "src/App.css",
@@ -126,20 +105,6 @@
       ]
     },
     {
-      "class": "tab-btn",
-      "files": [
-        "src/pages/admin/AdminRules.css",
-        "src/pages/admin/SnsHubAdmin.css"
-      ]
-    },
-    {
-      "class": "tab-content",
-      "files": [
-        "src/pages/admin/AdminRules.css",
-        "src/pages/admin/SnsHubAdmin.css"
-      ]
-    },
-    {
       "class": "tab-navigation",
       "files": [
         "src/pages/admin/AdminRules.css",
@@ -153,41 +118,6 @@
         "src/components/race/OutcomePatternPreview.css",
         "src/pages/RaceDetail.css",
         "src/pages/admin/AdminRules.css"
-      ]
-    },
-    {
-      "class": "venue-guide-arrow",
-      "files": [
-        "src/App.css",
-        "src/pages/RaceDetail.css"
-      ]
-    },
-    {
-      "class": "venue-guide-desc",
-      "files": [
-        "src/App.css",
-        "src/pages/RaceDetail.css"
-      ]
-    },
-    {
-      "class": "venue-guide-icon",
-      "files": [
-        "src/App.css",
-        "src/pages/RaceDetail.css"
-      ]
-    },
-    {
-      "class": "venue-guide-link",
-      "files": [
-        "src/App.css",
-        "src/pages/RaceDetail.css"
-      ]
-    },
-    {
-      "class": "venue-guide-title",
-      "files": [
-        "src/App.css",
-        "src/pages/RaceDetail.css"
       ]
     }
   ]

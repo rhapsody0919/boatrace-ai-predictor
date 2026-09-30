@@ -50,15 +50,18 @@
   margin: 0.5rem 0 0 0;
 }
 
-/* ローディング・エラー */
-.loading-state,
-.error-state {
+/* ローディング・エラー
+   タブ・タブ内容とあわせて admin-rules- 接頭辞を付ける。SnsHubAdmin.css が同じ詳細度で
+   .tab-btn 等を定義しており、CSSが1つのバンドルに結合されて後に来る SNSハブ側の
+   青い配色・余白がこの画面に効いていた（BOA-570） */
+.admin-rules-loading-state,
+.admin-rules-error-state {
   text-align: center;
   padding: 3rem 1rem;
   color: #64748b;
 }
 
-.loading-state .spinner {
+.admin-rules-loading-state .spinner {
   width: 40px;
   height: 40px;
   border: 3px solid #e2e8f0;
@@ -72,7 +75,7 @@
   to { transform: rotate(360deg); }
 }
 
-.error-state button {
+.admin-rules-error-state button {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
   background: #7c3aed;
@@ -143,7 +146,7 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.tab-btn {
+.admin-rules-tab-btn {
   padding: 0.6rem 1.25rem;
   background: white;
   border: 1px solid #e2e8f0;
@@ -156,19 +159,19 @@
   transition: all 0.15s;
 }
 
-.tab-btn:hover {
+.admin-rules-tab-btn:hover {
   background: #f8fafc;
   color: #1e293b;
 }
 
-.tab-btn.active {
+.admin-rules-tab-btn.active {
   background: #7c3aed;
   border-color: #7c3aed;
   color: white;
 }
 
 /* タブコンテンツ */
-.tab-content {
+.admin-rules-tab-content {
   background: white;
   border-radius: 12px;
   padding: 1rem;
@@ -698,12 +701,12 @@
     font-size: 0.9rem;
   }
 
-  .tab-btn {
+  .admin-rules-tab-btn {
     padding: 0.5rem 1rem;
     font-size: 0.85rem;
   }
 
-  .tab-content {
+  .admin-rules-tab-content {
     padding: 0.75rem;
   }
 
@@ -752,12 +755,12 @@
     gap: 0.35rem;
   }
 
-  .tab-btn {
+  .admin-rules-tab-btn {
     padding: 0.4rem 0.75rem;
     font-size: 0.8rem;
   }
 
-  .tab-content {
+  .admin-rules-tab-content {
     padding: 0.5rem;
   }
 

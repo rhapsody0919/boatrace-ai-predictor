@@ -596,3 +596,91 @@ test.describe("レイアウト: ホームの会場グリッドに /guide の指�
     );
   });
 });
+
+/**
+ * BOA-570 の再現テスト。
+ *
+ * `/admin/rules`（src/pages/admin/AdminRules.css）と `/admin/sns-hub`
+ * （src/pages/admin/SnsHubAdmin.css）が、同じ詳細度の `.tab-btn`・`.tab-content`・
+ * `.loading-state`・`.error-state` を別々に定義していた。CSSは1つのバンドルに結合され、
+ * SnsHubAdmin.css が後に来るため、`/admin/rules` のタブが SNSハブの青（#0ea5e9）になり、
+ * AdminRules.css の @media の上書き（768px以下・480px以下の余白と文字サイズ）も
+ * SNSハブの基本指定に負けて効いていなかった（修正前の実測: 768pxでタブの padding が
+ * 9.6px 20px、文字 14.4px）。両画面ともクラス名に画面固有の接頭辞を付けて分けた。
+ * 両方のCSSが適用済みになる「/admin/sns-hub → SPA遷移で /admin/rules」の順で測る。
+ *
+ * 期待値は各CSSファイルの指定そのもの:
+ *   AdminRules.css  … アクティブの背景 #7c3aed。padding は 768px以下 0.5rem 1rem、
+ *                      480px以下 0.4rem 0.75rem、それ以外 0.6rem 1.25rem
+ *   SnsHubAdmin.css … padding は 480px以下 0.5rem 0.75rem、それ以外 0.6rem 1.25rem
+ */
+function expectedAdminRulesTabPadding(width) {
+  if (width <= 480) return "6.4px 12px";
+  if (width <= 768) return "8px 16px";
+  return "9.6px 20px";
+}
+
+function expectedSnsHubTabPadding(width) {
+  return width <= 480 ? "8px 12px" : "9.6px 20px";
+}
+
+const fulfillAdminJson = (body) => (route) =>
+  route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify(body),
+  });
+
+test.describe("レイアウト: 管理画面2つのタブの指定が混ざらない（BOA-570）", () => {
+  test("/admin/sns-hub からSPA遷移した /admin/rules のタブが AdminRules.css の指定になる", async ({
+    page,
+  }) => {
+    // dev サーバーには Edge Function が無いので管理APIはスタブにする
+    // （e2e/admin-rules-performance.spec.js と同じ）。predictions も空で返し、
+    // 録画に無いリクエストを本番へ素通しさせない（BOA-551）
+    await page.route(/\/api\/admin\/sns-hub\//, fulfillAdminJson({ data: [] }));
+    await page.route(
+      /\/api\/admin\/rules\/performance/,
+      fulfillAdminJson({
+        startDate: "2026-01-16",
+        data: {
+          total: { samples: 0, hits: 0, payout: 0 },
+          by_rule: [],
+          by_week: [],
+        },
+      }),
+    );
+    await page.route(/\/rest\/v1\/predictions\?/, fulfillAdminJson([]));
+
+    const tabStyle = (selector) =>
+      page.locator(selector).evaluate((el) => {
+        const cs = getComputedStyle(el);
+        return {
+          width: window.innerWidth,
+          padding: cs.padding,
+          backgroundColor: cs.backgroundColor,
+        };
+      });
+
+    await page.goto("/admin/sns-hub");
+    const snsTab = await tabStyle(".sns-hub-tab-btn.active");
+    expect(snsTab.padding, JSON.stringify(snsTab)).toBe(
+      expectedSnsHubTabPadding(snsTab.width),
+    );
+    // SNSハブ側は自分の配色のまま（AdminRules.css の紫が漏れていない）
+    expect(snsTab.backgroundColor).not.toBe("rgb(124, 58, 237)");
+
+    await page.evaluate(() => {
+      window.history.pushState({}, "", "/admin/rules");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await expect(page).toHaveURL(/\/admin\/rules$/);
+    const rulesTab = await tabStyle(".admin-rules-tab-btn.active");
+    expect(rulesTab.padding, JSON.stringify(rulesTab)).toBe(
+      expectedAdminRulesTabPadding(rulesTab.width),
+    );
+    expect(rulesTab.backgroundColor, JSON.stringify(rulesTab)).toBe(
+      "rgb(124, 58, 237)",
+    );
+  });
+});
