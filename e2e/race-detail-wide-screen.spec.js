@@ -11,6 +11,10 @@ test.describe("レース詳細の広い画面（BOA-612）", () => {
     await page.setViewportSize({ width: 1920, height: 1000 });
     // 児島 2026-09-29 12R（予選2日目。今節タブに得点率早見が出る）
     await page.goto("/race/2026-09-29-16-12");
+    // 結果が確定したレースは「結果」タブが既定になる。9/29 の録画時刻ではまだ
+    // 結果が無く「基本情報」が既定だったが、それ以降に撮った録画では結果が入って
+    // いる（2026-10-01 の撮り直しがこれで不採用になった）。タブを明示して開く
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
     await expect(page.locator(".drt-table").first()).toBeVisible({
       timeout: 30000,
     });
