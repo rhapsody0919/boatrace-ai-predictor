@@ -47,6 +47,19 @@ import {
  * route.continue() と route.fetch() は context のルートを飛ばして本番へ直接出るため、
  * 使わない（実応答を加工したいときは fetchRecorded を使う）。
  * 録画時も同じ順序なので、page.route が差し替えた応答は録画に入らない。
+ *
+ * ## page のルートを途中で0件にしない
+ *
+ * page.unroute・page.unrouteAll・`times:` 付きの page.route は使わない。
+ * page のルートが0件になった瞬間に処理中の要求があると、Playwright（1.59）は
+ * それを context 側（この fixture の録画の再生）へ送り直す。同じ要求が
+ * page→context の経路でも処理され、「Route is already handled!」で落ちる。
+ * 2回起きた（BOA-466: smoke の afterEach の unrouteAll、BOA-661: smoke と
+ * ga-pageview の途中の unroute）。差し替えをやめたいときは、
+ *   - 上に page.route を重ねる（後から登録したものが先に評価される）
+ *   - フラグを倒して route.fallback() に回す（録画の再生へ落ちる）
+ * のどちらかにする。scripts/maintenance/verify-e2e-no-unroute.js が検出する
+ * （正当な例外は e2e-no-unroute-allowlist.json に理由つきで載せる）。
  */
 
 const repoRoot = path.resolve(
