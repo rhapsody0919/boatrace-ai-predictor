@@ -7151,8 +7151,9 @@ export const supabaseDataService = {
     // v16: 推移の走に着順（finish）を足した（BOA-537）
     // v17: 着順の並びの材料に公式の記号（finishMark）を足した（BOA-537）
     // v18: 賞典除外（公式の備考・今節F）を順位から外す理由を足した（BOA-587）
-    // v19: 予選後に今節Fを切った選手（postPrelimFlyingRacerIds）を足した（BOA-626）
-    return withCache(`meet-scoreboard-v19-${raceId}`, async () => {
+    // v20: 予選後に今節Fを切った選手（postPrelimFlyingRacerIds）を足した（BOA-626）。
+    //      v19 は BOA-578（予選終了の日目）が使う。マージ後の行は v20 だけを残す
+    return withCache(`meet-scoreboard-v20-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
