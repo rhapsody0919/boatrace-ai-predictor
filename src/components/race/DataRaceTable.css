@@ -264,6 +264,12 @@ thead tr:last-child:not(:first-child) .drt-label-th {
 }
 
 /* 部品交換・プロペラ交換バッジ（BOA-304、直前情報タブ用） */
+/* 部品名（「シャフト」等）は語の途中で折らない。折り返しは「・」の後だけ */
+.drt-part {
+  display: inline-block;
+  white-space: nowrap;
+}
+
 .drt-parts-changed {
   flex-direction: row;
   flex-wrap: wrap;

@@ -46,21 +46,25 @@ test.describe("レース詳細のデータ出走表（スマホ、BOA-612）", (
       // 行ラベルの「?」はラベル列の中に収まり、1号艇の数値に重ならない。
       // ラベルの文字は 11px を割らない（ファン評価2周目 P1・P2。320px で「?」が最大18px
       // はみ出し、ラベルは 10.5px だった）
-      const labels = await table.locator(".drt-label-cell").evaluateAll((cells) =>
-        cells.map((c) => {
-          const r = c.getBoundingClientRect();
-          const btn = c.querySelector(".term-hint__button");
-          return {
-            text: c.textContent.trim(),
-            fontSize: getComputedStyle(c).fontSize,
-            overflow: btn ? btn.getBoundingClientRect().right - r.right : 0,
-          };
-        }),
-      );
+      const labels = await table
+        .locator(".drt-label-cell")
+        .evaluateAll((cells) =>
+          cells.map((c) => {
+            const r = c.getBoundingClientRect();
+            const btn = c.querySelector(".term-hint__button");
+            return {
+              text: c.textContent.trim(),
+              fontSize: getComputedStyle(c).fontSize,
+              overflow: btn ? btn.getBoundingClientRect().right - r.right : 0,
+            };
+          }),
+        );
       expect(labels.length).toBeGreaterThan(0);
       for (const l of labels) {
         expect(l.overflow, l.text).toBeLessThanOrEqual(0.5);
-        expect(Number.parseFloat(l.fontSize), l.text).toBeGreaterThanOrEqual(11);
+        expect(Number.parseFloat(l.fontSize), l.text).toBeGreaterThanOrEqual(
+          11,
+        );
       }
 
       // 直前情報の表には名前の行が無い（艇番の見出しだけ）
@@ -97,3 +101,32 @@ test.describe("レース詳細のデータ出走表（スマホ、BOA-612）", (
     });
   }
 });
+
+// 部品交換の部品名は語の途中で折らない。以前は「シャフ／ト」と折れていた（ファン評価3周目 P2）。
+// 2026-09-29 児島12R の4号艇が「シャフト」を交換している
+for (const width of [320, 360, 375]) {
+  test(`${width}px: 直前情報の部品交換で、部品名が語の途中で折れない（BOA-612）`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 812 });
+    await page.goto("/race/2026-09-29-16-12");
+    await page
+      .locator(".race-tabs-btn", { hasText: "直前情報" })
+      .first()
+      .click();
+    const parts = page.locator(".drt-parts-changed .drt-part");
+    await expect(parts.filter({ hasText: "シャフト" }).first()).toBeVisible({
+      timeout: 30000,
+    });
+    const lines = await parts.evaluateAll((els) =>
+      els.map((el) => ({
+        text: el.textContent,
+        lines: Math.round(
+          el.getBoundingClientRect().height /
+            parseFloat(getComputedStyle(el).lineHeight),
+        ),
+      })),
+    );
+    for (const l of lines) expect(l.lines, l.text).toBe(1);
+  });
+}
