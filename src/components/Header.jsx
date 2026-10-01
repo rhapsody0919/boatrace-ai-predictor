@@ -186,6 +186,7 @@ function Header() {
               {t("nav.winningTechnique")}
             </Link>
             {/* 本日のデータ一覧（/today）は ja専用のため、選手一覧と同じく ja でのみ出す */}
+            {/* i18n-allow-start: ja のときだけ出すリンク（遷移先が ja専用ページ） */}
             {currentLng === "ja" && (
               <Link
                 to="/today"
@@ -195,6 +196,7 @@ function Header() {
                 本日のデータ一覧
               </Link>
             )}
+            {/* i18n-allow-end */}
             <button
               className={`submenu-item submenu-item-button ${activeTab === "hit-races" ? "active" : ""}`}
               onClick={() => {
@@ -218,6 +220,7 @@ function Header() {
             >
               {t("nav.pastRaces")}
             </Link>
+            {/* i18n-allow-start: ja のときだけ出すリンク（遷移先が ja専用ページ） */}
             {currentLng === "ja" && (
               <Link
                 to="/racers"
@@ -227,6 +230,7 @@ function Header() {
                 選手一覧
               </Link>
             )}
+            {/* i18n-allow-end */}
             <Link
               to={localize("/how-to-use")}
               className={`submenu-item ${activeTab === "how-to-use" ? "active" : ""}`}
