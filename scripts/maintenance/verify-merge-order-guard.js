@@ -161,12 +161,12 @@ const limited = (task) =>
   });
 
 /** node スクリプトを隔離した環境で起動する。{ status, stdout, stderr, timedOut } */
-function runNode(script, args, { env = {}, input = "" } = {}) {
+function runNode(script, args, { env = {}, input = "", cwd = repo } = {}) {
   return limited(
     () =>
       new Promise((resolve) => {
         const child = spawn(process.execPath, [script, ...args], {
-          cwd: repo,
+          cwd,
           env: isolatedEnv(env),
         });
         let stdout = "";
@@ -202,9 +202,13 @@ function ledgerFor(content) {
   return file;
 }
 
-/** フックとして起動する。deny なら理由、素通しなら null */
-async function runGuard(command, { ledgerFile, env = {}, payload = {} } = {}) {
+/** フックとして起動する。deny なら理由、素通しなら null。spawnCwd はフックのプロセス自身の cwd */
+async function runGuard(
+  command,
+  { ledgerFile, env = {}, payload = {}, spawnCwd = repo } = {},
+) {
   const r = await runNode(GUARD, [], {
+    cwd: spawnCwd,
     env: { MERGE_ORDER_LEDGER: ledgerFile, ...env },
     input: JSON.stringify({ cwd: repo, ...payload, tool_input: { command } }),
   });
@@ -217,9 +221,9 @@ async function runGuard(command, { ledgerFile, env = {}, payload = {} } = {}) {
 
 const pending = [];
 /** フックを起動して判定する（並列に走らせ、最後にまとめて待つ） */
-function expectGuard(label, ledger, command, env, predicate, payload = {}) {
+function expectGuard(label, ledger, command, env, predicate, options = {}) {
   pending.push(
-    runGuard(command, { ledgerFile: ledgerFor(ledger), env, payload }).then(
+    runGuard(command, { ledgerFile: ledgerFor(ledger), env, ...options }).then(
       (r) => check(label, predicate(r), String(r)),
     ),
   );
@@ -447,14 +451,17 @@ expectGuard(
     "gh pr merge --squash",
     onlyInOther,
     includes917,
-    { cwd: otherRepo },
+    { payload: { cwd: otherRepo } },
   );
+  // 逆向き: フックのプロセス自身はPRのあるリポジトリで起動し、payload の cwd は別のリポジトリ。
+  // payload の cwd ではなく process.cwd() で引く版に戻ると、ここでPRを引いてしまい落ちる
   expectGuard(
-    "(e) payload の cwd が別のリポジトリなら、そこのPRは引かない",
+    "(e) フック自身の起動ディレクトリではなく payload の cwd で引く",
     ledger,
     "gh pr merge --squash",
     onlyInOther,
     isUnresolvedDeny,
+    { payload: { cwd: repo }, spawnCwd: otherRepo },
   );
   expectGuard(
     "(e) cd の後の番号なしは確定できないので止める",
