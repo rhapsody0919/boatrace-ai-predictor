@@ -121,6 +121,30 @@ const DATA_POINTS = [
   { icon: "⏱️", name: "起跑穩定度", desc: "選手起跑時機的穩定程度。" },
 ];
 
+// レース詳細のタブ（並び順は PredictionPanel.jsx の tabs 配列が正本。結果は確定後だけ出る）
+const RACE_TABS = [
+  {
+    key: "basic",
+    desc: "勝率、2連對率、3連對率、平均ST，可依賽場（全國/當地）、等級、期間切換比較",
+  },
+  {
+    key: "aiPrediction",
+    desc: "第一轉彎標展開預測與1號位失守指數。也能在這裡確認預測是否命中",
+  },
+  {
+    key: "meet",
+    desc: "出賽6名選手在本梯次的得分率、梯次名次，以及晉級準優勝戰所需的得分",
+  },
+  { key: "beforeInfo", desc: "展示時間、天氣與賽前報告" },
+  { key: "waku", desc: "選手在今日預想航道的成績、起跑分析與逃脫模擬" },
+  { key: "motor", desc: "本賽場馬達的成績與調子" },
+  { key: "oddsList", desc: "發售中的賠率" },
+  { key: "result", desc: "比賽確定後的名次與派彩。確定前不會顯示此分頁" },
+];
+
+const RACE_TABS_INTRO =
+  "比賽頁面分為以下分頁，依此順序排列。前4個分頁一次比較6艘艇，後面的分頁則是選擇1艘艇深入查看。";
+
 export default function ZhTwGuide() {
   const { t } = useTranslation();
 
@@ -302,18 +326,18 @@ export default function ZhTwGuide() {
               </div>
             </li>
             <li>
-              <strong>查看1號位失守指數</strong> —
-              數值高代表容易爆冷（派彩更高、命中率更低）。
-            </li>
-            <li>
-              <strong>觀看第一轉彎標動畫</strong> —
-              以視覺化模擬呈現決定勝負的第一個轉彎最可能如何展開，並附各展開的機率。
-            </li>
-            <li>
-              <strong>閱讀關鍵數據卡</strong> —
-              每艘推薦艇背後的主要統計依據（起跑時機排名、馬達強度、當地勝率）。
+              <strong>打開「AI預測」分頁</strong> —
+              第一轉彎標的展開預測（附各展開的機率）、1號位失守指數（數值高代表容易爆冷：派彩更高、命中率更低），比賽結束後也能在這裡確認預測是否命中。
             </li>
           </ol>
+          <p>{RACE_TABS_INTRO}</p>
+          <ul className="eg-list eg-race-tabs">
+            {RACE_TABS.map((tab) => (
+              <li key={tab.key}>
+                <strong>{t(`raceTabs.${tab.key}`)}</strong>: {tab.desc}
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* Real example (BOA-250): actual past race data */}
