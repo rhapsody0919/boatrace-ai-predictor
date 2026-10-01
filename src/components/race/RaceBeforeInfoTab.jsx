@@ -59,6 +59,7 @@ import {
 } from "./raceIndicators";
 import {
   computeExhibitionTopRates,
+  recordsBeforeRace,
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
 import {
@@ -416,7 +417,11 @@ function RaceBeforeInfoTab({
         // null＝取得失敗。「展示1位なし」に化けさせず「—」にする
         // （失敗はカード側の InlineFetchError が知らせる）
         if (state === null) return "—";
-        const rates = computeExhibitionTopRates(state);
+        // 表示中のレースより前の走だけ（BOA-605）。過去のレースで、そのレース自身や
+        // 後日の走の「展示1位で勝った」が入っていた
+        const rates = computeExhibitionTopRates(
+          recordsBeforeRace(state, raceId),
+        );
         if (rates.n === 0)
           return (
             <span className="drt-sub">

@@ -240,17 +240,20 @@ const ROW_PARSERS = {
 
 /**
  * HTMLから3区分の通知を抽出する
- * @returns {{notes: Array|null, reason: string|null}}
+ * rowsUnparsed: 通知の表に行（セルあり）があるのに、行の解析・日付の解決に失敗して捨てた行数（BOA-373）。
+ * 「通知なし」と「行はあるが読めない（構造変化・未知の書式）」を区別するために数える
+ * @returns {{notes: Array|null, reason: string|null, rowsUnparsed: number}}
  */
 function parseInformationHtml(html, dateYmd) {
   const $ = cheerio.load(html);
   const sections = $(".title7_mainLabel");
   if (sections.length === 0) {
-    return { notes: null, reason: "notice_section_not_found" };
+    return { notes: null, reason: "notice_section_not_found", rowsUnparsed: 0 };
   }
 
   const notes = [];
   let matchedCategories = 0;
+  let rowsUnparsed = 0;
 
   sections.each((_, el) => {
     const label = $(el).text().trim();
@@ -273,10 +276,13 @@ function parseInformationHtml(html, dateYmd) {
 
       const parser = ROW_PARSERS[category];
       const parsed = parser ? parser(cells) : null;
-      if (!parsed) return;
-
-      const raceDate = resolveRaceDate(parsed.dateText, dateYmd);
-      if (!raceDate) return;
+      const raceDate = parsed
+        ? resolveRaceDate(parsed.dateText, dateYmd)
+        : null;
+      if (!raceDate) {
+        rowsUnparsed++;
+        return;
+      }
 
       notes.push({
         category,
@@ -289,9 +295,9 @@ function parseInformationHtml(html, dateYmd) {
   });
 
   if (matchedCategories < EXPECTED_CATEGORY_COUNT) {
-    return { notes, reason: "unexpected_section_count" };
+    return { notes, reason: "unexpected_section_count", rowsUnparsed };
   }
-  return { notes, reason: null };
+  return { notes, reason: null, rowsUnparsed };
 }
 
 /**
@@ -377,7 +383,8 @@ const NOT_ATTEMPTED_REASONS = new Set(["breaker_open", "deadline"]);
  * @param {() => boolean} [options.shouldStop] true を返したら、以降の会場は取得しない（ソフトデッドライン）
  * @returns {Promise<{
  *   updated: boolean, count: number, venuesChecked: number, venuesFailed: Array<{venueCode: number, reason: string|null}>,
- *   venuesNotAttempted: number[], notesParsed: number, notesInserted: number, healthWritten: number,
+ *   venuesNotAttempted: number[], notesParsed: number, rowsUnparsed: number,
+ *   venuesWithUnparsedRows: Array<{venueCode: number, rows: number}>, notesInserted: number, healthWritten: number,
  *   healthSkipped: number, digest: string, writeErrors: string[]
  * }>}
  */
@@ -398,6 +405,8 @@ export async function run(schedule, date, options = {}) {
     venuesFailed: [],
     venuesNotAttempted: [],
     notesParsed: 0,
+    rowsUnparsed: 0,
+    venuesWithUnparsedRows: [],
     notesInserted: 0,
     healthWritten: 0,
     healthSkipped: 0,
@@ -452,10 +461,11 @@ export async function run(schedule, date, options = {}) {
           notes: [],
         };
       }
-      const { notes, reason: parseReason } = parseInformationHtml(
-        html,
-        dateYmd,
-      );
+      const {
+        notes,
+        reason: parseReason,
+        rowsUnparsed,
+      } = parseInformationHtml(html, dateYmd);
       // parseReasonが立っている場合（見出し自体が見つからない、または3区分
       // 揃わない）は構造変化の疑いとして必ず失敗扱いにする。notesが空配列でも
       // nullでなければ「取得自体は成功」と誤判定してしまうバグを防ぐ
@@ -484,6 +494,7 @@ export async function run(schedule, date, options = {}) {
         venueCode,
         outcome: { success: parseReason === null, reason: parseReason },
         notes: notes ?? [],
+        rowsUnparsed,
         capturedPath,
       };
     },
@@ -494,8 +505,19 @@ export async function run(schedule, date, options = {}) {
   const venuesFailed = [];
   const venuesNotAttempted = [];
   const capturedPages = [];
+  /** 行はあるのに解析できなかった会場（BOA-373） */
+  const venuesWithUnparsedRows = [];
 
-  for (const { venueCode, outcome, notes, capturedPath } of perVenue) {
+  for (const {
+    venueCode,
+    outcome,
+    notes,
+    rowsUnparsed,
+    capturedPath,
+  } of perVenue) {
+    if (rowsUnparsed > 0) {
+      venuesWithUnparsedRows.push({ venueCode, rows: rowsUnparsed });
+    }
     if (capturedPath) {
       capturedPages.push({ venueCode, path: capturedPath });
       console.log(
@@ -607,6 +629,8 @@ export async function run(schedule, date, options = {}) {
     venuesFailed,
     venuesNotAttempted,
     notesParsed: allNoteRows.length,
+    rowsUnparsed: venuesWithUnparsedRows.reduce((n, v) => n + v.rows, 0),
+    venuesWithUnparsedRows,
     notesInserted: insertedCount,
     healthWritten,
     healthSkipped: healthUpdates.length - healthToWrite.length,

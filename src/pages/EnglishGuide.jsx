@@ -3,7 +3,10 @@
  * 競技を全く知らない海外ユーザーが、ルール理解から boatAI の予想の読み方まで到達できる構成
  */
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { getSiteFooterLinks } from "../components/siteFooterLinks";
 import "./EnglishGuide.css";
 
 const TECHNIQUES = [
@@ -159,7 +162,39 @@ const DATA_POINTS = [
   },
 ];
 
+// レース詳細のタブ（並び順は PredictionPanel.jsx の tabs 配列が正本。結果は確定後だけ出る）
+const RACE_TABS = [
+  {
+    key: "basic",
+    desc: "Win rate, top-2/top-3 rates and average ST, switchable by venue (national/local), grade and period",
+  },
+  {
+    key: "aiPrediction",
+    desc: "First Mark forecast and the Lane-1 upset index. You can also check here whether the forecast hit",
+  },
+  {
+    key: "meet",
+    desc: "Each racer's points in this series, standing, and points needed to reach the semifinal",
+  },
+  { key: "beforeInfo", desc: "Exhibition times, weather and the pit report" },
+  {
+    key: "waku",
+    desc: "Results from the lane each racer is expected to start from, start analysis and the Nige simulation",
+  },
+  { key: "motor", desc: "Stats and condition of this venue's motors" },
+  { key: "oddsList", desc: "Current odds on sale" },
+  {
+    key: "result",
+    desc: "Finishing order and payouts. This tab appears only after the race is confirmed",
+  },
+];
+
+const RACE_TABS_INTRO =
+  "The race page is split into tabs, in this order. The first four compare all 6 boats at once; the later ones let you pick one boat and dig in.";
+
 export default function EnglishGuide() {
+  const { t } = useTranslation();
+
   return (
     <div className="app">
       <title>
@@ -352,20 +387,21 @@ export default function EnglishGuide() {
               </div>
             </li>
             <li>
-              <strong>Check the Lane-1 upset index</strong> — high means chaos
-              is likely (bigger payouts, lower hit rate).
-            </li>
-            <li>
-              <strong>Watch the First Mark animation</strong> — a visual
-              simulation of how the decisive first turn is likely to unfold,
-              with win probabilities per pattern.
-            </li>
-            <li>
-              <strong>Read the Key Data card</strong> — the top statistical
-              reasons behind each picked boat (start timing rank, motor
-              strength, local win rate).
+              <strong>Open the AI Prediction tab</strong> — the First Mark
+              forecast (how the decisive first turn is likely to unfold, with
+              win probabilities per pattern), the Lane-1 upset index (high means
+              chaos is likely: bigger payouts, lower hit rate), and, once the
+              race is over, whether the forecast hit.
             </li>
           </ol>
+          <p>{RACE_TABS_INTRO}</p>
+          <ul className="eg-list eg-race-tabs">
+            {RACE_TABS.map((tab) => (
+              <li key={tab.key}>
+                <strong>{t(`raceTabs.${tab.key}`)}</strong>: {tab.desc}
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* Real example (BOA-250): actual past race data, not a fictional walkthrough */}
@@ -477,6 +513,7 @@ export default function EnglishGuide() {
           </Link>
         </section>
       </div>
+      <Footer links={getSiteFooterLinks(t)} />
     </div>
   );
 }

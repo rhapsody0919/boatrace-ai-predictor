@@ -1,0 +1,137 @@
+name: Post-merge Checks
+
+# master にマージされた後の状態で、未定義の名前の参照（no-undef）とビルドを検査する。
+# 失敗したら Slack に流す（ADR-0079）。
+#
+# 背景（2026-10-01 本番障害）: #1002 が import を groupIntoCurrentMeet から
+# groupIntoMeetBeforeRace に置き換え、その後に入った #999 はまだ groupIntoCurrentMeet を
+# 呼んでいた。どちらの PR も単体では CI が緑で、テキストの衝突も無かった。PR の CI は
+# 「PR を作った時点の master」との組み合わせしか見ないため、2つの PR の組み合わせで
+# 壊れる型は、マージ後の master を検査しないと捕まらない（master にはブランチ保護の
+# "Require branches to be up to date" が効いていない）。
+#
+# Quality Gates（quality-gates.yml）も master への push で verify:ci を走らせるが、
+# 失敗を誰にも知らせず、ビルドもしない。本ワークフローは「本番に出る前に気づく」ための
+# 最小の組み合わせ（no-undef ＋ build）に絞り、失敗を Slack に流す。
+#
+# 絞り方: 自動コミット（[automated]）が触るのは public/sitemap.xml・public/llms.txt・
+# docs/・data/・e2e/recording.json なので、paths で「ビルド結果か検査対象が変わりうる
+# ファイル」に絞れば自動コミットでは走らない。コミットメッセージでは絞らない
+# （[automated] が付いていても src/ を触るなら必ず走らせるため）。
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'src/**'
+      - 'api/**'
+      - 'middleware.js'
+      - 'scripts/**'
+      - 'e2e/**/*.js'
+      - '*.mjs'
+      - 'index.html'
+      - 'eslint.config.js'
+      - 'vite.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/post-merge-checks.yml'
+  workflow_dispatch:
+
+# concurrency は付けない。マージが続いても各コミットを検査し、どのコミットで壊れたかを通知に出すため
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # verify-no-undef.js の自己テストが壊れていた版を git show で読む。
+          # 通知に「直前にマージされた PR」を出すのにも履歴が要る
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: 未定義の名前の参照を検査（no-undef）
+        id: undef
+        continue-on-error: true
+        run: node scripts/maintenance/verify-no-undef.js 2>&1 | tee undef.log; exit "${PIPESTATUS[0]}"
+
+      - name: Install Chromium（build の AI スナップショット生成用）
+        id: chromium
+        continue-on-error: true
+        run: npx playwright install --with-deps chromium
+
+      - name: ビルド
+        id: build
+        continue-on-error: true
+        run: npm run build 2>&1 | tee build.log; exit "${PIPESTATUS[0]}"
+
+      - name: Notify Slack (失敗時のみ)
+        if: steps.undef.outcome == 'failure' || steps.build.outcome == 'failure'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          UNDEF_OUTCOME: ${{ steps.undef.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # 壊れたコミットと、その直前にマージされた PR（squash のタイトル末尾の (#番号)）。
+          # 2つの PR の組み合わせで壊れる型では、この2つを並べると原因の当たりが付く
+          head_line=$(git log -1 --format='%h %s')
+          # パイプにすると grep -m1 の早期終了で git log が SIGPIPE になり、pipefail で
+          # 失敗扱いになるため、一度ファイルに書いてから探す
+          git log HEAD^ -n 30 --format='%h %s' > recent-commits.txt
+          prev_line=$(grep -m1 -E '\(#[0-9]+\)$' recent-commits.txt || true)
+          [ -n "$prev_line" ] || prev_line='（直近30件に PR 番号付きのコミットが無い）'
+
+          failed=""
+          details=""
+          if [ "$UNDEF_OUTCOME" = "failure" ]; then
+            failed="${failed}no-undef "
+            details="${details}[verify-no-undef]
+          $(tail -n 30 undef.log)
+
+          "
+          fi
+          if [ "$BUILD_OUTCOME" = "failure" ]; then
+            failed="${failed}build "
+            details="${details}[npm run build]
+          $(tail -n 30 build.log)
+          "
+          fi
+
+          text=$(printf '%s\n' \
+            ":rotating_light: *マージ後の master の検査が失敗しました*（${failed% }）" \
+            "壊れたコミット: \`${head_line}\`" \
+            "直前にマージされた PR: \`${prev_line}\`" \
+            "2つの PR がそれぞれ CI 緑でも、組み合わせで壊れることがあります（ADR-0079）。本番デプロイ前に直してください。" \
+            "${RUN_URL}")
+
+          payload=$(jq -n --arg text "$text" --arg details "$details" '{
+            attachments: [{
+              color: "#c0392b",
+              blocks: [
+                { type: "section", text: { type: "mrkdwn", text: $text } },
+                { type: "section", text: { type: "mrkdwn", text: ("```" + ($details | .[0:2800]) + "```") } }
+              ]
+            }]
+          }')
+          curl -sS -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
+
+      - name: 検査の失敗をジョブの失敗として扱う
+        if: steps.undef.outcome == 'failure' || steps.build.outcome == 'failure'
+        run: |
+          echo "no-undef: ${{ steps.undef.outcome }} / build: ${{ steps.build.outcome }}"
+          exit 1

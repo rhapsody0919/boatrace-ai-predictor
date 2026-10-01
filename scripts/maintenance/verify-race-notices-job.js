@@ -255,6 +255,38 @@ const writes = (client, table) =>
     show({ status: shadow.status, report }),
   );
 
+  check(
+    "解析できない行が無いときは、監視への通知（last_report.alerts）を出さない（BOA-373）",
+    report?.rowsUnparsed === 0 && report?.alerts === undefined,
+    show(report),
+  );
+
+  // BOA-373: 通知の表に行があるのに解析できない（想定外の書式）。「通知なし」と区別し、監視へ通知する
+  const brokenStore = createMemoryStore({
+    rows: { race_notices: { job: "race_notices", mode: "shadow" } },
+  });
+  const brokenHtml = WITH_NOTICES.replace(">12/19</th>", ">十二月十九日</th>");
+  const broken = await runJob({
+    store: brokenStore,
+    client: createFakeClient({
+      tables: { races: raceRows("2017-12-24", [12]), racer_profiles: [] },
+    }),
+    politeFetch: stubFetch({}, () => ok(brokenHtml)),
+    now: new Date("2017-12-24T03:00:00Z"),
+  });
+  const brokenReport = brokenStore.state.get("race_notices").last_report;
+  check(
+    "解析できない行: 実行は成功のまま（読めた8件は扱う）、rowsUnparsed と会場を記録し、last_report.alerts で監視へ通知する（BOA-373）",
+    broken.status === 200 &&
+      brokenReport?.notesParsed === 8 &&
+      brokenReport?.rowsUnparsed === 1 &&
+      brokenReport?.venuesWithUnparsedRows?.[0]?.venueCode === 12 &&
+      brokenReport?.alerts?.length === 1 &&
+      brokenReport.alerts[0].key === "rows_unparsed" &&
+      /会場12: 1行/.test(brokenReport.alerts[0].text),
+    show({ status: broken.status, brokenReport }),
+  );
+
   // live（通知あり）: 書く
   const liveClient = createFakeClient({
     tables: { races: raceRows("2017-12-24", [12]), racer_profiles: [] },

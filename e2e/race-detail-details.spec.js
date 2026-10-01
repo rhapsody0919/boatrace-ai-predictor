@@ -75,13 +75,16 @@ test.describe("レース詳細の表示の細部", () => {
     await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
       timeout: 30000,
     });
-    const [shadow, track] = await page
-      .locator(".rbit-bar-row")
-      .first()
-      .evaluate((row) => [
-        getComputedStyle(row.querySelector(".rbit-bar-fill")).boxShadow,
-        getComputedStyle(row.querySelector(".rbit-bar-track")).backgroundColor,
-      ]);
+    // 棒（.rbit-bar-fill）は値の読み込みが終わってから描かれる。行だけを待つと、
+    // CI で棒の無い時点で測って落ちた
+    const firstRow = page.locator(".rbit-bar-row").first();
+    await expect(firstRow.locator(".rbit-bar-fill")).toBeVisible({
+      timeout: 30000,
+    });
+    const [shadow, track] = await firstRow.evaluate((row) => [
+      getComputedStyle(row.querySelector(".rbit-bar-fill")).boxShadow,
+      getComputedStyle(row.querySelector(".rbit-bar-track")).backgroundColor,
+    ]);
     const rgb = (s) =>
       s
         .match(/\d+(\.\d+)?/g)
