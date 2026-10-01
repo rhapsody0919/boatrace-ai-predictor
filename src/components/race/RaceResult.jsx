@@ -711,6 +711,12 @@ function RaceResult({ prediction, raceId }) {
   const validStartTimings = (startTimings ?? []).filter(
     (st) => st.startTiming != null,
   );
+  // 進入コース順に並べた艇番（公式の「スタート情報」の並び。BOA-625）。
+  // 進入が1艇も入っていない（2026-09-20 以前の一部・取得前）ときは空
+  const courseOrder = (startTimings ?? [])
+    .filter((st) => st.entryCourse != null)
+    .sort((a, b) => a.entryCourse - b.entryCourse)
+    .map((st) => st.boatNumber);
   // フライングは異常値のため「最速」判定・到達タイミングの基準（最遅ST）からは除外する
   // （update-top-start-stats.jsと同じ扱い。BOA-559）
   const nonFlyingStartTimings = validStartTimings.filter((st) => !st.isFlying);
@@ -768,6 +774,16 @@ function RaceResult({ prediction, raceId }) {
         </p>
       )}
 
+      {!isLoadingStartTimings && courseOrder.length > 0 && (
+        <div className="rr-course-order">
+          <span className="rr-course-order-label">
+            {t("result.courseOrderLabel")}
+          </span>
+          {courseOrder.map((boat) => (
+            <BoatChip key={boat} number={boat} />
+          ))}
+        </div>
+      )}
       {isLoadingStartTimings ? (
         <div className="rr-table-skeleton" aria-busy="true">
           {boatsInRace.map((boat) => (
@@ -803,6 +819,15 @@ function RaceResult({ prediction, raceId }) {
                     {player?.grade && <small>{player.grade}</small>}
                   </span>
                   {label && <span className="rr-mark-label">{label}</span>}
+                  {st?.entryCourse != null && (
+                    <span
+                      className={`rr-course${st.entryCourse !== boat ? " is-moved" : ""}`}
+                    >
+                      {t("result.entryCourseLabel", {
+                        course: st.entryCourse,
+                      })}
+                    </span>
+                  )}
                 </span>
                 <span className="rr-st-cell">
                   {st && st.startTiming != null ? (
@@ -844,7 +869,11 @@ function RaceResult({ prediction, raceId }) {
       {validStartTimings.length > 0 && (
         <p className="rr-note rr-st-legend">{t("result.stLegend")}</p>
       )}
-      <p className="rr-note">{t("result.courseNote")}</p>
+      {/* 以前は「進入コースは精度確認中のため表示していない」と出していた（BOA-238 の頃は
+          進入の元データが無かった）。今は本番STの進入を出すので、データが無いレースだけ断る（BOA-625） */}
+      {!isLoadingStartTimings && !isNoRace && courseOrder.length === 0 && (
+        <p className="rr-note">{t("result.courseNoData")}</p>
+      )}
       {!isLoadingStartTimings && !isNoRace && rows.length < 6 && (
         <p className="rr-note rr-note-missing-ranks">
           {t("result.missingRanksNote")}

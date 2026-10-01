@@ -234,7 +234,9 @@
     "popularityRange": "#{{from}}–{{to}} favorite",
     "popularityFromFinalOddsNote": "※ Win and place favorites are calculated from the official final odds (place: by upper bound; ties shown as a range). Other bet types show the official favorites.",
     "fastestStartTag": "Fastest",
-    "courseNote": "※Approach course is not shown yet (data accuracy under review).",
+    "courseNoData": "※We have not collected the approach course for this race yet.",
+    "courseOrderLabel": "Approach",
+    "entryCourseLabel": "Course {{course}}",
     "missingRanksNote": "* Finishing positions from 4th down have not been collected for this race, so some placings are not shown",
     "cancelledTitle": "This race was cancelled",
     "cancelledBody": "The race was cancelled due to weather or water conditions, so no result data is available.",
@@ -836,7 +838,10 @@
     "absentTitle": "Absent from every race so far this series, so no score rate or series rank (0 starts)",
     "absentNote": "\"Absent\" marks a racer who has not started any race so far this series. With 0 starts, there is no score rate or series rank.",
     "absentDetail": "Absent from every race so far this series (no score rate or series rank).",
-    "finishAbsentNote": "\"Abs\" in the finishes is a race the racer missed; it is not counted in the score rate."
+    "finishAbsentNote": "\"Abs\" in the finishes is a race the racer missed; it is not counted in the score rate.",
+    "postPrelimFlying": "F after qual.",
+    "postPrelimFlyingTitle": "Flying start (F) in a race after qualifying ended. The racer is excluded from prizes, but ranks are set by qualifying, so we keep them in the qualifying ranking",
+    "postPrelimFlyingNote": "\"F after qual.\" under a rank marks a racer who had a flying start after qualifying ended. They are excluded from prizes, but ranks are set by qualifying, so they are counted among the ranked racers above."
   },
   "basicInfo": {
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",

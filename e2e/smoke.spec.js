@@ -1748,6 +1748,48 @@ test.describe("レースページ再設計（BOA-168）", () => {
     }
   });
 
+  test("結果タブに進入コースを出し、古い「精度確認中」の注記を出さない（BOA-625）", async ({
+    page,
+  }) => {
+    // 2026-09-30 児島7R: 公式のスタート情報は 1-2-3-6-4-5。6号艇（峰竜太）は4コース
+    await page.goto("/race/2026-09-30-16-07");
+    const order = page.locator(".rr-course-order");
+    await expect(order).toBeVisible({ timeout: 30000 });
+    await expect(order.locator(".rr-boat-chip")).toHaveText([
+      "1",
+      "2",
+      "3",
+      "6",
+      "4",
+      "5",
+    ]);
+    const mine = page.locator(".rr-row", {
+      has: page.locator(".rr-boat-chip", { hasText: /^6$/ }),
+    });
+    await expect(mine.locator(".rr-course")).toHaveText("4コース");
+    // 枠番と違う進入（前付け）は強調する。枠なりの1号艇は強調しない
+    await expect(mine.locator(".rr-course")).toHaveClass(/is-moved/);
+    const one = page.locator(".rr-row", {
+      has: page.locator(".rr-boat-chip", { hasText: /^1$/ }),
+    });
+    await expect(one.locator(".rr-course")).not.toHaveClass(/is-moved/);
+    await expect(page.getByText("精度確認中")).toHaveCount(0);
+
+    // 本番STの進入が無いレース（2026-09-14 徳山7R）は、Kファイルの進入で埋める（枠なり）。
+    // 以前は「データがありません」と出していたが、公式には進入が出ている（ファン評価1周目）
+    await page.goto("/race/2026-09-14-18-07");
+    const order2 = page.locator(".rr-course-order");
+    await expect(order2).toBeVisible({ timeout: 30000 });
+    await expect(order2.locator(".rr-boat-chip")).toHaveText([
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+    ]);
+  });
+
   test("過去のレースの基本情報のバーは、そのレースより前の走で、期間もレースの日から数える（BOA-605）", async ({
     page,
   }) => {

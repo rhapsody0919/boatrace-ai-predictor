@@ -233,7 +233,9 @@
     "popularityRange": "人氣第{{from}}～{{to}}名",
     "popularityFromFinalOddsNote": "※ 單勝、複勝的人氣依截止時賠率（官方）計算（複勝依上限由低至高，相同賠率以範圍表示）。其他投注方式為官方公布。",
     "fastestStartTag": "最快",
-    "courseNote": "※目前未顯示進入航線（資料準確度確認中）",
+    "courseNoData": "※本站尚未取得本場的進入航線",
+    "courseOrderLabel": "進入",
+    "entryCourseLabel": "{{course}}道",
     "missingRanksNote": "※本場比賽第4名以後的名次資料尚未取得，因此部分名次未顯示",
     "cancelledTitle": "本場比賽已中止",
     "cancelledBody": "因天候或水面狀況等因素，本場比賽已中止，因此沒有結果資料。",
@@ -831,7 +833,10 @@
     "absentTitle": "本梯次至今全部缺賽，出賽數為0，因此沒有得分率與梯次內名次",
     "absentNote": "「缺賽」表示本梯次至今全部缺賽的選手。出賽數為0，因此沒有得分率與梯次內名次。",
     "absentDetail": "本梯次至今全部缺賽（沒有得分率與梯次內名次）。",
-    "finishAbsentNote": "名次中的「缺」為缺賽的比賽，不計入得分率的出賽數。"
+    "finishAbsentNote": "名次中的「缺」為缺賽的比賽，不計入得分率的出賽數。",
+    "postPrelimFlying": "預賽後F",
+    "postPrelimFlyingTitle": "預賽結束後的比賽中偷跑（F）。雖為獎典除外，但名次由預賽決定，因此未從預賽名次中排除",
+    "postPrelimFlyingNote": "名次下方的「預賽後F」為預賽結束後的比賽中偷跑的選手。雖為獎典除外，但名次由預賽決定，因此計入上方的「列入名次」人數。"
   },
   "basicInfo": {
     "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近10場、擅長賽場、依條件）",

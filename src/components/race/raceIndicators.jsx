@@ -149,6 +149,8 @@ function buildRowDefs({
   motorDeepLink = null,
   originalExhibition = null,
   entryWeights = null,
+  // 級別の後ろに付けるバッジ（F・L数、BOA-638）。(p) => ReactNode。一覧カードの出走表は渡さない
+  gradeBadge = null,
 }) {
   const {
     motor,
@@ -242,7 +244,10 @@ function buildRowDefs({
       best: bestOf(cand.winRate),
       render: (p) => (
         <span className="drt-value">
-          <span className="drt-grade">{p.grade}</span>
+          <span className="drt-grade">
+            {p.grade}
+            {gradeBadge?.(p)}
+          </span>
           {toNumber(p.winRate)?.toFixed(2) ?? "—"}
         </span>
       ),
