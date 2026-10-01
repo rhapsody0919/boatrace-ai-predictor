@@ -7,7 +7,10 @@
  */
 import { Link } from "react-router-dom";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
-import { prevResultState } from "../../utils/prevResult";
+import {
+  meetPrevRunState,
+  meetPrevRunWhenParams,
+} from "../../utils/prevResult";
 
 export const TECHNIQUE_KEY_BY_NAME = Object.fromEntries(
   Object.entries(TECHNIQUE_NAMES).map(([key, name]) => [name, key]),
@@ -146,8 +149,6 @@ function buildRowDefs({
   motorDeepLink = null,
   originalExhibition = null,
   entryWeights = null,
-  // 前走成績の空の読み方に使う（取得が始まった日・1R）。無ければ空は「—」
-  raceId = null,
 }) {
   const {
     motor,
@@ -158,6 +159,7 @@ function buildRowDefs({
     techniqueProfile,
     returnRate,
     racerStats,
+    meetPrevRun,
   } = analysis;
 
   const motorByBoat = byBoat(motor);
@@ -168,6 +170,7 @@ function buildRowDefs({
   const techByBoat = byBoat(techniqueProfile);
   const rateByBoat = byBoat(returnRate);
   const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
+  const meetPrevByBoat = byBoat(meetPrevRun);
 
   // ソース別プレースホルダ: ロード中はスケルトン、取得済みでデータ無しは「—」
   const ph = (source) =>
@@ -531,8 +534,8 @@ function buildRowDefs({
       },
     },
     {
-      // 本日の前走（同じ日にこのレースより前に走ったレースの着順・進入コース。
-      // prevResult.js 参照。今節の前走ではない）は事実の記録であり、
+      // 今節の前走（同じ会場・同じ節で、このレースより前の最後の走の着順・進入コース。
+      // prevResult.js 参照。BOA-610 で「本日の前走」から変えた）は事実の記録であり、
       // bestは持たせない（BOA-289、tilt/adjustmentWeightと同じ扱い）
       key: "prevResult",
       label: t("dataTable.rowPrevResult"),
@@ -540,15 +543,33 @@ function buildRowDefs({
       tab: null,
       best: null,
       render: (p) => {
-        const row = maintenanceByBoat.get(p.number);
-        if (!row) return ph("motorMaintenance");
-        const state = prevResultState(row, raceId);
-        if (state.kind === "firstToday") {
+        const row = meetPrevByBoat.get(p.number);
+        if (!row) return ph("meetPrevRun");
+        const state = meetPrevRunState(row);
+        if (state.kind === "firstOfMeet") {
           return (
-            <span className="drt-sub">{t("dataTable.prevResultNoRace")}</span>
+            // 375px で「今節初／戦」と語の途中で折れない（BOA-610 ファン評価3周目）
+            <span className="drt-sub drt-nowrap">
+              {t("dataTable.meetFirstRace")}
+            </span>
           );
         }
         if (state.kind === "unknown") return "—";
+        const when = meetPrevRunWhenParams(state.raceId);
+        if (state.kind === "pending") {
+          return (
+            <span className="drt-value">
+              <span className="drt-sub drt-nowrap">
+                {t("dataTable.prevResultPending")}
+              </span>
+              {when && (
+                <span className="drt-sub drt-nowrap">
+                  {t("dataTable.prevResultWhen", when)}
+                </span>
+              )}
+            </span>
+          );
+        }
         return (
           <span className="drt-value">
             {state.kind === "rank" ? (
@@ -565,6 +586,11 @@ function buildRowDefs({
               <span className="drt-sub drt-nowrap">
                 {" "}
                 {t("dataTable.prevResultCourse", { course: state.course })}
+              </span>
+            )}
+            {when && (
+              <span className="drt-sub drt-nowrap">
+                {t("dataTable.prevResultWhen", when)}
               </span>
             )}
           </span>

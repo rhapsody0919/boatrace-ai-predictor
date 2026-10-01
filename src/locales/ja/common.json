@@ -940,9 +940,10 @@
     "rowTilt": "チルト",
     "rowAdjustmentWeight": "調整重量",
     "rowPartsChanged": "部品交換",
-    "rowPrevResult": "本日の前走",
+    "rowPrevResult": "今節の前走",
     "prevResultCourse": "{{course}}コース",
-    "prevResultNoRace": "初走",
+    "prevResultWhen": "{{month}}/{{day}} {{race}}R",
+    "prevResultPending": "結果待ち",
     "meetFirstRace": "今節初戦",
     "prevMark": {
       "flying": "F",
@@ -1034,7 +1035,7 @@
       "tilt": "チルト",
       "adjustmentWeight": "調整重量",
       "partsChanged": "部品交換",
-      "prevResult": "本日前走",
+      "prevResult": "今節前走",
       "courseRate": "枠番",
       "returnRate": "回収率",
       "technique": "決まり手"

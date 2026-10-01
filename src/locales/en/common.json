@@ -945,9 +945,10 @@
     "rowTilt": "Tilt",
     "rowAdjustmentWeight": "Adjustment weight",
     "rowPartsChanged": "Parts changed",
-    "rowPrevResult": "Earlier race today",
+    "rowPrevResult": "Last race this series",
     "prevResultCourse": "Course {{course}}",
-    "prevResultNoRace": "None",
+    "prevResultWhen": "{{month}}/{{day}} R{{race}}",
+    "prevResultPending": "Awaiting result",
     "meetFirstRace": "First race of the event",
     "prevMark": {
       "flying": "F",
@@ -1039,7 +1040,7 @@
       "tilt": "Tilt",
       "adjustmentWeight": "Adj.wt",
       "partsChanged": "Parts",
-      "prevResult": "Earlier today",
+      "prevResult": "Last (series)",
       "courseRate": "Lane",
       "returnRate": "Return",
       "technique": "Style"
