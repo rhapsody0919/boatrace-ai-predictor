@@ -27,6 +27,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
+import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { parseRaceId } from "../../utils/raceId";
 import RaceHistoryTable from "./RaceHistoryTable";
@@ -235,6 +236,9 @@ function RaceBasicInfoTab({
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandedBoat, raceId]);
+
+  // Fバッジの「今節」の印（BOA-440）
+  const currentMeetFlyingBoats = useCurrentMeetFlyingBoats(raceId);
 
   const officialRowFor = (boatNumber) =>
     (officialRates ?? []).find((r) => r.boat_number === boatNumber) ?? null;
@@ -464,7 +468,11 @@ function RaceBasicInfoTab({
                       （race_entries.f_count）にしてある。この行は <button> なので
                       TermHintButton（入れ子の <button> になる）は置けず、
                       説明は title 属性で出す */}
-                  <FlyingBadge count={officialRowFor(boat)?.f_count} />
+                  <FlyingBadge
+                    count={officialRowFor(boat)?.f_count}
+                    currentMeet={currentMeetFlyingBoats.has(boat)}
+                    lateCount={officialRowFor(boat)?.l_count}
+                  />
                 </span>
                 <span className="rbit-bar-track">
                   {!loading && (
@@ -901,6 +909,12 @@ function RaceBasicInfoTab({
           );
         })}
       </div>
+      {/* Fバッジ・Lバッジの凡例。選手名の行は <button> で「?」を置けず、説明は
+          title（ホバー）だけになるため、スマホでは意味を知る手段が無かった
+          （BOA-440 ファン評価1周目）。バッジが1つも無いレースでは出さない */}
+      {(officialRates ?? []).some(
+        (r) => (r.f_count ?? 0) > 0 || (r.l_count ?? 0) > 0,
+      ) && <p className="rbit-note">{t("flyingBadge.legend")}</p>}
     </div>
   );
 }

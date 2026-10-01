@@ -45,6 +45,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { translateTechnique } from "./raceIndicators";
 import { SMALL_SAMPLE_THRESHOLD, recordsBeforeRace } from "./basicInfoStats";
 import {
@@ -106,9 +107,11 @@ function RaceWakuInfoTab({
   // どちらも094の事前集計テーブルを単純SELECTで読む（画面では集計しない）
   const [baseline, setBaseline] = useState(undefined);
   const [nigeRows, setNigeRows] = useState(undefined);
-  // 出走表の今期F数（艇番→f_count）。基本情報タブが既定タブで同じキーを
-  // 先に取るため、実質キャッシュヒットで追加クエリは増えない（T5-3）
-  const [fCountByBoat, setFCountByBoat] = useState(null);
+  // 出走表の今期F・L数（艇番→{f_count, l_count}）。基本情報タブが既定タブで
+  // 同じキーを先に取るため、実質キャッシュヒットで追加クエリは増えない（T5-3）
+  const [flyingRowByBoat, setFlyingRowByBoat] = useState(null);
+  // Fバッジの「今節」の印（BOA-440）
+  const currentMeetFlyingBoats = useCurrentMeetFlyingBoats(raceId);
 
   useEffect(() => {
     if (!raceId) return undefined;
@@ -117,18 +120,12 @@ function RaceWakuInfoTab({
       .getRaceEntryOfficialRatesBreakdown(raceId)
       .then((rows) => {
         if (cancelled) return;
-        setFCountByBoat(
-          new Map(
-            (rows ?? [])
-              .filter((r) => r.f_count !== null && r.f_count !== undefined)
-              .map((r) => [r.boat_number, r.f_count]),
-          ),
-        );
+        setFlyingRowByBoat(new Map((rows ?? []).map((r) => [r.boat_number, r])));
       })
       .catch((err) => {
         // バッジは補助表示。取れなければ出さない（カードごと消さない）
         console.error("F数取得エラー:", err?.message ?? String(err));
-        if (!cancelled) setFCountByBoat(null);
+        if (!cancelled) setFlyingRowByBoat(null);
       });
     return () => {
       cancelled = true;
@@ -652,7 +649,8 @@ function RaceWakuInfoTab({
         scopedByRacer={scopedBefore}
         baseline={baseline}
         entryCourseOf={(p) => p.number}
-        fCountByBoat={fCountByBoat}
+        flyingRowByBoat={flyingRowByBoat}
+        currentMeetFlyingBoats={currentMeetFlyingBoats}
       />
 
       {/* 逃げシミュレーション（FR-6）。会場のコース単位の指標で、選手の選択とは独立 */}

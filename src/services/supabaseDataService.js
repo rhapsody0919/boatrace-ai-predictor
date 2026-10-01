@@ -2744,6 +2744,92 @@ export const supabaseDataService = {
   },
 
   /**
+   * 今期のF（`f_count`）のうち1本を**今節**で切った艇番を返す（BOA-440）。
+   *
+   * 出走表の「F1」だけでは、半年前のFか今節のFか分からない。今節のFは
+   * 当日のスタート勘に直結するため、Fバッジに「今節」の印を付ける材料にする。
+   *
+   * - 対象は `f_count >= 1` の艇だけ。F0の艇にはバッジ自体が無い
+   * - 見るのは**前日まで**の走。`f_count` は朝の出走表の値で、同じ日の前のレースで
+   *   切ったFは含まない（実測: Fの翌日の出走表では15件中15件で1本増えていた）。
+   *   同じ日のFを拾うと「F1 今節」の1本が別のFを指してしまう
+   * - 節の範囲は `groupIntoCurrentMeet` を**選手＋会場**で絞って推定する
+   *   （`basicInfoStats.buildMeetResults` と同じ絞り方。meetGrouping.js の前提）
+   *
+   * @returns {Promise<number[]>} 今節にFがある艇番
+   */
+  getCurrentMeetFlyingBoats(raceId) {
+    return withCache(`race-current-meet-flying-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+      const date = raceId.slice(0, 10);
+      const venue = raceId.slice(11, 13);
+
+      const { data: entries } = await supabase
+        .from("race_entries")
+        .select("boat_number, racer_id, f_count")
+        .eq("race_id", raceId);
+      const targets = (entries ?? []).filter(
+        (e) => e.racer_id != null && (e.f_count ?? 0) >= 1,
+      );
+      if (targets.length === 0) return [];
+
+      // 節は長くて7日。前後の空き（2日）を見分けるのに足りる幅を取る
+      const from = new Date(`${date}T00:00:00Z`);
+      from.setUTCDate(from.getUTCDate() - 14);
+      const { data: past } = await supabase
+        .from("race_entries")
+        .select("race_id, racer_id, boat_number")
+        .in(
+          "racer_id",
+          targets.map((e) => e.racer_id),
+        )
+        .gte("race_id", from.toISOString().slice(0, 10))
+        .lt("race_id", raceId);
+
+      const meetRunsByRacer = new Map(
+        targets.map((e) => {
+          const upto = (past ?? [])
+            .filter(
+              (r) =>
+                r.racer_id === e.racer_id && r.race_id.slice(11, 13) === venue,
+            )
+            .sort((a, b) => a.race_id.localeCompare(b.race_id));
+          const meet = groupIntoCurrentMeet([
+            ...upto,
+            { race_id: raceId, anchor: true },
+          ]).filter((r) => !r.anchor && r.race_id.slice(0, 10) < date);
+          return [e.racer_id, meet];
+        }),
+      );
+      const meetRaceIds = [
+        ...new Set([...meetRunsByRacer.values()].flat().map((r) => r.race_id)),
+      ];
+      if (meetRaceIds.length === 0) return [];
+
+      const { data: flying } = await supabase
+        .from("race_start_timings")
+        .select("race_id, boat_number")
+        .in("race_id", meetRaceIds)
+        .eq("is_flying", true);
+      const flew = new Set(
+        (flying ?? []).map((r) => `${r.race_id}#${r.boat_number}`),
+      );
+
+      return targets
+        .filter((e) =>
+          meetRunsByRacer
+            .get(e.racer_id)
+            .some((r) => flew.has(`${r.race_id}#${r.boat_number}`)),
+        )
+        .map((e) => e.boat_number)
+        .sort((a, b) => a - b);
+    });
+  },
+
+  /**
    * 指定レースの枠番別モーター調子（2連率/3連率）を取得する（BOA-151）
    * 「このレースのどの艇のモーターが調子いいか」を直接示す
    * venueCodeを渡すと各艇のモーターの機力指数（BOA-265）も合わせて取得する
