@@ -60,15 +60,24 @@ const edgeData = {
   ],
 };
 
-async function setup(page, lang) {
-  await page.addInitScript((l) => {
-    localStorage.setItem("boatai-language", l);
-    window.__sharedUrls = [];
-    window.open = (url) => {
-      window.__sharedUrls.push(String(url));
-      return null;
-    };
-  }, lang);
+/**
+ * @param {string} lang
+ * @param {number} [variant] - 通常の予想文面（5種）のどれを出すか（0〜4）。
+ *   指定時は Math.random を固定値に差し替える（文面の選択は Math.random で決まる）
+ */
+async function setup(page, lang, variant) {
+  await page.addInitScript(
+    ({ l, v }) => {
+      localStorage.setItem("boatai-language", l);
+      window.__sharedUrls = [];
+      window.open = (url) => {
+        window.__sharedUrls.push(String(url));
+        return null;
+      };
+      if (v != null) Math.random = () => (v + 0.5) / 5;
+    },
+    { l: lang, v: variant },
+  );
   await page.route("**/api/predictions/**", (route) =>
     route.fulfill({ json: edgeData }),
   );
@@ -79,6 +88,11 @@ async function setup(page, lang) {
 
 /** X ボタンを押し、intent URL の text を返す */
 async function shareTextOnX(page, path) {
+  return (await shareOnX(page, path)).text;
+}
+
+/** X ボタンを押し、intent URL の text と hashtags を返す */
+async function shareOnX(page, path) {
   await page.goto(path);
   const xButton = page
     .locator(".social-share-wrapper .social-share-button")
@@ -88,7 +102,10 @@ async function shareTextOnX(page, path) {
   const url = await page.waitForFunction(() => window.__sharedUrls[0]);
   const shared = new URL(await url.jsonValue());
   expect(shared.hostname).toBe("twitter.com");
-  return shared.searchParams.get("text");
+  return {
+    text: shared.searchParams.get("text"),
+    hashtags: (shared.searchParams.get("hashtags") || "").split(","),
+  };
 }
 
 test.describe("レース詳細のSNSシェア文面（中止・予想なし）", () => {
@@ -132,4 +149,86 @@ test.describe("レース詳細のSNSシェア文面（中止・予想なし）",
     expect(text).not.toContain("本命");
     expect(text).not.toContain("中止");
   });
+});
+
+// 日本語の通常文面（5種）。i18n 化の前に share.js に直書きしていた文面と一字一句同じであることを確かめる
+const JA_HEAD =
+  "🏁 龍神レーダー予想【09/22 津2R】\n\nモデル: AI予想\n本命: 1号艇\n推奨: 1-2\n\n";
+const JA_BODIES = [
+  "展開予測から分析した結果、この並びが来そう！\nデータ的にも期待できるかも👀",
+  "1マーク展開予測とモーター性能を分析した結果、\nこの組み合わせに注目してます📊",
+  "無料でここまで精度の高い予想が見られるのは嬉しい✨\n今日も当たりますように！",
+  "展開予測から見て、この予想は信頼できそう！\n皆さんはどう思いますか？🤔",
+  "最近的中率が上がってきてて嬉しい😊\nAIの予想、参考にしてみてください！",
+];
+
+// 各言語の通常文面に必ず入る部分（見出し・モデル名・本命）
+const LOCALIZED = [
+  {
+    lang: "en",
+    prefix: "/en",
+    expected: [
+      "Ryujin Radar Prediction",
+      "Model: AI Prediction",
+      "Top pick: Boat 1",
+      "Picks: 1-2",
+    ],
+  },
+  {
+    lang: "zh-TW",
+    prefix: "/zh-TW",
+    expected: ["龍神雷達預測", "模型：AI預測", "首選：1號艇", "推薦：1-2"],
+  },
+  {
+    lang: "ko",
+    prefix: "/ko",
+    expected: [
+      "용신 레이더 예상",
+      "모델: AI 예상",
+      "본명: 1번 보트",
+      "추천: 1-2",
+    ],
+  },
+];
+
+// ひらがな・カタカナ（日本語の文面が混ざっていないかの判定。漢字は zh-TW と共通なので見ない）
+const KANA = /[\u3040-\u30ff]/;
+
+test.describe("レース詳細のSNSシェア文面（言語・ハッシュタグ）", () => {
+  for (let v = 0; v < 5; v++) {
+    test(`日本語: 通常の文面${v + 1}が従来どおり`, async ({ page }) => {
+      await setup(page, "ja", v);
+      const { text, hashtags } = await shareOnX(page, `/race/${DATE}-09-02`);
+      expect(text).toBe(JA_HEAD + JA_BODIES[v]);
+      expect(hashtags).toEqual(["ボートレース", "AI予想", "龍神レーダー"]);
+    });
+  }
+
+  for (const { lang, prefix, expected } of LOCALIZED) {
+    test(`${lang}: 通常の文面5種が各言語で出て、日本語が混ざらない`, async ({
+      page,
+    }) => {
+      const texts = [];
+      for (let v = 0; v < 5; v++) {
+        await setup(page, lang, v);
+        texts.push(await shareTextOnX(page, `${prefix}/race/${DATE}-09-02`));
+      }
+      for (const text of texts) {
+        expect(text).not.toMatch(KANA);
+        for (const part of expected) expect(text).toContain(part);
+      }
+      // 5種とも別の文面になっている（どれかが欠けて同じキーに落ちていない）
+      expect(new Set(texts).size).toBe(5);
+    });
+  }
+
+  for (const { lang, prefix } of [{ lang: "ja", prefix: "" }, ...LOCALIZED]) {
+    test(`${lang}: 中止のレースでは「#AI予想」のタグを付けない`, async ({
+      page,
+    }) => {
+      await setup(page, lang);
+      const { hashtags } = await shareOnX(page, `${prefix}/race/${DATE}-09-01`);
+      expect(hashtags).toEqual(["ボートレース", "龍神レーダー"]);
+    });
+  }
 });

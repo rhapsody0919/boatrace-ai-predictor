@@ -700,7 +700,14 @@
     "awaitingResultBanner": "締切を過ぎましたが、結果はまだ反映されていません（データは1時間おきに更新されます）",
     "cancelledBanner": "このレースは中止となりました",
     "shareCancelled": "🏁 龍神レーダー【{{date}}{{venue}}{{raceNo}}R】\n\nこのレースは中止になりました",
-    "shareNoPrediction": "🏁 龍神レーダー【{{date}}{{venue}}{{raceNo}}R】\n\n出走表とデータ分析を無料で公開中"
+    "shareNoPrediction": "🏁 龍神レーダー【{{date}}{{venue}}{{raceNo}}R】\n\n出走表とデータ分析を無料で公開中",
+    "sharePrediction": {
+      "v1": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n展開予測から分析した結果、この並びが来そう！\nデータ的にも期待できるかも👀",
+      "v2": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n1マーク展開予測とモーター性能を分析した結果、\nこの組み合わせに注目してます📊",
+      "v3": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n無料でここまで精度の高い予想が見られるのは嬉しい✨\n今日も当たりますように！",
+      "v4": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n展開予測から見て、この予想は信頼できそう！\n皆さんはどう思いますか？🤔",
+      "v5": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n最近的中率が上がってきてて嬉しい😊\nAIの予想、参考にしてみてください！"
+    }
   },
   "home": {
     "introBannerText": "龍神レーダー - ボートレースを見える化。迷ったら、データを信じる。| 展開予測・イン崩れ指数など45項目のデータを分析。詳しくはこちら →",

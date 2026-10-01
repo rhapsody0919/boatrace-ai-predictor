@@ -320,7 +320,14 @@
     "awaitingResultBanner": "已過截止時間，但結果尚未更新（資料約每小時更新一次）",
     "cancelledBanner": "本場比賽已中止",
     "shareCancelled": "🏁 龍神雷達【{{date}}{{venue}}{{raceNo}}R】\n\n本場比賽已中止",
-    "shareNoPrediction": "🏁 龍神雷達【{{date}}{{venue}}{{raceNo}}R】\n\n免費公開出賽表與數據分析"
+    "shareNoPrediction": "🏁 龍神雷達【{{date}}{{venue}}{{raceNo}}R】\n\n免費公開出賽表與數據分析",
+    "sharePrediction": {
+      "v1": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n根據轉彎預測分析，這個順序很有機會！\n從數據來看也值得期待👀",
+      "v2": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n分析第一轉彎標的轉彎預測與馬達性能後，\n我很看好這個組合📊",
+      "v3": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n能免費看到這麼精準的預測真開心✨\n希望今天也能命中！",
+      "v4": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n從轉彎預測來看，這個預測似乎很可靠！\n大家覺得呢？🤔",
+      "v5": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n最近命中率越來越高，好開心😊\n歡迎參考AI預測！"
+    }
   },
   "home": {
     "introBannerText": "龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。| 分析轉彎預測、內道崩盤指數等45項以上數據。了解更多 →",
