@@ -6,6 +6,75 @@
  *   trifecta / is_hit_trifecta / payout_trifecta → 実態: 3連複（順不同）
  *   trio / is_hit_trio / payout_trio             → 実態: 3連単（順序一致）
  */
+import { isBetJudgeable, isJudgeable } from "../../src/utils/raceOutcome.js";
+
+/**
+ * 1件の予想（predictions の行）について、的中フラグと配当の列を作る（BOA-544）。
+ * 結果取得時の判定（scrape-results.js judgeAndUpdateHits）・欠落の補完（fixMissingHitFlags）・
+ * 既存行のバックフィル（backfill-refund-hit-flags.js）が共有する。DBトリガー
+ * update_prediction_results()（マイグレーション110）も同じ規則で判定する。
+ *
+ * - 不成立（race_status='no_race'）: 全勝式と展開予測を判定対象外（NULL）にする
+ * - 返還艇（refund_boats）を含む勝式: その勝式だけ判定対象外（NULL）。単勝・複勝は top_pick、
+ *   3連複・3連単は top_pick〜top_3rd の3艇で見る。展開予測は1着が決まっているので判定する
+ * - race_status が NULL（078以前・値が無い）: 今までどおり通常のレースとして判定する
+ * - top_3rd を予想しないモデル（unified）: 3連複・3連単は NULL（BOA-191）
+ * - 外れの配当は 0、判定対象外の配当は NULL
+ *
+ * @param {{top_pick: number, top_2nd?: number|null, top_3rd?: number|null, feature_contributions?: object|null}} pred
+ * @param {{rank1: number, rank2: number, rank3: number, payout_win?: number|null, payout_place_1?: number|null,
+ *   payout_place_2?: number|null, payout_trifecta?: number|null, payout_trio?: number|null,
+ *   race_status?: string|null, refund_boats?: number[]|null}} result
+ * @returns {{is_hit_win: boolean|null, is_hit_place: boolean|null, is_hit_trifecta: boolean|null,
+ *   is_hit_trio: boolean|null, is_hit_turn: boolean|null, payout_win: number|null, payout_place: number|null,
+ *   payout_trifecta: number|null, payout_trio: number|null}}
+ */
+export function buildPredictionHitUpdate(pred, result) {
+  const top3 = [pred.top_pick, pred.top_2nd, pred.top_3rd];
+  const judgeWin = isBetJudgeable(result, [pred.top_pick]);
+  const judgeTrio = pred.top_3rd != null && isBetJudgeable(result, top3);
+
+  const isHitWin = judgeWin ? isWinHit(pred.top_pick, result.rank1) : null;
+  const isHitPlace = judgeWin
+    ? isPlaceHit(pred.top_pick, result.rank1, result.rank2)
+    : null;
+  // ⚠️ trifecta=実態3連複・trio=実態3連単（ファイル冒頭の命名注意）
+  const isHitTrifecta = judgeTrio
+    ? isTrifectaHit(top3, result.rank1, result.rank2, result.rank3)
+    : null;
+  const isHitTrio = judgeTrio
+    ? isTrioHit(top3, result.rank1, result.rank2, result.rank3)
+    : null;
+
+  // 展開予測（unified のみ。feature_contributions.turnPrediction が無い旧モデルは NULL。ADR 0013）
+  const turnPatterns = pred.feature_contributions?.turnPrediction?.patterns;
+  const isHitTurn =
+    Array.isArray(turnPatterns) && turnPatterns.length > 0 && isJudgeable(result)
+      ? isTurnHit(turnPatterns, result.rank1)
+      : null;
+
+  const payout = (judged, hit, amount) =>
+    judged ? (hit ? (amount ?? 0) : 0) : null;
+  return {
+    is_hit_win: isHitWin,
+    is_hit_place: isHitPlace,
+    is_hit_trifecta: isHitTrifecta,
+    is_hit_trio: isHitTrio,
+    is_hit_turn: isHitTurn,
+    payout_win: payout(judgeWin, isHitWin, result.payout_win),
+    payout_place: judgeWin
+      ? getPlacePayout(
+          pred.top_pick,
+          result.rank1,
+          result.rank2,
+          result.payout_place_1,
+          result.payout_place_2,
+        )
+      : null,
+    payout_trifecta: payout(judgeTrio, isHitTrifecta, result.payout_trifecta),
+    payout_trio: payout(judgeTrio, isHitTrio, result.payout_trio),
+  };
+}
 
 /**
  * 全買い方の的中判定と配当計算
