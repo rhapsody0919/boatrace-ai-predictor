@@ -1727,6 +1727,19 @@ test.describe("レースページ再設計（BOA-168）", () => {
     }
   });
 
+  test("過去のレースの基本情報のバーは、そのレースより前の走で、期間もレースの日から数える（BOA-605）", async ({
+    page,
+  }) => {
+    // 2026-09-26 津5R の1号艇（飯山泰）。このレースより前の直近1ヶ月（8/27〜）は24走。
+    // 以前はこのレース自身と後日の走（5走）が入り、期間も今日から数えていた
+    await page.goto("/race/2026-09-26-09-05");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await page.locator(".rbit-bar-row").first().waitFor({ timeout: 30000 });
+    await page.locator("summary", { hasText: "期間で絞り込む" }).click();
+    await page.locator(".rbit-chip", { hasText: "直近1ヶ月" }).click();
+    await expect(page.locator(".rbit-bar-row").first()).toContainText("(n=24)");
+  });
+
   test("今節タブ: en・zh-TW の375pxで6艇の表がカードからはみ出さず、必要得点に残りの走数を添える（BOA-596）", async ({
     page,
   }) => {
