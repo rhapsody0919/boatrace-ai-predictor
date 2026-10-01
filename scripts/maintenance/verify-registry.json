@@ -562,6 +562,11 @@
       "script": "verify-middleware-routing.js",
       "tier": "ci",
       "guards": "middleware.js の管理画面Basic認証（/admin/rules・/admin/sns-hub は認証なしで401、一般ページは素通り、環境変数が未設定・空なら拒否、':'入りパスワードは最初の':'で分割、UTF-8で復号、壊れたbase64で例外を出さず401。判定は api/_lib/adminAuth.js の requireAdminAuth と共有）と、AIスナップショット配信の経路（resolveSnapshotPath が返すパスが config.matcher に一致し、管理画面がスナップショットに振り分けられないこと）。BOA-555で /admin/rules が本番で認証なしに開けていた"
+    },
+    {
+      "script": "verify-prediction-hit-judgement.js",
+      "tier": "ci",
+      "guards": "不成立のレースと返還艇を含む勝式を、的中判定（buildPredictionHitUpdate・DBトリガー112・欠落の補完）と成績の集計（券種ごとの母数）から外すこと。トリガーとアプリの判定が同じ値を書くこと（PGlite で112を適用して突き合わせる）。BOA-544: 不成立のレースに的中が付き、返還艇の本命が「外れ」として成績に入っていた"
     }
   ]
 }
