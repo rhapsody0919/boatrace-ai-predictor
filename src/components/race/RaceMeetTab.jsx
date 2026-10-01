@@ -585,9 +585,16 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                   excluded: ranking.length - rankedOnly.length,
                 })
               : t("meetTab.compareSub", { total: rankedOnly.length })}
-            {/* 「予選後F」の意味（セルの title はタッチ端末で読めない。BOA-626） */}
-            {ranking.some(
-              (r) => r.rank !== null && postPrelimFlying.has(r.racerId),
+            {/* 「予選後F」の意味（セルの title はタッチ端末で読めない。BOA-626）。
+                **表の6艇に印が出ているときだけ**断る。節の誰かに居るだけで出すと、
+                表に印が無いのに説明だけ出て「どこにあるのか」と迷う（ファン評価1周目） */}
+            {sortedPlayers.some((p) =>
+              ranking.some(
+                (r) =>
+                  r.racerId === p.racerId &&
+                  r.rank !== null &&
+                  postPrelimFlying.has(r.racerId),
+              ),
             ) && <> {t("meetTab.postPrelimFlyingNote")}</>}
             {/* 「欠場」の理由。セルの title はタッチ端末で読めないので本文にも書く
                 （BOA-504 ファン評価） */}
