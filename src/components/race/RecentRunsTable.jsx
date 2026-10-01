@@ -7,8 +7,6 @@ import { finishMarkKeyOf } from "../../utils/prevResult";
 import { groupRunsByMeet } from "./basicInfoStats";
 import "./RecentRunsTable.css";
 
-const CIRCLED = ["①", "②", "③", "④", "⑤", "⑥"];
-
 // ST は公式の表記にそろえて先頭の 0 を省く（0.14 → .14）。F は記号を前に付ける
 const formatSt = (race) => {
   if (race.startTiming == null) return race.isFlying ? "F" : "-";
@@ -16,15 +14,14 @@ const formatSt = (race) => {
   return race.isFlying ? `F${s}` : s;
 };
 
-// 見出し行の期間。年は1回だけ出す（2026/9/14〜9/17）
-const formatPeriod = (first, last) => {
-  const md = (d) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`;
-  const head = `${first.slice(0, 4)}/${md(first)}`;
-  if (first === last) return head;
-  return first.slice(0, 4) === last.slice(0, 4)
-    ? `${head}〜${md(last)}`
-    : `${head}〜${last.slice(0, 4)}/${md(last)}`;
-};
+// 見出し行には年月だけを出す（2026/9）。行の日付は月日だけなので年はここで補う。
+// 「9/28〜9/29」のように日の範囲を出すと、節の開催期間に読まれる。実際は表に入った走の
+// 日付の幅で、同じ節でも選手やページで変わった（BOA-623 ファン評価1周目）
+const formatMonth = (date) => `${date.slice(0, 4)}/${Number(date.slice(5, 7))}`;
+const formatPeriod = (first, last) =>
+  formatMonth(first) === formatMonth(last)
+    ? formatMonth(first)
+    : `${formatMonth(first)}〜${formatMonth(last)}`;
 
 /**
  * 選手の走を、節ごとの見出し行つきの6列で並べる表（BOA-623）。
@@ -40,7 +37,7 @@ const formatPeriod = (first, last) => {
  * - 日付は月日（09-14）。年は見出し行の期間に出す（選手ページは2年分並ぶ）
  * - レース種別（予選・準優など）は R の下に小さく、決まり手は1着のときだけ
  *   着順の下に小さく出す
- * - ST にはそのレースの6艇の中での順位（F を除く）を丸数字で添える
+ * - ST にはそのレースの6艇の中での順位（F を除く）を「(4)」で添え、表の下に凡例を出す
  * - 単勝配当は PC だけ（選手の力を表す数字ではないため、375px では省く）
  *
  * 行のクリックは onClick で遷移する（iOS の WebKit は `<tr>` の
@@ -51,7 +48,7 @@ const formatPeriod = (first, last) => {
  * RaceHistoryTable を使う。
  *
  * @param {Array} rows getRecentRaces / aggregateRacerVenueBoatStats の matchedRaces の行。
- *   順序は呼び出し側のまま（直近10走は古い順、選手ページは新しい順）
+ *   新しい順で渡す（いちばん上が前走）。直近10走と選手ページで向きをそろえる
  * @param {(raceId: string) => string} [buildRaceHref]
  */
 function RecentRunsTable({
@@ -143,9 +140,11 @@ function RecentRunsTable({
                   className={`rrt-st${race.startTimingRank === 1 ? " is-top" : ""}`}
                 >
                   {formatSt(race)}
+                  {/* 順位は今節タブの表と同じ「(4)」。丸数字は字形が小さく、375px で
+                      読めなかった（BOA-623 ファン評価1周目） */}
                   {race.startTimingRank != null && (
                     <span className="rrt-st-rank">
-                      {CIRCLED[race.startTimingRank - 1] ?? ""}
+                      ({race.startTimingRank})
                     </span>
                   )}
                 </td>
@@ -169,6 +168,7 @@ function RecentRunsTable({
           </tbody>
         ))}
       </table>
+      <p className="rrt-legend">{t("raceHistoryTable.stRankLegend")}</p>
     </div>
   );
 }

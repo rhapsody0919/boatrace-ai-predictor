@@ -33,6 +33,10 @@
   text-align: left;
 }
 
+.rrt-table .rrt-left .rrt-sub {
+  margin-inline: 0;
+}
+
 /* 節の見出し行。会場・グレード・レース名・期間を1回だけ出す */
 .rrt-group td {
   background: var(--surface-page);
@@ -92,18 +96,28 @@
   text-decoration: underline;
 }
 
-/* R の下のレース種別、着順の下の決まり手 */
+/* R の下のレース種別、着順の下の決まり手。長い語（英語の決まり手「Makuri-zashi
+   (Sweep & pass)」、種別「ランチタイム戦」）で列が広がり、375px で着順が画面外に
+   出たので、幅を決めて折り返す（BOA-623 ファン評価1周目） */
 .rrt-sub {
   display: block;
+  max-width: 5.5em;
+  margin-inline: auto;
+  white-space: normal;
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-tight);
 }
 
-/* 2xs だと丸数字が潰れて「◎」に見えた（375px の実機相当で確認） */
 .rrt-st-rank {
   margin-left: 1px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rrt-legend {
+  margin: var(--spacing-1) 0 0;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
 }

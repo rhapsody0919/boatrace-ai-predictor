@@ -555,11 +555,13 @@ function RaceBasicInfoTab({
                         );
                       }
                       // 表示中のレースより前の走だけ（BOA-602）。過去のレースのページで、
-                      // そのレース自身や後日の走が「直近」に混ざっていた
+                      // そのレース自身や後日の走が「直近」に混ざっていた。
+                      // 並びは新しい順（いちばん上が前走）。選手ページのレース一覧と向きを
+                      // そろえる（BOA-623 ファン評価1周目。375px で前走が下に隠れていた）
                       const recent = getRecentRaces(
                         recordsBeforeRace(records, raceId),
                         RECENT_RACES_COUNT,
-                      );
+                      ).reverse();
                       if (recent.length === 0) {
                         return (
                           <p className="rbit-expanded-empty">

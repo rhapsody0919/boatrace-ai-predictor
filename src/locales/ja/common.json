@@ -570,7 +570,7 @@
     "loading": "読み込み中...",
     "noHistory": "出走履歴データがありません",
     "noVenueData": "会場別の成績データがありません（規定レース数未満）",
-    "trendNote": "このレースより前の直近10走（グレード・期間の条件によらない）。STの丸数字はそのレースの6艇の中の順位。行をタップでレース詳細へ",
+    "trendNote": "このレースより前の直近10走（新しい順。グレード・期間の条件によらない）。行をタップでレース詳細へ",
     "finishUnknown": "着外(順位不明)",
     "finishAbsent": "欠場",
     "venueRankingFor": "{{metric}}のランキング",
@@ -692,7 +692,8 @@
     },
     "exhibition": "展示",
     "exhibitionCell": "{{time}}({{rank}})",
-    "startTimingCell": "{{time}}({{rank}})"
+    "startTimingCell": "{{time}}({{rank}})",
+    "stRankLegend": "STの( )は、そのレースの6艇の中の順位（Fは除く）"
   },
   "panel": {
     "noData": "予想データが利用できません",

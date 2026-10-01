@@ -307,7 +307,8 @@
     },
     "exhibition": "전시",
     "exhibitionCell": "{{time}}({{rank}})",
-    "startTimingCell": "{{time}}({{rank}})"
+    "startTimingCell": "{{time}}({{rank}})",
+    "stRankLegend": "ST 옆 ( ) 안의 숫자는 그 경주 6척 중 순위(F 제외)"
   },
   "panel": {
     "noData": "예측 데이터가 없습니다",
@@ -866,7 +867,7 @@
     "loading": "불러오는 중...",
     "noHistory": "출주 이력 데이터가 없습니다",
     "noVenueData": "경기장별 성적 데이터가 없습니다(규정 경기 수 미만)",
-    "trendNote": "이 경주 이전의 최근 10경기(위의 등급·기간 조건과 관계없음). ST 옆 원 숫자는 그 경주 6척 중 순위. 행을 누르면 해당 경주 상세로 이동",
+    "trendNote": "이 경주 이전의 최근 10경기(최신순, 위의 등급·기간 조건과 관계없음). 행을 누르면 해당 경주 상세로 이동",
     "finishUnknown": "착외(순위 불명)",
     "finishAbsent": "결장",
     "venueRankingFor": "{{metric}} 랭킹",
