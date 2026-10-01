@@ -756,44 +756,6 @@ function toTodayRaceResult(embedded) {
  * この関数の出力オブジェクトでは同じ混乱を持ち込まないよう、実際の意味で
  * sanrenpuku（3連複）/sanrentan（3連単）という曖昧さの無いキー名で正規化する
  */
-// race_conditions（天候）をUI用に整形する（BOA-304、直前情報タブの気象カード）。
-// weather/wind_direction はスクレイピング側（update-race-info.js）で既に
-// 日本語ラベル文字列として保存されているため、変換不要でそのまま返す
-function buildWeather(conditions) {
-  if (!conditions) return null;
-  const {
-    weather = null,
-    wind_direction: windDirection = null,
-    wind_speed: windSpeed = null,
-    wave_height: waveHeight = null,
-    temperature = null,
-    water_temperature: waterTemperature = null,
-    // 気象の観測時刻（BOA-358、マイグレーション069）。行に含まれる場合のみ。この直接クエリの
-    // フォールバックは、列が未適用のDBで失敗しないよう、select には含めていない
-    weather_observed_at: observedAt = null,
-  } = conditions;
-  if (
-    weather === null &&
-    windDirection === null &&
-    windSpeed === null &&
-    waveHeight === null &&
-    temperature === null &&
-    waterTemperature === null
-  ) {
-    return null;
-  }
-  return {
-    weather,
-    windDirection,
-    windSpeed: windSpeed !== null ? Number(windSpeed) : null,
-    waveHeight: waveHeight !== null ? Number(waveHeight) : null,
-    temperature: temperature !== null ? Number(temperature) : null,
-    waterTemperature:
-      waterTemperature !== null ? Number(waterTemperature) : null,
-    observedAt,
-  };
-}
-
 /**
  * RPC の payoutRows（race_payouts の行の配列）を、結果タブの払戻表の行へ変換する（BOA-543）。
  * status: paid=通常 / special=特払 / no_amount=組番のみ（払戻金が空欄）/ no_race=不成立（返還）。
@@ -969,8 +931,8 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
       isFinalDay: race.isFinalDay ?? null,
       raceStage: race.raceStage ?? null,
       // 直前情報タブの気象カード用（BOA-304）。get_predictions_by_date/_light RPC
-      // （066マイグレーション）がbuildWeather()と同じ形で既に組み立てて返すため、
-      // そのまま渡すだけでよい
+      // （066マイグレーション）が UI 用の形で既に組み立てて返すため、そのまま渡すだけでよい
+      // （Edge API が失敗したときも同じ RPC を直接呼ぶ。BOA-355）
       weather: race.weather ?? null,
       volatility: race.volatility
         ? {
