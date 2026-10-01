@@ -614,11 +614,25 @@ export async function syncOfficialFinishCodeFromKFile(
   } = {},
 ) {
   const column = OFFICIAL_FINISH_CODE_COLUMN;
-  const { data: timings, error: readError } = await client
-    .from("race_start_timings")
-    .select(`race_id, boat_number, ${column}`)
-    .gte("race_id", dateStr)
-    .lt("race_id", `${dateStr}~`);
+  // 1日で1000行（約166レース）を超える日がある（2026-01-02 は192レース）ので、ページングして全部読む
+  const timings = [];
+  let readError = null;
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await client
+      .from("race_start_timings")
+      .select(`race_id, boat_number, ${column}`)
+      .gte("race_id", dateStr)
+      .lt("race_id", `${dateStr}~`)
+      .order("race_id")
+      .order("boat_number")
+      .range(from, from + 999);
+    if (error) {
+      readError = error;
+      break;
+    }
+    timings.push(...(data ?? []));
+    if ((data ?? []).length < 1000) break;
+  }
   if (readError && isColumnMissingError(readError, [column])) {
     console.warn(
       `  ⚠️ 成績コード: race_start_timings.${column} が未適用のため、同期しません（マイグレーション116）`,
@@ -638,14 +652,9 @@ export async function syncOfficialFinishCodeFromKFile(
     };
   }
   const current = new Map(
-    (timings ?? []).map((t) => [
-      `${t.race_id}|${t.boat_number}`,
-      t[column] ?? null,
-    ]),
+    timings.map((t) => [`${t.race_id}|${t.boat_number}`, t[column] ?? null]),
   );
-  const pending = (timings ?? []).filter(
-    (t) => (t[column] ?? null) === null,
-  ).length;
+  const pending = timings.filter((t) => (t[column] ?? null) === null).length;
   if (pending === 0) {
     return { updated: 0, parsed: 0, pending: 0, status: "nothing_pending" };
   }

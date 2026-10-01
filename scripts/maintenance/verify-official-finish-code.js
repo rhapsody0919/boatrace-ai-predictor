@@ -33,7 +33,7 @@ function check(label, pass, detail = "") {
 }
 const show = (v) => JSON.stringify(v);
 
-/** race_start_timings の select（gte・lt）と upsert だけの偽クライアント */
+/** race_start_timings の select（gte・lt・order・range）と upsert だけの偽クライアント。1回の range は最大1000行 */
 function fakeClient(rows, { missingColumn = false } = {}) {
   const upserts = [];
   return {
@@ -42,7 +42,9 @@ function fakeClient(rows, { missingColumn = false } = {}) {
       const q = {
         select: () => q,
         gte: () => q,
-        lt: async () =>
+        lt: () => q,
+        order: () => q,
+        range: async (from, to) =>
           missingColumn
             ? {
                 data: null,
@@ -52,7 +54,12 @@ function fakeClient(rows, { missingColumn = false } = {}) {
                     "column race_start_timings.official_finish_code does not exist",
                 },
               }
-            : { data: rows.map((r) => ({ ...r })), error: null },
+            : {
+                data: rows
+                  .slice(from, Math.min(to + 1, from + 1000))
+                  .map((r) => ({ ...r })),
+                error: null,
+              },
         upsert: async (batch, opts) => {
           upserts.push({ batch, opts });
           return { error: null };
@@ -115,6 +122,23 @@ async function evaluateSync(sync) {
         client.upserts.every(
           (u) => u.opts.onConflict === "race_id,boat_number",
         ),
+    );
+    // 1日で1000行を超える日（2026-01-02 は192レース）: 1000行目より後ろの行も読んで書く
+    const many = Array.from({ length: 1100 }, (_, i) => ({
+      race_id: `${DATE}-01-${String(Math.floor(i / 6) + 1).padStart(3, "0")}`,
+      boat_number: (i % 6) + 1,
+      official_finish_code: "01",
+    }));
+    many.push({ race_id: S1_RACE, boat_number: 2, official_finish_code: null });
+    const big = fakeClient(many);
+    const br = await sync(DATE, { client: big, loadText: async () => K_TEXT });
+    expect(
+      "(b) 1000行を超える日も、1001行目以降の行（S1 の2号艇）を読んで書く",
+      br.pending === 1 &&
+        big.upserts
+          .flatMap((u) => u.batch)
+          .some((w) => w.race_id === S1_RACE && w.boat_number === 2),
+      show(br),
     );
     // 全部入っていれば K を取得しない
     let loads2 = 0;
@@ -238,6 +262,13 @@ for (const [label, rel, from, to, run] of [
     "scripts/daily/scrape-results.js",
     "return current.has(key) && current.get(key) !== r[column];",
     "return current.get(key) !== r[column];",
+    (m) => evaluateSync(m.syncOfficialFinishCodeFromKFile),
+  ],
+  [
+    "日次: 1000行で読むのをやめる（ページングしない）",
+    "scripts/daily/scrape-results.js",
+    "if ((data ?? []).length < 1000) break;",
+    "break;",
     (m) => evaluateSync(m.syncOfficialFinishCodeFromKFile),
   ],
   [
