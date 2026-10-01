@@ -572,6 +572,7 @@
     "fetchError": "Couldn't load the last 10 finishes. Please try again later",
     "recentFinishesNote": "Last 10 starts from course {{course}} (the course actually taken)",
     "kimariteTitle": "Winning techniques (all boats, last 90 days)",
+    "venueStatsAsOfToday": "* Latest figures ({{start}} to {{end}}), not as of this race's date",
     "kimariteCaveat": "* Share of each winning technique across all races and boats at this venue (not an individual racer's record)",
     "gridTitle": "Record by course",
     "gridSubtitle": "Based on the course actually taken. Tap a cell to see the last 10 starts from that course",

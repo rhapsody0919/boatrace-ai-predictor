@@ -87,6 +87,13 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 過去のレースで、会場の集計が今日時点であることの注記（BOA-608） */
+.rwit-as-of {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
 .rwit-card-sub {
   margin: 0 0 var(--spacing-3);
   font-size: var(--font-size-xs);

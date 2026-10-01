@@ -42,6 +42,7 @@
  * 合わないため直接流用はしない
  */
 import { useState, useEffect } from "react";
+import { getDaysAgoJST, isRaceBeforeTodayJST } from "../../utils/dateUtils";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
@@ -317,6 +318,24 @@ function RaceWakuInfoTab({
   const techniqueDistribution = aggregateTechniqueDistribution(
     techniqueStats?.data,
   );
+  // 逃げ・決まり手は会場単位の事前集計で、今日から見た直近の期間しか持たない。
+  // 過去のレースでは「今日時点の集計」と期間を明記する（BOA-608）
+  const raceIsPast = isRaceBeforeTodayJST(raceId);
+  const techniqueAsOf =
+    raceIsPast && techniqueStats?.last_updated
+      ? (() => {
+          // last_updated は集計ジョブを動かした日（JST）。ジョブは深夜に動き、
+          // その日から90日前以降の確定した結果（＝前日まで）を数える
+          // （scripts/daily/update-winning-technique-stats.js）
+          const ranOn = new Date(
+            `${techniqueStats.last_updated}T12:00:00+09:00`,
+          );
+          return {
+            start: getDaysAgoJST(90, ranOn),
+            end: getDaysAgoJST(1, ranOn),
+          };
+        })()
+      : null;
 
   return (
     <div className="race-waku-info-tab">
@@ -674,10 +693,15 @@ function RaceWakuInfoTab({
       />
 
       {/* 逃げシミュレーション（FR-6）。会場のコース単位の指標で、選手の選択とは独立 */}
-      <NigeSimulationCard rows={nigeRows} />
+      <NigeSimulationCard rows={nigeRows} asOfToday={raceIsPast} />
 
       <div className="rwit-card">
         <h3 className="rwit-card-title">{t("wakuInfo.kimariteTitle")}</h3>
+        {techniqueAsOf && (
+          <p className="rwit-as-of">
+            {t("wakuInfo.venueStatsAsOfToday", techniqueAsOf)}
+          </p>
+        )}
         {techniqueDistribution.length === 0 ? (
           <p className="rwit-empty">
             {techniqueStats === undefined

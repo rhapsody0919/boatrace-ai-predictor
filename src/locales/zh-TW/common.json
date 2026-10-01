@@ -567,6 +567,7 @@
     "fetchError": "無法取得最近10場資料，請稍後再試",
     "recentFinishesNote": "從第{{course}}航道（實際進入的航道）出賽的最近10場",
     "kimariteTitle": "獲勝方式傾向（全艇・最近90天）",
+    "venueStatsAsOfToday": "※此為最新的統計（期間 {{start}}〜{{end}}），並非本場比賽當日的數值",
     "kimariteCaveat": "※本場館所有比賽・所有艇合計的獲勝方式比例（非選手個人實績）",
     "gridTitle": "各航道成績",
     "gridSubtitle": "以實際進入的航道為準。點擊儲存格可查看該航道最近10次出賽",

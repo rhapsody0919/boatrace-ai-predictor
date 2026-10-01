@@ -1102,6 +1102,19 @@ function suiteWeatherInfo(m, check) {
 // 6. dateUtils.js
 // ---------------------------------------------------------------------------
 function suiteDateUtils(m, check) {
+  // isRaceBeforeTodayJST（BOA-608）: 過去のレースだけ「今日時点の集計」と注記する
+  const noon = new Date("2026-10-01T12:00:00+09:00");
+  check(
+    "isRaceBeforeTodayJST: 前日以前は true、今日と読めない race_id は false",
+    [
+      m.isRaceBeforeTodayJST("2026-09-30-09-05", noon),
+      m.isRaceBeforeTodayJST("2026-10-01-09-05", noon),
+      m.isRaceBeforeTodayJST(null, noon),
+      m.isRaceBeforeTodayJST("abc", noon),
+    ],
+    [true, false, false, false],
+  );
+
   // --- isWithinDays: ブログ一覧（src/pages/Blog.jsx）の NEW バッジ（7日以内）（BOA-554）
   // 「JST の今日を含む直近7日」= JST 2026-09-29 なら 09-23〜09-29。09-22 と未来の 09-30 は含めない。
   // new Date("YYYY-MM-DD") は UTC 0時なので、JST にずらした現在時刻との差は実行環境の TZ に
