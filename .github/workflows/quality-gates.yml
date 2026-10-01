@@ -44,5 +44,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # verify-actionlint.js が使う actionlint・shellcheck を固定版で取得し、sha256 を照合する
+      # （BOA-659）。verify:ci の中では外部ネットワークに触れないため、ここで先に取る
+      - name: Install actionlint and shellcheck
+        run: npm run setup:actionlint
+
       - name: Run CI-tier verifications
         run: npm run verify:ci

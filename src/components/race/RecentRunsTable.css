@@ -1,0 +1,182 @@
+/* 節ごとの見出し行つきの走の表（BOA-623）。RecentRunsTable.jsx 参照 */
+
+/* 375px で全列が最初の画面に入る幅に収める（6列で約300px）。
+   英語など列名が長い言語ではみ出したときだけ、箱の中で横に送る */
+.rrt-wrap {
+  overflow-x: auto;
+}
+
+/* PC では表を中身に合う幅にして中央に置く。100% に広げると6列の間が
+   200px以上空いて、1行を目で追いにくくなった（モックで確認）。
+   左に寄せると右に大きな空きが残る（ユーザー確認） */
+.rrt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.rrt-table th,
+.rrt-table td {
+  /* 左右は 4px より少し詰める。英語の 375px で 1px はみ出した艇があった */
+  padding: var(--spacing-2) calc(var(--spacing-1) * 0.75);
+  text-align: center;
+  border-bottom: 1px solid var(--border-hairline);
+  color: var(--text-primary);
+}
+
+.rrt-table th {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.rrt-table .rrt-left {
+  text-align: left;
+}
+
+/* 決まり手はハイフンの位置で2行まで折り返す（Makuri- / zashi）。省略すると
+   英語の 375px で何で勝ったかが読めなかった（3周目） */
+.rrt-table .rrt-technique {
+  white-space: normal;
+  overflow-wrap: normal;
+}
+
+.rrt-table .rrt-left .rrt-sub {
+  margin-inline: 0;
+}
+
+/* 節の見出し行。会場・グレード・レース名・期間を1回だけ出す */
+.rrt-group td {
+  background: var(--surface-page);
+  text-align: left;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: normal;
+  padding: var(--spacing-1) var(--spacing-2);
+}
+
+.rrt-group b {
+  color: var(--text-primary);
+  margin-right: var(--spacing-2);
+}
+
+.rrt-grade {
+  display: inline-block;
+  margin-right: var(--spacing-1);
+  padding: 0 var(--spacing-1);
+  border-radius: var(--radius-sm);
+  background: var(--text-primary);
+  color: var(--surface-card);
+  font-weight: var(--font-weight-bold);
+}
+
+.rrt-grade.is-ippan {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-hairline);
+  font-weight: var(--font-weight-normal);
+}
+
+.rrt-title {
+  margin-right: var(--spacing-2);
+}
+
+.rrt-period {
+  white-space: nowrap;
+}
+
+.rrt-row {
+  cursor: pointer;
+}
+
+.rrt-row:hover td {
+  background: var(--surface-page);
+}
+
+/* 表のセルの文字色（.rrt-table td）より強く当てる */
+.rrt-table .rrt-link {
+  color: var(--brand-accent-secondary);
+  text-decoration: none;
+  font-weight: var(--font-weight-semibold);
+}
+
+.rrt-table .rrt-link:hover {
+  text-decoration: underline;
+}
+
+/* R の下のレース種別、着順の下の決まり手。長い語（英語の決まり手「Makuri-zashi
+   (Sweep & pass)」、種別「ランチタイム戦」）で列が広がり、375px で着順が画面外に
+   出た（1周目）。折り返すと「ウインウイン７」が1文字ずつ縦に並び、行の高さが
+   ばらばらになった（2周目）。1行に収め、はみ出す分は「…」にする（全文は title）。
+   PC では幅が余るので省略しない */
+.rrt-sub {
+  display: block;
+  /* 5.5em だと英語の 375px で表が 301px（枠 293px）になった */
+  max-width: 4.5em;
+  margin-inline: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-tight);
+}
+
+.rrt-st-rank {
+  margin-left: 1px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rrt-legend {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rrt-st.is-top {
+  font-weight: var(--font-weight-bold);
+}
+
+.rrt-finish {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+}
+
+.rrt-finish.is-win {
+  color: var(--brand-accent-primary);
+}
+
+/* 単勝配当は PC だけ */
+.rrt-table .rrt-pc {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .rrt-table {
+    width: auto;
+    min-width: 560px;
+    margin: 0 auto;
+    font-size: var(--font-size-base);
+  }
+
+  .rrt-table th,
+  .rrt-table td {
+    padding: var(--spacing-2) var(--spacing-3);
+  }
+
+  .rrt-table .rrt-pc {
+    display: table-cell;
+  }
+
+  .rrt-sub {
+    max-width: none;
+    overflow: visible;
+  }
+
+  /* 表を中央に置くので、凡例も表の下の中央にそろえる（2周目: 左端に離れていた） */
+  .rrt-legend {
+    text-align: center;
+  }
+}

@@ -4502,7 +4502,7 @@ export const supabaseDataService = {
     // v6: 着順が付かない走の公式の記号（finishMark）を足した（BOA-537）
     // v7: 同じ日の走を R の古い順に並べ直した（BOA-588）
     // v8: フライングの走の ST（flyingStartTiming）を足した（BOA-583。直近10走・今節の表で「F.01」と出すため）
-    return withCache(`racer-scoped-race-stats-v8-${racerId}`, async () => {
+    return withCache(`racer-scoped-race-stats-v9-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4563,7 +4563,7 @@ export const supabaseDataService = {
         fetchAllByIn(
           "race_start_timings",
           // finish_mark: 欠場の走を「着外」でなく「欠場」と出すため（BOA-504）
-          "race_id, boat_number, start_timing, is_flying, finish_mark",
+          "race_id, boat_number, start_timing, is_flying, finish_mark, entry_course",
           "race_id",
           raceIds,
         ),
@@ -4712,6 +4712,13 @@ export const supabaseDataService = {
               st?.is_flying && st.start_timing != null ? st.start_timing : null,
             // 実進入コース（BOA-257）。2025-12-04より前のレースや欠場艇はnull
             actualCourse: result[`actual_course_${entry.boat_number}`] ?? null,
+            // 表示用の進入コース（BOA-623）。本番STの進入（当日のうちに入る）を先に、
+            // 無ければ Kファイルの actualCourse。actualCourse 自体はコース別の集計に
+            // 使っているので変えない（集計の母数が変わる）
+            entryCourse:
+              st?.entry_course ??
+              result[`actual_course_${entry.boat_number}`] ??
+              null,
             // 級別（そのレース時点の値）。ST考察のベースラインを(course, grade)で引く
             grade: entry.grade ?? null,
             // 自艇の展示タイム。展示1位判定のために同レース全艇分を既に
@@ -4916,7 +4923,7 @@ export const supabaseDataService = {
    */
   getRacerRaceHistory(racerId) {
     // v2: ST を展示ST（exhibition_data）から本番ST（race_start_timings）に替え、isFlying・finishMark を足した（BOA-576）
-    return withCache(`racer-race-history-v2-${racerId}`, async () => {
+    return withCache(`racer-race-history-v3-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4949,7 +4956,7 @@ export const supabaseDataService = {
           ),
           fetchAllByIn(
             "race_results",
-            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race",
+            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
             "race_id",
             raceIds,
           ),
@@ -4970,7 +4977,7 @@ export const supabaseDataService = {
           // 同じ出どころにそろえる（BOA-576: 展示STを本番STとして出し、記号の走を「着外(順位不明)」と出していた）
           fetchAllByIn(
             "race_start_timings",
-            "race_id, boat_number, start_timing, is_flying, finish_mark",
+            "race_id, boat_number, start_timing, is_flying, finish_mark, entry_course",
             "race_id",
             raceIds,
           ),
@@ -4987,6 +4994,17 @@ export const supabaseDataService = {
       const stByKey = new Map(
         stRows.map((r) => [`${r.race_id}-${r.boat_number}`, r]),
       );
+      // レース内のST順位（Fを除く。同タイムは同順位）。今節タブ・直近10走と同じ規則
+      // （deriveRaceStContext）。レース一覧の「ST」に順位を添える（BOA-623）
+      const stRowsByRace = new Map();
+      stRows.forEach((r) => {
+        if (!stRowsByRace.has(r.race_id)) stRowsByRace.set(r.race_id, []);
+        stRowsByRace.get(r.race_id).push(r);
+      });
+      const stRankOf = (raceId, boatNumber) =>
+        deriveRaceStContext(stRowsByRace.get(raceId) ?? [], null).byBoat.get(
+          boatNumber,
+        )?.stRank ?? null;
 
       return entries
         .map((entry) => {
@@ -5019,6 +5037,12 @@ export const supabaseDataService = {
             startTiming: st?.start_timing ?? null,
             isFlying: st?.is_flying === true,
             finishMark: st?.finish_mark ?? null,
+            // 進入コースとST順位（BOA-623）。進入は本番STの進入を先に、無ければ Kファイル
+            entryCourse:
+              st?.entry_course ??
+              result[`actual_course_${entry.boat_number}`] ??
+              null,
+            stRank: stRankOf(entry.race_id, entry.boat_number),
             // 公式の着欄が数字でない（F・L・欠・落・転・妨・エ・不・失・沈・＿ など）走は着順が付かない。
             // race_results の rank1〜6 には、完走が3艇未満のレースで返還艇（F等）が入っていることがある
             // （43件、BOA-576 のデータ精度検証）。着欄の記号を優先し、着順・勝率には数えない
@@ -8499,6 +8523,8 @@ export function aggregateRacerVenueBoatStats(
       boatNumber: row.boatNumber,
       startTiming: row.startTiming ?? null,
       isFlying: row.isFlying === true,
+      entryCourse: row.entryCourse ?? null,
+      startTimingRank: row.stRank ?? null,
       finishRank: row.unranked ? null : finishPositionOf(row),
       finishMark: row.finishMark ?? null,
       absent: row.finishMark === "欠",

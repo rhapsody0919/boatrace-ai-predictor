@@ -27,6 +27,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-admin-rule-performance.js --rules --rpc"
     },
     {
+      "script": "verify-actionlint.js",
+      "tier": "ci",
+      "guards": ".github/workflows の全ファイルに actionlint＋shellcheck の新しい指摘が無いこと（BOA-659）。#1080 の env の ${{ failure() }}（ワークフロー全体が無効になり、PR の CI は緑のままだった）や #1081 の無効な types: merged を PR で止める。既存の指摘は actionlint-allowlist.json に（file, rule, 行の内容）で固定し、解消済みの残骸も失敗にする。版は actionlint-tools.json で固定し、Quality Gates が install-actionlint.js で sha256 を照合して取得する。手元で未取得なら警告して飛ばす（CI では失敗）"
+    },
+    {
       "script": "verify-adr-numbers.js",
       "tier": "ci",
       "guards": "docs/adr/ のADR番号の重複（並行セッションで繰り返し発生）"
