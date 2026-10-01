@@ -1,7 +1,23 @@
+/* 上限は 1600px（BOA-612）。以前の 1200px だと 1440px 以上の画面で左右が大きく空き、
+   6艇の表（データ出走表・今節・枠別情報・モータ情報・オッズ一覧）が窮屈だった。
+   画面いっぱいまで広げると 1920px で1列が約260pxになり、6艇の見比べが逆に難しくなるので
+   1600px で止める（ユーザー承認の案B。モック: BOA-612） */
 .race-detail-page-v2 {
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 1rem 1.5rem 5rem;
+}
+
+/* 広い画面ではデータ出走表の文字も一段大きくする（13.6px → 15px）。
+   表の部品（DataRaceTable.css）ではなくページ側で指定する。表はこのページ以外でも使う */
+@media (min-width: 1280px) {
+  .race-detail-page-v2 .drt-table {
+    font-size: 15px;
+  }
+
+  .race-detail-page-v2 .drt-name-th {
+    font-size: 14px;
+  }
 }
 
 .race-detail-page-v2__container .page-header {
