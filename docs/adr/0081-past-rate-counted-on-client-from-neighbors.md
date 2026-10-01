@@ -16,7 +16,7 @@ BOA-635 は、ユーザーが入れた予想（6つの型）が、今日のレ�
 
 ## 決定
 1. **数えるのは画面側（ブラウザ）の純粋関数。** `get_analogy_neighbors` の800行を、型ごとの判定関数で数える（`src/utils/pastRate/count.js`）。新しい RPC・API・テーブルは作らない
-2. **予想は localStorage に保存する**（キー `boatai-user:past-rate-check:v1`。データキャッシュの `boatai:` 名前空間は更新ボタンで全削除されるので重ねない。1レース×1型につき最新1件、入力時刻から30日で消す、締切後は保存しない）。スナップショットとは `(model_version, asof_stage, asof_at)` で紐づける（`analogy_snapshots` の一意制約と同じ組。RPC に `snapshot_id` を足さない）
+2. **予想は localStorage に保存する**（キー `boatai-user:past-rate-check:v1`。データキャッシュの `boatai:` 名前空間は更新ボタンで全削除されるので重ねない。1レース×1型につき最新1件、入力時刻から30日で消す、締切後は保存しない）。スナップショットとは `(model_version, asof_stage, asof_at)` で紐づける（`analogy_snapshots` の一意制約 (race_id, asof_stage) で1つに決まり、残りで作り直しを検知する。RPC に `snapshot_id` を足さない）
 3. 振り返りの「あなたの予想」の数字は、入力したときに見せた値を保存して出す。決着の行は今の RPC の返り値から数える
 
 ## 却下した選択肢
