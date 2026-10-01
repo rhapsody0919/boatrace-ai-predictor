@@ -15,8 +15,36 @@
     font-size: 15px;
   }
 
-  .race-detail-page-v2 .drt-name-th {
+  .race-detail-page-v2 .drt-name-th,
+  .race-detail-page-v2 .drt-label-cell {
     font-size: 14px;
+  }
+
+  /* 級別・分母・勝数などの補足行も、数値に合わせて一段上げる（12px のままだと、
+     行見出しが数値より一回り小さく読みにくかった。BOA-612 ファン評価1周目） */
+  .race-detail-page-v2 .drt-grade,
+  .race-detail-page-v2 .drt-sub {
+    font-size: 13px;
+  }
+
+  /* 同じ6艇の列を持つ「この会場の枠番別傾向」も同じ大きさにそろえる */
+  .race-detail-page-v2 .vtp-table {
+    font-size: 15px;
+  }
+
+  /* 1行に1艇を並べるリスト・グラフは、広げると選手名と数値が 1,200px 以上離れ、
+     点が横に潰れた（BOA-612 ファン評価1周目）。6艇を列に並べる表だけを
+     1600px まで使い、こちらは読みやすい幅で止める */
+  .race-detail-page-v2 .rbit-bars,
+  .race-detail-page-v2 .race-meet-tab,
+  .race-detail-page-v2 .race-ai-prediction-tab,
+  .race-detail-page-v2 .rwit-today-table {
+    max-width: 1200px;
+  }
+
+  /* 予選中にいちばん使う得点率早見は、10.4px のままだと広い画面でも読みにくい */
+  .race-detail-page-v2 .rmt-forecast-table {
+    font-size: 13px;
   }
 }
 
