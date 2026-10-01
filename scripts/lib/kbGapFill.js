@@ -58,6 +58,16 @@ export const GAP_FILL_ITEMS = Object.freeze({
     keyColumns: ["race_id", "boat_number"],
     columns: ["race_id", "boat_number", "exhibition_time"],
   },
+  // BOA-480: レースの状態（マイグレーション078）。race_results は rank1〜3 も NOT NULL のため、対象の列だけを送る
+  // upsert は INSERT の段階で制約違反になる。同じ値ごとにまとめて update().in(race_id) で書く（groupUpdate）。
+  // 書くのは race_status が NULL の行だけ（既存の値は上書きしない）
+  race_status: {
+    table: "race_results",
+    mode: "groupUpdate",
+    keyColumns: ["race_id"],
+    nullGuardColumn: "race_status",
+    columns: ["race_id", "race_status", "refund_boats"],
+  },
 });
 
 /** すべての行が、ちょうど columns の列を持つことを確かめる（違えば例外。書き込みの直前に呼ぶ） */
@@ -221,6 +231,116 @@ export function buildRate2Rows(day, existingByKey) {
           local_2rate: nextL,
         });
       }
+    }
+  }
+  return rows;
+}
+
+/** 返還になる成績コード（F=フライング、L0/L1=出遅れ、K0/K1=欠場）。S0/S1/S2（失格）・00（順位なし）は返還しない */
+const REFUND_CODES = new Set(["F", "L0", "L1", "K0", "K1"]);
+/** Kファイルに現れる成績コードの全て（2005〜2026-09 のアーカイブ全期間の実測）。これ以外が出たら書かずに異常とする */
+const KNOWN_FINISH_CODES = new Set([
+  "01",
+  "02",
+  "03",
+  "04",
+  "05",
+  "06",
+  "S0",
+  "S1",
+  "S2",
+  "F",
+  "K0",
+  "K1",
+  "L0",
+  "L1",
+  "00",
+]);
+/** 払戻の special（kbFileParser）で、払戻とみなす表記。「不成立」だけが不成立、それ以外は払戻あり */
+const KNOWN_PAYOUT_SPECIALS = new Set([
+  null,
+  undefined,
+  "",
+  "特払い",
+  "不成立",
+]);
+
+/**
+ * BOA-480: K の1レースから race_status・refund_boats を導く（結果ページの classifyRaceStatus と同じ構造）。
+ * 2026-09-21 以降の正解（結果ページ由来）と、9/21 より前で値のある行の計3,084件で、両列とも100%一致（2026-10-02）。
+ *   no_race:        付記に「レース不成立」がある、または全勝式の払戻が「不成立」
+ *   partial_refund: 一部の勝式が不成立、または返還艇がある
+ *   normal:         それ以外
+ * 想定外（未知の成績コード・払戻の表記、払戻0件なのに「レース不成立」も無い）は null を返し、呼び出し側が異常として数える。
+ *
+ * @param {{rows?: Object[], payouts?: Object[], extra_lines?: string[]}} race kb-day/v1 の .k.venues[].races[]
+ * @returns {{race_status: string, refund_boats: number[]}|{anomaly: string}}
+ */
+export function deriveRaceStatusFromK(race) {
+  const rows = race?.rows ?? [];
+  const payouts = race?.payouts ?? [];
+  const unknownCode = rows.find((r) => !KNOWN_FINISH_CODES.has(r.finish_raw));
+  if (unknownCode)
+    return { anomaly: `未知の成績コード ${unknownCode.finish_raw}` };
+  const unknownSpecial = payouts.find(
+    (p) => !KNOWN_PAYOUT_SPECIALS.has(p.special),
+  );
+  if (unknownSpecial)
+    return { anomaly: `未知の払戻の表記 ${unknownSpecial.special}` };
+  const refundBoats = [
+    ...new Set(
+      rows
+        .filter((r) => REFUND_CODES.has(r.finish_raw))
+        .map((r) => r.boat_number),
+    ),
+  ].sort((a, b) => a - b);
+  const raceNoRace = (race?.extra_lines ?? []).some((l) =>
+    /レース不成立/.test(l),
+  );
+  const notEstablished = payouts.filter((p) => p.special === "不成立").length;
+  if (raceNoRace || (payouts.length > 0 && notEstablished === payouts.length)) {
+    return { race_status: "no_race", refund_boats: refundBoats };
+  }
+  if (payouts.length === 0)
+    return { anomaly: "払戻が0件で「レース不成立」も無い" };
+  if (notEstablished > 0 || refundBoats.length > 0) {
+    return { race_status: "partial_refund", refund_boats: refundBoats };
+  }
+  return { race_status: "normal", refund_boats: refundBoats };
+}
+
+/**
+ * BOA-480: race_results の race_status が NULL のレースだけ、K から導いた値を書く行を作る。
+ * K の会場が完了（status complete 以外）でないもの・導けないもの（anomaly）は書かず、anomalies に入れる。
+ *
+ * @param {Object} day kb-day/v1
+ * @param {Map<string, string|null>} statusByRace race_results の race_id → 既存の race_status（行が無ければキーが無い）
+ * @param {{anomalies?: Array<{race_id: string, reason: string}>}} [out]
+ */
+export function buildRaceStatusRows(day, statusByRace, out = {}) {
+  const rows = [];
+  for (const venue of day?.k?.venues ?? []) {
+    for (const race of venue.races ?? []) {
+      const raceId = raceIdOf(day.date, venue.venue_code, race.race_number);
+      if (!statusByRace.has(raceId) || statusByRace.get(raceId) !== null)
+        continue;
+      if (venue.status && venue.status !== "complete") {
+        out.anomalies?.push({
+          race_id: raceId,
+          reason: `K の会場が ${venue.status}`,
+        });
+        continue;
+      }
+      const d = deriveRaceStatusFromK(race);
+      if (d.anomaly) {
+        out.anomalies?.push({ race_id: raceId, reason: d.anomaly });
+        continue;
+      }
+      rows.push({
+        race_id: raceId,
+        race_status: d.race_status,
+        refund_boats: d.refund_boats,
+      });
     }
   }
   return rows;

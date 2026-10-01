@@ -308,6 +308,7 @@
     "finish": "Finish",
     "technique": "Winning technique",
     "payout": "Win Payout",
+    "payoutCell": "¥{{amount}}",
     "grades": {
       "ippan": "Regular",
       "G1": "G1",
@@ -825,7 +826,7 @@
     "compareTrendRange": "The horizontal axis is the date ({{from}}–{{to}}). On days with two races the dots are shifted left and right, and the line breaks on days the racer did not race. The last dot in each row is the racer's previous race.",
     "compareTrendRangeOneDay": "The horizontal axis is the date ({{day}}). Racers with two races that day have their dots shifted left and right. The last dot in each row is the racer's previous race.",
     "compareTrendHint": "Tap a row to switch the details below to that racer",
-    "compareTrendFinishNote": "The number under each dot is the finish in that race (F = flying start, Abs = absent; other marks follow the official notation).",
+    "compareTrendFinishNote": "The number under each dot is the finish in that race. Races without a finish show a mark (F = flying start, Abs = absent, Eng = engine stall, etc.; tap ? on the \"Last race this series\" row of the data table for the full list).",
     "compareTrendEmpty": "Not enough runs yet to draw a trend",
     "prelimOverNoteDay": "The preliminaries ended on day {{day}} ({{date}}). The score rate is final and today's finish will not change it.",
     "trendLastHeader": "Last",
@@ -883,7 +884,7 @@
     },
     "periodSummary": "▸ Filter by period",
     "periodCaveat": "* When combined with a grade filter, \"Current term\" is not the official term division: it covers every period we have data for (since Dec 2025, up to the past two years)",
-    "winRateSwitchCaveat": "* When a grade or period filter is applied, \"Win rate\" is not the official win-rate points but the actual share of 1st-place finishes (%) under those conditions",
+    "winRateSwitchCaveat": "* With a grade or period filter, this shows the 1st-place rate (% of races won under those conditions), not the official win-rate points",
     "relativeBarNote": "* Bar length compares only these 6 boats. Even a small gap can make a big difference in length, so check the numbers for the actual gap",
     "sampleCount": "(n={{n}})",
     "noData": "(No data)",
@@ -896,6 +897,7 @@
     "finishUnknown": "Unplaced (rank unknown)",
     "finishAbsent": "Absent",
     "venueRankingFor": "{{metric}} ranking",
+    "venueRankingNote": "Our own tally over all available data (regardless of the grade or period filter). Only venues with 5 or more races are listed.",
     "currentVenueRank": "{{venue}}, this meet's venue, ranks {{rank}} of {{total}}",
     "viewConditions": "By condition",
     "viewMeet": "This series",
@@ -918,6 +920,7 @@
     "meetTrendStFlat": "same as usual",
     "meetEmpty": "No races yet in this series (this is the racer's first one)",
     "conditionsNote": "{{metric}} by condition (our own tally, all available data). It will not match the official figures in the bars above, which are calculated differently.",
+    "conditionsNoteFiltered": "{{metric}} by condition (our own tally, all available data). The bars above use your grade/period filter, while this table always covers all periods and grades, so the numbers may differ.",
     "conditions": {
       "national": "All venues",
       "local": "This venue",
@@ -934,6 +937,7 @@
     "conditionsBaseNoteSeparator": ", ",
     "conditionsCourseCaveat": "* These figures cover every starting position; only {{n}} of those starts were from lane {{boat}}, today's lane. For lane- and course-specific records, see the \"Lane Stats\" tab",
     "conditionsFinalDayCaveat": "* The final day includes the championship race, where the racers who came through the series take the inside lane. Read it as much a sign of a good draw as of the racer's own strength",
+    "conditionsWaveExcludedNote": "* \"Waves 5cm+\" excludes races at {{venue}} ({{n}} races). {{venue}} records wave height in 5cm steps, so even calm water is recorded as 5cm",
     "conditionsFStNote": "Average ST carrying an F: {{holding}} (n={{holdingN}}) / with no F: {{clean}} (n={{cleanN}}). A racer with an F changes how hard they push the start, so ST reads better than win rate here",
     "conditionsAllZeroHint": "Every row of this metric is under 1%, so the conditions cannot be told apart. For racers who mostly start from the outside lanes, the top-3 rate shows the differences that matter",
     "conditionsAllZeroAction": "Show top-3 rate",
@@ -1888,6 +1892,12 @@
     "ledeDayPartial": "Of the {{n}} settled races, the {{m}} with a recorded winning move: {{techniques}}.",
     "loading": "Loading..."
   },
+  "loadingScreen": {
+    "title": "Loading data...",
+    "description": "Please wait a moment",
+    "ariaLabel": "Loading"
+  },
+  "breadcrumbLabel": "Breadcrumb",
   "listSeparator": ", ",
   "termHintLabel": "Show what this term means",
   "termHints": {

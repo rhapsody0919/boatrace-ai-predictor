@@ -140,10 +140,6 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
       .locator(".rsc-label-th", { hasText: "級別" })
       .locator(".term-hint__button");
     await button.scrollIntoViewIfNeeded();
-    // クッキー同意バナー（初回だけ出る）は下部ナビより前面にあるので外して、ナビとの重なりだけを見る
-    await page.evaluate(() =>
-      document.querySelectorAll(".cookie-consent").forEach((el) => el.remove()),
-    );
     // 画面の下の方で開く（ナビと重なりやすい位置）
     await page.evaluate(() => {
       const b = document
@@ -188,9 +184,6 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     await page
       .locator(".rsc-card")
       .waitFor({ state: "visible", timeout: 25000 });
-    await page.evaluate(() =>
-      document.querySelectorAll(".cookie-consent").forEach((el) => el.remove()),
-    );
     await page
       .locator(".rsc-label-th .term-hint__button")
       .first()
@@ -268,9 +261,6 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
     const button = page.locator(".rsc-label-th .term-hint__button").first();
     await button.waitFor({ timeout: 30000 });
-    await page.evaluate(() =>
-      document.querySelectorAll(".cookie-consent").forEach((el) => el.remove()),
-    );
     await button.scrollIntoViewIfNeeded();
     await button.click();
     const pop = page.locator(".term-hint__popover");

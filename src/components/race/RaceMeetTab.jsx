@@ -47,6 +47,7 @@ import {
   SEMIFINAL_SPLIT_DEFAULT_SLOTS,
   MEET_SMALL_SAMPLE_RUNS,
 } from "./seriesPoints";
+import { finishMarkKeyOf } from "../../utils/prevResult";
 import RaceHistoryTable from "./RaceHistoryTable";
 import MeetSparkline from "./MeetSparkline";
 import {
@@ -74,6 +75,12 @@ const rankInBorder = (row, slots) =>
 
 function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   const { t } = useTranslation();
+  // 着順の欄の公式の記号（エ・転 等）を、データ出走表と同じ言語ごとの表記にする
+  const finishLabelOf = (finish) => {
+    if (typeof finish !== "string") return finish;
+    const key = finishMarkKeyOf(finish);
+    return key ? t(`dataTable.prevMark.${key}`) : finish;
+  };
   const localize = useLocalizedPath();
   const sortedPlayers = [...(players ?? [])].sort(
     (a, b) => a.number - b.number,
@@ -940,7 +947,8 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                         r.finish === null || r.finish === undefined
                           ? null
                           : {
-                              text: r.finish,
+                              // 公式の記号（エ・転 等）はデータ出走表と同じ表記にする（BOA-654）
+                              text: finishLabelOf(r.finish),
                               win: r.finish === 1,
                               mark: typeof r.finish === "string",
                             },

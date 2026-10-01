@@ -1,6 +1,7 @@
 import {
   test,
   expect,
+  applyCookieConsent,
   applyRecording,
   E2E_MODE,
   e2eNow,
@@ -76,11 +77,6 @@ test.describe("選手一覧ページ (/racers)", () => {
   test("級別フィルタで絞り込み、ソート・ページネーションが機能する", async ({
     page,
   }) => {
-    // Cookie同意バナー（position:fixed、z-index:9999）がページ下部の
-    // ページネーションと重なりクリックを阻害するため、既定済みとして進める
-    await page.addInitScript(() => {
-      localStorage.setItem("boatai:cookie-consent", "accepted");
-    });
     await page.goto("/racers");
     await expect(page.locator(".racer-table tbody tr").first()).toBeVisible();
 
@@ -176,6 +172,34 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
     await koBtn.click();
     await expect(page).toHaveURL(/\/ko\/venues$/);
   });
+});
+
+// BOA-654: レース詳細の非ja表示に日本語が残っていた（今節の記号「エ」・払戻「円」・パンくずのラベル）
+test("英語のレース詳細に公式の記号・円・日本語のラベルを生のまま出さない（BOA-654）", async ({
+  page,
+}) => {
+  // 2026-09-30 戸田9R: 6号艇の今節の走にエンストがある
+  await page.goto("/en/race/2026-09-30-02-09");
+  await page.locator(".race-tabs-btn", { hasText: "This Series" }).click();
+  await expect(page.locator("nav.breadcrumb")).toHaveAttribute(
+    "aria-label",
+    "Breadcrumb",
+  );
+  const labels = page.locator(".meet-sparkline-label");
+  await labels.first().waitFor({ timeout: 30000 });
+  await expect(labels.filter({ hasText: "エ" })).toHaveCount(0);
+  await expect(labels.filter({ hasText: "Eng" }).first()).toBeVisible();
+  const history = page.locator(".race-history-table").first();
+  await history.waitFor({ timeout: 30000 });
+  await expect(history).toContainText("¥");
+  await expect(history).not.toContainText("円");
+
+  // 基本情報タブの直近10走（RecentRunsTable）の払戻も同じ表記にする
+  await page.locator(".race-tabs-btn", { hasText: "Basic Info" }).click();
+  await page.locator(".rbit-bar-row").nth(5).click();
+  const recent = page.locator(".rrt-table").first();
+  await recent.waitFor({ timeout: 30000 });
+  await expect(recent).not.toContainText("円");
 });
 
 // BOA-656: 会場特性の要約は「水面・傾向」を日本語の中黒で連結していた（全言語で「Freshwater ・ Balanced」）
@@ -1354,10 +1378,6 @@ test.describe("レースページ再設計（BOA-168）", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 320, height: 900 });
-    // 320px幅ではCookie同意バナーが画面下部の操作を遮るため、同意済みで開始する
-    await page.addInitScript(() =>
-      localStorage.setItem("boatai:cookie-consent", "accepted"),
-    );
     await page.goto("/races/2026-08-11");
     await page.locator(".venue-grid-card--open").first().click();
     await page.locator(".race-card .predict-btn").first().click();
@@ -1396,10 +1416,6 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 任意のアニメーションフレームで計測しないよう止める
     // （AiCopyBannerはuseReducedMotionを見てリング自体を描画しない）
     await page.emulateMedia({ reducedMotion: "reduce" });
-    // 320px幅ではCookie同意バナーが画面下部の操作を遮るため、同意済みで開始する
-    await page.addInitScript(() =>
-      localStorage.setItem("boatai:cookie-consent", "accepted"),
-    );
 
     await openFixedRaceBeforeStart(page);
 
@@ -1468,6 +1484,68 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(breakoutRow.locator("td").first()).toContainText("内側なし");
   });
 
+  test("グレード・期間で絞り込むと、指標のチップは「勝率」ではなく「1着率」になる（BOA-585）", async ({
+    page,
+  }) => {
+    // 絞り込み中のバーは自社集計の1着になった割合（%）で、公式の勝率（点）ではない
+    await page.goto("/race/2026-09-21-02-05");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
+      timeout: 25000,
+    });
+    const chips = page.locator(".rbit-chip");
+    await expect(chips.first()).toHaveText("勝率");
+    await page.locator(".rbit-chip", { hasText: "一般戦" }).first().click();
+    await expect(chips.first()).toHaveText("1着率");
+    await expect(page.locator(".rbit-metric-caveat")).toContainText("1着率");
+    // 絞り込み中は上のバーも自社集計なので、条件別の注記は「公式値とは一致しない」と書かない
+    // （#1069 ファン評価2周目）
+    await page.locator(".rbit-bar-row").first().click();
+    await page.locator(".rbit-expanded-tab", { hasText: "条件別" }).click();
+    const note = page.locator(".rbit-conditions-note");
+    await expect(note).toContainText("絞り込みにかかわらず全期間", {
+      timeout: 25000,
+    });
+    await expect(note).not.toContainText("公式値");
+  });
+
+  test("得意会場のランキングにも、自社集計の1着率である旨を書く（#1069 ファン評価1周目）", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-09-21-02-05");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
+      timeout: 25000,
+    });
+    await page.locator(".rbit-bar-row").first().click();
+    await page.locator(".rbit-expanded-tab", { hasText: "得意会場" }).click();
+    await expect(page.locator(".rbit-venue-metric-label")).toHaveText(
+      "1着率のランキング",
+      { timeout: 25000 },
+    );
+    await expect(page.locator(".rbit-venue-note")).toContainText("当社集計");
+  });
+
+  test("条件別の「波5cm以上」は江戸川の走を除き、その旨を注記する（BOA-584）", async ({
+    page,
+  }) => {
+    // 江戸川は波高を5cm刻みで記録し、静水面でも5cm。全国合算に混ぜると「荒れ」が水増しされる。
+    // 2026-09-21 戸田5R の2号艇は、取得できる期間に江戸川の走がある
+    await page.goto("/race/2026-09-21-02-05");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
+      timeout: 25000,
+    });
+    await page.locator(".rbit-bar-row").nth(1).click();
+    await page.locator(".rbit-expanded-tab", { hasText: "条件別" }).click();
+    const how = page.locator(".rbit-conditions-how");
+    await expect(how).toBeVisible({ timeout: 25000 });
+    await how.locator("summary").click();
+    await expect(how).toContainText(
+      /「波5cm以上」からは、江戸川の走（\d+走）を除いています/,
+    );
+  });
+
   test("基本情報タブのバー展開に「条件別」タブと前期成績が出る（phase a T5-2/T5-2b）", async ({
     page,
   }) => {
@@ -1512,6 +1590,11 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 上のバー（公式値）と数字が一致しないことを明記する
     await expect(page.locator(".rbit-conditions-note")).toContainText(
       "一致しません",
+    );
+    // 自社集計の勝率は1着になった割合（%）なので「1着率」と呼ぶ。下の前期欄の
+    // 公式の「勝率」（点）と同じ名前で並べない（BOA-585）
+    await expect(page.locator(".rbit-conditions-note")).toContainText(
+      "条件ごとの1着率",
     );
     // 「前期」は指標の列に混ぜず、算出期間つきの別枠で出す（単位が点のため）
     await expect(page.locator(".rbit-period-heading")).toContainText(
@@ -3294,7 +3377,8 @@ test.describe("レース荒れ度ムード演出（BOA-195: race-open-animation�
   }, testInfo) => {
     const context = await browser.newContext({ reducedMotion: "reduce" });
     try {
-      // fixture を通らない context なので、録画の再生と時計の固定を明示的に掛ける
+      // fixture を通らない context なので、Cookie 同意・録画の再生・時計の固定を明示的に掛ける
+      await applyCookieConsent(context, "rejected");
       await applyRecording(context, testInfo);
       const page = await context.newPage();
       await openVolatility(page);
