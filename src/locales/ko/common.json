@@ -910,6 +910,9 @@
     "periodWinRate": "승률 {{value}}",
     "periodTop2Rate": "2연대율 {{value}}",
     "periodAvgSt": "평균 ST {{value}}",
+    "periodVsCurrent": "(출주표·전국 {{current}}, 전기 대비 {{diff}})",
+    "periodCurrentOnly": "(출주표·전국 {{current}})",
+    "periodDiffWithheldNote": "※ 기가 바뀐 뒤 3개월 동안은 출주표 수치의 대부분이 전기와 같은 기간의 성적이라 전기 대비 차이를 표시하지 않습니다({{date}} 이후 경주부터 표시).",
     "periodFetchError": "전기 성적을 가져오지 못했습니다",
     "meetScoreForecastTitle": "오늘 착순에 따른 득점률 변화",
     "meetScorePrelimOver": "예선 득점률 {{rate}}（{{n}}주・{{source}}・확정）"

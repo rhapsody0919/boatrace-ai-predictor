@@ -1499,6 +1499,19 @@ test.describe("レースページ再設計（BOA-168）", () => {
       /\d{4}-\d{2}-\d{2}/,
     );
     await expect(page.locator(".rbit-period-values")).toContainText("勝率");
+    // 前期の横に出走表の値（上のバーの既定と同じ公式値）と差を添える（BOA-439）。
+    // 平均STは出走表の値が無いので差を出さない。
+    // ファン評価で出た3点を固定する: 出走表の勝率は期替わりで数え直されないので
+    // 「今期」と呼ばない／バーを当地にしても全国のままなので「全国」と書く／
+    // 差の向きを「前期から」で示す。2連対率の差はポイント差なので pt
+    const periodDiffs = page.locator(".rbit-period-diff");
+    await expect(periodDiffs.first()).toHaveText(
+      /^（出走表・全国 \d+\.\d{2}、前期から[+−±]\d+\.\d{2}）$/,
+    );
+    await expect(periodDiffs.nth(1)).toHaveText(
+      /^（出走表・全国 \d+\.\d%、前期から[+−±]\d+\.\dpt）$/,
+    );
+    await expect(page.locator(".rbit-period-note")).toHaveCount(0);
 
     // この表が全コース込みであることと、今日の枠での走数を常時出す
     // （ボートレースファンのレビュー指摘A: 外枠専業の選手と枠が均等に回る選手で
@@ -1534,6 +1547,40 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(how.locator("p").first()).toBeVisible();
     await expect(how).toContainText("最終日は優勝戦を含み");
     await expect(how).toContainText("母数が他の行と違います");
+
+    // 期が替わって3か月は差を出さない（ファン評価2周目）。出走表の勝率は期の区切りで
+    // 数え直されず、5月の値の大半は前期と同じ期間の成績のため
+    await page.goto("/race/2026-05-02-02-04");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await page.locator(".rbit-bar-row").nth(1).click();
+    await page.locator(".rbit-expanded-tab", { hasText: "条件別" }).click();
+    await expect(page.locator(".rbit-period-diff").first()).toHaveText(
+      /^（出走表・全国 \d+\.\d{2}）$/,
+      { timeout: 25000 },
+    );
+    await expect(page.locator(".rbit-period-note")).toContainText(
+      "2026-08-01以降のレースで出します",
+    );
+
+    // 英語の長い文言が375pxで枠からはみ出して切れない（ファン評価3周目。
+    // 括弧を折り返し禁止にしていたときは右へ32pxはみ出していた）
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/en/race/2026-09-21-02-05");
+    await page.locator(".race-tabs-btn", { hasText: "Basic Info" }).click();
+    await page.locator(".rbit-bar-row").first().click();
+    await page.locator(".rbit-expanded-tab").nth(2).click();
+    await expect(page.locator(".rbit-period-diff").nth(1)).toBeVisible({
+      timeout: 25000,
+    });
+    const overflow = await page.evaluate(() => {
+      const box = document
+        .querySelector(".rbit-period")
+        .getBoundingClientRect();
+      return [...document.querySelectorAll(".rbit-period-diff")].map(
+        (e) => e.getBoundingClientRect().right - box.right,
+      );
+    });
+    for (const px of overflow) expect(px).toBeLessThanOrEqual(0.5);
   });
 
   test("勝率が全行1%未満に潰れる選手には3連対率への導線を出す（phase a T5-2、ファン視点レビュー指摘D）", async ({
