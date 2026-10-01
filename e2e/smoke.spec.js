@@ -174,6 +174,28 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
   });
 });
 
+// BOA-655: 分析ツールの非ja表示に日本語が残っていた（会場名・注記・選手ページのリンク）
+test("英語の分析ツールで会場名・注記・選手ページのリンクを日本語で出さない（BOA-655）", async ({
+  page,
+}) => {
+  await page.goto("/en/winning-technique?tab=volatility");
+  // 会場別の表は折りたたみの中。会場コードは "04" のようにゼロ埋めで来る
+  await page.locator(".vas-venue-details summary").click();
+  const names = page.locator(".volatility-venue-table__name");
+  await names.first().waitFor({ timeout: 30000 });
+  for (const text of await names.allTextContents()) {
+    expect(text).not.toMatch(/[\u3040-\u30FF\u4E00-\u9FFF]/);
+  }
+  const note = page.locator(".volatility-accuracy-chart-note");
+  await expect(note).toBeVisible();
+  await expect(note).not.toContainText("件を集計中");
+
+  await page.goto("/en/winning-technique?tab=formranking");
+  const link = page.locator(".racer-page-link-inline").first();
+  await link.waitFor({ timeout: 30000 });
+  await expect(link).toHaveText("Racer page (JA)");
+});
+
 // BOA-654: レース詳細の非ja表示に日本語が残っていた（今節の記号「エ」・払戻「円」・パンくずのラベル）
 test("英語のレース詳細に公式の記号・円・日本語のラベルを生のまま出さない（BOA-654）", async ({
   page,
