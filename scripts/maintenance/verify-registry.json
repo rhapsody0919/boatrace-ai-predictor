@@ -143,6 +143,11 @@
       "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
     },
     {
+      "script": "verify-function-grants-migration.js",
+      "tier": "ci",
+      "guards": "マイグレーション112（関数・シーケンスの匿名権限の剥奪と既定権限の是正、BOA-575）をPGlite上で実際に適用して検証。画面が呼ぶ7本のRPCが残ること・トリガーが発火し続けること"
+    },
+    {
       "script": "verify-migration-rls.js",
       "tier": "ci",
       "guards": "新規マイグレーションが公開スキーマのテーブルをRLSなし・匿名書き込み可のまま作っていないか（BOA-370の再発防止）"
@@ -470,6 +475,11 @@
       "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
     },
     {
+      "script": "verify-jsx-japanese.js",
+      "tier": "ci",
+      "guards": "翻訳対象のページ（/・/race・/venue・/guide・/venues・/winning-technique と共通の枠）に、t() を通らない日本語が新しく直書きされること。既存分は jsx-japanese-baseline.json に所属チケット付きで固定（BOA-653〜656）"
+    },
+    {
       "script": "verify-lib-index.js",
       "tier": "ci",
       "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）の抽出ロジックと、生成が成功すること。最新性はmasterへのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078）"
@@ -490,7 +500,7 @@
     {
       "script": "verify-e2e-har-merge.js",
       "tier": "ci",
-      "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、素通し一覧の集計（ADR-0077）"
+      "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、定期実行の起動時刻（1日4回・0分回避・打ち切り前）と直列化・通知の1日1回化、素通し一覧の集計（ADR-0077）"
     },
     {
       "script": "verify-e2e-recorded-network.js",

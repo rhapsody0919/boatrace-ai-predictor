@@ -351,6 +351,7 @@ export default function EnglishGuide() {
               </tbody>
             </table>
           </div>
+          {/* i18n-allow: 券種の日本語名を併記する（マークシート・発売所で見る表記） */}
           <p className="eg-note">
             The Trifecta (3連単) is by far the most popular bet — average
             payouts are around ¥7,000 per ¥100 stake, with big upsets paying
@@ -449,6 +450,7 @@ export default function EnglishGuide() {
             to look past class ranking alone for the 2nd-place pick.
           </p>
           <p>
+            {/* i18n-allow: 券種の日本語名を併記する（マークシートの表記） */}
             <strong>The bet:</strong> Trifecta (3連単), picking boats{" "}
             <strong>1 → 3 → 4</strong> in that exact order on the mark sheet —
             filling in the &quot;1&quot; oval in the 1st-place column,
