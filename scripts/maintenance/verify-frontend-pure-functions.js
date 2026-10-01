@@ -449,6 +449,28 @@ function suiteBasicInfoStats(m, check) {
     50,
   );
 
+  // --- lastStartTiming（BOA-597）: 前走のST。直前が F・L ならその記号で、飛ばさない
+  const stOf = { valueOf: (r) => r.st, markOf: (r) => r.mark ?? null };
+  check(
+    "lastStartTiming: 直前が F・L ならその記号、欠場（ST無し・記号無し）は飛ばす、何も無ければ null",
+    [
+      m.lastStartTiming([{ st: 0.09 }, { st: null, mark: "F" }], stOf),
+      m.lastStartTiming([{ st: 0.09 }, { st: null, mark: "L" }], stOf),
+      m.lastStartTiming([{ st: 0.12 }, { st: null }], stOf),
+      m.lastStartTiming([{ st: null, mark: "F" }, { st: 0.15 }], stOf),
+      m.lastStartTiming([{ st: null }], stOf),
+      m.lastStartTiming(null, stOf),
+    ],
+    [
+      { mark: "F", value: null },
+      { mark: "L", value: null },
+      { mark: null, value: 0.12 },
+      { mark: null, value: 0.15 },
+      null,
+      null,
+    ],
+  );
+
   // --- periodDiff（BOA-439）: 前期と出走表の値の差。どちらも公式値
   check(
     "periodDiff: 出走表の値と、符号つきの差（勝率は小数2桁・2連対率は1桁）",

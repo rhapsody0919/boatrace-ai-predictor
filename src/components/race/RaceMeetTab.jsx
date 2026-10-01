@@ -32,6 +32,7 @@ import {
   buildMeetResults,
   buildMeetTrend,
   getRecentRaces,
+  lastStartTiming,
   MEET_ST_DIFF_THRESHOLD,
 } from "./basicInfoStats";
 import {
@@ -349,7 +350,12 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
       : [];
   // 必要得点の列を出せるか（誰か1人でも残りの予選走が分かっていれば出す）
   const hasNeeded = forecastRows.some((r) => r.needed !== null);
-  const lastSt = lastOf("startTiming");
+  // STの前走は、直前がFならFと出す（数値のある最後の走を採るとFを飛ばす。BOA-597）
+  const lastSt = lastStartTiming(meet, {
+    valueOf: (r) => r.startTiming,
+    markOf: (r) =>
+      r.isFlying === true ? "F" : r.finishMark === "L" ? "L" : null,
+  });
   const lastExhibition = lastOf("exhibitionTime");
 
   // 得点率は平均なので「1着→6着」と「3着→3着」が同じ5.00になる。
@@ -826,9 +832,15 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
             {trendRows.map(({ player: p, runs, layout }) => {
               const color = BOAT_COLORS[p.number] || {};
               const vals = runs.map((r) => r[trendKey]);
-              const last = [...vals]
-                .reverse()
-                .find((v) => typeof v === "number");
+              // 右端の「前走」。STは直前がFならFと出す（BOA-597）。展示はFでも
+              // 走っている（展示タイムはある）ので、数値のある最後の走のまま
+              const lastRun = lastStartTiming(runs, {
+                valueOf: (r) => r[trendKey],
+                markOf: (r) =>
+                  trendKey === "st" && (r.finish === "F" || r.finish === "L")
+                    ? r.finish
+                    : null,
+              });
               return (
                 <li key={p.number}>
                   {/* 行全体を1つのボタンにする。以前は艇番・選手名だけが押せて、
@@ -863,6 +875,10 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                       height={34}
                       // 1走の選手も前走の点を出す（空白だと取れていないと読まれる）
                       allowSinglePoint
+                      // 前走が F・L なら、1つ前の走に「前走」の大きい点を付けない。
+                      // 右端は「F」なのに大きい点が0.09の走に付き、前走が好スタートに
+                      // 見えていた（BOA-597 ファン評価1周目）
+                      markLast={!lastRun?.mark}
                       xPositions={layout.xs}
                       xCenters={layout.centers}
                       breakBefore={layout.breakBefore}
@@ -878,7 +894,9 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                       )}
                     />
                     <span className="rmt-trend-last">
-                      {typeof last === "number" ? last.toFixed(2) : "—"}
+                      {lastRun === null
+                        ? "—"
+                        : (lastRun.mark ?? lastRun.value.toFixed(2))}
                     </span>
                   </button>
                 </li>
@@ -1047,13 +1065,16 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                   }))}
                   baseline={st.baseAvg}
                   color="var(--brand-accent-primary)"
+                  markLast={!lastSt?.mark}
                 />
                 <div className="rmt-spark-foot">
                   <span>{firstMeetDate}</span>
                   <span>
                     {lastSt === null
                       ? "—"
-                      : t("meetTab.sparkLast", { value: lastSt.toFixed(2) })}
+                      : t("meetTab.sparkLast", {
+                          value: lastSt.mark ?? lastSt.value.toFixed(2),
+                        })}
                   </span>
                 </div>
               </div>

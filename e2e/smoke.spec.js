@@ -1615,6 +1615,31 @@ test.describe("レースページ再設計（BOA-168）", () => {
     ).not.toContainText("0.0%");
   });
 
+  test("今節タブのSTの前走は、直前の走がFならFと出し、Fを飛ばして1つ前の走のSTを出さない（BOA-597）", async ({
+    page,
+  }) => {
+    // 2026-09-30 平和島11R: 古川誠之は同じ日の4RでF。以前は推移の右端と詳細が
+    // 「前走 0.09」（9/29 11R の値）になっていた
+    await page.goto("/race/2026-09-30-04-11");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const row = page.locator(".rmt-trend-row").filter({ hasText: "古川" });
+    await expect(row.locator(".rmt-trend-last")).toHaveText("F", {
+      timeout: 30000,
+    });
+    // 前走が F なので、1つ前の走に「前走」の大きい点（r=3.2）を付けない
+    // （ファン評価1周目: 右端は F なのに大きい点が 0.09 の走に付いていた）
+    await expect(row.locator('circle[r="3.2"]')).toHaveCount(0);
+    const other = page.locator(".rmt-trend-row").filter({ hasNotText: "古川" });
+    await expect(other.first().locator('circle[r="3.2"]')).toHaveCount(1);
+    await row.click();
+    await expect(page.locator(".rmt-spark-foot").first()).toContainText(
+      "前走 F",
+    );
+    await expect(
+      page.locator(".rmt-spark").first().locator('circle[r="3.2"]'),
+    ).toHaveCount(0);
+  });
+
   test("今節Fの選手は賞典除外として順位から外し、必要得点を出さない（BOA-587）", async ({
     page,
   }) => {

@@ -65,6 +65,8 @@ import { SPARK_VIEW_W, SPARK_PAD_X } from "../../utils/trendDateLayout";
  * @param {boolean} [allowSinglePoint] 値が1つでも描く（既定 false）。6艇を
  *   並べる推移では、1走の選手の行が空白だと「取れていない」と読まれるので、
  *   前走の点を1つだけ右端（他の行の前走と同じ横位置）に置く
+ * @param {boolean} [markLast] 最後の点を「前走」として大きく描く（既定 true）。
+ *   前走が F・L（値が無い）のときは false にする。1つ前の走が前走に見えるため
  */
 // 日付の横軸で、同じ日の2走を日の位置から左右にずらす最大幅（px、BOA-538）
 const MAX_DAY_OFFSET_PX = 8;
@@ -82,6 +84,7 @@ function MeetSparkline({
   height = 56,
   allowSinglePoint = false,
   pointLabels = null,
+  markLast = true,
   xPositions = null,
   xCenters = null,
   breakBefore = null,
@@ -328,7 +331,7 @@ function MeetSparkline({
             cx={x(d.i)}
             cy={y(d.v)}
             // 前走だけ大きくする（「今どこにいるか」が一番知りたい点）
-            r={idx === lastIndex ? 3.2 : 2}
+            r={markLast && idx === lastIndex ? 3.2 : 2}
             fill={color}
             vectorEffect="non-scaling-stroke"
           />
