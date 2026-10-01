@@ -1,5 +1,5 @@
 // Verify frontend calculation matches DB
-import { supabase, isSupabaseEnabled } from './lib/supabaseClient.js';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient.js';
 
 async function verifyCalculations() {
   if (!isSupabaseEnabled()) {

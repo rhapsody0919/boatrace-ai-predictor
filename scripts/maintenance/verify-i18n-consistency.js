@@ -21,17 +21,16 @@
  * 2. プレースホルダ `{{name}}` の集合が ja と各言語で一致すること
  *    （ja にある値が他言語で落ちていると、その言語だけ値が消えた文言になる）
  * 3. 値が空文字でないこと（キーだけ作って中身を入れ忘れた状態）
+ * 4. ja 以外に日本語の中黒「・」（U+30FB）が無いこと（BOA-442）。
+ *    区切りは言語ごとに en: `/` か `, `、zh-TW: `、`、ko: `, ` を使う
  *
- * 2026-09-25時点で1〜3とも違反ゼロ。この状態を保つための検査であって、
+ * 2026-09-25時点で1〜3とも違反ゼロ（4 は BOA-442 で61件を置き換えてから追加）。この状態を保つための検査であって、
  * 既存の違反を洗い出すためのものではない。
  *
  * ## 検査しないこと（意図的）
  *
  * - 訳文の質・用語の統一は見ない（`docs/reference/i18n-glossary.md` の領分で、
  *   機械では判定できない）
- * - 日本語の中黒「・」が en/ko に残っている問題（2026-09-25時点で61件）は
- *   対象外。区切り記号として定着しており、機械的に置き換えると文が壊れる。
- *   文言レビューが要るため別課題とする
  */
 
 import { readFileSync } from "node:fs";
@@ -150,6 +149,19 @@ if (allEmpty.length > 0) {
   failures.push(
     `全言語で値が空のキーが ${allEmpty.length} 件あります（キーだけ作って中身が入っていない）→ ${allEmpty.slice(0, 5).join(", ")}`,
   );
+}
+
+// 4. ja 以外の日本語の中黒（BOA-442）
+for (const lang of LANGS.filter((l) => l !== BASE_LANG)) {
+  checked += 1;
+  const withNakaguro = Object.entries(locales[lang])
+    .filter(([, value]) => typeof value === "string" && value.includes("\u30FB"))
+    .map(([key]) => key);
+  if (withNakaguro.length > 0) {
+    failures.push(
+      `${lang}: 日本語の中黒「・」を含むキーが ${withNakaguro.length} 件 → ${withNakaguro.slice(0, 5).join(", ")}${withNakaguro.length > 5 ? " ..." : ""}（en は / か , 、zh-TW は 、、ko は , で区切る）`,
+    );
+  }
 }
 
 if (failures.length > 0) {
