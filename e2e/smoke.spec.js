@@ -1615,6 +1615,44 @@ test.describe("レースページ再設計（BOA-168）", () => {
     ).not.toContainText("0.0%");
   });
 
+  test("基本情報の直近10走で、同じ日の2走も古い順（Rの小さい順）に並ぶ（BOA-588）", async ({
+    page,
+  }) => {
+    // 2026-09-29 戸田12R の1号艇: 9/27 と 9/28 に2走ずつある。以前は日付は古い順
+    // なのに、同じ日の中だけ「12R → 5R」と新しい順になっていた
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const bar = page.locator(".rbit-bar-row").first();
+    await bar.waitFor({ timeout: 30000 });
+    await bar.click();
+    const table = page.locator(".race-history-table").first();
+    await table.waitFor({ timeout: 30000 });
+    const rows = await table.locator("tbody tr").evaluateAll((trs) =>
+      trs.map((tr) => {
+        const cells = [...tr.querySelectorAll("td")].map((td) =>
+          td.textContent.trim(),
+        );
+        return {
+          date: cells.find((c) => /^\d{4}-\d{2}-\d{2}$/.test(c)) ?? null,
+          raceNo: Number(cells.find((c) => /^\d+R$/.test(c))?.slice(0, -1)),
+        };
+      }),
+    );
+    // 同じ日が2走以上ある日が、少なくとも1つあること（前提の確認）
+    const sameDay = rows.filter(
+      (r, i) => i > 0 && r.date !== null && r.date === rows[i - 1].date,
+    );
+    expect(sameDay.length).toBeGreaterThan(0);
+    // 表全体が「日付 → R」の古い順になっている
+    for (let i = 1; i < rows.length; i += 1) {
+      const prev = rows[i - 1];
+      const cur = rows[i];
+      if (prev.date === cur.date)
+        expect(cur.raceNo).toBeGreaterThan(prev.raceNo);
+      else expect(cur.date > prev.date).toBe(true);
+    }
+  });
+
   test("今節タブ: en・zh-TW の375pxで6艇の表がカードからはみ出さず、必要得点に残りの走数を添える（BOA-596）", async ({
     page,
   }) => {
