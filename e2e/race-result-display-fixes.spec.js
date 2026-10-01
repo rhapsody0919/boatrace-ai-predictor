@@ -116,7 +116,9 @@ test("フライング艇の矢印はスタートラインより先に、遅れ�
       return { boat, left: parseFloat(dot?.style.left ?? "NaN") };
     }),
   );
-  const LINE = 84;
+  // スタートラインの位置（RaceResult.jsx の START_ANIM.LINE_PERCENT）。F 側の幅を取るため
+  // 84% から 72% に下げた（BOA-586）
+  const LINE = 72;
   for (const d of dots) {
     if (d.boat === "4") expect(d.left, d.boat).toBeLessThan(LINE);
     else expect(d.left, d.boat).toBeGreaterThan(LINE);
