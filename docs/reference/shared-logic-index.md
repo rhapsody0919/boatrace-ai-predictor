@@ -252,9 +252,9 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/sherlockService.js` | シャーロック予想 データ取得・推論サービス | getSherlockModelInfo, getSherlockPredictions |
 | `src/services/snsHubService.js` | SNSマーケティングハブ 管理画面用サービス層 | getDrafts, getApprovers, approveDraft, mergeBlogPr, publishYoutube ほか19件 |
 | `src/services/supabaseClient.js` | Supabase クライアント（フロントエンド用） | supabase |
-| `src/services/supabaseDataService.js` | Supabase データサービス | clearCache, aggregateRacerVenueBoatStats, aggregateRacerCrossStats, supabaseDataService |
+| `src/services/supabaseDataService.js` | Supabase データサービス | clearCache, aggregateRacerVenueBoatStats, aggregateRacerCrossStats, FETCH_ALL_BY_IN_ORDER, supabaseDataService |
 | `src/services/watsonService.js` | ワトソン予想 データ取得サービス | getWatsonModelInfo, getWatsonPredictions |
 
 ---
 
-対象 222 ファイル / export 1106 件。
+対象 222 ファイル / export 1107 件。
