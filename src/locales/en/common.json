@@ -371,6 +371,13 @@
     "tbd": "TBD",
     "jstNote": " JST"
   },
+  "cookieConsent": {
+    "textBeforeLink": "We use cookies to improve our service. For details, see our ",
+    "privacyLink": "Privacy Policy",
+    "textAfterLink": " (in Japanese).",
+    "accept": "Accept",
+    "reject": "Reject"
+  },
   "footer": {
     "blog": "Blog",
     "operator": "Operator",
@@ -915,6 +922,9 @@
     "periodWinRate": "Win pts {{value}}",
     "periodTop2Rate": "Top-2 rate {{value}}",
     "periodAvgSt": "Avg. ST {{value}}",
+    "periodVsCurrent": "(race card, national {{current}}; {{diff}} from previous term)",
+    "periodCurrentOnly": "(race card, national {{current}})",
+    "periodDiffWithheldNote": "* For the first three months of a new term, the race-card figure still mostly covers the previous term, so the difference is not shown (shown for races from {{date}}).",
     "periodFetchError": "Could not load the previous term record",
     "meetScoreForecastTitle": "How today's finish moves the score rate",
     "meetScorePrelimOver": "Preliminary score rate {{rate}} ({{n}} runs, {{source}}, final)"

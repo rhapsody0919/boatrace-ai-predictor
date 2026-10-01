@@ -459,6 +459,11 @@
       "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）の抽出ロジックと、生成が成功すること。最新性はmasterへのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078）"
     },
     {
+      "script": "verify-ga4-measurement-breaks.js",
+      "tier": "ci",
+      "guards": "GA4 の計測の切れ目（2026-09-29 の page_view 修正）をまたぐ期間の判定と注記（scripts/lib/ga4MeasurementBreaks.js）。崩れると計測修正による PV の増減を需要の変化と誤読する"
+    },
+    {
       "script": "verify-generated-docs-not-in-pr.js",
       "tier": "ci",
       "args": [
