@@ -77,13 +77,6 @@
       ]
     },
     {
-      "class": "race-cards-grid",
-      "files": [
-        "src/App.css",
-        "src/components/HitRaces.css"
-      ]
-    },
-    {
       "class": "race-list-section",
       "files": [
         "src/App.css",

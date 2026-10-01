@@ -87,7 +87,10 @@
     "backToVenues": "← 경정장 목록으로",
     "jumpToNextRace": "{{race}}R로",
     "nextDeadlineMarker": "{{venue}} 다음 마감 {{race}}R {{time}}",
-    "allClosedMarker": "{{venue}} 오늘 레이스는 모두 마감"
+    "allClosedMarker": "{{venue}} 오늘 레이스는 모두 마감",
+    "todayTitle": "오늘의 경주・AI 예측",
+    "metaTitleSeries": "{{venue}} 오늘의 경주 일람({{series}})・AI 데이터 분석 - 용신 레이더",
+    "metaDescriptionSeries": "{{series}} 개최 중인 {{venue}} 경정장의 오늘 전체 경주 일람. 마감 시각과 등급을 확인하고 각 경주의 AI 데이터 분석을 볼 수 있습니다."
   },
   "venueCharacteristics": {
     "collapsedTeaser": "{{summary}} / 1호정 1착률 {{rate}}%",
@@ -279,7 +282,8 @@
     "partialNoRaceTag": "일부 승식 불성립",
     "payoutNoRace": "불성립(반환)",
     "payoutSpecial": "특별 지급",
-    "volatilityOutcomeNotJudgeable": "판정 대상 외(불성립)"
+    "volatilityOutcomeNotJudgeable": "판정 대상 외(불성립)",
+    "stLegend": "오른쪽 화살표는 스타트 타이밍(ST). 노란 선이 스타트 라인이며, 선에 가까울수록 빠른 스타트. 선을 넘은 빨간 화살표는 플라잉"
   },
   "raceHistoryTable": {
     "date": "날짜",
@@ -314,7 +318,16 @@
     "venueGuideDesc": "경정장 특성과 베팅 포인트 상세",
     "analysisToolsLink": "데이터 분석 도구로 이 레이스를 더 분석하기",
     "awaitingResultBanner": "마감 시간이 지났지만 아직 결과가 반영되지 않았습니다 (데이터는 약 1시간마다 갱신됩니다)",
-    "cancelledBanner": "이 레이스는 중지되었습니다"
+    "cancelledBanner": "이 레이스는 중지되었습니다",
+    "shareCancelled": "🏁 용신 레이더【{{date}}{{venue}} {{raceNo}}R】\n\n이 레이스는 중지되었습니다",
+    "shareNoPrediction": "🏁 용신 레이더【{{date}}{{venue}} {{raceNo}}R】\n\n출주표와 데이터 분석을 무료로 공개 중",
+    "sharePrediction": {
+      "v1": "🏁 용신 레이더 예상【{{date}}{{venue}} {{raceNo}}R】\n\n모델: {{model}}\n본명: {{topPick}}번 보트\n추천: {{top3}}\n\n전개 예측을 분석한 결과, 이 순서가 유력해 보여요!\n데이터상으로도 기대해 볼 만해요👀",
+      "v2": "🏁 용신 레이더 예상【{{date}}{{venue}} {{raceNo}}R】\n\n모델: {{model}}\n본명: {{topPick}}번 보트\n추천: {{top3}}\n\n1턴 마크 전개 예측과 모터 성능을 분석한 결과,\n이 조합에 주목하고 있어요📊",
+      "v3": "🏁 용신 레이더 예상【{{date}}{{venue}} {{raceNo}}R】\n\n모델: {{model}}\n본명: {{topPick}}번 보트\n추천: {{top3}}\n\n이렇게 정확한 예상을 무료로 볼 수 있어서 좋아요✨\n오늘도 적중하길!",
+      "v4": "🏁 용신 레이더 예상【{{date}}{{venue}} {{raceNo}}R】\n\n모델: {{model}}\n본명: {{topPick}}번 보트\n추천: {{top3}}\n\n전개 예측으로 보면 이 예상은 믿을 만해 보여요!\n여러분은 어떻게 생각하세요?🤔",
+      "v5": "🏁 용신 레이더 예상【{{date}}{{venue}} {{raceNo}}R】\n\n모델: {{model}}\n본명: {{topPick}}번 보트\n추천: {{top3}}\n\n요즘 적중률이 올라가고 있어서 기뻐요😊\nAI 예상을 참고해 보세요!"
+    }
   },
   "home": {
     "introBannerText": "용신 레이더 - 경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요. | 전개 예측・인코스 붕괴 지수 등 45개 이상의 데이터를 분석. 자세히 보기 →",
@@ -532,7 +545,7 @@
     "result": "결과"
   },
   "wakuInfo": {
-    "note": "선수를 선택하면 그 선수가 오늘 들어갈 예상 코스의 성적을 기간·조건별로 비교할 수 있습니다. 왼쪽의 기간 이름을 누르면 해당 코스의 최근 10주 착순이 열립니다. 전체 6개 코스 비교는 표 아래 접힌 영역에서 열 수 있습니다.",
+    "note": "선수를 선택하면 그 선수가 이 경주에서 들어갈 예상 코스의 성적을 기간·조건별로 비교할 수 있습니다. 왼쪽의 기간 이름을 누르면 해당 코스의 최근 10주 착순이 열립니다. 전체 6개 코스 비교는 표 아래 접힌 영역에서 열 수 있습니다. 성적은 이 경주 이전 경주로 집계합니다(최근 3개월·최근 1개월은 이 경주 날짜부터 셉니다).",
     "boatLabel": "선수(번호)",
     "metricLabel": "지표",
     "metrics": {
@@ -563,8 +576,8 @@
     },
     "smallSampleTitle": "표본이 적어 참고값입니다",
     "gridTitleWithMetric": "코스별 성적: {{metric}}",
-    "todayMark": "오늘",
-    "todayCourseHeading": "오늘의 예상 진입: {{course}}코스",
+    "todayMark": "예상",
+    "todayCourseHeading": "이 경주의 예상 진입: {{course}}코스",
     "wakuNariAssumption": "※정해진 레인대로 진입할 경우",
     "wakuNariRate": "이 선수가 정해진 레인대로 진입한 비율은 {{rate}}%입니다(최근 {{n}}주)",
     "periodHeader": "기간·조건",
@@ -746,6 +759,7 @@
     "rankPlain": "{{rank}}위",
     "pretestRank": "{{rank}}위",
     "compareSub": "이번 시리즈 출전 {{total}}명.",
+    "compareSubExcluded": "이번 시리즈 출전 {{all}}명(순위 대상 {{total}}명. 상전 제외·중도 귀향 {{excluded}}명 제외).",
     "borderLine": "준우승전 기준은 {{slots}}위({{rate}}).",
     "rankTiedTitle": "동률 {{tied}}명",
     "pretestCell": "{{time}}（{{rank}}위）",
@@ -756,12 +770,13 @@
     "finishAbsent": "결",
     "smallSampleLegend": "⚠ 는 3주 미만(득점률이 아직 거칠다).",
     "finishLabel": "착순",
+    "finishLabelPrelim": "예선 착순",
     "borderNote": "점선 위가 준우승전 기준 안입니다(편성이 확정되지 않아 확정은 아닙니다).",
     "prelimOverNote": "예선은 {{date}}에 끝났습니다. 득점률은 여기서 확정되어 오늘 착순으로는 바뀌지 않습니다.",
     "seriesSplitNote": "이번 시리즈는 Ｗ우승전으로, 승격 경로가 둘로 나뉩니다(시리즈 전체 {{meetTotal}}명). 시리즈 순위와 준우승전 기준은 표시 중인 6정과 같은 우승전을 목표로 하는 {{total}}명 안에서 계산합니다.",
     "seriesSplitNoteNoBorder": "이번 시리즈는 Ｗ우승전으로, 승격 경로가 둘로 나뉩니다(시리즈 전체 {{meetTotal}}명). 시리즈 순위는 표시 중인 6정과 같은 우승전을 목표로 하는 {{total}}명 안에서 계산합니다.",
     "seriesMixedNote": "이번 시리즈는 Ｗ우승전으로 승격 경로가 둘로 나뉘지만, 이 레이스는 양쪽 선수가 함께 출주하므로 시리즈 순위는 시리즈 전체 {{total}}명으로 계산합니다.",
-    "rankSourceNote": "시리즈 순위는 당사 계산입니다. 공식 득점률 일람을 확보한 개최에서는 공식 비고(상전 제외·중도 귀향)로 순위 대상 외를 판정하고, 확보하지 못한 개최에서는 '시리즈 마지막 날 출주가 없는 선수'를 이탈로 추정합니다.",
+    "rankSourceNote": "시리즈 순위는 당사 계산입니다. 공식 득점률 일람을 확보한 개최에서는 공식 비고(상전 제외·중도 귀향)로 순위 대상 외를 판정하고, 확보하지 못한 개최에서는 표시 중인 경주 이전에 이번 시리즈에서 플라잉(F)을 한 선수를 상전 제외로, '시리즈 마지막 날 출주가 없는 선수'를 이탈로 추정합니다.",
     "rankSourceNoteOfficial": "득점률과 시리즈 순위는 공식 득점률 일람(예선 종료 시점)의 값입니다. 감점·상전 제외·중도 귀향도 공식 그대로 반영합니다. 예선 중에는 공식 일람이 아직 나오지 않아 당사 집계를 사용합니다.",
     "sourceOfficial": "공식",
     "sourceOwn": "당사 집계",
@@ -779,7 +794,8 @@
     "compareTrendSt": "ST",
     "compareTrendEx": "전시",
     "compareTrendNote": "같은 시리즈·같은 수면을 달린 6정을 같은 잣대(6정의 최소~최대)로 늘어놓았습니다. 행을 넘어 선의 높이를 그대로 비교할 수 있습니다. 점선은 6정의 평균. 위일수록 빠르고, 큰 점이 직전 주행입니다.",
-    "compareTrendRange": "가로축은 출주 순서(왼쪽이 오래된 것)이며 날짜 눈금이 아닙니다. 여기 나오는 것은 {{from}}〜{{to}}의 출주이고, 각 행의 오른쪽 끝이 그 선수의 직전 출주입니다.",
+    "compareTrendRange": "가로축은 날짜입니다({{from}}~{{to}}). 하루에 2경주를 뛴 날은 좌우로 나누고, 그 선수가 뛰지 않은 날은 선을 끊었습니다. 각 행의 마지막 점이 그 선수의 전주입니다.",
+    "compareTrendRangeOneDay": "가로축은 날짜입니다({{day}}). 그날 2경주를 뛴 선수는 좌우로 나누었습니다. 각 행의 마지막 점이 그 선수의 전주입니다.",
     "compareTrendHint": "행을 탭하면 아래 상세가 그 선수로 바뀝니다",
     "compareTrendFinishNote": "점 아래 숫자는 그 경주의 착순입니다(F=플라잉, 결=결장, 전·락·방 등은 공식 표기).",
     "compareTrendEmpty": "추이를 그릴 주행이 아직 없습니다",
@@ -794,9 +810,13 @@
     "neededPoints": "{{points}}",
     "neededUnreachable": "도달 불가",
     "forecastDetailSummary": "기준과 필요 득점의 산출 방법",
-    "forecastDetail": "기준은 예선 종료 시점 {{slots}}위의 득점률입니다. 실제 보더와는 몇 계단 차이가 날 수 있습니다(실측: 와카마쓰 G1 0.07 차, 기류 일반전 0.83 차. 중도 귀향·상전 제외 선수를 당사 데이터로 뺄 수 없고, 일반전은 득점률 순만으로 준우승전이 정해지지 않는 경우가 있기 때문입니다). 필요 득점＝기준×(현재 주행 수+잔여 주행 수)−현재 득점이며, 잔여 주행 수는 당일 편성이 나와 있는 예선분입니다(하루 2주 하는 선수도 있어 사람마다 다릅니다). 무사고 완주가 전제이며 '확정'이라는 표현은 쓰지 않습니다.",
+    "forecastDetail": "기준은 예선 종료 시점 {{slots}}위의 득점률입니다. 실제 보더와는 몇 계단 차이가 날 수 있습니다(실측: 와카마쓰 G1 0.07 차, 기류 일반전 0.83 차. 공식 비고가 없는 시리즈에서는 중도 귀향(마지막 날까지 판정 불가)과 F 이외 사유의 상전 제외 선수를 당사 데이터로 뺄 수 없고, 일반전은 득점률 순만으로 준우승전이 정해지지 않는 경우가 있기 때문입니다). 필요 득점＝기준×(현재 주행 수+잔여 주행 수)−현재 득점이며, 잔여 주행 수는 당일 편성이 나와 있는 예선분입니다(하루 2주 하는 선수도 있어 사람마다 다릅니다). 무사고 완주가 전제이며 '확정'이라는 표현은 쓰지 않습니다.",
     "withdrawn": "대상 외",
     "withdrawnTitle": "시리즈 마지막 날 출주가 없어 중도 이탈로 취급(공식 순위표도 중도 귀향 선수를 순위에서 제외합니다)",
+    "awardExcluded": "상전 제외",
+    "awardExcludedTitle": "공식 득점률 일람의 비고에서 상전 제외(준우승전·우승전에 탈 수 없음). 공식과 마찬가지로 순위에서 제외합니다",
+    "flyingExcluded": "상전 제외(이번 F)",
+    "flyingExcludedTitle": "이번 시리즈에서 플라잉(F)을 해 상전 제외(준우승전·우승전에 탈 수 없음). 공식과 마찬가지로 순위에서 제외합니다. 공식 비고가 없는 시리즈에서의 당사 판정입니다",
     "absent": "결장",
     "absentTitle": "이번 시리즈는 지금까지 모두 결장해 출주 수가 0이므로 득점률·시리즈 내 순위가 없습니다",
     "absentNote": "\"결장\"은 이번 시리즈에서 지금까지 모든 경주를 결장한 선수입니다. 출주 수가 0이므로 득점률·시리즈 내 순위가 없습니다.",
@@ -913,9 +933,23 @@
     "rowTilt": "틸트",
     "rowAdjustmentWeight": "조정 중량",
     "rowPartsChanged": "부품 교환",
-    "rowPrevResult": "직전 경주 성적",
+    "rowPrevResult": "오늘 앞선 경주",
     "prevResultCourse": "{{course}}코스",
-    "prevResultNoRace": "이번 시리즈 첫 경주",
+    "prevResultNoRace": "첫 출주",
+    "meetFirstRace": "이번 시리즈 첫 경주",
+    "prevMark": {
+      "flying": "F",
+      "late": "L",
+      "absent": "결장",
+      "capsized": "전복",
+      "fell": "낙수",
+      "sank": "침몰",
+      "obstruction": "방해",
+      "engineStall": "엔스트",
+      "notFinished": "미완주",
+      "disqualified": "실격",
+      "noPosition": "—"
+    },
     "rowTechnique": "결정수 유형",
     "rowReturnRate": "단승 회수율",
     "noWins": "승리 없음",
@@ -993,7 +1027,7 @@
       "tilt": "틸트",
       "adjustmentWeight": "조정중량",
       "partsChanged": "부품교환",
-      "prevResult": "직전",
+      "prevResult": "오늘 직전",
       "courseRate": "번호",
       "returnRate": "회수율",
       "technique": "결정수"
@@ -1739,12 +1773,17 @@
     "noticeHeading": "⚠️ 주의사항"
   },
   "flyingBadge": {
-    "title": "출주표에 실린 이번 기 플라잉 {{n}}회. 기(5월 1일·11월 1일)가 바뀌면 0으로 돌아갑니다"
+    "title": "출주표에 실린 이번 기 플라잉 {{n}}회. 기(5월 1일·11월 1일)가 바뀌면 0으로 돌아갑니다",
+    "titleCurrentMeet": "출주표에 실린 이번 기 플라잉 {{n}}회. 이번 절 첫날부터 전날까지의 레이스에서 나온 것을 포함(당일 플라잉은 제외). 플라잉 후에도 이번 절의 남은 레이스에는 출주하지만, 준결승·결승에는 진출할 수 없습니다. 기(5월 1일·11월 1일)가 바뀌면 0으로 돌아갑니다",
+    "currentMeet": "이번 절",
+    "lateTitle": "출주표에 실린 이번 기 출발 지연(L) {{n}}회. 스타트 라인을 1초 이상 늦게 통과한 것으로, 플라잉 및 ST 고찰의 '출발지연률'과는 별도로 셉니다",
+    "legend": "F＝출주표의 이번 기 플라잉 횟수(금색 1회, 빨간색 2회). '이번 절'은 그중 이번 절 첫날부터 전날까지 나온 것이 있다는 뜻입니다(당일 플라잉은 제외). 그 선수는 이번 절의 남은 레이스에는 출주하지만 준결승·결승에는 진출할 수 없습니다. L＝이번 기 출발 지연 횟수"
   },
   "stConsideration": {
     "title": "ST 고찰",
     "subtitle": "아래는 같은 코스·같은 급별 평균과의 차이",
-    "window": "집계 기간 {{start}}〜{{end}}",
+    "window": "비교 평균의 집계 기간 {{start}}〜{{end}}",
+    "ownWindow": "선수의 값은 이 경주 이전 경주로 집계합니다",
     "gradeRow": "급별",
     "runsRow": "출주수",
     "stable": "안정률",

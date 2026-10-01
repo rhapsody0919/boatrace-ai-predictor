@@ -32,7 +32,7 @@
  */
 import { isPlaceHit, isShowHit } from "../../../scripts/lib/hitCalculator.js";
 import { parseRaceId } from "../../utils/raceId.js";
-import { groupIntoCurrentMeet } from "../../utils/meetGrouping.js";
+import { groupIntoMeetBeforeRace } from "../../utils/meetGrouping.js";
 import { getDaysAgoJST } from "../../utils/dateUtils.js";
 
 export const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
@@ -65,6 +65,29 @@ function matchesPeriod(record, period, now) {
     return record.date >= cutoffStr;
   }
   return true;
+}
+
+/**
+ * 表示中のレースより前の走だけに絞る（純関数、BOA-603）。
+ *
+ * `getRacerScopedRaceStats` は選手の**今までの全走**を返す（キャッシュも選手単位）。
+ * そのまま使うと、過去のレースを開いたときに**そのレース自身と後日の走**が集計に
+ * 入り、結果を知った状態の数字（例: 津 2026-09-26 5R の1号艇の「直近1ヶ月」に
+ * 9/26 5R の3着と 9/28 の1着）を出してしまう。race_id は `YYYY-MM-DD-VV-RR` の
+ * 固定長なので、文字列の比較でレース単位に切れる。
+ *
+ * 取得前（undefined）・取得失敗（null）はそのまま返す。呼び出し側がそれぞれ
+ * 「読み込み中」「取得できませんでした」を出し分けているため。
+ *
+ * @param {Array<Object>|null|undefined} records
+ * @param {string|null} raceId 表示中のレース。無ければ絞らない
+ * @returns {Array<Object>|null|undefined}
+ */
+export function recordsBeforeRace(records, raceId) {
+  if (!Array.isArray(records) || !raceId) return records;
+  return records.filter(
+    (r) => typeof r.raceId === "string" && r.raceId < raceId,
+  );
 }
 
 /**
@@ -391,7 +414,7 @@ function isUnavailable(records, field) {
  *   `n` は metric が `avgSt` のときだけ ST を計測できた走数（avgStN）になる。
  *   F持ち時・F無し時の2行だけ `avgSt` / `avgStN` も返す（画面は指標が勝率等でも
  *   STを併記する。Fを持った選手の見どころはスタートの踏み方のため）。
- *   `baseN` は波・F持ち時・F無し時の行だけ非null（その条件を判定できた走数。
+ *   `baseN` は初日・最終日・波・F持ち時・F無し時の行だけ非null（その条件を判定できた走数。
  *   他行と母数が違うことを示すので、画面はこれを添えて「他行と比べない」と読ませる）
  */
 export function buildConditionRows(records, { venueCode, metric }) {
@@ -429,8 +452,9 @@ export function buildConditionRows(records, { venueCode, metric }) {
     // 実質2026-02以降しか母数に入らない。同じ2026-02以降だけで比べると比率17.8%
     // （全走数の中央135走に対し初日24走）で、期間差の寄与は0.76倍ぶん。
     // 値そのものは読める母数がある（SMALL_SAMPLE_THRESHOLD=6 を割るのは初日0.6%・
-    // 最終日0.4%）が、「全国176走」と「初日24走」を同じ表に並べている点は
-    // 波・F行のような baseN での注記が無い（BOA-499で起票済み）
+    // 最終日0.4%）。「全国176走」と「初日24走」を同じ表に並べるので、波・F行と
+    // 同じく baseN（日目を判定できた走数）を返し、画面が「他行と比べない」と
+    // 読ませる（BOA-499）
     if (row.kind === "seriesDay" || row.kind === "isFinalDay") {
       const field = row.kind === "seriesDay" ? "seriesDay" : "isFinalDay";
       if (isUnavailable(all, field)) {
@@ -442,7 +466,13 @@ export function buildConditionRows(records, { venueCode, metric }) {
           baseN: null,
         };
       }
-      const hit = all.filter((r) =>
+      // 日目を判定できた走（race_conditions の値がある走）だけが母数
+      const known = all.filter((r) =>
+        field === "seriesDay"
+          ? typeof r.seriesDay === "number"
+          : typeof r.isFinalDay === "boolean",
+      );
+      const hit = known.filter((r) =>
         field === "seriesDay" ? r.seriesDay === 1 : r.isFinalDay === true,
       );
       const rates = computeRates(hit);
@@ -451,7 +481,7 @@ export function buildConditionRows(records, { venueCode, metric }) {
         value: sampleOf(rates) > 0 ? rates[metric] : null,
         n: sampleOf(rates),
         unavailable: false,
-        baseN: null,
+        baseN: known.length,
       };
     }
 
@@ -617,20 +647,10 @@ export function buildMeetResults(records, { raceId, venueCode }) {
   const date = (raceId ?? "").slice(0, 10);
   if (!date || venueCode === null || venueCode === undefined) return [];
 
-  // **表示中のレースより前**だけ。`date <= date` だと同じ日の後のレースまで入り、
-  // 5Rを見ているのに同じ日の9Rが「今節のこれまでの走り」に出る（2026-09-20 桐生5Rで発生）。
-  // race_id は `YYYY-MM-DD-VV-RR` の固定長なので文字列比較でレース単位に切れる
-  const upto = all
-    .filter((r) => r.venueCode === venueCode && r.raceId < raceId)
-    .sort((a, b) => a.raceId.localeCompare(b.raceId));
-
-  const anchored = [
-    ...upto.map((r) => ({ race_id: r.raceId, record: r })),
-    { race_id: raceId, record: null },
-  ];
-  return groupIntoCurrentMeet(anchored)
-    .filter((m) => m.record !== null)
-    .map((m) => m.record);
+  // 会場で絞る・表示中のレースより前だけにする・表示中のレースを目印に足す、の3つは
+  // `groupIntoMeetBeforeRace` が行う（直前情報タブの今節展示情報と同じ切り方、BOA-591）
+  const candidates = all.map((r) => ({ race_id: r.raceId, record: r }));
+  return groupIntoMeetBeforeRace(candidates, raceId).map((m) => m.record);
 }
 
 /** 今節の平均STが通常値とこれだけ違えば「踏んでいる／慎重」と言い切る閾値（秒） */

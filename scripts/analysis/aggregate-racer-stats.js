@@ -27,6 +27,11 @@ import {
   COURSE_DEFAULT_DISTRIBUTION,
   toTechniqueKey,
 } from "../lib/winningTechniques.js";
+import {
+  computeRacerStStats,
+  fetchRacerEntries,
+  fetchStartTimingsForEntries,
+} from "../lib/racerStStats.js";
 
 // ===== CLI引数パース =====
 
@@ -45,124 +50,24 @@ function parseArgs() {
   };
 }
 
-// ===== 統計ユーティリティ =====
-
-function mean(arr) {
-  if (arr.length === 0) return null;
-  return arr.reduce((a, b) => a + b, 0) / arr.length;
-}
-
-function stdDev(arr) {
-  if (arr.length < 2) return null;
-  const avg = mean(arr);
-  const squareDiffs = arr.map((x) => Math.pow(x - avg, 2));
-  return Math.sqrt(squareDiffs.reduce((a, b) => a + b, 0) / arr.length);
-}
-
 // ===== ST統計算出 =====
 
 /**
- * 選手のST関連統計を算出
+ * 選手のST関連統計を算出（定義は scripts/lib/racerStStats.js）
+ * 取得エラーは例外にする（黙って一部のデータで集計しない。BOA-581）
  * @param {number} racerId - 選手登録番号
  * @param {number|null} venueCode - 会場コード（nullの場合は全会場）
- * @returns {Object} { avg_st, avg_st_last_30, st_stddev, flying_rate, total_races }
+ * @returns {Promise<Object|null>} { avg_st, avg_st_last_30, st_stddev, flying_rate, total_races }
  */
 async function calculateRacerSTStats(racerId, venueCode = null) {
-  // race_start_timings と race_entries を結合して選手のSTデータを取得
-  // race_entries で racer_id -> (race_id, boat_number) を特定し、
-  // race_start_timings で該当 race_id + boat_number の ST を取得
-
-  // 1. race_entries から対象レースを取得
-  let entriesQuery = supabase
-    .from("race_entries")
-    .select("race_id, boat_number")
-    .eq("racer_id", racerId)
-    .order("race_id", { ascending: false });
-
-  const { data: entries, error: entriesError } = await entriesQuery;
-
-  if (entriesError) {
-    console.error(
-      `  race_entries取得エラー (racer=${racerId}):`,
-      entriesError.message,
-    );
-    return null;
-  }
-
-  if (!entries || entries.length === 0) {
-    return null;
-  }
-
-  // 会場フィルタ
+  const entries = await fetchRacerEntries(supabase, racerId);
   const filteredEntries = venueCode
     ? entries.filter((e) => extractVenueCodeFromRaceId(e.race_id) === venueCode)
     : entries;
+  if (filteredEntries.length === 0) return null;
 
-  if (filteredEntries.length === 0) {
-    return null;
-  }
-
-  // 2. race_start_timings からSTデータをバッチ取得
-  //    Supabase の .in() は大量データに制限があるため、チャンクに分割
-  const CHUNK_SIZE = 200;
-  const allTimings = [];
-
-  for (let i = 0; i < filteredEntries.length; i += CHUNK_SIZE) {
-    const chunk = filteredEntries.slice(i, i + CHUNK_SIZE);
-    const raceIds = chunk.map((e) => e.race_id);
-
-    const { data: timings, error: timingsError } = await supabase
-      .from("race_start_timings")
-      .select("race_id, boat_number, start_timing, is_flying, is_late_start")
-      .in("race_id", raceIds);
-
-    if (timingsError) {
-      console.error(`  race_start_timings取得エラー:`, timingsError.message);
-      continue;
-    }
-
-    if (timings) {
-      allTimings.push(...timings);
-    }
-  }
-
-  // 3. 選手の出走に対応するSTデータのみ抽出
-  const entryMap = new Map();
-  for (const entry of filteredEntries) {
-    entryMap.set(`${entry.race_id}_${entry.boat_number}`, true);
-  }
-
-  const racerTimings = allTimings.filter((t) =>
-    entryMap.has(`${t.race_id}_${t.boat_number}`),
-  );
-
-  if (racerTimings.length === 0) {
-    return null;
-  }
-
-  // race_id降順でソート（新しい順）
-  racerTimings.sort((a, b) => b.race_id.localeCompare(a.race_id));
-
-  // 4. 統計算出
-  const stValues = racerTimings
-    .filter((t) => t.start_timing !== null && t.start_timing !== undefined)
-    .map((t) => Number(t.start_timing));
-
-  const stLast30 = stValues.slice(0, 30);
-
-  const flyingCount = racerTimings.filter((t) => t.is_flying === true).length;
-  const totalRaces = racerTimings.length;
-
-  return {
-    avg_st: stValues.length > 0 ? Number(mean(stValues).toFixed(3)) : null,
-    avg_st_last_30:
-      stLast30.length > 0 ? Number(mean(stLast30).toFixed(3)) : null,
-    st_stddev:
-      stValues.length >= 2 ? Number(stdDev(stValues).toFixed(3)) : null,
-    flying_rate:
-      totalRaces > 0 ? Number((flyingCount / totalRaces).toFixed(4)) : null,
-    total_races: totalRaces,
-  };
+  const timings = await fetchStartTimingsForEntries(supabase, filteredEntries);
+  return computeRacerStStats(filteredEntries, timings);
 }
 
 // ===== 決まり手分布算出 =====
@@ -717,8 +622,8 @@ async function getAllRacerIds() {
       .order("racer_id", { ascending: true });
 
     if (error) {
-      console.error("  race_entries取得エラー:", error.message);
-      break;
+      // 途中で止めると一部の選手だけを集計して成功に見えるため、例外にする（BOA-581）
+      throw new Error(`race_entries取得エラー（全選手ID）: ${error.message}`);
     }
 
     if (!data || data.length === 0) break;
@@ -808,6 +713,7 @@ async function main() {
     let processed = 0;
     let succeeded = 0;
     let skipped = 0;
+    const failedIds = [];
     const startTime = Date.now();
 
     for (const id of racerIds) {
@@ -822,22 +728,30 @@ async function main() {
         );
       }
 
-      // 全会場統計
-      const record = await aggregateRacer(id, 0);
-      if (!record) {
-        skipped++;
-        continue;
-      }
-
-      const ok = await upsertRacerStats(record, dryRun);
-      if (ok) succeeded++;
-
-      // 会場指定がある場合は会場別統計も算出
-      if (venueCode) {
-        const venueRecord = await aggregateRacer(id, venueCode);
-        if (venueRecord) {
-          await upsertRacerStats(venueRecord, dryRun);
+      // 1人の取得エラーで全体を止めず、失敗として数えて最後に非0で終わる（BOA-581）
+      try {
+        // 全会場統計
+        const record = await aggregateRacer(id, 0);
+        if (!record) {
+          skipped++;
+          continue;
         }
+
+        let ok = await upsertRacerStats(record, dryRun);
+
+        // 会場指定がある場合は会場別統計も算出（失敗は全会場と同じく失敗に数える）
+        if (venueCode) {
+          const venueRecord = await aggregateRacer(id, venueCode);
+          if (venueRecord && !(await upsertRacerStats(venueRecord, dryRun))) {
+            ok = false;
+          }
+        }
+
+        if (ok) succeeded++;
+        else failedIds.push(id);
+      } catch (err) {
+        console.error(`  集計エラー (racer=${id}): ${err.message}`);
+        failedIds.push(id);
       }
     }
 
@@ -846,10 +760,14 @@ async function main() {
     console.log(`  処理: ${processed}人`);
     console.log(`  成功: ${succeeded}人`);
     console.log(`  スキップ: ${skipped}人 (データ不足)`);
+    console.log(
+      `  失敗: ${failedIds.length}人${failedIds.length > 0 ? ` (${failedIds.slice(0, 20).join(", ")}${failedIds.length > 20 ? " ほか" : ""})` : ""}`,
+    );
     console.log(`  所要時間: ${totalTime}秒`);
     if (dryRun) {
       console.log("  [dry-run] DB書き込みはスキップされました");
     }
+    if (failedIds.length > 0) process.exitCode = 1;
   }
 }
 
