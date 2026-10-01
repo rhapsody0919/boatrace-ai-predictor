@@ -98,13 +98,6 @@
       ]
     },
     {
-      "class": "tab-navigation",
-      "files": [
-        "src/pages/admin/AdminRules.css",
-        "src/pages/admin/SnsHubAdmin.css"
-      ]
-    },
-    {
       "class": "table-wrapper",
       "files": [
         "src/components/analysis/OutcomeDistributionTable.css",

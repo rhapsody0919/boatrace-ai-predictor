@@ -1,5 +1,5 @@
 // Backfill is_hit_place and payout_place for predictions
-import { supabase, isSupabaseEnabled } from './lib/supabaseClient.js';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient.js';
 
 async function backfillPlaceHits() {
   if (!isSupabaseEnabled()) {

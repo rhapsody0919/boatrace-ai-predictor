@@ -28,6 +28,15 @@
   white-space: nowrap;
 }
 
+/* レース名は長い節名（全角英数字の冠名など）で 355px になり、1024px で単勝配当の列を
+   表示枠の外へ押し出していた（BOA-583 ファン評価1周目）。この列だけ折り返す */
+.race-history-table td.race-history-table-title {
+  white-space: normal;
+  min-width: 8em;
+  max-width: 14em;
+  text-align: left;
+}
+
 .race-history-table th {
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);

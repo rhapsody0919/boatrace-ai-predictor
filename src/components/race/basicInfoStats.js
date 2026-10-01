@@ -234,14 +234,17 @@ export function getRecentRaces(records, count = 5) {
       typeof r.exhibitionTime === "number" ? r.exhibitionTime : null,
     exhibitionRank:
       typeof r.exhibitionRank === "number" ? r.exhibitionRank : null,
-    startTiming: r.startTiming ?? null,
+    // フライングの走は、平均から外した startTiming の代わりに F の ST を出す（表は「F.01」。BOA-583）
+    startTiming:
+      r.startTiming ?? (r.isFlying ? (r.flyingStartTiming ?? null) : null),
     isFlying: r.isFlying === true,
     // そのレースの6艇の中でのST順位（Fを除く。BOA-623 の直近10走で ST に添える）
     startTimingRank: r.stRank ?? null,
     // 欠場の走（BOA-504）。着順が無いので、表示側が「着外」でなく「欠場」と出す
     absent: r.absent === true,
-    // 着順が付かない走の公式の記号（落・転・妨など、BOA-537）
-    finishMark: r.finishMark ?? null,
+    // 着順が付かない走の公式の記号（落・転・妨など、BOA-537）。フライングは、着欄の記号が
+    // 未取得の走（2026-09前半以前）でも「着外(順位不明)」と出さず「F」にする（BOA-589）
+    finishMark: r.finishMark ?? (r.isFlying === true ? "F" : null),
     // 4〜6着はBOA-238以降のみ保存されているため、rank4〜6が未バックフィルの
     // 過去レースではnullになる（"unknown"として表示側が「着外」等に読み替える）
     finishRank: finishPositionOf(r),
