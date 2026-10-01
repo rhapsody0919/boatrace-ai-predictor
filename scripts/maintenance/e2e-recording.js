@@ -16,6 +16,8 @@
  *   skips <results>     Playwright の JSON レポートから件数を数えて JSON で出す
  *   judge <results>     撮り直した録画を採用してよいか判定する（全件通過・skip が増えていない）
  *   gate                定期実行で撮り直しを始めてよいか（今日の採用済み・遅すぎる起動は撮らない）
+ *   notify-dedupe       定期実行の Slack 通知を出すか（同じ日に別の定期実行が通知済みなら出さない）。
+ *                       GITHUB_RUN_ID・GH_TOKEN（actions: read）が要る
  *
  * 環境変数:
  *   E2E_RECORDING_REPO  owner/repo（既定: origin の URL から求める）
@@ -193,9 +195,9 @@ const jstDate = (d) =>
 /**
  * 定期実行（schedule）で撮り直しを始めてよいか（純関数）。
  *
- * schedule は1日2回（本命＋予備）起動する。GitHub の schedule は負荷で数時間遅れ、
+ * schedule は1日4回（JST10〜17時）起動する。GitHub の schedule は負荷で数時間遅れ、
  * 取りこぼされることもあるため（2026-09-30 は JST11:00 の予定が 17:15 に起動）。
- * - 今日（JST）撮った録画が既に採用済みなら撮らない（予備の起動を空振りさせる）
+ * - 今日（JST）撮った録画が既に採用済みなら撮らない（その日の後の起動を空振りさせる）
  * - 遅れて夜に起動したら撮らない（発走前のレースが少なく、skip が増えて不採用になるだけ）
  */
 export function scheduleGate(now, pointer) {
@@ -222,6 +224,67 @@ export function scheduleGate(now, pointer) {
     };
   }
   return { run: true, notify: false, reasons: [] };
+}
+
+/** e2e-rerecord.yml の Slack 通知ステップの名前の頭。通知済みかの判定に使う */
+export const NOTIFY_STEP_PREFIX = "Notify Slack";
+
+/** 1回の実行のジョブ一覧（GitHub API の jobs）から、Slack 通知のステップが動いたか */
+export function notifiedInJobs(jobs) {
+  return (jobs ?? []).some((job) =>
+    (job.steps ?? []).some(
+      (step) =>
+        step.name?.startsWith(NOTIFY_STEP_PREFIX) &&
+        step.conclusion === "success",
+    ),
+  );
+}
+
+/**
+ * 定期実行の Slack 通知を出すか（純関数）。同じ日（JST）に別の定期実行が通知済みなら出さない。
+ *
+ * 定期実行は1日4回起動し、採用されなければ次の起動で撮り直す。不採用の理由は撮影時の
+ * 本番データで決まることが多く、同じ日に何度も同じ通知が出ると読まれなくなる。
+ * 1日の最初の通知だけ出し、2回目以降は各実行の step summary に残す。
+ * runs: このワークフローの定期実行 [{ id, createdAt, notified }]
+ */
+export function notifyDedupe(now, currentRunId, runs) {
+  const today = jstDate(now).slice(0, 10);
+  const earlier = (runs ?? []).filter(
+    (r) =>
+      String(r.id) !== String(currentRunId) &&
+      jstDate(r.createdAt).slice(0, 10) === today &&
+      r.notified,
+  );
+  if (earlier.length > 0) {
+    return {
+      notify: false,
+      reasons: [
+        `今日（${today}）は実行 ${earlier.map((r) => r.id).join(", ")} で通知済み`,
+      ],
+    };
+  }
+  return { notify: true, reasons: [] };
+}
+
+/** notifyDedupe の入力を GitHub API から集める（Actions 上で使う。GH_TOKEN が要る） */
+function collectTodayRuns(now) {
+  const repo = process.env.GITHUB_REPOSITORY || repoSlug();
+  const since = new Date(
+    `${jstDate(now).slice(0, 10)}T00:00:00+09:00`,
+  ).toISOString();
+  const gh = (endpoint) =>
+    JSON.parse(execFileSync("gh", ["api", endpoint], { encoding: "utf8" }));
+  const { workflow_runs: runs = [] } = gh(
+    `repos/${repo}/actions/workflows/e2e-rerecord.yml/runs?event=schedule&per_page=30&created=${encodeURIComponent(`>=${since}`)}`,
+  );
+  return runs.map((run) => ({
+    id: run.id,
+    createdAt: run.created_at,
+    notified: notifiedInJobs(
+      gh(`repos/${repo}/actions/runs/${run.id}/jobs`).jobs,
+    ),
+  }));
 }
 
 function tagFor(recordedAt) {
@@ -382,6 +445,25 @@ async function main() {
       console.log(JSON.stringify(result));
       return;
     }
+    case "notify-dedupe": {
+      const now = new Date();
+      let result;
+      try {
+        result = notifyDedupe(
+          now,
+          process.env.GITHUB_RUN_ID,
+          collectTodayRuns(now),
+        );
+      } catch (error) {
+        // 確かめられないときは通知する（黙って落とすより、重複するほうがよい）
+        result = {
+          notify: true,
+          reasons: [`通知済みかを確かめられなかった: ${error.message}`],
+        };
+      }
+      console.log(JSON.stringify(result));
+      return;
+    }
     case "judge": {
       const report = JSON.parse(readFileSync(file, "utf8"));
       const counts = countResults(report);
@@ -398,7 +480,7 @@ async function main() {
     }
     default:
       console.error(
-        "使い方: node scripts/maintenance/e2e-recording.js fetch|publish|prune|skips <json>|judge <json>|gate",
+        "使い方: node scripts/maintenance/e2e-recording.js fetch|publish|prune|skips <json>|judge <json>|gate|notify-dedupe",
       );
       process.exitCode = 2;
   }
