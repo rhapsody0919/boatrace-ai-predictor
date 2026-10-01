@@ -817,6 +817,7 @@
     "prelimOverNoteDay": "The preliminaries ended on day {{day}} ({{date}}). The score rate is final and today's finish will not change it.",
     "prelimNoRaceDays": "No race was held on {{days}}, so that day is not counted as a race day (the same way the official day numbers are counted).",
     "compareTrendNoRaceDays": "No race was held on {{days}}, so that day has no tick.",
+    "cancelledNoForecast": "This race was cancelled, so the score rate does not move.",
     "listSeparator": ", ",
     "trendLastHeader": "Last",
     "trendFinishHeader": "Below dots: finish",

@@ -812,6 +812,7 @@
     "prelimOverNoteDay": "預賽已於第{{day}}天（{{date}}）結束。得分率就此確定，不會因今日的名次而變動。",
     "prelimNoRaceDays": "{{days}}一場比賽都沒有舉行，因此不計入天數（與官方天數的算法相同）。",
     "compareTrendNoRaceDays": "{{days}}一場比賽都沒有舉行，因此沒有刻度。",
+    "cancelledNoForecast": "本場比賽已停賽，得分率不會變動。",
     "listSeparator": "、",
     "trendLastHeader": "前一場",
     "trendFinishHeader": "點下方＝名次",

@@ -516,6 +516,7 @@
     "prelimOverNoteDay": "予選は{{day}}日目（{{date}}）で終了。得点率はここで確定していて、今日の着順では動きません。",
     "prelimNoRaceDays": "{{days}}はレースが1つも行われなかったので、日目に数えていません（公式の日目と同じ数え方です）。",
     "compareTrendNoRaceDays": "{{days}}はレースが1つも行われなかったので、目盛りにありません。",
+    "cancelledNoForecast": "このレースは中止のため、得点率は動きません。",
     "listSeparator": "・",
     "trendLastHeader": "前走",
     "trendFinishHeader": "点の下＝着順",

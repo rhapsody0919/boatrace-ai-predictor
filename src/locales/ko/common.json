@@ -812,6 +812,7 @@
     "prelimOverNoteDay": "예선은 {{day}}일째({{date}})에 끝났습니다. 득점률은 여기서 확정되어 오늘 착순으로는 바뀌지 않습니다.",
     "prelimNoRaceDays": "{{days}}에는 경주가 하나도 열리지 않아 일차에 넣지 않습니다(공식 일차와 같은 방식).",
     "compareTrendNoRaceDays": "{{days}}에는 경주가 하나도 열리지 않아 눈금에 없습니다.",
+    "cancelledNoForecast": "이 경주는 중지되어 득점률은 움직이지 않습니다.",
     "listSeparator": ", ",
     "trendLastHeader": "직전",
     "trendFinishHeader": "점 아래=착순",

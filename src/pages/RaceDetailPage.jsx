@@ -26,6 +26,7 @@ import { useNowHHMM } from "../hooks/useNowHHMM";
 import { parseRaceId } from "../utils/raceId";
 import { getTodayJST } from "../utils/dateUtils";
 import { getRaceStatus } from "../utils/raceStatus";
+import { isRaceCancelled } from "../utils/raceCancellation";
 import { formatDateLocalized } from "../utils/formatters";
 import { GRADE_CONFIG } from "../constants/gradeConfig";
 import {
@@ -241,9 +242,16 @@ function RaceDetailPage() {
     racePrediction?.[key] ??
     venueRaces.find((r) => r.rawData[key] != null)?.rawData[key] ??
     null;
-  const seriesDayLabel = racePrediction
-    ? getSeriesDayLabel(venueValue("seriesDay"), venueValue("isFinalDay"), t)
-    : null;
+  // 丸一日レースが無かった日（その会場のその日のレースが全部中止確定）は日目を出さない
+  // （BOA-658）。公式は翌日に同じ日目を振り直すので、series_day の値（津 9/22 は2）を
+  // そのまま出すと「2日目」が2日続く。今節タブも「日目に数えていません」と断っている
+  const wholeDayCancelled =
+    venueRaces.length > 0 &&
+    venueRaces.every((r) => isRaceCancelled(r.rawData));
+  const seriesDayLabel =
+    racePrediction && !wholeDayCancelled
+      ? getSeriesDayLabel(venueValue("seriesDay"), venueValue("isFinalDay"), t)
+      : null;
   // 節タイトル（BOA-509）
   const rawSeriesTitle = racePrediction ? venueValue("raceTitle") : null;
   const seriesTitle = rawSeriesTitle ? rawSeriesTitle.normalize("NFKC") : null;

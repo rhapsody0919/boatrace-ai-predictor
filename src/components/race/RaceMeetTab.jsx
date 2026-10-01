@@ -72,7 +72,15 @@ const AWARD_EXCLUDED_REASONS = new Set(["awardExcluded", "flying"]);
 const rankInBorder = (row, slots) =>
   row.rank !== null && row.rank !== undefined && row.rank <= slots;
 
-function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
+function RaceMeetTab({
+  raceId,
+  venueCode,
+  players,
+  focusedBoat,
+  onFocusBoat,
+  // 中止が確定したレース（BOA-658）。行われないレースに「今日の着順でこう動く」を出さない
+  isCancelled = false,
+}) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
   const sortedPlayers = [...(players ?? [])].sort(
@@ -204,8 +212,10 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
     : rankedOnly.length;
   const border = rankedOnly[slots - 1]?.rate;
   // 表のボーダー表示は「節全体の順位」なので、選んだ選手の走数に依存しない
-  const showBorderBadge = !isAfterPrelim && !prelimOver && border !== undefined;
+  const showBorderBadge =
+    !isCancelled && !isAfterPrelim && !prelimOver && border !== undefined;
   const showBorder =
+    !isCancelled &&
     !isAfterPrelim &&
     !prelimOver &&
     mine &&
@@ -343,7 +353,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   // 残り走で取りうる最大得点（ドリーム戦の1着は12点）。無ければ予選配点で代用
   const remainingPrelimMaxPoints = board?.remainingPrelimMaxPointsByRacer ?? {};
   const forecastRows =
-    !prelimOver && !isAfterPrelim
+    !isCancelled && !prelimOver && !isAfterPrelim
       ? sortedPlayers
           .map((p) => ({
             player: p,
@@ -1086,7 +1096,14 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
             )}
           </p>
         )}
-        {mine && prelimOver && (
+        {/* 中止のレースでは早見・目安を出さないので、その理由をここに出す（BOA-658。
+            丸一日中止の日に、前日までの数字で「今日の着順でこう動く」が出ていた） */}
+        {isCancelled && (
+          <p className="rmt-forecast rmt-forecast-settled">
+            {t("meetTab.cancelledNoForecast")}
+          </p>
+        )}
+        {mine && !isCancelled && prelimOver && (
           // 早見（6艇分）は予選中しか出さないので、終わっている理由をここに出す。
           // 「もう動かない」は勝負駆けの読みを決める情報なので、補足より一段強く出す
           // （BOA-636。375pxで10.4pxの灰色だった）
