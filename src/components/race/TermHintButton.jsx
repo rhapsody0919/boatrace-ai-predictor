@@ -49,7 +49,13 @@ export default function TermHintButton({ termKey }) {
     // 下に十分な余白が無ければ上に開く。長い説明（Fバッジの説明等）が画面下で
     // 120px の枠に押し込められ、肝心の後半が読めなかった（BOA-440 ファン評価2周目）。
     // 開いた側に収まらない分は中でスクロールさせる
-    const spaceBelow = window.innerHeight - rect.bottom - 6 - VIEWPORT_MARGIN;
+    // 画面下に固定のナビ（レース詳細の会場・R移動）があれば、その高さも空ける。ナビの裏に枠の下端が
+    // 重なり、本文の末尾が見えなかった（BOA-589 ファン評価2周目）
+    const bottomNav =
+      document.querySelector(".race-bottom-nav")?.getBoundingClientRect()
+        .height ?? 0;
+    const spaceBelow =
+      window.innerHeight - rect.bottom - 6 - VIEWPORT_MARGIN - bottomNav;
     const spaceAbove = rect.top - 6 - VIEWPORT_MARGIN;
     const openUp = spaceBelow < MIN_COMFORTABLE_HEIGHT && spaceAbove > spaceBelow;
     setPosition(

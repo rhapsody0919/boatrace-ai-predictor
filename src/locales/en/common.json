@@ -1807,7 +1807,7 @@
     "times": "{{n}}x",
     "expectedTimes": "avg {{n}}",
     "noInnerBoat": "no inner boat",
-    "caveat": "Green is better than the average for the same course and class, red is worse. Breaks are shown as a count, not a rate: they are rare from outer courses, so a rate would just show 0.0%. Course 1 has no inner boat, so it is not shown. False-start races are excluded from the denominator and shown as a badge instead. This is our own calculation.",
+    "caveat": "Green is better than the average for the same course and class, red is worse. Breaks are shown as a count, not a rate: they are rare from outer courses, so a rate would just show 0.0%. Course 1 has no inner boat, so it is not shown. False-start races are excluded from the denominator and shown as a badge instead. This is our own calculation. F marked \"this meet\" means the racer had a false start earlier in this meet (excluded from this meet's semifinal and final).",
     "histogramTitle": "ST distribution",
     "historyTitle": "ST history",
     "histogramNote": "{{n}} starts from course {{course}} as {{grade}} / pale bars = average for the same course and class ({{baselineN}} starts)",

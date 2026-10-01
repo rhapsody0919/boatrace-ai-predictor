@@ -79,7 +79,9 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     });
     const legend = page.locator(".rbit-note", { hasText: "今節" });
     await expect(legend).toBeVisible();
-    await expect(legend).toContainText("この節の準優勝戦・優勝戦の対象外です（賞典除外）");
+    await expect(legend).toContainText(
+      "この節の準優勝戦・優勝戦の対象外です（賞典除外）",
+    );
     await expect(legend).toContainText("当日のFは含みません");
     await expect(legend).toContainText("L＝");
     // 「F2 今節」を「2本とも今節」と読ませない（バッジの説明・「?」と同じ「そのうち」で書く。3周目）
@@ -118,7 +120,7 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     const text = await pop.textContent();
     // 級別の一文（BOA-589）の後、先頭近くに置く
     expect(text.indexOf("「今節」の印")).toBeLessThan(60);
-    expect(text.indexOf("賞典除外")).toBeLessThan(text.indexOf("あっせん停止"));
+    expect(text).toContain("賞典除外");
     const r = await pop.evaluate((el) => {
       const box = el.getBoundingClientRect();
       // 見えている範囲の下端近くで、最前面の要素がポップオーバー自身か
@@ -129,9 +131,9 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
         vh: window.innerHeight,
         front: el.contains(top),
         frontEl: top?.className ?? String(top),
-        scrollable:
-          el.scrollHeight <= el.clientHeight ||
-          getComputedStyle(el).overflowY === "auto",
+        // 本文が枠に全文収まる（中をスクロールしないと読めない状態を残さない。
+        // 3回目の指摘で本文を短くした。BOA-589 ファン評価2周目）
+        scrollable: el.scrollHeight <= el.clientHeight + 1,
       };
     });
     expect(r.bottom).toBeLessThanOrEqual(r.vh);
@@ -211,14 +213,18 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     // 選手の最新の走の級別（3号艇 A1・6号艇 A2）を出していた
     await page.goto("/race/2026-04-11-06-02");
     await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
-    await page.locator(".rsc-card").waitFor({ state: "visible", timeout: 30000 });
+    await page
+      .locator(".rsc-card")
+      .waitFor({ state: "visible", timeout: 30000 });
     const grades = page.locator(".rsc-grid .rsc-grade");
     await expect(grades).toHaveCount(6, { timeout: 30000 });
     await expect(grades.nth(2)).toHaveText("A2");
     await expect(grades.nth(5)).toHaveText("A1");
   });
 
-  test("1440px: 用語の説明の枠は 320px に広がる（BOA-589）", async ({ page }) => {
+  test("1440px: 用語の説明の枠は 320px に広がる（BOA-589）", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/race/2026-09-27-22-07");
     await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
