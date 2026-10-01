@@ -84,14 +84,14 @@
   },
   "venueRaceList": {
     "title": "경주 일람",
-    "metaTitle": "{{venue}} 오늘의 경주 일람・AI 데이터 분석 - 용신 레이더",
+    "metaTitle": "{{venue}} 오늘의 경주 일람, AI 데이터 분석 - 용신 레이더",
     "metaDescription": "{{venue}} 경정장의 오늘 전체 경주 일람. 마감 시각과 등급을 확인하고 각 경주의 AI 데이터 분석을 볼 수 있습니다.",
     "backToVenues": "← 경정장 목록으로",
     "jumpToNextRace": "{{race}}R로",
     "nextDeadlineMarker": "{{venue}} 다음 마감 {{race}}R {{time}}",
     "allClosedMarker": "{{venue}} 오늘 레이스는 모두 마감",
-    "todayTitle": "오늘의 경주・AI 예측",
-    "metaTitleSeries": "{{venue}} 오늘의 경주 일람({{series}})・AI 데이터 분석 - 용신 레이더",
+    "todayTitle": "오늘의 경주, AI 예측",
+    "metaTitleSeries": "{{venue}} 오늘의 경주 일람({{series}}), AI 데이터 분석 - 용신 레이더",
     "metaDescriptionSeries": "{{series}} 개최 중인 {{venue}} 경정장의 오늘 전체 경주 일람. 마감 시각과 등급을 확인하고 각 경주의 AI 데이터 분석을 볼 수 있습니다."
   },
   "venueCharacteristics": {
@@ -116,7 +116,7 @@
   },
   "raceDetailPage": {
     "metaTitle": "{{venue}} {{race}}R AI 데이터 분석 - 용신 레이더",
-    "metaDescription": "{{venue}} {{race}}R의 출주표 데이터・AI 데이터 분석・전개 예측을 무료로 확인할 수 있습니다.",
+    "metaDescription": "{{venue}} {{race}}R의 출주표 데이터, AI 데이터 분석, 전개 예측을 무료로 확인할 수 있습니다.",
     "backToList": "← 경주 일람으로",
     "notFound": "경주를 찾을 수 없습니다",
     "pastPredictionsBreadcrumb": "지난 예측",
@@ -253,7 +253,7 @@
     "volatilityCaveatLink": "실측 정확도 보기 ›",
     "payout": "배당금: ¥{{amount}}",
     "noRace": {
-      "title": "레이스 불성립・전액 반환",
+      "title": "레이스 불성립, 전액 반환",
       "body": "착순이 정해지지 않아 불성립. 주권은 모두 반환",
       "bodyWithReason": "{{reason}}. 주권은 모두 반환",
       "reason": "{{list}}로 불성립",
@@ -262,7 +262,7 @@
         "late": "출발 지연 {{count}}정({{boats}}번 보트)",
         "absent": "결장 {{count}}정({{boats}}번 보트)"
       },
-      "boatSeparator": "・",
+      "boatSeparator": ", ",
       "groupSeparator": ", "
     },
     "mark": {
@@ -332,7 +332,7 @@
     }
   },
   "home": {
-    "introBannerText": "용신 레이더 - 경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요. | 전개 예측・인코스 붕괴 지수 등 45개 이상의 데이터를 분석. 자세히 보기 →",
+    "introBannerText": "용신 레이더 - 경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요. | 전개 예측, 인코스 붕괴 지수 등 45개 이상의 데이터를 분석. 자세히 보기 →",
     "introBannerClose": "닫기",
     "aiIntro": {
       "title": "용신 레이더의 경정 AI 예측",
@@ -341,11 +341,11 @@
       "accuracyLink": "성적(경정장별 내역, 일본어 페이지) 보기 →",
       "hitRacesLink": "전개 예측이 적중한 경주 목록 보기(일본어 페이지) →"
     },
-    "freeAccessNoticeStrong": "완전 무료・가입 불필요",
+    "freeAccessNoticeStrong": "완전 무료, 가입 불필요",
     "freeAccessNoticeRest": "— 계좌 개설이나 회원 가입 없이 지금 바로 모든 기능을 이용하세요",
     "todayRaces": "오늘의 경주",
     "volatilityHighlightsTitle": "🌪️ 오늘의 인코스 붕괴 지수 하이라이트",
-    "volatilityHighlightsTurnPrediction": "1착 예상: {{course}}번 보트（{{technique}}・{{probability}}%）",
+    "volatilityHighlightsTurnPrediction": "1착 예상: {{course}}번 보트（{{technique}}, {{probability}}%）",
     "volatilityHighlightsAccuracyLink": "실측 정확도 보기 →",
     "dataType": "경주 데이터",
     "loadingTitle": "경주 데이터 로딩 중...",
@@ -519,13 +519,13 @@
     "badgeTurn": "✅ 전개 적중",
     "missBadge": "❌ 미적중",
     "view": "상세 보기",
-    "dataTableExpand": "컨디션・전시・회수율까지 보기",
+    "dataTableExpand": "컨디션, 전시, 회수율까지 보기",
     "noRace": "불성립",
     "refundBadge": "반환 있음"
   },
   "turnPatternList": {
     "title": "전개 예측",
-    "caption": "1착이 될 가능성이 높은 정의 후보입니다（최대 3정・확률순）",
+    "caption": "1착이 될 가능성이 높은 정의 후보입니다（최대 3정, 확률순）",
     "hitTag": "적중",
     "summaryHit": "✅ 상위 예측 중 하나가 적중했습니다",
     "summaryMiss": "❌ 상위 예측에 없던 {{winnerNumber}}번 보트가 1착이었습니다",
@@ -534,7 +534,7 @@
     "refundedTag": "반환(판정 대상 외)"
   },
   "accuracyStat": {
-    "withRecovery": "실측: 적중률{{hitRate}}%・회수율{{recoveryRate}}%（지난{{totalRaces}}경주）",
+    "withRecovery": "실측: 적중률{{hitRate}}%, 회수율{{recoveryRate}}%（지난{{totalRaces}}경주）",
     "hitRateOnly": "실측: 1착 적중률{{hitRate}}%（지난{{totalRaces}}경주）"
   },
   "section": {
@@ -568,9 +568,9 @@
     "noRecentFinishes": "이 번호로 출주한 이력이 없습니다",
     "fetchError": "최근 10경기를 가져오지 못했습니다. 잠시 후 다시 시도해 주세요",
     "recentFinishesNote": "{{course}}코스(실제로 진입한 코스)에서 출주한 최근 10경기",
-    "kimariteTitle": "결정수 경향(전 선수・최근 90일)",
+    "kimariteTitle": "결정수 경향(전 선수, 최근 90일)",
     "venueStatsAsOfToday": "※ 최신 집계입니다(기간 {{start}}〜{{end}}). 이 경주 날짜 시점의 값이 아닙니다",
-    "kimariteCaveat": "※이 경기장의 모든 경주・모든 선수를 합산한 결정수 비율입니다(선수 개인의 실적이 아닙니다)",
+    "kimariteCaveat": "※이 경기장의 모든 경주, 모든 선수를 합산한 결정수 비율입니다(선수 개인의 실적이 아닙니다)",
     "gridTitle": "코스별 성적",
     "gridSubtitle": "실제 진입 코스 기준. 셀을 누르면 해당 코스의 최근 10주가 열립니다",
     "gridCaveat": "코스는 실제로 진입한 코스이며 정번호가 아닙니다. 데이터가 없는 경주는 제외했습니다",
@@ -580,7 +580,7 @@
       "last1m": "최근 1개월",
       "local": "당지",
       "ippan": "일반전",
-      "sgg1": "SG・G1"
+      "sgg1": "SG/G1"
     },
     "smallSampleTitle": "표본이 적어 참고값입니다",
     "gridTitleWithMetric": "코스별 성적: {{metric}}",
@@ -636,12 +636,12 @@
     "secondsUnit": "초",
     "detailTableTitle": "전시 정보",
     "detailTableNote": "전시 타임 1위 승률은 2026년 3월 이후, 이 정번에서의 진입 코스는 2025년 12월 이후(모두 최대 과거 2년) 집계이며, 이번 시리즈 전시 정보는 이 모터 사용 시작 이후(이번 시리즈)의 추이입니다",
-    "preExhibitionNote": "체중・조정 중량은 전시 전 값입니다. 틸트는 전시 항주 후에 공개됩니다",
+    "preExhibitionNote": "체중, 조정 중량은 전시 전 값입니다. 틸트는 전시 항주 후에 공개됩니다",
     "entryWeightFetchError": "출주표의 체중을 가져오지 못했습니다",
     "originalExhibitionSource": "출처: BOATCAST(일반재단법인 BOATRACE 진흥회) — {{items}}",
     "originalExhibitionCapturedAt": "취득: {{time}}",
-    "originalExhibitionNote": "※ 취득한 값을 그대로 표시하고 있습니다(요약・수정・재배포하지 않았습니다). 최신 내용은 BOATCAST에서 확인해 주세요.",
-    "motorHistoryLink": "모터 컨디션에서 부품 교환・프로펠러 교환 이력 보기",
+    "originalExhibitionNote": "※ 취득한 값을 그대로 표시하고 있습니다(요약, 수정, 재배포하지 않았습니다). 최신 내용은 BOATCAST에서 확인해 주세요.",
+    "motorHistoryLink": "모터 컨디션에서 부품 교환, 프로펠러 교환 이력 보기",
     "rowExhibitionCourse": "전시 진입",
     "rowExhibitionCourseShort": "전시 진입",
     "entryDistTitle": "이 정번에서의 진입 코스",
@@ -656,7 +656,7 @@
     "exhibitionAbsent": "결장",
     "exhibitionCourseOutOfRange": "전시 진입(스타트 전시의 코스)은 2026년 9월 21일 이후 레이스부터 표시합니다",
     "exhibitionCourseSource": "전시 진입 출처: BOAT RACE 공식 웹사이트(직전 정보)",
-    "rawValuesNote": "※ 출처의 값을 그대로 표시하고 있습니다(요약・수정・재배포하지 않았습니다). 최신 내용은 각 출처에서 확인해 주세요.",
+    "rawValuesNote": "※ 출처의 값을 그대로 표시하고 있습니다(요약, 수정, 재배포하지 않았습니다). 최신 내용은 각 출처에서 확인해 주세요.",
     "rowExhibitionTopRate": "전시 타임 1위 승률",
     "rowExhibitionTopRateShort": "전시 1위율",
     "rowMeetExhibition": "이번 시리즈 전시 정보",
@@ -673,7 +673,7 @@
     "prevAbbrev": "직전",
     "avgAbbrev": "평균",
     "exhibitionChartNote": "막대가 길수록 전시가 빠릅니다(가장 느린 정과의 차). 숫자는 실제 전시 타임(초)",
-    "originalExhibitionItemSeparator": "・"
+    "originalExhibitionItemSeparator": ", "
   },
   "pitReport": {
     "title": "피트 리포트(선수 코멘트)",
@@ -713,7 +713,7 @@
     "emptyTitle": "오즈 데이터가 아직 없습니다",
     "emptyBody": "발주 시간이 가까워지면 오즈가 수집되어 이 탭에 표시됩니다.",
     "noVotes": "투표 없음",
-    "winPlaceChip": "단승・복승",
+    "winPlaceChip": "단승, 복승",
     "boatColumn": "정",
     "liveTrendLabel": "최신(마감 {{n}}분 전)",
     "snapshotAtDeadline": "{{time}} 수집(마감 직전)",
@@ -732,9 +732,9 @@
     "fetchFailed": "오즈를 불러오지 못했습니다",
     "liveFailedNoData": "최신 오즈를 가져오지 못했습니다",
     "winNoVotesOrMissing": "「-」는 투표 없음(또는 미수집)입니다. 공식 마감 시 오즈와 다를 수 있습니다",
-    "winAllNoVotes": "단승・복승 투표가 아직 없습니다(공식 표시는 0.0). 마감이 가까워지면 들어오기 시작합니다",
+    "winAllNoVotes": "단승, 복승 투표가 아직 없습니다(공식 표시는 0.0). 마감이 가까워지면 들어오기 시작합니다",
     "allNoVotes": "이 권종의 투표가 아직 없습니다(공식 표시는 0.0). 마감이 가까워지면 들어오기 시작합니다",
-    "snapshotLagNote": "수집 시점의 공식 표시값입니다. 공식 오즈 갱신은 몇 분 늦을 수 있어 마감 시 오즈・확정 배당과 다를 수 있습니다",
+    "snapshotLagNote": "수집 시점의 공식 표시값입니다. 공식 오즈 갱신은 몇 분 늦을 수 있어 마감 시 오즈, 확정 배당과 다를 수 있습니다",
     "finalPendingNote": "마감 시 오즈(공식)는 {{time}}경까지 표시됩니다(페이지를 다시 열면 바뀝니다)",
     "emptyTitleAfterDeadline": "이 레이스의 오즈 기록이 없습니다",
     "noBetTypeDataAfterDeadline": "이 권종의 오즈 기록이 없습니다",
@@ -773,7 +773,7 @@
     "pretestCell": "{{time}}（{{rank}}위）",
     "rowHint": "행을 누르면 아래 상세가 그 선수로 바뀝니다.",
     "classTitle": "급별",
-    "finishSeparator": "・",
+    "finishSeparator": "-",
     "finishDq": "실격",
     "finishAbsent": "결",
     "smallSampleLegend": "⚠ 는 3주 미만(득점률이 아직 거칠다).",
@@ -793,7 +793,7 @@
     "sparkBaselineSt": "평소 {{value}}",
     "sparkBaselinePretest": "전검 {{value}}",
     "sparkLast": "직전 {{value}}",
-    "sparkTip": "{{date}} {{no}}R・{{metric}} {{value}}・{{finish}}",
+    "sparkTip": "{{date}} {{no}}R, {{metric}} {{value}}, {{finish}}",
     "sparkTipFinish": "{{finish}}착",
     "sparkNote": "ST의 점선은 이 선수의 평소 평균, 전시의 점선은 그날 경기장 전체의 전시 평균(수면의 무게. 날마다 0.1초 가까이 움직입니다)입니다. 위일수록 빠르고, 점선보다 위면 그날 수면에서 빠른 편입니다. 큰 점이 직전 주행. 세로 폭은 이 선수의 이번 시리즈 최소~최대에 맞춰 늘렸기 때문에 기복의 크기는 다른 선수와 비교할 수 없습니다. 상승·하락 판정은 하지 않습니다.",
     "sparkStMeta": "평균 {{avg}}（{{n}}주）／평소 {{base}}",
@@ -853,7 +853,7 @@
     "grades": {
       "all": "전체 레이스",
       "ippan": "일반",
-      "sgg1": "SG・G1"
+      "sgg1": "SG/G1"
     },
     "presetLabel": "{{scope}} {{grade}}",
     "periods": {
@@ -863,7 +863,7 @@
     },
     "periodSummary": "▸ 기간으로 좁히기",
     "periodCaveat": "※등급 조건과 조합한 「이번 기」는 공식 기 구분이 아니라, 당사 데이터로 확인할 수 있는 전체 기간(2025년 12월 이후, 최대 과거 2년)을 대상으로 합니다",
-    "winRateSwitchCaveat": "※등급・기간을 좁힌 「승률」은 공식 승률 점수가 아니라, 해당 조건에서 실제로 1착이 된 비율(%)을 표시합니다",
+    "winRateSwitchCaveat": "※등급, 기간을 좁힌 「승률」은 공식 승률 점수가 아니라, 해당 조건에서 실제로 1착이 된 비율(%)을 표시합니다",
     "sampleCount": "(n={{n}})",
     "noData": "(데이터 없음)",
     "viewTrend": "최근 10경기",
@@ -927,12 +927,12 @@
     "periodDiffWithheldNote": "※ 기가 바뀐 뒤 3개월 동안은 출주표 수치의 대부분이 전기와 같은 기간의 성적이라 전기 대비 차이를 표시하지 않습니다({{date}} 이후 경주부터 표시).",
     "periodFetchError": "전기 성적을 가져오지 못했습니다",
     "meetScoreForecastTitle": "오늘 착순에 따른 득점률 변화",
-    "meetScorePrelimOver": "예선 득점률 {{rate}}（{{n}}주・{{source}}・확정）"
+    "meetScorePrelimOver": "예선 득점률 {{rate}}（{{n}}주, {{source}}, 확정）"
   },
   "dataTable": {
     "title": "데이터 출주표",
     "subtitle": "출주 6명의 분석 데이터를 한눈에 비교. 행 라벨을 탭하면 상세 분석 페이지로 이동합니다",
-    "rowWinRate": "급별・승률",
+    "rowWinRate": "급별/승률",
     "rowMotor": "모터 2연대율",
     "rowForm": "컨디션（승률Δ）",
     "rowSt": "ST 안정도",
@@ -981,9 +981,9 @@
   },
   "venueTendency": {
     "title": "이 경기장의 코스별 경향",
-    "note": "선수 개인의 실적이 아닌, 이 경기장・이 코스의 과거 경향입니다",
+    "note": "선수 개인의 실적이 아닌, 이 경기장, 이 코스의 과거 경향입니다",
     "insufficientData": "데이터 부족",
-    "lastUpdated": "집계 기준 {{date}}（최근 90일・전날 밤 갱신, 오늘 결과는 미반영）",
+    "lastUpdated": "집계 기준 {{date}}（최근 90일, 전날 밤 갱신, 오늘 결과는 미반영）",
     "rowTechnique": "결정수",
     "rowTopStart": "톱 스타트율",
     "rowLosing": "패배 시 결정수",
@@ -1011,7 +1011,7 @@
     "tableItemHeader": "항목",
     "playerNameLabel": "선수명",
     "promptWin": "위는 경정 출주표 데이터입니다. 이 데이터를 바탕으로 1착이 될 가능성이 가장 높은 정번을 근거와 함께 알려주세요.",
-    "promptTrifecta": "위는 경정 출주표 데이터입니다. 이 데이터를 바탕으로 삼쌍승(1착・2착・3착을 순서대로 맞히는 방식)으로 노려볼 만한 조합을 3가지, 근거와 함께 제안해주세요.",
+    "promptTrifecta": "위는 경정 출주표 데이터입니다. 이 데이터를 바탕으로 삼쌍승(1착, 2착, 3착을 순서대로 맞히는 방식)으로 노려볼 만한 조합을 3가지, 근거와 함께 제안해주세요.",
     "promptTrio": "위는 경정 출주표 데이터입니다. 이 데이터를 바탕으로 삼복승(1~3착에 들어오는 3척을 순서 상관없이 맞히는 방식)으로 노려볼 만한 조합을 3가지, 근거와 함께 제안해주세요.",
     "turnPredictionHeading": "1마크 전개 예측(결정技별 승리 확률)",
     "turnPredictionColTechnique": "결정技",
@@ -1021,7 +1021,7 @@
     "turnPredictionColThird": "3착 유력",
     "turnPredictionDistributionLabel": "결정技 전체 경향",
     "turnPredictionStrengthLabel": "1마크 전개 예측 기반 종합력 순위",
-    "promptVolatilityTrifecta": "위는 「인코스 붕괴 주의도」가 높다고(1번 보트가 평소보다 선행하지 못할 가능성이 있다고) 판정된 레이스의 출주표 데이터와, 1마크 전개 예측(결정技별 승리 확률・2착3착 유력 艇)입니다. 이 전개 예측 데이터를 바탕으로 실제로 1착이 될 가능성이 높은 艇과 그 결정技를 근거와 함께 판단하여, 삼쌍승으로 노려볼 만한 조합을 3가지 제안해주세요. 1번 보트의 선행 확률이 여전히 높다면 배제하지 말고 후보에 포함해주세요.",
+    "promptVolatilityTrifecta": "위는 「인코스 붕괴 주의도」가 높다고(1번 보트가 평소보다 선행하지 못할 가능성이 있다고) 판정된 레이스의 출주표 데이터와, 1마크 전개 예측(결정技별 승리 확률, 2착3착 유력 艇)입니다. 이 전개 예측 데이터를 바탕으로 실제로 1착이 될 가능성이 높은 艇과 그 결정技를 근거와 함께 판단하여, 삼쌍승으로 노려볼 만한 조합을 3가지 제안해주세요. 1번 보트의 선행 확률이 여전히 높다면 배제하지 말고 후보에 포함해주세요.",
     "previewToggleLabel": "복사될 질문 내용 보기"
   },
   "review": {
@@ -1164,7 +1164,7 @@
       "championshipHistoryNote": "💡 현재 모터의 사용 시작일 이후 '우승전'으로 판정된 경주에서 이 모터가 1착을 한 기록만 표시합니다. 모터는 경정장마다 대략 1년에 한 번 교체되며 번호가 새 모터에 그대로 쓰이므로, 교체 전 기록은 포함하지 않습니다.",
       "powerIndexGood": "선수 실력 이상으로 질주 중",
       "powerIndexBad": "선수 실력보다 저조",
-      "powerIndexSummary": "기력 지수 {{index}}（{{period}}・{{count}}경주 평균）",
+      "powerIndexSummary": "기력 지수 {{index}}（{{period}}, {{count}}경주 평균）",
       "powerIndexSmallSample": " — 출주 수가 적어 참고치",
       "powerIndexSmallSampleNote": " 주황색 「기력 지수」는 {{n}}회 미만이라 참고치입니다.",
       "period90": "최근 90일",
@@ -1179,17 +1179,17 @@
       "freshnessLabel": "모터 신선도",
       "freshnessRaceBadge": "{{raceCount}}走째",
       "freshnessMeetBadge": "{{meetCount}}절째",
-      "officialSnapshotNote": "💡 「모터 신선도」「경정장 내 순위」「1착률」「우승전 진출」「우승」은 각 경정장 공식 사이트의 값으로, 절이 끝날 때만 갱신됩니다. 따라서 아래 기력 지수・사용 이력(본 사이트 집계, 이 레이스 직전까지)과 출주 수가 맞지 않을 수 있습니다.",
+      "officialSnapshotNote": "💡 「모터 신선도」「경정장 내 순위」「1착률」「우승전 진출」「우승」은 각 경정장 공식 사이트의 값으로, 절이 끝날 때만 갱신됩니다. 따라서 아래 기력 지수, 사용 이력(본 사이트 집계, 이 레이스 직전까지)과 출주 수가 맞지 않을 수 있습니다.",
       "venueRankRoundingNote": "장내 순위에 붙인 2연대율은 경주장 공식 사이트의 값으로, 소수 둘째 자리를 버리기 때문에 목록의 2연대율과 0.1 다를 수 있습니다.",
       "legend2": "2연대율",
       "legend3": "3연대율",
       "trendHeading": "{{n}}호기의 추이",
-      "rateTrendHeading": "2연대율・3연대율 추이(공식 누계)",
+      "rateTrendHeading": "2연대율, 3연대율 추이(공식 누계)",
       "trendEmpty": "이 모터의 추이 데이터가 없습니다",
-      "trendNotYetOfficial": "공식 2연대율・3연대율 누계는 아직 없습니다(이 모터가 처음 사용되는 절이 끝나면 생깁니다). 이 모터의 출주는 아래 사용 이력에서 볼 수 있습니다.",
-      "trendOfficialZeroUnknown": "공식 2연대율・3연대율은 0.0%입니다. 이 모터가 처음 사용되는 절이 진행 중이라면 아직 누계가 생기지 않았을 뿐일 수 있습니다(이 경정장은 공식 사이트에 출주 수가 없어 구별할 수 없습니다). 이 모터의 출주는 아래 사용 이력에서 볼 수 있습니다.",
+      "trendNotYetOfficial": "공식 2연대율, 3연대율 누계는 아직 없습니다(이 모터가 처음 사용되는 절이 끝나면 생깁니다). 이 모터의 출주는 아래 사용 이력에서 볼 수 있습니다.",
+      "trendOfficialZeroUnknown": "공식 2연대율, 3연대율은 0.0%입니다. 이 모터가 처음 사용되는 절이 진행 중이라면 아직 누계가 생기지 않았을 뿐일 수 있습니다(이 경정장은 공식 사이트에 출주 수가 없어 구별할 수 없습니다). 이 모터의 출주는 아래 사용 이력에서 볼 수 있습니다.",
       "trendStartNote": "💡 공식 누계는 교체 후 첫 절이 끝난 뒤에 생기므로, 이 그래프는 누계가 생긴 날부터 시작합니다(전시 타임 그래프보다 늦게 시작합니다).",
-      "yAxis": "2연대율・3연대율 (%)",
+      "yAxis": "2연대율/3연대율 (%)",
       "exhibitionTrendHeading": "전시 타임 추이",
       "exhibitionLegend": "전시 타임",
       "exhibitionYAxis": "전시 타임 (초)",
@@ -1200,17 +1200,17 @@
       "usageHistoryNotRun": "미출주",
       "usageHistoryEmpty": "이 모터의 사용 이력 데이터가 없습니다",
       "drillFirstRunEmpty": "이 레이스가 이 모터의 첫 출주입니다(이전 출주 기록이 아직 없습니다).",
-      "usageHistoryNote": "💡 최근 90일(현재 모터 사용 개시 이후로 한정)에 이 모터를 사용한 선수를 절(연속 개최일)별로 최신순으로 표시합니다. 2연대율・3연대율은 그 절에서의 이 모터 자체의 실적입니다. 배지는 사용 선수의 급별입니다. 「-」는 실격・전복 등으로 착순이 없는 출주로, 1회로 2연대율 분모에 포함합니다. 「미출주」는 아직 달리지 않은 레이스로 포함하지 않습니다.",
+      "usageHistoryNote": "💡 최근 90일(현재 모터 사용 개시 이후로 한정)에 이 모터를 사용한 선수를 절(연속 개최일)별로 최신순으로 표시합니다. 2연대율, 3연대율은 그 절에서의 이 모터 자체의 실적입니다. 배지는 사용 선수의 급별입니다. 「-」는 실격, 전복 등으로 착순이 없는 출주로, 1회로 2연대율 분모에 포함합니다. 「미출주」는 아직 달리지 않은 레이스로 포함하지 않습니다.",
       "usageHistoryChartNote": "그래프는 왼쪽이 오래된 순, 오른쪽이 최신입니다.",
-      "partsHistoryHeading": "🔧 부품 교환・프로펠러 교환 이력",
+      "partsHistoryHeading": "🔧 부품 교환, 프로펠러 교환 이력",
       "propellerChanged": "프로펠러 교환",
       "partsInterpretation": {
         "improved": "교환 후 전시 타임 개선",
         "declined": "교환 후 전시 타임 악화",
         "neutral": "교환 전후 큰 변화 없음"
       },
-      "partsHistoryEmpty": "이 모터의 부품 교환・프로펠러 교환 기록이 없습니다",
-      "partsHistoryNote": "💡 부품 교환・프로펠러 교환은 그 자체만으로는 기력 저하의 신호일 수도, 정비 직후의 호전 신호일 수도 있습니다. 배지는 교환 전후 평균 전시 타임을 비교한 참고값이며 결과를 보장하지 않습니다.",
+      "partsHistoryEmpty": "이 모터의 부품 교환, 프로펠러 교환 기록이 없습니다",
+      "partsHistoryNote": "💡 부품 교환, 프로펠러 교환은 그 자체만으로는 기력 저하의 신호일 수도, 정비 직후의 호전 신호일 수도 있습니다. 배지는 교환 전후 평균 전시 타임을 비교한 참고값이며 결과를 보장하지 않습니다.",
       "note": "💡 표의 행을 클릭하면 해당 모터의 회차별 추이를 볼 수 있습니다. 강조 표시된 행은 이 레이스에서 2연대율이 가장 높은 보트입니다.",
       "highlightNote": "💡 강조된 행은 이 레이스에서 2연대율이 가장 높은 정입니다.",
       "focusedRowNote": "선으로 둘러싼 행은 다른 탭에서 선택한 보트입니다.",
@@ -1225,14 +1225,14 @@
       "wakuStatsWindowNote": "💡 집계 기간: {{date}} 모터 교체 이후(교체 전 같은 번호의 다른 모터는 포함하지 않음). 주황색 값은 {{n}}회 미만이라 참고치입니다.",
       "wakuStatsUnknownGeneration": "현재 모터의 사용 개시일을 가져오지 못해 표시하지 않습니다(교체 전 같은 번호의 다른 모터 성적이 섞이는 것을 피하기 위해).",
       "courseHeader": "코스",
-      "exhibitionTrendHeader": "전시 타임(평균・추이)",
+      "exhibitionTrendHeader": "전시 타임(평균, 추이)",
       "wakuStatsExpand": "전체 6코스 표시",
       "wakuStatsNote": "💡 '코스'는 이 모터가 실제로 진입한 코스 번호입니다（진입 코스 데이터가 없는 과거 레이스는 보트 번호를 그대로 사용）. 행을 탭하면 해당 코스에서 이 모터를 사용한 선수별 성적을 볼 수 있습니다.",
       "racerWakuBackLabel": "← 코스별 성적으로 돌아가기",
       "racerWakuHeading": "{{course}}코스 선수별 성적",
-      "racerWakuEmpty": "이 모터・코스 조합으로 출전한 선수를 찾을 수 없습니다",
+      "racerWakuEmpty": "이 모터, 코스 조합으로 출전한 선수를 찾을 수 없습니다",
       "racerWakuNote": "💡 현재 모터 사용 개시 이후, 이 모터가 이 코스에서 사용된 레이스만으로 집계했습니다. 주황색 값은 {{n}}회 미만이라 참고치입니다.",
-      "drillPreGeneration": "이 레이스의 {{n}}호기는 교체 전 모터로, 현재의 {{n}}호기와는 다른 모터입니다. 따라서 추이・기력 지수・사용 이력은 표시하지 않습니다.",
+      "drillPreGeneration": "이 레이스의 {{n}}호기는 교체 전 모터로, 현재의 {{n}}호기와는 다른 모터입니다. 따라서 추이, 기력 지수, 사용 이력은 표시하지 않습니다.",
       "drillAsOfRaceNote": "💡 이 레이스 직전까지의 상황입니다(이 레이스와 그 이후의 레이스는 포함하지 않습니다)."
     },
     "racerForm": {
@@ -1787,10 +1787,10 @@
   },
   "flyingBadge": {
     "title": "출주표에 실린 이번 기 플라잉 {{n}}회. 기(5월 1일·11월 1일)가 바뀌면 0으로 돌아갑니다",
-    "titleCurrentMeet": "출주표에 실린 이번 기 플라잉 {{n}}회. 이번 절 첫날부터 전날까지의 레이스에서 나온 것을 포함(당일 플라잉은 제외). 플라잉 후에도 이번 절의 남은 레이스에는 출주하지만, 준결승·결승에는 진출할 수 없습니다. 기(5월 1일·11월 1일)가 바뀌면 0으로 돌아갑니다",
+    "titleCurrentMeet": "출주표에 실린 이번 기 플라잉 {{n}}회. 이번 절 첫날부터 전날까지의 레이스에서 나온 것을 포함(당일 플라잉은 제외). 플라잉 후에도 이번 절의 남은 레이스에는 출주하지만, 이번 절의 준결승·결승 대상에서 제외됩니다. 기(5월 1일·11월 1일)가 바뀌면 0으로 돌아갑니다",
     "currentMeet": "이번 절",
     "lateTitle": "출주표에 실린 이번 기 출발 지연(L) {{n}}회. 스타트 라인을 1초 이상 늦게 통과한 것으로, 플라잉 및 ST 고찰의 '출발지연률'과는 별도로 셉니다",
-    "legend": "F＝출주표의 이번 기 플라잉 횟수(금색 1회, 빨간색 2회). '이번 절'은 그중 이번 절 첫날부터 전날까지 나온 것이 있다는 뜻입니다(당일 플라잉은 제외). 그 선수는 이번 절의 남은 레이스에는 출주하지만 준결승·결승에는 진출할 수 없습니다. L＝이번 기 출발 지연 횟수"
+    "legend": "F＝출주표의 이번 기 플라잉 횟수(금색 1회, 빨간색 2회). '이번 절'은 그중 이번 절 첫날부터 전날까지 나온 것이 있다는 뜻입니다(당일 플라잉은 제외). 그 선수는 이번 절의 남은 레이스에는 출주하지만 이번 절의 준결승·결승 대상에서 제외됩니다. L＝이번 기 출발 지연 횟수"
   },
   "stConsideration": {
     "title": "ST 고찰",
@@ -1805,7 +1805,7 @@
     "times": "{{n}}회",
     "expectedTimes": "평균{{n}}",
     "noInnerBoat": "안쪽 없음",
-    "caveat": "초록은 같은 코스·같은 급별 평균보다 좋음, 빨강은 나쁨. 추출은 바깥 코스일수록 발생 횟수가 적어 비율로 하면 0.0%만 나열되므로 횟수로 표시합니다. 1코스는 안쪽에 艇이 없어 표시하지 않습니다. 플라잉 경주는 모수에서 제외하고 배지로 따로 표시합니다. 본 서비스의 독자 집계입니다.",
+    "caveat": "초록은 같은 코스·같은 급별 평균보다 좋음, 빨강은 나쁨. 추출은 바깥 코스일수록 발생 횟수가 적어 비율로 하면 0.0%만 나열되므로 횟수로 표시합니다. 1코스는 안쪽에 艇이 없어 표시하지 않습니다. 플라잉 경주는 모수에서 제외하고 배지로 따로 표시합니다. 본 서비스의 독자 집계입니다. '이번 절'이 붙은 F는 이번 절에 플라잉을 한 선수입니다(이번 절의 준결승·결승 대상에서 제외).",
     "histogramTitle": "ST 분포",
     "historyTitle": "ST 이력",
     "histogramNote": "{{grade}}로 {{course}}코스에서의 {{n}}주／연한 막대＝같은 코스·같은 급별 평균({{baselineN}}주)",

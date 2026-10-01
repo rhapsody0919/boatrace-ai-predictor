@@ -33,6 +33,7 @@ import {
   countsForSeriesScore,
   shouldUseOfficialSeries,
   prelimEndRaceIdOf,
+  prelimEndDayOf,
   semifinalSlotsOf,
   splitMeetSeries,
   scoreTableFor,
@@ -7151,9 +7152,10 @@ export const supabaseDataService = {
     // v16: 推移の走に着順（finish）を足した（BOA-537）
     // v17: 着順の並びの材料に公式の記号（finishMark）を足した（BOA-537）
     // v18: 賞典除外（公式の備考・今節F）を順位から外す理由を足した（BOA-587）
-    // v20: 予選後に今節Fを切った選手（postPrelimFlyingRacerIds）を足した（BOA-626）。
-    //      v19 は BOA-578（予選終了の日目）が使う。マージ後の行は v20 だけを残す
-    return withCache(`meet-scoreboard-v20-${raceId}`, async () => {
+    // v19: 着順の並びでフライングを「F」と出すため、is_flying を足した（BOA-589）
+    // v20: 予選終了の日目を series_day から出す（中止の日を数えない、BOA-578）
+    // v21: 予選後に今節Fを切った選手（postPrelimFlyingRacerIds）を足した（BOA-626）
+    return withCache(`meet-scoreboard-v21-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7389,6 +7391,12 @@ export const supabaseDataService = {
           .filter((r) => officialMarkOf(r.finish_mark))
           .map((r) => [`${r.race_id}|${r.boat_number}`, r.finish_mark]),
       );
+      // フライングの走。着欄の記号（finish_mark）が未取得の走でも「失」と出さず「F」にする（BOA-589）
+      const flyingKeys = new Set(
+        (meetStarts ?? [])
+          .filter((r) => r.is_flying === true)
+          .map((r) => `${r.race_id}|${r.boat_number}`),
+      );
 
       return {
         meetStart,
@@ -7545,15 +7553,13 @@ export const supabaseDataService = {
           return byRacer;
         })(),
         // 予選が終わった日が節の何日目か（公式の「4日目12R終了時点」に合わせる）
-        prelimEndDay: (() => {
-          const last = prelimEndRaceIdOf(conditions ?? []);
-          if (!last) return null;
-          // `dates` は9日窓ぶん（前節を含む）なので、節の日付だけで数える
-          const meetDates = [
-            ...new Set(meetRows.map((r) => r.race_id.slice(0, 10))),
-          ].sort();
-          return meetDates.indexOf(last.slice(0, 10)) + 1 || null;
-        })(),
+        // 中止の日を数えないよう `series_day` を使う（BOA-578、prelimEndDayOf）
+        prelimEndDay: prelimEndDayOf(
+          prelimEndRaceIdOf(conditions ?? []),
+          conditions ?? [],
+          raceIds,
+          new Set(resultById.keys()),
+        ),
         // **この節に組まれた準優勝戦の枠数**。慣例は3個レース=18名で、決められない
         // とき（予選中で準優がまだ番組に出ていない等）は **null**（0ではない）。
         // 画面は `?? SEMIFINAL_DEFAULT_SLOTS` で既定の18枠に落とす。
@@ -7670,6 +7676,7 @@ export const supabaseDataService = {
             raceStage: stageById.get(e.race_id) ?? null,
             // 欠場を走数から外すための材料（BOA-489）
             finishMark: markByKey.get(`${e.race_id}|${e.boat_number}`) ?? null,
+            isFlying: flyingKeys.has(`${e.race_id}|${e.boat_number}`),
             started:
               !racesWithSt.has(e.race_id) ||
               startedKeys.has(`${e.race_id}|${e.boat_number}`),

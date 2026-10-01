@@ -43,6 +43,7 @@
     "verify:racelist-backfill": "node scripts/maintenance/verify-racelist-backfill.js",
     "verify:kb-results-backfill": "node scripts/maintenance/verify-kb-results-backfill.js",
     "verify:monthly-schedule": "node scripts/maintenance/verify-monthly-schedule.js",
+    "verify:no-undef": "node scripts/maintenance/verify-no-undef.js",
     "verify:final-odds-job": "node scripts/maintenance/verify-final-odds-job.js",
     "verify:odds-live-api": "node scripts/maintenance/verify-odds-live-api.js",
     "verify:opening-day-backfill": "node scripts/maintenance/verify-opening-day-backfill.js",

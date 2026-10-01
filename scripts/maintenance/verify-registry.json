@@ -165,6 +165,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-meet-grouping.js"
     },
     {
+      "script": "verify-ml-actual-course.js",
+      "tier": "ci",
+      "guards": "ML学習データの actual_course が枠番でなく実際の進入コース（entry_course → actual_course_<艇番> → null）であること（BOA-631）"
+    },
+    {
       "script": "verify-monthly-schedule.js",
       "tier": "ci",
       "guards": "月間スケジュール（節メタ N16）のパーサー・節の確定・行変換・CLI"
@@ -203,6 +208,12 @@
       "script": "verify-motor-pretest.js",
       "tier": "ci",
       "guards": "前検タイム・前検順位・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）"
+    },
+    {
+      "script": "verify-no-undef.js",
+      "tier": "ci",
+      "timeoutSec": 300,
+      "guards": "src・api・middleware.js・scripts・e2e・ルートの *.config.js・*.mjs に未定義の名前の参照（ESLint の no-undef）が無いこと。他のルールの既存違反では落とさない。#999 と #1002 の組み合わせで master の supabaseDataService.js が import の無い groupIntoCurrentMeet を呼び、本番で今節Fの印が全レースで消えた（2026-10-01、#1020 で修正、ADR-0079）。vite build はこの型を通す。#1020 直前の壊れていた版を検出できることと、src/ に Node のグローバルが付いていないことを自己テストで毎回確かめる。構文エラー・設定の当たらないファイルで検査が素通りするのも失敗にする。master への push 後にも post-merge-checks.yml が実行し、失敗を Slack に流す"
     },
     {
       "script": "verify-final-odds-job.js",
@@ -406,6 +417,11 @@
       "runner": "bash",
       "guards": "push-with-retry.sh のrebase＋リトライ・コンフリクト時の失敗・force push不使用（BOA-360）",
       "note": "使い捨てのbareリポジトリとクローンだけを使い、本リポジトリには触れない。2026-09-25時点でレジストリ導入まで未登録・CI未接続だった"
+    },
+    {
+      "script": "verify-relative-imports.js",
+      "tier": "ci",
+      "guards": "scripts/・api/ の相対 import の参照先が実在すること（移動したスクリプトの ./lib/ の取り残し。CIで走らない手動スクリプトの壊れに気づけない。BOA-536）"
     },
     {
       "script": "verify-rpc-key-regression.js",

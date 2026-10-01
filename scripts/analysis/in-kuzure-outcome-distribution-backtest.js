@@ -22,7 +22,7 @@
  *   各対象レースで、outcome_distribution から「first_boat = top_pick」の
  *   出目パターンを probability 降順 Top10 取得し、3連単10点 × 100円購入。
  *   的中: top_pick が実際に1着 かつ (rank2,rank3) が出目Top10 に含まれるレース。
- *   的中時の払戻は race_results.payout_trifecta。
+ *   的中時の払戻は race_results.payout_trio。
  *
  * 注意:
  *   - 仕様の in_kuzure_probability カラムは DB に存在しないため、
@@ -131,7 +131,8 @@ async function fetchRaceResults(periodDays) {
   const fromDate = getDateNDaysAgoJST(periodDays);
   const data = await fetchAll(
     "race_results",
-    "race_id, rank1, rank2, rank3, payout_trifecta",
+    // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+    "race_id, rank1, rank2, rank3, payout_trio",
     (q) =>
       q
         .eq("is_cancelled", false)
@@ -150,7 +151,7 @@ async function fetchPredictions(periodDays) {
   const fromDate = getDateNDaysAgoJST(periodDays);
   return fetchAll(
     "predictions",
-    "race_id, model_id, top_pick, top_2nd, top_3rd, payout_trifecta",
+    "race_id, model_id, top_pick, top_2nd, top_3rd, payout_trio",
     (q) =>
       q
         .eq("is_shadow", false)
@@ -174,7 +175,7 @@ function evaluateRace({ race, result, pred, distByVenueFirst }) {
   );
   const distInvestment = betPatterns.length * 100;
   const distHit = betPatterns.includes(actualPattern);
-  const distPayout = distHit ? result.payout_trifecta || 0 : 0;
+  const distPayout = distHit ? result.payout_trio || 0 : 0;
 
   // AI 単独（top_pick-top_2nd-top_3rd の3連単1点）
   const aiPattern =
@@ -183,9 +184,7 @@ function evaluateRace({ race, result, pred, distByVenueFirst }) {
       : null;
   const aiHit = aiPattern != null && aiPattern === actualPattern;
   const aiInvestment = 100;
-  const aiPayout = aiHit
-    ? pred.payout_trifecta || result.payout_trifecta || 0
-    : 0;
+  const aiPayout = aiHit ? pred.payout_trio || result.payout_trio || 0 : 0;
 
   return {
     race_id: race.race_id,
@@ -376,7 +375,9 @@ async function main() {
     console.log(
       `  （参考）うち rank1=top_pick だったレース: ${cntTopPickWon}件 = ${pct(cntTopPickNot1 > 0 ? cntTopPickWon / cntTopPickNot1 : 0)}`,
     );
-    console.log(`  → 母集団（条件3を外した対象, 出目分布データあり）: ${matched.length}件`);
+    console.log(
+      `  → 母集団（条件3を外した対象, 出目分布データあり）: ${matched.length}件`,
+    );
   } else {
     console.log(`  + rank1=top_pick（対象）: ${cntTopPickWon}件`);
     console.log(`  + 出目分布データあり（最終）: ${matched.length}件`);
@@ -537,7 +538,9 @@ async function main() {
         2,
       ),
     );
-    console.log(`✅ specific-cases: ${scp} (的中${hitCases.length}件/不的中${missCases.length}件)`);
+    console.log(
+      `✅ specific-cases: ${scp} (的中${hitCases.length}件/不的中${missCases.length}件)`,
+    );
 
     for (const v of byVenue) {
       const vp = path.join(
