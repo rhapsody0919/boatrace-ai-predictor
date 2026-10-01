@@ -343,7 +343,9 @@ export async function runSlotsWithRefresh({
  */
 export async function runLegacyExhibition({
   date,
-  getSchedule = (d) => getRaceSchedule(d, { throwOnError: false }),
+  client,
+  // DB障害を「対象なし」（200）にしない。500 にして cron-job.org の失敗通知に乗せる（BOA-352）
+  getSchedule = (d) => getRaceSchedule(d, { client, throwOnError: true }),
   run = runExhibitionLegacy,
   refresh = defaultRefresh,
   defer = waitUntil,
@@ -473,7 +475,7 @@ export function createExhibitionCronHandler({
         });
       }
       const date = toJstDateString(now());
-      const { status, body } = await legacy({ date, refresh, env });
+      const { status, body } = await legacy({ date, client, refresh, env });
       return res.status(status).json({ ...body, mode, modeKnown: known });
     }
 
@@ -481,7 +483,7 @@ export function createExhibitionCronHandler({
     let legacyResult = null;
     if (mode === "shadow" && !fromVercelCron) {
       const date = toJstDateString(now());
-      legacyResult = await legacy({ date, refresh, env });
+      legacyResult = await legacy({ date, client, refresh, env });
     }
     const runSlotsNow = () =>
       runSlots({
