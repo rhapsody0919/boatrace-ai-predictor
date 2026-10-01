@@ -69,7 +69,7 @@ function RankingTable({ title, rows, emptyMessage }) {
                     to={`/racer/${row.racer_id}`}
                     className="racer-page-link-inline"
                   >
-                    {t("analysis.racerPageShort")}
+                    選手ページ
                   </Link>
                 </td>
                 <td>

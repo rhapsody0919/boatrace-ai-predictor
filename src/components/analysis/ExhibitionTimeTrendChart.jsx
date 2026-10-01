@@ -216,7 +216,7 @@ function ExhibitionTimeTrendChart({
               name: drillDownRacerName?.replace(/\s+/g, ""),
             })}
             racerId={drillDownRacer}
-            racerLinkLabel={t("analysis.racerPageLink")}
+            racerLinkLabel="→ 選手ページを見る"
           />
 
           {chartData.length > 0 ? (

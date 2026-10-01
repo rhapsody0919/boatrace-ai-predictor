@@ -17,6 +17,7 @@ import { useSocialMeta } from "../hooks/useSocialMeta";
 import { extractFaqItems, buildFaqPageSchema } from "../utils/blogFaqSchema";
 import { BLOG_IMAGE_DIMENSIONS } from "../data/blogImageDimensions";
 import "./BlogPost.css";
+import { errorMessageOf } from "../utils/errorMessage.js";
 
 const UI_TEXT = {
   ja: {
@@ -154,7 +155,7 @@ export default function BlogPost() {
       })
       .catch((err) => {
         console.error("Error loading blog post:", err);
-        setError(err.message);
+        setError(errorMessageOf(err));
         setLoading(false);
       });
 

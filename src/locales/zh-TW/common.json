@@ -147,9 +147,6 @@
     "reasonsJaOnly": "AI詳細判定依據目前僅提供日文版本。"
   },
   "volatilityAccuracy": {
-    "loading": "資料載入中...",
-    "noData": "目前實測資料尚不足。新的AI預測模型於2026年8月11日啟用，資料累積後即會顯示。",
-    "chartNote": "※ 新的AI預測模型於2026年8月11日才啟用，目前已統計{{count}}場（每日增加）。場數較少時，數值可能波動較大。",
     "title": "🌪️ 內道崩盤預測實績（過去90天）",
     "level": {
       "low": "熱門穩定",
@@ -1074,8 +1071,6 @@
     "hide": "▲ 收起比賽列表"
   },
   "analysis": {
-    "racerPageLink": "→ 選手頁面（日文）",
-    "racerPageShort": "選手頁面（日文）",
     "loading": "數據載入中...",
     "error": "錯誤: {{message}}",
     "noRacesToday": "今天沒有舉行的比賽",

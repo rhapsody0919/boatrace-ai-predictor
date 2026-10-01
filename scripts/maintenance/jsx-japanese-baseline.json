@@ -6,6 +6,54 @@
   ],
   "entries": [
     {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/ExhibitionTimeTrendChart.jsx",
+      "kind": "attr:racerLinkLabel",
+      "text": "→ 選手ページを見る"
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/RacerFormChart.jsx",
+      "kind": "attr:racerLinkLabel",
+      "text": "→ 選手ページを見る"
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/RacerFormRankingChart.jsx",
+      "kind": "text",
+      "text": "選手ページ"
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/StPredictabilityChart.jsx",
+      "kind": "attr:racerLinkLabel",
+      "text": "→ 選手ページを見る"
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/VolatilityAccuracyChart.jsx",
+      "kind": "text",
+      "text": "データを読み込み中..."
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/VolatilityAccuracyChart.jsx",
+      "kind": "text",
+      "text": "まだ十分な実測データがありません。2026年8月11日に運用開始した新AI予想モデルのデータが蓄積され次第、表示されます。"
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/VolatilityAccuracyChart.jsx",
+      "kind": "text",
+      "text": "※ 新AI予想モデルは2026年8月11日に運用開始したばかりのため、現在"
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/VolatilityAccuracyChart.jsx",
+      "kind": "text",
+      "text": "件を集計中（日々増加します）。件数が少ないうちは数値の変動が大きくなる可能性があります"
+    },
+    {
       "ticket": "BOA-653",
       "file": "src/pages/VenueGridPage.jsx",
       "kind": "text",

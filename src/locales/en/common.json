@@ -148,9 +148,6 @@
     "reasonsJaOnly": "Detailed AI reasoning is currently available in Japanese only."
   },
   "volatilityAccuracy": {
-    "loading": "Loading data...",
-    "noData": "Not enough measured data yet. Results will appear once data from the new AI prediction model (launched on August 11, 2026) accumulates.",
-    "chartNote": "* The new AI prediction model launched on August 11, 2026, so {{count}} races have been counted so far (growing daily). While the count is small, the figures may swing widely.",
     "title": "🌪️ Upset Index Track Record (last 90 days)",
     "level": {
       "low": "Favorite friendly",
@@ -1079,8 +1076,6 @@
     "hide": "▲ Collapse race list"
   },
   "analysis": {
-    "racerPageLink": "→ Racer page (Japanese)",
-    "racerPageShort": "Racer page (JA)",
     "loading": "Loading data...",
     "error": "Error: {{message}}",
     "noRacesToday": "No races are held today",

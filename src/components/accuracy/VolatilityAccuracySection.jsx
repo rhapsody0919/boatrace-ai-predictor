@@ -182,7 +182,7 @@ function VolatilityAccuracySection({ stats }) {
                     style={{ opacity: v.isReliable ? 1 : 0.7 }}
                   >
                     <td className="volatility-venue-table__name">
-                      {t(`venues.${parseInt(v.venueCode, 10)}`, v.venueName)}
+                      {v.venueName}
                     </td>
                     <td style={{ fontWeight: 600, color: "#ff9800" }}>
                       {v.highUpsetRate.toFixed(1)}%
