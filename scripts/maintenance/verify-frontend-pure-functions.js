@@ -37,6 +37,7 @@ const TARGETS = {
   venueDayTrend: "src/components/race/venueDayTrend.js",
   weatherInfo: "src/components/race/weatherInfo.js",
   dateUtils: "src/utils/dateUtils.js",
+  prevResult: "src/utils/prevResult.js",
   meetGrouping: "src/utils/meetGrouping.js",
 };
 
@@ -1055,6 +1056,76 @@ function suiteDateUtils(m, check) {
   check("isWithinDays: 日付が空なら false", m.isWithinDays("", 7), false);
 }
 
+// --- prevResult（BOA-569）: 前走成績の読み方。prev_* は「同じ日の前の走」
+function suitePrevResult(m, check) {
+  const withPrev = {
+    prev_race_no: 6,
+    prev_entry_course: 5,
+    prev_finish_rank: 3,
+  };
+  const dq = {
+    prev_race_no: 6,
+    prev_entry_course: 5,
+    prev_finish_rank: null,
+    prev_finish_mark: "失",
+  };
+  const empty = { prev_race_no: null, prev_finish_rank: null };
+  check(
+    "prevResultState: 前走に着順があれば着順と進入コース",
+    m.prevResultState(withPrev, "2026-09-26-11-11"),
+    { kind: "rank", rank: 3, course: 5 },
+  );
+  check(
+    "prevResultState: 前走に着順が無ければ公式の記号（失・F など）。「—」にしない",
+    m.prevResultState(dq, "2026-09-26-11-11"),
+    { kind: "mark", mark: "失", markKey: "disqualified", course: 5 },
+  );
+  check(
+    "prevResultState: 記号は全角を半角にそろえ、訳すための key を返す。知らない記号は key が null（BOA-569 ファン評価2周目）",
+    [
+      m.prevResultState({ ...dq, prev_finish_mark: "Ｆ" }, "2026-09-26-11-11"),
+      m.prevResultState({ ...dq, prev_finish_mark: "エ" }, "2026-09-26-11-11"),
+      m.prevResultState({ ...dq, prev_finish_mark: "？" }, "2026-09-26-11-11"),
+    ],
+    [
+      { kind: "mark", mark: "F", markKey: "flying", course: 5 },
+      { kind: "mark", mark: "エ", markKey: "engineStall", course: 5 },
+      { kind: "mark", mark: "？", markKey: null, course: 5 },
+    ],
+  );
+  check(
+    "finishMarkKeyOf: 履歴表とデータ出走表で同じ key に引く。数字・空・知らない記号は null（BOA-569 ファン評価3周目）",
+    [
+      m.finishMarkKeyOf("エ"),
+      m.finishMarkKeyOf("落"),
+      m.finishMarkKeyOf("Ｌ"),
+      m.finishMarkKeyOf("3"),
+      m.finishMarkKeyOf(""),
+      m.finishMarkKeyOf(null),
+    ],
+    ["engineStall", "fell", "late", null, null, null],
+  );
+  check(
+    "prevResultState: 取得漏れが無い日（2026-09-16〜）の空は「本日初走」（今節初戦ではない）",
+    m.prevResultState(empty, "2026-09-26-09-05"),
+    { kind: "firstToday" },
+  );
+  check(
+    "prevResultState: 1R は日付に関わらず「本日初走」",
+    m.prevResultState(empty, "2026-06-22-13-01"),
+    { kind: "firstToday" },
+  );
+  check(
+    "prevResultState: 取得が揃う前（〜2026-09-15）の空は不明（「—」）",
+    [
+      m.prevResultState(empty, "2026-06-22-13-12"),
+      m.prevResultState(empty, "2026-09-15-02-05"),
+      m.prevResultState(empty, null),
+    ],
+    [{ kind: "unknown" }, { kind: "unknown" }, { kind: "unknown" }],
+  );
+}
+
 /**
  * groupIntoMeetBeforeRace（BOA-591）。直前情報タブの今節展示情報と今節タブが共有する
  * 「表示中レースより前の今節」の切り出し。入力は1選手分（モーター番号で引いた形）
@@ -1095,6 +1166,7 @@ function suiteMeetGrouping(m, check) {
 }
 
 const SUITES = {
+  prevResult: suitePrevResult,
   basicInfoStats: suiteBasicInfoStats,
   raceStatus: suiteRaceStatus,
   courseGridStats: suiteCourseGridStats,

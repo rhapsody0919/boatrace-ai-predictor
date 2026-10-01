@@ -52,10 +52,13 @@ test("選手ページの履歴: race_results の着順に入った返還艇（F�
     .filter({ has: page.locator("td", { hasText: /^9R$/ }) });
   await expect(row).toBeVisible({ timeout: 30000 });
   await expect(row).toContainText("F0.04");
-  // ST の次の列が着欄
+  // 着欄は見出しが「着順」の列（BOA-569 で R のすぐ右に移したので、位置で決め打ちしない）
+  const table = row.locator("xpath=ancestor::table[1]");
+  const headers = await table.locator("thead th").allTextContents();
+  const finishAt = headers.findIndex((h) => h.trim() === "着順");
+  expect(finishAt).toBeGreaterThan(-1);
   const cells = await row.locator("td").allTextContents();
-  const stAt = cells.indexOf("F0.04");
-  expect(cells[stAt + 1]).toBe("F");
+  expect(cells[finishAt].trim()).toBe("F");
 });
 
 // 本番STは2025-12から、展示タイムは2026-03からある。ST推移の見出しを「2025年12月以降」にし、
