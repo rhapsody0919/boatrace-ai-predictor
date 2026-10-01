@@ -561,6 +561,35 @@ export function isAbsentStartRow(row) {
 }
 
 /**
+ * 今節フライング（F）を切った選手（純関数、BOA-587）。**賞典除外**の判定に使う。
+ *
+ * Fを切った選手はその節の準優勝戦・優勝戦に乗れない（賞典除外）。公式の得点率一覧の
+ * 備考（`racer_series_points.remarks`）が取れている節ではそちらが正で、これは
+ * 備考が無い節のための推定。2026-09-30実測（備考がある3節）: 今節Fの2人は
+ * 2人とも「賞典除外」、Fがあるのに賞典除外でない選手は0人。
+ * **Lは数えない**。出遅れは選手責任のときだけ賞典除外で、当社データでは責任の
+ * 有無が分からない（同じ実測でLの1人は賞典除外ではなかった）
+ *
+ * @param {Array<Object>} starts `race_start_timings` の行（表示中レースより前の今節ぶん）
+ * @param {Array<Object>} entries `race_entries` の行（race_id・boat_number・racer_id）
+ * @returns {Array<number>} 選手ID
+ */
+export function flyingRacerIdsInMeet(starts, entries) {
+  const racerByKey = new Map(
+    (entries ?? []).map((e) => [`${e.race_id}|${e.boat_number}`, e.racer_id]),
+  );
+  const ids = new Set();
+  for (const r of starts ?? []) {
+    const flying =
+      r.is_flying === true || r.finish_mark === "F" || r.finish_mark === "Ｆ";
+    if (!flying) continue;
+    const id = racerByKey.get(`${r.race_id}|${r.boat_number}`);
+    if (id !== null && id !== undefined) ids.add(id);
+  }
+  return [...ids];
+}
+
+/**
  * 1走ぶんの着順の表示（純関数、BOA-537）。6艇の推移の点の下に出す。
  *
  * - フライングは「F」（本番STの is_flying）
@@ -740,8 +769,10 @@ export function parseOfficialPlacements(placements) {
  *   scoreboard `getMeetScoreboard` の戻り値。`seriesRacerIds` があれば
  *   その選手だけを母集団にする（男女Ｗ優勝戦の節）
  * @returns {Array<{racerId: number, playerName: string, points: number,
- *   runs: number, rate: number, rank: number|null, withdrawn: boolean}>}
- *   得点率の降順。同率は同順位。途中で節を離脱した選手は `rank: null`
+ *   runs: number, rate: number, rank: number|null, withdrawn: boolean,
+ *   excludedReason: "withdrawn"|"awardExcluded"|"flying"|null}>}
+ *   得点率の降順。同率は同順位。途中で節を離脱した選手・賞典除外の選手は
+ *   `rank: null`（理由は `excludedReason`。無ければ途中帰郷の扱い）
  */
 export function buildMeetRanking(scoreboard) {
   const all = scoreboard?.entries;
@@ -758,6 +789,8 @@ export function buildMeetRanking(scoreboard) {
   // 途中で節を離脱した選手（途中帰郷）は順位の対象から外す。公式の順位表と
   // 同じ扱い。得点率自体は出すので、行が消えることはない（rank が null になる）
   const withdrawn = new Set(scoreboard?.withdrawnRacerIds ?? []);
+  // 順位から外す理由（BOA-587）。賞典除外と途中帰郷で画面の説明が違う
+  const reasons = scoreboard?.exclusionReasonByRacer ?? {};
 
   const byRacer = new Map();
   entries.forEach((e) => {
@@ -804,11 +837,17 @@ export function buildMeetRanking(scoreboard) {
   let prev = null;
   let counted = 0;
   return rows.map((r) => {
-    if (withdrawn.has(r.racerId)) return { ...r, rank: null, withdrawn: true };
+    if (withdrawn.has(r.racerId))
+      return {
+        ...r,
+        rank: null,
+        withdrawn: true,
+        excludedReason: reasons[r.racerId] ?? "withdrawn",
+      };
     counted += 1;
     if (prev === null || Math.abs(r.rate - prev) > 0.0001) rank = counted;
     prev = r.rate;
-    return { ...r, rank, withdrawn: false };
+    return { ...r, rank, withdrawn: false, excludedReason: null };
   });
 }
 

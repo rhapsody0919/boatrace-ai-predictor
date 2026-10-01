@@ -16,6 +16,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { google } from "googleapis";
 import { getGoogleAuthClient } from "../lib/googleServiceAuth.js";
+import {
+  formatGa4PvBreakNotice,
+  ga4PvBreaksWithin,
+} from "../lib/ga4MeasurementBreaks.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, "../../.env.local") });
@@ -47,6 +51,11 @@ function monthsAgo(n) {
 
 async function main() {
   const startDate = monthsAgo(MONTHS);
+  // 集計期間が GA4 の計測の切れ目をまたぐなら、月別 PV を比べる前に注記を出す（scripts/lib/ga4MeasurementBreaks.js）
+  const pvBreakNotice = formatGa4PvBreakNotice(
+    ga4PvBreaksWithin(startDate, new Date().toISOString().split("T")[0]),
+  );
+  if (pvBreakNotice) console.log(`\n${pvBreakNotice}`);
 
   // 月別 PV・セッション数
   const byMonth = await analyticsData.properties.runReport({
