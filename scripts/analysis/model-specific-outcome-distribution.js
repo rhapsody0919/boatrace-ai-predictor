@@ -70,7 +70,8 @@ async function fetchRaceResults(periodDays) {
   const fromDate = getDateNDaysAgoJST(periodDays);
   const data = await fetchAll(
     "race_results",
-    "race_id, rank1, rank2, rank3, payout_trifecta",
+    // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+    "race_id, rank1, rank2, rank3, payout_trio",
     (q) =>
       q
         .eq("is_cancelled", false)
@@ -109,7 +110,7 @@ function buildDistribution(races) {
     if (!patterns.has(key)) patterns.set(key, { count: 0, payoutSum: 0 });
     const p = patterns.get(key);
     p.count++;
-    p.payoutSum += r.payout_trifecta || 0;
+    p.payoutSum += r.payout_trio || 0;
     firstBoatCount[r.rank1] = (firstBoatCount[r.rank1] || 0) + 1;
     total++;
   }

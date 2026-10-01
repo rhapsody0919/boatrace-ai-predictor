@@ -28,7 +28,7 @@ test("選手ページの履歴: 本番STと公式の記号を出す", async ({ p
 
 // 完走が3艇未満のレースでは race_results の rank に返還艇（F）が入っていることがある。着欄に公式の記号がある走は、
 // 着順より記号を優先する（「3着」と「F0.06」が同じ行に並ばない。BOA-576 のデータ精度検証）。
-// 選手4069: 2026-09-22 児島1R は F0.01（公式も F.01）
+// 選手4069: 2026-09-22 児島1R は F.01（公式と同じ表記。BOA-583 で「F0.01」から変更）
 test("選手ページの履歴: フライングの走は着順でなく F を出し、ST も F 付きで出す", async ({
   page,
 }) => {
@@ -38,7 +38,7 @@ test("選手ページの履歴: フライングの走は着順でなく F を出
     .filter({ hasText: "2026-09-22" })
     .filter({ has: page.locator("td", { hasText: /^1R$/ }) });
   await expect(row).toBeVisible({ timeout: 30000 });
-  await expect(row).toContainText("F0.01");
+  await expect(row).toContainText("F.01");
 });
 
 // 2026-09-19 戸田9R: 公式の完走は1・2号艇だけで3号艇はF0.04。race_results は rank 1-2-3 で、修正前は「3着」
@@ -51,7 +51,7 @@ test("選手ページの履歴: race_results の着順に入った返還艇（F�
     .filter({ hasText: "2026-09-19" })
     .filter({ has: page.locator("td", { hasText: /^9R$/ }) });
   await expect(row).toBeVisible({ timeout: 30000 });
-  await expect(row).toContainText("F0.04");
+  await expect(row).toContainText("F.04");
   // 着欄は見出しが「着順」の列（BOA-569 で R のすぐ右に移したので、位置で決め打ちしない）
   const table = row.locator("xpath=ancestor::table[1]");
   const headers = await table.locator("thead th").allTextContents();

@@ -13,6 +13,10 @@
  *   node scripts/daily/generate-unified-predictions.js              # 今日
  *   node scripts/daily/generate-unified-predictions.js --date=2026-08-13
  *   node scripts/daily/generate-unified-predictions.js --dry-run
+ *   node scripts/daily/generate-unified-predictions.js --date=2026-08-13 --include-started  # 発走済みも書く（過去日の作り直し）
+ *
+ * 発走済みのレースは、既定では書かない（BOA-628）。発走後に作り直すと、発走後のデータ（結果を含む集計等）で作った
+ * 予想が、発走前の予想に見えてしまう（2026年8月は、当日の結果を含む racer_aggregated_stats で作り直した日があった）
  */
 
 import { fileURLToPath } from "node:url";
@@ -33,6 +37,7 @@ const MIN_DISTRIBUTION_SAMPLES = 20; // これ未満ならフォールバック�
 function parseArgs(argv = process.argv.slice(2)) {
   return {
     dryRun: argv.includes("--dry-run"),
+    includeStarted: argv.includes("--include-started"),
   };
 }
 
@@ -193,8 +198,12 @@ async function fetchVolatilityDistributionByVenue(
  * @param {import("@supabase/supabase-js").SupabaseClient} [client]
  * @returns {Promise<string[]>}
  */
-export async function findRacesMissingUnified(date, client = supabase) {
-  const [entryRows, predRows] = await Promise.all([
+export async function findRacesMissingUnified(
+  date,
+  client = supabase,
+  { includeStarted = false, now = () => new Date() } = {},
+) {
+  const [entryRows, predRows, schedule] = await Promise.all([
     fetchAll(
       "race_entries",
       "race_id",
@@ -211,10 +220,18 @@ export async function findRacesMissingUnified(date, client = supabase) {
           .lt("race_id", `${date}~`),
       { client, throwOnError: true },
     ),
+    includeStarted
+      ? Promise.resolve([])
+      : getRaceSchedule(date, { client, throwOnError: true }),
   ]);
   const predRaceIds = new Set((predRows || []).map((r) => r.race_id));
+  // 発走済みのレースは、欠けていても数えない（生成側が書かないため、数えると毎回の再実行が止まらない。BOA-628）
+  const at = now();
+  const started = new Set(
+    schedule.filter((r) => r.start_time <= at).map((r) => r.race_id),
+  );
   return [...new Set((entryRows || []).map((r) => r.race_id))]
-    .filter((id) => !predRaceIds.has(id))
+    .filter((id) => !predRaceIds.has(id) && !started.has(id))
     .sort();
 }
 
@@ -227,6 +244,8 @@ export async function findRacesMissingUnified(date, client = supabase) {
  * @param {string} params.date 対象日（YYYY-MM-DD）
  * @param {import("@supabase/supabase-js").SupabaseClient|null} [params.client]
  * @param {boolean} [params.dryRun]
+ * @param {boolean} [params.includeStarted] true なら発走済みのレースも書く（既定 false。BOA-628。過去日の作り直しだけ）
+ * @param {() => Date} [params.now] テスト用の時刻の差し替え
  * @param {boolean} [params.strict] true なら、DBの読み取りの失敗を「対象なし」「データ無し」にせず例外にする
  *   （既定は従来どおり、ログのみ。Vercel Function は true）
  * @returns {Promise<{targetRaces: number, generated: number, written: number}>}
@@ -236,6 +255,8 @@ export async function generateUnifiedPredictions({
   client = supabase,
   dryRun = false,
   strict = false,
+  includeStarted = false,
+  now = () => new Date(),
 }) {
   if (!client) {
     throw new Error("Supabase環境変数が未設定です。");
@@ -247,7 +268,16 @@ export async function generateUnifiedPredictions({
     client,
     throwOnError: strict,
   });
-  const raceIds = schedule.map((r) => r.race_id);
+  const at = now();
+  const notStarted = includeStarted
+    ? schedule
+    : schedule.filter((r) => r.start_time > at);
+  if (notStarted.length < schedule.length) {
+    console.log(
+      `⏭️ 発走済みの${schedule.length - notStarted.length}レースは書かない（--include-started で書く）`,
+    );
+  }
+  const raceIds = notStarted.map((r) => r.race_id);
   if (raceIds.length === 0) {
     console.log("📭 対象レースなし");
     return { targetRaces: 0, generated: 0, written: 0 };
@@ -394,9 +424,9 @@ export async function generateUnifiedPredictions({
 }
 
 async function main() {
-  const { dryRun } = parseArgs();
+  const { dryRun, includeStarted } = parseArgs();
   const date = parseDateArg() || getTodayDateJST();
-  await generateUnifiedPredictions({ date, dryRun });
+  await generateUnifiedPredictions({ date, dryRun, includeStarted });
 }
 
 // スタンドアローン実行時のみ実行する（import 時に実行させない。Vercel Function から import される）

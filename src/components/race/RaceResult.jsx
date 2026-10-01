@@ -63,7 +63,7 @@ function getFinalPositionPercent(startTiming, isFlying = false) {
     : START_ANIM.LINE_PERCENT - ratio * START_ANIM.POSITION_RANGE_PERCENT;
 }
 
-// 選手名は公式の元データで姓と名の間を全角スペースで詰めてある（「丹下　　　将」）。そのまま出すと
+// 選手名は公式の元データで姓と名の間を全角スペースで詰めてある（「丹下」「将」の間に全角スペース3つ）。そのまま出すと
 // 375pxで姓だけに切れ、級別も見えなくなるため、空白を1つにまとめる（BOA-559）
 function displayName(name) {
   return name ? name.replace(/[\s\u3000]+/g, " ").trim() : name;
@@ -826,8 +826,10 @@ function RaceResult({ prediction, raceId }) {
                         reducedMotion={reducedMotion}
                       />
                       <span className="rr-st-value num">
-                        {st.isFlying ? "F" : ""}
-                        {st.startTiming.toFixed(2)}
+                        {/* フライングは公式と同じ「F.01」。選手ページ・直近10走とそろえる（BOA-583） */}
+                        {st.isFlying
+                          ? `F${st.startTiming.toFixed(2).replace(/^0/, "")}`
+                          : st.startTiming.toFixed(2)}
                       </span>
                       {isFastest && (
                         <span className="rr-st-fastest-tag">

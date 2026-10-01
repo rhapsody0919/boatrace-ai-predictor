@@ -857,7 +857,7 @@
     "grades": {
       "all": "All races",
       "ippan": "General",
-      "sgg1": "SG・G1"
+      "sgg1": "SG/G1"
     },
     "presetLabel": "{{scope}} {{grade}}",
     "periods": {
@@ -1794,10 +1794,10 @@
   },
   "flyingBadge": {
     "title": "{{n}} false start(s) this term, as printed on the race card. Resets when the term changes (May 1 / Nov 1)",
-    "titleCurrentMeet": "{{n}} false start(s) this term, as printed on the race card. Includes one or more from the first day of this meet through yesterday (today's are not included). The racer still runs the rest of the meet but cannot advance to the semifinal or final. Resets when the term changes (May 1 / Nov 1)",
+    "titleCurrentMeet": "{{n}} false start(s) this term, as printed on the race card. Includes one or more from the first day of this meet through yesterday (today's are not included). The racer still runs the rest of the meet but is excluded from this meet's semifinal and final. Resets when the term changes (May 1 / Nov 1)",
     "currentMeet": "this meet",
     "lateTitle": "{{n}} late start(s) (L) this term, as printed on the race card: crossing the start line 1 second or more late. Counted separately from false starts and from the \"Slow\" rate in the start timing card",
-    "legend": "F = false starts this term on the race card (gold: 1, red: 2). \"this meet\" means at least one of them was from the first day of this meet through yesterday (today's are not included). That racer still runs the rest of the meet but cannot advance to the semifinal or final. L = late starts this term"
+    "legend": "F = false starts this term on the race card (gold: 1, red: 2). \"this meet\" means at least one of them was from the first day of this meet through yesterday (today's are not included). That racer still runs the rest of the meet but is excluded from this meet's semifinal and final. L = late starts this term"
   },
   "stConsideration": {
     "title": "Start timing",
@@ -1812,7 +1812,7 @@
     "times": "{{n}}x",
     "expectedTimes": "avg {{n}}",
     "noInnerBoat": "no inner boat",
-    "caveat": "Green is better than the average for the same course and class, red is worse. Breaks are shown as a count, not a rate: they are rare from outer courses, so a rate would just show 0.0%. Course 1 has no inner boat, so it is not shown. False-start races are excluded from the denominator and shown as a badge instead. This is our own calculation.",
+    "caveat": "Green is better than the average for the same course and class, red is worse. Breaks are shown as a count, not a rate: they are rare from outer courses, so a rate would just show 0.0%. Course 1 has no inner boat, so it is not shown. False-start races are excluded from the denominator and shown as a badge instead. This is our own calculation. F marked \"this meet\" means the racer had a false start earlier in this meet (excluded from this meet's semifinal and final).",
     "histogramTitle": "ST distribution",
     "historyTitle": "ST history",
     "histogramNote": "{{n}} starts from course {{course}} as {{grade}} / pale bars = average for the same course and class ({{baselineN}} starts)",

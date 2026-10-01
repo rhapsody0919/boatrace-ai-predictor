@@ -56,7 +56,8 @@ async function main() {
   console.log(`📅 対象日: ${date}`);
 
   // 1. スケジュール取得（全スクリプト共通、1回のみ）
-  const schedule = await getRaceSchedule(date);
+  // DB障害を「対象なし」にしない。例外で exit 1 にし、workflow を失敗させて気づけるようにする（BOA-352）
+  const schedule = await getRaceSchedule(date, { throwOnError: true });
   if (schedule.length === 0) {
     console.log("📭 対象レースなし（スケジュール未登録）。終了。");
     return;
@@ -248,10 +249,8 @@ async function main() {
     await mainRefresh({
       isDryRun: false,
       specificRaceIds: [...updatedRaceIds],
-      // 案1の状態では、Vercel 側（upsert）と同じ書き込み方式にそろえる（削除→挿入と upsert が同じ
-      // レースで交差した場合に、削除→挿入側の挿入が一意制約で失敗し、予測が空になるのを避ける）。
-      // 既定（オッズ起点あり）は従来どおり削除→挿入
-      writeMode: skipOddsRefresh ? "upsert" : "replace",
+      // 書き込みは upsert（削除→挿入は BOA-628 で廃止。unified を消して発走時点で予想が無いレースを作っていた）。
+      // 発走済みのレースは mainRefresh が書かない
     }).catch((e) => {
       console.error("⚠️ 予測リフレッシュ失敗:", e.message);
     });

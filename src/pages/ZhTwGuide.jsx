@@ -3,7 +3,10 @@
  * EnglishGuide の繁体字版。スタイルは EnglishGuide.css を共用
  */
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { getSiteFooterLinks } from "../components/siteFooterLinks";
 import "./EnglishGuide.css";
 
 const TECHNIQUES = [
@@ -119,6 +122,8 @@ const DATA_POINTS = [
 ];
 
 export default function ZhTwGuide() {
+  const { t } = useTranslation();
+
   return (
     <div className="app">
       <title>什麼是日本賽艇（Kyotei）？規則與投注入門指南 | 龍神雷達</title>
@@ -409,6 +414,7 @@ export default function ZhTwGuide() {
           </Link>
         </section>
       </div>
+      <Footer links={getSiteFooterLinks(t)} />
     </div>
   );
 }

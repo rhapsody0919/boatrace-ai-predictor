@@ -1,5 +1,5 @@
 // Fix predictions where is_hit_win=true but payout_win=null
-import { supabase, isSupabaseEnabled } from './lib/supabaseClient.js';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient.js';
 
 async function fixMissingPayouts() {
   if (!isSupabaseEnabled()) {
