@@ -548,7 +548,10 @@ function buildRowDefs({
         const state = meetPrevRunState(row);
         if (state.kind === "firstOfMeet") {
           return (
-            <span className="drt-sub">{t("dataTable.meetFirstRace")}</span>
+            // 375px で「今節初／戦」と語の途中で折れない（BOA-610 ファン評価3周目）
+            <span className="drt-sub drt-nowrap">
+              {t("dataTable.meetFirstRace")}
+            </span>
           );
         }
         if (state.kind === "unknown") return "—";

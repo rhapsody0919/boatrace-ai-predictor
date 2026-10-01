@@ -2176,6 +2176,12 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(prevRow4.locator("td", { hasText: "今節初戦" })).toHaveCount(
       6,
     );
+    // 375px で「今節初／戦」と語の途中で折れない（ファン評価3周目）。
+    // 折れると行内要素の矩形が2つになる
+    const lineCounts = await prevRow4
+      .locator("td .drt-sub")
+      .evaluateAll((els) => els.map((el) => el.getClientRects().length));
+    expect(lineCounts).toEqual([1, 1, 1, 1, 1, 1]);
   });
 
   test("データ出走表の今節の前走は中止になったレースを飛ばす（BOA-610）", async ({
