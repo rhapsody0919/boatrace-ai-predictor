@@ -21,6 +21,14 @@ import { trackEvent } from "../../utils/analytics";
 import TermHintButton from "./TermHintButton";
 import InlineFetchError from "../InlineFetchError";
 import "./DataRaceTable.css";
+import { splitRacerName } from "../../utils/racerName";
+
+const nameParts = (name) =>
+  splitRacerName(name).map((part, i) => (
+    <span key={i} className="drt-name-part">
+      {part}
+    </span>
+  ));
 
 function DataRaceTable({ raceId, prediction, venueCode }) {
   const { t, i18n } = useTranslation();
@@ -90,12 +98,14 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
               <th className="drt-label-th"></th>
               {players.map((p) => (
                 <th key={p.number} className="drt-name-th">
+                  {/* 姓と名を別の塊にする。スマホでは2行に分け、名前の途中で
+                      折れないようにする（BOA-612。PCでは続けて1行に並ぶ） */}
                   {p.racerId ? (
                     <Link to={`/racer/${p.racerId}`} translate="no">
-                      {p.name?.replace(/\s+/g, "")}
+                      {nameParts(p.name)}
                     </Link>
                   ) : (
-                    <span translate="no">{p.name?.replace(/\s+/g, "")}</span>
+                    <span translate="no">{nameParts(p.name)}</span>
                   )}
                 </th>
               ))}

@@ -358,3 +358,14 @@ thead tr:last-child:not(:first-child) .drt-label-th {
     display: inline;
   }
 }
+
+/* 名前は姓・名の塊で持つ。PCでは続けて1行に並べ、スマホでは2行に分ける（BOA-612） */
+.drt-name-part {
+  display: inline;
+}
+
+@media (max-width: 480px) {
+  .drt-name-part {
+    display: block;
+  }
+}

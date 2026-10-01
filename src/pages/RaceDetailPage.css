@@ -136,3 +136,56 @@
   border-style: dashed;
   border-color: var(--text-secondary);
 }
+
+/* スマホ（BOA-612、ユーザー承認のモック）: 375px で表 380px が表示枠 301px に入らず、
+   6号艇の列が画面外に出ていた。レース詳細ページの中では表を画面の端まで広げ、
+   ラベル列を詰めて6艇を横スクロール無しで並べる。
+   端まで広げる指定は、中央寄せのレース詳細ページの中だけに効かせる
+   （calc(50% - 50vw) は、親が画面の中央にある前提でしか合わない）。
+   表の部品（DataRaceTable.css）ではなくページ側に置く */
+@media (max-width: 480px) {
+  .race-detail-page-v2 .data-race-table {
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding-left: 4px;
+    padding-right: 4px;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+  }
+
+  /* 直前情報タブの詳細表（同じ drt-table を、カードの中の横スクロール枠に入れている）も
+     同じく画面の端まで広げる */
+  .race-detail-page-v2 .rbi-card .hscroll-hint:has(> .drt-table-wrapper) {
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .race-detail-page-v2 .drt-table th,
+  .race-detail-page-v2 .drt-table td {
+    padding: 4px 1px;
+  }
+
+  .race-detail-page-v2 .drt-label-th,
+  .race-detail-page-v2 .drt-label-cell {
+    width: 66px;
+    min-width: 66px;
+    max-width: 66px;
+    font-size: 11px;
+  }
+
+  /* 部品交換のバッジ（「リング×２・キャブ」）は1行に保つと 112px になり、その艇の列だけ
+     広がって表が画面からはみ出していた。スマホでは折り返す（「5コース」等の .drt-nowrap は
+     語の途中で折れるのを防ぐためのものなので、そちらは触らない） */
+  .race-detail-page-v2 .drt-parts-changed .drt-badge {
+    white-space: normal;
+  }
+
+  .race-detail-page-v2 .drt-label-cell .term-hint__button {
+    width: 14px;
+    height: 14px;
+    font-size: 9px;
+  }
+}
