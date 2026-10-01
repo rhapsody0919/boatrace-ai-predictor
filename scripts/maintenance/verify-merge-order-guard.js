@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
  * verify-merge-order-guard.js - マージ順ガード（guard-pr-merge.js の3つ目の検査、scripts/lib/mergeOrder.js、
- * merge-order.js）の検証。本物の gh・GitHub には接続しない。
+ * merge-order.js）の検証。本物の gh・GitHub・このリポジトリの状態には触らない。
  *
  * 確認すること:
  *   (a) 実際にフックとして起動した guard-pr-merge.js が、台帳で先行とされたPRが未マージなら deny し、
- *       マージ済みなら素通しする（偽の gh を PATH の先頭に置き、台帳は MERGE_ORDER_LEDGER で差し替える）。
+ *       マージ済みなら素通しする（偽の gh を使い、台帳は MERGE_ORDER_LEDGER で差し替える）。
  *       マージ順の検査が無かった版では deny しない（= このテストが修正前に落ちる）
  *   (b) 素通しする場合: 台帳が無い・PRが台帳に無い・台帳が壊れている・gh が失敗する
  *   (c) 判定の純関数と台帳の形式検査
@@ -13,8 +13,17 @@
  *   (e) 台帳に制約があるのに、PR番号がシェルの展開で決まる書き方（for ループの $n・"$PR"・$(...)・xargs 等）
  *       ならフックが止める。番号を確定できる書き方と、台帳が空の場合は従来どおり
  *       （番号不明を素通ししていた版では、止める側の13件が落ちることを確認済み）
+ *
+ * 隔離（BOA-634）: 子プロセス（フック・CLI・偽の gh）は次の条件でだけ動かす。
+ *   - 環境変数は process.env を引き継がず、ここで組み立てたものだけを渡す。PATH は偽の gh を置いた
+ *     一時ディレクトリだけなので、本物の gh・git には届かない（偽の gh を消すと gh が見つからずに失敗する）。
+ *     GH_TOKEN・GITHUB_TOKEN は渡さず、HOME・GH_CONFIG_DIR は空の一時ディレクトリにする
+ *   - 子プロセスの cwd と、フックに渡す payload の cwd は、一時ディレクトリに作った独立した git リポジトリ
+ *     （本物のリポジトリのブランチ・worktree・台帳を見ない）
+ *   - 台帳はケースごとに別ファイル。フックの起動は互いに独立なので、並列に回す
+ *     （手元の負荷が高いと、直列では verify:ci の上限180秒に近づいていた）
  */
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   chmodSync,
   mkdirSync,
@@ -38,6 +47,10 @@ import {
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const GUARD = path.join(HERE, "guard-pr-merge.js");
 const CLI = path.join(HERE, "merge-order.js");
+/** 子プロセス1本あたりの上限。負荷で打ち切った場合は、判定の誤りと区別できるように理由を出す */
+const CHILD_TIMEOUT_MS = 90_000;
+/** 同時に起動する子プロセスの数 */
+const CONCURRENCY = 4;
 
 let failures = 0;
 let passed = 0;
@@ -49,15 +62,18 @@ function check(label, pass, detail = "") {
   }
 }
 
-const work = mkdtempSync(path.join(tmpdir(), "merge-order-guard-"));
+const work = realpathSync(
+  mkdtempSync(path.join(tmpdir(), "merge-order-guard-")),
+);
 process.on("exit", () => rmSync(work, { recursive: true, force: true }));
 
-// 偽の gh: pr checks は品質ゲート緑、pr view --json state は FAKE_GH_STATES（"902=OPEN,903=MERGED"）から返す
+// 偽の gh: pr checks は品質ゲート緑、pr view --json state は FAKE_GH_STATES（"902=OPEN,903=MERGED"）から返す。
+// PATH に他のコマンドが無いので、bash は絶対パスで起動し、組み込みコマンドだけを使う
 const bin = path.join(work, "bin");
 mkdirSync(bin);
 writeFileSync(
   path.join(bin, "gh"),
-  `#!/usr/bin/env bash
+  `#!/bin/bash
 if [ "$1 $2" = "pr checks" ]; then
   echo '[{"name":"verify","state":"SUCCESS"},{"name":"e2e","state":"SUCCESS"}]'
   exit 0
@@ -86,99 +102,224 @@ exit 1
 );
 chmodSync(path.join(bin, "gh"), 0o755);
 
-const ledgerFile = path.join(work, "merge-order.json");
-const writeRaw = (text) => writeFileSync(ledgerFile, text);
-const writeRules = (rules) => writeRaw(JSON.stringify({ rules }));
+const home = path.join(work, "home");
+const ghConfig = path.join(work, "gh-config");
+mkdirSync(home);
+mkdirSync(ghConfig);
+
+/** 独立した git リポジトリを作る（作るときだけ本物の git を使う。子プロセスからは git は見えない） */
+function initRepo(dir) {
+  mkdirSync(dir);
+  const r = spawnSync("git", ["init", "-q"], {
+    cwd: dir,
+    encoding: "utf8",
+    env: { PATH: process.env.PATH, HOME: home, GIT_CEILING_DIRECTORIES: work },
+  });
+  if (r.status !== 0) {
+    console.error(
+      `❌ 一時リポジトリを作れません: ${dir} ${r.error ?? r.stderr}`,
+    );
+    process.exit(1);
+  }
+  return dir;
+}
+const repo = initRepo(path.join(work, "repo"));
+const otherRepo = initRepo(path.join(work, "wt"));
+
+/** 子プロセスに渡す環境変数。process.env は引き継がない */
+const isolatedEnv = (extra = {}) => ({
+  PATH: bin,
+  HOME: home,
+  GH_CONFIG_DIR: ghConfig,
+  GH_PROMPT_DISABLED: "1",
+  GIT_CEILING_DIRECTORIES: work,
+  FAKE_GH_STATES: "",
+  FAKE_GH_FAIL: "",
+  FAKE_GH_CURRENT: "",
+  FAKE_GH_CURRENT_DIR: "",
+  FAKE_GH_BRANCHES: "",
+  ...extra,
+});
+
+// 同時起動数を絞る
+let active = 0;
+const queue = [];
+function pump() {
+  while (active < CONCURRENCY && queue.length > 0) {
+    const task = queue.shift();
+    active++;
+    task().finally(() => {
+      active--;
+      pump();
+    });
+  }
+}
+const limited = (task) =>
+  new Promise((resolve, reject) => {
+    queue.push(() => task().then(resolve, reject));
+    pump();
+  });
+
+/** node スクリプトを隔離した環境で起動する。{ status, stdout, stderr, timedOut } */
+function runNode(script, args, { env = {}, input = "" } = {}) {
+  return limited(
+    () =>
+      new Promise((resolve) => {
+        const child = spawn(process.execPath, [script, ...args], {
+          cwd: repo,
+          env: isolatedEnv(env),
+        });
+        let stdout = "";
+        let stderr = "";
+        let timedOut = false;
+        const timer = setTimeout(() => {
+          timedOut = true;
+          child.kill("SIGKILL");
+        }, CHILD_TIMEOUT_MS);
+        child.stdout.setEncoding("utf8").on("data", (d) => (stdout += d));
+        child.stderr.setEncoding("utf8").on("data", (d) => (stderr += d));
+        child.on("error", (e) => {
+          clearTimeout(timer);
+          resolve({ status: null, stdout, stderr: String(e), timedOut });
+        });
+        child.on("close", (status) => {
+          clearTimeout(timer);
+          resolve({ status, stdout, stderr, timedOut });
+        });
+        child.stdin.end(input);
+      }),
+  );
+}
+
+// 台帳はケースごとに別ファイルにする（並列に回すため）
+let ledgerSeq = 0;
+/** rules の配列なら台帳として書く、文字列ならそのまま書く、null なら存在しないパスを返す */
+function ledgerFor(content) {
+  const file = path.join(work, `ledger-${++ledgerSeq}.json`);
+  if (Array.isArray(content))
+    writeFileSync(file, JSON.stringify({ rules: content }));
+  else if (typeof content === "string") writeFileSync(file, content);
+  return file;
+}
 
 /** フックとして起動する。deny なら理由、素通しなら null */
-function runGuard(command, env = {}, payload = {}) {
-  const r = spawnSync(process.execPath, [GUARD], {
-    input: JSON.stringify({ ...payload, tool_input: { command } }),
-    encoding: "utf8",
-    env: {
-      ...process.env,
-      PATH: `${bin}${path.delimiter}${process.env.PATH}`,
-      MERGE_ORDER_LEDGER: ledgerFile,
-      FAKE_GH_STATES: "",
-      FAKE_GH_FAIL: "",
-      FAKE_GH_CURRENT: "",
-      FAKE_GH_CURRENT_DIR: "",
-      FAKE_GH_BRANCHES: "",
-      ...env,
-    },
-    timeout: 60_000,
+async function runGuard(command, { ledgerFile, env = {}, payload = {} } = {}) {
+  const r = await runNode(GUARD, [], {
+    env: { MERGE_ORDER_LEDGER: ledgerFile, ...env },
+    input: JSON.stringify({ cwd: repo, ...payload, tool_input: { command } }),
   });
+  if (r.timedOut) return `タイムアウト: ${CHILD_TIMEOUT_MS / 1000}秒で打ち切り`;
   if (r.status !== 0) return `起動失敗: ${r.status} ${r.stderr}`;
   if (!r.stdout.trim()) return null;
   const out = JSON.parse(r.stdout).hookSpecificOutput;
   return `${out.permissionDecision}: ${out.permissionDecisionReason}`;
 }
 
-// ---------------------------------------------------------------------------
-// (a) 止まる・通る
-// ---------------------------------------------------------------------------
-writeRules([{ pr: 901, after: [902] }]);
-{
-  const r = runGuard("gh pr merge 901 --squash", {
-    FAKE_GH_STATES: "902=OPEN",
-  });
-  check(
-    "(a) 先行の #902 が OPEN なら #901 のマージを止める",
-    r?.startsWith("deny:") &&
-      r.includes("#902") &&
-      r.includes("オーケストレーション"),
-    String(r),
-  );
-  check(
-    "(a) 先行が CLOSED（マージされずに閉じた）でも止める",
-    runGuard("gh pr merge 901", { FAKE_GH_STATES: "902=CLOSED" })?.startsWith(
-      "deny:",
+const pending = [];
+/** フックを起動して判定する（並列に走らせ、最後にまとめて待つ） */
+function expectGuard(label, ledger, command, env, predicate, payload = {}) {
+  pending.push(
+    runGuard(command, { ledgerFile: ledgerFor(ledger), env, payload }).then(
+      (r) => check(label, predicate(r), String(r)),
     ),
   );
-  check(
-    "(a) 先行の #902 が MERGED なら素通し",
-    runGuard("gh pr merge 901 --squash", { FAKE_GH_STATES: "902=MERGED" }) ===
-      null,
-  );
 }
-writeRules([{ pr: 901, after: [902, 903] }]);
+const isDeny = (r) => typeof r === "string" && r.startsWith("deny:");
+const isAllow = (r) => r === null;
+
+// ---------------------------------------------------------------------------
+// 隔離の前提: 子プロセスの PATH から見える gh は偽物だけで、git は見えない
+// ---------------------------------------------------------------------------
 {
-  const r = runGuard("gh pr merge 901", {
-    FAKE_GH_STATES: "902=MERGED,903=OPEN",
-  });
+  const r = spawnSync(
+    "/bin/bash",
+    ["-c", "command -v gh; command -v git; true"],
+    {
+      cwd: repo,
+      encoding: "utf8",
+      env: isolatedEnv(),
+    },
+  );
   check(
-    "(a) 先行が複数: 未マージのものだけを理由に挙げる",
-    r?.startsWith("deny:") && r.includes("#903") && !r.includes("#902"),
-    String(r),
+    "(隔離) 子プロセスで見える gh は偽物だけ・git は見えない",
+    r.stdout.trim() === path.join(bin, "gh"),
+    r.stdout.trim() || String(r.error),
   );
 }
 
 // ---------------------------------------------------------------------------
+// (a) 止まる・通る
+// ---------------------------------------------------------------------------
+{
+  const ledger = [{ pr: 901, after: [902] }];
+  expectGuard(
+    "(a) 先行の #902 が OPEN なら #901 のマージを止める",
+    ledger,
+    "gh pr merge 901 --squash",
+    { FAKE_GH_STATES: "902=OPEN" },
+    (r) =>
+      isDeny(r) && r.includes("#902") && r.includes("オーケストレーション"),
+  );
+  expectGuard(
+    "(a) 先行が CLOSED（マージされずに閉じた）でも止める",
+    ledger,
+    "gh pr merge 901",
+    { FAKE_GH_STATES: "902=CLOSED" },
+    isDeny,
+  );
+  expectGuard(
+    "(a) 先行の #902 が MERGED なら素通し",
+    ledger,
+    "gh pr merge 901 --squash",
+    { FAKE_GH_STATES: "902=MERGED" },
+    isAllow,
+  );
+}
+expectGuard(
+  "(a) 先行が複数: 未マージのものだけを理由に挙げる",
+  [{ pr: 901, after: [902, 903] }],
+  "gh pr merge 901",
+  { FAKE_GH_STATES: "902=MERGED,903=OPEN" },
+  (r) => isDeny(r) && r.includes("#903") && !r.includes("#902"),
+);
+
+// ---------------------------------------------------------------------------
 // (b) 素通し
 // ---------------------------------------------------------------------------
-rmSync(ledgerFile, { force: true });
-check(
+expectGuard(
   "(b) 台帳が無ければ素通し",
-  runGuard("gh pr merge 901", { FAKE_GH_STATES: "902=OPEN" }) === null,
+  null,
+  "gh pr merge 901",
+  { FAKE_GH_STATES: "902=OPEN" },
+  isAllow,
 );
-writeRules([{ pr: 901, after: [902] }]);
-check(
+expectGuard(
   "(b) 台帳に無いPRは素通し",
-  runGuard("gh pr merge 777", { FAKE_GH_STATES: "902=OPEN" }) === null,
+  [{ pr: 901, after: [902] }],
+  "gh pr merge 777",
+  { FAKE_GH_STATES: "902=OPEN" },
+  isAllow,
 );
-check(
+expectGuard(
   "(b) 制約なし（after が空）は素通し",
-  (writeRules([{ pr: 905, after: [] }]), runGuard("gh pr merge 905") === null),
+  [{ pr: 905, after: [] }],
+  "gh pr merge 905",
+  {},
+  isAllow,
 );
-writeRules([{ pr: 901, after: [902] }]);
-check(
+expectGuard(
   "(b) gh が失敗したら素通し",
-  runGuard("gh pr merge 901", { FAKE_GH_FAIL: "1" }) === null,
+  [{ pr: 901, after: [902] }],
+  "gh pr merge 901",
+  { FAKE_GH_FAIL: "1" },
+  isAllow,
 );
-writeRaw("{ 壊れたJSON");
-check(
+expectGuard(
   "(b) 台帳が壊れていたら素通し",
-  runGuard("gh pr merge 901", { FAKE_GH_STATES: "902=OPEN" }) === null,
+  "{ 壊れたJSON",
+  "gh pr merge 901",
+  { FAKE_GH_STATES: "902=OPEN" },
+  isAllow,
 );
 
 // ---------------------------------------------------------------------------
@@ -186,13 +327,12 @@ check(
 //     2026-09-29、`for n in 917 918; do gh pr merge $n ...; done` で番号を読めずに素通しし、
 //     #918 が #917 より先にマージされた。台帳に順序の制約があるのに番号を確定できなければ止める。
 // ---------------------------------------------------------------------------
-writeRules([{ pr: 918, after: [917] }]);
 {
+  const ledger = [{ pr: 918, after: [917] }];
   const open917 = { FAKE_GH_STATES: "917=OPEN" };
-  const isUnresolvedDeny = (r) =>
-    typeof r === "string" &&
-    r.startsWith("deny:") &&
-    r.includes("リテラルで1件ずつ");
+  const isUnresolvedDeny = (r) => isDeny(r) && r.includes("リテラルで1件ずつ");
+  const includes917 = (r) =>
+    typeof r === "string" && r.includes("#917（OPEN）");
   for (const [label, command] of [
     [
       "変数 $n の for ループ",
@@ -222,107 +362,135 @@ writeRules([{ pr: 918, after: [917] }]);
       "gh pr merge 917 --squash && gh pr merge $n --squash",
     ],
   ]) {
-    const r = runGuard(command, open917);
-    check(`(e) ${label} は止める`, isUnresolvedDeny(r), String(r));
-  }
-  check(
-    "(e) リテラル番号の複数行: 2件目（#918）の先行 #917 が未マージなら止める",
-    runGuard(
-      "gh pr merge 917 --squash\ngh pr merge 918 --squash",
+    expectGuard(
+      `(e) ${label} は止める`,
+      ledger,
+      command,
       open917,
-    )?.includes("#917（OPEN）"),
+      isUnresolvedDeny,
+    );
+  }
+  expectGuard(
+    "(e) リテラル番号の複数行: 2件目（#918）の先行 #917 が未マージなら止める",
+    ledger,
+    "gh pr merge 917 --squash\ngh pr merge 918 --squash",
+    open917,
+    includes917,
   );
-  check(
+  expectGuard(
     "(e) リテラル番号の複数行: 先行がマージ済みなら素通し",
-    runGuard("gh pr merge 917 --squash\ngh pr merge 918 --squash", {
-      FAKE_GH_STATES: "917=MERGED",
-    }) === null,
+    ledger,
+    "gh pr merge 917 --squash\ngh pr merge 918 --squash",
+    { FAKE_GH_STATES: "917=MERGED" },
+    isAllow,
   );
   // 番号を確定できる書き方の挙動は変えない
-  check(
+  expectGuard(
     "(e) リテラル番号（台帳に無いPR）は素通し",
-    runGuard("gh pr merge 777 --squash", open917) === null,
+    ledger,
+    "gh pr merge 777 --squash",
+    open917,
+    isAllow,
   );
-  check(
+  expectGuard(
     "(e) 引用符で囲んだリテラル番号は確定できる",
-    runGuard('gh pr merge "777" --squash', open917) === null,
+    ledger,
+    'gh pr merge "777" --squash',
+    open917,
+    isAllow,
   );
-  check(
+  expectGuard(
     "(e) URL 形式は確定できる",
-    runGuard(
-      "gh pr merge https://github.com/o/r/pull/777 --squash",
-      open917,
-    ) === null,
+    ledger,
+    "gh pr merge https://github.com/o/r/pull/777 --squash",
+    open917,
+    isAllow,
   );
-  check(
+  expectGuard(
     "(e) ブランチ名はそのブランチのPRに解決して判定する",
-    runGuard("gh pr merge fix/x --squash", {
-      ...open917,
-      FAKE_GH_BRANCHES: "fix/x=918",
-    })?.includes("#917（OPEN）"),
+    ledger,
+    "gh pr merge fix/x --squash",
+    { ...open917, FAKE_GH_BRANCHES: "fix/x=918" },
+    includes917,
   );
-  check(
+  expectGuard(
     "(e) 番号なし（現在のブランチ）は現在のブランチのPRで判定する",
-    runGuard("gh pr merge --squash", {
-      ...open917,
-      FAKE_GH_CURRENT: "918",
-    })?.includes("#917（OPEN）"),
+    ledger,
+    "gh pr merge --squash",
+    { ...open917, FAKE_GH_CURRENT: "918" },
+    includes917,
   );
-  check(
+  expectGuard(
     "(e) ブランチ名がPRに解決できなければ止める",
-    isUnresolvedDeny(runGuard("gh pr merge fix/none --squash", open917)),
+    ledger,
+    "gh pr merge fix/none --squash",
+    open917,
+    isUnresolvedDeny,
   );
-  check(
+  expectGuard(
     "(e) 番号なしで現在のブランチのPRが引けなければ止める",
-    isUnresolvedDeny(runGuard("gh pr merge --squash", open917)),
+    ledger,
+    "gh pr merge --squash",
+    open917,
+    isUnresolvedDeny,
   );
   // worktree のセッションでは、現在のブランチはコマンドが走るディレクトリ（payload の cwd）のもの
   // （/code-review の指摘で追加。フックの置き場所で引くと別のブランチのPRを見る）
-  check(
+  const onlyInOther = {
+    ...open917,
+    FAKE_GH_CURRENT: "918",
+    FAKE_GH_CURRENT_DIR: otherRepo,
+  };
+  expectGuard(
     "(e) 番号なしは payload の cwd で現在のブランチのPRを引く",
-    runGuard(
-      "gh pr merge --squash",
-      {
-        ...open917,
-        FAKE_GH_CURRENT: "918",
-        FAKE_GH_CURRENT_DIR: realpathSync(work),
-      },
-      { cwd: work },
-    )?.includes("#917（OPEN）"),
+    ledger,
+    "gh pr merge --squash",
+    onlyInOther,
+    includes917,
+    { cwd: otherRepo },
   );
-  check(
+  expectGuard(
+    "(e) payload の cwd が別のリポジトリなら、そこのPRは引かない",
+    ledger,
+    "gh pr merge --squash",
+    onlyInOther,
+    isUnresolvedDeny,
+  );
+  expectGuard(
     "(e) cd の後の番号なしは確定できないので止める",
-    isUnresolvedDeny(
-      runGuard("cd ../wt && gh pr merge --squash", {
-        ...open917,
-        FAKE_GH_CURRENT: "918",
-      }),
-    ),
+    ledger,
+    "cd ../wt && gh pr merge --squash",
+    { ...open917, FAKE_GH_CURRENT: "918" },
+    isUnresolvedDeny,
   );
-  check(
+  expectGuard(
     '(e) 空の引用符の値（-b ""）の後のリテラル番号で判定する',
-    runGuard('gh pr merge -b "" 918 --squash', {
-      ...open917,
-      FAKE_GH_CURRENT: "777",
-    })?.includes("#917（OPEN）"),
+    ledger,
+    'gh pr merge -b "" 918 --squash',
+    { ...open917, FAKE_GH_CURRENT: "777" },
+    includes917,
   );
 }
 // 台帳が空（または順序の制約が1つも無い）なら従来どおり素通し
-rmSync(ledgerFile, { force: true });
 for (const [label, command] of [
   ["for ループ", "for n in 917 918; do gh pr merge $n --squash; done"],
   ['"$PR"', 'gh pr merge "$PR" --squash'],
   ["xargs", "echo 917 918 | xargs -n1 gh pr merge --squash"],
 ]) {
-  check(
+  expectGuard(
     `(e) 台帳が無ければ ${label} も素通し`,
-    runGuard(command, { FAKE_GH_STATES: "917=OPEN" }) === null,
+    null,
+    command,
+    { FAKE_GH_STATES: "917=OPEN" },
+    isAllow,
   );
 }
-writeRules([{ pr: 905, after: [] }]);
-check(
+expectGuard(
   "(e) 順序の制約が無い台帳なら展開も素通し",
-  runGuard('gh pr merge "$PR"', { FAKE_GH_STATES: "917=OPEN" }) === null,
+  [{ pr: 905, after: [] }],
+  'gh pr merge "$PR"',
+  { FAKE_GH_STATES: "917=OPEN" },
+  isAllow,
 );
 
 // ---------------------------------------------------------------------------
@@ -377,67 +545,80 @@ check(
 );
 
 // ---------------------------------------------------------------------------
-// (d) CLI
+// (d) CLI（1つの台帳を順に書き換えるので、この中は直列。上のフックの起動とは並列に走る）
 // ---------------------------------------------------------------------------
-const cli = (...args) =>
-  spawnSync(process.execPath, [CLI, ...args], {
-    encoding: "utf8",
-    env: { ...process.env, MERGE_ORDER_LEDGER: ledgerFile },
-  });
-rmSync(ledgerFile, { force: true });
-check("(d) 台帳が無くても list は成功", cli("list").status === 0);
-check(
-  "(d) add 901 --after 902",
-  cli("add", "901", "--after", "902").status === 0,
-);
-check(
-  "(d) add 901 --after #903（# 付きも可）",
-  cli("add", "901", "--after", "#903").status === 0,
-);
-check("(d) add 905（制約なし）", cli("add", "905").status === 0);
-check(
-  "(d) 台帳の中身",
-  JSON.stringify(JSON.parse(readFileSync(ledgerFile, "utf8"))) ===
-    JSON.stringify({
-      rules: [
-        { pr: 901, after: [902, 903] },
-        { pr: 905, after: [] },
-      ],
-    }),
-  readFileSync(ledgerFile, "utf8"),
-);
-check(
-  "(d) list に表示される",
-  /#901 ← #902, #903 の後/.test(cli("list").stdout),
-);
-check(
-  "(d) CLIで書いた台帳で、フックが止める",
-  runGuard("gh pr merge 901", {
+async function verifyCli() {
+  const ledgerFile = ledgerFor(null);
+  const cli = (...args) =>
+    runNode(CLI, args, { env: { MERGE_ORDER_LEDGER: ledgerFile } });
+  const guard = (command, env) => runGuard(command, { ledgerFile, env });
+
+  check("(d) 台帳が無くても list は成功", (await cli("list")).status === 0);
+  check(
+    "(d) add 901 --after 902",
+    (await cli("add", "901", "--after", "902")).status === 0,
+  );
+  check(
+    "(d) add 901 --after #903（# 付きも可）",
+    (await cli("add", "901", "--after", "#903")).status === 0,
+  );
+  check("(d) add 905（制約なし）", (await cli("add", "905")).status === 0);
+  const written = readFileSync(ledgerFile, "utf8");
+  check(
+    "(d) 台帳の中身",
+    JSON.stringify(JSON.parse(written)) ===
+      JSON.stringify({
+        rules: [
+          { pr: 901, after: [902, 903] },
+          { pr: 905, after: [] },
+        ],
+      }),
+    written,
+  );
+  check(
+    "(d) list に表示される",
+    /#901 ← #902, #903 の後/.test((await cli("list")).stdout),
+  );
+  const denied = await guard("gh pr merge 901", {
     FAKE_GH_STATES: "902=MERGED,903=OPEN",
-  })?.startsWith("deny:"),
-);
-check("(d) remove 901", cli("remove", "901").status === 0);
-check(
-  "(d) remove 後はフックが素通し",
-  runGuard("gh pr merge 901", { FAKE_GH_STATES: "902=OPEN,903=OPEN" }) === null,
-);
-check("(d) 不正: PR番号でない", cli("add", "abc").status === 1);
-check("(d) 不正: --after の後が空", cli("add", "901", "--after").status === 1);
-check(
-  "(d) 不正: --after より前の余分な引数を黙って捨てない",
-  cli("add", "901", "902", "--after", "903").status === 1,
-);
-check(
-  "(d) 不正: 自分自身の後",
-  cli("add", "901", "--after", "901").status === 1,
-);
-check("(d) 不正: 台帳に無いPRの remove", cli("remove", "999").status === 1);
-check("(d) 不正: 不明なサブコマンド", cli("wipe").status === 1);
-writeRaw("{ 壊れたJSON");
-check(
-  "(d) 台帳が壊れていれば CLI は失敗して知らせる",
-  cli("list").status === 1,
-);
+  });
+  check(
+    "(d) CLIで書いた台帳で、フックが止める",
+    isDeny(denied),
+    String(denied),
+  );
+  check("(d) remove 901", (await cli("remove", "901")).status === 0);
+  const allowed = await guard("gh pr merge 901", {
+    FAKE_GH_STATES: "902=OPEN,903=OPEN",
+  });
+  check("(d) remove 後はフックが素通し", isAllow(allowed), String(allowed));
+  check("(d) 不正: PR番号でない", (await cli("add", "abc")).status === 1);
+  check(
+    "(d) 不正: --after の後が空",
+    (await cli("add", "901", "--after")).status === 1,
+  );
+  check(
+    "(d) 不正: --after より前の余分な引数を黙って捨てない",
+    (await cli("add", "901", "902", "--after", "903")).status === 1,
+  );
+  check(
+    "(d) 不正: 自分自身の後",
+    (await cli("add", "901", "--after", "901")).status === 1,
+  );
+  check(
+    "(d) 不正: 台帳に無いPRの remove",
+    (await cli("remove", "999")).status === 1,
+  );
+  check("(d) 不正: 不明なサブコマンド", (await cli("wipe")).status === 1);
+  writeFileSync(ledgerFile, "{ 壊れたJSON");
+  check(
+    "(d) 台帳が壊れていれば CLI は失敗して知らせる",
+    (await cli("list")).status === 1,
+  );
+}
+pending.push(verifyCli());
+
+await Promise.all(pending);
 
 if (failures > 0) {
   console.error(`\n❌ ${failures}件の検証が失敗しました`);
