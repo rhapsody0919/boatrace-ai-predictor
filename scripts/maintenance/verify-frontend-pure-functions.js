@@ -579,6 +579,33 @@ function suiteBasicInfoStats(m, check) {
     [winRows.wave5.n, winRows.wave5.baseN, winRows.wave5.value],
     [1, 2, 100],
   );
+  // 江戸川（03）は波高を5cm刻みで記録し、最小が5cm。全走が「5cm以上」になるので、
+  // 波の行の分子・母数の両方から外し、外した数を返す（BOA-584）
+  const withEdogawa = byKey(
+    m.buildConditionRows(
+      [
+        ...condRecords,
+        rec({
+          raceId: "2026-09-13-03-01",
+          boatNumber: 1,
+          ranks: [1, 2, 3],
+          waveHeight: 5,
+          fCount: 0,
+        }),
+      ],
+      { venueCode: 4, metric: "winRate" },
+    ),
+  );
+  check(
+    "buildConditionRows: 波の行は江戸川の走を分子・母数から外し、外した数を excludedN で返す",
+    [
+      withEdogawa.wave5.n,
+      withEdogawa.wave5.baseN,
+      withEdogawa.wave5.excludedN,
+      winRows.wave5.excludedN,
+    ],
+    [1, 2, 1, 0],
+  );
   check(
     "buildConditionRows: 初日（seriesDay=1）・最終日（isFinalDay=true）",
     [winRows.firstDay.n, winRows.finalDay.n, winRows.finalDay.value],

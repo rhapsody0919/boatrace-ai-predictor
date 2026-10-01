@@ -41,6 +41,7 @@ import {
   periodDiff,
   periodDiffShownFrom,
   SMALL_SAMPLE_THRESHOLD,
+  WAVE_EXCLUDED_VENUE_CODES,
 } from "./basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
 import FlyingBadge from "./FlyingBadge";
@@ -333,6 +334,14 @@ function RaceBasicInfoTab({
   const isPresetActive = (preset) =>
     preset.scope === scope && preset.grade === grade;
 
+  // 自社集計の「勝率」は1着になった割合（%）で、公式の勝率（点数）とは別物。
+  // 同じ「勝率」の名前で並ぶと、条件別の 26.9% と前期欄の公式の 6.71 が同じ指標に
+  // 見えた（BOA-585）。自社集計を出す場所では「1着率」と呼ぶ（枠別情報タブと同じ語）
+  const ownMetricLabel = (m) =>
+    m === "winRate"
+      ? t("wakuInfo.metrics.winRate")
+      : t(`basicInfo.metrics.${m}`);
+
   const toggleExpanded = (boatNumber) => {
     onFocusBoat(expandedBoat === boatNumber ? null : boatNumber);
   };
@@ -353,7 +362,9 @@ function RaceBasicInfoTab({
             className={`rbit-chip${metric === m ? " is-active" : ""}`}
             onClick={() => setMetric(m)}
           >
-            {t(`basicInfo.metrics.${m}`)}
+            {needsOwnAggregation
+              ? ownMetricLabel(m)
+              : t(`basicInfo.metrics.${m}`)}
           </button>
         ))}
       </div>
@@ -603,7 +614,7 @@ function RaceBasicInfoTab({
                         <div className="rbit-venue-ranking">
                           <p className="rbit-venue-metric-label">
                             {t("basicInfo.venueRankingFor", {
-                              metric: t(`basicInfo.metrics.${metric}`),
+                              metric: ownMetricLabel(metric),
                             })}
                           </p>
                           {currentRank > 0 && (
@@ -742,7 +753,7 @@ function RaceBasicInfoTab({
                               上のバーが公式値を出すため、同じ「全国」でも数字が違う */}
                           <p className="rbit-conditions-note">
                             {t("basicInfo.conditionsNote", {
-                              metric: t(`basicInfo.metrics.${metric}`),
+                              metric: ownMetricLabel(metric),
                             })}
                           </p>
                           <table className="rbit-conditions-table">
@@ -868,6 +879,26 @@ function RaceBasicInfoTab({
                                 {t("basicInfo.conditionsFinalDayCaveat")}
                               </p>
                             )}
+                            {/* 「波5cm以上」から江戸川の走を外したことを書く（BOA-584） */}
+                            {(() => {
+                              const wave = condRows.find(
+                                (r) => r.key === "wave5",
+                              );
+                              return wave?.excludedN > 0 ? (
+                                <p className="rbit-conditions-caveat">
+                                  {t("basicInfo.conditionsWaveExcludedNote", {
+                                    venue: [...WAVE_EXCLUDED_VENUE_CODES]
+                                      .map((code) => t(`venues.${code}`))
+                                      .join(
+                                        t(
+                                          "basicInfo.conditionsBaseNoteSeparator",
+                                        ),
+                                      ),
+                                    n: wave.excludedN,
+                                  })}
+                                </p>
+                              ) : null;
+                            })()}
                             {/* 母数が他行と違う行（初日・最終日・波・F持ち時・F無し時）は、
                                 条件を判定できた走数を添えて「他行と比べない」と読ませる */}
                             {condRows.some((r) => r.baseN !== null) && (
