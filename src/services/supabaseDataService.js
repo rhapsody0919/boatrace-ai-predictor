@@ -8306,6 +8306,9 @@ export function aggregateRacerVenueBoatStats(
       // 曖昧さを避ける（例: "25-05-12"）
       series.push({
         date: row.raceId.slice(2, 10),
+        // グラフの横軸は走ごとに一意な値にする。日付だけだと同じ日の2走が1つの目盛りにまとまり、
+        // 2走目に乗せても1走目のツールチップが出た（BOA-583 ファン評価2周目）
+        raceKey: row.raceId,
         // ツールチップで同じ日の2走を見分けるため（BOA-583）
         venueCode: row.venueCode,
         raceNo: Number(row.raceId.slice(-2)),

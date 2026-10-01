@@ -82,4 +82,44 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
       .first();
     await expect(row).toContainText("F.01", { timeout: 30000 });
   });
+
+  test("同じ日に2走ある日でも、Fの点に乗せるとその走（会場・R・Fの深さ）が出る（ファン評価2周目）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    // 選手3928: 2026-09-19 は戸田5R（0.12）と9R（F.04）の2走。以前は 9R の F の点で 5R が出た
+    await page.goto("/racer/3928");
+    const chart = page.locator(".racer-stat-chart").filter({
+      has: page.locator("h3", { hasText: "STの推移" }),
+    });
+    await expect(chart).toBeVisible({ timeout: 30000 });
+    await chart.scrollIntoViewIfNeeded();
+    const dot = chart.locator('circle[fill="var(--color-error)"]').last();
+    const box = await dot.boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(chart.locator(".recharts-tooltip-label")).toHaveText(
+      "26-09-19 戸田 9R",
+    );
+    await expect(chart.locator(".recharts-tooltip-wrapper")).toContainText(
+      "F.04",
+    );
+  });
+
+  test("375px: 推移グラフは直近50走に絞り、そのことを書く（ファン評価2周目）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/racer/4069");
+    const chart = page.locator(".racer-stat-chart").filter({
+      has: page.locator("h3", { hasText: "STの推移" }),
+    });
+    await expect(chart).toBeVisible({ timeout: 30000 });
+    await expect(chart).toContainText("直近50走");
+    const dots = await chart
+      .locator(".recharts-line-dots")
+      .first()
+      .locator("circle")
+      .count();
+    expect(dots).toBeLessThanOrEqual(50);
+  });
 });

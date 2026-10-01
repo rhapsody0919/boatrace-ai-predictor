@@ -153,8 +153,19 @@ export default function RacerPerformanceStats({
   const raceLabelOf = (label, payload) => {
     const d = payload?.[0]?.payload;
     if (!d?.venueCode) return label;
-    return `${label} ${t(`venues.${d.venueCode}`, String(d.venueCode))} ${d.raceNo}R`;
+    return `${d.date} ${t(`venues.${d.venueCode}`, String(d.venueCode))} ${d.raceNo}R`;
   };
+  // スマホ幅では推移グラフを直近50走に絞る。200走を幅約250pxに描くと1走あたり約1.2pxで、
+  // 線と点が帯に潰れて読めなかった（BOA-583 ファン評価2周目）
+  const NARROW_CHART_RUNS = 50;
+  const isNarrow =
+    typeof window !== "undefined" &&
+    (window.matchMedia?.("(max-width: 600px)").matches ?? false);
+  const chartRuns = (rows) =>
+    isNarrow ? rows.slice(-NARROW_CHART_RUNS) : rows;
+  // 横軸はレースごとの値（raceKey＝race_id）で、目盛りには日付だけを出す
+  const raceTick = (key) =>
+    typeof key === "string" && key.length > 10 ? key.slice(2, 10) : key;
   // 会場×枠番フィルタ。「全会場」「全枠番」がそれぞれ絞り込みなしを表す。
   // 表示は「枠番」。実際の進入コースはBOA-257の制約により取得できないため、
   // 発走前に決まる枠番（艇番）基準で集計・表示する
@@ -908,18 +919,27 @@ export default function RacerPerformanceStats({
           </h3>
           <p className="racer-stat-note">
             1走ごとの展示タイム。下ほど速い。会場によって出方が違うので、会場をまたいだ上下は調子の変化とは限りません
+            {isNarrow && `（この画面幅では直近${NARROW_CHART_RUNS}走）`}
           </p>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart
               data={
                 hasVcData
-                  ? vcData.series.filter((d) => d.avg_exhibition_time != null)
+                  ? chartRuns(
+                      vcData.series.filter(
+                        (d) => d.avg_exhibition_time != null,
+                      ),
+                    )
                   : exhibitionChartData
               }
               margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <XAxis
+                dataKey={hasVcData ? "raceKey" : "date"}
+                tickFormatter={raceTick}
+                tick={{ fontSize: 11 }}
+              />
               <YAxis
                 tick={{ fontSize: 11 }}
                 domain={["auto", "auto"]}
@@ -955,16 +975,23 @@ export default function RacerPerformanceStats({
           </h3>
           <p className="racer-stat-note">
             1走ごとの本番ST。下ほど速い（0がスタートライン）。赤い点はフライングの走で、線には含めていません
+            {isNarrow && `（この画面幅では直近${NARROW_CHART_RUNS}走）`}
           </p>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart
-              data={vcData.series.filter(
-                (d) => d.start_timing != null || d.flying != null,
+              data={chartRuns(
+                vcData.series.filter(
+                  (d) => d.start_timing != null || d.flying != null,
+                ),
               )}
               margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <XAxis
+                dataKey="raceKey"
+                tickFormatter={raceTick}
+                tick={{ fontSize: 11 }}
+              />
               {/* 0 がスタートライン。下ほど速い（0 に近い）。目盛りは 0.05 刻み */}
               <YAxis
                 tick={{ fontSize: 11 }}
