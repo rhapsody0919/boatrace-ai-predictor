@@ -412,8 +412,8 @@
       "winPlaceFinal": "単勝は1着、複勝は2着以内に入る艇を当てる券種です。複勝は下限-上限のレンジです"
     },
     "trendTitle": "{{combo}} のオッズ推移",
-    "deadlineLabel": "締切\u200b直前",
-    "minutesBeforeLabel": "締切\u200b{{n}}分前",
+    "deadlineLabel": "締切​直前",
+    "minutesBeforeLabel": "締切​{{n}}分前",
     "noData": "この組み合わせのオッズデータはまだありません",
     "noBetTypeData": "この券種のオッズデータはまだありません",
     "emptyTitle": "オッズデータがまだありません",
@@ -421,7 +421,7 @@
     "noVotes": "票なし",
     "winPlaceChip": "単勝・複勝",
     "boatColumn": "艇",
-    "liveTrendLabel": "最新\u200b（締切\u200b{{n}}分前）",
+    "liveTrendLabel": "最新​（締切​{{n}}分前）",
     "snapshotAtDeadline": "{{time}} 取得（締切直前）",
     "snapshotAt": "{{time}} 取得",
     "snapshotBefore": "{{time}} 取得（締切{{n}}分前）",
@@ -449,7 +449,7 @@
     "officialOddsLink": "公式サイトのオッズを見る",
     "finalDeadlineAt": "{{time}} 締切",
     "finalSource": "BOATRACE公式から取得",
-    "finalTrendLabel": "締切時\u200b（公式）",
+    "finalTrendLabel": "締切時​（公式）",
     "finalTrendNote": "○分前の値は、その時点に取得した公式表示です（公式の更新は数分遅れます）",
     "finalMissingForBetType": "この券種は締切時オッズ（公式）を取得できなかったため、締切前に取得した値を表示しています",
     "finalExactaMissing": "2連単の締切時オッズ（公式）は取得できなかったため、「2単」は「-」です（2連単のタブに締切前に取得した値があります）",
@@ -570,6 +570,7 @@
     "periodSummary": "▸ 期間で絞り込む",
     "periodCaveat": "※グレード条件と組み合わせた「今期」は、公式の期区分ではなく、当社データで確認できる全期間（2025年12月以降、最大過去2年）を対象とします",
     "winRateSwitchCaveat": "※グレード・期間で絞り込むと、公式の勝率（点数）ではなく、その条件で1着になった割合（1着率、%）を出します",
+    "relativeBarNote": "※棒の長さは、この6艇の中での比較です。差が小さくても長さは大きく開くので、差の大きさは数字で見てください",
     "sampleCount": "(n={{n}})",
     "noData": "(データなし)",
     "viewTrend": "直近10走",
@@ -577,7 +578,7 @@
     "loading": "読み込み中...",
     "noHistory": "出走履歴データがありません",
     "noVenueData": "会場別の成績データがありません（規定レース数未満）",
-    "trendNote": "直近10走（グレード・期間の条件によらず、常に最新10走を表示。日付をタップでレース詳細へ）",
+    "trendNote": "このレースより前の直近10走（新しい順。グレード・期間の条件によらない）。行をタップでレース詳細へ",
     "finishUnknown": "着外(順位不明)",
     "finishAbsent": "欠場",
     "venueRankingFor": "{{metric}}のランキング",
@@ -678,7 +679,16 @@
     "periodHeader": "期間・条件",
     "nHeader": "走数",
     "allCoursesFold": "全コース（1〜6）の成績を見る",
-    "periodCaveat": "※「今期」は公式の期区分ではなく、当社データで確認できる全期間（2025年12月以降、最大過去2年）を対象とします。公式サイトの勝率とは母集団が異なります"
+    "periodCaveat": "※「今期」は公式の期区分ではなく、当社データで確認できる全期間（2025年12月以降、最大過去2年）を対象とします。公式サイトの勝率とは母集団が異なります",
+    "recentFinishesNoteScoped": "{{scope}}{{course}}コース（実際に進入したコース）から出走した直近{{n}}走",
+    "recentScope": {
+      "current": "2025年12月以降で",
+      "last3m": "直近3ヶ月で",
+      "last1m": "直近1ヶ月で",
+      "local": "当地で",
+      "ippan": "一般戦で",
+      "sgg1": "SG・G1で"
+    }
   },
   "raceHistoryTable": {
     "date": "日付",
@@ -702,7 +712,9 @@
     },
     "exhibition": "展示",
     "exhibitionCell": "{{time}}({{rank}})",
-    "startTimingCell": "{{time}}({{rank}})"
+    "startTimingCell": "{{time}}({{rank}})",
+    "stRankLegend": "STの( )は、そのレースの6艇の中の順位（Fは除く）",
+    "finishUnknownShort": "着外"
   },
   "panel": {
     "noData": "予想データが利用できません",
@@ -1843,7 +1855,10 @@
     "hiddenOlder": "（← 左にあと{{n}}走）",
     "flying": "F",
     "stRank": "({{n}}位)",
-    "legend": "上段は実際に進入したコース、中段は着順、下段はSTとそのレース内でのST順位"
+    "legend": "いちばん上は月日、次に実際に進入したコース、着順、STとそのレース内でのST順位。タイルを押すと、その走の会場・R・種別が下に出ます",
+    "detail": "{{date}} {{venue}}{{race}}R{{stage}}・{{course}}・{{finish}}・ST {{st}}",
+    "stageWithGrade": "（{{grade}} {{stage}}）",
+    "stageOnly": "（{{stage}}）"
   },
   "venueDaySummary": {
     "collapsedTeaser": "確定{{n}}R・1号艇の逃げ率{{rate}}%",

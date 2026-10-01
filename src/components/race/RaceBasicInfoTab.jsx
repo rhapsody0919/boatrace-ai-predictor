@@ -30,7 +30,7 @@ import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { parseRaceId } from "../../utils/raceId";
-import RaceHistoryTable from "./RaceHistoryTable";
+import RecentRunsTable from "./RecentRunsTable";
 import {
   filterRecords,
   computeRates,
@@ -321,7 +321,14 @@ function RaceBasicInfoTab({
 
   if (sortedPlayers.length === 0) return null;
 
-  const values = sortedPlayers.map((p) => ({ boat: p.number, ...valueFor(p) }));
+  // 平均STは小数2桁で表示する。棒の長さも表示と同じ桁で決める。生の値で決めると、同じ「0.13」の
+  // 艇どうしで棒の長さが18ポイント違い、「差は数字で見て」の注記と食い違った（#1064 ファン評価3周目）
+  const values = sortedPlayers.map((p) => {
+    const v = valueFor(p);
+    return metric === "avgSt" && typeof v.value === "number"
+      ? { boat: p.number, ...v, value: Math.round(v.value * 100) / 100 }
+      : { boat: p.number, ...v };
+  });
   const numericValues = values
     .map((v) => v.value)
     .filter((v) => v !== null && v !== undefined);
@@ -341,7 +348,10 @@ function RaceBasicInfoTab({
       if (maxValue === minValue) return 50;
       const ratio = (value - minValue) / (maxValue - minValue);
       // STのみ「小さいほど良い」ため反転する
-      return metric === "avgSt" ? (1 - ratio) * 100 : ratio * 100;
+      const r = metric === "avgSt" ? 1 - ratio : ratio;
+      // 最下位の艇も短い棒を残す（10〜100%）。0%だと棒が空になり、6.70 と 7.58 の差が
+      // 「0対ほぼ半分」に見えて、勝率が無いようにも読めた（BOA-618）
+      return 10 + r * 90;
     }
     return Math.max(0, Math.min(100, value));
   };
@@ -464,6 +474,14 @@ function RaceBasicInfoTab({
         )}
       </details>
 
+      {/* 勝率（公式の点数）・平均STの棒は、6艇の中の最小〜最大で長さを決める。
+          平均STは差が0.03秒でも棒の長さが10%と100%に開くので、長さだけで差の大きさを
+          読ませないよう書き添える（#1064 ファン評価2周目） */}
+      {isRelativeScaleMetric && (
+        <p className="rbit-metric-caveat rbit-relative-note">
+          {t("basicInfo.relativeBarNote")}
+        </p>
+      )}
       <div className="rbit-bars">
         {values.map(({ boat, value, n, isSmallSample, loading }) => {
           const player = sortedPlayers.find((p) => p.number === boat);
@@ -505,7 +523,7 @@ function RaceBasicInfoTab({
                 <span className="rbit-bar-track">
                   {!loading && (
                     <span
-                      className={`rbit-bar-fill${isSmallSample ? " is-small-sample" : ""}`}
+                      className={`rbit-bar-fill${isSmallSample ? " is-small-sample" : ""}${boat === 1 ? " is-white" : ""}`}
                       style={{
                         width: `${barWidthPercent(value)}%`,
                         background: color.bg,
@@ -579,10 +597,14 @@ function RaceBasicInfoTab({
                           </p>
                         );
                       }
+                      // 表示中のレースより前の走だけ（BOA-602）。過去のレースのページで、
+                      // そのレース自身や後日の走が「直近」に混ざっていた。
+                      // 並びは新しい順（いちばん上が前走）。選手ページのレース一覧と向きを
+                      // そろえる（BOA-623 ファン評価1周目。375px で前走が下に隠れていた）
                       const recent = getRecentRaces(
-                        records,
+                        recordsBeforeRace(records, raceId),
                         RECENT_RACES_COUNT,
-                      );
+                      ).reverse();
                       if (recent.length === 0) {
                         return (
                           <p className="rbit-expanded-empty">
@@ -595,7 +617,7 @@ function RaceBasicInfoTab({
                           <p className="rbit-trend-note">
                             {t("basicInfo.trendNote")}
                           </p>
-                          <RaceHistoryTable
+                          <RecentRunsTable
                             rows={recent}
                             buildRaceHref={(raceId) =>
                               localize(`/race/${raceId}`)

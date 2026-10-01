@@ -222,7 +222,8 @@ export function getRecentRaces(records, count = 5) {
     boatNumber: r.boatNumber,
     // 実際に進入したコース。今節タブ（FR-3）が「進入」列で使う。
     // 2025-12-04より前のレースと当日のレースはnull（BOA-257）
-    entryCourse: r.actualCourse ?? null,
+    // 当日の走は Kファイルがまだ無いので、本番STの進入（entryCourse）を先に見る（BOA-623）
+    entryCourse: r.entryCourse ?? r.actualCourse ?? null,
     // 展示タイムと、その走の同レース内での展示順位。今節タブ（FR-3）が
     // 「展示」列で使う。**推移の判定文（上向き/下向き）は出さない**——
     // 初日と直近の2点だけを比べると、間の走を捨てて実態と逆の結論になる
@@ -237,6 +238,8 @@ export function getRecentRaces(records, count = 5) {
     startTiming:
       r.startTiming ?? (r.isFlying ? (r.flyingStartTiming ?? null) : null),
     isFlying: r.isFlying === true,
+    // そのレースの6艇の中でのST順位（Fを除く。BOA-623 の直近10走で ST に添える）
+    startTimingRank: r.stRank ?? null,
     // 欠場の走（BOA-504）。着順が無いので、表示側が「着外」でなく「欠場」と出す
     absent: r.absent === true,
     // 着順が付かない走の公式の記号（落・転・妨など、BOA-537）。フライングは、着欄の記号が
@@ -781,4 +784,48 @@ export function buildMeetTrend(meet, allRecords) {
       n: exhibitions.length,
     },
   };
+}
+
+/**
+ * 直近N走・レース一覧の行を、節ごとのまとまりに分ける（BOA-623）。
+ * 表は会場・グレード・レース名を節の見出し行に1回だけ出す（同じ節の10行で
+ * 同じ名前が並び、375px で表の幅の大半を取っていた）。
+ *
+ * 隣り合う行が「同じ会場・同じレース名・日付の差が2日以内」なら同じ節とみなす
+ * （meetGrouping.js と同じ「2日」）。行の順序（古い順・新しい順）はそのまま保つ。
+ *
+ * @param {Array<{raceId: string, venueCode: number|string, raceTitle?: string|null,
+ *   raceGrade?: string|null}>} rows
+ * @returns {Array<{venueCode, raceTitle, raceGrade, firstDate: string, lastDate: string, rows: Array}>}
+ *   firstDate / lastDate は日付の古い方・新しい方（YYYY-MM-DD）
+ */
+export function groupRunsByMeet(rows) {
+  const groups = [];
+  const dayOf = (raceId) => Date.parse(`${raceId.slice(0, 10)}T00:00:00Z`);
+  for (const row of rows ?? []) {
+    const last = groups.at(-1);
+    const prevRow = last?.rows.at(-1);
+    const sameMeet =
+      last &&
+      String(last.venueCode) === String(row.venueCode) &&
+      (last.raceTitle ?? null) === (row.raceTitle ?? null) &&
+      Math.abs(dayOf(row.raceId) - dayOf(prevRow.raceId)) <= 2 * 86400000;
+    if (sameMeet) {
+      last.rows.push(row);
+      const date = row.raceId.slice(0, 10);
+      if (date < last.firstDate) last.firstDate = date;
+      if (date > last.lastDate) last.lastDate = date;
+    } else {
+      const date = row.raceId.slice(0, 10);
+      groups.push({
+        venueCode: row.venueCode,
+        raceTitle: row.raceTitle ?? null,
+        raceGrade: row.raceGrade ?? null,
+        firstDate: date,
+        lastDate: date,
+        rows: [row],
+      });
+    }
+  }
+  return groups;
 }

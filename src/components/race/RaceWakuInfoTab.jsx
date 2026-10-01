@@ -183,8 +183,24 @@ function RaceWakuInfoTab({
   // 以外でも変わるので、selectBoatの中で閉じるのではなくここで判定する。
   // 副作用として、1→4→1と艇を戻すと1で開いていたセルが再び開く（従来は閉じた
   // まま）。同じ選手の同じセルに戻るだけなのでそのままにしている
+  //
+  // ただし既定ビュー（今日の想定コースの表）で開いた行は、艇を替えても同じ行（当地・
+  // 直近1ヶ月など）のまま開いておく。コースは新しい艇の想定コース（枠なり＝艇番）に
+  // 替える。6艇を同じ条件で見比べるのに、艇ごとに行を押し直していた（BOA-604
+  // ファン評価2周目）。全コース表のセルはコースを指定して開くので、従来どおり閉じる
   const [openCellState, setOpenCell] = useState(null);
-  const openCell = openCellState?.boat === selectedBoat ? openCellState : null;
+  const openCell = !openCellState
+    ? null
+    : openCellState.boat === selectedBoat
+      ? openCellState
+      : openCellState.from === "today" && selectedBoat !== null
+        ? {
+            ...openCellState,
+            boat: selectedBoat,
+            course: selectedBoat,
+            carried: true,
+          }
+        : null;
   // 全コース比較の折りたたみ。native <details> ではなくReactの状態で持つ。
   // <details> は取得待ちの分岐（scopedRecords === undefined）の中にあるため、
   // 履歴が未取得の選手に切り替えるとサブツリーが差し替わって再マウントされ、
@@ -273,6 +289,23 @@ function RaceWakuInfoTab({
         })
       : [];
 
+  // 艇を替えて引き継いだ行が、新しい艇では走数0なら閉じる。その行はボタンにならず
+  // （押して閉じられない）、「直近0走」の空の帯だけが表の下に残った（BOA-604 ファン評価3周目）
+  const shownCell =
+    openCell?.carried && recentRuns.length === 0 ? null : openCell;
+
+  // 帯の見出し。押した行の条件と、実際に並んだ走数を入れる（BOA-604）。以前は行によらず
+  // 「◯コースから出走した直近10走」のままで、「当地」で1走しか無くても10走と書いていた。
+  // 「今期」の行は公式の期区分ではない（当社データの全期間）ので、期間をそのまま書く
+  // （基本情報タブの periodCaveat・#973 と同じ「2025年12月以降」）
+  const recentHeading = shownCell
+    ? t("wakuInfo.recentFinishesNoteScoped", {
+        scope: t(`wakuInfo.recentScope.${shownCell.rowKey}`),
+        course: shownCell.course,
+        n: recentRuns.length,
+      })
+    : null;
+
   const selectBoat = (boatNumber) => {
     onFocusBoat(boatNumber);
   };
@@ -284,16 +317,15 @@ function RaceWakuInfoTab({
   // 全コース表の「今日」列セルも同じ (rowKey, course) を指すため、from を判定に
   // 入れないと両者が常に衝突し、片方を開いた状態でもう片方を押すと「閉じるだけ」
   // になって無反応に見える（レビュー指摘、2026-09-24）
+  // 開いているか（閉じるか）の判定は、画面に出ている openCell（艇を替えて引き継いだ
+  // 行を含む）と比べる。元の状態（前の艇）と比べると、引き継いだ行を押しても閉じない
   const toggleCell = (rowKey, course, from) => {
-    setOpenCell((prev) =>
-      prev &&
-      prev.boat === selectedBoat &&
-      prev.rowKey === rowKey &&
-      prev.course === course &&
-      prev.from === from
-        ? null
-        : { boat: selectedBoat, rowKey, course, from },
-    );
+    const isOpen =
+      openCell &&
+      openCell.rowKey === rowKey &&
+      openCell.course === course &&
+      openCell.from === from;
+    setOpenCell(isOpen ? null : { boat: selectedBoat, rowKey, course, from });
   };
 
   const techniqueDistribution = aggregateTechniqueDistribution(
@@ -402,7 +434,8 @@ function RaceWakuInfoTab({
                   const isSmallSample =
                     row.n > 0 && row.n < SMALL_SAMPLE_THRESHOLD;
                   const open =
-                    openCell?.from === "today" && openCell?.rowKey === row.key;
+                    shownCell?.from === "today" &&
+                    shownCell?.rowKey === row.key;
                   return (
                     <tr
                       key={row.key}
@@ -460,13 +493,9 @@ function RaceWakuInfoTab({
               </tbody>
             </table>
 
-            {openCell?.from === "today" && (
+            {shownCell?.from === "today" && (
               <div className="rwit-expanded">
-                <p className="rwit-expanded-note">
-                  {t("wakuInfo.recentFinishesNote", {
-                    course: openCell.course,
-                  })}
-                </p>
+                <p className="rwit-expanded-note">{recentHeading}</p>
                 {recentRuns.length === 0 ? (
                   <p className="rwit-expanded-empty">
                     {t("wakuInfo.noRecentFinishes")}
@@ -627,11 +656,7 @@ function RaceWakuInfoTab({
 
                 {openCell?.from === "grid" && (
                   <div className="rwit-expanded">
-                    <p className="rwit-expanded-note">
-                      {t("wakuInfo.recentFinishesNote", {
-                        course: openCell.course,
-                      })}
-                    </p>
+                    <p className="rwit-expanded-note">{recentHeading}</p>
                     {recentRuns.length === 0 ? (
                       <p className="rwit-expanded-empty">
                         {t("wakuInfo.noRecentFinishes")}

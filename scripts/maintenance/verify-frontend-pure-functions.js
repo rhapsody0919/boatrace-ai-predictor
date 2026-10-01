@@ -506,6 +506,104 @@ function suiteBasicInfoStats(m, check) {
     [null, null, null, null],
   );
 
+  check(
+    "getRecentRaces: 進入は本番STの進入（当日も入る）を先に、無ければ Kファイル。ST順位と F を渡す（BOA-623）",
+    m
+      .getRecentRaces(
+        [
+          {
+            raceId: "2026-10-01-16-04",
+            boatNumber: 5,
+            entryCourse: 6,
+            actualCourse: null,
+            rank1: 5,
+            stRank: 2,
+            isFlying: false,
+          },
+          {
+            raceId: "2026-09-29-16-10",
+            boatNumber: 5,
+            actualCourse: 4,
+            rank2: 5,
+            stRank: 3,
+          },
+          {
+            raceId: "2026-09-29-16-11",
+            boatNumber: 2,
+            entryCourse: null,
+            actualCourse: null,
+            isFlying: true,
+          },
+        ],
+        10,
+      )
+      .map((x) => [x.entryCourse, x.startTimingRank, x.isFlying]),
+    [
+      [6, 2, false],
+      [4, 3, false],
+      [null, null, true],
+    ],
+  );
+
+  // --- groupRunsByMeet（BOA-623）: 直近10走・レース一覧を節の見出し行でまとめる
+  {
+    const r = (raceId, venueCode, raceTitle, raceGrade = "G1") => ({
+      raceId,
+      venueCode,
+      raceTitle,
+      raceGrade,
+    });
+    const asc = [
+      r("2026-09-14-18-07", 18, "ダイヤモンドカップ"),
+      r("2026-09-15-18-02", 18, "ダイヤモンドカップ"),
+      r("2026-09-17-18-09", 18, "ダイヤモンドカップ"),
+      r("2026-09-28-16-05", 16, "児島キングカップ"),
+      r("2026-09-29-16-10", 16, "児島キングカップ"),
+    ];
+    const summary = (gs) =>
+      gs.map((g) => [g.venueCode, g.firstDate, g.lastDate, g.rows.length]);
+    check(
+      "groupRunsByMeet: 同じ会場・同じレース名・2日以内で続く行を1つの節にまとめる。古い順・新しい順のどちらでも期間は古い→新しい",
+      [
+        summary(m.groupRunsByMeet(asc)),
+        summary(m.groupRunsByMeet([...asc].reverse())),
+      ],
+      [
+        [
+          [18, "2026-09-14", "2026-09-17", 3],
+          [16, "2026-09-28", "2026-09-29", 2],
+        ],
+        [
+          [16, "2026-09-28", "2026-09-29", 2],
+          [18, "2026-09-14", "2026-09-17", 3],
+        ],
+      ],
+    );
+    check(
+      "groupRunsByMeet: 同じ会場・同じ名前でも3日以上空けば別の節。会場が変われば同じ日でも別。空は空",
+      [
+        summary(
+          m.groupRunsByMeet([
+            r("2026-08-01-18-01", 18, "一般戦"),
+            r("2026-08-05-18-01", 18, "一般戦"),
+            r("2026-08-05-16-01", 16, "一般戦"),
+          ]),
+        ),
+        m.groupRunsByMeet([]),
+        m.groupRunsByMeet(null),
+      ],
+      [
+        [
+          [18, "2026-08-01", "2026-08-01", 1],
+          [18, "2026-08-05", "2026-08-05", 1],
+          [16, "2026-08-05", "2026-08-05", 1],
+        ],
+        [],
+        [],
+      ],
+    );
+  }
+
   // --- recordsBeforeRace（BOA-603）: 表示中のレースより前の走だけ
   check(
     "recordsBeforeRace: 表示中のレース自身と後日の走を外す。取得前・失敗・raceId無しはそのまま",
