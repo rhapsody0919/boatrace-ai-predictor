@@ -2046,6 +2046,21 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
   });
 
+  test("データ出走表の今節の前走は中止になったレースを飛ばす（BOA-610）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // 2026-09-22 戸田5R の5号艇: 前日の 9/21 5R は中止（出走表の行はあるが結果が無い）。
+    // 前走は 9/20 10R（4コース6着）。中止を拾うと「—」のまま残る
+    await page.goto("/race/2026-09-22-02-05");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const row = page.locator("tr", { hasText: "今節の前走" }).first();
+    await row.waitFor({ timeout: 30000 });
+    const boat5 = row.locator("td").nth(5);
+    await expect(boat5).toContainText("9/20 10R");
+    await expect(boat5).toContainText("6着");
+  });
+
   test("着順が付かない走は、推移・比較表・日別の表で同じ公式の記号になる（BOA-537 ファン評価）", async ({
     page,
   }) => {

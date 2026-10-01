@@ -2845,6 +2845,7 @@ export const supabaseDataService = {
    * 戻り値は艇ごとに1行:
    *   { boat_number, firstOfMeet: true }                       今節の走がまだ無い
    *   { boat_number, raceId, boatNumber, result, finishMark }  前走（result は race_results の1行か null）
+   * 中止になったレース（`isRaceCancelled`）は走っていないので飛ばす。
    * 前走の結果がまだ無い行があるとき（同じ日の直前のレースが確定前）は `fetchFailed: true` を
    * 付けて withCache に焼き付けない（frontend-data-fetch.md §4）
    *
@@ -2881,21 +2882,19 @@ export const supabaseDataService = {
         .gte("race_id", from.toISOString().slice(0, 10))
         .lt("race_id", raceId);
 
-      const prevByBoat = new Map(
+      const meetByBoat = new Map(
         targets.map((e) => [
           e.boat_number,
           groupIntoMeetBeforeRace(
             (past ?? []).filter((r) => r.racer_id === e.racer_id),
             raceId,
-          ).at(-1) ?? null,
+          ),
         ]),
       );
-      const prevRaceIds = [
-        ...new Set(
-          [...prevByBoat.values()].filter(Boolean).map((r) => r.race_id),
-        ),
+      const meetRaceIds = [
+        ...new Set([...meetByBoat.values()].flat().map((r) => r.race_id)),
       ];
-      if (prevRaceIds.length === 0) {
+      if (meetRaceIds.length === 0) {
         return {
           rows: targets.map((e) => ({
             boat_number: e.boat_number,
@@ -2904,19 +2903,29 @@ export const supabaseDataService = {
         };
       }
 
-      const [{ data: results }, { data: timings }] = await Promise.all([
-        supabase
-          .from("race_results")
-          .select(
-            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, course_1, course_2, course_3, course_4, course_5, course_6",
-          )
-          .in("race_id", prevRaceIds),
-        supabase
-          .from("race_start_timings")
-          .select("race_id, boat_number, finish_mark")
-          .in("race_id", prevRaceIds),
-      ]);
+      // 中止になったレースにも出走表の行は残る（結果の行は無い）。節の走を全部引いて、
+      // 中止を飛ばした最後の走を前走にする（中止を拾うと結果が来ないまま「—」が残る）
+      const [{ data: results }, { data: timings }, { data: races }] =
+        await Promise.all([
+          supabase
+            .from("race_results")
+            .select(
+              "race_id, rank1, rank2, rank3, rank4, rank5, rank6, course_1, course_2, course_3, course_4, course_5, course_6",
+            )
+            .in("race_id", meetRaceIds),
+          supabase
+            .from("race_start_timings")
+            .select("race_id, boat_number, finish_mark")
+            .in("race_id", meetRaceIds),
+          supabase
+            .from("races")
+            .select("race_id, cancellation_status")
+            .in("race_id", meetRaceIds),
+        ]);
       const resultById = new Map((results ?? []).map((r) => [r.race_id, r]));
+      const statusById = new Map(
+        (races ?? []).map((r) => [r.race_id, r.cancellation_status]),
+      );
       const markByKey = new Map(
         (timings ?? []).map((r) => [
           `${r.race_id}#${r.boat_number}`,
@@ -2925,7 +2934,13 @@ export const supabaseDataService = {
       );
 
       const rows = targets.map((e) => {
-        const prev = prevByBoat.get(e.boat_number);
+        const prev = meetByBoat.get(e.boat_number).findLast(
+          (r) =>
+            !isRaceCancelled({
+              cancellationStatus: statusById.get(r.race_id) ?? null,
+              result: resultById.get(r.race_id) ?? null,
+            }),
+        );
         if (!prev) return { boat_number: e.boat_number, firstOfMeet: true };
         return {
           boat_number: e.boat_number,
