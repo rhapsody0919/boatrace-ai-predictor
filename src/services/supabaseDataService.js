@@ -7954,13 +7954,25 @@ export const supabaseDataService = {
    */
   async getRaceStartTimings(raceId) {
     if (!supabase || !raceId) return [];
-    const { data, error } = await supabase
-      .from("race_start_timings")
-      .select(
-        "boat_number, start_timing, is_flying, is_late_start, finish_mark, finish_rank, entry_course",
-      )
-      .eq("race_id", raceId)
-      .order("boat_number");
+    // 進入は本番STの entry_course（2026-09-21 からほぼ全件）を先に、無ければ Kファイル由来の
+    // race_results.actual_course_<艇番>（翌日以降に入る）で埋める（BOA-625。徳山 9/14 7R は
+    // entry_course が無いが actual_course はある）
+    const [{ data, error }, { data: courseRow }] = await Promise.all([
+      supabase
+        .from("race_start_timings")
+        .select(
+          "boat_number, start_timing, is_flying, is_late_start, finish_mark, finish_rank, entry_course",
+        )
+        .eq("race_id", raceId)
+        .order("boat_number"),
+      supabase
+        .from("race_results")
+        .select(
+          "actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+        )
+        .eq("race_id", raceId)
+        .maybeSingle(),
+    ]);
 
     if (error || !data) return [];
 
@@ -7975,7 +7987,10 @@ export const supabaseDataService = {
       finishRank: row.finish_rank ?? null,
       // 進入コース（結果ページのスタート情報の行順、077）。結果タブの進入の表示に使う（BOA-625）。
       // race_results.course_1〜6 は枠番と同じ値の旧列なので使わない
-      entryCourse: row.entry_course ?? null,
+      entryCourse:
+        row.entry_course ??
+        courseRow?.[`actual_course_${row.boat_number}`] ??
+        null,
     }));
   },
 

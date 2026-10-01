@@ -1754,13 +1754,19 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(one.locator(".rr-course")).not.toHaveClass(/is-moved/);
     await expect(page.getByText("精度確認中")).toHaveCount(0);
 
-    // 進入を取得できていないレース（2026-09-14 徳山7R）だけ断る。公式には進入が出ているので、
-    // 「データが無い」ではなく当サイトで取れていないと書く（ファン評価1周目）
+    // 本番STの進入が無いレース（2026-09-14 徳山7R）は、Kファイルの進入で埋める（枠なり）。
+    // 以前は「データがありません」と出していたが、公式には進入が出ている（ファン評価1周目）
     await page.goto("/race/2026-09-14-18-07");
-    await expect(
-      page.getByText("このレースの進入コースは、当サイトではまだ取得できていません"),
-    ).toBeVisible({ timeout: 30000 });
-    await expect(page.locator(".rr-course-order")).toHaveCount(0);
+    const order2 = page.locator(".rr-course-order");
+    await expect(order2).toBeVisible({ timeout: 30000 });
+    await expect(order2.locator(".rr-boat-chip")).toHaveText([
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+    ]);
   });
 
   test("今節タブ: en・zh-TW の375pxで6艇の表がカードからはみ出さず、必要得点に残りの走数を添える（BOA-596）", async ({
