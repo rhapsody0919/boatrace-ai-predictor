@@ -45,6 +45,8 @@ import {
 import { createFakeSupabaseClient } from "../lib/scrapeJobs/testing/fakeSupabaseClient.js";
 
 // 検証の対象コードが出すログは捨て、結果の行だけを出す
+// 発走済みのレースは書かない（BOA-628）ため、対象日の朝に固定する（2026-09-20・21 の発走前）
+const FIXED_NOW = new Date("2026-09-20T06:00:00+09:00");
 const out = { log: console.log, error: console.error };
 console.log = console.warn = console.error = () => {};
 
@@ -53,7 +55,9 @@ console.log = console.warn = console.error = () => {};
 let completed = false;
 process.on("exit", (code) => {
   if (!completed && code === 0) {
-    out.error("❌ 検証が最後まで実行されませんでした（途中で process.exit された）");
+    out.error(
+      "❌ 検証が最後まで実行されませんでした（途中で process.exit された）",
+    );
     process.exitCode = 1;
   }
 });
@@ -288,6 +292,7 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
 
   const client = newClient();
   const result = await generateAndWriteFromRacesData({
+    now: () => FIXED_NOW,
     racesData: racesData(),
     date: DATE,
     client,
@@ -318,18 +323,19 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
   const racesUpserts = client.writesTo("races").length;
   const entriesUpserts = client.writesTo("race_entries").length;
   await generateAndWriteFromRacesData({
+    now: () => FIXED_NOW,
     racesData: racesData(),
     date: DATE,
     client,
     throwOnError: true,
   });
   check(
-    "(b) 2回目: 変更の無い races・race_entries は書かない（WS8(b)）。predictions は削除→挿入で36行のまま",
+    "(b) 2回目: 変更の無い races・race_entries は書かない（WS8(b)）。predictions は upsert で36行のまま、削除しない（BOA-628）",
     client.writesTo("races").length === racesUpserts &&
       client.writesTo("race_entries").length === entriesUpserts &&
       client.data.predictions.length === 36 &&
       client.writesTo("predictions").filter((w) => w.op === "delete").length ===
-        2,
+        0,
   );
 
   // 失敗の扱い
@@ -337,11 +343,11 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
   for (const [label, failOn] of [
     ["race_entries の書き込み", { "race_entries:upsert": "boom-entries" }],
     ["races の書き込み", { "races:upsert": "boom-races" }],
-    ["predictions の挿入", { "predictions:insert": "boom-preds" }],
-    ["predictions の削除", { "predictions:delete": "boom-delete" }],
+    ["predictions の書き込み", { "predictions:upsert": "boom-preds" }],
   ]) {
     const err = await rejects(
       generateAndWriteFromRacesData({
+        now: () => FIXED_NOW,
         racesData: racesData(),
         date: DATE,
         client: failing(failOn),
@@ -351,6 +357,7 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
     check(`(b) throwOnError: ${label}の失敗は例外`, err !== null, err?.message);
     const swallowed = await rejects(
       generateAndWriteFromRacesData({
+        now: () => FIXED_NOW,
         racesData: racesData(),
         date: DATE,
         client: failing(failOn),
@@ -364,6 +371,7 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
   }
   const noClient = await rejects(
     generateAndWriteFromRacesData({
+      now: () => FIXED_NOW,
       racesData: racesData(),
       date: DATE,
       client: null,
@@ -376,6 +384,7 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
   );
   const badData = await rejects(
     generateAndWriteFromRacesData({
+      now: () => FIXED_NOW,
       racesData: { success: false },
       date: DATE,
       client: newClient(),
@@ -415,13 +424,16 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
   });
 
   const client = createFakeSupabaseClient({ tables: tables() });
-  const missingBefore = await findRacesMissingUnified(DATE, client);
+  const missingBefore = await findRacesMissingUnified(DATE, client, {
+    now: () => FIXED_NOW,
+  });
   check(
     "(c) findRacesMissingUnified: unified が無い2レースを返す",
     same(missingBefore, ["2026-09-21-01-01", "2026-09-21-01-02"]),
     show(missingBefore),
   );
   const r = await generateUnifiedPredictions({
+    now: () => FIXED_NOW,
     date: DATE,
     client,
     strict: true,
@@ -434,9 +446,16 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
       client.data.predictions.every((p) => p.model_id === "unified"),
     show(r),
   );
-  const missingAfter = await findRacesMissingUnified(DATE, client);
+  const missingAfter = await findRacesMissingUnified(DATE, client, {
+    now: () => FIXED_NOW,
+  });
   check("(c) 生成後は、欠けたレースが無い", same(missingAfter, []));
-  await generateUnifiedPredictions({ date: DATE, client, strict: true });
+  await generateUnifiedPredictions({
+    now: () => FIXED_NOW,
+    date: DATE,
+    client,
+    strict: true,
+  });
   check(
     "(c) 再実行しても行は増えない（upsert。冪等）",
     client.data.predictions.length === 2,
@@ -447,7 +466,11 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
     failOn: { "predictions:upsert": "boom-unified" },
   });
   const err = await rejects(
-    generateUnifiedPredictions({ date: DATE, client: failingClient }),
+    generateUnifiedPredictions({
+      now: () => FIXED_NOW,
+      date: DATE,
+      client: failingClient,
+    }),
   );
   check(
     "(c) 書き込みの失敗は例外（成功したバッチの件数をメッセージに含む）",
@@ -457,7 +480,11 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
     err?.message,
   );
   const noClient = await rejects(
-    generateUnifiedPredictions({ date: DATE, client: null }),
+    generateUnifiedPredictions({
+      now: () => FIXED_NOW,
+      date: DATE,
+      client: null,
+    }),
   );
   check("(c) Supabase が無ければ例外", noClient !== null);
 
@@ -466,6 +493,7 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
     failOn: { "races:select": "db-down" },
   });
   const lenient = await generateUnifiedPredictions({
+    now: () => FIXED_NOW,
     date: DATE,
     client: dbDown,
   });
@@ -474,13 +502,61 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
     lenient.targetRaces === 0,
   );
   const strictErr = await rejects(
-    generateUnifiedPredictions({ date: DATE, client: dbDown, strict: true }),
+    generateUnifiedPredictions({
+      now: () => FIXED_NOW,
+      date: DATE,
+      client: dbDown,
+      strict: true,
+    }),
   );
   check(
     "(c) strict: スケジュール取得の失敗は例外（対象なしに化けない）",
     strictErr && /db-down/.test(strictErr.message),
     strictErr?.message,
   );
+  // BOA-628: 発走済みのレースは書かず、欠けていても数えない（15:30 の時点で 1R=15:26 は発走済み、2R=15:57 は発走前）
+  {
+    const at = () => new Date(`${DATE}T15:30:00+09:00`);
+    const c2 = createFakeSupabaseClient({ tables: tables() });
+    const missing = await findRacesMissingUnified(DATE, c2, { now: at });
+    check(
+      "(c) BOA-628: findRacesMissingUnified は発走済みのレースを数えない（2R だけ）",
+      same(missing, ["2026-09-21-01-02"]),
+      show(missing),
+    );
+    const gen = await generateUnifiedPredictions({
+      date: DATE,
+      client: c2,
+      strict: true,
+      now: at,
+    });
+    check(
+      "(c) BOA-628: generateUnifiedPredictions は発走済みのレースを書かない（2R の1行だけ）",
+      gen.written === 1 &&
+        c2.data.predictions.length === 1 &&
+        c2.data.predictions[0].race_id === "2026-09-21-01-02",
+      show(gen),
+    );
+    const again = await findRacesMissingUnified(DATE, c2, { now: at });
+    check(
+      "(c) BOA-628: 生成後、発走済みの 1R が欠けたままでも、欠けたレースは0（再実行が止まる）",
+      same(again, []),
+      show(again),
+    );
+    const c3 = createFakeSupabaseClient({ tables: tables() });
+    const all = await generateUnifiedPredictions({
+      date: DATE,
+      client: c3,
+      strict: true,
+      now: at,
+      includeStarted: true,
+    });
+    check(
+      "(c) BOA-628: includeStarted なら発走済みも書く（過去日の作り直し）",
+      all.written === 2,
+      show(all),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -696,11 +772,15 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
   );
   check(
     "(e) true・JST 07:00 より前: 実行しない（Vercel の races-init の時間帯。DBの件数は見ない）",
-    [0, 4, 5, 6].every((h) => !decide(true, h, null).run && !decide(true, h, 0).run),
+    [0, 4, 5, 6].every(
+      (h) => !decide(true, h, null).run && !decide(true, h, 0).run,
+    ),
   );
   check(
     "(e) true・07:00 以降で races が1件以上: 実行しない（Vercel が初期化済み）",
-    !decide(true, 7, 12).run && !decide(true, 12, 1).run && !decide(true, 23, 288).run,
+    !decide(true, 7, 12).run &&
+      !decide(true, 12, 1).run &&
+      !decide(true, 23, 288).run,
   );
   check(
     "(e) true・07:00 以降で races が0件: 実行する（フェイルセーフ。Vercel が失敗した日に、誰も初期化しない状態を避ける）",
@@ -712,7 +792,9 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
   );
   check(
     "(e) フェイルセーフが働き始める時刻は JST 07:00（従来の初回の初期化と同じ）",
-    FALLBACK_FROM_JST_HOUR === 7 && !decide(true, 6, 0).run && decide(true, 7, 0).run,
+    FALLBACK_FROM_JST_HOUR === 7 &&
+      !decide(true, 6, 0).run &&
+      decide(true, 7, 0).run,
   );
 
   // 本番の資格情報が環境にあっても、DBに書かないよう、Supabase の変数は空にして起動する。

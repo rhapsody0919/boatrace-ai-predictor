@@ -947,11 +947,12 @@ function generateRacePrediction(race, date, racerStatsMap) {
  * @param {boolean} [options.throwOnError] true なら、書き込みの失敗を握りつぶさず例外にする。既定（false）は
  *   従来どおり、エラーをログに出して続行する（CLI・GitHub Actions）。Vercel Function（races-init）は、
  *   書き込みに失敗した会場を「済み」にしないため true を指定する
+ * @param {() => Date} [options.now] テスト用の時刻の差し替え（発走済みのレースの判定に使う）
  */
 async function writeToSupabase(
   allPredictions,
   date,
-  { client = supabase, throwOnError = false } = {},
+  { client = supabase, throwOnError = false, now = () => new Date() } = {},
 ) {
   if (!client) {
     if (throwOnError) {
@@ -1174,7 +1175,9 @@ async function writeToSupabase(
         .map((r) => r.raceId),
     );
     if (startedRaceIds.size > 0) {
-      console.log(`  ⏭️ 発走済みの${startedRaceIds.size}レースの予測は書かない`);
+      console.log(
+        `  ⏭️ 発走済みの${startedRaceIds.size}レースの予測は書かない`,
+      );
     }
     const rowsToWrite = predictionsData.filter(
       (row) => !startedRaceIds.has(row.race_id),
@@ -1757,6 +1760,7 @@ async function upsertPredictions(client, predictionsData, at) {
  * @param {string} params.date 予想生成日（YYYY-MM-DD。races の race_date になる）
  * @param {import("@supabase/supabase-js").SupabaseClient|null} [params.client] 既定は supabaseClient.js のクライアント
  * @param {boolean} [params.throwOnError] true なら、DBへの書き込みの失敗を例外にする（既定は従来どおりログのみ）
+ * @param {() => Date} [params.now] テスト用の時刻の差し替え
  * @returns {Promise<{predictedRaceIds: string[]}>}
  */
 export async function generateAndWriteFromRacesData({
@@ -1830,7 +1834,7 @@ export async function generateAndWriteFromRacesData({
   console.log(`\n📊 合計 ${totalRaces}レースの予想を生成しました`);
 
   // Supabaseに書き込み
-  await writeToSupabase(allPredictions, date, { client, throwOnError });
+  await writeToSupabase(allPredictions, date, { client, throwOnError, now });
 
   return { predictedRaceIds: allPredictions.map((p) => p.raceId) };
 }
