@@ -30,7 +30,7 @@ import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { parseRaceId } from "../../utils/raceId";
-import RaceHistoryTable from "./RaceHistoryTable";
+import RecentRunsTable from "./RecentRunsTable";
 import {
   filterRecords,
   computeRates,
@@ -568,10 +568,14 @@ function RaceBasicInfoTab({
                           </p>
                         );
                       }
+                      // 表示中のレースより前の走だけ（BOA-602）。過去のレースのページで、
+                      // そのレース自身や後日の走が「直近」に混ざっていた。
+                      // 並びは新しい順（いちばん上が前走）。選手ページのレース一覧と向きを
+                      // そろえる（BOA-623 ファン評価1周目。375px で前走が下に隠れていた）
                       const recent = getRecentRaces(
-                        records,
+                        recordsBeforeRace(records, raceId),
                         RECENT_RACES_COUNT,
-                      );
+                      ).reverse();
                       if (recent.length === 0) {
                         return (
                           <p className="rbit-expanded-empty">
@@ -584,7 +588,7 @@ function RaceBasicInfoTab({
                           <p className="rbit-trend-note">
                             {t("basicInfo.trendNote")}
                           </p>
-                          <RaceHistoryTable
+                          <RecentRunsTable
                             rows={recent}
                             buildRaceHref={(raceId) =>
                               localize(`/race/${raceId}`)

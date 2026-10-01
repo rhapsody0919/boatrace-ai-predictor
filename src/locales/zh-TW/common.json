@@ -311,7 +311,9 @@
     },
     "exhibition": "展示",
     "exhibitionCell": "{{time}}({{rank}})",
-    "startTimingCell": "{{time}}({{rank}})"
+    "startTimingCell": "{{time}}({{rank}})",
+    "stRankLegend": "ST 後（ ）內的數字為該場6艇中的名次（不含F）",
+    "finishUnknownShort": "名次外"
   },
   "panel": {
     "noData": "尚無預測資料",
@@ -708,8 +710,8 @@
       "winPlaceFinal": "單勝為猜中第1名的艇，複勝為猜中前2名內的艇。複勝以下限-上限範圍顯示"
     },
     "trendTitle": "{{combo}} 賠率趨勢",
-    "deadlineLabel": "截止\u200b前夕",
-    "minutesBeforeLabel": "截止前\u200b{{n}}分鐘",
+    "deadlineLabel": "截止​前夕",
+    "minutesBeforeLabel": "截止前​{{n}}分鐘",
     "noData": "此組合尚無賠率資料",
     "noBetTypeData": "此投注方式尚無賠率資料",
     "emptyTitle": "尚無賠率資料",
@@ -717,7 +719,7 @@
     "noVotes": "無投注",
     "winPlaceChip": "單勝、複勝",
     "boatColumn": "艇",
-    "liveTrendLabel": "最新\u200b（截止前\u200b{{n}}分鐘）",
+    "liveTrendLabel": "最新​（截止前​{{n}}分鐘）",
     "snapshotAtDeadline": "{{time}} 擷取（截止前夕）",
     "snapshotAt": "{{time}} 擷取",
     "snapshotBefore": "{{time}} 擷取（截止前{{n}}分鐘）",
@@ -745,7 +747,7 @@
     "officialOddsLink": "查看官方網站的賠率",
     "finalDeadlineAt": "{{time}} 截止（JST）",
     "finalSource": "取自BOATRACE官方網站",
-    "finalTrendLabel": "截止時\u200b（官方）",
+    "finalTrendLabel": "截止時​（官方）",
     "finalTrendNote": "「截止前○分鐘」的數值為當時擷取的官方顯示值（官方更新會延遲數分鐘）",
     "finalMissingForBetType": "此投注類型未能取得截止時賠率（官方），因此顯示截止前擷取的數值",
     "finalExactaMissing": "未能取得二連單的截止時賠率（官方），因此「2單」顯示為「-」（二連單分頁有截止前擷取的數值）",
@@ -873,7 +875,7 @@
     "loading": "載入中...",
     "noHistory": "沒有出賽紀錄資料",
     "noVenueData": "沒有各賽場的成績資料（未達規定場次）",
-    "trendNote": "最近10場（不受上方等級、期間條件影響，一律顯示最新10場。點選日期可前往該場詳情）",
+    "trendNote": "本場之前的最近10場（由新到舊，不受上方等級、期間條件影響）。點選列可前往該場詳情",
     "finishUnknown": "名次外（名次不明）",
     "finishAbsent": "缺賽",
     "venueRankingFor": "{{metric}}排行",

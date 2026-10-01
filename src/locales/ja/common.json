@@ -412,8 +412,8 @@
       "winPlaceFinal": "単勝は1着、複勝は2着以内に入る艇を当てる券種です。複勝は下限-上限のレンジです"
     },
     "trendTitle": "{{combo}} のオッズ推移",
-    "deadlineLabel": "締切\u200b直前",
-    "minutesBeforeLabel": "締切\u200b{{n}}分前",
+    "deadlineLabel": "締切​直前",
+    "minutesBeforeLabel": "締切​{{n}}分前",
     "noData": "この組み合わせのオッズデータはまだありません",
     "noBetTypeData": "この券種のオッズデータはまだありません",
     "emptyTitle": "オッズデータがまだありません",
@@ -421,7 +421,7 @@
     "noVotes": "票なし",
     "winPlaceChip": "単勝・複勝",
     "boatColumn": "艇",
-    "liveTrendLabel": "最新\u200b（締切\u200b{{n}}分前）",
+    "liveTrendLabel": "最新​（締切​{{n}}分前）",
     "snapshotAtDeadline": "{{time}} 取得（締切直前）",
     "snapshotAt": "{{time}} 取得",
     "snapshotBefore": "{{time}} 取得（締切{{n}}分前）",
@@ -449,7 +449,7 @@
     "officialOddsLink": "公式サイトのオッズを見る",
     "finalDeadlineAt": "{{time}} 締切",
     "finalSource": "BOATRACE公式から取得",
-    "finalTrendLabel": "締切時\u200b（公式）",
+    "finalTrendLabel": "締切時​（公式）",
     "finalTrendNote": "○分前の値は、その時点に取得した公式表示です（公式の更新は数分遅れます）",
     "finalMissingForBetType": "この券種は締切時オッズ（公式）を取得できなかったため、締切前に取得した値を表示しています",
     "finalExactaMissing": "2連単の締切時オッズ（公式）は取得できなかったため、「2単」は「-」です（2連単のタブに締切前に取得した値があります）",
@@ -577,7 +577,7 @@
     "loading": "読み込み中...",
     "noHistory": "出走履歴データがありません",
     "noVenueData": "会場別の成績データがありません（規定レース数未満）",
-    "trendNote": "直近10走（グレード・期間の条件によらず、常に最新10走を表示。日付をタップでレース詳細へ）",
+    "trendNote": "このレースより前の直近10走（新しい順。グレード・期間の条件によらない）。行をタップでレース詳細へ",
     "finishUnknown": "着外(順位不明)",
     "finishAbsent": "欠場",
     "venueRankingFor": "{{metric}}のランキング",
@@ -699,7 +699,9 @@
     },
     "exhibition": "展示",
     "exhibitionCell": "{{time}}({{rank}})",
-    "startTimingCell": "{{time}}({{rank}})"
+    "startTimingCell": "{{time}}({{rank}})",
+    "stRankLegend": "STの( )は、そのレースの6艇の中の順位（Fは除く）",
+    "finishUnknownShort": "着外"
   },
   "panel": {
     "noData": "予想データが利用できません",
