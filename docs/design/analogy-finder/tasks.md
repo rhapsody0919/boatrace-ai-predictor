@@ -75,7 +75,7 @@
 - [ ] T8-2 `CombinationView`（「1号艇以外が1着」の切り替え、組み合わせ一覧の上位10件、コールアウト（T0-2 のパターン、n が下限未満なら出さない））
 
 ## T9 組み込みと仕上げ
-- [ ] T9-1 `AnalogyFinderSection` を `RaceAiPredictionTab` に足す。予想の有無と切り離し、中止以外の3分岐（確定後・予想なし・未確定）で出す。is_active の版かスナップショットが無ければ節ごと出さない
+- [ ] T9-1 `AnalogyFinderSection` を `RaceAiPredictionTab` に足す。予想の有無と切り離し、中止以外の3分岐（確定後・予想なし・未確定）で出す。is_active の版かスナップショットが無ければ節ごと出さない。**BOA-635 も同じ場所（分岐の外）に部品を置く前提なので、この形を変えるときは BOA-635 のレーンに知らせる**
 - [ ] T9-2 i18n（`aiPredictionTab.analogy.*`、4言語。テーマ名・説明は themes[].key から）。「競艇」を画面に出さない。「AI がやらないこと」の文言を足さない
 - [ ] T9-3 `npm run test:layout`（AI予想タブの節。375/768/1024/1440/1920px）とダークモードの目視
 - [ ] T9-4 データ精度の検証（`data-accuracy-verifier`）: FR-1 のシェア・n、FR-2 の分布、FR-3 の帯と一覧、コールアウトの数値を実データで照合
