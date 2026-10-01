@@ -1,4 +1,4 @@
--- 112: 的中判定のトリガー（update_prediction_results）で、不成立のレースと返還艇を含む勝式を判定対象外（NULL）にする（BOA-544）
+-- 114: 的中判定のトリガー（update_prediction_results）で、不成立のレースと返還艇を含む勝式を判定対象外（NULL）にする（BOA-544）
 --
 -- ⚠️ この案は「本番へ未適用」。適用はユーザーの承認後に、ユーザーが実行する。
 --
@@ -19,8 +19,9 @@
 --   * 配当: 的中は払戻額（NULL なら 0）、外れは 0、判定対象外は NULL。旧版は外れを NULL にしていたが、アプリ側
 --     （判定のたびにトリガーの後で上書きする）は 0 だったので、アプリに揃える
 --
--- 権限: CREATE OR REPLACE FUNCTION は既存の権限を保つ。113（適用済み）で匿名の EXECUTE を剥がした状態は、
---   112 を後から適用しても変わらない（REVOKE を足していないのは、この保たれる性質による。BOA-575）。
+-- 権限: トリガー関数なので、匿名・authenticated から呼べないようにする（113 と同じ。114番以降は関数ごとに
+--   GRANT/REVOKE を明示する規律、verify:migration-rls）。CREATE OR REPLACE は既存の権限を保つが、明示しておく。
+--   番号: 当初112で作ったが、マージ前に master の最大が113になったため114に付け直した。
 --
 -- 発火条件: 097 の8列に race_status・refund_boats を足す。結果の確定の後で race_status だけが直される経路
 --   （raceResultFix.js の applyFixPlan・audit-race-result-anomalies.js）でも、判定をやり直すため。
@@ -180,6 +181,8 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+REVOKE ALL ON FUNCTION public.update_prediction_results() FROM PUBLIC, anon, authenticated;
 
 DROP TRIGGER IF EXISTS trg_update_predictions ON race_results;
 
