@@ -6,6 +6,7 @@
  *   --item=st          項目4: race_start_timings に行が無いレースへ、スタートの行を挿入する
  *   --item=exhibition  項目6: 展示タイムが無い艇（行が無い・行はあるが NULL）に、展示タイムの列だけを書く
  *   --item=conditions  項目5: race_conditions の NULL の列（天候・風向・風速・波高・ステージ）だけを埋める
+ *   --item=race_status 項目8（BOA-480）: race_results の race_status・refund_boats が NULL のレースを、K から導いて埋める
  *   --item=rate2       項目3: race_entries の2連率（全国・当地）の NULL だけを埋める（登録番号が一致する艇のみ）
  *
  * 書くのは項目ごとに決めた列だけ（kbGapFill.js の GAP_FILL_ITEMS）。書く直前に、すべての行の列の集合が同じかを
@@ -30,6 +31,7 @@ import {
   assertColumnSet,
   buildConditionsRows,
   buildExhibitionRows,
+  buildRaceStatusRows,
   buildRate2Rows,
   buildStartTimingRows,
 } from "../lib/kbGapFill.js";
@@ -75,7 +77,7 @@ const read = (table, columns, date, client) =>
  * 1日分の書く行を作る（DBの読み取りだけ）。
  * @returns {Promise<Object[]>}
  */
-export async function planDay(item, day, date, client = supabase) {
+export async function planDay(item, day, date, client = supabase, out = {}) {
   const def = GAP_FILL_ITEMS[item];
   if (!def) throw new Error(`--item が不正です: ${item}`);
   if (item === "st") {
@@ -96,9 +98,21 @@ export async function planDay(item, day, date, client = supabase) {
     return buildExhibitionRows(day, {
       raceIds: new Set(races.map((r) => r.race_id)),
       timeByKey: new Map(
-        existing.map((r) => [`${r.race_id}|${r.boat_number}`, r.exhibition_time]),
+        existing.map((r) => [
+          `${r.race_id}|${r.boat_number}`,
+          r.exhibition_time,
+        ]),
       ),
     });
+  }
+  if (item === "race_status") {
+    const rows = await read(def.table, "race_id, race_status", date, client);
+    const rows2 = buildRaceStatusRows(
+      day,
+      new Map(rows.map((r) => [r.race_id, r.race_status ?? null])),
+      out,
+    );
+    return rows2;
   }
   if (item === "conditions") {
     const rows = await read(def.table, def.columns.join(", "), date, client);
@@ -130,6 +144,8 @@ export async function writeRows(
   } = {},
 ) {
   const def = GAP_FILL_ITEMS[item];
+  if (def.mode === "groupUpdate")
+    return writeGrouped(def, rows, { client, pause });
   const at = now().toISOString();
   const stamped = def.stampUpdatedAt
     ? rows.map((r) => ({ ...r, updated_at: at }))
@@ -152,6 +168,42 @@ export async function writeRows(
       );
     }
     written += batch.length;
+  }
+  return written;
+}
+
+/**
+ * 同じ値（キー以外の列）ごとにまとめて update().in(key) で書く（race_results のように NOT NULL の列が多く、
+ * 対象の列だけの upsert ができない表）。nullGuardColumn が NULL の行だけを更新する（既存の値を上書きしない）。
+ */
+async function writeGrouped(def, rows, { client, pause }) {
+  assertColumnSet(rows, def.columns);
+  const key = def.keyColumns[0];
+  const groups = new Map();
+  for (const row of rows) {
+    const { [key]: id, ...values } = row;
+    const g = JSON.stringify(values);
+    if (!groups.has(g)) groups.set(g, { values, ids: [] });
+    groups.get(g).ids.push(id);
+  }
+  let written = 0;
+  let calls = 0;
+  for (const { values, ids } of groups.values()) {
+    for (let i = 0; i < ids.length; i += BATCH) {
+      if (calls++ > 0) await pause(PAUSE_MS);
+      const chunk = ids.slice(i, i + BATCH);
+      const { error } = await client
+        .from(def.table)
+        .update(values)
+        .in(key, chunk)
+        .is(def.nullGuardColumn, null);
+      if (error) {
+        throw new Error(
+          `${def.table} の書き込みに失敗しました（${written}行は書き込み済み。再実行すれば残りだけ書く）: ${error.message}`,
+        );
+      }
+      written += chunk.length;
+    }
   }
   return written;
 }
@@ -182,6 +234,8 @@ async function main() {
   );
   let total = 0;
   let written = 0;
+  const out = { anomalies: [] };
+  const tally = {};
   const missingDays = [];
   for (const date of datesBetween(from, to)) {
     const day = readParsedDay(dir, date);
@@ -189,14 +243,25 @@ async function main() {
       missingDays.push(date);
       continue;
     }
-    const rows = await planDay(item, day, date);
+    const rows = await planDay(item, day, date, supabase, out);
     total += rows.length;
+    for (const r of rows) {
+      if (r.race_status) tally[r.race_status] = (tally[r.race_status] ?? 0) + 1;
+    }
     if (rows.length > 0) console.log(`  ${date}: ${rows.length}行`);
     if (apply && rows.length > 0) written += await writeRows(item, rows);
   }
   console.log(
     `\n${apply ? "[APPLY]" : "[DRY-RUN]"} ${item}: 書く行 ${total}${apply ? `・書いた行 ${written}` : ""}${missingDays.length > 0 ? `・中間JSONの無い日 ${missingDays.length}（${missingDays.slice(0, 5).join(", ")}${missingDays.length > 5 ? " ほか" : ""}）` : ""}`,
   );
+  if (Object.keys(tally).length > 0) {
+    console.log(`  値の内訳: ${JSON.stringify(tally)}`);
+  }
+  if (out.anomalies.length > 0) {
+    console.log(
+      `  書かなかったレース（異常）: ${out.anomalies.length}件 ${JSON.stringify(out.anomalies.slice(0, 10))}${out.anomalies.length > 10 ? " ほか" : ""}`,
+    );
+  }
   if (missingDays.length > 0) process.exitCode = 1;
 }
 

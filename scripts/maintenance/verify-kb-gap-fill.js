@@ -9,6 +9,8 @@
  *   (e) 書き込み: すべての行の列の集合がそろう（そろわなければ書かずに例外）。upsert に送る行の列は項目の列（＋updated_at）
  *       だけ。挿入は既存の行に触れない（ignoreDuplicates）。1文200行以下
  *   (f) 変異検証: 上を壊した版で、検証が失敗する
+ *   (g) BOA-480: race_status・refund_boats を K から導く規則（返還は F・L0/L1・K0/K1、失格は返還しない、不成立の判定、
+ *       未知の表記は異常）と、書き込み（同じ値ごとに update().in()、race_status が NULL の行だけ）
  *
  * 実行: node scripts/maintenance/verify-kb-gap-fill.js
  */
@@ -444,6 +446,229 @@ for (const [label, rel, from, to] of MUTANTS) {
     `(f) 変異検証: 挿入で既存の行を上書きする → 検証が失敗する（${failed.length}項目）`,
     failed.length > 0,
   );
+}
+
+// ---------------------------------------------------------------------------
+// (g) BOA-480: race_status・refund_boats を K から導く（正解3,084件で100%一致した規則）
+// ---------------------------------------------------------------------------
+const kr = (codes, payouts, extra = []) => ({
+  rows: codes.map((c, i) => ({ boat_number: i + 1, finish_raw: c })),
+  payouts,
+  extra_lines: extra,
+});
+const PAID = [{ special: null }, { special: null }];
+function evaluateRaceStatus(g) {
+  const failed = [];
+  const expect = (label, got, want) => {
+    if (show(got) !== show(want)) failed.push(`${label} ${show(got)}`);
+  };
+  const d = g.deriveRaceStatusFromK;
+  expect("(g) 通常", d(kr(["01", "02", "03", "04", "05", "06"], PAID)), {
+    race_status: "normal",
+    refund_boats: [],
+  });
+  expect(
+    "(g) F・欠場は返還艇で partial",
+    d(kr(["01", "F", "02", "K0", "03", "04"], PAID)),
+    { race_status: "partial_refund", refund_boats: [2, 4] },
+  );
+  expect(
+    "(g) 失格（S0/S1/S2）は返還しない",
+    d(kr(["01", "S0", "S1", "02", "S2", "03"], PAID)),
+    { race_status: "normal", refund_boats: [] },
+  );
+  expect(
+    "(g) 一部の勝式だけ不成立（返還艇なし）は partial",
+    d(
+      kr(
+        ["01", "02", "S0", "S1", "S2", "S0"],
+        [{ special: null }, { special: "不成立" }],
+      ),
+    ),
+    { race_status: "partial_refund", refund_boats: [] },
+  );
+  expect(
+    "(g) 全勝式が不成立は no_race",
+    d(
+      kr(
+        ["00", "F", "F", "F", "F", "F"],
+        [{ special: "不成立" }, { special: "不成立" }],
+      ),
+    ),
+    { race_status: "no_race", refund_boats: [2, 3, 4, 5, 6] },
+  );
+  expect(
+    "(g) 付記に「レース不成立」は no_race（払戻0件）",
+    d(kr(["01", "02", "03", "04", "05", "06"], [], ["レース不成立"])),
+    { race_status: "no_race", refund_boats: [] },
+  );
+  expect(
+    "(g) 特払いは不成立に数えない",
+    d(kr(["01", "02", "03", "04", "05", "06"], [{ special: "特払い" }])),
+    { race_status: "normal", refund_boats: [] },
+  );
+  expect(
+    "(g) 未知の成績コードは異常",
+    "anomaly" in d(kr(["01", "Z9", "03", "04", "05", "06"], PAID)),
+    true,
+  );
+  expect(
+    "(g) 払戻0件で「レース不成立」も無いのは異常",
+    "anomaly" in d(kr(["01", "02", "03", "04", "05", "06"], [])),
+    true,
+  );
+
+  const day = {
+    date: DATE,
+    k: {
+      venues: [
+        {
+          venue_code: 1,
+          status: "complete",
+          races: [
+            {
+              race_number: 1,
+              ...kr(["01", "F", "02", "03", "04", "05"], PAID),
+            },
+            {
+              race_number: 2,
+              ...kr(["01", "02", "03", "04", "05", "06"], PAID),
+            },
+            {
+              race_number: 3,
+              ...kr(["01", "02", "03", "04", "05", "06"], PAID),
+            },
+          ],
+        },
+        {
+          venue_code: 2,
+          status: "pending",
+          races: [
+            {
+              race_number: 1,
+              ...kr(["01", "02", "03", "04", "05", "06"], PAID),
+            },
+          ],
+        },
+      ],
+    },
+  };
+  const out = { anomalies: [] };
+  const rows = g.buildRaceStatusRows(
+    day,
+    new Map([
+      [R1, null],
+      [R2, "normal"], // 既存の値は上書きしない
+      [`${DATE}-02-01`, null],
+    ]),
+    out,
+  );
+  expect(
+    "(g) NULL の行だけ（既存の値・race_results に行の無い R3 は作らない）",
+    rows,
+    [{ race_id: R1, race_status: "partial_refund", refund_boats: [2] }],
+  );
+  expect(
+    "(g) K の会場が未完（pending）は書かずに異常",
+    out.anomalies.map((a) => a.race_id),
+    [`${DATE}-02-01`],
+  );
+  return failed;
+}
+
+async function evaluateGroupWrite(cli) {
+  const failed = [];
+  const calls = [];
+  const client = {
+    from: (table) => {
+      const call = { table, filters: [] };
+      const q = {
+        update: (values) => ((call.values = values), q),
+        in: (col, ids) => (call.filters.push(["in", col, ids.length]), q),
+        is: (col, v) => (
+          call.filters.push(["is", col, v]),
+          calls.push(call),
+          Promise.resolve({ error: null })
+        ),
+      };
+      return q;
+    },
+  };
+  const rows = [
+    ...Array.from({ length: 450 }, (_, i) => ({
+      race_id: `N${i}`,
+      race_status: "normal",
+      refund_boats: [],
+    })),
+    { race_id: "P1", race_status: "partial_refund", refund_boats: [2] },
+  ];
+  const written = await cli.writeRows("race_status", rows, {
+    client,
+    pause: async () => {},
+  });
+  if (written !== 451) failed.push(`(g) 書いた件数 ${written}`);
+  if (show(calls.map((c) => c.filters[0][2])) !== show([200, 200, 50, 1]))
+    failed.push(
+      `(g) 同じ値ごとに200件ずつ ${show(calls.map((c) => c.filters))}`,
+    );
+  if (
+    !calls.every(
+      (c) =>
+        c.table === "race_results" &&
+        show(c.filters[1]) === show(["is", "race_status", null]),
+    )
+  )
+    failed.push(
+      "(g) race_status が NULL の行だけを更新する（既存の値を上書きしない）",
+    );
+  if (
+    show(calls[3]?.values) !==
+    show({ race_status: "partial_refund", refund_boats: [2] })
+  )
+    failed.push(
+      `(g) 更新する値は race_status・refund_boats だけ ${show(calls[3]?.values)}`,
+    );
+  return failed;
+}
+
+{
+  const rs = evaluateRaceStatus(g);
+  check("(g) race_status の導出（BOA-480）", rs.length === 0, rs.join(" / "));
+  const gw = await evaluateGroupWrite(cli);
+  check(
+    "(g) race_status の書き込み（同じ値ごと・NULL の行だけ）",
+    gw.length === 0,
+    gw.join(" / "),
+  );
+  for (const [label, rel, from, to, run] of [
+    [
+      "失格（S0）も返還に数える",
+      "scripts/lib/kbGapFill.js",
+      'const REFUND_CODES = new Set(["F", "L0", "L1", "K0", "K1"]);',
+      'const REFUND_CODES = new Set(["F", "L0", "L1", "K0", "K1", "S0"]);',
+      (m) => evaluateRaceStatus(m),
+    ],
+    [
+      "既存の race_status を上書きする",
+      "scripts/lib/kbGapFill.js",
+      "if (!statusByRace.has(raceId) || statusByRace.get(raceId) !== null) continue;",
+      "if (!statusByRace.has(raceId)) continue;",
+      (m) => evaluateRaceStatus(m),
+    ],
+    [
+      "NULL の行に限らず更新する",
+      "scripts/maintenance/backfill-kb-gaps.js",
+      ".is(def.nullGuardColumn, null);",
+      ".is(def.keyColumns[0], null);",
+      (m) => evaluateGroupWrite(m),
+    ],
+  ]) {
+    const failed = await withMutant(rel, from, to, run);
+    check(
+      `(g) 変異検証: ${label} → 検証が失敗する（${failed.length}項目）`,
+      failed.length > 0,
+    );
+  }
 }
 
 if (failures > 0) {
