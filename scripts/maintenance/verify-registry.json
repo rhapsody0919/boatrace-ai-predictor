@@ -562,6 +562,11 @@
       "script": "verify-middleware-routing.js",
       "tier": "ci",
       "guards": "middleware.js の管理画面Basic認証（/admin/rules・/admin/sns-hub は認証なしで401、一般ページは素通り、環境変数が未設定・空なら拒否、':'入りパスワードは最初の':'で分割、UTF-8で復号、壊れたbase64で例外を出さず401。判定は api/_lib/adminAuth.js の requireAdminAuth と共有）と、AIスナップショット配信の経路（resolveSnapshotPath が返すパスが config.matcher に一致し、管理画面がスナップショットに振り分けられないこと）。BOA-555で /admin/rules が本番で認証なしに開けていた"
+    },
+    {
+      "script": "verify-pit-report-backfill.js",
+      "tier": "ci",
+      "guards": "ピットレポートの取り直し（backfill-pit-reports.js）が、行の無いレースと、コメントが出走表の艇数に満たないレースだけを選び、not_target・全艇そろったレース・対象外のグレードを取り直さないこと。前後のコメント数の集計（BOA-611。取得ジョブが公開直後の1回しか取らず、9/21〜10/1 の57レースでコメントが欠けていた）"
     }
   ]
 }
