@@ -91,6 +91,13 @@
       "id": "venue-recrawl-request",
       "description": "Search Console で会場ページ（/venue/:code）の「インデックス登録をリクエスト」を実施（ユーザー実施、PR#991 のマージ後）。実施前の最終クロールは /venue/16 が 8/31、/venue/13 が 9/5。ダービー（尼崎 10/27〜）前に反映を確認し、10/20 ごろに再リクエストの要否を判断する",
       "ref": "Search Console（ユーザー操作）"
+    },
+    {
+      "date": "2026-10-01",
+      "kind": "measure",
+      "id": "home-ai-intro-remove-hit-rate",
+      "description": "トップの「龍神レーダーのボートレースAI予想」から展開予測の実測的中率の行を外し、ja の meta description から「展開予測の実測的中率とあわせて公開」を外した（ユーザー判断。的中率が決まり手を見ずに判定されており、予想なしの基準を下回ることが分かった。BOA-617）。説明文と /accuracy・/hit-races へのリンクは残す。本番反映はマージ日",
+      "ref": "PR（トップの実測的中率の行を外す）"
     }
   ]
 }
