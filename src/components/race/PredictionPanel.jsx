@@ -598,7 +598,12 @@ function PredictionPanel({
             "unified",
             t,
           )}
-          hashtags={["ボートレース", "AI予想", "龍神レーダー"]}
+          hashtags={
+            // 中止のレースは予想を出さないので「AI予想」のタグを外す
+            isCancelled
+              ? ["ボートレース", "龍神レーダー"]
+              : ["ボートレース", "AI予想", "龍神レーダー"]
+          }
           size={40}
         />
       </div>
