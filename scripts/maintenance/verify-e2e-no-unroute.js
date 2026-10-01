@@ -13,6 +13,7 @@
  * 検出するもの（コメント・文字列・正規表現リテラルの中は除く）:
  *   - `.unroute(` / `.unrouteAll(`
  *   - `.route(` の第3引数に `times` がある呼び出し（指定回数で自動的に外れ、0件になりうる）
+ *     第3引数がオブジェクトリテラルでない（変数等で times の有無を読めない）呼び出しも検出する
  * 代わりの書き方: 上に page.route を重ねる（後から登録したものが先に評価される）か、
  * フラグを倒して route.fallback() に回す。
  *
@@ -49,16 +50,21 @@ export function stripNonCode(source) {
       if (out[k] !== "\n") out[k] = " ";
     }
   };
-  const prevSignificant = (i) => {
+  // i の位置の `/` が正規表現リテラルの始まりか（割り算ではないか）
+  const startsRegex = (i) => {
     let k = i - 1;
     while (k >= 0 && /\s/.test(out[k])) k -= 1;
-    if (k < 0) return "";
+    if (k < 0) return true;
     // return / typeof 等のキーワードの後も正規表現
     const word = source.slice(0, k + 1).match(/[A-Za-z_$]+$/);
-    if (word && ["return", "typeof", "case", "in", "of"].includes(word[0])) {
-      return "(";
+    if (word) {
+      return ["return", "typeof", "case", "in", "of"].includes(word[0]);
     }
-    return out[k];
+    // a++ / 2・a-- / 2 は割り算
+    if ((out[k] === "+" || out[k] === "-") && out[k - 1] === out[k]) {
+      return false;
+    }
+    return REGEX_PRECEDERS.has(out[k]);
   };
   let i = 0;
   while (i < source.length) {
@@ -84,10 +90,7 @@ export function stripNonCode(source) {
       }
       blank(i + 1, k);
       i = k + 1;
-    } else if (
-      c === "/" &&
-      (prevSignificant(i) === "" || REGEX_PRECEDERS.has(prevSignificant(i)))
-    ) {
+    } else if (c === "/" && startsRegex(i)) {
       let k = i + 1;
       let inClass = false;
       while (k < source.length && source[k] !== "\n") {
@@ -142,8 +145,12 @@ export function findViolations(source) {
   for (const m of code.matchAll(/\.route\s*\(/g)) {
     const open = m.index + m[0].length - 1;
     const third = splitArgs(code, open)[2];
-    if (third !== undefined && /\btimes\b/.test(third)) {
+    if (third === undefined) continue;
+    if (/\btimes\b/.test(third)) {
       violations.push({ line: lineOf(code, m.index), kind: "route-times" });
+    } else if (!/^\s*\{/.test(third)) {
+      // 変数等でオプションを渡すと times の有無を読めないので、オブジェクトリテラルで書かせる
+      violations.push({ line: lineOf(code, m.index), kind: "route-opts" });
     }
   }
   return violations.sort((a, b) => a.line - b.line);
@@ -152,6 +159,8 @@ export function findViolations(source) {
 const MESSAGES = {
   unroute: "page.unroute で page のルートが0件になりうる",
   unrouteAll: "unrouteAll で page のルートが0件になる",
+  "route-opts":
+    "route の第3引数はオブジェクトリテラルで書く（変数だと times の有無を検査できない）",
   "route-times":
     "times 付きの route は回数に達すると外れ、page のルートが0件になりうる",
 };
@@ -255,6 +264,21 @@ function selfTest() {
       "割り算は正規表現と誤らない",
       "const a = b / 2; await page.unroute(x); const c = d / 3;",
       1,
+    ],
+    [
+      "後置インクリメントの後の割り算で後ろを消さない",
+      "x = a++ / 2; await page.unroute(y);",
+      1,
+    ],
+    [
+      "第3引数が変数の route は検出する（times の有無を読めない）",
+      'await page.route("**/a", h, opts);',
+      1,
+    ],
+    [
+      "第3引数が times の無いオブジェクトなら検出しない",
+      'await page.route("**/a", h, {});',
+      0,
     ],
     // 修正前の #1084（6e71b77c^）の書き方
     [
@@ -366,11 +390,11 @@ function main() {
     explicit.length > 0
       ? explicit.map((p) => path.resolve(p))
       : e2eFiles(E2E_DIR);
-  // 指定ファイルの検査（修正前の版を渡す等）でも許可リストが当たるよう、ラベルは e2e/<名前> に揃える
-  const label = (p) =>
-    explicit.length > 0
-      ? `e2e/${path.basename(p)}`
-      : path.relative(ROOT, p).split(path.sep).join("/");
+  // e2e/ の外（修正前の版を書き出したもの等）は e2e/<名前> とみなす
+  const label = (p) => {
+    const rel = path.relative(ROOT, p).split(path.sep).join("/");
+    return rel.startsWith("e2e/") ? rel : `e2e/${path.basename(p)}`;
+  };
   const found = targets.flatMap((p) => scan(label(p), readFileSync(p, "utf8")));
 
   const allowlist = JSON.parse(readFileSync(ALLOWLIST_PATH, "utf8"));
