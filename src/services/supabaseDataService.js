@@ -382,23 +382,37 @@ function chunkArray(array, size) {
   return chunks;
 }
 
+// fetchAllByIn のページングで使う、テーブルごとの一意な並び（主キー）。ORDER BY が無いと、PostgreSQL は
+// 行の順序を保証しないため、.range() のページの境目で行が重複・欠落しうる（BOA-595。races では BOA-301 で
+// 実際に起きた）。ここに無いテーブルを渡すと例外にする（並びを決めずにページングさせない）
+export const FETCH_ALL_BY_IN_ORDER = Object.freeze({
+  races: ["race_id"],
+  race_results: ["race_id"],
+  race_conditions: ["race_id"],
+  race_entries: ["race_id", "boat_number"],
+  exhibition_data: ["race_id", "boat_number"],
+  race_start_timings: ["race_id", "boat_number"],
+  race_original_exhibition_values: ["race_id", "boat_number", "kind"],
+});
+
 // Supabaseのデフォルトlimit(1000行)を超えるin()クエリを.range()でページネーションして全件取得する
 // （race_id 1件につき最大6艇分の行がある race_start_timings/exhibition_data 等、
-// 「in()のキー数 × 1行あたりの行数」が1000を超えうるクエリで使用する）
+// 「in()のキー数 × 1行あたりの行数」が1000を超えうるクエリで使用する）。
+// 取得の失敗は、クライアントの .throwOnError() 既定（ADR-0069）で例外になる（途中までの結果を返さない）
 async function fetchAllByIn(table, select, column, values) {
+  const orderKeys = FETCH_ALL_BY_IN_ORDER[table];
+  if (!orderKeys) {
+    throw new Error(
+      `fetchAllByIn: ${table} の並び（主キー）が FETCH_ALL_BY_IN_ORDER に無い`,
+    );
+  }
   const results = [];
   const pageSize = 1000;
   let from = 0;
   while (true) {
-    const { data, error } = await supabase
-      .from(table)
-      .select(select)
-      .in(column, values)
-      .range(from, from + pageSize - 1);
-    if (error) {
-      console.error(`${table}取得エラー:`, error.message);
-      break;
-    }
+    let query = supabase.from(table).select(select).in(column, values);
+    for (const key of orderKeys) query = query.order(key);
+    const { data } = await query.range(from, from + pageSize - 1);
     if (!data || data.length === 0) break;
     results.push(...data);
     if (data.length < pageSize) break;
