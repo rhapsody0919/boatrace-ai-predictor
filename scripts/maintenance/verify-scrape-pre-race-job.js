@@ -624,6 +624,28 @@ async function exhibitionShadowWritesNothing(run) {
     show(second.result),
   );
 
+  // Kファイルから展示タイムだけを入れた行（展示ST は NULL）は「取得済み」にしない（BOA-271 の前提の補完）。
+  // 直前情報で展示ST・チルト・体重を後から補えるようにする
+  const kOnlyDb = freshDb();
+  kOnlyDb.state.tables.exhibition_data = [1, 2, 3, 4, 5, 6].map((boat) => ({
+    race_id: RACE,
+    boat_number: boat,
+    exhibition_time: 6.7,
+    start_timing: null,
+  }));
+  const kOnly = await runExhibition(realExhibitionRun, kOnlyDb, {
+    mode: "live",
+  });
+  check(
+    "A2 live: 展示タイムだけの行（Kファイルからの補完。展示ST なし）は取得済みにせず、直前情報を取得して書く",
+    kOnly.result.outcome === "ok" &&
+      kOnly.fetcher.calls.length === 1 &&
+      upsertsOf(kOnlyDb, "exhibition_data")
+        .flatMap((u) => u.rows)
+        .some((row) => row.start_timing !== null),
+    show(kOnly.result),
+  );
+
   const shadowDb = freshDb();
   const shadow = await runExhibition(realExhibitionRun, shadowDb, {
     mode: "shadow",
@@ -1146,7 +1168,12 @@ for (const [job, createHandleSlot, offset] of [
     db: (() => {
       const db = freshDb();
       db.state.tables.exhibition_data = [
-        { race_id: RACE, boat_number: 2, exhibition_time: 6.9 },
+        {
+          race_id: RACE,
+          boat_number: 2,
+          exhibition_time: 6.9,
+          start_timing: 0.15,
+        },
       ];
       return db;
     })(),
@@ -2039,7 +2066,13 @@ const sumiFetcher = (html = BEFORE_AFTER_START_HTML) =>
 const sumiDbWithData = () => {
   const db = freshDb();
   db.state.tables.exhibition_data = [
-    { race_id: SUMI_RACE, boat_number: 1, exhibition_time: 6.89 },
+    // 取得済み＝展示タイムと展示STの両方がある行（BOA-271 の前提の補完で、展示STも条件にした）
+    {
+      race_id: SUMI_RACE,
+      boat_number: 1,
+      exhibition_time: 6.89,
+      start_timing: 0.12,
+    },
   ];
   return db;
 };
