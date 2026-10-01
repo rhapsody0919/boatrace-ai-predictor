@@ -88,7 +88,10 @@
     "backToVenues": "← Back to venues",
     "jumpToNextRace": "Go to R{{race}}",
     "nextDeadlineMarker": "{{venue}}: next deadline R{{race}} {{time}}",
-    "allClosedMarker": "{{venue}}: all races today have closed"
+    "allClosedMarker": "{{venue}}: all races today have closed",
+    "todayTitle": "Today's races & AI predictions",
+    "metaTitleSeries": "Today's races at {{venue}} ({{series}}) - AI data analysis | Ryujin Radar",
+    "metaDescriptionSeries": "All of today's races at {{venue}} boat race stadium during {{series}}. Check deadlines and grades, then view AI data analysis for each race."
   },
   "venueCharacteristics": {
     "collapsedTeaser": "{{summary}} / Boat 1 win rate {{rate}}%",

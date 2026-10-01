@@ -87,7 +87,10 @@
     "backToVenues": "← 返回賽場一覽",
     "jumpToNextRace": "前往{{race}}R",
     "nextDeadlineMarker": "{{venue}}　下一場截止 {{race}}R {{time}}",
-    "allClosedMarker": "{{venue}}　今日比賽皆已截止"
+    "allClosedMarker": "{{venue}}　今日比賽皆已截止",
+    "todayTitle": "今日賽程・AI預測",
+    "metaTitleSeries": "{{venue}}今日賽程（{{series}}）・AI數據分析 - 龍神雷達",
+    "metaDescriptionSeries": "{{venue}}賽艇場舉辦{{series}}期間的今日全部比賽一覽。確認截止時間與級別後，可查看各場比賽的AI數據分析。"
   },
   "venueCharacteristics": {
     "collapsedTeaser": "{{summary}}／1號艇第1名率 {{rate}}%",
