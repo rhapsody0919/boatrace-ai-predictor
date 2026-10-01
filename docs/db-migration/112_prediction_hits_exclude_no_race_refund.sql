@@ -124,7 +124,7 @@ BEGIN
             AND p.top_2nd = NEW.rank2
             AND p.top_3rd = NEW.rank3
         ) END,
-        is_hit_turn = CASE WHEN judgeable THEN p.is_hit_turn END,
+        is_hit_turn = CASE WHEN NEW.race_status = 'no_race' THEN NULL ELSE p.is_hit_turn END,
         payout_win = CASE
             WHEN NOT j.win THEN NULL
             WHEN p.top_pick = NEW.rank1 THEN COALESCE(NEW.payout_win, 0)

@@ -280,6 +280,24 @@ async function evaluateTrigger(sql, judge) {
         `トリガー ${c.name}: bet_recommendations.actual_hit が is_hit_win と一致しない`,
       );
   }
+  // rank1 が無い行（結果の書きかけ）では、展開予測を消さない
+  {
+    const raceId = "2026-09-30-02-02";
+    await db.query(
+      `INSERT INTO predictions (race_id, model_id, top_pick, top_2nd, top_3rd, is_hit_turn) VALUES ($1, 'standard', 1, 2, 3, true)`,
+      [raceId],
+    );
+    await db.query(
+      `INSERT INTO race_results (race_id, race_status) VALUES ($1, 'normal')`,
+      [raceId],
+    );
+    const { rows } = await db.query(
+      `SELECT is_hit_turn FROM predictions WHERE race_id = $1`,
+      [raceId],
+    );
+    if (rows[0].is_hit_turn !== true)
+      failed.push("rank1 が無い結果で is_hit_turn を消した");
+  }
   // race_status だけの更新（確定後の修正）でも判定をやり直す
   {
     const raceId = "2026-09-30-02-01";
@@ -394,6 +412,70 @@ async function evaluateFix(fixMissingHitFlags) {
 }
 
 // ---------------------------------------------------------------------------
+// (c2) 書き直しの CLI（backfill-refund-hit-flags.js の planRefundHitBackfill）
+function evaluatePlan(m) {
+  const failed = [];
+  const result = {
+    rank1: 1,
+    rank2: 2,
+    rank3: 3,
+    ...PAY,
+    race_status: "partial_refund",
+    refund_boats: [6],
+  };
+  const noRace = {
+    ...result,
+    race_id: "R2",
+    race_status: "no_race",
+    refund_boats: [2, 3],
+  };
+  const base = {
+    ...PRED,
+    ...TURN,
+    is_hit_win: true,
+    is_hit_place: true,
+    is_hit_trifecta: true,
+    is_hit_trio: true,
+    payout_win: 150,
+    payout_place: 110,
+    payout_trifecta: 500,
+    payout_trio: 900,
+  };
+  const plan = m.planRefundHitBackfill(
+    [
+      { ...base, prediction_id: 1, race_id: "R1", is_hit_turn: null }, // 旧モデルで展開予測が NULL のまま
+      { ...base, prediction_id: 2, race_id: "R2", is_hit_turn: true }, // 不成立
+      {
+        ...base,
+        prediction_id: 3,
+        race_id: "R1",
+        top_3rd: 6,
+        is_hit_turn: true,
+      }, // 3番手が返還艇
+    ],
+    new Map([
+      ["R1", { ...result, race_id: "R1" }],
+      ["R2", noRace],
+    ]),
+  );
+  const ids = plan.map((p) => p.prediction.prediction_id);
+  if (!same(ids, [2, 3]))
+    failed.push(
+      `書き直す予想 ${JSON.stringify(ids)}（期待 [2,3]。展開予測の NULL は埋めない）`,
+    );
+  if (
+    plan.find((p) => p.prediction.prediction_id === 2)?.update.is_hit_turn !==
+    null
+  )
+    failed.push("不成立の予想の展開予測を NULL にする");
+  if (
+    plan.find((p) => p.prediction.prediction_id === 3)?.update.is_hit_turn !==
+    true
+  )
+    failed.push("一部返還の予想の展開予測は今の値のまま");
+  return failed;
+}
+
 // (d) 成績集計
 // ---------------------------------------------------------------------------
 function evaluateAccuracy(m) {
@@ -476,6 +558,12 @@ check(
   fixFailed.length === 0,
   fixFailed.join(" / "),
 );
+const planFailed = evaluatePlan(await import("./backfill-refund-hit-flags.js"));
+check(
+  "(c2) 書き直しの CLI: 判定の変わる予想だけ・展開予測は不成立で NULL にするだけ",
+  planFailed.length === 0,
+  planFailed.join(" / "),
+);
 const accFailed = evaluateAccuracy(accuracy);
 check(
   "(d) 成績集計: 券種ごとの母数",
@@ -512,6 +600,13 @@ const MUTANTS = [
     "pred.top_3rd != null && isBetJudgeable(result, top3)",
     "pred.top_3rd != null && isJudgeable(result)",
     (m) => evaluateJudge(m),
+  ],
+  [
+    "書き直し: 展開予測の NULL を埋める",
+    "scripts/maintenance/backfill-refund-hit-flags.js",
+    "if (isJudgeable(result)) update.is_hit_turn",
+    "if (false) update.is_hit_turn",
+    (m) => evaluatePlan(m),
   ],
   [
     "判定: 展開予測で不成立を見ない",
@@ -552,6 +647,11 @@ const SQL_MUTANTS = [
     "トリガー: 不成立を見ない",
     "AND NEW.race_status IS DISTINCT FROM 'no_race';",
     ";",
+  ],
+  [
+    "トリガー: rank1 が無いと展開予測を消す",
+    "CASE WHEN NEW.race_status = 'no_race' THEN NULL ELSE p.is_hit_turn END",
+    "CASE WHEN judgeable THEN p.is_hit_turn END",
   ],
   [
     "トリガー: 発火条件に race_status を入れない",

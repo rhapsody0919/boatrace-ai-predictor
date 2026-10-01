@@ -18,6 +18,7 @@ import {
   buildPredictionHitUpdate,
 } from "../lib/hitCalculator.js";
 import { summarizeHits } from "../daily/calculate-accuracy.js";
+import { isJudgeable } from "../../src/utils/raceOutcome.js";
 
 const MODELS = ["standard", "safeBet", "upsetFocus", "unified"];
 
@@ -33,6 +34,10 @@ export function planRefundHitBackfill(predictions, resultsByRace) {
     const result = resultsByRace.get(prediction.race_id);
     if (!result || result.rank1 == null) continue;
     const update = buildPredictionHitUpdate(prediction, result);
+    // 展開予測は、不成立で NULL にするだけ。それ以外は今の値のまま（このCLIの目的外。旧モデルで is_hit_turn が
+    // NULL のままの予想に、値を埋めない）
+    if (isJudgeable(result))
+      update.is_hit_turn = prediction.is_hit_turn ?? null;
     const changed = HIT_COLUMNS.filter(
       (c) => (prediction[c] ?? null) !== update[c],
     );
