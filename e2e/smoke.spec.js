@@ -1800,6 +1800,43 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await wrap.waitFor({ timeout: 30000 });
     const w = await wrap.evaluate((el) => [el.scrollWidth, el.clientWidth]);
     expect(w[0]).toBeLessThanOrEqual(w[1]);
+    // 決まり手・種別は1行に収める（2周目: 折り返すと「ウインウイン７」が1文字ずつ
+    // 縦に並び、行の高さがばらばらになった）
+    const subLines = await wrap
+      .locator(".rrt-sub")
+      .evaluateAll((els) =>
+        els.map((el) =>
+          Math.round(
+            el.getBoundingClientRect().height /
+              parseFloat(getComputedStyle(el).lineHeight || "12"),
+          ),
+        ),
+      );
+    expect(subLines.every((n) => n <= 1)).toBe(true);
+  });
+
+  test("PC の選手ページのレース一覧で、種別を途中で折らず省略もしない（BOA-623 ファン評価2周目）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    // 選手5250: 「予選特賞女子」「ＤＤ目玉女子」が「女 / 子」で折れていた
+    await page.goto("/racer/5250");
+    const table = page.locator(".racer-vc-race-list .rrt-table");
+    await table.waitFor({ timeout: 30000 });
+    const bad = await table
+      .locator(".rrt-sub")
+      .evaluateAll((els) =>
+        els
+          .filter(
+            (el) =>
+              el.scrollWidth > el.clientWidth + 1 ||
+              el.getClientRects().length > 1 ||
+              el.getBoundingClientRect().height >
+                parseFloat(getComputedStyle(el).lineHeight) * 1.5,
+          )
+          .map((el) => el.textContent),
+      );
+    expect(bad).toEqual([]);
   });
 
   test("選手ページのレース一覧も、節の見出し行つきの6列で出す（BOA-623）", async ({

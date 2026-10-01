@@ -129,7 +129,11 @@ function RecentRunsTable({
                 <td className="rrt-left">
                   {race.raceNo != null ? `${race.raceNo}R` : "-"}
                   {race.raceStage && (
-                    <span className="rrt-sub" translate="no">
+                    <span
+                      className="rrt-sub"
+                      translate="no"
+                      title={race.raceStage}
+                    >
                       {race.raceStage}
                     </span>
                   )}
@@ -153,7 +157,10 @@ function RecentRunsTable({
                 >
                   {renderFinish(race)}
                   {race.finishRank === 1 && race.winningTechnique != null && (
-                    <span className="rrt-sub">
+                    <span
+                      className="rrt-sub"
+                      title={translateTechnique(t, race.winningTechnique)}
+                    >
                       {translateTechnique(t, race.winningTechnique)}
                     </span>
                   )}

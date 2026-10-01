@@ -98,12 +98,16 @@
 
 /* R の下のレース種別、着順の下の決まり手。長い語（英語の決まり手「Makuri-zashi
    (Sweep & pass)」、種別「ランチタイム戦」）で列が広がり、375px で着順が画面外に
-   出たので、幅を決めて折り返す（BOA-623 ファン評価1周目） */
+   出た（1周目）。折り返すと「ウインウイン７」が1文字ずつ縦に並び、行の高さが
+   ばらばらになった（2周目）。1行に収め、はみ出す分は「…」にする（全文は title）。
+   PC では幅が余るので省略しない */
 .rrt-sub {
   display: block;
   max-width: 5.5em;
   margin-inline: auto;
-  white-space: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   font-weight: var(--font-weight-normal);
@@ -155,5 +159,15 @@
 
   .rrt-table .rrt-pc {
     display: table-cell;
+  }
+
+  .rrt-sub {
+    max-width: none;
+    overflow: visible;
+  }
+
+  /* 表を中央に置くので、凡例も表の下の中央にそろえる（2周目: 左端に離れていた） */
+  .rrt-legend {
+    text-align: center;
   }
 }
