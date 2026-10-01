@@ -285,6 +285,8 @@
     "refundTag": "반환정 있음",
     "partialNoRaceTag": "일부 승식 불성립",
     "payoutNoRace": "불성립(반환)",
+    "payoutNoAmount": "공식 배당금에 금액이 기재되어 있지 않습니다",
+    "payoutNoAmountNote": "「—」는 공식 배당금에 금액이 기재되어 있지 않은 조합입니다",
     "payoutSpecial": "특별 지급",
     "volatilityOutcomeNotJudgeable": "판정 대상 외(불성립)",
     "stLegend": "오른쪽 화살표는 스타트 타이밍(ST). 노란 선이 스타트 라인이며, 선에 가까울수록 빠른 스타트. 선을 넘은 빨간 화살표는 플라잉"
@@ -312,7 +314,9 @@
     },
     "exhibition": "전시",
     "exhibitionCell": "{{time}}({{rank}})",
-    "startTimingCell": "{{time}}({{rank}})"
+    "startTimingCell": "{{time}}({{rank}})",
+    "stRankLegend": "ST 옆 ( ) 안의 숫자는 그 경주 6척 중 순위(F 제외)",
+    "finishUnknownShort": "착외"
   },
   "panel": {
     "noData": "예측 데이터가 없습니다",
@@ -594,7 +598,16 @@
     "periodHeader": "기간·조건",
     "nHeader": "주수",
     "allCoursesFold": "전체 6개 코스 성적 보기",
-    "periodCaveat": "※'이번 기'는 공식 기 구분이 아니라 당사 데이터로 확인할 수 있는 전체 기간(2025년 12월 이후, 최대 과거 2년)을 대상으로 합니다. 공식 사이트의 승률과는 모집단이 다릅니다."
+    "periodCaveat": "※'이번 기'는 공식 기 구분이 아니라 당사 데이터로 확인할 수 있는 전체 기간(2025년 12월 이후, 최대 과거 2년)을 대상으로 합니다. 공식 사이트의 승률과는 모집단이 다릅니다.",
+    "recentFinishesNoteScoped": "{{scope}}{{course}}코스(실제 진입 코스)에서 출주한 최근 {{n}}경기",
+    "recentScope": {
+      "current": "2025년 12월 이후 ",
+      "last3m": "최근 3개월 ",
+      "last1m": "최근 1개월 ",
+      "local": "당지 ",
+      "ippan": "일반전 ",
+      "sgg1": "SG·G1 "
+    }
   },
   "aiPredictionTab": {
     "cancelled": "이 경주는 중지되어 AI 예상이 없습니다",
@@ -867,6 +880,7 @@
     "periodSummary": "▸ 기간으로 좁히기",
     "periodCaveat": "※등급 조건과 조합한 「이번 기」는 공식 기 구분이 아니라, 당사 데이터로 확인할 수 있는 전체 기간(2025년 12월 이후, 최대 과거 2년)을 대상으로 합니다",
     "winRateSwitchCaveat": "※등급, 기간을 좁힌 「승률」은 공식 승률 점수가 아니라, 해당 조건에서 실제로 1착이 된 비율(%)을 표시합니다",
+    "relativeBarNote": "※막대 길이는 이 6정 안에서의 비교입니다. 차이가 작아도 길이는 크게 벌어지므로, 차이의 크기는 숫자로 확인해 주세요",
     "sampleCount": "(n={{n}})",
     "noData": "(데이터 없음)",
     "viewTrend": "최근 10경기",
@@ -874,7 +888,7 @@
     "loading": "불러오는 중...",
     "noHistory": "출주 이력 데이터가 없습니다",
     "noVenueData": "경기장별 성적 데이터가 없습니다(규정 경기 수 미만)",
-    "trendNote": "최근 10경기(위의 등급·기간 조건과 관계없이 항상 최신 10경기를 표시. 날짜를 누르면 해당 경주 상세로 이동)",
+    "trendNote": "이 경주 이전의 최근 10경기(최신순, 위의 등급·기간 조건과 관계없음). 행을 누르면 해당 경주 상세로 이동",
     "finishUnknown": "착외(순위 불명)",
     "finishAbsent": "결장",
     "venueRankingFor": "{{metric}} 랭킹",
@@ -1841,7 +1855,10 @@
     "hiddenOlder": " (← 왼쪽에 {{n}}경주 더)",
     "flying": "F",
     "stRank": "({{n}}위)",
-    "legend": "위는 실제 진입 코스, 가운데는 착순, 아래는 ST와 그 경주에서의 ST 순위"
+    "legend": "맨 위는 날짜, 다음은 실제 진입 코스·착순·ST와 그 경주 내 ST 순위. 타일을 누르면 그 경주의 경정장·R·종별이 아래에 나옵니다",
+    "detail": "{{date}} {{venue}} {{race}}R{{stage}} · {{course}} · {{finish}} · ST {{st}}",
+    "stageWithGrade": " ({{grade}} {{stage}})",
+    "stageOnly": " ({{stage}})"
   },
   "venueDaySummary": {
     "collapsedTeaser": "확정 {{n}}R · 1번 보트 도망 비율 {{rate}}%",

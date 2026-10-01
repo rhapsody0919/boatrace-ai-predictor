@@ -1,0 +1,38 @@
+{
+  "$comment": [
+    "verify-actionlint.js が使う actionlint と shellcheck の固定版（BOA-659）。install-actionlint.js がここを読んで取得し、sha256 を照合する。",
+    "版を上げるときは version と全プラットフォームの sha256 を同時に書き換える。actionlint は公式の actionlint_<版>_checksums.txt、shellcheck は配布物を取得して shasum -a 256 で求める。",
+    "版を上げると指摘が増減しうる。actionlint-allowlist.json の更新も同じPRで行う。",
+    "プラットフォームのキーは Node の process.platform-process.arch。CI（ubuntu-latest）は linux-x64、手元の Mac は darwin-arm64。"
+  ],
+  "actionlint": {
+    "version": "1.7.12",
+    "assets": {
+      "linux-x64": {
+        "url": "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz",
+        "sha256": "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8",
+        "binary": "actionlint"
+      },
+      "darwin-arm64": {
+        "url": "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_arm64.tar.gz",
+        "sha256": "aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f",
+        "binary": "actionlint"
+      }
+    }
+  },
+  "shellcheck": {
+    "version": "0.11.0",
+    "assets": {
+      "linux-x64": {
+        "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.gz",
+        "sha256": "b7af85e41cc99489dcc21d66c6d5f3685138f06d34651e6d34b42ec6d54fe6f6",
+        "binary": "shellcheck-v0.11.0/shellcheck"
+      },
+      "darwin-arm64": {
+        "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.aarch64.tar.gz",
+        "sha256": "339b930feb1ea764467013cc1f72d09cd6b869ebf1013296ba9055ab2ffbd26f",
+        "binary": "shellcheck-v0.11.0/shellcheck"
+      }
+    }
+  }
+}

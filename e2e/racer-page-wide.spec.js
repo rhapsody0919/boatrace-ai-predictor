@@ -9,11 +9,12 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
   }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/racer/4069");
-    const table = page.locator(".race-history-table").first();
+    // レース一覧は6列＋節の見出し行の表（BOA-623）
+    const table = page.locator(".racer-vc-race-list .rrt-table").first();
     await expect(table).toBeVisible({ timeout: 30000 });
     // 以前はページの上限 800px で表示枠 734px、表 887px（決まり手・単勝配当が枠外）
     const m = await table.evaluate((el) => {
-      const w = el.closest(".race-history-table-wrapper");
+      const w = el.closest(".rrt-wrap");
       return { sw: w.scrollWidth, cw: w.clientWidth };
     });
     expect(m.sw).toBeLessThanOrEqual(m.cw);
@@ -52,10 +53,11 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
     await page.setViewportSize({ width: 1024, height: 900 });
     // 選手5250: 全角英数字の長い節名（第２０回マンスリーＢＯＡＴＲＡＣＥ杯　男女Ｗ優勝戦）で 976/958 だった
     await page.goto("/racer/5250");
-    const table = page.locator(".race-history-table").first();
+    // レース一覧は6列＋節の見出し行の表（BOA-623）
+    const table = page.locator(".racer-vc-race-list .rrt-table").first();
     await expect(table).toBeVisible({ timeout: 30000 });
     const m = await table.evaluate((el) => {
-      const w = el.closest(".race-history-table-wrapper");
+      const w = el.closest(".rrt-wrap");
       return { sw: w.scrollWidth, cw: w.clientWidth };
     });
     expect(m.sw).toBeLessThanOrEqual(m.cw);
@@ -75,10 +77,11 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
     await page.goto("/race/2026-09-30-06-06");
     await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
     await page.locator(".rbit-bar-row").nth(1).click();
+    // 行は日付のリンク先（race_id）で引く。直近10走は月日だけの表（BOA-623）
     const row = page
-      .locator(".race-history-table tr")
-      .filter({ hasText: "2026-09-22" })
-      .filter({ has: page.locator("td", { hasText: /^1R$/ }) })
+      .locator(".rrt-table tr", {
+        has: page.locator('a[href$="/race/2026-09-22-16-01"]'),
+      })
       .first();
     await expect(row).toContainText("F.01", { timeout: 30000 });
   });
@@ -95,6 +98,9 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
     await expect(chart).toBeVisible({ timeout: 30000 });
     await chart.scrollIntoViewIfNeeded();
     const dot = chart.locator('circle[fill="var(--color-error)"]').last();
+    // 点は取得と描画の後に出る。待たずに boundingBox を取ると null になる（BOA-623 で
+    // 履歴の取得列が増え、録画に無い取得が本番へ素通しになって遅くなったときに落ちた）
+    await expect(dot).toBeVisible({ timeout: 30000 });
     const box = await dot.boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await expect(chart.locator(".recharts-tooltip-label")).toHaveText(
