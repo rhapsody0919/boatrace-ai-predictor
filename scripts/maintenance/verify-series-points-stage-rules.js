@@ -38,6 +38,7 @@ import {
   listAbsentOnlyRacers,
   FINISH_ABSENT,
   isAbsentStartRow,
+  flyingRacerIdsInMeet,
   runFinishLabel,
   officialMarkOf,
 } from "../../src/components/race/seriesPoints.js";
@@ -1318,6 +1319,95 @@ check(
   ),
   6,
 );
+
+// ---- 賞典除外（BOA-587） -----------------------------------------------------
+// 今節F（is_flying または着欄の F・Ｆ）の選手だけを拾う。L・欠・着順は拾わない
+check(
+  "今節Fの選手だけを賞典除外の候補にする（Lは数えない）",
+  flyingRacerIdsInMeet(
+    [
+      {
+        race_id: "2026-09-26-22-10",
+        boat_number: 1,
+        is_flying: true,
+        finish_mark: "F",
+      },
+      {
+        race_id: "2026-09-26-22-10",
+        boat_number: 2,
+        is_flying: false,
+        finish_mark: "1",
+      },
+      {
+        race_id: "2026-09-26-22-11",
+        boat_number: 3,
+        is_flying: false,
+        finish_mark: "Ｆ",
+      },
+      {
+        race_id: "2026-09-26-22-11",
+        boat_number: 4,
+        is_flying: false,
+        finish_mark: "L",
+      },
+      {
+        race_id: "2026-09-26-22-11",
+        boat_number: 5,
+        is_flying: false,
+        finish_mark: "欠",
+      },
+      // 出走表に無い艇（選手が分からない）は拾わない
+      {
+        race_id: "2026-09-26-22-12",
+        boat_number: 6,
+        is_flying: true,
+        finish_mark: "F",
+      },
+    ],
+    [
+      { race_id: "2026-09-26-22-10", boat_number: 1, racer_id: 101 },
+      { race_id: "2026-09-26-22-10", boat_number: 2, racer_id: 102 },
+      { race_id: "2026-09-26-22-11", boat_number: 3, racer_id: 103 },
+      { race_id: "2026-09-26-22-11", boat_number: 4, racer_id: 104 },
+      { race_id: "2026-09-26-22-11", boat_number: 5, racer_id: 105 },
+    ],
+  ).sort(),
+  [101, 103],
+);
+{
+  const run = (racerId, raceId, boatNumber) => ({
+    racerId,
+    playerName: `選手${racerId}`,
+    raceId,
+    raceStage: "予選",
+    boatNumber,
+    rank1: boatNumber,
+    rank2: null,
+    rank3: null,
+    rank4: null,
+    rank5: null,
+    rank6: null,
+  });
+  // 3人とも1着10点。201は今節F、202は途中帰郷、203はどちらでもない
+  const ranked = buildMeetRanking({
+    entries: [
+      run(201, "2026-09-22-22-01", 1),
+      run(202, "2026-09-22-22-02", 1),
+      run(203, "2026-09-22-22-03", 1),
+    ],
+    withdrawnRacerIds: [201, 202],
+    exclusionReasonByRacer: { 201: "flying" },
+  });
+  check(
+    "賞典除外・途中帰郷は順位から外し、理由を付ける（理由が無ければ途中帰郷）",
+    ranked.map((r) => [r.racerId, r.rank, r.excludedReason]),
+    [
+      [201, null, "flying"],
+      [202, null, "withdrawn"],
+      [203, 1, null],
+    ],
+  );
+}
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);
 process.exit(failures === 0 ? 0 : 1);

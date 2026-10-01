@@ -177,6 +177,19 @@
   margin-right: 2px;
 }
 
+/* 「賞典除外（今節F）」は長いので、順位の列と早見の必要得点の列だけ2行に
+   折り返す。1行のままだと375pxで表が16px右にはみ出し、早見は着順の列が
+   画面外へ押し出された（BOA-587） */
+.rmt-compare .rmt-excluded,
+.rmt-forecast-table .rmt-excluded {
+  display: inline-block;
+  max-width: 4.5em;
+  white-space: normal;
+  /* 「賞典除 / 外」と語の途中で割らず、「賞典除外 /（今節F）」で折る */
+  word-break: keep-all;
+  line-height: var(--line-height-tight);
+}
+
 .rmt-rank,
 .rmt-pretest {
   font-size: var(--font-size-xs);

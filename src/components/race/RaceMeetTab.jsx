@@ -51,6 +51,20 @@ import MeetSparkline from "./MeetSparkline";
 import "./RaceMeetTab.css";
 import "../common/HorizontalScrollHint.css";
 
+// 順位の対象外の理由 → 画面の文言キー（meetTab.<key> と meetTab.<key>Title）。BOA-587
+const EXCLUDED_LABEL_KEY = {
+  withdrawn: "withdrawn",
+  awardExcluded: "awardExcluded",
+  flying: "flyingExcluded",
+};
+// 準優・優勝戦に乗れない（必要得点を出さない）理由
+const AWARD_EXCLUDED_REASONS = new Set(["awardExcluded", "flying"]);
+
+// 準優の目安（上から slots 位）の中か。順位の対象外は rank が null で、
+// `null <= 18` は true になるため、比べる前に外す（BOA-587 ファン評価1周目）
+const rankInBorder = (row, slots) =>
+  row.rank !== null && row.rank !== undefined && row.rank <= slots;
+
 function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
@@ -436,11 +450,12 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                 .sort((a, b) => b.row.rate - a.row.rate)
                 .map(({ player: p, row }, i, arr) => {
                   const tied = tiedCount(row.rank);
-                  const inBorder = showBorderBadge && row.rank <= slots;
+                  const inBorder = showBorderBadge && rankInBorder(row, slots);
                   // 目安内の最後の行に太い罫線を引く。「誰が線の上か」は
                   // 数字を突き合わせないと分からず、実際に読み落とされた
                   const borderEdge =
-                    inBorder && !(arr[i + 1] && arr[i + 1].row.rank <= slots);
+                    inBorder &&
+                    !(arr[i + 1] && rankInBorder(arr[i + 1].row, slots));
                   return (
                     <tr
                       key={p.number}
@@ -472,10 +487,18 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                         {row.rate.toFixed(2)}
                       </td>
                       <td className="rmt-rank">
-                        {/* 途中で節を離脱した選手は順位の対象外（公式も同じ） */}
+                        {/* 途中で節を離脱した選手・賞典除外の選手は順位の対象外
+                            （公式も同じ）。理由で説明を出し分ける（BOA-587） */}
                         {row.rank === null ? (
-                          <span title={t("meetTab.withdrawnTitle")}>
-                            {t("meetTab.withdrawn")}
+                          <span
+                            className="rmt-excluded"
+                            title={t(
+                              `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason] ?? "withdrawn"}Title`,
+                            )}
+                          >
+                            {t(
+                              `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason] ?? "withdrawn"}`,
+                            )}
                           </span>
                         ) : tied > 1 ? (
                           <span title={t("meetTab.rankTiedTitle", { tied })}>
@@ -525,7 +548,16 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
             {ranking.some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS) && (
               <>{t("meetTab.smallSampleLegend")} </>
             )}
-            {t("meetTab.compareSub", { total: rankedOnly.length })}
+            {/* 賞典除外・途中帰郷の選手も節は走っているので、「出場」から外さない。
+                順位の対象の人数と分けて書く（ファン評価2周目: 出場50人なのに
+                前検51位の選手がいた） */}
+            {rankedOnly.length < ranking.length
+              ? t("meetTab.compareSubExcluded", {
+                  all: ranking.length,
+                  total: rankedOnly.length,
+                  excluded: ranking.length - rankedOnly.length,
+                })
+              : t("meetTab.compareSub", { total: rankedOnly.length })}
             {/* 「欠場」の理由。セルの title はタッチ端末で読めないので本文にも書く
                 （BOA-504 ファン評価） */}
             {absentOnly.length > 0 && <> {t("meetTab.absentNote")}</>}
@@ -659,6 +691,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                           className={`rmt-rate${
                             showBorderBadge &&
                             border !== undefined &&
+                            !row.withdrawn &&
                             row.rate >= border
                               ? " is-in-border"
                               : ""
@@ -668,13 +701,23 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                         </td>
                         {hasNeeded && (
                           <td className="rmt-needed">
-                            {needed === null
-                              ? "—"
-                              : needed.reachable
-                                ? t("meetTab.neededPoints", {
-                                    points: needed.needed,
-                                  })
-                                : t("meetTab.neededUnreachable")}
+                            {/* 賞典除外の選手は準優に乗れないので、必要得点を
+                                出さない（BOA-587） */}
+                            {AWARD_EXCLUDED_REASONS.has(row.excludedReason) ? (
+                              <span className="rmt-excluded">
+                                {t(
+                                  `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason]}`,
+                                )}
+                              </span>
+                            ) : needed === null ? (
+                              "—"
+                            ) : needed.reachable ? (
+                              t("meetTab.neededPoints", {
+                                points: needed.needed,
+                              })
+                            ) : (
+                              t("meetTab.neededUnreachable")
+                            )}
                           </td>
                         )}
                         {cells.map((f) => (
@@ -683,6 +726,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                             className={
                               showBorderBadge &&
                               border !== undefined &&
+                              !row.withdrawn &&
                               f.rate >= border
                                 ? "is-in-border"
                                 : undefined
@@ -884,15 +928,31 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                 ),
               },
             )}
+            {/* 順位の対象外（賞典除外・途中帰郷）の理由は、予選が終わった後も出す。
+                目安の行は予選中しか出ないので、そちらに頼ると最終日に消えていた
+                （ファン評価2周目） */}
+            {mine.withdrawn && !(showBorder && border !== undefined) && (
+              <span className="rmt-detail-border">
+                {t(
+                  `meetTab.${EXCLUDED_LABEL_KEY[mine.excludedReason] ?? "withdrawn"}Title`,
+                )}
+              </span>
+            )}
             {showBorder && border !== undefined && (
               <span className="rmt-detail-border">
-                {mine.rank <= slots
-                  ? t("basicInfo.meetBorderIn", { slots })
-                  : t("basicInfo.meetBorder", {
-                      slots,
-                      rate: border.toFixed(2),
-                      diff: (border - mine.rate).toFixed(2),
-                    })}
+                {mine.withdrawn
+                  ? // 順位の対象外（賞典除外・途中帰郷）は目安との距離を言わない。
+                    // rank が null なので `<= slots` で比べると「目安の中」になる（BOA-587）
+                    t(
+                      `meetTab.${EXCLUDED_LABEL_KEY[mine.excludedReason] ?? "withdrawn"}Title`,
+                    )
+                  : rankInBorder(mine, slots)
+                    ? t("basicInfo.meetBorderIn", { slots })
+                    : t("basicInfo.meetBorder", {
+                        slots,
+                        rate: border.toFixed(2),
+                        diff: (border - mine.rate).toFixed(2),
+                      })}
               </span>
             )}
           </p>

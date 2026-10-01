@@ -33,6 +33,7 @@ import {
   splitMeetSeries,
   scoreTableFor,
   isAbsentStartRow,
+  flyingRacerIdsInMeet,
   runFinishLabel,
   officialMarkOf,
 } from "../components/race/seriesPoints.js";
@@ -6909,7 +6910,8 @@ export const supabaseDataService = {
     // v15: 本番STの「欠」の行を出走に数えない（BOA-504）
     // v16: 推移の走に着順（finish）を足した（BOA-537）
     // v17: 着順の並びの材料に公式の記号（finishMark）を足した（BOA-537）
-    return withCache(`meet-scoreboard-v17-${raceId}`, async () => {
+    // v18: 賞典除外（公式の備考・今節F）を順位から外す理由を足した（BOA-587）
+    return withCache(`meet-scoreboard-v18-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7185,36 +7187,71 @@ export const supabaseDataService = {
           if (rows.length === 0) return null;
           return Object.fromEntries(rows.map((r) => [r.racer_id, r]));
         })(),
-        // **途中で節を離脱した選手**（途中帰郷）。公式の順位表はこの選手たちを
-        // 順位から外すため、当社が全員で順位を振ると下位ほどズレる。
-        //
-        // 判定は「節の最終日に1度も出走が無い」。2026-09-28に実測で裏を取った:
-        //   若松G1 … 該当2名が公式の「途中帰郷」2名と完全一致。除くと
-        //             推定ボーダーが 5.67 → 5.60 になり実ボーダーと**完全一致**
-        //   桐生   … 該当5名は全員、他会場でも走っておらず9/22〜9/24で出走が
-        //             途切れている（節の前後半でメンバーが入れ替わる形ではない）
-        //
-        // **節が終わるまでは判定できない**（最終日が未来なので）。
-        // `is_final_day` が取れていて、その日を過ぎている場合だけ有効にする。
-        // 賞典除外は判定できない（該当選手は最終日まで普通に走っている）
-        withdrawnRacerIds: (() => {
+        // **順位の対象から外す選手と、その理由**（途中帰郷・賞典除外）。
+        // 公式の順位表はこの選手たちを順位から外すため、当社が全員で順位を
+        // 振ると下位ほどズレ、ボーダーの目安も狂う。理由は画面の説明の出し分けに使う
+        ...(() => {
           // 公式の備考が取れていればそれが正（推定より確実）。
           // 「賞典除外」「途中帰郷」など、公式が順位を付けていない選手
           // （rank/score_rate が NULL）を除く
           const official = (officialSeries ?? []).filter((r) => r.remarks);
-          if (official.length > 0) return official.map((r) => r.racer_id);
+          if (official.length > 0) {
+            return {
+              withdrawnRacerIds: official.map((r) => r.racer_id),
+              exclusionReasonByRacer: Object.fromEntries(
+                official.map((r) => [
+                  r.racer_id,
+                  r.remarks.includes("賞典除外")
+                    ? "awardExcluded"
+                    : "withdrawn",
+                ]),
+              ),
+            };
+          }
 
-          // 収録が無い開催（一般戦など）は出走の有無から推定する
+          // 備考が無い節は推定する。**今節F（表示中のレースより前）は賞典除外**
+          // （flyingRacerIdsInMeet のコメント参照、BOA-587）。`meetStarts` は
+          // 節の頭〜表示中レースの直前なので、まだ切っていないFは入らない。
+          // **予選が終わった後のレースでは、予選終了までのFだけで判定する**。
+          // 順位は予選終了で確定しているのに、準優・優勝戦のFで最終日の
+          // レースごとに節内順位が動いていた（ファン評価1周目: 桐生9/24で
+          // 1〜8Rは47人、9〜12Rは45人）
+          const prelimEndForFlying = prelimEndRaceIdOf(conditions ?? []);
+          const flying = flyingRacerIdsInMeet(
+            (meetStarts ?? []).filter(
+              (r) => !prelimEndForFlying || r.race_id <= prelimEndForFlying,
+            ),
+            meetRows,
+          );
+          const reasons = Object.fromEntries(
+            flying.map((id) => [id, "flying"]),
+          );
+
+          // 途中帰郷は、節の最終日に1度も出走が無い選手。
+          // 判定は2026-09-28に実測で裏を取った:
+          //   若松G1 … 該当2名が公式の「途中帰郷」2名と完全一致。除くと
+          //             推定ボーダーが 5.67 → 5.60 になり実ボーダーと**完全一致**
+          //   桐生   … 該当5名は全員、他会場でも走っておらず9/22〜9/24で出走が
+          //             途切れている（節の前後半でメンバーが入れ替わる形ではない）
+          // **節が終わるまでは判定できない**（最終日が未来なので）。
+          // `is_final_day` が取れていて、その日を過ぎている場合だけ有効にする
           const finalDayRow = (conditions ?? []).find((c) => c.is_final_day);
           const finalDay = finalDayRow?.race_id.slice(0, 10) ?? null;
-          if (!finalDay || date < finalDay) return [];
-          const ranAtFinalDay = new Set(
-            meetRows
-              .filter((e) => e.race_id.startsWith(finalDay))
-              .map((e) => e.racer_id),
-          );
-          const all = new Set(meetRows.map((e) => e.racer_id));
-          return [...all].filter((id) => !ranAtFinalDay.has(id));
+          if (finalDay && date >= finalDay) {
+            const ranAtFinalDay = new Set(
+              meetRows
+                .filter((e) => e.race_id.startsWith(finalDay))
+                .map((e) => e.racer_id),
+            );
+            for (const id of new Set(meetRows.map((e) => e.racer_id))) {
+              if (!ranAtFinalDay.has(id) && !reasons[id])
+                reasons[id] = "withdrawn";
+            }
+          }
+          return {
+            withdrawnRacerIds: Object.keys(reasons).map(Number),
+            exclusionReasonByRacer: reasons,
+          };
         })(),
         // **残りの予選走数**（表示中のレースを含む）。公式の「必要得点」は
         // 「準優ボーダーをクリアするために必要な得点」で、実データから
