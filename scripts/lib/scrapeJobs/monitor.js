@@ -61,6 +61,11 @@ export const THRESHOLDS = Object.freeze({
   windowRateMinSamples: 20,
   /** last_tick_at がこの分数以上更新されていなければ、死活の異常（5分に1回しか書かないため、書き込み2回分） */
   livenessStaleMin: 10,
+  /**
+   * 10分ごとに起動する常駐型（kind: continuous。race_notices・race_status）の死活の閾値（BOA-373）。
+   * last_tick_at は起動のたびに書かれるが、5分未満の間隔では書かないため、起動2回分（20分）＋余裕5分
+   */
+  continuousLivenessStaleMin: 25,
   /** 運用窓の開始から、この分数が過ぎてから死活を判定する（開始直後の最初のtickを待つ） */
   livenessStartGraceMin: 10,
   consecutiveFailures: 3,
@@ -428,10 +433,16 @@ export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
       });
     }
 
-    // 死活: 毎分起動する窓型と、5分ごとの監視（自分自身の鮮度は、メタ監視が見る）
-    if (def.kind === "window" && livenessCheckable(now)) {
+    // 死活: 毎分起動する窓型と、10分ごとの常駐型（自分自身の鮮度は、メタ監視が見る）
+    const staleMin =
+      def.kind === "window"
+        ? THRESHOLDS.livenessStaleMin
+        : def.kind === "continuous"
+          ? THRESHOLDS.continuousLivenessStaleMin
+          : null;
+    if (staleMin !== null && livenessCheckable(now)) {
       const last = row.last_tick_at ? new Date(row.last_tick_at) : null;
-      if (!last || minutesBetween(now, last) >= THRESHOLDS.livenessStaleMin) {
+      if (!last || minutesBetween(now, last) >= staleMin) {
         alerts.push({
           key: `liveness:${row.job}`,
           kind: "liveness",

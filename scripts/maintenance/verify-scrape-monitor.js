@@ -1420,6 +1420,25 @@ const doneOdds = (delayMin, over = {}) =>
       !livenessCheckable(at("06:59")),
   );
   check(
+    "死活: 10分ごとの常駐型（race_notices・race_status）も判定する。25分以上前で通知、24分前は通知しない（BOA-373）",
+    show(
+      kinds([
+        base({ job: "race_notices", last_tick_at: minAgo(25) }),
+        base({ job: "race_status", last_tick_at: minAgo(25) }),
+      ]),
+    ) === '["liveness:race_notices","liveness:race_status"]' &&
+      kinds([base({ job: "race_notices", last_tick_at: minAgo(24) })])
+        .length === 0 &&
+      kinds([base({ job: "race_notices", mode: "off", last_tick_at: null })])
+        .length === 0,
+  );
+  check(
+    "死活: 日次ジョブは last_tick_at の古さでは通知しない（期限超過の判定は別）",
+    kinds([base({ job: "kfile_sync", last_tick_at: minAgo(600) })]).every(
+      (k) => !k.startsWith("liveness:"),
+    ),
+  );
+  check(
     "連続失敗: 3回以上で通知（2回は通知しない）",
     show(
       kinds([base({ job: "odds", consecutive_failures: 3, last_error: "x" })]),
