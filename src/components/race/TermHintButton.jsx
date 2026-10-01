@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import { TERM_HINTS } from "./termHints";
 import "./TermHintButton.css";
 
-const POPOVER_WIDTH = 220;
+// 広い画面では枠を広げる。220px 固定だと 1440px でも長い説明が縦に細長くなった（BOA-589）
+const popoverWidth = () => (window.innerWidth >= 1024 ? 320 : 220);
 const VIEWPORT_MARGIN = 8;
 // 下にこれだけの高さが無ければ、上に余裕があるとき上に開く
 const MIN_COMFORTABLE_HEIGHT = 320;
@@ -43,7 +44,7 @@ export default function TermHintButton({ termKey }) {
     const rect = event.currentTarget.getBoundingClientRect();
     const left = Math.min(
       Math.max(rect.left, VIEWPORT_MARGIN),
-      window.innerWidth - POPOVER_WIDTH - VIEWPORT_MARGIN,
+      window.innerWidth - popoverWidth() - VIEWPORT_MARGIN,
     );
     // 下に十分な余白が無ければ上に開く。長い説明（Fバッジの説明等）が画面下で
     // 120px の枠に押し込められ、肝心の後半が読めなかった（BOA-440 ファン評価2周目）。
@@ -56,9 +57,15 @@ export default function TermHintButton({ termKey }) {
         ? {
             bottom: window.innerHeight - rect.top + 6,
             left,
+            width: popoverWidth(),
             maxHeight: spaceAbove,
           }
-        : { top: rect.bottom + 6, left, maxHeight: Math.max(spaceBelow, 120) },
+        : {
+            top: rect.bottom + 6,
+            left,
+            width: popoverWidth(),
+            maxHeight: Math.max(spaceBelow, 120),
+          },
     );
   };
 
@@ -82,6 +89,7 @@ export default function TermHintButton({ termKey }) {
               top: position.top,
               bottom: position.bottom,
               left: position.left,
+              width: position.width,
               maxHeight: position.maxHeight,
             }}
           >

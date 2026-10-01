@@ -79,7 +79,7 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     });
     const legend = page.locator(".rbit-note", { hasText: "今節" });
     await expect(legend).toBeVisible();
-    await expect(legend).toContainText("準優勝戦・優勝戦には進めません");
+    await expect(legend).toContainText("この節の準優勝戦・優勝戦の対象外です（賞典除外）");
     await expect(legend).toContainText("当日のFは含みません");
     await expect(legend).toContainText("L＝");
     // 「F2 今節」を「2本とも今節」と読ませない（バッジの説明・「?」と同じ「そのうち」で書く。3周目）
@@ -201,5 +201,37 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     });
     expect(r.sw).toBeLessThanOrEqual(r.cw);
     expect(r.right).toBeLessThanOrEqual(r.wright);
+  });
+
+  test("ST考察の級別は表示中のレースの出走表の値で、データ出走表と一致する（BOA-589）", async ({
+    page,
+  }) => {
+    // 2026-04-11 びわこ2R: 公式の出走表は 3号艇 A2・6号艇 A1。以前の ST考察は
+    // 選手の最新の走の級別（3号艇 A1・6号艇 A2）を出していた
+    await page.goto("/race/2026-04-11-06-02");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    await page.locator(".rsc-card").waitFor({ state: "visible", timeout: 30000 });
+    const grades = page.locator(".rsc-grid .rsc-grade");
+    await expect(grades).toHaveCount(6, { timeout: 30000 });
+    await expect(grades.nth(2)).toHaveText("A2");
+    await expect(grades.nth(5)).toHaveText("A1");
+  });
+
+  test("1440px: 用語の説明の枠は 320px に広がる（BOA-589）", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/race/2026-09-27-22-07");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    const button = page.locator(".rsc-label-th .term-hint__button").first();
+    await button.waitFor({ timeout: 30000 });
+    await page.evaluate(() =>
+      document.querySelectorAll(".cookie-consent").forEach((el) => el.remove()),
+    );
+    await button.scrollIntoViewIfNeeded();
+    await button.click();
+    const pop = page.locator(".term-hint__popover");
+    await expect(pop).toBeVisible();
+    expect(
+      await pop.evaluate((el) => el.getBoundingClientRect().width),
+    ).toBeGreaterThanOrEqual(300);
   });
 });
