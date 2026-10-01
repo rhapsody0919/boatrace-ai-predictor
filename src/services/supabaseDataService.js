@@ -4776,7 +4776,8 @@ export const supabaseDataService = {
    * ここで除外し、以降の集計側では意識しなくて済むようにする
    */
   getRacerRaceHistory(racerId) {
-    return withCache(`racer-race-history-${racerId}`, async () => {
+    // v2: ST を展示ST（exhibition_data）から本番ST（race_start_timings）に替え、isFlying・finishMark を足した（BOA-576）
+    return withCache(`racer-race-history-v2-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4799,7 +4800,7 @@ export const supabaseDataService = {
       }
 
       const raceIds = [...new Set(entries.map((e) => e.race_id))];
-      const [raceRows, resultRows, exhibitionRows, conditionRows] =
+      const [raceRows, resultRows, exhibitionRows, conditionRows, stRows] =
         await Promise.all([
           fetchAllByIn(
             "races",
@@ -4813,15 +4814,24 @@ export const supabaseDataService = {
             "race_id",
             raceIds,
           ),
+          // 展示タイムだけ使う。ここの start_timing は展示ST（本番STではない。BOA-576）
           fetchAllByIn(
             "exhibition_data",
-            "race_id, boat_number, exhibition_time, start_timing",
+            "race_id, boat_number, exhibition_time",
             "race_id",
             raceIds,
           ),
           fetchAllByIn(
             "race_conditions",
             "race_id, race_stage, race_title",
+            "race_id",
+            raceIds,
+          ),
+          // 本番ST・フライング・公式の着欄の記号（落・転・妨・欠など）。今節タブ（getRacerScopedRaceStats）と
+          // 同じ出どころにそろえる（BOA-576: 展示STを本番STとして出し、記号の走を「着外(順位不明)」と出していた）
+          fetchAllByIn(
+            "race_start_timings",
+            "race_id, boat_number, start_timing, is_flying, finish_mark",
             "race_id",
             raceIds,
           ),
@@ -4835,6 +4845,9 @@ export const supabaseDataService = {
       const conditionByRaceId = new Map(
         conditionRows.map((c) => [c.race_id, c]),
       );
+      const stByKey = new Map(
+        stRows.map((r) => [`${r.race_id}-${r.boat_number}`, r]),
+      );
 
       return entries
         .map((entry) => {
@@ -4844,6 +4857,7 @@ export const supabaseDataService = {
             `${entry.race_id}-${entry.boat_number}`,
           );
           const condition = conditionByRaceId.get(entry.race_id);
+          const st = stByKey.get(`${entry.race_id}-${entry.boat_number}`);
           if (!raceInfo?.venue_code || !isUsableRaceResult(result)) return null;
           return {
             raceId: entry.race_id,
@@ -4863,7 +4877,13 @@ export const supabaseDataService = {
             payoutPlace1: result.payout_place_1 ?? null,
             payoutPlace2: result.payout_place_2 ?? null,
             exhibitionTime: exhibition?.exhibition_time ?? null,
-            startTiming: exhibition?.start_timing ?? null,
+            startTiming: st?.start_timing ?? null,
+            isFlying: st?.is_flying === true,
+            finishMark: st?.finish_mark ?? null,
+            // 公式の着欄が数字でない（F・L・欠・落・転・妨・エ・不・失・沈・＿ など）走は着順が付かない。
+            // race_results の rank1〜6 には、完走が3艇未満のレースで返還艇（F等）が入っていることがある
+            // （43件、BOA-576 のデータ精度検証）。着欄の記号を優先し、着順・勝率には数えない
+            unranked: isUnrankedFinishMark(st?.finish_mark),
           };
         })
         .filter(Boolean)
@@ -8190,7 +8210,13 @@ function isPermissionDeniedError(error) {
  * 共通化（ADR-0063、BOA-159レビューで発見）。
  * @returns {boolean} 勝利（1着）だったか
  */
+// 公式の着欄の記号が数字でない（着順が付かない走）か。記号が無い（未取得）ときは着順に従う
+function isUnrankedFinishMark(mark) {
+  return typeof mark === "string" && mark !== "" && !/^[1-6]$/.test(mark);
+}
+
 function tallyWinPlaceShow(totals, row) {
+  if (row.unranked) return false;
   const isWin = row.rank1 === row.boatNumber;
   if (isWin) totals.win += 1;
   if (isPlaceHit(row.boatNumber, row.rank1, row.rank2)) totals.top2 += 1;
@@ -8248,12 +8274,13 @@ export function aggregateRacerVenueBoatStats(
       }
       returnSum += row.payoutWin ?? 0;
       placeReturnSum += row.payoutPlace1 ?? 0;
-    } else if (row.rank2 === row.boatNumber) {
+    } else if (!row.unranked && row.rank2 === row.boatNumber) {
       placeReturnSum += row.payoutPlace2 ?? 0;
     }
 
     const hasEx = row.exhibitionTime !== null;
-    const hasSt = row.startTiming !== null;
+    // フライングは異常値のため平均ST・STの推移から除く（今節タブ・ST考察と同じ扱い。BOA-576）
+    const hasSt = row.startTiming != null && !row.isFlying;
     if (hasSt) {
       stSum += Number(row.startTiming);
       stN += 1;
@@ -8283,8 +8310,11 @@ export function aggregateRacerVenueBoatStats(
       raceGrade: row.raceGrade,
       raceStage: row.raceStage,
       boatNumber: row.boatNumber,
-      startTiming: row.startTiming,
-      finishRank: finishPositionOf(row),
+      startTiming: row.startTiming ?? null,
+      isFlying: row.isFlying === true,
+      finishRank: row.unranked ? null : finishPositionOf(row),
+      finishMark: row.finishMark ?? null,
+      absent: row.finishMark === "欠",
       winningTechnique: row.winningTechnique,
       payoutWin: row.payoutWin,
     });
