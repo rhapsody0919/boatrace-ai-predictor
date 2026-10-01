@@ -58,6 +58,8 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
           cp src/components/Header.jsx /tmp/Header.fixed.jsx
+          # 途中で失敗しても、修正後のステップが修正前のコードで走らないよう必ず戻す
+          trap 'cp /tmp/Header.fixed.jsx src/components/Header.jsx' EXIT
           git fetch --depth=1 origin master
           git show FETCH_HEAD:src/components/Header.jsx > src/components/Header.jsx
           npx playwright test e2e/smoke.spec.js e2e/header-compress.spec.js --project=smoke -g "条件別|ヘッダーの圧縮" --repeat-each=20 --retries=0 --reporter=line --output=test-results-b459-before || true
