@@ -26,6 +26,10 @@ import {
   parseLangFromPath,
 } from "../../src/config/languages.js";
 import {
+  formatGa4PvBreakNotice,
+  ga4PvBreaksWithin,
+} from "../lib/ga4MeasurementBreaks.js";
+import {
   findPreviousReport,
   perDay,
   formatDelta,
@@ -278,6 +282,20 @@ async function main() {
   const today = new Date().toISOString().split("T")[0];
   const previous = findPreviousReport(outDir, today);
 
+  // 集計期間と、前回レポートの期間の頭からの比較が、GA4 の計測の切れ目をまたぐかどうか（scripts/lib/ga4MeasurementBreaks.js）
+  const daysBefore = (dateStr, days) => {
+    const d = new Date(`${dateStr}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - days);
+    return d.toISOString().split("T")[0];
+  };
+  const windowStart = previous
+    ? daysBefore(previous.date, previous.data.days ?? DAYS)
+    : daysBefore(today, DAYS);
+  const pvBreaks = ga4PvBreaksWithin(windowStart, today);
+  if (pvBreaks.length > 0) {
+    console.log(`\n${formatGa4PvBreakNotice(pvBreaks)}`);
+  }
+
   if (previous) {
     const prevDays = previous.data.days ?? 1;
     console.log(
@@ -332,6 +350,7 @@ async function main() {
       {
         generatedAt: new Date().toISOString(),
         days: DAYS,
+        ga4PvBreaks: pvBreaks,
         byLanguage: byLang,
         shareOfPv: Object.fromEntries(
           PREFIXED_LANGUAGES.map(({ code }) => [
