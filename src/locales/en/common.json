@@ -905,6 +905,7 @@
     "meetTrendStFlat": "same as usual",
     "meetEmpty": "No races yet in this series (this is the racer's first one)",
     "conditionsNote": "{{metric}} by condition (our own tally, all available data). It will not match the official figures in the bars above, which are calculated differently.",
+    "conditionsNoteFiltered": "{{metric}} by condition (our own tally, all available data). The bars above use your grade/period filter, while this table always covers all periods and grades, so the numbers may differ.",
     "conditions": {
       "national": "All venues",
       "local": "This venue",

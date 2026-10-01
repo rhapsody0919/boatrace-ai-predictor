@@ -1484,6 +1484,15 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await page.locator(".rbit-chip", { hasText: "一般戦" }).first().click();
     await expect(chips.first()).toHaveText("1着率");
     await expect(page.locator(".rbit-metric-caveat")).toContainText("1着率");
+    // 絞り込み中は上のバーも自社集計なので、条件別の注記は「公式値とは一致しない」と書かない
+    // （#1069 ファン評価2周目）
+    await page.locator(".rbit-bar-row").first().click();
+    await page.locator(".rbit-expanded-tab", { hasText: "条件別" }).click();
+    const note = page.locator(".rbit-conditions-note");
+    await expect(note).toContainText("絞り込みにかかわらず全期間", {
+      timeout: 25000,
+    });
+    await expect(note).not.toContainText("公式値");
   });
 
   test("得意会場のランキングにも、自社集計の1着率である旨を書く（#1069 ファン評価1周目）", async ({

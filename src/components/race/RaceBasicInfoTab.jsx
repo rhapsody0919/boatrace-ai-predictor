@@ -772,9 +772,14 @@ function RaceBasicInfoTab({
                           {/* 値は全行とも自社集計。既定状態（勝率・全レース・今期）では
                               上のバーが公式値を出すため、同じ「全国」でも数字が違う */}
                           <p className="rbit-conditions-note">
-                            {t("basicInfo.conditionsNote", {
-                              metric: ownMetricLabel(metric),
-                            })}
+                            {/* 絞り込み中は上のバーも自社集計なので、「公式値とは一致しない」とは
+                                書かない。違いは期間・条件の範囲（#1069 ファン評価2周目） */}
+                            {t(
+                              needsOwnAggregation
+                                ? "basicInfo.conditionsNoteFiltered"
+                                : "basicInfo.conditionsNote",
+                              { metric: ownMetricLabel(metric) },
+                            )}
                           </p>
                           <table className="rbit-conditions-table">
                             <tbody>

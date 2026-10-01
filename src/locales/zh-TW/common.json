@@ -900,6 +900,7 @@
     "meetTrendStFlat": "與平常相同",
     "meetEmpty": "本梯次尚未出賽（本場為第一戰）",
     "conditionsNote": "各條件下的{{metric}}（本站統計、可取得的全部期間）。與上方長條圖的官方數值計算方式不同，因此數字不會一致。",
+    "conditionsNoteFiltered": "各條件下的{{metric}}（本站統計、可取得的全部期間）。上方長條圖依篩選條件統計，本表則不受篩選影響、涵蓋全部期間與等級，因此數字可能不一致。",
     "conditions": {
       "national": "全國",
       "local": "當地",
