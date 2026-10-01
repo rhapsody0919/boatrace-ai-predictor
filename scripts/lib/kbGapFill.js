@@ -14,11 +14,15 @@ const pad2 = (n) => String(n).padStart(2, "0");
 const raceIdOf = (date, venueCode, raceNumber) =>
   `${date}-${pad2(venueCode)}-${pad2(raceNumber)}`;
 
-/** 項目ごとの表・書く列・書き方（insert: 行の無いレースだけ挿入 / update: 既存の行の NULL の列だけ埋める） */
+/**
+ * 項目ごとの表・書く列・書き方（insert: 行の無いレースだけ挿入 / update: 既存の行の NULL の列だけ埋める）。
+ * stampUpdatedAt: 書く行に updated_at（書き込みの時刻）を付ける（マイグレーション071の運用。列のある表だけ）
+ */
 export const GAP_FILL_ITEMS = Object.freeze({
   st: {
     table: "race_start_timings",
     mode: "insert",
+    stampUpdatedAt: true,
     keyColumns: ["race_id", "boat_number"],
     columns: [
       "race_id",
@@ -45,12 +49,14 @@ export const GAP_FILL_ITEMS = Object.freeze({
   rate2: {
     table: "race_entries",
     mode: "update",
+    stampUpdatedAt: true,
     keyColumns: ["race_id", "boat_number"],
     columns: ["race_id", "boat_number", "global_2rate", "local_2rate"],
   },
   exhibition: {
     table: "exhibition_data",
     mode: "insert",
+    stampUpdatedAt: true,
     keyColumns: ["race_id", "boat_number"],
     columns: ["race_id", "boat_number", "exhibition_time"],
   },
