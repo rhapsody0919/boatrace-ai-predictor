@@ -12,7 +12,7 @@
  *   import 自体が無い名前の参照は通してしまう。
  *
  * やること:
- *   - src / api / middleware.js / scripts / e2e / ルートの *.config.js を ESLint で検査し、
+ *   - src / api / middleware.js / scripts / e2e / ルートの *.config.js・*.mjs を ESLint で検査し、
  *     no-undef だけを数える（他のルールの既存違反では落とさない）
  *   - Node 用のグローバル（process 等）は eslint.config.js の区分で付ける。ここでは上書きしない
  *   - 構文エラーで検査できなかったファイル、どの設定にも当たらず検査されなかったファイルも失敗にする
@@ -44,6 +44,7 @@ const TARGETS = [
   "scripts",
   "e2e",
   "*.config.js",
+  "*.mjs",
 ];
 
 // #1020（今節Fの import 抜けの修正）の直前の master。この版の supabaseDataService.js は
@@ -74,6 +75,13 @@ export function classify(results) {
           );
         }
         violations.push({ file, line: m.line, column: m.column, name });
+      } else if (
+        m.ruleId === null &&
+        !m.fatal &&
+        m.message.startsWith("Unused eslint-disable directive")
+      ) {
+        // 不要になった eslint-disable コメント。検査はできているので、本検査の対象外
+        continue;
       } else if (m.fatal || m.ruleId === null) {
         // 構文エラー、または「どの設定にも当たらない」等で検査されなかった
         unchecked.push(`${file}: ${m.message}`);
@@ -199,6 +207,14 @@ async function selfTests() {
         "api/undef-selftest.js",
       ),
       want: ["missingHelper"],
+    },
+    {
+      name: "不要になった eslint-disable no-undef は「検査できなかった」扱いにしない",
+      got: await namesIn(
+        "// eslint-disable-next-line no-undef\nexport const a = 1;\n",
+        "src/undef-selftest.js",
+      ),
+      want: [],
     },
   ];
 

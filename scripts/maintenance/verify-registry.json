@@ -208,7 +208,7 @@
       "script": "verify-no-undef.js",
       "tier": "ci",
       "timeoutSec": 300,
-      "guards": "src・api・middleware.js・scripts・e2e・ルートの *.config.js に未定義の名前の参照（ESLint の no-undef）が無いこと。他のルールの既存違反では落とさない。#999 と #1002 の組み合わせで master の supabaseDataService.js が import の無い groupIntoCurrentMeet を呼び、本番で今節Fの印が全レースで消えた（2026-10-01、#1020 で修正、ADR-0079）。vite build はこの型を通す。#1020 直前の壊れていた版を検出できることと、src/ に Node のグローバルが付いていないことを自己テストで毎回確かめる。構文エラー・設定の当たらないファイルで検査が素通りするのも失敗にする。master への push 後にも post-merge-checks.yml が実行し、失敗を Slack に流す"
+      "guards": "src・api・middleware.js・scripts・e2e・ルートの *.config.js・*.mjs に未定義の名前の参照（ESLint の no-undef）が無いこと。他のルールの既存違反では落とさない。#999 と #1002 の組み合わせで master の supabaseDataService.js が import の無い groupIntoCurrentMeet を呼び、本番で今節Fの印が全レースで消えた（2026-10-01、#1020 で修正、ADR-0079）。vite build はこの型を通す。#1020 直前の壊れていた版を検出できることと、src/ に Node のグローバルが付いていないことを自己テストで毎回確かめる。構文エラー・設定の当たらないファイルで検査が素通りするのも失敗にする。master への push 後にも post-merge-checks.yml が実行し、失敗を Slack に流す"
     },
     {
       "script": "verify-final-odds-job.js",

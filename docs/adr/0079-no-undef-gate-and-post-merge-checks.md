@@ -33,13 +33,13 @@
 ## 決定
 
 1. **`eslint.config.js` の Node 区分を実態に合わせる。** `scripts/`・`api/`・`e2e/`・`analysis/`・`middleware.js`・ルートの `*.config.js`・ルートの `.mjs`/`.cjs` に `globals.node` を付ける。ブラウザで動く `src/` には付けない（付けると `src/` で `process` を参照しても黙る）。e2e/ は `page.evaluate` の中で `document` を使うので、ブラウザのグローバルと併存させる。共通区分の `files` に `.mjs`/`.cjs` を加え、これらも検査対象にする
-2. **`scripts/maintenance/verify-no-undef.js`（ci tier）を追加する。** src・api・middleware.js・scripts・e2e・ルートの `*.config.js` を ESLint で検査し、no-undef だけを数える（`ruleFilter`）。他のルールの既存違反では落とさない
-   - 構文エラーや、どの設定区分にも当たらず検査されなかったファイルも失敗にする（検査されずに 0 件で通るのを防ぐ）
+2. **`scripts/maintenance/verify-no-undef.js`（ci tier）を追加する。** src・api・middleware.js・scripts・e2e・ルートの `*.config.js`・`*.mjs` を ESLint で検査し、no-undef だけを数える（`ruleFilter`）。他のルールの既存違反では落とさない
+   - 構文エラーや、どの設定区分にも当たらず検査されなかったファイルも失敗にする（検査されずに 0 件で通るのを防ぐ）。不要になった `eslint-disable` コメントの警告は、検査自体はできているので対象外にする
    - 残す違反は `verify-no-undef-allowlist.json` に（file, name, reason）で載せる。解消済みの項目が残っていても失敗にする（`verify-css-class-collisions.js` と同じ流儀）。導入時点では空
    - 自己テストを毎回実行する: #1020 直前の master（`3c0894ba`）の `supabaseDataService.js` を `git show` で読み、`groupIntoCurrentMeet` を検出できること。`src/` で `process` を検出すること（Node のグローバルが漏れていない）。`e2e/` で `process`・`Buffer`・`document` を通すこと。`.mjs` が検査対象であること
 3. **マージ後の master でも検査する（`.github/workflows/post-merge-checks.yml`）。** 今回の型を捕まえる本命はこちら。master への push で `verify-no-undef.js` と `npm run build` を走らせ、失敗したら Slack（`SLACK_WEBHOOK_URL`）に流す
    - 通知には、壊れたコミット（`git log -1`）と、その直前にマージされた PR（直近のコミットのうち、タイトル末尾に `(#番号)` を持つもの）を並べる。2 つの PR の組み合わせで壊れる型では、この 2 つが当たりになる
-   - 絞り方: `paths` で `src/`・`api/`・`middleware.js`・`scripts/`・`e2e/**/*.js`・`index.html`・`eslint.config.js`・`vite.config.js`・`package.json`・`package-lock.json` に限る。自動コミット（`[automated]`）が触るのは `public/sitemap.xml`・`public/llms.txt`・`docs/`・`data/`・`e2e/recording.json`（直近 200 コミットの実測）なので、これで走らない。コミットメッセージでは絞らない（`[automated]` でも `src/` を触るなら走らせるため）。なお GITHUB_TOKEN による push はそもそも他のワークフローを起動しない（ADR-0078）
+   - 絞り方: `paths` で `src/`・`api/`・`middleware.js`・`scripts/`・`e2e/**/*.js`・ルートの `*.mjs`・`index.html`・`eslint.config.js`・`vite.config.js`・`package.json`・`package-lock.json` に限る。自動コミット（`[automated]`）が触るのは `public/sitemap.xml`・`public/llms.txt`・`docs/`・`data/`・`e2e/recording.json`（直近 200 コミットの実測）なので、これで走らない。コミットメッセージでは絞らない（`[automated]` でも `src/` を触るなら走らせるため）。なお GITHUB_TOKEN による push はそもそも他のワークフローを起動しない（ADR-0078）
    - `concurrency` で取り消さない。マージが続いても各コミットを検査し、どのコミットで壊れたかを通知に出すため
 
 ## 検討して採らなかったもの

@@ -29,6 +29,7 @@ on:
       - 'middleware.js'
       - 'scripts/**'
       - 'e2e/**/*.js'
+      - '*.mjs'
       - 'index.html'
       - 'eslint.config.js'
       - 'vite.config.js'
