@@ -539,10 +539,13 @@ export function listSeriesFinishes(meetRecords, options = {}) {
       )
       .sort((a, b) => String(a.raceId).localeCompare(String(b.raceId)))
       // 着順が付かない走は、公式の記号（落・転・妨など）があればそれを出す。
-      // 無ければ null（画面は「失」）。推移の点の下と同じ表記にそろえる（BOA-537）
+      // 無ければ null（画面は「失」）。推移の点の下と同じ表記にそろえる（BOA-537）。
+      // フライングは本番STの is_flying を先に見る。着欄の記号（finish_mark）が未取得の走
+      // （2026-09前半以前）で「失」と出て、推移の「F」と食い違っていた（BOA-589）
       .map((r) =>
         countsAsRun(r)
-          ? (finishPositionOf(r) ?? officialMarkOf(r.finishMark))
+          ? (finishPositionOf(r) ??
+            (r.isFlying === true ? "F" : officialMarkOf(r.finishMark)))
           : FINISH_ABSENT,
       )
   );
