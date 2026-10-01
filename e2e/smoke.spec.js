@@ -178,6 +178,22 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
   });
 });
 
+// BOA-656: 会場特性の要約は「水面・傾向」を日本語の中黒で連結していた（全言語で「Freshwater ・ Balanced」）
+test("会場特性の要約は言語ごとの区切りで連結する（BOA-656）", async ({
+  page,
+}) => {
+  for (const [path, sep] of [
+    ["/en/venue/2", ", "],
+    ["/zh-TW/venue/2", "、"],
+  ]) {
+    await page.goto(path);
+    const teaser = page.getByTestId("venue-characteristics-teaser");
+    await teaser.waitFor({ timeout: 30000 });
+    await expect(teaser).not.toContainText("・");
+    await expect(teaser).toContainText(sep);
+  }
+});
+
 test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
   test("未翻訳ページ（/en/faq等）はja版へリダイレクトされlang=jaで配信される", async ({
     page,

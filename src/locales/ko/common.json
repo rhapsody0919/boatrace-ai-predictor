@@ -1880,6 +1880,7 @@
     "ledeDayPartial": "확정 {{n}}경주 중 결정타가 확인된 {{m}}경주는 {{techniques}}입니다.",
     "loading": "불러오는 중..."
   },
+  "listSeparator": ", ",
   "termHintLabel": "용어 설명 보기",
   "termHints": {
     "winRate": "선수의 전국 승률로, 급별 평가에 쓰이는 성적입니다. 수치가 높을수록 실력이 위로 평가됩니다",

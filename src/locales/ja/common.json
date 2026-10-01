@@ -1880,6 +1880,7 @@
     "ledeDayPartial": "確定{{n}}Rのうち決まり手が判明した{{m}}Rは {{techniques}}。",
     "loading": "読み込み中..."
   },
+  "listSeparator": "・",
   "termHintLabel": "用語の説明を見る",
   "termHints": {
     "winRate": "選手の全国での勝率を示す級別成績です。数値が高いほど実力上位とされます",

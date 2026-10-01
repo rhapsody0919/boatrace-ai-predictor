@@ -1184,12 +1184,12 @@ function MotorConditionChart({
                     {/* 何Rの展示で記録された交換か（そのレースの前の交換）。
                         同じ日に複数のレースがある（BOA-513、ファン4人のパネル） */}
                     {event.raceNos?.length > 0 &&
-                      ` ${event.raceNos.map((n) => `${n}R`).join("・")}`}
+                      ` ${event.raceNos.map((n) => `${n}R`).join(t("listSeparator"))}`}
                   </span>
                   <span className="parts-history-items">
                     {event.parts && event.parts.length > 0 && (
                       <span className="parts-history-tag">
-                        {event.parts.join("・")}
+                        {event.parts.join(t("listSeparator"))}
                       </span>
                     )}
                     {event.propellerChanged && (
