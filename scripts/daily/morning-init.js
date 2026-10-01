@@ -38,7 +38,17 @@ async function ensureUnifiedPredictions(date) {
   // 欠けていても数えない（生成側が書かないため。BOA-628）
   const { findRacesMissingUnified } =
     await import("./generate-unified-predictions.js");
-  const missingCount = (await findRacesMissingUnified(date)).length;
+  let missingCount;
+  try {
+    missingCount = (await findRacesMissingUnified(date)).length;
+  } catch (e) {
+    // 従来どおり、読み取りの失敗では止めない（後続のデプロイフックまで進める）。次の実行で判定し直す
+    console.warn(
+      "⚠️ unified の欠けの判定に失敗（今回は生成しない）:",
+      e.message,
+    );
+    return;
+  }
   if (missingCount === 0) {
     return;
   }
