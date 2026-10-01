@@ -11,13 +11,10 @@ import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { buildIndicatorRows } from "./raceIndicators";
 import InlineFetchError from "../InlineFetchError";
+import { splitRacerName } from "../../utils/racerName";
 import "./RaceCardDataTable.css";
 
 const ALWAYS_VISIBLE_KEYS = ["winRate", "localWinRate", "motor"];
-
-/** 出走表の名前（「丹下　　　将」）を姓と名に分ける。空白が無ければ1つのまま */
-const nameParts = (name) =>
-  (name ?? "").trim().split(/[\s\u3000]+/).filter(Boolean);
 
 function RaceCardDataTable({ raceId, players }) {
   const { t } = useTranslation();
@@ -87,7 +84,7 @@ function RaceCardDataTable({ raceId, players }) {
                   {/* 姓と名を別の塊にして、折り返すなら境目で折る。1つの文字列だと
                       「小森信/雄」のように名前の途中で折れ、姓名の区切りを読み違える
                       （出走表の名前は姓と名の間を全角スペースで詰めてある。BOA-559） */}
-                  {nameParts(p.name).map((part, i) => (
+                  {splitRacerName(p.name).map((part, i) => (
                     <span key={i} className="rcdt-name-part">
                       {part}
                     </span>
