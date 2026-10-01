@@ -573,3 +573,19 @@
     white-space: nowrap;
   }
 }
+
+/* 日付の目盛り（BOA-538）。推移の線の列と同じ幅で、点と同じ横位置に置く */
+.rmt-trend-days {
+  position: relative;
+  height: 1.2em;
+}
+
+.rmt-trend-day {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}

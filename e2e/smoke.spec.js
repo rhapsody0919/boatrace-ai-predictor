@@ -1715,15 +1715,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
 
     // 6艇の推移（同じ縦の物差しで並べる）。ST/展示を切り替えられる
     await expect(page.locator(".rmt-trend-row")).toHaveCount(6);
-    // **この節がいつからいつまでか**を出す。折れ線には日付の手がかりが無い、
-    // というファン評価の結論（BOA-495）。選択艇側の56pxグラフには元から軸に
-    // 日付が出ており、6艇側だけ無かった。
-    // **先に「走った順」と断る**。日付だけを名乗ると横位置＝時間と読まれ、
-    // 行をまたいで「同じ日」と比べてしまう（実際は x は走った順で、同じ日の
-    // 2走が横幅いっぱいに離れて描かれる）。「左が◯日」とも「この節は◯〜◯」
-    // とも書けない理由は RaceMeetTab.jsx のコメントに3点ある
+    // 横軸は日付（BOA-538）。範囲は「ここに出ている走」の範囲で、節の全日程ではない
+    // （表示中レースの直前までしか持たない）。以前は「走った順」と断っていた
     await expect(page.locator(".rmt-trend-range")).toHaveText(
-      /^横軸は走った順（左が古い）で、日付の目盛ではありません。ここに出ているのは\d+\/\d+〜\d+\/\d+の走で、各行の右端がその選手の前走です。$/,
+      /^横軸は日付（\d+\/\d+〜\d+\/\d+）。1日に2走した日は左右にずらし、その選手が走らなかった日は線を切っています。各行の最後の点がその選手の前走です。$/,
     );
     // 行を押すと下の詳細が変わることを、グラフ側にも書く（表側にだけあった）
     await expect(page.locator(".rmt-hint").last()).toContainText(
@@ -1862,7 +1857,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
   });
 
-  test("走数が多い節でも、375pxで点の下の着順を1段・10pxで読める間隔に並べる（BOA-537 ファン評価2・3周目）", async ({
+  test("走数が多い節でも、375pxで点の下の着順を1段で並べ、日付の目盛りも重ならない（BOA-537・BOA-538）", async ({
     page,
   }) => {
     // 2026-09-28 津11R（最終日）: 各艇10〜11走。9/21・22 の中止レースは出走表にだけ残る
@@ -1890,8 +1885,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
             ? parseFloat(getComputedStyle(labels[0]).fontSize)
             : 0,
           minGap: Math.min(...gaps),
-          // 最初の着順が左端近くにある（中止レースの空きで右に寄らない）
-          firstOffset: labels[0].getBoundingClientRect().left - wrap.left,
+          // 最初の着順が左側3割の中にある（中止レースの空きで右に寄らない）。
+          // 日付の横軸（BOA-538）では、初日に走っていない選手は2日目の位置から始まる
+          firstOffsetRatio:
+            (labels[0].getBoundingClientRect().left - wrap.left) / wrap.width,
           // 全走を1段に並べる（2段に振り分けると段ごとに読んで順番を読み違える）
           lines: new Set(
             labels.map((x) => Math.round(x.getBoundingClientRect().top)),
@@ -1900,11 +1897,25 @@ test.describe("レースページ再設計（BOA-168）", () => {
       }),
     );
     for (const row of info) {
-      expect(row.font).toBeGreaterThanOrEqual(10);
-      expect(row.minGap).toBeGreaterThanOrEqual(6);
-      expect(row.firstOffset).toBeLessThan(10);
+      // 日付の横軸では同じ日の2走を寄せる（日の区切りが見えるように）。375pxで
+      // 毎日2走の行は9.5pxまで小さくなる
+      expect(row.font).toBeGreaterThanOrEqual(9);
+      // 日付の横軸（BOA-538）では1日2走が近づく。隣と重ならない
+      expect(row.minGap).toBeGreaterThanOrEqual(2);
+      expect(row.firstOffsetRatio).toBeLessThan(0.3);
       expect(row.lines).toBe(1);
     }
+    // 日付の目盛り（BOA-538）: 最初の日だけ「月/日」、ほかは日だけで、隣と重ならない
+    const days = await page.locator(".rmt-trend-day").evaluateAll((els) =>
+      els.map((e) => {
+        const r = e.getBoundingClientRect();
+        return { text: e.textContent, left: r.left, right: r.right };
+      }),
+    );
+    expect(days[0].text).toMatch(/^\d+\/\d+$/);
+    expect(days.slice(1).every((d) => /^\d+$/.test(d.text))).toBe(true);
+    for (let i = 1; i < days.length; i += 1)
+      expect(days[i].left).toBeGreaterThan(days[i - 1].right);
   });
 
   test("着順が付かない走は、推移・比較表・日別の表で同じ公式の記号になる（BOA-537 ファン評価）", async ({
