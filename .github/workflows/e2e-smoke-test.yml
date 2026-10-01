@@ -48,32 +48,6 @@ jobs:
           path: node_modules/.cache/boatai-e2e-recording
           key: e2e-recording-${{ hashFiles('e2e/recording.json') }}
 
-      # TEMP(BOA-661): 修正前後の失敗率を比べる。マージ前に外す
-      - name: TEMP BOA-661 repeat before/after
-        env:
-          CI: true
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: |
-          set +e
-          git fetch --depth=1 origin master
-          git show FETCH_HEAD:e2e/smoke.spec.js > e2e/b661-before-smoke.spec.js
-          git show FETCH_HEAD:e2e/ga-pageview.spec.js > e2e/b661-before-ga.spec.js
-          G='096未適用で一度開いた後|管理画面（/admin）は直接開いても'
-          for W in 1 4; do
-            echo "::group::before workers=$W"
-            npx playwright test e2e/b661-before-smoke.spec.js e2e/b661-before-ga.spec.js --project=smoke -g "$G" --repeat-each=20 --retries=0 --workers=$W --reporter=line > before-$W.log 2>&1; tail -40 before-$W.log
-            echo "::endgroup::"
-            echo "::group::after workers=$W"
-            npx playwright test e2e/smoke.spec.js e2e/ga-pageview.spec.js --project=smoke -g "$G" --repeat-each=20 --retries=0 --workers=$W --reporter=line > after-$W.log 2>&1; tail -40 after-$W.log
-            echo "::endgroup::"
-          done
-          for f in before-1 after-1 before-4 after-4; do
-            echo "$f: $(grep -E '^\s+[0-9]+ (passed|failed|flaky)' $f.log | tr '\n' ' ') already_handled=$(grep -c 'already handled' $f.log)" | tee -a "$GITHUB_STEP_SUMMARY"
-          done
-          rm -f e2e/b661-before-*.spec.js
-          rm -rf test-results
-
       # 録画に無い通信は本番へ素通しするので、本番の読み取り用キー（anon）を渡す
       - name: Run E2E smoke tests (録画の再生)
         env:
