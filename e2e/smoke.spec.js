@@ -198,6 +198,23 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
     const lang = await page.evaluate(() => document.documentElement.lang);
     expect(lang).toBe("en");
   });
+
+  // BOA-202: 各言語ガイドはApp外で描画されるため、共通フッターを個別に置かないと法的リンクへの導線が消える
+  for (const [path, privacyLabel] of [
+    ["/en/guide", "Privacy Policy"],
+    ["/zh-TW/guide", "隱私權政策"],
+    ["/ko/guide", "개인정보 처리방침"],
+  ]) {
+    test(`${path} に各言語のラベルでフッターが出る`, async ({ page }) => {
+      await page.goto(path);
+      const footer = page.locator("footer.site-footer");
+      await expect(footer).toBeVisible();
+      await expect(
+        footer.getByRole("link", { name: privacyLabel }),
+      ).toBeVisible();
+      await expect(footer.locator(".site-footer-copyright")).toBeVisible();
+    });
+  }
 });
 
 test.describe("ブログ英語版（部分翻訳、blog-i18n）", () => {

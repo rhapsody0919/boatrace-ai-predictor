@@ -4,7 +4,10 @@
  * スタイルは EnglishGuide.css を共用
  */
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { getSiteFooterLinks } from "../components/siteFooterLinks";
 import "./EnglishGuide.css";
 
 const TECHNIQUES = [
@@ -156,6 +159,8 @@ const DATA_POINTS = [
 ];
 
 export default function KoGuide() {
+  const { t } = useTranslation();
+
   return (
     <div className="app">
       <title>일본 경정(쿄테이)이란? 규칙·베팅 입문 가이드 | 용신 레이더</title>
@@ -480,6 +485,7 @@ export default function KoGuide() {
           </Link>
         </section>
       </div>
+      <Footer links={getSiteFooterLinks(t)} />
     </div>
   );
 }
