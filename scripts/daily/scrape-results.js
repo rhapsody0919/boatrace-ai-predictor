@@ -12,7 +12,7 @@ import {
   formatDateForUrl,
   parseDateArg,
 } from "../lib/dateUtils.js";
-import { calculateHits, isTurnHit } from "../lib/hitCalculator.js";
+import { buildPredictionHitUpdate } from "../lib/hitCalculator.js";
 import { isCancellationConfirmed } from "../lib/cancellationStatus.js";
 import {
   getRaceSchedule,
@@ -858,83 +858,8 @@ async function judgeAndUpdateHits(client, resultsToJudge) {
     if (predictions.length === 0) continue;
 
     for (const pred of predictions) {
-      // 単勝: 1着予測が的中
-      const isWinHit = pred.top_pick === result.rank1;
-
-      // 複勝: 1着予測が2着以内（ボートレースのルール）
-      const isPlaceHit =
-        pred.top_pick === result.rank1 || pred.top_pick === result.rank2;
-
-      // unified（top_3rdを予想しないモデル）には3連複/3連単の的中判定を適用しない
-      // （2026-08-14修正、BOA-191）。旧実装はtop_3rd=nullのままfalse判定してしまい、
-      // race_history_cacheの動的集計に「unifiedモデルの3連単的中率0%」という
-      // 実態と異なる偽エントリが混入していた
-      const predictsTrio = pred.top_3rd != null;
-
-      let isTrifectaHit = null;
-      let isTrioHit = null;
-      if (predictsTrio) {
-        const predTop3 = [pred.top_pick, pred.top_2nd, pred.top_3rd].sort(
-          (a, b) => a - b,
-        );
-        const resultTop3 = [result.rank1, result.rank2, result.rank3].sort(
-          (a, b) => a - b,
-        );
-
-        // ⚠️ 命名注意: 変数名の英語と日本語が逆転（DB列名に合わせている）
-        // isTrifectaHit → 実態: 3連複的中（順不同）
-        isTrifectaHit =
-          predTop3[0] === resultTop3[0] &&
-          predTop3[1] === resultTop3[1] &&
-          predTop3[2] === resultTop3[2];
-
-        // isTrioHit → 実態: 3連単的中（順序一致）
-        isTrioHit =
-          pred.top_pick === result.rank1 &&
-          pred.top_2nd === result.rank2 &&
-          pred.top_3rd === result.rank3;
-      }
-
-      // 複勝の配当を計算（top_pickが何着かによって異なる）
-      let payoutPlace = 0;
-      if (isPlaceHit) {
-        if (pred.top_pick === result.rank1) {
-          payoutPlace = result.payout_place_1 || 0;
-        } else if (pred.top_pick === result.rank2) {
-          payoutPlace = result.payout_place_2 || 0;
-        }
-      }
-
-      // 展開予測的中（unifiedモデルのみ。feature_contributions.turnPrediction
-      // が無い旧モデルはnullのまま＝「対象外」として区別する。ADR 0013）
-      // ここではmodel_idを見ておらず、standard/safeBet/upsetFocusにturnPrediction
-      // が入っていた期間はそれらにもis_hit_turnを計算・書き込んでいた（下流の
-      // update-race-history-cache.jsはmodel_id='unified'限定で読むため実害は無い）。
-      // BOA-408（predictions.feature_contributionsの3モデル重複解消）以降、
-      // safeBet・upsetFocusのfeature_contributionsはNULLになるため、この2モデルは
-      // 自然にhasTurnPrediction=falseへ戻る（ADR 0013の設計意図どおりに近づく）
-      const turnPatterns = pred.feature_contributions?.turnPrediction?.patterns;
-      const hasTurnPrediction =
-        Array.isArray(turnPatterns) && turnPatterns.length > 0;
-      const turnHit = hasTurnPrediction
-        ? isTurnHit(turnPatterns, result.rank1)
-        : null;
-
-      const updateData = {
-        is_hit_win: isWinHit,
-        is_hit_place: isPlaceHit,
-        is_hit_trifecta: isTrifectaHit,
-        is_hit_trio: isTrioHit,
-        is_hit_turn: turnHit,
-        payout_win: isWinHit ? result.payout_win : 0,
-        payout_place: payoutPlace,
-        payout_trifecta: predictsTrio
-          ? isTrifectaHit
-            ? result.payout_trifecta
-            : 0
-          : null,
-        payout_trio: predictsTrio ? (isTrioHit ? result.payout_trio : 0) : null,
-      };
+      // 判定の規則（不成立・返還艇・top_3rd を予想しないモデル・展開予測）は buildPredictionHitUpdate に集約（BOA-544）
+      const updateData = buildPredictionHitUpdate(pred, result);
 
       const { error: updateError } = await client
         .from("predictions")
@@ -942,10 +867,10 @@ async function judgeAndUpdateHits(client, resultsToJudge) {
         .eq("prediction_id", pred.prediction_id);
 
       if (!updateError) {
-        if (isWinHit) winHits++;
-        if (isPlaceHit) placeHits++;
-        if (isTrifectaHit) trifectaHits++;
-        if (isTrioHit) trioHits++;
+        if (updateData.is_hit_win) winHits++;
+        if (updateData.is_hit_place) placeHits++;
+        if (updateData.is_hit_trifecta) trifectaHits++;
+        if (updateData.is_hit_trio) trioHits++;
       }
     }
   }
@@ -1488,12 +1413,25 @@ async function fetchAllRange(table, select, buildQuery, client = supabase) {
   return results;
 }
 
+/** predictions の的中フラグと配当の列（buildPredictionHitUpdate が返す列） */
+const HIT_COLUMNS = [
+  "is_hit_win",
+  "is_hit_place",
+  "is_hit_trifecta",
+  "is_hit_trio",
+  "is_hit_turn",
+  "payout_win",
+  "payout_place",
+  "payout_trifecta",
+  "payout_trio",
+];
+
 // 結果があるのにis_hit_winがNULLの予測を修正
 // startDate〜endDate（両端含む、race_id昇順比較）の範囲で欠落を検知・修復する。
 // 通常呼び出しは直近数日分の範囲を渡し、当日限定では拾えない過去日の
 // 一時的な書き込み失敗（2026-09-06発覚）を後続の実行で自己修復できるようにする。
 // GitHub Actions では結果取得のたびに、Vercel Cron では日次の result-catchup で呼ぶ（T4b-02-1）。
-// 戻り値: 欠落していた件数と修正できた件数（呼び出し側の多くは無視する）
+// 戻り値: 欠落していた件数と修正できた件数、判定対象外の件数（呼び出し側の多くは無視する）
 export async function fixMissingHitFlags(
   startDate,
   endDate = startDate,
@@ -1506,7 +1444,7 @@ export async function fixMissingHitFlags(
   // 一切修復されないまま固着していた）
   const missingPredictions = await fetchAllRange(
     "predictions",
-    "prediction_id, race_id, top_pick, top_2nd, top_3rd, feature_contributions",
+    `prediction_id, race_id, top_pick, top_2nd, top_3rd, feature_contributions, ${HIT_COLUMNS.join(", ")}`,
     (q) =>
       q
         .gte("race_id", startDate)
@@ -1526,7 +1464,7 @@ export async function fixMissingHitFlags(
   // 結果データを取得（同様にページネーション）
   const results = await fetchAllRange(
     "race_results",
-    "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio",
+    "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio, race_status, refund_boats",
     (q) => q.gte("race_id", startDate).lt("race_id", `${endDate}~`),
     client,
   );
@@ -1537,61 +1475,22 @@ export async function fixMissingHitFlags(
   }
 
   let fixed = 0;
+  let notJudgeable = 0; // 判定対象外のまま（不成立・単勝の艇が返還）。欠落ではない
   for (const pred of missingPredictions) {
     const result = resultsMap.get(pred.race_id);
     if (!result || !result.rank1) continue;
 
-    const isWinHit = pred.top_pick === result.rank1;
-    const isPlaceHit =
-      pred.top_pick === result.rank1 || pred.top_pick === result.rank2;
-
-    const predTop3 = [pred.top_pick, pred.top_2nd, pred.top_3rd].sort(
-      (a, b) => a - b,
-    );
-    const resultTop3 = [result.rank1, result.rank2, result.rank3].sort(
-      (a, b) => a - b,
-    );
-    const isTrifectaHit =
-      predTop3[0] === resultTop3[0] &&
-      predTop3[1] === resultTop3[1] &&
-      predTop3[2] === resultTop3[2];
-    const isTrioHit =
-      pred.top_pick === result.rank1 &&
-      pred.top_2nd === result.rank2 &&
-      pred.top_3rd === result.rank3;
-
-    let payoutPlace = 0;
-    if (isPlaceHit) {
-      if (pred.top_pick === result.rank1) {
-        payoutPlace = result.payout_place_1 || 0;
-      } else if (pred.top_pick === result.rank2) {
-        payoutPlace = result.payout_place_2 || 0;
-      }
+    const update = buildPredictionHitUpdate(pred, result);
+    // 判定対象外（不成立・返還艇を含む券種）は NULL のまま。is_hit_win が NULL の行は毎回ここに来るので、
+    // 今の値と同じなら書かない（変更の無い行は書かない。BOA-544）
+    if (HIT_COLUMNS.every((c) => (pred[c] ?? null) === update[c])) {
+      notJudgeable++;
+      continue;
     }
-
-    // 展開予測的中（unifiedモデルのみ。ADR 0013。judgeAndUpdateHits関数の同名の
-    // 判定と同じくmodel_idを見ていない点・BOA-408後の挙動については同関数の
-    // コメント参照）
-    const turnPatterns = pred.feature_contributions?.turnPrediction?.patterns;
-    const hasTurnPrediction =
-      Array.isArray(turnPatterns) && turnPatterns.length > 0;
-    const turnHit = hasTurnPrediction
-      ? isTurnHit(turnPatterns, result.rank1)
-      : null;
 
     const { error: updateError } = await client
       .from("predictions")
-      .update({
-        is_hit_win: isWinHit,
-        is_hit_place: isPlaceHit,
-        is_hit_trifecta: isTrifectaHit,
-        is_hit_trio: isTrioHit,
-        is_hit_turn: turnHit,
-        payout_win: isWinHit ? result.payout_win : 0,
-        payout_place: payoutPlace,
-        payout_trifecta: isTrifectaHit ? result.payout_trifecta : 0,
-        payout_trio: isTrioHit ? result.payout_trio : 0,
-      })
+      .update(update)
       .eq("prediction_id", pred.prediction_id);
 
     if (!updateError) fixed++;
@@ -1600,7 +1499,11 @@ export async function fixMissingHitFlags(
   if (fixed > 0) {
     console.log(`  ✅ ${fixed}件の欠落フラグを修正`);
   }
-  return { missing: missingPredictions.length, fixed };
+  return {
+    missing: missingPredictions.length - notJudgeable,
+    fixed,
+    notJudgeable,
+  };
 }
 
 // スタンドアローン実行時のみ実行する（import 時に実行させない）

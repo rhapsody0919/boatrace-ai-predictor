@@ -49,7 +49,9 @@ export function buildPredictionHitUpdate(pred, result) {
   // 展開予測（unified のみ。feature_contributions.turnPrediction が無い旧モデルは NULL。ADR 0013）
   const turnPatterns = pred.feature_contributions?.turnPrediction?.patterns;
   const isHitTurn =
-    Array.isArray(turnPatterns) && turnPatterns.length > 0 && isJudgeable(result)
+    Array.isArray(turnPatterns) &&
+    turnPatterns.length > 0 &&
+    isJudgeable(result)
       ? isTurnHit(turnPatterns, result.rank1)
       : null;
 
