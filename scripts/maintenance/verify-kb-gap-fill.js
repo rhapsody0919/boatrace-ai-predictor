@@ -584,11 +584,21 @@ async function evaluateGroupWrite(cli) {
       const call = { table, filters: [] };
       const q = {
         update: (values) => ((call.values = values), q),
-        in: (col, ids) => (call.filters.push(["in", col, ids.length]), q),
-        is: (col, v) => (
-          call.filters.push(["is", col, v]),
+        in: (col, ids) => (
+          (call.ids = ids),
+          call.filters.push(["in", col, ids.length]),
+          q
+        ),
+        is: (col, v) => (call.filters.push(["is", col, v]), q),
+        // 既に値の入った行（ここでは "N0"）は、DB の条件で外れて返らない
+        select: () => (
           calls.push(call),
-          Promise.resolve({ error: null })
+          Promise.resolve({
+            data: call.ids
+              .filter((id) => id !== "N0")
+              .map((id) => ({ race_id: id })),
+            error: null,
+          })
         ),
       };
       return q;
@@ -606,7 +616,10 @@ async function evaluateGroupWrite(cli) {
     client,
     pause: async () => {},
   });
-  if (written !== 451) failed.push(`(g) 書いた件数 ${written}`);
+  if (written !== 450)
+    failed.push(
+      `(g) 書いた件数は実際に更新した行（既に値のある N0 を除く450） ${written}`,
+    );
   if (show(calls.map((c) => c.filters[0][2])) !== show([200, 200, 50, 1]))
     failed.push(
       `(g) 同じ値ごとに200件ずつ ${show(calls.map((c) => c.filters))}`,

@@ -192,17 +192,19 @@ async function writeGrouped(def, rows, { client, pause }) {
     for (let i = 0; i < ids.length; i += BATCH) {
       if (calls++ > 0) await pause(PAUSE_MS);
       const chunk = ids.slice(i, i + BATCH);
-      const { error } = await client
+      const { data, error } = await client
         .from(def.table)
         .update(values)
         .in(key, chunk)
-        .is(def.nullGuardColumn, null);
+        .is(def.nullGuardColumn, null)
+        // 実際に更新した行を数える（既に値の入った行は条件で外れるので、chunk の件数とは限らない）
+        .select(key);
       if (error) {
         throw new Error(
           `${def.table} の書き込みに失敗しました（${written}行は書き込み済み。再実行すれば残りだけ書く）: ${error.message}`,
         );
       }
-      written += chunk.length;
+      written += (data ?? []).length;
     }
   }
   return written;
