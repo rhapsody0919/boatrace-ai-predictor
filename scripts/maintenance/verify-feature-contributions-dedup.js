@@ -7,8 +7,7 @@
  *   (a) generateAndWriteFromRacesData（writeToSupabase、朝の初期化経路）が書く predictions は、
  *       model_id='standard' の行にのみ feature_contributions（turnPrediction・racerStats）を持ち、
  *       safeBet・upsetFocus はNULL
- *   (b) mainRefresh（発走前リフレッシュ経路）が書く predictions も同様。writeMode="replace"・
- *       "upsert" のどちらでも同じ
+ *   (b) mainRefresh（発走前リフレッシュ経路）が書く predictions も同様（書き込みは upsert のみ。replace は BOA-628 で廃止）
  *   (c) standard行のfeature_contributions自体がNULL（turnPrediction・racerStatsどちらも無い）
  *       レースでは、3モデルとも従来どおりNULLのまま（何かを新たにNULLにしたわけではない）
  *   (d) 上記(a)(b)により、feature_contributionsを持つ行数がレースあたり3行→1行に減ることを
@@ -48,6 +47,8 @@ async function quiet(fn) {
   }
 }
 
+// 発走済みのレースは書かない（BOA-628）ため、対象日の朝に固定する（2026-09-20・21 の発走前）
+const FIXED_NOW = new Date("2026-09-20T06:00:00+09:00");
 const FX = new URL("../lib/racesInit/__fixtures__/", import.meta.url);
 const GOLDEN_VENUE = JSON.parse(
   fs.readFileSync(new URL("golden-venue-01.json", FX), "utf8"),
@@ -65,6 +66,7 @@ const GOLDEN_VENUE = JSON.parse(
   });
   await quiet(() =>
     generateAndWriteFromRacesData({
+      now: () => FIXED_NOW,
       racesData: { success: true, data: [structuredClone(GOLDEN_VENUE)] },
       date: "2026-09-21",
       client,
@@ -160,7 +162,7 @@ const GOLDEN_VENUE = JSON.parse(
     predictions: [],
   });
 
-  for (const writeMode of ["replace", "upsert"]) {
+  for (const writeMode of ["upsert"]) {
     const client = createFakeSupabaseClient({ tables: raceTables() });
     await quiet(() =>
       mainRefresh({

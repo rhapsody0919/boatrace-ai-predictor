@@ -14,9 +14,13 @@
  *       0件エラー / 例外の扱い / ブレーカー / ソフトデッドライン / 並列度 / 日次の冪等・リース・shadow
  *   (i) Supabaseストアのクエリの形: 完了・再試行はclaimed_byとstatus=runningの条件付き更新
  *   (j) getRaceSchedule の例外モード: DBエラーを「対象なし」に化けさせない
+ *   (k) scrape-scheduled.js（GitHub Actions）: DBに繋がらないとき、「対象レースなし」で正常終了せず exit 1（BOA-352）。
+ *       接続先は 127.0.0.1:1（必ず接続拒否になる）で、本物のDBには繋がない
  *
  * 予定表のRPCの意味論（期限・許容幅・リース・奪取）は verify-scrape-slots-sql.js（PGlite）で検証する。
  */
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import {
   toJstDateString,
   jstStartOfDay,
@@ -2080,6 +2084,34 @@ check(
     ok.length === 2 &&
       ok[0].race_id === "2026-09-19-01-01" &&
       ok[0].start_time.toISOString() === "2026-09-19T00:00:00.000Z",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (k) scrape-scheduled.js: DB障害で「対象レースなし」に化けず、exit 1 で workflow を失敗させる（BOA-352）
+// ---------------------------------------------------------------------------
+{
+  const proc = spawnSync(
+    process.execPath,
+    [
+      fileURLToPath(new URL("../daily/scrape-scheduled.js", import.meta.url)),
+      "--date=2026-09-19",
+    ],
+    {
+      encoding: "utf8",
+      timeout: 60_000,
+      env: {
+        ...process.env,
+        SUPABASE_URL: "http://127.0.0.1:1",
+        SUPABASE_SERVICE_KEY: "dummy",
+      },
+    },
+  );
+  const out = `${proc.stdout}${proc.stderr}`;
+  check(
+    "scrape-scheduled.js: DBに繋がらないとき exit 1 で終わり、「対象レースなし」で正常終了しない（BOA-352）",
+    proc.status === 1 && !out.includes("対象レースなし"),
+    `status=${proc.status} ${out.slice(-300)}`,
   );
 }
 

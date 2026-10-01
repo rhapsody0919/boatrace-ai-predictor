@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../hooks/useTheme";
 import { THEMES } from "../config/theme";
 import "./ThemeToggle.css";
@@ -13,8 +14,10 @@ function getEffectiveTheme(theme) {
 }
 
 function ThemeToggle() {
+  const { t } = useTranslation();
   const [theme, setTheme] = useTheme();
   const isDark = getEffectiveTheme(theme) === THEMES.DARK;
+  const label = isDark ? t("nav.themeToLight") : t("nav.themeToDark");
 
   const handleClick = () => {
     setTheme(isDark ? THEMES.LIGHT : THEMES.DARK);
@@ -25,8 +28,8 @@ function ThemeToggle() {
       type="button"
       className="theme-toggle"
       onClick={handleClick}
-      aria-label={isDark ? "ライトテーマに切り替え" : "ダークテーマに切り替え"}
-      title={isDark ? "ライトテーマに切り替え" : "ダークテーマに切り替え"}
+      aria-label={label}
+      title={label}
     >
       {isDark ? (
         <svg

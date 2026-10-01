@@ -48,7 +48,7 @@ import {
   dayTickLabels,
   layoutTrendByDate,
 } from "../../src/utils/trendDateLayout.js";
-import { fetchAllByRaceId } from "../lib/meetBoundaries.js";
+import { buildMeets, fetchAllByRaceId } from "../lib/meetBoundaries.js";
 
 let failures = 0;
 function check(label, actual, expected) {
@@ -601,6 +601,22 @@ check(
       withPrelim,
     ),
     ["落", null],
+  );
+  check(
+    "着順の並び: 着欄の記号が未取得でも、フライングの走は「失」ではなく F（推移の点と同じ。BOA-589）",
+    listSeriesFinishes(
+      [
+        {
+          ...base,
+          raceId: "2026-09-23-20-03",
+          boatNumber: 6,
+          started: true,
+          isFlying: true,
+        },
+      ],
+      withPrelim,
+    ),
+    ["F"],
   );
   // 6艇の推移の横軸を日付にする配置（BOA-538）
   {
@@ -1501,6 +1517,46 @@ check(
       [202, null, "withdrawn"],
       [203, 1, null],
     ],
+  );
+}
+
+// ---- buildMeets は順延（同じ日目が翌日に続く）で節を割らない（BOA-506） --------
+// 戸田 2026-09-18〜24 の実データ。9/21 が丸一日中止で、公式は 9/22 も4日目とする
+// （9/21→22 で出場43人が全員同じ）。以前は同値を新しい節として扱い、9/21 で節を
+// 割って予選の締めを 9/21 8R（中止で走っていない日）に確定させていた
+{
+  const day = (d, sd, stage, fin = false) => ({
+    race_id: `${d}-02-08`,
+    race_stage: stage,
+    series_day: sd,
+    is_final_day: fin,
+  });
+  const TODA = [
+    day("2026-09-18", 1, "予選"),
+    day("2026-09-19", 2, "予選"),
+    day("2026-09-20", 3, "予選"),
+    day("2026-09-21", 4, "予選"),
+    day("2026-09-22", 4, "予選"),
+    day("2026-09-23", 5, "準優勝戦"),
+    day("2026-09-24", 6, "優勝戦", true),
+    // 次の節
+    day("2026-09-26", 1, "予選"),
+  ];
+  const meets = buildMeets(TODA);
+  check(
+    "順延の日（4→4）は同じ節。予選の締めは 9/22",
+    meets.map((m) => [m.dates[0], m.dates.at(-1), m.prelimEndRaceId]),
+    [
+      ["2026-09-18", "2026-09-24", "2026-09-22-02-08"],
+      ["2026-09-26", "2026-09-26", "2026-09-26-02-08"],
+    ],
+  );
+  // 同じ日目でも日付が空いていれば別の節（従来どおり）
+  const GAP = [day("2026-09-01", 1, "予選"), day("2026-09-03", 1, "予選")];
+  check(
+    "日付が空いた同値は別の節",
+    buildMeets(GAP).map((m) => m.dates),
+    [["2026-09-01"], ["2026-09-03"]],
   );
 }
 
