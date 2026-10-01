@@ -48,29 +48,6 @@ jobs:
           path: node_modules/.cache/boatai-e2e-recording
           key: e2e-recording-${{ hashFiles('e2e/recording.json') }}
 
-      # 【一時・BOA-459 マージ前に外す】修正前（master の Header.jsx）と修正後で、
-      # 揺れていたテストと再現テストを20回ずつ回して失敗数を比べる
-      - name: "[TEMP BOA-459] repeat before fix (master Header.jsx)"
-        continue-on-error: true
-        env:
-          CI: true
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: |
-          cp src/components/Header.jsx /tmp/Header.fixed.jsx
-          # 途中で失敗しても、修正後のステップが修正前のコードで走らないよう必ず戻す
-          trap 'cp /tmp/Header.fixed.jsx src/components/Header.jsx' EXIT
-          git fetch --depth=1 origin master
-          git show FETCH_HEAD:src/components/Header.jsx > src/components/Header.jsx
-          npx playwright test e2e/smoke.spec.js e2e/header-compress.spec.js --project=smoke -g "条件別|ヘッダーの圧縮" --repeat-each=20 --retries=0 --reporter=line --output=test-results-b459-before || true
-          cp /tmp/Header.fixed.jsx src/components/Header.jsx
-      - name: "[TEMP BOA-459] repeat after fix"
-        env:
-          CI: true
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: npx playwright test e2e/smoke.spec.js e2e/header-compress.spec.js --project=smoke -g "条件別|ヘッダーの圧縮" --repeat-each=20 --retries=0 --reporter=line --output=test-results-b459-after
-
       # 録画に無い通信は本番へ素通しするので、本番の読み取り用キー（anon）を渡す
       - name: Run E2E smoke tests (録画の再生)
         env:
