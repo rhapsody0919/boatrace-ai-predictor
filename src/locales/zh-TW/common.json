@@ -1845,7 +1845,9 @@
     "flying": "F",
     "stRank": "(第{{n}})",
     "legend": "最上方為日期，接著是實際進入航線、名次、ST及該場內的ST名次。點選方塊，下方會顯示該場的場地、R、種別",
-    "detail": "{{date}} {{venue}}{{race}}R{{stage}}，{{course}}，{{finish}}，ST {{st}}"
+    "detail": "{{date}} {{venue}}{{race}}R{{stage}}，{{course}}，{{finish}}，ST {{st}}",
+    "stageWithGrade": "（{{grade}} {{stage}}）",
+    "stageOnly": "（{{stage}}）"
   },
   "venueDaySummary": {
     "collapsedTeaser": "已確定{{n}}R，1號艇逃脫率{{rate}}%",

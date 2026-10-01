@@ -1670,6 +1670,35 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(items.first()).toHaveAttribute("aria-pressed", "true");
   });
 
+  test("直近走の帯は、事故の走を「外」でなく公式の記号で出し、明細の括弧にグレードを付ける（BOA-604 ファン評価1周目）", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    // 2号艇（長岡良也）の「SG・G1」: 2/7 住之江4R は公式で F（以前は着順の欄が「外」）
+    await page
+      .getByRole("button", { name: /SG・G1/ })
+      .nth(1)
+      .click();
+    const f = page.locator('.rrb-item[data-race-id="2026-02-07-12-04"]');
+    await expect(f.locator(".rrb-rank")).toHaveText("F", { timeout: 30000 });
+    await f.click();
+    await expect(page.locator(".rrb-detail").first()).toContainText("F");
+    await expect(page.locator(".rrb-detail").first()).not.toContainText("外");
+
+    // 4号艇の「SG・G1」: 3/1 鳴門3R は G1 の「一般戦」。括弧にグレードを付けて、
+    // 表の「一般戦」行（一般グレードの節）と混ざって読まれないようにする
+    await page
+      .getByRole("button", { name: /SG・G1/ })
+      .nth(3)
+      .click();
+    const g = page.locator('.rrb-item[data-race-id="2026-03-01-14-03"]');
+    await g.click({ timeout: 30000 });
+    await expect(page.locator(".rrb-detail").first()).toContainText(
+      "（G1 一般戦）",
+    );
+  });
+
   test("枠別情報のコース別「直近1ヶ月」の帯は、表示どおり左が古く右が新しい（BOA-601）", async ({
     page,
   }) => {

@@ -1845,7 +1845,9 @@
     "flying": "F",
     "stRank": "({{n}}위)",
     "legend": "맨 위는 날짜, 다음은 실제 진입 코스·착순·ST와 그 경주 내 ST 순위. 타일을 누르면 그 경주의 경정장·R·종별이 아래에 나옵니다",
-    "detail": "{{date}} {{venue}} {{race}}R{{stage}} · {{course}} · {{finish}} · ST {{st}}"
+    "detail": "{{date}} {{venue}} {{race}}R{{stage}} · {{course}} · {{finish}} · ST {{st}}",
+    "stageWithGrade": " ({{grade}} {{stage}})",
+    "stageOnly": " ({{stage}})"
   },
   "venueDaySummary": {
     "collapsedTeaser": "확정 {{n}}R · 1번 보트 도망 비율 {{rate}}%",

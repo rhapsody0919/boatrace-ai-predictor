@@ -1845,7 +1845,9 @@
     "flying": "F",
     "stRank": "({{n}}位)",
     "legend": "いちばん上は月日、次に実際に進入したコース、着順、STとそのレース内でのST順位。タイルを押すと、その走の会場・R・種別が下に出ます",
-    "detail": "{{date}} {{venue}}{{race}}R{{stage}}・{{course}}・{{finish}}・ST {{st}}"
+    "detail": "{{date}} {{venue}}{{race}}R{{stage}}・{{course}}・{{finish}}・ST {{st}}",
+    "stageWithGrade": "（{{grade}} {{stage}}）",
+    "stageOnly": "（{{stage}}）"
   },
   "venueDaySummary": {
     "collapsedTeaser": "確定{{n}}R・1号艇の逃げ率{{rate}}%",
