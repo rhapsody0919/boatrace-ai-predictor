@@ -4375,7 +4375,7 @@ export const supabaseDataService = {
     // v5: 欠場（absent）を足した（BOA-504）
     // v6: 着順が付かない走の公式の記号（finishMark）を足した（BOA-537）
     // v7: 同じ日の走を R の古い順に並べ直した（BOA-588）
-    return withCache(`racer-scoped-race-stats-v7-${racerId}`, async () => {
+    return withCache(`racer-scoped-race-stats-v8-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4436,7 +4436,7 @@ export const supabaseDataService = {
         fetchAllByIn(
           "race_start_timings",
           // finish_mark: 欠場の走を「着外」でなく「欠場」と出すため（BOA-504）
-          "race_id, boat_number, start_timing, is_flying, finish_mark",
+          "race_id, boat_number, start_timing, is_flying, finish_mark, entry_course",
           "race_id",
           raceIds,
         ),
@@ -4516,127 +4516,138 @@ export const supabaseDataService = {
         }
       });
 
-      return entries
-        .map((entry) => {
-          const race = raceById.get(entry.race_id);
-          const result = resultById.get(entry.race_id);
-          if (!race || !isUsableRaceResult(result)) return null;
-          const st = startTimingByKey.get(
-            `${entry.race_id}-${entry.boat_number}`,
-          );
-          const hasExhibitionData = exhibitionRowsByRace.has(entry.race_id);
-          const soleFastestBoat = soleFastestBoatByRace.get(entry.race_id);
-          const condition = conditionById.get(entry.race_id);
-          const stContext = stContextByRace.get(entry.race_id);
-          const stDerived = stContext?.byBoat.get(entry.boat_number);
-          return {
-            raceId: entry.race_id,
-            date: race.race_date,
-            venueCode: race.venue_code,
-            boatNumber: entry.boat_number,
-            // racesの約76%のみrace_grade取得済み（2026-09-15確認）。
-            // 未取得レースはグレードフィルタ「全レース」時のみ集計対象に含める
-            raceGrade: race.race_grade ?? null,
-            raceTitle: condition?.race_title ?? null,
-            raceStage: condition?.race_stage ?? null,
-            // 条件別タブ（phase a FR-2）。取得失敗時は undefined のままにして
-            // 「未取得」を伝え、欠測（null）と区別する
-            waveHeight: conditionsUnavailable
-              ? undefined
-              : (condition?.wave_height ?? null),
-            // 節の何日目か／最終日か。公式サイトの日程タブ由来（BOA-226）で
-            // 2026-02-03以降99.0%が埋まっている。race_series（月間スケジュール）
-            // とは3,014 venue-dayで100%一致することを実装前に確認済み
-            seriesDay: conditionsUnavailable
-              ? undefined
-              : (condition?.series_day ?? null),
-            isFinalDay: conditionsUnavailable
-              ? undefined
-              : (condition?.is_final_day ?? null),
-            rank1: result.rank1,
-            rank2: result.rank2,
-            rank3: result.rank3,
-            rank4: result.rank4 ?? null,
-            rank5: result.rank5 ?? null,
-            rank6: result.rank6 ?? null,
-            // 決まり手・単勝配当（「直近5走」表示用、BOA-333レビュー指摘）。
-            // 1着以外では意味を持たないが、判定はRaceHistoryTable側（finishRank
-            // ===1の行のみ表示）に委ね、ここでは生値をそのまま渡す
-            winningTechnique: result.winning_technique ?? null,
-            payoutWin: result.payout_win ?? null,
-            // フライングは異常値のため平均ST計算から除外する（RaceResult.jsx等と
-            // 同じ扱い）。未計測・未取得レースはnullのまま
-            // 欠場（本番STの行の着順が「欠」）。履歴の表で「着外」と区別する（BOA-504）
-            // 本番STの行そのものが無い欠場もある（他の艇の行はあるのに自艇だけ無い。
-            // 2026-06-13 浜名湖5R・12Rの中岡正彦）。着順が付いた走は表示側が着順を
-            // 優先するので、ここで欠場扱いにしても「着順あり」の走は変わらない
-            // 着順が付かない走の公式の記号（落・転・妨など）。履歴の表で「着外」と
-            // 書かずに記号で出す（BOA-537）
-            finishMark: officialMarkOf(st?.finish_mark),
-            absent:
-              isAbsentStartRow(st) || (!st && stRowsByRace.has(entry.race_id)),
-            startTiming:
-              st && !st.is_flying && st.start_timing != null
-                ? st.start_timing
+      return (
+        entries
+          .map((entry) => {
+            const race = raceById.get(entry.race_id);
+            const result = resultById.get(entry.race_id);
+            if (!race || !isUsableRaceResult(result)) return null;
+            const st = startTimingByKey.get(
+              `${entry.race_id}-${entry.boat_number}`,
+            );
+            const hasExhibitionData = exhibitionRowsByRace.has(entry.race_id);
+            const soleFastestBoat = soleFastestBoatByRace.get(entry.race_id);
+            const condition = conditionById.get(entry.race_id);
+            const stContext = stContextByRace.get(entry.race_id);
+            const stDerived = stContext?.byBoat.get(entry.boat_number);
+            return {
+              raceId: entry.race_id,
+              date: race.race_date,
+              venueCode: race.venue_code,
+              boatNumber: entry.boat_number,
+              // racesの約76%のみrace_grade取得済み（2026-09-15確認）。
+              // 未取得レースはグレードフィルタ「全レース」時のみ集計対象に含める
+              raceGrade: race.race_grade ?? null,
+              raceTitle: condition?.race_title ?? null,
+              raceStage: condition?.race_stage ?? null,
+              // 条件別タブ（phase a FR-2）。取得失敗時は undefined のままにして
+              // 「未取得」を伝え、欠測（null）と区別する
+              waveHeight: conditionsUnavailable
+                ? undefined
+                : (condition?.wave_height ?? null),
+              // 節の何日目か／最終日か。公式サイトの日程タブ由来（BOA-226）で
+              // 2026-02-03以降99.0%が埋まっている。race_series（月間スケジュール）
+              // とは3,014 venue-dayで100%一致することを実装前に確認済み
+              seriesDay: conditionsUnavailable
+                ? undefined
+                : (condition?.series_day ?? null),
+              isFinalDay: conditionsUnavailable
+                ? undefined
+                : (condition?.is_final_day ?? null),
+              rank1: result.rank1,
+              rank2: result.rank2,
+              rank3: result.rank3,
+              rank4: result.rank4 ?? null,
+              rank5: result.rank5 ?? null,
+              rank6: result.rank6 ?? null,
+              // 決まり手・単勝配当（「直近5走」表示用、BOA-333レビュー指摘）。
+              // 1着以外では意味を持たないが、判定はRaceHistoryTable側（finishRank
+              // ===1の行のみ表示）に委ね、ここでは生値をそのまま渡す
+              winningTechnique: result.winning_technique ?? null,
+              payoutWin: result.payout_win ?? null,
+              // フライングは異常値のため平均ST計算から除外する（RaceResult.jsx等と
+              // 同じ扱い）。未計測・未取得レースはnullのまま
+              // 欠場（本番STの行の着順が「欠」）。履歴の表で「着外」と区別する（BOA-504）
+              // 本番STの行そのものが無い欠場もある（他の艇の行はあるのに自艇だけ無い。
+              // 2026-06-13 浜名湖5R・12Rの中岡正彦）。着順が付いた走は表示側が着順を
+              // 優先するので、ここで欠場扱いにしても「着順あり」の走は変わらない
+              // 着順が付かない走の公式の記号（落・転・妨など）。履歴の表で「着外」と
+              // 書かずに記号で出す（BOA-537）
+              finishMark: officialMarkOf(st?.finish_mark),
+              absent:
+                isAbsentStartRow(st) ||
+                (!st && stRowsByRace.has(entry.race_id)),
+              startTiming:
+                st && !st.is_flying && st.start_timing != null
+                  ? st.start_timing
+                  : null,
+              // 実進入コース（BOA-257）。2025-12-04より前のレースや欠場艇はnull
+              actualCourse:
+                result[`actual_course_${entry.boat_number}`] ?? null,
+              // 表示用の進入コース（BOA-623）。本番STの進入（当日のうちに入る）を先に、
+              // 無ければ Kファイルの actualCourse。actualCourse 自体はコース別の集計に
+              // 使っているので変えない（集計の母数が変わる）
+              entryCourse:
+                st?.entry_course ??
+                result[`actual_course_${entry.boat_number}`] ??
+                null,
+              // 級別（そのレース時点の値）。ST考察のベースラインを(course, grade)で引く
+              grade: entry.grade ?? null,
+              // 自艇の展示タイム。展示1位判定のために同レース全艇分を既に
+              // 取得しているので、そこから拾うだけ（追加クエリ0本）。
+              // 今節タブの「展示タイムの推移」（FR-3 Phase A）で使う
+              exhibitionTime:
+                exhibitionRowsByRace
+                  .get(entry.race_id)
+                  ?.find((r) => r.boat_number === entry.boat_number)
+                  ?.exhibition_time ?? null,
+              // 同じレースの中での展示タイム順位（1が最速）。
+              // **絶対値の推移は水面の影響を拾う**——桐生の会場平均は
+              // 2026-09-20〜25で 6.763〜6.865 と日によって0.10秒動いており、
+              // 「+0.03で下向き」のような判定は水面が重い日に全艇へ出てしまう。
+              // 同じレース内の順位なら、その日の水面の影響が相殺される
+              exhibitionRank: (() => {
+                const rows = exhibitionRowsByRace.get(entry.race_id);
+                const mine = rows?.find(
+                  (r) => r.boat_number === entry.boat_number,
+                )?.exhibition_time;
+                if (!rows || mine === null || mine === undefined) return null;
+                // 同着は同順位（1,1,3…）。展示は小数2桁で同着が起きる
+                return rows.filter((r) => r.exhibition_time < mine).length + 1;
+              })(),
+              // そのレース時点の出走表に載っていた今期のF数（phase a FR-2の
+              // 「F持ち時」「F無し時」の行）。null の走は母数から落ちる。
+              // 充足の内訳（2026-09-25実測）:
+              //   2025-12-03〜2026-02-14 … N19（racelist-backfill.js）が夜間に実行中
+              //   2026-02-15〜2026-09-20 … **埋める計画が無い**（BOA-417で起票）
+              //   2026-09-21〜           … 日次の生取得でほぼ100%
+              // K/Bアーカイブからは埋められない（Kファイルは今期F数のような累積を
+              // 持たず、レース限りのF/Lフラグだけ。導出を試して完全一致率約5%で
+              // 不採用になっている。pre-race-full-fields/plan.md §6.1）
+              fCount: entry.f_count ?? null,
+              // ST考察（FR-1）の派生値。Fは stForRank を null にし、raceBestSt /
+              // innerMinSt / stRank の算出からも外す（符号反転はしない。ADR-0068 却下5）
+              isFlying: st?.is_flying === true,
+              stForRank: stDerived?.stForRank ?? null,
+              raceBestSt: stContext?.raceBestSt ?? null,
+              innerMinSt: stDerived?.innerMinSt ?? null,
+              stRank: stDerived?.stRank ?? null,
+              // 当該レースで自艇の展示タイムが単独最速だったか。同着・データ欠落は
+              // nullにし、集計時に分母から除外する（isFastestExhibition===trueの
+              // 件数のみで「展示1位だった時の1着率」等を計算する）
+              isFastestExhibition: hasExhibitionData
+                ? soleFastestBoat !== undefined
+                  ? soleFastestBoat === entry.boat_number
+                  : null
                 : null,
-            // 実進入コース（BOA-257）。2025-12-04より前のレースや欠場艇はnull
-            actualCourse: result[`actual_course_${entry.boat_number}`] ?? null,
-            // 級別（そのレース時点の値）。ST考察のベースラインを(course, grade)で引く
-            grade: entry.grade ?? null,
-            // 自艇の展示タイム。展示1位判定のために同レース全艇分を既に
-            // 取得しているので、そこから拾うだけ（追加クエリ0本）。
-            // 今節タブの「展示タイムの推移」（FR-3 Phase A）で使う
-            exhibitionTime:
-              exhibitionRowsByRace
-                .get(entry.race_id)
-                ?.find((r) => r.boat_number === entry.boat_number)
-                ?.exhibition_time ?? null,
-            // 同じレースの中での展示タイム順位（1が最速）。
-            // **絶対値の推移は水面の影響を拾う**——桐生の会場平均は
-            // 2026-09-20〜25で 6.763〜6.865 と日によって0.10秒動いており、
-            // 「+0.03で下向き」のような判定は水面が重い日に全艇へ出てしまう。
-            // 同じレース内の順位なら、その日の水面の影響が相殺される
-            exhibitionRank: (() => {
-              const rows = exhibitionRowsByRace.get(entry.race_id);
-              const mine = rows?.find(
-                (r) => r.boat_number === entry.boat_number,
-              )?.exhibition_time;
-              if (!rows || mine === null || mine === undefined) return null;
-              // 同着は同順位（1,1,3…）。展示は小数2桁で同着が起きる
-              return rows.filter((r) => r.exhibition_time < mine).length + 1;
-            })(),
-            // そのレース時点の出走表に載っていた今期のF数（phase a FR-2の
-            // 「F持ち時」「F無し時」の行）。null の走は母数から落ちる。
-            // 充足の内訳（2026-09-25実測）:
-            //   2025-12-03〜2026-02-14 … N19（racelist-backfill.js）が夜間に実行中
-            //   2026-02-15〜2026-09-20 … **埋める計画が無い**（BOA-417で起票）
-            //   2026-09-21〜           … 日次の生取得でほぼ100%
-            // K/Bアーカイブからは埋められない（Kファイルは今期F数のような累積を
-            // 持たず、レース限りのF/Lフラグだけ。導出を試して完全一致率約5%で
-            // 不採用になっている。pre-race-full-fields/plan.md §6.1）
-            fCount: entry.f_count ?? null,
-            // ST考察（FR-1）の派生値。Fは stForRank を null にし、raceBestSt /
-            // innerMinSt / stRank の算出からも外す（符号反転はしない。ADR-0068 却下5）
-            isFlying: st?.is_flying === true,
-            stForRank: stDerived?.stForRank ?? null,
-            raceBestSt: stContext?.raceBestSt ?? null,
-            innerMinSt: stDerived?.innerMinSt ?? null,
-            stRank: stDerived?.stRank ?? null,
-            // 当該レースで自艇の展示タイムが単独最速だったか。同着・データ欠落は
-            // nullにし、集計時に分母から除外する（isFastestExhibition===trueの
-            // 件数のみで「展示1位だった時の1着率」等を計算する）
-            isFastestExhibition: hasExhibitionData
-              ? soleFastestBoat !== undefined
-                ? soleFastestBoat === entry.boat_number
-                : null
-              : null,
-          };
-        })
-        .filter(Boolean)
-        // race_id（YYYY-MM-DD-VV-RR の固定長）で古い順に並べる。日付だけで
-        // 並べると、同じ日の2走が取得順（新しい順）のまま残り、直近10走が
-        // 「9/22 9R → 9/22 1R」と日の中だけ逆になっていた（BOA-588）
-        .sort((a, b) => a.raceId.localeCompare(b.raceId));
+            };
+          })
+          .filter(Boolean)
+          // race_id（YYYY-MM-DD-VV-RR の固定長）で古い順に並べる。日付だけで
+          // 並べると、同じ日の2走が取得順（新しい順）のまま残り、直近10走が
+          // 「9/22 9R → 9/22 1R」と日の中だけ逆になっていた（BOA-588）
+          .sort((a, b) => a.raceId.localeCompare(b.raceId))
+      );
     });
   },
 
@@ -4785,7 +4796,7 @@ export const supabaseDataService = {
    */
   getRacerRaceHistory(racerId) {
     // v2: ST を展示ST（exhibition_data）から本番ST（race_start_timings）に替え、isFlying・finishMark を足した（BOA-576）
-    return withCache(`racer-race-history-v2-${racerId}`, async () => {
+    return withCache(`racer-race-history-v3-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4818,7 +4829,7 @@ export const supabaseDataService = {
           ),
           fetchAllByIn(
             "race_results",
-            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race",
+            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
             "race_id",
             raceIds,
           ),
@@ -4839,7 +4850,7 @@ export const supabaseDataService = {
           // 同じ出どころにそろえる（BOA-576: 展示STを本番STとして出し、記号の走を「着外(順位不明)」と出していた）
           fetchAllByIn(
             "race_start_timings",
-            "race_id, boat_number, start_timing, is_flying, finish_mark",
+            "race_id, boat_number, start_timing, is_flying, finish_mark, entry_course",
             "race_id",
             raceIds,
           ),
@@ -4856,6 +4867,17 @@ export const supabaseDataService = {
       const stByKey = new Map(
         stRows.map((r) => [`${r.race_id}-${r.boat_number}`, r]),
       );
+      // レース内のST順位（Fを除く。同タイムは同順位）。今節タブ・直近10走と同じ規則
+      // （deriveRaceStContext）。レース一覧の「ST」に順位を添える（BOA-623）
+      const stRowsByRace = new Map();
+      stRows.forEach((r) => {
+        if (!stRowsByRace.has(r.race_id)) stRowsByRace.set(r.race_id, []);
+        stRowsByRace.get(r.race_id).push(r);
+      });
+      const stRankOf = (raceId, boatNumber) =>
+        deriveRaceStContext(stRowsByRace.get(raceId) ?? [], null).byBoat.get(
+          boatNumber,
+        )?.stRank ?? null;
 
       return entries
         .map((entry) => {
@@ -4888,6 +4910,12 @@ export const supabaseDataService = {
             startTiming: st?.start_timing ?? null,
             isFlying: st?.is_flying === true,
             finishMark: st?.finish_mark ?? null,
+            // 進入コースとST順位（BOA-623）。進入は本番STの進入を先に、無ければ Kファイル
+            entryCourse:
+              st?.entry_course ??
+              result[`actual_course_${entry.boat_number}`] ??
+              null,
+            stRank: stRankOf(entry.race_id, entry.boat_number),
             // 公式の着欄が数字でない（F・L・欠・落・転・妨・エ・不・失・沈・＿ など）走は着順が付かない。
             // race_results の rank1〜6 には、完走が3艇未満のレースで返還艇（F等）が入っていることがある
             // （43件、BOA-576 のデータ精度検証）。着欄の記号を優先し、着順・勝率には数えない
@@ -8321,6 +8349,8 @@ export function aggregateRacerVenueBoatStats(
       boatNumber: row.boatNumber,
       startTiming: row.startTiming ?? null,
       isFlying: row.isFlying === true,
+      entryCourse: row.entryCourse ?? null,
+      startTimingRank: row.stRank ?? null,
       finishRank: row.unranked ? null : finishPositionOf(row),
       finishMark: row.finishMark ?? null,
       absent: row.finishMark === "欠",

@@ -871,7 +871,7 @@
     "loading": "Loading...",
     "noHistory": "No race history available",
     "noVenueData": "No record by venue available (below the minimum number of races)",
-    "trendNote": "The last 10 races, regardless of the grade and period filters above. Tap a date to open that race",
+    "trendNote": "The last 10 races before this one, regardless of the grade and period filters above. The circled number after ST is the rank among the six boats. Tap a row to open that race",
     "finishUnknown": "Unplaced (rank unknown)",
     "finishAbsent": "Absent",
     "venueRankingFor": "{{metric}} ranking",

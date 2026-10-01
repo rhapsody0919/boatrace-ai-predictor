@@ -30,7 +30,7 @@ import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { parseRaceId } from "../../utils/raceId";
-import RaceHistoryTable from "./RaceHistoryTable";
+import RecentRunsTable from "./RecentRunsTable";
 import {
   filterRecords,
   computeRates,
@@ -41,6 +41,7 @@ import {
   periodDiff,
   periodDiffShownFrom,
   SMALL_SAMPLE_THRESHOLD,
+  recordsBeforeRace,
 } from "./basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
 import FlyingBadge from "./FlyingBadge";
@@ -553,8 +554,10 @@ function RaceBasicInfoTab({
                           </p>
                         );
                       }
+                      // 表示中のレースより前の走だけ（BOA-602）。過去のレースのページで、
+                      // そのレース自身や後日の走が「直近」に混ざっていた
                       const recent = getRecentRaces(
-                        records,
+                        recordsBeforeRace(records, raceId),
                         RECENT_RACES_COUNT,
                       );
                       if (recent.length === 0) {
@@ -569,7 +572,7 @@ function RaceBasicInfoTab({
                           <p className="rbit-trend-note">
                             {t("basicInfo.trendNote")}
                           </p>
-                          <RaceHistoryTable
+                          <RecentRunsTable
                             rows={recent}
                             buildRaceHref={(raceId) =>
                               localize(`/race/${raceId}`)
