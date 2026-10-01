@@ -753,11 +753,26 @@ input:focus-visible,
   gap: 0.12rem;
 }
 
+/* 矢印は先端（舳先）を位置に合わせ、本体は左へ伸びる。遅いスタート（ST0.23以上）だと本体が
+   トラックの左端から外に出て、帯から浮いて見えた（#1071 ファン評価2周目）。灰色の帯
+   （::before）を矢印の幅（--rr-st-arrow-w）だけ左に伸ばし、トラック本体はその分だけ右に寄せる。
+   位置（%）の基準になるトラック本体の幅は変えない */
 .rr-st-track {
+  --rr-st-arrow-w: 16px;
   position: relative;
-  width: 100%;
+  width: calc(100% - var(--rr-st-arrow-w) - 2px);
   height: 14px;
   overflow: visible;
+}
+
+.rr-st-track::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  /* 2px は、ST0.30 以上で頭打ちになった矢印の先端（トラックの2%）との余裕 */
+  left: calc(-1 * var(--rr-st-arrow-w) - 2px);
   background: rgba(128, 128, 128, 0.08);
   border-radius: var(--radius-sm);
 }
@@ -801,7 +816,7 @@ input:focus-visible,
 .rr-st-dot {
   position: absolute;
   top: 50%;
-  width: 16px;
+  width: var(--rr-st-arrow-w);
   height: 9px;
   /* 舳先（右端）を位置に合わせる。中心を合わせると、ST0.01の正常な艇でも舳先が
      スタートラインを8px越え、フライングに見えた（BOA-559 ファン評価3周目） */
@@ -1711,4 +1726,16 @@ input:focus-visible,
 
 .race-list-toggle:hover {
   background: var(--color-gray-50);
+}
+
+/* スマホでは矢印を一回り小さくし、帯を左に伸ばす分（上の --rr-st-arrow-w）を減らす。
+   トラックが約86pxしかなく、16px伸ばすと位置の差がつく幅が減りすぎる（#1071 ファン評価2周目） */
+@media (max-width: 480px) {
+  .rr-st-track {
+    --rr-st-arrow-w: 12px;
+  }
+
+  .rr-st-dot {
+    height: 7px;
+  }
 }
