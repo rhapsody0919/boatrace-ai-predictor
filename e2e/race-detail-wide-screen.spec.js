@@ -35,6 +35,9 @@ test.describe("レース詳細の広い画面（BOA-612）", () => {
     expect(await fontSize(".drt-label-cell")).toBeGreaterThanOrEqual(14);
     expect(await fontSize(".drt-grade")).toBeGreaterThanOrEqual(13);
 
+    // 枠番別傾向の数値もデータ出走表と同じく大きくする（3周目: span 側の指定で効いていなかった）
+    expect(await fontSize(".vtp-table .vtp-main")).toBeGreaterThanOrEqual(14);
+
     // 今節タブ: リストと推移グラフは 1200px で止める（点が横に潰れない）、得点率早見は 13px
     await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
     await expect(page.locator(".race-meet-tab")).toBeVisible({ timeout: 30000 });
@@ -90,5 +93,23 @@ test.describe("レース詳細の広い画面（BOA-612）", () => {
     expect(
       await result.evaluate((el) => el.getBoundingClientRect().width),
     ).toBeLessThanOrEqual(1200);
+  });
+
+  test("1440x900: 直前情報の展示情報の表は、最後の行まで内側で切れずに見える（ファン評価3周目）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/race/2026-09-29-16-12");
+    await page.locator(".race-tabs-btn", { hasText: "直前情報" }).click();
+    const wrapper = page.locator(".rbi-card .drt-table-wrapper").first();
+    await expect(wrapper).toBeVisible({ timeout: 30000 });
+    // 今節の一周・まわり足・直線まで、15行がそろってから測る（読み込み前は行が少ない）
+    await expect(wrapper.locator("tbody tr")).toHaveCount(15, { timeout: 30000 });
+    await page.waitForTimeout(1000);
+    const m = await wrapper.evaluate((el) => ({
+      sh: el.scrollHeight,
+      ch: el.clientHeight,
+    }));
+    expect(m.sh).toBeLessThanOrEqual(m.ch + 1);
   });
 });
