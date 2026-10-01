@@ -1299,8 +1299,25 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 20000,
     });
     expect(await page.locator(".rrb-item").count()).toBeLessThanOrEqual(10);
-    // ST順位を「(N位)」形式で併記する（phase a T3-4）
-    await expect(page.locator(".rrb-st-rank").first()).toBeVisible();
+    // ST順位を「(N位)」形式で併記する（phase a T3-4）。STが取れている走には
+    // 必ず順位が付き、STが無い走（「—」）には付かない。
+    // 先頭の1走だけを見ると、本番データの補完で直近10走の窓がずれたときに
+    // 先頭がSTの無い走になって落ちる（2026-10-01、5/23 の進入コースが後から
+    // 入り、窓の先頭が ST の無い 3/27 になった）
+    const stCells = await page.locator(".rrb-item").evaluateAll((items) =>
+      items.map((el) => ({
+        st: el.querySelector(".rrb-st")?.textContent ?? "",
+        rank: el.querySelector(".rrb-st-rank")?.textContent ?? "",
+      })),
+    );
+    const withSt = stCells.filter((c) => /^\.\d{2}$/.test(c.st));
+    expect(withSt.length).toBeGreaterThan(0);
+    for (const c of withSt) expect(c.rank).toMatch(/^\(\d位\)$/);
+    for (const c of stCells.filter((c) => c.st === "—"))
+      expect(c.rank).toBe("");
+    await expect(
+      page.locator(".rrb-st-rank", { hasText: /^\(\d位\)$/ }).first(),
+    ).toBeVisible();
 
     // もう一度タップすると閉じる
     await page.locator(".rwit-today-label-button").first().click();
@@ -2577,6 +2594,12 @@ test.describe("レースページ再設計（BOA-168）", () => {
   }) => {
     // 会場の逃げ・決まり手は「今日から見た直近の期間」の事前集計しか無い。
     // 以前は6月のレースでも9月のレースでも同じ値が、何の断りもなく出ていた
+    //
+    // 「過去か当日か」はブラウザの時計で決まる。録画時刻（＝時計）は撮り直すたびに
+    // 進むため、時計を 9/29 に固定する。固定しないと、9/30 以降に撮った録画では
+    // 下の 9/29 のレースも「過去」になり、注記が出て落ちる（2026-10-01 の撮り直しが
+    // これで不採用になった）
+    await page.clock.setFixedTime(new Date("2026-09-29T15:04:00+09:00"));
     await page.goto("/race/2026-09-26-09-05");
     await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
     const note = page.getByText(
@@ -2595,10 +2618,15 @@ test.describe("レースページ再設計（BOA-168）", () => {
       .evaluate((el) => el.getBoundingClientRect().height);
     expect(toggleHeight).toBeGreaterThanOrEqual(44);
 
-    // 当日のレース（E2E の時計は録画時刻の 2026-09-29）では出さない
+    // 当日のレース（時計は上で 2026-09-29 に固定している）では出さない
     await page.goto("/race/2026-09-29-02-12");
     await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
-    await expect(page.locator(".nsc-card, .rwit-card").first()).toBeVisible({
+    // 注記の出る2枚（逃げシミュレーション・決まり手傾向）の中身が読み込まれてから
+    // 数える。カードの枠だけ見て数えると、読み込み前の 0 件で素通りする
+    await expect(page.locator(".nsc-fill").first()).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(page.locator(".rwit-tech-row").first()).toBeVisible({
       timeout: 30000,
     });
     await expect(page.getByText(/最新の集計です（期間/)).toHaveCount(0);
