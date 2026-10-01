@@ -776,8 +776,22 @@ input:focus-visible,
   top: 50%;
   width: 16px;
   height: 9px;
+  /* 舳先（右端）を位置に合わせる。中心を合わせると、ST0.01の正常な艇でも舳先が
+     スタートラインを8px越え、フライングに見えた（BOA-559 ファン評価3周目） */
+  transform: translate(-100%, -50%);
+}
+
+.rr-st-dot-shape {
+  display: block;
+  width: 100%;
+  height: 100%;
   clip-path: polygon(100% 50%, 62% 0%, 0% 18%, 0% 82%, 62% 100%);
-  transform: translate(-50%, -50%);
+}
+
+/* 1号艇（白）は明るい地に溶けるので、形に沿った濃い輪郭を付ける */
+.rr-st-dot.is-white {
+  filter: drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.9))
+    drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.9));
 }
 
 .rr-st-streak {
@@ -1143,6 +1157,14 @@ input:focus-visible,
 
   .rr-name {
     font-size: 0.8rem;
+  }
+
+  /* 級別は名前の下の行に置く。1行に並べると5文字の名前（「土屋 実沙希」）で級別が切れて見えない
+     （BOA-559 ファン評価1周目） */
+  .rr-name-text small {
+    display: block;
+    margin-left: 0;
+    line-height: 1.2;
   }
 
   .accuracy-check {

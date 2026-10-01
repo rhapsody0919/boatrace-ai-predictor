@@ -27,7 +27,7 @@ import {
 } from "../../utils/raceOutcome";
 
 // スタートのダイナミック演出（全艇が号砲と同時に走り出し、実ST比例の位置×時間で到達）の調整定数。
-// 到達位置は0〜0.15秒の固定レンジで正規化する（レースが違っても位置の見た目の意味を揃えるため）。
+// 到達位置は0〜0.30秒（フライングは0〜0.15秒）の固定レンジで正規化する（レースが違っても位置の見た目の意味を揃えるため）。
 // 到達までの時間はこのレース内の最遅STを基準（6秒）に相対比例させる（このレースだけの相対値）。
 // 周期7秒: 最遅艇が6秒で到達し、そこから1秒静止してループする
 const START_ANIM = {
@@ -35,23 +35,38 @@ const START_ANIM = {
   MAX_ARRIVAL_MS: 6000,
   LINE_PERCENT: 84,
   POSITION_RANGE_PERCENT: 76,
-  POSITION_MAX_SECONDS: 0.15,
+  // 遅い側は0.30まで位置で差をつける（0.15で頭打ちにすると、0.16と0.27が同じ位置に重なっていた。
+  // 平均STは0.15前後で、普通のレースでも半分近くの艇が左端に重なる。BOA-559 ファン評価1周目）
+  POSITION_MAX_SECONDS: 0.3,
+  // フライングは0.15までで位置の差をつける（F0.15で98%）
+  FLYING_MAX_SECONDS: 0.15,
   OVERSHOOT_RATIO: 0.72,
   STREAK_FADE_IN_RATIO: 0.26,
   IMPACT_FLASH_DELTA: 0.001,
   IMPACT_EXPAND_DELTA: 0.0703,
+  // フライング艇はスタートライン（84%）より先、F0.15 で98%まで（BOA-559）
+  FLYING_RANGE_PERCENT: 14,
+  // フライング艇は号砲の時点で既にラインを越えているため、最も早く到達させる（周期に対する割合）
+  FLYING_ARRIVAL_FRACTION: 0.04,
 };
 
-function getFinalPositionPercent(startTiming) {
-  const clamped = Math.min(
-    Math.max(startTiming, 0),
-    START_ANIM.POSITION_MAX_SECONDS,
-  );
-  return (
-    START_ANIM.LINE_PERCENT -
-    (clamped / START_ANIM.POSITION_MAX_SECONDS) *
-      START_ANIM.POSITION_RANGE_PERCENT
-  );
+// フライング艇（F）の ST は「号砲より何秒早くラインを越えたか」。遅れた艇と同じ式で置くと、ラインの
+// 手前（遅いスタート）に描かれてしまう（浜名湖 9/14 6R の F0.11 が最も遅い艇に見えた。BOA-559）。
+// F はラインより先に置く
+function getFinalPositionPercent(startTiming, isFlying = false) {
+  const max = isFlying
+    ? START_ANIM.FLYING_MAX_SECONDS
+    : START_ANIM.POSITION_MAX_SECONDS;
+  const ratio = Math.min(Math.max(startTiming, 0), max) / max;
+  return isFlying
+    ? START_ANIM.LINE_PERCENT + ratio * START_ANIM.FLYING_RANGE_PERCENT
+    : START_ANIM.LINE_PERCENT - ratio * START_ANIM.POSITION_RANGE_PERCENT;
+}
+
+// 選手名は公式の元データで姓と名の間を全角スペースで詰めてある（「丹下　　　将」）。そのまま出すと
+// 375pxで姓だけに切れ、級別も見えなくなるため、空白を1つにまとめる（BOA-559）
+function displayName(name) {
+  return name ? name.replace(/[\s\u3000]+/g, " ").trim() : name;
 }
 
 function BoatChip({ number }) {
@@ -81,11 +96,12 @@ function StartTimingTrack({
   const impactRef = useRef(null);
   const color = BOAT_COLORS[boatNumber] || BOAT_COLORS[1];
   const markerColor = isFlying ? "var(--color-error-text)" : color.bg;
-  const finalPosition = getFinalPositionPercent(startTiming);
+  const finalPosition = getFinalPositionPercent(startTiming, isFlying);
   // 到達オフセットは周期(7秒)全体に対する割合。最遅艇でもMAX_ARRIVAL_MS(6秒)/CYCLE_MS(7秒)を
   // 超えないため、この後の号砲フラッシュ・衝撃波の追加オフセットが必ず1未満に収まる
-  const arrivalFraction =
-    maxStartTiming > 0
+  const arrivalFraction = isFlying
+    ? START_ANIM.FLYING_ARRIVAL_FRACTION
+    : maxStartTiming > 0
       ? Math.min(startTiming / maxStartTiming, 1) *
         (START_ANIM.MAX_ARRIVAL_MS / START_ANIM.CYCLE_MS)
       : 0;
@@ -118,22 +134,22 @@ function StartTimingTrack({
           {
             offset: 0,
             left: "0%",
-            transform: "translate(-50%, -50%) scale(0.7)",
+            transform: "translate(-100%, -50%) scale(0.7)",
           },
           {
             offset: overshoot,
             left: `${finalPosition}%`,
-            transform: "translate(-50%, -50%) scale(1.35)",
+            transform: "translate(-100%, -50%) scale(1.35)",
           },
           {
             offset: arrivalFraction,
             left: `${finalPosition}%`,
-            transform: "translate(-50%, -50%) scale(1)",
+            transform: "translate(-100%, -50%) scale(1)",
           },
           {
             offset: 1,
             left: `${finalPosition}%`,
-            transform: "translate(-50%, -50%) scale(1)",
+            transform: "translate(-100%, -50%) scale(1)",
           },
         ],
         { ...baseOptions, easing: "cubic-bezier(0.15, 0.85, 0.25, 1)" },
@@ -197,16 +213,17 @@ function StartTimingTrack({
       />
       <span
         ref={dotRef}
-        className="rr-st-dot"
-        style={{
-          left: reducedMotion ? `${finalPosition}%` : "0%",
-          background: markerColor,
-          outline:
-            boatNumber === 1 && !isFlying
-              ? "1px solid var(--border-hairline)"
-              : "none",
-        }}
-      />
+        className={`rr-st-dot${boatNumber === 1 && !isFlying ? " is-white" : ""}`}
+        style={{ left: reducedMotion ? `${finalPosition}%` : "0%" }}
+      >
+        {/* 形（clip-path）は子に持たせる。親に付けた輪郭（drop-shadow）が
+            clip-path で切り取られないようにするため（1号艇の白が1着行の
+            クリーム地・トラックに埋もれていた。BOA-559 ファン評価2周目） */}
+        <span
+          className="rr-st-dot-shape"
+          style={{ background: markerColor }}
+        />
+      </span>
       <span
         ref={impactRef}
         className="rr-st-impact"
@@ -680,11 +697,12 @@ function RaceResult({ prediction, raceId }) {
   const validStartTimings = (startTimings ?? []).filter(
     (st) => st.startTiming != null,
   );
-  const maxStartTiming = validStartTimings.length
-    ? Math.max(...validStartTimings.map((st) => st.startTiming))
-    : 0;
-  // フライングは異常値のため「最速」判定からは除外する（update-top-start-stats.jsと同じ扱い）
+  // フライングは異常値のため「最速」判定・到達タイミングの基準（最遅ST）からは除外する
+  // （update-top-start-stats.jsと同じ扱い。BOA-559）
   const nonFlyingStartTimings = validStartTimings.filter((st) => !st.isFlying);
+  const maxStartTiming = nonFlyingStartTimings.length
+    ? Math.max(...nonFlyingStartTimings.map((st) => st.startTiming))
+    : 0;
   const fastestStartTiming = nonFlyingStartTimings.length
     ? Math.min(...nonFlyingStartTimings.map((st) => st.startTiming))
     : null;
@@ -770,7 +788,7 @@ function RaceResult({ prediction, raceId }) {
                 <BoatChip number={boat} />
                 <span className="rr-name">
                   <span className="rr-name-text" translate="no">
-                    {player?.name}
+                    {displayName(player?.name)}
                     {player?.grade && <small>{player.grade}</small>}
                   </span>
                   {label && <span className="rr-mark-label">{label}</span>}
@@ -807,6 +825,11 @@ function RaceResult({ prediction, raceId }) {
       )}
       {startTimingFailed && (
         <InlineFetchError onRetry={() => setReloadKey((key) => key + 1)} />
+      )}
+      {/* ST図の読み方。初見では黄線が何か・どちらが早いかが分からない
+          （BOA-559 ファン評価3周目） */}
+      {validStartTimings.length > 0 && (
+        <p className="rr-note rr-st-legend">{t("result.stLegend")}</p>
       )}
       <p className="rr-note">{t("result.courseNote")}</p>
       {!isLoadingStartTimings && !isNoRace && rows.length < 6 && (

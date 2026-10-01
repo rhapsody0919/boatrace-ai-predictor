@@ -589,14 +589,21 @@ function PredictionPanel({
               venue: venueName || t("panel.unknownVenue"),
               raceNo: selectedRace?.raceNumber || "?",
               date: raceDate,
+              isCancelled,
               prediction: {
                 topPick: prediction.topPick?.number,
                 top3: prediction.top3 || [],
               },
             },
             "unified",
+            t,
           )}
-          hashtags={["ボートレース", "AI予想", "龍神レーダー"]}
+          hashtags={
+            // 中止のレースは予想を出さないので「AI予想」のタグを外す
+            isCancelled
+              ? ["ボートレース", "龍神レーダー"]
+              : ["ボートレース", "AI予想", "龍神レーダー"]
+          }
           size={40}
         />
       </div>

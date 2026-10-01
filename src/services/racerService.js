@@ -67,8 +67,8 @@ export async function getRacerPageData(racerId) {
 }
 
 /**
- * 選手が直近出走で使用したモーターについて、今節（同一モーターが連続して
- * 割り当てられている直近の連続開催日）の出走一覧を特定する。
+ * 選手が直近出走で使用したモーターについて、今節（直近出走と同じ会場で、同一
+ * モーターが連続して割り当てられている直近の連続開催日）の出走一覧を特定する。
  * race_idの日付部分を新しい順に辿り、間が2日以上空いたら節の境目とみなす
  * （モーターは節単位で入れ替わるため、日付の連続性で節の範囲を推定できる）
  */
@@ -87,9 +87,12 @@ async function getCurrentMeetRaceEntries(racerId, motorNumber) {
   }
   if (!entries || entries.length === 0) return [];
 
-  const sorted = [...entries].sort((a, b) =>
-    a.race_id.localeCompare(b.race_id),
-  );
+  // 最新の走と同じ会場に絞る（BOA-591）。モーター番号は会場ごとに振られるので、
+  // 番号だけだと別会場の同じ番号のモーターの節が地続きのときに繋がる
+  const venue = entries[0].race_id.slice(11, 13);
+  const sorted = entries
+    .filter((e) => e.race_id.slice(11, 13) === venue)
+    .sort((a, b) => a.race_id.localeCompare(b.race_id));
   return groupIntoCurrentMeet(sorted);
 }
 
