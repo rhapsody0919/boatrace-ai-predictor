@@ -8,6 +8,19 @@
  */
 import { isBetJudgeable, isJudgeable } from "../../src/utils/raceOutcome.js";
 
+/** buildPredictionHitUpdate が返す predictions の列（的中フラグと配当） */
+export const PREDICTION_HIT_COLUMNS = Object.freeze([
+  "is_hit_win",
+  "is_hit_place",
+  "is_hit_trifecta",
+  "is_hit_trio",
+  "is_hit_turn",
+  "payout_win",
+  "payout_place",
+  "payout_trifecta",
+  "payout_trio",
+]);
+
 /**
  * 1件の予想（predictions の行）について、的中フラグと配当の列を作る（BOA-544）。
  * 結果取得時の判定（scrape-results.js judgeAndUpdateHits）・欠落の補完（fixMissingHitFlags）・

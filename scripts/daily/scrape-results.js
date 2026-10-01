@@ -12,7 +12,10 @@ import {
   formatDateForUrl,
   parseDateArg,
 } from "../lib/dateUtils.js";
-import { buildPredictionHitUpdate } from "../lib/hitCalculator.js";
+import {
+  PREDICTION_HIT_COLUMNS as HIT_COLUMNS,
+  buildPredictionHitUpdate,
+} from "../lib/hitCalculator.js";
 import { isCancellationConfirmed } from "../lib/cancellationStatus.js";
 import {
   getRaceSchedule,
@@ -1412,19 +1415,6 @@ async function fetchAllRange(table, select, buildQuery, client = supabase) {
   }
   return results;
 }
-
-/** predictions の的中フラグと配当の列（buildPredictionHitUpdate が返す列） */
-const HIT_COLUMNS = [
-  "is_hit_win",
-  "is_hit_place",
-  "is_hit_trifecta",
-  "is_hit_trio",
-  "is_hit_turn",
-  "payout_win",
-  "payout_place",
-  "payout_trifecta",
-  "payout_trio",
-];
 
 // 結果があるのにis_hit_winがNULLの予測を修正
 // startDate〜endDate（両端含む、race_id昇順比較）の範囲で欠落を検知・修復する。
