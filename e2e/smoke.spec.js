@@ -1994,30 +1994,13 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(prevRow2.locator("td").nth(6)).toContainText("9/26 1R");
     await expect(prevRow2.locator("td").nth(1)).toContainText("9/25 9R");
 
-    // 2026-09-30 児島7R の1号艇 西村拓也: 9/29 10R（5コース2着）が今節の前走。
-    // 公式の直前情報の前走は同じ日だけなので、以前は「今節初戦」と出ていた（BOA-610）
-    await page.goto("/race/2026-09-30-16-07");
-    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
-    const prevRow3 = page.locator("tr", { hasText: "今節の前走" }).first();
-    await prevRow3.waitFor({ timeout: 30000 });
-    const nishimura = prevRow3.locator("td").nth(1);
-    await expect(nishimura).toContainText("2着");
-    await expect(nishimura).toContainText("5コース");
-    await expect(nishimura).toContainText("9/29 10R");
-    await expect(prevRow3).not.toContainText("今節初戦");
-
-    // 節の初日の1R は全艇「今節初戦」（2026-09-21 津1R）
-    await page.goto("/race/2026-09-21-09-01");
-    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
-    const prevRow4 = page.locator("tr", { hasText: "今節の前走" }).first();
-    await prevRow4.waitFor({ timeout: 30000 });
-    await expect(prevRow4.locator("td", { hasText: "今節初戦" })).toHaveCount(6);
-
     // 英語の画面で公式の記号（エ＝エンスト）を生のまま出さない（ファン評価2周目）。
     // 2026-09-30 戸田9R: 前の走がエンスト失格の艇がいる
     await page.goto("/en/race/2026-09-30-02-09");
     await page.locator(".race-tabs-btn", { hasText: "Basic Info" }).click();
-    const enRow = page.locator("tr", { hasText: "Last race this event" }).first();
+    const enRow = page
+      .locator("tr", { hasText: "Last race this event" })
+      .first();
     await enRow.waitFor({ timeout: 30000 });
     await expect(enRow).toContainText("Eng");
     await expect(enRow).not.toContainText("エ");
@@ -2035,6 +2018,32 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const meetRow = page.locator("tr", { hasText: "今節展示情報" }).first();
     await meetRow.waitFor({ timeout: 30000 });
     await expect(meetRow).toContainText("今節初戦");
+  });
+
+  test("データ出走表の今節の前走は前日の走も拾い、節の初日の1Rは「今節初戦」（BOA-610）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // 2026-09-30 児島7R の1号艇 西村拓也: 9/29 10R（5コース2着）が今節の前走。
+    // 公式の直前情報の前走は同じ日だけなので、以前は「今節初戦」と出ていた（BOA-610）
+    await page.goto("/race/2026-09-30-16-07");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const prevRow3 = page.locator("tr", { hasText: "今節の前走" }).first();
+    await prevRow3.waitFor({ timeout: 30000 });
+    const nishimura = prevRow3.locator("td").nth(1);
+    await expect(nishimura).toContainText("2着");
+    await expect(nishimura).toContainText("5コース");
+    await expect(nishimura).toContainText("9/29 10R");
+    await expect(prevRow3).not.toContainText("今節初戦");
+
+    // 節の初日の1R は全艇「今節初戦」（2026-09-21 津1R）
+    await page.goto("/race/2026-09-21-09-01");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const prevRow4 = page.locator("tr", { hasText: "今節の前走" }).first();
+    await prevRow4.waitFor({ timeout: 30000 });
+    await expect(prevRow4.locator("td", { hasText: "今節初戦" })).toHaveCount(
+      6,
+    );
   });
 
   test("着順が付かない走は、推移・比較表・日別の表で同じ公式の記号になる（BOA-537 ファン評価）", async ({
