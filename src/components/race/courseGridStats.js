@@ -85,7 +85,9 @@ export function buildCourseGrid(records, { venueCode, metric, now }) {
  * @param {{venueCode: number|null, rowKey: string, course: number, count?: number, now?: Date}} options
  *   `now` は「直近3ヶ月・直近1ヶ月」の起点。過去のレースではそのレースの日を渡す
  *   （BOA-603。省略すると今日。今日を起点にすると、過去のレースで期間がずれる）
- * @returns {Array<Object>} 新しい順（左が新しい）
+ * @returns {Array<Object>} 古い順（左が古い）。`RecentRunsBar` が左に「古い」、右に
+ *   「新しい」と書くのと、今節の推移（左が古い）に向きをそろえる。以前は新しい順を
+ *   返していて、帯の「古い→新しい」と実際の並びが逆だった（BOA-601）
  */
 export function getCourseRecentRuns(
   records,
@@ -99,10 +101,15 @@ export function getCourseRecentRuns(
     period: row.period,
     now,
   });
-  return filtered
-    .filter((r) => r.actualCourse === course)
-    .slice(-count)
-    .reverse();
+  return (
+    filtered
+      .filter((r) => r.actualCourse === course)
+      // race_id（YYYY-MM-DD-VV-RR）で並べ直してから切る。records は日付だけで並んで
+      // いることがあり（BOA-588）、同じ日の2走の左右が読み込むたびに入れ替わった
+      // （ファン評価2周目）
+      .sort((a, b) => a.raceId.localeCompare(b.raceId))
+      .slice(-count)
+  );
 }
 
 /** 既定ビュー（今日の想定コース）で同時に出す3指標 */

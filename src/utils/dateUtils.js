@@ -54,6 +54,21 @@ export const getDaysAgoJST = (days, now = new Date()) => {
 };
 
 /**
+ * レースの日付が今日（JST）より前か（BOA-608）。race_id は `YYYY-MM-DD-VV-RR`。
+ * 会場単位の事前集計（逃げ・決まり手）は「今日から見た直近の期間」で作っていて、
+ * 過去の時点の値は残っていない。過去のレースでは、その旨を画面に明記するのに使う。
+ * 読めない race_id は false（今日のレースと同じ扱いで、注記を出さない）
+ * @param {string|null} raceId
+ * @param {Date} [now] - 基準時刻（既定は現在時刻）
+ * @returns {boolean}
+ */
+export const isRaceBeforeTodayJST = (raceId, now = new Date()) => {
+  const date = (raceId ?? "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  return date < getDaysAgoJST(0, now);
+};
+
+/**
  * JST日付情報を一括取得
  * 注意: Dateオブジェクトは返さない（Reactの依存配列で無限ループの原因になるため）
  * @returns {Object} todayStr, yesterdayStr

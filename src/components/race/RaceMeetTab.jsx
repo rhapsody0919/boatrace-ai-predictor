@@ -669,88 +669,116 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {forecastRows.map(({ player: p, row, cells, needed }) => {
-                    const color = BOAT_COLORS[p.number] || {};
-                    return (
-                      <tr
-                        key={p.number}
-                        className={
-                          p.number === selectedBoat ? "is-current" : ""
-                        }
-                        onClick={() => onFocusBoat(p.number)}
-                      >
-                        <th scope="row">
-                          <button
-                            type="button"
-                            className="rmt-row-select"
-                            onClick={() => onFocusBoat(p.number)}
-                            aria-pressed={p.number === selectedBoat}
-                          >
-                            <span
-                              className="rmt-boat-chip"
-                              style={{
-                                background: color.bg,
-                                color: color.text,
-                              }}
-                            >
-                              {p.number}
-                            </span>
-                            <span className="rmt-name" translate="no">
-                              {p.name?.replace(/\s+/g, "")}
-                            </span>
-                          </button>
-                        </th>
-                        <td
-                          className={`rmt-rate${
-                            showBorderBadge &&
-                            border !== undefined &&
-                            !row.withdrawn &&
-                            row.rate >= border
-                              ? " is-in-border"
-                              : ""
-                          }`}
+                  {forecastRows.map(
+                    ({ player: p, row, cells, needed, remaining }) => {
+                      const color = BOAT_COLORS[p.number] || {};
+                      return (
+                        <tr
+                          key={p.number}
+                          className={
+                            p.number === selectedBoat ? "is-current" : ""
+                          }
+                          onClick={() => onFocusBoat(p.number)}
                         >
-                          {row.rate.toFixed(2)}
-                        </td>
-                        {hasNeeded && (
-                          <td className="rmt-needed">
-                            {/* 賞典除外の選手は準優に乗れないので、必要得点を
-                                出さない（BOA-587） */}
-                            {AWARD_EXCLUDED_REASONS.has(row.excludedReason) ? (
-                              <span className="rmt-excluded">
-                                {t(
-                                  `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason]}`,
-                                )}
+                          <th scope="row">
+                            <button
+                              type="button"
+                              className="rmt-row-select"
+                              onClick={() => onFocusBoat(p.number)}
+                              aria-pressed={p.number === selectedBoat}
+                            >
+                              <span
+                                className="rmt-boat-chip"
+                                style={{
+                                  background: color.bg,
+                                  color: color.text,
+                                }}
+                              >
+                                {p.number}
                               </span>
-                            ) : needed === null ? (
-                              "—"
-                            ) : needed.reachable ? (
-                              t("meetTab.neededPoints", {
-                                points: needed.needed,
-                              })
-                            ) : (
-                              t("meetTab.neededUnreachable")
-                            )}
-                          </td>
-                        )}
-                        {cells.map((f) => (
+                              <span className="rmt-name" translate="no">
+                                {p.name?.replace(/\s+/g, "")}
+                              </span>
+                            </button>
+                          </th>
                           <td
-                            key={f.rank}
-                            className={
+                            className={`rmt-rate${
                               showBorderBadge &&
                               border !== undefined &&
                               !row.withdrawn &&
-                              f.rate >= border
-                                ? "is-in-border"
-                                : undefined
-                            }
+                              row.rate >= border
+                                ? " is-in-border"
+                                : ""
+                            }`}
                           >
-                            {f.rate.toFixed(2)}
+                            {row.rate.toFixed(2)}
                           </td>
-                        ))}
-                      </tr>
-                    );
-                  })}
+                          {hasNeeded && (
+                            <td className="rmt-needed">
+                              {/* 賞典除外の選手は準優に乗れないので、必要得点を
+                                出さない（BOA-587） */}
+                              {AWARD_EXCLUDED_REASONS.has(
+                                row.excludedReason,
+                              ) ? (
+                                <span className="rmt-excluded">
+                                  {t(
+                                    `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason]}`,
+                                  )}
+                                </span>
+                              ) : needed === null ? (
+                                "—"
+                              ) : needed.reachable ? (
+                                // 必要得点は今日の残りの予選ぶん（1日2走ある選手もいる）
+                                // を足した点数。横の早見は次の1走だけなので、2走以上
+                                // 残っていれば走数を添える。無いと「1着でも目安に
+                                // 届かないのに必要得点17」と食い違って読める（BOA-596）
+                                <>
+                                  {t("meetTab.neededPoints", {
+                                    points: needed.needed,
+                                  })}
+                                  {/* 走数は2行目に小さく出す。1行に並べると
+                                    375pxで列が広がり、早見の3着以降が
+                                    最初の画面から外れた（ファン評価1周目） */}
+                                  {remaining > 1 && (
+                                    <span className="rmt-needed-runs">
+                                      {t("meetTab.neededPointsRuns", {
+                                        runs: remaining,
+                                      })}
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="rmt-unreachable">
+                                  {t("meetTab.neededUnreachable")}
+                                </span>
+                              )}
+                            </td>
+                          )}
+                          {cells.map((f) => (
+                            <td
+                              key={f.rank}
+                              className={
+                                showBorderBadge &&
+                                border !== undefined &&
+                                !row.withdrawn &&
+                                // 今日2走以上残る選手の行は色を付けない。セルの数字は
+                                // 「次の1走だけ」の得点率で、準優に届くかは残りの
+                                // 走次第なので、その着で届くとは言えない。1周目は
+                                // 「残りを全部6着でも届くか」で塗ったが、数字と色の
+                                // 基準がずれ「7.00なのに色なし」と読まれた（BOA-596）
+                                remaining <= 1 &&
+                                f.rate >= border
+                                  ? "is-in-border"
+                                  : undefined
+                              }
+                            >
+                              {f.rate.toFixed(2)}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    },
+                  )}
                 </tbody>
               </table>
             </div>
