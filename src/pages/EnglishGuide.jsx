@@ -213,7 +213,7 @@ export default function EnglishGuide() {
         <section className="eg-hero">
           <h1>🚤 What is Kyotei?</h1>
           <p className="eg-hero-lead">
-            Kyotei (競艇) — Japanese boat racing — is one of Japan&apos;s four
+            Kyotei — Japanese boat racing — is one of Japan&apos;s four
             government-sanctioned betting sports, running nearly every day at 24
             venues across the country. Six hydroplane boats race three laps
             around a 600m course, and you can bet on the outcome. This guide

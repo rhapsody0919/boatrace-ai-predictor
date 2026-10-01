@@ -529,7 +529,7 @@ function buildRowDefs({
           <span className="drt-value drt-parts-changed">
             {parts && parts.length > 0 && (
               <span className="drt-badge">
-                {/* 部品名ごとに塊にし、折り返しは「・」の後と「×２」の前だけにする。
+                {/* 部品名ごとに塊にし、折り返しは区切り（listSeparator）の後と「×２」の前だけにする。
                     1つの文字列だとスマホで「シャフ／ト」と語の途中で折れた
                     （BOA-612 ファン評価3周目）。「リング×２」を1つの塊にすると
                     62px あり、320px の列（約44px）に入らない */}
@@ -540,7 +540,7 @@ function buildRowDefs({
                         {chunk}
                       </span>
                     ))}
-                    {i < parts.length - 1 && "・"}
+                    {i < parts.length - 1 && t("listSeparator")}
                   </Fragment>
                 ))}
               </span>

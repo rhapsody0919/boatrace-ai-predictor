@@ -5,8 +5,9 @@ name: E2E Live (本番データ)
 # 欠け、時刻に依存する表示）はPRでは検知できなくなる。それを拾うため、開催時間帯に
 # 本番データで同じE2Eを1日1回実行し、失敗をSlackに流す。
 #
-# JST 14:00 に置くのは、ほぼ全会場が開催中で「本日開催中の未終了レース」が確実にあり、
-# selectUpcomingRace 系のテストが skip しない時間帯だから。
+# JST 14:00 に置くのは、ほぼ全会場が開催中で、当日のデータに依存する表示（開催場一覧・
+# 締切前のレース等）を本番データで確かめられる時間帯だから。発走前のレースでしか出ない
+# UIのテストは、固定の過去レースを発走前の状態にして開くので時刻に依存しない（BOA-445）。
 
 on:
   schedule:
@@ -46,11 +47,14 @@ jobs:
           npm run test:e2e > e2e-live.log 2>&1
           CODE=$?
           cat e2e-live.log
+          # 区切りが固定だと、ログに区切りと同じ行があった時点で値が切れ、残りが出力の行として読まれる。
+          # 毎回ランダムな区切りにする（BOA-652）
+          delim="EOF_$(openssl rand -hex 16)"
           {
-            echo "summary<<SUMMARY_EOF"
+            echo "summary<<$delim"
             # 失敗したテスト名と最終集計だけを送る（全文はActionsのログで見る）
             grep -E '^\s+[0-9]+\) |^\s+[0-9]+ (passed|failed|flaky|skipped)' e2e-live.log | head -40
-            echo "SUMMARY_EOF"
+            echo "$delim"
           } >> "$GITHUB_OUTPUT"
           echo "exit_code=$CODE" >> "$GITHUB_OUTPUT"
           # 失敗はSlackに流してから明示的に落とす
@@ -68,20 +72,25 @@ jobs:
           SUMMARY: ${{ steps.e2e.outputs.summary }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         # 通知の形（attachments + section/mrkdwn）は nightly-verify-db.yml に揃える。
-        # テスト名に引用符・改行が入るため、JSONは jq で組み立ててエスケープを任せる
+        # テスト名に引用符・改行が入るため、JSONは jq で組み立ててエスケープを任せる。
+        # Slack の section の text は3000文字が上限で、超えると通知ごと拒否されるため、
+        # ログだけを切り詰める（BOA-652。定型文は削らない）
         run: |
-          PAYLOAD=$(jq -n --arg summary "$SUMMARY" --arg url "$RUN_URL" '{
-            attachments: [{
-              color: "#c0392b",
-              blocks: [{
-                type: "section",
-                text: {
-                  type: "mrkdwn",
-                  text: (":rotating_light: *本番データでのE2Eが失敗しました*\n```" + $summary + "```\nPRゲートは録画の再生で走るため、本番データ側の変化（RPCの応答形・当日データの欠け・時刻依存の表示）はここでしか検知できません。データ側の正常な変化が原因なら `npm run test:e2e:record` で録画を撮り直してください。\n<" + $url + "|実行ログ>")
-                }
-              }]
-            }]
-          }')
+          PAYLOAD=$(jq -n --arg summary "$SUMMARY" --arg url "$RUN_URL" '
+            ":rotating_light: *本番データでのE2Eが失敗しました*\n" as $head
+            | ("\nPRゲートは録画の再生で走るため、本番データ側の変化（RPCの応答形・当日データの欠け・時刻依存の表示）はここでしか検知できません。データ側の正常な変化が原因なら `npm run test:e2e:record` で録画を撮り直してください。\n<" + $url + "|実行ログ>") as $tail
+            | {
+                attachments: [{
+                  color: "#c0392b",
+                  blocks: [{
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text: ($head + "```" + ($summary | .[0:(2900 - ($head + $tail | length))]) + "```" + $tail)
+                    }
+                  }]
+                }]
+              }')
           curl -s -X POST "$SLACK_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD"

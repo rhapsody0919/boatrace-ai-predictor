@@ -1,0 +1,10 @@
+{
+  "$comment": "verify-e2e-no-unroute.js の許可リスト。page のルートを途中で0件にする書き方のうち、録画の再生（replay）では呼ばれない等の理由で残すものだけを載せる。code は該当行の内容（前後の空白を除く）、reason は残す理由。1エントリ＝1箇所。解消したらエントリを消す（残すと検査が落ちる）",
+  "entries": [
+    {
+      "file": "e2e/smoke.spec.js",
+      "code": "await page.unrouteAll({ behavior: \"ignoreErrors\" });",
+      "reason": "BOA-466。直前の if (E2E_MODE !== \"replay\") で live・record でだけ呼ぶ。replay（PRゲート）では呼ばない（呼ぶと録画の再生と競合して Route is already handled! で落ちることを実測済み）。live・record では routeUnfinished の本番の応答待ちをテスト終了時に捨てるために要る"
+    }
+  ]
+}
