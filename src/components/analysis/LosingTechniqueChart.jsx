@@ -15,6 +15,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import BandWrapAxisTick from "../BandWrapAxisTick";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "../race/raceIndicators";
 import "./WinningTechniqueChart.css";
@@ -199,7 +200,11 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="boat_number" interval={0} tick={{ fontSize: 11 }} />
+          <XAxis
+            dataKey="boat_number"
+            interval={0}
+            tick={(props) => <BandWrapAxisTick {...props} fontSize={11} />}
+          />
           <YAxis
             label={{
               value: t("analysis.sharePctHeader"),

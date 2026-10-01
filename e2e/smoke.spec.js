@@ -1499,6 +1499,19 @@ test.describe("レースページ再設計（BOA-168）", () => {
       /\d{4}-\d{2}-\d{2}/,
     );
     await expect(page.locator(".rbit-period-values")).toContainText("勝率");
+    // 前期の横に出走表の値（上のバーの既定と同じ公式値）と差を添える（BOA-439）。
+    // 平均STは出走表の値が無いので差を出さない。
+    // ファン評価で出た3点を固定する: 出走表の勝率は期替わりで数え直されないので
+    // 「今期」と呼ばない／バーを当地にしても全国のままなので「全国」と書く／
+    // 差の向きを「前期から」で示す。2連対率の差はポイント差なので pt
+    const periodDiffs = page.locator(".rbit-period-diff");
+    await expect(periodDiffs.first()).toHaveText(
+      /^（出走表・全国 \d+\.\d{2}、前期から[+−±]\d+\.\d{2}）$/,
+    );
+    await expect(periodDiffs.nth(1)).toHaveText(
+      /^（出走表・全国 \d+\.\d%、前期から[+−±]\d+\.\dpt）$/,
+    );
+    await expect(page.locator(".rbit-period-note")).toHaveCount(0);
 
     // この表が全コース込みであることと、今日の枠での走数を常時出す
     // （ボートレースファンのレビュー指摘A: 外枠専業の選手と枠が均等に回る選手で
@@ -1534,6 +1547,40 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(how.locator("p").first()).toBeVisible();
     await expect(how).toContainText("最終日は優勝戦を含み");
     await expect(how).toContainText("母数が他の行と違います");
+
+    // 期が替わって3か月は差を出さない（ファン評価2周目）。出走表の勝率は期の区切りで
+    // 数え直されず、5月の値の大半は前期と同じ期間の成績のため
+    await page.goto("/race/2026-05-02-02-04");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await page.locator(".rbit-bar-row").nth(1).click();
+    await page.locator(".rbit-expanded-tab", { hasText: "条件別" }).click();
+    await expect(page.locator(".rbit-period-diff").first()).toHaveText(
+      /^（出走表・全国 \d+\.\d{2}）$/,
+      { timeout: 25000 },
+    );
+    await expect(page.locator(".rbit-period-note")).toContainText(
+      "2026-08-01以降のレースで出します",
+    );
+
+    // 英語の長い文言が375pxで枠からはみ出して切れない（ファン評価3周目。
+    // 括弧を折り返し禁止にしていたときは右へ32pxはみ出していた）
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/en/race/2026-09-21-02-05");
+    await page.locator(".race-tabs-btn", { hasText: "Basic Info" }).click();
+    await page.locator(".rbit-bar-row").first().click();
+    await page.locator(".rbit-expanded-tab").nth(2).click();
+    await expect(page.locator(".rbit-period-diff").nth(1)).toBeVisible({
+      timeout: 25000,
+    });
+    const overflow = await page.evaluate(() => {
+      const box = document
+        .querySelector(".rbit-period")
+        .getBoundingClientRect();
+      return [...document.querySelectorAll(".rbit-period-diff")].map(
+        (e) => e.getBoundingClientRect().right - box.right,
+      );
+    });
+    for (const px of overflow) expect(px).toBeLessThanOrEqual(0.5);
   });
 
   test("勝率が全行1%未満に潰れる選手には3連対率への導線を出す（phase a T5-2、ファン視点レビュー指摘D）", async ({
@@ -1566,6 +1613,89 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(
       page.locator(".rbit-conditions-table tbody tr").first(),
     ).not.toContainText("0.0%");
+  });
+
+  test("今節タブ: en・zh-TW の375pxで6艇の表がカードからはみ出さず、必要得点に残りの走数を添える（BOA-596）", async ({
+    page,
+  }) => {
+    // 以前は en で9px、zh-TW で20px、表がカードの右へはみ出していた
+    // （列見出し「Score rate」「Series rank」と「第12名並列」「6.86（第34名）」が長い）
+    await page.setViewportSize({ width: 375, height: 812 });
+    for (const lang of ["en", "zh-TW"]) {
+      await page.goto(`/${lang}/race/2026-09-26-13-04`);
+      await page.locator(".race-tabs-btn").nth(2).click();
+      const table = page.locator(".rmt-compare");
+      await table.waitFor({ timeout: 30000 });
+      const over = await table.evaluate((t) => {
+        const card = t.closest(".rmt-card") ?? t.parentElement;
+        const right = card.getBoundingClientRect().right;
+        return Math.max(
+          ...[...t.querySelectorAll("tr")].map(
+            (tr) => tr.getBoundingClientRect().right - right,
+          ),
+        );
+      });
+      expect(over).toBeLessThanOrEqual(0.5);
+    }
+
+    // 必要得点は今日の残りの予選ぶんを足した点数。早見は次の1走だけなので、
+    // 2走残っていれば走数を添える（尼崎 2026-09-27 5R の塩田: 1着でも6.00で
+    // 目安6.17に届かないのに、必要得点は17だけと出ていた）
+    await page.goto("/race/2026-09-27-13-05");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const shiota = page
+      .locator(".rmt-forecast-table tr")
+      .filter({ hasText: "塩田" })
+      .first();
+    await expect(shiota.locator(".rmt-needed-runs")).toHaveText("今日2走で", {
+      timeout: 30000,
+    });
+    // 以前は町田が6着でも色付きで、同じ行の「必要得点7（2走で）」と逆だった
+    // （ファン評価1周目）
+    const machida = page
+      .locator(".rmt-forecast-table tr")
+      .filter({ hasText: "町田" })
+      .first();
+    // 今日2走残る選手の行は色を付けない（2周目: 「7.00なのに色なし」と
+    // 読まれた基準のずれをなくす）。1走だけの選手（浜野）は従来どおり
+    await expect(machida.locator("td.is-in-border:not(.rmt-rate)")).toHaveCount(
+      0,
+    );
+    // 走数は2行目に小さく出し、375pxで早見の3着まで最初の画面に入る
+    await page.setViewportSize({ width: 375, height: 812 });
+    const third = await page.locator(".rmt-forecast-scroll").evaluate((el) => {
+      const th = el.querySelectorAll("thead th");
+      const box = el.getBoundingClientRect();
+      const cell = [...th].find((x) => /^3/.test(x.textContent.trim()));
+      return cell ? cell.getBoundingClientRect().right - box.right : null;
+    });
+    expect(third).not.toBeNull();
+    expect(third).toBeLessThanOrEqual(0.5);
+  });
+
+  test("今節タブのSTの前走は、直前の走がFならFと出し、Fを飛ばして1つ前の走のSTを出さない（BOA-597）", async ({
+    page,
+  }) => {
+    // 2026-09-30 平和島11R: 古川誠之は同じ日の4RでF。以前は推移の右端と詳細が
+    // 「前走 0.09」（9/29 11R の値）になっていた
+    await page.goto("/race/2026-09-30-04-11");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const row = page.locator(".rmt-trend-row").filter({ hasText: "古川" });
+    await expect(row.locator(".rmt-trend-last")).toHaveText("F", {
+      timeout: 30000,
+    });
+    // 前走が F なので、1つ前の走に「前走」の大きい点（r=3.2）を付けない
+    // （ファン評価1周目: 右端は F なのに大きい点が 0.09 の走に付いていた）
+    await expect(row.locator('circle[r="3.2"]')).toHaveCount(0);
+    const other = page.locator(".rmt-trend-row").filter({ hasNotText: "古川" });
+    await expect(other.first().locator('circle[r="3.2"]')).toHaveCount(1);
+    await row.click();
+    await expect(page.locator(".rmt-spark-foot").first()).toContainText(
+      "前走 F",
+    );
+    await expect(
+      page.locator(".rmt-spark").first().locator('circle[r="3.2"]'),
+    ).toHaveCount(0);
   });
 
   test("今節Fの選手は賞典除外として順位から外し、必要得点を出さない（BOA-587）", async ({

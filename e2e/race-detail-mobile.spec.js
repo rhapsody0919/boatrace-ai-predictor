@@ -101,6 +101,44 @@ test("レース詳細 今節タブの日別表は、右に続くことが分か�
       page.locator(".race-history-hscroll .hscroll-more"),
     ).toHaveCount(0);
   });
+
+  await test.step("右へ送ったら「‹」が出て、押すと左へ戻せる（BOA-609）", async () => {
+    // iOS では指の横スワイプが効かず、右送りの「›」しか無いので左へ戻せなかった
+    await expect(
+      page.locator(".race-history-hscroll .hscroll-less").first(),
+    ).toBeVisible();
+    const before = await wrapper.evaluate((el) => el.scrollLeft);
+    await page.locator(".race-history-hscroll .hscroll-less").first().click();
+    await expect
+      .poll(() => wrapper.evaluate((el) => el.scrollLeft))
+      .toBeLessThan(before);
+    await wrapper.evaluate((el) => {
+      el.scrollLeft = 0;
+    });
+    await expect(
+      page.locator(".race-history-hscroll .hscroll-less"),
+    ).toHaveCount(0);
+  });
+
+  await test.step("行全体のリンクを重ね物（::after）で作らず、リンク以外を押しても遷移する（BOA-609）", async () => {
+    // iOS の WebKit は <tr> の position: relative を効かせないため、::after の重ね物が
+    // 表の外側を基準に表全体を覆い、指の横スワイプで表が動かなかった。
+    // Chromium では再現しないので、重ね物を使っていないことを構造で固定する
+    const overlay = await wrapper.evaluate((el) => {
+      const a = el.querySelector(".race-history-table-link");
+      const after = getComputedStyle(a, "::after");
+      return { content: after.content, position: after.position };
+    });
+    expect(overlay.position).not.toBe("absolute");
+
+    const row = page.locator(".race-history-table-row").first();
+    const href = await row
+      .locator(".race-history-table-link")
+      .getAttribute("href");
+    // 日付（リンク）ではなく、着順のセルを押す
+    await row.locator("td").nth(2).click();
+    await expect(page).toHaveURL(new RegExp(`${href}$`));
+  });
 });
 
 test("今節タブの折れ線は、点に合わせるとその走の日付・R・値・着順を出す", async ({

@@ -449,6 +449,63 @@ function suiteBasicInfoStats(m, check) {
     50,
   );
 
+  // --- lastStartTiming（BOA-597）: 前走のST。直前が F・L ならその記号で、飛ばさない
+  const stOf = { valueOf: (r) => r.st, markOf: (r) => r.mark ?? null };
+  check(
+    "lastStartTiming: 直前が F・L ならその記号、欠場（ST無し・記号無し）は飛ばす、何も無ければ null",
+    [
+      m.lastStartTiming([{ st: 0.09 }, { st: null, mark: "F" }], stOf),
+      m.lastStartTiming([{ st: 0.09 }, { st: null, mark: "L" }], stOf),
+      m.lastStartTiming([{ st: 0.12 }, { st: null }], stOf),
+      m.lastStartTiming([{ st: null, mark: "F" }, { st: 0.15 }], stOf),
+      m.lastStartTiming([{ st: null }], stOf),
+      m.lastStartTiming(null, stOf),
+    ],
+    [
+      { mark: "F", value: null },
+      { mark: "L", value: null },
+      { mark: null, value: 0.12 },
+      { mark: null, value: 0.15 },
+      null,
+      null,
+    ],
+  );
+
+  // --- periodDiff（BOA-439）: 前期と出走表の値の差。どちらも公式値
+  check(
+    "periodDiff: 出走表の値と、符号つきの差（勝率は小数2桁・2連対率は1桁）",
+    [
+      m.periodDiff(4.5, "4.12", 2),
+      m.periodDiff(25.6, 31.25, 1),
+      m.periodDiff(4.5, 4.5, 2),
+    ],
+    [
+      { current: "4.12", diff: "−0.38", sign: -1 },
+      { current: "31.3", diff: "+5.7", sign: 1 },
+      { current: "4.50", diff: "±0.00", sign: 0 },
+    ],
+  );
+  check(
+    "periodDiffShownFrom: 期の初めから3か月後の1日から差を出す（年をまたぐ期も）",
+    [
+      m.periodDiffShownFrom("2026-04-30"),
+      m.periodDiffShownFrom("2025-10-31"),
+      m.periodDiffShownFrom(null),
+      m.periodDiffShownFrom("2026/04/30"),
+    ],
+    ["2026-08-01", "2026-02-01", null, null],
+  );
+  check(
+    "periodDiff: どちらかが無ければ null（出走0の新人・出走表の値が無いとき）",
+    [
+      m.periodDiff(null, 4.1, 2),
+      m.periodDiff(4.5, null, 2),
+      m.periodDiff(4.5, "", 2),
+      m.periodDiff(4.5, "abc", 2),
+    ],
+    [null, null, null, null],
+  );
+
   // --- recordsBeforeRace（BOA-603）: 表示中のレースより前の走だけ
   check(
     "recordsBeforeRace: 表示中のレース自身と後日の走を外す。取得前・失敗・raceId無しはそのまま",

@@ -38,6 +38,8 @@ import {
   computeVenueRanking,
   buildConditionRows,
   pickPeriodStats,
+  periodDiff,
+  periodDiffShownFrom,
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
@@ -690,6 +692,50 @@ function RaceBasicInfoTab({
                         periodStats,
                         player?.racerId,
                       );
+                      // 前期と出走表の値の差（BOA-439）。出走表の値は上のバーの
+                      // 既定（全国・今期）と同じ公式値（race_entries、追加クエリ無し）。
+                      // 「今期」とは呼ばない: 出走表の勝率は期が替わっても数え直されず、
+                      // 5月は直前の期の確定値との差が平均0.12しかない（9月は0.38。
+                      // 2026-09-30実測）。バーを当地に切り替えても全国のままなので
+                      // 「全国」も明記する。平均STは出走表の値が無いので差は出さない
+                      const nowRow = officialRowFor(player?.number);
+                      const winDiff = period
+                        ? periodDiff(period.winRate, nowRow?.win_rate, 2)
+                        : null;
+                      const top2Diff = period
+                        ? periodDiff(period.top2Rate, nowRow?.global_2rate, 1)
+                        : null;
+                      // 期の初めから3か月は差を出さず、出走表の値だけを並べる
+                      // （periodDiffShownFrom のコメント参照）
+                      const diffShownFrom = periodDiffShownFrom(
+                        period?.calcTo ?? null,
+                      );
+                      const raceDate = (raceId ?? "").slice(0, 10);
+                      const diffWithheld = Boolean(
+                        diffShownFrom && raceDate && raceDate < diffShownFrom,
+                      );
+                      // 2連対率の差は率の変化ではなくポイント差なので pt を付ける
+                      const diffLabel = (d, unit = "", diffUnit = unit) =>
+                        d && (
+                          <span
+                            className={`rbit-period-diff${
+                              d.sign > 0
+                                ? " is-up"
+                                : d.sign < 0
+                                  ? " is-down"
+                                  : ""
+                            }`}
+                          >
+                            {diffWithheld
+                              ? t("basicInfo.periodCurrentOnly", {
+                                  current: `${d.current}${unit}`,
+                                })
+                              : t("basicInfo.periodVsCurrent", {
+                                  current: `${d.current}${unit}`,
+                                  diff: `${d.diff}${diffUnit}`,
+                                })}
+                          </span>
+                        );
                       return (
                         <div className="rbit-conditions">
                           {/* 値は全行とも自社集計。既定状態（勝率・全レース・今期）では
@@ -877,6 +923,7 @@ function RaceBasicInfoTab({
                                         ? "—"
                                         : period.winRate.toFixed(2),
                                   })}
+                                  {diffLabel(winDiff)}
                                 </span>
                                 <span>
                                   {/* 単位は値側に付ける。i18n側に「%」を残すと
@@ -888,6 +935,7 @@ function RaceBasicInfoTab({
                                         ? "—"
                                         : `${period.top2Rate.toFixed(1)}%`,
                                   })}
+                                  {diffLabel(top2Diff, "%", "pt")}
                                 </span>
                                 <span>
                                   {t("basicInfo.periodAvgSt", {
@@ -898,6 +946,13 @@ function RaceBasicInfoTab({
                                   })}
                                 </span>
                               </div>
+                              {diffWithheld && (winDiff || top2Diff) && (
+                                <p className="rbit-period-note">
+                                  {t("basicInfo.periodDiffWithheldNote", {
+                                    date: diffShownFrom,
+                                  })}
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>
