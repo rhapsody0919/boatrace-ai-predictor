@@ -56,6 +56,7 @@ const DAY = {
             wind_speed: 3,
             wave_height: 2,
             stage: "予選",
+            stage_raw: "予選　　　　  進入固定",
             rows: [
               kRow(1),
               kRow(2, { start_timing: -0.03, is_flying: true }), // パーサーは F を負の値で返す
@@ -73,6 +74,7 @@ const DAY = {
             wind_speed: 5,
             wave_height: 4,
             stage: "優勝戦",
+            stage_raw: "優勝戦",
             rows: [kRow(1)],
           },
           {
@@ -82,6 +84,7 @@ const DAY = {
             wind_speed: 0,
             wave_height: 1,
             stage: "一般",
+            stage_raw: "一般",
             rows: [kRow(1)],
           },
         ],
@@ -164,8 +167,15 @@ function evaluateBuilders(g) {
   });
   expect(
     "(b) 展示タイム: 行の無い R1・NULL の R3 は書き、既存の値のある R2 は書かない。欠場艇は作らない。列は exhibition_time だけ",
-    same(ex.map((r) => `${r.race_id}#${r.boat_number}`), [`${R1}#1`, `${R1}#2`, `${R3}#1`]) &&
-      ex.every((r) => Object.keys(r).sort().join() === "boat_number,exhibition_time,race_id"),
+    same(
+      ex.map((r) => `${r.race_id}#${r.boat_number}`),
+      [`${R1}#1`, `${R1}#2`, `${R3}#1`],
+    ) &&
+      ex.every(
+        (r) =>
+          Object.keys(r).sort().join() ===
+          "boat_number,exhibition_time,race_id",
+      ),
     show(ex),
   );
   // (c) R1 は全部 NULL、R2 は天候だけ既存（"曇り"）、R3 は全部埋まっている
@@ -217,6 +227,15 @@ function evaluateBuilders(g) {
       c2?.weather === "曇り" &&
       c2?.wind_speed === 5,
     show(cond),
+  );
+  const c1 = cond.find((r) => r.race_id === R1);
+  expect(
+    "(c) ステージは付記（進入固定）を落とした原文。風向は書かない（K と DB で方位の基準が違う）",
+    c1?.race_stage === "予選" &&
+      !("wind_direction" in (c1 ?? {})) &&
+      g.normalizeKStage({ stage_raw: "ドラドキ３" }) === "ドラドキ３" &&
+      g.normalizeKStage({ stage_raw: "" }) === null,
+    show(c1),
   );
   // (d) 1号艇は NULL、2号艇は登録番号違い、3号艇は全国2連率だけ既存
   const rate = g.buildRate2Rows(
@@ -320,7 +339,6 @@ async function evaluateWrite(cli) {
       {
         race_id: R1,
         weather: "晴",
-        wind_direction: "北",
         wind_speed: 1,
         wave_height: 1,
         race_stage: "予選",

@@ -37,14 +37,10 @@ export const GAP_FILL_ITEMS = Object.freeze({
     table: "race_conditions",
     mode: "update",
     keyColumns: ["race_id"],
-    columns: [
-      "race_id",
-      "weather",
-      "wind_direction",
-      "wind_speed",
-      "wave_height",
-      "race_stage",
-    ],
+    // 風向は書かない: DB（直前情報ページ由来）と Kファイルで方位の基準が違う（2026-02〜09 で突き合わせると、
+    // K の「南」が DB の「西」「東」「南」等にばらつく）。天候・風速・波高は Kファイルの「レース時点」の値で、
+    // 結果ページの気象で上書きする今の運用（BOA-358）と同じ時点
+    columns: ["race_id", "weather", "wind_speed", "wave_height", "race_stage"],
   },
   rate2: {
     table: "race_entries",
@@ -147,6 +143,21 @@ export function buildExhibitionRows(day, { raceIds, timeByKey }) {
 }
 
 /**
+ * Kファイルのステージの表記を、DB（出走表ページ由来）の表記にそろえる。原文（全角のまま）から、2つ以上の空白・全角空白の
+ * 後ろの付記（「進入固定」等）を落とす。2026-02〜09 の突き合わせで94%が完全一致。残りは会場独自のレース名が
+ * Kファイルで6文字に切り詰められたもの（「朝からセンプ」と「朝からセンプル」等）で、復元できない
+ * （予選・準優勝戦・優勝戦などの標準のステージは全て一致）。
+ *
+ * @param {{stage_raw?: string|null}} race
+ * @returns {string|null}
+ */
+export function normalizeKStage(race) {
+  const raw = typeof race?.stage_raw === "string" ? race.stage_raw.trim() : "";
+  const head = raw.split(/[\s\u3000]{2,}|\u3000/)[0].trim();
+  return head === "" ? null : head;
+}
+
+/**
  * 項目5: 気象・ステージ。race_conditions の既存の行のうち、NULL の列があり、K に値があるものだけ。
  * 既存の値は持ち回る（上書きしない）。
  *
@@ -157,7 +168,7 @@ export function buildExhibitionRows(day, { raceIds, timeByKey }) {
 export function buildConditionsRows(
   day,
   existingByRace,
-  { stage = (race) => race.stage ?? null } = {},
+  { stage = normalizeKStage } = {},
 ) {
   const rows = [];
   for (const { raceId, race } of kRaces(day)) {
@@ -165,7 +176,6 @@ export function buildConditionsRows(
     if (!cur) continue;
     const fromK = {
       weather: race.weather ?? null,
-      wind_direction: race.wind_direction ?? null,
       wind_speed: typeof race.wind_speed === "number" ? race.wind_speed : null,
       wave_height:
         typeof race.wave_height === "number" ? race.wave_height : null,
