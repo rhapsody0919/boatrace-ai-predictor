@@ -950,23 +950,12 @@ test.describe("結果のあるレースを中止扱いしない（BOA-525）", (
 });
 
 test.describe("レースページ再設計（BOA-168）", () => {
-  test("トップページでレース選択→データ出走表と「AI予想」タブ（展開予測/イン崩れ）が表示される（BOA-346）", async ({
+  test("発走前のレースでデータ出走表と「AI予想」タブ（展開予測/イン崩れ）が表示される（BOA-346）", async ({
     page,
   }) => {
-    // ブラウザのロケール検出でenへリダイレクトされるのを防ぎ、jaを固定する
-    // （「⏱️ 終了」フィルタは日本語文言依存のため、ja固定が無いと終了済みレースが
-    // 誤って選ばれうる。2026-08-14: 実行時刻経過で1Rが結果確定した際に顕在化）
-    await page.addInitScript(() =>
-      localStorage.setItem("boatai-language", "ja"),
-    );
     // AIデータ分析（展開予測/イン崩れ）は未来志向のUIのため結果確定済みレースでは
-    // 表示しない仕様（2026-08-14）。開催場一覧の「次 XR」表示がある会場＝未消化レースが
-    // 残っている会場の最終レース（12R側）を選ぶことで未終了レースを確実に引く
-    const found = await selectUpcomingRace(page);
-    test.skip(
-      !found,
-      "本日開催中の未終了レースが見つからないため検証をスキップ",
-    );
+    // 表示しない仕様（2026-08-14）。固定のレースを発走前の状態で開く（BOA-445）
+    await openFixedRaceBeforeStart(page);
 
     // データ出走表が主役として表示される（基本情報タブがデフォルト）
     await expect(page.locator(".data-race-table")).toBeVisible({
@@ -985,14 +974,8 @@ test.describe("レースページ再設計（BOA-168）", () => {
   test("この会場の枠番別傾向パネルがデフォルト展開で表示され、折りたたみ操作ができる（race-detail-analysis-integration）", async ({
     page,
   }) => {
-    await page.addInitScript(() =>
-      localStorage.setItem("boatai-language", "ja"),
-    );
-    const found = await selectUpcomingRace(page);
-    test.skip(
-      !found,
-      "本日開催中の未終了レースが見つからないため検証をスキップ",
-    );
+    // 結果確定済みのレースでも基本情報タブには同じパネルが出る（BOA-445）
+    await openFixedRaceBasicTab(page);
 
     const panel = page.locator(".venue-tendency-panel");
     await expect(panel).toBeVisible({ timeout: 15000 });
@@ -1017,19 +1000,13 @@ test.describe("レースページ再設計（BOA-168）", () => {
   test("分析ツール6コンポーネントの埋め込みセクションがデフォルト閉で並び、開くと会場/レース選択プルダウン無しで実データが表示される（race-detail-analysis-integration FR-3〜9）", async ({
     page,
   }) => {
-    await page.addInitScript(() =>
-      localStorage.setItem("boatai-language", "ja"),
-    );
-    const found = await selectUpcomingRace(page);
-    test.skip(
-      !found,
-      "本日開催中の未終了レースが見つからないため検証をスキップ",
-    );
+    // 結果確定済みのレースでも基本情報タブには同じ6セクションが出る（BOA-445）
+    await openFixedRaceBasicTab(page);
 
     // 「モーター調子」はBOA-308でアコーディオンからモータ情報タブへ昇格し、
     // 重複表示を避けてアコーディオン版が撤去された（PredictionPanel.jsx冒頭の
-    // コメント参照）。テストが7個のまま取り残されていたが、selectUpcomingRaceが
-    // 常にfalseを返して無言でskipしていたため検知できていなかった
+    // コメント参照）。テストが7個のまま取り残されていたが、当日の未終了レースを
+    // 探すヘルパーが常にfalseを返して無言でskipしていたため検知できていなかった
     const sections = page.locator(".embedded-analysis-section");
     await expect(sections).toHaveCount(6);
 
@@ -1110,38 +1087,30 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 実際より小さい数値になっていた（例: 勝率55%の艇なら実際の約半分）。
     // 各行の「出現回数 ÷ (出現率/100)」で逆算した分母が、同じ艇の行同士で
     // ほぼ一致することを確認する（全行が同じ分母＝該当艇の1着回数を使っている証拠）
-    const found = await selectUpcomingRace(page);
-    test.skip(
-      !found,
-      "本日開催中の未終了レースが見つからないため検証をスキップ",
-    );
+    //
+    // プレビューは発走前のレースのAI予想タブにだけ出る。固定のレースを発走前の状態で
+    // 開くので、タブ・プレビュー・2行以上が出ることは前提として確かめる
+    // （当日のレースを探していた頃は、出ないレースに当たると skip していた。BOA-445）
+    await openFixedRaceBeforeStart(page);
 
     // AI予想タブ（本命艇の予想確定後に描画される、BOA-346で独立タブ化）の読み込みを待つ
-    const aiPredictionTabBtn = page.locator(".race-tabs-btn", {
-      hasText: "AI予想",
+    await page
+      .locator(".race-tabs-btn", { hasText: "AI予想" })
+      .click({ timeout: 20000 });
+    await expect(page.locator(".prediction-result")).toBeVisible({
+      timeout: 15000,
     });
-    try {
-      await aiPredictionTabBtn.waitFor({ timeout: 15000 });
-      await aiPredictionTabBtn.click();
-      await page.locator(".prediction-result").waitFor({ timeout: 15000 });
-    } catch {
-      test.skip(true, "AI予想タブが表示されないレースのため検証をスキップ");
-      return;
-    }
 
-    const previewButton = page.locator(".expand-button", {
-      hasText: "コースが1着の場合の出現パターン",
-    });
-    if ((await previewButton.count()) === 0) {
-      test.skip(true, "このレースには出現パターンプレビューが表示されない");
-      return;
-    }
-    await previewButton.click();
+    await page
+      .locator(".expand-button", {
+        hasText: "コースが1着の場合の出現パターン",
+      })
+      .click({ timeout: 15000 });
 
     const rows = page.locator(".pattern-table tbody tr");
     await expect(rows.first()).toBeVisible({ timeout: 15000 });
     const rowCount = await rows.count();
-    test.skip(rowCount < 2, "比較に十分な行数が無いため検証をスキップ");
+    expect(rowCount).toBeGreaterThanOrEqual(2);
 
     const impliedDenominators = [];
     for (let i = 0; i < rowCount; i++) {
@@ -1416,11 +1385,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
       localStorage.setItem("boatai:cookie-consent", "accepted"),
     );
 
-    const found = await selectUpcomingRace(page);
-    test.skip(
-      !found,
-      "本日開催中の未終了レースが見つからないため検証をスキップ",
-    );
+    await openFixedRaceBeforeStart(page);
 
     // 未終了レースを開けた以上バナーは必ず出る。出ない場合は退行なので
     // スキップにせず失敗させる（バナーが消えると本検証が無言で骨抜きになるため）
@@ -2944,44 +2909,74 @@ test.describe("複勝予想UI撤去の完全性（レース結果パネル）", 
   });
 });
 
-// 本日開催レースは実行時刻次第で全会場終了済み、または（日付が変わった直後など）
-// 当日分の予測データが未生成で1件も無い状態になりうる。いずれも本アプリの正常な
-// 状態であり検証をスキップする対象のため、未終了レースを探し、無ければfalseを返す。
-// venue-list-redesign後の構造: 開催場一覧の「次 XR」表示がある会場＝未消化レースが
-// 残っている会場。その会場の最終レース（12R側）は必ず未終了のため、それを開く
-async function selectUpcomingRace(page) {
+// 当日の開催状況に依存しないための固定のレース（BOA-445）。
+//
+// 以前は「本日開催中で未終了のレース」をトップページから探し、無ければ skip していた。
+// E2Eは録画の時刻で走るので、撮影した時刻に発走前のレースが無いと、これらのテストが
+// まとめて skip になり何も検証しなくなる（夜間の実行では9件が skip）。
+//
+// - 2026-09-18 戸田8R（締切 14:16）。結果・進入コースの補完が済んだ過去レース
+// - イン崩れ指数 0.97（非フォールバック）＝ high。境界（0.7）から遠く、段階が揺れない
+// - 同じレースをオッズ一覧のテスト（BOA-311）でも使っている
+//
+// 直近N走のように後から窓がずれる値には、アサーションを依存させないこと
+// （進入コースの補完で窓がずれた実例がある。#1080 の T3-1）
+const FIXED_RACE_DATE = "2026-09-18";
+const FIXED_RACE_ID = `${FIXED_RACE_DATE}-02-08`;
+/** 締切 14:16 の30分前。この時刻のブラウザでは「当日・発走前」として描画される */
+const FIXED_RACE_BEFORE_START = new Date(`${FIXED_RACE_DATE}T13:46:00+09:00`);
+
+/**
+ * 固定のレースを、結果確定済みのまま基本情報タブで開く。
+ * 確定済みのレースは結果タブが既定なので、基本情報タブへ切り替える。
+ * データ出走表・枠番別傾向・分析ツールの埋め込みは、過去のレースでも同じ構造で出る
+ */
+async function openFixedRaceBasicTab(page) {
   await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
-  await page.goto("/");
+  await page.goto(`/race/${FIXED_RACE_ID}`);
+  await page
+    .locator(".race-tabs-btn", { hasText: "基本情報" })
+    .click({ timeout: 20000 });
+}
 
-  try {
-    await page.locator(".venue-grid").waitFor({ timeout: 10000 });
-  } catch {
-    return false;
-  }
-
-  // 「次 XR」表示は会場カードの描画より後に入るため、.venue-gridの描画直後に
-  // countすると開催中でも常に0件になり、このヘルパーを使うテストが無言で
-  // skipし続けていた。表示の出現自体を待ってから絞り込む
-  const upcomingVenue = page
-    .locator(".venue-grid-card--open")
-    .filter({ has: page.locator(".venue-grid-card__next-race") })
-    .first();
-  try {
-    await upcomingVenue.waitFor({ timeout: 15000 });
-  } catch {
-    return false;
-  }
-
-  await upcomingVenue.click();
-  const raceCards = page.locator(".race-card .predict-btn");
-  try {
-    await raceCards.first().waitFor({ timeout: 10000 });
-  } catch {
-    return false;
-  }
-  // 最終レース（未終了が保証される側）を選ぶ
-  await raceCards.last().click();
-  return true;
+/**
+ * 固定のレースを「当日・発走前」の状態で開く。AI用コピー・AI予想タブの予想・
+ * イン崩れの演出など、結果が出る前にしか描画しないUIの検証に使う。
+ *
+ * - ブラウザの時計をそのレースの締切30分前に固定する（fixture が入れた録画時刻を上書きする）
+ * - 予想データの応答（Edge API）から、そのレースの結果だけを外す。
+ *   結果の有無は時計ではなく result で判定している（PredictionPanel の isFinished）ため、
+ *   時計を戻すだけでは発走前にならない。他のレース・他の項目は実データのまま
+ *
+ * Edge API が失敗して Supabase への直接クエリに落ちた場合は結果が残り、
+ * 呼び出し側のアサーション（バナーが出る等）で落ちる。黙って skip にはしない
+ */
+async function openFixedRaceBeforeStart(page) {
+  await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
+  await page.clock.setFixedTime(FIXED_RACE_BEFORE_START);
+  await page.route(`**/api/predictions/${FIXED_RACE_DATE}*`, async (route) => {
+    // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+    const response = await fetchRecorded(route);
+    const body = await response.json();
+    const races = (body.races || []).map((race) =>
+      race.raceId === FIXED_RACE_ID ? { ...race, result: null } : race,
+    );
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json: { ...body, races },
+    });
+  });
+  // 予想データは軽量版→フル版の順に2回取る（useDatePredictions）。フル版の応答まで待つ。
+  // 待たずに検証が先に終わると、取得中の route がテスト終了で閉じた context に当たって
+  // 失敗する（本番データの実行で再現）。フル版で描画が変わる項目の揺れも防ぐ
+  const fullLoaded = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/api/predictions/${FIXED_RACE_DATE}`) &&
+      !response.url().includes("light=true"),
+  );
+  await page.goto(`/race/${FIXED_RACE_ID}`);
+  await fullLoaded;
 }
 
 test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
@@ -2990,11 +2985,7 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
   test("結果未確定レースでバナー・インラインのコピーボタンが表示される", async ({
     page,
   }) => {
-    const found = await selectUpcomingRace(page);
-    test.skip(
-      !found,
-      "本日開催中の未終了レースが見つからないため検証をスキップ",
-    );
+    await openFixedRaceBeforeStart(page);
 
     await expect(page.locator(".data-race-table")).toBeVisible({
       timeout: 15000,
@@ -3019,11 +3010,7 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
   test("コピー実行後にトーストが表示され、クリップボードに整形済みMarkdownが入る", async ({
     page,
   }) => {
-    const found = await selectUpcomingRace(page);
-    test.skip(
-      !found,
-      "本日開催中の未終了レースが見つからないため検証をスキップ",
-    );
+    await openFixedRaceBeforeStart(page);
 
     const bannerButton = page.locator(".ai-copy-btn-banner");
     await expect(bannerButton).toBeVisible({ timeout: 15000 });
@@ -3045,132 +3032,26 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
   });
 });
 
-// イン崩れ指数（volatilityPercentile）を持つ結果未確定レースを会場横断で探す。
-// レースカード一覧はhigh/lowレベルのレースに「🌪️ イン崩れ確率高」
-// 「🎯 本命有利」バッジを直接表示する（RaceCard.jsx、standardは無印）ため、
-// これをフィルタして対象レースを直接特定する。
-// venue-list-redesign後の構造: 会場別レース一覧（/venue/:code）を会場ごとに
-// 開いてバッジ付きカードを探し、クリックで/race/:raceIdへ遷移する。
-// AI予想タブ（BOA-346）はVolatilityDisplayをレンダリングしない結果確定済み
-// レースでは.volatility-display-*が一切出ないため、レンダリング待ちの
-// タイムアウトで判別して次の候補へ進む
-/** 通信が落ち着くまで待つ。終わらないページもあるためタイムアウトは許容する */
-async function waitForNetworkSettled(page) {
-  await page
-    .waitForLoadState("networkidle", { timeout: 15000 })
-    .catch((error) => {
-      if (error.name !== "TimeoutError") throw error;
-    });
-}
-
-async function findRaceWithVolatilityLevel(page) {
-  await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
-
-  await page.goto("/");
-  try {
-    // `.venue-grid` は読み込み中のスケルトン（VenueGridSkeleton）にも付いている。
-    // それを待つと、会場カードが描画される前に数えて0会場＝skip になり、負荷の高い
-    // 全件実行でだけ skip が出た（2026-09-30 の自動撮り直しが不採用になった原因。
-    // 単体実行では再現しない）。スケルトンではない実物のカードを待つ
-    await page
-      .locator(".venue-grid-card--open, .venue-grid-card--closed")
-      .first()
-      .waitFor({ timeout: 10000 });
-  } catch {
-    return null;
-  }
-  const venueLinks = await page
-    .locator(".venue-grid-card--open")
-    .evaluateAll((els) => els.map((el) => el.getAttribute("href")));
-
-  for (const link of venueLinks) {
-    if (!link) continue;
-    await page.goto(link);
-    try {
-      await page.locator(".race-card").first().waitFor({ timeout: 10000 });
-    } catch {
-      continue;
-    }
-    // バッジはカードの描画より後に届くデータで付く。カードが出た直後に数えると
-    // 通信の速さ次第で0件になり、実行ごとに見に行くレースが変わっていた
-    // （録画の再生で、録画時に訪れなかったレースを開いて発覚。BOA-466）
-    await waitForNetworkSettled(page);
-
-    // 締切を過ぎたレース（race-card--deadline-passed）は AI予想タブに
-    // VolatilityDisplay を出さないので、開いても1件あたり最大15秒の待ちで終わる。
-    // このヘルパーが探しているのは「未確定レース」なので最初から除く。
-    // 除かないと、バッジを数え損ねずに済むようになった後（上の待ち）で
-    // 締切後のレースを順に開いて60秒を使い切っていた（BOA-466）
-    const badgedCards = page
-      .locator(".race-card:not(.race-card--deadline-passed)")
-      .filter({ hasText: /イン崩れ確率高|本命有利/ });
-    const count = await badgedCards.count();
-
-    for (let i = 0; i < count; i++) {
-      await badgedCards.nth(i).locator(".predict-btn").click();
-      // AI予想タブ（BOA-346）はレース詳細読み込み後に描画されるため、
-      // タブボタン自体の描画をまず待つ
-      try {
-        await page
-          .locator(".race-tabs-btn", { hasText: "AI予想" })
-          .first()
-          .waitFor({ timeout: 15000 });
-      } catch {
-        await page.goBack();
-        await page.locator(".race-card").first().waitFor({ timeout: 10000 });
-        continue;
-      }
-      await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
-      // AI分析は非同期で完了まで数秒〜十数秒かかるため描画を待つ。
-      // 結果確定済みレースはVolatilityDisplayを描画しないため
-      // タイムアウトで次へ（下のvolatility-display-*判定で0件になり自然に次へ進む）
-      try {
-        await page
-          .locator(".prediction-result, .result-verify-section")
-          .first()
-          .waitFor({ timeout: 15000 });
-      } catch {
-        await page.goBack();
-        await page.locator(".race-card").first().waitFor({ timeout: 10000 });
-        continue;
-      }
-      // VolatilityDisplay は予想結果の描画より後に出ることがある。その場で数えると
-      // 出る前に0件と判定して次のレースへ進み、同じデータでも実行ごとに
-      // 見つかる・見つからないが揺れた（録画の再生で同一データのまま再現。BOA-466）。
-      // 締切前のレースだけを開いているので、出るまで待ってから判定する
-      const levels = ["high", "low", "standard"];
-      await page
-        .locator(levels.map((l) => `.volatility-display-${l}`).join(", "))
-        .first()
-        .waitFor({ timeout: 10000 })
-        .catch((error) => {
-          if (error.name !== "TimeoutError") throw error;
-        });
-      for (const level of levels) {
-        const el = page.locator(`.volatility-display-${level}`);
-        if ((await el.count()) > 0) return level;
-      }
-      await page.goBack();
-      await page.locator(".race-card").first().waitFor({ timeout: 10000 });
-    }
-  }
-  return null;
-}
-
 test.describe("レース荒れ度ムード演出（BOA-195: race-open-animation）", () => {
+  // 固定のレース（イン崩れ指数 0.97）は high。発走前の状態で開き、AI予想タブの
+  // VolatilityDisplay を見る（当日の未確定レースを会場横断で探していた頃は、
+  // 見つからない時間帯に skip していた。BOA-445）
+  const LEVEL = "high";
+
+  async function openVolatility(page) {
+    await openFixedRaceBeforeStart(page);
+    await page
+      .locator(".race-tabs-btn", { hasText: "AI予想" })
+      .click({ timeout: 20000 });
+    await expect(page.locator(`.volatility-display-${LEVEL}`)).toBeVisible({
+      timeout: 15000,
+    });
+  }
+
   test("イン崩れバッジが表示されるレースで波紋アニメーションが表示される", async ({
     page,
   }) => {
-    // findRaceWithVolatilityLevelは会場ごとにフルリロードして走査するため、
-    // 該当レースが見つかりにくい時間帯はデフォルトの30秒を超えうる
-    test.setTimeout(60000);
-    const level = await findRaceWithVolatilityLevel(page);
-    test.skip(
-      level === null,
-      "本日開催中の全レースにイン崩れ指数（非フォールバック）を持つ未確定レースが無いため検証をスキップ",
-    );
-
-    await expect(page.locator(`.volatility-display-${level}`)).toBeVisible();
+    await openVolatility(page);
     await expect(page.locator(".race-mood-effect")).toBeVisible();
     await expect(
       page.locator(".race-mood-effect .race-mood-effect-ring").first(),
@@ -3180,19 +3061,12 @@ test.describe("レース荒れ度ムード演出（BOA-195: race-open-animation�
   test("prefers-reduced-motion環境では波紋アニメーションが表示されない", async ({
     browser,
   }, testInfo) => {
-    test.setTimeout(60000);
     const context = await browser.newContext({ reducedMotion: "reduce" });
     try {
       // fixture を通らない context なので、録画の再生と時計の固定を明示的に掛ける
       await applyRecording(context, testInfo);
       const page = await context.newPage();
-      const level = await findRaceWithVolatilityLevel(page);
-      test.skip(
-        level === null,
-        "本日開催中の全レースにイン崩れ指数（非フォールバック）を持つ未確定レースが無いため検証をスキップ",
-      );
-
-      await expect(page.locator(`.volatility-display-${level}`)).toBeVisible();
+      await openVolatility(page);
       await expect(page.locator(".race-mood-effect")).toHaveCount(0);
     } finally {
       await context.close();
