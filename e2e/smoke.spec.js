@@ -204,6 +204,10 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
     ["/en/guide", "Privacy Policy"],
     ["/zh-TW/guide", "隱私權政策"],
     ["/ko/guide", "개인정보 처리방침"],
+    // BOA-632: 会場ガイド（一覧・詳細）も同じくApp外
+    ["/en/venues", "Privacy Policy"],
+    ["/zh-TW/venues/heiwajima", "隱私權政策"],
+    ["/ko/venues/heiwajima", "개인정보 처리방침"],
   ]) {
     test(`${path} に各言語のラベルでフッターが出る`, async ({ page }) => {
       await page.goto(path);
