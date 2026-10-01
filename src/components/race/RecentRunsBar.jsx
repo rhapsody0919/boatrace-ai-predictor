@@ -14,6 +14,13 @@
  * 「速いのか遅いのか」がレースの水面・風で変わるため、順位のほうが読める。
  *
  * Fの走はST順位を付けず「F」と出す（順位づけの対象外にしているため）。
+ *
+ * ## 各走がいつ・どこか（BOA-604、ユーザー承認の案 A＋D）
+ *
+ * タイルのいちばん上に月日（9/27）を出す。会場・R・種別はタイルに入れると
+ * 375px（1枚 46px）で読めないので、タイルを押したとき帯の下に1行で出す。
+ * 開いたときは最新の走を選んだ状態にする（以前は title 属性に raceId があるだけで、
+ * タッチ端末では何も出なかった）。
  */
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -29,9 +36,20 @@ function rankClass(rank) {
   return "rrb-rank-bad";
 }
 
+const formatSt = (r) =>
+  r.isFlying
+    ? null
+    : r.stForRank === null || r.stForRank === undefined
+      ? null
+      : Number(r.stForRank).toFixed(2).replace(/^0/, "");
+
 function RecentRunsBar({ runs }) {
   const { t } = useTranslation();
   const list = Array.isArray(runs) ? runs : [];
+  // 選んでいる走（帯の下に会場・R・種別を出す）。既定は最新（右端）
+  const [selectedId, setSelectedId] = useState(null);
+  const selected =
+    list.find((r) => r.raceId === selectedId) ?? list[list.length - 1] ?? null;
   // 古い順（左が古い）に並ぶので、横に収まらない幅では開いたときに右端（最新）を
   // 見せる。左端から見せると、いちばん知りたい直近の走が画面の外になる（BOA-601）
   const stripRef = useRef(null);
@@ -75,7 +93,17 @@ function RecentRunsBar({ runs }) {
           const course = r.actualCourse ?? null;
           const color = course ? BOAT_COLORS[course] || {} : {};
           return (
-            <div key={r.raceId} className="rrb-item" title={r.raceId}>
+            <button
+              type="button"
+              key={r.raceId}
+              data-race-id={r.raceId}
+              className={`rrb-item${r.raceId === selected?.raceId ? " is-selected" : ""}`}
+              aria-pressed={r.raceId === selected?.raceId}
+              onClick={() => setSelectedId(r.raceId)}
+            >
+              <span className="rrb-date">
+                {`${Number(r.raceId.slice(5, 7))}/${Number(r.raceId.slice(8, 10))}`}
+              </span>
               <span
                 className="rrb-course"
                 style={
@@ -90,21 +118,50 @@ function RecentRunsBar({ runs }) {
                 {rank ?? t("wakuInfo.outOfPlace")}
               </span>
               <span className="rrb-st">
-                {r.isFlying
-                  ? t("recentRuns.flying")
-                  : r.stForRank === null || r.stForRank === undefined
-                    ? "—"
-                    : Number(r.stForRank).toFixed(2).replace(/^0/, "")}
+                {r.isFlying ? t("recentRuns.flying") : (formatSt(r) ?? "—")}
               </span>
               <span className="rrb-st-rank">
                 {r.isFlying || r.stRank === null || r.stRank === undefined
                   ? ""
                   : t("recentRuns.stRank", { n: r.stRank })}
               </span>
-            </div>
+            </button>
           );
         })}
       </div>
+      {selected && (
+        <p className="rrb-detail" aria-live="polite">
+          {t("recentRuns.detail", {
+            date: `${Number(selected.raceId.slice(5, 7))}/${Number(selected.raceId.slice(8, 10))}`,
+            venue: t(
+              `venues.${selected.venueCode}`,
+              String(selected.venueCode),
+            ),
+            race: Number(selected.raceId.slice(14, 16)),
+            stage: selected.raceStage ? `（${selected.raceStage}）` : "",
+            course: selected.actualCourse
+              ? t("dataTable.prevResultCourse", {
+                  course: selected.actualCourse,
+                })
+              : "—",
+            finish:
+              finishPositionOf(selected) !== null
+                ? t("review.finishPosition", {
+                    position: finishPositionOf(selected),
+                  })
+                : t("wakuInfo.outOfPlace"),
+            st: selected.isFlying
+              ? t("recentRuns.flying")
+              : formatSt(selected) === null
+                ? "—"
+                : `${formatSt(selected)}${
+                    selected.stRank
+                      ? t("recentRuns.stRank", { n: selected.stRank })
+                      : ""
+                  }`,
+          })}
+        </p>
+      )}
       <p className="rrb-legend">{t("recentRuns.legend")}</p>
     </div>
   );

@@ -1632,6 +1632,44 @@ test.describe("レースページ再設計（BOA-168）", () => {
     ).not.toContainText("0.0%");
   });
 
+  test("枠別情報の直近走の帯は、各走の月日を出し、押すと会場・Rが出る。見出しは行の条件と実際の走数（BOA-604）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // 2026-09-29 戸田12R の1号艇。以前は見出しが行によらず「直近10走」、日付・会場は
+    // title 属性（raceId のまま）にしか無く、タッチ端末では出なかった
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    const btn = page.getByRole("button", { name: /直近1ヶ月/ }).first();
+    await btn.waitFor({ timeout: 30000 });
+    await btn.click();
+    const items = page.locator(".rrb-strip").first().locator(".rrb-item");
+    await expect(items.first()).toBeAttached({ timeout: 30000 });
+    const count = await items.count();
+    // 見出しに行の条件と実際の走数
+    await expect(page.locator(".rwit-expanded-note").first()).toContainText(
+      `直近1ヶ月で`,
+    );
+    await expect(page.locator(".rwit-expanded-note").first()).toContainText(
+      `直近${count}走`,
+    );
+    // タイルのいちばん上に月日
+    await expect(items.first().locator(".rrb-date")).toHaveText(/^\d+\/\d+$/);
+    // 最初は最新（右端）を選び、帯の下に会場・R を出す。左端を押すと切り替わる
+    const detail = page.locator(".rrb-detail").first();
+    const lastId = await items.last().getAttribute("data-race-id");
+    await expect(detail).toContainText(
+      `${Number(lastId.slice(5, 7))}/${Number(lastId.slice(8, 10))} `,
+    );
+    await expect(detail).toContainText(`${Number(lastId.slice(14, 16))}R`);
+    const firstId = await items.first().getAttribute("data-race-id");
+    await items.first().click();
+    await expect(detail).toContainText(
+      `${Number(firstId.slice(5, 7))}/${Number(firstId.slice(8, 10))} `,
+    );
+    await expect(items.first()).toHaveAttribute("aria-pressed", "true");
+  });
+
   test("枠別情報のコース別「直近1ヶ月」の帯は、表示どおり左が古く右が新しい（BOA-601）", async ({
     page,
   }) => {
@@ -1644,7 +1682,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await btn.click();
     const items = page.locator(".rrb-strip").first().locator(".rrb-item");
     await expect(items.first()).toBeVisible({ timeout: 30000 });
-    const ids = await items.evaluateAll((els) => els.map((e) => e.title));
+    const ids = await items.evaluateAll((els) =>
+      els.map((e) => e.dataset.raceId),
+    );
     expect(ids.length).toBeGreaterThan(1);
     expect(ids).toEqual([...ids].sort());
 
@@ -2496,7 +2536,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await btn.click();
     const items = page.locator(".rrb-strip").first().locator(".rrb-item");
     await expect(items.first()).toBeAttached({ timeout: 30000 });
-    const ids = await items.evaluateAll((els) => els.map((e) => e.title));
+    const ids = await items.evaluateAll((els) =>
+      els.map((e) => e.dataset.raceId),
+    );
     expect(ids.length).toBeGreaterThan(0);
     for (const id of ids) expect(id < raceId).toBe(true);
 

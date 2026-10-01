@@ -121,7 +121,9 @@ function RaceWakuInfoTab({
       .getRaceEntryOfficialRatesBreakdown(raceId)
       .then((rows) => {
         if (cancelled) return;
-        setFlyingRowByBoat(new Map((rows ?? []).map((r) => [r.boat_number, r])));
+        setFlyingRowByBoat(
+          new Map((rows ?? []).map((r) => [r.boat_number, r])),
+        );
       })
       .catch((err) => {
         // バッジは補助表示。取れなければ出さない（カードごと消さない）
@@ -291,6 +293,18 @@ function RaceWakuInfoTab({
           now: periodAnchor,
         })
       : [];
+
+  // 帯の見出し。押した行の条件と、実際に並んだ走数を入れる（BOA-604）。以前は行によらず
+  // 「◯コースから出走した直近10走」のままで、「当地」で1走しか無くても10走と書いていた。
+  // 「今期」の行は公式の期区分ではない（当社データの全期間）ので、期間をそのまま書く
+  // （基本情報タブの periodCaveat・#973 と同じ「2025年12月以降」）
+  const recentHeading = openCell
+    ? t("wakuInfo.recentFinishesNoteScoped", {
+        scope: t(`wakuInfo.recentScope.${openCell.rowKey}`),
+        course: openCell.course,
+        n: recentRuns.length,
+      })
+    : null;
 
   const selectBoat = (boatNumber) => {
     onFocusBoat(boatNumber);
@@ -481,11 +495,7 @@ function RaceWakuInfoTab({
 
             {openCell?.from === "today" && (
               <div className="rwit-expanded">
-                <p className="rwit-expanded-note">
-                  {t("wakuInfo.recentFinishesNote", {
-                    course: openCell.course,
-                  })}
-                </p>
+                <p className="rwit-expanded-note">{recentHeading}</p>
                 {recentRuns.length === 0 ? (
                   <p className="rwit-expanded-empty">
                     {t("wakuInfo.noRecentFinishes")}
@@ -646,11 +656,7 @@ function RaceWakuInfoTab({
 
                 {openCell?.from === "grid" && (
                   <div className="rwit-expanded">
-                    <p className="rwit-expanded-note">
-                      {t("wakuInfo.recentFinishesNote", {
-                        course: openCell.course,
-                      })}
-                    </p>
+                    <p className="rwit-expanded-note">{recentHeading}</p>
                     {recentRuns.length === 0 ? (
                       <p className="rwit-expanded-empty">
                         {t("wakuInfo.noRecentFinishes")}
