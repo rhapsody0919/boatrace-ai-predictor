@@ -39,6 +39,7 @@ import {
   scoreTableFor,
   isAbsentStartRow,
   flyingRacerIdsInMeet,
+  postPrelimFlyingRacerIds,
   runFinishLabel,
   officialMarkOf,
 } from "../components/race/seriesPoints.js";
@@ -7158,7 +7159,8 @@ export const supabaseDataService = {
     // v18: 賞典除外（公式の備考・今節F）を順位から外す理由を足した（BOA-587）
     // v19: 着順の並びでフライングを「F」と出すため、is_flying を足した（BOA-589）
     // v20: 予選終了の日目を series_day から出す（中止の日を数えない、BOA-578）
-    return withCache(`meet-scoreboard-v20-${raceId}`, async () => {
+    // v21: 予選後に今節Fを切った選手（postPrelimFlyingRacerIds）を足した（BOA-626）
+    return withCache(`meet-scoreboard-v21-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7506,6 +7508,16 @@ export const supabaseDataService = {
             exclusionReasonByRacer: reasons,
           };
         })(),
+        // **予選が終わった後のレースで今節Fを切った選手**（BOA-626）。
+        // 順位は予選終了で確定しているので順位の対象からは外さない（上の判定は
+        // 予選終了までのFだけを見る）が、賞典除外なのは同じ。同じ「今節F」で
+        // 片方は除外・片方は順位付きになる理由を、画面が順位の横で断るのに使う。
+        // `meetStarts` は表示中レースの直前までなので、まだ切っていないFは入らない
+        postPrelimFlyingRacerIds: postPrelimFlyingRacerIds(
+          meetStarts,
+          meetRows,
+          prelimEndRaceIdOf(conditions ?? []),
+        ),
         // **残りの予選走数**（表示中のレースを含む）。公式の「必要得点」は
         // 「準優ボーダーをクリアするために必要な得点」で、実データから
         // 逆算すると `ボーダー × (今の走数 + 残り走数) − 今の得点` だった
