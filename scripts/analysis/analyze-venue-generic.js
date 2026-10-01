@@ -86,7 +86,8 @@ async function analyzeVenue(venueCode) {
         win_odds: r?.payout_win ? r.payout_win / 100 : 0,
         place_odds_1: r?.payout_place_1 ? r.payout_place_1 / 100 : 0,
         place_odds_2: r?.payout_place_2 ? r.payout_place_2 / 100 : 0,
-        trio_odds: r?.payout_trio ? r.payout_trio / 100 : 0,
+        // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+        trio_odds: r?.payout_trifecta ? r.payout_trifecta / 100 : 0,
       };
     })
     .filter((p) => p.race_date && p.race_date >= "2025-12-04" && p.result_1st)

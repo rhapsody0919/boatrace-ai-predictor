@@ -1,6 +1,6 @@
 // Backfill all hit flags and payouts with pagination
-import { supabase, isSupabaseEnabled } from './lib/supabaseClient.js';
-import { calculateHits } from './lib/hitCalculator.js';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient.js';
+import { calculateHits } from '../lib/hitCalculator.js';
 
 async function backfillAllHits() {
   if (!isSupabaseEnabled()) {

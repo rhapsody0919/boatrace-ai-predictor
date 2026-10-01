@@ -198,7 +198,8 @@ async function analyzeEdogawa() {
       .sort()
       .join("-");
     const trioHit = predTop3Sorted === resultTop3Sorted;
-    const trioPayout = trioHit ? result.payout_trio : 0;
+    // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+    const trioPayout = trioHit ? result.payout_trifecta : 0;
 
     // 3連単判定
     const predTop3 = [pred.top_pick, pred.top_2nd, pred.top_3rd]
@@ -206,7 +207,7 @@ async function analyzeEdogawa() {
       .join("-");
     const resultTop3 = [result.rank1, result.rank2, result.rank3].join("-");
     const trifectaHit = predTop3 === resultTop3;
-    const trifectaPayout = trifectaHit ? result.payout_trifecta : 0;
+    const trifectaPayout = trifectaHit ? result.payout_trio : 0;
 
     // ----- 単勝データ収集 -----
 

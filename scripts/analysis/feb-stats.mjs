@@ -106,7 +106,8 @@ async function getFebruaryStats() {
         .join("-");
       if (predSet === resultSet) {
         trioHit++;
-        trioPayout += result.payout_trio || 0;
+        // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+        trioPayout += result.payout_trifecta || 0;
       }
 
       // Trifecta (3連単) - exact order match
@@ -116,7 +117,7 @@ async function getFebruaryStats() {
         pred.top_3rd === result.rank3
       ) {
         trifectaHit++;
-        trifectaPayout += result.payout_trifecta || 0;
+        trifectaPayout += result.payout_trio || 0;
       }
     }
 

@@ -408,6 +408,11 @@
       "note": "使い捨てのbareリポジトリとクローンだけを使い、本リポジトリには触れない。2026-09-25時点でレジストリ導入まで未登録・CI未接続だった"
     },
     {
+      "script": "verify-relative-imports.js",
+      "tier": "ci",
+      "guards": "scripts/・api/ の相対 import の参照先が実在すること（移動したスクリプトの ./lib/ の取り残し。CIで走らない手動スクリプトの壊れに気づけない。BOA-536）"
+    },
+    {
       "script": "verify-rpc-key-regression.js",
       "tier": "ci",
       "guards": "CREATE OR REPLACE FUNCTION が、それ以前の定義にあったキーを取りこぼしていないか（BOA-363・BOA-431と同型の回帰）",

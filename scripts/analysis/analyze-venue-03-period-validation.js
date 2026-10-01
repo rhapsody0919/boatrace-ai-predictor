@@ -119,7 +119,8 @@ const RULES = {
       .sort((a, b) => a - b)
       .join("-");
     const hit = predSorted === resultSorted;
-    return { hit, payout: hit ? result.payout_trio : 0 };
+    // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+    return { hit, payout: hit ? result.payout_trifecta : 0 };
   },
 
   "E03-T002: 1-2-3組み合わせ": (pred, entries, result) => {
@@ -133,7 +134,7 @@ const RULES = {
       .sort((a, b) => a - b)
       .join("-");
     const hit = predSorted === resultSorted;
-    return { hit, payout: hit ? result.payout_trio : 0 };
+    return { hit, payout: hit ? result.payout_trifecta : 0 };
   },
 
   "E03-T003: 1-2-4×後半レース": (pred, entries, result, raceNo) => {
@@ -148,7 +149,7 @@ const RULES = {
       .sort((a, b) => a - b)
       .join("-");
     const hit = predSorted === resultSorted;
-    return { hit, payout: hit ? result.payout_trio : 0 };
+    return { hit, payout: hit ? result.payout_trifecta : 0 };
   },
 
   "E03-T004: 1号艇含む予測（3連複）": (pred, entries, result) => {
@@ -162,7 +163,7 @@ const RULES = {
       .sort((a, b) => a - b)
       .join("-");
     const hit = predSorted === resultSorted;
-    return { hit, payout: hit ? result.payout_trio : 0 };
+    return { hit, payout: hit ? result.payout_trifecta : 0 };
   },
 };
 

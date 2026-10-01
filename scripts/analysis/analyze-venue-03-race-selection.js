@@ -90,7 +90,8 @@ async function analyzeRaceSelection() {
       .sort((a, b) => a - b)
       .join("-");
     const trioHit = predSorted === resultSorted;
-    const trioPayout = trioHit ? result.payout_trio : 0;
+    // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+    const trioPayout = trioHit ? result.payout_trifecta : 0;
 
     // 1号艇の属性
     const boat1 = raceEntries[1];

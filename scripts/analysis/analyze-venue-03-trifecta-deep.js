@@ -133,7 +133,8 @@ async function analyzeDeep() {
       if (!swapPatterns[pattern])
         swapPatterns[pattern] = { count: 0, payouts: [] };
       swapPatterns[pattern].count++;
-      swapPatterns[pattern].payouts.push(result.payout_trifecta);
+      // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+      swapPatterns[pattern].payouts.push(result.payout_trio);
     }
   }
 
@@ -190,7 +191,7 @@ async function analyzeDeep() {
         result: `${result.rank1}-${result.rank2}-${result.rank3}`,
         trifectaHit:
           pred.top_2nd === result.rank2 && pred.top_3rd === result.rank3,
-        payout: result.payout_trifecta,
+        payout: result.payout_trio,
       });
     }
   }
@@ -238,7 +239,7 @@ async function analyzeDeep() {
     const predOrder = predTop3.join("-");
     const resultOrder = `${result.rank1}-${result.rank2}-${result.rank3}`;
     const trifectaHit = predOrder === resultOrder;
-    const payout = trifectaHit ? result.payout_trifecta : 0;
+    const payout = trifectaHit ? result.payout_trio : 0;
     const record = { hit: trifectaHit, payout };
 
     // 1着予測艇の級別
@@ -323,14 +324,14 @@ async function analyzeDeep() {
     const resultOrder = `${result.rank1}-${result.rank2}-${result.rank3}`;
     const trifectaHit = predOrder === resultOrder;
 
-    if (trifectaHit && result.payout_trifecta >= 3000) {
+    if (trifectaHit && result.payout_trio >= 3000) {
       const boat1st = raceEntries[pred.top_pick];
       const raceNo = parseInt(pred.race_id.split("-")[4]);
 
       highPayoutConditions.push({
         race_id: pred.race_id,
         order: predOrder,
-        payout: result.payout_trifecta,
+        payout: result.payout_trio,
         confidence: pred.confidence,
         race_no: raceNo,
         first_grade: boat1st?.grade || "Unknown",
@@ -390,7 +391,7 @@ async function analyzeDeep() {
     const predOrder = predTop3.join("-");
     const resultOrder = `${result.rank1}-${result.rank2}-${result.rank3}`;
     const trifectaHit = predOrder === resultOrder;
-    const payout = trifectaHit ? result.payout_trifecta : 0;
+    const payout = trifectaHit ? result.payout_trio : 0;
     const record = { hit: trifectaHit, payout };
 
     // 1号艇1着×信頼度

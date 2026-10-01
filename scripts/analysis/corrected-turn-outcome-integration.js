@@ -98,7 +98,8 @@ allData.forEach((item) => {
   const trifectaKey = [result.rank1, result.rank2, result.rank3]
     .sort((a, b) => a - b)
     .join("-");
-  const payout = result.payout_trio || result.payout_trifecta || 0;
+  // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+  const payout = result.payout_trifecta || result.payout_trio || 0;
 
   [0, 1, 2].forEach((patIdx) => {
     const pattern = patterns[patIdx];

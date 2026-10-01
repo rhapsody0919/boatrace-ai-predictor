@@ -428,8 +428,9 @@ async function collectVenueStats(venueCode) {
       .join("-");
     const trioHit = predTop3 === resultTop3;
     trioHits.push(trioHit);
-    if (trioHit && result.payout_trio) {
-      trioPayouts.push(result.payout_trio);
+    // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+    if (trioHit && result.payout_trifecta) {
+      trioPayouts.push(result.payout_trifecta);
     }
 
     // ----- 3連単 -----
@@ -439,8 +440,8 @@ async function collectVenueStats(venueCode) {
     const resultTrifecta = [result.rank1, result.rank2, result.rank3].join("-");
     const trifectaHit = predTrifecta === resultTrifecta;
     trifectaHits.push(trifectaHit);
-    if (trifectaHit && result.payout_trifecta) {
-      trifectaPayouts.push(result.payout_trifecta);
+    if (trifectaHit && result.payout_trio) {
+      trifectaPayouts.push(result.payout_trio);
     }
 
     // ----- 条件別集計 -----
