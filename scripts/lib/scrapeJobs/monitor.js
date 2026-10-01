@@ -396,6 +396,17 @@ export function evaluateDetectionLag(lag, date) {
   return alerts;
 }
 
+/**
+ * 自分の Cron を持たず、他のジョブの成功フックで動くジョブ（registry には無い）。連続失敗・0件エラー・
+ * ジョブ自身の通知だけを見る（起動は親のジョブに依存するため、死活は見ない）。
+ *   prediction_odds  買い目オッズ（A4）。odds（A3）の成功フックで race_odds から導出する
+ *                    （predictionOddsHandlers.js の PREDICTION_ODDS_JOB。GitHub Actions 側の A4 は A3 を肩代わり
+ *                    するときしか動かないため、導出の失敗を、ここで通知しないと誰も気づかない。BOA-645）
+ */
+export const HOOK_JOBS = Object.freeze({
+  prediction_odds: Object.freeze({ kind: "hook" }),
+});
+
 /** 死活・連続失敗・ブレーカー・日次の期限超過 */
 export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
   /** @type {Alert[]} */
@@ -411,7 +422,7 @@ export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
       }
       continue;
     }
-    const def = registry[row.job];
+    const def = registry[row.job] ?? HOOK_JOBS[row.job];
     if (!def) continue;
     // 監視・保守のジョブは mode のゲートを掛けない（常に有効）。それ以外は shadow・live のみ
     const active = def.kind === "monitor" || isActiveMode(row.mode);
