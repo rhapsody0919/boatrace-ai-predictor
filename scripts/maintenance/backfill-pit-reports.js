@@ -150,9 +150,16 @@ async function main() {
     "race_id, status, comment_count",
     inRange,
   );
-  const entries = await fetchAll("race_entries", "race_id", (q) =>
-    inRange(q).in("race_id", raceIds.length > 0 ? raceIds : ["-"]),
-  );
+  // 対象の race_id を200件ずつに分けて読む（期間が長いと .in() の URL が長くなりすぎるため）
+  const entries = [];
+  for (let i = 0; i < raceIds.length; i += 200) {
+    const chunk = raceIds.slice(i, i + 200);
+    entries.push(
+      ...(await fetchAll("race_entries", "race_id", (q) =>
+        q.in("race_id", chunk),
+      )),
+    );
+  }
   const entryCounts = new Map();
   for (const e of entries)
     entryCounts.set(e.race_id, (entryCounts.get(e.race_id) ?? 0) + 1);
