@@ -28,6 +28,14 @@
   color: var(--text-secondary);
 }
 
+/* 過去のレースで、会場の集計が今日時点のものであることの注記（BOA-608）。
+   見た目は .nsc-sub と同じ。E2E が .nsc-sub を1つとして数えているため別のクラスにする */
+.nsc-as-of {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
 .nsc-section-label {
   margin: 0 0 var(--spacing-1);
   font-size: var(--font-size-xs);

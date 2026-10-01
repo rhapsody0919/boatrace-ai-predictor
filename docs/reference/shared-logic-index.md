@@ -202,7 +202,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/colors.js` | カラーユーティリティ | getRecoveryColorClass, MODEL_COLORS, BOAT_COLORS, BOAT_LINE_COLORS, HIT_COLORS ほか1件 |
 | `src/utils/competitionRank.js` | 同じ値は同じ順位にする順位（競技順位方式: 1, 2, 2, 4 …）（純関数、BOA-529）。 | competitionRank |
 | `src/utils/courseBaseline.js` | ST考察の「同コース・同級別の平均との差」の算出（phase a FR-1） | indexBaseline, getBaselineCell, diffFromBaseline, expectedBreakoutCount, METRIC_DIRECTION |
-| `src/utils/dateUtils.js` | 日付ユーティリティ（フロントエンド用） | getJSTNow, getNowHHMMJST, getTodayJST, getYesterdayJST, getDaysAgoJST ほか7件 |
+| `src/utils/dateUtils.js` | 日付ユーティリティ（フロントエンド用） | getJSTNow, getNowHHMMJST, getTodayJST, getYesterdayJST, getDaysAgoJST ほか8件 |
 | `src/utils/digestMetrics.js` | digestMetrics - 「本日のデータ一覧」（BOA-402）の指標計算（純関数） | computeSkillDelta, computePredicted, computeZScore, computeConsistency, computeFeaturedScore ほか11件 |
 | `src/utils/formatters.js` | フォーマット関数 | formatCapturedAtJst, formatPercent, formatDate, formatDateLocalized, formatDateShort ほか3件 |
 | `src/utils/meetGrouping.js` | meetGrouping - 節（開催）のグルーピング共通ロジック | groupIntoCurrentMeet, groupIntoMeetBeforeRace, findMeetStartDate |
@@ -254,4 +254,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 219 ファイル / export 1092 件。
+対象 219 ファイル / export 1093 件。

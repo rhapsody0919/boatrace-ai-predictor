@@ -209,6 +209,34 @@ test.describe("着いた位置の目印（ファン評価1・2周目）", () => 
   });
 });
 
+test.describe("目印の近道（「9Rへ」）の着地", () => {
+  test.use({ viewport: { width: 375, height: 800 } });
+
+  test("押した後に上の会場カードが伸びても、9Rはヘッダーのすぐ下に保たれる", async ({
+    page,
+  }) => {
+    // CI の負荷で会場カードの読み込みが遅れ、近道で移った後に会場カードが伸びて 9R が
+    // 約90px 下にずれた（#1017・#1023 の CI で「目印に会場名と次の締切を出し…」が落ちた）。
+    // 読み込みの遅れを、押した直後に会場カードの高さを伸ばすことで決定的に再現する
+    await open(page, { at: "14:00" });
+    const marker = page.getByTestId("venue-next-race-marker");
+    await marker.getByRole("button", { name: "9Rへ" }).click();
+    await page.evaluate(() => {
+      const holder = document.querySelector(
+        '[data-testid="venue-next-race-cards"]',
+      );
+      holder.style.paddingTop = "90px";
+    });
+    const headerBottom = await page
+      .locator(".app-header")
+      .evaluate((e) => e.getBoundingClientRect().bottom);
+    const nineR = page.locator(".race-grid > .race-card").nth(8);
+    await expect
+      .poll(() => nineR.evaluate((e) => e.getBoundingClientRect().top))
+      .toBeLessThan(headerBottom + 40);
+  });
+});
+
 test.describe("差し込んだ会場カードの折りたたみ（ユーザー判断）", () => {
   test.use({ viewport: { width: 375, height: 800 } });
 

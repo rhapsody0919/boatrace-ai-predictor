@@ -113,6 +113,27 @@ export async function processPitReportRace({
     return { outcome: PIT_REPORT_OUTCOMES.notTarget, rowsWritten: 0 };
   }
 
+  let commentCount = 0;
+  let expectedBoats = null;
+  /**
+   * 公開済みでもコメントが出走艇の数に満たない間は、発走まで partial で再試行する（BOA-611）。
+   * 公式はレポーターが艇ごとにコメントを順に足していく（2026-10-01 児島7R: 11:54 の検知は1艇、13:22 は6艇）。
+   * 発走後・発走時刻が不明なときは、そのまま完了にする（再試行を続けて期限切れの監視を鳴らさない）。
+   * 書き込みは content_hash で変わったときだけなので、取り直しても同じ内容なら書かない。
+   */
+  const settle = (result) =>
+    result.outcome === PIT_REPORT_OUTCOMES.ok &&
+    expectedBoats !== null &&
+    commentCount < expectedBoats &&
+    Number.isFinite(minutesToStart) &&
+    minutesToStart > 0
+      ? {
+          ...result,
+          outcome: PIT_REPORT_OUTCOMES.partial,
+          retrySec: pendingRetrySec(minutesToStart),
+        }
+      : result;
+
   const url = buildPitReportUrl(raceId);
   const html = await fetchHtml(url);
   const parsed = parsePitReportHtml(html);
@@ -132,6 +153,7 @@ export async function processPitReportRace({
       return failure(`parse_anomaly: ${parsed.anomalies.join(" / ")}`, base);
     }
     const count = parsed.boats.filter((b) => b.commentText !== null).length;
+    commentCount = count;
     base.rowsParsed = count;
     base.rowsExpected = 1;
   }
@@ -172,6 +194,8 @@ export async function processPitReportRace({
         base,
       );
     }
+    // 出走表が読めない（0件）ときは、全艇そろうまで待つ判定をしない（従来どおり完了にする）
+    expectedBoats = (entries ?? []).length > 0 ? entries.length : null;
     const mismatches = findRacerMismatches(parsed.boats, entries ?? []);
     if (mismatches.length > 0) {
       return failure(`parse_anomaly: ${mismatches.join(" / ")}`, base);
@@ -195,7 +219,7 @@ export async function processPitReportRace({
     existing.content_hash === digest &&
     existing.parser_version === parsed.parserVersion
   ) {
-    return { ...base, outcome, rowsWritten: 0 };
+    return settle({ ...base, outcome, rowsWritten: 0 });
   }
 
   // 内容が変わった（または初めて）: 生HTMLの保管（コメントありのみ。失敗しても続ける）→ 艇ごと → レース単位の行
@@ -257,7 +281,7 @@ export async function processPitReportRace({
   );
   if (reportResult.error) return failure(reportResult.error.message, base);
   rowsWritten += reportResult.written;
-  return { ...base, outcome, rowsWritten };
+  return settle({ ...base, outcome, rowsWritten });
 }
 
 /** races の1行を読む（グレード・レース番号）。無ければ null。DBエラーは例外 */
