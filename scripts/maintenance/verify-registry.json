@@ -143,6 +143,11 @@
       "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
     },
     {
+      "script": "verify-function-grants-migration.js",
+      "tier": "ci",
+      "guards": "マイグレーション112（関数・シーケンスの匿名権限の剥奪と既定権限の是正、BOA-575）をPGlite上で実際に適用して検証。画面が呼ぶ7本のRPCが残ること・トリガーが発火し続けること"
+    },
+    {
       "script": "verify-migration-rls.js",
       "tier": "ci",
       "guards": "新規マイグレーションが公開スキーマのテーブルをRLSなし・匿名書き込み可のまま作っていないか（BOA-370の再発防止）"
