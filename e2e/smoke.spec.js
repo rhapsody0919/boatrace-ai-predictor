@@ -4252,6 +4252,61 @@ test.describe("レース詳細のモータ情報タブ: 連対率の桁（BOA-47
   });
 });
 
+// BOA-505: 各言語の入門ガイドもタブの名前と並び順を載せる。名前は raceTabs.* の訳と一致させる
+test.describe("各言語ガイドがレース詳細のタブ構成に追随している（BOA-505）", () => {
+  const CASES = [
+    [
+      "/en/guide",
+      [
+        "Basic Info",
+        "AI Prediction",
+        "This Series",
+        "Just Before",
+        "Lane Stats",
+        "Motor Info",
+        "Odds List",
+        "Result",
+      ],
+    ],
+    [
+      "/zh-TW/guide",
+      [
+        "基本資訊",
+        "AI預測",
+        "本梯次",
+        "臨場資訊",
+        "艇號別資訊",
+        "馬達資訊",
+        "賠率一覽",
+        "結果",
+      ],
+    ],
+    [
+      "/ko/guide",
+      [
+        "기본 정보",
+        "AI 예상",
+        "이번 시리즈",
+        "직전 정보",
+        "번호별 정보",
+        "모터 정보",
+        "오즈 일람",
+        "결과",
+      ],
+    ],
+  ];
+  for (const [path, tabs] of CASES) {
+    test(`${path} に全タブが実際の並び順で載っている`, async ({ page }) => {
+      await page.goto(path);
+      const items = page.locator(".eg-race-tabs li");
+      await expect(items).toHaveCount(tabs.length);
+      for (const [index, tab] of tabs.entries()) {
+        await expect(items.nth(index).locator("strong")).toHaveText(tab);
+      }
+    });
+  }
+});
+
 test.describe("静的ガイドがレース詳細のタブ構成に追随している（BOA-456フォローアップ）", () => {
   // レース詳細がタブ構成になったあと、/how-to-use だけが追随し /about・/faq は
   // 「結果」タブにしか触れていなかった。同じ取りこぼしを繰り返さないよう、
