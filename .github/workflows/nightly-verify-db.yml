@@ -71,23 +71,26 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SUMMARY: ${{ steps.checks.outputs.summary }}
+        # ログに " ・改行・\ が入ると手書きの JSON は壊れ、失敗の通知が届かなくなる。
+        # payload は jq で組み立ててエスケープを任せる（BOA-644）。Slack の section の
+        # text は3000文字が上限で、超えると通知ごと拒否されるため、ログだけを切り詰める
         run: |
-          curl -s -X POST "$SLACK_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"attachments\": [{
-                \"color\": \"#c0392b\",
-                \"blocks\": [
-                  {
-                    \"type\": \"section\",
-                    \"text\": {
-                      \"type\": \"mrkdwn\",
-                      \"text\": \":rotating_light: *本番DBの検証が失敗しました*\n\`\`\`${SUMMARY}\`\`\`\nRPCの出力キーが欠けている場合、画面はフォールバック経路で壊れずに動くため気づけません（BOA-363 / BOA-431）。マイグレーションの CREATE OR REPLACE で古い定義を土台にしていないか確認してください。\"
+          payload=$(jq -n --arg summary "$SUMMARY" '
+            ":rotating_light: *本番DBの検証が失敗しました*\n" as $head
+            | "\nRPCの出力キーが欠けている場合、画面はフォールバック経路で壊れずに動くため気づけません（BOA-363 / BOA-431）。マイグレーションの CREATE OR REPLACE で古い定義を土台にしていないか確認してください。" as $tail
+            | {
+                attachments: [{
+                  color: "#c0392b",
+                  blocks: [{
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text: ($head + "```" + ($summary | .[0:(2900 - ($head + $tail | length))]) + "```" + $tail)
                     }
-                  }
-                ]
-              }]
-            }"
+                  }]
+                }]
+              }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
 
       - name: 検証の失敗をジョブの失敗として扱う
         if: steps.checks.outputs.exit_code == '1'

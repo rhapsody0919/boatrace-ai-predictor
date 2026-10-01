@@ -104,23 +104,25 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SUMMARY: ${{ steps.drift.outputs.summary }}
+        # payload は jq で組み立てる（ログの " ・改行・\ で JSON が壊れないように。BOA-644）。
+        # section の text の上限3000文字を超えないよう、ログだけを切り詰める
         run: |
-          curl -s -X POST "$SLACK_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"attachments\": [{
-                \"color\": \"#c9a227\",
-                \"blocks\": [
-                  {
-                    \"type\": \"section\",
-                    \"text\": {
-                      \"type\": \"mrkdwn\",
-                      \"text\": \":warning: *会場公式サイトのHTML構造変化の疑いを検知（BOA-293）*\n\`\`\`${SUMMARY}\`\`\`\n進入コース別選手成績ページの構造が変わり、パーサーが正しく取得できなくなっている可能性があります。scripts/lib/venueEntryCourseStats/parser.js を確認してください\"
+          payload=$(jq -n --arg summary "$SUMMARY" '
+            ":warning: *会場公式サイトのHTML構造変化の疑いを検知（BOA-293）*\n" as $head
+            | "\n進入コース別選手成績ページの構造が変わり、パーサーが正しく取得できなくなっている可能性があります。scripts/lib/venueEntryCourseStats/parser.js を確認してください" as $tail
+            | {
+                attachments: [{
+                  color: "#c9a227",
+                  blocks: [{
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text: ($head + "```" + ($summary | .[0:(2900 - ($head + $tail | length))]) + "```" + $tail)
                     }
-                  }
-                ]
-              }]
-            }"
+                  }]
+                }]
+              }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
 
       # 取得の失敗（races 0件・全会場失敗・DB障害）を、成功扱いのまま埋もれさせない（BOA-364）
       - name: Fail if scraping failed

@@ -46,20 +46,22 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SUMMARY: ${{ steps.check.outputs.summary }}
+        # payload は jq で組み立てる（ログの " ・改行・\ で JSON が壊れないように。BOA-644）。
+        # section の text の上限3000文字を超えないよう、ログだけを切り詰める
         run: |
-          curl -s -X POST "$SLACK_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"attachments\": [{
-                \"color\": \"#c9a227\",
-                \"blocks\": [
-                  {
-                    \"type\": \"section\",
-                    \"text\": {
-                      \"type\": \"mrkdwn\",
-                      \"text\": \":warning: *展示データ欠落率が閾値を超過*\n\`\`\`${SUMMARY}\`\`\`\nスクレイピング基盤のサーバーレス移行（docs/design/scraping-serverless-migration/spec.md）Step 2の並走期間中の監視項目です\"
+          payload=$(jq -n --arg summary "$SUMMARY" '
+            ":warning: *展示データ欠落率が閾値を超過*\n" as $head
+            | "\nスクレイピング基盤のサーバーレス移行（docs/design/scraping-serverless-migration/spec.md）Step 2の並走期間中の監視項目です" as $tail
+            | {
+                attachments: [{
+                  color: "#c9a227",
+                  blocks: [{
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text: ($head + "```" + ($summary | .[0:(2900 - ($head + $tail | length))]) + "```" + $tail)
                     }
-                  }
-                ]
-              }]
-            }"
+                  }]
+                }]
+              }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"

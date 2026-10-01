@@ -29,19 +29,20 @@ jobs:
             COLOR="#4caf50"
           fi
 
-          curl -s -X POST "$SLACK_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"attachments\": [{
-                \"color\": \"${COLOR}\",
-                \"blocks\": [
-                  {
-                    \"type\": \"section\",
-                    \"text\": {
-                      \"type\": \"mrkdwn\",
-                      \"text\": \"${EMOJI} *${ACTION_TEXT}*\n<${PR_URL}|#${PR_NUMBER} ${PR_TITLE}>\n\`${PR_HEAD}\` → \`${PR_BASE}\` by ${PR_USER}\"
-                    }
+          # PR のタイトルに " や \ が入ると手書きの JSON は壊れるため、jq で組み立てる（BOA-644）
+          payload=$(jq -n \
+            --arg color "$COLOR" --arg emoji "$EMOJI" --arg action "$ACTION_TEXT" \
+            --arg url "$PR_URL" --arg number "$PR_NUMBER" --arg title "$PR_TITLE" \
+            --arg head "$PR_HEAD" --arg base "$PR_BASE" --arg user "$PR_USER" '{
+              attachments: [{
+                color: $color,
+                blocks: [{
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: ($emoji + " *" + $action + "*\n<" + $url + "|#" + $number + " " + $title + ">\n`" + $head + "` → `" + $base + "` by " + $user)
                   }
-                ]
+                }]
               }]
-            }"
+            }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
