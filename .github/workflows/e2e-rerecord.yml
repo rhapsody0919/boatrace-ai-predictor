@@ -84,10 +84,12 @@ jobs:
           fi
           RESULT=$(node scripts/maintenance/e2e-recording.js gate)
           echo "$RESULT"
-          echo "run=$(echo "$RESULT" | jq -r '.run')" >> "$GITHUB_OUTPUT"
-          # 採用済みで空振りしたときは通知しない。遅れて撮れなかったときは通知する
-          echo "notify=$(echo "$RESULT" | jq -r '.notify')" >> "$GITHUB_OUTPUT"
-          echo "result=$RESULT" >> "$GITHUB_OUTPUT"
+          {
+            echo "run=$(echo "$RESULT" | jq -r '.run')"
+            # 採用済みで空振りしたときは通知しない。遅れて撮れなかったときは通知する
+            echo "notify=$(echo "$RESULT" | jq -r '.notify')"
+            echo "result=$RESULT"
+          } >> "$GITHUB_OUTPUT"
           REASON=$(echo "$RESULT" | jq -r '.reasons | join("; ")')
           if [ -n "$REASON" ]; then
             echo "## E2E 録画の撮り直し: 撮らずに終了（$REASON）" >> "$GITHUB_STEP_SUMMARY"
