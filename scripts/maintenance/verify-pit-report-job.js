@@ -589,6 +589,14 @@ const ENTRIES = [
   { race_id: RACE_ID, boat_number: 6, racer_id: 4500 },
 ];
 const G1_RACE = { race_grade: "G1", race_number: 12 };
+// 1号艇だけコメントがある版（2〜6号艇の本文を空にする。公開直後の状態。BOA-611）
+const ONE_BOAT = (() => {
+  let seen = 0;
+  return R12.replace(
+    /(<td class="is-alignL is-p0-10">)([^<]*)(<\/td>)/g,
+    (all, open, _text, close) => (seen++ === 0 ? all : `${open}${close}`),
+  );
+})();
 const freshClient = (opts = {}) => {
   const c = createFakeClient({
     tables: {
@@ -620,6 +628,63 @@ async function evaluateJob(processFn) {
       client: freshClient(),
       ...over,
     });
+
+  // 公開後にコメントが増えていく（BOA-611。2026-10-01 児島7R: 11:54 の検知は1艇、13:22 は6艇）
+  {
+    const client = freshClient();
+    const first = await go({
+      client,
+      fetchHtml: async () => ONE_BOAT,
+      minutesToStart: 90,
+    });
+    expect(
+      "BOA-611: 1艇だけ公開（発走90分前）: 書いたうえで partial（再試行）。間隔は発走前の10分",
+      first.outcome === "partial" &&
+        first.retrySec === 600 &&
+        client.state.race_pit_comments.length === 1 &&
+        client.state.race_pit_reports[0]?.comment_count === 1 &&
+        !isFinalOutcome(first.outcome),
+    );
+    const same1 = await go({
+      client,
+      fetchHtml: async () => ONE_BOAT,
+      minutesToStart: 20,
+    });
+    expect(
+      "BOA-611: 同じ1艇のまま（発走20分前）: 書かずに partial を続ける。間隔は直前の5分",
+      same1.outcome === "partial" &&
+        same1.rowsWritten === 0 &&
+        same1.retrySec === 300,
+    );
+    const full = await go({ client, minutesToStart: 15 });
+    expect(
+      "BOA-611: 6艇そろった再取得: 追加の5艇とレース単位の行を書き直し、ok で完了",
+      full.outcome === "ok" &&
+        client.state.race_pit_comments.length === 6 &&
+        client.state.race_pit_reports.length === 1 &&
+        client.state.race_pit_reports[0].comment_count === 6,
+    );
+  }
+  {
+    const client = freshClient();
+    const late = await go({
+      client,
+      fetchHtml: async () => ONE_BOAT,
+      minutesToStart: -5,
+    });
+    expect(
+      "BOA-611: 発走後は1艇のままでも ok で閉じる（再試行を続けて期限切れの監視を鳴らさない）",
+      late.outcome === "ok" && client.state.race_pit_comments.length === 1,
+    );
+    const unknown = await go({
+      client: freshClient(),
+      fetchHtml: async () => ONE_BOAT,
+    });
+    expect(
+      "BOA-611: 発走時刻が分からないときも ok で閉じる",
+      unknown.outcome === "ok",
+    );
+  }
 
   // shadow: 取得・解析のみ。DBにもStorageにも触れない
   {
@@ -1528,6 +1593,14 @@ for (const [label, replacements] of rowsMutants) {
   );
 }
 const jobMutants = [
+  [
+    "公開後、コメントが足りなくても完了にする（BOA-611 の取りこぼし）",
+    [["commentCount < expectedBoats &&", "false &&"]],
+  ],
+  [
+    "発走後もコメントが足りない間は再試行し続ける",
+    [["minutesToStart > 0", "minutesToStart > -Infinity"]],
+  ],
   ["shadow でも書く", [['mode !== "live" ||', "false ||"]]],
   [
     "内容が同じでも毎回書く",
