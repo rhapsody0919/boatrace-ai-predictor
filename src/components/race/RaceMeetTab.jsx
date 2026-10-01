@@ -205,11 +205,30 @@ function RaceMeetTab({
   const seriesSplit = Boolean(board?.seriesRacerIds);
   // 節全体では何人いるか。分けたときに「なぜ半分になったのか」を数で示す。
   // `buildMeetRanking` を分けずにもう一度通すだけ（追加クエリ0本・48人ぶんの計算）
-  const meetTotal = seriesSplit
-    ? buildMeetRanking({ ...board, seriesRacerIds: null }).filter(
-        (r) => !r.withdrawn,
-      ).length
-    : rankedOnly.length;
+  // 出場者は出走表から数える（得点率の母集団ではなく。BOA-660）。取れなければ従来どおり
+  const entrantIds = board?.meetEntrantIds ?? null;
+  const seriesIdSet = seriesSplit ? new Set(board.seriesRacerIds) : null;
+  const entrantCount = Math.max(
+    entrantIds
+      ? entrantIds.filter((id) => !seriesIdSet || seriesIdSet.has(id)).length
+      : 0,
+    ranking.length,
+  );
+  const meetTotal = entrantIds
+    ? entrantIds.length
+    : seriesSplit
+      ? buildMeetRanking({ ...board, seriesRacerIds: null }).length
+      : ranking.length;
+  // 表の6艇のうちの選手か（凡例の出し分け。節の誰かに該当者が居るだけで出すと、
+  // 表に無い印の説明を読ませることになる。BOA-660）
+  const inTable = (r) => sortedPlayers.some((p) => p.racerId === r.racerId);
+  // 今節をまだ走っていない艇（このレースが今節の初戦）。行ごと消すと「欠場か」と
+  // 読み違えるので、行として出す（BOA-660、津 9/23 6R で6艇中3艇しか出なかった）
+  const notYetRun = sortedPlayers.filter(
+    (p) =>
+      !ranking.some((r) => r.racerId === p.racerId) &&
+      !absentOnly.some((r) => r.racerId === p.racerId),
+  );
   const border = rankedOnly[slots - 1]?.rate;
   // 表のボーダー表示は「節全体の順位」なので、選んだ選手の走数に依存しない
   const showBorderBadge =
@@ -595,23 +614,56 @@ function RaceMeetTab({
                     {renderPretestCell(p)}
                   </tr>
                 ))}
+              {/* 今節をまだ走っていない艇（BOA-660） */}
+              {notYetRun.map((p) => (
+                <tr
+                  key={p.number}
+                  className={[
+                    "is-not-yet-run",
+                    p.number === selectedBoat ? "is-current" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  onClick={() => onFocusBoat(p.number)}
+                >
+                  {renderPlayerHead(p, [])}
+                  <td className="rmt-rate">—</td>
+                  <td className="rmt-rank">{t("meetTab.notYetRun")}</td>
+                  {renderPretestCell(p)}
+                </tr>
+              ))}
             </tbody>
           </table>
           <p className="rmt-hint">{t("meetTab.rowHint")}</p>
           <p className="rmt-sub">
-            {ranking.some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS) && (
+            {ranking
+              .filter(inTable)
+              .some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS) && (
               <>{t("meetTab.smallSampleLegend")} </>
             )}
             {/* 賞典除外・途中帰郷の選手も節は走っているので、「出場」から外さない。
                 順位の対象の人数と分けて書く（ファン評価2周目: 出場50人なのに
                 前検51位の選手がいた） */}
-            {rankedOnly.length < ranking.length
-              ? t("meetTab.compareSubExcluded", {
-                  all: ranking.length,
-                  total: rankedOnly.length,
-                  excluded: ranking.length - rankedOnly.length,
-                })
-              : t("meetTab.compareSub", { total: rankedOnly.length })}
+            {/* Ｗ優勝戦で分けたときは「節の出場」と書かない。下の注記の
+                「節全体は◯人」と食い違って読める（BOA-660） */}
+            {ranking.length - rankedOnly.length + absentOnly.length > 0
+              ? t(
+                  seriesSplit
+                    ? "meetTab.compareSubSeriesExcluded"
+                    : "meetTab.compareSubExcluded",
+                  {
+                    all: entrantCount,
+                    total: rankedOnly.length,
+                    // 全部の走が欠場の選手も順位の対象外。数えないと「47人（対象42人・
+                    // 4人を除く）」と足し算が合わない（BOA-660）
+                    excluded:
+                      ranking.length - rankedOnly.length + absentOnly.length,
+                  },
+                )
+              : t(
+                  seriesSplit ? "meetTab.compareSubSeries" : "meetTab.compareSub",
+                  { total: entrantCount },
+                )}
             {/* 「予選後F」の意味（セルの title はタッチ端末で読めない。BOA-626）。
                 **表の6艇に印が出ているときだけ**断る。節の誰かに居るだけで出すと、
                 表に印が無いのに説明だけ出て「どこにあるのか」と迷う（ファン評価1周目） */}
@@ -625,12 +677,15 @@ function RaceMeetTab({
             ) && <> {t("meetTab.postPrelimFlyingNote")}</>}
             {/* 「欠場」の理由。セルの title はタッチ端末で読めないので本文にも書く
                 （BOA-504 ファン評価） */}
-            {absentOnly.length > 0 && <> {t("meetTab.absentNote")}</>}
+            {absentOnly.some(inTable) && <> {t("meetTab.absentNote")}</>}
+            {notYetRun.length > 0 && <> {t("meetTab.notYetRunNote")}</>}
             {/* 着順の並びの「欠」の意味と、得点率の分母から外していること
                 （一部欠場の開催でも書く。BOA-504 ファン評価） */}
-            {[...ranking, ...absentOnly].some((r) =>
-              r.finishes.includes(FINISH_ABSENT),
-            ) && <> {t("meetTab.finishAbsentNote")}</>}
+            {[...ranking, ...absentOnly]
+              .filter(inTable)
+              .some((r) => r.finishes.includes(FINISH_ABSENT)) && (
+              <> {t("meetTab.finishAbsentNote")}</>
+            )}
             {showBorderBadge && (
               <>
                 {" "}
@@ -654,7 +709,7 @@ function RaceMeetTab({
                     showBorderBadge
                       ? "meetTab.seriesSplitNote"
                       : "meetTab.seriesSplitNoteNoBorder",
-                    { total: rankedOnly.length, meetTotal },
+                    { meetTotal },
                   )
                 : t("meetTab.seriesMixedNote", { total: rankedOnly.length })}
             </p>

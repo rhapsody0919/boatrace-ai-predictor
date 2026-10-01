@@ -1,0 +1,63 @@
+import { test, expect } from "./fixtures.js";
+
+/**
+ * 今節タブの比較表の行と出場人数（BOA-660）。
+ *
+ * - まだ今節を走っていない艇も行として出す（「今節初戦」）。消すと欠場と読み違える
+ * - 出場人数は出走表（当日の番組を含む）から数える。走った選手で数えると、
+ *   初日の2Rで「節の出場は6人」になった
+ * - Ｗ優勝戦で分けたときは「節の出場」と書かない（下の「節全体は◯人」と食い違う）
+ * - 除いた人数に全欠場の選手も含め、足し算を合わせる
+ * - 凡例（⚠ は3走未満 等）は、表の6艇に該当者がいるときだけ出す
+ */
+
+async function openMeetTab(page, raceId) {
+  await page.goto(`/race/${raceId}`);
+  await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+  await expect(page.locator(".rmt-compare tbody tr").first()).toBeVisible({
+    timeout: 30000,
+  });
+}
+
+test("初日の2Rでも6艇とも行が出て、出場人数は出走表から数える", async ({
+  page,
+}) => {
+  await openMeetTab(page, "2026-09-21-09-02");
+  await expect(page.locator(".rmt-compare tbody tr")).toHaveCount(6);
+  await expect(page.locator(".rmt-compare .rmt-rank").first()).toHaveText(
+    "今節初戦",
+  );
+  await expect(page.locator(".rmt-sub").first()).toContainText(
+    "節の出場は47人。",
+  );
+});
+
+test("予選序盤で今節をまだ走っていない艇も行として出す", async ({ page }) => {
+  await openMeetTab(page, "2026-09-23-09-06");
+  await expect(page.locator(".rmt-compare tbody tr")).toHaveCount(6);
+});
+
+test("Ｗ優勝戦で分けたときは「同じ優勝戦をめざす」人数として書く", async ({
+  page,
+}) => {
+  await openMeetTab(page, "2026-09-25-01-07");
+  await expect(page.locator(".rmt-sub").first()).toContainText(
+    "同じ優勝戦をめざすのは24人（順位の対象は19人。賞典除外・途中帰郷・欠場の5人を除く）",
+  );
+  await expect(page.locator(".rmt-sub").first()).not.toContainText(
+    "節の出場",
+  );
+});
+
+test("除いた人数を足すと出場人数になり、表に無い印の凡例は出さない", async ({
+  page,
+}) => {
+  await openMeetTab(page, "2026-09-28-09-11");
+  await expect(page.locator(".rmt-sub").first()).toContainText(
+    "節の出場は47人（順位の対象は42人。賞典除外・途中帰郷・欠場の5人を除く）",
+  );
+  await expect(page.locator(".rmt-compare .rmt-warn")).toHaveCount(0);
+  await expect(page.locator(".rmt-sub").first()).not.toContainText(
+    "3走未満",
+  );
+});
