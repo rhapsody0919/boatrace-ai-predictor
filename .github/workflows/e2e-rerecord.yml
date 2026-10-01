@@ -205,7 +205,9 @@ jobs:
           RESULT: ${{ steps.judge.outputs.result || steps.gate.outputs.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           EVENT_NAME: ${{ github.event_name }}
-          JOB_FAILED: ${{ failure() }}
+          # failure() は if: の中でしか使えない（env に書くとワークフロー全体が無効になる）。
+          # env では job.status で同じ判定をする
+          JOB_FAILED: ${{ job.status == 'failure' }}
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ -z "$SLACK_WEBHOOK_URL" ]; then

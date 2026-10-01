@@ -1,8 +1,11 @@
 name: Slack PR Notification
 
+# PR が作られたときだけ通知する。マージの通知は出さない（BOA-652 でユーザーが判断）。
+# 以前は types に merged を並べていたが、merged は pull_request の activity type に無く、
+# マージ時には一度も起動していなかった（マージは closed + merged == true で表す）
 on:
   pull_request:
-    types: [opened, merged]
+    types: [opened]
 
 jobs:
   notify:
@@ -14,20 +17,13 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           PR_USER: ${{ github.event.pull_request.user.login }}
-          PR_ACTION: ${{ github.event.action }}
           PR_BASE: ${{ github.event.pull_request.base.ref }}
           PR_HEAD: ${{ github.event.pull_request.head.ref }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          if [ "$PR_ACTION" = "opened" ]; then
-            EMOJI=":rocket:"
-            ACTION_TEXT="PRが作成されました"
-            COLOR="#2196f3"
-          else
-            EMOJI=":white_check_mark:"
-            ACTION_TEXT="PRがマージされました"
-            COLOR="#4caf50"
-          fi
+          EMOJI=":rocket:"
+          ACTION_TEXT="PRが作成されました"
+          COLOR="#2196f3"
 
           # PR のタイトルに " や \ が入ると手書きの JSON は壊れるため、jq で組み立てる（BOA-644）
           payload=$(jq -n \
