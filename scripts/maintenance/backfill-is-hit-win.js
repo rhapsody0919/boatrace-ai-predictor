@@ -1,9 +1,9 @@
 // Backfill is_hit_win for existing predictions
 // Uses service role key for write access
 
-import { supabase, isSupabaseEnabled } from './lib/supabaseClient.js';
-import { getTodayDateJST, parseDateArg } from './lib/dateUtils.js';
-import { isWinHit } from './lib/hitCalculator.js';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient.js';
+import { getTodayDateJST, parseDateArg } from '../lib/dateUtils.js';
+import { isWinHit } from '../lib/hitCalculator.js';
 
 async function backfillIsHitWin(dateStr = null) {
   if (!isSupabaseEnabled()) {

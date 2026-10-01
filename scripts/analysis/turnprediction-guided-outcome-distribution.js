@@ -143,7 +143,8 @@ async function fetchOutcomeDistribution() {
 async function fetchRaceResults(from, to) {
   const data = await fetchAll(
     "race_results",
-    "race_id, rank1, rank2, rank3, payout_trifecta",
+    // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+    "race_id, rank1, rank2, rank3, payout_trio",
     (q) =>
       q
         .eq("is_cancelled", false)
@@ -167,7 +168,7 @@ async function fetchPredictions(from, to) {
   // 常にNOT NULLのため、この条件を外しても対象レース数自体は変わらない
   return fetchAll(
     "predictions",
-    "race_id, model_id, top_pick, top_2nd, top_3rd, feature_contributions, payout_trifecta",
+    "race_id, model_id, top_pick, top_2nd, top_3rd, feature_contributions, payout_trio",
     (q) =>
       q
         .eq("is_shadow", false)
@@ -217,9 +218,7 @@ function evaluateRace({
       ? `${topPick}-${pred.top_2nd}-${pred.top_3rd}`
       : null;
   const aiHit = aiPattern != null && aiPattern === actualPattern;
-  const aiPayout = aiHit
-    ? pred.payout_trifecta || result.payout_trifecta || 0
-    : 0;
+  const aiPayout = aiHit ? pred.payout_trio || result.payout_trio || 0 : 0;
 
   const byApproach = {};
   for (const ap of APPROACHES) {
@@ -231,7 +230,7 @@ function evaluateRace({
     const points = betPatterns.length;
     const investment = points * 100;
     const hit = betPatterns.includes(actualPattern);
-    const payout = hit ? result.payout_trifecta || 0 : 0;
+    const payout = hit ? result.payout_trio || 0 : 0;
     byApproach[ap.key] = {
       points,
       investment,

@@ -457,7 +457,7 @@ function SnsHubAdmin() {
       />
 
       <div className="tab-navigation-row">
-        <div className="tab-navigation">
+        <div className="sns-hub-tab-navigation">
           {TABS.map((tab) => {
             const count =
               tab.id === "insights"

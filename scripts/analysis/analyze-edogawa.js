@@ -1,5 +1,5 @@
 // 江戸川会場の詳細分析 - 4券種での回収率分析
-import { supabase, isSupabaseEnabled } from './lib/supabaseClient.js';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient.js';
 
 async function analyze() {
   if (!isSupabaseEnabled()) {

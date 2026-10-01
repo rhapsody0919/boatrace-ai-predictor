@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import "./App.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import { getSiteFooterLinks } from "./components/siteFooterLinks";
 import AccuracyDashboard from "./components/AccuracyDashboard";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import Terms from "./components/Terms";
@@ -98,19 +99,7 @@ function App({ tab }) {
       </div>
 
       <Footer
-        links={[
-          { to: "/blog", label: t("footer.blog") },
-          { to: "/about", label: "About" },
-          { to: "/profile", label: t("footer.operator") },
-          { to: "/faq", label: "FAQ" },
-          { to: "/privacy", label: t("footer.privacy") },
-          { to: "/terms", label: t("footer.terms") },
-          { to: "/contact", label: t("footer.contact") },
-          {
-            to: "/responsible-gambling",
-            label: t("footer.responsibleGambling"),
-          },
-        ]}
+        links={getSiteFooterLinks(t)}
         extra={
           <>
             <p>{t("home.disclaimer")}</p>

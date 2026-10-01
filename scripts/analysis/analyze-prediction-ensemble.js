@@ -5,7 +5,7 @@
  *   → 複数の予想器（=投票者）の「共通する買い目」の的中率/回収率を分析する。
  *
  * 現状の投票者は本番3モデル（standard / safeBet / upsetFocus）。
- * predictions テーブルは非正規化済みで、各予想行に is_hit_trifecta / payout_trifecta
+ * predictions テーブルは非正規化済みで、各予想行に is_hit_trio / payout_trio
  * （100円あたりの払戻円）が入っているため、結果テーブルとの突合なしで検証できる。
  *
  * 「複数サイト」への拡張:
@@ -51,8 +51,9 @@ function buildVoter(row) {
   return {
     source: row.model_id,
     combo: `${t1}-${t2}-${t3}`, // 3連単の順序付き買い目
-    hit: !!row.is_hit_trifecta,
-    payout: Number(row.payout_trifecta) || 0, // 100円あたりの払戻（外れは0）
+    // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+    hit: !!row.is_hit_trio,
+    payout: Number(row.payout_trio) || 0, // 100円あたりの払戻（外れは0）
   };
 }
 
@@ -64,7 +65,7 @@ function buildVoter(row) {
 async function collectVotersPerRace(opts) {
   const rows = await fetchAll(
     "predictions",
-    "race_id, model_id, top_pick, top_2nd, top_3rd, is_hit_trifecta, payout_trifecta",
+    "race_id, model_id, top_pick, top_2nd, top_3rd, is_hit_trio, payout_trio",
     (q) => {
       let query = q.eq("is_shadow", false);
       if (opts.from) query = query.gte("predicted_at", `${opts.from}T00:00:00`);
@@ -165,7 +166,8 @@ function report(acc, opts, totalRaces) {
   // 全角=2幅として左揃えパディング（半角スペース埋めで桁を揃える）
   const dispWidth = (s) =>
     [...s].reduce((w, ch) => w + (ch.charCodeAt(0) > 0xff ? 2 : 1), 0);
-  const padLabel = (s, width) => s + " ".repeat(Math.max(0, width - dispWidth(s)));
+  const padLabel = (s, width) =>
+    s + " ".repeat(Math.max(0, width - dispWidth(s)));
 
   const scope =
     (opts.venue != null

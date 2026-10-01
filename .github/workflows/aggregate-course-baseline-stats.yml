@@ -54,20 +54,18 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        # payload は jq で組み立てる（文字列への変数の直書きで JSON が壊れないように。BOA-644）
         run: |
-          curl -s -X POST "$SLACK_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"attachments\": [{
-                \"color\": \"#c9a227\",
-                \"blocks\": [
-                  {
-                    \"type\": \"section\",
-                    \"text\": {
-                      \"type\": \"mrkdwn\",
-                      \"text\": \":warning: *コース×級別ベースラインの日次集計に失敗（phase a FR-1・FR-6）*\nst_course_baseline / nige_second_by_course が更新されていません。放置すると ST考察・逃げシミュレーションが古い window_end のまま表示され続けます。\n<${RUN_URL}|実行ログ>\"
-                    }
-                  }
-                ]
+          payload=$(jq -n --arg url "$RUN_URL" '{
+            attachments: [{
+              color: "#c9a227",
+              blocks: [{
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: (":warning: *コース×級別ベースラインの日次集計に失敗（phase a FR-1・FR-6）*\nst_course_baseline / nige_second_by_course が更新されていません。放置すると ST考察・逃げシミュレーションが古い window_end のまま表示され続けます。\n<" + $url + "|実行ログ>")
+                }
               }]
-            }"
+            }]
+          }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"

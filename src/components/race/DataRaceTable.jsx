@@ -19,6 +19,9 @@ import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { buildBasicIndicatorRows } from "./raceIndicators";
 import { trackEvent } from "../../utils/analytics";
 import TermHintButton from "./TermHintButton";
+import FlyingBadge from "./FlyingBadge";
+import { useRaceEntryFlyingRows } from "../../hooks/useRaceEntryFlyingRows";
+import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import InlineFetchError from "../InlineFetchError";
 import "./DataRaceTable.css";
 import { splitRacerName } from "../../utils/racerName";
@@ -33,6 +36,11 @@ const nameParts = (name) =>
 function DataRaceTable({ raceId, prediction, venueCode }) {
   const { t, i18n } = useTranslation();
   const analysis = useRaceAnalysisData(raceId, { venueCode });
+  // 級別の後ろの F・L バッジ。基本情報タブの勝率バー・ST考察カードと同じ出所
+  // （race_entries.f_count / l_count）と「今節」の判定を使う。以前はこの表にだけ出ず、
+  // 同じ選手の F 持ちが表の側では分からなかった（BOA-638）
+  const flyingRowByBoat = useRaceEntryFlyingRows(raceId);
+  const currentMeetFlyingBoats = useCurrentMeetFlyingBoats(raceId);
 
   const players = [...(prediction?.allPlayers ?? [])].sort(
     (a, b) => a.number - b.number,
@@ -57,6 +65,13 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
     analysis,
     pending: analysis.pending,
     motorDeepLink,
+    gradeBadge: (p) => (
+      <FlyingBadge
+        count={flyingRowByBoat?.get(p.number)?.f_count}
+        currentMeet={currentMeetFlyingBoats.has(p.number)}
+        lateCount={flyingRowByBoat?.get(p.number)?.l_count}
+      />
+    ),
   });
 
   const cellClass = (boat, best) =>
