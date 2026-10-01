@@ -87,7 +87,17 @@ GA4側のPV推移（`scripts/analysis/i18n-demand-report.js`）と合わせて�
 
 ### 施策の投入日台帳
 
-`data/analysis/search-console/seo-measures.json` に、施策（`kind: measure`）と外部要因・障害（`kind: event`）の日付を記録する。レポートは該当する週に `← id` を付けて出す。SEO施策のPRをマージしたら、本番に反映された日を1行足す。
+`data/analysis/search-console/seo-measures.json` に、日付を3種類に分けて記録する。
+
+- `kind: measure`: SEO施策
+- `kind: event`: 外部要因・障害
+- `kind: measurement`: 計測方法の変更。この日の前後で数値を比べない
+
+レポートは該当する週に `← id` を付けて出す。SEO施策のPRが本番に反映されたら、その日を1行足す（マージ日ではなく反映日。サイトマップは夜間の自動生成で反映される）。
+
+### GA4 の PV の切れ目（2026-09-29・2026-10-01）
+
+2026-09-29 13時 JST ごろに、GA4 の page_view を1経路に統一した（PR#935・BOA-531、拡張計測の「ブラウザの履歴イベントに基づくページの変更」OFF）。以後は `/` の PV が下がり、会場・レース詳細の PV が上がって見えるが、需要の変化ではない。**この日の前後で GA4 の PV を比較しない。** PV を出すレポート（`i18n-demand-report.js`・`monthly-pv-trend-report.js`）は、集計期間や前回との比較がこの日をまたぐと、冒頭に注記を出す（判定は `scripts/lib/ga4MeasurementBreaks.js`、検証は `verify-ga4-measurement-breaks.js`）。2026-10-01 には、運営者の内部トラフィックを GA4 で除外した（ユーザー設定）。以後は PV・ユーザー数が運営者の閲覧分だけ下がって見えるので、これも同じ扱いにする。計測の切れ目が増えたら、`GA4_PV_BREAKS` と台帳（`kind: measurement`）の両方に足す。
 
 ### 目標値（期限 2026-11-30、中間 2026-10-31）
 
