@@ -128,7 +128,9 @@ Disk IO の見積り:
   - `st_by_course`: フライング・出遅れ・欠場のコースは NULL（数値のままだと F の艇が「速い ST」に見える）。本体は `race_start_timings.is_flying`・`is_late_start`、長期は `kb_archive_boats.is_flying`・`is_late_start`
   - `payout_3tan`: 不成立・特払いのレース（`race_results.race_status`）は NULL（不成立の ¥100 を入れない）
   - `course_by_boat`: 実進入が分からない艇は NULL（艇番で埋めない。BOA-523 の欠落期間で枠なりに化けるため）
-  - pytest（T2-3）でこの4点を固定する
+  - 母集団に入れないレース（BOA-635 のレーンの依頼 D-5）: 不成立、および1〜3着に返還艇（F・L・欠）が入るレース。本体の `race_results.rank1〜6` は返還艇も公式の並びのまま入っている（例 2026-03-02-24-09 は F の1号艇が rank3）。`race_status` は 2026-09-20 より前でほぼ NULL なので、`race_start_timings.is_flying`・`is_late_start`・`finish_mark` でも判定する。2026-03〜09 の 32,858R 中16R。特徴量行列からも外し、決着と集合を一致させる
+  - スナップショットは版をまたいで1レース1つ（D-6）。一意性は `(race_id, asof_stage)`。週次の学習が朝の計算より後に終わった日でも、同じ日のうちに近傍が入れ替わらない
+  - pytest（T2-3）でこの約束を固定する
 - BOA-635 はコース順の ST（スリット7形）・進入・払戻（配当の帯）を、BOA-430 は決まり手・出目を、この同じ RPC から読む
 - SECURITY INVOKER・STABLE・`statement_timeout 5s`。113 で関数の既定権限を剥奪したので、anon・authenticated に EXECUTE を明示的に付ける
 

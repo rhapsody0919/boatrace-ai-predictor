@@ -71,6 +71,9 @@ CREATE TABLE IF NOT EXISTS analogy_contribution_profiles (
 -- ---------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS analogy_pool_outcomes (
   race_id           varchar PRIMARY KEY,           -- races.race_id と同じ形 'YYYY-MM-DD-VV-RR'（長期分は races に行が無いので外部キーにしない）
+                                                   -- 入れないレース: 不成立、および1〜3着に返還艇（F・L・欠）が入るレース（本体の rank は返還艇も公式の並びのまま入るため。
+                                                   --   例 2026-03-02-24-09 は F の1号艇が rank3）。判定は race_status に加えて race_start_timings.is_flying・is_late_start・finish_mark
+                                                   --   （race_status は 2026-09-20 より前でほぼ NULL）。母集団の特徴量行列からも同じレースを外し、集合を一致させる
   race_date         date NOT NULL,
   venue_code        smallint NOT NULL,
   race_number       smallint NOT NULL,
@@ -104,7 +107,7 @@ CREATE TABLE IF NOT EXISTS analogy_snapshots (
   features           jsonb NOT NULL,                -- as-of 特徴量（6艇分＋レース共通。距離の入力そのもの）
   neighbor_ids       varchar[],                     -- 近い順（analogy_pool_outcomes.race_id）
   neighbor_distances real[],                        -- 上と同じ順の距離
-  CONSTRAINT analogy_snapshots_one_per_stage UNIQUE (race_id, asof_stage, model_version),  -- 書き込みは ON CONFLICT DO NOTHING（実行が重なっても失敗しない）
+  CONSTRAINT analogy_snapshots_one_per_stage UNIQUE (race_id, asof_stage),  -- 版をまたいで1レース1つ（同じ日のうちに週次の新しい版で近傍が入れ替わらないように）。書き込みは ON CONFLICT DO NOTHING
   CONSTRAINT analogy_snapshots_same_length CHECK (
     (neighbor_ids IS NULL AND neighbor_distances IS NULL)
     OR cardinality(neighbor_ids) = cardinality(neighbor_distances)
@@ -150,7 +153,7 @@ AS $$
     WHERE sn.race_id = p_race_id
       AND (p_stage IS NULL OR sn.asof_stage = p_stage)
       AND sn.neighbor_ids IS NOT NULL
-    ORDER BY (sn.asof_stage = 'exhibition') DESC, m.is_active DESC, sn.computed_at DESC
+    ORDER BY (sn.asof_stage = 'exhibition') DESC, sn.computed_at DESC
     LIMIT 1
   )
   SELECT u.ord::integer, u.nid::varchar, u.dist, o.race_date, o.venue_code, o.race_number,

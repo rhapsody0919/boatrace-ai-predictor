@@ -29,7 +29,7 @@
 ## T2 特徴量と学習の本番化（scripts/ml/analogy/）
 - [ ] T2-1 `export_pool.js`: 長期（kb_archive）と本体から書き出す。Phase M の `export-data.js` を土台に、補完後のデータで欠損の扱いを見直す。長期分は初回だけ書き出して Storage（`analogy/source/`）に置き、週次は本体の差分だけ読む。2025-12-02 の重なりは本体を優先
 - [ ] T2-2 `features.py`: 近傍の距離は出走表時点の1段（ローリングは日単位でずらす）、寄与度のモデルは直前情報も使う。学習・母集団・今日のレースで同じ関数を使う。ラウンドの区分は本体が `getRaceStageCategory` と同じ規則、長期は `kb_archive_races.stage_kind`
-- [ ] T2-3 `tests/`（pytest）: 当日以降の結果（同じ日の前のレースを含む）が特徴量に混ざらない、近傍の距離に直前情報の列が入っていない、ラウンド区分が `raceStageConfig.js` と一致、テーマ集計の合計が1、analogy_pool_outcomes の値の約束（3連単は本体の `payout_trio` から・F/出遅れ/欠場の ST は NULL・不成立の払戻は NULL・実進入不明は NULL。plan の get_analogy_neighbors の節）。テストは先に書き、落ちることを確かめてから実装する
+- [ ] T2-3 `tests/`（pytest）: 当日以降の結果（同じ日の前のレースを含む）が特徴量に混ざらない、近傍の距離に直前情報の列が入っていない、ラウンド区分が `raceStageConfig.js` と一致、テーマ集計の合計が1、analogy_pool_outcomes の値の約束（3連単は本体の `payout_trio` から・F/出遅れ/欠場の ST は NULL・不成立の払戻は NULL・実進入不明は NULL・不成立と1〜3着に返還艇が入るレースは母集団に入れない。plan の get_analogy_neighbors の節）。テストは先に書き、落ちることを確かめてから実装する
 - [ ] T2-4 `train.py`: 主モデル3本（1着・2着以内・3着以内）、木の数固定、時系列の最後の分割での評価。品質ゲート（基準1に有意に勝つ・前の版より 0.005 以上悪化しない）
 - [ ] T2-5 `profiles.py`: SHAP をテーマに集計（`themes` 配列から。テーマ数は可変）、直近12か月、スライス（着順3×会場25×グレード6×ラウンド5×艇番7、グレード不明は「全グレード」にだけ）、seed 5回の SD、テーマ内の内訳（似た意味の項目はまとめる）
 - [ ] T2-6 `pool.py`: 母集団の特徴量行列（出走表時点、会場はコード、float16、50MB 以下に分割）、距離の重み（レース内で中心化した|SHAP|の平均）、会場ペナルティ λ（決まり手で選んだ値1つ）、`analogy_pool_outcomes` の行（長期と本体をそろえる）
@@ -39,7 +39,7 @@
 - [ ] 継続監視: 週次の学習が失敗・品質ゲートで止まったら Slack に通知されること、最終成功から8日を過ぎたら検知されることを確認する
 
 ## T3 近傍のバッチ（BOA-627 の保存を含む）
-- [ ] T3-1 `neighbors.py`: 今日の締切前・中止でない・スナップショット未作成のレースについて、出走表時点のスナップショットを作る。会場ペナルティつき k-NN 800件。`ON CONFLICT DO NOTHING`。対象が1件以上あるのに0件しか書けなければ失敗（対象0件は正常）
+- [ ] T3-1 `neighbors.py`: 今日の締切前・中止でない・スナップショット未作成（**レース単位。版を問わず1つでもあれば作らない**）のレースについて、出走表時点のスナップショットを作る。会場ペナルティつき k-NN 800件。`ON CONFLICT DO NOTHING`。対象が1件以上あるのに0件しか書けなければ失敗（対象0件は正常）
 - [ ] T3-2 tests: 距離の対称性、会場ペナルティの効き方、Phase M の評価スクリプトと同じ近傍が出ること（小さな固定データで）
 - [ ] T3-3 `.github/workflows/generate-analogy-neighbors.yml`（schedule なし、workflow_dispatch のみ、`concurrency` で1本）。Storage のモデル・行列を actions/cache で持つ
 - [ ] T3-4 `api/cron/analogy-dispatch.js`（Vercel Cron、共通ラッパ `cronWrapper.js`）: JST 7:30・10:00・14:00 に近傍、日曜 JST 4:00 に学習を workflow_dispatch する。`vercel.json` の crons に足す（UTC で書き、JST を併記）
