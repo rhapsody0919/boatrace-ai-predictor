@@ -215,7 +215,7 @@ function StPredictabilityChart({
               name: drillDownRacerName?.replace(/\s+/g, ""),
             })}
             racerId={drillDownRacer}
-            racerLinkLabel="→ 選手ページを見る"
+            racerLinkLabel={t("analysis.racerPageLink")}
           />
 
           {chartData.length > 0 ? (

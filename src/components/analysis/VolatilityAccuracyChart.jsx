@@ -11,12 +11,14 @@
  * 運用開始直後は特に少ない）。件数を明示し、小標本であることを正直に示す。
  */
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { VolatilityAccuracySection } from "../accuracy";
 import "./MotorConditionChart.css";
 import { errorMessageOf } from "../../utils/errorMessage.js";
 
 function VolatilityAccuracyChart() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,24 +44,20 @@ function VolatilityAccuracyChart() {
   }, []);
 
   if (loading) {
-    return <div className="empty-state">データを読み込み中...</div>;
+    return <div className="empty-state">{t("volatilityAccuracy.loading")}</div>;
   }
 
   if (error || !stats || !stats.baseline || stats.baseline.raceCount === 0) {
-    return (
-      <div className="empty-state">
-        まだ十分な実測データがありません。2026年8月11日に運用開始した新AI予想モデルのデータが蓄積され次第、表示されます。
-      </div>
-    );
+    return <div className="empty-state">{t("volatilityAccuracy.noData")}</div>;
   }
 
   return (
     <div>
       <VolatilityAccuracySection stats={stats} />
       <p className="volatility-accuracy-chart-note">
-        ※ 新AI予想モデルは2026年8月11日に運用開始したばかりのため、現在
-        {stats.baseline.raceCount}
-        件を集計中（日々増加します）。件数が少ないうちは数値の変動が大きくなる可能性があります
+        {t("volatilityAccuracy.chartNote", {
+          count: stats.baseline.raceCount,
+        })}
       </p>
     </div>
   );
