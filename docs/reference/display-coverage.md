@@ -22,14 +22,14 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 「匿名SELECT権限の記述が無い」は、**画面（`src/`）が匿名キーで直接読んでいるのに** `GRANT SELECT … TO anon` もSELECTポリシーもマイグレーションに無いもの。076（BOA-370）が新規テーブルの既定権限を剥奪したため、**076以降に定義されたテーブル**に限って見る。`api/` のEdge Functions経由の読み取りと、RPC経由（`SECURITY DEFINER` がありうる）は対象外。
 
-画面が呼んでいるRPC: `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_today_races`
+画面が呼んでいるRPC: `get_admin_rule_performance` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_today_races`
 
 ## 要判断: 画面から読んでいない（例外登録なし）（4件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
 | `external_predictions` | 表 | 021_external_predictions.sql | なし | GRANT（021_external_predictions.sql） |  |
-| `race_payouts` | 表 | 079_race_payouts.sql | なし | 記述なし |  |
+| `race_payouts` | 表 | 079_race_payouts.sql | なし | GRANT（109_predictions_rpc_race_status_payouts.sql） |  |
 | `race_series` | 表 | 084_race_series.sql | なし | GRANT（095_phase_a_numeric_public_read.sql） |  |
 | `race_special_notes` | 表 | 060_race_special_notes.sql | なし | 記述なし |  |
 
@@ -81,7 +81,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `outcome_distribution` | 表 | 020_outcome_distribution.sql | API・画面が直接 | GRANT（020_outcome_distribution.sql） |  |
 | `poirot_predictions` | 表 | 021_poirot_predictions.sql | 画面が直接 | ポリシー（021_poirot_predictions.sql） |  |
 | `prediction_odds` | 表 | 011_prediction_odds.sql | 画面が直接 | ポリシー（011_prediction_odds.sql） |  |
-| `predictions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_today_races(API) | ポリシー（001_schema.sql） |  |
+| `predictions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_admin_rule_performance(API), get_today_races(API) | ポリシー（001_schema.sql） |  |
 | `race_conditions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_today_races(API) | ポリシー（076_enable_rls_on_public_tables.sql） |  |
 | `race_entries` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_exhibition_trend(画面), get_race_return_rate(画面), get_race_st_predictability(画面), get_race_technique_profile(画面), get_today_races(API) | ポリシー（001_schema.sql） |  |
 | `race_history_cache` | 表 | 020_race_history_cache.sql | API・画面が直接 | GRANT（020_race_history_cache.sql） |  |
@@ -91,7 +91,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `race_original_exhibition_values` | 表 | 091_boatcast_original_exhibition.sql | 画面が直接 | GRANT（096_original_exhibition_public_read.sql） |  |
 | `race_pit_comments` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
 | `race_pit_reports` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
-| `race_results` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_return_rate(画面), get_race_technique_profile(画面) | ポリシー（001_schema.sql） |  |
+| `race_results` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_admin_rule_performance(API), get_race_return_rate(画面), get_race_technique_profile(画面), get_today_races(API) | ポリシー（001_schema.sql） |  |
 | `racer_grade_cache` | 表 | 054_racer_grade_cache_table.sql | 画面が直接 | GRANT（054_racer_grade_cache_table.sql） |  |
 | `racer_news` | 表 | 036_create_racer_news.sql | 画面が直接 | ポリシー（036_create_racer_news.sql） |  |
 | `racer_period_stats` | 表 | 083_racer_period_stats.sql | 画面が直接 | GRANT（095_phase_a_numeric_public_read.sql） |  |

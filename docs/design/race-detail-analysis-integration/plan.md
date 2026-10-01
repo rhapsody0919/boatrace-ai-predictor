@@ -34,7 +34,7 @@ RaceDetail.jsx
 ## 既存サービス層・共通ライブラリとの連携
 
 - `src/services/supabaseDataService.js`: 新規関数追加なし。既存4関数のレスポンス形状統一のみ
-- `src/hooks/useRaceAnalysisData.js`: 無変更（ADR-0024参照、責務を分離し会場統計は触れさせない）
+- `src/hooks/useRaceAnalysisData.js`: 無変更（ADR-0050参照、責務を分離し会場統計は触れさせない）
 - `src/hooks/useVenueTendencyStats.js`: 新規。`useRaceAnalysisData.js`と同じ`src/hooks/`配下に配置し、命名規則を揃える
 - `src/utils/analytics.js`: 既存`trackEvent`関数をそのまま呼び出すのみで、関数自体の変更は不要と想定（実装時に既存シグネチャを確認し、必要なら軽微な拡張を行う）
 

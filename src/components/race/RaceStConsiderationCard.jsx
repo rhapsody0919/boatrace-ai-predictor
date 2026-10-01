@@ -61,7 +61,8 @@ function RaceStConsiderationCard({
   scopedByRacer,
   baseline,
   entryCourseOf,
-  fCountByBoat,
+  flyingRowByBoat,
+  currentMeetFlyingBoats,
 }) {
   const { t } = useTranslation();
   // 折りたたみ（ST分布・ST履歴）。どちらも1艇ずつしか描けないため、
@@ -87,9 +88,15 @@ function RaceStConsiderationCard({
   const columns = sorted.map((p) => {
     const records = p.racerId ? scopedByRacer[p.racerId] : null;
     const course = entryCourseOf(p);
-    const grade = Array.isArray(records)
-      ? (records[records.length - 1]?.grade ?? null)
-      : null;
+    // 級別は表示中のレースの出走表の値を使う。選手の記録の最後の1件（＝今日に最も近い走）
+    // だと、過去のレースを開いたときに別の期の級別が出て、同じセルの F 数（出走表の値）と
+    // 時点が食い違っていた（BOA-589。基本情報タブのデータ出走表とも違っていた）。
+    // 平均と比べる基準（ベースライン）も同じ級別で引く
+    const grade =
+      p.grade ??
+      (Array.isArray(records)
+        ? (records[records.length - 1]?.grade ?? null)
+        : null);
     const stats = Array.isArray(records)
       ? computeStConsideration(records, { course })
       : null;
@@ -149,6 +156,12 @@ function RaceStConsiderationCard({
           })}
         </p>
       )}
+      {/* 選手側の値は表示中のレースより前の走だけで出している（BOA-603）。
+          画面の日付が平均の期間だけだと、選手の数字にもレース後の走が入っていると
+          読まれた（ファン評価2周目） */}
+      <p className="rsc-window rsc-own-window">
+        {t("stConsideration.ownWindow")}
+      </p>
 
       {loading ? (
         <p className="rsc-loading">{t("wakuInfo.loading")}</p>
@@ -188,7 +201,11 @@ function RaceStConsiderationCard({
                     {/* 出所は race_entries.f_count。以前は stats.flyingCount
                         （is_flying を窓×コースで数えた回数）を出しており、
                         「今期のF」という説明と数字が食い違っていた（T5-3） */}
-                    <FlyingBadge count={fCountByBoat?.get(player.number)} />
+                    <FlyingBadge
+                      count={flyingRowByBoat?.get(player.number)?.f_count}
+                      currentMeet={currentMeetFlyingBoats?.has(player.number)}
+                      lateCount={flyingRowByBoat?.get(player.number)?.l_count}
+                    />
                   </td>
                 ))}
               </tr>

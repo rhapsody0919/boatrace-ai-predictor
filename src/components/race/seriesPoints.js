@@ -149,6 +149,44 @@ export function prelimEndRaceIdOf(rows) {
 }
 
 /**
+ * 予選が終わった日が節の「何日目」か（公式の「◯日目12R終了時点」の日目、BOA-578）。
+ *
+ * **開催日を数えてはいけない**。丸一日中止の日も番組（出走表・種別）は残るので、
+ * 日付を数えると中止の日を1日に数えて公式より1日進む（津 2026-09-21〜28 の節:
+ * 9/22 が丸一日中止、公式は 9/26 を5日目とするが、日付を数えると6日目）。
+ * 公式は中止の翌日に同じ日目を振り直す。
+ *
+ * 1. 予選最終日の `series_day`（公式の出走表ページから読んだ値）を使う
+ * 2. 無ければ、結果が1つでも出た日だけを数える（丸一日中止の日を飛ばす）
+ *
+ * @param {string|null} prelimEndRaceId `prelimEndRaceIdOf` の値
+ * @param {Array<{race_id: string, series_day?: number|null}>} conditions 節の種別の行
+ * @param {Iterable<string>} meetRaceIds 節の全レースの race_id（出走表）
+ * @param {Set<string>} ranRaceIds 結果があるレース
+ * @returns {number|null}
+ */
+export function prelimEndDayOf(
+  prelimEndRaceId,
+  conditions,
+  meetRaceIds,
+  ranRaceIds,
+) {
+  if (!prelimEndRaceId) return null;
+  const endDate = prelimEndRaceId.slice(0, 10);
+  const seriesDays = (Array.isArray(conditions) ? conditions : [])
+    .filter((c) => c.race_id.slice(0, 10) === endDate && c.series_day != null)
+    .map((c) => Number(c.series_day));
+  if (seriesDays.length > 0) return Math.min(...seriesDays);
+  const ranDates = new Set(
+    [...(ranRaceIds ?? [])].map((id) => String(id).slice(0, 10)),
+  );
+  const dates = [
+    ...new Set([...(meetRaceIds ?? [])].map((id) => String(id).slice(0, 10))),
+  ].filter((d) => d < endDate && ranDates.has(d));
+  return dates.length + 1;
+}
+
+/**
  * 節に組まれた**準優勝戦**の `race_id`（枠数の算出に使う）。
  *
  * 「準優進出戦」は準優勝戦の1つ前の勝ち上がり戦で、準優の枠ではない
@@ -531,11 +569,24 @@ export const SEMIFINAL_SPLIT_DEFAULT_SLOTS = 12;
  */
 export function listSeriesFinishes(meetRecords, options = {}) {
   const { prelimEndRaceId = null } = options;
-  return (Array.isArray(meetRecords) ? [...meetRecords] : [])
-    .filter((r) => r.rank1 !== null && r.rank1 !== undefined)
-    .filter((r) => countsForSeriesScore(r.raceStage, r.raceId, prelimEndRaceId))
-    .sort((a, b) => String(a.raceId).localeCompare(String(b.raceId)))
-    .map((r) => (countsAsRun(r) ? finishPositionOf(r) : FINISH_ABSENT));
+  return (
+    (Array.isArray(meetRecords) ? [...meetRecords] : [])
+      .filter((r) => r.rank1 !== null && r.rank1 !== undefined)
+      .filter((r) =>
+        countsForSeriesScore(r.raceStage, r.raceId, prelimEndRaceId),
+      )
+      .sort((a, b) => String(a.raceId).localeCompare(String(b.raceId)))
+      // 着順が付かない走は、公式の記号（落・転・妨など）があればそれを出す。
+      // 無ければ null（画面は「失」）。推移の点の下と同じ表記にそろえる（BOA-537）。
+      // フライングは本番STの is_flying を先に見る。着欄の記号（finish_mark）が未取得の走
+      // （2026-09前半以前）で「失」と出て、推移の「F」と食い違っていた（BOA-589）
+      .map((r) =>
+        countsAsRun(r)
+          ? (finishPositionOf(r) ??
+            (r.isFlying === true ? "F" : officialMarkOf(r.finishMark)))
+          : FINISH_ABSENT,
+      )
+  );
 }
 
 /**
@@ -548,6 +599,92 @@ export function listSeriesFinishes(meetRecords, options = {}) {
  */
 export function isAbsentStartRow(row) {
   return row?.finish_mark === "欠";
+}
+
+/**
+ * 今節フライング（F）を切った選手（純関数、BOA-587）。**賞典除外**の判定に使う。
+ *
+ * Fを切った選手はその節の準優勝戦・優勝戦に乗れない（賞典除外）。公式の得点率一覧の
+ * 備考（`racer_series_points.remarks`）が取れている節ではそちらが正で、これは
+ * 備考が無い節のための推定。2026-09-30実測（備考がある3節）: 今節Fの2人は
+ * 2人とも「賞典除外」、Fがあるのに賞典除外でない選手は0人。
+ * **Lは数えない**。出遅れは選手責任のときだけ賞典除外で、当社データでは責任の
+ * 有無が分からない（同じ実測でLの1人は賞典除外ではなかった）
+ *
+ * @param {Array<Object>} starts `race_start_timings` の行（表示中レースより前の今節ぶん）
+ * @param {Array<Object>} entries `race_entries` の行（race_id・boat_number・racer_id）
+ * @returns {Array<number>} 選手ID
+ */
+export function flyingRacerIdsInMeet(starts, entries) {
+  const racerByKey = new Map(
+    (entries ?? []).map((e) => [`${e.race_id}|${e.boat_number}`, e.racer_id]),
+  );
+  const ids = new Set();
+  for (const r of starts ?? []) {
+    const flying =
+      r.is_flying === true || r.finish_mark === "F" || r.finish_mark === "Ｆ";
+    if (!flying) continue;
+    const id = racerByKey.get(`${r.race_id}|${r.boat_number}`);
+    if (id !== null && id !== undefined) ids.add(id);
+  }
+  return [...ids];
+}
+
+/**
+ * **予選が終わった後のレースで**今節Fを切った選手（純関数、BOA-626）。
+ *
+ * 順位は予選終了で確定しているので、予選後のFでは順位の対象から外さない
+ * （`getMeetScoreboard` は予選終了までのFだけで賞典除外を判定する）。それでも
+ * 賞典除外なのは同じなので、画面は順位の横で断る。予選の締めが分からない節は空。
+ *
+ * @param {Array<Object>} starts 本番STの行（`flyingRacerIdsInMeet` と同じ形）
+ * @param {Array<Object>} entries 出走表の行
+ * @param {string|null} prelimEndRaceId `prelimEndRaceIdOf` の値
+ * @returns {number[]} racer_id
+ */
+export function postPrelimFlyingRacerIds(starts, entries, prelimEndRaceId) {
+  if (!prelimEndRaceId) return [];
+  return flyingRacerIdsInMeet(
+    (starts ?? []).filter((r) => r.race_id > prelimEndRaceId),
+    entries,
+  );
+}
+
+/**
+ * 1走ぶんの着順の表示（純関数、BOA-537）。6艇の推移の点の下に出す。
+ *
+ * - フライングは「F」（本番STの is_flying）
+ * - 欠場は「欠」（本番STの着順欄が「欠」、またはそのレースに他艇のST行があるのに
+ *   自艇だけ行が無い。`isAbsentStartRow` と同じ判定）
+ * - 着順が付いていれば 1〜6
+ * - 着順が無く、本番STの着順欄に記号（転・落・妨・エ・不・L・沈 など、公式の表記）が
+ *   あればそれ
+ * - 結果が無い（未実施）・記号も無いときは null（出さない。推測で「失」と書かない）
+ *
+ * @param {Object|null} result `race_results` の1行（rank1〜rank6 は艇番）
+ * @param {number} boatNumber 艇番
+ * @param {Object|null} stRow 本番STの行（finish_mark・is_flying）
+ * @param {boolean} raceHasSt そのレースに本番STの行が1つでもあるか
+ * @returns {number|string|null}
+ */
+/**
+ * 本番STの着順欄の値が、着順でない公式の記号（転・落・妨・エ・不・L・沈 など）か
+ * （純関数、BOA-537）。数字・空・null は記号ではない。欠場（「欠」）もここでは
+ * 記号として返すので、欠場の扱いは呼び出し側で先に済ませる
+ */
+export function officialMarkOf(mark) {
+  return typeof mark === "string" && mark !== "" && !/^[0-9０-９]$/u.test(mark)
+    ? mark
+    : null;
+}
+
+export function runFinishLabel(result, boatNumber, stRow, raceHasSt) {
+  if (stRow?.is_flying) return "F";
+  if (isAbsentStartRow(stRow) || (!stRow && raceHasSt && result)) return "欠";
+  if (!result) return null;
+  const pos = finishPositionOf({ ...result, boatNumber });
+  if (pos !== null) return pos;
+  return officialMarkOf(stRow?.finish_mark);
 }
 
 /** 着順の並びで「欠場」を表す値（`listSeriesFinishes`） */
@@ -677,7 +814,9 @@ export function parseOfficialPlacements(placements) {
       const half = /[\uFF10-\uFF19]/u.test(c)
         ? String.fromCharCode(c.charCodeAt(0) - 0xfee0)
         : c;
-      return /^[1-6]$/u.test(half) ? Number(half) : null;
+      // 着順でない記号（妨・落 など）はそのまま返す。画面は記号のまま出す
+      // （推移の点の下・日別の表と表記をそろえる。BOA-537）
+      return /^[1-6]$/u.test(half) ? Number(half) : half;
     });
 }
 
@@ -691,8 +830,10 @@ export function parseOfficialPlacements(placements) {
  *   scoreboard `getMeetScoreboard` の戻り値。`seriesRacerIds` があれば
  *   その選手だけを母集団にする（男女Ｗ優勝戦の節）
  * @returns {Array<{racerId: number, playerName: string, points: number,
- *   runs: number, rate: number, rank: number|null, withdrawn: boolean}>}
- *   得点率の降順。同率は同順位。途中で節を離脱した選手は `rank: null`
+ *   runs: number, rate: number, rank: number|null, withdrawn: boolean,
+ *   excludedReason: "withdrawn"|"awardExcluded"|"flying"|null}>}
+ *   得点率の降順。同率は同順位。途中で節を離脱した選手・賞典除外の選手は
+ *   `rank: null`（理由は `excludedReason`。無ければ途中帰郷の扱い）
  */
 export function buildMeetRanking(scoreboard) {
   const all = scoreboard?.entries;
@@ -709,6 +850,8 @@ export function buildMeetRanking(scoreboard) {
   // 途中で節を離脱した選手（途中帰郷）は順位の対象から外す。公式の順位表と
   // 同じ扱い。得点率自体は出すので、行が消えることはない（rank が null になる）
   const withdrawn = new Set(scoreboard?.withdrawnRacerIds ?? []);
+  // 順位から外す理由（BOA-587）。賞典除外と途中帰郷で画面の説明が違う
+  const reasons = scoreboard?.exclusionReasonByRacer ?? {};
 
   const byRacer = new Map();
   entries.forEach((e) => {
@@ -755,11 +898,17 @@ export function buildMeetRanking(scoreboard) {
   let prev = null;
   let counted = 0;
   return rows.map((r) => {
-    if (withdrawn.has(r.racerId)) return { ...r, rank: null, withdrawn: true };
+    if (withdrawn.has(r.racerId))
+      return {
+        ...r,
+        rank: null,
+        withdrawn: true,
+        excludedReason: reasons[r.racerId] ?? "withdrawn",
+      };
     counted += 1;
     if (prev === null || Math.abs(r.rate - prev) > 0.0001) rank = counted;
     prev = r.rate;
-    return { ...r, rank, withdrawn: false };
+    return { ...r, rank, withdrawn: false, excludedReason: null };
   });
 }
 

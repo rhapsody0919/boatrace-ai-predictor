@@ -1,0 +1,110 @@
+{
+  "$comment": [
+    "verify-css-class-collisions.js の許可リスト。導入時点（BOA-539 フォローアップ）で既にあった衝突だけを載せる。",
+    "新しい衝突はここに足さず、ページ・部品に固有の名前にするか、ページのルート要素のクラスでスコープして直す。",
+    "衝突を解消したら、そのエントリ（または files の該当ファイル）を消す。消し忘れると verify が失敗する。",
+    "各衝突の内訳（食い違うプロパティ）は `node scripts/maintenance/verify-css-class-collisions.js --report` で見る。"
+  ],
+  "entries": [
+    {
+      "class": "analysis-tools-link",
+      "files": [
+        "src/App.css",
+        "src/pages/RaceDetail.css"
+      ]
+    },
+    {
+      "class": "analysis-tools-link-section",
+      "files": [
+        "src/App.css",
+        "src/pages/RaceDetail.css"
+      ]
+    },
+    {
+      "class": "back-link",
+      "files": [
+        "src/pages/AccuracyHistory.css",
+        "src/pages/BlogPost.css"
+      ]
+    },
+    {
+      "class": "error",
+      "files": [
+        "src/components/race/OutcomePatternPreview.css",
+        "src/pages/BlogPost.css"
+      ]
+    },
+    {
+      "class": "expand-button",
+      "files": [
+        "src/components/analysis/OutcomeDistributionTable.css",
+        "src/components/race/OutcomePatternPreview.css"
+      ]
+    },
+    {
+      "class": "info-card",
+      "files": [
+        "src/pages/OutcomeDistribution.css",
+        "src/pages/WinningTechniqueAnalysis.css"
+      ]
+    },
+    {
+      "class": "loading",
+      "files": [
+        "src/components/race/OutcomePatternPreview.css",
+        "src/pages/BlogPost.css"
+      ]
+    },
+    {
+      "class": "no-data",
+      "files": [
+        "src/components/race/OutcomePatternPreview.css",
+        "src/pages/AccuracyHistory.css"
+      ]
+    },
+    {
+      "class": "prediction-result",
+      "files": [
+        "src/App.css",
+        "src/pages/RaceDetail.css"
+      ]
+    },
+    {
+      "class": "prediction-section",
+      "files": [
+        "src/App.css",
+        "src/pages/RaceDetail.css"
+      ]
+    },
+    {
+      "class": "race-list-section",
+      "files": [
+        "src/App.css",
+        "src/pages/RaceDetail.css"
+      ]
+    },
+    {
+      "class": "stat-item",
+      "files": [
+        "src/components/HitRaces.css",
+        "src/pages/admin/AdminRules.css"
+      ]
+    },
+    {
+      "class": "step-content",
+      "files": [
+        "src/pages/About.css",
+        "src/pages/HowToUse.css"
+      ]
+    },
+    {
+      "class": "table-wrapper",
+      "files": [
+        "src/components/analysis/OutcomeDistributionTable.css",
+        "src/components/race/OutcomePatternPreview.css",
+        "src/pages/RaceDetail.css",
+        "src/pages/admin/AdminRules.css"
+      ]
+    }
+  ]
+}

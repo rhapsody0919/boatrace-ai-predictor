@@ -65,6 +65,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/fortuneTelling/sexagenaryCycle.js` | 六十干支（日柱）の共通計算ロジック | getDayGanzhiIndex, getGanzhiLabel, STEMS, BRANCHES |
 | `scripts/lib/fortuneTelling/shichuSuimei.js` | 四柱推命（日柱まで。時柱は出生時刻不明のため省略、spec.md準拠） | calculateScore |
 | `scripts/lib/fortuneTelling/westernAstrology.js` | 西洋占星術（太陽星座ベースのトランジット計算） | calculateScore |
+| `scripts/lib/ga4MeasurementBreaks.js` | GA4 の計測方法が変わった日（この日の前後で PV を比較してはいけない日）の一覧と、 | ga4PvBreaksWithin, formatGa4PvBreakNotice, GA4_PV_BREAKS |
 | `scripts/lib/ghaSkipGate.js` | GitHub Actions 側の取得を止める判定（フェイルセーフ付きSKIP。自動フェイルオーバー）。 | evaluateJobHealth, decideFromRows, jobKeysFor, createRestJobStateClient, shouldSkipOnGha ほか5件 |
 | `scripts/lib/googleServiceAuth.js` | Googleサービスアカウント認証の共通ヘルパー（BOA-139） | getGoogleAuthClient |
 | `scripts/lib/harville.js` | — | normalizeProbs, impliedProbsFromOdds, condSecond, condThird, exactaProb ほか6件 |
@@ -77,7 +78,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/kelly-criterion.js` | — | kellyFraction, halfKelly, quarterKelly |
 | `scripts/lib/kfileParser.js` | 公式成績ファイル（Kファイル）のダウンロード・解凍・パース（BOA-257） | fetchKFileText, parseKFileText, parseKFileRankings, _internal |
 | `scripts/lib/latestByRaceId.js` | 行の配列から、IDフィールド（既定はrace_id）ごとにタイムスタンプフィールド | latestByRaceId |
-| `scripts/lib/liveOdds.js` | オッズのライブ取得（BOA-487）の純粋部分。api/odds/live.js から使う。 | validateLiveOddsQuery, liveOddsUrl, parseLiveOddsPage, badRequestResponse, upstreamErrorResponse ほか7件 |
+| `scripts/lib/liveOdds.js` | オッズのライブ取得（BOA-487）の純粋部分。api/odds/live.js から使う。 | validateLiveOddsQuery, liveOddsUrl, parseLiveOddsPage, badRequestResponse, upstreamErrorResponse ほか10件 |
 | `scripts/lib/meetBoundaries.js` | 節（開催）の切り出しと、全レースの一括取得。 | buildMeets, fetchAllByRaceId |
 | `scripts/lib/mergeOrder.js` | マージ順の台帳。「PR 901 は 902 のマージ後に」という順序を、並行セッションのオーケストレーションが | ledgerPath, parseLedger, readLedger, writeLedger, prerequisitesOf ほか3件 |
 | `scripts/lib/monthlyScheduleParser.js` | 月間スケジュール（boatrace.jp race/monthlyschedule）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | buildMonthlyScheduleUrl, parseYm, listYms, parseMonthlySchedule, mergeMonthlySchedules ほか8件 |
@@ -127,6 +128,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/racerProfileSync.js` | — | parseArgs, fetchHtmlWithRetry, parseProfileHtml, getProfileUrl, toSeasonStatsRow ほか16件 |
 | `scripts/lib/racerProfilesJob.js` | 選手プロフィール・期別成績（B6、racer_profiles）の共通ラッパ向けハンドラー（tasks.md T4b-16-1）。 | resolveChunkSize, runRacerProfilesJob, RACER_PROFILES_CHUNK, RACER_PROFILES_CONCURRENCY |
 | `scripts/lib/racerSeasonStats.js` | — | getSeasonStatsUrl, isRacerPageNotFound, derivePeriodLabel, parseSeasonStatsHtml, scrapeSeasonStats ほか2件 |
+| `scripts/lib/racerStStats.js` | 選手のST統計（racer_aggregated_stats の avg_st / avg_st_last_30 / st_stddev / | computeRacerStStats, fetchRacerEntries, fetchStartTimingsForEntries, RECENT_ST_WINDOW |
 | `scripts/lib/racesInit/digest.js` | 朝の初期化（races-init）の shadow で記録する、レースごとのダイジェスト（純粋関数。DB・取得先に接続しない）。 | raceIdOf, digestScrapedRace, digestScrapedVenue, digestDbRace, compareRaceDigests |
 | `scripts/lib/racesInit/ghaSkip.js` | GitHub Actions 側の朝の初期化（morning-init.js）を止める変数 SKIP_MORNING_INIT_ON_GHA の判定（純粋関数）… | decideMorningInitOnGha, FALLBACK_FROM_JST_HOUR |
 | `scripts/lib/racesInit/job.js` | 朝の初期化（A8、races・race_entries・predictions の初期化）の共通ラッパ向けハンドラー（tasks.md T4b-07-4、 | backoffMinutes, resolveVenuesLimit, isBreakerOpenError, runRacesInitJob, createPredictCodeOnTick ほか2件 |
@@ -143,7 +145,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/expectedUnpublished.js` | 発売開始の遅れ（想定内の未公開。BOA-386・完了の定義Bの見直し）: 「発走60分前のオッズが、その窓（±3分）の間は | laterOffsetsOf, firstRaceIdSet, slotDeadlineOf, isPastWindow, isExtensionSuccess ほか8件 |
 | `scripts/lib/scrapeJobs/finalOddsHandlers.js` | 締切時オッズ（公式）の取り直し（BOA-496）の Vercel Cron ハンドラー。api/cron/odds-final.js から使う。 | parseFinalOddsRaceId, savedPagesOf, parseFinalOddsPage, computeFinalOddsDigest, createFinalOddsSlotHandler ほか3件 |
 | `scripts/lib/scrapeJobs/htmlFetch.js` | politeFetch（Response を返す）を、既存のスクレイパー（scrape-to-json.js・scrape-pcexpect.js）が受け取る | makeFetchHtml |
-| `scripts/lib/scrapeJobs/monitor.js` | データ取得の監視（完了の定義C、plan.md §7）。予定表（scrape_slots）とジョブ状態（scrape_job_state）から、 | livenessCheckable, percentile, computeWindowStats, aggregateByJob, evaluateExpired ほか14件 |
+| `scripts/lib/scrapeJobs/monitor.js` | データ取得の監視（完了の定義C、plan.md §7）。予定表（scrape_slots）とジョブ状態（scrape_job_state）から、 | livenessCheckable, percentile, computeWindowStats, aggregateByJob, evaluateExpired ほか15件 |
 | `scripts/lib/scrapeJobs/oddsDigest.js` | オッズ取得（A3）の shadow で記録する result_digest（scrape_slots.result_digest）の計算。 | computeOddsDigest, ODDS_DIGEST_FULL_KEYS |
 | `scripts/lib/scrapeJobs/oddsHandlers.js` | オッズ取得（A3）の Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parseOddsRaceId, shouldProbeWinFirst, createOddsSlotHandler |
 | `scripts/lib/scrapeJobs/outcomes.js` | スロット・ジョブの結果（outcome）の扱い（純粋関数）。 | isFinalOutcome, truncateError, applyZeroRowGuard, computeRetryAt, FINAL_OUTCOMES ほか2件 |
@@ -163,6 +165,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/venueDailyJob.js` | 会場公式サイトから、会場ごとに取得する日次ジョブの共通の流れ（B3 会場別モーター成績・B4 進入コース別選手成績。 | runVenueDailyJob |
 | `scripts/lib/scrapeJobs/venueJobSupport.js` | 会場ごとに取得する日次ジョブ（B3 会場別モーター成績・B4 進入コース別選手成績。tasks.md T4b-14・T4b-13）の | updateHealthForDate, isTransientReason, reasonFromError, previouslySettledVenues, driftAlertsToReport |
 | `scripts/lib/seoKeywordKpi.js` | SEOワード戦略のKPI集計（集客レーン、2026-09-29） | classifyQuery, summarizeClusters, weekStartOf, weeklySeries, trackedQueryWeekly ほか3件 |
+| `scripts/lib/sitemapLastmod.js` | sitemap.xml の lastmod を「実際に中身が変わった日」にするための部品（BOA-599）。 | gitLastCommitDate, laterDate, renderUrlEntry |
 | `scripts/lib/snsCampaigns.js` | 企画型（キャンペーン型）SNS投稿パイプライン用 sns_campaigns / sns_campaign_entries | createCampaign, getCampaign, getActiveCampaigns, findQualifyingRaces, getRaceIdsWithResults ほか6件 |
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
 | `scripts/lib/snsTopics.js` | SNSコンテンツ ネタ生成ライン用 sns_content_types / sns_target_accounts / | getActiveContentTypes, getContentTypeByKey, getTopicCategories, getActiveTopicCategoryByKey, enabledChannelsOf ほか13件 |
@@ -199,23 +202,28 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/colors.js` | カラーユーティリティ | getRecoveryColorClass, MODEL_COLORS, BOAT_COLORS, BOAT_LINE_COLORS, HIT_COLORS ほか1件 |
 | `src/utils/competitionRank.js` | 同じ値は同じ順位にする順位（競技順位方式: 1, 2, 2, 4 …）（純関数、BOA-529）。 | competitionRank |
 | `src/utils/courseBaseline.js` | ST考察の「同コース・同級別の平均との差」の算出（phase a FR-1） | indexBaseline, getBaselineCell, diffFromBaseline, expectedBreakoutCount, METRIC_DIRECTION |
-| `src/utils/dateUtils.js` | 日付ユーティリティ（フロントエンド用） | getJSTNow, getNowHHMMJST, getTodayJST, getYesterdayJST, getDaysAgoJST ほか7件 |
+| `src/utils/dateUtils.js` | 日付ユーティリティ（フロントエンド用） | getJSTNow, getNowHHMMJST, getTodayJST, getYesterdayJST, getDaysAgoJST ほか8件 |
 | `src/utils/digestMetrics.js` | digestMetrics - 「本日のデータ一覧」（BOA-402）の指標計算（純関数） | computeSkillDelta, computePredicted, computeZScore, computeConsistency, computeFeaturedScore ほか11件 |
 | `src/utils/formatters.js` | フォーマット関数 | formatCapturedAtJst, formatPercent, formatDate, formatDateLocalized, formatDateShort ほか3件 |
-| `src/utils/meetGrouping.js` | meetGrouping - 節（開催）のグルーピング共通ロジック | groupIntoCurrentMeet, findMeetStartDate |
+| `src/utils/meetGrouping.js` | meetGrouping - 節（開催）のグルーピング共通ロジック | groupIntoCurrentMeet, groupIntoMeetBeforeRace, findMeetStartDate |
 | `src/utils/motorGeneration.js` | モーターの世代（入れ替え単位）の判定。 | currentMotorGenerationStart, isInMotorGeneration, formatGenerationDate, isClippedByGeneration, officialTallyState |
 | `src/utils/pitReportUrl.js` | ピットレポート（選手コメント）の公式URL導出と、取得対象レースの判定（BOA-379） | buildPitReportUrl, isPitReportCandidate, PIT_REPORT_GRADES, PIT_REPORT_MIN_RACE_NUMBER_NON_SG |
 | `src/utils/pretestRows.js` | 前検タイム（`motor_pretest_stats`）の行の選び方（BOA-451 / phase a FR-4a） | shiftDate, pickFirstPretestByRacer, pickLatestPretestByRacer, PRETEST_LOOKBACK_DAYS |
+| `src/utils/prevResult.js` | 前走（今節）の1マスの読み方（BOA-569 → BOA-610）。データ出走表（raceIndicators.jsx）と | finishMarkKeyOf, meetPrevRunState, meetPrevRunWhenParams |
 | `src/utils/raceCancellation.js` | 開催中止・順延の判定を1箇所に集める。 | hasRaceResult, isRaceCancelled, isCancellationSuspected, CANCELLATION_CONFIRMED, CANCELLATION_TENTATIVE |
 | `src/utils/raceDeadlineStatus.js` | — | getDeadlineDate, getDeadlineStatus, DEADLINE_STATUS |
 | `src/utils/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
+| `src/utils/raceOutcome.js` | レースの成立状態（通常・一部返還・不成立）と、返還艇・的中判定の可否を1箇所で決める（BOA-543）。 | getRaceOutcomeState, getRefundBoats, isBoatRefunded, isJudgeable, isBetJudgeable ほか8件 |
 | `src/utils/raceStatus.js` | レース単位の状態（締切前/締切後・結果反映待ち/結果確定）を判定する。 | getRaceStatus, RACE_STATUS |
 | `src/utils/raceTimeOfDay.js` | 1Rの発走時刻から開催時間帯（モーニング/デイ/サマータイム/ナイター/ミッドナイト）を | getTimeOfDay, getVenueTimeOfDay, TIME_OF_DAY |
+| `src/utils/racerName.js` | 出走表の選手名（「丹下」「将」の間を全角スペース3つで詰めた表記）を姓と名に分ける。 | splitRacerName |
 | `src/utils/share.js` | SNSシェア関数 | shareRacePredictionToX, shareHitRaceToX, shareDailyStatsToX, generatePredictionShareText, generateTurnHitShareText |
 | `src/utils/smallSampleRate.js` | 出走数が少ないときの率の出し方（BOA-513、2026-09-29 ファン4人のパネルで決定）。 | formatRateOrCount, powerIndexTone, formatPowerIndex |
 | `src/utils/stConsideration.js` | ST考察（安定率・出遅率・抜出）の算出（phase a FR-1） | deriveRaceStContext, computeStConsideration, computeStHistogram, getStHistory, STABLE_THRESHOLD ほか3件 |
 | `src/utils/theme.js` | — | getTheme, setTheme, subscribe |
+| `src/utils/trendDateLayout.js` | `MeetSparkline` の viewBox の幅と左右の余白。日付の見出しを点と同じ横位置に置くため共有する | dayTickLabels, sparkLeftPercent, dayCenter, layoutTrendByDate, SPARK_VIEW_W ほか1件 |
 | `src/utils/turnPrediction.js` | 決まり手ユーティリティ（フロントエンド用） | TECHNIQUE_NAMES |
+| `src/utils/venueSeriesTitle.js` | 会場ページの title・description に入れる節タイトルを決める（集客レーン Phase3、2026-09-30）。 | getVenueSeriesTitle |
 | `src/utils/venueUtils.js` | — | VENUE_CODE_TO_BLOG_ID, getVenueBlogId, getVenueGuidePath |
 | `src/utils/volatilityLevel.js` | getVolatilityLevel - イン崩れ指数（percentile）からレベルを判定する共通ヘルパー | getVolatilityLevel |
 | `src/utils/webShare.js` | Web Share API 対応判定ヘルパー | canShareVideo, shareVideoFile, downloadFileBlob |
@@ -229,14 +237,15 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | --- | --- | --- |
 | `src/services/adlerModel.js` | アドラー予想 共有モデルロジック（純粋関数のみ） | rankPermutations |
 | `src/services/adlerService.js` | アドラー予想 データ取得・推論サービス | getAdlerModelInfo, getAdlerPredictions |
-| `src/services/adminRuleService.js` | 管理者向けルール分析サービス | getRuleApplicationHistory, getWeeklyPerformance |
+| `src/services/adminRulePerformance.js` | 管理画面（/admin/rules）の運用成績（全体・ルール別・週別）の取得と整形（BOA-567） | shapeRulePerformance, fetchRulePerformance, RULE_PERFORMANCE_START_DATE |
+| `src/services/adminRuleService.js` | 管理者向けルール分析サービス | getRuleApplicationHistory |
 | `src/services/dataService.js` | データ取得サービス | dataService |
 | `src/services/liveOddsService.js` | オッズのライブ取得（BOA-487）。/api/odds/live を呼ぶ。 | fetchLiveOdds, LIVE_PAGE_OF_BET_TYPE, LiveOddsError |
 | `src/services/moriartyService.js` | — | getMoriartyStats, getMoriartyRecommendations, getMoriartyROIHistory, getMoriartyVenueBreakdown, getMoriartyCalibrationData |
 | `src/services/mycroftService.js` | マイクロフト予想 データ取得サービス | venueName, getMycroftModelInfo, getMycroftPredictions |
 | `src/services/poirotService.js` | — | getPoirotPredictions |
 | `src/services/racerService.js` | 選手個別ページ用データ取得サービス | getRacerPageData, getRacerCurrentMotorStatus, getRacerStats |
-| `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, hasRulesForVenue, getRulesForVenue ほか6件 |
+| `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, hasRulesForVenue, getRulesForVenue ほか4件 |
 | `src/services/sherlockModel.js` | シャーロック予想 共有モデルロジック（純粋関数のみ） | mean, buildFeatures, softmax, predictConditionalLogit, impliedProbs ほか5件 |
 | `src/services/sherlockService.js` | シャーロック予想 データ取得・推論サービス | getSherlockModelInfo, getSherlockPredictions |
 | `src/services/snsHubService.js` | SNSマーケティングハブ 管理画面用サービス層 | getDrafts, getApprovers, approveDraft, mergeBlogPr, publishYoutube ほか19件 |
@@ -246,4 +255,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 211 ファイル / export 1055 件。
+対象 220 ファイル / export 1095 件。

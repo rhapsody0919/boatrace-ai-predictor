@@ -11,6 +11,7 @@ import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { buildIndicatorRows } from "./raceIndicators";
 import InlineFetchError from "../InlineFetchError";
+import { splitRacerName } from "../../utils/racerName";
 import "./RaceCardDataTable.css";
 
 const ALWAYS_VISIBLE_KEYS = ["winRate", "localWinRate", "motor"];
@@ -80,7 +81,14 @@ function RaceCardDataTable({ raceId, players }) {
               <th className="rcdt-label-th"></th>
               {sortedPlayers.map((p) => (
                 <th key={p.number} className="rcdt-name-th" translate="no">
-                  {p.name?.replace(/\s+/g, "")}
+                  {/* 姓と名を別の塊にして、折り返すなら境目で折る。1つの文字列だと
+                      「小森信/雄」のように名前の途中で折れ、姓名の区切りを読み違える
+                      （出走表の名前は姓と名の間を全角スペースで詰めてある。BOA-559） */}
+                  {splitRacerName(p.name).map((part, i) => (
+                    <span key={i} className="rcdt-name-part">
+                      {part}
+                    </span>
+                  ))}
                 </th>
               ))}
             </tr>

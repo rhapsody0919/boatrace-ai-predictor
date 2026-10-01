@@ -30,3 +30,36 @@ body {
   min-height: 100vh;
 }
 
+
+/* Recharts の既定のツールチップと軸の目盛りを、テーマの色にそろえる（BOA-583 ユーザー確認）。
+   既定はツールチップが白地（インラインの background-color: #fff）で、見出しの文字はページの文字色を
+   引き継ぐため、ダークモードでは白地に白字になって読めなかった。軸の目盛りも #666 固定で、
+   ダークの紺の地では暗すぎた。以前は1つのグラフ（TrendLineChart、BOA-557）だけを個別に直しており、
+   選手ページ等の他のグラフに同じ不具合が残っていたので、全グラフ共通でここで指定する。
+   ツールチップの地の色は Recharts がインラインで書くため、上書きに !important が要る */
+.recharts-default-tooltip {
+  background-color: var(--surface-card) !important;
+  border-color: var(--border-hairline) !important;
+  color: var(--text-primary);
+}
+
+.recharts-default-tooltip .recharts-tooltip-label {
+  color: var(--text-primary);
+}
+
+.recharts-cartesian-axis-tick-value,
+.recharts-cartesian-axis-tick-value tspan {
+  fill: var(--text-secondary);
+}
+
+/* ツールチップの項目の行（「ST : 0.11秒」）は線の色を引き継ぐ（インライン指定）。線の色が淡いと
+   ダークでは読めなかったので、文字は本文の色にする。どの系列かは項目名で分かる */
+.recharts-default-tooltip .recharts-tooltip-item {
+  color: var(--text-primary) !important;
+}
+
+/* 棒グラフでマウスを乗せた列に出る帯（既定は fill="#ccc"）。ダークでは明るすぎて棒を覆って
+   見えたので、どちらのテーマでも目立ちすぎない半透明にする */
+.recharts-tooltip-cursor {
+  fill: rgba(128, 128, 128, 0.18);
+}

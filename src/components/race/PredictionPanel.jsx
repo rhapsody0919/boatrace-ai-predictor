@@ -119,13 +119,14 @@ function PredictionPanel({
   const [activeMainTab, setActiveMainTab] = useState(() =>
     prediction?.result?.finished ? "result" : "basic",
   );
-  // 「今どの艇を見ているか」を基本情報・枠別情報・今節の3タブで共有する（BOA-492）。
+  // 「今どの艇を見ているか」を基本情報・枠別情報・今節・モータ情報の4タブで共有する（BOA-492、モータ情報は BOA-494）。
   // 各タブが自前で持っていた頃は、基本情報で4号艇を開いてから枠別へ移ると1号艇に
   // 戻って選び直しが要った。RaceTabsは非アクティブタブをアンマウントするため、
   // 枠別→今節→枠別と戻っただけでも消えていた。
   // null は「まだどの艇も選んでいない」。基本情報タブは null なら何も展開せず、
   // 枠別・今節は null なら従来どおり1号艇にフォールバックする（初回表示は3タブとも
-  // 現状のまま変わらない）
+  // 現状のまま変わらない）。モータ情報は一覧のまま選んだ艇の行を示し、ドリルダウンは
+  // 自動で開かない（BOA-494 案A。一覧が主役）
   // レースが変われば選択は無効（次のレースの4号艇は別人）。RaceTabsはkeyで作り直される
   // が、PredictionPanel自体は再マウントされないため、どのレースの選択かを一緒に持って
   // 描画時に判定する
@@ -166,6 +167,9 @@ function PredictionPanel({
   // 中止・順延の確定検知（BOA-254）。暫定検知（"tentative"）はまだ誤検出の
   // 可能性があるため、既存の受付中/結果反映待ち表示のまま変更しない
   const isCancelled = isRaceCancelled(prediction);
+  // AI用にコピー（BOA-194）はこれから走るレースを外部AIで分析するためのもの。
+  // 結果確定済みと中止確定（BOA-424）では出さない
+  const showAiCopy = !isFinished && !isCancelled;
 
   // データ出走表・枠番傾向・分析ツール群（レース前の予想材料）を表示するか。
   // 結果/直前情報/モータ情報/AI予想の各タブは、それぞれのタブ内で同種の情報を
@@ -306,8 +310,8 @@ function PredictionPanel({
         )
       )}
 
-      {/* AI用にコピー（BOA-194）: 結果未確定レースのみ、外部AIツールで独自分析したいユーザー向け */}
-      {!isFinished && (
+      {/* AI用にコピー（BOA-194）: 結果未確定・中止でないレースのみ、外部AIツールで独自分析したいユーザー向け */}
+      {showAiCopy && (
         <AiCopyBanner
           raceId={analysisRaceId}
           prediction={prediction}
@@ -365,6 +369,7 @@ function PredictionPanel({
                   venueCode={venueCode}
                   venueName={venueName}
                   raceId={analysisRaceId}
+                  isCancelled={isCancelled}
                 />
               ),
             },
@@ -427,6 +432,8 @@ function PredictionPanel({
                   embedded
                   initialVenueCode={venueCode}
                   initialRaceId={analysisRaceId}
+                  focusedBoat={focusedBoat}
+                  onFocusBoat={handleFocusBoat}
                 />
               ),
             },
@@ -554,7 +561,7 @@ function PredictionPanel({
         </>
       )}
 
-      {!isFinished && (
+      {showAiCopy && (
         <AiCopyButton
           variant="inline"
           raceId={analysisRaceId}
@@ -565,7 +572,7 @@ function PredictionPanel({
           onCopy={showAiCopyToast}
         />
       )}
-      {!isFinished && (
+      {showAiCopy && (
         <Toast
           message={aiCopyToast.message}
           type={aiCopyToast.type}
@@ -582,14 +589,21 @@ function PredictionPanel({
               venue: venueName || t("panel.unknownVenue"),
               raceNo: selectedRace?.raceNumber || "?",
               date: raceDate,
+              isCancelled,
               prediction: {
                 topPick: prediction.topPick?.number,
                 top3: prediction.top3 || [],
               },
             },
             "unified",
+            t,
           )}
-          hashtags={["ボートレース", "AI予想", "龍神レーダー"]}
+          hashtags={
+            // 中止のレースは予想を出さないので「AI予想」のタグを外す
+            isCancelled
+              ? ["ボートレース", "龍神レーダー"]
+              : ["ボートレース", "AI予想", "龍神レーダー"]
+          }
           size={40}
         />
       </div>

@@ -11,6 +11,7 @@ import Footer from "../components/Footer";
 import Breadcrumb from "../components/Breadcrumb";
 import UpdateStatus from "../components/UpdateStatus";
 import IntroBanner from "../components/IntroBanner";
+import HomeAiIntro from "../components/HomeAiIntro";
 import FirstVisitGuideCard from "../components/FirstVisitGuideCard";
 import { useFirstVisit } from "../hooks/useFirstVisit";
 import {
@@ -196,6 +197,9 @@ function TodayVenueGridPage() {
             )}
           </section>
 
+          {/* 何のサイトかを説明する本文と実績（集客レーン Phase3。検索向けにクロールできる本文として置く） */}
+          <HomeAiIntro />
+
           {/* ブログ記事セクション */}
           <section className="blog-preview-section">
             <h2>📝 {t("home.blogTitle")}</h2>
@@ -290,6 +294,7 @@ function TodayVenueGridPage() {
   );
 }
 
+// i18n-allow-start: 過去日付の一覧（/races/:date）は ja専用（TRANSLATED_PATHS 未登録）
 function PastVenueGridPage({ date }) {
   const { venuesData, loading, error } = usePastVenues(date);
   // /races/{today}のように「過去日付ビュー」経由で本日の日付が指定された場合も
@@ -352,6 +357,7 @@ function PastVenueGridPage({ date }) {
     </>
   );
 }
+// i18n-allow-end
 
 function VenueGridPage() {
   const { date } = useParams();

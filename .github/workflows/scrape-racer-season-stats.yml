@@ -129,23 +129,21 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        # payload は jq で組み立てる（文字列への変数の直書きで JSON が壊れないように。BOA-644）
         run: |
-          curl -s -X POST "$SLACK_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"attachments\": [{
-                \"color\": \"#c0392b\",
-                \"blocks\": [
-                  {
-                    \"type\": \"section\",
-                    \"text\": {
-                      \"type\": \"mrkdwn\",
-                      \"text\": \":x: *選手期別成績（能力指数等）の取得ジョブが失敗しました*\n失敗率が高い・書き込み0件・連続失敗・時間超過（または手動キャンセル）のいずれかです。ログの失敗理由と、data/analysis/racer-fortune-telling/profile-scrape-report.json（failureReasons・nextOffset）を確認してください\n<$RUN_URL|実行ログを開く>\"
-                    }
-                  }
-                ]
+          payload=$(jq -n --arg url "$RUN_URL" '{
+            attachments: [{
+              color: "#c0392b",
+              blocks: [{
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: (":x: *選手期別成績（能力指数等）の取得ジョブが失敗しました*\n失敗率が高い・書き込み0件・連続失敗・時間超過（または手動キャンセル）のいずれかです。ログの失敗理由と、data/analysis/racer-fortune-telling/profile-scrape-report.json（failureReasons・nextOffset）を確認してください\n<" + $url + "|実行ログを開く>")
+                }
               }]
-            }"
+            }]
+          }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
 
       - name: Commit scrape report if changed
         if: ${{ !cancelled() }} # スクレイピングが失敗した場合も、失敗理由を含むレポートを残す

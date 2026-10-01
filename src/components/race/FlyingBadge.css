@@ -4,14 +4,48 @@
   display: inline-block;
   margin-left: 2px;
   padding: 0 3px;
-  font-size: 0.65rem;
+  /* 0.65rem（10.4px）だと 1440px でも小さく、赤地の上で「節」が潰れた（BOA-589） */
+  font-size: 0.7rem;
   font-weight: var(--font-weight-bold);
   color: var(--color-black);
   background: var(--color-warning);
   border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+/* 今節の印付き。ST考察カードの6列（375pxで1列約50px）には1行で収まらないため、
+   収まらないときだけ「F1」の下に「今節」を折り返す */
+.flying-badge.has-meet {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 1px 2px;
+  max-width: 100%;
 }
 
 .flying-badge.is-f2 {
   color: var(--color-white);
   background: var(--color-error);
+}
+
+/* 「今節」の印（BOA-440）。同じバッジの中に一段明るい地で入れ、F本数と続けて読ませる。
+   折り返したときも区切りが崩れないよう、罫線ではなく地の色で分ける */
+.flying-badge-meet {
+  padding: 0 2px;
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: var(--radius-sm);
+}
+
+.flying-badge.is-f2 .flying-badge-meet {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* L（出遅れ）。F の金・赤と取り違えないよう灰にする */
+.flying-badge.is-late {
+  color: var(--color-white);
+  background: var(--color-gray-600);
+  /* ダークモードの紺のカードに地が溶けるので、内側に明るい輪郭を付ける（BOA-589） */
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
 }

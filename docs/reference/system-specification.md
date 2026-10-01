@@ -291,41 +291,30 @@ AIスコア = 全国勝率 × 重み
 
 ### 概要
 
-`ruleMatchService.js` に34ルールをハードコード。各予測に対してルール条件をチェックし、マッチしたルールをおすすめレースとして表示（`/picks`）。
+34ルールの定義は `src/config/venueRules.js`（宣言的なデータ＋判定関数 `ruleMatches`。BOA-567）。各予測に対してルール条件をチェックし、マッチしたルールをおすすめレースとして表示（`/picks`）。
 
 ```
 1つのレース → 1つの予測 → 複数のルールがマッチ可能 → 複数のルール適用
 ```
 
-### 累積成績 (getOverallPerformance)
+### 累積成績・ルール別・週別（管理画面 /admin/rules の運用成績）
 
-**ファイル:** `src/services/ruleMatchService.js`
+**ファイル:** `api/admin/rules/performance.js` → RPC `get_admin_rule_performance`（`docs/db-migration/111`）→ `src/services/adminRulePerformance.js`（整形）
+
+集計はDB側の1回のRPCで行い、生の整数（件数・的中数・払戻合計）だけを返す。% の丸め・週の累積・ラベルは画面側で行う（BOA-567。以前は画面が predictions と race_results を全件ページングして集計していた）。
 
 | 指標 | 計算方法 | 注意点 |
 |------|---------|--------|
-| レース数 | `totalSamples` | **実際はルール適用数**（結果ありのみ） |
-| 的中数 | `totalHits` | 的中したルール適用数 |
-| 的中率 | `totalHits / totalSamples * 100` | パーセント表示 |
-| 投資 | `totalSamples * 100` | 1ルール適用 = 100円と仮定 |
-| 回収 | `totalPayout` | 的中時の配当合計 |
-| 回収率 | `totalPayout / (totalSamples * 100) * 100` | パーセント表示 |
+| レース数 | `total.samples` | **実際はルール適用数**（結果ありのみ） |
+| 的中数 | `total.hits` | 的中したルール適用数 |
+| 的中率 | `Math.round(hits / samples * 100)` | パーセント表示 |
+| 投資 | `samples * 100` | 1ルール適用 = 100円と仮定 |
+| 回収 | `total.payout` | 的中時の配当合計 |
+| 回収率 | `Math.round(payout / (samples * 100) * 100)` | パーセント表示 |
 
 **重要: 「レース数」の実態**
 
-```javascript
-// getOverallPerformance() 内のカウントロジック
-for (const pred of allPredictions) {
-  for (const rule of rules) {
-    if (rule.check(...)) {
-      if (result) {           // 結果がある場合のみカウント
-        totalSamples++        // ← これが「レース数」として表示される
-      }
-    }
-  }
-}
-```
-
-- 1レースに3ルールがマッチ → totalSamples += 3
+- 1レースに3ルールがマッチ → samples += 3
 - 表示上は「レース数」だが、実際は「ルール適用数（結果あり）」
 
 ### 履歴件数 (getRuleApplicationHistory)
@@ -356,13 +345,9 @@ for (const pred of predictions) {
 return { data: historyItems, total: count }  // totalは予測数、dataはルール適用数
 ```
 
-### 週別パフォーマンス (getWeeklyPerformance)
+### 週別パフォーマンス
 
-**ファイル:** `src/services/adminRuleService.js`
-
-- 日付ごとにルール適用数と配当を集計
-- 週単位（月曜始まり）でグループ化
-- 累積値を計算
+上の RPC の `by_week`（race_id の日付を `date_trunc('week')`＝月曜始まりで束ねる）を、画面側で昇順に累積する。
 
 ---
 
@@ -464,23 +449,27 @@ return { data: historyItems, total: count }  // totalは予測数、dataはル�
 
 ### ruleMatchService.js
 
-会場別ベッティングルールのマッチングと成績追跡。34ルール・15会場対応。
+会場別ベッティングルールのマッチングと成績追跡。ルール定義（34ルール・15会場）は `src/config/venueRules.js`。
 
 | 関数 | 用途 |
 |------|------|
 | `getMatchingRules(prediction, venueCode, raceNo)` | 予測にマッチするルール一覧 |
-| `getOverallPerformance()` | 全体の累積成績 |
-| `getTopPerformingRules(options)` | 成績順のルール一覧 |
 | `getTodaysMatchingRaces(today)` | 今日のルールマッチレース |
 | `getRulePerformanceByVenue(venueCode)` | 会場別のルール成績 |
 | `getAvailableVenues()` | ルールが定義されている会場一覧 |
+
+### adminRulePerformance.js
+
+| 関数 | 用途 |
+|------|------|
+| `fetchRulePerformance()` | `/api/admin/rules/performance` から運用成績（全体・ルール別・週別）を取得して整形 |
+| `shapeRulePerformance(raw)` | RPC の生の値を画面の形に整える（純粋関数） |
 
 ### adminRuleService.js
 
 | 関数 | 用途 |
 |------|------|
 | `getRuleApplicationHistory(startDate, endDate, limit, offset)` | ルール適用履歴 |
-| `getWeeklyPerformance()` | 週別累積パフォーマンス |
 
 ### supabaseDataService.js
 

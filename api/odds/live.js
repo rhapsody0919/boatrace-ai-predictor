@@ -13,6 +13,10 @@
  *   （scrape_job_state の host:boatrace.jp 行）を共有する。Cron が 429/503 でブレーカーを開けていれば、ここも取りに行かない
  *
  * 検証・解析・応答の組み立ては scripts/lib/liveOdds.js（verify-odds-live-api.js で検証）。
+ *
+ * リージョンは syd1（vercel.json）。ブレーカー状態を読む DB（Supabase、ap-southeast-2）への往復を、既定の iad1 の
+ * 約250msから約30〜46msにする（BOA-573）。公式（boatrace.jp）の応答は入口（Akamai）で1リクエストごとに約8秒
+ * 待たされ（server-timing: edge dur=8000、origin dur=17〜52）、リージョンでは変わらない
  */
 import { handleLiveOddsRequest } from "../../scripts/lib/liveOdds.js";
 import { createCircuitBreaker } from "../../scripts/lib/scrapeJobs/circuitBreaker.js";

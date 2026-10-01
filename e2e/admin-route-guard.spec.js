@@ -6,9 +6,24 @@ import { test, expect } from "./fixtures.js";
 // 描画できてしまう。AdminRouteGuard が綴り違いをトップへ戻すことを固定する。
 // dev サーバーでは middleware が走らないので、ここで見るのはクライアント側の振る舞いだけ。
 test.describe("管理画面の綴り違いURL", () => {
-  // /admin/rules は表示時に predictions を全件ページングする（ga-pageview.spec.js 参照）。
-  // このテストは描画されるかだけを見るので空で返す
+  // /admin/rules は表示時に運用成績API（/api/admin/rules/performance、BOA-567）と
+  // 本日分の predictions を取る。dev サーバーには Edge Function が無く /api/admin は
+  // index.html が返るため、API はスタブが必須。このテストは描画されるかだけを見るので空で返す
   test.beforeEach(async ({ page }) => {
+    await page.route(/\/api\/admin\/rules\/performance/, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          startDate: "2026-01-16",
+          data: {
+            total: { samples: 0, hits: 0, payout: 0 },
+            by_rule: [],
+            by_week: [],
+          },
+        }),
+      }),
+    );
     await page.route(/\/rest\/v1\/predictions\?/, (route) =>
       route.fulfill({
         status: 200,

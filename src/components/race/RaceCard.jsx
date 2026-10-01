@@ -8,6 +8,12 @@ import { getRaceStageBadge } from "../../constants/raceStageConfig";
 import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
 import { isRaceCancelled } from "../../utils/raceCancellation";
 import {
+  RACE_OUTCOME,
+  TURN_JUDGEMENT,
+  getRaceOutcomeState,
+  judgeTurnPrediction,
+} from "../../utils/raceOutcome";
+import {
   getDeadlineStatus,
   DEADLINE_STATUS,
 } from "../../utils/raceDeadlineStatus";
@@ -53,20 +59,20 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
 
   // 的中判定（unifiedモデル: 展開予測的中のみ。複勝予想は表示しない方針
   // に統一、ADR 0013・BOA-174/175/178参照）
+  // 展開予測の的中判定は集計指標（実測的中率約80%）と同じロジック（上位パターンの winnerCourse の
+  // いずれかが1着と一致すれば的中）。判定は TurnPatternList・HitRaces と同じ関数を通す（BOA-543）。
+  // 不成立は的中・外れを出さず「不成立」だけ、一部返還は的中・外れの横に枠線の「返還あり」
   const unified = racePrediction?.unified;
-  let hitBadges = [];
-
-  if (isFinished && unified) {
-    // 展開予測の的中判定は集計指標（実測的中率約80%）と同じロジック:
-    // 上位パターンのwinnerCourseのいずれかが実際の1着と一致すれば的中
-    const patterns = unified.turnPrediction?.patterns;
-    const isTurnHit =
-      Array.isArray(patterns) &&
-      patterns.some((p) => p.winnerCourse === result.rank1);
-    if (isTurnHit) {
-      hitBadges.push({ label: t("raceCard.badgeTurn"), type: "turn" });
-    }
-  }
+  const outcome = isFinished ? getRaceOutcomeState(result) : null;
+  const isNoRace = outcome === RACE_OUTCOME.NO_RACE;
+  const isPartialRefund = outcome === RACE_OUTCOME.PARTIAL_REFUND;
+  const turnJudgement =
+    isFinished && unified && !isNoRace
+      ? judgeTurnPrediction(unified.turnPrediction?.patterns, result).status
+      : null;
+  // 予想パターンが無いレースは従来どおり「外れ」（isTurnHit=false と同じ扱い）
+  const showHitMissBadge = isFinished && Boolean(unified) && !isNoRace;
+  const isTurnHit = turnJudgement === TURN_JUDGEMENT.HIT;
 
   return (
     <div
@@ -88,17 +94,21 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
           {showBadge && (
             <RaceCardBadge color={badgeColor}>{badgeLabel}</RaceCardBadge>
           )}
-          {isFinished && unified && (
+          {showHitMissBadge && (
             <RaceCardBadge
-              color={
-                hitBadges.length > 0
-                  ? "var(--color-success)"
-                  : "var(--color-error)"
-              }
+              color={isTurnHit ? "var(--color-success)" : "var(--color-error)"}
             >
-              {hitBadges.length > 0
-                ? hitBadges[0].label
-                : t("raceCard.missBadge")}
+              {isTurnHit ? t("raceCard.badgeTurn") : t("raceCard.missBadge")}
+            </RaceCardBadge>
+          )}
+          {isNoRace && (
+            <RaceCardBadge color="var(--color-gray-600)">
+              {t("raceCard.noRace")}
+            </RaceCardBadge>
+          )}
+          {isPartialRefund && (
+            <RaceCardBadge color="var(--text-secondary)" variant="outline">
+              {t("raceCard.refundBadge")}
             </RaceCardBadge>
           )}
           {isCancelled ? (

@@ -20,6 +20,7 @@ import {
   isExcludedStage,
   isPastPrelimDay,
   prelimEndRaceIdOf,
+  prelimEndDayOf,
   semifinalRaceIdsOf,
   semifinalSlotsOf,
   splitMeetSeries,
@@ -38,9 +39,18 @@ import {
   listAbsentOnlyRacers,
   FINISH_ABSENT,
   isAbsentStartRow,
+  flyingRacerIdsInMeet,
+  postPrelimFlyingRacerIds,
+  runFinishLabel,
+  officialMarkOf,
 } from "../../src/components/race/seriesPoints.js";
 import { getRaceStageKey } from "../../src/constants/raceStageConfig.js";
-import { fetchAllByRaceId } from "../lib/meetBoundaries.js";
+import {
+  dayCenter,
+  dayTickLabels,
+  layoutTrendByDate,
+} from "../../src/utils/trendDateLayout.js";
+import { buildMeets, fetchAllByRaceId } from "../lib/meetBoundaries.js";
 
 let failures = 0;
 function check(label, actual, expected) {
@@ -541,6 +551,165 @@ check(
       true,
     );
   }
+  // 推移の点の下に出す着順（BOA-537）。数字・F・欠・公式の記号。推測で「失」と書かない
+  {
+    const res = {
+      rank1: 3,
+      rank2: 1,
+      rank3: 6,
+      rank4: 2,
+      rank5: 4,
+      rank6: null,
+    };
+    check(
+      "runFinishLabel: 着順・F・欠・公式の記号・未実施",
+      [
+        runFinishLabel(res, 1, { start_timing: 0.12 }, true),
+        runFinishLabel(res, 5, { start_timing: 0.2, is_flying: true }, true),
+        runFinishLabel(res, 5, { start_timing: null, finish_mark: "欠" }, true),
+        runFinishLabel(res, 5, null, true),
+        runFinishLabel(res, 5, { start_timing: 0.18, finish_mark: "転" }, true),
+        runFinishLabel(res, 5, { start_timing: 0.18, finish_mark: null }, true),
+        runFinishLabel(null, 1, null, false),
+      ],
+      [2, "F", "欠", "欠", "転", null, null],
+    );
+  }
+  // 着順が付かない走は、比較表の並び・推移・日別の表で同じ公式の記号を出す（BOA-537）
+  check(
+    "officialMarkOf: 記号だけを返す（数字・空・null は記号でない）",
+    [
+      officialMarkOf("落"),
+      officialMarkOf("転"),
+      officialMarkOf("3"),
+      officialMarkOf(""),
+      officialMarkOf(null),
+    ],
+    ["落", "転", null, null, null],
+  );
+  check(
+    "着順の並び: 着順の無い走は公式の記号（無ければ null＝画面は「失」）",
+    listSeriesFinishes(
+      [
+        {
+          ...base,
+          raceId: "2026-09-23-20-01",
+          boatNumber: 6,
+          started: true,
+          finishMark: "落",
+        },
+        { ...base, raceId: "2026-09-23-20-02", boatNumber: 6, started: true },
+      ],
+      withPrelim,
+    ),
+    ["落", null],
+  );
+  check(
+    "着順の並び: 着欄の記号が未取得でも、フライングの走は「失」ではなく F（推移の点と同じ。BOA-589）",
+    listSeriesFinishes(
+      [
+        {
+          ...base,
+          raceId: "2026-09-23-20-03",
+          boatNumber: 6,
+          started: true,
+          isFlying: true,
+        },
+      ],
+      withPrelim,
+    ),
+    ["F"],
+  );
+  // 6艇の推移の横軸を日付にする配置（BOA-538）
+  {
+    const days = ["2026-09-20", "2026-09-21", "2026-09-22", "2026-09-23"];
+    const a = layoutTrendByDate(
+      [
+        { date: "2026-09-20" },
+        { date: "2026-09-21" },
+        { date: "2026-09-21" },
+        { date: "2026-09-23" },
+      ],
+      days,
+    );
+    check(
+      "日付の横軸: 日の位置に置き、1日2走は左右にずらし、走らない日をまたぐと線を切る",
+      [
+        Math.abs(a.xs[0] - dayCenter(0, 4)) < 1e-9,
+        a.xs[1] < dayCenter(1, 4) && a.xs[2] > dayCenter(1, 4),
+        Math.abs((a.xs[1] + a.xs[2]) / 2 - dayCenter(1, 4)) < 1e-9,
+        Math.abs(a.xs[3] - dayCenter(3, 4)) < 1e-9,
+        a.breakBefore,
+      ],
+      [true, true, true, true, [false, false, false, true]],
+    );
+    const one = layoutTrendByDate([{ date: "2026-09-20" }], ["2026-09-20"]);
+    check("日付の横軸: 節の日が1日だけなら中央", one.xs, [0.5]);
+    // 2走が続く行でも、同じ日の2点は日をまたぐ間より近い（等間隔に見えない。ファン評価）
+    const pairs = layoutTrendByDate(
+      ["2026-09-23", "2026-09-23", "2026-09-24", "2026-09-24"].map((date) => ({
+        date,
+      })),
+      ["2026-09-23", "2026-09-24", "2026-09-25"],
+    );
+    check(
+      "日付の横軸: 各走の日の位置（centers）を返し、同じ日の2走は同じ位置",
+      [
+        pairs.centers[0] === pairs.centers[1],
+        pairs.centers[2] === pairs.centers[3],
+      ],
+      [true, true],
+    );
+    check(
+      "日付の横軸: 同じ日の2点は、日をまたぐ間隔より近い",
+      pairs.xs[1] - pairs.xs[0] < pairs.xs[2] - pairs.xs[1],
+      true,
+    );
+    const oneDay = layoutTrendByDate(
+      [{ date: "2026-09-20" }, { date: "2026-09-20" }],
+      ["2026-09-20"],
+    );
+    check(
+      "日付の横軸: 1日だけの節の2走は中央の近くに寄る（全幅の2割）",
+      Math.abs(oneDay.xs[1] - oneDay.xs[0] - 0.2) < 1e-9,
+      true,
+    );
+    check(
+      "日付の目盛り: 最初の日と月が変わった日だけ「月/日」、ほかは日だけ",
+      dayTickLabels([
+        "2026-09-28",
+        "2026-09-29",
+        "2026-09-30",
+        "2026-10-01",
+        "2026-10-02",
+      ]),
+      ["9/28", "29", "30", "10/1", "2"],
+    );
+    // 端の日の2走も、ずらした両方が 0〜1 の中に収まる（端で潰れて重ならない）
+    const edge = layoutTrendByDate(
+      [
+        { date: "2026-09-20" },
+        { date: "2026-09-20" },
+        { date: "2026-09-25" },
+        { date: "2026-09-25" },
+      ],
+      [
+        "2026-09-20",
+        "2026-09-21",
+        "2026-09-22",
+        "2026-09-23",
+        "2026-09-24",
+        "2026-09-25",
+      ],
+    );
+    check(
+      "日付の横軸: 端の日の2走も同じ幅でずれ、0〜1に収まる",
+      edge.xs.every((v) => v >= 0 && v <= 1) &&
+        Math.abs(edge.xs[1] - edge.xs[0] - (edge.xs[3] - edge.xs[2])) < 1e-9 &&
+        edge.xs[1] - edge.xs[0] > 0.05,
+      true,
+    );
+  }
   check(
     "男女Ｗ優勝戦の節では別シリーズの全走欠場者を返さない",
     listAbsentOnlyRacers({ ...board, seriesRacerIds: [1001, 3003] }),
@@ -659,9 +828,11 @@ check("バッジ: 予選", getRaceStageKey("予選"), null);
     [3, 2, 1, 4, 5, 2],
   );
   check(
-    "着順が付いていない走（妨・落）は null にする",
+    // 以前は null（画面は「失」）にしていたが、推移の点の下・日別の表と表記を
+    // そろえるため記号のまま返す（BOA-537 ファン評価）
+    "着順が付いていない走（妨・落）は公式の記号のまま返す",
     parseOfficialPlacements("２２落"),
-    [2, 2, null],
+    [2, 2, "落"],
   );
   check("placements が無ければ空", parseOfficialPlacements(null), []);
 
@@ -1261,6 +1432,221 @@ check(
   ),
   6,
 );
+
+// ---- 賞典除外（BOA-587） -----------------------------------------------------
+// 今節F（is_flying または着欄の F・Ｆ）の選手だけを拾う。L・欠・着順は拾わない
+check(
+  "今節Fの選手だけを賞典除外の候補にする（Lは数えない）",
+  flyingRacerIdsInMeet(
+    [
+      {
+        race_id: "2026-09-26-22-10",
+        boat_number: 1,
+        is_flying: true,
+        finish_mark: "F",
+      },
+      {
+        race_id: "2026-09-26-22-10",
+        boat_number: 2,
+        is_flying: false,
+        finish_mark: "1",
+      },
+      {
+        race_id: "2026-09-26-22-11",
+        boat_number: 3,
+        is_flying: false,
+        finish_mark: "Ｆ",
+      },
+      {
+        race_id: "2026-09-26-22-11",
+        boat_number: 4,
+        is_flying: false,
+        finish_mark: "L",
+      },
+      {
+        race_id: "2026-09-26-22-11",
+        boat_number: 5,
+        is_flying: false,
+        finish_mark: "欠",
+      },
+      // 出走表に無い艇（選手が分からない）は拾わない
+      {
+        race_id: "2026-09-26-22-12",
+        boat_number: 6,
+        is_flying: true,
+        finish_mark: "F",
+      },
+    ],
+    [
+      { race_id: "2026-09-26-22-10", boat_number: 1, racer_id: 101 },
+      { race_id: "2026-09-26-22-10", boat_number: 2, racer_id: 102 },
+      { race_id: "2026-09-26-22-11", boat_number: 3, racer_id: 103 },
+      { race_id: "2026-09-26-22-11", boat_number: 4, racer_id: 104 },
+      { race_id: "2026-09-26-22-11", boat_number: 5, racer_id: 105 },
+    ],
+  ).sort(),
+  [101, 103],
+);
+{
+  const run = (racerId, raceId, boatNumber) => ({
+    racerId,
+    playerName: `選手${racerId}`,
+    raceId,
+    raceStage: "予選",
+    boatNumber,
+    rank1: boatNumber,
+    rank2: null,
+    rank3: null,
+    rank4: null,
+    rank5: null,
+    rank6: null,
+  });
+  // 3人とも1着10点。201は今節F、202は途中帰郷、203はどちらでもない
+  const ranked = buildMeetRanking({
+    entries: [
+      run(201, "2026-09-22-22-01", 1),
+      run(202, "2026-09-22-22-02", 1),
+      run(203, "2026-09-22-22-03", 1),
+    ],
+    withdrawnRacerIds: [201, 202],
+    exclusionReasonByRacer: { 201: "flying" },
+  });
+  check(
+    "賞典除外・途中帰郷は順位から外し、理由を付ける（理由が無ければ途中帰郷）",
+    ranked.map((r) => [r.racerId, r.rank, r.excludedReason]),
+    [
+      [201, null, "flying"],
+      [202, null, "withdrawn"],
+      [203, 1, null],
+    ],
+  );
+}
+
+// ---- 予選後に今節Fを切った選手（BOA-626） ----------------------------------
+// 桐生 2026-09-25 7R の6号艇 武田光史は 9/24 8R（予選後）でF。予選中のFではないので
+// 順位は付いたまま、印だけ添える。予選中のF（5号艇 大澤）は対象外
+{
+  const END = "2026-09-23-01-12";
+  const entries = [
+    { race_id: "2026-09-22-01-03", boat_number: 5, racer_id: 501 },
+    { race_id: "2026-09-24-01-08", boat_number: 6, racer_id: 601 },
+    { race_id: "2026-09-24-01-09", boat_number: 1, racer_id: 701 },
+  ];
+  const starts = [
+    { race_id: "2026-09-22-01-03", boat_number: 5, is_flying: true },
+    { race_id: "2026-09-24-01-08", boat_number: 6, is_flying: true },
+    { race_id: "2026-09-24-01-09", boat_number: 1, is_flying: false },
+  ];
+  check(
+    "予選後のFだけを拾う（予選中のFは拾わない）",
+    postPrelimFlyingRacerIds(starts, entries, END),
+    [601],
+  );
+  check(
+    "予選の締めが分からない節では空",
+    postPrelimFlyingRacerIds(starts, entries, null),
+    [],
+  );
+}
+
+// ---- 予選終了の日目は中止の日を数えない（BOA-578） ---------------------------
+// 津 2026-09-21〜28 の節の実データ。9/21 は4Rまで成立、9/22 は丸一日中止
+// （番組は残り、series_day=2）、公式は 9/23 を再び2日目とし 9/26 を5日目とする
+// （公式の節間成績は「初日〜６日目・最終日」）。日付を数えると 9/26 は6日目になる
+{
+  const TSU_COND = [
+    ["2026-09-21", 1],
+    ["2026-09-22", 2],
+    ["2026-09-23", 2],
+    ["2026-09-24", 3],
+    ["2026-09-25", 4],
+    ["2026-09-26", 5],
+  ].map(([d, sd]) => ({ race_id: `${d}-09-12`, series_day: sd }));
+  const TSU_IDS = TSU_COND.map((c) => c.race_id);
+  const TSU_RAN = new Set(TSU_IDS.filter((id) => !id.startsWith("2026-09-22")));
+  check(
+    "予選終了の日目は series_day を使う（津 9/26 は5日目）",
+    prelimEndDayOf("2026-09-26-09-12", TSU_COND, TSU_IDS, TSU_RAN),
+    5,
+  );
+  check(
+    "series_day が無ければ、丸一日中止の日を飛ばして数える（津 9/26 は5日目）",
+    prelimEndDayOf(
+      "2026-09-26-09-12",
+      TSU_COND.map((c) => ({ ...c, series_day: null })),
+      TSU_IDS,
+      TSU_RAN,
+    ),
+    5,
+  );
+  // 戸田 2026-09-18〜24: 9/21 が丸一日中止（series_day=4）、9/22 も4日目で予選最終日
+  const TODA_COND = [
+    ["2026-09-18", 1],
+    ["2026-09-19", 2],
+    ["2026-09-20", 3],
+    ["2026-09-21", 4],
+    ["2026-09-22", 4],
+  ].map(([d, sd]) => ({ race_id: `${d}-02-12`, series_day: sd }));
+  check(
+    "戸田 9/22（中止の翌日）は4日目",
+    prelimEndDayOf(
+      "2026-09-22-02-12",
+      TODA_COND,
+      TODA_COND.map((c) => c.race_id),
+      new Set(
+        TODA_COND.map((c) => c.race_id).filter(
+          (id) => !id.startsWith("2026-09-21"),
+        ),
+      ),
+    ),
+    4,
+  );
+  check(
+    "予選の締めが無ければ null",
+    prelimEndDayOf(null, TSU_COND, TSU_IDS, TSU_RAN),
+    null,
+  );
+}
+
+// ---- buildMeets は順延（同じ日目が翌日に続く）で節を割らない（BOA-506） --------
+// 戸田 2026-09-18〜24 の実データ。9/21 が丸一日中止で、公式は 9/22 も4日目とする
+// （9/21→22 で出場43人が全員同じ）。以前は同値を新しい節として扱い、9/21 で節を
+// 割って予選の締めを 9/21 8R（中止で走っていない日）に確定させていた
+{
+  const day = (d, sd, stage, fin = false) => ({
+    race_id: `${d}-02-08`,
+    race_stage: stage,
+    series_day: sd,
+    is_final_day: fin,
+  });
+  const TODA = [
+    day("2026-09-18", 1, "予選"),
+    day("2026-09-19", 2, "予選"),
+    day("2026-09-20", 3, "予選"),
+    day("2026-09-21", 4, "予選"),
+    day("2026-09-22", 4, "予選"),
+    day("2026-09-23", 5, "準優勝戦"),
+    day("2026-09-24", 6, "優勝戦", true),
+    // 次の節
+    day("2026-09-26", 1, "予選"),
+  ];
+  const meets = buildMeets(TODA);
+  check(
+    "順延の日（4→4）は同じ節。予選の締めは 9/22",
+    meets.map((m) => [m.dates[0], m.dates.at(-1), m.prelimEndRaceId]),
+    [
+      ["2026-09-18", "2026-09-24", "2026-09-22-02-08"],
+      ["2026-09-26", "2026-09-26", "2026-09-26-02-08"],
+    ],
+  );
+  // 同じ日目でも日付が空いていれば別の節（従来どおり）
+  const GAP = [day("2026-09-01", 1, "予選"), day("2026-09-03", 1, "予選")];
+  check(
+    "日付が空いた同値は別の節",
+    buildMeets(GAP).map((m) => m.dates),
+    [["2026-09-01"], ["2026-09-03"]],
+  );
+}
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);
 process.exit(failures === 0 ? 0 : 1);

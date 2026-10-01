@@ -25,6 +25,7 @@ import {
 } from "../lib/supabaseClient.js";
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
 import { getRaceSchedule } from "../lib/raceSchedule.js";
+import { jstMinutesOfDay, toJstDateString } from "../lib/scrapeJobs/time.js";
 import {
   VENUE_ENTRY_COURSE_STATS_CONFIG,
   buildEntryCourseUrl,
@@ -279,7 +280,7 @@ export async function run(schedule, date) {
     console.log(
       `\n💾 venue_entry_course_stats: ${allRows.length}件書き込み中...`,
     );
-    await writeEntryCourseRows(supabase, allRows);
+    await writeEntryCourseRows(supabase, allRows, { throwOnError: true });
   }
 
   fs.mkdirSync(new URL(".", HEALTH_FILE_PATH), { recursive: true });
@@ -288,13 +289,55 @@ export async function run(schedule, date) {
   console.log(
     `📊 完了: ${successVenues}/${attemptedVenues}会場成功（本日開催なしを除く）、${allRows.length}件保存`,
   );
+  // 開催会場を1つ以上試したのに、1会場も取得・解析できなかった＝構造変化・取得先の障害。0件保存を成功にしない（BOA-364）
+  if (attemptedVenues > 0 && successVenues === 0) {
+    throw new Error(
+      `${targetDate}: 開催${attemptedVenues}会場すべてで取得・解析に失敗しました`,
+    );
+  }
   return { updated: allRows.length > 0, count: allRows.length };
 }
 
+/**
+ * CLI（GitHub Actions。Vercel が不調のときのフォールバック）の対象日（BOA-364）。
+ * GitHub Actions の schedule（20:00 JST 指定）は数時間遅れて日付をまたぐことがあり、実行時点の日付だと、
+ * races がまだ無い翌日を指して0件になっていた。--date が無ければ、07:00 JST より前の起動は前日、それ以降は当日。
+ * Vercel のジョブ（「20:00 の指定時刻」から解決）と違い、20:00 前を前日にしないのは、取得先のURLが日付を持たず
+ * （buildEntryCourseUrl）その時点の当日のページを返すため。日中の手動実行が前日を対象にすると、当日の内容を
+ * 前日の race_id に上書きしてしまう
+ */
+export function resolveCliTargetDate(
+  args = process.argv.slice(2),
+  now = new Date(),
+) {
+  const LATE_START_UNTIL_JST_MIN = 7 * 60;
+  return (
+    parseDateArg(args) ??
+    (jstMinutesOfDay(now) < LATE_START_UNTIL_JST_MIN
+      ? toJstDateString(new Date(now.getTime() - 24 * 60 * 60 * 1000))
+      : toJstDateString(now))
+  );
+}
+
+/** CLI の本体。対象日の races が0件・DB障害は、成功にせず例外にする（BOA-364） */
+export async function main({
+  args,
+  now,
+  getSchedule = getRaceSchedule,
+  runImpl = run,
+} = {}) {
+  const date = resolveCliTargetDate(args, now);
+  const schedule = await getSchedule(date, { throwOnError: true });
+  if (schedule.length === 0) {
+    throw new Error(
+      `対象日${date}の races が0件です（朝の初期化の失敗、または対象日の誤りの疑い）`,
+    );
+  }
+  return runImpl(schedule, date);
+}
+
 if (process.argv[1] === new URL(import.meta.url).pathname) {
-  const date = parseDateArg();
-  const schedule = await getRaceSchedule(date);
-  run(schedule, date).catch((error) => {
+  main().catch((error) => {
     console.error("❌ エラー:", error);
     process.exit(1);
   });

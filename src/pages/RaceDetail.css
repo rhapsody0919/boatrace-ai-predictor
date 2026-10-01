@@ -168,18 +168,14 @@
   text-shadow: none;
 }
 
-/* race-grid〜spinnerまでの各セレクタはApp.css（ホーム画面）にも同名クラスが
+/* race-card〜spinnerまでの各セレクタはApp.css（ホーム画面）にも同名クラスが
    存在し、意図的に異なるデザイン（余白・配色）を与えている。CSSが全ページ分
    1つのバンドルに結合されビルド順で意図しない側が勝つ事故が過去にあったため
    （BOA-206/BOA-207）、.race-detail-page配下に限定する詳細度スコープで
    確実に自ページのスタイルが勝つようにする。
-   なお 2026-09-29 時点で .race-detail-page 配下に .race-grid を出す画面は無い（BOA-528） */
-.race-detail-page .race-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
-}
-
+   .race-grid はこのファイルでは定義しない。使う画面は会場別レース一覧だけで、
+   列数は VenueRaceListPage.css が決める（.race-detail-page 配下に出す画面は無く、
+   @media の中の裸の .race-grid だけが App.css と衝突していた。BOA-528/BOA-570） */
 .race-detail-page .race-card {
   background: var(--surface-card);
   border-radius: 16px;
@@ -358,11 +354,6 @@
     padding: 0.6rem 1rem;
   }
 
-  .race-grid {
-    grid-template-columns: 1fr;
-  }
-
-
 }
 
 @media (max-width: 480px) {
@@ -389,95 +380,10 @@
 
 }
 
-/* 会場攻略ガイドリンク（App.cssと同名クラスのため.race-detail-pageでスコープ。
-   あわせて薄い青グラデーション背景+濃色文字はダークテーマで浮くため、
-   App.css側と同じトークンに統一する、BOA-206/BOA-207） */
-.race-detail-page .venue-guide-link {
-  margin-top: 2rem;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: var(--border-width-1) solid var(--border-hairline);
-}
-
-.race-detail-page .venue-guide-link a {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.25rem 1.5rem;
-  background: var(--surface-card);
-  text-decoration: none;
-  transition: all 0.3s ease;
-}
-
-.race-detail-page .venue-guide-link a:hover {
-  border-color: var(--brand-accent-primary);
-}
-
-.race-detail-page .venue-guide-icon {
-  font-size: 2rem;
-  flex-shrink: 0;
-}
-
-.race-detail-page .venue-guide-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.race-detail-page .venue-guide-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.race-detail-page .venue-guide-desc {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-.race-detail-page .venue-guide-arrow {
-  font-size: 1.5rem;
-  color: var(--brand-accent-primary);
-  font-weight: 700;
-}
-
-@media (max-width: 768px) {
-  .venue-guide-link a {
-    padding: 1rem 1.25rem;
-    gap: 0.75rem;
-  }
-
-  .venue-guide-icon {
-    font-size: 1.5rem;
-  }
-
-  .venue-guide-title {
-    font-size: 1rem;
-  }
-
-  .venue-guide-desc {
-    font-size: 0.8rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .venue-guide-link a {
-    padding: 0.875rem 1rem;
-  }
-
-  .venue-guide-title {
-    font-size: 0.9rem;
-  }
-
-  .venue-guide-desc {
-    font-size: 0.75rem;
-  }
-
-  .venue-guide-arrow {
-    font-size: 1.25rem;
-  }
-}
+/* 会場攻略ガイドリンク（.venue-guide-*）はこのファイルでは定義しない。出すのは
+   /race/:raceId の PredictionPanel だけで、その祖先は .race-detail-page-v2 のため
+   ここの .race-detail-page スコープの指定は一度も効いておらず、@media の中の裸の
+   上書きは App.css と同じ値の重複だった。定義は App.css に一本化する（BOA-570） */
 
 /* 極小スマートフォン対応 */
 @media (max-width: 320px) {

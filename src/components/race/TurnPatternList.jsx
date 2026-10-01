@@ -11,7 +11,8 @@
  * どの程度の自信度の予想なのかが一目でわかるようにする。
  *
  * PredictionPanel（レース前）とRaceResult（レース後）で共有する。
- * actualWinnerを渡すとレース後モードになり、一致した行をハイライトし結果を明示する。
+ * result（結果オブジェクト）を渡すとレース後モードになり、一致した行をハイライトし結果を明示する。
+ * 不成立のレースは「判定対象外」、返還艇の候補には「返還（判定対象外）」を出す（BOA-543）。
  *
  * 艇番の重複除去（2026-08-14追記）: patternsは技術（決まり手）単位の配列のため、
  * 同じ艇が異なる決まり手で複数回登場することがある（例: 2号艇の差し9%とまくり9%）。
@@ -24,11 +25,12 @@
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
+import { TURN_JUDGEMENT, judgeTurnPrediction } from "../../utils/raceOutcome";
 import "./TurnPatternList.css";
 
 const RANK_ICONS = ["🥇", "🥈", "🥉"];
 
-function TurnPatternList({ patterns, actualWinner = null }) {
+function TurnPatternList({ patterns, result = null }) {
   const { t } = useTranslation();
 
   if (!Array.isArray(patterns) || patterns.length === 0) return null;
@@ -38,9 +40,13 @@ function TurnPatternList({ patterns, actualWinner = null }) {
   const translateTechnique = (key) =>
     t(`techniques.${key}`, TECHNIQUE_NAMES[key] || key);
 
-  const isResultMode = actualWinner != null;
-  const hasHit =
-    isResultMode && patterns.some((p) => p.winnerCourse === actualWinner);
+  // レース後モード（result あり）。的中の判定は RaceCard・HitRaces と同じ関数を通す（BOA-543）。
+  // 不成立は判定対象外、一部返還は返還艇の候補にだけ「判定対象外」の印を付ける
+  const isResultMode = result != null;
+  const judgement = isResultMode ? judgeTurnPrediction(patterns, result) : null;
+  const isNotJudgeable = judgement?.status === TURN_JUDGEMENT.NOT_JUDGEABLE;
+  const hasHit = judgement?.status === TURN_JUDGEMENT.HIT;
+  const actualWinner = judgement?.winner ?? null;
 
   const seenCourses = new Set();
   const displayPatterns = patterns.filter((p) => {
@@ -55,12 +61,21 @@ function TurnPatternList({ patterns, actualWinner = null }) {
         <p className="turn-pattern-caption">{t("turnPatternList.caption")}</p>
       )}
       {displayPatterns.map((pattern, index) => {
-        const isMatch = isResultMode && pattern.winnerCourse === actualWinner;
+        // 不成立のレースは行ごとの印を付けず、まとめの「判定対象外（不成立）」だけにする
+        const isRefunded =
+          isResultMode &&
+          !isNotJudgeable &&
+          judgement.refundedCourses.includes(pattern.winnerCourse);
+        const isMatch =
+          isResultMode &&
+          !isNotJudgeable &&
+          !isRefunded &&
+          pattern.winnerCourse === actualWinner;
         const colors = BOAT_COLORS[pattern.winnerCourse] || BOAT_COLORS[1];
         return (
           <div
             key={`${pattern.winnerCourse}-${pattern.technique}-${index}`}
-            className={`turn-pattern-row${isMatch ? " turn-pattern-row--hit" : ""}`}
+            className={`turn-pattern-row${isMatch ? " turn-pattern-row--hit" : ""}${isNotJudgeable || isRefunded ? " turn-pattern-row--void" : ""}`}
           >
             <span className="turn-pattern-rank">
               {RANK_ICONS[index] || `${index + 1}`}
@@ -82,11 +97,26 @@ function TurnPatternList({ patterns, actualWinner = null }) {
                 {t("turnPatternList.hitTag")}
               </span>
             )}
+            {isRefunded && (
+              <span className="turn-pattern-void-tag">
+                {t("turnPatternList.refundedTag")}
+              </span>
+            )}
           </div>
         );
       })}
 
-      {isResultMode && (
+      {isResultMode && isNotJudgeable && (
+        <div className="turn-pattern-summary turn-pattern-summary--void">
+          <p className="turn-pattern-summary-title">
+            {t("turnPatternList.notJudgeable")}
+          </p>
+          <p className="turn-pattern-summary-body">
+            {t("turnPatternList.notJudgeableBody")}
+          </p>
+        </div>
+      )}
+      {isResultMode && !isNotJudgeable && (
         <p
           className={`turn-pattern-summary${hasHit ? " turn-pattern-summary--hit" : " turn-pattern-summary--miss"}`}
         >

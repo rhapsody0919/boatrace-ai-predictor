@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./MeetSparkline.css";
+import { SPARK_VIEW_W, SPARK_PAD_X } from "../../utils/trendDateLayout";
 
 /**
  * 今節の走順に並べた小さな折れ線（軸なし）。
@@ -51,10 +52,28 @@ import "./MeetSparkline.css";
  *   （6艇を同じ尺で並べるとき）。省略すると自分の最小〜最大に伸びる
  * @param {boolean} [upIsBetter] 値が小さいほど上に描く（既定 true）
  * @param {number} [height] 高さ（px）
+ * @param {Array<{text: string|number, win?: boolean, mark?: boolean}|null>} [pointLabels]
+ *   各点の下に出す短い文字（6艇の推移では着順）。`points` と同じ並び。
+ *   値（ST・展示）が無い走でも、その横位置に出す（欠場・フライングも並びに残す）
+ * @param {Array<number>} [xPositions] 各点の横位置（0〜1の割合）。日付の横軸で
+ *   6行をそろえるときに渡す（BOA-538）。省略すると走った順で左右いっぱい
+ * @param {Array<number>} [xCenters] 各点の「日の位置」（0〜1）。渡すと、日の位置からの
+ *   ずれを画面上で最大8pxにする。広い画面で同じ日の2走が離れすぎ、2点ずつの組に
+ *   見えなくなるのを防ぐ（BOA-538 ファン評価2周目）
+ * @param {Array<boolean>} [breakBefore] その点の前で線を切るか（走っていない日を
+ *   またぐとき）。`points` と同じ並び
  * @param {boolean} [allowSinglePoint] 値が1つでも描く（既定 false）。6艇を
  *   並べる推移では、1走の選手の行が空白だと「取れていない」と読まれるので、
  *   前走の点を1つだけ右端（他の行の前走と同じ横位置）に置く
+ * @param {boolean} [markLast] 最後の点を「前走」として大きく描く（既定 true）。
+ *   前走が F・L（値が無い）のときは false にする。1つ前の走が前走に見えるため
  */
+// 日付の横軸で、同じ日の2走を日の位置から左右にずらす最大幅（px、BOA-538）
+const MAX_DAY_OFFSET_PX = 8;
+
+// 点の下の文字（着順）の帯の高さ（px）
+const LABEL_STRIP_HEIGHT = 13;
+
 function MeetSparkline({
   points,
   baseline = null,
@@ -64,6 +83,11 @@ function MeetSparkline({
   upIsBetter = true,
   height = 56,
   allowSinglePoint = false,
+  pointLabels = null,
+  markLast = true,
+  xPositions = null,
+  xCenters = null,
+  breakBefore = null,
 }) {
   // どの点に合わせているか。null は「どこにも合わせていない」
   const [activeIndex, setActiveIndex] = useState(null);
@@ -82,7 +106,26 @@ function MeetSparkline({
 
   const values = (points ?? []).map((p) => p.value);
   const numeric = values.filter((v) => typeof v === "number");
-  if (numeric.length < (allowSinglePoint ? 1 : 2)) return null;
+  const canDraw = numeric.length >= (allowSinglePoint ? 1 : 2);
+
+  // 箱の実際の幅（px）。点の下の着順の間隔を実寸で測り、詰まる行だけ字を小さくする
+  // （BOA-537 ファン評価2周目。走数で一律に字を小さくすると、PCでも小さくなった）
+  const [boxWidth, setBoxWidth] = useState(0);
+  // 着順の間隔・日の位置からのずれの上限の両方に箱の実寸を使う
+  const hasLabels = Boolean(pointLabels) || Boolean(xCenters);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!canDraw || !hasLabels || !el) return undefined;
+    setBoxWidth(el.getBoundingClientRect().width);
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver((entries) => {
+      setBoxWidth(entries[0]?.contentRect.width ?? 0);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [canDraw, hasLabels]);
+
+  if (!canDraw) return null;
 
   const refNumeric = (referenceSeries ?? []).filter(
     (v) => typeof v === "number",
@@ -103,15 +146,33 @@ function MeetSparkline({
   // この値が実際の表示幅から離れるほど点（circle）が楕円に歪む。
   // 390px幅の端末での実表示が約340pxなので、それに近い値にして歪みを消す
   // （100にしていたときは3.4倍に引き伸ばされて明らかに潰れていた）
-  const W = 340;
+  const W = SPARK_VIEW_W;
   const padY = 6;
   // 左右にも余白を取る。0だと両端の点（前走を含む）が半分見切れる
-  const padX = 5;
+  const padX = SPARK_PAD_X;
   const innerH = height - padY * 2;
   const innerW = W - padX * 2;
   // 1走だけのときは右端（他の行の「前走」と同じ横位置）に置く
+  // 日の位置からのずれの上限（割合）。箱の幅が分かるまでは上限をかけない
+  const maxOffsetFrac =
+    xCenters && boxWidth > 0
+      ? MAX_DAY_OFFSET_PX / (boxWidth * (innerW / W))
+      : Infinity;
+  const cappedFrac = (i) => {
+    const v = xPositions?.[i] ?? 0;
+    const c = xCenters?.[i];
+    if (c === undefined || c === null) return v;
+    const d = v - c;
+    return c + Math.max(-maxOffsetFrac, Math.min(maxOffsetFrac, d));
+  };
+  // xPositions（0〜1の割合）を渡すと横位置を外から決める（日付の横軸、BOA-538）。
+  // 無ければ従来どおり走った順で左右いっぱいに並べる
   const x = (i) =>
-    values.length === 1 ? W - padX : padX + (i / (values.length - 1)) * innerW;
+    xPositions
+      ? padX + cappedFrac(i) * innerW
+      : values.length === 1
+        ? W - padX
+        : padX + (i / (values.length - 1)) * innerW;
   const y = (v) => {
     const ratio = (v - min) / span;
     // upIsBetter: 小さい値（速い）を上に
@@ -122,8 +183,52 @@ function MeetSparkline({
   const drawn = values
     .map((v, i) => (typeof v === "number" ? { i, v } : null))
     .filter(Boolean);
-  const path = drawn.map((d) => `${x(d.i).toFixed(2)},${y(d.v).toFixed(2)}`);
+  // 線は、走っていない日をまたぐところで切る（breakBefore、BOA-538）。
+  // 値の無い走（欠場など）は従来どおり前後をつなぐ
+  const segments = [];
+  drawn.forEach((d, k) => {
+    const prev = drawn[k - 1];
+    const cut =
+      prev &&
+      breakBefore &&
+      breakBefore.slice(prev.i + 1, d.i + 1).some(Boolean);
+    if (k === 0 || cut) segments.push([]);
+    segments[segments.length - 1].push(
+      `${x(d.i).toFixed(2)},${y(d.v).toFixed(2)}`,
+    );
+  });
   const lastIndex = drawn.length - 1;
+  // 点の下の着順の間隔（px）
+  // 日付の横軸（xPositions）では1日2走が近づくので、実際の横位置の最小の差で測る
+  const minStepFrac = xPositions
+    ? Math.min(
+        // 日の位置からのずれに上限をかけた後の位置で測る
+        ...xPositions.slice(1).map((_, i) => cappedFrac(i + 1) - cappedFrac(i)),
+        Infinity,
+      )
+    : values.length > 1
+      ? 1 / (values.length - 1)
+      : Infinity;
+  const labelGapPx =
+    boxWidth > 0 && Number.isFinite(minStepFrac)
+      ? boxWidth * (innerW / W) * minStepFrac
+      : Infinity;
+  // 間隔が足りない行は、間引かずに字を小さくして全走を1段に並べる。2段に振り分けると
+  // 段ごとに左から読んで順番を読み違える（BOA-537 ファン評価3周目）。
+  // 1文字の幅は、数字（半角）で字の大きさの約0.6倍、記号（落・欠などの全角）で約1倍。
+  // その行に全角の記号があるかで必要な間隔を変え、隣と3px以上あくように字を決める。
+  // 7px を下限にする（それ以下は読めない）。数字だけの行なら、375px（線の幅149px）で
+  // 等間隔のとき16走まで、日付の横軸で毎日2走でも7日まで10pxのまま並ぶ
+  const hasWideLabel = (pointLabels ?? []).some(
+    (lab) =>
+      lab && typeof lab.text === "string" && !/^[0-9A-Za-z]$/.test(lab.text),
+  );
+  const glyphRatio = hasWideLabel ? 1 : 0.6;
+  const fitFontPx = (labelGapPx - 3) / glyphRatio;
+  const labelFontPx =
+    pointLabels && fitFontPx < 10
+      ? Math.max(7, Math.floor(fitFontPx * 2) / 2)
+      : null;
 
   // 値のある点のうち、ポインタの横位置に最も近いものを選ぶ。
   // viewBox は `preserveAspectRatio="none"` で横に引き伸ばされるため、
@@ -169,7 +274,7 @@ function MeetSparkline({
     <div
       className="meet-sparkline-wrap"
       ref={wrapRef}
-      style={{ height }}
+      style={{ height: pointLabels ? height + LABEL_STRIP_HEIGHT : height }}
       onPointerMove={pickNearest}
       onPointerDown={pickNearest}
       onPointerLeave={() => setActiveIndex(null)}
@@ -211,19 +316,22 @@ function MeetSparkline({
             vectorEffect="non-scaling-stroke"
           />
         )}
-        <polyline
-          className="meet-sparkline-line"
-          points={path.join(" ")}
-          stroke={color}
-          vectorEffect="non-scaling-stroke"
-        />
+        {segments.map((seg, k) => (
+          <polyline
+            key={k}
+            className="meet-sparkline-line"
+            points={seg.join(" ")}
+            stroke={color}
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
         {drawn.map((d, idx) => (
           <circle
             key={d.i}
             cx={x(d.i)}
             cy={y(d.v)}
             // 前走だけ大きくする（「今どこにいるか」が一番知りたい点）
-            r={idx === lastIndex ? 3.2 : 2}
+            r={markLast && idx === lastIndex ? 3.2 : 2}
             fill={color}
             vectorEffect="non-scaling-stroke"
           />
@@ -242,6 +350,34 @@ function MeetSparkline({
           />
         )}
       </svg>
+      {pointLabels && (
+        // 点の下の文字は HTML で置く。SVG は横に引き伸ばす（preserveAspectRatio none）
+        // ので、SVG の text にすると文字が横に潰れる。横位置は点と同じ割合で合わせる
+        // 走数が多い（10走以上）と375pxで数字の間隔が10px前後まで詰まる。字を
+        // 小さくして、全角の記号（落・欠など）どうしが接しないようにする（BOA-537）
+        <div className="meet-sparkline-labels" aria-hidden="true">
+          {pointLabels.map((lab, i) =>
+            lab === null || lab === undefined ? null : (
+              <span
+                key={i}
+                className={[
+                  "meet-sparkline-label",
+                  lab.win ? "is-win" : "",
+                  lab.mark ? "is-mark" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                style={{
+                  left: `${((x(i) / W) * 100).toFixed(2)}%`,
+                  ...(labelFontPx ? { fontSize: `${labelFontPx}px` } : {}),
+                }}
+              >
+                {lab.text}
+              </span>
+            ),
+          )}
+        </div>
+      )}
       {activeLabel && (
         <span
           className={`meet-sparkline-tip x-${tipX} at-${tipSide}`}

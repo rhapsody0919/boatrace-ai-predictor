@@ -234,6 +234,11 @@ thead tr:last-child:not(:first-child) .drt-label-th {
   color: var(--text-secondary);
 }
 
+/* 「5コース」「今節初戦」を語の途中で折らない（375pxで「5コー／ス」になっていた） */
+.drt-nowrap {
+  white-space: nowrap;
+}
+
 /* 小標本（n<6）の視覚的区別（BOA-304、RaceBasicInfoTabのis-small-sampleと
    同じ配色規約: RaceBasicInfoTab.css参照） */
 .drt-n-small-sample {
@@ -259,6 +264,12 @@ thead tr:last-child:not(:first-child) .drt-label-th {
 }
 
 /* 部品交換・プロペラ交換バッジ（BOA-304、直前情報タブ用） */
+/* 部品名（「シャフト」等）は語の途中で折らない。折り返しは「・」の後だけ */
+.drt-part {
+  display: inline-block;
+  white-space: nowrap;
+}
+
 .drt-parts-changed {
   flex-direction: row;
   flex-wrap: wrap;
@@ -351,5 +362,16 @@ thead tr:last-child:not(:first-child) .drt-label-th {
 
   .drt-label-short {
     display: inline;
+  }
+}
+
+/* 名前は姓・名の塊で持つ。PCでは続けて1行に並べ、スマホでは2行に分ける（BOA-612） */
+.drt-name-part {
+  display: inline;
+}
+
+@media (max-width: 480px) {
+  .drt-name-part {
+    display: block;
   }
 }

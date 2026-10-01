@@ -11,7 +11,7 @@
   `src/services/supabaseDataService.js`の`getTopStartStats`/`getExhibitionTimeTopStats`が返すレスポンスに、`getWinningTechniqueStats`/`getLosingTechniqueStats`と同じ形で`last_updated`をトップレベルに正規化する。DBスキーマ変更なし、アプリ層のみ。
 
 - [x] **3. useVenueTendencyStats フック実装**
-  `src/hooks/useVenueTendencyStats.js`を新規作成（ADR-0024）。`venueCode`を引数に、`getWinningTechniqueStats`/`getTopStartStats`/`getLosingTechniqueStats`/`getExhibitionTimeTopStats`を`Promise.all`で並列取得し、各データソース・`last_updated`・ローディング状態を返す。
+  `src/hooks/useVenueTendencyStats.js`を新規作成（ADR-0050）。`venueCode`を引数に、`getWinningTechniqueStats`/`getTopStartStats`/`getLosingTechniqueStats`/`getExhibitionTimeTopStats`を`Promise.all`で並列取得し、各データソース・`last_updated`・ローディング状態を返す。
 
 - [x] **4. i18nキー追加（会場パネル用）**
   `src/locales/{ja,en,zh-TW,ko}/common.json`に`venueTendency`名前空間を追加。行ラベル（決まり手/トップ発走率/負け決まり手/展示最速転換率）、「選手個人の実績ではなく〜」の注記文言、「データ不足」表示文言、集計基準日の文言を定義する。
@@ -26,7 +26,7 @@
   `src/components/race/EmbeddedAnalysisSection.jsx`＋`.css`を新規作成（ヘッダ+アイコン+タイトル+chevron、デフォルト`expanded=false`、`expanded`時のみchildrenをマウントするlazy mount）。7セクション分のタイトルi18nキー（`embeddedSection.motor`等）を4言語分`common.json`に追加する。
 
 - [x] **8. MotorConditionChartのembedded対応＋統合（FR-3）**
-  `src/components/analysis/MotorConditionChart.jsx`に`embedded`prop（ADR-0023）を追加し、`embedded=true`時は会場・レース選択プルダウンを非表示にする。`PredictionPanel.jsx`に`EmbeddedAnalysisSection`でラップした本コンポーネントを追加し、embedded modeの改修・統合パターンをここで確立する。
+  `src/components/analysis/MotorConditionChart.jsx`に`embedded`prop（ADR-0048）を追加し、`embedded=true`時は会場・レース選択プルダウンを非表示にする。`PredictionPanel.jsx`に`EmbeddedAnalysisSection`でラップした本コンポーネントを追加し、embedded modeの改修・統合パターンをここで確立する。
 
 - [x] **9. RacerFormChartのembedded対応＋統合（FR-4）**
   `src/components/analysis/RacerFormChart.jsx`に同様の`embedded`propを追加し、`PredictionPanel.jsx`に統合する。

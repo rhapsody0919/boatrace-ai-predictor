@@ -259,7 +259,8 @@ function buildMatchedRows({ raceResults, predictions, distMap, topN }) {
         `${p.first_boat}-${p.second_boat}-${p.third_boat}` === actualPattern,
     );
     const distInvestment = topNPatterns.length * 100;
-    const distPayout = distHit ? race.payout_trifecta || 0 : 0;
+    // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+    const distPayout = distHit ? race.payout_trio || 0 : 0;
 
     // モデル別の合議結果
     for (const modelId of modelIds) {
@@ -270,7 +271,7 @@ function buildMatchedRows({ raceResults, predictions, distMap, topN }) {
 
       const aiPattern = `${pred.top_pick}-${pred.top_2nd}-${pred.top_3rd}`;
       const aiHit = aiPattern === actualPattern;
-      const aiPayout = pred.payout_trifecta || 0;
+      const aiPayout = pred.payout_trio || 0;
       const aiInDist = topNPatterns.some(
         (p) => `${p.first_boat}-${p.second_boat}-${p.third_boat}` === aiPattern,
       );

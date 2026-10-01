@@ -80,6 +80,7 @@ const ADMIN_PATHS = [
   "/admin/sns-hub",
   "/admin/sns-hub/insights",
   "/api/admin/sns-hub/trigger-weekly-proposer",
+  "/api/admin/rules/performance",
 ];
 
 console.log("[1] 管理画面の認証");

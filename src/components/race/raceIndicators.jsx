@@ -5,8 +5,13 @@
  * ロード中の未取得セルはソース別pendingに基づきスケルトン表示する
  * （プログレッシブ表示: 取得できた行から順次値が入る）
  */
+import { Fragment } from "react";
 import { Link } from "react-router-dom";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
+import {
+  meetPrevRunState,
+  meetPrevRunWhenParams,
+} from "../../utils/prevResult";
 
 export const TECHNIQUE_KEY_BY_NAME = Object.fromEntries(
   Object.entries(TECHNIQUE_NAMES).map(([key, name]) => [name, key]),
@@ -145,6 +150,8 @@ function buildRowDefs({
   motorDeepLink = null,
   originalExhibition = null,
   entryWeights = null,
+  // 級別の後ろに付けるバッジ（F・L数、BOA-638）。(p) => ReactNode。一覧カードの出走表は渡さない
+  gradeBadge = null,
 }) {
   const {
     motor,
@@ -155,6 +162,7 @@ function buildRowDefs({
     techniqueProfile,
     returnRate,
     racerStats,
+    meetPrevRun,
   } = analysis;
 
   const motorByBoat = byBoat(motor);
@@ -165,6 +173,7 @@ function buildRowDefs({
   const techByBoat = byBoat(techniqueProfile);
   const rateByBoat = byBoat(returnRate);
   const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
+  const meetPrevByBoat = byBoat(meetPrevRun);
 
   // ソース別プレースホルダ: ロード中はスケルトン、取得済みでデータ無しは「—」
   const ph = (source) =>
@@ -236,7 +245,10 @@ function buildRowDefs({
       best: bestOf(cand.winRate),
       render: (p) => (
         <span className="drt-value">
-          <span className="drt-grade">{p.grade}</span>
+          <span className="drt-grade">
+            {p.grade}
+            {gradeBadge?.(p)}
+          </span>
           {toNumber(p.winRate)?.toFixed(2) ?? "—"}
         </span>
       ),
@@ -516,7 +528,22 @@ function buildRowDefs({
         return (
           <span className="drt-value drt-parts-changed">
             {parts && parts.length > 0 && (
-              <span className="drt-badge">{parts.join("・")}</span>
+              <span className="drt-badge">
+                {/* 部品名ごとに塊にし、折り返しは「・」の後と「×２」の前だけにする。
+                    1つの文字列だとスマホで「シャフ／ト」と語の途中で折れた
+                    （BOA-612 ファン評価3周目）。「リング×２」を1つの塊にすると
+                    62px あり、320px の列（約44px）に入らない */}
+                {parts.map((part, i) => (
+                  <Fragment key={part}>
+                    {part.split(/(?=×)/).map((chunk) => (
+                      <span key={chunk} className="drt-part">
+                        {chunk}
+                      </span>
+                    ))}
+                    {i < parts.length - 1 && "・"}
+                  </Fragment>
+                ))}
+              </span>
             )}
             {propellerChanged && (
               <span className="drt-badge">
@@ -528,7 +555,8 @@ function buildRowDefs({
       },
     },
     {
-      // 前走成績（今節内の直近レースの着順・進入コース）は事実の記録であり、
+      // 今節の前走（同じ会場・同じ節で、このレースより前の最後の走の着順・進入コース。
+      // prevResult.js 参照。BOA-610 で「本日の前走」から変えた）は事実の記録であり、
       // bestは持たせない（BOA-289、tilt/adjustmentWeightと同じ扱い）
       key: "prevResult",
       label: t("dataTable.rowPrevResult"),
@@ -536,22 +564,54 @@ function buildRowDefs({
       tab: null,
       best: null,
       render: (p) => {
-        const row = maintenanceByBoat.get(p.number);
-        if (!row) return ph("motorMaintenance");
-        const rank = toNumber(row.prev_finish_rank);
-        if (rank === null) {
+        const row = meetPrevByBoat.get(p.number);
+        if (!row) return ph("meetPrevRun");
+        const state = meetPrevRunState(row);
+        if (state.kind === "firstOfMeet") {
           return (
-            <span className="drt-sub">{t("dataTable.prevResultNoRace")}</span>
+            // 375px で「今節初／戦」と語の途中で折れない（BOA-610 ファン評価3周目）
+            <span className="drt-sub drt-nowrap">
+              {t("dataTable.meetFirstRace")}
+            </span>
           );
         }
-        const course = toNumber(row.prev_entry_course);
+        if (state.kind === "unknown") return "—";
+        const when = meetPrevRunWhenParams(state.raceId);
+        if (state.kind === "pending") {
+          return (
+            <span className="drt-value">
+              <span className="drt-sub drt-nowrap">
+                {t("dataTable.prevResultPending")}
+              </span>
+              {when && (
+                <span className="drt-sub drt-nowrap">
+                  {t("dataTable.prevResultWhen", when)}
+                </span>
+              )}
+            </span>
+          );
+        }
         return (
           <span className="drt-value">
-            {t("review.finishPosition", { position: rank })}
-            {course !== null && (
-              <span className="drt-sub">
+            {state.kind === "rank" ? (
+              t("review.finishPosition", { position: state.rank })
+            ) : state.markKey ? (
+              // 記号は言語ごとの短い表記で出し、意味は title で補う
+              <abbr title={t(`result.mark.${state.markKey}`)}>
+                {t(`dataTable.prevMark.${state.markKey}`)}
+              </abbr>
+            ) : (
+              state.mark
+            )}
+            {state.course !== null && (
+              <span className="drt-sub drt-nowrap">
                 {" "}
-                {t("dataTable.prevResultCourse", { course })}
+                {t("dataTable.prevResultCourse", { course: state.course })}
+              </span>
+            )}
+            {when && (
+              <span className="drt-sub drt-nowrap">
+                {t("dataTable.prevResultWhen", when)}
               </span>
             )}
           </span>
@@ -715,7 +775,10 @@ export function buildExhibitionCourseRow({
             ? "beforeInfo.exhibitionCourseMovedOut"
             : null;
       return (
-        <span className="drt-value drt-entry-course" data-testid="exhibition-course">
+        <span
+          className="drt-value drt-entry-course"
+          data-testid="exhibition-course"
+        >
           {t("dataTable.prevResultCourse", { course })}
           {movedKey && (
             <span className="drt-sub drt-entry-moved-label">{t(movedKey)}</span>

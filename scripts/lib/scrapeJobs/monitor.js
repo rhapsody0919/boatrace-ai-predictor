@@ -61,6 +61,11 @@ export const THRESHOLDS = Object.freeze({
   windowRateMinSamples: 20,
   /** last_tick_at がこの分数以上更新されていなければ、死活の異常（5分に1回しか書かないため、書き込み2回分） */
   livenessStaleMin: 10,
+  /**
+   * 10分ごとに起動する常駐型（kind: continuous。race_notices・race_status）の死活の閾値（BOA-373）。
+   * last_tick_at は起動のたびに書かれるが、5分未満の間隔では書かないため、起動2回分（20分）＋余裕5分
+   */
+  continuousLivenessStaleMin: 25,
   /** 運用窓の開始から、この分数が過ぎてから死活を判定する（開始直後の最初のtickを待つ） */
   livenessStartGraceMin: 10,
   consecutiveFailures: 3,
@@ -84,13 +89,16 @@ const ONCE_KEY_PREFIXES = ["expired:", "unexecuted:"];
 const isActiveMode = (mode) => mode === "shadow" || mode === "live";
 const isHostRow = (row) => String(row.job).startsWith("host:");
 
-/** 死活を判定してよい時刻か（運用窓の開始から livenessStartGraceMin 経過後〜23:59） */
-export function livenessCheckable(now) {
+/**
+ * 死活を判定してよい時刻か（運用窓の開始から graceMin 経過後〜23:59）。
+ * 常駐型（10分ごと）は、日中と同じく起動2回分の欠落までを許すよう、graceMin に閾値（25分）を渡す（BOA-373）
+ */
+export function livenessCheckable(
+  now,
+  graceMin = THRESHOLDS.livenessStartGraceMin,
+) {
   const m = jstMinutesOfDay(now);
-  return (
-    m >= OPERATING_START_MIN + THRESHOLDS.livenessStartGraceMin &&
-    m < OPERATING_END_MIN
-  );
+  return m >= OPERATING_START_MIN + graceMin && m < OPERATING_END_MIN;
 }
 
 const minutesBetween = (later, earlier) =>
@@ -388,6 +396,17 @@ export function evaluateDetectionLag(lag, date) {
   return alerts;
 }
 
+/**
+ * 自分の Cron を持たず、他のジョブの成功フックで動くジョブ（registry には無い）。連続失敗・0件エラー・
+ * ジョブ自身の通知だけを見る（起動は親のジョブに依存するため、死活は見ない）。
+ *   prediction_odds  買い目オッズ（A4）。odds（A3）の成功フックで race_odds から導出する
+ *                    （predictionOddsHandlers.js の PREDICTION_ODDS_JOB。GitHub Actions 側の A4 は A3 を肩代わり
+ *                    するときしか動かないため、導出の失敗を、ここで通知しないと誰も気づかない。BOA-645）
+ */
+export const HOOK_JOBS = Object.freeze({
+  prediction_odds: Object.freeze({ kind: "hook" }),
+});
+
 /** 死活・連続失敗・ブレーカー・日次の期限超過 */
 export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
   /** @type {Alert[]} */
@@ -403,7 +422,7 @@ export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
       }
       continue;
     }
-    const def = registry[row.job];
+    const def = registry[row.job] ?? HOOK_JOBS[row.job];
     if (!def) continue;
     // 監視・保守のジョブは mode のゲートを掛けない（常に有効）。それ以外は shadow・live のみ
     const active = def.kind === "monitor" || isActiveMode(row.mode);
@@ -428,10 +447,20 @@ export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
       });
     }
 
-    // 死活: 毎分起動する窓型と、5分ごとの監視（自分自身の鮮度は、メタ監視が見る）
-    if (def.kind === "window" && livenessCheckable(now)) {
+    // 死活: 毎分起動する窓型と、10分ごとの常駐型（自分自身の鮮度は、メタ監視が見る）
+    const staleMin =
+      def.kind === "window"
+        ? THRESHOLDS.livenessStaleMin
+        : def.kind === "continuous"
+          ? THRESHOLDS.continuousLivenessStaleMin
+          : null;
+    const graceMin =
+      def.kind === "continuous"
+        ? THRESHOLDS.continuousLivenessStaleMin
+        : THRESHOLDS.livenessStartGraceMin;
+    if (staleMin !== null && livenessCheckable(now, graceMin)) {
       const last = row.last_tick_at ? new Date(row.last_tick_at) : null;
-      if (!last || minutesBetween(now, last) >= THRESHOLDS.livenessStaleMin) {
+      if (!last || minutesBetween(now, last) >= staleMin) {
         alerts.push({
           key: `liveness:${row.job}`,
           kind: "liveness",

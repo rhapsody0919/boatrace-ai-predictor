@@ -1,0 +1,33 @@
+/* 会場カードの折りたたみ（BOA-546）。見出しの行全体をタップ領域にし、右端に開閉の印を出す */
+.collapsible-section__summary {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  cursor: pointer;
+  list-style: none;
+}
+
+.collapsible-section__summary::-webkit-details-marker {
+  display: none;
+}
+
+.collapsible-section__summary::after {
+  content: "▸";
+  margin-left: auto;
+  color: var(--text-secondary);
+  flex: none;
+}
+
+.collapsible-section[open] > .collapsible-section__summary::after {
+  content: "▾";
+}
+
+.collapsible-section__summary:focus-visible {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.collapsible-section__body {
+  margin-top: var(--spacing-3);
+}

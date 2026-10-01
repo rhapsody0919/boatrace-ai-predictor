@@ -20,9 +20,21 @@
       "guards": "api/admin/ 配下の全ハンドラが関数自身でBasic認証をかけること（middleware はエンコードしたパスで迂回できる。2026-09-29 本番で認証なし200を確認）。ハンドラはファイル一覧から自動列挙し、認証なし・誤認証・env未設定で401かつ外部呼び出し0回、':'入りパスワードを最初の':'で分割すること"
     },
     {
+      "script": "verify-admin-rule-performance.js",
+      "tier": "manual",
+      "guards": "管理画面 /admin/rules の運用成績（BOA-567）。RPC get_admin_rule_performance（またはその本体SQL）＋画面側の整形が、旧実装（画面で全件ページングして集計。分岐元コミットから取り出して実行）と全値（全体・ルール別34件・週別）一致すること。ルールのデータ化（src/config/venueRules.js の ruleMatches）が旧クロージャと、合成データ・実データの全予想でマッチ集合一致すること",
+      "reason": "実Supabaseの predictions・race_results を読み、本番のRPCを service key で呼ぶため。旧実装をリポジトリの履歴から取り出すため、浅いクローンのCIでは動かない",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-admin-rule-performance.js --rules --rpc"
+    },
+    {
       "script": "verify-adr-numbers.js",
       "tier": "ci",
       "guards": "docs/adr/ のADR番号の重複（並行セッションで繰り返し発生）"
+    },
+    {
+      "script": "verify-adr-references.js",
+      "tier": "ci",
+      "guards": "ADRへの参照の実在（BOA-572）。git管理下のファイル中の adr/NNNN-xxx.md（docs/adr/ 内の相対リンクを含む）がファイル名まで実在すること、ADR-NNNN / ADR NNNN / ADRNNNN の番号が存在すること。確かめない範囲: 番号が実在する別件のADRを指す誤り（0050のつもりで0024と書いた等）は検出できない。番号の後に付けたADRタイトルとの食い違いも見ない。対象外: docs/archive/（書かれた時点のまま凍結した過去資料）、data/（出力データ）"
     },
     {
       "script": "verify-agent-definitions.js",
@@ -43,6 +55,11 @@
       "script": "verify-content-index-coverage.js",
       "tier": "ci",
       "guards": "docs/design/{slug}/content-index.json の形式（フローA-2のトレーサビリティ索引）"
+    },
+    {
+      "script": "verify-css-class-collisions.js",
+      "tier": "ci",
+      "guards": "src/ の別々の CSS ファイルが同じクラス名をスコープせずに（同じ詳細度で）定義すること。Vite が全ページの CSS を1つに結合するため、バンドル順で他ページの見た目が壊れる（BOA-206・207・539。#961 はホームの会場グリッドが PC 幅で 8〜16 列になった）。既存の衝突は css-class-collisions-allowlist.json に載せ、新規の衝突と解消済みの許可リストの残骸で失敗する。#961 の修正前の CSS を検出できることを自己テストで毎回確かめる"
     },
     {
       "script": "verify-course-entry-tendency.js",
@@ -92,6 +109,11 @@
       "guards": "画面側の純関数（basicInfoStats / raceStatus / courseGridStats / venueDayTrend / weatherInfo）の、過去に fix が入った箇所の回帰と変異検証（BOA-255）"
     },
     {
+      "script": "verify-race-outcome.js",
+      "tier": "ci",
+      "guards": "不成立・返還の判定関数（src/utils/raceOutcome.js）の回帰と変異検証、画面側が展開予測の的中を rank1 の直接比較・旧フラグ isNoRace で判定していないこと（BOA-543）"
+    },
+    {
       "script": "verify-gha-skip-gate.js",
       "tier": "ci",
       "guards": "フェイルセーフ付きSKIP（scripts/lib/ghaSkipGate.js）と日次ワークフローの配線"
@@ -107,6 +129,11 @@
       "guards": "K/Bアーカイブによる race_results 欠損補填CLI（BOA-403）"
     },
     {
+      "script": "verify-ko-boat-counter.js",
+      "tier": "ci",
+      "guards": "ko の「N号艇」が「N번 보트」にそろっていること（src/locales/ko・src/pages/Ko*.jsx・src/data/blogPostsKo.js に「호정」「번 정」「번정」が無い。BOA-615）"
+    },
+    {
       "script": "verify-migration-numbers.js",
       "tier": "ci",
       "args": [
@@ -114,6 +141,11 @@
       ],
       "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
       "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
+    },
+    {
+      "script": "verify-function-grants-migration.js",
+      "tier": "ci",
+      "guards": "マイグレーション112（関数・シーケンスの匿名権限の剥奪と既定権限の是正、BOA-575）をPGlite上で実際に適用して検証。画面が呼ぶ7本のRPCが残ること・トリガーが発火し続けること"
     },
     {
       "script": "verify-migration-rls.js",
@@ -126,11 +158,21 @@
       "guards": "会場単位の「節の初日」の判定（src/utils/meetGrouping.js の findMeetStartDate）。中1日の開催休みで前の節が丸ごと混ざると、節内順位・出場人数・準優の目安・必要得点が前の節の値になる（BOA-491/BOA-508）"
     },
     {
+      "script": "verify-meet-before-race.js",
+      "tier": "ci",
+      "guards": "直前情報タブ「今節展示情報」・今節タブの今節の切り出し（src/utils/meetGrouping.js の groupIntoMeetBeforeRace）。会場で絞らないと別会場の同じモーター番号の節が、表示中レースを目印にしないと節の初戦で前の節が「今節」として混ざる（BOA-591）"
+    },
+    {
       "script": "verify-meet-grouping.js",
       "tier": "manual",
       "guards": "節推定（src/utils/meetGrouping.js、race_idの日付連続性）がrace_conditions.series_dayと一致し続けること。選手単位の一致率と、推定が誤りうる会場境界に前後どちらの節にも出走した選手が現れないこと（BOA-491の同型が選手単位でも起きていないかの監視）",
       "reason": "実Supabaseの全期間データ（race_conditions・race_entries）を読むためCIでは決定的にならない。斡旋・中止順延の運用が変わったときに崩れる性質を見るので、日々のデータ投入結果に依存する",
       "command": "node --env-file=.env.local scripts/maintenance/verify-meet-grouping.js"
+    },
+    {
+      "script": "verify-ml-actual-course.js",
+      "tier": "ci",
+      "guards": "ML学習データの actual_course が枠番でなく実際の進入コース（entry_course → actual_course_<艇番> → null）であること（BOA-631）"
     },
     {
       "script": "verify-monthly-schedule.js",
@@ -171,6 +213,12 @@
       "script": "verify-motor-pretest.js",
       "tier": "ci",
       "guards": "前検タイム・前検順位・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）"
+    },
+    {
+      "script": "verify-no-undef.js",
+      "tier": "ci",
+      "timeoutSec": 300,
+      "guards": "src・api・middleware.js・scripts・e2e・ルートの *.config.js・*.mjs に未定義の名前の参照（ESLint の no-undef）が無いこと。他のルールの既存違反では落とさない。#999 と #1002 の組み合わせで master の supabaseDataService.js が import の無い groupIntoCurrentMeet を呼び、本番で今節Fの印が全レースで消えた（2026-10-01、#1020 で修正、ADR-0079）。vite build はこの型を通す。#1020 直前の壊れていた版を検出できることと、src/ に Node のグローバルが付いていないことを自己テストで毎回確かめる。構文エラー・設定の当たらないファイルで検査が素通りするのも失敗にする。master への push 後にも post-merge-checks.yml が実行し、失敗を Slack に流す"
     },
     {
       "script": "verify-final-odds-job.js",
@@ -264,6 +312,11 @@
       "guards": "選手プロフィール・期別成績ジョブ（scripts/lib/racerProfileSync.js）"
     },
     {
+      "script": "verify-racer-st-stats.js",
+      "tier": "ci",
+      "guards": "選手の平均ST・直近30走・ST標準偏差（scripts/lib/racerStStats.js、BOA-581）: 1000行上限での取りこぼし・Fの除外・直近30走の並び・取得エラーの例外化"
+    },
+    {
       "script": "verify-rls-migration.js",
       "tier": "ci",
       "guards": "マイグレーション076（RLS無効テーブルの匿名書き込みの是正、BOA-370）をPGlite上で実際に適用して検証"
@@ -329,6 +382,11 @@
       "guards": "AppRouter.jsx の静的ルートと generate-sitemap.js の staticPages の突き合わせ（sitemap登録漏れ）"
     },
     {
+      "script": "verify-sitemap-lastmod.js",
+      "tier": "ci",
+      "guards": "sitemap.xml の lastmod を実際の更新日（記事の md の最終コミット日・開催日）から取ること。生成日や mtime に戻ると、Google が lastmod を再クロールの合図として使わなくなる（BOA-599）。あわせて、言語版の組（hreflang）を xhtml:link で出すこと（BOA-560）"
+    },
+    {
       "script": "verify-unchanged-rows.js",
       "tier": "ci",
       "guards": "「変更の無い行は書かない」比較ロジック（scripts/lib/unchangedRows.js、BOA-349）と、バルクupsertのpayload列そろえ（キーの集合が違う行を混ぜると、持たない行にNULLが書かれる。2026-09-27にrace_entriesのbranch・hometownを1,729行消した）"
@@ -349,6 +407,11 @@
       "guards": "会場別モーター成績パーサー（BOA-264）"
     },
     {
+      "script": "verify-venue-series-title.js",
+      "tier": "ci",
+      "guards": "会場ページの title に節タイトルを入れる判定（SG・G1のみ、先頭レースの値、NFKC）。崩れると一般戦の title が長くなるか、SG開催週の検索需要を取り逃す"
+    },
+    {
       "script": "verify-weather-parsing.js",
       "tier": "ci",
       "guards": "水面気象情報の解析と race_conditions への反映（BOA-358）"
@@ -359,6 +422,11 @@
       "runner": "bash",
       "guards": "push-with-retry.sh のrebase＋リトライ・コンフリクト時の失敗・force push不使用（BOA-360）",
       "note": "使い捨てのbareリポジトリとクローンだけを使い、本リポジトリには触れない。2026-09-25時点でレジストリ導入まで未登録・CI未接続だった"
+    },
+    {
+      "script": "verify-relative-imports.js",
+      "tier": "ci",
+      "guards": "scripts/・api/ の相対 import の参照先が実在すること（移動したスクリプトの ./lib/ の取り残し。CIで走らない手動スクリプトの壊れに気づけない。BOA-536）"
     },
     {
       "script": "verify-rpc-key-regression.js",
@@ -407,9 +475,19 @@
       "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
     },
     {
+      "script": "verify-jsx-japanese.js",
+      "tier": "ci",
+      "guards": "翻訳対象のページ（/・/race・/venue・/guide・/venues・/winning-technique と共通の枠）に、t() を通らない日本語が新しく直書きされること。既存分は jsx-japanese-baseline.json に所属チケット付きで固定（BOA-653〜656）"
+    },
+    {
       "script": "verify-lib-index.js",
       "tier": "ci",
       "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）の抽出ロジックと、生成が成功すること。最新性はmasterへのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078）"
+    },
+    {
+      "script": "verify-ga4-measurement-breaks.js",
+      "tier": "ci",
+      "guards": "GA4 の計測の切れ目（2026-09-29 の page_view 修正）をまたぐ期間の判定と注記（scripts/lib/ga4MeasurementBreaks.js）。崩れると計測修正による PV の増減を需要の変化と誤読する"
     },
     {
       "script": "verify-generated-docs-not-in-pr.js",
@@ -422,7 +500,12 @@
     {
       "script": "verify-e2e-har-merge.js",
       "tier": "ci",
-      "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、素通し一覧の集計（ADR-0077）"
+      "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、定期実行の起動時刻（1日4回・0分回避・打ち切り前）と直列化・通知の1日1回化、素通し一覧の集計（ADR-0077）"
+    },
+    {
+      "script": "verify-e2e-no-unroute.js",
+      "tier": "ci",
+      "guards": "E2Eで page のルートを途中で0件にする書き方（.unroute(・.unrouteAll(・第3引数に times のある、または第3引数がオブジェクトリテラルでない .route(）が e2e/**/*.js に入らないこと。0件になった瞬間の処理中の要求が context 側（録画の再生）へ送り直され「Route is already handled!」で落ちる（BOA-466・BOA-661、ADR-0077 決定4）。正当な例外は e2e-no-unroute-allowlist.json に理由つきで載せ、理由の無いエントリと解消済みのエントリで失敗する。#1084 修正前の書き方を検出できることを自己テストで毎回確かめる"
     },
     {
       "script": "verify-e2e-recorded-network.js",
@@ -510,6 +593,16 @@
       "script": "verify-middleware-routing.js",
       "tier": "ci",
       "guards": "middleware.js の管理画面Basic認証（/admin/rules・/admin/sns-hub は認証なしで401、一般ページは素通り、環境変数が未設定・空なら拒否、':'入りパスワードは最初の':'で分割、UTF-8で復号、壊れたbase64で例外を出さず401。判定は api/_lib/adminAuth.js の requireAdminAuth と共有）と、AIスナップショット配信の経路（resolveSnapshotPath が返すパスが config.matcher に一致し、管理画面がスナップショットに振り分けられないこと）。BOA-555で /admin/rules が本番で認証なしに開けていた"
+    },
+    {
+      "script": "verify-pit-report-backfill.js",
+      "tier": "ci",
+      "guards": "ピットレポートの取り直し（backfill-pit-reports.js）が、行の無いレースと、コメントが出走表の艇数に満たないレースだけを選び、not_target・全艇そろったレース・対象外のグレードを取り直さないこと。前後のコメント数の集計（BOA-611。取得ジョブが公開直後の1回しか取らず、9/21〜10/1 の57レースでコメントが欠けていた）"
+    },
+    {
+      "script": "verify-aggregate-racer-stats.js",
+      "tier": "ci",
+      "guards": "選手別の日次集計（aggregate-racer-stats.js）が取得エラーを握りつぶさず、変わった行だけ書き、1日1回だけ起動する（BOA-600）"
     }
   ]
 }

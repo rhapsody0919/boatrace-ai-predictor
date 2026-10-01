@@ -10,7 +10,7 @@
  * 買い方の定義（このスクリプトが評価するベッティング戦略）:
  *   各レース・各モデルについて、AI が推す3連単 1点 を 100円 で買う。
  *   ただし「その3連単パターンが当該会場の出目分布 TopN に含まれるレースのみ」購入。
- *   的中時の払戻は predictions.payout_trifecta（DB トリガーが格納した実配当）。
+ *   的中時の払戻は predictions.payout_trio（DB トリガーが格納した実配当）。
  *
  * 使い方:
  *   node scripts/analysis/ai-intersect-analysis.js [--period 30] [--top-n 5] [--format json,csv]
@@ -107,7 +107,8 @@ async function fetchRaceResults(periodDays) {
   const fromDate = getDateNDaysAgoJST(periodDays);
   const data = await fetchAll(
     "race_results",
-    "race_id, rank1, rank2, rank3, payout_trifecta",
+    // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+    "race_id, rank1, rank2, rank3, payout_trio",
     (q) =>
       q
         .eq("is_cancelled", false)
@@ -132,7 +133,7 @@ async function fetchPredictions(periodDays) {
   const fromDate = getDateNDaysAgoJST(periodDays);
   return fetchAll(
     "predictions",
-    "race_id, model_id, top_pick, top_2nd, top_3rd, is_hit_trifecta, payout_trifecta",
+    "race_id, model_id, top_pick, top_2nd, top_3rd, is_hit_trio, payout_trio",
     (q) =>
       q
         .eq("is_shadow", false)
@@ -161,7 +162,7 @@ function analyzeModel({ modelId, predictions, resultMap, distMap, topN }) {
     const aiPattern = `${pred.top_pick}-${pred.top_2nd}-${pred.top_3rd}`;
     const actualPattern = `${race.rank1}-${race.rank2}-${race.rank3}`;
     const aiHit = aiPattern === actualPattern;
-    const aiPayout = pred.payout_trifecta || 0;
+    const aiPayout = pred.payout_trio || 0;
 
     if (aiHit) aiHitsAll++;
     aiPayoutAll += aiPayout;
@@ -367,7 +368,7 @@ async function main() {
     approximation_note:
       "outcome_distribution は現スナップショットのみ。本評価は現分布を全期間に適用する近似値。",
     betting_strategy:
-      "AI予測の3連単(top_pick-top_2nd-top_3rd)を1点100円で買う。分布TopN内のレースのみ購入。的中払戻は predictions.payout_trifecta。",
+      "AI予測の3連単(top_pick-top_2nd-top_3rd)を1点100円で買う。分布TopN内のレースのみ購入。的中払戻は predictions.payout_trio。",
     models: results,
   };
 

@@ -27,6 +27,9 @@
  * RPCエラー等。get_today_races は「今日(JST)」の開催が無いと検証できないため、
  * その場合は警告を出して未検証のまま終了する（失敗にはしない）。
  */
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { supabase } from "../lib/supabaseClient.js";
 
 // get_predictions_by_date / _light のレース要素が持つべきキー
@@ -139,9 +142,48 @@ const PREDICTION_NESTED_CHECKS = [
       "popularityWide1",
       "popularityWide2",
       "popularityWide3",
+      // 109（BOA-543）のキーは下の MIGRATION_109_RESULT_KEYS（適用状況で扱いを変える）
     ],
   },
 ];
+
+// 109（BOA-543）: result のレースの成立状態・返還艇・備考・払戻明細。値が null（未判定・明細なし）でも
+// キーは出る。コードは 109 の適用前にマージしてよい設計（未適用の間は画面が従来どおり）なので、
+// 台帳（docs/db-migration/APPLIED.md）で 109 が「適用済み」になるまでは、欠落を失敗にせず WARN にする
+// （nightly-verify-db が適用待ちの既知の欠落で毎晩失敗し、本物の回帰の通知を埋もれさせないため）。
+// 適用済みになった後は、他のキーと同じく欠落を失敗にする
+const MIGRATION_109_RESULT_KEYS = [
+  "raceStatus",
+  "refundBoats",
+  "remark",
+  "payoutRows",
+];
+
+/**
+ * 台帳でそのマイグレーションが「適用済み」か（行の3列目）。台帳が読めなければ適用済みとみなす
+ * （厳しい側に倒す）。コードを先にマージしてよい設計のマイグレーション（109・110）で、適用待ちの
+ * 既知の欠落を失敗にしないために使う
+ * @param {number} number
+ */
+function isMigrationApplied(number) {
+  try {
+    const ledger = readFileSync(
+      path.join(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "../../docs/db-migration/APPLIED.md",
+      ),
+      "utf8",
+    );
+    const row = ledger
+      .split("\n")
+      .find((line) => new RegExp(`^\\|\\s*${number}\\s*\\|`).test(line));
+    if (!row) return true;
+    const status = row.split("|")[3] ?? "";
+    return status.includes("適用済み");
+  } catch {
+    return true;
+  }
+}
 
 // get_today_races の data[].races[] 要素が持つべきキー（weather は元々含めない仕様）
 const TODAY_RACE_KEYS = [
@@ -154,6 +196,10 @@ const TODAY_RACE_KEYS = [
   "raceStage",
   "cancellationStatus",
 ];
+
+// 110（BOA-542）: 着順つきの結果の有無（{rank1} / null）。109 と同じく、台帳で 110 が「適用済み」に
+// なるまでは欠落を WARN にとどめ、適用済みになった後は失敗にする
+const MIGRATION_110_TODAY_RACE_KEYS = ["result"];
 
 /**
  * 要素配列のうち、期待キーを持たない要素の件数をキーごとに数える。
@@ -249,6 +295,8 @@ async function main() {
   );
 
   let failed = false;
+  const migration109Applied = isMigrationApplied(109);
+  const migration110Applied = isMigrationApplied(110);
   // weather は「気象が非nullのレースが無い日」だと検査対象が空になる。他の入れ子（SKIP）と違い、
   // 070（observedAt）の検証そのものなので、黙って OK にせず、最後の出力で未検証を明示する
   let weatherUnverified = false;
@@ -279,7 +327,19 @@ async function main() {
         }
         continue;
       }
-      failed = reportGroup(path, items, keys) || failed;
+      const expected =
+        path === "result" && migration109Applied
+          ? [...keys, ...MIGRATION_109_RESULT_KEYS]
+          : keys;
+      failed = reportGroup(path, items, expected) || failed;
+      if (path === "result" && !migration109Applied) {
+        const missing109 = findMissingKeys(items, MIGRATION_109_RESULT_KEYS);
+        console.log(
+          missing109.length === 0
+            ? "  [WARN] result: 109 の4キーは出ているが、台帳（APPLIED.md）の109が「適用済み」になっていない。台帳を更新する"
+            : `  [WARN] result: 109 は台帳で未適用のため、4キー（${MIGRATION_109_RESULT_KEYS.join("・")}）の欠落は失敗にしない`,
+        );
+      }
     }
   }
 
@@ -291,7 +351,25 @@ async function main() {
   if (todayUnverified) {
     console.log("  [WARN] 本日のレースが0件のため未検証");
   } else {
-    failed = reportGroup("レース", todayRaces, TODAY_RACE_KEYS) || failed;
+    failed =
+      reportGroup(
+        "レース",
+        todayRaces,
+        migration110Applied
+          ? [...TODAY_RACE_KEYS, ...MIGRATION_110_TODAY_RACE_KEYS]
+          : TODAY_RACE_KEYS,
+      ) || failed;
+    if (!migration110Applied) {
+      const missing110 = findMissingKeys(
+        todayRaces,
+        MIGRATION_110_TODAY_RACE_KEYS,
+      );
+      console.log(
+        missing110.length === 0
+          ? "  [WARN] レース: 110 の result は出ているが、台帳（APPLIED.md）の110が「適用済み」になっていない。台帳を更新する"
+          : "  [WARN] レース: 110 は台帳で未適用のため、result の欠落は失敗にしない",
+      );
+    }
   }
 
   if (failed) {

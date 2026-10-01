@@ -17,6 +17,8 @@ import {
   AI_COPY_PROMPT_TYPES,
   getAiCopyPromptText,
 } from "../utils/aiCopyPrompts";
+import { isRaceCancelled } from "../utils/raceCancellation";
+import { meetPrevRunState, meetPrevRunWhenParams } from "../utils/prevResult";
 
 const DASH = "—";
 
@@ -54,6 +56,7 @@ function buildRows(t, players, analysis) {
   const statsByBoat = new Map(
     (analysis.racerStats ?? []).map((s) => [s.boatNumber, s]),
   );
+  const meetPrevByBoat = byBoat(analysis.meetPrevRun);
 
   return [
     {
@@ -157,14 +160,29 @@ function buildRows(t, players, analysis) {
     {
       label: t("dataTable.rowPrevResult"),
       values: players.map((p) => {
-        const row = maintenanceByBoat.get(p.number);
-        const rank = toNumber(row?.prev_finish_rank);
-        if (rank === null) return t("dataTable.prevResultNoRace");
-        const course = toNumber(row?.prev_entry_course);
-        const position = t("review.finishPosition", { position: rank });
-        return course !== null
-          ? `${position} ${t("dataTable.prevResultCourse", { course })}`
-          : position;
+        // データ出走表と同じ読み方にそろえる（prevResult.js、BOA-569 / BOA-610）
+        const row = meetPrevByBoat.get(p.number);
+        if (!row) return DASH;
+        const state = meetPrevRunState(row);
+        if (state.kind === "firstOfMeet") return t("dataTable.meetFirstRace");
+        if (state.kind === "unknown") return DASH;
+        const when = meetPrevRunWhenParams(state.raceId);
+        if (state.kind === "pending") {
+          return when
+            ? `${t("dataTable.prevResultPending")} (${t("dataTable.prevResultWhen", when)})`
+            : t("dataTable.prevResultPending");
+        }
+        const head =
+          state.kind === "rank"
+            ? t("review.finishPosition", { position: state.rank })
+            : state.markKey
+              ? t(`dataTable.prevMark.${state.markKey}`)
+              : state.mark;
+        const parts = [head];
+        if (state.course !== null)
+          parts.push(t("dataTable.prevResultCourse", { course: state.course }));
+        if (when) parts.push(`(${t("dataTable.prevResultWhen", when)})`);
+        return parts.join(" ");
       }),
     },
     {
@@ -338,6 +356,12 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
 
   // analysisは複数クエリの並列取得（30分TTLキャッシュ）で、DataRaceTableと
   // 同じソースを共有する。読み込み未完了のままコピーすると本来値が有る行まで
-  // 「—」として出力されうるため、読み込み完了までボタン自体を出さない
-  return { buildText, isReady: players.length > 0 && !analysis.loading };
+  // 「—」として出力されうるため、読み込み完了までボタン自体を出さない。
+  // 中止確定のレースは分析する対象が無いので出さない（BOA-424。呼び出し側の
+  // PredictionPanel でも隠しているが、別の画面から使われたときの保険）
+  return {
+    buildText,
+    isReady:
+      players.length > 0 && !analysis.loading && !isRaceCancelled(prediction),
+  };
 }

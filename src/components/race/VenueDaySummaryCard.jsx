@@ -25,13 +25,20 @@ import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "./raceIndicators";
 import { formatDateLocalized } from "../../utils/formatters";
+import CollapsibleSection from "../venue/CollapsibleSection";
 import InlineFetchError from "../InlineFetchError";
 import { buildDayTrend, sortTechniqueCounts } from "./venueDayTrend";
 import "./VenueDaySummaryCard.css";
 
 const COURSES = [1, 2, 3, 4, 5, 6];
 
-function VenueDaySummaryCard({ venueCode, date, raceId = null }) {
+// collapsible: 会場ページで次のレースの直上に差し込むとき、見出しと要約1行に折りたたむ（BOA-546）
+function VenueDaySummaryCard({
+  venueCode,
+  date,
+  raceId = null,
+  collapsible = false,
+}) {
   const { t, i18n } = useTranslation();
   // 取得結果・失敗を「どの会場のどの日のものか」とセットで持つ（`RacePitReportSection`
   // と同じ形。props だけ変わったときに前の日のデータが混ざらず、effect内で
@@ -119,140 +126,164 @@ function VenueDaySummaryCard({ venueCode, date, raceId = null }) {
   );
   const hasBreakdown = hasTechniqueBreakdown || hasCourseWinBreakdown;
 
-  return (
-    <section className="vds-card">
-      <h3 className="vds-heading">{t("venueDaySummary.title")}</h3>
-      <p className="vds-note">
-        {t("venueDaySummary.note", {
-          date: dateLabel,
-          venue: venueName,
+  // 折りたたんだ見出しの要約1行: 確定レース数と1号艇の逃げ率（中身の代表値）
+  const collapsedTeaser =
+    trend.nigeRate !== null
+      ? t("venueDaySummary.collapsedTeaser", {
           n: summary.raceCount,
-        })}
-      </p>
+          rate: trend.nigeRate.toFixed(0),
+        })
+      : t("venueDaySummary.collapsedTeaserNoNige", { n: summary.raceCount });
 
-      <p className="vds-lede">
-        {/* 決まり手が全レース分そろっていない（当日によく起きる）ときは、
-            並べた回数の合計が確定レース数と合わないため、判明レース数を明示する */}
-        {t(
-          trend.techniqueTotal === summary.raceCount
-            ? "venueDaySummary.ledeDay"
-            : "venueDaySummary.ledeDayPartial",
-          {
-            n: summary.raceCount,
-            m: trend.techniqueTotal,
-            techniques: techniqueList,
-          },
-        )}
-        {trend.nigeRate !== null && (
-          <>
-            {" "}
-            <span className="vds-lede-accent">
-              {t("venueDaySummary.ledeNige", {
-                rate: trend.nigeRate.toFixed(0),
-              })}
+  return (
+    <section className={`vds-card${collapsible ? " is-collapsible" : ""}`}>
+      <CollapsibleSection
+        collapsible={collapsible}
+        storageKey="venueDaySummary"
+        summary={
+          <span className="vds-collapsed-head">
+            <h3 className="vds-heading">{t("venueDaySummary.title")}</h3>
+            <span className="vds-teaser" data-testid="venue-day-summary-teaser">
+              {collapsedTeaser}
             </span>
+          </span>
+        }
+      >
+        {!collapsible && (
+          <h3 className="vds-heading">{t("venueDaySummary.title")}</h3>
+        )}
+        <p className="vds-note">
+          {t("venueDaySummary.note", {
+            date: dateLabel,
+            venue: venueName,
+            n: summary.raceCount,
+          })}
+        </p>
+
+        <p className="vds-lede">
+          {/* 決まり手が全レース分そろっていない（当日によく起きる）ときは、
+            並べた回数の合計が確定レース数と合わないため、判明レース数を明示する */}
+          {t(
+            trend.techniqueTotal === summary.raceCount
+              ? "venueDaySummary.ledeDay"
+              : "venueDaySummary.ledeDayPartial",
+            {
+              n: summary.raceCount,
+              m: trend.techniqueTotal,
+              techniques: techniqueList,
+            },
+          )}
+          {trend.nigeRate !== null && (
+            <>
+              {" "}
+              <span className="vds-lede-accent">
+                {t("venueDaySummary.ledeNige", {
+                  rate: trend.nigeRate.toFixed(0),
+                })}
+              </span>
+            </>
+          )}
+          {/* 当日は1着艇の実進入コースが取れないため、コース付き／コース無しの
+            2つの文を用意して出し分ける（venueDayTrend.js参照） */}
+          {trend.thisRace &&
+            ` ${t(
+              trend.thisRace.course !== null
+                ? "venueDaySummary.ledeThisRaceWithCourse"
+                : "venueDaySummary.ledeThisRace",
+              {
+                course: trend.thisRace.course,
+                technique: translateTechnique(t, trend.thisRace.technique),
+                ordinal: trend.thisRace.ordinal,
+              },
+            )}`}
+        </p>
+
+        <div className="vds-stat-grid">
+          <div className="vds-stat-item">
+            <span className="vds-stat-value">
+              {summary.avgPayout !== null
+                ? `¥${Math.round(summary.avgPayout).toLocaleString()}`
+                : "—"}
+            </span>
+            <span className="vds-stat-label">
+              {t("venueDaySummary.avgPayoutLabel")}
+            </span>
+          </div>
+          <div className="vds-stat-item">
+            <span className="vds-stat-value">
+              {summary.manshuRate !== null
+                ? `${summary.manshuRate.toFixed(0)}%`
+                : "—"}
+            </span>
+            <span className="vds-stat-label">
+              {t("venueDaySummary.manshuRateLabel")}
+            </span>
+          </div>
+          <div className="vds-stat-item">
+            <span className="vds-stat-value">
+              {summary.nigeRate !== null
+                ? `${summary.nigeRate.toFixed(0)}%`
+                : "—"}
+            </span>
+            {/* 実装は艇番基準（rank1===1かつ逃げ）なので「イン逃げ率」ではなく
+              「1号艇の逃げ率」と書く。FR-6の「1コース逃げ率」とは定義が違う */}
+            <span className="vds-stat-label">
+              {t("venueDaySummary.nigeRateLabel")}
+            </span>
+          </div>
+        </div>
+
+        {hasBreakdown && (
+          <>
+            <button
+              type="button"
+              className="vds-detail-toggle"
+              onClick={() => setExpanded((v) => !v)}
+              aria-expanded={expanded}
+            >
+              {expanded ? "▾ " : "▸ "}
+              {t("venueDaySummary.breakdownToggle")}
+            </button>
+            {expanded && (
+              <div className="vds-detail">
+                {hasTechniqueBreakdown && (
+                  <div className="vds-breakdown">
+                    <div className="vds-subheading">
+                      {t("venueDaySummary.techniqueBreakdownLabel")}
+                    </div>
+                    <div className="vds-badge-row">
+                      {/* 1行要約と同じ並びにする（素の sort だと同数のときの
+                        順序が挿入順に依存し、上の文と食い違って見える） */}
+                      {sortTechniqueCounts(summary.techniqueCounts).map(
+                        ({ technique, count }) => (
+                          <span className="vds-badge" key={technique}>
+                            {translateTechnique(t, technique)} {count}
+                          </span>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                )}
+                {hasCourseWinBreakdown && (
+                  <div className="vds-breakdown">
+                    <div className="vds-subheading">
+                      {t("venueDaySummary.entryCourseWinLabel")}
+                    </div>
+                    <div className="vds-badge-row">
+                      {COURSES.map((course) => (
+                        <span className="vds-badge" key={course}>
+                          {t("venueDaySummary.courseN", { n: course })}{" "}
+                          {summary.entryCourseWinCounts?.[course] ?? 0}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
-        {/* 当日は1着艇の実進入コースが取れないため、コース付き／コース無しの
-            2つの文を用意して出し分ける（venueDayTrend.js参照） */}
-        {trend.thisRace &&
-          ` ${t(
-            trend.thisRace.course !== null
-              ? "venueDaySummary.ledeThisRaceWithCourse"
-              : "venueDaySummary.ledeThisRace",
-            {
-              course: trend.thisRace.course,
-              technique: translateTechnique(t, trend.thisRace.technique),
-              ordinal: trend.thisRace.ordinal,
-            },
-          )}`}
-      </p>
-
-      <div className="vds-stat-grid">
-        <div className="vds-stat-item">
-          <span className="vds-stat-value">
-            {summary.avgPayout !== null
-              ? `¥${Math.round(summary.avgPayout).toLocaleString()}`
-              : "—"}
-          </span>
-          <span className="vds-stat-label">
-            {t("venueDaySummary.avgPayoutLabel")}
-          </span>
-        </div>
-        <div className="vds-stat-item">
-          <span className="vds-stat-value">
-            {summary.manshuRate !== null
-              ? `${summary.manshuRate.toFixed(0)}%`
-              : "—"}
-          </span>
-          <span className="vds-stat-label">
-            {t("venueDaySummary.manshuRateLabel")}
-          </span>
-        </div>
-        <div className="vds-stat-item">
-          <span className="vds-stat-value">
-            {summary.nigeRate !== null
-              ? `${summary.nigeRate.toFixed(0)}%`
-              : "—"}
-          </span>
-          {/* 実装は艇番基準（rank1===1かつ逃げ）なので「イン逃げ率」ではなく
-              「1号艇の逃げ率」と書く。FR-6の「1コース逃げ率」とは定義が違う */}
-          <span className="vds-stat-label">
-            {t("venueDaySummary.nigeRateLabel")}
-          </span>
-        </div>
-      </div>
-
-      {hasBreakdown && (
-        <>
-          <button
-            type="button"
-            className="vds-detail-toggle"
-            onClick={() => setExpanded((v) => !v)}
-            aria-expanded={expanded}
-          >
-            {expanded ? "▾ " : "▸ "}
-            {t("venueDaySummary.breakdownToggle")}
-          </button>
-          {expanded && (
-            <div className="vds-detail">
-              {hasTechniqueBreakdown && (
-                <div className="vds-breakdown">
-                  <div className="vds-subheading">
-                    {t("venueDaySummary.techniqueBreakdownLabel")}
-                  </div>
-                  <div className="vds-badge-row">
-                    {/* 1行要約と同じ並びにする（素の sort だと同数のときの
-                        順序が挿入順に依存し、上の文と食い違って見える） */}
-                    {sortTechniqueCounts(summary.techniqueCounts).map(
-                      ({ technique, count }) => (
-                        <span className="vds-badge" key={technique}>
-                          {translateTechnique(t, technique)} {count}
-                        </span>
-                      ),
-                    )}
-                  </div>
-                </div>
-              )}
-              {hasCourseWinBreakdown && (
-                <div className="vds-breakdown">
-                  <div className="vds-subheading">
-                    {t("venueDaySummary.entryCourseWinLabel")}
-                  </div>
-                  <div className="vds-badge-row">
-                    {COURSES.map((course) => (
-                      <span className="vds-badge" key={course}>
-                        {t("venueDaySummary.courseN", { n: course })}{" "}
-                        {summary.entryCourseWinCounts?.[course] ?? 0}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
+      </CollapsibleSection>
     </section>
   );
 }

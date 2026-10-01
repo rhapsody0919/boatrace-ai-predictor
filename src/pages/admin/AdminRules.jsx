@@ -6,8 +6,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  getTopPerformingRules,
-  getOverallPerformance,
   getTodaysMatchingRaces,
   getRulePerformanceByVenue,
   getAvailableVenues,
@@ -15,10 +13,8 @@ import {
   getReliabilityName,
   getVenueName
 } from '../../services/ruleMatchService'
-import {
-  getRuleApplicationHistory,
-  getWeeklyPerformance
-} from '../../services/adminRuleService'
+import { getRuleApplicationHistory } from '../../services/adminRuleService'
+import { fetchRulePerformance } from '../../services/adminRulePerformance'
 import './AdminRules.css'
 
 // タブ定義
@@ -99,17 +95,16 @@ function AdminRules() {
     setLoading(true)
     setError(null)
     try {
-      const [rulesData, overallData, todaysData, weeklyDataResult] = await Promise.all([
-        getTopPerformingRules({ minSamples: 0 }),
-        getOverallPerformance(),
-        getTodaysMatchingRaces(today),
-        getWeeklyPerformance()
+      // 運用成績（全体・ルール別・週別）は /api/admin/rules/performance の1回の取得にまとめた（BOA-567）
+      const [performance, todaysData] = await Promise.all([
+        fetchRulePerformance(),
+        getTodaysMatchingRaces(today)
       ])
 
-      setAllRules(rulesData)
-      setOverallPerformance(overallData)
+      setAllRules(performance.rules)
+      setOverallPerformance(performance.overall)
       setTodaysRaces(todaysData)
-      setWeeklyData(weeklyDataResult)
+      setWeeklyData(performance.weekly)
     } catch (err) {
       console.error('データ読み込みエラー:', err)
       setError(err.message)
@@ -173,7 +168,7 @@ function AdminRules() {
           <h1>ルール成績ダッシュボード</h1>
           <p className="admin-badge">管理者用</p>
         </div>
-        <div className="loading-state">
+        <div className="admin-rules-loading-state">
           <div className="spinner" />
           <p>データを読み込み中...</p>
         </div>
@@ -188,7 +183,7 @@ function AdminRules() {
           <h1>ルール成績ダッシュボード</h1>
           <p className="admin-badge">管理者用</p>
         </div>
-        <div className="error-state">
+        <div className="admin-rules-error-state">
           <p>エラーが発生しました: {error}</p>
           <button onClick={loadInitialData}>再読み込み</button>
         </div>
@@ -233,11 +228,11 @@ function AdminRules() {
       )}
 
       {/* タブナビゲーション */}
-      <div className="tab-navigation">
+      <div className="admin-rules-tab-navigation">
         {TABS.map(tab => (
           <button
             key={tab.id}
-            className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+            className={`admin-rules-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
             onClick={() => setActiveTab(tab.id)}
           >
             {tab.label}
@@ -246,7 +241,7 @@ function AdminRules() {
       </div>
 
       {/* タブコンテンツ */}
-      <div className="tab-content">
+      <div className="admin-rules-tab-content">
         {activeTab === 'overview' && (
           <OverviewTab
             rules={sortedRules}

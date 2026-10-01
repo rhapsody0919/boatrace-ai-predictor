@@ -178,8 +178,18 @@
   "functions": {
     "api/cron/*.js": {
       "regions": ["syd1"]
+    },
+    "api/odds/live.js": {
+      "regions": ["syd1"]
     }
   },
+  "redirects": [
+    {
+      "source": "/outcome-distribution",
+      "destination": "/winning-technique?tab=outcome",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!api/).*)",

@@ -177,6 +177,30 @@
   margin-right: 2px;
 }
 
+/* 「賞典除外（今節F）」は長いので、順位の列と早見の必要得点の列だけ2行に
+   折り返す。1行のままだと375pxで表が16px右にはみ出し、早見は着順の列が
+   画面外へ押し出された（BOA-587） */
+.rmt-compare .rmt-excluded,
+.rmt-forecast-table .rmt-excluded {
+  display: inline-block;
+  max-width: 4.5em;
+  white-space: normal;
+  /* 「賞典除 / 外」と語の途中で割らず、「賞典除外 /（今節F）」で折る */
+  word-break: keep-all;
+  line-height: var(--line-height-tight);
+}
+
+/* 「今日では届かず」も同じく2行に折る。1行のままだと必要得点の列が79pxになり、
+   375pxの早見が382pxに広がって着順の列が画面外へ押し出された（BOA-596 と
+   BOA-587 の組み合わせ）。keep-all にすると和文に折り目が無く折れないので、
+   幅だけで折る */
+.rmt-forecast-table .rmt-unreachable {
+  display: inline-block;
+  max-width: 4em;
+  white-space: normal;
+  line-height: var(--line-height-tight);
+}
+
 .rmt-rank,
 .rmt-pretest {
   font-size: var(--font-size-xs);
@@ -362,6 +386,13 @@
   font-weight: var(--font-weight-bold);
 }
 
+.rmt-needed-runs {
+  display: block;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
 .rmt-forecast-table td.rmt-needed {
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
@@ -539,4 +570,49 @@
 /* 全走欠場の行（BOA-504）。得点率・順位が無いことが一目で分かるよう控えめに */
 .rmt-compare tr.is-absent td {
   color: var(--text-secondary);
+}
+
+/* 推移の見出しの「点の下＝着順」（BOA-537）。線の列の左に小さく */
+.rmt-trend-head-sub {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+/* スマホでは名前の列を詰めて、推移の線と着順の段に幅を回す（BOA-537 ファン評価3周目）。
+   7.5em（120px）だと 375px で線の幅が109pxしかなく、名前の右に約64pxの空きが
+   あった。5em でも5文字の名前と艇番が入る。長い名前は省略記号で切る */
+@media (max-width: 480px) {
+  .rmt-trend-row,
+  .rmt-trend-head {
+    grid-template-columns: 5em 1fr 3em;
+  }
+
+  .rmt-trend-label .rmt-name {
+    white-space: nowrap;
+  }
+}
+
+/* 日付の目盛り（BOA-538）。推移の線の列と同じ幅で、点と同じ横位置に置く */
+.rmt-trend-days {
+  position: relative;
+  height: 1.2em;
+}
+
+.rmt-trend-day {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 予選後にFを切った選手の印（順位の下、BOA-626）。順位より小さく出し、
+   列の幅を広げないよう順位の下に置く */
+.rmt-compare .rmt-post-flying {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
 }

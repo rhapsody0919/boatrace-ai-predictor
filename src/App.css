@@ -114,7 +114,8 @@ input:focus-visible,
 
 /* レースグリッド
    唯一の利用先（VenueRaceListPage）は VenueRaceListPage.css の固定列数で上書きされ、
-   件数も1会場1日12レースで一定のため、auto-fill の空トラックは出ない（BOA-528） */
+   件数も1会場1日12レースで一定のため、auto-fill の空トラックは出ない（BOA-528）。
+   同じ理由で 1024px・768px の @media の上書きは効いていなかったため削除した（BOA-570） */
 .race-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -333,11 +334,6 @@ input:focus-visible,
     padding: 1.5rem 1rem;
   }
 
-  .race-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.25rem;
-  }
-
   .prediction-result {
     padding: 2rem;
   }
@@ -370,11 +366,6 @@ input:focus-visible,
   .race-list-section select {
     font-size: 1rem;
     padding: 0.875rem 1rem;
-  }
-
-  .race-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
   }
 
   .race-list-section .race-card {
@@ -608,19 +599,137 @@ input:focus-visible,
   border: var(--border-width-1) solid var(--border-hairline);
 }
 
+/* BOA-543: 着順の無い艇（返還・失格・不成立）は、名前の下に記号の意味（.rr-mark-label）を添える */
 .rr-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .rr-name small {
   margin-left: var(--spacing-1);
   font-weight: var(--font-weight-normal);
   color: var(--text-secondary);
+}
+
+.rr-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rr-mark-label {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+  white-space: normal;
+  line-height: 1.3;
+}
+
+/* BOA-625: 名前の下の進入コース。枠番と違う（前付け・譲った）ときだけ強調する */
+.rr-course {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
+.rr-course.is-moved {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+/* BOA-625: 表の上の進入順（公式のスタート情報の並び） */
+.rr-course-order {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-bottom: var(--spacing-2);
+}
+
+.rr-course-order-label {
+  margin-right: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+}
+
+.rr-row.is-unranked .rr-pos {
+  color: var(--text-primary);
+}
+
+/* BOA-543: 見出し横の「返還艇あり」（公式の備考の文言）。的中・外れより目立たせないよう枠線のみ */
+.rr-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.rr-refund-tag {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+  border: var(--border-width-1) solid var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.05rem var(--spacing-2);
+  white-space: nowrap;
+}
+
+/* BOA-543: 不成立の理由と「舟券はすべて返還」 */
+.rr-outcome-note {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+/* BOA-543: スタート情報（着欄の記号）の読み込み中。行と同じ高さで6行ぶん確保する */
+.rr-table-skeleton {
+  display: flex;
+  flex-direction: column;
+}
+
+.rr-skeleton-row {
+  padding: var(--spacing-2) 0;
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+.rr-skeleton-row:first-child {
+  border-top: none;
+}
+
+.rr-skeleton-bar {
+  display: block;
+  height: 1.45rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--surface-page) 25%,
+    var(--border-hairline) 50%,
+    var(--surface-page) 75%
+  );
+  background-size: 200% 100%;
+  animation: rr-skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes rr-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rr-skeleton-bar {
+    animation: none;
+  }
 }
 
 .rr-time {
@@ -694,8 +803,22 @@ input:focus-visible,
   top: 50%;
   width: 16px;
   height: 9px;
+  /* 舳先（右端）を位置に合わせる。中心を合わせると、ST0.01の正常な艇でも舳先が
+     スタートラインを8px越え、フライングに見えた（BOA-559 ファン評価3周目） */
+  transform: translate(-100%, -50%);
+}
+
+.rr-st-dot-shape {
+  display: block;
+  width: 100%;
+  height: 100%;
   clip-path: polygon(100% 50%, 62% 0%, 0% 18%, 0% 82%, 62% 100%);
-  transform: translate(-50%, -50%);
+}
+
+/* 1号艇（白）は明るい地に溶けるので、形に沿った濃い輪郭を付ける */
+.rr-st-dot.is-white {
+  filter: drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.9))
+    drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.9));
 }
 
 .rr-st-streak {
@@ -781,11 +904,13 @@ input:focus-visible,
   color: var(--text-secondary);
 }
 
+/* 組番は1つの塊として読むため折り返さない（375pxで「5-4／-2」と割れていた。BOA-534 ファン評価1周目）。
+   狭い画面では人気を払戻金額の下に置いて横幅を空ける（下の @media） */
 .rr-combo {
-  flex: 1;
+  flex: 1 0 auto;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--spacing-1);
 }
 
@@ -805,6 +930,52 @@ input:focus-visible,
   flex: 0 0 auto;
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
+  text-align: right;
+  /* 「82人気」を「82／人／気」と割らない */
+  white-space: nowrap;
+}
+
+/* 狭い画面では、人気を払戻金額の下に右寄せで置く。1行に並べると、組番（折り返さない）と5〜6桁の払戻に
+   押されて「82／人／気」と縦に割れる（BOA-534 ファン評価2周目） */
+@media (max-width: 480px) {
+  .rr-payout-row {
+    display: grid;
+    grid-template-columns: 3.4rem minmax(0, 1fr) auto;
+    grid-template-areas:
+      "type combo amount"
+      "type combo pop";
+    align-items: center;
+    column-gap: var(--spacing-2);
+    row-gap: 0;
+  }
+
+  .rr-payout-type {
+    grid-area: type;
+  }
+
+  .rr-combo {
+    grid-area: combo;
+  }
+
+  .rr-amount {
+    grid-area: amount;
+    text-align: right;
+  }
+
+  .rr-pop {
+    grid-area: pop;
+  }
+}
+
+
+/* 単勝・複勝の人気（締切時オッズから算出、BOA-534）。下の注記と「※」で結ぶ */
+.rr-pop-mark {
+  margin-left: 1px;
+}
+
+/* 払戻の下の注記は、表の内容の説明なので左寄せで読む（右寄せだと375pxで行頭がそろわない） */
+.rr-note.rr-payout-popularity-note {
+  text-align: left;
 }
 
 .rr-amount {
@@ -817,6 +988,29 @@ input:focus-visible,
 
 .rr-payout-row.is-best .rr-amount {
   color: var(--brand-accent-primary);
+}
+
+/* 320px帯では、組番3艇と5〜6桁の払戻が1行に収まらず、金額が3着の艇番に重なる（BOA-534 ファン評価3周目）。
+   券種名の列を詰め、金額の文字を小さくして収める */
+@media (max-width: 359px) {
+  .rr-payout-row {
+    grid-template-columns: 2.8rem minmax(0, 1fr) auto;
+  }
+
+  .rr-amount {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* BOA-543: 不成立（返還）・特払は組番の位置に文言を出す */
+.rr-payout-note {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.rr-payout-row.is-void .rr-payout-note {
+  color: var(--text-secondary);
 }
 
 /* BOA-238: 中止・不成立の空状態表示 */
@@ -990,6 +1184,14 @@ input:focus-visible,
 
   .rr-name {
     font-size: 0.8rem;
+  }
+
+  /* 級別は名前の下の行に置く。1行に並べると5文字の名前（「土屋 実沙希」）で級別が切れて見えない
+     （BOA-559 ファン評価1周目） */
+  .rr-name-text small {
+    display: block;
+    margin-left: 0;
+    line-height: 1.2;
   }
 
   .accuracy-check {
@@ -1413,11 +1615,6 @@ input:focus-visible,
     height: 36px;
     line-height: 36px;
     font-size: 1rem;
-  }
-
-  /* グリッドを1カラムに */
-  .race-cards-grid {
-    grid-template-columns: 1fr;
   }
 }
 

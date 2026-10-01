@@ -20,11 +20,29 @@ import TurnPatternList from "./TurnPatternList";
 import PredictionCard from "./PredictionCard";
 import OutcomePatternPreview from "./OutcomePatternPreview";
 import { getVolatilityLevel } from "../../utils/volatilityLevel";
+import { isJudgeable } from "../../utils/raceOutcome";
 
-function RaceAiPredictionTab({ prediction, venueCode, venueName, raceId }) {
+function RaceAiPredictionTab({
+  prediction,
+  venueCode,
+  venueName,
+  raceId,
+  isCancelled = false,
+}) {
   const { t } = useTranslation();
   const result = prediction?.result;
   const finished = Boolean(result?.finished);
+
+  // 中止確定のレースは開催されないので、展開予測・イン崩れ指数を出さない（BOA-424）。
+  // predictions は中止前に作られて残っていることがある（BOA-411）ため、データの有無では判定しない。
+  // タブ自体は残し、他タブの空状態と同じ形で案内する
+  if (isCancelled) {
+    return (
+      <div className="race-tabs-empty" data-testid="ai-prediction-cancelled">
+        <p>{t("aiPredictionTab.cancelled")}</p>
+      </div>
+    );
+  }
 
   const turnPatterns = prediction?.turnPrediction?.patterns;
   const hasTurnPrediction =
@@ -38,6 +56,8 @@ function RaceAiPredictionTab({ prediction, venueCode, venueName, raceId }) {
       : getVolatilityLevel(prediction.volatilityPercentile);
     const showVolatilityOutcome =
       volatilityLevel === "high" || volatilityLevel === "low";
+    // 不成立のレースは1着が決まっていないので、振り返りも「判定対象外」にする（BOA-543）
+    const canJudge = isJudgeable(result);
     const isUpset = result.rank1 !== 1;
     const volatilityPercentileValue = Math.round(
       (prediction.volatilityPercentile ?? 0) * 100,
@@ -80,16 +100,22 @@ function RaceAiPredictionTab({ prediction, venueCode, venueName, raceId }) {
             <p className="result-volatility-line">
               {t("result.volatilityOutcomeLabel")}
               {": "}
-              <strong>
-                {isUpset
-                  ? t("result.volatilityOutcomeCollapsed")
-                  : t("result.volatilityOutcomeSolid")}
-              </strong>
-              {isUpset
-                ? t("result.volatilityOutcomeDetailUpset", {
-                    winner: result.rank1,
-                  })
-                : t("result.volatilityOutcomeDetailFavorite")}
+              {canJudge ? (
+                <>
+                  <strong>
+                    {isUpset
+                      ? t("result.volatilityOutcomeCollapsed")
+                      : t("result.volatilityOutcomeSolid")}
+                  </strong>
+                  {isUpset
+                    ? t("result.volatilityOutcomeDetailUpset", {
+                        winner: result.rank1,
+                      })
+                    : t("result.volatilityOutcomeDetailFavorite")}
+                </>
+              ) : (
+                <strong>{t("result.volatilityOutcomeNotJudgeable")}</strong>
+              )}
             </p>
             <p className="result-volatility-caveat">
               {t("result.volatilityCaveat")}{" "}
@@ -105,10 +131,7 @@ function RaceAiPredictionTab({ prediction, venueCode, venueName, raceId }) {
             <h5 className="result-verify-title">
               {t("result.turnSectionTitle")}
             </h5>
-            <TurnPatternList
-              patterns={turnPatterns}
-              actualWinner={result.rank1}
-            />
+            <TurnPatternList patterns={turnPatterns} result={result} />
           </div>
         )}
       </div>

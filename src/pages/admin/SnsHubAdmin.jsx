@@ -383,7 +383,7 @@ function SnsHubAdmin() {
     return (
       <div className="sns-hub-admin-page">
         <Header />
-        <div className="loading-state">
+        <div className="sns-hub-loading-state">
           <div className="spinner" />
           <p>データを読み込み中...</p>
         </div>
@@ -395,7 +395,7 @@ function SnsHubAdmin() {
     return (
       <div className="sns-hub-admin-page">
         <Header />
-        <div className="error-state">
+        <div className="sns-hub-error-state">
           <p>エラーが発生しました: {error}</p>
           <button onClick={loadDrafts}>再読み込み</button>
         </div>
@@ -457,7 +457,7 @@ function SnsHubAdmin() {
       />
 
       <div className="tab-navigation-row">
-        <div className="tab-navigation">
+        <div className="sns-hub-tab-navigation">
           {TABS.map((tab) => {
             const count =
               tab.id === "insights"
@@ -475,7 +475,7 @@ function SnsHubAdmin() {
             return (
               <button
                 key={tab.id}
-                className={`tab-btn ${activeTab === tab.id ? "active" : ""}`}
+                className={`sns-hub-tab-btn ${activeTab === tab.id ? "active" : ""}`}
                 onClick={() => setActiveTab(tab.id)}
               >
                 {tab.label} ({count})
@@ -508,7 +508,7 @@ function SnsHubAdmin() {
         </div>
       )}
 
-      <div className="tab-content">
+      <div className="sns-hub-tab-content">
         {isCatalogTab ? (
           <CatalogTab templateVariants={templateVariants} />
         ) : isInsightsTab ? (

@@ -20,7 +20,7 @@ import { BOAT_COLORS } from "../../utils/colors";
 import TermHintButton from "./TermHintButton";
 import "./NigeSimulationCard.css";
 
-function NigeSimulationCard({ rows }) {
+function NigeSimulationCard({ rows, asOfToday = false }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
@@ -43,6 +43,16 @@ function NigeSimulationCard({ rows }) {
           total: Number(first.total_races).toLocaleString(),
         })}
       </p>
+      {/* 過去のレースでは「今日時点の集計」と明記する。この表は今日から見た直近の
+          期間で作っていて、そのレースの日の時点の値は残っていない（BOA-608） */}
+      {asOfToday && (
+        <p className="nsc-as-of">
+          {t("wakuInfo.venueStatsAsOfToday", {
+            start: first.window_start,
+            end: first.window_end,
+          })}
+        </p>
+      )}
 
       <p className="nsc-section-label">{t("nigeSimulation.secondCourse")}</p>
       <div className="nsc-rows">
