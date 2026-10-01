@@ -57,6 +57,8 @@ export function pendingRetrySec(minutesToStart, config = PIT_REPORT_RETRY) {
 export const PIT_REPORT_OUTCOMES = Object.freeze({
   ok: "ok",
   notTarget: "skipped_not_target",
+  /** 公開済みだが、コメントが出走艇の数に満たない（発走前。再試行して追加を取り直す。BOA-611） */
+  partial: "partial",
   pending: "no_values",
   error: "error",
 });
