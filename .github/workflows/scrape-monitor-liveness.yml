@@ -44,10 +44,13 @@ jobs:
           OUTPUT=$(node scripts/maintenance/check-scrape-monitor-liveness.js)
           EXIT_CODE=$?
           echo "$OUTPUT"
+          # 区切りが固定だと、ログに区切りと同じ行があった時点で値が切れ、残りが出力の行として読まれる。
+          # 毎回ランダムな区切りにする（BOA-652）
+          delim="EOF_$(openssl rand -hex 16)"
           {
-            echo "summary<<EOF"
+            echo "summary<<$delim"
             echo "$OUTPUT"
-            echo "EOF"
+            echo "$delim"
           } >> "$GITHUB_OUTPUT"
           echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
 
@@ -56,21 +59,25 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SUMMARY: ${{ steps.check.outputs.summary }}
+        # ログに " ・改行・\ が入っても壊れないよう、payload は jq で組み立てる。Slack の section の
+        # text は3000文字が上限で、超えると通知ごと拒否されるため、ログだけを切り詰める（BOA-652）
         run: |
-          curl -s -X POST "$SLACK_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "$(jq -n --arg summary "$SUMMARY" '{
-              attachments: [{
-                color: "#c9a227",
-                blocks: [{
-                  type: "section",
-                  text: {
-                    type: "mrkdwn",
-                    text: ("*データ取得の監視が動いていない可能性があります*\n```" + $summary + "```\n通知は Vercel の api/cron/scrape-monitor（5分ごと）が出しています。これが止まると、expired・未実行・死活の通知が届きません（docs/design/scraping-vercel-consolidation/plan.md §6・§7）。data_health（汎用の日次監視。件数の充足率・0件のテーブル）が対象日を処理していない場合は、Vercel Cron（api/cron/data-health）・マイグレーション089の適用・デプロイを確認してください（verification-runbook.md U）")
-                  }
+          payload=$(jq -n --arg summary "$SUMMARY" '
+            "*データ取得の監視が動いていない可能性があります*\n" as $head
+            | "\n通知は Vercel の api/cron/scrape-monitor（5分ごと）が出しています。これが止まると、expired・未実行・死活の通知が届きません（docs/design/scraping-vercel-consolidation/plan.md §6・§7）。data_health（汎用の日次監視。件数の充足率・0件のテーブル）が対象日を処理していない場合は、Vercel Cron（api/cron/data-health）・マイグレーション089の適用・デプロイを確認してください（verification-runbook.md U）" as $tail
+            | {
+                attachments: [{
+                  color: "#c9a227",
+                  blocks: [{
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text: ($head + "```" + ($summary | .[0:(2900 - ($head + $tail | length))]) + "```" + $tail)
+                    }
+                  }]
                 }]
-              }]
-            }')"
+              }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
 
       - name: 確認の失敗を、ジョブの失敗として残す
         if: steps.check.outputs.exit_code != '0'

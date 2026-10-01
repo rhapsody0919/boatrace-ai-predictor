@@ -3715,8 +3715,12 @@ test.describe("レース詳細の直前情報タブ: オリジナル展示", () 
 
     // 2回目: 096を適用した後を模して200を返す。forbiddenがキャッシュされていると、
     // 過去レースのキーは7日TTLなのでここで行が出ない
-    await page.unroute("**/rest/v1/race_original_exhibition?*");
-    await page.unroute("**/rest/v1/race_original_exhibition_values*");
+    //
+    // denied は unroute せず、上から200のハンドラを重ねる（後から登録した page.route が
+    // 先に評価され、fulfill すれば denied には回らない）。unroute で page のルートが
+    // 一度0件になると、Playwright はそのとき処理中の要求を context 側（録画の再生）へ
+    // 送り直す。同じ要求がクライアント側の page→context の経路でも処理され、
+    // 「Route is already handled!」で落ちた（BOA-661、CIの trace で実測）
     await routeOriginalExhibition(page, {
       header: {
         item_labels: "一周|まわり足|直線",

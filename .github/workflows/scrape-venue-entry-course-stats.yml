@@ -92,10 +92,13 @@ jobs:
           OUTPUT=$(node scripts/maintenance/check-venue-entry-course-stats-drift.js)
           EXIT_CODE=$?
           echo "$OUTPUT"
+          # 区切りが固定だと、ログに区切りと同じ行があった時点で値が切れ、残りが出力の行として読まれる。
+          # 毎回ランダムな区切りにする（BOA-652）
+          delim="EOF_$(openssl rand -hex 16)"
           {
-            echo "summary<<EOF"
+            echo "summary<<$delim"
             echo "$OUTPUT"
-            echo "EOF"
+            echo "$delim"
           } >> "$GITHUB_OUTPUT"
           echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
 
