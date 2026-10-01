@@ -602,6 +602,22 @@ check(
     ),
     ["落", null],
   );
+  check(
+    "着順の並び: 着欄の記号が未取得でも、フライングの走は「失」ではなく F（推移の点と同じ。BOA-589）",
+    listSeriesFinishes(
+      [
+        {
+          ...base,
+          raceId: "2026-09-23-20-03",
+          boatNumber: 6,
+          started: true,
+          isFlying: true,
+        },
+      ],
+      withPrelim,
+    ),
+    ["F"],
+  );
   // 6艇の推移の横軸を日付にする配置（BOA-538）
   {
     const days = ["2026-09-20", "2026-09-21", "2026-09-22", "2026-09-23"];

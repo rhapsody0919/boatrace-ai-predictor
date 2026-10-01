@@ -79,7 +79,9 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     });
     const legend = page.locator(".rbit-note", { hasText: "今節" });
     await expect(legend).toBeVisible();
-    await expect(legend).toContainText("準優勝戦・優勝戦には進めません");
+    await expect(legend).toContainText(
+      "この節の準優勝戦・優勝戦の対象外です（賞典除外）",
+    );
     await expect(legend).toContainText("当日のFは含みません");
     await expect(legend).toContainText("L＝");
     // 「F2 今節」を「2本とも今節」と読ませない（バッジの説明・「?」と同じ「そのうち」で書く。3周目）
@@ -116,8 +118,9 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     await expect(pop).toContainText("賞典除外");
     // 要点（今節の印・賞典除外）は先頭の方に置く。後半だと小さな枠で読まれない（3周目）
     const text = await pop.textContent();
-    expect(text.indexOf("「今節」の印")).toBeLessThan(40);
-    expect(text.indexOf("賞典除外")).toBeLessThan(text.indexOf("あっせん停止"));
+    // 級別の一文（BOA-589）の後、先頭近くに置く
+    expect(text.indexOf("「今節」の印")).toBeLessThan(60);
+    expect(text).toContain("賞典除外");
     const r = await pop.evaluate((el) => {
       const box = el.getBoundingClientRect();
       // 見えている範囲の下端近くで、最前面の要素がポップオーバー自身か
@@ -128,9 +131,9 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
         vh: window.innerHeight,
         front: el.contains(top),
         frontEl: top?.className ?? String(top),
-        scrollable:
-          el.scrollHeight <= el.clientHeight ||
-          getComputedStyle(el).overflowY === "auto",
+        // 本文が枠に全文収まる（中をスクロールしないと読めない状態を残さない。
+        // 3回目の指摘で本文を短くした。BOA-589 ファン評価2周目）
+        scrollable: el.scrollHeight <= el.clientHeight + 1,
       };
     });
     expect(r.bottom).toBeLessThanOrEqual(r.vh);
@@ -201,5 +204,62 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     });
     expect(r.sw).toBeLessThanOrEqual(r.cw);
     expect(r.right).toBeLessThanOrEqual(r.wright);
+  });
+
+  test("ST考察の級別は表示中のレースの出走表の値で、データ出走表と一致する（BOA-589）", async ({
+    page,
+  }) => {
+    // 2026-04-11 びわこ2R: 公式の出走表は 3号艇 A2・6号艇 A1。以前の ST考察は
+    // 選手の最新の走の級別（3号艇 A1・6号艇 A2）を出していた
+    await page.goto("/race/2026-04-11-06-02");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    await page
+      .locator(".rsc-card")
+      .waitFor({ state: "visible", timeout: 30000 });
+    const grades = page.locator(".rsc-grid .rsc-grade");
+    await expect(grades).toHaveCount(6, { timeout: 30000 });
+    await expect(grades.nth(2)).toHaveText("A2");
+    await expect(grades.nth(5)).toHaveText("A1");
+  });
+
+  test("1440px: 用語の説明の枠は 320px に広がる（BOA-589）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/race/2026-09-27-22-07");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    const button = page.locator(".rsc-label-th .term-hint__button").first();
+    await button.waitFor({ timeout: 30000 });
+    await page.evaluate(() =>
+      document.querySelectorAll(".cookie-consent").forEach((el) => el.remove()),
+    );
+    await button.scrollIntoViewIfNeeded();
+    await button.click();
+    const pop = page.locator(".term-hint__popover");
+    await expect(pop).toBeVisible();
+    expect(
+      await pop.evaluate((el) => el.getBoundingClientRect().width),
+    ).toBeGreaterThanOrEqual(300);
+  });
+
+  test("今節タブ: 着欄の記号が未取得の古い節でも、フライングの走は一覧・詳細とも「F」（BOA-589）", async ({
+    page,
+  }) => {
+    // 2026-04-11 びわこ2R: 6号艇 青木蓮は 4/9 4R でF。以前は一覧で「失」、詳細で「着外(順位不明)」
+    await page.goto("/race/2026-04-11-06-02");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const aoki = page.locator(".rmt-compare tr").filter({ hasText: "青木" });
+    await expect(aoki).toHaveCount(1, { timeout: 30000 });
+    const finishes = aoki.locator(".rmt-finishes");
+    await expect(finishes).toContainText("F");
+    await expect(finishes).not.toContainText("失");
+    // 青木を選ぶと、下の詳細の表の 4/9 4R も「着外(順位不明)」ではなく「F」
+    await aoki.click();
+    const detail = page
+      .locator(".race-history-table tr")
+      .filter({ hasText: "4/9" })
+      .filter({ has: page.locator("td", { hasText: /^4R$/ }) });
+    await expect(detail).toContainText("F", { timeout: 30000 });
+    await expect(detail).not.toContainText("着外");
   });
 });
