@@ -1433,6 +1433,29 @@ const doneOdds = (delayMin, over = {}) =>
         .length === 0,
   );
   check(
+    "死活: 常駐型は、朝の初回（07:00）が1回届かないだけでは通知しない。07:24 は判定せず、07:25 から判定する（BOA-373）",
+    kinds(
+      [
+        base({
+          job: "race_notices",
+          last_tick_at: "2026-09-18T14:50:00.000Z", // 前日 23:50 JST
+        }),
+      ],
+      at("07:24"),
+    ).length === 0 &&
+      show(
+        kinds(
+          [
+            base({
+              job: "race_notices",
+              last_tick_at: "2026-09-18T14:50:00.000Z",
+            }),
+          ],
+          at("07:25"),
+        ),
+      ) === '["liveness:race_notices"]',
+  );
+  check(
     "死活: 日次ジョブは last_tick_at の古さでは通知しない（期限超過の判定は別）",
     kinds([base({ job: "kfile_sync", last_tick_at: minAgo(600) })]).every(
       (k) => !k.startsWith("liveness:"),

@@ -89,13 +89,16 @@ const ONCE_KEY_PREFIXES = ["expired:", "unexecuted:"];
 const isActiveMode = (mode) => mode === "shadow" || mode === "live";
 const isHostRow = (row) => String(row.job).startsWith("host:");
 
-/** 死活を判定してよい時刻か（運用窓の開始から livenessStartGraceMin 経過後〜23:59） */
-export function livenessCheckable(now) {
+/**
+ * 死活を判定してよい時刻か（運用窓の開始から graceMin 経過後〜23:59）。
+ * 常駐型（10分ごと）は、日中と同じく起動2回分の欠落までを許すよう、graceMin に閾値（25分）を渡す（BOA-373）
+ */
+export function livenessCheckable(
+  now,
+  graceMin = THRESHOLDS.livenessStartGraceMin,
+) {
   const m = jstMinutesOfDay(now);
-  return (
-    m >= OPERATING_START_MIN + THRESHOLDS.livenessStartGraceMin &&
-    m < OPERATING_END_MIN
-  );
+  return m >= OPERATING_START_MIN + graceMin && m < OPERATING_END_MIN;
 }
 
 const minutesBetween = (later, earlier) =>
@@ -440,7 +443,11 @@ export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
         : def.kind === "continuous"
           ? THRESHOLDS.continuousLivenessStaleMin
           : null;
-    if (staleMin !== null && livenessCheckable(now)) {
+    const graceMin =
+      def.kind === "continuous"
+        ? THRESHOLDS.continuousLivenessStaleMin
+        : THRESHOLDS.livenessStartGraceMin;
+    if (staleMin !== null && livenessCheckable(now, graceMin)) {
       const last = row.last_tick_at ? new Date(row.last_tick_at) : null;
       if (!last || minutesBetween(now, last) >= staleMin) {
         alerts.push({
