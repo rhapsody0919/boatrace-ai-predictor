@@ -367,6 +367,13 @@
     "tbd": "未定",
     "jstNote": " JST"
   },
+  "cookieConsent": {
+    "textBeforeLink": "本網站使用 Cookie 以提升服務品質。詳情請參閱",
+    "privacyLink": "隱私權政策",
+    "textAfterLink": "（日文頁面）。",
+    "accept": "同意",
+    "reject": "拒絕"
+  },
   "footer": {
     "blog": "部落格",
     "operator": "營運者",
