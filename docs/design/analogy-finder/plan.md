@@ -1,0 +1,207 @@
+# アナロジー・ファインダー plan
+
+元: [spec.md](./spec.md)・[screens.md](./screens.md)。技術判断は [ADR-0080](../../adr/0080-analogy-neighbors-precomputed-in-batch.md)（近傍はバッチで事前計算し、pgvector は使わない）。
+
+FR-2 の絞り込みは「近い順に100／200／400／800件」の前提で書く（ユーザー確認中）。「類似度○%」を残すことになっても、保存するもの（近傍の一覧と距離）は変わらず、変わるのは画面だけ。
+
+## 全体の流れ
+
+```mermaid
+flowchart LR
+  subgraph GHA_week["GitHub Actions 週1（train-analogy.yml）"]
+    E1[export: 長期 kb_archive + 本体] --> T1[pytest: as-of・リーク防止]
+    T1 --> T2[主モデル学習 3本: 1着/2着以内/3着以内]
+    T2 --> G1{品質ゲート: 基準1に勝つ・前の版より悪化しない}
+    G1 -- 合格 --> S1[SHAP 集計 → 寄与度プロファイル]
+    G1 -- 合格 --> P1[母集団の特徴量行列・重み]
+    S1 --> W1[(analogy_models / analogy_contribution_profiles)]
+    P1 --> ST[(Supabase Storage analogy/版/)]
+    E1 --> W2[(analogy_pool_outcomes 差分だけ upsert)]
+    W1 --> A1[新しい版を is_active にする]
+  end
+  subgraph GHA_10m["GitHub Actions 10分ごと JST 8:00〜21:30（generate-analogy-neighbors.yml）"]
+    R1[今日の未締切レース] --> F1[as-of 特徴量: 出走表時点 / 直前情報時点]
+    ST --> K1[会場ペナルティつき k-NN 800件]
+    F1 --> K1 --> W3[(analogy_snapshots)]
+  end
+  W1 --> API1[api/analogy/contribution]
+  W3 --> RPC[get_analogy_neighbors]
+  W2 --> RPC
+  RPC --> API2[api/analogy/neighbors/raceId]
+  API1 --> UI[AI予想タブ アナロジー・ファインダー節]
+  API2 --> UI
+  API2 -.同じ RPC.-> B635[BOA-635 / BOA-430]
+```
+
+## データ設計
+
+マイグレーション案: [115_analogy_finder_tables.sql](../../db-migration/115_analogy_finder_tables.sql)（本番未適用。適用はユーザーが行う。PGlite で作成・RPC の動作・CHECK 制約を確認済み）
+
+```mermaid
+erDiagram
+    analogy_contribution_profiles }o--|| analogy_models : "model_version"
+    analogy_snapshots }o--|| races : "race_id"
+    analogy_snapshots }o--|| analogy_models : "model_version"
+    analogy_models {
+        text model_version PK
+        timestamptz trained_at
+        date pool_cutoff
+        text[] feature_columns
+        jsonb themes
+        smallint neighbor_k
+        real venue_penalty
+        jsonb metrics
+        boolean is_active
+        timestamptz created_at
+    }
+    analogy_contribution_profiles {
+        text model_version PK
+        smallint finish_target PK
+        smallint venue_code PK
+        text grade PK
+        text round PK
+        smallint boat_number PK
+        integer n_boats
+        integer n_races
+        date period_from
+        date period_to
+        jsonb shares
+        jsonb share_sd
+        jsonb breakdown
+    }
+    analogy_pool_outcomes {
+        varchar race_id PK
+        date race_date
+        smallint venue_code
+        smallint race_number
+        text grade
+        text round
+        smallint rank1
+        smallint rank2
+        smallint rank3
+        text winning_technique
+        smallint winner_course
+        smallint[] course_by_boat
+        numeric(4,2)[] st_by_course
+        integer payout_trifecta
+        timestamptz updated_at
+    }
+    analogy_snapshots {
+        bigint_GENERATED_ALWAYS_AS_IDENTITY snapshot_id PK
+        varchar race_id
+        text model_version
+        text asof_stage
+        timestamptz asof_at
+        timestamptz computed_at
+        jsonb features
+        varchar[] neighbor_ids
+        real[] neighbor_distances
+    }
+```
+
+| テーブル | 役割 | 行数・サイズの見積り | 書き込み |
+|---|---|---|---|
+| analogy_models | 版ごとに1行。`themes` にテーマの一覧（key・名前・説明・含む特徴量）。テーマ数は可変（「市場」を後から足せる） | 週1行 | 週1回 insert、最後に is_active を切り替える |
+| analogy_contribution_profiles | 着順3 × 会場25（0=全会場）× グレード6 × ラウンド5 × 艇番7（0=全艇）。n が0のセルは書かない | 1版あたり最大15,750行 × 約1KB ≒ 16MB。古い版は2つだけ残して消す | 週1回、新しい版の行を insert（既存行の UPDATE はしない） |
+| analogy_pool_outcomes | 近傍の母集団の決着。長期（kb）と本体を同じ形にそろえる | 約41万行 × 約120B ≒ 50MB。週に約1,100行増える | 初回だけ全件。以後は新しいレースと値が変わった行だけ upsert（全行 UPDATE しない） |
+| analogy_snapshots | BOA-627 の1・2。as-of 特徴量（`features`）と近傍800件（`neighbor_ids`・`neighbor_distances`） | 1行 約16KB。1日 約300行（約150レース × 2段）≒ 5MB/日、1年で約2GB | レースごと・段ごとに1回 insert。締切後は書かない。180日を過ぎた行は近傍の配列だけ NULL にする（`features` と `model_version` から再計算できる） |
+
+Disk IO の見積り: 週次の書き込みは約16MB（寄与度）＋差分の決着。10分ごとのジョブは1回あたり数十行 × 16KB。どちらも既存の取得ジョブ（オッズ・展示）より小さい。初回の analogy_pool_outcomes の全件投入（約50MB）だけは、適用前後でダッシュボードの Disk IO を確認する。
+
+### as-of の2段
+- **出走表時点（racecard）**: 前日〜当日朝に分かる項目（級別・勝率・2連率・当地・モーター/ボート・体重・支部・年齢・過去 ST・直近成績・グレード・ステージ・節日目・艇番・会場）
+- **直前情報時点（exhibition）**: 上に展示タイム（レース内の相対値）と気象を足す
+- 過去レースの特徴量も同じ段の項目だけでそろえる（母集団の行列を段ごとに2つ作る）
+- `asof_at` は、使ったデータのうち最も新しい取得時刻（`exhibition_data.updated_at` 等）。画面の「直前情報 14:52 時点のデータ」はこの値
+
+### get_analogy_neighbors
+- 引数 `p_race_id`、`p_stage`（省略時は直前情報時点があればそれ、無ければ出走表時点）
+- 返す列: 近さの順位・距離・母集団側のレースの日付・会場・R、1〜3着、決まり手、1着の進入コース、艇ごとの進入、コース順の ST、3連単の払戻、モデル版、段、`asof_at`
+- BOA-635 はコース順の ST（スリット7形）・進入・払戻（配当の帯）を、BOA-430 は決まり手・出目を、この同じ RPC から読む
+- SECURITY INVOKER・STABLE・`statement_timeout 5s`。113 で関数の既定権限を剥奪したので、anon・authenticated に EXECUTE を明示的に付ける
+
+## スクリプト構成と実行タイミング
+
+ADR-0066 の方針どおり、モデルの学習・推論は GitHub Actions に置く（`train-*`・`generate-*` は Vercel に移さない）。Phase M の分析スクリプト（`scripts/analysis/analogy-finder-phase-m/`・`analogy-finder-md6/`）から、本番に要る部分だけを `scripts/ml/analogy/` に移す。分析スクリプトは記録として残し、本番からは import しない。
+
+| ファイル | 役割 |
+|---|---|
+| `scripts/ml/analogy/export_pool.js` | 長期（kb_archive）と本体のテーブルから、学習・母集団のデータを書き出す（Phase M の `export-data.js` を土台に。読み取りのみ） |
+| `scripts/ml/analogy/features.py` | as-of の2段の特徴量（ローリングは `shift(1)`）。学習・母集団・今日のレースで同じ関数を使う |
+| `scripts/ml/analogy/train.py` | 主モデル3本（1着・2着以内・3着以内）。木の数は固定。品質ゲート（下）を通らなければ書き込まずに失敗させる |
+| `scripts/ml/analogy/profiles.py` | SHAP をテーマに集計し、寄与度プロファイルを作る。seed を変えた5回の SD も出す |
+| `scripts/ml/analogy/pool.py` | 母集団の特徴量行列（段ごと）と距離の重み・会場ペナルティを作り、Storage に上げる |
+| `scripts/ml/analogy/neighbors.py` | 今日のレースの as-of 特徴量を作り、k-NN 800件を計算して `analogy_snapshots` に書く |
+| `scripts/ml/analogy/tests/` | pytest。as-of の段・リーク防止（当日の結果が混ざらない）・テーマ集計の合計が1・距離の対称性 |
+| `.github/workflows/train-analogy.yml` | 週1（日曜 JST 4:00。`train-poirot.yml` の3:00と重ならない時刻）。export → pytest → train → profiles → pool → DB 書き込み → is_active 切り替え |
+| `.github/workflows/generate-analogy-neighbors.yml` | 10分ごと（UTC 23:00〜12:30 ＝ JST 8:00〜21:30）。Storage のモデル・行列をキャッシュ（actions/cache）して起動時間を抑える |
+
+品質ゲート（MD-7）: 新しい版は、(1) 時系列の最後の分割で基準1（会場×1号艇の級別）に対数損失で有意に勝つ、(2) 今の is_active の版より対数損失が 0.005 以上悪化しない、の両方を満たしたときだけ is_active にする。満たさなければ書き込まずに失敗させ、Slack に通知する（既存の失敗通知と同じ経路）。
+
+近傍のジョブの約束:
+- 対象: 今日のレースで、締切前・中止でない（`races.cancellation_status`）もの
+- 出走表がそろったら出走表時点、展示データが入ったら直前情報時点を1回ずつ作る（作成済みの段は作り直さない。catch-up で漏れを拾う）
+- 締切を過ぎたレースは書かない
+- 対象があるのに1件も書けなかった実行は失敗にする（0件を成功にしない）
+
+## API
+
+既存の公開 API と同じく Edge 関数で、PostgREST に anon key で直接 fetch する（`api/outcome-distribution/index.js`・`api/predictions/[date].js` と同じ流儀）。
+
+| エンドポイント | 中身 | キャッシュ |
+|---|---|---|
+| `GET /api/analogy/contribution?venue=&grade=&round=&target=` | is_active の版の `themes` と、該当スライスの行（全艇と艇番1〜6）。スライスの n が 0 なら一段広いスライスに戻して、戻したことを返す | `s-maxage=86400, stale-while-revalidate=3600` |
+| `GET /api/analogy/neighbors/[raceId]` | `get_analogy_neighbors` の結果（最大800行） | 締切前 `s-maxage=60`、締切後 `s-maxage=86400` |
+
+API が失敗したときは、既存の `getOutcomeDistribution` と同じく Supabase の直読み（PostgREST）に切り替える。
+
+## フロントエンド
+
+### コンポーネント（screens.md のとおり）
+`src/components/race/analogy/` に置き、`RaceAiPredictionTab.jsx` の末尾に `AnalogyFinderSection` を足す。既存のブロックは触らない。
+
+```mermaid
+flowchart TD
+  Tab[RaceAiPredictionTab] --> Sec[AnalogyFinderSection]
+  Sec --> C[ContributionView FR-1]
+  C --> CB[ContributionBreakdown]
+  C --> BT[BoatCompareTable]
+  Sec --> SR[SimilarRacesView FR-2]
+  SR --> SO[SonarChart]
+  SR --> TH[件数スライダー]
+  Sec --> CO[CombinationView FR-3]
+  CO --> SK[FinishSankey]
+  Sec -. hooks .-> H1[useAnalogyContribution]
+  Sec -. hooks .-> H2[useAnalogyNeighbors]
+  H1 --> SV[src/services/analogyService.js]
+  H2 --> SV
+  SR --> AG[src/utils/analogyAggregate.js]
+  CO --> AG
+```
+
+- `src/services/analogyService.js`: 上の2つの API を呼ぶ。`supabaseDataService.js` には足さない（既に大きいため）。キャッシュは既存の `withCache` を使う
+- `src/utils/analogyAggregate.js`: 純粋関数。近傍の行から、件数 N の分布（決着4種）、サンキーの流れ（1→2→3着）、組み合わせ一覧、干渉効果のコールアウトを作る。FR-2 と FR-3 が同じ近傍を共有するので、ここを1か所にする
+- 節を出す条件: is_active の版があり、そのレースのスナップショットがあること。どちらか無ければ節ごと出さない（中止確定のレースは今と同じく出さない）
+- 艇の色は `src/utils/colors.js` の `BOAT_COLORS`。`RaceOddsListTab.jsx` 内の `BoatBadge` は `src/components/race/BoatBadge.jsx` に切り出して共用する
+- テーマの描画は `themes` 配列から行う（レーダーの軸数・棒の本数・比較表の行数を固定しない）
+- 文言は `aiPredictionTab.analogy.*`（4言語）。テーマの名前と説明は `themes[].key` から i18n キーを引く（DB の日本語名は ja の既定値）
+
+### 表示時の計算
+- FR-2 の件数スライダーは、受け取った800行の先頭 N 件で分布を数え直す（再取得しない）
+- n と期間（母集団の最古〜`pool_cutoff`）を常に出す
+
+## 既存サービス層・共通ライブラリとの連携
+- Supabase の書き込みは `scripts/lib/supabaseClient.js`（service key）を Node 側で使う。Python からは Phase M と同じく PostgREST に直接書く小さな関数を `scripts/ml/analogy/db.py` に置く
+- Storage の上げ下ろしは `scripts/ml/storage-models.js` と同じ流儀で、バケット `analogy`（新規）・パス `{model_version}/...`
+- 中止の判定は `races.cancellation_status`（メモリの既知事項）
+- グレード・ラウンドの区分は `src/constants/raceStageConfig.js` の `getRaceStageCategory` と同じ規則を Python 側にも持つ（Phase M の `common.py` で実装済み。表の対応を tests で固定する）
+
+## 検証
+- `scripts/maintenance/verify-analogy-neighbors.js`（新規、`verify-registry.json` に manual で登録）: 本番の `analogy_snapshots` から無作為に選んだレースで、RPC の結果と、ローカルで計算し直した近傍が一致するか。分布の数え方が `analogyAggregate.js` と一致するか
+- 実装後の `data-accuracy-verifier`: FR-1 のシェアの合計・n、FR-2 の分布、FR-3 のサンキーの帯と一覧のシェア、コールアウトの数値を実データで照合
+- 受け入れ E2E（`acceptance-test-writer`）と `npm run test:layout`（AI予想タブの節）
+
+## 残る判断（plan では決めない）
+- FR-2 の件数スライダーか「類似度○%」か（ユーザー確認中。データ設計は同じ）
+- 干渉効果のコールアウトに出すパターンの選び方（Phase U の最初の分析タスクで実データから選ぶ）
+- MD-3 の再判定（2026-10-02 以降のデータ、約6,100R）で「市場」を足すか
