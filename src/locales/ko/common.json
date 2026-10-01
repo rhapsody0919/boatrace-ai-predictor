@@ -635,7 +635,7 @@
     "exhibitionChartEmpty": "전시 타임이 아직 집계되지 않았습니다",
     "secondsUnit": "초",
     "detailTableTitle": "전시 정보",
-    "detailTableNote": "전시 타임 1위 승률은 2026년 3월 이후, 이 정번에서의 진입 코스는 2025년 12월 이후(모두 최대 과거 2년) 집계이며, 이번 시리즈 전시 정보는 이 모터 사용 시작 이후(이번 시리즈)의 추이입니다",
+    "detailTableNote": "전시 타임 1위 승률과 이 정번에서의 진입 코스는 2025년 12월 이후(모두 최대 과거 2년) 집계이며, 이번 시리즈 전시 정보는 이 모터 사용 시작 이후(이번 시리즈)의 추이입니다",
     "preExhibitionNote": "체중・조정 중량은 전시 전 값입니다. 틸트는 전시 항주 후에 공개됩니다",
     "entryWeightFetchError": "출주표의 체중을 가져오지 못했습니다",
     "originalExhibitionSource": "출처: BOATCAST(일반재단법인 BOATRACE 진흥회) — {{items}}",

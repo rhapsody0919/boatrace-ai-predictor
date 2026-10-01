@@ -339,7 +339,7 @@
     "exhibitionChartEmpty": "展示タイムはまだ取得できていません",
     "secondsUnit": "秒",
     "detailTableTitle": "展示情報",
-    "detailTableNote": "展示タイム1位勝率は2026年3月以降、この枠からの進入コースは2025年12月以降（いずれも最大過去2年）の集計、今節展示情報はモーター使用開始後（今節）の推移です",
+    "detailTableNote": "展示タイム1位勝率とこの枠からの進入コースは2025年12月以降（いずれも最大過去2年）の集計、今節展示情報はモーター使用開始後（今節）の推移です",
     "preExhibitionNote": "体重・調整重量は展示前の値です。チルトは展示航走の後に公開されます",
     "entryWeightFetchError": "出走表の体重を取得できませんでした",
     "originalExhibitionSource": "出典: BOATCAST（一般財団法人BOATRACE振興会）— {{items}}",

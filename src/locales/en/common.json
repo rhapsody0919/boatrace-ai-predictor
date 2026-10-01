@@ -640,7 +640,7 @@
     "exhibitionChartEmpty": "Exhibition times aren't available yet",
     "secondsUnit": "s",
     "detailTableTitle": "Exhibition details",
-    "detailTableNote": "Exhibition-fastest win rate covers races since Mar 2026 and entry course from this lane since Dec 2025 (both up to 2 years); this-meet exhibition trend covers races since this motor was assigned",
+    "detailTableNote": "Exhibition-fastest win rate and entry course from this lane cover races since Dec 2025 (both up to 2 years); this-meet exhibition trend covers races since this motor was assigned",
     "preExhibitionNote": "Weight and adjustment weight are pre-exhibition values. Tilt is published after the exhibition run",
     "entryWeightFetchError": "Couldn't load the race card weights",
     "originalExhibitionSource": "Source: BOATCAST (BOATRACE Promotion Association) — {{items}}",
