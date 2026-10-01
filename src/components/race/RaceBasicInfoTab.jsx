@@ -441,6 +441,14 @@ function RaceBasicInfoTab({
         )}
       </details>
 
+      {/* 勝率（公式の点数）・平均STの棒は、6艇の中の最小〜最大で長さを決める。
+          平均STは差が0.03秒でも棒の長さが10%と100%に開くので、長さだけで差の大きさを
+          読ませないよう書き添える（#1064 ファン評価2周目） */}
+      {isRelativeScaleMetric && (
+        <p className="rbit-metric-caveat rbit-relative-note">
+          {t("basicInfo.relativeBarNote")}
+        </p>
+      )}
       <div className="rbit-bars">
         {values.map(({ boat, value, n, isSmallSample, loading }) => {
           const player = sortedPlayers.find((p) => p.number === boat);

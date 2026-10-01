@@ -61,6 +61,10 @@ test.describe("レース詳細の表示の細部", () => {
         { timeout: 30000 },
       )
       .toBeGreaterThanOrEqual(10);
+    // 長さは6艇の中の相対比較なので、差の大きさは数字で見るよう書き添える（ファン評価2周目 P1）
+    await expect(page.locator(".rbit-relative-note")).toContainText(
+      "この6艇の中での比較",
+    );
   });
 
   test("基本情報の勝率バー: 1号艇（白）の棒の輪郭がライトモードの地と見分けられる（ファン評価1周目 P2）", async ({
@@ -130,5 +134,21 @@ test.describe("レース詳細の表示の細部", () => {
         expect(w).toBeLessThanOrEqual(1200);
       }
     }
+  });
+
+  test("375px: ST考察の級別の行で、バッジの有無にかかわらず級別の高さがそろう（ファン評価2周目 P2）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // 桐生7R: 5・6号艇は「F1 今節」で2段、4号艇はバッジなし
+    await page.goto("/race/2026-09-25-01-07");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    const grades = page.locator(".rsc-grid .rsc-cell-meta .rsc-grade");
+    await expect(grades).toHaveCount(6, { timeout: 30000 });
+    await expect(page.locator(".rsc-grid .flying-badge-meet")).toHaveCount(2);
+    const tops = await grades.evaluateAll((els) =>
+      els.map((el) => el.getBoundingClientRect().top),
+    );
+    expect(Math.max(...tops) - Math.min(...tops)).toBeLessThanOrEqual(1);
   });
 });
