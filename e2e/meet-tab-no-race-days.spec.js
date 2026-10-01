@@ -27,20 +27,19 @@ test("丸一日レースが無かった日を、予選終了の一文と推移�
     "予選は5日目（9/26）で終了",
   );
   await expect(page.locator(".rmt-forecast-settled")).toContainText(
-    "9/22は中止・順延",
+    "9/22はレースが1つも行われなかった",
   );
   await expect(page.locator(".rmt-forecast-settled")).not.toContainText(
     "9/21",
   );
   await expect(page.locator(".rmt-trend-range")).toContainText(
-    "9/22は中止・順延でレースが無かったため、目盛りにありません",
+    "9/22はレースが1つも行われなかったので、目盛りにありません",
   );
 });
 
 test("中止の無い節では、どちらの注記も出さない", async ({ page }) => {
   await openMeetTab(page, "2026-09-30-02-12");
-  await expect(page.locator(".rmt-trend-range")).not.toContainText("中止");
   await expect(page.locator(".race-meet-tab")).not.toContainText(
-    "中止・順延",
+    "レースが1つも行われなかった",
   );
 });
