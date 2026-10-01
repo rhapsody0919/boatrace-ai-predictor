@@ -67,7 +67,8 @@ const OVERFLOW_TOLERANCE_PX = 2;
  * 選んだ要素は 2026-09-29 の録画の再生で、各ページの主データとして描画されるものを実測した
  */
 const READY_SELECTORS = {
-  "/": ".venue-grid .venue-grid-card",
+  // スケルトン（VenueGridSkeleton）も .venue-grid-card を持つため、実物だけに付く修飾子で待つ（BOA-593）
+  "/": ".venue-grid-card--open, .venue-grid-card--closed",
   "/accuracy": ".turn-accuracy-venue-table",
   "/winning-technique": ".winning-technique-table",
   "/races": ".dates-list .date-card",
@@ -580,7 +581,7 @@ test.describe("レイアウト: ホームの会場グリッドに /guide の指�
     await page.locator(".app-header .logo").click();
     await expect(page).toHaveURL(/\/$/);
     await expect(
-      page.locator(".venue-grid .venue-grid-card").first(),
+      page.locator(".venue-grid-card--open, .venue-grid-card--closed").first(),
     ).toBeAttached({ timeout: 30000 });
 
     const grid = await page.evaluate(() => {

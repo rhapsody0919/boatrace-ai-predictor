@@ -630,18 +630,50 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
   });
 });
 
+/**
+ * 会場グリッドが実データで描画されたことを確かめる（BOA-593）。
+ *
+ * 読み込み中のスケルトン（VenueGridSkeleton）も `.venue-grid` と `.venue-grid-card` を
+ * 24件持つため、それらの件数では実物のカードが出る前でも通り、データ取得が壊れても
+ * 検知できなかった。スケルトンには無い `--open` / `--closed` を数え、取得失敗の表示が
+ * 無いこと、開催中の会場が1つ以上あること（取得が空・失敗だと24会場すべてが
+ * 「本日開催なし」になる）まで見る
+ */
+async function expectVenueGridLoaded(page) {
+  const realCards = page.locator(
+    ".venue-grid-card--open, .venue-grid-card--closed",
+  );
+  await expect(realCards).toHaveCount(24, { timeout: 30000 });
+  // スケルトンが残っていない（実物と合わせて24件ちょうど）
+  await expect(page.locator(".venue-grid-card")).toHaveCount(24);
+  await expect(page.locator(".data-fetch-error")).toHaveCount(0);
+
+  const names = (
+    await realCards.locator(".venue-grid-card__name").allTextContents()
+  ).map((name) => name.trim());
+  expect(names).toHaveLength(24);
+  expect(
+    names.filter((name) => name === "" || name.startsWith("venues.")),
+  ).toEqual([]);
+  expect(new Set(names).size).toBe(24);
+
+  expect(
+    await page.locator(".venue-grid-card--open").count(),
+    "開催中の会場が1つも無い（会場データの取得が空か失敗している）",
+  ).toBeGreaterThan(0);
+}
+
 test.describe("開催場一覧ページ（venue-list-redesign）", () => {
   test("トップページに24会場のグリッドが固定表示される", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator(".venue-grid")).toBeVisible({ timeout: 10000 });
-    await expect(page.locator(".venue-grid-card")).toHaveCount(24);
+    await expectVenueGridLoaded(page);
   });
 
   test("会場一覧→レース一覧→レース詳細と遷移し、URLがディープリンク可能", async ({
     page,
   }) => {
     await page.goto("/races/2026-08-11");
-    await expect(page.locator(".venue-grid-card")).toHaveCount(24);
+    await expectVenueGridLoaded(page);
 
     await page.locator(".venue-grid-card--open").first().click();
     await expect(page).toHaveURL(/\/races\/2026-08-11\/\d+$/);
