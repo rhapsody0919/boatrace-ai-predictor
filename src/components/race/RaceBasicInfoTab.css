@@ -162,6 +162,13 @@
   box-shadow: inset 0 0 0 1px var(--border-hairline);
 }
 
+/* 1号艇（白）は、ライトモードのトラック（--surface-page）と明度差がほぼ無く、
+   上の細い罫線（--border-hairline）だけでは棒の長さが読めなかった。
+   展示タイムのグラフと同じ濃さの輪郭にする（BOA-613 の追随。#1064 ファン評価1周目 P2） */
+.rbit-bar-fill.is-white {
+  box-shadow: inset 0 0 0 1.5px var(--text-secondary);
+}
+
 .rbit-bar-fill.is-small-sample {
   opacity: 0.5;
   background-image: repeating-linear-gradient(

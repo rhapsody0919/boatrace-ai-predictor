@@ -482,7 +482,7 @@ function RaceBasicInfoTab({
                 <span className="rbit-bar-track">
                   {!loading && (
                     <span
-                      className={`rbit-bar-fill${isSmallSample ? " is-small-sample" : ""}`}
+                      className={`rbit-bar-fill${isSmallSample ? " is-small-sample" : ""}${boat === 1 ? " is-white" : ""}`}
                       style={{
                         width: `${barWidthPercent(value)}%`,
                         background: color.bg,

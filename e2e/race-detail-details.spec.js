@@ -48,11 +48,52 @@ test.describe("レース詳細の表示の細部", () => {
     await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
       timeout: 30000,
     });
-    const widths = await page
-      .locator(".rbit-bar-fill")
-      .evaluateAll((els) => els.map((el) => parseFloat(el.style.width)));
-    expect(widths).toHaveLength(6);
-    expect(Math.min(...widths)).toBeGreaterThanOrEqual(10);
+    // 行は値より先に出る。6本の棒に長さが付くまで読み直す（行だけを待つと、値の読み込み前に
+    // 測ってしまう。CI で列見出しを読み込み前に測って落ちたのと同じ形）
+    await expect
+      .poll(
+        async () => {
+          const widths = await page
+            .locator(".rbit-bar-fill")
+            .evaluateAll((els) => els.map((el) => parseFloat(el.style.width)));
+          return widths.length === 6 ? Math.min(...widths) : -1;
+        },
+        { timeout: 30000 },
+      )
+      .toBeGreaterThanOrEqual(10);
+  });
+
+  test("基本情報の勝率バー: 1号艇（白）の棒の輪郭がライトモードの地と見分けられる（ファン評価1周目 P2）", async ({
+    page,
+  }) => {
+    await page.goto(RACE);
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
+      timeout: 30000,
+    });
+    const [shadow, track] = await page
+      .locator(".rbit-bar-row")
+      .first()
+      .evaluate((row) => [
+        getComputedStyle(row.querySelector(".rbit-bar-fill")).boxShadow,
+        getComputedStyle(row.querySelector(".rbit-bar-track")).backgroundColor,
+      ]);
+    const rgb = (s) =>
+      s
+        .match(/\d+(\.\d+)?/g)
+        .slice(0, 3)
+        .map(Number);
+    const lum = ([r, g, b]) => {
+      const f = (c) => {
+        const v = c / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+    };
+    const [a, b] = [lum(rgb(shadow)), lum(rgb(track))];
+    const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    // 非テキストの図形のコントラストの目安（WCAG 1.4.11）は 3:1
+    expect(ratio).toBeGreaterThanOrEqual(3);
   });
 
   test("ピットレポートの名前は全角スペースを1つの空白にまとめる（BOA-618）", async ({
@@ -73,12 +114,13 @@ test.describe("レース詳細の表示の細部", () => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/race/2026-09-25-01-07");
       await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
-      await page.locator(".rsc-card").waitFor({ timeout: 30000 });
-      const cols = await page
-        .locator(".rsc-grid thead th.rsc-boat-th")
-        .evaluateAll((els) =>
-          els.map((el) => el.getBoundingClientRect().width),
-        );
+      // カードの枠はデータより先に出る。6艇の列見出しがそろうまで待ってから測る
+      // （枠だけを待っていたため、CI では列が0本の時点で測って落ちた）
+      const heads = page.locator(".rsc-grid thead th.rsc-boat-th");
+      await expect(heads).toHaveCount(6, { timeout: 30000 });
+      const cols = await heads.evaluateAll((els) =>
+        els.map((el) => el.getBoundingClientRect().width),
+      );
       expect(cols).toHaveLength(6);
       expect(Math.max(...cols) - Math.min(...cols)).toBeLessThanOrEqual(2);
       if (width === 1920) {
