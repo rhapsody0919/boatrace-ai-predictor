@@ -56,7 +56,8 @@ async function main() {
   console.log(`📅 対象日: ${date}`);
 
   // 1. スケジュール取得（全スクリプト共通、1回のみ）
-  const schedule = await getRaceSchedule(date);
+  // DB障害を「対象なし」にしない。例外で exit 1 にし、workflow を失敗させて気づけるようにする（BOA-352）
+  const schedule = await getRaceSchedule(date, { throwOnError: true });
   if (schedule.length === 0) {
     console.log("📭 対象レースなし（スケジュール未登録）。終了。");
     return;
