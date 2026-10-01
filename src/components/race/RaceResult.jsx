@@ -19,6 +19,7 @@ import {
   PAYOUT_BET_TYPES,
   PAYOUT_STATUS,
   RACE_OUTCOME,
+  describePartialVoid,
   getRaceOutcomeState,
   getRefundBoats,
   isBoatRefunded,
@@ -746,6 +747,18 @@ function RaceResult({ prediction, raceId }) {
     result.payoutRows ?? legacyPayoutRows(result.payouts, outcome),
     finalOddsState.raceId === raceId ? finalOddsState.data : null,
   );
+  // 完走した艇の数は、着欄の記号が取れているときだけ数える（取れていない過去分は null）
+  const finishers = (startTimings ?? []).some((st) => st.finishMark != null)
+    ? startTimings.filter((st) => st.finishRank != null).length
+    : null;
+  const partialVoid = isPartialRefund
+    ? describePartialVoid({
+        boatsInRace: boatsInRace.length,
+        refundBoats: getRefundBoats(result),
+        finishers,
+        payoutRows: payoutRowsToShow,
+      })
+    : null;
   const hasFinalOddsPopularity = (payoutRowsToShow ?? []).some(
     (row) => row.popularityFromFinalOdds,
   );
@@ -899,6 +912,27 @@ function RaceResult({ prediction, raceId }) {
             {t("result.payoutSectionTitle")}
           </div>
           <PayoutRowsTable rows={payoutRowsToShow} t={t} />
+          {/* 一部の勝式だけ不成立になった理由を、事実だけ1行で書く。払戻明細の不成立が
+              正常スタート・完走の艇数から決まる表と一致するときだけ出す（BOA-558） */}
+          {partialVoid && (
+            <p className="rr-note rr-payout-void-note">
+              {t(
+                partialVoid.kind === "starters"
+                  ? "result.partialVoidByStarters"
+                  : "result.partialVoidByFinishers",
+                {
+                  count: partialVoid.count,
+                  types: partialVoid.betTypes
+                    .map((betType) =>
+                      t(
+                        `result.payoutType.${PAYOUT_BET_TYPES.find((b) => b.betType === betType).typeKey}`,
+                      ),
+                    )
+                    .join(t("result.noRace.boatSeparator")),
+                },
+              )}
+            </p>
+          )}
           {/* 単勝・複勝の人気だけは公式の発表でなく締切時オッズから出しているため、その旨を書く */}
           {hasFinalOddsPopularity && (
             <p

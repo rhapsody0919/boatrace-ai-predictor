@@ -285,6 +285,8 @@
     "refundTag": "返還艇あり",
     "partialNoRaceTag": "不成立の勝式あり",
     "payoutNoRace": "不成立（返還）",
+    "partialVoidByStarters": "正常にスタートした艇が{{count}}艇のため、{{types}}は不成立（返還）です",
+    "partialVoidByFinishers": "完走した艇が{{count}}艇のため、{{types}}は不成立（返還）です",
     "payoutNoAmount": "公式の払戻に金額の記載がありません",
     "payoutNoAmountNote": "「—」は、公式の払戻に金額の記載がない組番です",
     "payoutSpecial": "特払",

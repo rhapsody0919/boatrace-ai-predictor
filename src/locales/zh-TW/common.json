@@ -285,6 +285,8 @@
     "refundTag": "有退款艇",
     "partialNoRaceTag": "部分投注類型不成立",
     "payoutNoRace": "不成立（退款）",
+    "partialVoidByStarters": "正常起跑的艇只有{{count}}艇，因此{{types}}不成立（退款）",
+    "partialVoidByFinishers": "完賽的艇只有{{count}}艇，因此{{types}}不成立（退款）",
     "payoutNoAmount": "官方派彩資料中沒有記載金額",
     "payoutNoAmountNote": "「—」表示官方派彩資料中沒有記載金額的組合",
     "payoutSpecial": "特別派彩",

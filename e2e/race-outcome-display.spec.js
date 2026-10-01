@@ -316,6 +316,10 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
       "2連複 1=2 1人気 ¥100",
       "拡連複 不成立（返還）",
     ]);
+    // 一部の勝式だけ不成立になった理由を、事実だけ1行で書く（BOA-558）
+    await expect(root.locator(".rr-payout-void-note")).toHaveText(
+      "正常にスタートした艇が3艇のため、3連複・拡連複は不成立（返還）です",
+    );
   });
 
   test("一部返還でスタート情報の取得に失敗したとき: 返還艇（戸田9R の3号艇）を3着に出さない", async ({
@@ -357,6 +361,10 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
       "2連複 不成立（返還）",
       "拡連複 不成立（返還）",
     ]);
+    // 4艇返還（正常スタート2艇）。スタート情報が取れなくても、返還艇の数から言える（BOA-558）
+    await expect(root.locator(".rr-payout-void-note")).toHaveText(
+      "正常にスタートした艇が2艇のため、複勝・3連単・3連複・2連複・拡連複は不成立（返還）です",
+    );
   });
 
   test("特払（2026-07-24 17R3）: 単勝は組番の位置に「特払」、金額なしの複勝は組番と「—」", async ({
@@ -404,6 +412,7 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
       "金額の記載がない",
     );
     await expect(root.locator(".rr-refund-tag")).toHaveCount(0);
+    await expect(root.locator(".rr-payout-void-note")).toHaveCount(0);
   });
 
   test("マイグレーション未適用（raceStatus なし）: 従来どおりの見出しと旧列の払戻", async ({
