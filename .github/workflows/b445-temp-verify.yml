@@ -1,0 +1,57 @@
+name: TEMP BOA-445 verify (マージ前に外す)
+
+on:
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.head_ref == 'fix/boa-445-fixed-race-tests'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: true
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      GREP: "発走前のレースでデータ出走表|枠番別傾向パネル|分析ツール6コンポーネント|出現パターンプレビューの出現率|AI用コピーバナーあり|バナー・インラインのコピーボタン|コピー実行後にトースト|波紋アニメーション"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: 1. 再生（既存の録画、3回繰り返し）
+        run: |
+          npx playwright test e2e/smoke.spec.js --project=smoke --workers=1 --retries=0 --repeat-each=3 -g "$GREP"
+          node scripts/maintenance/check-e2e-skips.js --projects=smoke
+
+      - name: 2. 本番データ・実時刻（live）
+        env:
+          E2E_LIVE: '1'
+        run: |
+          date -u
+          TZ=Asia/Tokyo date
+          npx playwright test e2e/smoke.spec.js --project=smoke --workers=1 --retries=0 -g "$GREP"
+          node scripts/maintenance/check-e2e-skips.js --projects=smoke
+
+      - name: 3. 録画（部分録画、時計は各テストが締切前に固定）
+        env:
+          E2E_RECORD: '1'
+        run: |
+          npx playwright test e2e/smoke.spec.js --project=smoke --workers=1 --retries=0 -g "$GREP"
+          test -f e2e/recordings/api.har
+
+      - name: 4. 撮った録画だけで再生（録画に無い通信は abort、3回繰り返し）
+        env:
+          E2E_RECORDING_SOURCE: local
+          E2E_REPLAY_STRICT: '1'
+        run: |
+          npx playwright test e2e/smoke.spec.js --project=smoke --workers=1 --retries=0 --repeat-each=3 -g "$GREP"
+          node scripts/maintenance/check-e2e-skips.js --projects=smoke
