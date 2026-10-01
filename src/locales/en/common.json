@@ -600,7 +600,16 @@
     "periodHeader": "Period / condition",
     "nHeader": "Races",
     "allCoursesFold": "Show the record for all six courses",
-    "periodCaveat": "\"This term\" is not the official term division: it covers every race in our data (since Dec 2025, up to the past two years), so the population differs from the win rate on the official site."
+    "periodCaveat": "\"This term\" is not the official term division: it covers every race in our data (since Dec 2025, up to the past two years), so the population differs from the win rate on the official site.",
+    "recentFinishesNoteScoped": "Runs from course {{course}} (the course actually entered) {{scope}}: last {{n}}",
+    "recentScope": {
+      "current": "since Dec 2025",
+      "last3m": "in the last 3 months",
+      "last1m": "in the last month",
+      "local": "at this venue",
+      "ippan": "in General races",
+      "sgg1": "in SG/G1 races"
+    }
   },
   "aiPredictionTab": {
     "cancelled": "This race was cancelled, so there is no AI prediction.",
@@ -1850,7 +1859,10 @@
     "hiddenOlder": " (← {{n}} more to the left)",
     "flying": "F",
     "stRank": "(#{{n}})",
-    "legend": "Top: course actually taken. Middle: finish. Bottom: start timing and its rank in that race"
+    "legend": "Top: date. Then the course actually entered, the finish, and ST with its rank in that race. Tap a tile to see the venue, race and stage below",
+    "detail": "{{date}} {{venue}} R{{race}}{{stage}} · {{course}} · {{finish}} · ST {{st}}",
+    "stageWithGrade": " ({{grade}} {{stage}})",
+    "stageOnly": " ({{stage}})"
   },
   "venueDaySummary": {
     "collapsedTeaser": "{{n}} races settled / Boat 1 nige rate {{rate}}%",

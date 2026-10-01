@@ -595,7 +595,16 @@
     "periodHeader": "期間/條件",
     "nHeader": "出賽數",
     "allCoursesFold": "查看全部6條航道的成績",
-    "periodCaveat": "※「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（2025年12月以後，最多過去2年）。與官方網站的勝率母體不同。"
+    "periodCaveat": "※「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（2025年12月以後，最多過去2年）。與官方網站的勝率母體不同。",
+    "recentFinishesNoteScoped": "{{scope}}從{{course}}道（實際進入航線）出賽的最近{{n}}場",
+    "recentScope": {
+      "current": "2025年12月以後",
+      "last3m": "最近3個月",
+      "last1m": "最近1個月",
+      "local": "本場地",
+      "ippan": "一般戰",
+      "sgg1": "SG、G1"
+    }
   },
   "aiPredictionTab": {
     "cancelled": "本場比賽已中止，因此沒有AI預測。",
@@ -1842,7 +1851,10 @@
     "hiddenOlder": "（← 左側還有{{n}}場）",
     "flying": "F",
     "stRank": "(第{{n}})",
-    "legend": "上排為實際進入的航道，中排為名次，下排為起跑時間與該場的起跑順位"
+    "legend": "最上方為日期，接著是實際進入航線、名次、ST及該場內的ST名次。點選方塊，下方會顯示該場的場地、R、種別",
+    "detail": "{{date}} {{venue}}{{race}}R{{stage}}，{{course}}，{{finish}}，ST {{st}}",
+    "stageWithGrade": "（{{grade}} {{stage}}）",
+    "stageOnly": "（{{stage}}）"
   },
   "venueDaySummary": {
     "collapsedTeaser": "已確定{{n}}R，1號艇逃脫率{{rate}}%",

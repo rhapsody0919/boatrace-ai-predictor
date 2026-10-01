@@ -675,7 +675,16 @@
     "periodHeader": "期間・条件",
     "nHeader": "走数",
     "allCoursesFold": "全コース（1〜6）の成績を見る",
-    "periodCaveat": "※「今期」は公式の期区分ではなく、当社データで確認できる全期間（2025年12月以降、最大過去2年）を対象とします。公式サイトの勝率とは母集団が異なります"
+    "periodCaveat": "※「今期」は公式の期区分ではなく、当社データで確認できる全期間（2025年12月以降、最大過去2年）を対象とします。公式サイトの勝率とは母集団が異なります",
+    "recentFinishesNoteScoped": "{{scope}}{{course}}コース（実際に進入したコース）から出走した直近{{n}}走",
+    "recentScope": {
+      "current": "2025年12月以降で",
+      "last3m": "直近3ヶ月で",
+      "last1m": "直近1ヶ月で",
+      "local": "当地で",
+      "ippan": "一般戦で",
+      "sgg1": "SG・G1で"
+    }
   },
   "raceHistoryTable": {
     "date": "日付",
@@ -1842,7 +1851,10 @@
     "hiddenOlder": "（← 左にあと{{n}}走）",
     "flying": "F",
     "stRank": "({{n}}位)",
-    "legend": "上段は実際に進入したコース、中段は着順、下段はSTとそのレース内でのST順位"
+    "legend": "いちばん上は月日、次に実際に進入したコース、着順、STとそのレース内でのST順位。タイルを押すと、その走の会場・R・種別が下に出ます",
+    "detail": "{{date}} {{venue}}{{race}}R{{stage}}・{{course}}・{{finish}}・ST {{st}}",
+    "stageWithGrade": "（{{grade}} {{stage}}）",
+    "stageOnly": "（{{stage}}）"
   },
   "venueDaySummary": {
     "collapsedTeaser": "確定{{n}}R・1号艇の逃げ率{{rate}}%",

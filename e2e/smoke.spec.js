@@ -1618,6 +1618,94 @@ test.describe("レースページ再設計（BOA-168）", () => {
     ).not.toContainText("0.0%");
   });
 
+  test("枠別情報の直近走の帯は、各走の月日を出し、押すと会場・Rが出る。見出しは行の条件と実際の走数（BOA-604）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // 2026-09-29 戸田12R の1号艇。以前は見出しが行によらず「直近10走」、日付・会場は
+    // title 属性（raceId のまま）にしか無く、タッチ端末では出なかった
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    const btn = page.getByRole("button", { name: /直近1ヶ月/ }).first();
+    await btn.waitFor({ timeout: 30000 });
+    await btn.click();
+    const items = page.locator(".rrb-strip").first().locator(".rrb-item");
+    await expect(items.first()).toBeAttached({ timeout: 30000 });
+    const count = await items.count();
+    // 見出しに行の条件と実際の走数
+    await expect(page.locator(".rwit-expanded-note").first()).toContainText(
+      `直近1ヶ月で`,
+    );
+    await expect(page.locator(".rwit-expanded-note").first()).toContainText(
+      `直近${count}走`,
+    );
+    // タイルのいちばん上に月日
+    await expect(items.first().locator(".rrb-date")).toHaveText(/^\d+\/\d+$/);
+    // 最初は最新（右端）を選び、帯の下に会場・R を出す。左端を押すと切り替わる
+    const detail = page.locator(".rrb-detail").first();
+    const lastId = await items.last().getAttribute("data-race-id");
+    await expect(detail).toContainText(
+      `${Number(lastId.slice(5, 7))}/${Number(lastId.slice(8, 10))} `,
+    );
+    await expect(detail).toContainText(`${Number(lastId.slice(14, 16))}R`);
+    const firstId = await items.first().getAttribute("data-race-id");
+    await items.first().click();
+    await expect(detail).toContainText(
+      `${Number(firstId.slice(5, 7))}/${Number(firstId.slice(8, 10))} `,
+    );
+    await expect(items.first()).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("直近走の帯は、事故の走を「外」でなく公式の記号で出し、明細の括弧にグレードを付ける（BOA-604 ファン評価1周目）", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    // 2号艇（長岡良也）の「SG・G1」: 2/7 住之江4R は公式で F（以前は着順の欄が「外」）。
+    // 艇は上のチップで切り替える（SG・G1 のボタンは選んでいる艇の1つだけ）
+    await page.locator(".rwit-boat-chip").nth(1).click({ timeout: 30000 });
+    await page.getByRole("button", { name: /SG・G1/ }).click();
+    const f = page.locator('.rrb-item[data-race-id="2026-02-07-12-04"]');
+    await expect(f.locator(".rrb-rank")).toHaveText("F", { timeout: 30000 });
+    await f.click();
+    await expect(page.locator(".rrb-detail").first()).toContainText("F");
+    await expect(page.locator(".rrb-detail").first()).not.toContainText("外");
+
+    // 4号艇の「SG・G1」: 3/1 鳴門3R は G1 の「一般戦」。括弧にグレードを付けて、
+    // 表の「一般戦」行（一般グレードの節）と混ざって読まれないようにする
+    // 艇を替えても「SG・G1」の行は開いたまま（ファン評価2周目）なので、押し直さない
+    await page.locator(".rwit-boat-chip").nth(3).click();
+    const g = page.locator('.rrb-item[data-race-id="2026-03-01-14-03"]');
+    await g.click({ timeout: 30000 });
+    await expect(page.locator(".rrb-detail").first()).toContainText(
+      "（G1 一般戦）",
+    );
+  });
+
+  test("枠別情報で艇を切り替えても、開いていた行（当地など）の帯は開いたまま（BOA-604 ファン評価2周目）", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    await page.getByRole("button", { name: /当地/ }).click({ timeout: 30000 });
+    const note = page.locator(".rwit-expanded-note").first();
+    await expect(note).toContainText("当地で1コース");
+    // 2号艇に切り替えると、同じ「当地」の行のまま2コースの帯になる（以前は閉じた）
+    await page.locator(".rwit-boat-chip").nth(1).click();
+    await expect(note).toContainText("当地で2コース");
+    // 引き継いだ行をもう一度押すと閉じる
+    await page.getByRole("button", { name: /当地/ }).click();
+    await expect(page.locator(".rwit-expanded-note")).toHaveCount(0);
+
+    // 引き継いだ先の艇で走数0の行（4号艇の「当地」）は閉じる。ボタンにならず閉じられない
+    // 「直近0走」の帯だけが残っていた（ファン評価3周目）
+    await page.locator(".rwit-boat-chip").nth(0).click();
+    await page.getByRole("button", { name: /当地/ }).click();
+    await expect(note).toContainText("当地で1コース");
+    await page.locator(".rwit-boat-chip").nth(3).click();
+    await expect(page.locator(".rwit-expanded-note")).toHaveCount(0);
+  });
+
   test("枠別情報のコース別「直近1ヶ月」の帯は、表示どおり左が古く右が新しい（BOA-601）", async ({
     page,
   }) => {
@@ -1630,7 +1718,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await btn.click();
     const items = page.locator(".rrb-strip").first().locator(".rrb-item");
     await expect(items.first()).toBeVisible({ timeout: 30000 });
-    const ids = await items.evaluateAll((els) => els.map((e) => e.title));
+    const ids = await items.evaluateAll((els) =>
+      els.map((e) => e.dataset.raceId),
+    );
     expect(ids.length).toBeGreaterThan(1);
     expect(ids).toEqual([...ids].sort());
 
@@ -2677,7 +2767,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await btn.click();
     const items = page.locator(".rrb-strip").first().locator(".rrb-item");
     await expect(items.first()).toBeAttached({ timeout: 30000 });
-    const ids = await items.evaluateAll((els) => els.map((e) => e.title));
+    const ids = await items.evaluateAll((els) =>
+      els.map((e) => e.dataset.raceId),
+    );
     expect(ids.length).toBeGreaterThan(0);
     for (const id of ids) expect(id < raceId).toBe(true);
 
