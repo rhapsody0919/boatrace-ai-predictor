@@ -855,7 +855,7 @@
     "grades": {
       "all": "All races",
       "ippan": "General",
-      "sgg1": "SG・G1"
+      "sgg1": "SG/G1"
     },
     "presetLabel": "{{scope}} {{grade}}",
     "periods": {
