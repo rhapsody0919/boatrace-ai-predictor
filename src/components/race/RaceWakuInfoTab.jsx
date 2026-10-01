@@ -47,6 +47,7 @@ import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
+import { useRaceEntryFlyingRows } from "../../hooks/useRaceEntryFlyingRows";
 import { translateTechnique } from "./raceIndicators";
 import { SMALL_SAMPLE_THRESHOLD, recordsBeforeRace } from "./basicInfoStats";
 import {
@@ -108,30 +109,10 @@ function RaceWakuInfoTab({
   // どちらも094の事前集計テーブルを単純SELECTで読む（画面では集計しない）
   const [baseline, setBaseline] = useState(undefined);
   const [nigeRows, setNigeRows] = useState(undefined);
-  // 出走表の今期F・L数（艇番→{f_count, l_count}）。基本情報タブが既定タブで
-  // 同じキーを先に取るため、実質キャッシュヒットで追加クエリは増えない（T5-3）
-  const [flyingRowByBoat, setFlyingRowByBoat] = useState(null);
+  // 出走表の今期F・L数（艇番→{f_count, l_count}）。データ出走表と同じフック（BOA-638）
+  const flyingRowByBoat = useRaceEntryFlyingRows(raceId);
   // Fバッジの「今節」の印（BOA-440）
   const currentMeetFlyingBoats = useCurrentMeetFlyingBoats(raceId);
-
-  useEffect(() => {
-    if (!raceId) return undefined;
-    let cancelled = false;
-    supabaseDataService
-      .getRaceEntryOfficialRatesBreakdown(raceId)
-      .then((rows) => {
-        if (cancelled) return;
-        setFlyingRowByBoat(new Map((rows ?? []).map((r) => [r.boat_number, r])));
-      })
-      .catch((err) => {
-        // バッジは補助表示。取れなければ出さない（カードごと消さない）
-        console.error("F数取得エラー:", err?.message ?? String(err));
-        if (!cancelled) setFlyingRowByBoat(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [raceId]);
 
   useEffect(() => {
     let cancelled = false;
