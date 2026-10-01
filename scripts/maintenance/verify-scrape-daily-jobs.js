@@ -332,9 +332,24 @@ const strictClient = () => ({
     ],
     ["venue_motor_stats", "2026-09-19T08:04:00", "2026-09-19", "遅延起動"],
     ["racer_news", "2026-09-20T01:10:00", "2026-09-19", "補足の起動は前日"],
-    ["racer_profiles", "2026-10-02T03:00:00", "2026-10-02", "月次の窓の始まり(UTC 18:00)"],
-    ["racer_profiles", "2026-10-02T05:50:00", "2026-10-02", "月次の窓の終わり(UTC 20:50)"],
-    ["racer_profiles", "2026-10-02T02:59:00", "2026-10-01", "指定時刻の前は前日"],
+    [
+      "racer_profiles",
+      "2026-10-02T03:00:00",
+      "2026-10-02",
+      "月次の窓の始まり(UTC 18:00)",
+    ],
+    [
+      "racer_profiles",
+      "2026-10-02T05:50:00",
+      "2026-10-02",
+      "月次の窓の終わり(UTC 20:50)",
+    ],
+    [
+      "racer_profiles",
+      "2026-10-02T02:59:00",
+      "2026-10-01",
+      "指定時刻の前は前日",
+    ],
   ];
   for (const [job, at, expected, label] of cases) {
     const actual = resolveTargetDate(jst(at), SCRAPE_JOBS[job].targetTimeJst);
@@ -967,6 +982,61 @@ const ecFetch = (overrides = {}) =>
         store2.state.get("entry_course_stats").last_target_date ===
           "2026-09-19",
       show(res2.body),
+    );
+  }
+
+  // BOA-364: GitHub Actions（CLI）の対象日と0件の扱い
+  {
+    const { resolveCliTargetDate, main } =
+      await import("../daily/scrape-venue-entry-course-stats.js");
+    const jst = (s) => new Date(`${s}+09:00`);
+    check(
+      "進入コース CLI: 20:00 指定が日付をまたいで遅れて起動（翌 01:30・06:59）しても前日。07:00 以降（日中の手動実行）は当日。--date 指定はそのまま（BOA-364）",
+      resolveCliTargetDate([], jst("2026-09-20T01:30:00")) === "2026-09-19" &&
+        resolveCliTargetDate([], jst("2026-09-19T20:05:00")) === "2026-09-19" &&
+        // 日中の手動実行は当日（取得先のページは日付を持たず当日を返すため、前日の race_id に書かない）
+        resolveCliTargetDate([], jst("2026-09-20T10:00:00")) === "2026-09-20" &&
+        resolveCliTargetDate([], jst("2026-09-20T06:59:00")) === "2026-09-19" &&
+        resolveCliTargetDate(
+          ["--date=2026-09-01"],
+          jst("2026-09-20T01:30:00"),
+        ) === "2026-09-01",
+    );
+    const seen = [];
+    let emptyError = null;
+    try {
+      await main({
+        args: [],
+        now: jst("2026-09-20T01:30:00"),
+        getSchedule: async (date, opts) => {
+          seen.push({ date, opts });
+          return [];
+        },
+        runImpl: async () => {
+          throw new Error("呼ばれない");
+        },
+      });
+    } catch (error) {
+      emptyError = error.message;
+    }
+    check(
+      "進入コース CLI: 対象日の races が0件なら、0件保存の成功にせず例外（exit 1）。スケジュールは throwOnError で読む（BOA-364）",
+      /races が0件/.test(emptyError ?? "") &&
+        seen[0]?.date === "2026-09-19" &&
+        seen[0]?.opts?.throwOnError === true,
+      show({ emptyError, seen }),
+    );
+    const ran = [];
+    await main({
+      args: [],
+      now: jst("2026-09-20T01:30:00"),
+      getSchedule: async () => [{ race_id: "2026-09-19-01-01", venue_code: 1 }],
+      runImpl: async (schedule, date) => ran.push({ n: schedule.length, date }),
+    });
+    check(
+      "進入コース CLI: races があれば、解決した対象日で取得する",
+      ran.length === 1 && ran[0].date === "2026-09-19" && ran[0].n === 1,
+      show(ran),
     );
   }
 
@@ -2298,7 +2368,9 @@ const summaryOf = ({
     check(
       `GitHub側 ${workflow}: リポジトリ変数 ${skipVar}=true のときだけ gate ジョブが判定し、Vercelが健全なときだけ取得ジョブを止める（未設定・falseは gate が skipped で従来どおり実行、gate の失敗も実行）。実行コマンドは変えない`,
       yml.includes(`if: \${{ vars.${skipVar} == 'true' }}`) &&
-        yml.includes(`node scripts/maintenance/gha-skip-gate.js ${skipVar} --wait`) &&
+        yml.includes(
+          `node scripts/maintenance/gha-skip-gate.js ${skipVar} --wait`,
+        ) &&
         yml.includes("needs: gate") &&
         yml.includes(
           "if: ${{ !cancelled() && needs.gate.outputs.skip != 'true' }}",
@@ -2349,7 +2421,12 @@ const summaryOf = ({
         SCRAPE_JOBS.racer_profiles.targetTimeJst === "03:00" &&
         same([...targets], ["2026-10-02"]) &&
         lastEndJst < "07:00",
-      show({ first: jstText[0], last: jstText.at(-1), targets: [...targets], lastEndJst }),
+      show({
+        first: jstText[0],
+        last: jstText.at(-1),
+        targets: [...targets],
+        lastEndJst,
+      }),
     );
     // 起動日: UTC 基準の日付に、JST では +1日（UTC 18時台は JST の翌日）。レジストリの runDaysOfMonth は JST の日で持つ
     const [first, second] = vercelDays.map((d) => d.split(" "));
