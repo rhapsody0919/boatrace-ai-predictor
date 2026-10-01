@@ -154,4 +154,43 @@ test.describe("レース詳細の表示の細部", () => {
     );
     expect(Math.max(...tops) - Math.min(...tops)).toBeLessThanOrEqual(1);
   });
+
+  test("平均ST: 表示が同じ数字の艇は、棒の長さも同じ（ファン評価3周目 P2）", async ({
+    page,
+  }) => {
+    // 児島12R: 1・3・5・6号艇がいずれも「0.13」と表示される
+    await page.goto(RACE);
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await page.locator(".rbit-chip", { hasText: "平均ST" }).click();
+    await expect
+      .poll(
+        async () =>
+          page
+            .locator(".rbit-bar-row")
+            .evaluateAll(
+              (rows) =>
+                rows.filter((r) => r.querySelector(".rbit-bar-fill")).length,
+            ),
+        { timeout: 30000 },
+      )
+      .toBe(6);
+    const rows = await page.locator(".rbit-bar-row").evaluateAll((rows) =>
+      rows.map((r) => ({
+        text: r.querySelector(".rbit-value").textContent.trim(),
+        width: parseFloat(r.querySelector(".rbit-bar-fill").style.width),
+      })),
+    );
+    const byText = new Map();
+    for (const r of rows) {
+      const key = r.text.match(/\d\.\d{2}/)?.[0];
+      if (!key) continue;
+      if (!byText.has(key)) byText.set(key, []);
+      byText.get(key).push(r.width);
+    }
+    const same = [...byText.values()].filter((ws) => ws.length >= 2);
+    expect(same.length).toBeGreaterThan(0);
+    for (const ws of same) {
+      expect(Math.max(...ws) - Math.min(...ws)).toBeLessThanOrEqual(0.01);
+    }
+  });
 });

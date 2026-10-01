@@ -320,7 +320,14 @@ function RaceBasicInfoTab({
 
   if (sortedPlayers.length === 0) return null;
 
-  const values = sortedPlayers.map((p) => ({ boat: p.number, ...valueFor(p) }));
+  // 平均STは小数2桁で表示する。棒の長さも表示と同じ桁で決める。生の値で決めると、同じ「0.13」の
+  // 艇どうしで棒の長さが18ポイント違い、「差は数字で見て」の注記と食い違った（#1064 ファン評価3周目）
+  const values = sortedPlayers.map((p) => {
+    const v = valueFor(p);
+    return metric === "avgSt" && typeof v.value === "number"
+      ? { boat: p.number, ...v, value: Math.round(v.value * 100) / 100 }
+      : { boat: p.number, ...v };
+  });
   const numericValues = values
     .map((v) => v.value)
     .filter((v) => v !== null && v !== undefined);
