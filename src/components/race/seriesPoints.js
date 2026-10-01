@@ -658,8 +658,10 @@ export function flyingRacerIdsInMeet(starts, entries) {
  * **予選が終わった後のレースで**今節Fを切った選手（純関数、BOA-626）。
  *
  * 順位は予選終了で確定しているので、予選後のFでは順位の対象から外さない
- * （`getMeetScoreboard` は予選終了までのFだけで賞典除外を判定する）。それでも
- * 賞典除外なのは同じなので、画面は順位の横で断る。予選の締めが分からない節は空。
+ * （`getMeetScoreboard` は予選終了までのFだけで賞典除外を判定する）。公式の
+ * 得点率一覧も予選後のFは順位・得点率をそのまま残し、備考も付けない（SG/G1/G2の
+ * 9例で確認、BOA-649）。予選中のFの選手（順位なし）と並ぶと食い違って見えるので、
+ * 画面は順位の下で断る。予選の締めが分からない節は空。
  *
  * @param {Array<Object>} starts 本番STの行（`flyingRacerIdsInMeet` と同じ形）
  * @param {Array<Object>} entries 出走表の行
