@@ -4396,7 +4396,7 @@ export const supabaseDataService = {
       // （BOA-503。getRacerScopedRaceStats/getRacerRaceHistoryも同じ窓）。
       // 2027-12-03以降は窓の始点がデータの開始日を越えて直書きが誤りになるため、
       // その時点で注記（locales の basicInfo/wakuInfo.periodCaveat、
-      // beforeInfo.detailTableNote、termHints.js、RacerPerformanceStats.jsx）を見直す
+      // beforeInfo.detailTableNote、locales の termHints.*、RacerPerformanceStats.jsx）を見直す
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - 730);
       const cutoffStr = cutoffDate.toISOString().split("T")[0];

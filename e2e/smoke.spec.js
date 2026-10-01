@@ -2261,6 +2261,12 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await enRow.waitFor({ timeout: 30000 });
     await expect(enRow).toContainText("Eng");
     await expect(enRow).not.toContainText("エ");
+    // 記号の意味をタッチでも確かめられる（BOA-592。以前は ? が日本語ページだけで、title しか無かった）
+    await enRow.locator(".term-hint__button").click();
+    const enHint = page.locator(".term-hint__popover");
+    await expect(enHint).toContainText("Eng");
+    await expect(enHint).toContainText(/engine stall/i);
+    await enRow.locator(".term-hint__button").click();
     // 同じ走を直近の出走履歴でも同じ表記にする（ファン評価3周目。以前は履歴だけ「エ」）
     await page.locator(".rbit-bar-row").nth(5).click();
     const enHistory = page.locator(".race-history-table").first();
