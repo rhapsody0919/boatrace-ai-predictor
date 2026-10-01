@@ -137,8 +137,11 @@
   color: #94a3b8;
 }
 
-/* タブナビゲーション */
-.tab-navigation {
+/* タブナビゲーション
+   SnsHubAdmin.css の .tab-navigation と同じ詳細度で、CSSが1つのバンドルに結合され
+   後に来る方が勝つため、margin-bottom が /admin/sns-hub 側にも漏れていた。
+   admin-rules- 接頭辞を付けて分ける（BOA-570 フォローアップ） */
+.admin-rules-tab-navigation {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1rem;
@@ -751,7 +754,7 @@
     margin-top: 0.5rem;
   }
 
-  .tab-navigation {
+  .admin-rules-tab-navigation {
     gap: 0.35rem;
   }
 
