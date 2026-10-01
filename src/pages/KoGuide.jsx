@@ -158,6 +158,36 @@ const DATA_POINTS = [
   { icon: "⏱️", name: "스타트 안정도", desc: "스타트 타이밍의 일관성." },
 ];
 
+// レース詳細のタブ（並び順は PredictionPanel.jsx の tabs 配列が正本。結果は確定後だけ出る）
+const RACE_TABS = [
+  {
+    key: "basic",
+    desc: "승률, 2연대율, 3연대율, 평균 ST를 경정장(전국/당지), 등급, 기간별로 바꿔 가며 비교",
+  },
+  {
+    key: "aiPrediction",
+    desc: "1턴 마크 전개 예측과 1코스 이변 지수. 예측 적중 여부도 여기서 확인",
+  },
+  {
+    key: "meet",
+    desc: "출주 6명의 이번 시리즈 득점률, 순위, 준결승 진출에 필요한 득점",
+  },
+  { key: "beforeInfo", desc: "전시 타임, 기상, 피트 리포트" },
+  {
+    key: "waku",
+    desc: "오늘 예상 코스에서의 성적, 스타트 분석, 도주 시뮬레이션",
+  },
+  { key: "motor", desc: "이 경정장 모터의 성적과 컨디션" },
+  { key: "oddsList", desc: "발매 중인 오즈" },
+  {
+    key: "result",
+    desc: "경주 확정 후의 착순과 배당. 확정 전에는 이 탭이 나오지 않습니다",
+  },
+];
+
+const RACE_TABS_INTRO =
+  "경주 페이지는 아래 순서의 탭으로 나뉩니다. 앞의 4개 탭은 6명을 한꺼번에 비교하고, 뒤의 탭은 보트 하나를 골라 깊이 살펴봅니다.";
+
 export default function KoGuide() {
   const { t } = useTranslation();
 
@@ -362,18 +392,20 @@ export default function KoGuide() {
               </div>
             </li>
             <li>
-              <strong>1코스 이변 지수를 확인</strong>합니다 — 높을수록 혼전
-              가능성이 크고 (배당은 높아지고 적중률은 낮아집니다).
-            </li>
-            <li>
-              <strong>1턴 마크 전개 애니메이션</strong>을 봅니다 — 승부를 가르는
-              1턴이 어떻게 전개될지 확률과 함께 시각화합니다.
-            </li>
-            <li>
-              <strong>핵심 데이터 카드</strong>를 읽습니다 — 각 추천 정의 통계적
-              근거 (스타트 순위, 모터 성능, 현지 승률)입니다.
+              <strong>「AI 예상」 탭을 엽니다</strong> — 1턴 마크 전개
+              예측(전개별 확률 포함)과 1코스 이변 지수(높을수록 혼전 가능성이
+              크고, 배당은 높아지고 적중률은 낮아집니다)를 볼 수 있습니다.
+              경주가 끝나면 예측이 적중했는지도 여기서 확인합니다.
             </li>
           </ol>
+          <p>{RACE_TABS_INTRO}</p>
+          <ul className="eg-list eg-race-tabs">
+            {RACE_TABS.map((tab) => (
+              <li key={tab.key}>
+                <strong>{t(`raceTabs.${tab.key}`)}</strong>: {tab.desc}
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* Real example (BOA-250): actual past race data */}

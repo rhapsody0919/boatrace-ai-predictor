@@ -33,6 +33,7 @@ import {
   countsForSeriesScore,
   shouldUseOfficialSeries,
   prelimEndRaceIdOf,
+  prelimEndDayOf,
   semifinalSlotsOf,
   splitMeetSeries,
   scoreTableFor,
@@ -4395,7 +4396,7 @@ export const supabaseDataService = {
       // （BOA-503。getRacerScopedRaceStats/getRacerRaceHistoryも同じ窓）。
       // 2027-12-03以降は窓の始点がデータの開始日を越えて直書きが誤りになるため、
       // その時点で注記（locales の basicInfo/wakuInfo.periodCaveat、
-      // beforeInfo.detailTableNote、termHints.js、RacerPerformanceStats.jsx）を見直す
+      // beforeInfo.detailTableNote、locales の termHints.*、RacerPerformanceStats.jsx）を見直す
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - 730);
       const cutoffStr = cutoffDate.toISOString().split("T")[0];
@@ -4499,7 +4500,8 @@ export const supabaseDataService = {
     // v5: 欠場（absent）を足した（BOA-504）
     // v6: 着順が付かない走の公式の記号（finishMark）を足した（BOA-537）
     // v7: 同じ日の走を R の古い順に並べ直した（BOA-588）
-    return withCache(`racer-scoped-race-stats-v7-${racerId}`, async () => {
+    // v8: フライングの走の ST（flyingStartTiming）を足した（BOA-583。直近10走・今節の表で「F.01」と出すため）
+    return withCache(`racer-scoped-race-stats-v8-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4703,6 +4705,10 @@ export const supabaseDataService = {
               st && !st.is_flying && st.start_timing != null
                 ? st.start_timing
                 : null,
+            // フライングの走の ST。startTiming（平均・ST考察の母数）には入れず、表に「F.01」と
+            // 出すためだけに別に持つ（BOA-583。以前は直近10走・今節の表で「-」だった）
+            flyingStartTiming:
+              st?.is_flying && st.start_timing != null ? st.start_timing : null,
             // 実進入コース（BOA-257）。2025-12-04より前のレースや欠場艇はnull
             actualCourse: result[`actual_course_${entry.boat_number}`] ?? null,
             // 級別（そのレース時点の値）。ST考察のベースラインを(course, grade)で引く
@@ -7151,7 +7157,8 @@ export const supabaseDataService = {
     // v17: 着順の並びの材料に公式の記号（finishMark）を足した（BOA-537）
     // v18: 賞典除外（公式の備考・今節F）を順位から外す理由を足した（BOA-587）
     // v19: 着順の並びでフライングを「F」と出すため、is_flying を足した（BOA-589）
-    return withCache(`meet-scoreboard-v19-${raceId}`, async () => {
+    // v20: 予選終了の日目を series_day から出す（中止の日を数えない、BOA-578）
+    return withCache(`meet-scoreboard-v20-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7539,15 +7546,13 @@ export const supabaseDataService = {
           return byRacer;
         })(),
         // 予選が終わった日が節の何日目か（公式の「4日目12R終了時点」に合わせる）
-        prelimEndDay: (() => {
-          const last = prelimEndRaceIdOf(conditions ?? []);
-          if (!last) return null;
-          // `dates` は9日窓ぶん（前節を含む）なので、節の日付だけで数える
-          const meetDates = [
-            ...new Set(meetRows.map((r) => r.race_id.slice(0, 10))),
-          ].sort();
-          return meetDates.indexOf(last.slice(0, 10)) + 1 || null;
-        })(),
+        // 中止の日を数えないよう `series_day` を使う（BOA-578、prelimEndDayOf）
+        prelimEndDay: prelimEndDayOf(
+          prelimEndRaceIdOf(conditions ?? []),
+          conditions ?? [],
+          raceIds,
+          new Set(resultById.keys()),
+        ),
         // **この節に組まれた準優勝戦の枠数**。慣例は3個レース=18名で、決められない
         // とき（予選中で準優がまだ番組に出ていない等）は **null**（0ではない）。
         // 画面は `?? SEMIFINAL_DEFAULT_SLOTS` で既定の18枠に落とす。
@@ -8430,15 +8435,26 @@ export function aggregateRacerVenueBoatStats(
       exSum += Number(row.exhibitionTime);
       exN += 1;
     }
-    if (hasEx || hasSt) {
+    if (hasEx || hasSt || row.isFlying) {
       // historyは既にrace_id（YYYY-MM-DD-会場-レース番号）昇順でソート済みの
       // ため点の並び順は正しいが、対象期間が最大2年に及ぶため月日だけを表示
       // すると異なる年の同じ月日が同一ラベルに見えてしまう。年下2桁を含めて
       // 曖昧さを避ける（例: "25-05-12"）
       series.push({
         date: row.raceId.slice(2, 10),
+        // グラフの横軸は走ごとに一意な値にする。日付だけだと同じ日の2走が1つの目盛りにまとまり、
+        // 2走目に乗せても1走目のツールチップが出た（BOA-583 ファン評価2周目）
+        raceKey: row.raceId,
+        // ツールチップで同じ日の2走を見分けるため（BOA-583）
+        venueCode: row.venueCode,
+        raceNo: Number(row.raceId.slice(-2)),
         avg_exhibition_time: hasEx ? Number(row.exhibitionTime) : null,
         start_timing: hasSt ? Number(row.startTiming) : null,
+        // フライングの走は平均・線からは外すが、どこで切ったかは印で残す（BOA-583）。
+        // 0（スタートライン）の位置に置く
+        flying: row.isFlying ? 0 : null,
+        // ツールチップで F の深さ（F.01 か F.04 か）を出す
+        flyingSt: row.isFlying ? (row.startTiming ?? null) : null,
       });
     }
 

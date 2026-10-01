@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { TERM_HINTS } from "./termHints";
 import "./TermHintButton.css";
 
 // 広い画面では枠を広げる。220px 固定だと 1440px でも長い説明が縦に細長くなった（BOA-589）
@@ -11,7 +10,7 @@ const VIEWPORT_MARGIN = 8;
 const MIN_COMFORTABLE_HEIGHT = 320;
 
 export default function TermHintButton({ termKey }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [position, setPosition] = useState(null);
   const buttonRef = useRef(null);
   const popoverRef = useRef(null);
@@ -31,9 +30,10 @@ export default function TermHintButton({ termKey }) {
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [position]);
 
-  if (i18n.language !== "ja") return null;
-  const explanation = TERM_HINTS[termKey];
-  if (!explanation) return null;
+  // 説明文は locales の termHints.* に4言語で置く（BOA-592）。キーが無い用語は ? を出さない
+  const hintKey = `termHints.${termKey}`;
+  if (!i18n.exists(hintKey)) return null;
+  const explanation = t(hintKey);
 
   const handleToggle = (event) => {
     event.stopPropagation();
@@ -81,7 +81,7 @@ export default function TermHintButton({ termKey }) {
         type="button"
         className="term-hint__button"
         onClick={handleToggle}
-        aria-label="用語の説明を見る"
+        aria-label={t("termHintLabel")}
         aria-expanded={Boolean(position)}
       >
         ?

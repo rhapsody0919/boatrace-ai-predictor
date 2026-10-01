@@ -63,7 +63,7 @@ function getFinalPositionPercent(startTiming, isFlying = false) {
     : START_ANIM.LINE_PERCENT - ratio * START_ANIM.POSITION_RANGE_PERCENT;
 }
 
-// 選手名は公式の元データで姓と名の間を全角スペースで詰めてある（「丹下　　　将」）。そのまま出すと
+// 選手名は公式の元データで姓と名の間を全角スペースで詰めてある（「丹下」「将」の間に全角スペース3つ）。そのまま出すと
 // 375pxで姓だけに切れ、級別も見えなくなるため、空白を1つにまとめる（BOA-559）
 function displayName(name) {
   return name ? name.replace(/[\s\u3000]+/g, " ").trim() : name;
@@ -219,10 +219,7 @@ function StartTimingTrack({
         {/* 形（clip-path）は子に持たせる。親に付けた輪郭（drop-shadow）が
             clip-path で切り取られないようにするため（1号艇の白が1着行の
             クリーム地・トラックに埋もれていた。BOA-559 ファン評価2周目） */}
-        <span
-          className="rr-st-dot-shape"
-          style={{ background: markerColor }}
-        />
+        <span className="rr-st-dot-shape" style={{ background: markerColor }} />
       </span>
       <span
         ref={impactRef}
@@ -411,7 +408,10 @@ function PayoutRow({
       <span className="rr-pop">
         {popularity
           ? popularityTo
-            ? t("result.popularityRange", { from: popularity, to: popularityTo })
+            ? t("result.popularityRange", {
+                from: popularity,
+                to: popularityTo,
+              })
             : t("result.popularity", { rank: popularity })
           : ""}
         {popularity && popularityMarked && (
@@ -729,9 +729,7 @@ function RaceResult({ prediction, raceId }) {
     <div className="race-result">
       <div className="rr-head">
         <div className="rr-title">
-          <h4>
-            🏁 {isNoRace ? t("result.noRace.title") : t("result.title")}
-          </h4>
+          <h4>🏁 {isNoRace ? t("result.noRace.title") : t("result.title")}</h4>
           {isPartialRefund && (
             <span className="rr-refund-tag">
               {getRefundBoats(result).length > 0
@@ -775,8 +773,7 @@ function RaceResult({ prediction, raceId }) {
               !st.isFlying &&
               fastestStartTiming != null &&
               st.startTiming === fastestStartTiming;
-            const label =
-              position == null ? markLabel(t, row, isNoRace) : null;
+            const label = position == null ? markLabel(t, row, isNoRace) : null;
 
             return (
               <div className={rowClassName(position)} key={key}>
@@ -804,8 +801,10 @@ function RaceResult({ prediction, raceId }) {
                         reducedMotion={reducedMotion}
                       />
                       <span className="rr-st-value num">
-                        {st.isFlying ? "F" : ""}
-                        {st.startTiming.toFixed(2)}
+                        {/* フライングは公式と同じ「F.01」。選手ページ・直近10走とそろえる（BOA-583） */}
+                        {st.isFlying
+                          ? `F${st.startTiming.toFixed(2).replace(/^0/, "")}`
+                          : st.startTiming.toFixed(2)}
                       </span>
                       {isFastest && (
                         <span className="rr-st-fastest-tag">
