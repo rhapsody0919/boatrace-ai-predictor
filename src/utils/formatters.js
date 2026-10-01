@@ -72,6 +72,39 @@ export const formatDateShort = (dateStr) => {
 };
 
 /**
+ * 日付フォーマット（短縮形式、言語対応版）。ja は formatDateShort と同じ M/D(曜日)、
+ * それ以外は Intl（例 en "Thu, 10/1"）。翻訳対象ページの見出しに使う（BOA-653）
+ * @param {string} dateStr - YYYY-MM-DD形式の日付（JSTの日付）
+ * @param {string} lang - i18nの言語コード
+ */
+export const formatDateShortLocalized = (dateStr, lang) => {
+  if (!INTL_LOCALE_BY_LANG[lang] || lang === "ja")
+    return formatDateShort(dateStr);
+  return new Intl.DateTimeFormat(INTL_LOCALE_BY_LANG[lang], {
+    timeZone: "Asia/Tokyo",
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+  }).format(new Date(dateStr + "T00:00:00+09:00"));
+};
+
+/**
+ * 日付フォーマット（年月日、曜日なし、言語対応版）。ja は「YYYY年M月D日」、
+ * それ以外は Intl（例 en "September 28, 2026"）。フッターの更新日に使う（BOA-653）
+ * @param {string} dateStr - YYYY-MM-DD形式の日付（JSTの日付）
+ * @param {string} lang - i18nの言語コード
+ */
+export const formatDateLongLocalized = (dateStr, lang) => {
+  const locale = INTL_LOCALE_BY_LANG[lang] || INTL_LOCALE_BY_LANG.ja;
+  return new Intl.DateTimeFormat(locale, {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(dateStr + "T00:00:00+09:00"));
+};
+
+/**
  * 日付フォーマット（複数形式を返す）
  * @param {string} dateStr - YYYY-MM-DD形式の日付
  * @returns {Object} full, short, yearMonth の各形式

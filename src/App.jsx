@@ -11,13 +11,13 @@ import Contact from "./components/Contact";
 import HitRaces from "./components/HitRaces";
 import { getLatestPosts } from "./data/blogPosts";
 import { dataService } from "./services/dataService";
-import { formatDateJP } from "./utils/dateUtils";
+import { formatDateLongLocalized } from "./utils/formatters";
 
 // タブページ（/hit-races・/accuracy・/privacy・/terms・/contact）のシェル。
 // トップ（/）の開催場一覧はVenueGridPage、レース詳細は/race/:raceIdに分離済み
 // （docs/design/venue-list-redesign/参照）
 function App({ tab }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState(tab);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -105,10 +105,13 @@ function App({ tab }) {
             <p>{t("home.disclaimer")}</p>
             <p className="site-footer-updated">
               {(() => {
-                const latestPost = getLatestPosts(1)[0];
+                const latestPost = getLatestPosts(1, i18n.resolvedLanguage)[0];
                 return latestPost
                   ? t("home.blogLastUpdated", {
-                      date: formatDateJP(latestPost.date),
+                      date: formatDateLongLocalized(
+                        latestPost.date,
+                        i18n.resolvedLanguage,
+                      ),
                     })
                   : "";
               })()}
