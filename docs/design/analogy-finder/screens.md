@@ -7,7 +7,6 @@
 ### S-1 レース詳細 > AI予想タブ（既存画面の拡張）
 - 既存ブロック（PredictionCard / TurnPatternList / VolatilityDisplay / OutcomePatternPreview）の下に「アナロジー・ファインダー」節を足す
 - 節の中は3つの切り替え（①寄与度 ②似たレース ③組み合わせ）。②③は同じ似たレースの集合を使うので、類似度しきい値（または条件チップ）は②③共通の場所に置き、①では隠す
-- 読みの入力（FR-4）は②の下に置く。発走後は結果モード（`finished`）で答え合わせを出す
 - 中止確定のレースは既存どおり節ごと出さない（`isCancelled`）
 - 発走前のデータ段（出走表時点／直前情報時点）を節の見出しの下に1行で出す（例: 「直前情報 14:52 時点のデータ」）
 
@@ -29,7 +28,6 @@ App.jsx 側にこの節は置かない（レース詳細のタブにだけ出す
 | `SimilarityThreshold` | 新規（k-NN 採用時） | 65〜95% のスライダー |
 | `CombinationView`（FR-3） | 新規 | サンキー図、組み合わせ一覧（上位10件）、干渉効果のコールアウト、「1号艇以外が1着」の切り替え |
 | `FinishSankey` | 新規 | 自作 SVG。1着→2着→3着の3段を常に出す。少ない流れも艇の色のまま薄く描く（まとめない）。帯タップで件数・%。帯とノードは艇の公式色、1号艇の白は枠線つき |
-| `ReadCheck`（FR-4、保留） | 新規 | 読みの入力（1着艇＋決まり手）。発走前は分布上の位置、発走後は多数派／少数派と「よくある決着か」 |
 | `BoatBadge` | 既存を共通化 | 今は `RaceOddsListTab.jsx` 内のローカル関数。本機能でも使うので `src/components/race/BoatBadge.jsx` に切り出し、色は `src/utils/colors.js` の `BOAT_COLORS` を使う（2箇所以上で使うため共通化の規約に該当） |
 | `RaceAiPredictionTab` | 既存を拡張 | 末尾に `AnalogyFinderSection` を足すだけ。既存ブロックは触らない |
 
@@ -41,7 +39,6 @@ recharts のサンキー（`Sankey`）は帯の色を艇ごとに変える・帯
 |---|---|
 | `useContributionProfile(venueCode, grade, round, finishPos)` | 永続化した SHAP 集計（モデル版つき）を読む |
 | `useSimilarRaces(raceId, threshold or conditions)` | BOA-627 のスナップショットがあればそれを、無ければ計算結果を読む。②③で共有する |
-| `useRaceRead(raceId)` | localStorage の読み（1着艇＋決まり手、入力時刻） |
 
 テーブル・RPC・Edge Function の形は `/step2` で決める。
 
