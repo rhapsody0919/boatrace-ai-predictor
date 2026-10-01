@@ -1615,6 +1615,80 @@ test.describe("レースページ再設計（BOA-168）", () => {
     ).not.toContainText("0.0%");
   });
 
+  test("枠別情報のコース別「直近1ヶ月」の帯は、表示どおり左が古く右が新しい（BOA-601）", async ({
+    page,
+  }) => {
+    // 2026-09-29 戸田12R の1号艇。以前は左端が最新の 9/29 12R、右端が 9/10 で、
+    // 帯の上の「古い → 新しい」と逆だった
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    const btn = page.getByRole("button", { name: /直近1ヶ月/ }).first();
+    await btn.waitFor({ timeout: 30000 });
+    await btn.click();
+    const items = page.locator(".rrb-strip").first().locator(".rrb-item");
+    await expect(items.first()).toBeVisible({ timeout: 30000 });
+    const ids = await items.evaluateAll((els) => els.map((e) => e.title));
+    expect(ids.length).toBeGreaterThan(1);
+    expect(ids).toEqual([...ids].sort());
+
+    // 375pxでは1段の横スクロールで、開いたときに右端（最新）が見えている。
+    // 以前は5本×2段に折り返し、最新の走が2段目の右下に回っていた（ファン評価1周目）
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    const mBtn = page.getByRole("button", { name: /今期/ }).first();
+    await mBtn.waitFor({ timeout: 30000 });
+    await mBtn.click();
+    const strip = page.locator(".rrb-strip").first();
+    await expect(strip.locator(".rrb-item").first()).toBeAttached({
+      timeout: 30000,
+    });
+    const view = await strip.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const items = [...el.querySelectorAll(".rrb-item")];
+      const inView = (i) => {
+        const r = i.getBoundingClientRect();
+        return r.right <= box.right + 1 && r.left >= box.left - 1;
+      };
+      const rows = new Set(
+        items.map((i) => Math.round(i.getBoundingClientRect().top)),
+      );
+      return { rows: rows.size, lastInView: inView(items[items.length - 1]) };
+    });
+    expect(view).toEqual({ rows: 1, lastInView: true });
+    // 左に隠れた古い走の本数を軸に出す（3周目: 「古い」の下が一番古い走に見えた）
+    await expect(page.locator(".rrb-hidden-older").first()).toHaveText(
+      /左にあと\d+走/,
+    );
+    // 左端（いちばん古い走）までスクロールで戻れる
+    const firstReachable = await strip.evaluate((el) => {
+      el.scrollLeft = 0;
+      const box = el.getBoundingClientRect();
+      return (
+        el.querySelector(".rrb-item").getBoundingClientRect().left >=
+        box.left - 1
+      );
+    });
+    expect(firstReachable).toBe(true);
+    await expect(page.locator(".rrb-hidden-older")).toHaveCount(0);
+    // 左端まで戻した状態で別の期間を押しても、右端（最新）が見える位置で開く
+    // （ファン評価2周目: 件数と最新の走が同じ期間だと送り直されなかった）
+    await page
+      .getByRole("button", { name: /直近3ヶ月/ })
+      .first()
+      .click();
+    await expect
+      .poll(() =>
+        page
+          .locator(".rrb-strip")
+          .first()
+          .evaluate(
+            (el) => el.scrollLeft + el.clientWidth >= el.scrollWidth - 1,
+          ),
+      )
+      .toBe(true);
+  });
+
   test("基本情報の直近10走で、同じ日の2走も古い順（Rの小さい順）に並ぶ（BOA-588）", async ({
     page,
   }) => {

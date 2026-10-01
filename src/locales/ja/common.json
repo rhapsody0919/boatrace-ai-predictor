@@ -1830,6 +1830,7 @@
     "dateLabel": "{{month}}/{{day}} {{race}}R",
     "older": "古い",
     "newer": "新しい",
+    "hiddenOlder": "（← 左にあと{{n}}走）",
     "flying": "F",
     "stRank": "({{n}}位)",
     "legend": "上段は実際に進入したコース、中段は着順、下段はSTとそのレース内でのST順位"

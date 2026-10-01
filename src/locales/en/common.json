@@ -1838,6 +1838,7 @@
     "dateLabel": "{{month}}/{{day}} R{{race}}",
     "older": "Older",
     "newer": "Newer",
+    "hiddenOlder": " (← {{n}} more to the left)",
     "flying": "F",
     "stRank": "(#{{n}})",
     "legend": "Top: course actually taken. Middle: finish. Bottom: start timing and its rank in that race"
