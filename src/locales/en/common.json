@@ -286,7 +286,8 @@
     "partialNoRaceTag": "Some bet types void",
     "payoutNoRace": "Void (refunded)",
     "payoutSpecial": "Special payout",
-    "volatilityOutcomeNotJudgeable": "Not judged (void race)"
+    "volatilityOutcomeNotJudgeable": "Not judged (void race)",
+    "stLegend": "The arrows on the right show start timing (ST). The yellow line is the start line; the closer to it, the faster the start. A red arrow past the line is a false start"
   },
   "raceHistoryTable": {
     "date": "Date",

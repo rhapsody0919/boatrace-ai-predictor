@@ -282,7 +282,8 @@
     "partialNoRaceTag": "不成立の勝式あり",
     "payoutNoRace": "不成立（返還）",
     "payoutSpecial": "特払",
-    "volatilityOutcomeNotJudgeable": "判定対象外（不成立）"
+    "volatilityOutcomeNotJudgeable": "判定対象外（不成立）",
+    "stLegend": "右の矢印はスタートタイミング（ST）。黄色い線がスタートラインで、線に近いほど早いスタート。線を越えた赤い矢印はフライング"
   },
   "raceTabs": {
     "basic": "基本情報",
