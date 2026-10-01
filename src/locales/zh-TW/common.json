@@ -599,7 +599,7 @@
       "last1m": "最近1個月",
       "local": "本場地",
       "ippan": "一般戰",
-      "sgg1": "SG・G1"
+      "sgg1": "SG、G1"
     }
   },
   "aiPredictionTab": {
@@ -1844,8 +1844,8 @@
     "hiddenOlder": "（← 左側還有{{n}}場）",
     "flying": "F",
     "stRank": "(第{{n}})",
-    "legend": "最上方為日期，接著是實際進入航線、名次、ST及該場內的ST名次。點選方塊，下方會顯示該場的場地・R・種別",
-    "detail": "{{date}} {{venue}}{{race}}R{{stage}}・{{course}}・{{finish}}・ST {{st}}"
+    "legend": "最上方為日期，接著是實際進入航線、名次、ST及該場內的ST名次。點選方塊，下方會顯示該場的場地、R、種別",
+    "detail": "{{date}} {{venue}}{{race}}R{{stage}}，{{course}}，{{finish}}，ST {{st}}"
   },
   "venueDaySummary": {
     "collapsedTeaser": "已確定{{n}}R，1號艇逃脫率{{rate}}%",
