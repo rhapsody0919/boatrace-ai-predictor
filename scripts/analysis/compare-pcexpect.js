@@ -107,7 +107,8 @@ async function fetchRange({ start, end }) {
   const { data: results, error: errR } = await supabase
     .from("race_results")
     .select(
-      "race_id, rank1, rank2, rank3, payout_trifecta, is_cancelled, is_no_race",
+      // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+      "race_id, rank1, rank2, rank3, payout_trio, is_cancelled, is_no_race",
     )
     .gte("race_id", `${start}`)
     .lte("race_id", `${end}~`)
@@ -117,7 +118,7 @@ async function fetchRange({ start, end }) {
 
   const { data: preds, error: errP } = await supabase
     .from("predictions")
-    .select("race_id, model_id, top_pick, top_2nd, top_3rd, payout_trifecta")
+    .select("race_id, model_id, top_pick, top_2nd, top_3rd, payout_trio")
     .in("model_id", MODEL_IDS)
     .eq("is_shadow", false)
     .gte("race_id", `${start}`)
@@ -190,7 +191,7 @@ function aggregate({ results, preds, exts }) {
         mp.top_3rd === r.rank3
       ) {
         slot.hits++;
-        slot.payout += r.payout_trifecta || 0;
+        slot.payout += r.payout_trio || 0;
       }
     }
 
@@ -215,7 +216,7 @@ function aggregate({ results, preds, exts }) {
       });
       if (hit) {
         counts.pcexpect.hits++;
-        counts.pcexpect.payout += r.payout_trifecta || 0;
+        counts.pcexpect.payout += r.payout_trio || 0;
       }
 
       const conf = ext.payload.confidence;

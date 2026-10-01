@@ -1785,6 +1785,35 @@ async function routingIsCorrect(handlerFactory) {
     failed.status === 500 && /DB down/.test(failed.body.error),
     show(failed),
   );
+  // BOA-352: 既定の getSchedule（実際の getRaceSchedule）で、DBエラーが「対象なし（200）」に化けず 500 になる
+  const dbErrorClient = {
+    from: () => {
+      const b = {
+        select: () => b,
+        like: () => b,
+        not: () =>
+          Promise.resolve({
+            data: null,
+            error: { message: "canceling statement due to statement timeout" },
+          }),
+      };
+      return b;
+    },
+  };
+  const dbDown = await runLegacyExhibition({
+    date: DATE,
+    client: dbErrorClient,
+    run: async () => {
+      throw new Error("呼ばれない");
+    },
+    defer: () => {},
+    env: {},
+  });
+  check(
+    "従来の経路: 既定の getSchedule は、DBエラーを「対象なし（200）」にせず 500 を返す（BOA-352）",
+    dbDown.status === 500 && /statement timeout/.test(dbDown.body.error),
+    show(dbDown),
+  );
   const deferred3 = [];
   await runLegacyExhibition({
     date: DATE,

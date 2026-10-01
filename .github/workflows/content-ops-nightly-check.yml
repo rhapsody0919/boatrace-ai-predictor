@@ -53,20 +53,22 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SUMMARY: ${{ steps.checks.outputs.summary }}
+        # payload は jq で組み立てる（ログの " ・改行・\ で JSON が壊れないように。BOA-644）。
+        # section の text の上限3000文字を超えないよう、ログだけを切り詰める
         run: |
-          curl -s -X POST "$SLACK_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"attachments\": [{
-                \"color\": \"#c9a227\",
-                \"blocks\": [
-                  {
-                    \"type\": \"section\",
-                    \"text\": {
-                      \"type\": \"mrkdwn\",
-                      \"text\": \":warning: *コンテンツ運用の夜間チェックで滞留を検知*\n\`\`\`${SUMMARY}\`\`\`\n詳細: session-start-check.js または該当スクリプトを次回セッションで実行してください\"
+          payload=$(jq -n --arg summary "$SUMMARY" '
+            ":warning: *コンテンツ運用の夜間チェックで滞留を検知*\n" as $head
+            | "\n詳細: session-start-check.js または該当スクリプトを次回セッションで実行してください" as $tail
+            | {
+                attachments: [{
+                  color: "#c9a227",
+                  blocks: [{
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text: ($head + "```" + ($summary | .[0:(2900 - ($head + $tail | length))]) + "```" + $tail)
                     }
-                  }
-                ]
-              }]
-            }"
+                  }]
+                }]
+              }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"

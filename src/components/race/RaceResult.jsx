@@ -63,7 +63,7 @@ function getFinalPositionPercent(startTiming, isFlying = false) {
     : START_ANIM.LINE_PERCENT - ratio * START_ANIM.POSITION_RANGE_PERCENT;
 }
 
-// 選手名は公式の元データで姓と名の間を全角スペースで詰めてある（「丹下　　　将」）。そのまま出すと
+// 選手名は公式の元データで姓と名の間を全角スペースで詰めてある（「丹下」「将」の間に全角スペース3つ）。そのまま出すと
 // 375pxで姓だけに切れ、級別も見えなくなるため、空白を1つにまとめる（BOA-559）
 function displayName(name) {
   return name ? name.replace(/[\s\u3000]+/g, " ").trim() : name;
@@ -219,10 +219,7 @@ function StartTimingTrack({
         {/* 形（clip-path）は子に持たせる。親に付けた輪郭（drop-shadow）が
             clip-path で切り取られないようにするため（1号艇の白が1着行の
             クリーム地・トラックに埋もれていた。BOA-559 ファン評価2周目） */}
-        <span
-          className="rr-st-dot-shape"
-          style={{ background: markerColor }}
-        />
+        <span className="rr-st-dot-shape" style={{ background: markerColor }} />
       </span>
       <span
         ref={impactRef}
@@ -411,7 +408,10 @@ function PayoutRow({
       <span className="rr-pop">
         {popularity
           ? popularityTo
-            ? t("result.popularityRange", { from: popularity, to: popularityTo })
+            ? t("result.popularityRange", {
+                from: popularity,
+                to: popularityTo,
+              })
             : t("result.popularity", { rank: popularity })
           : ""}
         {popularity && popularityMarked && (
@@ -697,6 +697,12 @@ function RaceResult({ prediction, raceId }) {
   const validStartTimings = (startTimings ?? []).filter(
     (st) => st.startTiming != null,
   );
+  // 進入コース順に並べた艇番（公式の「スタート情報」の並び。BOA-625）。
+  // 進入が1艇も入っていない（2026-09-20 以前の一部・取得前）ときは空
+  const courseOrder = (startTimings ?? [])
+    .filter((st) => st.entryCourse != null)
+    .sort((a, b) => a.entryCourse - b.entryCourse)
+    .map((st) => st.boatNumber);
   // フライングは異常値のため「最速」判定・到達タイミングの基準（最遅ST）からは除外する
   // （update-top-start-stats.jsと同じ扱い。BOA-559）
   const nonFlyingStartTimings = validStartTimings.filter((st) => !st.isFlying);
@@ -729,9 +735,7 @@ function RaceResult({ prediction, raceId }) {
     <div className="race-result">
       <div className="rr-head">
         <div className="rr-title">
-          <h4>
-            🏁 {isNoRace ? t("result.noRace.title") : t("result.title")}
-          </h4>
+          <h4>🏁 {isNoRace ? t("result.noRace.title") : t("result.title")}</h4>
           {isPartialRefund && (
             <span className="rr-refund-tag">
               {getRefundBoats(result).length > 0
@@ -756,6 +760,16 @@ function RaceResult({ prediction, raceId }) {
         </p>
       )}
 
+      {!isLoadingStartTimings && courseOrder.length > 0 && (
+        <div className="rr-course-order">
+          <span className="rr-course-order-label">
+            {t("result.courseOrderLabel")}
+          </span>
+          {courseOrder.map((boat) => (
+            <BoatChip key={boat} number={boat} />
+          ))}
+        </div>
+      )}
       {isLoadingStartTimings ? (
         <div className="rr-table-skeleton" aria-busy="true">
           {boatsInRace.map((boat) => (
@@ -775,8 +789,7 @@ function RaceResult({ prediction, raceId }) {
               !st.isFlying &&
               fastestStartTiming != null &&
               st.startTiming === fastestStartTiming;
-            const label =
-              position == null ? markLabel(t, row, isNoRace) : null;
+            const label = position == null ? markLabel(t, row, isNoRace) : null;
 
             return (
               <div className={rowClassName(position)} key={key}>
@@ -792,6 +805,15 @@ function RaceResult({ prediction, raceId }) {
                     {player?.grade && <small>{player.grade}</small>}
                   </span>
                   {label && <span className="rr-mark-label">{label}</span>}
+                  {st?.entryCourse != null && (
+                    <span
+                      className={`rr-course${st.entryCourse !== boat ? " is-moved" : ""}`}
+                    >
+                      {t("result.entryCourseLabel", {
+                        course: st.entryCourse,
+                      })}
+                    </span>
+                  )}
                 </span>
                 <span className="rr-st-cell">
                   {st && st.startTiming != null ? (
@@ -804,8 +826,10 @@ function RaceResult({ prediction, raceId }) {
                         reducedMotion={reducedMotion}
                       />
                       <span className="rr-st-value num">
-                        {st.isFlying ? "F" : ""}
-                        {st.startTiming.toFixed(2)}
+                        {/* フライングは公式と同じ「F.01」。選手ページ・直近10走とそろえる（BOA-583） */}
+                        {st.isFlying
+                          ? `F${st.startTiming.toFixed(2).replace(/^0/, "")}`
+                          : st.startTiming.toFixed(2)}
                       </span>
                       {isFastest && (
                         <span className="rr-st-fastest-tag">
@@ -831,7 +855,11 @@ function RaceResult({ prediction, raceId }) {
       {validStartTimings.length > 0 && (
         <p className="rr-note rr-st-legend">{t("result.stLegend")}</p>
       )}
-      <p className="rr-note">{t("result.courseNote")}</p>
+      {/* 以前は「進入コースは精度確認中のため表示していない」と出していた（BOA-238 の頃は
+          進入の元データが無かった）。今は本番STの進入を出すので、データが無いレースだけ断る（BOA-625） */}
+      {!isLoadingStartTimings && !isNoRace && courseOrder.length === 0 && (
+        <p className="rr-note">{t("result.courseNoData")}</p>
+      )}
       {!isLoadingStartTimings && !isNoRace && rows.length < 6 && (
         <p className="rr-note rr-note-missing-ranks">
           {t("result.missingRanksNote")}

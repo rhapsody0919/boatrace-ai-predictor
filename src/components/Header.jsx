@@ -67,7 +67,15 @@ function Header() {
   }, [isMenuOpen]);
 
   // スクロール検出：デスクトップのみ圧縮
+  // 圧縮と復帰の閾値を分ける（BOA-459）。ヘッダーは sticky で文書の流れの中にあり、
+  // 圧縮で約22px縮むと、ブラウザのスクロールアンカーがその分 scrollY を戻す。
+  // 閾値が1つ（100px）だと、101〜122pxに止めた瞬間に
+  // 「圧縮→scrollYが100未満に戻る→復帰→scrollYが100超に戻る→圧縮」が毎フレーム続き、
+  // ヘッダーと下の内容が揺れ続けていた（E2Eでは要素が stable にならずクリックできない）。
+  // 2つの閾値の差を縮む量より大きく取れば、どちらの状態でも反対側の閾値を跨がない
   useEffect(() => {
+    const COMPRESS_ABOVE = 100;
+    const EXPAND_BELOW = 50;
     const handleScroll = () => {
       const isMobile = window.innerWidth <= 768;
       if (isMobile) {
@@ -75,7 +83,11 @@ function Header() {
         return;
       }
       const currentScrollY = window.scrollY;
-      setIsCompressed(currentScrollY > 100); // 100px以上スクロールで圧縮
+      setIsCompressed((compressed) =>
+        compressed
+          ? currentScrollY >= EXPAND_BELOW
+          : currentScrollY > COMPRESS_ABOVE,
+      );
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -174,6 +186,7 @@ function Header() {
               {t("nav.winningTechnique")}
             </Link>
             {/* 本日のデータ一覧（/today）は ja専用のため、選手一覧と同じく ja でのみ出す */}
+            {/* i18n-allow-start: ja のときだけ出すリンク（遷移先が ja専用ページ） */}
             {currentLng === "ja" && (
               <Link
                 to="/today"
@@ -183,6 +196,7 @@ function Header() {
                 本日のデータ一覧
               </Link>
             )}
+            {/* i18n-allow-end */}
             <button
               className={`submenu-item submenu-item-button ${activeTab === "hit-races" ? "active" : ""}`}
               onClick={() => {
@@ -206,6 +220,7 @@ function Header() {
             >
               {t("nav.pastRaces")}
             </Link>
+            {/* i18n-allow-start: ja のときだけ出すリンク（遷移先が ja専用ページ） */}
             {currentLng === "ja" && (
               <Link
                 to="/racers"
@@ -215,6 +230,7 @@ function Header() {
                 選手一覧
               </Link>
             )}
+            {/* i18n-allow-end */}
             <Link
               to={localize("/how-to-use")}
               className={`submenu-item ${activeTab === "how-to-use" ? "active" : ""}`}

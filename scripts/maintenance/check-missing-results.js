@@ -1,4 +1,4 @@
-import { supabase, isSupabaseEnabled, VENUE_NAMES } from './lib/supabaseClient.js';
+import { supabase, isSupabaseEnabled, VENUE_NAMES } from '../lib/supabaseClient.js';
 
 async function checkMissingResults() {
   if (!isSupabaseEnabled()) {

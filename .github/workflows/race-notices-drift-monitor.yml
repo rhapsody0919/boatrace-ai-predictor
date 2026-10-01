@@ -51,20 +51,22 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SUMMARY: ${{ steps.check.outputs.summary }}
+        # payload は jq で組み立てる（ログの " ・改行・\ で JSON が壊れないように。BOA-644）。
+        # section の text の上限3000文字を超えないよう、ログだけを切り詰める
         run: |
-          curl -s -X POST "$SLACK_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"attachments\": [{
-                \"color\": \"#c9a227\",
-                \"blocks\": [
-                  {
-                    \"type\": \"section\",
-                    \"text\": {
-                      \"type\": \"mrkdwn\",
-                      \"text\": \":warning: *レース特記事項ページのHTML構造変化の疑いを検知（FR-1、BOA-318/319/320）*\n\`\`\`${SUMMARY}\`\`\`\n公式サイトのrace/informationページの構造が変わり、scripts/daily/scrape-race-information.jsが正しく取得できなくなっている可能性があります\"
+          payload=$(jq -n --arg summary "$SUMMARY" '
+            ":warning: *レース特記事項ページのHTML構造変化の疑いを検知（FR-1、BOA-318/319/320）*\n" as $head
+            | "\n公式サイトのrace/informationページの構造が変わり、scripts/daily/scrape-race-information.jsが正しく取得できなくなっている可能性があります" as $tail
+            | {
+                attachments: [{
+                  color: "#c9a227",
+                  blocks: [{
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text: ($head + "```" + ($summary | .[0:(2900 - ($head + $tail | length))]) + "```" + $tail)
                     }
-                  }
-                ]
-              }]
-            }"
+                  }]
+                }]
+              }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"

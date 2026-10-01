@@ -1,3 +1,4 @@
+// i18n-allow-file: Header.jsx が ja のときだけ描画する（選手データ・検索が ja のみのため）
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabaseDataService } from "../services/supabaseDataService";

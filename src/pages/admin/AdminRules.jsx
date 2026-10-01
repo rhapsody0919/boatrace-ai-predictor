@@ -228,7 +228,7 @@ function AdminRules() {
       )}
 
       {/* タブナビゲーション */}
-      <div className="tab-navigation">
+      <div className="admin-rules-tab-navigation">
         {TABS.map(tab => (
           <button
             key={tab.id}

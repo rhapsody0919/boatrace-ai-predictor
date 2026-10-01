@@ -45,7 +45,8 @@ async function analyzeInKuzureUpsets() {
   const { data: results, error: resultError } = await supabase
     .from("race_results")
     .select(
-      "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta",
+      // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+      "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trio",
     )
     .in("race_id", raceIds);
 
@@ -71,7 +72,7 @@ async function analyzeInKuzureUpsets() {
     .filter((p) => p !== null);
 
   const trifectaPayout = upsetRaces
-    .map((r) => r.payout_trifecta)
+    .map((r) => r.payout_trio)
     .filter((p) => p !== null);
 
   const stats = (payouts, label) => {
@@ -113,7 +114,7 @@ async function analyzeInKuzureUpsets() {
       rank1: result.rank1,
       rank2: result.rank2,
       rank3: result.rank3,
-      trifecta: result.payout_trifecta,
+      trifecta: result.payout_trio,
       volatilityScore: race?.volatility_score,
     };
   });

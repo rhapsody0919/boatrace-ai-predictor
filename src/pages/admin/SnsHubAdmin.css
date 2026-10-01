@@ -87,7 +87,11 @@
   margin-bottom: 1rem;
 }
 
-.tab-navigation {
+/* AdminRules.css の .tab-navigation と同じ詳細度で、CSSが1つのバンドルに結合され
+   後に来る方が勝つため、余白（margin-bottom）が漏れる衝突があった。この画面の
+   余白は .tab-navigation-row 側に置く設計なので、タブ本体には付けない。
+   sns-hub- 接頭辞を付けて分ける（BOA-570 フォローアップ） */
+.sns-hub-tab-navigation {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
@@ -1233,7 +1237,7 @@
     font-size: 1.1rem;
   }
 
-  .tab-navigation {
+  .sns-hub-tab-navigation {
     gap: 0.35rem;
   }
 

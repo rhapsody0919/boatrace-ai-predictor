@@ -13,7 +13,8 @@ async function main() {
     const { data, error } = await supabase
       .from("predictions")
       .select(
-        "race_id, model_id, top_pick, is_hit_win, is_hit_trifecta, payout_trifecta",
+        // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+        "race_id, model_id, top_pick, is_hit_win, is_hit_trio, payout_trio",
       )
       .eq("model_id", modelId)
       .eq("is_shadow", false)
@@ -28,7 +29,7 @@ async function main() {
     const total = data.length;
     const withResult = data.filter((d) => d.is_hit_win !== null).length;
     const winHits = data.filter((d) => d.is_hit_win === true).length;
-    const trifectaHits = data.filter((d) => d.is_hit_trifecta === true).length;
+    const trifectaHits = data.filter((d) => d.is_hit_trio === true).length;
     const topPickDist = {};
     data.forEach((d) => {
       const k = d.top_pick;
