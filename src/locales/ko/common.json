@@ -304,6 +304,7 @@
     "finish": "착순",
     "technique": "결정수",
     "payout": "단승 배당금",
+    "payoutCell": "¥{{amount}}",
     "grades": {
       "ippan": "일반전",
       "G1": "G1",
@@ -820,7 +821,7 @@
     "compareTrendRange": "가로축은 날짜입니다({{from}}~{{to}}). 하루에 2경주를 뛴 날은 좌우로 나누고, 그 선수가 뛰지 않은 날은 선을 끊었습니다. 각 행의 마지막 점이 그 선수의 전주입니다.",
     "compareTrendRangeOneDay": "가로축은 날짜입니다({{day}}). 그날 2경주를 뛴 선수는 좌우로 나누었습니다. 각 행의 마지막 점이 그 선수의 전주입니다.",
     "compareTrendHint": "행을 탭하면 아래 상세가 그 선수로 바뀝니다",
-    "compareTrendFinishNote": "점 아래 숫자는 그 경주의 착순입니다(F=플라잉, 결=결장, 전·락·방 등은 공식 표기).",
+    "compareTrendFinishNote": "점 아래 숫자는 그 경주의 착순입니다. 착순이 없는 경주는 기호로 표시합니다(F=플라잉, 결장, 전복, 엔스트 등. 전체 설명은 데이터 출주표 「이번 시리즈 직전 경주」 행의 ?를 누르세요).",
     "compareTrendEmpty": "추이를 그릴 주행이 아직 없습니다",
     "prelimOverNoteDay": "예선은 {{day}}일째({{date}})에 끝났습니다. 득점률은 여기서 확정되어 오늘 착순으로는 바뀌지 않습니다.",
     "trendLastHeader": "직전",
@@ -1883,6 +1884,12 @@
     "ledeDayPartial": "확정 {{n}}경주 중 결정타가 확인된 {{m}}경주는 {{techniques}}입니다.",
     "loading": "불러오는 중..."
   },
+  "loadingScreen": {
+    "title": "데이터를 불러오는 중...",
+    "description": "잠시만 기다려 주세요",
+    "ariaLabel": "불러오는 중"
+  },
+  "breadcrumbLabel": "이동 경로",
   "listSeparator": ", ",
   "termHintLabel": "용어 설명 보기",
   "termHints": {

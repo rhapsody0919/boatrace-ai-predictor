@@ -308,6 +308,7 @@
     "finish": "Finish",
     "technique": "Winning technique",
     "payout": "Win Payout",
+    "payoutCell": "¥{{amount}}",
     "grades": {
       "ippan": "Regular",
       "G1": "G1",
@@ -825,7 +826,7 @@
     "compareTrendRange": "The horizontal axis is the date ({{from}}–{{to}}). On days with two races the dots are shifted left and right, and the line breaks on days the racer did not race. The last dot in each row is the racer's previous race.",
     "compareTrendRangeOneDay": "The horizontal axis is the date ({{day}}). Racers with two races that day have their dots shifted left and right. The last dot in each row is the racer's previous race.",
     "compareTrendHint": "Tap a row to switch the details below to that racer",
-    "compareTrendFinishNote": "The number under each dot is the finish in that race (F = flying start, Abs = absent; other marks follow the official notation).",
+    "compareTrendFinishNote": "The number under each dot is the finish in that race. Races without a finish show a mark (F = flying start, Abs = absent, Eng = engine stall, etc.; tap ? on the \"Last race this series\" row of the data table for the full list).",
     "compareTrendEmpty": "Not enough runs yet to draw a trend",
     "prelimOverNoteDay": "The preliminaries ended on day {{day}} ({{date}}). The score rate is final and today's finish will not change it.",
     "trendLastHeader": "Last",
@@ -1891,6 +1892,12 @@
     "ledeDayPartial": "Of the {{n}} settled races, the {{m}} with a recorded winning move: {{techniques}}.",
     "loading": "Loading..."
   },
+  "loadingScreen": {
+    "title": "Loading data...",
+    "description": "Please wait a moment",
+    "ariaLabel": "Loading"
+  },
+  "breadcrumbLabel": "Breadcrumb",
   "listSeparator": ", ",
   "termHintLabel": "Show what this term means",
   "termHints": {
