@@ -233,7 +233,7 @@
     "popularityRange": "人氣第{{from}}～{{to}}名",
     "popularityFromFinalOddsNote": "※ 單勝・複勝的人氣依截止時賠率（官方）計算（複勝依上限由低至高，相同賠率以範圍表示）。其他投注方式為官方公布。",
     "fastestStartTag": "最快",
-    "courseNoData": "※本場沒有進入航線的資料",
+    "courseNoData": "※本站尚未取得本場的進入航線",
     "courseOrderLabel": "進入",
     "entryCourseLabel": "{{course}}道",
     "missingRanksNote": "※本場比賽第4名以後的名次資料尚未取得，因此部分名次未顯示",

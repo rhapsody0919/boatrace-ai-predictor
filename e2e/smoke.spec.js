@@ -1754,10 +1754,11 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(one.locator(".rr-course")).not.toHaveClass(/is-moved/);
     await expect(page.getByText("精度確認中")).toHaveCount(0);
 
-    // 進入のデータが無いレース（2026-09-14 徳山7R）だけ、データが無いと断る
+    // 進入を取得できていないレース（2026-09-14 徳山7R）だけ断る。公式には進入が出ているので、
+    // 「データが無い」ではなく当サイトで取れていないと書く（ファン評価1周目）
     await page.goto("/race/2026-09-14-18-07");
     await expect(
-      page.getByText("このレースは進入コースのデータがありません"),
+      page.getByText("このレースの進入コースは、当サイトではまだ取得できていません"),
     ).toBeVisible({ timeout: 30000 });
     await expect(page.locator(".rr-course-order")).toHaveCount(0);
   });
