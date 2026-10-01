@@ -869,7 +869,7 @@
     "loading": "載入中...",
     "noHistory": "沒有出賽紀錄資料",
     "noVenueData": "沒有各賽場的成績資料（未達規定場次）",
-    "trendNote": "本場之前的最近10場（由新到舊，不受上方等級・期間條件影響）。點選列可前往該場詳情",
+    "trendNote": "本場之前的最近10場（由新到舊，不受上方等級、期間條件影響）。點選列可前往該場詳情",
     "finishUnknown": "名次外（名次不明）",
     "finishAbsent": "缺賽",
     "venueRankingFor": "{{metric}}排行",
