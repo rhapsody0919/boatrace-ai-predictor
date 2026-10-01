@@ -399,6 +399,10 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
       "複勝 4 —",
       "3連単 6-4-1 85人気 ¥92,140 best",
     ]);
+    // 「—」の意味は、スマホでも読めるよう表の下に書く（#1074 ファン評価1周目）
+    await expect(root.locator(".rr-payout-no-amount-note")).toContainText(
+      "金額の記載がない",
+    );
     await expect(root.locator(".rr-refund-tag")).toHaveCount(0);
   });
 

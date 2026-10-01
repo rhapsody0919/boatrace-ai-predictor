@@ -895,6 +895,14 @@ function RaceResult({ prediction, raceId }) {
               {t("result.popularityFromFinalOddsNote")}
             </p>
           )}
+          {/* 「—」の意味は title だけだとスマホで読めないので、表の下にも書く（#1074 ファン評価1周目） */}
+          {payoutRowsToShow.some(
+            (row) => row.status === PAYOUT_STATUS.NO_AMOUNT,
+          ) && (
+            <p className="rr-note rr-payout-no-amount-note">
+              {t("result.payoutNoAmountNote")}
+            </p>
+          )}
         </>
       )}
 
