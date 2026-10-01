@@ -153,12 +153,11 @@ export function checkMigrationSql(sql, { number = Infinity } = {}) {
 
   // 6・7. 関数の権限の明示と、SECURITY DEFINER の匿名公開
   if (number >= FUNCTION_GRANT_MIN_NUMBER) {
-    // 関数本文（ドル引用）の中の文字列を拾わないよう、本文を印に置き換えてから探す。
+    // 関数本文（ドル引用・単一引用）の中の文字列を拾わないよう、本文を印に置き換えてから探す。
     // 本文が消えるので、CREATE FUNCTION 文は次の ; で終わる（SECURITY DEFINER が本文の前後どちらにあっても拾える）
-    const outer = body.replace(
-      /\$([\w]*)\$[\s\S]*?\$\1\$/g,
-      () => " __BODY__ ",
-    );
+    const outer = body
+      .replace(/\$([\w]*)\$[\s\S]*?\$\1\$/g, () => " __BODY__ ")
+      .replace(/'(?:[^']|'')*'/g, () => " __BODY__ ");
     const fnRe =
       /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+((?:"?[\w]+"?\.)?"?[\w]+"?)\s*\(([^;]*);/gi;
     while ((m = fnRe.exec(outer))) {
@@ -319,6 +318,13 @@ GRANT EXECUTE ON FUNCTION public.f() TO anon;`,
       name: "114番以降: 本文の後ろに書いたSECURITY DEFINERも拾う",
       sql: `CREATE FUNCTION public.f() RETURNS int AS $fn$ SELECT 1 $fn$ LANGUAGE sql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION public.f() TO authenticated;`,
+      number: 114,
+      errors: 1,
+    },
+    {
+      name: "114番以降: 単一引用の本文に ; があっても後ろのSECURITY DEFINERを拾う",
+      sql: `CREATE FUNCTION public.f() RETURNS int LANGUAGE sql AS 'SELECT 1; SELECT 2' SECURITY DEFINER;
+GRANT EXECUTE ON FUNCTION public.f() TO anon;`,
       number: 114,
       errors: 1,
     },
