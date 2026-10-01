@@ -5,6 +5,13 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
   test("今節（前日まで）にFを切った艇にだけ「今節」の印が付き、前の節以前のF1には付かない", async ({
     page,
   }) => {
+    // 今節Fの取得で例外を出さない（#1002 と #999 の組み合わせで import が抜け、
+    // 「今節F取得エラー: groupIntoCurrentMeet is not defined」で印が全レースで消えた）
+    const flyingErrors = [];
+    page.on("console", (msg) => {
+      if (msg.type() === "error" && msg.text().includes("今節F取得エラー"))
+        flyingErrors.push(msg.text());
+    });
     // 2026-09-25 桐生7R: F1が5艇（1・2・3・5・6号艇）。
     // 5号艇（3740）は9/22 5R、6号艇（3654）は9/24 8Rで今節にFを切っている。
     // 1〜3号艇は今節（9/20〜）にFが無い＝期の前半のF
@@ -15,9 +22,9 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     });
     const basic = page.locator(".rbit-bar-row .flying-badge");
     await expect(basic).toHaveCount(5);
-    await expect(
-      page.locator(".rbit-bar-row .flying-badge-meet"),
-    ).toHaveCount(2);
+    await expect(page.locator(".rbit-bar-row .flying-badge-meet")).toHaveCount(
+      2,
+    );
     await expect(basic.filter({ hasText: "今節" }).first()).toHaveAttribute(
       "title",
       /今節の初日から前日まで.*当日のFは含みません/,
@@ -35,6 +42,7 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
       .waitFor({ state: "visible", timeout: 25000 });
     await expect(page.locator(".rsc-grid .flying-badge")).toHaveCount(5);
     await expect(page.locator(".rsc-grid .flying-badge-meet")).toHaveCount(2);
+    expect(flyingErrors).toEqual([]);
   });
 
   test("l_count が1以上の艇にはLバッジがFとは別の見た目で出る", async ({
@@ -120,7 +128,9 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
         vh: window.innerHeight,
         front: el.contains(top),
         frontEl: top?.className ?? String(top),
-        scrollable: el.scrollHeight <= el.clientHeight || getComputedStyle(el).overflowY === "auto",
+        scrollable:
+          el.scrollHeight <= el.clientHeight ||
+          getComputedStyle(el).overflowY === "auto",
       };
     });
     expect(r.bottom).toBeLessThanOrEqual(r.vh);
@@ -182,7 +192,12 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
       const mb = document
         .querySelector(".rsc-grid .flying-badge-meet")
         .getBoundingClientRect();
-      return { sw: w.scrollWidth, cw: w.clientWidth, right: mb.right, wright: wb.right };
+      return {
+        sw: w.scrollWidth,
+        cw: w.clientWidth,
+        right: mb.right,
+        wright: wb.right,
+      };
     });
     expect(r.sw).toBeLessThanOrEqual(r.cw);
     expect(r.right).toBeLessThanOrEqual(r.wright);
