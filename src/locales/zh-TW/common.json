@@ -532,7 +532,7 @@
     "result": "結果"
   },
   "wakuInfo": {
-    "note": "選擇選手後，可依期間與條件比較該選手在本日預想航道的成績。點擊左側的期間名稱，可展開該航道最近10次的名次。全部6條航道的比較請從表格下方的摺疊區開啟。",
+    "note": "選擇選手後，可依期間與條件比較該選手在本場比賽預想航道的成績。點擊左側的期間名稱，可展開該航道最近10次的名次。全部6條航道的比較請從表格下方的摺疊區開啟。成績只統計本場比賽之前的場次（最近3個月・最近1個月從本場比賽的日期起算）。",
     "boatLabel": "選手（艇號）",
     "metricLabel": "指標",
     "metrics": {
@@ -563,8 +563,8 @@
     },
     "smallSampleTitle": "樣本數少，僅供參考",
     "gridTitleWithMetric": "各航道成績：{{metric}}",
-    "todayMark": "本場",
-    "todayCourseHeading": "本日預想進入：{{course}}航道",
+    "todayMark": "預想",
+    "todayCourseHeading": "本場比賽預想進入：{{course}}航道",
     "wakuNariAssumption": "※以依艇號進入為前提",
     "wakuNariRate": "此選手依艇號進入的比率為{{rate}}％（最近{{n}}次出賽）",
     "periodHeader": "期間・條件",
@@ -1741,7 +1741,8 @@
   "stConsideration": {
     "title": "起跑分析",
     "subtitle": "下方為與相同航道、相同級別平均值的差距",
-    "window": "統計期間 {{start}}〜{{end}}",
+    "window": "比較平均的統計期間 {{start}}〜{{end}}",
+    "ownWindow": "選手的數值只統計本場比賽之前的場次",
     "gradeRow": "級別",
     "runsRow": "出賽數",
     "stable": "穩定率",

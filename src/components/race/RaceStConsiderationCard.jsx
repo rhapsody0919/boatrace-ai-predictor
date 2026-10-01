@@ -149,6 +149,12 @@ function RaceStConsiderationCard({
           })}
         </p>
       )}
+      {/* 選手側の値は表示中のレースより前の走だけで出している（BOA-603）。
+          画面の日付が平均の期間だけだと、選手の数字にもレース後の走が入っていると
+          読まれた（ファン評価2周目） */}
+      <p className="rsc-window rsc-own-window">
+        {t("stConsideration.ownWindow")}
+      </p>
 
       {loading ? (
         <p className="rsc-loading">{t("wakuInfo.loading")}</p>

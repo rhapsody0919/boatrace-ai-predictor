@@ -1428,9 +1428,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rsc-grid thead th.rsc-boat-th")).toHaveCount(6);
 
     // 集計期間が実測値で表示される（「直近1年」のような固定文言にしない）
-    await expect(page.locator(".rsc-window")).toContainText(
-      /\d{4}-\d{2}-\d{2}/,
-    );
+    await expect(
+      page.locator(".rsc-window:not(.rsc-own-window)"),
+    ).toContainText(/\d{4}-\d{2}-\d{2}/);
 
     // 差が表示され、方向（良い/悪い）で色分けされる。
     // どちらの向きが何件出るかは対象レースの選手次第なので、件数の内訳は問わない
@@ -1936,6 +1936,43 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 25000,
     });
     await expect(page.locator(".flying-badge")).toHaveCount(0);
+  });
+
+  test("過去のレースの枠別情報とST考察に、そのレース自身と後日の走を入れない（BOA-603）", async ({
+    page,
+  }) => {
+    // 津 2026-09-26 5R の1号艇（飯山泰）。以前は「直近1ヶ月」の帯の右端に
+    // 9/26 5R 自身の3着と 9/28 11R の1着が入り、ST履歴の先頭も 9/28 だった
+    const raceId = "2026-09-26-09-05";
+    await page.goto(`/race/${raceId}`);
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    // 数字は「このレースの時点」なので、見出しも「本日」と言わない（ファン評価1周目）
+    await expect(page.getByText("このレースの想定進入").first()).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(page.getByText("本日の想定進入")).toHaveCount(0);
+    // 選手側の値の集計範囲も画面に出す（2周目: 日付が平均の期間しか無く、
+    // 選手の数字にもレース後の走が入っていると読まれた）
+    await expect(
+      page.getByText("選手の値は、このレースより前の走で集計しています"),
+    ).toBeVisible();
+    const btn = page.getByRole("button", { name: /直近1ヶ月/ }).first();
+    await btn.waitFor({ timeout: 30000 });
+    await btn.click();
+    const items = page.locator(".rrb-strip").first().locator(".rrb-item");
+    await expect(items.first()).toBeAttached({ timeout: 30000 });
+    const ids = await items.evaluateAll((els) => els.map((e) => e.title));
+    expect(ids.length).toBeGreaterThan(0);
+    for (const id of ids) expect(id < raceId).toBe(true);
+
+    // ST考察のST履歴（1号艇）にも、このレース以降の日付が出ない
+    await page.locator(".rsc-fold-toggle").nth(1).click();
+    const dates = await page
+      .locator(".rsc-fold-body table tbody tr td:first-child")
+      .allInnerTexts();
+    expect(dates.length).toBeGreaterThan(0);
+    for (const d of dates) expect(d <= "2026-09-26").toBe(true);
+    expect(dates).not.toContain("2026-09-28");
   });
 
   test("枠別情報タブのST分布・ST履歴が折りたたみで開き、平均と重ねて表示される（phase a T3-3）", async ({
