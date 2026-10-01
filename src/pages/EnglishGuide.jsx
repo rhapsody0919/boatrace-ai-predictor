@@ -3,7 +3,10 @@
  * 競技を全く知らない海外ユーザーが、ルール理解から boatAI の予想の読み方まで到達できる構成
  */
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { getSiteFooterLinks } from "../components/siteFooterLinks";
 import "./EnglishGuide.css";
 
 const TECHNIQUES = [
@@ -160,6 +163,8 @@ const DATA_POINTS = [
 ];
 
 export default function EnglishGuide() {
+  const { t } = useTranslation();
+
   return (
     <div className="app">
       <title>
@@ -477,6 +482,7 @@ export default function EnglishGuide() {
           </Link>
         </section>
       </div>
+      <Footer links={getSiteFooterLinks(t)} />
     </div>
   );
 }

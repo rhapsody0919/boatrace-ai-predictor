@@ -2834,6 +2834,130 @@ export const supabaseDataService = {
   },
 
   /**
+   * 各艇の**今節の前走**（同じ会場・同じ節で、表示中のレースより前の最後の走）を返す
+   * （BOA-610、データ出走表の「今節の前走」行）。
+   *
+   * 以前この行は exhibition_data.prev_*（公式の直前情報の前走）を出していたが、
+   * それは「同じ日の前の走」で、前日までの走が入らない。節の2日目以降でも、
+   * その日の1走目は空になる（2026-09-30 児島7R の西村拓也は 9/29 10R を走っているのに空）。
+   * 節の切り方は `groupIntoMeetBeforeRace`（今節タブ・今節展示情報と同じ。選手＋会場＋目印）。
+   *
+   * 戻り値は艇ごとに1行:
+   *   { boat_number, firstOfMeet: true }                       今節の走がまだ無い
+   *   { boat_number, raceId, boatNumber, result, finishMark }  前走（result は race_results の1行か null）
+   * 中止になったレース（`isRaceCancelled`）は走っていないので飛ばす。
+   * 前走の結果がまだ無い行があるとき（同じ日の直前のレースが確定前）は `fetchFailed: true` を
+   * 付けて withCache に焼き付けない（frontend-data-fetch.md §4）
+   *
+   * @returns {Promise<{rows: Array<Object>, fetchFailed?: boolean}>}
+   */
+  getRaceMeetPrevRuns(raceId) {
+    return withCache(`race-meet-prev-runs-v2-${raceId}`, async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+      const date = raceId.slice(0, 10);
+      const venue = raceId.slice(11, 13);
+
+      const { data: entries } = await supabase
+        .from("race_entries")
+        .select("boat_number, racer_id")
+        .eq("race_id", raceId);
+      const targets = (entries ?? []).filter((e) => e.racer_id != null);
+      if (targets.length === 0) return { rows: [] };
+
+      // 節は長くて7日。前後の空き（2日）を見分けるのに足りる幅を取る
+      // （getCurrentMeetFlyingBoats と同じ）。6選手×14日なら1000行に届かない
+      const from = new Date(`${date}T00:00:00Z`);
+      from.setUTCDate(from.getUTCDate() - 14);
+      const { data: past } = await supabase
+        .from("race_entries")
+        .select("race_id, racer_id, boat_number")
+        .in(
+          "racer_id",
+          targets.map((e) => e.racer_id),
+        )
+        // `%-VV-%` だと月の部分（-09-）にも当たるので桁で位置を固定する
+        .like("race_id", `__________-${venue}-__`)
+        .gte("race_id", from.toISOString().slice(0, 10))
+        .lt("race_id", raceId);
+
+      const meetByBoat = new Map(
+        targets.map((e) => [
+          e.boat_number,
+          groupIntoMeetBeforeRace(
+            (past ?? []).filter((r) => r.racer_id === e.racer_id),
+            raceId,
+          ),
+        ]),
+      );
+      const meetRaceIds = [
+        ...new Set([...meetByBoat.values()].flat().map((r) => r.race_id)),
+      ];
+      if (meetRaceIds.length === 0) {
+        return {
+          rows: targets.map((e) => ({
+            boat_number: e.boat_number,
+            firstOfMeet: true,
+          })),
+        };
+      }
+
+      // 中止になったレースにも出走表の行は残る（結果の行は無い）。節の走を全部引いて、
+      // 中止を飛ばした最後の走を前走にする（中止を拾うと結果が来ないまま「—」が残る）
+      const [{ data: results }, { data: timings }, { data: races }] =
+        await Promise.all([
+          supabase
+            .from("race_results")
+            .select(
+              "race_id, rank1, rank2, rank3, rank4, rank5, rank6, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+            )
+            .in("race_id", meetRaceIds),
+          supabase
+            .from("race_start_timings")
+            .select("race_id, boat_number, finish_mark, entry_course")
+            .in("race_id", meetRaceIds),
+          supabase
+            .from("races")
+            .select("race_id, cancellation_status")
+            .in("race_id", meetRaceIds),
+        ]);
+      const resultById = new Map((results ?? []).map((r) => [r.race_id, r]));
+      const statusById = new Map(
+        (races ?? []).map((r) => [r.race_id, r.cancellation_status]),
+      );
+      const timingByKey = new Map(
+        (timings ?? []).map((r) => [`${r.race_id}#${r.boat_number}`, r]),
+      );
+
+      const rows = targets.map((e) => {
+        const prev = meetByBoat.get(e.boat_number).findLast(
+          (r) =>
+            !isRaceCancelled({
+              cancellationStatus: statusById.get(r.race_id) ?? null,
+              result: resultById.get(r.race_id) ?? null,
+            }),
+        );
+        if (!prev) return { boat_number: e.boat_number, firstOfMeet: true };
+        return {
+          boat_number: e.boat_number,
+          raceId: prev.race_id,
+          boatNumber: prev.boat_number,
+          result: resultById.get(prev.race_id) ?? null,
+          finishMark:
+            timingByKey.get(`${prev.race_id}#${prev.boat_number}`)
+              ?.finish_mark ?? null,
+          entryCourse:
+            timingByKey.get(`${prev.race_id}#${prev.boat_number}`)
+              ?.entry_course ?? null,
+        };
+      });
+      const pending = rows.some((r) => !r.firstOfMeet && !r.result);
+      return pending ? { rows, fetchFailed: true } : { rows };
+    });
+  },
+
+  /**
    * 指定レースの枠番別モーター調子（2連率/3連率）を取得する（BOA-151）
    * 「このレースのどの艇のモーターが調子いいか」を直接示す
    * venueCodeを渡すと各艇のモーターの機力指数（BOA-265）も合わせて取得する
@@ -7031,7 +7155,8 @@ export const supabaseDataService = {
     // v16: 推移の走に着順（finish）を足した（BOA-537）
     // v17: 着順の並びの材料に公式の記号（finishMark）を足した（BOA-537）
     // v18: 賞典除外（公式の備考・今節F）を順位から外す理由を足した（BOA-587）
-    return withCache(`meet-scoreboard-v18-${raceId}`, async () => {
+    // v19: 着順の並びでフライングを「F」と出すため、is_flying を足した（BOA-589）
+    return withCache(`meet-scoreboard-v19-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7266,6 +7391,12 @@ export const supabaseDataService = {
         (meetStarts ?? [])
           .filter((r) => officialMarkOf(r.finish_mark))
           .map((r) => [`${r.race_id}|${r.boat_number}`, r.finish_mark]),
+      );
+      // フライングの走。着欄の記号（finish_mark）が未取得の走でも「失」と出さず「F」にする（BOA-589）
+      const flyingKeys = new Set(
+        (meetStarts ?? [])
+          .filter((r) => r.is_flying === true)
+          .map((r) => `${r.race_id}|${r.boat_number}`),
       );
 
       return {
@@ -7538,6 +7669,7 @@ export const supabaseDataService = {
             raceStage: stageById.get(e.race_id) ?? null,
             // 欠場を走数から外すための材料（BOA-489）
             finishMark: markByKey.get(`${e.race_id}|${e.boat_number}`) ?? null,
+            isFlying: flyingKeys.has(`${e.race_id}|${e.boat_number}`),
             started:
               !racesWithSt.has(e.race_id) ||
               startedKeys.has(`${e.race_id}|${e.boat_number}`),

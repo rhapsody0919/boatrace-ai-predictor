@@ -1,25 +1,14 @@
 /**
- * 前走成績の1マスの読み方（BOA-569）。データ出走表（raceIndicators.jsx）が使う。
- * JSX を含まない純関数なので、ここに置いて単体テストする
+ * 前走（今節）の1マスの読み方（BOA-569 → BOA-610）。データ出走表（raceIndicators.jsx）と
+ * AIコピー（useAiCopyText.js）が使う。JSX を含まない純関数なので、ここに置いて単体テストする
+ *
+ * 以前は exhibition_data.prev_*（公式の直前情報の「同じ日の、このレースより前の走」）を
+ * 出していた。前日までの走が入らないため、節の途中でもその日の1走目は空になり、
+ * 「今節初戦」と誤って出た（2026-09-30 児島7R の西村拓也: 9/29 10R を走っているのに
+ * 「今節初戦」。BOA-610）。いまは、同じ会場・同じ節でこのレースより前の最後の走を出す
  */
 
 import { FINISH_MARKS, normalizeFinishMark } from "./raceOutcome.js";
-
-const toNumber = (value) => {
-  if (value === null || value === undefined || value === "") return null;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-};
-
-/**
- * 前走成績（exhibition_data.prev_*）が、取得漏れなく入り始めた日（BOA-569）。
- *
- * prev_* は「**同じ日に、このレースより前に走ったレース**」の記録（今節の前走ではない）。
- * 2026-09-28 の全864行で、前走が入っている317行は全て同じ日の直前の走と一致し、
- * 空の547行は全てその日まだ走っていなかった。この日以降は「空＝本日初走」と読める。
- * 09-15 以前は、同じ日に走っているのに空の行が大量にある（09-14 は372行、09-15 は108行）
- */
-export const PREV_RESULT_AVAILABLE_FROM = "2026-09-16";
 
 /**
  * 公式の記号（着順が付かない走の F・転・エ など）を、訳すための key に引く
@@ -36,33 +25,71 @@ export function finishMarkKeyOf(mark) {
 }
 
 /**
- * 前走成績の1マスに何を出すか（純関数、BOA-569）。
+ * 今節の前走の1マスに何を出すか（純関数、BOA-610）。
  *
- * - 前走があり着順も有る → { kind: "rank", rank, course }
- * - 前走があり着順が無い（失・F・転など）→ { kind: "mark", mark, markKey, course }（記号が無ければ unknown）。
- *   markKey は FINISH_MARKS の key（i18n の dataTable.prevMark.<key>）。日本語以外の画面で
- *   「エ」「転」を生のまま出さないため（BOA-569 ファン評価2周目）。知らない記号は null
- * - 前走が空で、取得漏れが無い日（または 1R）→ { kind: "firstToday" }（その日の最初の走）
- * - それ以外（取得が始まる前の空）→ { kind: "unknown" }
+ * - 節の初戦（今節の走がまだ無い）→ { kind: "firstOfMeet" }
+ * - 着順が付かない走（F・L・転・欠など、本番STの着欄の記号）→ { kind: "mark", mark, markKey, course, raceId }
+ *   **着順より先に見る**。返還艇（F）が race_results の着順に入っていることがある
+ *   （BOA-576: 2026-09-19 戸田9R の3号艇は F なのに rank3）
+ * - 着順が付いた走 → { kind: "rank", rank, course, raceId }
+ * - 前走の結果がまだ無い → { kind: "pending", raceId }
+ * - 読めない（行が無い・結果に艇が見つからない）→ { kind: "unknown" }
  *
- * @param {Object|null} row exhibition_data の1行
- * @param {string|null} raceId 表示中のレース
+ * @param {{firstOfMeet?: boolean, raceId?: string, boatNumber?: number,
+ *   result?: Object|null, finishMark?: string|null, entryCourse?: number|null}|null} entry
+ *   サービス層（getRaceMeetPrevRuns）の1艇分。result は race_results の1行
+ *   （rank1..6 に艇番、actual_course_<艇番> に進入コース）。entryCourse は
+ *   race_start_timings.entry_course
  */
-export function prevResultState(row, raceId) {
-  const prevNo = toNumber(row?.prev_race_no);
-  const course = toNumber(row?.prev_entry_course);
-  if (prevNo !== null) {
-    const rank = toNumber(row?.prev_finish_rank);
-    if (rank !== null) return { kind: "rank", rank, course };
-    const mark = normalizeFinishMark(row?.prev_finish_mark);
-    return mark !== null && !/^[0-9]$/.test(mark)
-      ? { kind: "mark", mark, markKey: finishMarkKeyOf(mark), course }
-      : { kind: "unknown" };
+export function meetPrevRunState(entry) {
+  if (!entry) return { kind: "unknown" };
+  if (entry.firstOfMeet) return { kind: "firstOfMeet" };
+  const { raceId, boatNumber, result } = entry;
+  if (!raceId || !boatNumber) return { kind: "unknown" };
+  // 前走は決まっているが結果がまだ無い（同じ日の前のレースが確定前）。「—」だと
+  // 「データなし」と読まれるので、待っている走を出す（BOA-610 ファン評価1周目 P2）
+  if (!result) return { kind: "pending", raceId };
+  // 進入コースは本番STの entry_course（当日のうちに入る）を先に見て、無ければ
+  // Kファイル由来の actual_course_<艇番>（翌日以降に入る）。race_results の
+  // course_1〜6 は進入順を表していない（2026-09-29 児島10R で 1〜6 のまま。
+  // 公式の進入は 1,2,3,5,4,6。BOA-610 ファン評価1周目 P0）ので使わない。
+  // どちらも無ければ枠番で代用せず null（コースを出さない）
+  const toCourse = (v) => {
+    const n = Number(v);
+    return v != null && v !== "" && Number.isInteger(n) && n >= 1 && n <= 6
+      ? n
+      : null;
+  };
+  const course =
+    toCourse(entry.entryCourse) ??
+    toCourse(result[`actual_course_${boatNumber}`]);
+  const mark = normalizeFinishMark(entry.finishMark);
+  if (mark !== null && !/^[0-9]$/.test(mark)) {
+    return {
+      kind: "mark",
+      mark,
+      markKey: finishMarkKeyOf(mark),
+      course,
+      raceId,
+    };
   }
-  const raceDate = (raceId ?? "").slice(0, 10);
-  const raceNo = Number((raceId ?? "").slice(14, 16));
-  if (raceNo === 1) return { kind: "firstToday" };
-  if (raceDate && raceDate >= PREV_RESULT_AVAILABLE_FROM)
-    return { kind: "firstToday" };
+  let rank = null;
+  for (let n = 1; n <= 6 && rank === null; n += 1) {
+    if (Number(result[`rank${n}`]) === Number(boatNumber)) rank = n;
+  }
+  if (rank !== null) return { kind: "rank", rank, course, raceId };
   return { kind: "unknown" };
+}
+
+/**
+ * 前走がいつのどのレースかを、i18n（dataTable.prevResultWhen）に渡す値にする（BOA-610）。
+ * 前日までの走も出るようになったので、「どの走の結果か」を併記しないと読み違える
+ *
+ * @param {string|null} raceId `YYYY-MM-DD-VV-RR`
+ * @returns {{month: number, day: number, race: number}|null}
+ */
+export function meetPrevRunWhenParams(raceId) {
+  const m = /^\d{4}-(\d{2})-(\d{2})-\d{2}-(\d{2})$/.exec(raceId ?? "");
+  if (!m) return null;
+  return { month: Number(m[1]), day: Number(m[2]), race: Number(m[3]) };
 }

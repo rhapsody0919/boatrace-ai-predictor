@@ -113,7 +113,7 @@ function RaceHistoryTable({
 }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  // 公式の記号はデータ出走表の「本日の前走」と同じ表記にする。日本語以外の
+  // 公式の記号はデータ出走表の「今節の前走」と同じ表記にする。日本語以外の
   // ページで「エ」「落」を生のまま出さない（BOA-569 ファン評価3周目）
   const renderFinishMark = (mark) => {
     const key = finishMarkKeyOf(mark);
