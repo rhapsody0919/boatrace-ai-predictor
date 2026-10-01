@@ -23,6 +23,8 @@
  * 3. 値が空文字でないこと（キーだけ作って中身を入れ忘れた状態）
  * 4. ja 以外に日本語の中黒「・」（U+30FB）が無いこと（BOA-442）。
  *    区切りは言語ごとに en: `/` か `, `、zh-TW: `、`、ko: `, ` を使う
+ * 5. en・ko に漢字・かなが無いこと（BOA-633。ko に「決定技」「艇」が残っていた）。
+ *    zh-TW は漢字を使う言語なので対象外
  *
  * 2026-09-25時点で1〜3とも違反ゼロ（4 は BOA-442 で61件を置き換えてから追加）。この状態を保つための検査であって、
  * 既存の違反を洗い出すためのものではない。
@@ -160,6 +162,20 @@ for (const lang of LANGS.filter((l) => l !== BASE_LANG)) {
   if (withNakaguro.length > 0) {
     failures.push(
       `${lang}: 日本語の中黒「・」を含むキーが ${withNakaguro.length} 件 → ${withNakaguro.slice(0, 5).join(", ")}${withNakaguro.length > 5 ? " ..." : ""}（en は / か , 、zh-TW は 、、ko は , で区切る）`,
+    );
+  }
+}
+
+// 5. en・ko に漢字・かな（BOA-633）
+const CJK = /[\u3040-\u30FF\u4E00-\u9FFF]/;
+for (const lang of ["en", "ko"]) {
+  checked += 1;
+  const withCjk = Object.entries(locales[lang])
+    .filter(([, value]) => typeof value === "string" && CJK.test(value))
+    .map(([key]) => key);
+  if (withCjk.length > 0) {
+    failures.push(
+      `${lang}: 漢字・かなを含むキーが ${withCjk.length} 件 → ${withCjk.slice(0, 5).join(", ")}${withCjk.length > 5 ? " ..." : ""}（訳し残しの可能性）`,
     );
   }
 }
