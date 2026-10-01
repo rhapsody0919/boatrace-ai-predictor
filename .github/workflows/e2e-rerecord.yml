@@ -16,27 +16,38 @@ name: E2E Re-record (録画の自動撮り直し)
 #      直接 push する（push-with-retry.sh。regenerate-generated-docs.yml と同じ流儀）。
 #      GITHUB_TOKEN の push は他のワークフローを起動しない
 #   5. 古い録画 Release を消す（直近14件を残す）
-#   採用しなかった・失敗したときは Slack に通知する
+#   採用しなかった・失敗したときは Slack に通知する（定期実行は1日1回まで。下記）
 #
-# 起動は1日2回（本命 JST10:23 = UTC01:23、予備 JST12:47 = UTC03:47）。
-# GitHub の schedule は負荷で遅れ、取りこぼされることもある。毎時0分は負荷が集中するため
-# 0分を避ける（公式: "High load times include the start of every hour" /
+# 起動は1日4回（JST 10:23 / 12:47 / 14:37 / 16:13）。毎時0分は負荷が集中するため避ける
+# （公式: "High load times include the start of every hour" /
 # "schedule your workflow to run at a different time of the hour"）。
-# 2026-09-30 は '0 2 * * *'（JST11:00）が JST17:15 に起動した。このリポジトリの他の
-# 定期実行も1〜4時間の遅れが常態のため、0分を避けるだけでは足りず、予備の起動を置く。
-# 予備の起動は、その日（JST）の録画を採用済みなら何もせず終わる。遅れて JST19時以降に
-# 起動したときも撮らない（発走前のレースが夜間開催の数場だけになる）。判定は
-# scripts/maintenance/e2e-recording.js gate。workflow_dispatch は判定せずに撮る。
-# 必要な権限: contents: write（Release の作成・削除とポインタの push）。
+# GitHub の schedule は数時間遅れ、取りこぼされることもある。2026-09-30 は JST11:00 の
+# 予定が 17:15 に、2026-10-01 は JST10:23 の予定が 16:15・12:47 の予定が 19:27 に起動した
+# （このリポジトリの他の定期実行も1〜6時間の遅れが常態）。起動を4回に増やし、1回が
+# 不採用・遅延でも同じ日のうちに撮り直せるようにする。
+# その日（JST）の録画を採用済みなら、後の起動は何もせず終わる（二重に撮らない）。
+# 遅れて JST19時以降に起動したときも撮らない（発走前のレースが夜間開催の数場だけになる）。
+# 判定は scripts/maintenance/e2e-recording.js gate。workflow_dispatch は判定せずに撮る。
+# 同時に2本は走らない（concurrency）。後の起動は前の起動の終了を待ってから master を
+# checkout するので、前の起動が push したポインタで「採用済み」を判定できる。
+#
+# Slack 通知: 定期実行は、同じ日（JST）に別の定期実行が通知済みなら出さない
+# （e2e-recording.js notify-dedupe）。4回とも不採用でも通知は1回で、2回目以降の結果は
+# 各実行の step summary に残る。workflow_dispatch は毎回通知する。
+# 必要な権限: contents: write（Release の作成・削除とポインタの push）、
+# actions: read（その日の他の実行が通知済みかを見る）。
 # 使う Secrets: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY（本番の読み取りのみ）、SLACK_WEBHOOK_URL
 
 on:
   schedule:
-    - cron: '23 1 * * *' # JST 10:23（本命）
-    - cron: '47 3 * * *' # JST 12:47（予備。本命が採用済みなら何もしない）
+    # 採用済みなら後の起動は何もしない。時刻は JST10〜17時に散らし、0分を避ける
+    - cron: '23 1 * * *' # JST 10:23
+    - cron: '47 3 * * *' # JST 12:47
+    - cron: '37 5 * * *' # JST 14:37
+    - cron: '13 7 * * *' # JST 16:13
   workflow_dispatch:
 
-# 本命が遅れて予備と重なっても、同時には走らせない（予備は本命の終了を待ち、
+# 起動が遅れて重なっても、同時には走らせない（後の起動は前の起動の終了を待ち、
 # checkout した master のポインタで「採用済み」を判定する）
 concurrency:
   group: e2e-rerecord
@@ -44,6 +55,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   rerecord:
@@ -191,10 +203,22 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           RESULT: ${{ steps.judge.outputs.result || steps.gate.outputs.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT_NAME: ${{ github.event_name }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ -z "$SLACK_WEBHOOK_URL" ]; then
             echo "::warning::SLACK_WEBHOOK_URL が未設定のため通知できません"
             exit 0
+          fi
+          # 定期実行は1日1回だけ通知する（同じ日に別の定期実行が通知済みなら出さない）。
+          # checkout 前に落ちてスクリプトが無いときは通知する
+          if [ "$EVENT_NAME" = "schedule" ]; then
+            DEDUPE=$(node scripts/maintenance/e2e-recording.js notify-dedupe 2>/dev/null || echo '{"notify":true}')
+            echo "$DEDUPE"
+            if [ "$(printf '%s' "$DEDUPE" | jq -r '.notify')" = "false" ]; then
+              echo "## Slack 通知を省略（$(printf '%s' "$DEDUPE" | jq -r '.reasons | join("; ")')）" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
           fi
           REASONS=$(printf '%s' "$RESULT" | jq -r '.reasons // [] | join("\n")' 2>/dev/null)
           if [ -z "$REASONS" ]; then REASONS="ワークフローが途中で失敗した（採用判定の前後）"; fi
@@ -205,7 +229,7 @@ jobs:
                 type: "section",
                 text: {
                   type: "mrkdwn",
-                  text: (":warning: *E2Eの録画を撮り直せませんでした（現行の録画のまま）*\n```" + $reasons + "```\nPRゲートは現行の録画で動き続けます。録画に無い通信は本番へ素通しされ、PRコメントに一覧が出ます。\n<" + $url + "|実行ログ>")
+                  text: (":warning: *E2Eの録画を撮り直せませんでした（現行の録画のまま）*\n```" + $reasons + "```\nPRゲートは現行の録画で動き続けます。録画に無い通信は本番へ素通しされ、PRコメントに一覧が出ます。\n定期実行は同じ日の後の起動でも撮り直します。同じ日の2回目以降の不採用は通知しません（各実行の step summary に残ります）。\n<" + $url + "|実行ログ>")
                 }
               }]
             }]
