@@ -21,6 +21,7 @@ import {
   isPastPrelimDay,
   prelimEndRaceIdOf,
   prelimEndDayOf,
+  noRaceDaysOf,
   semifinalRaceIdsOf,
   semifinalSlotsOf,
   splitMeetSeries,
@@ -1618,6 +1619,28 @@ check(
     buildMeets(GAP).map((m) => m.dates),
     [["2026-09-01"], ["2026-09-03"]],
   );
+}
+
+// ---- 丸一日レースが無かった日（BOA-636） --------------------------------------
+// 津 2026-09-21〜: 9/21 は 1〜4R が成立（5R以降は中止）、9/22 は全レース中止
+{
+  const ids = [];
+  for (const d of ["2026-09-21", "2026-09-22", "2026-09-23"])
+    for (let r = 1; r <= 12; r++)
+      ids.push(`${d}-09-${String(r).padStart(2, "0")}`);
+  const cancelled = new Set(
+    ids.filter(
+      (id) =>
+        id.startsWith("2026-09-22") ||
+        (id.startsWith("2026-09-21") && Number(id.slice(-2)) >= 5),
+    ),
+  );
+  check(
+    "全レースが中止の日だけを返す（一部成立の 9/21 は含めない）",
+    noRaceDaysOf(ids, cancelled),
+    ["2026-09-22"],
+  );
+  check("中止が無ければ空", noRaceDaysOf(ids, new Set()), []);
 }
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);

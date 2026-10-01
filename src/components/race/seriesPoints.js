@@ -187,6 +187,30 @@ export function prelimEndDayOf(
 }
 
 /**
+ * 節の中で**丸一日レースが無かった日**（全レースが中止・順延）を返す（純関数、BOA-636）。
+ *
+ * 公式は丸一日中止の翌日に同じ日目を振り直すので、日付を数えると日目が合わない
+ * （津 2026-09-22、戸田・江戸川 2026-09-21）。画面がその日を断るのに使う。
+ * 一部のレースだけ成立した日（津 9/21 は4Rまで成立）は含めない。
+ *
+ * @param {Iterable<string>} raceIds 節の全レースの race_id（出走表）
+ * @param {Set<string>} cancelledRaceIds 中止が確定したレース（`isRaceCancelled`）
+ * @returns {string[]} 日付（YYYY-MM-DD）昇順
+ */
+export function noRaceDaysOf(raceIds, cancelledRaceIds) {
+  const byDate = new Map();
+  for (const id of raceIds ?? []) {
+    const d = String(id).slice(0, 10);
+    if (!byDate.has(d)) byDate.set(d, []);
+    byDate.get(d).push(id);
+  }
+  return [...byDate.entries()]
+    .filter(([, ids]) => ids.every((id) => cancelledRaceIds?.has(id)))
+    .map(([d]) => d)
+    .sort();
+}
+
+/**
  * 節に組まれた**準優勝戦**の `race_id`（枠数の算出に使う）。
  *
  * 「準優進出戦」は準優勝戦の1つ前の勝ち上がり戦で、準優の枠ではない

@@ -34,6 +34,7 @@ import {
   shouldUseOfficialSeries,
   prelimEndRaceIdOf,
   prelimEndDayOf,
+  noRaceDaysOf,
   semifinalSlotsOf,
   splitMeetSeries,
   scoreTableFor,
@@ -7158,7 +7159,8 @@ export const supabaseDataService = {
     // v18: 賞典除外（公式の備考・今節F）を順位から外す理由を足した（BOA-587）
     // v19: 着順の並びでフライングを「F」と出すため、is_flying を足した（BOA-589）
     // v20: 予選終了の日目を series_day から出す（中止の日を数えない、BOA-578）
-    return withCache(`meet-scoreboard-v20-${raceId}`, async () => {
+    // v21: 丸一日レースが無かった日（noRaceDays）を足した（BOA-636）
+    return withCache(`meet-scoreboard-v21-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7545,6 +7547,13 @@ export const supabaseDataService = {
           }
           return byRacer;
         })(),
+        // **丸一日レースが無かった日**（全レースが中止・順延、BOA-636）。表示中の日
+        // より前だけ。推移の横軸から抜ける理由と、予選終了の日目が日付の数と
+        // 合わない理由を、画面が断るのに使う。追加クエリ0本
+        noRaceDays: noRaceDaysOf(
+          raceIds.filter((id) => id.slice(0, 10) < date),
+          cancelledRaceIds,
+        ),
         // 予選が終わった日が節の何日目か（公式の「4日目12R終了時点」に合わせる）
         // 中止の日を数えないよう `series_day` を使う（BOA-578、prelimEndDayOf）
         prelimEndDay: prelimEndDayOf(

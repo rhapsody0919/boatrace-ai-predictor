@@ -166,6 +166,16 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
     ? `${Number(prelimEndRaceId.slice(5, 7))}/${Number(prelimEndRaceId.slice(8, 10))}`
     : null;
   const prelimEndDay = board?.prelimEndDay ?? null;
+  // 丸一日レースが無かった日（中止・順延、BOA-636）。「9/22」の形で持つ
+  const noRaceDays = board?.noRaceDays ?? [];
+  const mdList = (days) =>
+    days
+      .map((d) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`)
+      .join(t("meetTab.listSeparator"));
+  // 予選終了の日より前の、レースが無かった日。日目と日付の数が合わない理由になる
+  const noRaceDaysBeforePrelimEnd = prelimEndRaceId
+    ? noRaceDays.filter((d) => d < prelimEndRaceId.slice(0, 10))
+    : [];
   const pretestOf = (racerId) => board?.pretestByRacer?.[racerId] ?? null;
   // 同率が何人いるか。節の序盤は得点率の刻みが粗く（3走なら0.33刻み）
   // 「11位」が3人並ぶ。順位だけ見せると分解能を過信させる
@@ -264,6 +274,13 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
           to: mdOf(trendDates[trendDates.length - 1]),
         }
       : null;
+  // 横軸の範囲の中で、レースが無かった日（目盛りから抜ける日、BOA-636）
+  const trendNoRaceDays =
+    trendDates.length > 1
+      ? noRaceDays.filter(
+          (d) => d > trendDates[0] && d < trendDates[trendDates.length - 1],
+        )
+      : [];
   const trendValues = trendRows
     .flatMap((r) => r.runs.map((x) => x[trendKey]))
     .filter((v) => typeof v === "number");
@@ -940,6 +957,15 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
               {trendRange.from === trendRange.to
                 ? t("meetTab.compareTrendRangeOneDay", { day: trendRange.from })
                 : t("meetTab.compareTrendRange", trendRange)}
+              {/* 目盛りから抜けている日の理由（BOA-636）。横軸の範囲の中だけ */}
+              {trendNoRaceDays.length > 0 && (
+                <>
+                  {" "}
+                  {t("meetTab.compareTrendNoRaceDays", {
+                    days: mdList(trendNoRaceDays),
+                  })}
+                </>
+              )}
             </p>
           )}
           <p className="rmt-hint">{t("meetTab.compareTrendHint")}</p>
@@ -1032,8 +1058,10 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
           </p>
         )}
         {mine && prelimOver && (
-          // 早見（6艇分）は予選中しか出さないので、終わっている理由をここに出す
-          <p className="rmt-forecast">
+          // 早見（6艇分）は予選中しか出さないので、終わっている理由をここに出す。
+          // 「もう動かない」は勝負駆けの読みを決める情報なので、補足より一段強く出す
+          // （BOA-636。375pxで10.4pxの灰色だった）
+          <p className="rmt-forecast rmt-forecast-settled">
             {isAfterPrelim
               ? t("basicInfo.meetScoreNoForecast", { stage })
               : t(
@@ -1042,6 +1070,17 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                     : "meetTab.prelimOverNote",
                   { date: prelimEndDate ?? "", day: prelimEndDay ?? "" },
                 )}
+            {/* 丸一日中止の日は日目に数えない（公式も翌日に同じ日目を振り直す）。
+                書かないと、初日から日付を数えて「1日ずれている」と読まれる
+                （BOA-636、PR #1044 ファン評価） */}
+            {!isAfterPrelim && noRaceDaysBeforePrelimEnd.length > 0 && (
+              <>
+                {" "}
+                {t("meetTab.prelimNoRaceDays", {
+                  days: mdList(noRaceDaysBeforePrelimEnd),
+                })}
+              </>
+            )}
           </p>
         )}
 

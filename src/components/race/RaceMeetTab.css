@@ -322,6 +322,13 @@
   display: block;
 }
 
+/* 予選が終わった後の「得点率はもう動かない」（BOA-636）。補足（2xs・灰色）と
+   同じ扱いだと375pxで目に入らないので、本文の色・一段大きい字にする */
+.rmt-forecast.rmt-forecast-settled {
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+}
+
 .rmt-verdict {
   color: var(--text-primary);
   font-weight: var(--font-weight-bold);
