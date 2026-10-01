@@ -414,7 +414,7 @@ function isUnavailable(records, field) {
  *   `n` は metric が `avgSt` のときだけ ST を計測できた走数（avgStN）になる。
  *   F持ち時・F無し時の2行だけ `avgSt` / `avgStN` も返す（画面は指標が勝率等でも
  *   STを併記する。Fを持った選手の見どころはスタートの踏み方のため）。
- *   `baseN` は波・F持ち時・F無し時の行だけ非null（その条件を判定できた走数。
+ *   `baseN` は初日・最終日・波・F持ち時・F無し時の行だけ非null（その条件を判定できた走数。
  *   他行と母数が違うことを示すので、画面はこれを添えて「他行と比べない」と読ませる）
  */
 export function buildConditionRows(records, { venueCode, metric }) {
@@ -452,8 +452,9 @@ export function buildConditionRows(records, { venueCode, metric }) {
     // 実質2026-02以降しか母数に入らない。同じ2026-02以降だけで比べると比率17.8%
     // （全走数の中央135走に対し初日24走）で、期間差の寄与は0.76倍ぶん。
     // 値そのものは読める母数がある（SMALL_SAMPLE_THRESHOLD=6 を割るのは初日0.6%・
-    // 最終日0.4%）が、「全国176走」と「初日24走」を同じ表に並べている点は
-    // 波・F行のような baseN での注記が無い（BOA-499で起票済み）
+    // 最終日0.4%）。「全国176走」と「初日24走」を同じ表に並べるので、波・F行と
+    // 同じく baseN（日目を判定できた走数）を返し、画面が「他行と比べない」と
+    // 読ませる（BOA-499）
     if (row.kind === "seriesDay" || row.kind === "isFinalDay") {
       const field = row.kind === "seriesDay" ? "seriesDay" : "isFinalDay";
       if (isUnavailable(all, field)) {
@@ -465,7 +466,13 @@ export function buildConditionRows(records, { venueCode, metric }) {
           baseN: null,
         };
       }
-      const hit = all.filter((r) =>
+      // 日目を判定できた走（race_conditions の値がある走）だけが母数
+      const known = all.filter((r) =>
+        field === "seriesDay"
+          ? typeof r.seriesDay === "number"
+          : typeof r.isFinalDay === "boolean",
+      );
+      const hit = known.filter((r) =>
         field === "seriesDay" ? r.seriesDay === 1 : r.isFinalDay === true,
       );
       const rates = computeRates(hit);
@@ -474,7 +481,7 @@ export function buildConditionRows(records, { venueCode, metric }) {
         value: sampleOf(rates) > 0 ? rates[metric] : null,
         n: sampleOf(rates),
         unavailable: false,
-        baseN: null,
+        baseN: known.length,
       };
     }
 

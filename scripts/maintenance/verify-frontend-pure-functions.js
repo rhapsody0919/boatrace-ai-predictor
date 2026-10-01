@@ -526,6 +526,35 @@ function suiteBasicInfoStats(m, check) {
     [winRows.firstDay.n, winRows.finalDay.n, winRows.finalDay.value],
     [1, 1, 0],
   );
+  // 初日・最終日も、他行と母数が違うので baseN（日目を判定できた走数）を返す。
+  // race_conditions は 2026-02 以降しか無く、この2行だけ期間が短い（BOA-499）
+  const partialDay = [
+    ...condRecords,
+    rec({
+      raceId: "2025-11-10-04-01",
+      boatNumber: 1,
+      ranks: [1, 2, 3],
+      startTiming: 0.12,
+      seriesDay: null,
+      isFinalDay: null,
+      waveHeight: null,
+      fCount: null,
+    }),
+  ];
+  const dayRows = byKey(
+    m.buildConditionRows(partialDay, { venueCode: 4, metric: "winRate" }),
+  );
+  check(
+    "buildConditionRows: 初日・最終日は baseN を返し、日目が無い走は入れない（BOA-499）",
+    [
+      winRows.firstDay.baseN,
+      winRows.finalDay.baseN,
+      dayRows.firstDay.baseN,
+      dayRows.finalDay.baseN,
+      dayRows.national.n,
+    ],
+    [3, 3, 3, 3, 4],
+  );
   check(
     "buildConditionRows: F数が取れていない走（null）は F持ち時にも F無し時にも入れない",
     [winRows.fHolding.n, winRows.fClean.n, winRows.fHolding.baseN],

@@ -1509,6 +1509,13 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rbit-conditions-caveat").first()).toContainText(
       /今日と同じ\d枠での出走は過去\d+走/,
     );
+    // 初日・最終日は他行と母数の期間が違う（race_conditions は 2026-02 以降）。
+    // 波・F行と同じく、判定できた走数を注記に出す（BOA-499）
+    await expect(
+      page
+        .locator(".rbit-conditions-caveat")
+        .filter({ hasText: "母数が他の行と違います" }),
+    ).toContainText(/初日は\d+走/);
 
     // F持ち時・F無し時は勝率だけだと「Fを持っている方が走る」と読めるため、
     // 指標が勝率でも平均STを併記する（同レビュー指摘C）
