@@ -33,7 +33,7 @@
    折り返したときも区切りが崩れないよう、罫線ではなく地の色で分ける */
 .flying-badge-meet {
   padding: 0 2px;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   background: rgba(255, 255, 255, 0.55);
   border-radius: var(--radius-sm);
 }
