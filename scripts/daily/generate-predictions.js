@@ -947,11 +947,12 @@ function generateRacePrediction(race, date, racerStatsMap) {
  * @param {boolean} [options.throwOnError] true なら、書き込みの失敗を握りつぶさず例外にする。既定（false）は
  *   従来どおり、エラーをログに出して続行する（CLI・GitHub Actions）。Vercel Function（races-init）は、
  *   書き込みに失敗した会場を「済み」にしないため true を指定する
+ * @param {() => Date} [options.now] テスト用の時刻の差し替え（発走済みのレースの判定に使う）
  */
 async function writeToSupabase(
   allPredictions,
   date,
-  { client = supabase, throwOnError = false } = {},
+  { client = supabase, throwOnError = false, now = () => new Date() } = {},
 ) {
   if (!client) {
     if (throwOnError) {
@@ -1159,32 +1160,35 @@ async function writeToSupabase(
       });
     }
 
-    // 既存の予測を削除してから挿入（upsertだと複合キーが必要なため）
-    const raceIds = allPredictions.map((r) => r.raceId);
-    const { error: deleteError } = await client
-      .from("predictions")
-      .delete()
-      .in("race_id", raceIds)
-      .eq("is_shadow", false);
-    if (deleteError) {
-      // 従来は握りつぶしていた（削除に失敗すると、続く挿入が一意制約に違反する）
-      console.error("❌ predictions削除エラー:", deleteError.message);
-      if (throwOnError) throw deleteError;
+    // (race_id, model_id) で upsert する（BOA-628）。従来は is_shadow=false の全モデルを削除してから挿入しており、
+    // 同じレースの unified（generate-unified-predictions.js が書く）まで消していた。
+    // 発走済みのレースは書かない（的中フラグ・払戻を保つ。朝の初期化が遅れて昼に走った会場でも、発走後の
+    // 作り直しをしない）。発走時刻が「未定」のレースは、判定できないので書く
+    const startedRaceIds = new Set(
+      allPredictions
+        .filter(
+          (r) =>
+            r.startTime &&
+            r.startTime !== "未定" &&
+            new Date(`${date}T${r.startTime}:00+09:00`) <= now(),
+        )
+        .map((r) => r.raceId),
+    );
+    if (startedRaceIds.size > 0) {
+      console.log(
+        `  ⏭️ 発走済みの${startedRaceIds.size}レースの予測は書かない`,
+      );
     }
-
-    // バッチで挿入
-    for (let i = 0; i < predictionsData.length; i += 1000) {
-      const batch = predictionsData.slice(i, i + 1000);
-      const { error: predsError } = await client
-        .from("predictions")
-        .insert(batch);
-
-      if (predsError) {
-        console.error("❌ predictions書き込みエラー:", predsError.message);
-        if (throwOnError) throw predsError;
-      }
+    const rowsToWrite = predictionsData.filter(
+      (row) => !startedRaceIds.has(row.race_id),
+    );
+    try {
+      await upsertPredictions(client, rowsToWrite, now());
+    } catch (predsError) {
+      console.error("❌", predsError.message);
+      if (throwOnError) throw predsError;
     }
-    console.log(`  ✅ predictions: ${predictionsData.length}件`);
+    console.log(`  ✅ predictions: ${rowsToWrite.length}件`);
 
     // 4. race_conditionsテーブルにupsert（race_grade は races テーブルで管理）
     // series_day/is_final_dayはここでは取得しないためフィールド自体を含めない。
@@ -1461,17 +1465,16 @@ async function planRacesVolatilityUpdates(
  *   その再生成経路だけ true を渡す
  * @param {string} [params.date] 対象日（YYYY-MM-DD）。省略時は CLI の --date= 引数、無ければ今日（JST）。
  *   Vercel Function から呼ぶ場合は process.argv に日付が無いため、引数で渡す（BOA-353 T4b-03）
- * @param {"replace"|"upsert"} [params.writeMode] predictions の書き込み方式。
- *   "replace"（既定・従来どおり）: 対象レースの行を削除してから挿入する。削除と挿入の間（および挿入が
- *   失敗した場合）に、そのレースの予測が空になる。
- *   "upsert": (race_id, model_id) の一意制約で1文の upsert にする。予測が空になる瞬間が無く、書き込みに
- *   失敗しても以前の予測が残る（失敗は例外にする）。行の内容は "replace" と同じ（的中フラグ・払戻・
- *   scores は null に戻し、predicted_at は現在時刻）。再計算の起点が展示の変更のみになる案1
- *   （REFRESH_ON_VERCEL）では、失敗した再計算が次の再計算で自己修復されないため、この方式を使う。
- *   どちらの方式も書くのは standard・safeBet・upsetFocus のみ。"replace" は is_shadow=false の全モデルを
- *   削除するため model_id='unified'（朝の日次バッチ generate-unified-predictions.js が書く）も消え、次の
- *   GitHub Actions の morning-init.js（ensureUnifiedPredictions）が日全体を再生成している。"upsert" は
- *   unified を削除も更新もしないため、この再生成は起きない（unified は朝のバッチの値のまま）
+ * @param {"upsert"} [params.writeMode] predictions の書き込み方式。"upsert" のみ（既定）:
+ *   (race_id, model_id) の一意制約で1文の upsert にする。予測が空になる瞬間が無く、書き込みに失敗しても
+ *   以前の予測が残る（失敗は例外にする）。的中フラグ・払戻・scores は null に戻し、predicted_at は現在時刻。
+ *   書くのは standard・safeBet・upsetFocus のみで、unified には触れない。
+ *   従来の "replace"（削除→挿入）は廃止した（BOA-628）: is_shadow=false の全モデルを削除するため unified も
+ *   消え、次の morning-init.js（ensureUnifiedPredictions）が作り直すまで、発走の瞬間に unified が無いレースが
+ *   出ていた（2026年9月、確定分だけで594件）
+ * @param {boolean} [params.includeStarted] true なら発走済みのレースも書く（既定 false。BOA-628）。
+ *   発走済みのレースを書き直すと、的中フラグ・払戻が消え、発走後のデータで作った予想が発走前の予想に
+ *   見える（2026年9月は発走後の作り直しが2,065件）。過去日の作り直し（明示の手動実行）のときだけ true にする
  * @param {import("@supabase/supabase-js").SupabaseClient|null} [params.client] テスト用の差し替え（既定は supabaseClient.js）
  * @param {() => Date} [params.now] テスト用の時刻の差し替え
  * @returns {Promise<{predictedRaceIds: string[], volatilityUpdated: number, writeMode: string}|{volatilityStats: Object}|undefined>}
@@ -1481,15 +1484,18 @@ export async function mainRefresh({
   specificRaceIds,
   forceTouchRaces = false,
   date: dateArg,
-  writeMode = "replace",
+  writeMode = "upsert",
+  includeStarted = false,
   client = supabase,
   now = () => new Date(),
 }) {
   console.log(`🔄 予測リフレッシュモード${isDryRun ? " [DRY-RUN]" : ""}`);
   console.log(`⏰ ${now().toISOString()}`);
 
-  if (!["replace", "upsert"].includes(writeMode)) {
-    throw new Error(`writeMode が不正です: ${writeMode}`);
+  if (writeMode !== "upsert") {
+    throw new Error(
+      `writeMode が不正です: ${writeMode}（"replace" は BOA-628 で廃止。"upsert" のみ）`,
+    );
   }
   if (!client) {
     // Vercel Function から呼ぶため、process.exit ではなく例外にする（CLI の呼び出し側は catch して終了コード1にする）
@@ -1501,11 +1507,13 @@ export async function mainRefresh({
   const date = dateArg || parseDateArg() || getTodayDateJST();
   console.log(`📅 対象日: ${date}`);
 
+  // 発走時刻（発走済みのレースを書かないため。読めないときは書かずに例外にする＝予想を上書きしない）
+  const schedule = await getRaceSchedule(date, { client, throwOnError: true });
+
   // 対象 race_ids を決定
   let targetRaceIds = specificRaceIds || [];
   if (targetRaceIds.length === 0) {
     // 自動検出: 発走60/30/15/10/5分前ウィンドウのレース
-    const schedule = await getRaceSchedule(date, { client });
     const WINDOWS = [60, 30, 15, 10, 5];
     const seen = new Set();
     for (const min of WINDOWS) {
@@ -1518,8 +1526,20 @@ export async function mainRefresh({
     }
   }
 
+  // 発走済みのレースは書かない（BOA-628）。発走時刻が無いレースは、判定できないので従来どおり書く
+  if (!includeStarted) {
+    const startById = new Map(schedule.map((r) => [r.race_id, r.start_time]));
+    const started = targetRaceIds.filter(
+      (id) => startById.has(id) && startById.get(id) <= now(),
+    );
+    if (started.length > 0) {
+      console.log(`⏭️ 発走済みの${started.length}レースは書かない`);
+      targetRaceIds = targetRaceIds.filter((id) => !started.includes(id));
+    }
+  }
+
   if (targetRaceIds.length === 0) {
-    console.log("📭 更新対象レースなし（全ウィンドウ外）");
+    console.log("📭 更新対象レースなし（全ウィンドウ外・発走済み）");
     return;
   }
   console.log(`🎯 更新対象: ${targetRaceIds.length}レース`);
@@ -1638,28 +1658,9 @@ export async function mainRefresh({
     );
   }
 
-  if (writeMode === "upsert") {
-    // 削除→挿入の交差・挿入失敗による「予測が空」を作らない。書き込みに失敗したら例外にする
-    // （失敗しても、以前の予測は残っている）
-    await upsertPredictions(client, predictionsData, now());
-  } else {
-    // 対象 race_id のみ delete → insert（従来どおり）
-    const { error: deleteError } = await client
-      .from("predictions")
-      .delete()
-      .in("race_id", updatedRaceIds)
-      .eq("is_shadow", false);
-    if (deleteError) {
-      console.error("❌ predictions削除エラー:", deleteError.message);
-      return;
-    }
-
-    for (let i = 0; i < predictionsData.length; i += 1000) {
-      const batch = predictionsData.slice(i, i + 1000);
-      const { error } = await client.from("predictions").insert(batch);
-      if (error) console.error("❌ predictions書き込みエラー:", error.message);
-    }
-  }
+  // 削除→挿入の交差・挿入失敗による「予測が空」を作らない。書き込みに失敗したら例外にする
+  // （失敗しても、以前の予測は残っている）。unified は削除も更新もしない
+  await upsertPredictions(client, predictionsData, now());
   console.log(
     `  ✅ predictions: ${predictionsData.length}件（${allPredictions.length}レース、${writeMode}）`,
   );
@@ -1759,6 +1760,7 @@ async function upsertPredictions(client, predictionsData, at) {
  * @param {string} params.date 予想生成日（YYYY-MM-DD。races の race_date になる）
  * @param {import("@supabase/supabase-js").SupabaseClient|null} [params.client] 既定は supabaseClient.js のクライアント
  * @param {boolean} [params.throwOnError] true なら、DBへの書き込みの失敗を例外にする（既定は従来どおりログのみ）
+ * @param {() => Date} [params.now] テスト用の時刻の差し替え
  * @returns {Promise<{predictedRaceIds: string[]}>}
  */
 export async function generateAndWriteFromRacesData({
@@ -1766,6 +1768,7 @@ export async function generateAndWriteFromRacesData({
   date,
   client = supabase,
   throwOnError = false,
+  now = () => new Date(),
 }) {
   if (!racesData?.success || !racesData.data) {
     throw new Error("races.json に有効なデータがありません");
@@ -1831,7 +1834,7 @@ export async function generateAndWriteFromRacesData({
   console.log(`\n📊 合計 ${totalRaces}レースの予想を生成しました`);
 
   // Supabaseに書き込み
-  await writeToSupabase(allPredictions, date, { client, throwOnError });
+  await writeToSupabase(allPredictions, date, { client, throwOnError, now });
 
   return { predictedRaceIds: allPredictions.map((p) => p.raceId) };
 }
