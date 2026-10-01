@@ -12,25 +12,29 @@ test.describe("レース詳細の表示の細部", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(RACE);
     await page.locator(".race-tabs-btn", { hasText: "直前情報" }).click();
+    // 展示タイムの数値ラベル（6.58 等）を持つグラフ
+    const timeLabel = page
+      .locator(".recharts-label-list .recharts-label")
+      .filter({ hasText: /^\d\.\d{2}$/ });
     const chart = page
-      .locator(".rbi-card")
-      .filter({ has: page.locator(".recharts-bar") })
+      .locator(".recharts-wrapper")
+      .filter({ has: timeLabel })
       .first();
     await expect(chart).toBeVisible({ timeout: 30000 });
-    const labelSize = await chart
-      .locator(".recharts-label-list text")
-      .first()
-      .evaluate((el) =>
-        parseFloat(
-          el.getAttribute("font-size") ?? getComputedStyle(el).fontSize,
+    const label = chart.locator(".recharts-label-list .recharts-label").first();
+    // Recharts は描画のアニメーション中にラベルを差し替えるため、落ち着くまで読み直す
+    // （差し替え直後の要素では computed の font-size が空文字になり NaN になった）
+    await expect
+      .poll(async () =>
+        Number.parseFloat(
+          await label.evaluate((el) => getComputedStyle(el).fontSize),
         ),
-      );
-    expect(labelSize).toBeGreaterThanOrEqual(13);
+      )
+      .toBeGreaterThanOrEqual(13);
     const firstBar = chart.locator(".recharts-bar-rectangle path").first();
     expect(await firstBar.getAttribute("stroke")).not.toBe("none");
     await chart.scrollIntoViewIfNeeded();
-    const box = await firstBar.boundingBox();
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await firstBar.hover({ force: true });
     const tip = chart.locator(".recharts-tooltip-wrapper");
     await expect(tip).toContainText("展示タイム");
     await expect(tip).not.toContainText("lead");
