@@ -43,6 +43,26 @@ test.describe("レース詳細のデータ出走表（スマホ、BOA-612）", (
       expect(m.sixthRight).toBeLessThanOrEqual(m.vw);
       expect(m.pageOverflow).toBe(0);
 
+      // 行ラベルの「?」はラベル列の中に収まり、1号艇の数値に重ならない。
+      // ラベルの文字は 11px を割らない（ファン評価2周目 P1・P2。320px で「?」が最大18px
+      // はみ出し、ラベルは 10.5px だった）
+      const labels = await table.locator(".drt-label-cell").evaluateAll((cells) =>
+        cells.map((c) => {
+          const r = c.getBoundingClientRect();
+          const btn = c.querySelector(".term-hint__button");
+          return {
+            text: c.textContent.trim(),
+            fontSize: getComputedStyle(c).fontSize,
+            overflow: btn ? btn.getBoundingClientRect().right - r.right : 0,
+          };
+        }),
+      );
+      expect(labels.length).toBeGreaterThan(0);
+      for (const l of labels) {
+        expect(l.overflow, l.text).toBeLessThanOrEqual(0.5);
+        expect(Number.parseFloat(l.fontSize), l.text).toBeGreaterThanOrEqual(11);
+      }
+
       // 直前情報の表には名前の行が無い（艇番の見出しだけ）
       if (tab !== "基本情報") return;
       // 名前は姓・名の2つの塊で、別の行に置かれ、どちらも途中で折れない（「西山貴／浩」にならない）
