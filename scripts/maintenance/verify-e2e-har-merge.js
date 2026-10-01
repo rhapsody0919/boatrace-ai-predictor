@@ -228,6 +228,16 @@ check(
   true,
 );
 check(
+  "ワークフロー自体の失敗は、通知済みでも必ず通知する（重複判定は不採用の通知だけ）",
+  [
+    workflow.includes("JOB_FAILED: ${{ failure() }}"),
+    /if \[ "\$EVENT_NAME" = "schedule" \] && \[ "\$JOB_FAILED" != "true" \]; then\s*\n\s*DEDUPE=\$\(node scripts\/maintenance\/e2e-recording\.js notify-dedupe/.test(
+      workflow,
+    ),
+  ],
+  [true, true],
+);
+check(
   "通知ステップの名前が notify-dedupe の判定と一致する",
   workflow.includes(`- name: ${NOTIFY_STEP_PREFIX}`),
   true,

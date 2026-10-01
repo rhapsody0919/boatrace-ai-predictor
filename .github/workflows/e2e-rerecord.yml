@@ -31,9 +31,10 @@ name: E2E Re-record (録画の自動撮り直し)
 # 同時に2本は走らない（concurrency）。後の起動は前の起動の終了を待ってから master を
 # checkout するので、前の起動が push したポインタで「採用済み」を判定できる。
 #
-# Slack 通知: 定期実行は、同じ日（JST）に別の定期実行が通知済みなら出さない
-# （e2e-recording.js notify-dedupe）。4回とも不採用でも通知は1回で、2回目以降の結果は
-# 各実行の step summary に残る。workflow_dispatch は毎回通知する。
+# Slack 通知: 定期実行の「採用しなかった・撮らなかった」は、同じ日（JST）に別の定期実行が
+# 通知済みなら出さない（e2e-recording.js notify-dedupe）。4回とも不採用でも通知は1回で、
+# 2回目以降の結果は各実行の step summary に残る。ワークフロー自体の失敗（ステップの失敗）と
+# workflow_dispatch は毎回通知する。
 # 必要な権限: contents: write（Release の作成・削除とポインタの push）、
 # actions: read（その日の他の実行が通知済みかを見る）。
 # 使う Secrets: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY（本番の読み取りのみ）、SLACK_WEBHOOK_URL
@@ -204,15 +205,17 @@ jobs:
           RESULT: ${{ steps.judge.outputs.result || steps.gate.outputs.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           EVENT_NAME: ${{ github.event_name }}
+          JOB_FAILED: ${{ failure() }}
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ -z "$SLACK_WEBHOOK_URL" ]; then
             echo "::warning::SLACK_WEBHOOK_URL が未設定のため通知できません"
             exit 0
           fi
-          # 定期実行は1日1回だけ通知する（同じ日に別の定期実行が通知済みなら出さない）。
-          # checkout 前に落ちてスクリプトが無いときは通知する
-          if [ "$EVENT_NAME" = "schedule" ]; then
+          # 定期実行の「採用しなかった・撮らなかった」は1日1回だけ通知する（同じ日に別の
+          # 定期実行が通知済みなら出さない）。ワークフロー自体の失敗（push の失敗等）は
+          # 理由が別なので必ず通知する。checkout 前に落ちてスクリプトが無いときも通知する
+          if [ "$EVENT_NAME" = "schedule" ] && [ "$JOB_FAILED" != "true" ]; then
             DEDUPE=$(node scripts/maintenance/e2e-recording.js notify-dedupe 2>/dev/null || echo '{"notify":true}')
             echo "$DEDUPE"
             if [ "$(printf '%s' "$DEDUPE" | jq -r '.notify')" = "false" ]; then
