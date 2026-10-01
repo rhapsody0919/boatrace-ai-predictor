@@ -1679,11 +1679,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
   }) => {
     await page.goto("/race/2026-09-29-02-12");
     await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
-    // 2号艇（長岡良也）の「SG・G1」: 2/7 住之江4R は公式で F（以前は着順の欄が「外」）
-    await page
-      .getByRole("button", { name: /SG・G1/ })
-      .nth(1)
-      .click();
+    // 2号艇（長岡良也）の「SG・G1」: 2/7 住之江4R は公式で F（以前は着順の欄が「外」）。
+    // 艇は上のチップで切り替える（SG・G1 のボタンは選んでいる艇の1つだけ）
+    await page.locator(".rwit-boat-chip").nth(1).click({ timeout: 30000 });
+    await page.getByRole("button", { name: /SG・G1/ }).click();
     const f = page.locator('.rrb-item[data-race-id="2026-02-07-12-04"]');
     await expect(f.locator(".rrb-rank")).toHaveText("F", { timeout: 30000 });
     await f.click();
@@ -1692,10 +1691,8 @@ test.describe("レースページ再設計（BOA-168）", () => {
 
     // 4号艇の「SG・G1」: 3/1 鳴門3R は G1 の「一般戦」。括弧にグレードを付けて、
     // 表の「一般戦」行（一般グレードの節）と混ざって読まれないようにする
-    await page
-      .getByRole("button", { name: /SG・G1/ })
-      .nth(3)
-      .click();
+    await page.locator(".rwit-boat-chip").nth(3).click();
+    await page.getByRole("button", { name: /SG・G1/ }).click();
     const g = page.locator('.rrb-item[data-race-id="2026-03-01-14-03"]');
     await g.click({ timeout: 30000 });
     await expect(page.locator(".rrb-detail").first()).toContainText(
