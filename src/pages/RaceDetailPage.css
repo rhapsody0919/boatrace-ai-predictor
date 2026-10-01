@@ -56,7 +56,10 @@
   .race-detail-page-v2 .nsc-card,
   .race-detail-page-v2 .ecd-list,
   .race-detail-page-v2 .rwit-card:has(.rwit-today-table),
-  .race-detail-page-v2 .rwit-card:has(.rwit-bars) {
+  .race-detail-page-v2 .rwit-card:has(.rwit-bars),
+  /* 枠別情報のカードの右端をそろえる。ST考察だけ 1552px に広がり、上下のカードと
+     ギザギザに並んでいた（BOA-619） */
+  .race-detail-page-v2 .rsc-card {
     max-width: 1200px;
   }
 

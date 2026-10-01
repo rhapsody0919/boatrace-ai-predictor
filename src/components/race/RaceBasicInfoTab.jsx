@@ -325,7 +325,10 @@ function RaceBasicInfoTab({
       if (maxValue === minValue) return 50;
       const ratio = (value - minValue) / (maxValue - minValue);
       // STのみ「小さいほど良い」ため反転する
-      return metric === "avgSt" ? (1 - ratio) * 100 : ratio * 100;
+      const r = metric === "avgSt" ? 1 - ratio : ratio;
+      // 最下位の艇も短い棒を残す（10〜100%）。0%だと棒が空になり、6.70 と 7.58 の差が
+      // 「0対ほぼ半分」に見えて、勝率が無いようにも読めた（BOA-618）
+      return 10 + r * 90;
     }
     return Math.max(0, Math.min(100, value));
   };

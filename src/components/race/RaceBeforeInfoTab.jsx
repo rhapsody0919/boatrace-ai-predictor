@@ -692,18 +692,21 @@ function RaceBeforeInfoTab({
                 {/* 縦軸は「最も遅い艇との差」で、目盛りの数字そのものに
                     意味が無いので出さない。実タイムは棒の上に出す */}
                 <YAxis hide domain={[0, "dataMax + 0.02"]} />
+                {/* 項目名は「展示タイム」。以前は dataKey の「lead」がそのまま出ていた（BOA-618） */}
                 <Tooltip
-                  formatter={(value, _name, item) =>
+                  formatter={(value, _name, item) => [
                     item?.payload?.time != null
                       ? `${item.payload.time.toFixed(2)}${t("beforeInfo.secondsUnit")}`
-                      : "—"
-                  }
+                      : "—",
+                    t("beforeInfo.exhibitionChartTitle"),
+                  ]}
                 />
                 <Bar dataKey="lead" radius={[4, 4, 0, 0]}>
+                  {/* 数値は 13px。広い画面で棒の幅が約200pxあるのに 11px で釣り合わなかった（BOA-613） */}
                   <LabelList
                     dataKey="timeLabel"
                     position="top"
-                    style={{ fontSize: 11, fill: "var(--text-primary)" }}
+                    style={{ fontSize: 13, fill: "var(--text-primary)" }}
                   />
                   {exhibitionLeadData.map((d) => (
                     <Cell
@@ -711,6 +714,9 @@ function RaceBeforeInfoTab({
                       fill={
                         BOAT_COLORS[d.boat]?.bg || "var(--brand-accent-primary)"
                       }
+                      // 1号艇の白い棒は背景に溶けるので輪郭を付ける（BOA-613）
+                      stroke={d.boat === 1 ? "var(--text-secondary)" : "none"}
+                      strokeWidth={d.boat === 1 ? 1 : 0}
                     />
                   ))}
                 </Bar>
