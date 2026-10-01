@@ -657,6 +657,32 @@ export function buildMeetResults(records, { raceId, venueCode }) {
   return groupIntoMeetBeforeRace(candidates, raceId).map((m) => m.record);
 }
 
+/**
+ * 「前走」のST（純関数、BOA-597）。最後の走から遡り、STの無い記号の走
+ * （F＝フライング、L＝出遅れ）に当たったらその記号を返す。
+ *
+ * F・L の走は ST を異常値として落としている（null）ので、「数値のある最後の走」を
+ * 採ると**直前のFを飛ばして1つ前の走のST**を「前走」と出してしまう
+ * （2026-09-30 平和島11Rの古川誠之: 4RでFなのに「前走 0.09」＝9/29の値）。
+ * 欠場など ST も記号も無い走は、今どおり飛ばす。
+ *
+ * @param {Array<Object>} runs 走った順（古い順）
+ * @param {{valueOf: (run: Object) => unknown, markOf: (run: Object) => string|null}} accessors
+ *   markOf はその走が F・L なら記号、それ以外は null
+ * @returns {{mark: string|null, value: number|null}|null} 該当が無ければ null
+ */
+export function lastStartTiming(runs, { valueOf, markOf }) {
+  const list = Array.isArray(runs) ? runs : [];
+  for (let i = list.length - 1; i >= 0; i -= 1) {
+    const run = list[i];
+    const mark = markOf(run);
+    if (mark) return { mark, value: null };
+    const value = valueOf(run);
+    if (typeof value === "number") return { mark: null, value };
+  }
+  return null;
+}
+
 /** 今節の平均STが通常値とこれだけ違えば「踏んでいる／慎重」と言い切る閾値（秒） */
 export const MEET_ST_DIFF_THRESHOLD = 0.01;
 /**

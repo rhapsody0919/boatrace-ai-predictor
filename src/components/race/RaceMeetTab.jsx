@@ -32,6 +32,7 @@ import {
   buildMeetResults,
   buildMeetTrend,
   getRecentRaces,
+  lastStartTiming,
   MEET_ST_DIFF_THRESHOLD,
 } from "./basicInfoStats";
 import {
@@ -349,7 +350,12 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
       : [];
   // 必要得点の列を出せるか（誰か1人でも残りの予選走が分かっていれば出す）
   const hasNeeded = forecastRows.some((r) => r.needed !== null);
-  const lastSt = lastOf("startTiming");
+  // STの前走は、直前がFならFと出す（数値のある最後の走を採るとFを飛ばす。BOA-597）
+  const lastSt = lastStartTiming(meet, {
+    valueOf: (r) => r.startTiming,
+    markOf: (r) =>
+      r.isFlying === true ? "F" : r.finishMark === "L" ? "L" : null,
+  });
   const lastExhibition = lastOf("exhibitionTime");
 
   // 得点率は平均なので「1着→6着」と「3着→3着」が同じ5.00になる。
@@ -663,88 +669,116 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {forecastRows.map(({ player: p, row, cells, needed }) => {
-                    const color = BOAT_COLORS[p.number] || {};
-                    return (
-                      <tr
-                        key={p.number}
-                        className={
-                          p.number === selectedBoat ? "is-current" : ""
-                        }
-                        onClick={() => onFocusBoat(p.number)}
-                      >
-                        <th scope="row">
-                          <button
-                            type="button"
-                            className="rmt-row-select"
-                            onClick={() => onFocusBoat(p.number)}
-                            aria-pressed={p.number === selectedBoat}
-                          >
-                            <span
-                              className="rmt-boat-chip"
-                              style={{
-                                background: color.bg,
-                                color: color.text,
-                              }}
-                            >
-                              {p.number}
-                            </span>
-                            <span className="rmt-name" translate="no">
-                              {p.name?.replace(/\s+/g, "")}
-                            </span>
-                          </button>
-                        </th>
-                        <td
-                          className={`rmt-rate${
-                            showBorderBadge &&
-                            border !== undefined &&
-                            !row.withdrawn &&
-                            row.rate >= border
-                              ? " is-in-border"
-                              : ""
-                          }`}
+                  {forecastRows.map(
+                    ({ player: p, row, cells, needed, remaining }) => {
+                      const color = BOAT_COLORS[p.number] || {};
+                      return (
+                        <tr
+                          key={p.number}
+                          className={
+                            p.number === selectedBoat ? "is-current" : ""
+                          }
+                          onClick={() => onFocusBoat(p.number)}
                         >
-                          {row.rate.toFixed(2)}
-                        </td>
-                        {hasNeeded && (
-                          <td className="rmt-needed">
-                            {/* 賞典除外の選手は準優に乗れないので、必要得点を
-                                出さない（BOA-587） */}
-                            {AWARD_EXCLUDED_REASONS.has(row.excludedReason) ? (
-                              <span className="rmt-excluded">
-                                {t(
-                                  `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason]}`,
-                                )}
+                          <th scope="row">
+                            <button
+                              type="button"
+                              className="rmt-row-select"
+                              onClick={() => onFocusBoat(p.number)}
+                              aria-pressed={p.number === selectedBoat}
+                            >
+                              <span
+                                className="rmt-boat-chip"
+                                style={{
+                                  background: color.bg,
+                                  color: color.text,
+                                }}
+                              >
+                                {p.number}
                               </span>
-                            ) : needed === null ? (
-                              "—"
-                            ) : needed.reachable ? (
-                              t("meetTab.neededPoints", {
-                                points: needed.needed,
-                              })
-                            ) : (
-                              t("meetTab.neededUnreachable")
-                            )}
-                          </td>
-                        )}
-                        {cells.map((f) => (
+                              <span className="rmt-name" translate="no">
+                                {p.name?.replace(/\s+/g, "")}
+                              </span>
+                            </button>
+                          </th>
                           <td
-                            key={f.rank}
-                            className={
+                            className={`rmt-rate${
                               showBorderBadge &&
                               border !== undefined &&
                               !row.withdrawn &&
-                              f.rate >= border
-                                ? "is-in-border"
-                                : undefined
-                            }
+                              row.rate >= border
+                                ? " is-in-border"
+                                : ""
+                            }`}
                           >
-                            {f.rate.toFixed(2)}
+                            {row.rate.toFixed(2)}
                           </td>
-                        ))}
-                      </tr>
-                    );
-                  })}
+                          {hasNeeded && (
+                            <td className="rmt-needed">
+                              {/* 賞典除外の選手は準優に乗れないので、必要得点を
+                                出さない（BOA-587） */}
+                              {AWARD_EXCLUDED_REASONS.has(
+                                row.excludedReason,
+                              ) ? (
+                                <span className="rmt-excluded">
+                                  {t(
+                                    `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason]}`,
+                                  )}
+                                </span>
+                              ) : needed === null ? (
+                                "—"
+                              ) : needed.reachable ? (
+                                // 必要得点は今日の残りの予選ぶん（1日2走ある選手もいる）
+                                // を足した点数。横の早見は次の1走だけなので、2走以上
+                                // 残っていれば走数を添える。無いと「1着でも目安に
+                                // 届かないのに必要得点17」と食い違って読める（BOA-596）
+                                <>
+                                  {t("meetTab.neededPoints", {
+                                    points: needed.needed,
+                                  })}
+                                  {/* 走数は2行目に小さく出す。1行に並べると
+                                    375pxで列が広がり、早見の3着以降が
+                                    最初の画面から外れた（ファン評価1周目） */}
+                                  {remaining > 1 && (
+                                    <span className="rmt-needed-runs">
+                                      {t("meetTab.neededPointsRuns", {
+                                        runs: remaining,
+                                      })}
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="rmt-unreachable">
+                                  {t("meetTab.neededUnreachable")}
+                                </span>
+                              )}
+                            </td>
+                          )}
+                          {cells.map((f) => (
+                            <td
+                              key={f.rank}
+                              className={
+                                showBorderBadge &&
+                                border !== undefined &&
+                                !row.withdrawn &&
+                                // 今日2走以上残る選手の行は色を付けない。セルの数字は
+                                // 「次の1走だけ」の得点率で、準優に届くかは残りの
+                                // 走次第なので、その着で届くとは言えない。1周目は
+                                // 「残りを全部6着でも届くか」で塗ったが、数字と色の
+                                // 基準がずれ「7.00なのに色なし」と読まれた（BOA-596）
+                                remaining <= 1 &&
+                                f.rate >= border
+                                  ? "is-in-border"
+                                  : undefined
+                              }
+                            >
+                              {f.rate.toFixed(2)}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    },
+                  )}
                 </tbody>
               </table>
             </div>
@@ -826,9 +860,15 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
             {trendRows.map(({ player: p, runs, layout }) => {
               const color = BOAT_COLORS[p.number] || {};
               const vals = runs.map((r) => r[trendKey]);
-              const last = [...vals]
-                .reverse()
-                .find((v) => typeof v === "number");
+              // 右端の「前走」。STは直前がFならFと出す（BOA-597）。展示はFでも
+              // 走っている（展示タイムはある）ので、数値のある最後の走のまま
+              const lastRun = lastStartTiming(runs, {
+                valueOf: (r) => r[trendKey],
+                markOf: (r) =>
+                  trendKey === "st" && (r.finish === "F" || r.finish === "L")
+                    ? r.finish
+                    : null,
+              });
               return (
                 <li key={p.number}>
                   {/* 行全体を1つのボタンにする。以前は艇番・選手名だけが押せて、
@@ -863,6 +903,10 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                       height={34}
                       // 1走の選手も前走の点を出す（空白だと取れていないと読まれる）
                       allowSinglePoint
+                      // 前走が F・L なら、1つ前の走に「前走」の大きい点を付けない。
+                      // 右端は「F」なのに大きい点が0.09の走に付き、前走が好スタートに
+                      // 見えていた（BOA-597 ファン評価1周目）
+                      markLast={!lastRun?.mark}
                       xPositions={layout.xs}
                       xCenters={layout.centers}
                       breakBefore={layout.breakBefore}
@@ -878,7 +922,9 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                       )}
                     />
                     <span className="rmt-trend-last">
-                      {typeof last === "number" ? last.toFixed(2) : "—"}
+                      {lastRun === null
+                        ? "—"
+                        : (lastRun.mark ?? lastRun.value.toFixed(2))}
                     </span>
                   </button>
                 </li>
@@ -1047,13 +1093,16 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                   }))}
                   baseline={st.baseAvg}
                   color="var(--brand-accent-primary)"
+                  markLast={!lastSt?.mark}
                 />
                 <div className="rmt-spark-foot">
                   <span>{firstMeetDate}</span>
                   <span>
                     {lastSt === null
                       ? "—"
-                      : t("meetTab.sparkLast", { value: lastSt.toFixed(2) })}
+                      : t("meetTab.sparkLast", {
+                          value: lastSt.mark ?? lastSt.value.toFixed(2),
+                        })}
                   </span>
                 </div>
               </div>

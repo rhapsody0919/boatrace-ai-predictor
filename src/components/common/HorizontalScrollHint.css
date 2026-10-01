@@ -49,3 +49,24 @@
   line-height: 1;
   cursor: pointer;
 }
+
+/* 左へ戻す「‹」（BOA-609）。「›」と左右対称に、箱の左上に重ねる */
+.hscroll-less {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 40px;
+  width: 28px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  cursor: pointer;
+}

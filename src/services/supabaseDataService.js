@@ -4374,8 +4374,9 @@ export const supabaseDataService = {
     // exhibitionRank を足した（水面の影響を相殺するため）
     // v5: 欠場（absent）を足した（BOA-504）
     // v6: 着順が付かない走の公式の記号（finishMark）を足した（BOA-537）
-    // v7: フライングの走の ST（flyingStartTiming）を足した（BOA-583。直近10走・今節の表で「F.01」と出すため）
-    return withCache(`racer-scoped-race-stats-v7-${racerId}`, async () => {
+    // v7: 同じ日の走を R の古い順に並べ直した（BOA-588）
+    // v8: フライングの走の ST（flyingStartTiming）を足した（BOA-583。直近10走・今節の表で「F.01」と出すため）
+    return withCache(`racer-scoped-race-stats-v8-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4637,7 +4638,10 @@ export const supabaseDataService = {
           };
         })
         .filter(Boolean)
-        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+        // race_id（YYYY-MM-DD-VV-RR の固定長）で古い順に並べる。日付だけで
+        // 並べると、同じ日の2走が取得順（新しい順）のまま残り、直近10走が
+        // 「9/22 9R → 9/22 1R」と日の中だけ逆になっていた（BOA-588）
+        .sort((a, b) => a.raceId.localeCompare(b.raceId));
     });
   },
 

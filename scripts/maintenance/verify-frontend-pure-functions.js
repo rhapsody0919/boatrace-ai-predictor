@@ -449,6 +449,28 @@ function suiteBasicInfoStats(m, check) {
     50,
   );
 
+  // --- lastStartTiming（BOA-597）: 前走のST。直前が F・L ならその記号で、飛ばさない
+  const stOf = { valueOf: (r) => r.st, markOf: (r) => r.mark ?? null };
+  check(
+    "lastStartTiming: 直前が F・L ならその記号、欠場（ST無し・記号無し）は飛ばす、何も無ければ null",
+    [
+      m.lastStartTiming([{ st: 0.09 }, { st: null, mark: "F" }], stOf),
+      m.lastStartTiming([{ st: 0.09 }, { st: null, mark: "L" }], stOf),
+      m.lastStartTiming([{ st: 0.12 }, { st: null }], stOf),
+      m.lastStartTiming([{ st: null, mark: "F" }, { st: 0.15 }], stOf),
+      m.lastStartTiming([{ st: null }], stOf),
+      m.lastStartTiming(null, stOf),
+    ],
+    [
+      { mark: "F", value: null },
+      { mark: "L", value: null },
+      { mark: null, value: 0.12 },
+      { mark: null, value: 0.15 },
+      null,
+      null,
+    ],
+  );
+
   // --- periodDiff（BOA-439）: 前期と出走表の値の差。どちらも公式値
   check(
     "periodDiff: 出走表の値と、符号つきの差（勝率は小数2桁・2連対率は1桁）",
@@ -904,7 +926,7 @@ function suiteCourseGridStats(m, check) {
   });
 
   check(
-    "getCourseRecentRuns: 実進入コースで絞り、新しい順",
+    "getCourseRecentRuns: 実進入コースで絞り、古い順（帯の「古い→新しい」と同じ向き。BOA-601）",
     m
       .getCourseRecentRuns(records, {
         venueCode: 4,
@@ -912,7 +934,21 @@ function suiteCourseGridStats(m, check) {
         course: 2,
       })
       .map((r) => r.raceId),
-    ["2026-09-11-04-01", "2026-09-10-04-01"],
+    ["2026-09-10-04-01", "2026-09-11-04-01"],
+  );
+  // 同じ日の2走は、records が日付だけで並んでいても R の順にそろえる（ファン評価2周目）
+  check(
+    "getCourseRecentRuns: 同じ日の2走は R の小さい順（入力が日の中で逆順でも）",
+    m
+      .getCourseRecentRuns(
+        [
+          rec({ raceId: "2026-09-12-04-09", boatNumber: 2, actualCourse: 2 }),
+          rec({ raceId: "2026-09-12-04-04", boatNumber: 2, actualCourse: 2 }),
+        ],
+        { venueCode: 4, rowKey: "current", course: 2 },
+      )
+      .map((r) => r.raceId),
+    ["2026-09-12-04-04", "2026-09-12-04-09"],
   );
   // 「直近1ヶ月」の起点をレースの日にそろえる（BOA-603）。今日（2026-10-01）を
   // 起点にすると、9/5 のレースでは 8/10 の走が期間の外に落ちる
@@ -940,7 +976,8 @@ function suiteCourseGridStats(m, check) {
         })
         .map((r) => r.raceId),
     ],
-    [["2026-09-03-04-01", "2026-08-10-04-01"], ["2026-09-03-04-01"]],
+    // 古い順（BOA-601。帯の左が古い）
+    [["2026-08-10-04-01", "2026-09-03-04-01"], ["2026-09-03-04-01"]],
   );
 }
 
@@ -1065,6 +1102,19 @@ function suiteWeatherInfo(m, check) {
 // 6. dateUtils.js
 // ---------------------------------------------------------------------------
 function suiteDateUtils(m, check) {
+  // isRaceBeforeTodayJST（BOA-608）: 過去のレースだけ「今日時点の集計」と注記する
+  const noon = new Date("2026-10-01T12:00:00+09:00");
+  check(
+    "isRaceBeforeTodayJST: 前日以前は true、今日と読めない race_id は false",
+    [
+      m.isRaceBeforeTodayJST("2026-09-30-09-05", noon),
+      m.isRaceBeforeTodayJST("2026-10-01-09-05", noon),
+      m.isRaceBeforeTodayJST(null, noon),
+      m.isRaceBeforeTodayJST("abc", noon),
+    ],
+    [true, false, false, false],
+  );
+
   // --- isWithinDays: ブログ一覧（src/pages/Blog.jsx）の NEW バッジ（7日以内）（BOA-554）
   // 「JST の今日を含む直近7日」= JST 2026-09-29 なら 09-23〜09-29。09-22 と未来の 09-30 は含めない。
   // new Date("YYYY-MM-DD") は UTC 0時なので、JST にずらした現在時刻との差は実行環境の TZ に
@@ -1357,9 +1407,9 @@ const MUTANTS = [
   ],
   [
     "courseGridStats",
-    "直近走を古い順にする",
-    ".slice(-count)\n    .reverse();",
-    ".slice(-count);",
+    "直近走を新しい順に戻す（BOA-601 の退行: 帯の「古い→新しい」と逆になる）",
+    ".slice(-count)\n  );",
+    ".slice(-count)\n      .reverse()\n  );",
   ],
   [
     "venueDayTrend",

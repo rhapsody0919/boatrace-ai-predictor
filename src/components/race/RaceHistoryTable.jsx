@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { GRADE_LABELS } from "./raceGradeLabels";
 import { translateTechnique } from "./raceIndicators";
@@ -52,6 +52,15 @@ import "./RaceHistoryTable.css";
  * に変更した。JSのonClick/useNavigateが不要になり、ネイティブの`<a>`のままの
  * ため中クリック・新規タブで開く・スクリーンリーダー対応も自然に保たれる。
  * ネイティブaタグのクリック判定はブラウザが行うため、スワイプ誤爆の懸念もない
+ *
+ * 2026-10-01追記（BOA-609）: stretched link をやめ、行の `onClick` に戻した。
+ * iOS の WebKit（Safari・Chrome とも）は `<tr>` の `position: relative` を効かせない
+ * （Playwright の WebKit で計算値が static）。`::after` の基準が行ではなく、
+ * スクロールする箱の外側（`.hscroll-hint`）になり、表全体をスクロールしない
+ * 重ね物が覆って、指の横スワイプで表が動かなくなっていた（見出しの位置を指しても
+ * リンクに当たった）。上の (b) の懸念は当たらない: ブラウザはスクロールした
+ * 操作には click を出さない。日付の `<Link>` は残すので、中クリック・新しいタブ・
+ * スクリーンリーダーは従来どおり。行の onClick はリンク自身を押したときは何もしない
  */
 /**
  * ## 横スクロール（BOA-455、2026-09-28）
@@ -103,6 +112,7 @@ function RaceHistoryTable({
   compactDate = false,
 }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   // 公式の記号はデータ出走表の「本日の前走」と同じ表記にする。日本語以外の
   // ページで「エ」「落」を生のまま出さない（BOA-569 ファン評価3周目）
   const renderFinishMark = (mark) => {
@@ -119,13 +129,14 @@ function RaceHistoryTable({
   // 列数・行数が決まってから測り直す（取得前は幅が無く、右に続くと分からない）。
   // 表の幅を変えるプロップは漏れなく並べる。1つでも抜けると、溢れが解消しても
   // 「›」が残る／溢れているのに出ない、という取り残しが起きる
-  const { ref, hasMore, update, scrollRight } = useHorizontalScrollHint([
-    rows.length,
-    omitColumns.join(","),
-    showEntryCourse,
-    showExhibition,
-    compactDate,
-  ]);
+  const { ref, hasMore, hasLess, update, scrollRight, scrollLeft } =
+    useHorizontalScrollHint([
+      rows.length,
+      omitColumns.join(","),
+      showEntryCourse,
+      showExhibition,
+      compactDate,
+    ]);
   // 同じ節の走だけが並ぶ表（今節タブ）では年は毎行同じで、390pxの幅を
   // 進入・ST・着順から奪うだけになる。月日だけに縮める
   const formatDate = (date) =>
@@ -137,6 +148,17 @@ function RaceHistoryTable({
     <div
       className={`race-history-hscroll hscroll-hint${hasMore ? " has-more" : ""}`}
     >
+      {hasLess && (
+        <button
+          type="button"
+          className="hscroll-less"
+          onClick={scrollLeft}
+          aria-hidden="true"
+          tabIndex={-1}
+        >
+          ‹
+        </button>
+      )}
       {hasMore && (
         <button
           type="button"
@@ -171,7 +193,14 @@ function RaceHistoryTable({
           </thead>
           <tbody>
             {rows.map((race) => (
-              <tr key={race.raceId} className="race-history-table-row">
+              <tr
+                key={race.raceId}
+                className="race-history-table-row"
+                onClick={(e) => {
+                  if (e.target.closest("a")) return;
+                  navigate(buildRaceHref(race.raceId));
+                }}
+              >
                 <td>
                   <Link
                     className="race-history-table-link"
