@@ -357,7 +357,12 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   const renderFinishes = (finishes) =>
     finishes.length > 0 && (
       <span className="rmt-finishes">
-        <span className="rmt-finishes-label">{t("meetTab.finishLabel")}</span>
+        <span className="rmt-finishes-label">
+          {/* 予選が終わった後は、並びは予選の走だけ（得点率に数える走、BOA-457）。
+              「着順」とだけ書くと、準優の日の一般戦など後の走が抜けて見える
+              （2026-09-29 戸田12R の山田康二: 並び6走・節の全走は7走。BOA-568） */}
+          {t(prelimOver ? "meetTab.finishLabelPrelim" : "meetTab.finishLabel")}
+        </span>
         {finishes.map((f, i2) => (
           <span key={i2}>
             {i2 > 0 && t("meetTab.finishSeparator")}

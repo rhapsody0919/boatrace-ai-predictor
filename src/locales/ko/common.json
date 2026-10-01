@@ -762,6 +762,7 @@
     "finishAbsent": "결",
     "smallSampleLegend": "⚠ 는 3주 미만(득점률이 아직 거칠다).",
     "finishLabel": "착순",
+    "finishLabelPrelim": "예선 착순",
     "borderNote": "점선 위가 준우승전 기준 안입니다(편성이 확정되지 않아 확정은 아닙니다).",
     "prelimOverNote": "예선은 {{date}}에 끝났습니다. 득점률은 여기서 확정되어 오늘 착순으로는 바뀌지 않습니다.",
     "seriesSplitNote": "이번 시리즈는 Ｗ우승전으로, 승격 경로가 둘로 나뉩니다(시리즈 전체 {{meetTotal}}명). 시리즈 순위와 준우승전 기준은 표시 중인 6정과 같은 우승전을 목표로 하는 {{total}}명 안에서 계산합니다.",
