@@ -527,7 +527,7 @@ function buildRowDefs({
         return (
           <span className="drt-value drt-parts-changed">
             {parts && parts.length > 0 && (
-              <span className="drt-badge">{parts.join("・")}</span>
+              <span className="drt-badge">{parts.join(t("listSeparator"))}</span>
             )}
             {propellerChanged && (
               <span className="drt-badge">

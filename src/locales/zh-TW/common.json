@@ -1863,6 +1863,7 @@
     "ledeDayPartial": "已確定{{n}}場中，已知決勝手法的{{m}}場為 {{techniques}}。",
     "loading": "讀取中..."
   },
+  "listSeparator": "、",
   "termHintLabel": "查看用語說明",
   "termHints": {
     "winRate": "選手的全國勝率，是級別評定所用的成績。數值越高代表實力越強",

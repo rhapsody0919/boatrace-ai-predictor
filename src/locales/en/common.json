@@ -1871,6 +1871,7 @@
     "ledeDayPartial": "Of the {{n}} settled races, the {{m}} with a recorded winning move: {{techniques}}.",
     "loading": "Loading..."
   },
+  "listSeparator": ", ",
   "termHintLabel": "Show what this term means",
   "termHints": {
     "winRate": "The racer's national win rate, the figure used for class ratings. Higher means a stronger racer",
