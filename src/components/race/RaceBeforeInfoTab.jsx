@@ -43,6 +43,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import BandWrapAxisTick from "../BandWrapAxisTick";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
@@ -681,7 +682,13 @@ function RaceBeforeInfoTab({
                 margin={{ top: 20, right: 16, left: 0, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <XAxis
+                  dataKey="name"
+                  interval={0}
+                  tick={(props) => (
+                    <BandWrapAxisTick {...props} fontSize={11} />
+                  )}
+                />
                 {/* 縦軸は「最も遅い艇との差」で、目盛りの数字そのものに
                     意味が無いので出さない。実タイムは棒の上に出す */}
                 <YAxis hide domain={[0, "dataMax + 0.02"]} />
