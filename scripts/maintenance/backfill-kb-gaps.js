@@ -6,6 +6,7 @@
  *   --item=st          項目4: race_start_timings に行が無いレースへ、スタートの行を挿入する
  *   --item=exhibition  項目6: 展示タイムが無い艇（行が無い・行はあるが NULL）に、展示タイムの列だけを書く
  *   --item=conditions  項目5: race_conditions の NULL の列（天候・風向・風速・波高・ステージ）だけを埋める
+ *   --item=finish_code 項目7（BOA-553）: race_start_timings の既存の行の公式の成績コード（NULL だけ）を埋める
  *   --item=race_status 項目8（BOA-480）: race_results の race_status・refund_boats が NULL のレースを、K から導いて埋める
  *   --item=rate2       項目3: race_entries の2連率（全国・当地）の NULL だけを埋める（登録番号が一致する艇のみ）
  *
@@ -31,6 +32,7 @@ import {
   assertColumnSet,
   buildConditionsRows,
   buildExhibitionRows,
+  buildFinishCodeRows,
   buildRaceStatusRows,
   buildRate2Rows,
   buildStartTimingRows,
@@ -104,6 +106,23 @@ export async function planDay(item, day, date, client = supabase, out = {}) {
         ]),
       ),
     });
+  }
+  if (item === "finish_code") {
+    const rows = await read(
+      def.table,
+      "race_id, boat_number, official_finish_code",
+      date,
+      client,
+    );
+    return buildFinishCodeRows(
+      day,
+      new Map(
+        rows.map((r) => [
+          `${r.race_id}|${r.boat_number}`,
+          r.official_finish_code ?? null,
+        ]),
+      ),
+    );
   }
   if (item === "race_status") {
     const rows = await read(def.table, "race_id, race_status", date, client);
