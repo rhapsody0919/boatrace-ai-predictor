@@ -40,6 +40,7 @@ import {
   scoreTableFor,
   isAbsentStartRow,
   flyingRacerIdsInMeet,
+  postPrelimFlyingRacerIds,
   runFinishLabel,
   officialMarkOf,
 } from "../components/race/seriesPoints.js";
@@ -7159,8 +7160,9 @@ export const supabaseDataService = {
     // v18: 賞典除外（公式の備考・今節F）を順位から外す理由を足した（BOA-587）
     // v19: 着順の並びでフライングを「F」と出すため、is_flying を足した（BOA-589）
     // v20: 予選終了の日目を series_day から出す（中止の日を数えない、BOA-578）
-    // v21: 丸一日レースが無かった日（noRaceDays）を足した（BOA-636）
-    return withCache(`meet-scoreboard-v21-${raceId}`, async () => {
+    // v21: 予選後に今節Fを切った選手（postPrelimFlyingRacerIds）を足した（BOA-626）
+    // v22: 丸一日レースが無かった日（noRaceDays）を足した（BOA-636）
+    return withCache(`meet-scoreboard-v22-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7508,6 +7510,16 @@ export const supabaseDataService = {
             exclusionReasonByRacer: reasons,
           };
         })(),
+        // **予選が終わった後のレースで今節Fを切った選手**（BOA-626）。
+        // 順位は予選終了で確定しているので順位の対象からは外さない（上の判定は
+        // 予選終了までのFだけを見る）が、賞典除外なのは同じ。同じ「今節F」で
+        // 片方は除外・片方は順位付きになる理由を、画面が順位の横で断るのに使う。
+        // `meetStarts` は表示中レースの直前までなので、まだ切っていないFは入らない
+        postPrelimFlyingRacerIds: postPrelimFlyingRacerIds(
+          meetStarts,
+          meetRows,
+          prelimEndRaceIdOf(conditions ?? []),
+        ),
         // **残りの予選走数**（表示中のレースを含む）。公式の「必要得点」は
         // 「準優ボーダーをクリアするために必要な得点」で、実データから
         // 逆算すると `ボーダー × (今の走数 + 残り走数) − 今の得点` だった
@@ -7972,13 +7984,25 @@ export const supabaseDataService = {
    */
   async getRaceStartTimings(raceId) {
     if (!supabase || !raceId) return [];
-    const { data, error } = await supabase
-      .from("race_start_timings")
-      .select(
-        "boat_number, start_timing, is_flying, is_late_start, finish_mark, finish_rank",
-      )
-      .eq("race_id", raceId)
-      .order("boat_number");
+    // 進入は本番STの entry_course（2026-09-21 からほぼ全件）を先に、無ければ Kファイル由来の
+    // race_results.actual_course_<艇番>（翌日以降に入る）で埋める（BOA-625。徳山 9/14 7R は
+    // entry_course が無いが actual_course はある）
+    const [{ data, error }, { data: courseRow }] = await Promise.all([
+      supabase
+        .from("race_start_timings")
+        .select(
+          "boat_number, start_timing, is_flying, is_late_start, finish_mark, finish_rank, entry_course",
+        )
+        .eq("race_id", raceId)
+        .order("boat_number"),
+      supabase
+        .from("race_results")
+        .select(
+          "actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+        )
+        .eq("race_id", raceId)
+        .maybeSingle(),
+    ]);
 
     if (error || !data) return [];
 
@@ -7991,6 +8015,12 @@ export const supabaseDataService = {
       isLateStart: row.is_late_start,
       finishMark: row.finish_mark ?? null,
       finishRank: row.finish_rank ?? null,
+      // 進入コース（結果ページのスタート情報の行順、077）。結果タブの進入の表示に使う（BOA-625）。
+      // race_results.course_1〜6 は枠番と同じ値の旧列なので使わない
+      entryCourse:
+        row.entry_course ??
+        courseRow?.[`actual_course_${row.boat_number}`] ??
+        null,
     }));
   },
 

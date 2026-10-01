@@ -41,6 +41,7 @@ import {
   FINISH_ABSENT,
   isAbsentStartRow,
   flyingRacerIdsInMeet,
+  postPrelimFlyingRacerIds,
   runFinishLabel,
   officialMarkOf,
 } from "../../src/components/race/seriesPoints.js";
@@ -1519,6 +1520,33 @@ check(
       [202, null, "withdrawn"],
       [203, 1, null],
     ],
+  );
+}
+
+// ---- 予選後に今節Fを切った選手（BOA-626） ----------------------------------
+// 桐生 2026-09-25 7R の6号艇 武田光史は 9/24 8R（予選後）でF。予選中のFではないので
+// 順位は付いたまま、印だけ添える。予選中のF（5号艇 大澤）は対象外
+{
+  const END = "2026-09-23-01-12";
+  const entries = [
+    { race_id: "2026-09-22-01-03", boat_number: 5, racer_id: 501 },
+    { race_id: "2026-09-24-01-08", boat_number: 6, racer_id: 601 },
+    { race_id: "2026-09-24-01-09", boat_number: 1, racer_id: 701 },
+  ];
+  const starts = [
+    { race_id: "2026-09-22-01-03", boat_number: 5, is_flying: true },
+    { race_id: "2026-09-24-01-08", boat_number: 6, is_flying: true },
+    { race_id: "2026-09-24-01-09", boat_number: 1, is_flying: false },
+  ];
+  check(
+    "予選後のFだけを拾う（予選中のFは拾わない）",
+    postPrelimFlyingRacerIds(starts, entries, END),
+    [601],
+  );
+  check(
+    "予選の締めが分からない節では空",
+    postPrelimFlyingRacerIds(starts, entries, null),
+    [],
   );
 }
 
