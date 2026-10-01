@@ -5,6 +5,7 @@
  * ロード中の未取得セルはソース別pendingに基づきスケルトン表示する
  * （プログレッシブ表示: 取得できた行から順次値が入る）
  */
+import { Fragment } from "react";
 import { Link } from "react-router-dom";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
 import {
@@ -527,7 +528,22 @@ function buildRowDefs({
         return (
           <span className="drt-value drt-parts-changed">
             {parts && parts.length > 0 && (
-              <span className="drt-badge">{parts.join("・")}</span>
+              <span className="drt-badge">
+                {/* 部品名ごとに塊にし、折り返しは「・」の後と「×２」の前だけにする。
+                    1つの文字列だとスマホで「シャフ／ト」と語の途中で折れた
+                    （BOA-612 ファン評価3周目）。「リング×２」を1つの塊にすると
+                    62px あり、320px の列（約44px）に入らない */}
+                {parts.map((part, i) => (
+                  <Fragment key={part}>
+                    {part.split(/(?=×)/).map((chunk) => (
+                      <span key={chunk} className="drt-part">
+                        {chunk}
+                      </span>
+                    ))}
+                    {i < parts.length - 1 && "・"}
+                  </Fragment>
+                ))}
+              </span>
             )}
             {propellerChanged && (
               <span className="drt-badge">
