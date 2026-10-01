@@ -2110,7 +2110,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await page.goto("/en/race/2026-09-30-02-09");
     await page.locator(".race-tabs-btn", { hasText: "Basic Info" }).click();
     const enRow = page
-      .locator("tr", { hasText: "Last race this event" })
+      .locator("tr", { hasText: "Last race this series" })
       .first();
     await enRow.waitFor({ timeout: 30000 });
     await expect(enRow).toContainText("Eng");
