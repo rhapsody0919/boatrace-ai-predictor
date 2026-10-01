@@ -27,6 +27,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-admin-rule-performance.js --rules --rpc"
     },
     {
+      "script": "verify-actionlint.js",
+      "tier": "ci",
+      "guards": ".github/workflows の全ファイルに actionlint＋shellcheck の新しい指摘が無いこと（BOA-659）。#1080 の env の ${{ failure() }}（ワークフロー全体が無効になり、PR の CI は緑のままだった）や #1081 の無効な types: merged を PR で止める。既存の指摘は actionlint-allowlist.json に（file, rule, 行の内容）で固定し、解消済みの残骸も失敗にする。版は actionlint-tools.json で固定し、Quality Gates が install-actionlint.js で sha256 を照合して取得する。手元で未取得なら警告して飛ばす（CI では失敗）"
+    },
+    {
       "script": "verify-adr-numbers.js",
       "tier": "ci",
       "guards": "docs/adr/ のADR番号の重複（並行セッションで繰り返し発生）"
@@ -141,6 +146,11 @@
       ],
       "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
       "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
+    },
+    {
+      "script": "verify-function-grants-migration.js",
+      "tier": "ci",
+      "guards": "マイグレーション112（関数・シーケンスの匿名権限の剥奪と既定権限の是正、BOA-575）をPGlite上で実際に適用して検証。画面が呼ぶ7本のRPCが残ること・トリガーが発火し続けること"
     },
     {
       "script": "verify-migration-rls.js",
@@ -498,6 +508,11 @@
       "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、定期実行の起動時刻（1日4回・0分回避・打ち切り前）と直列化・通知の1日1回化、素通し一覧の集計（ADR-0077）"
     },
     {
+      "script": "verify-e2e-no-unroute.js",
+      "tier": "ci",
+      "guards": "E2Eで page のルートを途中で0件にする書き方（.unroute(・.unrouteAll(・第3引数に times のある、または第3引数がオブジェクトリテラルでない .route(）が e2e/**/*.js に入らないこと。0件になった瞬間の処理中の要求が context 側（録画の再生）へ送り直され「Route is already handled!」で落ちる（BOA-466・BOA-661、ADR-0077 決定4）。正当な例外は e2e-no-unroute-allowlist.json に理由つきで載せ、理由の無いエントリと解消済みのエントリで失敗する。#1084 修正前の書き方を検出できることを自己テストで毎回確かめる"
+    },
+    {
       "script": "verify-e2e-recorded-network.js",
       "tier": "ci",
       "guards": "E2Eのspecが録画の再生（e2e/fixtures.js、ADR-0077）を素通りする書き方（@playwright/testからの直接import・route.continue()・route.fetch()）をしていないこと"
@@ -588,6 +603,16 @@
       "script": "verify-pit-report-backfill.js",
       "tier": "ci",
       "guards": "ピットレポートの取り直し（backfill-pit-reports.js）が、行の無いレースと、コメントが出走表の艇数に満たないレースだけを選び、not_target・全艇そろったレース・対象外のグレードを取り直さないこと。前後のコメント数の集計（BOA-611。取得ジョブが公開直後の1回しか取らず、9/21〜10/1 の57レースでコメントが欠けていた）"
+    },
+    {
+      "script": "verify-aggregate-racer-stats.js",
+      "tier": "ci",
+      "guards": "選手別の日次集計（aggregate-racer-stats.js）が取得エラーを握りつぶさず、変わった行だけ書き、1日1回だけ起動する（BOA-600）"
+    },
+    {
+      "script": "verify-kb-gap-fill.js",
+      "tier": "ci",
+      "guards": "K/Bファイルからの欠落の補完（backfill-kb-gaps.js・kbGapFill.js。BOA-271 の前提条件、Phase 1 項目3〜6）が、項目ごとに決めた列だけを書き（全行の列の集合がそろわなければ書かない＝一括 upsert の NULL 上書きを防ぐ）、既存の値を上書きせず、行の無いレースにだけ挿入し、フライングの ST を正の値で書くこと（本番の全期間が正。kbFileParser は負で返す）"
     }
   ]
 }

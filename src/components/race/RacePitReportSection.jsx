@@ -74,7 +74,9 @@ function PitCommentCard({ comment, player, t }) {
         </span>
         {player?.name ? (
           <span className="rpr-racer-name" translate="no">
-            {player.name}
+            {/* 出走表の名前は姓と名の間を全角スペースで詰めてある。結果タブと同じく
+                空白を1つにまとめる（「峰　竜太」→「峰 竜太」。BOA-618） */}
+            {player.name.replace(/\s+/g, " ").trim()}
           </span>
         ) : (
           <span className="rpr-racer-name" translate="no">
