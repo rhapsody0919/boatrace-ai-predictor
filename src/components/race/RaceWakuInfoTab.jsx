@@ -183,8 +183,19 @@ function RaceWakuInfoTab({
   // 以外でも変わるので、selectBoatの中で閉じるのではなくここで判定する。
   // 副作用として、1→4→1と艇を戻すと1で開いていたセルが再び開く（従来は閉じた
   // まま）。同じ選手の同じセルに戻るだけなのでそのままにしている
+  //
+  // ただし既定ビュー（今日の想定コースの表）で開いた行は、艇を替えても同じ行（当地・
+  // 直近1ヶ月など）のまま開いておく。コースは新しい艇の想定コース（枠なり＝艇番）に
+  // 替える。6艇を同じ条件で見比べるのに、艇ごとに行を押し直していた（BOA-604
+  // ファン評価2周目）。全コース表のセルはコースを指定して開くので、従来どおり閉じる
   const [openCellState, setOpenCell] = useState(null);
-  const openCell = openCellState?.boat === selectedBoat ? openCellState : null;
+  const openCell = !openCellState
+    ? null
+    : openCellState.boat === selectedBoat
+      ? openCellState
+      : openCellState.from === "today" && selectedBoat !== null
+        ? { ...openCellState, boat: selectedBoat, course: selectedBoat }
+        : null;
   // 全コース比較の折りたたみ。native <details> ではなくReactの状態で持つ。
   // <details> は取得待ちの分岐（scopedRecords === undefined）の中にあるため、
   // 履歴が未取得の選手に切り替えるとサブツリーが差し替わって再マウントされ、
@@ -296,16 +307,15 @@ function RaceWakuInfoTab({
   // 全コース表の「今日」列セルも同じ (rowKey, course) を指すため、from を判定に
   // 入れないと両者が常に衝突し、片方を開いた状態でもう片方を押すと「閉じるだけ」
   // になって無反応に見える（レビュー指摘、2026-09-24）
+  // 開いているか（閉じるか）の判定は、画面に出ている openCell（艇を替えて引き継いだ
+  // 行を含む）と比べる。元の状態（前の艇）と比べると、引き継いだ行を押しても閉じない
   const toggleCell = (rowKey, course, from) => {
-    setOpenCell((prev) =>
-      prev &&
-      prev.boat === selectedBoat &&
-      prev.rowKey === rowKey &&
-      prev.course === course &&
-      prev.from === from
-        ? null
-        : { boat: selectedBoat, rowKey, course, from },
-    );
+    const isOpen =
+      openCell &&
+      openCell.rowKey === rowKey &&
+      openCell.course === course &&
+      openCell.from === from;
+    setOpenCell(isOpen ? null : { boat: selectedBoat, rowKey, course, from });
   };
 
   const techniqueDistribution = aggregateTechniqueDistribution(

@@ -1708,13 +1708,29 @@ test.describe("レースページ再設計（BOA-168）", () => {
 
     // 4号艇の「SG・G1」: 3/1 鳴門3R は G1 の「一般戦」。括弧にグレードを付けて、
     // 表の「一般戦」行（一般グレードの節）と混ざって読まれないようにする
+    // 艇を替えても「SG・G1」の行は開いたまま（ファン評価2周目）なので、押し直さない
     await page.locator(".rwit-boat-chip").nth(3).click();
-    await page.getByRole("button", { name: /SG・G1/ }).click();
     const g = page.locator('.rrb-item[data-race-id="2026-03-01-14-03"]');
     await g.click({ timeout: 30000 });
     await expect(page.locator(".rrb-detail").first()).toContainText(
       "（G1 一般戦）",
     );
+  });
+
+  test("枠別情報で艇を切り替えても、開いていた行（当地など）の帯は開いたまま（BOA-604 ファン評価2周目）", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    await page.getByRole("button", { name: /当地/ }).click({ timeout: 30000 });
+    const note = page.locator(".rwit-expanded-note").first();
+    await expect(note).toContainText("当地で1コース");
+    // 2号艇に切り替えると、同じ「当地」の行のまま2コースの帯になる（以前は閉じた）
+    await page.locator(".rwit-boat-chip").nth(1).click();
+    await expect(note).toContainText("当地で2コース");
+    // 引き継いだ行をもう一度押すと閉じる
+    await page.getByRole("button", { name: /当地/ }).click();
+    await expect(page.locator(".rwit-expanded-note")).toHaveCount(0);
   });
 
   test("枠別情報のコース別「直近1ヶ月」の帯は、表示どおり左が古く右が新しい（BOA-601）", async ({
