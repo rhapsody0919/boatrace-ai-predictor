@@ -48,6 +48,49 @@ function scrollBelowHeader(el) {
   });
 }
 
+// 目的の要素がヘッダーのすぐ下に来るようスクロールし、5秒間は高さの変化に合わせて合わせ直す。
+// 上にある会場カードは自分でデータを読み込むので、読み込みで高さが変わると目的の要素が押し下げられる
+// （ファン評価2周目）。ユーザーが操作（スクロール・タップ・キー）したら、その時点でやめる。
+// 着いたときの自動スクロールと、目印の近道（「9Rへ」）の両方で使う。近道は1回だけ合わせていたため、
+// CI の負荷で会場カードの読み込みが遅いと、9R が約90px 下にずれていた
+function holdScrollPosition(getTarget, observed) {
+  // 自分で合わせた位置。これと違う位置へのスクロールは、ユーザーの操作（スクロールバーのドラッグ等も含む）
+  // とみなして合わせ直しをやめる
+  // 高さが変わった直後のずれは、ブラウザのスクロール位置の自動調整（scroll anchoring）によるものなので、
+  // ユーザーの操作とみなさず合わせ直す
+  let expectedY = 0;
+  let lastResizeAt = 0;
+  const realign = () => {
+    scrollBelowHeader(getTarget());
+    expectedY = window.scrollY;
+  };
+  realign();
+  if (typeof ResizeObserver === "undefined" || !observed) return;
+  const observer = new ResizeObserver(() => {
+    lastResizeAt = Date.now();
+    realign();
+  });
+  observer.observe(observed);
+  const onScroll = () => {
+    if (Math.abs(window.scrollY - expectedY) <= 2) return;
+    if (Date.now() - lastResizeAt < 300) realign();
+    else stop();
+  };
+  const stop = () => {
+    observer.disconnect();
+    clearTimeout(timer);
+    window.removeEventListener("scroll", onScroll);
+    USER_SCROLL_EVENTS.forEach((type) =>
+      window.removeEventListener(type, stop),
+    );
+  };
+  const timer = setTimeout(stop, 5000);
+  window.addEventListener("scroll", onScroll, { passive: true });
+  USER_SCROLL_EVENTS.forEach((type) =>
+    window.addEventListener(type, stop, { passive: true }),
+  );
+}
+
 function VenueRaceListPage() {
   const { date: dateParam, venueCode: venueCodeParam } = useParams();
   const { t } = useTranslation();
@@ -150,16 +193,10 @@ function VenueRaceListPage() {
     const marker = markerRef.current;
     if (!marker) return undefined;
     scrolledRef.current = true;
-    // 自分で合わせた位置。これと違う位置へのスクロールは、ユーザーの操作（スクロールバーのドラッグ等も含む）
-    // とみなして合わせ直しをやめる
-    // 高さが変わった直後のずれは、ブラウザのスクロール位置の自動調整（scroll anchoring）によるものなので、
-    // ユーザーの操作とみなさず合わせ直す
-    let expectedY = 0;
-    let lastResizeAt = 0;
     // 着地点: 会場カード（折りたたみ）＋目印＋次のレースの頭が1画面に入るなら会場カードの先頭。
     // 開いた状態を覚えていて入らないときは、次のレースを優先して目印に着く
     const holder = marker.parentElement;
-    const target = () => {
+    holdScrollPosition(() => {
       const header =
         document.querySelector(".app-header")?.getBoundingClientRect().height ??
         0;
@@ -167,36 +204,7 @@ function VenueRaceListPage() {
         holder.getBoundingClientRect().height + NEXT_RACE_PEEK_PX <=
         window.innerHeight - header;
       return fits ? holder : marker;
-    };
-    const realign = () => {
-      scrollBelowHeader(target());
-      expectedY = window.scrollY;
-    };
-    realign();
-    if (typeof ResizeObserver === "undefined") return undefined;
-    const observer = new ResizeObserver(() => {
-      lastResizeAt = Date.now();
-      realign();
-    });
-    observer.observe(holder);
-    const onScroll = () => {
-      if (Math.abs(window.scrollY - expectedY) <= 2) return;
-      if (Date.now() - lastResizeAt < 300) realign();
-      else stop();
-    };
-    const stop = () => {
-      observer.disconnect();
-      clearTimeout(timer);
-      window.removeEventListener("scroll", onScroll);
-      USER_SCROLL_EVENTS.forEach((type) =>
-        window.removeEventListener(type, stop),
-      );
-    };
-    const timer = setTimeout(stop, 5000);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    USER_SCROLL_EVENTS.forEach((type) =>
-      window.addEventListener(type, stop, { passive: true }),
-    );
+    }, holder);
     return undefined;
   });
 
@@ -387,10 +395,12 @@ function VenueRaceListPage() {
                             type="button"
                             className="venue-race-list__next-race-jump"
                             onClick={() =>
-                              scrollBelowHeader(
-                                gridRef.current?.querySelectorAll(
-                                  ":scope > .race-card",
-                                )[liveNextIndex],
+                              holdScrollPosition(
+                                () =>
+                                  gridRef.current?.querySelectorAll(
+                                    ":scope > .race-card",
+                                  )[liveNextIndex],
+                                gridRef.current,
                               )
                             }
                           >
