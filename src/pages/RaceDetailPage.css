@@ -251,6 +251,23 @@
      語の途中で折れるのを防ぐためのものなので、そちらは触らない） */
   .race-detail-page-v2 .drt-parts-changed .drt-badge {
     white-space: normal;
+    /* 小さい仮名・記号を行頭に置かない（「キ／ャブ」の形で折れていた。ファン評価1周目） */
+    line-break: strict;
+  }
+
+  /* 補足の行・バッジは 12px 固定で、表の文字を下げても縮まなかった。前走の「9/28 11R」（49px）、
+     「2コース」・モーターの「機力↑」（42px）が列を押し広げていた */
+  .race-detail-page-v2 .drt-table .drt-sub,
+  .race-detail-page-v2 .drt-table .drt-motor-badge,
+  .race-detail-page-v2 .drt-table .drt-badge {
+    font-size: 11px;
+  }
+
+  /* 「2コース」は語の途中で折らない（keep-all は空白の無い語を1つの塊にする）まま、
+     「9/28 11R」は空白で折れるようにする */
+  .race-detail-page-v2 .drt-table .drt-nowrap {
+    white-space: normal;
+    word-break: keep-all;
   }
 
   .race-detail-page-v2 .drt-label-cell .term-hint__button {
@@ -259,3 +276,32 @@
     font-size: 9px;
   }
 }
+
+/* 320px（iPhone SE 初代など）では、上の詰め方でも表が 353〜372px になり、表示枠 312px から
+   6号艇の列がはみ出していた（BOA-612 スマホ側 ファン評価1周目 P0）。360px 以下は
+   ラベル列とセルの余白をもう一段詰め、数値も 11px にする */
+@media (max-width: 360px) {
+  .race-detail-page-v2 .drt-label-th,
+  .race-detail-page-v2 .drt-label-cell {
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
+    font-size: 10.5px;
+  }
+
+  .race-detail-page-v2 .drt-table th,
+  .race-detail-page-v2 .drt-table td {
+    padding: 3px 0;
+  }
+
+  .race-detail-page-v2 .drt-table {
+    font-size: 11px;
+  }
+
+  .race-detail-page-v2 .drt-label-cell .term-hint__button {
+    width: 12px;
+    height: 12px;
+    font-size: 8px;
+  }
+}
+
