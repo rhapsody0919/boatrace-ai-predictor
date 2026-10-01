@@ -470,8 +470,48 @@ async function waitForInflight(context) {
   }
 }
 
+/** Cookie 同意の保存先（src/utils/analytics.js の CONSENT_KEY と同じ） */
+export const COOKIE_CONSENT_KEY = "boatai:cookie-consent";
+
+/**
+ * Cookie 同意バナーを出さない状態で始める（BOA-502）。
+ *
+ * バナーは画面下部に position:fixed・z-index:9999 で出て、下の方の要素へのクリックを
+ * 遮る。Playwright は要素が隠れている間リトライし続けるため、失敗は「タイムアウト」に
+ * なり原因が分かりにくい。以前は spec ごとに同意を入れていたが（smoke 3件・
+ * race-detail-mobile・ga-pageview・flying-late-badge の DOM 削除）、入れていない
+ * テストはレイアウトが変わるたびに無関係に落ちうるので、全テストで既定にする。
+ *
+ * value は "rejected"（既定）・"accepted"・null（未回答＝バナーが出る）。
+ * 既定を "rejected" にしているのは、"accepted" だと main.jsx が AdSense の
+ * スクリプトを読み込み、E2E_LIVE で実際の広告（下部固定のアンカー広告等）が
+ * 入りうるため。バナーを消す以外は、従来（未回答）と同じく計測・広告を動かさない。
+ * 既に値があるときは上書きしない（テスト中に押した同意・拒否を、遷移で戻さない）。
+ *
+ * fixture を通らずに browser.newContext() で作った context にも呼ぶこと。
+ */
+export async function applyCookieConsent(context, value) {
+  if (value === null) return;
+  await context.addInitScript(
+    ({ key, consent }) => {
+      // about:blank 等の opaque origin では localStorage に触れると例外になる
+      if (!/^https?:$/.test(location.protocol)) return;
+      if (localStorage.getItem(key) === null)
+        localStorage.setItem(key, consent);
+    },
+    { key: COOKIE_CONSENT_KEY, consent: value },
+  );
+}
+
 export const test = base.extend({
-  context: async ({ context }, use, testInfo) => {
+  /**
+   * Cookie 同意の初期状態（applyCookieConsent）。バナー自体を検証するテストは
+   * test.use({ cookieConsent: null }) で未回答から始める。
+   * 同意後の挙動（GA の page_view 等）を見るテストは "accepted" を指定する
+   */
+  cookieConsent: ["rejected", { option: true }],
+  context: async ({ context, cookieConsent }, use, testInfo) => {
+    await applyCookieConsent(context, cookieConsent);
     await applyRecording(context, testInfo);
     await use(context);
     await waitForInflight(context);

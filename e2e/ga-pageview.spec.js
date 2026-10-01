@@ -7,9 +7,11 @@ import { test, expect } from "./fixtures.js";
 // (2) App.jsx が同意なしで GA を二重初期化し、タブごとに page_view を追加送信していた、
 // (3) /admin も計測していた。
 test.describe("GA4 page_view の送信経路", () => {
+  // 同意後の送信経路を見るので、共通 fixture の既定（rejected）ではなく同意済みで始める
+  test.use({ cookieConsent: "accepted" });
+
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
-      localStorage.setItem("boatai:cookie-consent", "accepted");
       window.__gaCalls = [];
       window.gtag = (...args) => window.__gaCalls.push(args);
     });

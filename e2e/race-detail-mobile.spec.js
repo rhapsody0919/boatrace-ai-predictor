@@ -25,15 +25,6 @@ const RACE_PATH = "/race/2026-09-21-02-05";
 
 test.use({ viewport: { width: 390, height: 844 } });
 
-// Cookie同意バナーは画面下部に固定で出て、下の方の要素へのクリック・ポインタ操作を
-// 遮る（BOA-502）。このファイルは表の幅とグラフの当たり判定を測るので、
-// 出たままだと測っているものが変わる
-test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() =>
-    localStorage.setItem("boatai:cookie-consent", "accepted"),
-  );
-});
-
 test("レース詳細 今節タブの日別表は、右に続くことが分かり、着順までは初期表示に収まる（390px）", async ({
   page,
 }) => {

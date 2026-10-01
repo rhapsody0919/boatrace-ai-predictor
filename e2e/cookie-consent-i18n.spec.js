@@ -10,6 +10,10 @@ import { test, expect } from "./fixtures.js";
  */
 const HIRAGANA_KATAKANA = /[぀-ヿ]/;
 
+// 共通 fixture は全テストを同意回答済み（バナー無し）で始める（BOA-502）。
+// このファイルはバナー自体を検証するので、未回答から始める
+test.use({ cookieConsent: null });
+
 const CASES = [
   {
     path: "/",

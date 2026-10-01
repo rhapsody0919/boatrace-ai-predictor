@@ -1,6 +1,7 @@
 import {
   test,
   expect,
+  applyCookieConsent,
   applyRecording,
   E2E_MODE,
   e2eNow,
@@ -76,11 +77,6 @@ test.describe("選手一覧ページ (/racers)", () => {
   test("級別フィルタで絞り込み、ソート・ページネーションが機能する", async ({
     page,
   }) => {
-    // Cookie同意バナー（position:fixed、z-index:9999）がページ下部の
-    // ページネーションと重なりクリックを阻害するため、既定済みとして進める
-    await page.addInitScript(() => {
-      localStorage.setItem("boatai:cookie-consent", "accepted");
-    });
     await page.goto("/racers");
     await expect(page.locator(".racer-table tbody tr").first()).toBeVisible();
 
@@ -1338,10 +1334,6 @@ test.describe("レースページ再設計（BOA-168）", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 320, height: 900 });
-    // 320px幅ではCookie同意バナーが画面下部の操作を遮るため、同意済みで開始する
-    await page.addInitScript(() =>
-      localStorage.setItem("boatai:cookie-consent", "accepted"),
-    );
     await page.goto("/races/2026-08-11");
     await page.locator(".venue-grid-card--open").first().click();
     await page.locator(".race-card .predict-btn").first().click();
@@ -1380,10 +1372,6 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 任意のアニメーションフレームで計測しないよう止める
     // （AiCopyBannerはuseReducedMotionを見てリング自体を描画しない）
     await page.emulateMedia({ reducedMotion: "reduce" });
-    // 320px幅ではCookie同意バナーが画面下部の操作を遮るため、同意済みで開始する
-    await page.addInitScript(() =>
-      localStorage.setItem("boatai:cookie-consent", "accepted"),
-    );
 
     await openFixedRaceBeforeStart(page);
 
@@ -3063,7 +3051,8 @@ test.describe("レース荒れ度ムード演出（BOA-195: race-open-animation�
   }, testInfo) => {
     const context = await browser.newContext({ reducedMotion: "reduce" });
     try {
-      // fixture を通らない context なので、録画の再生と時計の固定を明示的に掛ける
+      // fixture を通らない context なので、Cookie 同意・録画の再生・時計の固定を明示的に掛ける
+      await applyCookieConsent(context, "rejected");
       await applyRecording(context, testInfo);
       const page = await context.newPage();
       await openVolatility(page);
