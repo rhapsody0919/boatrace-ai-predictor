@@ -81,9 +81,12 @@ CREATE TABLE IF NOT EXISTS analogy_pool_outcomes (
   rank3             smallint NOT NULL,
   winning_technique text NOT NULL,                 -- 6分類
   winner_course     smallint,                      -- 1着艇の進入コース
-  course_by_boat    smallint[],                    -- [1号艇のコース, ..., 6号艇のコース]
-  st_by_course      numeric(4,2)[],                -- [1コースのST, ..., 6コースのST]（BOA-635 のスリットの判定に使う）
-  payout_trifecta   integer,
+  course_by_boat    smallint[],                    -- [1号艇のコース, ..., 6号艇のコース]。実進入が分からない艇は NULL（艇番で埋めない。BOA-523 の欠落期間で枠なりに化けるため）
+  st_by_course      numeric(4,2)[],                -- [1コースのST, ..., 6コースのST]（BOA-635 のスリットの判定に使う）。フライング・出遅れ・欠場のコースは NULL
+                                                   --   （数値のままだと F の艇が「速い ST」に見える。本体は race_start_timings.is_flying・is_late_start、長期は kb_archive_boats.is_flying・is_late_start で判定）
+  payout_3tan       integer,                       -- 3連単の払戻（円）。列名は kb_archive_races.payout_3tan と同じ。
+                                                   --   ⚠️ race_results は列名と券種が逆（payout_trio＝3連単、payout_trifecta＝3連複。111 のコメント参照）。本体から作るときは payout_trio を入れる
+                                                   --   不成立・特払いのレース（race_results.race_status）は NULL（不成立の ¥100 を入れない）
   updated_at        timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS analogy_pool_outcomes_date ON public.analogy_pool_outcomes (race_date);
@@ -129,7 +132,7 @@ RETURNS TABLE (
   winner_course     smallint,
   course_by_boat    smallint[],
   st_by_course      numeric(4,2)[],
-  payout_trifecta   integer,
+  payout_3tan       integer,
   model_version     text,
   asof_stage        text,
   asof_at           timestamptz
@@ -152,7 +155,7 @@ AS $$
   )
   SELECT u.ord::integer, u.nid::varchar, u.dist, o.race_date, o.venue_code, o.race_number,
          o.rank1, o.rank2, o.rank3, o.winning_technique, o.winner_course,
-         o.course_by_boat, o.st_by_course, o.payout_trifecta,
+         o.course_by_boat, o.st_by_course, o.payout_3tan,
          s.model_version, s.asof_stage, s.asof_at
   FROM s
   CROSS JOIN LATERAL unnest(s.neighbor_ids, s.neighbor_distances) WITH ORDINALITY AS u(nid, dist, ord)

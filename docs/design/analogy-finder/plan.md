@@ -87,7 +87,7 @@ erDiagram
         smallint winner_course
         smallint[] course_by_boat
         numeric(4,2)[] st_by_course
-        integer payout_trifecta
+        integer payout_3tan
         timestamptz updated_at
     }
     analogy_snapshots {
@@ -123,6 +123,12 @@ Disk IO の見積り:
 ### get_analogy_neighbors
 - 引数 `p_race_id`、`p_stage`（省略時は直前情報時点があればそれ、無ければ出走表時点。今は出走表時点しか作らない）
 - 返す列: 近さの順位・距離・母集団側のレースの日付・会場・R、1〜3着、決まり手、1着の進入コース、艇ごとの進入、コース順の ST、3連単の払戻、モデル版、段、`asof_at`
+- **値の約束（BOA-635 のレーンの依頼 R1〜R4、2026-10-02）**:
+  - `payout_3tan` は3連単の払戻。列名は kb_archive と同じにした。本体の `race_results` は列名と券種が逆（`payout_trio`＝3連単、`payout_trifecta`＝3連複）なので、母集団を作るときは `payout_trio` を入れる。取り違えると配当の帯がすべてずれる
+  - `st_by_course`: フライング・出遅れ・欠場のコースは NULL（数値のままだと F の艇が「速い ST」に見える）。本体は `race_start_timings.is_flying`・`is_late_start`、長期は `kb_archive_boats.is_flying`・`is_late_start`
+  - `payout_3tan`: 不成立・特払いのレース（`race_results.race_status`）は NULL（不成立の ¥100 を入れない）
+  - `course_by_boat`: 実進入が分からない艇は NULL（艇番で埋めない。BOA-523 の欠落期間で枠なりに化けるため）
+  - pytest（T2-3）でこの4点を固定する
 - BOA-635 はコース順の ST（スリット7形）・進入・払戻（配当の帯）を、BOA-430 は決まり手・出目を、この同じ RPC から読む
 - SECURITY INVOKER・STABLE・`statement_timeout 5s`。113 で関数の既定権限を剥奪したので、anon・authenticated に EXECUTE を明示的に付ける
 
