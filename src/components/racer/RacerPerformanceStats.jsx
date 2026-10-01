@@ -149,6 +149,12 @@ export default function RacerPerformanceStats({
   todayVenueCode,
 }) {
   const { t } = useTranslation();
+  // 推移グラフのツールチップの見出し。日付だけだと同じ日の2走を見分けられない（BOA-583）
+  const raceLabelOf = (label, payload) => {
+    const d = payload?.[0]?.payload;
+    if (!d?.venueCode) return label;
+    return `${label} ${t(`venues.${d.venueCode}`, String(d.venueCode))} ${d.raceNo}R`;
+  };
   // 会場×枠番フィルタ。「全会場」「全枠番」がそれぞれ絞り込みなしを表す。
   // 表示は「枠番」。実際の進入コースはBOA-257の制約により取得できないため、
   // 発走前に決まる枠番（艇番）基準で集計・表示する
@@ -568,7 +574,9 @@ export default function RacerPerformanceStats({
 
         {aggregatedStats?.avg_st != null && (
           <div className="racer-stat-card">
-            <h3>平均ST</h3>
+            {/* このカードは日次集計（全会場・全条件）の値で、上の絞り込みには連動しない。
+                連動すると「桐生での平均ST」と読まれていた（BOA-583）。絞り込み後の平均STは下の表 */}
+            <h3>平均ST（全会場・全条件）</h3>
             <div className="racer-stat-value-row">
               <span className="racer-stat-value">
                 {Number(aggregatedStats.avg_st).toFixed(3)}
@@ -879,7 +887,7 @@ export default function RacerPerformanceStats({
       )}
 
       {(hasVcData
-        ? vcData.series.length > 0
+        ? vcData.series.some((d) => d.avg_exhibition_time != null)
         : exhibitionChartData.length > 0) && (
         <div className="racer-stat-chart">
           <h3>
@@ -898,15 +906,25 @@ export default function RacerPerformanceStats({
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} domain={["auto", "auto"]} />
-              <Tooltip formatter={(value) => value?.toFixed(2)} />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                domain={["auto", "auto"]}
+                tickFormatter={(v) => v.toFixed(2)}
+                unit="秒"
+                width={56}
+              />
+              <Tooltip
+                formatter={(value) => [`${value?.toFixed(2)}秒`, "展示タイム"]}
+                labelFormatter={raceLabelOf}
+              />
+              {/* 階段線（stepAfter）だと1走ごとの値が縦線に埋もれて傾向が読めなかった（BOA-583） */}
               <Line
-                type="stepAfter"
+                type="linear"
                 dataKey="avg_exhibition_time"
                 name="展示タイム"
                 stroke="var(--brand-accent-primary)"
-                strokeWidth={2}
-                dot={{ r: 2 }}
+                strokeWidth={1.5}
+                dot={{ r: 1.5 }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -921,22 +939,53 @@ export default function RacerPerformanceStats({
             STの推移（2025年12月以降・最大過去2年）
             {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
           </h3>
+          <p className="racer-stat-note">
+            1走ごとの本番ST。下ほど速い（0がスタートライン）。赤い点はフライングの走で、線と平均からは外しています
+          </p>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart
-              data={vcData.series.filter((d) => d.start_timing != null)}
+              data={vcData.series.filter(
+                (d) => d.start_timing != null || d.flying != null,
+              )}
               margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} domain={["auto", "auto"]} />
-              <Tooltip formatter={(value) => value?.toFixed(3)} />
+              {/* 0 がスタートライン。下ほど速い（0 に近い）。目盛りは 0.05 刻み */}
+              <YAxis
+                tick={{ fontSize: 11 }}
+                domain={[0, (max) => Math.max(0.3, Math.ceil(max * 20) / 20)]}
+                tickFormatter={(v) => v.toFixed(2)}
+                unit="秒"
+                width={56}
+              />
+              <Tooltip
+                formatter={(value, name) =>
+                  name === "F"
+                    ? ["フライング", "F"]
+                    : [`${value?.toFixed(2)}秒`, name]
+                }
+                labelFormatter={raceLabelOf}
+              />
               <Line
-                type="stepAfter"
+                type="linear"
                 dataKey="start_timing"
                 name="ST"
                 stroke="var(--brand-accent-secondary)"
-                strokeWidth={2}
-                dot={{ r: 2 }}
+                strokeWidth={1.5}
+                dot={{ r: 1.5 }}
+                connectNulls
+              />
+              {/* フライングの走は平均・線から外し、0 の位置に赤い点で残す（F 後にスタートを
+                  控えたかを読めるように。BOA-583） */}
+              <Line
+                type="linear"
+                dataKey="flying"
+                name="F"
+                stroke="none"
+                dot={{ r: 4, fill: "var(--color-error)", stroke: "none" }}
+                activeDot={{ r: 5, fill: "var(--color-error)" }}
+                isAnimationActive={false}
               />
             </LineChart>
           </ResponsiveContainer>

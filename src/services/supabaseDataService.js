@@ -8294,15 +8294,21 @@ export function aggregateRacerVenueBoatStats(
       exSum += Number(row.exhibitionTime);
       exN += 1;
     }
-    if (hasEx || hasSt) {
+    if (hasEx || hasSt || row.isFlying) {
       // historyは既にrace_id（YYYY-MM-DD-会場-レース番号）昇順でソート済みの
       // ため点の並び順は正しいが、対象期間が最大2年に及ぶため月日だけを表示
       // すると異なる年の同じ月日が同一ラベルに見えてしまう。年下2桁を含めて
       // 曖昧さを避ける（例: "25-05-12"）
       series.push({
         date: row.raceId.slice(2, 10),
+        // ツールチップで同じ日の2走を見分けるため（BOA-583）
+        venueCode: row.venueCode,
+        raceNo: Number(row.raceId.slice(-2)),
         avg_exhibition_time: hasEx ? Number(row.exhibitionTime) : null,
         start_timing: hasSt ? Number(row.startTiming) : null,
+        // フライングの走は平均・線からは外すが、どこで切ったかは印で残す（BOA-583）。
+        // 0（スタートライン）の位置に置く
+        flying: row.isFlying ? 0 : null,
       });
     }
 
