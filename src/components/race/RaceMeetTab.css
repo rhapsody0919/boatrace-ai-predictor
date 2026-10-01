@@ -281,6 +281,13 @@
   line-height: 1.6;
 }
 
+/* 推移の横軸から抜けている日（丸一日中止・順延）の断り（BOA-636）。
+   段落の他の文より一段大きく、予選確定の一文（.rmt-forecast-settled）とそろえる */
+.rmt-trend-range .rmt-trend-noday {
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+}
+
 .rmt-hint {
   margin: var(--spacing-2) 0 0;
   font-size: var(--font-size-2xs);

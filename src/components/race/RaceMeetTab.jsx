@@ -982,13 +982,17 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
               {trendRange.from === trendRange.to
                 ? t("meetTab.compareTrendRangeOneDay", { day: trendRange.from })
                 : t("meetTab.compareTrendRange", trendRange)}
-              {/* 目盛りから抜けている日の理由（BOA-636）。横軸の範囲の中だけ */}
+              {/* 目盛りから抜けている日の理由（BOA-636）。横軸の範囲の中だけ。
+                  段落の他の文（2xs）に埋もれないよう、この1文だけ一段大きくする
+                  （ファン評価3周目、予選確定の一文と同じ大きさ） */}
               {trendNoRaceDays.length > 0 && (
                 <>
                   {" "}
-                  {t("meetTab.compareTrendNoRaceDays", {
-                    days: mdList(trendNoRaceDays),
-                  })}
+                  <span className="rmt-trend-noday">
+                    {t("meetTab.compareTrendNoRaceDays", {
+                      days: mdList(trendNoRaceDays),
+                    })}
+                  </span>
                 </>
               )}
             </p>

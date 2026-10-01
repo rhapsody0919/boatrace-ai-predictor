@@ -32,8 +32,8 @@ test("丸一日レースが無かった日を、予選終了の一文と推移�
   await expect(page.locator(".rmt-forecast-settled")).not.toContainText(
     "9/21",
   );
-  await expect(page.locator(".rmt-trend-range")).toContainText(
-    "9/22はレースが1つも行われなかったので、目盛りにありません",
+  await expect(page.locator(".rmt-trend-range .rmt-trend-noday")).toHaveText(
+    "9/22はレースが1つも行われなかったので、目盛りにありません。",
   );
 });
 
