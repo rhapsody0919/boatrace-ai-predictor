@@ -1,3 +1,4 @@
+// i18n-allow-file: VenueGridPage.jsx が ja のときだけ描画する（初回訪問の動画案内が日本語のみ）
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";

@@ -15,6 +15,7 @@
     "verify:content-index": "node scripts/maintenance/verify-content-index-coverage.js",
     "verify:hit-guidance": "node scripts/maintenance/verify-hit-verification-guidance.js",
     "verify:i18n": "node scripts/maintenance/verify-i18n-consistency.js",
+    "verify:jsx-japanese": "node scripts/maintenance/verify-jsx-japanese.js",
     "verify:ko-boat-counter": "node scripts/maintenance/verify-ko-boat-counter.js",
     "check:session-start": "node scripts/maintenance/session-start-check.js",
     "check:worktrees": "node scripts/maintenance/check-worktrees.js",
