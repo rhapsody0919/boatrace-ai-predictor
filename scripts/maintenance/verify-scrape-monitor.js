@@ -1462,6 +1462,27 @@ const doneOdds = (delayMin, over = {}) =>
     ),
   );
   check(
+    "連続失敗: 成功フックで動く prediction_odds（registry に無い）も通知する。死活は見ない。off は通知しない（BOA-645）",
+    show(
+      kinds([
+        base({
+          job: "prediction_odds",
+          consecutive_failures: 3,
+          last_error: "x",
+          last_tick_at: null,
+        }),
+      ]),
+    ) === '["failures:prediction_odds"]' &&
+      kinds([
+        base({
+          job: "prediction_odds",
+          mode: "off",
+          consecutive_failures: 5,
+          last_error: "x",
+        }),
+      ]).length === 0,
+  );
+  check(
     "連続失敗: 3回以上で通知（2回は通知しない）",
     show(
       kinds([base({ job: "odds", consecutive_failures: 3, last_error: "x" })]),

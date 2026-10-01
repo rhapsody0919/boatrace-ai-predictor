@@ -233,7 +233,10 @@ export function getRecentRaces(records, count = 5) {
       typeof r.exhibitionTime === "number" ? r.exhibitionTime : null,
     exhibitionRank:
       typeof r.exhibitionRank === "number" ? r.exhibitionRank : null,
-    startTiming: r.startTiming ?? null,
+    // フライングの走は、平均から外した startTiming の代わりに F の ST を出す（表は「F.01」。BOA-583）
+    startTiming:
+      r.startTiming ?? (r.isFlying ? (r.flyingStartTiming ?? null) : null),
+    isFlying: r.isFlying === true,
     // 欠場の走（BOA-504）。着順が無いので、表示側が「着外」でなく「欠場」と出す
     absent: r.absent === true,
     // 着順が付かない走の公式の記号（落・転・妨など、BOA-537）。フライングは、着欄の記号が
@@ -554,7 +557,8 @@ export function periodDiffShownFrom(calcTo) {
   const m = /^(\d{4})-(\d{2})-\d{2}$/.exec(calcTo ?? "");
   if (!m) return null;
   // 算出期間の終わりの翌月が今期の初め。そこから3か月後の1日
-  const index = Number(m[1]) * 12 + (Number(m[2]) - 1) + 1 + PERIOD_DIFF_WITHHELD_MONTHS;
+  const index =
+    Number(m[1]) * 12 + (Number(m[2]) - 1) + 1 + PERIOD_DIFF_WITHHELD_MONTHS;
   const y = Math.floor(index / 12);
   const mo = (index % 12) + 1;
   return `${y}-${String(mo).padStart(2, "0")}-01`;

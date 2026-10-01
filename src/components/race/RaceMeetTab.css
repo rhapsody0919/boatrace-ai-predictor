@@ -607,3 +607,12 @@
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+
+/* 予選後にFを切った選手の印（順位の下、BOA-626）。順位より小さく出し、
+   列の幅を広げないよう順位の下に置く */
+.rmt-compare .rmt-post-flying {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
