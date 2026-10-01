@@ -16,7 +16,7 @@
 ## 実装開始の前提条件
 
 1. BOA-271 Phase U の T1（マイグレーション115 の本番適用）・T3（近傍のバッチ）・T5-2（`analogyService.js`）が済み、`get_analogy_neighbors` が本番で近傍を返していること。BOA-271 の「実装開始の前提条件」（K/B 補完の判定 等）をそのまま引き継ぐ
-2. BOA-271 側で、母集団の決着の約束（下の「母集団の約束」D-1〜D-4）がマイグレーション115 と `export_pool.js` に入っていること
+2. 下の「母集団の約束」D-1〜D-4 が本番の `analogy_pool_outcomes` で守られていること（BOA-271 T2-3 の pytest と、本機能の T0-3 の実測で確かめる）
 3. 定番／レアの線の検証（下の FR-3、tasks T0）が済んでいること。画面に線を出すのはその後
 
 ## データ（土台）
@@ -29,12 +29,12 @@
 | `winning_technique`（6分類） | 展開 |
 | `course_by_boat`（[1号艇のコース, …, 6号艇のコース]） | 進入・スリット（今日の艇番とは無関係。過去レースのコース順をそろえるのに使うのは `st_by_course` 側） |
 | `st_by_course`（[1コースのST, …, 6コースのST]） | スリット |
-| `payout_trifecta`（3連単の払戻。D-1） | 配当の帯 |
+| `payout_3tan`（3連単の払戻。D-1） | 配当の帯 |
 | `model_version`・`asof_stage`・`asof_at` | 保存（スナップショットとの紐づけ） |
 
-### 母集団の約束（BOA-271 の母集団の前提。2026-10-02 にオーケストレーター経由で BOA-271 の AI分析レーンへ依頼。マイグレーション115 は未適用なので115 側で直す）
-- **D-1** `analogy_pool_outcomes.payout_trifecta` は3連単の払戻。本体の `race_results` は `payout_trifecta`＝3連複・`payout_trio`＝3連単と名前が逆転しているため、取り違えると配当の帯がすべてずれる。列名を `payout_3tan`（`kb_archive_races` と同じ）に変えることを推奨した。名前が変わった場合は本 spec の列名も読み替える
-- **D-2** `st_by_course` は、フライング・出遅れ・欠場のコースを NULL にする（数値のままだとフライングの艇が「速いST」に見え、カド一撃などが過大に出る）。判定元は本体 `race_start_timings.is_flying`・`is_late_start`、長期 `kb_archive_boats.is_flying`
+### 母集団の約束（BOA-271 の母集団の前提。2026-10-02 に依頼し、BOA-271 のマイグレーション案115・plan.md「値の約束」に反映済み（PR #1039 e3f55d553）。tasks T2-3 の pytest で固定される）
+- **D-1** `payout_3tan` は3連単の払戻（列名は `kb_archive_races.payout_3tan` と同じ）。本体の `race_results` は `payout_trifecta`＝3連複・`payout_trio`＝3連単と名前が逆転しているので、母集団には `payout_trio` を入れる。取り違えると配当の帯がすべてずれる（BOA-271 で反映済み、PR #1039 e3f55d553）
+- **D-2** `st_by_course` は、フライング・出遅れ・欠場のコースを NULL にする（数値のままだとフライングの艇が「速いST」に見え、カド一撃などが過大に出る）。判定元は本体 `race_start_timings.is_flying`・`is_late_start`、長期 `kb_archive_boats.is_flying`・`is_late_start`
 - **D-3** 3連単の払戻は、不成立・特払いのレースで NULL（不成立の¥100を払戻として入れない。`race_results.race_status`）
 - **D-4** `course_by_boat` は、実進入が分からない艇を NULL にする（艇番で埋めない。BOA-523 の欠落期間で「枠なり」に化けるため）
 
@@ -242,6 +242,5 @@ BOA-430（思考アシスト）では Step2（展開・スリット）と Step4�
 ## 未確定事項
 | 項目 | いつ・誰が決めるか |
 |---|---|
-| D-1〜D-4 母集団の約束 | BOA-271 の AI分析レーンが115 に反映する（オーケストレーター経由で依頼済み）。反映を BOA-635 の実装開始前に確認する |
 | 定番／レアの線の値 x・y | tasks T0-1 の検証結果で決めて本 spec に書き戻す |
 | スリットの形に添える全国の出現率 | tasks T0-2（補完後のデータで出し直して固定） |
