@@ -1615,6 +1615,64 @@ test.describe("レースページ再設計（BOA-168）", () => {
     ).not.toContainText("0.0%");
   });
 
+  test("今節タブ: en・zh-TW の375pxで6艇の表がカードからはみ出さず、必要得点に残りの走数を添える（BOA-596）", async ({
+    page,
+  }) => {
+    // 以前は en で9px、zh-TW で20px、表がカードの右へはみ出していた
+    // （列見出し「Score rate」「Series rank」と「第12名並列」「6.86（第34名）」が長い）
+    await page.setViewportSize({ width: 375, height: 812 });
+    for (const lang of ["en", "zh-TW"]) {
+      await page.goto(`/${lang}/race/2026-09-26-13-04`);
+      await page.locator(".race-tabs-btn").nth(2).click();
+      const table = page.locator(".rmt-compare");
+      await table.waitFor({ timeout: 30000 });
+      const over = await table.evaluate((t) => {
+        const card = t.closest(".rmt-card") ?? t.parentElement;
+        const right = card.getBoundingClientRect().right;
+        return Math.max(
+          ...[...t.querySelectorAll("tr")].map(
+            (tr) => tr.getBoundingClientRect().right - right,
+          ),
+        );
+      });
+      expect(over).toBeLessThanOrEqual(0.5);
+    }
+
+    // 必要得点は今日の残りの予選ぶんを足した点数。早見は次の1走だけなので、
+    // 2走残っていれば走数を添える（尼崎 2026-09-27 5R の塩田: 1着でも6.00で
+    // 目安6.17に届かないのに、必要得点は17だけと出ていた）
+    await page.goto("/race/2026-09-27-13-05");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const shiota = page
+      .locator(".rmt-forecast-table tr")
+      .filter({ hasText: "塩田" })
+      .first();
+    await expect(shiota.locator(".rmt-needed-runs")).toHaveText("今日2走で", {
+      timeout: 30000,
+    });
+    // 以前は町田が6着でも色付きで、同じ行の「必要得点7（2走で）」と逆だった
+    // （ファン評価1周目）
+    const machida = page
+      .locator(".rmt-forecast-table tr")
+      .filter({ hasText: "町田" })
+      .first();
+    // 今日2走残る選手の行は色を付けない（2周目: 「7.00なのに色なし」と
+    // 読まれた基準のずれをなくす）。1走だけの選手（浜野）は従来どおり
+    await expect(machida.locator("td.is-in-border:not(.rmt-rate)")).toHaveCount(
+      0,
+    );
+    // 走数は2行目に小さく出し、375pxで早見の3着まで最初の画面に入る
+    await page.setViewportSize({ width: 375, height: 812 });
+    const third = await page.locator(".rmt-forecast-scroll").evaluate((el) => {
+      const th = el.querySelectorAll("thead th");
+      const box = el.getBoundingClientRect();
+      const cell = [...th].find((x) => /^3/.test(x.textContent.trim()));
+      return cell ? cell.getBoundingClientRect().right - box.right : null;
+    });
+    expect(third).not.toBeNull();
+    expect(third).toBeLessThanOrEqual(0.5);
+  });
+
   test("今節タブのSTの前走は、直前の走がFならFと出し、Fを飛ばして1つ前の走のSTを出さない（BOA-597）", async ({
     page,
   }) => {
