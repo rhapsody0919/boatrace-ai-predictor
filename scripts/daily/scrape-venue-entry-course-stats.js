@@ -25,8 +25,7 @@ import {
 } from "../lib/supabaseClient.js";
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
 import { getRaceSchedule } from "../lib/raceSchedule.js";
-import { resolveTargetDate } from "../lib/scrapeJobs/dailyJob.js";
-import { SCRAPE_JOBS } from "../lib/scrapeJobs/registry.js";
+import { jstMinutesOfDay, toJstDateString } from "../lib/scrapeJobs/time.js";
 import {
   VENUE_ENTRY_COURSE_STATS_CONFIG,
   buildEntryCourseUrl,
@@ -301,16 +300,22 @@ export async function run(schedule, date) {
 
 /**
  * CLI（GitHub Actions。Vercel が不調のときのフォールバック）の対象日（BOA-364）。
- * --date が無ければ、Vercel のジョブと同じく「指定時刻 20:00 JST」から解決する。GitHub Actions の schedule は
- * 数時間遅れて日付をまたぐことがあり、実行時点の日付だと、races がまだ無い翌日を指して0件になっていた
+ * GitHub Actions の schedule（20:00 JST 指定）は数時間遅れて日付をまたぐことがあり、実行時点の日付だと、
+ * races がまだ無い翌日を指して0件になっていた。--date が無ければ、07:00 JST より前の起動は前日、それ以降は当日。
+ * Vercel のジョブ（「20:00 の指定時刻」から解決）と違い、20:00 前を前日にしないのは、取得先のURLが日付を持たず
+ * （buildEntryCourseUrl）その時点の当日のページを返すため。日中の手動実行が前日を対象にすると、当日の内容を
+ * 前日の race_id に上書きしてしまう
  */
 export function resolveCliTargetDate(
   args = process.argv.slice(2),
   now = new Date(),
 ) {
+  const LATE_START_UNTIL_JST_MIN = 7 * 60;
   return (
     parseDateArg(args) ??
-    resolveTargetDate(now, SCRAPE_JOBS.entry_course_stats.targetTimeJst)
+    (jstMinutesOfDay(now) < LATE_START_UNTIL_JST_MIN
+      ? toJstDateString(new Date(now.getTime() - 24 * 60 * 60 * 1000))
+      : toJstDateString(now))
   );
 }
 

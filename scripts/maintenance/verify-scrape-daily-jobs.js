@@ -991,9 +991,12 @@ const ecFetch = (overrides = {}) =>
       await import("../daily/scrape-venue-entry-course-stats.js");
     const jst = (s) => new Date(`${s}+09:00`);
     check(
-      "進入コース CLI: 20:00 指定が日付をまたいで遅れて起動（翌 01:30）しても、対象日は前日のまま。--date 指定はそのまま（BOA-364）",
+      "進入コース CLI: 20:00 指定が日付をまたいで遅れて起動（翌 01:30・06:59）しても前日。07:00 以降（日中の手動実行）は当日。--date 指定はそのまま（BOA-364）",
       resolveCliTargetDate([], jst("2026-09-20T01:30:00")) === "2026-09-19" &&
         resolveCliTargetDate([], jst("2026-09-19T20:05:00")) === "2026-09-19" &&
+        // 日中の手動実行は当日（取得先のページは日付を持たず当日を返すため、前日の race_id に書かない）
+        resolveCliTargetDate([], jst("2026-09-20T10:00:00")) === "2026-09-20" &&
+        resolveCliTargetDate([], jst("2026-09-20T06:59:00")) === "2026-09-19" &&
         resolveCliTargetDate(
           ["--date=2026-09-01"],
           jst("2026-09-20T01:30:00"),
