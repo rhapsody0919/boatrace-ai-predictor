@@ -181,6 +181,8 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   // 選手を混ぜると公式とズレる（若松G1の実測で 5.67 → 除外すると 5.60 で
   // 実ボーダーと完全一致）
   const rankedOnly = ranking.filter((r) => !r.withdrawn);
+  // 予選の後に今節Fを切った選手（順位は付いたまま。BOA-626）
+  const postPrelimFlying = new Set(board?.postPrelimFlyingRacerIds ?? []);
   // 男女Ｗ優勝戦の節か（サービス層が同じシリーズの選手だけを渡してくる）
   const seriesSplit = Boolean(board?.seriesRacerIds);
   // 節全体では何人いるか。分けたときに「なぜ半分になったのか」を数で示す。
@@ -520,6 +522,18 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                         ) : (
                           t("meetTab.rankPlain", { rank: row.rank })
                         )}
+                        {/* 予選の後にFを切った選手。順位は予選で確定しているので
+                            残すが、予選中のFの選手（賞典除外で順位なし）と並ぶと
+                            食い違って見えるため印を添える（BOA-626） */}
+                        {row.rank !== null &&
+                          postPrelimFlying.has(row.racerId) && (
+                            <span
+                              className="rmt-post-flying"
+                              title={t("meetTab.postPrelimFlyingTitle")}
+                            >
+                              {t("meetTab.postPrelimFlying")}
+                            </span>
+                          )}
                       </td>
                       {renderPretestCell(p)}
                     </tr>
@@ -571,6 +585,10 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                   excluded: ranking.length - rankedOnly.length,
                 })
               : t("meetTab.compareSub", { total: rankedOnly.length })}
+            {/* 「予選後F」の意味（セルの title はタッチ端末で読めない。BOA-626） */}
+            {ranking.some(
+              (r) => r.rank !== null && postPrelimFlying.has(r.racerId),
+            ) && <> {t("meetTab.postPrelimFlyingNote")}</>}
             {/* 「欠場」の理由。セルの title はタッチ端末で読めないので本文にも書く
                 （BOA-504 ファン評価） */}
             {absentOnly.length > 0 && <> {t("meetTab.absentNote")}</>}

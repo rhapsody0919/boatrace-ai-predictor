@@ -590,6 +590,26 @@ export function flyingRacerIdsInMeet(starts, entries) {
 }
 
 /**
+ * **予選が終わった後のレースで**今節Fを切った選手（純関数、BOA-626）。
+ *
+ * 順位は予選終了で確定しているので、予選後のFでは順位の対象から外さない
+ * （`getMeetScoreboard` は予選終了までのFだけで賞典除外を判定する）。それでも
+ * 賞典除外なのは同じなので、画面は順位の横で断る。予選の締めが分からない節は空。
+ *
+ * @param {Array<Object>} starts 本番STの行（`flyingRacerIdsInMeet` と同じ形）
+ * @param {Array<Object>} entries 出走表の行
+ * @param {string|null} prelimEndRaceId `prelimEndRaceIdOf` の値
+ * @returns {number[]} racer_id
+ */
+export function postPrelimFlyingRacerIds(starts, entries, prelimEndRaceId) {
+  if (!prelimEndRaceId) return [];
+  return flyingRacerIdsInMeet(
+    (starts ?? []).filter((r) => r.race_id > prelimEndRaceId),
+    entries,
+  );
+}
+
+/**
  * 1走ぶんの着順の表示（純関数、BOA-537）。6艇の推移の点の下に出す。
  *
  * - フライングは「F」（本番STの is_flying）

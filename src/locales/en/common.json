@@ -835,7 +835,10 @@
     "absentTitle": "Absent from every race so far this series, so no score rate or series rank (0 starts)",
     "absentNote": "\"Absent\" marks a racer who has not started any race so far this series. With 0 starts, there is no score rate or series rank.",
     "absentDetail": "Absent from every race so far this series (no score rate or series rank).",
-    "finishAbsentNote": "\"Abs\" in the finishes is a race the racer missed; it is not counted in the score rate."
+    "finishAbsentNote": "\"Abs\" in the finishes is a race the racer missed; it is not counted in the score rate.",
+    "postPrelimFlying": "F after qual.",
+    "postPrelimFlyingTitle": "Flying start (F) in a race after qualifying ended. The qualifying rank is already final and stays, but the racer is excluded from prizes",
+    "postPrelimFlyingNote": "\"F after qual.\" next to a rank marks a racer who had a flying start after qualifying ended. The qualifying rank stays, but the racer is excluded from prizes."
   },
   "basicInfo": {
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",
