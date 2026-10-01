@@ -13,6 +13,10 @@ import {
   addDaysToDateString,
 } from "../../scripts/lib/dateUtils.js";
 import {
+  // getCurrentMeetFlyingBoats（今節F）が使う。#1002（BOA-591）でこの import を
+  // groupIntoMeetBeforeRace に置き換えたあとに #999（BOA-440）が入り、本番で
+  // 「groupIntoCurrentMeet is not defined」になって今節の印が全レースで消えていた
+  groupIntoCurrentMeet,
   groupIntoMeetBeforeRace,
   findMeetStartDate,
 } from "../utils/meetGrouping";
