@@ -367,6 +367,13 @@
     "tbd": "미정",
     "jstNote": " JST"
   },
+  "cookieConsent": {
+    "textBeforeLink": "이 사이트는 서비스 향상을 위해 쿠키를 사용합니다. 자세한 내용은 ",
+    "privacyLink": "개인정보 처리방침",
+    "textAfterLink": "(일본어 페이지)을 확인해 주세요.",
+    "accept": "동의",
+    "reject": "거부"
+  },
   "footer": {
     "blog": "블로그",
     "operator": "운영자",

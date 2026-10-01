@@ -371,6 +371,13 @@
     "tbd": "TBD",
     "jstNote": " JST"
   },
+  "cookieConsent": {
+    "textBeforeLink": "We use cookies to improve our service. For details, see our ",
+    "privacyLink": "Privacy Policy",
+    "textAfterLink": " (in Japanese).",
+    "accept": "Accept",
+    "reject": "Reject"
+  },
   "footer": {
     "blog": "Blog",
     "operator": "Operator",

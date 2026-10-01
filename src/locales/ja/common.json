@@ -747,6 +747,13 @@
     "tbd": "未定",
     "jstNote": ""
   },
+  "cookieConsent": {
+    "textBeforeLink": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくは",
+    "privacyLink": "プライバシーポリシー",
+    "textAfterLink": "をご確認ください。",
+    "accept": "同意する",
+    "reject": "拒否する"
+  },
   "footer": {
     "blog": "ブログ",
     "operator": "運営者",
