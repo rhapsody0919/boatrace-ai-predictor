@@ -55,7 +55,9 @@ export const GAP_FILL_ITEMS = Object.freeze({
   },
   exhibition: {
     table: "exhibition_data",
-    mode: "insert",
+    // 行が無い艇は挿入し、行があって展示タイムが NULL の艇（展示STだけ・体重だけの行）は展示タイムだけを埋める。
+    // 既存の展示タイムは上書きしない（展示タイムのある艇は作らない）
+    mode: "update",
     stampUpdatedAt: true,
     keyColumns: ["race_id", "boat_number"],
     columns: ["race_id", "boat_number", "exhibition_time"],
@@ -117,18 +119,23 @@ export function buildStartTimingRows(day, { raceIds, withRows }) {
 }
 
 /**
- * 項目6: 展示タイム。races にあり、exhibition_data に行が1つも無いレースだけ、展示タイムのある艇の行を作る。
+ * 項目6: 展示タイム。展示タイムがまだ無い艇（行が無い・行はあるが NULL）に、Kファイルの展示タイムを書く。
+ * 書く列は exhibition_time だけ（展示ST・チルト・体重には触れない。Kファイルの ST は本番の ST で、展示STではない）。
+ * 2025-12〜2026-03 は行の無いレース、2026-04〜09 は展示STだけ・体重だけの行が対象になる。
  *
  * @param {Object} day kb-day/v1
- * @param {{raceIds: Set<string>, withRows: Set<string>}} existing
+ * @param {{raceIds: Set<string>, timeByKey: Map<string, number|null>}} existing races の race_id・
+ *   `${race_id}|${boat_number}` → 既存の行の exhibition_time（行が無ければキーが無い）
  */
-export function buildExhibitionRows(day, { raceIds, withRows }) {
+export function buildExhibitionRows(day, { raceIds, timeByKey }) {
   const rows = [];
   for (const { raceId, race } of kRaces(day)) {
-    if (!raceIds.has(raceId) || withRows.has(raceId)) continue;
+    if (!raceIds.has(raceId)) continue;
     for (const r of race.rows ?? []) {
       if (!Number.isInteger(r.boat_number)) continue;
       if (typeof r.exhibition_time !== "number") continue;
+      if ((timeByKey.get(`${raceId}|${r.boat_number}`) ?? null) !== null)
+        continue;
       rows.push({
         race_id: raceId,
         boat_number: r.boat_number,

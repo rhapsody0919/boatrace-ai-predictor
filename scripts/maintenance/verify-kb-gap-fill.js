@@ -3,7 +3,7 @@
  * DBにも取得先にも接続しない（合成の kb-day と偽クライアント）。
  *
  *   (a) スタート: 行の無いレースだけ・races にあるレースだけ・進入のある艇だけ。フライングの ST は正の値（本番の全期間がそう）
- *   (b) 展示タイム: 行の無いレースだけ・展示タイムのある艇だけ・列は exhibition_time だけ（展示ST を入れない）
+ *   (b) 展示タイム: 展示タイムが無い艇（行なし・NULL）だけ・既存の値は上書きしない・列は exhibition_time だけ（展示ST を入れない）
  *   (c) 気象・ステージ: NULL の列だけ埋め、既存の値は持ち回る（上書きしない）。変化の無いレースは書かない
  *   (d) 2連率: 登録番号が一致する艇だけ・NULL だけ埋める
  *   (e) 書き込み: すべての行の列の集合がそろう（そろわなければ書かずに例外）。upsert に送る行の列は項目の列（＋updated_at）
@@ -154,22 +154,18 @@ function evaluateBuilders(g) {
         "boat_number,entry_course,is_flying,is_late_start,race_id,start_timing",
     ),
   );
-  // (b)
+  // (b) R1 は行なし、R2 は1号艇に展示タイムあり（上書きしない）、R3 は行があるが展示タイム NULL（展示STだけの行）
   const ex = g.buildExhibitionRows(DAY, {
     raceIds: new Set([R1, R2, R3]),
-    withRows: new Set([R2]),
+    timeByKey: new Map([
+      [`${R2}|1`, 6.81],
+      [`${R3}|1`, null],
+    ]),
   });
   expect(
-    "(b) 展示タイム: 行の無い R1・R3 の、展示タイムのある艇だけ。列は exhibition_time だけ",
-    same(
-      ex.map((r) => `${r.race_id}#${r.boat_number}`),
-      [`${R1}#1`, `${R1}#2`, `${R3}#1`],
-    ) &&
-      ex.every(
-        (r) =>
-          Object.keys(r).sort().join() ===
-          "boat_number,exhibition_time,race_id",
-      ),
+    "(b) 展示タイム: 行の無い R1・NULL の R3 は書き、既存の値のある R2 は書かない。欠場艇は作らない。列は exhibition_time だけ",
+    same(ex.map((r) => `${r.race_id}#${r.boat_number}`), [`${R1}#1`, `${R1}#2`, `${R3}#1`]) &&
+      ex.every((r) => Object.keys(r).sort().join() === "boat_number,exhibition_time,race_id"),
     show(ex),
   );
   // (c) R1 は全部 NULL、R2 は天候だけ既存（"曇り"）、R3 は全部埋まっている
@@ -267,9 +263,12 @@ async function evaluateWrite(cli) {
   const rows = Array.from({ length: 450 }, (_, i) => ({
     race_id: `${DATE}-01-${String((i % 12) + 1).padStart(2, "0")}`,
     boat_number: (i % 6) + 1,
-    exhibition_time: 6.7,
+    start_timing: 0.15,
+    is_flying: false,
+    is_late_start: false,
+    entry_course: (i % 6) + 1,
   }));
-  const written = await cli.writeRows("exhibition", rows, {
+  const written = await cli.writeRows("st", rows, {
     client,
     pause: async () => {},
     now: () => new Date("2026-10-02T00:00:00Z"),
@@ -285,13 +284,13 @@ async function evaluateWrite(cli) {
   if (
     !calls.every(
       (c) =>
-        c.table === "exhibition_data" &&
+        c.table === "race_start_timings" &&
         c.opts.ignoreDuplicates === true &&
         c.opts.onConflict === "race_id,boat_number" &&
         c.rows.every(
           (r) =>
             Object.keys(r).sort().join() ===
-            "boat_number,exhibition_time,race_id,updated_at",
+            "boat_number,entry_course,is_flying,is_late_start,race_id,start_timing,updated_at",
         ),
     )
   )
@@ -374,6 +373,12 @@ async function withMutant(rel, from, to, run) {
 }
 const LIB = "scripts/lib/kbGapFill.js";
 const MUTANTS = [
+  [
+    "既存の展示タイムを上書きする",
+    LIB,
+    "if ((timeByKey.get(`${raceId}|${r.boat_number}`) ?? null) !== null)",
+    "if (false)",
+  ],
   [
     "フライングの ST を負の値のまま書く",
     LIB,

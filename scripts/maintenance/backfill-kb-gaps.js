@@ -4,7 +4,7 @@
  * 行の組み立ては scripts/lib/kbGapFill.js（純関数）。
  *
  *   --item=st          項目4: race_start_timings に行が無いレースへ、スタートの行を挿入する
- *   --item=exhibition  項目6: exhibition_data に行が無いレースへ、展示タイムだけの行を挿入する
+ *   --item=exhibition  項目6: 展示タイムが無い艇（行が無い・行はあるが NULL）に、展示タイムの列だけを書く
  *   --item=conditions  項目5: race_conditions の NULL の列（天候・風向・風速・波高・ステージ）だけを埋める
  *   --item=rate2       項目3: race_entries の2連率（全国・当地）の NULL だけを埋める（登録番号が一致する艇のみ）
  *
@@ -78,18 +78,27 @@ const read = (table, columns, date, client) =>
 export async function planDay(item, day, date, client = supabase) {
   const def = GAP_FILL_ITEMS[item];
   if (!def) throw new Error(`--item が不正です: ${item}`);
-  if (def.mode === "insert") {
+  if (item === "st") {
     const [races, existing] = await Promise.all([
       read("races", "race_id", date, client),
       read(def.table, "race_id", date, client),
     ]);
-    const ctx = {
+    return buildStartTimingRows(day, {
       raceIds: new Set(races.map((r) => r.race_id)),
       withRows: new Set(existing.map((r) => r.race_id)),
-    };
-    return item === "st"
-      ? buildStartTimingRows(day, ctx)
-      : buildExhibitionRows(day, ctx);
+    });
+  }
+  if (item === "exhibition") {
+    const [races, existing] = await Promise.all([
+      read("races", "race_id", date, client),
+      read(def.table, "race_id, boat_number, exhibition_time", date, client),
+    ]);
+    return buildExhibitionRows(day, {
+      raceIds: new Set(races.map((r) => r.race_id)),
+      timeByKey: new Map(
+        existing.map((r) => [`${r.race_id}|${r.boat_number}`, r.exhibition_time]),
+      ),
+    });
   }
   if (item === "conditions") {
     const rows = await read(def.table, def.columns.join(", "), date, client);
