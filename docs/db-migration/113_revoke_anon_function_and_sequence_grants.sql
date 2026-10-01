@@ -1,4 +1,4 @@
--- 112_revoke_anon_function_and_sequence_grants.sql
+-- 113_revoke_anon_function_and_sequence_grants.sql
 -- BOA-575: 書き込み用の関数・使われていない関数の EXECUTE が匿名(anon)に残っている問題の是正
 -- BOA-228: 076（BOA-370）で解消済みであることを本番の読み取りで再確認（下記「背景」1）
 --
@@ -41,7 +41,7 @@
 --     以後、匿名に呼ばせたい RPC は同じマイグレーション内で
 --       GRANT EXECUTE ON FUNCTION public.<name>(<args>) TO anon, authenticated;
 --     を明示する（テーブルの GRANT SELECT と同じ流儀）。付け忘れは「呼べない」側に倒れる。
---     npm run verify:migration-rls が113番以降で、関数ごとに GRANT/REVOKE の明示を機械検査する
+--     npm run verify:migration-rls が114番以降で、関数ごとに GRANT/REVOKE の明示を機械検査する
 --   * PUBLIC の既定 EXECUTE は PostgreSQL 全体の既定でスキーマ単位では外せないため、
 --     FOR ROLE postgres の全スキーマに対して剥奪する（postgres が public 以外に作る関数も、
 --     postgres 以外が呼ぶには GRANT が要る。supabase_admin が作る拡張の関数は対象外）

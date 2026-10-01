@@ -17,10 +17,10 @@
  *      （公開ポリシーは FOR SELECT のみ。書き込みはservice_role=RLS迂回で行う）
  *   4. CREATE VIEW で security_invoker を指定していない（ビューは所有者権限で基底テーブルのRLSを迂回する。
  *      security_invoker=true が要る。SELECTのみの内部用ビューで意図的な場合は除外マーカーを付ける）
- *   6. 【113番以降】CREATE [OR REPLACE] FUNCTION（publicスキーマ）の関数に、同じファイル内で
- *      GRANT EXECUTE / REVOKE ... ON FUNCTION が無い（112で既定のEXECUTE付与を剥奪したため、
+ *   6. 【114番以降】CREATE [OR REPLACE] FUNCTION（publicスキーマ）の関数に、同じファイル内で
+ *      GRANT EXECUTE / REVOKE ... ON FUNCTION が無い（113で既定のEXECUTE付与を剥奪したため、
  *      匿名に呼ばせるかどうかを関数ごとに明示させる。BOA-575）
- *   7. 【113番以降】SECURITY DEFINER の関数の EXECUTE を anon / authenticated / PUBLIC に付与している
+ *   7. 【114番以降】SECURITY DEFINER の関数の EXECUTE を anon / authenticated / PUBLIC に付与している
  *      （所有者権限でRLSを迂回する関数を匿名に公開しない）
  * 警告のみ:
  *   5. RLS有効＋SELECTポリシーがあるのに GRANT SELECT が無い（076で既定権限を剥奪済みのため、
@@ -41,8 +41,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATION_DIR = path.join(__dirname, "../../docs/db-migration");
 /** これ以降の番号を検査する（076=RLS一括是正のマイグレーション） */
 export const MIN_CHECKED_NUMBER = 76;
-/** 関数の権限の明示（6・7）を検査する番号（112=関数の既定EXECUTEの剥奪。113以降が対象） */
-export const FUNCTION_GRANT_MIN_NUMBER = 113;
+/** 関数の権限の明示（6・7）を検査する番号（113=関数の既定EXECUTEの剥奪。114以降が対象） */
+export const FUNCTION_GRANT_MIN_NUMBER = 114;
 
 const stripComments = (sql) =>
   sql.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/--[^\n]*/g, " ");
@@ -175,7 +175,7 @@ export function checkMigrationSql(sql, { number = Infinity } = {}) {
       const grants = outer.match(grantRe2) ?? [];
       if (grants.length === 0 && !revokeRe2.test(outer)) {
         errors.push(
-          `関数 ${name}: GRANT EXECUTE / REVOKE が無い（112で既定のEXECUTE付与を剥奪済み）。` +
+          `関数 ${name}: GRANT EXECUTE / REVOKE が無い（113で既定のEXECUTE付与を剥奪済み）。` +
             `画面から呼ぶなら GRANT EXECUTE ON FUNCTION public.${name}(<引数>) TO anon, authenticated;、` +
             `バッチ専用なら REVOKE ALL ... FROM PUBLIC, anon, authenticated; GRANT EXECUTE ... TO service_role; を書く。` +
             `意図的なら "-- function-exempt: ${name} <理由>" を書く`,
@@ -282,58 +282,58 @@ CREATE POLICY p ON foo FOR SELECT USING (true);`,
       errors: 0,
     },
     {
-      name: "113番以降: GRANT/REVOKEの無い関数",
+      name: "114番以降: GRANT/REVOKEの無い関数",
       sql: "CREATE OR REPLACE FUNCTION public.f(p int) RETURNS int LANGUAGE sql AS $$ SELECT 1 $$;",
-      number: 113,
+      number: 114,
       errors: 1,
     },
     {
-      name: "112番以前は関数の権限を検査しない",
+      name: "113番以前は関数の権限を検査しない",
       sql: "CREATE OR REPLACE FUNCTION public.f(p int) RETURNS int LANGUAGE sql AS $$ SELECT 1 $$;",
-      number: 112,
-      errors: 0,
-    },
-    {
-      name: "113番以降: 匿名へのGRANT EXECUTEあり",
-      sql: `CREATE FUNCTION f(p int) RETURNS int LANGUAGE sql AS $$ SELECT 1 $$;
-GRANT EXECUTE ON FUNCTION public.f(int) TO anon, authenticated;`,
       number: 113,
       errors: 0,
     },
     {
-      name: "113番以降: service_role限定（REVOKE＋GRANT）",
+      name: "114番以降: 匿名へのGRANT EXECUTEあり",
+      sql: `CREATE FUNCTION f(p int) RETURNS int LANGUAGE sql AS $$ SELECT 1 $$;
+GRANT EXECUTE ON FUNCTION public.f(int) TO anon, authenticated;`,
+      number: 114,
+      errors: 0,
+    },
+    {
+      name: "114番以降: service_role限定（REVOKE＋GRANT）",
       sql: `CREATE FUNCTION public.f() RETURNS int LANGUAGE sql AS $$ SELECT 1 $$;
 REVOKE ALL ON FUNCTION public.f() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.f() TO service_role;`,
-      number: 113,
+      number: 114,
       errors: 0,
     },
     {
-      name: "113番以降: SECURITY DEFINERを匿名に公開",
+      name: "114番以降: SECURITY DEFINERを匿名に公開",
       sql: `CREATE FUNCTION public.f() RETURNS int LANGUAGE sql SECURITY DEFINER AS $$ SELECT 1 $$;
 GRANT EXECUTE ON FUNCTION public.f() TO anon;`,
-      number: 113,
+      number: 114,
       errors: 1,
     },
     {
-      name: "113番以降: 本文の後ろに書いたSECURITY DEFINERも拾う",
+      name: "114番以降: 本文の後ろに書いたSECURITY DEFINERも拾う",
       sql: `CREATE FUNCTION public.f() RETURNS int AS $fn$ SELECT 1 $fn$ LANGUAGE sql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION public.f() TO authenticated;`,
-      number: 113,
+      number: 114,
       errors: 1,
     },
     {
-      name: "113番以降: 本文中の文字列 ON FUNCTION は数えない（ドル引用の中）",
+      name: "114番以降: 本文中の文字列 ON FUNCTION は数えない（ドル引用の中）",
       sql: `CREATE FUNCTION public.f() RETURNS text LANGUAGE sql AS $$ SELECT 'CREATE FUNCTION g()' $$;
 GRANT EXECUTE ON FUNCTION public.f() TO anon;`,
-      number: 113,
+      number: 114,
       errors: 0,
     },
     {
-      name: "113番以降: 除外マーカー付き",
+      name: "114番以降: 除外マーカー付き",
       sql: `-- function-exempt: f 既存関数の本文だけの差し替え。権限は既存のまま
 CREATE OR REPLACE FUNCTION public.f() RETURNS int LANGUAGE sql AS $$ SELECT 1 $$;`,
-      number: 113,
+      number: 114,
       errors: 0,
     },
   ];

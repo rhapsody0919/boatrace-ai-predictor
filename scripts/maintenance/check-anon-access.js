@@ -8,11 +8,11 @@
  *   2. 画面が使うテーブル・RPCを、anonキーで読めること（要 VITE_SUPABASE_ANON_KEY）
  *   3. 読ませない設計のテーブルが、anonから見えないこと（適用後のみ判定）
  *   4. anonがEXECUTEできる関数が画面の呼ぶRPCだけであること、シーケンス権限が無いこと
- *      （要 SUPABASE_ACCESS_TOKEN。マイグレーション112、BOA-575。適用後のみ判定）
+ *      （要 SUPABASE_ACCESS_TOKEN。マイグレーション113、BOA-575。適用後のみ判定）
  *
  * 使い方:
  *   node --env-file=.env.local scripts/maintenance/check-anon-access.js
- *   node --env-file=.env.local scripts/maintenance/check-anon-access.js --expect-applied   # 076・112適用後: 不可視テーブル・権限の残りも失敗にする
+ *   node --env-file=.env.local scripts/maintenance/check-anon-access.js --expect-applied   # 076・113適用後: 不可視テーブル・権限の残りも失敗にする
  *
  * 終了コード: 0=すべてOK、2=失敗あり
  */
@@ -98,7 +98,7 @@ const MUST_READ = [
   "venue_motor_stats",
   "model_performance_daily",
 ];
-// 画面・api/ が匿名キーで呼ぶRPC（マイグレーション112の監査結果。これ以外は anon から EXECUTE できない設計）
+// 画面・api/ が匿名キーで呼ぶRPC（マイグレーション113の監査結果。これ以外は anon から EXECUTE できない設計）
 const ANON_RPCS = [
   "get_predictions_by_date",
   "get_predictions_by_date_light",

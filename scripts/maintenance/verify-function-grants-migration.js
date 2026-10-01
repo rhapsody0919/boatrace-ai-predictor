@@ -1,7 +1,7 @@
 /**
- * verify-function-grants-migration.js - マイグレーション112（BOA-575: 関数・シーケンスの匿名権限の剥奪と
+ * verify-function-grants-migration.js - マイグレーション113（BOA-575: 関数・シーケンスの匿名権限の剥奪と
  * 既定権限の是正）の検証。インメモリのPostgres（PGlite）に、本番と同じ形のロール・既定権限・関数・
- * シーケンス・トリガーの縮約版を作り、docs/db-migration/112_revoke_anon_function_and_sequence_grants.sql を
+ * シーケンス・トリガーの縮約版を作り、docs/db-migration/113_revoke_anon_function_and_sequence_grants.sql を
  * 実際に適用して、次を確認する。本番DBには接続しない。
  *
  * 確認すること:
@@ -31,7 +31,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATION = path.join(
   __dirname,
-  "../../docs/db-migration/112_revoke_anon_function_and_sequence_grants.sql",
+  "../../docs/db-migration/113_revoke_anon_function_and_sequence_grants.sql",
 );
 
 /** 匿名が呼ぶ RPC（EXECUTE を残す） */
@@ -317,33 +317,33 @@ for (const role of ["anon", "authenticated"]) {
 
 {
   await db.exec(`
-    CREATE FUNCTION public.new_rpc_after_112() RETURNS int LANGUAGE sql AS $$ SELECT 1 $$;
-    CREATE SEQUENCE public.new_seq_after_112;
+    CREATE FUNCTION public.new_rpc_after_113() RETURNS int LANGUAGE sql AS $$ SELECT 1 $$;
+    CREATE SEQUENCE public.new_seq_after_113;
   `);
   check(
     "(f) 適用後に作る関数を anon は EXECUTE できない（既定権限の抑止）",
-    !(await canExecute(db, "anon", "new_rpc_after_112")) &&
-      !(await canExecute(db, "authenticated", "new_rpc_after_112")),
+    !(await canExecute(db, "anon", "new_rpc_after_113")) &&
+      !(await canExecute(db, "authenticated", "new_rpc_after_113")),
   );
   check(
     "(f) 適用後に作る関数を service_role は EXECUTE できる",
-    await canExecute(db, "service_role", "new_rpc_after_112"),
+    await canExecute(db, "service_role", "new_rpc_after_113"),
   );
   check(
     "(f) 適用後に作るシーケンスに anon の権限が付かない",
     (await sequenceGrantCount(db, "anon")) === 0,
   );
   await db.exec(
-    "GRANT EXECUTE ON FUNCTION public.new_rpc_after_112() TO anon, authenticated",
+    "GRANT EXECUTE ON FUNCTION public.new_rpc_after_113() TO anon, authenticated",
   );
-  const r = await as(db, "anon", "SELECT public.new_rpc_after_112() AS v");
+  const r = await as(db, "anon", "SELECT public.new_rpc_after_113() AS v");
   check(
     "(f) GRANT EXECUTE を明示すれば anon から呼べる",
     r.ok && r.rows[0].v === 1,
     JSON.stringify(r),
   );
   await db.exec(
-    "DROP FUNCTION public.new_rpc_after_112(); DROP SEQUENCE public.new_seq_after_112;",
+    "DROP FUNCTION public.new_rpc_after_113(); DROP SEQUENCE public.new_seq_after_113;",
   );
 }
 
