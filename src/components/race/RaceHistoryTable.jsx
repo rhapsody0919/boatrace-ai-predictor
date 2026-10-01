@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { GRADE_LABELS } from "./raceGradeLabels";
 import { translateTechnique } from "./raceIndicators";
 import { formatPayout } from "../../utils/formatters";
+import { finishMarkKeyOf } from "../../utils/prevResult";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import "../common/HorizontalScrollHint.css";
 import "./RaceHistoryTable.css";
@@ -65,9 +66,10 @@ import "./RaceHistoryTable.css";
  * 1. 右に続くことを知らせる（`useHorizontalScrollHint`。モータ情報タブ・
  *    直前情報タブ・タブバーと同じ手がかり）。黙って切れるのが実害であり、
  *    スクロールすること自体は実害ではない
- * 2. 狭い画面ではセルの左右余白を詰め、**着順までは初期表示に収める**
- *    （`RaceHistoryTable.css` のメディアクエリ）。着順はこの表で最も読まれる列で、
- *    半分切れているのと最初から右にあるのとでは意味が違う
+ * 2. **着順はR番号のすぐ右に置く**（BOA-569）。着順はこの表で最も読まれる列で、
+ *    右端寄りだと 375px では初期表示の外（直近10走）か、横スクロールのぼかしの下
+ *    （今節タブ）になった。狭い画面ではセルの左右余白も詰める
+ *    （`RaceHistoryTable.css` のメディアクエリ）
  *
  * @param {string[]} [omitColumns] 出さない列（"venue" / "raceTitle" / "grade" /
  *   "stage"）。今節タブ（FR-3）は同じ節の走しか並ばず、この4列が全行同じ値に
@@ -85,6 +87,10 @@ import "./RaceHistoryTable.css";
  *   （`actual_course_*` は2025-12-04以降のレースにしか無く、
  *   古い行では「-」が並ぶだけになるため）
  */
+// ST の表記。フライングは結果タブと同じく「F0.11」（BOA-576）
+const formatSt = (race) =>
+  `${race.isFlying ? "F" : ""}${Number(race.startTiming).toFixed(2)}`;
+
 function RaceHistoryTable({
   rows,
   buildRaceHref = (raceId) => `/race/${raceId}`,
@@ -94,6 +100,18 @@ function RaceHistoryTable({
   compactDate = false,
 }) {
   const { t } = useTranslation();
+  // 公式の記号はデータ出走表の「本日の前走」と同じ表記にする。日本語以外の
+  // ページで「エ」「落」を生のまま出さない（BOA-569 ファン評価3周目）
+  const renderFinishMark = (mark) => {
+    const key = finishMarkKeyOf(mark);
+    return key ? (
+      <abbr title={t(`result.mark.${key}`)}>
+        {t(`dataTable.prevMark.${key}`)}
+      </abbr>
+    ) : (
+      mark
+    );
+  };
   const shows = (key) => !omitColumns.includes(key);
   // 列数・行数が決まってから測り直す（取得前は幅が無く、右に続くと分からない）。
   // 表の幅を変えるプロップは漏れなく並べる。1つでも抜けると、溢れが解消しても
@@ -136,6 +154,7 @@ function RaceHistoryTable({
               <th>{t("raceHistoryTable.date")}</th>
               {shows("venue") && <th>{t("raceHistoryTable.venue")}</th>}
               <th>{t("raceHistoryTable.raceNo")}</th>
+              <th>{t("raceHistoryTable.finish")}</th>
               {shows("raceTitle") && <th>{t("raceHistoryTable.raceTitle")}</th>}
               {shows("grade") && <th>{t("raceHistoryTable.grade")}</th>}
               {shows("stage") && <th>{t("raceHistoryTable.stage")}</th>}
@@ -143,7 +162,6 @@ function RaceHistoryTable({
               {showEntryCourse && <th>{t("raceHistoryTable.entryCourse")}</th>}
               {showExhibition && <th>{t("raceHistoryTable.exhibition")}</th>}
               <th>{t("raceHistoryTable.startTiming")}</th>
-              <th>{t("raceHistoryTable.finish")}</th>
               <th>{t("raceHistoryTable.technique")}</th>
               <th>{t("raceHistoryTable.payout")}</th>
             </tr>
@@ -163,6 +181,18 @@ function RaceHistoryTable({
                   <td>{t(`venues.${race.venueCode}`, race.venueCode)}</td>
                 )}
                 <td>{race.raceNo !== null ? `${race.raceNo}R` : "-"}</td>
+                {/* 着順はこの表で最も読まれる列なので、R番号のすぐ右に置く。
+                    以前は右から3番目で、375px の直近10走（11列・930px）では
+                    右へ約640px送らないと見えず、今節タブの日別の表では横スクロールの
+                    ぼかしに重なっていた（BOA-569） */}
+                <td>
+                  {race.finishRank ??
+                    (race.absent
+                      ? t("basicInfo.finishAbsent")
+                      : race.finishMark
+                        ? renderFinishMark(race.finishMark)
+                        : t("basicInfo.finishUnknown"))}
+                </td>
                 {shows("raceTitle") && <td>{race.raceTitle ?? "-"}</td>}
                 {shows("grade") && (
                   <td>
@@ -194,20 +224,14 @@ function RaceHistoryTable({
                   何番目だったかの方が直接的（日和の「安定率」が答えようと
                   している問いに、%より読みやすい形で答える） */}
                 <td>
-                  {race.startTiming !== null
+                  {race.startTiming != null
                     ? race.startTimingRank
                       ? t("raceHistoryTable.startTimingCell", {
-                          time: Number(race.startTiming).toFixed(2),
+                          time: formatSt(race),
                           rank: race.startTimingRank,
                         })
-                      : Number(race.startTiming).toFixed(2)
+                      : formatSt(race)
                     : "-"}
-                </td>
-                <td>
-                  {race.finishRank ??
-                    (race.absent
-                      ? t("basicInfo.finishAbsent")
-                      : (race.finishMark ?? t("basicInfo.finishUnknown")))}
                 </td>
                 <td>
                   {race.finishRank === 1 && race.winningTechnique != null

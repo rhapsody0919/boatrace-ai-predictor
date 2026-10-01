@@ -147,9 +147,10 @@ test("今節タブの折れ線は、点に合わせるとその走の日付・R�
       .filter({ hasText: date })
       .first();
     const cells = await row.locator("td").allInnerTexts();
-    // 表の列は 日付/R/枠番/進入/展示/ST/着順/決まり手/単勝配当
-    const st = cells[5];
-    const finish = cells[6];
+    // 表の列は 日付/R/着順/枠番/進入/展示/ST/決まり手/単勝配当
+    // （着順は BOA-569 で R の右へ移した）
+    const finish = cells[2];
+    const st = cells[6];
     expect(text).toContain(st);
     expect(text).toContain(finish);
   });

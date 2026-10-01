@@ -82,12 +82,15 @@
   },
   "venueRaceList": {
     "title": "レース一覧",
-    "metaTitle": "{{venue}}の本日のレース一覧・AIデータ分析 - 龍神レーダー",
-    "metaDescription": "{{venue}}ボートレース場の本日の全レース一覧。締切時刻・グレードを確認し、各レースのAIデータ分析へ進めます。",
+    "metaTitle": "{{venue}}競艇のAI予想｜本日の全レース - 龍神レーダー",
+    "metaDescription": "{{venue}}競艇（ボートレース{{venue}}）の本日の全レースをAIが予想。1マークの展開予測・イン崩れ指数と締切時刻を無料・登録不要で確認できます。",
     "backToVenues": "← 会場一覧に戻る",
     "jumpToNextRace": "{{race}}Rへ",
     "nextDeadlineMarker": "{{venue}}　次の締切 {{race}}R {{time}}",
-    "allClosedMarker": "{{venue}}　本日のレースはすべて締切済み"
+    "allClosedMarker": "{{venue}}　本日のレースはすべて締切済み",
+    "todayTitle": "本日のレース・AI予想",
+    "metaTitleSeries": "{{venue}}競艇のAI予想 {{series}}｜本日の全レース - 龍神レーダー",
+    "metaDescriptionSeries": "{{venue}}競艇（ボートレース{{venue}}）で{{series}}開催中。本日の全レースをAIが予想し、1マークの展開予測・イン崩れ指数を無料・登録不要で公開しています。"
   },
   "venueCharacteristics": {
     "collapsedTeaser": "{{summary}}／1号艇の1着率 {{rate}}%",
@@ -279,7 +282,8 @@
     "partialNoRaceTag": "不成立の勝式あり",
     "payoutNoRace": "不成立（返還）",
     "payoutSpecial": "特払",
-    "volatilityOutcomeNotJudgeable": "判定対象外（不成立）"
+    "volatilityOutcomeNotJudgeable": "判定対象外（不成立）",
+    "stLegend": "右の矢印はスタートタイミング（ST）。黄色い線がスタートラインで、線に近いほど早いスタート。線を越えた赤い矢印はフライング"
   },
   "raceTabs": {
     "basic": "基本情報",
@@ -465,6 +469,7 @@
     "rankPlain": "{{rank}}位",
     "pretestRank": "{{rank}}位",
     "compareSub": "節の出場は{{total}}人。",
+    "compareSubExcluded": "節の出場は{{all}}人（順位の対象は{{total}}人。賞典除外・途中帰郷の{{excluded}}人を除く）。",
     "borderLine": "準優の目安は{{slots}}位（{{rate}}）。",
     "rankTiedTitle": "同率{{tied}}人",
     "pretestCell": "{{time}}（{{rank}}位）",
@@ -475,12 +480,13 @@
     "finishAbsent": "欠",
     "smallSampleLegend": "⚠ は3走未満（得点率がまだ荒い）。",
     "finishLabel": "着順",
+    "finishLabelPrelim": "予選の着順",
     "borderNote": "点線より上が準優の目安内（番組は未定のため確定ではありません）。",
     "prelimOverNote": "予選は{{date}}で終了。得点率はここで確定していて、今日の着順では動きません",
     "seriesSplitNote": "この節はＷ優勝戦で、勝ち上がりが2つに分かれています（節全体は{{meetTotal}}人）。節内順位と準優の目安は、この6艇と同じ優勝戦をめざす{{total}}人の中で出しています。",
     "seriesSplitNoteNoBorder": "この節はＷ優勝戦で、勝ち上がりが2つに分かれています（節全体は{{meetTotal}}人）。節内順位は、この6艇と同じ優勝戦をめざす{{total}}人の中で出しています。",
     "seriesMixedNote": "この節はＷ優勝戦で勝ち上がりが2つに分かれていますが、このレースは両方の選手が乗っているため、節内順位は節全体の{{total}}人で出しています。",
-    "rankSourceNote": "節内順位は当社計算です。公式の得点率一覧が取れている開催では、公式の備考（賞典除外・途中帰郷）で順位の対象外を判定しています。取れていない開催では「節の最終日に出走が無い選手」を離脱として推定します。",
+    "rankSourceNote": "節内順位は当社計算です。公式の得点率一覧が取れている開催では、公式の備考（賞典除外・途中帰郷）で順位の対象外を判定しています。取れていない開催では、表示中のレースより前に今節F（フライング）を切った選手を賞典除外、「節の最終日に出走が無い選手」を離脱として推定します。",
     "rankSourceNoteOfficial": "得点率・節内順位は公式の得点率一覧（予選終了時点）の値です。減点・賞典除外・途中帰郷も公式のとおりに反映しています。予選中は公式の一覧がまだ出ないため当社計算になります。",
     "sourceOfficial": "公式",
     "sourceOwn": "当社計算",
@@ -498,7 +504,8 @@
     "compareTrendSt": "ST",
     "compareTrendEx": "展示",
     "compareTrendNote": "同じ節・同じ水面を走った6艇を同じ物差し（6艇の最小〜最大）で並べています。行をまたいで線の高さをそのまま見比べられます。破線は6艇の平均。上ほど速い。大きい点が前走",
-    "compareTrendRange": "横軸は走った順（左が古い）で、日付の目盛ではありません。ここに出ているのは{{from}}〜{{to}}の走で、各行の右端がその選手の前走です。",
+    "compareTrendRange": "横軸は日付（{{from}}〜{{to}}）。1日に2走した日は左右にずらし、その選手が走らなかった日は線を切っています。各行の最後の点がその選手の前走です。",
+    "compareTrendRangeOneDay": "横軸は日付（{{day}}）。1日に2走した選手は左右にずらしています。各行の最後の点がその選手の前走です。",
     "compareTrendHint": "行をタップすると、下の詳細がその選手に変わります",
     "compareTrendFinishNote": "点の下の数字はその走の着順です（F＝フライング、欠＝欠場、転・落・妨などは公式の表記）。",
     "compareTrendEmpty": "推移を出せる走がまだありません",
@@ -514,9 +521,13 @@
     "neededPointsRuns": "今日{{runs}}走で",
     "neededUnreachable": "今日では届かず",
     "forecastDetailSummary": "目安と必要得点の出し方",
-    "forecastDetail": "目安は予選終了時点の{{slots}}位の得点率です。実際のボーダーとは数位ずれることがあります（実測: 若松G1では0.07差、桐生の一般戦では0.83差。途中帰郷・賞典除外の選手を当社データで除けないことと、一般戦は得点率順だけで準優が決まらないことがあるため）。必要得点は「目安×(今の走数+残り走数)−今の得点」で、残り走数は当日の番組が出ている予選ぶんです（1日2走ある選手もいるので人により異なります）。無事故完走が前提で、当確という言い方はしません。",
+    "forecastDetail": "目安は予選終了時点の{{slots}}位の得点率です。実際のボーダーとは数位ずれることがあります（実測: 若松G1では0.07差、桐生の一般戦では0.83差。公式の備考が無い節では、途中帰郷（最終日まで判定できない）とF以外の理由の賞典除外を当社データで除けないことと、一般戦は得点率順だけで準優が決まらないことがあるため）。必要得点は「目安×(今の走数+残り走数)−今の得点」で、残り走数は当日の番組が出ている予選ぶんです（1日2走ある選手もいるので人により異なります）。無事故完走が前提で、当確という言い方はしません。",
     "withdrawn": "対象外",
     "withdrawnTitle": "節の最終日に出走が無く、途中で離脱した扱い（公式の順位表も途中帰郷の選手を順位から外します）",
+    "awardExcluded": "賞典除外",
+    "awardExcludedTitle": "公式の得点率一覧の備考で賞典除外（準優勝戦・優勝戦に乗れない）。公式と同じく順位から外します",
+    "flyingExcluded": "賞典除外（今節F）",
+    "flyingExcludedTitle": "今節フライング（F）を切ったので賞典除外（準優勝戦・優勝戦に乗れない）。公式と同じく順位から外します。公式の備考が無い節での当社の判定です",
     "absent": "欠場",
     "absentTitle": "今節はここまで全て欠場で、走数0のため得点率・節内順位は出ません",
     "absentNote": "「欠場」は、今節ここまでの走が全て欠場の選手です。走数が0のため、得点率・節内順位は出ません。",
@@ -610,12 +621,15 @@
     "periodWinRate": "勝率 {{value}}",
     "periodTop2Rate": "2連対率 {{value}}",
     "periodAvgSt": "平均ST {{value}}",
+    "periodVsCurrent": "（出走表・全国 {{current}}、前期から{{diff}}）",
+    "periodCurrentOnly": "（出走表・全国 {{current}}）",
+    "periodDiffWithheldNote": "※期が替わって3か月は、出走表の値の大半が前期と同じ期間の成績なので、前期との差は出していません（{{date}}以降のレースで出します）",
     "periodFetchError": "前期成績を取得できませんでした",
     "meetScoreForecastTitle": "今日の着順で得点率はこう動く",
     "meetScorePrelimOver": "予選の得点率 {{rate}}（{{n}}走・{{source}}・確定）"
   },
   "wakuInfo": {
-    "note": "選手を選ぶと、その選手が本日入る想定コースでの成績を期間・条件ごとに比較できます。左端の期間名をタップするとそのコースの直近10走の着順が開きます。全コース（1〜6）の比較は表の下の折りたたみから開けます",
+    "note": "選手を選ぶと、その選手がこのレースで入る想定コースでの成績を期間・条件ごとに比較できます。左端の期間名をタップするとそのコースの直近10走の着順が開きます。全コース（1〜6）の比較は表の下の折りたたみから開けます。成績は、このレースより前の走で集計します（直近3ヶ月・直近1ヶ月は、このレースの日から数えます）。",
     "boatLabel": "選手（艇番）",
     "metricLabel": "指標",
     "metrics": {
@@ -646,8 +660,8 @@
     },
     "smallSampleTitle": "サンプルが少ないため参考値です",
     "gridTitleWithMetric": "コース別成績：{{metric}}",
-    "todayMark": "今日",
-    "todayCourseHeading": "本日の想定進入：{{course}}コース",
+    "todayMark": "想定",
+    "todayCourseHeading": "このレースの想定進入：{{course}}コース",
     "wakuNariAssumption": "※枠なり進入時",
     "wakuNariRate": "この選手の枠なり進入率は{{rate}}％（直近{{n}}走）",
     "periodHeader": "期間・条件",
@@ -688,7 +702,16 @@
     "venueGuideDesc": "会場の特徴と狙い目を詳しく解説",
     "analysisToolsLink": "データ分析ツールでこのレースをさらに分析する",
     "awaitingResultBanner": "締切を過ぎましたが、結果はまだ反映されていません（データは1時間おきに更新されます）",
-    "cancelledBanner": "このレースは中止となりました"
+    "cancelledBanner": "このレースは中止となりました",
+    "shareCancelled": "🏁 龍神レーダー【{{date}}{{venue}}{{raceNo}}R】\n\nこのレースは中止になりました",
+    "shareNoPrediction": "🏁 龍神レーダー【{{date}}{{venue}}{{raceNo}}R】\n\n出走表とデータ分析を無料で公開中",
+    "sharePrediction": {
+      "v1": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n展開予測から分析した結果、この並びが来そう！\nデータ的にも期待できるかも👀",
+      "v2": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n1マーク展開予測とモーター性能を分析した結果、\nこの組み合わせに注目してます📊",
+      "v3": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n無料でここまで精度の高い予想が見られるのは嬉しい✨\n今日も当たりますように！",
+      "v4": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n展開予測から見て、この予想は信頼できそう！\n皆さんはどう思いますか？🤔",
+      "v5": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n最近的中率が上がってきてて嬉しい😊\nAIの予想、参考にしてみてください！"
+    }
   },
   "home": {
     "introBannerText": "龍神レーダー - ボートレースを見える化。迷ったら、データを信じる。| 展開予測・イン崩れ指数など45項目のデータを分析。詳しくはこちら →",
@@ -911,9 +934,23 @@
     "rowTilt": "チルト",
     "rowAdjustmentWeight": "調整重量",
     "rowPartsChanged": "部品交換",
-    "rowPrevResult": "前走成績",
+    "rowPrevResult": "本日の前走",
     "prevResultCourse": "{{course}}コース",
-    "prevResultNoRace": "今節初戦",
+    "prevResultNoRace": "初走",
+    "meetFirstRace": "今節初戦",
+    "prevMark": {
+      "flying": "F",
+      "late": "L",
+      "absent": "欠",
+      "capsized": "転",
+      "fell": "落",
+      "sank": "沈",
+      "obstruction": "妨",
+      "engineStall": "エ",
+      "notFinished": "不",
+      "disqualified": "失",
+      "noPosition": "—"
+    },
     "rowTechnique": "決まり手型",
     "rowReturnRate": "単勝回収率",
     "noWins": "勝利なし",
@@ -991,7 +1028,7 @@
       "tilt": "チルト",
       "adjustmentWeight": "調整重量",
       "partsChanged": "部品交換",
-      "prevResult": "前走",
+      "prevResult": "本日前走",
       "courseRate": "枠番",
       "returnRate": "回収率",
       "technique": "決まり手"
@@ -1737,12 +1774,17 @@
     "noticeHeading": "⚠️ 注意事項"
   },
   "flyingBadge": {
-    "title": "出走表に載っている今期のフライング{{n}}本。期（5月1日・11月1日）が変わると0に戻ります"
+    "title": "出走表に載っている今期のフライング{{n}}本。期（5月1日・11月1日）が変わると0に戻ります",
+    "titleCurrentMeet": "出走表に載っている今期のフライング{{n}}本。今節の初日から前日までのレースで切ったものを含みます（当日のFは含みません）。Fを切っても節の残りのレースには出走しますが、準優勝戦・優勝戦には進めません（賞典除外）。期（5月1日・11月1日）が変わると0に戻ります",
+    "currentMeet": "今節",
+    "lateTitle": "出走表に載っている今期の出遅れ（L）{{n}}本。スタートラインを1秒以上遅れて越えたもので、フライングとも、ST考察の「出遅率」とも別に数えます",
+    "legend": "F＝出走表の今期フライング本数（金は1本、赤は2本）。「今節」付きは、そのうち今節の初日から前日までに切ったものがあることを示します（当日のFは含みません）。その選手は節の残りのレースには出走しますが、準優勝戦・優勝戦には進めません。L＝今期の出遅れ本数"
   },
   "stConsideration": {
     "title": "ST考察",
     "subtitle": "下段は同じコース・同じ級別の平均との差",
-    "window": "集計期間 {{start}}〜{{end}}",
+    "window": "比べる平均の集計期間 {{start}}〜{{end}}",
+    "ownWindow": "選手の値は、このレースより前の走で集計しています",
     "gradeRow": "級別",
     "runsRow": "走数",
     "stable": "安定率",

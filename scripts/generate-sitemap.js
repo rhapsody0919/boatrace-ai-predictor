@@ -1,11 +1,12 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import matter from "gray-matter";
 import {
   SUPPORTED_LANGUAGES,
   DEFAULT_LANGUAGE,
   localizePath,
+  parseLangFromPath,
+  getAvailableLanguages,
 } from "../src/config/languages.js";
 import { VENUE_GUIDES_EN } from "../src/data/venueGuidesEn.js";
 import { VENUE_REGIONS } from "../src/data/venueRegions.js";
@@ -14,6 +15,12 @@ import { VENUE_GUIDES_KO } from "../src/data/venueGuidesKo.js";
 import { blogPostsEn } from "../src/data/blogPostsEn.js";
 import { blogPostsZhTw } from "../src/data/blogPostsZhTw.js";
 import { blogPostsKo } from "../src/data/blogPostsKo.js";
+import { blogPosts as blogPostsJa } from "../src/data/blogPosts.js";
+import {
+  gitLastCommitDate,
+  laterDate,
+  renderUrlEntry,
+} from "./lib/sitemapLastmod.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,97 +33,88 @@ const BLOG_DIR = path.join(PUBLIC_DIR, "blog");
 const staticPages = [
   {
     loc: "/",
-    lastmod: new Date().toISOString().split("T")[0],
+    lastmodFrom: "raceData",
     changefreq: "daily",
     priority: "1.0",
   },
   {
     loc: "/accuracy",
-    lastmod: new Date().toISOString().split("T")[0],
+    lastmodFrom: "raceData",
     changefreq: "daily",
     priority: "0.9",
   },
   {
     loc: "/hit-races",
-    lastmod: new Date().toISOString().split("T")[0],
+    lastmodFrom: "raceData",
     changefreq: "daily",
     priority: "0.9",
   },
   {
     loc: "/about",
-    lastmod: new Date().toISOString().split("T")[0],
     changefreq: "monthly",
     priority: "0.8",
   },
   {
     loc: "/faq",
-    lastmod: new Date().toISOString().split("T")[0],
     changefreq: "monthly",
     priority: "0.8",
   },
   {
     loc: "/how-to-use",
-    lastmod: new Date().toISOString().split("T")[0],
     changefreq: "monthly",
     priority: "0.9",
   },
   {
     loc: "/privacy",
-    lastmod: new Date().toISOString().split("T")[0],
     changefreq: "yearly",
     priority: "0.3",
   },
   {
     loc: "/terms",
-    lastmod: new Date().toISOString().split("T")[0],
     changefreq: "yearly",
     priority: "0.3",
   },
   {
     loc: "/contact",
-    lastmod: new Date().toISOString().split("T")[0],
     changefreq: "monthly",
     priority: "0.5",
   },
   {
     loc: "/blog",
-    lastmod: new Date().toISOString().split("T")[0],
+    lastmodFrom: "blogIndex",
     changefreq: "weekly",
     priority: "0.7",
   },
   {
     loc: "/races",
-    lastmod: new Date().toISOString().split("T")[0],
+    lastmodFrom: "raceData",
     changefreq: "daily",
     priority: "0.9",
   },
   {
     loc: "/guide",
-    lastmod: new Date().toISOString().split("T")[0],
     changefreq: "monthly",
     priority: "0.8",
   },
   {
     loc: "/responsible-gambling",
-    lastmod: new Date().toISOString().split("T")[0],
     changefreq: "yearly",
     priority: "0.5",
   },
   {
     loc: "/profile",
-    lastmod: new Date().toISOString().split("T")[0],
     changefreq: "monthly",
     priority: "0.5",
   },
   {
     loc: "/accuracy/history",
-    lastmod: new Date().toISOString().split("T")[0],
+    lastmodFrom: "raceData",
     changefreq: "daily",
     priority: "0.8",
   },
   {
     loc: "/winning-technique",
-    lastmod: new Date().toISOString().split("T")[0],
+    lastmodFrom: "raceData",
     changefreq: "daily",
     priority: "0.8",
   },
@@ -124,13 +122,12 @@ const staticPages = [
     // 「本日のデータ一覧」（BOA-402）。単一URLで毎日中身を差し替える。
     // 日付別URL（/today/YYYY-MM-DD）は発行しない（ADR-0070の背景・spec §3）
     loc: "/today",
-    lastmod: new Date().toISOString().split("T")[0],
+    lastmodFrom: "raceData",
     changefreq: "daily",
     priority: "0.8",
   },
   {
     loc: "/racers",
-    lastmod: new Date().toISOString().split("T")[0],
     changefreq: "weekly",
     priority: "0.7",
   },
@@ -140,7 +137,8 @@ const staticPages = [
   // sitemap非対象とする（docs/adr/0026参照）
   ...Array.from({ length: 24 }, (_, i) => ({
     loc: `/venue/${i + 1}`,
-    lastmod: new Date().toISOString().split("T")[0],
+    lastmodFrom: "venueRaceData",
+    venueCode: i + 1,
     changefreq: "daily",
     priority: "0.7",
   })),
@@ -148,14 +146,26 @@ const staticPages = [
 
 // 全言語で翻訳提供済みのページ（デフォルト言語以外の各言語 URL を登録。未翻訳の blog 等は含めない）
 const LOCALIZED_PAGES = [
-  { basePath: "/", changefreq: "daily", priority: "0.9" },
+  {
+    basePath: "/",
+    changefreq: "daily",
+    priority: "0.9",
+    lastmodFrom: "raceData",
+  },
   { basePath: "/guide", changefreq: "monthly", priority: "0.8" },
-  { basePath: "/winning-technique", changefreq: "daily", priority: "0.8" },
+  {
+    basePath: "/winning-technique",
+    changefreq: "daily",
+    priority: "0.8",
+    lastmodFrom: "raceData",
+  },
   // 会場別レース一覧（本日）は4言語対応（venue-list-redesign）
   ...Array.from({ length: 24 }, (_, i) => ({
     basePath: `/venue/${i + 1}`,
     changefreq: "daily",
     priority: "0.6",
+    lastmodFrom: "venueRaceData",
+    venueCode: i + 1,
   })),
 ];
 
@@ -201,11 +211,14 @@ const LANGUAGE_ONLY_PAGES = {
       basePath: "/blog",
       changefreq: "weekly",
       priority: "0.6",
+      lastmodFrom: "blogIndex",
     },
     ...blogPostsEn.map((post) => ({
       basePath: `/blog/${post.id}`,
       changefreq: "monthly",
       priority: "0.6",
+      lastmodFrom: "blogPost",
+      postId: post.id,
     })),
   ],
   "zh-TW": [
@@ -227,11 +240,18 @@ const LANGUAGE_ONLY_PAGES = {
     // 未提供と判定するため、それと矛盾しないよう記事0件の間は一覧ページも含めない
     ...(blogPostsZhTw.length > 0
       ? [
-          { basePath: "/blog", changefreq: "weekly", priority: "0.6" },
+          {
+            basePath: "/blog",
+            changefreq: "weekly",
+            priority: "0.6",
+            lastmodFrom: "blogIndex",
+          },
           ...blogPostsZhTw.map((post) => ({
             basePath: `/blog/${post.id}`,
             changefreq: "monthly",
             priority: "0.6",
+            lastmodFrom: "blogPost",
+            postId: post.id,
           })),
         ]
       : []),
@@ -255,11 +275,18 @@ const LANGUAGE_ONLY_PAGES = {
     // 未提供と判定するため、それと矛盾しないよう記事0件の間は一覧ページも含めない
     ...(blogPostsKo.length > 0
       ? [
-          { basePath: "/blog", changefreq: "weekly", priority: "0.6" },
+          {
+            basePath: "/blog",
+            changefreq: "weekly",
+            priority: "0.6",
+            lastmodFrom: "blogIndex",
+          },
           ...blogPostsKo.map((post) => ({
             basePath: `/blog/${post.id}`,
             changefreq: "monthly",
             priority: "0.6",
+            lastmodFrom: "blogPost",
+            postId: post.id,
           })),
         ]
       : []),
@@ -271,14 +298,26 @@ const localizedPages = SUPPORTED_LANGUAGES.filter(
   ({ code }) => code !== DEFAULT_LANGUAGE,
 ).flatMap(({ code }) =>
   [...LOCALIZED_PAGES, ...(LANGUAGE_ONLY_PAGES[code] ?? [])].map(
-    ({ basePath, changefreq, priority }) => ({
+    ({ basePath, ...rest }) => ({
+      ...rest,
       loc: localizePath(basePath, code),
-      lastmod: new Date().toISOString().split("T")[0],
-      changefreq,
-      priority,
+      lang: code,
     }),
   ),
 );
+
+const JA_POST_DATE = new Map(blogPostsJa.map((p) => [p.id, p.date ?? null]));
+const BLOG_MD_SUFFIX = { en: "-en", "zh-TW": "-zh-tw", ko: "-ko" };
+
+// 記事の lastmod。md の最終コミット日（本文の修正を拾う）と、記事データの日付
+// （公開日）の新しいほう。md は frontmatter を持たず、以前は mtime を使っていたため、
+// CI の checkout 時刻＝毎日の生成日になっていた（BOA-599）
+function blogLastmod(id, mdSuffix) {
+  return laterDate(
+    gitLastCommitDate(path.join(BLOG_DIR, `${id}${mdSuffix}.md`)),
+    JA_POST_DATE.get(id) ?? null,
+  );
+}
 
 // ブログ記事のスキャン
 function getBlogPosts() {
@@ -299,23 +338,8 @@ function getBlogPosts() {
     );
     if (isTranslatedBlogFile) return;
 
-    const filePath = path.join(BLOG_DIR, file);
-    const content = fs.readFileSync(filePath, "utf-8");
-    const { data } = matter(content);
-
     const slug = file.replace(".md", "");
-    const stats = fs.statSync(filePath);
-
-    // frontmatterのdateフィールドまたはファイルの更新日時を使用
-    let lastmod = data.date || data.publishedAt || stats.mtime;
-    if (lastmod instanceof Date) {
-      lastmod = lastmod.toISOString().split("T")[0];
-    } else if (typeof lastmod === "string") {
-      lastmod = new Date(lastmod).toISOString().split("T")[0];
-    } else {
-      lastmod = new Date().toISOString().split("T")[0];
-    }
-
+    const lastmod = blogLastmod(slug, "");
     // 週次レポートは優先度を下げる
     const isWeeklyReport = slug.startsWith("weekly-report-");
     const priority = isWeeklyReport ? "0.5" : "0.6";
@@ -439,11 +463,97 @@ async function getRacerPages() {
   return racerPages;
 }
 
+// 開催日（JSTの今日以前で最新）。全体と会場別。取れなければ null（lastmod を出さない）
+async function getLatestRaceDates() {
+  const result = { overall: null, byVenue: new Map() };
+  try {
+    const { supabase, isSupabaseEnabled } =
+      await import("./lib/supabaseClient.js");
+    if (!isSupabaseEnabled()) return result;
+    const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    // 会場は24。1会場1行だけ取る（全行を取ると1000行の上限に当たる）
+    const rows = await Promise.all(
+      Array.from({ length: 24 }, (_, i) =>
+        supabase
+          .from("races")
+          .select("race_date")
+          .eq("venue_code", i + 1)
+          .lte("race_date", todayJst)
+          .order("race_date", { ascending: false })
+          .limit(1)
+          .then(({ data, error }) => {
+            if (error) throw new Error(error.message);
+            return [i + 1, data?.[0]?.race_date ?? null];
+          }),
+      ),
+    );
+    for (const [venue, date] of rows) {
+      result.byVenue.set(venue, date);
+      result.overall = laterDate(result.overall, date);
+    }
+  } catch (err) {
+    console.error("開催日の取得エラー:", err.message);
+  }
+  return result;
+}
+
+// 言語版の組（hreflang）。画面の HreflangTags と同じ getAvailableLanguages で決める。
+// 画面の hreflang は JS 実行後にしか無く、日本語の検索に /en/・/ko/ が出ていた（BOA-560）。
+// 1言語しか無いページは出さない（画面も出さない）
+function alternatesFor(loc) {
+  const { basePath } = parseLangFromPath(loc);
+  const languages = getAvailableLanguages(basePath);
+  if (languages.length < 2) return [];
+  const urlFor = (code) => `${SITE_URL}${localizePath(basePath, code)}`;
+  return [
+    ...languages.map(({ code, hreflang }) => ({
+      hreflang,
+      href: urlFor(code),
+    })),
+    ...(languages.some(({ code }) => code === DEFAULT_LANGUAGE)
+      ? [{ hreflang: "x-default", href: urlFor(DEFAULT_LANGUAGE) }]
+      : []),
+  ];
+}
+
 // sitemap.xmlの生成
 async function generateSitemap() {
   const blogPosts = getBlogPosts();
   const racePages = await getRacePages();
   const racerPages = await getRacerPages();
+  const latest = await getLatestRaceDates();
+  const blogIndexLastmod = (lang) => {
+    const posts =
+      lang === "en"
+        ? blogPostsEn
+        : lang === "zh-TW"
+          ? blogPostsZhTw
+          : lang === "ko"
+            ? blogPostsKo
+            : blogPostsJa;
+    return posts.reduce(
+      (acc, post) =>
+        laterDate(acc, blogLastmod(post.id, BLOG_MD_SUFFIX[lang] ?? "")),
+      null,
+    );
+  };
+  const resolveLastmod = (page) => {
+    switch (page.lastmodFrom) {
+      case "raceData":
+        return latest.overall;
+      case "venueRaceData":
+        return latest.byVenue.get(page.venueCode) ?? null;
+      case "blogIndex":
+        return blogIndexLastmod(page.lang);
+      case "blogPost":
+        return blogLastmod(page.postId, BLOG_MD_SUFFIX[page.lang] ?? "");
+      default:
+        return page.lastmod ?? null;
+    }
+  };
+
   const allPages = [
     ...staticPages,
     ...localizedPages,
@@ -453,15 +563,15 @@ async function generateSitemap() {
   ];
 
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-  xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+  xml +=
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n';
 
   allPages.forEach((page) => {
-    xml += "  <url>\n";
-    xml += `    <loc>${SITE_URL}${page.loc}</loc>\n`;
-    xml += `    <lastmod>${page.lastmod}</lastmod>\n`;
-    xml += `    <changefreq>${page.changefreq}</changefreq>\n`;
-    xml += `    <priority>${page.priority}</priority>\n`;
-    xml += "  </url>\n";
+    xml += renderUrlEntry(SITE_URL, {
+      ...page,
+      lastmod: resolveLastmod(page),
+      alternates: alternatesFor(page.loc),
+    });
   });
 
   xml += "</urlset>\n";
