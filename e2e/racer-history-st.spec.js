@@ -61,9 +61,10 @@ test("選手ページの履歴: race_results の着順に入った返還艇（F�
   expect(cells[finishAt].trim()).toBe("F");
 });
 
-// 本番STは2025-12から、展示タイムは2026-03からある。ST推移の見出しを「2025年12月以降」にし、
+// 本番STは2025-12から。展示タイムも、Kファイルからの補完（BOA-271 の前提、Phase 1 項目6）で2025-12からある。
 // 展示タイムの推移は展示がある走だけで横軸を作る（見出しの期間と横軸の始まりが食い違っていた。
-// PR #996 ファン評価1周目）
+// PR #996 ファン評価1周目）。このテストは、補完の後に撮り直した録画で通る（補完の前の録画では
+// 展示タイムが2026-03からなので、見出しと横軸が食い違って失敗する＝正しく検知する）
 test("選手ページ: STの推移・展示タイムの推移の見出しと横軸の始まりが合う", async ({
   page,
 }) => {
@@ -86,9 +87,9 @@ test("選手ページ: STの推移・展示タイムの推移の見出しと横�
             .map((el) => el.textContent.trim())
             .find((t) => /^\d{2}-\d{2}-\d{2}$/.test(t)) ?? null,
       );
-  // 5250 の本番STは 2025-12-27 から、展示タイムは 2026-03 から
+  // 5250 の本番STは 2025-12-27 から。展示タイムも補完の後は 2025-12 から
   expect(await firstTick(st)).toMatch(/^25-12-/);
   const ex = chartOf("展示タイムの推移");
-  await expect(ex.locator("h3")).toContainText("2026年3月以降");
-  expect(await firstTick(ex)).toMatch(/^26-/);
+  await expect(ex.locator("h3")).toContainText("2025年12月以降");
+  expect(await firstTick(ex)).toMatch(/^25-12-/);
 });
