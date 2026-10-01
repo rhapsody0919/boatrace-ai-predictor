@@ -35,6 +35,11 @@ const SOURCES = {
   returnRate: (raceId) =>
     supabaseDataService.getRaceRacerBoatReturnRate(raceId),
   racerStats: (raceId) => supabaseDataService.getRaceRacerStats(raceId),
+  // 今節の前走（BOA-610）。サービス層は { rows } を返す（結果待ちをキャッシュさせないため）
+  meetPrevRun: (raceId) =>
+    supabaseDataService
+      .getRaceMeetPrevRuns(raceId)
+      .then((result) => result.rows),
 };
 
 const EMPTY = Object.fromEntries(

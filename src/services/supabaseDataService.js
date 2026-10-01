@@ -2834,6 +2834,114 @@ export const supabaseDataService = {
   },
 
   /**
+   * 各艇の**今節の前走**（同じ会場・同じ節で、表示中のレースより前の最後の走）を返す
+   * （BOA-610、データ出走表の「今節の前走」行）。
+   *
+   * 以前この行は exhibition_data.prev_*（公式の直前情報の前走）を出していたが、
+   * それは「同じ日の前の走」で、前日までの走が入らない。節の2日目以降でも、
+   * その日の1走目は空になる（2026-09-30 児島7R の西村拓也は 9/29 10R を走っているのに空）。
+   * 節の切り方は `groupIntoMeetBeforeRace`（今節タブ・今節展示情報と同じ。選手＋会場＋目印）。
+   *
+   * 戻り値は艇ごとに1行:
+   *   { boat_number, firstOfMeet: true }                       今節の走がまだ無い
+   *   { boat_number, raceId, boatNumber, result, finishMark }  前走（result は race_results の1行か null）
+   * 前走の結果がまだ無い行があるとき（同じ日の直前のレースが確定前）は `fetchFailed: true` を
+   * 付けて withCache に焼き付けない（frontend-data-fetch.md §4）
+   *
+   * @returns {Promise<{rows: Array<Object>, fetchFailed?: boolean}>}
+   */
+  getRaceMeetPrevRuns(raceId) {
+    return withCache(`race-meet-prev-runs-v1-${raceId}`, async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+      const date = raceId.slice(0, 10);
+      const venue = raceId.slice(11, 13);
+
+      const { data: entries } = await supabase
+        .from("race_entries")
+        .select("boat_number, racer_id")
+        .eq("race_id", raceId);
+      const targets = (entries ?? []).filter((e) => e.racer_id != null);
+      if (targets.length === 0) return { rows: [] };
+
+      // 節は長くて7日。前後の空き（2日）を見分けるのに足りる幅を取る
+      // （getCurrentMeetFlyingBoats と同じ）。6選手×14日なら1000行に届かない
+      const from = new Date(`${date}T00:00:00Z`);
+      from.setUTCDate(from.getUTCDate() - 14);
+      const { data: past } = await supabase
+        .from("race_entries")
+        .select("race_id, racer_id, boat_number")
+        .in(
+          "racer_id",
+          targets.map((e) => e.racer_id),
+        )
+        // `%-VV-%` だと月の部分（-09-）にも当たるので桁で位置を固定する
+        .like("race_id", `__________-${venue}-__`)
+        .gte("race_id", from.toISOString().slice(0, 10))
+        .lt("race_id", raceId);
+
+      const prevByBoat = new Map(
+        targets.map((e) => [
+          e.boat_number,
+          groupIntoMeetBeforeRace(
+            (past ?? []).filter((r) => r.racer_id === e.racer_id),
+            raceId,
+          ).at(-1) ?? null,
+        ]),
+      );
+      const prevRaceIds = [
+        ...new Set(
+          [...prevByBoat.values()].filter(Boolean).map((r) => r.race_id),
+        ),
+      ];
+      if (prevRaceIds.length === 0) {
+        return {
+          rows: targets.map((e) => ({
+            boat_number: e.boat_number,
+            firstOfMeet: true,
+          })),
+        };
+      }
+
+      const [{ data: results }, { data: timings }] = await Promise.all([
+        supabase
+          .from("race_results")
+          .select(
+            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, course_1, course_2, course_3, course_4, course_5, course_6",
+          )
+          .in("race_id", prevRaceIds),
+        supabase
+          .from("race_start_timings")
+          .select("race_id, boat_number, finish_mark")
+          .in("race_id", prevRaceIds),
+      ]);
+      const resultById = new Map((results ?? []).map((r) => [r.race_id, r]));
+      const markByKey = new Map(
+        (timings ?? []).map((r) => [
+          `${r.race_id}#${r.boat_number}`,
+          r.finish_mark,
+        ]),
+      );
+
+      const rows = targets.map((e) => {
+        const prev = prevByBoat.get(e.boat_number);
+        if (!prev) return { boat_number: e.boat_number, firstOfMeet: true };
+        return {
+          boat_number: e.boat_number,
+          raceId: prev.race_id,
+          boatNumber: prev.boat_number,
+          result: resultById.get(prev.race_id) ?? null,
+          finishMark:
+            markByKey.get(`${prev.race_id}#${prev.boat_number}`) ?? null,
+        };
+      });
+      const pending = rows.some((r) => !r.firstOfMeet && !r.result);
+      return pending ? { rows, fetchFailed: true } : { rows };
+    });
+  },
+
+  /**
    * 指定レースの枠番別モーター調子（2連率/3連率）を取得する（BOA-151）
    * 「このレースのどの艇のモーターが調子いいか」を直接示す
    * venueCodeを渡すと各艇のモーターの機力指数（BOA-265）も合わせて取得する
