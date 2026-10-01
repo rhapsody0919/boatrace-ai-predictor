@@ -470,6 +470,11 @@
       "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
     },
     {
+      "script": "verify-jsx-japanese.js",
+      "tier": "ci",
+      "guards": "翻訳対象のページ（/・/race・/venue・/guide・/venues・/winning-technique と共通の枠）に、t() を通らない日本語が新しく直書きされること。既存分は jsx-japanese-baseline.json に所属チケット付きで固定（BOA-653〜656）"
+    },
+    {
       "script": "verify-lib-index.js",
       "tier": "ci",
       "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）の抽出ロジックと、生成が成功すること。最新性はmasterへのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078）"
