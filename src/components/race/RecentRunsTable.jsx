@@ -70,7 +70,15 @@ function RecentRunsTable({
         </abbr>
       );
     }
-    return race.finishMark ?? t("basicInfo.finishUnknown");
+    if (race.finishMark) return race.finishMark;
+    // 順位不明（4〜6着のどれか。古いレースは上位3着しか持っていない）。全文
+    // 「Unplaced (rank unknown)」は英語の 375px で着順の列を 190px に広げたので、
+    // 短い表記にして全文は title に出す（BOA-623 ファン評価2周目の修正の確認で発見）
+    return (
+      <abbr title={t("basicInfo.finishUnknown")}>
+        {t("raceHistoryTable.finishUnknownShort")}
+      </abbr>
+    );
   };
 
   return (

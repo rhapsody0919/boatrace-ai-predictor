@@ -312,7 +312,8 @@
     "exhibition": "전시",
     "exhibitionCell": "{{time}}({{rank}})",
     "startTimingCell": "{{time}}({{rank}})",
-    "stRankLegend": "ST 옆 ( ) 안의 숫자는 그 경주 6척 중 순위(F 제외)"
+    "stRankLegend": "ST 옆 ( ) 안의 숫자는 그 경주 6척 중 순위(F 제외)",
+    "finishUnknownShort": "착외"
   },
   "panel": {
     "noData": "예측 데이터가 없습니다",

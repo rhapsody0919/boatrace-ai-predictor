@@ -1793,30 +1793,37 @@ test.describe("レースページ再設計（BOA-168）", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    // 2026-09-30 戸田9R の1号艇: 決まり手「Makuri-zashi (Sweep & pass)」などの長い語で、
-    // 以前は表が 414px（枠 293px）になり Finish の列が画面外に出ていた
+    // 2026-09-30 戸田9R: 決まり手「Makuri-zashi (Sweep & pass)」などの長い語で、表が
+    // 414px（枠 293px）になった（1周目、1号艇）。順位不明の「Unplaced (rank unknown)」で
+    // 着順の列が 190px になった（3号艇）。6艇とも見る
     await page.goto("/en/race/2026-09-30-02-09");
     await page.locator(".race-tabs-btn", { hasText: "Basic Info" }).click();
-    const bar = page.locator(".rbit-bar-row").first();
-    await bar.waitFor({ timeout: 30000 });
-    await bar.click();
-    const wrap = page.locator(".rrt-wrap").first();
-    await wrap.waitFor({ timeout: 30000 });
-    const w = await wrap.evaluate((el) => [el.scrollWidth, el.clientWidth]);
-    expect(w[0]).toBeLessThanOrEqual(w[1]);
-    // 決まり手・種別は1行に収める（2周目: 折り返すと「ウインウイン７」が1文字ずつ
-    // 縦に並び、行の高さがばらばらになった）
-    const subLines = await wrap
-      .locator(".rrt-sub")
-      .evaluateAll((els) =>
-        els.map((el) =>
-          Math.round(
-            el.getBoundingClientRect().height /
-              parseFloat(getComputedStyle(el).lineHeight || "12"),
+    await page.locator(".rbit-bar-row").first().waitFor({ timeout: 30000 });
+    for (let i = 0; i < 6; i += 1) {
+      const bar = page.locator(".rbit-bar-row").nth(i);
+      await bar.click();
+      const wrap = page.locator(".rrt-wrap").first();
+      await wrap.waitFor({ timeout: 30000 });
+      const w = await wrap.evaluate((el) => [el.scrollWidth, el.clientWidth]);
+      expect(w[0], `${i + 1}号艇`).toBeLessThanOrEqual(w[1]);
+      // 決まり手・種別は1行に収める（2周目: 折り返すと「ウインウイン７」が1文字ずつ
+      // 縦に並び、行の高さがばらばらになった）
+      const subLines = await wrap
+        .locator(".rrt-sub")
+        .evaluateAll((els) =>
+          els.map((el) =>
+            Math.round(
+              el.getBoundingClientRect().height /
+                parseFloat(getComputedStyle(el).lineHeight || "12"),
+            ),
           ),
-        ),
-      );
-    expect(subLines.every((n) => n <= 1)).toBe(true);
+        );
+      expect(
+        subLines.every((n) => n <= 1),
+        `${i + 1}号艇`,
+      ).toBe(true);
+      await bar.click();
+    }
   });
 
   test("PC の選手ページのレース一覧で、種別を途中で折らず省略もしない（BOA-623 ファン評価2周目）", async ({

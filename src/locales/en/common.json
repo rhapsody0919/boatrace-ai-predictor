@@ -316,7 +316,8 @@
     "exhibition": "Trial",
     "exhibitionCell": "{{time}}({{rank}})",
     "startTimingCell": "{{time}}({{rank}})",
-    "stRankLegend": "The number in ( ) after ST is the rank among the six boats in that race (flying starts excluded)"
+    "stRankLegend": "The number in ( ) after ST is the rank among the six boats in that race (flying starts excluded)",
+    "finishUnknownShort": "4-6"
   },
   "panel": {
     "noData": "Prediction data is not available",

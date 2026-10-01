@@ -18,7 +18,8 @@
 
 .rrt-table th,
 .rrt-table td {
-  padding: var(--spacing-2) var(--spacing-1);
+  /* 左右は 4px より少し詰める。英語の 375px で 1px はみ出した艇があった */
+  padding: var(--spacing-2) calc(var(--spacing-1) * 0.75);
   text-align: center;
   border-bottom: 1px solid var(--border-hairline);
   color: var(--text-primary);
@@ -103,7 +104,8 @@
    PC では幅が余るので省略しない */
 .rrt-sub {
   display: block;
-  max-width: 5.5em;
+  /* 5.5em だと英語の 375px で表が 301px（枠 293px）になった */
+  max-width: 4.5em;
   margin-inline: auto;
   white-space: nowrap;
   overflow: hidden;

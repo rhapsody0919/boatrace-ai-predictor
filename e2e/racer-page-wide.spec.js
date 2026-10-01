@@ -98,6 +98,9 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
     await expect(chart).toBeVisible({ timeout: 30000 });
     await chart.scrollIntoViewIfNeeded();
     const dot = chart.locator('circle[fill="var(--color-error)"]').last();
+    // 点は取得と描画の後に出る。待たずに boundingBox を取ると null になる（BOA-623 で
+    // 履歴の取得列が増え、録画に無い取得が本番へ素通しになって遅くなったときに落ちた）
+    await expect(dot).toBeVisible({ timeout: 30000 });
     const box = await dot.boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await expect(chart.locator(".recharts-tooltip-label")).toHaveText(
