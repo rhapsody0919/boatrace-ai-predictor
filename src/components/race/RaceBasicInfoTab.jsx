@@ -42,6 +42,7 @@ import {
   periodDiffShownFrom,
   SMALL_SAMPLE_THRESHOLD,
   WAVE_EXCLUDED_VENUE_CODES,
+  recordsBeforeRace,
 } from "./basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
 import FlyingBadge from "./FlyingBadge";
@@ -167,6 +168,19 @@ function RaceBasicInfoTab({
   // racerIdsKey は「6人の登録番号の並び」で、同じレース内では変わらない
   const racerIdsKey = sortedPlayers.map((p) => p.racerId ?? "").join(",");
   const raceDate = parseRaceId(raceId)?.date ?? null;
+  // 表示中のレースより前の走だけを使う（BOA-605。枠別情報タブの BOA-603 と同じ）。
+  // 過去のレースを開いたとき、そのレース自身と後日の走がバー・得意会場・条件別に入り、
+  // 結果を知った状態の数字になっていた。取得前（undefined）・失敗（null）はそのまま返す
+  const recordsOf = (racerId) => {
+    const records = scopedStatsByRacer[racerId];
+    return Array.isArray(records)
+      ? recordsBeforeRace(records, raceId)
+      : records;
+  };
+  // 「直近3ヶ月・直近1ヶ月」の起点もレースの日にそろえる（当日のレースは今日と同じ）
+  const periodAnchor = raceId
+    ? new Date(`${raceId.slice(0, 10)}T12:00:00+09:00`)
+    : new Date();
   useEffect(() => {
     const ids = racerIdsKey.split(",").filter(Boolean).map(Number);
     if (ids.length === 0 || !raceDate) return undefined;
@@ -277,7 +291,7 @@ function RaceBasicInfoTab({
       };
     }
 
-    const records = scopedStatsByRacer[p.racerId];
+    const records = recordsOf(p.racerId);
     if (records === undefined)
       return { value: null, n: null, isSmallSample: false, loading: true };
     const filtered = filterRecords(records ?? [], {
@@ -285,6 +299,7 @@ function RaceBasicInfoTab({
       scope,
       grade,
       period,
+      now: periodAnchor,
     });
     const rates = computeRates(filtered);
     if (metric === "avgSt") {
@@ -592,7 +607,7 @@ function RaceBasicInfoTab({
 
                   {expandedView === "venue" &&
                     (() => {
-                      const records = scopedStatsByRacer[player?.racerId];
+                      const records = recordsOf(player?.racerId);
                       if (records === undefined || records === null) {
                         return (
                           <p className="rbit-expanded-loading">
@@ -663,7 +678,7 @@ function RaceBasicInfoTab({
 
                   {expandedView === "conditions" &&
                     (() => {
-                      const records = scopedStatsByRacer[player?.racerId];
+                      const records = recordsOf(player?.racerId);
                       if (records === undefined || records === null) {
                         return (
                           <p className="rbit-expanded-loading">
