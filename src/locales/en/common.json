@@ -317,7 +317,7 @@
     "exhibitionCell": "{{time}}({{rank}})",
     "startTimingCell": "{{time}}({{rank}})",
     "stRankLegend": "The number in ( ) after ST is the rank among the six boats in that race (flying starts excluded)",
-    "finishUnknownShort": "4-6"
+    "finishUnknownShort": "Out"
   },
   "panel": {
     "noData": "Prediction data is not available",

@@ -166,10 +166,15 @@ function RecentRunsTable({
                   {renderFinish(race)}
                   {race.finishRank === 1 && race.winningTechnique != null && (
                     <span
-                      className="rrt-sub"
+                      className="rrt-sub rrt-technique"
                       title={translateTechnique(t, race.winningTechnique)}
                     >
-                      {translateTechnique(t, race.winningTechnique)}
+                      {/* 英語の「Makuri-zashi (Sweep & pass)」は括弧の説明を省く。
+                          375px で「Makuri…」と切れて読めなかった（3周目） */}
+                      {translateTechnique(t, race.winningTechnique).replace(
+                        / \(.*\)$/,
+                        "",
+                      )}
                     </span>
                   )}
                 </td>

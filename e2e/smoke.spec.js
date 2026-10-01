@@ -1835,10 +1835,17 @@ test.describe("レースページ再設計（BOA-168）", () => {
             ),
           ),
         );
+      // 決まり手（.rrt-technique）はハイフンで2行まで折り返す（3周目: 省略すると
+      // 「Makuri…」で読めなかった）。括弧の説明は出さない
       expect(
-        subLines.every((n) => n <= 1),
+        subLines.every((n) => n <= 2),
         `${i + 1}号艇`,
       ).toBe(true);
+      const techniques = await wrap.locator(".rrt-technique").allInnerTexts();
+      expect(
+        techniques.some((x) => x.includes("(")),
+        `${i + 1}号艇`,
+      ).toBe(false);
       await bar.click();
     }
   });

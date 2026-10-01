@@ -34,6 +34,13 @@
   text-align: left;
 }
 
+/* 決まり手はハイフンの位置で2行まで折り返す（Makuri- / zashi）。省略すると
+   英語の 375px で何で勝ったかが読めなかった（3周目） */
+.rrt-table .rrt-technique {
+  white-space: normal;
+  overflow-wrap: normal;
+}
+
 .rrt-table .rrt-left .rrt-sub {
   margin-inline: 0;
 }
