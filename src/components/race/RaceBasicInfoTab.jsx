@@ -27,6 +27,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
+import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { parseRaceId } from "../../utils/raceId";
 import RaceHistoryTable from "./RaceHistoryTable";
@@ -37,6 +38,8 @@ import {
   computeVenueRanking,
   buildConditionRows,
   pickPeriodStats,
+  periodDiff,
+  periodDiffShownFrom,
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
@@ -235,6 +238,9 @@ function RaceBasicInfoTab({
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandedBoat, raceId]);
+
+  // Fバッジの「今節」の印（BOA-440）
+  const currentMeetFlyingBoats = useCurrentMeetFlyingBoats(raceId);
 
   const officialRowFor = (boatNumber) =>
     (officialRates ?? []).find((r) => r.boat_number === boatNumber) ?? null;
@@ -464,7 +470,11 @@ function RaceBasicInfoTab({
                       （race_entries.f_count）にしてある。この行は <button> なので
                       TermHintButton（入れ子の <button> になる）は置けず、
                       説明は title 属性で出す */}
-                  <FlyingBadge count={officialRowFor(boat)?.f_count} />
+                  <FlyingBadge
+                    count={officialRowFor(boat)?.f_count}
+                    currentMeet={currentMeetFlyingBoats.has(boat)}
+                    lateCount={officialRowFor(boat)?.l_count}
+                  />
                 </span>
                 <span className="rbit-bar-track">
                   {!loading && (
@@ -682,6 +692,50 @@ function RaceBasicInfoTab({
                         periodStats,
                         player?.racerId,
                       );
+                      // 前期と出走表の値の差（BOA-439）。出走表の値は上のバーの
+                      // 既定（全国・今期）と同じ公式値（race_entries、追加クエリ無し）。
+                      // 「今期」とは呼ばない: 出走表の勝率は期が替わっても数え直されず、
+                      // 5月は直前の期の確定値との差が平均0.12しかない（9月は0.38。
+                      // 2026-09-30実測）。バーを当地に切り替えても全国のままなので
+                      // 「全国」も明記する。平均STは出走表の値が無いので差は出さない
+                      const nowRow = officialRowFor(player?.number);
+                      const winDiff = period
+                        ? periodDiff(period.winRate, nowRow?.win_rate, 2)
+                        : null;
+                      const top2Diff = period
+                        ? periodDiff(period.top2Rate, nowRow?.global_2rate, 1)
+                        : null;
+                      // 期の初めから3か月は差を出さず、出走表の値だけを並べる
+                      // （periodDiffShownFrom のコメント参照）
+                      const diffShownFrom = periodDiffShownFrom(
+                        period?.calcTo ?? null,
+                      );
+                      const raceDate = (raceId ?? "").slice(0, 10);
+                      const diffWithheld = Boolean(
+                        diffShownFrom && raceDate && raceDate < diffShownFrom,
+                      );
+                      // 2連対率の差は率の変化ではなくポイント差なので pt を付ける
+                      const diffLabel = (d, unit = "", diffUnit = unit) =>
+                        d && (
+                          <span
+                            className={`rbit-period-diff${
+                              d.sign > 0
+                                ? " is-up"
+                                : d.sign < 0
+                                  ? " is-down"
+                                  : ""
+                            }`}
+                          >
+                            {diffWithheld
+                              ? t("basicInfo.periodCurrentOnly", {
+                                  current: `${d.current}${unit}`,
+                                })
+                              : t("basicInfo.periodVsCurrent", {
+                                  current: `${d.current}${unit}`,
+                                  diff: `${d.diff}${diffUnit}`,
+                                })}
+                          </span>
+                        );
                       return (
                         <div className="rbit-conditions">
                           {/* 値は全行とも自社集計。既定状態（勝率・全レース・今期）では
@@ -814,7 +868,7 @@ function RaceBasicInfoTab({
                                 {t("basicInfo.conditionsFinalDayCaveat")}
                               </p>
                             )}
-                            {/* 母数が他行と違う行（波・F持ち時・F無し時）は、
+                            {/* 母数が他行と違う行（初日・最終日・波・F持ち時・F無し時）は、
                                 条件を判定できた走数を添えて「他行と比べない」と読ませる */}
                             {condRows.some((r) => r.baseN !== null) && (
                               <p className="rbit-conditions-caveat">
@@ -869,6 +923,7 @@ function RaceBasicInfoTab({
                                         ? "—"
                                         : period.winRate.toFixed(2),
                                   })}
+                                  {diffLabel(winDiff)}
                                 </span>
                                 <span>
                                   {/* 単位は値側に付ける。i18n側に「%」を残すと
@@ -880,6 +935,7 @@ function RaceBasicInfoTab({
                                         ? "—"
                                         : `${period.top2Rate.toFixed(1)}%`,
                                   })}
+                                  {diffLabel(top2Diff, "%", "pt")}
                                 </span>
                                 <span>
                                   {t("basicInfo.periodAvgSt", {
@@ -890,6 +946,13 @@ function RaceBasicInfoTab({
                                   })}
                                 </span>
                               </div>
+                              {diffWithheld && (winDiff || top2Diff) && (
+                                <p className="rbit-period-note">
+                                  {t("basicInfo.periodDiffWithheldNote", {
+                                    date: diffShownFrom,
+                                  })}
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>
@@ -901,6 +964,12 @@ function RaceBasicInfoTab({
           );
         })}
       </div>
+      {/* Fバッジ・Lバッジの凡例。選手名の行は <button> で「?」を置けず、説明は
+          title（ホバー）だけになるため、スマホでは意味を知る手段が無かった
+          （BOA-440 ファン評価1周目）。バッジが1つも無いレースでは出さない */}
+      {(officialRates ?? []).some(
+        (r) => (r.f_count ?? 0) > 0 || (r.l_count ?? 0) > 0,
+      ) && <p className="rbit-note">{t("flyingBadge.legend")}</p>}
     </div>
   );
 }

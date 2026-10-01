@@ -1,5 +1,5 @@
 {
-  "$comment": "SEO施策・検索流入に影響した出来事の投入日台帳。search-console-report.js が週次KPIの横に表示し、施策の前後の週を比べるのに使う。施策のPRをマージしたら、本番反映日を date に1行足す（kind: measure）。外部要因・障害は kind: event。",
+  "$comment": "SEO施策・検索流入に影響した出来事の投入日台帳。search-console-report.js が週次KPIの横に表示し、施策の前後の週を比べるのに使う。施策のPRが本番に反映されたら、その日を date に1行足す。kind は3種類: measure（SEO施策）、event（外部要因・障害）、measurement（計測方法の変更。この日の前後で数値を比べない。GA4 の PV の切れ目は scripts/lib/ga4MeasurementBreaks.js にも書く）。",
   "entries": [
     {
       "date": "2026-07-07",
@@ -31,9 +31,9 @@
     },
     {
       "date": "2026-09-29",
-      "kind": "event",
+      "kind": "measurement",
       "id": "ga4-pageview-dedup",
-      "description": "GA4 page_view の誤帰属を修正（BOA-531）。これ以前の GA4 PV は比較に使わない",
+      "description": "GA4 の page_view を1経路に統一（BOA-531）、拡張計測の「ブラウザの履歴イベントに基づくページの変更」をOFF。13時 JST ごろ以後は \"/\" の PV が下がり、会場・レース詳細の PV が上がって見える。需要の変化ではない。この日の前後で GA4 の PV を比較しない（PV を出すレポートは scripts/lib/ga4MeasurementBreaks.js で注記を出す）",
       "ref": "PR#935"
     },
     {
@@ -51,18 +51,46 @@
       "ref": "PR#1009"
     },
     {
-      "date": "2026-09-30",
+      "date": "2026-10-01",
       "kind": "measure",
       "id": "sitemap-lastmod-actual",
-      "description": "sitemap の lastmod を、全URL共通の生成日から各ページの実際の更新日にした（BOA-599）。サイトマップへの反映は 9/30 23:30 JST の自動生成から",
+      "description": "sitemap の lastmod を、全URL共通の生成日から各ページの実際の更新日にした（BOA-599）。9/30 マージ、サイトマップへの反映は 10/1 04:30 JST の自動生成（513URL 中 lastmod 407件、日付がばらけたことを確認）",
       "ref": "PR#1011"
     },
     {
-      "date": "2026-09-30",
+      "date": "2026-10-01",
       "kind": "measure",
       "id": "sitemap-hreflang",
-      "description": "sitemap に hreflang（xhtml:link）を入れた（BOA-560。日本語クエリで /en/・/ko/ が出る件）。サイトマップへの反映は 9/30 23:30 JST の自動生成から",
+      "description": "sitemap に hreflang（xhtml:link）を入れた（BOA-560。日本語クエリで /en/・/ko/ が出る件）。9/30 マージ、サイトマップへの反映は 10/1 04:30 JST の自動生成（xhtml:link 1,339本を確認）",
       "ref": "PR#1012"
+    },
+    {
+      "date": "2026-10-01",
+      "kind": "measure",
+      "id": "venue-page-seo-meta",
+      "description": "本日の会場ページの title・description を「{会場}競艇のAI予想…」にし、SG・G1開催中は節タイトルを入れた。h1 は「{会場} 本日のレース・AI予想」（本番反映 09:27 JST ごろ。児島G1の節タイトル入りを確認）",
+      "ref": "PR#991"
+    },
+    {
+      "date": "2026-10-01",
+      "kind": "measure",
+      "id": "today-seo-meta",
+      "description": "/today の title・description・keywords に「今日の競艇 鉄板・荒れる」を入れ、h1 を「本日のデータ一覧（鉄板・荒れるの判断材料）」にした（本番反映 09:27 JST ごろ）",
+      "ref": "PR#1013"
+    },
+    {
+      "date": "2026-10-01",
+      "kind": "measurement",
+      "id": "ga4-internal-traffic-filter",
+      "description": "GA4 で運営者の内部トラフィックを除外した（ユーザー設定）。以後は PV・ユーザー数が運営者の閲覧分だけ下がって見える。需要の変化ではない。この日の前後で GA4 の PV・ユーザー数を比較しない（scripts/lib/ga4MeasurementBreaks.js にも登録）",
+      "ref": "GA4 管理画面"
+    },
+    {
+      "date": "2026-10-01",
+      "kind": "measure",
+      "id": "venue-recrawl-request",
+      "description": "Search Console で会場ページ（/venue/:code）の「インデックス登録をリクエスト」を実施（ユーザー実施、PR#991 のマージ後）。実施前の最終クロールは /venue/16 が 8/31、/venue/13 が 9/5。ダービー（尼崎 10/27〜）前に反映を確認し、10/20 ごろに再リクエストの要否を判断する",
+      "ref": "Search Console（ユーザー操作）"
     }
   ]
 }

@@ -297,7 +297,7 @@ function generateTodaySnapshot() {
 <body>
   <main>
     <h1>${escapeHtml(MORNING_DIGEST_META.h1)}</h1>
-    <p>${escapeHtml(MORNING_DIGEST_META.description)}</p>
+    <p>${escapeHtml(MORNING_DIGEST_META.lead)}</p>
     <p>掲載している選手・レースは毎朝入れ替わります。最新の内容は ${MORNING_DIGEST_META.canonical} を参照してください。</p>
 ${sections}
     <section>

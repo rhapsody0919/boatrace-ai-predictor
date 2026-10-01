@@ -129,6 +129,11 @@
       "guards": "K/Bアーカイブによる race_results 欠損補填CLI（BOA-403）"
     },
     {
+      "script": "verify-ko-boat-counter.js",
+      "tier": "ci",
+      "guards": "ko の「N号艇」が「N번 보트」にそろっていること（src/locales/ko・src/pages/Ko*.jsx・src/data/blogPostsKo.js に「호정」「번 정」「번정」が無い。BOA-615）"
+    },
+    {
       "script": "verify-migration-numbers.js",
       "tier": "ci",
       "args": [
@@ -146,6 +151,11 @@
       "script": "verify-meet-start-date.js",
       "tier": "ci",
       "guards": "会場単位の「節の初日」の判定（src/utils/meetGrouping.js の findMeetStartDate）。中1日の開催休みで前の節が丸ごと混ざると、節内順位・出場人数・準優の目安・必要得点が前の節の値になる（BOA-491/BOA-508）"
+    },
+    {
+      "script": "verify-meet-before-race.js",
+      "tier": "ci",
+      "guards": "直前情報タブ「今節展示情報」・今節タブの今節の切り出し（src/utils/meetGrouping.js の groupIntoMeetBeforeRace）。会場で絞らないと別会場の同じモーター番号の節が、表示中レースを目印にしないと節の初戦で前の節が「今節」として混ざる（BOA-591）"
     },
     {
       "script": "verify-meet-grouping.js",
@@ -286,6 +296,11 @@
       "guards": "選手プロフィール・期別成績ジョブ（scripts/lib/racerProfileSync.js）"
     },
     {
+      "script": "verify-racer-st-stats.js",
+      "tier": "ci",
+      "guards": "選手の平均ST・直近30走・ST標準偏差（scripts/lib/racerStStats.js、BOA-581）: 1000行上限での取りこぼし・Fの除外・直近30走の並び・取得エラーの例外化"
+    },
+    {
       "script": "verify-rls-migration.js",
       "tier": "ci",
       "guards": "マイグレーション076（RLS無効テーブルの匿名書き込みの是正、BOA-370）をPGlite上で実際に適用して検証"
@@ -376,6 +391,11 @@
       "guards": "会場別モーター成績パーサー（BOA-264）"
     },
     {
+      "script": "verify-venue-series-title.js",
+      "tier": "ci",
+      "guards": "会場ページの title に節タイトルを入れる判定（SG・G1のみ、先頭レースの値、NFKC）。崩れると一般戦の title が長くなるか、SG開催週の検索需要を取り逃す"
+    },
+    {
       "script": "verify-weather-parsing.js",
       "tier": "ci",
       "guards": "水面気象情報の解析と race_conditions への反映（BOA-358）"
@@ -437,6 +457,11 @@
       "script": "verify-lib-index.js",
       "tier": "ci",
       "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）の抽出ロジックと、生成が成功すること。最新性はmasterへのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078）"
+    },
+    {
+      "script": "verify-ga4-measurement-breaks.js",
+      "tier": "ci",
+      "guards": "GA4 の計測の切れ目（2026-09-29 の page_view 修正）をまたぐ期間の判定と注記（scripts/lib/ga4MeasurementBreaks.js）。崩れると計測修正による PV の増減を需要の変化と誤読する"
     },
     {
       "script": "verify-generated-docs-not-in-pr.js",

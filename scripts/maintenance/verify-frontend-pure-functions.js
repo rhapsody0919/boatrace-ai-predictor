@@ -37,6 +37,8 @@ const TARGETS = {
   venueDayTrend: "src/components/race/venueDayTrend.js",
   weatherInfo: "src/components/race/weatherInfo.js",
   dateUtils: "src/utils/dateUtils.js",
+  prevResult: "src/utils/prevResult.js",
+  meetGrouping: "src/utils/meetGrouping.js",
 };
 
 const show = (v) => JSON.stringify(v);
@@ -447,6 +449,86 @@ function suiteBasicInfoStats(m, check) {
     50,
   );
 
+  // --- lastStartTiming（BOA-597）: 前走のST。直前が F・L ならその記号で、飛ばさない
+  const stOf = { valueOf: (r) => r.st, markOf: (r) => r.mark ?? null };
+  check(
+    "lastStartTiming: 直前が F・L ならその記号、欠場（ST無し・記号無し）は飛ばす、何も無ければ null",
+    [
+      m.lastStartTiming([{ st: 0.09 }, { st: null, mark: "F" }], stOf),
+      m.lastStartTiming([{ st: 0.09 }, { st: null, mark: "L" }], stOf),
+      m.lastStartTiming([{ st: 0.12 }, { st: null }], stOf),
+      m.lastStartTiming([{ st: null, mark: "F" }, { st: 0.15 }], stOf),
+      m.lastStartTiming([{ st: null }], stOf),
+      m.lastStartTiming(null, stOf),
+    ],
+    [
+      { mark: "F", value: null },
+      { mark: "L", value: null },
+      { mark: null, value: 0.12 },
+      { mark: null, value: 0.15 },
+      null,
+      null,
+    ],
+  );
+
+  // --- periodDiff（BOA-439）: 前期と出走表の値の差。どちらも公式値
+  check(
+    "periodDiff: 出走表の値と、符号つきの差（勝率は小数2桁・2連対率は1桁）",
+    [
+      m.periodDiff(4.5, "4.12", 2),
+      m.periodDiff(25.6, 31.25, 1),
+      m.periodDiff(4.5, 4.5, 2),
+    ],
+    [
+      { current: "4.12", diff: "−0.38", sign: -1 },
+      { current: "31.3", diff: "+5.7", sign: 1 },
+      { current: "4.50", diff: "±0.00", sign: 0 },
+    ],
+  );
+  check(
+    "periodDiffShownFrom: 期の初めから3か月後の1日から差を出す（年をまたぐ期も）",
+    [
+      m.periodDiffShownFrom("2026-04-30"),
+      m.periodDiffShownFrom("2025-10-31"),
+      m.periodDiffShownFrom(null),
+      m.periodDiffShownFrom("2026/04/30"),
+    ],
+    ["2026-08-01", "2026-02-01", null, null],
+  );
+  check(
+    "periodDiff: どちらかが無ければ null（出走0の新人・出走表の値が無いとき）",
+    [
+      m.periodDiff(null, 4.1, 2),
+      m.periodDiff(4.5, null, 2),
+      m.periodDiff(4.5, "", 2),
+      m.periodDiff(4.5, "abc", 2),
+    ],
+    [null, null, null, null],
+  );
+
+  // --- recordsBeforeRace（BOA-603）: 表示中のレースより前の走だけ
+  check(
+    "recordsBeforeRace: 表示中のレース自身と後日の走を外す。取得前・失敗・raceId無しはそのまま",
+    [
+      m
+        .recordsBeforeRace(
+          [
+            { raceId: "2026-09-25-09-03" },
+            { raceId: "2026-09-26-09-04" },
+            { raceId: "2026-09-26-09-05" },
+            { raceId: "2026-09-26-09-11" },
+            { raceId: "2026-09-28-09-11" },
+          ],
+          "2026-09-26-09-05",
+        )
+        .map((r) => r.raceId),
+      m.recordsBeforeRace(undefined, "2026-09-26-09-05"),
+      m.recordsBeforeRace(null, "2026-09-26-09-05"),
+      m.recordsBeforeRace([{ raceId: "2026-09-28-09-11" }], null).length,
+    ],
+    [["2026-09-25-09-03", "2026-09-26-09-04"], undefined, null, 1],
+  );
+
   // --- buildConditionRows（phase a FR-2）
   const condRecords = [
     rec({
@@ -501,6 +583,35 @@ function suiteBasicInfoStats(m, check) {
     "buildConditionRows: 初日（seriesDay=1）・最終日（isFinalDay=true）",
     [winRows.firstDay.n, winRows.finalDay.n, winRows.finalDay.value],
     [1, 1, 0],
+  );
+  // 初日・最終日も、他行と母数が違うので baseN（日目を判定できた走数）を返す。
+  // race_conditions は 2026-02 以降しか無く、この2行だけ期間が短い（BOA-499）
+  const partialDay = [
+    ...condRecords,
+    rec({
+      raceId: "2025-11-10-04-01",
+      boatNumber: 1,
+      ranks: [1, 2, 3],
+      startTiming: 0.12,
+      seriesDay: null,
+      isFinalDay: null,
+      waveHeight: null,
+      fCount: null,
+    }),
+  ];
+  const dayRows = byKey(
+    m.buildConditionRows(partialDay, { venueCode: 4, metric: "winRate" }),
+  );
+  check(
+    "buildConditionRows: 初日・最終日は baseN を返し、日目が無い走は入れない（BOA-499）",
+    [
+      winRows.firstDay.baseN,
+      winRows.finalDay.baseN,
+      dayRows.firstDay.baseN,
+      dayRows.finalDay.baseN,
+      dayRows.national.n,
+    ],
+    [3, 3, 3, 3, 4],
   );
   check(
     "buildConditionRows: F数が取れていない走（null）は F持ち時にも F無し時にも入れない",
@@ -815,7 +926,7 @@ function suiteCourseGridStats(m, check) {
   });
 
   check(
-    "getCourseRecentRuns: 実進入コースで絞り、新しい順",
+    "getCourseRecentRuns: 実進入コースで絞り、古い順（帯の「古い→新しい」と同じ向き。BOA-601）",
     m
       .getCourseRecentRuns(records, {
         venueCode: 4,
@@ -823,7 +934,50 @@ function suiteCourseGridStats(m, check) {
         course: 2,
       })
       .map((r) => r.raceId),
-    ["2026-09-11-04-01", "2026-09-10-04-01"],
+    ["2026-09-10-04-01", "2026-09-11-04-01"],
+  );
+  // 同じ日の2走は、records が日付だけで並んでいても R の順にそろえる（ファン評価2周目）
+  check(
+    "getCourseRecentRuns: 同じ日の2走は R の小さい順（入力が日の中で逆順でも）",
+    m
+      .getCourseRecentRuns(
+        [
+          rec({ raceId: "2026-09-12-04-09", boatNumber: 2, actualCourse: 2 }),
+          rec({ raceId: "2026-09-12-04-04", boatNumber: 2, actualCourse: 2 }),
+        ],
+        { venueCode: 4, rowKey: "current", course: 2 },
+      )
+      .map((r) => r.raceId),
+    ["2026-09-12-04-04", "2026-09-12-04-09"],
+  );
+  // 「直近1ヶ月」の起点をレースの日にそろえる（BOA-603）。今日（2026-10-01）を
+  // 起点にすると、9/5 のレースでは 8/10 の走が期間の外に落ちる
+  const periodRecs = [
+    rec({ raceId: "2026-08-10-04-01", boatNumber: 2, actualCourse: 2 }),
+    rec({ raceId: "2026-09-03-04-01", boatNumber: 2, actualCourse: 2 }),
+  ];
+  check(
+    "getCourseRecentRuns: 直近1ヶ月の起点に now（レースの日）を使う",
+    [
+      m
+        .getCourseRecentRuns(periodRecs, {
+          venueCode: 4,
+          rowKey: "last1m",
+          course: 2,
+          now: new Date("2026-09-05T12:00:00+09:00"),
+        })
+        .map((r) => r.raceId),
+      m
+        .getCourseRecentRuns(periodRecs, {
+          venueCode: 4,
+          rowKey: "last1m",
+          course: 2,
+          now: new Date("2026-10-01T12:00:00+09:00"),
+        })
+        .map((r) => r.raceId),
+    ],
+    // 古い順（BOA-601。帯の左が古い）
+    [["2026-08-10-04-01", "2026-09-03-04-01"], ["2026-09-03-04-01"]],
   );
 }
 
@@ -987,13 +1141,124 @@ function suiteDateUtils(m, check) {
   check("isWithinDays: 日付が空なら false", m.isWithinDays("", 7), false);
 }
 
+// --- prevResult（BOA-569）: 前走成績の読み方。prev_* は「同じ日の前の走」
+function suitePrevResult(m, check) {
+  const withPrev = {
+    prev_race_no: 6,
+    prev_entry_course: 5,
+    prev_finish_rank: 3,
+  };
+  const dq = {
+    prev_race_no: 6,
+    prev_entry_course: 5,
+    prev_finish_rank: null,
+    prev_finish_mark: "失",
+  };
+  const empty = { prev_race_no: null, prev_finish_rank: null };
+  check(
+    "prevResultState: 前走に着順があれば着順と進入コース",
+    m.prevResultState(withPrev, "2026-09-26-11-11"),
+    { kind: "rank", rank: 3, course: 5 },
+  );
+  check(
+    "prevResultState: 前走に着順が無ければ公式の記号（失・F など）。「—」にしない",
+    m.prevResultState(dq, "2026-09-26-11-11"),
+    { kind: "mark", mark: "失", markKey: "disqualified", course: 5 },
+  );
+  check(
+    "prevResultState: 記号は全角を半角にそろえ、訳すための key を返す。知らない記号は key が null（BOA-569 ファン評価2周目）",
+    [
+      m.prevResultState({ ...dq, prev_finish_mark: "Ｆ" }, "2026-09-26-11-11"),
+      m.prevResultState({ ...dq, prev_finish_mark: "エ" }, "2026-09-26-11-11"),
+      m.prevResultState({ ...dq, prev_finish_mark: "？" }, "2026-09-26-11-11"),
+    ],
+    [
+      { kind: "mark", mark: "F", markKey: "flying", course: 5 },
+      { kind: "mark", mark: "エ", markKey: "engineStall", course: 5 },
+      { kind: "mark", mark: "？", markKey: null, course: 5 },
+    ],
+  );
+  check(
+    "finishMarkKeyOf: 履歴表とデータ出走表で同じ key に引く。数字・空・知らない記号は null（BOA-569 ファン評価3周目）",
+    [
+      m.finishMarkKeyOf("エ"),
+      m.finishMarkKeyOf("落"),
+      m.finishMarkKeyOf("Ｌ"),
+      m.finishMarkKeyOf("3"),
+      m.finishMarkKeyOf(""),
+      m.finishMarkKeyOf(null),
+    ],
+    ["engineStall", "fell", "late", null, null, null],
+  );
+  check(
+    "prevResultState: 取得漏れが無い日（2026-09-16〜）の空は「本日初走」（今節初戦ではない）",
+    m.prevResultState(empty, "2026-09-26-09-05"),
+    { kind: "firstToday" },
+  );
+  check(
+    "prevResultState: 1R は日付に関わらず「本日初走」",
+    m.prevResultState(empty, "2026-06-22-13-01"),
+    { kind: "firstToday" },
+  );
+  check(
+    "prevResultState: 取得が揃う前（〜2026-09-15）の空は不明（「—」）",
+    [
+      m.prevResultState(empty, "2026-06-22-13-12"),
+      m.prevResultState(empty, "2026-09-15-02-05"),
+      m.prevResultState(empty, null),
+    ],
+    [{ kind: "unknown" }, { kind: "unknown" }, { kind: "unknown" }],
+  );
+}
+
+/**
+ * groupIntoMeetBeforeRace（BOA-591）。直前情報タブの今節展示情報と今節タブが共有する
+ * 「表示中レースより前の今節」の切り出し。入力は1選手分（モーター番号で引いた形）
+ */
+function suiteMeetGrouping(m, check) {
+  const rows = (ids) => ids.map((race_id) => ({ race_id }));
+  const ids = (xs) => xs.map((x) => x.race_id);
+  const entries = rows([
+    "2026-07-05-07-12", // 別会場・2ヶ月前（同じモーター番号）
+    "2026-09-12-01-03", // 同じ会場の前節（間が空いている）
+    "2026-09-17-16-03", // 別会場・地続き
+    "2026-09-18-01-02", // 今節1日目
+    "2026-09-19-01-08", // 今節2日目
+    "2026-09-19-02-04", // 別会場・地続き
+    "2026-09-20-01-01", // 今節3日目・表示中より前
+    "2026-09-20-01-09", // 今節3日目・表示中より後
+  ]);
+  check(
+    "groupIntoMeetBeforeRace: 同じ会場・同じ節で、表示中のレースより前だけ",
+    ids(m.groupIntoMeetBeforeRace(entries, "2026-09-20-01-05")),
+    ["2026-09-18-01-02", "2026-09-19-01-08", "2026-09-20-01-01"],
+  );
+  check(
+    "groupIntoMeetBeforeRace: 節の初戦で、別会場の前の節を拾わない（2026-09-21 津1R）",
+    ids(
+      m.groupIntoMeetBeforeRace(
+        rows(["2026-07-05-07-12", "2026-07-06-07-09"]),
+        "2026-09-21-09-01",
+      ),
+    ),
+    [],
+  );
+  check(
+    "groupIntoMeetBeforeRace: 節の初戦で、同じ会場の前の節を拾わない",
+    ids(m.groupIntoMeetBeforeRace(entries, "2026-09-26-01-01")),
+    [],
+  );
+}
+
 const SUITES = {
+  prevResult: suitePrevResult,
   basicInfoStats: suiteBasicInfoStats,
   raceStatus: suiteRaceStatus,
   courseGridStats: suiteCourseGridStats,
   venueDayTrend: suiteVenueDayTrend,
   weatherInfo: suiteWeatherInfo,
   dateUtils: suiteDateUtils,
+  meetGrouping: suiteMeetGrouping,
 };
 
 // ---------------------------------------------------------------------------
@@ -1020,16 +1285,22 @@ const MUTANTS = [
     "raceTitle: null,",
   ],
   [
-    "basicInfoStats",
+    "meetGrouping",
     "今節を日付単位で切る（桐生5Rの退行）",
-    "r.raceId < raceId",
-    "r.raceId.slice(0, 10) <= date",
+    "e.race_id < beforeRaceId,",
+    "e.race_id.slice(0, 10) <= beforeRaceId.slice(0, 10),",
   ],
   [
-    "basicInfoStats",
-    "今節の会場絞り込みを外す",
-    "r.venueCode === venueCode && r.raceId",
-    "r.raceId",
+    "meetGrouping",
+    "今節の会場絞り込みを外す（BOA-591 の退行）",
+    "e.race_id.slice(11, 13) === venue &&",
+    "",
+  ],
+  [
+    "meetGrouping",
+    "表示中のレースを目印に足さない（BOA-591 の退行）",
+    "groupIntoCurrentMeet([...upto, ANCHOR])",
+    "groupIntoCurrentMeet(upto)",
   ],
   [
     "basicInfoStats",
@@ -1136,9 +1407,9 @@ const MUTANTS = [
   ],
   [
     "courseGridStats",
-    "直近走を古い順にする",
-    ".slice(-count)\n    .reverse();",
-    ".slice(-count);",
+    "直近走を新しい順に戻す（BOA-601 の退行: 帯の「古い→新しい」と逆になる）",
+    ".slice(-count)\n  );",
+    ".slice(-count)\n      .reverse()\n  );",
   ],
   [
     "venueDayTrend",

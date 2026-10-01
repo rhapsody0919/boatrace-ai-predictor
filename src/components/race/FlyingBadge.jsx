@@ -18,16 +18,50 @@
 import { useTranslation } from "react-i18next";
 import "./FlyingBadge.css";
 
-function FlyingBadge({ count }) {
+/**
+ * ## 今節の印とLバッジ（BOA-440）
+ *
+ * - `currentMeet`: 今期のFに**今節**（前日まで）で切ったものがある艇。
+ *   「F1 今節」と続けて出す。F2のとき今節が1本でも2本でも印は1つ（本数の内訳は出さない）。
+ *   判定は `getCurrentMeetFlyingBoats`。Fを切っても節の残りは出走するので、
+ *   「今節はもう走らない」と読める言い方（「F休み」「帰郷」等）は使わない
+ * - `lateCount`: 出走表の今期L（出遅れ）本数。1以上のときだけ出す
+ *   （実測で `l_count >= 1` は11,366件中4件。screens.md §3.7）。色はFと別系統の灰。
+ *   今節かどうかは見ない（件数が少なく、判定材料の出遅れフラグも持っていない）
+ */
+function FlyingBadge({ count, currentMeet = false, lateCount }) {
   const { t } = useTranslation();
-  if (!count || count <= 0) return null;
+  const hasF = Boolean(count) && count > 0;
+  const hasL = Boolean(lateCount) && lateCount > 0;
+  if (!hasF && !hasL) return null;
   return (
-    <span
-      className={`flying-badge${count >= 2 ? " is-f2" : ""}`}
-      title={t("flyingBadge.title", { n: count })}
-    >
-      F{count}
-    </span>
+    <>
+      {hasF && (
+        <span
+          className={`flying-badge${count >= 2 ? " is-f2" : ""}${currentMeet ? " has-meet" : ""}`}
+          title={
+            currentMeet
+              ? t("flyingBadge.titleCurrentMeet", { n: count })
+              : t("flyingBadge.title", { n: count })
+          }
+        >
+          F{count}
+          {currentMeet && (
+            <span className="flying-badge-meet">
+              {t("flyingBadge.currentMeet")}
+            </span>
+          )}
+        </span>
+      )}
+      {hasL && (
+        <span
+          className="flying-badge is-late"
+          title={t("flyingBadge.lateTitle", { n: lateCount })}
+        >
+          L{lateCount}
+        </span>
+      )}
+    </>
   );
 }
 

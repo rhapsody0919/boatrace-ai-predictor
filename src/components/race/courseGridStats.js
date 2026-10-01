@@ -44,11 +44,13 @@ export const GRID_ROWS = [
  * 選手の出走履歴から、行（期間・条件）× 列（実進入コース1〜6）のセルを組み立てる。
  *
  * @param {Array<Object>} records `getRacerScopedRaceStats` の戻り値
- * @param {{venueCode: number|null, metric: "winRate"|"top2Rate"|"top3Rate"}} options
+ * @param {{venueCode: number|null, metric: "winRate"|"top2Rate"|"top3Rate", now?: Date}} options
+ *   `now` は「直近3ヶ月・直近1ヶ月」の起点。過去のレースではそのレースの日を渡す
+ *   （BOA-603。省略すると今日。今日を起点にすると、過去のレースで期間がずれる）
  * @returns {Array<{key: string, cells: Array<{course: number, value: number|null, n: number}>}>}
  *   n=0 のセルは value=null（画面は「—」を出す）
  */
-export function buildCourseGrid(records, { venueCode, metric }) {
+export function buildCourseGrid(records, { venueCode, metric, now }) {
   const all = Array.isArray(records) ? records : [];
   return GRID_ROWS.map((row) => {
     const filtered = filterRecords(all, {
@@ -56,6 +58,7 @@ export function buildCourseGrid(records, { venueCode, metric }) {
       scope: row.scope,
       grade: row.grade,
       period: row.period,
+      now,
     });
     const cells = GRID_COURSES.map((course) => {
       const inCourse = filtered.filter((r) => r.actualCourse === course);
@@ -79,12 +82,16 @@ export function buildCourseGrid(records, { venueCode, metric }) {
  * （旧メソッドは呼び出し元が無くなったため削除済み）。
  *
  * @param {Array<Object>} records `getRacerScopedRaceStats` の戻り値
- * @param {{venueCode: number|null, rowKey: string, course: number, count?: number}} options
- * @returns {Array<Object>} 新しい順（左が新しい）
+ * @param {{venueCode: number|null, rowKey: string, course: number, count?: number, now?: Date}} options
+ *   `now` は「直近3ヶ月・直近1ヶ月」の起点。過去のレースではそのレースの日を渡す
+ *   （BOA-603。省略すると今日。今日を起点にすると、過去のレースで期間がずれる）
+ * @returns {Array<Object>} 古い順（左が古い）。`RecentRunsBar` が左に「古い」、右に
+ *   「新しい」と書くのと、今節の推移（左が古い）に向きをそろえる。以前は新しい順を
+ *   返していて、帯の「古い→新しい」と実際の並びが逆だった（BOA-601）
  */
 export function getCourseRecentRuns(
   records,
-  { venueCode, rowKey, course, count = 10 },
+  { venueCode, rowKey, course, count = 10, now },
 ) {
   const row = GRID_ROWS.find((r) => r.key === rowKey) ?? GRID_ROWS[0];
   const filtered = filterRecords(Array.isArray(records) ? records : [], {
@@ -92,11 +99,17 @@ export function getCourseRecentRuns(
     scope: row.scope,
     grade: row.grade,
     period: row.period,
+    now,
   });
-  return filtered
-    .filter((r) => r.actualCourse === course)
-    .slice(-count)
-    .reverse();
+  return (
+    filtered
+      .filter((r) => r.actualCourse === course)
+      // race_id（YYYY-MM-DD-VV-RR）で並べ直してから切る。records は日付だけで並んで
+      // いることがあり（BOA-588）、同じ日の2走の左右が読み込むたびに入れ替わった
+      // （ファン評価2周目）
+      .sort((a, b) => a.raceId.localeCompare(b.raceId))
+      .slice(-count)
+  );
 }
 
 /** 既定ビュー（今日の想定コース）で同時に出す3指標 */
@@ -112,10 +125,12 @@ export const TODAY_METRICS = ["winRate", "top2Rate", "top3Rate"];
  * 情報が減るどころか増える。
  *
  * @param {Array<Object>} records `getRacerScopedRaceStats` の戻り値
- * @param {{venueCode: number|null, course: number}} options
+ * @param {{venueCode: number|null, course: number, now?: Date}} options
+ *   `now` は「直近3ヶ月・直近1ヶ月」の起点。過去のレースではそのレースの日を渡す
+ *   （BOA-603。省略すると今日。今日を起点にすると、過去のレースで期間がずれる）
  * @returns {Array<{key: string, metrics: Record<string, number|null>, n: number}>}
  */
-export function buildTodayCourseRows(records, { venueCode, course }) {
+export function buildTodayCourseRows(records, { venueCode, course, now }) {
   // course が数値でないときに素通りさせると、`actualCourse === null` の走
   // （実進入コースが取れていないレース）を「今日のコース」として数えてしまう
   const all = Number.isInteger(course) && Array.isArray(records) ? records : [];
@@ -125,6 +140,7 @@ export function buildTodayCourseRows(records, { venueCode, course }) {
       scope: row.scope,
       grade: row.grade,
       period: row.period,
+      now,
     }).filter((r) => r.actualCourse === course);
     const rates = computeRates(filtered);
     return {

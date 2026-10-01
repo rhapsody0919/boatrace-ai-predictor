@@ -88,7 +88,10 @@
     "backToVenues": "← Back to venues",
     "jumpToNextRace": "Go to R{{race}}",
     "nextDeadlineMarker": "{{venue}}: next deadline R{{race}} {{time}}",
-    "allClosedMarker": "{{venue}}: all races today have closed"
+    "allClosedMarker": "{{venue}}: all races today have closed",
+    "todayTitle": "Today's races & AI predictions",
+    "metaTitleSeries": "Today's races at {{venue}} ({{series}}) - AI data analysis | Ryujin Radar",
+    "metaDescriptionSeries": "All of today's races at {{venue}} boat race stadium during {{series}}. Check deadlines and grades, then view AI data analysis for each race."
   },
   "venueCharacteristics": {
     "collapsedTeaser": "{{summary}} / Boat 1 win rate {{rate}}%",
@@ -283,7 +286,8 @@
     "partialNoRaceTag": "Some bet types void",
     "payoutNoRace": "Void (refunded)",
     "payoutSpecial": "Special payout",
-    "volatilityOutcomeNotJudgeable": "Not judged (void race)"
+    "volatilityOutcomeNotJudgeable": "Not judged (void race)",
+    "stLegend": "The arrows on the right show start timing (ST). The yellow line is the start line; the closer to it, the faster the start. A red arrow past the line is a false start"
   },
   "raceHistoryTable": {
     "date": "Date",
@@ -318,7 +322,16 @@
     "venueGuideDesc": "Detailed venue characteristics and betting angles",
     "analysisToolsLink": "Analyze this race further with the data analysis tools",
     "awaitingResultBanner": "The deadline has passed, but the result hasn't been posted yet (data updates about once an hour).",
-    "cancelledBanner": "This race has been cancelled."
+    "cancelledBanner": "This race has been cancelled.",
+    "shareCancelled": "🏁 Ryujin Radar [{{date}}{{venue}} R{{raceNo}}]\n\nThis race has been cancelled.",
+    "shareNoPrediction": "🏁 Ryujin Radar [{{date}}{{venue}} R{{raceNo}}]\n\nRace card and data analysis, free to view",
+    "sharePrediction": {
+      "v1": "🏁 Ryujin Radar Prediction [{{date}}{{venue}} R{{raceNo}}]\n\nModel: {{model}}\nTop pick: Boat {{topPick}}\nPicks: {{top3}}\n\nBased on the turn prediction, this order looks likely!\nThe data looks promising too 👀",
+      "v2": "🏁 Ryujin Radar Prediction [{{date}}{{venue}} R{{raceNo}}]\n\nModel: {{model}}\nTop pick: Boat {{topPick}}\nPicks: {{top3}}\n\nAfter analyzing the first-mark turn prediction and motor performance,\nI'm keeping an eye on this combination 📊",
+      "v3": "🏁 Ryujin Radar Prediction [{{date}}{{venue}} R{{raceNo}}]\n\nModel: {{model}}\nTop pick: Boat {{topPick}}\nPicks: {{top3}}\n\nGreat to get predictions this sharp for free ✨\nFingers crossed for today!",
+      "v4": "🏁 Ryujin Radar Prediction [{{date}}{{venue}} R{{raceNo}}]\n\nModel: {{model}}\nTop pick: Boat {{topPick}}\nPicks: {{top3}}\n\nJudging by the turn prediction, this pick looks reliable!\nWhat do you think? 🤔",
+      "v5": "🏁 Ryujin Radar Prediction [{{date}}{{venue}} R{{raceNo}}]\n\nModel: {{model}}\nTop pick: Boat {{topPick}}\nPicks: {{top3}}\n\nHappy to see the hit rate climbing lately 😊\nGive the AI predictions a look!"
+    }
   },
   "home": {
     "introBannerText": "Ryujin Radar - Visualize boat racing. When in doubt, trust the data. | 45+ data points analyzed, including turn predictions and the Upset Index. Learn more →",
@@ -357,6 +370,13 @@
     "blogLastUpdated": "Blog last updated: {{date}}",
     "tbd": "TBD",
     "jstNote": " JST"
+  },
+  "cookieConsent": {
+    "textBeforeLink": "We use cookies to improve our service. For details, see our ",
+    "privacyLink": "Privacy Policy",
+    "textAfterLink": " (in Japanese).",
+    "accept": "Accept",
+    "reject": "Reject"
   },
   "footer": {
     "blog": "Blog",
@@ -537,7 +557,7 @@
     "result": "Result"
   },
   "wakuInfo": {
-    "note": "Pick a racer to compare their record in today's expected course across periods and conditions. Tap the period name on the left to see the last 10 finishes from that course. Use the fold below the table to compare all six courses.",
+    "note": "Pick a racer to compare their record in the expected course in this race across periods and conditions. Tap the period name on the left to see the last 10 finishes from that course. Use the fold below the table to compare all six courses. Figures count only races before this one (the last 3 months and last month are counted back from this race's date).",
     "boatLabel": "Racer (boat #)",
     "metricLabel": "Metric",
     "metrics": {
@@ -569,8 +589,8 @@
     },
     "smallSampleTitle": "Small sample; treat as a rough guide",
     "gridTitleWithMetric": "Record by course: {{metric}}",
-    "todayMark": "today",
-    "todayCourseHeading": "Today's expected start: course {{course}}",
+    "todayMark": "est.",
+    "todayCourseHeading": "Expected start in this race: course {{course}}",
     "wakuNariAssumption": "assuming a straight start from the assigned lane",
     "wakuNariRate": "This racer starts from the assigned lane {{rate}}% of the time (last {{n}} races)",
     "periodHeader": "Period / condition",
@@ -745,13 +765,14 @@
     "note": "Who needs a result in this series, and how the boat you pick has been running",
     "compareTitle": "The six in this series (by score rate)",
     "colBoat": "Boat / racer",
-    "colScore": "Score rate",
-    "colRank": "Series rank",
+    "colScore": "Score",
+    "colRank": "Rank",
     "colPretest": "Trial",
-    "rankTied": "{{rank}} (tied)",
+    "rankTied": "T{{rank}}",
     "rankPlain": "{{rank}}",
     "pretestRank": "{{rank}}",
     "compareSub": "{{total}} racers in this series.",
+    "compareSubExcluded": "{{all}} racers in this series ({{total}} ranked; {{excluded}} excluded from prizes or withdrawn).",
     "borderLine": "The semi-final line is {{slots}}th ({{rate}}).",
     "rankTiedTitle": "{{tied}} racers tied",
     "pretestCell": "{{time}} (#{{rank}})",
@@ -762,12 +783,13 @@
     "finishAbsent": "Abs",
     "smallSampleLegend": "⚠ = fewer than three runs (the score rate still swings).",
     "finishLabel": "Finishes",
+    "finishLabelPrelim": "Qualifying finishes",
     "borderNote": "Rows above the dashed line are within the semi-final line (the card is not set yet, so this is not final).",
     "prelimOverNote": "The preliminaries ended on {{date}}. The score rate is final and today's finish will not change it.",
     "seriesSplitNote": "This meet has two finals, so the path to the final splits in two ({{meetTotal}} racers in the meet). The meet rank and the semi-final line are calculated among the {{total}} racers heading for the same final as the six boats shown.",
     "seriesSplitNoteNoBorder": "This meet has two finals, so the path to the final splits in two ({{meetTotal}} racers in the meet). The meet rank is calculated among the {{total}} racers heading for the same final as the six boats shown.",
     "seriesMixedNote": "This meet has two finals, but this race mixes boats from both, so the meet rank is calculated across all {{total}} racers in the meet.",
-    "rankSourceNote": "The series rank is our own calculation. Where the official score-rate list is available we use its remarks (excluded from prizes, withdrew mid-series) to drop racers from the ranking; otherwise we infer a withdrawal from having no start on the final day of the series.",
+    "rankSourceNote": "The series rank is our own calculation. Where the official score-rate list is available we use its remarks (excluded from prizes, withdrew mid-series) to drop racers from the ranking; otherwise we treat a racer with a flying start (F) this series, before the race shown, as excluded from prizes, and infer a withdrawal from having no start on the final day of the series.",
     "rankSourceNoteOfficial": "The score rate and series rank come from the official score-rate list as of the end of the preliminaries, including its deductions, prize exclusions and mid-series withdrawals. During the preliminaries the official list is not published yet, so our own tally is used.",
     "sourceOfficial": "official",
     "sourceOwn": "our own tally",
@@ -785,7 +807,8 @@
     "compareTrendSt": "ST",
     "compareTrendEx": "Trial",
     "compareTrendNote": "All six ran the same series on the same water, so they share one scale (the min-max across the six) and you can compare the heights of the lines across rows directly. The dashed line is the average of the six. Higher is faster; the large dot is the latest run.",
-    "compareTrendRange": "The horizontal axis is the order of runs (oldest on the left), not a date scale. These lines cover {{from}}–{{to}}, and the right end of each row is that racer's last run.",
+    "compareTrendRange": "The horizontal axis is the date ({{from}}–{{to}}). On days with two races the dots are shifted left and right, and the line breaks on days the racer did not race. The last dot in each row is the racer's previous race.",
+    "compareTrendRangeOneDay": "The horizontal axis is the date ({{day}}). Racers with two races that day have their dots shifted left and right. The last dot in each row is the racer's previous race.",
     "compareTrendHint": "Tap a row to switch the details below to that racer",
     "compareTrendFinishNote": "The number under each dot is the finish in that race (F = flying start, Abs = absent; other marks follow the official notation).",
     "compareTrendEmpty": "Not enough runs yet to draw a trend",
@@ -794,15 +817,20 @@
     "trendFinishHeader": "Below dots: finish",
     "forecastTitle": "Score-rate outlook (how today's finish moves it)",
     "forecastRankHeader": "{{rank}}",
-    "forecastNote": "A highlighted cell means that finish should reach the semi-final line ({{slots}}th = {{rate}}). \"Points needed\" is what it takes to reach that line.",
+    "forecastNote": "A highlighted cell means that, with that finish today, the racer should be at or above the semi-final line ({{slots}}th = {{rate}}) at the end of today. On days with more preliminaries tomorrow, it does not settle the semi-final. Racers with two or more preliminary races left today are not highlighted, because one finish alone does not decide it. \"Points needed\" is what it takes to reach that line, counting only today's carded preliminary races (it changes if there are more preliminaries tomorrow).",
     "forecastNoteNoBorder": "The score rate you would have after that finish. Assumes a clean finish.",
     "colNeeded": "Points needed",
     "neededPoints": "{{points}}",
-    "neededUnreachable": "Out of reach",
+    "neededPointsRuns": "{{runs}} races today",
+    "neededUnreachable": "Out of reach today",
     "forecastDetailSummary": "How the line and the points needed are derived",
-    "forecastDetail": "The line is the score rate of the {{slots}}th racer when the preliminaries ended. It can differ from the real border by a few places (measured: 0.07 at Wakamatsu G1, 0.83 at a Kiryu general meet — we cannot exclude racers who withdrew mid-series or were excluded from prizes, and general meets do not always pick semi-finalists purely by score rate). Points needed = line x (runs so far + remaining runs) - points so far, where remaining runs are the carded preliminary races for today (some racers run twice, so it differs per racer). It assumes a clean finish, and we never call it a lock.",
+    "forecastDetail": "The line is the score rate of the {{slots}}th racer when the preliminaries ended. It can differ from the real border by a few places (measured: 0.07 at Wakamatsu G1, 0.83 at a Kiryu general meet — where official remarks are not available, we cannot exclude racers who withdrew mid-series (known only after the final day) or were excluded from prizes for reasons other than a flying start, and general meets do not always pick semi-finalists purely by score rate). Points needed = line x (runs so far + remaining runs) - points so far, where remaining runs are the carded preliminary races for today (some racers run twice, so it differs per racer). It assumes a clean finish, and we never call it a lock.",
     "withdrawn": "N/A",
     "withdrawnTitle": "No start on the final day of the series, so treated as having withdrawn (the official table also drops mid-series withdrawals from the ranking)",
+    "awardExcluded": "Excl.",
+    "awardExcludedTitle": "Excluded from prizes per the official score table remarks (cannot ride the semi-final or final). Like the official table, we drop them from the ranking",
+    "flyingExcluded": "Excl. (F)",
+    "flyingExcludedTitle": "Excluded from prizes after a flying start (F) this series (cannot ride the semi-final or final). Like the official table, we drop them from the ranking. Our own judgement where the official remarks are not available",
     "absent": "Absent",
     "absentTitle": "Absent from every race so far this series, so no score rate or series rank (0 starts)",
     "absentNote": "\"Absent\" marks a racer who has not started any race so far this series. With 0 starts, there is no score rate or series rank.",
@@ -896,6 +924,9 @@
     "periodWinRate": "Win pts {{value}}",
     "periodTop2Rate": "Top-2 rate {{value}}",
     "periodAvgSt": "Avg. ST {{value}}",
+    "periodVsCurrent": "(race card, national {{current}}; {{diff}} from previous term)",
+    "periodCurrentOnly": "(race card, national {{current}})",
+    "periodDiffWithheldNote": "* For the first three months of a new term, the race-card figure still mostly covers the previous term, so the difference is not shown (shown for races from {{date}}).",
     "periodFetchError": "Could not load the previous term record",
     "meetScoreForecastTitle": "How today's finish moves the score rate",
     "meetScorePrelimOver": "Preliminary score rate {{rate}} ({{n}} runs, {{source}}, final)"
@@ -916,9 +947,23 @@
     "rowTilt": "Tilt",
     "rowAdjustmentWeight": "Adjustment weight",
     "rowPartsChanged": "Parts changed",
-    "rowPrevResult": "Previous race",
+    "rowPrevResult": "Earlier race today",
     "prevResultCourse": "Course {{course}}",
-    "prevResultNoRace": "First race of the event",
+    "prevResultNoRace": "None",
+    "meetFirstRace": "First race of the event",
+    "prevMark": {
+      "flying": "F",
+      "late": "L",
+      "absent": "Abs",
+      "capsized": "Cap",
+      "fell": "Fell",
+      "sank": "Sank",
+      "obstruction": "Obs",
+      "engineStall": "Eng",
+      "notFinished": "DNF",
+      "disqualified": "DQ",
+      "noPosition": "—"
+    },
     "rowTechnique": "Winning style",
     "rowReturnRate": "Win return rate",
     "noWins": "No wins",
@@ -996,7 +1041,7 @@
       "tilt": "Tilt",
       "adjustmentWeight": "Adj.wt",
       "partsChanged": "Parts",
-      "prevResult": "Prev.",
+      "prevResult": "Earlier today",
       "courseRate": "Lane",
       "returnRate": "Return",
       "technique": "Style"
@@ -1745,12 +1790,17 @@
     "noticeHeading": "⚠️ Notes"
   },
   "flyingBadge": {
-    "title": "{{n}} false start(s) this term, as printed on the race card. Resets when the term changes (May 1 / Nov 1)"
+    "title": "{{n}} false start(s) this term, as printed on the race card. Resets when the term changes (May 1 / Nov 1)",
+    "titleCurrentMeet": "{{n}} false start(s) this term, as printed on the race card. Includes one or more from the first day of this meet through yesterday (today's are not included). The racer still runs the rest of the meet but cannot advance to the semifinal or final. Resets when the term changes (May 1 / Nov 1)",
+    "currentMeet": "this meet",
+    "lateTitle": "{{n}} late start(s) (L) this term, as printed on the race card: crossing the start line 1 second or more late. Counted separately from false starts and from the \"Slow\" rate in the start timing card",
+    "legend": "F = false starts this term on the race card (gold: 1, red: 2). \"this meet\" means at least one of them was from the first day of this meet through yesterday (today's are not included). That racer still runs the rest of the meet but cannot advance to the semifinal or final. L = late starts this term"
   },
   "stConsideration": {
     "title": "Start timing",
     "subtitle": "Lower figure is the gap from the average for the same course and class",
-    "window": "Period {{start}}-{{end}}",
+    "window": "Average compared against: {{start}} to {{end}}",
+    "ownWindow": "The racer's figures count only races before this one",
     "gradeRow": "Class",
     "runsRow": "Starts",
     "stable": "Consistent",
@@ -1789,6 +1839,7 @@
     "dateLabel": "{{month}}/{{day}} R{{race}}",
     "older": "Older",
     "newer": "Newer",
+    "hiddenOlder": " (← {{n}} more to the left)",
     "flying": "F",
     "stRank": "(#{{n}})",
     "legend": "Top: course actually taken. Middle: finish. Bottom: start timing and its rank in that race"
