@@ -1499,6 +1499,19 @@ test.describe("レースページ再設計（BOA-168）", () => {
       /\d{4}-\d{2}-\d{2}/,
     );
     await expect(page.locator(".rbit-period-values")).toContainText("勝率");
+    // 前期の横に出走表の値（上のバーの既定と同じ公式値）と差を添える（BOA-439）。
+    // 平均STは出走表の値が無いので差を出さない。
+    // ファン評価で出た3点を固定する: 出走表の勝率は期替わりで数え直されないので
+    // 「今期」と呼ばない／バーを当地にしても全国のままなので「全国」と書く／
+    // 差の向きを「前期から」で示す。2連対率の差はポイント差なので pt
+    const periodDiffs = page.locator(".rbit-period-diff");
+    await expect(periodDiffs.first()).toHaveText(
+      /^（出走表・全国 \d+\.\d{2}、前期から[+−±]\d+\.\d{2}）$/,
+    );
+    await expect(periodDiffs.nth(1)).toHaveText(
+      /^（出走表・全国 \d+\.\d%、前期から[+−±]\d+\.\dpt）$/,
+    );
+    await expect(page.locator(".rbit-period-note")).toHaveCount(0);
 
     // この表が全コース込みであることと、今日の枠での走数を常時出す
     // （ボートレースファンのレビュー指摘A: 外枠専業の選手と枠が均等に回る選手で
@@ -1534,6 +1547,40 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(how.locator("p").first()).toBeVisible();
     await expect(how).toContainText("最終日は優勝戦を含み");
     await expect(how).toContainText("母数が他の行と違います");
+
+    // 期が替わって3か月は差を出さない（ファン評価2周目）。出走表の勝率は期の区切りで
+    // 数え直されず、5月の値の大半は前期と同じ期間の成績のため
+    await page.goto("/race/2026-05-02-02-04");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await page.locator(".rbit-bar-row").nth(1).click();
+    await page.locator(".rbit-expanded-tab", { hasText: "条件別" }).click();
+    await expect(page.locator(".rbit-period-diff").first()).toHaveText(
+      /^（出走表・全国 \d+\.\d{2}）$/,
+      { timeout: 25000 },
+    );
+    await expect(page.locator(".rbit-period-note")).toContainText(
+      "2026-08-01以降のレースで出します",
+    );
+
+    // 英語の長い文言が375pxで枠からはみ出して切れない（ファン評価3周目。
+    // 括弧を折り返し禁止にしていたときは右へ32pxはみ出していた）
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/en/race/2026-09-21-02-05");
+    await page.locator(".race-tabs-btn", { hasText: "Basic Info" }).click();
+    await page.locator(".rbit-bar-row").first().click();
+    await page.locator(".rbit-expanded-tab").nth(2).click();
+    await expect(page.locator(".rbit-period-diff").nth(1)).toBeVisible({
+      timeout: 25000,
+    });
+    const overflow = await page.evaluate(() => {
+      const box = document
+        .querySelector(".rbit-period")
+        .getBoundingClientRect();
+      return [...document.querySelectorAll(".rbit-period-diff")].map(
+        (e) => e.getBoundingClientRect().right - box.right,
+      );
+    });
+    for (const px of overflow) expect(px).toBeLessThanOrEqual(0.5);
   });
 
   test("勝率が全行1%未満に潰れる選手には3連対率への導線を出す（phase a T5-2、ファン視点レビュー指摘D）", async ({
@@ -1566,6 +1613,201 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(
       page.locator(".rbit-conditions-table tbody tr").first(),
     ).not.toContainText("0.0%");
+  });
+
+  test("枠別情報のコース別「直近1ヶ月」の帯は、表示どおり左が古く右が新しい（BOA-601）", async ({
+    page,
+  }) => {
+    // 2026-09-29 戸田12R の1号艇。以前は左端が最新の 9/29 12R、右端が 9/10 で、
+    // 帯の上の「古い → 新しい」と逆だった
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    const btn = page.getByRole("button", { name: /直近1ヶ月/ }).first();
+    await btn.waitFor({ timeout: 30000 });
+    await btn.click();
+    const items = page.locator(".rrb-strip").first().locator(".rrb-item");
+    await expect(items.first()).toBeVisible({ timeout: 30000 });
+    const ids = await items.evaluateAll((els) => els.map((e) => e.title));
+    expect(ids.length).toBeGreaterThan(1);
+    expect(ids).toEqual([...ids].sort());
+
+    // 375pxでは1段の横スクロールで、開いたときに右端（最新）が見えている。
+    // 以前は5本×2段に折り返し、最新の走が2段目の右下に回っていた（ファン評価1周目）
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    const mBtn = page.getByRole("button", { name: /今期/ }).first();
+    await mBtn.waitFor({ timeout: 30000 });
+    await mBtn.click();
+    const strip = page.locator(".rrb-strip").first();
+    await expect(strip.locator(".rrb-item").first()).toBeAttached({
+      timeout: 30000,
+    });
+    const view = await strip.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const items = [...el.querySelectorAll(".rrb-item")];
+      const inView = (i) => {
+        const r = i.getBoundingClientRect();
+        return r.right <= box.right + 1 && r.left >= box.left - 1;
+      };
+      const rows = new Set(
+        items.map((i) => Math.round(i.getBoundingClientRect().top)),
+      );
+      return { rows: rows.size, lastInView: inView(items[items.length - 1]) };
+    });
+    expect(view).toEqual({ rows: 1, lastInView: true });
+    // 左に隠れた古い走の本数を軸に出す（3周目: 「古い」の下が一番古い走に見えた）
+    await expect(page.locator(".rrb-hidden-older").first()).toHaveText(
+      /左にあと\d+走/,
+    );
+    // 左端（いちばん古い走）までスクロールで戻れる
+    const firstReachable = await strip.evaluate((el) => {
+      el.scrollLeft = 0;
+      const box = el.getBoundingClientRect();
+      return (
+        el.querySelector(".rrb-item").getBoundingClientRect().left >=
+        box.left - 1
+      );
+    });
+    expect(firstReachable).toBe(true);
+    await expect(page.locator(".rrb-hidden-older")).toHaveCount(0);
+    // 左端まで戻した状態で別の期間を押しても、右端（最新）が見える位置で開く
+    // （ファン評価2周目: 件数と最新の走が同じ期間だと送り直されなかった）
+    await page
+      .getByRole("button", { name: /直近3ヶ月/ })
+      .first()
+      .click();
+    await expect
+      .poll(() =>
+        page
+          .locator(".rrb-strip")
+          .first()
+          .evaluate(
+            (el) => el.scrollLeft + el.clientWidth >= el.scrollWidth - 1,
+          ),
+      )
+      .toBe(true);
+  });
+
+  test("基本情報の直近10走で、同じ日の2走も古い順（Rの小さい順）に並ぶ（BOA-588）", async ({
+    page,
+  }) => {
+    // 2026-09-29 戸田12R の1号艇: 9/27 と 9/28 に2走ずつある。以前は日付は古い順
+    // なのに、同じ日の中だけ「12R → 5R」と新しい順になっていた
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const bar = page.locator(".rbit-bar-row").first();
+    await bar.waitFor({ timeout: 30000 });
+    await bar.click();
+    const table = page.locator(".race-history-table").first();
+    await table.waitFor({ timeout: 30000 });
+    const rows = await table.locator("tbody tr").evaluateAll((trs) =>
+      trs.map((tr) => {
+        const cells = [...tr.querySelectorAll("td")].map((td) =>
+          td.textContent.trim(),
+        );
+        return {
+          date: cells.find((c) => /^\d{4}-\d{2}-\d{2}$/.test(c)) ?? null,
+          raceNo: Number(cells.find((c) => /^\d+R$/.test(c))?.slice(0, -1)),
+        };
+      }),
+    );
+    // 同じ日が2走以上ある日が、少なくとも1つあること（前提の確認）
+    const sameDay = rows.filter(
+      (r, i) => i > 0 && r.date !== null && r.date === rows[i - 1].date,
+    );
+    expect(sameDay.length).toBeGreaterThan(0);
+    // 表全体が「日付 → R」の古い順になっている
+    for (let i = 1; i < rows.length; i += 1) {
+      const prev = rows[i - 1];
+      const cur = rows[i];
+      if (prev.date === cur.date)
+        expect(cur.raceNo).toBeGreaterThan(prev.raceNo);
+      else expect(cur.date > prev.date).toBe(true);
+    }
+  });
+
+  test("今節タブ: en・zh-TW の375pxで6艇の表がカードからはみ出さず、必要得点に残りの走数を添える（BOA-596）", async ({
+    page,
+  }) => {
+    // 以前は en で9px、zh-TW で20px、表がカードの右へはみ出していた
+    // （列見出し「Score rate」「Series rank」と「第12名並列」「6.86（第34名）」が長い）
+    await page.setViewportSize({ width: 375, height: 812 });
+    for (const lang of ["en", "zh-TW"]) {
+      await page.goto(`/${lang}/race/2026-09-26-13-04`);
+      await page.locator(".race-tabs-btn").nth(2).click();
+      const table = page.locator(".rmt-compare");
+      await table.waitFor({ timeout: 30000 });
+      const over = await table.evaluate((t) => {
+        const card = t.closest(".rmt-card") ?? t.parentElement;
+        const right = card.getBoundingClientRect().right;
+        return Math.max(
+          ...[...t.querySelectorAll("tr")].map(
+            (tr) => tr.getBoundingClientRect().right - right,
+          ),
+        );
+      });
+      expect(over).toBeLessThanOrEqual(0.5);
+    }
+
+    // 必要得点は今日の残りの予選ぶんを足した点数。早見は次の1走だけなので、
+    // 2走残っていれば走数を添える（尼崎 2026-09-27 5R の塩田: 1着でも6.00で
+    // 目安6.17に届かないのに、必要得点は17だけと出ていた）
+    await page.goto("/race/2026-09-27-13-05");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const shiota = page
+      .locator(".rmt-forecast-table tr")
+      .filter({ hasText: "塩田" })
+      .first();
+    await expect(shiota.locator(".rmt-needed-runs")).toHaveText("今日2走で", {
+      timeout: 30000,
+    });
+    // 以前は町田が6着でも色付きで、同じ行の「必要得点7（2走で）」と逆だった
+    // （ファン評価1周目）
+    const machida = page
+      .locator(".rmt-forecast-table tr")
+      .filter({ hasText: "町田" })
+      .first();
+    // 今日2走残る選手の行は色を付けない（2周目: 「7.00なのに色なし」と
+    // 読まれた基準のずれをなくす）。1走だけの選手（浜野）は従来どおり
+    await expect(machida.locator("td.is-in-border:not(.rmt-rate)")).toHaveCount(
+      0,
+    );
+    // 走数は2行目に小さく出し、375pxで早見の3着まで最初の画面に入る
+    await page.setViewportSize({ width: 375, height: 812 });
+    const third = await page.locator(".rmt-forecast-scroll").evaluate((el) => {
+      const th = el.querySelectorAll("thead th");
+      const box = el.getBoundingClientRect();
+      const cell = [...th].find((x) => /^3/.test(x.textContent.trim()));
+      return cell ? cell.getBoundingClientRect().right - box.right : null;
+    });
+    expect(third).not.toBeNull();
+    expect(third).toBeLessThanOrEqual(0.5);
+  });
+
+  test("今節タブのSTの前走は、直前の走がFならFと出し、Fを飛ばして1つ前の走のSTを出さない（BOA-597）", async ({
+    page,
+  }) => {
+    // 2026-09-30 平和島11R: 古川誠之は同じ日の4RでF。以前は推移の右端と詳細が
+    // 「前走 0.09」（9/29 11R の値）になっていた
+    await page.goto("/race/2026-09-30-04-11");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    const row = page.locator(".rmt-trend-row").filter({ hasText: "古川" });
+    await expect(row.locator(".rmt-trend-last")).toHaveText("F", {
+      timeout: 30000,
+    });
+    // 前走が F なので、1つ前の走に「前走」の大きい点（r=3.2）を付けない
+    // （ファン評価1周目: 右端は F なのに大きい点が 0.09 の走に付いていた）
+    await expect(row.locator('circle[r="3.2"]')).toHaveCount(0);
+    const other = page.locator(".rmt-trend-row").filter({ hasNotText: "古川" });
+    await expect(other.first().locator('circle[r="3.2"]')).toHaveCount(1);
+    await row.click();
+    await expect(page.locator(".rmt-spark-foot").first()).toContainText(
+      "前走 F",
+    );
+    await expect(
+      page.locator(".rmt-spark").first().locator('circle[r="3.2"]'),
+    ).toHaveCount(0);
   });
 
   test("今節Fの選手は賞典除外として順位から外し、必要得点を出さない（BOA-587）", async ({
@@ -1947,7 +2189,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
       expect(days[i].left).toBeGreaterThan(days[i - 1].right);
   });
 
-  test("375pxで履歴の表の着順が初期表示に入り、本日の前走を未取得のときに「今節初戦」と言い切らない（BOA-569）", async ({
+  test("375pxで履歴の表の着順が初期表示に入り、前走の公式の記号を言語ごとの表記で出す（BOA-569）", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
@@ -1975,30 +2217,13 @@ test.describe("レースページ再設計（BOA-168）", () => {
     expect(pos.index).toBe(3);
     expect(pos.right).toBeLessThanOrEqual(pos.wrapRight);
 
-    // 2026-06-22 尼崎12R（優勝戦）: 前走の列が6艇とも未取得。以前は6艇とも
-    // 「今節初戦」と出ていた
-    await page.goto("/race/2026-06-22-13-12");
-    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
-    const prevRow = page.locator("tr", { hasText: "本日の前走" }).first();
-    await prevRow.waitFor({ timeout: 30000 });
-    await expect(prevRow).not.toContainText("今節初戦");
-
-    // 前走の列は「同じ日の前の走」なので見出しを「本日の前走」にする。4日目の5R
-    // （2026-09-26 津）で、その日まだ走っていない5艇は「初走」、1R を走った6号艇
-    // だけ前走が出る（以前は5艇に「今節初戦」と出ていた。ファン評価）
-    await page.goto("/race/2026-09-26-09-05");
-    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
-    const prevRow2 = page.locator("tr", { hasText: "本日の前走" }).first();
-    await prevRow2.waitFor({ timeout: 30000 });
-    await expect(prevRow2).not.toContainText("今節初戦");
-    await expect(prevRow2).toContainText("初走");
-    await expect(prevRow2).toContainText(/\d着/);
-
     // 英語の画面で公式の記号（エ＝エンスト）を生のまま出さない（ファン評価2周目）。
     // 2026-09-30 戸田9R: 前の走がエンスト失格の艇がいる
     await page.goto("/en/race/2026-09-30-02-09");
     await page.locator(".race-tabs-btn", { hasText: "Basic Info" }).click();
-    const enRow = page.locator("tr", { hasText: "Earlier race today" }).first();
+    const enRow = page
+      .locator("tr", { hasText: "Last race this series" })
+      .first();
     await enRow.waitFor({ timeout: 30000 });
     await expect(enRow).toContainText("Eng");
     await expect(enRow).not.toContainText("エ");
@@ -2009,13 +2234,81 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(enHistory).toContainText("Eng");
     await expect(enHistory).not.toContainText("エ");
 
-    // 「今節の展示」が無い艇は「今節初戦」のまま（本日の前走の「初走」と取り違えない）。
+    // 「今節の展示」が無い艇は「今節初戦」のまま。
     // 2026-09-21 津1R は節の初日
     await page.goto("/race/2026-09-21-09-01");
     await page.locator(".race-tabs-btn", { hasText: "直前情報" }).click();
     const meetRow = page.locator("tr", { hasText: "今節展示情報" }).first();
     await meetRow.waitFor({ timeout: 30000 });
     await expect(meetRow).toContainText("今節初戦");
+  });
+
+  test("データ出走表の今節の前走は前日の走も拾い、節の初日の1Rは「今節初戦」（BOA-610）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // 2026-06-22 尼崎12R（優勝戦）: 公式の直前情報の前走（同じ日の前の走）は
+    // 6艇とも空。今節の前走は前日の走から出す（以前は6艇とも「今節初戦」）
+    await page.goto("/race/2026-06-22-13-12");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const prevRow = page.locator("tr", { hasText: "今節の前走" }).first();
+    await prevRow.waitFor({ timeout: 30000 });
+    await expect(prevRow).not.toContainText("今節初戦");
+    await expect(prevRow).toContainText("6/21 11R");
+
+    // 4日目の5R（2026-09-26 津）: その日まだ走っていない5艇も前日の走を出す。
+    // 1R を走った6号艇は同じ日の 1R（BOA-610。以前は5艇が「初走」）
+    await page.goto("/race/2026-09-26-09-05");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const prevRow2 = page.locator("tr", { hasText: "今節の前走" }).first();
+    await prevRow2.waitFor({ timeout: 30000 });
+    await expect(prevRow2).not.toContainText("今節初戦");
+    await expect(prevRow2.locator("td").nth(6)).toContainText("9/26 1R");
+    await expect(prevRow2.locator("td").nth(1)).toContainText("9/25 9R");
+
+    // 2026-09-30 児島7R の1号艇 西村拓也: 9/29 10R（5号艇・4コース進入で2着）が今節の前走。
+    // 公式の直前情報の前走は同じ日だけなので、以前は「今節初戦」と出ていた（BOA-610）
+    await page.goto("/race/2026-09-30-16-07");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const prevRow3 = page.locator("tr", { hasText: "今節の前走" }).first();
+    await prevRow3.waitFor({ timeout: 30000 });
+    const nishimura = prevRow3.locator("td").nth(1);
+    await expect(nishimura).toContainText("2着");
+    // 進入は4コース（公式のスタート情報）。枠番の5を出さない（ファン評価1周目 P0）
+    await expect(nishimura).toContainText("4コース");
+    await expect(nishimura).not.toContainText("5コース");
+    await expect(nishimura).toContainText("9/29 10R");
+    await expect(prevRow3).not.toContainText("今節初戦");
+
+    // 節の初日の1R は全艇「今節初戦」（2026-09-21 津1R）
+    await page.goto("/race/2026-09-21-09-01");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const prevRow4 = page.locator("tr", { hasText: "今節の前走" }).first();
+    await prevRow4.waitFor({ timeout: 30000 });
+    await expect(prevRow4.locator("td", { hasText: "今節初戦" })).toHaveCount(
+      6,
+    );
+    // 375px で「今節初／戦」と語の途中で折れない（ファン評価3周目）。
+    // 折れると行内要素の矩形が2つになる
+    const lineCounts = await prevRow4
+      .locator("td .drt-sub")
+      .evaluateAll((els) => els.map((el) => el.getClientRects().length));
+    expect(lineCounts).toEqual([1, 1, 1, 1, 1, 1]);
+  });
+
+  test("データ出走表の今節の前走は中止になったレースを飛ばす（BOA-610）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // 2026-09-22 戸田5R の5号艇: 前日の 9/21 5R は中止（出走表の行はあるが結果が無い）。
+    // 前走は 9/20 10R（4コース6着）。中止を拾うと「—」のまま残る
+    await page.goto("/race/2026-09-22-02-05");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const row = page.locator("tr", { hasText: "今節の前走" }).first();
+    await row.waitFor({ timeout: 30000 });
+    const boat5 = row.locator("td").nth(5);
+    await expect(boat5).toContainText("9/20 10R");
+    await expect(boat5).toContainText("6着");
   });
 
   test("着順が付かない走は、推移・比較表・日別の表で同じ公式の記号になる（BOA-537 ファン評価）", async ({
@@ -2129,6 +2422,38 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 25000,
     });
     await expect(page.locator(".flying-badge")).toHaveCount(0);
+  });
+
+  test("過去のレースでは、枠別情報の逃げ・決まり手が最新の集計（そのレースの日の時点ではない）だと明記する（BOA-608）", async ({
+    page,
+  }) => {
+    // 会場の逃げ・決まり手は「今日から見た直近の期間」の事前集計しか無い。
+    // 以前は6月のレースでも9月のレースでも同じ値が、何の断りもなく出ていた
+    await page.goto("/race/2026-09-26-09-05");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    const note = page.getByText(
+      /最新の集計です（期間 \d{4}-\d{2}-\d{2}〜\d{4}-\d{2}-\d{2}）/,
+    );
+    await expect(note.first()).toBeVisible({ timeout: 30000 });
+    await expect(note).toHaveCount(2);
+
+    // 注記を足しても、逃げシミュレーションの横棒と「くわしく見る」の見た目が
+    // 崩れない（ファン評価1周目: CSS の後ろ半分を消して、全レースで崩れていた）
+    const fill = page.locator(".nsc-fill").first();
+    await expect(fill).toBeVisible();
+    expect((await fill.boundingBox()).width).toBeGreaterThan(0);
+    const toggleHeight = await page
+      .locator(".nsc-detail-toggle")
+      .evaluate((el) => el.getBoundingClientRect().height);
+    expect(toggleHeight).toBeGreaterThanOrEqual(44);
+
+    // 当日のレース（E2E の時計は録画時刻の 2026-09-29）では出さない
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    await expect(page.locator(".nsc-card, .rwit-card").first()).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(page.getByText(/最新の集計です（期間/)).toHaveCount(0);
   });
 
   test("過去のレースの枠別情報とST考察に、そのレース自身と後日の走を入れない（BOA-603）", async ({

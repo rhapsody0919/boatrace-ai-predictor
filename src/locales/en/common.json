@@ -16,7 +16,9 @@
     "menuLabel": "More menu",
     "logoLabel": "Go to Ryujin Radar top page",
     "logoText": "Ryujin Radar",
-    "logoTagline": "Visualize boat racing. When in doubt, trust the data."
+    "logoTagline": "Visualize boat racing. When in doubt, trust the data.",
+    "themeToLight": "Switch to light theme",
+    "themeToDark": "Switch to dark theme"
   },
   "language": {
     "switchLabel": "Switch language",
@@ -324,7 +326,14 @@
     "awaitingResultBanner": "The deadline has passed, but the result hasn't been posted yet (data updates about once an hour).",
     "cancelledBanner": "This race has been cancelled.",
     "shareCancelled": "🏁 Ryujin Radar [{{date}}{{venue}} R{{raceNo}}]\n\nThis race has been cancelled.",
-    "shareNoPrediction": "🏁 Ryujin Radar [{{date}}{{venue}} R{{raceNo}}]\n\nRace card and data analysis, free to view"
+    "shareNoPrediction": "🏁 Ryujin Radar [{{date}}{{venue}} R{{raceNo}}]\n\nRace card and data analysis, free to view",
+    "sharePrediction": {
+      "v1": "🏁 Ryujin Radar Prediction [{{date}}{{venue}} R{{raceNo}}]\n\nModel: {{model}}\nTop pick: Boat {{topPick}}\nPicks: {{top3}}\n\nBased on the turn prediction, this order looks likely!\nThe data looks promising too 👀",
+      "v2": "🏁 Ryujin Radar Prediction [{{date}}{{venue}} R{{raceNo}}]\n\nModel: {{model}}\nTop pick: Boat {{topPick}}\nPicks: {{top3}}\n\nAfter analyzing the first-mark turn prediction and motor performance,\nI'm keeping an eye on this combination 📊",
+      "v3": "🏁 Ryujin Radar Prediction [{{date}}{{venue}} R{{raceNo}}]\n\nModel: {{model}}\nTop pick: Boat {{topPick}}\nPicks: {{top3}}\n\nGreat to get predictions this sharp for free ✨\nFingers crossed for today!",
+      "v4": "🏁 Ryujin Radar Prediction [{{date}}{{venue}} R{{raceNo}}]\n\nModel: {{model}}\nTop pick: Boat {{topPick}}\nPicks: {{top3}}\n\nJudging by the turn prediction, this pick looks reliable!\nWhat do you think? 🤔",
+      "v5": "🏁 Ryujin Radar Prediction [{{date}}{{venue}} R{{raceNo}}]\n\nModel: {{model}}\nTop pick: Boat {{topPick}}\nPicks: {{top3}}\n\nHappy to see the hit rate climbing lately 😊\nGive the AI predictions a look!"
+    }
   },
   "home": {
     "introBannerText": "Ryujin Radar - Visualize boat racing. When in doubt, trust the data. | 45+ data points analyzed, including turn predictions and the Upset Index. Learn more →",
@@ -333,9 +342,7 @@
       "title": "Ryujin Radar's AI Boat Race Predictions",
       "lead": "Ryujin Radar is a data analysis site where AI predicts every race held at all 24 boat race venues in Japan, every day. It is completely free, with no sign-up required.",
       "method": "From each racer's win rate, average start timing and results by course, motor performance, and wind and wave data, we publish a first-turn development forecast and an \"inside upset index\" that shows how likely boat 1 is to lose, for every race.",
-      "statLabel": "Measured hit rate of the development forecast:",
-      "statNote": "(last {{count}} races; the share of races where one of the forecast patterns matched the course of the actual winner)",
-      "accuracyLink": "See our track record (breakdown by venue, in Japanese) →",
+      "accuracyLink": "See the results page (by venue, in Japanese) →",
       "hitRacesLink": "See races where the forecast was correct (in Japanese) →"
     },
     "freeAccessNoticeStrong": "100% Free, No Sign-up",
@@ -363,6 +370,13 @@
     "blogLastUpdated": "Blog last updated: {{date}}",
     "tbd": "TBD",
     "jstNote": " JST"
+  },
+  "cookieConsent": {
+    "textBeforeLink": "We use cookies to improve our service. For details, see our ",
+    "privacyLink": "Privacy Policy",
+    "textAfterLink": " (in Japanese).",
+    "accept": "Accept",
+    "reject": "Reject"
   },
   "footer": {
     "blog": "Blog",
@@ -560,6 +574,7 @@
     "fetchError": "Couldn't load the last 10 finishes. Please try again later",
     "recentFinishesNote": "Last 10 starts from course {{course}} (the course actually taken)",
     "kimariteTitle": "Winning techniques (all boats, last 90 days)",
+    "venueStatsAsOfToday": "* Latest figures ({{start}} to {{end}}), not as of this race's date",
     "kimariteCaveat": "* Share of each winning technique across all races and boats at this venue (not an individual racer's record)",
     "gridTitle": "Record by course",
     "gridSubtitle": "Based on the course actually taken. Tap a cell to see the last 10 starts from that course",
@@ -750,10 +765,10 @@
     "note": "Who needs a result in this series, and how the boat you pick has been running",
     "compareTitle": "The six in this series (by score rate)",
     "colBoat": "Boat / racer",
-    "colScore": "Score rate",
-    "colRank": "Series rank",
+    "colScore": "Score",
+    "colRank": "Rank",
     "colPretest": "Trial",
-    "rankTied": "{{rank}} (tied)",
+    "rankTied": "T{{rank}}",
     "rankPlain": "{{rank}}",
     "pretestRank": "{{rank}}",
     "compareSub": "{{total}} racers in this series.",
@@ -802,11 +817,12 @@
     "trendFinishHeader": "Below dots: finish",
     "forecastTitle": "Score-rate outlook (how today's finish moves it)",
     "forecastRankHeader": "{{rank}}",
-    "forecastNote": "A highlighted cell means that finish should reach the semi-final line ({{slots}}th = {{rate}}). \"Points needed\" is what it takes to reach that line.",
+    "forecastNote": "A highlighted cell means that, with that finish today, the racer should be at or above the semi-final line ({{slots}}th = {{rate}}) at the end of today. On days with more preliminaries tomorrow, it does not settle the semi-final. Racers with two or more preliminary races left today are not highlighted, because one finish alone does not decide it. \"Points needed\" is what it takes to reach that line, counting only today's carded preliminary races (it changes if there are more preliminaries tomorrow).",
     "forecastNoteNoBorder": "The score rate you would have after that finish. Assumes a clean finish.",
     "colNeeded": "Points needed",
     "neededPoints": "{{points}}",
-    "neededUnreachable": "Out of reach",
+    "neededPointsRuns": "{{runs}} races today",
+    "neededUnreachable": "Out of reach today",
     "forecastDetailSummary": "How the line and the points needed are derived",
     "forecastDetail": "The line is the score rate of the {{slots}}th racer when the preliminaries ended. It can differ from the real border by a few places (measured: 0.07 at Wakamatsu G1, 0.83 at a Kiryu general meet — where official remarks are not available, we cannot exclude racers who withdrew mid-series (known only after the final day) or were excluded from prizes for reasons other than a flying start, and general meets do not always pick semi-finalists purely by score rate). Points needed = line x (runs so far + remaining runs) - points so far, where remaining runs are the carded preliminary races for today (some racers run twice, so it differs per racer). It assumes a clean finish, and we never call it a lock.",
     "withdrawn": "N/A",
@@ -908,6 +924,9 @@
     "periodWinRate": "Win pts {{value}}",
     "periodTop2Rate": "Top-2 rate {{value}}",
     "periodAvgSt": "Avg. ST {{value}}",
+    "periodVsCurrent": "(race card, national {{current}}; {{diff}} from previous term)",
+    "periodCurrentOnly": "(race card, national {{current}})",
+    "periodDiffWithheldNote": "* For the first three months of a new term, the race-card figure still mostly covers the previous term, so the difference is not shown (shown for races from {{date}}).",
     "periodFetchError": "Could not load the previous term record",
     "meetScoreForecastTitle": "How today's finish moves the score rate",
     "meetScorePrelimOver": "Preliminary score rate {{rate}} ({{n}} runs, {{source}}, final)"
@@ -928,9 +947,10 @@
     "rowTilt": "Tilt",
     "rowAdjustmentWeight": "Adjustment weight",
     "rowPartsChanged": "Parts changed",
-    "rowPrevResult": "Earlier race today",
+    "rowPrevResult": "Last race this series",
     "prevResultCourse": "Course {{course}}",
-    "prevResultNoRace": "None",
+    "prevResultWhen": "{{month}}/{{day}} R{{race}}",
+    "prevResultPending": "Awaiting result",
     "meetFirstRace": "First race of the event",
     "prevMark": {
       "flying": "F",
@@ -1022,7 +1042,7 @@
       "tilt": "Tilt",
       "adjustmentWeight": "Adj.wt",
       "partsChanged": "Parts",
-      "prevResult": "Earlier today",
+      "prevResult": "Last (series)",
       "courseRate": "Lane",
       "returnRate": "Return",
       "technique": "Style"
@@ -1820,6 +1840,7 @@
     "dateLabel": "{{month}}/{{day}} R{{race}}",
     "older": "Older",
     "newer": "Newer",
+    "hiddenOlder": " (← {{n}} more to the left)",
     "flying": "F",
     "stRank": "(#{{n}})",
     "legend": "Top: course actually taken. Middle: finish. Bottom: start timing and its rank in that race"

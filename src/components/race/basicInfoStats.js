@@ -534,6 +534,60 @@ export function buildConditionRows(records, { venueCode, metric }) {
   });
 }
 
+// 期の初めから、前期との差を出さない月数（periodDiffShownFrom）
+export const PERIOD_DIFF_WITHHELD_MONTHS = 3;
+
+/**
+ * 前期との差を出さずにおく期間の終わり（その日から差を出す、純関数、BOA-439）。
+ *
+ * 出走表の勝率・2連率は期の区切りで数え直されず、直近の成績を転がして数えた値。
+ * 期が替わってしばらくは中身の大半が前期のレースで、前期の確定値との差は
+ * 「今期の調子」ではなく集計の窓のずれにすぎない（2026-09-30実測: 前期の確定値との
+ * 平均差は、期末の4/30でも0.06、5月0.07〜0.13、9月0.38）。期の初めから3か月は
+ * 差を出さず、出走表の値だけを並べる（ファン評価2周目・オーケストレーター判断）。
+ *
+ * @param {string|null} calcTo 前期の算出期間の終わり（例 "2026-04-30"）
+ * @returns {string|null} 差を出し始める日（例 "2026-08-01"）。calcTo が読めなければ null
+ */
+export function periodDiffShownFrom(calcTo) {
+  const m = /^(\d{4})-(\d{2})-\d{2}$/.exec(calcTo ?? "");
+  if (!m) return null;
+  // 算出期間の終わりの翌月が今期の初め。そこから3か月後の1日
+  const index = Number(m[1]) * 12 + (Number(m[2]) - 1) + 1 + PERIOD_DIFF_WITHHELD_MONTHS;
+  const y = Math.floor(index / 12);
+  const mo = (index % 12) + 1;
+  return `${y}-${String(mo).padStart(2, "0")}-01`;
+}
+
+/**
+ * 前期と出走表の値の差（純関数、BOA-439）。どちらも公式の値（勝率は点、2連対率は%）。
+ * 自社集計の1着率%と混ぜない。どちらかが無ければ null。
+ *
+ * @param {number|null} prev 前期の値
+ * @param {number|string|null} current 出走表の値（race_entries は文字列で返ることがある）
+ * @param {number} digits 小数の桁（勝率2・2連対率1）
+ * @returns {{current: string, diff: string, sign: -1|0|1}|null}
+ */
+export function periodDiff(prev, current, digits) {
+  if (prev === null || prev === undefined) return null;
+  if (current === null || current === undefined || current === "") return null;
+  const cur = Number(current);
+  if (!Number.isFinite(cur) || !Number.isFinite(prev)) return null;
+  // 表示する桁に丸めてから引く。丸める前で引くと「25.6 → 出走表31.3（+5.6）」のように、
+  // 画面の数字どうしを引いた値と食い違う
+  const scale = 10 ** digits;
+  const round = (v) => Math.round(v * scale);
+  const d = (round(cur) - round(prev)) / scale;
+  const sign = d > 0 ? 1 : d < 0 ? -1 : 0;
+  const abs = Math.abs(d).toFixed(digits);
+  // 負号は全角のマイナス記号（−）。ハイフンより数字と並べて読みやすい
+  return {
+    current: (round(cur) / scale).toFixed(digits),
+    diff: sign > 0 ? `+${abs}` : sign < 0 ? `−${abs}` : `±${abs}`,
+    sign,
+  };
+}
+
 /**
  * 「前期」（`racer_period_stats`）の1選手分を表示用に整える（純関数）。
  *
@@ -597,6 +651,32 @@ export function buildMeetResults(records, { raceId, venueCode }) {
   // `groupIntoMeetBeforeRace` が行う（直前情報タブの今節展示情報と同じ切り方、BOA-591）
   const candidates = all.map((r) => ({ race_id: r.raceId, record: r }));
   return groupIntoMeetBeforeRace(candidates, raceId).map((m) => m.record);
+}
+
+/**
+ * 「前走」のST（純関数、BOA-597）。最後の走から遡り、STの無い記号の走
+ * （F＝フライング、L＝出遅れ）に当たったらその記号を返す。
+ *
+ * F・L の走は ST を異常値として落としている（null）ので、「数値のある最後の走」を
+ * 採ると**直前のFを飛ばして1つ前の走のST**を「前走」と出してしまう
+ * （2026-09-30 平和島11Rの古川誠之: 4RでFなのに「前走 0.09」＝9/29の値）。
+ * 欠場など ST も記号も無い走は、今どおり飛ばす。
+ *
+ * @param {Array<Object>} runs 走った順（古い順）
+ * @param {{valueOf: (run: Object) => unknown, markOf: (run: Object) => string|null}} accessors
+ *   markOf はその走が F・L なら記号、それ以外は null
+ * @returns {{mark: string|null, value: number|null}|null} 該当が無ければ null
+ */
+export function lastStartTiming(runs, { valueOf, markOf }) {
+  const list = Array.isArray(runs) ? runs : [];
+  for (let i = list.length - 1; i >= 0; i -= 1) {
+    const run = list[i];
+    const mark = markOf(run);
+    if (mark) return { mark, value: null };
+    const value = valueOf(run);
+    if (typeof value === "number") return { mark: null, value };
+  }
+  return null;
 }
 
 /** 今節の平均STが通常値とこれだけ違えば「踏んでいる／慎重」と言い切る閾値（秒） */

@@ -541,3 +541,23 @@
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
 }
+
+/* 前期の値の横に添える今期との差（BOA-439）。向きは符号（+/−）で示し、色だけに頼らない */
+.rbit-period-note {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.rbit-period-diff {
+  /* 375pxで2連対率の括弧が「前期から / −12.3pt）」と途中で割れるので、
+     inline-block で括弧ごと次の行へ送る。折り返し自体は止めない（nowrap にすると
+     英語の長い文言が375px以下で枠からはみ出して切れた）。inline-block は先頭の
+     空白を消すので、値との間は文言の空白ではなく margin で空ける */
+  display: inline-block;
+  max-width: 100%;
+  margin-left: 0.25em;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}

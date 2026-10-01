@@ -16,7 +16,9 @@
     "menuLabel": "更多選單",
     "logoLabel": "回到龍神雷達首頁",
     "logoText": "龍神雷達",
-    "logoTagline": "讓賽艇數據視覺化。猶豫時，相信數據。"
+    "logoTagline": "讓賽艇數據視覺化。猶豫時，相信數據。",
+    "themeToLight": "切換為淺色主題",
+    "themeToDark": "切換為深色主題"
   },
   "language": {
     "switchLabel": "切換語言",
@@ -320,7 +322,14 @@
     "awaitingResultBanner": "已過截止時間，但結果尚未更新（資料約每小時更新一次）",
     "cancelledBanner": "本場比賽已中止",
     "shareCancelled": "🏁 龍神雷達【{{date}}{{venue}}{{raceNo}}R】\n\n本場比賽已中止",
-    "shareNoPrediction": "🏁 龍神雷達【{{date}}{{venue}}{{raceNo}}R】\n\n免費公開出賽表與數據分析"
+    "shareNoPrediction": "🏁 龍神雷達【{{date}}{{venue}}{{raceNo}}R】\n\n免費公開出賽表與數據分析",
+    "sharePrediction": {
+      "v1": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n根據轉彎預測分析，這個順序很有機會！\n從數據來看也值得期待👀",
+      "v2": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n分析第一轉彎標的轉彎預測與馬達性能後，\n我很看好這個組合📊",
+      "v3": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n能免費看到這麼精準的預測真開心✨\n希望今天也能命中！",
+      "v4": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n從轉彎預測來看，這個預測似乎很可靠！\n大家覺得呢？🤔",
+      "v5": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n最近命中率越來越高，好開心😊\n歡迎參考AI預測！"
+    }
   },
   "home": {
     "introBannerText": "龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。| 分析轉彎預測、內道崩盤指數等45項以上數據。了解更多 →",
@@ -329,8 +338,6 @@
       "title": "龍神雷達的賽艇AI預測",
       "lead": "龍神雷達是由AI每天預測日本全國24座賽艇場所有比賽的數據分析網站。完全免費，無需註冊。",
       "method": "我們根據選手的勝率、平均起跑時機、各水道成績、馬達成績以及風浪數據，為每場比賽提供第一彎道的展開預測，以及顯示1號艇是否容易落敗的「內道崩潰指數」。",
-      "statLabel": "展開預測的實測命中率：",
-      "statNote": "（過去{{count}}場比賽。預測的展開模式之一與實際第1名艇的水道一致的比例）",
       "accuracyLink": "查看成績（各賽場明細，日文頁面）→",
       "hitRacesLink": "查看展開預測命中的比賽一覽（日文頁面）→"
     },
@@ -359,6 +366,13 @@
     "blogLastUpdated": "部落格最後更新：{{date}}",
     "tbd": "未定",
     "jstNote": " JST"
+  },
+  "cookieConsent": {
+    "textBeforeLink": "本網站使用 Cookie 以提升服務品質。詳情請參閱",
+    "privacyLink": "隱私權政策",
+    "textAfterLink": "（日文頁面）。",
+    "accept": "同意",
+    "reject": "拒絕"
   },
   "footer": {
     "blog": "部落格",
@@ -555,6 +569,7 @@
     "fetchError": "無法取得最近10場資料，請稍後再試",
     "recentFinishesNote": "從第{{course}}航道（實際進入的航道）出賽的最近10場",
     "kimariteTitle": "獲勝方式傾向（全艇・最近90天）",
+    "venueStatsAsOfToday": "※此為最新的統計（期間 {{start}}〜{{end}}），並非本場比賽當日的數值",
     "kimariteCaveat": "※本場館所有比賽・所有艇合計的獲勝方式比例（非選手個人實績）",
     "gridTitle": "各航道成績",
     "gridSubtitle": "以實際進入的航道為準。點擊儲存格可查看該航道最近10次出賽",
@@ -748,14 +763,14 @@
     "colScore": "得分率",
     "colRank": "梯次名次",
     "colPretest": "前檢",
-    "rankTied": "第{{rank}}名並列",
+    "rankTied": "並列第{{rank}}",
     "rankPlain": "第{{rank}}名",
     "pretestRank": "第{{rank}}名",
     "compareSub": "本梯次共{{total}}人。",
     "compareSubExcluded": "本梯次共{{all}}人（列入名次{{total}}人，不含獎典除外・中途歸鄉{{excluded}}人）。",
     "borderLine": "準優門檻為第{{slots}}名（{{rate}}）。",
     "rankTiedTitle": "同分{{tied}}人",
-    "pretestCell": "{{time}}（第{{rank}}名）",
+    "pretestCell": "{{time}}（第{{rank}}）",
     "rowHint": "點選該列，下方詳情會切換為該選手。",
     "classTitle": "級別",
     "finishSeparator": "・",
@@ -797,11 +812,12 @@
     "trendFinishHeader": "點下方＝名次",
     "forecastTitle": "得分率早見（今日名次會這樣變動）",
     "forecastRankHeader": "第{{rank}}名",
-    "forecastNote": "有底色的格子代表取得該名次就有望達到準優門檻（第{{slots}}名＝{{rate}}）。所需得分是達到門檻所需的分數。",
+    "forecastNote": "有底色的格子代表今天取得該名次，今天結束時有望位於準優門檻（第{{slots}}名＝{{rate}}）以上。明天仍有預賽的日子，並不代表已確定晉級準優。今天預賽還剩2場以上的選手，只看1場的名次無法判斷，因此不上色。所需得分是達到門檻所需的分數，只計算今天已排定的預賽場次（明天仍有預賽時會改變）。",
     "forecastNoteNoBorder": "取得該名次後的得分率。以無事故完賽為前提。",
     "colNeeded": "所需得分",
     "neededPoints": "{{points}}",
-    "neededUnreachable": "無法達到",
+    "neededPointsRuns": "今天{{runs}}場內",
+    "neededUnreachable": "今天無法達到",
     "forecastDetailSummary": "門檻與所需得分的算法",
     "forecastDetail": "門檻採用預賽結束時第{{slots}}名的得分率。與實際門檻可能相差數位（實測: 若松G1差0.07、桐生一般賽差0.83。沒有官方備註的梯次，本站資料無法排除中途歸鄉（最後一天才能判定）與F以外原因的獎典除外選手，且一般賽的準優人選不一定只看得分率）。所需得分＝門檻×(目前場次+剩餘場次)−目前得分，剩餘場次以當日已排定的預賽計算（有選手一天兩場，因人而異）。以無事故完賽為前提，不使用「確定晉級」的說法。",
     "withdrawn": "不列入",
@@ -903,6 +919,9 @@
     "periodWinRate": "勝率 {{value}}",
     "periodTop2Rate": "2連對率 {{value}}",
     "periodAvgSt": "平均ST {{value}}",
+    "periodVsCurrent": "（出走表・全國 {{current}}，較前期 {{diff}}）",
+    "periodCurrentOnly": "（出走表・全國 {{current}}）",
+    "periodDiffWithheldNote": "※換期後的3個月內，出走表數值大部分仍是與前期相同期間的成績，因此不顯示與前期的差（{{date}}以後的比賽才顯示）。",
     "periodFetchError": "無法取得前期成績",
     "meetScoreForecastTitle": "今日名次會讓得分率這樣變動",
     "meetScorePrelimOver": "預賽得分率 {{rate}}（{{n}}場・{{source}}・已確定）"
@@ -923,9 +942,10 @@
     "rowTilt": "傾角",
     "rowAdjustmentWeight": "調整重量",
     "rowPartsChanged": "零件交換",
-    "rowPrevResult": "本日前一場",
+    "rowPrevResult": "本梯次前一場",
     "prevResultCourse": "{{course}}道",
-    "prevResultNoRace": "首戰",
+    "prevResultWhen": "{{month}}/{{day}} {{race}}R",
+    "prevResultPending": "等待結果",
     "meetFirstRace": "本節首戰",
     "prevMark": {
       "flying": "F",
@@ -1017,7 +1037,7 @@
       "tilt": "傾角",
       "adjustmentWeight": "調重",
       "partsChanged": "零件",
-      "prevResult": "本日前場",
+      "prevResult": "本梯次前場",
       "courseRate": "艇號",
       "returnRate": "回收率",
       "technique": "方式"
@@ -1812,6 +1832,7 @@
     "dateLabel": "{{month}}/{{day}} 第{{race}}場",
     "older": "較舊",
     "newer": "較新",
+    "hiddenOlder": "（← 左側還有{{n}}場）",
     "flying": "F",
     "stRank": "(第{{n}})",
     "legend": "上排為實際進入的航道，中排為名次，下排為起跑時間與該場的起跑順位"

@@ -24,14 +24,6 @@
   margin: 0 auto 0.75rem;
 }
 
-.home-ai-intro .home-ai-intro__stat {
-  color: var(--text-primary);
-}
-
-.home-ai-intro__rate {
-  font-size: 1.25rem;
-}
-
 .home-ai-intro__links {
   list-style: none;
   padding: 0;
