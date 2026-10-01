@@ -95,13 +95,6 @@ export const formatDateObject = (dateStr) => {
  * @returns {string} YYYY/M/D HH:MM 形式
  */
 /**
- * 金額フォーマット
- * @param {number} amount - 金額
- * @returns {string} カンマ区切り+円 (例: "1,234円")
- */
-export const formatPayout = (amount) => amount.toLocaleString() + "円";
-
-/**
  * 回収率フォーマット
  * @param {number} rate - 回収率 (1.0 = 100%)
  * @returns {string} パーセント文字列 (例: "125.5%")

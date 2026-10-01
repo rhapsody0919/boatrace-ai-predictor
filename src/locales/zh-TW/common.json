@@ -270,14 +270,14 @@
     "mark": {
       "flying": "F（偷跑、退款）",
       "late": "L（出發延遲、退款）",
-      "absent": "欠（缺席、退款）",
-      "capsized": "転（翻覆失格）",
-      "fell": "落（落水失格）",
-      "sank": "沈（沉沒失格）",
-      "obstruction": "妨（妨礙失格）",
-      "engineStall": "エ（引擎熄火失格）",
-      "notFinished": "不（未完賽失格）",
-      "disqualified": "失（失格）",
+      "absent": "缺賽（退款）",
+      "capsized": "翻覆（失格）",
+      "fell": "落水（失格）",
+      "sank": "沉沒（失格）",
+      "obstruction": "妨礙（失格）",
+      "engineStall": "熄火（失格）",
+      "notFinished": "未完賽（失格）",
+      "disqualified": "失格",
       "noPosition": "無名次（比賽不成立）",
       "refunded": "退款",
       "noPositionPlain": "無名次"
@@ -302,6 +302,7 @@
     "finish": "名次",
     "technique": "獲勝方式",
     "payout": "單勝派彩",
+    "payoutCell": "¥{{amount}}",
     "grades": {
       "ippan": "一般賽",
       "G1": "G1",
@@ -807,7 +808,7 @@
     "compareTrendRange": "橫軸為日期（{{from}}〜{{to}}）。一天出賽2場的日子左右錯開，選手未出賽的日子線會中斷。每列最後一個點是該選手的前一場。",
     "compareTrendRangeOneDay": "橫軸為日期（{{day}}）。當天出賽2場的選手左右錯開。每列最後一個點是該選手的前一場。",
     "compareTrendHint": "點選該列，下方的詳細資料會切換為該選手",
-    "compareTrendFinishNote": "點下方的數字是該場的名次（F＝偷跑，缺＝缺賽，轉、落、妨等為官方標記）。",
+    "compareTrendFinishNote": "點下方的數字是該場的名次。沒有名次的場次以記號顯示（F＝偷跑、缺賽、翻覆、熄火等，完整說明請點資料出賽表「本梯次前一場」列的 ?）。",
     "compareTrendEmpty": "尚無足夠場次可繪製走勢",
     "prelimOverNoteDay": "預賽已於第{{day}}天（{{date}}）結束。得分率就此確定，今日名次不會再改變。",
     "trendLastHeader": "前一場",
@@ -1863,6 +1864,12 @@
     "ledeDayPartial": "已確定{{n}}場中，已知決勝手法的{{m}}場為 {{techniques}}。",
     "loading": "讀取中..."
   },
+  "loadingScreen": {
+    "title": "資料載入中...",
+    "description": "請稍候",
+    "ariaLabel": "載入中"
+  },
+  "breadcrumbLabel": "導覽路徑",
   "listSeparator": "、",
   "termHintLabel": "查看用語說明",
   "termHints": {
