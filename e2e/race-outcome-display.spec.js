@@ -362,9 +362,33 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
       "拡連複 不成立（返還）",
     ]);
     // 4艇返還（正常スタート2艇）。スタート情報が取れなくても、返還艇の数から言える（BOA-558）
-    await expect(root.locator(".rr-payout-void-note")).toHaveText(
+    const voidNote = root.locator(".rr-payout-void-note");
+    await expect(voidNote).toHaveText(
       "正常にスタートした艇が2艇のため、複勝・3連単・3連複・2連複・拡連複は不成立（返還）です",
     );
+    // 375px でも勝式名を途中で折らず、表の説明として左寄せで読む（#1094 ファン評価1周目）
+    await page.setViewportSize({ width: 375, height: 812 });
+    const layout = await voidNote.evaluate((el) => {
+      const text = el.firstChild;
+      const lines = (word) => {
+        const i = text.textContent.indexOf(word);
+        const range = document.createRange();
+        range.setStart(text, i);
+        range.setEnd(text, i + word.length);
+        return new Set(
+          [...range.getClientRects()].map((r) => Math.round(r.top)),
+        ).size;
+      };
+      return {
+        align: getComputedStyle(el).textAlign,
+        words: ["複勝", "3連単", "3連複", "2連複", "拡連複"].map((w) => [
+          w,
+          lines(w),
+        ]),
+      };
+    });
+    expect(layout.align).toBe("left");
+    for (const [word, n] of layout.words) expect(n, word).toBe(1);
   });
 
   test("特払（2026-07-24 17R3）: 単勝は組番の位置に「特払」、金額なしの複勝は組番と「—」", async ({
