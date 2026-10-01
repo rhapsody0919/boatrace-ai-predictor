@@ -280,6 +280,17 @@ export default function RacerPerformanceStats({
     vcGradeValue,
     vcStageValue,
   ]);
+  // STの推移の縦軸。0 から 0.1 刻みで等間隔にする（自動だと 0.15・0.30・0.50 のように
+  // 上だけ間隔が広くなり、上の方の走の数を読み違えた。ファン評価1周目）
+  const stMax = Math.max(
+    0,
+    ...(vcData?.series ?? []).map((d) => d.start_timing ?? 0),
+  );
+  const stAxisTop = Math.max(0.3, Math.ceil(stMax * 10) / 10);
+  const stAxisTicks = Array.from(
+    { length: Math.round(stAxisTop * 10) + 1 },
+    (_, i) => Math.round(i * 10) / 100,
+  );
 
   // クロス集計（成績ブロック用。会場・枠番のどちらか一方だけ固定の場合のみ
   // 使う。両方固定/両方未固定はnull——それぞれ既存の単一カード/一覧表示を使う）
@@ -895,6 +906,9 @@ export default function RacerPerformanceStats({
             {hasVcData ? "2026年3月以降・最大過去2年" : "過去90日"}）
             {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
           </h3>
+          <p className="racer-stat-note">
+            1走ごとの展示タイム。下ほど速い。会場によって出方が違うので、会場をまたいだ上下は調子の変化とは限りません
+          </p>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart
               data={
@@ -940,7 +954,7 @@ export default function RacerPerformanceStats({
             {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
           </h3>
           <p className="racer-stat-note">
-            1走ごとの本番ST。下ほど速い（0がスタートライン）。赤い点はフライングの走で、線と平均からは外しています
+            1走ごとの本番ST。下ほど速い（0がスタートライン）。赤い点はフライングの走で、線には含めていません
           </p>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart
@@ -954,15 +968,21 @@ export default function RacerPerformanceStats({
               {/* 0 がスタートライン。下ほど速い（0 に近い）。目盛りは 0.05 刻み */}
               <YAxis
                 tick={{ fontSize: 11 }}
-                domain={[0, (max) => Math.max(0.3, Math.ceil(max * 20) / 20)]}
+                domain={[0, stAxisTop]}
+                ticks={stAxisTicks}
                 tickFormatter={(v) => v.toFixed(2)}
                 unit="秒"
                 width={56}
               />
               <Tooltip
-                formatter={(value, name) =>
+                formatter={(value, name, item) =>
                   name === "F"
-                    ? ["フライング", "F"]
+                    ? [
+                        item?.payload?.flyingSt != null
+                          ? `F${Number(item.payload.flyingSt).toFixed(2).replace(/^0/, "")}`
+                          : "フライング",
+                        "F",
+                      ]
                     : [`${value?.toFixed(2)}秒`, name]
                 }
                 labelFormatter={raceLabelOf}

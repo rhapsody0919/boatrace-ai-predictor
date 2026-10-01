@@ -4374,7 +4374,8 @@ export const supabaseDataService = {
     // exhibitionRank を足した（水面の影響を相殺するため）
     // v5: 欠場（absent）を足した（BOA-504）
     // v6: 着順が付かない走の公式の記号（finishMark）を足した（BOA-537）
-    return withCache(`racer-scoped-race-stats-v6-${racerId}`, async () => {
+    // v7: フライングの走の ST（flyingStartTiming）を足した（BOA-583。直近10走・今節の表で「F.01」と出すため）
+    return withCache(`racer-scoped-race-stats-v7-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4578,6 +4579,10 @@ export const supabaseDataService = {
               st && !st.is_flying && st.start_timing != null
                 ? st.start_timing
                 : null,
+            // フライングの走の ST。startTiming（平均・ST考察の母数）には入れず、表に「F.01」と
+            // 出すためだけに別に持つ（BOA-583。以前は直近10走・今節の表で「-」だった）
+            flyingStartTiming:
+              st?.is_flying && st.start_timing != null ? st.start_timing : null,
             // 実進入コース（BOA-257）。2025-12-04より前のレースや欠場艇はnull
             actualCourse: result[`actual_course_${entry.boat_number}`] ?? null,
             // 級別（そのレース時点の値）。ST考察のベースラインを(course, grade)で引く
@@ -8309,6 +8314,8 @@ export function aggregateRacerVenueBoatStats(
         // フライングの走は平均・線からは外すが、どこで切ったかは印で残す（BOA-583）。
         // 0（スタートライン）の位置に置く
         flying: row.isFlying ? 0 : null,
+        // ツールチップで F の深さ（F.01 か F.04 か）を出す
+        flyingSt: row.isFlying ? (row.startTiming ?? null) : null,
       });
     }
 

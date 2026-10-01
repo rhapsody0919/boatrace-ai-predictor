@@ -45,4 +45,41 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
       /^\d{2}-\d{2}-\d{2} .+ \d{1,2}R$/,
     );
   });
+
+  test("1024px: レース名が長い選手でも、レース一覧は単勝配当まで枠に収まる（ファン評価1周目）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1024, height: 900 });
+    // 選手5250: 全角英数字の長い節名（第２０回マンスリーＢＯＡＴＲＡＣＥ杯　男女Ｗ優勝戦）で 976/958 だった
+    await page.goto("/racer/5250");
+    const table = page.locator(".race-history-table").first();
+    await expect(table).toBeVisible({ timeout: 30000 });
+    const m = await table.evaluate((el) => {
+      const w = el.closest(".race-history-table-wrapper");
+      return { sw: w.scrollWidth, cw: w.clientWidth };
+    });
+    expect(m.sw).toBeLessThanOrEqual(m.cw);
+  });
+
+  test("フライングのSTは、直近10走・結果タブでも公式と同じ「F.01」（ファン評価1周目）", async ({
+    page,
+  }) => {
+    // 2026-09-22 児島1R: 山本修一（4069）がF.01。以前は直近10走で「-」、結果タブで「F0.01」
+    await page.goto("/race/2026-09-22-16-01");
+    await page.locator(".race-tabs-btn", { hasText: "結果" }).click();
+    await expect(
+      page.locator(".rr-st-value", { hasText: /^F/ }).first(),
+    ).toHaveText(/^F\.\d{2}$/, { timeout: 30000 });
+
+    // 2026-09-30 浜名湖6R の基本情報 → 山本修一（2号艇）の直近10走に 9/22 児島1R の F が入る
+    await page.goto("/race/2026-09-30-06-06");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await page.locator(".rbit-bar-row").nth(1).click();
+    const row = page
+      .locator(".race-history-table tr")
+      .filter({ hasText: "2026-09-22" })
+      .filter({ has: page.locator("td", { hasText: /^1R$/ }) })
+      .first();
+    await expect(row).toContainText("F.01", { timeout: 30000 });
+  });
 });

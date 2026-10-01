@@ -196,7 +196,11 @@ function RaceHistoryTable({
                         ? renderFinishMark(race.finishMark)
                         : t("basicInfo.finishUnknown"))}
                 </td>
-                {shows("raceTitle") && <td>{race.raceTitle ?? "-"}</td>}
+                {shows("raceTitle") && (
+                  <td className="race-history-table-title">
+                    {race.raceTitle ?? "-"}
+                  </td>
+                )}
                 {shows("grade") && (
                   <td>
                     {race.raceGrade
