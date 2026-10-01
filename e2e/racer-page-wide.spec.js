@@ -18,9 +18,9 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
     });
     expect(m.sw).toBeLessThanOrEqual(m.cw);
     // 平均STカードは絞り込みに連動しない日次集計の値（「桐生での平均ST」と読まれていた）
-    await expect(page.locator(".racer-stat-card h3", { hasText: "平均ST" }).first()).toHaveText(
-      "平均ST（全会場・全条件）",
-    );
+    await expect(
+      page.locator(".racer-stat-card h3", { hasText: "平均ST" }).first(),
+    ).toHaveText("平均ST（全会場・全条件）");
   });
 
   test("STの推移はフライングの走を赤い点で残し、ツールチップに会場とR番号を出す", async ({
@@ -122,4 +122,75 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
       .count();
     expect(dots).toBeLessThanOrEqual(50);
   });
+
+  for (const theme of ["dark", "light"]) {
+    test(`${theme}: 推移グラフのツールチップと軸の目盛りは、背景とのコントラスト比 4.5 以上（ユーザー確認）`, async ({
+      page,
+    }) => {
+      // ダークでツールチップが白地に白字になり、日付・R が読めなかった（目盛りも暗かった）
+      await page.addInitScript((t) => {
+        try {
+          localStorage.setItem("ryujin-radar-theme", t);
+        } catch {
+          // 保存できなくても data-theme を直接付ける
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      }, theme);
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto("/racer/4069");
+      const chart = page.locator(".racer-stat-chart").filter({
+        has: page.locator("h3", { hasText: "STの推移" }),
+      });
+      await expect(chart).toBeVisible({ timeout: 30000 });
+      await chart.scrollIntoViewIfNeeded();
+      const box = await chart.locator(".recharts-surface").boundingBox();
+      await page.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2);
+      const tip = chart.locator(".recharts-default-tooltip");
+      await expect(tip).toBeVisible();
+      const ratios = await chart.evaluate((root) => {
+        const rgb = (c) => {
+          const m = c.match(/[\d.]+/g).map(Number);
+          return m.slice(0, 3);
+        };
+        const lum = ([r, g, b]) => {
+          const f = (v) => {
+            const x = v / 255;
+            return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+          };
+          return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+        };
+        const ratio = (a, b) => {
+          const [l1, l2] = [lum(rgb(a)), lum(rgb(b))].sort((x, y) => y - x);
+          return (l1 + 0.05) / (l2 + 0.05);
+        };
+        // カードの背景（透明なら親をたどる）
+        const bgOf = (el) => {
+          let e = el;
+          while (e) {
+            const c = getComputedStyle(e).backgroundColor;
+            if (c && !/rgba\(0, 0, 0, 0\)|transparent/.test(c)) return c;
+            e = e.parentElement;
+          }
+          return "rgb(255, 255, 255)";
+        };
+        const tipEl = root.querySelector(".recharts-default-tooltip");
+        const tipBg = getComputedStyle(tipEl).backgroundColor;
+        const label = getComputedStyle(
+          tipEl.querySelector(".recharts-tooltip-label"),
+        ).color;
+        const item = getComputedStyle(
+          tipEl.querySelector(".recharts-tooltip-item"),
+        ).color;
+        const tick = root.querySelector(".recharts-cartesian-axis-tick-value");
+        return {
+          label: ratio(tipBg, label),
+          item: ratio(tipBg, item),
+          tick: ratio(bgOf(root), getComputedStyle(tick).fill),
+        };
+      });
+      expect(ratios.label).toBeGreaterThanOrEqual(4.5);
+      expect(ratios.item).toBeGreaterThanOrEqual(4.5);
+      expect(ratios.tick).toBeGreaterThanOrEqual(4.5);
+    });
+  }
 });
