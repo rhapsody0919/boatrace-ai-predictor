@@ -2,7 +2,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { GRADE_LABELS } from "./raceGradeLabels";
 import { translateTechnique } from "./raceIndicators";
-import { formatPayout } from "../../utils/formatters";
 import { finishMarkKeyOf } from "../../utils/prevResult";
 import { groupRunsByMeet } from "./basicInfoStats";
 import "./RecentRunsTable.css";
@@ -180,7 +179,9 @@ function RecentRunsTable({
                 </td>
                 <td className="rrt-pc">
                   {race.finishRank === 1 && race.payoutWin != null
-                    ? formatPayout(race.payoutWin)
+                    ? t("raceHistoryTable.payoutCell", {
+                        amount: race.payoutWin.toLocaleString(),
+                      })
                     : "-"}
                 </td>
               </tr>

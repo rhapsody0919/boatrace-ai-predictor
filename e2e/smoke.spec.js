@@ -184,11 +184,11 @@ test("英語のレース詳細に公式の記号・円・日本語のラベル�
 }) => {
   // 2026-09-30 戸田9R: 6号艇の今節の走にエンストがある
   await page.goto("/en/race/2026-09-30-02-09");
+  await page.locator(".race-tabs-btn", { hasText: "This Series" }).click();
   await expect(page.locator("nav.breadcrumb")).toHaveAttribute(
     "aria-label",
     "Breadcrumb",
   );
-  await page.locator(".race-tabs-btn", { hasText: "This Series" }).click();
   const labels = page.locator(".meet-sparkline-label");
   await labels.first().waitFor({ timeout: 30000 });
   await expect(labels.filter({ hasText: "エ" })).toHaveCount(0);
@@ -197,6 +197,13 @@ test("英語のレース詳細に公式の記号・円・日本語のラベル�
   await history.waitFor({ timeout: 30000 });
   await expect(history).toContainText("¥");
   await expect(history).not.toContainText("円");
+
+  // 基本情報タブの直近10走（RecentRunsTable）の払戻も同じ表記にする
+  await page.locator(".race-tabs-btn", { hasText: "Basic Info" }).click();
+  await page.locator(".rbit-bar-row").nth(5).click();
+  const recent = page.locator(".rrt-table").first();
+  await recent.waitFor({ timeout: 30000 });
+  await expect(recent).not.toContainText("円");
 });
 
 // BOA-656: 会場特性の要約は「水面・傾向」を日本語の中黒で連結していた（全言語で「Freshwater ・ Balanced」）
