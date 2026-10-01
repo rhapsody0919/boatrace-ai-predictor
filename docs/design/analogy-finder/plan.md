@@ -35,7 +35,7 @@ flowchart LR
 
 ## データ設計
 
-マイグレーション案: [115_analogy_finder_tables.sql](../../db-migration/115_analogy_finder_tables.sql)（本番未適用。適用はユーザーが行う。PGlite で作成・RPC の動作・CHECK 制約を確認済み）
+マイグレーション案: [115_analogy_finder_tables.sql](../../db-migration/115_analogy_finder_tables.sql)（本番未適用。適用はユーザーが行う。PGlite で作成・RPC の動作・CHECK 制約を確認済み）。番号は、master の最大 113 と、作業中の PR #1035 が使う 114 の後の 115（112 は master で欠番）
 
 ```mermaid
 erDiagram
