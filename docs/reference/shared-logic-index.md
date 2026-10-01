@@ -74,7 +74,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/isotonic-regression.js` | — | IsotonicCalibrator |
 | `scripts/lib/kbArchiveRows.js` | K/B中間形式（kb-day/v1）→ アーカイブ表（kb_archive_*）の行への変換 | raceTimeToSeconds, classifyStage, buildArchiveRows, KB_ARCHIVE_TABLES |
 | `scripts/lib/kbFileParser.js` | 公式ダウンロードデータ（Kファイル=競走成績、Bファイル=番組表）の全項目パーサー | buildKbUrl, kbArchiveRelPath, decodeLzhText, decodeLzhBytes, classifyKFileVenues ほか9件 |
-| `scripts/lib/kbGapFill.js` | K/Bファイル（kb-day/v1。kb-backfill.js parse の出力）から、本体テーブルの欠落を補う行を作る（純関数）。 | assertColumnSet, buildStartTimingRows, buildExhibitionRows, normalizeKStage, buildConditionsRows ほか4件 |
+| `scripts/lib/kbGapFill.js` | K/Bファイル（kb-day/v1。kb-backfill.js parse の出力）から、本体テーブルの欠落を補う行を作る（純関数）。 | assertColumnSet, buildStartTimingRows, buildExhibitionRows, normalizeKStage, buildConditionsRows ほか5件 |
 | `scripts/lib/kbResultsBackfillRows.js` | K/Bアーカイブ（kb-day/v1、scripts/lib/kbFileParser.js）から race_results の欠損行を | classifyMissingResult, buildRaceFactsForDay, buildRaceResultRow, MISSING_STATUS |
 | `scripts/lib/kelly-criterion.js` | — | kellyFraction, halfKelly, quarterKelly |
 | `scripts/lib/kfileParser.js` | 公式成績ファイル（Kファイル）のダウンロード・解凍・パース（BOA-257） | fetchKFileText, parseKFileText, parseKFileRankings, _internal |
@@ -87,6 +87,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/motorPretestParser.js` | 公式のモーター抽選結果・前検タイム（boatrace.jp race/rankingmotor）のパーサー（純関数。DB・取得先に接続しない） | buildMotorPretestUrl, readHeaderLabels, competitionRanks, parseMotorPretestHtml, MOTOR_PRETEST_PARSER_VERSION ほか1件 |
 | `scripts/lib/motorPretestRows.js` | 前検タイム（N23、motor_pretest_stats）の、行の組み立て・期待件数の算出・書き込み。 | buildMotorPretestRows, writeMotorPretestRows, loadExpectedRacers, summarizeVenueCoverage, MOTOR_PRETEST_TABLE ほか1件 |
 | `scripts/lib/oddsParser.js` | boatrace.jp オッズページの共通パーサー | parseOddsTable, parseTrifectaAll, parseTrioAll, parseRangeOddsValue, parseExactaAll ほか4件 |
+| `scripts/lib/officialFinishCode.js` | 公式の成績コード（Kファイルの着順欄。01〜06・F・L0・L1・K0・K1・S0・S1・S2 等）を、 | buildOfficialFinishCodeRows, OFFICIAL_FINISH_CODE_COLUMN |
 | `scripts/lib/openingDayBackfill.js` | 節の初日の欠落（racesに1行も無い会場日）を、公式サイトの過去日ページから補うCLI | parseOnly, selectTargets, buildRaceRows, createThrottledFetch, tallyOutcomes ほか10件 |
 | `scripts/lib/optionalColumns.js` | 「マイグレーション未適用のDBでも壊れない」書き込みの共通処理 | isColumnMissingError, stripColumns, createOptionalColumnState, upsertWithOptionalColumns |
 | `scripts/lib/outcomeDistribution.js` | 出目分布（3連単の出現パターン）の会場別集計。純粋関数（DBに触れない）。 | aggregateOutcomeDistribution, TRIFECTA_PAYOUT_COLUMN |
@@ -256,4 +257,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 221 ファイル / export 1103 件。
+対象 222 ファイル / export 1106 件。
