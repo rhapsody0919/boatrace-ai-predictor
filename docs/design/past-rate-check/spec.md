@@ -21,7 +21,7 @@
 
 ## データ（土台）
 
-`get_analogy_neighbors(race_id)`（BOA-271、マイグレーション115）の返り値だけで数える。1行＝近傍の過去レース1件、近い順に最大800行。
+`get_analogy_neighbors(race_id)`（BOA-271、マイグレーション115）の返り値だけで数える。1行＝近傍の過去レース1件、近い順に最大800行。画面の部品は、BOA-271 の `useAnalogyNeighbors(raceId)` が返す行の配列（RPC の返り値の行そのまま、近い順）を受け取る。取得経路（`/api/analogy/neighbors/[raceId]`、失敗時は PostgREST の RPC 直読み）と応答の形は BOA-271 plan の「API」節に従う。
 
 | 列 | 使う型 |
 |---|---|
