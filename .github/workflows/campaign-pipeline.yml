@@ -81,20 +81,19 @@ jobs:
         if: failure()
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        # payload は jq で組み立てる（文字列への変数の直書きで JSON が壊れないように。BOA-644）
         run: |
-          curl -s -X POST "$SLACK_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"attachments\": [{
-                \"color\": \"#c0392b\",
-                \"blocks\": [
-                  {
-                    \"type\": \"section\",
-                    \"text\": {
-                      \"type\": \"mrkdwn\",
-                      \"text\": \":rotating_light: *企画型SNSパイプラインの自動実行が失敗しました*\nワークフロー: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|実行ログを見る>\n次回のcronでも失敗が続く場合は手動実行して原因を確認してください。\"
-                    }
-                  }
-                ]
+          payload=$(jq -n --arg url "$RUN_URL" '{
+            attachments: [{
+              color: "#c0392b",
+              blocks: [{
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: (":rotating_light: *企画型SNSパイプラインの自動実行が失敗しました*\nワークフロー: <" + $url + "|実行ログを見る>\n次回のcronでも失敗が続く場合は手動実行して原因を確認してください。")
+                }
               }]
-            }"
+            }]
+          }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
