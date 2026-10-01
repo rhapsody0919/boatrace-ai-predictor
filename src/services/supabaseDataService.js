@@ -7151,8 +7151,9 @@ export const supabaseDataService = {
     // v16: 推移の走に着順（finish）を足した（BOA-537）
     // v17: 着順の並びの材料に公式の記号（finishMark）を足した（BOA-537）
     // v18: 賞典除外（公式の備考・今節F）を順位から外す理由を足した（BOA-587）
-    // v19: 予選終了の日目を series_day から出す（中止の日を数えない、BOA-578）
-    return withCache(`meet-scoreboard-v19-${raceId}`, async () => {
+    // v19: 着順の並びでフライングを「F」と出すため、is_flying を足した（BOA-589）
+    // v20: 予選終了の日目を series_day から出す（中止の日を数えない、BOA-578）
+    return withCache(`meet-scoreboard-v20-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7387,6 +7388,12 @@ export const supabaseDataService = {
         (meetStarts ?? [])
           .filter((r) => officialMarkOf(r.finish_mark))
           .map((r) => [`${r.race_id}|${r.boat_number}`, r.finish_mark]),
+      );
+      // フライングの走。着欄の記号（finish_mark）が未取得の走でも「失」と出さず「F」にする（BOA-589）
+      const flyingKeys = new Set(
+        (meetStarts ?? [])
+          .filter((r) => r.is_flying === true)
+          .map((r) => `${r.race_id}|${r.boat_number}`),
       );
 
       return {
@@ -7657,6 +7664,7 @@ export const supabaseDataService = {
             raceStage: stageById.get(e.race_id) ?? null,
             // 欠場を走数から外すための材料（BOA-489）
             finishMark: markByKey.get(`${e.race_id}|${e.boat_number}`) ?? null,
+            isFlying: flyingKeys.has(`${e.race_id}|${e.boat_number}`),
             started:
               !racesWithSt.has(e.race_id) ||
               startedKeys.has(`${e.race_id}|${e.boat_number}`),

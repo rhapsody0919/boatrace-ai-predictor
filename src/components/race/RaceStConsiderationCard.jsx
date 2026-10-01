@@ -88,9 +88,15 @@ function RaceStConsiderationCard({
   const columns = sorted.map((p) => {
     const records = p.racerId ? scopedByRacer[p.racerId] : null;
     const course = entryCourseOf(p);
-    const grade = Array.isArray(records)
-      ? (records[records.length - 1]?.grade ?? null)
-      : null;
+    // 級別は表示中のレースの出走表の値を使う。選手の記録の最後の1件（＝今日に最も近い走）
+    // だと、過去のレースを開いたときに別の期の級別が出て、同じセルの F 数（出走表の値）と
+    // 時点が食い違っていた（BOA-589。基本情報タブのデータ出走表とも違っていた）。
+    // 平均と比べる基準（ベースライン）も同じ級別で引く
+    const grade =
+      p.grade ??
+      (Array.isArray(records)
+        ? (records[records.length - 1]?.grade ?? null)
+        : null);
     const stats = Array.isArray(records)
       ? computeStConsideration(records, { course })
       : null;
