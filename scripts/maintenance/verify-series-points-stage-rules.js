@@ -20,6 +20,7 @@ import {
   isExcludedStage,
   isPastPrelimDay,
   prelimEndRaceIdOf,
+  prelimEndDayOf,
   semifinalRaceIdsOf,
   semifinalSlotsOf,
   splitMeetSeries,
@@ -1501,6 +1502,65 @@ check(
       [202, null, "withdrawn"],
       [203, 1, null],
     ],
+  );
+}
+
+// ---- 予選終了の日目は中止の日を数えない（BOA-578） ---------------------------
+// 津 2026-09-21〜28 の節の実データ。9/21 は4Rまで成立、9/22 は丸一日中止
+// （番組は残り、series_day=2）、公式は 9/23 を再び2日目とし 9/26 を5日目とする
+// （公式の節間成績は「初日〜６日目・最終日」）。日付を数えると 9/26 は6日目になる
+{
+  const TSU_COND = [
+    ["2026-09-21", 1],
+    ["2026-09-22", 2],
+    ["2026-09-23", 2],
+    ["2026-09-24", 3],
+    ["2026-09-25", 4],
+    ["2026-09-26", 5],
+  ].map(([d, sd]) => ({ race_id: `${d}-09-12`, series_day: sd }));
+  const TSU_IDS = TSU_COND.map((c) => c.race_id);
+  const TSU_RAN = new Set(TSU_IDS.filter((id) => !id.startsWith("2026-09-22")));
+  check(
+    "予選終了の日目は series_day を使う（津 9/26 は5日目）",
+    prelimEndDayOf("2026-09-26-09-12", TSU_COND, TSU_IDS, TSU_RAN),
+    5,
+  );
+  check(
+    "series_day が無ければ、丸一日中止の日を飛ばして数える（津 9/26 は5日目）",
+    prelimEndDayOf(
+      "2026-09-26-09-12",
+      TSU_COND.map((c) => ({ ...c, series_day: null })),
+      TSU_IDS,
+      TSU_RAN,
+    ),
+    5,
+  );
+  // 戸田 2026-09-18〜24: 9/21 が丸一日中止（series_day=4）、9/22 も4日目で予選最終日
+  const TODA_COND = [
+    ["2026-09-18", 1],
+    ["2026-09-19", 2],
+    ["2026-09-20", 3],
+    ["2026-09-21", 4],
+    ["2026-09-22", 4],
+  ].map(([d, sd]) => ({ race_id: `${d}-02-12`, series_day: sd }));
+  check(
+    "戸田 9/22（中止の翌日）は4日目",
+    prelimEndDayOf(
+      "2026-09-22-02-12",
+      TODA_COND,
+      TODA_COND.map((c) => c.race_id),
+      new Set(
+        TODA_COND.map((c) => c.race_id).filter(
+          (id) => !id.startsWith("2026-09-21"),
+        ),
+      ),
+    ),
+    4,
+  );
+  check(
+    "予選の締めが無ければ null",
+    prelimEndDayOf(null, TSU_COND, TSU_IDS, TSU_RAN),
+    null,
   );
 }
 
