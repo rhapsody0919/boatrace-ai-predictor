@@ -177,6 +177,30 @@
   margin-right: 2px;
 }
 
+/* 「賞典除外（今節F）」は長いので、順位の列と早見の必要得点の列だけ2行に
+   折り返す。1行のままだと375pxで表が16px右にはみ出し、早見は着順の列が
+   画面外へ押し出された（BOA-587） */
+.rmt-compare .rmt-excluded,
+.rmt-forecast-table .rmt-excluded {
+  display: inline-block;
+  max-width: 4.5em;
+  white-space: normal;
+  /* 「賞典除 / 外」と語の途中で割らず、「賞典除外 /（今節F）」で折る */
+  word-break: keep-all;
+  line-height: var(--line-height-tight);
+}
+
+/* 「今日では届かず」も同じく2行に折る。1行のままだと必要得点の列が79pxになり、
+   375pxの早見が382pxに広がって着順の列が画面外へ押し出された（BOA-596 と
+   BOA-587 の組み合わせ）。keep-all にすると和文に折り目が無く折れないので、
+   幅だけで折る */
+.rmt-forecast-table .rmt-unreachable {
+  display: inline-block;
+  max-width: 4em;
+  white-space: normal;
+  line-height: var(--line-height-tight);
+}
+
 .rmt-rank,
 .rmt-pretest {
   font-size: var(--font-size-xs);
@@ -360,6 +384,13 @@
   background: var(--color-success-bg, rgba(67, 160, 71, 0.16));
   color: var(--text-primary);
   font-weight: var(--font-weight-bold);
+}
+
+.rmt-needed-runs {
+  display: block;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
 }
 
 .rmt-forecast-table td.rmt-needed {
@@ -559,4 +590,20 @@
   .rmt-trend-label .rmt-name {
     white-space: nowrap;
   }
+}
+
+/* 日付の目盛り（BOA-538）。推移の線の列と同じ幅で、点と同じ横位置に置く */
+.rmt-trend-days {
+  position: relative;
+  height: 1.2em;
+}
+
+.rmt-trend-day {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }

@@ -7,6 +7,7 @@
  */
 import { Link } from "react-router-dom";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
+import { prevResultState } from "../../utils/prevResult";
 
 export const TECHNIQUE_KEY_BY_NAME = Object.fromEntries(
   Object.entries(TECHNIQUE_NAMES).map(([key, name]) => [name, key]),
@@ -145,6 +146,8 @@ function buildRowDefs({
   motorDeepLink = null,
   originalExhibition = null,
   entryWeights = null,
+  // 前走成績の空の読み方に使う（取得が始まった日・1R）。無ければ空は「—」
+  raceId = null,
 }) {
   const {
     motor,
@@ -528,7 +531,8 @@ function buildRowDefs({
       },
     },
     {
-      // 前走成績（今節内の直近レースの着順・進入コース）は事実の記録であり、
+      // 本日の前走（同じ日にこのレースより前に走ったレースの着順・進入コース。
+      // prevResult.js 参照。今節の前走ではない）は事実の記録であり、
       // bestは持たせない（BOA-289、tilt/adjustmentWeightと同じ扱い）
       key: "prevResult",
       label: t("dataTable.rowPrevResult"),
@@ -538,20 +542,29 @@ function buildRowDefs({
       render: (p) => {
         const row = maintenanceByBoat.get(p.number);
         if (!row) return ph("motorMaintenance");
-        const rank = toNumber(row.prev_finish_rank);
-        if (rank === null) {
+        const state = prevResultState(row, raceId);
+        if (state.kind === "firstToday") {
           return (
             <span className="drt-sub">{t("dataTable.prevResultNoRace")}</span>
           );
         }
-        const course = toNumber(row.prev_entry_course);
+        if (state.kind === "unknown") return "—";
         return (
           <span className="drt-value">
-            {t("review.finishPosition", { position: rank })}
-            {course !== null && (
-              <span className="drt-sub">
+            {state.kind === "rank" ? (
+              t("review.finishPosition", { position: state.rank })
+            ) : state.markKey ? (
+              // 記号は言語ごとの短い表記で出し、意味は title で補う
+              <abbr title={t(`result.mark.${state.markKey}`)}>
+                {t(`dataTable.prevMark.${state.markKey}`)}
+              </abbr>
+            ) : (
+              state.mark
+            )}
+            {state.course !== null && (
+              <span className="drt-sub drt-nowrap">
                 {" "}
-                {t("dataTable.prevResultCourse", { course })}
+                {t("dataTable.prevResultCourse", { course: state.course })}
               </span>
             )}
           </span>
@@ -715,7 +728,10 @@ export function buildExhibitionCourseRow({
             ? "beforeInfo.exhibitionCourseMovedOut"
             : null;
       return (
-        <span className="drt-value drt-entry-course" data-testid="exhibition-course">
+        <span
+          className="drt-value drt-entry-course"
+          data-testid="exhibition-course"
+        >
           {t("dataTable.prevResultCourse", { course })}
           {movedKey && (
             <span className="drt-sub drt-entry-moved-label">{t(movedKey)}</span>

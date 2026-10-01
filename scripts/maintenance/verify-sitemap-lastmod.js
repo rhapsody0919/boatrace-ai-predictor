@@ -7,6 +7,8 @@
  *
  * 1. scripts/lib/sitemapLastmod.js の部品（最終コミット日・日付の比較・<url> の出力）
  * 2. generate-sitemap.js が lastmod に生成日・mtime を使っていないこと（ソースの検査）
+ * 3. 言語版の組（hreflang）を xhtml:link で出していること（BOA-560。画面の hreflang は
+ *    JS 実行後の head にしか無く、日本語の検索に /en/・/ko/ が出ていた）
  */
 import { readFileSync } from "fs";
 import { execFileSync } from "child_process";
@@ -45,6 +47,28 @@ check(
 check(
   !withoutDate.includes("<lastmod>"),
   "lastmod が null なのに <lastmod> が出ている",
+);
+
+// 1-a2. 言語版の組（hreflang）を xhtml:link で出す（BOA-560）
+const withAlternates = renderUrlEntry("https://x", {
+  loc: "/c",
+  lastmod: null,
+  changefreq: "daily",
+  priority: "0.5",
+  alternates: [
+    { hreflang: "ja", href: "https://x/c" },
+    { hreflang: "en", href: "https://x/en/c" },
+  ],
+});
+check(
+  withAlternates.includes(
+    '<xhtml:link rel="alternate" hreflang="en" href="https://x/en/c" />',
+  ),
+  "alternates があるのに xhtml:link が出ていない",
+);
+check(
+  !withoutDate.includes("xhtml:link"),
+  "alternates が無いのに xhtml:link が出ている",
 );
 
 // 1-b. 日付の比較
@@ -89,6 +113,15 @@ check(
 check(
   !/mtime/.test(source.replace(/\/\/.*$/gm, "")),
   "generate-sitemap.js が lastmod にファイルの mtime を使っている（CI では毎日の checkout 時刻になる）",
+);
+
+check(
+  source.includes('xmlns:xhtml="http://www.w3.org/1999/xhtml"'),
+  "urlset に xhtml 名前空間が無い（xhtml:link を使うと XML として不正になる）",
+);
+check(
+  /alternates:\s*alternatesFor\(/.test(source),
+  "generate-sitemap.js が各URLに言語版の組（alternatesFor）を渡していない",
 );
 
 if (failures.length > 0) {

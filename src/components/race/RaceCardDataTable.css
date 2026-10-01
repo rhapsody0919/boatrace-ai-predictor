@@ -4,6 +4,8 @@
 
 .rcdt {
   margin-top: 0.75rem;
+  /* カードの幅に合わせて表を詰めるため（下の @container） */
+  container-type: inline-size;
 }
 
 .rcdt-table-wrapper {
@@ -37,6 +39,14 @@
   background: var(--surface-page);
   word-break: break-all;
   line-height: var(--line-height-tight);
+}
+
+/* 姓・名の塊。姓と名は常に別の行にする。inline-block で「収まれば1行」にすると、
+   日本語は1文字ごとに折り返せるため、名の塊が前の行の余りに縮んで入り
+   「安河内鈴/之介」になった（BOA-559 ファン評価3周目）。塊そのものが列より
+   長い（4文字の姓など）ときだけ中で折れる */
+.rcdt-name-part {
+  display: block;
 }
 
 .rcdt-label-th {
@@ -118,5 +128,31 @@
 @media (max-width: 480px) {
   .rcdt-table {
     font-size: 10.5px;
+  }
+}
+
+/* 多列グリッドのカード（768〜1440pxで約250〜310px）では、表の最小幅（約330px）が収まらず6号艇の列が
+   切れていた（ページ全体は横スクロールしないので気づきにくい。BOA-559）。カードが狭いときは最小幅を外し、
+   文字と余白を詰めて7列を収める */
+@container (max-width: 340px) {
+  .rcdt-table {
+    min-width: 0;
+    font-size: 10px;
+  }
+
+  .rcdt-table th,
+  .rcdt-table td {
+    padding: 3px 1px;
+  }
+
+  .rcdt-label-cell {
+    font-size: 10px;
+  }
+
+  /* 3文字の姓（向井田 等）は10.5pxで約31px。1pxの余白でも列（約34px）から溢れて
+     姓の中で折れるので、名前の行だけ左右の余白を無くす（上の th 一括指定より強くする） */
+  .rcdt-table .rcdt-name-th {
+    padding-left: 0;
+    padding-right: 0;
   }
 }

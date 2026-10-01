@@ -35,13 +35,20 @@ export function laterDate(a, b) {
   return a > b ? a : b;
 }
 
-/** 1URL分の <url> 要素。lastmod が null なら <lastmod> を出さない */
+/**
+ * 1URL分の <url> 要素。lastmod が null なら <lastmod> を出さない。
+ * alternates（[{ hreflang, href }]）があれば xhtml:link で言語版を並べる（BOA-560）。
+ * 画面の hreflang は JS 実行後の head にしか無いため、サイトマップにも同じ組を置く
+ */
 export function renderUrlEntry(
   siteUrl,
-  { loc, lastmod, changefreq, priority },
+  { loc, lastmod, changefreq, priority, alternates = [] },
 ) {
   let xml = "  <url>\n";
   xml += `    <loc>${siteUrl}${loc}</loc>\n`;
+  for (const { hreflang, href } of alternates) {
+    xml += `    <xhtml:link rel="alternate" hreflang="${hreflang}" href="${href}" />\n`;
+  }
   if (lastmod) xml += `    <lastmod>${lastmod}</lastmod>\n`;
   xml += `    <changefreq>${changefreq}</changefreq>\n`;
   xml += `    <priority>${priority}</priority>\n`;

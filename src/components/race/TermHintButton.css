@@ -30,7 +30,10 @@
 
 .term-hint__popover {
   position: fixed;
-  z-index: var(--z-index-popover);
+  /* レース詳細の下部固定ナビ（RaceBottomNav.css、z-index 1500）より前に出す。
+     トークンの popover（60）だと、375px で長い説明の末尾がナビの裏に隠れた（BOA-440） */
+  z-index: 1600;
+  overflow-y: auto;
   width: 220px;
   background: var(--surface-card);
   border: var(--border-width-1) solid var(--border-hairline);

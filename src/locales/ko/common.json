@@ -87,10 +87,13 @@
     "backToVenues": "← 경정장 목록으로",
     "jumpToNextRace": "{{race}}R로",
     "nextDeadlineMarker": "{{venue}} 다음 마감 {{race}}R {{time}}",
-    "allClosedMarker": "{{venue}} 오늘 레이스는 모두 마감"
+    "allClosedMarker": "{{venue}} 오늘 레이스는 모두 마감",
+    "todayTitle": "오늘의 경주・AI 예측",
+    "metaTitleSeries": "{{venue}} 오늘의 경주 일람({{series}})・AI 데이터 분석 - 용신 레이더",
+    "metaDescriptionSeries": "{{series}} 개최 중인 {{venue}} 경정장의 오늘 전체 경주 일람. 마감 시각과 등급을 확인하고 각 경주의 AI 데이터 분석을 볼 수 있습니다."
   },
   "venueCharacteristics": {
-    "collapsedTeaser": "{{summary}} / 1호정 1착률 {{rate}}%",
+    "collapsedTeaser": "{{summary}} / 1번 보트 1착률 {{rate}}%",
     "title": "이 경정장의 특징 (최근 90일)",
     "note": "AI 데이터 분석이 참고하는 것과 동일한 경정장별 데이터입니다. 번호별 1착률과, 우승 시 가장 많이 나온 결정수를 확인할 수 있습니다.",
     "nationalAverageTooltip": "전국 평균 {{value}}%",
@@ -125,7 +128,7 @@
   "volatility": {
     "levelHigh": "이변 가능성 높음",
     "levelLow": "인기 안정",
-    "description": "최근 90일간 같은 경정장 레이스와 비교한, 1코스가 질 가능성의 상대 지표입니다",
+    "description": "최근 90일간 같은 경정장 레이스와 비교한, 1번 보트가 질 가능성의 상대 지표입니다",
     "attentionTitle": "1코스 이변 주의도",
     "attentionHigh": "이변 가능성 높음",
     "attentionLow": "인기 안정",
@@ -150,7 +153,7 @@
     },
     "baselineTitle": "전체 평균 {{rate}}%",
     "summaryPrefix": "「이변 가능성 높음」라벨이 부여된 레이스에서는, 실제로",
-    "summarySuffix": "확률로 1코스（1호정）가 1착이 되지 못했습니다",
+    "summarySuffix": "확률로 1코스（1번 보트）가 1착이 되지 못했습니다",
     "summaryBaseline": "（전체 평균: {{rate}}%）",
     "legendBaseline": "세로선 = 전체 평균 {{rate}}%",
     "legendCount": "（집계: {{count}}경주）",
@@ -233,7 +236,7 @@
     "cancelledTitle": "이 레이스는 중지되었습니다",
     "cancelledBody": "날씨나 수면 상태 등으로 인해 레이스가 중지되어 결과 데이터가 없습니다.",
     "placeSectionTitle": "🎯 복승 예측 검증",
-    "placePredicted": "복승 {{rank}}위 예측: {{number}}호정",
+    "placePredicted": "복승 {{rank}}위 예측: {{number}}번 보트",
     "placeHit": "✅ 적중!（{{position}}착）",
     "placeMiss": "❌ 미적중",
     "turnSectionTitle": "🌊 전개 예측 검증",
@@ -253,9 +256,9 @@
       "bodyWithReason": "{{reason}}. 주권은 모두 반환",
       "reason": "{{list}}로 불성립",
       "group": {
-        "flying": "플라잉 {{count}}정({{boats}}호정)",
-        "late": "출발 지연 {{count}}정({{boats}}호정)",
-        "absent": "결장 {{count}}정({{boats}}호정)"
+        "flying": "플라잉 {{count}}정({{boats}}번 보트)",
+        "late": "출발 지연 {{count}}정({{boats}}번 보트)",
+        "absent": "결장 {{count}}정({{boats}}번 보트)"
       },
       "boatSeparator": "・",
       "groupSeparator": ", "
@@ -279,7 +282,8 @@
     "partialNoRaceTag": "일부 승식 불성립",
     "payoutNoRace": "불성립(반환)",
     "payoutSpecial": "특별 지급",
-    "volatilityOutcomeNotJudgeable": "판정 대상 외(불성립)"
+    "volatilityOutcomeNotJudgeable": "판정 대상 외(불성립)",
+    "stLegend": "오른쪽 화살표는 스타트 타이밍(ST). 노란 선이 스타트 라인이며, 선에 가까울수록 빠른 스타트. 선을 넘은 빨간 화살표는 플라잉"
   },
   "raceHistoryTable": {
     "date": "날짜",
@@ -314,7 +318,16 @@
     "venueGuideDesc": "경정장 특성과 베팅 포인트 상세",
     "analysisToolsLink": "데이터 분석 도구로 이 레이스를 더 분석하기",
     "awaitingResultBanner": "마감 시간이 지났지만 아직 결과가 반영되지 않았습니다 (데이터는 약 1시간마다 갱신됩니다)",
-    "cancelledBanner": "이 레이스는 중지되었습니다"
+    "cancelledBanner": "이 레이스는 중지되었습니다",
+    "shareCancelled": "🏁 용신 레이더【{{date}}{{venue}} {{raceNo}}R】\n\n이 레이스는 중지되었습니다",
+    "shareNoPrediction": "🏁 용신 레이더【{{date}}{{venue}} {{raceNo}}R】\n\n출주표와 데이터 분석을 무료로 공개 중",
+    "sharePrediction": {
+      "v1": "🏁 용신 레이더 예상【{{date}}{{venue}} {{raceNo}}R】\n\n모델: {{model}}\n본명: {{topPick}}번 보트\n추천: {{top3}}\n\n전개 예측을 분석한 결과, 이 순서가 유력해 보여요!\n데이터상으로도 기대해 볼 만해요👀",
+      "v2": "🏁 용신 레이더 예상【{{date}}{{venue}} {{raceNo}}R】\n\n모델: {{model}}\n본명: {{topPick}}번 보트\n추천: {{top3}}\n\n1턴 마크 전개 예측과 모터 성능을 분석한 결과,\n이 조합에 주목하고 있어요📊",
+      "v3": "🏁 용신 레이더 예상【{{date}}{{venue}} {{raceNo}}R】\n\n모델: {{model}}\n본명: {{topPick}}번 보트\n추천: {{top3}}\n\n이렇게 정확한 예상을 무료로 볼 수 있어서 좋아요✨\n오늘도 적중하길!",
+      "v4": "🏁 용신 레이더 예상【{{date}}{{venue}} {{raceNo}}R】\n\n모델: {{model}}\n본명: {{topPick}}번 보트\n추천: {{top3}}\n\n전개 예측으로 보면 이 예상은 믿을 만해 보여요!\n여러분은 어떻게 생각하세요?🤔",
+      "v5": "🏁 용신 레이더 예상【{{date}}{{venue}} {{raceNo}}R】\n\n모델: {{model}}\n본명: {{topPick}}번 보트\n추천: {{top3}}\n\n요즘 적중률이 올라가고 있어서 기뻐요😊\nAI 예상을 참고해 보세요!"
+    }
   },
   "home": {
     "introBannerText": "용신 레이더 - 경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요. | 전개 예측・인코스 붕괴 지수 등 45개 이상의 데이터를 분석. 자세히 보기 →",
@@ -322,7 +335,7 @@
     "aiIntro": {
       "title": "용신 레이더의 경정 AI 예측",
       "lead": "용신 레이더는 일본 전국 24개 경정장에서 열리는 모든 경주를 AI가 매일 예측하는 데이터 분석 사이트입니다. 완전 무료이며 회원가입이 필요 없습니다.",
-      "method": "선수의 승률, 평균 스타트 타이밍, 코스별 성적, 모터 성적, 바람과 파도 데이터를 바탕으로 경주마다 1마크 전개 예측과 1호정이 무너지기 쉬운지를 나타내는 '인 붕괴 지수'를 제공합니다.",
+      "method": "선수의 승률, 평균 스타트 타이밍, 코스별 성적, 모터 성적, 바람과 파도 데이터를 바탕으로 경주마다 1마크 전개 예측과 1번 보트가 무너지기 쉬운지를 나타내는 '인 붕괴 지수'를 제공합니다.",
       "statLabel": "전개 예측의 실측 적중률:",
       "statNote": "(최근 {{count}}경주. 예측한 전개 패턴 중 하나가 실제 1착정의 코스와 일치한 비율)",
       "accuracyLink": "성적(경정장별 내역, 일본어 페이지) 보기 →",
@@ -332,7 +345,7 @@
     "freeAccessNoticeRest": "— 계좌 개설이나 회원 가입 없이 지금 바로 모든 기능을 이용하세요",
     "todayRaces": "오늘의 경주",
     "volatilityHighlightsTitle": "🌪️ 오늘의 인코스 붕괴 지수 하이라이트",
-    "volatilityHighlightsTurnPrediction": "1착 예상: {{course}}호정（{{technique}}・{{probability}}%）",
+    "volatilityHighlightsTurnPrediction": "1착 예상: {{course}}번 보트（{{technique}}・{{probability}}%）",
     "volatilityHighlightsAccuracyLink": "실측 정확도 보기 →",
     "dataType": "경주 데이터",
     "loadingTitle": "경주 데이터 로딩 중...",
@@ -353,6 +366,13 @@
     "blogLastUpdated": "블로그 최종 업데이트: {{date}}",
     "tbd": "미정",
     "jstNote": " JST"
+  },
+  "cookieConsent": {
+    "textBeforeLink": "이 사이트는 서비스 향상을 위해 쿠키를 사용합니다. 자세한 내용은 ",
+    "privacyLink": "개인정보 처리방침",
+    "textAfterLink": "(일본어 페이지)을 확인해 주세요.",
+    "accept": "동의",
+    "reject": "거부"
   },
   "footer": {
     "blog": "블로그",
@@ -393,7 +413,7 @@
   },
   "outcomePreview": {
     "fetchError": "데이터를 가져오지 못했습니다",
-    "title": "참고: {{boat}}번 정이 1착일 때의 결과 조합",
+    "title": "참고: {{boat}}번 보트가 1착일 때의 결과 조합",
     "loading": "데이터 로딩 중...",
     "error": "오류: {{message}}",
     "rank": "순위",
@@ -412,7 +432,7 @@
     "safeBetTitle": "🎯 안정형 (보수적)",
     "safeBetFeature": "가장 가능성 높은 1턴 전개에 기반한 보수적 선택",
     "safeBetFactors": "1코스 우위, A급 선수, 인빠지기/찌르기 확률",
-    "safeBetSuited": "1번 정이나 A급 선수가 강한 안정적인 경주",
+    "safeBetSuited": "1번 보트나 A급 선수가 강한 안정적인 경주",
     "safeBetRecommend": "적중률을 중시하고 꾸준히 이기고 싶은 분",
     "standardTitle": "⚖️ 표준형 (균형)",
     "standardFeature": "두 번째로 가능성 높은 전개에 기반한 균형 잡힌 선택",
@@ -444,7 +464,7 @@
     "attack": "공격",
     "racer": "선수",
     "winsPerStarts": "승수/출주",
-    "boatDefault": "{{number}}번 정",
+    "boatDefault": "{{number}}번 보트",
     "nige": "인빠지기",
     "sashiDefense": "찌르기 당함",
     "sashiAttack": "찌르기",
@@ -453,17 +473,17 @@
     "makurizashiDefense": "휘감아찌르기 당함",
     "makurizashiAttack": "휘감아찌르기",
     "other": "기타",
-    "exampleDefenseTitle": "1번의 「{{label}} {{count}}/{{total}}」",
-    "exampleDefenseDesc": "→ 1번으로 출주한 {{total}}회 중 다른 선수의 「{{attackLabel}}」에 {{count}}회 패배",
-    "exampleAttackTitle": "{{course}}번의 「{{label}} {{count}}/{{total}}」",
-    "exampleAttackDesc": "→ {{course}}번으로 출주한 {{total}}회 중 「{{label}}」(으)로 {{count}}회 승리",
+    "exampleDefenseTitle": "1번 보트의 「{{label}} {{count}}/{{total}}」",
+    "exampleDefenseDesc": "→ 1번 보트로 출주한 {{total}}회 중 다른 선수의 「{{attackLabel}}」에 {{count}}회 패배",
+    "exampleAttackTitle": "{{course}}번 보트의 「{{label}} {{count}}/{{total}}」",
+    "exampleAttackDesc": "→ {{course}}번 보트로 출주한 {{total}}회 중 「{{label}}」(으)로 {{count}}회 승리",
     "legendWinsDesc": ": 해당 번호 출주 시 승수/출주 수",
     "legendRed": "빨강",
-    "legendRedDesc": ": 1번이 당한 공격 (찌르기 등)",
+    "legendRedDesc": ": 1번 보트가 당한 공격 (찌르기 등)",
     "legendBlue": "파랑",
-    "legendBlueDesc": ": 2-6번이 성공시킨 공격 (찌르기 등)",
+    "legendBlueDesc": ": 2-6번 보트가 성공시킨 공격 (찌르기 등)",
     "legendGreen": "초록",
-    "legendGreenDesc": ": 1번의 인빠지기 성공 횟수",
+    "legendGreenDesc": ": 1번 보트의 인빠지기 성공 횟수",
     "supplementDefault": "… 전국 평균 (개인 데이터가 부족할 때 표시)",
     "supplementReference": "… 참고 데이터 (표본이 적어 정확도가 낮을 수 있음)"
   },
@@ -508,7 +528,7 @@
     "caption": "1착이 될 가능성이 높은 정의 후보입니다（최대 3정・확률순）",
     "hitTag": "적중",
     "summaryHit": "✅ 상위 예측 중 하나가 적중했습니다",
-    "summaryMiss": "❌ 상위 예측에 없던 {{winnerNumber}}호정이 1착이었습니다",
+    "summaryMiss": "❌ 상위 예측에 없던 {{winnerNumber}}번 보트가 1착이었습니다",
     "notJudgeable": "판정 대상 외(불성립)",
     "notJudgeableBody": "1착이 정해지지 않아 적중 여부를 판정하지 않습니다",
     "refundedTag": "반환(판정 대상 외)"
@@ -532,7 +552,7 @@
     "result": "결과"
   },
   "wakuInfo": {
-    "note": "선수를 선택하면 그 선수가 오늘 들어갈 예상 코스의 성적을 기간·조건별로 비교할 수 있습니다. 왼쪽의 기간 이름을 누르면 해당 코스의 최근 10주 착순이 열립니다. 전체 6개 코스 비교는 표 아래 접힌 영역에서 열 수 있습니다.",
+    "note": "선수를 선택하면 그 선수가 이 경주에서 들어갈 예상 코스의 성적을 기간·조건별로 비교할 수 있습니다. 왼쪽의 기간 이름을 누르면 해당 코스의 최근 10주 착순이 열립니다. 전체 6개 코스 비교는 표 아래 접힌 영역에서 열 수 있습니다. 성적은 이 경주 이전 경주로 집계합니다(최근 3개월·최근 1개월은 이 경주 날짜부터 셉니다).",
     "boatLabel": "선수(번호)",
     "metricLabel": "지표",
     "metrics": {
@@ -563,8 +583,8 @@
     },
     "smallSampleTitle": "표본이 적어 참고값입니다",
     "gridTitleWithMetric": "코스별 성적: {{metric}}",
-    "todayMark": "오늘",
-    "todayCourseHeading": "오늘의 예상 진입: {{course}}코스",
+    "todayMark": "예상",
+    "todayCourseHeading": "이 경주의 예상 진입: {{course}}코스",
     "wakuNariAssumption": "※정해진 레인대로 진입할 경우",
     "wakuNariRate": "이 선수가 정해진 레인대로 진입한 비율은 {{rate}}%입니다(최근 {{n}}주)",
     "periodHeader": "기간·조건",
@@ -746,6 +766,7 @@
     "rankPlain": "{{rank}}위",
     "pretestRank": "{{rank}}위",
     "compareSub": "이번 시리즈 출전 {{total}}명.",
+    "compareSubExcluded": "이번 시리즈 출전 {{all}}명(순위 대상 {{total}}명. 상전 제외·중도 귀향 {{excluded}}명 제외).",
     "borderLine": "준우승전 기준은 {{slots}}위({{rate}}).",
     "rankTiedTitle": "동률 {{tied}}명",
     "pretestCell": "{{time}}（{{rank}}위）",
@@ -756,12 +777,13 @@
     "finishAbsent": "결",
     "smallSampleLegend": "⚠ 는 3주 미만(득점률이 아직 거칠다).",
     "finishLabel": "착순",
+    "finishLabelPrelim": "예선 착순",
     "borderNote": "점선 위가 준우승전 기준 안입니다(편성이 확정되지 않아 확정은 아닙니다).",
     "prelimOverNote": "예선은 {{date}}에 끝났습니다. 득점률은 여기서 확정되어 오늘 착순으로는 바뀌지 않습니다.",
     "seriesSplitNote": "이번 시리즈는 Ｗ우승전으로, 승격 경로가 둘로 나뉩니다(시리즈 전체 {{meetTotal}}명). 시리즈 순위와 준우승전 기준은 표시 중인 6정과 같은 우승전을 목표로 하는 {{total}}명 안에서 계산합니다.",
     "seriesSplitNoteNoBorder": "이번 시리즈는 Ｗ우승전으로, 승격 경로가 둘로 나뉩니다(시리즈 전체 {{meetTotal}}명). 시리즈 순위는 표시 중인 6정과 같은 우승전을 목표로 하는 {{total}}명 안에서 계산합니다.",
     "seriesMixedNote": "이번 시리즈는 Ｗ우승전으로 승격 경로가 둘로 나뉘지만, 이 레이스는 양쪽 선수가 함께 출주하므로 시리즈 순위는 시리즈 전체 {{total}}명으로 계산합니다.",
-    "rankSourceNote": "시리즈 순위는 당사 계산입니다. 공식 득점률 일람을 확보한 개최에서는 공식 비고(상전 제외·중도 귀향)로 순위 대상 외를 판정하고, 확보하지 못한 개최에서는 '시리즈 마지막 날 출주가 없는 선수'를 이탈로 추정합니다.",
+    "rankSourceNote": "시리즈 순위는 당사 계산입니다. 공식 득점률 일람을 확보한 개최에서는 공식 비고(상전 제외·중도 귀향)로 순위 대상 외를 판정하고, 확보하지 못한 개최에서는 표시 중인 경주 이전에 이번 시리즈에서 플라잉(F)을 한 선수를 상전 제외로, '시리즈 마지막 날 출주가 없는 선수'를 이탈로 추정합니다.",
     "rankSourceNoteOfficial": "득점률과 시리즈 순위는 공식 득점률 일람(예선 종료 시점)의 값입니다. 감점·상전 제외·중도 귀향도 공식 그대로 반영합니다. 예선 중에는 공식 일람이 아직 나오지 않아 당사 집계를 사용합니다.",
     "sourceOfficial": "공식",
     "sourceOwn": "당사 집계",
@@ -779,7 +801,8 @@
     "compareTrendSt": "ST",
     "compareTrendEx": "전시",
     "compareTrendNote": "같은 시리즈·같은 수면을 달린 6정을 같은 잣대(6정의 최소~최대)로 늘어놓았습니다. 행을 넘어 선의 높이를 그대로 비교할 수 있습니다. 점선은 6정의 평균. 위일수록 빠르고, 큰 점이 직전 주행입니다.",
-    "compareTrendRange": "가로축은 출주 순서(왼쪽이 오래된 것)이며 날짜 눈금이 아닙니다. 여기 나오는 것은 {{from}}〜{{to}}의 출주이고, 각 행의 오른쪽 끝이 그 선수의 직전 출주입니다.",
+    "compareTrendRange": "가로축은 날짜입니다({{from}}~{{to}}). 하루에 2경주를 뛴 날은 좌우로 나누고, 그 선수가 뛰지 않은 날은 선을 끊었습니다. 각 행의 마지막 점이 그 선수의 전주입니다.",
+    "compareTrendRangeOneDay": "가로축은 날짜입니다({{day}}). 그날 2경주를 뛴 선수는 좌우로 나누었습니다. 각 행의 마지막 점이 그 선수의 전주입니다.",
     "compareTrendHint": "행을 탭하면 아래 상세가 그 선수로 바뀝니다",
     "compareTrendFinishNote": "점 아래 숫자는 그 경주의 착순입니다(F=플라잉, 결=결장, 전·락·방 등은 공식 표기).",
     "compareTrendEmpty": "추이를 그릴 주행이 아직 없습니다",
@@ -788,15 +811,20 @@
     "trendFinishHeader": "점 아래=착순",
     "forecastTitle": "득점률 조견(오늘 착순에 따른 변화)",
     "forecastRankHeader": "{{rank}}착",
-    "forecastNote": "색이 들어간 칸은 그 착순이면 준우승전 기준({{slots}}위＝{{rate}})에 닿을 전망이라는 뜻입니다. 필요 득점은 기준에 닿는 데 드는 점수입니다.",
+    "forecastNote": "색이 들어간 칸은 오늘 그 착순을 받으면 오늘 끝날 때 준우승전 기준({{slots}}위＝{{rate}}) 이상에 있을 전망이라는 뜻입니다. 내일도 예선이 있는 날에는 준우승전 진출이 정해지는 것은 아닙니다. 오늘 예선이 2경주 이상 남은 선수는 한 경주의 착순만으로 정해지지 않으므로 색을 넣지 않습니다. 필요 득점은 기준에 닿는 데 드는 점수로, 오늘 편성된 예선 경주만으로 계산합니다(내일도 예선이 있으면 바뀝니다).",
     "forecastNoteNoBorder": "그 착순을 했을 때의 득점률입니다. 무사고 완주가 전제입니다.",
     "colNeeded": "필요 득점",
     "neededPoints": "{{points}}",
-    "neededUnreachable": "도달 불가",
+    "neededPointsRuns": "오늘 {{runs}}경주로",
+    "neededUnreachable": "오늘은 도달 불가",
     "forecastDetailSummary": "기준과 필요 득점의 산출 방법",
-    "forecastDetail": "기준은 예선 종료 시점 {{slots}}위의 득점률입니다. 실제 보더와는 몇 계단 차이가 날 수 있습니다(실측: 와카마쓰 G1 0.07 차, 기류 일반전 0.83 차. 중도 귀향·상전 제외 선수를 당사 데이터로 뺄 수 없고, 일반전은 득점률 순만으로 준우승전이 정해지지 않는 경우가 있기 때문입니다). 필요 득점＝기준×(현재 주행 수+잔여 주행 수)−현재 득점이며, 잔여 주행 수는 당일 편성이 나와 있는 예선분입니다(하루 2주 하는 선수도 있어 사람마다 다릅니다). 무사고 완주가 전제이며 '확정'이라는 표현은 쓰지 않습니다.",
+    "forecastDetail": "기준은 예선 종료 시점 {{slots}}위의 득점률입니다. 실제 보더와는 몇 계단 차이가 날 수 있습니다(실측: 와카마쓰 G1 0.07 차, 기류 일반전 0.83 차. 공식 비고가 없는 시리즈에서는 중도 귀향(마지막 날까지 판정 불가)과 F 이외 사유의 상전 제외 선수를 당사 데이터로 뺄 수 없고, 일반전은 득점률 순만으로 준우승전이 정해지지 않는 경우가 있기 때문입니다). 필요 득점＝기준×(현재 주행 수+잔여 주행 수)−현재 득점이며, 잔여 주행 수는 당일 편성이 나와 있는 예선분입니다(하루 2주 하는 선수도 있어 사람마다 다릅니다). 무사고 완주가 전제이며 '확정'이라는 표현은 쓰지 않습니다.",
     "withdrawn": "대상 외",
     "withdrawnTitle": "시리즈 마지막 날 출주가 없어 중도 이탈로 취급(공식 순위표도 중도 귀향 선수를 순위에서 제외합니다)",
+    "awardExcluded": "상전 제외",
+    "awardExcludedTitle": "공식 득점률 일람의 비고에서 상전 제외(준우승전·우승전에 탈 수 없음). 공식과 마찬가지로 순위에서 제외합니다",
+    "flyingExcluded": "상전 제외(이번 F)",
+    "flyingExcludedTitle": "이번 시리즈에서 플라잉(F)을 해 상전 제외(준우승전·우승전에 탈 수 없음). 공식과 마찬가지로 순위에서 제외합니다. 공식 비고가 없는 시리즈에서의 당사 판정입니다",
     "absent": "결장",
     "absentTitle": "이번 시리즈는 지금까지 모두 결장해 출주 수가 0이므로 득점률·시리즈 내 순위가 없습니다",
     "absentNote": "\"결장\"은 이번 시리즈에서 지금까지 모든 경주를 결장한 선수입니다. 출주 수가 0이므로 득점률·시리즈 내 순위가 없습니다.",
@@ -890,6 +918,9 @@
     "periodWinRate": "승률 {{value}}",
     "periodTop2Rate": "2연대율 {{value}}",
     "periodAvgSt": "평균 ST {{value}}",
+    "periodVsCurrent": "(출주표·전국 {{current}}, 전기 대비 {{diff}})",
+    "periodCurrentOnly": "(출주표·전국 {{current}})",
+    "periodDiffWithheldNote": "※ 기가 바뀐 뒤 3개월 동안은 출주표 수치의 대부분이 전기와 같은 기간의 성적이라 전기 대비 차이를 표시하지 않습니다({{date}} 이후 경주부터 표시).",
     "periodFetchError": "전기 성적을 가져오지 못했습니다",
     "meetScoreForecastTitle": "오늘 착순에 따른 득점률 변화",
     "meetScorePrelimOver": "예선 득점률 {{rate}}（{{n}}주・{{source}}・확정）"
@@ -910,9 +941,23 @@
     "rowTilt": "틸트",
     "rowAdjustmentWeight": "조정 중량",
     "rowPartsChanged": "부품 교환",
-    "rowPrevResult": "직전 경주 성적",
+    "rowPrevResult": "오늘 앞선 경주",
     "prevResultCourse": "{{course}}코스",
-    "prevResultNoRace": "이번 시리즈 첫 경주",
+    "prevResultNoRace": "첫 출주",
+    "meetFirstRace": "이번 시리즈 첫 경주",
+    "prevMark": {
+      "flying": "F",
+      "late": "L",
+      "absent": "결장",
+      "capsized": "전복",
+      "fell": "낙수",
+      "sank": "침몰",
+      "obstruction": "방해",
+      "engineStall": "엔스트",
+      "notFinished": "미완주",
+      "disqualified": "실격",
+      "noPosition": "—"
+    },
     "rowTechnique": "결정수 유형",
     "rowReturnRate": "단승 회수율",
     "noWins": "승리 없음",
@@ -938,7 +983,7 @@
     "rowTopStart": "톱 스타트율",
     "rowLosing": "패배 시 결정수",
     "rowExhibitionTop": "전시 최고속→우승",
-    "boatLabel": "{{n}}호정",
+    "boatLabel": "{{n}}번 보트",
     "nigeLink": "인빠지기 시 조합 보기",
     "rowTechniqueShort": "결정수",
     "rowTopStartShort": "스타트율",
@@ -971,7 +1016,7 @@
     "turnPredictionColThird": "3착 유력",
     "turnPredictionDistributionLabel": "결정技 전체 경향",
     "turnPredictionStrengthLabel": "1마크 전개 예측 기반 종합력 순위",
-    "promptVolatilityTrifecta": "위는 「인코스 붕괴 주의도」가 높다고(1호정이 평소보다 선행하지 못할 가능성이 있다고) 판정된 레이스의 출주표 데이터와, 1마크 전개 예측(결정技별 승리 확률・2착3착 유력 艇)입니다. 이 전개 예측 데이터를 바탕으로 실제로 1착이 될 가능성이 높은 艇과 그 결정技를 근거와 함께 판단하여, 삼쌍승으로 노려볼 만한 조합을 3가지 제안해주세요. 1호정의 선행 확률이 여전히 높다면 배제하지 말고 후보에 포함해주세요.",
+    "promptVolatilityTrifecta": "위는 「인코스 붕괴 주의도」가 높다고(1번 보트가 평소보다 선행하지 못할 가능성이 있다고) 판정된 레이스의 출주표 데이터와, 1마크 전개 예측(결정技별 승리 확률・2착3착 유력 艇)입니다. 이 전개 예측 데이터를 바탕으로 실제로 1착이 될 가능성이 높은 艇과 그 결정技를 근거와 함께 판단하여, 삼쌍승으로 노려볼 만한 조합을 3가지 제안해주세요. 1번 보트의 선행 확률이 여전히 높다면 배제하지 말고 후보에 포함해주세요.",
     "previewToggleLabel": "복사될 질문 내용 보기"
   },
   "review": {
@@ -990,7 +1035,7 @@
       "tilt": "틸트",
       "adjustmentWeight": "조정중량",
       "partsChanged": "부품교환",
-      "prevResult": "직전",
+      "prevResult": "오늘 직전",
       "courseRate": "번호",
       "returnRate": "회수율",
       "technique": "결정수"
@@ -1009,7 +1054,7 @@
     "raceSelectLabel": "레이스:",
     "backToList": "← 레이스 목록으로 돌아가기",
     "dataLoadError": "데이터를 가져오지 못했습니다",
-    "boatN": "{{n}}호정",
+    "boatN": "{{n}}번 보트",
     "raceOption": "{{number}}R ({{time}} JST)",
     "lastUpdated": "(마지막 업데이트: {{date}})",
     "noData": "데이터 없음",
@@ -1043,7 +1088,7 @@
       "title": "💔 패배 시 결정수 분석",
       "description": "최근 90일간의 레이스 결과를 바탕으로, 각 경기장에서 「1착을 놓쳤을 때 승자가 어떤 결정수(인빠지기·찌르기·휘감기 등)로 이겼는가」를 번호별로 분석합니다.",
       "summary": "최근 90일간의 패배 시 결정수 구성비",
-      "note": "💡 출현 비율은 해당 번호가 1착을 놓친 레이스 내에서의 구성비입니다. 「1호정은 질 때 찌르기를 당하는 비율이 높다」 등의 경향을 읽을 수 있습니다.",
+      "note": "💡 출현 비율은 해당 번호가 1착을 놓친 레이스 내에서의 구성비입니다. 「1번 보트는 질 때 찌르기를 당하는 비율이 높다」 등의 경향을 읽을 수 있습니다.",
       "empty": "패배 시 결정수 데이터가 없습니다"
     },
     "outcome": {
@@ -1056,10 +1101,10 @@
     },
     "nige": {
       "title": "🏃 인빠지기 성공 시 결과 분포",
-      "description": "최근 90일간의 경정 결과 중 「인빠지기(선두 독주)」로 1착이 된 레이스만을 대상으로, 2착·3착이 어떤 코스 조합으로 나오기 쉬운지 분석합니다. 1호정 이외가 인빠지기한 경우도 포함합니다.",
+      "description": "최근 90일간의 경정 결과 중 「인빠지기(선두 독주)」로 1착이 된 레이스만을 대상으로, 2착·3착이 어떤 코스 조합으로 나오기 쉬운지 분석합니다. 1번 보트 이외가 인빠지기한 경우도 포함합니다.",
       "summary": "최근 90일간의 인빠지기 성공 {{count}}개 레이스",
-      "firstHeading": "{{n}}호정이 인빠지기로 1착",
-      "note": "💡 출현율은 해당 보트가 인빠지기로 1착한 레이스 내에서의 확률입니다. 1호정 이외의 인빠지기는 건수가 적은 경향이 있습니다.",
+      "firstHeading": "{{n}}번 보트가 인빠지기로 1착",
+      "note": "💡 출현율은 해당 보트가 인빠지기로 1착한 레이스 내에서의 확률입니다. 1번 보트 이외의 인빠지기는 건수가 적은 경향이 있습니다.",
       "empty": "인빠지기 성공 시 결과 분포 데이터가 없습니다"
     },
     "exTop": {
@@ -1241,7 +1286,7 @@
     },
     "ad": {
       "title": "⚔️ 심화 경주 데이터",
-      "description": "오늘 개최 중인 레이스를 선택하면 출전하는 6명의 선수 각각의 번호별 「공격 수단」(찌르기·휘감기 등으로 어떻게 공격하는가)과 1번의 「수비 패턴」(어떻게 공격당해 지는가)의 실적 분포를 알 수 있습니다.",
+      "description": "오늘 개최 중인 레이스를 선택하면 출전하는 6명의 선수 각각의 번호별 「공격 수단」(찌르기·휘감기 등으로 어떻게 공격하는가)과 1번 보트의 「수비 패턴」(어떻게 공격당해 지는가)의 실적 분포를 알 수 있습니다.",
       "empty": "이 레이스의 심화 경주 데이터가 아직 생성되지 않았습니다"
     },
     "raceCard": {
@@ -1378,7 +1423,7 @@
       },
       "attackdefense": {
         "name": "심화 경주 데이터",
-        "description": "출전 선수별 번호에 따른 공격 패턴과 1번의 수비 패턴을 분석"
+        "description": "출전 선수별 번호에 따른 공격 패턴과 1번 보트의 수비 패턴을 분석"
       },
       "racecard": {
         "name": "출전표 데이터",
@@ -1519,7 +1564,7 @@
             "text": " = 바깥쪽에서의 추격에 약한 경향"
           },
           {
-            "text": "1호정이 어떤 결정수로 패배하기 쉬운지 보면 인빠지기가 결정되지 않았을 때의 전개를 예측하는 자료가 됩니다"
+            "text": "1번 보트가 어떤 결정수로 패배하기 쉬운지 보면 인빠지기가 결정되지 않았을 때의 전개를 예측하는 자료가 됩니다"
           }
         ],
         "articleLinkText": "패배 시 결정수 데이터 분석이란? 「지는 방법」으로 경기장·번호의 약점을 찾는 새 기능"
@@ -1529,10 +1574,10 @@
         "dataView": "최근 90일간의 레이스 결과로부터, 「인빠지기(선두 독주)」로 1착이 된 레이스만으로 한정하여 2착·3착의 출현 패턴을 분석합니다. 결과 조합 분포(결정수를 불문한 전체 집계)와 달리, 인빠지기 성공 시로 한정한 경향을 알 수 있습니다.",
         "tips": [
           {
-            "text": "1호정이 인빠지기했을 때 2착·3착이 되기 쉬운 보트 조합을 파악할 수 있음"
+            "text": "1번 보트가 인빠지기했을 때 2착·3착이 되기 쉬운 보트 조합을 파악할 수 있음"
           },
           {
-            "text": "1호정 이외(2~6코스)가 인빠지기하는 경우는 건수가 적어, 이변이 있는 레이스의 참고가 됨"
+            "text": "1번 보트 이외(2~6코스)가 인빠지기하는 경우는 건수가 적어, 이변이 있는 레이스의 참고가 됨"
           },
           {
             "text": "결정수를 불문한 결과 조합 분포와 비교하면 인빠지기 특유의 경향을 구분할 수 있습니다"
@@ -1634,7 +1679,7 @@
       },
       "attackdefense": {
         "title": "심화 경주 데이터 소개",
-        "dataView": "출전 선수별로 번호에 따라 「어떻게 공격해서 이겼는가」(공격 수단: 찌르기·휘감기·휘감아찌르기 등)와, 1번 선수가 「어떻게 공격당해 졌는가」(수비 패턴)의 실적 분포를 표시합니다. 전국 평균과의 비교로 그 선수의 공격 스타일을 읽을 수 있습니다.",
+        "dataView": "출전 선수별로 번호에 따라 「어떻게 공격해서 이겼는가」(공격 수단: 찌르기·휘감기·휘감아찌르기 등)와, 1번 보트 선수가 「어떻게 공격당해 졌는가」(수비 패턴)의 실적 분포를 표시합니다. 전국 평균과의 비교로 그 선수의 공격 스타일을 읽을 수 있습니다.",
         "tips": [
           {
             "strong": "휘감기 공격이 많은 바깥 번호 선수",
@@ -1666,11 +1711,11 @@
       },
       "venueranking": {
         "title": "경기장 랭킹 소개",
-        "dataView": "오늘 결과가 확정된 레이스를 경기장별로 집계하여 삼쌍승식 평균 배당금(안정/이변), 1호정의 인빠지기 성공률, 만슈(1만엔 이상 배당) 출현율의 4가지 지표로 랭킹 표시합니다. 전체 24개 경기장의 최근 90일간 1번 보트 승률도 함께 표시합니다(이 지표만 90일 집계이며 오늘 한정이 아닙니다).",
+        "dataView": "오늘 결과가 확정된 레이스를 경기장별로 집계하여 삼쌍승식 평균 배당금(안정/이변), 1번 보트의 인빠지기 성공률, 만슈(1만엔 이상 배당) 출현율의 4가지 지표로 랭킹 표시합니다. 전체 24개 경기장의 최근 90일간 1번 보트 승률도 함께 표시합니다(이 지표만 90일 집계이며 오늘 한정이 아닙니다).",
         "tips": [
           {
             "strong": "안정적인 경기장",
-            "text": " = 1호정의 인빠지기가 잘 성공하는 경향. 안정형 선호자에게 추천"
+            "text": " = 1번 보트의 인빠지기가 잘 성공하는 경향. 안정형 선호자에게 추천"
           },
           {
             "strong": "이변이 많은 경기장",
@@ -1689,7 +1734,7 @@
         "dataView": "선택한 경기장에 대해 레이스 등급(일반전/G3/G2/G1/SG)별로 번호별 승률·연대율·3연대율, 또는 레이스 전체의 만슈율·평균 배당금을 비교합니다. 샘플 수가 50레이스 미만인 셀은 \"-\"로 표시합니다.",
         "tips": [
           {
-            "strong": "등급이 오를수록 1번이 약해지는 경기장",
+            "strong": "등급이 오를수록 1번 보트가 약해지는 경기장",
             "text": " = 일반전에서 통하는 예측 패턴이 SG/G1에서는 통하지 않을 수 있습니다"
           },
           {
@@ -1702,7 +1747,7 @@
       },
       "volatility": {
         "title": "인코스 붕괴 지수 실적 소개",
-        "dataView": "신규 AI 예측 모델(2026년 8월 11일 운용 개시)이 산출하는 「인코스 붕괴 지수」(1호정이 붕괴하기 쉬운 정도의 경기장 내 백분위)를 레벨별(경계/표준/안정)로 실제 인코스 붕괴 발생률과 대조하여 공개합니다.",
+        "dataView": "신규 AI 예측 모델(2026년 8월 11일 운용 개시)이 산출하는 「인코스 붕괴 지수」(1번 보트가 붕괴하기 쉬운 정도의 경기장 내 백분위)를 레벨별(경계/표준/안정)로 실제 인코스 붕괴 발생률과 대조하여 공개합니다.",
         "tips": [
           {
             "strong": "경계",
@@ -1736,12 +1781,17 @@
     "noticeHeading": "⚠️ 주의사항"
   },
   "flyingBadge": {
-    "title": "출주표에 실린 이번 기 플라잉 {{n}}회. 기(5월 1일·11월 1일)가 바뀌면 0으로 돌아갑니다"
+    "title": "출주표에 실린 이번 기 플라잉 {{n}}회. 기(5월 1일·11월 1일)가 바뀌면 0으로 돌아갑니다",
+    "titleCurrentMeet": "출주표에 실린 이번 기 플라잉 {{n}}회. 이번 절 첫날부터 전날까지의 레이스에서 나온 것을 포함(당일 플라잉은 제외). 플라잉 후에도 이번 절의 남은 레이스에는 출주하지만, 준결승·결승에는 진출할 수 없습니다. 기(5월 1일·11월 1일)가 바뀌면 0으로 돌아갑니다",
+    "currentMeet": "이번 절",
+    "lateTitle": "출주표에 실린 이번 기 출발 지연(L) {{n}}회. 스타트 라인을 1초 이상 늦게 통과한 것으로, 플라잉 및 ST 고찰의 '출발지연률'과는 별도로 셉니다",
+    "legend": "F＝출주표의 이번 기 플라잉 횟수(금색 1회, 빨간색 2회). '이번 절'은 그중 이번 절 첫날부터 전날까지 나온 것이 있다는 뜻입니다(당일 플라잉은 제외). 그 선수는 이번 절의 남은 레이스에는 출주하지만 준결승·결승에는 진출할 수 없습니다. L＝이번 기 출발 지연 횟수"
   },
   "stConsideration": {
     "title": "ST 고찰",
     "subtitle": "아래는 같은 코스·같은 급별 평균과의 차이",
-    "window": "집계 기간 {{start}}〜{{end}}",
+    "window": "비교 평균의 집계 기간 {{start}}〜{{end}}",
+    "ownWindow": "선수의 값은 이 경주 이전 경주로 집계합니다",
     "gradeRow": "급별",
     "runsRow": "출주수",
     "stable": "안정률",
@@ -1786,19 +1836,19 @@
     "legend": "위는 실제 진입 코스, 가운데는 착순, 아래는 ST와 그 경주에서의 ST 순위"
   },
   "venueDaySummary": {
-    "collapsedTeaser": "확정 {{n}}R · 1호정 도망 비율 {{rate}}%",
+    "collapsedTeaser": "확정 {{n}}R · 1번 보트 도망 비율 {{rate}}%",
     "collapsedTeaserNoNige": "확정 {{n}}R",
     "title": "이날의 수면 경향",
     "note": "{{date}} {{venue}}에서 확정된 {{n}}경주의 집계입니다",
     "ledeDay": "확정된 {{n}}경주의 결정타는 {{techniques}}입니다.",
-    "ledeNige": "1호정의 도주율 {{rate}}%.",
+    "ledeNige": "1번 보트의 도주율 {{rate}}%.",
     "ledeThisRaceWithCourse": "이 경주는 {{course}}코스에서 {{technique}}로 승리해, 이날 {{ordinal}}번째 {{technique}}였습니다.",
     "ledeThisRace": "이 경주는 {{technique}}로 승리해, 이날 {{ordinal}}번째 {{technique}}였습니다.",
     "countUnit": "{{n}}",
     "techniqueSeparator": "·",
     "avgPayoutLabel": "평균 배당",
     "manshuRateLabel": "만슈율",
-    "nigeRateLabel": "1호정의 도주율",
+    "nigeRateLabel": "1번 보트의 도주율",
     "breakdownToggle": "결정타별·진입 코스별 내역",
     "techniqueBreakdownLabel": "결정타별",
     "entryCourseWinLabel": "진입 코스별 1착 횟수",

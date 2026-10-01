@@ -20,8 +20,8 @@
  *   getRacerScopedRaceStats(racerId)の生データ（既にactualCourse/
  *   isFastestExhibitionを追加済み）をこのタブでも取得し、basicInfoStats.jsの
  *   computeFrameEntryDistribution/computeExhibitionTopRatesで集計する
- * - 今節展示情報（展示タイムのみ）: racerService.getCurrentMeetRaceEntriesと
- *   同じ節判定（groupIntoCurrentMeet）を使うgetRacerMeetExhibitionTrendBefore
+ * - 今節展示情報（展示タイムのみ）: getRacerMeetExhibitionTrendBefore。今節タブと
+ *   同じ節判定（groupIntoMeetBeforeRace、会場で絞り表示中のレースを目印にする）
  *
  * 2026-09-24（phase a FR-5 / BOA-222）に「本日の成績サマリー」をこのタブから
  * 外した。粒度（レース単位ではなく会場×当日単位）と更新タイミング（発走前に
@@ -43,6 +43,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import BandWrapAxisTick from "../BandWrapAxisTick";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
@@ -381,8 +382,8 @@ function RaceBeforeInfoTab({
               const v = valueFor(p);
               if (!v)
                 return (
-                  <span className="drt-sub">
-                    {t("dataTable.prevResultNoRace")}
+                  <span className="drt-sub drt-nowrap">
+                    {t("dataTable.meetFirstRace")}
                   </span>
                 );
               return (
@@ -454,7 +455,9 @@ function RaceBeforeInfoTab({
         const trend = (state ?? []).filter((e) => e.exhibitionTime !== null);
         if (trend.length === 0)
           return (
-            <span className="drt-sub">{t("dataTable.prevResultNoRace")}</span>
+            <span className="drt-sub drt-nowrap">
+              {t("dataTable.meetFirstRace")}
+            </span>
           );
         const prev = trend[trend.length - 1].exhibitionTime;
         const avg =
@@ -679,7 +682,13 @@ function RaceBeforeInfoTab({
                 margin={{ top: 20, right: 16, left: 0, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <XAxis
+                  dataKey="name"
+                  interval={0}
+                  tick={(props) => (
+                    <BandWrapAxisTick {...props} fontSize={11} />
+                  )}
+                />
                 {/* 縦軸は「最も遅い艇との差」で、目盛りの数字そのものに
                     意味が無いので出さない。実タイムは棒の上に出す */}
                 <YAxis hide domain={[0, "dataMax + 0.02"]} />
