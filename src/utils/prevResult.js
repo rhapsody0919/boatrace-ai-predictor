@@ -32,25 +32,37 @@ export function finishMarkKeyOf(mark) {
  *   **着順より先に見る**。返還艇（F）が race_results の着順に入っていることがある
  *   （BOA-576: 2026-09-19 戸田9R の3号艇は F なのに rank3）
  * - 着順が付いた走 → { kind: "rank", rank, course, raceId }
- * - 結果がまだ無い・読めない → { kind: "unknown" }
+ * - 前走の結果がまだ無い → { kind: "pending", raceId }
+ * - 読めない（行が無い・結果に艇が見つからない）→ { kind: "unknown" }
  *
  * @param {{firstOfMeet?: boolean, raceId?: string, boatNumber?: number,
- *   result?: Object|null, finishMark?: string|null}|null} entry
+ *   result?: Object|null, finishMark?: string|null, entryCourse?: number|null}|null} entry
  *   サービス層（getRaceMeetPrevRuns）の1艇分。result は race_results の1行
- *   （rank1..6・course_1..6 に艇番が入る）
+ *   （rank1..6 に艇番、actual_course_<艇番> に進入コース）。entryCourse は
+ *   race_start_timings.entry_course
  */
 export function meetPrevRunState(entry) {
   if (!entry) return { kind: "unknown" };
   if (entry.firstOfMeet) return { kind: "firstOfMeet" };
   const { raceId, boatNumber, result } = entry;
-  if (!raceId || !boatNumber || !result) return { kind: "unknown" };
-  const indexOf = (prefix) => {
-    for (let n = 1; n <= 6; n += 1) {
-      if (Number(result[`${prefix}${n}`]) === Number(boatNumber)) return n;
-    }
-    return null;
+  if (!raceId || !boatNumber) return { kind: "unknown" };
+  // 前走は決まっているが結果がまだ無い（同じ日の前のレースが確定前）。「—」だと
+  // 「データなし」と読まれるので、待っている走を出す（BOA-610 ファン評価1周目 P2）
+  if (!result) return { kind: "pending", raceId };
+  // 進入コースは本番STの entry_course（当日のうちに入る）を先に見て、無ければ
+  // Kファイル由来の actual_course_<艇番>（翌日以降に入る）。race_results の
+  // course_1〜6 は進入順を表していない（2026-09-29 児島10R で 1〜6 のまま。
+  // 公式の進入は 1,2,3,5,4,6。BOA-610 ファン評価1周目 P0）ので使わない。
+  // どちらも無ければ枠番で代用せず null（コースを出さない）
+  const toCourse = (v) => {
+    const n = Number(v);
+    return v != null && v !== "" && Number.isInteger(n) && n >= 1 && n <= 6
+      ? n
+      : null;
   };
-  const course = indexOf("course_");
+  const course =
+    toCourse(entry.entryCourse) ??
+    toCourse(result[`actual_course_${boatNumber}`]);
   const mark = normalizeFinishMark(entry.finishMark);
   if (mark !== null && !/^[0-9]$/.test(mark)) {
     return {
@@ -61,7 +73,10 @@ export function meetPrevRunState(entry) {
       raceId,
     };
   }
-  const rank = indexOf("rank");
+  let rank = null;
+  for (let n = 1; n <= 6 && rank === null; n += 1) {
+    if (Number(result[`rank${n}`]) === Number(boatNumber)) rank = n;
+  }
   if (rank !== null) return { kind: "rank", rank, course, raceId };
   return { kind: "unknown" };
 }

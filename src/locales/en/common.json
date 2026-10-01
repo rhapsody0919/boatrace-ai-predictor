@@ -938,6 +938,7 @@
     "rowPrevResult": "Last race this event",
     "prevResultCourse": "Course {{course}}",
     "prevResultWhen": "{{month}}/{{day}} R{{race}}",
+    "prevResultPending": "Awaiting result",
     "meetFirstRace": "First race of the event",
     "prevMark": {
       "flying": "F",

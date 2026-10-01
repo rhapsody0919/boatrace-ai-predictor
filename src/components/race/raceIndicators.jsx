@@ -553,6 +553,20 @@ function buildRowDefs({
         }
         if (state.kind === "unknown") return "—";
         const when = meetPrevRunWhenParams(state.raceId);
+        if (state.kind === "pending") {
+          return (
+            <span className="drt-value">
+              <span className="drt-sub drt-nowrap">
+                {t("dataTable.prevResultPending")}
+              </span>
+              {when && (
+                <span className="drt-sub drt-nowrap">
+                  {t("dataTable.prevResultWhen", when)}
+                </span>
+              )}
+            </span>
+          );
+        }
         return (
           <span className="drt-value">
             {state.kind === "rank" ? (

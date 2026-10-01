@@ -1059,32 +1059,48 @@ function suiteDateUtils(m, check) {
 // --- prevResult（BOA-569 → BOA-610）: 今節の前走の読み方。
 // 前走は同じ会場・同じ節でこのレースより前の最後の走（race_results の1行と本番STの記号）
 function suitePrevResult(m, check) {
-  // 2026-09-29 児島10R: 西村拓也（1号艇）が5コースから2着、のような形
+  // 2026-09-29 児島10R の5号艇 西村拓也: 4コースから2着。race_results の course_1〜6 は
+  // 1〜6 のまま（進入順を表していない）。本番STの entry_course と actual_course_5 が 4
   const result = {
-    rank1: 3,
-    rank2: 1,
-    rank3: 2,
+    rank1: 1,
+    rank2: 5,
+    rank3: 3,
     rank4: 4,
-    rank5: 5,
+    rank5: 2,
     rank6: 6,
-    course_1: 2,
-    course_2: 3,
-    course_3: 4,
-    course_4: 5,
-    course_5: 1,
+    course_1: 1,
+    course_2: 2,
+    course_3: 3,
+    course_4: 4,
+    course_5: 5,
     course_6: 6,
+    actual_course_4: 5,
+    actual_course_5: 4,
   };
   const prev = {
     boat_number: 1,
     raceId: "2026-09-29-16-10",
-    boatNumber: 1,
+    boatNumber: 5,
     result,
     finishMark: "2",
+    entryCourse: 4,
   };
   check(
-    "meetPrevRunState: 着順があれば着順と進入コース（艇番ではなく進入したコース）",
+    "meetPrevRunState: 着順と進入コース。進入は entry_course（course_N や枠番ではない。BOA-610 ファン評価1周目 P0）",
     m.meetPrevRunState(prev),
-    { kind: "rank", rank: 2, course: 5, raceId: "2026-09-29-16-10" },
+    { kind: "rank", rank: 2, course: 4, raceId: "2026-09-29-16-10" },
+  );
+  check(
+    "meetPrevRunState: entry_course が無ければ actual_course_<艇番>、どちらも無ければ枠番で代用せず null",
+    [
+      m.meetPrevRunState({ ...prev, entryCourse: null }).course,
+      m.meetPrevRunState({
+        ...prev,
+        entryCourse: null,
+        result: { ...result, actual_course_5: null },
+      }).course,
+    ],
+    [4, null],
   );
   check(
     "meetPrevRunState: 着順が付かない走は公式の記号。返還艇が着順の列にいても記号を先に見る（BOA-576）",
@@ -1098,21 +1114,21 @@ function suitePrevResult(m, check) {
         kind: "mark",
         mark: "F",
         markKey: "flying",
-        course: 5,
+        course: 4,
         raceId: "2026-09-29-16-10",
       },
       {
         kind: "mark",
         mark: "エ",
         markKey: "engineStall",
-        course: 5,
+        course: 4,
         raceId: "2026-09-29-16-10",
       },
       {
         kind: "mark",
         mark: "？",
         markKey: null,
-        course: 5,
+        course: 4,
         raceId: "2026-09-29-16-10",
       },
     ],
@@ -1123,13 +1139,17 @@ function suitePrevResult(m, check) {
     { kind: "firstOfMeet" },
   );
   check(
-    "meetPrevRunState: 前走の結果がまだ無い・行が無いときは不明（「—」。「今節初戦」にしない）",
+    "meetPrevRunState: 前走の結果がまだ無ければ結果待ち（その走のレースIDつき）。行が無い・艇が結果に無ければ不明（「今節初戦」にしない）",
     [
       m.meetPrevRunState({ ...prev, result: null, finishMark: null }),
       m.meetPrevRunState(null),
       m.meetPrevRunState({ ...prev, boatNumber: 7, finishMark: null }),
     ],
-    [{ kind: "unknown" }, { kind: "unknown" }, { kind: "unknown" }],
+    [
+      { kind: "pending", raceId: "2026-09-29-16-10" },
+      { kind: "unknown" },
+      { kind: "unknown" },
+    ],
   );
   check(
     "meetPrevRunWhenParams: 前走の日付とR番号。形が違えば null",
@@ -1399,15 +1419,15 @@ const MUTANTS = [
   ["dateUtils", "isWithinDays の未来日の除外を外す", " && diffDays >= 0;", ";"],
   [
     "prevResult",
-    "今節の前走で記号より着順を先に見る（BOA-576 の退行）",
+    "今節の前走で記号を見ずに着順を出す（BOA-576 の退行）",
     "if (mark !== null && !/^[0-9]$/.test(mark)) {",
-    "if (indexOf(\"rank\") === null && mark !== null && !/^[0-9]$/.test(mark)) {",
+    "if (false) {",
   ],
   [
     "prevResult",
-    "進入コースの代わりに艇番を出す",
-    "const course = indexOf(\"course_\");",
-    "const course = Number(boatNumber);",
+    "進入コースの代わりに艇番を出す（BOA-610 ファン評価1周目 P0 の退行）",
+    "toCourse(entry.entryCourse) ??",
+    "Number(boatNumber) ??",
   ],
 ];
 

@@ -933,6 +933,7 @@
     "rowPrevResult": "今節の前走",
     "prevResultCourse": "{{course}}コース",
     "prevResultWhen": "{{month}}/{{day}} {{race}}R",
+    "prevResultPending": "結果待ち",
     "meetFirstRace": "今節初戦",
     "prevMark": {
       "flying": "F",

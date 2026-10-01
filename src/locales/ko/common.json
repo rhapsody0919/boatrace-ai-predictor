@@ -933,6 +933,7 @@
     "rowPrevResult": "이번 시리즈 직전 경주",
     "prevResultCourse": "{{course}}코스",
     "prevResultWhen": "{{month}}/{{day}} {{race}}R",
+    "prevResultPending": "결과 대기",
     "meetFirstRace": "이번 시리즈 첫 경주",
     "prevMark": {
       "flying": "F",

@@ -2852,7 +2852,7 @@ export const supabaseDataService = {
    * @returns {Promise<{rows: Array<Object>, fetchFailed?: boolean}>}
    */
   getRaceMeetPrevRuns(raceId) {
-    return withCache(`race-meet-prev-runs-v1-${raceId}`, async () => {
+    return withCache(`race-meet-prev-runs-v2-${raceId}`, async () => {
       if (!supabase) {
         throw new Error("Supabase client not initialized");
       }
@@ -2910,12 +2910,12 @@ export const supabaseDataService = {
           supabase
             .from("race_results")
             .select(
-              "race_id, rank1, rank2, rank3, rank4, rank5, rank6, course_1, course_2, course_3, course_4, course_5, course_6",
+              "race_id, rank1, rank2, rank3, rank4, rank5, rank6, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
             )
             .in("race_id", meetRaceIds),
           supabase
             .from("race_start_timings")
-            .select("race_id, boat_number, finish_mark")
+            .select("race_id, boat_number, finish_mark, entry_course")
             .in("race_id", meetRaceIds),
           supabase
             .from("races")
@@ -2926,11 +2926,8 @@ export const supabaseDataService = {
       const statusById = new Map(
         (races ?? []).map((r) => [r.race_id, r.cancellation_status]),
       );
-      const markByKey = new Map(
-        (timings ?? []).map((r) => [
-          `${r.race_id}#${r.boat_number}`,
-          r.finish_mark,
-        ]),
+      const timingByKey = new Map(
+        (timings ?? []).map((r) => [`${r.race_id}#${r.boat_number}`, r]),
       );
 
       const rows = targets.map((e) => {
@@ -2948,7 +2945,11 @@ export const supabaseDataService = {
           boatNumber: prev.boat_number,
           result: resultById.get(prev.race_id) ?? null,
           finishMark:
-            markByKey.get(`${prev.race_id}#${prev.boat_number}`) ?? null,
+            timingByKey.get(`${prev.race_id}#${prev.boat_number}`)
+              ?.finish_mark ?? null,
+          entryCourse:
+            timingByKey.get(`${prev.race_id}#${prev.boat_number}`)
+              ?.entry_course ?? null,
         };
       });
       const pending = rows.some((r) => !r.firstOfMeet && !r.result);

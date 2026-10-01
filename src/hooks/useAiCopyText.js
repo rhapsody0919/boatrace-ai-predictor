@@ -167,6 +167,11 @@ function buildRows(t, players, analysis) {
         if (state.kind === "firstOfMeet") return t("dataTable.meetFirstRace");
         if (state.kind === "unknown") return DASH;
         const when = meetPrevRunWhenParams(state.raceId);
+        if (state.kind === "pending") {
+          return when
+            ? `${t("dataTable.prevResultPending")} (${t("dataTable.prevResultWhen", when)})`
+            : t("dataTable.prevResultPending");
+        }
         const head =
           state.kind === "rank"
             ? t("review.finishPosition", { position: state.rank })
