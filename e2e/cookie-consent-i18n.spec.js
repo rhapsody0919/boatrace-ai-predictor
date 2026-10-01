@@ -86,3 +86,27 @@ for (const [button, stored] of [
     ).toBe(stored);
   });
 }
+
+/**
+ * ko は単語（어절）の途中で改行しないことの固定（BOA-620）。
+ * 375px で「자세한 내/용은」のように切れていた。ja・zh-TW は空白の少ない文なので
+ * keep-all を当てると改行位置が無くなり折り返しが変わるため、ko だけに当てる。
+ */
+for (const [path, expected] of [
+  ["/ko/", "keep-all"],
+  ["/", "normal"],
+  ["/zh-TW/", "normal"],
+  ["/en/", "normal"],
+]) {
+  test(`Cookie バナー: ${path} の本文の word-break は ${expected}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(path);
+    const text = page.locator(".cookie-consent .cookie-consent__text");
+    await expect(text).toBeVisible();
+    expect(
+      await text.evaluate((el) => getComputedStyle(el).wordBreak),
+    ).toBe(expected);
+  });
+}

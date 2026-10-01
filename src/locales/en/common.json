@@ -16,7 +16,9 @@
     "menuLabel": "More menu",
     "logoLabel": "Go to Ryujin Radar top page",
     "logoText": "Ryujin Radar",
-    "logoTagline": "Visualize boat racing. When in doubt, trust the data."
+    "logoTagline": "Visualize boat racing. When in doubt, trust the data.",
+    "themeToLight": "Switch to light theme",
+    "themeToDark": "Switch to dark theme"
   },
   "language": {
     "switchLabel": "Switch language",
