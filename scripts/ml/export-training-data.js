@@ -31,6 +31,25 @@ function csvCell(v) {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+/**
+ * この艇の実際の進入コース（BOA-631）。
+ *   1. race_start_timings.entry_course（結果ページのスタート情報の行順。077、2026-09-21 以降はほぼ全レース）
+ *   2. race_results.actual_course_<艇番>（Kファイル由来。063）
+ *   3. どちらも無ければ null（枠番で代用しない）
+ * race_results.course_1〜6 は枠番と常に一致する無効な列（077 のコメント）のため使わない。以前はここから
+ * 逆引きしており、Supabase 期間の actual_course がすべて枠番になっていた
+ *
+ * @param {{ entryCourse?: number|null, result?: Record<string, unknown>, boatNumber: number }} params
+ * @returns {number|null}
+ */
+export function resolveActualCourse({ entryCourse, result, boatNumber }) {
+  const valid = (v) => Number.isInteger(v) && v >= 1 && v <= 6;
+  if (valid(entryCourse)) return entryCourse;
+  const fromKfile = result?.[`actual_course_${boatNumber}`];
+  if (valid(fromKfile)) return fromKfile;
+  return null;
+}
+
 function toCsv(rows, columns) {
   const lines = [columns.join(",")];
   for (const r of rows) {
@@ -67,11 +86,11 @@ async function main() {
       ),
       fetchAll(
         "race_results",
-        "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio, is_cancelled, is_no_race, course_1, course_2, course_3, course_4, course_5, course_6, winning_technique",
+        "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, winning_technique",
       ),
       fetchAll(
         "race_start_timings",
-        "race_id, boat_number, start_timing, is_flying, is_late_start",
+        "race_id, boat_number, start_timing, is_flying, is_late_start, entry_course",
       ),
     ]);
 
@@ -86,6 +105,9 @@ async function main() {
   const resultById = new Map(results.map((r) => [r.race_id, r]));
   const exhByKey = new Map(
     exhibitions.map((e) => [`${e.race_id}:${e.boat_number}`, e]),
+  );
+  const entryCourseByKey = new Map(
+    timings.map((t) => [`${t.race_id}:${t.boat_number}`, t.entry_course]),
   );
 
   // 結果あり・非中止レースのみを学習対象にする
@@ -107,14 +129,11 @@ async function main() {
     const cond = condById.get(e.race_id) || {};
     const exh = exhByKey.get(`${e.race_id}:${e.boat_number}`) || {};
 
-    // 実際の進入コース（course_N = そのコースに入った艇番）から、この艇のコースを逆引き
-    let actualCourse = null;
-    for (let c = 1; c <= 6; c++) {
-      if (result[`course_${c}`] === e.boat_number) {
-        actualCourse = c;
-        break;
-      }
-    }
+    const actualCourse = resolveActualCourse({
+      entryCourse: entryCourseByKey.get(`${e.race_id}:${e.boat_number}`),
+      result,
+      boatNumber: e.boat_number,
+    });
 
     // ラベル: 着順（1/2/3、それ以外は0）
     let finishPos = 0;
@@ -231,7 +250,10 @@ async function main() {
   console.log(`📁 出力先: ${OUT_DIR}`);
 }
 
-main().catch((err) => {
-  console.error("❌ エラー:", err);
-  process.exit(1);
-});
+// 検証スクリプトから resolveActualCourse だけを読み込めるよう、直接実行したときだけ本体を動かす
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    console.error("❌ エラー:", err);
+    process.exit(1);
+  });
+}
