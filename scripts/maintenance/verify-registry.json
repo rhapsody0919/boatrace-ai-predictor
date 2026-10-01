@@ -129,6 +129,11 @@
       "guards": "K/Bアーカイブによる race_results 欠損補填CLI（BOA-403）"
     },
     {
+      "script": "verify-ko-boat-counter.js",
+      "tier": "ci",
+      "guards": "ko の「N号艇」が「N번 보트」にそろっていること（src/locales/ko・src/pages/Ko*.jsx・src/data/blogPostsKo.js に「호정」「번 정」「번정」が無い。BOA-615）"
+    },
+    {
       "script": "verify-migration-numbers.js",
       "tier": "ci",
       "args": [
