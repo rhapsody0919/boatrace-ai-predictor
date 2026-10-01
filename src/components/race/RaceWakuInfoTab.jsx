@@ -194,7 +194,12 @@ function RaceWakuInfoTab({
     : openCellState.boat === selectedBoat
       ? openCellState
       : openCellState.from === "today" && selectedBoat !== null
-        ? { ...openCellState, boat: selectedBoat, course: selectedBoat }
+        ? {
+            ...openCellState,
+            boat: selectedBoat,
+            course: selectedBoat,
+            carried: true,
+          }
         : null;
   // 全コース比較の折りたたみ。native <details> ではなくReactの状態で持つ。
   // <details> は取得待ちの分岐（scopedRecords === undefined）の中にあるため、
@@ -284,14 +289,19 @@ function RaceWakuInfoTab({
         })
       : [];
 
+  // 艇を替えて引き継いだ行が、新しい艇では走数0なら閉じる。その行はボタンにならず
+  // （押して閉じられない）、「直近0走」の空の帯だけが表の下に残った（BOA-604 ファン評価3周目）
+  const shownCell =
+    openCell?.carried && recentRuns.length === 0 ? null : openCell;
+
   // 帯の見出し。押した行の条件と、実際に並んだ走数を入れる（BOA-604）。以前は行によらず
   // 「◯コースから出走した直近10走」のままで、「当地」で1走しか無くても10走と書いていた。
   // 「今期」の行は公式の期区分ではない（当社データの全期間）ので、期間をそのまま書く
   // （基本情報タブの periodCaveat・#973 と同じ「2025年12月以降」）
-  const recentHeading = openCell
+  const recentHeading = shownCell
     ? t("wakuInfo.recentFinishesNoteScoped", {
-        scope: t(`wakuInfo.recentScope.${openCell.rowKey}`),
-        course: openCell.course,
+        scope: t(`wakuInfo.recentScope.${shownCell.rowKey}`),
+        course: shownCell.course,
         n: recentRuns.length,
       })
     : null;
@@ -424,7 +434,8 @@ function RaceWakuInfoTab({
                   const isSmallSample =
                     row.n > 0 && row.n < SMALL_SAMPLE_THRESHOLD;
                   const open =
-                    openCell?.from === "today" && openCell?.rowKey === row.key;
+                    shownCell?.from === "today" &&
+                    shownCell?.rowKey === row.key;
                   return (
                     <tr
                       key={row.key}
@@ -482,7 +493,7 @@ function RaceWakuInfoTab({
               </tbody>
             </table>
 
-            {openCell?.from === "today" && (
+            {shownCell?.from === "today" && (
               <div className="rwit-expanded">
                 <p className="rwit-expanded-note">{recentHeading}</p>
                 {recentRuns.length === 0 ? (

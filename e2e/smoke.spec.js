@@ -1731,6 +1731,14 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 引き継いだ行をもう一度押すと閉じる
     await page.getByRole("button", { name: /当地/ }).click();
     await expect(page.locator(".rwit-expanded-note")).toHaveCount(0);
+
+    // 引き継いだ先の艇で走数0の行（4号艇の「当地」）は閉じる。ボタンにならず閉じられない
+    // 「直近0走」の帯だけが残っていた（ファン評価3周目）
+    await page.locator(".rwit-boat-chip").nth(0).click();
+    await page.getByRole("button", { name: /当地/ }).click();
+    await expect(note).toContainText("当地で1コース");
+    await page.locator(".rwit-boat-chip").nth(3).click();
+    await expect(page.locator(".rwit-expanded-note")).toHaveCount(0);
   });
 
   test("枠別情報のコース別「直近1ヶ月」の帯は、表示どおり左が古く右が新しい（BOA-601）", async ({
