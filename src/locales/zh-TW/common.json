@@ -283,6 +283,7 @@
     "refundTag": "有退款艇",
     "partialNoRaceTag": "部分投注類型不成立",
     "payoutNoRace": "不成立（退款）",
+    "payoutNoAmount": "官方派彩資料中沒有記載金額",
     "payoutSpecial": "特別派彩",
     "volatilityOutcomeNotJudgeable": "不列入判定（比賽不成立）",
     "stLegend": "右側箭頭為起跑時機（ST）。黃線為起跑線，越接近越早起跑。越過起跑線的紅色箭頭為起步犯規"

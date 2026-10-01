@@ -346,8 +346,9 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
     ]);
     // 払戻明細（payoutRows）が無い経路（直接クエリ・RPC未適用）でも、旧列に無い勝式を
     // 黙って消さず「不成立（返還）」で出す（/code-review の指摘、BOA-543）
+    // 最高額が ¥100（元返し）なので、¥100 の2行を「最高配当」として強調しない（BOA-558）
     const payouts = await readPayouts(root);
-    expect(payouts.map((p) => p.replace(/ best$/, ""))).toEqual([
+    expect(payouts).toEqual([
       "単勝 1 ¥100",
       "複勝 不成立（返還）",
       "3連単 不成立（返還）",
@@ -358,7 +359,7 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
     ]);
   });
 
-  test("特払（2026-07-24 17R3）: 単勝は組番の位置に「特払」、金額なしの複勝は組番だけ", async ({
+  test("特払（2026-07-24 17R3）: 単勝は組番の位置に「特払」、金額なしの複勝は組番と「—」", async ({
     page,
   }) => {
     const race = {
@@ -394,7 +395,8 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
     expect(payouts).toEqual([
       "単勝 特払 ¥70",
       "複勝 6 ¥1,800",
-      "複勝 4",
+      // 金額の無い行は空欄にせず「—」（データの欠けに見えないように。BOA-558）
+      "複勝 4 —",
       "3連単 6-4-1 85人気 ¥92,140 best",
     ]);
     await expect(root.locator(".rr-refund-tag")).toHaveCount(0);
