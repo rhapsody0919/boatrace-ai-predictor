@@ -9,11 +9,12 @@
  *   (d) mainRefresh の Vercel 対応: process.exit せず例外にする / 引数の日付が argv より優先 /
  *       Deploy Hook は decideDeployHook の抑制を維持 / race_id の一括取得が1000行の上限で欠けない
  *       （200レースを取得できる）/ 展示・気象の取得失敗は例外にする（予測を上書きしない）
- *   (e) 書き込み方式: replace は従来どおり削除→挿入（挿入失敗で予測が空になる）。upsert は削除も挿入もせず、
- *       失敗しても以前の予測が残り、行の内容は replace と同じ（的中フラグ等は null、predicted_at は現在時刻）
+ *   (e) 書き込み方式: upsert のみ（削除→挿入の replace は BOA-628 で廃止し、指定すると例外）。削除も挿入もせず、
+ *       失敗しても以前の予測が残る（的中フラグ等は null、predicted_at は現在時刻）
  *   (f) 展示取得（scrape-exhibition-data.js）が、実際に書き込んだレースを changedRaceIds で返す
  *   (g) 併走の排他: 案1の状態（GitHub は upsert・Vercel も upsert）で、同じレースを同時に再計算しても、
- *       予測が空にならず、書き込みが衝突して失敗しない。従来の replace 同士の併走では失敗しうる（現行の弱点）
+ *       予測が空にならず、書き込みが衝突して失敗しない（mainRefresh は predictions を削除しない）
+ *   (j) 発走済みのレース（BOA-628）: mainRefresh は書かない（includeStarted のときだけ書く）。発走時刻が無いレースは書く
  *   (i) cancellation_status の除外（BOA-411）: races.cancellation_status が非NULL（tentative/confirmed）の
  *       レースは、race_entries が事前スクレイピング済みでも予測を生成しない。開催されなかったレースに
  *       predictions が誤生成される不具合の再発防止（is_hit_win 等が永遠に未確定のまま残存する）
@@ -576,7 +577,7 @@ async function quiet(fn) {
 }
 
 // ---------------------------------------------------------------------------
-// (e) 書き込み方式（replace / upsert）
+// (e) 書き込み方式（upsert のみ）
 // ---------------------------------------------------------------------------
 {
   const ids = raceIdsOf(3);
@@ -597,57 +598,47 @@ async function quiet(fn) {
       fail,
     });
 
-  // replace（既定）: 従来どおり削除→挿入
+  // replace は廃止（BOA-628）: 指定すると例外にし、何も書かない
   const replaceFake = build();
   const replaceRun = await quiet(() =>
     mainRefresh({
       isDryRun: false,
       specificRaceIds: ids,
       client: replaceFake,
+      writeMode: "replace",
       now: () => NOW,
     }),
   );
-  const predOps = replaceFake.calls
-    .filter((c) => c.table === "predictions" && c.op !== "select")
-    .map((c) => c.op);
   check(
-    "replace（既定）: 従来どおり、削除→挿入の順（upsert は使わない）",
-    show(predOps) === show(["delete", "insert"]) && !replaceRun.error,
-    show(predOps),
-  );
-  const deleteCall = replaceFake.calls.find(
-    (c) => c.table === "predictions" && c.op === "delete",
-  );
-  check(
-    "replace: 削除は対象レースの is_shadow=false のみ（従来と同じ条件）",
-    show(deleteCall.filters) ===
-      show([
-        ["in", "race_id", ids],
-        ["eq", "is_shadow", false],
-      ]),
-    show(deleteCall.filters),
-  );
-  check(
-    "replace: 戻り値は { predictedRaceIds, volatilityUpdated, writeMode }（従来の呼び出し元は戻り値を使わない）",
-    show(replaceRun.value?.predictedRaceIds) === show(ids) &&
-      replaceRun.value?.writeMode === "replace",
-    show(replaceRun.value),
+    "replace は廃止（BOA-628）: writeMode='replace' は例外で、predictions に書かない",
+    replaceRun.error instanceof Error &&
+      /replace/.test(replaceRun.error.message) &&
+      replaceFake.calls.every(
+        (c) => c.table !== "predictions" || c.op === "select",
+      ),
+    replaceRun.error?.message,
   );
 
-  // replace で挿入が失敗すると、予測が空になる（現行の弱点。upsert が解消する対象）
-  const replaceBroken = build({ "predictions:insert": "connection reset" });
-  await quiet(() =>
+  // 既定は upsert
+  const defaultFake = build();
+  const defaultRun = await quiet(() =>
     mainRefresh({
       isDryRun: false,
       specificRaceIds: ids,
-      client: replaceBroken,
+      client: defaultFake,
       now: () => NOW,
     }),
   );
   check(
-    "replace（現行の弱点の記録）: 挿入が失敗すると、削除済みのため対象レースの予測が空になり、例外にもならない",
-    replaceBroken.state.predictions.length === 0,
-    `${replaceBroken.state.predictions.length}行`,
+    "既定（writeMode 未指定）は upsert。戻り値は { predictedRaceIds, volatilityUpdated, writeMode: 'upsert' }",
+    show(
+      defaultFake.calls
+        .filter((c) => c.table === "predictions" && c.op !== "select")
+        .map((c) => c.op),
+    ) === show(["upsert"]) &&
+      show(defaultRun.value?.predictedRaceIds) === show(ids) &&
+      defaultRun.value?.writeMode === "upsert",
+    show(defaultRun.value),
   );
 
   // upsert: 削除も挿入もしない。1文の upsert（一意制約 race_id,model_id）
@@ -688,15 +679,6 @@ async function quiet(fn) {
       sample.predicted_at === NOW.toISOString(),
     show(sample),
   );
-  const replaceKeys = Object.keys(
-    replaceFake.state.predictions[0] ?? {},
-  ).filter((k) => k !== "prediction_id");
-  check(
-    "upsert: 書き込む列の集合は、replace（挿入）が書く列を全て含む（挿入で null/DEFAULT になる列が、古い値のまま残らない）",
-    replaceKeys.every((k) => k in sample),
-    show(replaceKeys.filter((k) => !(k in sample))),
-  );
-
   // upsert で失敗しても、以前の予測が残る（例外にする）
   const upsertBroken = build({ "predictions:upsert": "connection reset" });
   const broken = await quiet(() =>
@@ -751,7 +733,7 @@ async function quiet(fn) {
 }
 
 // ---------------------------------------------------------------------------
-// (e2) unified の行: replace は削除してしまう（副作用）。upsert は触らない
+// (e2) unified の行: upsert は触らない（廃止した replace は削除していた。BOA-628）
 //      unified は、朝の日次バッチ（generate-unified-predictions.js）が書く model_id='unified'（is_shadow=false）。
 //      replace は is_shadow=false の全モデルを削除するため、再計算のたびに unified が消え、次の GitHub Actions
 //      の実行（morning-init.js の ensureUnifiedPredictions）が「unified が欠けたレースがある」ことを検知して
@@ -775,21 +757,6 @@ async function quiet(fn) {
     });
   const unifiedOf = (fake) =>
     fake.state.predictions.filter((p) => p.model_id === "unified");
-
-  const replaceFake = build();
-  await quiet(() =>
-    mainRefresh({
-      isDryRun: false,
-      specificRaceIds: ids,
-      client: replaceFake,
-      now: () => NOW,
-    }),
-  );
-  check(
-    "replace（現行の副作用の記録）: is_shadow=false の全モデルを削除するため、unified の行も消える（次の GitHub Actions の ensureUnifiedPredictions が再生成する）",
-    unifiedOf(replaceFake).length === 0,
-    `${unifiedOf(replaceFake).length}行`,
-  );
 
   const upsertFake = build();
   await quiet(() =>
@@ -1003,20 +970,8 @@ async function quiet(fn) {
     return { fake, github, races, conflict };
   };
 
-  const legacy = await interleave("replace", "replace");
   const upsertBoth = await interleave("upsert", "upsert");
-  const mixed = await interleave("replace", "upsert");
 
-  check(
-    "併走（現行の弱点の記録: replace 同士）: GitHub の挿入が一意制約に衝突し、バッチごと書かれず、r2 の予測が空になる",
-    legacy.conflict && !legacy.races.has(ids[1]) && legacy.races.has(ids[0]),
-    `予測のあるレース: ${show([...legacy.races])} / 衝突${legacy.conflict}`,
-  );
-  check(
-    "併走（過渡期: GitHub=replace・Vercel=upsert）: 同じく衝突して r2 が空になる。これが、案1の状態では GitHub も upsert にそろえる理由（scrape-scheduled.js の writeMode）",
-    mixed.conflict && !mixed.races.has(ids[1]),
-    `予測のあるレース: ${show([...mixed.races])} / 衝突${mixed.conflict}`,
-  );
   check(
     "併走（案1の状態: GitHub も Vercel も upsert）: 同じレースを同時に再計算しても、衝突せず、2レースとも予測が残る（6行のまま増えない）",
     !upsertBoth.conflict &&
@@ -1044,8 +999,8 @@ async function quiet(fn) {
       ),
   );
   check(
-    "scrape-scheduled.js: 書き込み方式は、案1の状態（オッズ起点を外す）だけ upsert、既定は replace（従来どおり）",
-    /writeMode: skipOddsRefresh \? "upsert" : "replace"/.test(scheduled),
+    "scrape-scheduled.js: 書き込み方式を指定しない（既定の upsert。replace は BOA-628 で廃止）",
+    !/writeMode/.test(scheduled),
   );
   check(
     "scrape-scheduled.js: オッズ・レース情報・展示の各起点を別々の集合に集めている（オッズ起点だけを外せる）",
@@ -1130,6 +1085,72 @@ async function quiet(fn) {
           l.includes(ids[2]) && l.includes("cancellation_status=confirmed"),
       ),
     show(result.lines.filter((l) => l.includes("スキップ"))),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (j) 発走済みのレースは書かない（BOA-628）。2026年9月、発走後の作り直しが2,065件あり、594件は発走の瞬間に
+//     unified が無かった。NOW は 2026-09-20 12:03 JST
+// ---------------------------------------------------------------------------
+{
+  const ids = raceIdsOf(3);
+  const tables = raceTables(ids);
+  // r1 は発走済み（12:00）、r2 は発走前（12:30）、r3 は発走時刻が無い（判定できないので書く）
+  tables.races = [
+    { race_id: ids[0], race_grade: "一般", start_time: "12:00:00" },
+    { race_id: ids[1], race_grade: "一般", start_time: "12:30:00" },
+    { race_id: ids[2], race_grade: "一般", start_time: null },
+  ];
+  const run = async (opts = {}) => {
+    const fake = createFakeClient({ tables: { ...tables, predictions: [] } });
+    const r = await quiet(() =>
+      mainRefresh({
+        isDryRun: false,
+        specificRaceIds: ids,
+        client: fake,
+        date: "2026-09-20",
+        now: () => NOW,
+        ...opts,
+      }),
+    );
+    return {
+      r,
+      races: [...new Set(fake.state.predictions.map((p) => p.race_id))].sort(),
+    };
+  };
+  const guarded = await run();
+  check(
+    "(j) 発走済みのレース（12:00）は書かず、発走前（12:30）と発走時刻の無いレースだけ書く",
+    show(guarded.races) === show([ids[1], ids[2]]) && !guarded.r.error,
+    show(guarded.races),
+  );
+  check(
+    "(j) 書かなかったレースの件数をログに出す",
+    guarded.r.lines.some((l) => l.includes("発走済みの1レースは書かない")),
+  );
+  const all = await run({ includeStarted: true });
+  check(
+    "(j) includeStarted のときは発走済みも書く（過去日の作り直し）",
+    show(all.races) === show(ids),
+    show(all.races),
+  );
+  const failing = createFakeClient({
+    tables: { ...tables, predictions: [] },
+    fail: { "races:select": "connection reset" },
+  });
+  const noSchedule = await quiet(() =>
+    mainRefresh({
+      isDryRun: false,
+      specificRaceIds: ids,
+      client: failing,
+      date: "2026-09-20",
+      now: () => NOW,
+    }),
+  );
+  check(
+    "(j) 発走時刻が読めないときは、書かずに例外にする（発走済みを上書きしない）",
+    noSchedule.error instanceof Error && failing.state.predictions.length === 0,
+    noSchedule.error?.message,
   );
 }
 

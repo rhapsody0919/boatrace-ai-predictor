@@ -165,6 +165,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-meet-grouping.js"
     },
     {
+      "script": "verify-ml-actual-course.js",
+      "tier": "ci",
+      "guards": "ML学習データの actual_course が枠番でなく実際の進入コース（entry_course → actual_course_<艇番> → null）であること（BOA-631）"
+    },
+    {
       "script": "verify-monthly-schedule.js",
       "tier": "ci",
       "guards": "月間スケジュール（節メタ N16）のパーサー・節の確定・行変換・CLI"

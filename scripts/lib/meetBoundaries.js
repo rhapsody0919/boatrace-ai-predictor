@@ -50,11 +50,18 @@ export function buildMeets(conds) {
     for (const [d, dayRows] of [...days.entries()].sort()) {
       const seriesDay = dayRows.find((r) => r.series_day != null)?.series_day;
       const prevFinal = prevDay?.some((r) => r.is_final_day) ?? false;
-      // series_day が無い日（実データで0.4%）は日付の連続で判定する
+      // series_day が無い日（実データで0.4%）は日付の連続で判定する。
+      // **同じ日目が翌日に続くのは順延で、節の続き**（BOA-506）。公式は丸一日中止の
+      // 翌日に同じ日目を振り直す（江戸川・戸田 9/21→22 が 4→4、津 9/22→23 が 2→2）。
+      // 以前は `<=` で新しい節にしていて、中止の日で節を2つに割り、前半の予選の締めを
+      // 早い日で確定させていた。日付が空いた同値は、従来どおり別の節とする
+      const last = current?.lastSeriesDay ?? 0;
       const isNewMeet =
         current === null ||
         prevFinal ||
-        (seriesDay != null && seriesDay <= (current.lastSeriesDay ?? 0)) ||
+        (seriesDay != null &&
+          (seriesDay < last ||
+            (seriesDay === last && !isNextDay(current.dates.at(-1), d)))) ||
         (seriesDay == null && !isNextDay(current.dates.at(-1), d));
       if (isNewMeet) {
         current = { venueCode, dates: [], rows: [], lastSeriesDay: null };

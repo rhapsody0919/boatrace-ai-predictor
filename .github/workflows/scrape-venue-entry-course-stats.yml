@@ -62,8 +62,10 @@ jobs:
       - run: npm ci
 
       - name: Scrape venue entry course stats
+        id: scrape
         run: node scripts/daily/scrape-venue-entry-course-stats.js
-        continue-on-error: true # 他の日次ジョブに影響させない
+        # 失敗しても、成否履歴のコミットと構造変化の検知は行う。失敗は最後のステップで workflow の失敗にする（BOA-364）
+        continue-on-error: true
         env:
           TZ: 'Asia/Tokyo'
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -119,3 +121,10 @@ jobs:
                 ]
               }]
             }"
+
+      # 取得の失敗（races 0件・全会場失敗・DB障害）を、成功扱いのまま埋もれさせない（BOA-364）
+      - name: Fail if scraping failed
+        if: steps.scrape.outcome == 'failure'
+        run: |
+          echo "進入コース別選手成績の取得に失敗しました（上の Scrape ステップのログを参照）"
+          exit 1
