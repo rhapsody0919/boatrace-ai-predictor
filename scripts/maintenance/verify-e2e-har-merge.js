@@ -1,15 +1,31 @@
 #!/usr/bin/env node
 /**
- * E2E の録画を束ねる規則（e2e/har-merge.js）と、部分録画の判定（e2e/global-setup.js）を
- * 固定の入力で確かめる（ADR-0077）。
+ * E2E の録画を束ねる規則（e2e/har-merge.js）と、部分録画の判定（e2e/global-setup.js）、
+ * 自動撮り直し（e2e-rerecord.yml）の起動時刻・採用判定・通知の判定を固定の入力で確かめる（ADR-0077）。
  *
  * どれも壊れると「PRゲートが録画外で abort して大量に落ちる」か「録画が静かに痩せる」
  * かのどちらかで、原因が録画の中身に埋もれて見つけにくい。実際の E2E・本番には依存しない。
  */
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { canonicalUrl, harKey, mergeHarLogs } from "../../e2e/har-merge.js";
 import { isPartialRun } from "../../e2e/global-setup.js";
-import { countResults, judgeAdoption, scheduleGate } from "./e2e-recording.js";
+import {
+  countResults,
+  judgeAdoption,
+  NOTIFY_STEP_PREFIX,
+  notifiedInJobs,
+  notifyDedupe,
+  RECORD_CUTOFF_HOUR_JST,
+  scheduleGate,
+} from "./e2e-recording.js";
+
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
 import { summarize, toMarkdown, MARKER } from "./report-e2e-passthrough.js";
 
 const failures = [];
@@ -161,6 +177,121 @@ check(
       .notify,
   ],
   [false, true],
+);
+
+// --- 定期実行の起動時刻（e2e-rerecord.yml）。1日4回・JST10〜17時・0分を避ける。
+// どの起動も gate の打ち切り時刻より前で、採用済みなら後の起動は空振りする
+const workflow = readFileSync(
+  path.join(repoRoot, ".github", "workflows", "e2e-rerecord.yml"),
+  "utf8",
+);
+const crons = [...workflow.matchAll(/cron:\s*'(\d+) (\d+) \* \* \*'/g)].map(
+  ([, minute, hourUtc]) => ({
+    minute: Number(minute),
+    hourJst: (Number(hourUtc) + 9) % 24,
+  }),
+);
+check("定期実行は1日4回", crons.length, 4);
+check(
+  "起動は JST10〜17時台で、0分を避ける",
+  crons.filter((c) => c.hourJst < 10 || c.hourJst > 17 || c.minute === 0),
+  [],
+);
+check(
+  "どの起動時刻も gate の打ち切り（JST19時）より前",
+  crons.filter((c) => c.hourJst >= RECORD_CUTOFF_HOUR_JST),
+  [],
+);
+check(
+  "採用済みなら、その日の後の起動はどれも撮らない",
+  crons.map(
+    (c) =>
+      scheduleGate(
+        jst(
+          `2026-09-30T${String(c.hourJst).padStart(2, "0")}:${String(c.minute).padStart(2, "0")}:00`,
+        ),
+        adoptedAt("2026-09-30T10:40:00"),
+      ).run,
+  ),
+  [false, false, false, false],
+);
+check(
+  "同時に2本走らせない（後の起動は前の起動のポインタで判定する）",
+  /concurrency:\s*\n\s*group: e2e-rerecord\s*\n\s*cancel-in-progress: false/.test(
+    workflow,
+  ),
+  true,
+);
+check(
+  "通知の重複判定に要る権限（actions: read）がある",
+  /permissions:\s*\n(?:\s+\w+: \w+\n)*?\s+actions: read/.test(workflow),
+  true,
+);
+check(
+  "ワークフロー自体の失敗は、通知済みでも必ず通知する（重複判定は不採用の通知だけ）",
+  [
+    workflow.includes("JOB_FAILED: ${{ failure() }}"),
+    /if \[ "\$EVENT_NAME" = "schedule" \] && \[ "\$JOB_FAILED" != "true" \]; then\s*\n\s*DEDUPE=\$\(node scripts\/maintenance\/e2e-recording\.js notify-dedupe/.test(
+      workflow,
+    ),
+  ],
+  [true, true],
+);
+check(
+  "通知ステップの名前が notify-dedupe の判定と一致する",
+  workflow.includes(`- name: ${NOTIFY_STEP_PREFIX}`),
+  true,
+);
+
+// --- 定期実行の Slack 通知（同じ日に別の定期実行が通知済みなら出さない）
+const run = (id, at, notified) => ({
+  id,
+  createdAt: jst(at).toISOString(),
+  notified,
+});
+check(
+  "その日の最初の通知は出す",
+  notifyDedupe(jst("2026-10-01T16:15:00"), 2, [
+    run(1, "2026-10-01T12:47:00", false),
+    run(2, "2026-10-01T16:15:00", false),
+  ]).notify,
+  true,
+);
+check(
+  "同じ日に別の実行が通知済みなら出さない",
+  notifyDedupe(jst("2026-10-01T19:27:00"), 3, [
+    run(2, "2026-10-01T16:15:00", true),
+    run(3, "2026-10-01T19:27:00", false),
+  ]).notify,
+  false,
+);
+check(
+  "前日（JST）の通知は数えない（UTC では同じ日付でも）",
+  notifyDedupe(jst("2026-10-01T10:23:00"), 5, [
+    run(4, "2026-09-30T23:30:00", true),
+  ]).notify,
+  true,
+);
+check(
+  "自分自身は数えない",
+  notifyDedupe(jst("2026-10-01T10:23:00"), 6, [
+    run(6, "2026-10-01T10:23:00", true),
+  ]).notify,
+  true,
+);
+check(
+  "通知ステップが動いた実行だけを通知済みとみなす",
+  [
+    notifiedInJobs([
+      { steps: [{ name: `${NOTIFY_STEP_PREFIX} (x)`, conclusion: "success" }] },
+    ]),
+    notifiedInJobs([
+      { steps: [{ name: `${NOTIFY_STEP_PREFIX} (x)`, conclusion: "skipped" }] },
+    ]),
+    notifiedInJobs([{ steps: [{ name: "録画", conclusion: "success" }] }]),
+    notifiedInJobs(undefined),
+  ],
+  [true, false, false, false],
 );
 
 // --- 自動撮り直しの採用判定（全件通過・skip が増えていない）
