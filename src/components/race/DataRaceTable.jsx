@@ -49,7 +49,6 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
     analysis,
     pending: analysis.pending,
     motorDeepLink,
-    raceId,
   });
 
   const cellClass = (boat, best) =>
