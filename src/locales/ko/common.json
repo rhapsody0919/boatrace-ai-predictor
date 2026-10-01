@@ -285,6 +285,8 @@
     "refundTag": "반환정 있음",
     "partialNoRaceTag": "일부 승식 불성립",
     "payoutNoRace": "불성립(반환)",
+    "payoutNoAmount": "공식 배당금에 금액이 기재되어 있지 않습니다",
+    "payoutNoAmountNote": "「—」는 공식 배당금에 금액이 기재되어 있지 않은 조합입니다",
     "payoutSpecial": "특별 지급",
     "volatilityOutcomeNotJudgeable": "판정 대상 외(불성립)",
     "stLegend": "오른쪽 화살표는 스타트 타이밍(ST). 노란 선이 스타트 라인이며, 선에 가까울수록 빠른 스타트. 선을 넘은 빨간 화살표는 플라잉"

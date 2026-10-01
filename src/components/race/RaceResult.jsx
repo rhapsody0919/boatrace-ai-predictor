@@ -396,6 +396,7 @@ function PayoutRow({
   isBest,
   note = null,
   isVoid = false,
+  noAmount = false,
   t,
 }) {
   return (
@@ -430,8 +431,15 @@ function PayoutRow({
           </span>
         )}
       </span>
-      <span className="rr-amount num">
-        {typeof amount === "number" ? `¥${amount.toLocaleString()}` : ""}
+      <span
+        className="rr-amount num"
+        title={noAmount ? t("result.payoutNoAmount") : undefined}
+      >
+        {typeof amount === "number"
+          ? `¥${amount.toLocaleString()}`
+          : noAmount
+            ? "—"
+            : ""}
       </span>
     </div>
   );
@@ -442,7 +450,10 @@ function PayoutRow({
 // 最高配当の強調は、通常の払戻と特払だけで計算する
 function PayoutRowsTable({ rows, t }) {
   const amounts = rows.filter(isPayoutAmountCountable).map((row) => row.amount);
-  const maxAmount = amounts.length ? Math.max(...amounts) : null;
+  // 最高額が ¥100（元返し）のときは強調しない。一部返還で単勝・2連単がともに ¥100 だった
+  // レースで、¥100 の2行が「最高配当」として金色になっていた（BOA-558）
+  const maxAmount =
+    amounts.length && Math.max(...amounts) > 100 ? Math.max(...amounts) : null;
   return (
     <div className="rr-payout-table">
       {rows.map((row) => {
@@ -471,6 +482,9 @@ function PayoutRowsTable({ rows, t }) {
                   : null
             }
             isVoid={isNoRaceRow}
+            // 公式の払戻に金額が無い行（例: 津 2026-09-27 1R の複勝6）。空欄だとデータの
+            // 欠けに見えるので「—」を出す（BOA-558）
+            noAmount={row.status === PAYOUT_STATUS.NO_AMOUNT}
             t={t}
           />
         );
@@ -892,6 +906,14 @@ function RaceResult({ prediction, raceId }) {
               data-testid="payout-popularity-note"
             >
               {t("result.popularityFromFinalOddsNote")}
+            </p>
+          )}
+          {/* 「—」の意味は title だけだとスマホで読めないので、表の下にも書く（#1074 ファン評価1周目） */}
+          {payoutRowsToShow.some(
+            (row) => row.status === PAYOUT_STATUS.NO_AMOUNT,
+          ) && (
+            <p className="rr-note rr-payout-no-amount-note">
+              {t("result.payoutNoAmountNote")}
             </p>
           )}
         </>
