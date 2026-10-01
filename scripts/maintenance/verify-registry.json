@@ -148,6 +148,11 @@
       "guards": "会場単位の「節の初日」の判定（src/utils/meetGrouping.js の findMeetStartDate）。中1日の開催休みで前の節が丸ごと混ざると、節内順位・出場人数・準優の目安・必要得点が前の節の値になる（BOA-491/BOA-508）"
     },
     {
+      "script": "verify-meet-before-race.js",
+      "tier": "ci",
+      "guards": "直前情報タブ「今節展示情報」・今節タブの今節の切り出し（src/utils/meetGrouping.js の groupIntoMeetBeforeRace）。会場で絞らないと別会場の同じモーター番号の節が、表示中レースを目印にしないと節の初戦で前の節が「今節」として混ざる（BOA-591）"
+    },
+    {
       "script": "verify-meet-grouping.js",
       "tier": "manual",
       "guards": "節推定（src/utils/meetGrouping.js、race_idの日付連続性）がrace_conditions.series_dayと一致し続けること。選手単位の一致率と、推定が誤りうる会場境界に前後どちらの節にも出走した選手が現れないこと（BOA-491の同型が選手単位でも起きていないかの監視）",

@@ -12,7 +12,10 @@ import {
   extractVenueCodeFromRaceId,
   addDaysToDateString,
 } from "../../scripts/lib/dateUtils.js";
-import { groupIntoCurrentMeet, findMeetStartDate } from "../utils/meetGrouping";
+import {
+  groupIntoMeetBeforeRace,
+  findMeetStartDate,
+} from "../utils/meetGrouping";
 import { deriveRaceStContext } from "../utils/stConsideration";
 import {
   currentMotorGenerationStart,
@@ -4543,20 +4546,19 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定選手の「今節（同一モーターが連続して割り当てられている、当該レースより
-   * 前の直近開催日）」の展示タイム推移を取得する（BOA-304、直前情報タブ
-   * 「今節展示情報」）。racerService.getCurrentMeetRaceEntriesと同じ節判定
-   * （groupIntoCurrentMeet、race_idの日付連続性）を使うが、あちらは常に
-   * 「選手の絶対最新の節」を返すのに対し、こちらはbeforeRaceIdより前の節を
-   * 返す点が異なる（過去日付のレース詳細ページを閲覧した場合に、選手の
-   * 最新（未来）の節を誤って表示しないため）
+   * 指定選手の「今節（表示中のレースと同じ会場・同じ節で、同じモーターに乗った
+   * 当該レースより前の走）」の展示タイム推移を取得する（BOA-304、直前情報タブ
+   * 「今節展示情報」）。節の切り方は `groupIntoMeetBeforeRace`（今節タブの
+   * basicInfoStats.buildMeetResults と同じ）。節の初戦なら空配列を返す
    * `boatNumber` も返す（追加クエリ0本）。オリジナル展示（BOA-473）は
    * `(race_id, boat_number)` で引くため、呼び出し側がこの2つを組にして使う。
    * @returns {Promise<Array<{raceId: string, boatNumber: number, exhibitionTime: number|null}>>} 昇順（古い→新しい）
    */
   getRacerMeetExhibitionTrendBefore(racerId, motorNumber, beforeRaceId) {
     return withCache(
-      `racer-meet-exhibition-trend-${racerId}-${motorNumber}-${beforeRaceId}`,
+      // v2: BOA-591 で別会場・前の節の値を返さないようにした。過去レースは7日TTLで
+      // localStorage に残るため、旧キーの誤った値を読まないようにキーを変える
+      `racer-meet-exhibition-trend-v2-${racerId}-${motorNumber}-${beforeRaceId}`,
       async () => {
         if (!supabase || !racerId || !motorNumber || !beforeRaceId) return [];
 
@@ -4575,10 +4577,11 @@ export const supabaseDataService = {
         }
         if (!entries || entries.length === 0) return [];
 
-        const sorted = [...entries].sort((a, b) =>
-          a.race_id.localeCompare(b.race_id),
-        );
-        const meet = groupIntoCurrentMeet(sorted);
+        // **会場で絞り、表示中のレースを目印に足してから切る**（BOA-591）。
+        // モーター番号は会場ごとに振られるので、番号だけで引くと別会場の同じ番号の
+        // モーターの節が混ざる。目印が無いと、節の初戦で何ヶ月も前の節を今節として拾う
+        const meet = groupIntoMeetBeforeRace(entries, beforeRaceId);
+        if (meet.length === 0) return [];
         const raceIds = meet.map((e) => e.race_id);
 
         const exhibitionRows = await fetchAllByIn(
