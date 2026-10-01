@@ -226,14 +226,19 @@ export const shareDailyStatsToX = (stats) => {
 
 /**
  * AI予想のシェアテキストを生成（react-share用）
+ *
+ * 中止のレース（race.isCancelled。判定は呼び出し側で isRaceCancelled）と、
+ * 予想データの無いレース（本命が無い）では、予想の文面を使わず t() の文面を返す。
+ * 予想の文面のままだと、中止でも「本命: X号艇」、予想なしで「本命: ?号艇」になっていた。
+ *
+ * @param {{venue?: string, raceNo?: number|string, date?: string, isCancelled?: boolean,
+ *   prediction?: {topPick?: number|null, top3?: number[]}}} race
+ * @param {string} model
+ * @param {(key: string, options?: object) => string} t - i18next の t
  */
-export const generatePredictionShareText = (race, model = "standard") => {
+export const generatePredictionShareText = (race, model = "standard", t) => {
   const venue = race.venue || "不明";
   const raceNo = race.raceNo || "?";
-  const topPick = race.prediction?.topPick || "?";
-  const top3 = race.prediction?.top3?.join("-") || "?-?-?";
-
-  const modelName = MODEL_NAMES[model] || "スタンダード";
 
   let dateStr = "";
   if (race.date) {
@@ -242,6 +247,18 @@ export const generatePredictionShareText = (race, model = "standard") => {
       dateStr = `${parts[1]}/${parts[2]} `;
     }
   }
+
+  // 見出し（日付・会場・R）は予想の文面と同じ形で残す
+  const label = { date: dateStr, venue, raceNo };
+  if (race.isCancelled) return t("panel.shareCancelled", label);
+  if (race.prediction?.topPick == null) {
+    return t("panel.shareNoPrediction", label);
+  }
+
+  const topPick = race.prediction.topPick;
+  const top3 = race.prediction.top3?.join("-") || "?-?-?";
+
+  const modelName = MODEL_NAMES[model] || "スタンダード";
 
   const messages = [
     `🏁 龍神レーダー予想【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n本命: ${topPick}号艇\n推奨: ${top3}\n\n展開予測から分析した結果、この並びが来そう！\nデータ的にも期待できるかも👀`,

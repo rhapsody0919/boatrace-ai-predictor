@@ -148,6 +148,11 @@
       "guards": "会場単位の「節の初日」の判定（src/utils/meetGrouping.js の findMeetStartDate）。中1日の開催休みで前の節が丸ごと混ざると、節内順位・出場人数・準優の目安・必要得点が前の節の値になる（BOA-491/BOA-508）"
     },
     {
+      "script": "verify-meet-before-race.js",
+      "tier": "ci",
+      "guards": "直前情報タブ「今節展示情報」・今節タブの今節の切り出し（src/utils/meetGrouping.js の groupIntoMeetBeforeRace）。会場で絞らないと別会場の同じモーター番号の節が、表示中レースを目印にしないと節の初戦で前の節が「今節」として混ざる（BOA-591）"
+    },
+    {
       "script": "verify-meet-grouping.js",
       "tier": "manual",
       "guards": "節推定（src/utils/meetGrouping.js、race_idの日付連続性）がrace_conditions.series_dayと一致し続けること。選手単位の一致率と、推定が誤りうる会場境界に前後どちらの節にも出走した選手が現れないこと（BOA-491の同型が選手単位でも起きていないかの監視）",
@@ -286,6 +291,11 @@
       "guards": "選手プロフィール・期別成績ジョブ（scripts/lib/racerProfileSync.js）"
     },
     {
+      "script": "verify-racer-st-stats.js",
+      "tier": "ci",
+      "guards": "選手の平均ST・直近30走・ST標準偏差（scripts/lib/racerStStats.js、BOA-581）: 1000行上限での取りこぼし・Fの除外・直近30走の並び・取得エラーの例外化"
+    },
+    {
       "script": "verify-rls-migration.js",
       "tier": "ci",
       "guards": "マイグレーション076（RLS無効テーブルの匿名書き込みの是正、BOA-370）をPGlite上で実際に適用して検証"
@@ -351,6 +361,11 @@
       "guards": "AppRouter.jsx の静的ルートと generate-sitemap.js の staticPages の突き合わせ（sitemap登録漏れ）"
     },
     {
+      "script": "verify-sitemap-lastmod.js",
+      "tier": "ci",
+      "guards": "sitemap.xml の lastmod を実際の更新日（記事の md の最終コミット日・開催日）から取ること。生成日や mtime に戻ると、Google が lastmod を再クロールの合図として使わなくなる（BOA-599）。あわせて、言語版の組（hreflang）を xhtml:link で出すこと（BOA-560）"
+    },
+    {
       "script": "verify-unchanged-rows.js",
       "tier": "ci",
       "guards": "「変更の無い行は書かない」比較ロジック（scripts/lib/unchangedRows.js、BOA-349）と、バルクupsertのpayload列そろえ（キーの集合が違う行を混ぜると、持たない行にNULLが書かれる。2026-09-27にrace_entriesのbranch・hometownを1,729行消した）"
@@ -369,6 +384,11 @@
       "script": "verify-venue-motor-stats-parsers.js",
       "tier": "ci",
       "guards": "会場別モーター成績パーサー（BOA-264）"
+    },
+    {
+      "script": "verify-venue-series-title.js",
+      "tier": "ci",
+      "guards": "会場ページの title に節タイトルを入れる判定（SG・G1のみ、先頭レースの値、NFKC）。崩れると一般戦の title が長くなるか、SG開催週の検索需要を取り逃す"
     },
     {
       "script": "verify-weather-parsing.js",

@@ -48,8 +48,28 @@ import {
 } from "./seriesPoints";
 import RaceHistoryTable from "./RaceHistoryTable";
 import MeetSparkline from "./MeetSparkline";
+import {
+  dayCenter,
+  dayTickLabels,
+  layoutTrendByDate,
+  sparkLeftPercent,
+} from "../../utils/trendDateLayout";
 import "./RaceMeetTab.css";
 import "../common/HorizontalScrollHint.css";
+
+// 順位の対象外の理由 → 画面の文言キー（meetTab.<key> と meetTab.<key>Title）。BOA-587
+const EXCLUDED_LABEL_KEY = {
+  withdrawn: "withdrawn",
+  awardExcluded: "awardExcluded",
+  flying: "flyingExcluded",
+};
+// 準優・優勝戦に乗れない（必要得点を出さない）理由
+const AWARD_EXCLUDED_REASONS = new Set(["awardExcluded", "flying"]);
+
+// 準優の目安（上から slots 位）の中か。順位の対象外は rank が null で、
+// `null <= 18` は true になるため、比べる前に外す（BOA-587 ファン評価1周目）
+const rankInBorder = (row, slots) =>
+  row.rank !== null && row.rank !== undefined && row.rank <= slots;
 
 function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   const { t } = useTranslation();
@@ -201,7 +221,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   // 出走表にだけ残り、点の無い空きの位置を取って線を片側に寄せていた
   // （津 2026-09-21・22 は中止。2026-09-28 の最終日で、飯山泰の線が右7割に詰まった。
   // BOA-537 ファン評価2周目）
-  const trendRows = sortedPlayers.map((p) => ({
+  const trendRowsRaw = sortedPlayers.map((p) => ({
     player: p,
     runs: (meetRunsByRacer[p.racerId] ?? []).filter(
       (x) =>
@@ -210,27 +230,23 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
         (x.finish !== null && x.finish !== undefined),
     ),
   }));
-  // **このグラフが何を描いているか**。6行の折れ線には日付の手がかりが何も無く、
-  // 「いつからいつまでの話か」が読めない（2026-09-29のファン評価）。
-  //
-  // 文言は3回書き直した。書けないことが3つある。
-  //
-  // 1. **「左が◯日」**とは書けない。`MeetSparkline` の x は
-  //    `i / (values.length - 1)` で、各行が自分の走数で左右いっぱいに伸びる。
-  //    走数が違えば左端の日付も違う（戸田2026-09-28で点が3個/4個/5個）
-  // 2. **「この節は◯〜◯」**とも書けない。`meetRunsByRacer` は表示中レースの
-  //    直前までしか持たず、その日の1Rでは当日が入らない（戸田2026-09-28の1Rで
-  //    「9/26〜9/27」と出た）
-  // 3. **日付だけを名乗ってもいけない**。横位置＝時間と読まれ、行をまたいで
-  //    「同じ日」と比べてしまう。実際は x は走った順で、同じ9/27の2走が
-  //    横幅いっぱいに離れて描かれる。**先に「走った順」と断る**
-  //
-  // 横軸をそろえる話は BOA-538。追加取得はせず、既に持っている日付から出す
+  // **横軸は日付**（BOA-538）。以前は各行が自分の走数で左右いっぱいに伸びる
+  // 「走った順」で、走数が違うと同じ横位置が別の日になり、行をまたいで同じ日と
+  // 比べられなかった。節の日（6艇のうち誰かが走った日）を等間隔に並べて、
+  // 6行の横位置をそろえる。`meetRunsByRacer` は表示中レースの直前までしか持たない
+  // ので、日付の範囲は「この節の全日程」ではなく「ここに出ている走の範囲」。
+  // 追加取得はせず、既に持っている日付から出す
   const trendDates = [
     ...new Set(
-      trendRows.flatMap((r) => r.runs.map((x) => x.date).filter(Boolean)),
+      trendRowsRaw.flatMap((r) => r.runs.map((x) => x.date).filter(Boolean)),
     ),
   ].sort();
+  // 横軸は日付（BOA-538）。節の日（6艇のうち誰かが走った日）を等間隔に並べ、
+  // 各走をその日の位置に置く。1日2走は左右にずらし、走らなかった日で線を切る
+  const trendRows = trendRowsRaw.map((r) => ({
+    ...r,
+    layout: layoutTrendByDate(r.runs, trendDates),
+  }));
   // 表の日付（9/22）と同じ形。`slice` だけだと「09/22」でゼロ埋めが残る
   const mdOf = (d) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`;
   // **線が1本も引けないときは出さない**。初日で各艇1走だと点が1個ずつになり、
@@ -341,7 +357,12 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   const renderFinishes = (finishes) =>
     finishes.length > 0 && (
       <span className="rmt-finishes">
-        <span className="rmt-finishes-label">{t("meetTab.finishLabel")}</span>
+        <span className="rmt-finishes-label">
+          {/* 予選が終わった後は、並びは予選の走だけ（得点率に数える走、BOA-457）。
+              「着順」とだけ書くと、準優の日の一般戦など後の走が抜けて見える
+              （2026-09-29 戸田12R の山田康二: 並び6走・節の全走は7走。BOA-568） */}
+          {t(prelimOver ? "meetTab.finishLabelPrelim" : "meetTab.finishLabel")}
+        </span>
         {finishes.map((f, i2) => (
           <span key={i2}>
             {i2 > 0 && t("meetTab.finishSeparator")}
@@ -436,11 +457,12 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                 .sort((a, b) => b.row.rate - a.row.rate)
                 .map(({ player: p, row }, i, arr) => {
                   const tied = tiedCount(row.rank);
-                  const inBorder = showBorderBadge && row.rank <= slots;
+                  const inBorder = showBorderBadge && rankInBorder(row, slots);
                   // 目安内の最後の行に太い罫線を引く。「誰が線の上か」は
                   // 数字を突き合わせないと分からず、実際に読み落とされた
                   const borderEdge =
-                    inBorder && !(arr[i + 1] && arr[i + 1].row.rank <= slots);
+                    inBorder &&
+                    !(arr[i + 1] && rankInBorder(arr[i + 1].row, slots));
                   return (
                     <tr
                       key={p.number}
@@ -472,10 +494,18 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                         {row.rate.toFixed(2)}
                       </td>
                       <td className="rmt-rank">
-                        {/* 途中で節を離脱した選手は順位の対象外（公式も同じ） */}
+                        {/* 途中で節を離脱した選手・賞典除外の選手は順位の対象外
+                            （公式も同じ）。理由で説明を出し分ける（BOA-587） */}
                         {row.rank === null ? (
-                          <span title={t("meetTab.withdrawnTitle")}>
-                            {t("meetTab.withdrawn")}
+                          <span
+                            className="rmt-excluded"
+                            title={t(
+                              `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason] ?? "withdrawn"}Title`,
+                            )}
+                          >
+                            {t(
+                              `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason] ?? "withdrawn"}`,
+                            )}
                           </span>
                         ) : tied > 1 ? (
                           <span title={t("meetTab.rankTiedTitle", { tied })}>
@@ -525,7 +555,16 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
             {ranking.some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS) && (
               <>{t("meetTab.smallSampleLegend")} </>
             )}
-            {t("meetTab.compareSub", { total: rankedOnly.length })}
+            {/* 賞典除外・途中帰郷の選手も節は走っているので、「出場」から外さない。
+                順位の対象の人数と分けて書く（ファン評価2周目: 出場50人なのに
+                前検51位の選手がいた） */}
+            {rankedOnly.length < ranking.length
+              ? t("meetTab.compareSubExcluded", {
+                  all: ranking.length,
+                  total: rankedOnly.length,
+                  excluded: ranking.length - rankedOnly.length,
+                })
+              : t("meetTab.compareSub", { total: rankedOnly.length })}
             {/* 「欠場」の理由。セルの title はタッチ端末で読めないので本文にも書く
                 （BOA-504 ファン評価） */}
             {absentOnly.length > 0 && <> {t("meetTab.absentNote")}</>}
@@ -659,6 +698,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                           className={`rmt-rate${
                             showBorderBadge &&
                             border !== undefined &&
+                            !row.withdrawn &&
                             row.rate >= border
                               ? " is-in-border"
                               : ""
@@ -668,13 +708,23 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                         </td>
                         {hasNeeded && (
                           <td className="rmt-needed">
-                            {needed === null
-                              ? "—"
-                              : needed.reachable
-                                ? t("meetTab.neededPoints", {
-                                    points: needed.needed,
-                                  })
-                                : t("meetTab.neededUnreachable")}
+                            {/* 賞典除外の選手は準優に乗れないので、必要得点を
+                                出さない（BOA-587） */}
+                            {AWARD_EXCLUDED_REASONS.has(row.excludedReason) ? (
+                              <span className="rmt-excluded">
+                                {t(
+                                  `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason]}`,
+                                )}
+                              </span>
+                            ) : needed === null ? (
+                              "—"
+                            ) : needed.reachable ? (
+                              t("meetTab.neededPoints", {
+                                points: needed.needed,
+                              })
+                            ) : (
+                              t("meetTab.neededUnreachable")
+                            )}
                           </td>
                         )}
                         {cells.map((f) => (
@@ -683,6 +733,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                             className={
                               showBorderBadge &&
                               border !== undefined &&
+                              !row.withdrawn &&
                               f.rate >= border
                                 ? "is-in-border"
                                 : undefined
@@ -746,18 +797,33 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
           </div>
           {/* 右端の数値が何か分からない、という指摘（2026-09-27）。列見出しを出す */}
           <div className="rmt-trend-head">
-            <span />
-            {/* 点の下の数字が着順だと行の中で分かるように。日別の表の「0.17(4)」の
-                括弧（ST順位）と取り違えられた（BOA-537 ファン評価） */}
+            {/* 点の下の数字が着順だと行の中で分かるように（BOA-537）。真ん中の列は
+                日付の目盛りに使うので、名前の列の上に置く */}
             <span className="rmt-trend-head-sub">
               {t("meetTab.trendFinishHeader")}
+            </span>
+            {/* 日付の目盛り（点と同じ横位置）。縦のガイド線は引かない */}
+            <span className="rmt-trend-days" aria-hidden="true">
+              {dayTickLabels(trendDates).map((label, i) => (
+                <span
+                  key={trendDates[i]}
+                  className="rmt-trend-day"
+                  style={{
+                    left: `${sparkLeftPercent(
+                      dayCenter(i, trendDates.length),
+                    ).toFixed(2)}%`,
+                  }}
+                >
+                  {label}
+                </span>
+              ))}
             </span>
             <span className="rmt-trend-last">
               {t("meetTab.trendLastHeader")}
             </span>
           </div>
           <ul className="rmt-trend-rows">
-            {trendRows.map(({ player: p, runs }) => {
+            {trendRows.map(({ player: p, runs, layout }) => {
               const color = BOAT_COLORS[p.number] || {};
               const vals = runs.map((r) => r[trendKey]);
               const last = [...vals]
@@ -797,6 +863,9 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                       height={34}
                       // 1走の選手も前走の点を出す（空白だと取れていないと読まれる）
                       allowSinglePoint
+                      xPositions={layout.xs}
+                      xCenters={layout.centers}
+                      breakBefore={layout.breakBefore}
                       // 各走の着順を点の下に出す（BOA-537。ファン4人のパネル）
                       pointLabels={runs.map((r) =>
                         r.finish === null || r.finish === undefined
@@ -821,7 +890,10 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
               （2026-09-29、BOA-495） */}
           {trendRange && (
             <p className="rmt-trend-range">
-              {t("meetTab.compareTrendRange", trendRange)}
+              {/* 1日だけの節で「9/20〜9/20」と書かない（BOA-538 ファン評価） */}
+              {trendRange.from === trendRange.to
+                ? t("meetTab.compareTrendRangeOneDay", { day: trendRange.from })
+                : t("meetTab.compareTrendRange", trendRange)}
             </p>
           )}
           <p className="rmt-hint">{t("meetTab.compareTrendHint")}</p>
@@ -884,15 +956,31 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                 ),
               },
             )}
+            {/* 順位の対象外（賞典除外・途中帰郷）の理由は、予選が終わった後も出す。
+                目安の行は予選中しか出ないので、そちらに頼ると最終日に消えていた
+                （ファン評価2周目） */}
+            {mine.withdrawn && !(showBorder && border !== undefined) && (
+              <span className="rmt-detail-border">
+                {t(
+                  `meetTab.${EXCLUDED_LABEL_KEY[mine.excludedReason] ?? "withdrawn"}Title`,
+                )}
+              </span>
+            )}
             {showBorder && border !== undefined && (
               <span className="rmt-detail-border">
-                {mine.rank <= slots
-                  ? t("basicInfo.meetBorderIn", { slots })
-                  : t("basicInfo.meetBorder", {
-                      slots,
-                      rate: border.toFixed(2),
-                      diff: (border - mine.rate).toFixed(2),
-                    })}
+                {mine.withdrawn
+                  ? // 順位の対象外（賞典除外・途中帰郷）は目安との距離を言わない。
+                    // rank が null なので `<= slots` で比べると「目安の中」になる（BOA-587）
+                    t(
+                      `meetTab.${EXCLUDED_LABEL_KEY[mine.excludedReason] ?? "withdrawn"}Title`,
+                    )
+                  : rankInBorder(mine, slots)
+                    ? t("basicInfo.meetBorderIn", { slots })
+                    : t("basicInfo.meetBorder", {
+                        slots,
+                        rate: border.toFixed(2),
+                        diff: (border - mine.rate).toFixed(2),
+                      })}
               </span>
             )}
           </p>

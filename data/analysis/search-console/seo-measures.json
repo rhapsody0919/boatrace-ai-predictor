@@ -42,6 +42,27 @@
       "id": "home-ai-intro",
       "description": "トップに「龍神レーダーのボートレースAI予想」の説明・展開予測の実測的中率・/accuracy と /hit-races へのリンクを常時表示。ja の meta description を修正し「競艇」を追加（本番反映 06:55 JST ごろ）",
       "ref": "PR#976"
+    },
+    {
+      "date": "2026-09-30",
+      "kind": "measure",
+      "id": "outcome-distribution-redirect",
+      "description": "旧 /outcome-distribution を /winning-technique?tab=outcome への恒久リダイレクト（308）にした（BOA-561）。本番で 308 を確認済み",
+      "ref": "PR#1009"
+    },
+    {
+      "date": "2026-10-01",
+      "kind": "measure",
+      "id": "sitemap-lastmod-actual",
+      "description": "sitemap の lastmod を、全URL共通の生成日から各ページの実際の更新日にした（BOA-599）。9/30 マージ、サイトマップへの反映は 10/1 04:30 JST の自動生成（513URL 中 lastmod 407件、日付がばらけたことを確認）",
+      "ref": "PR#1011"
+    },
+    {
+      "date": "2026-10-01",
+      "kind": "measure",
+      "id": "sitemap-hreflang",
+      "description": "sitemap に hreflang（xhtml:link）を入れた（BOA-560。日本語クエリで /en/・/ko/ が出る件）。9/30 マージ、サイトマップへの反映は 10/1 04:30 JST の自動生成（xhtml:link 1,339本を確認）",
+      "ref": "PR#1012"
     }
   ]
 }

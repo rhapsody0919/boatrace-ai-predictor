@@ -27,6 +27,7 @@
     "verify:race-stage": "node scripts/maintenance/verify-race-stage-parsing.js",
     "verify:series-points-stage": "node scripts/maintenance/verify-series-points-stage-rules.js",
     "verify:meet-start-date": "node scripts/maintenance/verify-meet-start-date.js",
+    "verify:meet-before-race": "node scripts/maintenance/verify-meet-before-race.js",
     "verify:race-notices": "node scripts/maintenance/verify-race-notices-parser.js",
     "verify:point-rank": "node scripts/maintenance/verify-point-rank-parser.js",
     "verify:venue-entry-course-stats": "node scripts/maintenance/verify-venue-entry-course-stats-parser.js",

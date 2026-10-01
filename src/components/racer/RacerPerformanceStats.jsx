@@ -889,7 +889,11 @@ export default function RacerPerformanceStats({
           </h3>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart
-              data={hasVcData ? vcData.series : exhibitionChartData}
+              data={
+                hasVcData
+                  ? vcData.series.filter((d) => d.avg_exhibition_time != null)
+                  : exhibitionChartData
+              }
               margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
@@ -912,12 +916,14 @@ export default function RacerPerformanceStats({
       {hasVcData && vcData.stN > 1 && (
         <div className="racer-stat-chart">
           <h3>
-            STの推移（2026年3月以降・最大過去2年）
+            {/* 本番ST（race_start_timings）は2025-12から。展示ST（2026-03〜）を
+                使っていた頃の「2026年3月以降」のままだと横軸と食い違う（BOA-576） */}
+            STの推移（2025年12月以降・最大過去2年）
             {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
           </h3>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart
-              data={vcData.series}
+              data={vcData.series.filter((d) => d.start_timing != null)}
               margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />

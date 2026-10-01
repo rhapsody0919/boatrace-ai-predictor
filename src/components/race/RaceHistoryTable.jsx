@@ -87,6 +87,10 @@ import "./RaceHistoryTable.css";
  *   （`actual_course_*` は2025-12-04以降のレースにしか無く、
  *   古い行では「-」が並ぶだけになるため）
  */
+// ST の表記。フライングは結果タブと同じく「F0.11」（BOA-576）
+const formatSt = (race) =>
+  `${race.isFlying ? "F" : ""}${Number(race.startTiming).toFixed(2)}`;
+
 function RaceHistoryTable({
   rows,
   buildRaceHref = (raceId) => `/race/${raceId}`,
@@ -220,13 +224,13 @@ function RaceHistoryTable({
                   何番目だったかの方が直接的（日和の「安定率」が答えようと
                   している問いに、%より読みやすい形で答える） */}
                 <td>
-                  {race.startTiming !== null
+                  {race.startTiming != null
                     ? race.startTimingRank
                       ? t("raceHistoryTable.startTimingCell", {
-                          time: Number(race.startTiming).toFixed(2),
+                          time: formatSt(race),
                           rank: race.startTimingRank,
                         })
-                      : Number(race.startTiming).toFixed(2)
+                      : formatSt(race)
                     : "-"}
                 </td>
                 <td>

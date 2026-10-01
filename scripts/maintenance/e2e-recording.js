@@ -15,6 +15,7 @@
  *   prune               古い録画 Release を消す。--keep=N（既定14）。--dry-run で一覧だけ
  *   skips <results>     Playwright の JSON レポートから件数を数えて JSON で出す
  *   judge <results>     撮り直した録画を採用してよいか判定する（全件通過・skip が増えていない）
+ *   gate                定期実行で撮り直しを始めてよいか（今日の採用済み・遅すぎる起動は撮らない）
  *
  * 環境変数:
  *   E2E_RECORDING_REPO  owner/repo（既定: origin の URL から求める）
@@ -183,9 +184,48 @@ export function judgeAdoption(counts, current, problems = []) {
   return { adopt: reasons.length === 0, reasons };
 }
 
+/** 定期実行で録画を始めない時刻（JST の時）。これ以降は発走前のレースが夜間開催の数場だけになる */
+export const RECORD_CUTOFF_HOUR_JST = 19;
+
+const jstDate = (d) =>
+  new Date(new Date(d).getTime() + 9 * 60 * 60 * 1000).toISOString();
+
+/**
+ * 定期実行（schedule）で撮り直しを始めてよいか（純関数）。
+ *
+ * schedule は1日2回（本命＋予備）起動する。GitHub の schedule は負荷で数時間遅れ、
+ * 取りこぼされることもあるため（2026-09-30 は JST11:00 の予定が 17:15 に起動）。
+ * - 今日（JST）撮った録画が既に採用済みなら撮らない（予備の起動を空振りさせる）
+ * - 遅れて夜に起動したら撮らない（発走前のレースが少なく、skip が増えて不採用になるだけ）
+ */
+export function scheduleGate(now, pointer) {
+  const today = jstDate(now).slice(0, 10);
+  if (
+    pointer?.recordedAt &&
+    jstDate(pointer.recordedAt).slice(0, 10) === today
+  ) {
+    // 本命が採用済みで予備が空振りするのは正常なので、通知しない
+    return {
+      run: false,
+      notify: false,
+      reasons: [`今日（${today}）撮った録画 ${pointer.tag} を採用済み`],
+    };
+  }
+  const hour = Number(jstDate(now).slice(11, 13));
+  if (hour >= RECORD_CUTOFF_HOUR_JST) {
+    return {
+      run: false,
+      notify: true,
+      reasons: [
+        `起動が JST${hour}時台まで遅れたため撮らなかった（${RECORD_CUTOFF_HOUR_JST}時以降は発走前のレースが少ない）`,
+      ],
+    };
+  }
+  return { run: true, notify: false, reasons: [] };
+}
+
 function tagFor(recordedAt) {
-  const jst = new Date(new Date(recordedAt).getTime() + 9 * 60 * 60 * 1000);
-  const s = jst.toISOString();
+  const s = jstDate(recordedAt);
   return `${TAG_PREFIX}${s.slice(0, 10).replaceAll("-", "")}-${s.slice(11, 16).replace(":", "")}`;
 }
 
@@ -334,6 +374,14 @@ async function main() {
         JSON.stringify(countResults(JSON.parse(readFileSync(file, "utf8")))),
       );
       return;
+    case "gate": {
+      const result = scheduleGate(
+        new Date(),
+        existsSync(POINTER_PATH) ? readPointer() : null,
+      );
+      console.log(JSON.stringify(result));
+      return;
+    }
     case "judge": {
       const report = JSON.parse(readFileSync(file, "utf8"));
       const counts = countResults(report);
@@ -350,7 +398,7 @@ async function main() {
     }
     default:
       console.error(
-        "使い方: node scripts/maintenance/e2e-recording.js fetch|publish|prune|skips <json>|judge <json>",
+        "使い方: node scripts/maintenance/e2e-recording.js fetch|publish|prune|skips <json>|judge <json>|gate",
       );
       process.exitCode = 2;
   }

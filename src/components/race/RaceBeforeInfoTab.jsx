@@ -20,8 +20,8 @@
  *   getRacerScopedRaceStats(racerId)の生データ（既にactualCourse/
  *   isFastestExhibitionを追加済み）をこのタブでも取得し、basicInfoStats.jsの
  *   computeFrameEntryDistribution/computeExhibitionTopRatesで集計する
- * - 今節展示情報（展示タイムのみ）: racerService.getCurrentMeetRaceEntriesと
- *   同じ節判定（groupIntoCurrentMeet）を使うgetRacerMeetExhibitionTrendBefore
+ * - 今節展示情報（展示タイムのみ）: getRacerMeetExhibitionTrendBefore。今節タブと
+ *   同じ節判定（groupIntoMeetBeforeRace、会場で絞り表示中のレースを目印にする）
  *
  * 2026-09-24（phase a FR-5 / BOA-222）に「本日の成績サマリー」をこのタブから
  * 外した。粒度（レース単位ではなく会場×当日単位）と更新タイミング（発走前に
