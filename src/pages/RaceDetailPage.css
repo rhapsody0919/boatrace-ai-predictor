@@ -206,3 +206,12 @@
   border-style: dashed;
   border-color: var(--text-secondary);
 }
+
+/* 結果タブの着順表: 広い画面ではスタートの図（4列目）を広げる。6.5rem（104px）固定だと
+   1440px で名前の列との間が約700px空き、0.01秒の差が読み取りにくかった（BOA-586）。
+   着順表は一覧カードでも使うので、レース詳細ページの中だけ広げる */
+@media (min-width: 1024px) {
+  .race-detail-page-v2 .rr-row {
+    grid-template-columns: 2.6rem 1.8rem minmax(0, 1fr) 18rem 3.6rem;
+  }
+}

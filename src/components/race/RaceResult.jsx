@@ -33,8 +33,10 @@ import {
 const START_ANIM = {
   CYCLE_MS: 7000,
   MAX_ARRIVAL_MS: 6000,
-  LINE_PERCENT: 84,
-  POSITION_RANGE_PERCENT: 76,
+  // スタートラインの位置。F側に幅を取るため84%から72%に下げた。84%だとF側が14%しか無く、
+  // 375pxで F0.01 と F0.11 の差が約8pxしか無かった（BOA-586）。CSS の線もこの値で置く
+  LINE_PERCENT: 72,
+  POSITION_RANGE_PERCENT: 70,
   // 遅い側は0.30まで位置で差をつける（0.15で頭打ちにすると、0.16と0.27が同じ位置に重なっていた。
   // 平均STは0.15前後で、普通のレースでも半分近くの艇が左端に重なる。BOA-559 ファン評価1周目）
   POSITION_MAX_SECONDS: 0.3,
@@ -44,8 +46,8 @@ const START_ANIM = {
   STREAK_FADE_IN_RATIO: 0.26,
   IMPACT_FLASH_DELTA: 0.001,
   IMPACT_EXPAND_DELTA: 0.0703,
-  // フライング艇はスタートライン（84%）より先、F0.15 で98%まで（BOA-559）
-  FLYING_RANGE_PERCENT: 14,
+  // フライング艇はスタートライン（72%）より先、F0.15 で98%まで（BOA-559・586）
+  FLYING_RANGE_PERCENT: 26,
   // フライング艇は号砲の時点で既にラインを越えているため、最も早く到達させる（周期に対する割合）
   FLYING_ARRIVAL_FRACTION: 0.04,
 };
@@ -200,7 +202,10 @@ function StartTimingTrack({
 
   return (
     <span className="rr-st-track">
-      <span className="rr-st-line" />
+      <span
+        className="rr-st-line"
+        style={{ left: `${START_ANIM.LINE_PERCENT}%` }}
+      />
       <span
         ref={streakRef}
         className="rr-st-streak"
@@ -703,9 +708,12 @@ function RaceResult({ prediction, raceId }) {
   const maxStartTiming = nonFlyingStartTimings.length
     ? Math.max(...nonFlyingStartTimings.map((st) => st.startTiming))
     : 0;
-  const fastestStartTiming = nonFlyingStartTimings.length
-    ? Math.min(...nonFlyingStartTimings.map((st) => st.startTiming))
-    : null;
+  // 「最速」は比べる相手がいるときだけ付ける。不成立レースで F 以外が1艇だけのとき、
+  // その1艇に「最速」が付いていた（BOA-586）
+  const fastestStartTiming =
+    nonFlyingStartTimings.length >= 2
+      ? Math.min(...nonFlyingStartTimings.map((st) => st.startTiming))
+      : null;
 
   // 払戻は払戻明細（race_payouts、payoutRows）を正とする。届いていないときだけ旧 payout_* 列から
   // 同じ行の形を組み立てる（legacyPayoutRows）
