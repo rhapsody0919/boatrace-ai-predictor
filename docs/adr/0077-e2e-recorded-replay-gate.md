@@ -62,6 +62,13 @@ HAR は context に登録し、spec 側の `page.route` は page に登録され
 
 もう1つ、テスト終了時の `page.unrouteAll()` は、context 側の録画の再生と競合して `Route is already handled!` で落ちる（実測: 展示前の体重テスト5件）。このフックは本番の応答待ちを捨てるためのものなので、replay では呼ばない。
 
+**規約: page のルートを途中で0件にしない**（BOA-662）。`page.unroute`・`page.unrouteAll`・`times:` 付きの `page.route` は使わない。Playwright 1.59 は、page のルートが0件になった瞬間に処理中の要求があると、それを context 側（録画の再生 `routeFromHAR`）へ送り直す。同じ要求がクライアント側でも page→context の経路で処理され、`Route is already handled!` で落ちる。同じ仕組みで2回落ちた。
+
+- BOA-466（#913）: 上記の afterEach の `page.unrouteAll()`
+- BOA-661（#1084）: `smoke.spec.js` のオリジナル展示の再訪テストと `ga-pageview.spec.js` の `/admin` のスタブが、テストの途中で `page.unroute` していた
+
+差し替えをやめたいときは、上に `page.route` を重ねる（後から登録したものが先に評価され、fulfill すれば下には回らない）か、フラグを倒して `route.fallback()` に回す（録画の再生へ落ちる）。`scripts/maintenance/verify-e2e-no-unroute.js`（Quality Gates で実行）が `e2e/**/*.js` を検査する。正当な例外は `scripts/maintenance/e2e-no-unroute-allowlist.json` に「ファイル・行の内容・理由」で載せる（現状は上記 afterEach の1件。replay では呼ばないため）。
+
 ### 5. A改: 録画に無い通信は素通しし、必ず一覧に出す（2026-09-29 改訂）
 
 当初は録画に無い通信を abort していた。ところが、データ取得部分（`supabaseDataService.js`）を変える PR が1日に7本入り、PR ごとに撮り直す前提が成り立たなかった（導入初日だけで master 側の変更による撮り直しが3回要った）。そこで次に改めた。
