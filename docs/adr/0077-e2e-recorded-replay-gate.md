@@ -62,6 +62,13 @@ HAR は context に登録し、spec 側の `page.route` は page に登録され
 
 もう1つ、テスト終了時の `page.unrouteAll()` は、context 側の録画の再生と競合して `Route is already handled!` で落ちる（実測: 展示前の体重テスト5件）。このフックは本番の応答待ちを捨てるためのものなので、replay では呼ばない。
 
+**規約: page のルートを途中で0件にしない**（BOA-662）。`page.unroute`・`page.unrouteAll`・`times:` 付きの `page.route` は使わない。Playwright 1.59 は、page のルートが0件になった瞬間に処理中の要求があると、それを context 側（録画の再生 `routeFromHAR`）へ送り直す。同じ要求がクライアント側でも page→context の経路で処理され、`Route is already handled!` で落ちる。同じ仕組みで2回落ちた。
+
+- BOA-466（#913）: 上記の afterEach の `page.unrouteAll()`
+- BOA-661（#1084）: `smoke.spec.js` のオリジナル展示の再訪テストと `ga-pageview.spec.js` の `/admin` のスタブが、テストの途中で `page.unroute` していた
+
+差し替えをやめたいときは、上に `page.route` を重ねる（後から登録したものが先に評価され、fulfill すれば下には回らない）か、フラグを倒して `route.fallback()` に回す（録画の再生へ落ちる）。`scripts/maintenance/verify-e2e-no-unroute.js`（Quality Gates で実行）が `e2e/**/*.js` を検査する。正当な例外は `scripts/maintenance/e2e-no-unroute-allowlist.json` に「ファイル・行の内容・理由」で載せる（現状は上記 afterEach の1件。replay では呼ばないため）。
+
 ### 5. A改: 録画に無い通信は素通しし、必ず一覧に出す（2026-09-29 改訂）
 
 当初は録画に無い通信を abort していた。ところが、データ取得部分（`supabaseDataService.js`）を変える PR が1日に7本入り、PR ごとに撮り直す前提が成り立たなかった（導入初日だけで master 側の変更による撮り直しが3回要った）。そこで次に改めた。
@@ -72,11 +79,12 @@ HAR は context に登録し、spec 側の `page.route` は page に登録され
 
 ### 6. 録画は毎日自動で撮り直す（`.github/workflows/e2e-rerecord.yml`）
 
-毎日2回（本命 JST10:23 = UTC01:23、予備 JST12:47 = UTC03:47）と `workflow_dispatch` で、master で全件を録画する。
+毎日4回（JST 10:23 / 12:47 / 14:37 / 16:13。UTC 01:23 / 03:47 / 05:37 / 07:13）と `workflow_dispatch` で、master で全件を録画する。その日の録画を採用したら、後の起動は空振りする。
 
-- 当初は JST11:00（`'0 2 * * *'`）の1回だけだったが、2026-09-30 は JST17:15 に起動した。GitHub の schedule は負荷で遅れ、取りこぼされることもあり、毎時0分に負荷が集中する（[公式](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule)）。このリポジトリの他の定期実行も1〜4時間の遅れが常態のため、0分を避けたうえで予備の起動を置く
-- 定期実行は、録画の前に `scripts/maintenance/e2e-recording.js gate` で撮るかを決める。その日（JST）の録画を採用済みなら撮らない（予備の空振り。通知しない）。JST19時以降に起動したら撮らない（発走前のレースが夜間開催の数場だけになる。通知する）。`workflow_dispatch` は判定せずに撮る
-- 本命が遅れて予備と重なっても、`concurrency`（`cancel-in-progress: false`）で直列になる。予備は本命の終了後に checkout した master のポインタで判定する
+- 当初は JST11:00（`'0 2 * * *'`）の1回だけだったが、2026-09-30 は JST17:15 に起動した。GitHub の schedule は負荷で遅れ、取りこぼされることもあり、毎時0分に負荷が集中する（[公式](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule)）。このリポジトリの他の定期実行も1〜4時間の遅れが常態のため、0分を避けたうえで予備の起動を置いた（JST10:23・12:47の2回）
+- 2回でも足りなかった。2026-10-01 は 10:23 の予定が JST16:15 に、12:47 の予定が JST19:27 に起動し、16:15 の回は不採用（テスト3件の失敗）、19:27 の回は打ち切りで撮らずに終わった。1回でも不採用・大幅遅延になると、その日は撮り直せない。起動を JST10〜17時に4回置き、同じ日のうちに再挑戦できるようにした
+- 定期実行は、録画の前に `scripts/maintenance/e2e-recording.js gate` で撮るかを決める。その日（JST）の録画を採用済みなら撮らない（後の起動の空振り。通知しない）。JST19時以降に起動したら撮らない（発走前のレースが夜間開催の数場だけになる。通知する）。`workflow_dispatch` は判定せずに撮る
+- 起動が遅れて重なっても、`concurrency`（`cancel-in-progress: false`）で直列になる。後の起動は前の起動の終了後に checkout した master のポインタで判定する（二重に撮らない）。起動時刻・直列化・権限は `verify-e2e-har-merge.js` が機械検査する
 
 1. 本番に繋いで全件を録画する
 2. 撮った録画だけで再生して全件実行する（`E2E_REPLAY_STRICT=1`: 録画に無い通信は abort＝録画が自己完結しているかを見る）
@@ -84,7 +92,15 @@ HAR は context に登録し、spec 側の `page.route` は page に登録され
    - 2 が全件通る（失敗・flaky・テスト外のエラーが0）
    - skip が現行の録画（ポインタに記録した件数）より増えていない。発走前のレースが少ない日に撮ると skip が増えるため
 4. 採用したら Release に添付してポインタを master に直接 push する（`push-with-retry.sh`。GITHUB_TOKEN の push は他のワークフローを起動しない）。直近14件を残して古い Release を消す
-5. 採用しなかった・失敗したときは Slack に通知する。PRゲートは現行の録画のまま動き続ける
+5. 採用しなかった・失敗したときは Slack に通知する。PRゲートは現行の録画のまま動き続ける。定期実行の「採用しなかった・撮らなかった」通知は1日1回まで（`e2e-recording.js notify-dedupe`。同じ日に別の定期実行の通知ステップが動いていれば出さない。確かめられないときは通知する）。2回目以降の結果は各実行の step summary に残る。ワークフロー自体の失敗（push の失敗等、ステップが失敗したとき）と `workflow_dispatch` は毎回通知する
+
+撮り直しで初めて落ちるテストは、録画の日時か本番データに暗黙に依存している。PRゲートは録画（時計は録画時刻）で再生するので通るが、翌日の撮り直し（時計は撮影時刻・本番の最新データ）で落ちる。2026-10-01 の不採用の3件はいずれもこの型だった。
+
+- 「過去か当日か」で表示が変わる箇所を、録画時刻の日付のレースで確かめていた → テスト内で `page.clock.setFixedTime` で日付を固定する
+- 結果が確定すると既定タブが「結果」に変わるレースで、既定タブの中身を測っていた → タブを明示して開く
+- 本番データの補完（過去のレースの進入コース）で「直近10走」の窓がずれ、先頭の1走の性質が変わった → 位置ではなく「条件を満たす走すべて」で確かめる
+
+固定の race_id を開くテストを書くときは、撮影日が進んでも前提が変わらないか（結果の確定・今日との前後・後日の走の追加）を確かめる。
 
 ### 7. 録画の本体は GitHub Release に置く
 

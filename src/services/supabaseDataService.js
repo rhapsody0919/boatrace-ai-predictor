@@ -33,11 +33,13 @@ import {
   countsForSeriesScore,
   shouldUseOfficialSeries,
   prelimEndRaceIdOf,
+  prelimEndDayOf,
   semifinalSlotsOf,
   splitMeetSeries,
   scoreTableFor,
   isAbsentStartRow,
   flyingRacerIdsInMeet,
+  postPrelimFlyingRacerIds,
   runFinishLabel,
   officialMarkOf,
 } from "../components/race/seriesPoints.js";
@@ -4037,7 +4039,7 @@ export const supabaseDataService = {
       // （BOA-503。getRacerScopedRaceStats/getRacerRaceHistoryも同じ窓）。
       // 2027-12-03以降は窓の始点がデータの開始日を越えて直書きが誤りになるため、
       // その時点で注記（locales の basicInfo/wakuInfo.periodCaveat、
-      // beforeInfo.detailTableNote、termHints.js、RacerPerformanceStats.jsx）を見直す
+      // beforeInfo.detailTableNote、locales の termHints.*、RacerPerformanceStats.jsx）を見直す
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - 730);
       const cutoffStr = cutoffDate.toISOString().split("T")[0];
@@ -4141,7 +4143,8 @@ export const supabaseDataService = {
     // v5: 欠場（absent）を足した（BOA-504）
     // v6: 着順が付かない走の公式の記号（finishMark）を足した（BOA-537）
     // v7: 同じ日の走を R の古い順に並べ直した（BOA-588）
-    return withCache(`racer-scoped-race-stats-v7-${racerId}`, async () => {
+    // v8: フライングの走の ST（flyingStartTiming）を足した（BOA-583。直近10走・今節の表で「F.01」と出すため）
+    return withCache(`racer-scoped-race-stats-v9-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4202,7 +4205,7 @@ export const supabaseDataService = {
         fetchAllByIn(
           "race_start_timings",
           // finish_mark: 欠場の走を「着外」でなく「欠場」と出すため（BOA-504）
-          "race_id, boat_number, start_timing, is_flying, finish_mark",
+          "race_id, boat_number, start_timing, is_flying, finish_mark, entry_course",
           "race_id",
           raceIds,
         ),
@@ -4345,8 +4348,19 @@ export const supabaseDataService = {
               st && !st.is_flying && st.start_timing != null
                 ? st.start_timing
                 : null,
+            // フライングの走の ST。startTiming（平均・ST考察の母数）には入れず、表に「F.01」と
+            // 出すためだけに別に持つ（BOA-583。以前は直近10走・今節の表で「-」だった）
+            flyingStartTiming:
+              st?.is_flying && st.start_timing != null ? st.start_timing : null,
             // 実進入コース（BOA-257）。2025-12-04より前のレースや欠場艇はnull
             actualCourse: result[`actual_course_${entry.boat_number}`] ?? null,
+            // 表示用の進入コース（BOA-623）。本番STの進入（当日のうちに入る）を先に、
+            // 無ければ Kファイルの actualCourse。actualCourse 自体はコース別の集計に
+            // 使っているので変えない（集計の母数が変わる）
+            entryCourse:
+              st?.entry_course ??
+              result[`actual_course_${entry.boat_number}`] ??
+              null,
             // 級別（そのレース時点の値）。ST考察のベースラインを(course, grade)で引く
             grade: entry.grade ?? null,
             // 自艇の展示タイム。展示1位判定のために同レース全艇分を既に
@@ -4551,7 +4565,7 @@ export const supabaseDataService = {
    */
   getRacerRaceHistory(racerId) {
     // v2: ST を展示ST（exhibition_data）から本番ST（race_start_timings）に替え、isFlying・finishMark を足した（BOA-576）
-    return withCache(`racer-race-history-v2-${racerId}`, async () => {
+    return withCache(`racer-race-history-v3-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4584,7 +4598,7 @@ export const supabaseDataService = {
           ),
           fetchAllByIn(
             "race_results",
-            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race",
+            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
             "race_id",
             raceIds,
           ),
@@ -4605,7 +4619,7 @@ export const supabaseDataService = {
           // 同じ出どころにそろえる（BOA-576: 展示STを本番STとして出し、記号の走を「着外(順位不明)」と出していた）
           fetchAllByIn(
             "race_start_timings",
-            "race_id, boat_number, start_timing, is_flying, finish_mark",
+            "race_id, boat_number, start_timing, is_flying, finish_mark, entry_course",
             "race_id",
             raceIds,
           ),
@@ -4622,6 +4636,17 @@ export const supabaseDataService = {
       const stByKey = new Map(
         stRows.map((r) => [`${r.race_id}-${r.boat_number}`, r]),
       );
+      // レース内のST順位（Fを除く。同タイムは同順位）。今節タブ・直近10走と同じ規則
+      // （deriveRaceStContext）。レース一覧の「ST」に順位を添える（BOA-623）
+      const stRowsByRace = new Map();
+      stRows.forEach((r) => {
+        if (!stRowsByRace.has(r.race_id)) stRowsByRace.set(r.race_id, []);
+        stRowsByRace.get(r.race_id).push(r);
+      });
+      const stRankOf = (raceId, boatNumber) =>
+        deriveRaceStContext(stRowsByRace.get(raceId) ?? [], null).byBoat.get(
+          boatNumber,
+        )?.stRank ?? null;
 
       return entries
         .map((entry) => {
@@ -4654,6 +4679,12 @@ export const supabaseDataService = {
             startTiming: st?.start_timing ?? null,
             isFlying: st?.is_flying === true,
             finishMark: st?.finish_mark ?? null,
+            // 進入コースとST順位（BOA-623）。進入は本番STの進入を先に、無ければ Kファイル
+            entryCourse:
+              st?.entry_course ??
+              result[`actual_course_${entry.boat_number}`] ??
+              null,
+            stRank: stRankOf(entry.race_id, entry.boat_number),
             // 公式の着欄が数字でない（F・L・欠・落・転・妨・エ・不・失・沈・＿ など）走は着順が付かない。
             // race_results の rank1〜6 には、完走が3艇未満のレースで返還艇（F等）が入っていることがある
             // （43件、BOA-576 のデータ精度検証）。着欄の記号を優先し、着順・勝率には数えない
@@ -6792,7 +6823,10 @@ export const supabaseDataService = {
     // v16: 推移の走に着順（finish）を足した（BOA-537）
     // v17: 着順の並びの材料に公式の記号（finishMark）を足した（BOA-537）
     // v18: 賞典除外（公式の備考・今節F）を順位から外す理由を足した（BOA-587）
-    return withCache(`meet-scoreboard-v18-${raceId}`, async () => {
+    // v19: 着順の並びでフライングを「F」と出すため、is_flying を足した（BOA-589）
+    // v20: 予選終了の日目を series_day から出す（中止の日を数えない、BOA-578）
+    // v21: 予選後に今節Fを切った選手（postPrelimFlyingRacerIds）を足した（BOA-626）
+    return withCache(`meet-scoreboard-v21-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7028,6 +7062,12 @@ export const supabaseDataService = {
           .filter((r) => officialMarkOf(r.finish_mark))
           .map((r) => [`${r.race_id}|${r.boat_number}`, r.finish_mark]),
       );
+      // フライングの走。着欄の記号（finish_mark）が未取得の走でも「失」と出さず「F」にする（BOA-589）
+      const flyingKeys = new Set(
+        (meetStarts ?? [])
+          .filter((r) => r.is_flying === true)
+          .map((r) => `${r.race_id}|${r.boat_number}`),
+      );
 
       return {
         meetStart,
@@ -7134,6 +7174,16 @@ export const supabaseDataService = {
             exclusionReasonByRacer: reasons,
           };
         })(),
+        // **予選が終わった後のレースで今節Fを切った選手**（BOA-626）。
+        // 順位は予選終了で確定しているので順位の対象からは外さない（上の判定は
+        // 予選終了までのFだけを見る）が、賞典除外なのは同じ。同じ「今節F」で
+        // 片方は除外・片方は順位付きになる理由を、画面が順位の横で断るのに使う。
+        // `meetStarts` は表示中レースの直前までなので、まだ切っていないFは入らない
+        postPrelimFlyingRacerIds: postPrelimFlyingRacerIds(
+          meetStarts,
+          meetRows,
+          prelimEndRaceIdOf(conditions ?? []),
+        ),
         // **残りの予選走数**（表示中のレースを含む）。公式の「必要得点」は
         // 「準優ボーダーをクリアするために必要な得点」で、実データから
         // 逆算すると `ボーダー × (今の走数 + 残り走数) − 今の得点` だった
@@ -7174,15 +7224,13 @@ export const supabaseDataService = {
           return byRacer;
         })(),
         // 予選が終わった日が節の何日目か（公式の「4日目12R終了時点」に合わせる）
-        prelimEndDay: (() => {
-          const last = prelimEndRaceIdOf(conditions ?? []);
-          if (!last) return null;
-          // `dates` は9日窓ぶん（前節を含む）なので、節の日付だけで数える
-          const meetDates = [
-            ...new Set(meetRows.map((r) => r.race_id.slice(0, 10))),
-          ].sort();
-          return meetDates.indexOf(last.slice(0, 10)) + 1 || null;
-        })(),
+        // 中止の日を数えないよう `series_day` を使う（BOA-578、prelimEndDayOf）
+        prelimEndDay: prelimEndDayOf(
+          prelimEndRaceIdOf(conditions ?? []),
+          conditions ?? [],
+          raceIds,
+          new Set(resultById.keys()),
+        ),
         // **この節に組まれた準優勝戦の枠数**。慣例は3個レース=18名で、決められない
         // とき（予選中で準優がまだ番組に出ていない等）は **null**（0ではない）。
         // 画面は `?? SEMIFINAL_DEFAULT_SLOTS` で既定の18枠に落とす。
@@ -7299,6 +7347,7 @@ export const supabaseDataService = {
             raceStage: stageById.get(e.race_id) ?? null,
             // 欠場を走数から外すための材料（BOA-489）
             finishMark: markByKey.get(`${e.race_id}|${e.boat_number}`) ?? null,
+            isFlying: flyingKeys.has(`${e.race_id}|${e.boat_number}`),
             started:
               !racesWithSt.has(e.race_id) ||
               startedKeys.has(`${e.race_id}|${e.boat_number}`),
@@ -7592,13 +7641,25 @@ export const supabaseDataService = {
    */
   async getRaceStartTimings(raceId) {
     if (!supabase || !raceId) return [];
-    const { data, error } = await supabase
-      .from("race_start_timings")
-      .select(
-        "boat_number, start_timing, is_flying, is_late_start, finish_mark, finish_rank",
-      )
-      .eq("race_id", raceId)
-      .order("boat_number");
+    // 進入は本番STの entry_course（2026-09-21 からほぼ全件）を先に、無ければ Kファイル由来の
+    // race_results.actual_course_<艇番>（翌日以降に入る）で埋める（BOA-625。徳山 9/14 7R は
+    // entry_course が無いが actual_course はある）
+    const [{ data, error }, { data: courseRow }] = await Promise.all([
+      supabase
+        .from("race_start_timings")
+        .select(
+          "boat_number, start_timing, is_flying, is_late_start, finish_mark, finish_rank, entry_course",
+        )
+        .eq("race_id", raceId)
+        .order("boat_number"),
+      supabase
+        .from("race_results")
+        .select(
+          "actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+        )
+        .eq("race_id", raceId)
+        .maybeSingle(),
+    ]);
 
     if (error || !data) return [];
 
@@ -7611,6 +7672,12 @@ export const supabaseDataService = {
       isLateStart: row.is_late_start,
       finishMark: row.finish_mark ?? null,
       finishRank: row.finish_rank ?? null,
+      // 進入コース（結果ページのスタート情報の行順、077）。結果タブの進入の表示に使う（BOA-625）。
+      // race_results.course_1〜6 は枠番と同じ値の旧列なので使わない
+      entryCourse:
+        row.entry_course ??
+        courseRow?.[`actual_course_${row.boat_number}`] ??
+        null,
     }));
   },
 
@@ -8064,15 +8131,26 @@ export function aggregateRacerVenueBoatStats(
       exSum += Number(row.exhibitionTime);
       exN += 1;
     }
-    if (hasEx || hasSt) {
+    if (hasEx || hasSt || row.isFlying) {
       // historyは既にrace_id（YYYY-MM-DD-会場-レース番号）昇順でソート済みの
       // ため点の並び順は正しいが、対象期間が最大2年に及ぶため月日だけを表示
       // すると異なる年の同じ月日が同一ラベルに見えてしまう。年下2桁を含めて
       // 曖昧さを避ける（例: "25-05-12"）
       series.push({
         date: row.raceId.slice(2, 10),
+        // グラフの横軸は走ごとに一意な値にする。日付だけだと同じ日の2走が1つの目盛りにまとまり、
+        // 2走目に乗せても1走目のツールチップが出た（BOA-583 ファン評価2周目）
+        raceKey: row.raceId,
+        // ツールチップで同じ日の2走を見分けるため（BOA-583）
+        venueCode: row.venueCode,
+        raceNo: Number(row.raceId.slice(-2)),
         avg_exhibition_time: hasEx ? Number(row.exhibitionTime) : null,
         start_timing: hasSt ? Number(row.startTiming) : null,
+        // フライングの走は平均・線からは外すが、どこで切ったかは印で残す（BOA-583）。
+        // 0（スタートライン）の位置に置く
+        flying: row.isFlying ? 0 : null,
+        // ツールチップで F の深さ（F.01 か F.04 か）を出す
+        flyingSt: row.isFlying ? (row.startTiming ?? null) : null,
       });
     }
 
@@ -8087,6 +8165,8 @@ export function aggregateRacerVenueBoatStats(
       boatNumber: row.boatNumber,
       startTiming: row.startTiming ?? null,
       isFlying: row.isFlying === true,
+      entryCourse: row.entryCourse ?? null,
+      startTimingRank: row.stRank ?? null,
       finishRank: row.unranked ? null : finishPositionOf(row),
       finishMark: row.finishMark ?? null,
       absent: row.finishMark === "欠",

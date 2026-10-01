@@ -1,0 +1,93 @@
+{
+  "$comment": [
+    "verify-jsx-japanese.js の台帳。導入時点（2026-10-01）に翻訳対象のページに残っていた、t() を通らない日本語の直書き。",
+    "各行は所属チケットで直す。直したら、その行をここから消す（残すと verify が失敗する）。",
+    "新しい行は足さない。新しい文言は4言語のロケールに足して t() で出す。意図的な日本語なら、コードの側に `i18n-allow: <理由>` を書く。"
+  ],
+  "entries": [
+    {
+      "ticket": "BOA-654",
+      "file": "src/components/Breadcrumb.jsx",
+      "kind": "attr:aria-label",
+      "text": "パンくずリスト"
+    },
+    {
+      "ticket": "BOA-654",
+      "file": "src/components/LoadingScreen.jsx",
+      "kind": "attr:aria-label",
+      "text": "読み込み中"
+    },
+    {
+      "ticket": "BOA-654",
+      "file": "src/components/LoadingScreen.jsx",
+      "kind": "text",
+      "text": "データを読み込み中..."
+    },
+    {
+      "ticket": "BOA-654",
+      "file": "src/components/LoadingScreen.jsx",
+      "kind": "text",
+      "text": "しばらくお待ちください"
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/ExhibitionTimeTrendChart.jsx",
+      "kind": "attr:racerLinkLabel",
+      "text": "→ 選手ページを見る"
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/RacerFormChart.jsx",
+      "kind": "attr:racerLinkLabel",
+      "text": "→ 選手ページを見る"
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/RacerFormRankingChart.jsx",
+      "kind": "text",
+      "text": "選手ページ"
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/StPredictabilityChart.jsx",
+      "kind": "attr:racerLinkLabel",
+      "text": "→ 選手ページを見る"
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/VolatilityAccuracyChart.jsx",
+      "kind": "text",
+      "text": "データを読み込み中..."
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/VolatilityAccuracyChart.jsx",
+      "kind": "text",
+      "text": "まだ十分な実測データがありません。2026年8月11日に運用開始した新AI予想モデルのデータが蓄積され次第、表示されます。"
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/VolatilityAccuracyChart.jsx",
+      "kind": "text",
+      "text": "※ 新AI予想モデルは2026年8月11日に運用開始したばかりのため、現在"
+    },
+    {
+      "ticket": "BOA-655",
+      "file": "src/components/analysis/VolatilityAccuracyChart.jsx",
+      "kind": "text",
+      "text": "件を集計中（日々増加します）。件数が少ないうちは数値の変動が大きくなる可能性があります"
+    },
+    {
+      "ticket": "BOA-653",
+      "file": "src/pages/VenueGridPage.jsx",
+      "kind": "text",
+      "text": "📋 本日のデータ一覧"
+    },
+    {
+      "ticket": "BOA-653",
+      "file": "src/pages/VenueGridPage.jsx",
+      "kind": "text",
+      "text": "逃げが堅い選手・まくりが利く選手・昨日のフライング"
+    }
+  ]
+}

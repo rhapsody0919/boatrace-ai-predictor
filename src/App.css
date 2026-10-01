@@ -630,6 +630,33 @@ input:focus-visible,
   line-height: 1.3;
 }
 
+/* BOA-625: 名前の下の進入コース。枠番と違う（前付け・譲った）ときだけ強調する */
+.rr-course {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
+.rr-course.is-moved {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+/* BOA-625: 表の上の進入順（公式のスタート情報の並び） */
+.rr-course-order {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-bottom: var(--spacing-2);
+}
+
+.rr-course-order-label {
+  margin-right: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+}
+
 .rr-row.is-unranked .rr-pos {
   color: var(--text-primary);
 }
@@ -712,7 +739,7 @@ input:focus-visible,
 }
 
 /* ===== スタート情報: 全艇アニメーション（実ST比例の距離×実ST比例の到達時間） =====
-   反時計回り（左→右）のためスタートラインはトラック右寄り（84%、参考位置として表示）。
+   反時計回り（左→右）のためスタートラインはトラック右寄り（72%、参考位置として表示）。
    各艇は号砲(t=0)から自艇の静止位置（実STに応じた距離感）まで動き、そこで静止する。
    到達までの時間もSTに比例させ、STが小さい艇（早いスタート）ほど短時間で、STが大きい艇
    ほど長い時間をかけて到達する。見た目の動きの速さ自体が実際のスタートの速さを表す。
@@ -726,18 +753,33 @@ input:focus-visible,
   gap: 0.12rem;
 }
 
+/* 矢印は先端（舳先）を位置に合わせ、本体は左へ伸びる。遅いスタート（ST0.23以上）だと本体が
+   トラックの左端から外に出て、帯から浮いて見えた（#1071 ファン評価2周目）。灰色の帯
+   （::before）を矢印の幅（--rr-st-arrow-w）だけ左に伸ばし、トラック本体はその分だけ右に寄せる。
+   位置（%）の基準になるトラック本体の幅は変えない */
 .rr-st-track {
+  --rr-st-arrow-w: 16px;
   position: relative;
-  width: 100%;
+  width: calc(100% - var(--rr-st-arrow-w) - 2px);
   height: 14px;
   overflow: visible;
+}
+
+.rr-st-track::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  /* 2px は、ST0.30 以上で頭打ちになった矢印の先端（トラックの2%）との余裕 */
+  left: calc(-1 * var(--rr-st-arrow-w) - 2px);
   background: rgba(128, 128, 128, 0.08);
   border-radius: var(--radius-sm);
 }
 
+/* 横の位置（left）は RaceResult.jsx の START_ANIM.LINE_PERCENT から置く */
 .rr-st-line {
   position: absolute;
-  left: 84%;
   top: -3px;
   bottom: -3px;
   width: 2px;
@@ -774,7 +816,7 @@ input:focus-visible,
 .rr-st-dot {
   position: absolute;
   top: 50%;
-  width: 16px;
+  width: var(--rr-st-arrow-w);
   height: 9px;
   /* 舳先（右端）を位置に合わせる。中心を合わせると、ST0.01の正常な艇でも舳先が
      スタートラインを8px越え、フライングに見えた（BOA-559 ファン評価3周目） */
@@ -790,8 +832,9 @@ input:focus-visible,
 
 /* 1号艇（白）は明るい地に溶けるので、形に沿った濃い輪郭を付ける */
 .rr-st-dot.is-white {
-  filter: drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.9))
-    drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.9));
+  /* 0.6px では1着行のベージュ地で輪郭が弱かった（BOA-586） */
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.95))
+    drop-shadow(0 0 1px rgba(0, 0, 0, 0.95));
 }
 
 .rr-st-streak {
@@ -1683,4 +1726,16 @@ input:focus-visible,
 
 .race-list-toggle:hover {
   background: var(--color-gray-50);
+}
+
+/* スマホでは矢印を一回り小さくし、帯を左に伸ばす分（上の --rr-st-arrow-w）を減らす。
+   トラックが約86pxしかなく、16px伸ばすと位置の差がつく幅が減りすぎる（#1071 ファン評価2周目） */
+@media (max-width: 480px) {
+  .rr-st-track {
+    --rr-st-arrow-w: 12px;
+  }
+
+  .rr-st-dot {
+    height: 7px;
+  }
 }

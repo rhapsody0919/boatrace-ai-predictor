@@ -3,7 +3,10 @@
  * EnglishGuide の繁体字版。スタイルは EnglishGuide.css を共用
  */
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { getSiteFooterLinks } from "../components/siteFooterLinks";
 import "./EnglishGuide.css";
 
 const TECHNIQUES = [
@@ -118,7 +121,33 @@ const DATA_POINTS = [
   { icon: "⏱️", name: "起跑穩定度", desc: "選手起跑時機的穩定程度。" },
 ];
 
+// レース詳細のタブ（並び順は PredictionPanel.jsx の tabs 配列が正本。結果は確定後だけ出る）
+const RACE_TABS = [
+  {
+    key: "basic",
+    desc: "勝率、2連對率、3連對率、平均ST，可依賽場（全國/當地）、等級、期間切換比較",
+  },
+  {
+    key: "aiPrediction",
+    desc: "第一轉彎標展開預測與1號位失守指數。也能在這裡確認預測是否命中",
+  },
+  {
+    key: "meet",
+    desc: "出賽6名選手在本梯次的得分率、梯次名次，以及晉級準優勝戰所需的得分",
+  },
+  { key: "beforeInfo", desc: "展示時間、天氣與賽前報告" },
+  { key: "waku", desc: "選手在今日預想航道的成績、起跑分析與逃脫模擬" },
+  { key: "motor", desc: "本賽場馬達的成績與調子" },
+  { key: "oddsList", desc: "發售中的賠率" },
+  { key: "result", desc: "比賽確定後的名次與派彩。確定前不會顯示此分頁" },
+];
+
+const RACE_TABS_INTRO =
+  "比賽頁面分為以下分頁，依此順序排列。前4個分頁一次比較6艘艇，後面的分頁則是選擇1艘艇深入查看。";
+
 export default function ZhTwGuide() {
+  const { t } = useTranslation();
+
   return (
     <div className="app">
       <title>什麼是日本賽艇（Kyotei）？規則與投注入門指南 | 龍神雷達</title>
@@ -192,7 +221,7 @@ export default function ZhTwGuide() {
 
         {/* Winning techniques */}
         <section className="eg-section">
-          <h2>🥇 6 種獲勝方式（決まり手）</h2>
+          <h2>🥇 6 種獲勝方式（Kimarite）</h2>
           <p>
             每一場勝利都會依「如何獲勝」被官方分類。 記住這 6
             個詞，就能看懂日文賽事實況和龍神雷達的預測。
@@ -297,18 +326,18 @@ export default function ZhTwGuide() {
               </div>
             </li>
             <li>
-              <strong>查看1號位失守指數</strong> —
-              數值高代表容易爆冷（派彩更高、命中率更低）。
-            </li>
-            <li>
-              <strong>觀看第一轉彎標動畫</strong> —
-              以視覺化模擬呈現決定勝負的第一個轉彎最可能如何展開，並附各展開的機率。
-            </li>
-            <li>
-              <strong>閱讀關鍵數據卡</strong> —
-              每艘推薦艇背後的主要統計依據（起跑時機排名、馬達強度、當地勝率）。
+              <strong>打開「AI預測」分頁</strong> —
+              第一轉彎標的展開預測（附各展開的機率）、1號位失守指數（數值高代表容易爆冷：派彩更高、命中率更低），比賽結束後也能在這裡確認預測是否命中。
             </li>
           </ol>
+          <p>{RACE_TABS_INTRO}</p>
+          <ul className="eg-list eg-race-tabs">
+            {RACE_TABS.map((tab) => (
+              <li key={tab.key}>
+                <strong>{t(`raceTabs.${tab.key}`)}</strong>: {tab.desc}
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* Real example (BOA-250): actual past race data */}
@@ -349,7 +378,7 @@ export default function ZhTwGuide() {
           </div>
           <p>
             <strong>怎麼解讀：</strong>{" "}
-            1號艇是A1級別，且本場當地勝率全場最高（6.59）——是典型的「1號位逃げ」熱門。3號艇雖然只是A2級別，但馬達2連率（38.0%）明顯優於其他艇——這是很多人不單看級別、而多考慮馬達表現來選2着的常見理由。
+            1號艇是A1級別，且本場當地勝率全場最高（6.59）——是典型的「1號位逃走（Nige）」熱門。3號艇雖然只是A2級別，但馬達2連率（38.0%）明顯優於其他艇——這是很多人不單看級別、而多考慮馬達表現來選2着的常見理由。
           </p>
           <p>
             <strong>投注方式：</strong> 3連單，依序選擇
@@ -358,7 +387,7 @@ export default function ZhTwGuide() {
           </p>
           <p className="eg-note">
             <strong>結果：</strong>{" "}
-            1號艇以逃げ獲勝，3號艇第2、4號艇第3——與預測完全一致。每投注¥100，配當為{" "}
+            1號艇以逃走（Nige）獲勝，3號艇第2、4號艇第3——與預測完全一致。每投注¥100，配當為{" "}
             <strong>{EXAMPLE_RACE.payout}</strong>。
           </p>
           <p>
@@ -409,6 +438,7 @@ export default function ZhTwGuide() {
           </Link>
         </section>
       </div>
+      <Footer links={getSiteFooterLinks(t)} />
     </div>
   );
 }

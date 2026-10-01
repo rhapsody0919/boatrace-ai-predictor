@@ -173,6 +173,29 @@ check(
   withNoticesResult.notes?.length,
   9,
 );
+// BOA-373: 行はあるのに解析できない行を数え、「通知なし」と区別する
+check(
+  "parseInformationHtml: 通知なし・全行を解析できたページは rowsUnparsed=0",
+  [noNoticesResult.rowsUnparsed, withNoticesResult.rowsUnparsed],
+  [0, 0],
+);
+{
+  // 事故の1行目（ページ内で最初の「12/19」）の日付を、想定外の書式（日付を復元できない）に差し替える
+  const broken = loadFixture("with-notices").replace(
+    ">12/19</th>",
+    ">十二月十九日</th>",
+  );
+  const brokenResult = _internal.parseInformationHtml(broken, "20171224");
+  check(
+    "parseInformationHtml: 解析できない行は捨てつつ rowsUnparsed に数える（9件→8件、1行）",
+    [
+      broken !== loadFixture("with-notices"),
+      brokenResult.notes.length,
+      brokenResult.rowsUnparsed,
+    ],
+    [true, 8, 1],
+  );
+}
 check(
   "parseInformationHtml (with-notices): 区分ごとの内訳",
   {

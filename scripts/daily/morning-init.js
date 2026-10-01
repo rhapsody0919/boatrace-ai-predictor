@@ -31,30 +31,24 @@ const ROOT = path.join(__dirname, "..", "..");
 // 判定だと、朝一番のcron実行時点でrace_entriesのスクレイピングが間に合っていない
 // レース（generate-unified-predictions.js側で黙ってスキップされる）が、その後
 // スクレイピングされても永久に生成対象外になってしまう（三国4〜7Rで実際に発生）。
-// race_entriesが存在するのにunified predictionsが無いレースが1件でもあれば
-// 再実行する（generate-unified-predictions.jsは対象日全体をdelete→insertし直すため
-// 冪等で、重複や余計な書き込みは発生しない）
+// race_entriesが存在するのにunified predictionsが無い（発走前の）レースが1件でもあれば
+// 再実行する（generate-unified-predictions.jsは発走前のレースを upsert するため冪等）
 async function ensureUnifiedPredictions(date) {
-  const [entryRows, predRows] = await Promise.all([
-    fetchAll("race_entries", "race_id", (q) =>
-      q.gte("race_id", date).lt("race_id", `${date}~`),
-    ),
-    fetchAll("predictions", "race_id", (q) =>
-      q
-        .eq("model_id", "unified")
-        .gte("race_id", date)
-        .lt("race_id", `${date}~`),
-    ),
-  ]);
-
-  const entryRaceIds = new Set((entryRows || []).map((r) => r.race_id));
-  if (entryRaceIds.size === 0) {
+  // 判定は Vercel 側（racesInit/job.js）と同じ findRacesMissingUnified を使う。発走済みのレースは
+  // 欠けていても数えない（生成側が書かないため。BOA-628）
+  const { findRacesMissingUnified } =
+    await import("./generate-unified-predictions.js");
+  let missingCount;
+  try {
+    missingCount = (await findRacesMissingUnified(date)).length;
+  } catch (e) {
+    // 従来どおり、読み取りの失敗では止めない（後続のデプロイフックまで進める）。次の実行で判定し直す
+    console.warn(
+      "⚠️ unified の欠けの判定に失敗（今回は生成しない）:",
+      e.message,
+    );
     return;
   }
-  const predRaceIds = new Set((predRows || []).map((r) => r.race_id));
-  const missingCount = [...entryRaceIds].filter(
-    (id) => !predRaceIds.has(id),
-  ).length;
   if (missingCount === 0) {
     return;
   }

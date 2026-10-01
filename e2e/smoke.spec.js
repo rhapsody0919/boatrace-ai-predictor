@@ -178,6 +178,22 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
   });
 });
 
+// BOA-656: 会場特性の要約は「水面・傾向」を日本語の中黒で連結していた（全言語で「Freshwater ・ Balanced」）
+test("会場特性の要約は言語ごとの区切りで連結する（BOA-656）", async ({
+  page,
+}) => {
+  for (const [path, sep] of [
+    ["/en/venue/2", ", "],
+    ["/zh-TW/venue/2", "、"],
+  ]) {
+    await page.goto(path);
+    const teaser = page.getByTestId("venue-characteristics-teaser");
+    await teaser.waitFor({ timeout: 30000 });
+    await expect(teaser).not.toContainText("・");
+    await expect(teaser).toContainText(sep);
+  }
+});
+
 test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
   test("未翻訳ページ（/en/faq等）はja版へリダイレクトされlang=jaで配信される", async ({
     page,
@@ -198,6 +214,27 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
     const lang = await page.evaluate(() => document.documentElement.lang);
     expect(lang).toBe("en");
   });
+
+  // BOA-202: 各言語ガイドはApp外で描画されるため、共通フッターを個別に置かないと法的リンクへの導線が消える
+  for (const [path, privacyLabel] of [
+    ["/en/guide", "Privacy Policy"],
+    ["/zh-TW/guide", "隱私權政策"],
+    ["/ko/guide", "개인정보 처리방침"],
+    // BOA-632: 会場ガイド（一覧・詳細）も同じくApp外
+    ["/en/venues", "Privacy Policy"],
+    ["/zh-TW/venues/heiwajima", "隱私權政策"],
+    ["/ko/venues/heiwajima", "개인정보 처리방침"],
+  ]) {
+    test(`${path} に各言語のラベルでフッターが出る`, async ({ page }) => {
+      await page.goto(path);
+      const footer = page.locator("footer.site-footer");
+      await expect(footer).toBeVisible();
+      await expect(
+        footer.getByRole("link", { name: privacyLabel }),
+      ).toBeVisible();
+      await expect(footer.locator(".site-footer-copyright")).toBeVisible();
+    });
+  }
 });
 
 test.describe("ブログ英語版（部分翻訳、blog-i18n）", () => {
@@ -929,23 +966,12 @@ test.describe("結果のあるレースを中止扱いしない（BOA-525）", (
 });
 
 test.describe("レースページ再設計（BOA-168）", () => {
-  test("トップページでレース選択→データ出走表と「AI予想」タブ（展開予測/イン崩れ）が表示される（BOA-346）", async ({
+  test("発走前のレースでデータ出走表と「AI予想」タブ（展開予測/イン崩れ）が表示される（BOA-346）", async ({
     page,
   }) => {
-    // ブラウザのロケール検出でenへリダイレクトされるのを防ぎ、jaを固定する
-    // （「⏱️ 終了」フィルタは日本語文言依存のため、ja固定が無いと終了済みレースが
-    // 誤って選ばれうる。2026-08-14: 実行時刻経過で1Rが結果確定した際に顕在化）
-    await page.addInitScript(() =>
-      localStorage.setItem("boatai-language", "ja"),
-    );
     // AIデータ分析（展開予測/イン崩れ）は未来志向のUIのため結果確定済みレースでは
-    // 表示しない仕様（2026-08-14）。開催場一覧の「次 XR」表示がある会場＝未消化レースが
-    // 残っている会場の最終レース（12R側）を選ぶことで未終了レースを確実に引く
-    const found = await selectUpcomingRace(page);
-    test.skip(
-      !found,
-      "本日開催中の未終了レースが見つからないため検証をスキップ",
-    );
+    // 表示しない仕様（2026-08-14）。固定のレースを発走前の状態で開く（BOA-445）
+    await openFixedRaceBeforeStart(page);
 
     // データ出走表が主役として表示される（基本情報タブがデフォルト）
     await expect(page.locator(".data-race-table")).toBeVisible({
@@ -964,14 +990,8 @@ test.describe("レースページ再設計（BOA-168）", () => {
   test("この会場の枠番別傾向パネルがデフォルト展開で表示され、折りたたみ操作ができる（race-detail-analysis-integration）", async ({
     page,
   }) => {
-    await page.addInitScript(() =>
-      localStorage.setItem("boatai-language", "ja"),
-    );
-    const found = await selectUpcomingRace(page);
-    test.skip(
-      !found,
-      "本日開催中の未終了レースが見つからないため検証をスキップ",
-    );
+    // 結果確定済みのレースでも基本情報タブには同じパネルが出る（BOA-445）
+    await openFixedRaceBasicTab(page);
 
     const panel = page.locator(".venue-tendency-panel");
     await expect(panel).toBeVisible({ timeout: 15000 });
@@ -996,19 +1016,13 @@ test.describe("レースページ再設計（BOA-168）", () => {
   test("分析ツール6コンポーネントの埋め込みセクションがデフォルト閉で並び、開くと会場/レース選択プルダウン無しで実データが表示される（race-detail-analysis-integration FR-3〜9）", async ({
     page,
   }) => {
-    await page.addInitScript(() =>
-      localStorage.setItem("boatai-language", "ja"),
-    );
-    const found = await selectUpcomingRace(page);
-    test.skip(
-      !found,
-      "本日開催中の未終了レースが見つからないため検証をスキップ",
-    );
+    // 結果確定済みのレースでも基本情報タブには同じ6セクションが出る（BOA-445）
+    await openFixedRaceBasicTab(page);
 
     // 「モーター調子」はBOA-308でアコーディオンからモータ情報タブへ昇格し、
     // 重複表示を避けてアコーディオン版が撤去された（PredictionPanel.jsx冒頭の
-    // コメント参照）。テストが7個のまま取り残されていたが、selectUpcomingRaceが
-    // 常にfalseを返して無言でskipしていたため検知できていなかった
+    // コメント参照）。テストが7個のまま取り残されていたが、当日の未終了レースを
+    // 探すヘルパーが常にfalseを返して無言でskipしていたため検知できていなかった
     const sections = page.locator(".embedded-analysis-section");
     await expect(sections).toHaveCount(6);
 
@@ -1089,38 +1103,30 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 実際より小さい数値になっていた（例: 勝率55%の艇なら実際の約半分）。
     // 各行の「出現回数 ÷ (出現率/100)」で逆算した分母が、同じ艇の行同士で
     // ほぼ一致することを確認する（全行が同じ分母＝該当艇の1着回数を使っている証拠）
-    const found = await selectUpcomingRace(page);
-    test.skip(
-      !found,
-      "本日開催中の未終了レースが見つからないため検証をスキップ",
-    );
+    //
+    // プレビューは発走前のレースのAI予想タブにだけ出る。固定のレースを発走前の状態で
+    // 開くので、タブ・プレビュー・2行以上が出ることは前提として確かめる
+    // （当日のレースを探していた頃は、出ないレースに当たると skip していた。BOA-445）
+    await openFixedRaceBeforeStart(page);
 
     // AI予想タブ（本命艇の予想確定後に描画される、BOA-346で独立タブ化）の読み込みを待つ
-    const aiPredictionTabBtn = page.locator(".race-tabs-btn", {
-      hasText: "AI予想",
+    await page
+      .locator(".race-tabs-btn", { hasText: "AI予想" })
+      .click({ timeout: 20000 });
+    await expect(page.locator(".prediction-result")).toBeVisible({
+      timeout: 15000,
     });
-    try {
-      await aiPredictionTabBtn.waitFor({ timeout: 15000 });
-      await aiPredictionTabBtn.click();
-      await page.locator(".prediction-result").waitFor({ timeout: 15000 });
-    } catch {
-      test.skip(true, "AI予想タブが表示されないレースのため検証をスキップ");
-      return;
-    }
 
-    const previewButton = page.locator(".expand-button", {
-      hasText: "コースが1着の場合の出現パターン",
-    });
-    if ((await previewButton.count()) === 0) {
-      test.skip(true, "このレースには出現パターンプレビューが表示されない");
-      return;
-    }
-    await previewButton.click();
+    await page
+      .locator(".expand-button", {
+        hasText: "コースが1着の場合の出現パターン",
+      })
+      .click({ timeout: 15000 });
 
     const rows = page.locator(".pattern-table tbody tr");
     await expect(rows.first()).toBeVisible({ timeout: 15000 });
     const rowCount = await rows.count();
-    test.skip(rowCount < 2, "比較に十分な行数が無いため検証をスキップ");
+    expect(rowCount).toBeGreaterThanOrEqual(2);
 
     const impliedDenominators = [];
     for (let i = 0; i < rowCount; i++) {
@@ -1278,8 +1284,25 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 20000,
     });
     expect(await page.locator(".rrb-item").count()).toBeLessThanOrEqual(10);
-    // ST順位を「(N位)」形式で併記する（phase a T3-4）
-    await expect(page.locator(".rrb-st-rank").first()).toBeVisible();
+    // ST順位を「(N位)」形式で併記する（phase a T3-4）。STが取れている走には
+    // 必ず順位が付き、STが無い走（「—」）には付かない。
+    // 先頭の1走だけを見ると、本番データの補完で直近10走の窓がずれたときに
+    // 先頭がSTの無い走になって落ちる（2026-10-01、5/23 の進入コースが後から
+    // 入り、窓の先頭が ST の無い 3/27 になった）
+    const stCells = await page.locator(".rrb-item").evaluateAll((items) =>
+      items.map((el) => ({
+        st: el.querySelector(".rrb-st")?.textContent ?? "",
+        rank: el.querySelector(".rrb-st-rank")?.textContent ?? "",
+      })),
+    );
+    const withSt = stCells.filter((c) => /^\.\d{2}$/.test(c.st));
+    expect(withSt.length).toBeGreaterThan(0);
+    for (const c of withSt) expect(c.rank).toMatch(/^\(\d位\)$/);
+    for (const c of stCells.filter((c) => c.st === "—"))
+      expect(c.rank).toBe("");
+    await expect(
+      page.locator(".rrb-st-rank", { hasText: /^\(\d位\)$/ }).first(),
+    ).toBeVisible();
 
     // もう一度タップすると閉じる
     await page.locator(".rwit-today-label-button").first().click();
@@ -1378,11 +1401,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
       localStorage.setItem("boatai:cookie-consent", "accepted"),
     );
 
-    const found = await selectUpcomingRace(page);
-    test.skip(
-      !found,
-      "本日開催中の未終了レースが見つからないため検証をスキップ",
-    );
+    await openFixedRaceBeforeStart(page);
 
     // 未終了レースを開けた以上バナーは必ず出る。出ない場合は退行なので
     // スキップにせず失敗させる（バナーが消えると本検証が無言で骨抜きになるため）
@@ -1615,6 +1634,94 @@ test.describe("レースページ再設計（BOA-168）", () => {
     ).not.toContainText("0.0%");
   });
 
+  test("枠別情報の直近走の帯は、各走の月日を出し、押すと会場・Rが出る。見出しは行の条件と実際の走数（BOA-604）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // 2026-09-29 戸田12R の1号艇。以前は見出しが行によらず「直近10走」、日付・会場は
+    // title 属性（raceId のまま）にしか無く、タッチ端末では出なかった
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    const btn = page.getByRole("button", { name: /直近1ヶ月/ }).first();
+    await btn.waitFor({ timeout: 30000 });
+    await btn.click();
+    const items = page.locator(".rrb-strip").first().locator(".rrb-item");
+    await expect(items.first()).toBeAttached({ timeout: 30000 });
+    const count = await items.count();
+    // 見出しに行の条件と実際の走数
+    await expect(page.locator(".rwit-expanded-note").first()).toContainText(
+      `直近1ヶ月で`,
+    );
+    await expect(page.locator(".rwit-expanded-note").first()).toContainText(
+      `直近${count}走`,
+    );
+    // タイルのいちばん上に月日
+    await expect(items.first().locator(".rrb-date")).toHaveText(/^\d+\/\d+$/);
+    // 最初は最新（右端）を選び、帯の下に会場・R を出す。左端を押すと切り替わる
+    const detail = page.locator(".rrb-detail").first();
+    const lastId = await items.last().getAttribute("data-race-id");
+    await expect(detail).toContainText(
+      `${Number(lastId.slice(5, 7))}/${Number(lastId.slice(8, 10))} `,
+    );
+    await expect(detail).toContainText(`${Number(lastId.slice(14, 16))}R`);
+    const firstId = await items.first().getAttribute("data-race-id");
+    await items.first().click();
+    await expect(detail).toContainText(
+      `${Number(firstId.slice(5, 7))}/${Number(firstId.slice(8, 10))} `,
+    );
+    await expect(items.first()).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("直近走の帯は、事故の走を「外」でなく公式の記号で出し、明細の括弧にグレードを付ける（BOA-604 ファン評価1周目）", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    // 2号艇（長岡良也）の「SG・G1」: 2/7 住之江4R は公式で F（以前は着順の欄が「外」）。
+    // 艇は上のチップで切り替える（SG・G1 のボタンは選んでいる艇の1つだけ）
+    await page.locator(".rwit-boat-chip").nth(1).click({ timeout: 30000 });
+    await page.getByRole("button", { name: /SG・G1/ }).click();
+    const f = page.locator('.rrb-item[data-race-id="2026-02-07-12-04"]');
+    await expect(f.locator(".rrb-rank")).toHaveText("F", { timeout: 30000 });
+    await f.click();
+    await expect(page.locator(".rrb-detail").first()).toContainText("F");
+    await expect(page.locator(".rrb-detail").first()).not.toContainText("外");
+
+    // 4号艇の「SG・G1」: 3/1 鳴門3R は G1 の「一般戦」。括弧にグレードを付けて、
+    // 表の「一般戦」行（一般グレードの節）と混ざって読まれないようにする
+    // 艇を替えても「SG・G1」の行は開いたまま（ファン評価2周目）なので、押し直さない
+    await page.locator(".rwit-boat-chip").nth(3).click();
+    const g = page.locator('.rrb-item[data-race-id="2026-03-01-14-03"]');
+    await g.click({ timeout: 30000 });
+    await expect(page.locator(".rrb-detail").first()).toContainText(
+      "（G1 一般戦）",
+    );
+  });
+
+  test("枠別情報で艇を切り替えても、開いていた行（当地など）の帯は開いたまま（BOA-604 ファン評価2周目）", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    await page.getByRole("button", { name: /当地/ }).click({ timeout: 30000 });
+    const note = page.locator(".rwit-expanded-note").first();
+    await expect(note).toContainText("当地で1コース");
+    // 2号艇に切り替えると、同じ「当地」の行のまま2コースの帯になる（以前は閉じた）
+    await page.locator(".rwit-boat-chip").nth(1).click();
+    await expect(note).toContainText("当地で2コース");
+    // 引き継いだ行をもう一度押すと閉じる
+    await page.getByRole("button", { name: /当地/ }).click();
+    await expect(page.locator(".rwit-expanded-note")).toHaveCount(0);
+
+    // 引き継いだ先の艇で走数0の行（4号艇の「当地」）は閉じる。ボタンにならず閉じられない
+    // 「直近0走」の帯だけが残っていた（ファン評価3周目）
+    await page.locator(".rwit-boat-chip").nth(0).click();
+    await page.getByRole("button", { name: /当地/ }).click();
+    await expect(note).toContainText("当地で1コース");
+    await page.locator(".rwit-boat-chip").nth(3).click();
+    await expect(page.locator(".rwit-expanded-note")).toHaveCount(0);
+  });
+
   test("枠別情報のコース別「直近1ヶ月」の帯は、表示どおり左が古く右が新しい（BOA-601）", async ({
     page,
   }) => {
@@ -1627,7 +1734,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await btn.click();
     const items = page.locator(".rrb-strip").first().locator(".rrb-item");
     await expect(items.first()).toBeVisible({ timeout: 30000 });
-    const ids = await items.evaluateAll((els) => els.map((e) => e.title));
+    const ids = await items.evaluateAll((els) =>
+      els.map((e) => e.dataset.raceId),
+    );
     expect(ids.length).toBeGreaterThan(1);
     expect(ids).toEqual([...ids].sort());
 
@@ -1689,7 +1798,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
       .toBe(true);
   });
 
-  test("基本情報の直近10走で、同じ日の2走も古い順（Rの小さい順）に並ぶ（BOA-588）", async ({
+  test("基本情報の直近10走は新しい順で、同じ日の2走も R の大きい順に並ぶ（BOA-588・BOA-623）", async ({
     page,
   }) => {
     // 2026-09-29 戸田12R の1号艇: 9/27 と 9/28 に2走ずつある。以前は日付は古い順
@@ -1699,32 +1808,211 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const bar = page.locator(".rbit-bar-row").first();
     await bar.waitFor({ timeout: 30000 });
     await bar.click();
-    const table = page.locator(".race-history-table").first();
+    const table = page.locator(".rrt-table").first();
     await table.waitFor({ timeout: 30000 });
-    const rows = await table.locator("tbody tr").evaluateAll((trs) =>
-      trs.map((tr) => {
-        const cells = [...tr.querySelectorAll("td")].map((td) =>
-          td.textContent.trim(),
-        );
-        return {
-          date: cells.find((c) => /^\d{4}-\d{2}-\d{2}$/.test(c)) ?? null,
-          raceNo: Number(cells.find((c) => /^\d+R$/.test(c))?.slice(0, -1)),
-        };
-      }),
-    );
+    // 行は日付のリンク先（race_id = 日付＋会場＋R）で読む（BOA-623 で日付は月日だけになった）
+    const ids = await table
+      .locator(".rrt-row .rrt-link")
+      .evaluateAll((as) => as.map((a) => a.getAttribute("href").slice(-16)));
     // 同じ日が2走以上ある日が、少なくとも1つあること（前提の確認）
-    const sameDay = rows.filter(
-      (r, i) => i > 0 && r.date !== null && r.date === rows[i - 1].date,
+    const sameDay = ids.filter(
+      (id, i) => i > 0 && id.slice(0, 10) === ids[i - 1].slice(0, 10),
     );
     expect(sameDay.length).toBeGreaterThan(0);
-    // 表全体が「日付 → R」の古い順になっている
-    for (let i = 1; i < rows.length; i += 1) {
-      const prev = rows[i - 1];
-      const cur = rows[i];
-      if (prev.date === cur.date)
-        expect(cur.raceNo).toBeGreaterThan(prev.raceNo);
-      else expect(cur.date > prev.date).toBe(true);
+    // 表全体が「日付 → R」の新しい順（race_id の降順）。いちばん上が前走（BOA-623）。
+    // 同じ日の2走で R の順が日の中だけ逆になる不具合（BOA-588）もこれで見る
+    expect(ids).toEqual([...ids].sort().reverse());
+  });
+
+  test("直近10走は、表示中のレースより前の走を節の見出し行つきの6列で出し、PCでは中央に置く（BOA-623・BOA-602）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // 2026-09-30 児島7R の1号艇 西村拓也。以前はこのレース自身（9/30 7R）まで「直近」に入っていた
+    await page.goto("/race/2026-09-30-16-07");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const bar = page.locator(".rbit-bar-row").first();
+    await bar.waitFor({ timeout: 30000 });
+    await bar.click();
+    const table = page.locator(".rrt-table").first();
+    await table.waitFor({ timeout: 30000 });
+    const ids = await table
+      .locator(".rrt-row .rrt-link")
+      .evaluateAll((as) => as.map((a) => a.getAttribute("href").slice(-16)));
+    expect(ids.length).toBe(10);
+    expect(ids.every((id) => id < "2026-09-30-16-07")).toBe(true);
+    // 会場・レース名は節の見出し行に1回だけ（期間に年を出す）
+    const groups = table.locator(".rrt-group");
+    // 新しい順なので、最初の見出しは児島（今節）、次が徳山
+    await expect(groups.first()).toContainText("児島");
+    await expect(groups.nth(1)).toContainText("徳山");
+    await expect(groups.nth(1)).toContainText("ダイヤモンドカップ");
+    // 9/29 10R は5号艇・4コース進入で、ST は6艇中3番目。2着
+    const r = table.locator("tr", {
+      has: page.locator('a[href$="/race/2026-09-29-16-10"]'),
+    });
+    const cells = (await r.locator("td").allInnerTexts()).map((c) =>
+      c.replace(/\s+/g, ""),
+    );
+    expect(cells.slice(2, 6)).toEqual(["5", "4", ".08(3)", "2"]);
+    // いちばん上が前走（9/29 10R）。選手ページのレース一覧と同じ新しい順
+    expect(ids[0]).toBe("2026-09-29-16-10");
+    // 見出し行は年月だけ（日の範囲は節の開催期間に読まれるため出さない）
+    await expect(groups.first()).toHaveText(/2026\/9$/);
+    // ST の ( ) の意味を表の下に出す（選手ページにも同じ凡例が出る）
+    await expect(page.locator(".rrt-legend").first()).toContainText(
+      "6艇の中の順位",
+    );
+    // 単勝配当は 375px では出さない
+    await expect(table.locator("th.rrt-pc")).toBeHidden();
+
+    // PC では単勝配当を出し、表は中央に置く（左寄せで右に大きな空きを残さない）
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(table.locator("th.rrt-pc")).toBeVisible();
+    const gap = await table.evaluate((tb) => {
+      const t = tb.getBoundingClientRect();
+      const w = tb.closest(".rrt-wrap").getBoundingClientRect();
+      return { left: t.left - w.left, right: w.right - t.right };
+    });
+    expect(Math.abs(gap.left - gap.right)).toBeLessThanOrEqual(2);
+  });
+
+  test("英語版の375pxでも直近10走の着順が画面内に入る（BOA-623 ファン評価1周目）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // 2026-09-30 戸田9R: 決まり手「Makuri-zashi (Sweep & pass)」などの長い語で、表が
+    // 414px（枠 293px）になった（1周目、1号艇）。順位不明の「Unplaced (rank unknown)」で
+    // 着順の列が 190px になった（3号艇）。6艇とも見る
+    await page.goto("/en/race/2026-09-30-02-09");
+    await page.locator(".race-tabs-btn", { hasText: "Basic Info" }).click();
+    await page.locator(".rbit-bar-row").first().waitFor({ timeout: 30000 });
+    for (let i = 0; i < 6; i += 1) {
+      const bar = page.locator(".rbit-bar-row").nth(i);
+      await bar.click();
+      const wrap = page.locator(".rrt-wrap").first();
+      await wrap.waitFor({ timeout: 30000 });
+      const w = await wrap.evaluate((el) => [el.scrollWidth, el.clientWidth]);
+      expect(w[0], `${i + 1}号艇`).toBeLessThanOrEqual(w[1]);
+      // 決まり手・種別は1行に収める（2周目: 折り返すと「ウインウイン７」が1文字ずつ
+      // 縦に並び、行の高さがばらばらになった）
+      const subLines = await wrap
+        .locator(".rrt-sub")
+        .evaluateAll((els) =>
+          els.map((el) =>
+            Math.round(
+              el.getBoundingClientRect().height /
+                parseFloat(getComputedStyle(el).lineHeight || "12"),
+            ),
+          ),
+        );
+      // 決まり手（.rrt-technique）はハイフンで2行まで折り返す（3周目: 省略すると
+      // 「Makuri…」で読めなかった）。括弧の説明は出さない
+      expect(
+        subLines.every((n) => n <= 2),
+        `${i + 1}号艇`,
+      ).toBe(true);
+      const techniques = await wrap.locator(".rrt-technique").allInnerTexts();
+      expect(
+        techniques.some((x) => x.includes("(")),
+        `${i + 1}号艇`,
+      ).toBe(false);
+      await bar.click();
     }
+  });
+
+  test("PC の選手ページのレース一覧で、種別を途中で折らず省略もしない（BOA-623 ファン評価2周目）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    // 選手5250: 「予選特賞女子」「ＤＤ目玉女子」が「女 / 子」で折れていた
+    await page.goto("/racer/5250");
+    const table = page.locator(".racer-vc-race-list .rrt-table");
+    await table.waitFor({ timeout: 30000 });
+    const bad = await table
+      .locator(".rrt-sub")
+      .evaluateAll((els) =>
+        els
+          .filter(
+            (el) =>
+              el.scrollWidth > el.clientWidth + 1 ||
+              el.getClientRects().length > 1 ||
+              el.getBoundingClientRect().height >
+                parseFloat(getComputedStyle(el).lineHeight) * 1.5,
+          )
+          .map((el) => el.textContent),
+      );
+    expect(bad).toEqual([]);
+  });
+
+  test("選手ページのレース一覧も、節の見出し行つきの6列で出す（BOA-623）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/racer/5250");
+    const table = page.locator(".racer-vc-race-list .rrt-table");
+    await table.waitFor({ timeout: 30000 });
+    await expect(table.locator(".rrt-group").first()).toContainText("2026/");
+    const wrap = await table.evaluate((tb) => {
+      const w = tb.closest(".rrt-wrap");
+      return [w.scrollWidth, w.clientWidth];
+    });
+    expect(wrap[0]).toBeLessThanOrEqual(wrap[1]);
+  });
+
+  test("結果タブに進入コースを出し、古い「精度確認中」の注記を出さない（BOA-625）", async ({
+    page,
+  }) => {
+    // 2026-09-30 児島7R: 公式のスタート情報は 1-2-3-6-4-5。6号艇（峰竜太）は4コース
+    await page.goto("/race/2026-09-30-16-07");
+    const order = page.locator(".rr-course-order");
+    await expect(order).toBeVisible({ timeout: 30000 });
+    await expect(order.locator(".rr-boat-chip")).toHaveText([
+      "1",
+      "2",
+      "3",
+      "6",
+      "4",
+      "5",
+    ]);
+    const mine = page.locator(".rr-row", {
+      has: page.locator(".rr-boat-chip", { hasText: /^6$/ }),
+    });
+    await expect(mine.locator(".rr-course")).toHaveText("4コース");
+    // 枠番と違う進入（前付け）は強調する。枠なりの1号艇は強調しない
+    await expect(mine.locator(".rr-course")).toHaveClass(/is-moved/);
+    const one = page.locator(".rr-row", {
+      has: page.locator(".rr-boat-chip", { hasText: /^1$/ }),
+    });
+    await expect(one.locator(".rr-course")).not.toHaveClass(/is-moved/);
+    await expect(page.getByText("精度確認中")).toHaveCount(0);
+
+    // 本番STの進入が無いレース（2026-09-14 徳山7R）は、Kファイルの進入で埋める（枠なり）。
+    // 以前は「データがありません」と出していたが、公式には進入が出ている（ファン評価1周目）
+    await page.goto("/race/2026-09-14-18-07");
+    const order2 = page.locator(".rr-course-order");
+    await expect(order2).toBeVisible({ timeout: 30000 });
+    await expect(order2.locator(".rr-boat-chip")).toHaveText([
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+    ]);
+  });
+
+  test("過去のレースの基本情報のバーは、そのレースより前の走で、期間もレースの日から数える（BOA-605）", async ({
+    page,
+  }) => {
+    // 2026-09-26 津5R の1号艇（飯山泰）。このレースより前の直近1ヶ月（8/27〜）は24走。
+    // 以前はこのレース自身と後日の走（5走）が入り、期間も今日から数えていた
+    await page.goto("/race/2026-09-26-09-05");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await page.locator(".rbit-bar-row").first().waitFor({ timeout: 30000 });
+    await page.locator("summary", { hasText: "期間で絞り込む" }).click();
+    await page.locator(".rbit-chip", { hasText: "直近1ヶ月" }).click();
+    await expect(page.locator(".rbit-bar-row").first()).toContainText("(n=24)");
   });
 
   test("今節タブ: en・zh-TW の375pxで6艇の表がカードからはみ出さず、必要得点に残りの走数を添える（BOA-596）", async ({
@@ -2199,23 +2487,22 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const bar = page.locator(".rbit-bar-row").first();
     await bar.waitFor({ timeout: 30000 });
     await bar.click();
-    const table = page.locator(".race-history-table").first();
+    const table = page.locator(".rrt-table").first();
     await table.waitFor({ timeout: 30000 });
-    const pos = await table.evaluate((tb) => {
-      const ths = [...tb.querySelectorAll("th")];
-      const finish = ths.find((th) => th.textContent.trim() === "着順");
-      const wrap = tb
-        .closest(".race-history-table-wrapper")
-        .getBoundingClientRect();
+    // 列は「日付・R・枠番・進入・ST・着順」（BOA-623）。375px で横に送らずに全部見える
+    // （以前は11列・約930pxで、着順は R の右に寄せても枠番・ST は画面外だった）
+    const layout = await table.evaluate((tb) => {
+      const wrap = tb.closest(".rrt-wrap");
       return {
-        index: ths.indexOf(finish),
-        right: finish.getBoundingClientRect().right,
-        wrapRight: wrap.right,
+        heads: [...tb.querySelectorAll("thead th")]
+          .filter((th) => getComputedStyle(th).display !== "none")
+          .map((th) => th.textContent.trim()),
+        scroll: wrap.scrollWidth,
+        client: wrap.clientWidth,
       };
     });
-    // R番号のすぐ右（日付・会場・R の次）で、横スクロールせずに見える
-    expect(pos.index).toBe(3);
-    expect(pos.right).toBeLessThanOrEqual(pos.wrapRight);
+    expect(layout.heads).toEqual(["日付", "R", "枠番", "進入", "ST", "着順"]);
+    expect(layout.scroll).toBeLessThanOrEqual(layout.client);
 
     // 英語の画面で公式の記号（エ＝エンスト）を生のまま出さない（ファン評価2周目）。
     // 2026-09-30 戸田9R: 前の走がエンスト失格の艇がいる
@@ -2227,9 +2514,15 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await enRow.waitFor({ timeout: 30000 });
     await expect(enRow).toContainText("Eng");
     await expect(enRow).not.toContainText("エ");
+    // 記号の意味をタッチでも確かめられる（BOA-592。以前は ? が日本語ページだけで、title しか無かった）
+    await enRow.locator(".term-hint__button").click();
+    const enHint = page.locator(".term-hint__popover");
+    await expect(enHint).toContainText("Eng");
+    await expect(enHint).toContainText(/engine stall/i);
+    await enRow.locator(".term-hint__button").click();
     // 同じ走を直近の出走履歴でも同じ表記にする（ファン評価3周目。以前は履歴だけ「エ」）
     await page.locator(".rbit-bar-row").nth(5).click();
-    const enHistory = page.locator(".race-history-table").first();
+    const enHistory = page.locator(".rrt-table").first();
     await enHistory.waitFor({ timeout: 30000 });
     await expect(enHistory).toContainText("Eng");
     await expect(enHistory).not.toContainText("エ");
@@ -2429,6 +2722,12 @@ test.describe("レースページ再設計（BOA-168）", () => {
   }) => {
     // 会場の逃げ・決まり手は「今日から見た直近の期間」の事前集計しか無い。
     // 以前は6月のレースでも9月のレースでも同じ値が、何の断りもなく出ていた
+    //
+    // 「過去か当日か」はブラウザの時計で決まる。録画時刻（＝時計）は撮り直すたびに
+    // 進むため、時計を 9/29 に固定する。固定しないと、9/30 以降に撮った録画では
+    // 下の 9/29 のレースも「過去」になり、注記が出て落ちる（2026-10-01 の撮り直しが
+    // これで不採用になった）
+    await page.clock.setFixedTime(new Date("2026-09-29T15:04:00+09:00"));
     await page.goto("/race/2026-09-26-09-05");
     await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
     const note = page.getByText(
@@ -2447,10 +2746,15 @@ test.describe("レースページ再設計（BOA-168）", () => {
       .evaluate((el) => el.getBoundingClientRect().height);
     expect(toggleHeight).toBeGreaterThanOrEqual(44);
 
-    // 当日のレース（E2E の時計は録画時刻の 2026-09-29）では出さない
+    // 当日のレース（時計は上で 2026-09-29 に固定している）では出さない
     await page.goto("/race/2026-09-29-02-12");
     await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
-    await expect(page.locator(".nsc-card, .rwit-card").first()).toBeVisible({
+    // 注記の出る2枚（逃げシミュレーション・決まり手傾向）の中身が読み込まれてから
+    // 数える。カードの枠だけ見て数えると、読み込み前の 0 件で素通りする
+    await expect(page.locator(".nsc-fill").first()).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(page.locator(".rwit-tech-row").first()).toBeVisible({
       timeout: 30000,
     });
     await expect(page.getByText(/最新の集計です（期間/)).toHaveCount(0);
@@ -2479,7 +2783,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await btn.click();
     const items = page.locator(".rrb-strip").first().locator(".rrb-item");
     await expect(items.first()).toBeAttached({ timeout: 30000 });
-    const ids = await items.evaluateAll((els) => els.map((e) => e.title));
+    const ids = await items.evaluateAll((els) =>
+      els.map((e) => e.dataset.raceId),
+    );
     expect(ids.length).toBeGreaterThan(0);
     for (const id of ids) expect(id < raceId).toBe(true);
 
@@ -2834,44 +3140,74 @@ test.describe("複勝予想UI撤去の完全性（レース結果パネル）", 
   });
 });
 
-// 本日開催レースは実行時刻次第で全会場終了済み、または（日付が変わった直後など）
-// 当日分の予測データが未生成で1件も無い状態になりうる。いずれも本アプリの正常な
-// 状態であり検証をスキップする対象のため、未終了レースを探し、無ければfalseを返す。
-// venue-list-redesign後の構造: 開催場一覧の「次 XR」表示がある会場＝未消化レースが
-// 残っている会場。その会場の最終レース（12R側）は必ず未終了のため、それを開く
-async function selectUpcomingRace(page) {
+// 当日の開催状況に依存しないための固定のレース（BOA-445）。
+//
+// 以前は「本日開催中で未終了のレース」をトップページから探し、無ければ skip していた。
+// E2Eは録画の時刻で走るので、撮影した時刻に発走前のレースが無いと、これらのテストが
+// まとめて skip になり何も検証しなくなる（夜間の実行では9件が skip）。
+//
+// - 2026-09-18 戸田8R（締切 14:16）。結果・進入コースの補完が済んだ過去レース
+// - イン崩れ指数 0.97（非フォールバック）＝ high。境界（0.7）から遠く、段階が揺れない
+// - 同じレースをオッズ一覧のテスト（BOA-311）でも使っている
+//
+// 直近N走のように後から窓がずれる値には、アサーションを依存させないこと
+// （進入コースの補完で窓がずれた実例がある。#1080 の T3-1）
+const FIXED_RACE_DATE = "2026-09-18";
+const FIXED_RACE_ID = `${FIXED_RACE_DATE}-02-08`;
+/** 締切 14:16 の30分前。この時刻のブラウザでは「当日・発走前」として描画される */
+const FIXED_RACE_BEFORE_START = new Date(`${FIXED_RACE_DATE}T13:46:00+09:00`);
+
+/**
+ * 固定のレースを、結果確定済みのまま基本情報タブで開く。
+ * 確定済みのレースは結果タブが既定なので、基本情報タブへ切り替える。
+ * データ出走表・枠番別傾向・分析ツールの埋め込みは、過去のレースでも同じ構造で出る
+ */
+async function openFixedRaceBasicTab(page) {
   await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
-  await page.goto("/");
+  await page.goto(`/race/${FIXED_RACE_ID}`);
+  await page
+    .locator(".race-tabs-btn", { hasText: "基本情報" })
+    .click({ timeout: 20000 });
+}
 
-  try {
-    await page.locator(".venue-grid").waitFor({ timeout: 10000 });
-  } catch {
-    return false;
-  }
-
-  // 「次 XR」表示は会場カードの描画より後に入るため、.venue-gridの描画直後に
-  // countすると開催中でも常に0件になり、このヘルパーを使うテストが無言で
-  // skipし続けていた。表示の出現自体を待ってから絞り込む
-  const upcomingVenue = page
-    .locator(".venue-grid-card--open")
-    .filter({ has: page.locator(".venue-grid-card__next-race") })
-    .first();
-  try {
-    await upcomingVenue.waitFor({ timeout: 15000 });
-  } catch {
-    return false;
-  }
-
-  await upcomingVenue.click();
-  const raceCards = page.locator(".race-card .predict-btn");
-  try {
-    await raceCards.first().waitFor({ timeout: 10000 });
-  } catch {
-    return false;
-  }
-  // 最終レース（未終了が保証される側）を選ぶ
-  await raceCards.last().click();
-  return true;
+/**
+ * 固定のレースを「当日・発走前」の状態で開く。AI用コピー・AI予想タブの予想・
+ * イン崩れの演出など、結果が出る前にしか描画しないUIの検証に使う。
+ *
+ * - ブラウザの時計をそのレースの締切30分前に固定する（fixture が入れた録画時刻を上書きする）
+ * - 予想データの応答（Edge API）から、そのレースの結果だけを外す。
+ *   結果の有無は時計ではなく result で判定している（PredictionPanel の isFinished）ため、
+ *   時計を戻すだけでは発走前にならない。他のレース・他の項目は実データのまま
+ *
+ * Edge API が失敗して Supabase への直接クエリに落ちた場合は結果が残り、
+ * 呼び出し側のアサーション（バナーが出る等）で落ちる。黙って skip にはしない
+ */
+async function openFixedRaceBeforeStart(page) {
+  await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
+  await page.clock.setFixedTime(FIXED_RACE_BEFORE_START);
+  await page.route(`**/api/predictions/${FIXED_RACE_DATE}*`, async (route) => {
+    // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+    const response = await fetchRecorded(route);
+    const body = await response.json();
+    const races = (body.races || []).map((race) =>
+      race.raceId === FIXED_RACE_ID ? { ...race, result: null } : race,
+    );
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json: { ...body, races },
+    });
+  });
+  // 予想データは軽量版→フル版の順に2回取る（useDatePredictions）。フル版の応答まで待つ。
+  // 待たずに検証が先に終わると、取得中の route がテスト終了で閉じた context に当たって
+  // 失敗する（本番データの実行で再現）。フル版で描画が変わる項目の揺れも防ぐ
+  const fullLoaded = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/api/predictions/${FIXED_RACE_DATE}`) &&
+      !response.url().includes("light=true"),
+  );
+  await page.goto(`/race/${FIXED_RACE_ID}`);
+  await fullLoaded;
 }
 
 test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
@@ -2880,11 +3216,7 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
   test("結果未確定レースでバナー・インラインのコピーボタンが表示される", async ({
     page,
   }) => {
-    const found = await selectUpcomingRace(page);
-    test.skip(
-      !found,
-      "本日開催中の未終了レースが見つからないため検証をスキップ",
-    );
+    await openFixedRaceBeforeStart(page);
 
     await expect(page.locator(".data-race-table")).toBeVisible({
       timeout: 15000,
@@ -2909,11 +3241,7 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
   test("コピー実行後にトーストが表示され、クリップボードに整形済みMarkdownが入る", async ({
     page,
   }) => {
-    const found = await selectUpcomingRace(page);
-    test.skip(
-      !found,
-      "本日開催中の未終了レースが見つからないため検証をスキップ",
-    );
+    await openFixedRaceBeforeStart(page);
 
     const bannerButton = page.locator(".ai-copy-btn-banner");
     await expect(bannerButton).toBeVisible({ timeout: 15000 });
@@ -2935,132 +3263,26 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
   });
 });
 
-// イン崩れ指数（volatilityPercentile）を持つ結果未確定レースを会場横断で探す。
-// レースカード一覧はhigh/lowレベルのレースに「🌪️ イン崩れ確率高」
-// 「🎯 本命有利」バッジを直接表示する（RaceCard.jsx、standardは無印）ため、
-// これをフィルタして対象レースを直接特定する。
-// venue-list-redesign後の構造: 会場別レース一覧（/venue/:code）を会場ごとに
-// 開いてバッジ付きカードを探し、クリックで/race/:raceIdへ遷移する。
-// AI予想タブ（BOA-346）はVolatilityDisplayをレンダリングしない結果確定済み
-// レースでは.volatility-display-*が一切出ないため、レンダリング待ちの
-// タイムアウトで判別して次の候補へ進む
-/** 通信が落ち着くまで待つ。終わらないページもあるためタイムアウトは許容する */
-async function waitForNetworkSettled(page) {
-  await page
-    .waitForLoadState("networkidle", { timeout: 15000 })
-    .catch((error) => {
-      if (error.name !== "TimeoutError") throw error;
-    });
-}
-
-async function findRaceWithVolatilityLevel(page) {
-  await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
-
-  await page.goto("/");
-  try {
-    // `.venue-grid` は読み込み中のスケルトン（VenueGridSkeleton）にも付いている。
-    // それを待つと、会場カードが描画される前に数えて0会場＝skip になり、負荷の高い
-    // 全件実行でだけ skip が出た（2026-09-30 の自動撮り直しが不採用になった原因。
-    // 単体実行では再現しない）。スケルトンではない実物のカードを待つ
-    await page
-      .locator(".venue-grid-card--open, .venue-grid-card--closed")
-      .first()
-      .waitFor({ timeout: 10000 });
-  } catch {
-    return null;
-  }
-  const venueLinks = await page
-    .locator(".venue-grid-card--open")
-    .evaluateAll((els) => els.map((el) => el.getAttribute("href")));
-
-  for (const link of venueLinks) {
-    if (!link) continue;
-    await page.goto(link);
-    try {
-      await page.locator(".race-card").first().waitFor({ timeout: 10000 });
-    } catch {
-      continue;
-    }
-    // バッジはカードの描画より後に届くデータで付く。カードが出た直後に数えると
-    // 通信の速さ次第で0件になり、実行ごとに見に行くレースが変わっていた
-    // （録画の再生で、録画時に訪れなかったレースを開いて発覚。BOA-466）
-    await waitForNetworkSettled(page);
-
-    // 締切を過ぎたレース（race-card--deadline-passed）は AI予想タブに
-    // VolatilityDisplay を出さないので、開いても1件あたり最大15秒の待ちで終わる。
-    // このヘルパーが探しているのは「未確定レース」なので最初から除く。
-    // 除かないと、バッジを数え損ねずに済むようになった後（上の待ち）で
-    // 締切後のレースを順に開いて60秒を使い切っていた（BOA-466）
-    const badgedCards = page
-      .locator(".race-card:not(.race-card--deadline-passed)")
-      .filter({ hasText: /イン崩れ確率高|本命有利/ });
-    const count = await badgedCards.count();
-
-    for (let i = 0; i < count; i++) {
-      await badgedCards.nth(i).locator(".predict-btn").click();
-      // AI予想タブ（BOA-346）はレース詳細読み込み後に描画されるため、
-      // タブボタン自体の描画をまず待つ
-      try {
-        await page
-          .locator(".race-tabs-btn", { hasText: "AI予想" })
-          .first()
-          .waitFor({ timeout: 15000 });
-      } catch {
-        await page.goBack();
-        await page.locator(".race-card").first().waitFor({ timeout: 10000 });
-        continue;
-      }
-      await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
-      // AI分析は非同期で完了まで数秒〜十数秒かかるため描画を待つ。
-      // 結果確定済みレースはVolatilityDisplayを描画しないため
-      // タイムアウトで次へ（下のvolatility-display-*判定で0件になり自然に次へ進む）
-      try {
-        await page
-          .locator(".prediction-result, .result-verify-section")
-          .first()
-          .waitFor({ timeout: 15000 });
-      } catch {
-        await page.goBack();
-        await page.locator(".race-card").first().waitFor({ timeout: 10000 });
-        continue;
-      }
-      // VolatilityDisplay は予想結果の描画より後に出ることがある。その場で数えると
-      // 出る前に0件と判定して次のレースへ進み、同じデータでも実行ごとに
-      // 見つかる・見つからないが揺れた（録画の再生で同一データのまま再現。BOA-466）。
-      // 締切前のレースだけを開いているので、出るまで待ってから判定する
-      const levels = ["high", "low", "standard"];
-      await page
-        .locator(levels.map((l) => `.volatility-display-${l}`).join(", "))
-        .first()
-        .waitFor({ timeout: 10000 })
-        .catch((error) => {
-          if (error.name !== "TimeoutError") throw error;
-        });
-      for (const level of levels) {
-        const el = page.locator(`.volatility-display-${level}`);
-        if ((await el.count()) > 0) return level;
-      }
-      await page.goBack();
-      await page.locator(".race-card").first().waitFor({ timeout: 10000 });
-    }
-  }
-  return null;
-}
-
 test.describe("レース荒れ度ムード演出（BOA-195: race-open-animation）", () => {
+  // 固定のレース（イン崩れ指数 0.97）は high。発走前の状態で開き、AI予想タブの
+  // VolatilityDisplay を見る（当日の未確定レースを会場横断で探していた頃は、
+  // 見つからない時間帯に skip していた。BOA-445）
+  const LEVEL = "high";
+
+  async function openVolatility(page) {
+    await openFixedRaceBeforeStart(page);
+    await page
+      .locator(".race-tabs-btn", { hasText: "AI予想" })
+      .click({ timeout: 20000 });
+    await expect(page.locator(`.volatility-display-${LEVEL}`)).toBeVisible({
+      timeout: 15000,
+    });
+  }
+
   test("イン崩れバッジが表示されるレースで波紋アニメーションが表示される", async ({
     page,
   }) => {
-    // findRaceWithVolatilityLevelは会場ごとにフルリロードして走査するため、
-    // 該当レースが見つかりにくい時間帯はデフォルトの30秒を超えうる
-    test.setTimeout(60000);
-    const level = await findRaceWithVolatilityLevel(page);
-    test.skip(
-      level === null,
-      "本日開催中の全レースにイン崩れ指数（非フォールバック）を持つ未確定レースが無いため検証をスキップ",
-    );
-
-    await expect(page.locator(`.volatility-display-${level}`)).toBeVisible();
+    await openVolatility(page);
     await expect(page.locator(".race-mood-effect")).toBeVisible();
     await expect(
       page.locator(".race-mood-effect .race-mood-effect-ring").first(),
@@ -3070,19 +3292,12 @@ test.describe("レース荒れ度ムード演出（BOA-195: race-open-animation�
   test("prefers-reduced-motion環境では波紋アニメーションが表示されない", async ({
     browser,
   }, testInfo) => {
-    test.setTimeout(60000);
     const context = await browser.newContext({ reducedMotion: "reduce" });
     try {
       // fixture を通らない context なので、録画の再生と時計の固定を明示的に掛ける
       await applyRecording(context, testInfo);
       const page = await context.newPage();
-      const level = await findRaceWithVolatilityLevel(page);
-      test.skip(
-        level === null,
-        "本日開催中の全レースにイン崩れ指数（非フォールバック）を持つ未確定レースが無いため検証をスキップ",
-      );
-
-      await expect(page.locator(`.volatility-display-${level}`)).toBeVisible();
+      await openVolatility(page);
       await expect(page.locator(".race-mood-effect")).toHaveCount(0);
     } finally {
       await context.close();
@@ -3605,8 +3820,12 @@ test.describe("レース詳細の直前情報タブ: オリジナル展示", () 
 
     // 2回目: 096を適用した後を模して200を返す。forbiddenがキャッシュされていると、
     // 過去レースのキーは7日TTLなのでここで行が出ない
-    await page.unroute("**/rest/v1/race_original_exhibition?*");
-    await page.unroute("**/rest/v1/race_original_exhibition_values*");
+    //
+    // denied は unroute せず、上から200のハンドラを重ねる（後から登録した page.route が
+    // 先に評価され、fulfill すれば denied には回らない）。unroute で page のルートが
+    // 一度0件になると、Playwright はそのとき処理中の要求を context 側（録画の再生）へ
+    // 送り直す。同じ要求がクライアント側の page→context の経路でも処理され、
+    // 「Route is already handled!」で落ちた（BOA-661、CIの trace で実測）
     await routeOriginalExhibition(page, {
       header: {
         item_labels: "一周|まわり足|直線",
@@ -4216,6 +4435,61 @@ test.describe("レース詳細のモータ情報タブ: 連対率の桁（BOA-47
       expect(text).toMatch(/^\d+\.\d$/);
     }
   });
+});
+
+// BOA-505: 各言語の入門ガイドもタブの名前と並び順を載せる。名前は raceTabs.* の訳と一致させる
+test.describe("各言語ガイドがレース詳細のタブ構成に追随している（BOA-505）", () => {
+  const CASES = [
+    [
+      "/en/guide",
+      [
+        "Basic Info",
+        "AI Prediction",
+        "This Series",
+        "Just Before",
+        "Lane Stats",
+        "Motor Info",
+        "Odds List",
+        "Result",
+      ],
+    ],
+    [
+      "/zh-TW/guide",
+      [
+        "基本資訊",
+        "AI預測",
+        "本梯次",
+        "臨場資訊",
+        "艇號別資訊",
+        "馬達資訊",
+        "賠率一覽",
+        "結果",
+      ],
+    ],
+    [
+      "/ko/guide",
+      [
+        "기본 정보",
+        "AI 예상",
+        "이번 시리즈",
+        "직전 정보",
+        "번호별 정보",
+        "모터 정보",
+        "오즈 일람",
+        "결과",
+      ],
+    ],
+  ];
+  for (const [path, tabs] of CASES) {
+    test(`${path} に全タブが実際の並び順で載っている`, async ({ page }) => {
+      await page.goto(path);
+      const items = page.locator(".eg-race-tabs li");
+      await expect(items).toHaveCount(tabs.length);
+      for (const [index, tab] of tabs.entries()) {
+        await expect(items.nth(index).locator("strong")).toHaveText(tab);
+      }
+    });
+  }
 });
 
 test.describe("静的ガイドがレース詳細のタブ構成に追随している（BOA-456フォローアップ）", () => {
