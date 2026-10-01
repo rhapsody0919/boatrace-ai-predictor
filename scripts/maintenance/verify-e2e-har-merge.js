@@ -7,7 +7,7 @@
  * かのどちらかで、原因が録画の中身に埋もれて見つけにくい。実際の E2E・本番には依存しない。
  */
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { canonicalUrl, harKey, mergeHarLogs } from "../../e2e/har-merge.js";
@@ -230,13 +230,54 @@ check(
 check(
   "ワークフロー自体の失敗は、通知済みでも必ず通知する（重複判定は不採用の通知だけ）",
   [
-    workflow.includes("JOB_FAILED: ${{ failure() }}"),
+    workflow.includes("JOB_FAILED: ${{ job.status == 'failure' }}"),
     /if \[ "\$EVENT_NAME" = "schedule" \] && \[ "\$JOB_FAILED" != "true" \]; then\s*\n\s*DEDUPE=\$\(node scripts\/maintenance\/e2e-recording\.js notify-dedupe/.test(
       workflow,
     ),
   ],
   [true, true],
 );
+// 状態関数（failure() / success() / cancelled() / always()）は if: の中でしか使えない。
+// env や with の ${{ }} に書くと、GitHub はワークフロー全体を無効と判定し、schedule も
+// 起動しなくなる。#1080 で JOB_FAILED: ${{ failure() }} を入れ、この検証自体がその
+// 誤った書き方を正としていたため、CI が緑のまま撮り直しが止まった（2026-10-01）。
+// .github/workflows の全ファイルを対象に、if: 以外の行の ${{ }} に状態関数が無いことを確かめる
+function findStatusFuncOutsideIf(text) {
+  const bad = [];
+  text.split("\n").forEach((line, i) => {
+    if (/^\s*-?\s*if:/.test(line)) return;
+    for (const m of line.matchAll(/\$\{\{([^}]*)\}\}/g)) {
+      if (/\b(failure|success|cancelled|always)\s*\(\s*\)/.test(m[1])) {
+        bad.push(`${i + 1}: ${line.trim()}`);
+      }
+    }
+  });
+  return bad;
+}
+check(
+  "状態関数の検出: if: 以外の ${{ failure() }} を見つける（検出器の自己検査）",
+  [
+    findStatusFuncOutsideIf("        env:\n          X: ${{ failure() }}\n").length,
+    findStatusFuncOutsideIf("        if: ${{ failure() }}\n").length,
+    findStatusFuncOutsideIf("          X: ${{ job.status == 'failure' }}\n").length,
+  ],
+  [1, 0, 0],
+);
+{
+  const wfDir = path.join(repoRoot, ".github", "workflows");
+  const offenders = readdirSync(wfDir)
+    .filter((f) => /\.ya?ml$/.test(f))
+    .flatMap((f) =>
+      findStatusFuncOutsideIf(readFileSync(path.join(wfDir, f), "utf8")).map(
+        (l) => `${f}:${l}`,
+      ),
+    );
+  check(
+    "全ワークフローで、状態関数を if: 以外（env 等）に書いていない",
+    offenders,
+    [],
+  );
+}
 check(
   "通知ステップの名前が notify-dedupe の判定と一致する",
   workflow.includes(`- name: ${NOTIFY_STEP_PREFIX}`),
