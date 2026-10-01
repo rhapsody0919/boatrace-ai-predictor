@@ -45,6 +45,44 @@ test.describe("Fバッジの今節の印・Lバッジ（BOA-440）", () => {
     expect(flyingErrors).toEqual([]);
   });
 
+  test("データ出走表の級別にも、勝率バーと同じF・Lバッジが出る（BOA-638）", async ({
+    page,
+  }) => {
+    // 以前は勝率バーの一覧にだけ出て、同じタブのデータ出走表（級別・勝率の行）には出なかった
+    await page.goto("/race/2026-09-25-01-07");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const table = page.locator(".drt-table").first();
+    await expect(table.locator(".flying-badge")).toHaveCount(5, {
+      timeout: 25000,
+    });
+    await expect(table.locator(".flying-badge-meet")).toHaveCount(2);
+
+    // L（出遅れ）も同じ出所。2026-04-11 びわこ2R の1号艇が F1・L1
+    await page.goto("/race/2026-04-11-06-02");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(
+      page.locator(".drt-table").first().locator(".flying-badge.is-late"),
+    ).toHaveText("L1", { timeout: 25000 });
+  });
+
+  test("375px: データ出走表にバッジが付いても、ページに横スクロールが出ない（BOA-638）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/race/2026-09-25-01-07");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const table = page.locator(".drt-table").first();
+    await expect(table.locator(".flying-badge")).toHaveCount(5, {
+      timeout: 25000,
+    });
+    const overflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(overflow).toBe(0);
+  });
+
   test("l_count が1以上の艇にはLバッジがFとは別の見た目で出る", async ({
     page,
   }) => {
