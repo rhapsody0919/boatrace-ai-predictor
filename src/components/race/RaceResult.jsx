@@ -46,8 +46,11 @@ const START_ANIM = {
   STREAK_FADE_IN_RATIO: 0.26,
   IMPACT_FLASH_DELTA: 0.001,
   IMPACT_EXPAND_DELTA: 0.0703,
-  // フライング艇はスタートライン（72%）より先、F0.15 で98%まで（BOA-559・586）
-  FLYING_RANGE_PERCENT: 26,
+  // フライング艇はスタートライン（72%）より先、F0.15 で98%まで（BOA-559・586）。
+  // F0.01 でも線から離して置く（FLYING_OFFSET_PERCENT）。距離に比例させるだけだと F0.01 の
+  // 先端は線から1.7%（375pxで約1.5px）しか離れず、矢印が線に重なって見えた（#1071 ファン評価1周目）
+  FLYING_OFFSET_PERCENT: 5,
+  FLYING_RANGE_PERCENT: 21,
   // フライング艇は号砲の時点で既にラインを越えているため、最も早く到達させる（周期に対する割合）
   FLYING_ARRIVAL_FRACTION: 0.04,
 };
@@ -61,7 +64,9 @@ function getFinalPositionPercent(startTiming, isFlying = false) {
     : START_ANIM.POSITION_MAX_SECONDS;
   const ratio = Math.min(Math.max(startTiming, 0), max) / max;
   return isFlying
-    ? START_ANIM.LINE_PERCENT + ratio * START_ANIM.FLYING_RANGE_PERCENT
+    ? START_ANIM.LINE_PERCENT +
+        START_ANIM.FLYING_OFFSET_PERCENT +
+        ratio * START_ANIM.FLYING_RANGE_PERCENT
     : START_ANIM.LINE_PERCENT - ratio * START_ANIM.POSITION_RANGE_PERCENT;
 }
 

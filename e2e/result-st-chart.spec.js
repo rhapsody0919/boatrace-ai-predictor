@@ -40,6 +40,10 @@ test.describe("結果タブのスタートの図（BOA-586）", () => {
     // 以前はスタートラインが84%で F 側が14%しか無く、差は約8pxだった
     expect(tipOf("F.11") - tipOf("F.01")).toBeGreaterThanOrEqual(12);
     for (const r of rows) expect(r.overflow, r.st).toBeLessThanOrEqual(0);
+    // F.01 でも、矢印の先端が線から 4px 以上先にある（以前は約1.5pxで、線に重なって見えた。
+    // #1071 ファン評価1周目）。線の位置はトラックの72%
+    const f01 = rows.find((r) => r.st === "F.01");
+    expect(f01.tip - f01.trackWidth * 0.72).toBeGreaterThanOrEqual(4);
   });
 
   test("1440px: トラックを広げ、0.01秒の差が読み取れる", async ({ page }) => {
