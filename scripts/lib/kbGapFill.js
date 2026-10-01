@@ -58,6 +58,14 @@ export const GAP_FILL_ITEMS = Object.freeze({
     keyColumns: ["race_id", "boat_number"],
     columns: ["race_id", "boat_number", "exhibition_time"],
   },
+  // BOA-553: 公式の成績コード（マイグレーション116）。既存の行の NULL だけを埋める（行の無い艇は挿入しない）
+  finish_code: {
+    table: "race_start_timings",
+    mode: "update",
+    stampUpdatedAt: true,
+    keyColumns: ["race_id", "boat_number"],
+    columns: ["race_id", "boat_number", "official_finish_code"],
+  },
 });
 
 /** すべての行が、ちょうど columns の列を持つことを確かめる（違えば例外。書き込みの直前に呼ぶ） */
@@ -221,6 +229,32 @@ export function buildRate2Rows(day, existingByKey) {
           local_2rate: nextL,
         });
       }
+    }
+  }
+  return rows;
+}
+
+/**
+ * BOA-553: 公式の成績コード（Kファイルの着順欄の表記のまま。01〜06・F・L0・L1・K0・K1・S0・S1・S2 等）。
+ * race_start_timings の既存の行のうち、成績コードが NULL の艇だけ。行の無い艇は作らない。
+ *
+ * @param {Object} day kb-day/v1
+ * @param {Map<string, string|null>} codeByKey `${race_id}|${boat_number}` → 既存の行の official_finish_code
+ */
+export function buildFinishCodeRows(day, codeByKey) {
+  const rows = [];
+  for (const { raceId, race } of kRaces(day)) {
+    for (const r of race.rows ?? []) {
+      if (!Number.isInteger(r.boat_number)) continue;
+      const key = `${raceId}|${r.boat_number}`;
+      if (!codeByKey.has(key) || codeByKey.get(key) !== null) continue;
+      const code = typeof r.finish_raw === "string" ? r.finish_raw.trim() : "";
+      if (code === "") continue;
+      rows.push({
+        race_id: raceId,
+        boat_number: r.boat_number,
+        official_finish_code: code,
+      });
     }
   }
   return rows;

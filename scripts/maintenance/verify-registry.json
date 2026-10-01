@@ -608,6 +608,11 @@
       "script": "verify-kb-gap-fill.js",
       "tier": "ci",
       "guards": "K/Bファイルからの欠落の補完（backfill-kb-gaps.js・kbGapFill.js。BOA-271 の前提条件、Phase 1 項目3〜6）が、項目ごとに決めた列だけを書き（全行の列の集合がそろわなければ書かない＝一括 upsert の NULL 上書きを防ぐ）、既存の値を上書きせず、行の無いレースにだけ挿入し、フライングの ST を正の値で書くこと（本番の全期間が正。kbFileParser は負で返す）"
+    },
+    {
+      "script": "verify-official-finish-code.js",
+      "tier": "ci",
+      "guards": "公式の成績コード（race_start_timings.official_finish_code、BOA-553。マイグレーション116）の取り込みが、Kファイルの表記のまま（S0/S1・K0/K1 の責任の有無を含む）値を取り、既存の行の値が変わるものだけを書き、行の無い艇を挿入しないこと（読み手の7箇所が行の有無で出走を判定する）。日次の同期と過去分の補完が同じ値を返すこと"
     }
   ]
 }
