@@ -163,7 +163,7 @@
 |---|---|
 | order | `{ first: number, second: number[], third: number[], nagashi: boolean }` |
 | boat1 | `{ outcome: "win" \| "top3" \| "out" }` |
-| tenkai | `{ boat: number, technique: "逃げ" \| "差し" \| "まくり" \| "まくり差し" }`（値は DB の `winning_technique` と同じ日本語。表示は i18n） |
+| tenkai | `{ boat: number, technique: "nige" \| "sashi" \| "makuri" \| "makurizashi" }`（`src/utils/turnPrediction.js` の `TECHNIQUE_NAMES` のキー。DB の `winning_technique`（日本語）とはこの表で対応させる。表示は i18n） |
 | slit | `{ mode: "pattern", patterns: string[], level: 1 \| 2 }` または `{ mode: "custom", courses: (-1 \| 0 \| 1)[] }`（-1 凹む、0 指定なし、1 出る） |
 | entry | `{ boat: 3..6, target: "within3" \| "within4" \| "waku" }` |
 | payout | `{ band: "low" \| "mid" \| "high" }` |
