@@ -11,7 +11,9 @@ import { test, expect } from "./fixtures.js";
  *
  * バナー自体（文言・同意・拒否）の検証は cookie-consent-i18n.spec.js にある。
  */
-test.use({ viewport: { width: 375, height: 812 } });
+// 768px 以下ではレース詳細の下部ナビ（.race-bottom-nav、高さ80px）が画面下端を
+// 常に覆うため、バナーの有無と関係なく行に当たらない。ナビが消える幅で測る
+test.use({ viewport: { width: 1280, height: 720 } });
 
 const RACE_PATH = "/race/2026-09-24-01-03";
 
@@ -21,6 +23,14 @@ async function hitAtRowNearBottom(page) {
   await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
   const row = page.locator(".rmt-compare tbody tr").nth(2);
   await expect(row).toBeVisible({ timeout: 25000 });
+  // バナーは下からせり上がる（0.3秒）。途中で測らない
+  await page.evaluate(() =>
+    Promise.all(
+      (document.querySelector(".cookie-consent")?.getAnimations() ?? []).map(
+        (a) => a.finished,
+      ),
+    ),
+  );
   return row.evaluate((el) => {
     const before = el.getBoundingClientRect();
     window.scrollBy(0, before.bottom - (window.innerHeight - 8));
@@ -28,8 +38,8 @@ async function hitAtRowNearBottom(page) {
     const y = r.top + r.height / 2;
     const top = document.elementFromPoint(r.left + r.width / 2, y);
     return {
-      // 行の中心が画面の下から80px以内にある（バナーの帯の中）
-      nearBottom: window.innerHeight - y <= 80,
+      // 行の中心が画面の下から40px以内にある（バナーの帯の中。バナーは上下の余白だけで32px）
+      nearBottom: window.innerHeight - y <= 40,
       inRow: el.contains(top),
       inBanner: Boolean(top?.closest(".cookie-consent")),
     };
