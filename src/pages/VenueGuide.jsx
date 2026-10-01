@@ -3,7 +3,10 @@
  * 一覧・詳細のJSX構造を言語非依存にし、lang/guides/copyで言語別ページを組み立てる
  */
 import { Link, useParams, Navigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { getSiteFooterLinks } from "../components/siteFooterLinks";
 import {
   VenueListStructuredData,
   VenueDetailStructuredData,
@@ -37,6 +40,12 @@ export function VenueCard({ venue, to, nightRaceBadge }) {
 }
 
 // 会場一覧ページ（/{lang}/venues）
+// App外で描画されるため、共通フッターを個別に置く（BOA-632）
+function SiteFooter() {
+  const { t } = useTranslation();
+  return <Footer links={getSiteFooterLinks(t)} />;
+}
+
 export function VenueGuideList({ lang, guides, copy }) {
   const base = `/${lang}`;
 
@@ -73,6 +82,7 @@ export function VenueGuideList({ lang, guides, copy }) {
           </Link>
         </section>
       </div>
+      <SiteFooter />
     </div>
   );
 }
@@ -310,6 +320,7 @@ export function VenueGuideDetail({ lang, guides, copy }) {
           </Link>
         </section>
       </div>
+      <SiteFooter />
     </div>
   );
 }
