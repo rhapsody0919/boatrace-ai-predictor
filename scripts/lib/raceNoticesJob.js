@@ -77,6 +77,8 @@ export async function runRaceNoticesJob(
     venuesFailed: result.venuesFailed,
     venuesNotAttempted: result.venuesNotAttempted,
     notesParsed: result.notesParsed,
+    rowsUnparsed: result.rowsUnparsed,
+    venuesWithUnparsedRows: result.venuesWithUnparsedRows,
     notesInserted: result.notesInserted,
     healthWritten: result.healthWritten,
     healthSkipped: result.healthSkipped,
@@ -86,9 +88,24 @@ export async function runRaceNoticesJob(
     // 不具合か通知自体が無いのかを実例が出るまで判別できなかったため
     capturedPages: result.capturedPages,
   };
+  // 通知の表に行があるのに解析できなかった（BOA-373）。「通知なし」の正常と区別できるよう、監視
+  // （scrape-monitor の last_report.alerts）へ通知する。取得できた行は保存済みのため、実行は失敗にしない
+  const alerts =
+    result.rowsUnparsed > 0
+      ? [
+          {
+            key: "rows_unparsed",
+            text: `通知の表に行があるのに解析できなかった ${result.rowsUnparsed}行（${result.venuesWithUnparsedRows
+              .map((v) => `会場${v.venueCode}: ${v.rows}行`)
+              .join(
+                "、",
+              )}）。パーサーの想定外の書式か、ページの構造変化の可能性`,
+          },
+        ]
+      : [];
   return {
     rowsWritten: result.notesInserted + result.healthWritten,
-    report: summary,
+    report: alerts.length > 0 ? { ...summary, alerts } : summary,
     body: summary,
   };
 }

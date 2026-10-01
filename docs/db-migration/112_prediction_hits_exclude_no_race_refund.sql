@@ -19,6 +19,9 @@
 --   * 配当: 的中は払戻額（NULL なら 0）、外れは 0、判定対象外は NULL。旧版は外れを NULL にしていたが、アプリ側
 --     （判定のたびにトリガーの後で上書きする）は 0 だったので、アプリに揃える
 --
+-- 権限: CREATE OR REPLACE FUNCTION は既存の権限を保つ。113（適用済み）で匿名の EXECUTE を剥がした状態は、
+--   112 を後から適用しても変わらない（REVOKE を足していないのは、この保たれる性質による。BOA-575）。
+--
 -- 発火条件: 097 の8列に race_status・refund_boats を足す。結果の確定の後で race_status だけが直される経路
 --   （raceResultFix.js の applyFixPlan・audit-race-result-anomalies.js）でも、判定をやり直すため。
 --

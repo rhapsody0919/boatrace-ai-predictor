@@ -34,6 +34,12 @@
   margin: 0;
 }
 
+/* ko は語（어절）の途中で改行させない（BOA-620、375px で「자세한 내/용은」と切れていた）。
+   ja・zh-TW は空白がほぼ無く keep-all だと折り目が無くなるため、ko だけに当てる */
+.cookie-consent__text:lang(ko) {
+  word-break: keep-all;
+}
+
 .cookie-consent__link {
   color: #38bdf8;
   text-decoration: underline;

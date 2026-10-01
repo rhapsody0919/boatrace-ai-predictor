@@ -96,9 +96,12 @@ import "./RaceHistoryTable.css";
  *   （`actual_course_*` は2025-12-04以降のレースにしか無く、
  *   古い行では「-」が並ぶだけになるため）
  */
-// ST の表記。フライングは結果タブと同じく「F0.11」（BOA-576）
-const formatSt = (race) =>
-  `${race.isFlying ? "F" : ""}${Number(race.startTiming).toFixed(2)}`;
+// ST の表記。フライングは公式と同じく「F.01」（BOA-583。以前は「F0.01」）。
+// F 以外は「0.15」のまま（この表の他の数値と桁をそろえる）
+const formatSt = (race) => {
+  const st = Number(race.startTiming).toFixed(2);
+  return race.isFlying ? `F${st.replace(/^0/, "")}` : st;
+};
 
 function RaceHistoryTable({
   rows,
@@ -110,7 +113,7 @@ function RaceHistoryTable({
 }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  // 公式の記号はデータ出走表の「本日の前走」と同じ表記にする。日本語以外の
+  // 公式の記号はデータ出走表の「今節の前走」と同じ表記にする。日本語以外の
   // ページで「エ」「落」を生のまま出さない（BOA-569 ファン評価3周目）
   const renderFinishMark = (mark) => {
     const key = finishMarkKeyOf(mark);
@@ -222,7 +225,11 @@ function RaceHistoryTable({
                         ? renderFinishMark(race.finishMark)
                         : t("basicInfo.finishUnknown"))}
                 </td>
-                {shows("raceTitle") && <td>{race.raceTitle ?? "-"}</td>}
+                {shows("raceTitle") && (
+                  <td className="race-history-table-title">
+                    {race.raceTitle ?? "-"}
+                  </td>
+                )}
                 {shows("grade") && (
                   <td>
                     {race.raceGrade

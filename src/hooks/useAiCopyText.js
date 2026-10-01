@@ -18,7 +18,7 @@ import {
   getAiCopyPromptText,
 } from "../utils/aiCopyPrompts";
 import { isRaceCancelled } from "../utils/raceCancellation";
-import { prevResultState } from "../utils/prevResult";
+import { meetPrevRunState, meetPrevRunWhenParams } from "../utils/prevResult";
 
 const DASH = "—";
 
@@ -45,7 +45,7 @@ function buildMotorRow(t, players, motorByBoat) {
   };
 }
 
-function buildRows(t, players, analysis, raceId) {
+function buildRows(t, players, analysis) {
   const motorByBoat = byBoat(analysis.motor);
   const formByBoat = byBoat(analysis.racerForm);
   const stByBoat = byBoat(analysis.stPredictability);
@@ -56,6 +56,7 @@ function buildRows(t, players, analysis, raceId) {
   const statsByBoat = new Map(
     (analysis.racerStats ?? []).map((s) => [s.boatNumber, s]),
   );
+  const meetPrevByBoat = byBoat(analysis.meetPrevRun);
 
   return [
     {
@@ -159,24 +160,29 @@ function buildRows(t, players, analysis, raceId) {
     {
       label: t("dataTable.rowPrevResult"),
       values: players.map((p) => {
-        // データ出走表と同じ読み方にそろえる（prevResult.js、BOA-569）。
-        // 着順が無いだけで「初走」と書くと、F・転の走や取得前の日を取り違える
-        // 直前情報の発表前は行そのものが無い。空の行と同じに読むと
-        // 2026-09-16 以降は「初走」と書いてしまうので、データ出走表と同じく「—」
-        const row = maintenanceByBoat.get(p.number);
+        // データ出走表と同じ読み方にそろえる（prevResult.js、BOA-569 / BOA-610）
+        const row = meetPrevByBoat.get(p.number);
         if (!row) return DASH;
-        const state = prevResultState(row, raceId);
-        if (state.kind === "firstToday") return t("dataTable.prevResultNoRace");
+        const state = meetPrevRunState(row);
+        if (state.kind === "firstOfMeet") return t("dataTable.meetFirstRace");
         if (state.kind === "unknown") return DASH;
+        const when = meetPrevRunWhenParams(state.raceId);
+        if (state.kind === "pending") {
+          return when
+            ? `${t("dataTable.prevResultPending")} (${t("dataTable.prevResultWhen", when)})`
+            : t("dataTable.prevResultPending");
+        }
         const head =
           state.kind === "rank"
             ? t("review.finishPosition", { position: state.rank })
             : state.markKey
               ? t(`dataTable.prevMark.${state.markKey}`)
               : state.mark;
-        return state.course !== null
-          ? `${head} ${t("dataTable.prevResultCourse", { course: state.course })}`
-          : head;
+        const parts = [head];
+        if (state.course !== null)
+          parts.push(t("dataTable.prevResultCourse", { course: state.course }));
+        if (when) parts.push(`(${t("dataTable.prevResultWhen", when)})`);
+        return parts.join(" ");
       }),
     },
     {
@@ -325,7 +331,7 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
   const buildText = (promptType) => {
     if (players.length === 0) return "";
 
-    const rows = buildRows(t, players, analysis, raceId);
+    const rows = buildRows(t, players, analysis);
     const table = toMarkdownTable(t, players, rows);
     // 会場名はvenues.*i18nキー経由で翻訳する（他箇所と同じ既存パターン。
     // race?.venueは日本語の生値のため、非ja言語では直接使えない）

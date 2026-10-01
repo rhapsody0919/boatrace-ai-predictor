@@ -1526,10 +1526,18 @@ async function runOdds({ rows, slots, available, db, fetcher, run }) {
       ),
   );
   check(
-    "scrape-scheduled.js: 買い目オッズ（A4）は、SKIP_ODDS_ON_GHA の影響を受けない（別に動く。T4b-10 で扱う）",
-    /runPredictionOdds\(/.test(scheduled) &&
-      !/skipOdds[^\n]*runPredictionOdds/.test(scheduled) &&
-      /if \(upcomingRaces\.length > 0\) \{/.test(scheduled),
+    "scrape-scheduled.js: 買い目オッズ（A4）は、A3 を GitHub Actions が肩代わりするとき（skipOdds が false）だけ動く。Vercel の A3 から導出しているため、二重取得しない（BOA-645）",
+    /const hasPredictionOddsRaces = !skipOdds && upcomingRaces\.length > 0;/.test(
+      scheduled,
+    ) &&
+      /if \(hasPredictionOddsRaces\) \{\s*console\.log\([^)]*\);\s*await runPredictionOdds\(/.test(
+        scheduled,
+      ) &&
+      // 早期終了の判定も同じ条件にする（A4 しか無い起動で、何もせず最後まで進まない）
+      /finishedRaces\.length === 0 &&\s*!hasPredictionOddsRaces/.test(
+        scheduled,
+      ) &&
+      (scheduled.match(/runPredictionOdds\(/g) ?? []).length === 1,
   );
   check(
     "scrape-scheduled.js: 案1が有効でないままオッズを止めた場合は警告（SKIP_ODDS_REFRESH_ON_GHA が true でないとき）",

@@ -1,9 +1,9 @@
 // Backfill is_hit_trifecta/is_hit_trio for existing predictions
 // Uses service role key for write access
 
-import { supabase, isSupabaseEnabled } from './lib/supabaseClient.js';
-import { getTodayDateJST, parseDateArg } from './lib/dateUtils.js';
-import { isTrifectaHit as checkTrifectaHit, isTrioHit as checkTrioHit } from './lib/hitCalculator.js';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient.js';
+import { getTodayDateJST, parseDateArg } from '../lib/dateUtils.js';
+import { isTrifectaHit as checkTrifectaHit, isTrioHit as checkTrioHit } from '../lib/hitCalculator.js';
 
 async function backfillTrifectaTrio(dateStr = null) {
   if (!isSupabaseEnabled()) {

@@ -56,7 +56,8 @@ async function main() {
   console.log(`📅 対象日: ${date}`);
 
   // 1. スケジュール取得（全スクリプト共通、1回のみ）
-  const schedule = await getRaceSchedule(date);
+  // DB障害を「対象なし」にしない。例外で exit 1 にし、workflow を失敗させて気づけるようにする（BOA-352）
+  const schedule = await getRaceSchedule(date, { throwOnError: true });
   if (schedule.length === 0) {
     console.log("📭 対象レースなし（スケジュール未登録）。終了。");
     return;
@@ -104,13 +105,17 @@ async function main() {
   const finishedRaces = getRacesAfterStart(schedule, 5);
   // 予測買い目オッズ: 発走60分以内のレース（オッズは発走直前に最も変動する）
   const upcomingRaces = getRacesBeforeStart(schedule, 60);
+  // 買い目オッズ（A4）は、Vercel では A3 の成功フックで race_odds から導出している（BOA-404、2026-09-25 live）。
+  // GitHub Actions 側で同じ odds3t・odds3f を取り直すと二重取得になる（BOA-645、job-inventory.md D1）。
+  // A3 を GitHub Actions が肩代わりするとき（SKIP_ODDS_ON_GHA が未設定、または Vercel が不調）だけ、A4 も肩代わりする
+  const hasPredictionOddsRaces = !skipOdds && upcomingRaces.length > 0;
 
   if (
     !hasOddsRaces &&
     !hasUpdateRaces &&
     !hasExhibitionRaces &&
     finishedRaces.length === 0 &&
-    upcomingRaces.length === 0
+    !hasPredictionOddsRaces
   ) {
     console.log("📭 全ウィンドウ対象レースなし。終了。");
     return;
@@ -248,10 +253,8 @@ async function main() {
     await mainRefresh({
       isDryRun: false,
       specificRaceIds: [...updatedRaceIds],
-      // 案1の状態では、Vercel 側（upsert）と同じ書き込み方式にそろえる（削除→挿入と upsert が同じ
-      // レースで交差した場合に、削除→挿入側の挿入が一意制約で失敗し、予測が空になるのを避ける）。
-      // 既定（オッズ起点あり）は従来どおり削除→挿入
-      writeMode: skipOddsRefresh ? "upsert" : "replace",
+      // 書き込みは upsert（削除→挿入は BOA-628 で廃止。unified を消して発走時点で予想が無いレースを作っていた）。
+      // 発走済みのレースは mainRefresh が書かない
     }).catch((e) => {
       console.error("⚠️ 予測リフレッシュ失敗:", e.message);
     });
@@ -259,9 +262,9 @@ async function main() {
     console.log("\n📭 新規データなし → 予測リフレッシュスキップ");
   }
 
-  // 5. 予測買い目オッズ更新（発走前レースに対して毎回実行）
+  // 5. 予測買い目オッズ更新（発走前レースに対して毎回実行。A3 を肩代わりしているときのみ）
   // 予測リフレッシュの有無に関わらず、オッズは発走まで変動し続けるため独立して実行する
-  if (upcomingRaces.length > 0) {
+  if (hasPredictionOddsRaces) {
     console.log(`\n💹 予測買い目オッズ更新: ${upcomingRaces.length}レース`);
     await runPredictionOdds(
       upcomingRaces.map((r) => r.race_id),
