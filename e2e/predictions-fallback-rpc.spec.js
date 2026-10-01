@@ -71,7 +71,7 @@ test.describe("Edge API 失敗時のフォールバック（BOA-355）", () => {
   }) => {
     await page.goto(`/race/${DATE}-09-01`);
     await expect(
-      page.getByText("このレースは中止のため、AI予想はありません").first(),
+      page.getByText("このレースは中止となりました").first(),
     ).toBeVisible({ timeout: 15000 });
   });
 });
