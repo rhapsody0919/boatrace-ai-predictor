@@ -204,6 +204,10 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
     ["/en/guide", "Privacy Policy"],
     ["/zh-TW/guide", "隱私權政策"],
     ["/ko/guide", "개인정보 처리방침"],
+    // BOA-632: 会場ガイド（一覧・詳細）も同じくApp外
+    ["/en/venues", "Privacy Policy"],
+    ["/zh-TW/venues/heiwajima", "隱私權政策"],
+    ["/ko/venues/heiwajima", "개인정보 처리방침"],
   ]) {
     test(`${path} に各言語のラベルでフッターが出る`, async ({ page }) => {
       await page.goto(path);
@@ -1744,6 +1748,19 @@ test.describe("レースページ再設計（BOA-168）", () => {
     }
   });
 
+  test("過去のレースの基本情報のバーは、そのレースより前の走で、期間もレースの日から数える（BOA-605）", async ({
+    page,
+  }) => {
+    // 2026-09-26 津5R の1号艇（飯山泰）。このレースより前の直近1ヶ月（8/27〜）は24走。
+    // 以前はこのレース自身と後日の走（5走）が入り、期間も今日から数えていた
+    await page.goto("/race/2026-09-26-09-05");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await page.locator(".rbit-bar-row").first().waitFor({ timeout: 30000 });
+    await page.locator("summary", { hasText: "期間で絞り込む" }).click();
+    await page.locator(".rbit-chip", { hasText: "直近1ヶ月" }).click();
+    await expect(page.locator(".rbit-bar-row").first()).toContainText("(n=24)");
+  });
+
   test("今節タブ: en・zh-TW の375pxで6艇の表がカードからはみ出さず、必要得点に残りの走数を添える（BOA-596）", async ({
     page,
   }) => {
@@ -2244,6 +2261,12 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await enRow.waitFor({ timeout: 30000 });
     await expect(enRow).toContainText("Eng");
     await expect(enRow).not.toContainText("エ");
+    // 記号の意味をタッチでも確かめられる（BOA-592。以前は ? が日本語ページだけで、title しか無かった）
+    await enRow.locator(".term-hint__button").click();
+    const enHint = page.locator(".term-hint__popover");
+    await expect(enHint).toContainText("Eng");
+    await expect(enHint).toContainText(/engine stall/i);
+    await enRow.locator(".term-hint__button").click();
     // 同じ走を直近の出走履歴でも同じ表記にする（ファン評価3周目。以前は履歴だけ「エ」）
     await page.locator(".rbit-bar-row").nth(5).click();
     const enHistory = page.locator(".race-history-table").first();
@@ -4233,6 +4256,61 @@ test.describe("レース詳細のモータ情報タブ: 連対率の桁（BOA-47
       expect(text).toMatch(/^\d+\.\d$/);
     }
   });
+});
+
+// BOA-505: 各言語の入門ガイドもタブの名前と並び順を載せる。名前は raceTabs.* の訳と一致させる
+test.describe("各言語ガイドがレース詳細のタブ構成に追随している（BOA-505）", () => {
+  const CASES = [
+    [
+      "/en/guide",
+      [
+        "Basic Info",
+        "AI Prediction",
+        "This Series",
+        "Just Before",
+        "Lane Stats",
+        "Motor Info",
+        "Odds List",
+        "Result",
+      ],
+    ],
+    [
+      "/zh-TW/guide",
+      [
+        "基本資訊",
+        "AI預測",
+        "本梯次",
+        "臨場資訊",
+        "艇號別資訊",
+        "馬達資訊",
+        "賠率一覽",
+        "結果",
+      ],
+    ],
+    [
+      "/ko/guide",
+      [
+        "기본 정보",
+        "AI 예상",
+        "이번 시리즈",
+        "직전 정보",
+        "번호별 정보",
+        "모터 정보",
+        "오즈 일람",
+        "결과",
+      ],
+    ],
+  ];
+  for (const [path, tabs] of CASES) {
+    test(`${path} に全タブが実際の並び順で載っている`, async ({ page }) => {
+      await page.goto(path);
+      const items = page.locator(".eg-race-tabs li");
+      await expect(items).toHaveCount(tabs.length);
+      for (const [index, tab] of tabs.entries()) {
+        await expect(items.nth(index).locator("strong")).toHaveText(tab);
+      }
+    });
+  }
 });
 
 test.describe("静的ガイドがレース詳細のタブ構成に追随している（BOA-456フォローアップ）", () => {
