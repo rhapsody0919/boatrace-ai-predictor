@@ -872,6 +872,7 @@
     "finishUnknown": "名次外（名次不明）",
     "finishAbsent": "缺賽",
     "venueRankingFor": "{{metric}}排行",
+    "venueRankingNote": "本站統計、可取得的全部期間（不受等級、期間篩選影響）。僅列出出賽5場以上的賽場",
     "currentVenueRank": "本節的{{venue}}在全{{total}}個賽場中排名第{{rank}}",
     "viewConditions": "依條件",
     "viewMeet": "本梯次",

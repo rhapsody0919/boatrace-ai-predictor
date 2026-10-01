@@ -872,6 +872,7 @@
     "finishUnknown": "착외(순위 불명)",
     "finishAbsent": "결장",
     "venueRankingFor": "{{metric}} 랭킹",
+    "venueRankingNote": "당사 집계·확보 가능한 전체 기간(등급·기간 필터와 관계없음). 5주 이상 출주한 경기장만 표시합니다",
     "currentVenueRank": "이번 시리즈의 {{venue}}는 전체 {{total}}개 경기장 중 {{rank}}위",
     "viewConditions": "조건별",
     "viewMeet": "이번 시리즈",

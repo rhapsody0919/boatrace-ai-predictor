@@ -632,6 +632,11 @@ function RaceBasicInfoTab({
                               metric: ownMetricLabel(metric),
                             })}
                           </p>
+                          {/* 条件別と同じく自社集計で、上のバーの公式値とは別物。どの期間・
+                              どの会場が対象かも書く（#1069 ファン評価1周目） */}
+                          <p className="rbit-conditions-note rbit-venue-note">
+                            {t("basicInfo.venueRankingNote")}
+                          </p>
                           {currentRank > 0 && (
                             <p className="rbit-venue-current-rank">
                               {t("basicInfo.currentVenueRank", {

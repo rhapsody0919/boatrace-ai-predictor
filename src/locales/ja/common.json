@@ -576,6 +576,7 @@
     "finishUnknown": "着外(順位不明)",
     "finishAbsent": "欠場",
     "venueRankingFor": "{{metric}}のランキング",
+    "venueRankingNote": "当社集計・取得できる全期間（グレード・期間の絞り込みにかかわらず）。5走以上の会場だけを並べています",
     "currentVenueRank": "今節の{{venue}}は全{{total}}会場中{{rank}}位",
     "viewConditions": "条件別",
     "viewMeet": "今節",

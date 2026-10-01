@@ -1482,6 +1482,23 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rbit-metric-caveat")).toContainText("1着率");
   });
 
+  test("得意会場のランキングにも、自社集計の1着率である旨を書く（#1069 ファン評価1周目）", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-09-21-02-05");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
+      timeout: 25000,
+    });
+    await page.locator(".rbit-bar-row").first().click();
+    await page.locator(".rbit-expanded-tab", { hasText: "得意会場" }).click();
+    await expect(page.locator(".rbit-venue-metric-label")).toHaveText(
+      "1着率のランキング",
+      { timeout: 25000 },
+    );
+    await expect(page.locator(".rbit-venue-note")).toContainText("当社集計");
+  });
+
   test("条件別の「波5cm以上」は江戸川の走を除き、その旨を注記する（BOA-584）", async ({
     page,
   }) => {

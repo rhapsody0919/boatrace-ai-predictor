@@ -877,6 +877,7 @@
     "finishUnknown": "Unplaced (rank unknown)",
     "finishAbsent": "Absent",
     "venueRankingFor": "{{metric}} ranking",
+    "venueRankingNote": "Our own tally over all available data (regardless of the grade or period filter). Only venues with 5 or more races are listed.",
     "currentVenueRank": "{{venue}}, this meet's venue, ranks {{rank}} of {{total}}",
     "viewConditions": "By condition",
     "viewMeet": "This series",
