@@ -394,6 +394,14 @@ export const CONDITION_ROWS = [
  */
 export const ROUGH_WAVE_CM = 5;
 
+/**
+ * 「波5cm以上」の行から除く会場（BOA-584）。江戸川（03）は波高を5cm刻みで記録し、
+ * 最小値が5cmのため、静水面の走も含めて全走が「5cm以上」になる
+ * （2026-09-30 実測: 5cm 1,074件・10cm 121件・15cm 56件・20cm 28件）。
+ * 全国合算の行に混ぜると、江戸川を多く走る選手ほど「荒れ」の走が水増しされる
+ */
+export const WAVE_EXCLUDED_VENUE_CODES = new Set([3]);
+
 // 条件別タブが使う派生フィールドが「未取得」か（取得失敗でundefinedのまま）。
 // 欠測（null）とは区別する。区別しないと、取得に失敗しただけなのに
 // 「初日 n=0」のような誤った値を出してしまう（.claude/rules/frontend-data-fetch.md）
@@ -526,8 +534,12 @@ export function buildConditionRows(records, { venueCode, metric }) {
         baseN: null,
       };
     }
-    const known = all.filter(
+    const measured = all.filter(
       (r) => typeof r.waveHeight === "number" && Number.isFinite(r.waveHeight),
+    );
+    // 5cm刻みで記録する会場の走は、母数からも外す（WAVE_EXCLUDED_VENUE_CODES）
+    const known = measured.filter(
+      (r) => !WAVE_EXCLUDED_VENUE_CODES.has(Number(r.venueCode)),
     );
     const rough = known.filter((r) => r.waveHeight >= ROUGH_WAVE_CM);
     const rates = computeRates(rough);
@@ -537,6 +549,8 @@ export function buildConditionRows(records, { venueCode, metric }) {
       n: sampleOf(rates),
       unavailable: false,
       baseN: known.length,
+      // 除いた走の数。1以上なら画面がその旨を注記する
+      excludedN: measured.length - known.length,
     };
   });
 }
