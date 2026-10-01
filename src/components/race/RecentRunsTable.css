@@ -81,13 +81,14 @@
   background: var(--surface-page);
 }
 
-.rrt-link {
+/* 表のセルの文字色（.rrt-table td）より強く当てる */
+.rrt-table .rrt-link {
   color: var(--brand-accent-secondary);
   text-decoration: none;
   font-weight: var(--font-weight-semibold);
 }
 
-.rrt-link:hover {
+.rrt-table .rrt-link:hover {
   text-decoration: underline;
 }
 
@@ -100,8 +101,10 @@
   line-height: var(--line-height-tight);
 }
 
+/* 2xs だと丸数字が潰れて「◎」に見えた（375px の実機相当で確認） */
 .rrt-st-rank {
-  font-size: var(--font-size-2xs);
+  margin-left: 1px;
+  font-size: var(--font-size-xs);
   color: var(--text-secondary);
 }
 

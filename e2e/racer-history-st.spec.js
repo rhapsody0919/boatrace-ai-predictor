@@ -9,19 +9,17 @@ import { test, expect } from "./fixtures.js";
  */
 test("選手ページの履歴: 本番STと公式の記号を出す", async ({ page }) => {
   await page.goto("/racer/5250");
-  const rowOf = (date, raceNo) =>
-    page
-      .locator("tr")
-      .filter({ hasText: date })
-      .filter({
-        has: page.locator("td", { hasText: new RegExp(`^${raceNo}R$`) }),
-      });
+  // 行は日付のリンク先（race_id）で引く。日付は月日だけになり、R のセルには
+  // 種別も入るので、文字では一意に取れない（BOA-623）
+  const rowOf = (raceId) =>
+    page.locator("tr", { has: page.locator(`a[href$="/race/${raceId}"]`) });
   // 9/24 は2走（5R・10R）ある。10R の行を取る
-  const r0924 = rowOf("2026-09-24", 10);
+  const r0924 = rowOf("2026-09-24-01-10");
   await expect(r0924).toBeVisible({ timeout: 30000 });
-  await expect(r0924).toContainText("0.02");
-  await expect(r0924).not.toContainText("0.06");
-  const r0921 = rowOf("2026-09-21", 11);
+  // ST は公式の表記（.02）。先頭の0は省く（BOA-623）
+  await expect(r0924).toContainText(".02");
+  await expect(r0924).not.toContainText(".06");
+  const r0921 = rowOf("2026-09-21-01-11");
   await expect(r0921).toContainText("落");
   await expect(r0921).not.toContainText("着外");
 });
@@ -33,12 +31,11 @@ test("選手ページの履歴: フライングの走は着順でなく F を出
   page,
 }) => {
   await page.goto("/racer/4069");
-  const row = page
-    .locator("tr")
-    .filter({ hasText: "2026-09-22" })
-    .filter({ has: page.locator("td", { hasText: /^1R$/ }) });
+  const row = page.locator("tr", {
+    has: page.locator('a[href$="/race/2026-09-22-16-01"]'),
+  });
   await expect(row).toBeVisible({ timeout: 30000 });
-  await expect(row).toContainText("F0.01");
+  await expect(row).toContainText("F.01");
 });
 
 // 2026-09-19 戸田9R: 公式の完走は1・2号艇だけで3号艇はF0.04。race_results は rank 1-2-3 で、修正前は「3着」
@@ -46,12 +43,11 @@ test("選手ページの履歴: race_results の着順に入った返還艇（F�
   page,
 }) => {
   await page.goto("/racer/3928");
-  const row = page
-    .locator("tr")
-    .filter({ hasText: "2026-09-19" })
-    .filter({ has: page.locator("td", { hasText: /^9R$/ }) });
+  const row = page.locator("tr", {
+    has: page.locator('a[href$="/race/2026-09-19-02-09"]'),
+  });
   await expect(row).toBeVisible({ timeout: 30000 });
-  await expect(row).toContainText("F0.04");
+  await expect(row).toContainText("F.04");
   // 着欄は見出しが「着順」の列（BOA-569 で R のすぐ右に移したので、位置で決め打ちしない）
   const table = row.locator("xpath=ancestor::table[1]");
   const headers = await table.locator("thead th").allTextContents();

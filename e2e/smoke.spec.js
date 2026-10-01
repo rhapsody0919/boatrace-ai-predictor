@@ -1699,32 +1699,78 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const bar = page.locator(".rbit-bar-row").first();
     await bar.waitFor({ timeout: 30000 });
     await bar.click();
-    const table = page.locator(".race-history-table").first();
+    const table = page.locator(".rrt-table").first();
     await table.waitFor({ timeout: 30000 });
-    const rows = await table.locator("tbody tr").evaluateAll((trs) =>
-      trs.map((tr) => {
-        const cells = [...tr.querySelectorAll("td")].map((td) =>
-          td.textContent.trim(),
-        );
-        return {
-          date: cells.find((c) => /^\d{4}-\d{2}-\d{2}$/.test(c)) ?? null,
-          raceNo: Number(cells.find((c) => /^\d+R$/.test(c))?.slice(0, -1)),
-        };
-      }),
-    );
+    // 行は日付のリンク先（race_id = 日付＋会場＋R）で読む（BOA-623 で日付は月日だけになった）
+    const ids = await table
+      .locator(".rrt-row .rrt-link")
+      .evaluateAll((as) => as.map((a) => a.getAttribute("href").slice(-16)));
     // 同じ日が2走以上ある日が、少なくとも1つあること（前提の確認）
-    const sameDay = rows.filter(
-      (r, i) => i > 0 && r.date !== null && r.date === rows[i - 1].date,
+    const sameDay = ids.filter(
+      (id, i) => i > 0 && id.slice(0, 10) === ids[i - 1].slice(0, 10),
     );
     expect(sameDay.length).toBeGreaterThan(0);
-    // 表全体が「日付 → R」の古い順になっている
-    for (let i = 1; i < rows.length; i += 1) {
-      const prev = rows[i - 1];
-      const cur = rows[i];
-      if (prev.date === cur.date)
-        expect(cur.raceNo).toBeGreaterThan(prev.raceNo);
-      else expect(cur.date > prev.date).toBe(true);
-    }
+    // 表全体が「日付 → R」の古い順（race_id の昇順）になっている
+    expect(ids).toEqual([...ids].sort());
+  });
+
+  test("直近10走は、表示中のレースより前の走を節の見出し行つきの6列で出し、PCでは中央に置く（BOA-623・BOA-602）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // 2026-09-30 児島7R の1号艇 西村拓也。以前はこのレース自身（9/30 7R）まで「直近」に入っていた
+    await page.goto("/race/2026-09-30-16-07");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    const bar = page.locator(".rbit-bar-row").first();
+    await bar.waitFor({ timeout: 30000 });
+    await bar.click();
+    const table = page.locator(".rrt-table").first();
+    await table.waitFor({ timeout: 30000 });
+    const ids = await table
+      .locator(".rrt-row .rrt-link")
+      .evaluateAll((as) => as.map((a) => a.getAttribute("href").slice(-16)));
+    expect(ids.length).toBe(10);
+    expect(ids.every((id) => id < "2026-09-30-16-07")).toBe(true);
+    // 会場・レース名は節の見出し行に1回だけ（期間に年を出す）
+    const groups = table.locator(".rrt-group");
+    await expect(groups.first()).toContainText("徳山");
+    await expect(groups.first()).toContainText("ダイヤモンドカップ");
+    await expect(groups.first()).toContainText("2026/");
+    // 9/29 10R は5号艇・4コース進入で、ST は6艇中3番目。2着
+    const r = table.locator("tr", {
+      has: page.locator('a[href$="/race/2026-09-29-16-10"]'),
+    });
+    const cells = (await r.locator("td").allInnerTexts()).map((c) =>
+      c.replace(/\s+/g, ""),
+    );
+    expect(cells.slice(2, 6)).toEqual(["5", "4", ".08③", "2"]);
+    // 単勝配当は 375px では出さない
+    await expect(table.locator("th.rrt-pc")).toBeHidden();
+
+    // PC では単勝配当を出し、表は中央に置く（左寄せで右に大きな空きを残さない）
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(table.locator("th.rrt-pc")).toBeVisible();
+    const gap = await table.evaluate((tb) => {
+      const t = tb.getBoundingClientRect();
+      const w = tb.closest(".rrt-wrap").getBoundingClientRect();
+      return { left: t.left - w.left, right: w.right - t.right };
+    });
+    expect(Math.abs(gap.left - gap.right)).toBeLessThanOrEqual(2);
+  });
+
+  test("選手ページのレース一覧も、節の見出し行つきの6列で出す（BOA-623）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/racer/5250");
+    const table = page.locator(".racer-vc-race-list .rrt-table");
+    await table.waitFor({ timeout: 30000 });
+    await expect(table.locator(".rrt-group").first()).toContainText("2026/");
+    const wrap = await table.evaluate((tb) => {
+      const w = tb.closest(".rrt-wrap");
+      return [w.scrollWidth, w.clientWidth];
+    });
+    expect(wrap[0]).toBeLessThanOrEqual(wrap[1]);
   });
 
   test("今節タブ: en・zh-TW の375pxで6艇の表がカードからはみ出さず、必要得点に残りの走数を添える（BOA-596）", async ({
@@ -2199,23 +2245,22 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const bar = page.locator(".rbit-bar-row").first();
     await bar.waitFor({ timeout: 30000 });
     await bar.click();
-    const table = page.locator(".race-history-table").first();
+    const table = page.locator(".rrt-table").first();
     await table.waitFor({ timeout: 30000 });
-    const pos = await table.evaluate((tb) => {
-      const ths = [...tb.querySelectorAll("th")];
-      const finish = ths.find((th) => th.textContent.trim() === "着順");
-      const wrap = tb
-        .closest(".race-history-table-wrapper")
-        .getBoundingClientRect();
+    // 列は「日付・R・枠番・進入・ST・着順」（BOA-623）。375px で横に送らずに全部見える
+    // （以前は11列・約930pxで、着順は R の右に寄せても枠番・ST は画面外だった）
+    const layout = await table.evaluate((tb) => {
+      const wrap = tb.closest(".rrt-wrap");
       return {
-        index: ths.indexOf(finish),
-        right: finish.getBoundingClientRect().right,
-        wrapRight: wrap.right,
+        heads: [...tb.querySelectorAll("thead th")]
+          .filter((th) => getComputedStyle(th).display !== "none")
+          .map((th) => th.textContent.trim()),
+        scroll: wrap.scrollWidth,
+        client: wrap.clientWidth,
       };
     });
-    // R番号のすぐ右（日付・会場・R の次）で、横スクロールせずに見える
-    expect(pos.index).toBe(3);
-    expect(pos.right).toBeLessThanOrEqual(pos.wrapRight);
+    expect(layout.heads).toEqual(["日付", "R", "枠番", "進入", "ST", "着順"]);
+    expect(layout.scroll).toBeLessThanOrEqual(layout.client);
 
     // 英語の画面で公式の記号（エ＝エンスト）を生のまま出さない（ファン評価2周目）。
     // 2026-09-30 戸田9R: 前の走がエンスト失格の艇がいる
@@ -2229,7 +2274,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(enRow).not.toContainText("エ");
     // 同じ走を直近の出走履歴でも同じ表記にする（ファン評価3周目。以前は履歴だけ「エ」）
     await page.locator(".rbit-bar-row").nth(5).click();
-    const enHistory = page.locator(".race-history-table").first();
+    const enHistory = page.locator(".rrt-table").first();
     await enHistory.waitFor({ timeout: 30000 });
     await expect(enHistory).toContainText("Eng");
     await expect(enHistory).not.toContainText("エ");
