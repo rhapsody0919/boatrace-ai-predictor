@@ -105,6 +105,7 @@ async function shareOnX(page, path) {
   return {
     text: shared.searchParams.get("text"),
     hashtags: (shared.searchParams.get("hashtags") || "").split(","),
+    url: shared.searchParams.get("url"),
   };
 }
 
@@ -231,4 +232,38 @@ test.describe("レース詳細のSNSシェア文面（言語・ハッシュタ�
       expect(hashtags).toEqual(["ボートレース", "龍神レーダー"]);
     });
   }
+});
+
+// BOA-691: 共有する URL は今見ているレース（以前はどのページでもトップ固定で、
+// 受け取った人がそのレースに戻れなかった）。言語・選んだタブ・艇（BOA-493）も含める
+test.describe("シェアボタンの共有 URL（BOA-691）", () => {
+  test("レース詳細から共有すると、そのレースの URL を送る", async ({
+    page,
+  }) => {
+    await setup(page, "ja");
+    const { url } = await shareOnX(page, `/race/${DATE}-09-02`);
+    expect(url).toBe(`https://www.boat-ai.jp/race/${DATE}-09-02`);
+  });
+
+  test("言語・タブ・艇を選んだ状態のまま共有する", async ({ page }) => {
+    await setup(page, "en");
+    const { url } = await shareOnX(
+      page,
+      `/en/race/${DATE}-09-02?tab=meet&boat=3`,
+    );
+    expect(url).toBe(
+      `https://www.boat-ai.jp/en/race/${DATE}-09-02?tab=meet&boat=3`,
+    );
+  });
+
+  test("レース詳細は og:url を持たない（Facebook 等がトップとして扱わないように）", async ({
+    page,
+  }) => {
+    await setup(page, "ja");
+    await page.goto(`/race/${DATE}-09-02`);
+    await expect(
+      page.locator(".social-share-wrapper .social-share-button").first(),
+    ).toBeVisible({ timeout: 20000 });
+    await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
+  });
 });
