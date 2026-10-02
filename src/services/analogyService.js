@@ -3,8 +3,9 @@
  *
  * 寄与度（FR-1）は Edge API（api/analogy/contribution.js、CDN に1日）を先に試し、失敗したら
  * Supabase を直接読む（スライスの選び方は src/utils/analogyContribution.js で API と共有）。
- * supabaseDataService.js には足さない（既に大きい）。キャッシュはメモリだけで、学習前（版が無い）・
- * エラーの結果は残さない（途中の状態を残すと、版ができても出ないままになる。BOA-497 の教訓）。
+ * supabaseDataService.js には足さない（既に大きい）。キャッシュはメモリだけ。エラーは残さない。
+ * 学習前（版が無い・テーブル未適用）は、タブを開くたびに問い合わせないよう UNAVAILABLE_TTL_MS だけ覚える
+ * （ずっと覚えると、版ができても出ないままになる。BOA-497 の教訓）。
  * 類似レース（FR-2）の取得は、類似の定義が決まってから足す。
  */
 import { supabase } from "./supabaseClient";
@@ -14,6 +15,8 @@ import {
 } from "../utils/analogyContribution.js";
 
 const cache = new Map();
+const UNAVAILABLE_TTL_MS = 10 * 60 * 1000;
+let unavailableUntil = 0;
 
 const contributionKey = ({ venue, grade, round, target }) =>
   `contribution|${venue}|${grade}|${round}|${target}`;
@@ -85,6 +88,8 @@ async function fromSupabase(params) {
 export async function getAnalogyContribution(params) {
   const key = contributionKey(params);
   if (cache.has(key)) return cache.get(key);
+  // 学習前の判定は版全体についてなので、条件を問わず共有する
+  if (Date.now() < unavailableUntil) return { available: false };
   let result;
   try {
     result = await fromApi(params);
@@ -96,5 +101,6 @@ export async function getAnalogyContribution(params) {
     result = await fromSupabase(params);
   }
   if (result.available) cache.set(key, result);
+  else unavailableUntil = Date.now() + UNAVAILABLE_TTL_MS;
   return result;
 }
