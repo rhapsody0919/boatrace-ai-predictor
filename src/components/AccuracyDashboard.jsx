@@ -6,6 +6,7 @@ import { formatPercent } from "../utils/formatters";
 import { ReliabilityWarning, VolatilityAccuracySection } from "./accuracy";
 import LoadingScreen from "./LoadingScreen";
 import "./AccuracyDashboard.css";
+import { errorMessageOf } from "../utils/errorMessage.js";
 
 function AccuracyDashboard({ onRefresh, isRefreshing }) {
   const [modelAccuracy, setModelAccuracy] = useState(null);
@@ -29,7 +30,7 @@ function AccuracyDashboard({ onRefresh, isRefreshing }) {
         }
       } catch (err) {
         console.error("Failed to load accuracy summary:", err);
-        if (!cancelled) setError(err.message);
+        if (!cancelled) setError(errorMessageOf(err));
       } finally {
         if (!cancelled) setLoading(false);
       }
