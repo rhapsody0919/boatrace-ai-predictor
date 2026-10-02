@@ -41,6 +41,7 @@ const TARGETS = {
   nextOpenDate: "src/utils/nextOpenDate.js",
   meetGrouping: "src/utils/meetGrouping.js",
   turnPrediction: "src/utils/turnPrediction.js",
+  volatilityLevel: "src/utils/volatilityLevel.js",
   hscrollHint: "src/utils/horizontalScrollHint.js",
 };
 
@@ -1563,6 +1564,20 @@ function suiteHscrollHint(m, check) {
     hasLess: false,
     peekFadeWidth: 0,
   });
+  check(
+    "hscroll: 左に12px以下しか送っていなければ「‹」は出さない（PR #1192 ファン評価2周目）",
+    st(315, 312, 3),
+    { hasMore: false, hasLess: false, peekFadeWidth: 0 },
+  );
+  check(
+    "hscroll: 1回に送る幅は、固定の左の列を引いた見える幅の8割",
+    [
+      m.horizontalScrollStep({ clientWidth: 312, stickyWidth: 90 }),
+      m.horizontalScrollStep({ clientWidth: 312, stickyWidth: 0 }),
+      m.horizontalScrollStep({ clientWidth: 60, stickyWidth: 50 }),
+    ],
+    [178, 250, 40],
+  );
   check("hscroll: 右端まで送ったら「›」は消え、「‹」が出る", st(357, 301, 56), {
     hasMore: false,
     hasLess: true,
@@ -1632,6 +1647,33 @@ function suiteTurnPrediction(m, check) {
   );
 }
 
+// --- volatilityDisplayValue: イン崩れ指数の表示の数値がラベルの境目をまたがない（PR #1186 ファン評価）
+function suiteVolatilityLevel(m, check) {
+  const show = (p) => [m.getVolatilityLevel(p), m.volatilityDisplayValue(p)];
+  check("volatility: 0.6975 は標準で69（四捨五入の70にしない）", show(0.6975), [
+    "standard",
+    69,
+  ]);
+  check("volatility: 0.7037 はイン崩れ確率高で70", show(0.7037), ["high", 70]);
+  check("volatility: 0.3 は本命有利で30", show(0.3), ["low", 30]);
+  check("volatility: 0.3004 は標準で31（四捨五入の30にしない）", show(0.3004), [
+    "standard",
+    31,
+  ]);
+  check(
+    "volatility: 0 と 1 はそのまま",
+    [show(0), show(1)],
+    [
+      ["low", 0],
+      ["high", 100],
+    ],
+  );
+  check("volatility: 標準の中はそのまま四捨五入", show(0.555), [
+    "standard",
+    56,
+  ]);
+}
+
 const SUITES = {
   nextOpenDate: suiteNextOpenDate,
   prevResult: suitePrevResult,
@@ -1643,6 +1685,7 @@ const SUITES = {
   dateUtils: suiteDateUtils,
   meetGrouping: suiteMeetGrouping,
   turnPrediction: suiteTurnPrediction,
+  volatilityLevel: suiteVolatilityLevel,
   hscrollHint: suiteHscrollHint,
 };
 
@@ -1656,6 +1699,18 @@ const MUTANTS = [
     "実際の決まり手を見ずに、同じ艇の最初の候補を選ぶ（PR #1197 ファン評価3周目の退行）",
     "return exact ?? sameBoat[0] ?? null;",
     "return sameBoat[0] ?? null;",
+  ],
+  [
+    "volatilityLevel",
+    "表示の数値をラベルの範囲に収めない（PR #1186 ファン評価の退行）",
+    "return Math.min(Math.max(value, 31), 69);",
+    "return value;",
+  ],
+  [
+    "hscrollHint",
+    "送る幅から固定の左の列を引かない（PR #1192 ファン評価2周目の退行）",
+    "Math.round((clientWidth - stickyWidth) * 0.8)",
+    "Math.round(clientWidth * 0.8)",
   ],
   [
     "hscrollHint",

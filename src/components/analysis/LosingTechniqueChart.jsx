@@ -19,6 +19,7 @@ import BandWrapAxisTick from "../BandWrapAxisTick";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "../race/raceIndicators";
 import "./WinningTechniqueChart.css";
+import { techniqueColor } from "../../utils/techniqueColors";
 
 const VENUES = [
   { code: "01", name: "桐生" },
@@ -46,28 +47,6 @@ const VENUES = [
   { code: "23", name: "唐津" },
   { code: "24", name: "大村" },
 ];
-
-const TECHNIQUE_COLORS = {
-  逃げ: "#0ea5e9",
-  差し: "#10b981",
-  まくり: "#f59e0b",
-  まくり差し: "#ef4444",
-  抜き: "#8b5cf6",
-  恵まれ: "#94a3b8",
-};
-
-function techniqueColor(technique, index) {
-  const palette = [
-    "#0ea5e9",
-    "#10b981",
-    "#f59e0b",
-    "#ef4444",
-    "#8b5cf6",
-    "#94a3b8",
-    "#ec4899",
-  ];
-  return TECHNIQUE_COLORS[technique] ?? palette[index % palette.length];
-}
 
 function LosingTechniqueChart({ initialVenueCode = null }) {
   const { t } = useTranslation();

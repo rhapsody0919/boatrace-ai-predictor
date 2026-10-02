@@ -121,11 +121,24 @@
      --brand-accent-primary から作るので、ダークでは同じ要素の上で金500に切り替わる */
   --ind-best-bg: color-mix(in srgb, var(--brand-accent-primary) 14%, transparent);
   --ind-best-ring: color-mix(in srgb, var(--brand-accent-primary) 40%, transparent);
+  /* 基準に届く・良いセルの薄い緑の塗り（R2）。--color-success-text から作るので、
+     ダークでは同じ要素の上で明るい緑に切り替わる */
+  --color-success-bg: color-mix(in srgb, var(--color-success-text) 16%, transparent);
   /* 3着表示専用。金銀と同じ理由でライト背景では--color-bronzeのままだと
      コントラスト不足（2.99:1）になるため、テーマごとに階調を分ける */
   --podium-bronze-text: #8f5419;
 
   /* 透明度バリエーション - プライマリーカラー */
+  /* 決まり手の色（src/utils/techniqueColors.js）。カテゴリの色で良し悪しは無い。
+     棒・帯の塗りに使い、文字色には使わない（ライト・ダークとも同じ値で背景から見分けられる） */
+  --technique-color-1: #0ea5e9; /* 逃げ */
+  --technique-color-2: #10b981; /* 差し */
+  --technique-color-3: #f59e0b; /* まくり */
+  --technique-color-4: #ef4444; /* まくり差し */
+  --technique-color-5: #8b5cf6; /* 抜き */
+  --technique-color-6: #94a3b8; /* 恵まれ・その他 */
+  --technique-color-7: #ec4899;
+
   --color-primary-alpha-10: rgba(14, 165, 233, 0.1);
   --color-primary-alpha-20: rgba(14, 165, 233, 0.2);
   --color-primary-alpha-30: rgba(14, 165, 233, 0.3);

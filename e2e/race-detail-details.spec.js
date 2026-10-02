@@ -58,6 +58,63 @@ test.describe("レース詳細の表示の細部", () => {
     await expect(tip).not.toContainText("lead");
   });
 
+  test("1440px: AI予想の展開予測で、決まり手と確率が離れすぎない（BOA-619 の残り、race-detail-ui-unify FR-6）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    // 発走前の AI予想（.prediction-result）と確定後の振り返り（.race-ai-prediction-tab）の
+    // どちらになるかは録画の時刻しだいなので、トップのレースから辿って出た方を測る
+    await page.goto("/");
+    await page
+      .getByRole("link", { name: /\d{1,2}\s*R/ })
+      .first()
+      .click();
+    await page.waitForURL(/\/race\//);
+    await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
+    const row = page.locator(".turn-pattern-row").first();
+    await expect(row).toBeVisible({ timeout: 30000 });
+    // 以前は発走前の表示で約1130px 離れていた。720px の箱の中なら 600px を超えない
+    await expect
+      .poll(() =>
+        row.evaluate((r) => {
+          const range = document.createRange();
+          range.selectNodeContents(r.querySelector(".turn-pattern-technique"));
+          return (
+            r.querySelector(".turn-pattern-prob").getBoundingClientRect().left -
+            range.getBoundingClientRect().right
+          );
+        }),
+      )
+      .toBeLessThan(600);
+  });
+
+  test("確定後の展開予測の的中は緑、不的中は赤（race-detail-ui-unify R2）", async ({
+    page,
+  }) => {
+    await page.goto(`${RACE}?tab=aiPrediction`);
+    const summary = page.locator(
+      ".turn-pattern-summary--hit, .turn-pattern-summary--miss",
+    );
+    await expect(summary).toBeVisible({ timeout: 30000 });
+    const { color, success, error, hit } = await summary.evaluate((el) => {
+      const probe = (v) => {
+        const s = document.createElement("span");
+        s.style.color = `var(${v})`;
+        el.appendChild(s);
+        const c = getComputedStyle(s).color;
+        s.remove();
+        return c;
+      };
+      return {
+        color: getComputedStyle(el).color,
+        success: probe("--color-success-text"),
+        error: probe("--color-error-text"),
+        hit: el.classList.contains("turn-pattern-summary--hit"),
+      };
+    });
+    expect(color).toBe(hit ? success : error);
+  });
+
   test("基本情報の勝率バー: 最下位の艇も棒が空にならない（BOA-618）", async ({
     page,
   }) => {
@@ -336,6 +393,188 @@ test.describe("レース詳細の表示の細部", () => {
           `${theme}・${boat}号艇: 艇番 ${fg} / 丸 ${bg}`,
         ).toBeGreaterThanOrEqual(4.5);
       }
+    }
+  });
+  for (const lang of ["ja", "en"]) {
+    test(`AI予想の振り返り（${lang}）: 確率と丸数字の説明を出し、イン崩れ指数はレース前と同じバーで見せる（BOA-706）`, async ({
+      page,
+    }) => {
+      await page.goto(`${lang === "ja" ? "" : "/en"}${RACE}?tab=aiPrediction`);
+      const tab = page.locator(".race-ai-prediction-tab");
+      await expect(tab.locator(".turn-pattern-row").first()).toBeVisible({
+        timeout: 30000,
+      });
+      // 「47%」が何の値か・丸数字が何かを書く（以前はレース前だけ出していた）
+      await expect(tab.locator(".turn-pattern-caption")).toContainText(
+        lang === "ja"
+          ? "丸数字の艇がその決まり手で1着になる確率"
+          : "the chance that the circled lane wins",
+      );
+      // 指数は「会場内パーセンタイル0」と文字で出さず、0〜100 のバーで出す
+      await expect(tab.getByTestId("volatility-percentile-bar")).toBeVisible();
+      // バーの色の段階は、ラベル（本命有利）と同じ基準（getVolatilityLevel の low）
+      await expect(tab.getByTestId("volatility-percentile-bar")).toHaveClass(
+        /vpb--low/,
+      );
+      // 何と比べた 0〜100 かを、レース前のカードと同じ一文で書く（ファン評価1・3周目）
+      await expect(tab).toContainText(
+        lang === "ja"
+          ? "過去90日・同会場のレースと比較"
+          : "over the last 90 days",
+      );
+      await expect(tab).not.toContainText(
+        lang === "ja" ? "パーセンタイル" : "percentile",
+      );
+    });
+  }
+
+  test("AI予想の振り返り: イン崩れ指数のバーの文字は、ライト・ダークとも地の色と見分けられる（BOA-706）", async ({
+    page,
+  }) => {
+    await page.goto(`${RACE}?tab=aiPrediction`);
+    const bar = page.getByTestId("volatility-percentile-bar");
+    await expect(bar).toBeVisible({ timeout: 30000 });
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate(
+        (t) => document.documentElement.setAttribute("data-theme", t),
+        theme,
+      );
+      const { label, ends, bg } = await bar.evaluate((el) => ({
+        label: getComputedStyle(el.querySelector(".vpb-label")).color,
+        ends: getComputedStyle(el.querySelector(".vpb-ends")).color,
+        bg: getComputedStyle(el).backgroundColor,
+      }));
+      expect(contrast(label, bg), `${theme}: 見出し`).toBeGreaterThanOrEqual(
+        4.5,
+      );
+      // 端の「堅い・標準・崩れやすい」は小さい補助の文字。3:1 を下限にする
+      expect(contrast(ends, bg), `${theme}: 端の文字`).toBeGreaterThanOrEqual(
+        3,
+      );
+    }
+  });
+  test("イン崩れ指数のバー: 今の値の位置に印を置き、「標準」の文字は真ん中の目印の真下（PR #1186 ファン評価1周目）", async ({
+    page,
+  }) => {
+    // 児島12R は指数0。塗りが見えず、真ん中の「標準」の目印だけが目に入っていた
+    for (const width of [375, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${RACE}?tab=aiPrediction`);
+      const bar = page.getByTestId("volatility-percentile-bar");
+      await expect(bar).toBeVisible({ timeout: 30000 });
+      const m = await bar.evaluate((el) => {
+        const c = (q) => {
+          const r = el.querySelector(q).getBoundingClientRect();
+          return {
+            left: r.left,
+            center: (r.left + r.right) / 2,
+            width: r.width,
+          };
+        };
+        return {
+          track: c(".vpb-track"),
+          marker: c(".vpb-marker"),
+          median: c(".vpb-median"),
+          middleLabel: c(".vpb-ends > span:nth-child(2)"),
+          value: Number(el.querySelector(".vpb-value").textContent),
+        };
+      });
+      // 印は値の位置（0なら左端）にあり、見える大きさがある
+      expect(m.marker.width, `${width}px: 印の大きさ`).toBeGreaterThanOrEqual(
+        10,
+      );
+      expect(
+        Math.abs(
+          m.marker.center - (m.track.left + (m.track.width * m.value) / 100),
+        ),
+        `${width}px: 印の位置`,
+      ).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(m.middleLabel.center - m.median.center),
+        `${width}px: 「標準」の文字と真ん中の目印`,
+      ).toBeLessThanOrEqual(2);
+    }
+  });
+
+  test("375px: 直前情報の展示情報の表は、右へ送ったら「‹」で左へ戻せる（BOA-699）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${RACE}?tab=beforeInfo`);
+    const table = page.locator(".rbi-card .drt-table").first();
+    await expect(table).toBeVisible({ timeout: 30000 });
+    // この表は 320〜390px では収まる。英語や列が増えたときに溢れても戻せることを、
+    // 表を広げて確かめる
+    await page.addStyleTag({
+      content: ".rbi-card .drt-table { min-width: 640px; }",
+    });
+    // 手がかりは幅が変わったときに測り直す。広げたあとに測り直させる
+    await page.evaluate(() => window.dispatchEvent(new Event("resize")));
+    const hint = page.locator(".rbi-card .hscroll-hint:has(.drt-table)");
+    const wrapper = hint.locator(".drt-table-wrapper");
+    await expect(hint.locator(".hscroll-more")).toBeVisible();
+    await expect(hint.locator(".hscroll-less")).toHaveCount(0);
+    await hint.locator(".hscroll-more").click();
+    await expect(hint.locator(".hscroll-less")).toBeVisible();
+    await hint.locator(".hscroll-less").click();
+    await expect.poll(() => wrapper.evaluate((el) => el.scrollLeft)).toBe(0);
+    await expect(hint.locator(".hscroll-less")).toHaveCount(0);
+  });
+  test("展示情報の表: 読み込んだあとで表の幅が変わっても、手がかりを出し直す（PR #1192 ファン評価1周目）", async ({
+    page,
+  }) => {
+    // 英語の 320px では表が3px溢れるのに、Preview では手がかりが出ていなかった。最初の計測の
+    // あとに文字の読み込み等で表の幅が変わっても、窓の幅が変わらない限り測り直していなかった。
+    // 窓の幅を変えずに表だけを広げて、同じ状況を作る
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${RACE}?tab=beforeInfo`);
+    const hint = page.locator(".rbi-card .hscroll-hint:has(.drt-table)");
+    await expect(hint.locator(".drt-table")).toBeVisible({ timeout: 30000 });
+    await expect(hint).not.toHaveAttribute("data-hscroll-peek", "true");
+    await page.addStyleTag({
+      content:
+        ".rbi-card .drt-table { margin-right: -6px; width: calc(100% + 6px); }",
+    });
+    await expect(hint).toHaveAttribute("data-hscroll-peek", "true");
+  });
+  test("320px: 左の列を固定した表で「›」を押しても、列を読み飛ばさない（PR #1192 ファン評価2周目）", async ({
+    page,
+  }) => {
+    // 送る幅が見える幅の8割（固定の項目名の列を含む）だったため、320px で表が溢れると
+    // 「›」を押すだけでは3号艇の列が一度も見えなかった
+    await page.setViewportSize({ width: 320, height: 812 });
+    await page.goto(`${RACE}?tab=beforeInfo`);
+    const hint = page.locator(".rbi-card .hscroll-hint:has(.drt-table)");
+    await expect(hint.locator(".drt-table")).toBeVisible({ timeout: 30000 });
+    await page.addStyleTag({
+      content: ".rbi-card .drt-table { min-width: 640px; }",
+    });
+    await expect(hint.locator(".hscroll-more")).toBeVisible();
+    // 押す前後で、固定の列の右に最初に全部見える列と、押す前に右端まで全部見えていた列を比べる
+    const cols = () =>
+      hint.evaluate((el) => {
+        const box = el
+          .querySelector(".drt-table-wrapper")
+          .getBoundingClientRect();
+        const sticky = el.querySelector("thead th").getBoundingClientRect();
+        const heads = [...el.querySelectorAll("thead th.drt-boat-th")].map(
+          (th) => th.getBoundingClientRect(),
+        );
+        return {
+          lastFull: Math.max(
+            ...heads.map((r, i) => (r.right <= box.right - 1 ? i : -1)),
+          ),
+          firstFull: heads.findIndex((r) => r.left >= sticky.right - 1),
+        };
+      });
+    while (await hint.locator(".hscroll-more").isVisible()) {
+      const before = await cols();
+      await hint.locator(".hscroll-more").click();
+      const after = await cols();
+      expect(
+        after.firstFull,
+        "押したあと最初に全部見える列は、押す前に見えていた最後の列の次まで",
+      ).toBeLessThanOrEqual(before.lastFull + 1);
     }
   });
 });
