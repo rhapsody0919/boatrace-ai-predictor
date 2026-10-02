@@ -353,6 +353,10 @@ test.describe("レース詳細の表示の細部", () => {
       );
       // 指数は「会場内パーセンタイル0」と文字で出さず、0〜100 のバーで出す
       await expect(tab.getByTestId("volatility-percentile-bar")).toBeVisible();
+      // バーの色の段階は、ラベル（本命有利）と同じ基準（getVolatilityLevel の low）
+      await expect(tab.getByTestId("volatility-percentile-bar")).toHaveClass(
+        /vpb--low/,
+      );
       await expect(tab).not.toContainText(
         lang === "ja" ? "パーセンタイル" : "percentile",
       );

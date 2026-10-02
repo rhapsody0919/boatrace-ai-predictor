@@ -22,11 +22,11 @@
   --vpb-ends: #999;
 }
 
-/* 値と棒の色は段階で決める（0.3以下=堅い、0.7以上=崩れやすい） */
+/* 値と棒の色は段階で決める（getVolatilityLevel と同じ low / standard / high） */
 .vpb--low {
   --vpb-tone: var(--color-success-light);
 }
-.vpb--mid {
+.vpb--standard {
   --vpb-tone: var(--color-info);
 }
 .vpb--high {
