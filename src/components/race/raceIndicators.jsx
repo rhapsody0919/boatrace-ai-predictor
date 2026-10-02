@@ -296,7 +296,12 @@ function buildRowDefs({
       render: (p) => {
         const rate = toNumber(p.global2Rate);
         return rate !== null ? (
-          <span className="drt-value">{rate.toFixed(1)}%</span>
+          <span className="drt-value">
+            <span>
+              {rate.toFixed(1)}
+              <span className="drt-unit">%</span>
+            </span>
+          </span>
         ) : (
           "—"
         );
@@ -326,7 +331,11 @@ function buildRowDefs({
         const powerIndex = toNumber(row?.power_index);
         return (
           <span className="drt-value">
-            {rate.toFixed(1)}%
+            {/* 単位は別の要素にし、狭い一覧カードでは一回り小さくする（RaceCardDataTable.css、BOA-586） */}
+            <span>
+              {rate.toFixed(1)}
+              <span className="drt-unit">%</span>
+            </span>
             {motorDeepLink && powerIndex !== null && powerIndex !== 0 && (
               <Link
                 to={motorDeepLink(row.motor_number)}

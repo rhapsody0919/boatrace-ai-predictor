@@ -9,7 +9,7 @@ import react from '@vitejs/plugin-react'
 // admin/cron/sns-hub等の書き込み系は転送しない。未適用のapi/やRPCの変更を試す場合は
 // API_PROXY_TARGET= (空文字)でプロキシを無効化する
 const apiProxyTarget = process.env.API_PROXY_TARGET ?? 'https://www.boat-ai.jp'
-const READ_ONLY_API = '^/api/(predictions|races|accuracy|race-history|outcome-distribution|odds)(/|$|\\?)'
+const READ_ONLY_API = '^/api/(predictions|races|accuracy|race-history|outcome-distribution|analogy|odds)(/|$|\\?)'
 
 // https://vite.dev/config/
 export default defineConfig({

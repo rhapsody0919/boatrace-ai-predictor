@@ -35,7 +35,6 @@
  */
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { BOAT_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import {
   fetchLiveOdds,
@@ -44,6 +43,7 @@ import {
 import { getDeadlineDate } from "../../utils/raceDeadlineStatus";
 import { parseRaceId } from "../../utils/raceId";
 import InlineFetchError from "../InlineFetchError";
+import BoatBadge from "./BoatBadge";
 import "./RaceOddsListTab.css";
 
 const BOAT_NUMBERS = [1, 2, 3, 4, 5, 6];
@@ -345,18 +345,6 @@ function Sparkline({ points, isRange }) {
         />
       )}
     </svg>
-  );
-}
-
-function BoatBadge({ n, size }) {
-  const color = BOAT_COLORS[n] || {};
-  return (
-    <span
-      className={`rol-boat-badge${size ? ` rol-boat-badge-${size}` : ""}`}
-      style={{ background: color.bg, color: color.text }}
-    >
-      {n}
-    </span>
   );
 }
 

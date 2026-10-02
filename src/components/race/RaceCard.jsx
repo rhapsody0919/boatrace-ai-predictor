@@ -85,6 +85,7 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
       <div className="race-card-header">
         <h3>{race.venue}</h3>
         <div
+          className="race-card-badges"
           style={{
             display: "flex",
             alignItems: "center",
@@ -157,8 +158,9 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
               {gradeConfig.label}
             </RaceCardBadge>
           )}
-          <span className="race-number">{race.raceNumber}R</span>
         </div>
+        {/* R番号はバッジの外に置く。狭いカードでバッジを2段目に送っても、会場名と同じ段に残す */}
+        <span className="race-number">{race.raceNumber}R</span>
       </div>
       {race.startTime && (
         <div className="race-info">

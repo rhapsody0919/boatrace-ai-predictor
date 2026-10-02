@@ -192,6 +192,39 @@ input:focus-visible,
   font-weight: 700;
 }
 
+/* 狭いカード（1024px の3列で約315px）では、会場名とR番号を1段目、バッジを2段目に分ける。
+   同じ段に並べると、バッジの数で見出しが1〜3段に折れ、隣のカードと出走表の高さが
+   最大67pxずれた（BOA-558 の6）。768px・1440px のカードは幅に余裕があるので今のまま */
+.race-list-section .race-card {
+  container: race-card / inline-size;
+}
+
+/* バッジは右寄せ、R番号はその右（R番号をバッジの外に出したため、以前の並びを保つ） */
+.race-list-section .race-card-badges {
+  margin-left: auto;
+}
+
+.race-list-section .race-card-header .race-number {
+  margin-left: 0.5rem;
+}
+
+@container race-card (max-width: 340px) {
+  .race-list-section .race-card-header {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+  }
+
+  .race-list-section .race-card-badges {
+    order: 3;
+    flex-basis: 100%;
+    margin-left: 0;
+    /* バッジが3つ以上だと2段に折れるカードがある（「本命有利」「展開的中」「準優勝戦」で約263px、
+       使える幅は約253px）。2段ぶんの高さを全カードで取り、出走表の高さをそろえる */
+    min-height: 3.5rem;
+    align-content: flex-start;
+  }
+}
+
 .race-number {
   background: linear-gradient(135deg, #FF6B35, #FFB347);
   color: white;
