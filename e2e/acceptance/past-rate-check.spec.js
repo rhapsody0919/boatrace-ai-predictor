@@ -9,6 +9,9 @@ import { test, expect } from "@playwright/test";
 // /rest/v1/rpc/get_analogy_similar_races を route で止めて固定データを返す。
 // 期待値はすべて下の固定データから手計算した値。
 //
+// 切り詰めの判定は n_returned = 2,000 で行う（n_total は使わない。spec FR-2）。
+// 固定データの rows は spec どおり race_date の新しい順に並べる。
+//
 // 定番／レアの線は未確定（spec FR-3。候補 (15,5)(20,5)(15,3)(25,3)(10,3)）。
 // ラベルの期待値は、候補のどれでも結果が変わらない割合（25%以上→定番、3%未満→レア、5%以上10%未満→なし）に限る。
 // 線ちょうどの境界は、画面の注記から線を読んでから固定データを作って確かめる。
@@ -29,18 +32,20 @@ const META = {
     venue_code: "01",
     top_boat: 1,
   },
-  // 注記の期間はこの2つから「2019-04〜2025-11」の形で出す（rows の race_date ではない）
+  // 切り詰めていない（n_returned < 2,000）とき、注記の期間はこの2つから「2019-04〜2025-11」の形で出す。
+  // 切り詰めたときは rows の最も古い race_date〜pool_cutoff
   pool_from: "2019-04-01",
   pool_cutoff: "2025-11-30",
 };
 const PERIOD = "2019-04〜2025-11";
 
-// rows の race_date は期間の端とわざと違う月にする（期間を rows から作っていないかを見分けるため）
+// rows の race_date は期間の端とわざと違う月にする（切り詰めていないときに期間を rows から作っていないかを見分けるため）
 const ROW_DATE = "2022-06-15";
 
 const WAKU = [1, 2, 3, 4, 5, 6];
 const ST_FLAT = [0.15, 0.15, 0.15, 0.15, 0.15, 0.15];
 
+// row に race_date を書けばそれを使う
 const group = (n, row) =>
   Array.from({ length: n }, () => ({
     race_date: ROW_DATE,
@@ -122,9 +127,38 @@ const orderRows = (k) => [
   ...group(800 - k, { ...BASE_ROW, rank1: 3, rank2: 1, rank3: 2 }),
 ];
 
+// 切り詰めた（n_returned = 2,000）ときの rows。新しい順に並べ、最も古い race_date は 2025-08-03。
+// 1-2-3 が412件、3-1-2 が1,556件（ST そろう）、3-1-2 が32件（2コースの ST が NULL）
+const LATEST_PERIOD = "2025-08〜2025-11";
+const latestRows = () => [
+  ...group(412, {
+    ...BASE_ROW,
+    race_date: "2025-11-20",
+    rank1: 1,
+    rank2: 2,
+    rank3: 3,
+  }),
+  ...group(1556, {
+    ...BASE_ROW,
+    race_date: "2025-10-01",
+    rank1: 3,
+    rank2: 1,
+    rank3: 2,
+  }),
+  ...group(32, {
+    ...BASE_ROW,
+    race_date: "2025-08-03",
+    rank1: 3,
+    rank2: 1,
+    rank3: 2,
+    st_by_course: [0.15, null, 0.15, 0.15, 0.15, 0.15],
+  }),
+];
+
 // ---------- 共通の操作 ----------
 
-// state.rows・state.meta は途中で差し替えられる（次の読み込みから効く）
+// state.rows・state.meta は途中で差し替えられる（次の読み込みから効く）。
+// n_total・n_returned は既定で rows の件数。metaOverride で上書きできる
 async function mockSimilar(page, initialRows, metaOverride = {}) {
   const state = {
     rows: initialRows,
@@ -274,6 +308,7 @@ const resultLine = (n, c, p, prefix = PAST) =>
     `${prefix}${fmt(n)}レース中\\s*${fmtLoose(c)}回\\s*（${esc(p)}%）`,
   );
 const ANY_RESULT = /(過去|同じ条件の新しい)[\d,]+レース中/;
+const CHANGED_NOTE = "入力したときと比べた類似レースが変わっています";
 
 async function pickOrder(checker, first, second, third) {
   await boat(checker, first, 0).click();
@@ -301,12 +336,14 @@ async function seedStoreOnce(page, value) {
   );
 }
 
-// Entry.snapshot（spec FR-5: { snapshotAt, depth, poolCutoff, nTotal }）。既定は ROWS（800件）を返す RPC と同じ値
+// Entry.snapshot（spec FR-5: { snapshotAt, depth, poolCutoff, nTotal, conditions }）。
+// 既定は ROWS（800件）を返す RPC と同じ値
 const savedSnapshot = (override = {}) => ({
   snapshotAt: META.snapshot_at,
   depth: META.depth,
   poolCutoff: META.pool_cutoff,
   nTotal: 800,
+  conditions: { ...META.conditions },
   ...override,
 });
 
@@ -1000,7 +1037,7 @@ test.describe("AI予想タブ あなたの予想", () => {
 
   // ---------- 注記・共通 ----------
 
-  test("[spec FR-2] 層が2,000件以下のとき、注記は「比べた相手: 類似レース{n_total}件（{似ている理由}、{期間}）。定番は…」で「のうち新しい」を付けず、期間は pool_from〜pool_cutoff。「（例）」は付かない", async ({
+  test("[spec FR-2] 切り詰めていない（n_returned < 2,000）とき、注記は「比べた相手: 類似レース{n_returned}件（{似ている理由}、{期間}）。定番は…」で「のうち新しい」を付けず、期間は pool_from〜pool_cutoff。「（例）」は付かない", async ({
     page,
   }) => {
     const checker = await openAiTab(page, anyRaceId());
@@ -1020,7 +1057,7 @@ test.describe("AI予想タブ あなたの予想", () => {
     await expect(checker).not.toContainText("2022-06");
   });
 
-  test("[spec FR-2] pool_from と pool_cutoff が同じ月なら期間は「2025-11」だけ", async ({
+  test("[spec FR-2] 切り詰めていないとき pool_from と pool_cutoff が同じ月なら期間は「2025-11」だけ", async ({
     page,
   }) => {
     await page.unrouteAll();
@@ -1171,7 +1208,7 @@ test.describe("AI予想タブ 類似レースのデータの境界", () => {
     await expect(checker).toContainText(resultLine(10, 7, "70.0"));
     await expect(checker).toContainText("決まり手が分からない290レースを除く");
     await expect(checker).not.toContainText(/決着が分からない/);
-    // 注記の件数は n_total（分母 N とは別）
+    // 注記の件数は n_returned（分母 N とは別）
     await expect(checker).toContainText("類似レース300件");
   });
 
@@ -1208,21 +1245,7 @@ test.describe("AI予想タブ 類似レースのデータの境界", () => {
     await expect(checker).not.toContainText(/レースを除く/);
   });
 
-  // 層が2,000件を超えるとき: rows は新しい順2,000件、n_total は層の総件数
-  // 1-2-3 が412件、3-1-2 が1,556件（ST そろう）、3-1-2 が32件（2コースの ST が NULL）
-  const latestRows = () => [
-    ...group(412, { ...BASE_ROW, rank1: 1, rank2: 2, rank3: 3 }),
-    ...group(1556, { ...BASE_ROW, rank1: 3, rank2: 1, rank3: 2 }),
-    ...group(32, {
-      ...BASE_ROW,
-      rank1: 3,
-      rank2: 1,
-      rank3: 2,
-      st_by_course: [0.15, null, 0.15, 0.15, 0.15, 0.15],
-    }),
-  ];
-
-  test("[spec FR-2] 層が2,000件を超えると主文は「同じ条件の新しい2,000レース中 412回（20.6%）」、注記は「類似レース{n_total}件（…）のうち新しい2,000件」", async ({
+  test("[spec FR-2] 切り詰めた（n_returned = 2,000）とき主文は「同じ条件の新しい2,000レース中 412回（20.6%）」、注記は「類似レース{n_total}件（{似ている理由}）のうち新しい2,000件（{rows の最も古い race_date〜pool_cutoff}）」", async ({
     page,
   }) => {
     await mockSimilar(page, latestRows(), {
@@ -1237,12 +1260,14 @@ test.describe("AI予想タブ 類似レースのデータの境界", () => {
     // n_total の3桁区切りは spec に例が無いので、区切りの有無どちらも通す
     await expect(checker).toContainText(
       new RegExp(
-        `比べた相手: 類似レース38,?000件（.+、${PERIOD}）のうち新しい2,?000件`,
+        `比べた相手: 類似レース38,?000件（.+）のうち新しい2,?000件（${LATEST_PERIOD}）`,
       ),
     );
+    // 期間は pool_from（2019-04）から作らない
+    await expect(checker).not.toContainText("2019-04");
   });
 
-  test("[spec FR-2] 層が2,000件を超えるとき、型で除いた後の件数を N にする: 「同じ条件の新しい1,968レース中」＋「スタートタイミングがそろわない32レースを除く」", async ({
+  test("[spec FR-2] 切り詰めたとき、型で除いた後の件数を N にする: 「同じ条件の新しい1,968レース中」＋「スタートタイミングがそろわない32レースを除く」", async ({
     page,
   }) => {
     await mockSimilar(page, latestRows(), {
@@ -1261,7 +1286,7 @@ test.describe("AI予想タブ 類似レースのデータの境界", () => {
     );
   });
 
-  test("[spec FR-2] 層がちょうど2,000件（n_total = n_returned）なら主文は「過去2,000レース中」で、注記に「のうち新しい」を付けない", async ({
+  test("[spec FR-2] 切り詰めの判定は n_returned で行う: n_returned = 2,000 なら n_total が2,000でも「同じ条件の新しい」と「のうち新しい」を出す", async ({
     page,
   }) => {
     await mockSimilar(page, latestRows(), {
@@ -1271,9 +1296,57 @@ test.describe("AI予想タブ 類似レースのデータの境界", () => {
     const checker = await openAiTab(page, anyRaceId());
     await pickOrder(checker, 1, 2, 3);
     await judgeButton(checker).click();
-    await expect(checker).toContainText(resultLine(2000, 412, "20.6", PAST));
+    await expect(checker).toContainText(resultLine(2000, 412, "20.6", LATEST));
+    await expect(checker).not.toContainText(/過去[\d,]+レース中/);
+    await expect(checker).toContainText(
+      new RegExp(
+        `類似レース2,?000件（.+）のうち新しい2,?000件（${LATEST_PERIOD}）`,
+      ),
+    );
+  });
+
+  test("[spec FR-2] 切り詰めの判定に n_total を使わない: n_returned < 2,000 なら n_total が2,000を超えていても「過去{N}レース中」、注記は「類似レース{n_returned}件（…、pool_from〜pool_cutoff）」", async ({
+    page,
+  }) => {
+    // スナップショット時点の n_total と今の rows がずれた状態（spec「発走後の再現」）
+    await mockSimilar(page, ROWS, { n_total: 2345, n_returned: 800 });
+    const checker = await openAiTab(page, anyRaceId());
+    await pickOrder(checker, 1, 2, 3);
+    await judgeButton(checker).click();
+    await expect(checker).toContainText(resultLine(800, 300, "37.5", PAST));
     await expect(checker).not.toContainText(LATEST);
     await expect(checker).not.toContainText(/のうち新しい/);
+    await expect(checker).toContainText(
+      new RegExp(`比べた相手: 類似レース800件（.+、${PERIOD}）`),
+    );
+  });
+
+  test("[spec FR-2] 切り詰めたとき、rows の最も古い race_date と pool_cutoff が同じ月なら期間は「2025-11」だけ", async ({
+    page,
+  }) => {
+    const rows = [
+      ...group(300, {
+        ...BASE_ROW,
+        race_date: "2025-11-28",
+        rank1: 1,
+        rank2: 2,
+        rank3: 3,
+      }),
+      ...group(1700, {
+        ...BASE_ROW,
+        race_date: "2025-11-02",
+        rank1: 3,
+        rank2: 1,
+        rank3: 2,
+      }),
+    ];
+    await mockSimilar(page, rows, { n_total: 72000, n_returned: 2000 });
+    const checker = await openAiTab(page, anyRaceId());
+    await pickOrder(checker, 1, 2, 3);
+    await judgeButton(checker).click();
+    await expect(checker).toContainText(resultLine(2000, 300, "15.0", LATEST));
+    await expect(checker).toContainText(/のうち新しい2,?000件（2025-11）/);
+    await expect(checker).not.toContainText("2025-11〜");
   });
 
   test("[spec FR-4] スナップショットが無いレース（snapshot: false）でも部品を出し、判定できる", async ({
@@ -1365,7 +1438,7 @@ test.describe("端末内保存", () => {
     await mockSimilar(page, ROWS);
   });
 
-  test("[spec FR-5] ボタンを押すと boatai-user:past-rate-check:v1 に型・入力・時刻・スナップショット・見せた数字とラベルを保存する（boatai: では始めない）", async ({
+  test("[spec FR-5] ボタンを押すと boatai-user:past-rate-check:v1 に型・入力・時刻・スナップショット（conditions を含む）・見せた数字とラベルを保存する（boatai: では始めない）", async ({
     page,
   }) => {
     const raceId = anyRaceId();
@@ -1387,9 +1460,9 @@ test.describe("端末内保存", () => {
       input: ORDER_123,
       result: { n: 800, count: 300, label: "standard" },
     });
-    // snapshot は { snapshotAt, depth, poolCutoff, nTotal }。snapshotAt は時刻として比べる（Z／+00:00 の表記は問わない）
+    // snapshot は { snapshotAt, depth, poolCutoff, nTotal, conditions }。snapshotAt は時刻として比べる（Z／+00:00 の表記は問わない）
     expect(Object.keys(entry.snapshot).sort()).toEqual(
-      ["depth", "nTotal", "poolCutoff", "snapshotAt"].sort(),
+      ["conditions", "depth", "nTotal", "poolCutoff", "snapshotAt"].sort(),
     );
     expect(Date.parse(entry.snapshot.snapshotAt)).toBe(
       Date.parse(META.snapshot_at),
@@ -1397,6 +1470,8 @@ test.describe("端末内保存", () => {
     expect(entry.snapshot.depth).toEqual(META.depth);
     expect(entry.snapshot.poolCutoff).toEqual(META.pool_cutoff);
     expect(entry.snapshot.nTotal).toBe(800);
+    // conditions は RPC の5キーをそのまま
+    expect(entry.snapshot.conditions).toEqual(META.conditions);
     expect(Array.isArray(entry.result.excluded)).toBe(true);
     expect(entry.result.excluded).toHaveLength(0);
     expect(Number.isNaN(Date.parse(entry.savedAt))).toBe(false);
@@ -1432,26 +1507,15 @@ test.describe("端末内保存", () => {
       depth: META.depth,
       poolCutoff: META.pool_cutoff,
       nTotal: 800,
+      conditions: META.conditions,
     });
   });
 
-  test("[spec FR-5] 層が2,000件を超えるとき、result.n は型で除いた後の件数、snapshot.nTotal は層の総件数で保存する", async ({
+  test("[spec FR-5] 切り詰めたとき、result.n は型で除いた後の件数、snapshot.nTotal は層の総件数で保存する", async ({
     page,
   }) => {
     await page.unrouteAll();
-    // 1-2-3 が412件・3-1-2 が1,588件。うち3-1-2の32件は2コースの ST が NULL
-    const rows = [
-      ...group(412, { ...BASE_ROW, rank1: 1, rank2: 2, rank3: 3 }),
-      ...group(1556, { ...BASE_ROW, rank1: 3, rank2: 1, rank3: 2 }),
-      ...group(32, {
-        ...BASE_ROW,
-        rank1: 3,
-        rank2: 1,
-        rank3: 2,
-        st_by_course: [0.15, null, 0.15, 0.15, 0.15, 0.15],
-      }),
-    ];
-    await mockSimilar(page, rows, { n_total: 38000, n_returned: 2000 });
+    await mockSimilar(page, latestRows(), { n_total: 38000, n_returned: 2000 });
     const raceId = anyRaceId();
     await page.clock.install({ time: beforeDeadline(raceId) });
     const checker = await openAiTab(page, raceId);
@@ -1974,13 +2038,11 @@ test.describe("結果タブ 振り返り", () => {
 
   // 振り返りのリスト（「決着」または「あなたの予想」の行を持つ list）
   const reviewList = (page) =>
-    page
-      .getByRole("list")
-      .filter({
-        has: page
-          .getByRole("listitem")
-          .filter({ hasText: /^\s*(決着|あなたの予想)/ }),
-      });
+    page.getByRole("list").filter({
+      has: page
+        .getByRole("listitem")
+        .filter({ hasText: /^\s*(決着|あなたの予想)/ }),
+    });
   const reviewItems = (page) => reviewList(page).getByRole("listitem");
 
   test("[spec FR-4] 保存した予想を型の順に、保存した数字のまま出し、最後に決着の行を同じリストに出す", async ({
@@ -2045,12 +2107,8 @@ test.describe("結果タブ 振り返り", () => {
     await expect(items.nth(1)).toContainText(/（7\.5%）\s*定番/);
   });
 
-  test("[spec FR-4] 決着の行は今の類似レースから着順の型（1点）と同じ数え方で数え、今の線でラベルを付ける", async ({
-    page,
-  }) => {
-    await mockSimilar(page, ROWS);
-    const raceId = await settledRace(page);
-    await seedAndOpenResult(page, raceId, null);
+  // 決着の行の数字を、今の RPC の rows から着順の型（1点）と同じ数え方で確かめる
+  async function expectSettledRow(page, rows, n, prefix) {
     const row = reviewItems(page).filter({ hasText: /^\s*決着/ });
     test.skip(
       (await row.count()) === 0,
@@ -2060,10 +2118,19 @@ test.describe("結果タブ 振り返り", () => {
     const text = await row.innerText();
     const m = text.match(/決着\s*(\d)-(\d)-(\d)/);
     expect(m, `決着の行に着順が無い: ${text}`).not.toBeNull();
-    const c = countOrder(ROWS, Number(m[1]), Number(m[2]), Number(m[3]));
-    const pNum = (c / 800) * 100;
-    const p = pNum.toFixed(1);
-    await expect(row).toContainText(resultLine(800, c, p));
+    const c = countOrder(rows, Number(m[1]), Number(m[2]), Number(m[3]));
+    const pNum = (c / n) * 100;
+    await expect(row).toContainText(resultLine(n, c, pNum.toFixed(1), prefix));
+    return { row, pNum };
+  }
+
+  test("[spec FR-4] 決着の行は今の類似レースから着順の型（1点）と同じ数え方で数え、今の線でラベルを付ける", async ({
+    page,
+  }) => {
+    await mockSimilar(page, ROWS);
+    const raceId = await settledRace(page);
+    await seedAndOpenResult(page, raceId, null);
+    const { row, pNum } = await expectSettledRow(page, ROWS, 800, PAST);
     // 線の候補のどれでも結果が変わらない割合だけ確かめる
     if (pNum >= 25) await expect(row).toContainText("定番");
     if (pNum < 3) await expect(row).toContainText("レア");
@@ -2071,6 +2138,17 @@ test.describe("結果タブ 振り返り", () => {
       await expect(row).not.toContainText("定番");
       await expect(row).not.toContainText("レア");
     }
+  });
+
+  test("[spec FR-4] 今の RPC が切り詰めた（n_returned = 2,000）とき、決着の行の前置きは「同じ条件の新しい2,000レース中」", async ({
+    page,
+  }) => {
+    const rows = latestRows();
+    await mockSimilar(page, rows, { n_total: 38000, n_returned: 2000 });
+    const raceId = await settledRace(page);
+    await seedAndOpenResult(page, raceId, null);
+    const { row } = await expectSettledRow(page, rows, 2000, LATEST);
+    await expect(row).not.toContainText(/過去[\d,]+レース中/);
   });
 
   test("[spec FR-4] 保存した予想が無い（別のレースの保存しか無い）ときは決着の行だけ出す", async ({
@@ -2143,12 +2221,33 @@ test.describe("結果タブ 振り返り", () => {
     await expect(reviewList(page)).not.toContainText(/当たり|外れ|的中|ハズレ/);
   });
 
+  // 照合は depth・poolCutoff・conditions（5キーを値で比べる）。どれかが違えば注記を出す
   for (const [what, override] of [
-    ["snapshotAt の時刻", { snapshotAt: "2026-09-29T21:00:00.000Z" }],
-    ["snapshotAt（保存は null、今はあり）", { snapshotAt: null }],
     ["depth", { depth: 3 }],
-    ["poolCutoff", { poolCutoff: "2025-10-31" }],
-    ["nTotal", { nTotal: 799 }],
+    [
+      "poolCutoff（前夜に入れた予想で cutoff が1日違う）",
+      { poolCutoff: "2025-11-29" },
+    ],
+    [
+      "conditions.b1_class",
+      { conditions: { ...META.conditions, b1_class: "B1" } },
+    ],
+    [
+      "conditions.b1_win_gap",
+      { conditions: { ...META.conditions, b1_win_gap: 0.5 } },
+    ],
+    [
+      "conditions.gap_band",
+      { conditions: { ...META.conditions, gap_band: 3 } },
+    ],
+    [
+      "conditions.venue_code",
+      { conditions: { ...META.conditions, venue_code: "02" } },
+    ],
+    [
+      "conditions.top_boat",
+      { conditions: { ...META.conditions, top_boat: 2 } },
+    ],
   ]) {
     test(`[spec FR-4] 保存時と今で ${what} が違うと「入力したときと比べた類似レースが変わっています」を出す`, async ({
       page,
@@ -2158,35 +2257,80 @@ test.describe("結果タブ 振り返り", () => {
       await seedAndOpenResult(page, raceId, [
         entryOf(raceId, "order", ORDER_123, { n: 800, count: 300 }, override),
       ]);
-      await expect(
-        page.getByText("入力したときと比べた類似レースが変わっています"),
-      ).toBeVisible();
+      await expect(page.getByText(CHANGED_NOTE)).toBeVisible();
     });
   }
 
-  test("[spec FR-4] スナップショットが同じなら（snapshotAt の表記が Z と +00:00 で違っても）類似レースが変わった注記は出さない", async ({
+  test("[spec FR-4] Entry のどれか1つでも違えば注記を出し、複数違っても注記は1つだけ", async ({
     page,
   }) => {
     await mockSimilar(page, ROWS);
     const raceId = await settledRace(page);
     await seedAndOpenResult(page, raceId, [
+      // 同じ
       entryOf(raceId, "order", ORDER_123, { n: 800, count: 300 }),
+      // depth が違う
       entryOf(
         raceId,
         "boat1",
         { outcome: "win" },
         { n: 800, count: 420 },
-        // RPC の snapshot_at は 2026-09-30T21:00:00.000Z
-        { snapshotAt: "2026-09-30T21:00:00+00:00" },
+        { depth: 3 },
+      ),
+      // poolCutoff が違う
+      entryOf(
+        raceId,
+        "payout",
+        { band: "high" },
+        { n: 760, count: 340 },
+        { poolCutoff: "2025-11-29" },
       ),
     ]);
     await expect(
       reviewItems(page).filter({ hasText: /あなたの予想/ }),
-    ).toHaveCount(2);
-    await expect(
-      page.getByText("入力したときと比べた類似レースが変わっています"),
-    ).toHaveCount(0);
+    ).toHaveCount(3);
+    await expect(page.getByText(CHANGED_NOTE)).toHaveCount(1);
   });
+
+  // snapshotAt・nTotal は照合に使わない（spec FR-4、差分レビュー指摘3）
+  for (const [what, override] of [
+    [
+      "snapshotAt が null（スナップショットが無い朝に入れた予想）で、今は時刻がある",
+      { snapshotAt: null },
+    ],
+    ["snapshotAt の時刻が違う", { snapshotAt: "2026-09-29T21:00:00.000Z" }],
+    [
+      "snapshotAt の表記が Z と +00:00 で違う",
+      { snapshotAt: "2026-09-30T21:00:00+00:00" },
+    ],
+    ["nTotal が違う", { nTotal: 799 }],
+    [
+      "conditions のキーの順が違う（値は同じ）",
+      {
+        conditions: {
+          top_boat: META.conditions.top_boat,
+          venue_code: META.conditions.venue_code,
+          gap_band: META.conditions.gap_band,
+          b1_win_gap: META.conditions.b1_win_gap,
+          b1_class: META.conditions.b1_class,
+        },
+      },
+    ],
+  ]) {
+    test(`[spec FR-4] ${what}だけなら、類似レースが変わった注記は出さない`, async ({
+      page,
+    }) => {
+      await mockSimilar(page, ROWS);
+      const raceId = await settledRace(page);
+      await seedAndOpenResult(page, raceId, [
+        entryOf(raceId, "order", ORDER_123, { n: 800, count: 300 }, override),
+      ]);
+      await expect(
+        reviewItems(page).filter({ hasText: /あなたの予想/ }),
+      ).toHaveCount(1);
+      await expect(page.getByText(CHANGED_NOTE)).toHaveCount(0);
+    });
+  }
 
   test("[spec FR-5] 30日を過ぎた保存は振り返りの読み込みで消え、振り返りに出ない", async ({
     page,
