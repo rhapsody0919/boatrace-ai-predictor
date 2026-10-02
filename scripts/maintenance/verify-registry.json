@@ -317,6 +317,11 @@
       "guards": "出走表（racelist）の過去分バックフィルCLI"
     },
     {
+      "script": "verify-racer-condition-stats.js",
+      "tier": "ci",
+      "guards": "選手ページ「レース条件別の成績」（BOA-336、src/utils/racerConditionStats.js）。天候の3区分（雪・台風は雨にまとめる）、風速5m・波高5cmの境目、江戸川を波の行から外すこと、条件の無い走を全体に混ぜないこと、着順の付かない走の数え方、5走未満の条件を出さないこと"
+    },
+    {
       "script": "verify-racer-index-policy.js",
       "tier": "ci",
       "guards": "選手ページのインデックス判定（src/utils/racerIndexPolicy.js。ページの noindex と sitemap が共用）。崩れると B 級の大量インデックスか、現役 A1 の noindex 化が両方同時に起きる"
