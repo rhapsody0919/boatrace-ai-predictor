@@ -37,3 +37,20 @@
 - 分析レーンの worktree（`recursing-poincare-93292f`）の data/ml は読むだけ
 - モデルに特徴量を渡すときは `booster.feature_name()` の並びを使う（`themes.FEATURES` と並びが違う。perrace.py で実際に取り違えた）
 - マイグレーション番号は実装 PR の時点で origin/master の最新を確認する
+
+## 6. 2026-10-02 夕方の状態（次のセッションはここから）
+- **ユーザー回答**: Q1〜Q7 は推奨どおり（screens.md「ユーザー回答」）。縦の1本の流れ、このレースを上・条件全体は折りたたみ、展示後に置き換え、末尾からだけ外す・200件未満は自動で外す・強調は差 .05 以上、件数÷n（30件未満も%）、**Q6「ほかのテーマでも絞る」を作る**、見出しの文言 OK
+- **確認中**: 展示前後のラベル・注記の文言（screens.md「1-a の段のラベルと注記」、推奨と代案A・B）。モック https://claude.ai/artifact/PmBJj2kX13venVRWs5E2Cw （Version 2）。画面に「間に合わない」「失敗」「エラー」の類を出さない
+- **ADR-0083 は採用**（学習レーンとの境界、学習側からの申し送り4点への判断を含む）。T3c-1（JS の TreeSHAP・一致検査・テーマ集計）は PR #1177 で完了（#1176 の後にマージ）。T3c-3 は呼び出しだけ
+
+### 次にやること
+1. **Q6 の設計と マイグレーション 120 の改訂**（まだ手を付けていない）:
+   - 母集団に列を足す: `round`（yosen／junyu／yusho／other／NULL。本体は `race_conditions.race_stage` を `getRaceStageCategory` と同じ規則で、長期は `kb_archive_races.stage_kind`。features.py の `round_from_stage`・`round_from_kb_kind` が正）、`grade`（ippan／G3／G2／G1／SG／NULL。長期は `kb_archive_venue_days.race_grade`、本体は `races.race_grade`、無ければ `race_series`）、`b1_motor_band`（1号艇のモーター2連率の6艇内順位で 0=1〜2位・1=3〜4位・2=5〜6位・3=不明。cm2.py の M1b と同じ。本体は `race_entries.motor_2rate`、長期は `kb_archive_boats.motor_2rate`）
+   - ステージの規則を SQL に持つと JS・Python と3か所になる。SQL 版と `getRaceStageCategory` が同じ分類になることを固定の文字列で検査する（PGlite の検証に足す）
+   - 確かめること: 今日のレースの `race_stage`・`race_grade` が出走表の時点（7:30）で入っているか（本番の読み取り）
+   - RPC: `get_analogy_similar` に任意の条件（round・grade・motor の on/off）を足し、今の深さの上に重ねる。応答に「足すと N件」の件数（3つそれぞれ）を入れる。スナップショットには含めない（探索用）
+   - ST（1号艇の平均ST順位帯）は後回し（過去30走の集計が要る）
+   - PGlite の検証（`verify-analogy-strata-migration.js`）に、新しい列・任意の条件・件数の予告のケースを足す
+2. 文言の回答を受けて screens.md を確定
+3. 受け入れ E2E（`acceptance-test-writer`、spec.md と screens.md だけを渡す）→ `design-reviewer`（`/step4` の事前条件。spec・screens・plan・tasks・ADR-0082/0083・120 を渡す）
+4. 指摘の反映 → オーケストレーター経由で実装の承認
