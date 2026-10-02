@@ -2155,7 +2155,7 @@
     "diffPt": "{{diff}}pt",
     "raceCount": "{{countText}}건",
     "reference": "참고값",
-    "pooledNote": "세로선은 전체 평균({{base}}%). 차이의 97.5% 범위: 강한 뒷바람 {{tailLow}}~{{tailHigh}}pt, 강한 맞바람 {{headLow}}~{{headHigh}}pt",
+    "pooledNote": "세로선은 전체 평균({{base}}%). 각 구분의 값은 전체 평균에 경기장 내 차이(같은 경기장 평균과의 차를 건수로 가중 평균한 값)를 더한 것입니다. 차이의 97.5% 범위: 강한 뒷바람 {{tailLow}}~{{tailHigh}}pt, 강한 맞바람 {{headLow}}~{{headHigh}}pt",
     "techniqueTitle": "결정수의 변화 (전체 24개 경기장)",
     "techniqueLead": "맞바람이 강하면 휘감기, 뒷바람이 강하면 찌르기가 늘어납니다",
     "techniqueNote": "결정수 구성은 기록용 집계로, 1코스 1착률과 같은 판정(범위, 경기장별 방향 확인)은 하지 않았습니다.",

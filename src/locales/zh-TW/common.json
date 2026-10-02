@@ -2155,7 +2155,7 @@
     "diffPt": "{{diff}}pt",
     "raceCount": "{{countText}}場",
     "reference": "參考值",
-    "pooledNote": "直線為整體平均（{{base}}%）。差異的97.5%範圍：強順風 {{tailLow}}〜{{tailHigh}}pt、強逆風 {{headLow}}〜{{headHigh}}pt",
+    "pooledNote": "直線為整體平均（{{base}}%）。各區分的數值為整體平均加上賽場內差異（與同賽場平均之差，依場數加權平均）。差異的97.5%範圍：強順風 {{tailLow}}〜{{tailHigh}}pt、強逆風 {{headLow}}〜{{headHigh}}pt",
     "techniqueTitle": "決勝方式的變化（全24個賽場）",
     "techniqueLead": "逆風強時「捲」增加，順風強時「刺」增加",
     "techniqueNote": "決勝方式的構成為記錄用統計，未像1道第1名率那樣進行判定（範圍、各賽場方向確認）。",

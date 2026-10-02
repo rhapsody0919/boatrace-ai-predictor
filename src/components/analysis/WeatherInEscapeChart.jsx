@@ -183,7 +183,11 @@ export default function WeatherInEscapeChart({ initialVenueCode = null }) {
   const binLabel = (key) => t(`weatherInEscape.bins.${key}`);
   const binSub = (key) => t(`weatherInEscape.binSubs.${key}`);
   const venueName = (code) => t(`venues.${code}`, code);
-  const venueData = data.venues[venue];
+  // URL の venue_code が集計に無い値なら、最初の会場にする
+  const selectedVenue = data.venues[venue]
+    ? venue
+    : Object.keys(data.venues)[0];
+  const venueData = data.venues[selectedVenue];
   const [ciLowTail, ciHighTail] = data.pooled.tail_strong.ci;
   const [ciLowHead, ciHighHead] = data.pooled.head_strong.ci;
   const period = {
@@ -304,7 +308,7 @@ export default function WeatherInEscapeChart({ initialVenueCode = null }) {
           <select
             id="wie-venue"
             className="venue-select"
-            value={venue}
+            value={selectedVenue}
             onChange={(e) => setVenue(e.target.value)}
           >
             {Object.keys(data.venues).map((code) => (
@@ -317,7 +321,7 @@ export default function WeatherInEscapeChart({ initialVenueCode = null }) {
             <>
               <p className="wie-note">
                 {t("weatherInEscape.venueAverage", {
-                  venue: venueName(venue),
+                  venue: venueName(selectedVenue),
                   rate: venueData.rate.toFixed(1),
                   count: venueData.n,
                   countText: venueData.n.toLocaleString(),

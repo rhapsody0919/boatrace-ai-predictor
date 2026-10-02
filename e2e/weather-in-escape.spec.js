@@ -74,3 +74,17 @@ test("集計の取得に失敗したら、空ではなくエラーを出し、�
     timeout: 30000,
   });
 });
+
+test("集計に無い venue_code でも、最初の会場で表示する（BOA-211）", async ({
+  page,
+}) => {
+  await page.goto("/winning-technique?tab=weather&venue_code=99", {
+    waitUntil: "domcontentloaded",
+  });
+  const tab = page.getByTestId("weather-in-escape");
+  await tab.waitFor({ timeout: 30000 });
+  await expect(tab.locator("#wie-venue")).toHaveValue("1");
+  await expect(
+    page.getByTestId("wie-venue-rows").locator(".wie-row"),
+  ).toHaveCount(5);
+});

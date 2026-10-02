@@ -2155,7 +2155,7 @@
     "diffPt": "{{diff}}pt",
     "raceCount": "{{countText}}件",
     "reference": "参考値",
-    "pooledNote": "縦線は全体の平均（{{base}}%）。差の97.5%の幅: 追い風・強 {{tailLow}}〜{{tailHigh}}pt、向かい風・強 {{headLow}}〜{{headHigh}}pt",
+    "pooledNote": "縦線は全体の平均（{{base}}%）。各区分の値は、全体の平均に会場内の差（同じ会場の平均との差を件数で重み付けした平均）を足したものです。差の97.5%の幅: 追い風・強 {{tailLow}}〜{{tailHigh}}pt、向かい風・強 {{headLow}}〜{{headHigh}}pt",
     "techniqueTitle": "決まり手の変わり方（全24会場）",
     "techniqueLead": "向かい風が強いとまくり、追い風が強いと差しが増えます",
     "techniqueNote": "決まり手の構成は記録のための集計で、イン逃げ率のような判定（区間・会場ごとの向きの確認）はしていません。",

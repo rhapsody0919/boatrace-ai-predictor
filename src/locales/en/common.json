@@ -2164,7 +2164,7 @@
     "raceCount_one": "{{countText}} race",
     "raceCount_other": "{{countText}} races",
     "reference": "Reference only",
-    "pooledNote": "The vertical line is the overall average ({{base}}%). 97.5% range of the difference: strong tailwind {{tailLow}} to {{tailHigh}} pt, strong headwind {{headLow}} to {{headHigh}} pt.",
+    "pooledNote": "The vertical line is the overall average ({{base}}%). Each bar is the overall average plus the within-venue difference (the race-weighted average gap from each venue's own average). 97.5% range of the difference: strong tailwind {{tailLow}} to {{tailHigh}} pt, strong headwind {{headLow}} to {{headHigh}} pt.",
     "techniqueTitle": "How winning techniques shift (all 24 venues)",
     "techniqueLead": "Strong headwinds bring more makuri; strong tailwinds bring more sashi.",
     "techniqueNote": "The technique mix is a descriptive tally. Unlike the course-1 win rate, it was not tested (no ranges or per-venue direction checks).",
