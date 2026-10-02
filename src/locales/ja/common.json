@@ -115,8 +115,8 @@
     "fetchError": "会場の水面特性を読み込めませんでした。"
   },
   "raceDetailPage": {
-    "metaTitle": "{{venue}} {{race}}R AIデータ分析 - 龍神レーダー",
-    "metaDescription": "{{venue}} {{race}}Rのデータ出走表・AIデータ分析・展開予測を無料で確認できます。",
+    "metaTitle": "{{venue}}競艇 {{race}}R AI予想・展開予測（{{date}}）- 龍神レーダー",
+    "metaDescription": "{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rの出走表データ・AI予想・1マークの展開予測・イン崩れ指数を無料で確認できます。",
     "backToList": "← レース一覧に戻る",
     "notFound": "レースが見つかりませんでした",
     "pastPredictionsBreadcrumb": "過去の予想",
