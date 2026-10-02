@@ -1035,6 +1035,12 @@ async function checkHscrollHints(page, label) {
       (await readHint(hint)).moreWidth,
       `${at}: 「›」の押せる幅`,
     ).toBeGreaterThanOrEqual(44);
+    // 押せる範囲を広げても、記号は以前と同じく端に寄せる。真ん中に置くと見出しの文字に
+    // 寄って「ST›」のように続けて読めた（PR #1169 のレビュー）
+    expect(
+      (await readHint(hint)).moreGlyphFromRight,
+      `${at}: 「›」の記号の位置`,
+    ).toBeLessThanOrEqual(16);
   }
 }
 
@@ -1077,6 +1083,15 @@ async function readHint(hint, fromEnd) {
       hasMore: el.classList.contains("has-more"),
       moreButton: Boolean(more),
       moreWidth: more ? more.getBoundingClientRect().width : 0,
+      // 「›」の記号の中心から箱の右端までの距離
+      moreGlyphFromRight: more
+        ? (() => {
+            const range = document.createRange();
+            range.selectNodeContents(more);
+            const g = range.getBoundingClientRect();
+            return more.getBoundingClientRect().right - (g.left + g.right) / 2;
+          })()
+        : null,
       peek: el.dataset.hscrollPeek ?? null,
       peekWidth: el.style.getPropertyValue("--hscroll-peek-width") || null,
     };

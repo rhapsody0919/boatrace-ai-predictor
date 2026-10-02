@@ -52,14 +52,16 @@
   top: 0;
   right: 0;
   height: 40px;
-  /* 押せる範囲は44px（以前は28pxで押し損ねやすかった。#1130 ファン評価） */
+  /* 押せる範囲は44px（以前は28pxで押し損ねやすかった。#1130 ファン評価）。
+     記号は以前と同じく端から14pxの位置に置く。真ん中に置くと見出しの文字に寄って
+     「ST›」のように続けて読めた */
   width: 44px;
   /* ::after のフェード（z-index: 5）と sticky な見出し行より上に出す */
   z-index: 6;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0;
+  justify-content: flex-end;
+  padding: 0 10px 0 0;
   border: none;
   background: none;
   color: var(--text-primary);
@@ -75,13 +77,13 @@
   top: 0;
   left: 0;
   height: 40px;
-  /* 押せる範囲は44px（以前は28pxで押し損ねやすかった。#1130 ファン評価） */
+  /* 押せる範囲と記号の位置は「›」と左右対称 */
   width: 44px;
   z-index: 6;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0;
+  justify-content: flex-start;
+  padding: 0 0 0 10px;
   border: none;
   background: none;
   color: var(--text-primary);
