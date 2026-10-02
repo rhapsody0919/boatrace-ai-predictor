@@ -125,7 +125,7 @@
 
 @media (max-width: 480px) {
   .race-detail-page-v2 {
-    padding: 0.75rem 0.75rem 5rem;
+    padding-top: 0.75rem;
   }
 
   .race-detail-page-v2__container .page-header h1 {
@@ -210,20 +210,107 @@
   border-color: var(--text-secondary);
 }
 
-/* スマホ（BOA-612、ユーザー承認のモック）: 375px で表 380px が表示枠 301px に入らず、
-   6号艇の列が画面外に出ていた。レース詳細ページの中では表を画面の端まで広げ、
-   ラベル列を詰めて6艇を横スクロール無しで並べる。表の部品（DataRaceTable.css）ではなくページ側に置く。
-
-   端まで広げる量は、表の外側にある余白（ページの左右 0.75rem ＋ .prediction-section の左右
-   1rem、320px 以下は 0.75rem。RaceDetail.css）そのものを --rdp-bleed として打ち消す。
-   以前は calc(50% - 50vw) で画面幅から逆算していたが、「親が画面の中央にある」前提が端末側で
-   崩れると表が画面の左端より外へ押し出され、直前情報の展示情報カードでは行見出しの頭が切れ、
-   表がカードの枠の外に覆い被さった（本番の不具合）。余白の値から決めれば画面幅のずれに左右されない */
-@media (max-width: 480px) {
+/* スマホ・小さいタブレット（767px 以下）の余白（docs/design/race-detail-ui-unify FR-1、
+   ユーザー承認の案B）。以前はページ 12px（481px 以上は 24px）＋タブのセクション 16px＋
+   カードの内余白 12px が左右に重なり、375px で表に使える幅が 293px しかなかった
+   （今節タブ等。データ出走表だけは画面の端まで使っていた）。
+   - ページの左右 8px、タブのセクション 0、カードの内余白 10px（カードの枠と角丸は残す）
+   - カードの中の表は、カードの内余白を打ち消してカードの枠の内側まで広げる（375px で 357px）。
+     グラフと文は内余白の内側のまま（軸のラベルや文が枠に触れないように）
+   481〜767px の帯も同じにする。以前は 480px 以下だけを詰めていたため、520px 前後で
+   カードの外側に 24px 残り、展示情報の表が横スクロールになっていた（ユーザー報告） */
+@media (max-width: 767px) {
   .race-detail-page-v2 {
-    --rdp-bleed: calc(0.75rem + 1rem);
+    --rdp-card-pad: 10px;
+    /* 表を画面の端まで広げる量 = 表の外側の余白（ページの左右。セクションは 0） */
+    --rdp-bleed: 0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
 
+  /* RaceDetail.css の裸の .prediction-section（480px 以下 1rem、320px 以下 0.75rem）を打ち消す */
+  .race-detail-page-v2 .prediction-section {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* タブの中のカード。各部品の CSS（12〜24px）より詳細度を上げて内余白をそろえる */
+  .race-detail-page-v2
+    :is(
+      .rmt-card,
+      .rbi-card,
+      .rwit-card,
+      .rsc-card,
+      .nsc-card,
+      .venue-tendency-panel,
+      .prediction-result,
+      .race-result,
+      .rol-disclaimer,
+      .rol-status,
+      .race-tabs-empty,
+      .motor-condition-container
+    ) {
+    padding-left: var(--rdp-card-pad);
+    padding-right: var(--rdp-card-pad);
+  }
+
+  /* カードの中の表（またはその横スクロール枠）をカードの枠まで広げる。
+     width: 100% の表は負の margin だけでは左にずれるだけなので、幅も足す。
+     枠別情報の「全コース」の表（.rwit-grid-hscroll）は広げない。広げると 375px で表 361px /
+     表示枠 357px と 3px だけ切れ、横に続く手がかり「›」（切れが 4px を超えたときに出る。
+     useHorizontalScrollHint）が出ないまま最後の列が欠けた（BOA-607 の e2e）。内余白の内側なら
+     切れ幅が大きく、「›」で続きがあると分かる */
+  .race-detail-page-v2
+    :is(
+      .rmt-card > .rmt-compare,
+      .rmt-card > .hscroll-hint,
+      .rmt-card .race-history-hscroll,
+      .rwit-card > .rwit-today-table,
+      .rsc-card > .rsc-grid-wrapper,
+      .venue-tendency-panel .vtp-table-wrapper,
+      .motor-condition-container .table-wrapper
+    ) {
+    margin-left: calc(-1 * var(--rdp-card-pad));
+    margin-right: calc(-1 * var(--rdp-card-pad));
+    width: calc(100% + 2 * var(--rdp-card-pad));
+    max-width: none;
+  }
+
+  /* 広げた表の左右端の文字がカードの枠線に接しないよう、端の列にだけ内側の余白を付ける */
+  .race-detail-page-v2
+    :is(
+      .rmt-card > .rmt-compare,
+      .rmt-card > .hscroll-hint,
+      .rmt-card .race-history-hscroll,
+      .rwit-card > .rwit-today-table,
+      .rsc-card > .rsc-grid-wrapper,
+      .venue-tendency-panel .vtp-table-wrapper,
+      .motor-condition-container .table-wrapper
+    )
+    tr
+    > :first-child {
+    padding-left: 6px;
+  }
+
+  .race-detail-page-v2
+    :is(
+      .rmt-card > .rmt-compare,
+      .rmt-card > .hscroll-hint,
+      .rmt-card .race-history-hscroll,
+      .rwit-card > .rwit-today-table,
+      .rsc-card > .rsc-grid-wrapper,
+      .venue-tendency-panel .vtp-table-wrapper,
+      .motor-condition-container .table-wrapper
+    )
+    tr
+    > :last-child {
+    padding-right: 6px;
+  }
+
+  /* データ出走表は画面の端まで（BOA-612）。表の部品（DataRaceTable.css）ではなくページ側に置く。
+     端まで広げる量は、表の外側の余白そのもの（--rdp-bleed）。以前は calc(50% - 50vw) で
+     画面幅から逆算していたが、「親が画面の中央にある」前提が端末側で崩れると表が画面の左端より
+     外へ押し出された（#1127） */
   .race-detail-page-v2 .data-race-table {
     margin-left: calc(-1 * var(--rdp-bleed));
     margin-right: calc(-1 * var(--rdp-bleed));
@@ -235,8 +322,8 @@
   }
 
   /* 直前情報タブの展示情報カード（同じ drt-table を、カードの中の横スクロール枠に入れている）は、
-     表だけでなくカードごと画面の端まで広げ、左右の枠を外す。表だけを広げると、表がカードの
-     左右の枠に覆い被さった。見出し・注記はカードの内側の余白（12px）のまま */
+     表だけでなくカードごと画面の端まで広げ、左右の枠を外す（#1127）。表だけを広げると、表が
+     カードの左右の枠に覆い被さった。見出し・注記はカードの内余白のまま */
   .race-detail-page-v2 .rbi-card:has(.drt-table-wrapper) {
     margin-left: calc(-1 * var(--rdp-bleed));
     margin-right: calc(-1 * var(--rdp-bleed));
@@ -245,15 +332,65 @@
     border-radius: 0;
   }
 
-  /* 表はカードの内側の余白（480px 以下は --spacing-3。RaceBeforeInfoTab.css）を打ち消し、
-     画面の端から 4px に置く */
+  /* 表はカードの内余白を打ち消し、画面の端から 4px に置く */
   .race-detail-page-v2 .rbi-card .hscroll-hint:has(> .drt-table-wrapper) {
-    margin-left: calc(-1 * var(--spacing-3));
-    margin-right: calc(-1 * var(--spacing-3));
+    margin-left: calc(-1 * var(--rdp-card-pad));
+    margin-right: calc(-1 * var(--rdp-card-pad));
     padding-left: 4px;
     padding-right: 4px;
   }
 
+  /* 行見出しは短縮ラベル（「展示1位率」等）にする。部品（DataRaceTable.css）は 480px 以下だけ
+     短縮ラベルに切り替えるため、481px 以上では「展示タイム1位勝率」が1行のまま並び、列が
+     139px に広がって6艇の列を画面の外へ押し出していた（520px で表 531px / 表示枠 438px） */
+  .race-detail-page-v2 .drt-label-full {
+    display: none;
+  }
+
+  .race-detail-page-v2 .drt-label-short {
+    display: inline;
+  }
+
+  /* 481〜767px でも、表の列が中身の1行の長さまで広がらないようにする（以前は 480px 以下だけ）。
+     520px で行見出し「今節まわり足 ?」が 110px、部品交換の「リング×２・キャブ」が 130px に
+     なり、表が 574px / 表示枠 512px で横スクロールになった（#1148 の CI、録画のレース） */
+  .race-detail-page-v2 .drt-table th,
+  .race-detail-page-v2 .drt-table td {
+    padding: 4px 2px;
+  }
+
+  /* ラベルと「?」が列に収まらないとき、「?」を次の行に送る。nowrap のままだと
+     「?」が列の外にはみ出し、1号艇の数値に重なっていた（ファン評価2周目 P1）。
+     ラベル自体は語の途中で折らない */
+  .race-detail-page-v2 .drt-label-th,
+  .race-detail-page-v2 .drt-label-cell {
+    white-space: normal;
+    word-break: keep-all;
+  }
+
+  /* 部品交換のバッジ（「リング×２・キャブ」）は1行に保つと 112〜130px になり、その艇の列だけ
+     広がって表がはみ出していた。折り返す（「5コース」等の .drt-nowrap は語の途中で折れるのを
+     防ぐためのものなので、そちらは語の単位で折る） */
+  .race-detail-page-v2 .drt-parts-changed .drt-badge {
+    white-space: normal;
+    /* 小さい仮名・記号を行頭に置かない（「キ／ャブ」の形で折れていた。ファン評価1周目） */
+    line-break: strict;
+    /* 英語版の部品名（「Carburetor」等）は1語が長く、列を押し広げて表をはみ出させる。
+       列に入らない語だけは途中で折る（日本語は上の指定で句読点の位置で折れる） */
+    overflow-wrap: anywhere;
+  }
+
+  /* 「2コース」は語の途中で折らない（keep-all は空白の無い語を1つの塊にする）まま、
+     「9/28 11R」は空白で折れるようにする */
+  .race-detail-page-v2 .drt-table .drt-nowrap {
+    white-space: normal;
+    word-break: keep-all;
+  }
+}
+
+/* 480px 以下は、表の列そのものも詰めて6艇を横スクロール無しで並べる（BOA-612、
+   ユーザー承認のモック。375px で表 380px が表示枠 301px に入らず、6号艇の列が画面外に出ていた） */
+@media (max-width: 480px) {
   .race-detail-page-v2 .drt-table th,
   .race-detail-page-v2 .drt-table td {
     padding: 4px 1px;
@@ -265,20 +402,6 @@
     min-width: 66px;
     max-width: 66px;
     font-size: 11px;
-    /* ラベルと「?」が列に収まらないとき、「?」を次の行に送る。nowrap のままだと
-       「?」が列の外にはみ出し、1号艇の数値に重なっていた（ファン評価2周目 P1）。
-       ラベル自体は語の途中で折らない */
-    white-space: normal;
-    word-break: keep-all;
-  }
-
-  /* 部品交換のバッジ（「リング×２・キャブ」）は1行に保つと 112px になり、その艇の列だけ
-     広がって表が画面からはみ出していた。スマホでは折り返す（「5コース」等の .drt-nowrap は
-     語の途中で折れるのを防ぐためのものなので、そちらは触らない） */
-  .race-detail-page-v2 .drt-parts-changed .drt-badge {
-    white-space: normal;
-    /* 小さい仮名・記号を行頭に置かない（「キ／ャブ」の形で折れていた。ファン評価1周目） */
-    line-break: strict;
   }
 
   /* 補足の行・バッジは 12px 固定で、表の文字を下げても縮まなかった。前走の「9/28 11R」（49px）、
@@ -287,13 +410,6 @@
   .race-detail-page-v2 .drt-table .drt-motor-badge,
   .race-detail-page-v2 .drt-table .drt-badge {
     font-size: 11px;
-  }
-
-  /* 「2コース」は語の途中で折らない（keep-all は空白の無い語を1つの塊にする）まま、
-     「9/28 11R」は空白で折れるようにする */
-  .race-detail-page-v2 .drt-table .drt-nowrap {
-    white-space: normal;
-    word-break: keep-all;
   }
 
   .race-detail-page-v2 .drt-label-cell .term-hint__button {
@@ -306,13 +422,6 @@
 /* 320px（iPhone SE 初代など）では、上の詰め方でも表が 353〜372px になり、表示枠 312px から
    6号艇の列がはみ出していた（BOA-612 スマホ側 ファン評価1周目 P0）。360px 以下は
    ラベル列とセルの余白をもう一段詰め、数値も 11px にする（ラベルも 11px のまま。下限を割らない） */
-/* 320px 以下は .prediction-section の左右の余白が 0.75rem になる（RaceDetail.css） */
-@media (max-width: 320px) {
-  .race-detail-page-v2 {
-    --rdp-bleed: calc(0.75rem + 0.75rem);
-  }
-}
-
 @media (max-width: 360px) {
   .race-detail-page-v2 .drt-label-th,
   .race-detail-page-v2 .drt-label-cell {
@@ -337,7 +446,6 @@
   }
 }
 
-
 /* 結果タブの着順表: 広い画面ではスタートの図（4列目）を広げる。6.5rem（104px）固定だと
    1440px で名前の列との間が約700px空き、0.01秒の差が読み取りにくかった（BOA-586）。
    着順表は一覧カードでも使うので、レース詳細ページの中だけ広げる */
@@ -346,6 +454,8 @@
   .race-detail-page-v2 .rr-row-head {
     /* 名前の列は 16rem で止め、余った幅はスタートの図に回す。名前の列を 1fr にしていると、
        図を 18rem に広げても名前の後ろに 1440px で約660px の空白が残った（#1071 ファン評価2周目） */
-    grid-template-columns: 2.6rem 1.8rem minmax(0, 16rem) minmax(18rem, 1fr) 3.6rem;
+    grid-template-columns:
+      2.6rem 1.8rem minmax(0, 16rem) minmax(18rem, 1fr)
+      3.6rem;
   }
 }

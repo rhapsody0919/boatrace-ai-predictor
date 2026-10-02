@@ -199,7 +199,7 @@ test.describe("レース詳細の表示の細部", () => {
     }
   });
 
-  test("375px: 枠別情報の全コース表は切れていることが「›」で分かり、ST考察は枠に収まる（BOA-607）", async ({
+  test("320px: 枠別情報の全コース表は切れていることが「›」で分かり、375px: ST考察は枠に収まる（BOA-607）", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
@@ -213,7 +213,10 @@ test.describe("レース詳細の表示の細部", () => {
       await rsc.evaluate((el) => el.scrollWidth - el.clientWidth),
     ).toBeLessThanOrEqual(1);
 
-    // 全コース表は 5〜6コースが切れる。横に続く手がかり（「›」）を出す
+    // 全コース表が切れる幅では、横に続く手がかり（「›」）を出す。375px は余白を詰めて
+    // （race-detail-ui-unify FR-1）表示枠が 345px に広がり、表がほぼ収まるようになったため、
+    // 表の最小幅（320px）が表示枠を必ず超える 320px で確かめる
+    await page.setViewportSize({ width: 320, height: 812 });
     await page.locator(".rwit-fold-summary").click();
     const grid = page.locator(".rwit-grid-wrapper");
     await expect(grid.locator(".rwit-grid")).toBeVisible({ timeout: 30000 });
