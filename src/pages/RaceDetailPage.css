@@ -262,7 +262,7 @@
       .rmt-card > .hscroll-hint,
       .rmt-card .race-history-hscroll,
       .rwit-card > .rwit-today-table,
-      .rwit-card .rwit-grid-wrapper,
+      .rwit-card .rwit-grid-hscroll,
       .rsc-card > .rsc-grid-wrapper,
       .venue-tendency-panel .vtp-table-wrapper,
       .motor-condition-container .table-wrapper
@@ -280,7 +280,7 @@
       .rmt-card > .hscroll-hint,
       .rmt-card .race-history-hscroll,
       .rwit-card > .rwit-today-table,
-      .rwit-card .rwit-grid-wrapper,
+      .rwit-card .rwit-grid-hscroll,
       .rsc-card > .rsc-grid-wrapper,
       .venue-tendency-panel .vtp-table-wrapper,
       .motor-condition-container .table-wrapper
@@ -296,7 +296,7 @@
       .rmt-card > .hscroll-hint,
       .rmt-card .race-history-hscroll,
       .rwit-card > .rwit-today-table,
-      .rwit-card .rwit-grid-wrapper,
+      .rwit-card .rwit-grid-hscroll,
       .rsc-card > .rsc-grid-wrapper,
       .venue-tendency-panel .vtp-table-wrapper,
       .motor-condition-container .table-wrapper
@@ -374,6 +374,9 @@
     white-space: normal;
     /* 小さい仮名・記号を行頭に置かない（「キ／ャブ」の形で折れていた。ファン評価1周目） */
     line-break: strict;
+    /* 英語版の部品名（「Carburetor」等）は1語が長く、列を押し広げて表をはみ出させる。
+       列に入らない語だけは途中で折る（日本語は上の指定で句読点の位置で折れる） */
+    overflow-wrap: anywhere;
   }
 
   /* 「2コース」は語の途中で折らない（keep-all は空白の無い語を1つの塊にする）まま、
