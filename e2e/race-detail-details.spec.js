@@ -379,4 +379,44 @@ test.describe("レース詳細の表示の細部", () => {
     });
     await expect(hint).toHaveAttribute("data-hscroll-peek", "true");
   });
+  test("320px: 左の列を固定した表で「›」を押しても、列を読み飛ばさない（PR #1192 ファン評価2周目）", async ({
+    page,
+  }) => {
+    // 送る幅が見える幅の8割（固定の項目名の列を含む）だったため、320px で表が溢れると
+    // 「›」を押すだけでは3号艇の列が一度も見えなかった
+    await page.setViewportSize({ width: 320, height: 812 });
+    await page.goto(`${RACE}?tab=beforeInfo`);
+    const hint = page.locator(".rbi-card .hscroll-hint:has(.drt-table)");
+    await expect(hint.locator(".drt-table")).toBeVisible({ timeout: 30000 });
+    await page.addStyleTag({
+      content: ".rbi-card .drt-table { min-width: 640px; }",
+    });
+    await expect(hint.locator(".hscroll-more")).toBeVisible();
+    // 押す前後で、固定の列の右に最初に全部見える列と、押す前に右端まで全部見えていた列を比べる
+    const cols = () =>
+      hint.evaluate((el) => {
+        const box = el
+          .querySelector(".drt-table-wrapper")
+          .getBoundingClientRect();
+        const sticky = el.querySelector("thead th").getBoundingClientRect();
+        const heads = [...el.querySelectorAll("thead th.drt-boat-th")].map(
+          (th) => th.getBoundingClientRect(),
+        );
+        return {
+          lastFull: Math.max(
+            ...heads.map((r, i) => (r.right <= box.right - 1 ? i : -1)),
+          ),
+          firstFull: heads.findIndex((r) => r.left >= sticky.right - 1),
+        };
+      });
+    while (await hint.locator(".hscroll-more").isVisible()) {
+      const before = await cols();
+      await hint.locator(".hscroll-more").click();
+      const after = await cols();
+      expect(
+        after.firstFull,
+        "押したあと最初に全部見える列は、押す前に見えていた最後の列の次まで",
+      ).toBeLessThanOrEqual(before.lastFull + 1);
+    }
+  });
 });

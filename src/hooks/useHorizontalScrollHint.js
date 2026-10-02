@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { horizontalScrollHintState } from "../utils/horizontalScrollHint";
+import {
+  horizontalScrollHintState,
+  horizontalScrollStep,
+} from "../utils/horizontalScrollHint";
 
 /**
  * 横スクロールする箱に「まだ右に続く」ことを知らせる手がかりを付けるフック。
@@ -25,6 +28,16 @@ import { horizontalScrollHintState } from "../utils/horizontalScrollHint";
  * @returns {{ref: object, hasMore: boolean, hasLess: boolean, update: Function,
  *   scrollRight: Function, scrollLeft: Function}}
  */
+/** 固定の左の列（1行目の先頭のセルが position: sticky のとき）の幅を引いた、1回に送る幅 */
+function stepOf(el) {
+  const first = el.querySelector("tr > :first-child");
+  const stickyWidth =
+    first && getComputedStyle(first).position === "sticky"
+      ? first.getBoundingClientRect().width
+      : 0;
+  return horizontalScrollStep({ clientWidth: el.clientWidth, stickyWidth });
+}
+
 export function useHorizontalScrollHint(deps = []) {
   const ref = useRef(null);
   const [hasMore, setHasMore] = useState(false);
@@ -89,14 +102,14 @@ export function useHorizontalScrollHint(deps = []) {
     if (!el) return;
     // `scroll-behavior: smooth` は使わない。動きを減らす設定の環境では
     // プログラムからのスクロールが一切効かなくなる（RaceTabs.css に実例）
-    el.scrollLeft += Math.round(el.clientWidth * 0.8);
+    el.scrollLeft += stepOf(el);
     update();
   }, [update]);
 
   const scrollLeft = useCallback(() => {
     const el = ref.current;
     if (!el) return;
-    el.scrollLeft -= Math.round(el.clientWidth * 0.8);
+    el.scrollLeft -= stepOf(el);
     update();
   }, [update]);
 
