@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { VolatilityAccuracySection } from "../accuracy";
 import "./MotorConditionChart.css";
+import { errorMessageOf } from "../../utils/errorMessage.js";
 
 function VolatilityAccuracyChart() {
   const { t } = useTranslation();
@@ -32,7 +33,7 @@ function VolatilityAccuracyChart() {
       })
       .catch((err) => {
         console.error("Failed to load unified volatility accuracy:", err);
-        if (!cancelled) setError(err.message);
+        if (!cancelled) setError(errorMessageOf(err));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

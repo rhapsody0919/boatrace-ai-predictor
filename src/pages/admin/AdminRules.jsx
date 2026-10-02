@@ -15,6 +15,7 @@ import {
 import { getRuleApplicationHistory } from '../../services/adminRuleService'
 import { fetchRulePerformance } from '../../services/adminRulePerformance'
 import './AdminRules.css'
+import { errorMessageOf } from "../../utils/errorMessage.js";
 
 // タブ定義
 const TABS = [
@@ -101,7 +102,7 @@ function AdminRules() {
       setVenuePerformance(performance.byVenue)
     } catch (err) {
       console.error('データ読み込みエラー:', err)
-      setError(err.message)
+      setError(errorMessageOf(err))
     } finally {
       setLoading(false)
     }
