@@ -792,6 +792,17 @@ function RaceBasicInfoTab({
                         period?.fallback ||
                         (diffShownFrom && raceDate && raceDate < diffShownFrom),
                       );
+                      // 前々期を出しているときの、差を出さない理由。前期を取り込んだ後も、
+                      // 期の初め3か月（periodDiffShownFrom）は差を出さないので、その日付を書く。
+                      // 「公開されたら差を出す」と書くと、取り込んだ日に差が出ず事実と違う（ファン評価1周目 P2）
+                      const fallbackDiffNote = (p, date) => {
+                        const from = periodDiffShownFrom(p.pending.calcTo);
+                        return from && date && date < from
+                          ? t("basicInfo.periodDiffFallbackNoteDate", {
+                              date: from,
+                            })
+                          : t("basicInfo.periodDiffFallbackNote");
+                      };
                       // 2連対率の差は率の変化ではなくポイント差なので pt を付ける
                       const diffLabel = (d, unit = "", diffUnit = unit) =>
                         d && (
@@ -1030,8 +1041,10 @@ function RaceBasicInfoTab({
                               </div>
                               {/* 公式の fan が公開される前（期替わり直後）は前々期を出す。
                                   その期を表として取り込んでいないときだけ（pickPeriodStats） */}
+                              {/* 値の行は通常の前期と同じ見た目なので、見出しの「々」1文字だけに
+                                  頼らず、この注記を本文と同じ大きさ・色で出す（ファン評価1周目 P2） */}
                               {period.fallback && (
-                                <p className="rbit-period-note">
+                                <p className="rbit-period-note rbit-period-pending">
                                   {t("basicInfo.periodFallbackNote", {
                                     from: period.pending.calcFrom,
                                     to: period.pending.calcTo,
@@ -1084,22 +1097,27 @@ function RaceBasicInfoTab({
                                   })}
                                 </span>
                                 <span className="rbit-period-recent">
-                                  {t("basicInfo.periodRecentFinals", {
-                                    from: period.recent.from
-                                      .slice(0, 7)
-                                      .replace("-", "/"),
-                                    to: period.recent.to
-                                      .slice(0, 7)
-                                      .replace("-", "/"),
-                                    finals: period.recent.finals,
-                                    wins: period.recent.wins,
-                                  })}
+                                  {t(
+                                    period.fallback
+                                      ? "basicInfo.periodRecentFinalsFallback"
+                                      : "basicInfo.periodRecentFinals",
+                                    {
+                                      from: period.recent.from
+                                        .slice(0, 7)
+                                        .replace("-", "/"),
+                                      to: period.recent.to
+                                        .slice(0, 7)
+                                        .replace("-", "/"),
+                                      finals: period.recent.finals,
+                                      wins: period.recent.wins,
+                                    },
+                                  )}
                                 </span>
                               </div>
                               {diffWithheld && (winDiff || top2Diff) && (
                                 <p className="rbit-period-note">
                                   {period.fallback
-                                    ? t("basicInfo.periodDiffFallbackNote")
+                                    ? fallbackDiffNote(period, raceDate)
                                     : t("basicInfo.periodDiffWithheldNote", {
                                         date: diffShownFrom,
                                       })}

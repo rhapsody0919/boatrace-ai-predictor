@@ -584,6 +584,13 @@
   color: var(--text-secondary);
 }
 
+/* 前期が公開待ちで前々期を出しているときの注記。値の行は通常と同じ見た目なので、
+   前々期だと気づけるよう本文と同じ大きさ・色にする */
+.rbit-period-note.rbit-period-pending {
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+}
+
 .rbit-period-diff {
   /* 375pxで2連対率の括弧が「前期から / −12.3pt）」と途中で割れるので、
      inline-block で括弧ごと次の行へ送る。折り返し自体は止めない（nowrap にすると
