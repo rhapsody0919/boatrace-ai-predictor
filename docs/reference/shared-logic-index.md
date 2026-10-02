@@ -186,6 +186,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/venueEntryCourseStats/parser.js` | parser - 進入コース別選手成績（`/modules/raceinfo/?page=index_racecourse`）の | parseEntryCourseHtml |
 | `scripts/lib/venueEntryCourseStats/venueConfig.js` | venueConfig - 進入コース別選手成績スクレイピング対象会場設定（BOA-293） | buildEntryCourseUrl, VENUE_ENTRY_COURSE_STATS_CONFIG, EXCLUDED_VENUES |
 | `scripts/lib/venueEntryCourseStatsJob.js` | 進入コース別選手成績（B4、venue_entry_course_stats）の共通ラッパ向けハンドラー（tasks.md T4b-13-1）。 | runVenueEntryCourseStatsJob, ENTRY_COURSE_CONCURRENCY |
+| `scripts/lib/venueFirstWinRate.js` | 会場別の1号艇勝率（直近N日）の集計（BOA-303）。 | aggregateFirstWinRate |
 | `scripts/lib/venueMotorStats/driftHealth.js` | 会場公式サイトのHTML構造変化を検知するための、日次スクレイピング結果の | updateVenueHealth, findDriftAlerts, STRUCTURAL_DRIFT_REASONS, DRIFT_ALERT_THRESHOLD_DAYS |
 | `scripts/lib/venueMotorStats/parserUtils.js` | parserUtils - 会場公式サイトのモーター成績パーサー間で共通の変換・DOM操作 | normalizeText, toIntOrNull, toFloatOrNull, toStrictIntOrNull, parseBestTime ほか5件 |
 | `scripts/lib/venueMotorStats/parsers/gamagori.js` | gamagori - 蒲郡専用パーサー（BOA-264） | parseGamagoriMotorTable |
@@ -205,6 +206,9 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | --- | --- | --- |
 | `src/utils/aiCopyPrompts.js` | race-ai-copy機能の分析依頼プロンプト種別定義 | getAiCopyPromptOptions, getAiCopyPromptText, AI_COPY_PROMPT_TYPES |
 | `src/utils/analogyContribution.js` | アナロジー・ファインダーの寄与度（BOA-271 FR-1）の純粋関数。 | roundFromStageCategory, sliceCandidates, resolveContributionSlice, themeEntries, roundToTotal ほか5件 |
+| `src/utils/analogyRaceContribution.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: 6艇の TreeSHAP をテーマ… | aggregateRaceContribution, boatMostRaisedBy |
+| `src/utils/analogyRaceFeatures.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: DB の行からモデルの入力を作る純… | toFloat32, meanFloat32, rankMinAscending, windComponents, buildLiveFeatures ほか2件 |
+| `src/utils/analogyTreeShap.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: LightGBM の | compileModel, predictRaw, contributions |
 | `src/utils/analytics.js` | — | getCookieConsent, setCookieConsent, initAdSense, initTrackingIfConsented, initGA ほか6件 |
 | `src/utils/bestOf.js` | 6艇を並べた値の中で、レース内の最良の艇番を返す（docs/design/race-detail-ui-unify spec R1）。 | bestOf |
 | `src/utils/blogFaqSchema.js` | — | extractFaqItems, buildFaqPageSchema |
@@ -216,6 +220,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/digestMetrics.js` | digestMetrics - 「本日のデータ一覧」（BOA-402）の指標計算（純関数） | computeSkillDelta, computePredicted, computeZScore, computeConsistency, computeFeaturedScore ほか11件 |
 | `src/utils/errorMessage.js` | 例外から、画面のエラー状態に入れる文言を取り出す（BOA-668）。 | errorMessageOf |
 | `src/utils/formatters.js` | フォーマット関数 | formatCapturedAtJst, formatPercent, formatDate, formatDateLocalized, formatDateShort ほか4件 |
+| `src/utils/horizontalScrollHint.js` | 右に残っている幅がこれ以下なら「›」は出さず、細いフェードだけにする（px） | horizontalScrollHintState, HSCROLL_PEEK_MAX, HSCROLL_PEEK_FADE |
 | `src/utils/meetGrouping.js` | meetGrouping - 節（開催）のグルーピング共通ロジック | groupIntoCurrentMeet, groupIntoMeetBeforeRace, findMeetStartDate |
 | `src/utils/motorGeneration.js` | モーターの世代（入れ替え単位）の判定。 | currentMotorGenerationStart, isInMotorGeneration, formatGenerationDate, isClippedByGeneration, officialTallyState |
 | `src/utils/nextOpenDate.js` | 非開催会場の「次開催日」を節（race_series）から求める（BOA-225）。 | computeNextOpenDates, formatMonthDay |
@@ -272,4 +277,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 237 ファイル / export 1156 件。
+対象 242 ファイル / export 1172 件。
