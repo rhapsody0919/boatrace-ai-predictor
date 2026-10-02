@@ -1310,12 +1310,11 @@ export const supabaseDataService = {
   async getUpcomingSeries(today) {
     return withCache(`upcoming-series-${today}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("race_series")
         .select("venue_code,start_date,end_date")
         .gte("end_date", today)
         .order("start_date");
-      if (error) throw new Error(`race_series の取得に失敗: ${error.message}`);
       return data ?? [];
     });
   },
