@@ -42,7 +42,8 @@ PREV = OUT / "prev"
 
 TEST_MONTHS = 12
 TEMPERATURE_MONTHS = 3
-SEEDS = [0, 1, 2, 3, 4]
+# 手元の動作確認では ANALOGY_SEEDS=2 等で減らせる（本番は5回。spec FR-1「安定性」と同じ回数）
+SEEDS = list(range(int(os.environ.get("ANALOGY_SEEDS", "5"))))
 GATE_MAX_DEGRADATION = 0.005
 PARAMS = dict(objective="binary", learning_rate=0.08, num_leaves=31, min_data_in_leaf=500,
               feature_fraction=0.8, bagging_fraction=0.8, bagging_freq=1, lambda_l2=1.0,
