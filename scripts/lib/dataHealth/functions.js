@@ -77,7 +77,8 @@ with e as (
   select r.race_date::text as d,
       count(*) as races,
       count(*) filter (where x.race_distance_m is not null) as race_distance_m,
-      count(*) filter (where x.race_labels is not null) as race_labels
+      count(*) filter (where x.race_labels is not null) as race_labels,
+      count(*) filter (where x.series_day is not null) as series_day
   from races r
   left join race_conditions x on x.race_id = r.race_id
   where r.race_date between ${fromDate} and ${toDate}
@@ -93,7 +94,8 @@ select coalesce(e.d, c.d) as d,
     coalesce(e.is_absent, 0) as is_absent,
     coalesce(c.races, 0) as races,
     coalesce(c.race_distance_m, 0) as race_distance_m,
-    coalesce(c.race_labels, 0) as race_labels
+    coalesce(c.race_labels, 0) as race_labels,
+    coalesce(c.series_day, 0) as series_day
 from e full join c on c.d = e.d
 order by 1`;
 
@@ -265,8 +267,8 @@ export const DATA_HEALTH_FUNCTIONS = Object.freeze([
     args: FROM_TO,
     shape: "rows",
     description:
-      "データ健全性の日次監視: 出走表の拡張列（081。登録体重・支部・F数・L数・欠場・距離・ラベル）の取得済み件数",
-    migration: "089_data_health_functions.sql",
+      "データ健全性の日次監視: 出走表の拡張列（081。登録体重・支部・F数・L数・欠場・距離・ラベル）と日目（series_day）の取得済み件数",
+    migration: "121_data_health_pre_race_series_day.sql",
     body: preRaceFieldsSql,
   },
   {

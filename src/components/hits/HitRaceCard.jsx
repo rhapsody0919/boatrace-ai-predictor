@@ -2,7 +2,7 @@
  * HitRaceCard - 展開予測的中レースカードコンポーネント（BOA-174、unified一本化）
  */
 import { SocialShareButtons } from "../SocialShareButtons";
-import { generateTurnHitShareText } from "../../utils/share";
+import { generateTurnHitShareText, shareUrlFor } from "../../utils/share";
 
 function HitRaceCard({
   hitRace,
@@ -71,7 +71,8 @@ function HitRaceCard({
       {/* SNSシェアボタン */}
       <div style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
         <SocialShareButtons
-          shareUrl="https://www.boat-ai.jp/"
+          // 的中したレースの詳細を共有する（以前はトップ固定、BOA-691）
+          shareUrl={shareUrlFor(`/race/${hitRace.raceId}`)}
           title={generateTurnHitShareText({
             venue: hitRace.venue,
             raceNo: hitRace.raceNumber,

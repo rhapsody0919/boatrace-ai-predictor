@@ -73,6 +73,7 @@
   },
   "venueGrid": {
     "noRacesToday": "오늘 개최 없음",
+    "nextOpen": "다음 개최 {{date}}",
     "nextRace": "다음 {{race}}R",
     "allFinished": "전 경주 종료",
     "timeOfDay": {
