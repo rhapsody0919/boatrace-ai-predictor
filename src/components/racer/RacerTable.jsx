@@ -1,23 +1,7 @@
 import { useNavigate, Link } from "react-router-dom";
 import RacerGradeBadge from "./RacerGradeBadge";
+import { COLUMNS } from "./racerColumns";
 import "./RacerTable.css";
-
-const COLUMNS = [
-  { key: "name", label: "選手名", sortable: false },
-  { key: "branch", label: "支部", sortable: true },
-  { key: "height_cm", label: "身長", sortable: true },
-  { key: "weight_kg", label: "体重", sortable: true },
-  { key: "grade", label: "級別", sortable: true },
-  { key: "registration_period", label: "登録期", sortable: true },
-  { key: "hometown", label: "出身地", sortable: true },
-  { key: "winRate", label: "勝率", sortable: true },
-  { key: "age", label: "年齢", sortable: true },
-];
-
-// URL の sort に受け付けるキー（列のキーそのもの）。モバイルの折りたたみ行も同じキーで並べる
-export const SORTABLE_KEYS = COLUMNS.filter((c) => c.sortable).map(
-  (c) => c.key,
-);
 
 /**
  * デスクトップ用のソート可能な選手一覧テーブル（docs/design/racer-search-and-list/）。
