@@ -21,10 +21,12 @@
 --   analogy_auto_depth(n_by_depth)              件数が200以上になる最も深い層（m=200）
 --   analogy_layer_distribution(...)             層の分布（スナップショットと画面の RPC で共用）
 --   create_analogy_snapshots(date)              その日の締切前のレースのスナップショットを作る（service_role のみ）
+--   analogy_resolve_race(race_id)               スナップショット、無ければ出走表から作った条件と母集団の範囲（2つの RPC で共用）
 --   get_analogy_similar(race_id, depth)         画面の RPC。条件・深さごとの件数・分布・同じ層の新しい順20件（jsonb）
+--   get_analogy_similar_races(race_id)          BOA-635 の RPC。自動の深さの層の行を新しい順に最大2,000件（jsonb）
 --
 -- 権限: 関数はすべて SECURITY INVOKER（public に SECURITY DEFINER を置かない。113 の監査）。
---   匿名が EXECUTE できるのは get_analogy_similar と、その中で呼ぶ読み取りだけの関数5本
+--   匿名が EXECUTE できるのは get_analogy_similar・get_analogy_similar_races と、その中で呼ぶ読み取りだけの関数6本
 --   （check-anon-access.js の ANON_RPCS に足す）。2表は RLS 有効・匿名は SELECT のみ。
 --   書き込みは service_role（Vercel Cron の api/cron/analogy-pool.js → refresh_analogy_pool、
 --   api/cron/analogy-snapshots.js → create_analogy_snapshots）。
@@ -436,6 +438,36 @@ END;
 $$;
 
 -- ---------------------------------------------------------------
+-- 8b. レースの条件と母集団の範囲（2つの RPC で共用）
+-- ---------------------------------------------------------------
+-- スナップショットがあればその行。無ければ出走表から条件を作り、その日より前の母集団で深さごとの件数を数えた行
+-- （created_at と distribution は NULL）。出走表が6艇そろわない・母集団が無いときは NULL。
+CREATE OR REPLACE FUNCTION analogy_resolve_race(p_race_id varchar)
+RETURNS analogy_snapshots
+LANGUAGE plpgsql STABLE SECURITY INVOKER
+SET search_path = public
+AS $$
+DECLARE
+  s analogy_snapshots%ROWTYPE;
+BEGIN
+  SELECT * INTO s FROM analogy_snapshots WHERE race_id = p_race_id;
+  IF FOUND THEN RETURN s; END IF;
+
+  SELECT c.race_id, c.b1_class, c.b1_win_gap, c.gap_band, c.venue_code, c.top_boat
+    INTO s.race_id, s.b1_class, s.b1_win_gap, s.gap_band, s.venue_code, s.top_boat
+  FROM analogy_race_conditions(p_race_id) c;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  SELECT min(p.race_date), max(p.race_date) INTO s.pool_from, s.pool_cutoff
+  FROM analogy_pool_outcomes p
+  WHERE p.race_date < (SELECT race_date FROM races WHERE race_id = p_race_id);
+  IF s.pool_cutoff IS NULL THEN RETURN NULL; END IF;
+  s.n_by_depth := analogy_layer_counts(s.gap_band, s.b1_class, s.venue_code, s.top_boat, s.pool_cutoff);
+  s.auto_depth := analogy_auto_depth(s.n_by_depth);
+  RETURN s;
+END;
+$$;
+
+-- ---------------------------------------------------------------
 -- 9. 画面の RPC
 -- ---------------------------------------------------------------
 -- p_depth を省略すると自動の深さ。1〜4 を渡すとその層（条件チップ）。
@@ -461,21 +493,9 @@ DECLARE
   v_dist jsonb;
   v_recent jsonb;
 BEGIN
-  SELECT * INTO s FROM analogy_snapshots WHERE race_id = p_race_id;
-  v_snap := FOUND;
-
-  IF NOT v_snap THEN
-    SELECT c.race_id, c.b1_class, c.b1_win_gap, c.gap_band, c.venue_code, c.top_boat
-      INTO s.race_id, s.b1_class, s.b1_win_gap, s.gap_band, s.venue_code, s.top_boat
-    FROM analogy_race_conditions(p_race_id) c;
-    IF NOT FOUND THEN RETURN NULL; END IF;
-    SELECT min(p.race_date), max(p.race_date) INTO s.pool_from, s.pool_cutoff
-    FROM analogy_pool_outcomes p
-    WHERE p.race_date < (SELECT race_date FROM races WHERE race_id = p_race_id);
-    IF s.pool_cutoff IS NULL THEN RETURN NULL; END IF;
-    s.n_by_depth := analogy_layer_counts(s.gap_band, s.b1_class, s.venue_code, s.top_boat, s.pool_cutoff);
-    s.auto_depth := analogy_auto_depth(s.n_by_depth);
-  END IF;
+  s := analogy_resolve_race(p_race_id);
+  IF s.race_id IS NULL THEN RETURN NULL; END IF;
+  v_snap := s.created_at IS NOT NULL;
 
   v_depth := coalesce(p_depth, s.auto_depth);
   IF v_depth NOT BETWEEN 1 AND 4 THEN
@@ -512,6 +532,51 @@ END;
 $$;
 
 -- ---------------------------------------------------------------
+-- 9b. BOA-635 の RPC（自動の深さの層の行。2026-10-02 BOA-635 のレーンと合意）
+-- ---------------------------------------------------------------
+-- 自動の深さの層から、pool_cutoff 以前を新しい順に最大2,000件。発走後も同じ範囲で返す（スナップショットの pool_cutoff）。
+-- 返す jsonb: snapshot, snapshot_at, depth, conditions, n_total（層の総件数）, n_returned, pool_from, pool_cutoff,
+--   rows[{race_date, rank1, rank2, rank3, winning_technique, course_by_boat, st_by_course, payout_3tan}]
+-- 該当なしは NULL。
+CREATE OR REPLACE FUNCTION get_analogy_similar_races(p_race_id varchar)
+RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY INVOKER
+SET search_path = public
+SET statement_timeout = '5s'
+AS $$
+DECLARE
+  s analogy_snapshots%ROWTYPE;
+  v_rows jsonb;
+BEGIN
+  s := analogy_resolve_race(p_race_id);
+  IF s.race_id IS NULL THEN RETURN NULL; END IF;
+
+  SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY t.race_date DESC, t.race_id DESC) , '[]') INTO v_rows
+  FROM (SELECT p.race_id, p.race_date, p.rank1, p.rank2, p.rank3, p.winning_technique, p.course_by_boat,
+               p.st_by_course, p.payout_3tan
+        FROM analogy_pool_outcomes p
+        WHERE p.gap_band = s.gap_band
+          AND (s.auto_depth < 2 OR p.b1_class = s.b1_class)
+          AND (s.auto_depth < 3 OR p.venue_code = s.venue_code)
+          AND (s.auto_depth < 4 OR p.top_boat = s.top_boat)
+          AND p.race_date <= s.pool_cutoff
+        ORDER BY p.race_date DESC, p.race_id DESC LIMIT 2000) t;
+
+  RETURN jsonb_build_object(
+    'snapshot', s.created_at IS NOT NULL,
+    'snapshot_at', s.created_at,
+    'depth', s.auto_depth,
+    'conditions', jsonb_build_object('b1_class', s.b1_class, 'b1_win_gap', s.b1_win_gap, 'gap_band', s.gap_band,
+                                     'venue_code', s.venue_code, 'top_boat', s.top_boat),
+    'n_total', s.n_by_depth[s.auto_depth],
+    'n_returned', jsonb_array_length(v_rows),
+    'pool_from', s.pool_from, 'pool_cutoff', s.pool_cutoff,
+    -- 行の race_id は並びを決めるためだけに使い、返さない（BOA-635 の列の合意）
+    'rows', (SELECT coalesce(jsonb_agg(r - 'race_id'), '[]') FROM jsonb_array_elements(v_rows) AS r));
+END;
+$$;
+
+-- ---------------------------------------------------------------
 -- 10. 権限
 -- ---------------------------------------------------------------
 REVOKE ALL ON FUNCTION analogy_gap_band(numeric) FROM PUBLIC, anon, authenticated;
@@ -524,9 +589,13 @@ REVOKE ALL ON FUNCTION analogy_auto_depth(integer[]) FROM PUBLIC, anon, authenti
 REVOKE ALL ON FUNCTION analogy_layer_distribution(smallint, text, smallint, smallint, smallint, date) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION create_analogy_snapshots(date) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION get_analogy_similar(varchar, smallint) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION get_analogy_similar_races(varchar) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION analogy_resolve_race(varchar) FROM PUBLIC, anon, authenticated;
 
 -- 匿名: 画面の RPC と、その中で呼ぶ読み取りだけの関数（SECURITY INVOKER なので呼び出し側にも EXECUTE が要る）
 GRANT EXECUTE ON FUNCTION get_analogy_similar(varchar, smallint) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION get_analogy_similar_races(varchar) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION analogy_resolve_race(varchar) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION analogy_gap_band(numeric) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION analogy_race_conditions(varchar) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION analogy_layer_counts(smallint, text, smallint, smallint, date) TO anon, authenticated, service_role;
@@ -548,13 +617,15 @@ COMMIT;
 -- SELECT p.proname, has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_exec
 --   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
 --   WHERE n.nspname = 'public' AND p.proname LIKE '%analogy%' ORDER BY 1;
---   -- anon_exec が true: get_analogy_similar・analogy_gap_band・analogy_race_conditions・analogy_layer_counts・
---   --   analogy_auto_depth・analogy_layer_distribution の6本。false: analogy_pool_rows_kb・analogy_pool_rows_main・
+--   -- anon_exec が true: get_analogy_similar・get_analogy_similar_races・analogy_resolve_race・analogy_gap_band・
+--   --   analogy_race_conditions・analogy_layer_counts・analogy_auto_depth・analogy_layer_distribution の8本。false: analogy_pool_rows_kb・analogy_pool_rows_main・
 --   --   refresh_analogy_pool・create_analogy_snapshots（と 118 の activate_analogy_model）
 --
 -- 元に戻す（緊急時のみ。データも消える）:
 -- BEGIN;
+-- DROP FUNCTION IF EXISTS get_analogy_similar_races(varchar);
 -- DROP FUNCTION IF EXISTS get_analogy_similar(varchar, smallint);
+-- DROP FUNCTION IF EXISTS analogy_resolve_race(varchar);
 -- DROP FUNCTION IF EXISTS create_analogy_snapshots(date);
 -- DROP FUNCTION IF EXISTS analogy_layer_distribution(smallint, text, smallint, smallint, smallint, date);
 -- DROP FUNCTION IF EXISTS analogy_auto_depth(integer[]);

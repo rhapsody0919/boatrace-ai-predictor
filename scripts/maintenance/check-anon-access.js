@@ -110,6 +110,8 @@ const ANON_RPCS = [
   // 類似レース（BOA-271 FR-2、マイグレーション119）。画面の RPC と、その中で呼ぶ読み取りだけの関数
   // （SECURITY INVOKER なので呼び出し側にも EXECUTE が要る）
   "get_analogy_similar",
+  "get_analogy_similar_races",
+  "analogy_resolve_race",
   "analogy_gap_band",
   "analogy_race_conditions",
   "analogy_layer_counts",

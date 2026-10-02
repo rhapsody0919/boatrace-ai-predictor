@@ -398,6 +398,21 @@ async function main() {
   }
   check("RPC: 深さ0は例外", depthErr);
 
+  // (g2) BOA-635 の RPC: 自動の深さの層の行
+  const br = (await db.query("SELECT get_analogy_similar_races($1) AS g", [T])).rows[0].g;
+  check(
+    "BOA-635 RPC: 層の総件数・返した件数・深さ",
+    br && br.n_total === 2 && br.n_returned === 2 && br.depth === 1 && br.snapshot === false,
+    JSON.stringify(br && { n_total: br.n_total, n_returned: br.n_returned, depth: br.depth }),
+  );
+  const keys = br ? Object.keys(br.rows[0]).sort().join(",") : "";
+  check(
+    "BOA-635 RPC: 行の列は合意した8列（race_id を含まない）",
+    keys === "course_by_boat,payout_3tan,race_date,rank1,rank2,rank3,st_by_course,winning_technique",
+    keys,
+  );
+  check("BOA-635 RPC: 新しい順", br && br.rows[0].race_date === "2026-01-10");
+
   // (f) スナップショット
   const s1 = (
     await db.query("SELECT create_analogy_snapshots($1) AS n", [tomorrow])
@@ -457,6 +472,10 @@ async function main() {
   const ga = (await db.query("SELECT get_analogy_similar($1) AS g", [T]))
     .rows[0].g;
   check("匿名: RPC を呼べる", ga !== null);
+  check(
+    "匿名: BOA-635 の RPC を呼べる",
+    (await db.query("SELECT get_analogy_similar_races($1) AS g", [T])).rows[0].g !== null,
+  );
   check(
     "匿名: 2表を SELECT できる",
     (await db.query("SELECT count(*)::int AS n FROM analogy_snapshots")).rows[0]

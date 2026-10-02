@@ -27,7 +27,9 @@ flowchart LR
   end
   API1 --> UI[AI予想タブ アナロジー・ファインダー節]
   API2 --> UI
-  RPC -.行の渡し方は合意待ち.-> B635[BOA-635]
+  POOL --> RPC2[get_analogy_similar_races 自動の深さ・最大2,000件]
+  SNAP --> RPC2
+  RPC2 --> B635[BOA-635]
 ```
 
 ## データ設計
@@ -211,21 +213,19 @@ flowchart TD
 - 受け入れ E2E（`acceptance-test-writer`）と `npm run test:layout`（AI予想タブの節）
 - 母集団の投入後、深さ1〜4の RPC の応答時間を実測する（目標 2秒以内、`statement_timeout` 5秒）
 
-## BOA-635 との接続（合意待ち）
-BOA-635（PR #1093、ADR-0081）は `get_analogy_neighbors` の近い順800行を画面で数える前提で設計している。層別では次の3つが変わる。
-1. 行の数が層で200〜7万件と幅がある（2条件の層は2.3%のレースで使い、中央値約3.8万件）。800行固定ではない
-2. スナップショットは1レース1行で、モデルの版を持たない。紐づけのキー `(model_version, asof_stage, asof_at)` は使えない。`(race_id, created_at)` に置き換わる
-3. 定番／レアの線を「近傍800件」で作る前提が崩れる
-
-候補（BOA-635 のレーンと合意してから、119 に足すか決める）:
-- (A) BOA-635 も SQL で数える: 予想の型ごとの判定を SQL に持つ。ADR-0081 の決定1を覆す
-- (B) 行を返す RPC `get_analogy_similar_races(race_id, depth)` を足し、件数が上限（例 5,000）以下の層だけ返す。上限を超える層では BOA-635 を出さない（出ないのは主に2条件の層、2.3%のレース）。返す列は今の `get_analogy_neighbors` と同じ（1〜3着・決まり手・1着の進入コース・艇ごとの進入・コース順の ST・3連単）。jsonb の配列1つで返す（PostgREST の行数の上限を避ける）
-
-本レーンの推奨は (B)。BOA-635 の判定は画面の純粋関数のまま使え、FR-2 と同じ層・同じ n で数えられる（n が食い違わない）。
+## BOA-635 との接続（2026-10-02 合意、オーケストレーター経由）
+BOA-635（PR #1093、ADR-0081）は近い順800行を画面で数える前提だった。層別では行の数が層で200〜7万件と変わり、スナップショットはモデルの版を持たない。次の形で合意した（plan の旧案 (B) を BOA-635 側が修正したもの）。
+- RPC `get_analogy_similar_races(race_id)`（119）: **自動の深さに固定**し、その層から `pool_cutoff` 以前を新しい順に最大2,000件返す。上限を超える層も隠さない。行の外に `snapshot`・`snapshot_at`・`depth`・`conditions`・`n_total`（層の総件数）・`n_returned`・`pool_from`・`pool_cutoff`
+- 列: `race_date`・`rank1〜3`・`winning_technique`・`course_by_boat`・`st_by_course`・`payout_3tan`（`race_id`・`venue_code`・`race_number`・`winner_course` は返さない）
+- 大きさ: 2,000行で gzip 後約34KB、1,000行で約17KB（乱数の模擬データでの試算。実データのほうが圧縮が効く）。100KB に収まるので2,000件。母集団の投入後に実測する
+- 発走後の再現: スナップショットの `pool_cutoff` 以前で固定するので、同じレースは発走後も同じ行の集合を返す（cutoff 以前の行が作り直しで変わったときは、その行の値だけ変わる）
+- 層の条件の説明文は、画面の共通関数 `src/utils/analogyReason.js`（FR-2 で作る）を BOA-635 も使う。RPC は `conditions` の値だけを返す
+- BOA-635 の判定はレース単位の純粋関数のまま（ADR-0081 の決定1は維持）。紐づけのキーは `(race_id, created_at)`（D-6 の読み替え）
+- 値の約束 R1〜R4・D-5 は 119 で固定（PGlite の検証）
+- 2,000件の言い換えの文言はオーケストレーターがユーザーに確認する
 
 ## 残る判断
 - モックの Q1〜5（案A/B、末尾からだけ外す、自動で外す、割合は件数÷n、任意の追加チップを作るか）: ユーザー確認中
-- BOA-635 の接続（上）
 - 干渉効果のコールアウトに出すパターン（tasks T0-2）
 - MD-3 の再判定（FR-1 の「市場」）
 
