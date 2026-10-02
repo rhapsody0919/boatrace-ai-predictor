@@ -39,10 +39,10 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
     });
     const { heads, rows } = await readTable(page);
     // 棒（公式2連率）と会場内順位を機番のすぐ右に置く
-    // E2E は時計を録画時刻に固定するので、このレースが当日扱い（見出しは「公式2連率（節時点）」）にも
-    // 過去扱い（「2連率 (%)」、列そのものが公式値）にもなりうる
+    // 棒の列の見出しは、当日・過去とも「公式2連率（節時点）」（承認済みのモック。値に % が付くので、
+    // 見出しに (%) を付けない）
     expect(heads[2]).toBe("機番");
-    expect(heads[3]).toMatch(/^(公式2連率（節時点）|2連率 \(%\))$/);
+    expect(heads[3]).toBe("公式2連率（節時点）");
     expect(heads[4]).toBe("会場内順位");
     expect(rows).toHaveLength(6);
     const max = Math.max(...rows.map((r) => r.value));

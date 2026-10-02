@@ -692,10 +692,9 @@ function MotorConditionChart({
                       2連率を先に置き、公式2連率をそのすぐ右にしていた。再計算した2連率は
                       消さずに会場内順位の右へ移す（見比べられる位置は保つ）。過去レースは
                       2連率の列そのものが公式値なので、その列を棒にし、再計算の列は無い */}
+                      {/* 過去レースもこの列は出走表時点の公式値なので、見出しは同じ（承認済みのモック） */}
                       <th className="motor-wrap-head">
-                        {officialMode
-                          ? t("analysis.motor.rate2Header")
-                          : t("analysis.motor.officialRate2Header")}
+                        {t("analysis.motor.officialRate2Header")}
                       </th>
                       {showVenueRank && (
                         <th className="motor-wrap-head motor-venue-rank-head">
@@ -739,7 +738,18 @@ function MotorConditionChart({
                           onFocusBoat?.(row.boat_number);
                         }}
                       >
-                        <td className="rank">{row.boat_number}</td>
+                        {/* 枠は艇色のチップ（承認済みのモック。結果タブの .rr-boat-chip と同じ） */}
+                        <td className="rank">
+                          <span
+                            className="rr-boat-chip"
+                            style={{
+                              background: BOAT_COLORS[row.boat_number]?.bg,
+                              color: BOAT_COLORS[row.boat_number]?.text,
+                            }}
+                          >
+                            {row.boat_number}
+                          </span>
+                        </td>
                         <td translate="no">
                           {row.player_name?.replace(/\s+/g, "")}
                         </td>
