@@ -56,6 +56,9 @@ function TrendLineChart({
           reversed={yReversed}
           // 目盛りを明示したいとき（展示タイムの0.2秒刻み、BOA-557）
           ticks={yTicks}
+          // 目盛りを渡したときは全部出す。既定（preserveEnd）だと、縦軸を反転したとき
+          // 上端（速い側）の数字が消えた（PR #1193 ファン評価1周目）
+          interval={yTicks ? 0 : undefined}
           // dataMin/dataMaxを使う可変domain（例: "dataMin - 0.1"）はJSの
           // 浮動小数点演算により目盛りが6.989999999999999のような値になることが
           // あるため、表示だけ丸める（domain自体の計算には影響しない）

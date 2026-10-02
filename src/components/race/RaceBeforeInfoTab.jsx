@@ -39,7 +39,6 @@ import {
   LabelList,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
@@ -447,7 +446,8 @@ function RaceBeforeInfoTab({
       label: t("beforeInfo.rowExhibitionTopRate"),
       shortLabel: t("beforeInfo.rowExhibitionTopRateShort"),
       tab: null,
-      best: bestExhibitionTopRate,
+      // 金枠はセル全体ではなく1着率の値だけに付ける（2連対・3連対は比べていない）
+      best: null,
       render: (p) => {
         if (!p.racerId) return "—";
         const state = scopedStatsByRacer[p.racerId];
@@ -469,7 +469,9 @@ function RaceBeforeInfoTab({
           );
         return (
           <span className="drt-value">
-            <span className="drt-sub">
+            <span
+              className={`drt-sub${bestExhibitionTopRate.has(p.number) ? " ind-best" : ""}`}
+            >
               {t("beforeInfo.winRateAbbrev")} {rates.winRate.toFixed(0)}%
             </span>
             <span className="drt-sub">
@@ -479,6 +481,8 @@ function RaceBeforeInfoTab({
               {t("beforeInfo.top3RateAbbrev")} {rates.top3Rate.toFixed(0)}%
             </span>
             <span className={`drt-sub ${smallSampleClass(rates.n)}`}>
+              {/* 件数が少ない参考値に⚠（注記の説明と対応させる。PR #1193 ファン評価1周目） */}
+              {rates.n < SMALL_SAMPLE_THRESHOLD && "⚠"}
               {t("beforeInfo.sampleCount", { n: rates.n })}
             </span>
           </span>
@@ -490,7 +494,9 @@ function RaceBeforeInfoTab({
       label: t("beforeInfo.rowMeetExhibition"),
       shortLabel: t("beforeInfo.rowMeetExhibitionShort"),
       tab: null,
-      best: bestMeetExhibition,
+      // 金枠はセル全体ではなく前走の値だけに付ける。セルごとだと平均まで太字の
+      // 金枠に入り、平均でも最良と読まれた（PR #1193 ファン評価1周目）
+      best: null,
       render: (p) => {
         if (!p.racerId || !p.motorNumber) return "—";
         const state = meetTrendByRacer[p.racerId];
@@ -508,7 +514,9 @@ function RaceBeforeInfoTab({
           trend.reduce((sum, e) => sum + e.exhibitionTime, 0) / trend.length;
         return (
           <span className="drt-value">
-            <span className="drt-sub">
+            <span
+              className={`drt-sub${bestMeetExhibition.has(p.number) ? " ind-best" : ""}`}
+            >
               {t("beforeInfo.prevAbbrev")} {prev.toFixed(2)}
             </span>
             <span className="drt-sub">
@@ -775,7 +783,8 @@ function RaceBeforeInfoTab({
                 // 上の余白は「最速」の印と値の枠のぶん（以前は 20）
                 margin={{ top: 36, right: 16, left: 0, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                {/* 横の補助線は出さない。縦軸の数字が無く（下の YAxis hide）意味を持たず、
+                    「最速」の印に重なっていた（PR #1193 ファン評価1周目） */}
                 <XAxis
                   dataKey="name"
                   interval={0}
@@ -808,8 +817,14 @@ function RaceBeforeInfoTab({
                         BOAT_COLORS[d.boat]?.bg || "var(--brand-accent-primary)"
                       }
                       // 1号艇の白い棒は背景に溶けるので輪郭を付ける（BOA-613）
-                      stroke={d.boat === 1 ? "var(--text-secondary)" : "none"}
-                      strokeWidth={d.boat === 1 ? 1 : 0}
+                      // 2号艇の黒い棒もダークの背景に溶けるので同じく輪郭を付ける
+                      // （PR #1193 ファン評価1周目）
+                      stroke={
+                        d.boat === 1 || d.boat === 2
+                          ? "var(--text-secondary)"
+                          : "none"
+                      }
+                      strokeWidth={d.boat === 1 || d.boat === 2 ? 1 : 0}
                     />
                   ))}
                 </Bar>
@@ -928,6 +943,8 @@ function RaceBeforeInfoTab({
           </p>
         )}
         <p className="rbi-note">💡 {t("beforeInfo.detailTableNote")}</p>
+        {/* 金枠と⚠の意味（PR #1193 ファン評価1周目: 件数が少なくて金枠を外したことが読めなかった） */}
+        <p className="rbi-note">{t("beforeInfo.bestLegend")}</p>
         {exhibitionCourseOutOfRange && (
           <p className="rbi-note" data-testid="exhibition-course-out-of-range">
             {t("beforeInfo.exhibitionCourseOutOfRange")}
