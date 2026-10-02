@@ -16,6 +16,12 @@ on:
     branches:
       - master
 
+# 同じPR（同じheadブランチ）に新しいpushが来たら、古い実行を止めて新しい方だけ走らせる。
+# pull_request専用のワークフローなので、グループはheadブランチだけで一意になる。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   # 素通し一覧の PR コメントを作成・更新する
