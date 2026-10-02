@@ -20,6 +20,7 @@ import {
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "../race/raceIndicators";
 import "./MotorConditionChart.css";
+import { techniqueColor } from "../../utils/techniqueColors";
 
 const VENUE_NAMES = {
   1: "桐生",
@@ -47,28 +48,6 @@ const VENUE_NAMES = {
   23: "唐津",
   24: "大村",
 };
-
-const TECHNIQUE_COLORS = {
-  逃げ: "#0ea5e9",
-  差し: "#10b981",
-  まくり: "#f59e0b",
-  まくり差し: "#ef4444",
-  抜き: "#8b5cf6",
-  恵まれ: "#94a3b8",
-};
-
-function techniqueColor(technique, index) {
-  const palette = [
-    "#0ea5e9",
-    "#10b981",
-    "#f59e0b",
-    "#ef4444",
-    "#8b5cf6",
-    "#94a3b8",
-    "#ec4899",
-  ];
-  return TECHNIQUE_COLORS[technique] ?? palette[index % palette.length];
-}
 
 function RacerTechniqueProfileChart({
   initialVenueCode = null,

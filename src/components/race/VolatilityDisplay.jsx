@@ -11,91 +11,11 @@ import { getVolatilityLevel } from "../../utils/volatilityLevel";
 import { trackEvent } from "../../utils/analytics";
 import RaceMoodEffect from "./RaceMoodEffect";
 import TermHintButton from "./TermHintButton";
+import VolatilityPercentileBar from "./VolatilityPercentileBar";
 
 // VolatilityDisplayのlevel（high/low/standard）→ calculate-unified-volatility-accuracy.js
 // の集計キー（high/low/medium）への対応
 const STATS_LEVEL_KEY = { high: "high", low: "low", standard: "medium" };
-
-function PercentileBar({ percentile }) {
-  const { t } = useTranslation();
-  const pct = Math.round(percentile * 100);
-  const color =
-    percentile >= 0.7 ? "#ff9800" : percentile <= 0.3 ? "#4caf50" : "#2196f3";
-
-  return (
-    <div
-      style={{
-        marginTop: "0.75rem",
-        marginBottom: "0.25rem",
-        padding: "0.6rem 0.75rem",
-        background: "rgba(255,255,255,0.55)",
-        borderRadius: "6px",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "0.4rem",
-        }}
-      >
-        <span style={{ fontSize: "0.82rem", color: "#555" }}>
-          {t("volatility.percentileBarLabel")}
-        </span>
-        <span style={{ fontSize: "1.25rem", fontWeight: "700", color }}>
-          {pct}
-        </span>
-      </div>
-
-      <div
-        style={{
-          position: "relative",
-          height: "6px",
-          background: "#e0e0e0",
-          borderRadius: "3px",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            width: `${pct}%`,
-            height: "100%",
-            background: color,
-            borderRadius: "3px",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: "-3px",
-            bottom: "-3px",
-            width: "2px",
-            background: "#616161",
-            borderRadius: "1px",
-            transform: "translateX(-50%)",
-          }}
-        />
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          fontSize: "0.68rem",
-          color: "#999",
-          marginTop: "0.25rem",
-        }}
-      >
-        <span>{t("volatility.percentileBarMin")}</span>
-        <span>{t("volatility.percentileBarMedian")}</span>
-        <span>{t("volatility.percentileBarMax")}</span>
-      </div>
-    </div>
-  );
-}
 
 /**
  * LevelAccuracyStat - 今表示しているレベル（警戒/標準/堅い）に対応する実測値を
@@ -360,7 +280,7 @@ function VolatilityDisplay({
 
       <LevelAccuracyStat level={level} venueCode={venueCode} raceId={raceId} />
 
-      <PercentileBar percentile={percentile} />
+      <VolatilityPercentileBar percentile={percentile} onLight />
 
       <ReasonsList reasons={reasons} language={i18n.language} t={t} />
     </div>
