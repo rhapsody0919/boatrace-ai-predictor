@@ -294,6 +294,36 @@ test("英語のレース詳細に公式の記号・円・日本語のラベル�
 test("会場特性の要約は言語ごとの区切りで連結する（BOA-656）", async ({
   page,
 }) => {
+  // venue-characteristics-teaser は VenueCharacteristicsCard が collapsible
+  // （VenueRaceListPage の showCardsInGrid＝その日にまだ発走前のレースがある。
+  // getRaceStatus は race.result.finished を最優先で見るため、時計を戸田の
+  // 開催中時刻に固定するだけでは不十分（BOA-688）。2026-09-29は実際の開催日から
+  // 日が経つほど全レースの結果が確定済みになり、BOA-608・#1080と同じ時刻固定を
+  // 真似ても「当日まだ発走前のレースがある」状態そのものが時間とともに崩れて
+  // record モード（本番）で再現できなくなる。そこで /api/predictions/2026-09-29
+  // の応答を差し替え、戸田の最終レースだけ未発走（result null・発走前の時刻）に
+  // 固定し、実際のレース結果の経過に左右されないようにする
+  const DATE = "2026-09-29";
+  await page.clock.setFixedTime(new Date(`${DATE}T15:04:00+09:00`));
+  await page.route(`**/api/predictions/${DATE}*`, async (route) => {
+    // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+    const response = await fetchRecorded(route);
+    const body = await response.json();
+    const todaRaceNumbers = (body.races || [])
+      .filter((r) => r.venueCode === 2)
+      .map((r) => r.raceNumber);
+    const lastRaceNumber = Math.max(...todaRaceNumbers);
+    const races = (body.races || []).map((race) =>
+      race.venueCode === 2 && race.raceNumber === lastRaceNumber
+        ? { ...race, result: null, startTime: "23:59" }
+        : race,
+    );
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json: { ...body, races },
+    });
+  });
   for (const [path, sep] of [
     ["/en/venue/2", ", "],
     ["/zh-TW/venue/2", "、"],
@@ -5404,7 +5434,29 @@ test.describe("レース詳細の見出し: グレードとレース種別（BOA
     page,
   }) => {
     // 2026-09-04 浜名湖9R は race_conditions に series_day=6 だけが入り、
-    // is_final_day・race_title・race_stage が null（BOA-347）。同じ日の他レースは最終日
+    // is_final_day・race_title・race_stage が null だった（BOA-347）。本番の
+    // race_conditions.race_stage がその後「一般」に補完され前提が崩れたため
+    // （BOA-688）、画面が読むのは /rest/v1/race_conditions ではなく
+    // /api/predictions/{date}（Edge API、get_predictions_by_date RPC が
+    // race_conditions を raceStage/isFinalDay/raceTitle として返す）なので、
+    // その応答だけを差し替えてこのレースの欠損を再現する。同じ日の他レースは
+    // 実データのまま（kicker・最終日の補完元として使う。useDatePredictions が
+    // 同じ会場の他レースから値を拾う）
+    await page.route("**/api/predictions/2026-09-04*", async (route) => {
+      // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+      const response = await fetchRecorded(route);
+      const body = await response.json();
+      const races = (body.races || []).map((race) =>
+        race.raceId === "2026-09-04-06-09"
+          ? { ...race, raceStage: null, isFinalDay: null, raceTitle: null }
+          : race,
+      );
+      await route.fulfill({
+        status: response.status(),
+        headers: response.headers(),
+        json: { ...body, races },
+      });
+    });
     await page.goto("/race/2026-09-04-06-09");
     await expect(kicker(page)).toContainText("クラウンメロン杯", {
       timeout: 25000,
