@@ -1,5 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { getVolatilityLevel } from "../../utils/volatilityLevel";
+import {
+  getVolatilityLevel,
+  volatilityDisplayValue,
+} from "../../utils/volatilityLevel";
 import "./VolatilityPercentileBar.css";
 
 /**
@@ -14,7 +17,8 @@ import "./VolatilityPercentileBar.css";
  */
 function VolatilityPercentileBar({ percentile, onLight = false }) {
   const { t } = useTranslation();
-  const pct = Math.round(percentile * 100);
+  // 数値はラベルの境目をまたがない値にする（同じ70で「標準」と「イン崩れ確率高」が出ないように）
+  const pct = volatilityDisplayValue(percentile);
   // 色の段階は、ラベル（本命有利・イン崩れ確率高）と同じ基準で決める
   const tone = getVolatilityLevel(percentile) ?? "standard";
 
