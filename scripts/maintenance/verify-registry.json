@@ -109,6 +109,11 @@
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
     },
     {
+      "script": "verify-venue-first-win-rate.js",
+      "tier": "ci",
+      "guards": "会場別1号艇勝率の母数の数え方（scripts/lib/venueFirstWinRate.js、BOA-303）。不成立・rank1 NULL・結果なしを除き、返還は数える。分析ツールのランキングは日次バッチの保存値（venues.avg_first_win_rate / avg_first_win_rate_race_count）を読む"
+    },
+    {
       "script": "verify-frontend-pure-functions.js",
       "tier": "ci",
       "guards": "画面側の純関数（basicInfoStats / raceStatus / courseGridStats / venueDayTrend / weatherInfo）の、過去に fix が入った箇所の回帰と変異検証（BOA-255）"
