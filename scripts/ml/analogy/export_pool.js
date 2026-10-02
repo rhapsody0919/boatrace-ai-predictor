@@ -250,17 +250,23 @@ async function main() {
   if (!supabase) throw new Error("Supabase 環境変数が未設定（.env.local）");
   fs.mkdirSync(OUT_DIR, { recursive: true });
   if (USE_CACHE) await ensureBucket();
-  const manifest = { exportedAt: new Date().toISOString(), tables: {} };
+  // テーブルを指定して書き出したときは、前回の manifest に上書きで足す（指定しなかったテーブルの記録を消さない）
+  const manifestPath = path.join(OUT_DIR, "export_manifest.json");
+  const previous =
+    ONLY.length && fs.existsSync(manifestPath)
+      ? JSON.parse(fs.readFileSync(manifestPath, "utf8"))
+      : { tables: {} };
+  const manifest = {
+    exportedAt: new Date().toISOString(),
+    tables: { ...previous.tables },
+  };
   for (const t of TABLES) {
     if (ONLY.length && !ONLY.includes(t.name)) continue;
     const t0 = Date.now();
     manifest.tables[t.name] = await exportTable(t);
     console.log(`   (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
   }
-  fs.writeFileSync(
-    path.join(OUT_DIR, "export_manifest.json"),
-    JSON.stringify(manifest, null, 1),
-  );
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 1));
 }
 
 main().catch((e) => {

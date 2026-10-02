@@ -111,11 +111,12 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceIndicatorData.js` | データ出走表11指標のデータ取得（AI予想モデル大規模改修 Task6a） | fetchStPredictability, fetchReturnRate, fetchTechniqueProfile, fetchExhibitionTrend, fetchRacerForm ほか1件 |
 | `scripts/lib/raceListParser.js` | 公式の出走表ページ（boatrace.jp racelist）の全項目パーサー（純関数。DB・取得先に接続しない） | scrapeSeriesDay, scrapeRaceMeta, parseRaceListDocument, parseRaceListPage, RACELIST_PARSER_VERSION |
 | `scripts/lib/raceNoticesJob.js` | レース特記事項（A5、race_special_notes）の共通ラッパ向けハンドラー（BOA-353 T4b-11-1、plan.md §2.2）。 | runRaceNoticesJob, RACE_NOTICES_CONCURRENCY |
+| `scripts/lib/raceOutcomeFilters.js` | 不成立（race_status='no_race'）のレースを集計から外すための共通の部品（BOA-545）。 | isNoRaceResult, placedRanks, NOT_NO_RACE_FILTER |
 | `scripts/lib/raceResultAudit.js` | 既存の race_results の誤り（Q6: 返還・不成立の払戻¥100、非完走艇の着順）を特定する純関数群。 | analyzeRaceFromDb, parseRaceId, summarizeDbFindings, isRefundedKFinish, kDayToRaceFacts ほか4件 |
 | `scripts/lib/raceResultFix.js` | 既存の race_results の誤り（Q6）を、公式の結果ページの再取得で修正するための計画づくりと書き込み。 | buildFixPlan, applyFixPlan, FIX_RESULT_COLUMNS, FIX_EXTRA_COLUMNS |
 | `scripts/lib/raceResultParser.js` | 公式の結果ページ（boatrace.jp raceresult）の全項目パーサー（純関数。DB・取得先に接続しない） | parseRaceSeconds, parseStartCell, classifyRaceStatus, parseRaceResultPage, RESULT_PARSER_VERSION ほか2件 |
 | `scripts/lib/raceResultRows.js` | 結果ページの全項目（scripts/lib/raceResultParser.js）から、DBへ書く行・旧形式の解析結果を作る（純関数）。 | toLegacyResult, buildResultExtras, buildTimingRows, buildPayoutRows |
-| `scripts/lib/raceResultSchema.js` | 結果系の新しい列・テーブル（マイグレーション077〜079）が、接続先のDBに適用済みかの判定。 | detectResultSchema, clearResultSchemaCache, RESULT_SCHEMA_TARGETS, SCHEMA_CACHE_TTL_MS |
+| `scripts/lib/raceResultSchema.js` | 結果系の新しい列・テーブル（マイグレーション077〜079・119）が、接続先のDBに適用済みかの判定。 | detectResultSchema, clearResultSchemaCache, RESULT_SCHEMA_TARGETS, SCHEMA_CACHE_TTL_MS |
 | `scripts/lib/raceSchedule.js` | レーススケジュール管理モジュール | getRaceSchedule, getRacesInWindow, getRacesAfterStart, getRacesPastResultWindow, getRacesBeforeStart |
 | `scripts/lib/raceSeriesJob.js` | 節（race_series、マイグレーション084）の定期取得。共通ラッパ向けハンドラー（api/cron/race-series.js）。 | runRaceSeriesJob, RACE_SERIES_EXPECTED_VENUES |
 | `scripts/lib/raceSeriesLookup.js` | 節（race_series、マイグレーション084）から「その日が節の何日目か」を導く（BOA-501）。 | deriveSeriesDay, indexSeriesByVenue, findSeriesFor, hasCancellationBefore, buildSeriesDayByVenue ほか2件 |
@@ -267,4 +268,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 232 ファイル / export 1141 件。
+対象 233 ファイル / export 1144 件。

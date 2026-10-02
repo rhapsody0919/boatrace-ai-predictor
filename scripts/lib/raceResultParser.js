@@ -10,7 +10,9 @@
  *   - 着順表（thead に「着」「ボートレーサー」）: 1艇1行（tbody>tr が6行。欠場艇も1行）。
  *       セル0=着欄（全角。「１」〜「６」・「Ｆ」・「Ｌ」・「欠」・「落」・「転」・「沈」・「妨」・「エ」・「＿」）、
  *       セル1=枠番、セル2=登番・氏名、セル3=レースタイム（1'50"7。完走できなかった艇・5〜6着は空欄）。
- *       完走した艇が先に、着順どおりに並ぶ。同着は同じ着が続く（「１」「１」「３」）。非完走の艇は最後に並ぶ
+ *       完走した艇が先に、着順どおりに並ぶ。同着は同じ着が続く（「１」「１」「３」）。非完走の艇は最後に並ぶ。
+ *       非完走の艇の並びは艇番順ではなく、記号の種類ごと（例: ＿→F、転→欠、落→妨）で、同じ種類の中は艇番順
+ *       （BOA-667。種類の間の順は全てを確認できていないため、行の順を official_row として持つ）
  *   - スタート情報（thead に「スタート情報」）: **行順が進入コース順**（1行目=1コース）。各行の
  *       .table1_boatImage1Number のテキストは「枠番」（進入コースではない。旧実装はこれを進入と読み違えた）。
  *       ST は「.07」、フライングは「F.04」、出遅れは「L」（数字なし）。先頭の1艇に決まり手が続く（「.07 逃げ」）。
@@ -186,6 +188,9 @@ function parseBoats($, resultTable, startInfo) {
       racer_id: Number.isNaN(racerId) ? null : racerId,
       finish_mark: mark === "" ? null : mark,
       finish_rank: /^[1-6]$/.test(mark) ? Number(mark) : null,
+      // 公式の着順表の行の順（1始まり）。着順の無い艇は艇番順ではなく記号の種類ごとに並ぶため（BOA-667）、
+      // 並びの規則を推測せず、行の順そのものを持つ
+      official_row: boats.length + 1,
       race_time: raceTime,
       race_seconds: parseRaceSeconds(raceTime),
       entry_course: start?.entryCourse ?? null,
