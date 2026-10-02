@@ -6692,8 +6692,9 @@ export const supabaseDataService = {
     // v22: 丸一日レースが無かった日（noRaceDays）を足した（BOA-636）
     // v23: 節の出場者（meetEntrantIds）を足した（BOA-660）
     // v24: 予選中に帰った選手を予選の翌日から外す・過去のレースは後の日付の前検も使う（BOA-674）
-    // v25: 途中帰郷を、前の日まで走っていて表示日に1走も無い選手として全日程で外す
-    return withCache(`meet-scoreboard-v25-${raceId}`, async () => {
+    // v26: 途中帰郷を、前の日まで走っていて表示日に1走も無い選手として全日程で外す
+    //      （v25 は BOA-292 の節ページ #1151 が使う。後からマージされる側は、先に入った番号の次にする）
+    return withCache(`meet-scoreboard-v26-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
