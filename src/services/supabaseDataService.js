@@ -43,7 +43,11 @@ import {
   runFinishLabel,
   officialMarkOf,
 } from "../components/race/seriesPoints.js";
-import { PAYOUT_BET_TYPES } from "../utils/raceOutcome.js";
+import {
+  PAYOUT_BET_TYPES,
+  RACE_OUTCOME,
+  getRaceOutcomeState,
+} from "../utils/raceOutcome.js";
 import {
   PRETEST_LOOKBACK_DAYS,
   pickFirstPretestByRacer,
@@ -58,15 +62,18 @@ function toReturnRate(payoutSum, sampleCount) {
   return sampleCount > 0 ? (payoutSum / (sampleCount * 100)) * 100 : null;
 }
 
-// race_resultsの1行が集計対象として使えるか（中止・不成立・未確定を除外）。
-// getRacerVenueStats/getRacerRaceHistoryの両方で同じ判定を使うための共通化
+// race_resultsの1行が集計対象として使えるか（不成立・未確定を除外）。
+// 不成立は race_results.race_status='no_race'（078）で判定する。旧フラグ is_cancelled・is_no_race は
+// どのスクリプトからも書かれておらず（常に false）、除外が効いていなかった（BOA-477）。
+// race_status が NULL の行は、078 の方針どおり通常として通す（raceOutcome.js の UNKNOWN）。
+// 中止（races.cancellation_status）のレースは結果の行が無いか rank1 が無いため、rank1 で外れる
 function isUsableRaceResult(result) {
-  return (
-    !!result &&
-    !result.is_cancelled &&
-    !result.is_no_race &&
-    result.rank1 !== null
-  );
+  return !!result && !isNoRaceResult(result) && result.rank1 !== null;
+}
+
+// 不成立（race_status='no_race'）か。返還（partial_refund）は着順が有効なので含めない
+function isNoRaceResult(result) {
+  return getRaceOutcomeState(result) === RACE_OUTCOME.NO_RACE;
 }
 
 // resultのrank1〜rank6（着順でインデックス、値が艇番）を走査し、boatNumberと
@@ -2817,7 +2824,7 @@ export const supabaseDataService = {
             supabase
               .from("race_results")
               .select(
-                "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race",
+                "race_id, rank1, rank2, rank3, rank4, rank5, rank6, race_status",
               )
               .in("race_id", chunk),
           ),
@@ -3275,7 +3282,7 @@ export const supabaseDataService = {
         const [resultRows, exhibitionRows] = await Promise.all([
           fetchAllByIn(
             "race_results",
-            "race_id, rank1, rank2, rank3, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+            "race_id, rank1, rank2, rank3, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
             "race_id",
             entries.map((e) => e.race_id),
           ),
@@ -3434,7 +3441,7 @@ export const supabaseDataService = {
 
         const resultRows = await fetchAllByIn(
           "race_results",
-          "race_id, rank1, rank2, rank3, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+          "race_id, rank1, rank2, rank3, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
           "race_id",
           entries.map((e) => e.race_id),
         );
@@ -3916,7 +3923,7 @@ export const supabaseDataService = {
         fetchAllByIn("races", "race_id, venue_code", "race_id", raceIds),
         fetchAllByIn(
           "race_results",
-          "race_id, rank1, rank2, rank3, is_cancelled, is_no_race",
+          "race_id, rank1, rank2, rank3, race_status",
           "race_id",
           raceIds,
         ),
@@ -4053,7 +4060,7 @@ export const supabaseDataService = {
         ),
         fetchAllByIn(
           "race_results",
-          "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, winning_technique, payout_win",
+          "race_id, rank1, rank2, rank3, rank4, rank5, rank6, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, winning_technique, payout_win",
           "race_id",
           raceIds,
         ),
@@ -4415,7 +4422,7 @@ export const supabaseDataService = {
    * racerId単位で1回だけ呼び、絞り込み・集計はaggregateRacerVenueBoatStats
    * （同ファイル内のプレーン関数）でクライアント側メモリ上に行う設計にして
    * いる（フィルタ操作をネットワークI/O無しの即時計算にするため）。
-   * 中止・不成立レース（is_cancelled/is_no_race）とrank1未確定行は
+   * 不成立レース（race_status=no_race。BOA-477）とrank1未確定行は
    * ここで除外し、以降の集計側では意識しなくて済むようにする
    */
   getRacerRaceHistory(racerId) {
@@ -4453,7 +4460,7 @@ export const supabaseDataService = {
           ),
           fetchAllByIn(
             "race_results",
-            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
             "race_id",
             raceIds,
           ),
@@ -4582,7 +4589,7 @@ export const supabaseDataService = {
       const raceIds = [...new Set(entries.map((e) => e.race_id))];
       const resultRows = await fetchAllByIn(
         "race_results",
-        "race_id, rank1, rank2, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race",
+        "race_id, rank1, rank2, payout_win, payout_place_1, payout_place_2, race_status",
         "race_id",
         raceIds,
       );
@@ -4592,7 +4599,7 @@ export const supabaseDataService = {
       const statsByBoat = new Map();
       entries.forEach((e) => {
         const result = resultByRaceId.get(e.race_id);
-        if (!result || result.is_cancelled || result.is_no_race) return;
+        if (!result || isNoRaceResult(result)) return;
 
         if (!statsByBoat.has(e.boat_number)) {
           statsByBoat.set(e.boat_number, {
@@ -5737,7 +5744,7 @@ export const supabaseDataService = {
       const { data, error } = await supabase
         .from("race_results")
         .select(
-          "race_id, rank1, rank2, rank3, winning_technique, is_cancelled, is_no_race",
+          "race_id, rank1, rank2, rank3, winning_technique, race_status",
         )
         .eq("race_id", raceId)
         .maybeSingle();
@@ -5842,7 +5849,7 @@ export const supabaseDataService = {
       ];
       const resultRows = await fetchAllByIn(
         "race_results",
-        "race_id, rank1, rank2, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race",
+        "race_id, rank1, rank2, payout_win, payout_place_1, payout_place_2, race_status",
         "race_id",
         pastRaceIds,
       );
@@ -5852,7 +5859,7 @@ export const supabaseDataService = {
       const statsByRacerBoat = new Map();
       relevantPastEntries.forEach((e) => {
         const result = resultByRaceId.get(e.race_id);
-        if (!result || result.is_cancelled || result.is_no_race) return;
+        if (!result || isNoRaceResult(result)) return;
 
         const key = `${e.racer_id}-${e.boat_number}`;
         if (!statsByRacerBoat.has(key)) {
@@ -6060,14 +6067,14 @@ export const supabaseDataService = {
 
         const results = await fetchAllByIn(
           "race_results",
-          "race_id, rank1, payout_trio, winning_technique, is_cancelled, is_no_race",
+          "race_id, rank1, payout_trio, winning_technique, race_status",
           "race_id",
           raceIds,
         );
 
         const byVenue = new Map();
         results.forEach((r) => {
-          if (r.is_cancelled || r.is_no_race || r.rank1 === null) return;
+          if (!isUsableRaceResult(r)) return;
           const venueCode = venueByRaceId.get(r.race_id);
           if (venueCode === null || venueCode === undefined) return;
           if (!byVenue.has(venueCode)) {
@@ -6154,7 +6161,7 @@ export const supabaseDataService = {
    * 入るため、当日は必ずnull）。courseOfBoat()は使わない——未バックフィルの
    * 艇番を暫定コースとみなすと、当日レースで「3コースまくり」と断定してしまう
    *
-   * 平均配当/万舟率/イン逃げ率の定義・除外条件（is_cancelled/is_no_race/
+   * 平均配当/万舟率/イン逃げ率の定義・除外条件（不成立=race_status no_race/
    * rank1===null除外、3連単配当はpayout_trio列を使う歴史的経緯）は
    * getTodaysVenueRanking（BOA-171）と完全に同じにする。あちらは「本日」
    * 固定・全24会場横断ランキング用、こちらは任意の日付・単一会場の
@@ -6208,7 +6215,7 @@ export const supabaseDataService = {
         const raceIds = races.map((r) => r.race_id);
         const results = await fetchAllByIn(
           "race_results",
-          "race_id, rank1, payout_trio, winning_technique, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+          "race_id, rank1, payout_trio, winning_technique, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
           "race_id",
           raceIds,
         );
@@ -6223,7 +6230,7 @@ export const supabaseDataService = {
         const byRace = {};
 
         results.forEach((r) => {
-          if (r.is_cancelled || r.is_no_race || r.rank1 === null) return;
+          if (!isUsableRaceResult(r)) return;
           raceCount += 1;
           byRace[r.race_id] = {
             rank1: r.rank1,
@@ -6302,7 +6309,7 @@ export const supabaseDataService = {
         while (true) {
           const { data, error } = await supabase
             .from("races")
-            .select("venue_code, race_results(rank1, is_cancelled, is_no_race)")
+            .select("venue_code, race_results(rank1, race_status)")
             .gte("race_date", sinceStr)
             .order("race_id")
             .range(from, from + PAGE - 1);
