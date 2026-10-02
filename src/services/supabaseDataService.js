@@ -28,6 +28,7 @@ import { isFinalStage } from "../constants/raceStageConfig";
 import { finishPositionOf } from "../components/race/basicInfoStats.js";
 import { isRaceCancelled } from "../utils/raceCancellation.js";
 import { competitionRank } from "../utils/competitionRank.js";
+import { toWakuRacerStats } from "../utils/racerStats.js";
 import {
   countsForSeriesScore,
   shouldUseOfficialSeries,
@@ -995,7 +996,7 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
           }
         : null,
       turnPrediction,
-      racerStats: stdPred?.racerStats || null,
+      racerStats: toWakuRacerStats(stdPred?.racerStats),
       exhibitionData:
         race.exhibitionData?.map((ed) => ({
           boat_number: ed.boatNumber,
@@ -5433,13 +5434,12 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定レースの選手コース別統計（racerStats）を取得する（BOA-168）
+   * 指定レースの選手の枠番別統計（racerStats）を取得する（BOA-168）
    * predictions.feature_contributions.racerStats に日次バッチで保存済みの
-   * 進入コース・平均ST・コース別勝敗・攻め手/守り手分布を返す。
+   * 平均ST・枠番別勝敗・攻め手/守り手分布を返す。
    * 超展開データタブ・データ出走表の平均ST/枠番勝率行で使用する。
-   * 注: 「コース」という名称だが、実際の進入コース変化（前づけ）は
-   * BOA-257の制約により区別できず、実質的に枠番（艇番）基準の値である
-   * （raceIndicators.jsxのcourseRateOf関数も参照）
+   * 保存側のキー名は course 系だが中身は枠番のため、toWakuRacerStats（src/utils/racerStats.js）で
+   * wakuRaceCounts に詰め替えて返す（BOA-302）
    */
   getRaceRacerStats(raceId) {
     return withCache(`race-racer-stats-${raceId}`, async () => {
@@ -5461,7 +5461,7 @@ export const supabaseDataService = {
         console.error("predictions取得エラー:", error.message);
         return null;
       }
-      return data?.[0]?.feature_contributions?.racerStats ?? null;
+      return toWakuRacerStats(data?.[0]?.feature_contributions?.racerStats);
     });
   },
 
