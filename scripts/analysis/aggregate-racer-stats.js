@@ -34,6 +34,7 @@ import {
 } from "../lib/racerStStats.js";
 import { fetchAll } from "../lib/supabaseClient.js";
 import { upsertChangedRows } from "../lib/unchangedRows.js";
+import { isNoRaceResult } from "../lib/raceOutcomeFilters.js";
 
 // ===== 取得（ページング＋例外。BOA-581 と同じ作り、BOA-600） =====
 
@@ -290,7 +291,7 @@ async function calculateCourseRaceCounts(racerId, venueCode = null) {
 
   const allResults = await fetchResultsForEntries(
     filteredEntries,
-    "race_id, rank1, rank2, rank3, is_cancelled, is_no_race, course_1, course_2, course_3, course_4, course_5, course_6",
+    "race_id, rank1, rank2, rank3, is_cancelled, race_status, course_1, course_2, course_3, course_4, course_5, course_6",
   );
 
   const entryBoatMap = new Map();
@@ -310,7 +311,7 @@ async function calculateCourseRaceCounts(racerId, venueCode = null) {
     if (
       !result ||
       result.is_cancelled ||
-      result.is_no_race ||
+      isNoRaceResult(result) ||
       result.rank1 === null
     ) {
       continue;

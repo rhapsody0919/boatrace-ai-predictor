@@ -4,7 +4,7 @@
  *
  *   (a) isNoRaceResult: race_status='no_race' だけが不成立。NULL（078以前・未判定）・normal・partial_refund は不成立でない
  *   (b) NOT_NO_RACE_FILTER: PostgREST の条件が「race_status が NULL、または no_race 以外」（078 の IS DISTINCT FROM）
- *   (c) 再発防止: scripts/daily・scripts/lib のコードが、旧フラグ is_no_race（全行 false で機能していない）を条件に使わない
+ *   (c) 再発防止: scripts/daily・scripts/lib と、日次で動く aggregate-racer-stats.js・保守用の update-venue-stats.js のコードが、旧フラグ is_no_race（全行 false で機能していない）を条件に使わない
  *       （コメントでの言及と、過去分の取り込みの書き込み kbResultsBackfillRows.js は除く）
  *   (d) 置き換えた集計（6本のクエリ）が、共通の条件 NOT_NO_RACE_FILTER を使う
  *
@@ -48,6 +48,18 @@ const stripComments = (src) =>
   src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
 const ALLOWED = new Set(["scripts/lib/kbResultsBackfillRows.js"]); // 過去分の取り込みで false を書くだけ（読まない）
 const offenders = [];
+// scripts/analysis 配下でも、日次の本番ジョブが実行するもの（aggregate-stats.yml）と、保守用の集計は対象に含める
+for (const rel of [
+  "scripts/analysis/aggregate-racer-stats.js",
+  "scripts/maintenance/update-venue-stats.js",
+]) {
+  if (
+    /is_no_race/.test(
+      stripComments(fs.readFileSync(path.join(ROOT, rel), "utf8")),
+    )
+  )
+    offenders.push(rel);
+}
 for (const dir of ["scripts/daily", "scripts/lib"]) {
   for (const name of fs.readdirSync(path.join(ROOT, dir))) {
     if (!name.endsWith(".js")) continue;
