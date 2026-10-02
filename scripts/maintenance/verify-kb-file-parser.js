@@ -363,6 +363,10 @@ for (const d of DAYS) {
       rows.boats.length === 144,
     `${rows.venueDays.length}/${rows.races.length}/${rows.boats.length}`,
   );
+  check(
+    "会場日の行は race_grade を持たない（race_series から補完した値を、load の再実行が NULL で上書きしない。BOA-651）",
+    rows.venueDays.every((v) => !("race_grade" in v)),
+  );
   const race = rows.races.find((r) => r.race_id === "2026-03-15-13-01");
   check(
     "命名: payout_3tan=2760（3連単）・payout_3fuku=1690（3連複）。DB本体の逆転命名を持ち込まない",
