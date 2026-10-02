@@ -20,6 +20,10 @@ export const dataService = {
     return supabaseDataService.getRaces();
   },
 
+  async getUpcomingSeries(today) {
+    return supabaseDataService.getUpcomingSeries(today);
+  },
+
   /**
    * 予想データを取得
    * @param {string} date - 日付文字列（YYYY-MM-DD形式）
