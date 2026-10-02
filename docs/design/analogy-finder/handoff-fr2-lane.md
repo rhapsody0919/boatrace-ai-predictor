@@ -21,6 +21,7 @@
 - モック: 条件チップ https://claude.ai/artifact/C8UpMVkF4G3jaZAvJGYtna 、寄与度とのつなぎ方3案 https://claude.ai/artifact/Dwz1KHwxzDj8BSYqmTd2nV
 
 ## 3. 待っていること
+- （2026-10-02 追記）ADR-0083 は学習レーンと合意して採用。T3c-1（JS の TreeSHAP・一致検査）は別セッションに切り出し済み。screens.md を書き直し、統合モック https://claude.ai/artifact/PmBJj2kX13venVRWs5E2Cw と Q1〜Q7（screens.md の末尾）をオーケストレーター経由でユーザー確認中。回答で screens.md を確定 → 受け入れ E2E（acceptance-test-writer）→ design-reviewer
 - FR-1 学習レーンの返事: ADR-0083 の境界（plan「レースごとの寄与度（B）」）。とくに表のマイグレーションをどちらが出すか、日次ジョブの時刻、win_racecard の品質ゲート
 - ユーザーの確認 Q1〜Q6（モックの見せ方。レースごとの寄与度を入れた形で組み直してから出し直す。前回版の要点: 案2（1本の流れ）＋案1のハイライト、末尾からだけ外す、200件未満は自動で外す、割合は件数÷n、任意の追加チップ、見出しの言い方）
 
