@@ -28,7 +28,8 @@ test("初日の2Rでも6艇とも行が出て、出場人数は出走表から�
     "今節初戦",
   );
   await expect(page.locator(".rmt-sub").first()).toContainText(
-    "節の出場は47人。",
+    // まだ走っていない選手も書き足す（BOA-690）
+    "節の出場は47人（順位の対象は6人。まだ走っていない41人を除く）。",
   );
 });
 
@@ -119,6 +120,49 @@ for (const path of ["/race/2026-09-25-01-07", "/en/race/2026-09-25-01-07"]) {
     expect(minGap).toBeGreaterThanOrEqual(6);
   });
 }
+
+test("まだ全員が1走していない間は準優の目安を伏せ、人数にまだ走っていない選手を書き足す", async ({
+  page,
+}) => {
+  // 下関の初日 5R。以前は走った24人の中の18位を「準優の目安は18位（2.00）」と出し、
+  // 人数も「45人（対象24人）」と足し算が合わなかった（BOA-690）
+  await openMeetTab(page, "2026-10-01-19-05");
+  const sub = page.locator(".rmt-sub").first();
+  await expect(sub).toContainText("準優の目安は、出場選手が全員1走してから出します。");
+  await expect(sub).not.toContainText("準優の目安は18位");
+  await expect(sub).toContainText("まだ走っていない21人を除く");
+  await expect(page.locator(".rmt-needed")).toHaveCount(0);
+});
+
+test("全員が走った後は目安を出し、何走時点の目安かを断る", async ({ page }) => {
+  // 津 9/23 12R（9/22 中止の翌日）。この日の途中までは初めて走る選手がいて伏せていた
+  await openMeetTab(page, "2026-09-23-09-12");
+  const sub = page.locator(".rmt-sub").first();
+  await expect(sub).toContainText("準優の目安は18位");
+  await expect(sub).toContainText(
+    "走した時点の目安で、予選が終わるまでは動きます。",
+  );
+});
+
+test("Ｗ優勝戦では前検の列見出しに節全体の人数を出す", async ({ page }) => {
+  // 節内順位は片側24人の中、前検の順位は節全体48人の中（公式の値）。分母を見せる（BOA-690）
+  await openMeetTab(page, "2026-09-24-01-03");
+  await expect(page.locator(".rmt-compare thead th").last()).toHaveText(
+    "前検（48人中）",
+  );
+});
+
+test("中止があった日も、人数の足し算が合う", async ({ page }) => {
+  // 津 9/21 は 5R 以降が中止。中止になったレースにしか番組が無かった選手が、
+  // 「まだ走っていない」にも数えられず、足し算が合わなかった（PR #1184 ファン評価1周目）
+  await openMeetTab(page, "2026-09-21-09-12");
+  const text = await page.locator(".rmt-sub").first().innerText();
+  const all = Number(text.match(/節の出場は(\d+)人/)?.[1]);
+  const total = Number(text.match(/順位の対象は(\d+)人/)?.[1]);
+  const excluded = Number(text.match(/欠場の(\d+)人/)?.[1] ?? 0);
+  const notYet = Number(text.match(/まだ走っていない(\d+)人/)?.[1] ?? 0);
+  expect(total + excluded + notYet).toBe(all);
+});
 
 test("予選の最終日から、予選中に帰った選手を順位の対象から外す", async ({
   page,
