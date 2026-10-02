@@ -267,6 +267,19 @@ test("会場特性の要約は言語ごとの区切りで連結する（BOA-656�
   }
 });
 
+// BOA-669: 部品交換の部品名（公式表記・日本語）が非jaでも日本語のまま出ていた
+test("英語のデータ出走表で部品交換の部品名を英語で出す（BOA-669）", async ({
+  page,
+}) => {
+  // 2026-09-30 浜名湖1R: 2号艇がキャブを交換
+  await page.goto("/en/race/2026-09-30-05-01");
+  await page.locator(".race-tabs-btn", { hasText: "Just Before" }).click();
+  const row = page.locator("tr", { hasText: "Parts changed" }).first();
+  await row.waitFor({ timeout: 30000 });
+  await expect(row).toContainText("Carburetor");
+  await expect(row).not.toContainText("キャブ");
+});
+
 test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
   test("未翻訳ページ（/en/faq等）はja版へリダイレクトされlang=jaで配信される", async ({
     page,
