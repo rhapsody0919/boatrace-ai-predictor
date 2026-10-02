@@ -662,7 +662,7 @@
       "boatLabel": "{{n}}號艇",
       "themeColumn": "主題",
       "venueAll": "全部場地",
-      "widened": "比賽數較少，已擴大至{{steps}}統計",
+      "widened": "{{requested}}的比賽數較少，已擴大至{{steps}}統計",
       "widenedSteps": {
         "venue": "全部場地",
         "round": "全部階段",
@@ -682,7 +682,7 @@
         },
         "racerRecord": {
           "name": "選手、基本成績",
-          "short": "基本成績"
+          "short": "選手成績"
         },
         "startExhibition": {
           "name": "ST、賽前資訊",
@@ -698,7 +698,7 @@
         },
         "racerProfile": {
           "name": "選手、屬性",
-          "short": "屬性"
+          "short": "選手屬性"
         }
       },
       "groups": {
@@ -712,7 +712,7 @@
           "national": "全國勝率、2連率",
           "local": "當地勝率、2連率",
           "recent": "近30場成績",
-          "boat1": "1號艇的級別、勝率"
+          "boat1": "1號艇（內側）的級別、勝率"
         },
         "startExhibition": {
           "exhibitionTime": "展示時間",
@@ -741,7 +741,8 @@
       "listSeparator": "、",
       "period": "{{from}}〜{{to}}",
       "listAllBoats": "各主題（全部艇）",
-      "listAllBoatsCompare": "各主題（全部艇。各艇號的數值見上表）"
+      "listAllBoatsCompare": "各主題（全部艇。各艇號的數值見上表）",
+      "magnitudeNote": "比例是不分有利或不利的「影響大小」。"
     }
   },
   "beforeInfo": {

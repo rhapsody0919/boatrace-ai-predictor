@@ -662,7 +662,7 @@
       "boatLabel": "{{n}}번",
       "themeColumn": "테마",
       "venueAll": "전체 경주장",
-      "widened": "레이스 수가 적어 {{steps}}(으)로 넓혀 집계했습니다",
+      "widened": "{{requested}}은(는) 레이스 수가 적어 {{steps}}(으)로 넓혀 집계했습니다",
       "widenedSteps": {
         "venue": "전체 경주장",
         "round": "전체 라운드",
@@ -682,7 +682,7 @@
         },
         "racerRecord": {
           "name": "선수, 기본 성적",
-          "short": "기본 성적"
+          "short": "선수 성적"
         },
         "startExhibition": {
           "name": "ST, 직전 정보",
@@ -698,7 +698,7 @@
         },
         "racerProfile": {
           "name": "선수, 속성",
-          "short": "속성"
+          "short": "선수 속성"
         }
       },
       "groups": {
@@ -712,7 +712,7 @@
           "national": "전국 승률, 연대율",
           "local": "현지 승률, 연대율",
           "recent": "최근 30주 성적",
-          "boat1": "1번 보트의 등급, 승률"
+          "boat1": "1번 보트(인코스)의 등급, 승률"
         },
         "startExhibition": {
           "exhibitionTime": "전시 타임",
@@ -741,7 +741,8 @@
       "listSeparator": ", ",
       "period": "{{from}}~{{to}}",
       "listAllBoats": "테마별(전체 보트)",
-      "listAllBoatsCompare": "테마별(전체 보트. 번호별 값은 위 표)"
+      "listAllBoatsCompare": "테마별(전체 보트. 번호별 값은 위 표)",
+      "magnitudeNote": "비율은 유리하게 작용했는지 불리하게 작용했는지와 관계없는 '영향의 크기'입니다."
     }
   },
   "beforeInfo": {

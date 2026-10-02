@@ -3,12 +3,11 @@ import { useTranslation } from "react-i18next";
 /**
  * テーマを押したときの内訳（BOA-271 FR-1）。似た意味の項目（勝率と2連率、その差・順位など）は
  * 学習側でまとめてある（scripts/ml/analogy/themes.py の groups）。多重共線性で個別の値は揺れるので、
- * 参考である旨を添える
+ * 参考である旨を添える。棒の長さは全テーマ合計に対する割合（親のテーマの棒と同じ目盛り）
  */
 export default function ContributionBreakdown({ id, themeKey, groups, items }) {
   const { t } = useTranslation();
   const byKey = new Map((items || []).map((g) => [g.key, g.share]));
-  const max = Math.max(0.0001, ...byKey.values());
   return (
     <div className="af-breakdown" id={id}>
       <ul className="af-breakdown-list">
@@ -27,7 +26,7 @@ export default function ContributionBreakdown({ id, themeKey, groups, items }) {
               >
                 <span
                   className="af-bar-fill af-bar-fill-sub"
-                  style={{ width: `${(share / max) * 100}%` }}
+                  style={{ width: `${share * 100}%` }}
                 />
               </span>
               <span className="af-breakdown-value">

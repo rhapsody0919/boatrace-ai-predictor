@@ -667,7 +667,7 @@
       "boatLabel": "Boat {{n}}",
       "themeColumn": "Theme",
       "venueAll": "All venues",
-      "widened": "Too few races, so these figures cover {{steps}}",
+      "widened": "Too few races for {{requested}}, so these figures cover {{steps}}",
       "widenedSteps": {
         "venue": "all venues",
         "round": "all rounds",
@@ -687,7 +687,7 @@
         },
         "racerRecord": {
           "name": "Racer record",
-          "short": "Record"
+          "short": "Racer record"
         },
         "startExhibition": {
           "name": "ST & pre-race info",
@@ -703,7 +703,7 @@
         },
         "racerProfile": {
           "name": "Racer profile",
-          "short": "Profile"
+          "short": "Racer profile"
         }
       },
       "groups": {
@@ -717,7 +717,7 @@
           "national": "National win rate & top-2 rate",
           "local": "Local win rate & top-2 rate",
           "recent": "Last 30 races",
-          "boat1": "Boat 1 class & win rate"
+          "boat1": "Boat 1 (inside) class & win rate"
         },
         "startExhibition": {
           "exhibitionTime": "Exhibition time",
@@ -746,7 +746,8 @@
       "listSeparator": ", ",
       "period": "{{from}} – {{to}}",
       "listAllBoats": "By theme (all boats)",
-      "listAllBoatsCompare": "By theme (all boats; per-boat values in the table above)"
+      "listAllBoatsCompare": "By theme (all boats; per-boat values in the table above)",
+      "magnitudeNote": "Shares show how strongly each theme mattered, whether it helped or hurt."
     }
   },
   "beforeInfo": {

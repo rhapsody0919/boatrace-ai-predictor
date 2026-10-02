@@ -1,6 +1,7 @@
 /**
  * 寄与度のレーダー（BOA-271 FR-1）。軸の数は themes 配列の長さに合わせる（テーマ数を固定しない）。
- * 艇番比較の2系列のときは点に数値を置かない（ラベルが重なるため。数値は比較表で出す）
+ * 艇番比較の2系列のときは点に数値を置かない（ラベルが重なるため。数値は比較表で出す）。
+ * 系列の色は series[].color（艇の線の色）。無ければブランドの色
  */
 const SIZE = 340;
 const CENTER = SIZE / 2;
@@ -56,7 +57,12 @@ export default function ContributionRadar({ axes, series, ariaLabel }) {
         {Math.round(scaleMax * 100)}%
       </text>
       {series.map((s) => (
-        <g key={s.key} className={`af-radar-series af-radar-series-${s.key}`}>
+        <g
+          key={s.key}
+          className={`af-radar-series af-radar-series-${s.key}`}
+          // 艇番比較では艇の線の色（公式色。白・黒・黄は線で見える色に置き換えたもの）を使う
+          style={s.color ? { "--af-series-color": s.color } : undefined}
+        >
           <polygon className="af-radar-area" points={poly(s.values)} />
           {s.values.map((v, i) => {
             const [x, y] = point(i, n, r(v));

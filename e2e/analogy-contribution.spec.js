@@ -217,7 +217,7 @@ test.describe("アナロジー・ファインダーの寄与度（BOA-271 FR-1�
     await expect(section.getByText("小標本")).toBeVisible();
     await expect(
       section.getByText(
-        "レース数が少ないため、全会場・全ラウンドに広げて集計しています",
+        /はレース数が少ないため、全会場・全ラウンドに広げて集計しています$/,
       ),
     ).toBeVisible();
   });
@@ -279,7 +279,10 @@ test.describe("アナロジー・ファインダーの寄与度（BOA-271 FR-1�
     const section = sectionOf(page);
     await expect(section.getByText("n=500レース（3,000艇）")).toBeVisible();
     await expect(
-      section.getByText("レース数が少ないため、全会場に広げて集計しています"),
+      // 選んだ条件（このレースの条件）と、実際に集計した範囲の両方を書く（ファン評価1周目 P2）
+      section.getByText(
+        "津・G1・準優勝戦はレース数が少ないため、全会場に広げて集計しています",
+      ),
     ).toBeVisible();
     await expect(section.getByText("小標本")).toHaveCount(0);
   });
@@ -307,6 +310,32 @@ test.describe("アナロジー・ファインダーの寄与度（BOA-271 FR-1�
     await expect(page.locator(".prediction-result")).toBeVisible();
     await expect(page.locator(".af-section")).toHaveCount(0);
     await expect(page.getByRole("alert")).toHaveCount(0);
+  });
+
+  test("棒はシェアの大きい順に並べ、棒の長さはシェアそのもの（全テーマで100%）。大きさの意味を書く", async ({
+    page,
+  }) => {
+    await setup(page, (p) => contribution(p));
+    await openAiTab(page);
+    const section = sectionOf(page);
+    const heads = section.locator(".af-theme-head");
+    await expect(heads).toHaveCount(THEMES.length);
+    const values = await section.locator(".af-theme-value").allInnerTexts();
+    const nums = values.map((v) => Number(v.replace("%", "")));
+    expect(nums).toEqual([...nums].sort((a, b) => b - a));
+    // 棒の長さ: 1位の棒が溝いっぱい（100%）にならない（シェアの値そのものの長さ）
+    const ratio = await section
+      .locator(".af-theme")
+      .first()
+      .evaluate((li) => {
+        const fill = li.querySelector(".af-bar-fill").getBoundingClientRect();
+        const track = li.querySelector(".af-bar-track").getBoundingClientRect();
+        return fill.width / track.width;
+      });
+    expect(Math.abs(ratio - nums[0] / 100)).toBeLessThan(0.02);
+    await expect(
+      section.getByText(/有利・不利のどちらに働いたかを問わない/),
+    ).toBeVisible();
   });
 
   test("375px で横スクロールが出ない", async ({ page }) => {

@@ -13,6 +13,7 @@ import {
   ROUNDS,
   themeEntries,
 } from "../../../utils/analogyContribution";
+import { BOAT_LINE_COLORS } from "../../../utils/colors";
 import ContributionRadar from "./ContributionRadar";
 import ContributionBreakdown from "./ContributionBreakdown";
 import BoatCompareTable from "./BoatCompareTable";
@@ -70,19 +71,22 @@ export default function ContributionView({
     ? [
         {
           key: "a",
+          color: BOAT_LINE_COLORS[boatA],
           values: data
             ? data.themes.map((th) => shareOf(boatA)?.[th.key] ?? 0)
             : [],
         },
         {
           key: "b",
+          color: BOAT_LINE_COLORS[boatB],
           values: data
             ? data.themes.map((th) => shareOf(boatB)?.[th.key] ?? 0)
             : [],
         },
       ]
     : [{ key: "all", values: entries.map((e) => e.share) }];
-  const maxShare = Math.max(0.0001, ...entries.map((e) => e.share));
+  // 棒の並びはシェアの大きい順（順位バッジと上下をそろえる）。レーダーの軸は themes 配列の順のまま
+  const listed = [...entries].sort((a, b) => b.share - a.share);
   const resolved = data?.resolved;
 
   return (
@@ -199,9 +203,19 @@ export default function ContributionView({
                   : roundLabel(resolved.round),
             })}
           </p>
+          <p className="af-note">{tr("magnitudeNote")}</p>
           {data.widened.length > 0 && (
-            <p className="af-note af-widened">
+            <p className="af-widened" role="note">
               {tr("widened", {
+                requested: [
+                  data.requested.venue === 0 ? tr("venueAll") : venueName,
+                  data.requested.grade === "all"
+                    ? tr("widenedSteps.grade")
+                    : gradeLabel(data.requested.grade),
+                  data.requested.round === "all"
+                    ? tr("widenedSteps.round")
+                    : roundLabel(data.requested.round),
+                ].join(tr("listSeparator")),
                 steps: data.widened
                   .map((s) => tr(`widenedSteps.${s}`))
                   .join(tr("listSeparator")),
@@ -222,10 +236,16 @@ export default function ContributionView({
                 />
                 {compare && (
                   <p className="af-radar-legend">
-                    <span className="af-legend-a">
+                    <span
+                      className="af-legend-a"
+                      style={{ "--af-legend-color": BOAT_LINE_COLORS[boatA] }}
+                    >
                       {tr("boatLabel", { n: boatA })}
                     </span>
-                    <span className="af-legend-b">
+                    <span
+                      className="af-legend-b"
+                      style={{ "--af-legend-color": BOAT_LINE_COLORS[boatB] }}
+                    >
                       {tr("boatLabel", { n: boatB })}
                     </span>
                   </p>
@@ -266,7 +286,7 @@ export default function ContributionView({
                 {compare ? tr("listAllBoatsCompare") : tr("listAllBoats")}
               </p>
               <ul className="af-theme-list">
-                {entries.map((e) => {
+                {listed.map((e) => {
                   const open = openTheme === e.key;
                   const panelId = `af-breakdown-${e.key}`;
                   return (
@@ -295,7 +315,7 @@ export default function ContributionView({
                         <span className="af-bar-track" aria-hidden="true">
                           <span
                             className="af-bar-fill"
-                            style={{ width: `${(e.share / maxShare) * 100}%` }}
+                            style={{ width: `${e.share * 100}%` }}
                           />
                         </span>
                       </button>

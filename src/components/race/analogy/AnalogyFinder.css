@@ -142,26 +142,25 @@
   font-size: 9px;
 }
 
+.af-radar-series {
+  --af-series-color: var(--brand-accent-primary);
+}
+
 .af-radar-area {
-  fill: var(--brand-accent-primary);
+  fill: var(--af-series-color);
   fill-opacity: 0.2;
-  stroke: var(--brand-accent-primary);
+  stroke: var(--af-series-color);
   stroke-width: 2;
 }
 
 .af-radar-dot {
-  fill: var(--brand-accent-primary);
+  fill: var(--af-series-color);
 }
 
-/* 艇番比較: A は実線、B は破線（色だけに頼らない） */
+/* 艇番比較: A は実線、B は破線（色だけに頼らない）。色は艇の線の色（JS から --af-series-color） */
 .af-radar-series-b .af-radar-area {
-  fill: var(--color-info);
-  stroke: var(--color-info);
+  fill-opacity: 0.08;
   stroke-dasharray: 5 4;
-}
-
-.af-radar-series-b .af-radar-dot {
-  fill: var(--color-info);
 }
 
 .af-radar-label {
@@ -191,11 +190,21 @@
   width: 1.25rem;
   margin-right: var(--spacing-1);
   vertical-align: middle;
-  border-top: var(--border-width-2) solid var(--brand-accent-primary);
+  border-top: var(--border-width-2) solid var(--af-legend-color);
 }
 
 .af-legend-b::before {
-  border-top: var(--border-width-2) dashed var(--color-info);
+  border-top-style: dashed;
+}
+
+/* 選んだ条件のレースが少なく、広げて集計したとき。読み飛ばされないよう枠で囲む */
+.af-widened {
+  margin: 0 0 var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: var(--border-width-1) solid var(--color-warning);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-warning-text);
 }
 
 /* ---- n・期間・モデル版 ---- */

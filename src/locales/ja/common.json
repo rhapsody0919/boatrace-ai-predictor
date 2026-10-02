@@ -348,7 +348,7 @@
       "boatLabel": "{{n}}号艇",
       "themeColumn": "テーマ",
       "venueAll": "全会場",
-      "widened": "レース数が少ないため、{{steps}}に広げて集計しています",
+      "widened": "{{requested}}はレース数が少ないため、{{steps}}に広げて集計しています",
       "widenedSteps": {
         "venue": "全会場",
         "round": "全ラウンド",
@@ -368,7 +368,7 @@
         },
         "racerRecord": {
           "name": "選手・基礎成績",
-          "short": "基礎成績"
+          "short": "選手成績"
         },
         "startExhibition": {
           "name": "ST・直前情報",
@@ -384,7 +384,7 @@
         },
         "racerProfile": {
           "name": "選手・属性",
-          "short": "属性"
+          "short": "選手属性"
         }
       },
       "groups": {
@@ -398,7 +398,7 @@
           "national": "全国勝率・2連率",
           "local": "当地勝率・2連率",
           "recent": "直近30走の成績",
-          "boat1": "1号艇の級別・勝率"
+          "boat1": "1号艇（イン）の級別・勝率"
         },
         "startExhibition": {
           "exhibitionTime": "展示タイム",
@@ -427,7 +427,8 @@
       "listSeparator": "・",
       "period": "{{from}}〜{{to}}",
       "listAllBoats": "テーマ別（全艇）",
-      "listAllBoatsCompare": "テーマ別（全艇。艇番ごとの値は上の表）"
+      "listAllBoatsCompare": "テーマ別（全艇。艇番ごとの値は上の表）",
+      "magnitudeNote": "割合は、有利・不利のどちらに働いたかを問わない「効きの大きさ」です。"
     }
   },
   "beforeInfo": {
