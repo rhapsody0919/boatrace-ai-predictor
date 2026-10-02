@@ -427,12 +427,14 @@ test.describe("レース詳細の表示の細部", () => {
       path: `${RACE}?tab=meet`,
       hint: ".hscroll-hint:has(.rmt-forecast-scroll)",
       sticky: ".rmt-forecast-table tbody tr:first-child th",
+      table: ".rmt-forecast-table",
     },
     {
       name: "今節の日別表",
       path: `${RACE}?tab=meet`,
       hint: ".race-history-hscroll",
       sticky: ".race-history-table tbody tr:first-child td:first-child",
+      table: ".race-history-table",
     },
     {
       name: "モーターのコース別成績",
@@ -446,6 +448,7 @@ test.describe("レース詳細の表示の細部", () => {
       },
       hint: ".mwsg-hint",
       sticky: ".mwsg-table tbody tr:first-child td:first-child",
+      table: ".mwsg-table",
     },
   ]) {
     test(`320px: ${screen.name}は横に送っても左端の列が残り、「‹」で戻れる（BOA-699・BOA-704）`, async ({
@@ -457,6 +460,11 @@ test.describe("レース詳細の表示の細部", () => {
       if (screen.open) await screen.open(page);
       const hint = page.locator(screen.hint).first();
       await expect(hint).toBeVisible({ timeout: 90000 });
+      // 表がどれだけ溢れるかは文字の幅で変わる（CI の Linux では 320px でも得点率早見が収まった）。
+      // 送る操作そのものを確かめるため、表を広げて必ず溢れさせる
+      await page.addStyleTag({
+        content: `${screen.table} { min-width: 640px; }`,
+      });
       const more = hint.locator(":scope > .hscroll-more");
       await expect(more).toBeVisible({ timeout: 30000 });
       const stickyLeft = () =>
