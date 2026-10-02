@@ -317,6 +317,11 @@
       "guards": "出走表（racelist）の過去分バックフィルCLI"
     },
     {
+      "script": "verify-racer-index-policy.js",
+      "tier": "ci",
+      "guards": "選手ページのインデックス判定（src/utils/racerIndexPolicy.js。ページの noindex と sitemap が共用）。崩れると B 級の大量インデックスか、現役 A1 の noindex 化が両方同時に起きる"
+    },
+    {
       "script": "verify-racer-profile-sync.js",
       "tier": "ci",
       "guards": "選手プロフィール・期別成績ジョブ（scripts/lib/racerProfileSync.js）"

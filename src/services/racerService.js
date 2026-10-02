@@ -24,17 +24,21 @@ async function getRacerProfile(racerId) {
   return data;
 }
 
-async function getLatestGrade(racerId) {
-  if (!supabase) return null;
+// 最新の出走の級と開催日。開催日はインデックス判定（src/utils/racerIndexPolicy.js）に使う
+async function getLatestEntry(racerId) {
+  if (!supabase) return { grade: null, raceDate: null };
   const { data, error } = await supabase
     .from("race_entries")
-    .select("grade")
+    .select("grade, race_id")
     .eq("racer_id", racerId)
     .order("race_id", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) throw new Error(`級別取得エラー: ${error.message}`);
-  return data?.grade ?? null;
+  return {
+    grade: data?.grade ?? null,
+    raceDate: data?.race_id ? (parseRaceId(data.race_id)?.date ?? null) : null,
+  };
 }
 
 async function getRacerNews(racerId) {
@@ -58,12 +62,17 @@ async function getRacerNews(racerId) {
  * @returns {Promise<{ profile: object|null, grade: string|null, news: object[] }>}
  */
 export async function getRacerPageData(racerId) {
-  const [profile, grade, news] = await Promise.all([
+  const [profile, latestEntry, news] = await Promise.all([
     getRacerProfile(racerId),
-    getLatestGrade(racerId),
+    getLatestEntry(racerId),
     getRacerNews(racerId),
   ]);
-  return { profile, grade, news };
+  return {
+    profile,
+    grade: latestEntry.grade,
+    latestRaceDate: latestEntry.raceDate,
+    news,
+  };
 }
 
 /**
