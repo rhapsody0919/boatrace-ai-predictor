@@ -25,7 +25,7 @@ export const PREDICTION_HIT_COLUMNS = Object.freeze([
  * 1件の予想（predictions の行）について、的中フラグと配当の列を作る（BOA-544）。
  * 結果取得時の判定（scrape-results.js judgeAndUpdateHits）・欠落の補完（fixMissingHitFlags）・
  * 既存行のバックフィル（backfill-refund-hit-flags.js）が共有する。DBトリガー
- * update_prediction_results()（マイグレーション114）も同じ規則で判定する。
+ * update_prediction_results()（マイグレーション117）も同じ規則で判定する。
  *
  * - 不成立（race_status='no_race'）: 全勝式と展開予測を判定対象外（NULL）にする
  * - 返還艇（refund_boats）を含む勝式: その勝式だけ判定対象外（NULL）。単勝・複勝は top_pick、

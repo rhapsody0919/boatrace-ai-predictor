@@ -1,4 +1,4 @@
--- 114: 的中判定のトリガー（update_prediction_results）で、不成立のレースと返還艇を含む勝式を判定対象外（NULL）にする（BOA-544）
+-- 117: 的中判定のトリガー（update_prediction_results）で、不成立のレースと返還艇を含む勝式を判定対象外（NULL）にする（BOA-544）
 --
 -- ⚠️ この案は「本番へ未適用」。適用はユーザーの承認後に、ユーザーが実行する。
 --
@@ -21,7 +21,7 @@
 --
 -- 権限: トリガー関数なので、匿名・authenticated から呼べないようにする（113 と同じ。114番以降は関数ごとに
 --   GRANT/REVOKE を明示する規律、verify:migration-rls）。CREATE OR REPLACE は既存の権限を保つが、明示しておく。
---   番号: 当初112で作ったが、マージ前に master の最大が113になったため114に付け直した。
+--   番号: 当初112で作り、マージ前に master の最大が113・116と進んだため、114→117に付け直した。
 --
 -- 発火条件: 097 の8列に race_status・refund_boats を足す。結果の確定の後で race_status だけが直される経路
 --   （raceResultFix.js の applyFixPlan・audit-race-result-anomalies.js）でも、判定をやり直すため。

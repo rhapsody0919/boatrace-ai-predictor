@@ -4,7 +4,7 @@
  *   (a) 判定関数（hitCalculator.js の buildPredictionHitUpdate）: 不成立は全券種・展開予測が NULL。返還艇を本命にした予想は
  *       単勝・複勝が NULL、上位3艇に返還艇があれば3連系が NULL。返還艇と関係の無い券種は通常どおり判定する。race_status が
  *       NULL（078以前）は今までどおり。top_3rd を予想しないモデルの3連系は NULL。外れの配当は 0、対象外は NULL
- *   (b) DBトリガー（マイグレーション114、PGlite で実際に適用）: 同じ予想・結果で、(a) と同じ値を書く（展開予測以外）。
+ *   (b) DBトリガー（マイグレーション117、PGlite で実際に適用）: 同じ予想・結果で、(a) と同じ値を書く（展開予測以外）。
  *       不成立では is_hit_turn を NULL にし、それ以外では触らない。race_status だけの更新でも判定をやり直す
  *   (c) 欠落の補完（scrape-results.js の fixMissingHitFlags）: 判定対象外のまま（今の値と同じ）の行は書かず、
  *       notJudgeable として数える（毎日同じ行を書き直さない）。欠落していた行は書く
@@ -21,7 +21,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const MIGRATION = fs.readFileSync(
   path.join(
     ROOT,
-    "docs/db-migration/114_prediction_hits_exclude_no_race_refund.sql",
+    "docs/db-migration/117_prediction_hits_exclude_no_race_refund.sql",
   ),
   "utf8",
 );
@@ -549,7 +549,7 @@ const trigFailed = await evaluateTrigger(
   hit.buildPredictionHitUpdate,
 );
 check(
-  "(b) DBトリガー（114）: JS の判定と同じ値・不成立で展開予測を NULL・race_status の更新で再判定",
+  "(b) DBトリガー（117）: JS の判定と同じ値・不成立で展開予測を NULL・race_status の更新で再判定",
   trigFailed.length === 0,
   trigFailed.join(" / "),
 );

@@ -2,7 +2,7 @@
 
 不成立のレースと、返還艇を含む勝式の予想を、的中判定と成績の集計から外す。コード（PR）とは別に、本番では次の2つが要る。
 
-- DBトリガーの置き換え（マイグレーション114）
+- DBトリガーの置き換え（マイグレーション117）
 - 既存の予想の書き直し（バックフィル）
 
 どちらも本番への書き込みなので、ユーザーが実行する。
@@ -47,9 +47,9 @@ where r.race_status in ('no_race','partial_refund');
 
 期待値（2026-10-01 時点）は `25 / 83 / 162`。適用までに不成立・返還のレースが増えれば、数字も増える。
 
-### 2. マイグレーション114を適用する
+### 2. マイグレーション117を適用する
 
-Supabase Dashboard > SQL Editor で、`docs/db-migration/114_prediction_hits_exclude_no_race_refund.sql` の全文を実行する（BEGIN〜COMMIT を含む）。
+Supabase Dashboard > SQL Editor で、`docs/db-migration/117_prediction_hits_exclude_no_race_refund.sql` の全文を実行する（BEGIN〜COMMIT を含む）。
 
 確認（読み取りのみ）:
 
@@ -86,7 +86,7 @@ node --env-file=.env.local scripts/maintenance/backfill-refund-hit-flags.js --ap
 
 ## 元に戻す
 
-- トリガー: 114 の冒頭の「元に戻す」の SQL を実行する。関数と発火条件が 097 の状態に戻る。
+- トリガー: 117 の冒頭の「元に戻す」の SQL を実行する。関数と発火条件が 097 の状態に戻る。
 - 書き直した予想: 元の値には自動では戻らない。必要なら、旧規則での再判定（`race_status` を見ない判定）を別途行う。書き直すのは不成立・返還のレースの予想だけ（約260行）で、通常のレースには触れない。
 
 ## 対象外（このPRでは直さない）
