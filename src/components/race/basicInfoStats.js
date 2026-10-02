@@ -779,6 +779,28 @@ export function lastStartTiming(runs, { valueOf, markOf }) {
 
 /** 今節の平均STが通常値とこれだけ違えば「踏んでいる／慎重」と言い切る閾値（秒） */
 export const MEET_ST_DIFF_THRESHOLD = 0.01;
+
+/**
+ * 今節のSTの判定文に良し悪しの色（緑・赤）を付けるか（race-detail-ui-unify R2）。
+ *
+ * 判定文そのものは差 0.01 から出るが、色は差が 0.02 以上（表示の2桁で）かつ
+ * 今節3走以上のときだけ付ける。0.01 は計測の誤差の範囲で、初日の1走だけの差に
+ * 赤の「慎重」を付けると、準優の1号艇まで不必要に疑わせた（PR #1187 ファン評価1周目）
+ *
+ * @param {number|null} diff 今節の平均ST − 通常の平均ST（負なら早い）
+ * @param {number} meetN 今節の走数
+ * @returns {"good"|"bad"|null}
+ */
+export const MEET_ST_COLOR_THRESHOLD = 0.02;
+export const MEET_ST_COLOR_MIN_RUNS = 3;
+export function meetStVerdictTone(diff, meetN) {
+  if (diff === null || diff === undefined || !(meetN >= MEET_ST_COLOR_MIN_RUNS))
+    return null;
+  const d = Number(diff.toFixed(2));
+  if (d <= -MEET_ST_COLOR_THRESHOLD) return "good";
+  if (d >= MEET_ST_COLOR_THRESHOLD) return "bad";
+  return null;
+}
 /**
  * 今節の展示**順位**がこれだけ動けば「上向き／下向き」と言い切る閾値（位）。
  *
