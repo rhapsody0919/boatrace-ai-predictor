@@ -71,6 +71,18 @@ check(
   !/rgba\(201,\s*162,\s*39/.test(appCss),
 );
 
+// --brand-accent-primary（ライトでは濃い金 #6b500f）から作ると、払戻の最高額の行で文字の
+// コントラストが 4.37 と AA を割った（PR #1194 ファン評価2周目）。元の色と同じパレットの金にする
+check(
+  "結果タブの金の背景（1着の行・最速ST・払戻の最高額）は --ryujin-gold-500 から作る",
+  (
+    appCss.match(
+      /color-mix\(in srgb, var\(--ryujin-gold-500\) 1[026]%, transparent\)/g,
+    ) ?? []
+  ).length === 3 &&
+    !/\.rr-[a-z-]+[^{]*\{[^}]*--brand-accent-primary\) 1[026]%/.test(appCss),
+);
+
 if (failures.length > 0) {
   console.error(`\nverify-race-detail-color-tokens: ${failures.length}件失敗`);
   process.exit(1);
