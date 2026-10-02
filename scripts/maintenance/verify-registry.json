@@ -645,6 +645,11 @@
       "guards": "6艇の中の最良値の判定 bestOf（src/utils/bestOf.js、docs/design/race-detail-ui-unify R1）。同値の最良を全部返すこと、全艇同値と値なしは空、表示の桁で丸めて比べること（54.84 と 54.80、平均の浮動小数の誤差）、null と NaN を除くこと"
     },
     {
+      "script": "verify-disqualified-finish-marks.js",
+      "tier": "ci",
+      "guards": "失格（K の S0〜S2）の艇の着欄を結果ページから埋める処理（backfill-disqualified-finish-marks.js、BOA-582）が、失格の表記（転・落・沈・妨・エ・失）だけを書き、行を挿入せず、着欄が NULL の行だけを更新し（既存の値を上書きしない）、取得の間隔を空けて 429・503 で即中止すること"
+    },
+    {
       "script": "verify-kb-gap-fill.js",
       "tier": "ci",
       "guards": "K/Bファイルからの欠落の補完（backfill-kb-gaps.js・kbGapFill.js。BOA-271 の前提条件、Phase 1 項目3〜6）が、項目ごとに決めた列だけを書き（全行の列の集合がそろわなければ書かない＝一括 upsert の NULL 上書きを防ぐ）、既存の値を上書きせず、行の無いレースにだけ挿入し、フライングの ST を正の値で書くこと（本番の全期間が正。kbFileParser は負で返す）"
@@ -659,6 +664,11 @@
       "tier": "ci",
       "timeoutSec": 300,
       "guards": "不成立のレースと返還艇を含む勝式を、的中判定（buildPredictionHitUpdate・DBトリガー117・欠落の補完）と成績の集計（券種ごとの母数）から外すこと。トリガーとアプリの判定が同じ値を書くこと（PGlite で112を適用して突き合わせる）。BOA-544: 不成立のレースに的中が付き、返還艇の本命が「外れ」として成績に入っていた"
+    },
+    {
+      "script": "verify-race-outcome-filters.js",
+      "tier": "ci",
+      "guards": "不成立のレースを集計から外す判定を race_status（no_race）に統一すること（BOA-545）。旧フラグ is_no_race は全行 false で機能しておらず、scripts/daily の集計10本がそれで判定していた。scripts/daily・scripts/lib のコードが is_no_race を使わないことと、PostgREST の条件が078の IS DISTINCT FROM と同じ意味であることを検査する"
     }
   ]
 }

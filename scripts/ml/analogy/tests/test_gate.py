@@ -58,3 +58,17 @@ def test_small_degradation_against_reference_is_allowed():
     g = T.quality_gate(metrics(w=win(model=1.204), t2=topk(model=0.5015)), reference=ref)
     assert g["passed"]
     assert g["reference"]["version"] == "2026-10-02"
+
+
+def test_stale_reference_warns_but_does_not_fail():
+    """参照版は時間とともに見ていないデータが増え、評価が自然に悪くなる（ゲートが実質緩む）。
+    学習の終わりから半年を過ぎたら更新を促す（止めはしない。レビュー指摘 P2）。"""
+    ref = {"version": "2026-10-02", "win": 1.200, "top2": 0.50, "top3": 0.56, "age_days": 200}
+    g = T.quality_gate(metrics(), reference=ref)
+    assert g["passed"]
+    assert any("参照版" in w and "更新" in w for w in g["warnings"])
+
+
+def test_fresh_reference_has_no_warning():
+    ref = {"version": "2026-10-02", "win": 1.200, "top2": 0.50, "top3": 0.56, "age_days": 90}
+    assert T.quality_gate(metrics(), reference=ref)["warnings"] == []
