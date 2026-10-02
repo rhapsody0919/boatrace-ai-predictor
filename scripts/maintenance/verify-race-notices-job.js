@@ -12,8 +12,9 @@
  *   (e) 通知の書き込みは、重複を無視する upsert。二重の起動でも、同じ通知は増えない
  *   (f) 会場の並列度は上限つき。ソフトデッドラインを過ぎたら、以降の会場は取得しない
  *   (g) 従来の呼び出し（run(schedule, date)。CLI）は、オプション無しで、逐次・失敗はログのみ（挙動を変えない）
- *   (h) 配線: api/cron/race-notices.js の maxDuration とレジストリの一致、vercel.json の cron（10分間隔・
- *       JST 07:00〜23:59）、cron-job.org の既存の起動と二重にならない（リース・冪等）
+ *   (i) 夜1回: 対象日は ctx.targetDate。取得失敗・未着手の会場があれば処理済みにしない（補足の起動が取り直す）
+ *   (h) 配線: api/cron/race-notices.js の maxDuration とレジストリの一致、vercel.json の cron（夜1回 JST 22:30
+ *       と補足 23:00・23:30。2026-10-03 に10分ごとから変更）、cron-job.org の既存の起動と二重にならない（リース・冪等）
  *
  * 実行: node scripts/maintenance/verify-race-notices-job.js
  */
@@ -140,7 +141,7 @@ const raceRows = (date, venues) =>
     start_time: "10:30:00",
   }));
 
-const FIXED_NOW = new Date("2026-09-20T03:00:00Z"); // 2026-09-20 12:00 JST
+const FIXED_NOW = new Date("2026-09-20T14:00:00Z"); // 2026-09-20 23:00 JST（日次の指定 22:30 より後。補足の起動の時刻）
 const ok = (html) => new Response(html, { status: 200 });
 
 /** politeFetch の差し替え: 会場ごとの応答を返し、同時実行数の最大値を記録する */
@@ -240,7 +241,7 @@ const writes = (client, table) =>
     store: shadowStore,
     client: shadowClient,
     politeFetch: shadowFetch,
-    now: new Date("2017-12-24T03:00:00Z"),
+    now: new Date("2017-12-24T14:00:00Z"), // 23:00 JST（指定 22:30 より後）
   });
   const report = shadowStore.state.get("race_notices").last_report;
   check(
@@ -272,7 +273,7 @@ const writes = (client, table) =>
       tables: { races: raceRows("2017-12-24", [12]), racer_profiles: [] },
     }),
     politeFetch: stubFetch({}, () => ok(brokenHtml)),
-    now: new Date("2017-12-24T03:00:00Z"),
+    now: new Date("2017-12-24T14:00:00Z"), // 23:00 JST（指定 22:30 より後）
   });
   const brokenReport = brokenStore.state.get("race_notices").last_report;
   check(
@@ -296,7 +297,7 @@ const writes = (client, table) =>
     store: liveStore(),
     client: liveClient,
     politeFetch: liveFetch,
-    now: new Date("2017-12-24T03:00:00Z"),
+    now: new Date("2017-12-24T14:00:00Z"), // 23:00 JST（指定 22:30 より後）
   });
   const noteWrite = writes(liveClient, "race_special_notes")[0];
   check(
@@ -423,7 +424,7 @@ const writes = (client, table) =>
     store: liveStore(),
     client: notesWriteDown,
     politeFetch: stubFetch({}, () => ok(WITH_NOTICES)),
-    now: new Date("2017-12-24T03:00:00Z"),
+    now: new Date("2017-12-24T14:00:00Z"), // 23:00 JST（指定 22:30 より後）
   });
   check(
     "通知（race_special_notes）の書き込み失敗: 500。集計行は、通知の失敗と独立に書く（構造の成否の記録は残す）",
@@ -656,7 +657,7 @@ const writes = (client, table) =>
   const opts = {
     client: c3,
     politeFetch: stubFetch({}, () => ok(WITH_NOTICES)),
-    now: new Date("2017-12-24T03:00:00Z"),
+    now: new Date("2017-12-24T14:00:00Z"), // 23:00 JST（指定 22:30 より後）
   };
   const n1 = await runJob({ store: liveStore(), ...opts });
   const n2 = await runJob({ store: liveStore(), ...opts });
@@ -817,15 +818,77 @@ const writes = (client, table) =>
 }
 
 // ---------------------------------------------------------------------------
+// (i) 夜1回（2026-10-03）: 対象日は指定時刻から解決した日。取得に失敗した会場・着手しなかった会場があれば、
+//     対象日を処理済みにしない（補足の起動 23:00・23:30 が取り直す）
+// ---------------------------------------------------------------------------
+{
+  const info = (over) => async () => ({
+    venuesChecked: 2,
+    venuesFailed: [],
+    venuesNotAttempted: [],
+    notesParsed: 0,
+    rowsUnparsed: 0,
+    venuesWithUnparsedRows: [],
+    notesInserted: 0,
+    healthWritten: 2,
+    healthSkipped: 0,
+    digest: null,
+    capturedPages: [],
+    ...over,
+  });
+  const seen = [];
+  const ctx = {
+    targetDate: "2026-09-19",
+    now: () => new Date("2026-09-20T14:00:00Z"),
+    mode: "live",
+    client: null,
+    politeFetch: async () => new Response(""),
+    shouldStop: () => false,
+  };
+  const getSchedule = async (date) => {
+    seen.push(date);
+    return [{ venueCode: "01" }, { venueCode: "02" }];
+  };
+  const ok = await runRaceNoticesJob(ctx, {
+    getSchedule,
+    runInformation: info(),
+  });
+  const failed = await runRaceNoticesJob(ctx, {
+    getSchedule,
+    runInformation: info({
+      venuesFailed: [{ venueCode: "02", reason: "timeout" }],
+    }),
+  });
+  const notAttempted = await runRaceNoticesJob(ctx, {
+    getSchedule,
+    runInformation: info({ venuesNotAttempted: ["02"] }),
+  });
+  check(
+    "夜1回: 対象日は共通ラッパが解決した ctx.targetDate（壁時計の日付ではない）。全会場が取れれば処理済み、取得失敗・未着手の会場があれば処理済みにしない（incomplete）",
+    seen.every((d) => d === "2026-09-19") &&
+      ok.incomplete === false &&
+      failed.incomplete === true &&
+      notAttempted.incomplete === true,
+    show({
+      seen,
+      ok: ok.incomplete,
+      failed: failed.incomplete,
+      notAttempted: notAttempted.incomplete,
+    }),
+  );
+}
+
+// ---------------------------------------------------------------------------
 // (h) 配線
 // ---------------------------------------------------------------------------
 {
   const def = SCRAPE_JOBS.race_notices;
   check(
-    "レジストリ: race_notices は continuous（窓なし・ジョブ単位のリース）で、取得先ホスト boatrace.jp のブレーカーを見る。リースは cron の間隔（10分）より短い",
-    def?.kind === "continuous" &&
+    "レジストリ: race_notices は日次（22:30指定。2026-10-03 に10分ごとから夜1回へ）で、取得先ホスト boatrace.jp のブレーカーを見る。リースは補足の起動の間隔（30分）より短い",
+    def?.kind === "daily" &&
+      def.targetTimeJst === "22:30" &&
       def.hosts?.includes("boatrace.jp") &&
-      def.leaseSec < 600,
+      def.leaseSec < 1800,
     show(def),
   );
   const mod = await import("../../api/cron/race-notices.js");
@@ -848,7 +911,7 @@ const writes = (client, table) =>
   const vercel = JSON.parse(
     fs.readFileSync(new URL("../../vercel.json", import.meta.url), "utf8"),
   );
-  const cron = vercel.crons.find((c) => c.path === "/api/cron/race-notices");
+  const crons = vercel.crons.filter((c) => c.path === "/api/cron/race-notices");
   // UTC→JSTの起動時刻（分）に換算する
   const expand = (field, max) => {
     const out = new Set();
@@ -864,18 +927,21 @@ const writes = (client, table) =>
     }
     return out;
   };
-  const [min, hour] = (cron?.schedule ?? "").split(" ");
   const times = [];
-  for (const h of expand(hour ?? "", 23))
-    for (const m of expand(min ?? "", 59)) times.push(((h + 9) % 24) * 60 + m);
+  for (const cron of crons) {
+    const [min, hour] = (cron.schedule ?? "").split(" ");
+    for (const h of expand(hour ?? "", 23))
+      for (const m of expand(min ?? "", 59))
+        times.push(((h + 9) % 24) * 60 + m);
+  }
   times.sort((a, b) => a - b);
+  const hhmm = (t) =>
+    `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
   check(
-    `vercel.json: /api/cron/race-notices は JST 07:00〜23:50 の10分ごと（${times.length}回。07:00を含み、06:50・00:00は含まない）`,
-    times.length === (23 - 7 + 1) * 6 &&
-      times[0] === 7 * 60 &&
-      times.at(-1) === 23 * 60 + 50 &&
-      times.every((t, i) => i === 0 || t - times[i - 1] === 10),
-    `${times.length}回 ${times[0]}〜${times.at(-1)}`,
+    `vercel.json: /api/cron/race-notices は夜1回（JST 22:30）と補足（23:00・23:30）の3回だけ（${times.map(hhmm).join("・")}）。どれも指定時刻 22:30 から同じ対象日に解決される（日付をまたがない）`,
+    JSON.stringify(times.map(hhmm)) === '["22:30","23:00","23:30"]' &&
+      times.every((t) => t >= 22 * 60 + 30 && t < 24 * 60),
+    times.map(hhmm).join(","),
   );
   // リージョンは、2026-09-20にユーザー承認のうえ、api/cron/*のみsyd1へ変更済み（PR #747）。
   // 全関数に効くトップレベルの regions は使わない（画面用のAPIは対象外）
