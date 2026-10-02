@@ -576,6 +576,8 @@ input:focus-visible,
 .rr-row-head .rr-head-st,
 .rr-row-head .rr-head-time {
   text-align: right;
+  /* 「レースタイム」が375pxで「レースタ／イム」と2行に折れた（#1108 ファン評価1周目 P3） */
+  white-space: nowrap;
 }
 
 .rr-row-head + .rr-row {

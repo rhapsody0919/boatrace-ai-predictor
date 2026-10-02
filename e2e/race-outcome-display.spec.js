@@ -301,6 +301,22 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
       "レースタイム",
     ]);
 
+    // 375px で「レースタイム」が折れない（ファン評価1周目 P3）
+    await page.setViewportSize({ width: 375, height: 900 });
+    const timeHead = root.locator(".rr-row-head .rr-head-time");
+    const lines = await timeHead.evaluate((el) => {
+      const h = el.getBoundingClientRect().height;
+      const fontSize = parseFloat(getComputedStyle(el).fontSize);
+      return Math.round(h / (fontSize * 1.4));
+    });
+    expect(lines).toBeLessThanOrEqual(1);
+    const overflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+
     const rows = await readRows(root);
     expect(
       rows.map(({ pos, boat, label }) => `${pos}:${boat}:${label}`),
