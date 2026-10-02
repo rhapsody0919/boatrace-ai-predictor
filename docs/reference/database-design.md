@@ -75,7 +75,7 @@
 | `race_entries` | 表 | 303068 | race_id, boat_number | 22 | 4 | 121 | 使用中 |
 | `race_history_cache` | 表 | 1 | key | 1 | 1 | 2 | 使用中 |
 | `race_notices_health` | 表 | 238 | venue_code, check_date | 0 | 0 | 7 | 使用中 |
-| `race_odds` | 表 | 151638 | race_id, captured_at | 4 | 2 | 38 | 使用中 |
+| `race_odds` | 表 | 151661 | race_id, captured_at | 4 | 2 | 38 | 使用中 |
 | `race_odds_final` | 表 | 483 | race_id | 3 | 1 | 2 | 使用中 |
 | `race_original_exhibition` | 表 | 1253 | race_id | 1 | 1 | 5 | 使用中 |
 | `race_original_exhibition_values` | 表 | 23162 | race_id, boat_number, kind | 1 | 1 | 6 | 使用中 |
@@ -115,10 +115,10 @@
 | `st_course_baseline` | 表 | 24 | course, grade | 4 | 0 | 2 | 使用中 |
 | `top_start_stats` | 表 | 144 | id | 1 | 0 | 2 | 使用中 |
 | `user_visible_summary` | 表 | 0 | summary_id | 0 | 0 | 1 | 空（参照あり） |
-| `v_performance_comparison` | ビュー等 | 0 | — | 0 | 0 | 1 | 空（参照あり） |
-| `v_prediction_performance` | ビュー等 | 933 | — | 0 | 0 | 1 | 使用中 |
-| `v_production_models` | 表 | 1 | model_id | 0 | 0 | 1 | 使用中 |
-| `v_todays_recommendations` | 表 | 672 | race_id | 0 | 0 | 0 | コード参照なし |
+| `v_performance_comparison` | ビュー | 0 | — | 0 | 0 | 1 | 空（参照あり） |
+| `v_prediction_performance` | ビュー | 933 | — | 0 | 0 | 1 | 使用中 |
+| `v_production_models` | ビュー | 1 | model_id | 0 | 0 | 2 | 使用中 |
+| `v_todays_recommendations` | ビュー | 672 | race_id | 0 | 0 | 0 | コード参照なし |
 | `venue_course_technique_baseline` | 表 | 612 | venue_code, race_grade, course | 2 | 1 | 4 | 使用中 |
 | `venue_entry_course_stats` | 表 | 27655 | race_id, waku, entry_course | 0 | 1 | 11 | 使用中 |
 | `venue_grade_boat_stats` | 表 | 518 | venue_code, race_grade, boat_number | 2 | 0 | 1 | 使用中 |

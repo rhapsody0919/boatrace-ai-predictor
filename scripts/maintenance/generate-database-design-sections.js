@@ -142,8 +142,9 @@ function renderUsage(defs, rowsByTable, refs, generatedAt) {
       .filter(([, c]) => isPk(c))
       .map(([k]) => k)
       .join(", ");
-    // PK を持たないものはビュー（PostgREST は表の PK だけを注記する）
-    const kind = pk ? "表" : "ビュー等";
+    // ビューは命名規約の v_ 接頭辞で見分ける。PostgREST は単純なビューに元の表の PK を引き継いで
+    // 注記するため、PK の有無では区別できない（v_production_models 等）
+    const kind = name.startsWith("v_") ? "ビュー" : pk ? "表" : "ビュー等";
     const byDir = refs.get(name) ?? {};
     const counts = CODE_DIRS.map((d) => byDir[d]?.size ?? 0);
     const total = counts.reduce((a, b) => a + b, 0);
