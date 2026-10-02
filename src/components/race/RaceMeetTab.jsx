@@ -704,8 +704,13 @@ function RaceMeetTab({
                 ranking.length - rankedOnly.length + absentOnly.length;
               // まだ1走もしていない選手も順位にまだ入らない。書かないと初日に
               // 「48人（対象44人・1人を除く）」と合わなかった（BOA-690）
-              // 全員がまだ走っていない（初日の1R等）なら「順位の対象は0人」と書かない
-              if (rankedOnly.length === 0 && notYetStarted > 0)
+              // 全員がまだ走っていない（初日の1R等）なら「順位の対象は0人」と書かない。
+              // 初戦を欠場した選手がいれば「全員が初戦」は誤りなので、従来の書き方に戻す
+              if (
+                rankedOnly.length === 0 &&
+                excluded === 0 &&
+                notYetStarted > 0
+              )
                 return t(
                   `meetTab.compareSub${seriesSplit ? "Series" : ""}AllNotYet`,
                   { all: entrantCount },
