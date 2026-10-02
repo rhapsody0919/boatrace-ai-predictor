@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "./supabaseClient";
+import { stDeviation } from "../utils/stDeviation.js";
 import { isPlaceHit, isShowHit } from "../../scripts/lib/hitCalculator.js";
 import {
   extractVenueCodeFromRaceId,
@@ -4887,9 +4888,9 @@ export const supabaseDataService = {
         const key = `${e.race_id}-${e.boat_number}`;
         const actual = actualByKey.get(key);
         const exhibition = exhibitionByKey.get(key);
-        if (actual === undefined || exhibition === undefined) return;
-
-        const deviation = Math.abs(actual - exhibition);
+        // 欠場艇の行（ST が NULL）・展示STの無い走は比べない（stDeviation が null）
+        const deviation = stDeviation(actual, exhibition);
+        if (deviation === null) return;
         if (!deviationsByRacer.has(e.racer_id)) {
           deviationsByRacer.set(e.racer_id, []);
         }
@@ -4978,9 +4979,9 @@ export const supabaseDataService = {
           const key = `${e.race_id}-${e.boat_number}`;
           const actual = actualByKey.get(key);
           const exhibition = exhibitionByKey.get(key);
-          if (actual === undefined || exhibition === undefined) return;
-
-          const deviation = Math.abs(actual - exhibition);
+          // 欠場艇の行（ST が NULL）・展示STの無い走は比べない（stDeviation が null）
+          const deviation = stDeviation(actual, exhibition);
+          if (deviation === null) return;
           if (!byDate.has(e.race_date)) {
             byDate.set(e.race_date, []);
           }
