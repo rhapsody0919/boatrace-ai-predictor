@@ -40,6 +40,7 @@ import {
   diffFromBaseline,
   expectedBreakoutCount,
 } from "../../utils/courseBaseline";
+import { bestOf } from "../../utils/bestOf";
 import TermHintButton from "./TermHintButton";
 import FlyingBadge from "./FlyingBadge";
 import "./RaceStConsiderationCard.css";
@@ -47,12 +48,17 @@ import "./RaceStConsiderationCard.css";
 /** 差の表示（+12.1 / −10.6）。符号は全角マイナスにせずCSSで色を分ける */
 function formatDiff(diff) {
   if (diff === null || diff === undefined) return null;
+  const abs = Math.abs(diff).toFixed(1);
+  // 表示の桁で0になる差に符号を付けない（「−0.0」と出ていた）
+  if (Number(abs) === 0) return abs;
   const sign = diff > 0 ? "+" : "−";
-  return `${sign}${Math.abs(diff).toFixed(1)}`;
+  return `${sign}${abs}`;
 }
 
-function diffClass(isBetter) {
+function diffClass(isBetter, diff) {
   if (isBetter === null || isBetter === undefined) return "";
+  // 「0.0」と出る差には色を付けない（記号の無い緑・赤にしない。R2）
+  if (Number(Math.abs(diff).toFixed(1)) === 0) return "";
   return isBetter ? " is-better" : " is-worse";
 }
 
@@ -105,6 +111,39 @@ function RaceStConsiderationCard({
   });
 
   const loading = columns.every((c) => c.stats === null);
+
+  // 6艇の中の最良（同値は全部）に金枠（race-detail-ui-unify R1、モック承認済み）。
+  // 走数が少ない艇（⚠）は比べない（基本情報の横棒と同じ。2走で安定率100%のような
+  // 値に金枠が付くのを避ける）。抜出は1コース（内に艇がいない）を外す。表示と同じ桁
+  const comparable = columns.filter(
+    (c) => (c.stats?.n ?? 0) >= SMALL_SAMPLE_THRESHOLD,
+  );
+  const bestStable = bestOf(
+    comparable.map((c) => ({
+      boat: c.player.number,
+      value: c.stats?.stableRate ?? null,
+    })),
+    "max",
+    { digits: 1 },
+  );
+  const bestBreakout = bestOf(
+    comparable
+      .filter((c) => c.course !== 1)
+      .map((c) => ({
+        boat: c.player.number,
+        value: c.stats?.breakoutCount ?? null,
+      })),
+    "max",
+  );
+  const bestLate = bestOf(
+    comparable.map((c) => ({
+      boat: c.player.number,
+      value: c.stats?.lateRate ?? null,
+    })),
+    "min",
+    { digits: 1 },
+  );
+  const bestCls = (set, boat) => (set.has(boat) ? " ind-best" : "");
 
   // --- 折りたたみ（ST分布 / ST履歴）用の派生値 ---
   const detailColumn =
@@ -239,14 +278,19 @@ function RaceStConsiderationCard({
                     (stats?.n ?? 0) > 0 &&
                     (stats?.n ?? 0) < SMALL_SAMPLE_THRESHOLD;
                   return (
-                    <td key={player.number} className="rsc-cell">
+                    <td
+                      key={player.number}
+                      className={`rsc-cell${bestCls(bestStable, player.number)}`}
+                    >
                       <span
                         className={`rsc-value${small ? " is-small-sample" : ""}`}
                       >
                         {value === null ? "—" : value.toFixed(1)}
                       </span>
                       {diff !== null && (
-                        <span className={`rsc-diff${diffClass(isBetter)}`}>
+                        <span
+                          className={`rsc-diff${diffClass(isBetter, diff)}`}
+                        >
                           {formatDiff(diff)}
                         </span>
                       )}
@@ -289,13 +333,34 @@ function RaceStConsiderationCard({
                     cell?.breakout_rate ?? null,
                     stats?.n ?? 0,
                   );
+                  // 平均（期待回数）との差。多いほど良い。期待回数が1回未満で0回の
+                  // ときは色を付けない（外のコースは平均0.2〜0.4回で、0回が普通。
+                  // 赤くすると「抜け出せない選手」と誤読される）
+                  const breakoutDiff =
+                    count === null || expected === null
+                      ? null
+                      : count - expected;
+                  const breakoutBetter =
+                    breakoutDiff === null || (count === 0 && expected < 1)
+                      ? null
+                      : breakoutDiff > 0;
                   return (
-                    <td key={player.number} className="rsc-cell">
+                    <td
+                      key={player.number}
+                      className={`rsc-cell${bestCls(bestBreakout, player.number)}`}
+                    >
                       <span className="rsc-value">
                         {count === null
                           ? "—"
                           : t("stConsideration.times", { n: count })}
                       </span>
+                      {breakoutDiff !== null && (
+                        <span
+                          className={`rsc-diff${diffClass(breakoutBetter, breakoutDiff)}`}
+                        >
+                          {formatDiff(breakoutDiff)}
+                        </span>
+                      )}
                       {expected !== null && (
                         <span className="rsc-note-small">
                           {t("stConsideration.expectedTimes", {
@@ -325,14 +390,19 @@ function RaceStConsiderationCard({
                     (stats?.n ?? 0) > 0 &&
                     (stats?.n ?? 0) < SMALL_SAMPLE_THRESHOLD;
                   return (
-                    <td key={player.number} className="rsc-cell">
+                    <td
+                      key={player.number}
+                      className={`rsc-cell${bestCls(bestLate, player.number)}`}
+                    >
                       <span
                         className={`rsc-value${small ? " is-small-sample" : ""}`}
                       >
                         {value === null ? "—" : value.toFixed(1)}
                       </span>
                       {diff !== null && (
-                        <span className={`rsc-diff${diffClass(isBetter)}`}>
+                        <span
+                          className={`rsc-diff${diffClass(isBetter, diff)}`}
+                        >
                           {formatDiff(diff)}
                         </span>
                       )}

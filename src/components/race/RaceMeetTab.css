@@ -403,7 +403,7 @@
 /* 準優の目安に届くセル。公式は「当確」を赤で塗るが、こちらは目安が推定な
    ので断定はせず、届く見込みという意味の色にとどめる */
 .rmt-forecast-table td.is-in-border {
-  background: var(--color-success-bg, rgba(67, 160, 71, 0.16));
+  background: var(--color-success-bg);
   color: var(--text-primary);
   font-weight: var(--font-weight-bold);
 }

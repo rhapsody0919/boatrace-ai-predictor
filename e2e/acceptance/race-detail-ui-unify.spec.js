@@ -6,7 +6,7 @@
 // 実装された FR を PENDING から外して有効にする。
 import { test, expect } from "../fixtures.js";
 
-const PENDING = new Set(["FR-1", "FR-3", "FR-4", "FR-5", "FR-6", "FR-7"]);
+const PENDING = new Set(["FR-1", "FR-3", "FR-5", "FR-6", "FR-7"]);
 const describeFR = (fr, title, body) =>
   (PENDING.has(fr) ? test.describe.fixme : test.describe)(
     `[${fr}] ${title}`,
@@ -163,7 +163,9 @@ async function installHelpers(page) {
       const w = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
       for (let n = w.nextNode(); n; n = w.nextNode()) {
         const t = n.textContent
-          .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+          .replace(/[０-９]/g, (c) =>
+            String.fromCharCode(c.charCodeAt(0) - 0xfee0),
+          )
           .replace(/(^|[^A-Za-z0-9])(?:[AB][12]|[FL]\d+)(?![0-9.])/g, "$1 ");
         if (/\d/.test(t)) return n.parentElement;
       }
@@ -261,9 +263,12 @@ async function collectBoatLines(page) {
     const rowCount = await rows.count();
     const matrix = [];
     for (let r = 0; r < rowCount; r++) {
+      // 行見出しを <th scope="row"> で持つ表（ST考察等の「見出し＋6艇」）は、
+      // getByRole("cell") だと見出しが落ちて6セルになり、6艇の行と認識されなかった。
+      // 行見出しも1セルとして数える
       const cells = await rows
         .nth(r)
-        .getByRole("cell")
+        .locator(':scope > th[scope="row"], :scope > td')
         .evaluateAll((els) => els.map((e) => window.__acc.inspect(e)));
       if (cells.length > 0) matrix.push(cells);
     }
@@ -271,10 +276,17 @@ async function collectBoatLines(page) {
       matrix.length === 6 &&
       matrix.every((row) => row.length === matrix[0].length)
     ) {
+      // 列の名前は列見出しの文字（「前検」等で列を選べるように）。無ければ番号
+      const heads = await table
+        .locator("thead tr")
+        .first()
+        .locator(":scope > th")
+        .allTextContents()
+        .catch(() => []);
       for (let c = 0; c < matrix[0].length; c++) {
         lines.push({
           table: t,
-          label: `列${c + 1}`,
+          label: heads[c]?.trim() || `列${c + 1}`,
           cells: matrix.map((row) => row[c]),
         });
       }
@@ -322,20 +334,25 @@ async function expectBestRuleHolds(page) {
   return lines;
 }
 
-// R2: 緑・赤は記号（↑↓・＋−）付きでのみ使う
+// R2: 緑・赤は記号（↑↓・＋−）付きでのみ使う。
+// 低いほど良い指標（出遅率等）は「＋」が悪い＝赤、「−」が良い＝緑になるので、
+// 記号の向きは問わず「記号があるか」だけを見る（モックの ST考察の出遅率 +0.1 が赤）。
+// 着順の列は R2 の対象外。spec FR-4 が「1着＝金、5・6着＝赤」（直近の走の帯と同じ）と
+// 明示している（基準との差ではなく着順そのものの色）
 function signViolations(lines) {
   const out = [];
   for (const line of lines) {
     for (const c of line.cells) {
+      if (/^着/.test(c.col ?? "")) continue;
       if (
         c.good &&
-        !/[↑▲+＋]/.test(c.text) &&
+        !/[↑▲+＋↓▼\-−－]/.test(c.text) &&
         !(parseNum(c.text) >= 100 && /%/.test(c.text))
       )
         out.push(
           `記号の無い緑: 表${line.table + 1}「${line.label}」 "${c.text}"`,
         );
-      if (c.bad && !/[↓▼\-−－]/.test(c.text))
+      if (c.bad && !/[↓▼\-−－↑▲+＋]/.test(c.text))
         out.push(
           `記号の無い赤: 表${line.table + 1}「${line.label}」 "${c.text}"`,
         );
@@ -353,9 +370,17 @@ async function collectAllCells(page) {
   for (let t = 0; t < n; t++) {
     const table = tables.nth(t);
     if (!(await table.isVisible())) continue;
-    const cells = await table
-      .getByRole("cell")
-      .evaluateAll((els) => els.map((e) => window.__acc.inspect(e)));
+    // 列見出しの文字を添える（着順の列を R2 の検査から外すため。下の signViolations）
+    const cells = await table.getByRole("cell").evaluateAll((els) =>
+      els.map((e) => {
+        const head = e.closest("table")?.querySelector("thead tr");
+        const th = head?.children[e.cellIndex];
+        return {
+          ...window.__acc.inspect(e),
+          col: (th?.textContent ?? "").trim(),
+        };
+      }),
+    );
     out.push({ table: t, label: "全セル", cells });
   }
   return out;
