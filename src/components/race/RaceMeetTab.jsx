@@ -34,6 +34,7 @@ import {
   getRecentRaces,
   lastStartTiming,
   MEET_ST_DIFF_THRESHOLD,
+  meetStVerdictTone,
 } from "./basicInfoStats";
 import {
   buildMeetRanking,
@@ -421,7 +422,10 @@ function RaceMeetTab({
 
   // 6艇の今節の最良（同値は全部）に金枠を付ける（race-detail-ui-unify R1、モック承認済み）。
   // 得点率は高いほど、節内順位・前検タイムは低いほど良い。表示と同じ桁で比べる。
-  // 欠場・未出走の行は得点率・順位が出ないので候補に入らない
+  // 欠場・未出走の行は得点率・順位が出ないので候補に入らない。
+  // 走数が少ない（⚠）艇の得点率・順位は比べるが、最良でも金枠を付けない（繰り下げもしない）。
+  // 初日に1走だけの「⚠10.00」が最良に光っていた（PR #1187 ファン評価1周目。
+  // 基本情報の横棒と同じく、当てにならない値を最良として光らせない）
   const compareRows = sortedPlayers
     .map((p) => ({
       boat: p.number,
@@ -429,12 +433,20 @@ function RaceMeetTab({
     }))
     .filter((x) => x.row);
   const bestRate = bestOf(
-    compareRows.map(({ boat, row }) => ({ boat, value: row.rate })),
+    compareRows.map(({ boat, row }) => ({
+      boat,
+      value: row.rate,
+      hidden: row.runs < MEET_SMALL_SAMPLE_RUNS,
+    })),
     "max",
     { digits: 2 },
   );
   const bestRank = bestOf(
-    compareRows.map(({ boat, row }) => ({ boat, value: row.rank })),
+    compareRows.map(({ boat, row }) => ({
+      boat,
+      value: row.rank,
+      hidden: row.runs < MEET_SMALL_SAMPLE_RUNS,
+    })),
     "min",
   );
   const bestPretest = bestOf(
@@ -689,6 +701,10 @@ function RaceMeetTab({
           </table>
           <p className="rmt-hint">{t("meetTab.rowHint")}</p>
           <p className="rmt-sub">
+            {/* 金枠の意味（PR #1187 ファン評価1周目: 説明がどこにも無かった） */}
+            {bestRate.size + bestRank.size + bestPretest.size > 0 && (
+              <>{t("meetTab.bestLegend")} </>
+            )}
             {ranking
               .filter(inTable)
               .some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS) && (
@@ -1280,14 +1296,14 @@ function RaceMeetTab({
                         n: st.meetN,
                         base: st.baseAvg === null ? "—" : st.baseAvg.toFixed(2),
                       })}{" "}
-                      {/* 通常より早い＝緑、遅い＝赤（R2）。差の数字に −/+ が付く */}
+                      {/* 通常より早い＝緑、遅い＝赤（R2）。差の数字に −/+ が付く。
+                          小さな差・走数の少ないときは色を付けない（meetStVerdictTone） */}
                       <span
                         className={`rmt-verdict${
-                          st.diff <= -MEET_ST_DIFF_THRESHOLD
-                            ? " ind-good"
-                            : st.diff >= MEET_ST_DIFF_THRESHOLD
-                              ? " ind-bad"
-                              : ""
+                          {
+                            good: " ind-good",
+                            bad: " ind-bad",
+                          }[meetStVerdictTone(st.diff, st.meetN)] ?? ""
                         }`}
                       >
                         {st.diff <= -MEET_ST_DIFF_THRESHOLD

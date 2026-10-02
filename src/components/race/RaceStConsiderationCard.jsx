@@ -40,7 +40,6 @@ import {
   diffFromBaseline,
   expectedBreakoutCount,
 } from "../../utils/courseBaseline";
-import { bestOf } from "../../utils/bestOf";
 import TermHintButton from "./TermHintButton";
 import FlyingBadge from "./FlyingBadge";
 import "./RaceStConsiderationCard.css";
@@ -112,42 +111,10 @@ function RaceStConsiderationCard({
 
   const loading = columns.every((c) => c.stats === null);
 
-  // 6艇の中の最良（同値は全部）に金枠（race-detail-ui-unify R1、モック承認済み）。
-  // 走数が少ない艇（⚠）は比べない（基本情報の横棒と同じ。2走で安定率100%のような
-  // 値に金枠が付くのを避ける）。抜出は1コース（内に艇がいない）を外す。表示と同じ桁
-  const comparable = columns.filter(
-    (c) => (c.stats?.n ?? 0) >= SMALL_SAMPLE_THRESHOLD,
-  );
-  const bestStable = bestOf(
-    comparable.map((c) => ({
-      boat: c.player.number,
-      value: c.stats?.stableRate ?? null,
-    })),
-    "max",
-    { digits: 1 },
-  );
-  const bestBreakout = bestOf(
-    comparable
-      .filter((c) => c.course !== 1)
-      .map((c) => ({
-        boat: c.player.number,
-        value: c.stats?.breakoutCount ?? null,
-      })),
-    "max",
-  );
-  const bestLate = bestOf(
-    comparable.map((c) => ({
-      boat: c.player.number,
-      value: c.stats?.lateRate ?? null,
-    })),
-    "min",
-    { digits: 1 },
-  );
-  // 平均より悪い（差が赤）のセルには金枠を付けない。6艇で最も良くても、同じコース・
-  // 同じ級別の平均に届いていない値を「最良」と光らせると、赤の差と食い違う
-  // （調子の矢印と同じ扱い。plan §5）。次に良い艇へ繰り下げもしない
-  const bestCls = (set, boat, isBetter) =>
-    set.has(boat) && isBetter !== false ? " ind-best" : "";
+  // このカードには6艇の最良の金枠を付けない（race-detail-ui-unify plan §6）。
+  // 安定率・出遅率・抜出はコースで水準が大きく違い（内ほど安定率が高く出遅率が低い）、
+  // 生の値の最良はほぼ毎回内側の艇に付く。カードの見方は「同じコース・同じ級別の
+  // 平均との差」なので、良し悪しは差の緑・赤で示す（PR #1187 ファン評価1周目 P1）
 
   // --- 折りたたみ（ST分布 / ST履歴）用の派生値 ---
   const detailColumn =
@@ -282,10 +249,7 @@ function RaceStConsiderationCard({
                     (stats?.n ?? 0) > 0 &&
                     (stats?.n ?? 0) < SMALL_SAMPLE_THRESHOLD;
                   return (
-                    <td
-                      key={player.number}
-                      className={`rsc-cell${bestCls(bestStable, player.number, isBetter)}`}
-                    >
+                    <td key={player.number} className="rsc-cell">
                       <span
                         className={`rsc-value${small ? " is-small-sample" : ""}`}
                       >
@@ -349,10 +313,7 @@ function RaceStConsiderationCard({
                       ? null
                       : breakoutDiff > 0;
                   return (
-                    <td
-                      key={player.number}
-                      className={`rsc-cell${bestCls(bestBreakout, player.number, breakoutBetter)}`}
-                    >
+                    <td key={player.number} className="rsc-cell">
                       <span className="rsc-value">
                         {count === null
                           ? "—"
@@ -394,10 +355,7 @@ function RaceStConsiderationCard({
                     (stats?.n ?? 0) > 0 &&
                     (stats?.n ?? 0) < SMALL_SAMPLE_THRESHOLD;
                   return (
-                    <td
-                      key={player.number}
-                      className={`rsc-cell${bestCls(bestLate, player.number, isBetter)}`}
-                    >
+                    <td key={player.number} className="rsc-cell">
                       <span
                         className={`rsc-value${small ? " is-small-sample" : ""}`}
                       >

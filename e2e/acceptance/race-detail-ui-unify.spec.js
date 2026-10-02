@@ -710,6 +710,9 @@ describeFR("FR-4", "今節・枠別情報タブ", () => {
       await openRaceDetail(page);
       await openTab(page, tabName);
       const lines = await expectBestRuleHolds(page);
+      // 枠別情報は金枠を付ける6艇比較が無い（ST考察は平均との差で示す。コース別成績は
+      // 1艇の表。plan §6）。規則の破れが無いことだけを確かめる
+      if (tabName === "枠別情報") return;
       const withSpread = lines.filter((l) => {
         const nums = l.cells
           .map((c) => parseNum(c.text))
@@ -747,6 +750,25 @@ describeFR("FR-4", "今節・枠別情報タブ", () => {
         l.cells.some((c) => c.best),
         `前検タイム「${l.label}」に強調が無い`,
       ).toBe(true);
+    }
+  });
+
+  // plan §6（PR #1187 ファン評価1周目 P1）: ST考察の指標はコースで水準が違い、生の値の
+  // 最良はほぼ内側の艇に付く。カードの見方は「同コース・同級別の平均との差」なので金枠を付けない
+  test("[plan §6] 枠別情報のST考察には最良の金枠を付けない", async ({
+    page,
+  }) => {
+    await openRaceDetail(page);
+    await openTab(page, "枠別情報");
+    const lines = (await collectBoatLines(page)).filter((l) =>
+      /安定率|抜出|出遅率/.test(l.label),
+    );
+    test.skip(lines.length === 0, "ST考察の表が見つからない");
+    for (const l of lines) {
+      expect(
+        l.cells.some((c) => c.best),
+        `ST考察「${l.label}」に金枠がある`,
+      ).toBe(false);
     }
   });
 

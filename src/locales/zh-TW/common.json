@@ -934,6 +934,7 @@
     "rankTiedTitle": "同分{{tied}}人",
     "pretestCell": "{{time}}（第{{rank}}）",
     "rowHint": "點選該列，下方詳情會切換為該選手。",
+    "bestLegend": "金框為6艇中最佳的數值（同值全部標示；場數少的⚠數值不標示）。",
     "classTitle": "級別",
     "finishSeparator": "-",
     "finishDq": "失格",

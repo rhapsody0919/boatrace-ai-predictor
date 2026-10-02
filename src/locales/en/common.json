@@ -939,6 +939,7 @@
     "rankTiedTitle": "{{tied}} racers tied",
     "pretestCell": "{{time}} (#{{rank}})",
     "rowHint": "Tap a row to switch the details below to that racer.",
+    "bestLegend": "A gold frame marks the best value among the six boats (all ties are marked; ⚠ values with few runs are not).",
     "classTitle": "Class",
     "finishSeparator": "-",
     "finishDq": "DQ",
