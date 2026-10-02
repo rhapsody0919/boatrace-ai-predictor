@@ -671,16 +671,16 @@
       "error": "기여도 데이터를 불러오지 못했습니다",
       "themes": {
         "venueCourse": {
-          "name": "경주장×번호・진입",
+          "name": "경주장×번호, 진입",
           "short": "경주장×번호"
         },
         "racerRecord": {
-          "name": "선수・기본 성적",
+          "name": "선수, 기본 성적",
           "short": "기본 성적"
         },
         "startExhibition": {
-          "name": "ST・직전 정보",
-          "short": "ST・직전"
+          "name": "ST, 직전 정보",
+          "short": "ST, 직전"
         },
         "machine": {
           "name": "기력",
@@ -691,7 +691,7 @@
           "short": "환경"
         },
         "racerProfile": {
-          "name": "선수・속성",
+          "name": "선수, 속성",
           "short": "속성"
         }
       },
@@ -703,10 +703,10 @@
         },
         "racerRecord": {
           "class": "등급",
-          "national": "전국 승률・연대율",
-          "local": "현지 승률・연대율",
+          "national": "전국 승률, 연대율",
+          "local": "현지 승률, 연대율",
           "recent": "최근 30주 성적",
-          "boat1": "1번 보트의 등급・승률"
+          "boat1": "1번 보트의 등급, 승률"
         },
         "startExhibition": {
           "exhibitionTime": "전시 타임",
@@ -718,7 +718,7 @@
         },
         "environment": {
           "weather": "날씨",
-          "wind": "풍향・풍속",
+          "wind": "풍향, 풍속",
           "wave": "파고",
           "grade": "등급",
           "round": "라운드",
@@ -727,12 +727,12 @@
         "racerProfile": {
           "age": "나이",
           "weight": "체중",
-          "branch": "지부・홈"
+          "branch": "지부, 홈"
         }
       },
       "loading": "불러오는 중…",
-      "scope": "{{venue}}・{{grade}}・{{round}}의 과거 레이스",
-      "listSeparator": "・",
+      "scope": "{{venue}}, {{grade}}, {{round}}의 과거 레이스",
+      "listSeparator": ", ",
       "period": "{{from}}~{{to}}",
       "listAllBoats": "테마별(전체 보트)",
       "listAllBoatsCompare": "테마별(전체 보트. 번호별 값은 위 표)"
