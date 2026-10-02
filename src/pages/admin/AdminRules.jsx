@@ -7,10 +7,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   getTodaysMatchingRaces,
-  getRulePerformanceByVenue,
   getAvailableVenues,
   getBetTypeName,
-  getReliabilityName,
   getVenueName
 } from '../../services/ruleMatchService'
 import { getRuleApplicationHistory } from '../../services/adminRuleService'
@@ -43,7 +41,7 @@ function AdminRules() {
   const [historyData, setHistoryData] = useState([])
   const [historyTotal, setHistoryTotal] = useState(0)
   const [selectedVenue, setSelectedVenue] = useState('all')
-  const [venuePerformance, setVenuePerformance] = useState(null)
+  const [venuePerformance, setVenuePerformance] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -78,13 +76,6 @@ function AdminRules() {
     loadInitialData()
   }, [])
 
-  // 会場変更時のデータ読み込み
-  useEffect(() => {
-    if (activeTab === 'venue' && selectedVenue !== 'all') {
-      loadVenuePerformance(selectedVenue)
-    }
-  }, [selectedVenue, activeTab])
-
   // 履歴タブ切り替え時のデータ読み込み
   useEffect(() => {
     if (activeTab === 'history') {
@@ -106,20 +97,13 @@ function AdminRules() {
       setOverallPerformance(performance.overall)
       setTodaysRaces(todaysData)
       setWeeklyData(performance.weekly)
+      // 会場別タブの成績カードもこの1回の取得から出す（会場を切り替えても再取得しない。BOA-574）
+      setVenuePerformance(performance.byVenue)
     } catch (err) {
       console.error('データ読み込みエラー:', err)
       setError(errorMessageOf(err))
     } finally {
       setLoading(false)
-    }
-  }
-
-  async function loadVenuePerformance(venueCode) {
-    try {
-      const data = await getRulePerformanceByVenue(venueCode)
-      setVenuePerformance(data)
-    } catch (err) {
-      console.error('会場別データ読み込みエラー:', err)
     }
   }
 
@@ -223,7 +207,7 @@ function AdminRules() {
             </span>
           </div>
           <div className="summary-detail">
-            レース数: {overallPerformance.samples} / 的中数: {overallPerformance.hits} ({overallPerformance.hitRate}%)
+            対象件数: {overallPerformance.samples} / 的中数: {overallPerformance.hits} ({overallPerformance.hitRate}%)
           </div>
         </div>
       )}
@@ -257,7 +241,7 @@ function AdminRules() {
             venues={venues}
             selectedVenue={selectedVenue}
             onVenueChange={setSelectedVenue}
-            venuePerformance={venuePerformance}
+            venueTotal={venuePerformance[selectedVenue]}
             allRules={allRules}
           />
         )}
@@ -375,7 +359,7 @@ function OverviewTab({ rules, sortKey, sortDesc, onSort, weeklyData }) {
 }
 
 // 会場別タブ
-function VenueTab({ venues, selectedVenue, onVenueChange, venuePerformance, allRules }) {
+function VenueTab({ venues, selectedVenue, onVenueChange, venueTotal, allRules }) {
   // 会場別に集計したルール
   const venueRules = useMemo(() => {
     if (selectedVenue === 'all') return allRules
@@ -394,26 +378,26 @@ function VenueTab({ venues, selectedVenue, onVenueChange, venuePerformance, allR
         </select>
       </div>
 
-      {selectedVenue !== 'all' && venuePerformance && (
+      {selectedVenue !== 'all' && venueTotal && (
         <div className="venue-summary">
           <h3>{getVenueName(selectedVenue)} の運用成績</h3>
           <div className="venue-stats">
             <div className="stat-item">
-              <span className="stat-label">レース数</span>
-              <span className="stat-value">{venuePerformance.total.samples}</span>
+              <span className="stat-label">対象件数</span>
+              <span className="stat-value">{venueTotal.samples}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">的中数</span>
-              <span className="stat-value">{venuePerformance.total.hits}</span>
+              <span className="stat-value">{venueTotal.hits}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">的中率</span>
-              <span className="stat-value">{venuePerformance.total.hitRate}%</span>
+              <span className="stat-value">{venueTotal.hitRate}%</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">回収率</span>
-              <span className={`stat-value recovery ${venuePerformance.total.recovery >= 100 ? 'positive' : 'negative'}`}>
-                {venuePerformance.total.recovery}%
+              <span className={`stat-value recovery ${venueTotal.recovery >= 100 ? 'positive' : 'negative'}`}>
+                {venueTotal.recovery}%
               </span>
             </div>
           </div>
@@ -468,6 +452,42 @@ function VenueTab({ venues, selectedVenue, onVenueChange, venuePerformance, allR
 
 // 本日タブ
 function TodayTab({ races }) {
+  // hooks は早期 return より前で毎回同じ順に呼ぶ（rules-of-hooks）。races が空・null のときは空の集計になる
+  // 会場ごとにグループ化
+  const racesByVenue = useMemo(() => {
+    const grouped = {}
+    for (const race of races ?? []) {
+      if (!grouped[race.venueCode]) {
+        grouped[race.venueCode] = {
+          venueCode: race.venueCode,
+          venueName: race.venueName,
+          races: []
+        }
+      }
+      grouped[race.venueCode].races.push(race)
+    }
+    return Object.values(grouped).sort((a, b) => a.venueCode.localeCompare(b.venueCode))
+  }, [races])
+
+  // 本日の集計
+  const todaySummary = useMemo(() => {
+    let total = 0
+    let hits = 0
+    let payout = 0
+    for (const race of races ?? []) {
+      if (race.hitInfo) {
+        total++
+        if (race.hitInfo.hit) {
+          hits++
+          payout += race.hitInfo.payout
+        }
+      }
+    }
+    const investment = total * 100
+    const recovery = investment > 0 ? Math.round((payout / investment) * 100) : 0
+    return { total, hits, investment, payout, recovery }
+  }, [races])
+
   if (!races || races.length === 0) {
     return (
       <div className="today-tab">
@@ -477,41 +497,6 @@ function TodayTab({ races }) {
       </div>
     )
   }
-
-  // 会場ごとにグループ化
-  const racesByVenue = useMemo(() => {
-    const grouped = {}
-    races.forEach(race => {
-      if (!grouped[race.venueCode]) {
-        grouped[race.venueCode] = {
-          venueCode: race.venueCode,
-          venueName: race.venueName,
-          races: []
-        }
-      }
-      grouped[race.venueCode].races.push(race)
-    })
-    return Object.values(grouped).sort((a, b) => a.venueCode.localeCompare(b.venueCode))
-  }, [races])
-
-  // 本日の集計
-  const todaySummary = useMemo(() => {
-    let total = 0
-    let hits = 0
-    let payout = 0
-    races.forEach(race => {
-      if (race.hitInfo) {
-        total++
-        if (race.hitInfo.hit) {
-          hits++
-          payout += race.hitInfo.payout
-        }
-      }
-    })
-    const investment = total * 100
-    const recovery = investment > 0 ? Math.round((payout / investment) * 100) : 0
-    return { total, hits, investment, payout, recovery }
-  }, [races])
 
   return (
     <div className="today-tab">

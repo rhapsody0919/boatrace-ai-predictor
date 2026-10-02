@@ -115,8 +115,8 @@
     "fetchError": "会場の水面特性を読み込めませんでした。"
   },
   "raceDetailPage": {
-    "metaTitle": "{{venue}} {{race}}R AIデータ分析 - 龍神レーダー",
-    "metaDescription": "{{venue}} {{race}}Rのデータ出走表・AIデータ分析・展開予測を無料で確認できます。",
+    "metaTitle": "{{venue}}競艇 {{race}}R AI予想・展開予測（{{date}}）- 龍神レーダー",
+    "metaDescription": "{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rの出走表データ・AI予想・1マークの展開予測・イン崩れ指数を無料で確認できます。",
     "backToList": "← レース一覧に戻る",
     "notFound": "レースが見つかりませんでした",
     "pastPredictionsBreadcrumb": "過去の予想",
@@ -750,6 +750,12 @@
   "home": {
     "introBannerText": "龍神レーダー - ボートレースを見える化。迷ったら、データを信じる。| 展開予測・イン崩れ指数など45項目のデータを分析。詳しくはこちら →",
     "introBannerClose": "閉じる",
+    "sgNow": {
+      "region": "SG開催中",
+      "withTitle": "{{series}} 開催中（{{venue}}）",
+      "withoutTitle": "SG 開催中（{{venue}}）",
+      "cta": "本日のレース・AI予想 →"
+    },
     "aiIntro": {
       "title": "龍神レーダーのボートレースAI予想",
       "lead": "龍神レーダーは、全国24場で開催されるボートレースの全レースを、AIが毎日予想するデータ分析サイトです。完全無料・会員登録なしで使えます。",

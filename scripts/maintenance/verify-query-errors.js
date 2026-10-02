@@ -31,9 +31,13 @@
  *
  * - 呼び出し側の `if (error)` の有無は見ない。`.throwOnError()` が既定になった今、
  *   その分岐は到達しないだけで害が無く、機械的に消すとレビューのノイズになる
- * - `scripts/` （バッチ側）は対象外。`scripts/lib/supabaseClient.js` の `fetchAll` は
- *   `throwOnError = false` が既定のまま残っており、121箇所の呼び出し側への影響確認が
- *   別途必要なため、別チケットで扱う（本スクリプトのBATCH_TODOに記録）
+ *
+ * ## バッチ側（scripts/）で検査すること（BOA-391）
+ *
+ * 5. `scripts/` の関数が `throwOnError = false` を引数の既定にしていないこと。
+ *    fetchAll・getRaceSchedule 等の8関数が、失敗を空配列・部分結果にするのを既定にしていた
+ *    （安全な挙動がオプトイン）。既定は例外にし、握りつぶしてよい呼び出し側だけが
+ *    `{ throwOnError: false }` を理由付きで明示する
  */
 
 import fs from "fs";
@@ -44,10 +48,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
 const SRC = path.join(ROOT, "src");
 const CLIENT_REL = "src/services/supabaseClient.js";
-
-/** バッチ側の未対応分（別チケット）。ここに書いておき、忘れられないようにする */
-const BATCH_TODO =
-  "scripts/lib/supabaseClient.js の fetchAll は throwOnError=false が既定のまま（呼び出し121箇所）。BOA-359のバッチ側として別対応";
 
 function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -111,6 +111,23 @@ if (!fs.existsSync(clientPath)) {
   }
 }
 
+// 5: バッチ側の関数が、失敗を握りつぶすことを既定にしていないか（BOA-391）
+const scriptFiles = walk(path.join(ROOT, "scripts"));
+for (const file of scriptFiles) {
+  const rel = path.relative(ROOT, file);
+  const text = fs.readFileSync(file, "utf8");
+  const lines = text.split("\n");
+  lines.forEach((line, i) => {
+    if (/^\s*(\/\/|\*)/.test(line)) return;
+    if (/\bthrowOnError\s*=\s*false\b/.test(line)) {
+      errors.push(
+        `${rel}:${i + 1}: 引数の既定が「失敗を握りつぶす」になっている（${line.trim()}）。` +
+          "既定は例外にし、握りつぶしてよい呼び出し側だけが { throwOnError: false } を明示すること（BOA-391）",
+      );
+    }
+  });
+}
+
 if (errors.length > 0) {
   console.error("NG: Supabaseクエリのエラー処理に問題があります\n");
   for (const e of errors) console.error("  - " + e);
@@ -124,4 +141,6 @@ console.log(
   `OK: src配下の${files.length}ファイルを検査。Supabaseクライアントは${CLIENT_REL}に一本化され、` +
     "取得エラーは既定で例外になります。",
 );
-console.log(`INFO: 未対応（別チケット）— ${BATCH_TODO}`);
+console.log(
+  `OK: scripts配下の${scriptFiles.length}ファイルに、throwOnError を false にする引数の既定は無い（BOA-391）`,
+);
