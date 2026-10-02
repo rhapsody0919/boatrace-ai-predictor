@@ -1620,7 +1620,7 @@
       },
       "weather": {
         "name": "風與內道逃走率",
-        "description": "依風向（順風・逆風）與風力，從官方競賽成績統計1道第1名率與賽場平均的差異"
+        "description": "依風向（順風、逆風）與風力，從官方競賽成績統計1道第1名率與賽場平均的差異"
       }
     },
     "info": {
@@ -2134,14 +2134,14 @@
     "bins": {
       "head_strong": "強逆風",
       "head": "逆風",
-      "calm_cross": "弱風・側風",
+      "calm_cross": "弱風、側風",
       "tail": "順風",
       "tail_strong": "強順風"
     },
     "binSubs": {
       "head_strong": "4m以上",
       "head": "2〜3m",
-      "calm_cross": "1m以下・側風",
+      "calm_cross": "1m以下、側風",
       "tail": "2〜3m",
       "tail_strong": "4m以上"
     },
@@ -2158,7 +2158,7 @@
     "pooledNote": "直線為整體平均（{{base}}%）。差異的97.5%範圍：強順風 {{tailLow}}〜{{tailHigh}}pt、強逆風 {{headLow}}〜{{headHigh}}pt",
     "techniqueTitle": "決勝方式的變化（全24個賽場）",
     "techniqueLead": "逆風強時「捲」增加，順風強時「刺」增加",
-    "techniqueNote": "決勝方式的構成為記錄用統計，未像1道第1名率那樣進行判定（範圍・各賽場方向確認）。",
+    "techniqueNote": "決勝方式的構成為記錄用統計，未像1道第1名率那樣進行判定（範圍、各賽場方向確認）。",
     "venueTitle": "選擇賽場",
     "venueAverage": "{{venue}}平均：{{rate}}%（{{countText}}場）",
     "tooFew": "場數過少，不顯示",
@@ -2170,7 +2170,7 @@
     "rankingExcluded": "未滿1,000場而排除：{{venues}}",
     "footSource": "期間 {{from}}〜{{to}}，官方競賽成績（K檔）{{countText}}場。在查看結果前，已先決定比較方法與判定標準再進行統計。",
     "footTiming": "風為比賽當下的確定值。賽前資訊的氣象可能是前一場比賽的數值。",
-    "footAdjusted": "即使對齊季節・時段（場次）・1道選手級別比較，強風的差異也幾乎相同（強逆風 {{head}}pt、強順風 {{tail}}pt）。",
-    "footWave": "僅限弱風時（1m以下・側風），浪高6〜9cm的比賽比賽場平均{{diff}}pt（{{countText}}場。符合的賽場有限，僅供參考）。"
+    "footAdjusted": "即使對齊季節、時段（場次）、1道選手級別比較，強風的差異也幾乎相同（強逆風 {{head}}pt、強順風 {{tail}}pt）。",
+    "footWave": "僅限弱風時（1m以下、側風），浪高6〜9cm的比賽比賽場平均{{diff}}pt（{{countText}}場。符合的賽場有限，僅供參考）。"
   }
 }
