@@ -554,7 +554,7 @@ function RaceBeforeInfoTab({
     hasPreExhibitionWeight;
 
   const cellClass = (boat, best) =>
-    `drt-cell ${best !== null && boat === best ? "drt-best" : ""}`;
+    `drt-cell ${best?.has(boat) ? "drt-best" : ""}`;
 
   // 展示タイム棒グラフ用データ（艇番順、未取得艇はnullのままバーを描かない）
   const exhibitionByBoat = new Map(
