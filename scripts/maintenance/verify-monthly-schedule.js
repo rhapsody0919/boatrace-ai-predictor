@@ -542,6 +542,12 @@ const byUrl = (url) => resp(200, html(/ym=(\d{6})/.exec(url)[1]));
 // ---------------------------------------------------------------------------
 // 6. 変異検証
 // ---------------------------------------------------------------------------
+/**
+ * 変異ごとに別モジュールとして読み込むための通し番号。以前は import の URL を `?t=${Date.now()}` で区別していたが、
+ * 同じファイルの変異が同じミリ秒に続くと URL が一致し、ESM のキャッシュから直前の変異が返る（BOA-648/BOA-671と同種）。
+ * 時刻ではなく通し番号で区別する
+ */
+let mutantSeq = 0;
 async function withMutant(fileName, replacements, run) {
   let mutated = fs.readFileSync(path.join(LIB, fileName), "utf8");
   for (const [from, to] of replacements) {
@@ -553,11 +559,11 @@ async function withMutant(fileName, replacements, run) {
   }
   const tmpFile = path.join(
     LIB,
-    `${fileName.replace(/\.js$/, "")}.mutant-${process.pid}.tmp.mjs`,
+    `${fileName.replace(/\.js$/, "")}.mutant-${process.pid}-${++mutantSeq}.tmp.mjs`,
   );
   fs.writeFileSync(tmpFile, mutated);
   try {
-    return await run(await import(`${tmpFile}?t=${Date.now()}`));
+    return await run(await import(tmpFile));
   } finally {
     fs.rmSync(tmpFile, { force: true });
   }
