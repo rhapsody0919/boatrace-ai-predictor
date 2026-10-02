@@ -32,7 +32,11 @@ import {
   meanFloat32,
   windComponents,
 } from "../../src/utils/analogyRaceFeatures.js";
-import { ParityInputError, checkParity, checkParityDir } from "../ml/analogy/treeshap-parity.js";
+import {
+  ParityInputError,
+  checkParity,
+  checkParityDir,
+} from "../ml/analogy/treeshap-parity.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const DIR = join(ROOT, "scripts/ml/analogy/testdata/treeshap-parity");
