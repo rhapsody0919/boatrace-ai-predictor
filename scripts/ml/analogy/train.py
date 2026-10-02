@@ -55,6 +55,9 @@ SEEDS = list(range(int(os.environ.get("ANALOGY_SEEDS", "5"))))
 # 参照版からの悪化の許容幅。1着はレースあたりの6クラス対数損失、2・3着以内は艇あたりの二値対数損失
 GATE_MAX_DEGRADATION = {"win": 0.005, "top2": 0.002, "top3": 0.002}
 TARGET_LABEL = {"win": "1着", "top2": "2着以内", "top3": "3着以内"}
+# 参照版の学習の終わりからこの日数を過ぎたら、更新を促す（参照版は見ていないデータが増えるほど
+# 評価が自然に悪くなり、「参照版より悪化しない」が実質緩むため）
+REFERENCE_MAX_AGE_DAYS = 183
 # 日単位のブートストラップの回数（シェアの SD）
 N_BOOT = int(os.environ.get("ANALOGY_N_BOOT", "100"))
 PARAMS = dict(objective="binary", learning_rate=0.08, num_leaves=31, min_data_in_leaf=500,
@@ -86,15 +89,20 @@ def quality_gate(metrics: dict, reference: dict | None) -> dict:
         if not ci_hi < 0:
             reasons.append(f"{TARGET_LABEL[name]}: 基準に有意に勝っていない（対数損失の差の95%CI上限 {ci_hi:+.5f}）")
     ref_result = "none"
+    warnings = []
+    if reference is not None and reference.get("age_days", 0) > REFERENCE_MAX_AGE_DAYS:
+        warnings.append(f"参照版 {reference['version']} は学習の終わりから {reference['age_days']} 日経っている。"
+                        f"{REFERENCE_MAX_AGE_DAYS} 日を過ぎたので reference.json の更新を検討する")
     if reference is not None:
-        ref_result = {"version": reference["version"], "deltas": {}}
+        ref_result = {"version": reference["version"], "age_days": reference.get("age_days"),
+                      "deltas": {}}
         for name in ("win", "top2", "top3"):
             delta = _model_logloss(name, metrics[name]) - reference[name]
             ref_result["deltas"][name] = delta
             if delta >= GATE_MAX_DEGRADATION[name]:
                 reasons.append(f"{TARGET_LABEL[name]}: 参照版 {reference['version']} より対数損失が "
                                f"{delta:+.5f} 悪化（許容 {GATE_MAX_DEGRADATION[name]}）")
-    return {"passed": not reasons, "reasons": reasons, "reference": ref_result}
+    return {"passed": not reasons, "reasons": reasons, "reference": ref_result, "warnings": warnings}
 
 
 def split(df: pd.DataFrame):
@@ -155,6 +163,10 @@ def reference_logloss(train: pd.DataFrame, temp: pd.DataFrame, test: pd.DataFram
     if not version:
         return None
     out = {"version": version}
+    meta_path = REFERENCE_DIR / "train_meta.json"
+    if meta_path.exists():
+        fit_end = json.loads(meta_path.read_text())["metrics"]["periods"]["fit"][1]
+        out["age_days"] = int((test["race_date"].max() - pd.Timestamp(fit_end)).days)
     for name, label, _, _ in TARGETS:
         path = REFERENCE_DIR / f"model_{name}.txt"
         if not path.exists():

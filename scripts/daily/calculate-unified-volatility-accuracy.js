@@ -19,6 +19,7 @@ import {
   fetchAll,
   isSupabaseEnabled,
 } from "../lib/supabaseClient.js";
+import { isNoRaceResult } from "../lib/raceOutcomeFilters.js";
 
 const MODEL_ID = "unified";
 
@@ -77,7 +78,7 @@ async function main() {
   console.log("race_results取得中...");
   const results = await fetchAll(
     "race_results",
-    "race_id, rank1, is_cancelled, is_no_race",
+    "race_id, rank1, is_cancelled, race_status",
     (q) => q.not("rank1", "is", null),
   );
   const resultByRaceId = new Map(results.map((r) => [r.race_id, r]));
@@ -86,7 +87,7 @@ async function main() {
   const joined = predictions
     .map((pred) => {
       const result = resultByRaceId.get(pred.race_id);
-      if (!result || result.is_cancelled || result.is_no_race) return null;
+      if (!result || result.is_cancelled || isNoRaceResult(result)) return null;
       const percentile = pred.feature_contributions?.volatilityPercentile;
       if (typeof percentile !== "number") return null;
       // race_id形式: YYYY-MM-DD-VV-RR
