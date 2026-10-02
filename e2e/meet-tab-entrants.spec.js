@@ -240,3 +240,17 @@ test("英語の対象外の一覧で、見出しと理由のコロンが二重�
     { timeout: 30000 },
   );
 });
+
+test("375pxで、対象外の一覧の選手名が途中で改行されない", async ({ page }) => {
+  // 「北川」で改行して次の行が「幸典」になっていた（BOA-714 ファン評価1周目）
+  await page.setViewportSize({ width: 375, height: 812 });
+  await openMeetTab(page, "2026-09-25-01-07");
+  const names = page.locator(".rmt-excluded-list .rmt-excluded-name");
+  await expect(names).not.toHaveCount(0);
+  const multiLine = await names.evaluateAll((els) =>
+    els
+      .filter((el) => el.getClientRects().length > 1)
+      .map((el) => el.textContent),
+  );
+  expect(multiLine).toEqual([]);
+});

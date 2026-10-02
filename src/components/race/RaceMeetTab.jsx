@@ -843,9 +843,15 @@ function RaceMeetTab({
                       {parts.length > 0 && t("meetTab.excludedGroupSeparator")}
                       {t(`meetTab.excludedReason_${g.reason}`)}
                       {t("meetTab.excludedReasonSuffix")}
-                      <span translate="no">
-                        {shown.join(t("meetTab.listSeparator"))}
-                      </span>
+                      {/* 名前の途中で改行しない（375pxで「北川／幸典」と切れた。BOA-714 ファン評価） */}
+                      {shown.map((name, i) => (
+                        <span key={name}>
+                          {i > 0 && t("meetTab.listSeparator")}
+                          <span className="rmt-excluded-name" translate="no">
+                            {name}
+                          </span>
+                        </span>
+                      ))}
                     </span>,
                   );
                 }
