@@ -40,6 +40,7 @@ import {
   isAbsentStartRow,
   flyingRacerIdsInMeet,
   postPrelimFlyingRacerIds,
+  withdrawnBeforePrelimEnd,
   runFinishLabel,
   officialMarkOf,
 } from "../components/race/seriesPoints.js";
@@ -50,7 +51,7 @@ import {
 } from "../utils/raceOutcome.js";
 import {
   PRETEST_LOOKBACK_DAYS,
-  pickFirstPretestByRacer,
+  pickMeetPretestByRacer,
   pickLatestPretestByRacer,
   shiftDate,
 } from "../utils/pretestRows";
@@ -6690,7 +6691,8 @@ export const supabaseDataService = {
     // v21: 予選後に今節Fを切った選手（postPrelimFlyingRacerIds）を足した（BOA-626）
     // v22: 丸一日レースが無かった日（noRaceDays）を足した（BOA-636）
     // v23: 節の出場者（meetEntrantIds）を足した（BOA-660）
-    return withCache(`meet-scoreboard-v23-${raceId}`, async () => {
+    // v24: 予選中に帰った選手を予選の翌日から外す・過去のレースは後の日付の前検も使う（BOA-674）
+    return withCache(`meet-scoreboard-v24-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -6707,7 +6709,7 @@ export const supabaseDataService = {
       const [entriesRes, windowConditionsRes] = await Promise.all([
         supabase
           .from("race_entries")
-          .select("race_id, boat_number, racer_id, player_name")
+          .select("race_id, boat_number, racer_id, player_name, motor_number")
           .gte("race_id", windowStart)
           // **これから走るレースも含めて**取る（2026-09-28）。得点率の集計は
           // 「結果がまだ無いレースは分母に入れない」で弾いているので混ざらない。
@@ -6809,7 +6811,15 @@ export const supabaseDataService = {
           )
           .eq("venue_code", venueCode)
           .gte("race_date", meetStart)
-          .lte("race_date", date)
+          // 過去のレースは**表示日より後の行**も引く（BOA-674）。前検の取得が止まって
+          // いた日（9/18〜9/22 初日の節。BOA-679）は初日の行が無く、前検が全部「—」に
+          // なった。前検は節の中で変わらないので、後の日付の行でも同じ値。
+          // 別の節の行はモーター番号で弾く（pickMeetPretestByRacer）。当日は後の行が
+          // まだ無いので、今までどおり表示日まで
+          .lte(
+            "race_date",
+            isPastRace(raceId) ? shiftDate(date, PRETEST_LOOKBACK_DAYS) : date,
+          )
           .then(({ data }) => data ?? []),
         // **節の全レース・全艇**の展示タイム（2026-09-27追加、+1本）。
         // 2つの用途を1クエリで賄う:
@@ -7012,6 +7022,17 @@ export const supabaseDataService = {
             flying.map((id) => [id, "flying"]),
           );
 
+          // **予選中に帰った選手**は、予選が終わった翌日から外す（BOA-674）。
+          // 公式の得点率一覧も予選終了時点で外している。最終日まで待つと、
+          // 最終日に下の順位がまとめて繰り上がった
+          for (const id of withdrawnBeforePrelimEnd(
+            meetRows,
+            prelimEndRaceIdOf(conditions ?? []),
+            date,
+          )) {
+            if (!reasons[id]) reasons[id] = "withdrawn";
+          }
+
           // 途中帰郷は、節の最終日に1度も出走が無い選手。
           // 判定は2026-09-28に実測で裏を取った:
           //   若松G1 … 該当2名が公式の「途中帰郷」2名と完全一致。除くと
@@ -7207,7 +7228,16 @@ export const supabaseDataService = {
         // 直近は節の中の複数日に行があるため、最も古い日付を採る。
         // 採り方の根拠と、モータ情報タブ（最新の行を採る）と必ず一致することの
         // 実測は src/utils/pretestRows.js を読むこと
-        pretestByRacer: Object.fromEntries(pickFirstPretestByRacer(pretest)),
+        pretestByRacer: Object.fromEntries(
+          pickMeetPretestByRacer(
+            pretest,
+            new Map(
+              meetRows
+                .filter((e) => e.motor_number != null)
+                .map((e) => [e.racer_id, e.motor_number]),
+            ),
+          ),
+        ),
         // 得点率の計算は画面側の純関数（seriesPoints.js）と同じ規則。
         // ここでは素材（着順と種別）だけ渡し、集計は呼び出し側に任せる。
         // **表示中のレースより前だけ**を渡す。過去日を開いているときは
