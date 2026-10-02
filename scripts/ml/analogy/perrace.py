@@ -20,7 +20,7 @@ import pandas as pd
 
 import features as F
 import metrics as M
-from themes import LIVE_FEATURES, THEMES, theme_features, themes_for_db
+from themes import LIVE_FEATURES, THEMES, theme_features
 
 FIXTURE_N = 50
 # 事前登録5: 2026-04-01 以降の test は、探索（ablate.py）・FR-2 の事前登録1〜3で見ている。
@@ -44,15 +44,16 @@ def model_entry(m: lgb.Booster, dump: dict, file: str) -> dict:
 
 
 def per_race_meta(version: str, win: tuple, racecard: tuple, maps: dict) -> dict:
-    """win・racecard: (booster, dump)。file は Storage のキー（storage.js が .gz を付けて置く）。"""
+    """win・racecard: (booster, dump)。file は out/ のファイル名（Storage では storage.js が .gz を付けて置く）。
+    themes は themes.py の THEMES そのもの（groups[].features あり。推論側がグループごとに集計するため）。"""
     return {
         "model_version": version,
         "dtype": "float32",
-        "models": {"win": model_entry(*win, "model_win.json.gz"),
-                   "win_racecard": model_entry(*racecard, "model_win_racecard.json.gz")},
+        "models": {"win": model_entry(*win, "model_win.json"),
+                   "win_racecard": model_entry(*racecard, "model_win_racecard.json")},
         "live_features": LIVE_FEATURES,
         "categorical_maps": maps,
-        "themes": themes_for_db(),
+        "themes": THEMES,
     }
 
 
@@ -131,7 +132,8 @@ def parity_fixture(version: str, test: pd.DataFrame, ids: list[int], cond_raw: p
                               "contrib": [_floats(r) for r in contrib]}
         races.append({
             "race_id": F.int_to_rid(rid),
-            "racecard_features": [_floats(r) for r in rows[rc_names].astype("float32").to_numpy()],
+            "racecard_features": [{"boat_number": int(b), "features": _floats(r)} for b, r in
+                                  zip(rows["boat_number"], rows[rc_names].astype("float32").to_numpy())],
             "live_raw": {
                 "exhibition": [{"boat_number": int(r["boat_number"]),
                                 "exhibition_time": _num(r["exhibition_time"]),

@@ -76,6 +76,9 @@ def test_per_race_meta_feature_names_follow_booster(models, tmp_path):
     assert meta["models"]["win_racecard"]["feature_names"] == rc.feature_name()
     assert meta["models"]["win"]["num_trees"] == 20
     assert meta["live_features"] == LIVE_FEATURES
+    assert meta["themes"] == THEMES and "features" in meta["themes"][0]["groups"][0]
+    assert meta["models"]["win"]["file"] == "model_win.json"
+    assert set(win.feature_name()) == set(rc.feature_name()) | set(LIVE_FEATURES)
     assert json.loads((tmp_path / "w.json").read_text())["feature_names"] == win.feature_name()
 
 
@@ -100,7 +103,8 @@ def test_parity_fixture_contrib_sums_to_raw_score(models):
     ids = P.select_parity_races(df, cond, n=5)
     fx = P.parity_fixture("v", df, ids, cond, exh, {"win": win, "win_racecard": rc})
     r0 = fx["races"][0]
-    assert len(r0["racecard_features"]) == 6 and len(r0["racecard_features"][0]) == 36
+    assert len(r0["racecard_features"]) == 6 and len(r0["racecard_features"][0]["features"]) == 36
+    assert [b["boat_number"] for b in r0["racecard_features"]] == [1, 2, 3, 4, 5, 6]
     assert r0["live_raw"]["conditions"]["wind_speed"] is not None
     assert r0["live_raw"]["exhibition"][0]["exhibition_time"] == 6.75
     rows = df[df["race_id"] == ids[0]].sort_values("boat_number")
@@ -109,7 +113,7 @@ def test_parity_fixture_contrib_sums_to_raw_score(models):
         rs = m.predict(rows[m.feature_name()].astype("float32"), raw_score=True)
         assert c.sum(axis=1) == pytest.approx(rs, abs=1e-9)
     # racecard_features は win_racecard の入力と同じ値
-    assert r0["racecard_features"] == r0["expected"]["win_racecard"]["features"]
+    assert [b["features"] for b in r0["racecard_features"]] == r0["expected"]["win_racecard"]["features"]
 
 
 def test_centered_theme_shares_sum_to_one(models):
