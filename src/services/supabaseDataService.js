@@ -6713,7 +6713,9 @@ export const supabaseDataService = {
     // v22: 丸一日レースが無かった日（noRaceDays）を足した（BOA-636）
     // v23: 節の出場者（meetEntrantIds）を足した（BOA-660）
     // v24: 予選中に帰った選手を予選の翌日から外す・過去のレースは後の日付の前検も使う（BOA-674）
-    return withCache(`meet-scoreboard-v24-${raceId}`, async () => {
+    // v28: まだ1走もしていない選手（notYetStartedRacerIds）を足した（BOA-690）。
+    //      v25〜v27 は #1151・#1149 が使う。後からマージされる側は、先に入った番号の次にする
+    return withCache(`meet-scoreboard-v28-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7162,6 +7164,22 @@ export const supabaseDataService = {
         // 2シリーズを混ぜて順位を振ると、節内順位・出場人数・準優の目安が
         // すべて実際の勝ち上がり争いとズレる
         seriesRacerIds: currentSeries ? [...currentSeries] : null,
+        // **この節をまだ1走もしていない選手**（BOA-690）。表示中のレースより前に、
+        // 結果の出たレースが1つも無く、表示中のレース以降に番組がある選手。
+        // 中止で流れたレースは走ったうちに数えない（津 9/22 が丸一日中止で、9/23 に
+        // 初めて走る選手を「走った」と数えていた）。この選手がいる間は順位の対象が
+        // そろっていないので、画面は準優の目安を伏せ、人数の行に書き足す。追加クエリ0本
+        notYetStartedRacerIds: (() => {
+          const ran = new Set();
+          const upcoming = new Set();
+          for (const e of meetRows) {
+            if (e.racer_id == null) continue;
+            if (e.race_id < raceId) {
+              if (resultById.has(e.race_id)) ran.add(e.racer_id);
+            } else upcoming.add(e.racer_id);
+          }
+          return [...upcoming].filter((id) => !ran.has(id));
+        })(),
         // **節の出場者**（表示日までの出走表に載った選手、当日の番組を含む。BOA-660）。
         // 得点率の母集団（表示中のレースより前に走った選手）で数えると、初日の2Rで
         // 「節の出場は6人」になった。追加クエリ0本

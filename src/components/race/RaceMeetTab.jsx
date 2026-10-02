@@ -242,11 +242,28 @@ function RaceMeetTab({
       )
     : [];
   const border = rankedOnly[slots - 1]?.rate;
+  // **この節をまだ1走もしていない選手**の数（BOA-690）。この選手がいる間（ふつうは
+  // 初日の途中）は順位の対象がそろっておらず、目安が意味を持たない（下関の初日に
+  // 「準優の目安は18位（2.00）」と出た）。2日目以降は出したまま、走数で断る
+  const notYetStarted = (board?.notYetStartedRacerIds ?? []).filter(
+    (id) => !seriesIdSet || seriesIdSet.has(id),
+  ).length;
+  const bordersReady = notYetStarted === 0;
+  // 目安を出している時点の走数（順位の対象の選手の中央値）。「◯走時点の目安」と断る
+  const medianRuns = (() => {
+    const runs = rankedOnly.map((r) => r.runs).sort((a, b) => a - b);
+    return runs.length > 0 ? runs[Math.floor(runs.length / 2)] : 0;
+  })();
   // 表のボーダー表示は「節全体の順位」なので、選んだ選手の走数に依存しない
   const showBorderBadge =
-    !isCancelled && !isAfterPrelim && !prelimOver && border !== undefined;
+    !isCancelled &&
+    !isAfterPrelim &&
+    !prelimOver &&
+    bordersReady &&
+    border !== undefined;
   const showBorder =
     !isCancelled &&
+    bordersReady &&
     !isAfterPrelim &&
     !prelimOver &&
     mine &&
@@ -512,7 +529,13 @@ function RaceMeetTab({
                 <th scope="col">{t("meetTab.colBoat")}</th>
                 <th scope="col">{t("meetTab.colScore")}</th>
                 <th scope="col">{t("meetTab.colRank")}</th>
-                <th scope="col">{t("meetTab.colPretest")}</th>
+                <th scope="col">
+                  {/* Ｗ優勝戦の節では、節内順位は片側（24人前後）の中の順位なのに、
+                      前検の順位は節全体の中の順位（公式の値）。分母を見出しに出す（BOA-690） */}
+                  {seriesSplit
+                    ? t("meetTab.colPretestOf", { total: meetTotal })
+                    : t("meetTab.colPretest")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -667,24 +690,31 @@ function RaceMeetTab({
                 前検51位の選手がいた） */}
             {/* Ｗ優勝戦で分けたときは「節の出場」と書かない。下の注記の
                 「節全体は◯人」と食い違って読める（BOA-660） */}
-            {ranking.length - rankedOnly.length + absentOnly.length > 0
-              ? t(
-                  seriesSplit
-                    ? "meetTab.compareSubSeriesExcluded"
-                    : "meetTab.compareSubExcluded",
-                  {
-                    all: entrantCount,
-                    total: rankedOnly.length,
-                    // 全部の走が欠場の選手も順位の対象外。数えないと「47人（対象42人・
-                    // 4人を除く）」と足し算が合わない（BOA-660）
-                    excluded:
-                      ranking.length - rankedOnly.length + absentOnly.length,
-                  },
-                )
-              : t(
-                  seriesSplit ? "meetTab.compareSubSeries" : "meetTab.compareSub",
-                  { total: entrantCount },
-                )}
+            {(() => {
+              // 全部の走が欠場の選手も順位の対象外。数えないと「47人（対象42人・
+              // 4人を除く）」と足し算が合わない（BOA-660）
+              const excluded =
+                ranking.length - rankedOnly.length + absentOnly.length;
+              // まだ1走もしていない選手も順位にまだ入らない。書かないと初日に
+              // 「48人（対象44人・1人を除く）」と合わなかった（BOA-690）
+              const variant =
+                excluded > 0 && notYetStarted > 0
+                  ? "ExcludedNotYet"
+                  : excluded > 0
+                    ? "Excluded"
+                    : notYetStarted > 0
+                      ? "NotYet"
+                      : "";
+              return t(
+                `meetTab.compareSub${seriesSplit ? "Series" : ""}${variant}`,
+                {
+                  all: entrantCount,
+                  total: variant ? rankedOnly.length : entrantCount,
+                  excluded,
+                  notYet: notYetStarted,
+                },
+              );
+            })()}
             {/* 「予選後F」の意味（セルの title はタッチ端末で読めない。BOA-626）。
                 **表の6艇に印が出ているときだけ**断る。節の誰かに居るだけで出すと、
                 表に印が無いのに説明だけ出て「どこにあるのか」と迷う（ファン評価1周目） */}
@@ -723,9 +753,17 @@ function RaceMeetTab({
                   slots,
                   rate: border.toFixed(2),
                 })}{" "}
-                {t("meetTab.borderNote")}
+                {t("meetTab.borderNote")}{" "}
+                {/* 何走時点の目安かを断る。2日目の朝の目安は、予選終了時の目安と
+                    平均0.46点ずれる（BOA-690 の実測。数値は画面に出さない） */}
+                {t("meetTab.borderAsOfRuns", { runs: medianRuns })}
               </>
             )}
+            {/* まだ全員が走っていない間は目安を出さない理由を書く（BOA-690） */}
+            {!bordersReady &&
+              !isCancelled &&
+              !isAfterPrelim &&
+              !prelimOver && <> {t("meetTab.borderPending")}</>}
           </p>
           {/* **Ｗ優勝戦の節**は1つの節に独立した2つの勝ち上がりが同居する
               （全期間で6節）。何も言わずに人数が半分になると「なぜ減ったのか」に
