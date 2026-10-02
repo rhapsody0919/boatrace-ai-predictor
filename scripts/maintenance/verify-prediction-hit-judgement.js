@@ -576,14 +576,17 @@ check(
 /**
  * 変異ごとに別モジュールとして読み込むための通し番号。以前はファイル名に Date.now() を使っていたが、
  * 同じミリ秒に2回呼ばれると同じファイル名になり、ESM のキャッシュから直前の変異が返る（BOA-648/BOA-671と同種）。
- * 時刻ではなく通し番号で区別する
+ * 時刻ではなく通し番号で区別する。プロセス間（verify:ci の並列実行）での衝突も避けるため process.pid も含める
  */
 let mutantSeq = 0;
 async function withMutant(relPath, from, to, run) {
   const file = path.join(ROOT, relPath);
   const src = fs.readFileSync(file, "utf8");
   if (!src.includes(from)) return [`置き換え元が見つからない: ${from}`];
-  const mutant = file.replace(/\.js$/, `.__mutant-${++mutantSeq}.js`);
+  const mutant = file.replace(
+    /\.js$/,
+    `.__mutant-${process.pid}-${++mutantSeq}.js`,
+  );
   fs.writeFileSync(mutant, src.replace(from, to));
   try {
     return await run(await import(pathToFileURL(mutant).href));
