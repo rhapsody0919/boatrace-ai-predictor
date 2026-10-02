@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS analogy_pool_outcomes (
   race_number       smallint NOT NULL,
   -- 条件（出走表時点）
   b1_class          text NOT NULL CHECK (b1_class IN ('A1', 'A2', 'B1', 'B2', '')),   -- 1号艇の級別。不明は ''
-  b1_win_gap        numeric(4, 2),                 -- 1号艇の全国勝率 − 2〜6号艇の全国勝率の最大。取れなければ NULL
+  b1_win_gap        numeric(4,2),                 -- 1号艇の全国勝率 − 2〜6号艇の全国勝率の最大。取れなければ NULL
   gap_band          smallint GENERATED ALWAYS AS (analogy_gap_band(b1_win_gap)) STORED,
   top_boat          smallint NOT NULL CHECK (top_boat BETWEEN 1 AND 6),  -- 全国勝率が最大の艇番（同率は小さい艇番）
   -- 決着
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS analogy_pool_outcomes (
   winning_technique text CHECK (winning_technique IN ('逃げ', '差し', 'まくり', 'まくり差し', '抜き', '恵まれ')),  -- 6分類以外（逃げ抜き等）・不明は NULL
   winner_course     smallint CHECK (winner_course BETWEEN 1 AND 6),        -- 1着艇の進入コース。不明は NULL
   course_by_boat    smallint[] NOT NULL,           -- [1号艇のコース, …, 6号艇]。実進入が分からない艇は NULL（艇番で埋めない。BOA-523）
-  st_by_course      numeric(4, 2)[] NOT NULL,      -- [1コースのST, …, 6コース]。フライング・出遅れ・不明のコースは NULL
+  st_by_course      numeric(4,2)[] NOT NULL,      -- [1コースのST, …, 6コース]。フライング・出遅れ・不明のコースは NULL
   payout_3tan       integer,                       -- 3連単の払戻（円）。本体は race_results.payout_trio（列名と券種が逆）。不成立は母集団に入れない
   source            text NOT NULL CHECK (source IN ('kb', 'main')),
   updated_at        timestamptz NOT NULL DEFAULT now()
@@ -112,7 +112,7 @@ GRANT SELECT ON analogy_pool_outcomes TO anon, authenticated;
 CREATE TABLE IF NOT EXISTS analogy_snapshots (
   race_id      varchar PRIMARY KEY REFERENCES races(race_id) ON DELETE CASCADE,  -- 1レース1行（BOA-635 の D-6）
   b1_class     text NOT NULL,
-  b1_win_gap   numeric(4, 2),
+  b1_win_gap   numeric(4,2),
   gap_band     smallint NOT NULL,
   venue_code   smallint NOT NULL,
   top_boat     smallint NOT NULL,
@@ -202,7 +202,7 @@ AS $$
     CASE WHEN r.technique IN ('逃げ', '差し', 'まくり', 'まくり差し', '抜き', '恵まれ') THEN r.technique END,
     a.winner_course::smallint,
     a.course_by_boat::smallint[],
-    ARRAY(SELECT (a.st_map ->> c::text)::numeric(4, 2) FROM unnest(a.cs) AS c ORDER BY c),
+    ARRAY(SELECT (a.st_map ->> c::text)::numeric(4,2) FROM unnest(a.cs) AS c ORDER BY c),
     r.payout_3tan, 'kb'
   FROM a JOIN r ON r.race_id = a.race_id
   WHERE a.n_boats = 6 AND NOT a.has_absent AND NOT a.returned_top3 AND a.n_win = 1
@@ -264,7 +264,7 @@ AS $$
     CASE WHEN res.winning_technique IN ('逃げ', '差し', 'まくり', 'まくり差し', '抜き', '恵まれ') THEN res.winning_technique END,
     a.winner_course::smallint,
     a.course_by_boat::smallint[],
-    ARRAY(SELECT (a.st_map ->> c::text)::numeric(4, 2) FROM unnest(a.cs) AS c ORDER BY c),
+    ARRAY(SELECT (a.st_map ->> c::text)::numeric(4,2) FROM unnest(a.cs) AS c ORDER BY c),
     res.payout_trio, 'main'
   FROM a
   JOIN r ON r.race_id = a.race_id

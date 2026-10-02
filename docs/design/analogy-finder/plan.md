@@ -36,18 +36,45 @@ flowchart LR
 `analogy_models`・`analogy_contribution_profiles`・`activate_analogy_model`。FR-2 は学習モデルに依存しないので、`analogy_models` に FR-2 の列は足さない（118 の時点で予定していた `pool_cutoff`・`neighbor_k`・`venue_penalty` の ADD COLUMN は不要になった）。
 
 ### FR-2・FR-3（マイグレーション 119、未適用）
+
+ER 図は 118・119 の DDL から `generate-er-diagram.js` で生成した（FR-1 の2表を含む）。
 [119_analogy_strata.sql](../../db-migration/119_analogy_strata.sql)。設計時の案 115（k-NN の近傍のバッチ）は適用しないまま破棄した。PGlite で適用・関数の動作・権限を確認する `scripts/maintenance/verify-analogy-strata-migration.js`（ci）がある。
 
 ```mermaid
 erDiagram
+    analogy_contribution_profiles }o--|| analogy_models : "model_version"
     analogy_snapshots }o--|| races : "race_id"
+    analogy_models {
+        text model_version PK
+        timestamptz trained_at
+        text[] feature_columns
+        jsonb themes
+        jsonb metrics
+        boolean is_active
+        timestamptz created_at
+    }
+    analogy_contribution_profiles {
+        text model_version PK
+        smallint finish_target PK
+        smallint venue_code PK
+        text grade PK
+        text round PK
+        smallint boat_number PK
+        integer n_boats
+        integer n_races
+        date period_from
+        date period_to
+        jsonb shares
+        jsonb share_sd
+        jsonb breakdown
+    }
     analogy_pool_outcomes {
         varchar race_id PK
         date race_date
         smallint venue_code
         smallint race_number
         text b1_class
-        numeric b1_win_gap
+        numeric(4,2) b1_win_gap
         smallint gap_band "生成列 analogy_gap_band(b1_win_gap)"
         smallint top_boat
         smallint rank1
@@ -55,21 +82,21 @@ erDiagram
         smallint rank3
         text winning_technique
         smallint winner_course
-        smallint_arr course_by_boat
-        numeric_arr st_by_course
+        smallint[] course_by_boat
+        numeric(4,2)[] st_by_course
         integer payout_3tan
-        text source "kb | main"
+        text source
         timestamptz updated_at
     }
     analogy_snapshots {
         varchar race_id PK
         text b1_class
-        numeric b1_win_gap
+        numeric(4,2) b1_win_gap
         smallint gap_band
         smallint venue_code
         smallint top_boat
         smallint auto_depth
-        integer_arr n_by_depth
+        integer[] n_by_depth
         date pool_from
         date pool_cutoff
         jsonb distribution
