@@ -41,6 +41,8 @@
 | `data-accuracy-verifier` | 集計結果が実データと一致するかだけの検証 | 実装完了後の自動レビュー2番（新規の集計・分析機能を含む場合） |
 | `content-qa` | ブログ記事の公開前品質チェック6観点 | 記事の新規公開・改稿前 |
 | `boatrace-fan-reviewer` | 変更画面をファン視点の固定7観点でPreview URL上から評価（P0〜P3） | 「ファン評価あり」の作業で、CI緑の後に周ごと新規起動（`.claude/rules/review-fix-cycle.md`） |
+| `mock-diff-checker` | 承認済みモックと Preview の実画面を比べ、承認範囲の内外の差分を列挙する | UI PR を段階0で自己マージする前（`.claude/skills/orchestrate/SKILL.md` §4） |
+| `user-proxy-reviewer` | ユーザーの過去の判断（memory・CLAUDE.md・rules）から、提案が通るかを判定する | 段階1の代理判定（同 §4） |
 
 いずれも読み取り専用（`acceptance-test-writer` のみ `e2e/acceptance/` に書く）で、修正は親セッションが行う。定義に無い一回限りの調査は、従来通りAgent toolへ直接プロンプトを渡す。
 
