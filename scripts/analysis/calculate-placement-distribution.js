@@ -8,7 +8,7 @@
  * Usage: node scripts/analysis/calculate-placement-distribution.js
  */
 
-import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
+import { fetchAll, isSupabaseEnabled } from "../lib/supabaseClient.js";
 import { TECHNIQUES } from "../lib/winningTechniques.js";
 
 // 日本語 → 英語キー変換
@@ -33,35 +33,18 @@ async function main() {
   console.log("race_results から2着・3着の統計分布を算出中...\n");
 
   // 全件取得（1000件ずつページネーション）
-  const allResults = [];
-  const PAGE_SIZE = 1000;
-  let offset = 0;
-
-  while (true) {
-    const { data, error } = await supabase
-      .from("race_results")
-      .select(
-        "rank1, rank2, rank3, winning_technique, course_1, course_2, course_3, course_4, course_5, course_6",
-      )
-      .not("winning_technique", "is", null)
-      .not("rank1", "is", null)
-      .not("rank2", "is", null)
-      .not("rank3", "is", null)
-      .not("course_1", "is", null)
-      .range(offset, offset + PAGE_SIZE - 1);
-
-    if (error) {
-      console.error("取得エラー:", error.message);
-      break;
-    }
-
-    if (!data || data.length === 0) break;
-    allResults.push(...data);
-    console.log(`  ${allResults.length} 件取得...`);
-
-    if (data.length < PAGE_SIZE) break;
-    offset += PAGE_SIZE;
-  }
+  const allResults = await fetchAll(
+    "race_results",
+    "rank1, rank2, rank3, winning_technique, course_1, course_2, course_3, course_4, course_5, course_6",
+    (q) =>
+      q
+        .not("winning_technique", "is", null)
+        .not("rank1", "is", null)
+        .not("rank2", "is", null)
+        .not("rank3", "is", null)
+        .not("course_1", "is", null)
+        .order("race_id"),
+  );
 
   console.log(`\n合計 ${allResults.length} 件のレース結果を取得\n`);
 

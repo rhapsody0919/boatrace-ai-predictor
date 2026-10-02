@@ -55,6 +55,32 @@ export function pickFirstPretestByRacer(rows) {
 }
 
 /**
+ * 今節タブ用: 選手ごとに、**今節のモーター番号と一致する行**のうち最も古い行を採る
+ * （BOA-674）。過去のレースを開いたときは表示日より後の行も渡すので、別の節の行を
+ * 掴まないようモーター番号で絞る（前検は節の中で変わらないので、後の日付の行でも
+ * 同じ値。番号が分からない選手は絞らない）。
+ *
+ * @param {Array<{racer_id: number, race_date: string, motor_number?: number|null}>} rows
+ * @param {Map<number, number>} motorByRacer 今節のモーター番号
+ * @returns {Map<number, object>}
+ */
+export function pickMeetPretestByRacer(rows, motorByRacer) {
+  return pickByRacer(
+    (rows ?? []).filter((row) => {
+      const motor = motorByRacer?.get(row.racer_id);
+      return (
+        motor === undefined ||
+        motor === null ||
+        row.motor_number === undefined ||
+        row.motor_number === null ||
+        Number(row.motor_number) === Number(motor)
+      );
+    }),
+    "asc",
+  );
+}
+
+/**
  * `race_date` が**最新**の行を選手ごとに採る。モータ情報タブが使う。
  * @param {Array<{racer_id: number, race_date: string}>} rows
  * @returns {Map<number, object>}

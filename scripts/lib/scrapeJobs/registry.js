@@ -256,6 +256,16 @@ export const SCRAPE_JOBS = Object.freeze({
     // JST では2日（5月・11月は9日・16日も）。monitor が、起動しない日に「日次が未処理」と誤報しないために使う
     runDaysOfMonth: { default: [2], 5: [2, 9, 16], 11: [2, 9, 16] },
   },
+  // N16 節（race_series）。04:00指定（cron: 04:00・05:30 JST）。前月・当月・翌月の月間スケジュール（3リクエスト、
+  // 1ページ約1〜10秒）から、開始日が当月・翌月の節を書く。翌月の節名は後から公式に載るため毎日取る。
+  // 実装: scripts/lib/raceSeriesJob.js、api/cron/race-series.js
+  race_series: {
+    kind: "daily",
+    targetTimeJst: "04:00",
+    leaseSec: 120,
+    maxDurationSec: 120,
+    hosts: ["boatrace.jp"],
+  },
 
   // A5 レース特記事項（race_special_notes）。10分ごと（JST 07:00〜23:59）に、開催会場のページを巡回する。
   // 窓なし・ジョブ単位のリースで排他（cron-job.org と Vercel Cron の両方から起動されても、同時に1つだけ走る）。
