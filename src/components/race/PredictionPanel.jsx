@@ -63,7 +63,7 @@
  * 冒頭コメント参照）。選手名表示のためplayersを渡す
  */
 import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useRaceData } from "../../hooks/useRaceData";
 import {
@@ -72,7 +72,7 @@ import {
   parseBoatParam,
 } from "../../utils/raceUrlState";
 import { SocialShareButtons } from "../SocialShareButtons";
-import { generatePredictionShareText } from "../../utils/share";
+import { generatePredictionShareText, shareUrlFor } from "../../utils/share";
 import { getVenueGuidePath } from "../../utils/venueUtils";
 import { isRaceCancelled } from "../../utils/raceCancellation";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
@@ -138,6 +138,7 @@ function PredictionPanel({
   // レースが変われば選択は無効（次のレースの4号艇は別人）だが、前後のレースへのリンクは
   // クエリの無い /race/:raceId なので、移動すれば自然に消える
   const [searchParams, setSearchParams] = useSearchParams();
+  const { pathname, search } = useLocation();
   const focusedBoat = parseBoatParam(searchParams.get(RACE_BOAT_PARAM));
   // 値が変わるときだけ書き戻す（同じ値で navigate しない）。push ではなく replace にして、
   // 戻るボタンが艇・タブの選択を1つずつ巻き戻さないようにする
@@ -625,7 +626,8 @@ function PredictionPanel({
       {/* SNSシェアボタン */}
       <div className="social-share-wrapper">
         <SocialShareButtons
-          shareUrl="https://www.boat-ai.jp/"
+          // 今見ているレース（言語・選んだタブ・艇込み）を共有する（BOA-691）
+          shareUrl={shareUrlFor(`${pathname}${search}`)}
           title={generatePredictionShareText(
             {
               venue: venueName || t("panel.unknownVenue"),
