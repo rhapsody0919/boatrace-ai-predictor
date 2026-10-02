@@ -64,7 +64,9 @@ function months(from, to) {
   }
   return out;
 }
-const thisMonth = () => new Date().toISOString().slice(0, 7);
+// 月の境目は JST で決める（UTC だと毎月1日の JST 0:00〜9:00 に当月を取りこぼす。race_id の日付は JST）
+const thisMonth = () =>
+  new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 7);
 
 async function fetchRange(table, cols, orderCols, rangeCol, lo, hi) {
   const rows = [];

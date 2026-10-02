@@ -109,9 +109,19 @@
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
     },
     {
+      "script": "verify-blog-post-files.js",
+      "tier": "ci",
+      "guards": "ブログ記事メタデータ src/data/blog-posts/{id}.json（BOA-247）の形。id とファイル名の一致・必須項目・本文 .md の存在・featuredRank の有無と重複・blogPosts.js が全件を新しい順で返すこと"
+    },
+    {
       "script": "verify-frontend-pure-functions.js",
       "tier": "ci",
       "guards": "画面側の純関数（basicInfoStats / raceStatus / courseGridStats / venueDayTrend / weatherInfo）の、過去に fix が入った箇所の回帰と変異検証（BOA-255）"
+    },
+    {
+      "script": "verify-racer-stats-waku.js",
+      "tier": "ci",
+      "guards": "racerStats（中身は枠番、BOA-284 で枠番キー維持と決定）を画面が courseRaceCounts・courseRateOf・table.courseWinRate で読まないこと、境界の toWakuRacerStats が wakuRaceCounts に詰め替えること（BOA-302）"
     },
     {
       "script": "verify-race-outcome.js",

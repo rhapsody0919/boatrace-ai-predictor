@@ -101,9 +101,9 @@ function calcCompositeCount(dist, keys, base) {
   return Math.round(sum * base);
 }
 
-// 全コース合計勝利数を算出（5未満ならデフォルト分布が使われている）
+// 全枠番合計勝利数を算出（5未満ならデフォルト分布が使われている）
 function getTotalWins(stats) {
-  const counts = stats.courseRaceCounts;
+  const counts = stats.wakuRaceCounts;
   if (!counts) return 0;
   let sum = 0;
   for (const c of Object.values(counts)) {
@@ -113,8 +113,8 @@ function getTotalWins(stats) {
 }
 
 // 全国平均値のデフォルト率を取得
-function getDefaultRate(row, course) {
-  if (course === 1) {
+function getDefaultRate(row, waku) {
+  if (waku === 1) {
     if (row.key === "nige") return DEFAULT_ATTACK[1]?.nige || 0;
     if (row.composite) {
       let sum = 0;
@@ -125,16 +125,16 @@ function getDefaultRate(row, course) {
   }
   if (row.composite) {
     let sum = 0;
-    for (const k of row.composite) sum += DEFAULT_ATTACK[course]?.[k] || 0;
+    for (const k of row.composite) sum += DEFAULT_ATTACK[waku]?.[k] || 0;
     return sum;
   }
-  return DEFAULT_ATTACK[course]?.[row.key] || 0;
+  return DEFAULT_ATTACK[waku]?.[row.key] || 0;
 }
 
 // セルの値: 回数/分母
 // 戻り値: string | { type: 'default'|'reference', value: string }
-function getCellValue(row, course, stats, courseStr, wins, total) {
-  if (row.course1Only && course !== 1) return "-";
+function getCellValue(row, waku, stats, wakuStr, wins, total) {
+  if (row.course1Only && waku !== 1) return "-";
   if (!total) return "-";
 
   const totalWins = getTotalWins(stats);
@@ -143,21 +143,21 @@ function getCellValue(row, course, stats, courseStr, wins, total) {
 
   // データ不足: 全国平均値を%で薄字表示
   if (isInsufficient) {
-    const rate = getDefaultRate(row, course);
+    const rate = getDefaultRate(row, waku);
     if (rate === 0) return "-";
     return { type: "default", value: `${Math.round(rate * 100)}%` };
   }
 
-  if (course === 1) {
+  if (waku === 1) {
     if (row.key === "nige") {
-      const dist = stats.attackDistribution?.[courseStr];
+      const dist = stats.attackDistribution?.[wakuStr];
       const count = calcCount(dist, "nige", wins);
       const val = count != null ? `${count}/${total}` : "-";
       return isReference ? { type: "reference", value: val } : val;
     }
     // 防御: 負けた回数が分母
     const losses = total - wins;
-    const dist = stats.defenseDistribution?.[courseStr];
+    const dist = stats.defenseDistribution?.[wakuStr];
     if (!dist || !losses) {
       const val = `0/${total}`;
       return isReference ? { type: "reference", value: val } : val;
@@ -168,7 +168,7 @@ function getCellValue(row, course, stats, courseStr, wins, total) {
     const val = count != null ? `${count}/${total}` : "-";
     return isReference ? { type: "reference", value: val } : val;
   } else {
-    const dist = stats.attackDistribution?.[courseStr];
+    const dist = stats.attackDistribution?.[wakuStr];
     if (!dist || !wins) {
       const val = `0/${total}`;
       return isReference ? { type: "reference", value: val } : val;
@@ -221,7 +221,7 @@ function buildExamples(sorted, t) {
   // 1コースの防御例（差され/まくられ/捲差されで回数>0のもの）
   const c1 = sorted[0];
   if (c1) {
-    const counts = c1.courseRaceCounts?.["1"];
+    const counts = c1.wakuRaceCounts?.["1"];
     const total = counts?.total || 0;
     const wins = counts?.wins || 0;
     const losses = total - wins;
@@ -255,12 +255,12 @@ function buildExamples(sorted, t) {
   // 2-6コースの攻撃例（差し/まくり/まくり差しで回数>0のもの）
   for (let i = 1; i < sorted.length; i++) {
     const s = sorted[i];
-    const course = s.course || s.boatNumber;
-    const courseStr = String(course);
-    const counts = s.courseRaceCounts?.[courseStr];
+    const waku = s.boatNumber;
+    const wakuStr = String(waku);
+    const counts = s.wakuRaceCounts?.[wakuStr];
     const wins = counts?.wins || 0;
     const total = counts?.total || 0;
-    const atkDist = s.attackDistribution?.[courseStr];
+    const atkDist = s.attackDistribution?.[wakuStr];
     if (!atkDist || !wins || !total) continue;
 
     for (const tech of ["sashi", "makuri", "makurizashi"]) {
@@ -271,13 +271,13 @@ function buildExamples(sorted, t) {
           const label = t(TECH_LABEL_KEYS[tech].attack);
           examples.push({
             title: t("attackDefense.exampleAttackTitle", {
-              course,
+              waku,
               label,
               count,
               total,
             }),
             desc: t("attackDefense.exampleAttackDesc", {
-              course,
+              waku,
               label,
               count,
               total,
@@ -308,17 +308,13 @@ function RowLabel({ row }) {
   );
 }
 
-// 注: 見出しは「号艇」表示（枠番＝艇番基準）。実際の進入コース変化（前づけ）は
-// BOA-257の制約により区別できないため、race_results.course_1〜6は常に艇番と
-// 一致する値として扱う（raceIndicators.jsxのcourseRateOf関数と同じ制約）
+// 見出しは「号艇」表示。枠番キーは BOA-284 で決定（実進入コースではない。src/utils/racerStats.js）
 export default function AttackDefenseTable({ racerStats, players }) {
   const { t } = useTranslation();
 
   if (!racerStats || racerStats.length < 6) return null;
 
-  const sorted = [...racerStats].sort(
-    (a, b) => (a.course || a.boatNumber) - (b.course || b.boatNumber),
-  );
+  const sorted = [...racerStats].sort((a, b) => a.boatNumber - b.boatNumber);
 
   const getPlayerName = (boatNumber) => {
     const p = players?.find(
@@ -338,20 +334,20 @@ export default function AttackDefenseTable({ racerStats, players }) {
             <tr>
               <th></th>
               {sorted.map((s) => {
-                const course = s.course || s.boatNumber;
-                const color = BOAT_COLORS[course] || {};
+                const waku = s.boatNumber;
+                const color = BOAT_COLORS[waku] || {};
                 return (
                   <th
-                    key={course}
-                    className={course === 1 ? "ad-course1-th" : ""}
+                    key={waku}
+                    className={waku === 1 ? "ad-course1-th" : ""}
                     style={{
-                      background: course === 1 ? "#f1f5f9" : color.bg,
-                      color: course === 1 ? "#1e293b" : color.text,
+                      background: waku === 1 ? "#f1f5f9" : color.bg,
+                      color: waku === 1 ? "#1e293b" : color.text,
                     }}
                   >
-                    <div>{t("analysis.boatN", { n: course })}</div>
+                    <div>{t("analysis.boatN", { n: waku })}</div>
                     <div className="ad-role-sub">
-                      {course === 1
+                      {waku === 1
                         ? t("attackDefense.defense")
                         : t("attackDefense.attack")}
                     </div>
@@ -375,8 +371,8 @@ export default function AttackDefenseTable({ racerStats, players }) {
                 {t("attackDefense.winsPerStarts")}
               </td>
               {sorted.map((s) => {
-                const course = String(s.course || s.boatNumber);
-                const counts = s.courseRaceCounts?.[course];
+                const waku = String(s.boatNumber);
+                const counts = s.wakuRaceCounts?.[waku];
                 return (
                   <td key={s.boatNumber}>
                     {counts ? `${counts.wins || 0}/${counts.total || 0}` : "-"}
@@ -391,16 +387,16 @@ export default function AttackDefenseTable({ racerStats, players }) {
                   <RowLabel row={row} />
                 </td>
                 {sorted.map((s) => {
-                  const course = s.course || s.boatNumber;
-                  const courseStr = String(course);
-                  const counts = s.courseRaceCounts?.[courseStr];
+                  const waku = s.boatNumber;
+                  const wakuStr = String(waku);
+                  const counts = s.wakuRaceCounts?.[wakuStr];
                   const wins = counts?.wins || 0;
                   const total = counts?.total || 0;
 
                   return (
                     <td key={s.boatNumber}>
                       {renderCellValue(
-                        getCellValue(row, course, s, courseStr, wins, total),
+                        getCellValue(row, waku, s, wakuStr, wins, total),
                       )}
                     </td>
                   );
@@ -418,18 +414,18 @@ export default function AttackDefenseTable({ racerStats, players }) {
             <tr>
               <th className="ad-sticky-col"></th>
               {sorted.map((s) => {
-                const course = s.course || s.boatNumber;
-                const color = BOAT_COLORS[course] || {};
+                const waku = s.boatNumber;
+                const color = BOAT_COLORS[waku] || {};
                 return (
                   <th
-                    key={course}
-                    className={course === 1 ? "ad-course1-th" : ""}
+                    key={waku}
+                    className={waku === 1 ? "ad-course1-th" : ""}
                     style={{
-                      background: course === 1 ? "#f1f5f9" : color.bg,
-                      color: course === 1 ? "#1e293b" : color.text,
+                      background: waku === 1 ? "#f1f5f9" : color.bg,
+                      color: waku === 1 ? "#1e293b" : color.text,
                     }}
                   >
-                    {t("analysis.boatN", { n: course })}
+                    {t("analysis.boatN", { n: waku })}
                   </th>
                 );
               })}
@@ -451,8 +447,8 @@ export default function AttackDefenseTable({ racerStats, players }) {
                 {t("attackDefense.winsPerStarts")}
               </td>
               {sorted.map((s) => {
-                const course = String(s.course || s.boatNumber);
-                const counts = s.courseRaceCounts?.[course];
+                const waku = String(s.boatNumber);
+                const counts = s.wakuRaceCounts?.[waku];
                 return (
                   <td key={s.boatNumber}>
                     {counts ? `${counts.wins || 0}/${counts.total || 0}` : "-"}
@@ -466,16 +462,16 @@ export default function AttackDefenseTable({ racerStats, players }) {
                   <RowLabel row={row} />
                 </td>
                 {sorted.map((s) => {
-                  const course = s.course || s.boatNumber;
-                  const courseStr = String(course);
-                  const counts = s.courseRaceCounts?.[courseStr];
+                  const waku = s.boatNumber;
+                  const wakuStr = String(waku);
+                  const counts = s.wakuRaceCounts?.[wakuStr];
                   const wins = counts?.wins || 0;
                   const total = counts?.total || 0;
 
                   return (
                     <td key={s.boatNumber}>
                       {renderCellValue(
-                        getCellValue(row, course, s, courseStr, wins, total),
+                        getCellValue(row, waku, s, wakuStr, wins, total),
                       )}
                     </td>
                   );

@@ -16,6 +16,11 @@ on:
         description: "版の名前（省略時は JST の今日の日付）"
         required: false
         default: ""
+      record_perrace:
+        description: "事前登録5 の記録2（ファンに見える値・seed の揺れ）を取る。初回の本番学習で1回だけ（約数分増える）"
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: train-analogy
@@ -29,6 +34,7 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
       ANALOGY_MODEL_VERSION: ${{ inputs.model_version }}
+      ANALOGY_RECORD_PERRACE: ${{ inputs.record_perrace && '1' || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -43,7 +49,7 @@ jobs:
           python-version: "3.12"
           cache: "pip"
       - name: Install Python deps
-        run: pip install -r scripts/ml/requirements.txt pytest
+        run: pip install -r scripts/ml/analogy/requirements.txt
 
       - name: Test (as-of・リーク防止・ラウンド区分・集計)
         run: python -m pytest scripts/ml/analogy/tests -q
