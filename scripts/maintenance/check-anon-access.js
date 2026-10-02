@@ -117,6 +117,12 @@ const ANON_RPCS = [
   "analogy_layer_counts",
   "analogy_auto_depth",
   "analogy_layer_distribution",
+  // 任意の条件（Q6「ほかのテーマでも絞る」）
+  "analogy_round_from_stage",
+  "analogy_grade_of",
+  "analogy_motor_band",
+  "analogy_race_extras",
+  "analogy_optional_counts",
 ];
 // 読ませない設計のテーブル（RLS有効・ポリシー無し・権限なし）
 const MUST_BE_HIDDEN = [

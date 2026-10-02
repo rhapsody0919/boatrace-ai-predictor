@@ -12,6 +12,8 @@
  *   (f) スナップショット: 締切前のレースに1行、2回目は作らない。自動の深さの分布を保存し、RPC はそれを返す
  *   (g) get_analogy_similar: 深さ1〜4の件数、深さの指定、スナップショット無しでも数えられる
  *   (h) 権限: 匿名は RPC と2表の SELECT だけ。refresh・スナップショット作成・書き込みはできない
+ *   (i) 任意の条件（Q6）: ラウンドの分類が getRaceStageCategory（JS）と同じ、グレードの補い方、モーター順位帯、
+ *       母集団の3列、RPC の絞り込み・「足すと N件」・値が不明な条件をオンにしたときの例外
  *
  * 実行: npm run verify:analogy-strata-migration（@electric-sql/pglite は devDependency）
  * 注意: 検証対象は縮約フィクスチャ。本番データとの照合は verify-analogy-pool.js（manual）
@@ -20,6 +22,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
+import { getRaceStageCategory } from "../../src/constants/raceStageConfig.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATION = path.join(
@@ -39,9 +42,11 @@ const check = (label, ok, detail = "") => {
 const SCHEMA = `
 CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN BYPASSRLS;
 CREATE TABLE races (race_id varchar PRIMARY KEY, race_date date, venue_code smallint, race_number smallint,
-  start_time time, cancellation_status text);
+  start_time time, cancellation_status text, race_grade varchar);
 CREATE TABLE race_entries (race_id varchar, boat_number smallint, grade varchar, win_rate numeric, is_absent boolean,
-  PRIMARY KEY (race_id, boat_number));
+  motor_2rate numeric, PRIMARY KEY (race_id, boat_number));
+CREATE TABLE race_conditions (race_id varchar PRIMARY KEY, race_stage varchar);
+CREATE TABLE race_series (venue_code smallint, start_date date, end_date date, grade text);
 CREATE TABLE race_results (race_id varchar PRIMARY KEY, rank1 smallint, rank2 smallint, rank3 smallint, rank4 smallint,
   rank5 smallint, rank6 smallint, is_cancelled boolean, is_no_race boolean, race_status text, winning_technique text,
   payout_trio integer, payout_trifecta integer,
@@ -51,10 +56,11 @@ CREATE TABLE race_start_timings (race_id varchar, boat_number smallint, start_ti
   is_late_start boolean, finish_mark text, PRIMARY KEY (race_id, boat_number));
 CREATE TABLE exhibition_data (race_id varchar, boat_number smallint, is_absent boolean, PRIMARY KEY (race_id, boat_number));
 CREATE TABLE kb_archive_races (race_id varchar PRIMARY KEY, race_date date, venue_code smallint, race_number smallint,
-  technique text, payout_3tan integer, has_result boolean);
+  technique text, payout_3tan integer, has_result boolean, stage_kind text, venue_day_id text);
+CREATE TABLE kb_archive_venue_days (venue_day_id text PRIMARY KEY, race_grade text);
 CREATE TABLE kb_archive_boats (race_id varchar, boat_number smallint, class text, national_win_rate numeric,
   course smallint, start_timing numeric, is_flying boolean, is_late_start boolean, finish_rank smallint, finish_raw text,
-  PRIMARY KEY (race_id, boat_number));
+  motor_2rate numeric, PRIMARY KEY (race_id, boat_number));
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 `;
 
@@ -241,11 +247,25 @@ async function main() {
   );
 
   // m5: 2号艇が2着だが、フラグは立たず着の欄が F → 除外（BOA-635 の依頼）
-  await mainRace(db, "2026-01-10-24-05", {}, six([6.5, 6.2, 5.0, 4.0, 3.0, 2.0]));
-  await db.query("UPDATE race_start_timings SET finish_mark = 'F' WHERE race_id = '2026-01-10-24-05' AND boat_number = 2");
+  await mainRace(
+    db,
+    "2026-01-10-24-05",
+    {},
+    six([6.5, 6.2, 5.0, 4.0, 3.0, 2.0]),
+  );
+  await db.query(
+    "UPDATE race_start_timings SET finish_mark = 'F' WHERE race_id = '2026-01-10-24-05' AND boat_number = 2",
+  );
   // m6: 3号艇が3着だが返還艇の一覧に入っている → 除外
-  await mainRace(db, "2026-01-10-24-06", {}, six([6.5, 6.2, 5.0, 4.0, 3.0, 2.0]));
-  await db.query("UPDATE race_results SET refund_boats = '{3}' WHERE race_id = '2026-01-10-24-06'");
+  await mainRace(
+    db,
+    "2026-01-10-24-06",
+    {},
+    six([6.5, 6.2, 5.0, 4.0, 3.0, 2.0]),
+  );
+  await db.query(
+    "UPDATE race_results SET refund_boats = '{3}' WHERE race_id = '2026-01-10-24-06'",
+  );
 
   // ---- 今日（検証では明日の日付）のレース: 1号艇 A1・勝率差 +0.30・大村(24)・勝率1位は1号艇 ----
   const tomorrow = jstDate(1);
@@ -260,8 +280,139 @@ async function main() {
   const T5 = `${tomorrow}-24-11`;
   await mainRace(db, T5, { noResult: true }, six([6.5, 6.2, 5.0, 4.0, 3.0]));
 
+  // 任意の条件（Q6）の元の値
+  // kb1: 予選・G1（開催日の値）・1号艇のモーター 40.0 は 45.0 に次ぐ2位（40.0 の同率は上の順位）→ 帯0
+  // kb4: 優勝戦・開催日の行が無いので race_series で補う（重なる2節のうち開始日の早い G3。グレード NULL の節は使わない）
+  //      ・1号艇のモーター不明 → 帯3
+  // m1:  予選特賞 → 予選・ippan・1号艇のモーター 30.0 は5位 → 帯2
+  // T:   全角の「ＭＤ予選」→ 予選・G1・1号艇のモーター 60.0 は1位 → 帯0
+  // T2:  ステージ・グレード・モーターがどれも無い（任意の条件を足せない）
+  await db.exec(`
+    INSERT INTO kb_archive_venue_days VALUES ('vd1', 'G1');
+    UPDATE kb_archive_races SET stage_kind = 'qualifier', venue_day_id = 'vd1' WHERE race_id = '2025-06-01-24-01';
+    UPDATE kb_archive_races SET stage_kind = 'final', venue_day_id = 'vd-missing' WHERE race_id = '2025-06-01-24-04';
+    INSERT INTO race_series VALUES (24, '2025-05-25', '2025-06-03', NULL), (24, '2025-05-30', '2025-06-04', 'ippan'),
+                                   (24, '2025-05-28', '2025-06-02', 'G3');
+    UPDATE kb_archive_boats SET motor_2rate = (ARRAY[40, 45, 40, 30, 20, 10])[boat_number]
+      WHERE race_id = '2025-06-01-24-01';
+    UPDATE kb_archive_boats SET motor_2rate = (ARRAY[NULL, 45, 40, 30, 20, 10])[boat_number]
+      WHERE race_id = '2025-06-01-24-04';
+    UPDATE races SET race_grade = 'ippan' WHERE race_id = '2026-01-10-24-01';
+    INSERT INTO race_conditions VALUES ('2026-01-10-24-01', '予選特賞');
+    UPDATE race_entries SET motor_2rate = (ARRAY[30, 50, 45, 40, 35, 20])[boat_number]
+      WHERE race_id = '2026-01-10-24-01';
+    UPDATE races SET race_grade = 'G1' WHERE race_id = '${T}';
+    INSERT INTO race_conditions VALUES ('${T}', 'ＭＤ予選');
+    UPDATE race_entries SET motor_2rate = (ARRAY[60, 50, 45, 40, 35, 20])[boat_number] WHERE race_id = '${T}';
+  `);
+  const T2 = `${tomorrow}-24-10`;
+  await mainRace(
+    db,
+    T2,
+    { noResult: true },
+    six([6.5, 6.2, 5.0, 4.0, 3.0, 2.0], { 1: { cls: "A1" } }),
+  );
+
   await db.exec(fs.readFileSync(MIGRATION, "utf8"));
   check("120 を適用できる", true);
+
+  // (i) 分類の関数
+  const STAGES = [
+    "予選",
+    "一般戦",
+    "準優勝戦",
+    "優勝戦",
+    "準々優勝戦",
+    "準優進出戦",
+    "ツッキー優勝戦",
+    "ＭＤ優勝戦",
+    "ドリーム戦",
+    "ペイペイDR",
+    "ペイペイＤＲ",
+    "予選特賞",
+    "予選特選",
+    "一般特選",
+    "一般特賞",
+    "選抜戦",
+    "記者選抜戦",
+    "特別選抜戦",
+    "予選ドリーム戦",
+    "予選選抜",
+    "一般選抜",
+    "朝からセンプル",
+    "サンライズX戦",
+    "カタメン１予選",
+    "特選",
+    "団体・優勝戦",
+    "一般",
+    "特別戦",
+    "一般予選",
+    "",
+  ];
+  const CATEGORY_TO_ROUND = {
+    qualifier: "yosen",
+    qualifierSpecial: "yosen",
+    semifinal: "junyu",
+    final: "yusho",
+  };
+  const expectedRounds = STAGES.map((st) => {
+    const cat = getRaceStageCategory(st);
+    if (!st) return null;
+    return CATEGORY_TO_ROUND[cat?.key] ?? "other";
+  });
+  const sqlRounds = (
+    await db.query(
+      "SELECT array_agg(analogy_round_from_stage(x) ORDER BY i) AS r FROM unnest($1::text[]) WITH ORDINALITY AS t(x, i)",
+      [STAGES],
+    )
+  ).rows[0].r;
+  const roundDiff = STAGES.filter(
+    (st, i) => sqlRounds[i] !== expectedRounds[i],
+  ).map(
+    (st, i) =>
+      `${st}: SQL=${sqlRounds[STAGES.indexOf(st)]} JS=${expectedRounds[STAGES.indexOf(st)]}`,
+  );
+  check(
+    `ラウンドの分類が getRaceStageCategory と同じ（${STAGES.length}通り）`,
+    roundDiff.length === 0,
+    roundDiff.join(" / "),
+  );
+  check(
+    "ラウンド: ステージが NULL なら NULL",
+    (await db.query("SELECT analogy_round_from_stage(NULL) AS r")).rows[0].r ===
+      null,
+  );
+  const kinds = (
+    await db.query(
+      "SELECT array_agg(coalesce(analogy_round_from_kb_kind(x), '-') ORDER BY i) AS r FROM unnest(ARRAY['qualifier','semifinal','final','other','x',NULL]) WITH ORDINALITY AS t(x, i)",
+    )
+  ).rows[0].r;
+  check(
+    "長期の stage_kind → ラウンド",
+    JSON.stringify(kinds) ===
+      JSON.stringify(["yosen", "junyu", "yusho", "other", "-", "-"]),
+    JSON.stringify(kinds),
+  );
+  const mb = (
+    await db.query(
+      "SELECT array_agg(analogy_motor_band(x) ORDER BY i) AS b FROM unnest(ARRAY[NULL,1,2,3,4,5,6]::int[]) WITH ORDINALITY AS t(x, i)",
+    )
+  ).rows[0].b;
+  check(
+    "モーター順位帯（不明3・1〜2位0・3〜4位1・5〜6位2）",
+    JSON.stringify(mb) === "[3,0,0,1,1,2,2]",
+    JSON.stringify(mb),
+  );
+  const gr = (
+    await db.query(
+      "SELECT analogy_grade_of('SG', 24::smallint, '2025-06-01') AS a, analogy_grade_of('x', 24::smallint, '2025-06-01') AS b, analogy_grade_of(NULL, 1::smallint, '2025-06-01') AS c",
+    )
+  ).rows[0];
+  check(
+    "グレード: レースの値を先に、無ければ重なる節のうち開始日の早いもの、どれも無ければ NULL",
+    gr.a === "SG" && gr.b === "G3" && gr.c === null,
+    JSON.stringify(gr),
+  );
 
   // (a) 帯
   const bands = await db.query(
@@ -331,6 +482,22 @@ async function main() {
       m1.rank3 === 2 &&
       m1.winning_technique === "まくり" &&
       m1.winner_course === 3,
+  );
+
+  check(
+    "母集団の任意の3列（kb1: 予選・G1・帯0／kb4: 優勝戦・G3・帯3／m1: 予選・ippan・帯2）",
+    kb1.round === "yosen" &&
+      kb1.grade === "G1" &&
+      kb1.b1_motor_band === 0 &&
+      kb4.round === "yusho" &&
+      kb4.grade === "G3" &&
+      kb4.b1_motor_band === 3 &&
+      m1.round === "yosen" &&
+      m1.grade === "ippan" &&
+      m1.b1_motor_band === 2,
+    JSON.stringify(
+      [kb1, kb4, m1].map((p) => [p.round, p.grade, p.b1_motor_band]),
+    ),
   );
 
   const r2 = (
@@ -405,17 +572,101 @@ async function main() {
   }
   check("RPC: 深さ0は例外", depthErr);
 
+  // (i) 任意の条件（層は kb1・m1 の2件。T は予選・G1・帯0）
+  check(
+    "RPC: 今日のレースの任意の条件の値と、足すと N件（ラウンド2・グレード1・モーター1）",
+    g0.extras.round === "yosen" &&
+      g0.extras.grade === "G1" &&
+      g0.extras.b1_motor_band === 0 &&
+      JSON.stringify(g0.n_if_added) ===
+        JSON.stringify({ grade: 1, motor: 1, round: 2 }) &&
+      g0.filters.round === false &&
+      g0.filters.grade === false &&
+      g0.filters.motor === false,
+    JSON.stringify({ extras: g0.extras, n_if_added: g0.n_if_added }),
+  );
+  const gG = (
+    await db.query(
+      "SELECT get_analogy_similar($1, NULL, false, true, false) AS g",
+      [T],
+    )
+  ).rows[0].g;
+  check(
+    "RPC: グレードで絞ると kb1 の1件だけ（分布・一覧とも）",
+    gG.n === 1 &&
+      gG.filters.grade === true &&
+      gG.recent.length === 1 &&
+      gG.recent[0].race_id === "2025-06-01-24-01" &&
+      gG.depth === 1,
+    JSON.stringify({ n: gG.n, recent: gG.recent.map((r) => r.race_id) }),
+  );
+  check(
+    "RPC: 絞った後の足すと N件は、今の層に重ねた件数（ラウンド1・グレード1・モーター1）",
+    JSON.stringify(gG.n_if_added) ===
+      JSON.stringify({ grade: 1, motor: 1, round: 1 }),
+    JSON.stringify(gG.n_if_added),
+  );
+  const gRM = (
+    await db.query(
+      "SELECT get_analogy_similar($1, NULL, true, false, true) AS g",
+      [T],
+    )
+  ).rows[0].g;
+  check(
+    "RPC: ラウンドとモーターを重ねる（kb1 の1件）",
+    gRM.n === 1 && gRM.filters.round === true && gRM.filters.motor === true,
+    JSON.stringify({ n: gRM.n, filters: gRM.filters }),
+  );
+  const g2 = (await db.query("SELECT get_analogy_similar($1) AS g", [T2]))
+    .rows[0].g;
+  check(
+    "RPC: 値が分からない任意の条件は足せない（n_if_added が null、モーターの帯は3）",
+    g2 &&
+      g2.extras.round === null &&
+      g2.extras.grade === null &&
+      g2.extras.b1_motor_band === 3 &&
+      g2.n_if_added.round === null &&
+      g2.n_if_added.grade === null &&
+      g2.n_if_added.motor === null,
+    JSON.stringify(g2 && { extras: g2.extras, n_if_added: g2.n_if_added }),
+  );
+  for (const [label, args] of [
+    ["ラウンド", "true, false, false"],
+    ["グレード", "false, true, false"],
+    ["モーター", "false, false, true"],
+  ]) {
+    let err = "";
+    try {
+      await db.query(`SELECT get_analogy_similar($1, NULL, ${args})`, [T2]);
+    } catch (e) {
+      err = e.message;
+    }
+    check(
+      `RPC: 値が分からない${label}をオンにすると例外`,
+      err.includes("絞れません"),
+      err,
+    );
+  }
+
   // (g2) BOA-635 の RPC: 自動の深さの層の行
-  const br = (await db.query("SELECT get_analogy_similar_races($1) AS g", [T])).rows[0].g;
+  const br = (await db.query("SELECT get_analogy_similar_races($1) AS g", [T]))
+    .rows[0].g;
   check(
     "BOA-635 RPC: 層の総件数・返した件数・深さ",
-    br && br.n_total === 2 && br.n_returned === 2 && br.depth === 1 && br.snapshot === false,
-    JSON.stringify(br && { n_total: br.n_total, n_returned: br.n_returned, depth: br.depth }),
+    br &&
+      br.n_total === 2 &&
+      br.n_returned === 2 &&
+      br.depth === 1 &&
+      br.snapshot === false,
+    JSON.stringify(
+      br && { n_total: br.n_total, n_returned: br.n_returned, depth: br.depth },
+    ),
   );
   const keys = br ? Object.keys(br.rows[0]).sort().join(",") : "";
   check(
     "BOA-635 RPC: 行の列は合意した8列（race_id を含まない）",
-    keys === "course_by_boat,payout_3tan,race_date,rank1,rank2,rank3,st_by_course,winning_technique",
+    keys ===
+      "course_by_boat,payout_3tan,race_date,rank1,rank2,rank3,st_by_course,winning_technique",
     keys,
   );
   check("BOA-635 RPC: 新しい順", br && br.rows[0].race_date === "2026-01-10");
@@ -425,8 +676,8 @@ async function main() {
     await db.query("SELECT create_analogy_snapshots($1) AS n", [tomorrow])
   ).rows[0].n;
   check(
-    "スナップショットを締切前の1レースに作る（6艇そろわないレースは作らない）",
-    s1 === 1,
+    "スナップショットを締切前の2レースに作る（6艇そろわないレースは作らない）",
+    s1 === 2,
     String(s1),
   );
   const s2 = (
@@ -449,6 +700,19 @@ async function main() {
   const g4 = (
     await db.query("SELECT get_analogy_similar($1, 4::smallint) AS g", [T])
   ).rows[0].g;
+  const gSnapG = (
+    await db.query(
+      "SELECT get_analogy_similar($1, NULL, false, true, false) AS g",
+      [T],
+    )
+  ).rows[0].g;
+  check(
+    "RPC: 任意の条件を足したら、スナップショットがあっても数え直す",
+    gSnapG.from_snapshot === false &&
+      gSnapG.snapshot === true &&
+      gSnapG.technique["差し"] === 1,
+    JSON.stringify(gSnapG.technique),
+  );
   check(
     "RPC: 深さを変えたら数え直す",
     g4.from_snapshot === false && g4.depth === 4 && g4.technique["差し"] === 1,
@@ -481,12 +745,13 @@ async function main() {
   check("匿名: RPC を呼べる", ga !== null);
   check(
     "匿名: BOA-635 の RPC を呼べる",
-    (await db.query("SELECT get_analogy_similar_races($1) AS g", [T])).rows[0].g !== null,
+    (await db.query("SELECT get_analogy_similar_races($1) AS g", [T])).rows[0]
+      .g !== null,
   );
   check(
     "匿名: 2表を SELECT できる",
     (await db.query("SELECT count(*)::int AS n FROM analogy_snapshots")).rows[0]
-      .n === 1,
+      .n === 2,
   );
   const denied = async (sql) => {
     try {
