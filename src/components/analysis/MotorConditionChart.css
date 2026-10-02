@@ -144,7 +144,11 @@
      モーター番号が「44/号/機」と1文字ずつ改行されて行の高さが3倍になっていた
      （2026-09-27、ファン視点のレビューで発覚）。ラップさせるより、
      .table-wrapper の overflow-x に載せて横スクロールさせる */
-  min-width: 620px;
+  /* 列幅は中身の幅にする（nowrap なので折れない）。以前は min-width: 620px で、375px では
+     余った幅が左の列（枠番・選手名・機番）に配られ、棒と会場内順位が画面の外に押し出された
+     （BOA-428。左から5列を最初の画面に入れる）。広い画面では 100% に伸ばす */
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
@@ -186,6 +190,33 @@
 .motor-ranking-table td.rate {
   color: var(--color-success-text);
   font-weight: var(--font-weight-medium);
+}
+
+/* 公式2連率の棒と会場内順位（BOA-428）。良し悪しの色は付けない（UI統一ルール R4・R5）。
+   375px で左から5列（枠・選手・機番・棒・順位）が横スクロールなしで入る幅にする */
+.motor-ranking-table td.motor-rate-bar-cell {
+  min-width: 84px;
+}
+
+.motor-ranking-table td.motor-venue-rank {
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* 母数は順位の下の行に小さく出す（375px で列幅を詰める。BOA-428） */
+.motor-venue-rank-total {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+
+/* 棒と会場内順位の見出しは2行に折ってよい（承認済みのモックと同じ。列幅を中身で決める） */
+/* 表の幅が max-content なので、見出しは幅を決めないと折れない */
+.motor-ranking-table th.motor-wrap-head {
+  white-space: normal;
+  width: 3.5em;
 }
 
 .motor-ranking-table td.power-index-good {
@@ -457,7 +488,13 @@
 
   .motor-ranking-table th,
   .motor-ranking-table td {
-    padding: 0.5rem;
+    padding: 0.5rem 0.3rem;
+  }
+
+  /* 375px で会場内順位の列まで、右端の「›」に隠れずに入る幅（BOA-428） */
+  .motor-ranking-table td.motor-rate-bar-cell,
+  .motor-ranking-table td.motor-rate-bar-cell .rate-bar {
+    min-width: 52px;
   }
 }
 

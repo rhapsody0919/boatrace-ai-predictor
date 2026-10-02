@@ -29,6 +29,8 @@ import {
   officialTallyState,
 } from "../../utils/motorGeneration";
 import { translatePartName } from "../race/raceIndicators";
+import RateBar from "../common/RateBar";
+import { BOAT_COLORS } from "../../utils/colors";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
 
@@ -94,6 +96,9 @@ function MotorConditionChart({
   // 選択中のレース自体が入れ替え前（過去レースで、レース日 < 使用開始日）か。
   // 一覧の時点で伝え、行を押しても推移が出ないことを先に知らせる
   const [racePreGeneration, setRacePreGeneration] = useState(false);
+  // 6基の会場内順位（会場公式サイトの2連率、BOA-428）。{state: "ok"|"empty"|"error"}。
+  // null は取得中（列はまだ出さない）
+  const [venueRanks, setVenueRanks] = useState(null);
   // 会場の現行モーターの使用開始日（BOATCAST bc_mst）。当日のレースで画面に出す
   // （2026-09-29 ユーザー判断 B、ADR-0067 の 2026-09-28 追記の改訂）
   const [generationStart, setGenerationStart] = useState(null);
@@ -146,6 +151,17 @@ function MotorConditionChart({
         setGenerationStart(venueGenerationStart);
         setRacePreGeneration(preGeneration);
         setBreakdown(data);
+        // 会場内順位は一覧表のあとから足す（表の表示を待たせない）。当日のレースは最新の
+        // スナップショット、過去のレースはレース日以前で最新（BOA-521 と同じ）
+        setVenueRanks(null);
+        supabaseDataService
+          .getVenueMotorRanks(
+            selectedVenue,
+            raceDate !== null && raceDate < getTodayJST() ? raceDate : null,
+          )
+          .then((ranks) => {
+            if (!cancelled) setVenueRanks(ranks);
+          });
         // 機力バッジ等からのディープリンク（?motor=）で指定されたモーターが
         // 今回のレースに実在すれば、そのままドリルダウン画面を開く。
         // マッチしなかった場合もpendingは消費する（消費せず残すと、後で
@@ -365,10 +381,49 @@ function MotorConditionChart({
       rate3: meet.rate3,
     }));
 
-  const bestMotor2Rate =
-    breakdown.length > 0
-      ? Math.max(...breakdown.map((r) => r.motor_2rate ?? 0))
+  // 棒にする公式2連率（節時点）。過去レースは2連率の列そのものが公式値（BOA-329）
+  const officialRateOf = (row) => {
+    const v =
+      row.rate_source === "official" ? row.motor_2rate : row.official_2rate;
+    return v === null || v === undefined ? null : Number(v);
+  };
+  const officialRates = breakdown.map(officialRateOf);
+  const officialRateValues = officialRates.filter((v) => v !== null);
+  const officialRateMax =
+    officialRateValues.length > 0 ? Math.max(...officialRateValues) : null;
+  // 最良の値ラベル（UI統一ルール R1）。同じ値の最良は全部、全艇同値・値なしなら付けない
+  const officialRateBest =
+    officialRateValues.length > 0 &&
+    Math.min(...officialRateValues) !== officialRateMax
+      ? officialRateMax
       : null;
+  // 会場内順位の列（BOA-428）。会場サイトの値を出さない会場（戸田・平和島・浜名湖・宮島）と、
+  // その日以前のスナップショットが無いときは列ごと畳む。取得の失敗は列を残して印を出す
+  // （列が黙って消えると、データが無い会場と区別できない）
+  const showVenueRank =
+    venueRanks?.state === "ok" || venueRanks?.state === "error";
+  const venueRankCell = (motorNumber) => {
+    if (venueRanks?.state === "error") {
+      return t("analysis.motor.venueRankError");
+    }
+    const hit = venueRanks?.ranks.get(motorNumber);
+    // スナップショットに載っていないモーター（入れ替え直後の会場で欠けることがある）
+    if (!hit) return "-";
+    // 母数（/60）は小さく添える。375px で列幅を詰めるため（BOA-428）
+    return (
+      <>
+        {t(
+          hit.tied > 1
+            ? "analysis.motor.venueRankCellTied"
+            : "analysis.motor.venueRankCell",
+          { rank: hit.rank },
+        )}
+        <span className="motor-venue-rank-total">
+          {t("analysis.motor.venueRankTotal", { total: venueRanks.total })}
+        </span>
+      </>
+    );
+  };
 
   // BOA-301: embedded時のFR-2/3枠番グリッドで強調表示する「今日の艇番」。
   // 今日のレースはまだ実施前のため実進入コース(actual_course)は存在せず、
@@ -618,17 +673,25 @@ function MotorConditionChart({
                     <tr>
                       <th>{t("analysis.laneHeader")}</th>
                       <th>{t("table.playerName")}</th>
-                      <th>{t("analysis.motor.motorNumberHeader")}</th>
-                      {/* BOA-451: 「公式2連率（節時点）」は再計算した2連率の**すぐ右**に
-                      置く。この2つを見比べられることが追加の目的なので隣り合わせる。
-                      前検は「起点」なので3連率の右（機力指数の手前）。
-                      **2連率より左に列を足さない**のが肝心で、390pxでは左から3列で
-                      画面が埋まるため、手前に足すと肝心の2連率・機力指数が画面外へ
-                      押し出される（1着率の列を条件表示にしたのと同じ理由、2026-09-27） */}
-                      <th>{t("analysis.motor.rate2Header")}</th>
-                      {/* 過去レースは2連率の列そのものが公式値なので、同じ値の列を畳む */}
+                      <th>{t("analysis.motor.motorNumberShortHeader")}</th>
+                      {/* 公式2連率（節時点、棒）と会場内順位を、機番のすぐ右に置く（BOA-428、
+                      ユーザー承認のモック）。375px で左から5列が最初の画面に入り、6基の強さの
+                      差と会場の中での位置が、横に送らずに読める。以前（BOA-451）は再計算した
+                      2連率を先に置き、公式2連率をそのすぐ右にしていた。再計算した2連率は
+                      消さずに会場内順位の右へ移す（見比べられる位置は保つ）。過去レースは
+                      2連率の列そのものが公式値なので、その列を棒にし、再計算の列は無い */}
+                      <th className="motor-wrap-head">
+                        {officialMode
+                          ? t("analysis.motor.rate2Header")
+                          : t("analysis.motor.officialRate2Header")}
+                      </th>
+                      {showVenueRank && (
+                        <th className="motor-wrap-head motor-venue-rank-head">
+                          {t("analysis.motor.venueRankHeader")}
+                        </th>
+                      )}
                       {!officialMode && (
-                        <th>{t("analysis.motor.officialRate2Header")}</th>
+                        <th>{t("analysis.motor.rate2Header")}</th>
                       )}
                       <th>{t("analysis.motor.rate3Header")}</th>
                       {hasPretest && (
@@ -652,9 +715,6 @@ function MotorConditionChart({
                         key={row.boat_number}
                         className={[
                           "motor-ranking-row",
-                          row.motor_2rate === bestMotor2Rate
-                            ? "best-motor"
-                            : "",
                           // 他のタブで選んだ艇は、一覧のまま行で示す（ドリルダウンは
                           // 自動で開かない。一覧が主役で、初回の表示を変えない。BOA-494 案A）
                           row.boat_number === focusedBoat ? "is-focused" : "",
@@ -671,11 +731,9 @@ function MotorConditionChart({
                         <td translate="no">
                           {row.player_name?.replace(/\s+/g, "")}
                         </td>
-                        <td className="motor-num">
-                          {t("analysis.motor.motorUnit", {
-                            n: row.motor_number,
-                          })}
-                        </td>
+                        {/* 見出しが「機番」なので数字だけ（BOA-428、承認済みのモック。375px で棒と
+                            会場内順位を最初の画面に入れるため「◯号機」を詰めた） */}
+                        <td className="motor-num">{row.motor_number}</td>
                         {/* 連対率は**小数1桁**で出す（BOA-474、2026-09-28）。
                           `official_2rate`（`race_entries.motor_2rate`）は、同じ節・同じ
                           モーターでもレースによって桁数が違う。出走表の行は二段階で埋まり、
@@ -689,37 +747,46 @@ function MotorConditionChart({
                           基本情報タブのデータ出走表も同じ値を `toFixed(1)` で出しており、
                           ボートレース日和も1桁。再計算した2連率/3連率も、母数が数十走で
                           2桁目に意味が無いため揃える */}
-                        <td className="rate">
-                          {row.motor_2rate?.toFixed(1)}
-                          {/* このレースより前に結果の出た走が無い新モーター（当日の
-                              レースのみ判定できる）。公式の 0.0 は消さずに添える
-                              （BOA-513、ファン4人のパネル） */}
-                          {row.sample_count === 0 && (
-                            <span className="motor-waku-n motor-first-use">
-                              {t("analysis.motor.firstUseBadge")}
-                            </span>
-                          )}
-                          {/* 過去レースはこの列が公式の2連率なので、「集計前」もここに
-                              添える（当日は公式2連率の列に添える。BOA-557） */}
-                          {officialMode && isOfficialPending(row) && (
+                        <td className="motor-rate-bar-cell">
+                          <RateBar
+                            value={officialRates[i]}
+                            max={officialRateMax}
+                            fill={BOAT_COLORS[row.boat_number]?.bg}
+                            best={
+                              officialRateBest !== null &&
+                              officialRates[i] === officialRateBest
+                            }
+                            label={
+                              officialRates[i] !== null
+                                ? officialRates[i].toFixed(1)
+                                : "-"
+                            }
+                          />
+                          {/* 公式の2連率・3連率がどちらも 0 なのに、このレースより前に
+                              結果の出た走がある＝新モーターで公式の累計がまだ付いていない。
+                              公式の 0.0 は残し、「本当に0%」と読まれないよう印を添える
+                              （2026-09-29 ファン4人のパネル・ユーザー承認。過去レースも
+                              この列が公式値なので同じ。BOA-557） */}
+                          {isOfficialPending(row) && (
                             <span className="motor-waku-n motor-official-pending">
                               {t("analysis.motor.officialPendingBadge")}
                             </span>
                           )}
                         </td>
+                        {showVenueRank && (
+                          <td className="motor-venue-rank">
+                            {venueRankCell(row.motor_number)}
+                          </td>
+                        )}
                         {!officialMode && (
                           <td className="rate">
-                            {row.official_2rate !== null &&
-                            row.official_2rate !== undefined
-                              ? Number(row.official_2rate).toFixed(1)
-                              : "-"}
-                            {/* 公式の2連率・3連率がどちらも 0 なのに、このレースより前に
-                                結果の出た走がある＝新モーターで公式の累計がまだ付いていない。
-                                公式の 0.0 は残し、「本当に0%」と読まれないよう印を添える
-                                （2026-09-29 ファン4人のパネル・ユーザー承認） */}
-                            {isOfficialPending(row) && (
-                              <span className="motor-waku-n motor-official-pending">
-                                {t("analysis.motor.officialPendingBadge")}
+                            {row.motor_2rate?.toFixed(1)}
+                            {/* このレースより前に結果の出た走が無い新モーター（当日の
+                                レースのみ判定できる）。公式の 0.0 は消さずに添える
+                                （BOA-513、ファン4人のパネル） */}
+                            {row.sample_count === 0 && (
+                              <span className="motor-waku-n motor-first-use">
+                                {t("analysis.motor.firstUseBadge")}
                               </span>
                             )}
                           </td>
@@ -803,6 +870,25 @@ function MotorConditionChart({
               2連率/3連率・機力指数）は当社の計算なので出典の対象外。
               横スクロールの枠（右端のフェード）の外に置く。枠の中だと375pxで
               各行の末尾がフェードに隠れて読めない（2026-09-29 ファン評価） */}
+            {/* 会場内順位の出どころ（BOA-428）。棒は BOATRACE 公式の2連率、順位は会場公式サイトの
+                2連率で、出どころが違う（2026-10-02 ユーザー判断で注記の形）。日付は「取得日」と書く。
+                会場によっては節ごとにしか中身が変わらず、取得日をデータの時点と読ませないため */}
+            {venueRanks?.state === "ok" && (
+              <p className="table-note motor-venue-rank-note">
+                {t("analysis.motor.venueRankSourceNote", {
+                  venue: t(
+                    `venues.${selectedVenue}`,
+                    VENUE_NAMES[selectedVenue] || String(selectedVenue),
+                  ),
+                  date: venueRanks.scrapedDate.replaceAll("-", "/").replace(
+                    /\/0(\d)/g,
+                    "/$1",
+                  ),
+                })}
+                <br />
+                {t("analysis.motor.motorRiderMixNote")}
+              </p>
+            )}
             <p className="table-note motor-official-source-note">
               {officialMode
                 ? t("analysis.motor.officialModeSourceNote")
