@@ -112,7 +112,21 @@
       "out_strong": "アウト強い",
       "balanced": "バランス型"
     },
-    "fetchError": "会場の水面特性を読み込めませんでした。"
+    "fetchError": "会場の水面特性を読み込めませんでした。",
+    "details": {
+      "summary": "もっと詳しく（2連率・3連率、決まり手の内訳）",
+      "placeRatesTitle": "枠番別の連対率",
+      "placeRatesNote": "2連率は2着以内、3連率は3着以内に入った割合（{{count}}レース）",
+      "boat": "枠",
+      "winRate": "1着率",
+      "top2Rate": "2連率",
+      "top3Rate": "3連率",
+      "techniqueTitle": "勝ったときの決まり手",
+      "techniqueNote": "枠番ごとの、1着になったレースの決まり手の内訳。（）は回数",
+      "winCount": "1着{{count}}回",
+      "smallSampleNote": "1着の回数が少ない枠は、割合がぶれやすい点に注意してください。",
+      "outcomeLink": "この会場の出目ランキングを見る（分析ツール）"
+    }
   },
   "raceDetailPage": {
     "metaTitle": "{{venue}}競艇 {{race}}R AI予想・展開予測（{{date}}）- 龍神レーダー",

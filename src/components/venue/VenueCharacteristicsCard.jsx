@@ -11,6 +11,7 @@
  * デザイン案はArtifact（レーダースイープ/HUDテレメトリ/ソナーリング）から
  * HUDテレメトリ案を採用（2026-09-07）。
  * /venueはTRANSLATED_PATHS対象のため、文言はi18nキー経由にする。
+ * 下に「もっと詳しく」（2連率・3連率と決まり手の全内訳、BOA-269）の折りたたみを置く。
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -19,6 +20,7 @@ import { translateTechnique } from "../race/raceIndicators";
 import { BOAT_COLORS } from "../../utils/colors";
 import InlineFetchError from "../InlineFetchError";
 import CollapsibleSection from "./CollapsibleSection";
+import VenueCharacteristicsDetails from "./VenueCharacteristicsDetails";
 import "./VenueCharacteristicsCard.css";
 
 // このサンプル数を下回る会場は表示しない（ノイズが大きいため）
@@ -213,6 +215,11 @@ export default function VenueCharacteristicsCard({
             );
           })}
         </div>
+        <VenueCharacteristicsDetails
+          venueCode={venueCode}
+          outcomeData={outcomeData}
+          techniqueData={techniqueData}
+        />
         <p className="venue-characteristics-footnote">
           {t("venueCharacteristics.footnote", {
             count: outcomeData.total_races,
