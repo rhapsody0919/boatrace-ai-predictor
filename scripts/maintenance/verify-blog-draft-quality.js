@@ -156,7 +156,7 @@ function checkFaqSection(markdown) {
 
 /**
  * @param {string} slug - public/blog/{slug}.md のslug
- * @param {{title: string, description: string}} meta - src/data/blogPosts.js の該当エントリ
+ * @param {{title: string, description: string}} meta - src/data/blog-posts/{id}.json の中身
  * @returns {Promise<{passed: boolean, checks: Array<{name: string, passed: boolean, detail: string}>}>}
  */
 export async function verifyBlogDraftQuality(slug, meta) {

@@ -1,0 +1,16 @@
+{
+  "id": "race-mood-effect-guide",
+  "title": "イン崩れ注意度に波紋アニメーションを追加。荒れそうなレースがひと目でわかる",
+  "description": "イン崩れ注意度のアイコン背後に、荒れ度合いに応じて強弱が変わる波紋アニメーションを追加した新機能を解説。数値を読む前に、波紋の勢いで大まかな荒れ度合いをつかむ使い方を紹介します。",
+  "date": "2026-08-18",
+  "category": "新機能",
+  "tags": [
+    "イン崩れ指数",
+    "新機能",
+    "UI改善",
+    "アニメーション"
+  ],
+  "readTime": "5分",
+  "featured": false,
+  "image": "/images/blog/race-mood-effect-badge.jpg"
+}
