@@ -30,19 +30,20 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
-  MS_SCHEMA,
   MS_USER_AGENT,
   MS_EARLIEST_YM,
   buildMonthlyScheduleUrl,
   listYms,
   parseYm,
   parseMonthlySchedule,
-  mergeMonthlySchedules,
   summarizeMonthlySchedule,
-  addDays,
 } from "../lib/monthlyScheduleParser.js";
-import { SERIES_TABLE, buildSeriesRows } from "../lib/raceSeriesRows.js";
-import { diffRows } from "../lib/unchangedRows.js";
+import {
+  planRaceSeriesRows,
+  shiftYm,
+  ymOf,
+  writeRaceSeriesRows,
+} from "../lib/raceSeriesSync.js";
 import {
   HARD_MIN_INTERVAL_MS,
   appendJsonl,
@@ -55,13 +56,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
-const ymOf = (date) => `${date.slice(0, 4)}${date.slice(5, 7)}`;
-/** YYYYMM の1か月前・後 */
-const shiftYm = (ym, delta) => {
-  const { year, month } = parseYm(ym);
-  const idx = year * 12 + (month - 1) + delta;
-  return `${Math.floor(idx / 12)}${String((idx % 12) + 1).padStart(2, "0")}`;
-};
 const jstMonth = (now = new Date()) =>
   ymOf(new Date(now.getTime() + JST_OFFSET_MS).toISOString().slice(0, 10));
 
@@ -292,10 +286,6 @@ export async function cmdParse(opts, deps = {}) {
 // ---------------------------------------------------------------------------
 
 const sleepDefault = (ms) => new Promise((r) => setTimeout(r, ms));
-const chunk = (arr, n) =>
-  Array.from({ length: Math.ceil(arr.length / n) }, (_, i) =>
-    arr.slice(i * n, i * n + n),
-  );
 
 /**
  * load の範囲（--from〜--to の月に開始日がある節）の、節の行を作る。前後1か月の解析済みページが必要。
@@ -307,33 +297,12 @@ export function buildLoadPlan(opts) {
   const missingMonths = [];
   for (const ym of need) {
     const p = readParsedMonth(opts.archiveDir, ym);
-    if (p) {
-      if (p.schema !== MS_SCHEMA)
-        throw new Error(`${ym}: 未対応のスキーマ ${p.schema}`);
-      pages.push(p);
-    } else missingMonths.push(ym);
+    if (p) pages.push(p);
+    else missingMonths.push(ym);
   }
   if (missingMonths.length > 0)
     return { rows: [], unresolved: [], anomalies: [], missingMonths };
-  const merged = mergeMonthlySchedules(pages);
-  const lastDay = addDays(
-    `${shiftYm(opts.to, 1).slice(0, 4)}-${shiftYm(opts.to, 1).slice(4)}-01`,
-    -1,
-  );
-  const rows = buildSeriesRows(merged.series, {
-    from: `${opts.from.slice(0, 4)}-${opts.from.slice(4)}-01`,
-    to: lastDay,
-  });
-  // 範囲内で確定できなかった節（範囲の端の月の外へ続く節）。前後1か月のページがあるため、通常は0件
-  const inRange = (u) =>
-    u.seen_from >= `${opts.from.slice(0, 4)}-${opts.from.slice(4)}-01` &&
-    u.seen_to <= lastDay;
-  return {
-    rows,
-    unresolved: merged.unresolved.filter(inRange),
-    anomalies: merged.anomalies,
-    missingMonths,
-  };
+  return { ...planRaceSeriesRows(pages, opts.from, opts.to), missingMonths };
 }
 
 export async function cmdLoad(opts, deps = {}) {
@@ -373,57 +342,18 @@ export async function cmdLoad(opts, deps = {}) {
   }
   const client =
     deps.client ?? (await import("../lib/supabaseClient.js")).supabase;
-  const probe = await client
-    .from(SERIES_TABLE.table)
-    .select("venue_code")
-    .limit(1);
-  if (probe.error) {
-    console.error(
-      `${SERIES_TABLE.table} を読めません（DDL 084 が未適用の可能性）: ${probe.error.message}`,
-    );
+  let summary;
+  try {
+    summary = await writeRaceSeriesRows(client, plan.rows, {
+      batchSize: opts.batchSize,
+      sleepMs: opts.sleepMs,
+      sleep: sleepFn,
+    });
+  } catch (e) {
+    console.error(e.message);
     return 1;
   }
-  // 月ごとに、開始日がその月の節の既存行を読み、差分のある行だけを書く
-  const byMonth = new Map();
-  for (const r of plan.rows) {
-    const list = byMonth.get(ymOf(r.start_date)) ?? [];
-    list.push(r);
-    byMonth.set(ymOf(r.start_date), list);
-  }
-  const summary = { written: 0, unchanged: 0, failedMonths: 0 };
-  for (const [ym, rows] of [...byMonth.entries()].sort()) {
-    const first = `${ym.slice(0, 4)}-${ym.slice(4)}-01`;
-    const last = addDays(
-      `${shiftYm(ym, 1).slice(0, 4)}-${shiftYm(ym, 1).slice(4)}-01`,
-      -1,
-    );
-    const { data, error } = await client
-      .from(SERIES_TABLE.table)
-      .select(Object.keys(rows[0]).join(","))
-      .gte("start_date", first)
-      .lte("start_date", last)
-      .range(0, 999);
-    if (error)
-      throw new Error(`${SERIES_TABLE.table} の取得に失敗: ${error.message}`);
-    const { toWrite, stats } = diffRows(data ?? [], rows, {
-      keyColumns: SERIES_TABLE.keyColumns,
-    });
-    summary.unchanged += stats.unchanged;
-    let failed = false;
-    for (const part of chunk(toWrite, opts.batchSize)) {
-      const { error: e } = await client
-        .from(SERIES_TABLE.table)
-        .upsert(part, { onConflict: SERIES_TABLE.onConflict });
-      if (e) {
-        failed = true;
-        console.error(`${ym}: 書き込みに失敗: ${e.message}`);
-        break;
-      }
-      summary.written += part.length;
-      await sleepFn(opts.sleepMs);
-    }
-    if (failed) summary.failedMonths++;
-  }
+  for (const e of summary.errors) console.error(e);
   log(`\nload: ${JSON.stringify(summary)}`);
   if (summary.failedMonths > 0) return 1;
   if (summary.written + summary.unchanged === 0) {

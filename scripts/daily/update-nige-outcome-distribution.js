@@ -68,11 +68,12 @@ async function fetchAllNigeRaceResults() {
       .not("rank2", "is", null)
       .not("rank3", "is", null)
       .gte("race_id", ninetyDaysAgo)
+      .order("race_id")
       .range(from, from + pageSize - 1);
 
     if (error) {
-      console.error("レース結果取得エラー:", error.message);
-      return null;
+      // 失敗を「データなし」（exit 0）にしない。古い統計が残ったまま成功扱いになるため（BOA-391）
+      throw new Error(`レース結果取得エラー: ${error.message}`);
     }
 
     if (!data || data.length === 0) {

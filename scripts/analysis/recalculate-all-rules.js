@@ -5,6 +5,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { fetchAll } from '../lib/supabaseClient.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -207,28 +208,12 @@ const VENUE_RULES = {
 async function fetchAllData(startDate) {
   console.log(`\n📥 データ取得中... (${startDate}以降)`);
 
-  const allPredictions = [];
-  let offset = 0;
-  const pageSize = 1000;
-
-  while (true) {
-    const { data, error } = await supabase
-      .from('predictions')
-      .select('*')
-      .gte('predicted_at', startDate)
-      .eq('model_id', 'standard')
-      .range(offset, offset + pageSize - 1);
-
-    if (error) {
-      console.error('予測取得エラー:', error.message);
-      break;
-    }
-    if (!data || data.length === 0) break;
-
-    allPredictions.push(...data);
-    offset += pageSize;
-    if (data.length < pageSize) break;
-  }
+  const allPredictions = await fetchAll(
+    'predictions',
+    '*',
+    q => q.gte('predicted_at', startDate).eq('model_id', 'standard').order('prediction_id'),
+    { client: supabase }
+  );
 
   console.log(`  予測データ: ${allPredictions.length}件`);
 
@@ -243,9 +228,8 @@ async function fetchAllData(startDate) {
       .select('*')
       .in('race_id', batch);
 
-    if (!error && data) {
-      allResults.push(...data);
-    }
+    if (error) throw new Error(`race_results取得エラー: ${error.message}`);
+    allResults.push(...data);
   }
 
   console.log(`  結果データ: ${allResults.length}件`);

@@ -25,7 +25,7 @@
 |---|---|---|
 | `RacerFilterToolbar.jsx`（`src/components/racer/`） | 上記5つの共通フィルタコンポーネントを一覧ページ用の横並びレイアウトで束ねる | `RacersPage.jsx`から状態を受け取るコンテナ。フィルタ自体のロジックは各`*FilterSelect`/`RangeFilterInput`側に閉じ込め、本コンポーネントはレイアウトのみ担当 |
 | `RacerTable.jsx`（`src/components/racer/`） | デスクトップ用ソート可能テーブル（選手名・支部・身長・体重・級別・登録期・出身地・勝率・年齢） | `<th>`クリックでソート方向をトグルする。行クリックで`/racer/:racerId`へ`<Link>`遷移（FR2） |
-| `RacerCompactRow.jsx`（`src/components/racer/`） | モバイル用の折りたたみ行（FR5） | 行本体は`<Link>`、▼アイコンのみ`onClick`で`e.preventDefault()`+`e.stopPropagation()`し展開状態をトグルする独立ボタンとして実装（スペック確定済みのタップ領域分離） |
+| `RacerCompactRow.jsx`（`src/components/racer/`） | モバイル用の折りたたみ行（FR5） | 行本体は`<Link>`（href を持つ。新しいタブで開ける・長押しで URL が取れる）。▼アイコンは**リンクの外に兄弟要素として置く**独立ボタンで、展開状態をトグルする（操作できる要素を入れ子にしない。BOA-470） |
 | `RacerListPagination.jsx`（`src/components/racer/`） | ページ番号方式のページネーション（1 2 3 … 33） | 既存の管理画面用prev/nextページネーションとは要件が異なるため新規作成。汎用化はせず`/racers`専用として作る（YAGNI、他ページでの利用要求が出た時点で共通化を検討） |
 
 ## 既存コンポーネントの拡張（変更あり）
