@@ -11,6 +11,11 @@
  * 旧AiAnalysisSectionは「折りたたみ」であることに価値があったが、独立タブへの
  * 昇格によりタブ選択自体が開閉の役割を兼ねるため、アコーディオンの重複UIは
  * 廃止した（本命サマリー表示もOutcomePatternPreview内で艇番が分かるため省略）。
+ *
+ * アナロジー・ファインダー節（BOA-271）は、予想（predictions）の有無と切り離して、中止以外の
+ * すべての分岐（確定後・予想なし・未確定）で既存ブロックの下に出す。既存ブロックの早期 return に
+ * 巻き込まれないよう、既存の表示は PredictionBlocks に分け、節はその外に置く。
+ * BOA-635 も同じ場所（PredictionBlocks の外）に部品を置く前提なので、この形を変えるときは知らせる。
  */
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -21,17 +26,18 @@ import PredictionCard from "./PredictionCard";
 import OutcomePatternPreview from "./OutcomePatternPreview";
 import { getVolatilityLevel } from "../../utils/volatilityLevel";
 import { isJudgeable } from "../../utils/raceOutcome";
+import AnalogyFinderSection from "./analogy/AnalogyFinderSection";
 
 function RaceAiPredictionTab({
   prediction,
   venueCode,
   venueName,
   raceId,
+  raceGrade = null,
+  raceStage = null,
   isCancelled = false,
 }) {
   const { t } = useTranslation();
-  const result = prediction?.result;
-  const finished = Boolean(result?.finished);
 
   // 中止確定のレースは開催されないので、展開予測・イン崩れ指数を出さない（BOA-424）。
   // predictions は中止前に作られて残っていることがある（BOA-411）ため、データの有無では判定しない。
@@ -43,6 +49,30 @@ function RaceAiPredictionTab({
       </div>
     );
   }
+
+  return (
+    <>
+      <PredictionBlocks
+        prediction={prediction}
+        venueCode={venueCode}
+        venueName={venueName}
+        raceId={raceId}
+      />
+      <AnalogyFinderSection
+        key={raceId}
+        venueCode={venueCode}
+        venueName={venueName}
+        raceGrade={raceGrade}
+        raceStage={raceStage}
+      />
+    </>
+  );
+}
+
+function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
+  const { t } = useTranslation();
+  const result = prediction?.result;
+  const finished = Boolean(result?.finished);
 
   const turnPatterns = prediction?.turnPrediction?.patterns;
   const hasTurnPrediction =

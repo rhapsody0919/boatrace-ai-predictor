@@ -369,6 +369,17 @@ function PredictionPanel({
                   venueCode={venueCode}
                   venueName={venueName}
                   raceId={analysisRaceId}
+                  raceGrade={
+                    prediction?.raceGrade ??
+                    selectedRace?.rawData?.raceGrade ??
+                    selectedRace?.raceGrade ??
+                    null
+                  }
+                  raceStage={
+                    prediction?.raceStage ??
+                    selectedRace?.rawData?.raceStage ??
+                    null
+                  }
                   isCancelled={isCancelled}
                 />
               ),

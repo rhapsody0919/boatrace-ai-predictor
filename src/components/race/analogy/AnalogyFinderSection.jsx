@@ -8,7 +8,10 @@
 import { useCallback, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getRaceStageCategory } from "../../../constants/raceStageConfig";
-import { GRADES, roundFromStageCategory } from "../../../utils/analogyContribution";
+import {
+  GRADES,
+  roundFromStageCategory,
+} from "../../../utils/analogyContribution";
 import ContributionView from "./ContributionView";
 import "./AnalogyFinder.css";
 
@@ -25,8 +28,10 @@ export default function AnalogyFinderSection({
   if (unavailable) return null;
   const defaultGrade = GRADES.includes(raceGrade) ? raceGrade : "all";
   const defaultRound =
-    roundFromStageCategory(getRaceStageCategory(raceStage)?.key, Boolean(raceStage)) ??
-    "all";
+    roundFromStageCategory(
+      getRaceStageCategory(raceStage)?.key,
+      Boolean(raceStage),
+    ) ?? "all";
   return (
     <section className="af-section" aria-labelledby={headingId}>
       <h2 id={headingId} className="af-title">

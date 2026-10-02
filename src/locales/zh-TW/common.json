@@ -617,7 +617,121 @@
   "aiPredictionTab": {
     "cancelled": "本場比賽已中止，因此沒有AI預測。",
     "unavailableTitle": "尚無AI預測資料",
-    "unavailableBody": "這場比賽尚未備齊AI預測所需的資料。"
+    "unavailableBody": "這場比賽尚未備齊AI預測所需的資料。",
+    "analogy": {
+      "title": "類比搜尋",
+      "views": {
+        "contribution": "貢獻度"
+      },
+      "contribution": {
+        "lede": "依名次查看哪些資料、以多大程度發揮作用，以主題別比例呈現。",
+        "foot": "比例表示在相同條件的過去比賽中，各主題影響的相對大小（全部主題合計100%）。"
+      },
+      "targetsLabel": "名次",
+      "targets": {
+        "1": "第1名",
+        "2": "前2名",
+        "3": "前3名"
+      },
+      "conditions": "詳細條件",
+      "grade": "等級",
+      "round": "階段",
+      "all": "全部",
+      "grades": {
+        "ippan": "一般",
+        "G3": "G3",
+        "G2": "G2",
+        "G1": "G1",
+        "SG": "SG"
+      },
+      "rounds": {
+        "yosen": "預賽",
+        "junyu": "準優勝戰",
+        "yusho": "優勝戰",
+        "other": "其他"
+      },
+      "compare": "依艇號比較",
+      "boatA": "艇號A",
+      "boatB": "艇號B",
+      "boatLabel": "{{n}}號艇",
+      "themeColumn": "主題",
+      "venueAll": "全部場地",
+      "allBoats": "全部艇",
+      "widened": "比賽數較少，已擴大至{{steps}}統計",
+      "widenedSteps": {
+        "venue": "全部場地",
+        "round": "全部階段",
+        "grade": "全部等級"
+      },
+      "n": "n={{races}}場（{{boats}}艇）",
+      "model": "模型 {{version}}",
+      "smallSample": "小樣本",
+      "rank": "第{{rank}}",
+      "radarLabel": "各主題貢獻大小的雷達圖",
+      "breakdownNote": "意義相近的項目（勝率與2連率、場內排名等）已合併顯示。個別數值僅供參考。",
+      "error": "無法載入貢獻度資料",
+      "themes": {
+        "venueCourse": {
+          "name": "場地×艇號・進場",
+          "short": "場地×艇號"
+        },
+        "racerRecord": {
+          "name": "選手・基本成績",
+          "short": "基本成績"
+        },
+        "startExhibition": {
+          "name": "ST・賽前資訊",
+          "short": "ST・賽前"
+        },
+        "machine": {
+          "name": "機力",
+          "short": "機力"
+        },
+        "environment": {
+          "name": "環境",
+          "short": "環境"
+        },
+        "racerProfile": {
+          "name": "選手・屬性",
+          "short": "屬性"
+        }
+      },
+      "groups": {
+        "venueCourse": {
+          "venue": "場地",
+          "boatNumber": "艇號",
+          "raceNumber": "賽事編號"
+        },
+        "racerRecord": {
+          "class": "級別",
+          "national": "全國勝率・2連率",
+          "local": "當地勝率・2連率",
+          "recent": "近30場成績",
+          "boat1": "1號艇的級別・勝率"
+        },
+        "startExhibition": {
+          "exhibitionTime": "展示時間",
+          "pastSt": "過去平均ST"
+        },
+        "machine": {
+          "motor": "馬達2連率",
+          "boat": "艇體2連率"
+        },
+        "environment": {
+          "weather": "天氣",
+          "wind": "風向・風速",
+          "wave": "浪高",
+          "grade": "等級",
+          "round": "階段",
+          "seriesDay": "節的第幾天"
+        },
+        "racerProfile": {
+          "age": "年齡",
+          "weight": "體重",
+          "branch": "支部・主場"
+        }
+      }
+    }
   },
   "beforeInfo": {
     "subtitle": "隨著發走時間接近才會更新的當日限定資訊。部分項目要到發走前30/15/10分鐘才會確定",
