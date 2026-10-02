@@ -1,5 +1,5 @@
 /**
- * アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR-0083）の JS が、学習側の Python と同じ値を出すことを、
+ * アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））の JS が、学習側の Python と同じ値を出すことを、
  * 小さな固定モデルと DB の行の形の固定データ（scripts/ml/analogy/testdata/treeshap-parity/、make_treeshap_testdata.py が作る）で検証する。
  * 実DBに触らない。本番の版ごとの検査は、学習ジョブが同じ treeshap-parity.js を本番のモデルと固定データで呼ぶ。
  *
@@ -86,7 +86,7 @@ check(
   );
 }
 {
-  // 平均を float64 で取る誤り（ADR-0083 決定5 で避けたもの）を、固定データの期待値が見分けられること
+  // 平均を float64 で取る誤り（ADR 案（#1134「レースごとの寄与度」） 決定5 で避けたもの）を、固定データの期待値が見分けられること
   const d = load();
   let differs = 0;
   for (const race of d.fixture.races) {

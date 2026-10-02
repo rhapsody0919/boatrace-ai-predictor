@@ -5,7 +5,7 @@
 Python の特徴量・pred_contrib を書き出す。verify-analogy-treeshap.js（CI）がこれを読む。
 
 直前情報8列は features.py の encode_race_level と add_relative と同じ pandas の式で作る。
-風向が空で風速0を無風とする約束（ADR-0083、学習側の features.py の変更）は、features.py に
+風向が空で風速0を無風とする約束（ADR 案（#1134「レースごとの寄与度」）、学習側の features.py の変更）は、features.py に
 入るまではここで足す（入った後は何もしない）。
 
 作り直し（lightgbm・pandas は scripts/ml/analogy/requirements の版で）:

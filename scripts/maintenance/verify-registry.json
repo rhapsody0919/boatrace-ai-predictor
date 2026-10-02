@@ -642,7 +642,7 @@
     {
       "script": "verify-analogy-treeshap.js",
       "tier": "ci",
-      "guards": "アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR-0083）の JS が学習側の Python と同じ値を出すこと。小さな固定モデルと DB の行の形の固定データで、直前情報8列（float32 の Kahan 和の平均・min の順位・無風と風向が空の扱い）が完全一致し、TreeSHAP（カテゴリ分岐・欠損の向き）が pred_contrib と 1e-9 未満で一致すること、学習ジョブが呼ぶ treeshap-parity.js の終了コード（一致0・不一致1・入力の不備2）、テーマ集計（中心化した |SHAP| のシェア）の約束"
+      "guards": "アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））の JS が学習側の Python と同じ値を出すこと。小さな固定モデルと DB の行の形の固定データで、直前情報8列（float32 の Kahan 和の平均・min の順位・無風と風向が空の扱い）が完全一致し、TreeSHAP（カテゴリ分岐・欠損の向き）が pred_contrib と 1e-9 未満で一致すること、学習ジョブが呼ぶ treeshap-parity.js の終了コード（一致0・不一致1・入力の不備2）、テーマ集計（中心化した |SHAP| のシェア）の約束"
     },
     {
       "script": "verify-best-of.js",

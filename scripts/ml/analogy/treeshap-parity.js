@@ -1,12 +1,12 @@
 /**
- * BOA-271 FR-1b（ADR-0083 決定6）: レースごとの寄与度の JS（TreeSHAP・直前情報8列の作り方）が、
+ * BOA-271 FR-1b（ADR 案（#1134「レースごとの寄与度」） 決定6）: レースごとの寄与度の JS（TreeSHAP・直前情報8列の作り方）が、
  * 学習側の Python（features.py・LightGBM の pred_contrib）と一致するかを、DB の行の形の固定データで端から端まで検査する。
  *
  * 学習ジョブ（週次）が Storage へのアップロードの前に呼ぶ品質ゲート。一致しなければ版を切り替えない。
  *   node scripts/ml/analogy/treeshap-parity.js out/
  * 終了コード: 0 一致 / 1 不一致 / 2 入力の不備（ファイルが無い・形が違う）
  *
- * ディレクトリに置くもの（学習側が作る。形は ADR-0083「境界の合意」と docs/design/analogy-finder/plan.md）:
+ * ディレクトリに置くもの（学習側が作る。形は ADR 案（#1134「レースごとの寄与度」）「境界の合意」と docs/design/analogy-finder/plan.md）:
  * - per_race_meta.json: { model_version, dtype: "float32", models: { win, win_racecard: {file, feature_names, num_trees, objective} },
  *     live_features, categorical_maps, themes }
  * - models.*.file（dump_model() の JSON。.gz でも可）

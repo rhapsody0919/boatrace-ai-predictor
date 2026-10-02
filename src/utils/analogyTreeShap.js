@@ -1,5 +1,5 @@
 /**
- * アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR-0083）: LightGBM の
+ * アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: LightGBM の
  * `Booster.dump_model()` の JSON から、生スコアの推論と TreeSHAP（pred_contrib と同じ値）を出す純粋関数。
  *
  * LightGBM（src/io/tree.cpp・include/LightGBM/tree.h）の移植。試作は

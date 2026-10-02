@@ -1,10 +1,10 @@
 /**
- * アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR-0083）: DB の行からモデルの入力を作る純粋関数。
+ * アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: DB の行からモデルの入力を作る純粋関数。
  *
  * - 出走表時点の36列は学習側の日次ジョブが `analogy_race_features.features`（real[]）に書いたものを読むだけ
  * - 直前情報8列（LIVE_FEATURES）は、展示タイムと気象から scripts/ml/analogy/features.py と同じ式で作る
  *
- * float32 の約束（ADR-0083 決定5）: 学習は float32 の値で木を作るので、分岐の閾値が名目値の
+ * float32 の約束（ADR 案（#1134「レースごとの寄与度」） 決定5）: 学習は float32 の値で木を作るので、分岐の閾値が名目値の
  * すぐ近くにある。Python（pandas）と1ビットでも違うと分岐が変わるため、次をそろえる。
  * - DB から読んだ値はすべて Math.fround する
  * - レース内の差は、float32 の Kahan 和で求めた平均（pandas の groupby().transform("mean") の float32）を引く
@@ -92,7 +92,7 @@ export function rankMinAscending(values) {
 
 /**
  * 風の成分。features.py の encode_race_level と同じ式（風向の角度×風速。無風は0）。
- * 無風は「風向が無風」または「風向が空で風速0」。風向が空で風速>0・風速が空・未知の風向は NaN（学習側と合意、ADR-0083）
+ * 無風は「風向が無風」または「風向が空で風速0」。風向が空で風速>0・風速が空・未知の風向は NaN（学習側と合意、ADR 案（#1134「レースごとの寄与度」））
  */
 export function windComponents(windDirection, windSpeed) {
   const dir = blankToNull(windDirection);
