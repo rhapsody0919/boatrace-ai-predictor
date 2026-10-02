@@ -78,6 +78,34 @@ test("選んだタブ・艇が URL に載り、そのリンクを開くと同じ
   await expect.poll(() => searchOf(page)).toBe("");
 });
 
+// 艇を押した直後（書き戻しが画面に反映される前）にタブを押しても、艇の選択が消えない。
+// setSearchParams の関数形式が受け取る値は描画時点のもので、反映前に次の書き戻しが走ると
+// 古い値を土台にして boat を消していた（CI で「?tab=meet&boat=2」が「?tab=meet」になった）。
+// 同じタスクの中で2つのクリックを発火させて、反映前の書き戻しを確実に起こす
+test("艇を押した直後にタブを押しても、艇の選択が URL から消えない", async ({
+  page,
+}) => {
+  test.slow();
+  await openRace(page, RACE_PATH);
+  await tab(page, "基本情報").click();
+  await expect(basicBar(page, 5)).toBeVisible({ timeout: 30000 });
+
+  await page.evaluate(() => {
+    const bar = [...document.querySelectorAll(".rbit-bar-row")].find(
+      (el) => el.querySelector(".rbit-boat-chip")?.textContent.trim() === "5",
+    );
+    const meet = [...document.querySelectorAll(".race-tabs-btn")].find(
+      (el) => el.textContent.trim() === "今節",
+    );
+    bar.click();
+    meet.click();
+  });
+  await expect.poll(() => searchOf(page)).toBe("?tab=meet&boat=5");
+  await expect(meetChip(page, 5)).toHaveAttribute("aria-pressed", "true", {
+    timeout: 30000,
+  });
+});
+
 test("戻るボタンはタブ・艇の選択を巻き戻さず、前のページへ戻る", async ({
   page,
 }) => {
