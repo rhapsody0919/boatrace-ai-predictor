@@ -57,6 +57,21 @@
   2. 風向を特徴量から外し、風速だけにする（簡単で、基準のずれは無くなる。向かい風・追い風の区別を失う）
   - どちらも画面の数字が変わるので、決まったら独立エージェントで検証する
 
+## ユーザー作業の手順
+### A. 学習のやり直し（#1178 → #1205 のマージの後）
+前提: #1205（`KB_CACHE_VERSION` v2）が master にあること。無いまま走らせると、長期分は v1 のキャッシュ（最終日が全件 false）を読み、`check_final_day` で止まる（害は無いが無駄）。欠場艇の行の補完（#1199）の本番適用も先に済ませる（本体分は毎回 DB から読むので、学習より前に入っていればよい）。
+1. Supabase Dashboard → Storage → バケット（`scripts/ml/analogy/storage.js` の `BUCKET`）→ `source/v1/` を削除する（v2 にしたので読まれないが、BOA-696 の前の値を残さない）
+2. GitHub → Actions → Train Analogy Finder → Run workflow（branch: master）
+   - `record_perrace`: 風向の扱いが決まるまでは **false**。事前登録5 の記録は、特徴量が確定した版で1回だけ取る
+   - 初回は長期分（2019-04〜2025-12）を DB から読み直して v2 のキャッシュを置くので、普段より Disk IO が多い（Dashboard の Disk IO を前後で確認する）
+3. 確認: Step Summary の「版 … に切り替えた」、一致検査（Parity check）が緑、`analogy_models` の新しい版が is_active
+
+### B. T10-7 の有効化（A が1回成功し、123・124 を適用した後）
+1. GitHub → Settings → Developer settings → Fine-grained tokens → 新規。Repository access はこのリポジトリだけ、Permissions は Actions: Read and write だけ。有効期限を決めてカレンダーに入れる（期限切れは scrape-monitor が1回目の失敗から Slack に出す）
+2. Vercel → Project → Settings → Environment Variables に `GITHUB_ACTIONS_DISPATCH_TOKEN`（Production）を足し、再デプロイ
+3. SQL（Supabase、書き込み）: `insert into scrape_job_state (job, mode) values ('analogy_dispatch_train','shadow'),('analogy_dispatch_features','shadow') on conflict (job) do update set mode = excluded.mode;`
+4. 翌朝 6:40・7:20 の応答（`last_report`）で `wouldDispatch` を確かめ、`mode='live'` にする
+
 ## 手元で動かすとき
 - Python は 3.12 の venv に `scripts/ml/analogy/requirements.txt` を入れる（pandas 3.0.6・lightgbm 4.7.0）。macOS では `DYLD_LIBRARY_PATH` に `site-packages/sklearn/.dylibs` を通す。`nice` を挟むと SIP で DYLD が消えるので、挟まない
 - `train.py` の結合確認は合成データで行える。今回は、`tests/test_perrace.py` の `synthetic()` で 6,000R を作り、`out/reference/` に参照版の3本を置いて最後まで流した
