@@ -56,11 +56,14 @@ const results = await must("結果", () =>
 const startRows = await must("ST", () =>
   supabase
     .from("race_start_timings")
-    .select("race_id, boat_number")
+    .select("race_id, boat_number, finish_mark")
     .in("race_id", raceIds),
 );
+// 欠場艇にも行がある（finish_mark='欠'）ので、それは出走に数えない（getMeetScoreboard と同じ）
 const startedKeys = new Set(
-  startRows.map((r) => `${r.race_id}|${r.boat_number}`),
+  startRows
+    .filter((r) => r.finish_mark !== "欠")
+    .map((r) => `${r.race_id}|${r.boat_number}`),
 );
 const racesWithSt = new Set(startRows.map((r) => r.race_id));
 const didStart = (raceId, boatNumber) =>

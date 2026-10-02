@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { formatPercent } from "../../utils/formatters";
+import RacerConditionStats from "./RacerConditionStats";
 import {
   supabaseDataService,
   aggregateRacerVenueBoatStats,
@@ -766,6 +767,9 @@ export default function RacerPerformanceStats({
           )}
         </div>
       )}
+
+      {/* レース条件別の成績（BOA-336）。フィルタには連動しない（全会場・全条件の履歴から集計） */}
+      <RacerConditionStats history={vcHistory} />
 
       {hasReturnRate && (
         <div className="racer-technique-profile">
