@@ -79,3 +79,27 @@ export function officialTallyState(venueHasOfficialStats, officialRaceCount) {
   if (officialRaceCount > 0) return "tallied";
   return venueHasOfficialStats ? "pending" : "unknown";
 }
+
+/**
+ * モーター2連率 0 が「実績なし（新モーターで、このレースより前に一度も使われていない）」か（BOA-702）。
+ * 実績なしを「0.0%」と出すと「2着以内に一度も来ていない」と読まれるため、表示を「—」にする。
+ * 本当に 0%（走って2着以内0回）なら false（機力の情報を消さない）。
+ *
+ * - 当日のレース（rate_source='recalc'）: 自社集計の走数 sample_count（全会場で取れる）が 0 なら実績なし
+ * - 過去のレース（rate_source='official'）: 会場公式の出走数 race_count で判定（officialTallyState）。
+ *   公式の値が無い会場（戸田・平和島、出走回数の列が無い会場）は断定しない（false）
+ *
+ * @param {{motor_2rate?: number|string|null, rate_source?: string, sample_count?: number|null,
+ *   race_count?: number|null}} row getRaceMotorBreakdown の1行
+ * @param {boolean} venueHasOfficialStats その会場に会場公式の出走数があるか
+ * @returns {boolean}
+ */
+export function isMotorUnrated(row, venueHasOfficialStats) {
+  if (!row || row.motor_2rate === null || row.motor_2rate === undefined)
+    return false;
+  if (Number(row.motor_2rate) !== 0) return false;
+  if (row.rate_source === "recalc") return row.sample_count === 0;
+  return (
+    officialTallyState(venueHasOfficialStats, row.race_count) === "pending"
+  );
+}

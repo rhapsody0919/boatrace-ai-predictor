@@ -80,7 +80,12 @@ function DigestRaceCard({
         {open && (
           <footer className="digest-card__foot">
             {row.motor_2rate !== null && (
-              <span>モーター2連率 {Number(row.motor_2rate).toFixed(1)}%</span>
+              <span>
+                {/* 新モーターで実績なしの 0 は「0.0%」と出さない（BOA-702。印は生成スクリプトが付ける） */}
+                {row.detail?.motorUnrated
+                  ? "モーター2連率 —（新モーター・実績なし）"
+                  : `モーター2連率 ${Number(row.motor_2rate).toFixed(1)}%`}
+              </span>
             )}
             {row.volatility_percentile !== null && (
               <span>

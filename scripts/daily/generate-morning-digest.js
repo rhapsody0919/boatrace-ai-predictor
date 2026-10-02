@@ -42,6 +42,11 @@ import {
 } from "../lib/supabaseClient.js";
 import { isDirectRun } from "../lib/isDirectRun.js";
 import {
+  countPriorMotorRuns,
+  fetchMotorStartDates,
+  isUnratedMotor,
+} from "../lib/motorUnrated.js";
+import {
   createTopicWithTargets,
   enabledChannelsOf,
   findTopicByTextMarker,
@@ -152,7 +157,7 @@ async function fetchEntries(raceIds, { includeAbsent = false } = {}) {
       supabase
         .from("race_entries")
         .select(
-          "race_id, boat_number, racer_id, player_name, grade, motor_2rate, is_absent",
+          "race_id, boat_number, racer_id, player_name, grade, motor_number, motor_2rate, is_absent",
         )
         .in("race_id", chunk)
         .order("race_id", { ascending: true })
@@ -164,6 +169,26 @@ async function fetchEntries(raceIds, { includeAbsent = false } = {}) {
   return all.filter(
     (e) => e.racer_id !== null && (includeAbsent || !e.is_absent),
   );
+}
+
+async function markUnratedMotors(rows, entries, date) {
+  const zeroRows = rows.filter((r) => r.motor_2rate === 0);
+  if (zeroRows.length === 0) return;
+  const motorByKey = new Map(
+    entries.map((e) => [`${e.race_id}:${e.boat_number}`, e.motor_number]),
+  );
+  const startDateByVenue = await fetchMotorStartDates(supabase, date);
+  for (const r of zeroRows) {
+    const priorRuns = await countPriorMotorRuns(supabase, {
+      venueCode: r.venue_code,
+      motorNumber: motorByKey.get(`${r.race_id}:${r.boat_number}`) ?? null,
+      raceDate: r.race_id.slice(0, 10),
+      startDateByVenue,
+    });
+    if (isUnratedMotor(r.motor_2rate, priorRuns)) {
+      r.detail = { ...r.detail, motorUnrated: true };
+    }
+  }
 }
 
 async function fetchRacerStats(racerIds) {
@@ -953,6 +978,10 @@ export async function runMorningDigest({
     ...flying,
     ...returned.rows,
   ];
+
+  // モーター2連率 0 のうち、新モーターで実績なしのものに印を付ける（BOA-702）。
+  // カードは印があれば「—（新モーター・実績なし）」、無ければ 0.0% を出す
+  await markUnratedMotors(ordered, entries, date);
 
   // rank はセクション内の並び順（1始まり）
   const rankBySection = new Map();
