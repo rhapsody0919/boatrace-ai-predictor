@@ -29,85 +29,14 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { stripNonCode } from "../lib/stripNonCode.js";
+import { compareWithAllowlist as compareWithAllowlistShared } from "../lib/compareWithAllowlist.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
 const E2E_DIR = path.join(ROOT, "e2e");
 const ALLOWLIST_PATH = path.join(HERE, "e2e-no-unroute-allowlist.json");
 const MIN_REASON_LENGTH = 10;
-
-// この文字の直後の `/` は割り算ではなく正規表現リテラルの始まり
-const REGEX_PRECEDERS = new Set("(,=:[!&|?{};+-*%<>~^".split(""));
-
-/**
- * コメント・文字列・テンプレート・正規表現リテラルの中身を空白に置き換える（純関数）。
- * 改行は残すので、行番号と位置は元のソースと一致する
- */
-export function stripNonCode(source) {
-  const out = source.split("");
-  const blank = (from, to) => {
-    for (let k = from; k < to; k += 1) {
-      if (out[k] !== "\n") out[k] = " ";
-    }
-  };
-  // i の位置の `/` が正規表現リテラルの始まりか（割り算ではないか）
-  const startsRegex = (i) => {
-    let k = i - 1;
-    while (k >= 0 && /\s/.test(out[k])) k -= 1;
-    if (k < 0) return true;
-    // return / typeof 等のキーワードの後も正規表現
-    const word = source.slice(0, k + 1).match(/[A-Za-z_$]+$/);
-    if (word) {
-      return ["return", "typeof", "case", "in", "of"].includes(word[0]);
-    }
-    // a++ / 2・a-- / 2 は割り算
-    if ((out[k] === "+" || out[k] === "-") && out[k - 1] === out[k]) {
-      return false;
-    }
-    return REGEX_PRECEDERS.has(out[k]);
-  };
-  let i = 0;
-  while (i < source.length) {
-    const c = source[i];
-    const next = source[i + 1];
-    if (c === "/" && next === "/") {
-      const end = source.indexOf("\n", i);
-      const stop = end === -1 ? source.length : end;
-      blank(i, stop);
-      i = stop;
-    } else if (c === "/" && next === "*") {
-      const end = source.indexOf("*/", i + 2);
-      const stop = end === -1 ? source.length : end + 2;
-      blank(i, stop);
-      i = stop;
-    } else if (c === '"' || c === "'" || c === "`") {
-      let k = i + 1;
-      while (k < source.length && source[k] !== c) {
-        if (source[k] === "\\") k += 1;
-        // 通常の文字列は行をまたがない（閉じ忘れで以降を全部消さないため）
-        else if (source[k] === "\n" && c !== "`") break;
-        k += 1;
-      }
-      blank(i + 1, k);
-      i = k + 1;
-    } else if (c === "/" && startsRegex(i)) {
-      let k = i + 1;
-      let inClass = false;
-      while (k < source.length && source[k] !== "\n") {
-        if (source[k] === "\\") k += 1;
-        else if (source[k] === "[") inClass = true;
-        else if (source[k] === "]") inClass = false;
-        else if (source[k] === "/" && !inClass) break;
-        k += 1;
-      }
-      blank(i + 1, k);
-      i = k + 1;
-    } else {
-      i += 1;
-    }
-  }
-  return out.join("");
-}
 
 /** code[open] が "(" のとき、対応する ")" までの引数を最上位のカンマで分ける */
 function splitArgs(code, open) {
@@ -167,29 +96,13 @@ const MESSAGES = {
 
 /**
  * 違反（{ file, line, code }）と許可リストを突き合わせる（純関数）。
- * 戻り値: { unallowed, stale, invalid }
+ * 戻り値: { unallowed, stale, invalid }。実体は scripts/lib/compareWithAllowlist.js
+ * （verify-e2e-recorded-network.js と共有、BOA-663）
  */
 export function compareWithAllowlist(found, entries) {
-  const invalid = entries.filter(
-    (e) =>
-      typeof e.file !== "string" ||
-      typeof e.code !== "string" ||
-      typeof e.reason !== "string" ||
-      e.reason.trim().length < MIN_REASON_LENGTH,
-  );
-  const valid = entries.filter((e) => !invalid.includes(e));
-  const used = new Set();
-  const unallowed = found.filter((v) => {
-    const idx = valid.findIndex(
-      (e, k) =>
-        !used.has(k) && e.file === v.file && e.code.trim() === v.code.trim(),
-    );
-    if (idx === -1) return true;
-    used.add(idx);
-    return false;
+  return compareWithAllowlistShared(found, entries, {
+    minReasonLength: MIN_REASON_LENGTH,
   });
-  const stale = valid.filter((_, k) => !used.has(k));
-  return { unallowed, stale, invalid };
 }
 
 /** ファイルの内容から { file, line, kind, code } の一覧を作る */
