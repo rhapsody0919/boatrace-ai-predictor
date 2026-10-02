@@ -28,14 +28,15 @@
 - [ ] T1-3 workflow_dispatch 用の fine-grained PAT（このリポジトリの Actions の write だけ）を作り、Vercel の環境変数 `GITHUB_ACTIONS_DISPATCH_TOKEN` に入れる（ユーザーの作業）
 
 ## T2 特徴量と学習の本番化（scripts/ml/analogy/）
-- [ ] T2-1 `export_pool.js`: 長期（kb_archive）と本体から書き出す。Phase M の `export-data.js` を土台に、補完後のデータで欠損の扱いを見直す。長期分は初回だけ書き出して Storage（`analogy/source/`）に置き、週次は本体の差分だけ読む。2025-12-02 の重なりは本体を優先
-- [ ] T2-2 `features.py`: 近傍の距離は出走表時点の1段（ローリングは日単位でずらす）、寄与度のモデルは直前情報も使う。学習・母集団・今日のレースで同じ関数を使う。ラウンドの区分は本体が `getRaceStageCategory` と同じ規則、長期は `kb_archive_races.stage_kind`
-- [ ] T2-3 `tests/`（pytest）: 当日以降の結果（同じ日の前のレースを含む）が特徴量に混ざらない、近傍の距離に直前情報の列が入っていない、ラウンド区分が `raceStageConfig.js` と一致、テーマ集計の合計が1、analogy_pool_outcomes の値の約束（3連単は本体の `payout_trio` から・F/出遅れ/欠場の ST は NULL・不成立の払戻は NULL・実進入不明は NULL・不成立と1〜3着に返還艇が入るレースは母集団に入れない。plan の get_analogy_neighbors の節）。テストは先に書き、落ちることを確かめてから実装する
-- [ ] T2-4 `train.py`: 主モデル3本（1着・2着以内・3着以内）、木の数固定、時系列の最後の分割での評価。品質ゲート（基準1に有意に勝つ・前の版より 0.005 以上悪化しない）
-- [ ] T2-5 `profiles.py`: SHAP をテーマに集計（`themes` 配列から。テーマ数は可変）、直近12か月、スライス（着順3×会場25×グレード6×ラウンド5×艇番7、グレード不明は「全グレード」にだけ）、seed 5回の SD、テーマ内の内訳（似た意味の項目はまとめる）
-- [ ] T2-6 `pool.py`: 母集団の特徴量行列（出走表時点、会場はコード、float16、50MB 以下に分割）、距離の重み（レース内で中心化した|SHAP|の平均）、会場ペナルティ λ（決まり手で選んだ値1つ）、`analogy_pool_outcomes` の行（長期と本体をそろえる）
-- [ ] T2-7 `db.py`: PostgREST への書き込み（service key）。analogy_pool_outcomes は差分だけ upsert、書き込み0件はエラー
-- [ ] T2-8 `.github/workflows/train-analogy.yml`（schedule なし、workflow_dispatch のみ）。版の切り替えは `activate_analogy_model`。初回は手動実行
+寄与度の分は PR #1121 でマージ済み（T2-1〜T2-5・T2-7・T2-8。マイグレーションは 118 に切り出し）。本番適用と初回の手動実行はユーザーの作業（#1121 の本文）。
+- [x] T2-1 `export_pool.js`: 長期（kb_archive）と本体から書き出す。Phase M の `export-data.js` を土台に、補完後のデータで欠損の扱いを見直す。長期分は初回だけ書き出して Storage（`analogy/source/`）に置き、週次は本体の差分だけ読む。2025-12-02 の重なりは本体を優先
+- [x] T2-2 `features.py`: 近傍の距離は出走表時点の1段（ローリングは日単位でずらす）、寄与度のモデルは直前情報も使う。学習・母集団・今日のレースで同じ関数を使う。ラウンドの区分は本体が `getRaceStageCategory` と同じ規則、長期は `kb_archive_races.stage_kind`
+- [x] T2-3 `tests/`（pytest）: 当日以降の結果（同じ日の前のレースを含む）が特徴量に混ざらない、近傍の距離に直前情報の列が入っていない、ラウンド区分が `raceStageConfig.js` と一致、テーマ集計の合計が1、analogy_pool_outcomes の値の約束（3連単は本体の `payout_trio` から・F/出遅れ/欠場の ST は NULL・不成立の払戻は NULL・実進入不明は NULL・不成立と1〜3着に返還艇が入るレースは母集団に入れない。plan の get_analogy_neighbors の節）。テストは先に書き、落ちることを確かめてから実装する
+- [x] T2-4 `train.py`: 主モデル3本（1着・2着以内・3着以内）、木の数固定、時系列の最後の分割での評価。品質ゲート（基準1に有意に勝つ・前の版より 0.005 以上悪化しない）
+- [x] T2-5 `profiles.py`: SHAP をテーマに集計（`themes` 配列から。テーマ数は可変）、直近12か月、スライス（着順3×会場25×グレード6×ラウンド5×艇番7、グレード不明は「全グレード」にだけ）、seed 5回の SD、テーマ内の内訳（似た意味の項目はまとめる）
+- [ ] T2-6 （FR-2 の作り直しで見直す。層別 S* では距離の行列は要らない）`pool.py`: 母集団の特徴量行列（出走表時点、会場はコード、float16、50MB 以下に分割）、距離の重み（レース内で中心化した|SHAP|の平均）、会場ペナルティ λ（決まり手で選んだ値1つ）、`analogy_pool_outcomes` の行（長期と本体をそろえる）
+- [x] T2-7 `db.py`: PostgREST への書き込み（service key）。analogy_pool_outcomes は差分だけ upsert、書き込み0件はエラー
+- [x] T2-8 `.github/workflows/train-analogy.yml`（schedule なし、workflow_dispatch のみ）。版の切り替えは `activate_analogy_model`。初回は手動実行
 - [ ] 本番実測: analogy_models に is_active の1行、analogy_contribution_profiles が全スライスの期待件数（n>0 のセル数。算出根拠を書く）、analogy_pool_outcomes が母集団の完全レース数（2019-04〜pool_cutoff、Phase M では 409,588R）に対し99%以上であることを実測クエリで確認する
 - [ ] 継続監視: 週次の学習が失敗・品質ゲートで止まったら Slack に通知されること、最終成功から8日を過ぎたら検知されることを確認する
 

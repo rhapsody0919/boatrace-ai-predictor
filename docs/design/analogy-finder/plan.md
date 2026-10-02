@@ -106,7 +106,7 @@ erDiagram
 | テーブル | 役割 | 行数・サイズの見積り | 書き込み |
 |---|---|---|---|
 | analogy_models | 版ごとに1行。`themes` にテーマの一覧（key・名前・説明・含む特徴量）。テーマ数は可変（「市場」を後から足せる） | 週1行。行は消さない | 週1回 insert、最後に `activate_analogy_model` で切り替える（旧版 false → 新版 true を1トランザクション） |
-| analogy_contribution_profiles | 着順3 × 会場25（0=全会場）× グレード6 × ラウンド5 × 艇番7（0=全艇）。n が0のセルは書かない | 1版あたり最大15,750行 × 約1KB ≒ 16MB。古い版は2つだけ残して消す | 週1回、新しい版の行を insert（既存行の UPDATE はしない） |
+| analogy_contribution_profiles | 着順3 × 会場25（0=全会場）× グレード6 × ラウンド5 × 艇番7（0=全艇）。n が0のセルは書かない | 1版あたり最大15,750行（実測: 着順ごとに3,962セル、計11,886行、1行約1.8KB）。表示中の版と切り替え直前の版の行だけ残す | 週1回、新しい版の行を insert（既存行の UPDATE はしない） |
 | analogy_pool_outcomes | 近傍の母集団の決着。長期（kb）と本体を同じ形にそろえる。長期と本体で日付が重なる 2025-12-02 は本体を優先 | 約41万行 × 約120B ≒ 50MB。週に約1,100行増える | 初回だけ全件。以後は新しいレースと値が変わった行だけ upsert（全行 UPDATE しない）。母集団の行列と同じレースの集合であることを verify で検査する |
 | analogy_snapshots | BOA-627 の1・2。as-of 特徴量（`features`）と近傍800件（`neighbor_ids`・`neighbor_distances`） | 1行 約16KB。1日 約150行 ≒ 2.4MB/日、1年で約0.9GB | レースごとに1回 insert（`ON CONFLICT DO NOTHING`）。締切後は書かない。1年を過ぎた行は近傍の配列を NULL にし、画面にも出さない（再計算はしない） |
 
@@ -143,8 +143,8 @@ ADR-0066 の方針どおり、モデルの学習・推論は GitHub Actions に�
 | `scripts/ml/analogy/export_pool.js` | 長期（kb_archive）と本体のテーブルから、学習・母集団のデータを書き出す（Phase M の `export-data.js` を土台に。読み取りのみ） |
 | `scripts/ml/analogy/features.py` | as-of の2段の特徴量（ローリングは `shift(1)`）。学習・母集団・今日のレースで同じ関数を使う |
 | `scripts/ml/analogy/train.py` | 主モデル3本（1着・2着以内・3着以内）。木の数は固定。品質ゲート（下）を通らなければ書き込まずに失敗させる |
-| `scripts/ml/analogy/profiles.py` | SHAP をテーマに集計し、寄与度プロファイルを作る。集計は直近12か月のレース（データの穴の期間は除く）。グレード不明のレースは「全グレード」にだけ入れる。seed を変えた5回の SD も出す |
-| `scripts/ml/analogy/pool.py` | 母集団の特徴量行列（会場の one-hot は持たず、会場はコードで持ってペナルティで扱う。float16）と距離の重み・会場ペナルティ λ（決まり手で選んだ1つの値）を作り、50MB 以下に分割して Storage に上げる。Storage の版は直近3つだけ残す |
+| `scripts/ml/analogy/profiles.py` | SHAP をテーマに集計し、寄与度プロファイルを作る。集計は**学習に使っていない直近12か月**（train.py の test 期間。データの穴は補完済みなので外さない）。グレード不明のレースは「全グレード」にだけ入れる。seed を変えた5回の SD も出す（PR #1121 で実装済み） |
+| `scripts/ml/analogy/pool.py` | 母集団の特徴量行列（会場の one-hot は持たず、会場はコードで持ってペナルティで扱う。float16）と距離の重み・会場ペナルティ λ（決まり手で選んだ1つの値）を作り、50MB 以下に分割して Storage に上げる。Storage の版は直近3つと表示中の版を残す |
 | `scripts/ml/analogy/neighbors.py` | 今日のレースの as-of 特徴量を作り、k-NN 800件を計算して `analogy_snapshots` に書く（`ON CONFLICT DO NOTHING`） |
 | `scripts/ml/analogy/tests/` | pytest。as-of の段・リーク防止（当日の結果が混ざらない）・テーマ集計の合計が1・距離の対称性 |
 | `.github/workflows/train-analogy.yml` | 週1。起動は Vercel Cron（日曜 JST 4:00）からの workflow_dispatch（schedule は使わない。ADR-0080）。export → pytest → train → profiles → pool → DB 書き込み → `activate_analogy_model` |
@@ -241,3 +241,12 @@ flowchart TD
 | 13 | P3 | 115 を適用すると `check-anon-access.js` が失敗する | 採用 | T1-1 に一覧の更新を足す |
 | 14 | P3 | MD-3 の比較A が実行ごとに約0.0003揺れる | 採用 | 結果ファイルに注記。結論と再判定（比較B）には影響しない |
 | 15 | P3 | 細部（説明の一行・λ が目的ごとに違う・0件の判定・重複実行・外部キー） | 採用 | 説明の一行から「展示の差」を外す。λ は決まり手で選んだ値1つ。0件は対象ありのときだけ失敗。`concurrency`＋`ON CONFLICT DO NOTHING`。analogy_models の行は消さない |
+
+## 実装レーンで決まった事項（PR #1118・#1121 マージ済み、2026-10-02）
+- マイグレーション: 寄与度の分（`analogy_models`・`analogy_contribution_profiles`・`activate_analogy_model`）を 115 から **118** に切り出した。`analogy_models` から FR-2 専用の3列（pool_cutoff・neighbor_k・venue_penalty）を外し、FR-2 のマイグレーションで ADD COLUMN する。115 の残り（母集団の決着・スナップショット・RPC）は FR-2 の作り直しで形を直し、番号を振り直す
+- 学習（train.py）: test は最終日から12か月、train はそれ以前（末尾3か月は温度合わせだけ）。木の数は固定。品質ゲートは「基準1に日クラスタ・ブートストラップ CI で有意に勝つ」「前の版を同じ test で評価し直して 0.005 以上悪化しない」
+- 寄与度の集計窓: 学習に使っていない直近12か月（test 期間）
+- Storage の版の規則（`storageRules.js`、`verify-analogy-storage.js` で固定）: 直近3版と表示中の版を残す。表示中の版と同じ名前ではアップロードしない（上書きしない）。長期データのキャッシュ（`analogy/source/v1/`、月ごとの gzip）は先頭行に列名を入れ、読むときに照合する。0行の月はキャッシュしない
+- 寄与度の行は、表示中の版と切り替え直前の版だけ残す。書き込み途中で失敗したら今回の版を消してから失敗する
+- 特徴量（features.py）: 選手の履歴は日単位でずらす（その日の最初の走の値だけを配る）。1〜3着に返還艇が入るレースは除外。グレードは長期 `kb_archive_venue_days.race_grade` → `race_series` の順
+- 週次の起動（Vercel Cron → workflow_dispatch）は FR-2 の起動の仕組みと一緒に入れる（未実装）
