@@ -63,7 +63,7 @@ function VenueRankingChart() {
     const loadRanking = async () => {
       setLoading(true);
       setError(null);
-      // allSettled: 1号艇勝率（新規・全会場90日スキャンで相対的に重い）の失敗が
+      // allSettled: 1号艇勝率（日次バッチの保存値。BOA-303）の失敗が
       // 従来から安定していた本日限定の4指標まで道連れでエラー状態にしないよう、
       // 互いに独立して失敗を扱う
       const [todaysResult, firstWinRateResult] = await Promise.allSettled([

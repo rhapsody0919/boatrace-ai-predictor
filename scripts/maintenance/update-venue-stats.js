@@ -1,7 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 import { supabase } from "../lib/supabaseClient.js";
-import { isNoRaceResult } from "../lib/raceOutcomeFilters.js";
+import { aggregateFirstWinRate } from "../lib/venueFirstWinRate.js";
+import { getDaysAgoJST } from "../../src/utils/dateUtils.js";
 
 const DAYS = 90;
 
@@ -20,68 +21,58 @@ async function fetchAll(query) {
 }
 
 async function updateVenueStats() {
-  const since = new Date();
-  since.setDate(since.getDate() - DAYS);
-  const sinceStr = since.toISOString().split("T")[0];
+  const sinceStr = getDaysAgoJST(DAYS);
 
   console.log(`🔬 会場別統計を更新中（直近${DAYS}日: ${sinceStr} 〜）`);
 
-  // 1号艇勝率の集計（90日）
-  // 注: BOA-267のgetVenueFirstWinRateRanking（supabaseDataService.js）と同じ
-  // 90日・同じ除外基準で集計する。基準が食い違うと、分析ツールの
-  // 「1号艇勝率ランキング」とこのバッチが更新するvenues.avg_first_win_rate
-  // （他機能でvenueWinRateとして参照）が同じ会場・同じ期間で異なる数値を
-  // 示してしまうため
+  // 1号艇勝率と母数（90日）。分析ツールの「1号艇勝率ランキング」と
+  // 他機能の venueWinRate はこの保存値を読む（BOA-303。除外の基準は scripts/lib/venueFirstWinRate.js）
   const races = await fetchAll((from, to) =>
     supabase
       .from("races")
-      .select("venue_code, race_results(rank1, is_cancelled, race_status)")
+      .select("venue_code, race_results(rank1, race_status)")
       .gte("race_date", sinceStr)
       .order("race_id")
       .range(from, to),
   );
 
-  const venueStats = {};
-  races.forEach((r) => {
-    const venueCode = r.venue_code;
-    const result = Array.isArray(r.race_results)
-      ? r.race_results[0]
-      : r.race_results;
-    if (
-      !result ||
-      result.is_cancelled ||
-      isNoRaceResult(result) ||
-      result.rank1 === null
-    )
-      return;
+  const venueStats = aggregateFirstWinRate(races);
 
-    if (!venueStats[venueCode]) {
-      venueStats[venueCode] = { total: 0, firstWins: 0 };
-    }
-    venueStats[venueCode].total++;
-    if (result.rank1 === 1) venueStats[venueCode].firstWins++;
-  });
-
-  // venues テーブルを更新
+  // venues テーブルを更新。1会場でも失敗したら終了コードを非0にする（以前はログだけで成功扱いだった）
   const now = new Date().toISOString();
-  for (const [venueCode, stats] of Object.entries(venueStats)) {
-    const winRate = stats.total > 0 ? stats.firstWins / stats.total : null;
-
+  const failures = [];
+  for (const [venueCode, stats] of venueStats) {
     const { error } = await supabase
       .from("venues")
       .update({
-        avg_first_win_rate: winRate,
+        avg_first_win_rate: stats.firstWins / stats.raceCount,
+        avg_first_win_rate_race_count: stats.raceCount,
         updated_at: now,
       })
-      .eq("code", parseInt(venueCode));
-    if (error)
-      console.error(`❌ venues更新エラー (${venueCode}):`, error.message);
+      .eq("code", venueCode);
+    if (error) failures.push(`${venueCode}: ${error.message}`);
+  }
+  // 期間内にレースが無い会場（改修で長期休催など）は、前回の値が残らないよう空にする。
+  // ランキングは保存値を読むので、残すと休催前の勝率が出続ける
+  const { error: clearError } = await supabase
+    .from("venues")
+    .update({
+      avg_first_win_rate: null,
+      avg_first_win_rate_race_count: null,
+      updated_at: now,
+    })
+    .not("code", "in", `(${[...venueStats.keys()].join(",") || "0"})`);
+  if (clearError) failures.push(`期間外の会場: ${clearError.message}`);
+  if (failures.length > 0) {
+    throw new Error(
+      `venues の更新に失敗（${failures.length}会場）: ${failures.join(" / ")}`,
+    );
   }
 
   // 結果表示
   const { data: venues } = await supabase
     .from("venues")
-    .select("code, name, avg_first_win_rate")
+    .select("code, name, avg_first_win_rate, avg_first_win_rate_race_count")
     .not("avg_first_win_rate", "is", null)
     .order("avg_first_win_rate", { ascending: false });
 
@@ -91,7 +82,9 @@ async function updateVenueStats() {
     const winRate = v.avg_first_win_rate
       ? (v.avg_first_win_rate * 100).toFixed(1) + "%"
       : "-";
-    console.log(`  ${v.name}: 1コース勝率=${winRate}`);
+    console.log(
+      `  ${v.name}: 1コース勝率=${winRate}（${v.avg_first_win_rate_race_count ?? "-"}レース）`,
+    );
   });
 }
 

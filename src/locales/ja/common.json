@@ -610,6 +610,13 @@
     "pretestRank": "{{rank}}位",
     "compareSub": "節の出場は{{total}}人。",
     "compareSubExcluded": "節の出場は{{all}}人（順位の対象は{{total}}人。賞典除外・途中帰郷・欠場の{{excluded}}人を除く）。",
+    "colPretestOf": "前検（{{total}}人中）",
+    "borderPending": "準優の目安は、出場選手が全員1走してから出します。",
+    "borderAsOfRuns": "出場選手の多くが{{runs}}走した時点の目安で、予選が終わるまでは動きます。",
+    "compareSubSeriesExcludedNotYet": "同じ優勝戦をめざすのは{{all}}人（順位の対象は{{total}}人。賞典除外・途中帰郷・欠場の{{excluded}}人と、まだ走っていない{{notYet}}人を除く）。",
+    "compareSubSeriesNotYet": "同じ優勝戦をめざすのは{{all}}人（順位の対象は{{total}}人。まだ走っていない{{notYet}}人を除く）。",
+    "compareSubExcludedNotYet": "節の出場は{{all}}人（順位の対象は{{total}}人。賞典除外・途中帰郷・欠場の{{excluded}}人と、まだ走っていない{{notYet}}人を除く）。",
+    "compareSubNotYet": "節の出場は{{all}}人（順位の対象は{{total}}人。まだ走っていない{{notYet}}人を除く）。",
     "notYetRunNote": "「今節初戦」は、このレースが今節の最初の走で、まだ得点率がない選手です。",
     "notYetRunCancelled": "未出走",
     "notYetRunCancelledNote": "「未出走」は、今節まだ1走もしていない選手です。",
@@ -2170,6 +2177,7 @@
     "outOfScope": "この開催は節ページの対象外です（SG・G1・G2の予選・準優・優勝戦の節のみ）",
     "backToVenue": "{{venue}}のレース一覧へ",
     "source": "出典: 予選終了後の得点率・順位はボートレース公式サイトの得点率一覧。予選中は当サイトが着順から計算した値です（減点は含みません）。",
-    "noRateYet": "得点率は初日のレース後から出ます"
+    "noRateYet": "得点率は初日のレース後から出ます",
+    "borderPending": "まだ1走もしていない選手が{{count}}人いるため、準優の目安は全員が1走してから出します"
   }
 }

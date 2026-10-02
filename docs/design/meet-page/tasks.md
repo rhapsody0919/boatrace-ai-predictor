@@ -12,7 +12,7 @@ spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md) / plan: [plan.m
 ## Phase 1: 節ページ本体（BOA-682、PR 1）
 
 - [x] **T1-1** 純関数 `src/utils/meetPageModel.js`: `meetDaysOf`・`meetPageState`・`pickMeetAnchor`・`buildQualifiers`・`pickShobugake`・対象外の節の判定（plan.md §2.2〜2.6）。夜・昼の各ケース（plan.md §2.4）と、2025-12〜の通常の SG/G1/G2 の節で予選最終日が series_day=4 であることは本番の実測（design-reviewer 対応時の SQL、plan.md §2.4 の根拠）で確認し、純関数側は児島の節のフィクスチャで固定する。`scripts/maintenance/verify-meet-page-model.js`（児島 2026-09-28 の節の実データ断片をフィクスチャにする）。`verify-registry.json` に ci で登録
-- [x] **T1-2** `getMeetScoreboard` に第3引数 `{ prelimDone }`（キャッシュキー v27）。`getMeetPage(venueCode, startDate)`（`supabaseDataService.js`）。`race_series` が無い・初日に行が無い・対象外グレード・`meetStart` 不一致を、それぞれ状態として返す（例外で握りつぶさない）
+- [x] **T1-2** `getMeetScoreboard` に第3引数 `{ prelimDone }`（キャッシュキー v29）。`getMeetPage(venueCode, startDate)`（`supabaseDataService.js`）。`race_series` が無い・初日に行が無い・対象外グレード・`meetStart` 不一致を、それぞれ状態として返す（例外で握りつぶさない）
 - [x] **T1-3** `MeetPage.jsx` とルート（`AppRouter.jsx`）。title・description・canonical・`Breadcrumb`。読み込み失敗は `DataFetchError`
 - [x] **T1-4** `MeetHeader`・`MeetRankingTable`（ボーダー線・順位外・勝負駆けの切り替え・金枠）・`MeetQualifiersSection`。375px 1行2段、1024px 以上 2カラム
 - [x] **T1-5** i18n（`meetPage.*` を ja/en/zh-TW/ko。glossary 確認・追記）

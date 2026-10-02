@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures.js";
+import { test, expect, fetchRecorded } from "./fixtures.js";
 
 /**
  * 節ページ（/venue/:venueCode/meet/:startDate、BOA-682）の固定。
@@ -97,4 +97,32 @@ test("日付の形でない URL は、パンくず・title に壊れた日付（
   // 修正前は "abc" から「0/0開幕の節」を作っていた
   await expect(page.locator(".breadcrumb")).not.toContainText(/開幕の節|NaN/);
   await expect(page).not.toHaveTitle(/開幕の節|NaN/);
+});
+
+test("初日の途中（まだ1走もしていない選手がいる間）は、準優の目安を伏せて理由を出す", async ({
+  page,
+}) => {
+  // 初日の 1R・2R だけ結果がある状態を、結果の応答を絞って再現する（今節タブと同じ条件、BOA-690）
+  await page.clock.setFixedTime(new Date("2026-09-28T11:30:00+09:00"));
+  await page.route(/\/rest\/v1\/race_results/, async (route) => {
+    const response = await fetchRecorded(route);
+    const body = await response.json().catch(() => null);
+    const kept = Array.isArray(body)
+      ? body.filter((r) => r.race_id <= "2026-09-28-16-02")
+      : body;
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json: kept,
+    });
+  });
+  await page.goto(KOJIMA, { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".meet-ranking__table tbody tr").first()).toBeVisible({
+    timeout: 60000,
+  });
+  await expect(page.locator(".meet-page__note").first()).toContainText(
+    "準優の目安は全員が1走してから出します",
+  );
+  await expect(page.locator(".meet-ranking__border")).toHaveCount(0);
+  await expect(page.locator("tr.meet-ranking__line")).toHaveCount(0);
 });

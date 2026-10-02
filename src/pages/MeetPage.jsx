@@ -246,8 +246,14 @@ function MeetBody({ page }) {
       .map((r) => ({ ...r, reason: "absent" })),
   ];
   const slots = board?.semifinalSlots ?? SEMIFINAL_DEFAULT_SLOTS;
-  const border = rows[slots - 1]?.rate ?? null;
   const confirmed = CONFIRMED_STATES.includes(page.state);
+  // まだ1走もしていない選手がいる間（ふつうは初日の途中）は、順位の対象がそろって
+  // おらず目安が意味を持たないので伏せる（今節タブと同じ、BOA-690）。予選後は出す
+  const notYetStarted = confirmed
+    ? 0
+    : (board?.notYetStartedRacerIds ?? []).length;
+  const border =
+    notYetStarted > 0 ? null : (rows[slots - 1]?.rate ?? null);
   const showRemaining = page.state === "prelimFinalDay";
   const remainingRuns = board?.remainingPrelimRunsByRacer ?? {};
   const remainingMax = board?.remainingPrelimMaxPointsByRacer ?? {};
@@ -264,6 +270,11 @@ function MeetBody({ page }) {
   return (
     <div className="meet-page__body">
       <div className="meet-page__main">
+        {notYetStarted > 0 && rows.length > 0 && (
+          <p className="meet-page__note">
+            {t("meetPage.borderPending", { count: notYetStarted })}
+          </p>
+        )}
         {page.state === "prelim" && rows.length > 0 && (
           <p className="meet-page__note">{t("meetPage.shobugakePending")}</p>
         )}

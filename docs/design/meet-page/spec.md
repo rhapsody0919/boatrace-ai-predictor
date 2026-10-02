@@ -99,7 +99,7 @@ URL: `/venue/{会場コード}/meet/{節の初日 YYYY-MM-DD}`（例 `/venue/13/
 ## 非機能要件
 
 - 375 / 768 / 1024 / 1440 / 1920px で横スクロールなし（`e2e/layout.spec.js`）。375px で52行の表が読めること（列を絞る・横スクロールでなく折り返し）
-- 取得クエリは plan.md §2.1 の本数（初回 約14本）。`getMeetScoreboard` のキャッシュはレース単位（`meet-scoreboard-v27-${raceId}`。節ページの prelimDone は `:pd` 付き）で、節ページと今節タブで共有されるのは基準のレースが同じときだけ。出走表の1000行上限に注意（10日×12R×6艇=720行）
+- 取得クエリは plan.md §2.1 の本数（初回 約14本）。`getMeetScoreboard` のキャッシュはレース単位（`meet-scoreboard-v29-${raceId}`。節ページの prelimDone は `:pd` 付き）で、節ページと今節タブで共有されるのは基準のレースが同じときだけ。出走表の1000行上限に注意（10日×12R×6艇=720行）
 - 色分けは承認済みの共通ルール（`docs/design/race-detail-ui-unify/spec.md`）: 最良1つ（同値は全部）を金枠＋太字、基準との差は緑/赤＋↑↓・＋−、向きの無い値は無色、グラフは艇色
 - 選手名に `translate="no"`
 
