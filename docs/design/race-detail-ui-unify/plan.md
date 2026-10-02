@@ -82,6 +82,15 @@ spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md)
 
 PR2b〜PR5 は tasks.md の各節。PR ごとに plan の該当節を追記してから着手する（PR2a の結果を見て共通クラスの使い方を確定させるため）。
 
+## 10. イン崩れ注意度（PR5 の残り、#1186 の後）
+
+（§7〜§9 は #1193・#1194 で足す。番号を空けておく）
+
+- `VolatilityDisplay` の直書きの色（#fff3e0・#ff9800・#333・#777 等）を、すべてテーマのトークンから作る。地はカード色に段階の色（高＝`--color-warning-text`、低＝`--color-success-text`、標準＝`--color-info-text`）を 8% 混ぜ、左の線は段階の色。ラベルは段階の色の文字＋14% の地（モック承認済み）。以前はダークでもカードだけ明るく浮き、ラベルは白字に橙・緑の地で約2〜3:1だった
+- データ収集中の表示も同じ（段階の色の代わりに `--text-secondary`）
+- #1186 の `VolatilityPercentileBar` の明るい地専用の配色（`onLight`・`.vpb--on-light`）は使う所が無くなったので外す。バーは意味トークンの配色のまま
+- 375px で見出しが「イン崩れ注意／度」と1文字だけ折れたので、見出しとラベルは折らずに、入らないときはラベルを次の行へ送る
+
 ## テスト
 
 - `bestOf` の単体の検証: `scripts/maintenance/verify-best-of.js`（同値・全艇同値・null・min/max）。`verify-registry.json` に `ci` で登録
