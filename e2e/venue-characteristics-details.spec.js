@@ -8,6 +8,8 @@ import { test, expect } from "./fixtures.js";
  * 固定値（40レース。カードは20レース未満の会場を出さない）:
  *   1-2-3 が20回、3-1-2 が10回、3-4-5 が10回
  *   → 1号艇: 1着50% / 2連75% / 3連75%、3号艇: 1着50% / 2連50% / 3連100%
+ *   3号艇の probability は本番と同じく丸めた値（24.96×2＝49.92）にして、上のHUDも
+ *   件数から出す（49.9% と出ない）ことを確かめる
  */
 const VENUE = 2;
 
@@ -19,8 +21,8 @@ const outcome = {
   data: {
     1: [{ second_boat: 2, third_boat: 3, count: 20, probability: 50 }],
     3: [
-      { second_boat: 1, third_boat: 2, count: 10, probability: 25 },
-      { second_boat: 4, third_boat: 5, count: 10, probability: 25 },
+      { second_boat: 1, third_boat: 2, count: 10, probability: 24.96 },
+      { second_boat: 4, third_boat: 5, count: 10, probability: 24.96 },
     ],
   },
 };
@@ -89,6 +91,11 @@ test("会場特徴カードの「もっと詳しく」に枠番別の2連率・3
   // 初期は閉じている
   await expect(details).not.toHaveAttribute("open", "");
   await details.locator("summary").click();
+
+  // 上のHUDと表で、同じ1着率が同じ値になる（probability の丸めの和を使わない）
+  await expect(
+    page.locator(".venue-hud-row").nth(2).locator(".venue-hud-own-label"),
+  ).toHaveText("50.0%");
 
   const rows = details.locator("tbody tr");
   await expect(rows).toHaveCount(6);

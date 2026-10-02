@@ -21,6 +21,7 @@ import { BOAT_COLORS } from "../../utils/colors";
 import InlineFetchError from "../InlineFetchError";
 import CollapsibleSection from "./CollapsibleSection";
 import VenueCharacteristicsDetails from "./VenueCharacteristicsDetails";
+import { placeRatesByBoat } from "../../utils/venuePlaceRates";
 import "./VenueCharacteristicsCard.css";
 
 // このサンプル数を下回る会場は表示しない（ノイズが大きいため）
@@ -87,12 +88,12 @@ export default function VenueCharacteristicsCard({
     return null;
   }
 
-  // outcome_distributionのprobabilityは各3連単パターンの出現率（対全レース）のため、
-  // 同じ1着艇のパターンを合算するとその艇の1着率になる
-  // （検証済み: venue_code=12の実データでsum(probability)とsum(count)/total_racesが一致）
+  // 1着率は件数（count / total_races）から出す。probability はパターンごとに小数2桁で
+  // 丸めてあり、足し合わせると最大0.05pt ずれて、下の「もっと詳しく」の表（件数から計算）と
+  // 小数1桁の表示が食い違う（全144セル中19セル、2026-10-02 実測。BOA-269）
+  const placeRates = placeRatesByBoat(outcomeData) ?? [];
   const boatRows = [1, 2, 3, 4, 5, 6].map((boat) => {
-    const patterns = outcomeData.data[boat] ?? [];
-    const winRate = patterns.reduce((sum, p) => sum + (p.probability ?? 0), 0);
+    const winRate = placeRates.find((r) => r.boat === boat)?.winRate ?? 0;
     const topTechnique = techniqueData?.data?.[boat]?.techniques?.[0] ?? null;
     const national = nationalAverage?.[boat] ?? null;
     return { boat, winRate, topTechnique, national };
