@@ -346,6 +346,12 @@
   "home": {
     "introBannerText": "龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。| 分析轉彎預測、內道崩盤指數等45項以上數據。了解更多 →",
     "introBannerClose": "關閉",
+    "sgNow": {
+      "region": "SG賽事進行中",
+      "withTitle": "{{series}} 進行中（{{venue}}）",
+      "withoutTitle": "SG賽事進行中（{{venue}}）",
+      "cta": "今日賽程、AI預測 →"
+    },
     "aiIntro": {
       "title": "龍神雷達的賽艇AI預測",
       "lead": "龍神雷達是由AI每天預測日本全國24座賽艇場所有比賽的數據分析網站。完全免費，無需註冊。",

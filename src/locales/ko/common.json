@@ -346,6 +346,12 @@
   "home": {
     "introBannerText": "용신 레이더 - 경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요. | 전개 예측, 인코스 붕괴 지수 등 45개 이상의 데이터를 분석. 자세히 보기 →",
     "introBannerClose": "닫기",
+    "sgNow": {
+      "region": "SG 개최 중",
+      "withTitle": "{{series}} 개최 중({{venue}})",
+      "withoutTitle": "SG 개최 중({{venue}})",
+      "cta": "오늘의 경주, AI 예측 →"
+    },
     "aiIntro": {
       "title": "용신 레이더의 경정 AI 예측",
       "lead": "용신 레이더는 일본 전국 24개 경정장에서 열리는 모든 경주를 AI가 매일 예측하는 데이터 분석 사이트입니다. 완전 무료이며 회원가입이 필요 없습니다.",
