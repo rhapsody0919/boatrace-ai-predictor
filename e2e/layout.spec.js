@@ -1,4 +1,5 @@
 import { test, expect, e2eTodayJST, fetchRecorded } from "./fixtures.js";
+import { contribution } from "./analogy-contribution-fixture.js";
 
 /**
  * 画面幅ごとのレイアウト崩れを機械的に検知する。
@@ -740,6 +741,52 @@ test.describe("レイアウト: 管理画面2つのタブの指定が混ざら�
   });
 });
 
+/**
+ * AI予想タブのアナロジー・ファインダー節（BOA-271 FR-1 寄与度）。上の PAGES はレース詳細を既定タブのまま
+ * 測るため、節は検査の対象外。寄与度 API だけを固定値に差し替え（本番のテーブルに依存しない）、
+ * 艇番比較の表とテーマの内訳を開いた状態で横スクロールとグリッドを見る
+ */
+test.describe("レイアウト: AI予想タブのアナロジー・ファインダー節", () => {
+  const RACE = "/race/2026-09-26-08-02";
+
+  test("艇番比較と内訳を開いても横スクロールが出ず、グリッドの幅も無駄にならない", async ({
+    page,
+  }) => {
+    // 公開までは機能フラグで隠している。内部確認の印を立てて測る
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai-user:analogy-finder-preview", "1"),
+    );
+    await page.route("**/api/analogy/contribution*", (route) => {
+      const u = new URL(route.request().url());
+      return route.fulfill({
+        json: contribution({
+          venue: Number(u.searchParams.get("venue")),
+          grade: u.searchParams.get("grade"),
+          round: u.searchParams.get("round"),
+          target: Number(u.searchParams.get("target")),
+        }),
+      });
+    });
+    await gotoAndSettle(page, RACE);
+    await page.click('[role="tab"]:has-text("AI予想")');
+    const section = page.getByRole("region", {
+      name: "アナロジー・ファインダー",
+    });
+    await expect(section).toBeVisible({ timeout: 30000 });
+    await section.getByRole("checkbox", { name: "艇番で比較" }).check();
+    await section.getByRole("button", { name: /選手・基礎成績/ }).click();
+    await expect(section.getByRole("table")).toBeVisible();
+
+    const overflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(OVERFLOW_TOLERANCE_PX);
+    expectNoWastedGrids(await inspectGrids(page));
+  });
+});
+
 // 会場のレース一覧カード（BOA-558 の6・BOA-586）。2026-09-24 桐生は準優勝戦（バッジ3つ）を含む
 test.describe("レイアウト: 会場のレース一覧カード（出走表の列・モーターの行・見出しの高さ）", () => {
   test("6号艇の列が切れず、モーターの値が罫線に接さず、同じ段のカードの出走表の高さがそろう", async ({
@@ -824,3 +871,59 @@ test.describe("レイアウト: 会場のレース一覧カード（出走表の
     }
   });
 });
+
+// 直前情報の展示情報カード（本番の不具合、2026-10-02）。スマホで表だけを calc(50% - 50vw) で
+// 画面の端まで広げていたため、表がカードの左右の枠の外へ覆い被さり、端末によっては表が画面の
+// 左端より外へ押し出されて行見出しの頭（「展示ST」→「示ST」）が切れた
+for (const path of ["/race/2026-09-29-16-12", "/en/race/2026-09-29-16-12"]) {
+  test.describe(`レイアウト: 直前情報の展示情報カード（${path.startsWith("/en") ? "en" : "ja"}）`, () => {
+    // スマホは機種で幅が違い、320px 以下だけ別の余白の指定がある（RaceDetail.css・RaceDetailPage.css）。
+    // layout-mobile（375px）のときは 320・390px も通す（PR #1135 で、#1127 を取り込む前の
+    // ブランチの Preview がこの崩れのまま出た）
+    test("表がカードの内側に収まり、行見出しが画面の左端で切れない", async ({
+      page,
+    }, testInfo) => {
+      const widths =
+        testInfo.project.name === "layout-mobile" ? [320, 375, 390] : [null];
+      for (const width of widths) {
+        if (width) await page.setViewportSize({ width, height: 812 });
+        await checkBeforeInfoExhibitionCard(page, path, width);
+      }
+    });
+  });
+}
+
+async function checkBeforeInfoExhibitionCard(page, path, width) {
+  const at = width ? `${width}px: ` : "";
+  await page.goto(path, { waitUntil: "domcontentloaded" });
+  await page
+    .locator(".race-tabs-btn")
+    .filter({ hasText: /直前情報|Just Before/ })
+    .first()
+    .click({ timeout: 30000 });
+  const table = page.locator(".rbi-card .drt-table").first();
+  await expect(table).toBeVisible({ timeout: 30000 });
+  const m = await table.evaluate((el) => {
+    const card = el.closest(".rbi-card").getBoundingClientRect();
+    const wrap = el.closest(".drt-table-wrapper").getBoundingClientRect();
+    const labels = [...el.querySelectorAll(".drt-label-cell")].map(
+      (c) => c.getBoundingClientRect().left,
+    );
+    return {
+      card: [card.left, card.right],
+      wrap: [wrap.left, wrap.right],
+      minLabelLeft: Math.min(...labels),
+      vw: document.documentElement.clientWidth,
+    };
+  });
+  // 表（横スクロールの枠）はカードの左右の枠の内側にある
+  expect(m.wrap[0], `${at}表の左端`).toBeGreaterThanOrEqual(m.card[0] - 0.5);
+  expect(m.wrap[1], `${at}表の右端`).toBeLessThanOrEqual(m.card[1] + 0.5);
+  // カードも画面からはみ出さない
+  expect(m.card[0], `${at}カードの左端`).toBeGreaterThanOrEqual(-0.5);
+  expect(m.card[1], `${at}カードの右端`).toBeLessThanOrEqual(m.vw + 0.5);
+  // 行見出しの左端が画面とカードの内側にある（頭が切れない）
+  expect(m.minLabelLeft, `${at}行見出し`).toBeGreaterThanOrEqual(
+    Math.max(0, m.card[0]) - 0.5,
+  );
+}

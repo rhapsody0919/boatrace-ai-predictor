@@ -63,7 +63,7 @@ flowchart TD
 - 夜（架空ID）のとき `prelimDone` = 「`D` の `series_day` ≥ 4」。`getMeetScoreboard` に新しい第3引数 `{ prelimDone }` を足し、`true` なら `officialByRacer` を種別に関係なく採用する（公式の行があれば）。`undefined` のときは今の挙動のまま（今節タブは変わらない）
   - 架空IDだけでは予選最終日の夜に公式値が使われない（`countsForSeriesScore(null, …)` が真になる。design-reviewer 指摘2）。また「最後のレース」を基準にすると `e.race_id < raceId` でそのレースの結果が落ちる。どちらも避ける
   - 予選最終日の夜、公式の得点率一覧（22:00 JST 取得）が入る前は当社計算になる（減点だけズレうる）
-- `getMeetScoreboard` のキャッシュキーに `prelimDone` を含める（`meet-scoreboard-v24-${raceId}${prelimDone ? ":pd" : ""}`）
+- `getMeetScoreboard` のキャッシュキーに `prelimDone` を含める（`meet-scoreboard-v25-${raceId}${prelimDone ? ":pd" : ""}`）
 - キャッシュの残留（design-reviewer 指摘3）: 優勝戦前（基準＝最終日12R、当日TTL 30分）と優勝戦後（基準＝`-99`）でキーが分かれるので、最大7日の残留は起きない。勝ち上がりの着順は 2.1 の4（キャッシュしない）から出す
 
 固定するケース（`verify-meet-page-model.js` のフィクスチャ。児島 2026-09-28 の節の種別）: ドリーム戦の日の夜（9/28）、予選中の日の夜（9/30）、予選最終日の昼と夜（10/1）、準優の日の昼と夜（10/2）、節終了後。

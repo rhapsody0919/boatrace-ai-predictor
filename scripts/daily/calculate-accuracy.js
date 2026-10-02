@@ -1,7 +1,11 @@
 // Accuracy Calculation Script
 // Supabaseから予測結果を集計し、models統計と accuracy_cache を更新する（3モデル×4券種対応）
 
-import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
+import {
+  supabase,
+  isSupabaseEnabled,
+  fetchAll,
+} from "../lib/supabaseClient.js";
 import { isJudgeable } from "../../src/utils/raceOutcome.js";
 
 /**
@@ -36,29 +40,14 @@ export function summarizeHits(predictions) {
 
 // Calculate statistics for a model (4券種: win/place/trifecta/trio) — overall のみ
 async function calculateModelStats(modelId) {
-  let allPredictions = [];
-  let from = 0;
-  const pageSize = 1000;
-
-  while (true) {
-    const { data: page, error } = await supabase
-      .from("predictions")
-      .select(
-        "race_id, is_hit_win, is_hit_place, is_hit_trifecta, is_hit_trio, payout_win, payout_place, payout_trifecta, payout_trio",
-      )
-      .eq("model_id", modelId)
-      .not("is_hit_win", "is", null)
-      .range(from, from + pageSize - 1);
-
-    if (error) {
-      console.error(`  ${modelId} predictions error:`, error.message);
-      return null;
-    }
-    if (!page || page.length === 0) break;
-    allPredictions = allPredictions.concat(page);
-    if (page.length < pageSize) break;
-    from += pageSize;
-  }
+  // 失敗は例外にする。以前は null を返し、そのモデルが抜けたまま accuracy_cache を書いていた（BOA-391）。
+  // モデルを絞れば1レース1行なので race_id で一意に並ぶ
+  const allPredictions = await fetchAll(
+    "predictions",
+    "race_id, is_hit_win, is_hit_place, is_hit_trifecta, is_hit_trio, payout_win, payout_place, payout_trifecta, payout_trio",
+    (q) =>
+      q.eq("model_id", modelId).not("is_hit_win", "is", null).order("race_id"),
+  );
 
   if (allPredictions.length === 0) {
     return {
@@ -124,37 +113,18 @@ export function computeStats(predictions) {
 
 // predictions テーブルから指定範囲を全件取得（ページネーション付き）
 async function fetchPredictionsRange(startDate, endDate) {
-  let allData = [];
-  let from = 0;
-  const pageSize = 1000;
   const adjustedEnd = endDate ? `${endDate}-99-99` : null;
-
-  while (true) {
-    let query = supabase
-      .from("predictions")
-      .select(
-        "race_id, model_id, is_hit_win, is_hit_place, is_hit_trifecta, is_hit_trio, payout_win, payout_place, payout_trifecta, payout_trio",
-      )
-      .gte("race_id", startDate)
-      .not("is_hit_win", "is", null)
-      .range(from, from + pageSize - 1);
-
-    if (adjustedEnd) {
-      query = query.lte("race_id", adjustedEnd);
-    }
-
-    const { data: page, error } = await query;
-    if (error) {
-      console.error("  fetchPredictionsRange error:", error.message);
-      break;
-    }
-    if (!page || page.length === 0) break;
-    allData = allData.concat(page);
-    if (page.length < pageSize) break;
-    from += pageSize;
-  }
-
-  return allData;
+  // 失敗は例外にする。以前は途中までの結果で accuracy_cache を upsert していた（BOA-391）。
+  // 1レースにモデルの数だけ行があるため、race_id・model_id で一意に並べる
+  return fetchAll(
+    "predictions",
+    "race_id, model_id, is_hit_win, is_hit_place, is_hit_trifecta, is_hit_trio, payout_win, payout_place, payout_trifecta, payout_trio",
+    (q) => {
+      let query = q.gte("race_id", startDate).not("is_hit_win", "is", null);
+      if (adjustedEnd) query = query.lte("race_id", adjustedEnd);
+      return query.order("race_id").order("model_id");
+    },
+  );
 }
 
 // JST 日付文字列を生成するヘルパー
@@ -203,45 +173,22 @@ async function calculateVolatilityStats() {
     24: "大村",
   };
 
-  // races を取得（volatility_level が設定されているもの）
-  let races = [];
-  let from = 0;
-  const pageSize = 1000;
-  while (true) {
-    const { data: page, error } = await supabase
-      .from("races")
-      .select("race_id, venue_code, volatility_level, race_grade")
-      .gte("race_date", ninetyDaysAgoStr)
-      .not("volatility_level", "is", null)
-      .range(from, from + pageSize - 1);
-    if (error) {
-      console.error("  volatilityStats races error:", error.message);
-      return null;
-    }
-    if (!page || page.length === 0) break;
-    races = races.concat(page);
-    if (page.length < pageSize) break;
-    from += pageSize;
-  }
-
-  // race_results を取得
-  let results = [];
-  from = 0;
-  while (true) {
-    const { data: page, error } = await supabase
-      .from("race_results")
-      .select("race_id, rank1, is_cancelled, race_status")
-      .gte("race_id", ninetyDaysAgoStr)
-      .range(from, from + pageSize - 1);
-    if (error) {
-      console.error("  volatilityStats results error:", error.message);
-      return null;
-    }
-    if (!page || page.length === 0) break;
-    results = results.concat(page);
-    if (page.length < pageSize) break;
-    from += pageSize;
-  }
+  // races・race_results を取得。失敗は例外にする（以前は null を返し、その null が volatilityStats として
+  // そのままキャッシュに書かれていた。BOA-391）
+  const races = await fetchAll(
+    "races",
+    "race_id, venue_code, volatility_level, race_grade",
+    (q) =>
+      q
+        .gte("race_date", ninetyDaysAgoStr)
+        .not("volatility_level", "is", null)
+        .order("race_id"),
+  );
+  const results = await fetchAll(
+    "race_results",
+    "race_id, rank1, is_cancelled, race_status",
+    (q) => q.gte("race_id", ninetyDaysAgoStr).order("race_id"),
+  );
 
   // アプリ側 JOIN・フィルタ
   const resultMap = new Map(results.map((r) => [r.race_id, r]));
@@ -617,5 +564,8 @@ async function calculateAccuracy() {
 
 // スタンドアローン実行時のみ実行する（import 時に実行させない）
 if (process.argv[1] === new URL(import.meta.url).pathname) {
-  calculateAccuracy();
+  calculateAccuracy().catch((error) => {
+    console.error("❌ 統計更新エラー:", error);
+    process.exit(1);
+  });
 }

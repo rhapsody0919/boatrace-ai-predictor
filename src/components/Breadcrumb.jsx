@@ -11,6 +11,22 @@ const SITE_ORIGIN = "https://www.boat-ai.jp";
  * /today 等）は、ページ側に BreadcrumbList を持っていない（About・Blog 等は自前で出しており、
  * このコンポーネントは使っていない）ので、二重にならない。
  */
+// 名前か URL が欠けた項目があるときは JSON-LD を出さない。壊れた BreadcrumbList（item が ".../undefined"）は
+// Search Console でエラーになる。呼び出し側の渡し方の誤り（{label, path} 等）は e2e で検知する
+function isValidCrumbs(items) {
+  return (
+    Array.isArray(items) &&
+    items.length > 0 &&
+    items.every(
+      (item) =>
+        typeof item?.name === "string" &&
+        item.name !== "" &&
+        typeof item?.url === "string" &&
+        item.url !== "",
+    )
+  );
+}
+
 function toBreadcrumbListLd(items) {
   return {
     "@context": "https://schema.org",
@@ -28,9 +44,11 @@ export default function Breadcrumb({ items }) {
   const { t } = useTranslation();
   return (
     <nav className="breadcrumb" aria-label={t("breadcrumbLabel")}>
-      <script type="application/ld+json">
-        {JSON.stringify(toBreadcrumbListLd(items))}
-      </script>
+      {isValidCrumbs(items) && (
+        <script type="application/ld+json">
+          {JSON.stringify(toBreadcrumbListLd(items))}
+        </script>
+      )}
       <ol className="breadcrumb-list">
         {items.map((item, index) => (
           <li key={index} className="breadcrumb-item">

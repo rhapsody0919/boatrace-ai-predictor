@@ -9,6 +9,45 @@ import {
   e2eTodayJST,
 } from "./fixtures.js";
 
+/**
+ * 分析ツール（/winning-technique）の一部タブは「本日開催中のレース」を基準に
+ * データを取得する実装になっている。E2Eは録画時刻で走るため、撮影時刻にたまたま
+ * 開催中の会場が無い・本日分の結果確定レースが無いと、これらのタブが毎回
+ * 空状態（.empty-state）だけで通ってしまい、中身を一度も検証しないまま
+ * green になっていた（BOA-664）。test.skip ではないため check:e2e-skips でも
+ * 検知できない。
+ *
+ * races/race_entries/race_results は「本日分しか持たない」という実装コメントに
+ * 反して過去分も保持している（2026-10-02実測、2025-12-02〜現在で47,568行）ため、
+ * レース詳細のE2E（BOA-445）と同じ戸田8R（2026-09-18-02-08、結果・進入コース
+ * 補完済み）を使い、ブラウザ時計をその日に固定することで「本日」を確実に
+ * データがある日として再現する。venue_code/race_id を受け付けるタブはそのレース
+ * を直接指定し（ディープリンクは「本日開催」一覧の有無を問わず信頼される、
+ * useVenueRaceSelector参照）、受け付けないタブ（好調・不調ランキング/
+ * 会場ランキング）は時計だけで揃える。
+ */
+const ANALYSIS_FIXED_DATE = "2026-09-18";
+const ANALYSIS_FIXED_VENUE_CODE = 2; // 戸田
+const ANALYSIS_FIXED_RACE_ID = `${ANALYSIS_FIXED_DATE}-02-08`;
+/** 正午JST。当日の全レースは既に結果確定済みのため、時刻自体に意味は無い */
+const ANALYSIS_FIXED_NOON_JST = new Date(
+  `${ANALYSIS_FIXED_DATE}T12:00:00+09:00`,
+);
+
+/**
+ * 分析ツールのタブを、当日開催データが確実にある固定の過去日で開く（BOA-664）。
+ * withRace=false のタブ（venue_code/race_id を受け付けない）では付与しない。
+ */
+async function gotoAnalysisTabOnFixedDate(page, tab, { withRace = true } = {}) {
+  await page.clock.setFixedTime(ANALYSIS_FIXED_NOON_JST);
+  const params = new URLSearchParams({ tab });
+  if (withRace) {
+    params.set("venue_code", String(ANALYSIS_FIXED_VENUE_CODE));
+    params.set("race_id", ANALYSIS_FIXED_RACE_ID);
+  }
+  await page.goto(`/winning-technique?${params.toString()}`);
+}
+
 test.describe("ホーム・基本ナビゲーション", () => {
   test("トップページが表示され、主要ナビが機能する", async ({ page }) => {
     await page.goto("/");
@@ -103,6 +142,75 @@ test.describe("選手一覧ページ (/racers)", () => {
     await page.goto("/racers");
     const firstRow = page.locator(".racer-table tbody tr").first();
     await firstRow.click();
+    await expect(page).toHaveURL(/\/racer\/\d+$/);
+  });
+
+  // BOA-470: 仕様（spec.md FR4 の例 ?sort=height）と実装（height_cm）の食い違い。
+  // 別名を受け付け、知らないキーは既定（勝率の降順）に戻す
+  test("?sort=height（別名）で身長の降順に並ぶ（BOA-470）", async ({
+    page,
+  }) => {
+    await page.goto("/racers?sort=height&dir=desc");
+    const cells = page.locator(".racer-table tbody tr td:nth-child(3)");
+    await expect(cells.first()).toBeVisible();
+    const heights = (await cells.allTextContents())
+      .map((t) => parseInt(t, 10))
+      .filter((n) => Number.isFinite(n));
+    expect(heights.length).toBeGreaterThan(5);
+    for (let i = 1; i < heights.length; i++) {
+      expect(heights[i]).toBeLessThanOrEqual(heights[i - 1]);
+    }
+    // 見出しの並び順の印も身長の列に付く
+    await expect(
+      page.locator(".racer-table th.is-sorted", { hasText: "身長" }),
+    ).toBeVisible();
+  });
+
+  // BOA-470: 身長・体重の範囲入力で、上限欄にもアクセシブルネームがある
+  test("身長・体重の下限・上限の欄に、それぞれ名前が付いている（BOA-470）", async ({
+    page,
+  }) => {
+    await page.goto("/racers");
+    for (const name of [
+      "身長の下限（cm）",
+      "身長の上限（cm）",
+      "体重の下限（kg）",
+      "体重の上限（kg）",
+    ]) {
+      await expect(
+        page.getByRole("spinbutton", { name, exact: true }).first(),
+      ).toBeAttached();
+    }
+  });
+
+  // BOA-470: モバイルの行本体は href を持つ本物のリンク（新しいタブで開ける）。
+  // ▼ボタンはリンクの中に入れない（操作できる要素の入れ子にしない）
+  test("375px: 行本体は選手ページへのリンクで、▼はリンクの外のボタン（BOA-470）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/racers");
+    const row = page.locator(".racer-compact-row").first();
+    await expect(row).toBeVisible();
+    await expect(row.locator("a.racer-compact-row-main")).toHaveAttribute(
+      "href",
+      /^\/racer\/\d+$/,
+    );
+    await expect(page.locator(".racer-compact-row a button")).toHaveCount(0);
+
+    // ▼は画面遷移せずに、その行だけ展開する
+    await row.locator(".racer-compact-row-chevron").click();
+    await expect(page).toHaveURL(/\/racers/);
+    await expect(row.locator(".racer-compact-row-detail")).toBeVisible();
+    await expect(
+      page
+        .locator(".racer-compact-row")
+        .nth(1)
+        .locator(".racer-compact-row-detail"),
+    ).toHaveCount(0);
+
+    // 行本体のタップで選手ページへ
+    await row.locator("a.racer-compact-row-main").click();
     await expect(page).toHaveURL(/\/racer\/\d+$/);
   });
 });
@@ -255,6 +363,36 @@ test("英語のレース詳細に公式の記号・円・日本語のラベル�
 test("会場特性の要約は言語ごとの区切りで連結する（BOA-656）", async ({
   page,
 }) => {
+  // venue-characteristics-teaser は VenueCharacteristicsCard が collapsible
+  // （VenueRaceListPage の showCardsInGrid＝その日にまだ発走前のレースがある。
+  // getRaceStatus は race.result.finished を最優先で見るため、時計を戸田の
+  // 開催中時刻に固定するだけでは不十分（BOA-688）。2026-09-29は実際の開催日から
+  // 日が経つほど全レースの結果が確定済みになり、BOA-608・#1080と同じ時刻固定を
+  // 真似ても「当日まだ発走前のレースがある」状態そのものが時間とともに崩れて
+  // record モード（本番）で再現できなくなる。そこで /api/predictions/2026-09-29
+  // の応答を差し替え、戸田の最終レースだけ未発走（result null・発走前の時刻）に
+  // 固定し、実際のレース結果の経過に左右されないようにする
+  const DATE = "2026-09-29";
+  await page.clock.setFixedTime(new Date(`${DATE}T15:04:00+09:00`));
+  await page.route(`**/api/predictions/${DATE}*`, async (route) => {
+    // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+    const response = await fetchRecorded(route);
+    const body = await response.json();
+    const todaRaceNumbers = (body.races || [])
+      .filter((r) => r.venueCode === 2)
+      .map((r) => r.raceNumber);
+    const lastRaceNumber = Math.max(...todaRaceNumbers);
+    const races = (body.races || []).map((race) =>
+      race.venueCode === 2 && race.raceNumber === lastRaceNumber
+        ? { ...race, result: null, startTime: "23:59" }
+        : race,
+    );
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json: { ...body, races },
+    });
+  });
   for (const [path, sep] of [
     ["/en/venue/2", ", "],
     ["/zh-TW/venue/2", "、"],
@@ -592,110 +730,96 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     ).toBeVisible({ timeout: 10000 });
   });
 
-  test("選手別展示タイム推移タブで本日のレースの推移一覧→クリックで推移グラフに切り替わる（BOA-164）", async ({
+  test("選手別展示タイム推移タブで固定の過去レースの推移一覧→クリックで推移グラフに切り替わる（BOA-164、固定日の技法はBOA-664）", async ({
     page,
   }) => {
-    await page.goto("/winning-technique");
-    await page.click('.analysis-tab-btn:text-is("📈 展示タイム推移")');
+    await gotoAnalysisTabOnFixedDate(page, "extrend");
     await expect(page.locator(".motor-condition-container")).toBeVisible({
       timeout: 10000,
     });
-    // マイグレーション不要のためデータは常に存在するはずだが、
-    // 本日開催中のレースが無い環境でも空状態を許容する
-    await expect(
-      page.locator(".empty-state, .motor-ranking-row").first(),
-    ).toBeVisible({
-      timeout: 15000,
-    });
-
+    // 固定の過去レースのため6艇分の行が必ず出る（空状態を許容しない。BOA-664）
     const rows = page.locator(".motor-ranking-row");
-    const rowCount = await rows.count();
-    if (rowCount > 0) {
-      // 90日平均（4列目）が出ている選手を選ぶ。平均は推移と同じ直近90日の展示タイムから
-      // 出すため、平均があれば推移グラフは必ず描ける（新人等で平均が無い選手は空状態になる）
-      const rowWithAvg = page
-        .locator(".motor-ranking-row:not(.non-clickable-row)")
-        .filter({
-          has: page.locator("td:nth-child(4)", { hasText: /^\d+\.\d{2}$/ }),
-        })
-        .first();
-      await expect(rowWithAvg).toBeVisible();
-      await rowWithAvg.click();
-      // 見出し（.selected-motor-heading）はクリック直後の1回の描画で一瞬出て、推移の取得中
-      // （.loading-state）は消える。見出しだけで終えると推移の要求が録画に入らず、strict
-      // 再生で落ちる（BOA-594）。取得が終わってからしか描かれない推移の点まで待つ
-      await expect(
-        page.locator(".motor-condition-container .recharts-line-dot").first(),
-      ).toBeVisible({ timeout: 10000 });
-      await expect(page.locator(".loading-state")).toHaveCount(0);
-      await expect(page.locator(".selected-motor-heading")).toBeVisible();
-    }
-  });
+    await expect(rows.first()).toBeVisible({ timeout: 15000 });
+    await expect(rows).toHaveCount(6);
 
-  test("選手別決まり手傾向タブが表示される（BOA-165）", async ({ page }) => {
-    await page.goto("/winning-technique");
-    await page.click('.analysis-tab-btn:text-is("🏆 選手別決まり手傾向")');
-    await expect(page.locator(".motor-condition-container")).toBeVisible({
-      timeout: 10000,
-    });
-    // 本日開催中のレースが無い環境でも空状態を許容する
+    // 90日平均（4列目）が出ている選手を選ぶ。平均は推移と同じ直近90日の展示タイムから
+    // 出すため、平均があれば推移グラフは必ず描ける（新人等で平均が無い選手は空状態になる）
+    const rowWithAvg = page
+      .locator(".motor-ranking-row:not(.non-clickable-row)")
+      .filter({
+        has: page.locator("td:nth-child(4)", { hasText: /^\d+\.\d{2}$/ }),
+      })
+      .first();
+    await expect(rowWithAvg).toBeVisible();
+    await rowWithAvg.click();
+    // 見出し（.selected-motor-heading）はクリック直後の1回の描画で一瞬出て、推移の取得中
+    // （.loading-state）は消える。見出しだけで終えると推移の要求が録画に入らず、strict
+    // 再生で落ちる（BOA-594）。取得が終わってからしか描かれない推移の点まで待つ
     await expect(
-      page.locator(".empty-state, .motor-ranking-row").first(),
-    ).toBeVisible({
-      timeout: 15000,
-    });
+      page.locator(".motor-condition-container .recharts-line-dot").first(),
+    ).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(".loading-state")).toHaveCount(0);
+    await expect(page.locator(".selected-motor-heading")).toBeVisible();
   });
 
-  test("本日の好調・不調選手ランキングタブが表示される（BOA-166）", async ({
+  test("選手別決まり手傾向タブで固定の過去レースの内訳が表示される（BOA-165、固定日の技法はBOA-664）", async ({
     page,
   }) => {
-    await page.goto("/winning-technique");
-    await page.click(
-      '.analysis-tab-btn:text-is("🔥 好調・不調選手ランキング")',
-    );
+    await gotoAnalysisTabOnFixedDate(page, "techprofile");
     await expect(page.locator(".motor-condition-container")).toBeVisible({
       timeout: 10000,
     });
-    // 本日開催中のレースが無い環境でも空状態を許容する
-    await expect(
-      page.locator(".empty-state, .motor-ranking-row").first(),
-    ).toBeVisible({
-      timeout: 15000,
-    });
+    // 固定の過去レースのため6艇分の行が必ず出る（空状態を許容しない。BOA-664）
+    const rows = page.locator(".motor-ranking-row");
+    await expect(rows.first()).toBeVisible({ timeout: 15000 });
+    await expect(rows).toHaveCount(6);
   });
 
-  test("選手×艇番別 回収率分析タブが表示される（BOA-167）", async ({
+  test("本日の好調・不調選手ランキングタブで固定日の実データが表示される（BOA-166、固定日の技法はBOA-664）", async ({
     page,
   }) => {
-    await page.goto("/winning-technique");
-    await page.click('.analysis-tab-btn:text-is("💰 回収率分析")');
+    // venue_code/race_id を受け付けないタブのため、時計だけを固定の過去日に合わせる
+    await gotoAnalysisTabOnFixedDate(page, "formranking", {
+      withRace: false,
+    });
     await expect(page.locator(".motor-condition-container")).toBeVisible({
       timeout: 10000,
     });
-    // 本日開催中のレースが無い環境でも空状態を許容する
-    await expect(
-      page.locator(".empty-state, .motor-ranking-row").first(),
-    ).toBeVisible({
-      timeout: 15000,
-    });
+    // 固定日は550人超の選手に当時・90日前時点の両方の全国勝率があり、急上昇/急下降
+    // どちらのランキングにも実データが出る（空状態を許容しない。BOA-664）
+    const rows = page.locator(".motor-ranking-row");
+    await expect(rows.first()).toBeVisible({ timeout: 15000 });
+    expect(await rows.count()).toBeGreaterThan(0);
   });
 
-  test("会場ランキングタブが表示される（BOA-171/BOA-267）", async ({
+  test("選手×艇番別 回収率分析タブで固定の過去レースの実データが表示される（BOA-167、固定日の技法はBOA-664）", async ({
     page,
   }) => {
-    await page.goto("/winning-technique");
-    await page.click('.analysis-tab-btn:text-is("🏟️ 会場ランキング")');
+    await gotoAnalysisTabOnFixedDate(page, "returnrate");
     await expect(page.locator(".motor-condition-container")).toBeVisible({
       timeout: 10000,
     });
-    // 本日開催中のレースが無い、または結果確定レースが無い環境でも空状態を許容する。
-    // 集計に複数クエリを要し、日本国内からの実測は約4秒だがCI(海外ランナー→本番DB)では
-    // 15秒を超えて失敗したため、この待ちだけ長めにする
-    await expect(
-      page.locator(".empty-state, .motor-ranking-row").first(),
-    ).toBeVisible({
-      timeout: 30000,
+    // 固定の過去レースのため6艇分の行が必ず出る（空状態を許容しない。BOA-664）
+    const rows = page.locator(".motor-ranking-row");
+    await expect(rows.first()).toBeVisible({ timeout: 15000 });
+    await expect(rows).toHaveCount(6);
+  });
+
+  test("会場ランキングタブで固定日の実データが表示される（BOA-171/BOA-267、固定日の技法はBOA-664）", async ({
+    page,
+  }) => {
+    // venue_code/race_id を受け付けないタブのため、時計だけを固定の過去日に合わせる。
+    // 固定日は24会場中15会場・180レース全てが結果確定済み（配当データ込み）のため
+    // 本日限定の4指標・直近90日の1号艇勝率とも実データが出る（空状態を許容しない。BOA-664）
+    await gotoAnalysisTabOnFixedDate(page, "venueranking", {
+      withRace: false,
     });
+    await expect(page.locator(".motor-condition-container")).toBeVisible({
+      timeout: 10000,
+    });
+    const rows = page.locator(".motor-ranking-row");
+    await expect(rows.first()).toBeVisible({ timeout: 30000 });
+    expect(await rows.count()).toBeGreaterThan(0);
   });
 
   test("会場×グレード分析タブが表示される（BOA-263）", async ({ page }) => {
@@ -2529,12 +2653,13 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 同居している。以前はここが「48人」＝男子24人と女子24人の合算で、
     // 別の勝ち上がりの選手を混ぜて順位を振っていた（BOA-476／BOA-511）。
     // 表示中の6艇と同じ側だけを母集団にするので24人。さらに 9/22 5R（予選男子）で
-    // Fを切った大澤普司は賞典除外として順位の対象から外すので23人（BOA-587）
+    // Fを切った大澤普司は賞典除外として順位の対象から外し（BOA-587）、予選中の 9/22 に
+    // 帰った北川・田中も予選の翌日から外すので21人（BOA-674）
     // 除外の選手も節は走っているので24人のまま、順位の対象を分けて書く。
     // Ｗ優勝戦で分けた節は「節の出場」ではなく「同じ優勝戦をめざすのは」と書く
     // （下の注記の「節全体は48人」と食い違って読めた。BOA-660）
     await expect(page.locator(".rmt-sub")).toContainText(
-      "同じ優勝戦をめざすのは24人（順位の対象は23人",
+      "同じ優勝戦をめざすのは24人（順位の対象は21人",
     );
     // 人数が半分になる理由を1行で断る（黙って半分にすると「なぜ減った」になる）
     await expect(page.locator(".rmt-series-note")).toContainText(
@@ -3305,31 +3430,29 @@ test.describe("レースページ再設計（BOA-168）", () => {
     });
   });
 
-  test("分析ツールの超展開データタブが表示される（レースAI予想からの外出し）", async ({
+  test("分析ツールの超展開データタブで固定の過去レースの実データが表示される（レースAI予想からの外出し、固定日の技法はBOA-664）", async ({
     page,
   }) => {
-    await page.goto("/winning-technique");
-    await page.click('.analysis-tab-btn:text-is("⚔️ 超展開データ")');
+    await gotoAnalysisTabOnFixedDate(page, "attackdefense");
     await expect(page.locator(".motor-condition-container")).toBeVisible({
       timeout: 10000,
     });
-    // 本日開催中のレースが無い環境でも空状態を許容する
-    await expect(page.locator(".empty-state, .ad-section").first()).toBeVisible(
-      { timeout: 20000 },
-    );
+    // 固定の過去レースは6艇分のデータが揃っているため実テーブルが必ず出る
+    // （空状態を許容しない。BOA-664）
+    await expect(page.locator(".ad-section")).toBeVisible({ timeout: 20000 });
   });
 
-  test("分析ツールの出走表データタブが表示される（レースAI予想からの外出し）", async ({
+  test("分析ツールの出走表データタブで固定の過去レースの実データが表示される（レースAI予想からの外出し、固定日の技法はBOA-664）", async ({
     page,
   }) => {
-    await page.goto("/winning-technique");
-    await page.click('.analysis-tab-btn:text-is("📋 出走表データ")');
+    await gotoAnalysisTabOnFixedDate(page, "racecard");
     await expect(page.locator(".motor-condition-container")).toBeVisible({
       timeout: 10000,
     });
-    await expect(page.locator(".empty-state, .rcd-table").first()).toBeVisible({
-      timeout: 20000,
-    });
+    // 固定の過去レースは出走表データが確定しているため実テーブルが必ず出る
+    // （空状態を許容しない。BOA-664）
+    await expect(page.locator(".rcd-table")).toBeVisible({ timeout: 20000 });
+    await expect(page.locator(".rcd-table tbody tr")).toHaveCount(6);
   });
 });
 
@@ -5381,7 +5504,29 @@ test.describe("レース詳細の見出し: グレードとレース種別（BOA
     page,
   }) => {
     // 2026-09-04 浜名湖9R は race_conditions に series_day=6 だけが入り、
-    // is_final_day・race_title・race_stage が null（BOA-347）。同じ日の他レースは最終日
+    // is_final_day・race_title・race_stage が null だった（BOA-347）。本番の
+    // race_conditions.race_stage がその後「一般」に補完され前提が崩れたため
+    // （BOA-688）、画面が読むのは /rest/v1/race_conditions ではなく
+    // /api/predictions/{date}（Edge API、get_predictions_by_date RPC が
+    // race_conditions を raceStage/isFinalDay/raceTitle として返す）なので、
+    // その応答だけを差し替えてこのレースの欠損を再現する。同じ日の他レースは
+    // 実データのまま（kicker・最終日の補完元として使う。useDatePredictions が
+    // 同じ会場の他レースから値を拾う）
+    await page.route("**/api/predictions/2026-09-04*", async (route) => {
+      // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+      const response = await fetchRecorded(route);
+      const body = await response.json();
+      const races = (body.races || []).map((race) =>
+        race.raceId === "2026-09-04-06-09"
+          ? { ...race, raceStage: null, isFinalDay: null, raceTitle: null }
+          : race,
+      );
+      await route.fulfill({
+        status: response.status(),
+        headers: response.headers(),
+        json: { ...body, races },
+      });
+    });
     await page.goto("/race/2026-09-04-06-09");
     await expect(kicker(page)).toContainText("クラウンメロン杯", {
       timeout: 25000,

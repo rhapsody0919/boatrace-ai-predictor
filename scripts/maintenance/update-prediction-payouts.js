@@ -1,36 +1,17 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 import { createClient } from '@supabase/supabase-js';
+import { fetchAll } from '../lib/supabaseClient.js';
 
 const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-async function fetchAll(table, select) {
-  const pageSize = 1000;
-  let allData = [];
-  let page = 0;
-
-  while (true) {
-    const { data } = await supabase
-      .from(table)
-      .select(select)
-      .range(page * pageSize, (page + 1) * pageSize - 1);
-
-    if (!data || data.length === 0) break;
-    allData = allData.concat(data);
-    if (data.length < pageSize) break;
-    page++;
-  }
-
-  return allData;
-}
-
 async function updatePayouts() {
   console.log('Fetching predictions...');
-  const predictions = await fetchAll('predictions', 'prediction_id, race_id, top_pick, is_hit_win, is_hit_place, is_hit_trifecta, is_hit_trio');
+  const predictions = await fetchAll('predictions', 'prediction_id, race_id, top_pick, is_hit_win, is_hit_place, is_hit_trifecta, is_hit_trio', q => q.order('prediction_id'), { client: supabase });
   console.log('  Total predictions:', predictions.length);
 
   console.log('Fetching race_results...');
-  const results = await fetchAll('race_results', 'race_id, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio, rank1, rank2');
+  const results = await fetchAll('race_results', 'race_id, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio, rank1, rank2', q => q.order('race_id'), { client: supabase });
   console.log('  Total results:', results.length);
 
   // race_id -> result マップ

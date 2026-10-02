@@ -629,7 +629,128 @@
   "aiPredictionTab": {
     "cancelled": "이 경주는 중지되어 AI 예상이 없습니다",
     "unavailableTitle": "AI 예상 데이터가 없습니다",
-    "unavailableBody": "이 경주는 AI 예상에 필요한 데이터가 아직 준비되지 않았습니다."
+    "unavailableBody": "이 경주는 AI 예상에 필요한 데이터가 아직 준비되지 않았습니다.",
+    "analogy": {
+      "title": "아날로지 파인더",
+      "views": {
+        "contribution": "기여도"
+      },
+      "contribution": {
+        "lede": "조건이 비슷한 과거 레이스에서 착순에 어떤 데이터가 얼마나 영향을 주었는지 테마별 비율로 봅니다.",
+        "foot": "비율은 조건이 비슷한 과거 레이스에서 테마별 영향의 상대적인 크기를 나타냅니다(전체 테마 합계 100%)."
+      },
+      "targetsLabel": "착순",
+      "targets": {
+        "1": "1착",
+        "2": "2착 이내",
+        "3": "3착 이내"
+      },
+      "conditions": "상세 조건",
+      "grade": "등급",
+      "round": "라운드",
+      "all": "전체",
+      "grades": {
+        "ippan": "일반",
+        "G3": "G3",
+        "G2": "G2",
+        "G1": "G1",
+        "SG": "SG"
+      },
+      "rounds": {
+        "yosen": "예선",
+        "junyu": "준우승전",
+        "yusho": "우승전",
+        "other": "기타"
+      },
+      "compare": "보트 번호로 비교",
+      "boatA": "번호 A",
+      "boatB": "번호 B",
+      "boatLabel": "{{n}}번",
+      "themeColumn": "테마",
+      "venueAll": "전체 경주장",
+      "widened": "{{requested}}은(는) 레이스 수가 적어 {{steps}}(으)로 넓혀 집계했습니다",
+      "widenedSteps": {
+        "venue": "전체 경주장",
+        "round": "전체 라운드",
+        "grade": "전체 등급"
+      },
+      "n": "n={{races}}레이스({{boats}}척)",
+      "model": "모델 {{version}}",
+      "smallSample": "소표본",
+      "rank": "{{rank}}위",
+      "radarLabel": "테마별 기여 크기를 나타낸 레이더 차트",
+      "breakdownNote": "의미가 비슷한 항목(승률과 연대율, 레이스 내 순위 등)은 묶어서 표시합니다. 개별 값은 참고용입니다.",
+      "error": "기여도 데이터를 불러오지 못했습니다",
+      "themes": {
+        "venueCourse": {
+          "name": "경주장×번호, 진입",
+          "short": "경주장×번호"
+        },
+        "racerRecord": {
+          "name": "선수, 기본 성적",
+          "short": "선수 성적"
+        },
+        "startExhibition": {
+          "name": "ST, 직전 정보",
+          "short": "ST, 직전"
+        },
+        "machine": {
+          "name": "기력",
+          "short": "기력"
+        },
+        "environment": {
+          "name": "환경",
+          "short": "환경"
+        },
+        "racerProfile": {
+          "name": "선수, 속성",
+          "short": "선수 속성"
+        }
+      },
+      "groups": {
+        "venueCourse": {
+          "venue": "경주장",
+          "boatNumber": "번호",
+          "raceNumber": "레이스 번호"
+        },
+        "racerRecord": {
+          "class": "등급",
+          "national": "전국 승률, 연대율",
+          "local": "현지 승률, 연대율",
+          "recent": "최근 30주 성적",
+          "boat1": "인코스 선수(1번)의 등급, 승률"
+        },
+        "startExhibition": {
+          "exhibitionTime": "전시 타임",
+          "pastSt": "과거 평균 ST"
+        },
+        "machine": {
+          "motor": "모터 연대율",
+          "boat": "보트 연대율"
+        },
+        "environment": {
+          "weather": "날씨",
+          "wind": "풍향, 풍속",
+          "wave": "파고",
+          "grade": "등급",
+          "round": "라운드",
+          "seriesDay": "절의 일차"
+        },
+        "racerProfile": {
+          "age": "나이",
+          "weight": "체중",
+          "branch": "지부, 홈"
+        }
+      },
+      "loading": "불러오는 중…",
+      "scope": "{{venue}}, {{grade}}, {{round}}의 과거 레이스",
+      "listSeparator": ", ",
+      "period": "{{from}}~{{to}}",
+      "listAllBoats": "테마별(전체 보트)",
+      "listAllBoatsCompare": "테마별(전체 보트. 번호별 값은 위 표)",
+      "magnitudeNote": "비율은 유리하게 작용했는지 불리하게 작용했는지와 관계없는 '영향의 크기'입니다.",
+      "compareCaption": "번호별 영향 비율(%, 열마다 합계 100%). 아래 '전체 보트'는 2~5번을 포함한 6척을 합친 값입니다."
+    }
   },
   "beforeInfo": {
     "subtitle": "발주 시간이 가까워지면 갱신되는 당일 한정 정보입니다. 발주 30/15/10분 전까지 확정되지 않는 항목이 있습니다",
@@ -824,7 +945,7 @@
     "seriesSplitNote": "이번 시리즈는 Ｗ우승전으로, 승격 경로가 둘로 나뉩니다(시리즈 전체 {{meetTotal}}명). 시리즈 순위와 준우승전 기준은 표시 중인 6정과 같은 우승전을 목표로 하는 선수 안에서 계산합니다.",
     "seriesSplitNoteNoBorder": "이번 시리즈는 Ｗ우승전으로, 승격 경로가 둘로 나뉩니다(시리즈 전체 {{meetTotal}}명). 시리즈 순위는 표시 중인 6정과 같은 우승전을 목표로 하는 선수 안에서 계산합니다.",
     "seriesMixedNote": "이번 시리즈는 Ｗ우승전으로 승격 경로가 둘로 나뉘지만, 이 레이스는 양쪽 선수가 함께 출주하므로 시리즈 순위는 시리즈 전체 {{total}}명으로 계산합니다.",
-    "rankSourceNote": "시리즈 순위는 당사 계산입니다. 공식 득점률 일람을 확보한 개최에서는 공식 비고(상전 제외, 중도 귀향)로 순위 대상 외를 판정하고, 확보하지 못한 개최에서는 예선이 끝나기 전까지 이번 시리즈에서 플라잉(F)을 한 선수를 상전 제외로, '시리즈 마지막 날 출주가 없는 선수'를 이탈로 추정합니다(예선이 끝난 뒤의 F로는 순위에서 빼지 않습니다. 공식과 같음).",
+    "rankSourceNote": "시리즈 순위는 당사 계산입니다. 공식 득점률 일람을 확보한 개최에서는 공식 비고(상전 제외, 중도 귀향)로 순위 대상 외를 판정하고, 확보하지 못한 개최에서는 예선이 끝나기 전까지 이번 시리즈에서 플라잉(F)을 한 선수를 상전 제외로 보고, 중도 귀향은 두 단계로 추정해 뺍니다. 예선 마지막 경주 이후 한 번도 출주하지 않은 선수(예선 중 귀향)는 예선 다음 날부터, 시리즈 마지막 날 출주가 없는 선수(예선 후 귀향)는 마지막 날부터 빼므로, 마지막 날 순위가 올라갈 수 있습니다. 예선이 끝난 뒤의 F로는 순위에서 빼지 않지만, 예선 후의 중도 귀향은 뺍니다(둘 다 공식과 같음).",
     "rankSourceNoteOfficial": "득점률과 시리즈 순위는 공식 득점률 일람(예선 종료 시점)의 값입니다. 감점·상전 제외·중도 귀향도 공식 그대로 반영합니다. 예선 중에는 공식 일람이 아직 나오지 않아 당사 집계를 사용합니다.",
     "sourceOfficial": "공식",
     "sourceOwn": "당사 집계",

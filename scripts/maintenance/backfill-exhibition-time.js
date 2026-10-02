@@ -51,6 +51,7 @@ function listDates(from, to) {
  */
 async function findMissingRaces(date) {
   const now = new Date();
+  // 握りつぶし可（BOA-391）: 手動の複数日補完。失敗した日は「未確認」（null）として続ける（上の JSDoc）
   const schedule = await getRaceSchedule(date, { throwOnError: false });
   if (schedule.length === 0) return null;
   const withTime = await getRaceIdsWithExhibitionTime(date);
