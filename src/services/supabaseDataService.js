@@ -6994,6 +6994,8 @@ export const supabaseDataService = {
           const official = (officialSeries ?? []).filter((r) => r.remarks);
           if (official.length > 0) {
             return {
+              // 画面の注記の出し分け（公式の備考で外したか、当社の推定か）
+              exclusionsFromOfficial: true,
               withdrawnRacerIds: official.map((r) => r.racer_id),
               exclusionReasonByRacer: Object.fromEntries(
                 official.map((r) => [
@@ -7032,6 +7034,7 @@ export const supabaseDataService = {
             if (!reasons[id]) reasons[id] = "withdrawn";
           }
           return {
+            exclusionsFromOfficial: false,
             withdrawnRacerIds: Object.keys(reasons).map(Number),
             exclusionReasonByRacer: reasons,
           };

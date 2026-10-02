@@ -134,3 +134,17 @@ test("予選の最終日から、予選中に帰った選手を順位の対象�
     "予選の後に帰った",
   );
 });
+
+test("公式の得点率一覧の備考で外している節は、注記もそう書く", async ({
+  page,
+}) => {
+  // 児島G1（2026-09-28〜）は公式の得点率一覧の備考（賞典除外・途中帰郷）で外す。
+  // 「公式は取れていない」と書くと、表の「対象外」と食い違った（PR #1149 ファン評価1周目）
+  await openMeetTab(page, "2026-10-01-16-09");
+  await expect(page.locator(".rmt-rank-note")).toContainText(
+    "公式の得点率一覧の備考で判定しています",
+  );
+  await expect(page.locator(".rmt-rank-note")).not.toContainText(
+    "取れていません",
+  );
+});

@@ -749,14 +749,19 @@ function RaceMeetTab({
               実測: 得点率は6/6一致、順位は最大4つ差）。除外の判定材料が
               自社データに無いので、合わせにいかずに違いを書く */}
           <p className="rmt-rank-note">
+            {/* 3通り: 得点率も公式の値／得点率は当社計算だが対象外は公式の備考／
+                どちらも当社の推定。備考で外している節で「公式は取れていない」と
+                書くと、表の「対象外」と食い違った（PR #1149 ファン評価1周目） */}
             {t(
               usesOfficialScore
                 ? "meetTab.rankSourceNoteOfficial"
-                : "meetTab.rankSourceNote",
+                : board?.exclusionsFromOfficial
+                  ? "meetTab.rankSourceNoteOfficialRemarks"
+                  : "meetTab.rankSourceNote",
             )}
             {/* 予選の後の扱い（Fは外さない・帰郷は外す）は、予選が終わってから
                 関係する話なので、予選中は出さない（注記が長くなるだけだった） */}
-            {!usesOfficialScore && prelimOver && (
+            {!usesOfficialScore && !board?.exclusionsFromOfficial && prelimOver && (
               <> {t("meetTab.rankSourceNoteAfterPrelim")}</>
             )}
           </p>
