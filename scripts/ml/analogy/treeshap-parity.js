@@ -123,9 +123,10 @@ export function prepareModels(meta, dumps) {
  * @returns {{boatNumbers:number[], inputs: Record<string, Float64Array[]>}}
  */
 export function raceInputs(models, race) {
-  const rows = [...(race.racecard_features ?? [])].sort(
-    (a, b) => a.boat_number - b.boat_number,
-  );
+  // 行は {boat_number, features}（analogy_race_features の行の形）か、艇番の昇順の features の配列
+  const rows = (race.racecard_features ?? [])
+    .map((r, i) => (Array.isArray(r) ? { boat_number: i + 1, features: r } : r))
+    .sort((a, b) => a.boat_number - b.boat_number);
   const boatNumbers = rows.map((r) => Number(r.boat_number));
   const racecardNames = models.win_racecard.featureNames;
   const live = buildLiveFeatures({
@@ -192,6 +193,12 @@ export function checkParity({ meta, dumps, fixture }) {
         );
       }
       inputs[name].forEach((x, b) => {
+        // 欠けた列を null（欠損）と同じに扱って素通りさせない
+        if (exp.features[b]?.length !== names.length) {
+          throw new ParityInputError(
+            `${race.race_id}: expected.${name}.features の列の数 ${exp.features[b]?.length} が feature_names の ${names.length} と違います`,
+          );
+        }
         s.boats += 1;
         names.forEach((f, j) => {
           if (!sameFloat(x[j], exp.features[b][j])) {
@@ -259,14 +266,20 @@ export function checkParityDir(dir) {
         throw new ParityInputError(
           `per_race_meta.json に models.${n}.file がありません`,
         );
-      return [n, readJson(join(dir, file))];
+      // 学習ジョブは out/ に .json で書き、Storage へ置くときに gzip する（meta の file は Storage の名前）
+      const path = [file, file.replace(/\.gz$/, "")]
+        .map((f) => join(dir, f))
+        .find((p) => existsSync(p));
+      if (!path) throw new ParityInputError(`${join(dir, file)} がありません`);
+      return [n, readJson(path)];
     }),
   );
   // 学習ジョブは .json、CI の固定データはリポジトリを重くしないよう .json.gz で置く
   const fixturePath = ["parity_fixture.json", "parity_fixture.json.gz"]
     .map((f) => join(dir, f))
     .find((p) => existsSync(p));
-  if (!fixturePath) throw new ParityInputError(`${dir} に parity_fixture.json がありません`);
+  if (!fixturePath)
+    throw new ParityInputError(`${dir} に parity_fixture.json がありません`);
   const fixture = readJson(fixturePath);
   return checkParity({ meta, dumps, fixture });
 }

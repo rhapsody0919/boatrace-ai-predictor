@@ -32,7 +32,7 @@ import {
   meanFloat32,
   windComponents,
 } from "../../src/utils/analogyRaceFeatures.js";
-import { checkParity, checkParityDir } from "../ml/analogy/treeshap-parity.js";
+import { ParityInputError, checkParity, checkParityDir } from "../ml/analogy/treeshap-parity.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const DIR = join(ROOT, "scripts/ml/analogy/testdata/treeshap-parity");
@@ -108,6 +108,23 @@ check(
     `平均を float64 で取ると、固定データの差の列が ${differs} 艇で食い違う（検査が見分けられる）`,
     differs > 0,
   );
+}
+
+{
+  // 展示タイムの欠けた艇（JS は NaN）の最後の列を落としても、欠損と同じ扱いで素通りしないこと
+  const d = load();
+  const race =
+    d.fixture.races.find((r) =>
+      r.expected.win.features.some((row) => row.at(-1) === null),
+    ) ?? d.fixture.races[0];
+  race.expected.win.features[0].pop();
+  let threw = false;
+  try {
+    checkParity(d);
+  } catch (e) {
+    threw = e instanceof ParityInputError;
+  }
+  check("expected.features の列が欠けていれば入力の不備として失敗する", threw);
 }
 
 // 3. CLI の終了コード
