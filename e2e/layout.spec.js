@@ -927,9 +927,10 @@ async function checkBeforeInfoExhibitionCard(page, path, width) {
 
 // 横スクロールの手がかり（useHorizontalScrollHint）。右に残っている幅に合わせて出し方を変える
 // （#1130 ファン評価で見送った P3 を共通部品で直したもの）。
-// - 残り 24px 超: 「›」（押せる幅 44px 以上）と右端のフェード（.has-more）
-// - 残り 1〜24px: 「›」は出さず、残りに合わせた薄いフェードだけ（data-hscroll-peek）
-//   以前は 5px 残りでも 40px のフェードと「›」がほぼ見えている最後の列を覆い、4px 以下では何も出なかった
+// - 残り 12px 超: 「›」（押せる幅 44px 以上）と右端のフェード（.has-more）
+// - 残り 1〜12px: 「›」は出さず、幅 12px の細いフェードだけ（data-hscroll-peek）
+//   以前は 5px 残りでも 40px のフェードと「›」がほぼ見えている最後の列を覆い、4px 以下では何も出なかった。
+//   境目を 24px にした版では、20px 残りで「›」が消えて最後の列が無いように見えた（PR #1169 ファン評価1周目）
 // - 残り 1px 以下: 何も出さない
 // このフックを使う画面ごとに、そのときの表示と、右端の手前 10px まで送った表示の両方を確かめる。
 // 本番データの列幅ではたまたま境目を踏まないことがあるため、送る位置はテストで決める
@@ -941,7 +942,14 @@ const HSCROLL_SCREENS = [
     // #1127 以降は 320px でも表が収まる（溢れていないときに手がかりを出さないことを確かめる）
   },
   {
-    name: "今節の予想表・日別表",
+    name: "今節の得点率早見",
+    path: "/race/2026-09-29-16-12?tab=meet",
+    ready: ".rmt-forecast-scroll table",
+    mobileOnly: true,
+  },
+  {
+    // このレースは中止で得点率早見が出ない。日別表だけを見る
+    name: "今節の日別表",
     path: "/race/2026-09-21-02-05?tab=meet",
     ready: ".race-history-table-row",
     // 今節は本番 Supabase を2段で引き、表が出るまで1〜2分かかる日がある（race-detail-mobile.spec.js）。
@@ -1010,7 +1018,17 @@ async function checkHscrollHints(page, label) {
       .toBe("");
     const { maxScroll } = await readHint(hint);
     if (maxScroll <= 30) continue;
-    // 右端の手前 10px まで送る: 「›」は出さず、10px＋12px の薄いフェードだけ
+    // 右端の手前 20px まで送る: まだ「›」を出す
+    await readHint(hint, 20);
+    await expect
+      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 残り20px` })
+      .toMatchObject({
+        remaining: 20,
+        hasMore: true,
+        moreButton: true,
+        peek: null,
+      });
+    // 右端の手前 10px まで送る: 「›」は出さず、幅 12px の細いフェードだけ
     await readHint(hint, 10);
     await expect
       .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 残り10px` })
@@ -1019,13 +1037,14 @@ async function checkHscrollHints(page, label) {
         hasMore: false,
         moreButton: false,
         peek: "true",
-        peekWidth: "22px",
+        peekWidth: "12px",
       });
     // 右端まで送る: 何も出さない
     await readHint(hint, 0);
     await expect
       .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 右端` })
       .toMatchObject({ remaining: 0, hasMore: false, peek: null });
+    await expectGlyphDisc(hint, ".hscroll-less", at);
     // 左端へ戻すと「›」が出る。押せる幅は 44px 以上（以前は 28px で押し損ねやすかった）
     await readHint(hint, null);
     await expect
@@ -1035,6 +1054,7 @@ async function checkHscrollHints(page, label) {
       (await readHint(hint)).moreWidth,
       `${at}: 「›」の押せる幅`,
     ).toBeGreaterThanOrEqual(44);
+    await expectGlyphDisc(hint, ".hscroll-more", at);
     // 押せる範囲を広げても、記号は以前と同じく端に寄せる。真ん中に置くと見出しの文字に
     // 寄って「ST›」のように続けて読めた（PR #1169 のレビュー）
     expect(
@@ -1044,10 +1064,24 @@ async function checkHscrollHints(page, label) {
   }
 }
 
+/**
+ * 「›」「‹」の記号の後ろに面の色の円を敷いているか。左の列が固定されていない表では、記号の下を
+ * 見出しの文字が流れて「枠番」の「枠」と一体に見えた（PR #1169 ファン評価1周目）
+ */
+async function expectGlyphDisc(hint, sel, at) {
+  const bgImage = await hint.evaluate((el, s) => {
+    const b = el.querySelector(`:scope > ${s}`);
+    return b ? getComputedStyle(b).backgroundImage : null;
+  }, sel);
+  if (bgImage !== null) {
+    expect(bgImage, `${at}: ${sel} の記号の下地`).toContain("radial-gradient");
+  }
+}
+
 /** そのときの残りの幅に対して、出ている手がかりが合っていなければ食い違いを文で返す（合っていれば空文字） */
 function hintMismatch(h) {
   // 境目の判定は丸める前の幅で行う（フックと同じ）
-  const hasMore = h.remainingRaw > 24;
+  const hasMore = h.remainingRaw > 12;
   const want = {
     hasMore,
     moreButton: hasMore,

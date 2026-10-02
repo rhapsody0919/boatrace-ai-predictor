@@ -1442,16 +1442,17 @@ function suiteHscrollHint(m, check) {
     peekFadeWidth: 0,
   });
   check(
-    "hscroll: 残り4px（以前は何も出なかった）は「›」なしの薄いフェード（16px）",
+    "hscroll: 残り4px（以前は何も出なかった）は「›」なしの細いフェード（12px）",
     st(320, 316, 0),
-    { hasMore: false, hasLess: false, peekFadeWidth: 16 },
+    { hasMore: false, hasLess: false, peekFadeWidth: 12 },
   );
   check(
-    "hscroll: 残り24pxまでは「›」を出さない（フェード36px）",
-    st(340, 316, 0),
-    { hasMore: false, hasLess: false, peekFadeWidth: 36 },
+    "hscroll: 残り12pxまでは「›」を出さない（フェード12px）",
+    st(328, 316, 0),
+    { hasMore: false, hasLess: false, peekFadeWidth: 12 },
   );
-  check("hscroll: 残り25px以上は「›」と幅40pxのフェード", st(357, 301, 0), {
+  // 20px残りで「›」を出さず32pxのフェードにした版では、最後の列が無いように見えた（PR #1169 ファン評価1周目）
+  check("hscroll: 残り20pxは「›」と幅40pxのフェード", st(336, 316, 0), {
     hasMore: true,
     hasLess: false,
     peekFadeWidth: 0,
@@ -1488,8 +1489,14 @@ const MUTANTS = [
   ],
   [
     "hscrollHint",
+    "境目を24pxに戻す（PR #1169 ファン評価1周目の退行）",
+    "export const HSCROLL_PEEK_MAX = 12;",
+    "export const HSCROLL_PEEK_MAX = 24;",
+  ],
+  [
+    "hscrollHint",
     "少しだけ切れているときのフェードを出さない",
-    "!hasMore && remaining > 1 ? Math.min(40, Math.round(remaining) + 12) : 0;",
+    "!hasMore && remaining > 1 ? HSCROLL_PEEK_FADE : 0;",
     "0;",
   ],
   [
