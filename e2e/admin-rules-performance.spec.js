@@ -109,14 +109,15 @@ test.describe("管理画面 /admin/rules の運用成績", () => {
     await page.getByRole("button", { name: "会場別" }).click();
     const select = page.locator(".venue-selector select");
     const stats = page.locator(".venue-summary .stat-item");
+    // カードは 対象件数・的中数・的中率・回収率 の順。値は位置で取り、見出しは別に確かめる
+    const CARD_INDEX = { 対象件数: 0, 的中数: 1, 的中率: 2, 回収率: 3 };
     const statValue = (label) =>
-      stats.filter({ hasText: label }).locator(".stat-value");
+      stats.nth(CARD_INDEX[label]).locator(".stat-value");
 
     await select.selectOption("16");
     await expect(page.locator(".venue-summary h3")).toHaveText(
       "児島 の運用成績",
     );
-    await expect(stats.nth(0).locator(".stat-label")).toHaveText("対象件数");
     await expect(statValue("対象件数")).toHaveText("1380");
     await expect(statValue("的中数")).toHaveText("264");
     await expect(statValue("的中率")).toHaveText("19%");
@@ -128,6 +129,8 @@ test.describe("管理画面 /admin/rules の運用成績", () => {
       0,
     );
     expect(samplesInTable).toBe(1380);
+    // 見出しは「レース数」ではなく「対象件数」（1レースが複数ルールに当たると重複して数えるため）
+    await expect(stats.nth(0).locator(".stat-label")).toHaveText("対象件数");
 
     await select.selectOption("21");
     await expect(statValue("対象件数")).toHaveText("780");
