@@ -6,13 +6,13 @@ spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md) / plan: [plan.m
 ## Phase 0: 着手前（`/step4` の事前条件）
 
 - [x] **T0-1** モックのユーザー承認（2026-10-02。spec.md「モック承認で決まった事項」）
-- [ ] **T0-2** design-reviewer のレビューと指摘の反映
+- [x] **T0-2** design-reviewer のレビューと指摘の反映（2026-10-02。指摘9件。対応は plan.md §2・§4 と spec.md FR-1.4・FR-1.8）
 - [ ] **T0-3** acceptance-test-writer が `e2e/acceptance/meet-page.spec.js` を書く（spec.md・screens.md のみ渡す）
 
 ## Phase 1: 節ページ本体（BOA-682、PR 1）
 
-- [ ] **T1-1** 純関数 `src/utils/meetPageModel.js`: `meetDaysOf`・`pickMeetAnchorRaceId`・`buildQualifiers`・`pickShobugake`（plan.md §2.2〜2.5）。`scripts/maintenance/verify-meet-page-model.js`（児島 2026-09-28 の節の実データ断片をフィクスチャにする）。`verify-registry.json` に ci で登録
-- [ ] **T1-2** `getMeetPage(venueCode, startDate)`（`supabaseDataService.js`）。`race_series` が無い・初日に行が無い・対象外グレード・`meetStart` 不一致を、それぞれ状態として返す（例外で握りつぶさない）
+- [ ] **T1-1** 純関数 `src/utils/meetPageModel.js`: `meetDaysOf`・`meetPageState`・`pickMeetAnchor`・`buildQualifiers`・`pickShobugake`・対象外の節の判定（plan.md §2.2〜2.6）。夜・昼の各ケース（plan.md §2.4）と、2025-12〜の通常の SG/G1/G2 の節で予選最終日が series_day=4 であることを固定する。`scripts/maintenance/verify-meet-page-model.js`（児島 2026-09-28 の節の実データ断片をフィクスチャにする）。`verify-registry.json` に ci で登録
+- [ ] **T1-2** `getMeetScoreboard` に第3引数 `{ prelimDone }`（キャッシュキー v24）。`getMeetPage(venueCode, startDate)`（`supabaseDataService.js`）。`race_series` が無い・初日に行が無い・対象外グレード・`meetStart` 不一致を、それぞれ状態として返す（例外で握りつぶさない）
 - [ ] **T1-3** `MeetPage.jsx` とルート（`AppRouter.jsx`）。title・description・canonical・`Breadcrumb`。読み込み失敗は `DataFetchError`
 - [ ] **T1-4** `MeetHeader`・`MeetRankingTable`（ボーダー線・順位外・勝負駆けの切り替え・金枠）・`MeetQualifiersSection`。375px 1行2段、1024px 以上 2カラム
 - [ ] **T1-5** i18n（`meetPage.*` を ja/en/zh-TW/ko。glossary 確認・追記）
