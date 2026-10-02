@@ -13,10 +13,12 @@ df = df[df['race_ok'] & (df['race_date'] >= '2026-04-01') & (df['race_date'] <= 
 df = df.sort_values(['race_id', 'boat_number'])
 df = df[df.groupby('race_id')['boat_number'].transform('size') == 6]
 m = lgb.Booster(model_file=D + 'main_win_F5.txt')
-X = df[FEATURES].astype('float32')
+# モデルの列の並びで渡す（themes.FEATURES と並びが違う。2026-10-02 に列順の不具合として修正）
+FN = m.feature_name()
+X = df[FN].astype('float32')
 R = len(df) // 6
 TK = [t['key'] for t in THEMES]
-idx = {t['key']: [FEATURES.index(f) for f in theme_features(t)] for t in THEMES}
+idx = {t['key']: [FN.index(f) for f in theme_features(t)] for t in THEMES}
 LIVE = ['exh_time', 'exh_time_diff', 'exh_time_rank', 'weather_code', 'wind_x', 'wind_y', 'wind_speed', 'wave_height']
 
 def shares(Xm, centered):
