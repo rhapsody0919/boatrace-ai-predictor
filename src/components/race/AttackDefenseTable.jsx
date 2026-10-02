@@ -364,7 +364,9 @@ export default function AttackDefenseTable({ racerStats, players }) {
             <tr>
               <td className="ad-label-cell">{t("attackDefense.racer")}</td>
               {sorted.map((s) => (
-                <td key={s.boatNumber}>{getPlayerName(s.boatNumber)}</td>
+                <td key={s.boatNumber} translate="no">
+                  {getPlayerName(s.boatNumber)}
+                </td>
               ))}
             </tr>
 
@@ -439,7 +441,9 @@ export default function AttackDefenseTable({ racerStats, players }) {
                 {t("attackDefense.racer")}
               </td>
               {sorted.map((s) => (
-                <td key={s.boatNumber}>{getPlayerName(s.boatNumber)}</td>
+                <td key={s.boatNumber} translate="no">
+                  {getPlayerName(s.boatNumber)}
+                </td>
               ))}
             </tr>
             <tr>

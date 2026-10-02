@@ -7,9 +7,11 @@ import { test, expect } from "./fixtures.js";
 // (2) App.jsx が同意なしで GA を二重初期化し、タブごとに page_view を追加送信していた、
 // (3) /admin も計測していた。
 test.describe("GA4 page_view の送信経路", () => {
+  // 同意後の送信経路を見るので、共通 fixture の既定（rejected）ではなく同意済みで始める
+  test.use({ cookieConsent: "accepted" });
+
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
-      localStorage.setItem("boatai:cookie-consent", "accepted");
       window.__gaCalls = [];
       window.gtag = (...args) => window.__gaCalls.push(args);
     });
@@ -69,34 +71,43 @@ test.describe("GA4 page_view の送信経路", () => {
     // dev サーバーには Edge Function が無く /api/admin は index.html が返るので API はスタブにし、
     // predictions も空で返す（録画に入らないリクエストを本番へ素通しさせない。BOA-551）。
     // page.route の fulfill は context の録画・再生より先に評価されるので録画も汚さない
+    //
+    // 後半では差し替えをやめるが、unroute はしない。page のルートが0件になる瞬間に
+    // 処理中の要求があると、Playwright がそれを context 側（録画の再生）へ送り直し、
+    // 同じ要求を二重に処理して「Route is already handled!」で落ちる（BOA-661）。
+    // フラグを倒して route.fallback() で録画の再生へ回す
+    let stubbing = true;
     const PERFORMANCE_API = /\/api\/admin\/rules\/performance/;
     const emptyPerformance = (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          startDate: "2026-01-16",
-          data: {
-            total: { samples: 0, hits: 0, payout: 0 },
-            by_rule: [],
-            by_week: [],
-          },
-        }),
-      });
+      !stubbing
+        ? route.fallback()
+        : route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              startDate: "2026-01-16",
+              data: {
+                total: { samples: 0, hits: 0, payout: 0 },
+                by_rule: [],
+                by_week: [],
+              },
+            }),
+          });
     const PREDICTIONS = /\/rest\/v1\/predictions\?/;
     const emptyPredictions = (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: "[]",
-      });
+      !stubbing
+        ? route.fallback()
+        : route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: "[]",
+          });
     await page.route(PERFORMANCE_API, emptyPerformance);
     await page.route(PREDICTIONS, emptyPredictions);
     await page.goto("/admin/rules");
     await page.waitForTimeout(1500);
     expect(await pageViews(page)).toHaveLength(0);
-    await page.unroute(PERFORMANCE_API, emptyPerformance);
-    await page.unroute(PREDICTIONS, emptyPredictions);
+    stubbing = false;
 
     // 公開ページから SPA 遷移で入った場合も送らない（旧実装は config で送っていた）
     await page.goto("/");

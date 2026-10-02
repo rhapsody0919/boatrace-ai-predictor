@@ -109,7 +109,9 @@ export function buildArchiveRows(day) {
       is_final_day: Boolean(src.is_final_day || bv?.is_final_day),
       has_k: Boolean(kv),
       has_b: Boolean(bv),
-      race_grade: null, // race/index（boatrace.jp）で後から補完する。K/Bには無い
+      // race_grade は書かない（K/B にグレードの項目は無い）。race_series の kind から別に補完する
+      // （BOA-651、docs/issues/boa-651-kb-archive-grade.md）。ここで null を送ると、load の再実行
+      // （upsertChangedRows）が補完した値を NULL で上書きする
       created_at: null, // バックフィル行はNULL（取得時刻を偽らない。data-acquisition.md）
     });
 
