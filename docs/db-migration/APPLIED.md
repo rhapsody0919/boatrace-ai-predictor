@@ -176,4 +176,5 @@
 | 119 | 119_race_start_timings_official_row.sql | 未適用 | race_start_timings に公式の着順表の行の順 official_row（smallint、1〜6、CHECK つき）を足す（BOA-667）。列の追加だけで、表の書き換えは無い。コードは列が無い間は書かないので、マージの前後どちらでも適用してよい。過去分は埋めない（NULL のまま。画面は艇番順にフォールバック）。**適用したら、この行を「適用済み」に直す** |
 | 121 | 121_data_health_pre_race_series_day.sql | 未適用 | data_health_pre_race_fields を CREATE OR REPLACE し、日目（race_conditions.series_day）の件数を返す（BOA-510）。読み取りの集計関数の置き換えのみ。**適用後に** checks.js へ pre_race.series_day を足す PR を出す（先に足すと充足率0%の誤報になる）。119 は #1145、120 は #1134 の振り直し先として空けてある。**適用したら、この行を「適用済み」に直す** |
 | 122 | 122_venues_first_win_rate_race_count.sql | 未適用（コードのマージより先に適用する） | venues に1号艇勝率の母数 avg_first_win_rate_race_count（integer）を足す（BOA-303）。分析ツールの1号艇勝率ランキングが画面からの90日スキャンをやめ、update-venue-stats.js の保存値を読むため。列の追加のみ |
+| 125 | 125_raw_snapshots.sql | 未適用（コードのマージより先でも後でもよい） | 生ファイルの台帳 raw_snapshots を新設する（optimal-scraping-design.md §2.2 の設計どおり）。最初の利用者は期別成績 fan の定期取り込み（`fan_period`、2026-10-03 ユーザー承認）。RLS有効・匿名の権限なし。未適用の間は、取り込みは続き、生ファイルの保管だけが警告になる。123・124 は BOA-271（#1178）が予約済み |
 | （番号なし） | add-defense-distribution.sql | 適用済み | 列 racer_aggregated_stats.defense_distribution・course_race_counts が存在 |

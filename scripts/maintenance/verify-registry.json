@@ -99,6 +99,11 @@
       "guards": "Deploy Hookを叩く条件の判定（scripts/lib/deployHookPolicy.js、BOA-361）"
     },
     {
+      "script": "verify-fan-period-job.js",
+      "tier": "ci",
+      "guards": "期別成績（fan）の定期取り込み（scripts/lib/fanPeriodJob.js、api/cron/fan-period.js）。対象日→fanの対応、取り込み済みなら0リクエスト、未公開404はその日で済み（06:30の補足は叩かない）、期の終わりから105日超は取得せず通知、live の書き込みと生ファイルの保管（raw-pages・raw_snapshots）、shadow は書かない、異常・HTTP 500 は error、保管失敗でも取り込みは成功。vercel.json の06:00・06:30、レジストリ、125のRLS"
+    },
+    {
       "script": "verify-fan-period.js",
       "tier": "ci",
       "guards": "期別成績ファイル（fan）のパーサー・行変換・取得〜投入CLI"
