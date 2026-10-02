@@ -34,6 +34,7 @@ import {
   shouldUseOfficialSeries,
   prelimEndRaceIdOf,
   prelimEndDayOf,
+  noRaceDaysOf,
   semifinalSlotsOf,
   splitMeetSeries,
   scoreTableFor,
@@ -136,6 +137,27 @@ function inferTtlFromKey(key) {
   return CACHE_TTL;
 }
 const CACHE_PREFIX = "boatai:";
+
+/**
+ * localStorage のそのキーが、データキャッシュ（cache.set が書いた {data, timestamp}）か。
+ * 接頭辞 boatai: は Cookie の同意（boatai:cookie-consent）・初回訪問・案内バナーを
+ * 閉じた記録にも使っており、接頭辞だけで判定すると更新ボタンでそれらまで消えた
+ * （BOA-665。Cookie の同意バナーが再表示される）。値の形で見分ける
+ */
+function readCacheEntry(storageKey) {
+  if (!storageKey || !storageKey.startsWith(CACHE_PREFIX)) return null;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(storageKey));
+    return parsed !== null &&
+      typeof parsed === "object" &&
+      typeof parsed.timestamp === "number" &&
+      "data" in parsed
+      ? parsed
+      : null;
+  } catch {
+    return null; // JSON でない値（"granted" 等）はキャッシュではない
+  }
+}
 
 const cache = {
   memory: new Map(),
@@ -243,12 +265,12 @@ const cache = {
   },
 
   /**
-   * localStorage内の龍神レーダーキャッシュを全削除
+   * localStorage内の龍神レーダーのデータキャッシュを全削除（設定のキーは残す）
    */
   _clearAllLocalStorage() {
     try {
-      const keys = Object.keys(localStorage).filter((k) =>
-        k.startsWith(CACHE_PREFIX),
+      const keys = Object.keys(localStorage).filter(
+        (k) => readCacheEntry(k) !== null,
       );
       keys.forEach((k) => localStorage.removeItem(k));
     } catch (e) {}
@@ -262,13 +284,9 @@ const cache = {
       const entries = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith(CACHE_PREFIX)) {
-          const stored = localStorage.getItem(key);
-          if (stored) {
-            const { timestamp } = JSON.parse(stored);
-            entries.push({ key, timestamp });
-          }
-        }
+        // 設定のキー（JSON でない値）で JSON.parse が投げて掃除全体が止まっていた（BOA-665）
+        const entry = readCacheEntry(key);
+        if (entry) entries.push({ key, timestamp: entry.timestamp });
       }
       // 古い順にソートして半分削除
       entries.sort((a, b) => a.timestamp - b.timestamp);
@@ -6802,7 +6820,8 @@ export const supabaseDataService = {
     // v19: 着順の並びでフライングを「F」と出すため、is_flying を足した（BOA-589）
     // v20: 予選終了の日目を series_day から出す（中止の日を数えない、BOA-578）
     // v21: 予選後に今節Fを切った選手（postPrelimFlyingRacerIds）を足した（BOA-626）
-    return withCache(`meet-scoreboard-v21-${raceId}`, async () => {
+    // v22: 丸一日レースが無かった日（noRaceDays）を足した（BOA-636）
+    return withCache(`meet-scoreboard-v22-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7152,8 +7171,8 @@ export const supabaseDataService = {
         })(),
         // **予選が終わった後のレースで今節Fを切った選手**（BOA-626）。
         // 順位は予選終了で確定しているので順位の対象からは外さない（上の判定は
-        // 予選終了までのFだけを見る）が、賞典除外なのは同じ。同じ「今節F」で
-        // 片方は除外・片方は順位付きになる理由を、画面が順位の横で断るのに使う。
+        // 予選終了までのFだけを見る。公式の得点率一覧も同じ、BOA-649）。同じ
+        // 「今節F」で片方は除外・片方は順位付きになる理由を、画面が順位の下で断るのに使う。
         // `meetStarts` は表示中レースの直前までなので、まだ切っていないFは入らない
         postPrelimFlyingRacerIds: postPrelimFlyingRacerIds(
           meetStarts,
@@ -7199,6 +7218,13 @@ export const supabaseDataService = {
           }
           return byRacer;
         })(),
+        // **丸一日レースが無かった日**（全レースが中止・順延、BOA-636）。表示中の日
+        // より前だけ。推移の横軸から抜ける理由と、予選終了の日目が日付の数と
+        // 合わない理由を、画面が断るのに使う。追加クエリ0本
+        noRaceDays: noRaceDaysOf(
+          raceIds.filter((id) => id.slice(0, 10) < date),
+          cancelledRaceIds,
+        ),
         // 予選が終わった日が節の何日目か（公式の「4日目12R終了時点」に合わせる）
         // 中止の日を数えないよう `series_day` を使う（BOA-578、prelimEndDayOf）
         prelimEndDay: prelimEndDayOf(

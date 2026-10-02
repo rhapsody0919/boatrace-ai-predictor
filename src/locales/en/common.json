@@ -292,6 +292,8 @@
     "refundTag": "Refunded boats",
     "partialNoRaceTag": "Some bet types void",
     "payoutNoRace": "Void (refunded)",
+    "partialVoidByStarters": "Only {{count}} boats started normally, so {{types}} were void (refunded)",
+    "partialVoidByFinishers": "Only {{count}} boats finished, so {{types}} were void (refunded)",
     "payoutNoAmount": "No amount is listed in the official payouts",
     "payoutNoAmountNote": "\"—\" marks a combination with no amount listed in the official payouts",
     "payoutSpecial": "Special payout",
@@ -808,7 +810,7 @@
     "seriesSplitNote": "This meet has two finals, so the path to the final splits in two ({{meetTotal}} racers in the meet). The meet rank and the semi-final line are calculated among the {{total}} racers heading for the same final as the six boats shown.",
     "seriesSplitNoteNoBorder": "This meet has two finals, so the path to the final splits in two ({{meetTotal}} racers in the meet). The meet rank is calculated among the {{total}} racers heading for the same final as the six boats shown.",
     "seriesMixedNote": "This meet has two finals, but this race mixes boats from both, so the meet rank is calculated across all {{total}} racers in the meet.",
-    "rankSourceNote": "The series rank is our own calculation. Where the official score-rate list is available we use its remarks (excluded from prizes, withdrew mid-series) to drop racers from the ranking; otherwise we treat a racer with a flying start (F) this series, before the race shown, as excluded from prizes, and infer a withdrawal from having no start on the final day of the series.",
+    "rankSourceNote": "The series rank is our own calculation. Where the official score-rate list is available we use its remarks (excluded from prizes, withdrew mid-series) to drop racers from the ranking; otherwise we treat a racer with a flying start (F) this series before qualifying ended as excluded from prizes, and infer a withdrawal from having no start on the final day of the series (an F after qualifying does not remove a racer from the ranking, same as the official list).",
     "rankSourceNoteOfficial": "The score rate and series rank come from the official score-rate list as of the end of the preliminaries, including its deductions, prize exclusions and mid-series withdrawals. During the preliminaries the official list is not published yet, so our own tally is used.",
     "sourceOfficial": "official",
     "sourceOwn": "our own tally",
@@ -832,6 +834,9 @@
     "compareTrendFinishNote": "The number under each dot is the finish in that race. Races without a finish show a mark (F = flying start, Abs = absent, Eng = engine stall, etc.; tap ? on the \"Last race this series\" row of the data table for the full list).",
     "compareTrendEmpty": "Not enough runs yet to draw a trend",
     "prelimOverNoteDay": "The preliminaries ended on day {{day}} ({{date}}). The score rate is final and today's finish will not change it.",
+    "prelimNoRaceDays": "No race was held on {{days}}, so that day is not counted as a race day (the same way the official day numbers are counted).",
+    "compareTrendNoRaceDays": "No race was held on {{days}}, so that day has no tick.",
+    "listSeparator": ", ",
     "trendLastHeader": "Last",
     "trendFinishHeader": "Below dots: finish",
     "forecastTitle": "Score-rate outlook (how today's finish moves it)",
@@ -856,8 +861,8 @@
     "absentDetail": "Absent from every race so far this series (no score rate or series rank).",
     "finishAbsentNote": "\"Abs\" in the finishes is a race the racer missed; it is not counted in the score rate.",
     "postPrelimFlying": "F after qual.",
-    "postPrelimFlyingTitle": "Flying start (F) in a race after qualifying ended. The racer is excluded from prizes, but ranks are set by qualifying, so we keep them in the qualifying ranking",
-    "postPrelimFlyingNote": "\"F after qual.\" under a rank marks a racer who had a flying start after qualifying ended. They are excluded from prizes, but ranks are set by qualifying, so they are counted among the ranked racers above."
+    "postPrelimFlyingTitle": "Flying start (F) in a race after qualifying ended. The official ranking also keeps the qualifying rank as it is",
+    "postPrelimFlyingNote": "\"F after qual.\" under a rank marks a racer who had a flying start after qualifying ended. The official ranking also keeps the qualifying rank as it is, so they are counted among the ranked racers above."
   },
   "basicInfo": {
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",
