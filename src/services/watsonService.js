@@ -84,13 +84,13 @@ export async function getWatsonPredictions(date) {
     const raceIds = races.map((r) => r.race_id);
     const preds = [];
     for (let i = 0; i < raceIds.length; i += 100) {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("watson_predictions")
         .select(
           "race_id, rank_order, win_probs, explanations, model_trained_at, predicted_at",
         )
         .in("race_id", raceIds.slice(i, i + 100));
-      if (!error && data) preds.push(...data);
+      if (data) preds.push(...data);
     }
     if (preds.length === 0) return [];
 
