@@ -556,7 +556,7 @@
   "turnPatternList": {
     "title": "Turn Prediction",
     "caption": "Candidates likely to finish 1st (up to 3 boats, ranked by probability)",
-    "captionResult": "Pre-race prediction. The circled number is the course likely to finish 1st, and the % is its probability.",
+    "captionResult": "Pre-race prediction. The % is the chance that the circled lane wins with that winning technique.",
     "hitTag": "Hit",
     "summaryHit": "✅ One of the top predictions hit",
     "summaryMiss": "❌ Boat {{winnerNumber}} won, which wasn't among the top predictions",

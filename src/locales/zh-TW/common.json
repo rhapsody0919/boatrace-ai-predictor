@@ -551,7 +551,7 @@
   "turnPatternList": {
     "title": "轉彎預測",
     "caption": "可能獲得第1名的候選艇（最多3艇，依機率排序）",
-    "captionResult": "這是賽前的預測。圓圈數字是可能獲得第1名的道次，%是其機率。",
+    "captionResult": "這是賽前的預測。%是圓圈數字的艇以該獲勝方式獲得第1名的機率。",
     "hitTag": "命中",
     "summaryHit": "✅ 其中一項預測命中",
     "summaryMiss": "❌ 第1名是{{winnerNumber}}號艇，不在預測名單中",

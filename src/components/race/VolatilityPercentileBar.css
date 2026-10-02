@@ -78,10 +78,28 @@
   transform: translateX(-50%);
 }
 
+/* 両端と真ん中のラベル。両端に寄せて並べると、文字幅の差だけ「標準」が真ん中の目印から
+   ずれたので、3等分して真ん中は中央に置く */
 .vpb-ends {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   font-size: 0.68rem;
   color: var(--vpb-ends);
   margin-top: 0.25rem;
+}
+
+.vpb-ends > span:last-child {
+  text-align: right;
+}
+
+.vpb-marker {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--vpb-tone);
+  /* 地の色で縁取って、トラック・真ん中の目印と重なっても見分けられるようにする */
+  box-shadow: 0 0 0 2px var(--vpb-bg);
+  transform: translate(-50%, -50%);
 }

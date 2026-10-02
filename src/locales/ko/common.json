@@ -551,7 +551,7 @@
   "turnPatternList": {
     "title": "전개 예측",
     "caption": "1착이 될 가능성이 높은 정의 후보입니다（최대 3정, 확률순）",
-    "captionResult": "레이스 전 예상입니다. 동그라미 숫자는 1착이 될 가능성이 높은 코스, %는 그 확률입니다.",
+    "captionResult": "레이스 전 예상입니다. %는 동그라미 숫자의 보트가 그 결정수로 1착이 될 확률입니다.",
     "hitTag": "적중",
     "summaryHit": "✅ 상위 예측 중 하나가 적중했습니다",
     "summaryMiss": "❌ 상위 예측에 없던 {{winnerNumber}}번 보트가 1착이었습니다",

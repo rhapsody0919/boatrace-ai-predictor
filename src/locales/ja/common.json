@@ -1087,7 +1087,7 @@
   "turnPatternList": {
     "title": "展開予測",
     "caption": "1着になりそうな艇の候補です（最大3艇・確率順）",
-    "captionResult": "レース前の予想です。丸数字は1着になりそうなコース、%はその確率です。",
+    "captionResult": "レース前の予想です。%は、丸数字の艇がその決まり手で1着になる確率です。",
     "hitTag": "的中",
     "summaryHit": "✅ 上位予想の1つが的中しました",
     "summaryMiss": "❌ 上位予想に無い{{winnerNumber}}号艇が1着でした",

@@ -30,6 +30,13 @@ function VolatilityPercentileBar({ percentile, onLight = false }) {
       <div className="vpb-track">
         <div className="vpb-fill" style={{ width: `${pct}%` }} />
         <div className="vpb-median" />
+        {/* 今の値の位置の印。値が0に近いと塗りが見えず、真ん中の「標準」の目印だけが
+            目に入って「標準」と読めた（PR #1186 ファン評価1周目） */}
+        <div
+          className="vpb-marker"
+          style={{ left: `${pct}%` }}
+          data-testid="volatility-percentile-marker"
+        />
       </div>
       <div className="vpb-ends">
         <span>{t("volatility.percentileBarMin")}</span>
