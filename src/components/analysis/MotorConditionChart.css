@@ -225,11 +225,7 @@
 }
 
 /* 棒と会場内順位の見出しは2行に折ってよい（承認済みのモックと同じ。列幅を中身で決める） */
-/* 表の幅が max-content なので、見出しは幅を決めないと折れない */
-.motor-ranking-table th.motor-wrap-head {
-  white-space: normal;
-  width: 3.5em;
-}
+
 
 .motor-ranking-table td.power-index-good {
   color: var(--color-success-text);
@@ -505,6 +501,13 @@
   .motor-condition-container .motor-ranking-table th,
   .motor-condition-container .motor-ranking-table td {
     padding: 0.5rem 0.3rem;
+  }
+
+  /* 狭い画面だけ、棒と会場内順位の見出しを折る。表の幅が max-content なので、幅を決めないと
+     折れない。広い画面で幅を決めると「会場/内順/位」と語の途中で折れた（ファン評価） */
+  .motor-ranking-table th.motor-wrap-head {
+    white-space: normal;
+    width: 3.5em;
   }
 
   /* 狭い画面だけ、「20位タイ」で1行が埋まる幅にして母数「/60」を次の行へ折る（BOA-428） */

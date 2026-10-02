@@ -105,7 +105,13 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
       { timeout: 30000 },
     );
     await expect(page.locator(".motor-venue-rank")).toHaveCount(6);
-    await expect(page.locator(".motor-venue-rank-note")).toHaveCount(0);
+    // 出どころの文は出さず、「選手の実力も混ざる」の注意だけ残る
+    await expect(page.locator(".motor-venue-rank-note")).not.toContainText(
+      "会場内順位は",
+    );
+    await expect(page.locator(".motor-venue-rank-note")).toContainText(
+      "乗った選手の実力も混ざります",
+    );
   });
 
   test("浜名湖（会場サイトの値を出さない会場）では会場内順位の列を出さない", async ({
@@ -124,6 +130,10 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
         hasText: "会場内順位",
       }),
     ).toHaveCount(0);
+    // 順位が無い会場でも「選手の実力も混ざる」の注意は出す（ファン評価）
+    await expect(page.locator(".motor-venue-rank-note")).toContainText(
+      "乗った選手の実力も混ざります",
+    );
   });
   test("1桁で同じに見える最大の値は、どちらにも最良の印が付く", async ({
     page,

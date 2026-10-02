@@ -30,7 +30,7 @@ import {
 } from "../../utils/motorGeneration";
 import { translatePartName } from "../race/raceIndicators";
 import RateBar from "../common/RateBar";
-import { BOAT_COLORS } from "../../utils/colors";
+import { BOAT_COLORS, BOAT_LINE_COLORS } from "../../utils/colors";
 import { bestOf } from "../../utils/bestOf";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
@@ -701,8 +701,17 @@ function MotorConditionChart({
                           {t("analysis.motor.venueRankHeader")}
                         </th>
                       )}
+                      {/* 期間で集計した2連率。公式2連率と並ぶので、見出しに期間を書く（ファン評価） */}
                       {!officialMode && (
-                        <th>{t("analysis.motor.rate2Header")}</th>
+                        <th>
+                          {t("analysis.motor.rate2PeriodHeader", {
+                            period: t(
+                              periodDays === 30
+                                ? "analysis.motor.period30"
+                                : "analysis.motor.period90",
+                            ),
+                          })}
+                        </th>
                       )}
                       <th>{t("analysis.motor.rate3Header")}</th>
                       {hasPretest && (
@@ -773,7 +782,9 @@ function MotorConditionChart({
                           <RateBar
                             value={officialRates[i]}
                             max={officialRateMax}
-                            fill={BOAT_COLORS[row.boat_number]?.bg}
+                            // 線用の艇色（1号艇・2号艇はテーマで反転するトークン）。ダークモードで
+                            // 2号艇の黒い棒が紺の背景に溶けていた（ファン評価）
+                            fill={BOAT_LINE_COLORS[row.boat_number]}
                             best={officialRateBestBoats.has(row.boat_number)}
                             label={
                               officialRates[i] !== null
@@ -892,19 +903,23 @@ function MotorConditionChart({
             {/* 会場内順位の出どころ（BOA-428）。棒は BOATRACE 公式の2連率、順位は会場公式サイトの
                 2連率で、出どころが違う（2026-10-02 ユーザー判断で注記の形）。日付は「取得日」と書く。
                 会場によっては節ごとにしか中身が変わらず、取得日をデータの時点と読ませないため */}
-            {venueRanks?.state === "ok" && (
+            {breakdown.length > 0 && (
               <p className="table-note motor-venue-rank-note">
-                {t("analysis.motor.venueRankSourceNote", {
-                  venue: t(
-                    `venues.${selectedVenue}`,
-                    VENUE_NAMES[selectedVenue] || String(selectedVenue),
-                  ),
-                  date: venueRanks.scrapedDate.replaceAll("-", "/").replace(
-                    /\/0(\d)/g,
-                    "/$1",
-                  ),
-                })}
-                <br />
+                {venueRanks?.state === "ok" && (
+                  <>
+                    {t("analysis.motor.venueRankSourceNote", {
+                      venue: t(
+                        `venues.${selectedVenue}`,
+                        VENUE_NAMES[selectedVenue] || String(selectedVenue),
+                      ),
+                      date: venueRanks.scrapedDate
+                        .replaceAll("-", "/")
+                        .replace(/\/0(\d)/g, "/$1"),
+                    })}
+                    <br />
+                  </>
+                )}
+                {/* 選手の実力が混ざる注意は、会場内順位の有無にかかわらず出す（ファン評価） */}
                 {t("analysis.motor.motorRiderMixNote")}
               </p>
             )}
