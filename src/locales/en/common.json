@@ -116,8 +116,8 @@
     "fetchError": "Could not load this venue's water characteristics."
   },
   "raceDetailPage": {
-    "metaTitle": "{{venue}} Race {{race}} AI data analysis - Ryujin Radar",
-    "metaDescription": "Free race data table, AI data analysis and first-turn prediction for {{venue}} Race {{race}}.",
+    "metaTitle": "{{venue}} Race {{race}} AI data analysis ({{date}}) - Ryujin Radar",
+    "metaDescription": "Free race data table, AI data analysis and first-turn prediction for {{venue}} Race {{race}} on {{date}}.",
     "backToList": "← Back to race list",
     "notFound": "Race not found",
     "pastPredictionsBreadcrumb": "Past Predictions",
@@ -1908,6 +1908,16 @@
     "ariaLabel": "Loading"
   },
   "breadcrumbLabel": "Breadcrumb",
+  "partsNames": {
+    "ring": "Ring",
+    "piston": "Piston",
+    "carburetor": "Carburetor",
+    "gear": "Gear",
+    "cylinder": "Cylinder",
+    "electrical": "Electrical",
+    "shaft": "Shaft",
+    "carrierBody": "Carrier body"
+  },
   "listSeparator": ", ",
   "termHintLabel": "Show what this term means",
   "termHints": {

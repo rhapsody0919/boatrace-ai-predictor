@@ -434,6 +434,11 @@
       "note": "使い捨てのbareリポジトリとクローンだけを使い、本リポジトリには触れない。2026-09-25時点でレジストリ導入まで未登録・CI未接続だった"
     },
     {
+      "script": "verify-race-status-exclusion.js",
+      "tier": "ci",
+      "guards": "画面（src/）の集計が、書かれていない旧フラグ is_cancelled・is_no_race ではなく race_results.race_status で不成立を外すこと（BOA-477）"
+    },
+    {
       "script": "verify-relative-imports.js",
       "tier": "ci",
       "guards": "scripts/・api/ の相対 import の参照先が実在すること（移動したスクリプトの ./lib/ の取り残し。CIで走らない手動スクリプトの壊れに気づけない。BOA-536）"

@@ -1864,6 +1864,13 @@ async function runDaily({ mode, client, fetchImpl, rows, targetNow }) {
 // (i) 変異検証: 壊した版で、(a)(b)(c) の評価が失敗する
 // ---------------------------------------------------------------------------
 const LIB = path.join(ROOT, "scripts/lib/boatcast");
+/**
+ * 変異ごとに別のモジュールとして読み込むための通し番号。以前は import の URL を `?t=${Date.now()}` で区別していたが、
+ * 同じファイルの変異が同じミリ秒に続くと URL が一致し、ESM のキャッシュから直前の変異が返る。CIで「間隔・並行」の
+ * 変異の代わりに「間隔を空けない」変異が評価され、検証が失敗した（BOA-648、run 36840737023 attempt 1）。
+ * 逆に、壊れた直前の変異で代わりに評価されて変異検証が素通りすることもあるので、時刻ではなく通し番号で区別する
+ */
+let mutantSeq = 0;
 async function withMutant(fileName, replacements, runFn) {
   const source = fs.readFileSync(path.join(LIB, fileName), "utf8");
   let mutated = source;
@@ -1877,11 +1884,11 @@ async function withMutant(fileName, replacements, runFn) {
   }
   const tmp = path.join(
     LIB,
-    `${fileName.replace(/\.js$/, "")}.mutant-${process.pid}.tmp.mjs`,
+    `${fileName.replace(/\.js$/, "")}.mutant-${process.pid}-${++mutantSeq}.tmp.mjs`,
   );
   fs.writeFileSync(tmp, mutated);
   try {
-    return await runFn(await import(`${tmp}?t=${Date.now()}`));
+    return await runFn(await import(tmp));
   } finally {
     fs.rmSync(tmp, { force: true });
   }

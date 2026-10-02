@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { GRADE_LABELS } from "./raceGradeLabels";
+import { raceStageLabel } from "../../constants/raceStageConfig";
 import { translateTechnique } from "./raceIndicators";
 import { finishMarkKeyOf } from "../../utils/prevResult";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
@@ -102,6 +103,17 @@ const formatSt = (race) => {
   return race.isFlying ? `F${st.replace(/^0/, "")}` : st;
 };
 
+// レース種別のセル。区分の訳を出すときは公式表記をツールチップに残し、
+// 公式表記のまま出すときは自動翻訳で崩れないよう translate="no"（BOA-621）
+function RaceStageCell({ label, official }) {
+  if (!label) return <td>-</td>;
+  return label.isOfficial ? (
+    <td translate="no">{label.text}</td>
+  ) : (
+    <td title={`${label.text} (${official})`}>{label.text}</td>
+  );
+}
+
 function RaceHistoryTable({
   rows,
   buildRaceHref = (raceId) => `/race/${raceId}`,
@@ -110,7 +122,7 @@ function RaceHistoryTable({
   omitColumns = [],
   compactDate = false,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   // 公式の記号はデータ出走表の「今節の前走」と同じ表記にする。日本語以外の
   // ページで「エ」「落」を生のまま出さない（BOA-569 ファン評価3周目）
@@ -239,7 +251,12 @@ function RaceHistoryTable({
                       : "-"}
                   </td>
                 )}
-                {shows("stage") && <td>{race.raceStage ?? "-"}</td>}
+                {shows("stage") && (
+                  <RaceStageCell
+                    label={raceStageLabel(race.raceStage, t, i18n.language)}
+                    official={race.raceStage}
+                  />
+                )}
                 <td>{race.boatNumber}</td>
                 {showEntryCourse && <td>{race.entryCourse ?? "-"}</td>}
                 {showExhibition && (

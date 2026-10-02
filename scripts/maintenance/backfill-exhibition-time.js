@@ -45,12 +45,13 @@ function listDates(from, to) {
 
 /**
  * 発走済みで展示タイムが未取得のレースを返す。
- * getRaceSchedule は取得エラー（statement timeout等）でも空配列を返すため、空の場合は
- * 「欠落0件」と区別できるよう null を返す（誤って「補完済み」と読まれるのを防ぐ）
+ * 取得エラー（statement timeout等）の日は、複数日の補完全体を止めずに「未確認」として続けるため、
+ * getRaceSchedule を throwOnError: false で呼ぶ（既定は例外。BOA-391）。空の場合は「欠落0件」と区別できるよう
+ * null を返す（誤って「補完済み」と読まれるのを防ぐ）
  */
 async function findMissingRaces(date) {
   const now = new Date();
-  const schedule = await getRaceSchedule(date);
+  const schedule = await getRaceSchedule(date, { throwOnError: false });
   if (schedule.length === 0) return null;
   const withTime = await getRaceIdsWithExhibitionTime(date);
   return schedule.filter((r) => r.start_time < now && !withTime.has(r.race_id));

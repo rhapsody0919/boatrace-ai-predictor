@@ -1,20 +1,22 @@
 {
-  "executedAt": "2026-09-20T04:23:36.315Z",
-  "durationSeconds": 18,
-  "mode": "racer_ids",
+  "executedAt": "2026-10-02T02:35:46.456Z",
+  "durationSeconds": 15728,
+  "mode": "all",
   "options": {
-    "racerIds": [
-      3849,
-      4519
-    ],
+    "racerIds": null,
     "limit": null,
     "offset": 0,
     "recentDays": 35
   },
-  "targetCount": 2,
+  "targetCount": 1628,
+  "resumed": false,
   "stoppedEarly": false,
+  "deadlineStopped": false,
   "aborted": false,
   "nextOffset": null,
+  "processedPrefix": 1628,
+  "lastProcessedRacerId": 5472,
+  "remaining": 0,
   "profile": {
     "successCount": 0,
     "failCount": 0,
@@ -23,16 +25,11 @@
   },
   "season": {
     "successCount": 0,
-    "unchangedCount": 0,
-    "noDataCount": 0,
-    "failCount": 2,
-    "failedRacerIds": [
-      3849,
-      4519
-    ]
+    "unchangedCount": 1592,
+    "noDataCount": 34,
+    "notFoundCount": 2,
+    "failCount": 0,
+    "failedRacerIds": []
   },
-  "failureReasons": [
-    "期別成績の書き込みも変更なしの確認も0件",
-    "期別成績の失敗率が100.0%（2/2件、上限5%）"
-  ]
+  "failureReasons": []
 }

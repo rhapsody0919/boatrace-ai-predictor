@@ -72,6 +72,7 @@ import {
 import { createSupabaseStore } from "../lib/scrapeJobs/store.js";
 import { createMemoryStore } from "../lib/scrapeJobs/testing/memoryStore.js";
 import { getRaceSchedule } from "../lib/raceSchedule.js";
+import { fetchAll } from "../lib/supabaseClient.js";
 
 // 検証対象のコードが出す警告・エラーのログ（テストが意図的に起こす失敗）で出力が埋まらないよう、
 // 検証中は console.warn・console.error を無効にし、結果の表示だけ元の関数で行う
@@ -2039,12 +2040,25 @@ check(
   const originalWarn = console.warn;
   console.error = () => {};
   console.warn = () => {};
-  const legacy = await getRaceSchedule("2026-09-19", { client: dbError });
+  const legacy = await getRaceSchedule("2026-09-19", {
+    client: dbError,
+    throwOnError: false,
+  });
   console.error = originalError;
   console.warn = originalWarn;
   check(
-    "既定（従来どおり）: DBエラーは空配列を返す",
+    "throwOnError: false を明示したときだけ、DBエラーを空配列にする",
     Array.isArray(legacy) && legacy.length === 0,
+  );
+  let threwByDefault;
+  try {
+    await getRaceSchedule("2026-09-19", { client: dbError });
+  } catch (e) {
+    threwByDefault = e;
+  }
+  check(
+    "既定（BOA-391）: 指定なしでも、DBエラーを空配列にせず例外にする",
+    threwByDefault && /connection refused/.test(threwByDefault.message),
   );
   let threw;
   try {
@@ -2112,6 +2126,51 @@ check(
     "scrape-scheduled.js: DBに繋がらないとき exit 1 で終わり、「対象レースなし」で正常終了しない（BOA-352）",
     proc.status === 1 && !out.includes("対象レースなし"),
     `status=${proc.status} ${out.slice(-300)}`,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (l) fetchAll の既定（BOA-391）: 途中のページの失敗で、取得済み分を「全件」として返さない
+// ---------------------------------------------------------------------------
+{
+  // 1ページ目は1000行（続きがある）、2ページ目で失敗する
+  const pagedClient = {
+    from: () => {
+      const b = {
+        select: () => b,
+        range: (from) =>
+          Promise.resolve(
+            from === 0
+              ? {
+                  data: Array.from({ length: 1000 }, (_, i) => ({ id: i })),
+                  error: null,
+                }
+              : { data: null, error: { message: "statement timeout" } },
+          ),
+      };
+      return b;
+    },
+  };
+  let threw;
+  try {
+    await fetchAll("t", "id", null, { client: pagedClient });
+  } catch (e) {
+    threw = e;
+  }
+  check(
+    "fetchAll の既定（BOA-391）: 2ページ目の失敗を例外にする（1000行を全件として返さない）",
+    threw && /statement timeout/.test(threw.message),
+  );
+  const originalError = console.error;
+  console.error = () => {};
+  const partial = await fetchAll("t", "id", null, {
+    client: pagedClient,
+    throwOnError: false,
+  });
+  console.error = originalError;
+  check(
+    "fetchAll: throwOnError: false を明示したときだけ、取得済みの分を返す",
+    partial.length === 1000,
   );
 }
 
