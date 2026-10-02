@@ -46,9 +46,9 @@ CREATE TABLE race_results (race_id varchar PRIMARY KEY, rank1 smallint, rank2 sm
   rank5 smallint, rank6 smallint, is_cancelled boolean, is_no_race boolean, race_status text, winning_technique text,
   payout_trio integer, payout_trifecta integer,
   actual_course_1 smallint, actual_course_2 smallint, actual_course_3 smallint,
-  actual_course_4 smallint, actual_course_5 smallint, actual_course_6 smallint);
+  actual_course_4 smallint, actual_course_5 smallint, actual_course_6 smallint, refund_boats smallint[]);
 CREATE TABLE race_start_timings (race_id varchar, boat_number smallint, start_timing numeric, is_flying boolean,
-  is_late_start boolean, PRIMARY KEY (race_id, boat_number));
+  is_late_start boolean, finish_mark text, PRIMARY KEY (race_id, boat_number));
 CREATE TABLE exhibition_data (race_id varchar, boat_number smallint, is_absent boolean, PRIMARY KEY (race_id, boat_number));
 CREATE TABLE kb_archive_races (race_id varchar PRIMARY KEY, race_date date, venue_code smallint, race_number smallint,
   technique text, payout_3tan integer, has_result boolean);
@@ -239,6 +239,13 @@ async function main() {
     { cancel: "confirmed" },
     six([6.5, 6.2, 5.0, 4.0, 3.0, 2.0]),
   );
+
+  // m5: 2号艇が2着だが、フラグは立たず着の欄が F → 除外（BOA-635 の依頼）
+  await mainRace(db, "2026-01-10-24-05", {}, six([6.5, 6.2, 5.0, 4.0, 3.0, 2.0]));
+  await db.query("UPDATE race_start_timings SET finish_mark = 'F' WHERE race_id = '2026-01-10-24-05' AND boat_number = 2");
+  // m6: 3号艇が3着だが返還艇の一覧に入っている → 除外
+  await mainRace(db, "2026-01-10-24-06", {}, six([6.5, 6.2, 5.0, 4.0, 3.0, 2.0]));
+  await db.query("UPDATE race_results SET refund_boats = '{3}' WHERE race_id = '2026-01-10-24-06'");
 
   // ---- 今日（検証では明日の日付）のレース: 1号艇 A1・勝率差 +0.30・大村(24)・勝率1位は1号艇 ----
   const tomorrow = jstDate(1);

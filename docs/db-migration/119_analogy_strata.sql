@@ -99,6 +99,11 @@ COMMENT ON TABLE analogy_pool_outcomes IS 'BOA-271 FR-2 類似レース（層別
 CREATE INDEX IF NOT EXISTS idx_analogy_pool_strata
   ON analogy_pool_outcomes (gap_band, b1_class, venue_code, top_boat, race_date DESC);
 CREATE INDEX IF NOT EXISTS idx_analogy_pool_date ON analogy_pool_outcomes (race_date);
+-- 深さ1〜3の「新しい順」の一覧（recent・BOA-635 の最大2,000件）を、層の全件を並べ替えずに読むための索引。
+-- 本番適用後に深さ1〜4で EXPLAIN (ANALYZE, BUFFERS) を取り、使われない索引は落とす（BOA-635 のレーンと合意）
+CREATE INDEX IF NOT EXISTS idx_analogy_pool_d1 ON analogy_pool_outcomes (gap_band, race_date DESC);
+CREATE INDEX IF NOT EXISTS idx_analogy_pool_d2 ON analogy_pool_outcomes (gap_band, b1_class, race_date DESC);
+CREATE INDEX IF NOT EXISTS idx_analogy_pool_d3 ON analogy_pool_outcomes (gap_band, b1_class, venue_code, race_date DESC);
 
 ALTER TABLE analogy_pool_outcomes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public read access" ON analogy_pool_outcomes;
@@ -232,7 +237,11 @@ AS $$
   ), b AS (
     SELECT e.race_id, e.boat_number, e.grade, e.win_rate AS w,
       coalesce(e.is_absent, false) OR coalesce(x.is_absent, false) AS absent,
-      coalesce(st.is_flying, false) OR coalesce(st.is_late_start, false) AS returned,
+      -- 返還艇: フライング・出遅れのフラグに加えて、着の欄（F・L・欠）と返還艇の一覧も見る（BOA-635 の依頼。
+      -- フラグが立っていないのに着欄が F・L・欠のレースが 247艇あった。features.py より厳しい）
+      coalesce(st.is_flying, false) OR coalesce(st.is_late_start, false)
+        OR coalesce(st.finish_mark IN ('F', 'L', '欠'), false)
+        OR e.boat_number = ANY (coalesce(res.refund_boats, '{}')) AS returned,
       st.start_timing,
       (ARRAY[res.actual_course_1, res.actual_course_2, res.actual_course_3,
              res.actual_course_4, res.actual_course_5, res.actual_course_6])[e.boat_number] AS course,
