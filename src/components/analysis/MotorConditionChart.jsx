@@ -391,11 +391,15 @@ function MotorConditionChart({
   const officialRateValues = officialRates.filter((v) => v !== null);
   const officialRateMax =
     officialRateValues.length > 0 ? Math.max(...officialRateValues) : null;
-  // 最良の値ラベル（UI統一ルール R1）。同じ値の最良は全部、全艇同値・値なしなら付けない
+  // 最良の値ラベル（UI統一ルール R1）。同じ値の最良は全部、全艇同値・値なしなら付けない。
+  // 判定は表示する1桁の値で行う。生の値だと「38.3」と「38.3」（38.33 と 38.28）の片方にだけ
+  // 印が付く（9/15〜10/02 で14レース。データ精度検証）
+  const roundedRate = (v) => (v === null ? null : Math.round(v * 10) / 10);
+  const roundedRateValues = officialRateValues.map(roundedRate);
   const officialRateBest =
-    officialRateValues.length > 0 &&
-    Math.min(...officialRateValues) !== officialRateMax
-      ? officialRateMax
+    roundedRateValues.length > 0 &&
+    Math.min(...roundedRateValues) !== Math.max(...roundedRateValues)
+      ? Math.max(...roundedRateValues)
       : null;
   // 会場内順位の列（BOA-428）。会場サイトの値を出さない会場（戸田・平和島・浜名湖・宮島）と、
   // その日以前のスナップショットが無いときは列ごと畳む。取得の失敗は列を残して印を出す
@@ -754,7 +758,8 @@ function MotorConditionChart({
                             fill={BOAT_COLORS[row.boat_number]?.bg}
                             best={
                               officialRateBest !== null &&
-                              officialRates[i] === officialRateBest
+                              roundedRate(officialRates[i]) ===
+                                officialRateBest
                             }
                             label={
                               officialRates[i] !== null

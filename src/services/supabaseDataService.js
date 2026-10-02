@@ -3198,7 +3198,7 @@ export const supabaseDataService = {
           const { data, error } = await supabase
             .from("venue_motor_stats")
             .select(
-              "motor_number, win_rate, top2_rate, top3_rate, accident_rate, final_count, championship_count",
+              "motor_number, win_rate, top2_rate, top3_rate, accident_rate, final_count, championship_count, race_count",
             )
             .eq("venue_code", venueCode)
             .eq("scraped_date", latestRow.scraped_date);
@@ -3227,6 +3227,7 @@ export const supabaseDataService = {
    *   - 浜名湖・宮島は会場サイトの値を出さない（VENUE_SITE_STATS_HIDDEN、2026-10-02 ユーザー判断）
    * @param {number} venueCode
    * @param {string|null} asOfDate
+   *   - 出走数 0（集計前）のモーターは順位に入れない（画面は「-」）
    * @returns {Promise<{state:"ok", scrapedDate:string, total:number, ranks:Map<number,{rank:number,tied:number}>}|{state:"empty"}|{state:"error"}>}
    */
   async getVenueMotorRanks(venueCode, asOfDate = null) {
@@ -3235,9 +3236,11 @@ export const supabaseDataService = {
     }
     const snapshot = await this.getVenueMotorSnapshot(venueCode, asOfDate);
     if (snapshot.state !== "ok") return { state: snapshot.state };
+    // 出走数が 0 のモーター（入れ替え直後でまだ走っていない）は、2連率の 0 が「集計前」なので
+    // 順位にも母数にも入れない（唐津は 9/22 時点で65基中19基。「40位タイ」と出ていた。データ精度検証）
     const rows = snapshot.rows.map((row) => ({
       motorNumber: row.motor_number,
-      top2Rate: row.top2_rate,
+      top2Rate: row.race_count === 0 ? null : row.top2_rate,
     }));
     const ranks = rankBy(rows, "top2Rate");
     if (ranks.size === 0) return { state: "empty" };

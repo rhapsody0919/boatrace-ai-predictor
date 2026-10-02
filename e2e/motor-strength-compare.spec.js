@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures.js";
+import { test, expect, fetchRecorded } from "./fixtures.js";
 
 /**
  * モーター表の公式2連率の棒と会場内順位（BOA-428 子1）。
@@ -124,5 +124,63 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
         hasText: "会場内順位",
       }),
     ).toHaveCount(0);
+  });
+  test("1桁で同じに見える最大の値は、どちらにも最良の印が付く", async ({
+    page,
+  }) => {
+    // 38.33 と 38.28 はどちらも「38.3」と出る。生の値で判定すると片方だけに印が付いていた
+    await page.route("**/rest/v1/race_entries*", async (route) => {
+      const response = await fetchRecorded(route);
+      const body = await response.json().catch(() => null);
+      if (
+        !Array.isArray(body) ||
+        !route.request().url().includes("2026-09-30-16-07")
+      ) {
+        return route.fulfill({ response });
+      }
+      const rates = { 1: 30, 2: 31, 3: 32, 4: 33, 5: 38.33, 6: 38.28 };
+      for (const row of body) {
+        if (row.boat_number in rates) row.motor_2rate = rates[row.boat_number];
+      }
+      await route.fulfill({ response, json: body });
+    });
+    await page.goto(KOJIMA_7R);
+    await expect(page.locator(".rate-bar-label").first()).toBeVisible({
+      timeout: 30000,
+    });
+    const { rows } = await readTable(page);
+    expect(rows.map((r) => r.best)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+    ]);
+  });
+
+  test("出走数0（集計前）のモーターは会場内順位に入れない", async ({
+    page,
+  }) => {
+    // 唐津では、まだ走っていないモーターの 2連率 0 が「40位タイ」と出ていた
+    await page.route("**/rest/v1/venue_motor_stats*", async (route) => {
+      const response = await fetchRecorded(route);
+      const body = await response.json().catch(() => null);
+      if (!Array.isArray(body) || body.length < 10) {
+        return route.fulfill({ response });
+      }
+      for (const row of body) {
+        if (row.motor_number === 44) row.race_count = 0;
+      }
+      await route.fulfill({ response, json: body });
+    });
+    await page.goto(KOJIMA_7R);
+    await expect(page.locator(".motor-venue-rank").first()).toBeVisible({
+      timeout: 30000,
+    });
+    const { rows } = await readTable(page);
+    // 6号艇（44号機）だけ「-」、母数は 60 → 59
+    expect(rows[5].rank).toBe("-");
+    expect(rows[4].rank).toMatch(/\/59$/);
   });
 });
