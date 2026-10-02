@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
 const tips = [
   "1号艇の勝率は全国平均で約55%です",
@@ -72,6 +73,7 @@ const injectKeyframes = () => {
 };
 
 export default function LoadingScreen({ title, description }) {
+  const { t, i18n } = useTranslation();
   // keyframesを注入
   injectKeyframes();
 
@@ -88,7 +90,7 @@ export default function LoadingScreen({ title, description }) {
         viewBox="0 0 56 56"
         style={styles.spinner}
         role="img"
-        aria-label="読み込み中"
+        aria-label={t("loadingScreen.ariaLabel")}
       >
         <circle
           cx="28"
@@ -112,13 +114,16 @@ export default function LoadingScreen({ title, description }) {
           }}
         />
       </svg>
-      <h3 style={styles.title}>{title || "データを読み込み中..."}</h3>
+      <h3 style={styles.title}>{title || t("loadingScreen.title")}</h3>
       <p style={styles.description}>
-        {description || "しばらくお待ちください"}
+        {description || t("loadingScreen.description")}
       </p>
-      <div style={styles.tipContainer}>
-        <p style={styles.tipText}>💡 {randomTip}</p>
-      </div>
+      {/* 豆知識は日本語だけで持つ（翻訳対象のページでは出さない、BOA-654） */}
+      {i18n.language === "ja" && (
+        <div style={styles.tipContainer}>
+          <p style={styles.tipText}>💡 {randomTip}</p>
+        </div>
+      )}
     </div>
   );
 }

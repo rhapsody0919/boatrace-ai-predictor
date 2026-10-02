@@ -221,7 +221,7 @@ export default function ZhTwGuide() {
 
         {/* Winning techniques */}
         <section className="eg-section">
-          <h2>🥇 6 種獲勝方式（決まり手）</h2>
+          <h2>🥇 6 種獲勝方式（Kimarite）</h2>
           <p>
             每一場勝利都會依「如何獲勝」被官方分類。 記住這 6
             個詞，就能看懂日文賽事實況和龍神雷達的預測。
@@ -378,7 +378,7 @@ export default function ZhTwGuide() {
           </div>
           <p>
             <strong>怎麼解讀：</strong>{" "}
-            1號艇是A1級別，且本場當地勝率全場最高（6.59）——是典型的「1號位逃げ」熱門。3號艇雖然只是A2級別，但馬達2連率（38.0%）明顯優於其他艇——這是很多人不單看級別、而多考慮馬達表現來選2着的常見理由。
+            1號艇是A1級別，且本場當地勝率全場最高（6.59）——是典型的「1號位逃走（Nige）」熱門。3號艇雖然只是A2級別，但馬達2連率（38.0%）明顯優於其他艇——這是很多人不單看級別、而多考慮馬達表現來選2着的常見理由。
           </p>
           <p>
             <strong>投注方式：</strong> 3連單，依序選擇
@@ -387,7 +387,7 @@ export default function ZhTwGuide() {
           </p>
           <p className="eg-note">
             <strong>結果：</strong>{" "}
-            1號艇以逃げ獲勝，3號艇第2、4號艇第3——與預測完全一致。每投注¥100，配當為{" "}
+            1號艇以逃走（Nige）獲勝，3號艇第2、4號艇第3——與預測完全一致。每投注¥100，配當為{" "}
             <strong>{EXAMPLE_RACE.payout}</strong>。
           </p>
           <p>

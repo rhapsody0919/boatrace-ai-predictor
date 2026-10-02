@@ -12,7 +12,10 @@ import {
   formatDateForUrl,
   parseDateArg,
 } from "../lib/dateUtils.js";
-import { calculateHits, isTurnHit } from "../lib/hitCalculator.js";
+import {
+  PREDICTION_HIT_COLUMNS as HIT_COLUMNS,
+  buildPredictionHitUpdate,
+} from "../lib/hitCalculator.js";
 import { isCancellationConfirmed } from "../lib/cancellationStatus.js";
 import {
   getRaceSchedule,
@@ -30,6 +33,11 @@ import {
   upsertChangedRows,
 } from "../lib/unchangedRows.js";
 import { buildResultWeatherRows } from "../lib/beforeinfoWeather.js";
+import {
+  OFFICIAL_FINISH_CODE_COLUMN,
+  buildOfficialFinishCodeRows,
+} from "../lib/officialFinishCode.js";
+import { isColumnMissingError } from "../lib/optionalColumns.js";
 import { parseRaceResultPage } from "../lib/raceResultParser.js";
 import {
   buildPayoutRows,
@@ -587,7 +595,134 @@ export async function syncRank456FromKFile(
 }
 
 /**
- * 指定日のKファイル同期（進入コース＋rank4〜6）。同じ日のKファイルを、1回だけダウンロードして両方に使う
+ * 指定日について、公式成績ファイル（Kファイル）の艇ごとの成績コード（01〜06・F・L0・L1・K0・K1・S0・S1・S2 等）を
+ * race_start_timings.official_finish_code に書く（BOA-553。マイグレーション116）。
+ *
+ * 対象は、成績コードの無い行がある日。無ければダウンロードしない（同じ日の進入・rank4〜6 の同期と K を共有する）。
+ * 書くのは既存の行の official_finish_code（と updated_at）だけ。行の無い艇は挿入しない（race_start_timings の
+ * 読み手のうち7箇所が「行がある＝出走した」と見るため。2026-09-29 の棚卸し）。値の変わる行だけを書く。
+ * 列が未適用（116 が未適用）のDBでは、何もせず status=column_missing を返す。
+ *
+ * @param {string} dateStr YYYY-MM-DD
+ * @param {Object} [options] syncActualCourseFromKFile と同じ（dryRun・client・loadText）と now（テスト用）
+ * @returns {Promise<{updated: number, status: string, parsed: number, pending: number, error?: string}>}
+ */
+export async function syncOfficialFinishCodeFromKFile(
+  dateStr,
+  {
+    dryRun = false,
+    client = supabase,
+    loadText = () => fetchKFileText(dateStr),
+    now = () => new Date(),
+  } = {},
+) {
+  const column = OFFICIAL_FINISH_CODE_COLUMN;
+  // 1日で1000行（約166レース）を超える日がある（2026-01-02 は192レース）ので、ページングして全部読む
+  const timings = [];
+  let readError = null;
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await client
+      .from("race_start_timings")
+      .select(`race_id, boat_number, ${column}`)
+      .gte("race_id", dateStr)
+      .lt("race_id", `${dateStr}~`)
+      .order("race_id")
+      .order("boat_number")
+      .range(from, from + 999);
+    if (error) {
+      readError = error;
+      break;
+    }
+    timings.push(...(data ?? []));
+    if ((data ?? []).length < 1000) break;
+  }
+  if (readError && isColumnMissingError(readError, [column])) {
+    console.warn(
+      `  ⚠️ 成績コード: race_start_timings.${column} が未適用のため、同期しません（マイグレーション116）`,
+    );
+    return { updated: 0, parsed: 0, pending: 0, status: "column_missing" };
+  }
+  if (readError) {
+    console.error(
+      `  ⚠️ 成績コード対象確認エラー(${dateStr}): ${readError.message}`,
+    );
+    return {
+      updated: 0,
+      parsed: 0,
+      pending: 0,
+      status: "pending_check_failed",
+      error: readError.message,
+    };
+  }
+  const current = new Map(
+    timings.map((t) => [`${t.race_id}|${t.boat_number}`, t[column] ?? null]),
+  );
+  const pending = timings.filter((t) => (t[column] ?? null) === null).length;
+  if (pending === 0) {
+    return { updated: 0, parsed: 0, pending: 0, status: "nothing_pending" };
+  }
+
+  let text;
+  try {
+    text = await loadText();
+  } catch (e) {
+    console.error(`  ⚠️ Kファイル取得エラー(${dateStr}): ${e.message}`);
+    return {
+      updated: 0,
+      parsed: 0,
+      pending,
+      status: "kfile_error",
+      error: e.message,
+    };
+  }
+  if (!text) {
+    console.log(`  成績コード: Kファイル未公開/開催なし (${dateStr})`);
+    return { updated: 0, parsed: 0, pending, status: "kfile_unavailable" };
+  }
+
+  const parsed = buildOfficialFinishCodeRows(text, dateStr);
+  const at = now().toISOString();
+  // 既存の行で、値が変わるものだけ（行の無い艇は書かない）
+  const toWrite = parsed
+    .filter((r) => {
+      const key = `${r.race_id}|${r.boat_number}`;
+      return current.has(key) && current.get(key) !== r[column];
+    })
+    .map((r) => ({ ...r, updated_at: at }));
+  if (!dryRun && toWrite.length > 0) {
+    for (let i = 0; i < toWrite.length; i += 1000) {
+      const { error } = await client
+        .from("race_start_timings")
+        .upsert(toWrite.slice(i, i + 1000), {
+          onConflict: "race_id,boat_number",
+        });
+      if (error) {
+        console.error(
+          `  ⚠️ 成績コード書き込みエラー(${dateStr}): ${error.message}`,
+        );
+        return {
+          updated: i,
+          parsed: parsed.length,
+          pending,
+          status: "write_error",
+          error: error.message,
+        };
+      }
+    }
+  }
+  console.log(
+    `  ✅ ${dryRun ? "[DRY-RUN] " : ""}成績コード(Kファイル方式): ${toWrite.length}艇を更新 (${dateStr}, 未同期${pending}艇)`,
+  );
+  return {
+    updated: toWrite.length,
+    parsed: parsed.length,
+    pending,
+    status: "synced",
+  };
+}
+
+/**
+ * 指定日のKファイル同期（進入コース＋rank4〜6＋成績コード）。同じ日のKファイルを、1回だけダウンロードして両方に使う
  * （D4の解消。従来は、2つの同期が同じ日を別々にダウンロードしていた）。どちらも、未同期のレースが無ければ
  * ダウンロードしない。Vercel Cron の kfile-sync と、GitHub Actions・CLIの両方から呼ぶ。
  *
@@ -628,7 +763,19 @@ export async function syncKFileForDate(
     client,
     loadText,
   });
-  return { date: dateStr, downloads, actualCourse, rank456 };
+  // 成績コード（BOA-553）。同じKファイルを使う（ダウンロードは1回のまま）
+  const officialFinishCode = await syncOfficialFinishCodeFromKFile(dateStr, {
+    dryRun,
+    client,
+    loadText,
+  });
+  return {
+    date: dateStr,
+    downloads,
+    actualCourse,
+    rank456,
+    officialFinishCode,
+  };
 }
 /**
  * 発走90分超で結果が取得できていないレースを中止・順延「確定」として扱う（BOA-254 FR2）。
@@ -858,83 +1005,8 @@ async function judgeAndUpdateHits(client, resultsToJudge) {
     if (predictions.length === 0) continue;
 
     for (const pred of predictions) {
-      // 単勝: 1着予測が的中
-      const isWinHit = pred.top_pick === result.rank1;
-
-      // 複勝: 1着予測が2着以内（ボートレースのルール）
-      const isPlaceHit =
-        pred.top_pick === result.rank1 || pred.top_pick === result.rank2;
-
-      // unified（top_3rdを予想しないモデル）には3連複/3連単の的中判定を適用しない
-      // （2026-08-14修正、BOA-191）。旧実装はtop_3rd=nullのままfalse判定してしまい、
-      // race_history_cacheの動的集計に「unifiedモデルの3連単的中率0%」という
-      // 実態と異なる偽エントリが混入していた
-      const predictsTrio = pred.top_3rd != null;
-
-      let isTrifectaHit = null;
-      let isTrioHit = null;
-      if (predictsTrio) {
-        const predTop3 = [pred.top_pick, pred.top_2nd, pred.top_3rd].sort(
-          (a, b) => a - b,
-        );
-        const resultTop3 = [result.rank1, result.rank2, result.rank3].sort(
-          (a, b) => a - b,
-        );
-
-        // ⚠️ 命名注意: 変数名の英語と日本語が逆転（DB列名に合わせている）
-        // isTrifectaHit → 実態: 3連複的中（順不同）
-        isTrifectaHit =
-          predTop3[0] === resultTop3[0] &&
-          predTop3[1] === resultTop3[1] &&
-          predTop3[2] === resultTop3[2];
-
-        // isTrioHit → 実態: 3連単的中（順序一致）
-        isTrioHit =
-          pred.top_pick === result.rank1 &&
-          pred.top_2nd === result.rank2 &&
-          pred.top_3rd === result.rank3;
-      }
-
-      // 複勝の配当を計算（top_pickが何着かによって異なる）
-      let payoutPlace = 0;
-      if (isPlaceHit) {
-        if (pred.top_pick === result.rank1) {
-          payoutPlace = result.payout_place_1 || 0;
-        } else if (pred.top_pick === result.rank2) {
-          payoutPlace = result.payout_place_2 || 0;
-        }
-      }
-
-      // 展開予測的中（unifiedモデルのみ。feature_contributions.turnPrediction
-      // が無い旧モデルはnullのまま＝「対象外」として区別する。ADR 0013）
-      // ここではmodel_idを見ておらず、standard/safeBet/upsetFocusにturnPrediction
-      // が入っていた期間はそれらにもis_hit_turnを計算・書き込んでいた（下流の
-      // update-race-history-cache.jsはmodel_id='unified'限定で読むため実害は無い）。
-      // BOA-408（predictions.feature_contributionsの3モデル重複解消）以降、
-      // safeBet・upsetFocusのfeature_contributionsはNULLになるため、この2モデルは
-      // 自然にhasTurnPrediction=falseへ戻る（ADR 0013の設計意図どおりに近づく）
-      const turnPatterns = pred.feature_contributions?.turnPrediction?.patterns;
-      const hasTurnPrediction =
-        Array.isArray(turnPatterns) && turnPatterns.length > 0;
-      const turnHit = hasTurnPrediction
-        ? isTurnHit(turnPatterns, result.rank1)
-        : null;
-
-      const updateData = {
-        is_hit_win: isWinHit,
-        is_hit_place: isPlaceHit,
-        is_hit_trifecta: isTrifectaHit,
-        is_hit_trio: isTrioHit,
-        is_hit_turn: turnHit,
-        payout_win: isWinHit ? result.payout_win : 0,
-        payout_place: payoutPlace,
-        payout_trifecta: predictsTrio
-          ? isTrifectaHit
-            ? result.payout_trifecta
-            : 0
-          : null,
-        payout_trio: predictsTrio ? (isTrioHit ? result.payout_trio : 0) : null,
-      };
+      // 判定の規則（不成立・返還艇・top_3rd を予想しないモデル・展開予測）は buildPredictionHitUpdate に集約（BOA-544）
+      const updateData = buildPredictionHitUpdate(pred, result);
 
       const { error: updateError } = await client
         .from("predictions")
@@ -942,10 +1014,10 @@ async function judgeAndUpdateHits(client, resultsToJudge) {
         .eq("prediction_id", pred.prediction_id);
 
       if (!updateError) {
-        if (isWinHit) winHits++;
-        if (isPlaceHit) placeHits++;
-        if (isTrifectaHit) trifectaHits++;
-        if (isTrioHit) trioHits++;
+        if (updateData.is_hit_win) winHits++;
+        if (updateData.is_hit_place) placeHits++;
+        if (updateData.is_hit_trifecta) trifectaHits++;
+        if (updateData.is_hit_trio) trioHits++;
       }
     }
   }
@@ -1431,7 +1503,8 @@ async function scrapeResults(dateStr = null) {
   const targetDate = dateStr || getTodayDateJST();
   console.log(`Starting race result scraping: ${targetDate}`);
 
-  const schedule = await getRaceSchedule(targetDate);
+  // 失敗したら下の「races テーブルから全件」のフォールバックに進む設計のため、従来どおり空配列で受ける（BOA-391）
+  const schedule = await getRaceSchedule(targetDate, { throwOnError: false });
   let races;
   if (schedule.length > 0) {
     const startedRaces = getRacesAfterStart(schedule, 5);
@@ -1493,7 +1566,7 @@ async function fetchAllRange(table, select, buildQuery, client = supabase) {
 // 通常呼び出しは直近数日分の範囲を渡し、当日限定では拾えない過去日の
 // 一時的な書き込み失敗（2026-09-06発覚）を後続の実行で自己修復できるようにする。
 // GitHub Actions では結果取得のたびに、Vercel Cron では日次の result-catchup で呼ぶ（T4b-02-1）。
-// 戻り値: 欠落していた件数と修正できた件数（呼び出し側の多くは無視する）
+// 戻り値: 欠落していた件数と修正できた件数、判定対象外の件数（呼び出し側の多くは無視する）
 export async function fixMissingHitFlags(
   startDate,
   endDate = startDate,
@@ -1506,7 +1579,7 @@ export async function fixMissingHitFlags(
   // 一切修復されないまま固着していた）
   const missingPredictions = await fetchAllRange(
     "predictions",
-    "prediction_id, race_id, top_pick, top_2nd, top_3rd, feature_contributions",
+    `prediction_id, race_id, top_pick, top_2nd, top_3rd, feature_contributions, ${HIT_COLUMNS.join(", ")}`,
     (q) =>
       q
         .gte("race_id", startDate)
@@ -1526,7 +1599,7 @@ export async function fixMissingHitFlags(
   // 結果データを取得（同様にページネーション）
   const results = await fetchAllRange(
     "race_results",
-    "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio",
+    "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio, race_status, refund_boats",
     (q) => q.gte("race_id", startDate).lt("race_id", `${endDate}~`),
     client,
   );
@@ -1537,61 +1610,22 @@ export async function fixMissingHitFlags(
   }
 
   let fixed = 0;
+  let notJudgeable = 0; // 判定対象外のまま（不成立・単勝の艇が返還）。欠落ではない
   for (const pred of missingPredictions) {
     const result = resultsMap.get(pred.race_id);
     if (!result || !result.rank1) continue;
 
-    const isWinHit = pred.top_pick === result.rank1;
-    const isPlaceHit =
-      pred.top_pick === result.rank1 || pred.top_pick === result.rank2;
-
-    const predTop3 = [pred.top_pick, pred.top_2nd, pred.top_3rd].sort(
-      (a, b) => a - b,
-    );
-    const resultTop3 = [result.rank1, result.rank2, result.rank3].sort(
-      (a, b) => a - b,
-    );
-    const isTrifectaHit =
-      predTop3[0] === resultTop3[0] &&
-      predTop3[1] === resultTop3[1] &&
-      predTop3[2] === resultTop3[2];
-    const isTrioHit =
-      pred.top_pick === result.rank1 &&
-      pred.top_2nd === result.rank2 &&
-      pred.top_3rd === result.rank3;
-
-    let payoutPlace = 0;
-    if (isPlaceHit) {
-      if (pred.top_pick === result.rank1) {
-        payoutPlace = result.payout_place_1 || 0;
-      } else if (pred.top_pick === result.rank2) {
-        payoutPlace = result.payout_place_2 || 0;
-      }
+    const update = buildPredictionHitUpdate(pred, result);
+    // 判定対象外（不成立・返還艇を含む券種）は NULL のまま。is_hit_win が NULL の行は毎回ここに来るので、
+    // 今の値と同じなら書かない（変更の無い行は書かない。BOA-544）
+    if (HIT_COLUMNS.every((c) => (pred[c] ?? null) === update[c])) {
+      notJudgeable++;
+      continue;
     }
-
-    // 展開予測的中（unifiedモデルのみ。ADR 0013。judgeAndUpdateHits関数の同名の
-    // 判定と同じくmodel_idを見ていない点・BOA-408後の挙動については同関数の
-    // コメント参照）
-    const turnPatterns = pred.feature_contributions?.turnPrediction?.patterns;
-    const hasTurnPrediction =
-      Array.isArray(turnPatterns) && turnPatterns.length > 0;
-    const turnHit = hasTurnPrediction
-      ? isTurnHit(turnPatterns, result.rank1)
-      : null;
 
     const { error: updateError } = await client
       .from("predictions")
-      .update({
-        is_hit_win: isWinHit,
-        is_hit_place: isPlaceHit,
-        is_hit_trifecta: isTrifectaHit,
-        is_hit_trio: isTrioHit,
-        is_hit_turn: turnHit,
-        payout_win: isWinHit ? result.payout_win : 0,
-        payout_place: payoutPlace,
-        payout_trifecta: isTrifectaHit ? result.payout_trifecta : 0,
-        payout_trio: isTrioHit ? result.payout_trio : 0,
-      })
+      .update(update)
       .eq("prediction_id", pred.prediction_id);
 
     if (!updateError) fixed++;
@@ -1600,7 +1634,11 @@ export async function fixMissingHitFlags(
   if (fixed > 0) {
     console.log(`  ✅ ${fixed}件の欠落フラグを修正`);
   }
-  return { missing: missingPredictions.length, fixed };
+  return {
+    missing: missingPredictions.length - notJudgeable,
+    fixed,
+    notJudgeable,
+  };
 }
 
 // スタンドアローン実行時のみ実行する（import 時に実行させない）

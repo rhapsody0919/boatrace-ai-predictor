@@ -264,7 +264,7 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
 
     const payouts = await readPayouts(root);
     expect(payouts).toEqual(
-      ["単勝", "複勝", "3連単", "3連複", "2連単", "2連複", "拡連複"].map(
+      ["3連単", "3連複", "2連単", "2連複", "拡連複", "単勝", "複勝"].map(
         (type) => `${type} 不成立（返還）`,
       ),
     );
@@ -292,6 +292,30 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
     await expect(root.locator(".rr-head h4")).toHaveText("🏁 レース結果");
     await expect(root.locator(".rr-refund-tag")).toHaveText("返還艇あり");
     await expect(root.locator(".rr-tag")).toContainText("差し");
+    // 着順表の列見出しは公式の結果ページにそろえる（スタートの図の「ST」だけ追加。BOA-558 の4）
+    await expect(root.locator(".rr-row-head span")).toHaveText([
+      "着",
+      "枠",
+      "ボートレーサー",
+      "ST",
+      "レースタイム",
+    ]);
+
+    // 375px で「レースタイム」が折れない（ファン評価1周目 P3）
+    await page.setViewportSize({ width: 375, height: 900 });
+    const timeHead = root.locator(".rr-row-head .rr-head-time");
+    const lines = await timeHead.evaluate((el) => {
+      const h = el.getBoundingClientRect().height;
+      const fontSize = parseFloat(getComputedStyle(el).fontSize);
+      return Math.round(h / (fontSize * 1.4));
+    });
+    expect(lines).toBeLessThanOrEqual(1);
+    const overflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
 
     const rows = await readRows(root);
     expect(
@@ -307,15 +331,19 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
 
     const payouts = await readPayouts(root);
     expect(payouts).toEqual([
-      "単勝 2 ¥580",
-      "複勝 2 ¥100",
-      "複勝 1 ¥100",
       "3連単 2-1-4 3人気 ¥870 best",
       "3連複 不成立（返還）",
       "2連単 2-1 3人気 ¥600",
       "2連複 1=2 1人気 ¥100",
       "拡連複 不成立（返還）",
+      "単勝 2 ¥580",
+      "複勝 2 ¥100",
+      "複勝 1 ¥100",
     ]);
+    // 一部の勝式だけ不成立になった理由を、事実だけ1行で書く（BOA-558）
+    await expect(root.locator(".rr-payout-void-note")).toHaveText(
+      "正常にスタートした艇が3艇のため、3連複・拡連複は不成立（返還）です",
+    );
   });
 
   test("一部返還でスタート情報の取得に失敗したとき: 返還艇（戸田9R の3号艇）を3着に出さない", async ({
@@ -346,19 +374,48 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
     ]);
     // 払戻明細（payoutRows）が無い経路（直接クエリ・RPC未適用）でも、旧列に無い勝式を
     // 黙って消さず「不成立（返還）」で出す（/code-review の指摘、BOA-543）
+    // 最高額が ¥100（元返し）なので、¥100 の2行を「最高配当」として強調しない（BOA-558）
     const payouts = await readPayouts(root);
-    expect(payouts.map((p) => p.replace(/ best$/, ""))).toEqual([
-      "単勝 1 ¥100",
-      "複勝 不成立（返還）",
+    expect(payouts).toEqual([
       "3連単 不成立（返還）",
       "3連複 不成立（返還）",
       "2連単 1-2 1人気 ¥100",
       "2連複 不成立（返還）",
       "拡連複 不成立（返還）",
+      "単勝 1 ¥100",
+      "複勝 不成立（返還）",
     ]);
+    // 4艇返還（正常スタート2艇）。スタート情報が取れなくても、返還艇の数から言える（BOA-558）
+    const voidNote = root.locator(".rr-payout-void-note");
+    await expect(voidNote).toHaveText(
+      "正常にスタートした艇が2艇のため、3連単・3連複・2連複・拡連複・複勝は不成立（返還）です",
+    );
+    // 375px でも勝式名を途中で折らず、表の説明として左寄せで読む（#1094 ファン評価1周目）
+    await page.setViewportSize({ width: 375, height: 812 });
+    const layout = await voidNote.evaluate((el) => {
+      const text = el.firstChild;
+      const lines = (word) => {
+        const i = text.textContent.indexOf(word);
+        const range = document.createRange();
+        range.setStart(text, i);
+        range.setEnd(text, i + word.length);
+        return new Set(
+          [...range.getClientRects()].map((r) => Math.round(r.top)),
+        ).size;
+      };
+      return {
+        align: getComputedStyle(el).textAlign,
+        words: ["3連単", "3連複", "2連複", "拡連複", "複勝"].map((w) => [
+          w,
+          lines(w),
+        ]),
+      };
+    });
+    expect(layout.align).toBe("left");
+    for (const [word, n] of layout.words) expect(n, word).toBe(1);
   });
 
-  test("特払（2026-07-24 17R3）: 単勝は組番の位置に「特払」、金額なしの複勝は組番だけ", async ({
+  test("特払（2026-07-24 17R3）: 単勝は組番の位置に「特払」、金額なしの複勝は組番と「—」", async ({
     page,
   }) => {
     const race = {
@@ -392,12 +449,18 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
     const root = await openResult(page, race);
     const payouts = await readPayouts(root);
     expect(payouts).toEqual([
+      "3連単 6-4-1 85人気 ¥92,140 best",
       "単勝 特払 ¥70",
       "複勝 6 ¥1,800",
-      "複勝 4",
-      "3連単 6-4-1 85人気 ¥92,140 best",
+      // 金額の無い行は空欄にせず「—」（データの欠けに見えないように。BOA-558）
+      "複勝 4 —",
     ]);
+    // 「—」の意味は、スマホでも読めるよう表の下に書く（#1074 ファン評価1周目）
+    await expect(root.locator(".rr-payout-no-amount-note")).toContainText(
+      "金額の記載がない",
+    );
     await expect(root.locator(".rr-refund-tag")).toHaveCount(0);
+    await expect(root.locator(".rr-payout-void-note")).toHaveCount(0);
   });
 
   test("マイグレーション未適用（raceStatus なし）: 従来どおりの見出しと旧列の払戻", async ({
@@ -448,7 +511,7 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
     await expect(root.locator(".rr-table-skeleton")).toHaveCount(0);
   });
 
-  test("一覧カード: 不成立は「不成立」だけ、一部返還は的中・外れの横に「返還あり」", async ({
+  test("一覧カード: 不成立は「不成立」だけ、一部返還は的中・外れの横に「返還艇あり」（公式の備考の表記）", async ({
     page,
   }) => {
     const sameDay = (race, raceNumber) => ({
@@ -470,7 +533,7 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
 
     const partial = cards.nth(1).locator(".race-card-header");
     await expect(partial).toContainText("展開的中");
-    await expect(partial).toContainText("返還あり");
+    await expect(partial).toContainText("返還艇あり");
   });
 
   test("AI予想タブ: 不成立は展開予測とイン崩れの振り返りを「判定対象外（不成立）」にする", async ({
@@ -592,8 +655,6 @@ test.describe("light 版だけが届いた状態（BOA-543、2026-09-29 ユー�
     });
     const payouts = await readPayouts(root);
     expect(payouts).toEqual([
-      "単勝 1 ¥110",
-      "複勝 1 ¥120",
       "3連単 1-6-2 10人気 ¥3,050 best",
       "3連複 1=2=6 6人気 ¥1,040",
       "2連単 1-6 4人気 ¥1,080",
@@ -601,6 +662,8 @@ test.describe("light 版だけが届いた状態（BOA-543、2026-09-29 ユー�
       "拡連複 1=6 2人気 ¥160",
       "拡連複 1=2 3人気 ¥180",
       "拡連複 2=6 11人気 ¥620",
+      "単勝 1 ¥110",
+      "複勝 1 ¥120",
     ]);
     await expect(root.locator(".rr-payout-table")).not.toContainText("不成立");
   });

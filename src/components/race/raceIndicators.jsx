@@ -23,6 +23,25 @@ export const translateTechnique = (t, name) => {
   return key ? t(`techniques.${key}`, name) : name;
 };
 
+// 部品交換の部品名（公式表記・日本語）→ partsNames.* のキー（BOA-669）
+const PART_KEY_BY_NAME = {
+  リング: "ring",
+  ピストン: "piston",
+  キャブ: "carburetor",
+  ギヤ: "gear",
+  シリンダ: "cylinder",
+  電気: "electrical",
+  シャフト: "shaft",
+  キャリボ: "carrierBody",
+};
+
+// 部品名を表示用に翻訳する。「リング×２」の「×２」は個数なのでそのまま付ける。未知の値はそのまま返す
+export const translatePartName = (t, name) => {
+  const [base, ...rest] = String(name).split(/(?=×)/);
+  const key = PART_KEY_BY_NAME[base];
+  return key ? `${t(`partsNames.${key}`, base)}${rest.join("")}` : name;
+};
+
 export const toNumber = (value) => {
   const n = parseFloat(value);
   return Number.isFinite(n) ? n : null;
@@ -277,7 +296,12 @@ function buildRowDefs({
       render: (p) => {
         const rate = toNumber(p.global2Rate);
         return rate !== null ? (
-          <span className="drt-value">{rate.toFixed(1)}%</span>
+          <span className="drt-value">
+            <span>
+              {rate.toFixed(1)}
+              <span className="drt-unit">%</span>
+            </span>
+          </span>
         ) : (
           "—"
         );
@@ -307,7 +331,11 @@ function buildRowDefs({
         const powerIndex = toNumber(row?.power_index);
         return (
           <span className="drt-value">
-            {rate.toFixed(1)}%
+            {/* 単位は別の要素にし、狭い一覧カードでは一回り小さくする（RaceCardDataTable.css、BOA-586） */}
+            <span>
+              {rate.toFixed(1)}
+              <span className="drt-unit">%</span>
+            </span>
             {motorDeepLink && powerIndex !== null && powerIndex !== 0 && (
               <Link
                 to={motorDeepLink(row.motor_number)}
@@ -529,18 +557,20 @@ function buildRowDefs({
           <span className="drt-value drt-parts-changed">
             {parts && parts.length > 0 && (
               <span className="drt-badge">
-                {/* 部品名ごとに塊にし、折り返しは「・」の後と「×２」の前だけにする。
+                {/* 部品名ごとに塊にし、折り返しは区切り（listSeparator）の後と「×２」の前だけにする。
                     1つの文字列だとスマホで「シャフ／ト」と語の途中で折れた
                     （BOA-612 ファン評価3周目）。「リング×２」を1つの塊にすると
                     62px あり、320px の列（約44px）に入らない */}
                 {parts.map((part, i) => (
                   <Fragment key={part}>
-                    {part.split(/(?=×)/).map((chunk) => (
-                      <span key={chunk} className="drt-part">
-                        {chunk}
-                      </span>
-                    ))}
-                    {i < parts.length - 1 && "・"}
+                    {translatePartName(t, part)
+                      .split(/(?=×)/)
+                      .map((chunk) => (
+                        <span key={chunk} className="drt-part">
+                          {chunk}
+                        </span>
+                      ))}
+                    {i < parts.length - 1 && t("listSeparator")}
                   </Fragment>
                 ))}
               </span>

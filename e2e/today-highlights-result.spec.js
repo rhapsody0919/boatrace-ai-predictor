@@ -8,9 +8,9 @@ import { test, expect } from "./fixtures.js";
  * （get_today_races と、その代わりに使う races の直接クエリ）が結果を返さず、
  * confirmed だけで一覧から外れていた（BOA-512: 2026-09-12 に結果のある32本が confirmed のまま）。
  *
- * 経路は2つ。どちらも result を {rank1} / null で返す。
- * - Edge API（/api/races/today → get_today_races。110 適用後の形）
- * - 直接クエリ（Edge API が失敗したとき。races に race_results(rank1) を埋め込む）
+ * 経路は2つ。どちらも同じ RPC（get_today_races。110 適用後の形）の出力を、同じ整形で使う（BOA-668）。
+ * - Edge API（/api/races/today → get_today_races）
+ * - Edge API が失敗したとき、get_today_races を Supabase へ直接呼ぶ（以前は races への別実装の直接クエリ）
  *
  * DBの中身に依存しないよう、Edge API と Supabase REST を差し替える。
  */
@@ -70,32 +70,6 @@ function edgeTodayResponse() {
   };
 }
 
-/** races の直接クエリの応答（race_results は1対1の埋め込みでオブジェクト） */
-function directRacesRows() {
-  return RACES.map((r) => ({
-    race_id: raceIdOf(r.raceNo),
-    race_date: DATE,
-    venue_code: VENUE_CODE,
-    race_number: r.raceNo,
-    start_time: `1${r.raceNo}:00:00`,
-    race_grade: null,
-    cancellation_status: r.cancellationStatus,
-    race_conditions: null,
-    race_results: r.rank1 != null ? { rank1: r.rank1 } : null,
-    race_entries: [],
-  }));
-}
-
-function directPredictionRows() {
-  return RACES.map((r) => ({
-    race_id: raceIdOf(r.raceNo),
-    feature_contributions: {
-      volatilityPercentile: r.percentile,
-      volatilityPercentileIsFallback: false,
-    },
-  }));
-}
-
 async function setup(page, { edge }) {
   await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
   await page.route("**/rest/v1/**", (route) =>
@@ -107,13 +81,8 @@ async function setup(page, { edge }) {
       ? route.fulfill({ json: edgeTodayResponse() })
       : route.fulfill({ status: 500, json: { success: false } }),
   );
-  await page.route("**/rest/v1/races?**", (route) =>
-    route.request().url().includes("race_entries")
-      ? route.fulfill({ status: 200, json: directRacesRows() })
-      : route.fulfill({ status: 200, json: [] }),
-  );
-  await page.route("**/rest/v1/predictions?**", (route) =>
-    route.fulfill({ status: 200, json: directPredictionRows() }),
+  await page.route("**/rest/v1/rpc/get_today_races*", (route) =>
+    route.fulfill({ status: 200, json: edgeTodayResponse() }),
   );
 }
 
@@ -133,7 +102,7 @@ test.describe("ホームの注目レース: 結果のあるレースは中止扱
   for (const edge of [true, false]) {
     const path = edge
       ? "Edge API（get_today_races）"
-      : "直接クエリ（Edge API 失敗時）";
+      : "RPC の直接呼び出し（Edge API 失敗時）";
     test(`${path}: confirmed でも結果があれば一覧に出し、結果の無い confirmed は外す`, async ({
       page,
     }) => {

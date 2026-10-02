@@ -18,6 +18,7 @@ import {
   VenueGrid,
   VenueGridSkeleton,
   TodaysVolatilityHighlights,
+  SgNowBanner,
 } from "../components/race";
 import { dataService } from "../services/dataService";
 import DataFetchError from "../components/DataFetchError";
@@ -30,18 +31,16 @@ import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { useNowHHMM } from "../hooks/useNowHHMM";
 import { getLanguage, localizePath } from "../config/languages";
 import { getFeaturedPosts, getLatestPosts } from "../data/blogPosts";
-import { WEEKDAYS } from "../constants";
 import { formatDate } from "../utils/formatters";
-import { formatDateJP, getTodayJST } from "../utils/dateUtils";
+import { getTodayJST } from "../utils/dateUtils";
+import {
+  formatDateShortLocalized,
+  formatDateLongLocalized,
+} from "../utils/formatters";
 import "./VenueGridPage.css";
 // 過去日付ビューのレイアウト（.race-detail-page/.page-header/.back-link等）は
 // 旧RaceDetail.jsxのスタイルを流用する
 import "./RaceDetail.css";
-
-function getTodayDateShort() {
-  const today = new Date();
-  return `${today.getMonth() + 1}/${today.getDate()}(${WEEKDAYS[today.getDay()]})`;
-}
 
 // getPredictions系レスポンス（フラットなraces配列）を会場別にグループ化する
 function groupRacesByVenue(races) {
@@ -87,7 +86,11 @@ function useTodayVenues() {
       if (result.scrapedAt) setLastUpdated(result.scrapedAt);
     } catch (err) {
       console.error("API取得エラー:", err);
-      setError(err.message);
+      // 失敗の判定は例外が出たかどうかで行い、メッセージの有無には依存しない。
+      // 本文が空・{} の 5xx では PostgrestError の message が空文字になり、
+      // err.message をそのまま入れると error が偽になって、取得失敗が
+      // 「24会場すべて本日開催なし」に化けていた（BOA-668）
+      setError(err?.message || FETCH_FAILED_ERROR);
     } finally {
       setLoading(false);
     }
@@ -155,7 +158,8 @@ function TodayVenueGridPage() {
         <main className="main-content">
           <section className="race-list-section">
             <h2>
-              🏁 {t("home.todayRaces")} {getTodayDateShort()}
+              🏁 {t("home.todayRaces")}{" "}
+              {formatDateShortLocalized(getTodayJST(), i18n.resolvedLanguage)}
             </h2>
             <p className="free-access-notice">
               ✅ <strong>{t("home.freeAccessNoticeStrong")}</strong>{" "}
@@ -177,22 +181,41 @@ function TodayVenueGridPage() {
               <VenueGridSkeleton />
             ) : (
               <>
-                {error && <DataFetchError detail={error} />}
-                <TodaysVolatilityHighlights venuesData={venuesData} />
-                {/* 本日のデータ一覧（BOA-402）への導線。高さを固定してCLSを出さない */}
-                <Link to={localize("/today")} className="home-digest-link">
-                  <span className="home-digest-link__label">
-                    📋 本日のデータ一覧
-                  </span>
-                  <span className="home-digest-link__desc">
-                    逃げが堅い選手・まくりが利く選手・昨日のフライング
-                  </span>
-                </Link>
-                <VenueGrid
-                  venuesData={venuesData}
-                  getVenueLink={(code) => localize(`/venue/${code}`)}
-                  nowHHMM={nowHHMM}
-                />
+                {/* 取得に失敗したら会場グリッドを出さない。出すと venuesData が空のため
+                    24会場すべてが「本日開催なし」になり、エラー表示と矛盾する（BOA-668）。
+                    「本日開催なし」は取得に成功して0件だったときだけ出す */}
+                {error ? (
+                  <DataFetchError
+                    detail={error === FETCH_FAILED_ERROR ? null : error}
+                  />
+                ) : (
+                  <>
+                    {/* SG開催中の会場への導線（集客レーン。SG の日だけ出る） */}
+                    <SgNowBanner venuesData={venuesData} />
+                    <TodaysVolatilityHighlights venuesData={venuesData} />
+                  </>
+                )}
+                {/* 本日のデータ一覧（BOA-402）への導線。高さを固定してCLSを出さない。
+                    /today は ja専用なので、ヘッダーと同じく ja のときだけ出す（BOA-653） */}
+                {/* i18n-allow-start: ja のときだけ出す導線（遷移先が ja専用ページ） */}
+                {i18n.language === "ja" && (
+                  <Link to="/today" className="home-digest-link">
+                    <span className="home-digest-link__label">
+                      📋 本日のデータ一覧
+                    </span>
+                    <span className="home-digest-link__desc">
+                      逃げが堅い選手・まくりが利く選手・昨日のフライング
+                    </span>
+                  </Link>
+                )}
+                {/* i18n-allow-end */}
+                {!error && (
+                  <VenueGrid
+                    venuesData={venuesData}
+                    getVenueLink={(code) => localize(`/venue/${code}`)}
+                    nowHHMM={nowHHMM}
+                  />
+                )}
               </>
             )}
           </section>
@@ -211,9 +234,11 @@ function TodayVenueGridPage() {
               // （2026-09-04、直近10記事が全てfeatured:falseと判明）。
               // 人気（featured）/新着（日付順）の2セクションに分け、
               // 新着側にはfeatured枠と重複する記事を出さない
-              const popularPosts = getFeaturedPosts().slice(0, 3);
+              const popularPosts = getFeaturedPosts(
+                i18n.resolvedLanguage,
+              ).slice(0, 3);
               const popularIds = new Set(popularPosts.map((post) => post.id));
-              const newPosts = getLatestPosts(6)
+              const newPosts = getLatestPosts(6, i18n.resolvedLanguage)
                 .filter((post) => !popularIds.has(post.id))
                 .slice(0, 3);
 
@@ -279,10 +304,13 @@ function TodayVenueGridPage() {
             <p>{t("home.disclaimer")}</p>
             <p className="site-footer-updated">
               {(() => {
-                const latestPost = getLatestPosts(1)[0];
+                const latestPost = getLatestPosts(1, i18n.resolvedLanguage)[0];
                 return latestPost
                   ? t("home.blogLastUpdated", {
-                      date: formatDateJP(latestPost.date),
+                      date: formatDateLongLocalized(
+                        latestPost.date,
+                        i18n.resolvedLanguage,
+                      ),
                     })
                   : "";
               })()}

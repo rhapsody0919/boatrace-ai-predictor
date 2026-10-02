@@ -227,9 +227,9 @@ function runChecks(m) {
     m.isPayoutAmountCountable({ status: "no_amount", amount: null }) === false,
   );
   check(
-    "払戻表の並びはモックどおり（単勝・複勝・3連単・3連複・2連単・2連複・拡連複）",
+    "払戻表の並びは公式の結果ページと同じ（3連単・3連複・2連単・2連複・拡連複・単勝・複勝。BOA-558 の5）",
     m.PAYOUT_BET_TYPES.map((b) => b.betType).join(",") ===
-      "win,place,3tan,3fuku,2tan,2fuku,wide",
+      "3tan,3fuku,2tan,2fuku,wide,win,place",
   );
   check(
     "3連単=trifecta・3連複=trio（race_results の列名の逆転を持ち込まない）",
@@ -237,6 +237,116 @@ function runChecks(m) {
       "trifecta" &&
       m.PAYOUT_BET_TYPES.find((b) => b.betType === "3fuku").typeKey === "trio",
   );
+
+  // 不成立になる勝式の表（BOA-558）。2026-10-02 に本番の race_payouts と race_start_timings を
+  // 突き合わせた実データ（返還・失格・完走不足のある154レースが全件一致）
+  if (typeof m.expectedVoidBetTypes === "function") {
+    const sorted = (set) => [...set].sort().join(",");
+    const TABLE = [
+      // [正常スタート, 完走, 不成立の勝式, 件数・例]
+      [6, 5, "", "返還なし・完走5（124件）"],
+      [5, 5, "", "1艇返還（83件）"],
+      [4, 4, "", "2艇返還（11件）"],
+      [3, 3, "3fuku,wide", "3艇返還（8件、桐生 9/24 8R）"],
+      [2, 2, "2fuku,3fuku,3tan,place,wide", "4艇返還（14件）"],
+      [
+        1,
+        0,
+        "2fuku,2tan,3fuku,3tan,place,wide,win",
+        "5艇返還（6件、浜名湖 9/14 6R）",
+      ],
+      [0, 0, "2fuku,2tan,3fuku,3tan,place,wide,win", "6艇返還（1件）"],
+      [6, 2, "3fuku,3tan", "返還なし・完走2（4件）"],
+      [5, 2, "3fuku,3tan", "1艇返還・完走2（1件）"],
+      [6, 0, "2fuku,2tan,3fuku,3tan,place,wide,win", "返還なし・完走0（1件、失格のみ）"],
+    ];
+    for (const [normalStarters, finishers, want, label] of TABLE) {
+      const got = sorted(m.expectedVoidBetTypes({ normalStarters, finishers }));
+      check(
+        `不成立の勝式: 正常スタート${normalStarters}・完走${finishers} → ${want || "なし"}（${label}）`,
+        got === want,
+        `got=${got}`,
+      );
+    }
+    const pay = (betType, status) => ({ betType, status });
+    const paid = (b) => pay(b, "paid");
+    const voidRow = (b) => pay(b, "no_race");
+    const KIRYU_PAYOUTS = [
+      paid("win"),
+      paid("place"),
+      paid("3tan"),
+      voidRow("3fuku"),
+      paid("2tan"),
+      paid("2fuku"),
+      voidRow("wide"),
+    ];
+    const r1 = m.describePartialVoid({
+      boatsInRace: 6,
+      refundBoats: [3, 5, 6],
+      finishers: 3,
+      payoutRows: KIRYU_PAYOUTS,
+    });
+    check(
+      "理由の1行: 桐生 9/24 8R は「正常スタート3艇・3連複・拡連複」",
+      r1?.kind === "starters" &&
+        r1.count === 3 &&
+        r1.betTypes.join(",") === "3fuku,wide",
+      show(r1),
+    );
+    const r2 = m.describePartialVoid({
+      boatsInRace: 6,
+      refundBoats: [],
+      finishers: 2,
+      payoutRows: [
+        paid("win"),
+        paid("2tan"),
+        voidRow("3tan"),
+        voidRow("3fuku"),
+      ],
+    });
+    check(
+      "理由の1行: 返還なし・完走2は「完走2艇・3連単・3連複」",
+      r2?.kind === "finishers" &&
+        r2.count === 2 &&
+        r2.betTypes.join(",") === "3tan,3fuku",
+      show(r2),
+    );
+    check(
+      "理由の1行: 払戻明細の不成立が表と合わないときは出さない（断定しない）",
+      m.describePartialVoid({
+        boatsInRace: 6,
+        refundBoats: [3, 5, 6],
+        finishers: 3,
+        payoutRows: [paid("win"), voidRow("3tan")],
+      }) === null,
+    );
+    check(
+      "理由の1行: 全勝式が不成立（レース不成立）・不成立が無いときは出さない",
+      m.describePartialVoid({
+        boatsInRace: 6,
+        refundBoats: [1, 2, 3, 5, 6],
+        payoutRows: [
+          "win",
+          "place",
+          "3tan",
+          "3fuku",
+          "2tan",
+          "2fuku",
+          "wide",
+        ].map(voidRow),
+      }) === null &&
+        m.describePartialVoid({
+          boatsInRace: 6,
+          refundBoats: [],
+          payoutRows: [paid("win")],
+        }) === null,
+    );
+  } else {
+    check(
+      "expectedVoidBetTypes / describePartialVoid がある（BOA-558）",
+      false,
+    );
+  }
 
   return results;
 }

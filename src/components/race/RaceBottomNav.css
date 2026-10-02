@@ -91,9 +91,11 @@
   border-color: var(--brand-accent-primary);
 }
 
+/* 前後のレースが無いとき（1R・最終R）は、ボタンの場所だけ残して隠す。以前は「- →」と
+   薄く出ていて、何のボタンか分からなかった（BOA-586）。場所を残すのは、今のRの表示が
+   左右に動かないようにするため */
 .race-bottom-nav__btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  visibility: hidden;
 }
 
 .race-bottom-nav__current {

@@ -23,14 +23,21 @@
  * 2. `src/services/supabaseClient.js` が `.throwOnError()` を適用していること
  * 3. `src/` 配下に `@supabase/supabase-js` を直接importするファイルが
  *    supabaseClient.js 以外に無いこと
+ * 4. `src/` 配下に `setError(err.message)` の形が無いこと（BOA-668）。message が空の例外
+ *    （本文 `{}` の 5xx の PostgrestError）でエラー状態が偽のままになり、取得失敗が
+ *    「データなし」に化ける。`src/utils/errorMessage.js` の errorMessageOf を使う
  *
  * ## 検査しないこと（意図的）
  *
  * - 呼び出し側の `if (error)` の有無は見ない。`.throwOnError()` が既定になった今、
  *   その分岐は到達しないだけで害が無く、機械的に消すとレビューのノイズになる
- * - `scripts/` （バッチ側）は対象外。`scripts/lib/supabaseClient.js` の `fetchAll` は
- *   `throwOnError = false` が既定のまま残っており、121箇所の呼び出し側への影響確認が
- *   別途必要なため、別チケットで扱う（本スクリプトのBATCH_TODOに記録）
+ *
+ * ## バッチ側（scripts/）で検査すること（BOA-391）
+ *
+ * 5. `scripts/` の関数が `throwOnError = false` を引数の既定にしていないこと。
+ *    fetchAll・getRaceSchedule 等の8関数が、失敗を空配列・部分結果にするのを既定にしていた
+ *    （安全な挙動がオプトイン）。既定は例外にし、握りつぶしてよい呼び出し側だけが
+ *    `{ throwOnError: false }` を理由付きで明示する
  */
 
 import fs from "fs";
@@ -41,10 +48,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
 const SRC = path.join(ROOT, "src");
 const CLIENT_REL = "src/services/supabaseClient.js";
-
-/** バッチ側の未対応分（別チケット）。ここに書いておき、忘れられないようにする */
-const BATCH_TODO =
-  "scripts/lib/supabaseClient.js の fetchAll は throwOnError=false が既定のまま（呼び出し121箇所）。BOA-359のバッチ側として別対応";
 
 function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -71,6 +74,14 @@ for (const file of files) {
     errors.push(
       `${rel}: createClient() を直接呼んでいる。${CLIENT_REL} の supabase を import すること` +
         "（直接作ると .throwOnError() の既定が効かず、取得失敗が空データに化ける。BOA-359）",
+    );
+  }
+  // 4: message の有無でエラー状態を決めない（BOA-668）
+  const messageOnly = text.match(/setError\(\s*\w+\??\.message\s*\)/g);
+  if (messageOnly) {
+    errors.push(
+      `${rel}: ${messageOnly[0]} の形がある。message が空の例外で失敗がエラー表示に届かない。` +
+        "src/utils/errorMessage.js の errorMessageOf(err) を使うこと（BOA-668）",
     );
   }
   if (/from\s+["']@supabase\/supabase-js["']/.test(text)) {
@@ -100,6 +111,23 @@ if (!fs.existsSync(clientPath)) {
   }
 }
 
+// 5: バッチ側の関数が、失敗を握りつぶすことを既定にしていないか（BOA-391）
+const scriptFiles = walk(path.join(ROOT, "scripts"));
+for (const file of scriptFiles) {
+  const rel = path.relative(ROOT, file);
+  const text = fs.readFileSync(file, "utf8");
+  const lines = text.split("\n");
+  lines.forEach((line, i) => {
+    if (/^\s*(\/\/|\*)/.test(line)) return;
+    if (/\bthrowOnError\s*=\s*false\b/.test(line)) {
+      errors.push(
+        `${rel}:${i + 1}: 引数の既定が「失敗を握りつぶす」になっている（${line.trim()}）。` +
+          "既定は例外にし、握りつぶしてよい呼び出し側だけが { throwOnError: false } を明示すること（BOA-391）",
+      );
+    }
+  });
+}
+
 if (errors.length > 0) {
   console.error("NG: Supabaseクエリのエラー処理に問題があります\n");
   for (const e of errors) console.error("  - " + e);
@@ -113,4 +141,6 @@ console.log(
   `OK: src配下の${files.length}ファイルを検査。Supabaseクライアントは${CLIENT_REL}に一本化され、` +
     "取得エラーは既定で例外になります。",
 );
-console.log(`INFO: 未対応（別チケット）— ${BATCH_TODO}`);
+console.log(
+  `OK: scripts配下の${scriptFiles.length}ファイルに、throwOnError を false にする引数の既定は無い（BOA-391）`,
+);

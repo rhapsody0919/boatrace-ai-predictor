@@ -58,6 +58,7 @@ import {
   getDefaultDraftCardExpanded,
 } from "./sns-hub/utils";
 import "./SnsHubAdmin.css";
+import { errorMessageOf } from "../../utils/errorMessage.js";
 
 const PLATFORM_UPLOAD_URLS = {
   tiktok: "https://www.tiktok.com/tiktokstudio/upload",
@@ -279,7 +280,7 @@ function SnsHubAdmin() {
         if (silent) {
           showToast(`最新状態の取得に失敗しました: ${err.message}`, "error");
         } else {
-          setError(err.message);
+          setError(errorMessageOf(err));
         }
       } finally {
         if (!silent) setLoading(false);

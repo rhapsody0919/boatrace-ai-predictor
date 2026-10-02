@@ -84,10 +84,12 @@ jobs:
           fi
           RESULT=$(node scripts/maintenance/e2e-recording.js gate)
           echo "$RESULT"
-          echo "run=$(echo "$RESULT" | jq -r '.run')" >> "$GITHUB_OUTPUT"
-          # 採用済みで空振りしたときは通知しない。遅れて撮れなかったときは通知する
-          echo "notify=$(echo "$RESULT" | jq -r '.notify')" >> "$GITHUB_OUTPUT"
-          echo "result=$RESULT" >> "$GITHUB_OUTPUT"
+          {
+            echo "run=$(echo "$RESULT" | jq -r '.run')"
+            # 採用済みで空振りしたときは通知しない。遅れて撮れなかったときは通知する
+            echo "notify=$(echo "$RESULT" | jq -r '.notify')"
+            echo "result=$RESULT"
+          } >> "$GITHUB_OUTPUT"
           REASON=$(echo "$RESULT" | jq -r '.reasons | join("; ")')
           if [ -n "$REASON" ]; then
             echo "## E2E 録画の撮り直し: 撮らずに終了（$REASON）" >> "$GITHUB_STEP_SUMMARY"
@@ -205,7 +207,9 @@ jobs:
           RESULT: ${{ steps.judge.outputs.result || steps.gate.outputs.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           EVENT_NAME: ${{ github.event_name }}
-          JOB_FAILED: ${{ failure() }}
+          # failure() は if: の中でしか使えない（env に書くとワークフロー全体が無効になる）。
+          # env では job.status で同じ判定をする
+          JOB_FAILED: ${{ job.status == 'failure' }}
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ -z "$SLACK_WEBHOOK_URL" ]; then

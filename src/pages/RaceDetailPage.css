@@ -56,7 +56,10 @@
   .race-detail-page-v2 .nsc-card,
   .race-detail-page-v2 .ecd-list,
   .race-detail-page-v2 .rwit-card:has(.rwit-today-table),
-  .race-detail-page-v2 .rwit-card:has(.rwit-bars) {
+  .race-detail-page-v2 .rwit-card:has(.rwit-bars),
+  /* 枠別情報のカードの右端をそろえる。ST考察だけ 1552px に広がり、上下のカードと
+     ギザギザに並んでいた（BOA-619） */
+  .race-detail-page-v2 .rsc-card {
     max-width: 1200px;
   }
 
@@ -309,3 +312,15 @@
   }
 }
 
+
+/* 結果タブの着順表: 広い画面ではスタートの図（4列目）を広げる。6.5rem（104px）固定だと
+   1440px で名前の列との間が約700px空き、0.01秒の差が読み取りにくかった（BOA-586）。
+   着順表は一覧カードでも使うので、レース詳細ページの中だけ広げる */
+@media (min-width: 1024px) {
+  .race-detail-page-v2 .rr-row,
+  .race-detail-page-v2 .rr-row-head {
+    /* 名前の列は 16rem で止め、余った幅はスタートの図に回す。名前の列を 1fr にしていると、
+       図を 18rem に広げても名前の後ろに 1440px で約660px の空白が残った（#1071 ファン評価2周目） */
+    grid-template-columns: 2.6rem 1.8rem minmax(0, 16rem) minmax(18rem, 1fr) 3.6rem;
+  }
+}

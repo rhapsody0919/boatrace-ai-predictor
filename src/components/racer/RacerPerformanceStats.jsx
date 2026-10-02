@@ -18,7 +18,7 @@ import {
   aggregateRacerCrossStats,
 } from "../../services/supabaseDataService";
 import { ALL_VENUE_CODES } from "../../constants";
-import RaceHistoryTable from "../race/RaceHistoryTable";
+import RecentRunsTable from "../race/RecentRunsTable";
 import { GRADE_LABELS } from "../race/raceGradeLabels";
 import "./RacerPerformanceStats.css";
 
@@ -914,7 +914,7 @@ export default function RacerPerformanceStats({
         <div className="racer-stat-chart">
           <h3>
             展示タイムの推移（
-            {hasVcData ? "2026年3月以降・最大過去2年" : "過去90日"}）
+            {hasVcData ? "2025年12月以降・最大過去2年" : "過去90日"}）
             {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
           </h3>
           <p className="racer-stat-note">
@@ -1045,7 +1045,7 @@ export default function RacerPerformanceStats({
             レース一覧
             {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
           </h3>
-          <RaceHistoryTable rows={vcRacePageRows} />
+          <RecentRunsTable rows={vcRacePageRows} />
           {vcRaceTotalPages > 1 && (
             <div className="racer-vc-pager">
               <button

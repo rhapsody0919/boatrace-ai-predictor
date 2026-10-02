@@ -65,6 +65,10 @@ const BOA289_COLUMNS = [
  * 先に公開するため、その間に取得すると exhibition_time=null・start_timing のみの行が
  * 書かれる。行の有無で判定すると、この行が「取得済み」とみなされ展示タイムが
  * 永久に補完されない（2026-09-19判明、9/18は29レース＝16%が該当）。
+ * 展示ST（start_timing）も非nullであることを条件にする（BOA-271 の前提の補完、2026-10-01）。Kファイルから
+ * exhibition_time だけを入れた過去のレース（2025-12〜2026-03）を「取得済み」にすると、展示ST・チルト・体重を
+ * 直前情報の過去日ページから後で補う道が閉じるため。当日の取得への影響は、展示STが無いレース（9月は月に約20）が
+ * 窓の中で再試行されるだけ（過去日を自動で取り直す経路は無い。過去日は手動の補完 CLI のみ）。
  *
  * exhibition_data は1レース6行のため、1日180レースで1000行のデフォルト上限を超える。
  * fetchAll でページネーションして取りこぼしを防ぐ。
@@ -77,8 +81,13 @@ export async function getRaceIdsWithExhibitionTime(date) {
       .gte("race_id", date)
       .lt("race_id", `${date}~`)
       .not("exhibition_time", "is", null)
+      .not("start_timing", "is", null)
       .order("race_id")
       .order("boat_number"),
+    // 取得済みのスキップ判定にだけ使う。失敗したら空・途中までの集合になり、窓内のレースを取り直す（取得先への
+    // 負荷が少し増えるだけで、データは欠けない）。例外にすると、その回の展示の取得が丸ごと飛ぶため、ここは
+    // 従来どおりにする（fetchAll の既定は例外。BOA-391）
+    { throwOnError: false },
   );
 
   return new Set(rows.map((r) => r.race_id));
@@ -530,7 +539,9 @@ export async function runForRaces(
         "race_id",
         races.map((r) => r.race_id),
       )
-      .not("exhibition_time", "is", null);
+      .not("exhibition_time", "is", null)
+      // 展示STまであるレースだけを取得済みにする（getRaceIdsWithExhibitionTime と同じ判定）
+      .not("start_timing", "is", null);
     if (error) {
       throw new Error(
         `展示データの取得済みの確認に失敗しました: ${error.message}`,

@@ -1061,17 +1061,17 @@ const ecFetch = (overrides = {}) =>
     const failing = createFakeClient({
       failOn: { "venue_entry_course_stats:upsert": "x" },
     });
-    const written = await writeEntryCourseRows(failing, [{ race_id: "a" }]);
+    const written = await writeEntryCourseRows(failing, [{ race_id: "a" }], {
+      throwOnError: false,
+    });
     let threw = false;
     try {
-      await writeEntryCourseRows(failing, [{ race_id: "a" }], {
-        throwOnError: true,
-      });
+      await writeEntryCourseRows(failing, [{ race_id: "a" }]);
     } catch {
       threw = true;
     }
     check(
-      "進入コース: 書き込みエラーは、既定ではログのみ(従来どおり0件書き込み)・throwOnError で例外",
+      "進入コース: 書き込みエラーは、既定（BOA-391）で例外。throwOnError: false のときだけログのみ(0件書き込み)",
       written === 0 && threw,
     );
   }
@@ -1281,16 +1281,18 @@ const ecFetch = (overrides = {}) =>
     const failing = createFakeClient({
       failOn: { "venue_motor_stats:upsert": "x" },
     });
-    const written = await writeMotorStatsRows(failing, [{ a: 1 }]);
+    const written = await writeMotorStatsRows(failing, [{ a: 1 }], {
+      throwOnError: false,
+    });
     let threw = false;
     try {
-      await writeMotorStatsRows(failing, [{ a: 1 }], { throwOnError: true });
+      await writeMotorStatsRows(failing, [{ a: 1 }]);
     } catch {
       threw = true;
     }
     const sample = toMotorStatsRow(fukuoka, { motorNumber: 43 }, "2026-09-19");
     check(
-      "モーター成績: 書き込みエラーは既定ではログのみ・throwOnError で例外。行の組み立ては従来と同じ列",
+      "モーター成績: 書き込みエラーは既定（BOA-391）で例外・throwOnError: false のときだけログのみ。行の組み立ては従来と同じ列",
       written === 0 &&
         threw &&
         sample.venue_code === 22 &&

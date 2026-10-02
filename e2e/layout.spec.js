@@ -67,7 +67,8 @@ const OVERFLOW_TOLERANCE_PX = 2;
  * 選んだ要素は 2026-09-29 の録画の再生で、各ページの主データとして描画されるものを実測した
  */
 const READY_SELECTORS = {
-  "/": ".venue-grid .venue-grid-card",
+  // スケルトン（VenueGridSkeleton）も .venue-grid-card を持つため、実物だけに付く修飾子で待つ（BOA-593）
+  "/": ".venue-grid-card--open, .venue-grid-card--closed",
   "/accuracy": ".turn-accuracy-venue-table",
   "/winning-technique": ".winning-technique-table",
   "/races": ".dates-list .date-card",
@@ -580,7 +581,7 @@ test.describe("レイアウト: ホームの会場グリッドに /guide の指�
     await page.locator(".app-header .logo").click();
     await expect(page).toHaveURL(/\/$/);
     await expect(
-      page.locator(".venue-grid .venue-grid-card").first(),
+      page.locator(".venue-grid-card--open, .venue-grid-card--closed").first(),
     ).toBeAttached({ timeout: 30000 });
 
     const grid = await page.evaluate(() => {
@@ -733,5 +734,90 @@ test.describe("レイアウト: 管理画面2つのタブの指定が混ざら�
     await expect(page).toHaveURL(/\/admin\/rules$/);
     await expect(page.locator(".admin-rules-tab-navigation")).toBeVisible();
     expect(await marginBottom(".admin-rules-tab-navigation")).toBe("16px");
+  });
+});
+
+// 会場のレース一覧カード（BOA-558 の6・BOA-586）。2026-09-24 桐生は準優勝戦（バッジ3つ）を含む
+test.describe("レイアウト: 会場のレース一覧カード（出走表の列・モーターの行・見出しの高さ）", () => {
+  test("6号艇の列が切れず、モーターの値が罫線に接さず、同じ段のカードの出走表の高さがそろう", async ({
+    page,
+  }) => {
+    await page.goto("/races/2026-09-24/1", { waitUntil: "domcontentloaded" });
+    await expect(page.locator(".race-card .rcdt-table").first()).toBeVisible({
+      timeout: 30000,
+    });
+    await page
+      .waitForLoadState("networkidle", { timeout: 15000 })
+      .catch((error) => {
+        if (error.name !== "TimeoutError") throw error;
+      });
+
+    const m = await page.evaluate(() => {
+      const cards = [
+        ...document.querySelectorAll(".race-list-section .race-card"),
+      ];
+      return cards.map((card) => {
+        const wrap = card.querySelector(".rcdt-table-wrapper");
+        const table = card.querySelector(".rcdt-table");
+        const lastBoat = table.querySelector("thead tr th:last-child");
+        const motorRow = [...table.querySelectorAll("tbody tr")].find((tr) =>
+          /モーター/.test(tr.textContent),
+        );
+        const gaps = motorRow
+          ? [...motorRow.querySelectorAll("td.rcdt-cell")]
+              .map((td) => {
+                const value = td.querySelector(".drt-value > span");
+                if (!value) return null;
+                const a = td.getBoundingClientRect();
+                const b = value.getBoundingClientRect();
+                return Math.min(b.left - a.left, a.right - b.right);
+              })
+              .filter((g) => g !== null)
+          : [];
+        const c = card.getBoundingClientRect();
+        return {
+          // 6号艇の列が表の枠の中にある（BOA-559 の再発防止）
+          overflow: wrap.scrollWidth - wrap.clientWidth,
+          lastBoatRight: lastBoat.getBoundingClientRect().right,
+          wrapRight: wrap.getBoundingClientRect().right,
+          minMotorGap: gaps.length ? Math.min(...gaps) : null,
+          rowTop: Math.round(c.top),
+          tableTop: table.getBoundingClientRect().top - c.top,
+        };
+      });
+    });
+
+    expect(m.length).toBeGreaterThan(0);
+    for (const [i, card] of m.entries()) {
+      expect(
+        card.overflow,
+        `${i + 1}枚目: 出走表の横スクロール`,
+      ).toBeLessThanOrEqual(1);
+      expect(
+        card.lastBoatRight,
+        `${i + 1}枚目: 6号艇の列が枠の外`,
+      ).toBeLessThanOrEqual(card.wrapRight + 0.5);
+      if (card.minMotorGap !== null) {
+        // 以前は 1024px で最小1.5px（「42.2%」が37pxのセルに34px）。%を小さくして2px以上にした
+        expect(
+          card.minMotorGap,
+          `${i + 1}枚目: モーターの値の左右の余白`,
+        ).toBeGreaterThanOrEqual(1.8);
+      }
+    }
+    // 同じ段（上端がそろうカード）では、出走表の始まる高さもそろう。以前は 1024px で
+    // バッジの数により見出しが1〜3段に折れ、最大67pxずれた
+    const byRow = new Map();
+    for (const card of m) {
+      if (!byRow.has(card.rowTop)) byRow.set(card.rowTop, []);
+      byRow.get(card.rowTop).push(card.tableTop);
+    }
+    for (const [top, tops] of byRow) {
+      if (tops.length < 2) continue;
+      expect(
+        Math.max(...tops) - Math.min(...tops),
+        `上端 ${top}px の段で出走表の高さがずれている`,
+      ).toBeLessThanOrEqual(1);
+    }
   });
 });

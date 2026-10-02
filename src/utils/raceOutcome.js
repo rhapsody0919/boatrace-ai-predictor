@@ -166,18 +166,18 @@ export function normalizeFinishMark(mark) {
 
 /**
  * 払戻明細（race_payouts.bet_type、079）→ 画面の勝式キー（i18n の result.payoutType.*）と組番の区切り。
- * 並びは単勝・複勝・3連単・3連複・2連単・2連複・拡連複（ユーザー承認のモックどおり。公式PC版の結果ページは
- * 3連単・3連複・2連単・2連複・拡連複・単勝・複勝の順で、公式とは違う。ファン評価 第1周 指摘2で判明）。
+ * 並びは公式の結果ページと同じ 3連単・3連複・2連単・2連複・拡連複・単勝・複勝（BOA-558 の5、ユーザー判断）。
+ * 以前は単勝・複勝を先頭にしたモックの並びだった。
  * race_results の payout_trio=3連単・payout_trifecta=3連複 の逆転は持ち込まない
  */
 export const PAYOUT_BET_TYPES = Object.freeze([
-  { betType: "win", typeKey: "win", separator: "" },
-  { betType: "place", typeKey: "place", separator: "" },
   { betType: "3tan", typeKey: "trifecta", separator: "-" },
   { betType: "3fuku", typeKey: "trio", separator: "=" },
   { betType: "2tan", typeKey: "exacta", separator: "-" },
   { betType: "2fuku", typeKey: "quinella", separator: "=" },
   { betType: "wide", typeKey: "wide", separator: "=" },
+  { betType: "win", typeKey: "win", separator: "" },
+  { betType: "place", typeKey: "place", separator: "" },
 ]);
 
 export const PAYOUT_STATUS = Object.freeze({
@@ -194,4 +194,68 @@ export function isPayoutAmountCountable(row) {
       row?.status === PAYOUT_STATUS.SPECIAL) &&
     typeof row.amount === "number"
   );
+}
+
+/**
+ * 正常にスタートした艇の数・完走した艇の数から、不成立になる勝式（race_payouts.bet_type）を返す（BOA-558）。
+ *
+ * 規程の原文は見つけられなかったため、本番の公式払戻（race_payouts）と着順の記号（race_start_timings）を
+ * 突き合わせた実データで決めている（2026-10-02、返還・失格・完走不足のある154レースが全件この表に一致）:
+ *   正常スタート4艇以上: なし／3艇: 3連複・拡連複／2艇: 複勝・2連複・拡連複・3連単・3連複／1艇以下: 全勝式
+ *   返還が無くても完走が2艇だけのとき: 3連単・3連複／完走1艇以下: 全勝式
+ * 表は scripts/maintenance/verify-race-outcome.js で固定している。
+ * @param {{normalStarters: number, finishers?: number|null}} counts
+ * @returns {Set<string>}
+ */
+export function expectedVoidBetTypes({ normalStarters, finishers = null }) {
+  const all = PAYOUT_BET_TYPES.map((t) => t.betType);
+  if (normalStarters <= 1 || (finishers != null && finishers <= 1)) {
+    return new Set(all);
+  }
+  const types = new Set();
+  if (normalStarters === 2) {
+    ["place", "2fuku", "wide", "3tan", "3fuku"].forEach((b) => types.add(b));
+  } else if (normalStarters === 3) {
+    ["3fuku", "wide"].forEach((b) => types.add(b));
+  }
+  if (finishers === 2) ["3tan", "3fuku"].forEach((b) => types.add(b));
+  return types;
+}
+
+/**
+ * 一部の勝式だけ不成立になったレースで、その理由を事実として1行で言えるか判定する（BOA-558）。
+ * 実際に不成立になった勝式（払戻明細）が上の表と一致するときだけ返す。一致しなければ、理由を
+ * 断定できないので null（画面は何も書かない）。全勝式が不成立（レース不成立）・不成立が無いときも null。
+ * @param {{boatsInRace: number, refundBoats: number[], finishers?: number|null,
+ *   payoutRows: Array<{betType: string, status: string}>|null|undefined}} args
+ * @returns {{kind: "starters"|"finishers", count: number, betTypes: string[]}|null}
+ */
+export function describePartialVoid({
+  boatsInRace,
+  refundBoats,
+  finishers = null,
+  payoutRows,
+}) {
+  const voided = new Set(
+    (payoutRows ?? [])
+      .filter((row) => row.status === PAYOUT_STATUS.NO_RACE)
+      .map((row) => row.betType),
+  );
+  if (voided.size === 0 || voided.size === PAYOUT_BET_TYPES.length) return null;
+  const ordered = PAYOUT_BET_TYPES.map((t) => t.betType).filter((b) =>
+    voided.has(b),
+  );
+  const same = (expected) =>
+    expected.size === voided.size && [...expected].every((b) => voided.has(b));
+  const normalStarters = boatsInRace - refundBoats.length;
+  if (same(expectedVoidBetTypes({ normalStarters }))) {
+    return { kind: "starters", count: normalStarters, betTypes: ordered };
+  }
+  if (
+    finishers != null &&
+    same(expectedVoidBetTypes({ normalStarters: 6, finishers }))
+  ) {
+    return { kind: "finishers", count: finishers, betTypes: ordered };
+  }
+  return null;
 }

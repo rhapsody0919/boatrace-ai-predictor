@@ -27,6 +27,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-admin-rule-performance.js --rules --rpc"
     },
     {
+      "script": "verify-actionlint.js",
+      "tier": "ci",
+      "guards": ".github/workflows の全ファイルに actionlint＋shellcheck の新しい指摘が無いこと（BOA-659）。#1080 の env の ${{ failure() }}（ワークフロー全体が無効になり、PR の CI は緑のままだった）や #1081 の無効な types: merged を PR で止める。既存の指摘は actionlint-allowlist.json に（file, rule, 行の内容）で固定し、解消済みの残骸も失敗にする。版は actionlint-tools.json で固定し、Quality Gates が install-actionlint.js で sha256 を照合して取得する。手元で未取得なら警告して飛ばす（CI では失敗）"
+    },
+    {
       "script": "verify-adr-numbers.js",
       "tier": "ci",
       "guards": "docs/adr/ のADR番号の重複（並行セッションで繰り返し発生）"
@@ -114,6 +119,11 @@
       "guards": "不成立・返還の判定関数（src/utils/raceOutcome.js）の回帰と変異検証、画面側が展開予測の的中を rank1 の直接比較・旧フラグ isNoRace で判定していないこと（BOA-543）"
     },
     {
+      "script": "verify-fetch-all-by-in-order.js",
+      "tier": "ci",
+      "guards": "フロントの fetchAllByIn（supabaseDataService.js）が、テーブルごとの主キーで並べてからページングすること。新しいテーブルの並びの足し忘れを CI で止める（BOA-595）"
+    },
+    {
       "script": "verify-gha-skip-gate.js",
       "tier": "ci",
       "guards": "フェイルセーフ付きSKIP（scripts/lib/ghaSkipGate.js）と日次ワークフローの配線"
@@ -145,7 +155,7 @@
     {
       "script": "verify-function-grants-migration.js",
       "tier": "ci",
-      "guards": "マイグレーション112（関数・シーケンスの匿名権限の剥奪と既定権限の是正、BOA-575）をPGlite上で実際に適用して検証。画面が呼ぶ7本のRPCが残ること・トリガーが発火し続けること"
+      "guards": "マイグレーション117（関数・シーケンスの匿名権限の剥奪と既定権限の是正、BOA-575）をPGlite上で実際に適用して検証。画面が呼ぶ7本のRPCが残ること・トリガーが発火し続けること"
     },
     {
       "script": "verify-migration-rls.js",
@@ -307,6 +317,11 @@
       "guards": "出走表（racelist）の過去分バックフィルCLI"
     },
     {
+      "script": "verify-racer-index-policy.js",
+      "tier": "ci",
+      "guards": "選手ページのインデックス判定（src/utils/racerIndexPolicy.js。ページの noindex と sitemap が共用）。崩れると B 級の大量インデックスか、現役 A1 の noindex 化が両方同時に起きる"
+    },
+    {
       "script": "verify-racer-profile-sync.js",
       "tier": "ci",
       "guards": "選手プロフィール・期別成績ジョブ（scripts/lib/racerProfileSync.js）"
@@ -377,6 +392,11 @@
       "guards": "得点率の種別判定（src/components/race/seriesPoints.js の算入範囲と配点、raceStageConfig のバッジ）。race_stage は会場の自由記述で349種あり、部分一致の判定が壊れやすい（BOA-457・BOA-458）"
     },
     {
+      "script": "verify-sg-now-venues.js",
+      "tier": "ci",
+      "guards": "トップの「SG開催中」帯に出す会場の判定（SGのみ・先頭レースの値・NFKC・会場順）。崩れると SG の日に帯が出ないか、G1・一般戦の日に誤って出る"
+    },
+    {
       "script": "verify-sitemap-coverage.js",
       "tier": "ci",
       "guards": "AppRouter.jsx の静的ルートと generate-sitemap.js の staticPages の突き合わせ（sitemap登録漏れ）"
@@ -422,6 +442,11 @@
       "runner": "bash",
       "guards": "push-with-retry.sh のrebase＋リトライ・コンフリクト時の失敗・force push不使用（BOA-360）",
       "note": "使い捨てのbareリポジトリとクローンだけを使い、本リポジトリには触れない。2026-09-25時点でレジストリ導入まで未登録・CI未接続だった"
+    },
+    {
+      "script": "verify-race-status-exclusion.js",
+      "tier": "ci",
+      "guards": "画面（src/）の集計が、書かれていない旧フラグ is_cancelled・is_no_race ではなく race_results.race_status で不成立を外すこと（BOA-477）"
     },
     {
       "script": "verify-relative-imports.js",
@@ -503,9 +528,14 @@
       "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、定期実行の起動時刻（1日4回・0分回避・打ち切り前）と直列化・通知の1日1回化、素通し一覧の集計（ADR-0077）"
     },
     {
+      "script": "verify-e2e-no-unroute.js",
+      "tier": "ci",
+      "guards": "E2Eで page のルートを途中で0件にする書き方（.unroute(・.unrouteAll(・第3引数に times のある、または第3引数がオブジェクトリテラルでない .route(）が e2e/**/*.js に入らないこと。0件になった瞬間の処理中の要求が context 側（録画の再生）へ送り直され「Route is already handled!」で落ちる（BOA-466・BOA-661、ADR-0077 決定4）。正当な例外は e2e-no-unroute-allowlist.json に理由つきで載せ、理由の無いエントリと解消済みのエントリで失敗する。#1084 修正前の書き方を検出できることを自己テストで毎回確かめる"
+    },
+    {
       "script": "verify-e2e-recorded-network.js",
       "tier": "ci",
-      "guards": "E2Eのspecが録画の再生（e2e/fixtures.js、ADR-0077）を素通りする書き方（@playwright/testからの直接import・route.continue()・route.fetch()）をしていないこと"
+      "guards": "e2e/**/*.js（recordings/を除く）が録画の再生（e2e/fixtures.js、ADR-0077）を素通りする書き方（@playwright/testからの直接import・route.continue()・route.fetch()）をしていないこと。コメント・文字列・正規表現リテラルの判定はverify-e2e-no-unroute.jsと共有するstripNonCode（scripts/lib/stripNonCode.js）で行い、文字列中の`//`をコメントの開始と誤らないことを自己テストで確かめる（BOA-663）。fixtures.js自身が正当に使う箇所はverify-e2e-recorded-network-allowlist.jsonに理由つきで載せ、理由の無いエントリと解消済みのエントリで失敗する"
     },
     {
       "script": "verify-e2e-skips.js",
@@ -593,6 +623,37 @@
       "script": "verify-pit-report-backfill.js",
       "tier": "ci",
       "guards": "ピットレポートの取り直し（backfill-pit-reports.js）が、行の無いレースと、コメントが出走表の艇数に満たないレースだけを選び、not_target・全艇そろったレース・対象外のグレードを取り直さないこと。前後のコメント数の集計（BOA-611。取得ジョブが公開直後の1回しか取らず、9/21〜10/1 の57レースでコメントが欠けていた）"
+    },
+    {
+      "script": "verify-aggregate-racer-stats.js",
+      "tier": "ci",
+      "guards": "選手別の日次集計（aggregate-racer-stats.js）が取得エラーを握りつぶさず、変わった行だけ書き、1日1回だけ起動する（BOA-600）"
+    },
+    {
+      "script": "verify-analogy-contribution.js",
+      "tier": "ci",
+      "guards": "アナロジー・ファインダーの寄与度（BOA-271 FR-1）で、レース数30未満のスライスを会場→ラウンド→グレードの順に広げること、テーマを themes 配列の順と数で並べること（テーマ数を固定しない）、SD の2倍に満たない隣どうしの順位を強調しないこと（API と画面の直読みで共有する src/utils/analogyContribution.js）"
+    },
+    {
+      "script": "verify-analogy-storage.js",
+      "tier": "ci",
+      "guards": "アナロジー・ファインダーの学習（BOA-271）で、Storage の古い版を消すときに表示中の版を残すこと、表示中の版と同じ名前ではモデルを上書きしないこと、長期データのキャッシュの列名が今のコードと違えば失敗すること（scripts/ml/analogy/storageRules.js）"
+    },
+    {
+      "script": "verify-kb-gap-fill.js",
+      "tier": "ci",
+      "guards": "K/Bファイルからの欠落の補完（backfill-kb-gaps.js・kbGapFill.js。BOA-271 の前提条件、Phase 1 項目3〜6）が、項目ごとに決めた列だけを書き（全行の列の集合がそろわなければ書かない＝一括 upsert の NULL 上書きを防ぐ）、既存の値を上書きせず、行の無いレースにだけ挿入し、フライングの ST を正の値で書くこと（本番の全期間が正。kbFileParser は負で返す）"
+    },
+    {
+      "script": "verify-official-finish-code.js",
+      "tier": "ci",
+      "guards": "公式の成績コード（race_start_timings.official_finish_code、BOA-553。マイグレーション116）の取り込みが、Kファイルの表記のまま（S0/S1・K0/K1 の責任の有無を含む）値を取り、既存の行の値が変わるものだけを書き、行の無い艇を挿入しないこと（読み手の7箇所が行の有無で出走を判定する）。日次の同期と過去分の補完が同じ値を返すこと"
+    },
+    {
+      "script": "verify-prediction-hit-judgement.js",
+      "tier": "ci",
+      "timeoutSec": 300,
+      "guards": "不成立のレースと返還艇を含む勝式を、的中判定（buildPredictionHitUpdate・DBトリガー117・欠落の補完）と成績の集計（券種ごとの母数）から外すこと。トリガーとアプリの判定が同じ値を書くこと（PGlite で112を適用して突き合わせる）。BOA-544: 不成立のレースに的中が付き、返還艇の本命が「外れ」として成績に入っていた"
     }
   ]
 }

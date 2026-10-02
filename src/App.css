@@ -192,6 +192,39 @@ input:focus-visible,
   font-weight: 700;
 }
 
+/* 狭いカード（1024px の3列で約315px）では、会場名とR番号を1段目、バッジを2段目に分ける。
+   同じ段に並べると、バッジの数で見出しが1〜3段に折れ、隣のカードと出走表の高さが
+   最大67pxずれた（BOA-558 の6）。768px・1440px のカードは幅に余裕があるので今のまま */
+.race-list-section .race-card {
+  container: race-card / inline-size;
+}
+
+/* バッジは右寄せ、R番号はその右（R番号をバッジの外に出したため、以前の並びを保つ） */
+.race-list-section .race-card-badges {
+  margin-left: auto;
+}
+
+.race-list-section .race-card-header .race-number {
+  margin-left: 0.5rem;
+}
+
+@container race-card (max-width: 340px) {
+  .race-list-section .race-card-header {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+  }
+
+  .race-list-section .race-card-badges {
+    order: 3;
+    flex-basis: 100%;
+    margin-left: 0;
+    /* バッジが3つ以上だと2段に折れるカードがある（「本命有利」「展開的中」「準優勝戦」で約263px、
+       使える幅は約253px）。2段ぶんの高さを全カードで取り、出走表の高さをそろえる */
+    min-height: 3.5rem;
+    align-content: flex-start;
+  }
+}
+
 .race-number {
   background: linear-gradient(135deg, #FF6B35, #FFB347);
   color: white;
@@ -550,7 +583,8 @@ input:focus-visible,
   flex-direction: column;
 }
 
-.rr-row {
+.rr-row,
+.rr-row-head {
   display: grid;
   grid-template-columns: 2.6rem 1.8rem 1fr 6.5rem 3.6rem;
   align-items: center;
@@ -560,6 +594,26 @@ input:focus-visible,
 }
 
 .rr-row:first-child {
+  border-top: none;
+}
+
+/* 着順表の列見出し（公式の結果ページの「着・枠・ボートレーサー・レースタイム」にそろえる。
+   スタートの図の列は公式に無いので「ST」。BOA-558 の4）。見出しの下だけ罫線、上の行より目立たせない */
+.rr-row-head {
+  padding: 0 0 var(--spacing-1);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+}
+
+.rr-row-head .rr-head-st,
+.rr-row-head .rr-head-time {
+  text-align: right;
+  /* 「レースタイム」が375pxで「レースタ／イム」と2行に折れた（#1108 ファン評価1周目 P3） */
+  white-space: nowrap;
+}
+
+.rr-row-head + .rr-row {
   border-top: none;
 }
 
@@ -739,7 +793,7 @@ input:focus-visible,
 }
 
 /* ===== スタート情報: 全艇アニメーション（実ST比例の距離×実ST比例の到達時間） =====
-   反時計回り（左→右）のためスタートラインはトラック右寄り（84%、参考位置として表示）。
+   反時計回り（左→右）のためスタートラインはトラック右寄り（72%、参考位置として表示）。
    各艇は号砲(t=0)から自艇の静止位置（実STに応じた距離感）まで動き、そこで静止する。
    到達までの時間もSTに比例させ、STが小さい艇（早いスタート）ほど短時間で、STが大きい艇
    ほど長い時間をかけて到達する。見た目の動きの速さ自体が実際のスタートの速さを表す。
@@ -753,18 +807,33 @@ input:focus-visible,
   gap: 0.12rem;
 }
 
+/* 矢印は先端（舳先）を位置に合わせ、本体は左へ伸びる。遅いスタート（ST0.23以上）だと本体が
+   トラックの左端から外に出て、帯から浮いて見えた（#1071 ファン評価2周目）。灰色の帯
+   （::before）を矢印の幅（--rr-st-arrow-w）だけ左に伸ばし、トラック本体はその分だけ右に寄せる。
+   位置（%）の基準になるトラック本体の幅は変えない */
 .rr-st-track {
+  --rr-st-arrow-w: 16px;
   position: relative;
-  width: 100%;
+  width: calc(100% - var(--rr-st-arrow-w) - 2px);
   height: 14px;
   overflow: visible;
+}
+
+.rr-st-track::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  /* 2px は、ST0.30 以上で頭打ちになった矢印の先端（トラックの2%）との余裕 */
+  left: calc(-1 * var(--rr-st-arrow-w) - 2px);
   background: rgba(128, 128, 128, 0.08);
   border-radius: var(--radius-sm);
 }
 
+/* 横の位置（left）は RaceResult.jsx の START_ANIM.LINE_PERCENT から置く */
 .rr-st-line {
   position: absolute;
-  left: 84%;
   top: -3px;
   bottom: -3px;
   width: 2px;
@@ -801,7 +870,7 @@ input:focus-visible,
 .rr-st-dot {
   position: absolute;
   top: 50%;
-  width: 16px;
+  width: var(--rr-st-arrow-w);
   height: 9px;
   /* 舳先（右端）を位置に合わせる。中心を合わせると、ST0.01の正常な艇でも舳先が
      スタートラインを8px越え、フライングに見えた（BOA-559 ファン評価3周目） */
@@ -817,8 +886,9 @@ input:focus-visible,
 
 /* 1号艇（白）は明るい地に溶けるので、形に沿った濃い輪郭を付ける */
 .rr-st-dot.is-white {
-  filter: drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.9))
-    drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.9));
+  /* 0.6px では1着行のベージュ地で輪郭が弱かった（BOA-586） */
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.95))
+    drop-shadow(0 0 1px rgba(0, 0, 0, 0.95));
 }
 
 .rr-st-streak {
@@ -974,8 +1044,15 @@ input:focus-visible,
 }
 
 /* 払戻の下の注記は、表の内容の説明なので左寄せで読む（右寄せだと375pxで行頭がそろわない） */
-.rr-note.rr-payout-popularity-note {
+.rr-note.rr-payout-popularity-note,
+.rr-note.rr-payout-void-note {
   text-align: left;
+}
+
+/* 不成立の理由の1行: 勝式名（「2連複」等）を途中で折らず、「・」「、」の後だけで折り返す。
+   375px で「…3連複・2／連複…」と数字だけが行末に残った（#1094 ファン評価1周目） */
+.rr-note.rr-payout-void-note {
+  word-break: keep-all;
 }
 
 .rr-amount {
@@ -1177,7 +1254,8 @@ input:focus-visible,
     font-size: 0.95rem;
   }
 
-  .rr-row {
+  .rr-row,
+  .rr-row-head {
     grid-template-columns: 2.1rem 1.6rem 1fr 5.4rem 2.8rem;
     gap: 0.35rem;
   }
@@ -1591,7 +1669,8 @@ input:focus-visible,
     padding: 0.75rem;
   }
 
-  .rr-row {
+  .rr-row,
+  .rr-row-head {
     grid-template-columns: 1.9rem 1.5rem 1fr 4.6rem 2.4rem;
     gap: 0.25rem;
   }
@@ -1710,4 +1789,16 @@ input:focus-visible,
 
 .race-list-toggle:hover {
   background: var(--color-gray-50);
+}
+
+/* スマホでは矢印を一回り小さくし、帯を左に伸ばす分（上の --rr-st-arrow-w）を減らす。
+   トラックが約86pxしかなく、16px伸ばすと位置の差がつく幅が減りすぎる（#1071 ファン評価2周目） */
+@media (max-width: 480px) {
+  .rr-st-track {
+    --rr-st-arrow-w: 12px;
+  }
+
+  .rr-st-dot {
+    height: 7px;
+  }
 }

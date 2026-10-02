@@ -187,6 +187,30 @@ export function prelimEndDayOf(
 }
 
 /**
+ * 節の中で**丸一日レースが無かった日**（全レースが中止・順延）を返す（純関数、BOA-636）。
+ *
+ * 公式は丸一日中止の翌日に同じ日目を振り直すので、日付を数えると日目が合わない
+ * （津 2026-09-22、戸田・江戸川 2026-09-21）。画面がその日を断るのに使う。
+ * 一部のレースだけ成立した日（津 9/21 は4Rまで成立）は含めない。
+ *
+ * @param {Iterable<string>} raceIds 節の全レースの race_id（出走表）
+ * @param {Set<string>} cancelledRaceIds 中止が確定したレース（`isRaceCancelled`）
+ * @returns {string[]} 日付（YYYY-MM-DD）昇順
+ */
+export function noRaceDaysOf(raceIds, cancelledRaceIds) {
+  const byDate = new Map();
+  for (const id of raceIds ?? []) {
+    const d = String(id).slice(0, 10);
+    if (!byDate.has(d)) byDate.set(d, []);
+    byDate.get(d).push(id);
+  }
+  return [...byDate.entries()]
+    .filter(([, ids]) => ids.every((id) => cancelledRaceIds?.has(id)))
+    .map(([d]) => d)
+    .sort();
+}
+
+/**
  * 節に組まれた**準優勝戦**の `race_id`（枠数の算出に使う）。
  *
  * 「準優進出戦」は準優勝戦の1つ前の勝ち上がり戦で、準優の枠ではない
@@ -634,8 +658,10 @@ export function flyingRacerIdsInMeet(starts, entries) {
  * **予選が終わった後のレースで**今節Fを切った選手（純関数、BOA-626）。
  *
  * 順位は予選終了で確定しているので、予選後のFでは順位の対象から外さない
- * （`getMeetScoreboard` は予選終了までのFだけで賞典除外を判定する）。それでも
- * 賞典除外なのは同じなので、画面は順位の横で断る。予選の締めが分からない節は空。
+ * （`getMeetScoreboard` は予選終了までのFだけで賞典除外を判定する）。公式の
+ * 得点率一覧も予選後のFは順位・得点率をそのまま残し、備考も付けない（SG/G1/G2の
+ * 9例で確認、BOA-649）。予選中のFの選手（順位なし）と並ぶと食い違って見えるので、
+ * 画面は順位の下で断る。予選の締めが分からない節は空。
  *
  * @param {Array<Object>} starts 本番STの行（`flyingRacerIdsInMeet` と同じ形）
  * @param {Array<Object>} entries 出走表の行

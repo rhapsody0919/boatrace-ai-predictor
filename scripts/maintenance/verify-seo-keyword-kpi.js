@@ -146,6 +146,7 @@ const landing = landingSplit([
   row([`${O}/blog/rough-race-signals#toc-heading-0`], 2, 40, 7),
   row([`${O}/en/`], 1, 30, 11),
   row([`${O}/accuracy`], 4, 20, 6),
+  row([`${O}/racer/3941`], 2, 30, 8),
   row([`${O}/venues`], 0, 5, 20), // /venue/:code ではない
 ]);
 check("着地: トップ", landing.root.clicks, 100);
@@ -154,7 +155,8 @@ check("着地: /today", landing.today.clicks, 1);
 check("着地: ブログ（アンカー付きも）", landing.blog.clicks, 2);
 check("着地: 多言語", landing.i18n.clicks, 1);
 check("着地: その他の日本語", landing.otherJa.impressions, 25);
-check("着地: トップ以外の絶対数", landing.nonRootClicks, 11);
+check("着地: 選手ページ", landing.racer.clicks, 2);
+check("着地: トップ以外の絶対数", landing.nonRootClicks, 13);
 
 if (failures.length > 0) {
   console.error(

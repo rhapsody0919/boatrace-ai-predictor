@@ -9,19 +9,17 @@ import { test, expect } from "./fixtures.js";
  */
 test("選手ページの履歴: 本番STと公式の記号を出す", async ({ page }) => {
   await page.goto("/racer/5250");
-  const rowOf = (date, raceNo) =>
-    page
-      .locator("tr")
-      .filter({ hasText: date })
-      .filter({
-        has: page.locator("td", { hasText: new RegExp(`^${raceNo}R$`) }),
-      });
+  // 行は日付のリンク先（race_id）で引く。日付は月日だけになり、R のセルには
+  // 種別も入るので、文字では一意に取れない（BOA-623）
+  const rowOf = (raceId) =>
+    page.locator("tr", { has: page.locator(`a[href$="/race/${raceId}"]`) });
   // 9/24 は2走（5R・10R）ある。10R の行を取る
-  const r0924 = rowOf("2026-09-24", 10);
+  const r0924 = rowOf("2026-09-24-01-10");
   await expect(r0924).toBeVisible({ timeout: 30000 });
-  await expect(r0924).toContainText("0.02");
-  await expect(r0924).not.toContainText("0.06");
-  const r0921 = rowOf("2026-09-21", 11);
+  // ST は公式の表記（.02）。先頭の0は省く（BOA-623）
+  await expect(r0924).toContainText(".02");
+  await expect(r0924).not.toContainText(".06");
+  const r0921 = rowOf("2026-09-21-01-11");
   await expect(r0921).toContainText("落");
   await expect(r0921).not.toContainText("着外");
 });
@@ -33,10 +31,9 @@ test("選手ページの履歴: フライングの走は着順でなく F を出
   page,
 }) => {
   await page.goto("/racer/4069");
-  const row = page
-    .locator("tr")
-    .filter({ hasText: "2026-09-22" })
-    .filter({ has: page.locator("td", { hasText: /^1R$/ }) });
+  const row = page.locator("tr", {
+    has: page.locator('a[href$="/race/2026-09-22-16-01"]'),
+  });
   await expect(row).toBeVisible({ timeout: 30000 });
   await expect(row).toContainText("F.01");
 });
@@ -46,10 +43,9 @@ test("選手ページの履歴: race_results の着順に入った返還艇（F�
   page,
 }) => {
   await page.goto("/racer/3928");
-  const row = page
-    .locator("tr")
-    .filter({ hasText: "2026-09-19" })
-    .filter({ has: page.locator("td", { hasText: /^9R$/ }) });
+  const row = page.locator("tr", {
+    has: page.locator('a[href$="/race/2026-09-19-02-09"]'),
+  });
   await expect(row).toBeVisible({ timeout: 30000 });
   await expect(row).toContainText("F.04");
   // 着欄は見出しが「着順」の列（BOA-569 で R のすぐ右に移したので、位置で決め打ちしない）
@@ -61,9 +57,10 @@ test("選手ページの履歴: race_results の着順に入った返還艇（F�
   expect(cells[finishAt].trim()).toBe("F");
 });
 
-// 本番STは2025-12から、展示タイムは2026-03からある。ST推移の見出しを「2025年12月以降」にし、
+// 本番STは2025-12から。展示タイムも、Kファイルからの補完（BOA-271 の前提、Phase 1 項目6）で2025-12からある。
 // 展示タイムの推移は展示がある走だけで横軸を作る（見出しの期間と横軸の始まりが食い違っていた。
-// PR #996 ファン評価1周目）
+// PR #996 ファン評価1周目）。このテストは、補完の後に撮り直した録画で通る（補完の前の録画では
+// 展示タイムが2026-03からなので、見出しと横軸が食い違って失敗する＝正しく検知する）
 test("選手ページ: STの推移・展示タイムの推移の見出しと横軸の始まりが合う", async ({
   page,
 }) => {
@@ -86,9 +83,9 @@ test("選手ページ: STの推移・展示タイムの推移の見出しと横�
             .map((el) => el.textContent.trim())
             .find((t) => /^\d{2}-\d{2}-\d{2}$/.test(t)) ?? null,
       );
-  // 5250 の本番STは 2025-12-27 から、展示タイムは 2026-03 から
+  // 5250 の本番STは 2025-12-27 から。展示タイムも補完の後は 2025-12 から
   expect(await firstTick(st)).toMatch(/^25-12-/);
   const ex = chartOf("展示タイムの推移");
-  await expect(ex.locator("h3")).toContainText("2026年3月以降");
-  expect(await firstTick(ex)).toMatch(/^26-/);
+  await expect(ex.locator("h3")).toContainText("2025年12月以降");
+  expect(await firstTick(ex)).toMatch(/^25-12-/);
 });

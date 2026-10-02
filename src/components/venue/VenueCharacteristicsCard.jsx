@@ -100,7 +100,7 @@ export default function VenueCharacteristicsCard({
   if (!hasAnyWinRate) return null;
 
   const venueSummary = venueInfo
-    ? `${t(`venueCharacteristics.waterType.${venueInfo.waterType}`)} ・ ${t(`venueCharacteristics.cluster.${venueInfo.cluster}`)}`
+    ? `${t(`venueCharacteristics.waterType.${venueInfo.waterType}`)}${t("listSeparator")}${t(`venueCharacteristics.cluster.${venueInfo.cluster}`)}`
     : null;
   // 折りたたんだ見出しの要約1行: 水面・傾向と、1号艇の1着率（中身の代表値）
   const collapsedTeaser = t("venueCharacteristics.collapsedTeaser", {

@@ -96,6 +96,14 @@
 }
 
 /* 名前の下の着順の並び。得点率（平均）では潰れる情報 */
+/* 狭いときは級別のバッジを名前の下へ回り込ませ、左端の列の最小幅を縮める。
+   375pxで⚠付きの得点率と「6.68（18位）」の前検が並ぶと表がカードからはみ出し、
+   見出しの「前検」が欠けた（PR #1102 ファン評価2周目）。列の間を詰めると値どうしが
+   くっついて1つの値に見えた（同3周目）ので、名前の列の側で吸収する */
+.rmt-compare .rmt-row-select {
+  flex-wrap: wrap;
+}
+
 .rmt-finishes {
   display: block;
   /* 7走の節では「着順 2・2・3・4・1・2・5」が長く、親の nowrap のままだと
@@ -281,6 +289,13 @@
   line-height: 1.6;
 }
 
+/* 推移の横軸から抜けている日（丸一日中止・順延）の断り（BOA-636）。
+   段落の他の文より一段大きく、予選確定の一文（.rmt-forecast-settled）とそろえる */
+.rmt-trend-range .rmt-trend-noday {
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+}
+
 .rmt-hint {
   margin: var(--spacing-2) 0 0;
   font-size: var(--font-size-2xs);
@@ -320,6 +335,13 @@
 
 .rmt-trend span {
   display: block;
+}
+
+/* 予選が終わった後の「得点率はもう動かない」（BOA-636）。補足（2xs・灰色）と
+   同じ扱いだと375pxで目に入らないので、本文の色・一段大きい字にする */
+.rmt-forecast.rmt-forecast-settled {
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
 }
 
 .rmt-verdict {

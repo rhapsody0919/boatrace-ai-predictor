@@ -581,8 +581,9 @@ async function fillMissingFullOddsFromLatestSnapshots(patchesByRaceId) {
     Date.now() - MAX_FALLBACK_AGE_MINUTES * 60000,
   ).toISOString();
 
-  // fetchAll()自体がエラーを内部でログして空配列を返す設計のため、
-  // ここでは追加のtry/catchは不要（コールサイトを揃える）
+  // この補完は「直近のスナップショットで欠けた全通りを埋める」だけのため、取得に失敗しても、その回の基本オッズの
+  // 書き込みを止めない（例外にすると、呼び出し元の run() ごと失敗し、基本オッズまで書かれなくなる）。
+  // fetchAll の既定は例外（BOA-391）なので、ここだけ従来どおり「ログに出して取得済み分で続ける」を明示する
   const CHUNK_SIZE = 900; // Supabase .in() の1000件制限内（generate-predictions.js踏襲）
   const raceIds = targets.map((t) => t.raceId);
   const data = [];
@@ -596,6 +597,7 @@ async function fillMissingFullOddsFromLatestSnapshots(patchesByRaceId) {
           .in("race_id", chunk)
           .gte("captured_at", cutoffIso)
           .order("captured_at", { ascending: false }),
+      { throwOnError: false },
     );
     data.push(...rows);
   }
