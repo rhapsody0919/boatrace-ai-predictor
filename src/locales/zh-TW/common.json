@@ -1061,7 +1061,7 @@
     "meetScoreNoForecast": "本場為{{stage}}，得分率不再變動",
     "meetScoreForecast": "今日 {{list}}",
     "meetScoreForecastItem": "{{rank}}名 {{rate}}",
-    "meetScoreNote": "官方僅在SG/G1的第4天之後公開得分率，因此由本站計算。採用預賽配分（第1名10分至第6名1分，夢幻賽、選拔賽配分不同），不計入準優勝戰與優勝戰",
+    "meetScoreNote": "官方得分率一覽為預賽結束時的數值，因此預賽期間由本站計算。採用預賽配分（第1名10分至第6名1分，夢幻賽、選拔賽配分不同），不計入準優勝戰與優勝戰",
     "meetTrendSt": "本梯次平均ST {{meet}}（{{n}}場）／平常 {{base}}",
     "meetTrendStPush": "−{{diff}} 起步更積極",
     "meetTrendStCareful": "+{{diff}} 較保守",
