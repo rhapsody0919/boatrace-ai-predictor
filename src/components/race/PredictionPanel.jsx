@@ -63,7 +63,7 @@
  * 冒頭コメント参照）。選手名表示のためplayersを渡す
  */
 import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useRaceData } from "../../hooks/useRaceData";
 import {
@@ -72,7 +72,7 @@ import {
   parseBoatParam,
 } from "../../utils/raceUrlState";
 import { SocialShareButtons } from "../SocialShareButtons";
-import { generatePredictionShareText } from "../../utils/share";
+import { generatePredictionShareText, shareUrlFor } from "../../utils/share";
 import { getVenueGuidePath } from "../../utils/venueUtils";
 import { isRaceCancelled } from "../../utils/raceCancellation";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
@@ -138,21 +138,21 @@ function PredictionPanel({
   // レースが変われば選択は無効（次のレースの4号艇は別人）だが、前後のレースへのリンクは
   // クエリの無い /race/:raceId なので、移動すれば自然に消える
   const [searchParams, setSearchParams] = useSearchParams();
+  const { pathname, search } = useLocation();
   const focusedBoat = parseBoatParam(searchParams.get(RACE_BOAT_PARAM));
   // 値が変わるときだけ書き戻す（同じ値で navigate しない）。push ではなく replace にして、
   // 戻るボタンが艇・タブの選択を1つずつ巻き戻さないようにする
+  //
+  // 土台は描画時点の searchParams ではなく、その時点の実際の URL（window.location.search）。
+  // react-router の setSearchParams は関数形式でも描画時点の値を渡すため、艇を押した直後
+  // （書き戻しが画面に反映される前）にタブを押すと、古い値を土台にして boat を消していた
   const setRaceParam = (key, value) => {
     const next = value == null ? null : String(value);
-    if (searchParams.get(key) === next) return;
-    setSearchParams(
-      (prev) => {
-        const params = new URLSearchParams(prev);
-        if (next == null) params.delete(key);
-        else params.set(key, next);
-        return params;
-      },
-      { replace: true },
-    );
+    const params = new URLSearchParams(window.location.search);
+    if (params.get(key) === next) return;
+    if (next == null) params.delete(key);
+    else params.set(key, next);
+    setSearchParams(params, { replace: true });
   };
   const handleFocusBoat = (boat) => setRaceParam(RACE_BOAT_PARAM, boat);
   const { toast: aiCopyToast, showToast: showAiCopyToast } = useToast();
@@ -625,7 +625,8 @@ function PredictionPanel({
       {/* SNSシェアボタン */}
       <div className="social-share-wrapper">
         <SocialShareButtons
-          shareUrl="https://www.boat-ai.jp/"
+          // 今見ているレース（言語・選んだタブ・艇込み）を共有する（BOA-691）
+          shareUrl={shareUrlFor(`${pathname}${search}`)}
           title={generatePredictionShareText(
             {
               venue: venueName || t("panel.unknownVenue"),
