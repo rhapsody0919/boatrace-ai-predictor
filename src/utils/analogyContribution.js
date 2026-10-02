@@ -13,6 +13,23 @@ export const GRADES = ["ippan", "G3", "G2", "G1", "SG"];
 export const ROUNDS = ["yosen", "junyu", "yusho", "other"];
 export const FINISH_TARGETS = [1, 2, 3];
 
+const STAGE_CATEGORY_ROUND = {
+  qualifier: "yosen",
+  qualifierSpecial: "yosen",
+  semifinal: "junyu",
+  final: "yusho",
+};
+
+/**
+ * race_conditions.race_stage の分類（getRaceStageCategory のキー）→ 寄与度のラウンド4区分。
+ * 学習側（scripts/ml/analogy/features.py の round_from_stage）と同じ対応。分類不能の企画レース名は
+ * 「その他」、ステージが無ければ null（呼び出し側で「すべて」にする）
+ */
+export function roundFromStageCategory(categoryKey, hasStage) {
+  if (!hasStage) return null;
+  return STAGE_CATEGORY_ROUND[categoryKey] ?? "other";
+}
+
 /** 会場→ラウンド→グレードの順に一段ずつ広げた候補（要求そのものが先頭） */
 export function sliceCandidates({ venue, grade, round }) {
   const out = [{ venue, grade, round, widened: [] }];
