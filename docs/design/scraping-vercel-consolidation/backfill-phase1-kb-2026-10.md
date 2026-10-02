@@ -104,6 +104,71 @@ BOA-271（アナロジー・ファインダー）の実装開始の前提条件�
 - 各回の前後で、Supabase のダッシュボードの Disk IO を確認する（backfill-plan.md §5.4）。
 - 開催時間帯（JST 8:00〜21:30頃）は避ける。
 
+### 5.1 項目7（成績コード・着欄・着）の月ごとの期待件数（dry-run、2026-10-02 の夕方）
+
+`node --env-file=.env.local scripts/maintenance/backfill-kb-gaps.js --item=finish_code --from=YYYY-MM-01 --to=YYYY-MM-末日`（`--apply` なし）の出力の「書く行」と「NULL から埋める艇（列ごと）」。本番の `race_start_timings` の月別の行数を、読み取りで数えて突き合わせた。
+
+| 月 | 書く行（= 本番の行数） | 成績コードを埋める | 着欄を埋める | 着を埋める | 既存の着欄（持ち回る） | 着欄を埋めない艇（失格 S0〜S2 等） |
+|---|---:|---:|---:|---:|---:|---:|
+| 2025-12 | 26,990 | 26,990 | 26,601 | 26,526 | 90 | 299 |
+| 2026-01 | 30,919 | 30,919 | 30,603 | 30,491 | 24 | 292 |
+| 2026-02 | 24,972 | 24,972 | 24,740 | 24,661 | 6 | 226 |
+| 2026-03 | 27,875 | 27,875 | 27,610 | 27,526 | 24 | 241 |
+| 2026-04 | 26,001 | 26,001 | 25,453 | 25,334 | 372 | 176 |
+| 2026-05 | 28,829 | 28,829 | 26,899 | 26,788 | 1,716 | 214 |
+| 2026-06 | 27,679 | 27,679 | 25,160 | 25,080 | 2,334 | 185 |
+| 2026-07 | 29,450 | 29,450 | 27,236 | 27,144 | 2,034 | 180 |
+| 2026-08 | 29,473 | 29,473 | 28,452 | 28,356 | 810 | 211 |
+| 2026-09 | 27,558 | 27,558 | 16,378 | 16,341 | 11,094 | 86 |
+| 計 | 279,746 | 279,746 | 259,132 | 258,247 | 18,504 | 2,110 |
+
+- 書く行は、10か月とも本番の行数と一致した。K に無いために書けない艇は0件（行のある艇は、すべて K の成績にある）。成績コード（`official_finish_code`）は、まだ全件 NULL なので、全行を埋める。
+- 着欄（`finish_mark`）を埋める数は、行数から「既存の着欄」と「K から記号が決まらない艇」（失格 S0〜S2 と未知のコード）を引いたもの。2026-09 は、9/21 以降は結果ページの取得で着欄が入っているので、既存の着欄が多く、埋める数が少ない。
+- 着（`finish_rank`）は、着欄の 01〜06 の艇だけ。F・L・欠・失格等の艇は NULL のまま。
+- 実行時点の数は、日々の取得で少し変わる（特に 2026-09 の既存の着欄）。dry-run と `--apply` の出力の「書く行」が一致することを、月ごとに確かめる。
+
+### 5.2 項目7を元に戻す手順
+
+項目7は、3列とも「NULL のところだけ」を埋める。元に戻すには、実行前の3列の値が要る。116 の「元に戻す」（列ごと削除）では、9/21 以降に結果ページの取得で入った `finish_mark`・`finish_rank` まで消えるので使わない。代わりに、実行の前に3列の控えを取る。
+
+**実行の前（1回だけ。月ごとの1回目より前）**:
+
+```sql
+CREATE TABLE backup_boa582_rst_finish AS
+SELECT race_id, boat_number, official_finish_code, finish_mark, finish_rank
+FROM race_start_timings
+WHERE race_id >= '2025-12' AND race_id < '2026-10';
+ALTER TABLE backup_boa582_rst_finish ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON backup_boa582_rst_finish FROM anon, authenticated;
+SELECT count(*) FROM backup_boa582_rst_finish;
+```
+
+期待: 279,746（実行時点の行数。5.1 の表の計と同じ）。容量は約15MB。
+
+**元に戻す（必要になったときだけ。月を絞るときは race_id の範囲を変える）**:
+
+```sql
+BEGIN;
+UPDATE race_start_timings t
+SET official_finish_code = b.official_finish_code,
+    finish_mark = b.finish_mark,
+    finish_rank = b.finish_rank,
+    updated_at = now()
+FROM backup_boa582_rst_finish b
+WHERE t.race_id = b.race_id AND t.boat_number = b.boat_number
+  AND t.race_id >= '2025-12' AND t.race_id < '2026-10'
+  AND (t.official_finish_code, t.finish_mark, t.finish_rank)
+      IS DISTINCT FROM (b.official_finish_code, b.finish_mark, b.finish_rank);
+COMMIT;
+```
+
+注意:
+
+- 控えの後に、日々の取得が書いた値も戻る。対象は2つで、K の同期（kfile_sync）が直近4日分に書く成績コードと、結果の修正が書く着欄。範囲を 2026-09 以前に限っているので、影響は 9/27〜9/30 の成績コード程度。戻した後に要れば、その日だけ `--item=finish_code` を再実行する。
+- 確認: `SELECT count(official_finish_code) FROM race_start_timings WHERE race_id >= '2025-12' AND race_id < '2026-10';` が控えの値（0）に戻る。
+
+**控えを消す（完了の判定の後）**: 6章の充足率の実測で基準を満たしたら、`DROP TABLE backup_boa582_rst_finish;` を実行する。
+
 ## 6. 完了の判定（充足率の基準）
 
 月別×列の充足率を、本番の実測で報告する（`scripts/analysis/data-health-report.js` を、月別×列で出せるよう拡張する）。
