@@ -229,6 +229,7 @@ BOA-635（PR #1093、BOA-635 の ADR 案（PR #1093））は近い順800行を�
 分担（2026-10-02 オーケストレーター確定）: SHAP の計算は出走表時点・展示後の両段とも推論側の JS。学習側は、特徴量の表・モデル2本・JSON ダンプ・一致検査の固定データ・日次の特徴量ジョブまで。学習側の詳細は下の「学習側の設計」。
 
 ### 学習側が作るもの（FR-1 の学習レーン）
+食い違う箇所は、下の「学習側の設計」を優先する（レビューで直した点を含む）。
 - **モデル**: 1着の2本。`win`（今のモデル、44特徴量）と `win_racecard`（直前情報8列 `exh_time, exh_time_diff, exh_time_rank, weather_code, wind_x, wind_y, wind_speed, wave_height` を除いた36特徴量）。木の数・設定は `win` と同じ。品質ゲートは段ごと
 - **Storage**（`analogy/{版}/`）:
   - `model_win.json.gz`・`model_win_racecard.json.gz`: LightGBM の `Booster.dump_model()` の JSON をそのまま gzip
@@ -245,15 +246,25 @@ BOA-635（PR #1093、BOA-635 の ADR 案（PR #1093））は近い順800行を�
   - 風向が空のとき: `features.py` で「風向 null かつ風速0 → 0、風向 null かつ風速>0 → NaN」と決める（今は null を NaN にしていて、本体の無風は風向 null・風速0）
   - `branch_code` の対応表（文字列→番号）を `per_race_meta.json` に持たせる（今は `cat.codes` で、データに現れた文字列の辞書順）
 
-### 学習側の設計（FR-1 の学習レーン、2026-10-02）
-上の「学習側が作るもの」を実装に落としたもの。合意で足した条件（per_race_meta の対応表・固定データの選び方・input_hash・品質ゲートの扱い）もここに書く。
+### 学習側の設計（FR-1 の学習レーン、2026-10-02。design-reviewer・second-opinion の指摘を反映済み）
+上の「学習側が作るもの」を実装に落としたもの。合意で足した条件（per_race_meta の対応表・固定データの選び方・input_hash・品質ゲートの扱い）と、レビューの指摘への対応（末尾の表）もここに書く。
+
+**36列は「朝 6:40 に分かる値」で定義する（P0 の対応）**
+朝の初期化（`races-init` → `generate-predictions.js`）は、`race_entries` の `weight_kg`・`branch`・`is_absent` と、`race_conditions` の `series_day`・`is_final_day` を書かない（`preRaceRows.js:43-50` の `extended`、`generate-predictions.js:1208`）。これらは発走60分前の race_info の取り直しで初めて入る。学習の行は取り直した後の値なので、そのまま朝に作ると全レースで分布がずれる。そこで、学習と日次ジョブの両方で次の定義を使う（`win` も同じ36列を使うので、`win` の定義も変わる。参照版との比較で確かめる）:
+- **節の日目・最終日（本体期間）**: `race_series` から導く。節の日目＝レース日−節の開始日＋1、最終日＝レース日が節の終了日と同じ。`race_conditions` の値は使わない。本番 DB の照合（2026-02-01〜10-01、`series_day` のある 37,510R）: 節の日目の一致 36,910（98.4%。不一致は中止で振り直された日）、最終日の一致 37,025/37,073（99.9%）、節が見つからない 48R（NaN）。2025-12・2026-01 の `is_final_day` が全件 NULL の問題もこれで消える。長期は `kb_archive_venue_days`（BOA-696 の修正後）のまま
+- **体重・支部**: 「前日までに分かっている最後の値」（選手ごとに日単位でずらしてから前方補完）。当日の値は使わない。体重は期間で定義が変わる（長期は B ファイルの登録体重の整数、本体は当日の体重で 2026-02〜08 は大半が NULL。`raceEntriesKbRestore.js:21`）ので、spec の限界に書く
+- **欠場**: 6:40 には分からない（`is_absent` が NULL）。日次ジョブは欠場で除外できないので、6:40 の回は全レースを書き、9:40・13:40 の回で欠場が分かったレースはそのまま残す（行を消さない）。欠場の判定は推論側が計算の時点で行う（ADR-0083 決定7）
+- **2連率の丸め**: 朝の値と取り直し後の値で小数の桁が違うという観測がある（second-opinion。まだ確かめていない）。T10-6 の前に、1日分の 6:40 の `race_entries` を写し取り、取り直しの後と列ごとに比べる（T10-1b）。違えば、学習と日次の両方で同じ丸めにそろえる
+- **毎晩の照合**: `analogy_race_features` の行と、その日の終わりのデータで `features.build()` を作り直した値を列ごとに比べ、不一致率を出す（`verify-analogy-race-features.js`、nightly）。定義のずれ（上の5点以外も含む）をここで検知する
 
 **モデル（`train.py`）**
-- `TARGETS` に `win_racecard`（ラベル `y_win`、木 250本、設定は `win` と同じ）を足す。特徴量は `themes.FEATURES` から `LIVE_FEATURES`（8列。`themes.py` に定数で持つ）を除いた36列。seed は0の1回だけ（レースごとの計算に使うのは seed0 のモデル。寄与度の条件ごとの集計 `profiles.py` には使わない）
+- `win_racecard` は `TARGETS` に入れず、別の定数（`RACECARD = ("win_racecard", "y_win", 250)`）にする。`TARGETS` のループ（profiles・meta.targets）に入れると、1着の寄与度の行が二重になるため。`fit_model` は特徴量の列を引数で受ける
+- 特徴量は `themes.FEATURES` から `LIVE_FEATURES`（8列。`themes.py` に定数で持つ）を除いた36列。seed は0の1回だけ（レースごとの計算に使うのは seed0 のモデル。`profiles.py` には使わない）
 - 温度合わせ・test・基準は `win` と同じ。`evaluate_win` をそのまま使う
-- 品質ゲート: (1) 基準1に日クラスタ CI で有意に勝つ（`win` と同じ）。(2) 参照版との比較は、参照版にそのモデルのファイルが無いときだけ「比較なし（参照版にモデルが無い）」を metrics に書いて飛ばし、`warnings` に入れる（Slack に流れる）。`win`・`top2`・`top3` が参照版に無いのは今まで通り異常として止める。`win_racecard` を含む版ができたら、人の判断で `reference.json` を更新する
-- 記録のみ（止めない）: `win_racecard` と `win` の1着の対数損失の差（展示の効果）を、日クラスタ CI つきで `metrics.exhibition_effect` に残す
-- 書き出し（`out/`）: `model_win_racecard.txt`（参照版の評価用）、`model_win.json.gz`・`model_win_racecard.json.gz`（`Booster.dump_model()` をそのまま gzip）、`per_race_meta.json`、`parity_fixture.json`。`storage.js upload-model` の対象に足す
+- 品質ゲート: `quality_gate()` のループに `win_racecard` を足す。(1) 基準1に日クラスタ CI で有意に勝つ。(2) 参照版との比較は、参照版にそのモデルのファイルが無いときだけ「比較なし（参照版にモデルが無い）」を metrics に書いて飛ばし、`warnings` に入れる。`win`・`top2`・`top3` が無いのは今まで通り異常として止める。`storage.js download-reference` も、`win_racecard` のファイルだけは欠けても進める（今は全ファイルが無いと throw）。`win_racecard` を含む版ができたら、人の判断で `reference.json` を更新する
+- `win_racecard` が通らないと、版全体（条件ごとの寄与度の更新を含む）を切り替えない
+- 記録（止めない）は事前登録 5 の「記録」に従う（展示の効果、テーマのシェアの分布、2段の間の入れ替わり、seed による揺れ、分岐の missing_type と列ごとの NaN 率 等）
+- 書き出し（`out/`）: `model_win_racecard.txt`（参照版の評価用）、`model_win.json.gz`・`model_win_racecard.json.gz`（`Booster.dump_model()` をそのまま gzip）、`per_race_meta.json`、`parity_fixture.json`。`storage.js` のアップロード対象と、古い版を消す対象（`pruneModels`）の両方に足す
 
 **`per_race_meta.json`**
 ```
@@ -267,24 +278,27 @@ BOA-635（PR #1093、BOA-635 の ADR 案（PR #1093））は近い順800行を�
 `feature_names` は `booster.feature_name()` の並び。推論側はこの並びで入力を作る。
 
 **`parity_fixture.json`（一致検査の固定データ、版ごとに作り直す）**
-- test の本体分（2025-12-03 以降。DB の行の形が取れる期間）から 50R。うち次を意図的に含め、残りは無作為（seed 0）: 風向 null・風速0（無風）、風向 null・風速>0、展示タイムの同値、天候の各値、支部の対応表の端（最小・最大の番号）、ラウンド・グレード不明
+- test の本体分（2025-12-03 以降。DB の行の形が取れる期間）から 50R。うち次を意図的に含め、残りは無作為（seed 0）: 風向 null・風速0（無風）、風向 null・風速>0、展示タイムの同値、本体期間に現れる天候の各値（晴・曇り・雨・雪・台風。霧は0行）、支部の対応表の端（最小・最大の番号）、ラウンド・グレード不明
 - 1レースの中身: `race_id`、`racecard_features`（6艇。`analogy_race_features.features` に書くのと同じ値・並び、欠損は null）、`live_raw`（`exhibition_data` の `exhibition_time`・`is_absent` と、`race_conditions` の `weather`・`wind_direction`・`wind_speed`・`wave_height` を DB の型のまま）、`expected.win_racecard`・`expected.win`（それぞれ入力の特徴量と `pred_contrib`。最後の列が期待値）
 - テーマ集計の期待値は入れない（集計は推論側の JS の1か所）
-- 学習ジョブは、切り替え（`db.py write`）の前に `node scripts/ml/analogy/treeshap-parity.js out/` を実行し、一致しなければ切り替えずに Slack へ知らせる。`treeshap-parity.js`（推論側が作る）が master に無い間は、このステップを飛ばさず失敗させる（黙って省かない）。順序: 推論側の `treeshap-parity.js` を先にマージ → 学習側の PR
+- 学習ジョブは、Storage へのアップロードの前に `node scripts/ml/analogy/treeshap-parity.js out/` を実行し、一致しなければアップロードも切り替えもせずに Slack へ知らせる（不一致の版で直近3版の枠を使わない）。`treeshap-parity.js`（推論側が作る）が master に無い間は、このステップを飛ばさず失敗させる。順序: 推論側の `treeshap-parity.js` を先にマージ → 学習側の PR
 
 **特徴量の約束の変更（`features.py`。学習と日次の両方に効く）**
-- 風向: `無風`、または「風向 null かつ風速0」→ `wind_x = wind_y = 0`。「風向 null かつ風速>0」と風速 null → NaN。本体の `race_conditions`（2025-12-03〜2026-10-02）で、風向 null・風速>0 は 10,280行（うち 2025-12・2026-01 が 8,902行＝風向が丸ごと無い期間）、風向 null・風速0 は 3,229行、`無風` は0行（本番 DB の読み取り、2026-10-02）。今は null をすべて NaN にしているので、約 3,200R の無風が「不明」扱いになっている
-- `branch_code`: 今は `cat.codes`（データに現れた文字列の辞書順）。学習時に対応表を作って `per_race_meta.json` に保存し、日次ジョブはその表で符号化する。表に無い支部は NaN（ログに出す）
-- `is_final_day_num`: BOA-696（#1166）の修正後のデータで学習する。修正後は Storage の `analogy/source/v1/` を消して取り直す（`storageRules.js` は列名の照合だけで値の訂正を検知しない）。キャッシュの削除はユーザーの作業（書き込み部分を渡す）
-- `scripts/ml/requirements.txt` を、本番の初回学習（run 36968972725）で入った版に固定する: `pandas==3.0.6`、`numpy==2.5.3`、`lightgbm==4.7.0`、`scikit-learn==1.9.1`、`scipy==1.18.1`。推論側の float32 の約束（Kahan 和の平均）は pandas 3.0.6 で確かめる（ADR-0083 の確認は pandas 2.1）
+- 上の「36列は朝 6:40 に分かる値で定義する」の4点
+- 風向: `無風`、または「風向 null かつ風速0」→ `wind_x = wind_y = 0`。「風向 null かつ風速>0」と風速 null → NaN。本体の `race_conditions`（2025-12-03〜2026-10-02）で、風向 null・風速>0 は 10,280行（うち 2025-12・2026-01 が 8,902行＝風向が丸ごと無い期間）、風向 null・風速0 は 3,229行、`無風` は0行（本番 DB の読み取り、2026-10-02、design-reviewer が再現）。長期は `無風` が 24,762行で風速0の行とほぼ一致する
+- `branch_code`: 今は `cat.codes`（データに現れた文字列の辞書順）。学習時に同じ規則で対応表を作って `per_race_meta.json` に保存し、日次ジョブはその表で符号化する（今の番号と同じになる。長期と本体の支部の文字列は同じ18種）。表に無い支部は NaN（ログに出す）
+- `is_final_day_num`（長期）: BOA-696（#1166）の修正後のデータで学習する。修正後は `export_pool.js` の `KB_CACHE_VERSION` を `v2` に上げ、長期分を取り直す（Storage の削除をユーザーに頼まない。コードのコメントにある正規の手順）。学習の前に `kb_venue_days.csv` の最終日の件数が期待値（約5,579）にあることを確かめ、満たさなければ学習しない
+- ライブラリの版: アナロジー専用の `scripts/ml/analogy/requirements.txt` を作り、本番の初回学習（run 36968972725）で入った版に固定する（`pandas==3.0.6`、`numpy==2.5.3`、`lightgbm==4.7.0`、`scikit-learn==1.9.1`、`scipy==1.18.1`）。共用の `scripts/ml/requirements.txt`（ポアロ・ワトソン・quality-gates と共用）は変えない。推論側の float32 の約束は pandas 3.0.6 で確かめる（ADR-0083 の確認は pandas 2.1。既存の pytest 37件は 3.0.6 で通ることを手元で確認済み）
 
 **日次の特徴量ジョブ（`scripts/ml/analogy/daily_features.py`）**
-- 起動: Vercel Cron `api/cron/analogy-dispatch.js`（週次学習の dispatch と同じ関数を `?job=` で分ける）→ workflow_dispatch → `.github/workflows/analogy-daily-features.yml`。時刻は JST 6:40・9:40・13:40（UTC `40 21,0,4 * * *`）と、JST 7:20 の拾い直し（今日の対象レースの行の充足が 99% 未満のときだけ dispatch）。根拠: `race_entries` は毎日 JST 5:01〜5:10 に全場ぶん入り、最も早い締切は 8:32〜8:35（本番 DB、2026-09-26〜10-02）
-- 対象: 今日（JST）の、締切（`races.start_time`）まで10分以上あり、中止でなく、欠場が分かっていないレース。学習は欠場のあるレースを外しているので、欠場のあるレースの行は書かない（既にあれば消さない。推論側が欠場を見て計算しない）
-- 読み込み: `export_pool.js --daily`。長期分は Storage のキャッシュ、本体分は「前月と当月（JST で決める）」だけ DB から読み、それより前の本体分は週次の学習が Storage（`analogy/source/main/`、週ごとに上書き）に置いたものを読む。`thisMonth()` を JST にする（今は UTC で、毎月1日の JST 0:00〜9:00 に当月を取りこぼす）
-- 計算: `features.build()` と同じ関数を使い、読み込んだ後すぐ「今日の出走選手の行」と「今日のレースの行」だけに絞ってから履歴を作る（選手の過去30走・体重と支部の前方補完は本人の行だけで決まり、レース内の差・順位は今日のレースの6艇だけで決まるため、全件で作った値と同じになる。pytest で全件版との一致を固定する）
-- 書き込み: `analogy_race_features` に、`win_racecard.feature_names` の並びの36列を `real[]` で。`input_hash`（`model_version` と36列の値から作る）が同じ行は書かない。違えば上書き（締切前だけ）。書き込みが0件でも、対象があって全行が同じハッシュなら成功、対象があるのに書けた行も既存の行も無ければ失敗
-- 所要時間と Disk IO: 本番と同じ条件で1回計測して tasks に記録する（data-acquisition.md の見積りの規律）
+- 起動: Vercel Cron `api/cron/analogy-dispatch.js`（週次学習の dispatch と同じ関数を `?job=` で分ける）→ workflow_dispatch → `.github/workflows/analogy-daily-features.yml`（`concurrency` で二重起動を防ぐ）。時刻は JST 6:40・9:40・13:40（UTC `40 21,0,4 * * *`）と、JST 7:20 の拾い直し（今日の対象レースに行が無いレースがあれば dispatch。対象が0件の日は「充足」とせず、朝の初期化の遅れとして通知する）。根拠: `race_entries` は毎日 JST 5:01〜5:10 に全場ぶん入り、最も早い締切は 8:32〜8:35（本番 DB、2026-09-24〜10-02、design-reviewer が再現）
+- 対象: 今日（JST）の、締切（`races.start_time`）まで10分以上あり、中止でないレース。欠場が分かっているレースは書かない（9:40・13:40 の回。既にある行は消さない）
+- 読み込み: `export_pool.js --daily`。長期分は Storage のキャッシュ、前々月以前の本体分は週次の学習が置いた `analogy/source/main/`（週ごとに上書き）、前月と当月（JST で決める）だけ DB から読む。日次は Storage に書かない（読み取り専用。キャッシュに無ければ DB から読み直さずに失敗する）。期待する月の一覧のファイルの存在とヘッダーを検査し、1つでも欠ければ失敗する（欠けた月を飛ばすと選手の過去30走が黙って短くなる）。DB の読み込みは日付の範囲で細かく分け、深い OFFSET を避ける。`thisMonth()` を JST にする（今は UTC で、毎月1日の JST 0:00〜9:00 に当月を取りこぼす）
+- 計算: `features.build()` を読んだデータ全件にそのまま使い、今日のレースの行を選ぶ（全件の build は本番 CI で約11秒。絞り込みの等価性を守るコストのほうが大きい）
+- 書き込み: `analogy_race_features` に、`win_racecard.feature_names` の並びの36列を `real[]` で。`input_hash`（`model_version` と36列の値から作る）が同じ行は書かない。違えば上書き（締切前だけ）
+- 成功の条件: 対象の全レースに行がある（書いた、または同じハッシュで既にある）。欠けたレースがあれば失敗にして Slack に件数とレースを出す
+- 読み込み量の見積り（design-reviewer の推測。T10-6 で実測して置き換える）: DB は月末の最悪で1回 約20万行（entries・exhibition・start_timings が各 約5.5万行、races・conditions・results が各 約0.9万行）、1日4回で 約80万行（週次学習の本体分 約99万行／週の約5〜6倍）。Storage の転送は1回 約65MB（長期 49MB＋本体の締まった月）、月 6〜8GB
+- 所要時間と Disk IO は、本番と同じ条件で1回計測して tasks に記録する（data-acquisition.md の見積りの規律）。大きければ、前月分も週次のキャッシュに寄せる
 
 **表 `analogy_race_features`（学習側のマイグレーション）**
 - 列: `race_id text`（races の外部キー）・`boat_number smallint`・`model_version text`・`features real[]`・`input_hash text`・`created_at timestamptz default now()`・`updated_at timestamptz`。主キー `(race_id, boat_number)`
@@ -292,8 +306,25 @@ BOA-635（PR #1093、BOA-635 の ADR 案（PR #1093））は近い順800行を�
 - 行数: 1日 約150R×6艇＝約900行、1行 約250B。年 約0.08GB
 
 **監視**
-- 日次: JST 8:00 に、今日の対象レースに対する行の充足率を計測し、99% 未満なら Slack（既存の `data-health` の仕組みに足す）
-- ジョブの失敗・最終成功からの経過（1日を超えたら）を検知する
+- 当日: 日次ジョブ自身が、対象の全レースに行が無ければ失敗して Slack に出す。7:20 の `analogy-dispatch` が当日の充足を数え、欠けていれば dispatch し、dispatch の HTTP 失敗（PAT の期限切れ等）も Slack に出す
+- 前日: `data-health` に前日の充足率を足す（SQL 関数のマイグレーション。data-health は前日を評価する仕組み）
+- 毎晩: `verify-analogy-race-features.js` で、行と作り直した値の不一致率
+
+**レビューの指摘と対応（2026-10-02）**
+| 指摘 | 対応 |
+|---|---|
+| P0／高: 朝は節の日目・最終日・体重・支部・欠場が NULL で、学習の値とずれる（両レビュー。コードで再現） | 採用。36列を朝に分かる値で定義（上）。毎晩の照合を足す |
+| 高: 2連率が朝は丸められている | 未確認。T10-1b で実測してから決める |
+| P1: 参照版に `win_racecard` が無いと `download-reference` と `reference_logloss` が止まる | 採用（上の品質ゲート） |
+| P2: `TARGETS` に足すと profiles が二重・44列で学習・ゲートに入らない | 採用（別の定数にする） |
+| P2: 本体分のキャッシュの月が欠けても黙って進む／日次が Storage に書く | 採用（読み取り専用・欠けたら失敗） |
+| P2: 監視が data-health の仕組みと合わない | 採用（上の監視） |
+| P2: Disk IO の見積りが無い | 採用（見積りを書き、T10-6 で実測） |
+| P3: 絞り込みは不要 | 採用（全件の build から選ぶ） |
+| P3: 霧は0行／一致検査はアップロードの前／版の固定は専用のファイル／concurrency／対象0件の扱い | 採用 |
+| P3: v1 を消す代わりに `KB_CACHE_VERSION` を上げる | 採用（ユーザーの本番書き込みが不要になる） |
+| P3: 昼に版が切り替わると2段の版が食い違う | 推論側に渡す（画面に版を出すか） |
+| 2026-02 以降の風向 null・風速>0（気象の観測時刻が null の行） | 推論側に渡す（展示後の段の JS がこの形を受けたときの扱い） |
 
 ### 推論側が作るもの（このレーン）
 - `src/utils/analogyTreeShap.js`（純粋関数。モデルの JSON から推論と TreeSHAP）と、`analogyRaceContribution.js`（テーマ集計: レース内で中心化した |SHAP| のシェア、艇ごと・テーマごとの符号つきの値、テーマ内のグループ別の値）
