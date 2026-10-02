@@ -38,6 +38,7 @@ import {
 import {
   buildMeetRanking,
   listAbsentOnlyRacers,
+  groupExcludedRacers,
   FINISH_ABSENT,
   forecastSeriesScore,
   pointsNeededForBorder,
@@ -67,6 +68,8 @@ const EXCLUDED_LABEL_KEY = {
   awardExcluded: "awardExcluded",
   flying: "flyingExcluded",
 };
+// 順位の対象外の内訳で名前を出す上限（超えた分は「ほか◯人」、BOA-697）
+const EXCLUDED_LIST_MAX = 6;
 // 準優・優勝戦に乗れない（必要得点を出さない）理由
 const AWARD_EXCLUDED_REASONS = new Set(["awardExcluded", "flying"]);
 
@@ -210,6 +213,8 @@ function RaceMeetTab({
   const rankedOnly = ranking.filter((r) => !r.withdrawn);
   // 予選の後に今節Fを切った選手（順位は付いたまま。BOA-626）
   const postPrelimFlying = new Set(board?.postPrelimFlyingRacerIds ?? []);
+  // 順位の対象外の内訳（BOA-697）
+  const excludedGroups = groupExcludedRacers(ranking, absentOnly);
   // 男女Ｗ優勝戦の節か（サービス層が同じシリーズの選手だけを渡してくる）
   const seriesSplit = Boolean(board?.seriesRacerIds);
   // 節全体では何人いるか。分けたときに「なぜ半分になったのか」を数で示す。
@@ -699,6 +704,17 @@ function RaceMeetTab({
                 ranking.length - rankedOnly.length + absentOnly.length;
               // まだ1走もしていない選手も順位にまだ入らない。書かないと初日に
               // 「48人（対象44人・1人を除く）」と合わなかった（BOA-690）
+              // 全員がまだ走っていない（初日の1R等）なら「順位の対象は0人」と書かない。
+              // 初戦を欠場した選手がいれば「全員が初戦」は誤りなので、従来の書き方に戻す
+              if (
+                rankedOnly.length === 0 &&
+                excluded === 0 &&
+                notYetStarted > 0
+              )
+                return t(
+                  `meetTab.compareSub${seriesSplit ? "Series" : ""}AllNotYet`,
+                  { all: entrantCount },
+                );
               const variant =
                 excluded > 0 && notYetStarted > 0
                   ? "ExcludedNotYet"
@@ -762,11 +778,59 @@ function RaceMeetTab({
               </>
             )}
             {/* まだ全員が走っていない間は目安を出さない理由を書く（BOA-690） */}
-            {!bordersReady &&
-              !isCancelled &&
-              !isAfterPrelim &&
-              !prelimOver && <> {t("meetTab.borderPending")}</>}
+            {!bordersReady && !isCancelled && !isAfterPrelim && !prelimOver && (
+              <>
+                {" "}
+                {/* Ｗ優勝戦では「出場選手」が24人か48人か読めないので書き分ける */}
+                {t(
+                  seriesSplit
+                    ? "meetTab.borderPendingSeries"
+                    : "meetTab.borderPending",
+                )}
+              </>
+            )}
           </p>
+          {/* 順位の対象外の内訳（BOA-697）。人数だけでは誰が外れたか分からず、予選の後に
+              順位が動いた理由も読めなかった。公式の備考欄に近い形で名前を理由ごとに出す。
+              7人以上は6人まで出して「ほか◯人」と畳む（行が長くなりすぎないように） */}
+          {excludedGroups.length > 0 && (
+            <p className="rmt-excluded-list">
+              <strong>{t("meetTab.excludedListLabel")}</strong>
+              {(() => {
+                let budget = EXCLUDED_LIST_MAX;
+                const parts = [];
+                for (const g of excludedGroups) {
+                  if (budget <= 0) break;
+                  const shown = g.names.slice(0, budget);
+                  budget -= shown.length;
+                  parts.push(
+                    <span key={g.reason}>
+                      {parts.length > 0 && t("meetTab.excludedGroupSeparator")}
+                      <span translate="no">
+                        {shown.join(t("meetTab.listSeparator"))}
+                      </span>
+                      {t("meetTab.excludedReasonWrap", {
+                        reason: t(`meetTab.excludedReason_${g.reason}`),
+                      })}
+                    </span>,
+                  );
+                }
+                const total = excludedGroups.reduce(
+                  (n, g) => n + g.names.length,
+                  0,
+                );
+                return (
+                  <>
+                    {parts}
+                    {total > EXCLUDED_LIST_MAX &&
+                      t("meetTab.excludedMore", {
+                        count: total - EXCLUDED_LIST_MAX,
+                      })}
+                  </>
+                );
+              })()}
+            </p>
+          )}
           {/* **Ｗ優勝戦の節**は1つの節に独立した2つの勝ち上がりが同居する
               （全期間で6節）。何も言わずに人数が半分になると「なぜ減ったのか」に
               なるので、節全体の人数と併せて断る。準優の目安が出ていない日は

@@ -225,6 +225,10 @@
   color: var(--text-secondary);
   line-height: 1.6;
 }
+/* 名前を探す人が見つけられるように、行頭だけ本文の色で太くする（ファン評価1周目） */
+.rmt-excluded-list strong {
+  color: var(--text-primary);
+}
 
 /* 表の下には同じ見た目の注意書きが4本並ぶ。Ｗ開催の断りだけは
    「なぜ人数が半分なのか」の答えなので、左の罫線で見分けられるようにする
@@ -287,6 +291,10 @@
   font-size: var(--font-size-2xs);
   color: var(--text-primary);
   line-height: 1.6;
+}
+/* 名前を探す人が見つけられるように、行頭だけ本文の色で太くする（ファン評価1周目） */
+.rmt-excluded-list strong {
+  color: var(--text-primary);
 }
 
 /* 推移の横軸から抜けている日（丸一日中止・順延）の断り（BOA-636）。
@@ -574,6 +582,10 @@
   color: var(--text-secondary);
   line-height: 1.6;
 }
+/* 名前を探す人が見つけられるように、行頭だけ本文の色で太くする（ファン評価1周目） */
+.rmt-excluded-list strong {
+  color: var(--text-primary);
+}
 
 .rmt-loading,
 .rmt-empty {
@@ -637,4 +649,16 @@
   font-size: 0.7rem;
   color: var(--text-secondary);
   white-space: nowrap;
+}
+
+/* 順位の対象外の内訳（BOA-697）。人数の行のすぐ下に、補足と同じ大きさで出す */
+.rmt-excluded-list {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+/* 名前を探す人が見つけられるように、行頭だけ本文の色で太くする（ファン評価1周目） */
+.rmt-excluded-list strong {
+  color: var(--text-primary);
 }
