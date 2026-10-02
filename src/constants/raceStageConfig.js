@@ -99,3 +99,22 @@ export function getRaceStageCategory(raceStage) {
   const rule = RACE_STAGE_CATEGORY_RULES.find((r) => r.test(s));
   return rule ? { key: rule.key, i18nKey: `raceStage.${rule.key}` } : null;
 }
+
+/**
+ * 出走履歴の表・直近10走の表のレース種別の表示（BOA-621）。
+ * ja は公式表記のまま（表示を変えない）。ja 以外は getRaceStageCategory で分類できれば
+ * 区分の訳を出し、分類できない会場独自の名前（企画レース名等）は公式表記のまま出す。
+ *
+ * @param {string|null|undefined} raceStage race_conditions.race_stage（生の公式表記）
+ * @param {(key: string) => string} t i18next の t
+ * @param {string} lang i18n の言語コード
+ * @returns {{ text: string, isOfficial: boolean } | null} isOfficial は公式表記のまま出すか
+ *   （translate="no" を付ける目印）
+ */
+export function raceStageLabel(raceStage, t, lang) {
+  if (!raceStage) return null;
+  const category = lang === "ja" ? null : getRaceStageCategory(raceStage);
+  return category
+    ? { text: t(category.i18nKey), isOfficial: false }
+    : { text: raceStage, isOfficial: true };
+}
