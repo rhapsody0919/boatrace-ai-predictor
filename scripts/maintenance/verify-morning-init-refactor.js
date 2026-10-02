@@ -361,12 +361,26 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
         racesData: racesData(),
         date: DATE,
         client: failing(failOn),
+        throwOnError: false,
       }),
     );
     check(
-      `(b) 既定: ${label}の失敗は、従来どおり握りつぶして続行（GitHub Actions・CLIの挙動を変えない）`,
+      `(b) throwOnError: false（CLI が指定）: ${label}の失敗は握りつぶして続行（morning-init の後続を止めない）`,
       swallowed === null,
       swallowed?.message,
+    );
+    const byDefault = await rejects(
+      generateAndWriteFromRacesData({
+        now: () => FIXED_NOW,
+        racesData: racesData(),
+        date: DATE,
+        client: failing(failOn),
+      }),
+    );
+    check(
+      `(b) 既定（BOA-391）: ${label}の失敗は例外`,
+      byDefault !== null,
+      byDefault?.message,
     );
   }
   const noClient = await rejects(
@@ -496,10 +510,22 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
     now: () => FIXED_NOW,
     date: DATE,
     client: dbDown,
+    strict: false,
   });
   check(
-    "(c) 既定（strict でない）: スケジュール取得の失敗は、従来どおり「対象レースなし」",
+    "(c) strict: false: スケジュール取得の失敗は「対象レースなし」",
     lenient.targetRaces === 0,
+  );
+  const defaultErr = await rejects(
+    generateUnifiedPredictions({
+      now: () => FIXED_NOW,
+      date: DATE,
+      client: dbDown,
+    }),
+  );
+  check(
+    "(c) 既定（BOA-391）: スケジュール取得の失敗は例外（CLI の例外は morning-init が catch する）",
+    defaultErr !== null,
   );
   const strictErr = await rejects(
     generateUnifiedPredictions({
