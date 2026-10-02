@@ -535,7 +535,7 @@
     {
       "script": "verify-e2e-recorded-network.js",
       "tier": "ci",
-      "guards": "E2Eのspecが録画の再生（e2e/fixtures.js、ADR-0077）を素通りする書き方（@playwright/testからの直接import・route.continue()・route.fetch()）をしていないこと"
+      "guards": "e2e/**/*.js（recordings/を除く）が録画の再生（e2e/fixtures.js、ADR-0077）を素通りする書き方（@playwright/testからの直接import・route.continue()・route.fetch()）をしていないこと。コメント・文字列・正規表現リテラルの判定はverify-e2e-no-unroute.jsと共有するstripNonCode（scripts/lib/stripNonCode.js）で行い、文字列中の`//`をコメントの開始と誤らないことを自己テストで確かめる（BOA-663）。fixtures.js自身が正当に使う箇所はverify-e2e-recorded-network-allowlist.jsonに理由つきで載せ、理由の無いエントリと解消済みのエントリで失敗する"
     },
     {
       "script": "verify-e2e-skips.js",
