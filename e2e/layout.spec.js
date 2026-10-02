@@ -996,15 +996,10 @@ async function checkHscrollHints(page, label) {
         message: `${at}: そのときの表示`,
       })
       .toBe("");
-    const first = await readHint(hint);
-    if (first.hasMore) {
-      expect(first.moreWidth, `${at}: 「›」の押せる幅`).toBeGreaterThanOrEqual(
-        44,
-      );
-    }
-    if (first.maxScroll <= 30) continue;
+    const { maxScroll } = await readHint(hint);
+    if (maxScroll <= 30) continue;
     // 右端の手前 10px まで送る: 「›」は出さず、10px＋12px の薄いフェードだけ
-    await setScroll(hint, 10);
+    await readHint(hint, 10);
     await expect
       .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 残り10px` })
       .toMatchObject({
@@ -1015,11 +1010,19 @@ async function checkHscrollHints(page, label) {
         peekWidth: "22px",
       });
     // 右端まで送る: 何も出さない
-    await setScroll(hint, 0);
+    await readHint(hint, 0);
     await expect
       .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 右端` })
       .toMatchObject({ remaining: 0, hasMore: false, peek: null });
-    await setScroll(hint, null);
+    // 左端へ戻すと「›」が出る。押せる幅は 44px 以上（以前は 28px で押し損ねやすかった）
+    await readHint(hint, null);
+    await expect
+      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 左端` })
+      .toMatchObject({ hasMore: true, moreButton: true });
+    expect(
+      (await readHint(hint)).moreWidth,
+      `${at}: 「›」の押せる幅`,
+    ).toBeGreaterThanOrEqual(44);
   }
 }
 
@@ -1038,21 +1041,22 @@ function hintMismatch(h) {
     : `残り${h.remaining}px で ${JSON.stringify(got)}（期待 ${JSON.stringify(want)}）`;
 }
 
-/** 横に送る。fromEnd は右端からの距離（px）、null なら左端へ戻す */
-async function setScroll(hint, fromEnd) {
-  await hint.evaluate((el, d) => {
-    const box = [el, ...el.querySelectorAll("*")].find((n) =>
+/**
+ * 手がかりの箱（.hscroll-hint）の状態を読む。fromEnd を渡すと先に横へ送る
+ * （右端からの距離 px。null なら左端へ戻す）。
+ * スクロールするのは箱そのもの（直前情報）か中の要素（モーター・今節）で、外枠にも overflow-x: auto が
+ * 付いている画面がある。実際に溢れている要素を選び、どれも溢れていなければいちばん内側を使う
+ */
+async function readHint(hint, fromEnd) {
+  return hint.evaluate((el, d) => {
+    const boxes = [el, ...el.querySelectorAll("*")].filter((n) =>
       ["auto", "scroll"].includes(getComputedStyle(n).overflowX),
     );
-    box.scrollLeft = d === null ? 0 : box.scrollWidth - box.clientWidth - d;
-  }, fromEnd);
-}
-
-async function readHint(hint) {
-  return hint.evaluate((el) => {
-    const box = [el, ...el.querySelectorAll("*")].find((n) =>
-      ["auto", "scroll"].includes(getComputedStyle(n).overflowX),
-    );
+    const box =
+      boxes.find((n) => n.scrollWidth > n.clientWidth) ?? boxes.at(-1);
+    if (d !== undefined) {
+      box.scrollLeft = d === null ? 0 : box.scrollWidth - box.clientWidth - d;
+    }
     const more = el.querySelector(":scope > .hscroll-more");
     return {
       remaining: Math.round(box.scrollWidth - box.clientWidth - box.scrollLeft),
@@ -1064,5 +1068,5 @@ async function readHint(hint) {
       peek: el.dataset.hscrollPeek ?? null,
       peekWidth: el.style.getPropertyValue("--hscroll-peek-width") || null,
     };
-  });
+  }, fromEnd);
 }
