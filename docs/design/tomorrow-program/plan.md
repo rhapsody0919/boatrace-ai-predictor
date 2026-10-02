@@ -130,6 +130,22 @@ erDiagram
 
 ## 4. 画面（(b)）
 
+### 4.0 出走表の方針（2026-10-02 ユーザー承認）
+
+明日の出走表は、当日のレース詳細の「データ出走表」（`DataRaceTable`、艇が列・指標が行の転置表）と**同じ部品・同じ行の並び**にする。前日に値がある行を全部出し、前日に出せない行（当日体重・級別横の F/L バッジ）は出さず、表の下に「展示・当日体重・F/L は当日朝から」と案内する。6列の簡易版（モックの版1）はやめた。ファン4人パネルの推奨と、ユーザーの「当日の出走表と同じにすればよい」による。
+
+| 行（`buildRowDefs` の key） | 前日の値の出所 |
+|---|---|
+| 見出し（艇番・選手名） | `tomorrow_program`（名前は `racer_profiles` の正式名） |
+| 級別・勝率 | `tomorrow_program.class`・`national_win_rate`（F/L バッジは出さない） |
+| 当地勝率・全国2連率 | `tomorrow_program.local_win_rate`・`national_2rate` |
+| モーター2連率・機力バッジ | `getMotorPowerIndex(venue, motor, 90, 締切前の仮の race_id)`（当日と同じ自社集計の2連率・機力指数・sample_count）。実績なしの判定は BOA-702 の `isMotorUnrated` |
+| 調子（勝率Δ） | B の `national_win_rate` と、選手の約90日前の `race_entries.win_rate`（racer_id で引く） |
+| 平均ST・枠番勝率 | `racer_aggregated_stats`（racer_id で直接。当日は predictions 経由だが、元の値は同じ） |
+| ST安定度・決まり手型・単勝回収率 | RPC 3本（`get_race_st_predictability`・`get_race_technique_profile`・`get_race_return_rate`、029）は `race_entries` を race_id で引くので、明日には使えない。**「艇番と racer_id の組」を引数に取る版を新設**する（本体の集計は同じ。マイグレーション123に同梱し、匿名に EXECUTE を GRANT。113 の方針を確認する） |
+| 今節の前走 | 同じ会場の今節（節の初日は `findMeetStartDate`）の `race_entries`・`race_results` を racer_id で引く。初日は「今節初戦」 |
+| 当日体重・展示系 | 出さない（表の下に案内） |
+
 ### 4.1 ルート
 
 | パス | 画面 | i18n |
@@ -139,33 +155,41 @@ erDiagram
 
 `/venue/:venueCode` の配下にしない（本日の会場ページと日付の意味が混ざる）。
 
-### 4.2 データ取得（`src/services/supabaseDataService.js` に追加）
+### 4.2 部品の切り出し
+
+```mermaid
+flowchart TB
+  subgraph 当日
+    DRT[DataRaceTable raceId] --> H1[useRaceAnalysisData race_id で9系統] --> V[DataRaceTableView 新規・表示だけ]
+  end
+  subgraph 明日
+    TP[TomorrowProgramPage] --> H2[useTomorrowAnalysisData 新規<br/>racer_id・艇番で取得] --> V
+  end
+  V --> R[buildBasicIndicatorRows 既存の純関数]
+```
+
+- `DataRaceTable.jsx` の表示部分（見出し・行・セル・注記、DataRaceTable.jsx:93-167）を `DataRaceTableView({ players, rows, ... })` に切り出す。当日の `DataRaceTable` は今のまま `useRaceAnalysisData` で analysis を作って View に渡す（当日の見た目・挙動は変えない。既存の E2E がそのまま通ること）
+- 明日の行は `buildBasicIndicatorRows` に、明日用の `analysis` と、除外する行（当日体重）・`gradeBadge` なし（F/L を出さない）を渡して作る。`buildBasicIndicatorRows` に「除外する key」の引数が無ければ足す
+- `players` は `tomorrow_program` から当日と同じ形（`{ number, name, racerId, grade, winRate, localWinRate, global2Rate, motor2Rate }`）に組み立てる純関数を置く
+
+### 4.3 データ取得（`src/services/supabaseDataService.js` に追加）
 
 | 関数 | クエリ | 使う画面 |
 |---|---|---|
 | `getTomorrowVenueSummary(date)` | `tomorrow_program_venues` を `race_date=date` で select（≤24行。status・節名・日次） ＋ `tomorrow_program` を `race_date=date, race_number=1, boat_number=1` で select（1R締切） ＋ `race_series` を `start_date<=date<=end_date` で select（グレードだけ） | S1 |
 | `getTomorrowProgram(date, venueCode)` | `tomorrow_program` を `race_date, venue_code` で select（≤72行） ＋ `racer_profiles` を登番で select（正式名） | S2 |
+| `useTomorrowAnalysisData(date, venueCode, entries)`（hook） | 4.0 の表の各行。会場の全レース分（≤72艇）をまとめて取り、レースごとに分ける（レースごとに9系統×12R を呼ばない） | S2 |
 
-- いずれも `withCache`（TTL は短め。15分ごとの更新に合わせ5分）。エラーは throw（画面は `DataFetchError`）
+- いずれも `withCache`（明日分は5分）。エラーは throw し、画面は `InlineFetchError`（当日と同じ。失敗を「—」の羅列に化けさせない、BOA-359）
 - 明日タブを開くまで呼ばない（本日タブの速度を変えない）
-- RPC は作らない（≤72行の単純な select で足り、RPC の `CREATE OR REPLACE` によるキーの取りこぼしの経路を増やさない）
+- RPC の新設は ST安定度・決まり手型・単勝回収率の3本だけ。それ以外は単純な select
 
-### 4.3 コンポーネント（screens.md）
-
-```mermaid
-flowchart TB
-  VGP[VenueGridPage 本日ビュー] --> DT[DayTabs 新規]
-  DT -->|today| VG1[VenueGrid → VenueGridCard mode=today 既存]
-  DT -->|tomorrow| N[TomorrowPublishNotice 新規]
-  DT -->|tomorrow| VG2[VenueGrid → VenueGridCard mode=tomorrow 拡張]
-  VG2 -->|出走表あり| P[TomorrowProgramPage 新規 /tomorrow/:venueCode]
-  P --> R[TomorrowRaceProgram ×12 新規]
-```
+### 4.4 コンポーネント（screens.md）
 
 - `VenueGridCard` の明日の状態: `program`（venues=published。グレードは `race_series.grade`、引けなければ出さない）／`waiting`（venues=pending）／`none`（venues に行が無く、他の会場には行がある。BOA-225 の次開催日を併記）／`before`（venues が0行＝B 未公開。「—」）
 - 選手名: `racer_profiles.name` の全角空白（可変長）を表示用に1つにまとめる純関数を `src/utils/` に置く（既存に無い）。再現テスト付き
 - 公開状況の案内（`TomorrowPublishNotice`）: 公開前（venues 0行）と公開途中（n<m）と全公開（n=m、非表示）
-- 列（モック承認待ち）: 艇・選手・級・全国勝率・当地勝率・モーター。モーター2連率0の表示もモック承認で決める
+- 明日の出走表ページ: レースごとに見出し（R番号・締切予定 HH:MM（JST））＋ `DataRaceTableView`＋表の下の案内。12レース分を縦に並べる
 
 ## 5. 既存への影響
 
@@ -174,6 +198,8 @@ flowchart TB
 | races・race_entries・朝の初期化・予想・監視の0件判定 | なし（別テーブル） |
 | `parseBText` の既存の呼び出し元（`fix-opening-day-entries-from-b.js` 等） | 会場に `pending` が増えるだけ。空会場として扱っていた処理は、`pending` を見なくても従来どおり動く（races が空の会場） |
 | トップの本日タブ | タブの追加のみ。初期表示は本日（`?day` なし） |
+| 当日のデータ出走表（DataRaceTable） | 表示部分を View に切り出すだけ。見た目・挙動は変えない（既存の E2E で確認） |
+| RPC 029 の3本 | 変えない。艇番×racer_id を引数に取る版を新設する |
 | sitemap・AI スナップショット | `/tomorrow/*` は対象外に登録 |
 
 ## 6. テスト

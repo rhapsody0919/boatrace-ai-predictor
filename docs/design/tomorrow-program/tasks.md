@@ -3,7 +3,7 @@
 spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md) / plan: [plan.md](./plan.md)
 
 順序: (a) 取得（T1〜T5）→ マイグレーション適用・shadow→live → (b) 画面（T6〜T10）→ 完了の実測（T11）。
-(b) の着手は、モック承認（出走表の列・モーター2連率0の表示）と design-reviewer・受け入れ E2E がそろってから。
+(b) の着手は、モック承認（2026-10-02 済み: 当日のデータ出走表と同じ部品）と design-reviewer・受け入れ E2E がそろってから。モーター0の表示は BOA-702（当日側）を先に入れる。
 
 ## (a) 翌日の番組表の取得
 
@@ -33,6 +33,9 @@ spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md) / plan: [plan.m
 
 ## (b) 「明日」タブの画面
 
+- [ ] **T5b RPC 3本の「艇番×racer_id」版**（マイグレーション123に同梱、未適用のうちに足す）
+  - `get_race_st_predictability`・`get_race_technique_profile`・`get_race_return_rate`（029）と同じ集計で、`race_entries` の代わりに引数の組（艇番・racer_id）と基準日を使う版。匿名に EXECUTE（113 の方針を確認）
+  - 再現テスト: 既存のレース（race_id 版が値を返すもの）で、同じ艇番×racer_id を渡した新版が同じ値を返す（実データで1会場12R、`scripts/maintenance/` の manual verify）
 - [ ] **T6 データ取得**（`src/services/supabaseDataService.js`）
   - `getTomorrowVenueSummary(date)`・`getTomorrowProgram(date, venueCode)`（plan.md §4.2。withCache 5分、エラーは throw）
   - 会場の状態（program / waiting / none / before）を決める純関数と、選手名の全角空白をまとめる純関数を `src/utils/` に置き、`verify-frontend-pure-functions.js` に追加（venues=published→program、pending→waiting、venues に行が無く他の会場にはある→none、venues 0行→before）
@@ -41,8 +44,12 @@ spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md) / plan: [plan.m
   - `TomorrowPublishNotice`（公開前 / 公開途中 n/m / 全公開は非表示）
 - [ ] **T8 VenueGridCard の明日の状態**（`VenueGridCard.jsx` 拡張）
   - program（グレード・節名・日次・1R締切予定、リンク `/tomorrow/:venueCode`）/ waiting「出走表準備中」/ none「明日開催なし」＋次開催日（BOA-225）
-- [ ] **T9 明日の出走表ページ**（`src/pages/TomorrowProgramPage.jsx`・`TomorrowRaceProgram` 新規、ルート `/tomorrow/:venueCode`）
-  - 前日時点の注記（Last-Modified の時刻、JST）、12R、列はモック承認どおり、選手名は racer_profiles の正式名（未登録は B の名前）、`translate="no"`
+- [ ] **T8b DataRaceTable の表示部分の切り出し**（`DataRaceTableView`）
+  - 当日の見た目・挙動は変えない。既存の `e2e/race-detail-*.spec.js` と layout が通ること
+  - `buildBasicIndicatorRows` に除外する行の key を渡せるようにする（明日は当日体重を出さない）
+  - `useTomorrowAnalysisData`（plan.md §4.0 の表の各行を racer_id・艇番で、会場の全レース分まとめて取得）
+- [ ] **T9 明日の出走表ページ**（`src/pages/TomorrowProgramPage.jsx` 新規、ルート `/tomorrow/:venueCode`。各レースは見出し＋ `DataRaceTableView`＋表の下の案内）
+  - 前日時点の注記（Last-Modified の時刻、JST）、12R、選手名は racer_profiles の正式名（未登録は B の名前）、`translate="no"`、モーター0の実績なしは BOA-702 の規則
   - レース詳細へのリンクは置かない
 - [ ] **T10 多言語・ルーティング・レイアウト**
   - 4言語の `tomorrow.*` キー（用語は i18n-glossary）、`TRANSLATED_PATHS` に `/tomorrow`、sitemap の `EXPECTED_EXCLUSIONS`
