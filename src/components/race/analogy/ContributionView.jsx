@@ -202,105 +202,110 @@ export default function ContributionView({
             </p>
           )}
 
-          <div className="af-radar-wrap">
-            <ContributionRadar
-              axes={data.themes.map((th) => ({
-                key: th.key,
-                label: themeShort(th),
-              }))}
-              series={radarSeries}
-              ariaLabel={tr("radarLabel")}
-            />
-            {compare && (
-              <p className="af-radar-legend">
-                <span className="af-legend-a">
-                  {tr("boatLabel", { n: boatA })}
+          <div className="af-body">
+            <div className="af-figure">
+              <div className="af-radar-wrap">
+                <ContributionRadar
+                  axes={data.themes.map((th) => ({
+                    key: th.key,
+                    label: themeShort(th),
+                  }))}
+                  series={radarSeries}
+                  ariaLabel={tr("radarLabel")}
+                />
+                {compare && (
+                  <p className="af-radar-legend">
+                    <span className="af-legend-a">
+                      {tr("boatLabel", { n: boatA })}
+                    </span>
+                    <span className="af-legend-b">
+                      {tr("boatLabel", { n: boatB })}
+                    </span>
+                  </p>
+                )}
+              </div>
+
+              <p className="af-meta">
+                <span>
+                  {tr("n", {
+                    races: all.n_races.toLocaleString(i18n.language),
+                    boats: all.n_boats.toLocaleString(i18n.language),
+                  })}
                 </span>
-                <span className="af-legend-b">
-                  {tr("boatLabel", { n: boatB })}
+                <span>
+                  {tr("period", {
+                    from: ym(all.period_from),
+                    to: ym(all.period_to),
+                  })}
                 </span>
+                <span>{tr("model", { version: data.modelVersion })}</span>
+                {data.smallSample && (
+                  <span className="af-flag">{tr("smallSample")}</span>
+                )}
               </p>
-            )}
-          </div>
+            </div>
+            <div className="af-themes">
+              {compare && (
+                <BoatCompareTable
+                  themes={data.themes}
+                  boatA={boatA}
+                  boatB={boatB}
+                  sharesA={shareOf(boatA)}
+                  sharesB={shareOf(boatB)}
+                />
+              )}
 
-          <p className="af-meta">
-            <span>
-              {tr("n", {
-                races: all.n_races.toLocaleString(i18n.language),
-                boats: all.n_boats.toLocaleString(i18n.language),
-              })}
-            </span>
-            <span>
-              {tr("period", {
-                from: ym(all.period_from),
-                to: ym(all.period_to),
-              })}
-            </span>
-            <span>{tr("model", { version: data.modelVersion })}</span>
-            {data.smallSample && (
-              <span className="af-flag">{tr("smallSample")}</span>
-            )}
-          </p>
-
-          {compare && (
-            <BoatCompareTable
-              themes={data.themes}
-              boatA={boatA}
-              boatB={boatB}
-              sharesA={shareOf(boatA)}
-              sharesB={shareOf(boatB)}
-            />
-          )}
-
-          <p className="af-list-label">
-            {compare ? tr("listAllBoatsCompare") : tr("listAllBoats")}
-          </p>
-          <ul className="af-theme-list">
-            {entries.map((e) => {
-              const open = openTheme === e.key;
-              const panelId = `af-breakdown-${e.key}`;
-              return (
-                <li key={e.key} className="af-theme">
-                  <button
-                    type="button"
-                    className="af-theme-head"
-                    aria-expanded={open}
-                    aria-controls={panelId}
-                    onClick={() => setOpenTheme(open ? null : e.key)}
-                  >
-                    <span className="af-chevron" aria-hidden="true">
-                      ▶
-                    </span>
-                    <span className="af-theme-name">
-                      {themeName(e)}
-                      {e.rankDistinct && e.rank <= 3 && (
-                        <span className="af-rank">
-                          {tr("rank", { rank: e.rank })}
+              <p className="af-list-label">
+                {compare ? tr("listAllBoatsCompare") : tr("listAllBoats")}
+              </p>
+              <ul className="af-theme-list">
+                {entries.map((e) => {
+                  const open = openTheme === e.key;
+                  const panelId = `af-breakdown-${e.key}`;
+                  return (
+                    <li key={e.key} className="af-theme">
+                      <button
+                        type="button"
+                        className="af-theme-head"
+                        aria-expanded={open}
+                        aria-controls={panelId}
+                        onClick={() => setOpenTheme(open ? null : e.key)}
+                      >
+                        <span className="af-chevron" aria-hidden="true">
+                          ▶
                         </span>
+                        <span className="af-theme-name">
+                          {themeName(e)}
+                          {e.rankDistinct && e.rank <= 3 && (
+                            <span className="af-rank">
+                              {tr("rank", { rank: e.rank })}
+                            </span>
+                          )}
+                        </span>
+                        <span className="af-theme-value">
+                          {Math.round(e.share * 100)}%
+                        </span>
+                        <span className="af-bar-track" aria-hidden="true">
+                          <span
+                            className="af-bar-fill"
+                            style={{ width: `${(e.share / maxShare) * 100}%` }}
+                          />
+                        </span>
+                      </button>
+                      {open && (
+                        <ContributionBreakdown
+                          id={panelId}
+                          themeKey={e.key}
+                          groups={e.groups || []}
+                          items={all.breakdown?.[e.key]}
+                        />
                       )}
-                    </span>
-                    <span className="af-theme-value">
-                      {Math.round(e.share * 100)}%
-                    </span>
-                    <span className="af-bar-track" aria-hidden="true">
-                      <span
-                        className="af-bar-fill"
-                        style={{ width: `${(e.share / maxShare) * 100}%` }}
-                      />
-                    </span>
-                  </button>
-                  {open && (
-                    <ContributionBreakdown
-                      id={panelId}
-                      themeKey={e.key}
-                      groups={e.groups || []}
-                      items={all.breakdown?.[e.key]}
-                    />
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
           <p className="af-note">{tr("contribution.foot")}</p>
         </>
       )}

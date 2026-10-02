@@ -348,13 +348,24 @@
   text-align: left;
 }
 
-.af-compare-table th:not(:first-child) {
+.af-compare-table th:not(:first-child),
+.af-compare-table td.af-compare-value {
   text-align: right;
   white-space: nowrap;
 }
 
 .af-compare-boat {
   margin-left: var(--spacing-1);
+}
+
+/* 広い幅ではレーダーとテーマ別の棒を左右に並べる（1列だと棒が間延びし、レーダーが小さく見える） */
+@media (min-width: 1024px) {
+  .af-body {
+    display: grid;
+    grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--spacing-6);
+  }
 }
 
 @media (max-width: 480px) {
