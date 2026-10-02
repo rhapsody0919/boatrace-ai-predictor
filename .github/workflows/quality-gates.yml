@@ -26,6 +26,7 @@ on:
 # PRへのpushは同じPRの古い実行を止める（同じheadブランチでgroupを束ねる）。
 # masterへのpushはそれぞれ独立に最後まで走らせたいので、run_idで一意にしてcancelしない
 # （masterの定期pushやe2e-rerecord等と無関係に、このワークフロー自身の push トリガーを連続で止めないため）。
+# （この行は、同じPRへの2回目のpushで古い実行がcancelされることを確認するための検証用コメント）
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
