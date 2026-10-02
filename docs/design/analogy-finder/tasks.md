@@ -59,6 +59,21 @@
 - [ ] T3b-3 分析コードと結果は master に残せる形にする（入出力のパスは環境変数。scratchpad の絶対パスを書かない。既存の `scripts/analysis/analogy-finder-fr2-strat/` のパスも直す）。縮小版の結果 JSON には `scale` を必ず入れる
 - [ ] T3b-4 報告・文書の数値には「値／指標／A−B（比較対象）／母集団・部分集合／期間（cal・test）／データ版／結果 JSON のパス#キー」を付ける
 
+## T10 レースごとの寄与度（B）学習側（FR-1 の学習レーン。plan「学習側の設計」）
+推論側（JS の TreeSHAP・集計・2段の計算・`analogy_race_contributions`・API・画面）のタスクは推論側のレーンが別に足す。順序: T10-0 → T10-1〜3（1 PR）→ 推論側の `treeshap-parity.js` のマージ → T10-4 → T10-5〜7（1 PR）→ T10-8。
+- [ ] T10-0 事前登録 5（[analysis/fr2-strat/preregistration-5.md](./analysis/fr2-strat/preregistration-5.md)）を単独でコミット・push。その前に second-opinion-reviewer で方法論を1回見る
+- [ ] T10-1 `features.py`: 風向 null の扱い（無風＝0）、`branch_code` の対応表（作る・使う）、`export_pool.js` の月の境目を JST に。pytest: 無風の3通り、対応表に無い支部は NaN、対応表の番号が今の `cat.codes` と同じ（版の互換）
+- [ ] T10-2 `train.py`: `win_racecard`、参照版にモデルが無いときの品質ゲートの扱い、`exhibition_effect` の記録、JSON ダンプ・`per_race_meta.json`・`parity_fixture.json` の書き出し、`storage.js` のアップロード対象。pytest: 品質ゲートの「参照版にモデルが無い」分岐、固定データの選び方（意図した例を含む・本体分だけ）、`feature_names` がブースターの並びと同じ
+- [ ] T10-3 `requirements.txt` の版の固定（pandas 3.0.6・numpy 2.5.3・lightgbm 4.7.0・scikit-learn 1.9.1・scipy 1.18.1）
+- [ ] T10-4 `train-analogy.yml`: 切り替え前に `treeshap-parity.js` を実行（不一致は Slack・切り替えない）。週次の学習が本体分の締まった月を `analogy/source/main/` に置く。actionlint を通す
+- [ ] T10-5 マイグレーション（番号は PR の時点で `npm run verify:migration-numbers`）: `analogy_race_features`（RLS・匿名 SELECT のみ）。PGlite の検証を足す。本番適用はユーザーに書き込み SQL だけを渡し、APPLIED.md に行を足す
+- [ ] T10-6 `daily_features.py`・`export_pool.js --daily`・`.github/workflows/analogy-daily-features.yml`（workflow_dispatch のみ、actionlint）。pytest: 絞り込んでから作った特徴量が全件で作った値と一致する、欠場のあるレース・締切10分前を過ぎたレースは書かない、同じハッシュは書かない
+- [ ] T10-7 `api/cron/analogy-dispatch.js`（`?job=train|daily-features`、7:20 は充足 99% 未満のときだけ）と `vercel.json` の crons（UTC で書き JST を併記）。PAT（`GITHUB_ACTIONS_DISPATCH_TOKEN`）は T1-3 と共用（ユーザーの作業）
+- [ ] T10-8 BOA-696（#1166）のマージ後: Storage の `analogy/source/v1/` の削除をユーザーに依頼（書き込み部分だけ）→ 学習を手動実行 → 品質ゲート・`exhibition_effect`・一致検査の結果を事前登録 5 の SHA つきで `analysis/` に記録
+- [ ] 本番実測（件数）: 土日を含む直近5日で、対象レース（中止・欠場のあるレースを除く。除いた件数も出す）×6艇に対する `analogy_race_features` の行の充足率 99% 以上
+- [ ] タイミング実測: 同じ5日で、行の `created_at`（上書きは `updated_at`）が締切より前で、6:40 の回で書けた割合と、最初の締切（8:32 前後）のレースに間に合った割合。日次ジョブの所要時間と Disk IO を1回計測
+- [ ] 継続監視: JST 8:00 の充足率（99% 未満で Slack）と、日次ジョブの失敗・最終成功から1日超えの検知が動くことを確認する
+
 ## T4 API
 - [ ] T4-1 `api/analogy/contribution.js`（Edge）: is_active の版の themes と該当スライス。n=0 のスライスは一段広いスライスに戻し、戻したことを返す
 - [ ] T4-2 `api/analogy/similar/[raceId].js`（Edge、`?depth=`）: `get_analogy_similar` の結果。キャッシュは plan「API」の表

@@ -224,7 +224,9 @@ BOA-635（PR #1093、BOA-635 の ADR 案（PR #1093））は近い順800行を�
 - 値の約束 R1〜R4・D-5 は 120 で固定（PGlite の検証）
 - 2,000件の言い換えの文言はオーケストレーターがユーザーに確認する
 
-## レースごとの寄与度（B、ADR-0083。FR-1 の学習レーンと合意待ち）
+## レースごとの寄与度（B、ADR-0083。FR-1 の学習レーンと 2026-10-02 合意済み）
+
+分担（2026-10-02 オーケストレーター確定）: SHAP の計算は出走表時点・展示後の両段とも推論側の JS。学習側は、特徴量の表・モデル2本・JSON ダンプ・一致検査の固定データ・日次の特徴量ジョブまで。学習側の詳細は下の「学習側の設計」。
 
 ### 学習側が作るもの（FR-1 の学習レーン）
 - **モデル**: 1着の2本。`win`（今のモデル、44特徴量）と `win_racecard`（直前情報8列 `exh_time, exh_time_diff, exh_time_rank, weather_code, wind_x, wind_y, wind_speed, wave_height` を除いた36特徴量）。木の数・設定は `win` と同じ。品質ゲートは段ごと
@@ -243,6 +245,56 @@ BOA-635（PR #1093、BOA-635 の ADR 案（PR #1093））は近い順800行を�
   - 風向が空のとき: `features.py` で「風向 null かつ風速0 → 0、風向 null かつ風速>0 → NaN」と決める（今は null を NaN にしていて、本体の無風は風向 null・風速0）
   - `branch_code` の対応表（文字列→番号）を `per_race_meta.json` に持たせる（今は `cat.codes` で、データに現れた文字列の辞書順）
 
+### 学習側の設計（FR-1 の学習レーン、2026-10-02）
+上の「学習側が作るもの」を実装に落としたもの。合意で足した条件（per_race_meta の対応表・固定データの選び方・input_hash・品質ゲートの扱い）もここに書く。
+
+**モデル（`train.py`）**
+- `TARGETS` に `win_racecard`（ラベル `y_win`、木 250本、設定は `win` と同じ）を足す。特徴量は `themes.FEATURES` から `LIVE_FEATURES`（8列。`themes.py` に定数で持つ）を除いた36列。seed は0の1回だけ（レースごとの計算に使うのは seed0 のモデル。寄与度の条件ごとの集計 `profiles.py` には使わない）
+- 温度合わせ・test・基準は `win` と同じ。`evaluate_win` をそのまま使う
+- 品質ゲート: (1) 基準1に日クラスタ CI で有意に勝つ（`win` と同じ）。(2) 参照版との比較は、参照版にそのモデルのファイルが無いときだけ「比較なし（参照版にモデルが無い）」を metrics に書いて飛ばし、`warnings` に入れる（Slack に流れる）。`win`・`top2`・`top3` が参照版に無いのは今まで通り異常として止める。`win_racecard` を含む版ができたら、人の判断で `reference.json` を更新する
+- 記録のみ（止めない）: `win_racecard` と `win` の1着の対数損失の差（展示の効果）を、日クラスタ CI つきで `metrics.exhibition_effect` に残す
+- 書き出し（`out/`）: `model_win_racecard.txt`（参照版の評価用）、`model_win.json.gz`・`model_win_racecard.json.gz`（`Booster.dump_model()` をそのまま gzip）、`per_race_meta.json`、`parity_fixture.json`。`storage.js upload-model` の対象に足す
+
+**`per_race_meta.json`**
+```
+{ model_version, dtype: "float32",
+  models: { win: {file, feature_names, num_trees, objective},
+            win_racecard: {file, feature_names, num_trees, objective} },
+  live_features: [8列],              // win にだけある列
+  categorical_maps: { branch_code: {"東京": 0, ...} },
+  themes: analogy_models.themes と同じ }
+```
+`feature_names` は `booster.feature_name()` の並び。推論側はこの並びで入力を作る。
+
+**`parity_fixture.json`（一致検査の固定データ、版ごとに作り直す）**
+- test の本体分（2025-12-03 以降。DB の行の形が取れる期間）から 50R。うち次を意図的に含め、残りは無作為（seed 0）: 風向 null・風速0（無風）、風向 null・風速>0、展示タイムの同値、天候の各値、支部の対応表の端（最小・最大の番号）、ラウンド・グレード不明
+- 1レースの中身: `race_id`、`racecard_features`（6艇。`analogy_race_features.features` に書くのと同じ値・並び、欠損は null）、`live_raw`（`exhibition_data` の `exhibition_time`・`is_absent` と、`race_conditions` の `weather`・`wind_direction`・`wind_speed`・`wave_height` を DB の型のまま）、`expected.win_racecard`・`expected.win`（それぞれ入力の特徴量と `pred_contrib`。最後の列が期待値）
+- テーマ集計の期待値は入れない（集計は推論側の JS の1か所）
+- 学習ジョブは、切り替え（`db.py write`）の前に `node scripts/ml/analogy/treeshap-parity.js out/` を実行し、一致しなければ切り替えずに Slack へ知らせる。`treeshap-parity.js`（推論側が作る）が master に無い間は、このステップを飛ばさず失敗させる（黙って省かない）。順序: 推論側の `treeshap-parity.js` を先にマージ → 学習側の PR
+
+**特徴量の約束の変更（`features.py`。学習と日次の両方に効く）**
+- 風向: `無風`、または「風向 null かつ風速0」→ `wind_x = wind_y = 0`。「風向 null かつ風速>0」と風速 null → NaN。本体の `race_conditions`（2025-12-03〜2026-10-02）で、風向 null・風速>0 は 10,280行（うち 2025-12・2026-01 が 8,902行＝風向が丸ごと無い期間）、風向 null・風速0 は 3,229行、`無風` は0行（本番 DB の読み取り、2026-10-02）。今は null をすべて NaN にしているので、約 3,200R の無風が「不明」扱いになっている
+- `branch_code`: 今は `cat.codes`（データに現れた文字列の辞書順）。学習時に対応表を作って `per_race_meta.json` に保存し、日次ジョブはその表で符号化する。表に無い支部は NaN（ログに出す）
+- `is_final_day_num`: BOA-696（#1166）の修正後のデータで学習する。修正後は Storage の `analogy/source/v1/` を消して取り直す（`storageRules.js` は列名の照合だけで値の訂正を検知しない）。キャッシュの削除はユーザーの作業（書き込み部分を渡す）
+- `scripts/ml/requirements.txt` を、本番の初回学習（run 36968972725）で入った版に固定する: `pandas==3.0.6`、`numpy==2.5.3`、`lightgbm==4.7.0`、`scikit-learn==1.9.1`、`scipy==1.18.1`。推論側の float32 の約束（Kahan 和の平均）は pandas 3.0.6 で確かめる（ADR-0083 の確認は pandas 2.1）
+
+**日次の特徴量ジョブ（`scripts/ml/analogy/daily_features.py`）**
+- 起動: Vercel Cron `api/cron/analogy-dispatch.js`（週次学習の dispatch と同じ関数を `?job=` で分ける）→ workflow_dispatch → `.github/workflows/analogy-daily-features.yml`。時刻は JST 6:40・9:40・13:40（UTC `40 21,0,4 * * *`）と、JST 7:20 の拾い直し（今日の対象レースの行の充足が 99% 未満のときだけ dispatch）。根拠: `race_entries` は毎日 JST 5:01〜5:10 に全場ぶん入り、最も早い締切は 8:32〜8:35（本番 DB、2026-09-26〜10-02）
+- 対象: 今日（JST）の、締切（`races.start_time`）まで10分以上あり、中止でなく、欠場が分かっていないレース。学習は欠場のあるレースを外しているので、欠場のあるレースの行は書かない（既にあれば消さない。推論側が欠場を見て計算しない）
+- 読み込み: `export_pool.js --daily`。長期分は Storage のキャッシュ、本体分は「前月と当月（JST で決める）」だけ DB から読み、それより前の本体分は週次の学習が Storage（`analogy/source/main/`、週ごとに上書き）に置いたものを読む。`thisMonth()` を JST にする（今は UTC で、毎月1日の JST 0:00〜9:00 に当月を取りこぼす）
+- 計算: `features.build()` と同じ関数を使い、読み込んだ後すぐ「今日の出走選手の行」と「今日のレースの行」だけに絞ってから履歴を作る（選手の過去30走・体重と支部の前方補完は本人の行だけで決まり、レース内の差・順位は今日のレースの6艇だけで決まるため、全件で作った値と同じになる。pytest で全件版との一致を固定する）
+- 書き込み: `analogy_race_features` に、`win_racecard.feature_names` の並びの36列を `real[]` で。`input_hash`（`model_version` と36列の値から作る）が同じ行は書かない。違えば上書き（締切前だけ）。書き込みが0件でも、対象があって全行が同じハッシュなら成功、対象があるのに書けた行も既存の行も無ければ失敗
+- 所要時間と Disk IO: 本番と同じ条件で1回計測して tasks に記録する（data-acquisition.md の見積りの規律）
+
+**表 `analogy_race_features`（学習側のマイグレーション）**
+- 列: `race_id text`（races の外部キー）・`boat_number smallint`・`model_version text`・`features real[]`・`input_hash text`・`created_at timestamptz default now()`・`updated_at timestamptz`。主キー `(race_id, boat_number)`
+- RLS 有効・匿名と authenticated は SELECT のみ。書き込みは service_role
+- 行数: 1日 約150R×6艇＝約900行、1行 約250B。年 約0.08GB
+
+**監視**
+- 日次: JST 8:00 に、今日の対象レースに対する行の充足率を計測し、99% 未満なら Slack（既存の `data-health` の仕組みに足す）
+- ジョブの失敗・最終成功からの経過（1日を超えたら）を検知する
+
 ### 推論側が作るもの（このレーン）
 - `src/utils/analogyTreeShap.js`（純粋関数。モデルの JSON から推論と TreeSHAP）と、`analogyRaceContribution.js`（テーマ集計: レース内で中心化した |SHAP| のシェア、艇ごと・テーマごとの符号つきの値、テーマ内のグループ別の値）
 - 直前情報8列を作る関数（`features.py` と同じ式。展示タイムのレース内の差と順位（小さいほど上、同値は min）、風向16方位の角度×風速の成分、無風は0、天候の符号化）
@@ -256,9 +308,9 @@ BOA-635（PR #1093、BOA-635 の ADR 案（PR #1093））は近い順800行を�
 ### 表（マイグレーション案。番号は実装 PR の時点で決める）
 | 表 | 列 | 書き手 |
 |---|---|---|
-| `analogy_race_features` | `race_id`（races の外部キー）・`boat_number`・`model_version`・`features real[]`（`win_racecard.feature_names` の並び、欠損は NULL）・`created_at`。主キー `(race_id, boat_number)` | 日次の Python ジョブ（service_role） |
+| `analogy_race_features` | `race_id`（races の外部キー）・`boat_number`・`model_version`・`features real[]`（`win_racecard.feature_names` の並び、欠損は NULL）・`input_hash`・`created_at`・`updated_at`。主キー `(race_id, boat_number)`。締切前でハッシュが違うときだけ上書き（学習側の設計） | 日次の Python ジョブ（service_role）。マイグレーションは学習側 |
 | `analogy_race_contributions` | `race_id`・`stage`（'racecard' / 'exhibition'）・`model_version`・`model`（'win_racecard' / 'win'）・`computed_at`・`theme_shares jsonb`（{テーマ: シェア}、合計1）・`boats jsonb`（[{boat_number, themes: {テーマ: 中心化した SHAP の合計（符号つき）}, groups: {グループ: 同}}]）・`live_inputs jsonb`（展示後の段だけ。使った展示タイム・気象の値）。主キー `(race_id, stage)` | Vercel の JS（service_role） |
-- どちらも RLS 有効・匿名は SELECT のみ。締切前だけ書き、既にあれば書かない（`ON CONFLICT DO NOTHING`）
+- どちらも RLS 有効・匿名は SELECT のみ。`analogy_race_contributions` は締切前だけ書き、既にあれば書かない（`ON CONFLICT DO NOTHING`。マイグレーションは推論側）。`analogy_race_features` は上の通り
 - 行数: features 1日 約900行（約200B）、contributions 1日 約300行（約1KB）
 
 ### API
