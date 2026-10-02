@@ -1,0 +1,10 @@
+# BOA-271 アナロジー・ファインダー専用。版を固定する（共用の scripts/ml/requirements.txt はポアロ・ワトソンと
+# 共用なので変えない）。推論側の JS が Python の特徴量・pred_contrib と一致することを前提にしている
+# （float32 の平均の取り方・LightGBM の木の形。ADR-0083）ので、版を上げるときは一致検査（treeshap-parity.js）を
+# 通してから。値は 2026-10-02 の初回の本番学習（run 36968972725）で入った版
+pandas==3.0.6
+numpy==2.5.3
+scikit-learn==1.9.1
+scipy==1.18.1
+lightgbm==4.7.0
+pytest==9.1.1

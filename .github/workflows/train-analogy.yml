@@ -43,7 +43,7 @@ jobs:
           python-version: "3.12"
           cache: "pip"
       - name: Install Python deps
-        run: pip install -r scripts/ml/requirements.txt pytest
+        run: pip install -r scripts/ml/analogy/requirements.txt
 
       - name: Test (as-of・リーク防止・ラウンド区分・集計)
         run: python -m pytest scripts/ml/analogy/tests -q
