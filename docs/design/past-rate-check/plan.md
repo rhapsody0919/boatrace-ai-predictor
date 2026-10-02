@@ -30,8 +30,8 @@ flowchart LR
 
 ### 読み取りの量
 - 1レースあたり最大2,000行 × 8列。gzip 後で約34KB（FR-2 レーンの試算。本番投入後に実測）。取得は部品を出すときに1回で、AI予想タブと結果タブで同じキャッシュを使う
-- SQL 側: 深さ4（4条件、使う層の70.5%）は複合索引 `idx_analogy_pool_strata (gap_band, b1_class, venue_code, top_boat, race_date DESC)` の並びで新しい順に最大2,000行を読める。深さ1〜3は索引の並びで読めず、層の全件（最大約7万行）を読んで並べ替える。深さ別の索引（例 `(gap_band, b1_class, race_date DESC)`）を足すかは、119 の本番適用後に深さ1〜4で `EXPLAIN (ANALYZE, BUFFERS)` を取って FR-2 レーンと決める（T0-3）
-- 取得は Edge API `GET /api/analogy/similar-races/[raceId]`（新規、本機能で作る。FR-2 の `api/analogy/similar` と同じ流儀）を通し、CDN にキャッシュさせる: スナップショットあり・締切前 `s-maxage=300`、締切後 `s-maxage=86400`、スナップショットなし `s-maxage=300`、NULL・エラーは `no-store`。API が失敗したときは PostgREST の RPC 直読みに切り替える（FR-2 と同じ）。部品は AI予想タブの先頭に常に出るので、直接 RPC だと表示のたびに DB に届く（差分レビュー指摘7）
+- SQL 側: 深さ4（4条件、使う層の70.5%）は複合索引 `idx_analogy_pool_strata (gap_band, b1_class, venue_code, top_boat, race_date DESC)` の並びで新しい順に最大2,000行を読める。深さ1〜3用に FR-2 レーンが索引 `(gap_band, race_date DESC)`・`(gap_band, b1_class, race_date DESC)`・`(gap_band, b1_class, venue_code, race_date DESC)` を119 に足した（PR #1134）。119 の本番適用後に深さ1〜4で `EXPLAIN (ANALYZE, BUFFERS)` を取り、使われない索引は落とす（FR-2 レーンと合意、T0-3(h)）
+- 取得は Edge API `GET /api/analogy/similar-races/[raceId]`（新規、本機能で作る。FR-2 の `/api/analogy/similar/[raceId]` と同じ形: Edge・anon key で RPC・同じキャッシュ規則・NULL とエラーは `no-store`。別ファイルでよいと FR-2 レーンと合意）を通し、CDN にキャッシュさせる: スナップショットあり・締切前 `s-maxage=300`、締切後 `s-maxage=86400`、スナップショットなし `s-maxage=300`、NULL・エラーは `no-store`。API が失敗したときは PostgREST の RPC 直読みに切り替える（FR-2 と同じ）。部品は AI予想タブの先頭に常に出るので、直接 RPC だと表示のたびに DB に届く（差分レビュー指摘7）
 - ボタンのたびに層の全件を SQL で数える方式は Disk IO を圧迫するので採らない（ADR-0081）
 - 注記の期間は、切り詰めていなければ `pool_from`〜`pool_cutoff`、切り詰めたら `rows` の最も古い race_date〜`pool_cutoff`。似ている理由は `analogyReason.js`（BOA-271 FR-2）に `conditions`・`depth`・`n_total` を渡して作る
 

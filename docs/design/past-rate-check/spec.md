@@ -55,7 +55,7 @@
 - **D-2** `st_by_course` は、フライング・出遅れ・欠場のコースを NULL にする（数値のままだとフライングの艇が「速いST」に見え、カド一撃などが過大に出る）。判定元は本体 `race_start_timings.is_flying`・`is_late_start`、長期 `kb_archive_boats.is_flying`・`is_late_start`
 - **D-3** 3連単の払戻は、不成立・特払いのレースで NULL（不成立の¥100を払戻として入れない。`race_results.race_status`）
 - **D-4** `course_by_boat` は、実進入が分からない艇を NULL にする（艇番で埋めない。BOA-523 の欠落期間で「枠なり」に化けるため）
-- **D-5** `rank1`〜`rank3` に返還艇（F・L・欠）が入るレースと、不成立のレースは、母集団（`analogy_pool_outcomes`）に入れない。行に出てこないので、本機能の分母には影響しない。本体の `race_results.rank*` は返還艇も公式の並びのまま入っている（`RaceResult.jsx:236-246`。上位3着に返還艇が入るのは 2026-03〜09 の 32,858R 中16R）。`race_results.race_status` は 2026-09-20 より前でほぼ NULL なので、返還艇の判定は `race_start_timings.is_flying`・`is_late_start`・`finish_mark` も使う（設計レビュー 2026-10-02 指摘6・10。PR #1039 の115 に反映）。**119 の本体分は `is_flying`・`is_late_start` だけで判定し、`finish_mark`・`race_results.refund_boats` を使っていない**（差分レビュー指摘6）。フラグが立っていないのに着欄が F・L・欠のレースが混ざりうるので、FR-2 レーンに伝え、T0-3(e) で `finish_mark`・`refund_boats` を正解として照合する
+- **D-5** `rank1`〜`rank3` に返還艇（F・L・欠）が入るレースと、不成立のレースは、母集団（`analogy_pool_outcomes`）に入れない。行に出てこないので、本機能の分母には影響しない。本体の `race_results.rank*` は返還艇も公式の並びのまま入っている（`RaceResult.jsx:236-246`。上位3着に返還艇が入るのは 2026-03〜09 の 32,858R 中16R）。`race_results.race_status` は 2026-09-20 より前でほぼ NULL なので、返還艇の判定は `race_start_timings.is_flying`・`is_late_start`・`finish_mark` も使う（設計レビュー 2026-10-02 指摘6・10。PR #1039 の115 に反映）。差分レビュー（指摘6）で 119 がフラグだけで判定していると分かり、FR-2 レーンが判定を広げた（PR #1134 09e1215ab）: `is_flying`・`is_late_start`、`finish_mark` が F・L・欠、`race_results.refund_boats` のどれか（転・落・妨などの事故は返還ではないので入れない）。本番でフラグ無しなのに着欄が事故・返還の艇は247艇（2026-09 以降。`finish_mark` はそれより前はほぼ NULL）。T0-3(e) で本番を照合する
 - **D-6** 1レースのスナップショットは1行（`analogy_snapshots` の主キーが race_id。マイグレーション119）。保存との紐づけは (race_id, snapshot_at)
 
 ## 機能要件
