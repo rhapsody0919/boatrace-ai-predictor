@@ -73,24 +73,6 @@ export function sortMotorRows(rows, sortKey) {
 }
 
 /**
- * 2連率が1位のモーターの機番（同率1位は全部、UI統一ルール R1）。値のある行が無い、または
- * 全部が同じ値なら空（差が無いものは強調しない）。
- * レース詳細UI統一の `bestOf`（#1135）がマージされたら、そちらに置き換える
- * @param {Array<{motorNumber: number, top2Rate: number|null}>} rows
- * @returns {Set<number>}
- */
-export function topRateMotors(rows) {
-  const valued = rows.filter((r) => hasValue(r.top2Rate));
-  if (valued.length === 0) return new Set();
-  const values = valued.map((r) => Number(r.top2Rate));
-  const max = Math.max(...values);
-  if (Math.min(...values) === max) return new Set();
-  return new Set(
-    valued.filter((r) => Number(r.top2Rate) === max).map((r) => r.motorNumber),
-  );
-}
-
-/**
  * 2連率の表示。会場サイトによって小数第2位まである（51.43）ので、その桁は残す。
  * 1桁に丸めると、別の値が同じ「51.4」に見え、順位が違う理由が読めなくなる
  * @param {number|null} v
