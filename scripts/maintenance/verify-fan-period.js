@@ -726,6 +726,20 @@ async function downloadTests(mods = { cli }) {
       `code=${code} n=${h.urls.length}`,
     );
   }
+  // (d2) 内容が想定外（LZHとして解析できない）が3回連続 → 間隔を空けて再試行し、3回目で停止
+  {
+    const dir = newDir();
+    const h = harness(() => resp(200, new Uint8Array([1, 2, 3, 4])));
+    const code = await C.cmdDownload(baseOpts(dir, { to: "fan2510" }), h.deps);
+    add(
+      "download: 内容が想定外（LZH解析失敗）が3回連続で停止し、再試行の間隔は3秒以上",
+      code === 4 &&
+        h.urls.length === 3 &&
+        h.sleeps.length >= 2 &&
+        h.sleeps.every((s) => s >= 3000),
+      `code=${code} n=${h.urls.length} sleeps=${JSON.stringify(h.sleeps)}`,
+    );
+  }
   // (e) 最新の期のファイルが未公開（404）は想定内。完了扱いにせず、次回も試す
   {
     const dir = newDir();
@@ -829,7 +843,6 @@ async function downloadTests(mods = { cli }) {
 // ---------------------------------------------------------------------------
 // parse → load → sync-profiles（偽のDBクライアント）
 // ---------------------------------------------------------------------------
-
 
 {
   const dir = newDir();
@@ -1093,6 +1106,12 @@ async function downloadTests(mods = { cli }) {
 // ---------------------------------------------------------------------------
 // 8. 変異検証: 壊した版で、評価・取得の検証が失敗する
 // ---------------------------------------------------------------------------
+/**
+ * 変異ごとに別モジュールとして読み込むための通し番号。以前は import の URL を `?t=${Date.now()}` で区別していたが、
+ * 同じファイルの変異が同じミリ秒に続くと URL が一致し、ESM のキャッシュから直前の変異が返る（BOA-648/BOA-671と同種）。
+ * 時刻ではなく通し番号で区別する（下の取得ループの変異（archiveDownloader/fan-backfill）とも共有する）
+ */
+let mutantSeq = 0;
 async function withMutant(fileName, replacements, run) {
   let mutated = fs.readFileSync(path.join(LIB, fileName), "utf8");
   for (const [from, to] of replacements) {
@@ -1104,11 +1123,11 @@ async function withMutant(fileName, replacements, run) {
   }
   const tmpFile = path.join(
     LIB,
-    `${fileName.replace(/\.js$/, "")}.mutant-${process.pid}.tmp.mjs`,
+    `${fileName.replace(/\.js$/, "")}.mutant-${process.pid}-${++mutantSeq}.tmp.mjs`,
   );
   fs.writeFileSync(tmpFile, mutated);
   try {
-    return await run(await import(`${tmpFile}?t=${Date.now()}`));
+    return await run(await import(tmpFile));
   } finally {
     fs.rmSync(tmpFile, { force: true });
   }
@@ -1117,7 +1136,12 @@ async function withMutant(fileName, replacements, run) {
 const parserMutants = [
   [
     "氏名の幅を16→15バイトにする（全角の桁ずれ）",
-    [['["name", 16, "text", "名前漢字"],', '["name", 15, "text", "名前漢字"],']],
+    [
+      [
+        '["name", 16, "text", "名前漢字"],',
+        '["name", 15, "text", "名前漢字"],',
+      ],
+    ],
   ],
   [
     "全体の2連対率の桁数を4→3にする",
@@ -1128,7 +1152,15 @@ const parserMutants = [
       ],
     ],
   ],
-  ["算出期間（至）の桁数を8→7にする", [['["calc_to", 8, "raw", "算出期間（至）"],', '["calc_to", 7, "raw", "算出期間（至）"],']]],
+  [
+    "算出期間（至）の桁数を8→7にする",
+    [
+      [
+        '["calc_to", 8, "raw", "算出期間（至）"],',
+        '["calc_to", 7, "raw", "算出期間（至）"],',
+      ],
+    ],
+  ],
   [
     "昭和の起点を1925→1926にする（生年月日が1年ずれる）",
     [["S: 1925,", "S: 1926,"]],
@@ -1266,9 +1298,10 @@ for (const [label, reps] of downloaderMutants) {
         );
       mutatedDl = mutatedDl.replace(from, to);
     }
+    const seq = ++mutantSeq;
     const dlTmp = path.join(
       LIB,
-      `archiveDownloader.mutant-${process.pid}.tmp.mjs`,
+      `archiveDownloader.mutant-${process.pid}-${seq}.tmp.mjs`,
     );
     const cliSrc = fs
       .readFileSync(
@@ -1282,12 +1315,12 @@ for (const [label, reps] of downloaderMutants) {
     const cliTmp = path.join(
       ROOT,
       "scripts/maintenance",
-      `fan-backfill.mutant-${process.pid}.tmp.mjs`,
+      `fan-backfill.mutant-${process.pid}-${seq}.tmp.mjs`,
     );
     fs.writeFileSync(dlTmp, mutatedDl);
     fs.writeFileSync(cliTmp, cliSrc);
     try {
-      const mod = await import(`${cliTmp}?t=${Date.now()}`);
+      const mod = await import(cliTmp);
       return (await downloadTests({ cli: mod })).filter((r) => !r.pass);
     } catch (e) {
       return [{ label: `例外: ${e.message}` }];
