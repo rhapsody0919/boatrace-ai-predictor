@@ -1,4 +1,5 @@
 import { test, expect, e2eTodayJST, fetchRecorded } from "./fixtures.js";
+import { contribution } from "./analogy-contribution-fixture.js";
 
 /**
  * 画面幅ごとのレイアウト崩れを機械的に検知する。
@@ -734,6 +735,52 @@ test.describe("レイアウト: 管理画面2つのタブの指定が混ざら�
     await expect(page).toHaveURL(/\/admin\/rules$/);
     await expect(page.locator(".admin-rules-tab-navigation")).toBeVisible();
     expect(await marginBottom(".admin-rules-tab-navigation")).toBe("16px");
+  });
+});
+
+/**
+ * AI予想タブのアナロジー・ファインダー節（BOA-271 FR-1 寄与度）。上の PAGES はレース詳細を既定タブのまま
+ * 測るため、節は検査の対象外。寄与度 API だけを固定値に差し替え（本番のテーブルに依存しない）、
+ * 艇番比較の表とテーマの内訳を開いた状態で横スクロールとグリッドを見る
+ */
+test.describe("レイアウト: AI予想タブのアナロジー・ファインダー節", () => {
+  const RACE = "/race/2026-09-26-08-02";
+
+  test("艇番比較と内訳を開いても横スクロールが出ず、グリッドの幅も無駄にならない", async ({
+    page,
+  }) => {
+    // 公開までは機能フラグで隠している。内部確認の印を立てて測る
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai-user:analogy-finder-preview", "1"),
+    );
+    await page.route("**/api/analogy/contribution*", (route) => {
+      const u = new URL(route.request().url());
+      return route.fulfill({
+        json: contribution({
+          venue: Number(u.searchParams.get("venue")),
+          grade: u.searchParams.get("grade"),
+          round: u.searchParams.get("round"),
+          target: Number(u.searchParams.get("target")),
+        }),
+      });
+    });
+    await gotoAndSettle(page, RACE);
+    await page.click('[role="tab"]:has-text("AI予想")');
+    const section = page.getByRole("region", {
+      name: "アナロジー・ファインダー",
+    });
+    await expect(section).toBeVisible({ timeout: 30000 });
+    await section.getByRole("checkbox", { name: "艇番で比較" }).check();
+    await section.getByRole("button", { name: /選手・基礎成績/ }).click();
+    await expect(section.getByRole("table")).toBeVisible();
+
+    const overflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(OVERFLOW_TOLERANCE_PX);
+    expectNoWastedGrids(await inspectGrids(page));
   });
 });
 
