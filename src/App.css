@@ -990,8 +990,15 @@ input:focus-visible,
 }
 
 /* 払戻の下の注記は、表の内容の説明なので左寄せで読む（右寄せだと375pxで行頭がそろわない） */
-.rr-note.rr-payout-popularity-note {
+.rr-note.rr-payout-popularity-note,
+.rr-note.rr-payout-void-note {
   text-align: left;
+}
+
+/* 不成立の理由の1行: 勝式名（「2連複」等）を途中で折らず、「・」「、」の後だけで折り返す。
+   375px で「…3連複・2／連複…」と数字だけが行末に残った（#1094 ファン評価1周目） */
+.rr-note.rr-payout-void-note {
+  word-break: keep-all;
 }
 
 .rr-amount {

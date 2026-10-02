@@ -288,6 +288,8 @@
     "refundTag": "반환정 있음",
     "partialNoRaceTag": "일부 승식 불성립",
     "payoutNoRace": "불성립(반환)",
+    "partialVoidByStarters": "정상적으로 스타트한 정이 {{count}}정이어서 {{types}}은(는) 불성립(반환)입니다",
+    "partialVoidByFinishers": "완주한 정이 {{count}}정이어서 {{types}}은(는) 불성립(반환)입니다",
     "payoutNoAmount": "공식 배당금에 금액이 기재되어 있지 않습니다",
     "payoutNoAmountNote": "「—」는 공식 배당금에 금액이 기재되어 있지 않은 조합입니다",
     "payoutSpecial": "특별 지급",
