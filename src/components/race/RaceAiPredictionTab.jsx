@@ -27,6 +27,7 @@ import OutcomePatternPreview from "./OutcomePatternPreview";
 import { getVolatilityLevel } from "../../utils/volatilityLevel";
 import { isJudgeable } from "../../utils/raceOutcome";
 import AnalogyFinderSection from "./analogy/AnalogyFinderSection";
+import { isAnalogyFinderEnabled } from "../../config/featureFlags";
 
 function RaceAiPredictionTab({
   prediction,
@@ -58,13 +59,16 @@ function RaceAiPredictionTab({
         venueName={venueName}
         raceId={raceId}
       />
-      <AnalogyFinderSection
-        key={raceId}
-        venueCode={venueCode}
-        venueName={venueName}
-        raceGrade={raceGrade}
-        raceStage={raceStage}
-      />
+      {/* 公開までは機能フラグで隠す（隠している間は描かないので API も呼ばない。src/config/featureFlags.js） */}
+      {isAnalogyFinderEnabled() && (
+        <AnalogyFinderSection
+          key={raceId}
+          venueCode={venueCode}
+          venueName={venueName}
+          raceGrade={raceGrade}
+          raceStage={raceStage}
+        />
+      )}
     </>
   );
 }

@@ -9,7 +9,9 @@ import {
  * アナロジー・ファインダーの寄与度（BOA-271 FR-1）。
  *
  * 寄与度 API（/api/analogy/contribution）と予想の Edge API・Supabase REST を差し替え、DB に依存しない。
+ * 公開までは機能フラグ（src/config/featureFlags.js）で隠しているので、テストは内部確認の印を立てて行う。
  * 固定するもの:
+ *   - 印が無ければ節を出さず、寄与度の API も呼ばない（DB への問い合わせが無い）。?analogy=1 で出せる
  *   - 学習前（is_active の版が無い）は節ごと出さない
  *   - API にはこのレースの会場・グレード・ラウンドを既定の条件として渡す
  *   - テーマは API の themes 配列から描く（7つ目のテーマを足しても出る）
@@ -66,12 +68,14 @@ const edgeData = {
   races: [race(1), race(2, { predictions: false })],
 };
 
-async function setup(page, respond) {
+async function setup(page, respond, { preview = true } = {}) {
   const calls = [];
-  await page.addInitScript(() => {
+  await page.addInitScript((on) => {
     localStorage.setItem("boatai-language", "ja");
     localStorage.setItem("boatai:cookie-consent", "accepted");
-  });
+    // 公開までは機能フラグで隠している（src/config/featureFlags.js）。内部確認の印を立てて検証する
+    if (on) localStorage.setItem("boatai-user:analogy-finder-preview", "1");
+  }, preview);
   await page.route("**/api/predictions/**", (route) =>
     route.fulfill({ json: edgeData }),
   );
@@ -104,6 +108,31 @@ const sectionOf = (page) =>
   page.getByRole("region", { name: "アナロジー・ファインダー" });
 
 test.describe("アナロジー・ファインダーの寄与度（BOA-271 FR-1）", () => {
+  test("公開前の既定では節を出さず、寄与度の API も呼ばない", async ({
+    page,
+  }) => {
+    const calls = await setup(page, (p) => contribution(p), { preview: false });
+    await openAiTab(page);
+    await expect(page.locator(".prediction-result")).toBeVisible();
+    await page.waitForLoadState("networkidle").catch(() => {});
+    await expect(page.locator(".af-section")).toHaveCount(0);
+    expect(calls).toHaveLength(0);
+  });
+
+  test("?analogy=1 を付けて開くと内部確認として節を出し、端末に覚える", async ({
+    page,
+  }) => {
+    await setup(page, (p) => contribution(p), { preview: false });
+    await page.goto(`/race/${DATE}-09-01?analogy=1`);
+    await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
+    await expect(sectionOf(page)).toBeVisible();
+    expect(
+      await page.evaluate(() =>
+        localStorage.getItem("boatai-user:analogy-finder-preview"),
+      ),
+    ).toBe("1");
+  });
+
   test("学習前（版が無い）は節ごと出さない", async ({ page }) => {
     const calls = await setup(page, () => ({ available: false }));
     await openAiTab(page);

@@ -749,6 +749,10 @@ test.describe("レイアウト: AI予想タブのアナロジー・ファイン�
   test("艇番比較と内訳を開いても横スクロールが出ず、グリッドの幅も無駄にならない", async ({
     page,
   }) => {
+    // 公開までは機能フラグで隠している。内部確認の印を立てて測る
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai-user:analogy-finder-preview", "1"),
+    );
     await page.route("**/api/analogy/contribution*", (route) => {
       const u = new URL(route.request().url());
       return route.fulfill({
