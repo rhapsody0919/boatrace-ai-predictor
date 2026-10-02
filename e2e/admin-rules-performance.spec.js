@@ -231,7 +231,11 @@ test.describe("管理画面 /admin/rules の運用成績", () => {
       PERFORMANCE_API,
       fulfillJson({
         startDate: "2026-01-16",
-        data: { total: { samples: 0, hits: 0, payout: 0 }, by_rule: [], by_week: [] },
+        data: {
+          total: { samples: 0, hits: 0, payout: 0 },
+          by_rule: [],
+          by_week: [],
+        },
       }),
     );
     await page.goto("/admin/rules");
@@ -254,5 +258,40 @@ test.describe("管理画面 /admin/rules の運用成績", () => {
     await expect(page.locator(".admin-rules-error-state")).toContainText(
       "get_admin_rule_performance 呼び出しエラー",
     );
+  });
+
+  // BOA-676: loadHistoryData は catch で console.error するだけで、historyData/historyTotal を
+  // 更新しないまま終わっていた。取得失敗が「対象期間に履歴なし」という空の一覧に化け、
+  // 画面からは取得できていないことに気づけなかった。履歴タブの predictions クエリ
+  // （getRuleApplicationHistory、race_id=gte./lt. を使う）だけを失敗させ、
+  // 本日タブの predictions クエリ（race_id=like.、beforeEach で空配列を返す）とは区別する
+  test("履歴タブのAPIが失敗したら「対象期間に履歴なし」にせずエラーを出す", async ({
+    page,
+  }) => {
+    const HISTORY_PREDICTIONS = /\/rest\/v1\/predictions\?.*race_id=gte\./;
+    await page.route(
+      PERFORMANCE_API,
+      fulfillJson({
+        startDate: "2026-01-16",
+        data: {
+          total: { samples: 0, hits: 0, payout: 0 },
+          by_rule: [],
+          by_week: [],
+        },
+      }),
+    );
+    await page.route(
+      HISTORY_PREDICTIONS,
+      fulfillJson({ message: "履歴取得に失敗しました（テスト用）" }, 500),
+    );
+    await page.goto("/admin/rules");
+    await page.getByRole("button", { name: "履歴", exact: true }).click();
+
+    await expect(page.locator(".history-tab .data-fetch-error")).toContainText(
+      "履歴取得に失敗しました（テスト用）",
+    );
+    // 空の一覧（0件）としての表示（期間成績サマリー・表・ページネーション）は出さない
+    await expect(page.locator(".history-tab .history-summary")).toHaveCount(0);
+    await expect(page.locator(".history-tab .rules-table")).toHaveCount(0);
   });
 });
