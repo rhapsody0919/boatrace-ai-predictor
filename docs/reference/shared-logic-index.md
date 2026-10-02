@@ -186,6 +186,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/venueEntryCourseStats/parser.js` | parser - 進入コース別選手成績（`/modules/raceinfo/?page=index_racecourse`）の | parseEntryCourseHtml |
 | `scripts/lib/venueEntryCourseStats/venueConfig.js` | venueConfig - 進入コース別選手成績スクレイピング対象会場設定（BOA-293） | buildEntryCourseUrl, VENUE_ENTRY_COURSE_STATS_CONFIG, EXCLUDED_VENUES |
 | `scripts/lib/venueEntryCourseStatsJob.js` | 進入コース別選手成績（B4、venue_entry_course_stats）の共通ラッパ向けハンドラー（tasks.md T4b-13-1）。 | runVenueEntryCourseStatsJob, ENTRY_COURSE_CONCURRENCY |
+| `scripts/lib/venueFirstWinRate.js` | 会場別の1号艇勝率（直近N日）の集計（BOA-303）。 | aggregateFirstWinRate |
 | `scripts/lib/venueMotorStats/driftHealth.js` | 会場公式サイトのHTML構造変化を検知するための、日次スクレイピング結果の | updateVenueHealth, findDriftAlerts, STRUCTURAL_DRIFT_REASONS, DRIFT_ALERT_THRESHOLD_DAYS |
 | `scripts/lib/venueMotorStats/parserUtils.js` | parserUtils - 会場公式サイトのモーター成績パーサー間で共通の変換・DOM操作 | normalizeText, toIntOrNull, toFloatOrNull, toStrictIntOrNull, parseBestTime ほか5件 |
 | `scripts/lib/venueMotorStats/parsers/gamagori.js` | gamagori - 蒲郡専用パーサー（BOA-264） | parseGamagoriMotorTable |
@@ -276,4 +277,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 241 ファイル / export 1171 件。
+対象 242 ファイル / export 1172 件。
