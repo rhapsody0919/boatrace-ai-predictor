@@ -1,0 +1,401 @@
+/* アナロジー・ファインダー節（BOA-271）。クラス名は af- 接頭辞で他ページと衝突させない */
+
+.af-section {
+  margin-top: var(--spacing-8);
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-5);
+  color: var(--text-primary);
+}
+
+.af-section .af-title {
+  margin: 0 0 var(--spacing-3);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.af-section .af-panel-title {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+}
+
+.af-lede,
+.af-note,
+.af-scope {
+  margin: 0 0 var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.af-note {
+  font-size: var(--font-size-xs);
+}
+
+.af-scope {
+  margin-bottom: var(--spacing-1);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ---- 操作（着順・詳細条件・艇番比較） ---- */
+.af-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+}
+
+.af-segment {
+  display: flex;
+  gap: var(--spacing-1-5);
+}
+
+.af-segment button {
+  flex: 1;
+  min-height: 2.5rem;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.af-segment button.is-active {
+  background: var(--brand-accent-primary);
+  border-color: var(--brand-accent-primary);
+  /* ダークでは背景が明るい金になるので、白でなく面の色（RaceOddsListTab.css と同じ組み合わせ） */
+  color: var(--surface-card);
+}
+
+.af-conditions summary {
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+}
+
+.af-conditions-body,
+.af-compare-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2) var(--spacing-4);
+}
+
+.af-conditions-body {
+  margin-top: var(--spacing-2);
+}
+
+.af-field,
+.af-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.af-field select {
+  min-height: 2.25rem;
+  padding: 0 var(--spacing-2);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.af-check input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--brand-accent-primary);
+}
+
+/* ---- レーダー ---- */
+.af-radar-wrap {
+  max-width: 22rem;
+  margin: 0 auto;
+}
+
+.af-radar {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.af-radar-ring,
+.af-radar-axis {
+  fill: none;
+  stroke: var(--border-hairline);
+  stroke-width: 1;
+}
+
+.af-radar-scale {
+  fill: var(--text-secondary);
+  font-size: 9px;
+}
+
+.af-radar-series {
+  --af-series-color: var(--brand-accent-primary);
+}
+
+.af-radar-area {
+  fill: var(--af-series-color);
+  fill-opacity: 0.2;
+  stroke: var(--af-series-color);
+  stroke-width: 2;
+}
+
+.af-radar-dot {
+  fill: var(--af-series-color);
+}
+
+/* 艇番比較: A は実線、B は破線（色だけに頼らない）。色は艇の線の色（JS から --af-series-color） */
+.af-radar-series-b .af-radar-area {
+  fill-opacity: 0.08;
+  stroke-dasharray: 5 4;
+}
+
+.af-radar-label {
+  fill: var(--text-primary);
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+}
+
+.af-radar-label-value {
+  fill: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.af-radar-legend {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-4);
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.af-legend-a::before,
+.af-legend-b::before {
+  content: "";
+  display: inline-block;
+  width: 1.25rem;
+  margin-right: var(--spacing-1);
+  vertical-align: middle;
+  border-top: var(--border-width-2) solid var(--af-legend-color);
+}
+
+.af-legend-b::before {
+  border-top-style: dashed;
+}
+
+/* 選んだ条件のレースが少なく、広げて集計したとき。読み飛ばされないよう枠で囲む */
+.af-widened {
+  margin: 0 0 var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: var(--border-width-1) solid var(--color-warning);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-warning-text);
+}
+
+/* ---- n・期間・モデル版 ---- */
+.af-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-1) var(--spacing-3);
+  margin: var(--spacing-2) 0 var(--spacing-4);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.af-flag {
+  padding: 0 var(--spacing-2);
+  border: var(--border-width-1) solid var(--color-warning);
+  border-radius: var(--radius-full);
+  color: var(--color-warning-text);
+  font-weight: var(--font-weight-bold);
+}
+
+/* ---- テーマ別の棒 ---- */
+.af-list-label {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+}
+
+.af-theme-list {
+  list-style: none;
+  margin: 0 0 var(--spacing-2);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.af-theme {
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.af-theme-head {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-2);
+  width: 100%;
+  padding: var(--spacing-2-5) var(--spacing-3);
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.af-chevron {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  transition: transform var(--transition-fast) var(--ease-out);
+}
+
+.af-theme-head[aria-expanded="true"] .af-chevron {
+  transform: rotate(90deg);
+}
+
+.af-theme-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.af-rank {
+  margin-left: var(--spacing-1-5);
+  padding: 0 var(--spacing-1-5);
+  border-radius: var(--radius-sm);
+  background: var(--brand-accent-primary);
+  color: var(--surface-card);
+  font-size: var(--font-size-2xs);
+  vertical-align: 1px;
+}
+
+.af-theme-value,
+.af-breakdown-value,
+.af-compare-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+  text-align: right;
+}
+
+.af-bar-track {
+  grid-column: 2 / 4;
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--border-hairline);
+  overflow: hidden;
+}
+
+.af-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--brand-accent-primary);
+}
+
+.af-breakdown {
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-3) var(--spacing-8);
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+.af-breakdown-list {
+  list-style: none;
+  margin: 0 0 var(--spacing-2);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1-5);
+}
+
+.af-breakdown-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(3rem, 6rem) 2.75rem;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.af-bar-track-sub {
+  grid-column: auto;
+  height: 0.35rem;
+}
+
+.af-bar-fill-sub {
+  opacity: 0.6;
+}
+
+/* ---- 艇番比較の表 ---- */
+.af-compare-table {
+  width: 100%;
+  margin-bottom: var(--spacing-4);
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.af-compare-table th,
+.af-compare-table td {
+  padding: var(--spacing-1-5) var(--spacing-2);
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+  text-align: left;
+}
+
+.af-compare-table th:not(:first-child),
+.af-compare-table td.af-compare-value {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.af-compare-caption {
+  caption-side: top;
+  margin-bottom: var(--spacing-1-5);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.af-compare-boat {
+  margin-left: var(--spacing-1);
+}
+
+/* 広い幅ではレーダーとテーマ別の棒を左右に並べる（1列だと棒が間延びし、レーダーが小さく見える） */
+@media (min-width: 1024px) {
+  .af-body {
+    display: grid;
+    grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--spacing-6);
+  }
+}
+
+@media (max-width: 480px) {
+  .af-section {
+    margin-top: var(--spacing-4);
+    padding: var(--spacing-3);
+  }
+
+  .af-segment button {
+    font-size: var(--font-size-xs);
+  }
+
+  .af-breakdown {
+    padding-left: var(--spacing-3);
+  }
+}

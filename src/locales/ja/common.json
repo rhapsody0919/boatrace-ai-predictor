@@ -316,7 +316,128 @@
   "aiPredictionTab": {
     "cancelled": "このレースは中止のため、AI予想はありません",
     "unavailableTitle": "AI予想データがありません",
-    "unavailableBody": "このレースはAI予想の対象データが揃っていません。"
+    "unavailableBody": "このレースはAI予想の対象データが揃っていません。",
+    "analogy": {
+      "title": "アナロジー・ファインダー",
+      "views": {
+        "contribution": "寄与度"
+      },
+      "contribution": {
+        "lede": "条件が近い過去のレースで、着順にどのデータがどれだけ効いていたかを、テーマ別の割合で見ます。",
+        "foot": "割合は、条件が近い過去のレースで、テーマごとの効き方の相対的な大きさを示します（全テーマで合計100%）。"
+      },
+      "targetsLabel": "着順",
+      "targets": {
+        "1": "1着",
+        "2": "2着以内",
+        "3": "3着以内"
+      },
+      "conditions": "詳細条件",
+      "grade": "グレード",
+      "round": "ラウンド",
+      "all": "すべて",
+      "grades": {
+        "ippan": "一般",
+        "G3": "G3",
+        "G2": "G2",
+        "G1": "G1",
+        "SG": "SG"
+      },
+      "rounds": {
+        "yosen": "予選",
+        "junyu": "準優勝戦",
+        "yusho": "優勝戦",
+        "other": "その他"
+      },
+      "compare": "艇番で比較",
+      "boatA": "艇番A",
+      "boatB": "艇番B",
+      "boatLabel": "{{n}}号艇",
+      "themeColumn": "テーマ",
+      "venueAll": "全会場",
+      "widened": "{{requested}}はレース数が少ないため、{{steps}}に広げて集計しています",
+      "widenedSteps": {
+        "venue": "全会場",
+        "round": "全ラウンド",
+        "grade": "全グレード"
+      },
+      "n": "n={{races}}レース（{{boats}}艇）",
+      "model": "モデル {{version}}",
+      "smallSample": "小標本",
+      "rank": "{{rank}}位",
+      "radarLabel": "テーマ別の寄与の大きさを示すレーダーチャート",
+      "breakdownNote": "似た意味の項目（勝率と2連率、レース内の順位など）はまとめています。個別の値は参考です。",
+      "error": "寄与度を読み込めませんでした",
+      "themes": {
+        "venueCourse": {
+          "name": "会場×枠・進入",
+          "short": "会場×枠"
+        },
+        "racerRecord": {
+          "name": "選手・基礎成績",
+          "short": "選手・成績"
+        },
+        "startExhibition": {
+          "name": "ST・直前情報",
+          "short": "ST・直前"
+        },
+        "machine": {
+          "name": "機力",
+          "short": "機力"
+        },
+        "environment": {
+          "name": "環境",
+          "short": "環境"
+        },
+        "racerProfile": {
+          "name": "選手・属性",
+          "short": "選手・属性"
+        }
+      },
+      "groups": {
+        "venueCourse": {
+          "venue": "会場",
+          "boatNumber": "枠番",
+          "raceNumber": "レース番号"
+        },
+        "racerRecord": {
+          "class": "級別",
+          "national": "全国勝率・2連率",
+          "local": "当地勝率・2連率",
+          "recent": "直近30走の成績",
+          "boat1": "インの選手（1号艇）の級別・勝率"
+        },
+        "startExhibition": {
+          "exhibitionTime": "展示タイム",
+          "pastSt": "過去の平均ST"
+        },
+        "machine": {
+          "motor": "モーター2連率",
+          "boat": "ボート2連率"
+        },
+        "environment": {
+          "weather": "天候",
+          "wind": "風向・風速",
+          "wave": "波高",
+          "grade": "グレード",
+          "round": "ラウンド",
+          "seriesDay": "節の日目"
+        },
+        "racerProfile": {
+          "age": "年齢",
+          "weight": "体重",
+          "branch": "支部・地元"
+        }
+      },
+      "loading": "読み込み中…",
+      "scope": "{{venue}}・{{grade}}・{{round}}の過去のレース",
+      "listSeparator": "・",
+      "period": "{{from}}〜{{to}}",
+      "listAllBoats": "テーマ別（全艇）",
+      "listAllBoatsCompare": "テーマ別（全艇。艇番ごとの値は上の表）",
+      "magnitudeNote": "割合は、有利・不利のどちらに働いたかを問わない「効きの大きさ」です。",
+      "compareCaption": "艇番ごとの効きの割合（%。列ごとに合計100%）。下の「全艇」は2〜5号艇も含めた6艇をまとめた値です。"
+    }
   },
   "beforeInfo": {
     "subtitle": "発走が近づくと更新される当日限りの情報です。発走30/15/10分前まで確定しない項目があります",
