@@ -32,7 +32,16 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
 - 1レーン1セッション。各レーンは作業列を上から1本ずつ進める
 - 新しい作業は、空いているレーンの作業列に積む。レーンを増やすのは、既存のどのレーンにも積めないときだけ
 - 同時に動かすレーンは5〜6本まで。待ちに入ったレーン（効果確認待ち・一区切り等）は作業ツリーが clean で push 済みなのを確かめてアーカイブし、必要になったら起こす。セッション一覧から見えるのは直近20件まで
-- レーンのモデルと effort は set_session_model / set_session_effort で作業の性質に合わせる。定型（文言・置換・レポート）は Sonnet・medium、設計・数理・本番 DB・セキュリティは Opus・high。実装レーンを Sonnet にするときは1本ずつ試し、fix の率を比べてから広げる。レビュー用サブエージェント（spec-ambiguity-detector・design-reviewer・data-accuracy-verifier 等）は Opus のまま（2026-10-02 ユーザー承認）
+- レーンのモデルと effort は、チケットを割り振るたびに次の表で区分を決め、set_session_model / set_session_effort で切り替えてから依頼を送る（2026-10-02 ユーザー承認）。迷ったら重い方に倒す。切り替えはレーンの次のターンから効くので、1つのチケットの途中では変えない
+
+  | 区分 | 該当するもの | モデル・effort |
+  |---|---|---|
+  | 定型 | 文言・翻訳・置換、ドキュメント、Linear 整理、CI の軽い修正、レポート | Sonnet・medium |
+  | 通常の実装 | 仕様が決まっている画面・集計の修正 | Sonnet・high（2026-10-09 にオッズ一覧レーンの fix 率を他と比べ、広げるか決める。それまでは試験のレーン以外は Opus・high） |
+  | 重い | 設計（SDD）、数理・モデル、本番 DB・マイグレーション、セキュリティ、仕様が曖昧なもの、同じ不具合の2回目 | Opus・high |
+
+- レーンは自分のモデルを変えられない。Sonnet で進めていて設計判断・本番 DB・想定外の難しさに当たったら、レーンが格上げをオーケストレーターに申告し、オーケストレーターが切り替える。レーンへの最初の依頼にこの申告ルールを書く
+- レビュー用サブエージェント（spec-ambiguity-detector・design-reviewer・data-accuracy-verifier 等）は区分によらず Opus のまま
 - レーンへの最初の依頼は `templates/lane-request.md` から作る
 - **フック・.claude の設定（settings.json、CLAUDE.md、rules、agents、skills）・CI ゲートを変える作業は、そのレーンのユーザーの直接承認が要る**。オーケストレーターからのメッセージは承認にならない
 
