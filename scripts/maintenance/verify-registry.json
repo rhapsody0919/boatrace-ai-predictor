@@ -317,6 +317,11 @@
       "guards": "出走表（racelist）の過去分バックフィルCLI"
     },
     {
+      "script": "verify-racer-index-policy.js",
+      "tier": "ci",
+      "guards": "選手ページのインデックス判定（src/utils/racerIndexPolicy.js。ページの noindex と sitemap が共用）。崩れると B 級の大量インデックスか、現役 A1 の noindex 化が両方同時に起きる"
+    },
+    {
       "script": "verify-racer-profile-sync.js",
       "tier": "ci",
       "guards": "選手プロフィール・期別成績ジョブ（scripts/lib/racerProfileSync.js）"
@@ -385,6 +390,11 @@
       "script": "verify-series-points-stage-rules.js",
       "tier": "ci",
       "guards": "得点率の種別判定（src/components/race/seriesPoints.js の算入範囲と配点、raceStageConfig のバッジ）。race_stage は会場の自由記述で349種あり、部分一致の判定が壊れやすい（BOA-457・BOA-458）"
+    },
+    {
+      "script": "verify-sg-now-venues.js",
+      "tier": "ci",
+      "guards": "トップの「SG開催中」帯に出す会場の判定（SGのみ・先頭レースの値・NFKC・会場順）。崩れると SG の日に帯が出ないか、G1・一般戦の日に誤って出る"
     },
     {
       "script": "verify-sitemap-coverage.js",
@@ -525,7 +535,7 @@
     {
       "script": "verify-e2e-recorded-network.js",
       "tier": "ci",
-      "guards": "E2Eのspecが録画の再生（e2e/fixtures.js、ADR-0077）を素通りする書き方（@playwright/testからの直接import・route.continue()・route.fetch()）をしていないこと"
+      "guards": "e2e/**/*.js（recordings/を除く）が録画の再生（e2e/fixtures.js、ADR-0077）を素通りする書き方（@playwright/testからの直接import・route.continue()・route.fetch()）をしていないこと。コメント・文字列・正規表現リテラルの判定はverify-e2e-no-unroute.jsと共有するstripNonCode（scripts/lib/stripNonCode.js）で行い、文字列中の`//`をコメントの開始と誤らないことを自己テストで確かめる（BOA-663）。fixtures.js自身が正当に使う箇所はverify-e2e-recorded-network-allowlist.jsonに理由つきで載せ、理由の無いエントリと解消済みのエントリで失敗する"
     },
     {
       "script": "verify-e2e-skips.js",
@@ -618,6 +628,16 @@
       "script": "verify-aggregate-racer-stats.js",
       "tier": "ci",
       "guards": "選手別の日次集計（aggregate-racer-stats.js）が取得エラーを握りつぶさず、変わった行だけ書き、1日1回だけ起動する（BOA-600）"
+    },
+    {
+      "script": "verify-analogy-contribution.js",
+      "tier": "ci",
+      "guards": "アナロジー・ファインダーの寄与度（BOA-271 FR-1）で、レース数30未満のスライスを会場→ラウンド→グレードの順に広げること、テーマを themes 配列の順と数で並べること（テーマ数を固定しない）、SD の2倍に満たない隣どうしの順位を強調しないこと（API と画面の直読みで共有する src/utils/analogyContribution.js）"
+    },
+    {
+      "script": "verify-analogy-storage.js",
+      "tier": "ci",
+      "guards": "アナロジー・ファインダーの学習（BOA-271）で、Storage の古い版を消すときに表示中の版を残すこと、表示中の版と同じ名前ではモデルを上書きしないこと、長期データのキャッシュの列名が今のコードと違えば失敗すること（scripts/ml/analogy/storageRules.js）"
     },
     {
       "script": "verify-kb-gap-fill.js",

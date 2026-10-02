@@ -1417,6 +1417,12 @@ async function runWrapped({ mode, rows, client, fetched }) {
 // (g) 変異検証: 壊した版で、(a)(b)(c) の評価が失敗する
 // ---------------------------------------------------------------------------
 const LIB = path.join(ROOT, "scripts/lib");
+/**
+ * 変異ごとに別モジュールとして読み込むための通し番号。以前は import の URL を `?t=${Date.now()}` で区別していたが、
+ * 同じファイルの変異が同じミリ秒に続くと URL が一致し、ESM のキャッシュから直前の変異が返る（BOA-648/BOA-671と同種）。
+ * 時刻ではなく通し番号で区別する
+ */
+let mutantSeq = 0;
 async function withMutant(fileName, replacements, runFn) {
   const source = fs.readFileSync(path.join(LIB, fileName), "utf8");
   let mutated = source;
@@ -1429,11 +1435,11 @@ async function withMutant(fileName, replacements, runFn) {
   }
   const tmp = path.join(
     LIB,
-    `${fileName.replace(/\.js$/, "")}.mutant-${process.pid}.tmp.mjs`,
+    `${fileName.replace(/\.js$/, "")}.mutant-${process.pid}-${++mutantSeq}.tmp.mjs`,
   );
   fs.writeFileSync(tmp, mutated);
   try {
-    return await runFn(await import(`${tmp}?t=${Date.now()}`));
+    return await runFn(await import(tmp));
   } finally {
     fs.rmSync(tmp, { force: true });
   }

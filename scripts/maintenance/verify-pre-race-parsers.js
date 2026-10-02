@@ -910,7 +910,9 @@ function createDb({ tables = {}, missing = {}, throwOnProbe = false } = {}) {
           // 絞り込みの後は await で終える（lte・gte の順に依らない）
           const rangeFilters = [];
           const pick = (r) =>
-            Object.fromEntries(cols.filter((c) => c in r).map((c) => [c, r[c]]));
+            Object.fromEntries(
+              cols.filter((c) => c in r).map((c) => [c, r[c]]),
+            );
           const q = {
             lte(column, value) {
               rangeFilters.push((r) => String(r[column]) <= String(value));
@@ -1495,6 +1497,12 @@ const hmOf = (date) => realRows.formatJstHm(date);
 // (f) 変異検証: 壊した版で、評価が失敗する
 // ---------------------------------------------------------------------------
 const MUTANT_DIR = path.join(ROOT, "scripts/lib");
+/**
+ * 変異ごとに別モジュールとして読み込むための通し番号。以前は import の URL を `?t=${Date.now()}` で区別していたが、
+ * 同じファイルの変異が同じミリ秒に続くと URL が一致し、ESM のキャッシュから直前の変異が返る（BOA-648/BOA-671と同種）。
+ * 時刻ではなく通し番号で区別する
+ */
+let mutantSeq = 0;
 async function withMutant(fileName, replacements, run) {
   const source = fs.readFileSync(path.join(MUTANT_DIR, fileName), "utf8");
   let mutated = source;
@@ -1507,11 +1515,11 @@ async function withMutant(fileName, replacements, run) {
   }
   const tmp = path.join(
     MUTANT_DIR,
-    `${fileName.replace(/\.js$/, "")}.mutant-${process.pid}.tmp.mjs`,
+    `${fileName.replace(/\.js$/, "")}.mutant-${process.pid}-${++mutantSeq}.tmp.mjs`,
   );
   fs.writeFileSync(tmp, mutated);
   try {
-    return await run(await import(`${tmp}?t=${Date.now()}`));
+    return await run(await import(tmp));
   } finally {
     fs.rmSync(tmp, { force: true });
   }

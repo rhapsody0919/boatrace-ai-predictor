@@ -316,6 +316,7 @@ async function buildSeoKpi() {
   const landingLabels = {
     root: "トップ /",
     venue: "会場ページ /venue/*",
+    racer: "選手ページ /racer/*",
     today: "/today",
     blog: "ブログ /blog/*",
     otherJa: "その他の日本語ページ",

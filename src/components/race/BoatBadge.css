@@ -1,0 +1,42 @@
+/* 艇番バッジ（サイズ違い: 既定/sm/xs） */
+.rol-boat-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  border: var(--border-width-1) solid var(--border-hairline);
+  flex: none;
+}
+
+.rol-boat-badge-sm {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.rol-boat-badge-xs {
+  width: 1rem;
+  height: 1rem;
+  font-size: var(--font-size-2xs);
+}
+
+@media (max-width: 480px) {
+  .rol-boat-badge {
+    width: 1.2rem;
+    height: 1.2rem;
+    font-size: var(--font-size-2xs);
+  }
+
+  .rol-boat-badge-sm {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .rol-boat-badge-xs {
+    width: 0.9rem;
+    height: 0.9rem;
+  }
+}

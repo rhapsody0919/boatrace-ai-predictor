@@ -35,7 +35,7 @@ export async function runRaceNoticesJob(
   } = {},
 ) {
   const date = toJstDateString(ctx.now());
-  // DB障害を「開催会場なし」にしない（getRaceSchedule は、既定ではDBエラーを空配列にする）
+  // DB障害を「開催会場なし」にしない（getRaceSchedule の既定も例外。BOA-391。意図を明示するため指定を残す）
   const schedule = await getSchedule(date, {
     throwOnError: true,
     client: ctx.client,

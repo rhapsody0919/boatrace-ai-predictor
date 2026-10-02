@@ -297,20 +297,20 @@ function RaceDetailPage() {
     },
   ];
 
+  const metaParams = {
+    venue: venueName,
+    race: parsed.raceNo,
+    date: formatDateLocalized(date, i18n.resolvedLanguage),
+  };
+
   return (
     <>
-      <title>
-        {t("raceDetailPage.metaTitle", {
-          venue: venueName,
-          race: parsed.raceNo,
-        })}
-      </title>
+      {/* 開催日を入れる。無いと同じ会場・同じR番号の全日付で title・description が同じになり、
+          検索結果で重複扱いになる（集客レーン、2026-10-02） */}
+      <title>{t("raceDetailPage.metaTitle", metaParams)}</title>
       <meta
         name="description"
-        content={t("raceDetailPage.metaDescription", {
-          venue: venueName,
-          race: parsed.raceNo,
-        })}
+        content={t("raceDetailPage.metaDescription", metaParams)}
       />
       <link rel="canonical" href={`https://www.boat-ai.jp/race/${raceId}`} />
       <Header />

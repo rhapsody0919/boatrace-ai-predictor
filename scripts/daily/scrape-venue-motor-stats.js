@@ -149,14 +149,14 @@ export function toMotorStatsRow(venue, m, scrapedDate) {
  * venue_motor_stats へ書く（1,000行ずつ upsert）。
  * @param {import("@supabase/supabase-js").SupabaseClient} client
  * @param {Array<Object>} rows
- * @param {{throwOnError?: boolean}} [options] true なら、書き込みエラーを例外にする（Vercel）。
- *   既定は従来どおり、ログに出して続行する
+ * @param {{throwOnError?: boolean}} [options] true（既定。BOA-391）なら、書き込みエラーを例外にする。
+ *   false はログに出して続行する
  * @returns {Promise<number>} 書き込みに成功した行数
  */
 export async function writeMotorStatsRows(
   client,
   rows,
-  { throwOnError = false } = {},
+  { throwOnError = true } = {},
 ) {
   let written = 0;
   for (let i = 0; i < rows.length; i += 1000) {
@@ -207,13 +207,14 @@ export async function run() {
     }
   }
 
+  // 会場ごとの成否履歴（構造変化の検知の入力）は、DB の書き込みが失敗して例外になっても残すため、先に書く（BOA-391）
+  fs.mkdirSync(new URL(".", HEALTH_FILE_PATH), { recursive: true });
+  fs.writeFileSync(HEALTH_FILE_PATH, JSON.stringify(health, null, 2) + "\n");
+
   if (allRows.length > 0) {
     console.log(`\n💾 venue_motor_stats: ${allRows.length}件書き込み中...`);
     await writeMotorStatsRows(supabase, allRows);
   }
-
-  fs.mkdirSync(new URL(".", HEALTH_FILE_PATH), { recursive: true });
-  fs.writeFileSync(HEALTH_FILE_PATH, JSON.stringify(health, null, 2) + "\n");
 
   console.log(
     `📊 完了: ${successCount}/${VENUE_MOTOR_STATS_CONFIG.length}会場成功、${allRows.length}件保存`,

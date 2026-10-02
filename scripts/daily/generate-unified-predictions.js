@@ -44,7 +44,7 @@ function parseArgs(argv = process.argv.slice(2)) {
 async function fetchRaceDataFromSupabase(
   raceIds,
   client = supabase,
-  throwOnError = false,
+  throwOnError = true,
 ) {
   // ⚠️ Supabaseのデフォルトlimitは1000行。180レース×6艇=1080行等、対象日によっては
   // 単純な.select("*").in()だと後方の会場が無条件に切り捨てられる（2026-08-13判明、
@@ -158,7 +158,7 @@ function venueCodeOfRaceId(raceId) {
 async function fetchVolatilityDistributionByVenue(
   beforeDate,
   client = supabase,
-  throwOnError = false,
+  throwOnError = true,
 ) {
   const cutoff = new Date(beforeDate);
   cutoff.setDate(cutoff.getDate() - VOLATILITY_LOOKBACK_DAYS);
@@ -246,15 +246,15 @@ export async function findRacesMissingUnified(
  * @param {boolean} [params.dryRun]
  * @param {boolean} [params.includeStarted] true なら発走済みのレースも書く（既定 false。BOA-628。過去日の作り直しだけ）
  * @param {() => Date} [params.now] テスト用の時刻の差し替え
- * @param {boolean} [params.strict] true なら、DBの読み取りの失敗を「対象なし」「データ無し」にせず例外にする
- *   （既定は従来どおり、ログのみ。Vercel Function は true）
+ * @param {boolean} [params.strict] true（既定。BOA-391）なら、DBの読み取りの失敗を「対象なし」「データ無し」にせず例外にする。
+ *   CLI の例外は、呼び出し元の morning-init.js が try/catch で受けて続行する
  * @returns {Promise<{targetRaces: number, generated: number, written: number}>}
  */
 export async function generateUnifiedPredictions({
   date,
   client = supabase,
   dryRun = false,
-  strict = false,
+  strict = true,
   includeStarted = false,
   now = () => new Date(),
 }) {

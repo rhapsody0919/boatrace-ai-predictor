@@ -16,15 +16,16 @@ import { getTodayDateJST } from "./dateUtils.js";
  *
  * @param {string} [date] - YYYY-MM-DD形式（省略時は今日のJST日付）
  * @param {Object} [options]
- * @param {boolean} [options.throwOnError=false] - true なら、Supabase未設定・DBエラーを空配列にせず例外にする
- *   （既定は従来どおり空配列。DB障害が「対象なし」に化けて、ジョブが黙って何もせず成功扱いになるのを避けたい
- *   呼び出し元＝Vercel Cronの共通ラッパが指定する。BOA-359と同型）。races が空（未登録）の場合は、どちらでも空配列
+ * @param {boolean} [options.throwOnError=true] - true（既定。BOA-391）なら、Supabase未設定・DBエラーを空配列にせず例外にする
+ *   （DB障害が「対象なし」に化けて、ジョブが黙って何もせず成功扱いになるのを避ける。BOA-352・BOA-359と同型）。
+ *   false は、失敗を「対象なし」として扱ってよいことを呼び出し側が理由付きで示すときだけ指定する。
+ *   races が空（未登録）の場合は、どちらでも空配列
  * @param {import("@supabase/supabase-js").SupabaseClient} [options.client] - テスト用の差し替え（既定は supabaseClient.js）
  * @returns {Promise<Array<{race_id: string, venue_code: number, race_no: number, start_time: Date}>>}
  */
 export async function getRaceSchedule(
   date,
-  { throwOnError = false, client } = {},
+  { throwOnError = true, client } = {},
 ) {
   const targetDate = date || getTodayDateJST();
   const db = client ?? supabase;

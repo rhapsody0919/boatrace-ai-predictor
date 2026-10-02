@@ -97,7 +97,28 @@
       "kind": "measure",
       "id": "home-ai-intro-remove-hit-rate",
       "description": "トップの「龍神レーダーのボートレースAI予想」から展開予測の実測的中率の行を外し、ja の meta description から「展開予測の実測的中率とあわせて公開」を外した（ユーザー判断。的中率が決まり手を見ずに判定されており、予想なしの基準を下回ることが分かった。BOA-617）。説明文と /accuracy・/hit-races へのリンクは残す。本番反映はマージ日",
-      "ref": "PR（トップの実測的中率の行を外す）"
+      "ref": "PR#1032"
+    },
+    {
+      "date": "2026-10-02",
+      "kind": "measure",
+      "id": "race-detail-meta-dedupe",
+      "description": "レース詳細の title・description に開催日を入れ、同じ会場・R番号の全日付で重複しないようにした。ja は「{会場}競艇 {N}R AI予想・展開予測（{日付}）」（本番反映 12:16 JST ごろ）",
+      "ref": "PR#1109"
+    },
+    {
+      "date": "2026-10-02",
+      "kind": "measure",
+      "id": "breadcrumb-structured-data",
+      "description": "Breadcrumb コンポーネントを使う5ページ（会場・レース詳細・過去の予想・過去日付の会場一覧・/today）に BreadcrumbList の構造化データを出した（本番反映 12:16 JST ごろ）",
+      "ref": "PR#1112"
+    },
+    {
+      "date": "2026-10-02",
+      "kind": "measure",
+      "id": "racer-index-a1",
+      "description": "現役の A1 選手（最新の出走が A1 で直近30日以内、10/2 時点で322人）の選手ページを index にし、title を「{名前}（競艇）選手の成績・勝率・決まり手」にした（本番反映 13:36 JST。/racer/3941 の index と title を確認）。sitemap への反映は同日 23:30 JST の自動生成から。A2 への拡大は 10/30 ごろの観測で判断",
+      "ref": "PR#1120"
     }
   ]
 }
