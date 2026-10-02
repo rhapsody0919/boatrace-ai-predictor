@@ -182,5 +182,10 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
     // 6号艇（44号機）だけ「-」、母数は 60 → 59
     expect(rows[5].rank).toBe("-");
     expect(rows[4].rank).toMatch(/\/59$/);
+    // 行を押して開くドリルダウンの会場内順位も、同じ母数（59機中）にそろう
+    await page.locator(".motor-ranking-table tbody tr").nth(4).click();
+    await expect(page.getByText(/位(タイ)?／59機中/).first()).toBeVisible({
+      timeout: 30000,
+    });
   });
 });

@@ -144,11 +144,7 @@
      モーター番号が「44/号/機」と1文字ずつ改行されて行の高さが3倍になっていた
      （2026-09-27、ファン視点のレビューで発覚）。ラップさせるより、
      .table-wrapper の overflow-x に載せて横スクロールさせる */
-  /* 列幅は中身の幅にする（nowrap なので折れない）。以前は min-width: 620px で、375px では
-     余った幅が左の列（枠番・選手名・機番）に配られ、棒と会場内順位が画面の外に押し出された
-     （BOA-428。左から5列を最初の画面に入れる）。広い画面では 100% に伸ばす */
-  width: max-content;
-  min-width: 100%;
+  min-width: 620px;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
@@ -156,6 +152,15 @@
 .motor-ranking-table th,
 .motor-ranking-table td {
   white-space: nowrap;
+}
+
+/* モーター調子の6艇表だけ、列幅を中身の幅にする（nowrap なので折れない）。min-width: 620px だと
+   375px で余った幅が左の列（枠番・選手名・機番）に配られ、棒と会場内順位が画面の外に押し出された
+   （BOA-428。左から5列を最初の画面に入れる）。広い画面では 100% に伸ばす。
+   .motor-ranking-table は他の分析タブの表でも使うので、この表に絞る */
+.motor-condition-container .motor-ranking-table {
+  width: max-content;
+  min-width: 100%;
 }
 
 .motor-ranking-table thead {
@@ -492,6 +497,11 @@
 
   .motor-ranking-table th,
   .motor-ranking-table td {
+    padding: 0.5rem;
+  }
+
+  .motor-condition-container .motor-ranking-table th,
+  .motor-condition-container .motor-ranking-table td {
     padding: 0.5rem 0.3rem;
   }
 

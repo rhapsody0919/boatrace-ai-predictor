@@ -481,7 +481,11 @@ function MotorConditionChart({
     (r) => r.pretest_time !== null && r.pretest_time !== undefined,
   );
   // 9列の表は390pxでは右が切れる。切れていることに気づけるようにする
-  const rankingScroll = useHorizontalScrollHint([breakdown.length]);
+  // 会場内順位の列は一覧の後から足される（BOA-428）。足されたときに測り直す
+  const rankingScroll = useHorizontalScrollHint([
+    breakdown.length,
+    venueRanks?.state,
+  ]);
   const finalCountRankClass = rankClassFor(
     breakdown.map((r) => r.final_count),
     0,

@@ -3113,9 +3113,10 @@ export const supabaseDataService = {
       // asOfDate（YYYY-MM-DD）を渡すと、その日以前で最新のスナップショットで順位を
       // 出す（過去レースのドリルダウン、BOA-521）
       // v2: 同じ値は同じ順位・tied を追加（BOA-529）
+      // v3: 出走数 0 のモーターを順位・母数から外す（BOA-428。一覧の6基とそろえる）
       asOfDate === null
-        ? `venue-motor-ranking-v2-${venueCode}-${motorNumber}-${metric}`
-        : `venue-motor-ranking-v2-asof-${venueCode}-${motorNumber}-${metric}-${asOfDate}`,
+        ? `venue-motor-ranking-v3-${venueCode}-${motorNumber}-${metric}`
+        : `venue-motor-ranking-v3-asof-${venueCode}-${motorNumber}-${metric}-${asOfDate}`,
       async () => {
         // 会場全体の取得は getVenueMotorSnapshot に任せる（会場×日付でキャッシュ。BOA-428）。
         // 取得の失敗・データ無しは、これまでどおり null（ドリルダウンは出さないだけ）
@@ -3132,8 +3133,13 @@ export const supabaseDataService = {
         // 事故率のみ低いほど良いため昇順、他は降順
         const ascending = metric === "accidentRate";
 
+        // 出走数 0（入れ替え直後で集計前）のモーターは、値が 0 でも順位・母数に入れない。
+        // 一覧の6基（getVenueMotorRanks）と同じ扱いにして、同じ画面で母数がずれないようにする（BOA-428）
         const valued = snapshot.rows.filter(
-          (row) => row[column] !== null && row[column] !== undefined,
+          (row) =>
+            row[column] !== null &&
+            row[column] !== undefined &&
+            row.race_count !== 0,
         );
         const own = valued.find((row) => row.motor_number === motorNumber);
         if (!own) return null;

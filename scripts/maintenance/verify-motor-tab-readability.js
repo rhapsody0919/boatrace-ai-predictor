@@ -447,7 +447,8 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     "会場内順位は competitionRank で出し、同値なら「◯位タイ」の文言を使う",
     /competitionRank\(\s*valued\.map/.test(service) &&
       !/rank: rankIndex \+ 1/.test(service) &&
-      service.includes("`venue-motor-ranking-v2-") &&
+      // v2（BOA-529）以降。v3 は出走数 0 を外した（BOA-428）
+      /`venue-motor-ranking-v[2-9]-/.test(service) &&
       /venueMotorRanking\.tied > 1\s*\?\s*"analysis\.motor\.venueRankBadgeTied"/.test(
         chart,
       ) &&
