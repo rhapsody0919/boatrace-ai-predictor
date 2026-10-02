@@ -77,11 +77,31 @@ test("使い方ガイドと成績ページの展開予測の説明は「1着」�
   await expect(info).not.toContainText("先頭");
 });
 
-test("的中レースの展開予測のカードは「1着予想」と書く（BOA-710）", async ({
+test("的中レースの展開予測のカードは「的中した候補」と書き、共有文に「先頭」を書かない（BOA-710）", async ({
   page,
 }) => {
+  // 共有ボタンが開く URL を記録する（実際には開かない）
+  await page.addInitScript(() => {
+    window.__opened = [];
+    window.open = (url) => {
+      window.__opened.push(String(url));
+      return null;
+    };
+  });
   await page.goto("/hit-races");
   const label = page.locator(".turn-hit-course-label").first();
   await expect(label).toBeVisible({ timeout: 30000 });
-  await expect(label).toHaveText("1着予想");
+  // 上位候補のどれかが当たれば的中なので、本命に推したように読める「1着予想」とは書かない
+  await expect(label).toHaveText("的中した候補");
+
+  const card = page.locator(".race-card").filter({ has: label }).first();
+  await card.locator(".social-share-button").first().click();
+  await expect
+    .poll(() => page.evaluate(() => window.__opened.length))
+    .toBeGreaterThan(0);
+  const text = decodeURIComponent(
+    await page.evaluate(() => window.__opened.join(" ")),
+  );
+  expect(text).toContain("コースが1着");
+  expect(text).not.toContain("先頭");
 });

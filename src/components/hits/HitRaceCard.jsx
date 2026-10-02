@@ -56,9 +56,10 @@ function HitRaceCard({
 
       <div className="turn-hit-detail">
         <div className="turn-hit-course">
-          {/* 的中の判定は1着の艇で行う（予想の確率も1着になる確率）。「1マーク先頭」と書いていたが、
-              展開予測の説明を「1着」にそろえた（BOA-710） */}
-          <span className="turn-hit-course-label">1着予想</span>
+          {/* 上位候補のどれかが1着になれば的中で、ここに出るのはその当たった候補（本命とは限らない）。
+              「1マーク先頭」は展開予測の説明（1着）と食い違い、「1着予想」は本命に推したように読めた
+              （BOA-710、PR #1197 ファン評価1周目） */}
+          <span className="turn-hit-course-label">的中した候補</span>
           <span className="turn-hit-course-value">
             {hitRace.winnerCourse}コース
           </span>

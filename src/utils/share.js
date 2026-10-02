@@ -291,7 +291,8 @@ export const generatePredictionShareText = (race, model = "standard", t) => {
 /**
  * 展開予測的中結果のシェアテキストを生成（react-share用、BOA-174）
  * unifiedモデルは複勝予想・展開予測の2種類のみのため、レース単位の的中は
- * 展開予測的中（1マークでの予想パターンが実際の1着コースと一致）のみを扱う
+ * 展開予測的中（予想パターンが実際の1着コースと一致）のみを扱う。展開予測は「その艇がその決まり手で
+ * 1着になる確率」なので、「1マークで先頭」とは書かない（BOA-710）
  * @param {Object} race - { venue, raceNo, date, winnerCourse, probability }
  */
 export const generateTurnHitShareText = (race) => {
@@ -312,11 +313,11 @@ export const generateTurnHitShareText = (race) => {
   }
 
   const messages = [
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nAIの分析力に驚いてます！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n無料でこの精度はすごい！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nデータ分析の力を実感！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n今日もAI予想が当たった！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n的中率の高さに満足してます！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerCourse}コースが1着${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nAIの分析力に驚いてます！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerCourse}コースが1着${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n無料でこの精度はすごい！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerCourse}コースが1着${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nデータ分析の力を実感！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerCourse}コースが1着${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n今日もAI予想が当たった！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerCourse}コースが1着${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n的中率の高さに満足してます！`,
   ];
 
   return messages[Math.floor(Math.random() * messages.length)];

@@ -234,7 +234,7 @@
   background: #475569;
 }
 
-/* 展開予測的中の詳細（1着予想のコース・予想確率） */
+/* 展開予測的中の詳細（的中した候補のコース・予想確率） */
 .turn-hit-detail {
   border-top: 2px solid var(--border-hairline);
   padding-top: 0.75rem;
