@@ -292,7 +292,8 @@
       "boat": "艇號",
       "racer": "選手",
       "start": "ST",
-      "time": "比賽時間"
+      "time": "比賽時間",
+      "timeShort": "時間"
     },
     "partialNoRaceTag": "部分投注類型不成立",
     "payoutNoRace": "不成立（退款）",

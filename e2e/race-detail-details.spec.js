@@ -58,6 +58,63 @@ test.describe("レース詳細の表示の細部", () => {
     await expect(tip).not.toContainText("lead");
   });
 
+  test("1440px: AI予想の展開予測で、決まり手と確率が離れすぎない（BOA-619 の残り、race-detail-ui-unify FR-6）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    // 発走前の AI予想（.prediction-result）と確定後の振り返り（.race-ai-prediction-tab）の
+    // どちらになるかは録画の時刻しだいなので、トップのレースから辿って出た方を測る
+    await page.goto("/");
+    await page
+      .getByRole("link", { name: /\d{1,2}\s*R/ })
+      .first()
+      .click();
+    await page.waitForURL(/\/race\//);
+    await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
+    const row = page.locator(".turn-pattern-row").first();
+    await expect(row).toBeVisible({ timeout: 30000 });
+    // 以前は発走前の表示で約1130px 離れていた。720px の箱の中なら 600px を超えない
+    await expect
+      .poll(() =>
+        row.evaluate((r) => {
+          const range = document.createRange();
+          range.selectNodeContents(r.querySelector(".turn-pattern-technique"));
+          return (
+            r.querySelector(".turn-pattern-prob").getBoundingClientRect().left -
+            range.getBoundingClientRect().right
+          );
+        }),
+      )
+      .toBeLessThan(600);
+  });
+
+  test("確定後の展開予測の的中は緑、不的中は赤（race-detail-ui-unify R2）", async ({
+    page,
+  }) => {
+    await page.goto(`${RACE}?tab=aiPrediction`);
+    const summary = page.locator(
+      ".turn-pattern-summary--hit, .turn-pattern-summary--miss",
+    );
+    await expect(summary).toBeVisible({ timeout: 30000 });
+    const { color, success, error, hit } = await summary.evaluate((el) => {
+      const probe = (v) => {
+        const s = document.createElement("span");
+        s.style.color = `var(${v})`;
+        el.appendChild(s);
+        const c = getComputedStyle(s).color;
+        s.remove();
+        return c;
+      };
+      return {
+        color: getComputedStyle(el).color,
+        success: probe("--color-success-text"),
+        error: probe("--color-error-text"),
+        hit: el.classList.contains("turn-pattern-summary--hit"),
+      };
+    });
+    expect(color).toBe(hit ? success : error);
+  });
+
   test("基本情報の勝率バー: 最下位の艇も棒が空にならない（BOA-618）", async ({
     page,
   }) => {

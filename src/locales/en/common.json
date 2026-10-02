@@ -296,7 +296,8 @@
       "boat": "Boat #",
       "racer": "Racer",
       "start": "ST",
-      "time": "Race time"
+      "time": "Race time",
+      "timeShort": "Time"
     },
     "partialNoRaceTag": "Some bet types void",
     "payoutNoRace": "Void (refunded)",

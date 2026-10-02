@@ -93,6 +93,20 @@ spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md)
 
 PR2b〜PR5 は tasks.md の各節。PR ごとに plan の該当節を追記してから着手する（PR2a の結果を見て共通クラスの使い方を確定させるため）。
 
+## 9. AI予想・オッズ・結果（PR5、イン崩れ注意度を除く）
+
+（§6・§7 は PR3 #1187・PR4 #1193 で足す。番号を空けておく）
+
+- 決まり手の色: 4コンポーネント（分析ページの決まり手3つ・選手ページ）に複製されていた hex の表を `src/utils/techniqueColors.js` の `techniqueColor` にまとめ、色は `--technique-color-1`〜`7`（design-tokens.css）。値は今のまま。カテゴリの色で良し悪しは無い（R3）。棒・帯の塗りだけに使い、ライト・ダークで同じ値
+- 結果: 1着の行・最速STのタグ・払戻の最高額の背景の `rgba(201,162,39,…)` を `color-mix(--ryujin-gold-500 N%)` に（同じ色のトークン。見た目は変わらない）。当初は `--brand-accent-primary` から作ったが、ライトの金（#6b500f）が濃く、払戻の最高額の行で文字のコントラストが 4.83 → 4.37 と AA を割った（ファン評価2周目）
+- 結果: 着順表の列見出し「レースタイム」は 768px 以下で短い「タイム」（`result.columns.timeShort`、4言語）。列が 2.4〜2.8rem しか無く、375px で 15px はみ出してカードの外で切れていた（本番でも同じ。ファン評価1周目）
+- 結果: 「この日の水面傾向」（`.vds-card`）は `.race-result` の中のカードで、767px 以下で外の内余白に自分の 16px が重なっていた。ほかのカードと同じ `--rdp-card-pad` に
+- AI予想: 確定後の展開予測の的中・不的中（`.turn-pattern-summary--hit/--miss`、クラスだけあって CSS が無かった）を緑・赤に。文の頭に ✅ / ❌ が付く
+- AI予想（イン崩れ注意度）の確定後の振り返りには良し悪しの色を付けない。単発のレースで的中・不的中を判定しない方針（2026-08-14、RaceAiPredictionTab のコメント）
+- BOA-619 の残り: 発走前の AI予想（`.prediction-result`）も 1025px 以上で 720px・中央に（確定後の振り返りは #1185 で済み）。1440px で展開予測の決まり手と確率が約1130px 離れていた
+- オッズ一覧の濃淡（`--color-primary-alpha-10`〜`50`）は既にトークンで、ライト・ダークどちらのカードにも馴染むよう選んだ値（RaceOddsListTab.css のコメント）。変えない
+- イン崩れ注意度（VolatilityDisplay）の直書きの色は、オッズ一覧レーンの #1186（BOA-706）のマージ後に別に行う
+
 ## テスト
 
 - `bestOf` の単体の検証: `scripts/maintenance/verify-best-of.js`（同値・全艇同値・null・min/max）。`verify-registry.json` に `ci` で登録
