@@ -640,6 +640,11 @@
       "guards": "アナロジー・ファインダーの学習（BOA-271）で、Storage の古い版を消すときに表示中の版を残すこと、表示中の版と同じ名前ではモデルを上書きしないこと、長期データのキャッシュの列名が今のコードと違えば失敗すること（scripts/ml/analogy/storageRules.js）"
     },
     {
+      "script": "verify-analogy-strata-migration.js",
+      "tier": "ci",
+      "guards": "類似レース（BOA-271 FR-2・層別 S*）のマイグレーション120を PGlite に適用し、勝率差の帯の境界（1/100単位・境界ちょうどは上）、母集団に完全レースだけが入ること（返還艇が1〜3着・欠場・不成立・中止を除く）、値の約束（3連単は payout_trio、返還艇の ST と不明な進入は NULL）、変わった行だけ書くこと、スナップショットが締切前に1回だけ作られ自動の深さの分布を返すこと、匿名が RPC と SELECT しかできないことを固定データで確かめる"
+    },
+    {
       "script": "verify-best-of.js",
       "tier": "ci",
       "guards": "6艇の中の最良値の判定 bestOf（src/utils/bestOf.js、docs/design/race-detail-ui-unify R1）。同値の最良を全部返すこと、全艇同値と値なしは空、表示の桁で丸めて比べること（54.84 と 54.80、平均の浮動小数の誤差）、null と NaN を除くこと"
