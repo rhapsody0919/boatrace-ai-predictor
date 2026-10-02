@@ -730,7 +730,8 @@
           "weight": "체중",
           "branch": "지부・홈"
         }
-      }
+      },
+      "loading": "불러오는 중…"
     }
   },
   "beforeInfo": {

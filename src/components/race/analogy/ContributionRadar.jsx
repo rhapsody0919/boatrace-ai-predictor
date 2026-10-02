@@ -51,7 +51,8 @@ export default function ContributionRadar({ labels, series, ariaLabel }) {
           />
         );
       })}
-      <text className="af-radar-scale" x={CENTER + 4} y={CENTER - RADIUS - 4}>
+      {/* 外周の目盛り。上の軸ラベルと重ならないよう、外周の内側・軸の右に置く */}
+      <text className="af-radar-scale" x={CENTER + 6} y={CENTER - RADIUS + 12}>
         {Math.round(scaleMax * 100)}%
       </text>
       {series.map((s) => (

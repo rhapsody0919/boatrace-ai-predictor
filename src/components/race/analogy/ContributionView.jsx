@@ -174,6 +174,11 @@ export default function ContributionView({
         </div>
       </div>
 
+      {status === "loading" && !data && (
+        <p className="af-note" role="status">
+          {tr("loading")}
+        </p>
+      )}
       {status === "error" && (
         <InlineFetchError message={tr("error")} onRetry={retry} />
       )}

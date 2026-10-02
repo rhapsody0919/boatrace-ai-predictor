@@ -422,7 +422,8 @@
           "weight": "体重",
           "branch": "支部・地元"
         }
-      }
+      },
+      "loading": "読み込み中…"
     }
   },
   "beforeInfo": {

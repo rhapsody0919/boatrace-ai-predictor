@@ -730,7 +730,8 @@
           "weight": "體重",
           "branch": "支部・主場"
         }
-      }
+      },
+      "loading": "載入中…"
     }
   },
   "beforeInfo": {

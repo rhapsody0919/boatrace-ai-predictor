@@ -735,7 +735,8 @@
           "weight": "Weight",
           "branch": "Branch & home venue"
         }
-      }
+      },
+      "loading": "Loading…"
     }
   },
   "beforeInfo": {
