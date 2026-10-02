@@ -84,6 +84,10 @@ export async function getRaceIdsWithExhibitionTime(date) {
       .not("start_timing", "is", null)
       .order("race_id")
       .order("boat_number"),
+    // 取得済みのスキップ判定にだけ使う。失敗したら空・途中までの集合になり、窓内のレースを取り直す（取得先への
+    // 負荷が少し増えるだけで、データは欠けない）。例外にすると、その回の展示の取得が丸ごと飛ぶため、ここは
+    // 従来どおりにする（fetchAll の既定は例外。BOA-391）
+    { throwOnError: false },
   );
 
   return new Set(rows.map((r) => r.race_id));

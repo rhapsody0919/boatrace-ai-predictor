@@ -1503,7 +1503,8 @@ async function scrapeResults(dateStr = null) {
   const targetDate = dateStr || getTodayDateJST();
   console.log(`Starting race result scraping: ${targetDate}`);
 
-  const schedule = await getRaceSchedule(targetDate);
+  // 失敗したら下の「races テーブルから全件」のフォールバックに進む設計のため、従来どおり空配列で受ける（BOA-391）
+  const schedule = await getRaceSchedule(targetDate, { throwOnError: false });
   let races;
   if (schedule.length > 0) {
     const startedRaces = getRacesAfterStart(schedule, 5);

@@ -944,15 +944,14 @@ function generateRacePrediction(race, date, racerStatsMap) {
  * @param {string} date 対象日（YYYY-MM-DD）
  * @param {Object} [options]
  * @param {import("@supabase/supabase-js").SupabaseClient|null} [options.client] 既定は supabaseClient.js のクライアント
- * @param {boolean} [options.throwOnError] true なら、書き込みの失敗を握りつぶさず例外にする。既定（false）は
- *   従来どおり、エラーをログに出して続行する（CLI・GitHub Actions）。Vercel Function（races-init）は、
- *   書き込みに失敗した会場を「済み」にしないため true を指定する
+ * @param {boolean} [options.throwOnError] true（既定。BOA-391）なら、書き込みの失敗を握りつぶさず例外にする。
+ *   false は、エラーをログに出して続行する（CLI の main が、morning-init の後続の手順を止めないために指定する）
  * @param {() => Date} [options.now] テスト用の時刻の差し替え（発走済みのレースの判定に使う）
  */
 async function writeToSupabase(
   allPredictions,
   date,
-  { client = supabase, throwOnError = false, now = () => new Date() } = {},
+  { client = supabase, throwOnError = true, now = () => new Date() } = {},
 ) {
   if (!client) {
     if (throwOnError) {
@@ -1759,7 +1758,7 @@ async function upsertPredictions(client, predictionsData, at) {
  * @param {{success?: boolean, data: Object[]}} params.racesData scrape-to-json.js の出力と同じ形
  * @param {string} params.date 予想生成日（YYYY-MM-DD。races の race_date になる）
  * @param {import("@supabase/supabase-js").SupabaseClient|null} [params.client] 既定は supabaseClient.js のクライアント
- * @param {boolean} [params.throwOnError] true なら、DBへの書き込みの失敗を例外にする（既定は従来どおりログのみ）
+ * @param {boolean} [params.throwOnError] true（既定。BOA-391）なら、DBへの書き込みの失敗を例外にする。false はログのみ
  * @param {() => Date} [params.now] テスト用の時刻の差し替え
  * @returns {Promise<{predictedRaceIds: string[]}>}
  */
@@ -1767,7 +1766,7 @@ export async function generateAndWriteFromRacesData({
   racesData,
   date,
   client = supabase,
-  throwOnError = false,
+  throwOnError = true,
   now = () => new Date(),
 }) {
   if (!racesData?.success || !racesData.data) {
@@ -1864,7 +1863,14 @@ async function main() {
       );
     }
 
-    await generateAndWriteFromRacesData({ racesData, date: today });
+    // CLI は morning-init.js の手順2から try なしの execSync で呼ばれる。書き込みの一部が失敗しただけで
+    // 例外にすると、morning-init の後続（unified の生成・pcexpect・Deploy Hook）まで止まり、その日は
+    // 作り直されない。CLI だけは従来どおりログに出して続行する（Vercel の races-init は true。BOA-391）
+    await generateAndWriteFromRacesData({
+      racesData,
+      date: today,
+      throwOnError: false,
+    });
 
     console.log("✨ 予想生成が完了しました！");
   } catch (error) {

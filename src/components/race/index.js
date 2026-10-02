@@ -34,3 +34,4 @@ export { default as BoatBadge } from "./BoatBadge";
 export { default as AnalogyFinderSection } from "./analogy/AnalogyFinderSection";
 export { default as NigeSimulationCard } from "./NigeSimulationCard";
 export { default as RecentRunsBar } from "./RecentRunsBar";
+export { default as SgNowBanner } from "./SgNowBanner";
