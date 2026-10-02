@@ -786,8 +786,11 @@ function RaceBasicInfoTab({
                         period?.calcTo ?? null,
                       );
                       const raceDate = (raceId ?? "").slice(0, 10);
+                      // 前期を取り込む前に前々期を出しているとき（period.fallback）も差を出さない。
+                      // 出走表の勝率は前期の成績に近く、前々期との差を「前期から」と読ませると誤る
                       const diffWithheld = Boolean(
-                        diffShownFrom && raceDate && raceDate < diffShownFrom,
+                        period?.fallback ||
+                        (diffShownFrom && raceDate && raceDate < diffShownFrom),
                       );
                       // 2連対率の差は率の変化ではなくポイント差なので pt を付ける
                       const diffLabel = (d, unit = "", diffUnit = unit) =>
@@ -1015,11 +1018,26 @@ function RaceBasicInfoTab({
                           {period && (
                             <div className="rbit-period">
                               <div className="rbit-period-heading">
-                                {t("basicInfo.periodTitle", {
-                                  from: period.calcFrom,
-                                  to: period.calcTo,
-                                })}
+                                {t(
+                                  period.fallback
+                                    ? "basicInfo.periodTitleFallback"
+                                    : "basicInfo.periodTitle",
+                                  {
+                                    from: period.calcFrom,
+                                    to: period.calcTo,
+                                  },
+                                )}
                               </div>
+                              {/* 公式の fan が公開される前（期替わり直後）は前々期を出す。
+                                  その期を表として取り込んでいないときだけ（pickPeriodStats） */}
+                              {period.fallback && (
+                                <p className="rbit-period-note">
+                                  {t("basicInfo.periodFallbackNote", {
+                                    from: period.pending.calcFrom,
+                                    to: period.pending.calcTo,
+                                  })}
+                                </p>
+                              )}
                               <div className="rbit-period-values">
                                 <span>
                                   {t("basicInfo.periodWinRate", {
@@ -1080,9 +1098,11 @@ function RaceBasicInfoTab({
                               </div>
                               {diffWithheld && (winDiff || top2Diff) && (
                                 <p className="rbit-period-note">
-                                  {t("basicInfo.periodDiffWithheldNote", {
-                                    date: diffShownFrom,
-                                  })}
+                                  {period.fallback
+                                    ? t("basicInfo.periodDiffFallbackNote")
+                                    : t("basicInfo.periodDiffWithheldNote", {
+                                        date: diffShownFrom,
+                                      })}
                                 </p>
                               )}
                             </div>

@@ -7277,29 +7277,32 @@ export const supabaseDataService = {
    *
    * @param {Array<number>} racerIds 登録番号
    * @param {string} raceDate `YYYY-MM-DD`。この日より前に終わった期を引く
+   * @returns {Promise<{rows: Array<Object>, latestImported: boolean}|{state: "forbidden", rows: [], fetchFailed: true}>}
+   *   rows は直近5期分。latestImported は前期の行が表に1行でもあるか（false なら前々期を出す）
    */
   getRacerPeriodStats(racerIds, raceDate) {
     const ids = [...new Set((racerIds ?? []).filter(Boolean))].sort(
       (a, b) => a - b,
     );
-    if (ids.length === 0 || !raceDate) return Promise.resolve([]);
+    if (ids.length === 0 || !raceDate)
+      return Promise.resolve({ rows: [], latestImported: true });
 
     // 「前期」と、直近2年（前期を含む4期）の優出・優勝の合計に使う期（BOA-326）。
+    // 前期を取り込む前（期替わり直後）は前々期で終わる4期を使うので、1期多く取る。
     // 期の求め方は periodsEndedBefore のコメント参照
-    const periods = periodsEndedBefore(raceDate, RECENT_PERIOD_COUNT);
-    if (periods.length === 0) return Promise.resolve([]);
+    const periods = periodsEndedBefore(raceDate, RECENT_PERIOD_COUNT + 1);
+    if (periods.length === 0) return Promise.resolve({ rows: [], latestImported: true });
     const years = [...new Set(periods.map((p) => p.periodYear))].sort();
     const [latest] = periods;
 
     return withCache(
-      `racer-period-stats-v2-${latest.periodYear}-${latest.periodNo}-${ids.join(",")}`,
+      `racer-period-stats-v3-${latest.periodYear}-${latest.periodNo}-${ids.join(",")}`,
       async () => {
         if (!supabase) {
           throw new Error("Supabase client not initialized");
         }
         try {
-          // 4期は最大3つの period_year にまたがる。年で絞って取り、範囲外の期
-          // （3年分なら最大2期）は落とす（6人×最大6行）
+          // 5期は最大4つの period_year にまたがる。年で絞って取り、範囲外の期は落とす（6人×最大8行）
           const { data } = await supabase
             .from("racer_period_stats")
             .select(
@@ -7307,12 +7310,23 @@ export const supabaseDataService = {
             )
             .in("period_year", years)
             .in("racer_id", ids);
-          return (data ?? []).filter((r) =>
-            periods.some(
-              (p) =>
-                r.period_year === p.periodYear && r.period_no === p.periodNo,
+          // 前期を「期として」取り込んだか。選手ごとの欠け（長期休場で fan に載らない等）では判定しない。
+          // 公式の fan は期の終わりから15〜60日遅れて公開されるため、11/1・5/1 からしばらくは0行になる
+          const { data: latestRows } = await supabase
+            .from("racer_period_stats")
+            .select("racer_id")
+            .eq("period_year", latest.periodYear)
+            .eq("period_no", latest.periodNo)
+            .limit(1);
+          return {
+            rows: (data ?? []).filter((r) =>
+              periods.some(
+                (p) =>
+                  r.period_year === p.periodYear && r.period_no === p.periodNo,
+              ),
             ),
-          );
+            latestImported: (latestRows ?? []).length > 0,
+          };
         } catch (error) {
           if (isPermissionDeniedError(error)) {
             // 095（匿名へのSELECT公開）が未適用の間はここを通る
