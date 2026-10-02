@@ -292,7 +292,8 @@
       "boat": "번호",
       "racer": "선수",
       "start": "ST",
-      "time": "레이스 타임"
+      "time": "레이스 타임",
+      "timeShort": "타임"
     },
     "partialNoRaceTag": "일부 승식 불성립",
     "payoutNoRace": "불성립(반환)",
@@ -791,6 +792,7 @@
     "exhibitionChartEmpty": "전시 타임이 아직 집계되지 않았습니다",
     "secondsUnit": "초",
     "detailTableTitle": "전시 정보",
+    "bestLegend": "금색 테두리는 6척 중 가장 좋은 값입니다(같은 값은 모두 표시). ⚠는 건수가 적은 참고값이며, 가장 좋은 값이 ⚠이면 어느 보트에도 붙이지 않습니다.",
     "detailTableNote": "전시 타임 1위 승률과 이 정번에서의 진입 코스는 2025년 12월 이후(모두 최대 과거 2년) 집계이며, 이번 시리즈 전시 정보는 이 모터 사용 시작 이후(이번 시리즈)의 추이입니다",
     "preExhibitionNote": "체중, 조정 중량은 전시 전 값입니다. 틸트는 전시 항주 후에 공개됩니다",
     "entryWeightFetchError": "출주표의 체중을 가져오지 못했습니다",
@@ -828,6 +830,7 @@
     "top3RateAbbrev": "3연대",
     "prevAbbrev": "직전",
     "avgAbbrev": "평균",
+    "exhibitionFastestMark": "최속",
     "exhibitionChartNote": "막대가 길수록 전시가 빠릅니다(가장 느린 정과의 차). 숫자는 실제 전시 타임(초)",
     "originalExhibitionItemSeparator": ", "
   },
@@ -1392,7 +1395,7 @@
       "exhibitionLegend": "전시 타임",
       "exhibitionYAxis": "전시 타임 (초)",
       "exhibitionTrendEmpty": "이 모터의 전시 타임 데이터가 없습니다",
-      "exhibitionTrendNote": "💡 같은 모터라도 정비나 선수의 다루는 방식에 따라 전시 타임이 달라질 수 있습니다. 수치가 작을수록 빠른 타임입니다.",
+      "exhibitionTrendNote": "💡 같은 모터라도 정비나 선수의 다루는 방식에 따라 전시 타임이 달라질 수 있습니다. 수치가 작을수록 빠른 타임이며, 그래프는 위로 갈수록 빠르게 그렸습니다.",
       "usageHistoryHeading": "📜 사용 이력",
       "usageHistoryRank": "{{n}}착",
       "usageHistoryNotRun": "미출주",
