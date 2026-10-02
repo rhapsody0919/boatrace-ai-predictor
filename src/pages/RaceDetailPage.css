@@ -255,14 +255,17 @@
   }
 
   /* カードの中の表（またはその横スクロール枠）をカードの枠まで広げる。
-     width: 100% の表は負の margin だけでは左にずれるだけなので、幅も足す */
+     width: 100% の表は負の margin だけでは左にずれるだけなので、幅も足す。
+     枠別情報の「全コース」の表（.rwit-grid-hscroll）は広げない。広げると 375px で表 361px /
+     表示枠 357px と 3px だけ切れ、横に続く手がかり「›」（切れが 4px を超えたときに出る。
+     useHorizontalScrollHint）が出ないまま最後の列が欠けた（BOA-607 の e2e）。内余白の内側なら
+     切れ幅が大きく、「›」で続きがあると分かる */
   .race-detail-page-v2
     :is(
       .rmt-card > .rmt-compare,
       .rmt-card > .hscroll-hint,
       .rmt-card .race-history-hscroll,
       .rwit-card > .rwit-today-table,
-      .rwit-card .rwit-grid-hscroll,
       .rsc-card > .rsc-grid-wrapper,
       .venue-tendency-panel .vtp-table-wrapper,
       .motor-condition-container .table-wrapper
@@ -280,7 +283,6 @@
       .rmt-card > .hscroll-hint,
       .rmt-card .race-history-hscroll,
       .rwit-card > .rwit-today-table,
-      .rwit-card .rwit-grid-hscroll,
       .rsc-card > .rsc-grid-wrapper,
       .venue-tendency-panel .vtp-table-wrapper,
       .motor-condition-container .table-wrapper
@@ -296,7 +298,6 @@
       .rmt-card > .hscroll-hint,
       .rmt-card .race-history-hscroll,
       .rwit-card > .rwit-today-table,
-      .rwit-card .rwit-grid-hscroll,
       .rsc-card > .rsc-grid-wrapper,
       .venue-tendency-panel .vtp-table-wrapper,
       .motor-condition-container .table-wrapper
