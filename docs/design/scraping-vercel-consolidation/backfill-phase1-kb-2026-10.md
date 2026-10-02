@@ -116,6 +116,7 @@ BOA-271（アナロジー・ファインダー）の実装開始の前提条件�
 | 2連率 | 出走表の艇（欠場を含む） | `global_2rate`・`local_2rate` が非NULL | 99%以上（新人など、公式に値が無い艇は件数を報告） |
 | 進入 | 結果のあるレース | `actual_course_1` が非NULL | 99%以上（欠場艇は NULL で正常） |
 | 成績コード | `race_start_timings` の行 | `official_finish_code` が非NULL | 99%以上 |
+| 着欄・着（BOA-582、項目7と同じ回） | `race_start_timings` の行のうち、`official_finish_code` が失格（S0・S1・S2）でないもの | `finish_mark` が非NULL。着（`finish_rank`）は、`official_finish_code` が 01〜06 の行で非NULL | 99%以上（失格 S0〜S2 の行は K から記号が決まらないので分母から外し、件数を別に報告する。実行前の 2026-10-02 の実測: 9/21 より前の行 270,884 のうち `finish_mark` 非NULL 9,642） |
 | レースの状態 | 結果のあるレース | `race_status` が非NULL | 99%以上（PR-C が成立した場合） |
 
 基準を満たさない月は、理由を件数つきで説明する（.claude/rules/data-acquisition.md 完了の定義A）。
