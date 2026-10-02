@@ -189,6 +189,12 @@
   white-space: nowrap;
 }
 
+/* 6艇で最良の値（.ind-best、src/styles/indicators.css）。金の枠が数字に接しないよう少し空ける */
+.rbit-value-num {
+  padding: 0 var(--spacing-1);
+  border-radius: var(--radius-sm);
+}
+
 .rbit-n {
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
@@ -285,8 +291,14 @@
   border-radius: var(--radius-sm);
 }
 
+/* 今日の会場。固定の水色（--color-primary-alpha-10）はダークで変わらないため、テーマで
+   切り替わる銀から作る（race-detail-ui-unify R6） */
 .rbit-venue-item.is-current {
-  background: var(--color-primary-alpha-10);
+  background: color-mix(
+    in srgb,
+    var(--brand-accent-secondary) 14%,
+    transparent
+  );
   font-weight: var(--font-weight-bold);
 }
 
