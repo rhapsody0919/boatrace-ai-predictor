@@ -27,6 +27,13 @@ import {
 import { isFinalStage } from "../constants/raceStageConfig";
 import { finishPositionOf } from "../components/race/basicInfoStats.js";
 import { isRaceCancelled } from "../utils/raceCancellation.js";
+import {
+  meetDaysOf,
+  meetPageState,
+  pickMeetAnchor,
+  buildQualifiers,
+  seriesDayByDate,
+} from "../utils/meetPageModel.js";
 import { competitionRank } from "../utils/competitionRank.js";
 import {
   countsForSeriesScore,
@@ -6670,12 +6677,17 @@ export const supabaseDataService = {
    * **1レース詳細あたり+3本**。ただしキーは節単位なので、6艇のどれを開いても
    * 使い回され、同じ節の他のレースを開いても再取得しない。
    *
-   * @param {string} raceId 表示中のレース
+   * @param {string} raceId 表示中のレース。節ページ（BOA-682）は、その日の全レースを
+   *   済みとして扱う架空ID `{日付}-{会場}-99` を渡すことがある
    * @param {number} venueCode
+   * @param {{prelimDone?: boolean}} [options] `prelimDone: true` なら、種別に関係なく
+   *   公式の得点率一覧（`officialByRacer`）を使う。架空IDには種別が無く、予選最終日の
+   *   夜に公式値が使われないため（節ページの `pickMeetAnchor`、plan §2.4）。
+   *   省略時は従来どおり表示中レースの種別で決める（今節タブ）
    * @returns {Promise<{rows: Array, currentStage: string|null,
    *   meetStart: string, meetEnd: string, semifinalSlots: number|null}>}
    */
-  getMeetScoreboard(raceId, venueCode) {
+  getMeetScoreboard(raceId, venueCode, { prelimDone } = {}) {
     const date = (raceId ?? "").slice(0, 10);
     if (!date || venueCode === null || venueCode === undefined) {
       return Promise.resolve(null);
@@ -6690,7 +6702,10 @@ export const supabaseDataService = {
     // v21: 予選後に今節Fを切った選手（postPrelimFlyingRacerIds）を足した（BOA-626）
     // v22: 丸一日レースが無かった日（noRaceDays）を足した（BOA-636）
     // v23: 節の出場者（meetEntrantIds）を足した（BOA-660）
-    return withCache(`meet-scoreboard-v23-${raceId}`, async () => {
+    // v24: 節ページの prelimDone を足した（BOA-682）。キーを分けないと、今節タブと
+    // 節ページで公式値の採否が違う結果を取り違える
+    const cacheKey = `meet-scoreboard-v24-${raceId}${prelimDone ? ":pd" : ""}`;
+    return withCache(cacheKey, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -6959,8 +6974,10 @@ export const supabaseDataService = {
         // 予選中は従来どおり当社計算で、減点のズレは残る（公式の行が生えるのも
         // 4日目以降なので、予選中は直しようが無い）
         officialByRacer: (() => {
-          // 「使ってよいか」の判断は純関数に切り出してある（回帰テスト可能）
+          // 「使ってよいか」の判断は純関数に切り出してある（回帰テスト可能）。
+          // 節ページが予選終了を知っているとき（prelimDone）はそちらに従う
           if (
+            prelimDone !== true &&
             !shouldUseOfficialSeries(
               stageById.get(raceId) ?? null,
               raceId,
@@ -7232,6 +7249,157 @@ export const supabaseDataService = {
           })),
       };
     });
+  },
+
+  /**
+   * 節ページ（`/venue/:venueCode/meet/:startDate`、BOA-682）のデータ。
+   *
+   * 節の日程・段階・基準のレースは `meetPageModel.js` の純関数で決め、得点率・順位・
+   * ボーダー・残り走数は今節タブと同じ `getMeetScoreboard` に任せる（計算を書き直さない）。
+   *
+   * 窓（初日〜+7日）の種別・グレード・結果・出走表は**キャッシュしない**。結果と出走表は
+   * 1日の中で増えるので、キャッシュすると基準のレースや勝ち上がりの着順が古いまま残る
+   * （design-reviewer 指摘3）。各96行以下で、既定の1000行上限に当たらない。
+   * `getMeetScoreboard` は基準のレース単位でキャッシュされる。
+   *
+   * 設計: docs/design/meet-page/plan.md §2
+   *
+   * @param {number} venueCode
+   * @param {string} startDate 節の初日 YYYY-MM-DD（URL の値）
+   * @param {string} today JST の今日 YYYY-MM-DD
+   */
+  async getMeetPage(venueCode, startDate, today) {
+    if (!supabase) throw new Error("Supabase client not initialized");
+    const vv = String(venueCode).padStart(2, "0");
+    const end = new Date(`${startDate}T00:00:00Z`);
+    end.setUTCDate(end.getUTCDate() + 7);
+    const windowEnd = end.toISOString().slice(0, 10);
+    const inWindow = (q) =>
+      q
+        .gte("race_id", startDate)
+        .lte("race_id", `${windowEnd}-zz`)
+        .like("race_id", `__________-${vv}-__`);
+
+    const [seriesRes, condRes, racesRes, resultsRes, entriesRes] =
+      await Promise.all([
+        supabase
+          .from("race_series")
+          .select("start_date, end_date, title, grade")
+          .eq("venue_code", venueCode)
+          .eq("start_date", startDate)
+          .maybeSingle(),
+        inWindow(
+          supabase
+            .from("race_conditions")
+            .select("race_id, race_stage, series_day, is_final_day, race_title"),
+        ),
+        inWindow(
+          supabase
+            .from("races")
+            .select("race_id, race_grade, cancellation_status"),
+        ),
+        inWindow(
+          supabase
+            .from("race_results")
+            .select("race_id, rank1, rank2, rank3, rank4, rank5, rank6"),
+        ),
+        inWindow(
+          supabase
+            .from("race_entries")
+            .select("race_id, boat_number, racer_id, player_name"),
+        ),
+      ]);
+    const series = seriesRes.data ?? null;
+    const windowConditions = condRes.data ?? [];
+    const windowEntries = entriesRes.data ?? [];
+    const meetDays = meetDaysOf(startDate, windowConditions, windowEntries);
+    const inMeet = (r) => meetDays.includes(r.race_id.slice(0, 10));
+    const conditions = windowConditions.filter(inMeet);
+    const entries = windowEntries.filter(inMeet);
+    const races = (racesRes.data ?? []).filter(inMeet);
+    const results = (resultsRes.data ?? []).filter(inMeet);
+    const resultById = new Map(results.map((r) => [r.race_id, r]));
+
+    const raceIds = [
+      ...new Set([
+        ...conditions.map((c) => c.race_id),
+        ...entries.map((e) => e.race_id),
+      ]),
+    ].sort();
+    // 済んだレース: 結果がある、または中止が確定した（判定は isRaceCancelled に集めてある）
+    const doneRaceIds = new Set([
+      ...results.map((r) => r.race_id),
+      ...races
+        .filter((r) =>
+          isRaceCancelled({
+            cancellationStatus: r.cancellation_status,
+            result: resultById.get(r.race_id) ?? null,
+          }),
+        )
+        .map((r) => r.race_id),
+    ]);
+    const grade =
+      series?.grade ??
+      races.find((r) => r.race_grade)?.race_grade ??
+      null;
+    const title =
+      series?.title ?? conditions.find((c) => c.race_title)?.race_title ?? null;
+    const endDate =
+      series?.end_date ??
+      conditions.find((c) => c.is_final_day)?.race_id.slice(0, 10) ??
+      meetDays[meetDays.length - 1] ??
+      null;
+
+    const state = meetPageState({
+      today,
+      startDate,
+      meetDays,
+      hasEntries: entries.length > 0,
+      grade,
+      title,
+      conditions,
+      doneRaceIds,
+      raceIds,
+    });
+    const base = {
+      state,
+      venueCode,
+      startDate,
+      endDate,
+      title,
+      grade,
+      meetDays,
+      // race_series に無く出走表も無い節は、存在するか分からない（未来日の任意の URL）
+      knownMeet: Boolean(series) || entries.length > 0,
+      seriesDayToday:
+        seriesDayByDate(conditions).get(today)?.seriesDay ?? null,
+    };
+    if (["preOpen", "notFound", "outOfScope"].includes(state)) {
+      return { ...base, board: null, qualifiers: null };
+    }
+
+    const anchor = pickMeetAnchor({
+      today,
+      meetDays,
+      raceIds,
+      doneRaceIds,
+      venueCode,
+      conditions,
+    });
+    const board = anchor
+      ? await this.getMeetScoreboard(anchor.raceId, venueCode, {
+          prelimDone: anchor.prelimDone,
+        })
+      : null;
+    // 窓の先頭を初日とみなすので、URL の初日が節の途中だと別の節と食い違う
+    if (!board || board.meetStart !== startDate) {
+      return { ...base, state: "notFound", board: null, qualifiers: null };
+    }
+    return {
+      ...base,
+      board,
+      qualifiers: buildQualifiers(conditions, entries, results),
+    };
   },
 
   /**
