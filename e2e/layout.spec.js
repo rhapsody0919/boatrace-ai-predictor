@@ -1159,3 +1159,72 @@ async function readHint(hint, fromEnd) {
     };
   }, fromEnd);
 }
+
+// PC幅で、1行に名前と数値を並べるリストが 1200px の箱の両端に離れない（BOA-619 項目3）。
+// 1440px で、展開予測の決まり手と確率が約1000px、払戻金の券種と金額も約1000px離れていた
+test.describe("レイアウト: PC幅で名前と数値を離しすぎない（BOA-619）", () => {
+  const RACE = "/race/2026-09-29-16-12"; // 児島12R（確定済み）
+
+  // 指定は 1025px から効く。箱が 1200px で止まる前の帯（1025〜1279px）も通すため、
+  // layout-desktop のときは 1100px でも確かめる
+  const widthsFor = (testInfo) => {
+    if (testInfo.project.name === "layout-desktop") return [1100, 1440];
+    if (testInfo.project.name === "layout-wide") return [1920];
+    return [];
+  };
+
+  test("AI予想の振り返り: 決まり手と確率が近く、ページの中央に置く", async ({
+    page,
+  }, testInfo) => {
+    const widths = widthsFor(testInfo);
+    test.skip(widths.length === 0, "PC幅（1025px以上）だけの指定");
+    for (const width of widths) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${RACE}?tab=aiPrediction`, {
+        waitUntil: "domcontentloaded",
+      });
+      const row = page.locator(".turn-pattern-row").first();
+      await expect(row).toBeVisible({ timeout: 30000 });
+      const m = await row.evaluate((el) => {
+        const r = (q) => el.querySelector(q).getBoundingClientRect();
+        const tab = el
+          .closest(".race-ai-prediction-tab")
+          .getBoundingClientRect();
+        const box = el.closest(".race-tabs-panel").getBoundingClientRect();
+        return {
+          gap: r(".turn-pattern-prob").left - r(".turn-pattern-technique").left,
+          tabCenter: (tab.left + tab.right) / 2,
+          boxCenter: (box.left + box.right) / 2,
+        };
+      });
+      expect(
+        m.gap,
+        `${width}px: 決まり手の左端から確率の左端まで`,
+      ).toBeLessThanOrEqual(700);
+      expect(
+        Math.abs(m.tabCenter - m.boxCenter),
+        `${width}px: 振り返りの中心`,
+      ).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test("結果の払戻金: 券種と金額が近い", async ({ page }, testInfo) => {
+    const widths = widthsFor(testInfo);
+    test.skip(widths.length === 0, "PC幅（1025px以上）だけの指定");
+    for (const width of widths) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${RACE}?tab=result`, { waitUntil: "domcontentloaded" });
+      const row = page.locator(".rr-payout-row").first();
+      await expect(row).toBeVisible({ timeout: 30000 });
+      const gap = await row.evaluate(
+        (el) =>
+          el.querySelector(".rr-amount").getBoundingClientRect().right -
+          el.querySelector(".rr-payout-type").getBoundingClientRect().left,
+      );
+      expect(
+        gap,
+        `${width}px: 券種の左端から金額の右端まで`,
+      ).toBeLessThanOrEqual(640);
+    }
+  });
+});
