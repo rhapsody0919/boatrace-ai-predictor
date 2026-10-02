@@ -14,6 +14,11 @@ const COLUMNS = [
   { key: "age", label: "年齢", sortable: true },
 ];
 
+// URL の sort に受け付けるキー（列のキーそのもの）。モバイルの折りたたみ行も同じキーで並べる
+export const SORTABLE_KEYS = COLUMNS.filter((c) => c.sortable).map(
+  (c) => c.key,
+);
+
 /**
  * デスクトップ用のソート可能な選手一覧テーブル（docs/design/racer-search-and-list/）。
  * `racers`は表示対象1ページ分（ソート・フィルタ・ページングは呼び出し側で適用済み）

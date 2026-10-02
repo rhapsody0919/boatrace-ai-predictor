@@ -1,52 +1,41 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import RacerGradeBadge from "./RacerGradeBadge";
 import "./RacerCompactRow.css";
 
 /**
  * モバイル用の折りたたみ行（docs/design/racer-search-and-list/spec.md FR5）。
  * タップ領域を分離する: 行本体（名前・支部・勝率）は選手個別ページへ遷移し、
- * ▼アイコンだけが展開/折りたたみをトグルする（画面遷移は発生しない）
+ * ▼アイコンだけが展開/折りたたみをトグルする（画面遷移は発生しない）。
+ *
+ * 行本体は本物の <Link>（href を持つ）にする。以前は <div role="link"> + navigate() で、
+ * 新しいタブで開けず、長押しで URL も取れなかった。▼ボタンはリンクの中に入れず
+ * 兄弟要素に置く（操作できる要素の入れ子は支援技術で正しく読めない、BOA-470）
  */
 function RacerCompactRow({ racer, isExpanded, onToggleExpand }) {
-  const navigate = useNavigate();
-
-  const handleChevronClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onToggleExpand(racer.racer_id);
-  };
-
-  const goToRacer = () => navigate(`/racer/${racer.racer_id}`);
-
   return (
     <div className={`racer-compact-row ${isExpanded ? "is-expanded" : ""}`}>
-      <div
-        className="racer-compact-row-main"
-        role="link"
-        tabIndex={0}
-        onClick={goToRacer}
-        onKeyDown={(e) => {
-          // ▼ボタン（子要素）でのEnter操作がバブリングして遷移しないよう、
-          // 行本体自身がフォーカスされている場合のみ遷移する
-          if (e.key === "Enter" && e.target === e.currentTarget) goToRacer();
-        }}
-      >
-        <RacerGradeBadge grade={racer.grade} />
-        <span className="racer-compact-row-name" translate="no">
-          {racer.name?.replace(/\s+/g, "")}
-        </span>
-        <span className="racer-compact-row-branch">{racer.branch}</span>
-        <span className="racer-compact-row-spacer" />
-        <span className="racer-compact-row-win-rate">
-          <span className="racer-compact-row-win-rate-label">勝率</span>
-          <span className="racer-compact-row-win-rate-value">
-            {racer.winRate != null ? racer.winRate.toFixed(2) : "-"}
+      <div className="racer-compact-row-head">
+        <Link
+          to={`/racer/${racer.racer_id}`}
+          className="racer-compact-row-main"
+        >
+          <RacerGradeBadge grade={racer.grade} />
+          <span className="racer-compact-row-name" translate="no">
+            {racer.name?.replace(/\s+/g, "")}
           </span>
-        </span>
+          <span className="racer-compact-row-branch">{racer.branch}</span>
+          <span className="racer-compact-row-spacer" />
+          <span className="racer-compact-row-win-rate">
+            <span className="racer-compact-row-win-rate-label">勝率</span>
+            <span className="racer-compact-row-win-rate-value">
+              {racer.winRate != null ? racer.winRate.toFixed(2) : "-"}
+            </span>
+          </span>
+        </Link>
         <button
           type="button"
           className="racer-compact-row-chevron"
-          onClick={handleChevronClick}
+          onClick={() => onToggleExpand(racer.racer_id)}
           aria-label={isExpanded ? "詳細を閉じる" : "詳細を開く"}
           aria-expanded={isExpanded}
         >
