@@ -142,18 +142,17 @@ function PredictionPanel({
   const focusedBoat = parseBoatParam(searchParams.get(RACE_BOAT_PARAM));
   // 値が変わるときだけ書き戻す（同じ値で navigate しない）。push ではなく replace にして、
   // 戻るボタンが艇・タブの選択を1つずつ巻き戻さないようにする
+  //
+  // 土台は描画時点の searchParams ではなく、その時点の実際の URL（window.location.search）。
+  // react-router の setSearchParams は関数形式でも描画時点の値を渡すため、艇を押した直後
+  // （書き戻しが画面に反映される前）にタブを押すと、古い値を土台にして boat を消していた
   const setRaceParam = (key, value) => {
     const next = value == null ? null : String(value);
-    if (searchParams.get(key) === next) return;
-    setSearchParams(
-      (prev) => {
-        const params = new URLSearchParams(prev);
-        if (next == null) params.delete(key);
-        else params.set(key, next);
-        return params;
-      },
-      { replace: true },
-    );
+    const params = new URLSearchParams(window.location.search);
+    if (params.get(key) === next) return;
+    if (next == null) params.delete(key);
+    else params.set(key, next);
+    setSearchParams(params, { replace: true });
   };
   const handleFocusBoat = (boat) => setRaceParam(RACE_BOAT_PARAM, boat);
   const { toast: aiCopyToast, showToast: showAiCopyToast } = useToast();
