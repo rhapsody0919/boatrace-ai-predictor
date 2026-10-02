@@ -34,10 +34,12 @@ import {
   getRecentRaces,
   lastStartTiming,
   MEET_ST_DIFF_THRESHOLD,
+  meetStVerdictTone,
 } from "./basicInfoStats";
 import {
   buildMeetRanking,
   listAbsentOnlyRacers,
+  groupExcludedRacers,
   FINISH_ABSENT,
   forecastSeriesScore,
   pointsNeededForBorder,
@@ -49,6 +51,7 @@ import {
 } from "./seriesPoints";
 import { finishMarkKeyOf } from "../../utils/prevResult";
 import RaceHistoryTable from "./RaceHistoryTable";
+import { bestOf } from "../../utils/bestOf";
 import MeetSparkline from "./MeetSparkline";
 import {
   dayCenter,
@@ -62,9 +65,13 @@ import "../common/HorizontalScrollHint.css";
 // 順位の対象外の理由 → 画面の文言キー（meetTab.<key> と meetTab.<key>Title）。BOA-587
 const EXCLUDED_LABEL_KEY = {
   withdrawn: "withdrawn",
+  // 公式の備考による途中帰郷（説明の文だけ当社の推定と分ける）
+  officialWithdrawn: "withdrawnOfficial",
   awardExcluded: "awardExcluded",
   flying: "flyingExcluded",
 };
+// 順位の対象外の内訳で名前を出す上限（超えた分は「ほか◯人」、BOA-697）
+const EXCLUDED_LIST_MAX = 6;
 // 準優・優勝戦に乗れない（必要得点を出さない）理由
 const AWARD_EXCLUDED_REASONS = new Set(["awardExcluded", "flying"]);
 
@@ -208,6 +215,8 @@ function RaceMeetTab({
   const rankedOnly = ranking.filter((r) => !r.withdrawn);
   // 予選の後に今節Fを切った選手（順位は付いたまま。BOA-626）
   const postPrelimFlying = new Set(board?.postPrelimFlyingRacerIds ?? []);
+  // 順位の対象外の内訳（BOA-697）
+  const excludedGroups = groupExcludedRacers(ranking, absentOnly);
   // 男女Ｗ優勝戦の節か（サービス層が同じシリーズの選手だけを渡してくる）
   const seriesSplit = Boolean(board?.seriesRacerIds);
   // 節全体では何人いるか。分けたときに「なぜ半分になったのか」を数で示す。
@@ -242,11 +251,28 @@ function RaceMeetTab({
       )
     : [];
   const border = rankedOnly[slots - 1]?.rate;
+  // **この節をまだ1走もしていない選手**の数（BOA-690）。この選手がいる間（ふつうは
+  // 初日の途中）は順位の対象がそろっておらず、目安が意味を持たない（下関の初日に
+  // 「準優の目安は18位（2.00）」と出た）。2日目以降は出したまま、走数で断る
+  const notYetStarted = (board?.notYetStartedRacerIds ?? []).filter(
+    (id) => !seriesIdSet || seriesIdSet.has(id),
+  ).length;
+  const bordersReady = notYetStarted === 0;
+  // 目安を出している時点の走数（順位の対象の選手の中央値）。「◯走時点の目安」と断る
+  const medianRuns = (() => {
+    const runs = rankedOnly.map((r) => r.runs).sort((a, b) => a - b);
+    return runs.length > 0 ? runs[Math.floor(runs.length / 2)] : 0;
+  })();
   // 表のボーダー表示は「節全体の順位」なので、選んだ選手の走数に依存しない
   const showBorderBadge =
-    !isCancelled && !isAfterPrelim && !prelimOver && border !== undefined;
+    !isCancelled &&
+    !isAfterPrelim &&
+    !prelimOver &&
+    bordersReady &&
+    border !== undefined;
   const showBorder =
     !isCancelled &&
+    bordersReady &&
     !isAfterPrelim &&
     !prelimOver &&
     mine &&
@@ -418,6 +444,48 @@ function RaceMeetTab({
   });
   const lastExhibition = lastOf("exhibitionTime");
 
+  // 6艇の今節の最良（同値は全部）に金枠を付ける（race-detail-ui-unify R1、モック承認済み）。
+  // 得点率は高いほど、節内順位・前検タイムは低いほど良い。表示と同じ桁で比べる。
+  // 欠場・未出走の行は得点率・順位が出ないので候補に入らない。
+  // 走数が少ない（⚠）艇の得点率・順位は比べるが、最良でも金枠を付けない（繰り下げもしない）。
+  // 初日に1走だけの「⚠10.00」が最良に光っていた（PR #1187 ファン評価1周目。
+  // 基本情報の横棒と同じく、当てにならない値を最良として光らせない）
+  const compareRows = sortedPlayers
+    .map((p) => ({
+      boat: p.number,
+      row: ranking.find((r) => r.racerId === p.racerId),
+    }))
+    .filter((x) => x.row);
+  const bestRate = bestOf(
+    compareRows.map(({ boat, row }) => ({
+      boat,
+      value: row.rate,
+      hidden: row.runs < MEET_SMALL_SAMPLE_RUNS,
+    })),
+    "max",
+    { digits: 2 },
+  );
+  const bestRank = bestOf(
+    compareRows.map(({ boat, row }) => ({
+      boat,
+      value: row.rank,
+      hidden: row.runs < MEET_SMALL_SAMPLE_RUNS,
+    })),
+    "min",
+  );
+  const bestPretest = bestOf(
+    sortedPlayers.map((p) => {
+      const time = pretestOf(p.racerId)?.pretest_time;
+      return {
+        boat: p.number,
+        value: time === null || time === undefined ? null : Number(time),
+      };
+    }),
+    "min",
+    { digits: 2 },
+  );
+  const bestCls = (set, boat) => (set.has(boat) ? " ind-best" : "");
+
   // 得点率は平均なので「1着→6着」と「3着→3着」が同じ5.00になる。
   // 次をどう見るかは並びで変わる
   const renderFinishes = (finishes) =>
@@ -449,7 +517,7 @@ function RaceMeetTab({
   const renderPretestCell = (p) => {
     const pt = pretestOf(p.racerId);
     return (
-      <td className="rmt-pretest">
+      <td className={`rmt-pretest${bestCls(bestPretest, p.number)}`}>
         {pt?.pretest_time !== null && pt?.pretest_time !== undefined
           ? pt.pretest_rank
             ? t("meetTab.pretestCell", {
@@ -512,7 +580,13 @@ function RaceMeetTab({
                 <th scope="col">{t("meetTab.colBoat")}</th>
                 <th scope="col">{t("meetTab.colScore")}</th>
                 <th scope="col">{t("meetTab.colRank")}</th>
-                <th scope="col">{t("meetTab.colPretest")}</th>
+                <th scope="col">
+                  {/* Ｗ優勝戦の節では、節内順位は片側（24人前後）の中の順位なのに、
+                      前検の順位は節全体の中の順位（公式の値）。分母を見出しに出す（BOA-690） */}
+                  {seriesSplit
+                    ? t("meetTab.colPretestOf", { total: meetTotal })
+                    : t("meetTab.colPretest")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -550,7 +624,7 @@ function RaceMeetTab({
                       onClick={() => onFocusBoat(p.number)}
                     >
                       {renderPlayerHead(p, row.finishes)}
-                      <td className="rmt-rate">
+                      <td className={`rmt-rate${bestCls(bestRate, p.number)}`}>
                         {row.runs < MEET_SMALL_SAMPLE_RUNS && (
                           <span
                             className="rmt-warn"
@@ -561,7 +635,7 @@ function RaceMeetTab({
                         )}
                         {row.rate.toFixed(2)}
                       </td>
-                      <td className="rmt-rank">
+                      <td className={`rmt-rank${bestCls(bestRank, p.number)}`}>
                         {/* 途中で節を離脱した選手・賞典除外の選手は順位の対象外
                             （公式も同じ）。理由で説明を出し分ける（BOA-587） */}
                         {row.rank === null ? (
@@ -657,6 +731,10 @@ function RaceMeetTab({
           </table>
           <p className="rmt-hint">{t("meetTab.rowHint")}</p>
           <p className="rmt-sub">
+            {/* 金枠の意味（PR #1187 ファン評価1周目: 説明がどこにも無かった） */}
+            {bestRate.size + bestRank.size + bestPretest.size > 0 && (
+              <>{t("meetTab.bestLegend")} </>
+            )}
             {ranking
               .filter(inTable)
               .some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS) && (
@@ -667,24 +745,42 @@ function RaceMeetTab({
                 前検51位の選手がいた） */}
             {/* Ｗ優勝戦で分けたときは「節の出場」と書かない。下の注記の
                 「節全体は◯人」と食い違って読める（BOA-660） */}
-            {ranking.length - rankedOnly.length + absentOnly.length > 0
-              ? t(
-                  seriesSplit
-                    ? "meetTab.compareSubSeriesExcluded"
-                    : "meetTab.compareSubExcluded",
-                  {
-                    all: entrantCount,
-                    total: rankedOnly.length,
-                    // 全部の走が欠場の選手も順位の対象外。数えないと「47人（対象42人・
-                    // 4人を除く）」と足し算が合わない（BOA-660）
-                    excluded:
-                      ranking.length - rankedOnly.length + absentOnly.length,
-                  },
-                )
-              : t(
-                  seriesSplit ? "meetTab.compareSubSeries" : "meetTab.compareSub",
-                  { total: entrantCount },
-                )}
+            {(() => {
+              // 全部の走が欠場の選手も順位の対象外。数えないと「47人（対象42人・
+              // 4人を除く）」と足し算が合わない（BOA-660）
+              const excluded =
+                ranking.length - rankedOnly.length + absentOnly.length;
+              // まだ1走もしていない選手も順位にまだ入らない。書かないと初日に
+              // 「48人（対象44人・1人を除く）」と合わなかった（BOA-690）
+              // 全員がまだ走っていない（初日の1R等）なら「順位の対象は0人」と書かない。
+              // 初戦を欠場した選手がいれば「全員が初戦」は誤りなので、従来の書き方に戻す
+              if (
+                rankedOnly.length === 0 &&
+                excluded === 0 &&
+                notYetStarted > 0
+              )
+                return t(
+                  `meetTab.compareSub${seriesSplit ? "Series" : ""}AllNotYet`,
+                  { all: entrantCount },
+                );
+              const variant =
+                excluded > 0 && notYetStarted > 0
+                  ? "ExcludedNotYet"
+                  : excluded > 0
+                    ? "Excluded"
+                    : notYetStarted > 0
+                      ? "NotYet"
+                      : "";
+              return t(
+                `meetTab.compareSub${seriesSplit ? "Series" : ""}${variant}`,
+                {
+                  all: entrantCount,
+                  total: variant ? rankedOnly.length : entrantCount,
+                  excluded,
+                  notYet: notYetStarted,
+                },
+              );
+            })()}
             {/* 「予選後F」の意味（セルの title はタッチ端末で読めない。BOA-626）。
                 **表の6艇に印が出ているときだけ**断る。節の誰かに居るだけで出すと、
                 表に印が無いのに説明だけ出て「どこにあるのか」と迷う（ファン評価1周目） */}
@@ -723,10 +819,66 @@ function RaceMeetTab({
                   slots,
                   rate: border.toFixed(2),
                 })}{" "}
-                {t("meetTab.borderNote")}
+                {t("meetTab.borderNote")}{" "}
+                {/* 何走時点の目安かを断る。2日目の朝の目安は、予選終了時の目安と
+                    平均0.46点ずれる（BOA-690 の実測。数値は画面に出さない） */}
+                {t("meetTab.borderAsOfRuns", { runs: medianRuns })}
+              </>
+            )}
+            {/* まだ全員が走っていない間は目安を出さない理由を書く（BOA-690） */}
+            {!bordersReady && !isCancelled && !isAfterPrelim && !prelimOver && (
+              <>
+                {" "}
+                {/* Ｗ優勝戦では「出場選手」が24人か48人か読めないので書き分ける */}
+                {t(
+                  seriesSplit
+                    ? "meetTab.borderPendingSeries"
+                    : "meetTab.borderPending",
+                )}
               </>
             )}
           </p>
+          {/* 順位の対象外の内訳（BOA-697）。人数だけでは誰が外れたか分からず、予選の後に
+              順位が動いた理由も読めなかった。公式の備考欄に近い形で名前を理由ごとに出す。
+              7人以上は6人まで出して「ほか◯人」と畳む（行が長くなりすぎないように） */}
+          {excludedGroups.length > 0 && (
+            <p className="rmt-excluded-list">
+              <strong>{t("meetTab.excludedListLabel")}</strong>
+              {(() => {
+                let budget = EXCLUDED_LIST_MAX;
+                const parts = [];
+                for (const g of excludedGroups) {
+                  if (budget <= 0) break;
+                  const shown = g.names.slice(0, budget);
+                  budget -= shown.length;
+                  parts.push(
+                    <span key={g.reason}>
+                      {parts.length > 0 && t("meetTab.excludedGroupSeparator")}
+                      <span translate="no">
+                        {shown.join(t("meetTab.listSeparator"))}
+                      </span>
+                      {t("meetTab.excludedReasonWrap", {
+                        reason: t(`meetTab.excludedReason_${g.reason}`),
+                      })}
+                    </span>,
+                  );
+                }
+                const total = excludedGroups.reduce(
+                  (n, g) => n + g.names.length,
+                  0,
+                );
+                return (
+                  <>
+                    {parts}
+                    {total > EXCLUDED_LIST_MAX &&
+                      t("meetTab.excludedMore", {
+                        count: total - EXCLUDED_LIST_MAX,
+                      })}
+                  </>
+                );
+              })()}
+            </p>
+          )}
           {/* **Ｗ優勝戦の節**は1つの節に独立した2つの勝ち上がりが同居する
               （全期間で6節）。何も言わずに人数が半分になると「なぜ減ったのか」に
               なるので、節全体の人数と併せて断る。準優の目安が出ていない日は
@@ -749,10 +901,17 @@ function RaceMeetTab({
               実測: 得点率は6/6一致、順位は最大4つ差）。除外の判定材料が
               自社データに無いので、合わせにいかずに違いを書く */}
           <p className="rmt-rank-note">
+            {/* 公式の備考で外すのは予選の後だけで、そのときは得点率も公式の値になる
+                （rankSourceNoteOfficial）。それ以外は当社の推定（PR #1149 ファン評価2周目） */}
             {t(
               usesOfficialScore
                 ? "meetTab.rankSourceNoteOfficial"
                 : "meetTab.rankSourceNote",
+            )}
+            {/* 予選の後の扱い（Fは外さない・帰郷は外す）は、予選が終わってから
+                関係する話なので、予選中は出さない（注記が長くなるだけだった） */}
+            {!usesOfficialScore && prelimOver && (
+              <> {t("meetTab.rankSourceNoteAfterPrelim")}</>
             )}
           </p>
           <p className="rmt-source">{t("basicInfo.meetPretestSource")}</p>
@@ -1244,7 +1403,16 @@ function RaceMeetTab({
                         n: st.meetN,
                         base: st.baseAvg === null ? "—" : st.baseAvg.toFixed(2),
                       })}{" "}
-                      <span className="rmt-verdict">
+                      {/* 通常より早い＝緑、遅い＝赤（R2）。差の数字に −/+ が付く。
+                          小さな差・走数の少ないときは色を付けない（meetStVerdictTone） */}
+                      <span
+                        className={`rmt-verdict${
+                          {
+                            good: " ind-good",
+                            bad: " ind-bad",
+                          }[meetStVerdictTone(st.diff, st.meetN)] ?? ""
+                        }`}
+                      >
                         {st.diff <= -MEET_ST_DIFF_THRESHOLD
                           ? t("basicInfo.meetTrendStPush", {
                               diff: Math.abs(st.diff).toFixed(2),
@@ -1319,7 +1487,7 @@ function RaceMeetTab({
                   referenceSeries={meetRows.map(
                     (r) => venueDailyExhibitionAvg[r.date] ?? null,
                   )}
-                  color="var(--color-info-text, #2a7fbf)"
+                  color="var(--color-info-text)"
                 />
                 <div className="rmt-spark-foot">
                   <span>{firstMeetDate}</span>

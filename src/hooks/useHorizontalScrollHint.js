@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  horizontalScrollHintState,
+  horizontalScrollStep,
+} from "../utils/horizontalScrollHint";
 
 /**
  * 横スクロールする箱に「まだ右に続く」ことを知らせる手がかりを付けるフック。
@@ -24,6 +28,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * @returns {{ref: object, hasMore: boolean, hasLess: boolean, update: Function,
  *   scrollRight: Function, scrollLeft: Function}}
  */
+/** 固定の左の列（1行目の先頭のセルが position: sticky のとき）の幅を引いた、1回に送る幅 */
+function stepOf(el) {
+  const first = el.querySelector("tr > :first-child");
+  const stickyWidth =
+    first && getComputedStyle(first).position === "sticky"
+      ? first.getBoundingClientRect().width
+      : 0;
+  return horizontalScrollStep({ clientWidth: el.clientWidth, stickyWidth });
+}
+
 export function useHorizontalScrollHint(deps = []) {
   const ref = useRef(null);
   const [hasMore, setHasMore] = useState(false);
@@ -32,17 +46,53 @@ export function useHorizontalScrollHint(deps = []) {
   const update = useCallback(() => {
     const el = ref.current;
     if (!el) return;
-    setHasMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 4);
-    setHasLess(el.scrollLeft > 4);
+    const state = horizontalScrollHintState({
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
+      scrollLeft: el.scrollLeft,
+    });
+    setHasMore(state.hasMore);
+    setHasLess(state.hasLess);
+    // 少しだけ切れているとき（「›」を出すほどではない）は、切れた量に合わせた薄いフェードだけを
+    // 出す。呼び出し側の JSX を変えずに済むよう、手がかりの箱（.hscroll-hint）に data 属性で渡す
+    // （React が管理する className は再描画で上書きされるため使わない）
+    // 指で送るあいだは毎フレーム呼ばれるので、値が変わったときだけ書き換える
+    const hint = el.closest(".hscroll-hint");
+    const peekWidth = state.peekFadeWidth > 0 ? `${state.peekFadeWidth}px` : "";
+    if (
+      hint &&
+      hint.style.getPropertyValue("--hscroll-peek-width") !== peekWidth
+    ) {
+      if (peekWidth) {
+        hint.dataset.hscrollPeek = "true";
+        hint.style.setProperty("--hscroll-peek-width", peekWidth);
+      } else {
+        delete hint.dataset.hscrollPeek;
+        hint.style.removeProperty("--hscroll-peek-width");
+      }
+    }
   }, []);
 
   useEffect(() => {
     update();
     const raf = requestAnimationFrame(update);
     window.addEventListener("resize", update);
+    // 窓の幅が変わらなくても、文字の読み込みや中身の差し替えで表の幅は後から変わる。
+    // 最初の計測だけでは、英語の 320px で表が3px溢れているのに手がかりが出なかった
+    // （PR #1192 ファン評価1周目）。箱と中身の大きさの変化でも測り直す
+    const el = ref.current;
+    const observer =
+      el && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(update)
+        : null;
+    if (observer) {
+      observer.observe(el);
+      if (el.firstElementChild) observer.observe(el.firstElementChild);
+    }
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", update);
+      observer?.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
@@ -52,14 +102,14 @@ export function useHorizontalScrollHint(deps = []) {
     if (!el) return;
     // `scroll-behavior: smooth` は使わない。動きを減らす設定の環境では
     // プログラムからのスクロールが一切効かなくなる（RaceTabs.css に実例）
-    el.scrollLeft += Math.round(el.clientWidth * 0.8);
+    el.scrollLeft += stepOf(el);
     update();
   }, [update]);
 
   const scrollLeft = useCallback(() => {
     const el = ref.current;
     if (!el) return;
-    el.scrollLeft -= Math.round(el.clientWidth * 0.8);
+    el.scrollLeft -= stepOf(el);
     update();
   }, [update]);
 

@@ -71,7 +71,7 @@ BOA-271（アナロジー・ファインダー）の実装開始の前提条件�
 | 4 | スタート（2026-02・03） | 行の無い3,327レース（約19,900艇） | Kファイル（ST・F・L・進入・着） | `race_start_timings` の INSERT（行の無いレースだけ） | 新規 CLI（PR-A）。`kbFileParser` の艇行から作る |
 | 5 | 気象・ステージ（2025-12・2026-01） | 約9,660行。**2026-04〜09 の天候 NULL 1,029レースも対象**（2026-10-01 追加。月別: 4月146・5月191・6月148・7月208・8月206・9月130。すべて結果のあるレース） | Kファイルのレース見出し（天候・風向・風速・波高）、K/B の見出し（ステージ） | `race_conditions` の NULL の列だけを UPDATE | 新規 CLI（PR-A） |
 | 6 | 展示タイム（2025-12〜2026-09） | 2025-12〜2026-03: 行の無い約15,240レース（約91,400艇）。**2026-04〜09: 1,193レース**（2026-10-01 追加。行なし450＋行はあるが展示タイム NULL 743。月別の行なし/NULL: 4月191/132・5月83/135・6月65/138・7月49/126・8月42/179・9月20/33。すべて結果のあるレース） | Kファイルの「展示」列 | `exhibition_data` の upsert（列は `exhibition_time` だけ。展示タイムが無い艇だけ。行が無ければ挿入し、展示STだけ・体重だけの行は展示タイムだけを埋める。既存の展示タイムは上書きしない） | PR-A。読み手の棚卸しは済み（2026-10-01。29箇所すべて、過去レースで NULL を正しく除外）。取得済みの判定を「展示タイムと展示STの両方」に変えた（直前情報による後日補完の道を残す。当日の窓の中で月約20レースの再試行が増えるだけ）。期間のラベル（「2026年3月以降」）は PR #1048 で、挿入の後にマージする |
-| 7 | 成績コード（BOA-553） | 全期間（既存の行 約259,800。項目4の ST の挿入の後は約279,700） | Kファイル | マイグレーション116（列の追加）の後、`race_start_timings.official_finish_code` を UPDATE（既存の行だけ。行の無い艇は挿入しない。読み手7箇所が行の有無で出走を判定するため） | 実装は途中（WIP コミットあり）。PR-B |
+| 7 | 成績コード（BOA-553） | 全期間（既存の行 約259,800。項目4の ST の挿入の後は約279,700） | Kファイル | マイグレーション116（列の追加）の後、`race_start_timings.official_finish_code` を UPDATE（既存の行だけ。行の無い艇は挿入しない。読み手7箇所が行の有無で出走を判定するため） | 実装は途中（WIP コミットあり）。PR-B。**BOA-582: 同じ回で `finish_mark`・`finish_rank` も埋める**（NULL の艇だけ。K の 01〜06→着、F→F、L0/L1→L、K0/K1→欠、00→_。9/21〜30 の正解8,805艇で100%一致。失格 S0〜S2 は K から記号が決まらないので書かない。書く行数は増えない。2026-10-02 の dry-run: 書く行 279,746、うち着欄を埋める艇 259,132・着 258,247） |
 | 8 | レースの状態（BOA-480） | race_status が NULL の43,619レース（2025-12-02〜2026-09-20） | Kファイル（成績コードの F・L0/L1・K0/K1 → 返還艇、払戻の「不成立」・付記の「レース不成立」 → 不成立） | `race_results.race_status`・`refund_boats` を、同じ値ごとに `update().in()`（rank1〜3 が NOT NULL のため、対象の列だけの upsert はできない）。race_status が NULL の行だけ | **検証済み（2026-10-02）**: 正解3,084件で両列とも100%一致。導出は normal 42,496・partial_refund 1,123・no_race 0・異常0。`backfill-kb-gaps.js --item=race_status`（PR-C）。**117（BOA-544 のトリガーの変更。旧番号114）の適用より前に実行する**（117 の後は race_status の更新が予想の再判定のトリガーを動かす）。その後の `backfill-refund-hit-flags.js` は約3,600行（既存の263行＋新しく partial になる1,123レースの予想3,314行） |
 | 外 | 展示ST（2025-12〜2026-03） | 約15,240レース | **K/B に無い**。直前情報ページ（beforeinfo の過去日。1レース1ページ） | — | 本計画の外。約15,240リクエストが要るので、別に判断する。AI 分析レーンの有用性の検証の対象に入れる案がある |
 
@@ -104,6 +104,85 @@ BOA-271（アナロジー・ファインダー）の実装開始の前提条件�
 - 各回の前後で、Supabase のダッシュボードの Disk IO を確認する（backfill-plan.md §5.4）。
 - 開催時間帯（JST 8:00〜21:30頃）は避ける。
 
+### 5.1 項目7（成績コード・着欄・着）の月ごとの期待件数（dry-run、2026-10-02 の夕方）
+
+`node --env-file=.env.local scripts/maintenance/backfill-kb-gaps.js --item=finish_code --from=YYYY-MM-01 --to=YYYY-MM-末日`（`--apply` なし）の出力の「書く行」と「NULL から埋める艇（列ごと）」。本番の `race_start_timings` の月別の行数を、読み取りで数えて突き合わせた。
+
+| 月 | 書く行（= 本番の行数） | 成績コードを埋める | 着欄を埋める | 着を埋める | 既存の着欄（持ち回る） | 着欄を埋めない艇（失格 S0〜S2 等） |
+|---|---:|---:|---:|---:|---:|---:|
+| 2025-12 | 26,990 | 26,990 | 26,601 | 26,526 | 90 | 299 |
+| 2026-01 | 30,919 | 30,919 | 30,603 | 30,491 | 24 | 292 |
+| 2026-02 | 24,972 | 24,972 | 24,740 | 24,661 | 6 | 226 |
+| 2026-03 | 27,875 | 27,875 | 27,610 | 27,526 | 24 | 241 |
+| 2026-04 | 26,001 | 26,001 | 25,453 | 25,334 | 372 | 176 |
+| 2026-05 | 28,829 | 28,829 | 26,899 | 26,788 | 1,716 | 214 |
+| 2026-06 | 27,679 | 27,679 | 25,160 | 25,080 | 2,334 | 185 |
+| 2026-07 | 29,450 | 29,450 | 27,236 | 27,144 | 2,034 | 180 |
+| 2026-08 | 29,473 | 29,473 | 28,452 | 28,356 | 810 | 211 |
+| 2026-09 | 27,558 | 27,558 | 16,378 | 16,341 | 11,094 | 86 |
+| 計 | 279,746 | 279,746 | 259,132 | 258,247 | 18,504 | 2,110 |
+
+- 書く行は、10か月とも本番の行数と一致した。K に無いために書けない艇は0件（行のある艇は、すべて K の成績にある）。成績コード（`official_finish_code`）は、まだ全件 NULL なので、全行を埋める。
+- 着欄（`finish_mark`）を埋める数は、行数から「既存の着欄」と「K から記号が決まらない艇」（失格 S0〜S2 と未知のコード）を引いたもの。2026-09 は、9/21 以降は結果ページの取得で着欄が入っているので、既存の着欄が多く、埋める数が少ない。
+- 着（`finish_rank`）は、着欄の 01〜06 の艇だけ。F・L・欠・失格等の艇は NULL のまま。
+- 実行時点の数は、日々の取得で少し変わる（特に 2026-09 の既存の着欄）。dry-run と `--apply` の出力の「書く行」が一致することを、月ごとに確かめる。
+
+### 5.2 項目7を元に戻す手順
+
+項目7は、3列とも「NULL のところだけ」を埋める。元に戻すには、実行前の3列の値が要る。116 の「元に戻す」（列ごと削除）では、9/21 以降に結果ページの取得で入った `finish_mark`・`finish_rank` まで消えるので使わない。代わりに、実行の前に3列の控えを取る。
+
+**実行の前（1回だけ。月ごとの1回目より前）**:
+
+```sql
+CREATE TABLE backup_boa582_rst_finish AS
+SELECT race_id, boat_number, official_finish_code, finish_mark, finish_rank
+FROM race_start_timings
+WHERE race_id >= '2025-12' AND race_id < '2026-10';
+ALTER TABLE backup_boa582_rst_finish ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON backup_boa582_rst_finish FROM anon, authenticated;
+SELECT count(*) FROM backup_boa582_rst_finish;
+```
+
+期待: 279,746（実行時点の行数。5.1 の表の計と同じ）。容量は約15MB。
+
+**元に戻す（必要になったときだけ。月ごとに1回ずつ。1回で約3万行）**:
+
+全10か月を1回の UPDATE で戻すと、約28万行を1つのトランザクションで書く（WAL・Disk IO・ロックの時間が長い）。書き込みと同じく月ごとに分ける。下の `'2025-12'`・`'2026-01'` を、戻す月とその翌月に置き換えて、月の数だけ実行する。
+
+```sql
+BEGIN;
+UPDATE race_start_timings t
+SET official_finish_code = b.official_finish_code,
+    finish_mark = b.finish_mark,
+    finish_rank = b.finish_rank,
+    updated_at = now()
+FROM backup_boa582_rst_finish b
+WHERE t.race_id = b.race_id AND t.boat_number = b.boat_number
+  AND t.race_id >= '2025-12' AND t.race_id < '2026-01'
+  AND (t.official_finish_code, t.finish_mark, t.finish_rank)
+      IS DISTINCT FROM (b.official_finish_code, b.finish_mark, b.finish_rank);
+COMMIT;
+```
+
+注意:
+
+- 控えの後に、日々の取得が書いた値も戻る。対象は2つで、K の同期（kfile_sync）が直近4日分に書く成績コードと、結果の修正が書く着欄。範囲を 2026-09 以前に限っているので、影響は 9/27〜9/30 の成績コード程度。戻した後に要れば、その日だけ `--item=finish_code` を再実行する。
+- 確認（全部の月を戻した後。3列とも、控えと同じ件数に戻る）:
+
+```sql
+SELECT
+  (SELECT count(official_finish_code) FROM race_start_timings WHERE race_id >= '2025-12' AND race_id < '2026-10')
+    = (SELECT count(official_finish_code) FROM backup_boa582_rst_finish) AS code_ok,
+  (SELECT count(finish_mark) FROM race_start_timings WHERE race_id >= '2025-12' AND race_id < '2026-10')
+    = (SELECT count(finish_mark) FROM backup_boa582_rst_finish) AS mark_ok,
+  (SELECT count(finish_rank) FROM race_start_timings WHERE race_id >= '2025-12' AND race_id < '2026-10')
+    = (SELECT count(finish_rank) FROM backup_boa582_rst_finish) AS rank_ok;
+```
+
+期待: `true / true / true`（控えを取った時点の件数は、成績コード 0・着欄 18,504・着 18,081 前後。§5.1 の表の「既存の着欄」の計と、月別の既存の着の和）。
+
+**控えを消す（完了の判定の後）**: 6章の充足率の実測で基準を満たしたら、`DROP TABLE backup_boa582_rst_finish;` を実行する。
+
 ## 6. 完了の判定（充足率の基準）
 
 月別×列の充足率を、本番の実測で報告する（`scripts/analysis/data-health-report.js` を、月別×列で出せるよう拡張する）。
@@ -116,6 +195,7 @@ BOA-271（アナロジー・ファインダー）の実装開始の前提条件�
 | 2連率 | 出走表の艇（欠場を含む） | `global_2rate`・`local_2rate` が非NULL | 99%以上（新人など、公式に値が無い艇は件数を報告） |
 | 進入 | 結果のあるレース | `actual_course_1` が非NULL | 99%以上（欠場艇は NULL で正常） |
 | 成績コード | `race_start_timings` の行 | `official_finish_code` が非NULL | 99%以上 |
+| 着欄・着（BOA-582、項目7と同じ回） | `race_start_timings` の行のうち、`official_finish_code` が失格（S0・S1・S2）でないもの | `finish_mark` が非NULL。着（`finish_rank`）は、`official_finish_code` が 01〜06 の行で非NULL | 99%以上（失格 S0〜S2 の行は K から記号が決まらないので分母から外し、件数を別に報告する。実行前の 2026-10-02 の実測: 9/21 より前の行 270,884 のうち `finish_mark` 非NULL 9,642） |
 | レースの状態 | 結果のあるレース | `race_status` が非NULL | 99%以上（PR-C が成立した場合） |
 
 基準を満たさない月は、理由を件数つきで説明する（.claude/rules/data-acquisition.md 完了の定義A）。

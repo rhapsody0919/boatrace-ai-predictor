@@ -38,7 +38,9 @@ const TARGETS = {
   weatherInfo: "src/components/race/weatherInfo.js",
   dateUtils: "src/utils/dateUtils.js",
   prevResult: "src/utils/prevResult.js",
+  nextOpenDate: "src/utils/nextOpenDate.js",
   meetGrouping: "src/utils/meetGrouping.js",
+  hscrollHint: "src/utils/horizontalScrollHint.js",
 };
 
 const show = (v) => JSON.stringify(v);
@@ -891,20 +893,93 @@ function suiteBasicInfoStats(m, check) {
     [null, 0],
   );
 
+  // --- periodsEndedBefore（BOA-326）
+  check(
+    "periodsEndedBefore: 5〜10月のレースの前期は (Y,2)、そこから4期さかのぼる",
+    m.periodsEndedBefore("2026-09-29", 4),
+    [
+      {
+        periodYear: 2026,
+        periodNo: 2,
+        calcFrom: "2025-11-01",
+        calcTo: "2026-04-30",
+      },
+      {
+        periodYear: 2026,
+        periodNo: 1,
+        calcFrom: "2025-05-01",
+        calcTo: "2025-10-31",
+      },
+      {
+        periodYear: 2025,
+        periodNo: 2,
+        calcFrom: "2024-11-01",
+        calcTo: "2025-04-30",
+      },
+      {
+        periodYear: 2025,
+        periodNo: 1,
+        calcFrom: "2024-05-01",
+        calcTo: "2024-10-31",
+      },
+    ],
+  );
+  check(
+    "periodsEndedBefore: 期の境目（4/30・5/1・10/31・11/1・1月）",
+    ["2026-04-30", "2026-05-01", "2026-10-31", "2026-11-01", "2027-01-15"].map(
+      (d) => {
+        const [p] = m.periodsEndedBefore(d, 1);
+        return `${p.periodYear}-${p.periodNo}`;
+      },
+    ),
+    ["2026-1", "2026-2", "2026-2", "2027-1", "2027-1"],
+  );
+  check(
+    "periodsEndedBefore: 日付が無い・壊れていれば空",
+    [m.periodsEndedBefore("", 4), m.periodsEndedBefore(null, 4)],
+    [[], []],
+  );
+
   // --- pickPeriodStats
+  const RD = "2026-09-29"; // 前期 = (2026,2)、直近2年 = (2025,1)〜(2026,2)
   check(
     "pickPeriodStats: 該当選手が無い・取得結果が配列でない（state付きオブジェクト）なら null",
     [
-      m.pickPeriodStats([{ racer_id: 1 }], 2),
-      m.pickPeriodStats({ state: "forbidden" }, 1),
+      m.pickPeriodStats(
+        [{ racer_id: 1, period_year: 2026, period_no: 2 }],
+        2,
+        RD,
+      ),
+      m.pickPeriodStats({ state: "forbidden" }, 1, RD),
     ],
     [null, null],
   );
   check(
+    "pickPeriodStats: 前期の行が無ければ、古い期の行があっても null（古い期を前期として出さない）",
+    m.pickPeriodStats(
+      [{ racer_id: 1, period_year: 2026, period_no: 1, finals: 3, wins: 1 }],
+      1,
+      RD,
+    ),
+    null,
+  );
+  check(
     "pickPeriodStats: 出走0の新人（win_rate=NULL）は null のまま（0 にしない）",
     m.pickPeriodStats(
-      [{ racer_id: 4320, win_rate: null, top2_rate: 0, starts: 0 }],
+      [
+        {
+          racer_id: 4320,
+          period_year: 2026,
+          period_no: 2,
+          win_rate: null,
+          top2_rate: 0,
+          starts: 0,
+          finals: 0,
+          wins: 0,
+        },
+      ],
       4320,
+      RD,
     ),
     {
       winRate: null,
@@ -913,7 +988,38 @@ function suiteBasicInfoStats(m, check) {
       starts: 0,
       calcFrom: null,
       calcTo: null,
+      finals: 0,
+      wins: 0,
+      recent: { finals: 0, wins: 0, from: "2024-05-01", to: "2026-04-30" },
     },
+  );
+  // 2026-09-29 13場12R 1号艇 馬場貴也（4262）の本番値。前期 優出5・優勝1、直近2年 優出22・優勝6
+  // （racer_period_stats の各期の値をそのまま。2026-10-02 に本番から取得）
+  const baba = [
+    [2026, 2, 5, 1],
+    [2026, 1, 5, 3],
+    [2025, 2, 6, 0],
+    [2025, 1, 6, 2],
+    [2024, 2, 6, 3], // 範囲外（2年より前）。足さない
+  ].map(([py, pn, finals, wins]) => ({
+    racer_id: 4262,
+    period_year: py,
+    period_no: pn,
+    finals,
+    wins,
+  }));
+  const babaPicked = m.pickPeriodStats(
+    [
+      ...baba,
+      { racer_id: 9999, period_year: 2026, period_no: 2, finals: 50, wins: 50 },
+    ],
+    4262,
+    RD,
+  );
+  check(
+    "pickPeriodStats: 前期の優出・優勝と、前期を含む4期の合計（範囲外の期・他の選手は足さない）",
+    [babaPicked.finals, babaPicked.wins, babaPicked.recent],
+    [5, 1, { finals: 22, wins: 6, from: "2024-05-01", to: "2026-04-30" }],
   );
 }
 
@@ -1429,7 +1535,89 @@ function suiteMeetGrouping(m, check) {
   );
 }
 
+// --- horizontalScrollHintState: 横スクロールの手がかり（「›」・フェード）の出し方
+// （#1130 ファン評価。全コース表で5px残りでも40pxのフェードと「›」が最後の列を覆い、
+// 4px以下の残りでは何も出なかった）
+function suiteHscrollHint(m, check) {
+  const st = (scrollWidth, clientWidth, scrollLeft) =>
+    m.horizontalScrollHintState({ scrollWidth, clientWidth, scrollLeft });
+  check("hscroll: 収まっていれば何も出さない", st(300, 300, 0), {
+    hasMore: false,
+    hasLess: false,
+    peekFadeWidth: 0,
+  });
+  check(
+    "hscroll: 残り4px（以前は何も出なかった）は「›」なしの細いフェード（12px）",
+    st(320, 316, 0),
+    { hasMore: false, hasLess: false, peekFadeWidth: 12 },
+  );
+  check(
+    "hscroll: 残り12pxまでは「›」を出さない（フェード12px）",
+    st(328, 316, 0),
+    { hasMore: false, hasLess: false, peekFadeWidth: 12 },
+  );
+  // 20px残りで「›」を出さず32pxのフェードにした版では、最後の列が無いように見えた（PR #1169 ファン評価1周目）
+  check("hscroll: 残り20pxは「›」と幅40pxのフェード", st(336, 316, 0), {
+    hasMore: true,
+    hasLess: false,
+    peekFadeWidth: 0,
+  });
+  check(
+    "hscroll: 左に12px以下しか送っていなければ「‹」は出さない（PR #1192 ファン評価2周目）",
+    st(315, 312, 3),
+    { hasMore: false, hasLess: false, peekFadeWidth: 0 },
+  );
+  check(
+    "hscroll: 1回に送る幅は、固定の左の列を引いた見える幅の8割",
+    [
+      m.horizontalScrollStep({ clientWidth: 312, stickyWidth: 90 }),
+      m.horizontalScrollStep({ clientWidth: 312, stickyWidth: 0 }),
+      m.horizontalScrollStep({ clientWidth: 60, stickyWidth: 50 }),
+    ],
+    [178, 250, 40],
+  );
+  check("hscroll: 右端まで送ったら「›」は消え、「‹」が出る", st(357, 301, 56), {
+    hasMore: false,
+    hasLess: true,
+    peekFadeWidth: 0,
+  });
+}
+
+// --- nextOpenDate（BOA-225）: 非開催会場の次開催日。race_series の 2026-10-02 時点の形
+function suiteNextOpenDate(m, check) {
+  const today = "2026-10-02";
+  const rows = [
+    // 平和島: 期間中（最終日が翌日）。後ろに次の節があっても次開催は出さない
+    { venue_code: 4, start_date: "2026-09-28", end_date: "2026-10-03" },
+    { venue_code: 4, start_date: "2026-10-10", end_date: "2026-10-15" },
+    // 桐生: 今日が節の最終日。期間中なので出さない
+    { venue_code: 1, start_date: "2026-09-27", end_date: "2026-10-02" },
+    // 戸田: 次の節が2つ。早い方
+    { venue_code: 2, start_date: "2026-10-20", end_date: "2026-10-25" },
+    { venue_code: 2, start_date: "2026-10-08", end_date: "2026-10-13" },
+    // 常滑: 明日が初日
+    { venue_code: 8, start_date: "2026-10-03", end_date: "2026-10-08" },
+  ];
+  const got = m.computeNextOpenDates(rows, today);
+  check(
+    "computeNextOpenDates: 期間中の会場（最終日を含む）は出さず、未来の節は最も早い開始日",
+    Object.fromEntries([...got].sort((a, b) => a[0] - b[0])),
+    { 2: "2026-10-08", 8: "2026-10-03" },
+  );
+  check(
+    "computeNextOpenDates: 行が無ければ空",
+    m.computeNextOpenDates([], today).size,
+    0,
+  );
+  check(
+    "formatMonthDay: ゼロ埋めしない M/D",
+    m.formatMonthDay("2026-10-05"),
+    "10/5",
+  );
+}
+
 const SUITES = {
+  nextOpenDate: suiteNextOpenDate,
   prevResult: suitePrevResult,
   basicInfoStats: suiteBasicInfoStats,
   raceStatus: suiteRaceStatus,
@@ -1438,6 +1626,7 @@ const SUITES = {
   weatherInfo: suiteWeatherInfo,
   dateUtils: suiteDateUtils,
   meetGrouping: suiteMeetGrouping,
+  hscrollHint: suiteHscrollHint,
 };
 
 // ---------------------------------------------------------------------------
@@ -1445,6 +1634,30 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  [
+    "hscrollHint",
+    "送る幅から固定の左の列を引かない（PR #1192 ファン評価2周目の退行）",
+    "Math.round((clientWidth - stickyWidth) * 0.8)",
+    "Math.round(clientWidth * 0.8)",
+  ],
+  [
+    "hscrollHint",
+    "4pxの残りで「›」を出す（#1130 ファン評価で見送った P3 の退行）",
+    "const hasMore = remaining > HSCROLL_PEEK_MAX;",
+    "const hasMore = remaining > 4;",
+  ],
+  [
+    "hscrollHint",
+    "境目を24pxに戻す（PR #1169 ファン評価1周目の退行）",
+    "export const HSCROLL_PEEK_MAX = 12;",
+    "export const HSCROLL_PEEK_MAX = 24;",
+  ],
+  [
+    "hscrollHint",
+    "少しだけ切れているときのフェードを出さない",
+    "!hasMore && remaining > 1 ? HSCROLL_PEEK_FADE : 0;",
+    "0;",
+  ],
   [
     "basicInfoStats",
     "枠番に実進入コースを出す（57a9b159 の退行）",
@@ -1627,6 +1840,18 @@ const MUTANTS = [
     "const jstNow = now;\n  const diffMs",
   ],
   ["dateUtils", "isWithinDays の未来日の除外を外す", " && diffDays >= 0;", ";"],
+  [
+    "nextOpenDate",
+    "節の期間中の会場にも次開催を出す",
+    "for (const code of inSeries) next.delete(code);",
+    "",
+  ],
+  [
+    "nextOpenDate",
+    "次の節の早い方を選ばない",
+    "row.start_date < current",
+    "row.start_date > current",
+  ],
   [
     "prevResult",
     "今節の前走で記号を見ずに着順を出す（BOA-576 の退行）",

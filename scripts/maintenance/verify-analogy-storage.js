@@ -2,13 +2,15 @@
  * アナロジー・ファインダーの学習（BOA-271）で、Supabase Storage の版を壊さない規則を検証する。
  * scripts/ml/analogy/storageRules.js の純粋関数だけを使い、実の Storage に触らない。
  *
- * 1. 古い版を消すとき、表示中の版（is_active）は数に関係なく残す
+ * 1. 古い版を消すとき、表示中の版（is_active）と参照版（reference.json）は数に関係なく残す
  * 2. 表示中の版と同じ名前ではアップロードしない（同じ日の再実行で上書きしない）
  * 3. 長期データのキャッシュの列名が今のコードの列と違えば失敗する
+ * 4. 参照版に無くてよいファイルは「無い」（404）ときだけ飛ばし、通信・権限のエラーは飛ばさない
  */
 import {
   assertCachedHeader,
   assertUploadable,
+  isNotFound,
   versionsToPrune,
 } from "../ml/analogy/storageRules.js";
 
@@ -42,6 +44,11 @@ check(
   versionsToPrune(names, "2026-10-04", 3).length === 0,
 );
 check(
+  "参照版（品質ゲートの比較の相手）は古くても消さない",
+  JSON.stringify(versionsToPrune(names, "2026-10-25", 3, ["2026-10-04"])) ===
+    "[]",
+);
+check(
   "版のフォルダでないもの（source）は消さない",
   !versionsToPrune(names, null, 0).includes("source"),
 );
@@ -68,6 +75,22 @@ check(
 check(
   "列名の行しか無いキャッシュも列名で判定する",
   !throws(() => assertCachedHeader("a,b", ["a", "b"], "k")),
+);
+check(
+  "404 は「無い」と判定する",
+  isNotFound({ statusCode: "404", message: "x" }),
+);
+check(
+  "Object not found は「無い」と判定する",
+  isNotFound({ message: "Object not found" }),
+);
+check(
+  "503 は「無い」と判定しない（参照版との比較を黙って省かない）",
+  !isNotFound({ statusCode: "503", message: "Service Unavailable" }),
+);
+check(
+  "通信のエラーは「無い」と判定しない",
+  !isNotFound({ message: "fetch failed" }),
 );
 
 if (failures.length) {

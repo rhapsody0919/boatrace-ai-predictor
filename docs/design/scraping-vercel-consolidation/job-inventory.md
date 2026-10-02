@@ -64,7 +64,7 @@
 | A3 | オッズ（`scrape-odds.js`） | T1 | A1と同じ（`scrape-scheduled.yml`） | 5分ごと。実効窓は発走57〜63分前、27〜33分前、18分前〜発走3分後（60/30/15/10/5/0分前の各±3分の合併） | A1と同じ |
 | A3b | 締切時オッズ（公式）の取り直し（`api/cron/odds-final.js`、BOA-496） | T1 | Vercel Cron（予定表 `scrape_slots` の `odds_final`） | 5分ごと（07:00〜23:55）。締切の5分後が期限、締切60分後まで300秒おきに再試行 | 2026-09-29 追加（マイグレーション108の適用と `odds_final` の live 化の後に実測） |
 | A4 | 買い目オッズ（`scrape-prediction-odds.js`） | T1 | A1と同じ | 5分ごと。発走60分以内（発走前）の全レースに毎回（1レース最大12回） | A1と同じ |
-| A5 | レース特記事項（`scrape-race-information.js`、`api/cron/race-notices.js`） | T2 | cron-job.org→Vercel Function（直接） | 10分ごと。コード記載は07:00〜23:00。24時間の呼び出し件数102件から、稼働窓は約17時間（07:00〜23:59相当）と推定 | Vercelログで10分間隔を確認（cron-job.org側の登録内容は未確認） |
+| A5 | レース特記事項（`scrape-race-information.js`、`api/cron/race-notices.js`） | T2 | cron-job.org→Vercel Function（直接） | **2026-10-03 から夜1回**（Vercel Cron、22:30 JST＋補足 23:00・23:30。日次ジョブ。ユーザー承認）。それまでは10分ごと（コード記載は07:00〜23:00。24時間の呼び出し件数102件から、稼働窓は約17時間と推定） | Vercelログで10分間隔を確認（cron-job.org側の登録内容は未確認） |
 | A6 | 結果取得（`scrape-results.js`）。中止確定・Kファイル同期2種・的中フラグ補完を含む | T3 | A1と同じ | 5分ごと。発走5〜90分後の未完了レースを毎回取り直し。Kファイル同期は直近4日を毎回確認 | A1と同じ |
 | A7 | 予測リフレッシュ（`generate-predictions.js`の`mainRefresh`） | 派生 | A1と同じ（同じジョブ内で、A1・A3の更新があったレースのみ） | 更新があった実行ごと（約8秒） | A1と同じ |
 | A8 | 朝の初期化（`morning-init.js`＋`scrape-to-json.js`＋`generate-predictions.js`のフルモード＋unified予測） | T4（1日1回。A1〜A7の前提） | A1と同じ | 毎回起動されるが、実処理は1日1回（07:00の初回実行）。毎回、DB確認・取りこぼし確認が走る | 毎日の初回dispatchは07:00 JST（9/18・9/19で確認） |
@@ -443,7 +443,7 @@ Linearへの起票は行っていない。以下は、起票できる粒度で�
 
 | ワークフロー | 起動 | 対象外の理由 |
 |---|---|---|
-| `aggregate-stats.yml` | schedule（23:00 JST指定）＋cron-job.orgのdispatch（毎日23:00） | DBの集計（選手・会場統計）。外部取得なし |
+| `aggregate-stats.yml` | schedule（23:00 JST指定）＋cron-job.orgのdispatch（毎日23:00） | DBの集計（選手・会場統計・会場×グレード×艇番の統計 venue_grade_boat_stats。最後のものは BOA-694 で追加）。外部取得なし |
 | `calculate-accuracy.yml` | schedule（23:30 JST指定） | DBの集計（的中率、キャッシュ更新）。外部取得なし |
 | `update-outcome-distribution.yml`、`update-nige-outcome-distribution.yml`、`update-losing-technique-stats.yml`、`update-top-start-stats.yml`、`update-winning-technique-stats.yml`、`update-exhibition-time-top-stats.yml` | schedule（00:30〜00:44 JST指定） | DBの集計（出目分布・決まり手・スタート・展示タイム）。外部取得なし |
 | `generate-moriarty.yml`、`update-moriarty.yml`、`train-moriarty.yml` | schedule | 買い目推奨の生成・更新・学習。外部取得なし |

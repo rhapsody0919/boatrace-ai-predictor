@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "./supabaseClient";
+import { stDeviation } from "../utils/stDeviation.js";
 import { isPlaceHit, isShowHit } from "../../scripts/lib/hitCalculator.js";
 import {
   extractVenueCodeFromRaceId,
@@ -25,9 +26,15 @@ import {
   isInMotorGeneration,
 } from "../utils/motorGeneration";
 import { isFinalStage } from "../constants/raceStageConfig";
-import { finishPositionOf } from "../components/race/basicInfoStats.js";
+import {
+  finishPositionOf,
+  periodsEndedBefore,
+  RECENT_PERIOD_COUNT,
+} from "../components/race/basicInfoStats.js";
+import { tallyWinPlaceShow } from "../utils/racerConditionStats.js";
 import { isRaceCancelled } from "../utils/raceCancellation.js";
 import { competitionRank } from "../utils/competitionRank.js";
+import { toWakuRacerStats } from "../utils/racerStats.js";
 import {
   VENUE_SITE_STATS_HIDDEN,
   rankBy,
@@ -44,7 +51,7 @@ import {
   isAbsentStartRow,
   flyingRacerIdsInMeet,
   postPrelimFlyingRacerIds,
-  withdrawnBeforePrelimEnd,
+  withdrawnByAbsence,
   runFinishLabel,
   officialMarkOf,
 } from "../components/race/seriesPoints.js";
@@ -999,7 +1006,7 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
           }
         : null,
       turnPrediction,
-      racerStats: stdPred?.racerStats || null,
+      racerStats: toWakuRacerStats(stdPred?.racerStats),
       exhibitionData:
         race.exhibitionData?.map((ed) => ({
           boat_number: ed.boatNumber,
@@ -1313,6 +1320,23 @@ export const supabaseDataService = {
       return transformTodayRaces(rpcData, await fetchVenueWinRateMap());
 
     }); // withCache end
+  },
+
+  /**
+   * 期間中・これからの節（race_series）を返す。非開催会場の次開催日に使う（BOA-225）。
+   * 1会場あたり翌月末までで数節なので、全会場で100行に届かない
+   */
+  async getUpcomingSeries(today) {
+    return withCache(`upcoming-series-${today}`, async () => {
+      if (!supabase) throw new Error("Supabase client not initialized");
+      const { data, error } = await supabase
+        .from("race_series")
+        .select("venue_code,start_date,end_date")
+        .gte("end_date", today)
+        .order("start_date");
+      if (error) throw new Error(`race_series の取得に失敗: ${error.message}`);
+      return data ?? [];
+    });
   },
 
   /**
@@ -4503,7 +4527,8 @@ export const supabaseDataService = {
    */
   getRacerRaceHistory(racerId) {
     // v2: ST を展示ST（exhibition_data）から本番ST（race_start_timings）に替え、isFlying・finishMark を足した（BOA-576）
-    return withCache(`racer-race-history-v4-${racerId}`, async () => {
+    // v5: 天候・風速・波高を足した（レース条件別の成績、BOA-336）
+    return withCache(`racer-race-history-v5-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4549,7 +4574,7 @@ export const supabaseDataService = {
           ),
           fetchAllByIn(
             "race_conditions",
-            "race_id, race_stage, race_title",
+            "race_id, race_stage, race_title, weather, wind_speed, wave_height",
             "race_id",
             raceIds,
           ),
@@ -4602,6 +4627,10 @@ export const supabaseDataService = {
             raceGrade: raceInfo.race_grade ?? null,
             raceStage: condition?.race_stage ?? null,
             raceTitle: condition?.race_title ?? null,
+            // レース直前の発表値（BOA-336）。race_conditions の行が無い走は null
+            weather: condition?.weather ?? null,
+            windSpeed: condition?.wind_speed ?? null,
+            waveHeight: condition?.wave_height ?? null,
             boatNumber: entry.boat_number,
             rank1: result.rank1,
             rank2: result.rank2,
@@ -4940,9 +4969,9 @@ export const supabaseDataService = {
         const key = `${e.race_id}-${e.boat_number}`;
         const actual = actualByKey.get(key);
         const exhibition = exhibitionByKey.get(key);
-        if (actual === undefined || exhibition === undefined) return;
-
-        const deviation = Math.abs(actual - exhibition);
+        // 欠場艇の行（ST が NULL）・展示STの無い走は比べない（stDeviation が null）
+        const deviation = stDeviation(actual, exhibition);
+        if (deviation === null) return;
         if (!deviationsByRacer.has(e.racer_id)) {
           deviationsByRacer.set(e.racer_id, []);
         }
@@ -5031,9 +5060,9 @@ export const supabaseDataService = {
           const key = `${e.race_id}-${e.boat_number}`;
           const actual = actualByKey.get(key);
           const exhibition = exhibitionByKey.get(key);
-          if (actual === undefined || exhibition === undefined) return;
-
-          const deviation = Math.abs(actual - exhibition);
+          // 欠場艇の行（ST が NULL）・展示STの無い走は比べない（stDeviation が null）
+          const deviation = stDeviation(actual, exhibition);
+          if (deviation === null) return;
           if (!byDate.has(e.race_date)) {
             byDate.set(e.race_date, []);
           }
@@ -5491,13 +5520,12 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定レースの選手コース別統計（racerStats）を取得する（BOA-168）
+   * 指定レースの選手の枠番別統計（racerStats）を取得する（BOA-168）
    * predictions.feature_contributions.racerStats に日次バッチで保存済みの
-   * 進入コース・平均ST・コース別勝敗・攻め手/守り手分布を返す。
+   * 平均ST・枠番別勝敗・攻め手/守り手分布を返す。
    * 超展開データタブ・データ出走表の平均ST/枠番勝率行で使用する。
-   * 注: 「コース」という名称だが、実際の進入コース変化（前づけ）は
-   * BOA-257の制約により区別できず、実質的に枠番（艇番）基準の値である
-   * （raceIndicators.jsxのcourseRateOf関数も参照）
+   * 保存側のキー名は course 系だが中身は枠番のため、toWakuRacerStats（src/utils/racerStats.js）で
+   * wakuRaceCounts に詰め替えて返す（BOA-302）
    */
   getRaceRacerStats(raceId) {
     return withCache(`race-racer-stats-${raceId}`, async () => {
@@ -5519,7 +5547,7 @@ export const supabaseDataService = {
         console.error("predictions取得エラー:", error.message);
         return null;
       }
-      return data?.[0]?.feature_contributions?.racerStats ?? null;
+      return toWakuRacerStats(data?.[0]?.feature_contributions?.racerStats);
     });
   },
 
@@ -6354,82 +6382,34 @@ export const supabaseDataService = {
 
   /**
    * 全24会場の1号艇勝率ランキングを取得する（BOA-267、venuerankingタブの追加指標）
-   * venues.avg_first_win_rate（update-venue-stats.jsが日次バッチで更新するキャッシュ列）
-   * には依存せず、直近days日のrace_results/racesから都度ライブ集計する。バッチの実行
-   * タイミングに依存せず常に最新の値になり、消化レース数（race_count）も同時に得られる
-   * （avg_first_win_rate列は値のみでレース数を保持していないため）。
-   * 注: 90日全会場スキャンは軽くないため6時間キャッシュにしている（BOA-303で
-   * update-venue-stats.js側にrace_count列を追加しavg_first_win_rateを読むだけの
-   * 実装に置き換えることを検討、そちらはDBマイグレーションの手動適用が必要なため
-   * 本チケットでは見送った）
+   * 直近90日の値は日次バッチ update-venue-stats.js が venues.avg_first_win_rate と母数
+   * avg_first_win_rate_race_count に保存している（BOA-303、マイグレーション122）。以前は
+   * races×race_results の90日分を画面から毎回スキャンしていた
    */
-  getVenueFirstWinRateRanking(days = 90, minRaceCount = 3) {
-    const CACHE_TTL = 6 * 60 * 60 * 1000; // 6時間（90日集計は変化が緩やか）
+  getVenueFirstWinRateRanking(minRaceCount = 3) {
     return withCache(
-      `venue-first-win-rate-ranking-v2-${days}-${minRaceCount}`,
+      `venue-first-win-rate-ranking-v3-${minRaceCount}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
           return [];
         }
-
-        const jstOffset = 9 * 60;
-        const jstNow = new Date(Date.now() + jstOffset * 60 * 1000);
-        const since = new Date(jstNow);
-        since.setDate(since.getDate() - days);
-        const sinceStr = since.toISOString().split("T")[0];
-
-        const races = [];
-        const PAGE = 1000;
-        let from = 0;
-        while (true) {
-          const { data, error } = await supabase
-            .from("races")
-            .select("venue_code, race_results(rank1, race_status)")
-            .gte("race_date", sinceStr)
-            .order("race_id")
-            .range(from, from + PAGE - 1);
-          if (error) {
-            // getAllRacersLiteと同じ教訓（2026-09-08）: ここで[]を返すとエラー時の
-            // 結果が正常値としてキャッシュされ、取得済み分のデータも道連れで
-            // 破棄されてしまう。エラーは必ずthrowしてwithCacheにキャッシュさせない
-            throw new Error(`races取得エラー: ${error.message}`);
-          }
-          if (!data || data.length === 0) break;
-          races.push(...data);
-          if (data.length < PAGE) break;
-          from += PAGE;
+        const { data, error } = await supabase
+          .from("venues")
+          .select("code, avg_first_win_rate, avg_first_win_rate_race_count")
+          .not("avg_first_win_rate", "is", null)
+          .gte("avg_first_win_rate_race_count", minRaceCount);
+        if (error) {
+          throw new Error(`venues取得エラー: ${error.message}`);
         }
-
-        const byVenue = new Map();
-        races.forEach((r) => {
-          const result = Array.isArray(r.race_results)
-            ? r.race_results[0]
-            : r.race_results;
-          if (!isUsableRaceResult(result)) return;
-          const venueCode = r.venue_code;
-          if (!byVenue.has(venueCode)) {
-            byVenue.set(venueCode, {
-              venue_code: venueCode,
-              race_count: 0,
-              firstWins: 0,
-            });
-          }
-          const v = byVenue.get(venueCode);
-          v.race_count += 1;
-          if (result.rank1 === 1) v.firstWins += 1;
-        });
-
-        return [...byVenue.values()]
-          .filter((v) => v.race_count >= minRaceCount)
+        return (data ?? [])
           .map((v) => ({
-            venue_code: v.venue_code,
-            race_count: v.race_count,
-            first_win_rate: (v.firstWins / v.race_count) * 100,
+            venue_code: v.code,
+            race_count: v.avg_first_win_rate_race_count,
+            first_win_rate: v.avg_first_win_rate * 100,
           }))
           .sort((a, b) => b.first_win_rate - a.first_win_rate);
       },
-      CACHE_TTL,
     );
   },
 
@@ -6767,7 +6747,11 @@ export const supabaseDataService = {
     // v22: 丸一日レースが無かった日（noRaceDays）を足した（BOA-636）
     // v23: 節の出場者（meetEntrantIds）を足した（BOA-660）
     // v24: 予選中に帰った選手を予選の翌日から外す・過去のレースは後の日付の前検も使う（BOA-674）
-    return withCache(`meet-scoreboard-v24-${raceId}`, async () => {
+    // v26: 途中帰郷を、前の日まで走っていて表示日に1走も無い選手として全日程で外す。
+    //      公式の備考は予選の後だけ使い、その途中帰郷は officialWithdrawn にする（#1149）
+    //      （v25 は BOA-292 の節ページ #1151、v27 は #1151 が取り込み時に使う）
+    // v28: まだ1走もしていない選手（notYetStartedRacerIds）を足した（BOA-690）
+    return withCache(`meet-scoreboard-v28-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7064,7 +7048,17 @@ export const supabaseDataService = {
           // 公式の備考が取れていればそれが正（推定より確実）。
           // 「賞典除外」「途中帰郷」など、公式が順位を付けていない選手
           // （rank/score_rate が NULL）を除く
-          const official = (officialSeries ?? []).filter((r) => r.remarks);
+          // **予選が終わった後のレースでだけ使う**（得点率の officialByRacer と同じ条件）。
+          // 公式の行は節に1行で、取得した時点（予選の最終日の夜）の備考が入る。予選中の
+          // 日に使うと、まだ走っている選手を「途中帰郷」で外した（児島G1 10/1 9R の
+          // 丸野一樹。PR #1149 ファン評価2周目）
+          const official = shouldUseOfficialSeries(
+            stageById.get(raceId) ?? null,
+            raceId,
+            prelimEndRaceIdOf(conditions ?? []),
+          )
+            ? (officialSeries ?? []).filter((r) => r.remarks)
+            : [];
           if (official.length > 0) {
             return {
               withdrawnRacerIds: official.map((r) => r.racer_id),
@@ -7073,7 +7067,8 @@ export const supabaseDataService = {
                   r.racer_id,
                   r.remarks.includes("賞典除外")
                     ? "awardExcluded"
-                    : "withdrawn",
+                    : // 公式の備考による途中帰郷。当社の推定と説明を分ける
+                      "officialWithdrawn",
                 ]),
               ),
             };
@@ -7097,37 +7092,12 @@ export const supabaseDataService = {
             flying.map((id) => [id, "flying"]),
           );
 
-          // **予選中に帰った選手**は、予選が終わった翌日から外す（BOA-674）。
-          // 公式の得点率一覧も予選終了時点で外している。最終日まで待つと、
-          // 最終日に下の順位がまとめて繰り上がった
-          for (const id of withdrawnBeforePrelimEnd(
-            meetRows,
-            prelimEndRaceIdOf(conditions ?? []),
-            date,
-          )) {
+          // **途中帰郷**: 前の日まで走っていたのに、表示日に1走も組まれていない選手。
+          // 予選中でも予選の後でも、その日から外す（withdrawnByAbsence の実測を参照）。
+          // 以前は最終日まで待っていたため、予選中に帰った選手が予選の最終日の
+          // 準優の目安の計算に残っていた
+          for (const id of withdrawnByAbsence(meetRows, date)) {
             if (!reasons[id]) reasons[id] = "withdrawn";
-          }
-
-          // 途中帰郷は、節の最終日に1度も出走が無い選手。
-          // 判定は2026-09-28に実測で裏を取った:
-          //   若松G1 … 該当2名が公式の「途中帰郷」2名と完全一致。除くと
-          //             推定ボーダーが 5.67 → 5.60 になり実ボーダーと**完全一致**
-          //   桐生   … 該当5名は全員、他会場でも走っておらず9/22〜9/24で出走が
-          //             途切れている（節の前後半でメンバーが入れ替わる形ではない）
-          // **節が終わるまでは判定できない**（最終日が未来なので）。
-          // `is_final_day` が取れていて、その日を過ぎている場合だけ有効にする
-          const finalDayRow = (conditions ?? []).find((c) => c.is_final_day);
-          const finalDay = finalDayRow?.race_id.slice(0, 10) ?? null;
-          if (finalDay && date >= finalDay) {
-            const ranAtFinalDay = new Set(
-              meetRows
-                .filter((e) => e.race_id.startsWith(finalDay))
-                .map((e) => e.racer_id),
-            );
-            for (const id of new Set(meetRows.map((e) => e.racer_id))) {
-              if (!ranAtFinalDay.has(id) && !reasons[id])
-                reasons[id] = "withdrawn";
-            }
           }
           return {
             withdrawnRacerIds: Object.keys(reasons).map(Number),
@@ -7216,6 +7186,26 @@ export const supabaseDataService = {
         // 2シリーズを混ぜて順位を振ると、節内順位・出場人数・準優の目安が
         // すべて実際の勝ち上がり争いとズレる
         seriesRacerIds: currentSeries ? [...currentSeries] : null,
+        // **この節をまだ1走もしていない選手**（BOA-690）。表示中のレースより前に、
+        // 結果の出たレースが1つも無い選手。中止で流れたレースは走ったうちに数えない
+        // （津 9/22 が丸一日中止で、9/23 に初めて走る選手を「走った」と数えていた）。
+        // 「表示中のレース以降に番組がある」には絞らない。絞ると、中止になったレースに
+        // しか番組が無かった選手がどこにも数えられず、人数の足し算が合わなかった
+        // （津 9/21 の 6R〜12R。ファン評価1周目）。全部の走が欠場の選手は、結果の出た
+        // レースに入っているのでここには入らない（absentOnly の側）。
+        // この選手がいる間は順位の対象がそろっていないので、画面は準優の目安を伏せ、
+        // 人数の行に書き足す。追加クエリ0本
+        notYetStartedRacerIds: (() => {
+          const ran = new Set();
+          const all = new Set();
+          for (const e of meetRows) {
+            if (e.racer_id == null) continue;
+            all.add(e.racer_id);
+            if (e.race_id < raceId && resultById.has(e.race_id))
+              ran.add(e.racer_id);
+          }
+          return [...all].filter((id) => !ran.has(id));
+        })(),
         // **節の出場者**（表示日までの出走表に載った選手、当日の番組を含む。BOA-660）。
         // 得点率の母集団（表示中のレースより前に走った選手）で数えると、初日の2Rで
         // 「節の出場は6人」になった。追加クエリ0本
@@ -7354,7 +7344,9 @@ export const supabaseDataService = {
    *
    * 期の境界は 5/1 と 11/1（`period_no` 1 = 5/1〜10/31、2 = 11/1〜4/30、
    * `period_year` は算出期間の終了が4月の年）。クライアントで計算できるので、
-   * `.eq()` 2つで6行に絞る（絞らないと1選手あたり約12期分が返る）。
+   * 前期を含む直近4期（優出・優勝の直近2年の合計、BOA-326）だけを返す
+   * （絞らないと1選手あたり約15期分が返る）。前期の行の選び出しは
+   * `pickPeriodStats` が行う。
    *
    * ## 単位に注意
    *
@@ -7374,36 +7366,35 @@ export const supabaseDataService = {
     );
     if (ids.length === 0 || !raceDate) return Promise.resolve([]);
 
-    // レース日から見て「直前に**終わった**期」を求める。
-    // `period_year` Y は「5月〜翌4月の年度」を指し、その中が2つに割れる
-    // （本番DBの全15期を実測して確認した。083のCOMMENTの言い換え）:
-    //   (Y,1) = (Y-1)-05-01 〜 (Y-1)-10-31
-    //   (Y,2) = (Y-1)-11-01 〜     Y-04-30
-    // 例: (2026,1)=2025-05-01〜2025-10-31、(2026,2)=2025-11-01〜2026-04-30
-    // したがって直前に終わった期は
-    //   5〜10月  → (Y,2)   … Y-04-30 に終わった期
-    //   11〜12月 → (Y+1,1) … Y-10-31 に終わった期
-    //   1〜4月   → (Y,1)   … (Y-1)-10-31 に終わった期
-    const [y, m] = raceDate.split("-").map(Number);
-    const periodYear = m >= 5 && m <= 10 ? y : m >= 11 ? y + 1 : y;
-    const periodNo = m >= 5 && m <= 10 ? 2 : 1;
+    // 「前期」と、直近2年（前期を含む4期）の優出・優勝の合計に使う期（BOA-326）。
+    // 期の求め方は periodsEndedBefore のコメント参照
+    const periods = periodsEndedBefore(raceDate, RECENT_PERIOD_COUNT);
+    if (periods.length === 0) return Promise.resolve([]);
+    const years = [...new Set(periods.map((p) => p.periodYear))].sort();
+    const [latest] = periods;
 
     return withCache(
-      `racer-period-stats-v1-${periodYear}-${periodNo}-${ids.join(",")}`,
+      `racer-period-stats-v2-${latest.periodYear}-${latest.periodNo}-${ids.join(",")}`,
       async () => {
         if (!supabase) {
           throw new Error("Supabase client not initialized");
         }
         try {
+          // 4期は最大3つの period_year にまたがる。年で絞って取り、範囲外の期
+          // （3年分なら最大2期）は落とす（6人×最大6行）
           const { data } = await supabase
             .from("racer_period_stats")
             .select(
-              "racer_id, period_year, period_no, calc_from, calc_to, win_rate, top2_rate, avg_st, starts",
+              "racer_id, period_year, period_no, calc_from, calc_to, win_rate, top2_rate, avg_st, starts, finals, wins",
             )
-            .eq("period_year", periodYear)
-            .eq("period_no", periodNo)
+            .in("period_year", years)
             .in("racer_id", ids);
-          return data ?? [];
+          return (data ?? []).filter((r) =>
+            periods.some(
+              (p) =>
+                r.period_year === p.periodYear && r.period_no === p.periodNo,
+            ),
+          );
         } catch (error) {
           if (isPermissionDeniedError(error)) {
             // 095（匿名へのSELECT公開）が未適用の間はここを通る
@@ -8027,27 +8018,9 @@ function isPermissionDeniedError(error) {
   return /permission denied/i.test(error.message ?? "");
 }
 
-/**
- * 1走分の勝敗を{win, top2, top3}アキュムレータに加算する共通ロジック。
- * aggregateRacerVenueBoatStats（単一集計）とaggregateRacerCrossStats
- * （グループ別集計）の両方が同じ勝率/2連率/3連率の判定を必要とするため
- * 共通化（ADR-0063、BOA-159レビューで発見）。
- * @returns {boolean} 勝利（1着）だったか
- */
 // 公式の着欄の記号が数字でない（着順が付かない走）か。記号が無い（未取得）ときは着順に従う
 function isUnrankedFinishMark(mark) {
   return typeof mark === "string" && mark !== "" && !/^[1-6]$/.test(mark);
-}
-
-function tallyWinPlaceShow(totals, row) {
-  if (row.unranked) return false;
-  const isWin = row.rank1 === row.boatNumber;
-  if (isWin) totals.win += 1;
-  if (isPlaceHit(row.boatNumber, row.rank1, row.rank2)) totals.top2 += 1;
-  if (isShowHit(row.boatNumber, row.rank1, row.rank2, row.rank3)) {
-    totals.top3 += 1;
-  }
-  return isWin;
 }
 
 /**

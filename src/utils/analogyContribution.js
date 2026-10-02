@@ -108,3 +108,26 @@ export function themeEntries(themes, shares, sd) {
     return { ...e, rank: i + 1, rankDistinct };
   });
 }
+
+/**
+ * 割合を整数の % に丸め、合計を total にそろえる（最大剰余法）。四捨五入だけだと6テーマの合計が
+ * 99・101 になり、「合計100%」と書いた注記と食い違う（ファン評価2周目）。内訳は total に親の値を渡す
+ * @param {number[]} values 割合（合計は何でもよい。total に比例配分する）
+ * @param {number} total 丸めたあとの合計
+ */
+export function roundToTotal(values, total) {
+  const sum = values.reduce((a, b) => a + b, 0);
+  if (sum <= 0 || total <= 0) return values.map(() => 0);
+  const scaled = values.map((v) => (v / sum) * total);
+  const out = scaled.map(Math.floor);
+  let rest = total - out.reduce((a, b) => a + b, 0);
+  const order = scaled
+    .map((v, i) => [v - Math.floor(v), i])
+    .sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+  for (const [, i] of order) {
+    if (rest <= 0) break;
+    out[i] += 1;
+    rest -= 1;
+  }
+  return out;
+}

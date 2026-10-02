@@ -20,10 +20,10 @@ argument-hint: "<記事slug>（例: new-feature-analysis）"
 
 ```bash
 cat public/blog/$ARGUMENTS.md
-grep -n "$ARGUMENTS" src/data/blogPosts.js
+cat src/data/blog-posts/$ARGUMENTS.json
 ```
 
-- `blogPosts.js` に該当エントリがあるか、`featured: true` かを確認する
+- `src/data/blog-posts/$ARGUMENTS.json` があるか、`featured: true` かを確認する（形は `node scripts/maintenance/verify-blog-post-files.js`）
 
 ### 2. 公開前品質チェック（6項目、パス/フェイルを明示）
 
@@ -32,7 +32,7 @@ CLAUDE.mdの基準に従い、以下を実際に検証する。チェックリ�
 1. **数値・データ整合性**: 本文中の数値と表・図解の数値が一致するか、期待値計算式等を再計算する。他記事で言及済みの数値（控除率25%等）と矛盾しないか横断確認する
 2. **現行仕様との整合性**: 言及する機能・UI要素・モデル名が現在も実在するか
    ```bash
-   grep -rn "3モデル\|本命モデル\|穴モデル" public/blog/$ARGUMENTS.md src/data/blogPosts.js
+   grep -rn "3モデル\|本命モデル\|穴モデル" public/blog/$ARGUMENTS.md src/data/blog-posts/$ARGUMENTS.json
    ```
    廃止済み用語が残っていないか確認する（過去実例: unified化前の3モデル切替言及）
 3. **検索意図の網羅性**: 対象キーワードに対して読者の疑問に答えられているか
@@ -50,7 +50,7 @@ CLAUDE.mdの基準に従い、以下を実際に検証する。チェックリ�
 
 ### 3. featured記事の場合: 英語版作成
 
-`blogPosts.js`で`featured: true`なら、同一PRまたは近接PRで英語版を作成する:
+`src/data/blog-posts/$ARGUMENTS.json`が`featured: true`なら、同一PRまたは近接PRで英語版を作成する:
 - `public/blog/$ARGUMENTS-en.md`
 - `src/data/blogPostsEn.js` にエントリ追加
 

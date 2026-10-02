@@ -268,6 +268,17 @@ function evaluate(m) {
         c.marks.map((mark) => (/^[1-6]$/.test(mark) ? Number(mark) : null)),
       ),
     );
+    // 公式の行の順（BOA-667）: c.boats は公式の着順表の上からの並び。非完走艇が記号の種類ごとに並ぶ例
+    // （＿→F、エ→沈→欠、落→転→F、落→妨）を含む
+    expect(
+      `${name}: 公式の行の順(official_row)が、着順表の上からの並びと一致`,
+      same(
+        c.boats.map(
+          (n) => full.boats.find((b) => b.boat_number === n)?.official_row,
+        ),
+        c.boats.map((_, i) => i + 1),
+      ),
+    );
     // フライング・出遅れ・レースタイム（秒）は、着欄・レースタイムの表記から独立に計算して比べる
     expect(
       `${name}: フライング(is_flying)は着欄F、出遅れ(is_late_start)は着欄Lの艇だけ`,
@@ -388,6 +399,16 @@ function evaluate(m) {
           r.race_seconds === b.race_seconds
         );
       }),
+    );
+    const officialRows = m.buildTimingRows("R", newR, {
+      extended: true,
+      officialRow: true,
+    });
+    expect(
+      `${name}: 119適用済みの艇別の行に、公式の行の順(official_row)が入る。未適用なら列を含まない`,
+      officialRows.every(
+        (r) => r.official_row === c.boats.indexOf(r.boat_number) + 1,
+      ) && extRows.every((r) => !("official_row" in r)),
     );
     const payoutRows = m.buildPayoutRows("R", newR);
     expect(
@@ -1040,6 +1061,54 @@ const fullColumns = {
       !db.writes.some((w) => w.table === "race_payouts"),
   );
 }
+// 119（official_row）の適用前後（BOA-667）
+{
+  const before = createSchemaAwareDb(
+    { races: seedRaces },
+    { columns: fullColumns },
+  );
+  await runLive(before);
+  const after = createSchemaAwareDb(
+    { races: seedRaces },
+    {
+      columns: {
+        ...fullColumns,
+        race_start_timings: fullColumns.race_start_timings.concat([
+          "official_row",
+        ]),
+      },
+    },
+  );
+  const outcomes = await runLive(after);
+  const timings = after.tables.race_start_timings ?? [];
+  // 唐津12R の公式の着順表は 4→6→5→3→2→1（1号艇が欠場で最後の行）、戸田9R は 2→1→3→4→5→6（Fが4艇）
+  const rowsOf = (raceId) =>
+    timings
+      .filter((r) => r.race_id === raceId)
+      .sort((a, b) => a.official_row - b.official_row)
+      .map((r) => r.boat_number);
+  check(
+    "119未適用のDB: race_start_timings に official_row を書かない（書き込みの失敗も無い）",
+    (before.tables.race_start_timings ?? []).every(
+      (r) => !("official_row" in r),
+    ) && before.writes.every((w) => !w.failed),
+  );
+  check(
+    "119適用済みのDB: race_start_timings の全艇に official_row（公式の着順表の行の順）が入る",
+    outcomes.every((o) => !o.error) &&
+      after.writes.every((w) => !w.failed) &&
+      timings.length === 12 &&
+      same(
+        rowsOf(RACE_ABSENT),
+        CASES.find((c) => c.file.includes("2026-09-16-23-12")).boats,
+      ) &&
+      same(
+        rowsOf(RACE_F4),
+        CASES.find((c) => c.file.includes("2026-09-19-02-09")).boats,
+      ),
+    show(timings.map((r) => [r.race_id, r.boat_number, r.official_row])),
+  );
+}
 // 判定のキャッシュ
 {
   const db = createSchemaAwareDb({}, { columns: fullColumns });
@@ -1619,6 +1688,12 @@ const mutants = [
     "parser",
   ],
   [
+    "公式の行の順を艇番にする（行の順を持たない）",
+    PARSER,
+    [["official_row: boats.length + 1,", "official_row: boatNumber,"]],
+    "parser",
+  ],
+  [
     "進入コースを0始まりにする",
     PARSER,
     [["entryCourse: index + 1,", "entryCourse: index,"]],
@@ -1702,6 +1777,12 @@ const mutants = [
         "rank456 = [3, 4, 5].map((i) => rowOrder[i] ?? null);",
       ],
     ],
+    "rows",
+  ],
+  [
+    "119適用済みでも艇別の行に公式の行の順を入れない",
+    ROWS,
+    [["...(officialRow ? { official_row: b.official_row } : {}),", ""]],
     "rows",
   ],
   [

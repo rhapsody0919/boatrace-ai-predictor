@@ -5,12 +5,15 @@
  *   並んだ艇が劣って見える）
  * - 値のある艇が無い、または全艇が同じ値なら空集合（差が無いものは強調しない）
  * - null / undefined / NaN は候補から外す
+ * - `hidden: true` の候補は比べるが、最良でも返さない（次に良い艇へ繰り下げない）。
+ *   走数が少なく当てにならない値が最良のとき、金枠を付けずに済ませるため
+ *   （次の艇を光らせると、その艇が最良に見えてしまう）
  *
  * `digits` を渡すと、画面に出す桁に丸めてから比べる。生の値で比べると、
  * 表示が同じ「54.8」（54.84 と 54.80）の片方だけが光ったり、JS で平均した
  * 6.710000000000001 と 6.71 が別の値になったりする。呼び出し側は表示と同じ桁を渡す
  *
- * @param {{boat: number, value: number|null|undefined}[]} candidates
+ * @param {{boat: number, value: number|null|undefined, hidden?: boolean}[]} candidates
  * @param {"max"|"min"} [dir] 高いほど良いなら "max"、低いほど良いなら "min"
  * @param {{digits?: number}} [options]
  * @returns {Set<number>}
@@ -19,12 +22,14 @@ export function bestOf(candidates, dir = "max", { digits } = {}) {
   const round = (v) => (digits === undefined ? v : Number(v.toFixed(digits)));
   const values = (candidates ?? [])
     .filter((c) => typeof c.value === "number" && !Number.isNaN(c.value))
-    .map((c) => ({ boat: c.boat, value: round(c.value) }));
+    .map((c) => ({ boat: c.boat, value: round(c.value), hidden: c.hidden }));
   if (values.length === 0) return new Set();
   const vs = values.map((c) => c.value);
   const min = Math.min(...vs);
   const max = Math.max(...vs);
   if (min === max) return new Set();
   const target = dir === "min" ? min : max;
-  return new Set(values.filter((c) => c.value === target).map((c) => c.boat));
+  return new Set(
+    values.filter((c) => c.value === target && !c.hidden).map((c) => c.boat),
+  );
 }

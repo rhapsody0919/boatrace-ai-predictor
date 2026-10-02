@@ -12,7 +12,9 @@
  * （古いキャッシュを読まなくなる）か、--refresh-kb で取り直す。本体分（2025-12〜）は補完・訂正で値が変わるので毎回 DB から読む
  * （約10か月分で、長期の約1/8）。
  *
- * 出力: data/ml/analogy/*.csv（ANALOGY_DATA_DIR で変更可、gitignore 対象）
+ * 出力: data/ml/analogy/*.csv（ANALOGY_DATA_DIR で変更可、gitignore 対象）と export_manifest.json
+ *   （テーブルごとの行数・先頭列の最大値・内容の SHA-256。train.py が版のメトリクスに残し、後から
+ *   どのデータで学習した版かを確かめられるようにする）
  * 使い方:
  *   node scripts/ml/analogy/export_pool.js            # CI（長期分は Storage を使う）
  *   node scripts/ml/analogy/export_pool.js --no-cache # 手元（Storage を読み書きしない）
@@ -23,6 +25,7 @@
 import fs from "fs";
 import path from "path";
 import zlib from "zlib";
+import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { supabase } from "../../lib/supabaseClient.js";
 import { BUCKET, ensureBucket } from "./storage.js";
@@ -61,7 +64,9 @@ function months(from, to) {
   }
   return out;
 }
-const thisMonth = () => new Date().toISOString().slice(0, 7);
+// 月の境目は JST で決める（UTC だと毎月1日の JST 0:00〜9:00 に当月を取りこぼす。race_id の日付は JST）
+const thisMonth = () =>
+  new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 7);
 
 async function fetchRange(table, cols, orderCols, rangeCol, lo, hi) {
   const rows = [];
@@ -115,6 +120,11 @@ async function kbMonth(t, lo, hi) {
   return body;
 }
 
+const lastFirstColumn = (body) => {
+  const line = body.slice(body.lastIndexOf("\n") + 1);
+  return line.slice(0, line.indexOf(","));
+};
+
 async function exportTable(t) {
   t.colList = t.cols.split(",").map((s) => s.trim());
   const chunks = new Array(t.ranges.length);
@@ -140,6 +150,13 @@ async function exportTable(t) {
     `${t.colList.join(",")}\n${body}\n`,
   );
   console.log(`✅ ${t.name}.csv ${n.toLocaleString()}行`);
+  return {
+    rows: n,
+    // 先頭列（race_id・venue_day_id 等）の最大値＝最新のデータがいつまで入っていたか。
+    // 月ごとの範囲は昇順に並び、範囲の中も先頭列の昇順なので、最後の行の先頭列が最大
+    maxKey: lastFirstColumn(body),
+    sha256: crypto.createHash("sha256").update(body).digest("hex"),
+  };
 }
 
 const KB_MONTHS = months("2019-04", "2025-12");
@@ -235,12 +252,23 @@ async function main() {
   if (!supabase) throw new Error("Supabase 環境変数が未設定（.env.local）");
   fs.mkdirSync(OUT_DIR, { recursive: true });
   if (USE_CACHE) await ensureBucket();
+  // テーブルを指定して書き出したときは、前回の manifest に上書きで足す（指定しなかったテーブルの記録を消さない）
+  const manifestPath = path.join(OUT_DIR, "export_manifest.json");
+  const previous =
+    ONLY.length && fs.existsSync(manifestPath)
+      ? JSON.parse(fs.readFileSync(manifestPath, "utf8"))
+      : { tables: {} };
+  const manifest = {
+    exportedAt: new Date().toISOString(),
+    tables: { ...previous.tables },
+  };
   for (const t of TABLES) {
     if (ONLY.length && !ONLY.includes(t.name)) continue;
     const t0 = Date.now();
-    await exportTable(t);
+    manifest.tables[t.name] = await exportTable(t);
     console.log(`   (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
   }
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 1));
 }
 
 main().catch((e) => {

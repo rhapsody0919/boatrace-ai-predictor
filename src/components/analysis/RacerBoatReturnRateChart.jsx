@@ -216,12 +216,7 @@ function RacerBoatReturnRateChart({
               {breakdown.map((row) => (
                 <tr
                   key={row.boat_number}
-                  className={`motor-ranking-row non-clickable-row ${
-                    bestWinReturnBoats.has(row.boat_number) &&
-                    row.win_return_rate > 0
-                      ? "best-motor"
-                      : ""
-                  }`}
+                  className="motor-ranking-row non-clickable-row"
                 >
                   <td className="rank">{row.boat_number}</td>
                   <td>
@@ -230,7 +225,16 @@ function RacerBoatReturnRateChart({
                     </Link>
                   </td>
                   <td className="rate">{row.sample_count}</td>
-                  <td className="rate">
+                  {/* 最良は行全体ではなく単勝回収率のセルに金枠（R1）。100%以上（買い続けて
+                      プラス）は緑（R2。データ出走表の .drt-plus と同じ基準） */}
+                  <td
+                    className={`rate${
+                      bestWinReturnBoats.has(row.boat_number) &&
+                      row.win_return_rate > 0
+                        ? " ind-best"
+                        : ""
+                    }${row.win_return_rate >= 100 ? " ind-good" : ""}`}
+                  >
                     {row.win_return_rate !== null
                       ? `${row.win_return_rate.toFixed(0)}%`
                       : t("analysis.noData")}

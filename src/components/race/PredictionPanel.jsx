@@ -63,11 +63,16 @@
  * 冒頭コメント参照）。選手名表示のためplayersを渡す
  */
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useRaceData } from "../../hooks/useRaceData";
+import {
+  RACE_TAB_PARAM,
+  RACE_BOAT_PARAM,
+  parseBoatParam,
+} from "../../utils/raceUrlState";
 import { SocialShareButtons } from "../SocialShareButtons";
-import { generatePredictionShareText } from "../../utils/share";
+import { generatePredictionShareText, shareUrlFor } from "../../utils/share";
 import { getVenueGuidePath } from "../../utils/venueUtils";
 import { isRaceCancelled } from "../../utils/raceCancellation";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
@@ -127,14 +132,29 @@ function PredictionPanel({
   // 枠別・今節は null なら従来どおり1号艇にフォールバックする（初回表示は3タブとも
   // 現状のまま変わらない）。モータ情報は一覧のまま選んだ艇の行を示し、ドリルダウンは
   // 自動で開かない（BOA-494 案A。一覧が主役）
-  // レースが変われば選択は無効（次のレースの4号艇は別人）。RaceTabsはkeyで作り直される
-  // が、PredictionPanel自体は再マウントされないため、どのレースの選択かを一緒に持って
-  // 描画時に判定する
-  const [boatFocus, setBoatFocus] = useState({ raceId: null, boat: null });
-  const focusedBoat =
-    boatFocus.raceId === analysisRaceId ? boatFocus.boat : null;
-  const handleFocusBoat = (boat) =>
-    setBoatFocus({ raceId: analysisRaceId, boat });
+  //
+  // 選択は URL の ?boat=（タブは ?tab=）に置く（BOA-493）。選ぶたびに history.replace で
+  // 書き戻すので、アドレスバーのコピーや共有シートで送ったリンクが同じ艇・タブで開く。
+  // レースが変われば選択は無効（次のレースの4号艇は別人）だが、前後のレースへのリンクは
+  // クエリの無い /race/:raceId なので、移動すれば自然に消える
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { pathname, search } = useLocation();
+  const focusedBoat = parseBoatParam(searchParams.get(RACE_BOAT_PARAM));
+  // 値が変わるときだけ書き戻す（同じ値で navigate しない）。push ではなく replace にして、
+  // 戻るボタンが艇・タブの選択を1つずつ巻き戻さないようにする
+  //
+  // 土台は描画時点の searchParams ではなく、その時点の実際の URL（window.location.search）。
+  // react-router の setSearchParams は関数形式でも描画時点の値を渡すため、艇を押した直後
+  // （書き戻しが画面に反映される前）にタブを押すと、古い値を土台にして boat を消していた
+  const setRaceParam = (key, value) => {
+    const next = value == null ? null : String(value);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get(key) === next) return;
+    if (next == null) params.delete(key);
+    else params.set(key, next);
+    setSearchParams(params, { replace: true });
+  };
+  const handleFocusBoat = (boat) => setRaceParam(RACE_BOAT_PARAM, boat);
   const { toast: aiCopyToast, showToast: showAiCopyToast } = useToast();
 
   if (!prediction && !isAnalyzing) return null;
@@ -161,6 +181,8 @@ function PredictionPanel({
   // 結果確定済みレースでは未来志向のAIデータ分析（展開予測/イン崩れ）を表示しない。
   // 過去レースの検証は「結果」タブ（RaceResult）が担う
   const isFinished = Boolean(prediction?.result?.finished);
+  // 確定前は基本情報、確定後は結果で開く（URL の ?tab= が無いとき）
+  const defaultMainTab = isFinished ? "result" : "basic";
   // 締切は過ぎたが結果はまだ反映されていない状態（1時間おきのスクレイピングバッチのラグ）。
   // AI分析パネル自体は表示を維持しつつ、案内バナーのみ追加する
   const isAwaitingResult = status === RACE_STATUS.AWAITING_RESULT;
@@ -342,8 +364,16 @@ function PredictionPanel({
       {venueCode && analysisRaceId && (
         <RaceTabs
           key={analysisRaceId}
-          defaultTabId={isFinished ? "result" : "basic"}
-          onActiveTabChange={setActiveMainTab}
+          defaultTabId={defaultMainTab}
+          initialTabId={searchParams.get(RACE_TAB_PARAM)}
+          onActiveTabChange={(tabId) => {
+            setActiveMainTab(tabId);
+            // 既定のタブではクエリを付けない（素の /race/:raceId を保つ）
+            setRaceParam(
+              RACE_TAB_PARAM,
+              tabId === defaultMainTab ? null : tabId,
+            );
+          }}
           tabs={[
             {
               id: "basic",
@@ -369,6 +399,17 @@ function PredictionPanel({
                   venueCode={venueCode}
                   venueName={venueName}
                   raceId={analysisRaceId}
+                  raceGrade={
+                    prediction?.raceGrade ??
+                    selectedRace?.rawData?.raceGrade ??
+                    selectedRace?.raceGrade ??
+                    null
+                  }
+                  raceStage={
+                    prediction?.raceStage ??
+                    selectedRace?.rawData?.raceStage ??
+                    null
+                  }
                   isCancelled={isCancelled}
                 />
               ),
@@ -584,7 +625,8 @@ function PredictionPanel({
       {/* SNSシェアボタン */}
       <div className="social-share-wrapper">
         <SocialShareButtons
-          shareUrl="https://www.boat-ai.jp/"
+          // 今見ているレース（言語・選んだタブ・艇込み）を共有する（BOA-691）
+          shareUrl={shareUrlFor(`${pathname}${search}`)}
           title={generatePredictionShareText(
             {
               venue: venueName || t("panel.unknownVenue"),

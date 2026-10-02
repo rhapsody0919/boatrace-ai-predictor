@@ -4,8 +4,7 @@
  * データ分析ツールへ外出ししたもの。本日開催中の会場・レースを選ぶと、
  * 出走6選手の枠番（艇番）別の攻め手/守り手データを表示する。
  * テーブル本体は既存のAttackDefenseTableをそのまま再利用する。
- * 注: 実際の進入コース変化（前づけ）はBOA-257の制約により区別できないため、
- * 発走前に決まる枠番（艇番）基準で表示している（AttackDefenseTable.jsx参照）
+ * 枠番キーは BOA-284 で決定（実進入コースではない。src/utils/racerStats.js）
  */
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";

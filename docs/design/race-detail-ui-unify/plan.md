@@ -49,22 +49,36 @@ spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md)
 
 ## 4. 余白（PR1）
 
-- `RaceDetailPage.css` の `@media (max-width: 480px)` に置く
-  - `.race-detail-page-v2` の左右 padding 0.75rem → 0.5rem
-  - `.race-detail-page-v2 .prediction-section` の左右 padding → 0
-  - ページ側の変数 `--rdp-card-pad: 10px` を置き、各カード（`.rmt-card` `.rbi-card` `.rwit-card` `.rsc-card` `.nsc-card` `.prediction-result` `.race-result` `.rol-*` `.venue-tendency-panel` `.embedded-analysis-section` ほか、棚卸しの一覧）の左右 padding をこの変数にする
-  - カードの中の表・グラフの外枠に `margin-inline: calc(-1 * var(--rdp-card-pad))`
-  - `--rdp-bleed`（#1127）を `calc(0.5rem + 0)` に合わせる。#1127 は 320px 以下のブロックでも `--rdp-bleed` を再定義している（0.75rem + 0.75rem）ので、そちらも同じ値にそろえる。そろえないと 320px で左右16pxはみ出す（指摘3）
-  - #1127 の `.rbi-card .hscroll-hint:has(> .drt-table-wrapper)` の打ち消し（`--spacing-3` 固定）を `var(--rdp-card-pad)` にする（指摘3）
-  - `width: 100%` の表（`.rmt-compare` `.rmt-forecast-table` `.rwit-grid` `.rwit-today-table` 等）は、負の margin だけでは左にずれるだけなので、幅が auto のラッパーに付けるか `width: calc(100% + 2 * var(--rdp-card-pad))` も付ける（指摘5）
-  - カードの内余白は一律ではない（480px 以下で `.rsc-card` `.nsc-card` `.venue-tendency-panel` は既に 8px、`.embedded-analysis-section` は中の要素が余白を持つ、AI予想の `.prediction-result` は 16px の可能性）。PR1 の着手時に、カードごとの今の値を実測してこの節に表で書く（指摘6）
-- 320px 以下の指定（RaceDetail.css）とぶつからないよう、最終値を `e2e/layout.spec.js` で 320 / 375 で確認
+- `RaceDetailPage.css` の `@media (max-width: 767px)` に置く（481〜767px の帯もユーザー報告で対象に追加）
+  - `.race-detail-page-v2` の左右 padding 0.5rem。`--rdp-card-pad: 10px`、`--rdp-bleed: 0.5rem`
+  - `.race-detail-page-v2 .prediction-section` の左右 padding 0（RaceDetail.css の裸の指定 0,1,0 に 0,2,0 で勝つ。320px 以下の 0.75rem も同じく打ち消すので、#1127 の 320px の `--rdp-bleed` 再定義は削除した）
+  - カード（`.rmt-card` `.rbi-card` `.rwit-card` `.rsc-card` `.nsc-card` `.venue-tendency-panel` `.prediction-result` `.race-result` `.rol-disclaimer` `.rol-status` `.race-tabs-empty` `.motor-condition-container`）の左右 padding を `--rdp-card-pad` に。480px 以下で 8px だった `.rsc-card` `.nsc-card` `.venue-tendency-panel` は 10px になる
+  - 表を広げるのは、カードの内余白の直下にある表か横スクロール枠だけ（`.rmt-card > .rmt-compare` `.rmt-card > .hscroll-hint` `.rmt-card .race-history-hscroll` `.rwit-card > .rwit-today-table` `.rwit-card .rwit-grid-wrapper` `.rsc-card > .rsc-grid-wrapper` `.venue-tendency-panel .vtp-table-wrapper` `.motor-condition-container .table-wrapper`）。負の margin と `width: calc(100% + 2 * pad)` を一緒に付ける（指摘5）。グラフは広げない
+  - 展示情報カードの `.hscroll-hint` の打ち消しは `var(--rdp-card-pad)`（指摘3）
+  - データ出走表の行見出しを短縮ラベルに（481px 以上では全名が1行で並び、行見出しの列が 139px になっていた）
+- 実測（開発サーバー、2026-10-02 児島8R）: 320〜700px の全幅で、今節・直前情報・枠別情報・モータ情報のカードの外側が左右 8px、ページの横スクロール無し。展示情報の表は 520・600・700px で横スクロール無し
 
 ## 5. 調子（Δ）の最良（PR2b）
 
 - データ出走表の `form` 行は、全員が下がっていても「最もマシな艇」に金枠が付く。埋め込み分析の選手調子は Δ > 0 のときだけ。PR2b でデータ出走表も「Δ > 0 のときだけ最良」にそろえる。赤（下がった）の値に金枠が付くと R2 と矛盾するため（指摘8）
 
-## 6. 以降のPR
+## 6. 今節・枠別情報（PR3）
+
+- 今節の「6艇の今節」: 得点率（高、2桁）・節内順位（低）・前検タイム（低、2桁）の最良に `.ind-best`（モックどおり3列）。欠場・未出走の行は候補に入らない
+  - 走数が少ない（⚠、3走未満）艇の得点率・順位は比べるが、最良でも金枠を付けない。次の艇へ繰り下げもしない（`bestOf` の `hidden`）。初日の1走だけの「⚠10.00」が光っていた（ファン評価1周目）
+  - 表の下の注記に金枠の意味と、⚠ が最良のときはどの艇にも付けないことを書く（`meetTab.bestLegend`）
+  - 選択中の行の最良は枠を不透明の金にする。行の青い塗りと混ざって灰色の箱に見えた（ファン評価2周目）
+  - 得点率・順位・前検のセルの右に余白（`--spacing-1`）。数字が金枠の線に接していた（ファン評価3周目）。列の数字の右端がそろうよう、金枠の有無によらず付ける
+- 得点率早見のボーダー超えの塗りは新トークン `--color-success-bg`（`--color-success-text` の 16%。ダークで切り替わる）
+- 今節のSTの判定文: 「踏んでいる」＝`.ind-good`、「慎重」＝`.ind-bad`（差に −/+ が付く）。色は差 0.02 以上かつ今節3走以上のときだけ（`meetStVerdictTone`）。条件は推移の注記（`meetTab.sparkNote`）に書く。差 0.01・1走で赤の「慎重」が出ていた（ファン評価1周目）。展示の判定文は以前に廃止済みなので対象外
+- 日別の走り（`RaceHistoryTable`、今節タブだけが使う）の着順: 1着＝金、5・6着と F・L・転覆などの記号＝赤（`RecentRunsBar` と同じ）。欠場は色なし
+- **ST考察には金枠を付けない**（モックからの変更。ファン評価1周目 P1）。安定率・出遅率・抜出はコースで水準が違い、生の値の最良はほぼ毎回内側の艇に付く（2026-10-02 平和島12R: 安定率の金枠は1号艇 93.8・平均との差 +19.4、3号艇は 90.7 で +24.3）。カードの見方は「同コース・同級別の平均との差」なので、良し悪しは差の緑・赤で示す
+  - 平均との差の緑・赤は、走数が少ない艇（⚠）には付けない（`diffTone`）。1走で「−56.1」が赤く出ていた（ファン評価2周目）。凡例にも書き、走数に⚠を付ける（凡例の⚠が表に無かった。ファン評価3周目）
+  - 抜出に平均（期待回数）との差を ＋− 付きで出す。期待回数が1未満で0回のときは色なし（カードの既存方針）。表示の桁で0になる差は符号・色なし（以前は「−0.0」）
+  - 代案（判断材料）: 「平均との差」の最良に金枠を付ける。コース補正後の最良が分かるが、金枠のセルの値が6艇の最大・最小と一致しなくなる
+- **コース別成績・全コースには金枠を付けない**（spec FR-4 から外す）。どちらも1艇の期間・条件・コース別の表で、6艇の比較ではない。行は母数が違い、全コースは1コースが常に最良になる。PR2b の「条件別」を外した判断と同じ（spec「6艇比較が無いセクション」）
+
+## 7. 以降のPR
 
 PR2b〜PR5 は tasks.md の各節。PR ごとに plan の該当節を追記してから着手する（PR2a の結果を見て共通クラスの使い方を確定させるため）。
 

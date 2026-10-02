@@ -48,15 +48,12 @@ export const toNumber = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 
-// 艇の枠番別勝率（枠番での1着数/出走数）。racerStatsから算出する
-// 注: race_results.course_1〜6は艇番と常に一致しており、実際の進入変化
-// （前づけ）を区別できていない既知の制約がある（BOA-257）。表示ラベルは
-// 「枠番」に統一しているが、内部の変数名・関数名はcourse系のまま残している
-export function courseRateOf(statsByBoat, boat) {
+// 艇の枠番別勝率（枠番での1着数/出走数）。racerStats から算出する。
+// 枠番キーは BOA-284 で決定（実進入コースではない。src/utils/racerStats.js）
+export function wakuRateOf(statsByBoat, boat) {
   const stats = statsByBoat.get(boat);
   if (!stats) return null;
-  const course = stats.course ?? boat;
-  const counts = stats.courseRaceCounts?.[String(course)];
+  const counts = stats.wakuRaceCounts?.[String(boat)];
   if (!counts || !counts.total) return null;
   return {
     wins: counts.wins ?? 0,
@@ -70,7 +67,6 @@ const byBoat = (rows) => {
   (rows ?? []).forEach((row) => map.set(row.boat_number, row));
   return map;
 };
-
 
 /**
  * オリジナル展示（一周・半周ラップ・まわり足・直線）の行を作る（BOA-452 / FR-4b）。
@@ -240,7 +236,7 @@ function buildRowDefs({
 
   cand.courseRate = players.map((p) => ({
     boat: p.number,
-    value: courseRateOf(statsByBoat, p.number)?.rate ?? null,
+    value: wakuRateOf(statsByBoat, p.number)?.rate ?? null,
   }));
 
   return [
@@ -345,11 +341,21 @@ function buildRowDefs({
       label: t("dataTable.rowForm"),
       shortLabel: t("review.cols.form"),
       tab: "racer",
-      best: bestOf(
-        (racerForm ?? []).map((r) => ({ boat: r.boat_number, value: r.delta })),
-        "max",
-        { digits: 2 },
-      ),
+      // 上がった艇（Δ > 0）の中の最良だけを強調する。全員が下がっているときに「下がり方が
+      // 最も小さい艇」へ金枠を付けると、赤（悪い）の値に金（最良）が重なる（R1・R2。
+      // 埋め込み分析の選手調子と同じ条件）
+      best: (() => {
+        const rows = racerForm ?? [];
+        const best = bestOf(
+          rows.map((r) => ({ boat: r.boat_number, value: r.delta })),
+          "max",
+          { digits: 2 },
+        );
+        const up = new Set(
+          rows.filter((r) => r.delta > 0).map((r) => r.boat_number),
+        );
+        return new Set([...best].filter((boat) => up.has(boat)));
+      })(),
       render: (p) => {
         const row = formByBoat.get(p.number);
         if (!row || row.delta === null || row.delta === undefined)
@@ -371,11 +377,13 @@ function buildRowDefs({
       label: t("dataTable.rowAvgSt"),
       shortLabel: t("review.cols.avgSt"),
       tab: "racecard",
-      best: bestOf(cand.avgSt, "min", { digits: 2 }),
+      // 平均STは小数3桁で出す。2桁だと 0.127〜0.134 が全部「0.13」になり、表示桁で比べる
+      // 最良（R1）が5艇同時に光った（2026-10-02 児島12R。ユーザー承認で3桁に）
+      best: bestOf(cand.avgSt, "min", { digits: 3 }),
       render: (p) => {
         const rate = toNumber(statsByBoat.get(p.number)?.avgST);
         return rate !== null ? (
-          <span className="drt-value">{rate.toFixed(2)}</span>
+          <span className="drt-value">{rate.toFixed(3)}</span>
         ) : (
           ph("racerStats")
         );
@@ -645,7 +653,7 @@ function buildRowDefs({
       tab: "attackdefense",
       best: bestOf(cand.courseRate, "max", { digits: 0 }),
       render: (p) => {
-        const cr = courseRateOf(statsByBoat, p.number);
+        const cr = wakuRateOf(statsByBoat, p.number);
         if (!cr) return ph("racerStats");
         return (
           <span className="drt-value">

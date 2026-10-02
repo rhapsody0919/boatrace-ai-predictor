@@ -11,14 +11,19 @@ const datedVersions = (names) =>
     .reverse();
 
 /**
- * 消してよい版。新しい順に keep 個と、表示中の版（is_active）は残す。
+ * 消してよい版。新しい順に keep 個と、表示中の版（is_active）と、守る版（参照版など）は残す。
  * 書き込み（db.py）が何週か続けて失敗しても、表示中の版のモデルを消さない
- * （消すと次の週の品質ゲートで前の版を取ってこられず、学習が止まる）
+ * （消すと次の週の品質ゲートで比べられず、学習が止まる）。参照版は品質ゲートの比較の相手なので消さない
  */
-export function versionsToPrune(names, activeVersion, keep) {
+export function versionsToPrune(
+  names,
+  activeVersion,
+  keep,
+  protectedVersions = [],
+) {
   return datedVersions(names)
     .slice(keep)
-    .filter((v) => v !== activeVersion);
+    .filter((v) => v !== activeVersion && !protectedVersions.includes(v));
 }
 
 /**
@@ -47,4 +52,13 @@ export function assertCachedHeader(csv, expectedColumns, key) {
       `${key} の列が今のコードと違う（キャッシュ: ${header} / コード: ${expectedColumns.join(",")}）。KB_CACHE_VERSION を上げる`,
     );
   }
+}
+
+/**
+ * Storage のダウンロードのエラーが「ファイルが無い」か。参照版に無くてよいファイル（この版で足したモデル）は
+ * 無いときだけ飛ばし、通信・権限のエラーでは失敗させる（飛ばすと参照版との比較が黙って省かれる）
+ */
+export function isNotFound(error) {
+  const status = String(error?.statusCode ?? error?.status ?? "");
+  return status === "404" || /not found/i.test(error?.message ?? "");
 }

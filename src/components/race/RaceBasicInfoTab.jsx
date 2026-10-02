@@ -46,6 +46,7 @@ import {
 } from "./basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
 import FlyingBadge from "./FlyingBadge";
+import { bestOf } from "../../utils/bestOf";
 import "./RaceBasicInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
@@ -356,6 +357,24 @@ function RaceBasicInfoTab({
     return Math.max(0, Math.min(100, value));
   };
 
+  // 6艇の中で最良の値（同値は全部）に金枠を付ける（race-detail-ui-unify R1）。
+  // 棒は艇色のまま、値のラベルで示す（R4）。表示と同じ桁で比べる
+  const valueDigits =
+    metric === "avgSt"
+      ? 3
+      : metric === "winRate" && !needsOwnAggregation
+        ? 2
+        : 1;
+  // 走数が少ない値（棒を薄く出しているもの）は比べない。条件で絞ると「2走で2連対率100%」の
+  // ような値が最良になり、金枠が最も当てにならない値に付く
+  const bestBoats = bestOf(
+    values
+      .filter((v) => !v.loading && !v.isSmallSample)
+      .map(({ boat, value }) => ({ boat, value })),
+    metric === "avgSt" ? "min" : "max",
+    { digits: valueDigits },
+  );
+
   const isPresetActive = (preset) =>
     preset.scope === scope && preset.grade === grade;
 
@@ -534,16 +553,18 @@ function RaceBasicInfoTab({
                 <span className="rbit-value">
                   {loading ? (
                     <span className="rbit-skeleton" aria-hidden="true" />
-                  ) : metric === "avgSt" ? (
-                    value !== null ? (
-                      value.toFixed(2)
-                    ) : (
-                      "—"
-                    )
-                  ) : metric === "winRate" ? (
-                    formatWinRate(value, needsOwnAggregation)
                   ) : (
-                    formatRate(value)
+                    <span
+                      className={`rbit-value-num${bestBoats.has(boat) ? " ind-best" : ""}`}
+                    >
+                      {metric === "avgSt"
+                        ? value !== null && value !== undefined
+                          ? value.toFixed(valueDigits)
+                          : "—"
+                        : metric === "winRate"
+                          ? formatWinRate(value, needsOwnAggregation)
+                          : formatRate(value)}
+                    </span>
                   )}
                   {n !== null && n !== undefined && (
                     <span
@@ -744,6 +765,7 @@ function RaceBasicInfoTab({
                       const period = pickPeriodStats(
                         periodStats,
                         player?.racerId,
+                        (raceId ?? "").slice(0, 10),
                       );
                       // 前期と出走表の値の差（BOA-439）。出走表の値は上のバーの
                       // 既定（全国・今期）と同じ公式値（race_entries、追加クエリ無し）。
@@ -771,12 +793,17 @@ function RaceBasicInfoTab({
                       const diffLabel = (d, unit = "", diffUnit = unit) =>
                         d && (
                           <span
+                            // 勝率・2連対率とも高いほど良い。上がった＝緑、下がった＝赤
+                            // （差の数字に＋−が付く。race-detail-ui-unify R2）。
+                            // 差を出さない期の初め（diffWithheld）は色を付けない
                             className={`rbit-period-diff${
-                              d.sign > 0
-                                ? " is-up"
-                                : d.sign < 0
-                                  ? " is-down"
-                                  : ""
+                              diffWithheld
+                                ? ""
+                                : d.sign > 0
+                                  ? " is-up ind-good"
+                                  : d.sign < 0
+                                    ? " is-down ind-bad"
+                                    : ""
                             }`}
                           >
                             {diffWithheld
@@ -1021,6 +1048,33 @@ function RaceBasicInfoTab({
                                       period.avgSt === null
                                         ? "—"
                                         : period.avgSt.toFixed(2),
+                                  })}
+                                </span>
+                              </div>
+                              {/* 優出・優勝（BOA-326）。公式の期別成績の前期の値と、
+                                  前期を含む直近4期の合計。1艇ずつの表示で6艇の
+                                  比較ではないので、最良の金枠は付けない */}
+                              <div className="rbit-period-finals">
+                                <span>
+                                  {t("basicInfo.periodFinals", {
+                                    value: period.finals ?? "—",
+                                  })}
+                                </span>
+                                <span>
+                                  {t("basicInfo.periodWins", {
+                                    value: period.wins ?? "—",
+                                  })}
+                                </span>
+                                <span className="rbit-period-recent">
+                                  {t("basicInfo.periodRecentFinals", {
+                                    from: period.recent.from
+                                      .slice(0, 7)
+                                      .replace("-", "/"),
+                                    to: period.recent.to
+                                      .slice(0, 7)
+                                      .replace("-", "/"),
+                                    finals: period.recent.finals,
+                                    wins: period.recent.wins,
                                   })}
                                 </span>
                               </div>
