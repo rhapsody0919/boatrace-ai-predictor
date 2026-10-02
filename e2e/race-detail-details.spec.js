@@ -3,6 +3,24 @@ import { test, expect } from "./fixtures.js";
 // レース詳細の表示の細部（BOA-613・618・619）
 const RACE = "/race/2026-09-29-16-12"; // 児島12R（ピットレポートあり）
 
+// 色の文字列（rgb(...)）どうしのコントラスト比（WCAG の相対輝度）
+const rgb = (s) =>
+  s
+    .match(/\d+(\.\d+)?/g)
+    .slice(0, 3)
+    .map(Number);
+const lum = ([r, g, b]) => {
+  const f = (c) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+};
+const contrast = (a, b) => {
+  const [x, y] = [lum(rgb(a)), lum(rgb(b))];
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+};
+
 test.describe("レース詳細の表示の細部", () => {
   test.slow();
 
@@ -85,20 +103,7 @@ test.describe("レース詳細の表示の細部", () => {
       getComputedStyle(row.querySelector(".rbit-bar-fill")).boxShadow,
       getComputedStyle(row.querySelector(".rbit-bar-track")).backgroundColor,
     ]);
-    const rgb = (s) =>
-      s
-        .match(/\d+(\.\d+)?/g)
-        .slice(0, 3)
-        .map(Number);
-    const lum = ([r, g, b]) => {
-      const f = (c) => {
-        const v = c / 255;
-        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-      };
-      return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
-    };
-    const [a, b] = [lum(rgb(shadow)), lum(rgb(track))];
-    const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    const ratio = contrast(shadow, track);
     // 非テキストの図形のコントラストの目安（WCAG 1.4.11）は 3:1
     expect(ratio).toBeGreaterThanOrEqual(3);
   });
@@ -191,6 +196,146 @@ test.describe("レース詳細の表示の細部", () => {
     expect(same.length).toBeGreaterThan(0);
     for (const ws of same) {
       expect(Math.max(...ws) - Math.min(...ws)).toBeLessThanOrEqual(0.01);
+    }
+  });
+
+  test("320px: 枠別情報の全コース表は切れていることが「›」で分かり、375px: ST考察は枠に収まる（BOA-607）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // 2026-09-26 津5R（チケットの再現レース）
+    await page.goto("/race/2026-09-26-09-05");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    // ST考察の表は 375px で6艇とも枠の中（#1064 で等幅・最小幅を外した）
+    const rsc = page.locator(".rsc-grid-wrapper").first();
+    await expect(rsc).toBeVisible({ timeout: 30000 });
+    expect(
+      await rsc.evaluate((el) => el.scrollWidth - el.clientWidth),
+    ).toBeLessThanOrEqual(1);
+
+    // 全コース表が切れる幅では、横に続く手がかり（「›」）を出す。375px は余白を詰めて
+    // （race-detail-ui-unify FR-1）表示枠が 345px に広がり、表がほぼ収まるようになったため、
+    // 表の最小幅（320px）が表示枠を必ず超える 320px で確かめる
+    await page.setViewportSize({ width: 320, height: 812 });
+    await page.locator(".rwit-fold-summary").click();
+    const grid = page.locator(".rwit-grid-wrapper");
+    await expect(grid.locator(".rwit-grid")).toBeVisible({ timeout: 30000 });
+    expect(
+      await grid.evaluate((el) => el.scrollWidth - el.clientWidth),
+    ).toBeGreaterThan(4);
+    const more = page.locator(".rwit-grid-hscroll .hscroll-more");
+    await expect(more).toBeVisible();
+    // 押すと右へ送られ、左へ戻す「‹」が出る
+    await more.click();
+    await expect
+      .poll(() => grid.evaluate((el) => el.scrollLeft))
+      .toBeGreaterThan(0);
+    await expect(
+      page.locator(".rwit-grid-hscroll .hscroll-less"),
+    ).toBeVisible();
+
+    // フェードを付ける箱が、スクロールする箱の右端まで覆う。以前は箱が4px内側で終わり、
+    // フェードの外に切れた列の文字がくっきり残った（#1130 ファン評価1周目）
+    const edges = await page.evaluate(() => {
+      const hint = document
+        .querySelector(".rwit-grid-hscroll")
+        .getBoundingClientRect();
+      const wrap = document
+        .querySelector(".rwit-grid-wrapper")
+        .getBoundingClientRect();
+      return { hintRight: hint.right, wrapRight: wrap.right };
+    });
+    expect(edges.hintRight).toBeGreaterThanOrEqual(edges.wrapRight - 0.5);
+
+    // 想定コースが外の選手（4〜6号艇）を選んでも、「想定」の列が初めから見える位置まで送られ、
+    // 右端のフェード（幅40px）と「›」の下にも入らない。指標を替えても同じ（#1130 ファン評価
+    // 1・2周目）。行見出しはスクロールする箱の左端にぴったり付き、左に流れた数字が覗かない
+    await page.locator(".rwit-grid-hscroll .hscroll-less").click();
+    await expect.poll(() => grid.evaluate((el) => el.scrollLeft)).toBe(0);
+    const todayColumnState = () =>
+      page.evaluate(() => {
+        const wrap = document.querySelector(".rwit-grid-wrapper");
+        const th = wrap.querySelector(".rwit-grid-course-th.is-today");
+        if (!th) return "no-today";
+        const w = wrap.getBoundingClientRect();
+        const c = th.getBoundingClientRect();
+        const label = wrap
+          .querySelector(".rwit-grid-label-th")
+          .getBoundingClientRect();
+        const hasMore =
+          wrap.scrollWidth - wrap.clientWidth - wrap.scrollLeft > 4;
+        const rightLimit = w.right - (hasMore ? 40 : 0);
+        if (label.left - w.left > 0.5)
+          return `label-gap ${label.left - w.left}`;
+        // 行見出しの右端で途中まで隠れた列が無い（右端まで送り切った時を除く。同 3周目）
+        const atMax =
+          wrap.scrollLeft >= wrap.scrollWidth - wrap.clientWidth - 1;
+        if (!atMax) {
+          for (const head of wrap.querySelectorAll(".rwit-grid-course-th")) {
+            const r = head.getBoundingClientRect();
+            if (r.left < label.right - 0.5 && r.right > label.right + 0.5) {
+              return `straddle ${head.textContent.trim()} ${Math.round(r.left)}-${Math.round(r.right)} / ${Math.round(label.right)}`;
+            }
+          }
+        }
+        return c.right <= rightLimit + 0.5 && c.left >= label.right - 0.5
+          ? "visible"
+          : `hidden ${Math.round(c.left)}-${Math.round(c.right)} / ${Math.round(label.right)}-${Math.round(rightLimit)}`;
+      });
+    for (const width of [375, 320]) {
+      await page.setViewportSize({ width, height: 812 });
+      for (const boat of ["4", "5", "6"]) {
+        await page
+          .locator(".rwit-boat-chip")
+          .filter({
+            has: page.locator(".rwit-boat-chip-num", {
+              hasText: new RegExp(`^${boat}$`),
+            }),
+          })
+          .click();
+        for (const metric of ["1着率", "2連対率", "3連対率"]) {
+          await page
+            .locator(".rwit-metric-row .rwit-chip", { hasText: metric })
+            .click();
+          await expect
+            .poll(todayColumnState, {
+              message: `${width}px・${boat}号艇・${metric}`,
+            })
+            .toBe("visible");
+        }
+      }
+    }
+  });
+  test("枠別情報: 選んだ艇チップの艇番が、ライト・ダークとも6艇すべてで読める（BOA-693）", async ({
+    page,
+  }) => {
+    await page.goto(`${RACE}?tab=waku`);
+    const chips = page.locator(".rwit-boat-chip");
+    await expect(chips).toHaveCount(6, { timeout: 30000 });
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate(
+        (t) => document.documentElement.setAttribute("data-theme", t),
+        theme,
+      );
+      for (let i = 0; i < 6; i++) {
+        const chip = chips.nth(i);
+        await chip.click();
+        await expect(chip).toHaveAttribute("aria-pressed", "true");
+        const { boat, fg, bg } = await chip.evaluate((el) => {
+          const num = el.querySelector(".rwit-boat-chip-num");
+          const cs = getComputedStyle(num);
+          return {
+            boat: num.textContent.trim(),
+            fg: cs.color,
+            bg: cs.backgroundColor,
+          };
+        });
+        // 文字のコントラストの目安（WCAG 1.4.3）は 4.5:1。以前はダークの1・5号艇で約1.2:1
+        expect(
+          contrast(fg, bg),
+          `${theme}・${boat}号艇: 艇番 ${fg} / 丸 ${bg}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
     }
   });
 });

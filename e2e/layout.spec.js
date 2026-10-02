@@ -514,7 +514,7 @@ test.describe("レイアウト: /hit-races は的中が列数より少なくて�
  * カテゴリで絞ると件数が列数を下回る（「リスク管理」1件・「実績分析」2件・
  * 「上級者向け」3件）。1440px以上は3列なので、1件のカテゴリで右に2列分の空白が残る。
  *
- * 記事はバンドルされた静的データ（src/data/blogPosts.js）なので、本番データにも
+ * 記事はバンドルされた静的データ（src/data/blog-posts/*.json）なので、本番データにも
  * 通信にも依存しない。カテゴリを全部押して、そのたびにグリッドを検査する。
  */
 test.describe("レイアウト: /blog はカテゴリで絞って件数が列数より少なくても幅を余らせない（BOA-528）", () => {
@@ -884,7 +884,9 @@ for (const path of ["/race/2026-09-29-16-12", "/en/race/2026-09-29-16-12"]) {
       page,
     }, testInfo) => {
       const widths =
-        testInfo.project.name === "layout-mobile" ? [320, 375, 390] : [null];
+        testInfo.project.name === "layout-mobile"
+          ? [320, 375, 390, 520, 600, 700]
+          : [null];
       for (const width of widths) {
         if (width) await page.setViewportSize({ width, height: 812 });
         await checkBeforeInfoExhibitionCard(page, path, width);
@@ -909,11 +911,21 @@ async function checkBeforeInfoExhibitionCard(page, path, width) {
     const labels = [...el.querySelectorAll(".drt-label-cell")].map(
       (c) => c.getBoundingClientRect().left,
     );
+    const wrapEl = el.closest(".drt-table-wrapper");
+    // 同じタブの、表を持たないカード（水面・展示タイム・進入など）
+    const others = [...document.querySelectorAll(".rbi-card")]
+      .filter((c) => !c.querySelector(".drt-table-wrapper") && c.offsetParent)
+      .map((c) => {
+        const r = c.getBoundingClientRect();
+        return [r.left, r.right];
+      });
     return {
       card: [card.left, card.right],
       wrap: [wrap.left, wrap.right],
       minLabelLeft: Math.min(...labels),
       vw: document.documentElement.clientWidth,
+      tableOverflow: wrapEl.scrollWidth - wrapEl.clientWidth,
+      others,
     };
   });
   // 表（横スクロールの枠）はカードの左右の枠の内側にある
@@ -926,4 +938,20 @@ async function checkBeforeInfoExhibitionCard(page, path, width) {
   expect(m.minLabelLeft, `${at}行見出し`).toBeGreaterThanOrEqual(
     Math.max(0, m.card[0]) - 0.5,
   );
+  if (!width) return;
+  // 375〜767px: 6艇が表の横スクロール無しで入る（以前は 520px で表 531px / 表示枠 438px）。
+  // 320px は対象外: 列の幅が 11px の文字の幅だけで決まり、CI（Linux のフォント）では 34px はみ出す
+  // （Mac の Chromium・Preview では 312/312 で収まる）。表は横スクロールのヒント付きで読める。
+  // 320px で横スクロールを無くすには列の中身を折る必要があり、仕様（FR-1 は 520・600・700px）の外
+  if (width >= 375) {
+    expect(
+      m.tableOverflow,
+      `${width}px: 展示情報の表の横スクロール`,
+    ).toBeLessThanOrEqual(1);
+  }
+  // 767px 以下: ほかのカードは画面の左右 8px（docs/design/race-detail-ui-unify FR-1 案B）
+  for (const [left, right] of m.others) {
+    expect(left, `${width}px: カードの左の余白`).toBeCloseTo(8, 0);
+    expect(m.vw - right, `${width}px: カードの右の余白`).toBeCloseTo(8, 0);
+  }
 }

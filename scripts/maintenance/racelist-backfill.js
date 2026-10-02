@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 出走表（公式 racelist ページ）過去分バックフィルCLI（N19: 3連率の欠落対応）
+ * 出走表（公式 racelist ページ）過去分バックフィルCLI（N19: 3連率の欠落対応、BOA-417: F数等の欠落対応）
  *
  * 設計: docs/design/pre-race-full-fields/plan.md §6。背景: 2025-12-03〜2026-02-14の一部レース
  * （約8,900レース、race_entries 約52,000行）で、global_3rate（3連率）等がNULL。当初検討していた
@@ -18,7 +18,7 @@
  *
  * kb-backfill.js・fan-backfill.js・monthly-schedule-backfill.js と同じ構成（取得・解析・投入を別
  * ステップに分離。取り直しをしない設計）。ただし対象日の一覧を持たず、**対象レースの一覧を本番DBの
- * 読み取りで決める**（global_3rate が NULL の行を持つレース）点が異なる:
+ * 読み取りで決める**（global_3rate か f_count が NULL の行を持つレース。BOA-417 で f_count を追加）点が異なる:
  *   plan      対象レースの件数・download の見積り（リクエスト数・所要夜数）。DBは読み取りのみ。書き込み・
  *             公式サイトへのリクエストなし（= download --dry-run）
  *   download  公式サイトから出走表ページを取得し、生のHTML（gzip）をアーカイブへ保存する。DBは対象の
@@ -45,6 +45,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseRaceListPage } from "../lib/raceListParser.js";
+import { getYesterdayDateJST } from "../lib/dateUtils.js";
 import {
   RACELIST_BACKFILL_COLUMNS,
   buildFillRowsForRace,
@@ -78,7 +79,7 @@ function parseArgs(argv) {
   const opts = {
     command,
     from: null, // race_id の下限（YYYY-MM-DD）。未指定なら対象の全期間
-    to: null, // race_id の上限（YYYY-MM-DD）
+    to: null, // race_id の上限（YYYY-MM-DD）。未指定なら前日（JST）
     archiveDir: path.join(REPO_ROOT, "data/racelist-backfill-archive"),
     dailyLimit: 2000,
     window: "22-06",
@@ -194,6 +195,13 @@ function readParsedRace(dir, raceId) {
   return JSON.parse(zlib.gunzipSync(fs.readFileSync(file)).toString("utf8"));
 }
 
+/** race_id の一覧を月ごとに数える（plan・status の内訳） */
+const countByMonth = (raceIds) =>
+  raceIds.reduce((acc, id) => {
+    const m = id.slice(0, 7);
+    return { ...acc, [m]: (acc[m] ?? 0) + 1 };
+  }, {});
+
 const chunk = (arr, n) =>
   Array.from({ length: Math.ceil(arr.length / n) }, (_, i) =>
     arr.slice(i * n, i * n + n),
@@ -206,7 +214,12 @@ const chunk = (arr, n) =>
 async function loadTargets(opts, deps) {
   const client =
     deps.client ?? (await import("../lib/supabaseClient.js")).supabase;
-  return loadTargetRaceIds(client, { from: opts.from, to: opts.to });
+  // --to の既定は前日（JST）。当日以降のレースは日次の取得が埋めるため、夜間の取得（期間を指定しない）で
+  // 当日・翌日の出走表を取りに行かない（BOA-417 で対象を F数の NULL に広げたため、当日分も対象に入りうる）
+  return loadTargetRaceIds(client, {
+    from: opts.from,
+    to: opts.to ?? getYesterdayDateJST(),
+  });
 }
 
 /**
@@ -217,7 +230,7 @@ export async function cmdDownload(opts, deps = {}) {
   const log = deps.log ?? console.log;
   const targetIds = deps.targetIds ?? (await loadTargets(opts, deps));
   log(
-    `対象レース（global_3rateがNULL、${opts.from ?? "全期間"}〜${opts.to ?? "全期間"}）: ${targetIds.length}件`,
+    `対象レース（global_3rate か f_count が NULL、${opts.from ?? "全期間"}〜${opts.to ?? `${getYesterdayDateJST()}（前日）`}）: ${targetIds.length}件 ${JSON.stringify(countByMonth(targetIds))}`,
   );
   const items = targetIds.map((raceId) => ({
     key: raceId,

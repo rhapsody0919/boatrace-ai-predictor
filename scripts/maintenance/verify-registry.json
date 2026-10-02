@@ -109,9 +109,19 @@
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
     },
     {
+      "script": "verify-blog-post-files.js",
+      "tier": "ci",
+      "guards": "ブログ記事メタデータ src/data/blog-posts/{id}.json（BOA-247）の形。id とファイル名の一致・必須項目・本文 .md の存在・featuredRank の有無と重複・blogPosts.js が全件を新しい順で返すこと"
+    },
+    {
       "script": "verify-frontend-pure-functions.js",
       "tier": "ci",
       "guards": "画面側の純関数（basicInfoStats / raceStatus / courseGridStats / venueDayTrend / weatherInfo）の、過去に fix が入った箇所の回帰と変異検証（BOA-255）"
+    },
+    {
+      "script": "verify-racer-stats-waku.js",
+      "tier": "ci",
+      "guards": "racerStats（中身は枠番、BOA-284 で枠番キー維持と決定）を画面が courseRaceCounts・courseRateOf・table.courseWinRate で読まないこと、境界の toWakuRacerStats が wakuRaceCounts に詰め替えること（BOA-302）"
     },
     {
       "script": "verify-race-outcome.js",
@@ -500,6 +510,11 @@
       "guards": "開催中止の判定が共通関数を通らず生の文字列比較で書かれること（BOA-418）と、画面の判定が結果のあるレースを中止扱いすること（BOA-525）"
     },
     {
+      "script": "verify-linear-cli.js",
+      "tier": "ci",
+      "guards": "scripts/linear-cli.js の失敗（create の無料枠上限・コメント失敗・アーカイブ失敗）が終了コード1になること、update で状態の種類が完了・取り消しになったらアーカイブすること。ローカルの模擬サーバーに向けて CLI を起動する（実 Linear に触れない）"
+    },
+    {
       "script": "verify-i18n-consistency.js",
       "tier": "ci",
       "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
@@ -645,9 +660,19 @@
       "guards": "アナロジー・ファインダーの学習（BOA-271）で、Storage の古い版を消すときに表示中の版を残すこと、表示中の版と同じ名前ではモデルを上書きしないこと、長期データのキャッシュの列名が今のコードと違えば失敗すること（scripts/ml/analogy/storageRules.js）"
     },
     {
+      "script": "verify-analogy-treeshap.js",
+      "tier": "ci",
+      "guards": "アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））の JS が学習側の Python と同じ値を出すこと。小さな固定モデルと DB の行の形の固定データで、直前情報8列（float32 の Kahan 和の平均・min の順位・無風と風向が空の扱い）が完全一致し、TreeSHAP（カテゴリ分岐・欠損の向き）が pred_contrib と 1e-9 未満で一致すること、学習ジョブが呼ぶ treeshap-parity.js の終了コード（一致0・不一致1・入力の不備2）、テーマ集計（中心化した |SHAP| のシェア）の約束"
+    },
+    {
       "script": "verify-best-of.js",
       "tier": "ci",
       "guards": "6艇の中の最良値の判定 bestOf（src/utils/bestOf.js、docs/design/race-detail-ui-unify R1）。同値の最良を全部返すこと、全艇同値と値なしは空、表示の桁で丸めて比べること（54.84 と 54.80、平均の浮動小数の誤差）、null と NaN を除くこと"
+    },
+    {
+      "script": "verify-disqualified-finish-marks.js",
+      "tier": "ci",
+      "guards": "失格（K の S0〜S2）の艇の着欄を結果ページから埋める処理（backfill-disqualified-finish-marks.js、BOA-582）が、失格の表記（転・落・沈・妨・エ・失）だけを書き、行を挿入せず、着欄が NULL の行だけを更新し（既存の値を上書きしない）、取得の間隔を空けて 429・503 で即中止すること"
     },
     {
       "script": "verify-kb-gap-fill.js",
@@ -664,6 +689,11 @@
       "tier": "ci",
       "timeoutSec": 300,
       "guards": "不成立のレースと返還艇を含む勝式を、的中判定（buildPredictionHitUpdate・DBトリガー117・欠落の補完）と成績の集計（券種ごとの母数）から外すこと。トリガーとアプリの判定が同じ値を書くこと（PGlite で112を適用して突き合わせる）。BOA-544: 不成立のレースに的中が付き、返還艇の本命が「外れ」として成績に入っていた"
+    },
+    {
+      "script": "verify-race-outcome-filters.js",
+      "tier": "ci",
+      "guards": "不成立のレースを集計から外す判定を race_status（no_race）に統一すること（BOA-545）。旧フラグ is_no_race は全行 false で機能しておらず、scripts/daily の集計10本がそれで判定していた。scripts/daily・scripts/lib のコードが is_no_race を使わないことと、PostgREST の条件が078の IS DISTINCT FROM と同じ意味であることを検査する"
     }
   ]
 }

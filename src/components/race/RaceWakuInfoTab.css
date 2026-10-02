@@ -66,6 +66,12 @@
   flex-shrink: 0;
 }
 
+/* 選んだチップの艇番の丸は、艇の文字色で塗って数字を白黒の反対にする（色は JSX の style で渡す。BOA-693） */
+.rwit-boat-chip.is-active .rwit-boat-chip-num {
+  background: var(--rwit-chip-num-bg);
+  color: var(--rwit-chip-num-fg);
+}
+
 .rwit-boat-chip-name {
   max-width: 6em;
   overflow: hidden;
@@ -287,6 +293,23 @@
    行＝期間・条件、列＝実進入コース1〜6。共通コンポーネントには切り出していない
    （使う箇所が1つのため。spec.md FR-0）。
    横スクロールはこのラッパの中だけに閉じ、ページ全体は横スクロールさせない。 */
+/* 全コース比較の表の「›」「‹」（BOA-607）。カード（--surface-card）の上に載るので、
+   右端のフェードの行き先をカードの色にする */
+.rwit-grid-hscroll {
+  --hscroll-fade-color: var(--surface-card);
+  /* 表をカードの余白まで広げる負のマージンは、スクロールする箱ではなくこの箱に付ける。
+     中の箱に付けると、この箱（フェードの基準）より4px外へはみ出し、フェードの外側に
+     切れた列の文字がくっきり残った（#1130 ファン評価1周目） */
+  margin: 0 calc(var(--spacing-1) * -1);
+}
+
+.rwit-grid-hscroll > .rwit-grid-wrapper {
+  margin: 0;
+  /* 左右の内側の余白は付けない。固定（sticky）の行見出しは内側の余白の内側に止まるため、
+     左に流れたセルの数字が余白の4px幅に覗き、「4今期」のように見えた（#1130 ファン評価2周目） */
+  padding: 0;
+}
+
 .rwit-grid-wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;

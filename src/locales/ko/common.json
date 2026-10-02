@@ -26,7 +26,7 @@
   },
   "meta": {
     "title": "용신 레이더 - 무료 경정 AI 예측 및 데이터 분석",
-    "description": "일본 경정(BOAT RACE)을 AI가 무료로 예측합니다. 경주당 45개 데이터를 분석해 결과를 예측 — 완전 무료, 가입 불필요."
+    "description": "일본 경정(BOAT RACE)을 AI가 무료로 예측합니다. 선수 성적·모터·전시 항주·스타트 데이터를 분석해 결과를 예측 — 완전 무료, 가입 불필요."
   },
   "venues": {
     "1": "키류",
@@ -73,6 +73,7 @@
   },
   "venueGrid": {
     "noRacesToday": "오늘 개최 없음",
+    "nextOpen": "다음 개최 {{date}}",
     "nextRace": "다음 {{race}}R",
     "allFinished": "전 경주 종료",
     "timeOfDay": {
@@ -199,7 +200,7 @@
     "exhibitionTime": "전시 타임",
     "exhibitionST": "전시 ST",
     "totalPower": "종합력",
-    "courseWinRate": "번호 승률",
+    "wakuWinRate": "번호 승률",
     "firstPlace": "1착",
     "guideTitle": "데이터 보는 법",
     "guideNationalWinRate": "선수의 전국 승률. 6.0 이상이면 A급 수준입니다.",
@@ -351,7 +352,7 @@
     }
   },
   "home": {
-    "introBannerText": "용신 레이더 - 경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요. | 전개 예측, 인코스 붕괴 지수 등 45개 이상의 데이터를 분석. 자세히 보기 →",
+    "introBannerText": "용신 레이더 - 경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요. | 전개 예측, 인코스 붕괴 지수 등 데이터를 분석. 자세히 보기 →",
     "introBannerClose": "닫기",
     "sgNow": {
       "region": "SG 개최 중",
@@ -500,8 +501,8 @@
     "other": "기타",
     "exampleDefenseTitle": "1번 보트의 「{{label}} {{count}}/{{total}}」",
     "exampleDefenseDesc": "→ 1번 보트로 출주한 {{total}}회 중 다른 선수의 「{{attackLabel}}」에 {{count}}회 패배",
-    "exampleAttackTitle": "{{course}}번 보트의 「{{label}} {{count}}/{{total}}」",
-    "exampleAttackDesc": "→ {{course}}번 보트로 출주한 {{total}}회 중 「{{label}}」(으)로 {{count}}회 승리",
+    "exampleAttackTitle": "{{waku}}번 보트의 「{{label}} {{count}}/{{total}}」",
+    "exampleAttackDesc": "→ {{waku}}번 보트로 출주한 {{total}}회 중 「{{label}}」(으)로 {{count}}회 승리",
     "legendWinsDesc": ": 해당 번호 출주 시 승수/출주 수",
     "legendRed": "빨강",
     "legendRedDesc": ": 1번 보트가 당한 공격 (찌르기 등)",
@@ -1091,6 +1092,9 @@
     "periodWinRate": "승률 {{value}}",
     "periodTop2Rate": "2연대율 {{value}}",
     "periodAvgSt": "평균 ST {{value}}",
+    "periodFinals": "우승전 진출 {{value}}회",
+    "periodWins": "우승 {{value}}회",
+    "periodRecentFinals": "최근 2년({{from}}〜{{to}}) 우승전 진출 {{finals}}회·우승 {{wins}}회",
     "periodVsCurrent": "(출주표·전국 {{current}}, 전기 대비 {{diff}})",
     "periodCurrentOnly": "(출주표·전국 {{current}})",
     "periodDiffWithheldNote": "※ 기가 바뀐 뒤 3개월 동안은 출주표 수치의 대부분이 전기와 같은 기간의 성적이라 전기 대비 차이를 표시하지 않습니다({{date}} 이후 경주부터 표시).",

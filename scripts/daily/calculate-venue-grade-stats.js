@@ -13,6 +13,8 @@
  */
 import { supabase } from "../lib/supabaseClient.js";
 import { toTechniqueKey } from "../lib/winningTechniques.js";
+import { isNoRaceResult, placedRanks } from "../lib/raceOutcomeFilters.js";
+import { upsertChangedRows } from "../lib/unchangedRows.js";
 
 // race_gradeが安定して記録されるようになった日付（それ以前はNULLの欠損期間）
 const CLEAN_DATA_SINCE = "2026-02-04";
@@ -70,7 +72,7 @@ async function calculateVenueGradeStats() {
     supabase
       .from("races")
       .select(
-        "venue_code, race_grade, race_results(rank1, rank2, rank3, winning_technique, payout_trio, is_cancelled, is_no_race)",
+        "venue_code, race_grade, race_results(rank1, rank2, rank3, winning_technique, payout_trio, is_cancelled, race_status, refund_boats)",
       )
       .gte("race_date", CLEAN_DATA_SINCE)
       .order("race_id")
@@ -93,7 +95,7 @@ async function calculateVenueGradeStats() {
     if (
       !result ||
       result.is_cancelled ||
-      result.is_no_race ||
+      isNoRaceResult(result) ||
       result.rank1 === null
     ) {
       skippedUnusable++;
@@ -101,7 +103,9 @@ async function calculateVenueGradeStats() {
     }
 
     const venueCode = r.venue_code;
-    const { rank1, rank2, rank3, winning_technique, payout_trio } = result;
+    const { winning_technique, payout_trio } = result;
+    // 完走3艇未満のレースは、返還艇が表の行順で2着・3着に入っている。2連対・3連対に数えない（BOA-579）
+    const { rank1, rank2, rank3 } = placedRanks(result);
     // 決まり手の異常値（"逃げ抜き"等、6分類に含まれない値）はtoTechniqueKeyがnullを
     // 返すため自然に除外される（実データで1件確認済み、BOA-263調査時点）
     const techKey = toTechniqueKey(winning_technique);
@@ -151,7 +155,6 @@ async function calculateVenueGradeStats() {
     payout_count: v.payout_count,
     manshu_count: v.manshu_count,
     payout_trio_sum: v.payout_trio_sum,
-    updated_at: new Date().toISOString(),
   }));
 
   console.log(`  集計セル数: ${rows.length}`);
@@ -180,23 +183,27 @@ async function calculateVenueGradeStats() {
           `  ${r.boat_number}号艇 ${r.race_grade}: n=${r.race_count} 勝率=${winRate}% 連対率=${top2Rate}%`,
         );
       });
-    return;
   }
 
-  const BATCH_SIZE = 500;
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const batch = rows.slice(i, i + BATCH_SIZE);
-    const { error } = await supabase
-      .from("venue_grade_boat_stats")
-      .upsert(batch, { onConflict: "venue_code,race_grade,boat_number" });
-    if (error) {
-      console.error(
-        `❌ venue_grade_boat_stats更新エラー（${i}件目〜）:`,
-        error.message,
-      );
-    }
-  }
-
+  // 値の変わったセルだけを書く（日次で全セルを書き直さない）。updated_at は変わったセルにだけ付ける。
+  // 書き込みエラーは例外にして、ジョブを失敗させる（以前はログだけ出して成功で終わっていた。BOA-694）
+  const { error, written } = await upsertChangedRows(
+    supabase,
+    "venue_grade_boat_stats",
+    rows,
+    {
+      onConflict: "venue_code,race_grade,boat_number",
+      keyColumns: ["venue_code", "race_grade", "boat_number"],
+      chunkColumn: "venue_code",
+      chunkSize: 24,
+      label: "venue_grade_boat_stats",
+      stampUpdatedAt: true,
+      dryRun: isDryRun, // --dry-run は書き込まず、変わるセルの件数だけを出す
+    },
+  );
+  if (error) throw error;
+  if (isDryRun) return;
+  console.log(`  書き込み: ${written}セル`);
   console.log("✅ venue_grade_boat_stats集計完了");
 }
 

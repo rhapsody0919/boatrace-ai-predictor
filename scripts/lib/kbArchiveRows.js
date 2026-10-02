@@ -106,12 +106,14 @@ export function buildArchiveRows(day) {
       title_short: src.title_short ?? null,
       day_label: src.day_label ?? null,
       series_day: src.series_day ?? bv?.series_day ?? null,
-      is_final_day: Boolean(src.is_final_day || bv?.is_final_day),
       has_k: Boolean(kv),
       has_b: Boolean(bv),
       // race_grade は書かない（K/B にグレードの項目は無い）。race_series の kind から別に補完する
       // （BOA-651、docs/issues/boa-651-kb-archive-grade.md）。ここで null を送ると、load の再実行
       // （upsertChangedRows）が補完した値を NULL で上書きする
+      // is_final_day も書かない（BOA-696）。K/B は最終日も「第N日」と書き、「最終日」と書かないため、K/B からは
+      // 常に false になる。race_series の終了日から別に補完する（docs/issues/boa-696-kb-archive-final-day.md）。
+      // 列は NOT NULL DEFAULT false なので、挿入では false、load の再実行では補完した値を保つ
       created_at: null, // バックフィル行はNULL（取得時刻を偽らない。data-acquisition.md）
     });
 

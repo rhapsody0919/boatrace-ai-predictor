@@ -73,6 +73,7 @@
   },
   "venueGrid": {
     "noRacesToday": "本日開催なし",
+    "nextOpen": "次開催 {{date}}",
     "nextRace": "次 {{race}}R",
     "allFinished": "全レース終了",
     "timeOfDay": {
@@ -199,7 +200,7 @@
     "exhibitionTime": "展示タイム",
     "exhibitionST": "展示ST",
     "totalPower": "総合力",
-    "courseWinRate": "枠番勝率",
+    "wakuWinRate": "枠番勝率",
     "firstPlace": "1位",
     "guideTitle": "データの見方",
     "guideNationalWinRate": "選手の全国での勝率。6.0以上でA級レベル。",
@@ -778,6 +779,9 @@
     "periodWinRate": "勝率 {{value}}",
     "periodTop2Rate": "2連対率 {{value}}",
     "periodAvgSt": "平均ST {{value}}",
+    "periodFinals": "優出 {{value}}回",
+    "periodWins": "優勝 {{value}}回",
+    "periodRecentFinals": "直近2年（{{from}}〜{{to}}）優出 {{finals}}回・優勝 {{wins}}回",
     "periodVsCurrent": "（出走表・全国 {{current}}、前期から{{diff}}）",
     "periodCurrentOnly": "（出走表・全国 {{current}}）",
     "periodDiffWithheldNote": "※期が替わって3か月は、出走表の値の大半が前期と同じ期間の成績なので、前期との差は出していません（{{date}}以降のレースで出します）",
@@ -884,7 +888,7 @@
     }
   },
   "home": {
-    "introBannerText": "龍神レーダー - ボートレースを見える化。迷ったら、データを信じる。| 展開予測・イン崩れ指数など45項目のデータを分析。詳しくはこちら →",
+    "introBannerText": "龍神レーダー - ボートレースを見える化。迷ったら、データを信じる。| 展開予測・イン崩れ指数などのデータを分析。詳しくはこちら →",
     "introBannerClose": "閉じる",
     "sgNow": {
       "region": "SG開催中",
@@ -1033,8 +1037,8 @@
     "other": "その他",
     "exampleDefenseTitle": "1号艇の「{{label}} {{count}}/{{total}}」",
     "exampleDefenseDesc": "→ 1号艇として{{total}}回出走し、うち{{count}}回は他の選手に「{{attackLabel}}」で1着を取られた",
-    "exampleAttackTitle": "{{course}}号艇の「{{label}} {{count}}/{{total}}」",
-    "exampleAttackDesc": "→ {{course}}号艇として{{total}}回出走し、うち{{count}}回は「{{label}}」で1着を取った",
+    "exampleAttackTitle": "{{waku}}号艇の「{{label}} {{count}}/{{total}}」",
+    "exampleAttackDesc": "→ {{waku}}号艇として{{total}}回出走し、うち{{count}}回は「{{label}}」で1着を取った",
     "legendWinsDesc": ": その枠番での1着回数 / 出走回数",
     "legendRed": "赤字",
     "legendRedDesc": ": 1号艇が受けた攻撃（差され等）の回数",

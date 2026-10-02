@@ -419,6 +419,22 @@
   color: var(--text-primary);
 }
 
+.rbit-period-finals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-1) var(--spacing-3);
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rbit-period-recent {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
 /* 今節の「変化」（FR-3 Phase A）。生データの表より前に、通常値との差を出す */
 .rbit-meet-trend {
   margin-bottom: var(--spacing-2);

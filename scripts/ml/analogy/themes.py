@@ -91,6 +91,11 @@ def theme_features(theme: dict) -> list[str]:
 
 
 FEATURES: list[str] = [f for t in THEMES for f in theme_features(t)]
+# 直前情報（展示・気象）の8列。出走表時点専用モデル win_racecard はこれを使わない（ADR 案（#1134「レースごとの寄与度」）、
+# plan「学習側の設計」）。展示後の段は、保存した36列にこの8列を推論側の JS が足して win に渡す
+LIVE_FEATURES: list[str] = ["exh_time", "exh_time_diff", "exh_time_rank", "weather_code",
+                            "wind_x", "wind_y", "wind_speed", "wave_height"]
+RACECARD_FEATURES: list[str] = [f for f in FEATURES if f not in LIVE_FEATURES]
 CATEGORICAL: list[str] = ["venue_code", "boat_number", "weather_code", "grade_code",
                           "round_code", "branch_code"]
 

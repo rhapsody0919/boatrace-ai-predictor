@@ -25,7 +25,11 @@ import {
   isInMotorGeneration,
 } from "../utils/motorGeneration";
 import { isFinalStage } from "../constants/raceStageConfig";
-import { finishPositionOf } from "../components/race/basicInfoStats.js";
+import {
+  finishPositionOf,
+  periodsEndedBefore,
+  RECENT_PERIOD_COUNT,
+} from "../components/race/basicInfoStats.js";
 import { isRaceCancelled } from "../utils/raceCancellation.js";
 import {
   meetDaysOf,
@@ -35,6 +39,7 @@ import {
   seriesDayByDate,
 } from "../utils/meetPageModel.js";
 import { competitionRank } from "../utils/competitionRank.js";
+import { toWakuRacerStats } from "../utils/racerStats.js";
 import {
   countsForSeriesScore,
   shouldUseOfficialSeries,
@@ -1002,7 +1007,7 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
           }
         : null,
       turnPrediction,
-      racerStats: stdPred?.racerStats || null,
+      racerStats: toWakuRacerStats(stdPred?.racerStats),
       exhibitionData:
         race.exhibitionData?.map((ed) => ({
           boat_number: ed.boatNumber,
@@ -1316,6 +1321,23 @@ export const supabaseDataService = {
       return transformTodayRaces(rpcData, await fetchVenueWinRateMap());
 
     }); // withCache end
+  },
+
+  /**
+   * 期間中・これからの節（race_series）を返す。非開催会場の次開催日に使う（BOA-225）。
+   * 1会場あたり翌月末までで数節なので、全会場で100行に届かない
+   */
+  async getUpcomingSeries(today) {
+    return withCache(`upcoming-series-${today}`, async () => {
+      if (!supabase) throw new Error("Supabase client not initialized");
+      const { data, error } = await supabase
+        .from("race_series")
+        .select("venue_code,start_date,end_date")
+        .gte("end_date", today)
+        .order("start_date");
+      if (error) throw new Error(`race_series の取得に失敗: ${error.message}`);
+      return data ?? [];
+    });
   },
 
   /**
@@ -5423,13 +5445,12 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定レースの選手コース別統計（racerStats）を取得する（BOA-168）
+   * 指定レースの選手の枠番別統計（racerStats）を取得する（BOA-168）
    * predictions.feature_contributions.racerStats に日次バッチで保存済みの
-   * 進入コース・平均ST・コース別勝敗・攻め手/守り手分布を返す。
+   * 平均ST・枠番別勝敗・攻め手/守り手分布を返す。
    * 超展開データタブ・データ出走表の平均ST/枠番勝率行で使用する。
-   * 注: 「コース」という名称だが、実際の進入コース変化（前づけ）は
-   * BOA-257の制約により区別できず、実質的に枠番（艇番）基準の値である
-   * （raceIndicators.jsxのcourseRateOf関数も参照）
+   * 保存側のキー名は course 系だが中身は枠番のため、toWakuRacerStats（src/utils/racerStats.js）で
+   * wakuRaceCounts に詰め替えて返す（BOA-302）
    */
   getRaceRacerStats(raceId) {
     return withCache(`race-racer-stats-${raceId}`, async () => {
@@ -5451,7 +5472,7 @@ export const supabaseDataService = {
         console.error("predictions取得エラー:", error.message);
         return null;
       }
-      return data?.[0]?.feature_contributions?.racerStats ?? null;
+      return toWakuRacerStats(data?.[0]?.feature_contributions?.racerStats);
     });
   },
 
@@ -7452,7 +7473,9 @@ export const supabaseDataService = {
    *
    * 期の境界は 5/1 と 11/1（`period_no` 1 = 5/1〜10/31、2 = 11/1〜4/30、
    * `period_year` は算出期間の終了が4月の年）。クライアントで計算できるので、
-   * `.eq()` 2つで6行に絞る（絞らないと1選手あたり約12期分が返る）。
+   * 前期を含む直近4期（優出・優勝の直近2年の合計、BOA-326）だけを返す
+   * （絞らないと1選手あたり約15期分が返る）。前期の行の選び出しは
+   * `pickPeriodStats` が行う。
    *
    * ## 単位に注意
    *
@@ -7472,36 +7495,35 @@ export const supabaseDataService = {
     );
     if (ids.length === 0 || !raceDate) return Promise.resolve([]);
 
-    // レース日から見て「直前に**終わった**期」を求める。
-    // `period_year` Y は「5月〜翌4月の年度」を指し、その中が2つに割れる
-    // （本番DBの全15期を実測して確認した。083のCOMMENTの言い換え）:
-    //   (Y,1) = (Y-1)-05-01 〜 (Y-1)-10-31
-    //   (Y,2) = (Y-1)-11-01 〜     Y-04-30
-    // 例: (2026,1)=2025-05-01〜2025-10-31、(2026,2)=2025-11-01〜2026-04-30
-    // したがって直前に終わった期は
-    //   5〜10月  → (Y,2)   … Y-04-30 に終わった期
-    //   11〜12月 → (Y+1,1) … Y-10-31 に終わった期
-    //   1〜4月   → (Y,1)   … (Y-1)-10-31 に終わった期
-    const [y, m] = raceDate.split("-").map(Number);
-    const periodYear = m >= 5 && m <= 10 ? y : m >= 11 ? y + 1 : y;
-    const periodNo = m >= 5 && m <= 10 ? 2 : 1;
+    // 「前期」と、直近2年（前期を含む4期）の優出・優勝の合計に使う期（BOA-326）。
+    // 期の求め方は periodsEndedBefore のコメント参照
+    const periods = periodsEndedBefore(raceDate, RECENT_PERIOD_COUNT);
+    if (periods.length === 0) return Promise.resolve([]);
+    const years = [...new Set(periods.map((p) => p.periodYear))].sort();
+    const [latest] = periods;
 
     return withCache(
-      `racer-period-stats-v1-${periodYear}-${periodNo}-${ids.join(",")}`,
+      `racer-period-stats-v2-${latest.periodYear}-${latest.periodNo}-${ids.join(",")}`,
       async () => {
         if (!supabase) {
           throw new Error("Supabase client not initialized");
         }
         try {
+          // 4期は最大3つの period_year にまたがる。年で絞って取り、範囲外の期
+          // （3年分なら最大2期）は落とす（6人×最大6行）
           const { data } = await supabase
             .from("racer_period_stats")
             .select(
-              "racer_id, period_year, period_no, calc_from, calc_to, win_rate, top2_rate, avg_st, starts",
+              "racer_id, period_year, period_no, calc_from, calc_to, win_rate, top2_rate, avg_st, starts, finals, wins",
             )
-            .eq("period_year", periodYear)
-            .eq("period_no", periodNo)
+            .in("period_year", years)
             .in("racer_id", ids);
-          return data ?? [];
+          return (data ?? []).filter((r) =>
+            periods.some(
+              (p) =>
+                r.period_year === p.periodYear && r.period_no === p.periodNo,
+            ),
+          );
         } catch (error) {
           if (isPermissionDeniedError(error)) {
             // 095（匿名へのSELECT公開）が未適用の間はここを通る

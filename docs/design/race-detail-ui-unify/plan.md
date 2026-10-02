@@ -49,16 +49,14 @@ spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md)
 
 ## 4. 余白（PR1）
 
-- `RaceDetailPage.css` の `@media (max-width: 480px)` に置く
-  - `.race-detail-page-v2` の左右 padding 0.75rem → 0.5rem
-  - `.race-detail-page-v2 .prediction-section` の左右 padding → 0
-  - ページ側の変数 `--rdp-card-pad: 10px` を置き、各カード（`.rmt-card` `.rbi-card` `.rwit-card` `.rsc-card` `.nsc-card` `.prediction-result` `.race-result` `.rol-*` `.venue-tendency-panel` `.embedded-analysis-section` ほか、棚卸しの一覧）の左右 padding をこの変数にする
-  - カードの中の表・グラフの外枠に `margin-inline: calc(-1 * var(--rdp-card-pad))`
-  - `--rdp-bleed`（#1127）を `calc(0.5rem + 0)` に合わせる。#1127 は 320px 以下のブロックでも `--rdp-bleed` を再定義している（0.75rem + 0.75rem）ので、そちらも同じ値にそろえる。そろえないと 320px で左右16pxはみ出す（指摘3）
-  - #1127 の `.rbi-card .hscroll-hint:has(> .drt-table-wrapper)` の打ち消し（`--spacing-3` 固定）を `var(--rdp-card-pad)` にする（指摘3）
-  - `width: 100%` の表（`.rmt-compare` `.rmt-forecast-table` `.rwit-grid` `.rwit-today-table` 等）は、負の margin だけでは左にずれるだけなので、幅が auto のラッパーに付けるか `width: calc(100% + 2 * var(--rdp-card-pad))` も付ける（指摘5）
-  - カードの内余白は一律ではない（480px 以下で `.rsc-card` `.nsc-card` `.venue-tendency-panel` は既に 8px、`.embedded-analysis-section` は中の要素が余白を持つ、AI予想の `.prediction-result` は 16px の可能性）。PR1 の着手時に、カードごとの今の値を実測してこの節に表で書く（指摘6）
-- 320px 以下の指定（RaceDetail.css）とぶつからないよう、最終値を `e2e/layout.spec.js` で 320 / 375 で確認
+- `RaceDetailPage.css` の `@media (max-width: 767px)` に置く（481〜767px の帯もユーザー報告で対象に追加）
+  - `.race-detail-page-v2` の左右 padding 0.5rem。`--rdp-card-pad: 10px`、`--rdp-bleed: 0.5rem`
+  - `.race-detail-page-v2 .prediction-section` の左右 padding 0（RaceDetail.css の裸の指定 0,1,0 に 0,2,0 で勝つ。320px 以下の 0.75rem も同じく打ち消すので、#1127 の 320px の `--rdp-bleed` 再定義は削除した）
+  - カード（`.rmt-card` `.rbi-card` `.rwit-card` `.rsc-card` `.nsc-card` `.venue-tendency-panel` `.prediction-result` `.race-result` `.rol-disclaimer` `.rol-status` `.race-tabs-empty` `.motor-condition-container`）の左右 padding を `--rdp-card-pad` に。480px 以下で 8px だった `.rsc-card` `.nsc-card` `.venue-tendency-panel` は 10px になる
+  - 表を広げるのは、カードの内余白の直下にある表か横スクロール枠だけ（`.rmt-card > .rmt-compare` `.rmt-card > .hscroll-hint` `.rmt-card .race-history-hscroll` `.rwit-card > .rwit-today-table` `.rwit-card .rwit-grid-wrapper` `.rsc-card > .rsc-grid-wrapper` `.venue-tendency-panel .vtp-table-wrapper` `.motor-condition-container .table-wrapper`）。負の margin と `width: calc(100% + 2 * pad)` を一緒に付ける（指摘5）。グラフは広げない
+  - 展示情報カードの `.hscroll-hint` の打ち消しは `var(--rdp-card-pad)`（指摘3）
+  - データ出走表の行見出しを短縮ラベルに（481px 以上では全名が1行で並び、行見出しの列が 139px になっていた）
+- 実測（開発サーバー、2026-10-02 児島8R）: 320〜700px の全幅で、今節・直前情報・枠別情報・モータ情報のカードの外側が左右 8px、ページの横スクロール無し。展示情報の表は 520・600・700px で横スクロール無し
 
 ## 5. 調子（Δ）の最良（PR2b）
 

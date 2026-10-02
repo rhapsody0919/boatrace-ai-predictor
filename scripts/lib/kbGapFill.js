@@ -58,13 +58,20 @@ export const GAP_FILL_ITEMS = Object.freeze({
     keyColumns: ["race_id", "boat_number"],
     columns: ["race_id", "boat_number", "exhibition_time"],
   },
-  // BOA-553: 公式の成績コード（マイグレーション116）。既存の行の NULL だけを埋める（行の無い艇は挿入しない）
+  // BOA-553: 公式の成績コード（マイグレーション116）。既存の行の NULL だけを埋める（行の無い艇は挿入しない）。
+  // BOA-582: 同じ行の着欄・着（077）も、成績コードから決まるものだけ同じ回で埋める（同じ行を2回書かない。Disk IO のため）
   finish_code: {
     table: "race_start_timings",
     mode: "update",
     stampUpdatedAt: true,
     keyColumns: ["race_id", "boat_number"],
-    columns: ["race_id", "boat_number", "official_finish_code"],
+    columns: [
+      "race_id",
+      "boat_number",
+      "official_finish_code",
+      "finish_mark",
+      "finish_rank",
+    ],
   },
   // BOA-480: レースの状態（マイグレーション078）。race_results は rank1〜3 も NOT NULL のため、対象の列だけを送る
   // upsert は INSERT の段階で制約違反になる。同じ値ごとにまとめて update().in(race_id) で書く（groupUpdate）。
@@ -245,26 +252,72 @@ export function buildRate2Rows(day, existingByKey) {
 }
 
 /**
+ * BOA-582: Kファイルの成績コードから、結果ページの着欄（finish_mark。NFKC 正規化後）と着（finish_rank）を導く。
+ * 2026-09-21〜30 の正解（結果ページ由来）8,805艇で、着欄・着とも100%一致（2026-10-02）。
+ * S0/S1/S2（失格）は null: 結果ページでは転・落・沈・妨・エ・失のどれにもなり、Kからは決まらない
+ * （同じ期間の実測で S0→転・落・エ・失、S1→転・落・エ・沈、S2→妨）。未知のコードも null。
+ *
+ * @param {string} code
+ * @returns {{finish_mark: string, finish_rank: number|null}|null}
+ */
+export function finishMarkFromCode(code) {
+  if (/^0[1-6]$/.test(code)) {
+    return { finish_mark: String(Number(code)), finish_rank: Number(code) };
+  }
+  const mark = {
+    F: "F",
+    L0: "L",
+    L1: "L",
+    K0: "欠",
+    K1: "欠",
+    "00": "_",
+  }[code];
+  return mark === undefined ? null : { finish_mark: mark, finish_rank: null };
+}
+
+/**
  * BOA-553: 公式の成績コード（Kファイルの着順欄の表記のまま。01〜06・F・L0・L1・K0・K1・S0・S1・S2 等）。
- * race_start_timings の既存の行のうち、成績コードが NULL の艇だけ。行の無い艇は作らない。
+ * BOA-582: 同じ行の着欄・着（finish_mark・finish_rank）も、着欄が NULL で成績コードから決まる艇だけ埋める。
+ * race_start_timings の既存の行だけが対象で、行の無い艇は作らない。3列とも既存の値は上書きしない（持ち回る）。
+ * 3列のどれも変わらない艇は書かない（成績コードを書き終えた後の再実行では、着欄の差分の行だけになる）。
  *
  * @param {Object} day kb-day/v1
- * @param {Map<string, string|null>} codeByKey `${race_id}|${boat_number}` → 既存の行の official_finish_code
+ * @param {Map<string, {official_finish_code?: string|null, finish_mark?: string|null, finish_rank?: number|null}>} existingByKey
+ *   `${race_id}|${boat_number}` → 既存の行の3列
+ * @param {{filled?: Record<string, number>}} [out] 列ごとに、NULL から値を入れた艇の数を足し込む（dry-run の内訳）
  */
-export function buildFinishCodeRows(day, codeByKey) {
+export function buildFinishCodeRows(day, existingByKey, out = {}) {
+  const filled = (out.filled ??= {
+    official_finish_code: 0,
+    finish_mark: 0,
+    finish_rank: 0,
+  });
   const rows = [];
   for (const { raceId, race } of kRaces(day)) {
     for (const r of race.rows ?? []) {
       if (!Number.isInteger(r.boat_number)) continue;
-      const key = `${raceId}|${r.boat_number}`;
-      if (!codeByKey.has(key) || codeByKey.get(key) !== null) continue;
+      const cur = existingByKey.get(`${raceId}|${r.boat_number}`);
+      if (!cur) continue;
       const code = typeof r.finish_raw === "string" ? r.finish_raw.trim() : "";
       if (code === "") continue;
-      rows.push({
-        race_id: raceId,
-        boat_number: r.boat_number,
-        official_finish_code: code,
-      });
+      const before = {
+        official_finish_code: cur.official_finish_code ?? null,
+        finish_mark: cur.finish_mark ?? null,
+        finish_rank: cur.finish_rank ?? null,
+      };
+      const derived =
+        before.finish_mark === null ? finishMarkFromCode(code) : null;
+      const next = {
+        official_finish_code: before.official_finish_code ?? code,
+        finish_mark: derived ? derived.finish_mark : before.finish_mark,
+        finish_rank: before.finish_rank ?? derived?.finish_rank ?? null,
+      };
+      const changed = Object.keys(next).filter(
+        (col) => next[col] !== before[col],
+      );
+      if (changed.length === 0) continue;
+      for (const col of changed) filled[col] += 1;
+      rows.push({ race_id: raceId, boat_number: r.boat_number, ...next });
     }
   }
   return rows;

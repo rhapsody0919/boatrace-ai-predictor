@@ -427,6 +427,8 @@ function parseKVenue(lines, venueCode) {
   if (out.day_label) {
     const dm = /第(\d+)日/.exec(out.day_label);
     if (dm) out.series_day = Number.parseInt(dm[1], 10);
+    // 実際の K/B は最終日も「第N日」と書き、「最終日」とは書かない（2019-04〜2026-09 の全ファイルで「最終日」0件。
+    // BOA-696）。is_final_day は K/B からは決まらないので、使う側は race_series の終了日で判定する
     if (out.day_label === "最終日") out.is_final_day = true;
   }
   return out;
@@ -556,6 +558,8 @@ function parseBVenue(lines, venueCode) {
   if (out.day_label) {
     const dm = /第(\d+)日/.exec(out.day_label);
     if (dm) out.series_day = Number.parseInt(dm[1], 10);
+    // 実際の K/B は最終日も「第N日」と書き、「最終日」とは書かない（2019-04〜2026-09 の全ファイルで「最終日」0件。
+    // BOA-696）。is_final_day は K/B からは決まらないので、使う側は race_series の終了日で判定する
     if (out.day_label === "最終日") out.is_final_day = true;
   }
   return out;

@@ -1,5 +1,5 @@
 /**
- * 結果系の新しい列・テーブル（マイグレーション077〜079）が、接続先のDBに適用済みかの判定。
+ * 結果系の新しい列・テーブル（マイグレーション077〜079・119）が、接続先のDBに適用済みかの判定。
  *
  * 目的: マイグレーションの適用前後どちらでも、結果取得が壊れない・意味の違う行を書かない。
  * 077の列が無いのに、STの無い艇（欠場・出遅れ）の行だけ書くと、旧形式の読み手には「ST不明の行」が
@@ -31,6 +31,11 @@ export const RESULT_SCHEMA_TARGETS = Object.freeze({
     columns: ["race_id", "bet_type", "seq", "payout_status"],
     migration: "079",
   },
+  officialRow: {
+    table: "race_start_timings",
+    columns: ["official_row"],
+    migration: "119",
+  },
 });
 
 export const SCHEMA_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -56,8 +61,8 @@ const cache = new WeakMap();
 /**
  * @param {import("@supabase/supabase-js").SupabaseClient} client
  * @param {{now?: () => number, ttlMs?: number, warn?: (message: string) => void}} [options]
- * @returns {Promise<{timings: boolean, results: boolean, payouts: boolean}>}
- *   各マイグレーション（077・078・079）が適用済みか。確認に失敗したものは false
+ * @returns {Promise<{timings: boolean, results: boolean, payouts: boolean, officialRow: boolean}>}
+ *   各マイグレーション（077・078・079・119）が適用済みか。確認に失敗したものは false
  */
 export async function detectResultSchema(
   client,

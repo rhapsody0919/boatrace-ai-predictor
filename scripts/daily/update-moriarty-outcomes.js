@@ -16,6 +16,7 @@
 
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
+import { isNoRaceResult } from "../lib/raceOutcomeFilters.js";
 
 const MODEL_ID = "moriarty";
 // Virtual bankroll for ROI calculation
@@ -43,7 +44,7 @@ async function fetchRaceResults(raceIds) {
   const { data, error } = await supabase
     .from("race_results")
     .select(
-      "race_id, rank1, rank2, rank3, payout_win, payout_trifecta, payout_trio, is_cancelled, is_no_race",
+      "race_id, rank1, rank2, rank3, payout_win, payout_trifecta, payout_trio, is_cancelled, race_status",
     )
     .in("race_id", raceIds);
 
@@ -133,7 +134,7 @@ async function updateRecommendations(pending, resultsMap) {
   for (const rec of pending) {
     const result = resultsMap[rec.race_id];
     if (!result) continue;
-    if (result.is_cancelled || result.is_no_race) {
+    if (result.is_cancelled || isNoRaceResult(result)) {
       updates.push({
         race_id: rec.race_id,
         actual_hit: false,
@@ -199,7 +200,7 @@ async function upsertDailyPerformance(date, recs, resultsMap, venueMap) {
 
   for (const rec of resolved) {
     const result = resultsMap[rec.race_id];
-    if (!result || result.is_cancelled || result.is_no_race) continue;
+    if (!result || result.is_cancelled || isNoRaceResult(result)) continue;
     if (rec.recommendation === "skip") continue;
 
     betsPlaced++;

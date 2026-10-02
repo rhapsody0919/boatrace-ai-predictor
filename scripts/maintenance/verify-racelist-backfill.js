@@ -234,6 +234,7 @@ function fakeTargetClient(raceEntryRows) {
       if (table !== "race_entries")
         throw new Error(`unexpected table ${table}`);
       let nullFilter = false;
+      let orNullCols = null;
       let gte = null;
       let lte = null;
       const chain = {
@@ -242,6 +243,16 @@ function fakeTargetClient(raceEntryRows) {
         },
         is(col, val) {
           if (col === "global_3rate" && val === null) nullFilter = true;
+          return chain;
+        },
+        or(expr) {
+          // 本番の PostgREST と同じ意味: カンマ区切りの「列.is.null」のいずれか
+          const cols = expr.split(",").map((part) => {
+            const m = /^([a-z_0-9]+)\.is\.null$/.exec(part);
+            if (!m) throw new Error(`unexpected or() ${expr}`);
+            return m[1];
+          });
+          orNullCols = cols;
           return chain;
         },
         order() {
@@ -258,6 +269,8 @@ function fakeTargetClient(raceEntryRows) {
         async range(a, b) {
           let rows = raceEntryRows;
           if (nullFilter) rows = rows.filter((r) => r.global_3rate === null);
+          if (orNullCols)
+            rows = rows.filter((r) => orNullCols.some((c) => r[c] === null));
           if (gte !== null) rows = rows.filter((r) => r.race_id >= gte);
           if (lte !== null) rows = rows.filter((r) => r.race_id <= lte);
           rows = [...rows].sort(
@@ -294,6 +307,33 @@ function fakeTargetClient(raceEntryRows) {
   check(
     "loadTargetRaceIds: global_3rateがNULLの行を持つレースだけを、重複なく返す",
     same(ids, ["2025-12-01-01-01", "2025-12-03-01-01"]),
+    JSON.stringify(ids),
+  );
+}
+{
+  // BOA-417: 2026-02 以降は3連率が埋まっていて、F数だけが NULL のレースがある。これも対象にする。
+  // 3連率・F数とも埋まっているレースは対象外
+  const rows = [];
+  for (const [raceId, g3, f] of [
+    ["2026-03-01-01-01", 50, null],
+    ["2026-03-01-01-02", 50, 0],
+    ["2026-03-01-01-03", null, 1],
+  ]) {
+    for (let boat_number = 1; boat_number <= 6; boat_number++) {
+      rows.push({
+        race_id: raceId,
+        boat_number,
+        global_3rate: g3,
+        f_count: f,
+      });
+    }
+  }
+  const ids = await loadTargetRaceIds(fakeTargetClient(rows), {
+    pageSize: 1000,
+  });
+  check(
+    "loadTargetRaceIds: 3連率が埋まっていても F数が NULL のレースは対象（BOA-417）。両方埋まったレースは対象外",
+    same(ids, ["2026-03-01-01-01", "2026-03-01-01-03"]),
     JSON.stringify(ids),
   );
 }

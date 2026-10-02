@@ -23,8 +23,8 @@
 
 `hasOpenBlogDraft()`（`scripts/lib/snsTopics.js`）を呼ぶ。trueなら**claimせずここで終了する**（通常ポーリング・今すぐ生成の両方で必須、省略しない）。
 
-- 理由: blogチャネルの生成物（`src/data/blogPosts.js`の記事メタデータ配列）は全ての記事が同じ挿入位置に追記される共有ファイルのため、未マージのDraft PRが複数同時に存在すると、先にマージされた方が後発のPRを必ずコンフリクトさせる（2026-09-05、PR #519とPR #509/#512/#525が相互に複数回コンフリクトし直した実績あり）
-- 恒久対策は`src/data/blogPosts.js`を手書き配列から個別ファイル由来の自動生成に置き換えること（未着手、将来のリファクタ課題）。それまでの間はclaim側を直列化して同時オープンPRの発生自体を防ぐ
+- 理由: 以前、blogチャネルの生成物（`src/data/blogPosts.js`の記事メタデータ配列）は全ての記事が同じ挿入位置に追記される共有ファイルだったため、未マージのDraft PRが複数同時に存在すると、先にマージされた方が後発のPRを必ずコンフリクトさせる（2026-09-05、PR #519とPR #509/#512/#525が相互に複数回コンフリクトし直した実績あり）
+- 恒久対策として、記事メタデータは1記事1ファイル（`src/data/blog-posts/{slug}.json`）に移した（BOA-247）。構造上のコンフリクトは無くなったが、このチェックの撤去は置き換えの稼働を確かめてから別途行う。それまではこのチェックを続ける
 
 ## 1. claim対象の取得・claim
 
@@ -45,7 +45,8 @@ claimしたターゲットに紐づく`sns_topics.topic_text`・型・`source_in
 - 実データに基づく記述（`scripts/lib/supabaseClient.js`パターンで取得）
 - 既存記事（`public/blog/`配下の同系統記事）を参考に構成・文体を揃える。**ただしカバー画像の挿入位置は4.のルールを優先する**（同系統の過去記事が4.のルール制定前に生成されたものだと、画像が文中に埋もれた構成をそのまま踏襲してしまうため）
 - 0.で確認済みの却下理由・戦略insightを構成・訴求の判断に反映する
-- **`src/data/blogPosts.js`の`title`は30〜60字、`description`は120〜160字に収める**（2026-09-08追加。6.5の機械的品質チェックの合格基準と一致させている。「既存記事を参考に」だけでは長さが揃う保証が無く、実際にこの2項目が原因で自動マージが働かないケースが判明したため明記した）
+- **記事メタデータは`src/data/blog-posts/{slug}.json`を新規作成する**（`src/data/blogPosts.js`は編集しない。項目は既存のJSONと同じ: `id`（=ファイル名）・`title`・`description`・`date`・`category`・`tags`・`readTime`・`featured`・`image`。`featured: true`にするときだけ`featuredRank`（既存の最大値+1）を付ける。形は`node scripts/maintenance/verify-blog-post-files.js`で確認できる）
+- **`title`は30〜60字、`description`は120〜160字に収める**（2026-09-08追加。6.5の機械的品質チェックの合格基準と一致させている。「既存記事を参考に」だけでは長さが揃う保証が無く、実際にこの2項目が原因で自動マージが働かないケースが判明したため明記した）
 - **本文中に、サイト内の別ページへの内部リンク（`/blog/{slug}`・`/winning-technique?tab=...`等）を最低1本含める**（同上の理由で明記。既存記事を書き起こす際、関連する過去記事や分析ツールへの導線を必ず1箇所は入れる）
 
 ## 3'. 企画由来ネタの本文執筆（日記型記事の追記）
@@ -106,11 +107,11 @@ claimしたターゲットに紐づく`sns_topics.topic_text`・型・`source_in
 ## 6. 下書きの永続化（Draft PR）
 
 - `sns_drafts`テーブルにINSERTする。`content_group_id`はclaimしたネタの`sns_topics.id`をそのまま使う。列: `platform`（'blog'）・`format`（4.で判定したカバー画像戦略の`type`、`'screenshot'`または`'data-card'`）・`title`・`caption_text`（本文）・`cover_image_path`・`status`（'pending_review'）・`routine_run_id`
-- `git checkout -b`→ファイル作成（`public/blog/{slug}.md`）→コミット→push→`gh pr create --draft`（`master`をベースブランチにする）。作成したPR URLを`pr_url`列に保存する。4.のカバー画像も同じPRに含める
+- `git checkout -b`→ファイル作成（`public/blog/{slug}.md`と`src/data/blog-posts/{slug}.json`）→コミット→push→`gh pr create --draft`（`master`をベースブランチにする）。作成したPR URLを`pr_url`列に保存する。4.のカバー画像も同じPRに含める
 
 **企画由来のネタの場合**:
 - 1日目（新規記事作成）は上記と同じ手順。`format`列には`'campaign-diary'`を入れる
-- 2日目以降（追記）は**新規ファイル作成ではなく既存ファイルの変更**にする: `git checkout -b`→`public/blog/{blogSlug}.md`を3'.の内容で上書き保存（新規作成ではなく既存ファイルへの追記編集）→コミット→push→`gh pr create --draft`。`src/data/blogPosts.js`は新規追加せず該当エントリの`description`/日付のみ変更する
+- 2日目以降（追記）は**新規ファイル作成ではなく既存ファイルの変更**にする: `git checkout -b`→`public/blog/{blogSlug}.md`を3'.の内容で上書き保存（新規作成ではなく既存ファイルへの追記編集）→コミット→push→`gh pr create --draft`。`src/data/blog-posts/{blogSlug}.json`は新規作成せず、既存ファイルの`description`/日付のみ変更する
 - `sns_drafts.content_group_id`は**1日目に作成したものと同じ`sns_topics.id`を使わず、その日のネタ（`sns_topics.id`）を使う**（企画の各エントリは別々の`sns_topics`行のため）。同一記事ファイルへの複数回の変更が、別々の`content_group_id`から行われる状態になる（通常の1ネタ1記事の前提と異なる点に注意）
 
 ## 6.5. 機械的な品質チェック→合格時のみ自動マージ
