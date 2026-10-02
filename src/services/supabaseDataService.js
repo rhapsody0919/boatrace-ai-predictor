@@ -6692,7 +6692,8 @@ export const supabaseDataService = {
     // v22: 丸一日レースが無かった日（noRaceDays）を足した（BOA-636）
     // v23: 節の出場者（meetEntrantIds）を足した（BOA-660）
     // v24: 予選中に帰った選手を予選の翌日から外す・過去のレースは後の日付の前検も使う（BOA-674）
-    // v26: 途中帰郷を、前の日まで走っていて表示日に1走も無い選手として全日程で外す
+    // v26: 途中帰郷を、前の日まで走っていて表示日に1走も無い選手として全日程で外す。
+    //      公式の備考は予選の後だけ使い、その途中帰郷は officialWithdrawn にする
     //      （v25 は BOA-292 の節ページ #1151 が使う。後からマージされる側は、先に入った番号の次にする）
     return withCache(`meet-scoreboard-v26-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
@@ -6991,18 +6992,27 @@ export const supabaseDataService = {
           // 公式の備考が取れていればそれが正（推定より確実）。
           // 「賞典除外」「途中帰郷」など、公式が順位を付けていない選手
           // （rank/score_rate が NULL）を除く
-          const official = (officialSeries ?? []).filter((r) => r.remarks);
+          // **予選が終わった後のレースでだけ使う**（得点率の officialByRacer と同じ条件）。
+          // 公式の行は節に1行で、取得した時点（予選の最終日の夜）の備考が入る。予選中の
+          // 日に使うと、まだ走っている選手を「途中帰郷」で外した（児島G1 10/1 9R の
+          // 丸野一樹。PR #1149 ファン評価2周目）
+          const official = shouldUseOfficialSeries(
+            stageById.get(raceId) ?? null,
+            raceId,
+            prelimEndRaceIdOf(conditions ?? []),
+          )
+            ? (officialSeries ?? []).filter((r) => r.remarks)
+            : [];
           if (official.length > 0) {
             return {
-              // 画面の注記の出し分け（公式の備考で外したか、当社の推定か）
-              exclusionsFromOfficial: true,
               withdrawnRacerIds: official.map((r) => r.racer_id),
               exclusionReasonByRacer: Object.fromEntries(
                 official.map((r) => [
                   r.racer_id,
                   r.remarks.includes("賞典除外")
                     ? "awardExcluded"
-                    : "withdrawn",
+                    : // 公式の備考による途中帰郷。当社の推定と説明を分ける
+                      "officialWithdrawn",
                 ]),
               ),
             };
@@ -7034,7 +7044,6 @@ export const supabaseDataService = {
             if (!reasons[id]) reasons[id] = "withdrawn";
           }
           return {
-            exclusionsFromOfficial: false,
             withdrawnRacerIds: Object.keys(reasons).map(Number),
             exclusionReasonByRacer: reasons,
           };

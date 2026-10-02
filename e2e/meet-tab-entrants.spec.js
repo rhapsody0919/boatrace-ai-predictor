@@ -135,16 +135,14 @@ test("予選の最終日から、予選中に帰った選手を順位の対象�
   );
 });
 
-test("公式の得点率一覧の備考で外している節は、注記もそう書く", async ({
+test("予選中のレースでは、後で付いた公式の備考（途中帰郷）で外さない", async ({
   page,
 }) => {
-  // 児島G1（2026-09-28〜）は公式の得点率一覧の備考（賞典除外・途中帰郷）で外す。
-  // 「公式は取れていない」と書くと、表の「対象外」と食い違った（PR #1149 ファン評価1周目）
+  // 児島G1 10/1 9R（予選の最終日）。公式の得点率一覧の行は予選の最終日の夜に取得した
+  // もので、丸野一樹は「途中帰郷」。でもこのレースの3号艇として走っている。
+  // 以前はこの備考をさかのぼって当て「対象外」にしていた（PR #1149 ファン評価2周目）
   await openMeetTab(page, "2026-10-01-16-09");
-  await expect(page.locator(".rmt-rank-note")).toContainText(
-    "公式の得点率一覧の備考で判定しています",
-  );
-  await expect(page.locator(".rmt-rank-note")).not.toContainText(
-    "取れていません",
-  );
+  const row = page.locator(".rmt-compare tbody tr", { hasText: "丸野一樹" });
+  await expect(row.locator(".rmt-rank")).not.toContainText("対象外");
+  await expect(row.locator(".rmt-rank")).toContainText("位");
 });
