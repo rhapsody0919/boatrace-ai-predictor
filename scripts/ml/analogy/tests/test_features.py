@@ -250,3 +250,11 @@ def test_live_features_are_the_eight_exhibition_columns():
                              "wind_x", "wind_y", "wind_speed", "wave_height"]
     assert set(LIVE_FEATURES) <= set(FEATURES)
     assert len(RACECARD_FEATURES) == 36 and not set(LIVE_FEATURES) & set(RACECARD_FEATURES)
+
+
+def test_kb_final_day_precondition():
+    """BOA-696 の前の長期データ（最終日がすべて false）では学習しない（事前登録5 の前提）。"""
+    with pytest.raises(RuntimeError, match="BOA-696"):
+        F.check_final_day(pd.Series([False] * 100))
+    F.check_final_day(pd.Series([True] * 18 + [False] * 82))
+    F.check_final_day(pd.Series(["true"] * 18 + ["false"] * 82))

@@ -5,6 +5,8 @@
 1着だけでなく2着以内・3着以内にもゲートを置く。
 """
 
+import pytest
+
 import train as T
 
 
@@ -102,11 +104,8 @@ def test_racecard_worse_than_reference_fails_once_reference_has_it():
 
 def test_win_missing_from_reference_is_still_an_error():
     ref = {"version": "2026-10-02", "win": None, "top2": 0.50, "top3": 0.56}
-    try:
+    with pytest.raises(RuntimeError, match="黙って省かない"):
         T.quality_gate(metrics(), reference=ref)
-    except TypeError:
-        return
-    raise AssertionError("win の参照値が無いのに比較を飛ばした")
 
 
 def test_racecard_is_not_in_targets():

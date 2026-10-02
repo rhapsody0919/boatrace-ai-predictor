@@ -157,6 +157,20 @@ def encode_race_level(r: pd.DataFrame, weather, wind_dir, wind_speed, final_day)
     return out
 
 
+# 長期の会場日のうち最終日の割合の下限。BOA-696（#1166）の前は K/B が最終日も「第N日」と書くため全件 false
+# だった（期待は 31,023 日中 約5,579＝約18%）。事前登録5 の前提で、満たさなければ学習しない
+MIN_FINAL_DAY_RATE = 0.10
+
+
+def check_final_day(is_final_day: pd.Series) -> None:
+    v = is_final_day.astype(str).str.lower()
+    rate = float((v == "true").mean()) if len(v) else 0.0
+    if rate < MIN_FINAL_DAY_RATE:
+        raise RuntimeError(
+            f"長期の is_final_day が true の会場日が {rate:.1%}（下限 {MIN_FINAL_DAY_RATE:.0%}）。BOA-696 の修正が"
+            "入っていないか、Storage のキャッシュが古い（export_pool.js の KB_CACHE_VERSION を上げる）")
+
+
 def load_kb(src: Path = D) -> pd.DataFrame:
     b = read("kb_boats", src, usecols=[
         "race_id", "boat_number", "racer_id", "class", "age", "branch", "weight",
@@ -168,6 +182,7 @@ def load_kb(src: Path = D) -> pd.DataFrame:
     r = read("kb_races", src)
     r = r[_bool(r["has_result"]) & (pd.to_datetime(r["race_date"]) <= KB_END)]
     vd = pd.read_csv(src / "kb_venue_days.csv", low_memory=False)
+    check_final_day(vd["is_final_day"])
     r = r.merge(vd[["venue_day_id", "series_day", "is_final_day", "race_grade"]],
                 on="venue_day_id", how="left")
     enc = encode_race_level(r, "weather", "wind_direction", "wind_speed", "is_final_day")

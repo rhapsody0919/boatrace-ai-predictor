@@ -150,14 +150,6 @@ def parity_fixture(version: str, test: pd.DataFrame, ids: list[int], cond_raw: p
 
 
 # ---------------------------------------------------------------- 記録（事前登録5）
-def race_logloss_win(m: lgb.Booster, temp: pd.DataFrame, test: pd.DataFrame) -> np.ndarray:
-    """1着のレース単位の対数損失（温度合わせ込み。train.evaluate_win と同じ手順）。"""
-    def raw(d):
-        return m.predict(d[m.feature_name()].astype("float32"), raw_score=True).reshape(-1, 6)
-    t = M.fit_temperature(raw(temp), M.winner_index(temp))
-    return M.per_race_logloss(M.softmax_rows(raw(test), t), M.winner_index(test))
-
-
 def live_complete(test: pd.DataFrame) -> np.ndarray:
     """レースごとに、6艇とも展示タイムがあるか（展示後の段を出すレースと同じ条件。欠場は完全レースで除外済み）。"""
     return test["exh_time"].notna().to_numpy().reshape(-1, 6).all(axis=1)

@@ -121,6 +121,8 @@ def quality_gate(metrics: dict, reference: dict | None) -> dict:
                 warnings.append(f"{TARGET_LABEL[name]}: 参照版 {reference['version']} にモデルが無いので比較なし。"
                                 "このモデルを含む版を参照版にするときは reference.json を更新する")
                 continue
+            if reference.get(name) is None:
+                raise RuntimeError(f"参照版 {reference['version']} に {name} の評価がありません（比較を黙って省かない）")
             delta = _model_logloss(name, metrics[name]) - reference[name]
             ref_result["deltas"][name] = delta
             if delta >= GATE_MAX_DEGRADATION[name]:
@@ -156,16 +158,21 @@ def raw(m: lgb.Booster, df: pd.DataFrame) -> np.ndarray:
     return m.predict(df[m.feature_name()].astype("float32"), raw_score=True)
 
 
-def evaluate_win(m, train, temp, test):
+def evaluate_win_races(m, train, temp, test) -> tuple[dict, np.ndarray]:
+    """1着の評価と、レース単位の対数損失（展示の効果の記録で2本のモデルのペア差に使う）。"""
     t = M.fit_temperature(raw(m, temp).reshape(-1, 6), M.winner_index(temp))
     y = M.winner_index(test)
     p = M.softmax_rows(raw(m, test).reshape(-1, 6), t)
     pb = M.baseline_winner(train, test)
     ll, llb = M.per_race_logloss(p, y), M.per_race_logloss(pb, y)
     days = test.loc[test["boat_number"] == 1, "race_date"].to_numpy()
-    return {"temperature": t, "logloss_model": float(ll.mean()), "logloss_baseline": float(llb.mean()),
-            "top1_acc_model": float((p.argmax(1) == y).mean()),
-            "paired_logloss_model_minus_baseline": M.paired_ci(ll - llb, days)}
+    return ({"temperature": t, "logloss_model": float(ll.mean()), "logloss_baseline": float(llb.mean()),
+             "top1_acc_model": float((p.argmax(1) == y).mean()),
+             "paired_logloss_model_minus_baseline": M.paired_ci(ll - llb, days)}, ll)
+
+
+def evaluate_win(m, train, temp, test) -> dict:
+    return evaluate_win_races(m, train, temp, test)[0]
 
 
 def evaluate_topk(m, train, test, label):
@@ -229,8 +236,10 @@ def profile_keys(test: pd.DataFrame) -> pd.DataFrame:
     return k
 
 
-def write_perrace(version, fit, temp, test, m_win: lgb.Booster, m_rc: lgb.Booster) -> dict:
-    """レースごとの寄与度（B）の書き出しと記録（perrace.py、事前登録5）。"""
+def write_perrace(version, fit, test, m_win: lgb.Booster, m_rc: lgb.Booster, win_ll: dict) -> dict:
+    """レースごとの寄与度（B）の書き出しと記録（perrace.py、事前登録5）。記録の全体は perrace_record.json
+    （Storage にも置く）に書き、analogy_models.metrics には展示の効果の要約だけを入れる（metrics は画面の
+    読み込みでも取られるため小さく保つ）。"""
     dumps = {"win": P.model_dump(m_win, OUT / "model_win.json"),
              "win_racecard": P.model_dump(m_rc, OUT / "model_win_racecard.json")}
     maps = json.loads((F.D / "categorical_maps.json").read_text())
@@ -242,8 +251,8 @@ def write_perrace(version, fit, temp, test, m_win: lgb.Booster, m_rc: lgb.Booste
     fixture = P.parity_fixture(version, test, ids, cond_raw, exh_raw, models)
     (OUT / "parity_fixture.json").write_text(json.dumps(fixture, ensure_ascii=False))
     rec = {
-        "exhibition_effect": P.exhibition_effect(P.race_logloss_win(m_win, temp, test),
-                                                 P.race_logloss_win(m_rc, temp, test), test),
+        "model_version": version,
+        "exhibition_effect": P.exhibition_effect(win_ll["win"], win_ll["win_racecard"], test),
         "missing_types": {n: P.missing_types(d) for n, d in dumps.items()},
         "fit_nan_rates": P.nan_rates(fit, FEATURES),
         "parity_fixture_races": len(ids),
@@ -252,8 +261,10 @@ def write_perrace(version, fit, temp, test, m_win: lgb.Booster, m_rc: lgb.Booste
     if RECORD_PERRACE:
         reseeds = [fit_model(fit, RACECARD[1], RACECARD[2], s, RACECARD_FEATURES) for s in (1, 2)]
         rec["fan_visible"] = P.fan_visible_record(test, m_win, m_rc, reseeds)
+    (OUT / "perrace_record.json").write_text(json.dumps(rec, ensure_ascii=False, indent=1))
     print(f"  perrace: {json.dumps(rec['exhibition_effect'], ensure_ascii=False)[:400]}", flush=True)
-    return rec
+    return {"exhibition_effect": rec["exhibition_effect"], "parity_fixture_races": len(ids),
+            "record_file": "perrace_record.json"}
 
 
 def main():
@@ -268,18 +279,20 @@ def main():
           f"({test['race_date'].min().date()}〜{test['race_date'].max().date()})", flush=True)
 
     keys = profile_keys(test)
-    metrics, models = {}, {}
+    metrics, models, win_ll = {}, {}, {}
     # 先に seed0 の3本を学習・評価して品質ゲートを通す（通らなければ SHAP の計算をせずに止める）
     for name, label, _, rounds in TARGETS:
         m = fit_model(fit, label, rounds, SEEDS[0])
-        metrics[name] = (evaluate_win(m, train, temp, test) if name == "win"
-                         else evaluate_topk(m, train, test, label))
+        if name == "win":
+            metrics[name], win_ll[name] = evaluate_win_races(m, train, temp, test)
+        else:
+            metrics[name] = evaluate_topk(m, train, test, label)
         m.save_model(str(OUT / f"model_{name}.txt"))
         models[name] = m
         print(f"  {name}: {json.dumps(metrics[name], ensure_ascii=False)[:300]}", flush=True)
     rc_name, rc_label, rc_rounds = RACECARD
     m_rc = fit_model(fit, rc_label, rc_rounds, SEEDS[0], RACECARD_FEATURES)
-    metrics[rc_name] = evaluate_win(m_rc, train, temp, test)
+    metrics[rc_name], win_ll[rc_name] = evaluate_win_races(m_rc, train, temp, test)
     m_rc.save_model(str(OUT / f"model_{rc_name}.txt"))
     print(f"  {rc_name}: {json.dumps(metrics[rc_name], ensure_ascii=False)[:300]}", flush=True)
     gate = quality_gate(metrics, reference_logloss(train, temp, test))
@@ -299,7 +312,7 @@ def main():
             print(f"    {name} seed {seed} ({time.time() - t0:.0f}s)", flush=True)
         profiles += slice_profiles(keys, contribs, FEATURES, THEMES, finish_target, n_boot=N_BOOT)
 
-    perrace_metrics = write_perrace(version, fit, temp, test, models["win"], m_rc)
+    perrace_metrics = write_perrace(version, fit, test, models["win"], m_rc, win_ll)
 
     meta = {
         "model_version": version,

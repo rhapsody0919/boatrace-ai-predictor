@@ -20,7 +20,11 @@ import path from "path";
 import zlib from "zlib";
 import { fileURLToPath } from "url";
 import { supabase, isSupabaseEnabled } from "../../lib/supabaseClient.js";
-import { assertUploadable, versionsToPrune } from "./storageRules.js";
+import {
+  assertUploadable,
+  isNotFound,
+  versionsToPrune,
+} from "./storageRules.js";
 
 export const BUCKET = "analogy";
 const KEEP_MODEL_VERSIONS = 3;
@@ -39,6 +43,7 @@ const PER_RACE_FILES = [
   "model_win_racecard.json",
   "per_race_meta.json",
   "parity_fixture.json",
+  "perrace_record.json",
 ];
 const UPLOAD_FILES = [
   ...MODEL_FILES,
@@ -149,7 +154,12 @@ async function downloadReference() {
       .from(BUCKET)
       .download(key);
     // この版で足したモデルは、参照版に無くてよい（train.py がその比較だけを「比較なし」と記録する）
-    if (dlError && OPTIONAL_REFERENCE_FILES.includes(name)) {
+    // 無いとき（404）だけ。通信・権限のエラーで飛ばすと、参照版との比較が黙って省かれる
+    if (
+      dlError &&
+      OPTIONAL_REFERENCE_FILES.includes(name) &&
+      isNotFound(dlError)
+    ) {
       console.log(`  参照版 ${version} に ${name} が無い。その比較は省く`);
       continue;
     }
