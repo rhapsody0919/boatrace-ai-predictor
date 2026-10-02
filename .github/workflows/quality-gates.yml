@@ -82,7 +82,7 @@ jobs:
 
       - name: Install Python deps
         if: steps.changed.outputs.run == 'true'
-        run: pip install -r scripts/ml/requirements.txt pytest
+        run: pip install -r scripts/ml/analogy/requirements.txt
 
       # ラウンド区分のテストは node で src/constants/raceStageConfig.js を読む（依存パッケージは不要）
       - name: pytest (scripts/ml/analogy/tests)

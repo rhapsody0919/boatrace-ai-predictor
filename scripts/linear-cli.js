@@ -11,18 +11,21 @@
  *   node scripts/linear-cli.js update BOAT-123 "進行中" "進捗コメント"
  *   node scripts/linear-cli.js list
  *   node scripts/linear-cli.js get BOAT-123
+ *
+ * 完了したチケットはアーカイブする運用（2026-10-02、ユーザー決定。無料枠の上限は
+ * アーカイブしていないチケット数で数えられ、上限に当たると新規起票が止まる）。
+ * update で状態の種類（state.type）が completed・canceled に変わったら、続けて
+ * issueArchive を呼ぶ。状態名では判定しない（名前は変えられるため）。
+ *
+ * 失敗はすべて終了コード1で返す（握りつぶさない）。以前は create の失敗に気づけず
+ * （USAGE_LIMIT_EXCEEDED、2026-09-28）、起票したつもりで進みかけた。
+ * docs/operation/linear-cli.md
  */
 
-import https from "https";
-import { readFileSync } from "fs";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 const LINEAR_API_KEY = process.env.LINEAR_API_KEY;
-const LINEAR_API_URL = "https://api.linear.app/graphql";
+// 検査（verify-linear-cli.js）で模擬サーバーに向けるため、環境変数で差し替えられる
+const LINEAR_API_URL =
+  process.env.LINEAR_API_URL || "https://api.linear.app/graphql";
 
 if (!LINEAR_API_KEY) {
   console.error("❌ LINEAR_API_KEY環境変数が設定されていません");
@@ -32,67 +35,43 @@ if (!LINEAR_API_KEY) {
 }
 
 /**
- * GraphQLリクエストを送信
+ * GraphQLリクエストを送信する。HTTP のエラー・GraphQL の errors はどちらも例外にする。
+ * 例外のメッセージには Linear のエラーコード（extensions.code、例 USAGE_LIMIT_EXCEEDED）を含める
  */
-function graphqlRequest(query, variables = {}) {
-  return new Promise((resolve, reject) => {
-    try {
-      const data = JSON.stringify({ query, variables });
-
-      if (process.env.DEBUG) {
-        console.error("送信データ:", data.substring(0, 500));
-      }
-
-      const options = {
-        hostname: "api.linear.app",
-        path: "/graphql",
-        method: "POST",
-        headers: {
-          Authorization: LINEAR_API_KEY,
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(data, "utf8"),
-        },
-      };
-
-      const req = https.request(options, (res) => {
-        let body = "";
-
-        res.on("data", (chunk) => {
-          body += chunk;
-        });
-
-        res.on("end", () => {
-          try {
-            if (res.statusCode !== 200) {
-              reject(
-                new Error(`HTTP ${res.statusCode}: ${body.substring(0, 200)}`),
-              );
-              return;
-            }
-
-            const result = JSON.parse(body);
-            if (result.errors) {
-              const errorMsg = JSON.stringify(result.errors, null, 2);
-              console.error("GraphQLエラー:", errorMsg);
-              reject(new Error(errorMsg));
-            } else {
-              resolve(result.data);
-            }
-          } catch (error) {
-            console.error("JSON解析エラー:", error.message);
-            console.error("レスポンスボディ:", body.substring(0, 500));
-            reject(error);
-          }
-        });
-      });
-
-      req.on("error", reject);
-      req.write(data, "utf8");
-      req.end();
-    } catch (error) {
-      reject(error);
-    }
+async function graphqlRequest(query, variables = {}) {
+  if (process.env.DEBUG) {
+    console.error(
+      "送信データ:",
+      JSON.stringify({ query, variables }).substring(0, 500),
+    );
+  }
+  const res = await fetch(LINEAR_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: LINEAR_API_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query, variables }),
   });
+  const body = await res.text();
+  let result;
+  try {
+    result = JSON.parse(body);
+  } catch {
+    throw new Error(
+      `HTTP ${res.status}: JSON でない応答: ${body.substring(0, 200)}`,
+    );
+  }
+  if (result.errors?.length) {
+    const summary = result.errors
+      .map((e) => [e.extensions?.code, e.message].filter(Boolean).join(": "))
+      .join(" / ");
+    throw new Error(`Linear API エラー（HTTP ${res.status}）: ${summary}`);
+  }
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: ${body.substring(0, 200)}`);
+  }
+  return result.data;
 }
 
 /**
@@ -269,6 +248,7 @@ async function updateIssue(identifier, updates = {}) {
           title
           state {
             name
+            type
           }
         }
       }
@@ -292,6 +272,31 @@ async function updateIssue(identifier, updates = {}) {
   });
 
   return result?.issueUpdate;
+}
+
+/**
+ * アーカイブする状態の種類（Linear の WorkflowState.type）。Duplicate は Linear では
+ * canceled の種類だが、種類として返る可能性に備えて含める
+ */
+const ARCHIVE_STATE_TYPES = new Set(["completed", "canceled", "duplicate"]);
+
+/**
+ * タスクをアーカイブする（issueArchive）
+ */
+async function archiveIssue(issueId) {
+  const mutation = `
+    mutation ArchiveIssue($id: String!) {
+      issueArchive(id: $id) {
+        success
+      }
+    }
+  `;
+  const result = await graphqlRequest(mutation, { id: issueId });
+  if (!result?.issueArchive?.success) {
+    throw new Error(
+      `アーカイブに失敗しました: ${JSON.stringify(result?.issueArchive ?? null)}`,
+    );
+  }
 }
 
 /**
@@ -494,11 +499,13 @@ async function main() {
         }
 
         if (updates.state || comment) {
+          let updated = null;
           if (updates.state) {
             const result = await updateIssue(identifier, updates);
             if (result?.success) {
+              updated = result.issue;
               console.log(`✅ タスク ${identifier} を更新しました`);
-              console.log(`   状態: ${result.issue.state.name}`);
+              console.log(`   状態: ${updated.state.name}`);
             } else {
               console.error("❌ タスクの更新に失敗しました");
               process.exit(1);
@@ -511,7 +518,15 @@ async function main() {
               console.log(`💬 コメントを追加しました`);
             } else {
               console.error("❌ コメントの追加に失敗しました");
+              process.exit(1);
             }
+          }
+
+          // 完了・取り消しにしたらアーカイブする（無料枠の上限はアーカイブしていない
+          // チケット数で数えられる）。コメントを付けた後で行う
+          if (updated && ARCHIVE_STATE_TYPES.has(updated.state.type)) {
+            await archiveIssue(updated.id);
+            console.log(`🗄️ タスク ${identifier} をアーカイブしました`);
           }
         } else {
           console.error("❌ 状態またはコメントを指定してください");
@@ -606,7 +621,8 @@ async function main() {
     例: node scripts/linear-cli.js create "予測機能の実装" "AI予測ロジックを追加"
 
   update <タスクID> [状態] [コメント]
-    タスクを更新します（状態変更とコメント追加）
+    タスクを更新します（状態変更とコメント追加）。状態の種類が完了・取り消し
+    （Done・Canceled・Duplicate 等）になったら、続けてアーカイブします
     例: node scripts/linear-cli.js update BOAT-123 "進行中" "実装を開始しました"
 
   comment <タスクID> <コメント>

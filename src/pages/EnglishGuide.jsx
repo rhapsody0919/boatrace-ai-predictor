@@ -363,7 +363,7 @@ export default function EnglishGuide() {
         <section className="eg-section">
           <h2>🤖 How to Read Ryujin Radar&apos;s Predictions</h2>
           <p>
-            Ryujin Radar analyzes 45 data points per race — racer stats, motor
+            Ryujin Radar analyzes the data behind every race — racer stats, motor
             performance, venue bias, start timing and more — and shows you{" "}
             <strong>why</strong> behind every pick. Completely free.
           </p>

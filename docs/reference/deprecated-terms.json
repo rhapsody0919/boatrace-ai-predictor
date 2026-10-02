@@ -20,18 +20,37 @@
     },
     {
       "id": "today-recommendation-feature",
-      "patterns": ["今日のおすすめ"],
+      "patterns": [
+        "今日のおすすめ"
+      ],
       "note": "「今日のおすすめ」機能は廃止済み（2026-08-23時点で確認済み）。紹介する下書き・記事が残っていた実例あり"
     },
     {
       "id": "old-brand-name",
-      "patterns": ["BoatAI"],
+      "patterns": [
+        "BoatAI"
+      ],
       "note": "旧ブランド名。2026-08-22に「龍神レーダー」へ改名済み。公開済みnote記事のブランド名残留が今回のセッションでも見つかった"
     },
     {
       "id": "data-review-feature",
-      "patterns": ["データで振り返る"],
+      "patterns": [
+        "データで振り返る"
+      ],
       "note": "「データで振り返る」機能（RaceReview）はBOA-312で撤去済み（2026-09-15、レース詳細ページの日和スタイルタブ再設計）。的中/不的中の検証は「結果」タブ（RaceResult）に統合された。public/blog配下の紹介記事（race-review-guide.md等）・note-articles配下の下書きは事業判断（記事削除 or 改稿）が別途必要なため、このPRでは意図的に未修正のまま残置している"
+    },
+    {
+      "id": "unsupported-45-items-claim",
+      "patterns": [
+        "45項目",
+        "45 data points",
+        "45+ data points",
+        "45개",
+        "45項數據",
+        "45 項數據",
+        "45項以上"
+      ],
+      "note": "「45項目のデータを分析」は裏付けが無い（BOA-571、2026-10-02）。AI予想モデル unified が使う指標は scripts/lib/unifiedModel.js の10指標＋決まり手一致の計11。サイト本文・meta・llms.txt・4言語は数を出さない表現に揃えた。public/blog・note-articles の既存記事と sns-video-studio の紹介動画（AboutHeroCM.jsx）は事業判断（改稿の要否）が別途要るため未修正で残置"
     }
   ]
 }

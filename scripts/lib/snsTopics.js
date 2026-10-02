@@ -336,10 +336,10 @@ export async function getClaimableTopicTargets(targetAccountId) {
 
 /**
  * platform='blog'の未マージDraft PR（sns_drafts.status='pending_review'）が
- * 既に存在するか確認する。blogチャネルの生成Routineは記事メタデータを
- * src/data/blogPosts.jsの同じ挿入位置に書き込むため、複数のDraft PRが同時に
- * オープンしていると片方がマージされた時点でもう片方が必ずコンフリクトする
- * （実例: PR #519とPR #509/#512/#525が相互に何度もコンフリクトし直した）。
+ * 既に存在するか確認する。以前は記事メタデータを src/data/blogPosts.js の同じ
+ * 挿入位置に書き込んでいたため、複数のDraft PRが同時にオープンすると必ずコンフリクトした
+ * （実例: PR #519とPR #509/#512/#525）。BOA-247 で1記事1ファイル（src/data/blog-posts/）に
+ * したため構造上の衝突は無くなったが、撤去は置き換えの稼働を確かめてから別途行う。
  * blog向けのclaim前にこれを呼び、trueならclaimせず終了する。
  */
 export async function hasOpenBlogDraft() {

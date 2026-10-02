@@ -744,6 +744,7 @@ function RaceBasicInfoTab({
                       const period = pickPeriodStats(
                         periodStats,
                         player?.racerId,
+                        (raceId ?? "").slice(0, 10),
                       );
                       // 前期と出走表の値の差（BOA-439）。出走表の値は上のバーの
                       // 既定（全国・今期）と同じ公式値（race_entries、追加クエリ無し）。
@@ -1021,6 +1022,33 @@ function RaceBasicInfoTab({
                                       period.avgSt === null
                                         ? "—"
                                         : period.avgSt.toFixed(2),
+                                  })}
+                                </span>
+                              </div>
+                              {/* 優出・優勝（BOA-326）。公式の期別成績の前期の値と、
+                                  前期を含む直近4期の合計。1艇ずつの表示で6艇の
+                                  比較ではないので、最良の金枠は付けない */}
+                              <div className="rbit-period-finals">
+                                <span>
+                                  {t("basicInfo.periodFinals", {
+                                    value: period.finals ?? "—",
+                                  })}
+                                </span>
+                                <span>
+                                  {t("basicInfo.periodWins", {
+                                    value: period.wins ?? "—",
+                                  })}
+                                </span>
+                                <span className="rbit-period-recent">
+                                  {t("basicInfo.periodRecentFinals", {
+                                    from: period.recent.from
+                                      .slice(0, 7)
+                                      .replace("-", "/"),
+                                    to: period.recent.to
+                                      .slice(0, 7)
+                                      .replace("-", "/"),
+                                    finals: period.recent.finals,
+                                    wins: period.recent.wins,
                                   })}
                                 </span>
                               </div>

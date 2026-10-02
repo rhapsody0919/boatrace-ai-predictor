@@ -109,9 +109,19 @@
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
     },
     {
+      "script": "verify-blog-post-files.js",
+      "tier": "ci",
+      "guards": "ブログ記事メタデータ src/data/blog-posts/{id}.json（BOA-247）の形。id とファイル名の一致・必須項目・本文 .md の存在・featuredRank の有無と重複・blogPosts.js が全件を新しい順で返すこと"
+    },
+    {
       "script": "verify-frontend-pure-functions.js",
       "tier": "ci",
       "guards": "画面側の純関数（basicInfoStats / raceStatus / courseGridStats / venueDayTrend / weatherInfo）の、過去に fix が入った箇所の回帰と変異検証（BOA-255）"
+    },
+    {
+      "script": "verify-racer-stats-waku.js",
+      "tier": "ci",
+      "guards": "racerStats（中身は枠番、BOA-284 で枠番キー維持と決定）を画面が courseRaceCounts・courseRateOf・table.courseWinRate で読まないこと、境界の toWakuRacerStats が wakuRaceCounts に詰め替えること（BOA-302）"
     },
     {
       "script": "verify-race-outcome.js",
@@ -500,6 +510,11 @@
       "guards": "開催中止の判定が共通関数を通らず生の文字列比較で書かれること（BOA-418）と、画面の判定が結果のあるレースを中止扱いすること（BOA-525）"
     },
     {
+      "script": "verify-linear-cli.js",
+      "tier": "ci",
+      "guards": "scripts/linear-cli.js の失敗（create の無料枠上限・コメント失敗・アーカイブ失敗）が終了コード1になること、update で状態の種類が完了・取り消しになったらアーカイブすること。ローカルの模擬サーバーに向けて CLI を起動する（実 Linear に触れない）"
+    },
+    {
       "script": "verify-i18n-consistency.js",
       "tier": "ci",
       "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
@@ -643,6 +658,11 @@
       "script": "verify-analogy-storage.js",
       "tier": "ci",
       "guards": "アナロジー・ファインダーの学習（BOA-271）で、Storage の古い版を消すときに表示中の版を残すこと、表示中の版と同じ名前ではモデルを上書きしないこと、長期データのキャッシュの列名が今のコードと違えば失敗すること（scripts/ml/analogy/storageRules.js）"
+    },
+    {
+      "script": "verify-analogy-treeshap.js",
+      "tier": "ci",
+      "guards": "アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））の JS が学習側の Python と同じ値を出すこと。小さな固定モデルと DB の行の形の固定データで、直前情報8列（float32 の Kahan 和の平均・min の順位・無風と風向が空の扱い）が完全一致し、TreeSHAP（カテゴリ分岐・欠損の向き）が pred_contrib と 1e-9 未満で一致すること、学習ジョブが呼ぶ treeshap-parity.js の終了コード（一致0・不一致1・入力の不備2）、テーマ集計（中心化した |SHAP| のシェア）の約束"
     },
     {
       "script": "verify-best-of.js",
