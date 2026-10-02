@@ -266,4 +266,24 @@ test.describe("シェアボタンの共有 URL（BOA-691）", () => {
     ).toBeVisible({ timeout: 20000 });
     await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
   });
+
+  test("記事ページは記事の og:url を持ち、離れると消える（useSocialMeta）", async ({
+    page,
+  }) => {
+    await page.goto("/blog/odds-expected-value-guide");
+    const ogUrl = page.locator('meta[property="og:url"]');
+    await expect(ogUrl).toHaveCount(1, { timeout: 30000 });
+    await expect(ogUrl).toHaveAttribute(
+      "content",
+      "https://www.boat-ai.jp/blog/odds-expected-value-guide",
+    );
+    // 一覧へ戻ると記事の og:url は消え、一覧の URL の1件だけになる（重複しない）
+    await page.locator('a[href="/blog"]').first().click();
+    await expect(page).toHaveURL(/\/blog$/);
+    await expect(ogUrl).toHaveCount(1);
+    await expect(ogUrl).toHaveAttribute(
+      "content",
+      "https://www.boat-ai.jp/blog",
+    );
+  });
 });
