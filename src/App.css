@@ -622,12 +622,27 @@ input:focus-visible,
   white-space: nowrap;
 }
 
+/* 「レースタイム」は 768px 以下で列に収まらないので短い見出しに切り替える */
+.rr-head-time-short {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .rr-head-time-full {
+    display: none;
+  }
+
+  .rr-head-time-short {
+    display: inline;
+  }
+}
+
 .rr-row-head + .rr-row {
   border-top: none;
 }
 
 .rr-row.is-winner {
-  background: rgba(201, 162, 39, 0.1);
+  background: color-mix(in srgb, var(--ryujin-gold-500) 10%, transparent);
 }
 
 .rr-pos {
@@ -934,7 +949,7 @@ input:focus-visible,
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-extrabold);
   color: var(--brand-accent-primary);
-  background: rgba(201, 162, 39, 0.16);
+  background: color-mix(in srgb, var(--ryujin-gold-500) 16%, transparent);
   border-radius: var(--radius-full);
   padding: 0.02rem var(--spacing-2);
 }
@@ -973,7 +988,7 @@ input:focus-visible,
 }
 
 .rr-payout-row.is-best {
-  background: rgba(201, 162, 39, 0.12);
+  background: color-mix(in srgb, var(--ryujin-gold-500) 12%, transparent);
 }
 
 .rr-payout-type {
