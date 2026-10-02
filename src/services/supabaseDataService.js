@@ -25,7 +25,11 @@ import {
   isInMotorGeneration,
 } from "../utils/motorGeneration";
 import { isFinalStage } from "../constants/raceStageConfig";
-import { finishPositionOf } from "../components/race/basicInfoStats.js";
+import {
+  finishPositionOf,
+  periodsEndedBefore,
+  RECENT_PERIOD_COUNT,
+} from "../components/race/basicInfoStats.js";
 import { isRaceCancelled } from "../utils/raceCancellation.js";
 import { competitionRank } from "../utils/competitionRank.js";
 import { toWakuRacerStats } from "../utils/racerStats.js";
@@ -7296,7 +7300,9 @@ export const supabaseDataService = {
    *
    * 期の境界は 5/1 と 11/1（`period_no` 1 = 5/1〜10/31、2 = 11/1〜4/30、
    * `period_year` は算出期間の終了が4月の年）。クライアントで計算できるので、
-   * `.eq()` 2つで6行に絞る（絞らないと1選手あたり約12期分が返る）。
+   * 前期を含む直近4期（優出・優勝の直近2年の合計、BOA-326）だけを返す
+   * （絞らないと1選手あたり約15期分が返る）。前期の行の選び出しは
+   * `pickPeriodStats` が行う。
    *
    * ## 単位に注意
    *
@@ -7316,36 +7322,35 @@ export const supabaseDataService = {
     );
     if (ids.length === 0 || !raceDate) return Promise.resolve([]);
 
-    // レース日から見て「直前に**終わった**期」を求める。
-    // `period_year` Y は「5月〜翌4月の年度」を指し、その中が2つに割れる
-    // （本番DBの全15期を実測して確認した。083のCOMMENTの言い換え）:
-    //   (Y,1) = (Y-1)-05-01 〜 (Y-1)-10-31
-    //   (Y,2) = (Y-1)-11-01 〜     Y-04-30
-    // 例: (2026,1)=2025-05-01〜2025-10-31、(2026,2)=2025-11-01〜2026-04-30
-    // したがって直前に終わった期は
-    //   5〜10月  → (Y,2)   … Y-04-30 に終わった期
-    //   11〜12月 → (Y+1,1) … Y-10-31 に終わった期
-    //   1〜4月   → (Y,1)   … (Y-1)-10-31 に終わった期
-    const [y, m] = raceDate.split("-").map(Number);
-    const periodYear = m >= 5 && m <= 10 ? y : m >= 11 ? y + 1 : y;
-    const periodNo = m >= 5 && m <= 10 ? 2 : 1;
+    // 「前期」と、直近2年（前期を含む4期）の優出・優勝の合計に使う期（BOA-326）。
+    // 期の求め方は periodsEndedBefore のコメント参照
+    const periods = periodsEndedBefore(raceDate, RECENT_PERIOD_COUNT);
+    if (periods.length === 0) return Promise.resolve([]);
+    const years = [...new Set(periods.map((p) => p.periodYear))].sort();
+    const [latest] = periods;
 
     return withCache(
-      `racer-period-stats-v1-${periodYear}-${periodNo}-${ids.join(",")}`,
+      `racer-period-stats-v2-${latest.periodYear}-${latest.periodNo}-${ids.join(",")}`,
       async () => {
         if (!supabase) {
           throw new Error("Supabase client not initialized");
         }
         try {
+          // 4期は最大3つの period_year にまたがる。年で絞って取り、範囲外の期
+          // （3年分なら最大2期）は落とす（6人×最大6行）
           const { data } = await supabase
             .from("racer_period_stats")
             .select(
-              "racer_id, period_year, period_no, calc_from, calc_to, win_rate, top2_rate, avg_st, starts",
+              "racer_id, period_year, period_no, calc_from, calc_to, win_rate, top2_rate, avg_st, starts, finals, wins",
             )
-            .eq("period_year", periodYear)
-            .eq("period_no", periodNo)
+            .in("period_year", years)
             .in("racer_id", ids);
-          return data ?? [];
+          return (data ?? []).filter((r) =>
+            periods.some(
+              (p) =>
+                r.period_year === p.periodYear && r.period_no === p.periodNo,
+            ),
+          );
         } catch (error) {
           if (isPermissionDeniedError(error)) {
             // 095（匿名へのSELECT公開）が未適用の間はここを通る
