@@ -92,20 +92,19 @@ async function kbMonth(t, lo, hi) {
         .gunzipSync(Buffer.from(await data.arrayBuffer()))
         .toString();
       assertCachedHeader(csv, t.colList, key);
-      const nl = csv.indexOf("
-");
+      const nl = csv.indexOf("\n");
       return nl === -1 ? "" : csv.slice(nl + 1);
     }
   }
   const rows = await fetchRange(t.table, t.cols, t.order, t.rangeCol, lo, hi);
   // 長期のアーカイブに空の月は無い。0行を置くと以後ずっと空のまま読まれるので失敗にする
-  if (rows.length === 0) throw new Error(`${t.table} ${lo}: 0行（キャッシュしない）`);
+  if (rows.length === 0)
+    throw new Error(`${t.table} ${lo}: 0行（キャッシュしない）`);
   const body = toCsv(t.colList, rows);
   if (USE_CACHE) {
     const { error } = await supabase.storage
       .from(BUCKET)
-      .upload(key, zlib.gzipSync(`${t.colList.join(",")}
-${body}`), {
+      .upload(key, zlib.gzipSync(`${t.colList.join(",")}\n${body}`), {
         upsert: true,
         contentType: "application/gzip",
       });
