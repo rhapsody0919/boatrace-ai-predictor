@@ -7,6 +7,17 @@ import { MODEL_NAMES } from "../constants";
 /** panel.sharePrediction の文面の数（v1〜vN） */
 const SHARE_PREDICTION_VARIANTS = 5;
 
+// シェアで送る URL の基点。プレビュー環境・開発機から共有しても本番のページを指すようにする
+const SITE_ORIGIN = "https://www.boat-ai.jp";
+
+/**
+ * シェアボタンで送る URL（BOA-691）。以前はどのページからでもトップ固定で、レース詳細から
+ * 共有しても受け取った人はそのレースに戻れなかった
+ * @param {string} pathWithSearch - 例 "/en/race/2026-10-02-02-09?tab=meet&boat=3"
+ */
+export const shareUrlFor = (pathWithSearch) =>
+  `${SITE_ORIGIN}${pathWithSearch}`;
+
 /**
  * AI予想をXでシェア
  * @param {Object} race - レースデータ

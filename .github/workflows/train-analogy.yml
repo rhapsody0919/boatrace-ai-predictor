@@ -79,9 +79,22 @@ jobs:
         run: |
           drift=data/ml/analogy/out/drift.json
           if [ "$(jq -r .flagged "$drift")" != "true" ]; then exit 0; fi
-          detail=$(jq -r '.changes[] | "finish_target=\(.finish_target) \(.theme) \(.max_abs_change * 1000 | round / 1000)"' "$drift" | paste -sd ' / ' -)
+          detail=$(jq -r '[.changes[] | "finish_target=\(.finish_target) \(.theme) \(.max_abs_change * 1000 | round / 1000)"] | join(" / ")' "$drift")
           payload=$(jq -n --arg d "$detail" --arg prev "$(jq -r .previous "$drift")" --arg url "$RUN_URL" \
             '{text: (":warning: *アナロジー・ファインダーの寄与度のシェアが前の版（" + $prev + "）から大きく動きました*（切り替えは済み）\n" + $d + "\n" + $url)}')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
+
+      # 品質ゲートの警告（参照版が古くなった等。止めはしない）
+      - name: Notify Slack (品質ゲートの警告)
+        if: success() && hashFiles('data/ml/analogy/out/train_meta.json') != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          warnings=$(jq -r '(.metrics.gate.warnings // []) | join(" / ")' data/ml/analogy/out/train_meta.json)
+          if [ -z "$warnings" ]; then exit 0; fi
+          payload=$(jq -n --arg w "$warnings" --arg url "$RUN_URL" \
+            '{text: (":information_source: *アナロジー・ファインダーの週次学習の警告*\n" + $w + "\n" + $url)}')
           curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
 
       - name: Summary
