@@ -834,7 +834,9 @@ for (const path of ["/race/2026-09-29-16-12", "/en/race/2026-09-29-16-12"]) {
       page,
     }, testInfo) => {
       const widths =
-        testInfo.project.name === "layout-mobile" ? [320, 375, 390] : [null];
+        testInfo.project.name === "layout-mobile"
+          ? [320, 375, 390, 520, 600, 700]
+          : [null];
       for (const width of widths) {
         if (width) await page.setViewportSize({ width, height: 812 });
         await checkBeforeInfoExhibitionCard(page, path, width);
@@ -859,11 +861,21 @@ async function checkBeforeInfoExhibitionCard(page, path, width) {
     const labels = [...el.querySelectorAll(".drt-label-cell")].map(
       (c) => c.getBoundingClientRect().left,
     );
+    const wrapEl = el.closest(".drt-table-wrapper");
+    // 同じタブの、表を持たないカード（水面・展示タイム・進入など）
+    const others = [...document.querySelectorAll(".rbi-card")]
+      .filter((c) => !c.querySelector(".drt-table-wrapper") && c.offsetParent)
+      .map((c) => {
+        const r = c.getBoundingClientRect();
+        return [r.left, r.right];
+      });
     return {
       card: [card.left, card.right],
       wrap: [wrap.left, wrap.right],
       minLabelLeft: Math.min(...labels),
       vw: document.documentElement.clientWidth,
+      tableOverflow: wrapEl.scrollWidth - wrapEl.clientWidth,
+      others,
     };
   });
   // 表（横スクロールの枠）はカードの左右の枠の内側にある
@@ -876,4 +888,15 @@ async function checkBeforeInfoExhibitionCard(page, path, width) {
   expect(m.minLabelLeft, `${at}行見出し`).toBeGreaterThanOrEqual(
     Math.max(0, m.card[0]) - 0.5,
   );
+  if (!width) return;
+  // 767px 以下: 6艇が表の横スクロール無しで入る（以前は 520px で表 531px / 表示枠 438px）
+  expect(
+    m.tableOverflow,
+    `${width}px: 展示情報の表の横スクロール`,
+  ).toBeLessThanOrEqual(1);
+  // 767px 以下: ほかのカードは画面の左右 8px（docs/design/race-detail-ui-unify FR-1 案B）
+  for (const [left, right] of m.others) {
+    expect(left, `${width}px: カードの左の余白`).toBeCloseTo(8, 0);
+    expect(m.vw - right, `${width}px: カードの右の余白`).toBeCloseTo(8, 0);
+  }
 }
