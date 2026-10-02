@@ -82,7 +82,10 @@ function ExhibitionTimeTrendChart({
 
   // 平均展示が最も速い艇（同値は全部）。表示と同じ小数2桁で比べる（R1）
   const bestAvgTimeBoats = bestOf(
-    breakdown.map((r) => ({ boat: r.boat_number, value: r.avg_exhibition_time })),
+    breakdown.map((r) => ({
+      boat: r.boat_number,
+      value: r.avg_exhibition_time,
+    })),
     "min",
     { digits: 2 },
   );
@@ -179,7 +182,7 @@ function ExhibitionTimeTrendChart({
                 {breakdown.map((row) => (
                   <tr
                     key={row.boat_number}
-                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""} ${bestAvgTimeBoats.has(row.boat_number) ? "best-motor" : ""}`}
+                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""}`}
                     onClick={() =>
                       row.racer_id !== null && setDrillDownRacer(row.racer_id)
                     }
@@ -193,7 +196,10 @@ function ExhibitionTimeTrendChart({
                         ? row.exhibition_time.toFixed(2)
                         : t("analysis.notMeasured")}
                     </td>
-                    <td className="rate">
+                    {/* 最良は行全体ではなく、比べている値（平均展示）のセルに金枠（R1） */}
+                    <td
+                      className={`rate${bestAvgTimeBoats.has(row.boat_number) ? " ind-best" : ""}`}
+                    >
                       {row.avg_exhibition_time !== null
                         ? row.avg_exhibition_time.toFixed(2)
                         : t("analysis.noData")}

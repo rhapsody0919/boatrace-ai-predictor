@@ -294,7 +294,11 @@
 /* 今日の会場。固定の水色（--color-primary-alpha-10）はダークで変わらないため、テーマで
    切り替わる銀から作る（race-detail-ui-unify R6） */
 .rbit-venue-item.is-current {
-  background: color-mix(in srgb, var(--brand-accent-secondary) 14%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--brand-accent-secondary) 14%,
+    transparent
+  );
   font-weight: var(--font-weight-bold);
 }
 
