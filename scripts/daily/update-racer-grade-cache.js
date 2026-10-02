@@ -12,13 +12,15 @@ async function fetchAllLatestRacerGrades() {
   const pageSize = 1000;
 
   while (true) {
+    // racer_id で並べて、ページの境目の重複・欠落を防ぐ（BOA-391）
     const { data: page, error } = await supabase
       .rpc("get_latest_racer_grades")
+      .order("racer_id")
       .range(from, from + pageSize - 1);
 
     if (error) {
-      console.error("  get_latest_racer_grades RPCエラー:", error.message);
-      return null;
+      // 失敗は例外にする（BOA-391。呼び出し側の null 判定は、従来どおり残す）
+      throw new Error(`get_latest_racer_grades RPCエラー: ${error.message}`);
     }
     if (!page || page.length === 0) break;
     allData = allData.concat(page);
@@ -76,4 +78,7 @@ async function main() {
   }
 }
 
-main();
+main().catch((error) => {
+  console.error("❌ 選手級別・勝率キャッシュ更新エラー:", error);
+  process.exit(1);
+});

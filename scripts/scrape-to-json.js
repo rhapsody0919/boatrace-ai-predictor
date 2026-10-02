@@ -16,6 +16,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { getTodayDateJST } from "./lib/dateUtils.js";
 import { scrapeRaceStage } from "./lib/raceStageParser.js";
+import { parseRaceListDocument } from "./lib/raceListParser.js";
 import { mapWithConcurrency } from "./lib/scrapeJobs/concurrency.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -65,7 +66,10 @@ export async function defaultFetchHtml(url) {
   return response.text();
 }
 
-const DEFAULT_IO = Object.freeze({ fetchHtml: defaultFetchHtml, strict: false });
+const DEFAULT_IO = Object.freeze({
+  fetchHtml: defaultFetchHtml,
+  strict: false,
+});
 
 // URLを生成する関数
 function getUrl(date, placeCd, raceNo, content) {
@@ -384,6 +388,23 @@ async function getRacelist(date, placeCd, raceNo, io = DEFAULT_IO) {
         boat3Rate: boat3Rate,
       });
     });
+
+    // F数・L数（BOA-590）。朝の初期化で書かないと、そのレースのレース情報の窓（発走60分前）まで NULL のままになり、
+    // Fバッジ・Lバッジ・「今節」の印が出ない（ナイター会場の後半のレースは夕方まで）。新しい出走表パーサーで同じ
+    // ページを読み、艇番で突き合わせる。読めなければ付けない（初期化は止めない。値は窓の取得が埋める）
+    try {
+      const { entries } = parseRaceListDocument($);
+      for (const racer of racers) {
+        const e = entries.find((x) => x.boat_number === racer.lane);
+        if (!e) continue;
+        if (Number.isInteger(e.f_count)) racer.fCount = e.f_count;
+        if (Number.isInteger(e.l_count)) racer.lCount = e.l_count;
+      }
+    } catch (e) {
+      console.warn(
+        `⚠️ 出走表のF数・L数を読めませんでした（会場${placeCd} ${raceNo}R）: ${e.message}`,
+      );
+    }
 
     return racers.length > 0
       ? { racers, raceGrade, raceTitle, raceStage }

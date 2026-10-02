@@ -144,6 +144,75 @@ test.describe("選手一覧ページ (/racers)", () => {
     await firstRow.click();
     await expect(page).toHaveURL(/\/racer\/\d+$/);
   });
+
+  // BOA-470: 仕様（spec.md FR4 の例 ?sort=height）と実装（height_cm）の食い違い。
+  // 別名を受け付け、知らないキーは既定（勝率の降順）に戻す
+  test("?sort=height（別名）で身長の降順に並ぶ（BOA-470）", async ({
+    page,
+  }) => {
+    await page.goto("/racers?sort=height&dir=desc");
+    const cells = page.locator(".racer-table tbody tr td:nth-child(3)");
+    await expect(cells.first()).toBeVisible();
+    const heights = (await cells.allTextContents())
+      .map((t) => parseInt(t, 10))
+      .filter((n) => Number.isFinite(n));
+    expect(heights.length).toBeGreaterThan(5);
+    for (let i = 1; i < heights.length; i++) {
+      expect(heights[i]).toBeLessThanOrEqual(heights[i - 1]);
+    }
+    // 見出しの並び順の印も身長の列に付く
+    await expect(
+      page.locator(".racer-table th.is-sorted", { hasText: "身長" }),
+    ).toBeVisible();
+  });
+
+  // BOA-470: 身長・体重の範囲入力で、上限欄にもアクセシブルネームがある
+  test("身長・体重の下限・上限の欄に、それぞれ名前が付いている（BOA-470）", async ({
+    page,
+  }) => {
+    await page.goto("/racers");
+    for (const name of [
+      "身長の下限（cm）",
+      "身長の上限（cm）",
+      "体重の下限（kg）",
+      "体重の上限（kg）",
+    ]) {
+      await expect(
+        page.getByRole("spinbutton", { name, exact: true }).first(),
+      ).toBeAttached();
+    }
+  });
+
+  // BOA-470: モバイルの行本体は href を持つ本物のリンク（新しいタブで開ける）。
+  // ▼ボタンはリンクの中に入れない（操作できる要素の入れ子にしない）
+  test("375px: 行本体は選手ページへのリンクで、▼はリンクの外のボタン（BOA-470）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/racers");
+    const row = page.locator(".racer-compact-row").first();
+    await expect(row).toBeVisible();
+    await expect(row.locator("a.racer-compact-row-main")).toHaveAttribute(
+      "href",
+      /^\/racer\/\d+$/,
+    );
+    await expect(page.locator(".racer-compact-row a button")).toHaveCount(0);
+
+    // ▼は画面遷移せずに、その行だけ展開する
+    await row.locator(".racer-compact-row-chevron").click();
+    await expect(page).toHaveURL(/\/racers/);
+    await expect(row.locator(".racer-compact-row-detail")).toBeVisible();
+    await expect(
+      page
+        .locator(".racer-compact-row")
+        .nth(1)
+        .locator(".racer-compact-row-detail"),
+    ).toHaveCount(0);
+
+    // 行本体のタップで選手ページへ
+    await row.locator("a.racer-compact-row-main").click();
+    await expect(page).toHaveURL(/\/racer\/\d+$/);
+  });
 });
 
 test.describe("会場ガイド (venues)", () => {
@@ -294,6 +363,36 @@ test("英語のレース詳細に公式の記号・円・日本語のラベル�
 test("会場特性の要約は言語ごとの区切りで連結する（BOA-656）", async ({
   page,
 }) => {
+  // venue-characteristics-teaser は VenueCharacteristicsCard が collapsible
+  // （VenueRaceListPage の showCardsInGrid＝その日にまだ発走前のレースがある。
+  // getRaceStatus は race.result.finished を最優先で見るため、時計を戸田の
+  // 開催中時刻に固定するだけでは不十分（BOA-688）。2026-09-29は実際の開催日から
+  // 日が経つほど全レースの結果が確定済みになり、BOA-608・#1080と同じ時刻固定を
+  // 真似ても「当日まだ発走前のレースがある」状態そのものが時間とともに崩れて
+  // record モード（本番）で再現できなくなる。そこで /api/predictions/2026-09-29
+  // の応答を差し替え、戸田の最終レースだけ未発走（result null・発走前の時刻）に
+  // 固定し、実際のレース結果の経過に左右されないようにする
+  const DATE = "2026-09-29";
+  await page.clock.setFixedTime(new Date(`${DATE}T15:04:00+09:00`));
+  await page.route(`**/api/predictions/${DATE}*`, async (route) => {
+    // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+    const response = await fetchRecorded(route);
+    const body = await response.json();
+    const todaRaceNumbers = (body.races || [])
+      .filter((r) => r.venueCode === 2)
+      .map((r) => r.raceNumber);
+    const lastRaceNumber = Math.max(...todaRaceNumbers);
+    const races = (body.races || []).map((race) =>
+      race.venueCode === 2 && race.raceNumber === lastRaceNumber
+        ? { ...race, result: null, startTime: "23:59" }
+        : race,
+    );
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json: { ...body, races },
+    });
+  });
   for (const [path, sep] of [
     ["/en/venue/2", ", "],
     ["/zh-TW/venue/2", "、"],
@@ -2554,12 +2653,13 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 同居している。以前はここが「48人」＝男子24人と女子24人の合算で、
     // 別の勝ち上がりの選手を混ぜて順位を振っていた（BOA-476／BOA-511）。
     // 表示中の6艇と同じ側だけを母集団にするので24人。さらに 9/22 5R（予選男子）で
-    // Fを切った大澤普司は賞典除外として順位の対象から外すので23人（BOA-587）
+    // Fを切った大澤普司は賞典除外として順位の対象から外し（BOA-587）、予選中の 9/22 に
+    // 帰った北川・田中も予選の翌日から外すので21人（BOA-674）
     // 除外の選手も節は走っているので24人のまま、順位の対象を分けて書く。
     // Ｗ優勝戦で分けた節は「節の出場」ではなく「同じ優勝戦をめざすのは」と書く
     // （下の注記の「節全体は48人」と食い違って読めた。BOA-660）
     await expect(page.locator(".rmt-sub")).toContainText(
-      "同じ優勝戦をめざすのは24人（順位の対象は23人",
+      "同じ優勝戦をめざすのは24人（順位の対象は21人",
     );
     // 人数が半分になる理由を1行で断る（黙って半分にすると「なぜ減った」になる）
     await expect(page.locator(".rmt-series-note")).toContainText(
@@ -5404,7 +5504,29 @@ test.describe("レース詳細の見出し: グレードとレース種別（BOA
     page,
   }) => {
     // 2026-09-04 浜名湖9R は race_conditions に series_day=6 だけが入り、
-    // is_final_day・race_title・race_stage が null（BOA-347）。同じ日の他レースは最終日
+    // is_final_day・race_title・race_stage が null だった（BOA-347）。本番の
+    // race_conditions.race_stage がその後「一般」に補完され前提が崩れたため
+    // （BOA-688）、画面が読むのは /rest/v1/race_conditions ではなく
+    // /api/predictions/{date}（Edge API、get_predictions_by_date RPC が
+    // race_conditions を raceStage/isFinalDay/raceTitle として返す）なので、
+    // その応答だけを差し替えてこのレースの欠損を再現する。同じ日の他レースは
+    // 実データのまま（kicker・最終日の補完元として使う。useDatePredictions が
+    // 同じ会場の他レースから値を拾う）
+    await page.route("**/api/predictions/2026-09-04*", async (route) => {
+      // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+      const response = await fetchRecorded(route);
+      const body = await response.json();
+      const races = (body.races || []).map((race) =>
+        race.raceId === "2026-09-04-06-09"
+          ? { ...race, raceStage: null, isFinalDay: null, raceTitle: null }
+          : race,
+      );
+      await route.fulfill({
+        status: response.status(),
+        headers: response.headers(),
+        json: { ...body, races },
+      });
+    });
     await page.goto("/race/2026-09-04-06-09");
     await expect(kicker(page)).toContainText("クラウンメロン杯", {
       timeout: 25000,

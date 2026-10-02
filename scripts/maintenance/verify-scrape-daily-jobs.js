@@ -42,6 +42,7 @@ import { runVenueEntryCourseStatsJob } from "../lib/venueEntryCourseStatsJob.js"
 import { runVenueMotorStatsJob } from "../lib/venueMotorStatsJob.js";
 import { runRacerNewsJob } from "../lib/racerNewsJob.js";
 import { runRacerProfilesJob } from "../lib/racerProfilesJob.js";
+import { runRaceSeriesJob } from "../lib/raceSeriesJob.js";
 import {
   buildPopulation,
   runRacerProfileSync,
@@ -406,6 +407,7 @@ const strictClient = () => ({
     ["venue_motor_stats", (ctx) => runVenueMotorStatsJob(ctx)],
     ["racer_news", (ctx) => runRacerNewsJob(ctx)],
     ["racer_profiles", (ctx) => runRacerProfilesJob(ctx)],
+    ["race_series", (ctx) => runRaceSeriesJob(ctx)],
   ];
   for (const [job, run] of jobs) {
     for (const [label, storeOptions] of [
