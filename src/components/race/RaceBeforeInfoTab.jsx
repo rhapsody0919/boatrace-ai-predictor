@@ -662,7 +662,9 @@ function RaceBeforeInfoTab({
             stroke="var(--ind-best-ring)"
           />
         )}
+        {/* recharts の既定のラベルと同じクラスを付ける（e2e の BOA-613 がこれで探す） */}
         <text
+          className="recharts-label"
           x={cx}
           y={y - 8}
           textAnchor="middle"
