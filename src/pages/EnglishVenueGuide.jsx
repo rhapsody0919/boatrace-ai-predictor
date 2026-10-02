@@ -11,7 +11,7 @@ import { VENUE_GUIDES_EN } from "../data/venueGuidesEn";
 const copy = {
   listTitle: "Boat Race Venues in Japan: Visitor Guides | Ryujin Radar",
   listDescription:
-    "English visitor guides to Japan's Kyotei (boat race) venues: how to get there, entrance fees, night races, and betting tips for Heiwajima, Suminoe, Edogawa, Tamagawa and Fukuoka.",
+    "English visitor guides to all 24 of Japan's Kyotei (boat race) venues: how to get there, entrance fees, night races, and betting tips for each one.",
   heroTitle: "🏟️ Boat Race Venue Guides",
   heroLead: (
     <>
