@@ -13,7 +13,12 @@ const point = (i, n, r) => {
   return [CENTER + r * Math.cos(angle), CENTER + r * Math.sin(angle)];
 };
 
-export default function ContributionRadar({ axes, series, ariaLabel }) {
+export default function ContributionRadar({
+  axes,
+  series,
+  valueTexts,
+  ariaLabel,
+}) {
   const n = axes.length;
   if (n < 3) return null;
   const max = Math.max(0.1, ...series.flatMap((s) => s.values));
@@ -22,7 +27,8 @@ export default function ContributionRadar({ axes, series, ariaLabel }) {
   const r = (v) => (v / scaleMax) * RADIUS;
   const poly = (values) =>
     values.map((v, i) => point(i, n, r(v)).join(",")).join(" ");
-  const showValues = series.length === 1;
+  // 1系列のときだけ頂点に値を出す。値の文字は呼び出し側で丸めたもの（合計100%にそろえる）
+  const showValues = series.length === 1 && Array.isArray(valueTexts);
   return (
     <svg
       className="af-radar"
@@ -94,7 +100,7 @@ export default function ContributionRadar({ axes, series, ariaLabel }) {
             <tspan x={x}>{axis.label}</tspan>
             {showValues && (
               <tspan className="af-radar-label-value" x={x} dy="1.2em">
-                {Math.round(series[0].values[i] * 100)}%
+                {valueTexts[i]}
               </tspan>
             )}
           </text>

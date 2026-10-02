@@ -11,6 +11,7 @@ import {
   FINISH_TARGETS,
   GRADES,
   ROUNDS,
+  roundToTotal,
   themeEntries,
 } from "../../../utils/analogyContribution";
 import { BOAT_LINE_COLORS } from "../../../utils/colors";
@@ -87,6 +88,13 @@ export default function ContributionView({
     : [{ key: "all", values: entries.map((e) => e.share) }];
   // 棒の並びはシェアの大きい順（順位バッジと上下をそろえる）。レーダーの軸は themes 配列の順のまま
   const listed = [...entries].sort((a, b) => b.share - a.share);
+  // 表示する % は合計100になるように丸める（四捨五入だけだと 99・101 になる）
+  const pctByKey = Object.fromEntries(
+    roundToTotal(
+      entries.map((e) => e.share),
+      100,
+    ).map((v, i) => [entries[i].key, v]),
+  );
   const resolved = data?.resolved;
 
   return (
@@ -232,6 +240,7 @@ export default function ContributionView({
                     label: themeShort(th),
                   }))}
                   series={radarSeries}
+                  valueTexts={entries.map((e) => `${pctByKey[e.key]}%`)}
                   ariaLabel={tr("radarLabel")}
                 />
                 {compare && (
@@ -303,14 +312,15 @@ export default function ContributionView({
                         </span>
                         <span className="af-theme-name">
                           {themeName(e)}
-                          {e.rankDistinct && e.rank <= 3 && (
+                          {/* 比較中は艇番ごとの順位と食い違うので、全艇の順位は出さない */}
+                          {!compare && e.rankDistinct && e.rank <= 3 && (
                             <span className="af-rank">
                               {tr("rank", { rank: e.rank })}
                             </span>
                           )}
                         </span>
                         <span className="af-theme-value">
-                          {Math.round(e.share * 100)}%
+                          {pctByKey[e.key]}%
                         </span>
                         <span className="af-bar-track" aria-hidden="true">
                           <span
@@ -325,6 +335,7 @@ export default function ContributionView({
                           themeKey={e.key}
                           groups={e.groups || []}
                           items={all.breakdown?.[e.key]}
+                          parentPct={pctByKey[e.key]}
                         />
                       )}
                     </li>

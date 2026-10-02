@@ -196,6 +196,8 @@ test.describe("アナロジー・ファインダーの寄与度（BOA-271 FR-1�
     await expect(table.getByRole("columnheader").nth(1)).toContainText("1号艇");
     await expect(table.getByRole("columnheader").nth(2)).toContainText("6号艇");
     await expect(table.getByRole("row")).toHaveCount(1 + THEMES.length);
+    // 比較中は全艇の順位バッジを出さない（艇番ごとの順位と食い違うため。ファン評価2周目）
+    await expect(section.locator(".af-rank")).toHaveCount(0);
 
     const theme = section.getByRole("button", { name: /選手・基礎成績/ });
     await expect(theme).toHaveAttribute("aria-expanded", "false");
@@ -323,6 +325,8 @@ test.describe("アナロジー・ファインダーの寄与度（BOA-271 FR-1�
     const values = await section.locator(".af-theme-value").allInnerTexts();
     const nums = values.map((v) => Number(v.replace("%", "")));
     expect(nums).toEqual([...nums].sort((a, b) => b - a));
+    // 表示の % の合計は100（四捨五入だけだと 99・101 になる。ファン評価2周目）
+    expect(nums.reduce((x, y) => x + y, 0)).toBe(100);
     // 棒の長さ: 1位の棒が溝いっぱい（100%）にならない（シェアの値そのものの長さ）
     const ratio = await section
       .locator(".af-theme")
