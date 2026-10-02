@@ -155,6 +155,14 @@
       "schedule": "35 21-23 * * *"
     },
     {
+      "path": "/api/cron/race-series",
+      "schedule": "0 19 * * *"
+    },
+    {
+      "path": "/api/cron/race-series",
+      "schedule": "30 20 * * *"
+    },
+    {
       "path": "/api/cron/racer-course-technique-stats",
       "schedule": "0 4 * * *"
     },

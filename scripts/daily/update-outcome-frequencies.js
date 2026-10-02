@@ -5,6 +5,7 @@
 
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
 import { getTrioKey, calculateRecoveryRate } from "../lib/payoutCalculator.js";
+import { isNoRaceResult } from "../lib/raceOutcomeFilters.js";
 
 const WINDOW_DAYS = 180;
 const PAGE_SIZE = 1000;
@@ -17,7 +18,7 @@ async function fetchRecentResults(cutoffDate) {
     const { data: page, error } = await supabase
       .from("race_results")
       .select(
-        "race_id, rank1, rank2, rank3, payout_trio, is_cancelled, is_no_race",
+        "race_id, rank1, rank2, rank3, payout_trio, is_cancelled, race_status",
       )
       .gte("result_at", cutoffDate)
       .range(from, from + PAGE_SIZE - 1);
@@ -29,7 +30,8 @@ async function fetchRecentResults(cutoffDate) {
     from += PAGE_SIZE;
   }
   return allResults.filter(
-    (r) => !r.is_cancelled && !r.is_no_race && r.rank1 && r.rank2 && r.rank3,
+    (r) =>
+      !r.is_cancelled && !isNoRaceResult(r) && r.rank1 && r.rank2 && r.rank3,
   );
 }
 

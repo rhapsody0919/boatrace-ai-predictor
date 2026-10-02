@@ -24,16 +24,18 @@ const near = (a, b, eps = 1e-6) => {
 // --- 旧クライアント集計の再現（フロントと同一ロジック） ---
 
 async function legacyStPredictability(raceId) {
-  const { data: entries } = await supabase
+  const { data: entries, error: entriesError } = await supabase
     .from("race_entries")
     .select("boat_number, player_name, racer_id")
     .eq("race_id", raceId)
     .order("boat_number");
+  if (entriesError) throw new Error(`race_entries取得エラー: ${entriesError.message}`);
   if (!entries?.length) return [];
-  const { data: todaysEx } = await supabase
+  const { data: todaysEx, error: todaysExError } = await supabase
     .from("exhibition_data")
     .select("boat_number, start_timing")
     .eq("race_id", raceId);
+  if (todaysExError) throw new Error(`exhibition_data取得エラー: ${todaysExError.message}`);
   const exByBoat = new Map(
     (todaysEx ?? []).map((e) => [e.boat_number, e.start_timing]),
   );
@@ -43,21 +45,25 @@ async function legacyStPredictability(raceId) {
   const ninety = new Date();
   ninety.setDate(ninety.getDate() - 90);
   const cutoff = ninety.toISOString().split("T")[0];
-  const { data: pastEntries } = await supabase
+  const { data: pastEntries, error: pastEntriesError } = await supabase
     .from("race_entries")
     .select("race_id, boat_number, racer_id")
     .in("racer_id", racerIds)
     .gte("race_id", cutoff)
     .lt("race_id", raceId);
+  if (pastEntriesError) throw new Error(`race_entries取得エラー: ${pastEntriesError.message}`);
   const raceIds = [...new Set((pastEntries ?? []).map((e) => e.race_id))];
   const fetchAll = async (table, select) => {
     const out = [];
     for (let from = 0; ; from += 1000) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from(table)
         .select(select)
         .in("race_id", raceIds)
+        .order("race_id")
+        .order("boat_number")
         .range(from, from + 999);
+      if (error) throw new Error(`${table}取得エラー: ${error.message}`);
       if (!data?.length) break;
       out.push(...data);
       if (data.length < 1000) break;
@@ -110,16 +116,18 @@ async function legacyStPredictability(raceId) {
 }
 
 async function legacyExhibitionTrend(raceId) {
-  const { data: entries } = await supabase
+  const { data: entries, error: entriesError } = await supabase
     .from("race_entries")
     .select("boat_number, player_name, racer_id")
     .eq("race_id", raceId)
     .order("boat_number");
+  if (entriesError) throw new Error(`race_entries取得エラー: ${entriesError.message}`);
   if (!entries?.length) return [];
-  const { data: todaysEx } = await supabase
+  const { data: todaysEx, error: todaysExError } = await supabase
     .from("exhibition_data")
     .select("boat_number, exhibition_time")
     .eq("race_id", raceId);
+  if (todaysExError) throw new Error(`exhibition_data取得エラー: ${todaysExError.message}`);
   const exByBoat = new Map(
     (todaysEx ?? []).map((e) => [e.boat_number, e.exhibition_time]),
   );
@@ -129,20 +137,24 @@ async function legacyExhibitionTrend(raceId) {
   const ninety = new Date();
   ninety.setDate(ninety.getDate() - 90);
   const cutoff = ninety.toISOString().split("T")[0];
-  const { data: pastEntries } = await supabase
+  const { data: pastEntries, error: pastEntriesError } = await supabase
     .from("race_entries")
     .select("race_id, boat_number, racer_id")
     .in("racer_id", racerIds)
     .gte("race_id", cutoff)
     .lt("race_id", raceId);
+  if (pastEntriesError) throw new Error(`race_entries取得エラー: ${pastEntriesError.message}`);
   const raceIds = [...new Set((pastEntries ?? []).map((e) => e.race_id))];
   const exRows = [];
   for (let from = 0; ; from += 1000) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("exhibition_data")
       .select("race_id, boat_number, exhibition_time")
       .in("race_id", raceIds)
+      .order("race_id")
+      .order("boat_number")
       .range(from, from + 999);
+    if (error) throw new Error(`exhibition_data取得エラー: ${error.message}`);
     if (!data?.length) break;
     exRows.push(...data);
     if (data.length < 1000) break;
@@ -172,11 +184,12 @@ async function legacyExhibitionTrend(raceId) {
 }
 
 async function legacyTechniqueProfile(raceId) {
-  const { data: entries } = await supabase
+  const { data: entries, error: entriesError } = await supabase
     .from("race_entries")
     .select("boat_number, player_name, racer_id")
     .eq("race_id", raceId)
     .order("boat_number");
+  if (entriesError) throw new Error(`race_entries取得エラー: ${entriesError.message}`);
   if (!entries?.length) return [];
   const racerIds = [...new Set(entries.map((r) => r.racer_id))].filter(
     (id) => id !== null,
@@ -184,20 +197,23 @@ async function legacyTechniqueProfile(raceId) {
   const ninety = new Date();
   ninety.setDate(ninety.getDate() - 90);
   const cutoff = ninety.toISOString().split("T")[0];
-  const { data: pastEntries } = await supabase
+  const { data: pastEntries, error: pastEntriesError } = await supabase
     .from("race_entries")
     .select("race_id, boat_number, racer_id")
     .in("racer_id", racerIds)
     .gte("race_id", cutoff)
     .lt("race_id", raceId);
+  if (pastEntriesError) throw new Error(`race_entries取得エラー: ${pastEntriesError.message}`);
   const raceIds = [...new Set((pastEntries ?? []).map((e) => e.race_id))];
   const results = [];
   for (let from = 0; ; from += 1000) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("race_results")
       .select("race_id, rank1, winning_technique")
       .in("race_id", raceIds)
+      .order("race_id")
       .range(from, from + 999);
+    if (error) throw new Error(`race_results取得エラー: ${error.message}`);
     if (!data?.length) break;
     results.push(...data);
     if (data.length < 1000) break;
@@ -233,11 +249,12 @@ async function legacyTechniqueProfile(raceId) {
 }
 
 async function legacyReturnRate(raceId) {
-  const { data: entries } = await supabase
+  const { data: entries, error: entriesError } = await supabase
     .from("race_entries")
     .select("boat_number, player_name, racer_id")
     .eq("race_id", raceId)
     .order("boat_number");
+  if (entriesError) throw new Error(`race_entries取得エラー: ${entriesError.message}`);
   if (!entries?.length) return [];
   const racerIds = [...new Set(entries.map((r) => r.racer_id))].filter(
     (id) => id !== null,
@@ -247,13 +264,16 @@ async function legacyReturnRate(raceId) {
   const cutoff = c180.toISOString().split("T")[0];
   const past = [];
   for (let from = 0; ; from += 1000) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("race_entries")
       .select("race_id, boat_number, racer_id")
       .in("racer_id", racerIds)
       .gte("race_id", cutoff)
       .lt("race_id", raceId)
+      .order("race_id")
+      .order("boat_number")
       .range(from, from + 999);
+    if (error) throw new Error(`race_entries取得エラー: ${error.message}`);
     if (!data?.length) break;
     past.push(...data);
     if (data.length < 1000) break;
@@ -261,12 +281,13 @@ async function legacyReturnRate(raceId) {
   const raceIds = [...new Set(past.map((e) => e.race_id))];
   const results = [];
   for (let i = 0; i < raceIds.length; i += 500) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("race_results")
       .select(
         "race_id, rank1, rank2, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race",
       )
       .in("race_id", raceIds.slice(i, i + 500));
+    if (error) throw new Error(`race_results取得エラー: ${error.message}`);
     results.push(...(data ?? []));
   }
   const resultById = new Map(results.map((r) => [r.race_id, r]));

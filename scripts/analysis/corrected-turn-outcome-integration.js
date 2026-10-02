@@ -3,7 +3,7 @@
  * 最新データで patterns配列が確実に存在する期間を分析
  */
 
-import { supabase } from "../lib/supabaseClient.js";
+import { fetchAll } from "../lib/supabaseClient.js";
 import fs from "fs/promises";
 
 console.log(`\n=== 修正版: 展開予測パターン × 出目分布統合分析 ===`);
@@ -16,15 +16,9 @@ console.log(`\n分析期間: ${startDate} ～ ${endDate}`);
 console.log(`（最新データでpatternsが保存されている期間）`);
 console.log(`データ取得中...`);
 
-let allData = [];
-let offset = 0;
-const pageSize = 1000;
-
-while (true) {
-  const { data: pageData, error } = await supabase
-    .from("predictions")
-    .select(
-      `
+const allData = await fetchAll(
+  "predictions",
+  `
       race_id,
       model_id,
       feature_contributions,
@@ -33,23 +27,14 @@ while (true) {
         race_results(rank1, rank2, rank3, payout_trifecta, payout_trio)
       )
     `,
-    )
-    .eq("model_id", "standard")
-    .gte("races.race_date", startDate)
-    .lte("races.race_date", endDate)
-    .range(offset, offset + pageSize - 1);
-
-  if (error) {
-    console.error(`エラー: ${error.message}`);
-    break;
-  }
-
-  if (!pageData || pageData.length === 0) break;
-
-  allData = allData.concat(pageData);
-  offset += pageSize;
-  console.log(`  取得済み: ${allData.length}件`);
-}
+  (q) =>
+    q
+      .eq("model_id", "standard")
+      .gte("races.race_date", startDate)
+      .lte("races.race_date", endDate)
+      .order("race_id")
+      .order("model_id"),
+);
 
 console.log(`\n合計データ: ${allData.length}件`);
 

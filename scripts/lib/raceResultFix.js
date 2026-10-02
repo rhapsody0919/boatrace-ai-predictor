@@ -52,7 +52,7 @@ export const FIX_EXTRA_COLUMNS = Object.freeze([
  * @param {Record<string, unknown>} existingRow race_results の現在の行（FIX_RESULT_COLUMNS・FIX_EXTRA_COLUMNS の列を含む）
  * @param {Record<string, unknown>} newRow buildRaceResultRow が作った行（再取得した結果ページ由来）
  * @param {NonNullable<ReturnType<import("./raceResultRows.js").toLegacyResult>>} parsed
- * @param {{results: boolean, timings: boolean, payouts: boolean}} schema マイグレーション078・077・079の適用状況
+ * @param {{results: boolean, timings: boolean, payouts: boolean, officialRow?: boolean}} schema マイグレーション078・077・079・119の適用状況
  */
 export function buildFixPlan(existingRow, newRow, parsed, schema) {
   const columns = schema.results
@@ -73,7 +73,10 @@ export function buildFixPlan(existingRow, newRow, parsed, schema) {
     resultUpdate: update,
     // 艇別・払戻明細は、対応するマイグレーションの適用済みのときだけ。全行を書く（既存行との差分は upsert が吸収する）
     timingRows: schema.timings
-      ? buildTimingRows(newRow.race_id, parsed, { extended: true })
+      ? buildTimingRows(newRow.race_id, parsed, {
+          extended: true,
+          officialRow: schema.officialRow === true,
+        })
       : [],
     payoutRows: schema.payouts ? buildPayoutRows(newRow.race_id, parsed) : [],
   };

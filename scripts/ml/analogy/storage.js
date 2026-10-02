@@ -10,7 +10,7 @@
  *
  * 使い方:
  *   node scripts/ml/analogy/storage.js upload-model     # out/ → {version}/
- *   node scripts/ml/analogy/storage.js download-active  # is_active の版 → out/prev/（無ければ何もしない）
+ *   node scripts/ml/analogy/storage.js download-reference  # 参照版（reference.json）→ out/reference/
  */
 
 import fs from "fs/promises";
@@ -34,6 +34,20 @@ const OUT =
   process.env.ANALOGY_DATA_DIR ||
   path.join(__dirname, "../../../data/ml/analogy");
 const OUT_DIR = path.join(OUT, "out");
+const REFERENCE_FILE = path.join(__dirname, "reference.json");
+
+/** 品質ゲートの比較の相手（reference.json）。未設定なら null（初回） */
+async function referenceVersion() {
+  try {
+    return (
+      JSON.parse(await fs.readFile(REFERENCE_FILE, "utf8")).model_version ||
+      null
+    );
+  } catch (e) {
+    if (e.code === "ENOENT") return null;
+    throw e;
+  }
+}
 
 export async function ensureBucket() {
   const { data: buckets, error: listError } =
@@ -88,10 +102,12 @@ async function pruneModels(active) {
     limit: 1000,
   });
   if (error) throw new Error(`Storage の一覧取得に失敗: ${error.message}`);
+  const reference = await referenceVersion();
   const old = versionsToPrune(
     data.map((e) => e.name),
     active,
     KEEP_MODEL_VERSIONS,
+    reference ? [reference] : [],
   );
   for (const v of old) {
     const keys = MODEL_FILES.map((n) => `${v}/${n}.gz`);
@@ -101,26 +117,20 @@ async function pruneModels(active) {
   }
 }
 
-async function downloadActive() {
-  const { data, error } = await supabase
-    .from("analogy_models")
-    .select("model_version")
-    .eq("is_active", true);
-  if (error)
-    throw new Error(`analogy_models の読み取りに失敗: ${error.message}`);
-  if (!data.length) {
-    console.log("  is_active の版が無い（初回）。前の版との比較は省く");
+async function downloadReference() {
+  const version = await referenceVersion();
+  if (!version) {
+    console.log("  参照版が未設定（初回）。参照版との比較は省く");
     return;
   }
-  const version = data[0].model_version;
-  const dir = path.join(OUT_DIR, "prev");
+  const dir = path.join(OUT_DIR, "reference");
   await fs.mkdir(dir, { recursive: true });
-  for (const name of ["model_win.txt", "train_meta.json"]) {
+  for (const name of MODEL_FILES) {
     const key = `${version}/${name}.gz`;
     const { data: blob, error: dlError } = await supabase.storage
       .from(BUCKET)
       .download(key);
-    // 表示中の版のモデルが無いのは異常（品質ゲートの比較が黙って省かれる）なので失敗させる
+    // 参照版のモデルが無いのは異常（品質ゲートの比較が黙って省かれる）なので失敗させる
     if (dlError)
       throw new Error(`${key} が Storage にありません: ${dlError.message}`);
     const buf = zlib.gunzipSync(Buffer.from(await blob.arrayBuffer()));
@@ -133,10 +143,10 @@ async function main() {
   if (!isSupabaseEnabled()) throw new Error("Supabase 環境変数が未設定です");
   const cmd = process.argv[2];
   if (cmd === "upload-model") await uploadModel();
-  else if (cmd === "download-active") await downloadActive();
+  else if (cmd === "download-reference") await downloadReference();
   else
     throw new Error(
-      "使い方: node scripts/ml/analogy/storage.js <upload-model|download-active>",
+      "使い方: node scripts/ml/analogy/storage.js <upload-model|download-reference>",
     );
 }
 

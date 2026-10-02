@@ -3,6 +3,7 @@ import {
   TRIFECTA_PAYOUT_COLUMN,
   aggregateOutcomeDistribution,
 } from "../lib/outcomeDistribution.js";
+import { NOT_NO_RACE_FILTER } from "../lib/raceOutcomeFilters.js";
 
 const VENUE_NAMES = {
   "01": "桐生",
@@ -58,16 +59,17 @@ async function fetchAllRaceResults() {
       .from("race_results")
       .select(`race_id, rank1, rank2, rank3, ${TRIFECTA_PAYOUT_COLUMN}`)
       .eq("is_cancelled", false)
-      .eq("is_no_race", false)
+      .or(NOT_NO_RACE_FILTER) // 不成立は race_status で外す（is_no_race は全行 false。BOA-545）
       .not("rank1", "is", null)
       .not("rank2", "is", null)
       .not("rank3", "is", null)
       .gte("race_id", ninetyDaysAgo)
+      .order("race_id")
       .range(from, from + pageSize - 1);
 
     if (error) {
-      console.error("レース結果取得エラー:", error.message);
-      return null;
+      // 失敗を「データなし」（exit 0）にしない。古い統計が残ったまま成功扱いになるため（BOA-391）
+      throw new Error(`レース結果取得エラー: ${error.message}`);
     }
 
     if (!data || data.length === 0) {
