@@ -797,6 +797,64 @@ describeFR("FR-4", "今節・枠別情報タブ", () => {
     expect(rings.every(Boolean), JSON.stringify(rings)).toBe(true);
   });
 
+  // PR #1187 ファン評価3周目: 得点率・順位のセルは右の余白が0で、数字が金枠の線に接していた
+  test("[plan §6] 今節の最良の数字が金枠の線に接しない", async ({ page }) => {
+    await openRaceDetail(page);
+    await openTab(page, "今節");
+    await installHelpers(page);
+    const gaps = await page
+      .getByRole("table")
+      .first()
+      .evaluate((table) =>
+        [...table.querySelectorAll("tbody td")]
+          .filter((td) => window.__acc.isBest(td))
+          .map((td) => {
+            const range = document.createRange();
+            range.selectNodeContents(td);
+            const text = range.getBoundingClientRect();
+            const cell = td.getBoundingClientRect();
+            return Math.round((cell.right - text.right) * 10) / 10;
+          }),
+      );
+    test.skip(gaps.length === 0, "6艇の今節の表に最良のセルが無い");
+    expect(
+      gaps.every((g) => g >= 2),
+      JSON.stringify(gaps),
+    ).toBe(true);
+  });
+
+  // PR #1187 ファン評価3周目: 凡例の「走数が少ない⚠の艇には色を付けない」の⚠が表に無かった
+  test("[plan §6] ST考察の走数が少ない艇は走数に⚠が付き、差に緑・赤が付かない", async ({
+    page,
+  }) => {
+    await openRaceDetail(page);
+    await openTab(page, "枠別情報");
+    const all = await collectBoatLines(page);
+    // コース別成績の表にも「走数」の列があるので、安定率の行と同じ表に絞る
+    const stable = all.find((l) => /安定率/.test(l.label));
+    test.skip(!stable, "ST考察の表が見つからない");
+    const lines = all.filter((l) => l.table === stable.table);
+    const runs = lines.find((l) => /走数/.test(l.label));
+    test.skip(!runs, "ST考察の走数の行が見つからない");
+    const smallIdx = runs.cells
+      .map((c, i) => {
+        const n = parseNum(c.text.replace("⚠", ""));
+        return n !== null && n > 0 && n < 6 ? i : -1;
+      })
+      .filter((i) => i >= 0);
+    test.skip(smallIdx.length === 0, "走数が少ない艇がいない");
+    for (const i of smallIdx) {
+      expect(runs.cells[i].text, "走数に⚠が無い").toContain("⚠");
+      for (const l of lines.filter((x) => /安定率|抜出|出遅率/.test(x.label))) {
+        const c = l.cells[i];
+        expect(
+          c.good || c.bad,
+          `ST考察「${l.label}」の走数が少ない艇に色: ${c.text}`,
+        ).toBe(false);
+      }
+    }
+  });
+
   // plan §6（PR #1187 ファン評価1周目 P1）: ST考察の指標はコースで水準が違い、生の値の
   // 最良はほぼ内側の艇に付く。カードの見方は「同コース・同級別の平均との差」なので金枠を付けない
   test("[plan §6] 枠別情報のST考察には最良の金枠を付けない", async ({

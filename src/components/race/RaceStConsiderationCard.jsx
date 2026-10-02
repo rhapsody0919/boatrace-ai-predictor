@@ -225,7 +225,22 @@ function RaceStConsiderationCard({
                 </th>
                 {columns.map(({ player, stats }) => (
                   <td key={player.number} className="rsc-cell rsc-cell-meta">
-                    <span className="rsc-runs">{stats?.n ?? "—"}</span>
+                    <span
+                      className={`rsc-runs${
+                        (stats?.n ?? 0) > 0 && stats.n < SMALL_SAMPLE_THRESHOLD
+                          ? " is-small-sample"
+                          : ""
+                      }`}
+                    >
+                      {/* 走数が少ない艇は平均との差に色を付けない（diffTone）。凡例の
+                          「⚠の艇」が表のどこか分かるよう、走数に⚠を付ける
+                          （PR #1187 ファン評価3周目。コース別成績の走数と同じ印） */}
+                      {(stats?.n ?? 0) > 0 &&
+                        stats.n < SMALL_SAMPLE_THRESHOLD && (
+                          <span title={t("wakuInfo.smallSampleTitle")}>⚠</span>
+                        )}
+                      {stats?.n ?? "—"}
+                    </span>
                   </td>
                 ))}
               </tr>

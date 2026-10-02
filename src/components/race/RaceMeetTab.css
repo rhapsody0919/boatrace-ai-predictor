@@ -188,6 +188,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 最良の金枠（内側1pxの線）に数字が接しないよう、得点率・順位のセルの右に余白を取る。
+   列の数字の右端がそろうよう、金枠の有無によらず付ける（PR #1187 ファン評価3周目。
+   前検は表の右端でカードの余白がある） */
+.rmt-compare td.rmt-rate,
+.rmt-compare td.rmt-rank,
+.rmt-compare td.rmt-pretest {
+  padding-right: var(--spacing-1);
+}
+
 .rmt-warn {
   color: var(--color-warning-text);
   margin-right: 2px;
