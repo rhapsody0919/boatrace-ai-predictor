@@ -125,6 +125,18 @@ Disk IO の見積り:
 
 元の列: 長期は `kb_archive_boats.national_win_rate`・`class`、本体は `race_entries.win_rate`・`grade`。今日のレースは `analogy_race_conditions(race_id)` が `race_entries` から作る（6艇そろわなければ0行）。
 
+任意の3列（Q6「ほかのテーマでも絞る」。自動の深さには使わない）:
+
+| 列 | 定義（features.py・cm2.py と同じ） |
+|---|---|
+| `round` | yosen／junyu／yusho／other、ステージが無ければ NULL。本体は `race_conditions.race_stage` を `analogy_round_from_stage`（`getRaceStageCategory` と同じ順の部分一致。予選・予選の特別戦 → yosen、準優勝戦 → junyu、優勝戦 → yusho、ほか → other）、長期は `kb_archive_races.stage_kind` |
+| `grade` | ippan／G3／G2／G1／SG、不明は NULL。長期は `kb_archive_venue_days.race_grade`、本体は `races.race_grade`。どちらも無ければ `race_series` の期間で補う（`analogy_grade_of`） |
+| `b1_motor_band` | 1号艇のモーター2連率の6艇内順位（高い順、同率は上の順位）で 0=1〜2位・1=3〜4位・2=5〜6位・3=不明。本体は `race_entries.motor_2rate`、長期は `kb_archive_boats.motor_2rate` |
+
+- ラウンドの規則は JS（`raceStageConfig.js`）・Python（`features.py`）・SQL の3か所にある。SQL と JS の一致は PGlite の検証が固定の文字列30通りで、Python と JS の一致は `scripts/ml/analogy/tests/test_features.py` が検査する
+- 今日のレースの値は `analogy_race_extras(race_id)` が表示のたびに作る。3列とも朝の初期化（JST 5時台、`generate-predictions.js` の races・race_conditions・race_entries の upsert）で入る。2026-09-28〜10-02 の 768R で3列とも埋まっていた（本番の読み取り、2026-10-02）。7:30 のスナップショットより前にそろう
+- 2025-12〜2026-01 は本体のモーター2連率が約20%しか無く（MD-2）、この期間の行は多くが帯3（不明）になる。帯3の行はモーターで絞った層に入らない
+
 ### 値の約束（BOA-635 の依頼 R1〜R4・D-5、ADR-0080 から引き継ぎ）
 - `payout_3tan` は3連単の払戻。本体は `race_results.payout_trio`（列名と券種が逆。`payout_trifecta` は3連複）
 - `st_by_course`: フライング・出遅れのコースと、進入が分からない艇は NULL
@@ -133,13 +145,15 @@ Disk IO の見積り:
 - 決まり手は6分類（逃げ・差し・まくり・まくり差し・抜き・恵まれ）。それ以外（本体の「逃げ抜き」等）・不明は NULL で、母集団には入れる（分析と同じ）
 - PGlite の検証（verify-analogy-strata-migration.js）がこれらを固定データで固定している
 
-### get_analogy_similar(p_race_id, p_depth)
+### get_analogy_similar(p_race_id, p_depth, p_round, p_grade, p_motor)
 - `p_depth` を省略すると自動の深さ（件数が200以上になる最も深い層。m=200）。1〜4 を渡すとその層（条件チップ）
-- スナップショットがあり、深さが自動の深さなら、保存した分布をそのまま返す（時点固定）。それ以外は `pool_cutoff` 以前の母集団で数え直す
+- `p_round`・`p_grade`・`p_motor`（既定 false）を true にすると、今日のレースと同じ値の行だけに絞る（今の深さの上に重ねる）。今日のレースの値が分からない条件を true にすると例外（API は 400）
+- スナップショットがあり、深さが自動の深さで、任意の条件がすべてオフなら、保存した分布をそのまま返す（時点固定）。それ以外は `pool_cutoff` 以前の母集団で数え直す
 - スナップショットが無いレースは、出走表から条件を作り、その日より前の母集団で数える（`snapshot: false`）
-- 返す jsonb: `race_id`・`snapshot`・`snapshot_at`・`from_snapshot`・`conditions`・`depth`・`auto_depth`・`n_by_depth`（深さ1〜4）・`pool_from`・`pool_cutoff`・`n`・`technique`・`winner_boat`・`winner_course`・`trifecta`（全組み合わせ）・`course_flow`（「1着の進入-2着の進入|決まり手」の件数、FR-3 のコールアウト用）・`recent`（同じ層の新しい順20件）
-- 割合は返さない。画面が件数÷n で出す（ADR-0082 決定6。ユーザー確認待ち。平滑化を採ったら、親の層の件数を足す）
-- SECURITY INVOKER・STABLE・`statement_timeout 5s`。匿名が EXECUTE できるのは、この RPC と中で呼ぶ読み取りの関数5本（`check-anon-access.js` の ANON_RPCS に足した）
+- 返す jsonb: `race_id`・`snapshot`・`snapshot_at`・`from_snapshot`・`conditions`・`depth`・`auto_depth`・`n_by_depth`（深さ1〜4）・`pool_from`・`pool_cutoff`・`n`・`technique`・`winner_boat`・`winner_course`・`trifecta`（全組み合わせ）・`course_flow`（「1着の進入-2着の進入|決まり手」の件数、FR-3 のコールアウト用）・`recent`（同じ層の新しい順20件）・`extras`（今日のレースの round・grade・b1_motor_band）・`filters`（オンにした任意の条件）・`n_if_added`（今の層にそれぞれ足したときの件数。足せない条件は null）
+- 割合は返さない。画面が件数÷n で出す（ADR-0082 決定6。2026-10-02 ユーザー回答 Q5 で確定）
+- SECURITY INVOKER・STABLE・`statement_timeout 5s`。匿名が EXECUTE できるのは、この RPC・BOA-635 の RPC と中で呼ぶ読み取りの関数11本（`check-anon-access.js` の ANON_RPCS に足した）
+- 任意の条件で絞る層は索引に載らない（4条件の層を読んでから絞る）。深さ1の層は最大で母集団の約2割（約8万行）。適用後に深さ1＋任意の3条件で EXPLAIN (ANALYZE) を取り、5秒の上限に余裕があるか確かめる
 
 ## スクリプト構成と実行タイミング
 
@@ -166,7 +180,7 @@ Disk IO の見積り:
 | エンドポイント | 中身 | キャッシュ |
 |---|---|---|
 | `GET /api/analogy/contribution?…`（実装済み） | FR-1 | 実装どおり |
-| `GET /api/analogy/similar/[raceId]?depth=` | `get_analogy_similar` の結果 | スナップショットあり・自動の深さ: 締切前 `s-maxage=300`、締切後 `s-maxage=86400`。深さ指定・スナップショット無し: `s-maxage=300`。NULL・エラーは `no-store` |
+| `GET /api/analogy/similar/[raceId]?depth=&round=1&grade=1&motor=1` | `get_analogy_similar` の結果。`round`・`grade`・`motor` は任意の条件（1 でオン） | スナップショットあり・自動の深さ・任意の条件なし: 締切前 `s-maxage=300`、締切後 `s-maxage=86400`。それ以外: `s-maxage=300`。足せない条件の指定は 400。NULL・エラーは `no-store` |
 
 既存の公開 API と同じく Edge 関数で、PostgREST の RPC を anon key で呼ぶ。API が失敗したら画面は PostgREST の RPC を直接呼ぶ（`getOutcomeDistribution` と同じ流儀）。
 
