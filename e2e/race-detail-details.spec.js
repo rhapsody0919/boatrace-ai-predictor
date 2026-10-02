@@ -259,6 +259,17 @@ test.describe("レース詳細の表示の細部", () => {
         const rightLimit = w.right - (hasMore ? 40 : 0);
         if (label.left - w.left > 0.5)
           return `label-gap ${label.left - w.left}`;
+        // 行見出しの右端で途中まで隠れた列が無い（右端まで送り切った時を除く。同 3周目）
+        const atMax =
+          wrap.scrollLeft >= wrap.scrollWidth - wrap.clientWidth - 1;
+        if (!atMax) {
+          for (const head of wrap.querySelectorAll(".rwit-grid-course-th")) {
+            const r = head.getBoundingClientRect();
+            if (r.left < label.right - 0.5 && r.right > label.right + 0.5) {
+              return `straddle ${head.textContent.trim()} ${Math.round(r.left)}-${Math.round(r.right)} / ${Math.round(label.right)}`;
+            }
+          }
+        }
         return c.right <= rightLimit + 0.5 && c.left >= label.right - 0.5
           ? "visible"
           : `hidden ${Math.round(c.left)}-${Math.round(c.right)} / ${Math.round(label.right)}-${Math.round(rightLimit)}`;

@@ -253,6 +253,18 @@ function RaceWakuInfoTab({
         target = right - (el.clientWidth - FADE_WIDTH);
       }
       if (left - labelWidth < target) target = left - labelWidth;
+      // 送り先は列の境目にそろえる。列の途中で止まると、固定の行見出しのすぐ右に、隠れかけた
+      // 列の切れ端（見出しの白い帯や数字の欠片）が残った（#1130 ファン評価3周目）。
+      // 行見出しの右端に掛かる列があれば、その列を丸ごと隠す位置まで送る
+      for (const head of el.querySelectorAll(".rwit-grid-course-th")) {
+        const r = head.getBoundingClientRect();
+        const colLeft = r.left - box.left + el.scrollLeft;
+        const colRight = colLeft + r.width;
+        if (colLeft < target + labelWidth && colRight > target + labelWidth) {
+          target = colRight - labelWidth;
+          break;
+        }
+      }
       el.scrollLeft = Math.min(maxScroll, Math.max(0, target));
       updateGridScroll();
     });
