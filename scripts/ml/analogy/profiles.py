@@ -143,7 +143,8 @@ def slice_profiles(keys: pd.DataFrame, contribs: list[np.ndarray], feats: list[s
         shares = {tk: float(shares_by_seed[0][tk][j]) for tk, _ in gidx}
         sd = None
         if sd_all is not None:
-            # 日が1日しかないセルはブートストラップの SD が出ない（NaN）。その場合は seed の分だけ
+            # ブートストラップの SD が NaN（抽出された回が1回以下）のセルは seed の分だけにする。
+            # 日が1〜3日しかないセルの日単位の SD は 0 か過小になりやすい（その日が出た回は同じ値）
             sd = {tk: float(np.nan_to_num(sd_all[j, t], nan=seed_sd[j, t] if seed_sd is not None
                                           else 0.0))
                   for t, tk in enumerate(theme_keys)}
