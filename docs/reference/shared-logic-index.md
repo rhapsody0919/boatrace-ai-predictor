@@ -56,6 +56,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/dataHealth/job.js` | 汎用の日次監視 data_health（完了の定義C）の実行。api/cron/data-health.js が、共通ラッパ | createRpcCaller, readDeliveredKeys, runDataHealthChecks, runDataHealthJob, DATA_HEALTH_JOB ほか1件 |
 | `scripts/lib/dateUtils.js` | 日付ユーティリティ（バックエンド用） | getTodayDateJST, getYesterdayDateJST, getDateDaysAgo, formatDateForUrl, parseDateArg ほか5件 |
 | `scripts/lib/deployHookPolicy.js` | Vercel Deploy Hook を叩くかどうかの判定（BOA-361）。 | decideDeployHook, DEPLOY_HOOK_WINDOW_MINUTES |
+| `scripts/lib/disqualifiedFinishMark.js` | BOA-582(2): 失格（Kファイルの成績コード S0〜S2）の艇の着欄（finish_mark）を、結果ページから決める（純関数）。 | buildDisqualifiedMarkRows, DISQUALIFIED_MARKS, isDisqualifiedCode |
 | `scripts/lib/erDiagramFromDdl.js` | docs/db-migration/ のSQL DDLからmermaid erDiagramを機械的に導出する。 | parseTablesFromSql, findLinkedMigrations, buildMermaidErDiagram, DB_MIGRATION_DIR, DESIGN_DIR |
 | `scripts/lib/fakeSupabaseClient.js` | 検証用の偽のSupabaseクライアント（メモリ上のテーブル。DB・ネットワークに接続しない）。 | fakeClient |
 | `scripts/lib/fanPeriodParser.js` | 公式「レーサー期別成績」ファイル（fan）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | parseFanId, fanIdOf, buildFanUrl, fanArchiveRelPath, listFanIds ほか14件 |
@@ -75,7 +76,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/isotonic-regression.js` | — | IsotonicCalibrator |
 | `scripts/lib/kbArchiveRows.js` | K/B中間形式（kb-day/v1）→ アーカイブ表（kb_archive_*）の行への変換 | raceTimeToSeconds, classifyStage, buildArchiveRows, KB_ARCHIVE_TABLES |
 | `scripts/lib/kbFileParser.js` | 公式ダウンロードデータ（Kファイル=競走成績、Bファイル=番組表）の全項目パーサー | buildKbUrl, kbArchiveRelPath, decodeLzhText, decodeLzhBytes, classifyKFileVenues ほか9件 |
-| `scripts/lib/kbGapFill.js` | K/Bファイル（kb-day/v1。kb-backfill.js parse の出力）から、本体テーブルの欠落を補う行を作る（純関数）。 | assertColumnSet, buildStartTimingRows, buildExhibitionRows, normalizeKStage, buildConditionsRows ほか5件 |
+| `scripts/lib/kbGapFill.js` | K/Bファイル（kb-day/v1。kb-backfill.js parse の出力）から、本体テーブルの欠落を補う行を作る（純関数）。 | assertColumnSet, buildStartTimingRows, buildExhibitionRows, normalizeKStage, buildConditionsRows ほか6件 |
 | `scripts/lib/kbResultsBackfillRows.js` | K/Bアーカイブ（kb-day/v1、scripts/lib/kbFileParser.js）から race_results の欠損行を | classifyMissingResult, buildRaceFactsForDay, buildRaceResultRow, MISSING_STATUS |
 | `scripts/lib/kelly-criterion.js` | — | kellyFraction, halfKelly, quarterKelly |
 | `scripts/lib/kfileParser.js` | 公式成績ファイル（Kファイル）のダウンロード・解凍・パース（BOA-257） | fetchKFileText, parseKFileText, parseKFileRankings, _internal |
@@ -116,7 +117,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceResultFix.js` | 既存の race_results の誤り（Q6）を、公式の結果ページの再取得で修正するための計画づくりと書き込み。 | buildFixPlan, applyFixPlan, FIX_RESULT_COLUMNS, FIX_EXTRA_COLUMNS |
 | `scripts/lib/raceResultParser.js` | 公式の結果ページ（boatrace.jp raceresult）の全項目パーサー（純関数。DB・取得先に接続しない） | parseRaceSeconds, parseStartCell, classifyRaceStatus, parseRaceResultPage, RESULT_PARSER_VERSION ほか2件 |
 | `scripts/lib/raceResultRows.js` | 結果ページの全項目（scripts/lib/raceResultParser.js）から、DBへ書く行・旧形式の解析結果を作る（純関数）。 | toLegacyResult, buildResultExtras, buildTimingRows, buildPayoutRows |
-| `scripts/lib/raceResultSchema.js` | 結果系の新しい列・テーブル（マイグレーション077〜079）が、接続先のDBに適用済みかの判定。 | detectResultSchema, clearResultSchemaCache, RESULT_SCHEMA_TARGETS, SCHEMA_CACHE_TTL_MS |
+| `scripts/lib/raceResultSchema.js` | 結果系の新しい列・テーブル（マイグレーション077〜079・119）が、接続先のDBに適用済みかの判定。 | detectResultSchema, clearResultSchemaCache, RESULT_SCHEMA_TARGETS, SCHEMA_CACHE_TTL_MS |
 | `scripts/lib/raceSchedule.js` | レーススケジュール管理モジュール | getRaceSchedule, getRacesInWindow, getRacesAfterStart, getRacesPastResultWindow, getRacesBeforeStart |
 | `scripts/lib/raceSeriesJob.js` | 節（race_series、マイグレーション084）の定期取得。共通ラッパ向けハンドラー（api/cron/race-series.js）。 | runRaceSeriesJob, RACE_SERIES_EXPECTED_VENUES |
 | `scripts/lib/raceSeriesLookup.js` | 節（race_series、マイグレーション084）から「その日が節の何日目か」を導く（BOA-501）。 | deriveSeriesDay, indexSeriesByVenue, findSeriesFor, hasCancellationBefore, buildSeriesDayByVenue ほか2件 |
@@ -217,6 +218,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/formatters.js` | フォーマット関数 | formatCapturedAtJst, formatPercent, formatDate, formatDateLocalized, formatDateShort ほか4件 |
 | `src/utils/meetGrouping.js` | meetGrouping - 節（開催）のグルーピング共通ロジック | groupIntoCurrentMeet, groupIntoMeetBeforeRace, findMeetStartDate |
 | `src/utils/motorGeneration.js` | モーターの世代（入れ替え単位）の判定。 | currentMotorGenerationStart, isInMotorGeneration, formatGenerationDate, isClippedByGeneration, officialTallyState |
+| `src/utils/nextOpenDate.js` | 非開催会場の「次開催日」を節（race_series）から求める（BOA-225）。 | computeNextOpenDates, formatMonthDay |
 | `src/utils/pitReportUrl.js` | ピットレポート（選手コメント）の公式URL導出と、取得対象レースの判定（BOA-379） | buildPitReportUrl, isPitReportCandidate, PIT_REPORT_GRADES, PIT_REPORT_MIN_RACE_NUMBER_NON_SG |
 | `src/utils/pretestRows.js` | 前検タイム（`motor_pretest_stats`）の行の選び方（BOA-451 / phase a FR-4a） | shiftDate, pickFirstPretestByRacer, pickMeetPretestByRacer, pickLatestPretestByRacer, PRETEST_LOOKBACK_DAYS |
 | `src/utils/prevResult.js` | 前走（今節）の1マスの読み方（BOA-569 → BOA-610）。データ出走表（raceIndicators.jsx）と | finishMarkKeyOf, meetPrevRunState, meetPrevRunWhenParams |
@@ -226,10 +228,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/raceOutcome.js` | レースの成立状態（通常・一部返還・不成立）と、返還艇・的中判定の可否を1箇所で決める（BOA-543）。 | getRaceOutcomeState, getRefundBoats, isBoatRefunded, isJudgeable, isBetJudgeable ほか10件 |
 | `src/utils/raceStatus.js` | レース単位の状態（締切前/締切後・結果反映待ち/結果確定）を判定する。 | getRaceStatus, RACE_STATUS |
 | `src/utils/raceTimeOfDay.js` | 1Rの発走時刻から開催時間帯（モーニング/デイ/サマータイム/ナイター/ミッドナイト）を | getTimeOfDay, getVenueTimeOfDay, TIME_OF_DAY |
+| `src/utils/raceUrlState.js` | レース詳細の「どのタブ・どの艇を見ているか」を URL のクエリに載せる（BOA-493）。 | parseBoatParam, pageViewPath, RACE_TAB_PARAM, RACE_BOAT_PARAM |
 | `src/utils/racerIndexPolicy.js` | 選手ページ（/racer/:racerId）を検索エンジンにインデックスさせるかの判定（集客レーン、2026-10-02）。 | isRacerIndexable, RACER_INDEX_GRADES, RACER_INDEX_ACTIVE_DAYS |
 | `src/utils/racerName.js` | 出走表の選手名（「丹下」「将」の間を全角スペース3つで詰めた表記）を姓と名に分ける。 | splitRacerName |
 | `src/utils/sgNowVenues.js` | トップの「SG開催中」帯に出す会場を決める（集客レーン、2026-10-02）。 | getSgNowVenues |
-| `src/utils/share.js` | SNSシェア関数 | shareRacePredictionToX, shareHitRaceToX, shareDailyStatsToX, generatePredictionShareText, generateTurnHitShareText |
+| `src/utils/share.js` | SNSシェア関数 | shareUrlFor, shareRacePredictionToX, shareHitRaceToX, shareDailyStatsToX, generatePredictionShareText ほか1件 |
 | `src/utils/smallSampleRate.js` | 出走数が少ないときの率の出し方（BOA-513、2026-09-29 ファン4人のパネルで決定）。 | formatRateOrCount, powerIndexTone, formatPowerIndex |
 | `src/utils/stConsideration.js` | ST考察（安定率・出遅率・抜出）の算出（phase a FR-1） | deriveRaceStContext, computeStConsideration, computeStHistogram, getStHistory, STABLE_THRESHOLD ほか3件 |
 | `src/utils/theme.js` | — | getTheme, setTheme, subscribe |
@@ -268,4 +271,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 233 ファイル / export 1144 件。
+対象 236 ファイル / export 1155 件。

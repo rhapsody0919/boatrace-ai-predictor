@@ -188,14 +188,31 @@ function evaluateBackfill(g, kb) {
   const day = kb.buildKbDay({ date: DATE, kText: K_TEXT, bText: "" });
   const rows = g.buildFinishCodeRows(
     day,
+    // 既存の行の3列（BOA-582 で着欄・着も同じ回に埋めるようになった）。1号艇は3列とも値あり（K の 01 と食い違う値。
+    // 既存の値を上書きしないことを、値が変わるかで確かめるため）、2号艇は全部 NULL
     new Map([
-      [`${S1_RACE}|1`, "01"],
-      [`${S1_RACE}|2`, null],
+      [
+        `${S1_RACE}|1`,
+        { official_finish_code: "06", finish_mark: "6", finish_rank: 6 },
+      ],
+      [
+        `${S1_RACE}|2`,
+        { official_finish_code: null, finish_mark: null, finish_rank: null },
+      ],
     ]),
   );
+  // 2号艇は失格（S1）なので、着欄・着は K から決まらず NULL のまま
   if (
     show(rows) !==
-    show([{ race_id: S1_RACE, boat_number: 2, official_finish_code: "S1" }])
+    show([
+      {
+        race_id: S1_RACE,
+        boat_number: 2,
+        official_finish_code: "S1",
+        finish_mark: null,
+        finish_rank: null,
+      },
+    ])
   )
     failed.push(
       `(c) 既存の行の NULL だけ（行の無い艇・値のある行は作らない） ${show(rows)}`,
@@ -223,7 +240,12 @@ const kb = await import("../lib/kbFileParser.js");
   );
   // 日次（テキスト）と過去分（kb-day）が同じ値を返す
   const day = kb.buildKbDay({ date: DATE, kText: K_TEXT, bText: "" });
-  const all = new Map(rows.map((r) => [`${r.race_id}|${r.boat_number}`, null]));
+  const all = new Map(
+    rows.map((r) => [
+      `${r.race_id}|${r.boat_number}`,
+      { official_finish_code: null, finish_mark: null, finish_rank: null },
+    ]),
+  );
   const back = g.buildFinishCodeRows(day, all);
   check(
     "(c) 過去分の経路（kb-day）と日次の経路（テキスト）は、144艇とも同じ値",
@@ -283,8 +305,8 @@ for (const [label, rel, from, to, run] of [
   [
     "過去分: 既存の値を上書きする",
     "scripts/lib/kbGapFill.js",
-    "if (!codeByKey.has(key) || codeByKey.get(key) !== null) continue;",
-    "if (!codeByKey.has(key)) continue;",
+    "official_finish_code: before.official_finish_code ?? code,",
+    "official_finish_code: code,",
     (m) => evaluateBackfill(m, kb),
   ],
 ]) {

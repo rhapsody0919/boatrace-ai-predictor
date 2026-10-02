@@ -11,7 +11,6 @@ const DEFAULT_META = {
     "龍神レーダー - 無料のボートレースAI予想＆データ分析",
   'meta[property="og:description"]':
     "45項目のデータをAIが分析するボートレース予測サービス。高精度なレース展開分析を完全無料・登録不要で今すぐ使えます。",
-  'meta[property="og:url"]': "https://www.boat-ai.jp/",
   'meta[property="og:image"]': "https://www.boat-ai.jp/ogp-image.png",
   'meta[name="twitter:title"]':
     "龍神レーダー - 無料のボートレースAI予想＆データ分析",
@@ -24,6 +23,9 @@ const DEFAULT_META = {
  * ページ固有のOGP/Twitterカード/keywordsをindex.htmlの静的タグに反映する。
  * アンマウント時（他ページへの遷移時）はデフォルト値に復元する。
  * 値が null/undefined のフィールドはデフォルト値のまま変更しない。
+ *
+ * og:url だけは index.html に静的に置かない（BOA-691。トップ固定だと Facebook 等が
+ * すべての共有をトップとして扱う）。url を渡されたときにタグを作り、離れるときに消す
  */
 export function useSocialMeta({ title, description, url, image, keywords }) {
   useEffect(() => {
@@ -31,7 +33,6 @@ export function useSocialMeta({ title, description, url, image, keywords }) {
       'meta[name="keywords"]': keywords,
       'meta[property="og:title"]': title,
       'meta[property="og:description"]': description,
-      'meta[property="og:url"]': url,
       'meta[property="og:image"]': image,
       'meta[name="twitter:title"]': title,
       'meta[name="twitter:description"]': description,
@@ -43,10 +44,19 @@ export function useSocialMeta({ title, description, url, image, keywords }) {
       document.querySelector(selector)?.setAttribute("content", value);
     });
 
+    let ogUrl = null;
+    if (url != null) {
+      ogUrl = document.createElement("meta");
+      ogUrl.setAttribute("property", "og:url");
+      ogUrl.setAttribute("content", url);
+      document.head.appendChild(ogUrl);
+    }
+
     return () => {
       Object.entries(DEFAULT_META).forEach(([selector, value]) => {
         document.querySelector(selector)?.setAttribute("content", value);
       });
+      ogUrl?.remove();
     };
   }, [title, description, url, image, keywords]);
 }

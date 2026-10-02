@@ -74,6 +74,7 @@
   },
   "venueGrid": {
     "noRacesToday": "No races today",
+    "nextOpen": "Next: {{date}}",
     "nextRace": "Next R{{race}}",
     "allFinished": "All races finished",
     "timeOfDay": {
