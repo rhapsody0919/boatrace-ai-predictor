@@ -6666,9 +6666,10 @@ export const supabaseDataService = {
     // v23: 節の出場者（meetEntrantIds）を足した（BOA-660）
     // v24: 予選中に帰った選手を予選の翌日から外す・過去のレースは後の日付の前検も使う（BOA-674）
     // v26: 途中帰郷を、前の日まで走っていて表示日に1走も無い選手として全日程で外す。
-    //      公式の備考は予選の後だけ使い、その途中帰郷は officialWithdrawn にする
-    //      （v25 は BOA-292 の節ページ #1151 が使う。後からマージされる側は、先に入った番号の次にする）
-    return withCache(`meet-scoreboard-v26-${raceId}`, async () => {
+    //      公式の備考は予選の後だけ使い、その途中帰郷は officialWithdrawn にする（#1149）
+    //      （v25 は BOA-292 の節ページ #1151、v27 は #1151 が取り込み時に使う）
+    // v28: まだ1走もしていない選手（notYetStartedRacerIds）を足した（BOA-690）
+    return withCache(`meet-scoreboard-v28-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7103,6 +7104,26 @@ export const supabaseDataService = {
         // 2シリーズを混ぜて順位を振ると、節内順位・出場人数・準優の目安が
         // すべて実際の勝ち上がり争いとズレる
         seriesRacerIds: currentSeries ? [...currentSeries] : null,
+        // **この節をまだ1走もしていない選手**（BOA-690）。表示中のレースより前に、
+        // 結果の出たレースが1つも無い選手。中止で流れたレースは走ったうちに数えない
+        // （津 9/22 が丸一日中止で、9/23 に初めて走る選手を「走った」と数えていた）。
+        // 「表示中のレース以降に番組がある」には絞らない。絞ると、中止になったレースに
+        // しか番組が無かった選手がどこにも数えられず、人数の足し算が合わなかった
+        // （津 9/21 の 6R〜12R。ファン評価1周目）。全部の走が欠場の選手は、結果の出た
+        // レースに入っているのでここには入らない（absentOnly の側）。
+        // この選手がいる間は順位の対象がそろっていないので、画面は準優の目安を伏せ、
+        // 人数の行に書き足す。追加クエリ0本
+        notYetStartedRacerIds: (() => {
+          const ran = new Set();
+          const all = new Set();
+          for (const e of meetRows) {
+            if (e.racer_id == null) continue;
+            all.add(e.racer_id);
+            if (e.race_id < raceId && resultById.has(e.race_id))
+              ran.add(e.racer_id);
+          }
+          return [...all].filter((id) => !ran.has(id));
+        })(),
         // **節の出場者**（表示日までの出走表に載った選手、当日の番組を含む。BOA-660）。
         // 得点率の母集団（表示中のレースより前に走った選手）で数えると、初日の2Rで
         // 「節の出場は6人」になった。追加クエリ0本
