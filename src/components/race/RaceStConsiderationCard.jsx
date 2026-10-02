@@ -38,6 +38,7 @@ import {
   indexBaseline,
   getBaselineCell,
   diffFromBaseline,
+  diffTone,
   expectedBreakoutCount,
 } from "../../utils/courseBaseline";
 import TermHintButton from "./TermHintButton";
@@ -47,13 +48,15 @@ import "./RaceStConsiderationCard.css";
 /** 差の表示（+12.1 / −10.6）。符号は全角マイナスにせずCSSで色を分ける */
 function formatDiff(diff) {
   if (diff === null || diff === undefined) return null;
+  const abs = Math.abs(diff).toFixed(1);
+  // 表示の桁で0になる差に符号を付けない（「−0.0」と出ていた）
+  if (Number(abs) === 0) return abs;
   const sign = diff > 0 ? "+" : "−";
-  return `${sign}${Math.abs(diff).toFixed(1)}`;
+  return `${sign}${abs}`;
 }
 
-function diffClass(isBetter) {
-  if (isBetter === null || isBetter === undefined) return "";
-  return isBetter ? " is-better" : " is-worse";
+function diffClass(tone) {
+  return tone === "better" ? " is-better" : tone === "worse" ? " is-worse" : "";
 }
 
 function RaceStConsiderationCard({
@@ -105,6 +108,11 @@ function RaceStConsiderationCard({
   });
 
   const loading = columns.every((c) => c.stats === null);
+
+  // このカードには6艇の最良の金枠を付けない（race-detail-ui-unify plan §6）。
+  // 安定率・出遅率・抜出はコースで水準が大きく違い（内ほど安定率が高く出遅率が低い）、
+  // 生の値の最良はほぼ毎回内側の艇に付く。カードの見方は「同じコース・同じ級別の
+  // 平均との差」なので、良し悪しは差の緑・赤で示す（PR #1187 ファン評価1周目 P1）
 
   // --- 折りたたみ（ST分布 / ST履歴）用の派生値 ---
   const detailColumn =
@@ -217,7 +225,22 @@ function RaceStConsiderationCard({
                 </th>
                 {columns.map(({ player, stats }) => (
                   <td key={player.number} className="rsc-cell rsc-cell-meta">
-                    <span className="rsc-runs">{stats?.n ?? "—"}</span>
+                    <span
+                      className={`rsc-runs${
+                        (stats?.n ?? 0) > 0 && stats.n < SMALL_SAMPLE_THRESHOLD
+                          ? " is-small-sample"
+                          : ""
+                      }`}
+                    >
+                      {/* 走数が少ない艇は平均との差に色を付けない（diffTone）。凡例の
+                          「⚠の艇」が表のどこか分かるよう、走数に⚠を付ける
+                          （PR #1187 ファン評価3周目。コース別成績の走数と同じ印） */}
+                      {(stats?.n ?? 0) > 0 &&
+                        stats.n < SMALL_SAMPLE_THRESHOLD && (
+                          <span title={t("wakuInfo.smallSampleTitle")}>⚠</span>
+                        )}
+                      {stats?.n ?? "—"}
+                    </span>
                   </td>
                 ))}
               </tr>
@@ -246,7 +269,9 @@ function RaceStConsiderationCard({
                         {value === null ? "—" : value.toFixed(1)}
                       </span>
                       {diff !== null && (
-                        <span className={`rsc-diff${diffClass(isBetter)}`}>
+                        <span
+                          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small }))}`}
+                        >
                           {formatDiff(diff)}
                         </span>
                       )}
@@ -289,6 +314,20 @@ function RaceStConsiderationCard({
                     cell?.breakout_rate ?? null,
                     stats?.n ?? 0,
                   );
+                  // 平均（期待回数）との差。多いほど良い。期待回数が1回未満で0回の
+                  // ときは色を付けない（外のコースは平均0.2〜0.4回で、0回が普通。
+                  // 赤くすると「抜け出せない選手」と誤読される）
+                  const breakoutDiff =
+                    count === null || expected === null
+                      ? null
+                      : count - expected;
+                  const breakoutSmall =
+                    (stats?.n ?? 0) > 0 &&
+                    (stats?.n ?? 0) < SMALL_SAMPLE_THRESHOLD;
+                  const breakoutBetter =
+                    breakoutDiff === null || (count === 0 && expected < 1)
+                      ? null
+                      : breakoutDiff > 0;
                   return (
                     <td key={player.number} className="rsc-cell">
                       <span className="rsc-value">
@@ -296,6 +335,13 @@ function RaceStConsiderationCard({
                           ? "—"
                           : t("stConsideration.times", { n: count })}
                       </span>
+                      {breakoutDiff !== null && (
+                        <span
+                          className={`rsc-diff${diffClass(diffTone({ isBetter: breakoutBetter, diff: breakoutDiff, small: breakoutSmall }))}`}
+                        >
+                          {formatDiff(breakoutDiff)}
+                        </span>
+                      )}
                       {expected !== null && (
                         <span className="rsc-note-small">
                           {t("stConsideration.expectedTimes", {
@@ -332,7 +378,9 @@ function RaceStConsiderationCard({
                         {value === null ? "—" : value.toFixed(1)}
                       </span>
                       {diff !== null && (
-                        <span className={`rsc-diff${diffClass(isBetter)}`}>
+                        <span
+                          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small }))}`}
+                        >
                           {formatDiff(diff)}
                         </span>
                       )}

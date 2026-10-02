@@ -1,0 +1,17 @@
+{
+  "id": "ai-vs-human",
+  "title": "AI予想vs人間予想、1ヶ月ガチ検証した結果",
+  "description": "AIが予想した舟券と人間が予想した舟券、どちらが当たるのか？2025年12月の1ヶ月間、ガチ検証を実施しました。",
+  "date": "2025-12-23",
+  "category": "データ分析",
+  "tags": [
+    "AI予想",
+    "検証",
+    "データ",
+    "比較"
+  ],
+  "readTime": "11分",
+  "featured": true,
+  "image": "/images/blog/ai-vs-human-comparison-ja.jpg",
+  "featuredRank": 28
+}

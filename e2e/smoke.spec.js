@@ -1988,6 +1988,14 @@ test.describe("レースページ再設計（BOA-168）", () => {
       /^（出走表・全国 \d+\.\d%、前期から[+−±]\d+\.\dpt）$/,
     );
     await expect(page.locator(".rbit-period-note")).toHaveCount(0);
+    // 前期の優出・優勝と、前期を含む直近2年（4期）の合計（BOA-326）。
+    // 範囲は期の定義から決まる（レース日の前期の終わり〜その2年前の5月）
+    const finals = page.locator(".rbit-period-finals");
+    await expect(finals).toContainText(/優出 \d+回/);
+    await expect(finals).toContainText(/優勝 \d+回/);
+    await expect(page.locator(".rbit-period-recent")).toHaveText(
+      /^直近2年（\d{4}\/(05|11)〜\d{4}\/(04|10)）優出 \d+回・優勝 \d+回$/,
+    );
 
     // この表が全コース込みであることと、今日の枠での走数を常時出す
     // （ボートレースファンのレビュー指摘A: 外枠専業の選手と枠が均等に回る選手で
@@ -3165,8 +3173,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 1000行を超える選手がいる）、待たずに次のレースへ移ると2ページ目が録画に入らず、
     // 速い再生でだけ出て本番へ素通りしていた（BOA-556）。走数は取得前「—」、
     // 取得後は数字（0を含む）になる
+    // 走数が少ない艇は⚠が付く（race-detail-ui-unify plan §6）
     await expect(page.locator(".rsc-grid .rsc-runs")).toHaveText(
-      Array(6).fill(/^\d+$/),
+      Array(6).fill(/^⚠?\d+$/),
       // 録画（本番に繋ぐ）では6選手分の2年窓を取るので、他の待ちと同じ長さにする
       { timeout: 25000 },
     );

@@ -178,7 +178,7 @@ function StPredictabilityChart({
                 {breakdown.map((row) => (
                   <tr
                     key={row.boat_number}
-                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""} ${bestDeviationBoats.has(row.boat_number) ? "best-motor" : ""}`}
+                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""}`}
                     onClick={() =>
                       row.racer_id !== null && setDrillDownRacer(row.racer_id)
                     }
@@ -192,7 +192,10 @@ function StPredictabilityChart({
                         ? row.exhibition_st.toFixed(2)
                         : t("analysis.notMeasured")}
                     </td>
-                    <td className="rate">
+                    {/* 最良は行全体ではなく、比べている値（平均ズレ）のセルに金枠（R1） */}
+                    <td
+                      className={`rate${bestDeviationBoats.has(row.boat_number) ? " ind-best" : ""}`}
+                    >
                       {row.avg_deviation !== null
                         ? row.avg_deviation.toFixed(3)
                         : t("analysis.noData")}

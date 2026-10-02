@@ -10,7 +10,7 @@
  * 基準そのものを見直す入力にする。
  *
  * 対象は直近{RECENT_WINDOW_DAYS}日以内に公開されたブログ記事
- * （src/data/blogPosts.js）。note記事は`note-articles/{id}.md`が
+ * （src/data/blog-posts/*.json を src/data/blogPosts.js が読む）。note記事は`note-articles/{id}.md`が
  * 存在する場合のみ併記する（フローA-3のnote下書き同時生成ルールにより
  * 大半のブログ記事はnote記事も存在する）。
  *
