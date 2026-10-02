@@ -44,7 +44,8 @@ async function fetchOutcomeDistribution() {
 async function fetchRecentResults(fromDate) {
   const rows = await fetchAll(
     "race_results",
-    "race_id, rank1, rank2, rank3, payout_trifecta",
+    // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+    "race_id, rank1, rank2, rank3, payout_trio",
     (q) =>
       q
         .eq("is_cancelled", false)
@@ -117,9 +118,9 @@ async function main() {
       perVenue[venueCode][n].total += 1;
       if (hit) {
         overall[n].hit += 1;
-        overall[n].totalPayout += r.payout_trifecta || 0;
+        overall[n].totalPayout += r.payout_trio || 0;
         perVenue[venueCode][n].hit += 1;
-        perVenue[venueCode][n].totalPayout += r.payout_trifecta || 0;
+        perVenue[venueCode][n].totalPayout += r.payout_trio || 0;
       }
     }
   }

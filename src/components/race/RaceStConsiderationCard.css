@@ -50,6 +50,14 @@
   min-width: 320px;
   border-collapse: separate;
   border-spacing: 0;
+  /* 6艇の列を等幅にする。自動だと「F1 今節」の印がある列だけ広がり、
+     1440pxで 161〜233px とばらついた（BOA-619） */
+  table-layout: fixed;
+}
+
+.rsc-grid .rsc-label-th:first-child,
+.rsc-grid thead th:first-child {
+  width: 72px;
 }
 
 .rsc-label-th {
@@ -162,11 +170,27 @@
     min-width: 38px;
   }
 
+  /* 級別の行: 列が約40pxで、「A1 F1 今節」のようにバッジが2つ付く列だけ2段に折れ、
+     1段の列と級別の高さがずれていた（#1064 ファン評価2周目）。スマホでは級別を必ず1段目、
+     バッジを2段目に置き、上でそろえる */
+  .rsc-cell-meta {
+    vertical-align: top;
+  }
+
+  .rsc-cell-meta .rsc-grade {
+    display: block;
+  }
+
   /* 375px では表示幅が約301px。最小幅320pxのままだと6号艇の列が19px切れ、
      級別の行の「F1 今節」が「今」で切れていた（BOA-440 ファン評価2周目）。
      各列の最小幅（38px）で7列が収まるので、表の最小幅は外す */
   .rsc-grid {
     min-width: 0;
+  }
+
+  .rsc-grid .rsc-label-th:first-child,
+  .rsc-grid thead th:first-child {
+    width: 60px;
   }
 }
 

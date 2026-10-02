@@ -19,6 +19,7 @@ import {
   PAYOUT_BET_TYPES,
   PAYOUT_STATUS,
   RACE_OUTCOME,
+  describePartialVoid,
   getRaceOutcomeState,
   getRefundBoats,
   isBoatRefunded,
@@ -33,8 +34,10 @@ import {
 const START_ANIM = {
   CYCLE_MS: 7000,
   MAX_ARRIVAL_MS: 6000,
-  LINE_PERCENT: 84,
-  POSITION_RANGE_PERCENT: 76,
+  // スタートラインの位置。F側に幅を取るため84%から72%に下げた。84%だとF側が14%しか無く、
+  // 375pxで F0.01 と F0.11 の差が約8pxしか無かった（BOA-586）。CSS の線もこの値で置く
+  LINE_PERCENT: 72,
+  POSITION_RANGE_PERCENT: 70,
   // 遅い側は0.30まで位置で差をつける（0.15で頭打ちにすると、0.16と0.27が同じ位置に重なっていた。
   // 平均STは0.15前後で、普通のレースでも半分近くの艇が左端に重なる。BOA-559 ファン評価1周目）
   POSITION_MAX_SECONDS: 0.3,
@@ -44,8 +47,11 @@ const START_ANIM = {
   STREAK_FADE_IN_RATIO: 0.26,
   IMPACT_FLASH_DELTA: 0.001,
   IMPACT_EXPAND_DELTA: 0.0703,
-  // フライング艇はスタートライン（84%）より先、F0.15 で98%まで（BOA-559）
-  FLYING_RANGE_PERCENT: 14,
+  // フライング艇はスタートライン（72%）より先、F0.15 で98%まで（BOA-559・586）。
+  // F0.01 でも線から離して置く（FLYING_OFFSET_PERCENT）。距離に比例させるだけだと F0.01 の
+  // 先端は線から1.7%（375pxで約1.5px）しか離れず、矢印が線に重なって見えた（#1071 ファン評価1周目）
+  FLYING_OFFSET_PERCENT: 5,
+  FLYING_RANGE_PERCENT: 21,
   // フライング艇は号砲の時点で既にラインを越えているため、最も早く到達させる（周期に対する割合）
   FLYING_ARRIVAL_FRACTION: 0.04,
 };
@@ -59,11 +65,13 @@ function getFinalPositionPercent(startTiming, isFlying = false) {
     : START_ANIM.POSITION_MAX_SECONDS;
   const ratio = Math.min(Math.max(startTiming, 0), max) / max;
   return isFlying
-    ? START_ANIM.LINE_PERCENT + ratio * START_ANIM.FLYING_RANGE_PERCENT
+    ? START_ANIM.LINE_PERCENT +
+        START_ANIM.FLYING_OFFSET_PERCENT +
+        ratio * START_ANIM.FLYING_RANGE_PERCENT
     : START_ANIM.LINE_PERCENT - ratio * START_ANIM.POSITION_RANGE_PERCENT;
 }
 
-// 選手名は公式の元データで姓と名の間を全角スペースで詰めてある（「丹下　　　将」）。そのまま出すと
+// 選手名は公式の元データで姓と名の間を全角スペースで詰めてある（「丹下」「将」の間に全角スペース3つ）。そのまま出すと
 // 375pxで姓だけに切れ、級別も見えなくなるため、空白を1つにまとめる（BOA-559）
 function displayName(name) {
   return name ? name.replace(/[\s\u3000]+/g, " ").trim() : name;
@@ -200,7 +208,10 @@ function StartTimingTrack({
 
   return (
     <span className="rr-st-track">
-      <span className="rr-st-line" />
+      <span
+        className="rr-st-line"
+        style={{ left: `${START_ANIM.LINE_PERCENT}%` }}
+      />
       <span
         ref={streakRef}
         className="rr-st-streak"
@@ -219,10 +230,7 @@ function StartTimingTrack({
         {/* 形（clip-path）は子に持たせる。親に付けた輪郭（drop-shadow）が
             clip-path で切り取られないようにするため（1号艇の白が1着行の
             クリーム地・トラックに埋もれていた。BOA-559 ファン評価2周目） */}
-        <span
-          className="rr-st-dot-shape"
-          style={{ background: markerColor }}
-        />
+        <span className="rr-st-dot-shape" style={{ background: markerColor }} />
       </span>
       <span
         ref={impactRef}
@@ -389,6 +397,7 @@ function PayoutRow({
   isBest,
   note = null,
   isVoid = false,
+  noAmount = false,
   t,
 }) {
   return (
@@ -411,7 +420,10 @@ function PayoutRow({
       <span className="rr-pop">
         {popularity
           ? popularityTo
-            ? t("result.popularityRange", { from: popularity, to: popularityTo })
+            ? t("result.popularityRange", {
+                from: popularity,
+                to: popularityTo,
+              })
             : t("result.popularity", { rank: popularity })
           : ""}
         {popularity && popularityMarked && (
@@ -420,8 +432,15 @@ function PayoutRow({
           </span>
         )}
       </span>
-      <span className="rr-amount num">
-        {typeof amount === "number" ? `¥${amount.toLocaleString()}` : ""}
+      <span
+        className="rr-amount num"
+        title={noAmount ? t("result.payoutNoAmount") : undefined}
+      >
+        {typeof amount === "number"
+          ? `¥${amount.toLocaleString()}`
+          : noAmount
+            ? "—"
+            : ""}
       </span>
     </div>
   );
@@ -432,7 +451,10 @@ function PayoutRow({
 // 最高配当の強調は、通常の払戻と特払だけで計算する
 function PayoutRowsTable({ rows, t }) {
   const amounts = rows.filter(isPayoutAmountCountable).map((row) => row.amount);
-  const maxAmount = amounts.length ? Math.max(...amounts) : null;
+  // 最高額が ¥100（元返し）のときは強調しない。一部返還で単勝・2連単がともに ¥100 だった
+  // レースで、¥100 の2行が「最高配当」として金色になっていた（BOA-558）
+  const maxAmount =
+    amounts.length && Math.max(...amounts) > 100 ? Math.max(...amounts) : null;
   return (
     <div className="rr-payout-table">
       {rows.map((row) => {
@@ -461,6 +483,9 @@ function PayoutRowsTable({ rows, t }) {
                   : null
             }
             isVoid={isNoRaceRow}
+            // 公式の払戻に金額が無い行（例: 津 2026-09-27 1R の複勝6）。空欄だとデータの
+            // 欠けに見えるので「—」を出す（BOA-558）
+            noAmount={row.status === PAYOUT_STATUS.NO_AMOUNT}
             t={t}
           />
         );
@@ -697,15 +722,24 @@ function RaceResult({ prediction, raceId }) {
   const validStartTimings = (startTimings ?? []).filter(
     (st) => st.startTiming != null,
   );
+  // 進入コース順に並べた艇番（公式の「スタート情報」の並び。BOA-625）。
+  // 進入が1艇も入っていない（2026-09-20 以前の一部・取得前）ときは空
+  const courseOrder = (startTimings ?? [])
+    .filter((st) => st.entryCourse != null)
+    .sort((a, b) => a.entryCourse - b.entryCourse)
+    .map((st) => st.boatNumber);
   // フライングは異常値のため「最速」判定・到達タイミングの基準（最遅ST）からは除外する
   // （update-top-start-stats.jsと同じ扱い。BOA-559）
   const nonFlyingStartTimings = validStartTimings.filter((st) => !st.isFlying);
   const maxStartTiming = nonFlyingStartTimings.length
     ? Math.max(...nonFlyingStartTimings.map((st) => st.startTiming))
     : 0;
-  const fastestStartTiming = nonFlyingStartTimings.length
-    ? Math.min(...nonFlyingStartTimings.map((st) => st.startTiming))
-    : null;
+  // 「最速」は比べる相手がいるときだけ付ける。不成立レースで F 以外が1艇だけのとき、
+  // その1艇に「最速」が付いていた（BOA-586）
+  const fastestStartTiming =
+    nonFlyingStartTimings.length >= 2
+      ? Math.min(...nonFlyingStartTimings.map((st) => st.startTiming))
+      : null;
 
   // 払戻は払戻明細（race_payouts、payoutRows）を正とする。届いていないときだけ旧 payout_* 列から
   // 同じ行の形を組み立てる（legacyPayoutRows）
@@ -713,6 +747,18 @@ function RaceResult({ prediction, raceId }) {
     result.payoutRows ?? legacyPayoutRows(result.payouts, outcome),
     finalOddsState.raceId === raceId ? finalOddsState.data : null,
   );
+  // 完走した艇の数は、着欄の記号が取れているときだけ数える（取れていない過去分は null）
+  const finishers = (startTimings ?? []).some((st) => st.finishMark != null)
+    ? startTimings.filter((st) => st.finishRank != null).length
+    : null;
+  const partialVoid = isPartialRefund
+    ? describePartialVoid({
+        boatsInRace: boatsInRace.length,
+        refundBoats: getRefundBoats(result),
+        finishers,
+        payoutRows: payoutRowsToShow,
+      })
+    : null;
   const hasFinalOddsPopularity = (payoutRowsToShow ?? []).some(
     (row) => row.popularityFromFinalOdds,
   );
@@ -729,9 +775,7 @@ function RaceResult({ prediction, raceId }) {
     <div className="race-result">
       <div className="rr-head">
         <div className="rr-title">
-          <h4>
-            🏁 {isNoRace ? t("result.noRace.title") : t("result.title")}
-          </h4>
+          <h4>🏁 {isNoRace ? t("result.noRace.title") : t("result.title")}</h4>
           {isPartialRefund && (
             <span className="rr-refund-tag">
               {getRefundBoats(result).length > 0
@@ -756,6 +800,16 @@ function RaceResult({ prediction, raceId }) {
         </p>
       )}
 
+      {!isLoadingStartTimings && courseOrder.length > 0 && (
+        <div className="rr-course-order">
+          <span className="rr-course-order-label">
+            {t("result.courseOrderLabel")}
+          </span>
+          {courseOrder.map((boat) => (
+            <BoatChip key={boat} number={boat} />
+          ))}
+        </div>
+      )}
       {isLoadingStartTimings ? (
         <div className="rr-table-skeleton" aria-busy="true">
           {boatsInRace.map((boat) => (
@@ -775,8 +829,7 @@ function RaceResult({ prediction, raceId }) {
               !st.isFlying &&
               fastestStartTiming != null &&
               st.startTiming === fastestStartTiming;
-            const label =
-              position == null ? markLabel(t, row, isNoRace) : null;
+            const label = position == null ? markLabel(t, row, isNoRace) : null;
 
             return (
               <div className={rowClassName(position)} key={key}>
@@ -792,6 +845,15 @@ function RaceResult({ prediction, raceId }) {
                     {player?.grade && <small>{player.grade}</small>}
                   </span>
                   {label && <span className="rr-mark-label">{label}</span>}
+                  {st?.entryCourse != null && (
+                    <span
+                      className={`rr-course${st.entryCourse !== boat ? " is-moved" : ""}`}
+                    >
+                      {t("result.entryCourseLabel", {
+                        course: st.entryCourse,
+                      })}
+                    </span>
+                  )}
                 </span>
                 <span className="rr-st-cell">
                   {st && st.startTiming != null ? (
@@ -804,8 +866,10 @@ function RaceResult({ prediction, raceId }) {
                         reducedMotion={reducedMotion}
                       />
                       <span className="rr-st-value num">
-                        {st.isFlying ? "F" : ""}
-                        {st.startTiming.toFixed(2)}
+                        {/* フライングは公式と同じ「F.01」。選手ページ・直近10走とそろえる（BOA-583） */}
+                        {st.isFlying
+                          ? `F${st.startTiming.toFixed(2).replace(/^0/, "")}`
+                          : st.startTiming.toFixed(2)}
                       </span>
                       {isFastest && (
                         <span className="rr-st-fastest-tag">
@@ -831,7 +895,11 @@ function RaceResult({ prediction, raceId }) {
       {validStartTimings.length > 0 && (
         <p className="rr-note rr-st-legend">{t("result.stLegend")}</p>
       )}
-      <p className="rr-note">{t("result.courseNote")}</p>
+      {/* 以前は「進入コースは精度確認中のため表示していない」と出していた（BOA-238 の頃は
+          進入の元データが無かった）。今は本番STの進入を出すので、データが無いレースだけ断る（BOA-625） */}
+      {!isLoadingStartTimings && !isNoRace && courseOrder.length === 0 && (
+        <p className="rr-note">{t("result.courseNoData")}</p>
+      )}
       {!isLoadingStartTimings && !isNoRace && rows.length < 6 && (
         <p className="rr-note rr-note-missing-ranks">
           {t("result.missingRanksNote")}
@@ -844,6 +912,27 @@ function RaceResult({ prediction, raceId }) {
             {t("result.payoutSectionTitle")}
           </div>
           <PayoutRowsTable rows={payoutRowsToShow} t={t} />
+          {/* 一部の勝式だけ不成立になった理由を、事実だけ1行で書く。払戻明細の不成立が
+              正常スタート・完走の艇数から決まる表と一致するときだけ出す（BOA-558） */}
+          {partialVoid && (
+            <p className="rr-note rr-payout-void-note">
+              {t(
+                partialVoid.kind === "starters"
+                  ? "result.partialVoidByStarters"
+                  : "result.partialVoidByFinishers",
+                {
+                  count: partialVoid.count,
+                  types: partialVoid.betTypes
+                    .map((betType) =>
+                      t(
+                        `result.payoutType.${PAYOUT_BET_TYPES.find((b) => b.betType === betType).typeKey}`,
+                      ),
+                    )
+                    .join(t("result.noRace.boatSeparator")),
+                },
+              )}
+            </p>
+          )}
           {/* 単勝・複勝の人気だけは公式の発表でなく締切時オッズから出しているため、その旨を書く */}
           {hasFinalOddsPopularity && (
             <p
@@ -851,6 +940,14 @@ function RaceResult({ prediction, raceId }) {
               data-testid="payout-popularity-note"
             >
               {t("result.popularityFromFinalOddsNote")}
+            </p>
+          )}
+          {/* 「—」の意味は title だけだとスマホで読めないので、表の下にも書く（#1074 ファン評価1周目） */}
+          {payoutRowsToShow.some(
+            (row) => row.status === PAYOUT_STATUS.NO_AMOUNT,
+          ) && (
+            <p className="rr-note rr-payout-no-amount-note">
+              {t("result.payoutNoAmountNote")}
             </p>
           )}
         </>

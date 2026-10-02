@@ -1,11 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Header from "../components/Header";
-import {
-  blogPosts,
-  isBlogLangAvailable,
-  getBlogOverride,
-} from "../data/blogPosts";
+import { getPostsForLang } from "../data/blogPosts";
 import { parseLangFromPath, localizePath } from "../config/languages";
 import { isWithinDays } from "../utils/dateUtils";
 import { useSocialMeta } from "../hooks/useSocialMeta";
@@ -86,11 +82,7 @@ export default function Blog() {
   const t = UI_TEXT[isTranslated ? lng : "ja"];
 
   // 翻訳版はその言語のデータが存在する記事のみを対象にする（未翻訳記事は一覧に出さない）
-  const basePosts = isTranslated
-    ? blogPosts
-        .filter((post) => isBlogLangAvailable(post.id, lng))
-        .map((post) => ({ ...post, ...getBlogOverride(post.id, lng) }))
-    : blogPosts;
+  const basePosts = getPostsForLang(isTranslated ? lng : "ja");
 
   const featuredPosts = basePosts.filter((post) => post.featured);
   const availableCategories = [

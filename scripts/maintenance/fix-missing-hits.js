@@ -1,5 +1,5 @@
 // Fix predictions where results exist but is_hit_win is NULL
-import { supabase, isSupabaseEnabled } from './lib/supabaseClient.js';
+import { supabase, isSupabaseEnabled } from '../lib/supabaseClient.js';
 
 async function fixMissingHits() {
   if (!isSupabaseEnabled()) {

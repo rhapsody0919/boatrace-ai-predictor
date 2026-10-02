@@ -316,6 +316,10 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
       "2連複 1=2 1人気 ¥100",
       "拡連複 不成立（返還）",
     ]);
+    // 一部の勝式だけ不成立になった理由を、事実だけ1行で書く（BOA-558）
+    await expect(root.locator(".rr-payout-void-note")).toHaveText(
+      "正常にスタートした艇が3艇のため、3連複・拡連複は不成立（返還）です",
+    );
   });
 
   test("一部返還でスタート情報の取得に失敗したとき: 返還艇（戸田9R の3号艇）を3着に出さない", async ({
@@ -346,8 +350,9 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
     ]);
     // 払戻明細（payoutRows）が無い経路（直接クエリ・RPC未適用）でも、旧列に無い勝式を
     // 黙って消さず「不成立（返還）」で出す（/code-review の指摘、BOA-543）
+    // 最高額が ¥100（元返し）なので、¥100 の2行を「最高配当」として強調しない（BOA-558）
     const payouts = await readPayouts(root);
-    expect(payouts.map((p) => p.replace(/ best$/, ""))).toEqual([
+    expect(payouts).toEqual([
       "単勝 1 ¥100",
       "複勝 不成立（返還）",
       "3連単 不成立（返還）",
@@ -356,9 +361,37 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
       "2連複 不成立（返還）",
       "拡連複 不成立（返還）",
     ]);
+    // 4艇返還（正常スタート2艇）。スタート情報が取れなくても、返還艇の数から言える（BOA-558）
+    const voidNote = root.locator(".rr-payout-void-note");
+    await expect(voidNote).toHaveText(
+      "正常にスタートした艇が2艇のため、複勝・3連単・3連複・2連複・拡連複は不成立（返還）です",
+    );
+    // 375px でも勝式名を途中で折らず、表の説明として左寄せで読む（#1094 ファン評価1周目）
+    await page.setViewportSize({ width: 375, height: 812 });
+    const layout = await voidNote.evaluate((el) => {
+      const text = el.firstChild;
+      const lines = (word) => {
+        const i = text.textContent.indexOf(word);
+        const range = document.createRange();
+        range.setStart(text, i);
+        range.setEnd(text, i + word.length);
+        return new Set(
+          [...range.getClientRects()].map((r) => Math.round(r.top)),
+        ).size;
+      };
+      return {
+        align: getComputedStyle(el).textAlign,
+        words: ["複勝", "3連単", "3連複", "2連複", "拡連複"].map((w) => [
+          w,
+          lines(w),
+        ]),
+      };
+    });
+    expect(layout.align).toBe("left");
+    for (const [word, n] of layout.words) expect(n, word).toBe(1);
   });
 
-  test("特払（2026-07-24 17R3）: 単勝は組番の位置に「特払」、金額なしの複勝は組番だけ", async ({
+  test("特払（2026-07-24 17R3）: 単勝は組番の位置に「特払」、金額なしの複勝は組番と「—」", async ({
     page,
   }) => {
     const race = {
@@ -394,10 +427,16 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
     expect(payouts).toEqual([
       "単勝 特払 ¥70",
       "複勝 6 ¥1,800",
-      "複勝 4",
+      // 金額の無い行は空欄にせず「—」（データの欠けに見えないように。BOA-558）
+      "複勝 4 —",
       "3連単 6-4-1 85人気 ¥92,140 best",
     ]);
+    // 「—」の意味は、スマホでも読めるよう表の下に書く（#1074 ファン評価1周目）
+    await expect(root.locator(".rr-payout-no-amount-note")).toContainText(
+      "金額の記載がない",
+    );
     await expect(root.locator(".rr-refund-tag")).toHaveCount(0);
+    await expect(root.locator(".rr-payout-void-note")).toHaveCount(0);
   });
 
   test("マイグレーション未適用（raceStatus なし）: 従来どおりの見出しと旧列の払戻", async ({

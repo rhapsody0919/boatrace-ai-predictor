@@ -67,7 +67,8 @@ const OVERFLOW_TOLERANCE_PX = 2;
  * 選んだ要素は 2026-09-29 の録画の再生で、各ページの主データとして描画されるものを実測した
  */
 const READY_SELECTORS = {
-  "/": ".venue-grid .venue-grid-card",
+  // スケルトン（VenueGridSkeleton）も .venue-grid-card を持つため、実物だけに付く修飾子で待つ（BOA-593）
+  "/": ".venue-grid-card--open, .venue-grid-card--closed",
   "/accuracy": ".turn-accuracy-venue-table",
   "/winning-technique": ".winning-technique-table",
   "/races": ".dates-list .date-card",
@@ -580,7 +581,7 @@ test.describe("レイアウト: ホームの会場グリッドに /guide の指�
     await page.locator(".app-header .logo").click();
     await expect(page).toHaveURL(/\/$/);
     await expect(
-      page.locator(".venue-grid .venue-grid-card").first(),
+      page.locator(".venue-grid-card--open, .venue-grid-card--closed").first(),
     ).toBeAttached({ timeout: 30000 });
 
     const grid = await page.evaluate(() => {
@@ -682,5 +683,56 @@ test.describe("レイアウト: 管理画面2つのタブの指定が混ざら�
     expect(rulesTab.backgroundColor, JSON.stringify(rulesTab)).toBe(
       "rgb(124, 58, 237)",
     );
+  });
+
+  /**
+   * BOA-570 の最後の1件（.tab-navigation のleak）。
+   *
+   * AdminRules.css と SnsHubAdmin.css が同じ詳細度で `.tab-navigation` を
+   * 定義しており（AdminRules.css は余白をタブ本体に、SnsHubAdmin.css は
+   * `.tab-navigation-row` に置く設計）、CSSが1つのバンドルに結合され後に来る
+   * 方が勝つため、AdminRules.css の margin-bottom: 1rem が /admin/sns-hub の
+   * タブの下にも漏れていた（修正前の実測: /admin/sns-hub のタブ下の余白が
+   * 本来の16pxから32pxに増える）。画面ごとに admin-rules- / sns-hub- の
+   * 接頭辞を付けて分けた。
+   *
+   * 期待値は各CSSファイルの設計そのもの:
+   *   AdminRules.css  … 余白はタブ本体(.admin-rules-tab-navigation)に1rem
+   *   SnsHubAdmin.css … 余白は行(.tab-navigation-row)に1rem、タブ本体は0
+   */
+  test("/admin/sns-hub のタブ下の余白に AdminRules.css の margin-bottom が漏れない", async ({
+    page,
+  }) => {
+    await page.route(/\/api\/admin\/sns-hub\//, fulfillAdminJson({ data: [] }));
+    await page.route(
+      /\/api\/admin\/rules\/performance/,
+      fulfillAdminJson({
+        startDate: "2026-01-16",
+        data: {
+          total: { samples: 0, hits: 0, payout: 0 },
+          by_rule: [],
+          by_week: [],
+        },
+      }),
+    );
+    await page.route(/\/rest\/v1\/predictions\?/, fulfillAdminJson([]));
+
+    const marginBottom = (selector) =>
+      page
+        .locator(selector)
+        .evaluate((el) => getComputedStyle(el).marginBottom);
+
+    await page.goto("/admin/sns-hub");
+    await expect(page.locator(".sns-hub-tab-navigation")).toBeVisible();
+    expect(await marginBottom(".tab-navigation-row")).toBe("16px");
+    expect(await marginBottom(".sns-hub-tab-navigation")).toBe("0px");
+
+    await page.evaluate(() => {
+      window.history.pushState({}, "", "/admin/rules");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await expect(page).toHaveURL(/\/admin\/rules$/);
+    await expect(page.locator(".admin-rules-tab-navigation")).toBeVisible();
+    expect(await marginBottom(".admin-rules-tab-navigation")).toBe("16px");
   });
 });

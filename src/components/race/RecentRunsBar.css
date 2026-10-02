@@ -50,6 +50,35 @@
   border-radius: var(--radius-sm);
 }
 
+/* タイルは押せる（BOA-604）。button の既定の見た目を消す */
+button.rrb-item {
+  border: 1px solid transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.rrb-item.is-selected {
+  border-color: var(--brand-accent-secondary);
+}
+
+/* タイルのいちばん上の月日（BOA-604） */
+.rrb-date {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.2;
+}
+
+/* 選んだ走の会場・R・種別（BOA-604） */
+.rrb-detail {
+  margin: var(--spacing-1) 0 0;
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-page);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
 .rrb-course {
   width: 100%;
   text-align: center;

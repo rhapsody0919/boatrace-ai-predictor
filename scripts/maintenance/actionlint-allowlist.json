@@ -1,0 +1,10 @@
+{
+  "$comment": [
+    "verify-actionlint.js の許可リスト（BOA-659）。導入時点で既にあり、挙動を変えるため今は直せない指摘だけを載せる。",
+    "エントリは（file, rule, line）で特定する。line は指摘された行の内容（前後の空白を除く）。行番号は使わない（行がずれるたびに壊れるため）。",
+    "rule は actionlint の kind（expression / events / syntax-check 等）。shellcheck の指摘は shellcheck:SCxxxx。reason に直さない理由を書く。",
+    "新しい指摘はここに足さず直す。解消したらエントリを消す。消し忘れると verify が失敗する。",
+    "現状の指摘は `node scripts/maintenance/verify-actionlint.js --print-allowlist` で出せる。"
+  ],
+  "entries": []
+}

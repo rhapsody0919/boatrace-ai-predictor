@@ -59,6 +59,13 @@ export const NUMERIC_SCALES = {
     motor_3rate: 2,
     win_rate: 3,
   },
+  // 選手別の日次集計（aggregate-racer-stats.js、BOA-600。2026-10-01 本番スキーマの実測値）
+  racer_aggregated_stats: {
+    avg_st: 3,
+    avg_st_last_30: 3,
+    st_stddev: 3,
+    flying_rate: 4,
+  },
   race_conditions: {
     temperature: 1,
     water_temperature: 1,

@@ -106,7 +106,7 @@ async function defaultExistingVenueCodes(client, date) {
 }
 
 /** 1会場の races・race_entries・exhibition_data・predictions・race_conditions を書く（失敗は例外） */
-async function defaultWriteVenue(venue, { date, client }) {
+async function defaultWriteVenue(venue, { date, client, now }) {
   const { generateAndWriteFromRacesData } =
     await import("../../daily/generate-predictions.js");
   await generateAndWriteFromRacesData({
@@ -114,6 +114,7 @@ async function defaultWriteVenue(venue, { date, client }) {
     date,
     client,
     throwOnError: true,
+    now,
   });
 }
 
@@ -133,16 +134,18 @@ async function defaultEnsureSlots(client, date) {
   return { jobs, created };
 }
 
-async function defaultEnsureUnified(client, date) {
+async function defaultEnsureUnified(client, date, now) {
   const { findRacesMissingUnified, generateUnifiedPredictions } =
     await import("../../daily/generate-unified-predictions.js");
-  const missing = await findRacesMissingUnified(date, client);
+  // 発走済みのレースは、欠けていても数えず、書きもしない（BOA-628）
+  const missing = await findRacesMissingUnified(date, client, { now });
   if (missing.length === 0) return { missing: 0, generated: 0 };
-  // 日全体を upsert し直す（冪等。従来の ensureUnifiedPredictions と同じ）
+  // 発走前のレースを upsert し直す（冪等。従来の ensureUnifiedPredictions と同じ）
   const result = await generateUnifiedPredictions({
     date,
     client,
     strict: true,
+    now,
   });
   return { missing: missing.length, generated: result.generated };
 }
@@ -272,7 +275,7 @@ export async function runRacesInitJob(ctx, deps = {}) {
         );
       }
       if (live) {
-        await d.writeVenue(venue, { date, client: ctx.client });
+        await d.writeVenue(venue, { date, client: ctx.client, now: ctx.now });
         cursor.wroteAny = true;
       }
       Object.assign(cursor.digests, summary.digests);
@@ -441,7 +444,7 @@ async function finalizeCycle({ ctx, d, cursor, date }) {
       fin.slots = { jobs: r.jobs, created: r.created };
     }
     if (!fin.unified) {
-      const r = await d.ensureUnified(ctx.client, date);
+      const r = await d.ensureUnified(ctx.client, date, ctx.now);
       fin.unified = { missing: r.missing, generated: r.generated };
     }
     if (!fin.hook) {

@@ -169,7 +169,7 @@
 | `scripts/maintenance/backfill-*-hit*.js`、`backfill-place-hits.js`、`backfill-trifecta-trio.js` | 的中フラグの補完（DBのみ） |
 | `scripts/maintenance/scrape-racer-profiles.js` | B6の本体。`--dry-run`・`--limit`で手動実行できる |
 | `scripts/ml/backfill.py` | MLの学習用に、Kファイルから過去分を取得（Python） |
-| `api/scrape-races.js` | Vercel Functionのオンデマンドエンドポイント（`beforeinfo`を取得）。リポジトリ内に参照が無く、24時間の呼び出し件数の上位25パスにも出ない。未使用の疑い（全期間の利用は未確認）。公開エンドポイントのため、呼ばれるとboatrace.jpへアクセスする |
+| ~~`api/scrape-races.js`~~ | 2026-10-01 削除（BOA-366）。認証なしの公開エンドポイントで、呼ばれると全会場の`beforeinfo`を取得していた。リポジトリ内に参照が無く、本番の直近24時間の呼び出しも0件 |
 
 ## 4. 起動元と実測の起動遅延
 
@@ -413,7 +413,7 @@ Linearへの起票は行っていない。以下は、起票できる粒度で�
 | D2 | `beforeinfo`を、A1（60分前、気象）・A2（30/15/10分前、展示）・A8（朝の初期化、12レース全て）の3ジョブが取得している。A2は同じページの気象も取得しているが、保存せずに捨てている | コード確認 | A1、A2、A8 | 気象を発走直前（A2）で保存すれば、A1の`beforeinfo`取得を省ける。BOA-358（気象の鮮度）と同じ根 |
 | D3 | `racelist`を、A8（朝、`race_entries`の初期化）とA1（60分前）が取得し、同じレースの`race_entries`をほぼ同じ列で2回書いている（A8は`generate-predictions.js`のフルモード経由） | コード確認 | A8、A1 | 再取得は意図的（直前の変更を反映）だが、差分が無ければ書かない（WS8(b)）。A8の朝の取得が必要かは、要検討 |
 | D4 | Kファイルを、進入コース同期（`syncActualCourseFromKFile`）と、rank4〜6同期（`syncRank456FromKFile`）が、同じ日について別々にダウンロードしている（直近4日×2関数） | コード確認 | A6 | 1回取得して両方を処理できる。BOA-349（毎回全件UPDATE）と合わせて修正できる |
-| D5 | 展示のコードが2箇所に残る。GitHub側（休止中、`SKIP_EXHIBITION_ON_GHA`で切り戻し可能）と、`scrape-to-json.js`・`api/scrape-races.js`のbeforeinfo別パーサー（重複実装） | コード確認 | A2、A8 | 旧経路の削除（WS7）の対象。`api/scrape-races.js`は参照が無い（未使用の疑い） |
+| D5 | 展示のコードが2箇所に残る。GitHub側（休止中、`SKIP_EXHIBITION_ON_GHA`で切り戻し可能）と、`scrape-to-json.js`・`api/scrape-races.js`のbeforeinfo別パーサー（重複実装） | コード確認 | A2、A8 | 旧経路の削除（WS7）の対象。`api/scrape-races.js`は2026-10-01に削除済み（BOA-366）。`scrape-to-json.js`の別パーサーは残る |
 | D6 | `race_results.course_1〜6`（raceresultページのスタート情報テーブルから取得）は、実進入を表していない（全レースで艇番と一致。BOA-257）。実進入は、Kファイル由来の`actual_course_1〜6` | コード内コメントの記載（BOA-257の調査結果。本調査では再検証していない） | A6 | 不要な取得・列の整理候補 |
 | D7 | 取得ジョブが、Vercelの再デプロイを引き起こす。`mainRefresh`とA8が、毎回Deploy Hookを叩く（BOA-361。9:00〜13:12 JSTで同一コミットの再デプロイが約22件。orchestration.mdの引用） | 推定（BOA-361の引用） | A7、A8 | 取得の重複ではないが、取得ジョブの副作用 |
 | D8 | A8が、毎回（5分ごと）、`races`の件数確認と、unified予測の欠落確認（`race_entries`・`predictions`を全件読む）を実行する。JST9時前は、毎回`race/index`も取得 | コード確認 | A8 | DBの読み取りと、外部取得の重複。1日1回で足りる可能性（WS8(e)、WS4b） |

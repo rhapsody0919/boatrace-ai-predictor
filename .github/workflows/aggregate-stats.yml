@@ -1,8 +1,10 @@
 name: Aggregate Racer Stats
 
+# 起動は cron-job.org からの workflow_dispatch（毎日 23:00 JST、時刻どおり）だけにする。
+# 以前は GitHub の schedule（同じ 23:00 指定）も残っていて、3〜4時間遅れて同じ集計を
+# もう一度走らせていた（1日2回、BOA-600。docs/design/scraping-vercel-consolidation/job-inventory.md）。
+# cron-job.org 側を止めるときは、ここに schedule を戻す
 on:
-  schedule:
-    - cron: '0 14 * * *' # JST 23:00（全レース終了後）
   workflow_dispatch:
 
 env:

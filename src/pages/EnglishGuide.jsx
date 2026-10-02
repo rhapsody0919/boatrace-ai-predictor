@@ -3,7 +3,10 @@
  * 競技を全く知らない海外ユーザーが、ルール理解から boatAI の予想の読み方まで到達できる構成
  */
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { getSiteFooterLinks } from "../components/siteFooterLinks";
 import "./EnglishGuide.css";
 
 const TECHNIQUES = [
@@ -159,7 +162,39 @@ const DATA_POINTS = [
   },
 ];
 
+// レース詳細のタブ（並び順は PredictionPanel.jsx の tabs 配列が正本。結果は確定後だけ出る）
+const RACE_TABS = [
+  {
+    key: "basic",
+    desc: "Win rate, top-2/top-3 rates and average ST, switchable by venue (national/local), grade and period",
+  },
+  {
+    key: "aiPrediction",
+    desc: "First Mark forecast and the Lane-1 upset index. You can also check here whether the forecast hit",
+  },
+  {
+    key: "meet",
+    desc: "Each racer's points in this series, standing, and points needed to reach the semifinal",
+  },
+  { key: "beforeInfo", desc: "Exhibition times, weather and the pit report" },
+  {
+    key: "waku",
+    desc: "Results from the lane each racer is expected to start from, start analysis and the Nige simulation",
+  },
+  { key: "motor", desc: "Stats and condition of this venue's motors" },
+  { key: "oddsList", desc: "Current odds on sale" },
+  {
+    key: "result",
+    desc: "Finishing order and payouts. This tab appears only after the race is confirmed",
+  },
+];
+
+const RACE_TABS_INTRO =
+  "The race page is split into tabs, in this order. The first four compare all 6 boats at once; the later ones let you pick one boat and dig in.";
+
 export default function EnglishGuide() {
+  const { t } = useTranslation();
+
   return (
     <div className="app">
       <title>
@@ -178,7 +213,7 @@ export default function EnglishGuide() {
         <section className="eg-hero">
           <h1>🚤 What is Kyotei?</h1>
           <p className="eg-hero-lead">
-            Kyotei (競艇) — Japanese boat racing — is one of Japan&apos;s four
+            Kyotei — Japanese boat racing — is one of Japan&apos;s four
             government-sanctioned betting sports, running nearly every day at 24
             venues across the country. Six hydroplane boats race three laps
             around a 600m course, and you can bet on the outcome. This guide
@@ -316,6 +351,7 @@ export default function EnglishGuide() {
               </tbody>
             </table>
           </div>
+          {/* i18n-allow: 券種の日本語名を併記する（マークシート・発売所で見る表記） */}
           <p className="eg-note">
             The Trifecta (3連単) is by far the most popular bet — average
             payouts are around ¥7,000 per ¥100 stake, with big upsets paying
@@ -352,20 +388,21 @@ export default function EnglishGuide() {
               </div>
             </li>
             <li>
-              <strong>Check the Lane-1 upset index</strong> — high means chaos
-              is likely (bigger payouts, lower hit rate).
-            </li>
-            <li>
-              <strong>Watch the First Mark animation</strong> — a visual
-              simulation of how the decisive first turn is likely to unfold,
-              with win probabilities per pattern.
-            </li>
-            <li>
-              <strong>Read the Key Data card</strong> — the top statistical
-              reasons behind each picked boat (start timing rank, motor
-              strength, local win rate).
+              <strong>Open the AI Prediction tab</strong> — the First Mark
+              forecast (how the decisive first turn is likely to unfold, with
+              win probabilities per pattern), the Lane-1 upset index (high means
+              chaos is likely: bigger payouts, lower hit rate), and, once the
+              race is over, whether the forecast hit.
             </li>
           </ol>
+          <p>{RACE_TABS_INTRO}</p>
+          <ul className="eg-list eg-race-tabs">
+            {RACE_TABS.map((tab) => (
+              <li key={tab.key}>
+                <strong>{t(`raceTabs.${tab.key}`)}</strong>: {tab.desc}
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* Real example (BOA-250): actual past race data, not a fictional walkthrough */}
@@ -413,6 +450,7 @@ export default function EnglishGuide() {
             to look past class ranking alone for the 2nd-place pick.
           </p>
           <p>
+            {/* i18n-allow: 券種の日本語名を併記する（マークシートの表記） */}
             <strong>The bet:</strong> Trifecta (3連単), picking boats{" "}
             <strong>1 → 3 → 4</strong> in that exact order on the mark sheet —
             filling in the &quot;1&quot; oval in the 1st-place column,
@@ -477,6 +515,7 @@ export default function EnglishGuide() {
           </Link>
         </section>
       </div>
+      <Footer links={getSiteFooterLinks(t)} />
     </div>
   );
 }

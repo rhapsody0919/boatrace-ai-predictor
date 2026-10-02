@@ -149,6 +149,68 @@ export function prelimEndRaceIdOf(rows) {
 }
 
 /**
+ * 予選が終わった日が節の「何日目」か（公式の「◯日目12R終了時点」の日目、BOA-578）。
+ *
+ * **開催日を数えてはいけない**。丸一日中止の日も番組（出走表・種別）は残るので、
+ * 日付を数えると中止の日を1日に数えて公式より1日進む（津 2026-09-21〜28 の節:
+ * 9/22 が丸一日中止、公式は 9/26 を5日目とするが、日付を数えると6日目）。
+ * 公式は中止の翌日に同じ日目を振り直す。
+ *
+ * 1. 予選最終日の `series_day`（公式の出走表ページから読んだ値）を使う
+ * 2. 無ければ、結果が1つでも出た日だけを数える（丸一日中止の日を飛ばす）
+ *
+ * @param {string|null} prelimEndRaceId `prelimEndRaceIdOf` の値
+ * @param {Array<{race_id: string, series_day?: number|null}>} conditions 節の種別の行
+ * @param {Iterable<string>} meetRaceIds 節の全レースの race_id（出走表）
+ * @param {Set<string>} ranRaceIds 結果があるレース
+ * @returns {number|null}
+ */
+export function prelimEndDayOf(
+  prelimEndRaceId,
+  conditions,
+  meetRaceIds,
+  ranRaceIds,
+) {
+  if (!prelimEndRaceId) return null;
+  const endDate = prelimEndRaceId.slice(0, 10);
+  const seriesDays = (Array.isArray(conditions) ? conditions : [])
+    .filter((c) => c.race_id.slice(0, 10) === endDate && c.series_day != null)
+    .map((c) => Number(c.series_day));
+  if (seriesDays.length > 0) return Math.min(...seriesDays);
+  const ranDates = new Set(
+    [...(ranRaceIds ?? [])].map((id) => String(id).slice(0, 10)),
+  );
+  const dates = [
+    ...new Set([...(meetRaceIds ?? [])].map((id) => String(id).slice(0, 10))),
+  ].filter((d) => d < endDate && ranDates.has(d));
+  return dates.length + 1;
+}
+
+/**
+ * 節の中で**丸一日レースが無かった日**（全レースが中止・順延）を返す（純関数、BOA-636）。
+ *
+ * 公式は丸一日中止の翌日に同じ日目を振り直すので、日付を数えると日目が合わない
+ * （津 2026-09-22、戸田・江戸川 2026-09-21）。画面がその日を断るのに使う。
+ * 一部のレースだけ成立した日（津 9/21 は4Rまで成立）は含めない。
+ *
+ * @param {Iterable<string>} raceIds 節の全レースの race_id（出走表）
+ * @param {Set<string>} cancelledRaceIds 中止が確定したレース（`isRaceCancelled`）
+ * @returns {string[]} 日付（YYYY-MM-DD）昇順
+ */
+export function noRaceDaysOf(raceIds, cancelledRaceIds) {
+  const byDate = new Map();
+  for (const id of raceIds ?? []) {
+    const d = String(id).slice(0, 10);
+    if (!byDate.has(d)) byDate.set(d, []);
+    byDate.get(d).push(id);
+  }
+  return [...byDate.entries()]
+    .filter(([, ids]) => ids.every((id) => cancelledRaceIds?.has(id)))
+    .map(([d]) => d)
+    .sort();
+}
+
+/**
  * 節に組まれた**準優勝戦**の `race_id`（枠数の算出に使う）。
  *
  * 「準優進出戦」は準優勝戦の1つ前の勝ち上がり戦で、準優の枠ではない
@@ -539,10 +601,13 @@ export function listSeriesFinishes(meetRecords, options = {}) {
       )
       .sort((a, b) => String(a.raceId).localeCompare(String(b.raceId)))
       // 着順が付かない走は、公式の記号（落・転・妨など）があればそれを出す。
-      // 無ければ null（画面は「失」）。推移の点の下と同じ表記にそろえる（BOA-537）
+      // 無ければ null（画面は「失」）。推移の点の下と同じ表記にそろえる（BOA-537）。
+      // フライングは本番STの is_flying を先に見る。着欄の記号（finish_mark）が未取得の走
+      // （2026-09前半以前）で「失」と出て、推移の「F」と食い違っていた（BOA-589）
       .map((r) =>
         countsAsRun(r)
-          ? (finishPositionOf(r) ?? officialMarkOf(r.finishMark))
+          ? (finishPositionOf(r) ??
+            (r.isFlying === true ? "F" : officialMarkOf(r.finishMark)))
           : FINISH_ABSENT,
       )
   );
@@ -587,6 +652,28 @@ export function flyingRacerIdsInMeet(starts, entries) {
     if (id !== null && id !== undefined) ids.add(id);
   }
   return [...ids];
+}
+
+/**
+ * **予選が終わった後のレースで**今節Fを切った選手（純関数、BOA-626）。
+ *
+ * 順位は予選終了で確定しているので、予選後のFでは順位の対象から外さない
+ * （`getMeetScoreboard` は予選終了までのFだけで賞典除外を判定する）。公式の
+ * 得点率一覧も予選後のFは順位・得点率をそのまま残し、備考も付けない（SG/G1/G2の
+ * 9例で確認、BOA-649）。予選中のFの選手（順位なし）と並ぶと食い違って見えるので、
+ * 画面は順位の下で断る。予選の締めが分からない節は空。
+ *
+ * @param {Array<Object>} starts 本番STの行（`flyingRacerIdsInMeet` と同じ形）
+ * @param {Array<Object>} entries 出走表の行
+ * @param {string|null} prelimEndRaceId `prelimEndRaceIdOf` の値
+ * @returns {number[]} racer_id
+ */
+export function postPrelimFlyingRacerIds(starts, entries, prelimEndRaceId) {
+  if (!prelimEndRaceId) return [];
+  return flyingRacerIdsInMeet(
+    (starts ?? []).filter((r) => r.race_id > prelimEndRaceId),
+    entries,
+  );
 }
 
 /**

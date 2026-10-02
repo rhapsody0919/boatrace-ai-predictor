@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import "./App.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import { getSiteFooterLinks } from "./components/siteFooterLinks";
 import AccuracyDashboard from "./components/AccuracyDashboard";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import Terms from "./components/Terms";
@@ -10,13 +11,13 @@ import Contact from "./components/Contact";
 import HitRaces from "./components/HitRaces";
 import { getLatestPosts } from "./data/blogPosts";
 import { dataService } from "./services/dataService";
-import { formatDateJP } from "./utils/dateUtils";
+import { formatDateLongLocalized } from "./utils/formatters";
 
 // タブページ（/hit-races・/accuracy・/privacy・/terms・/contact）のシェル。
 // トップ（/）の開催場一覧はVenueGridPage、レース詳細は/race/:raceIdに分離済み
 // （docs/design/venue-list-redesign/参照）
 function App({ tab }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState(tab);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -98,28 +99,19 @@ function App({ tab }) {
       </div>
 
       <Footer
-        links={[
-          { to: "/blog", label: t("footer.blog") },
-          { to: "/about", label: "About" },
-          { to: "/profile", label: t("footer.operator") },
-          { to: "/faq", label: "FAQ" },
-          { to: "/privacy", label: t("footer.privacy") },
-          { to: "/terms", label: t("footer.terms") },
-          { to: "/contact", label: t("footer.contact") },
-          {
-            to: "/responsible-gambling",
-            label: t("footer.responsibleGambling"),
-          },
-        ]}
+        links={getSiteFooterLinks(t)}
         extra={
           <>
             <p>{t("home.disclaimer")}</p>
             <p className="site-footer-updated">
               {(() => {
-                const latestPost = getLatestPosts(1)[0];
+                const latestPost = getLatestPosts(1, i18n.resolvedLanguage)[0];
                 return latestPost
                   ? t("home.blogLastUpdated", {
-                      date: formatDateJP(latestPost.date),
+                      date: formatDateLongLocalized(
+                        latestPost.date,
+                        i18n.resolvedLanguage,
+                      ),
                     })
                   : "";
               })()}

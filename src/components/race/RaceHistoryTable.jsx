@@ -2,7 +2,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { GRADE_LABELS } from "./raceGradeLabels";
 import { translateTechnique } from "./raceIndicators";
-import { formatPayout } from "../../utils/formatters";
 import { finishMarkKeyOf } from "../../utils/prevResult";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import "../common/HorizontalScrollHint.css";
@@ -96,9 +95,12 @@ import "./RaceHistoryTable.css";
  *   （`actual_course_*` は2025-12-04以降のレースにしか無く、
  *   古い行では「-」が並ぶだけになるため）
  */
-// ST の表記。フライングは結果タブと同じく「F0.11」（BOA-576）
-const formatSt = (race) =>
-  `${race.isFlying ? "F" : ""}${Number(race.startTiming).toFixed(2)}`;
+// ST の表記。フライングは公式と同じく「F.01」（BOA-583。以前は「F0.01」）。
+// F 以外は「0.15」のまま（この表の他の数値と桁をそろえる）
+const formatSt = (race) => {
+  const st = Number(race.startTiming).toFixed(2);
+  return race.isFlying ? `F${st.replace(/^0/, "")}` : st;
+};
 
 function RaceHistoryTable({
   rows,
@@ -222,7 +224,11 @@ function RaceHistoryTable({
                         ? renderFinishMark(race.finishMark)
                         : t("basicInfo.finishUnknown"))}
                 </td>
-                {shows("raceTitle") && <td>{race.raceTitle ?? "-"}</td>}
+                {shows("raceTitle") && (
+                  <td className="race-history-table-title">
+                    {race.raceTitle ?? "-"}
+                  </td>
+                )}
                 {shows("grade") && (
                   <td>
                     {race.raceGrade
@@ -269,7 +275,9 @@ function RaceHistoryTable({
                 </td>
                 <td>
                   {race.finishRank === 1 && race.payoutWin != null
-                    ? formatPayout(race.payoutWin)
+                    ? t("raceHistoryTable.payoutCell", {
+                        amount: race.payoutWin.toLocaleString(),
+                      })
                     : "-"}
                 </td>
               </tr>

@@ -47,6 +47,7 @@ import {
   SEMIFINAL_SPLIT_DEFAULT_SLOTS,
   MEET_SMALL_SAMPLE_RUNS,
 } from "./seriesPoints";
+import { finishMarkKeyOf } from "../../utils/prevResult";
 import RaceHistoryTable from "./RaceHistoryTable";
 import MeetSparkline from "./MeetSparkline";
 import {
@@ -74,6 +75,12 @@ const rankInBorder = (row, slots) =>
 
 function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   const { t } = useTranslation();
+  // 着順の欄の公式の記号（エ・転 等）を、データ出走表と同じ言語ごとの表記にする
+  const finishLabelOf = (finish) => {
+    if (typeof finish !== "string") return finish;
+    const key = finishMarkKeyOf(finish);
+    return key ? t(`dataTable.prevMark.${key}`) : finish;
+  };
   const localize = useLocalizedPath();
   const sortedPlayers = [...(players ?? [])].sort(
     (a, b) => a.number - b.number,
@@ -166,6 +173,16 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
     ? `${Number(prelimEndRaceId.slice(5, 7))}/${Number(prelimEndRaceId.slice(8, 10))}`
     : null;
   const prelimEndDay = board?.prelimEndDay ?? null;
+  // 丸一日レースが無かった日（中止・順延、BOA-636）。「9/22」の形で持つ
+  const noRaceDays = board?.noRaceDays ?? [];
+  const mdList = (days) =>
+    days
+      .map((d) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`)
+      .join(t("meetTab.listSeparator"));
+  // 予選終了の日より前の、レースが無かった日。日目と日付の数が合わない理由になる
+  const noRaceDaysBeforePrelimEnd = prelimEndRaceId
+    ? noRaceDays.filter((d) => d < prelimEndRaceId.slice(0, 10))
+    : [];
   const pretestOf = (racerId) => board?.pretestByRacer?.[racerId] ?? null;
   // 同率が何人いるか。節の序盤は得点率の刻みが粗く（3走なら0.33刻み）
   // 「11位」が3人並ぶ。順位だけ見せると分解能を過信させる
@@ -181,6 +198,8 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   // 選手を混ぜると公式とズレる（若松G1の実測で 5.67 → 除外すると 5.60 で
   // 実ボーダーと完全一致）
   const rankedOnly = ranking.filter((r) => !r.withdrawn);
+  // 予選の後に今節Fを切った選手（順位は付いたまま。BOA-626）
+  const postPrelimFlying = new Set(board?.postPrelimFlyingRacerIds ?? []);
   // 男女Ｗ優勝戦の節か（サービス層が同じシリーズの選手だけを渡してくる）
   const seriesSplit = Boolean(board?.seriesRacerIds);
   // 節全体では何人いるか。分けたときに「なぜ半分になったのか」を数で示す。
@@ -264,6 +283,13 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
           to: mdOf(trendDates[trendDates.length - 1]),
         }
       : null;
+  // 横軸の範囲の中で、レースが無かった日（目盛りから抜ける日、BOA-636）
+  const trendNoRaceDays =
+    trendDates.length > 1
+      ? noRaceDays.filter(
+          (d) => d > trendDates[0] && d < trendDates[trendDates.length - 1],
+        )
+      : [];
   const trendValues = trendRows
     .flatMap((r) => r.runs.map((x) => x[trendKey]))
     .filter((v) => typeof v === "number");
@@ -520,6 +546,18 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                         ) : (
                           t("meetTab.rankPlain", { rank: row.rank })
                         )}
+                        {/* 予選の後にFを切った選手。順位は予選で確定しているので
+                            残すが、予選中のFの選手（賞典除外で順位なし）と並ぶと
+                            食い違って見えるため印を添える（BOA-626） */}
+                        {row.rank !== null &&
+                          postPrelimFlying.has(row.racerId) && (
+                            <span
+                              className="rmt-post-flying"
+                              title={t("meetTab.postPrelimFlyingTitle")}
+                            >
+                              {t("meetTab.postPrelimFlying")}
+                            </span>
+                          )}
                       </td>
                       {renderPretestCell(p)}
                     </tr>
@@ -571,6 +609,17 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                   excluded: ranking.length - rankedOnly.length,
                 })
               : t("meetTab.compareSub", { total: rankedOnly.length })}
+            {/* 「予選後F」の意味（セルの title はタッチ端末で読めない。BOA-626）。
+                **表の6艇に印が出ているときだけ**断る。節の誰かに居るだけで出すと、
+                表に印が無いのに説明だけ出て「どこにあるのか」と迷う（ファン評価1周目） */}
+            {sortedPlayers.some((p) =>
+              ranking.some(
+                (r) =>
+                  r.racerId === p.racerId &&
+                  r.rank !== null &&
+                  postPrelimFlying.has(r.racerId),
+              ),
+            ) && <> {t("meetTab.postPrelimFlyingNote")}</>}
             {/* 「欠場」の理由。セルの title はタッチ端末で読めないので本文にも書く
                 （BOA-504 ファン評価） */}
             {absentOnly.length > 0 && <> {t("meetTab.absentNote")}</>}
@@ -915,7 +964,8 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                         r.finish === null || r.finish === undefined
                           ? null
                           : {
-                              text: r.finish,
+                              // 公式の記号（エ・転 等）はデータ出走表と同じ表記にする（BOA-654）
+                              text: finishLabelOf(r.finish),
                               win: r.finish === 1,
                               mark: typeof r.finish === "string",
                             },
@@ -940,6 +990,19 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
               {trendRange.from === trendRange.to
                 ? t("meetTab.compareTrendRangeOneDay", { day: trendRange.from })
                 : t("meetTab.compareTrendRange", trendRange)}
+              {/* 目盛りから抜けている日の理由（BOA-636）。横軸の範囲の中だけ。
+                  段落の他の文（2xs）に埋もれないよう、この1文だけ一段大きくする
+                  （ファン評価3周目、予選確定の一文と同じ大きさ） */}
+              {trendNoRaceDays.length > 0 && (
+                <>
+                  {" "}
+                  <span className="rmt-trend-noday">
+                    {t("meetTab.compareTrendNoRaceDays", {
+                      days: mdList(trendNoRaceDays),
+                    })}
+                  </span>
+                </>
+              )}
             </p>
           )}
           <p className="rmt-hint">{t("meetTab.compareTrendHint")}</p>
@@ -1032,8 +1095,10 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
           </p>
         )}
         {mine && prelimOver && (
-          // 早見（6艇分）は予選中しか出さないので、終わっている理由をここに出す
-          <p className="rmt-forecast">
+          // 早見（6艇分）は予選中しか出さないので、終わっている理由をここに出す。
+          // 「もう動かない」は勝負駆けの読みを決める情報なので、補足より一段強く出す
+          // （BOA-636。375pxで10.4pxの灰色だった）
+          <p className="rmt-forecast rmt-forecast-settled">
             {isAfterPrelim
               ? t("basicInfo.meetScoreNoForecast", { stage })
               : t(
@@ -1042,6 +1107,17 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                     : "meetTab.prelimOverNote",
                   { date: prelimEndDate ?? "", day: prelimEndDay ?? "" },
                 )}
+            {/* 丸一日中止の日は日目に数えない（公式も翌日に同じ日目を振り直す）。
+                書かないと、初日から日付を数えて「1日ずれている」と読まれる
+                （BOA-636、PR #1044 ファン評価） */}
+            {!isAfterPrelim && noRaceDaysBeforePrelimEnd.length > 0 && (
+              <>
+                {" "}
+                {t("meetTab.prelimNoRaceDays", {
+                  days: mdList(noRaceDaysBeforePrelimEnd),
+                })}
+              </>
+            )}
           </p>
         )}
 
