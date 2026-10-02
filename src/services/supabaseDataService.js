@@ -34,6 +34,7 @@ import {
   shouldUseOfficialSeries,
   prelimEndRaceIdOf,
   prelimEndDayOf,
+  noRaceDaysOf,
   semifinalSlotsOf,
   splitMeetSeries,
   scoreTableFor,
@@ -6802,7 +6803,8 @@ export const supabaseDataService = {
     // v19: 着順の並びでフライングを「F」と出すため、is_flying を足した（BOA-589）
     // v20: 予選終了の日目を series_day から出す（中止の日を数えない、BOA-578）
     // v21: 予選後に今節Fを切った選手（postPrelimFlyingRacerIds）を足した（BOA-626）
-    return withCache(`meet-scoreboard-v21-${raceId}`, async () => {
+    // v22: 丸一日レースが無かった日（noRaceDays）を足した（BOA-636）
+    return withCache(`meet-scoreboard-v22-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7152,8 +7154,8 @@ export const supabaseDataService = {
         })(),
         // **予選が終わった後のレースで今節Fを切った選手**（BOA-626）。
         // 順位は予選終了で確定しているので順位の対象からは外さない（上の判定は
-        // 予選終了までのFだけを見る）が、賞典除外なのは同じ。同じ「今節F」で
-        // 片方は除外・片方は順位付きになる理由を、画面が順位の横で断るのに使う。
+        // 予選終了までのFだけを見る。公式の得点率一覧も同じ、BOA-649）。同じ
+        // 「今節F」で片方は除外・片方は順位付きになる理由を、画面が順位の下で断るのに使う。
         // `meetStarts` は表示中レースの直前までなので、まだ切っていないFは入らない
         postPrelimFlyingRacerIds: postPrelimFlyingRacerIds(
           meetStarts,
@@ -7199,6 +7201,13 @@ export const supabaseDataService = {
           }
           return byRacer;
         })(),
+        // **丸一日レースが無かった日**（全レースが中止・順延、BOA-636）。表示中の日
+        // より前だけ。推移の横軸から抜ける理由と、予選終了の日目が日付の数と
+        // 合わない理由を、画面が断るのに使う。追加クエリ0本
+        noRaceDays: noRaceDaysOf(
+          raceIds.filter((id) => id.slice(0, 10) < date),
+          cancelledRaceIds,
+        ),
         // 予選が終わった日が節の何日目か（公式の「4日目12R終了時点」に合わせる）
         // 中止の日を数えないよう `series_day` を使う（BOA-578、prelimEndDayOf）
         prelimEndDay: prelimEndDayOf(
