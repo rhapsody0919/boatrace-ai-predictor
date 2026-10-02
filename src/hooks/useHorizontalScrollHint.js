@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { horizontalScrollHintState } from "../utils/horizontalScrollHint";
 
 /**
  * 横スクロールする箱に「まだ右に続く」ことを知らせる手がかりを付けるフック。
@@ -32,8 +33,31 @@ export function useHorizontalScrollHint(deps = []) {
   const update = useCallback(() => {
     const el = ref.current;
     if (!el) return;
-    setHasMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 4);
-    setHasLess(el.scrollLeft > 4);
+    const state = horizontalScrollHintState({
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
+      scrollLeft: el.scrollLeft,
+    });
+    setHasMore(state.hasMore);
+    setHasLess(state.hasLess);
+    // 少しだけ切れているとき（「›」を出すほどではない）は、切れた量に合わせた薄いフェードだけを
+    // 出す。呼び出し側の JSX を変えずに済むよう、手がかりの箱（.hscroll-hint）に data 属性で渡す
+    // （React が管理する className は再描画で上書きされるため使わない）
+    // 指で送るあいだは毎フレーム呼ばれるので、値が変わったときだけ書き換える
+    const hint = el.closest(".hscroll-hint");
+    const peekWidth = state.peekFadeWidth > 0 ? `${state.peekFadeWidth}px` : "";
+    if (
+      hint &&
+      hint.style.getPropertyValue("--hscroll-peek-width") !== peekWidth
+    ) {
+      if (peekWidth) {
+        hint.dataset.hscrollPeek = "true";
+        hint.style.setProperty("--hscroll-peek-width", peekWidth);
+      } else {
+        delete hint.dataset.hscrollPeek;
+        hint.style.removeProperty("--hscroll-peek-width");
+      }
+    }
   }, []);
 
   useEffect(() => {
