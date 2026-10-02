@@ -22,3 +22,29 @@ def test_drops_versions_older_than_previous_active():
 
 def test_first_version_deletes_nothing():
     assert db.profile_versions_to_delete([m("A", "2026-10-05", True)], previous_active=None) == []
+
+
+def overall(ft, shares):
+    return {"finish_target": ft, "venue_code": 0, "grade": "all", "round": "all",
+            "boat_number": 0, "shares": shares}
+
+
+def test_share_drift_flags_large_change_between_versions():
+    prev = [overall(1, {"a": 0.40, "b": 0.60})]
+    new = [overall(1, {"a": 0.45, "b": 0.55}), overall(1, {"a": 0.9, "b": 0.1}) | {"venue_code": 3}]
+    d = db.share_drift(prev, new, threshold=0.03)
+    assert d["flagged"]
+    assert d["changes"][0]["finish_target"] == 1
+    assert abs(d["changes"][0]["max_abs_change"] - 0.05) < 1e-9
+
+
+def test_share_drift_small_change_is_not_flagged_and_new_theme_counts_from_zero():
+    prev = [overall(2, {"a": 0.50, "b": 0.50})]
+    new = [overall(2, {"a": 0.49, "b": 0.49, "market": 0.02})]
+    d = db.share_drift(prev, new, threshold=0.03)
+    assert not d["flagged"]
+
+
+def test_share_drift_without_previous_version():
+    assert db.share_drift([], [overall(1, {"a": 1.0})], threshold=0.03) == {
+        "flagged": False, "changes": [], "previous": None}

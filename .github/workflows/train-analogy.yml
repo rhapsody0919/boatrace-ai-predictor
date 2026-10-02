@@ -55,8 +55,9 @@ jobs:
         working-directory: scripts/ml/analogy
         run: python features.py
 
-      - name: Download active model (品質ゲートの比較用)
-        run: node scripts/ml/analogy/storage.js download-active
+      # 品質ゲートの比較の相手は固定した参照版（scripts/ml/analogy/reference.json）。直前の版ではない
+      - name: Download reference model (品質ゲートの比較用)
+        run: node scripts/ml/analogy/storage.js download-reference
 
       - name: Train, quality gate, contribution profiles
         working-directory: scripts/ml/analogy
@@ -68,6 +69,20 @@ jobs:
       - name: Write profiles and activate
         working-directory: scripts/ml/analogy
         run: python db.py write
+
+      # 寄与度の見え方が前の版から大きく変わったら知らせる（止めはしない。db.py の drift.json）
+      - name: Notify Slack (寄与度のシェアが大きく動いたとき)
+        if: success() && hashFiles('data/ml/analogy/out/drift.json') != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          drift=data/ml/analogy/out/drift.json
+          if [ "$(jq -r .flagged "$drift")" != "true" ]; then exit 0; fi
+          detail=$(jq -r '.changes[] | "finish_target=\(.finish_target) \(.theme) \(.max_abs_change * 1000 | round / 1000)"' "$drift" | paste -sd ' / ' -)
+          payload=$(jq -n --arg d "$detail" --arg prev "$(jq -r .previous "$drift")" --arg url "$RUN_URL" \
+            '{text: (":warning: *アナロジー・ファインダーの寄与度のシェアが前の版（" + $prev + "）から大きく動きました*（切り替えは済み）\n" + $d + "\n" + $url)}')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
 
       - name: Summary
         if: always()
@@ -84,7 +99,8 @@ jobs:
             else
               echo "## 版 $(jq -r .model_version $meta) は学習したが、切り替えていない" >> "$GITHUB_STEP_SUMMARY"
             fi
-            jq '{periods: .metrics.periods, n_races: .metrics.n_races, gate: .metrics.gate, win: (.metrics.win | {logloss_model, logloss_baseline, paired_logloss_model_minus_baseline})}' "$meta" >> "$GITHUB_STEP_SUMMARY"
+            jq '{periods: .metrics.periods, n_races: .metrics.n_races, gate: .metrics.gate, code_sha: .metrics.provenance.code_sha, win: (.metrics.win | {logloss_model, logloss_baseline, paired_logloss_model_minus_baseline})}' "$meta" >> "$GITHUB_STEP_SUMMARY"
+            if [ -f data/ml/analogy/out/drift.json ]; then jq '{drift: .}' data/ml/analogy/out/drift.json >> "$GITHUB_STEP_SUMMARY"; fi
           fi
 
       - name: Notify Slack (失敗時のみ)

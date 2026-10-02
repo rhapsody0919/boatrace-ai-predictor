@@ -51,3 +51,40 @@ jobs:
 
       - name: Run CI-tier verifications
         run: npm run verify:ci
+
+  # scripts/ml/ の変更があるときだけ、アナロジー・ファインダーの学習の pytest（as-of・リーク防止・
+  # ラウンド区分・集計・品質ゲート）を回す。以前は train-analogy.yml の手動実行時にしか走らなかった
+  # （データサイエンス体制のレビュー、2026-10-02）
+  ml-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: scripts/ml/ に変更があるか
+        id: changed
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if git diff --quiet "$BASE" HEAD -- scripts/ml/ src/constants/raceStageConfig.js; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.changed.outputs.run == 'true'
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Python deps
+        if: steps.changed.outputs.run == 'true'
+        run: pip install -r scripts/ml/requirements.txt pytest
+
+      # ラウンド区分のテストは node で src/constants/raceStageConfig.js を読む（依存パッケージは不要）
+      - name: pytest (scripts/ml/analogy/tests)
+        if: steps.changed.outputs.run == 'true'
+        run: python -m pytest scripts/ml/analogy/tests -q
