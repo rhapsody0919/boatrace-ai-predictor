@@ -3173,8 +3173,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 1000行を超える選手がいる）、待たずに次のレースへ移ると2ページ目が録画に入らず、
     // 速い再生でだけ出て本番へ素通りしていた（BOA-556）。走数は取得前「—」、
     // 取得後は数字（0を含む）になる
+    // 走数が少ない艇は⚠が付く（race-detail-ui-unify plan §6）
     await expect(page.locator(".rsc-grid .rsc-runs")).toHaveText(
-      Array(6).fill(/^\d+$/),
+      Array(6).fill(/^⚠?\d+$/),
       // 録画（本番に繋ぐ）では6選手分の2年窓を取るので、他の待ちと同じ長さにする
       { timeout: 25000 },
     );

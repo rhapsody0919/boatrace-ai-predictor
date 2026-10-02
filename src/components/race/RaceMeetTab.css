@@ -145,6 +145,14 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 選択中の行の最良は、行の青い塗りと金の薄い塗りが混ざって灰色の箱に見え、
+   金の枠と読めなかった（PR #1187 ファン評価2周目）。枠を不透明の金にする */
+.rmt-compare tbody tr.is-current td.ind-best.ind-best.ind-best {
+  box-shadow:
+    inset 0 0 0 1px var(--brand-accent-primary),
+    inset 0 0 0 100vmax var(--ind-best-bg);
+}
+
 /* 準優の目安の「線」。どこが境目かは数字を突き合わせないと読めなかった */
 .rmt-compare tbody tr.is-border-edge th,
 .rmt-compare tbody tr.is-border-edge td {
@@ -178,6 +186,15 @@
 .rmt-rate {
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
+}
+
+/* 最良の金枠（内側1pxの線）に数字が接しないよう、得点率・順位のセルの右に余白を取る。
+   列の数字の右端がそろうよう、金枠の有無によらず付ける（PR #1187 ファン評価3周目。
+   前検は表の右端でカードの余白がある） */
+.rmt-compare td.rmt-rate,
+.rmt-compare td.rmt-rank,
+.rmt-compare td.rmt-pretest {
+  padding-right: var(--spacing-1);
 }
 
 .rmt-warn {
@@ -411,7 +428,7 @@
 /* 準優の目安に届くセル。公式は「当確」を赤で塗るが、こちらは目安が推定な
    ので断定はせず、届く見込みという意味の色にとどめる */
 .rmt-forecast-table td.is-in-border {
-  background: var(--color-success-bg, rgba(67, 160, 71, 0.16));
+  background: var(--color-success-bg);
   color: var(--text-primary);
   font-weight: var(--font-weight-bold);
 }

@@ -154,6 +154,10 @@
   color: var(--text-secondary);
 }
 
+.rsc-runs.is-small-sample {
+  color: var(--color-warning-text);
+}
+
 .rsc-caveat {
   margin: var(--spacing-2) 0 0;
   font-size: var(--font-size-xs);

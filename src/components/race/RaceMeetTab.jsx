@@ -34,6 +34,7 @@ import {
   getRecentRaces,
   lastStartTiming,
   MEET_ST_DIFF_THRESHOLD,
+  meetStVerdictTone,
 } from "./basicInfoStats";
 import {
   buildMeetRanking,
@@ -50,6 +51,7 @@ import {
 } from "./seriesPoints";
 import { finishMarkKeyOf } from "../../utils/prevResult";
 import RaceHistoryTable from "./RaceHistoryTable";
+import { bestOf } from "../../utils/bestOf";
 import MeetSparkline from "./MeetSparkline";
 import {
   dayCenter,
@@ -442,6 +444,48 @@ function RaceMeetTab({
   });
   const lastExhibition = lastOf("exhibitionTime");
 
+  // 6艇の今節の最良（同値は全部）に金枠を付ける（race-detail-ui-unify R1、モック承認済み）。
+  // 得点率は高いほど、節内順位・前検タイムは低いほど良い。表示と同じ桁で比べる。
+  // 欠場・未出走の行は得点率・順位が出ないので候補に入らない。
+  // 走数が少ない（⚠）艇の得点率・順位は比べるが、最良でも金枠を付けない（繰り下げもしない）。
+  // 初日に1走だけの「⚠10.00」が最良に光っていた（PR #1187 ファン評価1周目。
+  // 基本情報の横棒と同じく、当てにならない値を最良として光らせない）
+  const compareRows = sortedPlayers
+    .map((p) => ({
+      boat: p.number,
+      row: ranking.find((r) => r.racerId === p.racerId),
+    }))
+    .filter((x) => x.row);
+  const bestRate = bestOf(
+    compareRows.map(({ boat, row }) => ({
+      boat,
+      value: row.rate,
+      hidden: row.runs < MEET_SMALL_SAMPLE_RUNS,
+    })),
+    "max",
+    { digits: 2 },
+  );
+  const bestRank = bestOf(
+    compareRows.map(({ boat, row }) => ({
+      boat,
+      value: row.rank,
+      hidden: row.runs < MEET_SMALL_SAMPLE_RUNS,
+    })),
+    "min",
+  );
+  const bestPretest = bestOf(
+    sortedPlayers.map((p) => {
+      const time = pretestOf(p.racerId)?.pretest_time;
+      return {
+        boat: p.number,
+        value: time === null || time === undefined ? null : Number(time),
+      };
+    }),
+    "min",
+    { digits: 2 },
+  );
+  const bestCls = (set, boat) => (set.has(boat) ? " ind-best" : "");
+
   // 得点率は平均なので「1着→6着」と「3着→3着」が同じ5.00になる。
   // 次をどう見るかは並びで変わる
   const renderFinishes = (finishes) =>
@@ -473,7 +517,7 @@ function RaceMeetTab({
   const renderPretestCell = (p) => {
     const pt = pretestOf(p.racerId);
     return (
-      <td className="rmt-pretest">
+      <td className={`rmt-pretest${bestCls(bestPretest, p.number)}`}>
         {pt?.pretest_time !== null && pt?.pretest_time !== undefined
           ? pt.pretest_rank
             ? t("meetTab.pretestCell", {
@@ -580,7 +624,7 @@ function RaceMeetTab({
                       onClick={() => onFocusBoat(p.number)}
                     >
                       {renderPlayerHead(p, row.finishes)}
-                      <td className="rmt-rate">
+                      <td className={`rmt-rate${bestCls(bestRate, p.number)}`}>
                         {row.runs < MEET_SMALL_SAMPLE_RUNS && (
                           <span
                             className="rmt-warn"
@@ -591,7 +635,7 @@ function RaceMeetTab({
                         )}
                         {row.rate.toFixed(2)}
                       </td>
-                      <td className="rmt-rank">
+                      <td className={`rmt-rank${bestCls(bestRank, p.number)}`}>
                         {/* 途中で節を離脱した選手・賞典除外の選手は順位の対象外
                             （公式も同じ）。理由で説明を出し分ける（BOA-587） */}
                         {row.rank === null ? (
@@ -687,6 +731,10 @@ function RaceMeetTab({
           </table>
           <p className="rmt-hint">{t("meetTab.rowHint")}</p>
           <p className="rmt-sub">
+            {/* 金枠の意味（PR #1187 ファン評価1周目: 説明がどこにも無かった） */}
+            {bestRate.size + bestRank.size + bestPretest.size > 0 && (
+              <>{t("meetTab.bestLegend")} </>
+            )}
             {ranking
               .filter(inTable)
               .some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS) && (
@@ -1355,7 +1403,16 @@ function RaceMeetTab({
                         n: st.meetN,
                         base: st.baseAvg === null ? "—" : st.baseAvg.toFixed(2),
                       })}{" "}
-                      <span className="rmt-verdict">
+                      {/* 通常より早い＝緑、遅い＝赤（R2）。差の数字に −/+ が付く。
+                          小さな差・走数の少ないときは色を付けない（meetStVerdictTone） */}
+                      <span
+                        className={`rmt-verdict${
+                          {
+                            good: " ind-good",
+                            bad: " ind-bad",
+                          }[meetStVerdictTone(st.diff, st.meetN)] ?? ""
+                        }`}
+                      >
                         {st.diff <= -MEET_ST_DIFF_THRESHOLD
                           ? t("basicInfo.meetTrendStPush", {
                               diff: Math.abs(st.diff).toFixed(2),
@@ -1430,7 +1487,7 @@ function RaceMeetTab({
                   referenceSeries={meetRows.map(
                     (r) => venueDailyExhibitionAvg[r.date] ?? null,
                   )}
-                  color="var(--color-info-text, #2a7fbf)"
+                  color="var(--color-info-text)"
                 />
                 <div className="rmt-spark-foot">
                   <span>{firstMeetDate}</span>
