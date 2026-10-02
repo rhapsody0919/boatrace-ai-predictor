@@ -37,6 +37,7 @@ import { fileURLToPath } from "url";
 import { supabase } from "../../lib/supabaseClient.js";
 import { BUCKET, ensureBucket } from "./storage.js";
 import { assertCachedHeader } from "./storageRules.js";
+import { weekRanges } from "./week-ranges.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_DIR =
@@ -83,20 +84,6 @@ const prevMonth = (m) => {
   const [y, mo] = m.split("-").map(Number);
   return mo === 1 ? ym(y - 1, 12) : ym(y, mo - 1);
 };
-
-/** [lo, hi) の月を7日ずつの範囲に分ける（race_id の先頭は YYYY-MM-DD なので文字列で比べられる） */
-export function weekRanges(lo, hi) {
-  const out = [];
-  const day = (d) => d.toISOString().slice(0, 10);
-  let d = new Date(`${lo}-01T00:00:00Z`);
-  const end = new Date(`${hi}-01T00:00:00Z`);
-  while (d < end) {
-    const next = new Date(d.getTime() + 7 * 86400000);
-    out.push([day(d), day(next < end ? next : end)]);
-    d = next;
-  }
-  return out;
-}
 
 async function fetchRange(table, cols, orderCols, rangeCol, lo, hi) {
   const rows = [];

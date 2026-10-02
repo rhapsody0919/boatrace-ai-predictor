@@ -51,7 +51,7 @@ def test_feature_rows_follow_names_and_hash_includes_version():
 
 
 def test_week_ranges_cover_month_without_gaps():
-    script = ("import { weekRanges } from './scripts/ml/analogy/export_pool.js';"
+    script = ("import { weekRanges } from './scripts/ml/analogy/week-ranges.js';"
               "console.log(JSON.stringify(weekRanges('2026-09', '2026-10')));")
     out = subprocess.run(["node", "--input-type=module", "-e", script], cwd=ROOT, capture_output=True,
                          text=True, check=True, env={"PATH": __import__("os").environ["PATH"]})
