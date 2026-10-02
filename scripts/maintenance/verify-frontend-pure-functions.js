@@ -40,6 +40,7 @@ const TARGETS = {
   prevResult: "src/utils/prevResult.js",
   nextOpenDate: "src/utils/nextOpenDate.js",
   meetGrouping: "src/utils/meetGrouping.js",
+  turnPrediction: "src/utils/turnPrediction.js",
   hscrollHint: "src/utils/horizontalScrollHint.js",
 };
 
@@ -1602,6 +1603,35 @@ function suiteNextOpenDate(m, check) {
   );
 }
 
+// --- pickHitPattern: 的中レースで見せる「当たった候補」（PR #1197 ファン評価3周目）
+function suiteTurnPrediction(m, check) {
+  const patterns = [
+    { winnerCourse: 1, technique: "nige", probability: 0.44 },
+    { winnerCourse: 2, technique: "makuri", probability: 0.09 },
+    { winnerCourse: 2, technique: "sashi", probability: 0.07 },
+  ];
+  check(
+    "pickHitPattern: 同じ艇の候補が複数あれば、実際の決まり手と同じ候補を選ぶ",
+    m.pickHitPattern(patterns, 2, "差し"),
+    patterns[2],
+  );
+  check(
+    "pickHitPattern: 実際の決まり手の候補が無ければ、同じ艇の最初の候補",
+    m.pickHitPattern(patterns, 2, "抜き"),
+    patterns[1],
+  );
+  check(
+    "pickHitPattern: 決まり手が分からないときも同じ艇の最初の候補",
+    m.pickHitPattern(patterns, 2, null),
+    patterns[1],
+  );
+  check(
+    "pickHitPattern: 1着の艇の候補が無ければ null",
+    m.pickHitPattern(patterns, 5, "まくり"),
+    null,
+  );
+}
+
 const SUITES = {
   nextOpenDate: suiteNextOpenDate,
   prevResult: suitePrevResult,
@@ -1612,6 +1642,7 @@ const SUITES = {
   weatherInfo: suiteWeatherInfo,
   dateUtils: suiteDateUtils,
   meetGrouping: suiteMeetGrouping,
+  turnPrediction: suiteTurnPrediction,
   hscrollHint: suiteHscrollHint,
 };
 
@@ -1620,6 +1651,12 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  [
+    "turnPrediction",
+    "実際の決まり手を見ずに、同じ艇の最初の候補を選ぶ（PR #1197 ファン評価3周目の退行）",
+    "return exact ?? sameBoat[0] ?? null;",
+    "return sameBoat[0] ?? null;",
+  ],
   [
     "hscrollHint",
     "4pxの残りで「›」を出す（#1130 ファン評価で見送った P3 の退行）",

@@ -93,8 +93,12 @@ test("的中レースの展開予測のカードは「的中した候補」と�
   await expect(label).toBeVisible({ timeout: 30000 });
   // 上位候補のどれかが当たれば的中なので、本命に推したように読める「1着予想」とは書かない
   await expect(label).toHaveText("的中した候補");
+  // 決まり手は実際の結果と違うことがあるので、コースの欄には書かず、AI の予想として書く
   await expect(page.locator(".turn-hit-course-value").first()).toHaveText(
-    /^\dコース (逃げ|差し|まくり|まくり差し|抜き|恵まれ)$/,
+    /^\dコース$/,
+  );
+  await expect(page.locator(".turn-hit-probability").first()).toHaveText(
+    /^予想: (逃げ|差し|まくり|まくり差し|抜き|恵まれ) \d+%$/,
   );
 
   const card = page.locator(".race-card").filter({ has: label }).first();
@@ -106,8 +110,10 @@ test("的中レースの展開予測のカードは「的中した候補」と�
     await page.evaluate(() => window.__opened.join(" ")),
   );
   // 予想確率はその決まり手で1着になる確率なので、決まり手も添える（ファン評価2周目）
+  // 予想確率はその決まり手で1着になる確率なので決まり手も添える（ファン評価2周目）。ただし実際の
+  // 決まり手と違うことがあるので、結果としてではなく AI の予想として書く（3周目）
   expect(text).toMatch(
-    /コース（(逃げ|差し|まくり|まくり差し|抜き|恵まれ)）が1着/,
+    /コースが1着（AIの予想: (逃げ|差し|まくり|まくり差し|抜き|恵まれ) \d+%）/,
   );
   expect(text).not.toContain("先頭");
 });

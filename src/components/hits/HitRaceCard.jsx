@@ -65,12 +65,15 @@ function HitRaceCard({
               （BOA-710、PR #1197 ファン評価1周目） */}
           <span className="turn-hit-course-label">的中した候補</span>
           <span className="turn-hit-course-value">
-            {hitRace.winnerCourse}コース{technique ? ` ${technique}` : ""}
+            {hitRace.winnerCourse}コース
           </span>
         </div>
         {probability != null && (
           <div className="turn-hit-probability">
-            予想確率 {(probability * 100).toFixed(0)}%
+            {/* 決まり手は AI の予想として書く（実際の決まり手と違うことがある。的中の判定は1着の艇だけ。
+                PR #1197 ファン評価3周目） */}
+            予想: {technique ? `${technique} ` : ""}
+            {(probability * 100).toFixed(0)}%
           </div>
         )}
       </div>
