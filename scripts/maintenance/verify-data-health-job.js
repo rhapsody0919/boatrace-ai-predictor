@@ -174,6 +174,7 @@ const MIGRATION_FILES = Object.freeze([
   "100_data_health_entries_duplicates.sql",
   "105_data_health_coverage_exhibition_row.sql",
   "107_data_health_cancellation_with_result.sql",
+  "121_data_health_pre_race_series_day.sql",
 ]);
 const MIGRATION_FILE = MIGRATION_FILES[0];
 const migrationSqlByFile = new Map(
@@ -305,7 +306,7 @@ async function buildDb() {
 CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
 CREATE TABLE races (race_id varchar(20) primary key, race_date date not null, venue_code smallint not null, race_number smallint not null, race_grade text, cancellation_status text, start_time time);
 CREATE TABLE race_results (race_id varchar(20) primary key, rank1 smallint, rank2 smallint, rank3 smallint, rank4 smallint, rank5 smallint, rank6 smallint, actual_course_1 smallint, winning_technique text);
-CREATE TABLE race_conditions (race_id varchar(20) primary key, race_stage text, race_distance_m smallint, race_labels text[]);
+CREATE TABLE race_conditions (race_id varchar(20) primary key, race_stage text, race_distance_m smallint, race_labels text[], series_day smallint);
 CREATE TABLE race_start_timings (race_id varchar(20), boat_number smallint, start_timing numeric, finish_mark text, finish_rank smallint, primary key (race_id, boat_number));
 CREATE TABLE exhibition_data (race_id varchar(20), boat_number smallint, exhibition_time numeric, start_timing numeric, today_weight numeric, primary key (race_id, boat_number));
 CREATE TABLE race_odds (race_id varchar(20), captured_at timestamptz, trifecta_all jsonb, trio_all jsonb, exacta_all jsonb, quinella_all jsonb, wide_all jsonb, primary key (race_id, captured_at));
@@ -352,7 +353,7 @@ INSERT INTO races VALUES
  ('2026-09-19-01-01','2026-09-19',1,1,'ippan',NULL,'10:00');
 -- 1レース目: 6艇が完走し、全項目がそろう
 INSERT INTO race_results VALUES ('2026-09-18-01-01',1,2,3,4,5,6,1,'逃げ');
-INSERT INTO race_conditions VALUES ('2026-09-18-01-01','予選',1800,'{}');
+INSERT INTO race_conditions VALUES ('2026-09-18-01-01','予選',1800,'{}',2);
 INSERT INTO race_start_timings SELECT '2026-09-18-01-01', g, 0.15, g::text, g FROM generate_series(1,6) g;
 INSERT INTO exhibition_data (race_id, boat_number, exhibition_time) SELECT '2026-09-18-01-01', g, 6.70 FROM generate_series(1,6) g;
 INSERT INTO race_odds VALUES ('2026-09-18-01-01', now(), '{"1-2-3":1}', '{"1=2=3":1}', '{"1-2":1}', '{"1=2":1}', '{"1=2":1}');
@@ -413,7 +414,7 @@ INSERT INTO racer_period_stats VALUES (1001,2026,1),(1001,2026,2),(1002,2026,2);
   );
   const d1 = rows.find((r) => r.d === "2026-09-18");
   check(
-    "data_health_pre_race_fields: 出走行（確定中止を除く）と、体重・F数の取得済み件数、レース条件の距離・ラベル",
+    "data_health_pre_race_fields: 出走行（確定中止を除く）と、体重・F数の取得済み件数、レース条件の距離・ラベル・日目（BOA-510）",
     d1.entries === 12 &&
       d1.weight_kg === 6 &&
       d1.f_count === 4 &&
@@ -422,7 +423,8 @@ INSERT INTO racer_period_stats VALUES (1001,2026,1),(1001,2026,2),(1002,2026,2);
       d1.is_absent === 6 &&
       d1.races === 6 &&
       d1.race_distance_m === 1 &&
-      d1.race_labels === 1,
+      d1.race_labels === 1 &&
+      d1.series_day === 1,
     show(d1),
   );
 }
@@ -1975,7 +1977,7 @@ async function sqlMutantFails(label, mutate) {
 CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
 CREATE TABLE races (race_id varchar(20) primary key, race_date date not null, venue_code smallint not null, race_number smallint not null, race_grade text, cancellation_status text, start_time time);
 CREATE TABLE race_results (race_id varchar(20) primary key, rank1 smallint, rank2 smallint, rank3 smallint, rank4 smallint, rank5 smallint, rank6 smallint, actual_course_1 smallint, winning_technique text);
-CREATE TABLE race_conditions (race_id varchar(20) primary key, race_stage text, race_distance_m smallint, race_labels text[]);
+CREATE TABLE race_conditions (race_id varchar(20) primary key, race_stage text, race_distance_m smallint, race_labels text[], series_day smallint);
 CREATE TABLE race_start_timings (race_id varchar(20), boat_number smallint, start_timing numeric, finish_mark text, finish_rank smallint, primary key (race_id, boat_number));
 CREATE TABLE exhibition_data (race_id varchar(20), boat_number smallint, exhibition_time numeric, start_timing numeric, today_weight numeric, primary key (race_id, boat_number));
 CREATE TABLE race_odds (race_id varchar(20), captured_at timestamptz, trifecta_all jsonb, trio_all jsonb, exacta_all jsonb, quinella_all jsonb, wide_all jsonb, primary key (race_id, captured_at));
