@@ -266,10 +266,12 @@ tr.racer-vc-row-highlight td:first-child {
   display: inline-block;
 }
 
-/* 会場×枠番で絞った欄のカードは常に7枚（1着率〜平均展示タイム）。auto-fit の 200px だと、
+/* 会場×枠番で絞った欄のカードは常に7枚（勝率〜平均展示タイム）。auto-fit の 200px だと、
    ページの上限 1100px（BOA-583）で 5枚＋2枚に割れ、右に3枠分の空きが出た（BOA-624）。
-   件数は固定なので列数を決める: 1200px 以上は7列で1段、それより狭い PC・タブレットは4列（4＋3） */
-@media (min-width: 481px) {
+   件数は固定なので列数を決める: 1200px 以上は7列で1段、640〜1199px は4列（4＋3）。
+   640px 未満で4列にするとカードが 140px を切り、「平均展示タイム」「単勝回収率」の見出しが
+   2行に折れた（481px で実測）ので、そこは従来の auto-fit（2列）のまま */
+@media (min-width: 640px) {
   .racer-stat-cards-grid.racer-vc-cards-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }

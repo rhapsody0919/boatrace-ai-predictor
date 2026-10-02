@@ -228,5 +228,20 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
     ).toHaveText(/^0\.\d{3}$/);
     await page.setViewportSize({ width: 768, height: 900 });
     await expect.poll(rowsOf).toEqual([4, 3]);
+    // 481〜639px で4列にしていたときは、カードが 140px を切って見出しが2行に折れた
+    await page.setViewportSize({ width: 600, height: 900 });
+    await expect
+      .poll(() =>
+        grid.evaluate((g) =>
+          [...g.querySelectorAll(".racer-stat-card h3")]
+            .filter(
+              (h) =>
+                h.getBoundingClientRect().height >
+                parseFloat(getComputedStyle(h).lineHeight) * 1.5,
+            )
+            .map((h) => h.textContent),
+        ),
+      )
+      .toEqual([]);
   });
 });
