@@ -23,7 +23,7 @@ const readTable = (page) =>
           ? fill.getBoundingClientRect().width /
             track.getBoundingClientRect().width
           : null,
-        best: label?.classList.contains("is-best") ?? false,
+        best: label?.classList.contains("ind-best") ?? false,
         rank: tr.querySelector(".motor-venue-rank")?.textContent ?? null,
       };
     }),

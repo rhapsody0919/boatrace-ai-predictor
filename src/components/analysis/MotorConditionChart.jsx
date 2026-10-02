@@ -417,12 +417,16 @@ function MotorConditionChart({
     // 母数（/60）は小さく添える。375px で列幅を詰めるため（BOA-428）
     return (
       <>
-        {t(
-          hit.tied > 1
-            ? "analysis.motor.venueRankCellTied"
-            : "analysis.motor.venueRankCell",
-          { rank: hit.rank },
-        )}
+        <span className="motor-venue-rank-main">
+          {t(
+            hit.tied > 1
+              ? "analysis.motor.venueRankCellTied"
+              : "analysis.motor.venueRankCell",
+            { rank: hit.rank },
+          )}
+        </span>
+        {/* 母数の前で折り返せるようにする（「タイ」と「/」の間は、そのままでは折れない） */}
+        <wbr />
         <span className="motor-venue-rank-total">
           {t("analysis.motor.venueRankTotal", { total: venueRanks.total })}
         </span>

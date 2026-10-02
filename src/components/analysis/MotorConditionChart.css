@@ -199,18 +199,24 @@
   min-width: 84px;
 }
 
+/* 会場内順位は「20位タイ/60」を1つの文字列で出し、幅で自然に折り返す（母数を block にすると、
+   画面から読む文字列に改行が入り「20位タイ\n/60」になる。受け入れE2E）。375px で列幅を詰めるため、
+   母数の前で折れるよう、順位と母数をそれぞれ折れない塊にする */
 .motor-ranking-table td.motor-venue-rank {
   color: var(--text-primary);
   font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.motor-venue-rank-main {
   white-space: nowrap;
 }
 
-/* 母数は順位の下の行に小さく出す（375px で列幅を詰める。BOA-428） */
+/* 母数は小さく添える（375px で列幅を詰める。BOA-428） */
 .motor-venue-rank-total {
-  display: block;
+  white-space: nowrap;
   color: var(--text-secondary);
   font-size: 0.6875rem;
-  line-height: 1.2;
 }
 
 /* 棒と会場内順位の見出しは2行に折ってよい（承認済みのモックと同じ。列幅を中身で決める） */
@@ -487,6 +493,12 @@
   .motor-ranking-table th,
   .motor-ranking-table td {
     padding: 0.5rem 0.3rem;
+  }
+
+  /* 狭い画面だけ、「20位タイ」で1行が埋まる幅にして母数「/60」を次の行へ折る（BOA-428） */
+  .motor-ranking-table td.motor-venue-rank {
+    white-space: normal;
+    width: 4.6em;
   }
 
   /* 375px で会場内順位の列まで、右端の「›」に隠れずに入る幅（BOA-428） */
