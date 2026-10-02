@@ -1,0 +1,87 @@
+/* イン崩れ指数の 0〜100 バー（VolatilityPercentileBar.jsx）。
+   既定はページ・カードの地に載せる配色（意味トークン。ダークモードで反転する）。
+   常に明るい地のカード（VolatilityDisplay）に載せるときは .vpb--on-light で以前の固定色にする */
+.vpb {
+  --vpb-bg: var(--surface-page);
+  --vpb-label: var(--text-secondary);
+  --vpb-track: var(--border-hairline);
+  --vpb-median: var(--text-secondary);
+  --vpb-ends: var(--text-secondary);
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--vpb-bg);
+  border-radius: 6px;
+}
+
+.vpb--on-light {
+  --vpb-bg: rgba(255, 255, 255, 0.55);
+  --vpb-label: #555;
+  --vpb-track: #e0e0e0;
+  --vpb-median: #616161;
+  --vpb-ends: #999;
+}
+
+/* 値と棒の色は段階で決める（0.3以下=堅い、0.7以上=崩れやすい） */
+.vpb--low {
+  --vpb-tone: var(--color-success-light);
+}
+.vpb--mid {
+  --vpb-tone: var(--color-info);
+}
+.vpb--high {
+  --vpb-tone: var(--color-warning-light);
+}
+
+.vpb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.vpb-label {
+  font-size: 0.82rem;
+  color: var(--vpb-label);
+}
+
+.vpb-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--vpb-tone);
+}
+
+.vpb-track {
+  position: relative;
+  height: 6px;
+  background: var(--vpb-track);
+  border-radius: 3px;
+}
+
+.vpb-fill {
+  position: absolute;
+  left: 0;
+  height: 100%;
+  background: var(--vpb-tone);
+  border-radius: 3px;
+}
+
+/* 真ん中（標準）の目印 */
+.vpb-median {
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--vpb-median);
+  border-radius: 1px;
+  transform: translateX(-50%);
+}
+
+.vpb-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--vpb-ends);
+  margin-top: 0.25rem;
+}

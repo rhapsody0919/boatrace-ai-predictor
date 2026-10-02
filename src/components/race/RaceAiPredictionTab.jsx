@@ -26,6 +26,7 @@ import PredictionCard from "./PredictionCard";
 import OutcomePatternPreview from "./OutcomePatternPreview";
 import { getVolatilityLevel } from "../../utils/volatilityLevel";
 import { isJudgeable } from "../../utils/raceOutcome";
+import VolatilityPercentileBar from "./VolatilityPercentileBar";
 import AnalogyFinderSection from "./analogy/AnalogyFinderSection";
 import { isAnalogyFinderEnabled } from "../../config/featureFlags";
 
@@ -93,9 +94,6 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
     // 不成立のレースは1着が決まっていないので、振り返りも「判定対象外」にする（BOA-543）
     const canJudge = isJudgeable(result);
     const isUpset = result.rank1 !== 1;
-    const volatilityPercentileValue = Math.round(
-      (prediction.volatilityPercentile ?? 0) * 100,
-    );
 
     if (!showVolatilityOutcome && !hasTurnPrediction) {
       return (
@@ -123,14 +121,18 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
             <h5 className="result-verify-title">
               {t("result.volatilitySectionTitle")}
             </h5>
+            {/* 指数はレース前と同じ 0〜100 のバーで見せる。以前は「会場内パーセンタイル0」と
+                文字で出していて、専門用語のうえ「0」が確率0%に見えた（BOA-706） */}
             <p className="result-volatility-line">
-              {t("result.volatilityPredictedWithPercentile", {
+              {t("result.volatilityPredicted", {
                 label: t(
                   `volatility.level${volatilityLevel === "high" ? "High" : "Low"}`,
                 ),
-                percentile: volatilityPercentileValue,
               })}
             </p>
+            <VolatilityPercentileBar
+              percentile={prediction.volatilityPercentile ?? 0}
+            />
             <p className="result-volatility-line">
               {t("result.volatilityOutcomeLabel")}
               {": "}

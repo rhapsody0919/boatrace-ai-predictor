@@ -338,4 +338,50 @@ test.describe("レース詳細の表示の細部", () => {
       }
     }
   });
+  for (const lang of ["ja", "en"]) {
+    test(`AI予想の振り返り（${lang}）: 確率と丸数字の説明を出し、イン崩れ指数はレース前と同じバーで見せる（BOA-706）`, async ({
+      page,
+    }) => {
+      await page.goto(`${lang === "ja" ? "" : "/en"}${RACE}?tab=aiPrediction`);
+      const tab = page.locator(".race-ai-prediction-tab");
+      await expect(tab.locator(".turn-pattern-row").first()).toBeVisible({
+        timeout: 30000,
+      });
+      // 「47%」が何の値か・丸数字が何かを書く（以前はレース前だけ出していた）
+      await expect(tab.locator(".turn-pattern-caption")).toContainText(
+        lang === "ja" ? "レース前の予想" : "Pre-race prediction",
+      );
+      // 指数は「会場内パーセンタイル0」と文字で出さず、0〜100 のバーで出す
+      await expect(tab.getByTestId("volatility-percentile-bar")).toBeVisible();
+      await expect(tab).not.toContainText(
+        lang === "ja" ? "パーセンタイル" : "percentile",
+      );
+    });
+  }
+
+  test("AI予想の振り返り: イン崩れ指数のバーの文字は、ライト・ダークとも地の色と見分けられる（BOA-706）", async ({
+    page,
+  }) => {
+    await page.goto(`${RACE}?tab=aiPrediction`);
+    const bar = page.getByTestId("volatility-percentile-bar");
+    await expect(bar).toBeVisible({ timeout: 30000 });
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate(
+        (t) => document.documentElement.setAttribute("data-theme", t),
+        theme,
+      );
+      const { label, ends, bg } = await bar.evaluate((el) => ({
+        label: getComputedStyle(el.querySelector(".vpb-label")).color,
+        ends: getComputedStyle(el.querySelector(".vpb-ends")).color,
+        bg: getComputedStyle(el).backgroundColor,
+      }));
+      expect(contrast(label, bg), `${theme}: 見出し`).toBeGreaterThanOrEqual(
+        4.5,
+      );
+      // 端の「堅い・標準・崩れやすい」は小さい補助の文字。3:1 を下限にする
+      expect(contrast(ends, bg), `${theme}: 端の文字`).toBeGreaterThanOrEqual(
+        3,
+      );
+    }
+  });
 });
