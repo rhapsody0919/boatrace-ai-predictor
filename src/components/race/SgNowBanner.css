@@ -1,0 +1,39 @@
+/* トップの「SG開催中」帯。会場カード（VenueGridCard）と同じカードの面に、SG の色のバッジを置く */
+.sg-now-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+
+.sg-now-banner__link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: var(--surface-card);
+  border: 2px solid var(--brand-accent-primary);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.sg-now-banner__grade {
+  color: #fff;
+  font-weight: var(--font-weight-bold);
+  font-size: 0.8rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 6px;
+}
+
+.sg-now-banner__text {
+  flex: 1 1 12rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.sg-now-banner__cta {
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}

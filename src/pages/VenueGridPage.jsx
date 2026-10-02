@@ -18,6 +18,7 @@ import {
   VenueGrid,
   VenueGridSkeleton,
   TodaysVolatilityHighlights,
+  SgNowBanner,
 } from "../components/race";
 import { dataService } from "../services/dataService";
 import DataFetchError from "../components/DataFetchError";
@@ -188,7 +189,11 @@ function TodayVenueGridPage() {
                     detail={error === FETCH_FAILED_ERROR ? null : error}
                   />
                 ) : (
-                  <TodaysVolatilityHighlights venuesData={venuesData} />
+                  <>
+                    {/* SG開催中の会場への導線（集客レーン。SG の日だけ出る） */}
+                    <SgNowBanner venuesData={venuesData} />
+                    <TodaysVolatilityHighlights venuesData={venuesData} />
+                  </>
                 )}
                 {/* 本日のデータ一覧（BOA-402）への導線。高さを固定してCLSを出さない。
                     /today は ja専用なので、ヘッダーと同じく ja のときだけ出す（BOA-653） */}
