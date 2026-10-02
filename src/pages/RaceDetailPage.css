@@ -273,6 +273,39 @@
     max-width: none;
   }
 
+  /* 広げた表の左右端の文字がカードの枠線に接しないよう、端の列にだけ内側の余白を付ける */
+  .race-detail-page-v2
+    :is(
+      .rmt-card > .rmt-compare,
+      .rmt-card > .hscroll-hint,
+      .rmt-card .race-history-hscroll,
+      .rwit-card > .rwit-today-table,
+      .rwit-card .rwit-grid-wrapper,
+      .rsc-card > .rsc-grid-wrapper,
+      .venue-tendency-panel .vtp-table-wrapper,
+      .motor-condition-container .table-wrapper
+    )
+    tr
+    > :first-child {
+    padding-left: 6px;
+  }
+
+  .race-detail-page-v2
+    :is(
+      .rmt-card > .rmt-compare,
+      .rmt-card > .hscroll-hint,
+      .rmt-card .race-history-hscroll,
+      .rwit-card > .rwit-today-table,
+      .rwit-card .rwit-grid-wrapper,
+      .rsc-card > .rsc-grid-wrapper,
+      .venue-tendency-panel .vtp-table-wrapper,
+      .motor-condition-container .table-wrapper
+    )
+    tr
+    > :last-child {
+    padding-right: 6px;
+  }
+
   /* データ出走表は画面の端まで（BOA-612）。表の部品（DataRaceTable.css）ではなくページ側に置く。
      端まで広げる量は、表の外側の余白そのもの（--rdp-bleed）。以前は calc(50% - 50vw) で
      画面幅から逆算していたが、「親が画面の中央にある」前提が端末側で崩れると表が画面の左端より
@@ -405,9 +438,8 @@
   .race-detail-page-v2 .rr-row-head {
     /* 名前の列は 16rem で止め、余った幅はスタートの図に回す。名前の列を 1fr にしていると、
        図を 18rem に広げても名前の後ろに 1440px で約660px の空白が残った（#1071 ファン評価2周目） */
-    grid-template-columns: 2.6rem 1.8rem minmax(0, 16rem) minmax(
-        18rem,
-        1fr
-      ) 3.6rem;
+    grid-template-columns:
+      2.6rem 1.8rem minmax(0, 16rem) minmax(18rem, 1fr)
+      3.6rem;
   }
 }
