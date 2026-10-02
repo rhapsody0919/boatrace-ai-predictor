@@ -14,7 +14,15 @@ Phase M からの変更点:
   - 1〜3着に返還艇（F・出遅れ）が入るレースは完全レースから外す（本体の rank は返還艇も
     公式の並びのまま入っている）。データの穴（2025-12〜2026-03）は K/B 補完で埋まったので外さない
 
-使い方: python features.py   → data/ml/analogy/boats.pkl
+レースごとの寄与度（B、ADR-0083・plan「学習側の設計」）のため、出走表の時点（朝 6:40）に分かる値で
+定義する列がある。朝の初期化は体重・支部・節の日目・最終日を書かず、2連率は toFixed(1) で丸めて書く
+（発走60分前の取り直しで上書きされる）。学習の行は取り直し後の値なので、次のようにそろえる:
+  - 本体期間の節の日目・最終日は race_series から導く（race_conditions の値は使わない）
+  - 体重・支部は前日までに分かっている最後の値（当日の値は使わない）
+  - 2連率4列は JS の toFixed(1) と同じ丸め
+  - 風向が空で風速0は無風（0）
+
+使い方: python features.py   → data/ml/analogy/boats.pkl・categorical_maps.json
 """
 
 from __future__ import annotations
@@ -22,6 +30,7 @@ from __future__ import annotations
 import json
 import os
 import unicodedata
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 import numpy as np
@@ -85,6 +94,22 @@ def round_from_kb_kind(kind) -> str | None:
 
 
 # ---------------------------------------------------------------- 読み込み
+# 朝の経路（generate-predictions.js）が toFixed(1) で丸めて書く2連率の元の列名（長期・本体）
+RATE_COLUMNS = {"national_2rate", "global_2rate", "local_2rate", "motor_2rate", "boat_2rate"}
+
+
+def _round1(v: float) -> float:
+    # float64 の正確な10進値で最も近い方、ちょうど中間なら大きい方（JS の Number.prototype.toFixed）
+    return float(Decimal(v).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP))
+
+
+def round1_like_js(s: pd.Series) -> pd.Series:
+    """JS の parseFloat(x.toFixed(1)) と同じ値（float64 のうちに丸める。値の種類が少ないので一意な値で計算）。"""
+    s = pd.to_numeric(s, errors="coerce").astype("float64")
+    u = s.dropna().unique()
+    return s.map(dict(zip(u, (_round1(v) for v in u))))
+
+
 def rid_to_int(s: pd.Series) -> pd.Series:
     """race_id 'YYYY-MM-DD-VV-RR' → int64 YYYYMMDDVVRR（文字列のままだとメモリが足りないため）。"""
     c = s.astype("category")
@@ -104,6 +129,8 @@ def read(name: str, src: Path = D, **kw) -> pd.DataFrame:
     d = pd.read_csv(path, low_memory=False, **kw)
     if "race_id" in d.columns:
         d["race_id"] = rid_to_int(d["race_id"])
+    for c in RATE_COLUMNS & set(d.columns):
+        d[c] = round1_like_js(d[c])
     for c in d.columns:
         if d[c].dtype == "float64":
             d[c] = d[c].astype("float32")
@@ -119,8 +146,9 @@ def encode_race_level(r: pd.DataFrame, weather, wind_dir, wind_speed, final_day)
     out = pd.DataFrame({"race_id": r["race_id"]})
     out["weather_code"] = r[weather].map(WEATHER_CODE).astype("float32")
     ang = r[wind_dir].map(DIR_ANGLE)
-    calm = r[wind_dir] == "無風"
     ws = pd.to_numeric(r[wind_speed], errors="coerce")
+    # 本体は無風を「風向が空・風速0」で持つ（'無風' の行は無い）。風向が空で風速>0 は不明（NaN）
+    calm = (r[wind_dir] == "無風") | (r[wind_dir].isna() & (ws == 0))
     # 風向は長期が8方位・本体が16方位なので、角度×風速のベクトル成分にそろえる（無風は0）
     out["wind_x"] = np.where(calm, 0.0, ws * np.sin(np.deg2rad(ang))).astype("float32")
     out["wind_y"] = np.where(calm, 0.0, ws * np.cos(np.deg2rad(ang))).astype("float32")
@@ -238,6 +266,24 @@ def attach_grade_from_series(df: pd.DataFrame, series: pd.DataFrame) -> pd.DataF
     return out.drop(columns=["grade_series"])
 
 
+def series_day_from_series(df: pd.DataFrame, series: pd.DataFrame) -> pd.DataFrame:
+    """節の日目・最終日を race_series（会場・開始日〜終了日）から導く。朝の初期化は race_conditions の
+    series_day・is_final_day を書かないので、出走表の時点の値としてはこれを使う。節が重なる日は開始日が
+    新しい方。節が無ければ NaN。"""
+    s = series[["venue_code", "start_date", "end_date"]].copy()
+    s["start_date"] = pd.to_datetime(s["start_date"])
+    s["end_date"] = pd.to_datetime(s["end_date"])
+    keys = df[["venue_code", "race_date"]].drop_duplicates()
+    m = keys.merge(s, on="venue_code")
+    m = m[(m["race_date"] >= m["start_date"]) & (m["race_date"] <= m["end_date"])]
+    m = m.sort_values("start_date", ascending=False).drop_duplicates(["venue_code", "race_date"])
+    m["series_day"] = ((m["race_date"] - m["start_date"]).dt.days + 1).astype("float32")
+    m["is_final_day_num"] = (m["race_date"] == m["end_date"]).astype("float32")
+    out = df.drop(columns=["series_day", "is_final_day_num"], errors="ignore")
+    return out.merge(m[["venue_code", "race_date", "series_day", "is_final_day_num"]],
+                     on=["venue_code", "race_date"], how="left")
+
+
 # ---------------------------------------------------------------- 選手の履歴（日単位でずらす）
 def _rolling_before(df: pd.DataFrame, col: str, min_periods: int, how: str) -> pd.Series:
     """その走より前の HISTORY_WINDOW 走の集計（df は racer_id・日付・R番号順）。"""
@@ -273,13 +319,27 @@ def add_history(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def forward_fill_profile(df: pd.DataFrame) -> pd.DataFrame:
-    """体重・支部の前方補完（出走表の値が無い期間がある）。前の走の既知値だけを使う。"""
+def profile_as_of_previous_day(df: pd.DataFrame) -> pd.DataFrame:
+    """体重・支部を「前日までに分かっている最後の値」にする（df は racer_id・日付・R番号順）。
+    朝の初期化は当日の体重・支部を書かない（発走60分前に入る）ので、当日の値も同じ日の前の走の値も使わない。"""
+    first = df.groupby([df["racer_id"], df["race_date"]], sort=False).cumcount() == 0
+    keys = [df["racer_id"], df["race_date"]]
     for c in ("weight", "branch"):
         prev = df.groupby("racer_id", sort=False)[c].shift(1)
         prev = prev.groupby(df["racer_id"], sort=False).ffill()
-        df[c] = df[c].fillna(prev)
+        df[c] = prev.where(first).groupby(keys, sort=False).ffill()
     return df
+
+
+def make_branch_map(branch: pd.Series) -> dict[str, int]:
+    """支部の文字列 → 番号（文字列の順。今までの astype("category").cat.codes と同じ番号）。
+    学習時に作って categorical_maps.json に保存し、日次の特徴量ジョブはこの表で符号化する。"""
+    return {b: i for i, b in enumerate(sorted(branch.dropna().astype(str).unique()))}
+
+
+def encode_branch(branch: pd.Series, branch_map: dict[str, int]) -> pd.Series:
+    """表に無い支部は NaN（学習で見ていない値を既存の番号に寄せない）。"""
+    return branch.map(branch_map).astype("float32")
 
 
 # ---------------------------------------------------------------- レース内の相対値・ラベル
@@ -314,14 +374,21 @@ def add_labels(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def build(src: Path = D) -> pd.DataFrame:
+def build_with_maps(src: Path = D, branch_map: dict[str, int] | None = None):
+    """特徴量と、符号化の対応表。branch_map を渡すとその表で符号化する（日次の特徴量ジョブ）。
+    渡さなければデータから作る（学習）。"""
     df = pd.concat([load_kb(src), load_main(src)], ignore_index=True)
     for c in df.columns:
         if df[c].dtype == "float64":
             df[c] = df[c].astype("float32")
-    df = attach_grade_from_series(df, pd.read_csv(src / "race_series.csv"))
+    series = pd.read_csv(src / "race_series.csv")
+    df = attach_grade_from_series(df, series)
+    main = df["race_date"] > KB_END
+    derived = series_day_from_series(df[["venue_code", "race_date"]], series)
+    for c in ("series_day", "is_final_day_num"):
+        df[c] = df[c].astype("float32").where(~main, derived[c].to_numpy())
     df = df.sort_values(["racer_id", "race_date", "race_number", "race_id"]).reset_index(drop=True)
-    df = forward_fill_profile(df)
+    df = profile_as_of_previous_day(df)
     df = add_history(df)
 
     df["cls_ord"] = df["cls"].astype(object).map(CLASS_ORD).astype("float32")
@@ -330,11 +397,18 @@ def build(src: Path = D) -> pd.DataFrame:
     br = df["branch"].astype(object)
     df["is_local"] = np.where(br.isna(), np.nan,
                               (br == df["venue_code"].map(VENUE_PREF)).astype(float)).astype("float32")
-    df["branch_code"] = df["branch"].astype("category").cat.codes.astype("float32").where(br.notna())
+    if branch_map is None:
+        branch_map = make_branch_map(br)
+    df["branch_code"] = encode_branch(br, branch_map)
 
     df = add_relative(df)
     df = add_labels(df)
-    return df.sort_values(["race_date", "race_id", "boat_number"]).reset_index(drop=True)
+    df = df.sort_values(["race_date", "race_id", "boat_number"]).reset_index(drop=True)
+    return df, {"branch_code": branch_map}
+
+
+def build(src: Path = D) -> pd.DataFrame:
+    return build_with_maps(src)[0]
 
 
 def complete_races(df: pd.DataFrame) -> pd.DataFrame:
@@ -342,8 +416,9 @@ def complete_races(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def main():
-    df = build()
+    df, maps = build_with_maps()
     df.to_pickle(D / "boats.pkl")
+    (D / "categorical_maps.json").write_text(json.dumps(maps, ensure_ascii=False, indent=1))
     ok = df[df["race_ok"] & (df["boat_number"] == 1)]
     summary = {"rows": int(len(df)), "races": int(df["race_id"].nunique()),
                "races_ok": int(len(ok)),

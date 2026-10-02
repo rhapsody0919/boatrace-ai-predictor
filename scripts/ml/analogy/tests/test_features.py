@@ -175,3 +175,78 @@ def test_debut_day_st_mean_is_not_filled_from_same_day():
     rows = [(1, "2026-01-01", r, 3, st) for r, st in ((1, 0.05), (3, 0.07), (5, 0.09), (7, 0.11))]
     df = F.add_history(boats(rows))
     assert df["st_mean30"].isna().all()
+
+
+# ---------------------------------------------------------------- 朝 6:40 に分かる値（レースごとの寄与度 B、plan「学習側の設計」）
+RATES = [44.44, 44.25, 44.35, 0.05, 33.333, 12.45, 100.0, 0.0, 9.95, 57.15]
+
+
+def js_to_fixed1(values):
+    script = "console.log(JSON.stringify(JSON.parse(process.argv[1]).map((v) => parseFloat(v.toFixed(1)))))"
+    out = subprocess.run(["node", "-e", script, json.dumps(values)], capture_output=True, text=True,
+                         check=True)
+    return json.loads(out.stdout)
+
+
+def test_round1_matches_js_to_fixed():
+    """朝の経路（generate-predictions.js）は2連率を toFixed(1) で丸めて書く。学習も同じ丸めにする。"""
+    got = F.round1_like_js(pd.Series(RATES, dtype="float64")).tolist()
+    assert got == js_to_fixed1(RATES)
+    assert F.round1_like_js(pd.Series([np.nan])).isna().all()
+
+
+def test_series_day_and_final_day_from_race_series():
+    df = pd.DataFrame({"venue_code": [1, 1, 1, 2], "race_date": pd.to_datetime(
+        ["2026-03-01", "2026-03-03", "2026-03-06", "2026-03-01"])})
+    series = pd.DataFrame({"venue_code": [1, 1], "start_date": ["2026-03-01", "2026-03-06"],
+                           "end_date": ["2026-03-03", "2026-03-10"], "grade": [None, "G1"]})
+    out = F.series_day_from_series(df, series)
+    assert out["series_day"].tolist()[:3] == [1, 3, 1]
+    assert out["is_final_day_num"].tolist()[:3] == [0, 1, 0]
+    assert np.isnan(out["series_day"].iloc[3]) and np.isnan(out["is_final_day_num"].iloc[3])
+
+
+def test_series_day_prefers_latest_start_when_series_overlap():
+    df = pd.DataFrame({"venue_code": [1], "race_date": pd.to_datetime(["2026-03-05"])})
+    series = pd.DataFrame({"venue_code": [1, 1], "start_date": ["2026-03-01", "2026-03-04"],
+                           "end_date": ["2026-03-06", "2026-03-09"], "grade": [None, None]})
+    out = F.series_day_from_series(df, series)
+    assert out["series_day"].tolist() == [2]
+
+
+def test_profile_uses_values_known_before_the_day():
+    """体重・支部は当日の値（発走60分前に入る）を使わず、前日までに分かっている最後の値にする。"""
+    df = pd.DataFrame({"racer_id": 1, "race_date": pd.to_datetime(
+        ["2026-01-01", "2026-01-02", "2026-01-02", "2026-01-03"]), "race_number": [1, 1, 5, 1],
+        "race_id": [1, 2, 3, 4], "weight": [50.0, 51.0, np.nan, np.nan],
+        "branch": ["東京", "大阪", None, None]})
+    out = F.profile_as_of_previous_day(df)
+    assert np.isnan(out["weight"].iloc[0]) and out["branch"].iloc[0] is None or pd.isna(out["branch"].iloc[0])
+    assert out["weight"].tolist()[1:] == [50.0, 50.0, 51.0]
+    assert out["branch"].tolist()[1:] == ["東京", "東京", "大阪"]
+
+
+def test_wind_calm_rules():
+    r = pd.DataFrame({"race_id": [1, 2, 3, 4, 5], "weather": "晴",
+                      "wind_direction": ["無風", None, None, "北", None],
+                      "wind_speed": [0, 0, 3, 2, None], "is_final_day": False})
+    out = F.encode_race_level(r, "weather", "wind_direction", "wind_speed", "is_final_day")
+    assert out["wind_x"].tolist()[:2] == [0.0, 0.0] and out["wind_y"].tolist()[:2] == [0.0, 0.0]
+    assert np.isnan(out["wind_x"].iloc[2]) and np.isnan(out["wind_x"].iloc[4])
+    assert out["wind_y"].iloc[3] == pytest.approx(2.0)
+
+
+def test_branch_map_matches_category_codes_and_unseen_is_nan():
+    br = pd.Series(["東京", "大阪", None, "福岡", "東京"], dtype=object)
+    m = F.make_branch_map(br)
+    assert F.encode_branch(br, m).fillna(-1).tolist() == \
+        br.astype("category").cat.codes.astype("float32").where(br.notna()).fillna(-1).tolist()
+    assert np.isnan(F.encode_branch(pd.Series(["沖縄"], dtype=object), m).iloc[0])
+
+
+def test_live_features_are_the_eight_exhibition_columns():
+    from themes import FEATURES, LIVE_FEATURES, RACECARD_FEATURES
+    assert LIVE_FEATURES == ["exh_time", "exh_time_diff", "exh_time_rank", "weather_code",
+                             "wind_x", "wind_y", "wind_speed", "wave_height"]
+    assert set(LIVE_FEATURES) <= set(FEATURES)
+    assert len(RACECARD_FEATURES) == 36 and not set(LIVE_FEATURES) & set(RACECARD_FEATURES)
