@@ -76,7 +76,7 @@ def test_fresh_reference_has_no_warning():
     assert T.quality_gate(metrics(), reference=ref)["warnings"] == []
 
 
-# ---------------------------------------------------------------- 出走表時点専用モデル win_racecard（ADR-0083）
+# ---------------------------------------------------------------- 出走表時点専用モデル win_racecard（ADR 案（#1134「レースごとの寄与度」））
 def with_racecard(rc=None):
     m = metrics()
     m["win_racecard"] = rc or win(model=1.21)

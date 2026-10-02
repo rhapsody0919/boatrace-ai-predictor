@@ -11,7 +11,7 @@
 木の数は固定（Phase M の F4・F5 の best_iteration から決めた値。early stopping で版ごとに揺らさない）。
 シェアの SD は、seed を変えた再学習と、日単位のブートストラップの両方の揺れを合わせる（profiles.py）。
 
-レースごとの寄与度（B、ADR-0083）のために、直前情報8列を使わない1着モデル win_racecard（36列、seed 0）も
+レースごとの寄与度（B、ADR 案（#1134「レースごとの寄与度」））のために、直前情報8列を使わない1着モデル win_racecard（36列、seed 0）も
 学習する。寄与度の条件ごとの集計（profiles.py）には使わない。推論側の JS が使う JSON ダンプ・メタ・一致検査の
 固定データは perrace.py が書く。
 
@@ -77,7 +77,7 @@ PARAMS = dict(objective="binary", learning_rate=0.08, num_leaves=31, min_data_in
 # name, ラベル列, finish_target, 木の数（Phase M の best_iteration: 1着 F4 194/F5 313、
 # 2着以内 290/223、3着以内 367/294 の間で丸めた）
 TARGETS = [("win", "y_win", 1, 250), ("top2", "y_top2", 2, 250), ("top3", "y_top3", 3, 330)]
-# 出走表時点専用の1着モデル（ADR-0083）。TARGETS に入れない（profiles の1着が二重になるため）
+# 出走表時点専用の1着モデル（ADR 案（#1134「レースごとの寄与度」））。TARGETS に入れない（profiles の1着が二重になるため）
 RACECARD = ("win_racecard", "y_win", 250)
 # 学習に使う train のレースの割合。Phase M はマシン負荷のため0.35で検証した（spec MD-1 の妥協点）
 TRAIN_FRAC = float(os.environ.get("ANALOGY_TRAIN_FRAC", "1.0"))

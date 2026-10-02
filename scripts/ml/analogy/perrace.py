@@ -1,7 +1,7 @@
 """BOA-271 レースごとの寄与度（B）の学習側の書き出しと記録
 
 推論側（Vercel の JS）がレースごとに TreeSHAP を計算するために、学習ジョブが版ごとに書き出すもの
-（ADR-0083、plan「学習側の設計」）:
+（ADR 案（#1134「レースごとの寄与度」）、plan「学習側の設計」）:
   - model_win.json・model_win_racecard.json: LightGBM の dump_model() をそのまま（storage.js が gzip して置く）
   - per_race_meta.json: モデルの特徴量の並び・直前情報8列・支部の対応表・テーマ
   - parity_fixture.json: 一致検査の固定データ。test の本体分から 50R、DB の行の形の生の値と、Python の
@@ -173,7 +173,7 @@ def exhibition_effect(ll_win: np.ndarray, ll_racecard: np.ndarray, test: pd.Data
 
 def centered_theme_shares(contrib: np.ndarray, names: list[str]) -> np.ndarray:
     """contrib: (6R, 特徴量+1) の pred_contrib。レース内で6艇の平均を引いた |SHAP| をテーマごとに足し、
-    全テーマの合計で割る → (R, テーマ数)。推論側の JS の集計と同じ定義（ADR-0083）。"""
+    全テーマの合計で割る → (R, テーマ数)。推論側の JS の集計と同じ定義（ADR 案（#1134「レースごとの寄与度」））。"""
     c = contrib[:, :-1].reshape(-1, 6, len(names))
     c = np.abs(c - c.mean(axis=1, keepdims=True)).sum(axis=1)
     idx = {f: i for i, f in enumerate(names)}

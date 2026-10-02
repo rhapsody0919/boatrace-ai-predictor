@@ -4,7 +4,7 @@
  * - `{model_version}/model_{win,top2,top3,win_racecard}.txt.gz`・`train_meta.json.gz`: 学習した主モデル。
  *   次の週の品質ゲートで、参照版を同じ test で評価し直すのに使う
  * - `{model_version}/model_{win,win_racecard}.json.gz`・`per_race_meta.json.gz`・`parity_fixture.json.gz`:
- *   レースごとの寄与度（B、ADR-0083）。推論側の JS が読む（plan「学習側の設計」）
+ *   レースごとの寄与度（B、ADR 案（#1134「レースごとの寄与度」））。推論側の JS が読む（plan「学習側の設計」）
  * - `source/...`: 長期データの月ごとのキャッシュ（export_pool.js）
  * モデルの版は直近3つと表示中の版だけ残す（plan「Storage の版は直近3つだけ残す」）。表示中の版と同じ名前では
  * アップロードしない（規則は storageRules.js）。
