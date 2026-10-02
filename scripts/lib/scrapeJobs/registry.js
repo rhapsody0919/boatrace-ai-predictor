@@ -387,6 +387,25 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
   },
 
+  // BOA-271 アナロジー・ファインダーの GitHub Actions の起動（workflow_dispatch。scripts/lib/analogyDispatch.js）。
+  // 1日数回・週1回しか起動しないので、10分ごとの死活を見る continuous ではなく monitor にし、モードのゲートは
+  // api/cron 側で掛ける（modeGated: true。off の間は何もしない）。dispatch の失敗は1回目から通知する
+  // （failureAlertAfter: 1。トークンの期限切れ等は次の起動でも直らないため）
+  analogy_dispatch_train: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+  },
+  analogy_dispatch_features: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+  },
+
   // ↓ N23・N29（tasks.md T4b-20・T4b-21）
   // N23 前検タイム・前検順位・節時点のモーター/ボート2連対率（motor_pretest_stats）。05:20指定（cron: 05:30・06:00・06:30 JST。
   // 指定を cron より10分早くするのは、起動が数秒早まっても、対象日が前日に化けないため）。開催中の会場（races）ごとに
