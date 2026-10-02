@@ -993,7 +993,15 @@ export async function runMorningDigest({
 
   // モーター2連率 0 のうち、新モーターで実績なしのものに印を付ける（BOA-702）。
   // カードは印があれば「—（新モーター・実績なし）」、無ければ 0.0% を出す
-  await markUnratedMotors(ordered, entries, date);
+  // 補助の印なので、取得に失敗してもダイジェスト自体は出す（印が無ければカードは従来どおり 0.0%）。
+  // 失敗は理由つきで残す
+  try {
+    await markUnratedMotors(ordered, entries, date);
+  } catch (err) {
+    console.error(
+      `⚠️ 新モーターの実績なしの判定に失敗（印を付けずに続行）: ${err.message}`,
+    );
+  }
 
   // rank はセクション内の並び順（1始まり）
   const rankBySection = new Map();
