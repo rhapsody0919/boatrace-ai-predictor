@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react'
 import { supabase, isSupabaseConfigured } from '../services/supabaseDataService'
 import { getBetTypeName, getReliabilityName } from '../services/ruleMatchService'
+import { errorMessageOf } from "../utils/errorMessage.js";
 
 function RulePerformance() {
   const [rules, setRules] = useState([])
@@ -46,7 +47,7 @@ function RulePerformance() {
       setRules(rulesData || [])
       setApplications(appsData || [])
     } catch (e) {
-      setError(e.message)
+      setError(errorMessageOf(e))
     } finally {
       setLoading(false)
     }

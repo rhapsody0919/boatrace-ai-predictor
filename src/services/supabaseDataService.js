@@ -6,7 +6,6 @@
  */
 
 import { supabase } from "./supabaseClient";
-import { getVolatilityLevel } from "../utils/volatilityLevel";
 import { isPlaceHit, isShowHit } from "../../scripts/lib/hitCalculator.js";
 import {
   extractVenueCodeFromRaceId,
@@ -44,7 +43,11 @@ import {
   runFinishLabel,
   officialMarkOf,
 } from "../components/race/seriesPoints.js";
-import { PAYOUT_BET_TYPES } from "../utils/raceOutcome.js";
+import {
+  PAYOUT_BET_TYPES,
+  RACE_OUTCOME,
+  getRaceOutcomeState,
+} from "../utils/raceOutcome.js";
 import {
   PRETEST_LOOKBACK_DAYS,
   pickFirstPretestByRacer,
@@ -59,15 +62,18 @@ function toReturnRate(payoutSum, sampleCount) {
   return sampleCount > 0 ? (payoutSum / (sampleCount * 100)) * 100 : null;
 }
 
-// race_resultsの1行が集計対象として使えるか（中止・不成立・未確定を除外）。
-// getRacerVenueStats/getRacerRaceHistoryの両方で同じ判定を使うための共通化
+// race_resultsの1行が集計対象として使えるか（不成立・未確定を除外）。
+// 不成立は race_results.race_status='no_race'（078）で判定する。旧フラグ is_cancelled・is_no_race は
+// どのスクリプトからも書かれておらず（常に false）、除外が効いていなかった（BOA-477）。
+// race_status が NULL の行は、078 の方針どおり通常として通す（raceOutcome.js の UNKNOWN）。
+// 中止（races.cancellation_status）のレースは結果の行が無いか rank1 が無いため、rank1 で外れる
 function isUsableRaceResult(result) {
-  return (
-    !!result &&
-    !result.is_cancelled &&
-    !result.is_no_race &&
-    result.rank1 !== null
-  );
+  return !!result && !isNoRaceResult(result) && result.rank1 !== null;
+}
+
+// 不成立（race_status='no_race'）か。返還（partial_refund）は着順が有効なので含めない
+function isNoRaceResult(result) {
+  return getRaceOutcomeState(result) === RACE_OUTCOME.NO_RACE;
 }
 
 // resultのrank1〜rank6（着順でインデックス、値が艇番）を走査し、boatNumberと
@@ -765,18 +771,6 @@ async function fetchVenueWinRateMap() {
 }
 
 /**
- * 本日のレース一覧（getRaces の直接クエリ経路）の result を、get_today_races（110）と同じ
- * {rank1} / null の形にする（BOA-542）。race_results は races と1対1のため、PostgREST の
- * 埋め込みはオブジェクトで返る。配列で返る版にも備えて先頭を読む。
- * @param {{rank1?: number|null}|Array<{rank1?: number|null}>|null|undefined} embedded
- * @returns {{rank1: number}|null}
- */
-function toTodayRaceResult(embedded) {
-  const row = Array.isArray(embedded) ? embedded[0] : embedded;
-  return row?.rank1 != null ? { rank1: row.rank1 } : null;
-}
-
-/**
  * race_results 1件分（camelCaseに正規化済み）から raceData.result を組み立てる共通ヘルパー
  * （BOA-238。Edge API経路/直接クエリ経路の2箇所から呼ばれるため重複を避けるために切り出した）
  * rank4〜6・追加payout種別・人気はバックフィルしていない過去データではnullのため、
@@ -908,6 +902,33 @@ function buildRaceResult(r) {
  * Edge APIレスポンスをフロント期待形式に変換
  * Edge API(RPC)とSupabase直接クエリの構造差異を吸収する
  */
+/**
+ * get_today_races（RPC。Edge API /api/races/today はこの結果をそのまま返す）の出力を、画面の形に整える。
+ * Edge API の経路と、Edge API が失敗したときに RPC を直接呼ぶ経路の両方が使う（BOA-668）
+ */
+function transformTodayRaces(data, venueWinRateMap = {}) {
+  return {
+    success: true,
+    data: data.data.map((venue) => ({
+      placeCd: venue.place_cd || venue.placeCd,
+      placeName:
+        venue.place_name ||
+        venue.placeName ||
+        VENUE_NAMES[venue.place_cd || venue.placeCd],
+      races: (venue.races || []).map((race) => ({
+        ...race,
+        volatility: race.volatility
+          ? {
+              ...race.volatility,
+              venueWinRate: venueWinRateMap[race.placeCd] ?? null,
+            }
+          : null,
+      })),
+    })),
+    scrapedAt: data.scrapedAt || new Date().toISOString(),
+  };
+}
+
 function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
   const transformedRaces = (edgeData.races || []).map((race) => {
     const entries = race.entries || [];
@@ -1263,28 +1284,7 @@ export const supabaseDataService = {
           const data = await edgeResponse.json();
           if (data.success && data.data) {
             console.log("[getRaces] Edge API success");
-            // Edge APIはvenuesテーブルをjoinしないためvenueWinRateを別途取得
-            const venueWinRateMap = await fetchVenueWinRateMap();
-            return {
-              success: true,
-              data: data.data.map((venue) => ({
-                placeCd: venue.place_cd || venue.placeCd,
-                placeName:
-                  venue.place_name ||
-                  venue.placeName ||
-                  VENUE_NAMES[venue.place_cd || venue.placeCd],
-                races: (venue.races || []).map((race) => ({
-                  ...race,
-                  volatility: race.volatility
-                    ? {
-                        ...race.volatility,
-                        venueWinRate: venueWinRateMap[race.placeCd] ?? null,
-                      }
-                    : null,
-                })),
-              })),
-              scrapedAt: data.scrapedAt || new Date().toISOString(),
-            };
+            return transformTodayRaces(data, await fetchVenueWinRateMap());
           }
         }
       } catch (edgeError) {
@@ -1294,151 +1294,19 @@ export const supabaseDataService = {
         );
       }
 
-      // フォールバック: 従来のSupabase直接クエリ
+      // フォールバック: Edge API と同じ RPC（get_today_races）を Supabase へ直接呼び、同じ transformTodayRaces で整形する。
+      // 以前は別実装のネストクエリで、RPC との二重実装になっていた（BOA-355 の getPredictions と同じ形に寄せる。BOA-668）。
+      // RPC の失敗は .throwOnError() 既定（ADR-0069）で例外になり、呼び出し側のエラー表示に届く
       if (!supabase) {
         console.error("Supabase client not initialized");
         return { success: false, data: [], scrapedAt: null };
       }
-
-      // 今日のレースを取得
-      const { data: races, error: racesError } = await supabase
-        .from("races")
-        .select(
-          `
-        race_id,
-        race_date,
-        venue_code,
-        race_number,
-        start_time,
-        race_grade,
-        cancellation_status,
-        race_conditions (
-          series_day,
-          is_final_day,
-          race_title,
-          race_stage
-        ),
-        race_results (
-          rank1
-        ),
-        race_entries (
-          boat_number,
-          player_name,
-          grade,
-          age,
-          win_rate,
-          local_win_rate,
-          global_2rate,
-          motor_number,
-          motor_2rate,
-          boat_number_id,
-          boat_2rate
-        )
-      `,
-        )
-        .eq("race_date", today)
-        .order("venue_code")
-        .order("race_number");
-
-      if (racesError) {
-        console.error("Supabase getRaces error:", racesError.message);
-        return { success: false, data: [], scrapedAt: null };
+      const { data: rpcData } = await supabase.rpc("get_today_races");
+      if (!rpcData?.success || !rpcData.data) {
+        throw new Error("get_today_races が有効なデータを返しませんでした");
       }
+      return transformTodayRaces(rpcData, await fetchVenueWinRateMap());
 
-      // 会場別1コース勝率（直近90日）を取得
-      const venueWinRateMap = await fetchVenueWinRateMap();
-
-      // イン崩れ指数はunifiedモデル（predictions.feature_contributions.
-      // volatilityPercentile）基準に統一する（旧races.volatility_score/level は
-      // generate-predictions.js（旧3モデル）由来で別ロジックのため不使用。2026-08-15）
-      const { data: unifiedPreds } = await supabase
-        .from("predictions")
-        .select("race_id, feature_contributions")
-        .eq("model_id", "unified")
-        .in(
-          "race_id",
-          races.map((r) => r.race_id),
-        );
-      const volatilityByRaceId = new Map();
-      // 展開予測（先頭パターンのみ）。get_today_races RPC（052マイグレーション）と
-      // 同じ情報源・同じ抜き出し方に揃える
-      const turnPredictionByRaceId = new Map();
-      for (const pred of unifiedPreds || []) {
-        const percentile = pred.feature_contributions?.volatilityPercentile;
-        if (typeof percentile === "number") {
-          volatilityByRaceId.set(pred.race_id, {
-            percentile,
-            isFallback:
-              pred.feature_contributions?.volatilityPercentileIsFallback ??
-              false,
-            level: getVolatilityLevel(percentile),
-          });
-        }
-        const topPattern =
-          pred.feature_contributions?.turnPrediction?.patterns?.[0];
-        if (topPattern) {
-          turnPredictionByRaceId.set(pred.race_id, topPattern);
-        }
-      }
-
-      // 会場ごとにグループ化
-      const venueMap = new Map();
-
-      for (const race of races) {
-        const venueCode = race.venue_code;
-
-        if (!venueMap.has(venueCode)) {
-          venueMap.set(venueCode, {
-            placeCd: venueCode,
-            placeName: VENUE_NAMES[venueCode] || `会場${venueCode}`,
-            races: [],
-          });
-        }
-
-        // レースデータを変換
-        const raceData = {
-          raceNo: race.race_number,
-          startTime: race.start_time?.substring(0, 5) || "",
-          cancellationStatus: race.cancellation_status ?? null,
-          date: race.race_date,
-          placeCd: race.venue_code,
-          raceGrade: race.race_grade ?? null,
-          raceTitle: race.race_conditions?.race_title ?? null,
-          seriesDay: race.race_conditions?.series_day ?? null,
-          isFinalDay: race.race_conditions?.is_final_day ?? null,
-          raceStage: race.race_conditions?.race_stage ?? null,
-          // get_today_races（110、BOA-542）と同じ形。着順つきの結果があれば {rank1}、無ければ null。
-          // isRaceCancelled が見て、confirmed が残っていても結果のあるレースを中止扱いしない
-          result: toTodayRaceResult(race.race_results),
-          volatility: volatilityByRaceId.has(race.race_id)
-            ? {
-                ...volatilityByRaceId.get(race.race_id),
-                venueWinRate: venueWinRateMap[race.venue_code] ?? null,
-              }
-            : null,
-          turnPrediction: turnPredictionByRaceId.get(race.race_id) ?? null,
-          racers: (race.race_entries || []).map((entry) => ({
-            waku: entry.boat_number,
-            name: (entry.player_name || "").replace(/\s+/g, ""),
-            rank: entry.grade,
-            age: entry.age,
-            winRate: entry.win_rate,
-            localWinRate: entry.local_win_rate,
-            motorNo: entry.motor_number,
-            motor2Rate: entry.motor_2rate,
-            boatNo: entry.boat_number_id,
-            boat2Rate: entry.boat_2rate,
-          })),
-        };
-
-        venueMap.get(venueCode).races.push(raceData);
-      }
-
-      return {
-        success: true,
-        data: Array.from(venueMap.values()),
-        scrapedAt: new Date().toISOString(),
-      };
     }); // withCache end
   },
 
@@ -2910,7 +2778,7 @@ export const supabaseDataService = {
     return withCache(
       // v2: 期間を現行モーターの世代で切り詰める（BOA-329）
       // v3: 着順の付かなかった走（失格等）も分母に数える（BOA-549）
-      `motor-usage-history-v3-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
+      `motor-usage-history-v4-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -2956,7 +2824,7 @@ export const supabaseDataService = {
             supabase
               .from("race_results")
               .select(
-                "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race",
+                "race_id, rank1, rank2, rank3, rank4, rank5, rank6, race_status",
               )
               .in("race_id", chunk),
           ),
@@ -3346,7 +3214,7 @@ export const supabaseDataService = {
     return withCache(
       // 戻り値を配列から{generationStart, rows}に変えたため、キーを変えて
       // localStorageに残る旧形式（配列）を読まない
-      `motor-waku-stats-generation-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
+      `motor-waku-stats-generation-v2-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
       async () => {
         const emptyRows = () =>
           Array.from({ length: 6 }, (_, i) => ({
@@ -3414,7 +3282,7 @@ export const supabaseDataService = {
         const [resultRows, exhibitionRows] = await Promise.all([
           fetchAllByIn(
             "race_results",
-            "race_id, rank1, rank2, rank3, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+            "race_id, rank1, rank2, rank3, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
             "race_id",
             entries.map((e) => e.race_id),
           ),
@@ -3527,7 +3395,7 @@ export const supabaseDataService = {
   getMotorRacerWakuStats(venueCode, motorNumber, beforeRaceId = null) {
     return withCache(
       // 戻り値の形を変えたためキーも変える（getMotorWakuStatsと同じ理由）
-      `motor-racer-waku-stats-generation-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
+      `motor-racer-waku-stats-generation-v2-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -3573,7 +3441,7 @@ export const supabaseDataService = {
 
         const resultRows = await fetchAllByIn(
           "race_results",
-          "race_id, rank1, rank2, rank3, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+          "race_id, rank1, rank2, rank3, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
           "race_id",
           entries.map((e) => e.race_id),
         );
@@ -4020,7 +3888,7 @@ export const supabaseDataService = {
    * race_entries×races×race_resultsから直接算出する
    */
   getRacerVenueStats(racerId) {
-    return withCache(`racer-venue-stats-${racerId}`, async () => {
+    return withCache(`racer-venue-stats-v2-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4055,7 +3923,7 @@ export const supabaseDataService = {
         fetchAllByIn("races", "race_id, venue_code", "race_id", raceIds),
         fetchAllByIn(
           "race_results",
-          "race_id, rank1, rank2, rank3, is_cancelled, is_no_race",
+          "race_id, rank1, rank2, rank3, race_status",
           "race_id",
           raceIds,
         ),
@@ -4138,7 +4006,7 @@ export const supabaseDataService = {
     // v6: 着順が付かない走の公式の記号（finishMark）を足した（BOA-537）
     // v7: 同じ日の走を R の古い順に並べ直した（BOA-588）
     // v8: フライングの走の ST（flyingStartTiming）を足した（BOA-583。直近10走・今節の表で「F.01」と出すため）
-    return withCache(`racer-scoped-race-stats-v9-${racerId}`, async () => {
+    return withCache(`racer-scoped-race-stats-v10-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4192,7 +4060,7 @@ export const supabaseDataService = {
         ),
         fetchAllByIn(
           "race_results",
-          "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, winning_technique, payout_win",
+          "race_id, rank1, rank2, rank3, rank4, rank5, rank6, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, winning_technique, payout_win",
           "race_id",
           raceIds,
         ),
@@ -4554,12 +4422,12 @@ export const supabaseDataService = {
    * racerId単位で1回だけ呼び、絞り込み・集計はaggregateRacerVenueBoatStats
    * （同ファイル内のプレーン関数）でクライアント側メモリ上に行う設計にして
    * いる（フィルタ操作をネットワークI/O無しの即時計算にするため）。
-   * 中止・不成立レース（is_cancelled/is_no_race）とrank1未確定行は
+   * 不成立レース（race_status=no_race。BOA-477）とrank1未確定行は
    * ここで除外し、以降の集計側では意識しなくて済むようにする
    */
   getRacerRaceHistory(racerId) {
     // v2: ST を展示ST（exhibition_data）から本番ST（race_start_timings）に替え、isFlying・finishMark を足した（BOA-576）
-    return withCache(`racer-race-history-v3-${racerId}`, async () => {
+    return withCache(`racer-race-history-v4-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4592,7 +4460,7 @@ export const supabaseDataService = {
           ),
           fetchAllByIn(
             "race_results",
-            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
             "race_id",
             raceIds,
           ),
@@ -4696,7 +4564,7 @@ export const supabaseDataService = {
    * racer_id単体向けに転用したもの。対象が1選手のみのためRPC化は不要
    */
   getRacerBoatReturnRate(racerId) {
-    return withCache(`racer-boat-return-rate-${racerId}`, async () => {
+    return withCache(`racer-boat-return-rate-v2-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4721,7 +4589,7 @@ export const supabaseDataService = {
       const raceIds = [...new Set(entries.map((e) => e.race_id))];
       const resultRows = await fetchAllByIn(
         "race_results",
-        "race_id, rank1, rank2, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race",
+        "race_id, rank1, rank2, payout_win, payout_place_1, payout_place_2, race_status",
         "race_id",
         raceIds,
       );
@@ -4731,7 +4599,7 @@ export const supabaseDataService = {
       const statsByBoat = new Map();
       entries.forEach((e) => {
         const result = resultByRaceId.get(e.race_id);
-        if (!result || result.is_cancelled || result.is_no_race) return;
+        if (!result || isNoRaceResult(result)) return;
 
         if (!statsByBoat.has(e.boat_number)) {
           statsByBoat.set(e.boat_number, {
@@ -5876,7 +5744,7 @@ export const supabaseDataService = {
       const { data, error } = await supabase
         .from("race_results")
         .select(
-          "race_id, rank1, rank2, rank3, winning_technique, is_cancelled, is_no_race",
+          "race_id, rank1, rank2, rank3, winning_technique, race_status",
         )
         .eq("race_id", raceId)
         .maybeSingle();
@@ -5896,7 +5764,7 @@ export const supabaseDataService = {
    * 過去の実績払戻金のみを集計する（期待値分析のようなモデル較正は不要）
    */
   getRaceRacerBoatReturnRate(raceId) {
-    return withCache(`race-racer-boat-return-rate-${raceId}`, async () => {
+    return withCache(`race-racer-boat-return-rate-v2-${raceId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -5981,7 +5849,7 @@ export const supabaseDataService = {
       ];
       const resultRows = await fetchAllByIn(
         "race_results",
-        "race_id, rank1, rank2, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race",
+        "race_id, rank1, rank2, payout_win, payout_place_1, payout_place_2, race_status",
         "race_id",
         pastRaceIds,
       );
@@ -5991,7 +5859,7 @@ export const supabaseDataService = {
       const statsByRacerBoat = new Map();
       relevantPastEntries.forEach((e) => {
         const result = resultByRaceId.get(e.race_id);
-        if (!result || result.is_cancelled || result.is_no_race) return;
+        if (!result || isNoRaceResult(result)) return;
 
         const key = `${e.racer_id}-${e.boat_number}`;
         if (!statsByRacerBoat.has(key)) {
@@ -6175,7 +6043,7 @@ export const supabaseDataService = {
     const VENUE_RANKING_CACHE_TTL = 5 * 60 * 1000; // 5分
 
     return withCache(
-      `todays-venue-ranking-${today}-${limit}-${minRaceCount}`,
+      `todays-venue-ranking-v2-${today}-${limit}-${minRaceCount}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -6199,14 +6067,14 @@ export const supabaseDataService = {
 
         const results = await fetchAllByIn(
           "race_results",
-          "race_id, rank1, payout_trio, winning_technique, is_cancelled, is_no_race",
+          "race_id, rank1, payout_trio, winning_technique, race_status",
           "race_id",
           raceIds,
         );
 
         const byVenue = new Map();
         results.forEach((r) => {
-          if (r.is_cancelled || r.is_no_race || r.rank1 === null) return;
+          if (!isUsableRaceResult(r)) return;
           const venueCode = venueByRaceId.get(r.race_id);
           if (venueCode === null || venueCode === undefined) return;
           if (!byVenue.has(venueCode)) {
@@ -6293,7 +6161,7 @@ export const supabaseDataService = {
    * 入るため、当日は必ずnull）。courseOfBoat()は使わない——未バックフィルの
    * 艇番を暫定コースとみなすと、当日レースで「3コースまくり」と断定してしまう
    *
-   * 平均配当/万舟率/イン逃げ率の定義・除外条件（is_cancelled/is_no_race/
+   * 平均配当/万舟率/イン逃げ率の定義・除外条件（不成立=race_status no_race/
    * rank1===null除外、3連単配当はpayout_trio列を使う歴史的経緯）は
    * getTodaysVenueRanking（BOA-171）と完全に同じにする。あちらは「本日」
    * 固定・全24会場横断ランキング用、こちらは任意の日付・単一会場の
@@ -6314,7 +6182,7 @@ export const supabaseDataService = {
     }
 
     return withCache(
-      `venue-day-summary-${venueCode}-${date}`,
+      `venue-day-summary-v2-${venueCode}-${date}`,
       async () => {
         const empty = {
           raceCount: 0,
@@ -6347,7 +6215,7 @@ export const supabaseDataService = {
         const raceIds = races.map((r) => r.race_id);
         const results = await fetchAllByIn(
           "race_results",
-          "race_id, rank1, payout_trio, winning_technique, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+          "race_id, rank1, payout_trio, winning_technique, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
           "race_id",
           raceIds,
         );
@@ -6362,7 +6230,7 @@ export const supabaseDataService = {
         const byRace = {};
 
         results.forEach((r) => {
-          if (r.is_cancelled || r.is_no_race || r.rank1 === null) return;
+          if (!isUsableRaceResult(r)) return;
           raceCount += 1;
           byRace[r.race_id] = {
             rank1: r.rank1,
@@ -6422,7 +6290,7 @@ export const supabaseDataService = {
   getVenueFirstWinRateRanking(days = 90, minRaceCount = 3) {
     const CACHE_TTL = 6 * 60 * 60 * 1000; // 6時間（90日集計は変化が緩やか）
     return withCache(
-      `venue-first-win-rate-ranking-${days}-${minRaceCount}`,
+      `venue-first-win-rate-ranking-v2-${days}-${minRaceCount}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -6441,7 +6309,7 @@ export const supabaseDataService = {
         while (true) {
           const { data, error } = await supabase
             .from("races")
-            .select("venue_code, race_results(rank1, is_cancelled, is_no_race)")
+            .select("venue_code, race_results(rank1, race_status)")
             .gte("race_date", sinceStr)
             .order("race_id")
             .range(from, from + PAGE - 1);

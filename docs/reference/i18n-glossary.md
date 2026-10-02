@@ -37,6 +37,21 @@ boatAI 多言語化における対訳の基準表。翻訳キー追加時はこ�
 | 抜き | nuki | Nuki (Overtake) | 超越（Nuki） | 추월 (Nuki) | 1マーク以降で抜く |
 | 恵まれ | megumare | Megumare (Lucky win) | 幸運勝出（Megumare） | 어부지리 (Megumare) | 先行艇の事故等による勝利 |
 
+## 部品交換の部品名（Parts）
+
+公式の直前情報の部品交換欄（`exhibition_data.parts_changed`）の値。表示は `partsNames.*`（BOA-669）。「×２」等の個数は訳さずそのまま付ける。未知の値は公式表記のまま出す。
+
+| 日本語（DB値） | キー | 英語表記 | 繁體中文 | 한국어 | 補足 |
+|--------|------|---------|----------|--------|------|
+| リング | ring | Ring | 活塞環 | 피스톤 링 | ピストンリング。「リング×２」のように個数付きで入る |
+| ピストン | piston | Piston | 活塞 | 피스톤 | |
+| キャブ | carburetor | Carburetor | 化油器 | 카뷰레터 | キャブレター |
+| ギヤ | gear | Gear | 齒輪 | 기어 | ギヤケース |
+| シリンダ | cylinder | Cylinder | 汽缸 | 실린더 | シリンダケース |
+| 電気 | electrical | Electrical | 電氣系統 | 전기 계통 | 点火系などの電気部品一式 |
+| シャフト | shaft | Shaft | 傳動軸 | 샤프트 | クランクシャフト |
+| キャリボ | carrierBody | Carrier body | 傳動箱體 | 캐리어 바디 | キャリアボデー |
+
 ## 会場（Venues）
 
 | コード | 日本語 | 英語 | 繁體中文 | 한국어 |

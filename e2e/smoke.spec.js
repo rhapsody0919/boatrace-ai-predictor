@@ -267,6 +267,19 @@ test("会場特性の要約は言語ごとの区切りで連結する（BOA-656�
   }
 });
 
+// BOA-669: 部品交換の部品名（公式表記・日本語）が非jaでも日本語のまま出ていた
+test("英語のデータ出走表で部品交換の部品名を英語で出す（BOA-669）", async ({
+  page,
+}) => {
+  // 2026-09-30 浜名湖1R: 2号艇がキャブを交換
+  await page.goto("/en/race/2026-09-30-05-01");
+  await page.locator(".race-tabs-btn", { hasText: "Just Before" }).click();
+  const row = page.locator("tr", { hasText: "Parts changed" }).first();
+  await row.waitFor({ timeout: 30000 });
+  await expect(row).toContainText("Carburetor");
+  await expect(row).not.toContainText("キャブ");
+});
+
 // BOA-665: 更新ボタン（clearCache）が boatai: で始まるキーをすべて消し、Cookie の同意・
 // 初回訪問・案内バナーを閉じた記録まで消えていた（同意バナーが再表示される）
 test("更新ボタンはデータキャッシュだけを消し、Cookie の同意などの設定は残す（BOA-665）", async ({
@@ -295,6 +308,41 @@ test("更新ボタンはデータキャッシュだけを消し、Cookie の同�
     localStorage.getItem("boatai:intro-banner-dismissed"),
   ]);
   expect(kept).toEqual(["granted", "true", "true"]);
+});
+
+// BOA-621: 直近10走の表のレース種別（公式の自由記述）が非jaでも日本語のまま出ていた。
+// 分類できるもの（予選・優勝戦等）は区分の訳、会場独自の名前は公式表記のまま translate="no"
+test("英語の直近10走の表でレース種別を区分の訳で出し、ja は公式表記のまま（BOA-621）", async ({
+  page,
+}) => {
+  const JA = /[\u3040-\u30FF\u4E00-\u9FFF]/;
+  await page.goto("/en/race/2026-09-30-02-09");
+  await page.locator(".race-tabs-btn", { hasText: "Basic Info" }).click();
+  await page.locator(".rbit-bar-row").nth(5).click();
+  const subs = page.locator(".rrt-table .rrt-stage");
+  await subs.first().waitFor({ timeout: 30000 });
+  let translated = 0;
+  for (const sub of await subs.all()) {
+    const text = (await sub.textContent()) ?? "";
+    if (JA.test(text)) {
+      // 日本語のまま出すのは、分類できない会場独自の名前だけ
+      await expect(sub).toHaveAttribute("translate", "no");
+    } else {
+      translated += 1;
+      await expect(sub).toHaveAttribute("title", JA);
+    }
+  }
+  expect(translated).toBeGreaterThan(0);
+
+  await page.evaluate(() => localStorage.clear());
+  await page.goto("/race/2026-09-30-02-09");
+  await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+  await page.locator(".rbit-bar-row").nth(5).click();
+  const jaSubs = page.locator(".rrt-table .rrt-stage");
+  await jaSubs.first().waitFor({ timeout: 30000 });
+  for (const text of await jaSubs.allTextContents()) {
+    expect(text).toMatch(JA);
+  }
 });
 
 test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
@@ -774,6 +822,97 @@ test.describe("開催場一覧ページ（venue-list-redesign）", () => {
   test("トップページに24会場のグリッドが固定表示される", async ({ page }) => {
     await page.goto("/");
     await expectVenueGridLoaded(page);
+  });
+
+  // ホームの会場データ取得（/api/races/today → 失敗時は Supabase へのフォールバック）が
+  // 失敗したら、本文の形によらずエラー表示を出し、「本日開催なし」の会場カードを出さない
+  // （BOA-668）。以前は本文が空・{} の 5xx だと PostgrestError の message が空文字になり、
+  // エラー表示が出ないまま24会場すべてが「本日開催なし」になっていた。
+  // message がある場合もエラー表示の下に24会場の「本日開催なし」が並んでいた。
+  const POSTGREST_TIMEOUT = JSON.stringify({
+    code: "57014",
+    details: null,
+    hint: null,
+    message: "canceling statement due to statement timeout",
+  });
+  const homeFetchFailures = [
+    {
+      name: "本文が {} の 500",
+      api: { status: 500, contentType: "application/json", body: "{}" },
+      rest: { status: 500, contentType: "application/json", body: "{}" },
+    },
+    {
+      name: "本文が空の 503",
+      api: { status: 500, body: "" },
+      rest: { status: 503, body: "" },
+    },
+    {
+      name: "PostgREST のエラー本文（code・message・details・hint）の 500",
+      api: {
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: false,
+          error: "Supabase RPC error: 500",
+        }),
+      },
+      rest: {
+        status: 500,
+        contentType: "application/json",
+        body: POSTGREST_TIMEOUT,
+      },
+    },
+    {
+      name: "Vercel・ゲートウェイのタイムアウト（504, text/plain）",
+      api: {
+        status: 504,
+        contentType: "text/plain",
+        body: "An error occurred with your deployment\n\nFUNCTION_INVOCATION_TIMEOUT",
+      },
+      rest: {
+        status: 504,
+        contentType: "text/plain",
+        body: "upstream request timeout",
+      },
+    },
+    { name: "ネットワーク切断", api: "abort", rest: "abort" },
+  ];
+  for (const failure of homeFetchFailures) {
+    test(`ホームの会場データ取得が失敗したらエラー表示を出し、「本日開催なし」にしない: ${failure.name}（BOA-668）`, async ({
+      page,
+    }) => {
+      const respond = (spec) => (route) =>
+        spec === "abort"
+          ? route.abort("internetdisconnected")
+          : route.fulfill(spec);
+      await page.route("**/api/races/**", respond(failure.api));
+      await page.route("**/rest/v1/**", respond(failure.rest));
+
+      await page.goto("/");
+      await expect(page.locator(".data-fetch-error")).toHaveCount(1, {
+        timeout: 30000,
+      });
+      await expect(page.locator(".venue-grid-card--closed")).toHaveCount(0);
+      await expect(page.locator(".venue-grid-card")).toHaveCount(0);
+    });
+  }
+
+  test("ホームの会場データ取得が成功して0件なら、24会場すべてを「本日開催なし」にする（BOA-668）", async ({
+    page,
+  }) => {
+    await page.route("**/api/races/**", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: [] }),
+      }),
+    );
+
+    await page.goto("/");
+    await expect(page.locator(".venue-grid-card--closed")).toHaveCount(24, {
+      timeout: 30000,
+    });
+    await expect(page.locator(".data-fetch-error")).toHaveCount(0);
   });
 
   test("会場一覧→レース一覧→レース詳細と遷移し、URLがディープリンク可能", async ({

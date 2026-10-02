@@ -21,7 +21,7 @@ const percent = (numerator, denominator) =>
 /**
  * RPC の生の値を画面の形に整える（純粋関数）
  * @param {{ total: {samples, hits, payout}, by_rule: Array<{rule_id, samples, hits, payout}>, by_week: Array<{week_start, samples, hits, payout}> }} raw
- * @returns {{ overall: Object, rules: Array, weekly: Array }}
+ * @returns {{ overall: Object, rules: Array, weekly: Array, byVenue: Object }}
  */
 export function shapeRulePerformance(
   raw,
@@ -51,6 +51,38 @@ export function shapeRulePerformance(
       };
     });
   rules.sort((a, b) => b.recovery - a.recovery);
+
+  // 会場別の合計（BOA-574）: ルールは1つの会場にだけ属するので、会場のルールの合計がそのまま会場の合計になる。
+  // 丸めは rules・overall と同じ式。ルールの無い会場はキーを持たない
+  const byVenue = Object.fromEntries(
+    Object.entries(VENUE_RULES_BY_VENUE).map(([venueCode, venueRules]) => {
+      const sum = venueRules.reduce(
+        (acc, rule) => {
+          const stat = byRuleId.get(rule.id);
+          return stat
+            ? {
+                samples: acc.samples + stat.samples,
+                hits: acc.hits + stat.hits,
+                payout: acc.payout + stat.payout,
+              }
+            : acc;
+        },
+        { samples: 0, hits: 0, payout: 0 },
+      );
+      return [
+        venueCode,
+        {
+          samples: sum.samples,
+          hits: sum.hits,
+          hitRate: percent(sum.hits, sum.samples),
+          recovery:
+            sum.samples > 0
+              ? Math.round((sum.payout / (sum.samples * 100)) * 100)
+              : 0,
+        },
+      ];
+    }),
+  );
 
   const total = raw.total || { samples: 0, hits: 0, payout: 0 };
   const totalInvestment = total.samples * 100;
@@ -92,7 +124,7 @@ export function shapeRulePerformance(
     };
   });
 
-  return { overall, rules, weekly };
+  return { overall, rules, weekly, byVenue };
 }
 
 /**

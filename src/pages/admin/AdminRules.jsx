@@ -7,7 +7,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   getTodaysMatchingRaces,
-  getRulePerformanceByVenue,
   getAvailableVenues,
   getBetTypeName,
   getReliabilityName,
@@ -16,6 +15,7 @@ import {
 import { getRuleApplicationHistory } from '../../services/adminRuleService'
 import { fetchRulePerformance } from '../../services/adminRulePerformance'
 import './AdminRules.css'
+import { errorMessageOf } from "../../utils/errorMessage.js";
 
 // タブ定義
 const TABS = [
@@ -42,7 +42,7 @@ function AdminRules() {
   const [historyData, setHistoryData] = useState([])
   const [historyTotal, setHistoryTotal] = useState(0)
   const [selectedVenue, setSelectedVenue] = useState('all')
-  const [venuePerformance, setVenuePerformance] = useState(null)
+  const [venuePerformance, setVenuePerformance] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -77,13 +77,6 @@ function AdminRules() {
     loadInitialData()
   }, [])
 
-  // 会場変更時のデータ読み込み
-  useEffect(() => {
-    if (activeTab === 'venue' && selectedVenue !== 'all') {
-      loadVenuePerformance(selectedVenue)
-    }
-  }, [selectedVenue, activeTab])
-
   // 履歴タブ切り替え時のデータ読み込み
   useEffect(() => {
     if (activeTab === 'history') {
@@ -105,20 +98,13 @@ function AdminRules() {
       setOverallPerformance(performance.overall)
       setTodaysRaces(todaysData)
       setWeeklyData(performance.weekly)
+      // 会場別タブの成績カードもこの1回の取得から出す（会場を切り替えても再取得しない。BOA-574）
+      setVenuePerformance(performance.byVenue)
     } catch (err) {
       console.error('データ読み込みエラー:', err)
-      setError(err.message)
+      setError(errorMessageOf(err))
     } finally {
       setLoading(false)
-    }
-  }
-
-  async function loadVenuePerformance(venueCode) {
-    try {
-      const data = await getRulePerformanceByVenue(venueCode)
-      setVenuePerformance(data)
-    } catch (err) {
-      console.error('会場別データ読み込みエラー:', err)
     }
   }
 
@@ -256,7 +242,7 @@ function AdminRules() {
             venues={venues}
             selectedVenue={selectedVenue}
             onVenueChange={setSelectedVenue}
-            venuePerformance={venuePerformance}
+            venueTotal={venuePerformance[selectedVenue]}
             allRules={allRules}
           />
         )}
@@ -374,7 +360,7 @@ function OverviewTab({ rules, sortKey, sortDesc, onSort, weeklyData }) {
 }
 
 // 会場別タブ
-function VenueTab({ venues, selectedVenue, onVenueChange, venuePerformance, allRules }) {
+function VenueTab({ venues, selectedVenue, onVenueChange, venueTotal, allRules }) {
   // 会場別に集計したルール
   const venueRules = useMemo(() => {
     if (selectedVenue === 'all') return allRules
@@ -393,26 +379,26 @@ function VenueTab({ venues, selectedVenue, onVenueChange, venuePerformance, allR
         </select>
       </div>
 
-      {selectedVenue !== 'all' && venuePerformance && (
+      {selectedVenue !== 'all' && venueTotal && (
         <div className="venue-summary">
           <h3>{getVenueName(selectedVenue)} の運用成績</h3>
           <div className="venue-stats">
             <div className="stat-item">
-              <span className="stat-label">レース数</span>
-              <span className="stat-value">{venuePerformance.total.samples}</span>
+              <span className="stat-label">対象件数</span>
+              <span className="stat-value">{venueTotal.samples}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">的中数</span>
-              <span className="stat-value">{venuePerformance.total.hits}</span>
+              <span className="stat-value">{venueTotal.hits}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">的中率</span>
-              <span className="stat-value">{venuePerformance.total.hitRate}%</span>
+              <span className="stat-value">{venueTotal.hitRate}%</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">回収率</span>
-              <span className={`stat-value recovery ${venuePerformance.total.recovery >= 100 ? 'positive' : 'negative'}`}>
-                {venuePerformance.total.recovery}%
+              <span className={`stat-value recovery ${venueTotal.recovery >= 100 ? 'positive' : 'negative'}`}>
+                {venueTotal.recovery}%
               </span>
             </div>
           </div>
