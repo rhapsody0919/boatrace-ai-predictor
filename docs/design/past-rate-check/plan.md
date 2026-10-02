@@ -30,8 +30,10 @@ flowchart LR
 
 ### 読み取りの量
 - 1レースあたり最大2,000行 × 8列。gzip 後で約34KB（FR-2 レーンの試算。本番投入後に実測）。取得は部品を出すときに1回で、AI予想タブと結果タブで同じキャッシュを使う
-- SQL 側は、層の条件の複合索引（`idx_analogy_pool_strata`）で新しい順に最大2,000行を取るだけ。ボタンのたびに層の全件を数える方式（最大約7万行）は Disk IO を圧迫するので採らない（ADR-0081）
-- 注記の期間は返り値の `pool_from`〜`pool_cutoff`、似ている理由は `analogyReason.js`（BOA-271 FR-2）に `conditions`・`depth`・`n_total` を渡して作る
+- SQL 側: 深さ4（4条件、使う層の70.5%）は複合索引 `idx_analogy_pool_strata (gap_band, b1_class, venue_code, top_boat, race_date DESC)` の並びで新しい順に最大2,000行を読める。深さ1〜3は索引の並びで読めず、層の全件（最大約7万行）を読んで並べ替える。深さ別の索引（例 `(gap_band, b1_class, race_date DESC)`）を足すかは、119 の本番適用後に深さ1〜4で `EXPLAIN (ANALYZE, BUFFERS)` を取って FR-2 レーンと決める（T0-3）
+- 取得は Edge API `GET /api/analogy/similar-races/[raceId]`（新規、本機能で作る。FR-2 の `api/analogy/similar` と同じ流儀）を通し、CDN にキャッシュさせる: スナップショットあり・締切前 `s-maxage=300`、締切後 `s-maxage=86400`、スナップショットなし `s-maxage=300`、NULL・エラーは `no-store`。API が失敗したときは PostgREST の RPC 直読みに切り替える（FR-2 と同じ）。部品は AI予想タブの先頭に常に出るので、直接 RPC だと表示のたびに DB に届く（差分レビュー指摘7）
+- ボタンのたびに層の全件を SQL で数える方式は Disk IO を圧迫するので採らない（ADR-0081）
+- 注記の期間は、切り詰めていなければ `pool_from`〜`pool_cutoff`、切り詰めたら `rows` の最も古い race_date〜`pool_cutoff`。似ている理由は `analogyReason.js`（BOA-271 FR-2）に `conditions`・`depth`・`n_total` を渡して作る
 
 ## フロントエンド
 
@@ -40,7 +42,7 @@ flowchart LR
 | ファイル | 役割 |
 |---|---|
 | `src/utils/pastRate/patterns.js` | スリット7形の定義（キー・判定関数・効く強さ）、強さの段の線（`SLIT_LEVELS`、1/100秒の整数）、1艇身の秒数（0.13）、全国の出現率（T0-2 で固定した値）。ST は `Math.round(st*100)` の整数にしてから判定する（浮動小数の境界ずれを避ける。spec 共通の数え方） |
-| `src/utils/pastRate/count.js` | `countPastRate(rows, type, input)` → `{ n, count, excluded: { reason, count } \| null, breakdown }`。型ごとの判定（spec FR-1）。`orderPoints(input)`（点数）。`decisionOf(neighborOrResult)`（決着の行用） |
+| `src/utils/pastRate/count.js` | `countPastRate(rows, type, input)` → `{ n, count, excluded: { reason, count } \| null, breakdown }`。型ごとの判定（spec FR-1）。`orderPoints(input)`（点数）。`decisionOf(finishOrder)`（決着の行用） |
 | `src/utils/pastRate/label.js` | `rateLabel(rate)` → `"standard" \| "rare" \| null`。線 x・y は定数（T0-1 で決めた値） |
 | `src/utils/pastRate/storage.js` | `loadEntries()`・`saveEntry(entry, { deadline, now })`・`entriesForRace(raceId, { deadline })`。キー `boatai-user:past-rate-check:v1`（`boatai:` はデータキャッシュの全削除に巻き込まれるので使わない）、30日、上限1,000件、書く直前に読み直す、壊れた値・形の違う Entry を捨てる、例外の吸収（console に出す）、締切以降の Entry を振り返りから外す |
 | `src/components/race/pastRate/PastRateChecker.jsx` | 外枠。型の切り替え・入力の状態（非制御／`value`・`onChange` の制御の両対応）・ボタン・結果の表示。保存は `persist` が true で締切前のときだけ |
@@ -70,7 +72,7 @@ flowchart TD
 ### 組み込み
 - `RaceAiPredictionTab`: BOA-271 T9-1 で、BOA-271 の節の描画を早期 return の分岐の外に出す（BOA-271 の tasks に共有の前提として記載済み。FR-2 の作り直し後も位置は変わらない）。同じ外側の位置の**先頭**に `PastRateChecker` を置く（中止のときは出さない）。`rows` が0行・取得中は出さない。取得に失敗したときは `InlineFetchError`（`onRetry` で `useAnalogySimilarRaces` の再取得）。`frontend-data-fetch.md` の3
 - 締切: `getDeadlineDate(raceId, startTime)`（`src/utils/raceDeadlineStatus.js`）を `PastRateChecker` に `deadline` として渡す。`startTime` は今 `RaceAiPredictionTab` に渡っていないので、`PredictionPanel` から `raceStartTime={selectedRace?.startTime}` を新しい prop として渡す（オッズ一覧タブ `RaceOddsListTab` へ既に同じ値を渡している、`PredictionPanel.jsx:446`。値は `races.start_time` の先頭5文字で、締切の時刻と一致する）。無ければ null。null のときはレースが確定していなければ保存する（spec FR-5）
-- `RaceResult`: 払戻表の下に `PastRateReview`（`raceId`・決着・`similar`・締切）。決着は `RaceResult` の `buildResultRows` が組み立てた着順（返還艇を外したもの）の position 1〜3 の艇。3着までそろわなければ決着の行を出さない。取得に失敗したときは `InlineFetchError`。不成立（`RaceResult` 内で既に求めている `outcome === RACE_OUTCOME.NO_RACE`）とスナップショットなしでは出さない
+- `RaceResult`: 払戻表の下に `PastRateReview`（`raceId`・決着・`similar`・締切）。決着は `RaceResult` の `buildResultRows` が組み立てた着順（返還艇を外したもの）の position 1〜3 の艇。3着までそろわなければ決着の行を出さない。取得に失敗したときは `InlineFetchError`。不成立（`RaceResult` 内で既に求めている `outcome === RACE_OUTCOME.NO_RACE`）と `rows` が0行では出さない。スナップショットが無いレース（`snapshot: false`）でも出す
 - 決まり手のキーと DB の日本語の対応は `src/utils/turnPrediction.js` の `TECHNIQUE_NAMES` を使う（新しい対応表を作らない）
 
 ### 状態の持ち方
