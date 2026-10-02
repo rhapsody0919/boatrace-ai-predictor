@@ -219,6 +219,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/digestMetrics.js` | digestMetrics - 「本日のデータ一覧」（BOA-402）の指標計算（純関数） | computeSkillDelta, computePredicted, computeZScore, computeConsistency, computeFeaturedScore ほか11件 |
 | `src/utils/errorMessage.js` | 例外から、画面のエラー状態に入れる文言を取り出す（BOA-668）。 | errorMessageOf |
 | `src/utils/formatters.js` | フォーマット関数 | formatCapturedAtJst, formatPercent, formatDate, formatDateLocalized, formatDateShort ほか4件 |
+| `src/utils/horizontalScrollHint.js` | 右に残っている幅がこれ以下なら「›」は出さず、細いフェードだけにする（px） | horizontalScrollHintState, HSCROLL_PEEK_MAX, HSCROLL_PEEK_FADE |
 | `src/utils/meetGrouping.js` | meetGrouping - 節（開催）のグルーピング共通ロジック | groupIntoCurrentMeet, groupIntoMeetBeforeRace, findMeetStartDate |
 | `src/utils/motorGeneration.js` | モーターの世代（入れ替え単位）の判定。 | currentMotorGenerationStart, isInMotorGeneration, formatGenerationDate, isClippedByGeneration, officialTallyState |
 | `src/utils/nextOpenDate.js` | 非開催会場の「次開催日」を節（race_series）から求める（BOA-225）。 | computeNextOpenDates, formatMonthDay |
@@ -275,4 +276,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 240 ファイル / export 1168 件。
+対象 241 ファイル / export 1171 件。

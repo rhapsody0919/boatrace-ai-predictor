@@ -296,13 +296,15 @@
   background: var(--surface-card);
 }
 
+/* 調子の変化。上がった＝緑、下がった＝赤（データ出走表の .drt-up/.drt-down・選手ページと同じ。
+   race-detail-ui-unify R2） */
 .delta-up {
-  color: var(--color-error-text);
+  color: var(--color-success-text);
   font-weight: var(--font-weight-semibold);
 }
 
 .delta-down {
-  color: var(--color-info-text);
+  color: var(--color-error-text);
   font-weight: var(--font-weight-semibold);
 }
 

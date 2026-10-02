@@ -163,3 +163,30 @@ test("中止があった日も、人数の足し算が合う", async ({ page }) 
   const notYet = Number(text.match(/まだ走っていない(\d+)人/)?.[1] ?? 0);
   expect(total + excluded + notYet).toBe(all);
 });
+
+test("予選の最終日から、予選中に帰った選手を順位の対象から外す", async ({
+  page,
+}) => {
+  // 桐生 9/23（予選の最終日）。北川・田中は 9/22 が最後の走で、9/23 の番組に
+  // 1走も無い。以前は予選の翌日（または最終日）まで順位と準優の目安の計算に残った
+  await openMeetTab(page, "2026-09-23-01-09");
+  await expect(page.locator(".rmt-sub").first()).toContainText(
+    "同じ優勝戦をめざすのは24人（順位の対象は21人。賞典除外・途中帰郷・欠場の3人を除く）",
+  );
+  // 予選の後の扱いの説明は、予選が終わるまで出さない
+  await expect(page.locator(".rmt-rank-note")).not.toContainText(
+    "予選の後に帰った",
+  );
+});
+
+test("予選中のレースでは、後で付いた公式の備考（途中帰郷）で外さない", async ({
+  page,
+}) => {
+  // 児島G1 10/1 9R（予選の最終日）。公式の得点率一覧の行は予選の最終日の夜に取得した
+  // もので、丸野一樹は「途中帰郷」。でもこのレースの3号艇として走っている。
+  // 以前はこの備考をさかのぼって当て「対象外」にしていた（PR #1149 ファン評価2周目）
+  await openMeetTab(page, "2026-10-01-16-09");
+  const row = page.locator(".rmt-compare tbody tr", { hasText: "丸野一樹" });
+  await expect(row.locator(".rmt-rank")).not.toContainText("対象外");
+  await expect(row.locator(".rmt-rank")).toContainText("位");
+});

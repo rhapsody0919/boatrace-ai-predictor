@@ -42,7 +42,7 @@ import {
   isAbsentStartRow,
   flyingRacerIdsInMeet,
   postPrelimFlyingRacerIds,
-  withdrawnBeforePrelimEnd,
+  withdrawnByAbsence,
   runFinishLabel,
   officialMarkOf,
 } from "../../src/components/race/seriesPoints.js";
@@ -1673,31 +1673,40 @@ check(
   check("中止が無ければ空", noRaceDaysOf(ids, new Set()), []);
 }
 
-// ---- 予選中に帰った選手は予選の翌日から外す（BOA-674） ------------------------
-// 桐生 2026-09-20〜25（予選の締め 9/23 12R）。北川・田中は 9/22 が最後の走
-// （予選中に帰郷）。菊池は予選の後の 9/24 1R まで走った（これは最終日の判定で外す）
+// ---- 途中帰郷: 前の日まで走っていて、表示日に1走も組まれていない選手 ----------
+// 桐生 2026-09-20〜25（予選の締め 9/23）。北川・田中は 9/22 が最後の走（予選中に帰郷）。
+// 菊池は予選の後の 9/24 1R が最後。浜本は最後まで走る
 {
-  const END = "2026-09-23-01-12";
   const entries = [
     { race_id: "2026-09-22-01-03", racer_id: 3054 }, // 北川
     { race_id: "2026-09-22-01-05", racer_id: 3792 }, // 田中
-    { race_id: "2026-09-23-01-09", racer_id: 3538 }, // 菊池
+    { race_id: "2026-09-22-01-07", racer_id: 3538 }, // 菊池
+    { race_id: "2026-09-22-01-09", racer_id: 4834 }, // 浜本
+    { race_id: "2026-09-23-01-04", racer_id: 3538 },
+    { race_id: "2026-09-23-01-08", racer_id: 4834 },
     { race_id: "2026-09-24-01-01", racer_id: 3538 },
-    { race_id: "2026-09-24-01-03", racer_id: 4834 }, // 浜本（最後まで走る）
+    { race_id: "2026-09-24-01-03", racer_id: 4834 },
+    { race_id: "2026-09-25-01-05", racer_id: 4834 },
   ];
+  const upTo = (d) => entries.filter((e) => e.race_id.slice(0, 10) <= d);
   check(
-    "予選の翌日から、予選の締めより後に1走も無い選手を外す",
-    withdrawnBeforePrelimEnd(entries, END, "2026-09-24").sort(),
+    "予選の最終日（9/23）から、予選中に帰った選手を外す",
+    withdrawnByAbsence(upTo("2026-09-23"), "2026-09-23").sort(),
     [3054, 3792],
   );
   check(
-    "予選終了日（当日）はまだ判定しない",
-    withdrawnBeforePrelimEnd(entries, END, "2026-09-23"),
+    "最終日（9/25）は、予選の後に帰った選手も外す",
+    withdrawnByAbsence(upTo("2026-09-25"), "2026-09-25").sort(),
+    [3054, 3538, 3792],
+  );
+  check(
+    "表示日の出走表が会場に1件も無いとき（取得の遅れ）は判定しない",
+    withdrawnByAbsence(upTo("2026-09-24"), "2026-09-26"),
     [],
   );
   check(
-    "予選の締めが分からない節では外さない",
-    withdrawnBeforePrelimEnd(entries, null, "2026-09-25"),
+    "初日は誰も外さない",
+    withdrawnByAbsence(upTo("2026-09-22"), "2026-09-22"),
     [],
   );
 }

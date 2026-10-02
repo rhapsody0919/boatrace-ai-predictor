@@ -340,10 +340,12 @@ export default function AttackDefenseTable({ racerStats, players }) {
                   <th
                     key={waku}
                     className={waku === 1 ? "ad-course1-th" : ""}
-                    style={{
-                      background: waku === 1 ? "#f1f5f9" : color.bg,
-                      color: waku === 1 ? "#1e293b" : color.text,
-                    }}
+                    // 1号艇（守り）の見出しの色は .ad-course1-th（トークン）で付ける
+                    style={
+                      waku === 1
+                        ? undefined
+                        : { background: color.bg, color: color.text }
+                    }
                   >
                     <div>{t("analysis.boatN", { n: waku })}</div>
                     <div className="ad-role-sub">
@@ -420,10 +422,12 @@ export default function AttackDefenseTable({ racerStats, players }) {
                   <th
                     key={waku}
                     className={waku === 1 ? "ad-course1-th" : ""}
-                    style={{
-                      background: waku === 1 ? "#f1f5f9" : color.bg,
-                      color: waku === 1 ? "#1e293b" : color.text,
-                    }}
+                    // 1号艇（守り）の見出しの色は .ad-course1-th（トークン）で付ける
+                    style={
+                      waku === 1
+                        ? undefined
+                        : { background: color.bg, color: color.text }
+                    }
                   >
                     {t("analysis.boatN", { n: waku })}
                   </th>

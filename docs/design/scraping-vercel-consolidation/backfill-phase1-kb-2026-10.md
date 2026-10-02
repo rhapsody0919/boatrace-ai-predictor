@@ -145,7 +145,9 @@ SELECT count(*) FROM backup_boa582_rst_finish;
 
 期待: 279,746（実行時点の行数。5.1 の表の計と同じ）。容量は約15MB。
 
-**元に戻す（必要になったときだけ。月を絞るときは race_id の範囲を変える）**:
+**元に戻す（必要になったときだけ。月ごとに1回ずつ。1回で約3万行）**:
+
+全10か月を1回の UPDATE で戻すと、約28万行を1つのトランザクションで書く（WAL・Disk IO・ロックの時間が長い）。書き込みと同じく月ごとに分ける。下の `'2025-12'`・`'2026-01'` を、戻す月とその翌月に置き換えて、月の数だけ実行する。
 
 ```sql
 BEGIN;
@@ -156,7 +158,7 @@ SET official_finish_code = b.official_finish_code,
     updated_at = now()
 FROM backup_boa582_rst_finish b
 WHERE t.race_id = b.race_id AND t.boat_number = b.boat_number
-  AND t.race_id >= '2025-12' AND t.race_id < '2026-10'
+  AND t.race_id >= '2025-12' AND t.race_id < '2026-01'
   AND (t.official_finish_code, t.finish_mark, t.finish_rank)
       IS DISTINCT FROM (b.official_finish_code, b.finish_mark, b.finish_rank);
 COMMIT;
@@ -165,7 +167,19 @@ COMMIT;
 注意:
 
 - 控えの後に、日々の取得が書いた値も戻る。対象は2つで、K の同期（kfile_sync）が直近4日分に書く成績コードと、結果の修正が書く着欄。範囲を 2026-09 以前に限っているので、影響は 9/27〜9/30 の成績コード程度。戻した後に要れば、その日だけ `--item=finish_code` を再実行する。
-- 確認: `SELECT count(official_finish_code) FROM race_start_timings WHERE race_id >= '2025-12' AND race_id < '2026-10';` が控えの値（0）に戻る。
+- 確認（全部の月を戻した後。3列とも、控えと同じ件数に戻る）:
+
+```sql
+SELECT
+  (SELECT count(official_finish_code) FROM race_start_timings WHERE race_id >= '2025-12' AND race_id < '2026-10')
+    = (SELECT count(official_finish_code) FROM backup_boa582_rst_finish) AS code_ok,
+  (SELECT count(finish_mark) FROM race_start_timings WHERE race_id >= '2025-12' AND race_id < '2026-10')
+    = (SELECT count(finish_mark) FROM backup_boa582_rst_finish) AS mark_ok,
+  (SELECT count(finish_rank) FROM race_start_timings WHERE race_id >= '2025-12' AND race_id < '2026-10')
+    = (SELECT count(finish_rank) FROM backup_boa582_rst_finish) AS rank_ok;
+```
+
+期待: `true / true / true`（控えを取った時点の件数は、成績コード 0・着欄 18,504・着 18,081 前後。§5.1 の表の「既存の着欄」の計と、月別の既存の着の和）。
 
 **控えを消す（完了の判定の後）**: 6章の充足率の実測で基準を満たしたら、`DROP TABLE backup_boa582_rst_finish;` を実行する。
 

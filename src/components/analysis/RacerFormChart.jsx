@@ -180,7 +180,7 @@ function RacerFormChart({
                 {breakdown.map((row) => (
                   <tr
                     key={row.boat_number}
-                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""} ${bestDeltaBoats.has(row.boat_number) && row.delta > 0 ? "best-motor" : ""}`}
+                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""}`}
                     onClick={() =>
                       row.racer_id !== null && setDrillDownRacer(row.racer_id)
                     }
@@ -195,7 +195,10 @@ function RacerFormChart({
                         ? row.past_win_rate.toFixed(2)
                         : t("analysis.noData")}
                     </td>
-                    <td className="rate">
+                    {/* 最良は行全体ではなく、比べている値（Δ）のセルに金枠（race-detail-ui-unify R1） */}
+                    <td
+                      className={`rate${bestDeltaBoats.has(row.boat_number) && row.delta > 0 ? " ind-best" : ""}`}
+                    >
                       {row.delta !== null ? (
                         <span
                           className={

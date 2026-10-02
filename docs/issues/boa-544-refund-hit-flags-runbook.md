@@ -66,7 +66,22 @@ select position('race_status' in pg_get_functiondef('public.update_prediction_re
 
 ### 3. 既存の予想を書き直す
 
-ユーザーの手元のターミナルで実行する。
+書き直しの前に、対象の予想の判定の列の控えを取る（戻すときに使う。手順「元に戻す」）。SQL Editor で実行する。
+
+```sql
+CREATE TABLE backup_boa544_pred_hits AS
+SELECT p.prediction_id, p.is_hit_win, p.is_hit_place, p.is_hit_trifecta, p.is_hit_trio, p.is_hit_turn,
+       p.payout_win, p.payout_place, p.payout_trifecta, p.payout_trio
+FROM predictions p JOIN race_results r USING (race_id)
+WHERE r.race_status IN ('no_race', 'partial_refund');
+ALTER TABLE backup_boa544_pred_hits ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON backup_boa544_pred_hits FROM anon, authenticated;
+SELECT count(*) FROM backup_boa544_pred_hits;
+```
+
+期待: 3,771（2026-10-02 の夕方。手順1の対象の予想の数。増えていれば、その分だけ多い）。書き直す 3,602行は、すべてこの中に入る。
+
+続けて、ユーザーの手元のターミナルで実行する。
 
 ```bash
 node --env-file=.env.local scripts/maintenance/backfill-refund-hit-flags.js
@@ -91,7 +106,25 @@ node --env-file=.env.local scripts/maintenance/backfill-refund-hit-flags.js --ap
 ## 元に戻す
 
 - トリガー: 117 の冒頭の「元に戻す」の SQL を実行する。関数と発火条件が 097 の状態に戻る。
-- 書き直した予想: 元の値には自動では戻らない。必要なら、旧規則での再判定（`race_status` を見ない判定）を別途行う。書き直すのは不成立・返還のレースの予想だけ（約3,600行）で、通常のレースには触れない。
+- 書き直した予想: 手順3の控え（`backup_boa544_pred_hits`）から戻す。書き直すのは不成立・返還のレースの予想だけ（約3,600行）で、通常のレースには触れない。
+
+```sql
+BEGIN;
+UPDATE predictions p
+SET is_hit_win = b.is_hit_win, is_hit_place = b.is_hit_place, is_hit_trifecta = b.is_hit_trifecta,
+    is_hit_trio = b.is_hit_trio, is_hit_turn = b.is_hit_turn, payout_win = b.payout_win,
+    payout_place = b.payout_place, payout_trifecta = b.payout_trifecta, payout_trio = b.payout_trio
+FROM backup_boa544_pred_hits b
+WHERE p.prediction_id = b.prediction_id
+  AND (p.is_hit_win, p.is_hit_place, p.is_hit_trifecta, p.is_hit_trio, p.is_hit_turn,
+       p.payout_win, p.payout_place, p.payout_trifecta, p.payout_trio)
+      IS DISTINCT FROM (b.is_hit_win, b.is_hit_place, b.is_hit_trifecta, b.is_hit_trio, b.is_hit_turn,
+       b.payout_win, b.payout_place, b.payout_trifecta, b.payout_trio);
+COMMIT;
+```
+
+  戻すのは書き直した行（約3,600行）だけ。戻した後、手順1の SQL が書き直し前の値（`25 / 791 / 1937`）に戻ることを確かめ、成績の集計（手順5）を回し直す。トリガー（117）も戻す場合は、上の「トリガー」の手順を別に行う（予想の控えから戻すことと、トリガーを戻すことは独立している）。
+- 控えを消す: 翌日の成績の集計（`models`・`accuracy_cache`）が新しい規則で出たことを確かめたら、`DROP TABLE backup_boa544_pred_hits;` を実行する。
 
 ## 対象外（このPRでは直さない）
 
