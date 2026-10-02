@@ -1,0 +1,77 @@
+{
+ "model_version": "2026-10-02",
+ "test_period": [
+  "2025-10-03",
+  "2026-10-02"
+ ],
+ "n_races": 5000,
+ "repeats": 3,
+ "base_logloss": 1.2038966942932017,
+ "themes": [
+  {
+   "theme": "venueCourse",
+   "n_features": 3,
+   "shap_share": 0.353356441037769,
+   "perm_logloss_increase": 0.6270894083903668,
+   "perm_sd": 0.009797836652903513,
+   "perm_share": 0.7210619424995369
+  },
+  {
+   "theme": "racerRecord",
+   "n_features": 15,
+   "shap_share": 0.3949521164531557,
+   "perm_logloss_increase": 0.20143136097294745,
+   "perm_sd": 0.007648083104701997,
+   "perm_share": 0.23161687389410246
+  },
+  {
+   "theme": "startExhibition",
+   "n_features": 7,
+   "shap_share": 0.12920612712680637,
+   "perm_logloss_increase": 0.024904743844955373,
+   "perm_sd": 0.0005962814006998366,
+   "perm_share": 0.028636846251943127
+  },
+  {
+   "theme": "machine",
+   "n_features": 6,
+   "shap_share": 0.04804718598326524,
+   "perm_logloss_increase": 0.0065125405493310735,
+   "perm_sd": 0.00047164935207446164,
+   "perm_share": 0.007488477841080697
+  },
+  {
+   "theme": "environment",
+   "n_features": 9,
+   "shap_share": 0.026165584951584338,
+   "perm_logloss_increase": 0.0030580909158643976,
+   "perm_sd": 0.0004675429531235968,
+   "perm_share": 0.0035163613778670297
+  },
+  {
+   "theme": "racerProfile",
+   "n_features": 4,
+   "shap_share": 0.04827254444741927,
+   "perm_logloss_increase": 0.006678666087705398,
+   "perm_sd": 0.001233167915354802,
+   "perm_share": 0.007679498135469729
+  }
+ ],
+ "rank_by_shap": [
+  "racerRecord",
+  "venueCourse",
+  "startExhibition",
+  "racerProfile",
+  "machine",
+  "environment"
+ ],
+ "rank_by_permutation": [
+  "venueCourse",
+  "racerRecord",
+  "startExhibition",
+  "racerProfile",
+  "machine",
+  "environment"
+ ],
+ "top3_rank_same": false
+}
