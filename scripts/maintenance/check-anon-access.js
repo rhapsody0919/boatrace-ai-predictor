@@ -107,7 +107,7 @@ const ANON_RPCS = [
   "get_race_st_predictability",
   "get_race_technique_profile",
   "get_today_races",
-  // 類似レース（BOA-271 FR-2、マイグレーション119）。画面の RPC と、その中で呼ぶ読み取りだけの関数
+  // 類似レース（BOA-271 FR-2、マイグレーション120）。画面の RPC と、その中で呼ぶ読み取りだけの関数
   // （SECURITY INVOKER なので呼び出し側にも EXECUTE が要る）
   "get_analogy_similar",
   "get_analogy_similar_races",

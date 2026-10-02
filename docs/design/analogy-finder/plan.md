@@ -37,10 +37,10 @@ flowchart LR
 ### FR-1（マイグレーション 118、本番適用済み）
 `analogy_models`・`analogy_contribution_profiles`・`activate_analogy_model`。FR-2 は学習モデルに依存しないので、`analogy_models` に FR-2 の列は足さない（118 の時点で予定していた `pool_cutoff`・`neighbor_k`・`venue_penalty` の ADD COLUMN は不要になった）。
 
-### FR-2・FR-3（マイグレーション 119、未適用）
+### FR-2・FR-3（マイグレーション 120、未適用）
 
-ER 図は 118・119 の DDL から `generate-er-diagram.js` で生成した（FR-1 の2表を含む）。
-[119_analogy_strata.sql](../../db-migration/119_analogy_strata.sql)。設計時の案 115（k-NN の近傍のバッチ）は適用しないまま破棄した。PGlite で適用・関数の動作・権限を確認する `scripts/maintenance/verify-analogy-strata-migration.js`（ci）がある。
+ER 図は 118・120 の DDL から `generate-er-diagram.js` で生成した（FR-1 の2表を含む）。
+[120_analogy_strata.sql](../../db-migration/120_analogy_strata.sql)。設計時の案 115（k-NN の近傍のバッチ）は適用しないまま破棄した。PGlite で適用・関数の動作・権限を確認する `scripts/maintenance/verify-analogy-strata-migration.js`（ci）がある。
 
 ```mermaid
 erDiagram
@@ -215,13 +215,13 @@ flowchart TD
 
 ## BOA-635 との接続（2026-10-02 合意、オーケストレーター経由）
 BOA-635（PR #1093、BOA-635 の ADR 案（PR #1093））は近い順800行を画面で数える前提だった。層別では行の数が層で200〜7万件と変わり、スナップショットはモデルの版を持たない。次の形で合意した（plan の旧案 (B) を BOA-635 側が修正したもの）。
-- RPC `get_analogy_similar_races(race_id)`（119）: **自動の深さに固定**し、その層から `pool_cutoff` 以前を新しい順に最大2,000件返す。上限を超える層も隠さない。行の外に `snapshot`・`snapshot_at`・`depth`・`conditions`・`n_total`（層の総件数）・`n_returned`・`pool_from`・`pool_cutoff`
+- RPC `get_analogy_similar_races(race_id)`（120）: **自動の深さに固定**し、その層から `pool_cutoff` 以前を新しい順に最大2,000件返す。上限を超える層も隠さない。行の外に `snapshot`・`snapshot_at`・`depth`・`conditions`・`n_total`（層の総件数）・`n_returned`・`pool_from`・`pool_cutoff`
 - 列: `race_date`・`rank1〜3`・`winning_technique`・`course_by_boat`・`st_by_course`・`payout_3tan`（`race_id`・`venue_code`・`race_number`・`winner_course` は返さない）
 - 大きさ: 2,000行で gzip 後約34KB、1,000行で約17KB（乱数の模擬データでの試算。実データのほうが圧縮が効く）。100KB に収まるので2,000件。母集団の投入後に実測する
 - 発走後の再現: スナップショットの `pool_cutoff` 以前で固定するので、同じレースは発走後も同じ行の集合を返す（cutoff 以前の行が作り直しで変わったときは、その行の値だけ変わる）
 - 層の条件の説明文は、画面の共通関数 `src/utils/analogyReason.js`（FR-2 で作る）を BOA-635 も使う。RPC は `conditions` の値だけを返す
 - BOA-635 の判定はレース単位の純粋関数のまま（BOA-635 の ADR 案（PR #1093）の決定1は維持）。紐づけのキーは `(race_id, created_at)`（D-6 の読み替え）
-- 値の約束 R1〜R4・D-5 は 119 で固定（PGlite の検証）
+- 値の約束 R1〜R4・D-5 は 120 で固定（PGlite の検証）
 - 2,000件の言い換えの文言はオーケストレーターがユーザーに確認する
 
 ## 残る判断
@@ -245,12 +245,12 @@ BOA-635（PR #1093、BOA-635 の ADR 案（PR #1093））は近い順800行を�
 | 10 | P3 | 長期のステージ文字列 | `stage_kind` | FR-2 はラウンドを使わない |
 | 11 | P3 | MD-2 の数値が古い | T0-7 | 変わらず |
 | 12 | P3 | 母集団と決着の集合のずれ | LEFT JOIN と verify | 層別では母集団と決着が同じ表。長期と本体の境目は features.py どおり 2025-12-02 までが長期（以前の版の「2025-12-02 は本体を優先」は誤り） |
-| 13 | P3 | `check-anon-access.js` の一覧 | T1-1 | 119 の6関数を足した |
+| 13 | P3 | `check-anon-access.js` の一覧 | T1-1 | 120 の6関数を足した |
 | 14 | P3 | MD-3 の比較A の揺れ | 注記 | 変わらず |
 | 15 | P3 | 細部（説明の一行、λ、0件の判定、重複実行、外部キー） | 採用 | 説明の一行は文面ルール。0件の判定・重複実行は Cron の約束（上）に引き継ぐ |
 
 ## 実装レーンで決まった事項（PR #1118・#1121 マージ済み、2026-10-02）
-- マイグレーション: 寄与度の分（`analogy_models`・`analogy_contribution_profiles`・`activate_analogy_model`）を 115 から **118** に切り出した。115 の残りは 119（層別）に置き換えた
+- マイグレーション: 寄与度の分（`analogy_models`・`analogy_contribution_profiles`・`activate_analogy_model`）を 115 から **118** に切り出した。115 の残りは 120（層別）に置き換えた
 - 学習（train.py）: test は最終日から12か月、train はそれ以前（末尾3か月は温度合わせだけ）。木の数は固定。品質ゲートは「基準1に日クラスタ・ブートストラップ CI で有意に勝つ」「前の版を同じ test で評価し直して 0.005 以上悪化しない」
 - 寄与度の集計窓: 学習に使っていない直近12か月（test 期間）
 - Storage の版の規則（`storageRules.js`、`verify-analogy-storage.js` で固定）: 直近3版と表示中の版を残す。表示中の版と同じ名前ではアップロードしない。長期データのキャッシュ（`analogy/source/v1/`）は先頭行に列名を入れ、読むときに照合する

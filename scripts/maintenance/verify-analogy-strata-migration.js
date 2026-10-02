@@ -1,7 +1,7 @@
 /**
- * verify-analogy-strata-migration.js - マイグレーション119（BOA-271 FR-2 類似レース・層別 S*）の検証。
+ * verify-analogy-strata-migration.js - マイグレーション120（BOA-271 FR-2 類似レース・層別 S*）の検証。
  * インメモリの Postgres（PGlite）に、本番と同じ名前の元テーブルの縮約版とロールを作り、
- * docs/db-migration/119_analogy_strata.sql を実際に適用して、固定データで次を確認する。本番DBには接続しない。
+ * docs/db-migration/120_analogy_strata.sql を実際に適用して、固定データで次を確認する。本番DBには接続しない。
  *
  * 確認すること:
  *   (a) 勝率差の帯: 1/100単位で比べ、境界ちょうどは上の帯。勝率が取れなければ「不明」帯（5）
@@ -24,7 +24,7 @@ import { PGlite } from "@electric-sql/pglite";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATION = path.join(
   __dirname,
-  "../../docs/db-migration/119_analogy_strata.sql",
+  "../../docs/db-migration/120_analogy_strata.sql",
 );
 
 const failures = [];
@@ -261,7 +261,7 @@ async function main() {
   await mainRace(db, T5, { noResult: true }, six([6.5, 6.2, 5.0, 4.0, 3.0]));
 
   await db.exec(fs.readFileSync(MIGRATION, "utf8"));
-  check("119 を適用できる", true);
+  check("120 を適用できる", true);
 
   // (a) 帯
   const bands = await db.query(

@@ -634,7 +634,128 @@
   "aiPredictionTab": {
     "cancelled": "This race was cancelled, so there is no AI prediction.",
     "unavailableTitle": "No AI prediction data",
-    "unavailableBody": "This race doesn't have the data needed for an AI prediction."
+    "unavailableBody": "This race doesn't have the data needed for an AI prediction.",
+    "analogy": {
+      "title": "Analogy Finder",
+      "views": {
+        "contribution": "Contribution"
+      },
+      "contribution": {
+        "lede": "In past races under similar conditions, see which data mattered for each finishing position, and how much, as shares by theme.",
+        "foot": "Shares show the relative size of each theme's influence in past races under similar conditions (all themes add up to 100%)."
+      },
+      "targetsLabel": "Finish",
+      "targets": {
+        "1": "1st",
+        "2": "Top 2",
+        "3": "Top 3"
+      },
+      "conditions": "More conditions",
+      "grade": "Grade",
+      "round": "Round",
+      "all": "All",
+      "grades": {
+        "ippan": "General",
+        "G3": "G3",
+        "G2": "G2",
+        "G1": "G1",
+        "SG": "SG"
+      },
+      "rounds": {
+        "yosen": "Qualifying",
+        "junyu": "Semifinal",
+        "yusho": "Final",
+        "other": "Other"
+      },
+      "compare": "Compare boats",
+      "boatA": "Boat A",
+      "boatB": "Boat B",
+      "boatLabel": "Boat {{n}}",
+      "themeColumn": "Theme",
+      "venueAll": "All venues",
+      "widened": "Too few races for {{requested}}, so these figures cover {{steps}}",
+      "widenedSteps": {
+        "venue": "all venues",
+        "round": "all rounds",
+        "grade": "all grades"
+      },
+      "n": "n={{races}} races ({{boats}} boats)",
+      "model": "Model {{version}}",
+      "smallSample": "Small sample",
+      "rank": "#{{rank}}",
+      "radarLabel": "Radar chart of each theme's contribution",
+      "breakdownNote": "Closely related items (win rate and top-2 rate, in-race rank, etc.) are grouped. Individual values are for reference.",
+      "error": "Couldn't load the contribution data",
+      "themes": {
+        "venueCourse": {
+          "name": "Venue × lane & entry",
+          "short": "Venue×lane"
+        },
+        "racerRecord": {
+          "name": "Racer record",
+          "short": "Racer record"
+        },
+        "startExhibition": {
+          "name": "ST & pre-race info",
+          "short": "ST/pre-race"
+        },
+        "machine": {
+          "name": "Machine",
+          "short": "Machine"
+        },
+        "environment": {
+          "name": "Conditions",
+          "short": "Conditions"
+        },
+        "racerProfile": {
+          "name": "Racer profile",
+          "short": "Racer profile"
+        }
+      },
+      "groups": {
+        "venueCourse": {
+          "venue": "Venue",
+          "boatNumber": "Lane",
+          "raceNumber": "Race number"
+        },
+        "racerRecord": {
+          "class": "Class",
+          "national": "National win rate & top-2 rate",
+          "local": "Local win rate & top-2 rate",
+          "recent": "Last 30 races",
+          "boat1": "Inside racer's (boat 1) class & win rate"
+        },
+        "startExhibition": {
+          "exhibitionTime": "Exhibition time",
+          "pastSt": "Past avg. ST"
+        },
+        "machine": {
+          "motor": "Motor top-2 rate",
+          "boat": "Boat top-2 rate"
+        },
+        "environment": {
+          "weather": "Weather",
+          "wind": "Wind direction & speed",
+          "wave": "Wave height",
+          "grade": "Grade",
+          "round": "Round",
+          "seriesDay": "Day of meet"
+        },
+        "racerProfile": {
+          "age": "Age",
+          "weight": "Weight",
+          "branch": "Branch & home venue"
+        }
+      },
+      "loading": "Loading…",
+      "scope": "Past races: {{venue}} · {{grade}} · {{round}}",
+      "listSeparator": ", ",
+      "period": "{{from}} – {{to}}",
+      "listAllBoats": "By theme (all boats)",
+      "listAllBoatsCompare": "By theme (all boats; per-boat values in the table above)",
+      "magnitudeNote": "Shares show how strongly each theme mattered, whether it helped or hurt.",
+      "compareCaption": "Share of influence by boat (%; each column adds up to 100%). \"All boats\" below combines all six boats, including boats 2–5."
+    }
   },
   "beforeInfo": {
     "subtitle": "Same-day information updated as the race approaches. Some items aren't finalized until 30/15/10 minutes before the start",

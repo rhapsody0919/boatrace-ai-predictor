@@ -1,9 +1,9 @@
--- 119: アナロジー・ファインダーの類似レース（FR-2・FR-3、層別 S*）の母集団・スナップショット・RPC（BOA-271・BOA-627）
+-- 120: アナロジー・ファインダーの類似レース（FR-2・FR-3、層別 S*）の母集団・スナップショット・RPC（BOA-271・BOA-627）
 -- 対応: docs/adr/0082-analogy-strata-counted-in-sql.md、docs/design/analogy-finder/plan.md
 --
 -- 背景: FR-2 は「今日のレースと4条件がすべて同じ過去レース」の決着の分布を出す（層別 S*、2026-10-02 ユーザー決定）。
 --   条件: 1号艇と他艇の勝率差5帯 → 1号艇の級別 → 会場 → 勝率1位の艇。200件未満なら末尾の条件から外す（m=200）。
---   設計時の案 115（k-NN の近傍をバッチで作る形）は適用しないまま破棄し、この 119 に置き換えた。
+--   設計時の案 115（k-NN の近傍をバッチで作る形）は適用しないまま破棄し、この 120 に置き換えた。
 --   条件の定義は scripts/ml/analogy/features.py（分析 scripts/analysis/analogy-finder-fr2-strat/cm2.py）と同じにする。
 --   一致は scripts/maintenance/verify-analogy-pool.js で本番データを使って検査する。
 --

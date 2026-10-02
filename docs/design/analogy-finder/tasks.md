@@ -12,9 +12,9 @@
 - [ ] MD-3 の再判定: 2026-10-02 以降のまだ使っていないレース約6,100R で、条件付きロジット・ε=0.001・締切10〜60分前で最も近い時点で判定する（2026-11中旬の見込み）。採れたら T4 の themes に「市場」を足す（Phase U の着手は待たない）
 
 ## T0 準備
-- [x] T0-0 FR-2 の類似の定義の比べ直し → 層別 S*（2026-10-02 ユーザー決定）。軸の上限を外した前向き選択でも S* のまま（[fr2-strat-result.md](./analysis/fr2-strat-result.md) 4）。技術判断は ADR-0082、マイグレーションは 119
+- [x] T0-0 FR-2 の類似の定義の比べ直し → 層別 S*（2026-10-02 ユーザー決定）。軸の上限を外した前向き選択でも S* のまま（[fr2-strat-result.md](./analysis/fr2-strat-result.md) 4）。技術判断は ADR-0082、マイグレーションは 120
 - [ ] T0-1 ユーザー確認（モック https://claude.ai/artifact/C8UpMVkF4G3jaZAvJGYtna）: Q1 案A（チップ）／案B（チップ＋輪）、Q2 末尾からだけ外す、Q3 200件未満は自動で外す、Q4 割合は件数÷n（平滑化しない）、Q5 任意で条件を足すチップを作るか。回答で spec FR-2・screens・T7 を直す
-- [x] T0-1b BOA-635 のレーンと行の渡し方を合意（2026-10-02）。119 に `get_analogy_similar_races`（自動の深さ・最大2,000件）を足した（plan「BOA-635 との接続」）
+- [x] T0-1b BOA-635 のレーンと行の渡し方を合意（2026-10-02）。120 に `get_analogy_similar_races`（自動の深さ・最大2,000件）を足した（plan「BOA-635 との接続」）
 - [ ] T0-2 干渉効果のコールアウトに出すパターンを実データで選ぶ（spec FR-3。人が決めた1例に頼らない）。類似レースの層の中で（`course_flow` の件数から）、1着の決まり手×進入コースごとに2着の分布が全体から最も離れる組み合わせを上位から選び、n の下限と一緒に `analysis/` に記録する
 - [ ] T0-3 FR-3 の3着の段の注記（件数が少ないとき）の n の目安を決めて spec に書く（小標本フラグはレース数で数えると決めた。screens の表）
 - [x] ~~T0-4・T0-5・T0-6~~ 層別では不要（k-NN の近傍の距離と、その説明の一行の確認だった）
@@ -23,7 +23,7 @@
 
 ## T1 本番の器
 - [x] T1-0 マイグレーション 118（FR-1）は本番適用済み
-- [ ] T1-1 マイグレーション 119 の本番適用をユーザーに依頼する（書き込み SQL だけを渡す）。適用後、読み取りで2表・公開ポリシー2本・匿名の EXECUTE が6関数だけであること（119 末尾の確認 SQL）を確かめ、APPLIED.md を「適用済み」に直す。`check-anon-access.js` の ANON_RPCS は 119 の PR で更新済み
+- [ ] T1-1 マイグレーション 120 の本番適用をユーザーに依頼する（書き込み SQL だけを渡す）。適用後、読み取りで2表・公開ポリシー2本・匿名の EXECUTE が6関数だけであること（120 末尾の確認 SQL）を確かめ、APPLIED.md を「適用済み」に直す。`check-anon-access.js` の ANON_RPCS は 120 の PR で更新済み
 - [ ] T1-2 長期分の初回投入（`backfill-analogy-pool.js`、3か月ずつ。ユーザーが実行）。前後でダッシュボードの Disk IO を確認する
 - [ ] T1-3 （FR-1 の残り）週次学習の dispatch 用の fine-grained PAT を作り、Vercel の環境変数 `GITHUB_ACTIONS_DISPATCH_TOKEN` に入れる（ユーザーの作業）。FR-2 には要らない
 
@@ -34,15 +34,15 @@
 - [x] T2-3 `tests/`（pytest）: 当日以降の結果（同じ日の前のレースを含む）が特徴量に混ざらない、近傍の距離に直前情報の列が入っていない、ラウンド区分が `raceStageConfig.js` と一致、テーマ集計の合計が1、analogy_pool_outcomes の値の約束（3連単は本体の `payout_trio` から・F/出遅れ/欠場の ST は NULL・不成立の払戻は NULL・実進入不明は NULL・不成立と1〜3着に返還艇が入るレースは母集団に入れない。plan の get_analogy_neighbors の節）。テストは先に書き、落ちることを確かめてから実装する
 - [x] T2-4 `train.py`: 主モデル3本（1着・2着以内・3着以内）、木の数固定、時系列の最後の分割での評価。品質ゲート（基準1に有意に勝つ・前の版より 0.005 以上悪化しない）
 - [x] T2-5 `profiles.py`: SHAP をテーマに集計（`themes` 配列から。テーマ数は可変）、直近12か月、スライス（着順3×会場25×グレード6×ラウンド5×艇番7、グレード不明は「全グレード」にだけ）、seed 5回の SD、テーマ内の内訳（似た意味の項目はまとめる）
-- [x] ~~T2-6 `pool.py`~~ 層別では不要（母集団は 119 の SQL 関数で作る）
+- [x] ~~T2-6 `pool.py`~~ 層別では不要（母集団は 120 の SQL 関数で作る）
 - [x] T2-7 `db.py`: PostgREST への書き込み（service key）。analogy_pool_outcomes は差分だけ upsert、書き込み0件はエラー
 - [x] T2-8 `.github/workflows/train-analogy.yml`（schedule なし、workflow_dispatch のみ）。版の切り替えは `activate_analogy_model`。初回は手動実行
 - [ ] 本番実測: analogy_models に is_active の1行、analogy_contribution_profiles が全スライスの期待件数（n>0 のセル数。算出根拠を書く）であることを実測クエリで確認する
 - [ ] 継続監視: 週次の学習が失敗・品質ゲートで止まったら Slack に通知されること、最終成功から8日を過ぎたら検知されることを確認する
 
 ## T3 母集団とスナップショット（FR-2・BOA-627。SQL と Vercel Cron）
-- [ ] T3-00 マイグレーションの番号を振り直す: 119 は #1145（BOA-667）が先に使う見込み。実装 PR を出す時点の origin/master の最新＋1 にし、ADR-0082・plan・tasks・APPLIED.md・`verify-analogy-strata-migration.js`・`check-anon-access.js` のコメント・BOA-635 の文書の「119」をまとめて直す（`npm run verify:migration-numbers`）
-- [x] T3-0 マイグレーション 119（母集団・スナップショット・関数・RPC）と PGlite の検証 `verify-analogy-strata-migration.js`（ci）
+- [x] T3-00 マイグレーションの番号を 120 に振り直した（119 は #1145、121 は #1158 が使う。2026-10-02 オーケストレーター確定）。BOA-635 の文書の「119」は BOA-635 のレーンが直す
+- [x] T3-0 マイグレーション 120（母集団・スナップショット・関数・RPC）と PGlite の検証 `verify-analogy-strata-migration.js`（ci）
 - [ ] T3-1（公開前の必須条件）`scripts/ml/analogy/strata.py`（参照実装。`cm2.py` の `build_axes` の境界を固定し 1/100単位で比較、完全レースの判定は `features.py`）と pytest（境界ちょうど・同率・勝率の欠け）
 - [ ] T3-2 `scripts/maintenance/verify-analogy-pool.js`（**nightly-verify-db.yml で毎晩**。補完で過去の行が変わるため manual にしない。`verify-registry.json` に登録。公開前の必須条件）: 期間を区切って参照実装と母集団の「完全レースの集合」「条件4値」「決まり手・1着艇・1着の進入コースのラベル」を照合。元テーブルと母集団の行数の差、スナップショットの件数と数え直しの一致率も出す
 - [ ] T3-3 `scripts/maintenance/backfill-analogy-pool.js`（手動 CLI）: 期間を3か月ずつに切って `refresh_analogy_pool` を呼ぶ。`--dry-run` は `analogy_pool_rows_*` の件数だけ
