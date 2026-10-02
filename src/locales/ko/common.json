@@ -286,6 +286,13 @@
       "noPositionPlain": "착순 없음"
     },
     "refundTag": "반환정 있음",
+    "columns": {
+      "position": "착순",
+      "boat": "번호",
+      "racer": "선수",
+      "start": "ST",
+      "time": "레이스 타임"
+    },
     "partialNoRaceTag": "일부 승식 불성립",
     "payoutNoRace": "불성립(반환)",
     "partialVoidByStarters": "정상적으로 스타트한 정이 {{count}}정이어서 {{types}}은(는) 불성립(반환)입니다",
@@ -532,8 +539,7 @@
     "missBadge": "❌ 미적중",
     "view": "상세 보기",
     "dataTableExpand": "컨디션, 전시, 회수율까지 보기",
-    "noRace": "불성립",
-    "refundBadge": "반환 있음"
+    "noRace": "불성립"
   },
   "turnPatternList": {
     "title": "전개 예측",
