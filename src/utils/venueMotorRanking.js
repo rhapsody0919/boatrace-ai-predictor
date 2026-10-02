@@ -109,3 +109,41 @@ export function formatSlashDate(date) {
   const [y, m, d] = String(date).split("-").map(Number);
   return `${y}/${m}/${d}`;
 }
+
+const shiftDay = (date, days) => {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
+/**
+ * 出走表から、今の節で各モーターに直近に乗った選手とそのレースを返す（BOA-428 子3）。
+ *
+ * 前検データ（`motor_pretest_stats`）は前検日の名簿を節の毎日にコピーしたもので、節の途中で
+ * 入った選手（追加斡旋）が載らない。丸亀 2026-10-02 では2連率1位の50号機の使用者が出ず、
+ * 浜名湖では29号機が一覧から消えた（データ精度検証）。出走表で使用者を上書き・補完する。
+ *
+ * 節は「出走表の最新日から、レースのある日が途切れずに続く範囲」とみなす（前の節との間には
+ * レースの無い日がある）。最新日が前検日の前日より古ければ、まだ今の節が走っていない
+ * （出走表の行は前の節のもの）とみなし、空を返す
+ * 丸一日中止の日があると、その日より前は前の節とみなされる。そのモーターは前検データの
+ * 選手に戻る（前検日の名簿なので、誤った選手にはならない）
+ * @param {Array<{race_id: string, racer_id: number, motor_number: number}>} entries 会場の出走表
+ * @param {string} pretestDate 前検データの最新日（YYYY-MM-DD）
+ * @returns {Map<number, object>} motor_number → その節の直近の出走表の行
+ */
+export function currentSeriesRiders(entries, pretestDate) {
+  const dates = new Set(entries.map((e) => e.race_id.slice(0, 10)));
+  if (dates.size === 0) return new Map();
+  const latest = [...dates].sort().at(-1);
+  if (latest < shiftDay(pretestDate, -1)) return new Map();
+  let start = latest;
+  while (dates.has(shiftDay(start, -1))) start = shiftDay(start, -1);
+  const byMotor = new Map();
+  for (const e of entries) {
+    if (e.race_id.slice(0, 10) < start) continue;
+    const prev = byMotor.get(e.motor_number);
+    if (!prev || e.race_id > prev.race_id) byMotor.set(e.motor_number, e);
+  }
+  return byMotor;
+}

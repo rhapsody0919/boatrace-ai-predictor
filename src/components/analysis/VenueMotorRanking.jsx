@@ -36,7 +36,9 @@ function VenueMotorRanking({ initialVenueCode = null }) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
   const [venue, setVenue] = useState(initialVenueCode);
-  const [result, setResult] = useState(null);
+  // 取得結果は会場とセットで持つ（会場を替えた直後に前の会場の表が残らない。
+  // 読み込み中は「今の会場の結果がまだ無い」から導く）
+  const [loaded, setLoaded] = useState(null);
   const [sortKey, setSortKey] = useState("top2Rate");
 
   // 会場の指定が無ければ、今日開催している最初の会場（無ければ会場コード順の最初）
@@ -60,15 +62,15 @@ function VenueMotorRanking({ initialVenueCode = null }) {
   useEffect(() => {
     if (venue === null) return;
     let cancelled = false;
-    setResult(null);
-    supabaseDataService.getVenueMotorList(venue).then((r) => {
-      if (!cancelled) setResult(r);
+    supabaseDataService.getVenueMotorList(venue).then((data) => {
+      if (!cancelled) setLoaded({ venue, data });
     });
     return () => {
       cancelled = true;
     };
   }, [venue]);
 
+  const result = loaded?.venue === venue ? loaded.data : null;
   const rows = useMemo(
     () => (result?.state === "ok" ? sortMotorRows(result.rows, sortKey) : []),
     [result, sortKey],
@@ -78,7 +80,12 @@ function VenueMotorRanking({ initialVenueCode = null }) {
     () => Math.max(0, ...rows.map((r) => r.top2Rate).filter((v) => v !== null)),
     [rows],
   );
-  const scroll = useHorizontalScrollHint([rows.length]);
+  const {
+    ref: scrollRef,
+    hasMore,
+    update: updateScroll,
+    scrollRight,
+  } = useHorizontalScrollHint([rows.length]);
 
   const venueName =
     venue === null
@@ -166,13 +173,13 @@ function VenueMotorRanking({ initialVenueCode = null }) {
             <div className="vmr-state">{t("analysis.motorRanking.empty")}</div>
           ) : (
             <div
-              className={`vmr-table-wrapper hscroll-hint${scroll.hasMore ? " has-more" : ""}`}
+              className={`vmr-table-wrapper hscroll-hint${hasMore ? " has-more" : ""}`}
             >
-              {scroll.hasMore && (
+              {hasMore && (
                 <button
                   type="button"
                   className="hscroll-more"
-                  onClick={scroll.scrollRight}
+                  onClick={scrollRight}
                   aria-hidden="true"
                   tabIndex={-1}
                 >
@@ -181,8 +188,8 @@ function VenueMotorRanking({ initialVenueCode = null }) {
               )}
               <div
                 className="vmr-table-scroll"
-                ref={scroll.ref}
-                onScroll={scroll.update}
+                ref={scrollRef}
+                onScroll={updateScroll}
               >
                 <table className="vmr-table">
                   <thead>
