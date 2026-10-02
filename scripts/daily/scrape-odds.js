@@ -597,6 +597,7 @@ async function fillMissingFullOddsFromLatestSnapshots(patchesByRaceId) {
           .in("race_id", chunk)
           .gte("captured_at", cutoffIso)
           .order("captured_at", { ascending: false }),
+      // 握りつぶし可（BOA-391）: 全通りの補完だけ。失敗しても、その回の基本オッズの書き込みを止めない（上のコメント）
       { throwOnError: false },
     );
     data.push(...rows);

@@ -1869,6 +1869,7 @@ async function main() {
     await generateAndWriteFromRacesData({
       racesData,
       date: today,
+      // 握りつぶし可（BOA-391）: CLI だけ。morning-init の後続（unified・pcexpect・Deploy Hook）を止めない（上のコメント）
       throwOnError: false,
     });
 
