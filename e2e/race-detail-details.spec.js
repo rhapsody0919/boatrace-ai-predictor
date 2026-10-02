@@ -338,6 +338,107 @@ test.describe("レース詳細の表示の細部", () => {
       }
     }
   });
+  for (const lang of ["ja", "en"]) {
+    test(`AI予想の振り返り（${lang}）: 確率と丸数字の説明を出し、イン崩れ指数はレース前と同じバーで見せる（BOA-706）`, async ({
+      page,
+    }) => {
+      await page.goto(`${lang === "ja" ? "" : "/en"}${RACE}?tab=aiPrediction`);
+      const tab = page.locator(".race-ai-prediction-tab");
+      await expect(tab.locator(".turn-pattern-row").first()).toBeVisible({
+        timeout: 30000,
+      });
+      // 「47%」が何の値か・丸数字が何かを書く（以前はレース前だけ出していた）
+      await expect(tab.locator(".turn-pattern-caption")).toContainText(
+        lang === "ja"
+          ? "丸数字の艇がその決まり手で1着になる確率"
+          : "the chance that the circled lane wins",
+      );
+      // 指数は「会場内パーセンタイル0」と文字で出さず、0〜100 のバーで出す
+      await expect(tab.getByTestId("volatility-percentile-bar")).toBeVisible();
+      // バーの色の段階は、ラベル（本命有利）と同じ基準（getVolatilityLevel の low）
+      await expect(tab.getByTestId("volatility-percentile-bar")).toHaveClass(
+        /vpb--low/,
+      );
+      // 何と比べた 0〜100 かを、レース前のカードと同じ一文で書く（ファン評価1・3周目）
+      await expect(tab).toContainText(
+        lang === "ja"
+          ? "過去90日・同会場のレースと比較"
+          : "over the last 90 days",
+      );
+      await expect(tab).not.toContainText(
+        lang === "ja" ? "パーセンタイル" : "percentile",
+      );
+    });
+  }
+
+  test("AI予想の振り返り: イン崩れ指数のバーの文字は、ライト・ダークとも地の色と見分けられる（BOA-706）", async ({
+    page,
+  }) => {
+    await page.goto(`${RACE}?tab=aiPrediction`);
+    const bar = page.getByTestId("volatility-percentile-bar");
+    await expect(bar).toBeVisible({ timeout: 30000 });
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate(
+        (t) => document.documentElement.setAttribute("data-theme", t),
+        theme,
+      );
+      const { label, ends, bg } = await bar.evaluate((el) => ({
+        label: getComputedStyle(el.querySelector(".vpb-label")).color,
+        ends: getComputedStyle(el.querySelector(".vpb-ends")).color,
+        bg: getComputedStyle(el).backgroundColor,
+      }));
+      expect(contrast(label, bg), `${theme}: 見出し`).toBeGreaterThanOrEqual(
+        4.5,
+      );
+      // 端の「堅い・標準・崩れやすい」は小さい補助の文字。3:1 を下限にする
+      expect(contrast(ends, bg), `${theme}: 端の文字`).toBeGreaterThanOrEqual(
+        3,
+      );
+    }
+  });
+  test("イン崩れ指数のバー: 今の値の位置に印を置き、「標準」の文字は真ん中の目印の真下（PR #1186 ファン評価1周目）", async ({
+    page,
+  }) => {
+    // 児島12R は指数0。塗りが見えず、真ん中の「標準」の目印だけが目に入っていた
+    for (const width of [375, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${RACE}?tab=aiPrediction`);
+      const bar = page.getByTestId("volatility-percentile-bar");
+      await expect(bar).toBeVisible({ timeout: 30000 });
+      const m = await bar.evaluate((el) => {
+        const c = (q) => {
+          const r = el.querySelector(q).getBoundingClientRect();
+          return {
+            left: r.left,
+            center: (r.left + r.right) / 2,
+            width: r.width,
+          };
+        };
+        return {
+          track: c(".vpb-track"),
+          marker: c(".vpb-marker"),
+          median: c(".vpb-median"),
+          middleLabel: c(".vpb-ends > span:nth-child(2)"),
+          value: Number(el.querySelector(".vpb-value").textContent),
+        };
+      });
+      // 印は値の位置（0なら左端）にあり、見える大きさがある
+      expect(m.marker.width, `${width}px: 印の大きさ`).toBeGreaterThanOrEqual(
+        10,
+      );
+      expect(
+        Math.abs(
+          m.marker.center - (m.track.left + (m.track.width * m.value) / 100),
+        ),
+        `${width}px: 印の位置`,
+      ).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(m.middleLabel.center - m.median.center),
+        `${width}px: 「標準」の文字と真ん中の目印`,
+      ).toBeLessThanOrEqual(2);
+    }
+  });
+
   test("375px: 直前情報の展示情報の表は、右へ送ったら「‹」で左へ戻せる（BOA-699）", async ({
     page,
   }) => {
