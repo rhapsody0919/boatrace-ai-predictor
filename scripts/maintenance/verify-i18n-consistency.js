@@ -25,6 +25,9 @@
  *    区切りは言語ごとに en: `/` か `, `、zh-TW: `、`、ko: `, ` を使う
  * 5. en・ko に漢字・かなが無いこと（BOA-633。ko に「決定技」「艇」が残っていた）。
  *    zh-TW は漢字を使う言語なので対象外
+ * 6. ko で使わないと決めた訳語が無いこと（BOA-713）。「준우승」（韓国語では2位の意味）・
+ *    「상전」（韓国語の単語として通じない）。用語集 docs/reference/i18n-glossary.md の
+ *    「準優勝戦・賞典除外（ko）」行
  *
  * 2026-09-25時点で1〜3とも違反ゼロ（4 は BOA-442 で61件を置き換えてから追加）。この状態を保つための検査であって、
  * 既存の違反を洗い出すためのものではない。
@@ -157,7 +160,9 @@ if (allEmpty.length > 0) {
 for (const lang of LANGS.filter((l) => l !== BASE_LANG)) {
   checked += 1;
   const withNakaguro = Object.entries(locales[lang])
-    .filter(([, value]) => typeof value === "string" && value.includes("\u30FB"))
+    .filter(
+      ([, value]) => typeof value === "string" && value.includes("\u30FB"),
+    )
     .map(([key]) => key);
   if (withNakaguro.length > 0) {
     failures.push(
@@ -176,6 +181,23 @@ for (const lang of ["en", "ko"]) {
   if (withCjk.length > 0) {
     failures.push(
       `${lang}: 漢字・かなを含むキーが ${withCjk.length} 件 → ${withCjk.slice(0, 5).join(", ")}${withCjk.length > 5 ? " ..." : ""}（訳し残しの可能性）`,
+    );
+  }
+}
+
+// 6. ko で使わないと決めた訳語（BOA-713）
+const KO_RETIRED_TERMS = [
+  { term: "준우승", use: "준결승전（準優勝戦）・준결승 진출전（準優進出戦）" },
+  { term: "상전", use: "준결승·결승 제외（賞典除外）" },
+];
+checked += 1;
+for (const { term, use } of KO_RETIRED_TERMS) {
+  const keys = Object.entries(locales.ko)
+    .filter(([, value]) => typeof value === "string" && value.includes(term))
+    .map(([key]) => key);
+  if (keys.length > 0) {
+    failures.push(
+      `ko: 使わないと決めた訳語「${term}」が ${keys.length} 件 → ${keys.slice(0, 5).join(", ")}${keys.length > 5 ? " ..." : ""}（${use} を使う。用語集の「準優勝戦・賞典除外（ko）」行）`,
     );
   }
 }
