@@ -9,7 +9,6 @@ import {
   getTodaysMatchingRaces,
   getAvailableVenues,
   getBetTypeName,
-  getReliabilityName,
   getVenueName
 } from '../../services/ruleMatchService'
 import { getRuleApplicationHistory } from '../../services/adminRuleService'
@@ -208,7 +207,7 @@ function AdminRules() {
             </span>
           </div>
           <div className="summary-detail">
-            レース数: {overallPerformance.samples} / 的中数: {overallPerformance.hits} ({overallPerformance.hitRate}%)
+            対象件数: {overallPerformance.samples} / 的中数: {overallPerformance.hits} ({overallPerformance.hitRate}%)
           </div>
         </div>
       )}
@@ -453,6 +452,42 @@ function VenueTab({ venues, selectedVenue, onVenueChange, venueTotal, allRules }
 
 // 本日タブ
 function TodayTab({ races }) {
+  // hooks は早期 return より前で毎回同じ順に呼ぶ（rules-of-hooks）。races が空・null のときは空の集計になる
+  // 会場ごとにグループ化
+  const racesByVenue = useMemo(() => {
+    const grouped = {}
+    for (const race of races ?? []) {
+      if (!grouped[race.venueCode]) {
+        grouped[race.venueCode] = {
+          venueCode: race.venueCode,
+          venueName: race.venueName,
+          races: []
+        }
+      }
+      grouped[race.venueCode].races.push(race)
+    }
+    return Object.values(grouped).sort((a, b) => a.venueCode.localeCompare(b.venueCode))
+  }, [races])
+
+  // 本日の集計
+  const todaySummary = useMemo(() => {
+    let total = 0
+    let hits = 0
+    let payout = 0
+    for (const race of races ?? []) {
+      if (race.hitInfo) {
+        total++
+        if (race.hitInfo.hit) {
+          hits++
+          payout += race.hitInfo.payout
+        }
+      }
+    }
+    const investment = total * 100
+    const recovery = investment > 0 ? Math.round((payout / investment) * 100) : 0
+    return { total, hits, investment, payout, recovery }
+  }, [races])
+
   if (!races || races.length === 0) {
     return (
       <div className="today-tab">
@@ -462,41 +497,6 @@ function TodayTab({ races }) {
       </div>
     )
   }
-
-  // 会場ごとにグループ化
-  const racesByVenue = useMemo(() => {
-    const grouped = {}
-    races.forEach(race => {
-      if (!grouped[race.venueCode]) {
-        grouped[race.venueCode] = {
-          venueCode: race.venueCode,
-          venueName: race.venueName,
-          races: []
-        }
-      }
-      grouped[race.venueCode].races.push(race)
-    })
-    return Object.values(grouped).sort((a, b) => a.venueCode.localeCompare(b.venueCode))
-  }, [races])
-
-  // 本日の集計
-  const todaySummary = useMemo(() => {
-    let total = 0
-    let hits = 0
-    let payout = 0
-    races.forEach(race => {
-      if (race.hitInfo) {
-        total++
-        if (race.hitInfo.hit) {
-          hits++
-          payout += race.hitInfo.payout
-        }
-      }
-    })
-    const investment = total * 100
-    const recovery = investment > 0 ? Math.round((payout / investment) * 100) : 0
-    return { total, hits, investment, payout, recovery }
-  }, [races])
 
   return (
     <div className="today-tab">
