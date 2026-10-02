@@ -1900,6 +1900,16 @@
     "ariaLabel": "載入中"
   },
   "breadcrumbLabel": "導覽路徑",
+  "partsNames": {
+    "ring": "活塞環",
+    "piston": "活塞",
+    "carburetor": "化油器",
+    "gear": "齒輪",
+    "cylinder": "汽缸",
+    "electrical": "電氣系統",
+    "shaft": "傳動軸",
+    "carrierBody": "傳動箱體"
+  },
   "listSeparator": "、",
   "termHintLabel": "查看用語說明",
   "termHints": {

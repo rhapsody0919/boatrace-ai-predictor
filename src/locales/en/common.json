@@ -1908,6 +1908,16 @@
     "ariaLabel": "Loading"
   },
   "breadcrumbLabel": "Breadcrumb",
+  "partsNames": {
+    "ring": "Ring",
+    "piston": "Piston",
+    "carburetor": "Carburetor",
+    "gear": "Gear",
+    "cylinder": "Cylinder",
+    "electrical": "Electrical",
+    "shaft": "Shaft",
+    "carrierBody": "Carrier body"
+  },
   "listSeparator": ", ",
   "termHintLabel": "Show what this term means",
   "termHints": {

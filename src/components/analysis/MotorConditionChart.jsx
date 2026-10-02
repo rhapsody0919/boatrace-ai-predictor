@@ -28,6 +28,7 @@ import {
   isClippedByGeneration,
   officialTallyState,
 } from "../../utils/motorGeneration";
+import { translatePartName } from "../race/raceIndicators";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
 
@@ -1189,7 +1190,9 @@ function MotorConditionChart({
                   <span className="parts-history-items">
                     {event.parts && event.parts.length > 0 && (
                       <span className="parts-history-tag">
-                        {event.parts.join(t("listSeparator"))}
+                        {event.parts
+                          .map((part) => translatePartName(t, part))
+                          .join(t("listSeparator"))}
                       </span>
                     )}
                     {event.propellerChanged && (
