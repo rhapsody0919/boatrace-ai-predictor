@@ -3387,7 +3387,9 @@ export const supabaseDataService = {
             const s = statsByMotor.get(motorNumber);
             return {
               motorNumber,
-              top2Rate: toNumber(s?.top2_rate),
+              // 出走数 0（入れ替え直後で集計前）の 0% は値として扱わない。順位・最良にも入れない
+              // （6基の会場内順位・ドリルダウンと同じ扱い。BOA-428）
+              top2Rate: s?.race_count === 0 ? null : toNumber(s?.top2_rate),
               finalCount: toNumber(s?.final_count),
               championshipCount: toNumber(s?.championship_count),
               ...userOf(motorNumber),
