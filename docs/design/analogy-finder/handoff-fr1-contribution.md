@@ -1,6 +1,6 @@
 # アナロジー・ファインダー FR-1（寄与度）実装の引き継ぎ
 
-BOA-271 の実装レーン（2026-10-02）から次のセッションへの引き継ぎ。設計の正本は Draft PR #1039 の `docs/design/analogy-finder/`（spec.md・plan.md・tasks.md・ADR-0080。master の spec.md は #643 時点の古い版）。ここには、実装で決めたこと・本番の状態・残りの作業だけを書く。
+BOA-271 の実装レーン（2026-10-02）から次のセッションへの引き継ぎ。設計の正本は Draft PR #1039 の `docs/design/analogy-finder/`（spec.md・plan.md・tasks.md と、近傍をバッチで事前計算する ADR 案（Draft PR #1039）。master の spec.md は #643 時点の古い版）。ここには、実装で決めたこと・本番の状態・残りの作業だけを書く。
 
 ## 1. 本番の状態
 
