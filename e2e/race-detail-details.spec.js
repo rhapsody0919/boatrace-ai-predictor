@@ -239,30 +239,52 @@ test.describe("レース詳細の表示の細部", () => {
     });
     expect(edges.hintRight).toBeGreaterThanOrEqual(edges.wrapRight - 0.5);
 
-    // 想定コースが6の選手を選ぶと、「想定」の列が見える位置まで送られる（同 1周目。以前は
-    // 画面の外から始まり、比べる基準の列が見えなかった）。いったん左端へ戻してから選ぶ
+    // 想定コースが外の選手（4〜6号艇）を選んでも、「想定」の列が初めから見える位置まで送られ、
+    // 右端のフェード（幅40px）と「›」の下にも入らない。指標を替えても同じ（#1130 ファン評価
+    // 1・2周目）。行見出しはスクロールする箱の左端にぴったり付き、左に流れた数字が覗かない
     await page.locator(".rwit-grid-hscroll .hscroll-less").click();
     await expect.poll(() => grid.evaluate((el) => el.scrollLeft)).toBe(0);
-    await page
-      .locator(".rwit-boat-chip")
-      .filter({ has: page.locator(".rwit-boat-chip-num", { hasText: /^6$/ }) })
-      .click();
-    await expect
-      .poll(() =>
-        page.evaluate(() => {
-          const wrap = document.querySelector(".rwit-grid-wrapper");
-          const th = wrap.querySelector(".rwit-grid-course-th.is-today");
-          if (!th) return "no-today";
-          const w = wrap.getBoundingClientRect();
-          const c = th.getBoundingClientRect();
-          const label = wrap
-            .querySelector(".rwit-grid-label-th")
-            .getBoundingClientRect();
-          return c.right <= w.right + 0.5 && c.left >= label.right - 0.5
-            ? "visible"
-            : `hidden ${Math.round(c.left)}-${Math.round(c.right)} / ${Math.round(label.right)}-${Math.round(w.right)}`;
-        }),
-      )
-      .toBe("visible");
+    const todayColumnState = () =>
+      page.evaluate(() => {
+        const wrap = document.querySelector(".rwit-grid-wrapper");
+        const th = wrap.querySelector(".rwit-grid-course-th.is-today");
+        if (!th) return "no-today";
+        const w = wrap.getBoundingClientRect();
+        const c = th.getBoundingClientRect();
+        const label = wrap
+          .querySelector(".rwit-grid-label-th")
+          .getBoundingClientRect();
+        const hasMore =
+          wrap.scrollWidth - wrap.clientWidth - wrap.scrollLeft > 4;
+        const rightLimit = w.right - (hasMore ? 40 : 0);
+        if (label.left - w.left > 0.5)
+          return `label-gap ${label.left - w.left}`;
+        return c.right <= rightLimit + 0.5 && c.left >= label.right - 0.5
+          ? "visible"
+          : `hidden ${Math.round(c.left)}-${Math.round(c.right)} / ${Math.round(label.right)}-${Math.round(rightLimit)}`;
+      });
+    for (const width of [375, 320]) {
+      await page.setViewportSize({ width, height: 812 });
+      for (const boat of ["4", "5", "6"]) {
+        await page
+          .locator(".rwit-boat-chip")
+          .filter({
+            has: page.locator(".rwit-boat-chip-num", {
+              hasText: new RegExp(`^${boat}$`),
+            }),
+          })
+          .click();
+        for (const metric of ["1着率", "2連対率", "3連対率"]) {
+          await page
+            .locator(".rwit-metric-row .rwit-chip", { hasText: metric })
+            .click();
+          await expect
+            .poll(todayColumnState, {
+              message: `${width}px・${boat}号艇・${metric}`,
+            })
+            .toBe("visible");
+        }
+      }
+    }
   });
 });

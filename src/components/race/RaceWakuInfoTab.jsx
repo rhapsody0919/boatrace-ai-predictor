@@ -242,14 +242,30 @@ function RaceWakuInfoTab({
       const col = th.getBoundingClientRect();
       const left = col.left - box.left + el.scrollLeft;
       const right = left + col.width;
+      // 右にまだ続きがあるあいだは、右端に幅40pxのフェードと「›」が重なる
+      // （HorizontalScrollHint.css）。列の右端がフェードに掛からない位置まで送る。
+      // 箱の右端ちょうどに収めるだけだと、4〜5号艇の「想定」の列がフェードの下で薄れて
+      // 読めなかった（#1130 ファン評価2周目）
+      const FADE_WIDTH = 40;
+      const maxScroll = el.scrollWidth - el.clientWidth;
       let target = el.scrollLeft;
-      if (right > target + el.clientWidth) target = right - el.clientWidth;
+      if (right > target + el.clientWidth - FADE_WIDTH) {
+        target = right - (el.clientWidth - FADE_WIDTH);
+      }
       if (left - labelWidth < target) target = left - labelWidth;
-      el.scrollLeft = Math.max(0, target);
+      el.scrollLeft = Math.min(maxScroll, Math.max(0, target));
       updateGridScroll();
     });
     return () => cancelAnimationFrame(raf);
-  }, [foldOpen, selectedBoat, scopedByRacer, gridScrollRef, updateGridScroll]);
+    // 指標を替えると列の幅が変わるので、そのときも測り直す（#1130 ファン評価2周目）
+  }, [
+    foldOpen,
+    selectedBoat,
+    metric,
+    scopedByRacer,
+    gridScrollRef,
+    updateGridScroll,
+  ]);
 
   // 選手を選ぶたびに、その選手の出走履歴を取得する（withCacheで基本情報タブ・
   // 直前情報タブと共有されるため、同じ選手なら再フェッチは起きない）

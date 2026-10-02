@@ -299,6 +299,9 @@
 
 .rwit-grid-hscroll > .rwit-grid-wrapper {
   margin: 0;
+  /* 左右の内側の余白は付けない。固定（sticky）の行見出しは内側の余白の内側に止まるため、
+     左に流れたセルの数字が余白の4px幅に覗き、「4今期」のように見えた（#1130 ファン評価2周目） */
+  padding: 0;
 }
 
 .rwit-grid-wrapper {
