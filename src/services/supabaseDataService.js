@@ -7963,7 +7963,6 @@ function isUnrankedFinishMark(mark) {
   return typeof mark === "string" && mark !== "" && !/^[1-6]$/.test(mark);
 }
 
-
 /**
  * getRacerRaceHistory()が返すフラット履歴を「会場×枠番×グレード×レース種別」
  * で絞り込み集計する純粋関数（I/O無し）。各引数はnullで絞り込みなしを表す。
