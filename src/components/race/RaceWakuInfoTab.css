@@ -66,6 +66,12 @@
   flex-shrink: 0;
 }
 
+/* 選んだチップの艇番の丸は、艇の文字色で塗って数字を白黒の反対にする（色は JSX の style で渡す。BOA-693） */
+.rwit-boat-chip.is-active .rwit-boat-chip-num {
+  background: var(--rwit-chip-num-bg);
+  color: var(--rwit-chip-num-fg);
+}
+
 .rwit-boat-chip-name {
   max-width: 6em;
   overflow: hidden;
