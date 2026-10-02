@@ -115,8 +115,8 @@
     "fetchError": "無法載入本場地的水面特性。"
   },
   "raceDetailPage": {
-    "metaTitle": "{{venue}} 第{{race}}場 AI數據分析 - 龍神雷達",
-    "metaDescription": "免費查看{{venue}}第{{race}}場的出賽表資料、AI數據分析與展開預測。",
+    "metaTitle": "{{venue}} 第{{race}}場 AI數據分析（{{date}}）- 龍神雷達",
+    "metaDescription": "免費查看{{date}}{{venue}}第{{race}}場的出賽表資料、AI數據分析與展開預測。",
     "backToList": "← 返回比賽一覽",
     "notFound": "找不到比賽",
     "pastPredictionsBreadcrumb": "過往預測",
