@@ -10,8 +10,8 @@
  * （節の途中のモーター・ボート交換、勝率の当日以降の更新等が理由と推定）。そのため、このモジュールが書く行は
  * 「既存値が NULL の列だけ」に限定する（RACELIST_BACKFILL_COLUMNS）。既に値のある列（win_rate・motor_number・
  * boat_number_id・2連率系列を含む）には、たとえ再取得した値と異なっていても、絶対に触れない。
- * 対象は「3連率がNULLの行」（N19）に限定し、同じ取得で埋められる F数・L数・体重・支部・出身地・欠場フラグも
- * 一緒に埋める（重複取得を避ける。2連率等の他の欠落は別スコープ）。
+ * 対象は「3連率か F数が NULL の行」（N19・BOA-417）で、同じ取得で埋められる F数・L数・体重・支部・出身地・欠場フラグ・
+ * 3連率を一緒に埋める（重複取得を避ける。2連率等の他の欠落は別スコープ）。
  */
 
 /** 既存値がNULLのときだけ埋める列（3連率4種 + マイグレーション081の追加列） */
@@ -102,7 +102,7 @@ export function buildFillRowsForRace(existingRows, entries) {
 }
 
 /**
- * バックフィル対象のレースID一覧（global_3rate が NULL の行を持つレース）を、本番DBの読み取りで確定する。
+ * バックフィル対象のレースID一覧（global_3rate か f_count が NULL の行を持つレース）を、本番DBの読み取りで確定する。
  * 読み取りのみ（書き込みなし）。race_entries は主キーが (race_id, boat_number) のため、両方でorderして
  * range によるページングを安定させる。
  *
@@ -121,10 +121,12 @@ export async function loadTargetRaceIds(
   for (;;) {
     // フィルタ（gte/lte）は range() より前に付ける。range() を先に呼ぶと、実装によっては
     // その時点で確定した条件のみでページングしてしまうため（フェイクSupabaseクライアントでの検証で判明）
+    // 3連率（N19）か F数（BOA-417。2026-02 以降は3連率が埋まっていて、F数・L数・体重・支部等だけが欠けている）の
+    // どちらかが NULL の行。同じページの取得で、両方の列のまとまりが埋まる
     let query = client
       .from("race_entries")
       .select("race_id")
-      .is("global_3rate", null);
+      .or("global_3rate.is.null,f_count.is.null");
     if (from) query = query.gte("race_id", from);
     if (to) query = query.lte("race_id", `${to}-99-99`);
     query = query

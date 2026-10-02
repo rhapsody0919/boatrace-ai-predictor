@@ -26,7 +26,7 @@
   },
   "meta": {
     "title": "龍神雷達 - 免費賽艇AI預測與數據分析",
-    "description": "AI 免費預測日本賽艇（BOAT RACE / Kyotei）。AI 分析每場比賽 45 項數據並預測結果 — 完全免費，無需註冊。"
+    "description": "AI 免費預測日本賽艇（BOAT RACE / Kyotei）。AI 分析選手成績、馬達、展示航走與起跑數據並預測結果 — 完全免費，無需註冊。"
   },
   "venues": {
     "1": "桐生",
@@ -200,7 +200,7 @@
     "exhibitionTime": "展示時間",
     "exhibitionST": "展示ST",
     "totalPower": "綜合力",
-    "courseWinRate": "艇號勝率",
+    "wakuWinRate": "艇號勝率",
     "firstPlace": "第1名",
     "guideTitle": "數據解讀方式",
     "guideNationalWinRate": "選手在全國的勝率。6.0 以上為 A 級水準。",
@@ -352,7 +352,7 @@
     }
   },
   "home": {
-    "introBannerText": "龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。| 分析轉彎預測、內道崩盤指數等45項以上數據。了解更多 →",
+    "introBannerText": "龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。| 分析轉彎預測、內道崩盤指數等數據。了解更多 →",
     "introBannerClose": "關閉",
     "sgNow": {
       "region": "SG賽事進行中",
@@ -501,8 +501,8 @@
     "other": "其他",
     "exampleDefenseTitle": "1號位的「{{label}} {{count}}/{{total}}」",
     "exampleDefenseDesc": "→ 從1號位出發的{{total}}次中，被其他選手以「{{attackLabel}}」擊敗{{count}}次",
-    "exampleAttackTitle": "{{course}}號位的「{{label}} {{count}}/{{total}}」",
-    "exampleAttackDesc": "→ 從{{course}}號位出發的{{total}}次中，以「{{label}}」獲勝{{count}}次",
+    "exampleAttackTitle": "{{waku}}號位的「{{label}} {{count}}/{{total}}」",
+    "exampleAttackDesc": "→ 從{{waku}}號位出發的{{total}}次中，以「{{label}}」獲勝{{count}}次",
     "legendWinsDesc": "：該艇號的勝場／出賽數",
     "legendRed": "紅色",
     "legendRedDesc": "：1號位遭受的攻擊（切入等）",
@@ -1092,6 +1092,9 @@
     "periodWinRate": "勝率 {{value}}",
     "periodTop2Rate": "2連對率 {{value}}",
     "periodAvgSt": "平均ST {{value}}",
+    "periodFinals": "優出 {{value}}次",
+    "periodWins": "優勝 {{value}}次",
+    "periodRecentFinals": "近2年（{{from}}〜{{to}}）優出 {{finals}}次、優勝 {{wins}}次",
     "periodVsCurrent": "（出走表、全國 {{current}}，較前期 {{diff}}）",
     "periodCurrentOnly": "（出走表、全國 {{current}}）",
     "periodDiffWithheldNote": "※換期後的3個月內，出走表數值大部分仍是與前期相同期間的成績，因此不顯示與前期的差（{{date}}以後的比賽才顯示）。",

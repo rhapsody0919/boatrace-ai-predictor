@@ -1,0 +1,14 @@
+{
+  "id": "player-data-analysis",
+  "title": "AIが分析する選手データの見方",
+  "description": "選手のどのデータを見れば良いのか？AIが重視する選手データの見方を詳しく解説します。",
+  "date": "2025-12-17",
+  "category": "データ分析",
+  "tags": [
+    "選手データ",
+    "AI分析",
+    "データ"
+  ],
+  "readTime": "10分",
+  "featured": false
+}

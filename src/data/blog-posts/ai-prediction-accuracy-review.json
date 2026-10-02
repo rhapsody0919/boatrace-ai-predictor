@@ -1,0 +1,18 @@
+{
+  "id": "ai-prediction-accuracy-review",
+  "title": "ボートレースAI予想は本当に当たるのか？ — 3ヶ月15,000レースの検証結果",
+  "description": "AI予想の的中率・回収率を15,000レースで検証。強み・弱み、他サービスとの違い、AI予想の限界まで正直に公開。",
+  "date": "2026-03-12",
+  "category": "データ分析",
+  "tags": [
+    "AI予想",
+    "的中率",
+    "回収率",
+    "検証",
+    "透明性"
+  ],
+  "readTime": "10分",
+  "featured": true,
+  "image": "/images/blog/ai-accuracy-comparison-ja.jpg",
+  "featuredRank": 3
+}
