@@ -827,40 +827,53 @@ test.describe("レイアウト: 会場のレース一覧カード（出走表の
 // 左端より外へ押し出されて行見出しの頭（「展示ST」→「示ST」）が切れた
 for (const path of ["/race/2026-09-29-16-12", "/en/race/2026-09-29-16-12"]) {
   test.describe(`レイアウト: 直前情報の展示情報カード（${path.startsWith("/en") ? "en" : "ja"}）`, () => {
+    // スマホは機種で幅が違い、320px 以下だけ別の余白の指定がある（RaceDetail.css・RaceDetailPage.css）。
+    // layout-mobile（375px）のときは 320・390px も通す（PR #1135 で、#1127 を取り込む前の
+    // ブランチの Preview がこの崩れのまま出た）
     test("表がカードの内側に収まり、行見出しが画面の左端で切れない", async ({
       page,
-    }) => {
-      await page.goto(path, { waitUntil: "domcontentloaded" });
-      await page
-        .locator(".race-tabs-btn")
-        .filter({ hasText: /直前情報|Just Before/ })
-        .first()
-        .click({ timeout: 30000 });
-      const table = page.locator(".rbi-card .drt-table").first();
-      await expect(table).toBeVisible({ timeout: 30000 });
-      const m = await table.evaluate((el) => {
-        const card = el.closest(".rbi-card").getBoundingClientRect();
-        const wrap = el.closest(".drt-table-wrapper").getBoundingClientRect();
-        const labels = [...el.querySelectorAll(".drt-label-cell")].map(
-          (c) => c.getBoundingClientRect().left,
-        );
-        return {
-          card: [card.left, card.right],
-          wrap: [wrap.left, wrap.right],
-          minLabelLeft: Math.min(...labels),
-          vw: document.documentElement.clientWidth,
-        };
-      });
-      // 表（横スクロールの枠）はカードの左右の枠の内側にある
-      expect(m.wrap[0]).toBeGreaterThanOrEqual(m.card[0] - 0.5);
-      expect(m.wrap[1]).toBeLessThanOrEqual(m.card[1] + 0.5);
-      // カードも画面からはみ出さない
-      expect(m.card[0]).toBeGreaterThanOrEqual(-0.5);
-      expect(m.card[1]).toBeLessThanOrEqual(m.vw + 0.5);
-      // 行見出しの左端が画面とカードの内側にある（頭が切れない）
-      expect(m.minLabelLeft).toBeGreaterThanOrEqual(
-        Math.max(0, m.card[0]) - 0.5,
-      );
+    }, testInfo) => {
+      const widths =
+        testInfo.project.name === "layout-mobile" ? [320, 375, 390] : [null];
+      for (const width of widths) {
+        if (width) await page.setViewportSize({ width, height: 812 });
+        await checkBeforeInfoExhibitionCard(page, path, width);
+      }
     });
   });
+}
+
+async function checkBeforeInfoExhibitionCard(page, path, width) {
+  const at = width ? `${width}px: ` : "";
+  await page.goto(path, { waitUntil: "domcontentloaded" });
+  await page
+    .locator(".race-tabs-btn")
+    .filter({ hasText: /直前情報|Just Before/ })
+    .first()
+    .click({ timeout: 30000 });
+  const table = page.locator(".rbi-card .drt-table").first();
+  await expect(table).toBeVisible({ timeout: 30000 });
+  const m = await table.evaluate((el) => {
+    const card = el.closest(".rbi-card").getBoundingClientRect();
+    const wrap = el.closest(".drt-table-wrapper").getBoundingClientRect();
+    const labels = [...el.querySelectorAll(".drt-label-cell")].map(
+      (c) => c.getBoundingClientRect().left,
+    );
+    return {
+      card: [card.left, card.right],
+      wrap: [wrap.left, wrap.right],
+      minLabelLeft: Math.min(...labels),
+      vw: document.documentElement.clientWidth,
+    };
+  });
+  // 表（横スクロールの枠）はカードの左右の枠の内側にある
+  expect(m.wrap[0], `${at}表の左端`).toBeGreaterThanOrEqual(m.card[0] - 0.5);
+  expect(m.wrap[1], `${at}表の右端`).toBeLessThanOrEqual(m.card[1] + 0.5);
+  // カードも画面からはみ出さない
+  expect(m.card[0], `${at}カードの左端`).toBeGreaterThanOrEqual(-0.5);
+  expect(m.card[1], `${at}カードの右端`).toBeLessThanOrEqual(m.vw + 0.5);
+  // 行見出しの左端が画面とカードの内側にある（頭が切れない）
+  expect(m.minLabelLeft, `${at}行見出し`).toBeGreaterThanOrEqual(
+    Math.max(0, m.card[0]) - 0.5,
+  );
 }
