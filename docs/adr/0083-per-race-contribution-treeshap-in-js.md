@@ -1,7 +1,7 @@
 # ADR 0083: レースごとの寄与度は、特徴量を Python で朝に作り、SHAP は JS で出走表時点と展示後の2段に計算する
 
 ## ステータス
-提案中（BOA-271 FR-1 の拡張「レースごとの寄与度」、2026-10-02 ユーザー決定）。FR-1 の学習レーンとの合意（下の「境界」）と、second-opinion-reviewer の検証の後に採用に変える。
+採用（2026-10-02）。ユーザー決定、second-opinion-reviewer の検証（指摘10件を反映）、FR-1 の学習レーン（「BOA-271 レースごとの寄与度の学習側」、設計ブランチ feature/boa-271-perrace-train）との境界の合意（下の「境界の合意」）を経た
 
 ## 背景
 ユーザー決定（2026-10-02、オーケストレーター経由）:
@@ -55,3 +55,12 @@
 - 公開の前提条件: workflow_dispatch の PAT（ユーザーの作業）。日次の特徴量ジョブを本番と同じ条件で1回計測し、7:30 の段に間に合うことを確かめる
 - モデルの版の切り替え（週次）とレースの段の整合: 行に版を持つ。展示後の段は、そのレースの特徴量の行と同じ版のモデルで計算する（Storage は直近3版を残すので取れる）
 - 境界（FR-1 の学習レーンと合意する）: 学習側は2本のモデル・JSON ダンプ・一致検査の固定データ・日次の特徴量ジョブ。推論側（このレーン）は JS の TreeSHAP・テーマ集計・2段の計算・表と API
+
+## 境界の合意（2026-10-02、学習レーンとオーケストレーター経由）
+- `per_race_meta.json`: `model_version`、各モデルの `file`・`feature_names`（`booster.feature_name()` の並び）・`num_trees`・`objective`、`live_features`、`themes`、`categorical_maps`（`branch_code` 等の文字列→番号。学習時に固定）、`dtype: "float32"`
+- `parity_fixture.json`: 約50R。レースごとに `racecard_features`（`analogy_race_features` と同じ `real[]` ×6艇、欠損は null）、`live_raw`（`exhibition_data` の展示タイム・欠場、`race_conditions` の weather・wind_direction・wind_speed・wave_height を DB の型のまま）、`expected`（2本それぞれの特徴量の並びと pred_contrib。最後の列が期待値）。テーマ集計の期待値は入れない（集計は JS の1か所）。無風・風向 null・展示タイムの同値・カテゴリの未出現値・欠損を混ぜる
+- **マージの順序**: 学習ジョブは `scripts/ml/analogy/treeshap-parity.js` が master に無い間は失敗する。推論側の `treeshap-parity.js`（と JS の TreeSHAP・8列の作り方）を先にマージする
+- 日次の特徴量ジョブ: JST 6:40・9:40・13:40（race_entries は毎日 5:01〜5:10 に入り、最も早い締切は 8:32〜8:35）。欠場のあるレースは特徴量を書かない
+- 表: `analogy_race_features` は学習側のマイグレーション（`input_hash text` 列を持ち、締切前かつハッシュが違うときだけ更新）。`analogy_race_contributions` は推論側
+- `win_racecard` の品質ゲート: 基準1に日クラスタ CI で有意に勝つこと。参照版 2026-10-02 に `win_racecard` が無いので、その段は「比較なし」と metrics に書いて Slack で警告する（win・2着以内・3着以内の参照比較は今どおり止める）。win と win_racecard の対数損失の差は記録だけ
+- 既知の差: 学習データの天候・風・波は、本体分が `race_conditions`（直前情報の値）、長期分が K ファイル（レース時の値）で、出どころが違う

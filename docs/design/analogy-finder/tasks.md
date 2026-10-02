@@ -59,6 +59,17 @@
 - [ ] T3b-3 分析コードと結果は master に残せる形にする（入出力のパスは環境変数。scratchpad の絶対パスを書かない。既存の `scripts/analysis/analogy-finder-fr2-strat/` のパスも直す）。縮小版の結果 JSON には `scale` を必ず入れる
 - [ ] T3b-4 報告・文書の数値には「値／指標／A−B（比較対象）／母集団・部分集合／期間（cal・test）／データ版／結果 JSON のパス#キー」を付ける
 
+## T3c レースごとの寄与度（B、ADR-0083。推論側＝このレーン。学習側は feature/boa-271-perrace-train）
+- [ ] T3c-1（**先にマージする**。学習ジョブがこれを必要とする）`src/utils/analogyTreeShap.js`（dump_model の JSON から推論と TreeSHAP。カテゴリ分岐・欠損の向き）と、直前情報8列を作る関数（float32: DB から読んだ値は fround、差は float32 の Kahan 和の平均を fround して引く、順位は float32 で同値は min、無風・風向 null の扱いは features.py に合わせる）、`scripts/ml/analogy/treeshap-parity.js`（parity_fixture.json を読み、特徴量は完全一致・SHAP は最大差 < 1e-9・合計＝生スコア。一致しなければ終了コード1）。CI 用の小さな固定モデルと固定データの verify（ci）
+- [ ] T3c-2 マイグレーション（推論側）: `analogy_race_contributions`（主キー `(race_id, stage)`、RLS・匿名は SELECT のみ、締切前だけ書く・既にあれば書かない）
+- [ ] T3c-3 `src/utils/analogyRaceContribution.js`: テーマ集計（中心化した |SHAP| のシェア、艇ごと・テーマごと・グループごとの符号つきの値、展示のグループが最も押し上げた艇）
+- [ ] T3c-4 出走表時点の段: `api/cron/analogy-snapshots.js` で、特徴量があり段が無い締切前のレース（欠場が分かっていれば出さない）を計算
+- [ ] T3c-5 展示後の段: 展示取得のフック（`runSlotsWithRefresh` の後）と、毎分の起動での拾い直し（6艇の展示あり・欠場なし・締切前・展示後の段なし、件数に上限）。切り替えは専用の環境変数。失敗は取得の成否に影響させない
+- [ ] T3c-6 API `GET /api/analogy/race-contribution/[raceId]`
+- [ ] T3c-7 本番実測: 土日を含む直近5日で、展示後の段が締切前に作られた割合（対象: 6艇の展示あり・欠場なしのレース）、計算時間の分布、本番の版での JS と Python の一致
+- [ ] T3c-8 継続監視: 当日の段の充足率と一致検査の失敗を Slack に通知
+- [ ] 公開の前提条件: workflow_dispatch の PAT（ユーザー）、日次の特徴量ジョブの本番条件での計測（学習側）
+
 ## T4 API
 - [ ] T4-1 `api/analogy/contribution.js`（Edge）: is_active の版の themes と該当スライス。n=0 のスライスは一段広いスライスに戻し、戻したことを返す
 - [ ] T4-2 `api/analogy/similar/[raceId].js`（Edge、`?depth=`）: `get_analogy_similar` の結果。キャッシュは plan「API」の表
