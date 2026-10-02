@@ -64,9 +64,22 @@ export function useHorizontalScrollHint(deps = []) {
     update();
     const raf = requestAnimationFrame(update);
     window.addEventListener("resize", update);
+    // 窓の幅が変わらなくても、文字の読み込みや中身の差し替えで表の幅は後から変わる。
+    // 最初の計測だけでは、英語の 320px で表が3px溢れているのに手がかりが出なかった
+    // （PR #1192 ファン評価1周目）。箱と中身の大きさの変化でも測り直す
+    const el = ref.current;
+    const observer =
+      el && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(update)
+        : null;
+    if (observer) {
+      observer.observe(el);
+      if (el.firstElementChild) observer.observe(el.firstElementChild);
+    }
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", update);
+      observer?.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);

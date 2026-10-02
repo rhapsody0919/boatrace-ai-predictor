@@ -362,4 +362,21 @@ test.describe("レース詳細の表示の細部", () => {
     await expect.poll(() => wrapper.evaluate((el) => el.scrollLeft)).toBe(0);
     await expect(hint.locator(".hscroll-less")).toHaveCount(0);
   });
+  test("展示情報の表: 読み込んだあとで表の幅が変わっても、手がかりを出し直す（PR #1192 ファン評価1周目）", async ({
+    page,
+  }) => {
+    // 英語の 320px では表が3px溢れるのに、Preview では手がかりが出ていなかった。最初の計測の
+    // あとに文字の読み込み等で表の幅が変わっても、窓の幅が変わらない限り測り直していなかった。
+    // 窓の幅を変えずに表だけを広げて、同じ状況を作る
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${RACE}?tab=beforeInfo`);
+    const hint = page.locator(".rbi-card .hscroll-hint:has(.drt-table)");
+    await expect(hint.locator(".drt-table")).toBeVisible({ timeout: 30000 });
+    await expect(hint).not.toHaveAttribute("data-hscroll-peek", "true");
+    await page.addStyleTag({
+      content:
+        ".rbi-card .drt-table { margin-right: -6px; width: calc(100% + 6px); }",
+    });
+    await expect(hint).toHaveAttribute("data-hscroll-peek", "true");
+  });
 });
