@@ -1958,6 +1958,14 @@ test.describe("レースページ再設計（BOA-168）", () => {
       /^（出走表・全国 \d+\.\d%、前期から[+−±]\d+\.\dpt）$/,
     );
     await expect(page.locator(".rbit-period-note")).toHaveCount(0);
+    // 前期の優出・優勝と、前期を含む直近2年（4期）の合計（BOA-326）。
+    // 範囲は期の定義から決まる（レース日の前期の終わり〜その2年前の5月）
+    const finals = page.locator(".rbit-period-finals");
+    await expect(finals).toContainText(/優出 \d+回/);
+    await expect(finals).toContainText(/優勝 \d+回/);
+    await expect(page.locator(".rbit-period-recent")).toHaveText(
+      /^直近2年（\d{4}\/(05|11)〜\d{4}\/(04|10)）優出 \d+回・優勝 \d+回$/,
+    );
 
     // この表が全コース込みであることと、今日の枠での走数を常時出す
     // （ボートレースファンのレビュー指摘A: 外枠専業の選手と枠が均等に回る選手で
