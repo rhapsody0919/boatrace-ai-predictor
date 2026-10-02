@@ -1,0 +1,3381 @@
+{
+  "preregistration": "docs/design/weather-in-escape/preregistration.md",
+  "source": "kb-day/v1 parsed (K/B files)",
+  "period": {
+    "from": "2020-02-01",
+    "to": "2026-09-30",
+    "maxDate": "2026-09-30",
+    "firstHalfEnd": "2022-12-31"
+  },
+  "rows": 368332,
+  "rowsWithWind": 368332,
+  "rowsWithWave": 368332,
+  "rowsWithClass": 368332,
+  "inputHash": "f51ef50c34246fd9f43561e7c660f17f791bb47102e44f9a1b4da30a438d59c7",
+  "ciLevel": 0.975,
+  "bootstrapReps": 1000,
+  "overallInWinRate": 55.2,
+  "wind": {
+    "pooled": {
+      "head_strong": {
+        "label": "向かい風・強",
+        "n": 45541,
+        "diffVsVenue": -3.5,
+        "ci": [
+          -4,
+          -3.1
+        ],
+        "adjustedDiff": -3.5,
+        "venueSign": {
+          "eligible": 23,
+          "sameSign": 20
+        }
+      },
+      "head": {
+        "label": "向かい風",
+        "n": 60150,
+        "diffVsVenue": -0.1,
+        "ci": [
+          -0.5,
+          0.4
+        ],
+        "adjustedDiff": 0,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 12
+        }
+      },
+      "calm_cross": {
+        "label": "弱い・横風",
+        "n": 157904,
+        "diffVsVenue": 2.1,
+        "ci": [
+          1.9,
+          2.3
+        ],
+        "adjustedDiff": 1.2,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 24
+        }
+      },
+      "tail": {
+        "label": "追い風",
+        "n": 59737,
+        "diffVsVenue": 0.3,
+        "ci": [
+          -0.2,
+          0.7
+        ],
+        "adjustedDiff": -0.1,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 13
+        }
+      },
+      "tail_strong": {
+        "label": "追い風・強",
+        "n": 45000,
+        "diffVsVenue": -3.9,
+        "ci": [
+          -4.4,
+          -3.4
+        ],
+        "adjustedDiff": -3.8,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 23
+        }
+      }
+    },
+    "firstHalf": {
+      "head_strong": {
+        "label": "向かい風・強",
+        "n": 19556,
+        "diffVsVenue": -3.6,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 20,
+          "sameSign": 18
+        }
+      },
+      "head": {
+        "label": "向かい風",
+        "n": 26551,
+        "diffVsVenue": 0,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 12
+        }
+      },
+      "calm_cross": {
+        "label": "弱い・横風",
+        "n": 68995,
+        "diffVsVenue": 2,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 24
+        }
+      },
+      "tail": {
+        "label": "追い風",
+        "n": 25840,
+        "diffVsVenue": 0.3,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 23,
+          "sameSign": 14
+        }
+      },
+      "tail_strong": {
+        "label": "追い風・強",
+        "n": 19296,
+        "diffVsVenue": -4,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 21,
+          "sameSign": 19
+        }
+      }
+    },
+    "secondHalf": {
+      "head_strong": {
+        "label": "向かい風・強",
+        "n": 25985,
+        "diffVsVenue": -3.5,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 22,
+          "sameSign": 20
+        }
+      },
+      "head": {
+        "label": "向かい風",
+        "n": 33599,
+        "diffVsVenue": -0.1,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 13
+        }
+      },
+      "calm_cross": {
+        "label": "弱い・横風",
+        "n": 88909,
+        "diffVsVenue": 2,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 23
+        }
+      },
+      "tail": {
+        "label": "追い風",
+        "n": 33897,
+        "diffVsVenue": 0.2,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 14
+        }
+      },
+      "tail_strong": {
+        "label": "追い風・強",
+        "n": 25704,
+        "diffVsVenue": -3.8,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 21,
+          "sameSign": 20
+        }
+      }
+    },
+    "judge": {
+      "head_strong": {
+        "c1_absDiffAtLeast3pt": true,
+        "c2_ciExcludesZero": true,
+        "c3_adjustedKeeps": true,
+        "c4_halvesSameSign": true,
+        "c5_venuesSameSign": true,
+        "pass": true
+      },
+      "tail_strong": {
+        "c1_absDiffAtLeast3pt": true,
+        "c2_ciExcludesZero": true,
+        "c3_adjustedKeeps": true,
+        "c4_halvesSameSign": true,
+        "c5_venuesSameSign": true,
+        "pass": true
+      }
+    },
+    "venues": {
+      "1": {
+        "all": {
+          "n": 15245,
+          "inWinRate": 52.2
+        },
+        "bins": {
+          "head_strong": {
+            "n": 130,
+            "inWinRate": 36.9,
+            "diffVsVenue": -15.3,
+            "techniques": {
+              "逃げ": 45,
+              "差し": 21,
+              "まくり": 33,
+              "まくり差し": 23,
+              "抜き": 8,
+              "恵まれ": 0
+            }
+          },
+          "head": {
+            "n": 635,
+            "inWinRate": 39.8,
+            "diffVsVenue": -12.4,
+            "techniques": {
+              "逃げ": 239,
+              "差し": 95,
+              "まくり": 130,
+              "まくり差し": 122,
+              "抜き": 46,
+              "恵まれ": 3
+            }
+          },
+          "calm_cross": {
+            "n": 12072,
+            "inWinRate": 53.3,
+            "diffVsVenue": 1,
+            "techniques": {
+              "逃げ": 6153,
+              "差し": 1333,
+              "まくり": 2146,
+              "まくり差し": 1638,
+              "抜き": 728,
+              "恵まれ": 74
+            }
+          },
+          "tail": {
+            "n": 1192,
+            "inWinRate": 57.3,
+            "diffVsVenue": 5.1,
+            "techniques": {
+              "逃げ": 652,
+              "差し": 153,
+              "まくり": 175,
+              "まくり差し": 138,
+              "抜き": 56,
+              "恵まれ": 18
+            }
+          },
+          "tail_strong": {
+            "n": 1216,
+            "inWinRate": 45.2,
+            "diffVsVenue": -7,
+            "techniques": {
+              "逃げ": 506,
+              "差し": 207,
+              "まくり": 252,
+              "まくり差し": 136,
+              "抜き": 105,
+              "恵まれ": 10
+            }
+          }
+        }
+      },
+      "2": {
+        "all": {
+          "n": 15711,
+          "inWinRate": 43.5
+        },
+        "bins": {
+          "head_strong": {
+            "n": 956,
+            "inWinRate": 42.7,
+            "diffVsVenue": -0.8,
+            "techniques": {
+              "逃げ": 381,
+              "差し": 97,
+              "まくり": 259,
+              "まくり差し": 135,
+              "抜き": 81,
+              "恵まれ": 3
+            }
+          },
+          "head": {
+            "n": 2102,
+            "inWinRate": 42.7,
+            "diffVsVenue": -0.8,
+            "techniques": {
+              "逃げ": 854,
+              "差し": 214,
+              "まくり": 579,
+              "まくり差し": 296,
+              "抜き": 146,
+              "恵まれ": 13
+            }
+          },
+          "calm_cross": {
+            "n": 10154,
+            "inWinRate": 44.6,
+            "diffVsVenue": 1.1,
+            "techniques": {
+              "逃げ": 4250,
+              "差し": 1278,
+              "まくり": 2582,
+              "まくり差し": 1198,
+              "抜き": 765,
+              "恵まれ": 81
+            }
+          },
+          "tail": {
+            "n": 1082,
+            "inWinRate": 40.1,
+            "diffVsVenue": -3.4,
+            "techniques": {
+              "逃げ": 400,
+              "差し": 199,
+              "まくり": 256,
+              "まくり差し": 118,
+              "抜き": 95,
+              "恵まれ": 14
+            }
+          },
+          "tail_strong": {
+            "n": 1417,
+            "inWinRate": 40.1,
+            "diffVsVenue": -3.4,
+            "techniques": {
+              "逃げ": 510,
+              "差し": 298,
+              "まくり": 359,
+              "まくり差し": 124,
+              "抜き": 107,
+              "恵まれ": 19
+            }
+          }
+        }
+      },
+      "3": {
+        "all": {
+          "n": 14048,
+          "inWinRate": 46.3
+        },
+        "bins": {
+          "head_strong": {
+            "n": 3757,
+            "inWinRate": 46.6,
+            "diffVsVenue": 0.3,
+            "techniques": {
+              "逃げ": 1628,
+              "差し": 423,
+              "まくり": 834,
+              "まくり差し": 440,
+              "抜き": 400,
+              "恵まれ": 32
+            }
+          },
+          "head": {
+            "n": 1413,
+            "inWinRate": 47.8,
+            "diffVsVenue": 1.5,
+            "techniques": {
+              "逃げ": 627,
+              "差し": 215,
+              "まくり": 288,
+              "まくり差し": 116,
+              "抜き": 154,
+              "恵まれ": 13
+            }
+          },
+          "calm_cross": {
+            "n": 3472,
+            "inWinRate": 47.3,
+            "diffVsVenue": 1,
+            "techniques": {
+              "逃げ": 1529,
+              "差し": 515,
+              "まくり": 694,
+              "まくり差し": 352,
+              "抜き": 328,
+              "恵まれ": 54
+            }
+          },
+          "tail": {
+            "n": 941,
+            "inWinRate": 47.4,
+            "diffVsVenue": 1.1,
+            "techniques": {
+              "逃げ": 416,
+              "差し": 163,
+              "まくり": 169,
+              "まくり差し": 81,
+              "抜き": 92,
+              "恵まれ": 20
+            }
+          },
+          "tail_strong": {
+            "n": 4465,
+            "inWinRate": 44.5,
+            "diffVsVenue": -1.8,
+            "techniques": {
+              "逃げ": 1797,
+              "差し": 848,
+              "まくり": 730,
+              "まくり差し": 477,
+              "抜き": 531,
+              "恵まれ": 82
+            }
+          }
+        }
+      },
+      "4": {
+        "all": {
+          "n": 14461,
+          "inWinRate": 44.9
+        },
+        "bins": {
+          "head_strong": {
+            "n": 1481,
+            "inWinRate": 39.8,
+            "diffVsVenue": -5.2,
+            "techniques": {
+              "逃げ": 539,
+              "差し": 258,
+              "まくり": 313,
+              "まくり差し": 230,
+              "抜き": 125,
+              "恵まれ": 16
+            }
+          },
+          "head": {
+            "n": 2214,
+            "inWinRate": 41,
+            "diffVsVenue": -4,
+            "techniques": {
+              "逃げ": 859,
+              "差し": 408,
+              "まくり": 434,
+              "まくり差し": 323,
+              "抜き": 167,
+              "恵まれ": 23
+            }
+          },
+          "calm_cross": {
+            "n": 4333,
+            "inWinRate": 46.4,
+            "diffVsVenue": 1.5,
+            "techniques": {
+              "逃げ": 1911,
+              "差し": 742,
+              "まくり": 793,
+              "まくり差し": 540,
+              "抜き": 293,
+              "恵まれ": 54
+            }
+          },
+          "tail": {
+            "n": 3234,
+            "inWinRate": 46.8,
+            "diffVsVenue": 1.8,
+            "techniques": {
+              "逃げ": 1416,
+              "差し": 607,
+              "まくり": 546,
+              "まくり差し": 386,
+              "抜き": 240,
+              "恵まれ": 39
+            }
+          },
+          "tail_strong": {
+            "n": 3199,
+            "inWinRate": 46.3,
+            "diffVsVenue": 1.3,
+            "techniques": {
+              "逃げ": 1365,
+              "差し": 653,
+              "まくり": 545,
+              "まくり差し": 326,
+              "抜き": 280,
+              "恵まれ": 30
+            }
+          }
+        }
+      },
+      "5": {
+        "all": {
+          "n": 15351,
+          "inWinRate": 53
+        },
+        "bins": {
+          "head_strong": {
+            "n": 603,
+            "inWinRate": 50.7,
+            "diffVsVenue": -2.2,
+            "techniques": {
+              "逃げ": 290,
+              "差し": 48,
+              "まくり": 133,
+              "まくり差し": 77,
+              "抜き": 51,
+              "恵まれ": 4
+            }
+          },
+          "head": {
+            "n": 1253,
+            "inWinRate": 49.6,
+            "diffVsVenue": -3.4,
+            "techniques": {
+              "逃げ": 591,
+              "差し": 145,
+              "まくり": 242,
+              "まくり差し": 179,
+              "抜き": 91,
+              "恵まれ": 5
+            }
+          },
+          "calm_cross": {
+            "n": 8224,
+            "inWinRate": 54.2,
+            "diffVsVenue": 1.2,
+            "techniques": {
+              "逃げ": 4286,
+              "差し": 1045,
+              "まくり": 1380,
+              "まくり差し": 993,
+              "抜き": 462,
+              "恵まれ": 58
+            }
+          },
+          "tail": {
+            "n": 3997,
+            "inWinRate": 53.2,
+            "diffVsVenue": 0.2,
+            "techniques": {
+              "逃げ": 2040,
+              "差し": 595,
+              "まくり": 613,
+              "まくり差し": 447,
+              "抜き": 264,
+              "恵まれ": 38
+            }
+          },
+          "tail_strong": {
+            "n": 1274,
+            "inWinRate": 49.1,
+            "diffVsVenue": -3.9,
+            "techniques": {
+              "逃げ": 588,
+              "差し": 207,
+              "まくり": 226,
+              "まくり差し": 141,
+              "抜き": 102,
+              "恵まれ": 10
+            }
+          }
+        }
+      },
+      "6": {
+        "all": {
+          "n": 16210,
+          "inWinRate": 52.6
+        },
+        "bins": {
+          "head_strong": {
+            "n": 4437,
+            "inWinRate": 47.8,
+            "diffVsVenue": -4.8,
+            "techniques": {
+              "逃げ": 1969,
+              "差し": 596,
+              "まくり": 613,
+              "まくり差し": 856,
+              "抜き": 363,
+              "恵まれ": 40
+            }
+          },
+          "head": {
+            "n": 2796,
+            "inWinRate": 55.2,
+            "diffVsVenue": 2.5,
+            "techniques": {
+              "逃げ": 1477,
+              "差し": 323,
+              "まくり": 395,
+              "まくり差し": 399,
+              "抜き": 181,
+              "恵まれ": 21
+            }
+          },
+          "calm_cross": {
+            "n": 4731,
+            "inWinRate": 55,
+            "diffVsVenue": 2.4,
+            "techniques": {
+              "逃げ": 2497,
+              "差し": 623,
+              "まくり": 590,
+              "まくり差し": 662,
+              "抜き": 278,
+              "恵まれ": 81
+            }
+          },
+          "tail": {
+            "n": 1863,
+            "inWinRate": 56.4,
+            "diffVsVenue": 3.8,
+            "techniques": {
+              "逃げ": 1001,
+              "差し": 260,
+              "まくり": 227,
+              "まくり差し": 207,
+              "抜き": 141,
+              "恵まれ": 27
+            }
+          },
+          "tail_strong": {
+            "n": 2383,
+            "inWinRate": 50.9,
+            "diffVsVenue": -1.7,
+            "techniques": {
+              "逃げ": 1144,
+              "差し": 335,
+              "まくり": 442,
+              "まくり差し": 280,
+              "抜き": 155,
+              "恵まれ": 27
+            }
+          }
+        }
+      },
+      "7": {
+        "all": {
+          "n": 15597,
+          "inWinRate": 55.7
+        },
+        "bins": {
+          "head_strong": {
+            "n": 1397,
+            "inWinRate": 45.1,
+            "diffVsVenue": -10.6,
+            "techniques": {
+              "逃げ": 605,
+              "差し": 153,
+              "まくり": 311,
+              "まくり差し": 238,
+              "抜き": 79,
+              "恵まれ": 11
+            }
+          },
+          "head": {
+            "n": 3048,
+            "inWinRate": 51.1,
+            "diffVsVenue": -4.6,
+            "techniques": {
+              "逃げ": 1495,
+              "差し": 293,
+              "まくり": 592,
+              "まくり差し": 474,
+              "抜き": 180,
+              "恵まれ": 14
+            }
+          },
+          "calm_cross": {
+            "n": 9746,
+            "inWinRate": 58.4,
+            "diffVsVenue": 2.7,
+            "techniques": {
+              "逃げ": 5502,
+              "差し": 925,
+              "まくり": 1488,
+              "まくり差し": 1233,
+              "抜き": 508,
+              "恵まれ": 90
+            }
+          },
+          "tail": {
+            "n": 960,
+            "inWinRate": 59.6,
+            "diffVsVenue": 3.9,
+            "techniques": {
+              "逃げ": 543,
+              "差し": 95,
+              "まくり": 147,
+              "まくり差し": 98,
+              "抜き": 65,
+              "恵まれ": 12
+            }
+          },
+          "tail_strong": {
+            "n": 446,
+            "inWinRate": 53.1,
+            "diffVsVenue": -2.5,
+            "techniques": {
+              "逃げ": 225,
+              "差し": 48,
+              "まくり": 92,
+              "まくり差し": 45,
+              "抜き": 35,
+              "恵まれ": 1
+            }
+          }
+        }
+      },
+      "8": {
+        "all": {
+          "n": 16163,
+          "inWinRate": 57.4
+        },
+        "bins": {
+          "head_strong": {
+            "n": 2420,
+            "inWinRate": 51.5,
+            "diffVsVenue": -5.9,
+            "techniques": {
+              "逃げ": 1181,
+              "差し": 223,
+              "まくり": 467,
+              "まくり差し": 360,
+              "抜き": 165,
+              "恵まれ": 24
+            }
+          },
+          "head": {
+            "n": 4972,
+            "inWinRate": 56.6,
+            "diffVsVenue": -0.9,
+            "techniques": {
+              "逃げ": 2686,
+              "差し": 506,
+              "まくり": 837,
+              "まくり差し": 629,
+              "抜き": 283,
+              "恵まれ": 31
+            }
+          },
+          "calm_cross": {
+            "n": 6102,
+            "inWinRate": 60.2,
+            "diffVsVenue": 2.8,
+            "techniques": {
+              "逃げ": 3561,
+              "差し": 635,
+              "まくり": 838,
+              "まくり差し": 701,
+              "抜き": 294,
+              "恵まれ": 73
+            }
+          },
+          "tail": {
+            "n": 1832,
+            "inWinRate": 59.2,
+            "diffVsVenue": 1.8,
+            "techniques": {
+              "逃げ": 1033,
+              "差し": 223,
+              "まくり": 262,
+              "まくり差し": 173,
+              "抜き": 107,
+              "恵まれ": 34
+            }
+          },
+          "tail_strong": {
+            "n": 837,
+            "inWinRate": 55.2,
+            "diffVsVenue": -2.2,
+            "techniques": {
+              "逃げ": 437,
+              "差し": 117,
+              "まくり": 146,
+              "まくり差し": 75,
+              "抜き": 55,
+              "恵まれ": 7
+            }
+          }
+        }
+      },
+      "9": {
+        "all": {
+          "n": 14920,
+          "inWinRate": 57.5
+        },
+        "bins": {
+          "head_strong": {
+            "n": 3004,
+            "inWinRate": 55,
+            "diffVsVenue": -2.4,
+            "techniques": {
+              "逃げ": 1576,
+              "差し": 393,
+              "まくり": 382,
+              "まくり差し": 411,
+              "抜き": 200,
+              "恵まれ": 42
+            }
+          },
+          "head": {
+            "n": 2171,
+            "inWinRate": 61.8,
+            "diffVsVenue": 4.4,
+            "techniques": {
+              "逃げ": 1288,
+              "差し": 243,
+              "まくり": 226,
+              "まくり差し": 287,
+              "抜き": 112,
+              "恵まれ": 15
+            }
+          },
+          "calm_cross": {
+            "n": 3486,
+            "inWinRate": 61.3,
+            "diffVsVenue": 3.8,
+            "techniques": {
+              "逃げ": 2059,
+              "差し": 442,
+              "まくり": 356,
+              "まくり差し": 398,
+              "抜き": 209,
+              "恵まれ": 22
+            }
+          },
+          "tail": {
+            "n": 4650,
+            "inWinRate": 55.4,
+            "diffVsVenue": -2.1,
+            "techniques": {
+              "逃げ": 2432,
+              "差し": 786,
+              "まくり": 554,
+              "まくり差し": 500,
+              "抜き": 313,
+              "恵まれ": 65
+            }
+          },
+          "tail_strong": {
+            "n": 1609,
+            "inWinRate": 53.8,
+            "diffVsVenue": -3.6,
+            "techniques": {
+              "逃げ": 815,
+              "差し": 247,
+              "まくり": 240,
+              "まくり差し": 162,
+              "抜き": 130,
+              "恵まれ": 15
+            }
+          }
+        }
+      },
+      "10": {
+        "all": {
+          "n": 15187,
+          "inWinRate": 53.7
+        },
+        "bins": {
+          "head_strong": {
+            "n": 1979,
+            "inWinRate": 49.7,
+            "diffVsVenue": -4.1,
+            "techniques": {
+              "逃げ": 933,
+              "差し": 309,
+              "まくり": 283,
+              "まくり差し": 307,
+              "抜き": 136,
+              "恵まれ": 11
+            }
+          },
+          "head": {
+            "n": 2288,
+            "inWinRate": 55.7,
+            "diffVsVenue": 2,
+            "techniques": {
+              "逃げ": 1208,
+              "差し": 344,
+              "まくり": 274,
+              "まくり差し": 305,
+              "抜き": 142,
+              "恵まれ": 15
+            }
+          },
+          "calm_cross": {
+            "n": 5382,
+            "inWinRate": 55.7,
+            "diffVsVenue": 2,
+            "techniques": {
+              "逃げ": 2878,
+              "差し": 854,
+              "まくり": 661,
+              "まくり差し": 606,
+              "抜き": 323,
+              "恵まれ": 60
+            }
+          },
+          "tail": {
+            "n": 2378,
+            "inWinRate": 53.5,
+            "diffVsVenue": -0.2,
+            "techniques": {
+              "逃げ": 1197,
+              "差し": 402,
+              "まくり": 325,
+              "まくり差し": 248,
+              "抜き": 179,
+              "恵まれ": 27
+            }
+          },
+          "tail_strong": {
+            "n": 3160,
+            "inWinRate": 51.6,
+            "diffVsVenue": -2.1,
+            "techniques": {
+              "逃げ": 1509,
+              "差し": 526,
+              "まくり": 531,
+              "まくり差し": 287,
+              "抜き": 283,
+              "恵まれ": 24
+            }
+          }
+        }
+      },
+      "11": {
+        "all": {
+          "n": 14827,
+          "inWinRate": 54
+        },
+        "bins": {
+          "head_strong": {
+            "n": 1620,
+            "inWinRate": 48,
+            "diffVsVenue": -6,
+            "techniques": {
+              "逃げ": 739,
+              "差し": 226,
+              "まくり": 260,
+              "まくり差し": 268,
+              "抜き": 116,
+              "恵まれ": 11
+            }
+          },
+          "head": {
+            "n": 2070,
+            "inWinRate": 53.9,
+            "diffVsVenue": -0.1,
+            "techniques": {
+              "逃げ": 1073,
+              "差し": 267,
+              "まくり": 273,
+              "まくり差し": 313,
+              "抜き": 133,
+              "恵まれ": 11
+            }
+          },
+          "calm_cross": {
+            "n": 4921,
+            "inWinRate": 57.2,
+            "diffVsVenue": 3.2,
+            "techniques": {
+              "逃げ": 2709,
+              "差し": 655,
+              "まくり": 635,
+              "まくり差し": 599,
+              "抜き": 296,
+              "恵まれ": 27
+            }
+          },
+          "tail": {
+            "n": 4324,
+            "inWinRate": 53.4,
+            "diffVsVenue": -0.6,
+            "techniques": {
+              "逃げ": 2205,
+              "差し": 644,
+              "まくり": 658,
+              "まくり差し": 509,
+              "抜き": 287,
+              "恵まれ": 21
+            }
+          },
+          "tail_strong": {
+            "n": 1892,
+            "inWinRate": 52.5,
+            "diffVsVenue": -1.5,
+            "techniques": {
+              "逃げ": 920,
+              "差し": 276,
+              "まくり": 321,
+              "まくり差し": 188,
+              "抜き": 167,
+              "恵まれ": 20
+            }
+          }
+        }
+      },
+      "12": {
+        "all": {
+          "n": 15480,
+          "inWinRate": 58.8
+        },
+        "bins": {
+          "head_strong": {
+            "n": 398,
+            "inWinRate": 46.2,
+            "diffVsVenue": -12.6,
+            "techniques": {
+              "逃げ": 174,
+              "差し": 51,
+              "まくり": 88,
+              "まくり差し": 51,
+              "抜き": 30,
+              "恵まれ": 4
+            }
+          },
+          "head": {
+            "n": 2622,
+            "inWinRate": 54.8,
+            "diffVsVenue": -3.9,
+            "techniques": {
+              "逃げ": 1372,
+              "差し": 248,
+              "まくり": 516,
+              "まくり差し": 293,
+              "抜き": 170,
+              "恵まれ": 23
+            }
+          },
+          "calm_cross": {
+            "n": 8058,
+            "inWinRate": 61.2,
+            "diffVsVenue": 2.4,
+            "techniques": {
+              "逃げ": 4760,
+              "差し": 939,
+              "まくり": 1033,
+              "まくり差し": 797,
+              "抜き": 464,
+              "恵まれ": 65
+            }
+          },
+          "tail": {
+            "n": 3162,
+            "inWinRate": 59.8,
+            "diffVsVenue": 1,
+            "techniques": {
+              "逃げ": 1803,
+              "差し": 470,
+              "まくり": 414,
+              "まくり差し": 262,
+              "抜き": 192,
+              "恵まれ": 21
+            }
+          },
+          "tail_strong": {
+            "n": 1240,
+            "inWinRate": 53.1,
+            "diffVsVenue": -5.7,
+            "techniques": {
+              "逃げ": 630,
+              "差し": 219,
+              "まくり": 184,
+              "まくり差し": 120,
+              "抜き": 81,
+              "恵まれ": 6
+            }
+          }
+        }
+      },
+      "13": {
+        "all": {
+          "n": 15056,
+          "inWinRate": 59.4
+        },
+        "bins": {
+          "head_strong": {
+            "n": 4851,
+            "inWinRate": 58.1,
+            "diffVsVenue": -1.3,
+            "techniques": {
+              "逃げ": 2720,
+              "差し": 476,
+              "まくり": 762,
+              "まくり差し": 610,
+              "抜き": 265,
+              "恵まれ": 18
+            }
+          },
+          "head": {
+            "n": 2699,
+            "inWinRate": 61.7,
+            "diffVsVenue": 2.3,
+            "techniques": {
+              "逃げ": 1614,
+              "差し": 249,
+              "まくり": 343,
+              "まくり差し": 337,
+              "抜き": 143,
+              "恵まれ": 13
+            }
+          },
+          "calm_cross": {
+            "n": 5081,
+            "inWinRate": 60.2,
+            "diffVsVenue": 0.8,
+            "techniques": {
+              "逃げ": 2970,
+              "差し": 591,
+              "まくり": 647,
+              "まくり差し": 555,
+              "抜き": 276,
+              "恵まれ": 42
+            }
+          },
+          "tail": {
+            "n": 1387,
+            "inWinRate": 58.6,
+            "diffVsVenue": -0.8,
+            "techniques": {
+              "逃げ": 784,
+              "差し": 209,
+              "まくり": 157,
+              "まくり差し": 146,
+              "抜き": 82,
+              "恵まれ": 9
+            }
+          },
+          "tail_strong": {
+            "n": 1038,
+            "inWinRate": 56.5,
+            "diffVsVenue": -2.9,
+            "techniques": {
+              "逃げ": 561,
+              "差し": 171,
+              "まくり": 140,
+              "まくり差し": 88,
+              "抜き": 66,
+              "恵まれ": 12
+            }
+          }
+        }
+      },
+      "14": {
+        "all": {
+          "n": 14617,
+          "inWinRate": 49
+        },
+        "bins": {
+          "head_strong": {
+            "n": 1432,
+            "inWinRate": 46.1,
+            "diffVsVenue": -2.9,
+            "techniques": {
+              "逃げ": 624,
+              "差し": 173,
+              "まくり": 273,
+              "まくり差し": 242,
+              "抜き": 108,
+              "恵まれ": 12
+            }
+          },
+          "head": {
+            "n": 3325,
+            "inWinRate": 50.2,
+            "diffVsVenue": 1.2,
+            "techniques": {
+              "逃げ": 1591,
+              "差し": 398,
+              "まくり": 540,
+              "まくり差し": 514,
+              "抜き": 265,
+              "恵まれ": 17
+            }
+          },
+          "calm_cross": {
+            "n": 3434,
+            "inWinRate": 52.9,
+            "diffVsVenue": 3.9,
+            "techniques": {
+              "逃げ": 1732,
+              "差し": 479,
+              "まくり": 554,
+              "まくり差し": 404,
+              "抜き": 236,
+              "恵まれ": 29
+            }
+          },
+          "tail": {
+            "n": 3493,
+            "inWinRate": 50.1,
+            "diffVsVenue": 1.1,
+            "techniques": {
+              "逃げ": 1663,
+              "差し": 542,
+              "まくり": 620,
+              "まくり差し": 396,
+              "抜き": 238,
+              "恵まれ": 34
+            }
+          },
+          "tail_strong": {
+            "n": 2933,
+            "inWinRate": 43.1,
+            "diffVsVenue": -5.9,
+            "techniques": {
+              "逃げ": 1145,
+              "差し": 574,
+              "まくり": 561,
+              "まくり差し": 341,
+              "抜き": 293,
+              "恵まれ": 19
+            }
+          }
+        }
+      },
+      "15": {
+        "all": {
+          "n": 15571,
+          "inWinRate": 56.2
+        },
+        "bins": {
+          "head_strong": {
+            "n": 2599,
+            "inWinRate": 51.4,
+            "diffVsVenue": -4.8,
+            "techniques": {
+              "逃げ": 1264,
+              "差し": 368,
+              "まくり": 448,
+              "まくり差し": 323,
+              "抜き": 182,
+              "恵まれ": 14
+            }
+          },
+          "head": {
+            "n": 3520,
+            "inWinRate": 54.3,
+            "diffVsVenue": -1.9,
+            "techniques": {
+              "逃げ": 1834,
+              "差し": 532,
+              "まくり": 467,
+              "まくり差し": 448,
+              "抜き": 213,
+              "恵まれ": 26
+            }
+          },
+          "calm_cross": {
+            "n": 7132,
+            "inWinRate": 58.8,
+            "diffVsVenue": 2.6,
+            "techniques": {
+              "逃げ": 4036,
+              "差し": 954,
+              "まくり": 803,
+              "まくり差し": 884,
+              "抜き": 396,
+              "恵まれ": 59
+            }
+          },
+          "tail": {
+            "n": 1983,
+            "inWinRate": 57.9,
+            "diffVsVenue": 1.7,
+            "techniques": {
+              "逃げ": 1104,
+              "差し": 338,
+              "まくり": 208,
+              "まくり差し": 196,
+              "抜き": 118,
+              "恵まれ": 19
+            }
+          },
+          "tail_strong": {
+            "n": 337,
+            "inWinRate": 47.2,
+            "diffVsVenue": -9,
+            "techniques": {
+              "逃げ": 150,
+              "差し": 61,
+              "まくり": 56,
+              "まくり差し": 46,
+              "抜き": 19,
+              "恵まれ": 5
+            }
+          }
+        }
+      },
+      "16": {
+        "all": {
+          "n": 15589,
+          "inWinRate": 56.2
+        },
+        "bins": {
+          "head_strong": {
+            "n": 2300,
+            "inWinRate": 51.2,
+            "diffVsVenue": -5,
+            "techniques": {
+              "逃げ": 1122,
+              "差し": 216,
+              "まくり": 401,
+              "まくり差し": 395,
+              "抜き": 157,
+              "恵まれ": 9
+            }
+          },
+          "head": {
+            "n": 6503,
+            "inWinRate": 57.7,
+            "diffVsVenue": 1.5,
+            "techniques": {
+              "逃げ": 3586,
+              "差し": 758,
+              "まくり": 834,
+              "まくり差し": 854,
+              "抜き": 432,
+              "恵まれ": 39
+            }
+          },
+          "calm_cross": {
+            "n": 2737,
+            "inWinRate": 60.8,
+            "diffVsVenue": 4.6,
+            "techniques": {
+              "逃げ": 1596,
+              "差し": 430,
+              "まくり": 244,
+              "まくり差し": 287,
+              "抜き": 154,
+              "恵まれ": 26
+            }
+          },
+          "tail": {
+            "n": 2456,
+            "inWinRate": 56.2,
+            "diffVsVenue": 0,
+            "techniques": {
+              "逃げ": 1318,
+              "差し": 401,
+              "まくり": 271,
+              "まくり差し": 275,
+              "抜き": 161,
+              "恵まれ": 30
+            }
+          },
+          "tail_strong": {
+            "n": 1593,
+            "inWinRate": 49.4,
+            "diffVsVenue": -6.8,
+            "techniques": {
+              "逃げ": 743,
+              "差し": 286,
+              "まくり": 232,
+              "まくり差し": 199,
+              "抜き": 121,
+              "恵まれ": 12
+            }
+          }
+        }
+      },
+      "17": {
+        "all": {
+          "n": 15986,
+          "inWinRate": 57.1
+        },
+        "bins": {
+          "head_strong": {
+            "n": 2243,
+            "inWinRate": 53.7,
+            "diffVsVenue": -3.4,
+            "techniques": {
+              "逃げ": 1162,
+              "差し": 208,
+              "まくり": 415,
+              "まくり差し": 309,
+              "抜き": 137,
+              "恵まれ": 12
+            }
+          },
+          "head": {
+            "n": 4413,
+            "inWinRate": 57.9,
+            "diffVsVenue": 0.8,
+            "techniques": {
+              "逃げ": 2461,
+              "差し": 359,
+              "まくり": 780,
+              "まくり差し": 548,
+              "抜き": 252,
+              "恵まれ": 13
+            }
+          },
+          "calm_cross": {
+            "n": 5480,
+            "inWinRate": 59.2,
+            "diffVsVenue": 2.1,
+            "techniques": {
+              "逃げ": 3112,
+              "差し": 649,
+              "まくり": 777,
+              "まくり差し": 555,
+              "抜き": 345,
+              "恵まれ": 42
+            }
+          },
+          "tail": {
+            "n": 2829,
+            "inWinRate": 56.5,
+            "diffVsVenue": -0.6,
+            "techniques": {
+              "逃げ": 1523,
+              "差し": 383,
+              "まくり": 417,
+              "まくり差し": 273,
+              "抜き": 211,
+              "恵まれ": 22
+            }
+          },
+          "tail_strong": {
+            "n": 1021,
+            "inWinRate": 51.2,
+            "diffVsVenue": -5.9,
+            "techniques": {
+              "逃げ": 499,
+              "差し": 146,
+              "まくり": 164,
+              "まくり差し": 130,
+              "抜き": 73,
+              "恵まれ": 9
+            }
+          }
+        }
+      },
+      "18": {
+        "all": {
+          "n": 15743,
+          "inWinRate": 63.1
+        },
+        "bins": {
+          "head_strong": {
+            "n": 579,
+            "inWinRate": 54.1,
+            "diffVsVenue": -9.1,
+            "techniques": {
+              "逃げ": 303,
+              "差し": 87,
+              "まくり": 93,
+              "まくり差し": 67,
+              "抜き": 26,
+              "恵まれ": 3
+            }
+          },
+          "head": {
+            "n": 1038,
+            "inWinRate": 61.2,
+            "diffVsVenue": -2,
+            "techniques": {
+              "逃げ": 612,
+              "差し": 132,
+              "まくり": 114,
+              "まくり差し": 117,
+              "抜き": 57,
+              "恵まれ": 6
+            }
+          },
+          "calm_cross": {
+            "n": 9165,
+            "inWinRate": 64.5,
+            "diffVsVenue": 1.4,
+            "techniques": {
+              "逃げ": 5641,
+              "差し": 1118,
+              "まくり": 980,
+              "まくり差し": 744,
+              "抜き": 629,
+              "恵まれ": 53
+            }
+          },
+          "tail": {
+            "n": 2963,
+            "inWinRate": 63.7,
+            "diffVsVenue": 0.5,
+            "techniques": {
+              "逃げ": 1808,
+              "差し": 410,
+              "まくり": 281,
+              "まくり差し": 243,
+              "抜き": 198,
+              "恵まれ": 23
+            }
+          },
+          "tail_strong": {
+            "n": 1998,
+            "inWinRate": 59.8,
+            "diffVsVenue": -3.4,
+            "techniques": {
+              "逃げ": 1131,
+              "差し": 277,
+              "まくり": 245,
+              "まくり差し": 167,
+              "抜き": 170,
+              "恵まれ": 8
+            }
+          }
+        }
+      },
+      "19": {
+        "all": {
+          "n": 15015,
+          "inWinRate": 60.8
+        },
+        "bins": {
+          "head_strong": {
+            "n": 1119,
+            "inWinRate": 55.2,
+            "diffVsVenue": -5.6,
+            "techniques": {
+              "逃げ": 575,
+              "差し": 132,
+              "まくり": 136,
+              "まくり差し": 176,
+              "抜き": 93,
+              "恵まれ": 7
+            }
+          },
+          "head": {
+            "n": 2451,
+            "inWinRate": 57.2,
+            "diffVsVenue": -3.6,
+            "techniques": {
+              "逃げ": 1337,
+              "差し": 259,
+              "まくり": 350,
+              "まくり差し": 336,
+              "抜き": 154,
+              "恵まれ": 15
+            }
+          },
+          "calm_cross": {
+            "n": 5904,
+            "inWinRate": 63.5,
+            "diffVsVenue": 2.7,
+            "techniques": {
+              "逃げ": 3612,
+              "差し": 584,
+              "まくり": 749,
+              "まくり差し": 606,
+              "抜き": 319,
+              "恵まれ": 34
+            }
+          },
+          "tail": {
+            "n": 3871,
+            "inWinRate": 63.7,
+            "diffVsVenue": 2.9,
+            "techniques": {
+              "逃げ": 2343,
+              "差し": 459,
+              "まくり": 435,
+              "まくり差し": 319,
+              "抜き": 278,
+              "恵まれ": 37
+            }
+          },
+          "tail_strong": {
+            "n": 1670,
+            "inWinRate": 53.4,
+            "diffVsVenue": -7.4,
+            "techniques": {
+              "逃げ": 838,
+              "差し": 255,
+              "まくり": 271,
+              "まくり差し": 161,
+              "抜き": 128,
+              "恵まれ": 17
+            }
+          }
+        }
+      },
+      "20": {
+        "all": {
+          "n": 15552,
+          "inWinRate": 57.5
+        },
+        "bins": {
+          "head_strong": {
+            "n": 1576,
+            "inWinRate": 52.7,
+            "diffVsVenue": -4.7,
+            "techniques": {
+              "逃げ": 790,
+              "差し": 189,
+              "まくり": 254,
+              "まくり差し": 205,
+              "抜き": 126,
+              "恵まれ": 12
+            }
+          },
+          "head": {
+            "n": 777,
+            "inWinRate": 60.4,
+            "diffVsVenue": 2.9,
+            "techniques": {
+              "逃げ": 438,
+              "差し": 93,
+              "まくり": 100,
+              "まくり差し": 71,
+              "抜き": 71,
+              "恵まれ": 4
+            }
+          },
+          "calm_cross": {
+            "n": 7071,
+            "inWinRate": 60.2,
+            "diffVsVenue": 2.8,
+            "techniques": {
+              "逃げ": 4069,
+              "差し": 745,
+              "まくり": 954,
+              "まくり差し": 765,
+              "抜き": 490,
+              "恵まれ": 48
+            }
+          },
+          "tail": {
+            "n": 3158,
+            "inWinRate": 57.3,
+            "diffVsVenue": -0.1,
+            "techniques": {
+              "逃げ": 1699,
+              "差し": 465,
+              "まくり": 418,
+              "まくり差し": 283,
+              "抜き": 260,
+              "恵まれ": 33
+            }
+          },
+          "tail_strong": {
+            "n": 2970,
+            "inWinRate": 52.7,
+            "diffVsVenue": -4.7,
+            "techniques": {
+              "逃げ": 1446,
+              "差し": 463,
+              "まくり": 506,
+              "まくり差し": 251,
+              "抜き": 277,
+              "恵まれ": 27
+            }
+          }
+        }
+      },
+      "21": {
+        "all": {
+          "n": 15573,
+          "inWinRate": 61.4
+        },
+        "bins": {
+          "head_strong": {
+            "n": 1797,
+            "inWinRate": 58.4,
+            "diffVsVenue": -3,
+            "techniques": {
+              "逃げ": 995,
+              "差し": 136,
+              "まくり": 285,
+              "まくり差し": 252,
+              "抜き": 118,
+              "恵まれ": 11
+            }
+          },
+          "head": {
+            "n": 2027,
+            "inWinRate": 59.7,
+            "diffVsVenue": -1.7,
+            "techniques": {
+              "逃げ": 1164,
+              "差し": 151,
+              "まくり": 299,
+              "まくり差し": 284,
+              "抜き": 120,
+              "恵まれ": 9
+            }
+          },
+          "calm_cross": {
+            "n": 6309,
+            "inWinRate": 65.4,
+            "diffVsVenue": 4,
+            "techniques": {
+              "逃げ": 3951,
+              "差し": 487,
+              "まくり": 736,
+              "まくり差し": 702,
+              "抜き": 372,
+              "恵まれ": 61
+            }
+          },
+          "tail": {
+            "n": 2658,
+            "inWinRate": 60.8,
+            "diffVsVenue": -0.5,
+            "techniques": {
+              "逃げ": 1525,
+              "差し": 313,
+              "まくり": 335,
+              "まくり差し": 250,
+              "抜き": 203,
+              "恵まれ": 32
+            }
+          },
+          "tail_strong": {
+            "n": 2782,
+            "inWinRate": 56,
+            "diffVsVenue": -5.4,
+            "techniques": {
+              "逃げ": 1458,
+              "差し": 416,
+              "まくり": 416,
+              "まくり差し": 227,
+              "抜き": 245,
+              "恵まれ": 20
+            }
+          }
+        }
+      },
+      "22": {
+        "all": {
+          "n": 15239,
+          "inWinRate": 55.8
+        },
+        "bins": {
+          "head_strong": {
+            "n": 1194,
+            "inWinRate": 52.3,
+            "diffVsVenue": -3.5,
+            "techniques": {
+              "逃げ": 590,
+              "差し": 173,
+              "まくり": 241,
+              "まくり差し": 93,
+              "抜き": 90,
+              "恵まれ": 7
+            }
+          },
+          "head": {
+            "n": 1406,
+            "inWinRate": 56,
+            "diffVsVenue": 0.3,
+            "techniques": {
+              "逃げ": 744,
+              "差し": 176,
+              "まくり": 252,
+              "まくり差し": 111,
+              "抜き": 112,
+              "恵まれ": 11
+            }
+          },
+          "calm_cross": {
+            "n": 11417,
+            "inWinRate": 56.4,
+            "diffVsVenue": 0.7,
+            "techniques": {
+              "逃げ": 6072,
+              "差し": 1378,
+              "まくり": 2084,
+              "まくり差し": 862,
+              "抜き": 930,
+              "恵まれ": 91
+            }
+          },
+          "tail": {
+            "n": 568,
+            "inWinRate": 52.6,
+            "diffVsVenue": -3.1,
+            "techniques": {
+              "逃げ": 281,
+              "差し": 90,
+              "まくり": 88,
+              "まくり差し": 49,
+              "抜き": 57,
+              "恵まれ": 3
+            }
+          },
+          "tail_strong": {
+            "n": 654,
+            "inWinRate": 52.8,
+            "diffVsVenue": -3,
+            "techniques": {
+              "逃げ": 324,
+              "差し": 91,
+              "まくり": 127,
+              "まくり差し": 51,
+              "抜き": 55,
+              "恵まれ": 6
+            }
+          }
+        }
+      },
+      "23": {
+        "all": {
+          "n": 15249,
+          "inWinRate": 54.9
+        },
+        "bins": {
+          "head_strong": {
+            "n": 2144,
+            "inWinRate": 54.9,
+            "diffVsVenue": 0,
+            "techniques": {
+              "逃げ": 1124,
+              "差し": 227,
+              "まくり": 359,
+              "まくり差し": 279,
+              "抜き": 143,
+              "恵まれ": 12
+            }
+          },
+          "head": {
+            "n": 2448,
+            "inWinRate": 60.5,
+            "diffVsVenue": 5.6,
+            "techniques": {
+              "逃げ": 1416,
+              "差し": 236,
+              "まくり": 332,
+              "まくり差し": 301,
+              "抜き": 147,
+              "恵まれ": 16
+            }
+          },
+          "calm_cross": {
+            "n": 3488,
+            "inWinRate": 58.9,
+            "diffVsVenue": 4,
+            "techniques": {
+              "逃げ": 1975,
+              "差し": 375,
+              "まくり": 428,
+              "まくり差し": 472,
+              "抜き": 201,
+              "恵まれ": 37
+            }
+          },
+          "tail": {
+            "n": 2812,
+            "inWinRate": 54.5,
+            "diffVsVenue": -0.4,
+            "techniques": {
+              "逃げ": 1451,
+              "差し": 416,
+              "まくり": 378,
+              "まくり差し": 347,
+              "抜き": 189,
+              "恵まれ": 31
+            }
+          },
+          "tail_strong": {
+            "n": 4357,
+            "inWinRate": 48.8,
+            "diffVsVenue": -6.1,
+            "techniques": {
+              "逃げ": 1965,
+              "差し": 848,
+              "まくり": 670,
+              "まくり差し": 418,
+              "抜き": 419,
+              "恵まれ": 37
+            }
+          }
+        }
+      },
+      "24": {
+        "all": {
+          "n": 15942,
+          "inWinRate": 62.6
+        },
+        "bins": {
+          "head_strong": {
+            "n": 1525,
+            "inWinRate": 62.9,
+            "diffVsVenue": 0.3,
+            "techniques": {
+              "逃げ": 930,
+              "差し": 118,
+              "まくり": 236,
+              "まくり差し": 149,
+              "抜き": 87,
+              "恵まれ": 5
+            }
+          },
+          "head": {
+            "n": 1959,
+            "inWinRate": 65.8,
+            "diffVsVenue": 3.2,
+            "techniques": {
+              "逃げ": 1248,
+              "差し": 154,
+              "まくり": 221,
+              "まくり差し": 227,
+              "抜き": 96,
+              "恵まれ": 13
+            }
+          },
+          "calm_cross": {
+            "n": 10005,
+            "inWinRate": 63.8,
+            "diffVsVenue": 1.2,
+            "techniques": {
+              "逃げ": 6128,
+              "差し": 1053,
+              "まくり": 1055,
+              "まくり差し": 1066,
+              "抜き": 592,
+              "恵まれ": 111
+            }
+          },
+          "tail": {
+            "n": 1944,
+            "inWinRate": 56.4,
+            "diffVsVenue": -6.2,
+            "techniques": {
+              "逃げ": 1018,
+              "差し": 323,
+              "まくり": 231,
+              "まくり差し": 174,
+              "抜き": 176,
+              "恵まれ": 22
+            }
+          },
+          "tail_strong": {
+            "n": 509,
+            "inWinRate": 50.5,
+            "diffVsVenue": -12.1,
+            "techniques": {
+              "逃げ": 236,
+              "差し": 92,
+              "まくり": 58,
+              "まくり差し": 69,
+              "抜き": 47,
+              "恵まれ": 7
+            }
+          }
+        }
+      }
+    }
+  },
+  "waveWithinCalm": {
+    "pooled": {
+      "w0_2": {
+        "label": "0〜2cm",
+        "n": 126246,
+        "diffVsVenue": 0.6,
+        "ci": [
+          0.5,
+          0.8
+        ],
+        "adjustedDiff": 0,
+        "venueSign": {
+          "eligible": 22,
+          "sameSign": 20
+        }
+      },
+      "w3_5": {
+        "label": "3〜5cm",
+        "n": 28742,
+        "diffVsVenue": -2.3,
+        "ci": [
+          -2.9,
+          -1.8
+        ],
+        "adjustedDiff": -1.5,
+        "venueSign": {
+          "eligible": 18,
+          "sameSign": 17
+        }
+      },
+      "w6_9": {
+        "label": "6〜9cm",
+        "n": 2088,
+        "diffVsVenue": -6.1,
+        "ci": [
+          -8.7,
+          -3.7
+        ],
+        "adjustedDiff": -5.1,
+        "venueSign": {
+          "eligible": 1,
+          "sameSign": 1
+        }
+      },
+      "w10": {
+        "label": "10cm以上",
+        "n": 828,
+        "diffVsVenue": -0.1,
+        "ci": [
+          -3.5,
+          3.5
+        ],
+        "adjustedDiff": -1.3,
+        "venueSign": {
+          "eligible": 1,
+          "sameSign": 0
+        }
+      }
+    },
+    "firstHalf": {
+      "w0_2": {
+        "label": "0〜2cm",
+        "n": 55377,
+        "diffVsVenue": 0.7,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 22,
+          "sameSign": 16
+        }
+      },
+      "w3_5": {
+        "label": "3〜5cm",
+        "n": 12354,
+        "diffVsVenue": -2.5,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 9,
+          "sameSign": 6
+        }
+      },
+      "w6_9": {
+        "label": "6〜9cm",
+        "n": 887,
+        "diffVsVenue": -6.9,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 0,
+          "sameSign": 0
+        }
+      },
+      "w10": {
+        "label": "10cm以上",
+        "n": 377,
+        "diffVsVenue": 1.4,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 1,
+          "sameSign": 1
+        }
+      }
+    },
+    "secondHalf": {
+      "w0_2": {
+        "label": "0〜2cm",
+        "n": 70869,
+        "diffVsVenue": 0.6,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 22,
+          "sameSign": 19
+        }
+      },
+      "w3_5": {
+        "label": "3〜5cm",
+        "n": 16388,
+        "diffVsVenue": -2.2,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 14,
+          "sameSign": 11
+        }
+      },
+      "w6_9": {
+        "label": "6〜9cm",
+        "n": 1201,
+        "diffVsVenue": -5.4,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 1,
+          "sameSign": 1
+        }
+      },
+      "w10": {
+        "label": "10cm以上",
+        "n": 451,
+        "diffVsVenue": -1.4,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 1,
+          "sameSign": 1
+        }
+      }
+    },
+    "judge": {
+      "w6_9": {
+        "c1_absDiffAtLeast3pt": true,
+        "c2_ciExcludesZero": true,
+        "c3_adjustedKeeps": true,
+        "c4_halvesSameSign": true,
+        "c5_venuesSameSign": true,
+        "pass": true
+      },
+      "w10": {
+        "c1_absDiffAtLeast3pt": false,
+        "c2_ciExcludesZero": false,
+        "c3_adjustedKeeps": true,
+        "c4_halvesSameSign": false,
+        "c5_venuesSameSign": false,
+        "pass": false
+      }
+    },
+    "venues": {
+      "1": {
+        "all": {
+          "n": 12072,
+          "inWinRate": 53.3
+        },
+        "bins": {
+          "w0_2": {
+            "n": 9800,
+            "inWinRate": 54.2,
+            "diffVsVenue": 0.9,
+            "techniques": {
+              "逃げ": 5092,
+              "差し": 1061,
+              "まくり": 1680,
+              "まくり差し": 1324,
+              "抜き": 577,
+              "恵まれ": 66
+            }
+          },
+          "w3_5": {
+            "n": 1689,
+            "inWinRate": 50.9,
+            "diffVsVenue": -2.4,
+            "techniques": {
+              "逃げ": 820,
+              "差し": 189,
+              "まくり": 334,
+              "まくり差し": 240,
+              "抜き": 99,
+              "恵まれ": 7
+            }
+          },
+          "w6_9": {
+            "n": 580,
+            "inWinRate": 45,
+            "diffVsVenue": -8.3,
+            "techniques": {
+              "逃げ": 241,
+              "差し": 82,
+              "まくり": 132,
+              "まくり差し": 73,
+              "抜き": 51,
+              "恵まれ": 1
+            }
+          },
+          "w10": {
+            "n": 3,
+            "inWinRate": 0,
+            "diffVsVenue": -53.3,
+            "techniques": {
+              "逃げ": 0,
+              "差し": 1,
+              "まくり": 0,
+              "まくり差し": 1,
+              "抜き": 1,
+              "恵まれ": 0
+            }
+          }
+        }
+      },
+      "2": {
+        "all": {
+          "n": 10154,
+          "inWinRate": 44.6
+        },
+        "bins": {
+          "w0_2": {
+            "n": 9453,
+            "inWinRate": 44.8,
+            "diffVsVenue": 0.2,
+            "techniques": {
+              "逃げ": 3976,
+              "差し": 1199,
+              "まくり": 2374,
+              "まくり差し": 1117,
+              "抜き": 709,
+              "恵まれ": 78
+            }
+          },
+          "w3_5": {
+            "n": 632,
+            "inWinRate": 42.6,
+            "diffVsVenue": -2,
+            "techniques": {
+              "逃げ": 248,
+              "差し": 72,
+              "まくり": 186,
+              "まくり差し": 74,
+              "抜き": 49,
+              "恵まれ": 3
+            }
+          },
+          "w6_9": {
+            "n": 51,
+            "inWinRate": 35.3,
+            "diffVsVenue": -9.3,
+            "techniques": {
+              "逃げ": 16,
+              "差し": 6,
+              "まくり": 19,
+              "まくり差し": 5,
+              "抜き": 5,
+              "恵まれ": 0
+            }
+          },
+          "w10": {
+            "n": 18,
+            "inWinRate": 55.6,
+            "diffVsVenue": 11,
+            "techniques": {
+              "逃げ": 10,
+              "差し": 1,
+              "まくり": 3,
+              "まくり差し": 2,
+              "抜き": 2,
+              "恵まれ": 0
+            }
+          }
+        }
+      },
+      "3": {
+        "all": {
+          "n": 3472,
+          "inWinRate": 47.3
+        },
+        "bins": {
+          "w3_5": {
+            "n": 2685,
+            "inWinRate": 47.2,
+            "diffVsVenue": -0.1,
+            "techniques": {
+              "逃げ": 1176,
+              "差し": 413,
+              "まくり": 525,
+              "まくり差し": 266,
+              "抜き": 257,
+              "恵まれ": 48
+            }
+          },
+          "w10": {
+            "n": 787,
+            "inWinRate": 47.6,
+            "diffVsVenue": 0.3,
+            "techniques": {
+              "逃げ": 353,
+              "差し": 102,
+              "まくり": 169,
+              "まくり差し": 86,
+              "抜き": 71,
+              "恵まれ": 6
+            }
+          }
+        }
+      },
+      "4": {
+        "all": {
+          "n": 4333,
+          "inWinRate": 46.4
+        },
+        "bins": {
+          "w0_2": {
+            "n": 69,
+            "inWinRate": 47.8,
+            "diffVsVenue": 1.4,
+            "techniques": {
+              "逃げ": 28,
+              "差し": 8,
+              "まくり": 13,
+              "まくり差し": 14,
+              "抜き": 4,
+              "恵まれ": 2
+            }
+          },
+          "w3_5": {
+            "n": 4264,
+            "inWinRate": 46.4,
+            "diffVsVenue": 0,
+            "techniques": {
+              "逃げ": 1883,
+              "差し": 734,
+              "まくり": 780,
+              "まくり差し": 526,
+              "抜き": 289,
+              "恵まれ": 52
+            }
+          }
+        }
+      },
+      "5": {
+        "all": {
+          "n": 8224,
+          "inWinRate": 54.2
+        },
+        "bins": {
+          "w0_2": {
+            "n": 7804,
+            "inWinRate": 54.2,
+            "diffVsVenue": 0,
+            "techniques": {
+              "逃げ": 4070,
+              "差し": 1002,
+              "まくり": 1298,
+              "まくり差し": 951,
+              "抜き": 429,
+              "恵まれ": 54
+            }
+          },
+          "w3_5": {
+            "n": 411,
+            "inWinRate": 55,
+            "diffVsVenue": 0.8,
+            "techniques": {
+              "逃げ": 213,
+              "差し": 42,
+              "まくり": 79,
+              "まくり差し": 40,
+              "抜き": 33,
+              "恵まれ": 4
+            }
+          },
+          "w6_9": {
+            "n": 8,
+            "inWinRate": 37.5,
+            "diffVsVenue": -16.7,
+            "techniques": {
+              "逃げ": 3,
+              "差し": 1,
+              "まくり": 2,
+              "まくり差し": 2,
+              "抜き": 0,
+              "恵まれ": 0
+            }
+          },
+          "w10": {
+            "n": 1,
+            "inWinRate": 0,
+            "diffVsVenue": -54.2,
+            "techniques": {
+              "逃げ": 0,
+              "差し": 0,
+              "まくり": 1,
+              "まくり差し": 0,
+              "抜き": 0,
+              "恵まれ": 0
+            }
+          }
+        }
+      },
+      "6": {
+        "all": {
+          "n": 4731,
+          "inWinRate": 55
+        },
+        "bins": {
+          "w0_2": {
+            "n": 4591,
+            "inWinRate": 55.2,
+            "diffVsVenue": 0.2,
+            "techniques": {
+              "逃げ": 2432,
+              "差し": 604,
+              "まくり": 559,
+              "まくり差し": 646,
+              "抜き": 270,
+              "恵まれ": 80
+            }
+          },
+          "w3_5": {
+            "n": 140,
+            "inWinRate": 49.3,
+            "diffVsVenue": -5.8,
+            "techniques": {
+              "逃げ": 65,
+              "差し": 19,
+              "まくり": 31,
+              "まくり差し": 16,
+              "抜き": 8,
+              "恵まれ": 1
+            }
+          }
+        }
+      },
+      "7": {
+        "all": {
+          "n": 9746,
+          "inWinRate": 58.4
+        },
+        "bins": {
+          "w0_2": {
+            "n": 9240,
+            "inWinRate": 58.8,
+            "diffVsVenue": 0.5,
+            "techniques": {
+              "逃げ": 5261,
+              "差し": 869,
+              "まくり": 1376,
+              "まくり差し": 1172,
+              "抜き": 477,
+              "恵まれ": 85
+            }
+          },
+          "w3_5": {
+            "n": 506,
+            "inWinRate": 49.4,
+            "diffVsVenue": -8.9,
+            "techniques": {
+              "逃げ": 241,
+              "差し": 56,
+              "まくり": 112,
+              "まくり差し": 61,
+              "抜き": 31,
+              "恵まれ": 5
+            }
+          }
+        }
+      },
+      "8": {
+        "all": {
+          "n": 6102,
+          "inWinRate": 60.2
+        },
+        "bins": {
+          "w0_2": {
+            "n": 6008,
+            "inWinRate": 60.4,
+            "diffVsVenue": 0.1,
+            "techniques": {
+              "逃げ": 3518,
+              "差し": 622,
+              "まくり": 819,
+              "まくり差し": 691,
+              "抜き": 286,
+              "恵まれ": 72
+            }
+          },
+          "w3_5": {
+            "n": 91,
+            "inWinRate": 51.6,
+            "diffVsVenue": -8.6,
+            "techniques": {
+              "逃げ": 42,
+              "差し": 12,
+              "まくり": 18,
+              "まくり差し": 10,
+              "抜き": 8,
+              "恵まれ": 1
+            }
+          },
+          "w6_9": {
+            "n": 3,
+            "inWinRate": 33.3,
+            "diffVsVenue": -26.9,
+            "techniques": {
+              "逃げ": 1,
+              "差し": 1,
+              "まくり": 1,
+              "まくり差し": 0,
+              "抜き": 0,
+              "恵まれ": 0
+            }
+          }
+        }
+      },
+      "9": {
+        "all": {
+          "n": 3486,
+          "inWinRate": 61.3
+        },
+        "bins": {
+          "w0_2": {
+            "n": 3484,
+            "inWinRate": 61.3,
+            "diffVsVenue": 0,
+            "techniques": {
+              "逃げ": 2059,
+              "差し": 442,
+              "まくり": 355,
+              "まくり差し": 398,
+              "抜き": 208,
+              "恵まれ": 22
+            }
+          },
+          "w3_5": {
+            "n": 2,
+            "inWinRate": 0,
+            "diffVsVenue": -61.3,
+            "techniques": {
+              "逃げ": 0,
+              "差し": 0,
+              "まくり": 1,
+              "まくり差し": 0,
+              "抜き": 1,
+              "恵まれ": 0
+            }
+          }
+        }
+      },
+      "10": {
+        "all": {
+          "n": 5382,
+          "inWinRate": 55.7
+        },
+        "bins": {
+          "w0_2": {
+            "n": 4588,
+            "inWinRate": 56,
+            "diffVsVenue": 0.3,
+            "techniques": {
+              "逃げ": 2463,
+              "差し": 710,
+              "まくり": 554,
+              "まくり差し": 532,
+              "抜き": 277,
+              "恵まれ": 52
+            }
+          },
+          "w3_5": {
+            "n": 706,
+            "inWinRate": 54.2,
+            "diffVsVenue": -1.5,
+            "techniques": {
+              "逃げ": 371,
+              "差し": 133,
+              "まくり": 89,
+              "まくり差し": 65,
+              "抜き": 41,
+              "恵まれ": 7
+            }
+          },
+          "w6_9": {
+            "n": 84,
+            "inWinRate": 53.6,
+            "diffVsVenue": -2.2,
+            "techniques": {
+              "逃げ": 42,
+              "差し": 11,
+              "まくり": 17,
+              "まくり差し": 9,
+              "抜き": 5,
+              "恵まれ": 0
+            }
+          },
+          "w10": {
+            "n": 4,
+            "inWinRate": 50,
+            "diffVsVenue": -5.7,
+            "techniques": {
+              "逃げ": 2,
+              "差し": 0,
+              "まくり": 1,
+              "まくり差し": 0,
+              "抜き": 0,
+              "恵まれ": 1
+            }
+          }
+        }
+      },
+      "11": {
+        "all": {
+          "n": 4921,
+          "inWinRate": 57.2
+        },
+        "bins": {
+          "w0_2": {
+            "n": 4356,
+            "inWinRate": 58.2,
+            "diffVsVenue": 1.1,
+            "techniques": {
+              "逃げ": 2450,
+              "差し": 587,
+              "まくり": 533,
+              "まくり差し": 521,
+              "抜き": 240,
+              "恵まれ": 25
+            }
+          },
+          "w3_5": {
+            "n": 505,
+            "inWinRate": 49.3,
+            "diffVsVenue": -7.9,
+            "techniques": {
+              "逃げ": 235,
+              "差し": 58,
+              "まくり": 89,
+              "まくり差し": 70,
+              "抜き": 51,
+              "恵まれ": 2
+            }
+          },
+          "w6_9": {
+            "n": 60,
+            "inWinRate": 46.7,
+            "diffVsVenue": -10.5,
+            "techniques": {
+              "逃げ": 24,
+              "差し": 10,
+              "まくり": 13,
+              "まくり差し": 8,
+              "抜き": 5,
+              "恵まれ": 0
+            }
+          }
+        }
+      },
+      "12": {
+        "all": {
+          "n": 8058,
+          "inWinRate": 61.2
+        },
+        "bins": {
+          "w0_2": {
+            "n": 8058,
+            "inWinRate": 61.2,
+            "diffVsVenue": 0,
+            "techniques": {
+              "逃げ": 4760,
+              "差し": 939,
+              "まくり": 1033,
+              "まくり差し": 797,
+              "抜き": 464,
+              "恵まれ": 65
+            }
+          }
+        }
+      },
+      "13": {
+        "all": {
+          "n": 5081,
+          "inWinRate": 60.2
+        },
+        "bins": {
+          "w0_2": {
+            "n": 4707,
+            "inWinRate": 60.3,
+            "diffVsVenue": 0.2,
+            "techniques": {
+              "逃げ": 2759,
+              "差し": 551,
+              "まくり": 596,
+              "まくり差し": 503,
+              "抜き": 258,
+              "恵まれ": 40
+            }
+          },
+          "w3_5": {
+            "n": 355,
+            "inWinRate": 58.9,
+            "diffVsVenue": -1.3,
+            "techniques": {
+              "逃げ": 203,
+              "差し": 39,
+              "まくり": 48,
+              "まくり差し": 46,
+              "抜き": 17,
+              "恵まれ": 2
+            }
+          },
+          "w6_9": {
+            "n": 19,
+            "inWinRate": 42.1,
+            "diffVsVenue": -18.1,
+            "techniques": {
+              "逃げ": 8,
+              "差し": 1,
+              "まくり": 3,
+              "まくり差し": 6,
+              "抜き": 1,
+              "恵まれ": 0
+            }
+          }
+        }
+      },
+      "14": {
+        "all": {
+          "n": 3434,
+          "inWinRate": 52.9
+        },
+        "bins": {
+          "w0_2": {
+            "n": 3398,
+            "inWinRate": 53,
+            "diffVsVenue": 0.1,
+            "techniques": {
+              "逃げ": 1719,
+              "差し": 477,
+              "まくり": 541,
+              "まくり差し": 400,
+              "抜き": 232,
+              "恵まれ": 29
+            }
+          },
+          "w3_5": {
+            "n": 35,
+            "inWinRate": 42.9,
+            "diffVsVenue": -10,
+            "techniques": {
+              "逃げ": 13,
+              "差し": 1,
+              "まくり": 13,
+              "まくり差し": 4,
+              "抜き": 4,
+              "恵まれ": 0
+            }
+          },
+          "w6_9": {
+            "n": 1,
+            "inWinRate": 0,
+            "diffVsVenue": -52.9,
+            "techniques": {
+              "逃げ": 0,
+              "差し": 1,
+              "まくり": 0,
+              "まくり差し": 0,
+              "抜き": 0,
+              "恵まれ": 0
+            }
+          }
+        }
+      },
+      "15": {
+        "all": {
+          "n": 7132,
+          "inWinRate": 58.8
+        },
+        "bins": {
+          "w0_2": {
+            "n": 5588,
+            "inWinRate": 59.8,
+            "diffVsVenue": 1,
+            "techniques": {
+              "逃げ": 3211,
+              "差し": 730,
+              "まくり": 607,
+              "まくり差し": 699,
+              "抜き": 301,
+              "恵まれ": 40
+            }
+          },
+          "w3_5": {
+            "n": 1384,
+            "inWinRate": 55.6,
+            "diffVsVenue": -3.3,
+            "techniques": {
+              "逃げ": 739,
+              "差し": 206,
+              "まくり": 171,
+              "まくり差し": 164,
+              "抜き": 88,
+              "恵まれ": 16
+            }
+          },
+          "w6_9": {
+            "n": 159,
+            "inWinRate": 53.5,
+            "diffVsVenue": -5.4,
+            "techniques": {
+              "逃げ": 85,
+              "差し": 18,
+              "まくり": 25,
+              "まくり差し": 21,
+              "抜き": 7,
+              "恵まれ": 3
+            }
+          },
+          "w10": {
+            "n": 1,
+            "inWinRate": 100,
+            "diffVsVenue": 41.2,
+            "techniques": {
+              "逃げ": 1,
+              "差し": 0,
+              "まくり": 0,
+              "まくり差し": 0,
+              "抜き": 0,
+              "恵まれ": 0
+            }
+          }
+        }
+      },
+      "16": {
+        "all": {
+          "n": 2737,
+          "inWinRate": 60.8
+        },
+        "bins": {
+          "w0_2": {
+            "n": 2464,
+            "inWinRate": 60.9,
+            "diffVsVenue": 0.1,
+            "techniques": {
+              "逃げ": 1440,
+              "差し": 388,
+              "まくり": 215,
+              "まくり差し": 259,
+              "抜き": 139,
+              "恵まれ": 23
+            }
+          },
+          "w3_5": {
+            "n": 273,
+            "inWinRate": 59.7,
+            "diffVsVenue": -1.1,
+            "techniques": {
+              "逃げ": 156,
+              "差し": 42,
+              "まくり": 29,
+              "まくり差し": 28,
+              "抜き": 15,
+              "恵まれ": 3
+            }
+          }
+        }
+      },
+      "17": {
+        "all": {
+          "n": 5480,
+          "inWinRate": 59.2
+        },
+        "bins": {
+          "w0_2": {
+            "n": 5095,
+            "inWinRate": 60,
+            "diffVsVenue": 0.8,
+            "techniques": {
+              "逃げ": 2937,
+              "差し": 582,
+              "まくり": 710,
+              "まくり差し": 517,
+              "抜き": 313,
+              "恵まれ": 36
+            }
+          },
+          "w3_5": {
+            "n": 369,
+            "inWinRate": 48.2,
+            "diffVsVenue": -11,
+            "techniques": {
+              "逃げ": 167,
+              "差し": 64,
+              "まくり": 64,
+              "まくり差し": 38,
+              "抜き": 30,
+              "恵まれ": 6
+            }
+          },
+          "w6_9": {
+            "n": 16,
+            "inWinRate": 50,
+            "diffVsVenue": -9.2,
+            "techniques": {
+              "逃げ": 8,
+              "差し": 3,
+              "まくり": 3,
+              "まくり差し": 0,
+              "抜き": 2,
+              "恵まれ": 0
+            }
+          }
+        }
+      },
+      "18": {
+        "all": {
+          "n": 9165,
+          "inWinRate": 64.5
+        },
+        "bins": {
+          "w0_2": {
+            "n": 5640,
+            "inWinRate": 67,
+            "diffVsVenue": 2.4,
+            "techniques": {
+              "逃げ": 3621,
+              "差し": 697,
+              "まくり": 489,
+              "まくり差し": 446,
+              "抜き": 348,
+              "恵まれ": 39
+            }
+          },
+          "w3_5": {
+            "n": 3217,
+            "inWinRate": 61,
+            "diffVsVenue": -3.5,
+            "techniques": {
+              "逃げ": 1855,
+              "差し": 397,
+              "まくり": 428,
+              "まくり差し": 271,
+              "抜き": 252,
+              "恵まれ": 14
+            }
+          },
+          "w6_9": {
+            "n": 299,
+            "inWinRate": 57.5,
+            "diffVsVenue": -7,
+            "techniques": {
+              "逃げ": 162,
+              "差し": 24,
+              "まくり": 60,
+              "まくり差し": 25,
+              "抜き": 28,
+              "恵まれ": 0
+            }
+          },
+          "w10": {
+            "n": 9,
+            "inWinRate": 33.3,
+            "diffVsVenue": -31.2,
+            "techniques": {
+              "逃げ": 3,
+              "差し": 0,
+              "まくり": 3,
+              "まくり差し": 2,
+              "抜き": 1,
+              "恵まれ": 0
+            }
+          }
+        }
+      },
+      "19": {
+        "all": {
+          "n": 5904,
+          "inWinRate": 63.5
+        },
+        "bins": {
+          "w0_2": {
+            "n": 4989,
+            "inWinRate": 64.5,
+            "diffVsVenue": 1,
+            "techniques": {
+              "逃げ": 3109,
+              "差し": 485,
+              "まくり": 614,
+              "まくり差し": 498,
+              "抜き": 256,
+              "恵まれ": 27
+            }
+          },
+          "w3_5": {
+            "n": 839,
+            "inWinRate": 57.6,
+            "diffVsVenue": -5.9,
+            "techniques": {
+              "逃げ": 459,
+              "差し": 92,
+              "まくり": 127,
+              "まくり差し": 98,
+              "抜き": 57,
+              "恵まれ": 6
+            }
+          },
+          "w6_9": {
+            "n": 76,
+            "inWinRate": 63.2,
+            "diffVsVenue": -0.3,
+            "techniques": {
+              "逃げ": 44,
+              "差し": 7,
+              "まくり": 8,
+              "まくり差し": 10,
+              "抜き": 6,
+              "恵まれ": 1
+            }
+          }
+        }
+      },
+      "20": {
+        "all": {
+          "n": 7071,
+          "inWinRate": 60.2
+        },
+        "bins": {
+          "w0_2": {
+            "n": 4861,
+            "inWinRate": 63.8,
+            "diffVsVenue": 3.6,
+            "techniques": {
+              "逃げ": 2968,
+              "差し": 439,
+              "まくり": 591,
+              "まくり差し": 493,
+              "抜き": 331,
+              "恵まれ": 39
+            }
+          },
+          "w3_5": {
+            "n": 1931,
+            "inWinRate": 52.8,
+            "diffVsVenue": -7.5,
+            "techniques": {
+              "逃げ": 973,
+              "差し": 261,
+              "まくり": 317,
+              "まくり差し": 236,
+              "抜き": 135,
+              "恵まれ": 9
+            }
+          },
+          "w6_9": {
+            "n": 274,
+            "inWinRate": 49.6,
+            "diffVsVenue": -10.6,
+            "techniques": {
+              "逃げ": 126,
+              "差し": 45,
+              "まくり": 44,
+              "まくり差し": 35,
+              "抜き": 24,
+              "恵まれ": 0
+            }
+          },
+          "w10": {
+            "n": 5,
+            "inWinRate": 40,
+            "diffVsVenue": -20.2,
+            "techniques": {
+              "逃げ": 2,
+              "差し": 0,
+              "まくり": 2,
+              "まくり差し": 1,
+              "抜き": 0,
+              "恵まれ": 0
+            }
+          }
+        }
+      },
+      "21": {
+        "all": {
+          "n": 6309,
+          "inWinRate": 65.4
+        },
+        "bins": {
+          "w0_2": {
+            "n": 4965,
+            "inWinRate": 65.7,
+            "diffVsVenue": 0.3,
+            "techniques": {
+              "逃げ": 3130,
+              "差し": 395,
+              "まくり": 540,
+              "まくり差し": 565,
+              "抜き": 288,
+              "恵まれ": 47
+            }
+          },
+          "w3_5": {
+            "n": 1281,
+            "inWinRate": 64.8,
+            "diffVsVenue": -0.6,
+            "techniques": {
+              "逃げ": 788,
+              "差し": 87,
+              "まくり": 181,
+              "まくり差し": 136,
+              "抜き": 75,
+              "恵まれ": 14
+            }
+          },
+          "w6_9": {
+            "n": 63,
+            "inWinRate": 57.1,
+            "diffVsVenue": -8.3,
+            "techniques": {
+              "逃げ": 33,
+              "差し": 5,
+              "まくり": 15,
+              "まくり差し": 1,
+              "抜き": 9,
+              "恵まれ": 0
+            }
+          }
+        }
+      },
+      "22": {
+        "all": {
+          "n": 11417,
+          "inWinRate": 56.4
+        },
+        "bins": {
+          "w0_2": {
+            "n": 5562,
+            "inWinRate": 56.6,
+            "diffVsVenue": 0.2,
+            "techniques": {
+              "逃げ": 2978,
+              "差し": 721,
+              "まくり": 958,
+              "まくり差し": 418,
+              "抜き": 441,
+              "恵まれ": 46
+            }
+          },
+          "w3_5": {
+            "n": 5702,
+            "inWinRate": 56.1,
+            "diffVsVenue": -0.3,
+            "techniques": {
+              "逃げ": 3011,
+              "差し": 641,
+              "まくり": 1103,
+              "まくり差し": 438,
+              "抜き": 467,
+              "恵まれ": 42
+            }
+          },
+          "w6_9": {
+            "n": 153,
+            "inWinRate": 60.8,
+            "diffVsVenue": 4.4,
+            "techniques": {
+              "逃げ": 83,
+              "差し": 16,
+              "まくり": 23,
+              "まくり差し": 6,
+              "抜き": 22,
+              "恵まれ": 3
+            }
+          }
+        }
+      },
+      "23": {
+        "all": {
+          "n": 3488,
+          "inWinRate": 58.9
+        },
+        "bins": {
+          "w0_2": {
+            "n": 2422,
+            "inWinRate": 61.3,
+            "diffVsVenue": 2.5,
+            "techniques": {
+              "逃げ": 1429,
+              "差し": 254,
+              "まくり": 273,
+              "まくり差し": 310,
+              "抜き": 135,
+              "恵まれ": 21
+            }
+          },
+          "w3_5": {
+            "n": 1030,
+            "inWinRate": 53.4,
+            "diffVsVenue": -5.5,
+            "techniques": {
+              "逃げ": 530,
+              "差し": 118,
+              "まくり": 146,
+              "まくり差し": 157,
+              "抜き": 63,
+              "恵まれ": 16
+            }
+          },
+          "w6_9": {
+            "n": 36,
+            "inWinRate": 50,
+            "diffVsVenue": -8.9,
+            "techniques": {
+              "逃げ": 16,
+              "差し": 3,
+              "まくり": 9,
+              "まくり差し": 5,
+              "抜き": 3,
+              "恵まれ": 0
+            }
+          }
+        }
+      },
+      "24": {
+        "all": {
+          "n": 10005,
+          "inWinRate": 63.8
+        },
+        "bins": {
+          "w0_2": {
+            "n": 9104,
+            "inWinRate": 64,
+            "diffVsVenue": 0.2,
+            "techniques": {
+              "逃げ": 5598,
+              "差し": 969,
+              "まくり": 923,
+              "まくり差し": 979,
+              "抜き": 537,
+              "恵まれ": 98
+            }
+          },
+          "w3_5": {
+            "n": 695,
+            "inWinRate": 60.6,
+            "diffVsVenue": -3.2,
+            "techniques": {
+              "逃げ": 402,
+              "差し": 68,
+              "まくり": 108,
+              "まくり差し": 60,
+              "抜き": 46,
+              "恵まれ": 11
+            }
+          },
+          "w6_9": {
+            "n": 206,
+            "inWinRate": 64.6,
+            "diffVsVenue": 0.8,
+            "techniques": {
+              "逃げ": 128,
+              "差し": 16,
+              "まくり": 24,
+              "まくり差し": 27,
+              "抜き": 9,
+              "恵まれ": 2
+            }
+          }
+        }
+      }
+    }
+  },
+  "sensitivity": {
+    "tailwindComponent": {
+      "head_strong": {
+        "label": "向かい風・強",
+        "n": 28049,
+        "diffVsVenue": -4.7,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 21,
+          "sameSign": 20
+        }
+      },
+      "head": {
+        "label": "向かい風",
+        "n": 59398,
+        "diffVsVenue": -0.8,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 16
+        }
+      },
+      "calm_cross": {
+        "label": "弱い・横風",
+        "n": 198612,
+        "diffVsVenue": 1.9,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 24
+        }
+      },
+      "tail": {
+        "label": "追い風",
+        "n": 55457,
+        "diffVsVenue": -1.4,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 15
+        }
+      },
+      "tail_strong": {
+        "label": "追い風・強",
+        "n": 26816,
+        "diffVsVenue": -4.5,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 19,
+          "sameSign": 18
+        }
+      }
+    },
+    "previousRaceWind": {
+      "head_strong": {
+        "label": "向かい風・強",
+        "n": 41985,
+        "diffVsVenue": -2.2,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 23,
+          "sameSign": 19
+        }
+      },
+      "head": {
+        "label": "向かい風",
+        "n": 55928,
+        "diffVsVenue": 0.4,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 13
+        }
+      },
+      "calm_cross": {
+        "label": "弱い・横風",
+        "n": 143989,
+        "diffVsVenue": 1.5,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 24
+        }
+      },
+      "tail": {
+        "label": "追い風",
+        "n": 54640,
+        "diffVsVenue": -0.4,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 13
+        }
+      },
+      "tail_strong": {
+        "label": "追い風・強",
+        "n": 40988,
+        "diffVsVenue": -3.1,
+        "ci": null,
+        "adjustedDiff": null,
+        "venueSign": {
+          "eligible": 24,
+          "sameSign": 23
+        }
+      }
+    }
+  }
+}
