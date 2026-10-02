@@ -165,13 +165,18 @@ export function buildResultExtras(result) {
  * race_start_timings の行（艇別の結果）を作る。
  *   extended=false（マイグレーション077が未適用）: 旧実装と同じ。STを読めた艇だけの行（is_late_start・進入等は書かない）
  *   extended=true: 着順表の全艇（欠場・出遅れ等、STの無い艇を含む）の行。着欄・着・進入・レースタイムを含む
+ *   officialRow=true（マイグレーション119が適用済み。extended=true のときだけ効く）: 公式の着順表の行の順（official_row）も書く
  * 行の並びは、旧実装と同じ（スタート情報の行順）。
  *
  * @param {string} raceId
  * @param {NonNullable<ReturnType<typeof toLegacyResult>>} result
- * @param {{extended: boolean}} options
+ * @param {{extended: boolean, officialRow?: boolean}} options
  */
-export function buildTimingRows(raceId, result, { extended }) {
+export function buildTimingRows(
+  raceId,
+  result,
+  { extended, officialRow = false },
+) {
   if (!extended) {
     return result.startTimings.map((st) => ({ race_id: raceId, ...st }));
   }
@@ -196,6 +201,7 @@ export function buildTimingRows(raceId, result, { extended }) {
     finish_rank: b.finish_rank,
     entry_course: b.entry_course,
     race_seconds: b.race_seconds,
+    ...(officialRow ? { official_row: b.official_row } : {}),
   }));
 }
 

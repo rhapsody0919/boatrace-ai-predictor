@@ -1080,7 +1080,10 @@ async function persistRaceResults({
   // race_start_timingsに艇別の結果（ST・着欄・進入・レースタイム）を書き込み。
   // 077が未適用なら、STを読めた艇の行だけ（旧実装と同じ）
   const allStartTimings = [...scrapeCache].flatMap(([raceId, scraped]) =>
-    buildTimingRows(raceId, scraped, { extended: schema.timings }),
+    buildTimingRows(raceId, scraped, {
+      extended: schema.timings,
+      officialRow: schema.officialRow,
+    }),
   );
 
   let startTimingRowsWritten = [];

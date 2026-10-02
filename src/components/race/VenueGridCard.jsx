@@ -1,7 +1,7 @@
 /**
  * VenueGridCard - 開催場一覧グリッドの1会場分カード
  * 開催中: 大会名・グレードバッジ・時間帯アイコン・次レース時刻を表示しリンク化
- * 非開催: 「本日開催なし」表示のみ（リンクなし）
+ * 非開催: 次開催日（BOA-225）が分かれば「次開催 M/D」、無ければ「本日開催なし」（リンクなし）
  */
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -11,6 +11,7 @@ import {
   getRaceStageBadge,
 } from "../../constants/raceStageConfig";
 import { getVenueTimeOfDay, TIME_OF_DAY } from "../../utils/raceTimeOfDay";
+import { formatMonthDay } from "../../utils/nextOpenDate";
 import "./VenueGridCard.css";
 
 const TIME_OF_DAY_ICON = {
@@ -37,7 +38,13 @@ function findHighlightedStageRace(races) {
   );
 }
 
-function VenueGridCard({ venueCode, venueData, linkTo, nowHHMM }) {
+function VenueGridCard({
+  venueCode,
+  venueData,
+  linkTo,
+  nowHHMM,
+  nextOpenDate,
+}) {
   const { t } = useTranslation();
   const venueName = t(`venues.${venueCode}`);
 
@@ -49,7 +56,9 @@ function VenueGridCard({ venueCode, venueData, linkTo, nowHHMM }) {
       <div className="venue-grid-card venue-grid-card--closed">
         <div className="venue-grid-card__name">{venueName}</div>
         <div className="venue-grid-card__closed-label">
-          {t("venueGrid.noRacesToday")}
+          {nextOpenDate
+            ? t("venueGrid.nextOpen", { date: formatMonthDay(nextOpenDate) })
+            : t("venueGrid.noRacesToday")}
         </div>
       </div>
     );

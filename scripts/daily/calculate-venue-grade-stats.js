@@ -14,6 +14,7 @@
 import { supabase } from "../lib/supabaseClient.js";
 import { toTechniqueKey } from "../lib/winningTechniques.js";
 import { isNoRaceResult, placedRanks } from "../lib/raceOutcomeFilters.js";
+import { upsertChangedRows } from "../lib/unchangedRows.js";
 
 // race_gradeが安定して記録されるようになった日付（それ以前はNULLの欠損期間）
 const CLEAN_DATA_SINCE = "2026-02-04";
@@ -154,7 +155,6 @@ async function calculateVenueGradeStats() {
     payout_count: v.payout_count,
     manshu_count: v.manshu_count,
     payout_trio_sum: v.payout_trio_sum,
-    updated_at: new Date().toISOString(),
   }));
 
   console.log(`  集計セル数: ${rows.length}`);
@@ -183,23 +183,27 @@ async function calculateVenueGradeStats() {
           `  ${r.boat_number}号艇 ${r.race_grade}: n=${r.race_count} 勝率=${winRate}% 連対率=${top2Rate}%`,
         );
       });
-    return;
   }
 
-  const BATCH_SIZE = 500;
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const batch = rows.slice(i, i + BATCH_SIZE);
-    const { error } = await supabase
-      .from("venue_grade_boat_stats")
-      .upsert(batch, { onConflict: "venue_code,race_grade,boat_number" });
-    if (error) {
-      console.error(
-        `❌ venue_grade_boat_stats更新エラー（${i}件目〜）:`,
-        error.message,
-      );
-    }
-  }
-
+  // 値の変わったセルだけを書く（日次で全セルを書き直さない）。updated_at は変わったセルにだけ付ける。
+  // 書き込みエラーは例外にして、ジョブを失敗させる（以前はログだけ出して成功で終わっていた。BOA-694）
+  const { error, written } = await upsertChangedRows(
+    supabase,
+    "venue_grade_boat_stats",
+    rows,
+    {
+      onConflict: "venue_code,race_grade,boat_number",
+      keyColumns: ["venue_code", "race_grade", "boat_number"],
+      chunkColumn: "venue_code",
+      chunkSize: 24,
+      label: "venue_grade_boat_stats",
+      stampUpdatedAt: true,
+      dryRun: isDryRun, // --dry-run は書き込まず、変わるセルの件数だけを出す
+    },
+  );
+  if (error) throw error;
+  if (isDryRun) return;
+  console.log(`  書き込み: ${written}セル`);
   console.log("✅ venue_grade_boat_stats集計完了");
 }
 
