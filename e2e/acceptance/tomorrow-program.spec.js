@@ -301,7 +301,22 @@ test.describe("S2 明日の出走表（会場ごと）", () => {
     }
   });
 
-  test("[spec FR-B2] 1レース1表で、各表は見出し行＋6艇の7行", async ({
+  // 当日の「データ出走表」と同じ転置表（艇が列・指標が行）。行ラベルは spec FR-B2 の列挙どおり
+  const METRIC_ROWS = [
+    /級別・勝率/,
+    /当地勝率/,
+    /全国2連率/,
+    /モーター2連率/,
+    /調子/,
+    /平均ST/,
+    /ST安定度/,
+    /今節の前走/,
+    /枠番勝率/,
+    /決まり手型/,
+    /単勝回収率/,
+  ];
+
+  test("[spec FR-B2] 1レース1表（レース見出しと表の数が一致する）", async ({
     page,
   }) => {
     test.skip(!(await openProgram(page)), SKIP);
@@ -309,20 +324,92 @@ test.describe("S2 明日の出走表（会場ごと）", () => {
       .getByRole("heading")
       .filter({ hasText: DEADLINE })
       .count();
-    const tables = page.getByRole("table");
-    await expect(tables).toHaveCount(raceCount);
-    for (let i = 0; i < raceCount; i++) {
-      await expect(tables.nth(i).getByRole("row")).toHaveCount(7);
-    }
+    await expect(page.getByRole("table")).toHaveCount(raceCount);
   });
 
-  test("[spec FR-B2] 表の列見出しに艇番・選手名・級別・全国勝率・当地勝率・モーターがある", async ({
+  test("[spec FR-B2/screens C5] 表は艇が列: 見出し行に1〜6号艇の6列がある", async ({
     page,
   }) => {
     test.skip(!(await openProgram(page)), SKIP);
-    const header = page.getByRole("table").first().getByRole("row").first();
-    for (const name of [/艇/, /選手/, /級/, /全国/, /当地/, /モーター/]) {
-      await expect(header.getByRole("columnheader", { name })).toHaveCount(1);
+    const tables = await page.getByRole("table").all();
+    for (const table of tables) {
+      const header = table.getByRole("row").first();
+      // 行ラベル列の見出し（空でも可）＋6艇
+      const n = await header.getByRole("columnheader").count();
+      expect(n === 6 || n === 7, `columnheader=${n}`).toBe(true);
+      for (const boat of ["1", "2", "3", "4", "5", "6"]) {
+        await expect(header).toContainText(boat);
+      }
+    }
+  });
+
+  test("[spec FR-B2/screens C5] 表は指標が行: 前日に値がある11行がこの並びで出る", async ({
+    page,
+  }) => {
+    test.skip(!(await openProgram(page)), SKIP);
+    const table = page.getByRole("table").first();
+    const rows = table.getByRole("row");
+    const texts = await rows.allInnerTexts();
+    let cursor = -1;
+    for (const label of METRIC_ROWS) {
+      const idx = texts.findIndex((t, i) => i > cursor && label.test(t));
+      expect(idx, `行ラベル ${label} が順に見つからない`).toBeGreaterThan(cursor);
+      cursor = idx;
+    }
+  });
+
+  test("[spec FR-B2] 当日体重の行と F/L バッジは出さない", async ({ page }) => {
+    test.skip(!(await openProgram(page)), SKIP);
+    const main = page.getByRole("main");
+    for (const table of await main.getByRole("table").all()) {
+      await expect(table.getByRole("row").filter({ hasText: /体重/ })).toHaveCount(0);
+      await expect(table.getByText(/^F\d*$|^L\d*$/)).toHaveCount(0);
+    }
+  });
+
+  test("[spec FR-B2/screens C5] 表の下に「展示・当日体重・F/L は当日朝から」", async ({
+    page,
+  }) => {
+    test.skip(!(await openProgram(page)), SKIP);
+    const raceCount = await page
+      .getByRole("heading")
+      .filter({ hasText: DEADLINE })
+      .count();
+    const notes = page.getByText("展示・当日体重・F/L は当日朝から");
+    // 各表の下に出す（1レース1件）
+    await expect(notes).toHaveCount(raceCount);
+  });
+
+  test("[spec FR-B2] モーター2連率0で実績なしの艇は「—」＋「新モーター・実績なし」", async ({
+    page,
+  }) => {
+    test.skip(!(await openProgram(page)), SKIP);
+    const notes = page.getByText("新モーター・実績なし");
+    test.skip(
+      (await notes.count()) === 0,
+      "辿った会場に新モーターで実績なしの艇が無い",
+    );
+    // 注記がある表のモーター2連率の行に「—」がある
+    const table = page.getByRole("table").filter({ hasText: "新モーター・実績なし" }).first();
+    const tableWithNote =
+      (await table.count()) > 0
+        ? table
+        : page.getByRole("table").first();
+    const motorRow = tableWithNote.getByRole("row").filter({ hasText: /モーター2連率/ });
+    await expect(motorRow.getByText("—", { exact: true }).first()).toBeVisible();
+  });
+
+  test("[spec FR-B2] モーター2連率の行に「0.0%」と「—」の取り違えが無い（実績なしの注記が無い表に「—」を出さない）", async ({
+    page,
+  }) => {
+    test.skip(!(await openProgram(page)), SKIP);
+    test.skip(
+      (await page.getByText("新モーター・実績なし").count()) > 0,
+      "辿った会場に新モーターで実績なしの艇がある（前のテストで検証）",
+    );
+    for (const table of await page.getByRole("table").all()) {
+      const motorRow = table.getByRole("row").filter({ hasText: /モーター2連率/ });
+      await expect(motorRow.getByText("—", { exact: true })).toHaveCount(0);
     }
   });
 
@@ -357,7 +444,7 @@ test.describe("S2 明日の出走表（会場ごと）", () => {
 
   test('[spec FR-B3] 選手名に translate="no" を付ける', async ({ page }) => {
     test.skip(!(await openProgram(page)), SKIP);
-    const row = page.getByRole("table").first().getByRole("row").nth(1);
+    const row = page.getByRole("table").first().getByRole("row").first();
     const n = await row.evaluate(
       (el) => el.querySelectorAll('[translate="no"]').length,
     );
@@ -430,9 +517,8 @@ test.describe("多言語（en/zh-TW/ko）", () => {
       );
       await cards.first().click();
       await expect(page).toHaveURL(new RegExp(`/${lang}/`));
-      await expect(
-        page.getByRole("table").first().getByRole("row"),
-      ).toHaveCount(7);
+      await expect(page.getByRole("table").first()).toBeVisible();
+      await expect(page.getByText("展示・当日体重・F/L は当日朝から")).toHaveCount(0);
       await expect(page.getByText(NOTE_TAIL)).toHaveCount(0);
       await noHorizontalScroll(page);
     });
