@@ -1,37 +1,37 @@
 # 過去に発生した割合を見る plan
 
-元: [spec.md](./spec.md)・[screens.md](./screens.md)。技術判断は [ADR-0081](../../adr/0081-past-rate-counted-on-client-from-neighbors.md)（数えるのは画面側、保存は端末内）。土台は BOA-271 の [plan.md](../analogy-finder/plan.md)「get_analogy_neighbors」と [ADR-0080](../../adr/0080-analogy-neighbors-precomputed-in-batch.md)。
+元: [spec.md](./spec.md)・[screens.md](./screens.md)。技術判断は [ADR-0081](../../adr/0081-past-rate-counted-on-client-from-layer-rows.md)（層の新しい順最大2,000行を画面側で数え、保存は端末内）。土台は BOA-271 FR-2（層別 S*）の plan とマイグレーション119（ブランチ feature/boa-271-fr2-strat。`get_analogy_similar_races` は FR-2 レーンが119 に足す、2026-10-02 合意）。
 
 ## 全体の流れ
 
 ```mermaid
 flowchart LR
-  RPC[get_analogy_neighbors raceId<br/>BOA-271] --> API[api/analogy/neighbors/raceId<br/>BOA-271]
-  API --> SV[analogyService.js<br/>BOA-271 T5-2 キャッシュ共有]
-  SV --> HK[useAnalogyNeighbors]
+  POOL[(analogy_pool_outcomes<br/>analogy_snapshots<br/>マイグレーション119 BOA-271 FR-2)] --> RPC[get_analogy_similar_races raceId<br/>層の新しい順 最大2,000行]
+  RPC --> SV[analogyService.js<br/>getAnalogySimilarRaces 本機能で追加]
+  SV --> HK[useAnalogySimilarRaces]
   HK --> AI[RaceAiPredictionTab 先頭<br/>PastRateChecker]
-  HK --> AF[AnalogyFinderSection<br/>BOA-271 FR-2・FR-3]
   HK --> RR[RaceResult 払戻の下<br/>PastRateReview]
   AI -->|入力| CT[pastRate/count.js<br/>純粋関数]
   CT --> AI
-  AI -->|締切前・結果を出したとき| LS[(localStorage<br/>boatai:past-rate-check:v1)]
+  AI -->|締切前・結果を出したとき| LS[(localStorage<br/>boatai-user:past-rate-check:v1)]
   LS --> RR
   CT --> RR
+  RE[analogyReason.js<br/>BOA-271 FR-2] --> AI
   B430[BOA-430 Step2・Step4] -.props で絞って埋め込み.-> AI
 ```
 
 ## データ設計
 
-**新しいテーブル・カラム・RPC・API は作らない。** マイグレーションは無い（ER 図も無い）。
+**本機能では新しいテーブル・カラム・バッチを作らない。** RPC `get_analogy_similar_races(p_race_id)` は BOA-271 FR-2 がマイグレーション119 に足す（2026-10-02 合意。返り値の形は spec「データ（土台）」）。マイグレーションは本機能に無い（ER 図も無い）。
 
-読むのは BOA-271 の `get_analogy_neighbors` の返り値だけ（列は spec「データ（土台）」）。値の約束（`payout_3tan` は3連単、F・出遅れ・欠場の ST は NULL、不成立・特払いの払戻は NULL、実進入不明は NULL）は BOA-271 のマイグレーション案115・plan「値の約束」に反映済み（PR #1039 e3f55d553）。
+値の約束（`payout_3tan` は3連単、F・出遅れ・欠場の ST は NULL、実進入不明は NULL、不成立と1〜3着に返還艇が入るレースは母集団に入れない）は119 の `analogy_pool_outcomes` に引き継がれている。
 
 端末内の保存形式は spec FR-5 のとおり。サーバーには何も送らない。
 
 ### 読み取りの量
-- 注記の期間は近傍の `race_date` の最小〜最大から出す（RPC は `pool_cutoff` を返さない）
-- 1レースあたり800行 × 約17列。BOA-271 の節と同じ応答を `analogyService` のメモリキャッシュで共有するので、本機能による追加の通信は0回（同じタブで BOA-271 の節が先に取得していれば、そのまま使う）
-- 結果タブ（`RaceResult`）を先に開いた場合だけ、そこで1回取得する（キャッシュは同じ）
+- 1レースあたり最大2,000行 × 8列。gzip 後で約34KB（FR-2 レーンの試算。本番投入後に実測）。取得は部品を出すときに1回で、AI予想タブと結果タブで同じキャッシュを使う
+- SQL 側は、層の条件の複合索引（`idx_analogy_pool_strata`）で新しい順に最大2,000行を取るだけ。ボタンのたびに層の全件を数える方式（最大約7万行）は Disk IO を圧迫するので採らない（ADR-0081）
+- 注記の期間は返り値の `pool_from`〜`pool_cutoff`、似ている理由は `analogyReason.js`（BOA-271 FR-2）に `conditions`・`depth`・`n_total` を渡して作る
 
 ## フロントエンド
 
@@ -40,7 +40,7 @@ flowchart LR
 | ファイル | 役割 |
 |---|---|
 | `src/utils/pastRate/patterns.js` | スリット7形の定義（キー・判定関数・効く強さ）、強さの段の線（`SLIT_LEVELS`、1/100秒の整数）、1艇身の秒数（0.13）、全国の出現率（T0-2 で固定した値）。ST は `Math.round(st*100)` の整数にしてから判定する（浮動小数の境界ずれを避ける。spec 共通の数え方） |
-| `src/utils/pastRate/count.js` | `countPastRate(neighbors, type, input)` → `{ n, count, excluded: { reason, count } \| null, breakdown }`。型ごとの判定（spec FR-1）。`orderPoints(input)`（点数）。`decisionOf(neighborOrResult)`（決着の行用） |
+| `src/utils/pastRate/count.js` | `countPastRate(rows, type, input)` → `{ n, count, excluded: { reason, count } \| null, breakdown }`。型ごとの判定（spec FR-1）。`orderPoints(input)`（点数）。`decisionOf(neighborOrResult)`（決着の行用） |
 | `src/utils/pastRate/label.js` | `rateLabel(rate)` → `"standard" \| "rare" \| null`。線 x・y は定数（T0-1 で決めた値） |
 | `src/utils/pastRate/storage.js` | `loadEntries()`・`saveEntry(entry, { deadline, now })`・`entriesForRace(raceId, { deadline })`。キー `boatai-user:past-rate-check:v1`（`boatai:` はデータキャッシュの全削除に巻き込まれるので使わない）、30日、上限1,000件、書く直前に読み直す、壊れた値・形の違う Entry を捨てる、例外の吸収（console に出す）、締切以降の Entry を振り返りから外す |
 | `src/components/race/pastRate/PastRateChecker.jsx` | 外枠。型の切り替え・入力の状態（非制御／`value`・`onChange` の制御の両対応）・ボタン・結果の表示。保存は `persist` が true で締切前のときだけ |
@@ -68,9 +68,9 @@ flowchart TD
 ```
 
 ### 組み込み
-- `RaceAiPredictionTab`: BOA-271 T9-1 で、BOA-271 の節の描画を早期 return の分岐の外に出す（BOA-271 の tasks に共有の前提として記載済み）。同じ外側の位置の**先頭**に `PastRateChecker` を置く（中止のときは出さない）。`neighbors` が0行・取得中は出さない。取得に失敗したときは `InlineFetchError`（`onRetry` で `useAnalogyNeighbors` の再取得）。`frontend-data-fetch.md` の3
+- `RaceAiPredictionTab`: BOA-271 T9-1 で、BOA-271 の節の描画を早期 return の分岐の外に出す（BOA-271 の tasks に共有の前提として記載済み。FR-2 の作り直し後も位置は変わらない）。同じ外側の位置の**先頭**に `PastRateChecker` を置く（中止のときは出さない）。`rows` が0行・取得中は出さない。取得に失敗したときは `InlineFetchError`（`onRetry` で `useAnalogySimilarRaces` の再取得）。`frontend-data-fetch.md` の3
 - 締切: `getDeadlineDate(raceId, startTime)`（`src/utils/raceDeadlineStatus.js`）を `PastRateChecker` に `deadline` として渡す。`startTime` は今 `RaceAiPredictionTab` に渡っていないので、`PredictionPanel` から `raceStartTime={selectedRace?.startTime}` を新しい prop として渡す（オッズ一覧タブ `RaceOddsListTab` へ既に同じ値を渡している、`PredictionPanel.jsx:446`。値は `races.start_time` の先頭5文字で、締切の時刻と一致する）。無ければ null。null のときはレースが確定していなければ保存する（spec FR-5）
-- `RaceResult`: 払戻表の下に `PastRateReview`（`raceId`・決着・`neighbors`・締切）。決着は `RaceResult` の `buildResultRows` が組み立てた着順（返還艇を外したもの）の position 1〜3 の艇。3着までそろわなければ決着の行を出さない。取得に失敗したときは `InlineFetchError`。不成立（`RaceResult` 内で既に求めている `outcome === RACE_OUTCOME.NO_RACE`）とスナップショットなしでは出さない
+- `RaceResult`: 払戻表の下に `PastRateReview`（`raceId`・決着・`similar`・締切）。決着は `RaceResult` の `buildResultRows` が組み立てた着順（返還艇を外したもの）の position 1〜3 の艇。3着までそろわなければ決着の行を出さない。取得に失敗したときは `InlineFetchError`。不成立（`RaceResult` 内で既に求めている `outcome === RACE_OUTCOME.NO_RACE`）とスナップショットなしでは出さない
 - 決まり手のキーと DB の日本語の対応は `src/utils/turnPrediction.js` の `TECHNIQUE_NAMES` を使う（新しい対応表を作らない）
 
 ### 状態の持ち方
@@ -79,27 +79,28 @@ flowchart TD
 - `value`/`onChange` を渡されたときは、その型の入力を外の値で置き換える（BOA-430 Step4 のカート）
 
 ### 表示時の計算の量
-800行×1型の判定。着順の流しは最大 1×5×4 の点数でも、判定は行ごとに3つの集合の包含だけ。100ms の要件に対して十分小さいので、メモ化（`useMemo`）は入力と `neighbors` の参照だけをキーにする
+最大2,000行×1型の判定。着順の流しは最大 1×5×4 の点数でも、判定は行ごとに3つの集合の包含だけ。100ms の要件に対して十分小さいので、メモ化（`useMemo`）は入力と `neighbors` の参照だけをキーにする
 
 ## 既存サービス層・共通ライブラリとの連携
-- データ取得: BOA-271 の `src/services/analogyService.js`・`useAnalogyNeighbors`。本機能から `supabaseDataService.js` は呼ばない
+- データ取得: BOA-271 の `src/services/analogyService.js` に `getAnalogySimilarRaces(raceId)` を足し、フック `useAnalogySimilarRaces` を作る。RPC の呼び出しは同ファイルの既存の流儀（Supabase クライアントの入口を1つに閉じる、`frontend-data-fetch.md` の1）に従う。キャッシュは `raceId` 単位で、NULL・エラーは残さない。本機能から `supabaseDataService.js` は呼ばない
+- 似ている理由の文: BOA-271 FR-2 の `src/utils/analogyReason.js`
 - 締切: `src/utils/raceDeadlineStatus.js` の `getDeadlineDate`
 - 決まり手: `src/utils/turnPrediction.js` の `TECHNIQUE_NAMES`
-- 艇の色: `src/utils/colors.js` の `BOAT_COLORS`、艇番の表示は BOA-271 T5-1 の `BoatBadge`
+- 艇の色: `src/utils/colors.js` の `BOAT_COLORS`、艇番の表示は BOA-271 で切り出す `BoatBadge`
 - localStorage の扱い: 既存の `src/hooks/useFirstVisit.js` 等は例外を吸収していない。本機能の `storage.js` は try/catch で包む（プライベートモード・容量超過で画面を壊さない）。既存箇所の直しは本機能のスコープ外
 
 ## 検証
 
 | 何を | どこで |
 |---|---|
-| 6つの型の判定・分母・除いた件数・点数・ラベルの境界（x・y ちょうど） | `scripts/maintenance/verify-past-rate-count.js`（固定の近傍データ。`verify-registry.json` に ci で登録）。`src/utils/pastRate/` の純粋関数を import する |
+| 6つの型の判定・分母・除いた件数・点数・ラベルの境界（x・y ちょうど） | `scripts/maintenance/verify-past-rate-count.js`（固定の行データ。`verify-registry.json` に ci で登録）。`src/utils/pastRate/` の純粋関数を import する |
 | 保存（置き換え・30日・上限・締切後は保存しない・壊れた値・例外） | 同じ verify に保存の節を足す（localStorage は小さなメモリ実装を差し込む） |
-| 画面の件数が実データと一致するか | 実装後の `data-accuracy-verifier`: 本番の数レースで、`get_analogy_neighbors` の行を SQL で数えた値と画面の数字を照合 |
-| 受け入れ | `e2e/acceptance/past-rate-check.spec.js`（`acceptance-test-writer`）。近傍は録画再生（ADR-0077）。`/api/analogy/neighbors/*` が録画に無い間は route で固定データを返す |
+| 画面の件数が実データと一致するか | 実装後の `data-accuracy-verifier`: 本番の数レースで、`analogy_pool_outcomes` の同じ層の新しい順2,000件を SQL で数えた値と画面の数字を照合 |
+| 受け入れ | `e2e/acceptance/past-rate-check.spec.js`（`acceptance-test-writer`）。行は録画再生（ADR-0077）。`get_analogy_similar_races` が録画に無い間は route で固定データを返す |
 | レイアウト | `npm run test:layout` に AI予想タブの部品と結果タブの振り返りを足す（375/768/1024/1440/1920px） |
 
 ## 定番／レアの線の検証（tasks T0-1。分析のみ）
-- 置き場所: `scripts/analysis/past-rate-check/label-threshold.py`。test 2026-04〜09 の近傍800件は、BOA-271 の本番の定義（出走表時点の1段、日単位のずらし。BOA-271 T0-4・T0-5 で確かめたもの、または T2・T3 の `scripts/ml/analogy/` の本番コード）で作る。Phase M の MD-6 の近傍（直前情報入り・レース単位のずらし）は本番と別物なので使わない（設計レビュー指摘4）
+- 置き場所: `scripts/analysis/past-rate-check/label-threshold.py`。test 2026-04〜09 の各レースの比べる行は、BOA-271 FR-2 の層別 S* と同じ規則（自動の深さの層、そのレースの日より前の母集団、新しい順最大2,000件）で作る。FR-2 の分析スクリプト（層の条件・自動の深さ）を import するか、同じ規則を書き、固定データで `get_analogy_similar_races` と同じ行が選ばれることを確かめる
 - 判定のロジックは `src/utils/pastRate/count.js` と同じ式を Python に持つ（二重実装になるので、固定データで JS と Python の件数が一致することを確かめる小さな検査を同じディレクトリに置く。両方とも1/100秒の整数で比べ、固定データには差が線ちょうどの行を入れる。両方が浮動小数で一致したまま SQL とずれる、を防ぐため、固定データの期待値は SQL の numeric で出したものを使う）
 - 手順と判定の規則は spec FR-3 で固定済み。結果を `docs/design/past-rate-check/analysis/label-threshold-result.md` に書き、採った x・y を spec と `label.js` に反映する
 - 母集団の決着（スリットの ST・実進入・3連単）は、BOA-271 の値の約束（F・出遅れ・欠場は NULL 等）と同じ扱いで作る
