@@ -3,6 +3,7 @@ import {
   TRIFECTA_PAYOUT_COLUMN,
   aggregateOutcomeDistribution,
 } from "../lib/outcomeDistribution.js";
+import { NOT_NO_RACE_FILTER } from "../lib/raceOutcomeFilters.js";
 
 const VENUE_NAMES = {
   "01": "桐生",
@@ -61,7 +62,7 @@ async function fetchAllNigeRaceResults() {
       .from("race_results")
       .select(`race_id, rank1, rank2, rank3, ${TRIFECTA_PAYOUT_COLUMN}`)
       .eq("is_cancelled", false)
-      .eq("is_no_race", false)
+      .or(NOT_NO_RACE_FILTER) // 不成立は race_status で外す（is_no_race は全行 false。BOA-545）
       .eq("winning_technique", "逃げ")
       .not("rank1", "is", null)
       .not("rank2", "is", null)

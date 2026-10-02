@@ -13,6 +13,7 @@
  */
 import { supabase } from "../lib/supabaseClient.js";
 import { toTechniqueKey } from "../lib/winningTechniques.js";
+import { isNoRaceResult } from "../lib/raceOutcomeFilters.js";
 
 // race_gradeが安定して記録されるようになった日付（それ以前はNULLの欠損期間）
 const CLEAN_DATA_SINCE = "2026-02-04";
@@ -70,7 +71,7 @@ async function calculateVenueGradeStats() {
     supabase
       .from("races")
       .select(
-        "venue_code, race_grade, race_results(rank1, rank2, rank3, winning_technique, payout_trio, is_cancelled, is_no_race)",
+        "venue_code, race_grade, race_results(rank1, rank2, rank3, winning_technique, payout_trio, is_cancelled, race_status)",
       )
       .gte("race_date", CLEAN_DATA_SINCE)
       .order("race_id")
@@ -93,7 +94,7 @@ async function calculateVenueGradeStats() {
     if (
       !result ||
       result.is_cancelled ||
-      result.is_no_race ||
+      isNoRaceResult(result) ||
       result.rank1 === null
     ) {
       skippedUnusable++;

@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabaseClient.js";
+import { NOT_NO_RACE_FILTER } from "../lib/raceOutcomeFilters.js";
 
 const VENUE_NAMES = {
   "01": "桐生",
@@ -54,7 +55,7 @@ async function fetchAllRaceResults() {
       .from("race_results")
       .select("race_id, rank1, winning_technique")
       .eq("is_cancelled", false)
-      .eq("is_no_race", false)
+      .or(NOT_NO_RACE_FILTER) // 不成立は race_status で外す（is_no_race は全行 false。BOA-545）
       .not("rank1", "is", null)
       .not("winning_technique", "is", null)
       .gte("race_id", ninetyDaysAgo)

@@ -654,6 +654,11 @@
       "tier": "ci",
       "timeoutSec": 300,
       "guards": "不成立のレースと返還艇を含む勝式を、的中判定（buildPredictionHitUpdate・DBトリガー117・欠落の補完）と成績の集計（券種ごとの母数）から外すこと。トリガーとアプリの判定が同じ値を書くこと（PGlite で112を適用して突き合わせる）。BOA-544: 不成立のレースに的中が付き、返還艇の本命が「外れ」として成績に入っていた"
+    },
+    {
+      "script": "verify-race-outcome-filters.js",
+      "tier": "ci",
+      "guards": "不成立のレースを集計から外す判定を race_status（no_race）に統一すること（BOA-545）。旧フラグ is_no_race は全行 false で機能しておらず、scripts/daily の集計10本がそれで判定していた。scripts/daily・scripts/lib のコードが is_no_race を使わないことと、PostgREST の条件が078の IS DISTINCT FROM と同じ意味であることを検査する"
     }
   ]
 }
