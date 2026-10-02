@@ -514,6 +514,7 @@
     "top3RateAbbrev": "3連対",
     "prevAbbrev": "前走",
     "avgAbbrev": "平均",
+    "exhibitionFastestMark": "最速",
     "exhibitionChartNote": "棒が長いほど速い（最も遅い艇との差）。数字は実際の展示タイム（秒）",
     "originalExhibitionItemSeparator": "・"
   },
@@ -1379,7 +1380,7 @@
       "exhibitionLegend": "展示タイム",
       "exhibitionYAxis": "展示タイム (秒)",
       "exhibitionTrendEmpty": "このモーターの展示タイムデータが見つかりません",
-      "exhibitionTrendNote": "💡 同じモーターでも、整備や選手の使いこなしによって展示タイムが変化することがあります。数値が小さいほど速いタイムです。",
+      "exhibitionTrendNote": "💡 同じモーターでも、整備や選手の使いこなしによって展示タイムが変化することがあります。数値が小さいほど速いタイムで、グラフは上ほど速くなるように描いています。",
       "usageHistoryHeading": "📜 使用履歴",
       "usageHistoryRank": "{{n}}着",
       "usageHistoryNotRun": "未",

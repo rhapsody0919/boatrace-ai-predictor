@@ -827,6 +827,7 @@
     "top3RateAbbrev": "3連對",
     "prevAbbrev": "前一場",
     "avgAbbrev": "平均",
+    "exhibitionFastestMark": "最快",
     "exhibitionChartNote": "長條越長代表展示越快（與最慢艇的差）。數字為實際展示時間（秒）",
     "originalExhibitionItemSeparator": "、"
   },
@@ -1379,7 +1380,7 @@
       "exhibitionLegend": "展示時間",
       "exhibitionYAxis": "展示時間 (秒)",
       "exhibitionTrendEmpty": "找不到此馬達的展示時間資料",
-      "exhibitionTrendNote": "💡 即使是同一台馬達，也可能因保養調整或選手操控方式不同而使展示時間出現變化。數值越小代表時間越快。",
+      "exhibitionTrendNote": "💡 即使是同一台馬達，也可能因保養調整或選手操控方式不同而使展示時間出現變化。數值越小代表時間越快，圖表以越上方越快的方向繪製。",
       "usageHistoryHeading": "📜 使用履歷",
       "usageHistoryRank": "第{{n}}名",
       "usageHistoryNotRun": "未賽",

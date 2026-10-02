@@ -827,6 +827,7 @@
     "top3RateAbbrev": "3연대",
     "prevAbbrev": "직전",
     "avgAbbrev": "평균",
+    "exhibitionFastestMark": "최속",
     "exhibitionChartNote": "막대가 길수록 전시가 빠릅니다(가장 느린 정과의 차). 숫자는 실제 전시 타임(초)",
     "originalExhibitionItemSeparator": ", "
   },
@@ -1379,7 +1380,7 @@
       "exhibitionLegend": "전시 타임",
       "exhibitionYAxis": "전시 타임 (초)",
       "exhibitionTrendEmpty": "이 모터의 전시 타임 데이터가 없습니다",
-      "exhibitionTrendNote": "💡 같은 모터라도 정비나 선수의 다루는 방식에 따라 전시 타임이 달라질 수 있습니다. 수치가 작을수록 빠른 타임입니다.",
+      "exhibitionTrendNote": "💡 같은 모터라도 정비나 선수의 다루는 방식에 따라 전시 타임이 달라질 수 있습니다. 수치가 작을수록 빠른 타임이며, 그래프는 위로 갈수록 빠르게 그렸습니다.",
       "usageHistoryHeading": "📜 사용 이력",
       "usageHistoryRank": "{{n}}착",
       "usageHistoryNotRun": "미출주",

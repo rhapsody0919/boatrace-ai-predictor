@@ -832,6 +832,7 @@
     "top3RateAbbrev": "Top-3",
     "prevAbbrev": "Prev",
     "avgAbbrev": "Avg",
+    "exhibitionFastestMark": "Fastest",
     "exhibitionChartNote": "A longer bar means a faster trial (gap to the slowest boat). The number is the actual exhibition time in seconds.",
     "originalExhibitionItemSeparator": ", "
   },
@@ -1387,7 +1388,7 @@
       "exhibitionLegend": "Trial run time",
       "exhibitionYAxis": "Trial run time (sec)",
       "exhibitionTrendEmpty": "No trial run time data found for this motor",
-      "exhibitionTrendNote": "💡 Even the same motor's trial run time can change with maintenance and how well the rider handles it. A smaller number means a faster time.",
+      "exhibitionTrendNote": "💡 Even the same motor's trial run time can change with maintenance and how well the rider handles it. A smaller number means a faster time; the chart is drawn so that higher is faster.",
       "usageHistoryHeading": "📜 Usage history",
       "usageHistoryRank": "{{n}}th",
       "usageHistoryNotRun": "Upcoming",

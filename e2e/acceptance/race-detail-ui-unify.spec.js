@@ -6,7 +6,7 @@
 // 実装された FR を PENDING から外して有効にする。
 import { test, expect } from "../fixtures.js";
 
-const PENDING = new Set(["FR-1", "FR-3", "FR-4", "FR-5", "FR-6", "FR-7"]);
+const PENDING = new Set(["FR-1", "FR-3", "FR-4", "FR-6", "FR-7"]);
 const describeFR = (fr, title, body) =>
   (PENDING.has(fr) ? test.describe.fixme : test.describe)(
     `[${fr}] ${title}`,

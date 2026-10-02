@@ -24,6 +24,7 @@ function TrendLineChart({
   yTickDecimals,
   slantXLabels = false,
   yTicks,
+  yReversed = false,
 }) {
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -50,6 +51,9 @@ function TrendLineChart({
             style: { textAnchor: "middle" },
           }}
           domain={yAxisDomain}
+          // 小さいほど良い値（展示タイム）で「上ほど良い」にそろえたいとき
+          // （race-detail-ui-unify FR-5。今節タブのスパークラインと同じ向き）
+          reversed={yReversed}
           // 目盛りを明示したいとき（展示タイムの0.2秒刻み、BOA-557）
           ticks={yTicks}
           // dataMin/dataMaxを使う可変domain（例: "dataMin - 0.1"）はJSの
