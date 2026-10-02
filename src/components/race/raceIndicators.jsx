@@ -48,15 +48,12 @@ export const toNumber = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 
-// 艇の枠番別勝率（枠番での1着数/出走数）。racerStatsから算出する
-// 注: race_results.course_1〜6は艇番と常に一致しており、実際の進入変化
-// （前づけ）を区別できていない既知の制約がある（BOA-257）。表示ラベルは
-// 「枠番」に統一しているが、内部の変数名・関数名はcourse系のまま残している
-export function courseRateOf(statsByBoat, boat) {
+// 艇の枠番別勝率（枠番での1着数/出走数）。racerStats から算出する。
+// 枠番キーは BOA-284 で決定（実進入コースではない。src/utils/racerStats.js）
+export function wakuRateOf(statsByBoat, boat) {
   const stats = statsByBoat.get(boat);
   if (!stats) return null;
-  const course = stats.course ?? boat;
-  const counts = stats.courseRaceCounts?.[String(course)];
+  const counts = stats.wakuRaceCounts?.[String(boat)];
   if (!counts || !counts.total) return null;
   return {
     wins: counts.wins ?? 0,
@@ -70,7 +67,6 @@ const byBoat = (rows) => {
   (rows ?? []).forEach((row) => map.set(row.boat_number, row));
   return map;
 };
-
 
 /**
  * オリジナル展示（一周・半周ラップ・まわり足・直線）の行を作る（BOA-452 / FR-4b）。
@@ -240,7 +236,7 @@ function buildRowDefs({
 
   cand.courseRate = players.map((p) => ({
     boat: p.number,
-    value: courseRateOf(statsByBoat, p.number)?.rate ?? null,
+    value: wakuRateOf(statsByBoat, p.number)?.rate ?? null,
   }));
 
   return [
@@ -645,7 +641,7 @@ function buildRowDefs({
       tab: "attackdefense",
       best: bestOf(cand.courseRate, "max", { digits: 0 }),
       render: (p) => {
-        const cr = courseRateOf(statsByBoat, p.number);
+        const cr = wakuRateOf(statsByBoat, p.number);
         if (!cr) return ph("racerStats");
         return (
           <span className="drt-value">
