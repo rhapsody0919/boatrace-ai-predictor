@@ -140,7 +140,7 @@ test("全員が走った後は目安を出し、何走時点の目安かを断�
   const sub = page.locator(".rmt-sub").first();
   await expect(sub).toContainText("準優の目安は18位");
   await expect(sub).toContainText(
-    "走時点の目安で、予選が終わるまでに大きく動くことがあります。",
+    "走した時点の目安で、予選が終わるまでは動きます。",
   );
 });
 
@@ -150,4 +150,16 @@ test("Ｗ優勝戦では前検の列見出しに節全体の人数を出す", as
   await expect(page.locator(".rmt-compare thead th").last()).toHaveText(
     "前検（48人中）",
   );
+});
+
+test("中止があった日も、人数の足し算が合う", async ({ page }) => {
+  // 津 9/21 は 5R 以降が中止。中止になったレースにしか番組が無かった選手が、
+  // 「まだ走っていない」にも数えられず、足し算が合わなかった（PR #1184 ファン評価1周目）
+  await openMeetTab(page, "2026-09-21-09-12");
+  const text = await page.locator(".rmt-sub").first().innerText();
+  const all = Number(text.match(/節の出場は(\d+)人/)?.[1]);
+  const total = Number(text.match(/順位の対象は(\d+)人/)?.[1]);
+  const excluded = Number(text.match(/欠場の(\d+)人/)?.[1] ?? 0);
+  const notYet = Number(text.match(/まだ走っていない(\d+)人/)?.[1] ?? 0);
+  expect(total + excluded + notYet).toBe(all);
 });

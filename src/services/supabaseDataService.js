@@ -7165,20 +7165,24 @@ export const supabaseDataService = {
         // すべて実際の勝ち上がり争いとズレる
         seriesRacerIds: currentSeries ? [...currentSeries] : null,
         // **この節をまだ1走もしていない選手**（BOA-690）。表示中のレースより前に、
-        // 結果の出たレースが1つも無く、表示中のレース以降に番組がある選手。
-        // 中止で流れたレースは走ったうちに数えない（津 9/22 が丸一日中止で、9/23 に
-        // 初めて走る選手を「走った」と数えていた）。この選手がいる間は順位の対象が
-        // そろっていないので、画面は準優の目安を伏せ、人数の行に書き足す。追加クエリ0本
+        // 結果の出たレースが1つも無い選手。中止で流れたレースは走ったうちに数えない
+        // （津 9/22 が丸一日中止で、9/23 に初めて走る選手を「走った」と数えていた）。
+        // 「表示中のレース以降に番組がある」には絞らない。絞ると、中止になったレースに
+        // しか番組が無かった選手がどこにも数えられず、人数の足し算が合わなかった
+        // （津 9/21 の 6R〜12R。ファン評価1周目）。全部の走が欠場の選手は、結果の出た
+        // レースに入っているのでここには入らない（absentOnly の側）。
+        // この選手がいる間は順位の対象がそろっていないので、画面は準優の目安を伏せ、
+        // 人数の行に書き足す。追加クエリ0本
         notYetStartedRacerIds: (() => {
           const ran = new Set();
-          const upcoming = new Set();
+          const all = new Set();
           for (const e of meetRows) {
             if (e.racer_id == null) continue;
-            if (e.race_id < raceId) {
-              if (resultById.has(e.race_id)) ran.add(e.racer_id);
-            } else upcoming.add(e.racer_id);
+            all.add(e.racer_id);
+            if (e.race_id < raceId && resultById.has(e.race_id))
+              ran.add(e.racer_id);
           }
-          return [...upcoming].filter((id) => !ran.has(id));
+          return [...all].filter((id) => !ran.has(id));
         })(),
         // **節の出場者**（表示日までの出走表に載った選手、当日の番組を含む。BOA-660）。
         // 得点率の母集団（表示中のレースより前に走った選手）で数えると、初日の2Rで

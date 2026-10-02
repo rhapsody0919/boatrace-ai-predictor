@@ -930,7 +930,7 @@
     "compareSubExcluded": "{{all}} racers in this series ({{total}} ranked; {{excluded}} excluded from prizes, withdrawn or absent).",
     "colPretestOf": "Trial (of {{total}})",
     "borderPending": "The semi-final line is shown once every racer has run at least once.",
-    "borderAsOfRuns": "This line is as of {{runs}} runs and can move a lot before qualifying ends.",
+    "borderAsOfRuns": "This line is as of most racers having run {{runs}} times, and it keeps moving until qualifying ends.",
     "compareSubSeriesExcludedNotYet": "{{all}} racers heading for the same final ({{total}} ranked; {{excluded}} excluded from prizes, withdrawn or absent, and {{notYet}} who have not run yet are not counted).",
     "compareSubSeriesNotYet": "{{all}} racers heading for the same final ({{total}} ranked; {{notYet}} who have not run yet are not counted).",
     "compareSubExcludedNotYet": "{{all}} racers in this series ({{total}} ranked; {{excluded}} excluded from prizes, withdrawn or absent, and {{notYet}} who have not run yet are not counted).",
