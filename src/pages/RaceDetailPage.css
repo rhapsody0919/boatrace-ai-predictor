@@ -349,6 +349,39 @@
   .race-detail-page-v2 .drt-label-short {
     display: inline;
   }
+
+  /* 481〜767px でも、表の列が中身の1行の長さまで広がらないようにする（以前は 480px 以下だけ）。
+     520px で行見出し「今節まわり足 ?」が 110px、部品交換の「リング×２・キャブ」が 130px に
+     なり、表が 574px / 表示枠 512px で横スクロールになった（#1148 の CI、録画のレース） */
+  .race-detail-page-v2 .drt-table th,
+  .race-detail-page-v2 .drt-table td {
+    padding: 4px 2px;
+  }
+
+  /* ラベルと「?」が列に収まらないとき、「?」を次の行に送る。nowrap のままだと
+     「?」が列の外にはみ出し、1号艇の数値に重なっていた（ファン評価2周目 P1）。
+     ラベル自体は語の途中で折らない */
+  .race-detail-page-v2 .drt-label-th,
+  .race-detail-page-v2 .drt-label-cell {
+    white-space: normal;
+    word-break: keep-all;
+  }
+
+  /* 部品交換のバッジ（「リング×２・キャブ」）は1行に保つと 112〜130px になり、その艇の列だけ
+     広がって表がはみ出していた。折り返す（「5コース」等の .drt-nowrap は語の途中で折れるのを
+     防ぐためのものなので、そちらは語の単位で折る） */
+  .race-detail-page-v2 .drt-parts-changed .drt-badge {
+    white-space: normal;
+    /* 小さい仮名・記号を行頭に置かない（「キ／ャブ」の形で折れていた。ファン評価1周目） */
+    line-break: strict;
+  }
+
+  /* 「2コース」は語の途中で折らない（keep-all は空白の無い語を1つの塊にする）まま、
+     「9/28 11R」は空白で折れるようにする */
+  .race-detail-page-v2 .drt-table .drt-nowrap {
+    white-space: normal;
+    word-break: keep-all;
+  }
 }
 
 /* 480px 以下は、表の列そのものも詰めて6艇を横スクロール無しで並べる（BOA-612、
@@ -365,20 +398,6 @@
     min-width: 66px;
     max-width: 66px;
     font-size: 11px;
-    /* ラベルと「?」が列に収まらないとき、「?」を次の行に送る。nowrap のままだと
-       「?」が列の外にはみ出し、1号艇の数値に重なっていた（ファン評価2周目 P1）。
-       ラベル自体は語の途中で折らない */
-    white-space: normal;
-    word-break: keep-all;
-  }
-
-  /* 部品交換のバッジ（「リング×２・キャブ」）は1行に保つと 112px になり、その艇の列だけ
-     広がって表が画面からはみ出していた。スマホでは折り返す（「5コース」等の .drt-nowrap は
-     語の途中で折れるのを防ぐためのものなので、そちらは触らない） */
-  .race-detail-page-v2 .drt-parts-changed .drt-badge {
-    white-space: normal;
-    /* 小さい仮名・記号を行頭に置かない（「キ／ャブ」の形で折れていた。ファン評価1周目） */
-    line-break: strict;
   }
 
   /* 補足の行・バッジは 12px 固定で、表の文字を下げても縮まなかった。前走の「9/28 11R」（49px）、
@@ -387,13 +406,6 @@
   .race-detail-page-v2 .drt-table .drt-motor-badge,
   .race-detail-page-v2 .drt-table .drt-badge {
     font-size: 11px;
-  }
-
-  /* 「2コース」は語の途中で折らない（keep-all は空白の無い語を1つの塊にする）まま、
-     「9/28 11R」は空白で折れるようにする */
-  .race-detail-page-v2 .drt-table .drt-nowrap {
-    white-space: normal;
-    word-break: keep-all;
   }
 
   .race-detail-page-v2 .drt-label-cell .term-hint__button {
