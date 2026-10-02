@@ -198,6 +198,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | ファイル | 役割 | 主なexport |
 | --- | --- | --- |
 | `src/utils/aiCopyPrompts.js` | race-ai-copy機能の分析依頼プロンプト種別定義 | getAiCopyPromptOptions, getAiCopyPromptText, AI_COPY_PROMPT_TYPES |
+| `src/utils/analogyContribution.js` | アナロジー・ファインダーの寄与度（BOA-271 FR-1）の純粋関数。 | roundFromStageCategory, sliceCandidates, resolveContributionSlice, themeEntries, MIN_RACES ほか4件 |
 | `src/utils/analytics.js` | — | getCookieConsent, setCookieConsent, initAdSense, initTrackingIfConsented, initGA ほか6件 |
 | `src/utils/blogFaqSchema.js` | — | extractFaqItems, buildFaqPageSchema |
 | `src/utils/chartDomain.js` | 展示タイムの推移グラフの縦軸（範囲と目盛り）（BOA-557）。 | exhibitionTimeAxis |
@@ -243,6 +244,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/adlerService.js` | アドラー予想 データ取得・推論サービス | getAdlerModelInfo, getAdlerPredictions |
 | `src/services/adminRulePerformance.js` | 管理画面（/admin/rules）の運用成績（全体・ルール別・週別）の取得と整形（BOA-567） | shapeRulePerformance, fetchRulePerformance, RULE_PERFORMANCE_START_DATE |
 | `src/services/adminRuleService.js` | 管理者向けルール分析サービス | getRuleApplicationHistory |
+| `src/services/analogyService.js` | アナロジー・ファインダー（BOA-271）のデータ取得。 | getAnalogyContribution |
 | `src/services/dataService.js` | データ取得サービス | dataService |
 | `src/services/liveOddsService.js` | オッズのライブ取得（BOA-487）。/api/odds/live を呼ぶ。 | fetchLiveOdds, LIVE_PAGE_OF_BET_TYPE, LiveOddsError |
 | `src/services/moriartyService.js` | — | getMoriartyStats, getMoriartyRecommendations, getMoriartyROIHistory, getMoriartyVenueBreakdown, getMoriartyCalibrationData |
@@ -259,4 +261,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 224 ファイル / export 1114 件。
+対象 226 ファイル / export 1124 件。
