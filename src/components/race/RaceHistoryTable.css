@@ -54,6 +54,11 @@
   box-shadow: inset -1px 0 0 var(--border-hairline);
 }
 
+/* 固定の列は自分の地を塗るので、行に乗せたときの色も同じにそろえる */
+.race-history-table-row:hover td:first-child {
+  background: var(--surface-page);
+}
+
 /* 着順の色（直近の走の帯 RecentRunsBar と同じ。1着＝金、5・6着と記号＝赤） */
 .race-history-table td.race-history-finish-first {
   color: var(--brand-accent-primary);

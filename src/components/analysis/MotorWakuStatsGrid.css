@@ -32,3 +32,17 @@
     ),
     var(--hscroll-fade-color, var(--surface-card));
 }
+
+/* 固定の列は自分の地を塗るので、行に乗せたときの色も同じにそろえる */
+.mwsg-table .motor-waku-row:hover td:first-child {
+  background: var(--surface-page);
+}
+
+.mwsg-table .motor-waku-row-highlight:hover td:first-child {
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--text-secondary) 18%, transparent),
+      color-mix(in srgb, var(--text-secondary) 18%, transparent)
+    ),
+    var(--hscroll-fade-color, var(--surface-card));
+}

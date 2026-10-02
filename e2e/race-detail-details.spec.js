@@ -475,4 +475,19 @@ test.describe("レース詳細の表示の細部", () => {
       await expect(less).toHaveCount(0);
     });
   }
+  test("今節の日別表: 固定した日付の列も、行に乗せたとき行と同じ色になる（PR #1202 レビュー）", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await page.goto(`${RACE}?tab=meet`);
+    const row = page.locator(".race-history-table-row").first();
+    await expect(row).toBeVisible({ timeout: 90000 });
+    await row.hover();
+    const [rowBg, cellBg] = await row.evaluate((r) => [
+      getComputedStyle(r).backgroundColor,
+      getComputedStyle(r.querySelector("td")).backgroundColor,
+    ]);
+    expect(cellBg).toBe(rowBg);
+  });
 });
