@@ -136,6 +136,15 @@ function RaceHistoryTable({
       mark
     );
   };
+  // 着順の色は直近の走の帯（RecentRunsBar）とそろえる。1着＝金、5・6着と
+  // F・L・転覆などの記号＝赤（race-detail-ui-unify FR-4）。欠場は色を付けない
+  const finishClassOf = (race) =>
+    race.finishRank === 1
+      ? "race-history-finish-first"
+      : race.finishRank >= 5 ||
+          (race.finishRank == null && race.finishMark && !race.absent)
+        ? "race-history-finish-bad"
+        : undefined;
   const shows = (key) => !omitColumns.includes(key);
   // 列数・行数が決まってから測り直す（取得前は幅が無く、右に続くと分からない）。
   // 表の幅を変えるプロップは漏れなく並べる。1つでも抜けると、溢れが解消しても
@@ -228,7 +237,7 @@ function RaceHistoryTable({
                     以前は右から3番目で、375px の直近10走（11列・930px）では
                     右へ約640px送らないと見えず、今節タブの日別の表では横スクロールの
                     ぼかしに重なっていた（BOA-569） */}
-                <td>
+                <td className={finishClassOf(race)}>
                   {race.finishRank ??
                     (race.absent
                       ? t("basicInfo.finishAbsent")

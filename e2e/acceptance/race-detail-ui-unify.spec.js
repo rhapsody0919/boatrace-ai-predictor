@@ -6,7 +6,7 @@
 // 実装された FR を PENDING から外して有効にする。
 import { test, expect } from "../fixtures.js";
 
-const PENDING = new Set(["FR-1", "FR-3", "FR-4", "FR-5", "FR-6", "FR-7"]);
+const PENDING = new Set(["FR-1", "FR-3", "FR-5", "FR-6", "FR-7"]);
 const describeFR = (fr, title, body) =>
   (PENDING.has(fr) ? test.describe.fixme : test.describe)(
     `[${fr}] ${title}`,
@@ -163,7 +163,9 @@ async function installHelpers(page) {
       const w = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
       for (let n = w.nextNode(); n; n = w.nextNode()) {
         const t = n.textContent
-          .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+          .replace(/[０-９]/g, (c) =>
+            String.fromCharCode(c.charCodeAt(0) - 0xfee0),
+          )
           .replace(/(^|[^A-Za-z0-9])(?:[AB][12]|[FL]\d+)(?![0-9.])/g, "$1 ");
         if (/\d/.test(t)) return n.parentElement;
       }
@@ -261,9 +263,12 @@ async function collectBoatLines(page) {
     const rowCount = await rows.count();
     const matrix = [];
     for (let r = 0; r < rowCount; r++) {
+      // 行見出しを <th scope="row"> で持つ表（ST考察等の「見出し＋6艇」）は、
+      // getByRole("cell") だと見出しが落ちて6セルになり、6艇の行と認識されなかった。
+      // 行見出しも1セルとして数える
       const cells = await rows
         .nth(r)
-        .getByRole("cell")
+        .locator(':scope > th[scope="row"], :scope > td')
         .evaluateAll((els) => els.map((e) => window.__acc.inspect(e)));
       if (cells.length > 0) matrix.push(cells);
     }
@@ -271,10 +276,17 @@ async function collectBoatLines(page) {
       matrix.length === 6 &&
       matrix.every((row) => row.length === matrix[0].length)
     ) {
+      // 列の名前は列見出しの文字（「前検」等で列を選べるように）。無ければ番号
+      const heads = await table
+        .locator("thead tr")
+        .first()
+        .locator(":scope > th")
+        .allTextContents()
+        .catch(() => []);
       for (let c = 0; c < matrix[0].length; c++) {
         lines.push({
           table: t,
-          label: `列${c + 1}`,
+          label: heads[c]?.trim() || `列${c + 1}`,
           cells: matrix.map((row) => row[c]),
         });
       }
@@ -322,20 +334,25 @@ async function expectBestRuleHolds(page) {
   return lines;
 }
 
-// R2: 緑・赤は記号（↑↓・＋−）付きでのみ使う
+// R2: 緑・赤は記号（↑↓・＋−）付きでのみ使う。
+// 低いほど良い指標（出遅率等）は「＋」が悪い＝赤、「−」が良い＝緑になるので、
+// 記号の向きは問わず「記号があるか」だけを見る（モックの ST考察の出遅率 +0.1 が赤）。
+// 着順の列は R2 の対象外。spec FR-4 が「1着＝金、5・6着＝赤」（直近の走の帯と同じ）と
+// 明示している（基準との差ではなく着順そのものの色）
 function signViolations(lines) {
   const out = [];
   for (const line of lines) {
     for (const c of line.cells) {
+      if (/^着/.test(c.col ?? "")) continue;
       if (
         c.good &&
-        !/[↑▲+＋]/.test(c.text) &&
+        !/[↑▲+＋↓▼\-−－]/.test(c.text) &&
         !(parseNum(c.text) >= 100 && /%/.test(c.text))
       )
         out.push(
           `記号の無い緑: 表${line.table + 1}「${line.label}」 "${c.text}"`,
         );
-      if (c.bad && !/[↓▼\-−－]/.test(c.text))
+      if (c.bad && !/[↓▼\-−－↑▲+＋]/.test(c.text))
         out.push(
           `記号の無い赤: 表${line.table + 1}「${line.label}」 "${c.text}"`,
         );
@@ -353,9 +370,17 @@ async function collectAllCells(page) {
   for (let t = 0; t < n; t++) {
     const table = tables.nth(t);
     if (!(await table.isVisible())) continue;
-    const cells = await table
-      .getByRole("cell")
-      .evaluateAll((els) => els.map((e) => window.__acc.inspect(e)));
+    // 列見出しの文字を添える（着順の列を R2 の検査から外すため。下の signViolations）
+    const cells = await table.getByRole("cell").evaluateAll((els) =>
+      els.map((e) => {
+        const head = e.closest("table")?.querySelector("thead tr");
+        const th = head?.children[e.cellIndex];
+        return {
+          ...window.__acc.inspect(e),
+          col: (th?.textContent ?? "").trim(),
+        };
+      }),
+    );
     out.push({ table: t, label: "全セル", cells });
   }
   return out;
@@ -685,6 +710,9 @@ describeFR("FR-4", "今節・枠別情報タブ", () => {
       await openRaceDetail(page);
       await openTab(page, tabName);
       const lines = await expectBestRuleHolds(page);
+      // 枠別情報は金枠を付ける6艇比較が無い（ST考察は平均との差で示す。コース別成績は
+      // 1艇の表。plan §6）。規則の破れが無いことだけを確かめる
+      if (tabName === "枠別情報") return;
       const withSpread = lines.filter((l) => {
         const nums = l.cells
           .map((c) => parseNum(c.text))
@@ -722,6 +750,127 @@ describeFR("FR-4", "今節・枠別情報タブ", () => {
         l.cells.some((c) => c.best),
         `前検タイム「${l.label}」に強調が無い`,
       ).toBe(true);
+    }
+  });
+
+  // PR #1187 ファン評価2周目: 選択中の行（押されている行）の最良は、行の塗りと混ざって
+  // 灰色の箱に見えていた。枠の線は不透明の金（--brand-accent-primary）であること
+  test("[plan §6] 今節の選択中の行でも、最良の枠は不透明の金の線", async ({
+    page,
+  }) => {
+    await openRaceDetail(page);
+    await openTab(page, "今節");
+    await installHelpers(page);
+    const table = page.getByRole("table").first();
+    // 最良のセルがある行を押して選択中にする
+    const idx = await table.evaluate((t) =>
+      [...t.querySelectorAll("tbody tr")].findIndex((tr) =>
+        [...tr.querySelectorAll("td")].some((td) => window.__acc.isBest(td)),
+      ),
+    );
+    test.skip(idx < 0, "6艇の今節の表に最良のセルが無い");
+    await table
+      .locator("tbody tr")
+      .nth(idx)
+      .getByRole("button")
+      .first()
+      .click();
+    const rings = await table.evaluate((table) => {
+      const gold = window.__acc.tokenColor("--brand-accent-primary");
+      const row = [...table.querySelectorAll("tbody tr")].find((tr) =>
+        tr.querySelector('[aria-pressed="true"]'),
+      );
+      if (!row) return null;
+      return [...row.querySelectorAll("td")]
+        .filter((td) => window.__acc.isBest(td))
+        .map((td) => {
+          const m = getComputedStyle(td).boxShadow.match(/rgba?\(([^)]+)\)/);
+          const [r, g, b, a = 1] = m[1].split(/[ ,/]+/).map(Number);
+          return (
+            a >= 0.99 &&
+            Math.abs(r - gold.r) + Math.abs(g - gold.g) + Math.abs(b - gold.b) <
+              24
+          );
+        });
+    });
+    test.skip(!rings || rings.length === 0, "選択中の行に最良のセルが無い");
+    expect(rings.every(Boolean), JSON.stringify(rings)).toBe(true);
+  });
+
+  // PR #1187 ファン評価3周目: 得点率・順位のセルは右の余白が0で、数字が金枠の線に接していた
+  test("[plan §6] 今節の最良の数字が金枠の線に接しない", async ({ page }) => {
+    await openRaceDetail(page);
+    await openTab(page, "今節");
+    await installHelpers(page);
+    const gaps = await page
+      .getByRole("table")
+      .first()
+      .evaluate((table) =>
+        [...table.querySelectorAll("tbody td")]
+          .filter((td) => window.__acc.isBest(td))
+          .map((td) => {
+            const range = document.createRange();
+            range.selectNodeContents(td);
+            const text = range.getBoundingClientRect();
+            const cell = td.getBoundingClientRect();
+            return Math.round((cell.right - text.right) * 10) / 10;
+          }),
+      );
+    test.skip(gaps.length === 0, "6艇の今節の表に最良のセルが無い");
+    expect(
+      gaps.every((g) => g >= 2),
+      JSON.stringify(gaps),
+    ).toBe(true);
+  });
+
+  // PR #1187 ファン評価3周目: 凡例の「走数が少ない⚠の艇には色を付けない」の⚠が表に無かった
+  test("[plan §6] ST考察の走数が少ない艇は走数に⚠が付き、差に緑・赤が付かない", async ({
+    page,
+  }) => {
+    await openRaceDetail(page);
+    await openTab(page, "枠別情報");
+    const all = await collectBoatLines(page);
+    // コース別成績の表にも「走数」の列があるので、安定率の行と同じ表に絞る
+    const stable = all.find((l) => /安定率/.test(l.label));
+    test.skip(!stable, "ST考察の表が見つからない");
+    const lines = all.filter((l) => l.table === stable.table);
+    const runs = lines.find((l) => /走数/.test(l.label));
+    test.skip(!runs, "ST考察の走数の行が見つからない");
+    const smallIdx = runs.cells
+      .map((c, i) => {
+        const n = parseNum(c.text.replace("⚠", ""));
+        return n !== null && n > 0 && n < 6 ? i : -1;
+      })
+      .filter((i) => i >= 0);
+    test.skip(smallIdx.length === 0, "走数が少ない艇がいない");
+    for (const i of smallIdx) {
+      expect(runs.cells[i].text, "走数に⚠が無い").toContain("⚠");
+      for (const l of lines.filter((x) => /安定率|抜出|出遅率/.test(x.label))) {
+        const c = l.cells[i];
+        expect(
+          c.good || c.bad,
+          `ST考察「${l.label}」の走数が少ない艇に色: ${c.text}`,
+        ).toBe(false);
+      }
+    }
+  });
+
+  // plan §6（PR #1187 ファン評価1周目 P1）: ST考察の指標はコースで水準が違い、生の値の
+  // 最良はほぼ内側の艇に付く。カードの見方は「同コース・同級別の平均との差」なので金枠を付けない
+  test("[plan §6] 枠別情報のST考察には最良の金枠を付けない", async ({
+    page,
+  }) => {
+    await openRaceDetail(page);
+    await openTab(page, "枠別情報");
+    const lines = (await collectBoatLines(page)).filter((l) =>
+      /安定率|抜出|出遅率/.test(l.label),
+    );
+    test.skip(lines.length === 0, "ST考察の表が見つからない");
+    for (const l of lines) {
+      expect(
+        l.cells.some((c) => c.best),
+        `ST考察「${l.label}」に金枠がある`,
+      ).toBe(false);
     }
   });
 

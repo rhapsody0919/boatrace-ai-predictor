@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "./supabaseClient";
+import { stDeviation } from "../utils/stDeviation.js";
 import { isPlaceHit, isShowHit } from "../../scripts/lib/hitCalculator.js";
 import {
   extractVenueCodeFromRaceId,
@@ -30,6 +31,7 @@ import {
   periodsEndedBefore,
   RECENT_PERIOD_COUNT,
 } from "../components/race/basicInfoStats.js";
+import { tallyWinPlaceShow } from "../utils/racerConditionStats.js";
 import { isRaceCancelled } from "../utils/raceCancellation.js";
 import { competitionRank } from "../utils/competitionRank.js";
 import { toWakuRacerStats } from "../utils/racerStats.js";
@@ -4450,7 +4452,8 @@ export const supabaseDataService = {
    */
   getRacerRaceHistory(racerId) {
     // v2: ST を展示ST（exhibition_data）から本番ST（race_start_timings）に替え、isFlying・finishMark を足した（BOA-576）
-    return withCache(`racer-race-history-v4-${racerId}`, async () => {
+    // v5: 天候・風速・波高を足した（レース条件別の成績、BOA-336）
+    return withCache(`racer-race-history-v5-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4496,7 +4499,7 @@ export const supabaseDataService = {
           ),
           fetchAllByIn(
             "race_conditions",
-            "race_id, race_stage, race_title",
+            "race_id, race_stage, race_title, weather, wind_speed, wave_height",
             "race_id",
             raceIds,
           ),
@@ -4549,6 +4552,10 @@ export const supabaseDataService = {
             raceGrade: raceInfo.race_grade ?? null,
             raceStage: condition?.race_stage ?? null,
             raceTitle: condition?.race_title ?? null,
+            // レース直前の発表値（BOA-336）。race_conditions の行が無い走は null
+            weather: condition?.weather ?? null,
+            windSpeed: condition?.wind_speed ?? null,
+            waveHeight: condition?.wave_height ?? null,
             boatNumber: entry.boat_number,
             rank1: result.rank1,
             rank2: result.rank2,
@@ -4887,9 +4894,9 @@ export const supabaseDataService = {
         const key = `${e.race_id}-${e.boat_number}`;
         const actual = actualByKey.get(key);
         const exhibition = exhibitionByKey.get(key);
-        if (actual === undefined || exhibition === undefined) return;
-
-        const deviation = Math.abs(actual - exhibition);
+        // 欠場艇の行（ST が NULL）・展示STの無い走は比べない（stDeviation が null）
+        const deviation = stDeviation(actual, exhibition);
+        if (deviation === null) return;
         if (!deviationsByRacer.has(e.racer_id)) {
           deviationsByRacer.set(e.racer_id, []);
         }
@@ -4978,9 +4985,9 @@ export const supabaseDataService = {
           const key = `${e.race_id}-${e.boat_number}`;
           const actual = actualByKey.get(key);
           const exhibition = exhibitionByKey.get(key);
-          if (actual === undefined || exhibition === undefined) return;
-
-          const deviation = Math.abs(actual - exhibition);
+          // 欠場艇の行（ST が NULL）・展示STの無い走は比べない（stDeviation が null）
+          const deviation = stDeviation(actual, exhibition);
+          if (deviation === null) return;
           if (!byDate.has(e.race_date)) {
             byDate.set(e.race_date, []);
           }
@@ -7936,27 +7943,9 @@ function isPermissionDeniedError(error) {
   return /permission denied/i.test(error.message ?? "");
 }
 
-/**
- * 1走分の勝敗を{win, top2, top3}アキュムレータに加算する共通ロジック。
- * aggregateRacerVenueBoatStats（単一集計）とaggregateRacerCrossStats
- * （グループ別集計）の両方が同じ勝率/2連率/3連率の判定を必要とするため
- * 共通化（ADR-0063、BOA-159レビューで発見）。
- * @returns {boolean} 勝利（1着）だったか
- */
 // 公式の着欄の記号が数字でない（着順が付かない走）か。記号が無い（未取得）ときは着順に従う
 function isUnrankedFinishMark(mark) {
   return typeof mark === "string" && mark !== "" && !/^[1-6]$/.test(mark);
-}
-
-function tallyWinPlaceShow(totals, row) {
-  if (row.unranked) return false;
-  const isWin = row.rank1 === row.boatNumber;
-  if (isWin) totals.win += 1;
-  if (isPlaceHit(row.boatNumber, row.rank1, row.rank2)) totals.top2 += 1;
-  if (isShowHit(row.boatNumber, row.rank1, row.rank2, row.rank3)) {
-    totals.top3 += 1;
-  }
-  return isWin;
 }
 
 /**
