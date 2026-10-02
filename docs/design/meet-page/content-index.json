@@ -1,0 +1,13 @@
+{
+  "feature": "BOA-682 節ページ（SG/G1/G2の全選手の得点率ランキング・準優ボーダー・勝ち上がり）",
+  "released": "2026-10-20",
+  "content": {
+    "static_pages": ["/venue/:venueCode/meet/:startDate"],
+    "note_articles": [],
+    "blog_posts": [],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false,
+  "notes": "集客レーンが SG ダービー（尼崎、2026-10-27〜）の記事（10/20ごろ公開予定）から /venue/13/meet/2026-10-27 へ直接リンクする。記事が公開されたら blog_posts に追記する。released は公開予定日"
+}
