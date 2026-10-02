@@ -77,6 +77,22 @@
   }
 }
 
+/* PC幅で、1行に名前と数値を並べるリストは、1200px の箱いっぱいに広げると両端に離れ、
+   1440px で展開予測の決まり手と確率が約1000px、払戻金の券種と金額も約1000px離れた（BOA-619）。
+   - AI予想（終わったレースの振り返り）: 720px で止めてページ中央に置く。中の見出しは中央寄せで、
+     下の共有ボタンもページ中央なので、中心をそろえる
+   - 結果の払戻金: 表だけ 640px で止める。上の着順の行は ST の棒で間が埋まるので広いままにする */
+@media (min-width: 1025px) {
+  .race-detail-page-v2 .race-ai-prediction-tab {
+    max-width: 720px;
+    margin-inline: auto;
+  }
+
+  .race-detail-page-v2 .rr-payout-table {
+    max-width: 640px;
+  }
+}
+
 .race-detail-page-v2__container .page-header {
   display: flex;
   align-items: center;
