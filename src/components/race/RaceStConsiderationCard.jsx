@@ -143,7 +143,11 @@ function RaceStConsiderationCard({
     "min",
     { digits: 1 },
   );
-  const bestCls = (set, boat) => (set.has(boat) ? " ind-best" : "");
+  // 平均より悪い（差が赤）のセルには金枠を付けない。6艇で最も良くても、同じコース・
+  // 同じ級別の平均に届いていない値を「最良」と光らせると、赤の差と食い違う
+  // （調子の矢印と同じ扱い。plan §5）。次に良い艇へ繰り下げもしない
+  const bestCls = (set, boat, isBetter) =>
+    set.has(boat) && isBetter !== false ? " ind-best" : "";
 
   // --- 折りたたみ（ST分布 / ST履歴）用の派生値 ---
   const detailColumn =
@@ -280,7 +284,7 @@ function RaceStConsiderationCard({
                   return (
                     <td
                       key={player.number}
-                      className={`rsc-cell${bestCls(bestStable, player.number)}`}
+                      className={`rsc-cell${bestCls(bestStable, player.number, isBetter)}`}
                     >
                       <span
                         className={`rsc-value${small ? " is-small-sample" : ""}`}
@@ -347,7 +351,7 @@ function RaceStConsiderationCard({
                   return (
                     <td
                       key={player.number}
-                      className={`rsc-cell${bestCls(bestBreakout, player.number)}`}
+                      className={`rsc-cell${bestCls(bestBreakout, player.number, breakoutBetter)}`}
                     >
                       <span className="rsc-value">
                         {count === null
@@ -392,7 +396,7 @@ function RaceStConsiderationCard({
                   return (
                     <td
                       key={player.number}
-                      className={`rsc-cell${bestCls(bestLate, player.number)}`}
+                      className={`rsc-cell${bestCls(bestLate, player.number, isBetter)}`}
                     >
                       <span
                         className={`rsc-value${small ? " is-small-sample" : ""}`}
