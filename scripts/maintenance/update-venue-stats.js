@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 import { supabase } from "../lib/supabaseClient.js";
+import { isNoRaceResult } from "../lib/raceOutcomeFilters.js";
 
 const DAYS = 90;
 
@@ -34,7 +35,7 @@ async function updateVenueStats() {
   const races = await fetchAll((from, to) =>
     supabase
       .from("races")
-      .select("venue_code, race_results(rank1, is_cancelled, is_no_race)")
+      .select("venue_code, race_results(rank1, is_cancelled, race_status)")
       .gte("race_date", sinceStr)
       .order("race_id")
       .range(from, to),
@@ -49,7 +50,7 @@ async function updateVenueStats() {
     if (
       !result ||
       result.is_cancelled ||
-      result.is_no_race ||
+      isNoRaceResult(result) ||
       result.rank1 === null
     )
       return;

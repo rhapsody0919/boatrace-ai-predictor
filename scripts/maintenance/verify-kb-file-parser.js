@@ -367,6 +367,10 @@ for (const d of DAYS) {
     "会場日の行は race_grade を持たない（race_series から補完した値を、load の再実行が NULL で上書きしない。BOA-651）",
     rows.venueDays.every((v) => !("race_grade" in v)),
   );
+  check(
+    "会場日の行は is_final_day を持たない（K/B は最終日も「第N日」と書くので常に false になる。race_series から補完した値を、load の再実行が false で上書きしない。BOA-696）",
+    rows.venueDays.every((v) => !("is_final_day" in v)),
+  );
   const race = rows.races.find((r) => r.race_id === "2026-03-15-13-01");
   check(
     "命名: payout_3tan=2760（3連単）・payout_3fuku=1690（3連複）。DB本体の逆転命名を持ち込まない",
@@ -796,7 +800,8 @@ for (const d of DAYS) {
 {
   const P = "データは、この場の全レース終了後に登録されます。";
   const block = (code, body) => `${code}KBGN\n${body}\n${code}KEND`;
-  const done = (code) => block(code, "津［成績］ 7/30 x\n  1R 予選 H1800m 晴 風 北 2m 波 1cm");
+  const done = (code) =>
+    block(code, "津［成績］ 7/30 x\n  1R 予選 H1800m 晴 風 北 2m 波 1cm");
   const pend = (code) => block(code, `ボートレース\n${P}`);
   const mixed = [done("10"), pend("09"), done("08")].join("\n\n");
   const c1 = classifyKFileVenues(mixed);
@@ -820,7 +825,9 @@ for (const d of DAYS) {
     c3.total === 0 && c3.allPending === false,
     JSON.stringify(c3),
   );
-  const real = await decodeLzhText(fs.readFileSync(new URL("k260920-pending.lzh", FIX)));
+  const real = await decodeLzhText(
+    fs.readFileSync(new URL("k260920-pending.lzh", FIX)),
+  );
   const c4 = classifyKFileVenues(real);
   check(
     "K確定状況: 実物のプレースホルダ（k260920-pending.lzh、321バイト）は、日全体が未確定として扱われる",
