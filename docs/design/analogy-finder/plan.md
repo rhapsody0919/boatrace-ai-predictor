@@ -224,6 +224,40 @@ BOA-635（PR #1093、BOA-635 の ADR 案（PR #1093））は近い順800行を�
 - 値の約束 R1〜R4・D-5 は 120 で固定（PGlite の検証）
 - 2,000件の言い換えの文言はオーケストレーターがユーザーに確認する
 
+## レースごとの寄与度（B、ADR-0083。FR-1 の学習レーンと合意待ち）
+
+### 学習側が作るもの（FR-1 の学習レーン）
+- **モデル**: 1着の2本。`win`（今のモデル、44特徴量）と `win_racecard`（直前情報8列 `exh_time, exh_time_diff, exh_time_rank, weather_code, wind_x, wind_y, wind_speed, wave_height` を除いた36特徴量）。木の数・設定は `win` と同じ。品質ゲートは段ごと
+- **Storage**（`analogy/{版}/`）:
+  - `model_win.json.gz`・`model_win_racecard.json.gz`: LightGBM の `Booster.dump_model()` の JSON をそのまま gzip
+  - `per_race_meta.json`: `{model_version, models: {win: {file, feature_names}, win_racecard: {file, feature_names}}, live_features: [8列], themes: analogy_models.themes と同じ}`。`feature_names` はモデルの並び（`booster.feature_name()`）。推論側はこの並びで入力を作る
+  - `parity_fixture.json`: 固定の数十レース（test から）について、2本それぞれの入力（`feature_names` の並び、NaN は null）と `pred_contrib`（最後の列が期待値）。学習ジョブは、切り替え前に `node scripts/ml/analogy/treeshap-parity.js` でこれを検査し、一致しなければ版を切り替えない
+- **日次の特徴量ジョブ**（Vercel Cron → workflow_dispatch → GitHub Actions、JST 6:40・9:40・13:40）: 今日の締切前・中止でないレースの36特徴量を、is_active の版の `win_racecard.feature_names` の並びで `analogy_race_features` に書く。既にある行は書かない
+
+### 推論側が作るもの（このレーン）
+- `src/utils/analogyTreeShap.js`（純粋関数。モデルの JSON から推論と TreeSHAP）と、`analogyRaceContribution.js`（テーマ集計: レース内で中心化した |SHAP| のシェア、艇ごと・テーマごとの符号つきの値、テーマ内のグループ別の値）
+- 直前情報8列を作る関数（`features.py` と同じ式。展示タイムのレース内の差と順位（小さいほど上、同値は min）、風向16方位の角度×風速の成分、無風は0、天候の符号化）
+- 出走表時点の段: `api/cron/analogy-snapshots.js` の中で、特徴量の行があり段の行が無い締切前のレースを計算する
+- 展示後の段: `preRaceHandlers.js` の `runSlotsWithRefresh` の後に、展示を書いたレースを計算する（失敗しても取得の成否に影響させない）
+- 表 `analogy_race_contributions` と API `GET /api/analogy/race-contribution/[raceId]`
+
+### 表（マイグレーション案。番号は実装 PR の時点で決める）
+| 表 | 列 | 書き手 |
+|---|---|---|
+| `analogy_race_features` | `race_id`（races の外部キー）・`boat_number`・`model_version`・`features real[]`（`win_racecard.feature_names` の並び、欠損は NULL）・`created_at`。主キー `(race_id, boat_number)` | 日次の Python ジョブ（service_role） |
+| `analogy_race_contributions` | `race_id`・`stage`（'racecard' / 'exhibition'）・`model_version`・`model`（'win_racecard' / 'win'）・`computed_at`・`theme_shares jsonb`（{テーマ: シェア}、合計1）・`boats jsonb`（[{boat_number, themes: {テーマ: 中心化した SHAP の合計（符号つき）}, groups: {グループ: 同}}]）・`live_inputs jsonb`（展示後の段だけ。使った展示タイム・気象の値）。主キー `(race_id, stage)` | Vercel の JS（service_role） |
+- どちらも RLS 有効・匿名は SELECT のみ。締切前だけ書き、既にあれば書かない（`ON CONFLICT DO NOTHING`）
+- 行数: features 1日 約900行（約200B）、contributions 1日 約300行（約1KB）
+
+### API
+`GET /api/analogy/race-contribution/[raceId]` → `{available, shown: 'exhibition'|'racecard', model_version, themes, racecard: {...}|null, exhibition: {...}|null}`。締切前 `s-maxage=60`、締切後 `s-maxage=86400`、行が無い・エラーは `no-store`。
+
+### 画面（ファンパネルの結論）
+- 見出しで「AI のモデルが何を見ているかの説明」と分ける（予想に見せない）
+- 展示後の値に置き換え、展示前の値は折りたたみで残す。変化は1行で、効いた艇まで書く（例:「展示で ST・直前の比重が上がった。展示タイム1位は4号艇」）
+- 展示後の段が無いまま締切を過ぎたら「展示前の値」と明示する
+- 似たレース（FR-2）は出走表時点のまま。レースごとの上位テーマに当たる条件チップを強調するだけ
+
 ## 残る判断
 - モックの Q1〜5（案A/B、末尾からだけ外す、自動で外す、割合は件数÷n、任意の追加チップを作るか）: ユーザー確認中
 - 干渉効果のコールアウトに出すパターン（tasks T0-2）
