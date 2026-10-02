@@ -114,7 +114,7 @@ export async function getTodaysMatchingRaces(date) {
   }
 
   // 予測データを取得（standardモデルのみ）
-  const { data: predictions, error: predError } = await supabase
+  const { data: predictions } = await supabase
     .from("predictions")
     .select(
       "race_id, model_id, confidence, top_pick, top_2nd, top_3rd, predicted_at",
@@ -122,18 +122,13 @@ export async function getTodaysMatchingRaces(date) {
     .like("race_id", `${date}-%`)
     .eq("model_id", "standard");
 
-  if (predError) {
-    console.error("予測取得エラー:", predError.message);
-    return [];
-  }
-
   if (!predictions || predictions.length === 0) {
     return [];
   }
 
   // 結果データを取得
   const raceIds = predictions.map((p) => p.race_id);
-  const { data: results, error: resError } = await supabase
+  const { data: results } = await supabase
     .from("race_results")
     .select(
       "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio",
@@ -141,20 +136,20 @@ export async function getTodaysMatchingRaces(date) {
     .in("race_id", raceIds);
 
   const resultsMap = {};
-  if (!resError && results) {
+  if (results) {
     results.forEach((r) => {
       resultsMap[r.race_id] = r;
     });
   }
 
   // レース情報を取得（締切時刻）
-  const { data: races, error: raceError } = await supabase
+  const { data: races } = await supabase
     .from("races")
     .select("race_id, start_time")
     .in("race_id", raceIds);
 
   const racesMap = {};
-  if (!raceError && races) {
+  if (races) {
     races.forEach((r) => {
       racesMap[r.race_id] = r;
     });

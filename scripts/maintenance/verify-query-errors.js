@@ -26,11 +26,17 @@
  * 4. `src/` 配下に `setError(err.message)` の形が無いこと（BOA-668）。message が空の例外
  *    （本文 `{}` の 5xx の PostgrestError）でエラー状態が偽のままになり、取得失敗が
  *    「データなし」に化ける。`src/utils/errorMessage.js` の errorMessageOf を使う
+ * 8. `src/services/` 配下で `await supabase` の結果を分割代入するときに `error` を
+ *    受け取っていないこと（`{ data, error }`・`{ data: rows, error: pageError }` 等。BOA-507）
  *
- * ## 検査しないこと（意図的）
+ * ## 呼び出し側の `if (error)` を検査に変えた理由（BOA-507、2026-10-02）
  *
- * - 呼び出し側の `if (error)` の有無は見ない。`.throwOnError()` が既定になった今、
- *   その分岐は到達しないだけで害が無く、機械的に消すとレビューのノイズになる
+ * 以前は「`.throwOnError()` が既定になった今、`if (error)` の分岐は到達しないだけで害が無い」
+ * として検査しなかった。実際には害があった。到達しない `if (error) { return null; }` が
+ * 「この取得関数は失敗しても例外を投げず null を返す」という誤った前提を読み手に与え、
+ * BOA-507 の調査が回り道した。src/services の到達しない分岐は一括で削除し、
+ * `error` を受け取る書き方自体を検査8で止める。エラーの内容で分岐したいときは
+ * try/catch で `err.code` を見る（supabaseClient.js の冒頭コメント参照）
  *
  * ## バッチ側（scripts/）で検査すること（BOA-391）
  *
@@ -94,6 +100,31 @@ for (const file of files) {
   if (/from\s+["']@supabase\/supabase-js["']/.test(text)) {
     errors.push(
       `${rel}: @supabase/supabase-js を直接importしている。${CLIENT_REL} 経由にすること（BOA-359）`,
+    );
+  }
+}
+
+// 8: src/services で `await supabase` の結果から error を受け取っていないか（BOA-507）
+// .throwOnError() が既定なので error は常に null。受け取ると到達しない if (error) が生まれ、
+// 「取得関数は例外を投げない」という誤った前提を読み手に与える
+const SERVICES_REL = "src/services/";
+const DESTRUCTURED_ERROR_RE =
+  /\{[^{}]*\berror\b[^{}]*\}\s*=\s*await\s+supabase\b/g;
+for (const file of files) {
+  const rel = path.relative(ROOT, file);
+  if (!rel.startsWith(SERVICES_REL) || rel === CLIENT_REL) continue;
+  // コメント行は対象外（行数は保つ）
+  const code = fs
+    .readFileSync(file, "utf8")
+    .split("\n")
+    .map((line) => (/^\s*(\/\/|\*|\/\*)/.test(line) ? "" : line))
+    .join("\n");
+  for (const m of code.matchAll(DESTRUCTURED_ERROR_RE)) {
+    const line = code.slice(0, m.index).split("\n").length;
+    errors.push(
+      `${rel}:${line}: await supabase の結果から error を受け取っている（${m[0].replace(/\s+/g, " ")}）。` +
+        "クエリの失敗は .throwOnError() で例外になるため error は常に null で、if (error) は到達しない。" +
+        "error を受け取らず、エラーで分岐したいときは try/catch で err.code を見ること（BOA-507）",
     );
   }
 }
