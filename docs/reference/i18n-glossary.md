@@ -144,5 +144,10 @@ boatAI 多言語化における対訳の基準表。翻訳キー追加時はこ�
 | レースグレード | Race grade | 比賽等級 | 레이스 등급 | SG/G1/G2/G3/一般戦の5区分。SG/G1/G2/G3は4言語とも未翻訳のまま英数字表記を使う（races.race_gradeの生値と一致させるため）。一般戦（DB値: ippan）のみ表示ラベルを翻訳する（`volatilityAccuracy.gradeIppan`: 一般/General/一般/일반）。文章中でグレードを列挙する際は英語表記のみ"ippan"とローマ字表記を使う（BOA-263） |
 | レース種別（分類名） | Race type | 比賽類別 | 레이스 종별 | レース詳細の見出しの種別チップ（`raceStage.*`、BOA-509）。優勝戦=Final/優勝戰/우승전、準優勝戦=Semifinal/準優勝戰/준우승전、準優進出戦=Semifinal qualifier/準優進出戰/준우승 진출전、ドリーム戦=Dream race/夢幻戰/드림전、選抜戦=Selection race/選拔戰/선발전、予選特別戦（予選特賞・予選特選・予選選抜等、予選期間内）=Qualifying special/預賽特別戰/예선 특별전、一般特選（一般特選・一般特賞等、予選落ち組の上位戦）=Consolation special/一般特選戰/일반 특선전、特別戦（その他の特選・特賞）=Special race/特別戰/특별전、予選=Qualifying/預賽/예선、一般（予選終了後の一般戦）=Consolation race/一般戰/일반전。英語の最終日（`raceDetailPage.seriesDayFinal`）は優勝戦 Final と紛れないよう Last day。会場の企画レース名・節タイトルなど公式の固有名は訳さず日本語原文で出す（`translate="no"`） |
 | 万舟率 | Big-payout rate | 萬舟率 | 만슈율 | 3連単配当が1万円以上になった比率。「万艇率」は誤記（BOA-263実装時に混入し修正済み） |
+| 得点率 | Score rate | 得分率 | 득점률 | 節の予選の着順点の平均。今節タブ（`meetTab.*`）・節ページ（`meetPage.*`、BOA-682）で使う |
+| 準優の目安／準優の枠 | Semi-final line (estimate) / Semi-final cut | 準優門檻（估計）／準優名額 | 준우승전 기준(추정)／준우승전 진출권 | 予選中は推定（目安）、予選終了後は確定（枠）。節ページで書き分ける |
+| 勝負駆け | On the bubble | 關鍵一戰 | 승부처 | 予選最終日に、その日の着順しだいで準優の当落が入れ替わる選手 |
+| 途中帰郷 | Withdrew | 中途返鄉 | 중도 귀향 | 節の途中で帰った選手。順位の対象外 |
+| 賞典除外 | Prize excluded | 獎典除外 | 상전 제외 | 今節のF等で優出・賞金の対象から外れた選手（今節タブ `meetTab.awardExcluded` の短縮形と同じ語） |
 | ミッドナイト | Midnight race | 深夜賽 | 미드나이트 레이스 | 開催時間帯（夜〜深夜、無観客） |
 | 本日開催なし | No races today | 今日未舉辦 | 오늘 개최 없음 | 開催場一覧の非開催表示 |

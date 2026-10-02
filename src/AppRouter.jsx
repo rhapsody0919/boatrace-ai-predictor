@@ -17,6 +17,7 @@ import { refreshAdsOnRouteChange, trackPageView } from "./utils/analytics";
 import App from "./App";
 import VenueGridPage from "./pages/VenueGridPage";
 import VenueRaceListPage from "./pages/VenueRaceListPage";
+import MeetPage from "./pages/MeetPage";
 import RaceDetailPage from "./pages/RaceDetailPage";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
@@ -181,6 +182,11 @@ function LocalizedRoutes({ lng = "ja" }) {
       {/* 開催場一覧（トップ）: 会場一覧 → 会場別レース一覧 → レース詳細の3階層ナビ */}
       <Route path="/" element={<VenueGridPage />} />
       <Route path="venue/:venueCode" element={<VenueRaceListPage />} />
+      {/* 節ページ（SG/G1/G2 の全選手の得点率ランキング・準優ボーダー・勝ち上がり、BOA-682） */}
+      <Route
+        path="venue/:venueCode/meet/:startDate"
+        element={<MeetPage />}
+      />
       <Route path="race/:raceId" element={<RaceDetailPage />} />
 
       {/* タブページ（SEO対応: 個別URL） */}
