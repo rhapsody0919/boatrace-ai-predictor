@@ -1420,16 +1420,21 @@ const doneOdds = (delayMin, over = {}) =>
       !livenessCheckable(at("06:59")),
   );
   check(
-    "死活: 10分ごとの常駐型（race_notices・race_status）も判定する。25分以上前で通知、24分前は通知しない（BOA-373）",
+    "死活: 10分ごとの常駐型（race_status）も判定する。25分以上前で通知、24分前は通知しない（BOA-373）。race_notices は 2026-10-03 から日次（夜1回）なので、死活では判定しない",
     show(
       kinds([
-        base({ job: "race_notices", last_tick_at: minAgo(25) }),
+        // race_notices は日次。前日（指定 22:30 から解決した対象日）は処理済みなので、何も通知しない
+        base({
+          job: "race_notices",
+          last_tick_at: minAgo(25),
+          last_target_date: "2026-09-18",
+        }),
         base({ job: "race_status", last_tick_at: minAgo(25) }),
       ]),
-    ) === '["liveness:race_notices","liveness:race_status"]' &&
-      kinds([base({ job: "race_notices", last_tick_at: minAgo(24) })])
-        .length === 0 &&
-      kinds([base({ job: "race_notices", mode: "off", last_tick_at: null })])
+    ) === '["liveness:race_status"]' &&
+      kinds([base({ job: "race_status", last_tick_at: minAgo(24) })]).length ===
+        0 &&
+      kinds([base({ job: "race_status", mode: "off", last_tick_at: null })])
         .length === 0,
   );
   check(
@@ -1437,7 +1442,7 @@ const doneOdds = (delayMin, over = {}) =>
     kinds(
       [
         base({
-          job: "race_notices",
+          job: "race_status",
           last_tick_at: "2026-09-18T14:50:00.000Z", // 前日 23:50 JST
         }),
       ],
@@ -1447,13 +1452,13 @@ const doneOdds = (delayMin, over = {}) =>
         kinds(
           [
             base({
-              job: "race_notices",
+              job: "race_status",
               last_tick_at: "2026-09-18T14:50:00.000Z",
             }),
           ],
           at("07:25"),
         ),
-      ) === '["liveness:race_notices"]',
+      ) === '["liveness:race_status"]',
   );
   check(
     "死活: 日次ジョブは last_tick_at の古さでは通知しない（期限超過の判定は別）",

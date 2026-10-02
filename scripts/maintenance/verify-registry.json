@@ -332,6 +332,11 @@
       "guards": "出走表（racelist）の過去分バックフィルCLI"
     },
     {
+      "script": "verify-racer-condition-stats.js",
+      "tier": "ci",
+      "guards": "選手ページ「レース条件別の成績」（BOA-336、src/utils/racerConditionStats.js）。天候の3区分（雪・台風は雨にまとめる）、風速5m・波高5cmの境目、江戸川を波の行から外すこと、条件の無い走を全体に混ぜないこと、着順の付かない走の数え方、5走未満の条件を出さないこと"
+    },
+    {
       "script": "verify-racer-index-policy.js",
       "tier": "ci",
       "guards": "選手ページのインデックス判定（src/utils/racerIndexPolicy.js。ページの noindex と sitemap が共用）。崩れると B 級の大量インデックスか、現役 A1 の noindex 化が両方同時に起きる"
@@ -675,6 +680,11 @@
       "guards": "6艇の中の最良値の判定 bestOf（src/utils/bestOf.js、docs/design/race-detail-ui-unify R1）。同値の最良を全部返すこと、全艇同値と値なしは空、表示の桁で丸めて比べること（54.84 と 54.80、平均の浮動小数の誤差）、null と NaN を除くこと"
     },
     {
+      "script": "verify-race-indicator-tones.js",
+      "tier": "ci",
+      "guards": "レース詳細の緑・赤を付けるかの判定（docs/design/race-detail-ui-unify plan §6）。今節のST判定文 meetStVerdictTone: 差 0.01 や今節2走以下では色なし、差 0.02 以上・3走以上で早い＝緑・遅い＝赤、浮動小数の誤差を2桁で丸める。ST考察の平均との差 diffTone: 走数の少ない艇・0.0 と出る差・向きなしは色なし"
+    },
+    {
       "script": "verify-disqualified-finish-marks.js",
       "tier": "ci",
       "guards": "失格（K の S0〜S2）の艇の着欄を結果ページから埋める処理（backfill-disqualified-finish-marks.js、BOA-582）が、失格の表記（転・落・沈・妨・エ・失）だけを書き、行を挿入せず、着欄が NULL の行だけを更新し（既存の値を上書きしない）、取得の間隔を空けて 429・503 で即中止すること"
@@ -699,6 +709,11 @@
       "script": "verify-race-outcome-filters.js",
       "tier": "ci",
       "guards": "不成立のレースを集計から外す判定を race_status（no_race）に統一すること（BOA-545）。旧フラグ is_no_race は全行 false で機能しておらず、scripts/daily の集計10本がそれで判定していた。scripts/daily・scripts/lib のコードが is_no_race を使わないことと、PostgREST の条件が078の IS DISTINCT FROM と同じ意味であることを検査する"
+    },
+    {
+      "script": "verify-absent-start-rows.js",
+      "tier": "ci",
+      "guards": "race_start_timings の欠場艇の行（finish_mark='欠'、ST は NULL）を、読み手が出走・ST として数えないこと。展示STと本番STのズレ（stDeviation）・選手の出走数とF率（racerStStats）・会場×枠番のトップスタート（update-top-start-stats）・得点率の配点の検証スクリプト。9/21 以降の欠場艇の行で、欠場を出走に数え、ST の NULL を 0 として計算に混ぜていた"
     }
   ]
 }

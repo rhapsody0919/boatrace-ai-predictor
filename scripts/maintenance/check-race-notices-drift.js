@@ -3,7 +3,7 @@
  * GitHub Actions（race-notices-drift-monitor.yml）から日次で呼ばれる、
  * レース特記事項ページ（FR-1、BOA-318/319/320）のHTML構造変化検知。
  *
- * api/cron/race-notices.js はVercel Functionとして10分間隔で実行され、
+ * api/cron/race-notices.js はVercel Functionとして夜1回（22:30 JST、補足 23:00・23:30）実行され、
  * ファイルシステムへの永続化・git commitができないため、
  * scripts/daily/scrape-race-information.js が会場×日付単位の当日集計を
  * race_notices_health テーブル（Supabase）に書き込む。本スクリプトは
