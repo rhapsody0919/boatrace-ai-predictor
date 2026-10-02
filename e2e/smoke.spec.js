@@ -267,6 +267,36 @@ test("会場特性の要約は言語ごとの区切りで連結する（BOA-656�
   }
 });
 
+// BOA-665: 更新ボタン（clearCache）が boatai: で始まるキーをすべて消し、Cookie の同意・
+// 初回訪問・案内バナーを閉じた記録まで消えていた（同意バナーが再表示される）
+test("更新ボタンはデータキャッシュだけを消し、Cookie の同意などの設定は残す（BOA-665）", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.locator(".refresh-button").waitFor({ timeout: 30000 });
+  await page.evaluate(() => {
+    localStorage.setItem("boatai:cookie-consent", "granted");
+    localStorage.setItem("boatai:visited-before", "true");
+    localStorage.setItem("boatai:intro-banner-dismissed", "true");
+    localStorage.setItem(
+      "boatai:e2e-dummy-cache",
+      JSON.stringify({ data: { x: 1 }, timestamp: Date.now() }),
+    );
+  });
+  await page.locator(".refresh-button").click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => localStorage.getItem("boatai:e2e-dummy-cache")),
+    )
+    .toBeNull();
+  const kept = await page.evaluate(() => [
+    localStorage.getItem("boatai:cookie-consent"),
+    localStorage.getItem("boatai:visited-before"),
+    localStorage.getItem("boatai:intro-banner-dismissed"),
+  ]);
+  expect(kept).toEqual(["granted", "true", "true"]);
+});
+
 test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
   test("未翻訳ページ（/en/faq等）はja版へリダイレクトされlang=jaで配信される", async ({
     page,

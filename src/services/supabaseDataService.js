@@ -138,6 +138,27 @@ function inferTtlFromKey(key) {
 }
 const CACHE_PREFIX = "boatai:";
 
+/**
+ * localStorage のそのキーが、データキャッシュ（cache.set が書いた {data, timestamp}）か。
+ * 接頭辞 boatai: は Cookie の同意（boatai:cookie-consent）・初回訪問・案内バナーを
+ * 閉じた記録にも使っており、接頭辞だけで判定すると更新ボタンでそれらまで消えた
+ * （BOA-665。Cookie の同意バナーが再表示される）。値の形で見分ける
+ */
+function readCacheEntry(storageKey) {
+  if (!storageKey || !storageKey.startsWith(CACHE_PREFIX)) return null;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(storageKey));
+    return parsed !== null &&
+      typeof parsed === "object" &&
+      typeof parsed.timestamp === "number" &&
+      "data" in parsed
+      ? parsed
+      : null;
+  } catch {
+    return null; // JSON でない値（"granted" 等）はキャッシュではない
+  }
+}
+
 const cache = {
   memory: new Map(),
 
@@ -244,12 +265,12 @@ const cache = {
   },
 
   /**
-   * localStorage内の龍神レーダーキャッシュを全削除
+   * localStorage内の龍神レーダーのデータキャッシュを全削除（設定のキーは残す）
    */
   _clearAllLocalStorage() {
     try {
-      const keys = Object.keys(localStorage).filter((k) =>
-        k.startsWith(CACHE_PREFIX),
+      const keys = Object.keys(localStorage).filter(
+        (k) => readCacheEntry(k) !== null,
       );
       keys.forEach((k) => localStorage.removeItem(k));
     } catch (e) {}
@@ -263,13 +284,9 @@ const cache = {
       const entries = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith(CACHE_PREFIX)) {
-          const stored = localStorage.getItem(key);
-          if (stored) {
-            const { timestamp } = JSON.parse(stored);
-            entries.push({ key, timestamp });
-          }
-        }
+        // 設定のキー（JSON でない値）で JSON.parse が投げて掃除全体が止まっていた（BOA-665）
+        const entry = readCacheEntry(key);
+        if (entry) entries.push({ key, timestamp: entry.timestamp });
       }
       // 古い順にソートして半分削除
       entries.sort((a, b) => a.timestamp - b.timestamp);
