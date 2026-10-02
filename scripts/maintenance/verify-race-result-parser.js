@@ -536,6 +536,52 @@ const full = (file) => realParser.parseRaceResultPage(readFixture(file));
         );
       })(),
   );
+  // BOA-383: 2026-09-18 江戸川11R の2連複（特払70）が race_results で NULL だった。組番で引く勝式（2連単・2連複・
+  // 拡連複・複勝）は、組番の無い特払を拾えなかった。同じフィクスチャの払戻を1勝式ずつ特払に置き換えて確かめる
+  const asSpecial = (betType, seq) => ({
+    ...tk,
+    payouts: tk.payouts.map((p) =>
+      p.bet_type === betType && p.seq === seq
+        ? {
+            ...p,
+            combination: null,
+            payout: 70,
+            payout_status: "special",
+            popularity: null,
+          }
+        : p,
+    ),
+  });
+  const specialRow = (betType, seq) =>
+    buildRaceResultRow("R", realRows.toLegacyResult(asSpecial(betType, seq)));
+  // 複勝の特払: 1着艇（2号艇）の空欄を通常の払戻にし、2着艇（1号艇）を特払にする
+  const placeSpecial = asSpecial("place", 2);
+  const placeRow = buildRaceResultRow(
+    "R",
+    realRows.toLegacyResult({
+      ...placeSpecial,
+      payouts: placeSpecial.payouts.map((p) =>
+        p.bet_type === "place" && p.seq === 1
+          ? { ...p, payout: 110, payout_status: "paid" }
+          : p,
+      ),
+    }),
+  );
+  check(
+    "特払（組番で引く勝式）: 2連単・2連複・拡連複・複勝の特払70が、旧列にも入る（BOA-383。plan.md「特払は70（旧と同じ）」）",
+    specialRow("2tan", 1).payout_exacta === 70 &&
+      specialRow("2fuku", 1).payout_quinella === 70 &&
+      specialRow("wide", 1).payout_wide_1 === 70 &&
+      specialRow("wide", 1).payout_wide_2 === 320 &&
+      specialRow("wide", 1).payout_wide_3 === 130 &&
+      placeRow.payout_place_1 === 110 &&
+      placeRow.payout_place_2 === 70,
+  );
+  check(
+    "特払（複勝）: 組番で引けない艇が2つ（1着艇は空欄・2着艇は特払）なら、どちらの特払か区別できないので両方 NULL のまま（1着艇の空欄に70を入れない）",
+    specialRow("place", 2).payout_place_1 === null &&
+      specialRow("place", 2).payout_place_2 === null,
+  );
   const dh = full("raceresult-2025-12-11-17-01-dead-heat-1st.html");
   check(
     "同着: 1着同着の払戻は、3連単が2口（1-2-5=780円・2-1-5=2,430円）、単勝・複勝も2口。旧列（payout_trio）は先頭の1口だけ",

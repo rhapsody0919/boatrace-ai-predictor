@@ -143,24 +143,36 @@ export function buildRaceResultRow(
   // combo単位で{amount, popularity}を格納しているscrapePayouts()の構造から
   // 実際の着順に対応するコンボを引き当てる
   const sortedPairKey = (a, b) => [a, b].sort((x, y) => x - y).join("-");
+  // 特払は組番が無く、キー「特払」で入る（raceResultRows.js buildLegacyPayouts）。着順の組番で引けなければ、
+  // その額を使う（旧列にも特払は70を入れる。plan.md「race-result-full-fields」。BOA-383）
+  const byCombo = (kind, combo) => {
+    const map = payouts[kind];
+    return map?.[combo] ?? map?.["特払"];
+  };
   const winEntry = payouts.win ? Object.values(payouts.win)[0] : null;
-  const placeEntries = payouts.place ? Object.entries(payouts.place) : [];
-  const place1Entry = placeEntries.find(
-    ([k]) => k === String(result.rank1),
-  )?.[1];
-  const place2Entry = placeEntries.find(
-    ([k]) => k === String(result.rank2),
-  )?.[1];
+  // 複勝は、単勝が特払のレースで1着艇の払戻が空欄（no_amount）になり、旧形式に入らない。どちらの艇の特払か
+  // 区別できないため、組番で引けない艇がちょうど1つのときだけ特払の額を使う
+  const placeByBoat = (boat) => payouts.place?.[String(boat)];
+  const placeMissing = [result.rank1, result.rank2].filter(
+    (b) => !placeByBoat(b),
+  );
+  const placeOf = (boat) =>
+    placeByBoat(boat) ??
+    (placeMissing.length === 1 ? payouts.place?.["特払"] : undefined);
+  const place1Entry = placeOf(result.rank1);
+  const place2Entry = placeOf(result.rank2);
   const trioEntry = payouts.trio ? Object.values(payouts.trio)[0] : null;
   const trifectaEntry = payouts.trifecta
     ? Object.values(payouts.trifecta)[0]
     : null;
-  const exactaEntry = payouts.exacta?.[`${result.rank1}-${result.rank2}`];
-  const quinellaEntry =
-    payouts.quinella?.[sortedPairKey(result.rank1, result.rank2)];
-  const wide1Entry = payouts.wide?.[sortedPairKey(result.rank1, result.rank2)];
-  const wide2Entry = payouts.wide?.[sortedPairKey(result.rank1, result.rank3)];
-  const wide3Entry = payouts.wide?.[sortedPairKey(result.rank2, result.rank3)];
+  const exactaEntry = byCombo("exacta", `${result.rank1}-${result.rank2}`);
+  const quinellaEntry = byCombo(
+    "quinella",
+    sortedPairKey(result.rank1, result.rank2),
+  );
+  const wide1Entry = byCombo("wide", sortedPairKey(result.rank1, result.rank2));
+  const wide2Entry = byCombo("wide", sortedPairKey(result.rank1, result.rank3));
+  const wide3Entry = byCombo("wide", sortedPairKey(result.rank2, result.rank3));
 
   return {
     race_id: raceId,
