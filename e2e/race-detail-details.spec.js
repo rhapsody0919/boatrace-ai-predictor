@@ -338,4 +338,28 @@ test.describe("レース詳細の表示の細部", () => {
       }
     }
   });
+  test("375px: 直前情報の展示情報の表は、右へ送ったら「‹」で左へ戻せる（BOA-699）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${RACE}?tab=beforeInfo`);
+    const table = page.locator(".rbi-card .drt-table").first();
+    await expect(table).toBeVisible({ timeout: 30000 });
+    // この表は 320〜390px では収まる。英語や列が増えたときに溢れても戻せることを、
+    // 表を広げて確かめる
+    await page.addStyleTag({
+      content: ".rbi-card .drt-table { min-width: 640px; }",
+    });
+    // 手がかりは幅が変わったときに測り直す。広げたあとに測り直させる
+    await page.evaluate(() => window.dispatchEvent(new Event("resize")));
+    const hint = page.locator(".rbi-card .hscroll-hint:has(.drt-table)");
+    const wrapper = hint.locator(".drt-table-wrapper");
+    await expect(hint.locator(".hscroll-more")).toBeVisible();
+    await expect(hint.locator(".hscroll-less")).toHaveCount(0);
+    await hint.locator(".hscroll-more").click();
+    await expect(hint.locator(".hscroll-less")).toBeVisible();
+    await hint.locator(".hscroll-less").click();
+    await expect.poll(() => wrapper.evaluate((el) => el.scrollLeft)).toBe(0);
+    await expect(hint.locator(".hscroll-less")).toHaveCount(0);
+  });
 });
