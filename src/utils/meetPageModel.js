@@ -108,6 +108,8 @@ const isFinalStage = (stage) => {
  * @param {string} p.startDate URL の初日
  * @param {string[]} p.meetDays `meetDaysOf` の値
  * @param {boolean} p.hasEntries 節の日に出走表があるか
+ * @param {boolean} [p.windowHasRaces] 窓（初日〜+7日）に出走表か種別が1行でもあるか。
+ *   あるのに節の日が無い＝URL の初日が節の途中の日なので、今日に関係なく「見つからない」
  * @param {string|null} p.grade 節のグレード（`race_series.grade`、無ければレースの `race_grade`）
  * @param {string|null} p.title 節タイトル
  * @param {Array<{race_id: string, race_stage?: string|null}>} p.conditions 節の日の種別
@@ -125,7 +127,9 @@ export function meetPageState({
   conditions,
   doneRaceIds,
   raceIds,
+  windowHasRaces = false,
 }) {
+  if (meetDays.length === 0 && windowHasRaces) return "notFound";
   if (!hasEntries || meetDays.length === 0) {
     return today <= startDate ? "preOpen" : "notFound";
   }

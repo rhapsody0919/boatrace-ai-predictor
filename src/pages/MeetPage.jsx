@@ -141,9 +141,18 @@ function MeetPage() {
 
   return (
     <>
-      <title>{metaTitle}</title>
-      <meta name="description" content={metaDescription} />
-      <link rel="canonical" href={`https://www.boat-ai.jp${canonicalPath}`} />
+      {/* 節タイトルが届く前に「9/28開幕の節」の仮の title を出すと、届いた後に書き換わる
+          （クローラーやテストが仮の値を読む）。読み込み中は出さない */}
+      {(page || failed || !validParams) && (
+        <>
+          <title>{metaTitle}</title>
+          <meta name="description" content={metaDescription} />
+          <link
+            rel="canonical"
+            href={`https://www.boat-ai.jp${canonicalPath}`}
+          />
+        </>
+      )}
       <Header />
       <div className="meet-page">
         <Breadcrumb items={breadcrumbItems} />

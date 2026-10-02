@@ -7360,6 +7360,11 @@ export const supabaseDataService = {
       conditions,
       doneRaceIds,
       raceIds,
+      // 窓の先頭が初日の日付と同じ日のレースだけを見る（翌日以降に別の節があるだけでは
+      // 「見つからない」にしない。開幕前の節の窓に、同じ会場の前の節の最終日は入らない）
+      windowHasRaces: [...windowConditions, ...windowEntries].some((r) =>
+        r.race_id.startsWith(startDate),
+      ),
     });
     const base = {
       state,

@@ -145,6 +145,19 @@ check(
   "notFound",
 );
 check(
+  "節の途中の日（2日目）を初日として開くと、今日がその日でも見つからない",
+  meetPageState({
+    ...base,
+    meetDays: [],
+    hasEntries: false,
+    windowHasRaces: true,
+    startDate: "2026-09-29",
+    today: "2026-09-29",
+    doneRaceIds: new Set(),
+  }),
+  "notFound",
+);
+check(
   "一般戦は対象外",
   meetPageState({
     ...base,
