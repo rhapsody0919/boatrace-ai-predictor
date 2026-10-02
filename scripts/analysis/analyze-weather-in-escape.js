@@ -7,6 +7,9 @@
  * 使い方:
  *   node scripts/analysis/analyze-weather-in-escape.js
  *   KB_ARCHIVE_DIR=/path/to/kb-archive node scripts/analysis/analyze-weather-in-escape.js
+ *
+ * 出力: data/analysis/weather-in-escape.json（分析の全結果）と
+ *       public/data/weather-in-escape.json（分析ツールのタブが読む表示用の集計）
  */
 
 import fs from "fs";
@@ -23,6 +26,11 @@ const ARCHIVE_DIR =
 const OUT_PATH = path.join(
   __dirname,
   "../../data/analysis/weather-in-escape.json",
+);
+// 画面（分析ツール「風とイン逃げ率」タブ）が読む集計。分析の結果から、表示に使う値だけを抜き出す
+const DISPLAY_PATH = path.join(
+  __dirname,
+  "../../public/data/weather-in-escape.json",
 );
 const FROM = "2020-02-01";
 const TO = "2026-09-30";
@@ -440,6 +448,68 @@ function analyze(races, bins, binOf, judgeKeys) {
   };
 }
 
+/**
+ * 画面用の集計。判定した推定量（会場内の差 D と97.5%区間）をそのまま出す（事前登録 §7）
+ */
+export function buildDisplay(out) {
+  const techniqueTotals = Object.fromEntries(
+    WIND_BINS.map(({ key }) => [
+      key,
+      Object.fromEntries(
+        TECHNIQUES.map((t) => [
+          t,
+          Object.values(out.wind.venues).reduce(
+            (s, v) => s + (v.bins[key]?.techniques[t] ?? 0),
+            0,
+          ),
+        ]),
+      ),
+    ]),
+  );
+  return {
+    source: "scripts/analysis/analyze-weather-in-escape.js",
+    period: { from: out.period.from, to: out.period.maxDate },
+    rows: out.rows,
+    inputHash: out.inputHash,
+    overallInWinRate: out.overallInWinRate,
+    ciLevel: out.ciLevel,
+    pooled: Object.fromEntries(
+      Object.entries(out.wind.pooled).map(([k, p]) => [
+        k,
+        {
+          n: p.n,
+          diff: p.diffVsVenue,
+          ci: p.ci,
+          adjustedDiff: p.adjustedDiff,
+          venueSign: p.venueSign,
+        },
+      ]),
+    ),
+    techniques: techniqueTotals,
+    wave: {
+      w6_9: {
+        n: out.waveWithinCalm.pooled.w6_9.n,
+        diff: out.waveWithinCalm.pooled.w6_9.diffVsVenue,
+      },
+    },
+    venues: Object.fromEntries(
+      Object.entries(out.wind.venues).map(([code, v]) => [
+        code,
+        {
+          n: v.all.n,
+          rate: v.all.inWinRate,
+          bins: Object.fromEntries(
+            Object.entries(v.bins).map(([k, b]) => [
+              k,
+              { n: b.n, rate: b.inWinRate, diff: b.diffVsVenue },
+            ]),
+          ),
+        },
+      ]),
+    ),
+  };
+}
+
 function main() {
   const { races, maxDate, inputHash } = loadRaces();
   const waveBinOf = (r) =>
@@ -471,6 +541,8 @@ function main() {
   };
   fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
   fs.writeFileSync(OUT_PATH, JSON.stringify(out, null, 2) + "\n");
+  fs.mkdirSync(path.dirname(DISPLAY_PATH), { recursive: true });
+  fs.writeFileSync(DISPLAY_PATH, JSON.stringify(buildDisplay(out)) + "\n");
 
   console.log(
     `rows=${out.rows} wind=${out.rowsWithWind} wave=${out.rowsWithWave} class=${out.rowsWithClass} max=${maxDate} in1=${out.overallInWinRate}`,
