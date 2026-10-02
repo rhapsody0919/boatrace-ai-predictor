@@ -365,9 +365,11 @@ function RaceBasicInfoTab({
       : metric === "winRate" && !needsOwnAggregation
         ? 2
         : 1;
+  // 走数が少ない値（棒を薄く出しているもの）は比べない。条件で絞ると「2走で2連対率100%」の
+  // ような値が最良になり、金枠が最も当てにならない値に付く
   const bestBoats = bestOf(
     values
-      .filter((v) => !v.loading)
+      .filter((v) => !v.loading && !v.isSmallSample)
       .map(({ boat, value }) => ({ boat, value })),
     metric === "avgSt" ? "min" : "max",
     { digits: valueDigits },
