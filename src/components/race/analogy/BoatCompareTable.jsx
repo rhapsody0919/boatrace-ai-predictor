@@ -24,6 +24,10 @@ export default function BoatCompareTable({
   const colB = column(sharesB);
   return (
     <table className="af-compare-table">
+      {/* 着順の率（3連対率など）と読み違えないよう、表が「効きの割合」であることを表の上に書く（ファン評価3周目） */}
+      <caption className="af-compare-caption">
+        {t("aiPredictionTab.analogy.compareCaption")}
+      </caption>
       <thead>
         <tr>
           <th scope="col">{t("aiPredictionTab.analogy.themeColumn")}</th>

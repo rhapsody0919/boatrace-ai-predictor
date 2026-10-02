@@ -712,7 +712,7 @@
           "national": "전국 승률, 연대율",
           "local": "현지 승률, 연대율",
           "recent": "최근 30주 성적",
-          "boat1": "1번 보트(인코스)의 등급, 승률"
+          "boat1": "인코스 선수(1번)의 등급, 승률"
         },
         "startExhibition": {
           "exhibitionTime": "전시 타임",
@@ -742,7 +742,8 @@
       "period": "{{from}}~{{to}}",
       "listAllBoats": "테마별(전체 보트)",
       "listAllBoatsCompare": "테마별(전체 보트. 번호별 값은 위 표)",
-      "magnitudeNote": "비율은 유리하게 작용했는지 불리하게 작용했는지와 관계없는 '영향의 크기'입니다."
+      "magnitudeNote": "비율은 유리하게 작용했는지 불리하게 작용했는지와 관계없는 '영향의 크기'입니다.",
+      "compareCaption": "번호별 영향 비율(%, 열마다 합계 100%). 아래 '전체 보트'는 2~5번을 포함한 6척을 합친 값입니다."
     }
   },
   "beforeInfo": {

@@ -717,7 +717,7 @@
           "national": "National win rate & top-2 rate",
           "local": "Local win rate & top-2 rate",
           "recent": "Last 30 races",
-          "boat1": "Boat 1 (inside) class & win rate"
+          "boat1": "Inside racer's (boat 1) class & win rate"
         },
         "startExhibition": {
           "exhibitionTime": "Exhibition time",
@@ -747,7 +747,8 @@
       "period": "{{from}} – {{to}}",
       "listAllBoats": "By theme (all boats)",
       "listAllBoatsCompare": "By theme (all boats; per-boat values in the table above)",
-      "magnitudeNote": "Shares show how strongly each theme mattered, whether it helped or hurt."
+      "magnitudeNote": "Shares show how strongly each theme mattered, whether it helped or hurt.",
+      "compareCaption": "Share of influence by boat (%; each column adds up to 100%). \"All boats\" below combines all six boats, including boats 2–5."
     }
   },
   "beforeInfo": {

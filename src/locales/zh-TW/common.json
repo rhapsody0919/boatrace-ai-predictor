@@ -712,7 +712,7 @@
           "national": "全國勝率、2連率",
           "local": "當地勝率、2連率",
           "recent": "近30場成績",
-          "boat1": "1號艇（內側）的級別、勝率"
+          "boat1": "內側選手（1號艇）的級別、勝率"
         },
         "startExhibition": {
           "exhibitionTime": "展示時間",
@@ -742,7 +742,8 @@
       "period": "{{from}}〜{{to}}",
       "listAllBoats": "各主題（全部艇）",
       "listAllBoatsCompare": "各主題（全部艇。各艇號的數值見上表）",
-      "magnitudeNote": "比例是不分有利或不利的「影響大小」。"
+      "magnitudeNote": "比例是不分有利或不利的「影響大小」。",
+      "compareCaption": "各艇號的影響比例（%，每欄合計100%）。下方「全部艇」是包含2〜5號艇在內、6艇合計的數值。"
     }
   },
   "beforeInfo": {

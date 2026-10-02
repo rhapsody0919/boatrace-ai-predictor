@@ -198,6 +198,8 @@ test.describe("アナロジー・ファインダーの寄与度（BOA-271 FR-1�
     await expect(table.getByRole("row")).toHaveCount(1 + THEMES.length);
     // 比較中は全艇の順位バッジを出さない（艇番ごとの順位と食い違うため。ファン評価2周目）
     await expect(section.locator(".af-rank")).toHaveCount(0);
+    // 表が着順の率でなく「効きの割合」であることを表に書く（ファン評価3周目）
+    await expect(table.locator("caption")).toContainText("効きの割合");
 
     const theme = section.getByRole("button", { name: /選手・基礎成績/ });
     await expect(theme).toHaveAttribute("aria-expanded", "false");
