@@ -140,6 +140,23 @@ group by d
 order by 1`;
 
 /**
+ * レースごとの寄与度の特徴量（analogy_race_features。マイグレーション123、BOA-271 B）。期待件数 = 開催中止(confirmed)を
+ * 除いたレースの出走行、with_features = 特徴量の行がある出走行。日次の特徴量ジョブ（JST 6:40）が全レースを書く
+ * （欠場の分かったレースも消さない）ので、分母から欠場を外さない。
+ */
+const analogyRaceFeaturesSql = ({ fromDate, toDate }) => `
+select r.race_date::text as d,
+    count(*) as expected,
+    count(f.race_id) as with_features
+from races r
+join race_entries e on e.race_id = r.race_id
+left join analogy_race_features f on f.race_id = e.race_id and f.boat_number = e.boat_number
+where r.race_date between ${fromDate} and ${toDate}
+  and r.cancellation_status is distinct from 'confirmed'
+group by r.race_date
+order by 1`;
+
+/**
  * 選手の期別成績（racer_period_stats。マイグレーション083）。期待件数 = その日に出走する選手（登録番号）の数、
  * with_stats = いずれかの期の成績がある選手。新人（期別成績の公開前）は欠損に数える（公開は最大約2か月遅れる）。
  */
@@ -297,6 +314,15 @@ export const DATA_HEALTH_FUNCTIONS = Object.freeze([
       "データ健全性の日次監視: 出走した選手のうち、期別成績（racer_period_stats、083）がある選手の数",
     migration: "089_data_health_functions.sql",
     body: racerPeriodStatsSql,
+  },
+  {
+    name: "data_health_analogy_race_features",
+    args: FROM_TO,
+    shape: "rows",
+    description:
+      "データ健全性の日次監視: 出走行のうち、レースごとの寄与度の特徴量（analogy_race_features、123）がある行の数",
+    migration: "123_analogy_race_features.sql",
+    body: analogyRaceFeaturesSql,
   },
   {
     name: "data_health_monthly_result",
