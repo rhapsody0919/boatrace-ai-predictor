@@ -638,3 +638,11 @@
   color: var(--text-secondary);
   white-space: nowrap;
 }
+
+/* 順位の対象外の内訳（BOA-697）。人数の行のすぐ下に、補足と同じ大きさで出す */
+.rmt-excluded-list {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}

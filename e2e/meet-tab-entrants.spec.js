@@ -29,7 +29,7 @@ test("初日の2Rでも6艇とも行が出て、出場人数は出走表から�
   );
   await expect(page.locator(".rmt-sub").first()).toContainText(
     // まだ走っていない選手も書き足す（BOA-690）
-    "節の出場は47人（順位の対象は6人。まだ走っていない41人を除く）。",
+    "節の出場は47人（順位の対象は今節を走った6人。まだ走っていない41人を除く）。",
   );
 });
 
@@ -38,7 +38,11 @@ test("初日の1R（6艇とも初戦）でも表と出場人数を出し、同�
 }) => {
   await openMeetTab(page, "2026-09-21-09-01");
   await expect(page.locator(".rmt-compare tbody tr")).toHaveCount(6);
-  await expect(page.locator(".rmt-sub").first()).toContainText("節の出場は");
+  // 全員が初戦なら「順位の対象は0人」と書かない（BOA-697）
+  await expect(page.locator(".rmt-sub").first()).toContainText(
+    "節の出場は47人（まだ全員が今節初戦）。",
+  );
+  await expect(page.locator(".rmt-excluded-list")).toHaveCount(0);
   await expect(
     page.locator(".rmt-empty", { hasText: "今節はまだ走っていません" }),
   ).toHaveCount(1);
@@ -69,6 +73,11 @@ test("除いた人数を足すと出場人数になり、表に無い印の凡�
     "節の出場は47人（順位の対象は42人。賞典除外・途中帰郷・欠場の5人を除く）",
   );
   await expect(page.locator(".rmt-compare .rmt-warn")).toHaveCount(0);
+  // 除いた5人を理由ごとに名前で出す（BOA-697）
+  const list = page.locator(".rmt-excluded-list");
+  await expect(list).toContainText("順位の対象外：");
+  await expect(list.locator("[translate=no]")).not.toHaveCount(0);
+  await expect(list).not.toContainText("ほか");
   await expect(page.locator(".rmt-sub").first()).not.toContainText(
     "3走未満",
   );
@@ -158,7 +167,7 @@ test("中止があった日も、人数の足し算が合う", async ({ page }) 
   await openMeetTab(page, "2026-09-21-09-12");
   const text = await page.locator(".rmt-sub").first().innerText();
   const all = Number(text.match(/節の出場は(\d+)人/)?.[1]);
-  const total = Number(text.match(/順位の対象は(\d+)人/)?.[1]);
+  const total = Number(text.match(/順位の対象は(?:今節を走った)?(\d+)人/)?.[1]);
   const excluded = Number(text.match(/欠場の(\d+)人/)?.[1] ?? 0);
   const notYet = Number(text.match(/まだ走っていない(\d+)人/)?.[1] ?? 0);
   expect(total + excluded + notYet).toBe(all);

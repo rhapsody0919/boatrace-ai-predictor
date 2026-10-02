@@ -790,6 +790,38 @@ export function listAbsentOnlyRacers(scoreboard) {
 }
 
 /**
+ * 順位の対象から外した選手を、理由ごとにまとめる（純関数、BOA-697）。
+ *
+ * 人数の行（「…5人を除く」）だけでは誰が外れたかが分からず、予選の後に順位が
+ * 動いた理由もその場で読めなかった。公式の得点率一覧が備考欄で一人ずつ見せるのに
+ * 近い形で、名前を理由ごとに並べる。並びは 今節F → 賞典除外（公式の備考）→
+ * 途中帰郷 → 欠場。公式の備考による途中帰郷も「途中帰郷」にまとめる。
+ *
+ * @param {Array<{racerId: number, playerName: string, withdrawn?: boolean,
+ *   excludedReason?: string|null}>} ranking `buildMeetRanking` の行
+ * @param {Array<{racerId: number, playerName: string}>} absentOnly 全部の走が欠場の選手
+ * @returns {Array<{reason: "flying"|"awardExcluded"|"withdrawn"|"absent",
+ *   names: string[]}>} 該当者がいる理由だけ
+ */
+export function groupExcludedRacers(ranking, absentOnly) {
+  const order = ["flying", "awardExcluded", "withdrawn", "absent"];
+  const byReason = new Map(order.map((r) => [r, []]));
+  const nameOf = (r) => String(r.playerName ?? "").replace(/\s+/g, "");
+  for (const r of ranking ?? []) {
+    if (!r.withdrawn) continue;
+    const reason =
+      r.excludedReason === "flying" || r.excludedReason === "awardExcluded"
+        ? r.excludedReason
+        : "withdrawn";
+    byReason.get(reason).push(nameOf(r));
+  }
+  for (const r of absentOnly ?? []) byReason.get("absent").push(nameOf(r));
+  return order
+    .map((reason) => ({ reason, names: byReason.get(reason) }))
+    .filter((g) => g.names.length > 0);
+}
+
+/**
  * 公式の得点率一覧の値を使ってよいか（純関数、BOA-475）。
  *
  * 公式の行は節に1行しか無く、中身は「◯日目１２R終了時点」＝**予選終了時点の
