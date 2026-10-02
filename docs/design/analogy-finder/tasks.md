@@ -42,8 +42,8 @@
 
 ## T3 母集団とスナップショット（FR-2・BOA-627。SQL と Vercel Cron）
 - [x] T3-0 マイグレーション 119（母集団・スナップショット・関数・RPC）と PGlite の検証 `verify-analogy-strata-migration.js`（ci）
-- [ ] T3-1 `scripts/ml/analogy/strata.py`（参照実装。`cm2.py` の `build_axes` の境界を固定し 1/100単位で比較、完全レースの判定は `features.py`）と pytest（境界ちょうど・同率・勝率の欠け）
-- [ ] T3-2 `scripts/maintenance/verify-analogy-pool.js`（manual、`verify-registry.json` に登録）: 期間を区切って参照実装と母集団の「完全レースの集合」「条件4値」「決まり手・1着艇・1着の進入コースのラベル」を照合。元テーブルと母集団の行数の差、スナップショットの件数と数え直しの一致率も出す
+- [ ] T3-1（公開前の必須条件）`scripts/ml/analogy/strata.py`（参照実装。`cm2.py` の `build_axes` の境界を固定し 1/100単位で比較、完全レースの判定は `features.py`）と pytest（境界ちょうど・同率・勝率の欠け）
+- [ ] T3-2 `scripts/maintenance/verify-analogy-pool.js`（**nightly-verify-db.yml で毎晩**。補完で過去の行が変わるため manual にしない。`verify-registry.json` に登録。公開前の必須条件）: 期間を区切って参照実装と母集団の「完全レースの集合」「条件4値」「決まり手・1着艇・1着の進入コースのラベル」を照合。元テーブルと母集団の行数の差、スナップショットの件数と数え直しの一致率も出す
 - [ ] T3-3 `scripts/maintenance/backfill-analogy-pool.js`（手動 CLI）: 期間を3か月ずつに切って `refresh_analogy_pool` を呼ぶ。`--dry-run` は `analogy_pool_rows_*` の件数だけ
 - [ ] T3-4 `api/cron/analogy-pool.js`・`api/cron/analogy-snapshots.js`（`createScrapeCronHandler`、モード off／shadow／live）と `vercel.json` の crons（plan「スクリプト構成」の時刻。UTC で書き JST を併記）。ジョブのレジストリに登録。0件の判定: 母集団は期待件数が0でないのに source_rows が0なら失敗、スナップショットは対象があるのに0件なら失敗
 - [ ] T3-5 運用: K/B 補完・BOA-523 の実進入の補完が終わったら、その期間で `backfill-analogy-pool.js` を回す（data-acquisition レーンに知らせる）
@@ -51,6 +51,12 @@
 - [ ] 本番実測（スナップショット）: 土日を含む直近5日で、その日の開催レース（中止を除く）に対するスナップショットの割合が98%以上、作成時刻が締切前であること
 - [ ] 応答時間: 深さ1〜4それぞれで `get_analogy_similar` の実行時間（目標 2秒以内）
 - [ ] 継続監視: 当日のスナップショットの充足率と、母集団の最終日（前日まで入っているか）を日次で計測し、閾値（98%・最終日が2日以上古い）で Slack に通知されること。Cron の失敗・未実行（最終成功からの経過時間）が通知されること
+
+## T3b 分析の規律（2026-10-02 データサイエンス体制のレビューを受けたユーザー承認済みの対策。公開前の必須条件）
+- [ ] T3b-1 表示する推定量の評価: 画面に出す推定量（自動の深さの層の生の件数÷n。BOA-635 は同じ層の新しい順2,000件）を、選択に使ったのと同じ cal で1回評価し、`analysis/` に記録する。spec に「表示の推定量＝評価した推定量」の対応表を置く
+- [ ] T3b-2 以後の分析は、事前登録を単独でコミット・push してから回し、結果のコミットに事前登録の SHA を書く。事前登録の前に second-opinion-reviewer で方法論（時点・リーク・test の使用履歴・ベースライン・指標とファンに見える差）を1回レビューする
+- [ ] T3b-3 分析コードと結果は master に残せる形にする（入出力のパスは環境変数。scratchpad の絶対パスを書かない。既存の `scripts/analysis/analogy-finder-fr2-strat/` のパスも直す）。縮小版の結果 JSON には `scale` を必ず入れる
+- [ ] T3b-4 報告・文書の数値には「値／指標／A−B（比較対象）／母集団・部分集合／期間（cal・test）／データ版／結果 JSON のパス#キー」を付ける
 
 ## T4 API
 - [ ] T4-1 `api/analogy/contribution.js`（Edge）: is_active の版の themes と該当スライス。n=0 のスライスは一段広いスライスに戻し、戻したことを返す
