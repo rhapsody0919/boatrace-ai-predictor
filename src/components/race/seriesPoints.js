@@ -677,32 +677,36 @@ export function postPrelimFlyingRacerIds(starts, entries, prelimEndRaceId) {
 }
 
 /**
- * **予選の締めより後に1走も無い選手**（予選中に帰った選手、純関数、BOA-674）。
+ * **途中帰郷とみなす選手**（純関数）。前の日まで走っていたのに、表示日に1走も
+ * 組まれていない選手。
  *
- * 予選が終わった翌日から使う。公式の得点率一覧は予選終了時点で、こうした選手を
- * 「途中帰郷」として順位から外している（BOA-649 の調査で、公式の途中帰郷6名は
- * 全員この形だった）。以前は「最終日に出走が無い」でしか外さなかったため、予選中に
- * 帰った選手が最終日まで順位に残り、最終日に下の順位がまとめて繰り上がった
- * （桐生 2026-09-20〜25: 北川・田中が 9/22 で帰郷、9/24 の表示では順位に残っていた）。
+ * 予選中でも予選の後でも、その日から外す。公式の得点率一覧・会場の公式サイト・
+ * ボートレース日和も、予選中・予選後とも途中帰郷を順位から外している（BOA-649）。
+ * 以前は「最終日に出走が無い」でしか外さず、予選中に帰った選手が最終日まで順位にも
+ * 準優の目安の計算にも残っていた（桐生 2026-09-20〜25: 北川・田中が 9/22 で帰郷）。
  *
- * 出走表は表示日まで（当日の番組を含む）を渡す。2026-06〜の285節・558日ぶんの
- * 表示日で、予選の翌日からこの判定をしても途中で判定が変わる選手は0人だった。
+ * **出走表は表示日まで（当日の番組を含む）を渡す**。2026-06〜の288節で、この判定で
+ * 外した選手がその後に走った例は0人（表示日の種類ごと: 予選の途中 447日・204人、
+ * 予選の最終日 285日・329人、予選の後で最終日より前 277日・544人、最終日 288日・671人）。
+ * 表示日の出走表がその会場に1件も無い（当日の番組の取得が遅れた）ときは、全員を
+ * 外してしまうので判定しない。
  *
  * @param {Array<{race_id: string, racer_id: number}>} entries 節の出走表（表示日まで）
- * @param {string|null} prelimEndRaceId 予選の締めのレース
  * @param {string} date 表示日（YYYY-MM-DD）
- * @returns {number[]} racer_id。予選の締めが分からないか、予選終了日以前なら空
+ * @returns {number[]} racer_id
  */
-export function withdrawnBeforePrelimEnd(entries, prelimEndRaceId, date) {
-  if (!prelimEndRaceId || !(date > prelimEndRaceId.slice(0, 10))) return [];
-  const ranAfter = new Set();
-  const all = new Set();
-  for (const e of entries ?? []) {
-    if (e.racer_id === null || e.racer_id === undefined) continue;
-    all.add(e.racer_id);
-    if (e.race_id > prelimEndRaceId) ranAfter.add(e.racer_id);
+export function withdrawnByAbsence(entries, date) {
+  const rows = (entries ?? []).filter(
+    (e) => e.racer_id !== null && e.racer_id !== undefined,
+  );
+  if (!rows.some((e) => e.race_id.slice(0, 10) === date)) return [];
+  const before = new Set();
+  const onOrAfter = new Set();
+  for (const e of rows) {
+    if (e.race_id.slice(0, 10) < date) before.add(e.racer_id);
+    else onOrAfter.add(e.racer_id);
   }
-  return [...all].filter((id) => !ranAfter.has(id));
+  return [...before].filter((id) => !onOrAfter.has(id));
 }
 
 /**

@@ -41,6 +41,7 @@ const TARGETS = {
   nextOpenDate: "src/utils/nextOpenDate.js",
   meetGrouping: "src/utils/meetGrouping.js",
   volatilityLevel: "src/utils/volatilityLevel.js",
+  hscrollHint: "src/utils/horizontalScrollHint.js",
 };
 
 const show = (v) => JSON.stringify(v);
@@ -1535,6 +1536,40 @@ function suiteMeetGrouping(m, check) {
   );
 }
 
+// --- horizontalScrollHintState: 横スクロールの手がかり（「›」・フェード）の出し方
+// （#1130 ファン評価。全コース表で5px残りでも40pxのフェードと「›」が最後の列を覆い、
+// 4px以下の残りでは何も出なかった）
+function suiteHscrollHint(m, check) {
+  const st = (scrollWidth, clientWidth, scrollLeft) =>
+    m.horizontalScrollHintState({ scrollWidth, clientWidth, scrollLeft });
+  check("hscroll: 収まっていれば何も出さない", st(300, 300, 0), {
+    hasMore: false,
+    hasLess: false,
+    peekFadeWidth: 0,
+  });
+  check(
+    "hscroll: 残り4px（以前は何も出なかった）は「›」なしの細いフェード（12px）",
+    st(320, 316, 0),
+    { hasMore: false, hasLess: false, peekFadeWidth: 12 },
+  );
+  check(
+    "hscroll: 残り12pxまでは「›」を出さない（フェード12px）",
+    st(328, 316, 0),
+    { hasMore: false, hasLess: false, peekFadeWidth: 12 },
+  );
+  // 20px残りで「›」を出さず32pxのフェードにした版では、最後の列が無いように見えた（PR #1169 ファン評価1周目）
+  check("hscroll: 残り20pxは「›」と幅40pxのフェード", st(336, 316, 0), {
+    hasMore: true,
+    hasLess: false,
+    peekFadeWidth: 0,
+  });
+  check("hscroll: 右端まで送ったら「›」は消え、「‹」が出る", st(357, 301, 56), {
+    hasMore: false,
+    hasLess: true,
+    peekFadeWidth: 0,
+  });
+}
+
 // --- nextOpenDate（BOA-225）: 非開催会場の次開催日。race_series の 2026-10-02 時点の形
 function suiteNextOpenDate(m, check) {
   const today = "2026-10-02";
@@ -1606,6 +1641,7 @@ const SUITES = {
   dateUtils: suiteDateUtils,
   meetGrouping: suiteMeetGrouping,
   volatilityLevel: suiteVolatilityLevel,
+  hscrollHint: suiteHscrollHint,
 };
 
 // ---------------------------------------------------------------------------
@@ -1618,6 +1654,24 @@ const MUTANTS = [
     "表示の数値をラベルの範囲に収めない（PR #1186 ファン評価の退行）",
     "return Math.min(Math.max(value, 31), 69);",
     "return value;",
+  ],
+  [
+    "hscrollHint",
+    "4pxの残りで「›」を出す（#1130 ファン評価で見送った P3 の退行）",
+    "const hasMore = remaining > HSCROLL_PEEK_MAX;",
+    "const hasMore = remaining > 4;",
+  ],
+  [
+    "hscrollHint",
+    "境目を24pxに戻す（PR #1169 ファン評価1周目の退行）",
+    "export const HSCROLL_PEEK_MAX = 12;",
+    "export const HSCROLL_PEEK_MAX = 24;",
+  ],
+  [
+    "hscrollHint",
+    "少しだけ切れているときのフェードを出さない",
+    "!hasMore && remaining > 1 ? HSCROLL_PEEK_FADE : 0;",
+    "0;",
   ],
   [
     "basicInfoStats",

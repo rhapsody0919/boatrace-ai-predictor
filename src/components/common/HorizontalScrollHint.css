@@ -27,6 +27,24 @@
   );
 }
 
+/* 少しだけ切れているとき（src/utils/horizontalScrollHint.js の HSCROLL_PEEK_MAX 以下）は「›」を出さず、
+   細いフェードだけを出す。幅は --hscroll-peek-width（フックが設定） */
+.hscroll-hint[data-hscroll-peek="true"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--hscroll-peek-width, 16px);
+  pointer-events: none;
+  z-index: 5;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--hscroll-fade-color, var(--surface-page))
+  );
+}
+
 .hscroll-more {
   position: absolute;
   /* 上端に寄せる。箱の高さいっぱいに置くと、縦に長い表では「›」が
@@ -34,15 +52,26 @@
   top: 0;
   right: 0;
   height: 40px;
-  width: 28px;
+  /* 押せる範囲は44px（以前は28pxで押し損ねやすかった。#1130 ファン評価）。
+     記号は以前と同じく端から14pxの位置に置く。真ん中に置くと見出しの文字に寄って
+     「ST›」のように続けて読めた */
+  width: 44px;
   /* ::after のフェード（z-index: 5）と sticky な見出し行より上に出す */
   z-index: 6;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0;
+  justify-content: flex-end;
+  padding: 0 10px 0 0;
   border: none;
-  background: none;
+  /* 記号の後ろに、載っている面の色の円を敷く。左の列が固定されていない表では、記号の下を
+     見出しの文字が流れ、「枠番」の「枠」と一体に見えたり、「2連率 (%)›」と続けて読めたりした
+     （PR #1169 ファン評価1周目）。円の中心は記号の位置（端から14px）に合わせる */
+  background: radial-gradient(
+    circle at calc(100% - 14px) 50%,
+    var(--hscroll-fade-color, var(--surface-page)) 0 11px,
+    var(--border-hairline) 11px 12px,
+    transparent 12.5px
+  );
   color: var(--text-primary);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
@@ -56,14 +85,20 @@
   top: 0;
   left: 0;
   height: 40px;
-  width: 28px;
+  /* 押せる範囲と記号の位置は「›」と左右対称 */
+  width: 44px;
   z-index: 6;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0;
+  justify-content: flex-start;
+  padding: 0 0 0 10px;
   border: none;
-  background: none;
+  background: radial-gradient(
+    circle at 14px 50%,
+    var(--hscroll-fade-color, var(--surface-page)) 0 11px,
+    var(--border-hairline) 11px 12px,
+    transparent 12.5px
+  );
   color: var(--text-primary);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
