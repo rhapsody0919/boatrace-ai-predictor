@@ -582,6 +582,22 @@ const full = (file) => realParser.parseRaceResultPage(readFixture(file));
     specialRow("place", 2).payout_place_1 === null &&
       specialRow("place", 2).payout_place_2 === null,
   );
+  const wideAmbiguous = asSpecial("wide", 1);
+  const wideRow = buildRaceResultRow(
+    "R",
+    realRows.toLegacyResult({
+      ...wideAmbiguous,
+      payouts: wideAmbiguous.payouts.filter(
+        (p) => !(p.bet_type === "wide" && p.seq === 2),
+      ),
+    }),
+  );
+  check(
+    "特払（拡連複）: 組番で引けない組が2つあれば、どちらにも特払の額を入れない（引ける組の 1-3=130 はそのまま）",
+    wideRow.payout_wide_1 === null &&
+      wideRow.payout_wide_2 === null &&
+      wideRow.payout_wide_3 === 130,
+  );
   const dh = full("raceresult-2025-12-11-17-01-dead-heat-1st.html");
   check(
     "同着: 1着同着の払戻は、3連単が2口（1-2-5=780円・2-1-5=2,430円）、単勝・複勝も2口。旧列（payout_trio）は先頭の1口だけ",
