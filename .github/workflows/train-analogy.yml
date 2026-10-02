@@ -74,11 +74,16 @@ jobs:
         run: |
           meta=data/ml/analogy/out/train_meta.json
           failed=data/ml/analogy/out/gate_failed.json
+          activated=data/ml/analogy/out/activated.json
           if [ -f "$failed" ]; then
-            echo "## 品質ゲートで停止" >> "$GITHUB_STEP_SUMMARY"
+            echo "## 品質ゲートで停止（表示は前の版のまま）" >> "$GITHUB_STEP_SUMMARY"
             jq '.gate' "$failed" >> "$GITHUB_STEP_SUMMARY"
           elif [ -f "$meta" ]; then
-            echo "## 版 $(jq -r .model_version $meta)" >> "$GITHUB_STEP_SUMMARY"
+            if [ -f "$activated" ]; then
+              echo "## 版 $(jq -r .model_version $meta) に切り替えた" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "## 版 $(jq -r .model_version $meta) は学習したが、切り替えていない" >> "$GITHUB_STEP_SUMMARY"
+            fi
             jq '{periods: .metrics.periods, n_races: .metrics.n_races, gate: .metrics.gate, win: (.metrics.win | {logloss_model, logloss_baseline, paired_logloss_model_minus_baseline})}' "$meta" >> "$GITHUB_STEP_SUMMARY"
           fi
 
@@ -88,10 +93,13 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          reason="ジョブの失敗"
           if [ -f data/ml/analogy/out/gate_failed.json ]; then
-            reason="品質ゲートで停止: $(jq -r '.gate.reasons | join(" / ")' data/ml/analogy/out/gate_failed.json)"
+            reason="品質ゲートで停止（表示は前の版のまま）: $(jq -r '.gate.reasons | join(" / ")' data/ml/analogy/out/gate_failed.json)"
+          elif [ -f data/ml/analogy/out/activated.json ]; then
+            reason="新しい版への切り替えの後（古い版の削除）で失敗。表示は新しい版"
+          else
+            reason="切り替えの前で失敗。表示は前の版のまま"
           fi
           payload=$(jq -n --arg reason "$reason" --arg url "$RUN_URL" \
-            '{text: (":rotating_light: *アナロジー・ファインダーの週次学習が失敗しました*（表示は前の版のまま）\n" + $reason + "\n" + $url)}')
+            '{text: (":rotating_light: *アナロジー・ファインダーの週次学習が失敗しました*\n" + $reason + "\n" + $url)}')
           curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"

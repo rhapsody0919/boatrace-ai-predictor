@@ -6,7 +6,9 @@ train.py の出力（out/train_meta.json・profiles.json）を analogy_models・
 - 同じ版が is_active なら書かずに失敗する（表示中の版を消さない）。is_active でない同じ版
   （前回の途中で止まった実行の残り）は消してから書き直す
 - 寄与度の行が0件、または書いた件数とテーブルの件数が合わなければ失敗する（切り替えない）
-- 切り替えの後、寄与度の行は直近2版（今回と前回）だけ残す。analogy_models の行は消さない
+- 切り替えの後、寄与度の行は今回の版と、切り替える直前に表示していた版（ロールバック先）だけ残す。
+  途中で失敗して表示されなかった版の行は消す。analogy_models の行は消さない
+- 書き込みの途中で失敗したら、今回の版の行を消してから失敗させる（表示は前の版のまま）
 
 使い方: python db.py write
 """
@@ -23,7 +25,6 @@ import urllib.request
 from train import OUT
 
 BATCH = 1000
-KEEP_PROFILE_VERSIONS = 2
 
 
 class PostgrestError(RuntimeError):
@@ -76,6 +77,24 @@ def write() -> None:
         request("DELETE", f"analogy_models?model_version=eq.{q(version)}")
         print(f"  前回の途中で残った版 {version}（is_active でない）を消した")
 
+    previous, _ = request("GET", "analogy_models?select=model_version&is_active=is.true")
+    previous_active = previous[0]["model_version"] if previous else None
+    try:
+        _insert(version, meta, profiles)
+    except Exception:
+        # 表示されていない今回の版を残さない（次の版の prune でロールバック先を押し出さないため）
+        request("DELETE", f"analogy_models?model_version=eq.{q(version)}")
+        raise
+    request("POST", "rpc/activate_analogy_model", {"p_model_version": version})
+    active, _ = request("GET", "analogy_models?select=model_version&is_active=is.true")
+    if [a["model_version"] for a in active] != [version]:
+        raise PostgrestError(f"切り替えの確認に失敗: is_active = {active}")
+    print(f"  表示に使う版を {version} に切り替えた")
+    (OUT / "activated.json").write_text(json.dumps({"model_version": version}))
+    prune(previous_active)
+
+
+def _insert(version: str, meta: dict, profiles: list) -> None:
     request("POST", "analogy_models", {
         "model_version": version, "trained_at": meta["trained_at"],
         "feature_columns": meta["features"], "themes": meta["themes"],
@@ -89,17 +108,18 @@ def write() -> None:
         raise PostgrestError(f"寄与度の行数が合わない（書いた {len(rows):,} / テーブル {written:,}）")
     print(f"  analogy_contribution_profiles {written:,} 行")
 
-    request("POST", "rpc/activate_analogy_model", {"p_model_version": version})
-    active, _ = request("GET", "analogy_models?select=model_version&is_active=is.true")
-    if [a["model_version"] for a in active] != [version]:
-        raise PostgrestError(f"切り替えの確認に失敗: is_active = {active}")
-    print(f"  表示に使う版を {version} に切り替えた")
-    prune()
+
+def profile_versions_to_delete(models: list[dict], previous_active: str | None) -> list[str]:
+    """寄与度の行を消す版。残すのは表示中の版と、切り替える直前に表示していた版だけ。
+    models は trained_at の新しい順。"""
+    keep = {m["model_version"] for m in models if m["is_active"]} | {previous_active}
+    return [m["model_version"] for m in models if m["model_version"] not in keep]
 
 
-def prune() -> None:
-    models, _ = request("GET", "analogy_models?select=model_version&order=trained_at.desc")
-    old = [m["model_version"] for m in models[KEEP_PROFILE_VERSIONS:]]
+def prune(previous_active: str | None) -> None:
+    models, _ = request("GET", "analogy_models?select=model_version,trained_at,is_active"
+                        "&order=trained_at.desc")
+    old = profile_versions_to_delete(models, previous_active)
     for v in old:
         request("DELETE", f"analogy_contribution_profiles?model_version=eq.{q(v)}")
     if old:

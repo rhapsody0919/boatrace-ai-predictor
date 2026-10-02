@@ -25,6 +25,7 @@ import zlib from "zlib";
 import { fileURLToPath } from "url";
 import { supabase } from "../../lib/supabaseClient.js";
 import { BUCKET, ensureBucket } from "./storage.js";
+import { assertCachedHeader } from "./storageRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_DIR =
@@ -85,15 +86,26 @@ async function kbMonth(t, lo, hi) {
   const key = `source/${KB_CACHE_VERSION}/${t.name}/${lo}.csv.gz`;
   if (USE_CACHE && !REFRESH_KB) {
     const { data, error } = await supabase.storage.from(BUCKET).download(key);
-    if (!error)
-      return zlib.gunzipSync(Buffer.from(await data.arrayBuffer())).toString();
+    if (!error) {
+      // キャッシュは先頭行に列名を持つ。列が今のコードと違えば黙って読まずに失敗する
+      const csv = zlib
+        .gunzipSync(Buffer.from(await data.arrayBuffer()))
+        .toString();
+      assertCachedHeader(csv, t.colList, key);
+      const nl = csv.indexOf("
+");
+      return nl === -1 ? "" : csv.slice(nl + 1);
+    }
   }
   const rows = await fetchRange(t.table, t.cols, t.order, t.rangeCol, lo, hi);
+  // 長期のアーカイブに空の月は無い。0行を置くと以後ずっと空のまま読まれるので失敗にする
+  if (rows.length === 0) throw new Error(`${t.table} ${lo}: 0行（キャッシュしない）`);
   const body = toCsv(t.colList, rows);
   if (USE_CACHE) {
     const { error } = await supabase.storage
       .from(BUCKET)
-      .upload(key, zlib.gzipSync(body), {
+      .upload(key, zlib.gzipSync(`${t.colList.join(",")}
+${body}`), {
         upsert: true,
         contentType: "application/gzip",
       });

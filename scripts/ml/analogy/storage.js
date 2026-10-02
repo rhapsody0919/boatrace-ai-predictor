@@ -4,7 +4,8 @@
  * - `{model_version}/model_{win,top2,top3}.txt.gz`・`train_meta.json.gz`: 学習した主モデル。
  *   次の週の品質ゲートで、今の is_active の版を同じ test で評価し直すのに使う
  * - `source/...`: 長期データの月ごとのキャッシュ（export_pool.js）
- * モデルの版は直近3つだけ残す（plan「Storage の版は直近3つだけ残す」）。
+ * モデルの版は直近3つと表示中の版だけ残す（plan「Storage の版は直近3つだけ残す」）。表示中の版と同じ名前では
+ * アップロードしない（規則は storageRules.js）。
  * `scripts/ml/storage-models.js`（ポアロ）と同じ流儀。
  *
  * 使い方:
@@ -17,6 +18,7 @@ import path from "path";
 import zlib from "zlib";
 import { fileURLToPath } from "url";
 import { supabase, isSupabaseEnabled } from "../../lib/supabaseClient.js";
+import { assertUploadable, versionsToPrune } from "./storageRules.js";
 
 export const BUCKET = "analogy";
 const KEEP_MODEL_VERSIONS = 3;
@@ -47,11 +49,23 @@ export async function ensureBucket() {
   console.log(`📦 バケット '${BUCKET}' を作成`);
 }
 
+async function activeVersion() {
+  const { data, error } = await supabase
+    .from("analogy_models")
+    .select("model_version")
+    .eq("is_active", true);
+  if (error)
+    throw new Error(`analogy_models の読み取りに失敗: ${error.message}`);
+  return data[0]?.model_version ?? null;
+}
+
 async function uploadModel() {
   const meta = JSON.parse(
     await fs.readFile(path.join(OUT_DIR, "train_meta.json"), "utf8"),
   );
   const version = meta.model_version;
+  const active = await activeVersion();
+  assertUploadable(version, active);
   await ensureBucket();
   for (const name of MODEL_FILES) {
     const buf = await fs.readFile(path.join(OUT_DIR, name));
@@ -65,21 +79,21 @@ async function uploadModel() {
     if (error) throw new Error(`${key} の保存に失敗: ${error.message}`);
     console.log(`  ⬆️ ${key}`);
   }
-  await pruneModels();
+  await pruneModels(active);
 }
 
-/** 版のフォルダ（YYYY-MM-DD…）を新しい順に並べ、KEEP_MODEL_VERSIONS より古いものを消す */
-async function pruneModels() {
+/** 新しい順に KEEP_MODEL_VERSIONS 個と、表示中の版を残して消す（storageRules.js） */
+async function pruneModels(active) {
   const { data, error } = await supabase.storage.from(BUCKET).list("", {
     limit: 1000,
   });
   if (error) throw new Error(`Storage の一覧取得に失敗: ${error.message}`);
-  const versions = data
-    .map((e) => e.name)
-    .filter((n) => /^\d{4}-\d{2}-\d{2}/.test(n))
-    .sort()
-    .reverse();
-  for (const v of versions.slice(KEEP_MODEL_VERSIONS)) {
+  const old = versionsToPrune(
+    data.map((e) => e.name),
+    active,
+    KEEP_MODEL_VERSIONS,
+  );
+  for (const v of old) {
     const keys = MODEL_FILES.map((n) => `${v}/${n}.gz`);
     const { error: rmError } = await supabase.storage.from(BUCKET).remove(keys);
     if (rmError) throw new Error(`${v} の削除に失敗: ${rmError.message}`);

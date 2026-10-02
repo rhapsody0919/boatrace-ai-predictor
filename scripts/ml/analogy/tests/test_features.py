@@ -159,3 +159,19 @@ def test_grade_prefers_kb_venue_day_then_series():
                            "end_date": ["2020-01-02", "2020-01-10"], "grade": ["G3", "SG"]})
     out = F.attach_grade_from_series(df, series)
     assert out["grade"].tolist() == ["G1", "G3", None]
+
+
+def test_first_race_of_day_below_min_periods_does_not_take_later_race_values():
+    """その日の最初の走が min_periods に届かず NaN のとき、同じ日の2走目以降の値（当日1走目の結果を含む）を
+    配らない（レビュー指摘 P1。pandas の transform("first") は NaN を飛ばす）。"""
+    hist = [(1, f"2026-01-0{d}", 1, 6, 0.20) for d in range(1, 5)]  # 前日までは4走（min_periods=5 に届かない）
+    today = [(1, "2026-01-05", 1, 1, 0.01), (1, "2026-01-05", 9, 1, 0.01)]
+    df = F.add_history(boats(hist + today))
+    d = df[df["race_date"] == "2026-01-05"]
+    assert d["recent_win30"].isna().all()
+
+
+def test_debut_day_st_mean_is_not_filled_from_same_day():
+    rows = [(1, "2026-01-01", r, 3, st) for r, st in ((1, 0.05), (3, 0.07), (5, 0.09), (7, 0.11))]
+    df = F.add_history(boats(rows))
+    assert df["st_mean30"].isna().all()

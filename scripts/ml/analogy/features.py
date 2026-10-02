@@ -8,7 +8,7 @@ Phase M からの変更点:
     後のレースの特徴量に入れない（出走表時点で分かるのは前日までの成績のため。plan「as-of」）
   - ラウンドは本体が getRaceStageCategory（src/constants/raceStageConfig.js）と同じ規則、
     長期は kb_archive_races.stage_kind（長期の stage の文字列は途中で切れているため）。
-    分類できないステージは None（「全ラウンド」にだけ入れる）
+    会場の企画レース名など分類できないステージは「その他」、ステージが無いレースは None（「全ラウンド」にだけ入れる）
   - グレードは長期が kb_archive_venue_days.race_grade、本体が races.race_grade を先に使い、
     無ければ race_series の期間で補う
   - 1〜3着に返還艇（F・出遅れ）が入るレースは完全レースから外す（本体の rank は返還艇も
@@ -248,8 +248,12 @@ def _rolling_before(df: pd.DataFrame, col: str, min_periods: int, how: str) -> p
 
 
 def _first_of_day(df: pd.DataFrame, s: pd.Series) -> pd.Series:
-    """その日の最初の走の値を、同じ日の全走に配る（＝前日までの走だけの集計）。"""
-    return s.groupby([df["racer_id"], df["race_date"]], sort=False).transform("first")
+    """その日の最初の走の値を、同じ日の全走に配る（＝前日までの走だけの集計）。
+    transform("first") は NaN を飛ばして2走目以降の値（当日1走目の結果を含む）を配るので使わない。
+    最初の走が NaN（min_periods に届かない）なら、その日は全走 NaN のまま"""
+    keys = [df["racer_id"], df["race_date"]]
+    first = s.where(df.groupby(keys, sort=False).cumcount() == 0)
+    return first.groupby(keys, sort=False).transform("max")
 
 
 def add_history(df: pd.DataFrame) -> pd.DataFrame:

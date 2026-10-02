@@ -52,8 +52,8 @@ def _cells(keys: pd.DataFrame, abs_c: np.ndarray):
             n_boats=("race_id", "size"), n_races=("race_id", "nunique"),
             period_from=("race_date", "min"), period_to=("race_date", "max"))
         out.append(agg)
+    # 全体を表す値（0・"all"）は実在の値と重ならないので、組み合わせの間でキーは重複しない
     cells = pd.concat(out)
-    cells = cells[~cells.index.duplicated()]  # 艇番・会場が1種類しかない場合の重複を除く
     return cells, feat_cols
 
 
