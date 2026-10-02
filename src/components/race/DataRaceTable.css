@@ -246,12 +246,14 @@ thead tr:last-child:not(:first-child) .drt-label-th {
   font-weight: var(--font-weight-medium);
 }
 
+/* 調子（勝率の変化）。上がった＝緑、下がった＝赤（race-detail-ui-unify R2）。以前は株価のように
+   上がると赤・下がると青で、同じ表の「機力↑」の緑と向きが逆だった（2026-10-02 ユーザー承認） */
 .drt-up {
-  color: var(--color-error-text);
+  color: var(--color-success-text);
 }
 
 .drt-down {
-  color: var(--color-info-text);
+  color: var(--color-error-text);
 }
 
 .drt-plus {
