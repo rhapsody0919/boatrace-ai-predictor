@@ -214,13 +214,13 @@ flowchart TD
 - 母集団の投入後、深さ1〜4の RPC の応答時間を実測する（目標 2秒以内、`statement_timeout` 5秒）
 
 ## BOA-635 との接続（2026-10-02 合意、オーケストレーター経由）
-BOA-635（PR #1093、ADR-0081）は近い順800行を画面で数える前提だった。層別では行の数が層で200〜7万件と変わり、スナップショットはモデルの版を持たない。次の形で合意した（plan の旧案 (B) を BOA-635 側が修正したもの）。
+BOA-635（PR #1093、BOA-635 の ADR 案（PR #1093））は近い順800行を画面で数える前提だった。層別では行の数が層で200〜7万件と変わり、スナップショットはモデルの版を持たない。次の形で合意した（plan の旧案 (B) を BOA-635 側が修正したもの）。
 - RPC `get_analogy_similar_races(race_id)`（119）: **自動の深さに固定**し、その層から `pool_cutoff` 以前を新しい順に最大2,000件返す。上限を超える層も隠さない。行の外に `snapshot`・`snapshot_at`・`depth`・`conditions`・`n_total`（層の総件数）・`n_returned`・`pool_from`・`pool_cutoff`
 - 列: `race_date`・`rank1〜3`・`winning_technique`・`course_by_boat`・`st_by_course`・`payout_3tan`（`race_id`・`venue_code`・`race_number`・`winner_course` は返さない）
 - 大きさ: 2,000行で gzip 後約34KB、1,000行で約17KB（乱数の模擬データでの試算。実データのほうが圧縮が効く）。100KB に収まるので2,000件。母集団の投入後に実測する
 - 発走後の再現: スナップショットの `pool_cutoff` 以前で固定するので、同じレースは発走後も同じ行の集合を返す（cutoff 以前の行が作り直しで変わったときは、その行の値だけ変わる）
 - 層の条件の説明文は、画面の共通関数 `src/utils/analogyReason.js`（FR-2 で作る）を BOA-635 も使う。RPC は `conditions` の値だけを返す
-- BOA-635 の判定はレース単位の純粋関数のまま（ADR-0081 の決定1は維持）。紐づけのキーは `(race_id, created_at)`（D-6 の読み替え）
+- BOA-635 の判定はレース単位の純粋関数のまま（BOA-635 の ADR 案（PR #1093）の決定1は維持）。紐づけのキーは `(race_id, created_at)`（D-6 の読み替え）
 - 値の約束 R1〜R4・D-5 は 119 で固定（PGlite の検証）
 - 2,000件の言い換えの文言はオーケストレーターがユーザーに確認する
 
