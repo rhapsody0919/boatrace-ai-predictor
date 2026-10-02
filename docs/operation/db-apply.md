@@ -102,7 +102,7 @@ Settings > Actions > General > Workflow permissions で **Allow GitHub Actions t
    - 文の一覧と本文（400行を超える分はリンク先で読む）
    - 「台帳では既に適用済み」の注意が出ていれば、再適用してよいかを確かめる
 4. 問題なければ **Review deployments** > `production-db` にチェック > **Approve and deploy**。やめるなら **Reject**
-5. apply が成功すると、record が `db-apply/<ファイル名>-<run番号>` ブランチで APPLIED.md の PR を作る
+5. apply が成功すると、record が `db-apply/<ファイル名>-<run番号>-<試行回数>` ブランチで APPLIED.md の PR を作る
    - GITHUB_TOKEN が作った PR には他のワークフロー（Quality Gates）が自動では走らない。PR を一度閉じて開き直すと走る
    - 中身（適用状況の列）を確認してマージする。「確認した根拠」の列を書き足すならこの PR に足す
 6. ファイル冒頭の「適用後の確認」を実行する。RPC を変えたなら `node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js` も実行する（CLAUDE.md の自動レビュー4）
@@ -114,7 +114,7 @@ Settings > Actions > General > Workflow permissions で **Allow GitHub Actions t
 | inspect | 触っていない | 変わらない | summary の理由を直したマイグレーションを master にマージし、新しく起動する |
 | apply の sha256 照合・再検査 | 触っていない | 変わらない | 起こらない想定（同じコミットを取り出している）。起きたら run を残して調べる |
 | apply の psql | **全体がロールバック済み**（1つのトランザクション） | 変わらない（record は動かない） | ログの `psql:<file>:<行>: ERROR:` を見てマイグレーションを直し、master にマージして新しく起動する。`lock_timeout` 切れなら時間を置いて **Re-run jobs** でもよい（再承認が要る） |
-| record | **適用済み** | 変わらない | **apply を再実行しない**。record だけを **Re-run failed jobs** で再実行する（失敗した job だけが動き、apply は再実行されない）。それでも無理なら APPLIED.md を手で直す PR を出す |
+| record | **適用済み** | 変わらない | **apply を再実行しない**。record だけを **Re-run failed jobs** で再実行する（失敗した job だけが動き、apply は再実行されない。ブランチ名に試行回数が入るので1回目に push したブランチとぶつからない。残った1回目のブランチは消す）。それでも無理なら APPLIED.md を手で直す PR を出す |
 
 - **Re-run all jobs** は apply も含めてやり直す（承認がもう一度要る）。適用済みのものを再適用しないよう、record の失敗では使わない
 - 同時に2本は走らない（`concurrency: db-apply`。2本目は1本目が終わるまで待つ）

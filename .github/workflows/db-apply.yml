@@ -107,7 +107,8 @@ jobs:
         run: |
           node scripts/db/db-apply.js mark-applied "$MIGRATION" "$SHA256"
           file=$(basename "$MIGRATION")
-          branch="db-apply/${file%.sql}-${GITHUB_RUN_ID}"
+          # record だけを再実行したとき（PR の作成で落ちた等）に、1回目に push したブランチと名前がぶつからないよう試行回数も入れる
+          branch="db-apply/${file%.sql}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$branch"

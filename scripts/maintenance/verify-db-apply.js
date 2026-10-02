@@ -480,6 +480,10 @@ check(
     /refs\/heads\/master/.test(body("inspect")),
   );
   check(
+    "record のブランチ名に試行回数を入れる（record だけの再実行で push がぶつからない）",
+    /branch="db-apply\/[^"]*\$\{GITHUB_RUN_ATTEMPT\}"/.test(body("record")),
+  );
+  check(
     "apply は承認前の sha256 を受け取る",
     /needs\.inspect\.outputs\.sha256/.test(body("apply")),
   );
