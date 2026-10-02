@@ -1,7 +1,7 @@
 -- 123: レースごとの寄与度（B）の特徴量の表（BOA-271）
--- 対応spec/plan: docs/design/analogy-finder/plan.md（「学習側の設計」）、docs/adr/0083-per-race-contribution-treeshap-in-js.md
+-- 対応spec/plan: docs/design/analogy-finder/plan.md（「学習側の設計」）、ADR 案（#1134「レースごとの寄与度」）
 --
--- 背景: レースごとの寄与度は、Vercel の JS が TreeSHAP で計算する（出走表時点の段と展示後の段、ADR-0083）。選手の過去30走の
+-- 背景: レースごとの寄与度は、Vercel の JS が TreeSHAP で計算する（出走表時点の段と展示後の段、ADR 案（#1134））。選手の過去30走の
 --   ST・成績などの36特徴量は Python（scripts/ml/analogy/features.py）でしか作れないので、日次の特徴量ジョブ
 --   （GitHub Actions、JST 6:40・9:40・13:40）が今日のレースの36列をこの表に書き、JS が読む。
 --   36列は「朝 6:40 に分かる値」で定義する（節の日目・最終日は race_series から、体重・支部は前日まで、2連率は toFixed(1)）。
