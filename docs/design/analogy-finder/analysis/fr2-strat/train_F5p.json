@@ -1,0 +1,70 @@
+{
+ "variant": "F5p",
+ "features": [
+  "venue_code",
+  "boat_number",
+  "race_number",
+  "cls_ord",
+  "nat_win",
+  "nat_2",
+  "loc_win",
+  "loc_2",
+  "recent_win30",
+  "recent_top3_30",
+  "nat_win_diff",
+  "nat_win_rank",
+  "loc_win_diff",
+  "loc_win_rank",
+  "recent_win30_diff",
+  "recent_win30_rank",
+  "b1_cls_ord",
+  "b1_nat_win",
+  "st_mean30",
+  "st_n",
+  "st_mean30_diff",
+  "st_mean30_rank",
+  "motor_2",
+  "boat_2",
+  "motor_2_diff",
+  "motor_2_rank",
+  "boat_2_diff",
+  "boat_2_rank",
+  "grade_code",
+  "round_code",
+  "series_day",
+  "is_final_day_num",
+  "age",
+  "weight",
+  "branch_code",
+  "is_local"
+ ],
+ "ntree": 313,
+ "frac": 0.35,
+ "blocks": [
+  [
+   "2019-04-01",
+   "2020-06-24"
+  ],
+  [
+   "2020-06-25",
+   "2021-09-18"
+  ],
+  [
+   "2021-09-19",
+   "2022-12-13"
+  ],
+  [
+   "2022-12-14",
+   "2024-03-07"
+  ],
+  [
+   "2024-03-08",
+   "2025-05-31"
+  ]
+ ],
+ "full_train_races_used": 117494,
+ "temperature": 0.7166198892074456,
+ "win_ll_pool_cal": 1.2081510548076255,
+ "win_ll_cal": 1.2322553915473362,
+ "win_ll_test": 1.2009687973194243
+}
