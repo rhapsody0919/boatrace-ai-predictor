@@ -3,10 +3,11 @@
  * flying_rate / total_races）の取得と算出（BOA-581）。
  *
  * 定義:
- *   - total_races: 出走表（race_entries）に対応する race_start_timings の行のうち、欠場（finish_mark='欠'）を除いた数。
- *     F・L は含む。欠場艇にも行がある（9/21 以降の結果ページの取得と、K からの補完）ため、行数をそのまま数えると
- *     欠場を出走に数えてしまう（事故率の分母と同じく、欠場は出走に入れない）
- *   - flying_rate: F の走 ÷ total_races（分母は F・L を含み、欠場を含まない）
+ *   - total_races: 公式の出走回数と同じ定義（countsAsStart）。成績コード（official_finish_code、K ファイルの着欄）が
+ *     01〜06・F・L1・K1・S1・S2 の走を数え、S0・L0・K0（選手責任の無い失格・出遅れ・欠場）と 00 は数えない
+ *     （選手データ拡充レーンが BOA-327 の調査で確かめた。2026年前期で1,625人全員が公式の出走回数と一致）。
+ *     成績コードが NULL の行（K の同期の前の直近の分）は、着欄で判定し、欠場（finish_mark='欠'）だけを除く
+ *   - flying_rate: F の走 ÷ total_races（分母は上と同じ）
  *   - avg_st / st_stddev: F 以外で、ST が記録されている走（L・欠場は ST が NULL のため入らない）
  *   - avg_st_last_30: 上と同じ走のうち、新しい順に30走（F 以外の直近30走）
  *
@@ -16,6 +17,19 @@
 import { fetchAll } from "./supabaseClient.js";
 
 export const RECENT_ST_WINDOW = 30;
+
+/** 公式の出走回数に数える成績コード（K ファイルの着欄） */
+const OFFICIAL_START_CODE_RE = /^(0[1-6]|F|L1|K1|S1|S2)$/;
+
+/**
+ * その走が、公式の出走回数に数えられるか。
+ * @param {{official_finish_code?: string|null, finish_mark?: string|null}} t race_start_timings の行
+ */
+export function countsAsStart(t) {
+  if (t.official_finish_code != null)
+    return OFFICIAL_START_CODE_RE.test(t.official_finish_code);
+  return t.finish_mark !== "欠";
+}
 
 // .in() に渡す race_id の数。ページングで全件取るので行数の上限とは無関係で、
 // URL の長さだけを抑えるための値
@@ -41,7 +55,7 @@ const round = (value, digits) => Number(value.toFixed(digits));
  * 入力の並び順には依存しない（race_id 降順・boat_number 降順に並べ直す）。
  *
  * @param {Array<{race_id: string, boat_number: number}>} entries - 対象選手の出走
- * @param {Array<{race_id: string, boat_number: number, start_timing: number|string|null, is_flying: boolean|null, finish_mark?: string|null}>} timings
+ * @param {Array<{race_id: string, boat_number: number, start_timing: number|string|null, is_flying: boolean|null, finish_mark?: string|null, official_finish_code?: string|null}>} timings
  * @returns {{avg_st: number|null, avg_st_last_30: number|null, st_stddev: number|null, flying_rate: number, total_races: number}|null}
  */
 export function computeRacerStStats(entries, timings) {
@@ -50,7 +64,7 @@ export function computeRacerStStats(entries, timings) {
   );
   const racerTimings = timings
     .filter((t) => entryKeys.has(`${t.race_id}_${t.boat_number}`))
-    .filter((t) => t.finish_mark !== "欠")
+    .filter(countsAsStart)
     .sort(
       (a, b) =>
         b.race_id.localeCompare(a.race_id) || b.boat_number - a.boat_number,
@@ -119,7 +133,7 @@ export async function fetchStartTimingsForEntries(client, entries) {
     const rows = await withRetry("race_start_timings取得エラー", () =>
       fetchAll(
         "race_start_timings",
-        "race_id, boat_number, start_timing, is_flying, finish_mark",
+        "race_id, boat_number, start_timing, is_flying, finish_mark, official_finish_code",
         (q) =>
           q
             .in("race_id", chunk)

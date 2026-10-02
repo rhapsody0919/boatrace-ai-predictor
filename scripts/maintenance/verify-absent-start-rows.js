@@ -7,7 +7,8 @@
  *
  *   (a) stDeviation（展示STと本番STのズレ。supabaseDataService の getStDeviationTrend・getRaceStPredictabilityBreakdown）:
  *       どちらかが NULL なら null（Math.abs(null - 0.12) = 0.12 を混ぜない）
- *   (b) computeRacerStStats（racer_aggregated_stats の total_races・flying_rate）: 欠場を出走に数えない。L は数える
+ *   (b) computeRacerStStats（racer_aggregated_stats の total_races・flying_rate）: 出走回数は公式の定義（成績コードの
+ *       01〜06・F・L1・K1・S1・S2）。成績コードが NULL の行は着欄で判定し、欠場だけを除く
  *   (c) aggregateTopStarts（top_start_stats）: 欠場を参加数に入れない。ST が NULL の行があっても、そのレースの
  *       トップスタートを消さない（Math.min が null を 0 とみなしていた）
  *   (d) 分析・検証のスクリプト（得点率の配点の検証）: 行の有無だけで出走を判定せず、「欠」を除く
@@ -18,7 +19,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stDeviation } from "../../src/utils/stDeviation.js";
-import { computeRacerStStats } from "../lib/racerStStats.js";
+import { computeRacerStStats, countsAsStart } from "../lib/racerStStats.js";
 import { aggregateTopStarts } from "../daily/update-top-start-stats.js";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -44,55 +45,55 @@ check(
   show([stDeviation(null, 0.12), stDeviation(null, null)]),
 );
 
-// (b) 選手のST統計
+// (b) 選手のST統計: 出走回数は公式の定義（成績コードの 01〜06・F・L1・K1・S1・S2。S0・L0・K0 と 00 は数えない）。
+//     成績コードが NULL の行は着欄で判定し、欠場だけを除く
 {
-  const entries = [1, 2, 3, 4].map((d) => ({
-    race_id: `2026-06-0${d}-12-01`,
+  const t = (d, code, mark, st, fly = false) => ({
+    race_id: `2026-06-${String(d).padStart(2, "0")}-12-01`,
     boat_number: 1,
-  }));
+    start_timing: st,
+    is_flying: fly,
+    finish_mark: mark,
+    official_finish_code: code,
+  });
   const timings = [
-    {
-      race_id: "2026-06-01-12-01",
-      boat_number: 1,
-      start_timing: "0.15",
-      is_flying: false,
-      finish_mark: "2",
-    },
-    {
-      race_id: "2026-06-02-12-01",
-      boat_number: 1,
-      start_timing: "0.03",
-      is_flying: true,
-      finish_mark: "F",
-    },
-    // 欠場: 出走に数えない
-    {
-      race_id: "2026-06-03-12-01",
-      boat_number: 1,
-      start_timing: null,
-      is_flying: false,
-      finish_mark: "欠",
-    },
-    // 出遅れ: 出走には数える（ST は NULL なので平均には入らない）
-    {
-      race_id: "2026-06-04-12-01",
-      boat_number: 1,
-      start_timing: null,
-      is_flying: false,
-      finish_mark: "L",
-    },
+    t(1, "02", "2", "0.15"),
+    t(2, "F", "F", "0.03", true),
+    t(3, "K1", "欠", null), // 選手責任の欠場: 数える
+    t(4, "K0", "欠", null), // 責任外の欠場: 数えない
+    t(5, "L1", "L", null), // 選手責任の出遅れ: 数える
+    t(6, "L0", "L", null), // 責任外の出遅れ: 数えない
+    t(7, "S1", "転", "0.20"), // 選手責任の失格: 数える
+    t(8, "S0", "落", "0.10"), // 責任外の失格: 数えない
+    t(9, null, "欠", null), // 成績コードが未同期: 着欄で判定（欠場は数えない）
+    t(10, null, "3", "0.12"), // 成績コードが未同期: 着欄で判定（数える）
   ];
+  const entries = timings.map(({ race_id, boat_number }) => ({
+    race_id,
+    boat_number,
+  }));
   const s = computeRacerStStats(entries, timings);
   check(
-    "(b) computeRacerStStats: 欠場を除いた3走（F・L は含む）。F率の分母も3。平均STは F・L・欠場を除いた 0.15",
-    s.total_races === 3 && s.flying_rate === 0.3333 && s.avg_st === 0.15,
+    "(b) computeRacerStStats: 出走は 02・F・K1・L1・S1・（未同期の3着）の6走。K0・L0・S0・（未同期の欠場）は数えない。F率は 1/6",
+    s.total_races === 6 && s.flying_rate === 0.1667,
     show(s),
   );
-  const onlyAbsent = computeRacerStStats(entries.slice(2, 3), timings);
   check(
-    "(b) 欠場だけの選手は、統計なし（null。出走0）",
-    onlyAbsent === null,
-    show(onlyAbsent),
+    "(b) countsAsStart: 公式の出走の成績コード（01〜06・F・L1・K1・S1・S2）だけ true。00・S0・L0・K0 は false。NULL は着欄で「欠」だけ false",
+    ["01", "06", "F", "L1", "K1", "S1", "S2"].every((c) =>
+      countsAsStart({ official_finish_code: c }),
+    ) &&
+      ["00", "S0", "L0", "K0"].every(
+        (c) => !countsAsStart({ official_finish_code: c }),
+      ) &&
+      !countsAsStart({ official_finish_code: null, finish_mark: "欠" }) &&
+      countsAsStart({ official_finish_code: null, finish_mark: null }),
+  );
+  const onlyK0 = computeRacerStStats(entries.slice(3, 4), timings);
+  check(
+    "(b) 責任外の欠場だけの選手は、統計なし（null。出走0）",
+    onlyK0 === null,
+    show(onlyK0),
   );
 }
 
