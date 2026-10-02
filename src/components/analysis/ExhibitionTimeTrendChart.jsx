@@ -10,6 +10,7 @@ import { supabaseDataService } from "../../services/supabaseDataService";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import TrendLineChart from "./TrendLineChart";
+import { bestOf } from "../../utils/bestOf";
 import DrillDownHeader from "./DrillDownHeader";
 import "./MotorConditionChart.css";
 
@@ -79,14 +80,12 @@ function ExhibitionTimeTrendChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drillDownRacer]);
 
-  const bestAvgTime =
-    breakdown.filter((r) => r.avg_exhibition_time !== null).length > 0
-      ? Math.min(
-          ...breakdown
-            .filter((r) => r.avg_exhibition_time !== null)
-            .map((r) => r.avg_exhibition_time),
-        )
-      : null;
+  // 平均展示が最も速い艇（同値は全部）。表示と同じ小数2桁で比べる（R1）
+  const bestAvgTimeBoats = bestOf(
+    breakdown.map((r) => ({ boat: r.boat_number, value: r.avg_exhibition_time })),
+    "min",
+    { digits: 2 },
+  );
 
   const chartData = (trendData?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
@@ -180,7 +179,7 @@ function ExhibitionTimeTrendChart({
                 {breakdown.map((row) => (
                   <tr
                     key={row.boat_number}
-                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""} ${row.avg_exhibition_time === bestAvgTime && bestAvgTime !== null ? "best-motor" : ""}`}
+                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""} ${bestAvgTimeBoats.has(row.boat_number) ? "best-motor" : ""}`}
                     onClick={() =>
                       row.racer_id !== null && setDrillDownRacer(row.racer_id)
                     }

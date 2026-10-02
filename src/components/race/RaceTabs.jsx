@@ -10,7 +10,11 @@
  *
  * onActiveTabChangeを渡すと、アクティブタブが変わるたび（初回マウント含む）に
  * 呼ばれる。PredictionPanel.jsxが「結果タブの時はDataRaceTable等の分析ツール群を
- * 隠す」ためにアクティブタブを外部で把握する目的で使う（BOA-305〜312フィードバック#7）
+ * 隠す」ためにアクティブタブを外部で把握する目的で使う（BOA-305〜312フィードバック#7）。
+ * URL の ?tab= への書き戻し（BOA-493）もこれで行う
+ *
+ * initialTabIdを渡すと、マウント時にそのタブで開く（共有リンクの ?tab=、BOA-493）。
+ * 今のタブ構成に無いID（確定前のレースの "result" 等）なら defaultTabId で開く
  *
  * ## 狭い画面での操作性（2026-09-26、ファン視点の指摘で追加）
  *
@@ -32,8 +36,12 @@ import { useState, useEffect, useRef } from "react";
 import { trackEvent } from "../../utils/analytics";
 import "./RaceTabs.css";
 
-function RaceTabs({ tabs, defaultTabId, onActiveTabChange }) {
-  const [activeId, setActiveId] = useState(defaultTabId ?? tabs[0]?.id);
+function RaceTabs({ tabs, defaultTabId, initialTabId, onActiveTabChange }) {
+  const [activeId, setActiveId] = useState(() =>
+    tabs.some((tab) => tab.id === initialTabId)
+      ? initialTabId
+      : (defaultTabId ?? tabs[0]?.id),
+  );
   // レース遷移・結果確定でdefaultTabIdが変わった時だけ選択をリセットする
   // （タブを自分でクリックした後、無関係な再レンダーで勝手に戻らないようにする）
   const prevDefaultRef = useRef(defaultTabId);
