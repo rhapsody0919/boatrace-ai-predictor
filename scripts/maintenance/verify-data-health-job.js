@@ -175,6 +175,7 @@ const MIGRATION_FILES = Object.freeze([
   "105_data_health_coverage_exhibition_row.sql",
   "107_data_health_cancellation_with_result.sql",
   "121_data_health_pre_race_series_day.sql",
+  "124_data_health_analogy_race_features.sql",
 ]);
 const MIGRATION_FILE = MIGRATION_FILES[0];
 const migrationSqlByFile = new Map(

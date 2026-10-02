@@ -53,6 +53,7 @@ export const TABLE_ROWS_TABLES = Object.freeze([
   "race_special_notes",
   "race_series",
   "racer_period_stats",
+  "analogy_race_features",
 ]);
 
 /**
@@ -321,7 +322,7 @@ export const DATA_HEALTH_FUNCTIONS = Object.freeze([
     shape: "rows",
     description:
       "データ健全性の日次監視: 出走行のうち、レースごとの寄与度の特徴量（analogy_race_features、123）がある行の数",
-    migration: "123_analogy_race_features.sql",
+    migration: "124_data_health_analogy_race_features.sql",
     body: analogyRaceFeaturesSql,
   },
   {
@@ -359,7 +360,7 @@ export const DATA_HEALTH_FUNCTIONS = Object.freeze([
     shape: "object",
     description:
       "データ健全性の日次監視: 主要テーブルに1行以上あるか（空テーブルの検知）。対象テーブルは関数の中の固定の一覧",
-    migration: "089_data_health_functions.sql",
+    migration: "124_data_health_analogy_race_features.sql",
     body: tableRowsSql,
   },
 ]);
