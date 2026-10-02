@@ -28,6 +28,9 @@ test("丸一日中止の日は、見出しに日目を出さず、今節タブ�
     "このレースは中止のため、得点率は動きません。",
   );
   await expect(page.locator(".rmt-forecast-table")).toHaveCount(0);
+  // 走らないレースなので「初戦」と書かない（PR #1102 ファン評価1周目）
+  await expect(page.locator(".race-meet-tab")).not.toContainText("初戦");
+  await expect(page.locator(".rmt-compare")).toContainText("未出走");
 });
 
 test("一部だけ成立した日の中止のレースは、日目を残して中止の断りを出す", async ({

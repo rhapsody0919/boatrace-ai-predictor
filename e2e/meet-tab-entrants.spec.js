@@ -32,6 +32,17 @@ test("初日の2Rでも6艇とも行が出て、出場人数は出走表から�
   );
 });
 
+test("初日の1R（6艇とも初戦）でも表と出場人数を出し、同じ一文を2回出さない", async ({
+  page,
+}) => {
+  await openMeetTab(page, "2026-09-21-09-01");
+  await expect(page.locator(".rmt-compare tbody tr")).toHaveCount(6);
+  await expect(page.locator(".rmt-sub").first()).toContainText("節の出場は");
+  await expect(
+    page.locator(".rmt-empty", { hasText: "今節はまだ走っていません" }),
+  ).toHaveCount(1);
+});
+
 test("予選序盤で今節をまだ走っていない艇も行として出す", async ({ page }) => {
   await openMeetTab(page, "2026-09-23-09-06");
   await expect(page.locator(".rmt-compare tbody tr")).toHaveCount(6);

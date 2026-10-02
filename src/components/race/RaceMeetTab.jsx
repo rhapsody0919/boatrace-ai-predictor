@@ -496,7 +496,9 @@ function RaceMeetTab({
       <p className="rmt-note">{t("meetTab.note")}</p>
 
       {/* 1. 6艇横断。レースを開いて最初に見るもの */}
-      {ranking.length > 0 && (
+      {/* 6艇とも今節初戦（初日の1R等）でも表を出す。表を出さないと1Rだけ見え方が
+          変わり、出場人数も出ない（PR #1102 ファン評価1周目） */}
+      {(ranking.length > 0 || notYetRun.length > 0) && (
         <div className="rmt-card">
           <h3 className="rmt-card-title">{t("meetTab.compareTitle")}</h3>
           <table className="rmt-compare">
@@ -635,7 +637,14 @@ function RaceMeetTab({
                 >
                   {renderPlayerHead(p, [])}
                   <td className="rmt-rate">—</td>
-                  <td className="rmt-rank">{t("meetTab.notYetRun")}</td>
+                  {/* 中止のレースは走らないので「初戦」と書かない（ファン評価1周目） */}
+                  <td className="rmt-rank">
+                    {t(
+                      isCancelled
+                        ? "meetTab.notYetRunCancelled"
+                        : "meetTab.notYetRun",
+                    )}
+                  </td>
                   {renderPretestCell(p)}
                 </tr>
               ))}
@@ -685,7 +694,16 @@ function RaceMeetTab({
             {/* 「欠場」の理由。セルの title はタッチ端末で読めないので本文にも書く
                 （BOA-504 ファン評価） */}
             {absentOnly.some(inTable) && <> {t("meetTab.absentNote")}</>}
-            {notYetRun.length > 0 && <> {t("meetTab.notYetRunNote")}</>}
+            {notYetRun.length > 0 && (
+              <>
+                {" "}
+                {t(
+                  isCancelled
+                    ? "meetTab.notYetRunCancelledNote"
+                    : "meetTab.notYetRunNote",
+                )}
+              </>
+            )}
             {/* 着順の並びの「欠」の意味と、得点率の分母から外していること
                 （一部欠場の開催でも書く。BOA-504 ファン評価） */}
             {[...ranking, ...absentOnly]
@@ -739,9 +757,11 @@ function RaceMeetTab({
       {board === undefined && (
         <p className="rmt-loading">{t("basicInfo.loading")}</p>
       )}
-      {board !== undefined && ranking.length === 0 && (
-        <p className="rmt-empty">{t("basicInfo.meetEmpty")}</p>
-      )}
+      {board !== undefined &&
+        ranking.length === 0 &&
+        notYetRun.length === 0 && (
+          <p className="rmt-empty">{t("basicInfo.meetEmpty")}</p>
+        )}
 
       {/* 1a. 得点率早見（6艇×着順）。公式と同じ行列で、ボーダーの目安との
           関係を色で示す。「当確」という断定はしない（番組が未確定で
@@ -1196,7 +1216,11 @@ function RaceMeetTab({
         {records === undefined ? (
           <p className="rmt-loading">{t("basicInfo.loading")}</p>
         ) : meet.length === 0 ? (
-          <p className="rmt-empty">{t("basicInfo.meetEmpty")}</p>
+          <p className="rmt-empty">
+            {t(
+              isCancelled ? "meetTab.meetEmptyCancelled" : "basicInfo.meetEmpty",
+            )}
+          </p>
         ) : (
           <>
             {/* 今節の走順に並べた小さな線。数字の羅列だと8走ぶんの上下を
