@@ -68,9 +68,11 @@ function RaceHistory() {
     fetchSummary();
   }, []);
 
+  // Breadcrumb は {name, url} を読む。以前は {label, path} で渡していて、画面のパンくずが空になり、
+  // BreadcrumbList の JSON-LD も item が ".../undefined" になっていた（集客レーン、2026-10-02）
   const breadcrumbItems = [
-    { label: "ホーム", path: "/" },
-    { label: "過去の予想", path: "/races" },
+    { name: "ホーム", url: "/" },
+    { name: "過去の予想", url: "/races" },
   ];
 
   // 月のサマリーを計算（展開予測的中率の月内平均）
