@@ -9,6 +9,11 @@ import {
   getAvailableLanguages,
 } from "../src/config/languages.js";
 import { VENUE_GUIDES_EN } from "../src/data/venueGuidesEn.js";
+import {
+  isRacerIndexable,
+  RACER_INDEX_ACTIVE_DAYS,
+} from "../src/utils/racerIndexPolicy.js";
+import { getDaysAgoJST } from "../src/utils/dateUtils.js";
 import { VENUE_REGIONS } from "../src/data/venueRegions.js";
 import { VENUE_GUIDES_ZH_TW } from "../src/data/venueGuidesZhTw.js";
 import { VENUE_GUIDES_KO } from "../src/data/venueGuidesKo.js";
@@ -417,9 +422,9 @@ async function getRacePages() {
 }
 
 // 選手個別ページ（/racer/:racerId）を取得
-// racer_newsに1件でも行がある racer_id のみ対象とする（ニュース・占い情報が無い選手ページは
-// noindexにする方針、docs/design/racer-news-feature/plan.md「インデックス判定」参照）。
-// ページ側のnoindex条件（RacerProfile.jsxのuseRobotsMeta呼び出し）と同じ「racer_newsの有無」を見る
+// 対象はページ側の noindex 判定（RacerProfile.jsx）と同じ isRacerIndexable（src/utils/racerIndexPolicy.js）:
+// ニュースがある選手、または現役の A1 選手（最新の出走が A1 で直近30日以内。集客レーン、2026-10-02）。
+// lastmod は、ニュースの最新日と最新の出走日の新しい方（ページの中身が変わった日）
 async function getRacerPages() {
   const racerPages = [];
 
@@ -431,30 +436,72 @@ async function getRacerPages() {
       return racerPages;
     }
 
+    const { fetchAll } = await import("./lib/supabaseClient.js");
+    const activeSince = getDaysAgoJST(RACER_INDEX_ACTIVE_DAYS);
+
     const { data, error } = await supabase
       .from("racer_news")
       .select("racer_id, created_at");
     if (error) throw new Error(error.message);
-
-    const latestByRacerId = new Map();
+    const newsDateByRacerId = new Map();
     for (const row of data ?? []) {
+      const date = row.created_at.slice(0, 10);
+      const current = newsDateByRacerId.get(row.racer_id);
+      if (!current || date > current) newsDateByRacerId.set(row.racer_id, date);
+    }
+
+    // 直近の出走（race_id は YYYY-MM-DD-VV-RR なので、文字列の比較で日付の範囲を絞れる）。
+    // 選手ごとに最新の出走の級と開催日を取る（ページ側の getLatestEntry と同じ「最新の出走」）
+    const entries = await fetchAll(
+      "race_entries",
+      "racer_id, grade, race_id",
+      (q) => q.gte("race_id", activeSince).not("racer_id", "is", null),
+    );
+    const latestByRacerId = new Map();
+    for (const row of entries) {
       const current = latestByRacerId.get(row.racer_id);
-      if (!current || row.created_at > current) {
-        latestByRacerId.set(row.racer_id, row.created_at);
+      if (!current || row.race_id > current.race_id) {
+        latestByRacerId.set(row.racer_id, row);
       }
     }
 
-    for (const [racerId, createdAt] of latestByRacerId) {
+    const racerIds = new Set([
+      ...newsDateByRacerId.keys(),
+      ...latestByRacerId.keys(),
+    ]);
+    let byNews = 0;
+    let byGrade = 0;
+    for (const racerId of racerIds) {
+      const latest = latestByRacerId.get(racerId);
+      const latestRaceDate = latest ? latest.race_id.slice(0, 10) : null;
+      const hasNews = newsDateByRacerId.has(racerId);
+      if (
+        !isRacerIndexable({
+          hasNews,
+          latestGrade: latest?.grade ?? null,
+          latestRaceDate,
+          activeSince,
+        })
+      ) {
+        continue;
+      }
+      if (hasNews) byNews += 1;
+      else byGrade += 1;
+      const lastmod = [newsDateByRacerId.get(racerId), latestRaceDate]
+        .filter(Boolean)
+        .sort()
+        .at(-1);
       racerPages.push({
         loc: `/racer/${racerId}`,
-        lastmod: createdAt.slice(0, 10),
-        changefreq: "monthly",
+        lastmod,
+        changefreq: "weekly",
         priority: "0.5",
       });
     }
+    racerPages.sort((a, b) => a.loc.localeCompare(b.loc));
 
     console.log(
-      `📊 Supabase からニュース掲載済みの選手ページを取得（${latestByRacerId.size}人）`,
+      `📊 Supabase から選手ページを取得（${racerPages.length}人: ニュース掲載 ${byNews}人・現役A1 ${byGrade}人）`,
     );
   } catch (err) {
     console.error("選手ページ取得エラー:", err.message);

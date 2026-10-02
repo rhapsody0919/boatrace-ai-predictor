@@ -208,6 +208,7 @@ export function landingSplit(pageRows, origin = "https://www.boat-ai.jp") {
     root: emptyAgg(),
     today: emptyAgg(),
     venue: emptyAgg(),
+    racer: emptyAgg(),
     blog: emptyAgg(),
     otherJa: emptyAgg(),
     i18n: emptyAgg(),
@@ -220,6 +221,7 @@ export function landingSplit(pageRows, origin = "https://www.boat-ai.jp") {
     else if (/^\/(en|ko|zh-TW)(\/|$)/.test(pathname)) g = "i18n";
     else if (pathname === "/today") g = "today";
     else if (/^\/venue\/\d+$/.test(pathname)) g = "venue";
+    else if (/^\/racer\/\d+$/.test(pathname)) g = "racer";
     else if (pathname.startsWith("/blog/")) g = "blog";
     add(groups[g], r);
   }
@@ -229,6 +231,7 @@ export function landingSplit(pageRows, origin = "https://www.boat-ai.jp") {
   const nonRootClicks =
     out.today.clicks +
     out.venue.clicks +
+    out.racer.clicks +
     out.blog.clicks +
     out.otherJa.clicks +
     out.i18n.clicks;
