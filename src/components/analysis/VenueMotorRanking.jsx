@@ -18,11 +18,11 @@ import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { getTodayJST } from "../../utils/dateUtils";
 import {
   sortMotorRows,
-  topRateMotors,
   formatMotorRate,
   formatSlashDate,
 } from "../../utils/venueMotorRanking";
 import RateBar from "../common/RateBar";
+import { bestOf } from "../../utils/bestOf";
 import "./VenueMotorRanking.css";
 import "../common/HorizontalScrollHint.css";
 
@@ -75,7 +75,15 @@ function VenueMotorRanking({ initialVenueCode = null }) {
     () => (result?.state === "ok" ? sortMotorRows(result.rows, sortKey) : []),
     [result, sortKey],
   );
-  const best = useMemo(() => topRateMotors(rows), [rows]);
+  // 2連率1位の機番（同率1位は全部、全部同じ値なら無し。UI統一ルール R1）
+  const best = useMemo(
+    () =>
+      bestOf(
+        rows.map((r) => ({ boat: r.motorNumber, value: r.top2Rate })),
+        "max",
+      ),
+    [rows],
+  );
   const maxRate = useMemo(
     () => Math.max(0, ...rows.map((r) => r.top2Rate).filter((v) => v !== null)),
     [rows],

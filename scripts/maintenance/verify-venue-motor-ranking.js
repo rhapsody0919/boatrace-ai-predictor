@@ -7,7 +7,6 @@
  *   - 並べている列の値が無い行は末尾で、順位は null（画面は「-」）
  *   - 機番で並べたときの順位は、2連率の順位のまま
  *   - 列ごとの向き（2連率・優勝は降順、機番・前検は昇順）
- *   - 2連率1位（R1）は同率1位を全部、全部同じ値なら付けない
  *   - 2連率の表示桁（小数第2位があれば残す）と取得日の表記
  *   - 使用者は今の節の出走表で直近に乗った選手（前検データに載らない途中の入れ替えを補う）
  *
@@ -134,32 +133,6 @@ function runChecks(mod) {
     mod.VENUE_SITE_STATS_HIDDEN,
     [6, 17],
   );
-  // 2連率1位（R1、子3 のランキング）
-  check(
-    "2連率1位: 同率1位は全部、値なしは外す",
-    [
-      ...mod.topRateMotors([
-        { motorNumber: 1, top2Rate: 40 },
-        { motorNumber: 2, top2Rate: 40 },
-        { motorNumber: 3, top2Rate: 30 },
-        { motorNumber: 4, top2Rate: null },
-      ]),
-    ],
-    [1, 2],
-  );
-  check(
-    "2連率1位: 全部同じ値なら付けない",
-    mod.topRateMotors([
-      { motorNumber: 1, top2Rate: 40 },
-      { motorNumber: 2, top2Rate: 40 },
-    ]).size,
-    0,
-  );
-  check(
-    "2連率1位: 値のある行が無ければ付けない",
-    mod.topRateMotors([{ motorNumber: 1, top2Rate: null }]).size,
-    0,
-  );
   // 表示の桁（会場サイトによって小数第2位まである）
   check(
     "2連率の表示: 小数第2位があれば残し、無ければ1桁",
@@ -203,10 +176,12 @@ function runChecks(mod) {
   );
   check(
     "使用者: レースの無い日より前（前の節）は数えない",
-    mod.currentSeriesRiders(
-      [e("2026-09-24-15-01", 9001, 70), ...ENTRIES],
-      "2026-10-02",
-    ).has(70),
+    mod
+      .currentSeriesRiders(
+        [e("2026-09-24-15-01", 9001, 70), ...ENTRIES],
+        "2026-10-02",
+      )
+      .has(70),
     false,
   );
   check(
@@ -242,11 +217,6 @@ const MUTANTS = [
     name: "値なしの順位を 0 にする",
     from: "rank: hit?.rank ?? null",
     to: "rank: hit?.rank ?? 0",
-  },
-  {
-    name: "全部同じ値でも1位を光らせる",
-    from: "if (Math.min(...values) === max) return new Set();",
-    to: "",
   },
   {
     name: "2連率を常に1桁に丸める",

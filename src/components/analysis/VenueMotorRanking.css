@@ -143,17 +143,6 @@
   text-align: left;
 }
 
-/* 2連率1位（同率は全部）の値ラベル。UI統一ルール R1 の金枠＋太字。
-   レース詳細UI統一の共通クラス（.ind-best、#1135）がマージされたら置き換える */
-.vmr-table .rate-bar-label.is-best {
-  box-shadow:
-    inset 0 0 0 1px
-      color-mix(in srgb, var(--brand-accent-primary) 40%, transparent),
-    inset 0 0 0 100vmax
-      color-mix(in srgb, var(--brand-accent-primary) 14%, transparent);
-  font-weight: var(--font-weight-bold);
-}
-
 .vmr-note {
   margin-top: var(--spacing-3);
   padding: var(--spacing-2) var(--spacing-3);

@@ -31,7 +31,9 @@ export default function RateBar({ value, max, fill, best = false, label }) {
           style={{ width: `${(ratio * 100).toFixed(2)}%`, background: fill }}
         />
       )}
-      <span className={`rate-bar-label${best ? " is-best" : ""}`}>{label}</span>
+      <span className={`rate-bar-label${best ? " is-best ind-best" : ""}`}>
+        {label}
+      </span>
     </div>
   );
 }

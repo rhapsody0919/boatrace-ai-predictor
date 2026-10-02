@@ -1,0 +1,27 @@
+/*
+ * 指標の良し悪しの色分け（docs/design/race-detail-ui-unify spec R1・R2）。
+ *
+ *   .ind-best … 6艇の中の最良（同値は全部）。金の薄い塗り＋枠＋太字
+ *   .ind-good … 基準より良い（緑）。↑ や ＋ を文字で必ず添える
+ *   .ind-bad  … 基準より悪い（赤）。↓ や − を文字で必ず添える
+ *
+ * 各表の指定（`.motor-ranking-table td` の文字色、偶数行の縞の background）に負けないよう、
+ * 同じクラスを3つ重ねて詳細度を上げる。塗りは background ではなく inset の box-shadow で
+ * 描く（縞の行は background を上書きするため）
+ */
+.ind-best.ind-best.ind-best {
+  box-shadow:
+    inset 0 0 0 1px var(--ind-best-ring),
+    inset 0 0 0 100vmax var(--ind-best-bg);
+  font-weight: var(--font-weight-bold);
+}
+
+.ind-good.ind-good.ind-good {
+  color: var(--color-success-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.ind-bad.ind-bad.ind-bad {
+  color: var(--color-error-text);
+  font-weight: var(--font-weight-bold);
+}
