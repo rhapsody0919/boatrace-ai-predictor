@@ -88,3 +88,34 @@ test("375pxで、今節初戦の行があっても列見出し「前検」がカ
   });
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+for (const path of ["/race/2026-09-25-01-07", "/en/race/2026-09-25-01-07"]) {
+  test(`375pxで、節内順位と前検の値がくっつかない（${path}）`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(path);
+    await page.locator(".race-tabs-btn").nth(2).click();
+    await expect(page.locator(".rmt-compare tbody tr")).toHaveCount(6, {
+      timeout: 30000,
+    });
+    // 列の間を詰めて見出しのはみ出しを直したら、「7 6.74」が1つの値に見えた
+    // （PR #1102 ファン評価3周目）。列の間は8pxのまま、名前の列の側で吸収する
+    const minGap = await page.evaluate(() => {
+      const rng = (el) => {
+        const r = document.createRange();
+        r.selectNodeContents(el);
+        return r.getBoundingClientRect();
+      };
+      let gap = Infinity;
+      for (const tr of document.querySelectorAll(".rmt-compare tbody tr")) {
+        const rank = tr.querySelector(".rmt-rank");
+        const pre = tr.querySelector(".rmt-pretest");
+        if (rank && pre && pre.innerText.trim() !== "—")
+          gap = Math.min(gap, rng(pre).left - rng(rank).right);
+      }
+      return gap;
+    });
+    expect(minGap).toBeGreaterThanOrEqual(6);
+  });
+}
