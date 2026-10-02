@@ -32,7 +32,7 @@ S2 のパスは `/step2` で決める（候補: `/tomorrow/:venueCode`。`/venue
 ## デザイントークンで表現できる部分 / 新規 CSS
 
 - トークンで足りる: 文字色（`--text-primary`・`--text-secondary`）、面（`--surface-card`・`--surface-page`）、罫線（`--border-hairline`）、強調（`--brand-accent-primary`）。グレードは `GRADE_CONFIG`、艇番は `BOAT_COLORS`
-- 新規 CSS が要る: C1 のタブの形（2択のセグメント）、C5 の表の列幅（375px で6列が収まるよう、選手名の省略と数字列の固定幅）。いずれも `.tomorrow-` 接頭辞
+- 新規 CSS が要る: C1 のタブの形（2択のセグメント、`.tomorrow-` 接頭辞）。C5 の表は既存の `.drt-`（DataRaceTable.css）をそのまま使い、新規 CSS は作らない
 - ダークモードでも読めることを Playwright で確認する（`component-reuse.md`）
 
 ## 共通化の判断

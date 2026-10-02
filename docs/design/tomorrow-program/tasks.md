@@ -11,8 +11,11 @@ spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md) / plan: [plan.m
   - 会場ブロックの本文が「この場のデータ更新は、いましばらくお待ちください。」だけなら `pending: true`、出走表があれば `false`（開催の無い会場はブロック自体が無い）
   - 再現テスト: 10/3 分の実ファイルから、更新待ちの会場と出走表のある会場を含む断片を fixture にし、`verify-kb-file-parser.js` に追加（修正前は `pending` が無く、更新待ちが空会場になることを確認してから足す）
   - 既存の呼び出し元（`fix-opening-day-entries-from-b.js` 等）の挙動が変わらないことを確認
+- [ ] **T1b RPC 3本の「艇番×racer_id」版**（マイグレーション123に同梱。T2 の適用より前に書く。plan.md §8 の1・2）
+  - `get_boats_st_predictability`・`get_boats_technique_profile`・`get_boats_return_rate`（引数 `p_boats int[], p_racer_ids int[], p_before text`、`race_id < p_before`、集計窓の下限は 029 と同じ `now()`）。同じファイルで `GRANT EXECUTE ... TO anon, authenticated`。`check-anon-access.js` の `ANON_RPCS` に追加。「元に戻す」に DROP FUNCTION
+  - 再現テスト: 既存のレースの race_id を p_before に渡すと、race_id 版と同じ値（実データで1会場12R。`scripts/maintenance/` の manual verify、registry に manual で登録）
 - [ ] **T2 マイグレーション案 123 の最終確認**（`docs/db-migration/123_tomorrow_program.sql`）
-  - 2表（`tomorrow_program`・`tomorrow_program_venues`）。列の型は design-reviewer が実ファイルで突き合わせ済み。`verify:migration-rls`・`verify:migration-numbers` を通す
+  - 2表（`tomorrow_program`・`tomorrow_program_venues`）と T1b の RPC 3本。列の型は design-reviewer が実ファイルで突き合わせ済み。`verify:migration-rls`・`verify:migration-numbers` を通す
   - 適用はユーザー（コードのマージより先）。APPLIED.md に記録済み
 - [ ] **T3 取得ジョブ本体**（`scripts/lib/tomorrowProgramJob.js`、`api/cron/tomorrow-program.js`、registry、vercel.json）
   - plan.md §3.2 の1 tick（対象日=JST今日+1、14時前は何もしない、cursor `{date,lastModified,mode}`、404 は未公開で成功、Last-Modified 不変かつ DB がそろっていれば終了、本文の日付ガード、pending は venues だけ、`upsertChangedRows` の設定（chunkColumn・race_date の絞り込み・time 表記・ignoreColumns・TIMESTAMP_COLUMNS/NUMERIC_SCALES）、報告、22時以降の alerts）
@@ -33,9 +36,6 @@ spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md) / plan: [plan.m
 
 ## (b) 「明日」タブの画面
 
-- [ ] **T5b RPC 3本の「艇番×racer_id」版**（マイグレーション123に同梱、未適用のうちに足す）
-  - `get_race_st_predictability`・`get_race_technique_profile`・`get_race_return_rate`（029）と同じ集計で、`race_entries` の代わりに引数の組（艇番・racer_id）と基準日を使う版。匿名に EXECUTE（113 の方針を確認）
-  - 再現テスト: 既存のレース（race_id 版が値を返すもの）で、同じ艇番×racer_id を渡した新版が同じ値を返す（実データで1会場12R、`scripts/maintenance/` の manual verify）
 - [ ] **T6 データ取得**（`src/services/supabaseDataService.js`）
   - `getTomorrowVenueSummary(date)`・`getTomorrowProgram(date, venueCode)`（plan.md §4.2。withCache 5分、エラーは throw）
   - 会場の状態（program / waiting / none / before）を決める純関数と、選手名の全角空白をまとめる純関数を `src/utils/` に置き、`verify-frontend-pure-functions.js` に追加（venues=published→program、pending→waiting、venues に行が無く他の会場にはある→none、venues 0行→before）
@@ -45,9 +45,9 @@ spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md) / plan: [plan.m
 - [ ] **T8 VenueGridCard の明日の状態**（`VenueGridCard.jsx` 拡張）
   - program（グレード・節名・日次・1R締切予定、リンク `/tomorrow/:venueCode`）/ waiting「出走表準備中」/ none「明日開催なし」＋次開催日（BOA-225）
 - [ ] **T8b DataRaceTable の表示部分の切り出し**（`DataRaceTableView`）
-  - 当日の見た目・挙動は変えない。既存の `e2e/race-detail-*.spec.js` と layout が通ること
-  - `buildBasicIndicatorRows` に除外する行の key を渡せるようにする（明日は当日体重を出さない）
-  - `useTomorrowAnalysisData`（plan.md §4.0 の表の各行を racer_id・艇番で、会場の全レース分まとめて取得）
+  - 当日の DOM（クラス・id・順序）を変えない。`.drt-` を参照する E2E 5本（layout・race-detail-wide-screen・smoke・race-detail-mobile-table・flying-late-badge）が通ること（plan.md §8 の12）
+  - `buildBasicIndicatorRows` に除外する行の key、View に `linkRows: false`、バッジを非リンクで出す引数（§8 の3。既定は今のまま）
+  - `useTomorrowAnalysisData`（plan.md §4.0・§8 の各行を racer_id・艇番で、会場の全レース分まとめて取得。モーターは会場単位の一括取得と集計式の純関数化（§8 の4）、全艇0なら再計算しない（§8 の5）、players・モーター行の組み立ての純関数と再現テスト（§8 の8・9）、今節の前走は groupIntoMeetBeforeRace（§8 の10）、`fetchAllByIn`（§8 の11））
 - [ ] **T9 明日の出走表ページ**（`src/pages/TomorrowProgramPage.jsx` 新規、ルート `/tomorrow/:venueCode`。各レースは見出し＋ `DataRaceTableView`＋表の下の案内）
   - 前日時点の注記（Last-Modified の時刻、JST）、12R、選手名は racer_profiles の正式名（未登録は B の名前）、`translate="no"`、モーター0の実績なしは BOA-702 の規則
   - レース詳細へのリンクは置かない

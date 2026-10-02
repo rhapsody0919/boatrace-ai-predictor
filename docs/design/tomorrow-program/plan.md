@@ -215,3 +215,22 @@ flowchart TB
 - A 件数: 対象日に節がある会場×12R×6艇（中止・欠場を除く）の99%以上が、23:45 までに入っている。実測クエリを完了報告に添付
 - B タイミング: `created_at − source_modified_at` の分布を土日を含む直近5日で実測（目標: 30分以内が98%以上）
 - C 継続監視: 22時以降の未公開の会場・17時以降の未公開（404）は `alerts`、取得失敗は consecutive_failures、ジョブの未実行は monitor の死活（`activeWindowJst` の窓内）で Slack に流す
+
+## 8. 設計レビュー2回目（§4 画面）の反映（2026-10-02）
+
+design-reviewer の指摘12件。すべて一次情報（本番の読み取り・コード）で裏付けがあり、採用した。§4 の記述より、この節を優先する。
+
+| # | 指摘（重大度） | 決定 |
+|---|---|---|
+| 1 | RPC を「基準日」にすると同日の前の走が抜け、race_id 版と値が変わる（重要。10/1 江戸川72艇中25艇で差） | 新版の引数は `(p_boats int[], p_racer_ids int[], p_before text)`。`pe.race_id < p_before` で比べる（明日の画面は `'YYYY-MM-DD'`（明日）、検証は実際の race_id を渡す）。集計窓の下限は 029 と同じ `now()` 基準。関数名は既存と別（`get_boats_st_predictability`・`get_boats_technique_profile`・`get_boats_return_rate`。同名 overload は PostgREST の解決があいまい） |
+| 2 | T5b を 123 に同梱する話と tasks の順序が矛盾（重要） | T5b を T2（適用）の前に移し、123 に入れてから適用する。同じファイルで `GRANT EXECUTE ... TO anon, authenticated`（113 の方針、verify-migration-rls が検査）。`check-anon-access.js` の `ANON_RPCS` に3本を足す。123 の「元に戻す」に DROP FUNCTION、APPLIED.md の説明を直す |
+| 3 | 機力バッジは motorDeepLink があるときだけリンクとして出て、spec は分析への遷移を禁じている。行ラベルも分析へのリンク（重要） | spec どおり明日の表にはリンクを置かない。View に `linkRows: false`（行ラベルを span）を足し、`buildRowDefs` は motorDeepLink が無いときもバッジを非リンクの span で出せる引数（`motorBadgeAsText: true`）を足す。既定の挙動（当日・一覧カード）は変えない |
+| 4 | getMotorPowerIndex をモーターごとに呼ぶと1ページ約135リクエスト（重要） | 会場単位の一括取得にする。窓内の race_entries を `.in(motor_number, 全台)` でページング（約4,000行）、race_results を1〜2回で取り、getMotorPowerIndex の集計式を純関数に切り出して共有する（同じ式で当日と値が一致することを再現テストで固定） |
+| 5 | モーター入れ替えの前夜は venue_motor_start_dates が旧世代のままで、旧モーターの成績が明日の表に出る（重要、推測を含む） | B の会場内のモーター2連率が全艇0なら新世代とみなし、再計算せず B の値と「交換直後」の注記を出す（当日の全艇0の扱いと同じ）。入れ替え前日の bc_mst の実例は T5 の shadow 期間に1件確認する |
+| 6 | 当地勝率・当地2連率が B と当日の race_entries で約24%の艇が食い違う（重要。10/2 1008艇中240件、最大6.8） | 明日の表は B の値（前日時点の公式番組表）を出す。ページの注記「M/D HH:MM 時点（JST）の公式番組表です」で前日時点の値であることは示している。差の原因（集計期間の定義の違いと推測）は T11 で公式の定義を確認し、spec に残す。全国勝率・級別・全国2連率は一致 |
+| 7 | 平均ST・枠番勝率の元の値は 23:00 の集計後でしか当日と同じにならない。`venue_code=0` の絞り込みが無い（軽微） | `.eq("venue_code", 0)` を明記。形は `{boatNumber, avgST: avg_st, courseRaceCounts: course_race_counts}` を `toWakuRacerStats` に通す（BOA-302 の境界と同じ）。前日の集計の値であることは、ページの注記の趣旨に含める |
+| 8 | モーター行は当日の recalc と同じ形（`rate_source`・`motor_2rate` のフォールバック・`sample_count`）が要る（軽微） | 明日の行は `{ rate_source: "recalc", motor_2rate: actual_rate2 ?? B.motor_2rate, sample_count, power_index, motor_number }`。組み立てを純関数にして再現テスト（BOA-702 の isMotorUnrated で未使用が「—」になること） |
+| 9 | players の組み立てで当日の `\|\| ""` 変換を再現する（軽微） | 組み立ての純関数に含め、再現テスト（当地勝率 0.00 が当日と同じく「—」） |
+| 10 | 今節の前走は当日と同じ `groupIntoMeetBeforeRace` を使う方が確実（軽微。09-23〜10-02 の5,787件で一致を確認済み） | `groupIntoMeetBeforeRace(past, \`${date}-${vv}-00\`)` を使い、getRaceMeetPrevRuns の後半（中止の除外・結果待ち）を racer_id×艇番の入力で共有する。明日2走する選手は両方の表で「今日の最後の走」になる（前日時点の情報として許容。spec に記載） |
+| 11 | 調子の過去クエリに `.range()` が無い（軽微） | 一括版は `fetchAllByIn` 系で取る |
+| 12 | DataRaceTable の切り出しの注意（CSS の import・id・trackEvent・CSS の方針）（軽微） | `DataRaceTable.css` を View 側で import。`id="data-race-table"` は当日の外枠にだけ残す。明日はリンクを置かないので trackEvent は不要。新規 CSS は作らず既存の `.drt-` を使う（screens C5 の記述を合わせる）。当日の DOM（クラス・id・順序）が変わらないことを、`.drt-` を参照する E2E 5本（layout・race-detail-wide-screen・smoke・race-detail-mobile-table・flying-late-badge）で確認 |
