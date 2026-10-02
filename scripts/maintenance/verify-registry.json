@@ -495,6 +495,11 @@
       "guards": "開催中止の判定が共通関数を通らず生の文字列比較で書かれること（BOA-418）と、画面の判定が結果のあるレースを中止扱いすること（BOA-525）"
     },
     {
+      "script": "verify-linear-cli.js",
+      "tier": "ci",
+      "guards": "scripts/linear-cli.js の失敗（create の無料枠上限・コメント失敗・アーカイブ失敗）が終了コード1になること、update で状態の種類が完了・取り消しになったらアーカイブすること。ローカルの模擬サーバーに向けて CLI を起動する（実 Linear に触れない）"
+    },
+    {
       "script": "verify-i18n-consistency.js",
       "tier": "ci",
       "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
