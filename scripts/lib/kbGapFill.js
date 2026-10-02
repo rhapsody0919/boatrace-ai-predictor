@@ -33,26 +33,6 @@ export const GAP_FILL_ITEMS = Object.freeze({
       "entry_course",
     ],
   },
-  // 欠場艇等の行の補完（BOA-327 の前提）。K にあって race_start_timings に行の無い艇を挿入する（既存の行には触れない）。
-  // 2026-09-20 までの結果ページの取得は ST のある艇だけを書き、項目 st は進入の無い艇（欠場）と、行のあるレースを飛ばした
-  missing_boats: {
-    table: "race_start_timings",
-    mode: "insert",
-    stampUpdatedAt: true,
-    keyColumns: ["race_id", "boat_number"],
-    columns: [
-      "race_id",
-      "boat_number",
-      "start_timing",
-      "is_flying",
-      "is_late_start",
-      "entry_course",
-      "finish_mark",
-      "finish_rank",
-      "official_finish_code",
-      "created_at",
-    ],
-  },
   conditions: {
     table: "race_conditions",
     mode: "update",
@@ -153,42 +133,6 @@ export function buildStartTimingRows(day, { raceIds, withRows }) {
         is_flying: Boolean(r.is_flying),
         is_late_start: Boolean(r.is_late_start),
         entry_course: r.course,
-      });
-    }
-  }
-  return rows;
-}
-
-/**
- * 欠場艇等の行（missing_boats）: K の成績にあって、race_start_timings に行の無い艇の行を作る。races にあるレースだけ。
- * 形は 2026-09-21 以降の結果ページの取得が書く行と同じ。欠場（K0/K1）は finish_mark='欠'・ST と進入は NULL・
- * is_flying と is_late_start は false。走った艇は K の ST・進入・F・L。着欄・着は成績コードから（finishMarkFromCode。
- * 失格 S0〜S2 は NULL）。created_at は NULL（バックフィルの行は取得時刻を偽らない）。
- *
- * @param {Object} day kb-day/v1
- * @param {{raceIds: Set<string>, existingKeys: Set<string>}} existing races の race_id・既存の行の `${race_id}|${boat_number}`
- */
-export function buildMissingBoatRows(day, { raceIds, existingKeys }) {
-  const rows = [];
-  for (const { raceId, race } of kRaces(day)) {
-    if (!raceIds.has(raceId)) continue;
-    for (const r of race.rows ?? []) {
-      if (!Number.isInteger(r.boat_number)) continue;
-      if (existingKeys.has(`${raceId}|${r.boat_number}`)) continue;
-      const code = typeof r.finish_raw === "string" ? r.finish_raw : null;
-      const derived = code ? finishMarkFromCode(code) : null;
-      rows.push({
-        race_id: raceId,
-        boat_number: r.boat_number,
-        start_timing:
-          typeof r.start_timing === "number" ? Math.abs(r.start_timing) : null,
-        is_flying: Boolean(r.is_flying),
-        is_late_start: Boolean(r.is_late_start),
-        entry_course: Number.isInteger(r.course) ? r.course : null,
-        finish_mark: derived?.finish_mark ?? null,
-        finish_rank: derived?.finish_rank ?? null,
-        official_finish_code: code,
-        created_at: null,
       });
     }
   }

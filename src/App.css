@@ -526,6 +526,15 @@ input:focus-visible,
   text-align: center;
 }
 
+/* 前付けで艇番とコースが違ったレースの注記（BOA-708）。判定（艇番）の補足なので控えめに */
+.result-verify-entry-note {
+  margin: 0.5rem 0 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
 .result-volatility-line {
   margin: 0 0 0.35rem;
   font-size: 0.9rem;
@@ -613,27 +622,12 @@ input:focus-visible,
   white-space: nowrap;
 }
 
-/* 「レースタイム」は 768px 以下で列に収まらないので短い見出しに切り替える */
-.rr-head-time-short {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .rr-head-time-full {
-    display: none;
-  }
-
-  .rr-head-time-short {
-    display: inline;
-  }
-}
-
 .rr-row-head + .rr-row {
   border-top: none;
 }
 
 .rr-row.is-winner {
-  background: color-mix(in srgb, var(--ryujin-gold-500) 10%, transparent);
+  background: rgba(201, 162, 39, 0.1);
 }
 
 .rr-pos {
@@ -940,7 +934,7 @@ input:focus-visible,
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-extrabold);
   color: var(--brand-accent-primary);
-  background: color-mix(in srgb, var(--ryujin-gold-500) 16%, transparent);
+  background: rgba(201, 162, 39, 0.16);
   border-radius: var(--radius-full);
   padding: 0.02rem var(--spacing-2);
 }
@@ -979,7 +973,7 @@ input:focus-visible,
 }
 
 .rr-payout-row.is-best {
-  background: color-mix(in srgb, var(--ryujin-gold-500) 12%, transparent);
+  background: rgba(201, 162, 39, 0.12);
 }
 
 .rr-payout-type {

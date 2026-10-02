@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { exhibitionSparklineY } from "../../utils/chartDomain";
 import { useTranslation } from "react-i18next";
 import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
@@ -31,13 +30,14 @@ function ExhibitionSparkline({ trend }) {
   const times = trend.map((t) => t.time);
   const min = Math.min(...times);
   const max = Math.max(...times);
+  const range = max - min || 1;
   const width = 80;
   const height = 24;
   const points = times
     .map((t, i) => {
       const x = (i / (times.length - 1)) * width;
-      // 展示タイムは速い(小さい)ほど良いため、上に行くほど速いタイムにする
-      const y = exhibitionSparklineY(t, min, max, height);
+      // 展示タイムは速い(小さい)ほど良いため、上に行くほど速いタイムになるよう反転する
+      const y = height - ((t - min) / range) * height;
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");

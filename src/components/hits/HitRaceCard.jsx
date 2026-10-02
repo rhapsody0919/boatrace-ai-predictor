@@ -6,6 +6,8 @@ import { generateTurnHitShareText, shareUrlFor } from "../../utils/share";
 
 function HitRaceCard({
   hitRace,
+  // 1着の艇が実際に入ったコース（無ければ null）。艇番と違うときだけ添える（BOA-708）
+  winnerEntryCourse = null,
   variant = "today",
   showDate = false,
   onClick,
@@ -55,10 +57,15 @@ function HitRaceCard({
       )}
 
       <div className="turn-hit-detail">
+        {/* 以前は「1マーク先頭 Nコース」だったが、値は1着の艇番（BOA-708）。
+            前付けのあったレースでは艇番とコースが違い、誤表示になっていた */}
         <div className="turn-hit-course">
-          <span className="turn-hit-course-label">1マーク先頭</span>
+          <span className="turn-hit-course-label">1着</span>
           <span className="turn-hit-course-value">
-            {hitRace.winnerCourse}コース
+            {hitRace.winnerBoat}号艇
+            {winnerEntryCourse != null &&
+              winnerEntryCourse !== hitRace.winnerBoat &&
+              `（${winnerEntryCourse}コース）`}
           </span>
         </div>
         {probability != null && (
@@ -77,7 +84,8 @@ function HitRaceCard({
             venue: hitRace.venue,
             raceNo: hitRace.raceNumber,
             date: hitRace.date,
-            winnerCourse: hitRace.winnerCourse,
+            winnerBoat: hitRace.winnerBoat,
+            winnerEntryCourse,
             probability,
           })}
           hashtags={["ボートレース", "展開予測", "龍神レーダー"]}

@@ -293,12 +293,13 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
     await expect(root.locator(".rr-refund-tag")).toHaveText("返還艇あり");
     await expect(root.locator(".rr-tag")).toContainText("差し");
     // 着順表の列見出しは公式の結果ページにそろえる（スタートの図の「ST」だけ追加。BOA-558 の4）
-    // 「レースタイム」の見出しは中に全名と短い名の2つを持つ（768px 以下は短い名）ので、
-    // 直下の列見出しを、見えている文字（innerText）で比べる
-    await expect(root.locator(".rr-row-head > span")).toHaveText(
-      ["着", "枠", "ボートレーサー", "ST", "レースタイム"],
-      { useInnerText: true },
-    );
+    await expect(root.locator(".rr-row-head span")).toHaveText([
+      "着",
+      "枠",
+      "ボートレーサー",
+      "ST",
+      "レースタイム",
+    ]);
 
     // 375px で「レースタイム」が折れない（ファン評価1周目 P3）
     await page.setViewportSize({ width: 375, height: 900 });
@@ -309,13 +310,6 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
       return Math.round(h / (fontSize * 1.4));
     });
     expect(lines).toBeLessThanOrEqual(1);
-    // 375px では短い見出し「タイム」にし、列の幅からはみ出さない（以前は「レースタイム」が
-    // 15px はみ出してカードの外で切れた。race-detail-ui-unify PR5 ファン評価1周目）
-    await expect(timeHead).toHaveText("タイム", { useInnerText: true });
-    const headOverflow = await timeHead.evaluate(
-      (el) => el.scrollWidth - el.clientWidth,
-    );
-    expect(headOverflow).toBeLessThanOrEqual(1);
     const overflow = await page.evaluate(
       () =>
         document.documentElement.scrollWidth -

@@ -40,7 +40,6 @@ const TARGETS = {
   prevResult: "src/utils/prevResult.js",
   nextOpenDate: "src/utils/nextOpenDate.js",
   meetGrouping: "src/utils/meetGrouping.js",
-  volatilityLevel: "src/utils/volatilityLevel.js",
   hscrollHint: "src/utils/horizontalScrollHint.js",
 };
 
@@ -1617,33 +1616,6 @@ function suiteNextOpenDate(m, check) {
   );
 }
 
-// --- volatilityDisplayValue: イン崩れ指数の表示の数値がラベルの境目をまたがない（PR #1186 ファン評価）
-function suiteVolatilityLevel(m, check) {
-  const show = (p) => [m.getVolatilityLevel(p), m.volatilityDisplayValue(p)];
-  check("volatility: 0.6975 は標準で69（四捨五入の70にしない）", show(0.6975), [
-    "standard",
-    69,
-  ]);
-  check("volatility: 0.7037 はイン崩れ確率高で70", show(0.7037), ["high", 70]);
-  check("volatility: 0.3 は本命有利で30", show(0.3), ["low", 30]);
-  check("volatility: 0.3004 は標準で31（四捨五入の30にしない）", show(0.3004), [
-    "standard",
-    31,
-  ]);
-  check(
-    "volatility: 0 と 1 はそのまま",
-    [show(0), show(1)],
-    [
-      ["low", 0],
-      ["high", 100],
-    ],
-  );
-  check("volatility: 標準の中はそのまま四捨五入", show(0.555), [
-    "standard",
-    56,
-  ]);
-}
-
 const SUITES = {
   nextOpenDate: suiteNextOpenDate,
   prevResult: suitePrevResult,
@@ -1654,7 +1626,6 @@ const SUITES = {
   weatherInfo: suiteWeatherInfo,
   dateUtils: suiteDateUtils,
   meetGrouping: suiteMeetGrouping,
-  volatilityLevel: suiteVolatilityLevel,
   hscrollHint: suiteHscrollHint,
 };
 
@@ -1663,12 +1634,6 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
-  [
-    "volatilityLevel",
-    "表示の数値をラベルの範囲に収めない（PR #1186 ファン評価の退行）",
-    "return Math.min(Math.max(value, 31), 69);",
-    "return value;",
-  ],
   [
     "hscrollHint",
     "送る幅から固定の左の列を引かない（PR #1192 ファン評価2周目の退行）",

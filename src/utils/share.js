@@ -292,12 +292,17 @@ export const generatePredictionShareText = (race, model = "standard", t) => {
  * 展開予測的中結果のシェアテキストを生成（react-share用、BOA-174）
  * unifiedモデルは複勝予想・展開予測の2種類のみのため、レース単位の的中は
  * 展開予測的中（1マークでの予想パターンが実際の1着コースと一致）のみを扱う
- * @param {Object} race - { venue, raceNo, date, winnerCourse, probability }
+ * @param {Object} race - { venue, raceNo, date, winnerBoat, winnerEntryCourse, probability }
  */
 export const generateTurnHitShareText = (race) => {
   const venue = race.venue || "不明";
   const raceNo = race.raceNo || "?";
-  const winnerCourse = race.winnerCourse;
+  // 1着の艇番と、その艇が実際に入ったコース（BOA-708。以前は艇番を「Nコース」と書いていた）
+  const winnerBoat = race.winnerBoat;
+  const courseNote =
+    race.winnerEntryCourse != null && race.winnerEntryCourse !== winnerBoat
+      ? `（${race.winnerEntryCourse}コースから）`
+      : "";
   const probabilityStr =
     race.probability != null
       ? `（予想確率${(race.probability * 100).toFixed(0)}%）`
@@ -312,11 +317,11 @@ export const generateTurnHitShareText = (race) => {
   }
 
   const messages = [
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nAIの分析力に驚いてます！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n無料でこの精度はすごい！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nデータ分析の力を実感！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n今日もAI予想が当たった！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n的中率の高さに満足してます！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が1着${courseNote}${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nAIの分析力に驚いてます！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が1着${courseNote}${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n無料でこの精度はすごい！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が1着${courseNote}${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nデータ分析の力を実感！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が1着${courseNote}${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n今日もAI予想が当たった！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が1着${courseNote}${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n的中率の高さに満足してます！`,
   ];
 
   return messages[Math.floor(Math.random() * messages.length)];

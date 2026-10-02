@@ -17,6 +17,7 @@
  * 巻き込まれないよう、既存の表示は PredictionBlocks に分け、節はその外に置く。
  * BOA-635 も同じ場所（PredictionBlocks の外）に部品を置く前提なので、この形を変えるときは知らせる。
  */
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -26,7 +27,7 @@ import PredictionCard from "./PredictionCard";
 import OutcomePatternPreview from "./OutcomePatternPreview";
 import { getVolatilityLevel } from "../../utils/volatilityLevel";
 import { isJudgeable } from "../../utils/raceOutcome";
-import VolatilityPercentileBar from "./VolatilityPercentileBar";
+import { dataService } from "../../services/dataService";
 import AnalogyFinderSection from "./analogy/AnalogyFinderSection";
 import { isAnalogyFinderEnabled } from "../../config/featureFlags";
 
@@ -79,6 +80,39 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
   const result = prediction?.result;
   const finished = Boolean(result?.finished);
 
+  // 1着の艇が実際に入ったコース（BOA-708）。的中は艇番で判定するが、前付けで艇番と
+  // コースが違ったレースでは「逆に見える」ので、注記で添える。当日は entry_course で補い、
+  // それも無ければ出さない（取得に失敗しても注記を出さないだけで、判定の表示は止めない）
+  const [winner, setWinner] = useState({
+    raceId: null,
+    boat: null,
+    course: null,
+  });
+  useEffect(() => {
+    if (!finished || !raceId) return undefined;
+    let cancelled = false;
+    dataService
+      .getRaceWinnerCourses([raceId])
+      .then((byRace) => {
+        const w = byRace[raceId];
+        if (!cancelled && w) setWinner({ raceId, ...w });
+      })
+      .catch((error) => {
+        console.error(
+          "1着艇の進入コースの取得に失敗（注記を出さない）:",
+          error,
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [finished, raceId]);
+  const showWinnerCourse =
+    winner.raceId === raceId &&
+    winner.course != null &&
+    winner.boat != null &&
+    winner.course !== winner.boat;
+
   const turnPatterns = prediction?.turnPrediction?.patterns;
   const hasTurnPrediction =
     Array.isArray(turnPatterns) && turnPatterns.length > 0;
@@ -94,6 +128,9 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
     // 不成立のレースは1着が決まっていないので、振り返りも「判定対象外」にする（BOA-543）
     const canJudge = isJudgeable(result);
     const isUpset = result.rank1 !== 1;
+    const volatilityPercentileValue = Math.round(
+      (prediction.volatilityPercentile ?? 0) * 100,
+    );
 
     if (!showVolatilityOutcome && !hasTurnPrediction) {
       return (
@@ -121,22 +158,13 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
             <h5 className="result-verify-title">
               {t("result.volatilitySectionTitle")}
             </h5>
-            {/* 指数はレース前と同じ 0〜100 のバーで見せる。以前は「会場内パーセンタイル0」と
-                文字で出していて、専門用語のうえ「0」が確率0%に見えた（BOA-706） */}
             <p className="result-volatility-line">
-              {t("result.volatilityPredicted", {
+              {t("result.volatilityPredictedWithPercentile", {
                 label: t(
                   `volatility.level${volatilityLevel === "high" ? "High" : "Low"}`,
                 ),
+                percentile: volatilityPercentileValue,
               })}
-            </p>
-            <VolatilityPercentileBar
-              percentile={prediction.volatilityPercentile ?? 0}
-            />
-            {/* 何と比べた 0〜100 かを、レース前のカードと同じ一文で書く。無いと「イン崩れ確率高」の
-                真下の「99」が「崩れる確率99%」に読めた（PR #1186 ファン評価1・3周目） */}
-            <p className="result-volatility-caveat">
-              {t("volatility.description")}
             </p>
             <p className="result-volatility-line">
               {t("result.volatilityOutcomeLabel")}
@@ -173,6 +201,14 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
               {t("result.turnSectionTitle")}
             </h5>
             <TurnPatternList patterns={turnPatterns} result={result} />
+            {showWinnerCourse && (
+              <p className="result-verify-entry-note">
+                {t("turnPatternList.winnerEntryCourse", {
+                  boat: winner.boat,
+                  course: winner.course,
+                })}
+              </p>
+            )}
           </div>
         )}
       </div>

@@ -22,7 +22,19 @@ import { ALL_VENUE_CODES } from "../../constants";
 import RecentRunsTable from "../race/RecentRunsTable";
 import { GRADE_LABELS } from "../race/raceGradeLabels";
 import "./RacerPerformanceStats.css";
-import { techniqueColor } from "../../utils/techniqueColors";
+
+const TECHNIQUE_COLORS = {
+  逃げ: "#0ea5e9",
+  差し: "#10b981",
+  まくり: "#f59e0b",
+  まくり差し: "#ef4444",
+  抜き: "#8b5cf6",
+  恵まれ: "#94a3b8",
+};
+
+function techniqueColor(technique) {
+  return TECHNIQUE_COLORS[technique] ?? "#94a3b8";
+}
 
 // 会場別/枠番別の一覧テーブル。行クリックでフィルタに反映する形が4箇所
 // （会場別・枠番別の全体一覧、会場/枠番固定時のクロス集計2種）で共通のため

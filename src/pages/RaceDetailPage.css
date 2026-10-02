@@ -85,10 +85,7 @@
      下の共有ボタンもページ中央なので、中心をそろえる
    - 結果の払戻金: 表だけ 640px で止める。上の着順の行は ST の棒で間が埋まるので広いままにする */
 @media (min-width: 1025px) {
-  /* 発走前の AI予想（.prediction-result）も同じ 720px に。展開予測の決まり手と確率が
-     1440px で約1130px 離れていた（race-detail-ui-unify FR-6、BOA-619 の残り） */
-  .race-detail-page-v2 .race-ai-prediction-tab,
-  .race-detail-page-v2 .prediction-result {
+  .race-detail-page-v2 .race-ai-prediction-tab {
     max-width: 720px;
     margin-inline: auto;
   }
@@ -269,10 +266,7 @@
       .rol-disclaimer,
       .rol-status,
       .race-tabs-empty,
-      .motor-condition-container,
-      /* 結果タブの「この日の水面傾向」は .race-result の中のカードで、外の内余白に
-         自分の 16px が重なっていた（race-detail-ui-unify screens「二重の余白」） */
-      .vds-card
+      .motor-condition-container
     ) {
     padding-left: var(--rdp-card-pad);
     padding-right: var(--rdp-card-pad);

@@ -20,21 +20,3 @@ export function exhibitionTimeAxis(values) {
   for (let k = lo; k <= hi; k += 1) ticks.push(Number((k / 5).toFixed(1)));
   return { domain: [ticks[0], ticks[ticks.length - 1]], ticks };
 }
-
-/**
- * 展示タイムの小さな推移線（スパークライン）の縦位置。速い（小さい）ほど上（y が小さい）。
- *
- * 以前は `height - ((t - min) / range) * height` で、最も遅いタイムが上端に来ていた
- * （コメントは「上ほど速い」なのに逆）。モータ情報タブで下の大きいグラフを
- * 「上ほど速い」にそろえたとき、同じタブ内で向きが食い違った（PR #1193 ファン評価1周目）
- *
- * @param {number} t 展示タイム
- * @param {number} min 系列の最小（最も速い）
- * @param {number} max 系列の最大（最も遅い）
- * @param {number} height 描く高さ
- * @returns {number} 0（上端）〜 height（下端）
- */
-export function exhibitionSparklineY(t, min, max, height) {
-  const range = max - min || 1;
-  return ((t - min) / range) * height;
-}

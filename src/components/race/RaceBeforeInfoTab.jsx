@@ -39,6 +39,7 @@ import {
   LabelList,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
@@ -75,7 +76,6 @@ import InlineFetchError from "../InlineFetchError";
 import "./RaceBeforeInfoTab.css";
 import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
 import { formatCapturedAtJst } from "../../utils/formatters";
-import { bestOf } from "../../utils/bestOf";
 
 /**
  * 今節展示情報に出すオリジナル展示の種別（BOA-473）。
@@ -402,51 +402,12 @@ function RaceBeforeInfoTab({
         }).filter(Boolean)
       : [];
 
-  // 「展示タイム1位勝率」「今節の展示」の6艇の最良（race-detail-ui-unify FR-5、R1）。
-  // 展示1位勝率はセルの先頭に出す1着率（高いほど良い、0桁）で比べ、件数が少ない艇（⚠）は
-  // 比べるが最良でも光らせない（繰り下げない）。今節の展示はセルの先頭に出す前走の
-  // 展示タイム（低いほど良い、2桁）で比べる
-  const exhibitionTopRateOf = (p) => {
-    const state = p.racerId ? scopedStatsByRacer[p.racerId] : null;
-    if (!Array.isArray(state)) return null;
-    const rates = computeExhibitionTopRates(recordsBeforeRace(state, raceId));
-    return rates.n === 0 ? null : rates;
-  };
-  const bestExhibitionTopRate = bestOf(
-    sortedPlayers.map((p) => {
-      const rates = exhibitionTopRateOf(p);
-      return {
-        boat: p.number,
-        value: rates?.winRate ?? null,
-        hidden: rates !== null && rates.n < SMALL_SAMPLE_THRESHOLD,
-      };
-    }),
-    "max",
-    { digits: 0 },
-  );
-  const meetExhibitionPrevOf = (p) => {
-    if (!p.racerId || !p.motorNumber) return null;
-    const trend = (meetTrendByRacer[p.racerId] ?? []).filter(
-      (e) => e.exhibitionTime !== null,
-    );
-    return trend.length === 0 ? null : trend[trend.length - 1].exhibitionTime;
-  };
-  const bestMeetExhibition = bestOf(
-    sortedPlayers.map((p) => ({
-      boat: p.number,
-      value: meetExhibitionPrevOf(p),
-    })),
-    "min",
-    { digits: 2 },
-  );
-
   const extraRows = [
     {
       key: "exhibitionTopRate",
       label: t("beforeInfo.rowExhibitionTopRate"),
       shortLabel: t("beforeInfo.rowExhibitionTopRateShort"),
       tab: null,
-      // 金枠はセル全体ではなく1着率の値だけに付ける（2連対・3連対は比べていない）
       best: null,
       render: (p) => {
         if (!p.racerId) return "—";
@@ -469,9 +430,7 @@ function RaceBeforeInfoTab({
           );
         return (
           <span className="drt-value">
-            <span
-              className={`drt-sub${bestExhibitionTopRate.has(p.number) ? " ind-best" : ""}`}
-            >
+            <span className="drt-sub">
               {t("beforeInfo.winRateAbbrev")} {rates.winRate.toFixed(0)}%
             </span>
             <span className="drt-sub">
@@ -481,8 +440,6 @@ function RaceBeforeInfoTab({
               {t("beforeInfo.top3RateAbbrev")} {rates.top3Rate.toFixed(0)}%
             </span>
             <span className={`drt-sub ${smallSampleClass(rates.n)}`}>
-              {/* 件数が少ない参考値に⚠（注記の説明と対応させる。PR #1193 ファン評価1周目） */}
-              {rates.n < SMALL_SAMPLE_THRESHOLD && "⚠"}
               {t("beforeInfo.sampleCount", { n: rates.n })}
             </span>
           </span>
@@ -494,8 +451,6 @@ function RaceBeforeInfoTab({
       label: t("beforeInfo.rowMeetExhibition"),
       shortLabel: t("beforeInfo.rowMeetExhibitionShort"),
       tab: null,
-      // 金枠はセル全体ではなく前走の値だけに付ける。セルごとだと平均まで太字の
-      // 金枠に入り、平均でも最良と読まれた（PR #1193 ファン評価1周目）
       best: null,
       render: (p) => {
         if (!p.racerId || !p.motorNumber) return "—";
@@ -514,9 +469,7 @@ function RaceBeforeInfoTab({
           trend.reduce((sum, e) => sum + e.exhibitionTime, 0) / trend.length;
         return (
           <span className="drt-value">
-            <span
-              className={`drt-sub${bestMeetExhibition.has(p.number) ? " ind-best" : ""}`}
-            >
+            <span className="drt-sub">
               {t("beforeInfo.prevAbbrev")} {prev.toFixed(2)}
             </span>
             <span className="drt-sub">
@@ -628,67 +581,16 @@ function RaceBeforeInfoTab({
     .filter((v) => v !== null);
   const slowestExhibition =
     exhibitionTimes.length > 0 ? Math.max(...exhibitionTimes) : null;
-  // 最速の艇（同値は全部、表示の2桁で比べる。全艇同値なら無し）に「最速」の印と
-  // 金枠を付ける。棒は艇色のまま、良し悪しは値のラベルで示す（race-detail-ui-unify R4・FR-5）
-  const fastestBoats = bestOf(
-    exhibitionChartData.map((d) => ({ boat: d.boat, value: d.time })),
-    "min",
-    { digits: 2 },
-  );
+  const fastestExhibition =
+    exhibitionTimes.length > 0 ? Math.min(...exhibitionTimes) : null;
   const exhibitionLeadData = exhibitionChartData.map((d) => ({
     ...d,
     // 最も遅い艇は差が0で棒が消えるため、最小の下駄（0.01秒相当）を履かせる。
     // ラベルは実タイムなので数字は歪まない
     lead: d.time === null ? null : slowestExhibition - d.time + 0.01,
     timeLabel: d.time === null ? "" : d.time.toFixed(2),
+    isFastest: d.time !== null && d.time === fastestExhibition,
   }));
-  // 棒の上の値ラベル。最速の艇だけ金の薄い塗り＋枠（.ind-best と同じトークン）と太字、
-  // その上に「最速」の文字を重ねる。SVG なので CSS のクラスでなく属性で描く
-  const renderExhibitionLabel = ({ x, y, width, index }) => {
-    const d = exhibitionLeadData[index];
-    if (!d || !d.timeLabel) return null;
-    const cx = x + width / 2;
-    const fastest = fastestBoats.has(d.boat);
-    return (
-      <g className={fastest ? "rbi-exhibition-fastest" : undefined}>
-        {fastest && (
-          <rect
-            x={cx - 23}
-            y={y - 22}
-            width={46}
-            height={19}
-            rx={3}
-            fill="var(--ind-best-bg)"
-            stroke="var(--ind-best-ring)"
-          />
-        )}
-        {/* recharts の既定のラベルと同じクラスを付ける（e2e の BOA-613 がこれで探す） */}
-        <text
-          className="recharts-label"
-          x={cx}
-          y={y - 8}
-          textAnchor="middle"
-          fontSize={13}
-          fontWeight={fastest ? 700 : 400}
-          fill="var(--text-primary)"
-        >
-          {d.timeLabel}
-        </text>
-        {fastest && (
-          <text
-            x={cx}
-            y={y - 26}
-            textAnchor="middle"
-            fontSize={11}
-            fontWeight={700}
-            fill="var(--brand-accent-primary)"
-          >
-            {t("beforeInfo.exhibitionFastestMark")}
-          </text>
-        )}
-      </g>
-    );
-  };
 
   const weatherItems = weather
     ? [
@@ -782,11 +684,9 @@ function RaceBeforeInfoTab({
             <ResponsiveContainer width="100%" height={220}>
               <BarChart
                 data={exhibitionLeadData}
-                // 上の余白は「最速」の印と値の枠のぶん（以前は 20）
-                margin={{ top: 36, right: 16, left: 0, bottom: 5 }}
+                margin={{ top: 20, right: 16, left: 0, bottom: 5 }}
               >
-                {/* 横の補助線は出さない。縦軸の数字が無く（下の YAxis hide）意味を持たず、
-                    「最速」の印に重なっていた（PR #1193 ファン評価1周目） */}
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="name"
                   interval={0}
@@ -810,7 +710,8 @@ function RaceBeforeInfoTab({
                   {/* 数値は 13px。広い画面で棒の幅が約200pxあるのに 11px で釣り合わなかった（BOA-613） */}
                   <LabelList
                     dataKey="timeLabel"
-                    content={renderExhibitionLabel}
+                    position="top"
+                    style={{ fontSize: 13, fill: "var(--text-primary)" }}
                   />
                   {exhibitionLeadData.map((d) => (
                     <Cell
@@ -819,14 +720,8 @@ function RaceBeforeInfoTab({
                         BOAT_COLORS[d.boat]?.bg || "var(--brand-accent-primary)"
                       }
                       // 1号艇の白い棒は背景に溶けるので輪郭を付ける（BOA-613）
-                      // 2号艇の黒い棒もダークの背景に溶けるので同じく輪郭を付ける
-                      // （PR #1193 ファン評価1周目）
-                      stroke={
-                        d.boat === 1 || d.boat === 2
-                          ? "var(--text-secondary)"
-                          : "none"
-                      }
-                      strokeWidth={d.boat === 1 || d.boat === 2 ? 1 : 0}
+                      stroke={d.boat === 1 ? "var(--text-secondary)" : "none"}
+                      strokeWidth={d.boat === 1 ? 1 : 0}
                     />
                   ))}
                 </Bar>
@@ -940,8 +835,6 @@ function RaceBeforeInfoTab({
           </p>
         )}
         <p className="rbi-note">💡 {t("beforeInfo.detailTableNote")}</p>
-        {/* 金枠と⚠の意味（PR #1193 ファン評価1周目: 件数が少なくて金枠を外したことが読めなかった） */}
-        <p className="rbi-note">{t("beforeInfo.bestLegend")}</p>
         {exhibitionCourseOutOfRange && (
           <p className="rbi-note" data-testid="exhibition-course-out-of-range">
             {t("beforeInfo.exhibitionCourseOutOfRange")}
