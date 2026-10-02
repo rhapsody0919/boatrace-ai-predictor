@@ -54,11 +54,26 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
+    tomorrow_program_venues {
+        date race_date PK
+        smallint venue_code PK
+        text status
+        text series_title
+        smallint series_day
+        boolean is_final_day
+        smallint race_count
+        timestamptz source_modified_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
 ```
 
-- 1行＝1艇。レース・節の項目は艇の行に重ねる（1日最大1,728行。表を分けるほどの量ではない）
+- `tomorrow_program`: 1行＝1艇。レース・節の項目は艇の行に重ねる（1日最大1,728行）
+- `tomorrow_program_venues`: 1行＝1会場（B ファイルに会場ブロックがある会場だけ）。status は published / pending。行が無い会場＝明日開催なし。B ファイル未公開の間は0行。公開状況の分母 m はこの表の行数（race_series は10月分が未取得で不完全なため、開催の有無に使わない。グレード表示だけに使う）
+- 保存する列は上の ER 図のとおり。parseBText の出力のうち保存しないもの: venue_name（venue_code で足りる）・title_short・day_label（series_day・is_final_day で足りる）・stage_raw（stage で足りる）・date_in_body（対象日のガードに使うだけ）・正規化済みの name（name_raw を racer_name_raw に保存）
 - 名前は B ファイルの表記のまま（4文字で切れる）。正式名は画面が `racer_profiles`（匿名で読める）から登番で引く。未登録は B の名前
-- `source_modified_at`（B ファイルの Last-Modified）と `created_at`・`updated_at` で、公開→取り込みの遅れを実測する
+- `source_modified_at` は「行の値が最後に変わったときの B ファイルの Last-Modified」。比較対象からは外し（`ignoreColumns`）、値が変わった行にだけ入れる（ファイル更新のたびに全行を書き直さないため）
+- `created_at`・`updated_at` と `source_modified_at` で、公開→取り込みの遅れを実測する
 - 外部キー・既存テーブルへのリレーションは無し（`racer_id` は `racer_profiles.racer_id` と同じ値だが FK は張らない。新人の未登録で取り込みを止めないため）
 
 ### 書き込み量（Disk IO）
@@ -74,33 +89,44 @@ erDiagram
 | ファイル | 役割 |
 |---|---|
 | `api/cron/tomorrow-program.js`（新規） | `createScrapeCronHandler({ job: "tomorrow_program", run })`。`maxDuration` は registry と同値 |
-| `scripts/lib/tomorrowProgramJob.js`（新規） | 1 tick の本体。対象日の決定 → B ファイル取得（条件付き） → 解析 → 行の組み立て → 変更行だけ upsert → 公開状況の集計と報告 |
-| `scripts/lib/kbFileParser.js`（拡張） | `parseBText` の会場に `pending`（「データ更新待ち」の文言だけの会場）を足す。今は空会場として返し、開催なしと区別できない |
-| `scripts/lib/scrapeJobs/registry.js`（追加） | `tomorrow_program: { kind: "continuous", leaseSec: 120, maxDurationSec: 120, hosts: ["mbrace.or.jp"] }` |
-| `vercel.json`（追加） | `*/15 5-14 * * *`（UTC。JST 14:00〜23:45） |
+| `scripts/lib/tomorrowProgramJob.js`（新規） | 1 tick の本体（§3.2） |
+| `scripts/lib/kbFileParser.js`（拡張） | `parseBText` の会場に `pending`（本文が「この場のデータ更新は、いましばらくお待ちください。」だけ）を足す。既存の呼び出し元（kbArchiveRows・kbResultsBackfillRows・kb-backfill・fix-opening-day-entries-from-b・verify 2本）は races・entries しか見ないので影響なし |
+| `scripts/lib/scrapeJobs/registry.js`（追加） | `tomorrow_program: { kind: "continuous", activeWindowJst: ["14:00", "23:59"], leaseSec: 120, maxDurationSec: 120, hosts: ["mbrace.or.jp"] }` |
+| `scripts/lib/scrapeJobs/monitor.js`（拡張） | continuous の死活判定（運用窓 07:00〜23:59・25分。monitor.js:451-470）で、registry に `activeWindowJst` があればその窓だけで判定する。無いと毎日 07:25〜14:00 に死活の誤報が出る |
+| `scripts/lib/scrapeJobs/cleanup.js`（追加） | 2表の `race_date < 今日` を削除（scrape-cleanup、04:00） |
+| `vercel.json`（追加） | `*/15 5-14 * * *`（UTC。JST 14:00〜23:45）。Vercel の Cron 数の上限に余裕があるかを T3 で確認する（既存45件） |
 
-既存部品を使う: `buildKbUrl("B", date)`・`decodeLzhText`（kbFileParser.js、`kfile_sync` で Vercel 上の LZH 展開が稼働済み）、`upsertChangedRows`（`scripts/lib/unchangedRows.js`、`stampUpdatedAt: true`）、Cron 共通ラッパ（認証・リース・モード off/shadow/live）。
+既存部品: `buildKbUrl("B", date)`・`decodeLzhText`（kbFileParser.js。kfile_sync は kfileParser.js の独自展開だが、どちらも `@kirinsaninc/lhats` の LhaReader で Vercel 上の稼働実績がある）、`politeFetch`（レスポンスヘッダーを保持）、`upsertChangedRows`（`scripts/lib/unchangedRows.js`）、Cron 共通ラッパ（認証・リース・モード off/shadow/live・cursor の保存）、`last_report.alerts` による通知（monitor.js:474-487 の job_report 経路）。
 
 ### 3.2 1 tick の処理
 
-1. 対象日 = JST の今日+1。JST 14:00 より前は何もしない（vercel.json の時間帯外の手動起動も同じ）
-2. B ファイルを取得。前回の `Last-Modified`（`scrape_job_state.cursor` に保存）と同じなら、ここで終了（解析・書き込みなし）
-3. `parseBText` で解析。会場ごとに
-   - 出走表あり（12R×6艇） → 行を組み立てる
-   - `pending`（更新待ち） → 書かない。未公開として数える
-   - 出走表が12Rに満たない・艇が6に満たない → 欠場等の正当な理由があり得るため書くが、件数を報告に出す
-4. 行は全列をそろえて `upsertChangedRows`（キー集合の違う行を混ぜると NULL で上書きされる既知の落とし穴を避ける）
-5. 報告: `race_series` で対象日に節がある会場数 m、出走表を書いた会場数 n、未公開の会場、書いた行数、`source_modified_at`。shadow では書かずに件数だけ
-6. 最終 tick（23:45）で n < m なら `last_error` に未公開の会場を記録し、既存の監視（`scripts/lib/scrapeJobs/monitor.js`）経由で Slack に流す
+1. 対象日 = JST の今日+1。JST 14:00 より前は何もしない
+2. cursor は `{ date, lastModified, mode }`。対象日か mode が違えば無視する（共通ラッパは mode を問わず cursor を保存するため、shadow で保存した値で live が止まらないように。日付をまたいだ比較をしないように）
+3. B ファイルを取得する
+   - 404 → 未公開。成功として件数0で報告する（例外にしない。14時台に連続失敗の誤報を出さないため）。JST 17:00 以降も 404 なら `alerts` に入れる
+   - 200 で Last-Modified が cursor と同じ、かつ DB の件数（venues の行数・published の会場×72）がそろっている → 解析・書き込みをせず終了。DB の件数が足りなければ（行が消えた等）同じファイルで処理し直す
+4. 本文の日付（`date_in_body`）が対象日と違えば書かずにエラー（取り違えたファイルのガード）
+5. `parseBText` で解析し、会場ごとに
+   - 出走表あり → `tomorrow_program` の行（全列をそろえる）と、venues の行（published）
+   - `pending` → venues の行（pending）だけ。出走表は書かない
+   - 12R・6艇に満たない会場 → 書くが、件数を報告に出す
+6. 書き込み: `upsertChangedRows` を次の設定で使う
+   - `chunkColumn: "venue_code"`。読み出しは `race_date = 対象日` で絞り、1チャンク4会場以下（288行以下。PostgREST の1000行上限に掛からない）。ヘルパーが絞り込みの条件を受け取れなければ受け取れるように拡張する（既定の `chunkColumn` は `race_id` で、この表には無い）
+   - `deadline_time` は DB が返す表記（既存の time 列で実測してから決める。`HH:MM:SS` なら `HH:MM:00` にそろえる）で書き、毎回「変更あり」にしない
+   - `source_modified_at` は `ignoreColumns`。`TIMESTAMP_COLUMNS`・`NUMERIC_SCALES` に新しい表を登録する
+   - `stampUpdatedAt: true`
+   - 再現テスト: 同じファイルを2回処理すると、2回目の書き込みが0件
+7. 報告（`last_report`）: ファイルの会場数 m、published 数 n、pending の会場、書いた行数、Last-Modified。shadow は書かずに件数だけ
+8. 通知: JST 22:00 以降の毎 tick（最終 tick に頼らない。Vercel Cron は best-effort）で n < m なら `alerts`（key `tomorrow_program_incomplete`、text に未公開の会場、until は翌日 14:00）に入れる。判定は DB の件数で行うので、3. で早期終了する tick でも行う
 
 ### 3.3 失敗の扱い
 
-- 取得・展開・解析の失敗は例外にし、共通ラッパの `consecutive_failures` に乗せる（握りつぶさない）
-- 書き込み0件の tick は、Last-Modified が変わらなかった場合（正常）と、変わったのに出走表のある会場が0（異常）を区別する。後者はエラー
+- 取得（404 以外）・展開・解析・日付の不一致は例外にし、共通ラッパの `consecutive_failures` に乗せる（3回で通知）
+- 「Last-Modified が変わったのに会場ブロックが0」はエラー。初公開の版で全会場が pending のことはありうるが、pending も会場ブロックとして数えるので誤報にならない
 
 ### 3.4 掃除
 
-- `race_date < JST の今日` の行を消す。既存の掃除（`scrape-cleanup`）に対象表として足す。足せない構造なら、この job の最初の tick（14:00）で消す（`/step3` で既存の掃除を読んで決める）
+- `scrape-cleanup`（`scripts/lib/scrapeJobs/cleanup.js`、04:00）に2表の `race_date < 今日` の削除を足す（`client.from(...).delete().lt("race_date", today)`。rowsWritten に加算）
 
 ## 4. 画面（(b)）
 
@@ -117,7 +143,7 @@ erDiagram
 
 | 関数 | クエリ | 使う画面 |
 |---|---|---|
-| `getTomorrowVenueSummary(date)` | `tomorrow_program` を `race_date=date, race_number=1, boat_number=1` で select（≤24行。節名・日次・1R締切） ＋ `race_series` を `start_date<=date<=end_date` で select（節の期間・グレード） | S1 |
+| `getTomorrowVenueSummary(date)` | `tomorrow_program_venues` を `race_date=date` で select（≤24行。status・節名・日次） ＋ `tomorrow_program` を `race_date=date, race_number=1, boat_number=1` で select（1R締切） ＋ `race_series` を `start_date<=date<=end_date` で select（グレードだけ） | S1 |
 | `getTomorrowProgram(date, venueCode)` | `tomorrow_program` を `race_date, venue_code` で select（≤72行） ＋ `racer_profiles` を登番で select（正式名） | S2 |
 
 - いずれも `withCache`（TTL は短め。15分ごとの更新に合わせ5分）。エラーは throw（画面は `DataFetchError`）
@@ -136,8 +162,9 @@ flowchart TB
   P --> R[TomorrowRaceProgram ×12 新規]
 ```
 
-- `VenueGridCard` の明日の状態: `program`（出走表あり。グレードは `race_series.grade`、無い節は `kind` の表示名）／`waiting`（節あり・未公開）／`none`（節なし。BOA-225 の次開催日を併記）
-- 公開状況の案内（`TomorrowPublishNotice`）: 公開前（n=0）と公開途中（0<n<m）と全公開（n=m、非表示）
+- `VenueGridCard` の明日の状態: `program`（venues=published。グレードは `race_series.grade`、引けなければ出さない）／`waiting`（venues=pending）／`none`（venues に行が無く、他の会場には行がある。BOA-225 の次開催日を併記）／`before`（venues が0行＝B 未公開。「—」）
+- 選手名: `racer_profiles.name` の全角空白（可変長）を表示用に1つにまとめる純関数を `src/utils/` に置く（既存に無い）。再現テスト付き
+- 公開状況の案内（`TomorrowPublishNotice`）: 公開前（venues 0行）と公開途中（n<m）と全公開（n=m、非表示）
 - 列（モック承認待ち）: 艇・選手・級・全国勝率・当地勝率・モーター。モーター2連率0の表示もモック承認で決める
 
 ## 5. 既存への影響
@@ -152,7 +179,8 @@ flowchart TB
 ## 6. テスト
 
 - 解析: `parseBText` の `pending` 判定（B ファイルの実物の断片を fixture にして、更新待ちの会場と出走表のある会場が混ざるケース） → `scripts/maintenance/verify-kb-file-parser.js` に追加
-- ジョブ: 対象日（0時台・14時前・23時台）、Last-Modified 不変で書かない、更新待ちの会場を書かない、shadow で書かない → `scripts/maintenance/verify-tomorrow-program-job.js`（新規、registry `ci`。supabase はモック）
+- ジョブ: 対象日（0時台・14時前・23時台）、404 は成功で件数0・17時以降は alerts、Last-Modified 不変で DB がそろっていれば書かない・そろっていなければ処理し直す、cursor の日付・mode 違いは無視、本文の日付違いはエラー、pending の会場は出走表を書かない、shadow で書かない、同じファイル2回目の書き込み0件、22時以降の未公開で alerts → `scripts/maintenance/verify-tomorrow-program-job.js`（新規、registry `ci`。supabase・fetch はモック）
+- 監視: `activeWindowJst` の窓外で死活を出さない → `verify-scrape-monitor.js` に追加
 - 画面: 受け入れ E2E（acceptance-test-writer、時計を固定して4状態）、`e2e/layout.spec.js` に `/tomorrow/:venueCode` と `/?day=tomorrow`
 - データ精度: 実データで1会場の明日の出走表が B ファイルと全艇一致（data-accuracy-verifier）
 
@@ -160,4 +188,4 @@ flowchart TB
 
 - A 件数: 対象日に節がある会場×12R×6艇（中止・欠場を除く）の99%以上が、23:45 までに入っている。実測クエリを完了報告に添付
 - B タイミング: `created_at − source_modified_at` の分布を土日を含む直近5日で実測（目標: 30分以内が98%以上）
-- C 継続監視: 最終 tick でそろわない会場、Last-Modified が変わったのに0件、ジョブの未実行を Slack に流す
+- C 継続監視: 22時以降の未公開の会場・17時以降の未公開（404）は `alerts`、取得失敗は consecutive_failures、ジョブの未実行は monitor の死活（`activeWindowJst` の窓内）で Slack に流す

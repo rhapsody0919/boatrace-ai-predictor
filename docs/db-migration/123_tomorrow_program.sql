@@ -1,4 +1,4 @@
--- 123: 翌日の番組表（公式 B ファイル）を保存する tomorrow_program を新設する（BOA-223）
+-- 123: 翌日の番組表（公式 B ファイル）を保存する tomorrow_program・tomorrow_program_venues を新設する（BOA-223）
 --
 -- ⚠️ この案は「本番へ未適用」。適用はユーザーの承認後に、ユーザーが実行する。
 --
@@ -20,7 +20,10 @@
 --   * created_at / updated_at: 行の初回保存と値の変更の時刻（updated_at は書き込み側が変更のある行にだけ入れる）
 --   * 外部キーは張らない（venues は FK 先として使えるが、取り込みの失敗要因を増やさないため。races とは無関係）
 --   * アクセス制御: RLS を有効にし、匿名・authenticated には SELECT のみ（画面が直接読む）。書き込みは service_role
---   * 保持: 対象日を過ぎた行は掃除する（scripts/lib/scrapeJobs の掃除。plan.md §5）
+--   * tomorrow_program_venues: 1行＝1会場。B ファイルに会場ブロックがあれば行を持ち、status は published（出走表あり）か
+--     pending（「データ更新待ち」の文言だけ）。行が無い会場＝明日開催なし。B ファイルが未公開の間は行が無い
+--   * source_modified_at: tomorrow_program では行の値が最後に変わったときの B ファイルの時刻（値が同じなら更新しない）
+--   * 保持: 対象日を過ぎた行は scrape-cleanup（scripts/lib/scrapeJobs/cleanup.js）で消す（plan.md §3.4）
 --
 -- 適用手順（ユーザーが実行する）:
 --   Supabase Dashboard > SQL Editor で、このファイルの全文を実行する（BEGIN〜COMMIT を含む）。新規テーブルの作成のみ。
@@ -28,14 +31,15 @@
 --   mode を shadow → live の順に上げる（mode が off・行なしの間、Cron は何もしない）。
 --
 -- 適用後の確認（読み取りのみ）:
---   SELECT relrowsecurity FROM pg_class WHERE relname = 'tomorrow_program' AND relkind = 'r';
---   → true
+--   SELECT relname, relrowsecurity FROM pg_class WHERE relname IN ('tomorrow_program', 'tomorrow_program_venues') AND relkind = 'r';
+--   → 2行とも true
 --   SELECT has_table_privilege('anon', 'public.tomorrow_program', 'SELECT'),
 --          has_table_privilege('anon', 'public.tomorrow_program', 'INSERT');
 --   → true, false
 --
 -- 元に戻す（全行が消える。他の表には影響しない）:
 --   DROP TABLE IF EXISTS tomorrow_program;
+--   DROP TABLE IF EXISTS tomorrow_program_venues;
 
 BEGIN;
 SET LOCAL lock_timeout = '10s';
@@ -86,11 +90,37 @@ CREATE POLICY tomorrow_program_public_read ON tomorrow_program
   FOR SELECT TO anon, authenticated USING (true);
 GRANT SELECT ON tomorrow_program TO anon, authenticated;
 
+CREATE TABLE IF NOT EXISTS tomorrow_program_venues (
+  race_date           date        NOT NULL,
+  venue_code          smallint    NOT NULL,
+  status              text        NOT NULL,
+  series_title        text,
+  series_day          smallint,
+  is_final_day        boolean,
+  race_count          smallint,
+  source_modified_at  timestamptz,
+  created_at          timestamptz DEFAULT now(),
+  updated_at          timestamptz,
+  PRIMARY KEY (race_date, venue_code),
+  CONSTRAINT chk_tomorrow_program_venues_venue CHECK (venue_code BETWEEN 1 AND 24),
+  CONSTRAINT chk_tomorrow_program_venues_status CHECK (status IN ('published', 'pending'))
+);
+
+ALTER TABLE tomorrow_program_venues ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON tomorrow_program_venues FROM anon, authenticated;
+DROP POLICY IF EXISTS tomorrow_program_venues_public_read ON tomorrow_program_venues;
+CREATE POLICY tomorrow_program_venues_public_read ON tomorrow_program_venues
+  FOR SELECT TO anon, authenticated USING (true);
+GRANT SELECT ON tomorrow_program_venues TO anon, authenticated;
+
+COMMENT ON TABLE tomorrow_program_venues IS
+  '翌日の番組表の会場ごとの公開状況。published=出走表あり、pending=データ更新待ち。行が無い会場は明日開催なし（BOA-223）';
+
 COMMENT ON TABLE tomorrow_program IS
   '翌日の番組表（公式 B ファイル）。前日14時台〜23時台に取り込み、トップの「明日」タブが読む。races とは別（BOA-223、ADR-0084）';
 COMMENT ON COLUMN tomorrow_program.racer_name_raw IS
   'B ファイルの名前のまま（4文字で切れる）。正式名は racer_profiles から引く';
 COMMENT ON COLUMN tomorrow_program.source_modified_at IS
-  '取り込んだ B ファイルの HTTP Last-Modified（公開から取り込みまでの遅れの実測用）';
+  '行の値が最後に変わったときの B ファイルの HTTP Last-Modified（公開から取り込みまでの遅れの実測用）';
 
 COMMIT;
