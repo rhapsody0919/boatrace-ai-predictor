@@ -405,6 +405,17 @@
   width: 99%;
 }
 
+/* 艇番・選手名の列は横に送っても残す。送ると艇番の丸が消え、選手名も途中で切れて
+   （「竜太」「井繁」）、どの艇の行か分からなくなっていた（BOA-704） */
+.rmt-forecast-table thead th:first-child,
+.rmt-forecast-table tbody th {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--hscroll-fade-color, var(--surface-card));
+  box-shadow: inset -1px 0 0 var(--border-hairline);
+}
+
 .rmt-forecast-table tbody tr {
   cursor: pointer;
 }
@@ -417,7 +428,9 @@
 /* 選択中の行は背景で塗らない。塗ると「目安に届くセルの色」と混ざり、
    届いていない艇の行まで色付きに見える（実際に1号艇で起きた） */
 .rmt-forecast-table tbody tr.is-current th {
-  box-shadow: inset 3px 0 0 0 var(--brand-accent-primary);
+  box-shadow:
+    inset 3px 0 0 0 var(--brand-accent-primary),
+    inset -1px 0 0 var(--border-hairline);
   padding-left: 6px;
 }
 

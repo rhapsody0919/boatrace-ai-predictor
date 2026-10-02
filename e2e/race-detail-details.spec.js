@@ -419,4 +419,60 @@ test.describe("レース詳細の表示の細部", () => {
       ).toBeLessThanOrEqual(before.lastFull + 1);
     }
   });
+  // 横に送っても、行を見分ける左端の列（艇番・選手名・日付・コース）が残り、「‹」で戻れる
+  // （BOA-699・BOA-704）。以前は送ると左端の列が消え、「‹」も無い表があった
+  for (const screen of [
+    {
+      name: "今節の得点率早見",
+      path: `${RACE}?tab=meet`,
+      hint: ".hscroll-hint:has(.rmt-forecast-scroll)",
+      sticky: ".rmt-forecast-table tbody tr:first-child th",
+    },
+    {
+      name: "今節の日別表",
+      path: `${RACE}?tab=meet`,
+      hint: ".race-history-hscroll",
+      sticky: ".race-history-table tbody tr:first-child td:first-child",
+    },
+    {
+      name: "モーターのコース別成績",
+      path: `${RACE}?tab=motor`,
+      open: async (page) => {
+        await page
+          .locator(".motor-ranking-row")
+          .first()
+          .click({ timeout: 60000 });
+        await page.locator(".motor-waku-expand-btn").click();
+      },
+      hint: ".mwsg-hint",
+      sticky: ".mwsg-table tbody tr:first-child td:first-child",
+    },
+  ]) {
+    test(`320px: ${screen.name}は横に送っても左端の列が残り、「‹」で戻れる（BOA-699・BOA-704）`, async ({
+      page,
+    }) => {
+      test.slow();
+      await page.setViewportSize({ width: 320, height: 812 });
+      await page.goto(screen.path);
+      if (screen.open) await screen.open(page);
+      const hint = page.locator(screen.hint).first();
+      await expect(hint).toBeVisible({ timeout: 90000 });
+      const more = hint.locator(":scope > .hscroll-more");
+      await expect(more).toBeVisible({ timeout: 30000 });
+      const stickyLeft = () =>
+        hint.evaluate((el, sel) => {
+          const cell = el.querySelector(sel).getBoundingClientRect();
+          const box = el.getBoundingClientRect();
+          return Math.round(cell.left - box.left);
+        }, screen.sticky);
+      const before = await stickyLeft();
+      await more.click();
+      const less = hint.locator(":scope > .hscroll-less");
+      await expect(less).toBeVisible();
+      // 送ったあとも、左端の列は同じ位置に残る
+      expect(Math.abs((await stickyLeft()) - before)).toBeLessThanOrEqual(1);
+      await less.click();
+      await expect(less).toHaveCount(0);
+    });
+  }
 });

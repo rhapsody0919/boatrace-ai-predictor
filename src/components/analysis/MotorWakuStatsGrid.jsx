@@ -6,7 +6,8 @@ import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import { formatGenerationDate } from "../../utils/motorGeneration";
 import { formatRateOrCount } from "../../utils/smallSampleRate";
 import "./MotorConditionChart.css";
-import "../common/HorizontalScrollHint.css";
+import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
+import "./MotorWakuStatsGrid.css";
 
 /**
  * MotorWakuStatsGrid - モーター単体の枠番（進入コース）別成績・展示タイム推移
@@ -123,8 +124,10 @@ function MotorWakuStatsGrid({
   const {
     ref: scrollRef,
     hasMore: scrollHasMore,
+    hasLess: scrollHasLess,
     update: updateScroll,
     scrollRight,
+    scrollLeft,
   } = useHorizontalScrollHint([rows?.length, expanded]);
 
   if (!rows || rows.length === 0) return null;
@@ -162,21 +165,18 @@ function MotorWakuStatsGrid({
         })}
       </p>
       <div
-        className={`table-wrapper hscroll-hint${scrollHasMore ? " has-more" : ""}`}
+        className={`table-wrapper mwsg-hint hscroll-hint${scrollHasMore ? " has-more" : ""}`}
       >
-        {scrollHasMore && (
-          <button
-            type="button"
-            className="hscroll-more"
-            onClick={scrollRight}
-            aria-hidden="true"
-            tabIndex={-1}
-          >
-            ›
-          </button>
-        )}
+        {/* 右へ送るとコースの列が消えて、ボタンでは戻れなかった。コースの列を固定し、
+            「‹」も出す（BOA-699・BOA-704） */}
+        <HorizontalScrollButtons
+          hasMore={scrollHasMore}
+          hasLess={scrollHasLess}
+          onMore={scrollRight}
+          onLess={scrollLeft}
+        />
         <div className="table-scroll" ref={scrollRef} onScroll={updateScroll}>
-          <table className="motor-ranking-table motor-waku-table">
+          <table className="motor-ranking-table motor-waku-table mwsg-table">
             <thead>
               <tr>
                 <th>{t("analysis.motor.courseHeader")}</th>

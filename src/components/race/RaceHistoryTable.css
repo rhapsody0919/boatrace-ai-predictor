@@ -42,6 +42,18 @@
   color: var(--text-primary);
 }
 
+/* 日付の列は横に送っても残す。送ると日付・R・着順が画面の外に出て、残った列がどの走か
+   分からなくなっていた（BOA-704）。地の色は、この表が載っている面の色（--hscroll-fade-color）
+   に合わせる */
+.race-history-table th:first-child,
+.race-history-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--hscroll-fade-color, var(--surface-page));
+  box-shadow: inset -1px 0 0 var(--border-hairline);
+}
+
 /* 着順の色（直近の走の帯 RecentRunsBar と同じ。1着＝金、5・6着と記号＝赤） */
 .race-history-table td.race-history-finish-first {
   color: var(--brand-accent-primary);
