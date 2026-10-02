@@ -73,6 +73,7 @@
   },
   "venueGrid": {
     "noRacesToday": "本日開催なし",
+    "nextOpen": "次開催 {{date}}",
     "nextRace": "次 {{race}}R",
     "allFinished": "全レース終了",
     "timeOfDay": {
