@@ -82,13 +82,13 @@ for (const name of ["getMotorWakuStats", "getMotorRacerWakuStats"]) {
 
 check(
   "getMotorWakuStats のキャッシュのキーが旧形式（配列）と異なる",
-  methodBody("getMotorWakuStats").includes("`motor-waku-stats-generation-") &&
+  methodBody("getMotorWakuStats").includes("`motor-waku-stats-generation-v2-") &&
     !methodBody("getMotorWakuStats").includes("`motor-waku-stats-${"),
 );
 check(
   "getMotorRacerWakuStats のキャッシュのキーが旧形式（配列）と異なる",
   methodBody("getMotorRacerWakuStats").includes(
-    "`motor-racer-waku-stats-generation-",
+    "`motor-racer-waku-stats-generation-v2-",
   ) &&
     !methodBody("getMotorRacerWakuStats").includes(
       "`motor-racer-waku-stats-${",

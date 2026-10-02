@@ -2778,7 +2778,7 @@ export const supabaseDataService = {
     return withCache(
       // v2: 期間を現行モーターの世代で切り詰める（BOA-329）
       // v3: 着順の付かなかった走（失格等）も分母に数える（BOA-549）
-      `motor-usage-history-v3-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
+      `motor-usage-history-v4-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -3214,7 +3214,7 @@ export const supabaseDataService = {
     return withCache(
       // 戻り値を配列から{generationStart, rows}に変えたため、キーを変えて
       // localStorageに残る旧形式（配列）を読まない
-      `motor-waku-stats-generation-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
+      `motor-waku-stats-generation-v2-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
       async () => {
         const emptyRows = () =>
           Array.from({ length: 6 }, (_, i) => ({
@@ -3395,7 +3395,7 @@ export const supabaseDataService = {
   getMotorRacerWakuStats(venueCode, motorNumber, beforeRaceId = null) {
     return withCache(
       // 戻り値の形を変えたためキーも変える（getMotorWakuStatsと同じ理由）
-      `motor-racer-waku-stats-generation-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
+      `motor-racer-waku-stats-generation-v2-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -3888,7 +3888,7 @@ export const supabaseDataService = {
    * race_entries×races×race_resultsから直接算出する
    */
   getRacerVenueStats(racerId) {
-    return withCache(`racer-venue-stats-${racerId}`, async () => {
+    return withCache(`racer-venue-stats-v2-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4006,7 +4006,7 @@ export const supabaseDataService = {
     // v6: 着順が付かない走の公式の記号（finishMark）を足した（BOA-537）
     // v7: 同じ日の走を R の古い順に並べ直した（BOA-588）
     // v8: フライングの走の ST（flyingStartTiming）を足した（BOA-583。直近10走・今節の表で「F.01」と出すため）
-    return withCache(`racer-scoped-race-stats-v9-${racerId}`, async () => {
+    return withCache(`racer-scoped-race-stats-v10-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4427,7 +4427,7 @@ export const supabaseDataService = {
    */
   getRacerRaceHistory(racerId) {
     // v2: ST を展示ST（exhibition_data）から本番ST（race_start_timings）に替え、isFlying・finishMark を足した（BOA-576）
-    return withCache(`racer-race-history-v3-${racerId}`, async () => {
+    return withCache(`racer-race-history-v4-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4564,7 +4564,7 @@ export const supabaseDataService = {
    * racer_id単体向けに転用したもの。対象が1選手のみのためRPC化は不要
    */
   getRacerBoatReturnRate(racerId) {
-    return withCache(`racer-boat-return-rate-${racerId}`, async () => {
+    return withCache(`racer-boat-return-rate-v2-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -5764,7 +5764,7 @@ export const supabaseDataService = {
    * 過去の実績払戻金のみを集計する（期待値分析のようなモデル較正は不要）
    */
   getRaceRacerBoatReturnRate(raceId) {
-    return withCache(`race-racer-boat-return-rate-${raceId}`, async () => {
+    return withCache(`race-racer-boat-return-rate-v2-${raceId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -6043,7 +6043,7 @@ export const supabaseDataService = {
     const VENUE_RANKING_CACHE_TTL = 5 * 60 * 1000; // 5分
 
     return withCache(
-      `todays-venue-ranking-${today}-${limit}-${minRaceCount}`,
+      `todays-venue-ranking-v2-${today}-${limit}-${minRaceCount}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -6182,7 +6182,7 @@ export const supabaseDataService = {
     }
 
     return withCache(
-      `venue-day-summary-${venueCode}-${date}`,
+      `venue-day-summary-v2-${venueCode}-${date}`,
       async () => {
         const empty = {
           raceCount: 0,
@@ -6290,7 +6290,7 @@ export const supabaseDataService = {
   getVenueFirstWinRateRanking(days = 90, minRaceCount = 3) {
     const CACHE_TTL = 6 * 60 * 60 * 1000; // 6時間（90日集計は変化が緩やか）
     return withCache(
-      `venue-first-win-rate-ranking-${days}-${minRaceCount}`,
+      `venue-first-win-rate-ranking-v2-${days}-${minRaceCount}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
