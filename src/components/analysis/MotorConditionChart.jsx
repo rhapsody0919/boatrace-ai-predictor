@@ -30,6 +30,7 @@ import {
 } from "../../utils/motorGeneration";
 import { translatePartName } from "../race/raceIndicators";
 import RateBar from "../common/RateBar";
+import { formatSlashDate } from "../../utils/venueMotorRanking";
 import { BOAT_COLORS } from "../../utils/colors";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
@@ -880,10 +881,7 @@ function MotorConditionChart({
                     `venues.${selectedVenue}`,
                     VENUE_NAMES[selectedVenue] || String(selectedVenue),
                   ),
-                  date: venueRanks.scrapedDate.replaceAll("-", "/").replace(
-                    /\/0(\d)/g,
-                    "/$1",
-                  ),
+                  date: formatSlashDate(venueRanks.scrapedDate),
                 })}
                 <br />
                 {t("analysis.motor.motorRiderMixNote")}
