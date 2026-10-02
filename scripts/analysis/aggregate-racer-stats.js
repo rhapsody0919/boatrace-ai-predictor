@@ -34,7 +34,7 @@ import {
 } from "../lib/racerStStats.js";
 import { fetchAll } from "../lib/supabaseClient.js";
 import { upsertChangedRows } from "../lib/unchangedRows.js";
-import { isNoRaceResult } from "../lib/raceOutcomeFilters.js";
+import { isNoRaceResult, placedRanks } from "../lib/raceOutcomeFilters.js";
 
 // ===== 取得（ページング＋例外。BOA-581 と同じ作り、BOA-600） =====
 
@@ -291,7 +291,7 @@ async function calculateCourseRaceCounts(racerId, venueCode = null) {
 
   const allResults = await fetchResultsForEntries(
     filteredEntries,
-    "race_id, rank1, rank2, rank3, is_cancelled, race_status, course_1, course_2, course_3, course_4, course_5, course_6",
+    "race_id, rank1, rank2, rank3, is_cancelled, race_status, refund_boats, course_1, course_2, course_3, course_4, course_5, course_6",
   );
 
   const entryBoatMap = new Map();
@@ -338,10 +338,12 @@ async function calculateCourseRaceCounts(racerId, venueCode = null) {
     if (result.rank1 === boatNumber) {
       courseCounts[courseKey].wins++;
     }
-    if (isPlaceHit(boatNumber, result.rank1, result.rank2)) {
+    // 完走3艇未満のレースは、返還艇が表の行順で2着・3着に入っている。2連対・3連対に数えない（BOA-579）
+    const placed = placedRanks(result);
+    if (isPlaceHit(boatNumber, placed.rank1, placed.rank2)) {
       courseCounts[courseKey].top2++;
     }
-    if (isShowHit(boatNumber, result.rank1, result.rank2, result.rank3)) {
+    if (isShowHit(boatNumber, placed.rank1, placed.rank2, placed.rank3)) {
       courseCounts[courseKey].top3++;
     }
   }

@@ -344,6 +344,7 @@ season・course・back3は[実]（fixture・本調査）。profileは[C]。
 | E6 | 3連単と3連複の払戻の列名が逆 | `payout_trifecta`=3連複、`payout_trio`=3連単（唐津12Rで`payout_trifecta=410`、`payout_trio=780`、公式は3連単¥780・3連複¥410）[実+D] | 誤用のリスク | コード上の命名の逆転（既知[C]） |
 | E7 | `race_odds`の`odds_win_6`が約半分で欠ける | (b)53.3%（`odds_win_1`は94.6%）[D] | オッズを使う分析（6号艇） | N31。2026-09-22原因判明: 公式サイトが投票額僅少の艇の単勝オッズを表示しない仕様のため（バグではない）。対応不要 |
 | E8 | 当地勝率0が約9% | `local_win_rate`=0が(a)10,552行（9.2%）[D] | 当地未経験（NULLであるべき）を0として扱う恐れ | 未確認（実ページの表記が「-」か「0.00」か） |
+| E9 | 完走が3艇未満のレースで、`rank1〜3` に返還艇（F・L等）が入る | **作りどおり（不具合ではない）**。`rank1〜3` は NOT NULL で、既存の読み手が「結果あり」の判定に使うため、取り込み（`scripts/lib/raceResultRows.js`）は表の行順（非完走艇を含む）で `rank` を埋める。区別は `race_status`（`partial_refund`・`no_race`）と `refund_boats` で行う。2026-10-02の実測で21レース（不成立7・一部返還14、すべて `rank1〜3`）。例: 2026-09-04-11-09（完走は4・5号艇だけ、DBは4-5-1で1号艇はF）[D] | 2着・3着を数える集計（2連対率・3連対率）。画面の結果表示（BOA-543）と的中判定（BOA-544）は対応済み | [BOA-579](https://linear.app/boat-ai/issue/BOA-579)。スキーマは変えない（オーケストレーター判断）。2連対率・3連対率の集計は `placedRanks`（`scripts/lib/raceOutcomeFilters.js`）で返還艇の位置を飛ばす。出目の分布（`update-outcome-*`・`update-nige-outcome-distribution`）は未対応（21レース分） |
 
 ## 6. 未確認事項
 

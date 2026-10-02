@@ -13,7 +13,7 @@
  */
 import { supabase } from "../lib/supabaseClient.js";
 import { toTechniqueKey } from "../lib/winningTechniques.js";
-import { isNoRaceResult } from "../lib/raceOutcomeFilters.js";
+import { isNoRaceResult, placedRanks } from "../lib/raceOutcomeFilters.js";
 
 // race_gradeが安定して記録されるようになった日付（それ以前はNULLの欠損期間）
 const CLEAN_DATA_SINCE = "2026-02-04";
@@ -71,7 +71,7 @@ async function calculateVenueGradeStats() {
     supabase
       .from("races")
       .select(
-        "venue_code, race_grade, race_results(rank1, rank2, rank3, winning_technique, payout_trio, is_cancelled, race_status)",
+        "venue_code, race_grade, race_results(rank1, rank2, rank3, winning_technique, payout_trio, is_cancelled, race_status, refund_boats)",
       )
       .gte("race_date", CLEAN_DATA_SINCE)
       .order("race_id")
@@ -102,7 +102,9 @@ async function calculateVenueGradeStats() {
     }
 
     const venueCode = r.venue_code;
-    const { rank1, rank2, rank3, winning_technique, payout_trio } = result;
+    const { winning_technique, payout_trio } = result;
+    // 完走3艇未満のレースは、返還艇が表の行順で2着・3着に入っている。2連対・3連対に数えない（BOA-579）
+    const { rank1, rank2, rank3 } = placedRanks(result);
     // 決まり手の異常値（"逃げ抜き"等、6分類に含まれない値）はtoTechniqueKeyがnullを
     // 返すため自然に除外される（実データで1件確認済み、BOA-263調査時点）
     const techKey = toTechniqueKey(winning_technique);

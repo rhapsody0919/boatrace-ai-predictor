@@ -7,6 +7,9 @@
  *   (c) 再発防止: scripts/daily・scripts/lib と、日次で動く aggregate-racer-stats.js・保守用の update-venue-stats.js のコードが、旧フラグ is_no_race（全行 false で機能していない）を条件に使わない
  *       （コメントでの言及と、過去分の取り込みの書き込み kbResultsBackfillRows.js は除く）
  *   (d) 置き換えた集計（6本のクエリ）が、共通の条件 NOT_NO_RACE_FILTER を使う
+ *   (e) placedRanks: 返還艇（refund_boats）の位置は着順の艇なし（null）。完走した艇の着順は詰めない（BOA-579）
+ *   (f) 選手のコース別2連対率・3連対率（aggregate-racer-stats.js）と会場×枠番の2連対率・3連対率
+ *       （calculate-venue-grade-stats.js）が、refund_boats を読み、placedRanks を通して数える（BOA-579）
  *
  * 実行: node scripts/maintenance/verify-race-outcome-filters.js
  */
@@ -16,6 +19,7 @@ import { fileURLToPath } from "node:url";
 import {
   NOT_NO_RACE_FILTER,
   isNoRaceResult,
+  placedRanks,
 } from "../lib/raceOutcomeFilters.js";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -94,6 +98,47 @@ check(
   "(d) 置き換えた6本の集計が .or(NOT_NO_RACE_FILTER) で不成立を外す",
   missing.length === 0,
   missing.join(", "),
+);
+
+// (e) 2026-09-04-11-09: 完走は4・5号艇だけ。DB は 4-5-1 で、1号艇は F（返還）
+const same = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+check(
+  "(e) 返還艇の位置は null（4-5-1・1号艇F → 4-5-なし）。返還なし・refund_boats が NULL なら元のまま",
+  same(placedRanks({ rank1: 4, rank2: 5, rank3: 1, refund_boats: [1] }), {
+    rank1: 4,
+    rank2: 5,
+    rank3: null,
+  }) &&
+    same(placedRanks({ rank1: 1, rank2: 4, rank3: 2, refund_boats: [6] }), {
+      rank1: 1,
+      rank2: 4,
+      rank3: 2,
+    }) &&
+    same(placedRanks({ rank1: 3, rank2: 1, rank3: 2, refund_boats: null }), {
+      rank1: 3,
+      rank2: 1,
+      rank3: 2,
+    }) &&
+    same(placedRanks({ rank1: 2, rank2: 6, rank3: 3, refund_boats: [6, 3] }), {
+      rank1: 2,
+      rank2: null,
+      rank3: null,
+    }),
+);
+
+// (f) 2連対率・3連対率の集計が placedRanks を通す
+const PLACED_FILES = [
+  "scripts/analysis/aggregate-racer-stats.js",
+  "scripts/daily/calculate-venue-grade-stats.js",
+];
+const notPlaced = PLACED_FILES.filter((rel) => {
+  const code = stripComments(fs.readFileSync(path.join(ROOT, rel), "utf8"));
+  return !(/placedRanks\(result\)/.test(code) && /refund_boats/.test(code));
+});
+check(
+  "(f) 選手のコース別・会場×枠番の2連対率・3連対率が refund_boats を読み、placedRanks で数える",
+  notPlaced.length === 0,
+  notPlaced.join(", "),
 );
 
 if (failures > 0) {

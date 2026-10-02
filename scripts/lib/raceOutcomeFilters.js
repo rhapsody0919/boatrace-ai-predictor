@@ -17,3 +17,22 @@ export const NOT_NO_RACE_FILTER = "race_status.is.null,race_status.neq.no_race";
 export function isNoRaceResult(result) {
   return getRaceOutcomeState(result) === RACE_OUTCOME.NO_RACE;
 }
+
+/**
+ * 1〜3着の艇番から、返還艇（refund_boats）を除いたもの（BOA-579）。
+ *
+ * 完走が3艇未満のレースでは、rank1〜3 の NOT NULL 制約と既存の読み手のため、取り込みが表の行順（非完走艇を含む）で
+ * rank を埋める（scripts/lib/raceResultRows.js）。区別は race_status と refund_boats で行う。2着・3着を数える集計は、
+ * この関数を通して返還艇の位置を「その着順の艇なし」（null）として扱う。完走した艇の着順は詰めない（公式の着順のまま）。
+ * @param {{rank1?: number|null, rank2?: number|null, rank3?: number|null, refund_boats?: number[]|null}} result
+ * @returns {{rank1: number|null, rank2: number|null, rank3: number|null}}
+ */
+export function placedRanks(result) {
+  const refunded = new Set(result?.refund_boats ?? []);
+  const keep = (boat) => (boat == null || refunded.has(boat) ? null : boat);
+  return {
+    rank1: keep(result?.rank1),
+    rank2: keep(result?.rank2),
+    rank3: keep(result?.rank3),
+  };
+}
