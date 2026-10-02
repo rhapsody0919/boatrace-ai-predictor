@@ -48,6 +48,7 @@ import { BOAT_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { useRaceEntryFlyingRows } from "../../hooks/useRaceEntryFlyingRows";
+import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import { translateTechnique } from "./raceIndicators";
 import { SMALL_SAMPLE_THRESHOLD, recordsBeforeRace } from "./basicInfoStats";
 import {
@@ -62,6 +63,7 @@ import {
 import RaceStConsiderationCard from "./RaceStConsiderationCard";
 import NigeSimulationCard from "./NigeSimulationCard";
 import RecentRunsBar from "./RecentRunsBar";
+import "../common/HorizontalScrollHint.css";
 import "./RaceWakuInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate"];
@@ -211,6 +213,17 @@ function RaceWakuInfoTab({
   const selectedPlayer =
     sortedPlayers.find((p) => p.number === selectedBoat) ?? sortedPlayers[0];
   const selectedRacerId = selectedPlayer?.racerId ?? null;
+
+  // 全コース比較の表は 375px で 5〜6コースの列が切れるのに、横に続く手がかりが無かった（BOA-607）。
+  // 折りたたみを開いた時・指標や選手を替えた時・履歴が届いた時に測り直す
+  const {
+    ref: gridScrollRef,
+    hasMore: gridHasMore,
+    hasLess: gridHasLess,
+    update: updateGridScroll,
+    scrollRight: scrollGridRight,
+    scrollLeft: scrollGridLeft,
+  } = useHorizontalScrollHint([foldOpen, metric, selectedBoat, scopedByRacer]);
 
   // 選手を選ぶたびに、その選手の出走履歴を取得する（withCacheで基本情報タブ・
   // 直前情報タブと共有されるため、同じ選手なら再フェッチは起きない）
@@ -552,106 +565,137 @@ function RaceWakuInfoTab({
                     metric: t(`wakuInfo.metrics.${metric}`),
                   })}
                 </p>
-                {/* 横スクロールはこのラッパの中だけに閉じる（ページ全体は横スクロールさせない） */}
-                <div className="rwit-grid-wrapper">
-                  <table className="rwit-grid">
-                    <thead>
-                      <tr>
-                        <th className="rwit-grid-label-th" scope="col"></th>
-                        {GRID_COURSES.map((course) => {
-                          const color = BOAT_COLORS[course] || {};
-                          // 今日その選手が入る枠（枠なり進入の想定）を列ヘッダで明示する。
-                          // セルの金の縁だけでは「これが今日のコース」と伝わらなかった
-                          // （2026-09-24ユーザー指摘）
-                          const isToday = course === selectedPlayer.number;
-                          return (
-                            <th
-                              key={course}
-                              className={`rwit-grid-course-th${isToday ? " is-today" : ""}`}
-                              scope="col"
-                              style={{
-                                background: color.bg,
-                                color: color.text,
-                              }}
-                            >
-                              {course}
-                              {isToday && (
-                                <span
-                                  className="rwit-today-mark"
-                                  title={t("wakuInfo.todayBadge")}
-                                >
-                                  {t("wakuInfo.todayMark")}
-                                </span>
-                              )}
-                            </th>
-                          );
-                        })}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {grid.map((row) => (
-                        <tr key={row.key}>
-                          <th className="rwit-grid-label-th" scope="row">
-                            {t(`wakuInfo.gridRows.${row.key}`)}
-                          </th>
-                          {row.cells.map((cell) => {
-                            const isSmallSample =
-                              cell.n > 0 && cell.n < SMALL_SAMPLE_THRESHOLD;
-                            const open =
-                              openCell?.from === "grid" &&
-                              openCell?.rowKey === row.key &&
-                              openCell?.course === cell.course;
-                            const isOwnCourse =
-                              cell.course === selectedPlayer.number;
-                            if (cell.n === 0) {
-                              return (
-                                <td
-                                  key={cell.course}
-                                  className="rwit-grid-cell"
-                                >
-                                  <span className="rwit-grid-empty">—</span>
-                                </td>
-                              );
-                            }
+                {/* 横スクロールはこのラッパの中だけに閉じる（ページ全体は横スクロールさせない）。
+                    切れていることが分かるよう「›」「‹」を重ねる（BOA-607） */}
+                <div
+                  className={`rwit-grid-hscroll hscroll-hint${gridHasMore ? " has-more" : ""}`}
+                >
+                  {gridHasLess && (
+                    <button
+                      type="button"
+                      className="hscroll-less"
+                      onClick={scrollGridLeft}
+                      aria-hidden="true"
+                      tabIndex={-1}
+                    >
+                      ‹
+                    </button>
+                  )}
+                  {gridHasMore && (
+                    <button
+                      type="button"
+                      className="hscroll-more"
+                      onClick={scrollGridRight}
+                      aria-hidden="true"
+                      tabIndex={-1}
+                    >
+                      ›
+                    </button>
+                  )}
+                  <div
+                    className="rwit-grid-wrapper"
+                    ref={gridScrollRef}
+                    onScroll={updateGridScroll}
+                  >
+                    <table className="rwit-grid">
+                      <thead>
+                        <tr>
+                          <th className="rwit-grid-label-th" scope="col"></th>
+                          {GRID_COURSES.map((course) => {
+                            const color = BOAT_COLORS[course] || {};
+                            // 今日その選手が入る枠（枠なり進入の想定）を列ヘッダで明示する。
+                            // セルの金の縁だけでは「これが今日のコース」と伝わらなかった
+                            // （2026-09-24ユーザー指摘）
+                            const isToday = course === selectedPlayer.number;
                             return (
-                              <td
-                                key={cell.course}
-                                className={`rwit-grid-cell${open ? " is-open" : ""}${isOwnCourse ? " is-own-course" : ""}`}
+                              <th
+                                key={course}
+                                className={`rwit-grid-course-th${isToday ? " is-today" : ""}`}
+                                scope="col"
+                                style={{
+                                  background: color.bg,
+                                  color: color.text,
+                                }}
                               >
-                                <button
-                                  type="button"
-                                  className="rwit-grid-cell-button"
-                                  onClick={() =>
-                                    toggleCell(row.key, cell.course, "grid")
-                                  }
-                                  aria-expanded={open}
-                                >
+                                {course}
+                                {isToday && (
                                   <span
-                                    className={`rwit-grid-value${isSmallSample ? " is-small-sample" : ""}`}
+                                    className="rwit-today-mark"
+                                    title={t("wakuInfo.todayBadge")}
                                   >
-                                    {isSmallSample && (
-                                      <span
-                                        className="rwit-grid-warn"
-                                        title={t("wakuInfo.smallSampleTitle")}
-                                      >
-                                        ⚠
-                                      </span>
-                                    )}
-                                    {cell.value.toFixed(1)}
+                                    {t("wakuInfo.todayMark")}
                                   </span>
-                                  <span
-                                    className={`rwit-grid-n${isSmallSample ? " is-small-sample" : ""}`}
-                                  >
-                                    {t("wakuInfo.sampleCount", { n: cell.n })}
-                                  </span>
-                                </button>
-                              </td>
+                                )}
+                              </th>
                             );
                           })}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {grid.map((row) => (
+                          <tr key={row.key}>
+                            <th className="rwit-grid-label-th" scope="row">
+                              {t(`wakuInfo.gridRows.${row.key}`)}
+                            </th>
+                            {row.cells.map((cell) => {
+                              const isSmallSample =
+                                cell.n > 0 && cell.n < SMALL_SAMPLE_THRESHOLD;
+                              const open =
+                                openCell?.from === "grid" &&
+                                openCell?.rowKey === row.key &&
+                                openCell?.course === cell.course;
+                              const isOwnCourse =
+                                cell.course === selectedPlayer.number;
+                              if (cell.n === 0) {
+                                return (
+                                  <td
+                                    key={cell.course}
+                                    className="rwit-grid-cell"
+                                  >
+                                    <span className="rwit-grid-empty">—</span>
+                                  </td>
+                                );
+                              }
+                              return (
+                                <td
+                                  key={cell.course}
+                                  className={`rwit-grid-cell${open ? " is-open" : ""}${isOwnCourse ? " is-own-course" : ""}`}
+                                >
+                                  <button
+                                    type="button"
+                                    className="rwit-grid-cell-button"
+                                    onClick={() =>
+                                      toggleCell(row.key, cell.course, "grid")
+                                    }
+                                    aria-expanded={open}
+                                  >
+                                    <span
+                                      className={`rwit-grid-value${isSmallSample ? " is-small-sample" : ""}`}
+                                    >
+                                      {isSmallSample && (
+                                        <span
+                                          className="rwit-grid-warn"
+                                          title={t("wakuInfo.smallSampleTitle")}
+                                        >
+                                          ⚠
+                                        </span>
+                                      )}
+                                      {cell.value.toFixed(1)}
+                                    </span>
+                                    <span
+                                      className={`rwit-grid-n${isSmallSample ? " is-small-sample" : ""}`}
+                                    >
+                                      {t("wakuInfo.sampleCount", { n: cell.n })}
+                                    </span>
+                                  </button>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
                 {openCell?.from === "grid" && (

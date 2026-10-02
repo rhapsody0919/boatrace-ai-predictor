@@ -287,6 +287,12 @@
    行＝期間・条件、列＝実進入コース1〜6。共通コンポーネントには切り出していない
    （使う箇所が1つのため。spec.md FR-0）。
    横スクロールはこのラッパの中だけに閉じ、ページ全体は横スクロールさせない。 */
+/* 全コース比較の表の「›」「‹」（BOA-607）。カード（--surface-card）の上に載るので、
+   右端のフェードの行き先をカードの色にする */
+.rwit-grid-hscroll {
+  --hscroll-fade-color: var(--surface-card);
+}
+
 .rwit-grid-wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;

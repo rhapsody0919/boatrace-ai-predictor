@@ -193,4 +193,37 @@ test.describe("レース詳細の表示の細部", () => {
       expect(Math.max(...ws) - Math.min(...ws)).toBeLessThanOrEqual(0.01);
     }
   });
+
+  test("375px: 枠別情報の全コース表は切れていることが「›」で分かり、ST考察は枠に収まる（BOA-607）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // 2026-09-26 津5R（チケットの再現レース）
+    await page.goto("/race/2026-09-26-09-05");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    // ST考察の表は 375px で6艇とも枠の中（#1064 で等幅・最小幅を外した）
+    const rsc = page.locator(".rsc-grid-wrapper").first();
+    await expect(rsc).toBeVisible({ timeout: 30000 });
+    expect(
+      await rsc.evaluate((el) => el.scrollWidth - el.clientWidth),
+    ).toBeLessThanOrEqual(1);
+
+    // 全コース表は 5〜6コースが切れる。横に続く手がかり（「›」）を出す
+    await page.locator(".rwit-fold-summary").click();
+    const grid = page.locator(".rwit-grid-wrapper");
+    await expect(grid.locator(".rwit-grid")).toBeVisible({ timeout: 30000 });
+    expect(
+      await grid.evaluate((el) => el.scrollWidth - el.clientWidth),
+    ).toBeGreaterThan(4);
+    const more = page.locator(".rwit-grid-hscroll .hscroll-more");
+    await expect(more).toBeVisible();
+    // 押すと右へ送られ、左へ戻す「‹」が出る
+    await more.click();
+    await expect
+      .poll(() => grid.evaluate((el) => el.scrollLeft))
+      .toBeGreaterThan(0);
+    await expect(
+      page.locator(".rwit-grid-hscroll .hscroll-less"),
+    ).toBeVisible();
+  });
 });
