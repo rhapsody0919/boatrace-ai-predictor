@@ -5,12 +5,22 @@
   overflow: hidden;
 }
 
+/* 行本体（リンク）と▼ボタンを横に並べる。▼はリンクの外に置く（BOA-470） */
+.racer-compact-row-head {
+  display: flex;
+  align-items: center;
+  padding-right: 0.45rem;
+}
+
 .racer-compact-row-main {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 0.7rem;
-  cursor: pointer;
+  padding: 0.6rem 0.25rem 0.6rem 0.7rem;
+  color: inherit;
+  text-decoration: none;
 }
 
 .racer-compact-row-name {
@@ -52,8 +62,8 @@
 
 .racer-compact-row-chevron {
   flex-shrink: 0;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -61,6 +71,7 @@
   border: none;
   color: var(--text-secondary);
   font-size: 0.7rem;
+  cursor: pointer;
   transition: transform var(--transition-base) var(--ease-in-out);
 }
 
