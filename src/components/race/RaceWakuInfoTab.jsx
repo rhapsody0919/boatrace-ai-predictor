@@ -225,6 +225,32 @@ function RaceWakuInfoTab({
     scrollLeft: scrollGridLeft,
   } = useHorizontalScrollHint([foldOpen, metric, selectedBoat, scopedByRacer]);
 
+  // 想定コースが5〜6の選手だと、比べる基準の「想定」の列が初めから画面の外にあった
+  // （375px で5〜6コース、320px で4〜6コース。#1130 ファン評価1周目）。折りたたみを開いた時・
+  // 選手を替えた時・履歴が届いた時に、その列が見える位置まで送る。列の左側は固定の行見出しに
+  // 隠れるので、その幅も見込む
+  useEffect(() => {
+    if (!foldOpen) return undefined;
+    const raf = requestAnimationFrame(() => {
+      const el = gridScrollRef.current;
+      if (!el) return;
+      const th = el.querySelector(".rwit-grid-course-th.is-today");
+      if (!th) return;
+      const label = el.querySelector(".rwit-grid-label-th");
+      const labelWidth = label ? label.getBoundingClientRect().width : 0;
+      const box = el.getBoundingClientRect();
+      const col = th.getBoundingClientRect();
+      const left = col.left - box.left + el.scrollLeft;
+      const right = left + col.width;
+      let target = el.scrollLeft;
+      if (right > target + el.clientWidth) target = right - el.clientWidth;
+      if (left - labelWidth < target) target = left - labelWidth;
+      el.scrollLeft = Math.max(0, target);
+      updateGridScroll();
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [foldOpen, selectedBoat, scopedByRacer, gridScrollRef, updateGridScroll]);
+
   // 選手を選ぶたびに、その選手の出走履歴を取得する（withCacheで基本情報タブ・
   // 直前情報タブと共有されるため、同じ選手なら再フェッチは起きない）
   // ST考察は6艇分を並べるため、選択中の1人だけでなく全選手の履歴を取得する。

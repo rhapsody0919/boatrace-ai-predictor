@@ -225,5 +225,44 @@ test.describe("レース詳細の表示の細部", () => {
     await expect(
       page.locator(".rwit-grid-hscroll .hscroll-less"),
     ).toBeVisible();
+
+    // フェードを付ける箱が、スクロールする箱の右端まで覆う。以前は箱が4px内側で終わり、
+    // フェードの外に切れた列の文字がくっきり残った（#1130 ファン評価1周目）
+    const edges = await page.evaluate(() => {
+      const hint = document
+        .querySelector(".rwit-grid-hscroll")
+        .getBoundingClientRect();
+      const wrap = document
+        .querySelector(".rwit-grid-wrapper")
+        .getBoundingClientRect();
+      return { hintRight: hint.right, wrapRight: wrap.right };
+    });
+    expect(edges.hintRight).toBeGreaterThanOrEqual(edges.wrapRight - 0.5);
+
+    // 想定コースが6の選手を選ぶと、「想定」の列が見える位置まで送られる（同 1周目。以前は
+    // 画面の外から始まり、比べる基準の列が見えなかった）。いったん左端へ戻してから選ぶ
+    await page.locator(".rwit-grid-hscroll .hscroll-less").click();
+    await expect.poll(() => grid.evaluate((el) => el.scrollLeft)).toBe(0);
+    await page
+      .locator(".rwit-boat-chip")
+      .filter({ has: page.locator(".rwit-boat-chip-num", { hasText: /^6$/ }) })
+      .click();
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const wrap = document.querySelector(".rwit-grid-wrapper");
+          const th = wrap.querySelector(".rwit-grid-course-th.is-today");
+          if (!th) return "no-today";
+          const w = wrap.getBoundingClientRect();
+          const c = th.getBoundingClientRect();
+          const label = wrap
+            .querySelector(".rwit-grid-label-th")
+            .getBoundingClientRect();
+          return c.right <= w.right + 0.5 && c.left >= label.right - 0.5
+            ? "visible"
+            : `hidden ${Math.round(c.left)}-${Math.round(c.right)} / ${Math.round(label.right)}-${Math.round(w.right)}`;
+        }),
+      )
+      .toBe("visible");
   });
 });
