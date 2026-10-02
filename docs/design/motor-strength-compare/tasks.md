@@ -6,17 +6,18 @@ PR は2本に分ける。PR-A（子1）は UI統一レーンの PR2（`bestOf` �
 
 ## 共通（PR-A に含める。PR-B が先なら PR-B に含める）
 
-- [ ] T1 サービス層: `getVenueMotorSnapshot(venueCode, asOfDate)` を足す（`{state:"ok"|"empty"|"error"}`）。浜名湖・宮島を読まないのは T4・T11 の側（`VENUE_SITE_STATS_HIDDEN`）。既存のドリルダウンは変えない。`getVenueMotorRanking` の中身をこれに差し替える（戻り値・キャッシュキーは変えない）
-- [ ] T2 `RateBar`（`src/components/common/RateBar.jsx` / `.css`）: value / max / fill / best / label（best は複数行で true になりうる）。札は `--surface-card`、1号艇の白に `--border-hairline` の内線、`max` が 0・null なら棒なし。R1 は UI統一レーンの共通クラスを付けるだけ
-- [ ] T3 純関数（`src/utils/venueMotorRanking.js`）: 並べ替え（列ごとの固定の向き、値なしは末尾）と順位（`competitionRank`、機番で並べたときは2連率の順位）。`scripts/maintenance/verify-venue-motor-ranking.js` で同値・値なし・機番の並べ替えを固定し、`verify-registry.json` に `ci` で登録
+- [x] T1 サービス層: `getVenueMotorSnapshot(venueCode, asOfDate)` を足す（`{state:"ok"|"empty"|"error"}`）。浜名湖・宮島を読まないのは T4・T11 の側（`VENUE_SITE_STATS_HIDDEN`）。既存のドリルダウンは変えない。`getVenueMotorRanking` の中身をこれに差し替える（戻り値・キャッシュキーは変えない）
+- [x] T2 `RateBar`（`src/components/common/RateBar.jsx` / `.css`）: value / max / fill / best / label（best は複数行で true になりうる）。札は `--surface-card`、1号艇の白に `--border-hairline` の内線、`max` が 0・null なら棒なし。R1 は UI統一レーンの共通クラスを付けるだけ
+- [x] T3 純関数（`src/utils/venueMotorRanking.js`）: 並べ替え（列ごとの固定の向き、値なしは末尾）と順位（`competitionRank`、機番で並べたときは2連率の順位）。`scripts/maintenance/verify-venue-motor-ranking.js` で同値・値なし・機番の並べ替えを固定し、`verify-registry.json` に `ci` で登録
 
 ## PR-A 子1: 6艇の比較（MotorConditionChart）
 
-- [ ] T4 `getVenueMotorRanks(venueCode, asOfDate)`: スナップショットから `Map<motor_number, {rank, tied}>`・total・scrapedDate。当日は null、過去は raceDate
-- [ ] T5 6艇表の列の並びを変える: 枠 / 選手 / 機番 / 公式2連率 / 会場内順位 / 期間の2連率（当日のみ）/ 3連率 / … 。過去レースは2連率の列（公式値）を使う。BOA-451 の列順コメントを新しい理由に書き換える
+- [x] T4 `getVenueMotorRanks(venueCode, asOfDate)`: スナップショットから `Map<motor_number, {rank, tied}>`・total・scrapedDate。当日は null、過去は raceDate
+- [x] T5 6艇表の列の並びを変える: 枠 / 選手 / 機番 / 公式2連率 / 会場内順位 / 期間の2連率（当日のみ）/ 3連率 / … 。過去レースは2連率の列（公式値）を使う。BOA-451 の列順コメントを新しい理由に書き換える
 - [ ] T6 公式2連率を RateBar（艇色、`max` は6基の最大、`toFixed(1)`）。最良の札に R1（`bestOf` の艇の集合。同じ値の最良は全部、全艇同値・値なしは付けない）。行全体の `.best-motor` を外す
-- [ ] T7 会場内順位の列（「20位/60」「17位タイ/60」）。`empty` は列ごと畳む、`error` は印、スナップショットに無い機番は「-」。表の下に注記2行（出典と取得日、選手の実力が混ざる）。4言語のキー
-- [ ] T8 E2E（`e2e/`）: 棒の長さの比が値の比と一致、最良の札だけ R1、全艇同値なら R1 なし（ルートで加工）、375px で順位まで横スクロールなしで見える。分析ツールの「モーター調子」タブでも同じ表になる
+  - 進捗: 棒・最良の判定（同じ値は全部、全艇同値・値なしは付けない）・`.best-motor` の除去は済み（a837b07・d446479）。残りは UI統一 PR2a のマージ後に、判定を `bestOf`（艇の集合）に置き換え、`.rate-bar-label.is-best` に R1 の共通クラスを付けること
+- [x] T7 会場内順位の列（「20位/60」「17位タイ/60」）。`empty` は列ごと畳む、`error` は印、スナップショットに無い機番は「-」。表の下に注記2行（出典と取得日、選手の実力が混ざる）。4言語のキー
+- [x] T8 E2E（`e2e/`）: 棒の長さの比が値の比と一致、最良の札だけ R1、全艇同値なら R1 なし（ルートで加工）、375px で順位まで横スクロールなしで見える。分析ツールの「モーター調子」タブでも同じ表になる
 - [ ] T9 データ精度: 6基の順位が `getVenueMotorRanking`（ドリルダウン）と一致することを `data-accuracy-verifier` で確認（当日・過去レース・データの無い会場の3通り）
 - [ ] T10 自動レビュー（`/code-review`）→ build → 関連 spec と `npm run test:layout` を --workers=1 → PR・レビューコメント → ファン評価ループ（オーケストレーターの指定に従う）
 
