@@ -267,6 +267,19 @@ test("会場特性の要約は言語ごとの区切りで連結する（BOA-656�
   }
 });
 
+// BOA-669: 部品交換の部品名（公式表記・日本語）が非jaでも日本語のまま出ていた
+test("英語のデータ出走表で部品交換の部品名を英語で出す（BOA-669）", async ({
+  page,
+}) => {
+  // 2026-09-30 浜名湖1R: 2号艇がキャブを交換
+  await page.goto("/en/race/2026-09-30-05-01");
+  await page.locator(".race-tabs-btn", { hasText: "Just Before" }).click();
+  const row = page.locator("tr", { hasText: "Parts changed" }).first();
+  await row.waitFor({ timeout: 30000 });
+  await expect(row).toContainText("Carburetor");
+  await expect(row).not.toContainText("キャブ");
+});
+
 // BOA-665: 更新ボタン（clearCache）が boatai: で始まるキーをすべて消し、Cookie の同意・
 // 初回訪問・案内バナーを閉じた記録まで消えていた（同意バナーが再表示される）
 test("更新ボタンはデータキャッシュだけを消し、Cookie の同意などの設定は残す（BOA-665）", async ({
@@ -295,6 +308,41 @@ test("更新ボタンはデータキャッシュだけを消し、Cookie の同�
     localStorage.getItem("boatai:intro-banner-dismissed"),
   ]);
   expect(kept).toEqual(["granted", "true", "true"]);
+});
+
+// BOA-621: 直近10走の表のレース種別（公式の自由記述）が非jaでも日本語のまま出ていた。
+// 分類できるもの（予選・優勝戦等）は区分の訳、会場独自の名前は公式表記のまま translate="no"
+test("英語の直近10走の表でレース種別を区分の訳で出し、ja は公式表記のまま（BOA-621）", async ({
+  page,
+}) => {
+  const JA = /[\u3040-\u30FF\u4E00-\u9FFF]/;
+  await page.goto("/en/race/2026-09-30-02-09");
+  await page.locator(".race-tabs-btn", { hasText: "Basic Info" }).click();
+  await page.locator(".rbit-bar-row").nth(5).click();
+  const subs = page.locator(".rrt-table .rrt-stage");
+  await subs.first().waitFor({ timeout: 30000 });
+  let translated = 0;
+  for (const sub of await subs.all()) {
+    const text = (await sub.textContent()) ?? "";
+    if (JA.test(text)) {
+      // 日本語のまま出すのは、分類できない会場独自の名前だけ
+      await expect(sub).toHaveAttribute("translate", "no");
+    } else {
+      translated += 1;
+      await expect(sub).toHaveAttribute("title", JA);
+    }
+  }
+  expect(translated).toBeGreaterThan(0);
+
+  await page.evaluate(() => localStorage.clear());
+  await page.goto("/race/2026-09-30-02-09");
+  await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+  await page.locator(".rbit-bar-row").nth(5).click();
+  const jaSubs = page.locator(".rrt-table .rrt-stage");
+  await jaSubs.first().waitFor({ timeout: 30000 });
+  for (const text of await jaSubs.allTextContents()) {
+    expect(text).toMatch(JA);
+  }
 });
 
 test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {

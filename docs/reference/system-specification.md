@@ -455,14 +455,13 @@ return { data: historyItems, total: count }  // totalは予測数、dataはル�
 |------|------|
 | `getMatchingRules(prediction, venueCode, raceNo)` | 予測にマッチするルール一覧 |
 | `getTodaysMatchingRaces(today)` | 今日のルールマッチレース |
-| `getRulePerformanceByVenue(venueCode)` | 会場別のルール成績 |
 | `getAvailableVenues()` | ルールが定義されている会場一覧 |
 
 ### adminRulePerformance.js
 
 | 関数 | 用途 |
 |------|------|
-| `fetchRulePerformance()` | `/api/admin/rules/performance` から運用成績（全体・ルール別・週別）を取得して整形 |
+| `fetchRulePerformance()` | `/api/admin/rules/performance` から運用成績（全体・ルール別・週別・会場別）を取得して整形 |
 | `shapeRulePerformance(raw)` | RPC の生の値を画面の形に整える（純粋関数） |
 
 ### adminRuleService.js

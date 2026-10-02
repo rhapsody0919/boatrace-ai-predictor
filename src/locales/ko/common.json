@@ -115,8 +115,8 @@
     "fetchError": "경기장 수면 특성을 불러오지 못했습니다."
   },
   "raceDetailPage": {
-    "metaTitle": "{{venue}} {{race}}R AI 데이터 분석 - 용신 레이더",
-    "metaDescription": "{{venue}} {{race}}R의 출주표 데이터, AI 데이터 분석, 전개 예측을 무료로 확인할 수 있습니다.",
+    "metaTitle": "{{venue}} {{race}}R AI 데이터 분석 ({{date}}) - 용신 레이더",
+    "metaDescription": "{{date}} {{venue}} {{race}}R의 출주표 데이터, AI 데이터 분석, 전개 예측을 무료로 확인할 수 있습니다.",
     "backToList": "← 경주 일람으로",
     "notFound": "경주를 찾을 수 없습니다",
     "pastPredictionsBreadcrumb": "지난 예측",
@@ -353,6 +353,12 @@
   "home": {
     "introBannerText": "용신 레이더 - 경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요. | 전개 예측, 인코스 붕괴 지수 등 45개 이상의 데이터를 분석. 자세히 보기 →",
     "introBannerClose": "닫기",
+    "sgNow": {
+      "region": "SG 개최 중",
+      "withTitle": "{{series}} 개최 중({{venue}})",
+      "withoutTitle": "SG 개최 중({{venue}})",
+      "cta": "오늘의 경주, AI 예측 →"
+    },
     "aiIntro": {
       "title": "용신 레이더의 경정 AI 예측",
       "lead": "용신 레이더는 일본 전국 24개 경정장에서 열리는 모든 경주를 AI가 매일 예측하는 데이터 분석 사이트입니다. 완전 무료이며 회원가입이 필요 없습니다.",
@@ -1906,6 +1912,16 @@
     "ariaLabel": "불러오는 중"
   },
   "breadcrumbLabel": "이동 경로",
+  "partsNames": {
+    "ring": "피스톤 링",
+    "piston": "피스톤",
+    "carburetor": "카뷰레터",
+    "gear": "기어",
+    "cylinder": "실린더",
+    "electrical": "전기 계통",
+    "shaft": "샤프트",
+    "carrierBody": "캐리어 바디"
+  },
   "listSeparator": ", ",
   "termHintLabel": "용어 설명 보기",
   "termHints": {

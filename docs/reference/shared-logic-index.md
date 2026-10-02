@@ -220,6 +220,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/raceStatus.js` | レース単位の状態（締切前/締切後・結果反映待ち/結果確定）を判定する。 | getRaceStatus, RACE_STATUS |
 | `src/utils/raceTimeOfDay.js` | 1Rの発走時刻から開催時間帯（モーニング/デイ/サマータイム/ナイター/ミッドナイト）を | getTimeOfDay, getVenueTimeOfDay, TIME_OF_DAY |
 | `src/utils/racerName.js` | 出走表の選手名（「丹下」「将」の間を全角スペース3つで詰めた表記）を姓と名に分ける。 | splitRacerName |
+| `src/utils/sgNowVenues.js` | トップの「SG開催中」帯に出す会場を決める（集客レーン、2026-10-02）。 | getSgNowVenues |
 | `src/utils/share.js` | SNSシェア関数 | shareRacePredictionToX, shareHitRaceToX, shareDailyStatsToX, generatePredictionShareText, generateTurnHitShareText |
 | `src/utils/smallSampleRate.js` | 出走数が少ないときの率の出し方（BOA-513、2026-09-29 ファン4人のパネルで決定）。 | formatRateOrCount, powerIndexTone, formatPowerIndex |
 | `src/utils/stConsideration.js` | ST考察（安定率・出遅率・抜出）の算出（phase a FR-1） | deriveRaceStContext, computeStConsideration, computeStHistogram, getStHistory, STABLE_THRESHOLD ほか3件 |
@@ -248,7 +249,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/mycroftService.js` | マイクロフト予想 データ取得サービス | venueName, getMycroftModelInfo, getMycroftPredictions |
 | `src/services/poirotService.js` | — | getPoirotPredictions |
 | `src/services/racerService.js` | 選手個別ページ用データ取得サービス | getRacerPageData, getRacerCurrentMotorStatus, getRacerStats |
-| `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, hasRulesForVenue, getRulesForVenue ほか4件 |
+| `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, hasRulesForVenue, getRulesForVenue ほか3件 |
 | `src/services/sherlockModel.js` | シャーロック予想 共有モデルロジック（純粋関数のみ） | mean, buildFeatures, softmax, predictConditionalLogit, impliedProbs ほか5件 |
 | `src/services/sherlockService.js` | シャーロック予想 データ取得・推論サービス | getSherlockModelInfo, getSherlockPredictions |
 | `src/services/snsHubService.js` | SNSマーケティングハブ 管理画面用サービス層 | getDrafts, getApprovers, approveDraft, mergeBlogPr, publishYoutube ほか19件 |
@@ -258,4 +259,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 223 ファイル / export 1114 件。
+対象 224 ファイル / export 1114 件。

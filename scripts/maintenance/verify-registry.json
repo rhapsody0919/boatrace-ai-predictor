@@ -387,6 +387,11 @@
       "guards": "得点率の種別判定（src/components/race/seriesPoints.js の算入範囲と配点、raceStageConfig のバッジ）。race_stage は会場の自由記述で349種あり、部分一致の判定が壊れやすい（BOA-457・BOA-458）"
     },
     {
+      "script": "verify-sg-now-venues.js",
+      "tier": "ci",
+      "guards": "トップの「SG開催中」帯に出す会場の判定（SGのみ・先頭レースの値・NFKC・会場順）。崩れると SG の日に帯が出ないか、G1・一般戦の日に誤って出る"
+    },
+    {
       "script": "verify-sitemap-coverage.js",
       "tier": "ci",
       "guards": "AppRouter.jsx の静的ルートと generate-sitemap.js の staticPages の突き合わせ（sitemap登録漏れ）"
@@ -432,6 +437,11 @@
       "runner": "bash",
       "guards": "push-with-retry.sh のrebase＋リトライ・コンフリクト時の失敗・force push不使用（BOA-360）",
       "note": "使い捨てのbareリポジトリとクローンだけを使い、本リポジトリには触れない。2026-09-25時点でレジストリ導入まで未登録・CI未接続だった"
+    },
+    {
+      "script": "verify-race-status-exclusion.js",
+      "tier": "ci",
+      "guards": "画面（src/）の集計が、書かれていない旧フラグ is_cancelled・is_no_race ではなく race_results.race_status で不成立を外すこと（BOA-477）"
     },
     {
       "script": "verify-relative-imports.js",

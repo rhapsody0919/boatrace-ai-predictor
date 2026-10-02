@@ -241,8 +241,8 @@ check(
   check(
     "使用履歴: 着順の付かなかった走も、結果の出たレースなら分母に数える（キャッシュのキーも上げる）",
     /\} else if \(isUsableRaceResult\(result\)\) \{\s*n \+= 1;/.test(usage) &&
-      usage.includes("is_cancelled, is_no_race") &&
-      usage.includes("`motor-usage-history-v3-"),
+      usage.includes("race_status") &&
+      usage.includes("`motor-usage-history-v4-"),
   );
 }
 check(

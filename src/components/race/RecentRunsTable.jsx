@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { GRADE_LABELS } from "./raceGradeLabels";
+import { raceStageLabel } from "../../constants/raceStageConfig";
 import { translateTechnique } from "./raceIndicators";
 import { finishMarkKeyOf } from "../../utils/prevResult";
 import { groupRunsByMeet } from "./basicInfoStats";
@@ -50,11 +51,26 @@ const formatPeriod = (first, last) =>
  *   新しい順で渡す（いちばん上が前走）。直近10走と選手ページで向きをそろえる
  * @param {(raceId: string) => string} [buildRaceHref]
  */
+// レース番号の下のレース種別。ja・分類できない会場独自の名前は公式表記のまま
+// （translate="no"）、ja 以外で分類できたものは区分の訳を出し、公式表記はツールチップに残す（BOA-621）
+function RaceStageSub({ label, official }) {
+  return (
+    <span
+      className="rrt-sub rrt-stage"
+      translate={label.isOfficial ? "no" : undefined}
+      // 狭い列で区分名が省略されても全文と公式表記をツールチップで読めるようにする
+      title={label.isOfficial ? official : `${label.text} (${official})`}
+    >
+      {label.text}
+    </span>
+  );
+}
+
 function RecentRunsTable({
   rows,
   buildRaceHref = (raceId) => `/race/${raceId}`,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const groups = groupRunsByMeet(rows);
 
@@ -136,13 +152,10 @@ function RecentRunsTable({
                 <td className="rrt-left">
                   {race.raceNo != null ? `${race.raceNo}R` : "-"}
                   {race.raceStage && (
-                    <span
-                      className="rrt-sub"
-                      translate="no"
-                      title={race.raceStage}
-                    >
-                      {race.raceStage}
-                    </span>
+                    <RaceStageSub
+                      label={raceStageLabel(race.raceStage, t, i18n.language)}
+                      official={race.raceStage}
+                    />
                   )}
                 </td>
                 <td>{race.boatNumber ?? "-"}</td>

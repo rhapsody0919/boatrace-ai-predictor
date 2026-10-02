@@ -23,6 +23,25 @@ export const translateTechnique = (t, name) => {
   return key ? t(`techniques.${key}`, name) : name;
 };
 
+// 部品交換の部品名（公式表記・日本語）→ partsNames.* のキー（BOA-669）
+const PART_KEY_BY_NAME = {
+  リング: "ring",
+  ピストン: "piston",
+  キャブ: "carburetor",
+  ギヤ: "gear",
+  シリンダ: "cylinder",
+  電気: "electrical",
+  シャフト: "shaft",
+  キャリボ: "carrierBody",
+};
+
+// 部品名を表示用に翻訳する。「リング×２」の「×２」は個数なのでそのまま付ける。未知の値はそのまま返す
+export const translatePartName = (t, name) => {
+  const [base, ...rest] = String(name).split(/(?=×)/);
+  const key = PART_KEY_BY_NAME[base];
+  return key ? `${t(`partsNames.${key}`, base)}${rest.join("")}` : name;
+};
+
 export const toNumber = (value) => {
   const n = parseFloat(value);
   return Number.isFinite(n) ? n : null;
@@ -535,11 +554,13 @@ function buildRowDefs({
                     62px あり、320px の列（約44px）に入らない */}
                 {parts.map((part, i) => (
                   <Fragment key={part}>
-                    {part.split(/(?=×)/).map((chunk) => (
-                      <span key={chunk} className="drt-part">
-                        {chunk}
-                      </span>
-                    ))}
+                    {translatePartName(t, part)
+                      .split(/(?=×)/)
+                      .map((chunk) => (
+                        <span key={chunk} className="drt-part">
+                          {chunk}
+                        </span>
+                      ))}
                     {i < parts.length - 1 && t("listSeparator")}
                   </Fragment>
                 ))}

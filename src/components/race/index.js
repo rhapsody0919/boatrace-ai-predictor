@@ -32,3 +32,4 @@ export { default as RaceStConsiderationCard } from "./RaceStConsiderationCard";
 export { default as FlyingBadge } from "./FlyingBadge";
 export { default as NigeSimulationCard } from "./NigeSimulationCard";
 export { default as RecentRunsBar } from "./RecentRunsBar";
+export { default as SgNowBanner } from "./SgNowBanner";
