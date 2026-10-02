@@ -3,6 +3,24 @@ import { test, expect } from "./fixtures.js";
 // レース詳細の表示の細部（BOA-613・618・619）
 const RACE = "/race/2026-09-29-16-12"; // 児島12R（ピットレポートあり）
 
+// 色の文字列（rgb(...)）どうしのコントラスト比（WCAG の相対輝度）
+const rgb = (s) =>
+  s
+    .match(/\d+(\.\d+)?/g)
+    .slice(0, 3)
+    .map(Number);
+const lum = ([r, g, b]) => {
+  const f = (c) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+};
+const contrast = (a, b) => {
+  const [x, y] = [lum(rgb(a)), lum(rgb(b))];
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+};
+
 test.describe("レース詳細の表示の細部", () => {
   test.slow();
 
@@ -85,20 +103,7 @@ test.describe("レース詳細の表示の細部", () => {
       getComputedStyle(row.querySelector(".rbit-bar-fill")).boxShadow,
       getComputedStyle(row.querySelector(".rbit-bar-track")).backgroundColor,
     ]);
-    const rgb = (s) =>
-      s
-        .match(/\d+(\.\d+)?/g)
-        .slice(0, 3)
-        .map(Number);
-    const lum = ([r, g, b]) => {
-      const f = (c) => {
-        const v = c / 255;
-        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-      };
-      return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
-    };
-    const [a, b] = [lum(rgb(shadow)), lum(rgb(track))];
-    const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    const ratio = contrast(shadow, track);
     // 非テキストの図形のコントラストの目安（WCAG 1.4.11）は 3:1
     expect(ratio).toBeGreaterThanOrEqual(3);
   });
@@ -301,22 +306,6 @@ test.describe("レース詳細の表示の細部", () => {
   test("枠別情報: 選んだ艇チップの艇番が、ライト・ダークとも6艇すべてで読める（BOA-693）", async ({
     page,
   }) => {
-    const rgb = (s) =>
-      s
-        .match(/\d+(\.\d+)?/g)
-        .slice(0, 3)
-        .map(Number);
-    const lum = ([r, g, b]) => {
-      const f = (c) => {
-        const v = c / 255;
-        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-      };
-      return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
-    };
-    const contrast = (a, b) => {
-      const [x, y] = [lum(rgb(a)), lum(rgb(b))];
-      return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
-    };
     await page.goto(`${RACE}?tab=waku`);
     const chips = page.locator(".rwit-boat-chip");
     await expect(chips).toHaveCount(6, { timeout: 30000 });
