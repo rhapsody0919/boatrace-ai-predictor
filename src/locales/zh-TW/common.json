@@ -114,7 +114,7 @@
     },
     "fetchError": "無法載入本場地的水面特性。",
     "details": {
-      "summary": "查看更多（2連率・3連率、決勝方式明細）",
+      "summary": "查看更多（2連率、3連率、決勝方式明細）",
       "placeRatesTitle": "各艇號的連對率",
       "placeRatesNote": "2連率為進入前2名、3連率為進入前3名的比例（{{count}}場）",
       "boat": "艇",
