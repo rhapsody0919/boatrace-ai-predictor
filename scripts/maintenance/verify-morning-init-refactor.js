@@ -320,6 +320,40 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
     client.data.race_conditions.length === 12 &&
       client.data.race_conditions.every((r) => r.race_title || r.race_stage),
   );
+  // BOA-590: F数・L数を朝の初期化で書く（レース情報の窓＝発走60分前まで NULL にしない）
+  const fl = client.data.race_entries.filter((e) => e.race_id === "2026-09-21-01-01");
+  check(
+    "(b) BOA-590: race_entries に F数・L数を書く（5号艇 F1、ほかは F0・L0）",
+    fl.length === 6 &&
+      fl.find((e) => e.boat_number === 5)?.f_count === 1 &&
+      fl.filter((e) => e.boat_number !== 5).every((e) => e.f_count === 0) &&
+      fl.every((e) => e.l_count === 0),
+    show(fl.map((e) => [e.boat_number, e.f_count, e.l_count])),
+  );
+  {
+    // F数・L数が読めなかった艇は、列を送らない（既存の値を NULL で上書きしない）
+    const noFl = racesData();
+    for (const r of noFl.data[0].races)
+      for (const x of r.racers) {
+        delete x.fCount;
+        delete x.lCount;
+      }
+    const c2 = newClient();
+    await generateAndWriteFromRacesData({
+      now: () => FIXED_NOW,
+      racesData: noFl,
+      date: DATE,
+      client: c2,
+      throwOnError: true,
+    });
+    // 偽クライアントは送られた行をそのまま保存する（新しい行なので、送らなかった列は行に無い）
+    const sent = c2.data.race_entries;
+    check(
+      "(b) BOA-590: F数・L数が読めなかった艇は、f_count・l_count の列を送らない",
+      sent.length > 0 && sent.every((r) => !("f_count" in r) && !("l_count" in r)),
+      show(sent.slice(0, 1)),
+    );
+  }
   const racesUpserts = client.writesTo("races").length;
   const entriesUpserts = client.writesTo("race_entries").length;
   await generateAndWriteFromRacesData({

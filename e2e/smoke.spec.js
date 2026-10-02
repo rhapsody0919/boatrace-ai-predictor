@@ -144,6 +144,75 @@ test.describe("選手一覧ページ (/racers)", () => {
     await firstRow.click();
     await expect(page).toHaveURL(/\/racer\/\d+$/);
   });
+
+  // BOA-470: 仕様（spec.md FR4 の例 ?sort=height）と実装（height_cm）の食い違い。
+  // 別名を受け付け、知らないキーは既定（勝率の降順）に戻す
+  test("?sort=height（別名）で身長の降順に並ぶ（BOA-470）", async ({
+    page,
+  }) => {
+    await page.goto("/racers?sort=height&dir=desc");
+    const cells = page.locator(".racer-table tbody tr td:nth-child(3)");
+    await expect(cells.first()).toBeVisible();
+    const heights = (await cells.allTextContents())
+      .map((t) => parseInt(t, 10))
+      .filter((n) => Number.isFinite(n));
+    expect(heights.length).toBeGreaterThan(5);
+    for (let i = 1; i < heights.length; i++) {
+      expect(heights[i]).toBeLessThanOrEqual(heights[i - 1]);
+    }
+    // 見出しの並び順の印も身長の列に付く
+    await expect(
+      page.locator(".racer-table th.is-sorted", { hasText: "身長" }),
+    ).toBeVisible();
+  });
+
+  // BOA-470: 身長・体重の範囲入力で、上限欄にもアクセシブルネームがある
+  test("身長・体重の下限・上限の欄に、それぞれ名前が付いている（BOA-470）", async ({
+    page,
+  }) => {
+    await page.goto("/racers");
+    for (const name of [
+      "身長の下限（cm）",
+      "身長の上限（cm）",
+      "体重の下限（kg）",
+      "体重の上限（kg）",
+    ]) {
+      await expect(
+        page.getByRole("spinbutton", { name, exact: true }).first(),
+      ).toBeAttached();
+    }
+  });
+
+  // BOA-470: モバイルの行本体は href を持つ本物のリンク（新しいタブで開ける）。
+  // ▼ボタンはリンクの中に入れない（操作できる要素の入れ子にしない）
+  test("375px: 行本体は選手ページへのリンクで、▼はリンクの外のボタン（BOA-470）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/racers");
+    const row = page.locator(".racer-compact-row").first();
+    await expect(row).toBeVisible();
+    await expect(row.locator("a.racer-compact-row-main")).toHaveAttribute(
+      "href",
+      /^\/racer\/\d+$/,
+    );
+    await expect(page.locator(".racer-compact-row a button")).toHaveCount(0);
+
+    // ▼は画面遷移せずに、その行だけ展開する
+    await row.locator(".racer-compact-row-chevron").click();
+    await expect(page).toHaveURL(/\/racers/);
+    await expect(row.locator(".racer-compact-row-detail")).toBeVisible();
+    await expect(
+      page
+        .locator(".racer-compact-row")
+        .nth(1)
+        .locator(".racer-compact-row-detail"),
+    ).toHaveCount(0);
+
+    // 行本体のタップで選手ページへ
+    await row.locator("a.racer-compact-row-main").click();
+    await expect(page).toHaveURL(/\/racer\/\d+$/);
+  });
 });
 
 test.describe("会場ガイド (venues)", () => {
