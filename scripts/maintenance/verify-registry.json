@@ -332,6 +332,11 @@
       "guards": "出走表（racelist）の過去分バックフィルCLI"
     },
     {
+      "script": "verify-racer-condition-stats.js",
+      "tier": "ci",
+      "guards": "選手ページ「レース条件別の成績」（BOA-336、src/utils/racerConditionStats.js）。天候の3区分（雪・台風は雨にまとめる）、風速5m・波高5cmの境目、江戸川を波の行から外すこと、条件の無い走を全体に混ぜないこと、着順の付かない走の数え方、5走未満の条件を出さないこと"
+    },
+    {
       "script": "verify-racer-index-policy.js",
       "tier": "ci",
       "guards": "選手ページのインデックス判定（src/utils/racerIndexPolicy.js。ページの noindex と sitemap が共用）。崩れると B 級の大量インデックスか、現役 A1 の noindex 化が両方同時に起きる"
@@ -699,6 +704,11 @@
       "script": "verify-race-outcome-filters.js",
       "tier": "ci",
       "guards": "不成立のレースを集計から外す判定を race_status（no_race）に統一すること（BOA-545）。旧フラグ is_no_race は全行 false で機能しておらず、scripts/daily の集計10本がそれで判定していた。scripts/daily・scripts/lib のコードが is_no_race を使わないことと、PostgREST の条件が078の IS DISTINCT FROM と同じ意味であることを検査する"
+    },
+    {
+      "script": "verify-absent-start-rows.js",
+      "tier": "ci",
+      "guards": "race_start_timings の欠場艇の行（finish_mark='欠'、ST は NULL）を、読み手が出走・ST として数えないこと。展示STと本番STのズレ（stDeviation）・選手の出走数とF率（racerStStats）・会場×枠番のトップスタート（update-top-start-stats）・得点率の配点の検証スクリプト。9/21 以降の欠場艇の行で、欠場を出走に数え、ST の NULL を 0 として計算に混ぜていた"
     }
   ]
 }

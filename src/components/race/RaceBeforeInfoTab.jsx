@@ -73,7 +73,7 @@ import RacePitReportSection from "./RacePitReportSection";
 import EntryCourseDistributionCard from "./EntryCourseDistributionCard";
 import InlineFetchError from "../InlineFetchError";
 import "./RaceBeforeInfoTab.css";
-import "../common/HorizontalScrollHint.css";
+import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
 import { formatCapturedAtJst } from "../../utils/formatters";
 import { bestOf } from "../../utils/bestOf";
 
@@ -849,17 +849,12 @@ function RaceBeforeInfoTab({
         <div
           className={`hscroll-hint${detailScroll.hasMore ? " has-more" : ""}`}
         >
-          {detailScroll.hasMore && (
-            <button
-              type="button"
-              className="hscroll-more"
-              onClick={detailScroll.scrollRight}
-              aria-hidden="true"
-              tabIndex={-1}
-            >
-              ›
-            </button>
-          )}
+          <HorizontalScrollButtons
+            hasMore={detailScroll.hasMore}
+            hasLess={detailScroll.hasLess}
+            onMore={detailScroll.scrollRight}
+            onLess={detailScroll.scrollLeft}
+          />
           <div
             className="drt-table-wrapper"
             ref={detailScroll.ref}

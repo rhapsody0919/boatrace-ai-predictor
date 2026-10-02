@@ -1562,6 +1562,20 @@ function suiteHscrollHint(m, check) {
     hasLess: false,
     peekFadeWidth: 0,
   });
+  check(
+    "hscroll: 左に12px以下しか送っていなければ「‹」は出さない（PR #1192 ファン評価2周目）",
+    st(315, 312, 3),
+    { hasMore: false, hasLess: false, peekFadeWidth: 0 },
+  );
+  check(
+    "hscroll: 1回に送る幅は、固定の左の列を引いた見える幅の8割",
+    [
+      m.horizontalScrollStep({ clientWidth: 312, stickyWidth: 90 }),
+      m.horizontalScrollStep({ clientWidth: 312, stickyWidth: 0 }),
+      m.horizontalScrollStep({ clientWidth: 60, stickyWidth: 50 }),
+    ],
+    [178, 250, 40],
+  );
   check("hscroll: 右端まで送ったら「›」は消え、「‹」が出る", st(357, 301, 56), {
     hasMore: false,
     hasLess: true,
@@ -1620,6 +1634,12 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  [
+    "hscrollHint",
+    "送る幅から固定の左の列を引かない（PR #1192 ファン評価2周目の退行）",
+    "Math.round((clientWidth - stickyWidth) * 0.8)",
+    "Math.round(clientWidth * 0.8)",
+  ],
   [
     "hscrollHint",
     "4pxの残りで「›」を出す（#1130 ファン評価で見送った P3 の退行）",
