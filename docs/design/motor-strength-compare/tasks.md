@@ -2,13 +2,11 @@
 
 spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md) / plan: [plan.md](./plan.md)（BOA-428）
 
-**着手の前提**: 浜名湖・宮島の扱い（spec「未確定事項」）のユーザー判断。子1 は判断を待たず進められる（判断の結果は会場コードの一覧1つで切り替える）。子3 は判断の後。
-
 PR は2本に分ける。PR-A（子1）は UI統一レーンの PR2（`bestOf` の export・R1 の共通クラス）のマージ後に R1 の部分を入れる（plan.md「UI統一レーンとの順番」）。PR-B（子3）は PR-A と並行でよい。
 
 ## 共通（PR-A に含める。PR-B が先なら PR-B に含める）
 
-- [ ] T1 サービス層: `getVenueMotorSnapshot(venueCode, asOfDate)` を足す（`{state:"ok"|"empty"|"error"}`）。`getVenueMotorRanking` の中身をこれに差し替える（戻り値・キャッシュキーは変えない）
+- [ ] T1 サービス層: `getVenueMotorSnapshot(venueCode, asOfDate)` を足す（`{state:"ok"|"empty"|"error"}`）。浜名湖・宮島を読まないのは T4・T11 の側（`VENUE_SITE_STATS_HIDDEN`）。既存のドリルダウンは変えない。`getVenueMotorRanking` の中身をこれに差し替える（戻り値・キャッシュキーは変えない）
 - [ ] T2 `RateBar`（`src/components/common/RateBar.jsx` / `.css`）: value / max / fill / best / label（best は複数行で true になりうる）。札は `--surface-card`、1号艇の白に `--border-hairline` の内線、`max` が 0・null なら棒なし。R1 は UI統一レーンの共通クラスを付けるだけ
 - [ ] T3 純関数（`src/utils/venueMotorRanking.js`）: 並べ替え（列ごとの固定の向き、値なしは末尾）と順位（`competitionRank`、機番で並べたときは2連率の順位）。`scripts/maintenance/verify-venue-motor-ranking.js` で同値・値なし・機番の並べ替えを固定し、`verify-registry.json` に `ci` で登録
 
@@ -27,7 +25,7 @@ PR は2本に分ける。PR-A（子1）は UI統一レーンの PR2（`bestOf` �
 - [ ] T11 `getVenueMotorList(venueCode)`: スナップショット＋会場の最新の前検日1日分の `motor_pretest_stats`（使用者・前検・データの無い会場の公式2連率）＋その節の出走表（選手名・モーターが走った直近の `race_id`）。戻り値に state・出典の種類（会場サイト / BOATRACE 公式の前検データ）・取得日・前検日
 - [ ] T12 `VenueMotorRanking.jsx` / `.css`: 会場の選択、出典・取得日の行、表（順位・機番・2連率の棒（中立色）・優出・優勝・前検・使用者）、並べ替え（T3）、2連率1位の札に R1（同率は全部）、機番→ドリルダウン（`race_id` 付き、使われていないモーターはリンクなし）、使用者→選手ページ（`translate="no"`）、前検日が今日でなければ「直近の節の使用者（{{date}}）」、`error` はエラー表示、`useHorizontalScrollHint`、注記
 - [ ] T13 タブの登録: `TAB_KEYS` の `motor` の次に `motorranking`、`analysisPage.tabs` / `analysisPage.info` / `analysisPage.features.motorranking` を4言語、`scripts/lib/contentTopics/dataInsightSource.js` のタブ一覧、`venue_code` のディープリンク
-- [ ] T14 ADR-0067 に追記（会場公式サイトのモーター成績の全モーター一覧での再表示。出典と取得日を出す。取得は増やさない。戸田・平和島は前検データの値だけ。浜名湖・宮島はユーザー判断の結果と、ADR-0067:21 と実装の食い違い）
+- [ ] T14 ADR-0067 に追記（会場公式サイトのモーター成績の全モーター一覧での再表示。出典と取得日を出す。取得は増やさない。戸田・平和島・浜名湖・宮島は前検データの値だけ。ADR-0067:21 と実装の食い違い、BOA-681）
 - [ ] T15 `docs/design/motor-strength-compare/content-index.json` を作る
 - [ ] T16 E2E: タブが開く、直近の節の前検のモーターがすべて一覧にある、取得失敗でエラー（ルートで加工）、2連率の並べ替えで同値が同じ順位、データの無い会場で出典の行が替わる、375px でページに横スクロールなし。`e2e/layout.spec.js` に新しいタブを足す
 - [ ] T17 データ精度: 件数・順位・優出・優勝を本番の `venue_motor_stats` と、使用者を出走表と突き合わせる（`data-accuracy-verifier`）
