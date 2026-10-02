@@ -109,6 +109,11 @@
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
     },
     {
+      "script": "verify-venue-motor-ranking.js",
+      "tier": "ci",
+      "guards": "会場のモーターの順位と並べ替え（同値は同じ順位・値なしは末尾・機番で並べたときは2連率の順位・浜名湖と宮島を出さない一覧）の回帰と変異検証（BOA-428）"
+    },
+    {
       "script": "verify-frontend-pure-functions.js",
       "tier": "ci",
       "guards": "画面側の純関数（basicInfoStats / raceStatus / courseGridStats / venueDayTrend / weatherInfo）の、過去に fix が入った箇所の回帰と変異検証（BOA-255）"
