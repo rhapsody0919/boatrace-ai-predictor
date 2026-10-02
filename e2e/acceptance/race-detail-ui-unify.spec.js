@@ -128,23 +128,47 @@ async function installHelpers(page) {
       const dh = Math.min(Math.abs(x.h - g.h), 360 - Math.abs(x.h - g.h));
       return dh <= 14 && x.s >= 0.15;
     };
+    // トークンの値を、その要素の上で（テーマ等の上書きを含めて）色にする
+    const tokenColorOn = (el, name) => {
+      const sp = document.createElement("span");
+      sp.style.color = `var(${name})`;
+      el.appendChild(sp);
+      const c = getComputedStyle(sp).color;
+      sp.remove();
+      return parseColors(c)[0];
+    };
     const hasGoldFrame = (el) => {
       const cs = getComputedStyle(el);
+      // 表の通常の罫線（--border-hairline）は金寄りの色でも金枠として扱わない
+      const hairline = tokenColorOn(el, "--border-hairline");
+      const isFrameGold = (c) => isGoldish(c) && !near(c, hairline);
       const borders = ["Top", "Right", "Bottom", "Left"].some(
         (s) =>
           parseFloat(cs[`border${s}Width`]) > 0 &&
           cs[`border${s}Style`] !== "none" &&
-          parseColors(cs[`border${s}Color`]).some(isGoldish),
+          parseColors(cs[`border${s}Color`]).some(isFrameGold),
       );
       const outline =
         parseFloat(cs.outlineWidth) > 0 &&
         cs.outlineStyle !== "none" &&
-        parseColors(cs.outlineColor).some(isGoldish);
+        parseColors(cs.outlineColor).some(isFrameGold);
       const shadow =
-        cs.boxShadow !== "none" && parseColors(cs.boxShadow).some(isGoldish);
+        cs.boxShadow !== "none" && parseColors(cs.boxShadow).some(isFrameGold);
       return borders || outline || shadow;
     };
     const isBold = (el) => Number(getComputedStyle(el).fontWeight) >= 600;
+    // セルの値の文字を持つ要素（最初に主要な数値を含むテキストの親）。
+    // 級別（A1等）・F/L回数（F1等）だけのバッジは値ではないので飛ばす
+    const valueElement = (cell) => {
+      const w = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) {
+        const t = n.textContent
+          .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+          .replace(/(^|[^A-Za-z0-9])(?:[AB][12]|[FL]\d+)(?![0-9.])/g, "$1 ");
+        if (/\d/.test(t)) return n.parentElement;
+      }
+      return null;
+    };
     const subtree = (el) => [el, ...el.querySelectorAll("*")];
     const textColors = (el) =>
       subtree(el)
@@ -157,10 +181,13 @@ async function installHelpers(page) {
 
     window.__acc = {
       tokenColor,
-      // R1: 金の枠線＋太字
+      // R1: 金の枠線＋太字。太字は枠を持つ要素そのものか、セルの値の文字に限る
+      // （バッジ等の子要素の太字は強調とみなさない）
       isBest: (el) => {
-        const nodes = subtree(el);
-        return nodes.some(hasGoldFrame) && nodes.some(isBold);
+        const frames = subtree(el).filter(hasGoldFrame);
+        if (frames.length === 0) return false;
+        const v = valueElement(el);
+        return frames.some(isBold) || (v !== null && isBold(v));
       },
       // R2: 良い＝緑・悪い＝赤（文字色）
       isGood: (el) =>
@@ -201,16 +228,22 @@ async function installHelpers(page) {
   });
 }
 
+// セルの値＝セルの最初に現れる主要な数値。
+// - 級別（A1/A2/B1/B2）・F/L回数（F1・L1）の英字＋数字は値ではないので除く（「B1 F1 4.27」は 4.27）
+// - 補助の数字（「86%\n36/42」の分母等）は後ろにあるので、最初の数値だけを読む
+// - ↑/＋/+ は正、↓/−/－/- は負の符号として反映する（「↓0.56」は −0.56）
 function parseNum(text) {
-  const t = text.replace(/[０-９．－]/g, (c) =>
-    c === "．"
-      ? "."
-      : c === "－"
-        ? "-"
-        : String.fromCharCode(c.charCodeAt(0) - 0xfee0),
-  );
-  const m = t.match(/-?\d+(?:\.\d+)?/);
-  return m ? Number(m[0]) : null;
+  const t = text
+    .replace(/[０-９．＋]/g, (c) =>
+      c === "．" ? "." : String.fromCharCode(c.charCodeAt(0) - 0xfee0),
+    )
+    .replace(/(^|[^A-Za-z0-9])(?:[AB][12]|[FL]\d+)(?![0-9.])/g, "$1 ")
+    // 「1着 43%」「2連対 60%」の着順・連対は率の見出しなので値にしない
+    .replace(/\d+(?:着|連対|連率)\s*(?=[↑↓+\-−－]?\d+(?:\.\d+)?\s*%)/g, " ");
+  const m = t.match(/([↑↓+\-−－]?)\s*(\d+(?:\.\d+)?)/);
+  if (!m) return null;
+  const v = Number(m[2]);
+  return /[↓\-−－]/.test(m[1]) ? -v : v;
 }
 
 // 見えている表を「6艇を並べた列（行）」の集まりに分解する。
