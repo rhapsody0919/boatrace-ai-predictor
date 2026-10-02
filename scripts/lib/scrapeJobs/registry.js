@@ -267,6 +267,18 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: ["boatrace.jp"],
   },
 
+  // N13 期別成績（fan、racer_period_stats）。06:00指定（cron: 06:00・06:30 JST）。対象日より前に終わった期の fan が
+  // 未取り込みなら1回取得する（約180KB）。取り込み済みなら0リクエスト、未公開（404）ならその日は済み。期の終わりから105日を
+  // 過ぎたら取得を止めて通知する。2026-10-03 ユーザー承認で手動CLIから自動化。
+  // 実装: scripts/lib/fanPeriodJob.js、api/cron/fan-period.js
+  fan_period: {
+    kind: "daily",
+    targetTimeJst: "06:00",
+    leaseSec: 120,
+    maxDurationSec: 120,
+    hosts: ["boatrace.jp"],
+  },
+
   // A5 レース特記事項（race_special_notes）。夜1回、その日の開催会場のページを全部取る（22:30指定。cron: 22:30・
   // 23:00・23:30 JST。後の2回は、取得に失敗した会場があった場合の補足）。2026-10-03 にユーザー承認で、10分ごと
   // （1日約1,300回）から夜1回に減らした（ページに事故がほとんど載らず、取得の量に見合わない。データ信頼性レーンの調査）。
