@@ -938,6 +938,7 @@ const HSCROLL_SCREENS = [
     name: "直前情報の展示情報",
     path: "/race/2026-09-29-16-12?tab=beforeInfo",
     ready: ".rbi-card .drt-table",
+    // #1127 以降は 320px でも表が収まる（溢れていないときに手がかりを出さないことを確かめる）
   },
   {
     name: "今節の予想表・日別表",
@@ -956,6 +957,17 @@ const HSCROLL_SCREENS = [
       await checkHscrollHints(page, "モーター一覧");
       await page.locator(".motor-ranking-row").first().click();
       await expect(page.locator(".motor-waku-table")).toBeVisible({
+        timeout: 30000,
+      });
+    },
+  },
+  {
+    name: "枠別情報の全コース表",
+    path: "/race/2026-09-29-16-12?tab=waku",
+    ready: ".rwit-fold-summary",
+    open: async (page) => {
+      await page.locator(".rwit-fold-summary").first().click();
+      await expect(page.locator(".rwit-grid-hscroll")).toBeVisible({
         timeout: 30000,
       });
     },

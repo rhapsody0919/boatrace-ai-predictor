@@ -39,7 +39,7 @@ const TARGETS = {
   dateUtils: "src/utils/dateUtils.js",
   prevResult: "src/utils/prevResult.js",
   meetGrouping: "src/utils/meetGrouping.js",
-  hscrollHint: "src/hooks/useHorizontalScrollHint.js",
+  hscrollHint: "src/utils/horizontalScrollHint.js",
 };
 
 const show = (v) => JSON.stringify(v);
@@ -1480,6 +1480,18 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  [
+    "hscrollHint",
+    "4pxの残りで「›」を出す（#1130 ファン評価で見送った P3 の退行）",
+    "const hasMore = remaining > HSCROLL_PEEK_MAX;",
+    "const hasMore = remaining > 4;",
+  ],
+  [
+    "hscrollHint",
+    "少しだけ切れているときのフェードを出さない",
+    "!hasMore && remaining > 1 ? Math.min(40, Math.round(remaining) + 12) : 0;",
+    "0;",
+  ],
   [
     "basicInfoStats",
     "枠番に実進入コースを出す（57a9b159 の退行）",
