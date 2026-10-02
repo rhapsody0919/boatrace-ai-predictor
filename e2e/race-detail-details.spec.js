@@ -359,6 +359,12 @@ test.describe("レース詳細の表示の細部", () => {
       await expect(tab.getByTestId("volatility-percentile-bar")).toHaveClass(
         /vpb--low/,
       );
+      // 何と比べた 0〜100 かを、レース前のカードと同じ一文で書く（ファン評価1・3周目）
+      await expect(tab).toContainText(
+        lang === "ja"
+          ? "過去90日・同会場のレースと比較"
+          : "over the last 90 days",
+      );
       await expect(tab).not.toContainText(
         lang === "ja" ? "パーセンタイル" : "percentile",
       );

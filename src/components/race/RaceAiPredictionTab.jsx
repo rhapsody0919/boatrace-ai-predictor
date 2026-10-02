@@ -133,6 +133,11 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
             <VolatilityPercentileBar
               percentile={prediction.volatilityPercentile ?? 0}
             />
+            {/* 何と比べた 0〜100 かを、レース前のカードと同じ一文で書く。無いと「イン崩れ確率高」の
+                真下の「99」が「崩れる確率99%」に読めた（PR #1186 ファン評価1・3周目） */}
+            <p className="result-volatility-caveat">
+              {t("volatility.description")}
+            </p>
             <p className="result-volatility-line">
               {t("result.volatilityOutcomeLabel")}
               {": "}
