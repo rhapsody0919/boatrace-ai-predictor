@@ -4,7 +4,7 @@ name: Train Analogy Finder
 # analogy_models・analogy_contribution_profiles に書いて、表示に使う版を切り替える。
 # docs/design/analogy-finder/plan.md「スクリプト構成と実行タイミング」。
 #
-# schedule は使わない（ADR-0080。GitHub Actions の定時実行は遅れ・欠落が常態）。
+# schedule は使わない（GitHub Actions の定時実行は遅れ・欠落が常態。設計 PR #1039 の近傍バッチの ADR と同じ判断）。
 # 週次の起動は Vercel Cron（日曜 JST 4:00）からの workflow_dispatch（api/cron/analogy-dispatch.js、
 # 別タスク T3-4）。それまでは手動で実行する。
 # 品質ゲート（train.py）で止まったときは何も書かず、今の版の表示を続ける。
