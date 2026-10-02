@@ -93,6 +93,9 @@ test("的中レースの展開予測のカードは「的中した候補」と�
   await expect(label).toBeVisible({ timeout: 30000 });
   // 上位候補のどれかが当たれば的中なので、本命に推したように読める「1着予想」とは書かない
   await expect(label).toHaveText("的中した候補");
+  await expect(page.locator(".turn-hit-course-value").first()).toHaveText(
+    /^\dコース (逃げ|差し|まくり|まくり差し|抜き|恵まれ)$/,
+  );
 
   const card = page.locator(".race-card").filter({ has: label }).first();
   await card.locator(".social-share-button").first().click();
@@ -102,6 +105,9 @@ test("的中レースの展開予測のカードは「的中した候補」と�
   const text = decodeURIComponent(
     await page.evaluate(() => window.__opened.join(" ")),
   );
-  expect(text).toContain("コースが1着");
+  // 予想確率はその決まり手で1着になる確率なので、決まり手も添える（ファン評価2周目）
+  expect(text).toMatch(
+    /コース（(逃げ|差し|まくり|まくり差し|抜き|恵まれ)）が1着/,
+  );
   expect(text).not.toContain("先頭");
 });
