@@ -71,7 +71,7 @@
 }
 
 .rcdt-cell.rcdt-best {
-  background: color-mix(in srgb, var(--brand-accent-primary) 14%, transparent);
+  background: var(--ind-best-bg);
   font-weight: var(--font-weight-bold);
 }
 

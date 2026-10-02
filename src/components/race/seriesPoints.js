@@ -677,6 +677,35 @@ export function postPrelimFlyingRacerIds(starts, entries, prelimEndRaceId) {
 }
 
 /**
+ * **予選の締めより後に1走も無い選手**（予選中に帰った選手、純関数、BOA-674）。
+ *
+ * 予選が終わった翌日から使う。公式の得点率一覧は予選終了時点で、こうした選手を
+ * 「途中帰郷」として順位から外している（BOA-649 の調査で、公式の途中帰郷6名は
+ * 全員この形だった）。以前は「最終日に出走が無い」でしか外さなかったため、予選中に
+ * 帰った選手が最終日まで順位に残り、最終日に下の順位がまとめて繰り上がった
+ * （桐生 2026-09-20〜25: 北川・田中が 9/22 で帰郷、9/24 の表示では順位に残っていた）。
+ *
+ * 出走表は表示日まで（当日の番組を含む）を渡す。2026-06〜の285節・558日ぶんの
+ * 表示日で、予選の翌日からこの判定をしても途中で判定が変わる選手は0人だった。
+ *
+ * @param {Array<{race_id: string, racer_id: number}>} entries 節の出走表（表示日まで）
+ * @param {string|null} prelimEndRaceId 予選の締めのレース
+ * @param {string} date 表示日（YYYY-MM-DD）
+ * @returns {number[]} racer_id。予選の締めが分からないか、予選終了日以前なら空
+ */
+export function withdrawnBeforePrelimEnd(entries, prelimEndRaceId, date) {
+  if (!prelimEndRaceId || !(date > prelimEndRaceId.slice(0, 10))) return [];
+  const ranAfter = new Set();
+  const all = new Set();
+  for (const e of entries ?? []) {
+    if (e.racer_id === null || e.racer_id === undefined) continue;
+    all.add(e.racer_id);
+    if (e.race_id > prelimEndRaceId) ranAfter.add(e.racer_id);
+  }
+  return [...all].filter((id) => !ranAfter.has(id));
+}
+
+/**
  * 1走ぶんの着順の表示（純関数、BOA-537）。6艇の推移の点の下に出す。
  *
  * - フライングは「F」（本番STの is_flying）

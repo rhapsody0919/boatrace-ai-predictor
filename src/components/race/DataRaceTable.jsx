@@ -75,7 +75,7 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
   });
 
   const cellClass = (boat, best) =>
-    `drt-cell ${best !== null && boat === best ? "drt-best" : ""}`;
+    `drt-cell ${best?.has(boat) ? "drt-best" : ""}`;
 
   return (
     <div className="data-race-table" id="data-race-table">

@@ -10,6 +10,7 @@ import { supabaseDataService } from "../../services/supabaseDataService";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import TrendLineChart from "./TrendLineChart";
+import { bestOf } from "../../utils/bestOf";
 import DrillDownHeader from "./DrillDownHeader";
 import "./MotorConditionChart.css";
 
@@ -78,12 +79,13 @@ function RacerFormChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drillDownRacer]);
 
-  const bestDelta =
-    breakdown.length > 0
-      ? Math.max(
-          ...breakdown.filter((r) => r.delta !== null).map((r) => r.delta),
-        )
-      : null;
+  // 調子（Δ）が最も上がった艇（同値は全部）。表示と同じ小数2桁で比べる（R1）。
+  // 全員が下がっているときは強調しない（> 0 の条件は以前から）
+  const bestDeltaBoats = bestOf(
+    breakdown.map((r) => ({ boat: r.boat_number, value: r.delta })),
+    "max",
+    { digits: 2 },
+  );
 
   const chartData = (trendData?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
@@ -178,7 +180,7 @@ function RacerFormChart({
                 {breakdown.map((row) => (
                   <tr
                     key={row.boat_number}
-                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""} ${row.delta === bestDelta && bestDelta > 0 ? "best-motor" : ""}`}
+                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""} ${bestDeltaBoats.has(row.boat_number) && row.delta > 0 ? "best-motor" : ""}`}
                     onClick={() =>
                       row.racer_id !== null && setDrillDownRacer(row.racer_id)
                     }

@@ -9,6 +9,9 @@ train.py の出力（out/train_meta.json・profiles.json）を analogy_models・
 - 切り替えの後、寄与度の行は今回の版と、切り替える直前に表示していた版（ロールバック先）だけ残す。
   途中で失敗して表示されなかった版の行は消す。analogy_models の行は消さない
 - 書き込みの途中で失敗したら、今回の版の行を消してから失敗させる（表示は前の版のまま）
+- 切り替える前に、全体（全会場・全グレード・全ラウンド・全艇）のシェアが前の版からどれだけ動いたかを
+  out/drift.json に書く。どれかのテーマが DRIFT_THRESHOLD 以上動いたら、ワークフローが Slack に知らせる
+  （止めはしない。データやコードの変化で寄与度の見え方が大きく変わったことに気づくため）
 
 使い方: python db.py write
 """
@@ -25,6 +28,29 @@ import urllib.request
 from train import OUT
 
 BATCH = 1000
+DRIFT_THRESHOLD = 0.03
+
+
+def _overall(rows: list[dict]) -> dict[int, dict]:
+    return {r["finish_target"]: r["shares"] for r in rows
+            if (r["venue_code"], r["grade"], r["round"], r["boat_number"]) == (0, "all", "all", 0)}
+
+
+def share_drift(prev_rows: list[dict], new_rows: list[dict], threshold: float = DRIFT_THRESHOLD,
+                previous_version: str | None = None) -> dict:
+    """前の版と今回の版で、着順ごとの全体のシェアがテーマ別にどれだけ動いたか。
+    前の版に無いテーマ（後から足したテーマ）は0から動いたとみなす。"""
+    prev, new = _overall(prev_rows), _overall(new_rows)
+    changes = []
+    for ft, shares in sorted(new.items()):
+        if ft not in prev:
+            continue
+        deltas = {k: shares.get(k, 0.0) - prev[ft].get(k, 0.0) for k in set(shares) | set(prev[ft])}
+        theme = max(deltas, key=lambda k: abs(deltas[k]))
+        changes.append({"finish_target": ft, "theme": theme, "max_abs_change": abs(deltas[theme]),
+                        "deltas": deltas})
+    return {"flagged": any(c["max_abs_change"] >= threshold for c in changes),
+            "changes": changes, "previous": previous_version}
 
 
 class PostgrestError(RuntimeError):
@@ -79,6 +105,18 @@ def write() -> None:
 
     previous, _ = request("GET", "analogy_models?select=model_version&is_active=is.true")
     previous_active = previous[0]["model_version"] if previous else None
+    prev_rows = []
+    if previous_active:
+        prev_rows, _ = request("GET", "analogy_contribution_profiles?select=finish_target,venue_code,"
+                               "grade,round,boat_number,shares"
+                               f"&model_version=eq.{q(previous_active)}&venue_code=eq.0&grade=eq.all"
+                               "&round=eq.all&boat_number=eq.0")
+    drift = share_drift(prev_rows, profiles, previous_version=previous_active)
+    (OUT / "drift.json").write_text(json.dumps(drift, ensure_ascii=False, indent=1))
+    if drift["changes"]:
+        print(f"  前の版 {previous_active} からのシェアの最大の変化: "
+              + ", ".join(f"finish_target={c['finish_target']} {c['theme']} {c['max_abs_change']:.3f}"
+                          for c in drift["changes"]))
     try:
         _insert(version, meta, profiles)
     except Exception:
