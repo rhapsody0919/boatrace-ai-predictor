@@ -16,6 +16,7 @@
  * 使い方:
  *   node scripts/ml/analogy/export_pool.js            # CI（長期分は Storage を使う）
  *   node scripts/ml/analogy/export_pool.js --no-cache # 手元（Storage を読み書きしない）
+ *   node scripts/ml/analogy/export_pool.js --no-cache races results # 指定したテーブルだけ（動作確認用）
  *   node scripts/ml/analogy/export_pool.js --refresh-kb # 長期分を DB から取り直して Storage を上書き
  */
 
@@ -38,6 +39,7 @@ const CONCURRENCY = 6;
 const args = new Set(process.argv.slice(2));
 const USE_CACHE = !args.has("--no-cache");
 const REFRESH_KB = args.has("--refresh-kb");
+const ONLY = [...args].filter((a) => !a.startsWith("--"));
 
 const csvCell = (v) => {
   if (v == null) return "";
@@ -234,6 +236,7 @@ async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
   if (USE_CACHE) await ensureBucket();
   for (const t of TABLES) {
+    if (ONLY.length && !ONLY.includes(t.name)) continue;
     const t0 = Date.now();
     await exportTable(t);
     console.log(`   (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
