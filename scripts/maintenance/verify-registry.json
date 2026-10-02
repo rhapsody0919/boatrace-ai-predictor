@@ -645,6 +645,11 @@
       "guards": "6艇の中の最良値の判定 bestOf（src/utils/bestOf.js、docs/design/race-detail-ui-unify R1）。同値の最良を全部返すこと、全艇同値と値なしは空、表示の桁で丸めて比べること（54.84 と 54.80、平均の浮動小数の誤差）、null と NaN を除くこと"
     },
     {
+      "script": "verify-races-derived-backfill.js",
+      "tier": "ci",
+      "guards": "races の導出列の埋め直し（build-races-derived-backfill-sql.js、BOA-630）が、generate-predictions.js と同じ式（丸めてから平均・母標準偏差）で計算し、6列とも NULL の行だけを更新し（既存の値を上書きしない・再実行は0件）、モデルの出力の列（volatility_* 等）に触れないこと"
+    },
+    {
       "script": "verify-kb-gap-fill.js",
       "tier": "ci",
       "guards": "K/Bファイルからの欠落の補完（backfill-kb-gaps.js・kbGapFill.js。BOA-271 の前提条件、Phase 1 項目3〜6）が、項目ごとに決めた列だけを書き（全行の列の集合がそろわなければ書かない＝一括 upsert の NULL 上書きを防ぐ）、既存の値を上書きせず、行の無いレースにだけ挿入し、フライングの ST を正の値で書くこと（本番の全期間が正。kbFileParser は負で返す）"
