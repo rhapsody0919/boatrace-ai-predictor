@@ -277,9 +277,15 @@ function VolatilityDisplay({
             borderRadius: "12px",
             fontSize: "0.85rem",
             fontWeight: "700",
-            background: `color-mix(in srgb, ${tone} 14%, transparent)`,
+            // 地はカード色そのもの（不透明）＋段階の色の枠。薄い色を重ねると文字が
+            // 3.5〜3.8:1 に落ちた。不透明の地を前面に置き、狭い幅で次の行に回ったときも
+            // アイコンの波紋（RaceMoodEffect）が重ならないようにする（PR #1209 ファン評価1周目）
+            background: "var(--surface-card)",
+            border: `1px solid ${tone}`,
             color: tone,
             whiteSpace: "nowrap",
+            position: "relative",
+            zIndex: 1,
           }}
         >
           {attentionLabel}
