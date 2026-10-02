@@ -51,7 +51,7 @@ const SECTION_HEADING = "アナロジー・ファインダー";
 const H_WHAT = "何が効いているか";
 const H_RACE = "このレースの6艇の差の内訳";
 const H_SLICE = "同じ条件のレース全体の内訳";
-const H_SIMILAR = "寄与度の上位2つのテーマで似ている過去レース";
+const H_SIMILAR = "類似度の高い過去レース";
 const H_COMBO = "組み合わせ";
 const THEMES = [
   "会場×枠・進入",
@@ -958,7 +958,7 @@ test.describe("FR-1 1-b", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("FR-2 似ている過去レース", () => {
-  test("[screens 2 の見出し Q7/S-1 データ段] h3「寄与度の上位2つのテーマで似ている過去レース」の下に「出走表 7:30 時点のデータ（前日までの成績）」", async ({
+  test("[screens 2 の見出し Q7/S-1 データ段] h3「類似度の高い過去レース」の下に「出走表 7:30 時点のデータ（前日までの成績）」", async ({
     page,
   }) => {
     const section = await openSection(page, {
