@@ -25,7 +25,7 @@ spec: [spec.md](./spec.md)。新しい画面は無く、レース詳細ページ
 | 今節 | `RaceMeetTab.jsx/.css`、`RaceHistoryTable.jsx` | 6艇の今節・得点率早見・推移・選んだ1艇の走り | 前検 R1、早見の rgba→トークン、判定文 R2、日別の走りの着順色 | 3 |
 | 直前情報 | `RaceBeforeInfoTab.jsx/.css`、`EntryCourseDistributionCard.jsx`、`RacePitReportSection.jsx` | 水面・展示タイム棒・展示情報・進入・ピットレポート | 展示タイムの最速印（R4）、展示情報の未判定行 R1。#1127 のマージ後 | 4 |
 | 枠別情報 | `RaceWakuInfoTab.jsx/.css`、`RaceStConsiderationCard.jsx`、`NigeSimulationCard.jsx`、`RecentRunsBar.jsx` | コース別成績・全コース・ST考察・逃げたとき・決まり手傾向 | コース別成績・全コース R1、ST考察の抜出 R2 | 3 |
-| モータ情報 | `analysis/MotorConditionChart.jsx/.css`、`MotorWakuStatsGrid.jsx` | モーター一覧・枠番別成績・推移・使用履歴 | R5、375pxの列の並び（未確定 → モックで決める）、展示推移の縦軸の向き | 4 |
+| モータ情報 | `analysis/MotorConditionChart.jsx/.css`、`MotorWakuStatsGrid.jsx` | モーター一覧・枠番別成績・推移・使用履歴 | R5、展示推移の縦軸の向き（列の並びは BOA-428） | 4 |
 | オッズ一覧 | `RaceOddsListTab.jsx/.css` | 全組み合わせの表・単複・推移 | 濃淡の固定水色→トークン（R6）。良し悪しの色は付けない | 5 |
 | 結果 | `RaceResult.jsx`、`App.css`、`VenueDaySummaryCard.jsx` | 着順・払戻・その日の水面傾向 | rgba 直書き→トークン、BOA-619 の残り、水面傾向カードの二重の余白 | 5 |
 
@@ -50,7 +50,9 @@ spec: [spec.md](./spec.md)。新しい画面は無く、レース詳細ページ
 |12|16|1|12|   表 293px   |12|1|16|12|      |8|1|      表 357px       |1|8|
 ```
 
-### モータ情報の列（未確定）
+### モータ情報の列（UI統一の範囲外）
+
+モータ情報の列の並びは、BOA-428 の承認済みモック（枠・選手・機番・棒・会場内順位を左、既存列が右）に従う。UI統一の範囲から外す。下の候補1・2は、検討時の参考として残す。
 
 ```
 今（数値が画面外）                  候補1: 左の列を1つにまとめる          候補2: データ出走表と同じ縦横
@@ -61,6 +63,4 @@ spec: [spec.md](./spec.md)。新しい画面は無く、レース詳細ページ
 
 ## 未確定
 
-- モータ情報の列の並び（候補1・2）: モックでユーザーが決める
-- 展開予測の最も高い確率に R1 を付けるか: モックでユーザーが決める
-- 同値の最良（例: 展示タイム 1号艇と6号艇がともに 6.71）: `bestOf` は艇番の若い方1つだけを光らせる。両方を光らせるかをモックでユーザーが決める（参考の表の挙動も変わる）
+なし（展開予測には金枠を付けない、同値の最良は全部光らせる。2026-10-02 モック承認。spec.md「決定事項」）
