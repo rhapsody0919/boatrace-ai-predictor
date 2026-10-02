@@ -6,7 +6,6 @@
  */
 
 import { supabase } from "./supabaseClient";
-import { getVolatilityLevel } from "../utils/volatilityLevel";
 import { isPlaceHit, isShowHit } from "../../scripts/lib/hitCalculator.js";
 import {
   extractVenueCodeFromRaceId,
@@ -765,18 +764,6 @@ async function fetchVenueWinRateMap() {
 }
 
 /**
- * 本日のレース一覧（getRaces の直接クエリ経路）の result を、get_today_races（110）と同じ
- * {rank1} / null の形にする（BOA-542）。race_results は races と1対1のため、PostgREST の
- * 埋め込みはオブジェクトで返る。配列で返る版にも備えて先頭を読む。
- * @param {{rank1?: number|null}|Array<{rank1?: number|null}>|null|undefined} embedded
- * @returns {{rank1: number}|null}
- */
-function toTodayRaceResult(embedded) {
-  const row = Array.isArray(embedded) ? embedded[0] : embedded;
-  return row?.rank1 != null ? { rank1: row.rank1 } : null;
-}
-
-/**
  * race_results 1件分（camelCaseに正規化済み）から raceData.result を組み立てる共通ヘルパー
  * （BOA-238。Edge API経路/直接クエリ経路の2箇所から呼ばれるため重複を避けるために切り出した）
  * rank4〜6・追加payout種別・人気はバックフィルしていない過去データではnullのため、
@@ -908,6 +895,33 @@ function buildRaceResult(r) {
  * Edge APIレスポンスをフロント期待形式に変換
  * Edge API(RPC)とSupabase直接クエリの構造差異を吸収する
  */
+/**
+ * get_today_races（RPC。Edge API /api/races/today はこの結果をそのまま返す）の出力を、画面の形に整える。
+ * Edge API の経路と、Edge API が失敗したときに RPC を直接呼ぶ経路の両方が使う（BOA-668）
+ */
+function transformTodayRaces(data, venueWinRateMap = {}) {
+  return {
+    success: true,
+    data: data.data.map((venue) => ({
+      placeCd: venue.place_cd || venue.placeCd,
+      placeName:
+        venue.place_name ||
+        venue.placeName ||
+        VENUE_NAMES[venue.place_cd || venue.placeCd],
+      races: (venue.races || []).map((race) => ({
+        ...race,
+        volatility: race.volatility
+          ? {
+              ...race.volatility,
+              venueWinRate: venueWinRateMap[race.placeCd] ?? null,
+            }
+          : null,
+      })),
+    })),
+    scrapedAt: data.scrapedAt || new Date().toISOString(),
+  };
+}
+
 function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
   const transformedRaces = (edgeData.races || []).map((race) => {
     const entries = race.entries || [];
@@ -1263,28 +1277,7 @@ export const supabaseDataService = {
           const data = await edgeResponse.json();
           if (data.success && data.data) {
             console.log("[getRaces] Edge API success");
-            // Edge APIはvenuesテーブルをjoinしないためvenueWinRateを別途取得
-            const venueWinRateMap = await fetchVenueWinRateMap();
-            return {
-              success: true,
-              data: data.data.map((venue) => ({
-                placeCd: venue.place_cd || venue.placeCd,
-                placeName:
-                  venue.place_name ||
-                  venue.placeName ||
-                  VENUE_NAMES[venue.place_cd || venue.placeCd],
-                races: (venue.races || []).map((race) => ({
-                  ...race,
-                  volatility: race.volatility
-                    ? {
-                        ...race.volatility,
-                        venueWinRate: venueWinRateMap[race.placeCd] ?? null,
-                      }
-                    : null,
-                })),
-              })),
-              scrapedAt: data.scrapedAt || new Date().toISOString(),
-            };
+            return transformTodayRaces(data, await fetchVenueWinRateMap());
           }
         }
       } catch (edgeError) {
@@ -1294,151 +1287,19 @@ export const supabaseDataService = {
         );
       }
 
-      // フォールバック: 従来のSupabase直接クエリ
+      // フォールバック: Edge API と同じ RPC（get_today_races）を Supabase へ直接呼び、同じ transformTodayRaces で整形する。
+      // 以前は別実装のネストクエリで、RPC との二重実装になっていた（BOA-355 の getPredictions と同じ形に寄せる。BOA-668）。
+      // RPC の失敗は .throwOnError() 既定（ADR-0069）で例外になり、呼び出し側のエラー表示に届く
       if (!supabase) {
         console.error("Supabase client not initialized");
         return { success: false, data: [], scrapedAt: null };
       }
-
-      // 今日のレースを取得
-      const { data: races, error: racesError } = await supabase
-        .from("races")
-        .select(
-          `
-        race_id,
-        race_date,
-        venue_code,
-        race_number,
-        start_time,
-        race_grade,
-        cancellation_status,
-        race_conditions (
-          series_day,
-          is_final_day,
-          race_title,
-          race_stage
-        ),
-        race_results (
-          rank1
-        ),
-        race_entries (
-          boat_number,
-          player_name,
-          grade,
-          age,
-          win_rate,
-          local_win_rate,
-          global_2rate,
-          motor_number,
-          motor_2rate,
-          boat_number_id,
-          boat_2rate
-        )
-      `,
-        )
-        .eq("race_date", today)
-        .order("venue_code")
-        .order("race_number");
-
-      if (racesError) {
-        console.error("Supabase getRaces error:", racesError.message);
-        return { success: false, data: [], scrapedAt: null };
+      const { data: rpcData } = await supabase.rpc("get_today_races");
+      if (!rpcData?.success || !rpcData.data) {
+        throw new Error("get_today_races が有効なデータを返しませんでした");
       }
+      return transformTodayRaces(rpcData, await fetchVenueWinRateMap());
 
-      // 会場別1コース勝率（直近90日）を取得
-      const venueWinRateMap = await fetchVenueWinRateMap();
-
-      // イン崩れ指数はunifiedモデル（predictions.feature_contributions.
-      // volatilityPercentile）基準に統一する（旧races.volatility_score/level は
-      // generate-predictions.js（旧3モデル）由来で別ロジックのため不使用。2026-08-15）
-      const { data: unifiedPreds } = await supabase
-        .from("predictions")
-        .select("race_id, feature_contributions")
-        .eq("model_id", "unified")
-        .in(
-          "race_id",
-          races.map((r) => r.race_id),
-        );
-      const volatilityByRaceId = new Map();
-      // 展開予測（先頭パターンのみ）。get_today_races RPC（052マイグレーション）と
-      // 同じ情報源・同じ抜き出し方に揃える
-      const turnPredictionByRaceId = new Map();
-      for (const pred of unifiedPreds || []) {
-        const percentile = pred.feature_contributions?.volatilityPercentile;
-        if (typeof percentile === "number") {
-          volatilityByRaceId.set(pred.race_id, {
-            percentile,
-            isFallback:
-              pred.feature_contributions?.volatilityPercentileIsFallback ??
-              false,
-            level: getVolatilityLevel(percentile),
-          });
-        }
-        const topPattern =
-          pred.feature_contributions?.turnPrediction?.patterns?.[0];
-        if (topPattern) {
-          turnPredictionByRaceId.set(pred.race_id, topPattern);
-        }
-      }
-
-      // 会場ごとにグループ化
-      const venueMap = new Map();
-
-      for (const race of races) {
-        const venueCode = race.venue_code;
-
-        if (!venueMap.has(venueCode)) {
-          venueMap.set(venueCode, {
-            placeCd: venueCode,
-            placeName: VENUE_NAMES[venueCode] || `会場${venueCode}`,
-            races: [],
-          });
-        }
-
-        // レースデータを変換
-        const raceData = {
-          raceNo: race.race_number,
-          startTime: race.start_time?.substring(0, 5) || "",
-          cancellationStatus: race.cancellation_status ?? null,
-          date: race.race_date,
-          placeCd: race.venue_code,
-          raceGrade: race.race_grade ?? null,
-          raceTitle: race.race_conditions?.race_title ?? null,
-          seriesDay: race.race_conditions?.series_day ?? null,
-          isFinalDay: race.race_conditions?.is_final_day ?? null,
-          raceStage: race.race_conditions?.race_stage ?? null,
-          // get_today_races（110、BOA-542）と同じ形。着順つきの結果があれば {rank1}、無ければ null。
-          // isRaceCancelled が見て、confirmed が残っていても結果のあるレースを中止扱いしない
-          result: toTodayRaceResult(race.race_results),
-          volatility: volatilityByRaceId.has(race.race_id)
-            ? {
-                ...volatilityByRaceId.get(race.race_id),
-                venueWinRate: venueWinRateMap[race.venue_code] ?? null,
-              }
-            : null,
-          turnPrediction: turnPredictionByRaceId.get(race.race_id) ?? null,
-          racers: (race.race_entries || []).map((entry) => ({
-            waku: entry.boat_number,
-            name: (entry.player_name || "").replace(/\s+/g, ""),
-            rank: entry.grade,
-            age: entry.age,
-            winRate: entry.win_rate,
-            localWinRate: entry.local_win_rate,
-            motorNo: entry.motor_number,
-            motor2Rate: entry.motor_2rate,
-            boatNo: entry.boat_number_id,
-            boat2Rate: entry.boat_2rate,
-          })),
-        };
-
-        venueMap.get(venueCode).races.push(raceData);
-      }
-
-      return {
-        success: true,
-        data: Array.from(venueMap.values()),
-        scrapedAt: new Date().toISOString(),
-      };
     }); // withCache end
   },
 

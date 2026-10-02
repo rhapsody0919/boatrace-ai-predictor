@@ -85,7 +85,11 @@ function useTodayVenues() {
       if (result.scrapedAt) setLastUpdated(result.scrapedAt);
     } catch (err) {
       console.error("API取得エラー:", err);
-      setError(err.message);
+      // 失敗の判定は例外が出たかどうかで行い、メッセージの有無には依存しない。
+      // 本文が空・{} の 5xx では PostgrestError の message が空文字になり、
+      // err.message をそのまま入れると error が偽になって、取得失敗が
+      // 「24会場すべて本日開催なし」に化けていた（BOA-668）
+      setError(err?.message || FETCH_FAILED_ERROR);
     } finally {
       setLoading(false);
     }
@@ -176,8 +180,16 @@ function TodayVenueGridPage() {
               <VenueGridSkeleton />
             ) : (
               <>
-                {error && <DataFetchError detail={error} />}
-                <TodaysVolatilityHighlights venuesData={venuesData} />
+                {/* 取得に失敗したら会場グリッドを出さない。出すと venuesData が空のため
+                    24会場すべてが「本日開催なし」になり、エラー表示と矛盾する（BOA-668）。
+                    「本日開催なし」は取得に成功して0件だったときだけ出す */}
+                {error ? (
+                  <DataFetchError
+                    detail={error === FETCH_FAILED_ERROR ? null : error}
+                  />
+                ) : (
+                  <TodaysVolatilityHighlights venuesData={venuesData} />
+                )}
                 {/* 本日のデータ一覧（BOA-402）への導線。高さを固定してCLSを出さない。
                     /today は ja専用なので、ヘッダーと同じく ja のときだけ出す（BOA-653） */}
                 {/* i18n-allow-start: ja のときだけ出す導線（遷移先が ja専用ページ） */}
@@ -192,11 +204,13 @@ function TodayVenueGridPage() {
                   </Link>
                 )}
                 {/* i18n-allow-end */}
-                <VenueGrid
-                  venuesData={venuesData}
-                  getVenueLink={(code) => localize(`/venue/${code}`)}
-                  nowHHMM={nowHHMM}
-                />
+                {!error && (
+                  <VenueGrid
+                    venuesData={venuesData}
+                    getVenueLink={(code) => localize(`/venue/${code}`)}
+                    nowHHMM={nowHHMM}
+                  />
+                )}
               </>
             )}
           </section>

@@ -2,6 +2,37 @@
 // Supabaseから予測結果を集計し、models統計と accuracy_cache を更新する（3モデル×4券種対応）
 
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
+import { isJudgeable } from "../../src/utils/raceOutcome.js";
+
+/**
+ * 券種ごとの的中数・母数・払戻の合計（純関数。BOA-544）。
+ * 母数は、その券種の is_hit_* が NULL でない予想の数。不成立のレースと、返還艇を含む券種は判定対象外（NULL）で、
+ * 母数から外す（公式の回収率と同じ扱い。返還は「投資100円・戻り0円」ではない）。top_3rd を予想しないモデルの
+ * 3連系も NULL なので母数に入らない。
+ *
+ * @param {Array<Object>} predictions is_hit_win/place/trifecta/trio・payout_* を持つ行
+ * @returns {{win: Bet, place: Bet, trifecta: Bet, trio: Bet}} Bet = {n, hits, hitRate, recoveryRate}
+ */
+export function summarizeHits(predictions) {
+  const bet = (key) => {
+    const judged = predictions.filter((p) => p[`is_hit_${key}`] != null);
+    const n = judged.length;
+    const hits = judged.filter((p) => p[`is_hit_${key}`]).length;
+    const payout = judged.reduce((s, p) => s + (p[`payout_${key}`] || 0), 0);
+    return {
+      n,
+      hits,
+      hitRate: n > 0 ? hits / n : 0,
+      recoveryRate: n > 0 ? payout / (n * 100) : 0,
+    };
+  };
+  return {
+    win: bet("win"),
+    place: bet("place"),
+    trifecta: bet("trifecta"),
+    trio: bet("trio"),
+  };
+}
 
 // Calculate statistics for a model (4券種: win/place/trifecta/trio) — overall のみ
 async function calculateModelStats(modelId) {
@@ -43,43 +74,22 @@ async function calculateModelStats(modelId) {
     };
   }
 
-  const total = allPredictions.length;
-  const investment = total * 100;
-
-  const hitsWin = allPredictions.filter((p) => p.is_hit_win).length;
-  const hitsPlace = allPredictions.filter((p) => p.is_hit_place).length;
-  const hitsTrifecta = allPredictions.filter((p) => p.is_hit_trifecta).length;
-  const hitsTrio = allPredictions.filter((p) => p.is_hit_trio).length;
-
-  const payoutWin = allPredictions.reduce((s, p) => s + (p.payout_win || 0), 0);
-  const payoutPlace = allPredictions.reduce(
-    (s, p) => s + (p.payout_place || 0),
-    0,
-  );
-  const payoutTrifecta = allPredictions.reduce(
-    (s, p) => s + (p.payout_trifecta || 0),
-    0,
-  );
-  const payoutTrio = allPredictions.reduce(
-    (s, p) => s + (p.payout_trio || 0),
-    0,
-  );
-
+  const h = summarizeHits(allPredictions);
   return {
-    totalPredictions: total,
-    hitRateWin: hitsWin / total,
-    hitRatePlace: hitsPlace / total,
-    hitRateTrifecta: hitsTrifecta / total,
-    hitRateTrio: hitsTrio / total,
-    recoveryRateWin: payoutWin / investment,
-    recoveryRatePlace: payoutPlace / investment,
-    recoveryRateTrifecta: payoutTrifecta / investment,
-    recoveryRateTrio: payoutTrio / investment,
+    totalPredictions: allPredictions.length,
+    hitRateWin: h.win.hitRate,
+    hitRatePlace: h.place.hitRate,
+    hitRateTrifecta: h.trifecta.hitRate,
+    hitRateTrio: h.trio.hitRate,
+    recoveryRateWin: h.win.recoveryRate,
+    recoveryRatePlace: h.place.recoveryRate,
+    recoveryRateTrifecta: h.trifecta.recoveryRate,
+    recoveryRateTrio: h.trio.recoveryRate,
   };
 }
 
 // 統計を計算するヘルパー（predictions 配列 → フロントが期待する形式）
-function computeStats(predictions) {
+export function computeStats(predictions) {
   if (!predictions || predictions.length === 0) {
     return {
       totalRaces: 0,
@@ -96,34 +106,18 @@ function computeStats(predictions) {
     };
   }
 
-  const total = predictions.length;
-  const winHits = predictions.filter((p) => p.is_hit_win).length;
-  const placeHits = predictions.filter((p) => p.is_hit_place).length;
-  const trifectaHits = predictions.filter((p) => p.is_hit_trifecta).length;
-  const trioHits = predictions.filter((p) => p.is_hit_trio).length;
-
-  const winPayout = predictions.reduce((s, p) => s + (p.payout_win || 0), 0);
-  const placePayout = predictions.reduce(
-    (s, p) => s + (p.payout_place || 0),
-    0,
-  );
-  const trifectaPayout = predictions.reduce(
-    (s, p) => s + (p.payout_trifecta || 0),
-    0,
-  );
-  const trioPayout = predictions.reduce((s, p) => s + (p.payout_trio || 0), 0);
-
+  const h = summarizeHits(predictions);
   return {
-    totalRaces: total,
-    topPickHitRate: winHits / total,
-    topPickPlaceRate: placeHits / total,
-    top3HitRate: trifectaHits / total,
-    top3IncludedRate: trioHits / total,
+    totalRaces: predictions.length,
+    topPickHitRate: h.win.hitRate,
+    topPickPlaceRate: h.place.hitRate,
+    top3HitRate: h.trifecta.hitRate,
+    top3IncludedRate: h.trio.hitRate,
     actualRecovery: {
-      win: { recoveryRate: winPayout / (total * 100) },
-      place: { recoveryRate: placePayout / (total * 100) },
-      trifecta: { recoveryRate: trifectaPayout / (total * 100) },
-      trio: { recoveryRate: trioPayout / (total * 100) },
+      win: { recoveryRate: h.win.recoveryRate },
+      place: { recoveryRate: h.place.recoveryRate },
+      trifecta: { recoveryRate: h.trifecta.recoveryRate },
+      trio: { recoveryRate: h.trio.recoveryRate },
     },
   };
 }
@@ -178,13 +172,35 @@ function addMonths(date, n) {
 // イン崩れ予測精度を集計（直近90日の races × race_results）
 async function calculateVolatilityStats() {
   const now = new Date();
-  const ninetyDaysAgoStr = jstDateStr(new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000));
+  const ninetyDaysAgoStr = jstDateStr(
+    new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000),
+  );
 
   const VENUE_NAMES = {
-    1: '桐生', 2: '戸田', 3: '江戸川', 4: '平和島', 5: '多摩川', 6: '浜名湖',
-    7: '蒲郡', 8: '常滑', 9: '津', 10: '三国', 11: 'びわこ', 12: '住之江',
-    13: '尼崎', 14: '鳴門', 15: '丸亀', 16: '児島', 17: '宮島', 18: '徳山',
-    19: '下関', 20: '若松', 21: '芦屋', 22: '福岡', 23: '唐津', 24: '大村',
+    1: "桐生",
+    2: "戸田",
+    3: "江戸川",
+    4: "平和島",
+    5: "多摩川",
+    6: "浜名湖",
+    7: "蒲郡",
+    8: "常滑",
+    9: "津",
+    10: "三国",
+    11: "びわこ",
+    12: "住之江",
+    13: "尼崎",
+    14: "鳴門",
+    15: "丸亀",
+    16: "児島",
+    17: "宮島",
+    18: "徳山",
+    19: "下関",
+    20: "若松",
+    21: "芦屋",
+    22: "福岡",
+    23: "唐津",
+    24: "大村",
   };
 
   // races を取得（volatility_level が設定されているもの）
@@ -214,7 +230,7 @@ async function calculateVolatilityStats() {
   while (true) {
     const { data: page, error } = await supabase
       .from("race_results")
-      .select("race_id, rank1, is_cancelled, is_no_race")
+      .select("race_id, rank1, is_cancelled, race_status")
       .gte("race_id", ninetyDaysAgoStr)
       .range(from, from + pageSize - 1);
     if (error) {
@@ -232,7 +248,8 @@ async function calculateVolatilityStats() {
   const joined = races
     .map((race) => {
       const result = resultMap.get(race.race_id);
-      if (!result || result.is_cancelled || result.is_no_race) return null;
+      // 不成立は race_status で判定する（is_no_race は全行 false で機能していない。078・BOA-544）
+      if (!result || result.is_cancelled || !isJudgeable(result)) return null;
       return {
         venueCode: race.venue_code,
         level: race.volatility_level,
@@ -279,9 +296,10 @@ async function calculateVolatilityStats() {
       raceCount: rows.length,
       upsetRate,
       highRaceCount: highRows.length,
-      highUpsetRate: highRows.length > 0
-        ? parseFloat(((highUpsetCount / highRows.length) * 100).toFixed(1))
-        : null,
+      highUpsetRate:
+        highRows.length > 0
+          ? parseFloat(((highUpsetCount / highRows.length) * 100).toFixed(1))
+          : null,
     };
   }
 
@@ -313,14 +331,21 @@ async function calculateVolatilityStats() {
         venueCode: String(venueCode).padStart(2, "0"),
         venueName: VENUE_NAMES[venueCode] || `会場${venueCode}`,
         highRaceCount: high.total,
-        highUpsetRate: high.total > 0 ? parseFloat(((high.upset / high.total) * 100).toFixed(1)) : 0,
-        baselineUpsetRate: parseFloat(((all.upset / all.total) * 100).toFixed(1)),
+        highUpsetRate:
+          high.total > 0
+            ? parseFloat(((high.upset / high.total) * 100).toFixed(1))
+            : 0,
+        baselineUpsetRate: parseFloat(
+          ((all.upset / all.total) * 100).toFixed(1),
+        ),
         isReliable: high.total >= 5,
       };
     })
     .sort((a, b) => b.highUpsetRate - a.highUpsetRate);
 
-  console.log(`  volatilityStats: ${joined.length}件集計完了 (high=${byLevel.high?.raceCount ?? 0}件)`);
+  console.log(
+    `  volatilityStats: ${joined.length}件集計完了 (high=${byLevel.high?.raceCount ?? 0}件)`,
+  );
 
   return {
     baseline,
@@ -373,7 +398,10 @@ async function buildAndStoreAccuracyCache() {
   console.log("\n📊 accuracy_cache 用データ取得中...");
 
   // 過去90日を1回取得すれば 7日・今月・先月・6ヶ月分すべてカバーできる
-  const allRecentPredictions = await fetchPredictionsRange(ninetyDaysAgoStr, null);
+  const allRecentPredictions = await fetchPredictionsRange(
+    ninetyDaysAgoStr,
+    null,
+  );
   const thisMonthEnd = `${thisYear}-${pad(thisMonth)}-31`;
   const thisMonthPredictions = allRecentPredictions.filter(
     (p) => p.race_id >= thisMonthStart && p.race_id <= `${thisMonthEnd}-99-99`,
@@ -504,13 +532,11 @@ async function buildAndStoreAccuracyCache() {
     models: cacheModels,
   };
 
-  const { error: upsertError } = await supabase
-    .from("accuracy_cache")
-    .upsert({
-      key: "accuracy_summary",
-      data: cacheData,
-      updated_at: new Date().toISOString(),
-    });
+  const { error: upsertError } = await supabase.from("accuracy_cache").upsert({
+    key: "accuracy_summary",
+    data: cacheData,
+    updated_at: new Date().toISOString(),
+  });
 
   if (upsertError) {
     console.error("  ❌ accuracy_cache UPSERT エラー:", upsertError.message);
@@ -589,5 +615,7 @@ async function calculateAccuracy() {
   console.log("\n✅ 統計更新完了");
 }
 
-// Execute script
-calculateAccuracy();
+// スタンドアローン実行時のみ実行する（import 時に実行させない）
+if (process.argv[1] === new URL(import.meta.url).pathname) {
+  calculateAccuracy();
+}

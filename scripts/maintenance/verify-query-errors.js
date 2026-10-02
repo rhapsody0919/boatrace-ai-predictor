@@ -23,6 +23,9 @@
  * 2. `src/services/supabaseClient.js` が `.throwOnError()` を適用していること
  * 3. `src/` 配下に `@supabase/supabase-js` を直接importするファイルが
  *    supabaseClient.js 以外に無いこと
+ * 4. `src/` 配下に `setError(err.message)` の形が無いこと（BOA-668）。message が空の例外
+ *    （本文 `{}` の 5xx の PostgrestError）でエラー状態が偽のままになり、取得失敗が
+ *    「データなし」に化ける。`src/utils/errorMessage.js` の errorMessageOf を使う
  *
  * ## 検査しないこと（意図的）
  *
@@ -71,6 +74,14 @@ for (const file of files) {
     errors.push(
       `${rel}: createClient() を直接呼んでいる。${CLIENT_REL} の supabase を import すること` +
         "（直接作ると .throwOnError() の既定が効かず、取得失敗が空データに化ける。BOA-359）",
+    );
+  }
+  // 4: message の有無でエラー状態を決めない（BOA-668）
+  const messageOnly = text.match(/setError\(\s*\w+\??\.message\s*\)/g);
+  if (messageOnly) {
+    errors.push(
+      `${rel}: ${messageOnly[0]} の形がある。message が空の例外で失敗がエラー表示に届かない。` +
+        "src/utils/errorMessage.js の errorMessageOf(err) を使うこと（BOA-668）",
     );
   }
   if (/from\s+["']@supabase\/supabase-js["']/.test(text)) {

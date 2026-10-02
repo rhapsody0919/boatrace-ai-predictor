@@ -17,6 +17,7 @@ import {
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
 import { isToday } from "../utils/dateUtils";
 import "./RacerProfile.css";
+import { errorMessageOf } from "../utils/errorMessage.js";
 
 const SITE_URL = "https://www.boat-ai.jp";
 
@@ -41,7 +42,7 @@ export default function RacerProfile() {
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err.message);
+        setError(errorMessageOf(err));
         setLoading(false);
       });
     return () => {
