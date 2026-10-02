@@ -72,3 +72,19 @@ test("除いた人数を足すと出場人数になり、表に無い印の凡�
     "3走未満",
   );
 });
+
+test("375pxで、今節初戦の行があっても列見出し「前検」がカードからはみ出さない", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await openMeetTab(page, "2026-09-23-09-06");
+  const overflow = await page.evaluate(() => {
+    const card = document.querySelector(".rmt-compare").closest(".rmt-card");
+    const ths = [...document.querySelectorAll(".rmt-compare thead th")];
+    const last = ths[ths.length - 1];
+    const range = document.createRange();
+    range.selectNodeContents(last);
+    return range.getBoundingClientRect().right - card.getBoundingClientRect().right;
+  });
+  expect(overflow).toBeLessThanOrEqual(0);
+});

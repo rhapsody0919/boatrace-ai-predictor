@@ -50,6 +50,17 @@
   padding-left: var(--spacing-2);
 }
 
+/* 375pxでは、⚠付きの得点率と「6.68（18位）」の前検が並ぶと表がカードから
+   はみ出し、見出しの「前検」が欠けた（PR #1102 ファン評価2周目）。字を折ると
+   3行に割れて読めないので、列の間だけを詰める */
+@media (max-width: 480px) {
+  .rmt-compare th + th,
+  .rmt-compare th + td,
+  .rmt-compare td + td {
+    padding-left: var(--spacing-1);
+  }
+}
+
 /* 名前の列に余りを吸わせる（そうしないと見出しが中央付近に固まり、
    どの見出しがどの数字に掛かっているか読み取りにくい） */
 .rmt-compare thead th:first-child,

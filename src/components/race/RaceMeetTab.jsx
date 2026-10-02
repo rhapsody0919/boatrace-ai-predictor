@@ -231,11 +231,16 @@ function RaceMeetTab({
   const inTable = (r) => sortedPlayers.some((p) => p.racerId === r.racerId);
   // 今節をまだ走っていない艇（このレースが今節の初戦）。行ごと消すと「欠場か」と
   // 読み違えるので、行として出す（BOA-660、津 9/23 6R で6艇中3艇しか出なかった）
-  const notYetRun = sortedPlayers.filter(
-    (p) =>
-      !ranking.some((r) => r.racerId === p.racerId) &&
-      !absentOnly.some((r) => r.racerId === p.racerId),
-  );
+  // **データが届く前は判定しない**。届く前は今節の走が0件なので6艇とも「まだ走って
+  // いない」になり、「節の出場は0人」と全艇「今節初戦」の表が一瞬出ていた
+  // （PR #1102 ファン評価2周目）
+  const notYetRun = board
+    ? sortedPlayers.filter(
+        (p) =>
+          !ranking.some((r) => r.racerId === p.racerId) &&
+          !absentOnly.some((r) => r.racerId === p.racerId),
+      )
+    : [];
   const border = rankedOnly[slots - 1]?.rate;
   // 表のボーダー表示は「節全体の順位」なので、選んだ選手の走数に依存しない
   const showBorderBadge =
