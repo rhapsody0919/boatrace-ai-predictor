@@ -292,7 +292,8 @@
       "boat": "枠",
       "racer": "ボートレーサー",
       "start": "ST",
-      "time": "レースタイム"
+      "time": "レースタイム",
+      "timeShort": "タイム"
     },
     "partialNoRaceTag": "不成立の勝式あり",
     "payoutNoRace": "不成立（返還）",

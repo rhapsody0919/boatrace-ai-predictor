@@ -613,6 +613,21 @@ input:focus-visible,
   white-space: nowrap;
 }
 
+/* 「レースタイム」は 768px 以下で列に収まらないので短い見出しに切り替える */
+.rr-head-time-short {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .rr-head-time-full {
+    display: none;
+  }
+
+  .rr-head-time-short {
+    display: inline;
+  }
+}
+
 .rr-row-head + .rr-row {
   border-top: none;
 }

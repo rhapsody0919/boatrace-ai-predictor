@@ -292,7 +292,8 @@
       "boat": "번호",
       "racer": "선수",
       "start": "ST",
-      "time": "레이스 타임"
+      "time": "레이스 타임",
+      "timeShort": "타임"
     },
     "partialNoRaceTag": "일부 승식 불성립",
     "payoutNoRace": "불성립(반환)",
