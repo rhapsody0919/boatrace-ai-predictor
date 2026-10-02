@@ -54,10 +54,17 @@ export function parseParams(searchParams) {
   return { venue, grade, round, target };
 }
 
+class TableMissingError extends Error {}
+
 async function rest(path) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
   });
+  // テーブルがまだ無い（マイグレーション 118 の適用前）。PostgREST は 404 + PGRST205 を返す
+  if (res.status === 404) {
+    const body = await res.json().catch(() => ({}));
+    if (body.code === "PGRST205") throw new TableMissingError(body.message);
+  }
   if (!res.ok)
     throw new Error(`Supabase ${path.split("?")[0]}: HTTP ${res.status}`);
   return res.json();
@@ -113,6 +120,9 @@ export default async function handler(req) {
       "s-maxage=86400, stale-while-revalidate=3600",
     );
   } catch (error) {
+    // 適用前は「学習前」と同じ応答にする（画面は節を出さない）。キャッシュはさせない
+    if (error instanceof TableMissingError)
+      return json({ available: false }, 200, "no-store");
     console.error("analogy contribution error:", error);
     return json({ error: error.message }, 500, "no-store");
   }

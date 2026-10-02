@@ -35,16 +35,24 @@ async function fromApi(params) {
 
 async function fromSupabase(params) {
   if (!supabase) throw new Error("Supabase が未設定");
-  const { data: models, error } = await supabase
-    .from("analogy_models")
-    .select("model_version,trained_at,themes,metrics")
-    .eq("is_active", true);
-  if (error) throw new Error(`analogy_models: ${error.message}`);
+  let models;
+  try {
+    ({ data: models } = await supabase
+      .from("analogy_models")
+      .select("model_version,trained_at,themes,metrics")
+      .eq("is_active", true));
+  } catch (err) {
+    // テーブルがまだ無い（マイグレーション 118 の適用前）は「学習前」と同じく節を出さない。
+    // 画面の PR が適用より先に出ても、エラー表示を出さないための保険（getRacePitReport と同じ考え方）
+    if (err?.code === "PGRST205" || err?.code === "42P01")
+      return { available: false };
+    throw err;
+  }
   if (models.length === 0) return { available: false };
   const model = models[0];
   const cands = sliceCandidates(params);
   const uniq = (vals) => [...new Set(vals)];
-  const { data: rows, error: rowsError } = await supabase
+  const { data: rows } = await supabase
     .from("analogy_contribution_profiles")
     .select(
       "venue_code,grade,round,boat_number,n_boats,n_races,period_from,period_to,shares,share_sd,breakdown",
@@ -54,8 +62,6 @@ async function fromSupabase(params) {
     .in("venue_code", uniq(cands.map((c) => c.venue)))
     .in("grade", uniq(cands.map((c) => c.grade)))
     .in("round", uniq(cands.map((c) => c.round)));
-  if (rowsError)
-    throw new Error(`analogy_contribution_profiles: ${rowsError.message}`);
   const slice = resolveContributionSlice(rows, params);
   if (!slice)
     throw new Error(
