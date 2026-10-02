@@ -18,6 +18,8 @@
  *   4. 行変換・DDL案（084）: 列の一致、CHECK、RLS
  *   5. CLI: 取得・解析・投入（既定は検証のみ）、前後1か月が無ければ停止、構造の変更の検知
  *   6. 変異検証: 列と日付の対応・端の扱い・日数・グレードの対応を壊すと、検証が失敗する
+ *   7. 定期取得（raceSeriesJob.js）: 前月・当月・翌月を取り、当月・翌月に始まる節を書く。節名が未掲載の節は節名NULLで書き、
+ *      それ以外の要確認・会場数の違い・取得の失敗は何も書かない。shadow は書かない。配線（maxDuration・cron）
  */
 
 import fs from "node:fs";
@@ -30,6 +32,9 @@ import * as rowsMod from "../lib/raceSeriesRows.js";
 import { parseKText } from "../lib/kbFileParser.js";
 import * as cli from "./monthly-schedule-backfill.js";
 import { fakeClient } from "../lib/fakeSupabaseClient.js";
+import { runRaceSeriesJob } from "../lib/raceSeriesJob.js";
+import { SCRAPE_JOBS } from "../lib/scrapeJobs/registry.js";
+import { resolveTargetDate } from "../lib/scrapeJobs/dailyJob.js";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const LIB = path.join(ROOT, "scripts/lib");
@@ -671,6 +676,174 @@ for (const [label, reps] of mutants) {
     `変異検証: ${label}`,
     failed.length > 0,
     "この変異を検知できない（検証が通ってしまう）",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 7. 定期取得（raceSeriesJob.js）
+// ---------------------------------------------------------------------------
+{
+  const ymOfUrl = (url) => /ym=(\d{6})/.exec(url)?.[1];
+  const jobCtx = (pages, { mode = "live", client = fakeClient({}) } = {}) => {
+    const urls = [];
+    return {
+      urls,
+      client,
+      ctx: {
+        targetDate: "2026-09-15",
+        mode,
+        client,
+        politeFetch: async (url) => {
+          urls.push(url);
+          const body = pages[ymOfUrl(url)];
+          return body === undefined
+            ? new Response("", { status: 404 })
+            : new Response(body, { status: 200 });
+        },
+      },
+    };
+  };
+  const OPTS = { expectedVenues: 9, sleepMs: 0 };
+  const base = {
+    202608: html("202608"),
+    202609: html("202609"),
+    202610: html("202610"),
+  };
+
+  const j1 = jobCtx(base);
+  const r1 = await runRaceSeriesJob(j1.ctx, OPTS);
+  const rows = j1.client.tables.race_series ?? [];
+  check(
+    "定期取得: 前月・当月・翌月（202608〜202610）の3ページを取り、開始日が当月・翌月（9月・10月）の節を書く",
+    r1.outcome === undefined &&
+      same(j1.urls.map(ymOfUrl), ["202608", "202609", "202610"]) &&
+      rows.length > 0 &&
+      rows.length === r1.rowsWritten &&
+      rows.every(
+        (r) => r.start_date >= "2026-09-01" && r.start_date <= "2026-10-31",
+      ) &&
+      rows.some((r) => r.start_date.startsWith("2026-10")),
+    JSON.stringify({ outcome: r1.outcome, error: r1.error, n: rows.length }),
+  );
+  const r1b = await runRaceSeriesJob(
+    jobCtx(base, { client: j1.client }).ctx,
+    OPTS,
+  );
+  check(
+    "定期取得: 再実行は変更の無い節を書かない（書き込み0件でも成功）",
+    r1b.outcome === undefined &&
+      r1b.rowsWritten === 0 &&
+      r1b.rowsParsed === rows.length,
+    JSON.stringify(r1b.body),
+  );
+
+  // 節名がまだ載っていない月（節の td にリンクが無い）。2026-10-02 の 202611 の実測と同じ形
+  const untitled = base[202610].replace(
+    /(<td[^>]*is-gradeColor[^>]*>)\s*<a[^>]*>[\s\S]*?<\/a>/g,
+    "$1",
+  );
+  const j2 = jobCtx({ ...base, 202610: untitled });
+  const r2 = await runRaceSeriesJob(j2.ctx, OPTS);
+  const oct = (j2.client.tables.race_series ?? []).filter((r) =>
+    r.start_date.startsWith("2026-10"),
+  );
+  check(
+    "定期取得: 節名が未掲載の節（「節名のリンクがありません」の要確認）は許し、節名NULLで書く",
+    r2.outcome === undefined &&
+      r2.body.untitledSegments > 0 &&
+      oct.length > 0 &&
+      oct.some((r) => r.title === null),
+    JSON.stringify({ outcome: r2.outcome, error: r2.error }),
+  );
+  // 節名が載った後の取得で、節名を書き直す
+  const r2b = await runRaceSeriesJob(
+    jobCtx(base, { client: j2.client }).ctx,
+    OPTS,
+  );
+  check(
+    "定期取得: 節名が載った後の取得で、節名NULLの節を書き直す",
+    r2b.rowsWritten > 0 &&
+      (j2.client.tables.race_series ?? []).every((r) => r.title !== null),
+    JSON.stringify(r2b.body),
+  );
+
+  const unknown = base[202610].replace(
+    "is-gradeColorIppan",
+    "is-gradeColorXyz",
+  );
+  const failCases = [
+    ["未知の色分け（構造の変更の疑い）", { ...base, 202610: unknown }, OPTS],
+    [
+      "翌月のページの取得に失敗（HTTP 404）",
+      { 202608: base[202608], 202609: base[202609] },
+      OPTS,
+    ],
+    ["会場数が想定と違う", base, { ...OPTS, expectedVenues: 24 }],
+  ];
+  for (const [label, pages, opts] of failCases) {
+    const j = jobCtx(pages);
+    const r = await runRaceSeriesJob(j.ctx, opts);
+    check(
+      `定期取得: ${label}は、何も書かず error`,
+      r.outcome === "error" &&
+        (j.client.calls.upserts?.length ?? 0) === 0 &&
+        !(j.client.tables.race_series?.length > 0),
+      JSON.stringify({ outcome: r.outcome, error: r.error }),
+    );
+  }
+
+  const shadowClient = fakeClient({});
+  const r3 = await runRaceSeriesJob(
+    jobCtx(base, { mode: "shadow", client: shadowClient }).ctx,
+    OPTS,
+  );
+  check(
+    "定期取得: shadow は取得・解析のみで、DBに触れない",
+    r3.outcome === undefined &&
+      r3.rowsParsed > 0 &&
+      shadowClient.calls.selects.length === 0 &&
+      shadowClient.calls.upserts.length === 0,
+  );
+
+  // 配線: api/cron/race-series.js・vercel.json・レジストリ
+  const src = fs.readFileSync(
+    path.join(ROOT, "api/cron/race-series.js"),
+    "utf8",
+  );
+  const mod = await import(
+    new URL("../../api/cron/race-series.js", import.meta.url)
+  );
+  const def = SCRAPE_JOBS.race_series;
+  const literal = Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]);
+  check(
+    "配線: api/cron/race-series.js の maxDuration がレジストリと一致し、ハンドラーを export する（日次ジョブ）",
+    def?.kind === "daily" &&
+      literal === def.maxDurationSec &&
+      mod.config.maxDuration === literal &&
+      typeof mod.default === "function",
+  );
+  const vercel = JSON.parse(
+    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
+  );
+  const schedules = vercel.crons
+    .filter((c) => c.path === "/api/cron/race-series")
+    .map((c) => c.schedule);
+  const instants = schedules.map((s) => {
+    const [min, hour] = s.split(" ");
+    return new Date(Date.UTC(2026, 8, 30, Number(hour), Number(min)));
+  });
+  const jst = instants.map((d) => {
+    const t = new Date(d.getTime() + 9 * 3600 * 1000);
+    return `${String(t.getUTCHours()).padStart(2, "0")}:${String(t.getUTCMinutes()).padStart(2, "0")}`;
+  });
+  const targets = instants.map((d) => resolveTargetDate(d, def.targetTimeJst));
+  check(
+    "配線: vercel.json の cron は UTC 19:00・20:30（JST 04:00 指定時刻・05:30 補足）で、どちらも同じ対象日に解決される",
+    same(schedules, ["0 19 * * *", "30 20 * * *"]) &&
+      same(jst, ["04:00", "05:30"]) &&
+      def.targetTimeJst === "04:00" &&
+      new Set(targets).size === 1,
+    JSON.stringify({ schedules, jst, targets }),
   );
 }
 
