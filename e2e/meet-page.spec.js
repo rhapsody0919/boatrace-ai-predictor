@@ -69,3 +69,32 @@ test("節の途中の日を初日として開くと「見つからない」を�
     /noindex/,
   );
 });
+
+test("初日の最初のレースの結果が出る前は、空の表ではなく案内を出す", async ({
+  page,
+}) => {
+  // 結果が1つも無い初日の朝を、結果の応答を空にして再現する（セルフレビューの指摘）
+  await page.clock.setFixedTime(new Date("2026-09-28T09:00:00+09:00"));
+  await page.route(/\/rest\/v1\/race_results/, (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
+  await page.goto(KOJIMA, { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".meet-page__no-rate")).toHaveText(
+    "得点率は初日のレース後から出ます",
+    { timeout: 60000 },
+  );
+  await expect(page.locator(".meet-ranking__table")).toHaveCount(0);
+});
+
+test("日付の形でない URL は、パンくず・title に壊れた日付（0/0・NaN）を出さない", async ({
+  page,
+}) => {
+  await page.goto("/venue/16/meet/abc", { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".meet-page__message")).toContainText(
+    "この節は見つかりませんでした",
+    { timeout: 60000 },
+  );
+  // 修正前は "abc" から「0/0開幕の節」を作っていた
+  await expect(page.locator(".breadcrumb")).not.toContainText(/開幕の節|NaN/);
+  await expect(page).not.toHaveTitle(/開幕の節|NaN/);
+});

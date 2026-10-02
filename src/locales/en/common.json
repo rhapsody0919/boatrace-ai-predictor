@@ -2048,6 +2048,7 @@
     "notFound": "This meet could not be found",
     "outOfScope": "This meet is not covered (only SG, G1 and G2 meets with qualifying, semi-finals and a final)",
     "backToVenue": "Races at {{venue}}",
-    "source": "Source: after qualifying, score rates and ranks come from the official BOAT RACE score-rate list. During qualifying, this site calculates them from finishes (penalties not included)."
+    "source": "Source: after qualifying, score rates and ranks come from the official BOAT RACE score-rate list. During qualifying, this site calculates them from finishes (penalties not included).",
+    "noRateYet": "Score rates appear after the first day's races"
   }
 }

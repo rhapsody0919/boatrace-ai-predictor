@@ -68,9 +68,12 @@ function MeetPage() {
   const failed = failedKey === key;
   const venueName = validParams ? t(`venues.${venueCode}`) : "";
   const series = normalizeTitle(page?.title);
+  // 日付の形でない URL（validParams が偽）は日付を作らない（「NaN/NaN開幕の節」を出さない）
   const meetLabel =
     series ??
-    t("meetPage.meetFallback", { date: md(startDate ?? "0000-00-00") });
+    (validParams
+      ? t("meetPage.meetFallback", { date: md(startDate) })
+      : t("meetPage.titleFallback", { venue: venueName }));
   const canonicalPath = `/venue/${venueCode}/meet/${startDate}`;
   const metaTitle = t("meetPage.metaTitle", {
     venue: venueName,
@@ -261,9 +264,16 @@ function MeetBody({ page }) {
   return (
     <div className="meet-page__body">
       <div className="meet-page__main">
-        {page.state === "prelim" && (
+        {page.state === "prelim" && rows.length > 0 && (
           <p className="meet-page__note">{t("meetPage.shobugakePending")}</p>
         )}
+        {/* 初日の最初のレースの結果が出るまでは、得点率の付いた選手がいない。
+            見出しだけの空の表と「全0人」を出さず、開幕前と同じ案内にする */}
+        {rows.length === 0 && excluded.length === 0 ? (
+          <p className="meet-page__message meet-page__no-rate">
+            {t("meetPage.noRateYet")}
+          </p>
+        ) : (
         <MeetRankingTable
           rows={rows}
           excluded={excluded}
@@ -276,6 +286,7 @@ function MeetBody({ page }) {
           shobugake={shobugake}
           classByRacer={classByRacer}
         />
+        )}
         <p className="meet-page__source">{t("meetPage.source")}</p>
       </div>
       <aside className="meet-page__side">
