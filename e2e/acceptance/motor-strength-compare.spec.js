@@ -729,7 +729,7 @@ test.describe("子3 分析ツール「モーターランキング」タブ", () 
     await expect(page).not.toHaveURL(/\/winning-technique/);
   });
 
-  test("[spec 設計レビューの決定 機番リンク] 今節使われたモーターの機番は、tab=motor・venue_code・race_id・motor=機番 のドリルダウンへ移り、6艇表が開く", async ({
+  test("[spec 設計レビューの決定 機番リンク] 今節使われたモーターの機番は、tab=motor・venue_code・race_id・motor=機番 のドリルダウンへ移り、そのモーター1基のドリルダウンが開く", async ({
     page,
   }) => {
     const table = await openRanking(page, VENUE_KOJIMA);
@@ -741,8 +741,21 @@ test.describe("子3 分析ツール「モーターランキング」タブ", () 
     await expect(page).toHaveURL(new RegExp(`venue_code=${VENUE_KOJIMA}`));
     await expect(page).toHaveURL(/race_id=[^&]+/);
     await expect(page).toHaveURL(new RegExp(`motor=${used.no}(?:&|$)`));
-    // screens: 分析ツール「モーター調子」タブの6艇表はレース詳細と同じ見た目（同じ部品）
-    await expect(sixTable(page)).toBeVisible();
+    // spec 背景: 既存のドリルダウンは「1基単位」の表示。spec「機番リンク」: ?motor= は選択中のレースの
+    // 6艇にいるときだけ開く。リンク先で開けたかを次の3点で確かめる（6艇表が出ることは期待しない）。
+    // 1. そのモーターの機番を名前に含む見出しが出る（1基のドリルダウン）。
+    //    spec・screens にドリルダウンの文言は無いため、見出しの名前は機番の数字だけで幅を持たせる
+    await expect(
+      page
+        .getByRole("heading", { name: new RegExp(`(?<!\\d)${used.no}(?!\\d)`) })
+        .first(),
+    ).toBeVisible();
+    // 2. 表示が出たあとも motor=機番 が URL に残る（開けなかった指定として捨てられていない）
+    await expect(page).toHaveURL(new RegExp(`motor=${used.no}(?:&|$)`));
+    // 3. ランキングの表（列「今節使用者」）からは離れている
+    await expect(
+      page.getByRole("columnheader", { name: USER_HEADER }),
+    ).toHaveCount(0);
   });
 
   test("[spec 既定値 データの無い会場・浜名湖・宮島の扱い] 戸田・平和島・浜名湖・宮島は出典を前検データに替え、優出・優勝は「-」", async ({
