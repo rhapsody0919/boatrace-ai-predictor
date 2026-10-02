@@ -11,6 +11,7 @@ import {
   RACE_OUTCOME,
   TURN_JUDGEMENT,
   getRaceOutcomeState,
+  getRefundBoats,
   judgeTurnPrediction,
 } from "../../utils/raceOutcome";
 import {
@@ -84,6 +85,7 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
       <div className="race-card-header">
         <h3>{race.venue}</h3>
         <div
+          className="race-card-badges"
           style={{
             display: "flex",
             alignItems: "center",
@@ -108,7 +110,11 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
           )}
           {isPartialRefund && (
             <RaceCardBadge color="var(--text-secondary)" variant="outline">
-              {t("raceCard.refundBadge")}
+              {/* 結果タブと同じく公式の備考の表記（【返還艇あり】）にそろえる。返還艇が無く
+                  一部の勝式だけ不成立のときは、その旨を書く（BOA-558 の4） */}
+              {getRefundBoats(result).length > 0
+                ? t("result.refundTag")
+                : t("result.partialNoRaceTag")}
             </RaceCardBadge>
           )}
           {isCancelled ? (
@@ -152,8 +158,9 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
               {gradeConfig.label}
             </RaceCardBadge>
           )}
-          <span className="race-number">{race.raceNumber}R</span>
         </div>
+        {/* R番号はバッジの外に置く。狭いカードでバッジを2段目に送っても、会場名と同じ段に残す */}
+        <span className="race-number">{race.raceNumber}R</span>
       </div>
       {race.startTime && (
         <div className="race-info">

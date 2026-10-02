@@ -15,7 +15,11 @@ import {
   getRacerCurrentMotorStatus,
 } from "../services/racerService";
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
-import { isToday } from "../utils/dateUtils";
+import {
+  isRacerIndexable,
+  RACER_INDEX_ACTIVE_DAYS,
+} from "../utils/racerIndexPolicy";
+import { getDaysAgoJST, isToday } from "../utils/dateUtils";
 import "./RacerProfile.css";
 import { errorMessageOf } from "../utils/errorMessage.js";
 
@@ -91,10 +95,17 @@ export default function RacerProfile() {
   }, [racerId]);
 
   const hasNews = (data?.news?.length ?? 0) > 0;
-  // 成績データ（stats）単体はnoindex解除の条件にしない。profile未取得時は
-  // 表示名が「選手」フォールバックになりタイトルの一意性が保てないため
-  // （プロフィール未取得選手ページのnoindexテストで担保）
-  useRobotsMeta(!loading && !hasNews);
+  // インデックス判定は sitemap と共通（src/utils/racerIndexPolicy.js）。ニュースがある選手、または
+  // 現役の A1 選手（最新の出走が A1 で直近30日以内）を index にする（集客レーン、2026-10-02）。
+  // profile 未取得時は表示名が「選手」フォールバックになり title の一意性が保てないので、
+  // ニュースが無い選手は profile があるときだけ index にする（プロフィール未取得選手ページのnoindexテストで担保）
+  const indexable = isRacerIndexable({
+    hasNews,
+    latestGrade: data?.profile ? (data?.grade ?? null) : null,
+    latestRaceDate: data?.latestRaceDate ?? null,
+    activeSince: getDaysAgoJST(RACER_INDEX_ACTIVE_DAYS),
+  });
+  useRobotsMeta(!loading && !indexable);
 
   // 今節のモーター状況（直近出走）の日付が本日なら、その会場を選手ページの
   // 会場フィルタで「本日出走」として案内する（会場フィルタが全24会場から
@@ -105,9 +116,13 @@ export default function RacerProfile() {
     motorStatus && isToday(motorStatus.date) ? motorStatus.venueCode : null;
 
   const displayName = data?.profile?.name?.replace(/\s+/g, "") ?? "選手";
-  const title = `${displayName} 選手プロフィール | 龍神レーダー`;
+  // title・description は画面に表示されないメタ情報なので「競艇」を含めてよい（code-style.md 例外1の暫定措置。
+  // 役所への営業前に外す）。選手名＋成績で検索されるので、成績の語を前に置く（集客レーン、2026-10-02）
+  const title = data?.profile
+    ? `${displayName}（競艇）選手の成績・勝率・決まり手 | 龍神レーダー`
+    : `${displayName} 選手プロフィール | 龍神レーダー`;
   const description = data?.profile
-    ? `${displayName}選手のプロフィール（生年月日・支部・出身地等）、全国勝率推移・平均ST・決まり手傾向などの成績データ、ニュースをまとめて紹介。`
+    ? `${displayName}選手の競艇（ボートレース）成績データ。全国勝率・当地勝率の推移、平均ST、会場別成績、枠番別成績、決まり手傾向とプロフィール（支部・出身地等）をまとめて紹介。`
     : "選手プロフィール | 龍神レーダー";
   const canonicalUrl = `${SITE_URL}/racer/${racerId}`;
 

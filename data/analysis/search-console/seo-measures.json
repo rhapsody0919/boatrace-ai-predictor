@@ -112,6 +112,13 @@
       "id": "breadcrumb-structured-data",
       "description": "Breadcrumb コンポーネントを使う5ページ（会場・レース詳細・過去の予想・過去日付の会場一覧・/today）に BreadcrumbList の構造化データを出した（本番反映 12:16 JST ごろ）",
       "ref": "PR#1112"
+    },
+    {
+      "date": "2026-10-02",
+      "kind": "measure",
+      "id": "racer-index-a1",
+      "description": "現役の A1 選手（最新の出走が A1 で直近30日以内、10/2 時点で322人）の選手ページを index にし、title を「{名前}（競艇）選手の成績・勝率・決まり手」にした（本番反映 13:36 JST。/racer/3941 の index と title を確認）。sitemap への反映は同日 23:30 JST の自動生成から。A2 への拡大は 10/30 ごろの観測で判断",
+      "ref": "PR#1120"
     }
   ]
 }

@@ -1,0 +1,30 @@
+{
+  "$comment": "verify-e2e-recorded-network.js の許可リスト。e2e/fixtures.js は録画の再生（ADR-0077）の実装そのものなので、spec には禁止している書き方を正当に使う。code は該当行の内容（前後の空白を除く）、reason は残す理由。1エントリ＝1箇所。解消したらエントリを消す（残すと検査が落ちる）",
+  "entries": [
+    {
+      "file": "e2e/fixtures.js",
+      "code": "import { test as base, expect } from \"@playwright/test\";",
+      "reason": "fixtures.js 自身が「test as base」で本物の test を読み込み、test.extend でラップして export する実装。spec はここからではなく ./fixtures.js から test を import する"
+    },
+    {
+      "file": "e2e/fixtures.js",
+      "code": "if (E2E_MODE === \"live\") return route.fetch(options);",
+      "reason": "live モード（本番データ・実時刻）では録画の再生を使わないため、本物の route.fetch で素通りさせてよい"
+    },
+    {
+      "file": "e2e/fixtures.js",
+      "code": "() => route.fetch(options),",
+      "reason": "record モードで recordThrough に渡す実取得関数。取った応答を録画に書き出す fixtures.js 自身の実装"
+    },
+    {
+      "file": "e2e/fixtures.js",
+      "code": "return route.fetch(options);",
+      "reason": "replay で録画に無いリクエストを本番へ素通しする fetchRecorded 自身の実装（A改、notePassthrough で一覧に残す）"
+    },
+    {
+      "file": "e2e/fixtures.js",
+      "code": "response = await recordThrough(request, () => route.fetch());",
+      "reason": "record モードで context.route から本番の実応答を取って録画に書き出す fixtures.js 自身の実装"
+    }
+  ]
+}

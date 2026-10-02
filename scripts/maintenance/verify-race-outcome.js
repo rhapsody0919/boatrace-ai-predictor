@@ -227,9 +227,9 @@ function runChecks(m) {
     m.isPayoutAmountCountable({ status: "no_amount", amount: null }) === false,
   );
   check(
-    "払戻表の並びはモックどおり（単勝・複勝・3連単・3連複・2連単・2連複・拡連複）",
+    "払戻表の並びは公式の結果ページと同じ（3連単・3連複・2連単・2連複・拡連複・単勝・複勝。BOA-558 の5）",
     m.PAYOUT_BET_TYPES.map((b) => b.betType).join(",") ===
-      "win,place,3tan,3fuku,2tan,2fuku,wide",
+      "3tan,3fuku,2tan,2fuku,wide,win,place",
   );
   check(
     "3連単=trifecta・3連複=trio（race_results の列名の逆転を持ち込まない）",

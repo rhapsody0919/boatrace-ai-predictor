@@ -73,7 +73,15 @@ const AWARD_EXCLUDED_REASONS = new Set(["awardExcluded", "flying"]);
 const rankInBorder = (row, slots) =>
   row.rank !== null && row.rank !== undefined && row.rank <= slots;
 
-function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
+function RaceMeetTab({
+  raceId,
+  venueCode,
+  players,
+  focusedBoat,
+  onFocusBoat,
+  // 中止が確定したレース（BOA-658）。行われないレースに「今日の着順でこう動く」を出さない
+  isCancelled = false,
+}) {
   const { t } = useTranslation();
   // 着順の欄の公式の記号（エ・転 等）を、データ出走表と同じ言語ごとの表記にする
   const finishLabelOf = (finish) => {
@@ -204,15 +212,41 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   const seriesSplit = Boolean(board?.seriesRacerIds);
   // 節全体では何人いるか。分けたときに「なぜ半分になったのか」を数で示す。
   // `buildMeetRanking` を分けずにもう一度通すだけ（追加クエリ0本・48人ぶんの計算）
-  const meetTotal = seriesSplit
-    ? buildMeetRanking({ ...board, seriesRacerIds: null }).filter(
-        (r) => !r.withdrawn,
-      ).length
-    : rankedOnly.length;
+  // 出場者は出走表から数える（得点率の母集団ではなく。BOA-660）。取れなければ従来どおり
+  const entrantIds = board?.meetEntrantIds ?? null;
+  const seriesIdSet = seriesSplit ? new Set(board.seriesRacerIds) : null;
+  const entrantCount = Math.max(
+    entrantIds
+      ? entrantIds.filter((id) => !seriesIdSet || seriesIdSet.has(id)).length
+      : 0,
+    ranking.length,
+  );
+  const meetTotal = entrantIds
+    ? entrantIds.length
+    : seriesSplit
+      ? buildMeetRanking({ ...board, seriesRacerIds: null }).length
+      : ranking.length;
+  // 表の6艇のうちの選手か（凡例の出し分け。節の誰かに該当者が居るだけで出すと、
+  // 表に無い印の説明を読ませることになる。BOA-660）
+  const inTable = (r) => sortedPlayers.some((p) => p.racerId === r.racerId);
+  // 今節をまだ走っていない艇（このレースが今節の初戦）。行ごと消すと「欠場か」と
+  // 読み違えるので、行として出す（BOA-660、津 9/23 6R で6艇中3艇しか出なかった）
+  // **データが届く前は判定しない**。届く前は今節の走が0件なので6艇とも「まだ走って
+  // いない」になり、「節の出場は0人」と全艇「今節初戦」の表が一瞬出ていた
+  // （PR #1102 ファン評価2周目）
+  const notYetRun = board
+    ? sortedPlayers.filter(
+        (p) =>
+          !ranking.some((r) => r.racerId === p.racerId) &&
+          !absentOnly.some((r) => r.racerId === p.racerId),
+      )
+    : [];
   const border = rankedOnly[slots - 1]?.rate;
   // 表のボーダー表示は「節全体の順位」なので、選んだ選手の走数に依存しない
-  const showBorderBadge = !isAfterPrelim && !prelimOver && border !== undefined;
+  const showBorderBadge =
+    !isCancelled && !isAfterPrelim && !prelimOver && border !== undefined;
   const showBorder =
+    !isCancelled &&
     !isAfterPrelim &&
     !prelimOver &&
     mine &&
@@ -350,7 +384,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   // 残り走で取りうる最大得点（ドリーム戦の1着は12点）。無ければ予選配点で代用
   const remainingPrelimMaxPoints = board?.remainingPrelimMaxPointsByRacer ?? {};
   const forecastRows =
-    !prelimOver && !isAfterPrelim
+    !isCancelled && !prelimOver && !isAfterPrelim
       ? sortedPlayers
           .map((p) => ({
             player: p,
@@ -467,7 +501,9 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
       <p className="rmt-note">{t("meetTab.note")}</p>
 
       {/* 1. 6艇横断。レースを開いて最初に見るもの */}
-      {ranking.length > 0 && (
+      {/* 6艇とも今節初戦（初日の1R等）でも表を出す。表を出さないと1Rだけ見え方が
+          変わり、出場人数も出ない（PR #1102 ファン評価1周目） */}
+      {(ranking.length > 0 || notYetRun.length > 0) && (
         <div className="rmt-card">
           <h3 className="rmt-card-title">{t("meetTab.compareTitle")}</h3>
           <table className="rmt-compare">
@@ -592,23 +628,63 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                     {renderPretestCell(p)}
                   </tr>
                 ))}
+              {/* 今節をまだ走っていない艇（BOA-660） */}
+              {notYetRun.map((p) => (
+                <tr
+                  key={p.number}
+                  className={[
+                    "is-not-yet-run",
+                    p.number === selectedBoat ? "is-current" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  onClick={() => onFocusBoat(p.number)}
+                >
+                  {renderPlayerHead(p, [])}
+                  <td className="rmt-rate">—</td>
+                  {/* 中止のレースは走らないので「初戦」と書かない（ファン評価1周目） */}
+                  <td className="rmt-rank">
+                    {t(
+                      isCancelled
+                        ? "meetTab.notYetRunCancelled"
+                        : "meetTab.notYetRun",
+                    )}
+                  </td>
+                  {renderPretestCell(p)}
+                </tr>
+              ))}
             </tbody>
           </table>
           <p className="rmt-hint">{t("meetTab.rowHint")}</p>
           <p className="rmt-sub">
-            {ranking.some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS) && (
+            {ranking
+              .filter(inTable)
+              .some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS) && (
               <>{t("meetTab.smallSampleLegend")} </>
             )}
             {/* 賞典除外・途中帰郷の選手も節は走っているので、「出場」から外さない。
                 順位の対象の人数と分けて書く（ファン評価2周目: 出場50人なのに
                 前検51位の選手がいた） */}
-            {rankedOnly.length < ranking.length
-              ? t("meetTab.compareSubExcluded", {
-                  all: ranking.length,
-                  total: rankedOnly.length,
-                  excluded: ranking.length - rankedOnly.length,
-                })
-              : t("meetTab.compareSub", { total: rankedOnly.length })}
+            {/* Ｗ優勝戦で分けたときは「節の出場」と書かない。下の注記の
+                「節全体は◯人」と食い違って読める（BOA-660） */}
+            {ranking.length - rankedOnly.length + absentOnly.length > 0
+              ? t(
+                  seriesSplit
+                    ? "meetTab.compareSubSeriesExcluded"
+                    : "meetTab.compareSubExcluded",
+                  {
+                    all: entrantCount,
+                    total: rankedOnly.length,
+                    // 全部の走が欠場の選手も順位の対象外。数えないと「47人（対象42人・
+                    // 4人を除く）」と足し算が合わない（BOA-660）
+                    excluded:
+                      ranking.length - rankedOnly.length + absentOnly.length,
+                  },
+                )
+              : t(
+                  seriesSplit ? "meetTab.compareSubSeries" : "meetTab.compareSub",
+                  { total: entrantCount },
+                )}
             {/* 「予選後F」の意味（セルの title はタッチ端末で読めない。BOA-626）。
                 **表の6艇に印が出ているときだけ**断る。節の誰かに居るだけで出すと、
                 表に印が無いのに説明だけ出て「どこにあるのか」と迷う（ファン評価1周目） */}
@@ -622,12 +698,24 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
             ) && <> {t("meetTab.postPrelimFlyingNote")}</>}
             {/* 「欠場」の理由。セルの title はタッチ端末で読めないので本文にも書く
                 （BOA-504 ファン評価） */}
-            {absentOnly.length > 0 && <> {t("meetTab.absentNote")}</>}
+            {absentOnly.some(inTable) && <> {t("meetTab.absentNote")}</>}
+            {notYetRun.length > 0 && (
+              <>
+                {" "}
+                {t(
+                  isCancelled
+                    ? "meetTab.notYetRunCancelledNote"
+                    : "meetTab.notYetRunNote",
+                )}
+              </>
+            )}
             {/* 着順の並びの「欠」の意味と、得点率の分母から外していること
                 （一部欠場の開催でも書く。BOA-504 ファン評価） */}
-            {[...ranking, ...absentOnly].some((r) =>
-              r.finishes.includes(FINISH_ABSENT),
-            ) && <> {t("meetTab.finishAbsentNote")}</>}
+            {[...ranking, ...absentOnly]
+              .filter(inTable)
+              .some((r) => r.finishes.includes(FINISH_ABSENT)) && (
+              <> {t("meetTab.finishAbsentNote")}</>
+            )}
             {showBorderBadge && (
               <>
                 {" "}
@@ -651,7 +739,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
                     showBorderBadge
                       ? "meetTab.seriesSplitNote"
                       : "meetTab.seriesSplitNoteNoBorder",
-                    { total: rankedOnly.length, meetTotal },
+                    { meetTotal },
                   )
                 : t("meetTab.seriesMixedNote", { total: rankedOnly.length })}
             </p>
@@ -674,9 +762,11 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
       {board === undefined && (
         <p className="rmt-loading">{t("basicInfo.loading")}</p>
       )}
-      {board !== undefined && ranking.length === 0 && (
-        <p className="rmt-empty">{t("basicInfo.meetEmpty")}</p>
-      )}
+      {board !== undefined &&
+        ranking.length === 0 &&
+        notYetRun.length === 0 && (
+          <p className="rmt-empty">{t("basicInfo.meetEmpty")}</p>
+        )}
 
       {/* 1a. 得点率早見（6艇×着順）。公式と同じ行列で、ボーダーの目安との
           関係を色で示す。「当確」という断定はしない（番組が未確定で
@@ -1094,7 +1184,14 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
             )}
           </p>
         )}
-        {mine && prelimOver && (
+        {/* 中止のレースでは早見・目安を出さないので、その理由をここに出す（BOA-658。
+            丸一日中止の日に、前日までの数字で「今日の着順でこう動く」が出ていた） */}
+        {isCancelled && (
+          <p className="rmt-forecast rmt-forecast-settled">
+            {t("meetTab.cancelledNoForecast")}
+          </p>
+        )}
+        {mine && !isCancelled && prelimOver && (
           // 早見（6艇分）は予選中しか出さないので、終わっている理由をここに出す。
           // 「もう動かない」は勝負駆けの読みを決める情報なので、補足より一段強く出す
           // （BOA-636。375pxで10.4pxの灰色だった）
@@ -1124,7 +1221,11 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
         {records === undefined ? (
           <p className="rmt-loading">{t("basicInfo.loading")}</p>
         ) : meet.length === 0 ? (
-          <p className="rmt-empty">{t("basicInfo.meetEmpty")}</p>
+          <p className="rmt-empty">
+            {t(
+              isCancelled ? "meetTab.meetEmptyCancelled" : "basicInfo.meetEmpty",
+            )}
+          </p>
         ) : (
           <>
             {/* 今節の走順に並べた小さな線。数字の羅列だと8走ぶんの上下を
