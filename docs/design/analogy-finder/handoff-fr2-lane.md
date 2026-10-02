@@ -54,3 +54,17 @@
 2. 文言の回答を受けて screens.md を確定
 3. 受け入れ E2E（`acceptance-test-writer`、spec.md と screens.md だけを渡す）→ `design-reviewer`（`/step4` の事前条件。spec・screens・plan・tasks・ADR-0082/0083・120 を渡す）
 4. 指摘の反映 → オーケストレーター経由で実装の承認
+
+## 7. 2026-10-02 夜の状態（§6 の 1〜3 は完了）
+- **Q6 は 120 に入れた**: 母集団に `round`・`grade`・`b1_motor_band`、`get_analogy_similar(race_id, depth, round, grade, motor)` が `extras`・`filters`・`n_if_added`・`n_by_depth_filtered` を返す。スナップショットには入れない。PGlite の検証は57項目すべて通過
+  - 長期分のラウンドは `analogy_round_from_kb`（stage_kind を土台に、準優・優勝戦は本体の規則で上書き）。features.py の `round_from_kb_kind` とは違う（FR-1 側への申し送り事項）
+  - モーター2連率 0 は不明として順位から除く（cm2.py とは違う）
+  - 本番の読み取りで確認: race_grade・race_stage・motor_2rate は朝 5:01〜5:09 の初期化で入る（9/28〜10/02 の 768R で全部埋まっていた）
+- **1-a の文言はユーザー承認（推奨案）で screens.md に確定**
+- **受け入れ E2E** `e2e/acceptance/analogy-finder.spec.js`（51件、実装前で今は落ちる）。similar の応答は表示用の形を仮定しているので、T4-2 の着手時にモックを RPC の形に直す（plan「API」）。race-contribution の `status` の名前は E2E に合わせて plan に書いた
+- **design-reviewer の指摘10件**: 1・2・4〜10 は反映済み。3（見出し Q7「寄与度の上位2つのテーマで似ている過去レース」が 1-a のレースごとの上位テーマと食い違いうる）はオーケストレーター経由でユーザーに再確認中
+- 適用後に確かめること: anon の `statement_timeout` は 3s（関数の SET 5s が効くか不明）。深さ1＋任意の3条件で匿名の RPC の所要時間を測る。create_analogy_snapshots（service_role 8s）も同様
+
+### 次にやること
+1. Q7 の再確認の回答を screens に反映する
+2. 実装の承認（オーケストレーター経由）→ `/step4`（T1-1 の適用依頼から）
