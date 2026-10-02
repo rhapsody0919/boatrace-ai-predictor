@@ -43,6 +43,7 @@ import {
   flyingRacerIdsInMeet,
   postPrelimFlyingRacerIds,
   withdrawnByAbsence,
+  groupExcludedRacers,
   runFinishLabel,
   officialMarkOf,
 } from "../../src/components/race/seriesPoints.js";
@@ -1738,6 +1739,32 @@ check(
     new Map([[2, 12]]),
   );
   check("今節のモーターの行が無ければ採らない", onlyOther.has(2), false);
+}
+
+// 順位の対象外の内訳は理由ごとに、今節F → 賞典除外 → 途中帰郷 → 欠場 の順でまとめる。
+// 公式の備考による途中帰郷も「途中帰郷」に入れ、順位の付いた選手は入れない（BOA-697）
+{
+  const groups = groupExcludedRacers(
+    [
+      { racerId: 1, playerName: "山田　太郎", withdrawn: false, excludedReason: null },
+      { racerId: 2, playerName: "鈴木一郎", withdrawn: true, excludedReason: "withdrawn" },
+      { racerId: 3, playerName: "佐藤花子", withdrawn: true, excludedReason: "flying" },
+      { racerId: 4, playerName: "高橋", withdrawn: true, excludedReason: "officialWithdrawn" },
+      { racerId: 5, playerName: "田中", withdrawn: true, excludedReason: "awardExcluded" },
+    ],
+    [{ racerId: 6, playerName: "伊藤" }],
+  );
+  check(
+    "理由ごとにまとめ、順位の付いた選手を入れない",
+    groups,
+    [
+      { reason: "flying", names: ["佐藤花子"] },
+      { reason: "awardExcluded", names: ["田中"] },
+      { reason: "withdrawn", names: ["鈴木一郎", "高橋"] },
+      { reason: "absent", names: ["伊藤"] },
+    ],
+  );
+  check("対象外が居なければ空", groupExcludedRacers([], []), []);
 }
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);
