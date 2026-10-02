@@ -26,7 +26,7 @@
   },
   "meta": {
     "title": "Ryujin Radar - Free AI Boat Race Predictions & Data Analysis",
-    "description": "AI-powered predictions for Japanese boat racing (Kyotei). Our AI analyzes 45 data points per race to forecast outcomes — completely free, no sign-up required."
+    "description": "AI-powered predictions for Japanese boat racing (Kyotei). Our AI analyzes racer stats, motors, exhibitions and start timing to forecast outcomes — completely free, no sign-up required."
   },
   "venues": {
     "1": "Kiryu",
@@ -355,7 +355,7 @@
     }
   },
   "home": {
-    "introBannerText": "Ryujin Radar - Visualize boat racing. When in doubt, trust the data. | 45+ data points analyzed, including turn predictions and the Upset Index. Learn more →",
+    "introBannerText": "Ryujin Radar - Visualize boat racing. When in doubt, trust the data. | Data analyzed, including turn predictions and the Upset Index. Learn more →",
     "introBannerClose": "Close",
     "sgNow": {
       "region": "SG race in progress",

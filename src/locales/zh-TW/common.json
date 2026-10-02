@@ -26,7 +26,7 @@
   },
   "meta": {
     "title": "龍神雷達 - 免費賽艇AI預測與數據分析",
-    "description": "AI 免費預測日本賽艇（BOAT RACE / Kyotei）。AI 分析每場比賽 45 項數據並預測結果 — 完全免費，無需註冊。"
+    "description": "AI 免費預測日本賽艇（BOAT RACE / Kyotei）。AI 分析選手成績、馬達、展示航走與起跑數據並預測結果 — 完全免費，無需註冊。"
   },
   "venues": {
     "1": "桐生",
@@ -351,7 +351,7 @@
     }
   },
   "home": {
-    "introBannerText": "龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。| 分析轉彎預測、內道崩盤指數等45項以上數據。了解更多 →",
+    "introBannerText": "龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。| 分析轉彎預測、內道崩盤指數等數據。了解更多 →",
     "introBannerClose": "關閉",
     "sgNow": {
       "region": "SG賽事進行中",
