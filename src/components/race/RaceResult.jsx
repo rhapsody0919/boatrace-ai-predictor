@@ -820,6 +820,15 @@ function RaceResult({ prediction, raceId }) {
         </div>
       ) : (
         <div className="rr-table">
+          {/* 列見出し。公式の結果ページと同じ「着・枠・ボートレーサー・レースタイム」に、
+              スタートの図の「ST」を足す。不成立で全行のタイムが「—」になっても、何の列か分かる */}
+          <div className="rr-row-head" aria-hidden="true">
+            <span>{t("result.columns.position")}</span>
+            <span>{t("result.columns.boat")}</span>
+            <span>{t("result.columns.racer")}</span>
+            <span className="rr-head-st">{t("result.columns.start")}</span>
+            <span className="rr-head-time">{t("result.columns.time")}</span>
+          </div>
           {rows.map((row) => {
             const { key, position, boat, time } = row;
             const player = findPlayer(boat);

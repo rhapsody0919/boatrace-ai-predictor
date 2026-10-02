@@ -23,6 +23,28 @@ async function hitAtRowNearBottom(page) {
   await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
   const row = page.locator(".rmt-compare tbody tr").nth(2);
   await expect(row).toBeVisible({ timeout: 25000 });
+  // 表が見えた直後は、タブの上側・下側にまだ描画中の部分があり、行が画面下端より
+  // 上にあることがある（ページ先頭なので下端へ寄せられず nearBottom が false になる。
+  // PR #1102 で毎回落ちた）。networkidle は負荷が高いとデータの要求より前に返るので
+  // 使わず（#936 の分析）、具体的な要素で待つ: 6艇の行がそろい、読み込み中の表示が
+  // 消え、行の位置が間を空けて測っても動かなくなるまで
+  await expect(page.locator(".rmt-compare tbody tr")).toHaveCount(6, {
+    timeout: 30000,
+  });
+  await expect(
+    page.locator(".race-meet-tab .rmt-loading, .loading-state"),
+  ).toHaveCount(0, { timeout: 30000 });
+  await expect
+    .poll(
+      async () => {
+        const a = (await row.boundingBox())?.y;
+        await page.waitForTimeout(300);
+        const b = (await row.boundingBox())?.y;
+        return a !== undefined && a === b;
+      },
+      { timeout: 30000 },
+    )
+    .toBe(true);
   // バナーは下からせり上がる（0.3秒）。途中で測らない
   await page.evaluate(() =>
     Promise.all(

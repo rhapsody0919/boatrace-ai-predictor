@@ -6689,7 +6689,8 @@ export const supabaseDataService = {
     // v20: 予選終了の日目を series_day から出す（中止の日を数えない、BOA-578）
     // v21: 予選後に今節Fを切った選手（postPrelimFlyingRacerIds）を足した（BOA-626）
     // v22: 丸一日レースが無かった日（noRaceDays）を足した（BOA-636）
-    return withCache(`meet-scoreboard-v22-${raceId}`, async () => {
+    // v23: 節の出場者（meetEntrantIds）を足した（BOA-660）
+    return withCache(`meet-scoreboard-v23-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7119,6 +7120,12 @@ export const supabaseDataService = {
         // 2シリーズを混ぜて順位を振ると、節内順位・出場人数・準優の目安が
         // すべて実際の勝ち上がり争いとズレる
         seriesRacerIds: currentSeries ? [...currentSeries] : null,
+        // **節の出場者**（表示日までの出走表に載った選手、当日の番組を含む。BOA-660）。
+        // 得点率の母集団（表示中のレースより前に走った選手）で数えると、初日の2Rで
+        // 「節の出場は6人」になった。追加クエリ0本
+        meetEntrantIds: [
+          ...new Set(meetRows.map((e) => e.racer_id).filter((id) => id != null)),
+        ],
         // **節がＷ開催か**（`seriesRacerIds` とは別）。両方の選手が乗るレースでは
         // 分けられないので `seriesRacerIds` が null になるが、そのときも
         // 「なぜ節全体で出しているのか」を画面が断れるようにする（BOA-511）
