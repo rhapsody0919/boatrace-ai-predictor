@@ -3,8 +3,10 @@
  * flying_rate / total_races）の取得と算出（BOA-581）。
  *
  * 定義:
- *   - total_races: 出走表（race_entries）に対応する race_start_timings の行数。F・L・欠場を含む
- *   - flying_rate: F の走 ÷ total_races（分母は F・L・欠場を含む全走）
+ *   - total_races: 出走表（race_entries）に対応する race_start_timings の行のうち、欠場（finish_mark='欠'）を除いた数。
+ *     F・L は含む。欠場艇にも行がある（9/21 以降の結果ページの取得と、K からの補完）ため、行数をそのまま数えると
+ *     欠場を出走に数えてしまう（事故率の分母と同じく、欠場は出走に入れない）
+ *   - flying_rate: F の走 ÷ total_races（分母は F・L を含み、欠場を含まない）
  *   - avg_st / st_stddev: F 以外で、ST が記録されている走（L・欠場は ST が NULL のため入らない）
  *   - avg_st_last_30: 上と同じ走のうち、新しい順に30走（F 以外の直近30走）
  *
@@ -39,7 +41,7 @@ const round = (value, digits) => Number(value.toFixed(digits));
  * 入力の並び順には依存しない（race_id 降順・boat_number 降順に並べ直す）。
  *
  * @param {Array<{race_id: string, boat_number: number}>} entries - 対象選手の出走
- * @param {Array<{race_id: string, boat_number: number, start_timing: number|string|null, is_flying: boolean|null}>} timings
+ * @param {Array<{race_id: string, boat_number: number, start_timing: number|string|null, is_flying: boolean|null, finish_mark?: string|null}>} timings
  * @returns {{avg_st: number|null, avg_st_last_30: number|null, st_stddev: number|null, flying_rate: number, total_races: number}|null}
  */
 export function computeRacerStStats(entries, timings) {
@@ -48,6 +50,7 @@ export function computeRacerStStats(entries, timings) {
   );
   const racerTimings = timings
     .filter((t) => entryKeys.has(`${t.race_id}_${t.boat_number}`))
+    .filter((t) => t.finish_mark !== "欠")
     .sort(
       (a, b) =>
         b.race_id.localeCompare(a.race_id) || b.boat_number - a.boat_number,
@@ -116,7 +119,7 @@ export async function fetchStartTimingsForEntries(client, entries) {
     const rows = await withRetry("race_start_timings取得エラー", () =>
       fetchAll(
         "race_start_timings",
-        "race_id, boat_number, start_timing, is_flying",
+        "race_id, boat_number, start_timing, is_flying, finish_mark",
         (q) =>
           q
             .in("race_id", chunk)
