@@ -1,16 +1,16 @@
 import "./RateBar.css";
 
 /**
- * セルの中に横棒と値ラベルを出す小さな部品（BOA-428）。
+ * セルの中に値ラベルと横棒を出す小さな部品（BOA-428）。
  *
  * レース詳細の6艇表（公式2連率、塗りは艇色）と、分析ツールの「モーターランキング」
  * （2連率、塗りは中立色）で使う。良し悪しで棒を塗り分けない（UI統一ルール R4）。
  * 最良は値ラベルで示す（`best`。同じ値の最良が複数あれば、どれも true）。見た目は共通クラス
  * `.ind-best`（src/styles/indicators.css、UI統一ルール R1）。
  *
- * 値ラベルは棒の右端に重ねた札にする。札の背景を `--surface-card` にして、2号艇（黒）・
- * 4号艇（青）の塗りの上でも読めるようにする。札を棒の外に出すと、375px で6艇表の列幅が
- * 約36px増え、会場内順位まで横スクロールなしで入らなくなる（モックで実測）。
+ * 値ラベルを上、細い棒を下に置く2段にする。棒の上に札を重ねる形だと、375px（棒は約56px）で
+ * 札（約44px）が棒の大半を隠し、長さの差が読めなかった。文字を棒の塗りの上に直接書く形は、
+ * 艇色（2号艇の黒・4号艇の青）の上で読めない
  *
  * @param {object} props
  * @param {number|null} props.value 棒の長さに使う値
@@ -26,15 +26,17 @@ export default function RateBar({ value, max, fill, best = false, label }) {
       : null;
   return (
     <div className="rate-bar">
-      {ratio !== null && (
-        <div
-          className="rate-bar-fill"
-          style={{ width: `${(ratio * 100).toFixed(2)}%`, background: fill }}
-        />
-      )}
       <span className={`rate-bar-label${best ? " is-best ind-best" : ""}`}>
         {label}
       </span>
+      <div className="rate-bar-track">
+        {ratio !== null && (
+          <div
+            className="rate-bar-fill"
+            style={{ width: `${(ratio * 100).toFixed(2)}%`, background: fill }}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -767,7 +767,7 @@ function MotorConditionChart({
                             best={officialRateBestBoats.has(row.boat_number)}
                             label={
                               officialRates[i] !== null
-                                ? officialRates[i].toFixed(1)
+                                ? `${officialRates[i].toFixed(1)}%`
                                 : "-"
                             }
                           />

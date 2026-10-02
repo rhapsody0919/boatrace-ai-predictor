@@ -15,10 +15,10 @@ const readTable = (page) =>
     heads: [...t.querySelectorAll("thead th")].map((h) => h.textContent.trim()),
     rows: [...t.querySelectorAll("tbody tr")].map((tr) => {
       const fill = tr.querySelector(".rate-bar-fill");
-      const track = tr.querySelector(".rate-bar");
+      const track = tr.querySelector(".rate-bar-track");
       const label = tr.querySelector(".rate-bar-label");
       return {
-        value: Number(label?.textContent),
+        value: parseFloat(label?.textContent),
         ratio: fill
           ? fill.getBoundingClientRect().width /
             track.getBoundingClientRect().width
