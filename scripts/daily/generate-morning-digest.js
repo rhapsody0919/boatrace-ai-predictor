@@ -43,6 +43,7 @@ import {
 import { isDirectRun } from "../lib/isDirectRun.js";
 import {
   countPriorMotorRuns,
+  fetchMeetStartDate,
   fetchMotorStartDates,
   isUnratedMotor,
 } from "../lib/motorUnrated.js";
@@ -178,11 +179,18 @@ async function markUnratedMotors(rows, entries, date) {
     entries.map((e) => [`${e.race_id}:${e.boat_number}`, e.motor_number]),
   );
   const startDateByVenue = await fetchMotorStartDates(supabase, date);
+  const meetStartByVenue = new Map();
   for (const r of zeroRows) {
+    if (!meetStartByVenue.has(r.venue_code)) {
+      meetStartByVenue.set(
+        r.venue_code,
+        await fetchMeetStartDate(supabase, r.venue_code, date),
+      );
+    }
     const priorRuns = await countPriorMotorRuns(supabase, {
       venueCode: r.venue_code,
       motorNumber: motorByKey.get(`${r.race_id}:${r.boat_number}`) ?? null,
-      raceDate: r.race_id.slice(0, 10),
+      beforeDate: meetStartByVenue.get(r.venue_code),
       startDateByVenue,
     });
     if (isUnratedMotor(r.motor_2rate, priorRuns)) {
@@ -859,7 +867,11 @@ async function registerSnsTopic({ date, dayRow, rows }) {
   const marker = snsTopicMarker(date);
   const existing = await findTopicByTextMarker(marker);
   if (existing) {
-    return { registered: false, reason: "already-registered", topicId: existing.id };
+    return {
+      registered: false,
+      reason: "already-registered",
+      topicId: existing.id,
+    };
   }
 
   const category = await getActiveTopicCategoryByKey(SNS_TOPIC_CATEGORY_KEY);
