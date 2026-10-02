@@ -754,6 +754,11 @@ function RaceMeetTab({
                 ? "meetTab.rankSourceNoteOfficial"
                 : "meetTab.rankSourceNote",
             )}
+            {/* 予選の後の扱い（Fは外さない・帰郷は外す）は、予選が終わってから
+                関係する話なので、予選中は出さない（注記が長くなるだけだった） */}
+            {!usesOfficialScore && prelimOver && (
+              <> {t("meetTab.rankSourceNoteAfterPrelim")}</>
+            )}
           </p>
           <p className="rmt-source">{t("basicInfo.meetPretestSource")}</p>
         </div>

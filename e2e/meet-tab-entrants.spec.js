@@ -119,3 +119,18 @@ for (const path of ["/race/2026-09-25-01-07", "/en/race/2026-09-25-01-07"]) {
     expect(minGap).toBeGreaterThanOrEqual(6);
   });
 }
+
+test("予選の最終日から、予選中に帰った選手を順位の対象から外す", async ({
+  page,
+}) => {
+  // 桐生 9/23（予選の最終日）。北川・田中は 9/22 が最後の走で、9/23 の番組に
+  // 1走も無い。以前は予選の翌日（または最終日）まで順位と準優の目安の計算に残った
+  await openMeetTab(page, "2026-09-23-01-09");
+  await expect(page.locator(".rmt-sub").first()).toContainText(
+    "同じ優勝戦をめざすのは24人（順位の対象は21人。賞典除外・途中帰郷・欠場の3人を除く）",
+  );
+  // 予選の後の扱いの説明は、予選が終わるまで出さない
+  await expect(page.locator(".rmt-rank-note")).not.toContainText(
+    "予選の後に帰った",
+  );
+});

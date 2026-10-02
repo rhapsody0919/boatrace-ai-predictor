@@ -40,7 +40,7 @@ import {
   isAbsentStartRow,
   flyingRacerIdsInMeet,
   postPrelimFlyingRacerIds,
-  withdrawnBeforePrelimEnd,
+  withdrawnByAbsence,
   runFinishLabel,
   officialMarkOf,
 } from "../components/race/seriesPoints.js";
@@ -6692,7 +6692,8 @@ export const supabaseDataService = {
     // v22: 丸一日レースが無かった日（noRaceDays）を足した（BOA-636）
     // v23: 節の出場者（meetEntrantIds）を足した（BOA-660）
     // v24: 予選中に帰った選手を予選の翌日から外す・過去のレースは後の日付の前検も使う（BOA-674）
-    return withCache(`meet-scoreboard-v24-${raceId}`, async () => {
+    // v25: 途中帰郷を、前の日まで走っていて表示日に1走も無い選手として全日程で外す
+    return withCache(`meet-scoreboard-v25-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -7022,37 +7023,12 @@ export const supabaseDataService = {
             flying.map((id) => [id, "flying"]),
           );
 
-          // **予選中に帰った選手**は、予選が終わった翌日から外す（BOA-674）。
-          // 公式の得点率一覧も予選終了時点で外している。最終日まで待つと、
-          // 最終日に下の順位がまとめて繰り上がった
-          for (const id of withdrawnBeforePrelimEnd(
-            meetRows,
-            prelimEndRaceIdOf(conditions ?? []),
-            date,
-          )) {
+          // **途中帰郷**: 前の日まで走っていたのに、表示日に1走も組まれていない選手。
+          // 予選中でも予選の後でも、その日から外す（withdrawnByAbsence の実測を参照）。
+          // 以前は最終日まで待っていたため、予選中に帰った選手が予選の最終日の
+          // 準優の目安の計算に残っていた
+          for (const id of withdrawnByAbsence(meetRows, date)) {
             if (!reasons[id]) reasons[id] = "withdrawn";
-          }
-
-          // 途中帰郷は、節の最終日に1度も出走が無い選手。
-          // 判定は2026-09-28に実測で裏を取った:
-          //   若松G1 … 該当2名が公式の「途中帰郷」2名と完全一致。除くと
-          //             推定ボーダーが 5.67 → 5.60 になり実ボーダーと**完全一致**
-          //   桐生   … 該当5名は全員、他会場でも走っておらず9/22〜9/24で出走が
-          //             途切れている（節の前後半でメンバーが入れ替わる形ではない）
-          // **節が終わるまでは判定できない**（最終日が未来なので）。
-          // `is_final_day` が取れていて、その日を過ぎている場合だけ有効にする
-          const finalDayRow = (conditions ?? []).find((c) => c.is_final_day);
-          const finalDay = finalDayRow?.race_id.slice(0, 10) ?? null;
-          if (finalDay && date >= finalDay) {
-            const ranAtFinalDay = new Set(
-              meetRows
-                .filter((e) => e.race_id.startsWith(finalDay))
-                .map((e) => e.racer_id),
-            );
-            for (const id of new Set(meetRows.map((e) => e.racer_id))) {
-              if (!ranAtFinalDay.has(id) && !reasons[id])
-                reasons[id] = "withdrawn";
-            }
           }
           return {
             withdrawnRacerIds: Object.keys(reasons).map(Number),
