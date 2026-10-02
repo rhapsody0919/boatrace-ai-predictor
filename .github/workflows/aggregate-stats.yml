@@ -32,3 +32,12 @@ jobs:
           TZ: 'Asia/Tokyo'
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      # 会場×グレード×艇番の横断統計（venue_grade_boat_stats、BOA-263）。2026-02-04 以降の全レース（約3.7万件）を
+      # 読み、532セルのうち値の変わったものだけを書く（2026-10-02 の実測で約20秒）。定期実行が無く 9/15 から
+      # 止まっていた（BOA-694）。選手の集計と同じく、その日の結果が出そろった後の 23:00 JST に回す
+      - name: Update venue x grade x boat stats
+        run: node scripts/daily/calculate-venue-grade-stats.js
+        env:
+          TZ: 'Asia/Tokyo'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

@@ -443,7 +443,7 @@ Linearへの起票は行っていない。以下は、起票できる粒度で�
 
 | ワークフロー | 起動 | 対象外の理由 |
 |---|---|---|
-| `aggregate-stats.yml` | schedule（23:00 JST指定）＋cron-job.orgのdispatch（毎日23:00） | DBの集計（選手・会場統計）。外部取得なし |
+| `aggregate-stats.yml` | schedule（23:00 JST指定）＋cron-job.orgのdispatch（毎日23:00） | DBの集計（選手・会場統計・会場×グレード×艇番の統計 venue_grade_boat_stats。最後のものは BOA-694 で追加）。外部取得なし |
 | `calculate-accuracy.yml` | schedule（23:30 JST指定） | DBの集計（的中率、キャッシュ更新）。外部取得なし |
 | `update-outcome-distribution.yml`、`update-nige-outcome-distribution.yml`、`update-losing-technique-stats.yml`、`update-top-start-stats.yml`、`update-winning-technique-stats.yml`、`update-exhibition-time-top-stats.yml` | schedule（00:30〜00:44 JST指定） | DBの集計（出目分布・決まり手・スタート・展示タイム）。外部取得なし |
 | `generate-moriarty.yml`、`update-moriarty.yml`、`train-moriarty.yml` | schedule | 買い目推奨の生成・更新・学習。外部取得なし |

@@ -38,6 +38,7 @@ const TARGETS = {
   weatherInfo: "src/components/race/weatherInfo.js",
   dateUtils: "src/utils/dateUtils.js",
   prevResult: "src/utils/prevResult.js",
+  nextOpenDate: "src/utils/nextOpenDate.js",
   meetGrouping: "src/utils/meetGrouping.js",
 };
 
@@ -1429,7 +1430,41 @@ function suiteMeetGrouping(m, check) {
   );
 }
 
+// --- nextOpenDate（BOA-225）: 非開催会場の次開催日。race_series の 2026-10-02 時点の形
+function suiteNextOpenDate(m, check) {
+  const today = "2026-10-02";
+  const rows = [
+    // 平和島: 期間中（最終日が翌日）。後ろに次の節があっても次開催は出さない
+    { venue_code: 4, start_date: "2026-09-28", end_date: "2026-10-03" },
+    { venue_code: 4, start_date: "2026-10-10", end_date: "2026-10-15" },
+    // 桐生: 今日が節の最終日。期間中なので出さない
+    { venue_code: 1, start_date: "2026-09-27", end_date: "2026-10-02" },
+    // 戸田: 次の節が2つ。早い方
+    { venue_code: 2, start_date: "2026-10-20", end_date: "2026-10-25" },
+    { venue_code: 2, start_date: "2026-10-08", end_date: "2026-10-13" },
+    // 常滑: 明日が初日
+    { venue_code: 8, start_date: "2026-10-03", end_date: "2026-10-08" },
+  ];
+  const got = m.computeNextOpenDates(rows, today);
+  check(
+    "computeNextOpenDates: 期間中の会場（最終日を含む）は出さず、未来の節は最も早い開始日",
+    Object.fromEntries([...got].sort((a, b) => a[0] - b[0])),
+    { 2: "2026-10-08", 8: "2026-10-03" },
+  );
+  check(
+    "computeNextOpenDates: 行が無ければ空",
+    m.computeNextOpenDates([], today).size,
+    0,
+  );
+  check(
+    "formatMonthDay: ゼロ埋めしない M/D",
+    m.formatMonthDay("2026-10-05"),
+    "10/5",
+  );
+}
+
 const SUITES = {
+  nextOpenDate: suiteNextOpenDate,
   prevResult: suitePrevResult,
   basicInfoStats: suiteBasicInfoStats,
   raceStatus: suiteRaceStatus,
@@ -1627,6 +1662,18 @@ const MUTANTS = [
     "const jstNow = now;\n  const diffMs",
   ],
   ["dateUtils", "isWithinDays の未来日の除外を外す", " && diffDays >= 0;", ";"],
+  [
+    "nextOpenDate",
+    "節の期間中の会場にも次開催を出す",
+    "for (const code of inSeries) next.delete(code);",
+    "",
+  ],
+  [
+    "nextOpenDate",
+    "次の節の早い方を選ばない",
+    "row.start_date < current",
+    "row.start_date > current",
+  ],
   [
     "prevResult",
     "今節の前走で記号を見ずに着順を出す（BOA-576 の退行）",

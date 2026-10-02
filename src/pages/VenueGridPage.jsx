@@ -33,6 +33,7 @@ import { getLanguage, localizePath } from "../config/languages";
 import { getFeaturedPosts, getLatestPosts } from "../data/blogPosts";
 import { formatDate } from "../utils/formatters";
 import { getTodayJST } from "../utils/dateUtils";
+import { computeNextOpenDates } from "../utils/nextOpenDate";
 import {
   formatDateShortLocalized,
   formatDateLongLocalized,
@@ -120,6 +121,28 @@ function useTodayVenues() {
   };
 }
 
+// 本日用: 非開催会場の次開催日（BOA-225）。節データは補助情報なので、取得に失敗しても
+// 会場グリッドは出し、次開催日だけ出さない（従来の「本日開催なし」表示に戻る）
+function useNextOpenDates() {
+  const [nextOpenDates, setNextOpenDates] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    const today = getTodayJST();
+    dataService
+      .getUpcomingSeries(today)
+      .then((rows) => {
+        if (!cancelled) setNextOpenDates(computeNextOpenDates(rows, today));
+      })
+      .catch((err) => {
+        console.error("次開催日（race_series）の取得に失敗:", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return nextOpenDates;
+}
+
 // 過去日付用: getPredictionsを会場別にグループ化
 function usePastVenues(date) {
   const { races, loading, error } = useDatePredictions(date);
@@ -139,6 +162,7 @@ function TodayVenueGridPage() {
     isRefreshing,
     handleRefresh,
   } = useTodayVenues();
+  const nextOpenDates = useNextOpenDates();
 
   return (
     <div className="app">
@@ -214,6 +238,7 @@ function TodayVenueGridPage() {
                     venuesData={venuesData}
                     getVenueLink={(code) => localize(`/venue/${code}`)}
                     nowHHMM={nowHHMM}
+                    nextOpenDates={nextOpenDates}
                   />
                 )}
               </>
