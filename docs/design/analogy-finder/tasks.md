@@ -13,7 +13,7 @@
 
 ## T0 準備
 - [x] T0-0 FR-2 の類似の定義の比べ直し → 層別 S*（2026-10-02 ユーザー決定）。軸の上限を外した前向き選択でも S* のまま（[fr2-strat-result.md](./analysis/fr2-strat-result.md) 4）。技術判断は ADR-0082、マイグレーションは 120
-- [ ] T0-1 ユーザー確認（モック https://claude.ai/artifact/C8UpMVkF4G3jaZAvJGYtna）: Q1 案A（チップ）／案B（チップ＋輪）、Q2 末尾からだけ外す、Q3 200件未満は自動で外す、Q4 割合は件数÷n（平滑化しない）、Q5 任意で条件を足すチップを作るか。回答で spec FR-2・screens・T7 を直す
+- [x] T0-1 ユーザー確認（2026-10-02）: screens.md の Q1〜Q7（縦の1本の流れ・末尾からだけ外す・200件未満は自動で外す・件数÷n・「ほかのテーマでも絞る」を作る・見出し）と 1-a の文言。回答を spec FR-2・screens・T7 に反映済み
 - [x] T0-1b BOA-635 のレーンと行の渡し方を合意（2026-10-02）。120 に `get_analogy_similar_races`（自動の深さ・最大2,000件）を足した（plan「BOA-635 との接続」）
 - [ ] T0-2 干渉効果のコールアウトに出すパターンを実データで選ぶ（spec FR-3。人が決めた1例に頼らない）。類似レースの層の中で（`course_flow` の件数から）、1着の決まり手×進入コースごとに2着の分布が全体から最も離れる組み合わせを上位から選び、n の下限と一緒に `analysis/` に記録する
 - [ ] T0-3 FR-3 の3着の段の注記（件数が少ないとき）の n の目安を決めて spec に書く（小標本フラグはレース数で数えると決めた。screens の表）
@@ -23,7 +23,7 @@
 
 ## T1 本番の器
 - [x] T1-0 マイグレーション 118（FR-1）は本番適用済み
-- [ ] T1-1 マイグレーション 120 の本番適用をユーザーに依頼する（書き込み SQL だけを渡す）。適用後、読み取りで2表・公開ポリシー2本・匿名の EXECUTE が6関数だけであること（120 末尾の確認 SQL）を確かめ、APPLIED.md を「適用済み」に直す。`check-anon-access.js` の ANON_RPCS は 120 の PR で更新済み
+- [ ] T1-1 マイグレーション 120 の本番適用をユーザーに依頼する（書き込み SQL だけを渡す）。適用後、読み取りで2表・公開ポリシー2本・匿名の EXECUTE が13本（RPC 2本と読み取りの関数11本）だけであること（120 末尾の確認 SQL が正）を確かめ、APPLIED.md を「適用済み」に直す。`check-anon-access.js` の ANON_RPCS は 120 の PR で更新済み
 - [ ] T1-2 長期分の初回投入（`backfill-analogy-pool.js`、3か月ずつ。ユーザーが実行）。前後でダッシュボードの Disk IO を確認する
 - [ ] T1-3 （FR-1 の残り）週次学習の dispatch 用の fine-grained PAT を作り、Vercel の環境変数 `GITHUB_ACTIONS_DISPATCH_TOKEN` に入れる（ユーザーの作業）。FR-2 には要らない
 
@@ -72,12 +72,12 @@
 
 ## T4 API
 - [ ] T4-1 `api/analogy/contribution.js`（Edge）: is_active の版の themes と該当スライス。n=0 のスライスは一段広いスライスに戻し、戻したことを返す
-- [ ] T4-2 `api/analogy/similar/[raceId].js`（Edge、`?depth=`）: `get_analogy_similar` の結果。キャッシュは plan「API」の表
+- [ ] T4-2 `api/analogy/similar/[raceId].js`（Edge、`?depth=&round=1&grade=1&motor=1`。足せない条件の指定は 400）: `get_analogy_similar` の結果。キャッシュは plan「API」の表
 - [ ] T4-3 録画再生の E2E に新しい API が素通しされることの確認（`e2e/recording.json` の撮り直しは日次で自動）
 
 ## T5 共通部品
 - [ ] T5-1 `BoatBadge` を `src/components/race/BoatBadge.jsx` に切り出し、`RaceOddsListTab.jsx` から使う（見た目が変わらないことを E2E で確認）
-- [ ] T5-2 `src/services/analogyService.js` に `getAnalogySimilar(raceId, depth)` を足す（`(raceId, depth)` 単位のメモリキャッシュ。NULL・エラーは残さない。API 失敗時は PostgREST の RPC を直接呼ぶ）と `useAnalogySimilar`
+- [ ] T5-2 `src/services/analogyService.js` に `getAnalogySimilar(raceId, depth, { round, grade, motor })` を足す（`(raceId, depth, round, grade, motor)` 単位のメモリキャッシュ。NULL・エラーは残さない。API 失敗時は PostgREST の RPC を直接呼ぶ）と `useAnalogySimilar`
 - [ ] T5-3 `src/utils/analogyAggregate.js`（RPC の件数から、分布の行・サンキーの流れ・組み合わせ一覧・「1号艇以外が1着」・コールアウト）と `src/utils/analogyReason.js`（似ている理由の一文。spec FR-2 の文面ルール6つ）。`scripts/maintenance/verify-analogy-aggregate.js`（ci）で固定データの期待値と文面ルールを検証
 
 ## T6 FR-1 寄与度
@@ -89,7 +89,7 @@
 ## T7 FR-2 類似レース（T0-1 の回答で確定する）
 - [ ] T7-1 `SimilarRacesView`: 似ている理由の一文（主役、件数を大きく）、4分布（決まり手・1着の艇番・1着の進入コース・よく出た出目）、n と期間、事故情報の常設注記、同じ条件の過去レース（新しい順）
 - [ ] T7-2 `ConditionChips`: 4条件を順に並べ、末尾から「外す」・外した条件を「戻す」。自動で外したときは理由の一文。深さを変えたら取り直す（Q2・Q3）
-- [ ] T7-3 （Q1 で案B のときだけ）`DepthRings`: 一致する条件の数の輪と、深さごとの件数・1号艇1着率。輪か行を押すとその深さ
+- [-] T7-3 `DepthRings`（案B）は作らない（Q1 の回答で縦の流れ・チップだけ。ソナー・輪は作らない）
 - [ ] T7-4 「ほかのテーマでも絞る」（Q6、2026-10-02 ユーザー承認）: ラウンド・グレード・1号艇のモーター順位帯のトグル。`n_if_added` で「足すと N件」を予告、0件は押せない、値が分からない条件は出さない。割合は件数÷n（30件未満も出す）。母集団の列と RPC はマイグレーション 120 に入れた（PGlite の検証で固定）。ST は後回し
 - [ ] T7-5 データ段の表示（「出走表 7:30 時点のデータ（前日までの成績）」、確定後は「（発走前）」、スナップショットが無いときは保存なしの一文）
 

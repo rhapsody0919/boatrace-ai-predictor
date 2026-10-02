@@ -18,7 +18,7 @@
 -- 関数
 --   analogy_gap_band(gap)                       勝率差 → 帯（0〜4、勝率が取れないときは 5）。1/100単位で比べ、境界ちょうどは上の帯
 --   analogy_round_from_stage(stage)             race_stage → ラウンド（getRaceStageCategory と同じ規則）
---   analogy_round_from_kb_kind(kind)            kb_archive_races.stage_kind → ラウンド
+--   analogy_round_from_kb(stage, kind)          長期分のラウンド（stage_kind を土台に、準優・優勝戦は本体の規則で上書き）
 --   analogy_grade_of(grade, venue, date)        グレード。無ければ race_series の期間で補う
 --   analogy_motor_band(rank)                    1号艇のモーター2連率の6艇内順位 → 帯（0〜3）
 --   analogy_race_conditions(race_id)            今日のレースの4条件（race_entries から）
@@ -110,13 +110,23 @@ AS $$
   END
 $$;
 
--- 長期分は kb_archive_races.stage_kind（長期の stage の文字列は途中で切れているため。features.py と同じ）
-CREATE OR REPLACE FUNCTION analogy_round_from_kb_kind(p_kind text)
+-- 長期分は kb_archive_races.stage_kind を土台にし、準優・優勝戦の判定だけ本体の規則で上書きする。
+-- stage_kind（scripts/lib/kbArchiveRows.js の classifyStage）は前方一致なので、「準優進出戦」（1,298R）を semifinal に、
+-- 接頭つきの「W準優勝戦前」「GP優勝戦」等を other に入れていて、本体と「準優勝戦」の中身が違う（design-reviewer 指摘1、
+-- 2026-10-02 本番の読み取りで確認）。stage の文字列は途中で切れていることがある（「準優勝」「モーニング予」）ので、
+-- 本体の規則で準優勝戦・優勝戦と言える行と、準優進出・準々の行だけを上書きし、それ以外は stage_kind のまま。
+-- 残る差: 切れて「優勝戦」が読めない企画名の優勝戦（「団体・優勝」「シリーズ優勝」等、約30R）は other のまま。
+-- features.py の round_from_kb_kind は stage_kind だけを見るので、長期分のラウンドはこの SQL と違う（FR-1 側へ申し送り）
+CREATE OR REPLACE FUNCTION analogy_round_from_kb(p_stage text, p_kind text)
 RETURNS text
 LANGUAGE sql IMMUTABLE PARALLEL SAFE
 AS $$
-  SELECT CASE p_kind WHEN 'qualifier' THEN 'yosen' WHEN 'semifinal' THEN 'junyu'
+  SELECT CASE
+    WHEN p_stage LIKE '%準優進出%' OR p_stage LIKE '%準々%' THEN 'other'
+    WHEN analogy_round_from_stage(p_stage) IN ('junyu', 'yusho') THEN analogy_round_from_stage(p_stage)
+    ELSE CASE p_kind WHEN 'qualifier' THEN 'yosen' WHEN 'semifinal' THEN 'junyu'
                      WHEN 'final' THEN 'yusho' WHEN 'other' THEN 'other' END
+  END
 $$;
 
 -- グレード（ippan／G3／G2／G1／SG、不明は NULL）。レースの値（長期: kb_archive_venue_days.race_grade、
@@ -136,7 +146,9 @@ AS $$
 $$;
 
 -- 1号艇のモーター2連率の6艇内順位（高い順、同率は上の順位）→ 帯。0=1〜2位、1=3〜4位、2=5〜6位、3=不明
--- （分析 cm2.py の M1b と同じ）
+-- （分析 cm2.py の M1b と同じ）。順位を付ける前に、2連率 0 は不明として除く（新モーターで未出走の値。
+-- 6艇とも 0 だと全艇1位、1号艇だけ 0 だと5〜6位になり、画面の「6艇中1〜2位」が事実と違うため。
+-- cm2.py とはここが違う。design-reviewer 指摘2、本体 2025-12-03 以降で1号艇 0 が 1,920R）
 CREATE OR REPLACE FUNCTION analogy_motor_band(p_rank integer)
 RETURNS smallint
 LANGUAGE sql IMMUTABLE PARALLEL SAFE
@@ -249,11 +261,11 @@ AS $$
   SELECT analogy_round_from_stage(max(c.race_stage)),
     analogy_grade_of(max(r.race_grade), r.venue_code::smallint, r.race_date),
     analogy_motor_band(CASE WHEN b1.m IS NOT NULL
-                            THEN 1 + count(*) FILTER (WHERE e.boat_number > 1 AND e.motor_2rate > b1.m) END::int)
+                            THEN 1 + count(*) FILTER (WHERE e.boat_number > 1 AND nullif(e.motor_2rate, 0) > b1.m) END::int)
   FROM races r
   JOIN race_entries e ON e.race_id = r.race_id
   LEFT JOIN race_conditions c ON c.race_id = r.race_id
-  LEFT JOIN LATERAL (SELECT e1.motor_2rate AS m FROM race_entries e1
+  LEFT JOIN LATERAL (SELECT nullif(e1.motor_2rate, 0) AS m FROM race_entries e1
                      WHERE e1.race_id = r.race_id AND e1.boat_number = 1) b1 ON true
   WHERE r.race_id = p_race_id
   GROUP BY r.race_id, r.race_date, r.venue_code, b1.m
@@ -278,14 +290,14 @@ SET search_path = public
 AS $$
   WITH r AS (
     SELECT kr.race_id, kr.race_date, kr.venue_code, kr.race_number, kr.technique, kr.payout_3tan,
-      analogy_round_from_kb_kind(kr.stage_kind) AS round,
+      analogy_round_from_kb(kr.stage, kr.stage_kind) AS round,
       analogy_grade_of(vd.race_grade, kr.venue_code::smallint, kr.race_date) AS grade
     FROM kb_archive_races kr
     LEFT JOIN kb_archive_venue_days vd ON vd.venue_day_id = kr.venue_day_id
     WHERE kr.has_result AND kr.race_date BETWEEN p_from AND least(p_to, DATE '2025-12-02')
   ), b AS (
-    SELECT b.race_id, b.boat_number, b.class, b.national_win_rate AS w, b.motor_2rate AS m,
-      max(b.motor_2rate) FILTER (WHERE b.boat_number = 1) OVER (PARTITION BY b.race_id) AS m1,
+    SELECT b.race_id, b.boat_number, b.class, b.national_win_rate AS w, nullif(b.motor_2rate, 0) AS m,
+      max(nullif(b.motor_2rate, 0)) FILTER (WHERE b.boat_number = 1) OVER (PARTITION BY b.race_id) AS m1,
       CASE WHEN b.course BETWEEN 1 AND 6 THEN b.course END AS course,
       coalesce(b.is_flying, false) OR coalesce(b.is_late_start, false) AS returned,
       b.start_timing, b.finish_rank, b.finish_raw
@@ -299,7 +311,7 @@ AS $$
       coalesce(max(class) FILTER (WHERE boat_number = 1 AND class IN ('A1', 'A2', 'B1', 'B2')), '') AS b1_class,
       round(max(w) FILTER (WHERE boat_number = 1) - max(w) FILTER (WHERE boat_number > 1), 2) AS gap,
       (array_agg(boat_number ORDER BY w DESC NULLS LAST, boat_number))[1] AS top_boat,
-      -- 1号艇のモーター2連率の順位（高い順、同率は上の順位。features.py の rank(method="min")）
+      -- 1号艇のモーター2連率の順位（高い順、同率は上の順位。features.py の rank(method="min")。0 は不明として除く）
       CASE WHEN max(m1) IS NOT NULL THEN 1 + count(*) FILTER (WHERE boat_number > 1 AND m > m1) END AS motor_rank,
       max(boat_number) FILTER (WHERE finish_rank = 1) AS rank1,
       max(boat_number) FILTER (WHERE finish_rank = 2) AS rank2,
@@ -346,8 +358,8 @@ AS $$
     WHERE rr.rank1 IS NOT NULL AND NOT coalesce(rr.is_cancelled, false) AND NOT coalesce(rr.is_no_race, false)
       AND coalesce(rr.race_status, 'normal') <> 'no_race'
   ), b AS (
-    SELECT e.race_id, e.boat_number, e.grade, e.win_rate AS w, e.motor_2rate AS m,
-      max(e.motor_2rate) FILTER (WHERE e.boat_number = 1) OVER (PARTITION BY e.race_id) AS m1,
+    SELECT e.race_id, e.boat_number, e.grade, e.win_rate AS w, nullif(e.motor_2rate, 0) AS m,
+      max(nullif(e.motor_2rate, 0)) FILTER (WHERE e.boat_number = 1) OVER (PARTITION BY e.race_id) AS m1,
       coalesce(e.is_absent, false) OR coalesce(x.is_absent, false) AS absent,
       -- 返還艇: フライング・出遅れのフラグに加えて、着の欄（F・L・欠）と返還艇の一覧も見る（BOA-635 の依頼。
       -- フラグが立っていないのに着欄が F・L・欠のレースが 247艇あった。features.py より厳しい）
@@ -371,7 +383,7 @@ AS $$
       coalesce(max(grade) FILTER (WHERE boat_number = 1 AND grade IN ('A1', 'A2', 'B1', 'B2')), '') AS b1_class,
       round(max(w) FILTER (WHERE boat_number = 1) - max(w) FILTER (WHERE boat_number > 1), 2) AS gap,
       (array_agg(boat_number ORDER BY w DESC NULLS LAST, boat_number))[1] AS top_boat,
-      -- 1号艇のモーター2連率の順位（高い順、同率は上の順位。features.py の rank(method="min")）
+      -- 1号艇のモーター2連率の順位（高い順、同率は上の順位。features.py の rank(method="min")。0 は不明として除く）
       CASE WHEN max(m1) IS NOT NULL THEN 1 + count(*) FILTER (WHERE boat_number > 1 AND m > m1) END AS motor_rank,
       max(boat_number) FILTER (WHERE finish_rank = 1) AS rank1,
       max(boat_number) FILTER (WHERE finish_rank = 2) AS rank2,
@@ -461,8 +473,11 @@ $$;
 -- 7. 層の件数と分布
 -- ---------------------------------------------------------------
 -- 深さごとの件数 [深さ1, 深さ2, 深さ3, 深さ4]。深さを決める n は層の行数（決まり手・進入の欠けも数える）
+-- p_round・p_grade・p_motor_band は任意の条件（NULL なら絞らない）。任意の条件をオンにしたまま「戻す」ときの件数に使う
 CREATE OR REPLACE FUNCTION analogy_layer_counts(p_gap_band smallint, p_b1_class text, p_venue_code smallint,
-                                                p_top_boat smallint, p_cutoff date)
+                                                p_top_boat smallint, p_cutoff date,
+                                                p_round text DEFAULT NULL, p_grade text DEFAULT NULL,
+                                                p_motor_band smallint DEFAULT NULL)
 RETURNS integer[]
 LANGUAGE sql STABLE SECURITY INVOKER
 SET search_path = public
@@ -473,6 +488,9 @@ AS $$
     (count(*) FILTER (WHERE p.b1_class = p_b1_class AND p.venue_code = p_venue_code AND p.top_boat = p_top_boat))::int]
   FROM analogy_pool_outcomes p
   WHERE p.gap_band = p_gap_band AND p.race_date <= p_cutoff
+    AND (p_round IS NULL OR p.round = p_round)
+    AND (p_grade IS NULL OR p.grade = p_grade)
+    AND (p_motor_band IS NULL OR p.b1_motor_band = p_motor_band)
 $$;
 
 -- 件数が200以上になる最も深い層（m=200）。どの深さでも足りなければ1
@@ -642,6 +660,8 @@ $$;
 --   extras{round,grade,b1_motor_band}（今日のレースの任意の条件の値。不明は null、モーターの不明は 3）,
 --   filters{round,grade,motor}（オンにした任意の条件）,
 --   n_if_added{round,grade,motor}（今の層にそれぞれ足したときの件数。足せない条件は null）,
+--   n_by_depth_filtered[1..4]（オンにした任意の条件を重ねた深さごとの件数。「戻す」「外す」の先が0件かを画面が見る。
+--   任意の条件がすべてオフなら n_by_depth と同じ）,
 --   pool_from, pool_cutoff,
 --   recent[{race_id, race_date, venue_code, race_number, rank1, rank2, rank3, winning_technique}]（同じ層の新しい順20件）
 -- 該当なし（出走表が6艇そろわない・母集団が無い）は NULL。
@@ -718,6 +738,10 @@ BEGIN
     'extras', jsonb_build_object('round', x.round, 'grade', x.grade, 'b1_motor_band', coalesce(x.b1_motor_band, 3)),
     'filters', jsonb_build_object('round', v_round IS NOT NULL, 'grade', v_grade IS NOT NULL,
                                   'motor', v_motor IS NOT NULL),
+    'n_by_depth_filtered', CASE WHEN v_any
+      THEN to_jsonb(analogy_layer_counts(s.gap_band, s.b1_class, s.venue_code, s.top_boat, s.pool_cutoff,
+                                         v_round, v_grade, v_motor))
+      ELSE to_jsonb(s.n_by_depth) END,
     'n_if_added', analogy_optional_counts(s.gap_band, s.b1_class, s.venue_code, s.top_boat, v_depth, s.pool_cutoff,
                                           x.round, x.grade, coalesce(x.b1_motor_band, 3)::smallint,
                                           v_round IS NOT NULL, v_grade IS NOT NULL, v_motor IS NOT NULL),
@@ -776,7 +800,7 @@ $$;
 -- ---------------------------------------------------------------
 REVOKE ALL ON FUNCTION analogy_gap_band(numeric) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION analogy_round_from_stage(text) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION analogy_round_from_kb_kind(text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION analogy_round_from_kb(text, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION analogy_grade_of(text, smallint, date) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION analogy_motor_band(integer) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION analogy_race_extras(varchar) FROM PUBLIC, anon, authenticated;
@@ -785,7 +809,7 @@ REVOKE ALL ON FUNCTION analogy_race_conditions(varchar) FROM PUBLIC, anon, authe
 REVOKE ALL ON FUNCTION analogy_pool_rows_kb(date, date) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION analogy_pool_rows_main(date, date) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION refresh_analogy_pool(date, date) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION analogy_layer_counts(smallint, text, smallint, smallint, date) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION analogy_layer_counts(smallint, text, smallint, smallint, date, text, text, smallint) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION analogy_auto_depth(integer[]) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION analogy_layer_distribution(smallint, text, smallint, smallint, smallint, date, text, text, smallint) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION create_analogy_snapshots(date) FROM PUBLIC, anon, authenticated;
@@ -799,7 +823,7 @@ GRANT EXECUTE ON FUNCTION get_analogy_similar_races(varchar) TO anon, authentica
 GRANT EXECUTE ON FUNCTION analogy_resolve_race(varchar) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION analogy_gap_band(numeric) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION analogy_race_conditions(varchar) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION analogy_layer_counts(smallint, text, smallint, smallint, date) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION analogy_layer_counts(smallint, text, smallint, smallint, date, text, text, smallint) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION analogy_auto_depth(integer[]) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION analogy_round_from_stage(text) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION analogy_grade_of(text, smallint, date) TO anon, authenticated, service_role;
@@ -809,7 +833,7 @@ GRANT EXECUTE ON FUNCTION analogy_optional_counts(smallint, text, smallint, smal
 GRANT EXECUTE ON FUNCTION analogy_layer_distribution(smallint, text, smallint, smallint, smallint, date, text, text, smallint) TO anon, authenticated, service_role;
 -- 書き込み: service_role だけ
 GRANT EXECUTE ON FUNCTION analogy_pool_rows_kb(date, date) TO service_role;
-GRANT EXECUTE ON FUNCTION analogy_round_from_kb_kind(text) TO service_role;
+GRANT EXECUTE ON FUNCTION analogy_round_from_kb(text, text) TO service_role;
 GRANT EXECUTE ON FUNCTION analogy_pool_rows_main(date, date) TO service_role;
 GRANT EXECUTE ON FUNCTION refresh_analogy_pool(date, date) TO service_role;
 GRANT EXECUTE ON FUNCTION create_analogy_snapshots(date) TO service_role;
@@ -827,7 +851,7 @@ COMMIT;
 --   -- anon_exec が true: get_analogy_similar・get_analogy_similar_races・analogy_resolve_race・analogy_gap_band・
 --   --   analogy_race_conditions・analogy_layer_counts・analogy_auto_depth・analogy_layer_distribution・
 --   --   analogy_round_from_stage・analogy_grade_of・analogy_motor_band・analogy_race_extras・analogy_optional_counts の13本。
---   --   false: analogy_pool_rows_kb・analogy_pool_rows_main・analogy_round_from_kb_kind・
+--   --   false: analogy_pool_rows_kb・analogy_pool_rows_main・analogy_round_from_kb・
 --   --   refresh_analogy_pool・create_analogy_snapshots（と 118 の activate_analogy_model）
 --
 -- 元に戻す（緊急時のみ。データも消える）:
@@ -838,7 +862,7 @@ COMMIT;
 -- DROP FUNCTION IF EXISTS create_analogy_snapshots(date);
 -- DROP FUNCTION IF EXISTS analogy_layer_distribution(smallint, text, smallint, smallint, smallint, date, text, text, smallint);
 -- DROP FUNCTION IF EXISTS analogy_auto_depth(integer[]);
--- DROP FUNCTION IF EXISTS analogy_layer_counts(smallint, text, smallint, smallint, date);
+-- DROP FUNCTION IF EXISTS analogy_layer_counts(smallint, text, smallint, smallint, date, text, text, smallint);
 -- DROP FUNCTION IF EXISTS refresh_analogy_pool(date, date);
 -- DROP FUNCTION IF EXISTS analogy_pool_rows_main(date, date);
 -- DROP FUNCTION IF EXISTS analogy_pool_rows_kb(date, date);
@@ -850,6 +874,6 @@ COMMIT;
 -- DROP FUNCTION IF EXISTS analogy_gap_band(numeric);
 -- DROP FUNCTION IF EXISTS analogy_motor_band(integer);
 -- DROP FUNCTION IF EXISTS analogy_grade_of(text, smallint, date);
--- DROP FUNCTION IF EXISTS analogy_round_from_kb_kind(text);
+-- DROP FUNCTION IF EXISTS analogy_round_from_kb(text, text);
 -- DROP FUNCTION IF EXISTS analogy_round_from_stage(text);
 -- COMMIT;

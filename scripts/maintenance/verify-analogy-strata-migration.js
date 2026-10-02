@@ -56,7 +56,7 @@ CREATE TABLE race_start_timings (race_id varchar, boat_number smallint, start_ti
   is_late_start boolean, finish_mark text, PRIMARY KEY (race_id, boat_number));
 CREATE TABLE exhibition_data (race_id varchar, boat_number smallint, is_absent boolean, PRIMARY KEY (race_id, boat_number));
 CREATE TABLE kb_archive_races (race_id varchar PRIMARY KEY, race_date date, venue_code smallint, race_number smallint,
-  technique text, payout_3tan integer, has_result boolean, stage_kind text, venue_day_id text);
+  technique text, payout_3tan integer, has_result boolean, stage text, stage_kind text, venue_day_id text);
 CREATE TABLE kb_archive_venue_days (venue_day_id text PRIMARY KEY, race_grade text);
 CREATE TABLE kb_archive_boats (race_id varchar, boat_number smallint, class text, national_win_rate numeric,
   course smallint, start_timing numeric, is_flying boolean, is_late_start boolean, finish_rank smallint, finish_raw text,
@@ -284,13 +284,13 @@ async function main() {
   // kb1: 予選・G1（開催日の値）・1号艇のモーター 40.0 は 45.0 に次ぐ2位（40.0 の同率は上の順位）→ 帯0
   // kb4: 優勝戦・開催日の行が無いので race_series で補う（重なる2節のうち開始日の早い G3。グレード NULL の節は使わない）
   //      ・1号艇のモーター不明 → 帯3
-  // m1:  予選特賞 → 予選・ippan・1号艇のモーター 30.0 は5位 → 帯2
+  // m1:  予選特賞 → 予選・ippan・1号艇のモーター 0（新モーターで未出走）は不明 → 帯3（0 を値として順位を付けると6位・帯2）
   // T:   全角の「ＭＤ予選」→ 予選・G1・1号艇のモーター 60.0 は1位 → 帯0
-  // T2:  ステージ・グレード・モーターがどれも無い（任意の条件を足せない）
+  // T2:  ステージ・グレードが無く、モーター2連率は6艇とも 0（任意の条件を足せない。0 を値にすると全艇1位・帯0）
   await db.exec(`
     INSERT INTO kb_archive_venue_days VALUES ('vd1', 'G1');
-    UPDATE kb_archive_races SET stage_kind = 'qualifier', venue_day_id = 'vd1' WHERE race_id = '2025-06-01-24-01';
-    UPDATE kb_archive_races SET stage_kind = 'final', venue_day_id = 'vd-missing' WHERE race_id = '2025-06-01-24-04';
+    UPDATE kb_archive_races SET stage = '予選', stage_kind = 'qualifier', venue_day_id = 'vd1' WHERE race_id = '2025-06-01-24-01';
+    UPDATE kb_archive_races SET stage = '優勝戦', stage_kind = 'final', venue_day_id = 'vd-missing' WHERE race_id = '2025-06-01-24-04';
     INSERT INTO race_series VALUES (24, '2025-05-25', '2025-06-03', NULL), (24, '2025-05-30', '2025-06-04', 'ippan'),
                                    (24, '2025-05-28', '2025-06-02', 'G3');
     UPDATE kb_archive_boats SET motor_2rate = (ARRAY[40, 45, 40, 30, 20, 10])[boat_number]
@@ -299,7 +299,7 @@ async function main() {
       WHERE race_id = '2025-06-01-24-04';
     UPDATE races SET race_grade = 'ippan' WHERE race_id = '2026-01-10-24-01';
     INSERT INTO race_conditions VALUES ('2026-01-10-24-01', '予選特賞');
-    UPDATE race_entries SET motor_2rate = (ARRAY[30, 50, 45, 40, 35, 20])[boat_number]
+    UPDATE race_entries SET motor_2rate = (ARRAY[0, 50, 45, 40, 35, 20])[boat_number]
       WHERE race_id = '2026-01-10-24-01';
     UPDATE races SET race_grade = 'G1' WHERE race_id = '${T}';
     INSERT INTO race_conditions VALUES ('${T}', 'ＭＤ予選');
@@ -312,6 +312,9 @@ async function main() {
     { noResult: true },
     six([6.5, 6.2, 5.0, 4.0, 3.0, 2.0], { 1: { cls: "A1" } }),
   );
+  await db.query("UPDATE race_entries SET motor_2rate = 0 WHERE race_id = $1", [
+    T2,
+  ]);
 
   await db.exec(fs.readFileSync(MIGRATION, "utf8"));
   check("120 を適用できる", true);
@@ -382,16 +385,34 @@ async function main() {
     (await db.query("SELECT analogy_round_from_stage(NULL) AS r")).rows[0].r ===
       null,
   );
-  const kinds = (
+  // 長期分: stage_kind を土台に、準優・優勝戦は本体の規則で上書き（stage は途中で切れることがある）
+  const KB_CASES = [
+    ["準優進出戦", "semifinal", "other"],
+    ["準優進出チャ", "semifinal", "other"],
+    ["準優勝戦", "semifinal", "junyu"],
+    ["準優勝", "semifinal", "junyu"],
+    ["W準優勝戦前", "other", "junyu"],
+    ["GP優勝戦", "other", "yusho"],
+    ["準々優勝戦", "other", "other"],
+    ["優勝", "final", "yusho"],
+    ["団体・優勝", "other", "other"],
+    ["モーニング予", "qualifier", "yosen"],
+    [null, "final", "yusho"],
+    [null, null, null],
+  ];
+  const kbRounds = (
     await db.query(
-      "SELECT array_agg(coalesce(analogy_round_from_kb_kind(x), '-') ORDER BY i) AS r FROM unnest(ARRAY['qualifier','semifinal','final','other','x',NULL]) WITH ORDINALITY AS t(x, i)",
+      "SELECT array_agg(analogy_round_from_kb(s, k) ORDER BY i) AS r FROM unnest($1::text[], $2::text[]) WITH ORDINALITY AS t(s, k, i)",
+      [KB_CASES.map((c) => c[0]), KB_CASES.map((c) => c[1])],
     )
   ).rows[0].r;
+  const kbDiff = KB_CASES.filter((c, i) => kbRounds[i] !== c[2]).map(
+    (c) => `${c[0]}/${c[1]}: ${kbRounds[KB_CASES.indexOf(c)]}（期待 ${c[2]}）`,
+  );
   check(
-    "長期の stage_kind → ラウンド",
-    JSON.stringify(kinds) ===
-      JSON.stringify(["yosen", "junyu", "yusho", "other", "-", "-"]),
-    JSON.stringify(kinds),
+    "長期分のラウンド（準優進出は other、接頭つきの準優勝戦・優勝戦は本体と同じ）",
+    kbDiff.length === 0,
+    kbDiff.join(" / "),
   );
   const mb = (
     await db.query(
@@ -485,7 +506,7 @@ async function main() {
   );
 
   check(
-    "母集団の任意の3列（kb1: 予選・G1・帯0／kb4: 優勝戦・G3・帯3／m1: 予選・ippan・帯2）",
+    "母集団の任意の3列（kb1: 予選・G1・帯0／kb4: 優勝戦・G3・帯3／m1: 予選・ippan・帯3）",
     kb1.round === "yosen" &&
       kb1.grade === "G1" &&
       kb1.b1_motor_band === 0 &&
@@ -494,7 +515,7 @@ async function main() {
       kb4.b1_motor_band === 3 &&
       m1.round === "yosen" &&
       m1.grade === "ippan" &&
-      m1.b1_motor_band === 2,
+      m1.b1_motor_band === 3,
     JSON.stringify(
       [kb1, kb4, m1].map((p) => [p.round, p.grade, p.b1_motor_band]),
     ),
@@ -606,6 +627,13 @@ async function main() {
       JSON.stringify({ grade: 1, motor: 1, round: 1 }),
     JSON.stringify(gG.n_if_added),
   );
+  check(
+    "RPC: 任意の条件を重ねた深さごとの件数（グレードで [1,1,1,1]、オフなら n_by_depth と同じ）",
+    JSON.stringify(gG.n_by_depth_filtered) === "[1,1,1,1]" &&
+      JSON.stringify(g0.n_by_depth_filtered) === JSON.stringify(g0.n_by_depth),
+    JSON.stringify([gG.n_by_depth_filtered, g0.n_by_depth_filtered]),
+  );
+
   const gRM = (
     await db.query(
       "SELECT get_analogy_similar($1, NULL, true, false, true) AS g",

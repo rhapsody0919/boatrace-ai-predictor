@@ -79,6 +79,9 @@ erDiagram
         numeric(4,2) b1_win_gap
         smallint gap_band "生成列 analogy_gap_band(b1_win_gap)"
         smallint top_boat
+        text round
+        text grade
+        smallint b1_motor_band
         smallint rank1
         smallint rank2
         smallint rank3
@@ -135,7 +138,9 @@ Disk IO の見積り:
 
 - ラウンドの規則は JS（`raceStageConfig.js`）・Python（`features.py`）・SQL の3か所にある。SQL と JS の一致は PGlite の検証が固定の文字列30通りで、Python と JS の一致は `scripts/ml/analogy/tests/test_features.py` が検査する
 - 今日のレースの値は `analogy_race_extras(race_id)` が表示のたびに作る。3列とも朝の初期化（JST 5時台、`generate-predictions.js` の races・race_conditions・race_entries の upsert）で入る。2026-09-28〜10-02 の 768R で3列とも埋まっていた（本番の読み取り、2026-10-02）。7:30 のスナップショットより前にそろう
-- 2025-12〜2026-01 は本体のモーター2連率が約20%しか無く（MD-2）、この期間の行は多くが帯3（不明）になる。帯3の行はモーターで絞った層に入らない
+- モーター2連率 0（新モーターで未出走）は不明として順位から除く（cm2.py とはここが違う。0 を値にすると6艇とも 0 で全艇1位、1号艇だけ 0 で5〜6位になる。本体 2025-12-03 以降で1号艇 0 が 1,920R、2026-04 は 16.7%）。帯3（不明）の行はモーターで絞った層に入らない。1号艇の motor_2rate の NULL は 2025-12 が5.7%、2026-01 が1.2%、2026-02 以降は0（K/B 補完後。MD-2 の「約20%」は補完前の値）
+- 長期分のラウンドは `stage_kind` を土台に、準優・優勝戦だけ本体の規則で上書きする（`analogy_round_from_kb`）。`stage_kind` は前方一致で作られていて「準優進出戦」1,298R を準優勝戦に、「W準優勝戦前」「GP優勝戦」等を other に入れていた。上書き後に残る差は、切れて「優勝戦」が読めない企画名の優勝戦（約30R）だけ。features.py の `round_from_kb_kind` は `stage_kind` だけを見るので、FR-1 のラウンドのスライスにも同じずれがある（FR-1 側へ申し送り）
+- グレードの `race_series` での補いは、今のデータでは1件も効かない（本体の race_grade NULL 876R は race_series にもグレードが無い。長期分は全会場日にグレードがある）。この 876R はグレード不明で、グレードのトグルは出ない
 
 ### 値の約束（BOA-635 の依頼 R1〜R4・D-5、ADR-0080 から引き継ぎ）
 - `payout_3tan` は3連単の払戻。本体は `race_results.payout_trio`（列名と券種が逆。`payout_trifecta` は3連複）
@@ -180,7 +185,7 @@ Disk IO の見積り:
 | エンドポイント | 中身 | キャッシュ |
 |---|---|---|
 | `GET /api/analogy/contribution?…`（実装済み） | FR-1 | 実装どおり |
-| `GET /api/analogy/similar/[raceId]?depth=&round=1&grade=1&motor=1` | `get_analogy_similar` の結果。`round`・`grade`・`motor` は任意の条件（1 でオン） | スナップショットあり・自動の深さ・任意の条件なし: 締切前 `s-maxage=300`、締切後 `s-maxage=86400`。それ以外: `s-maxage=300`。足せない条件の指定は 400。NULL・エラーは `no-store` |
+| `GET /api/analogy/similar/[raceId]?depth=&round=1&grade=1&motor=1` | `get_analogy_similar` の結果（jsonb をそのまま。条件の値の表示用の文字列は作らず、画面が i18n で組み立てる。受け入れ E2E は表示用の形を仮定して書かれているので、T4-2 の着手時に E2E のモックをこの形に直す）。`round`・`grade`・`motor` は任意の条件（1 でオン） | スナップショットあり・自動の深さ・任意の条件なし: 締切前 `s-maxage=300`、締切後 `s-maxage=86400`。それ以外: `s-maxage=300`。足せない条件の指定は 400。NULL・エラーは `no-store` |
 
 既存の公開 API と同じく Edge 関数で、PostgREST の RPC を anon key で呼ぶ。API が失敗したら画面は PostgREST の RPC を直接呼ぶ（`getOutcomeDistribution` と同じ流儀）。
 
@@ -196,7 +201,6 @@ flowchart TD
   Sec --> SR[SimilarRacesView FR-2]
   SR --> CH[ConditionChips 末尾から外す・戻す]
   SR --> RS[似ている理由の一文]
-  SR --> RG[DepthRings 案B のときだけ]
   Sec --> CO[CombinationView FR-3]
   CO --> SK[FinishSankey]
   Sec -. hooks .-> H1[useAnalogyContribution 実装済み]
@@ -206,7 +210,7 @@ flowchart TD
   CO --> AG
 ```
 
-- `src/services/analogyService.js`（FR-1 で作成済み）に `getAnalogySimilar(raceId, depth)` を足す。メモリのキャッシュは `(raceId, depth)` 単位。NULL・エラーは残さない（BOA-497 の教訓）
+- `src/services/analogyService.js`（FR-1 で作成済み）に `getAnalogySimilar(raceId, depth, { round, grade, motor })` を足す。メモリのキャッシュは `(raceId, depth, round, grade, motor)` 単位（任意の条件をキーに入れないと、別の条件の結果が出る）。NULL・エラーは残さない（BOA-497 の教訓）
 - `src/utils/analogyAggregate.js`: 純粋関数。RPC の件数から、分布の行（件数・件数÷n）、サンキーの流れ（`trifecta` から1→2→3着）、組み合わせ一覧（上位10件＋その他）、「1号艇以外が1着」の絞り込み、コールアウト（`course_flow`）を作る。FR-2 と FR-3 で共有する
 - `src/utils/analogyReason.js`: 似ている理由の一文を、条件・深さ・件数から作る純粋関数（spec FR-2 の文面ルール6つ）。i18n のキーで組み立てる
 - 節を出す条件: FR-2・FR-3 は `get_analogy_similar` が NULL でないこと。FR-1 は is_active の版があること。どれも無ければ節ごと出さない。中止確定のレースは出さない。予想（predictions）の有無とは切り離す
@@ -276,7 +280,18 @@ BOA-635（PR #1093、BOA-635 の ADR 案（PR #1093））は近い順800行を�
 - 行数: features 1日 約900行（約200B）、contributions 1日 約300行（約1KB）
 
 ### API
-`GET /api/analogy/race-contribution/[raceId]` → `{available, shown: 'exhibition'|'racecard', model_version, themes, racecard: {...}|null, exhibition: {...}|null}`。締切前 `s-maxage=60`、締切後 `s-maxage=86400`、行が無い・エラーは `no-store`。
+`GET /api/analogy/race-contribution/[raceId]` → `{available, status, shown: 'exhibition'|'racecard', model_version, exhibition_as_of, themes, racecard: {...}|null, exhibition: {...}|null}`。締切前 `s-maxage=60`、締切後 `s-maxage=86400`、行が無い・エラーは `no-store`。
+
+`status`（screens「1-a の段のラベルと注記」の状態。画面は時刻で判定せず、これを見る。名前は受け入れ E2E の仮定に合わせた）を API が上から順に決める:
+
+| status | 条件 |
+|---|---|
+| `absent` | 欠場が分かっている（1-a を出さない） |
+| `after_exhibition` | 展示後の段がある |
+| `before_incomplete` (c) | 展示データの行はあるが、6艇の展示タイムがそろっていない |
+| `before_no_value` (d) | 締切を過ぎた（展示後の段が無い） |
+| `before_reflecting` (b) | 6艇の展示タイムがそろっている（締切前。計算待ち・計算の失敗もここ） |
+| `before_not_yet` (a) | それ以外（展示データがまだ無い） |
 
 ### 画面（ファンパネルの結論）
 - 見出しで「AI のモデルが何を見ているかの説明」と分ける（予想に見せない）
@@ -287,7 +302,7 @@ BOA-635（PR #1093、BOA-635 の ADR 案（PR #1093））は近い順800行を�
 - 似たレース（FR-2）は出走表時点のまま。レースごとの上位テーマに当たる条件チップを強調するだけ
 
 ## 残る判断
-- モックの Q1〜5（案A/B、末尾からだけ外す、自動で外す、割合は件数÷n、任意の追加チップを作るか）: ユーザー確認中
+- モックの Q1〜Q7・1-a の文言: 2026-10-02 回答済み（screens.md）
 - 干渉効果のコールアウトに出すパターン（tasks T0-2）
 - MD-3 の再判定（FR-1 の「市場」）
 
@@ -304,10 +319,10 @@ BOA-635（PR #1093、BOA-635 の ADR 案（PR #1093））は近い順800行を�
 | 7 | P2 | 予想が無いレースで節が出ない | 節を分岐の外に | 変わらず |
 | 8 | P2 | `withCache` の途中状態 | 専用キャッシュ | 変わらず |
 | 9 | P2 | 読み取りの Disk IO の見積り | 長期分を Storage に | FR-2 は上の「Disk IO の見積り」 |
-| 10 | P3 | 長期のステージ文字列 | `stage_kind` | FR-2 はラウンドを使わない |
+| 10 | P3 | 長期のステージ文字列 | `stage_kind` | FR-2 の任意の条件（Q6）でラウンドを使う。長期分は `analogy_round_from_kb`（stage_kind を土台に準優・優勝戦を上書き） |
 | 11 | P3 | MD-2 の数値が古い | T0-7 | 変わらず |
 | 12 | P3 | 母集団と決着の集合のずれ | LEFT JOIN と verify | 層別では母集団と決着が同じ表。長期と本体の境目は features.py どおり 2025-12-02 までが長期（以前の版の「2025-12-02 は本体を優先」は誤り） |
-| 13 | P3 | `check-anon-access.js` の一覧 | T1-1 | 120 の6関数を足した |
+| 13 | P3 | `check-anon-access.js` の一覧 | T1-1 | 120 の13本（RPC 2本と読み取りの関数11本）を足した |
 | 14 | P3 | MD-3 の比較A の揺れ | 注記 | 変わらず |
 | 15 | P3 | 細部（説明の一行、λ、0件の判定、重複実行、外部キー） | 採用 | 説明の一行は文面ルール。0件の判定・重複実行は Cron の約束（上）に引き継ぐ |
 
