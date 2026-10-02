@@ -41,6 +41,7 @@
 - [ ] 継続監視: 週次の学習が失敗・品質ゲートで止まったら Slack に通知されること、最終成功から8日を過ぎたら検知されることを確認する
 
 ## T3 母集団とスナップショット（FR-2・BOA-627。SQL と Vercel Cron）
+- [ ] T3-00 マイグレーションの番号を振り直す: 119 は #1145（BOA-667）が先に使う見込み。実装 PR を出す時点の origin/master の最新＋1 にし、ADR-0082・plan・tasks・APPLIED.md・`verify-analogy-strata-migration.js`・`check-anon-access.js` のコメント・BOA-635 の文書の「119」をまとめて直す（`npm run verify:migration-numbers`）
 - [x] T3-0 マイグレーション 119（母集団・スナップショット・関数・RPC）と PGlite の検証 `verify-analogy-strata-migration.js`（ci）
 - [ ] T3-1（公開前の必須条件）`scripts/ml/analogy/strata.py`（参照実装。`cm2.py` の `build_axes` の境界を固定し 1/100単位で比較、完全レースの判定は `features.py`）と pytest（境界ちょうど・同率・勝率の欠け）
 - [ ] T3-2 `scripts/maintenance/verify-analogy-pool.js`（**nightly-verify-db.yml で毎晩**。補完で過去の行が変わるため manual にしない。`verify-registry.json` に登録。公開前の必須条件）: 期間を区切って参照実装と母集団の「完全レースの集合」「条件4値」「決まり手・1着艇・1着の進入コースのラベル」を照合。元テーブルと母集団の行数の差、スナップショットの件数と数え直しの一致率も出す
