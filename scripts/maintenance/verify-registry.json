@@ -640,6 +640,11 @@
       "guards": "アナロジー・ファインダーの学習（BOA-271）で、Storage の古い版を消すときに表示中の版を残すこと、表示中の版と同じ名前ではモデルを上書きしないこと、長期データのキャッシュの列名が今のコードと違えば失敗すること（scripts/ml/analogy/storageRules.js）"
     },
     {
+      "script": "verify-analogy-strata-migration.js",
+      "tier": "ci",
+      "guards": "類似レース（BOA-271 FR-2・層別 S*）のマイグレーション119を PGlite に適用し、勝率差の帯の境界（1/100単位・境界ちょうどは上）、母集団に完全レースだけが入ること（返還艇が1〜3着・欠場・不成立・中止を除く）、値の約束（3連単は payout_trio、返還艇の ST と不明な進入は NULL）、変わった行だけ書くこと、スナップショットが締切前に1回だけ作られ自動の深さの分布を返すこと、匿名が RPC と SELECT しかできないことを固定データで確かめる"
+    },
+    {
       "script": "verify-kb-gap-fill.js",
       "tier": "ci",
       "guards": "K/Bファイルからの欠落の補完（backfill-kb-gaps.js・kbGapFill.js。BOA-271 の前提条件、Phase 1 項目3〜6）が、項目ごとに決めた列だけを書き（全行の列の集合がそろわなければ書かない＝一括 upsert の NULL 上書きを防ぐ）、既存の値を上書きせず、行の無いレースにだけ挿入し、フライングの ST を正の値で書くこと（本番の全期間が正。kbFileParser は負で返す）"

@@ -107,6 +107,14 @@ const ANON_RPCS = [
   "get_race_st_predictability",
   "get_race_technique_profile",
   "get_today_races",
+  // 類似レース（BOA-271 FR-2、マイグレーション119）。画面の RPC と、その中で呼ぶ読み取りだけの関数
+  // （SECURITY INVOKER なので呼び出し側にも EXECUTE が要る）
+  "get_analogy_similar",
+  "analogy_gap_band",
+  "analogy_race_conditions",
+  "analogy_layer_counts",
+  "analogy_auto_depth",
+  "analogy_layer_distribution",
 ];
 // 読ませない設計のテーブル（RLS有効・ポリシー無し・権限なし）
 const MUST_BE_HIDDEN = [
