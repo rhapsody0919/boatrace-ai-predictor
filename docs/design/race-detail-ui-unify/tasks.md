@@ -4,13 +4,13 @@ plan: [plan.md](./plan.md)。PR ごとに節を分ける。各 PR は画面が�
 
 ## PR2a 最良値の判定と共通クラス（先行）
 
-- [ ] T1 `src/utils/bestOf.js` を作り、集合を返す `bestOf` を export する。`raceIndicators.jsx` はこれを import する
-- [ ] T2 `DataRaceTable` / `RaceBeforeInfoTab` / `RaceCardDataTable` の `cellClass` を `best?.has(boat)` に変える
-- [ ] T3 別実装5つ（MotorConditionChart・RacerFormChart・StPredictabilityChart・ExhibitionTimeTrendChart・RacerBoatReturnRateChart）を `bestOf` に置き換える（行の `.best-motor` は残す）
-- [ ] T4 `src/styles/indicators.css` に `.ind-best` `.ind-good` `.ind-bad`、`design-tokens.css` に `--ind-best-bg` `--ind-best-ring`。`.drt-best` をトークン参照に
-- [ ] T5 `.motor-ranking-table td.rate` の一律の緑を外す。機力指数の緑・赤と小標本の黄が残ることを確認
-- [ ] T6 `scripts/maintenance/verify-best-of.js` と `verify-registry.json` 登録
-- [ ] T7 build・smoke（`td.drt-best`）・ライト/ダークのスクショ確認、PR 作成
+- [x] T1 `src/utils/bestOf.js` を作り、集合を返す `bestOf` を export する。`raceIndicators.jsx` はこれを import する
+- [x] T2 `DataRaceTable` / `RaceBeforeInfoTab` / `RaceCardDataTable` の `cellClass` を `best?.has(boat)` に変える
+- [x] T3 別実装5つ＋モーター表の rankClassFor（MotorConditionChart・RacerFormChart・StPredictabilityChart・ExhibitionTimeTrendChart・RacerBoatReturnRateChart）を `bestOf` に置き換える（行の `.best-motor` は残す）
+- [x] T4 `src/styles/indicators.css` に `.ind-best` `.ind-good` `.ind-bad`、`design-tokens.css` に `--ind-best-bg` `--ind-best-ring`。`.drt-best` をトークン参照に
+- [x] T5 `.motor-ranking-table td.rate` と `.usage-history-rate` の一律の緑を外す。機力指数の緑・赤と小標本の黄が残ることを確認
+- [x] T6 `scripts/maintenance/verify-best-of.js` と `verify-registry.json` 登録
+- [x] T7 build・smoke（`td.drt-best`）・ライト/ダークのスクショ確認、PR 作成
 
 ## PR1 余白
 
