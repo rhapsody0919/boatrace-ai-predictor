@@ -201,14 +201,14 @@ export async function scrapeVenue(
  * venue_entry_course_stats へ書く（1,000行ずつ upsert）。
  * @param {import("@supabase/supabase-js").SupabaseClient} client
  * @param {Array<Object>} rows
- * @param {{throwOnError?: boolean}} [options] true なら、書き込みエラーを例外にする（Vercel）。
- *   既定は従来どおり、ログに出して続行する
+ * @param {{throwOnError?: boolean}} [options] true（既定。BOA-391）なら、書き込みエラーを例外にする。
+ *   false はログに出して続行する
  * @returns {Promise<number>} 書き込みに成功した行数
  */
 export async function writeEntryCourseRows(
   client,
   rows,
-  { throwOnError = false } = {},
+  { throwOnError = true } = {},
 ) {
   let written = 0;
   // scraped_at は DEFAULT now() だが、DEFAULT は INSERT のときしか効かない。同じキーの行を
@@ -276,15 +276,16 @@ export async function run(schedule, date) {
     }
   }
 
+  // 会場ごとの成否履歴（構造変化の検知の入力）は、DB の書き込みが失敗して例外になっても残すため、先に書く（BOA-391）
+  fs.mkdirSync(new URL(".", HEALTH_FILE_PATH), { recursive: true });
+  fs.writeFileSync(HEALTH_FILE_PATH, JSON.stringify(health, null, 2) + "\n");
+
   if (allRows.length > 0) {
     console.log(
       `\n💾 venue_entry_course_stats: ${allRows.length}件書き込み中...`,
     );
-    await writeEntryCourseRows(supabase, allRows, { throwOnError: true });
+    await writeEntryCourseRows(supabase, allRows);
   }
-
-  fs.mkdirSync(new URL(".", HEALTH_FILE_PATH), { recursive: true });
-  fs.writeFileSync(HEALTH_FILE_PATH, JSON.stringify(health, null, 2) + "\n");
 
   console.log(
     `📊 完了: ${successVenues}/${attemptedVenues}会場成功（本日開催なしを除く）、${allRows.length}件保存`,
