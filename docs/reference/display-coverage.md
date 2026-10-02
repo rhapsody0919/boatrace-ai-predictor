@@ -81,9 +81,9 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `nige_second_by_course` | 表 | 094_course_baselines.sql | 画面が直接 | GRANT（094_course_baselines.sql） |  |
 | `outcome_distribution` | 表 | 020_outcome_distribution.sql | API・画面が直接 | GRANT（020_outcome_distribution.sql） |  |
 | `poirot_predictions` | 表 | 021_poirot_predictions.sql | 画面が直接 | ポリシー（021_poirot_predictions.sql） |  |
-| `predictions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_admin_rule_performance(API), get_today_races(API) | ポリシー（001_schema.sql） |  |
-| `race_conditions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_today_races(API) | ポリシー（076_enable_rls_on_public_tables.sql） |  |
-| `race_entries` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_exhibition_trend(画面), get_race_return_rate(画面), get_race_st_predictability(画面), get_race_technique_profile(画面), get_today_races(API) | ポリシー（001_schema.sql） |  |
+| `predictions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_admin_rule_performance(API), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
+| `race_conditions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_today_races(API・画面) | ポリシー（076_enable_rls_on_public_tables.sql） |  |
+| `race_entries` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_exhibition_trend(画面), get_race_return_rate(画面), get_race_st_predictability(画面), get_race_technique_profile(画面), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
 | `race_history_cache` | 表 | 020_race_history_cache.sql | API・画面が直接 | GRANT（020_race_history_cache.sql） |  |
 | `race_odds` | 表 | 001_schema.sql | 画面が直接 | ポリシー（076_enable_rls_on_public_tables.sql） |  |
 | `race_odds_final` | 表 | 108_race_odds_final.sql | 画面が直接 | GRANT（108_race_odds_final.sql） |  |
@@ -91,13 +91,13 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `race_original_exhibition_values` | 表 | 091_boatcast_original_exhibition.sql | 画面が直接 | GRANT（096_original_exhibition_public_read.sql） |  |
 | `race_pit_comments` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
 | `race_pit_reports` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
-| `race_results` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_admin_rule_performance(API), get_race_return_rate(画面), get_race_technique_profile(画面), get_today_races(API) | ポリシー（001_schema.sql） |  |
+| `race_results` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_admin_rule_performance(API), get_race_return_rate(画面), get_race_technique_profile(画面), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
 | `racer_grade_cache` | 表 | 054_racer_grade_cache_table.sql | 画面が直接 | GRANT（054_racer_grade_cache_table.sql） |  |
 | `racer_news` | 表 | 036_create_racer_news.sql | 画面が直接 | ポリシー（036_create_racer_news.sql） |  |
 | `racer_period_stats` | 表 | 083_racer_period_stats.sql | 画面が直接 | GRANT（095_phase_a_numeric_public_read.sql） |  |
 | `racer_profiles` | 表 | 035_create_racer_profiles.sql | 画面が直接 | ポリシー（035_create_racer_profiles.sql） |  |
 | `racer_series_points` | 表 | 064_racer_series_points.sql | 画面が直接 | ポリシー（076_enable_rls_on_public_tables.sql） |  |
-| `races` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_today_races(API) | ポリシー（001_schema.sql） |  |
+| `races` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
 | `rule_applications` | 表 | 008_venue_rules.sql | 画面が直接 | 記述なし |  |
 | `sns_approvers` | 表 | 035_sns_marketing_hub_schema.sql | APIが直接 | 記述なし |  |
 | `sns_content_types` | 表 | 043_sns_topic_gate_schema.sql | APIが直接 | 記述なし |  |

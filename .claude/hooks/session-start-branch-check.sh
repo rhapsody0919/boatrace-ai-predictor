@@ -20,6 +20,8 @@ if [ -n "$status" ]; then
   echo "$status"
 fi
 
+# NODE_USE_SYSTEM_CA があると node の起動が 0.4〜1.4秒遅くなる（OS の証明書ストア待ち、BOA-657）。フックは外部へ TLS 通信しないので外す
+unset NODE_USE_SYSTEM_CA
 # origin との乖離・worktree衛生。判定は scripts/maintenance/check-git-hygiene.js
 # （問題が無ければ何も出力しない）。node が使えない場合は黙って飛ばす。
 hygiene="$CLAUDE_PROJECT_DIR/scripts/maintenance/check-git-hygiene.js"

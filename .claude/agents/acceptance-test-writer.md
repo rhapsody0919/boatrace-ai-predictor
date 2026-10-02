@@ -34,9 +34,10 @@ model: opus
 
 ### 書き方
 
-- `import { test, expect } from "@playwright/test";`、`page.goto("/racers")` のように baseURL からの相対パスで開く。タイムアウトは設定（テスト60秒・expect 15秒）に任せ、個別に短くしない
+- `import { test, expect } from "../fixtures.js";`（`e2e/acceptance/` から見た `e2e/fixtures.js`。`@playwright/test` から直接 import しない。録画の再生（ADR-0077）・時計の固定・Cookie同意の既定は fixtures が担うため）、`page.goto("/racers")` のように baseURL からの相対パスで開く。タイムアウトは設定（テスト60秒・expect 15秒）に任せ、個別に短くしない
 - **ロケータはロール・表示文言ベース**（`getByRole` / `getByText` / `getByLabel` / `getByPlaceholder`）。実装前でDOMが無いので、`data-testid`・CSSクラス・要素構造を前提にしない。**タグ名・属性セレクタ（`a[href*=...]`・`td` 等）も使わない**。リンクは `getByRole("link")`、遷移先は `toHaveURL` で確かめる（試運転で `a[href]` 前提のテストが、`role="link"` や `navigate()` で作られた実装を「要素が無い」と誤判定した）
-- **サイト共通の前提は `test.beforeEach` で整える**: cookie同意バナーが画面下部のクリックを奪うので、`page.addInitScript(() => localStorage.setItem("boatai:cookie-consent", "accepted"))` を入れる（機能の実装ではなくサイト共通の前提なので、仕様に無くても書いてよい。試運転ではこれが無く、ページ送り等のクリックが全てタイムアウトした）。e2e共通fixtureが整備されたら（BOA-466）そちらを使う
+- **Cookie同意は書かない**: `e2e/fixtures.js` の共通 fixture が、既定で回答済み（rejected）にする。バナーそのものを検証するテストだけ `test.use({ cookieConsent: null })` で未回答から始める（#1091、BOA-502）。spec の `beforeEach`・`addInitScript` で同意を入れない
+- page のルートを途中で0件にしない。`page.unroute`・`page.unrouteAll`・`times:` 付きの `page.route` は使わない（BOA-662。0件になった瞬間に処理中の要求が録画の再生側へ送り直され「Route is already handled!」で落ちる）
 - 表示文言は spec.md / screens.md に**書かれている文言をそのまま**使う。書かれていない文言を推測で補わない。文言が仕様に無く、役割（ボタン・見出し・リンク等）でしか特定できないものはロールで特定し、名前は正規表現で幅を持たせる。それでも特定できないものは「仕様に文言が無く特定できない」として報告に回す
 - 1テスト = 仕様の1要件。テスト名の先頭に対応箇所を書く（例: `test("[spec 3.2] 級別で絞り込むとA1のみ表示される", ...)`）。どの要件を検証しているかを後から追えるようにするため
 - URLは spec.md / screens.md に書かれたパスを使う。本番Supabaseに直結するので、レースID・選手ID等を固定値で書かず、仕様にある導線（一覧→詳細等）で辿る。辿れない場合に限り固定値を使い、その理由をコメントに書く
