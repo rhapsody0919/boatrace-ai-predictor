@@ -811,6 +811,97 @@ test.describe("開催場一覧ページ（venue-list-redesign）", () => {
     await expectVenueGridLoaded(page);
   });
 
+  // ホームの会場データ取得（/api/races/today → 失敗時は Supabase へのフォールバック）が
+  // 失敗したら、本文の形によらずエラー表示を出し、「本日開催なし」の会場カードを出さない
+  // （BOA-668）。以前は本文が空・{} の 5xx だと PostgrestError の message が空文字になり、
+  // エラー表示が出ないまま24会場すべてが「本日開催なし」になっていた。
+  // message がある場合もエラー表示の下に24会場の「本日開催なし」が並んでいた。
+  const POSTGREST_TIMEOUT = JSON.stringify({
+    code: "57014",
+    details: null,
+    hint: null,
+    message: "canceling statement due to statement timeout",
+  });
+  const homeFetchFailures = [
+    {
+      name: "本文が {} の 500",
+      api: { status: 500, contentType: "application/json", body: "{}" },
+      rest: { status: 500, contentType: "application/json", body: "{}" },
+    },
+    {
+      name: "本文が空の 503",
+      api: { status: 500, body: "" },
+      rest: { status: 503, body: "" },
+    },
+    {
+      name: "PostgREST のエラー本文（code・message・details・hint）の 500",
+      api: {
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: false,
+          error: "Supabase RPC error: 500",
+        }),
+      },
+      rest: {
+        status: 500,
+        contentType: "application/json",
+        body: POSTGREST_TIMEOUT,
+      },
+    },
+    {
+      name: "Vercel・ゲートウェイのタイムアウト（504, text/plain）",
+      api: {
+        status: 504,
+        contentType: "text/plain",
+        body: "An error occurred with your deployment\n\nFUNCTION_INVOCATION_TIMEOUT",
+      },
+      rest: {
+        status: 504,
+        contentType: "text/plain",
+        body: "upstream request timeout",
+      },
+    },
+    { name: "ネットワーク切断", api: "abort", rest: "abort" },
+  ];
+  for (const failure of homeFetchFailures) {
+    test(`ホームの会場データ取得が失敗したらエラー表示を出し、「本日開催なし」にしない: ${failure.name}（BOA-668）`, async ({
+      page,
+    }) => {
+      const respond = (spec) => (route) =>
+        spec === "abort"
+          ? route.abort("internetdisconnected")
+          : route.fulfill(spec);
+      await page.route("**/api/races/**", respond(failure.api));
+      await page.route("**/rest/v1/**", respond(failure.rest));
+
+      await page.goto("/");
+      await expect(page.locator(".data-fetch-error")).toHaveCount(1, {
+        timeout: 30000,
+      });
+      await expect(page.locator(".venue-grid-card--closed")).toHaveCount(0);
+      await expect(page.locator(".venue-grid-card")).toHaveCount(0);
+    });
+  }
+
+  test("ホームの会場データ取得が成功して0件なら、24会場すべてを「本日開催なし」にする（BOA-668）", async ({
+    page,
+  }) => {
+    await page.route("**/api/races/**", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: [] }),
+      }),
+    );
+
+    await page.goto("/");
+    await expect(page.locator(".venue-grid-card--closed")).toHaveCount(24, {
+      timeout: 30000,
+    });
+    await expect(page.locator(".data-fetch-error")).toHaveCount(0);
+  });
+
   test("会場一覧→レース一覧→レース詳細と遷移し、URLがディープリンク可能", async ({
     page,
   }) => {

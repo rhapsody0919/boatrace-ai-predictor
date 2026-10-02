@@ -69,7 +69,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/ghaSkipGate.js` | GitHub Actions 側の取得を止める判定（フェイルセーフ付きSKIP。自動フェイルオーバー）。 | evaluateJobHealth, decideFromRows, jobKeysFor, createRestJobStateClient, shouldSkipOnGha ほか5件 |
 | `scripts/lib/googleServiceAuth.js` | Googleサービスアカウント認証の共通ヘルパー（BOA-139） | getGoogleAuthClient |
 | `scripts/lib/harville.js` | — | normalizeProbs, impliedProbsFromOdds, condSecond, condThird, exactaProb ほか6件 |
-| `scripts/lib/hitCalculator.js` | 的中判定ユーティリティ | calculateHits, isWinHit, isPlaceHit, isShowHit, isTrifectaHit ほか3件 |
+| `scripts/lib/hitCalculator.js` | 的中判定ユーティリティ | buildPredictionHitUpdate, calculateHits, isWinHit, isPlaceHit, isShowHit ほか5件 |
 | `scripts/lib/isDirectRun.js` | そのモジュールが `node <path>` で直接実行されたかを判定する。 | isDirectRun |
 | `scripts/lib/isotonic-regression.js` | — | IsotonicCalibrator |
 | `scripts/lib/kbArchiveRows.js` | K/B中間形式（kb-day/v1）→ アーカイブ表（kb_archive_*）の行への変換 | raceTimeToSeconds, classifyStage, buildArchiveRows, KB_ARCHIVE_TABLES |
@@ -206,6 +206,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/courseBaseline.js` | ST考察の「同コース・同級別の平均との差」の算出（phase a FR-1） | indexBaseline, getBaselineCell, diffFromBaseline, expectedBreakoutCount, METRIC_DIRECTION |
 | `src/utils/dateUtils.js` | 日付ユーティリティ（フロントエンド用） | getJSTNow, getNowHHMMJST, getTodayJST, getYesterdayJST, getDaysAgoJST ほか8件 |
 | `src/utils/digestMetrics.js` | digestMetrics - 「本日のデータ一覧」（BOA-402）の指標計算（純関数） | computeSkillDelta, computePredicted, computeZScore, computeConsistency, computeFeaturedScore ほか11件 |
+| `src/utils/errorMessage.js` | 例外から、画面のエラー状態に入れる文言を取り出す（BOA-668）。 | errorMessageOf |
 | `src/utils/formatters.js` | フォーマット関数 | formatCapturedAtJst, formatPercent, formatDate, formatDateLocalized, formatDateShort ほか4件 |
 | `src/utils/meetGrouping.js` | meetGrouping - 節（開催）のグルーピング共通ロジック | groupIntoCurrentMeet, groupIntoMeetBeforeRace, findMeetStartDate |
 | `src/utils/motorGeneration.js` | モーターの世代（入れ替え単位）の判定。 | currentMotorGenerationStart, isInMotorGeneration, formatGenerationDate, isClippedByGeneration, officialTallyState |
@@ -257,4 +258,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 222 ファイル / export 1111 件。
+対象 223 ファイル / export 1114 件。

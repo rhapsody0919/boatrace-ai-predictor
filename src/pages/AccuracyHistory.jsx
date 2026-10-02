@@ -7,6 +7,7 @@ import { getRecoveryColorClass } from "../utils/colors";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import "./AccuracyHistory.css";
+import { errorMessageOf } from "../utils/errorMessage.js";
 
 function AccuracyHistory() {
   const [summary, setSummary] = useState(null);
@@ -22,7 +23,7 @@ function AccuracyHistory() {
         setSummary(data);
       } catch (err) {
         console.error("Failed to load accuracy summary:", err);
-        setError(err.message);
+        setError(errorMessageOf(err));
       } finally {
         setLoading(false);
       }
