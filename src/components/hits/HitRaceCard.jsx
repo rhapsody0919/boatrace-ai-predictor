@@ -56,7 +56,9 @@ function HitRaceCard({
 
       <div className="turn-hit-detail">
         <div className="turn-hit-course">
-          <span className="turn-hit-course-label">1マーク先頭</span>
+          {/* 的中の判定は1着の艇で行う（予想の確率も1着になる確率）。「1マーク先頭」と書いていたが、
+              展開予測の説明を「1着」にそろえた（BOA-710） */}
+          <span className="turn-hit-course-label">1着予想</span>
           <span className="turn-hit-course-value">
             {hitRace.winnerCourse}コース
           </span>

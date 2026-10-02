@@ -76,3 +76,12 @@ test("使い方ガイドと成績ページの展開予測の説明は「1着」�
   });
   await expect(info).not.toContainText("先頭");
 });
+
+test("的中レースの展開予測のカードは「1着予想」と書く（BOA-710）", async ({
+  page,
+}) => {
+  await page.goto("/hit-races");
+  const label = page.locator(".turn-hit-course-label").first();
+  await expect(label).toBeVisible({ timeout: 30000 });
+  await expect(label).toHaveText("1着予想");
+});
