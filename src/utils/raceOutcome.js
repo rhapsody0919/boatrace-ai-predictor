@@ -166,18 +166,18 @@ export function normalizeFinishMark(mark) {
 
 /**
  * 払戻明細（race_payouts.bet_type、079）→ 画面の勝式キー（i18n の result.payoutType.*）と組番の区切り。
- * 並びは単勝・複勝・3連単・3連複・2連単・2連複・拡連複（ユーザー承認のモックどおり。公式PC版の結果ページは
- * 3連単・3連複・2連単・2連複・拡連複・単勝・複勝の順で、公式とは違う。ファン評価 第1周 指摘2で判明）。
+ * 並びは公式の結果ページと同じ 3連単・3連複・2連単・2連複・拡連複・単勝・複勝（BOA-558 の5、ユーザー判断）。
+ * 以前は単勝・複勝を先頭にしたモックの並びだった。
  * race_results の payout_trio=3連単・payout_trifecta=3連複 の逆転は持ち込まない
  */
 export const PAYOUT_BET_TYPES = Object.freeze([
-  { betType: "win", typeKey: "win", separator: "" },
-  { betType: "place", typeKey: "place", separator: "" },
   { betType: "3tan", typeKey: "trifecta", separator: "-" },
   { betType: "3fuku", typeKey: "trio", separator: "=" },
   { betType: "2tan", typeKey: "exacta", separator: "-" },
   { betType: "2fuku", typeKey: "quinella", separator: "=" },
   { betType: "wide", typeKey: "wide", separator: "=" },
+  { betType: "win", typeKey: "win", separator: "" },
+  { betType: "place", typeKey: "place", separator: "" },
 ]);
 
 export const PAYOUT_STATUS = Object.freeze({

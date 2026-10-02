@@ -317,7 +317,8 @@
    1440px で名前の列との間が約700px空き、0.01秒の差が読み取りにくかった（BOA-586）。
    着順表は一覧カードでも使うので、レース詳細ページの中だけ広げる */
 @media (min-width: 1024px) {
-  .race-detail-page-v2 .rr-row {
+  .race-detail-page-v2 .rr-row,
+  .race-detail-page-v2 .rr-row-head {
     /* 名前の列は 16rem で止め、余った幅はスタートの図に回す。名前の列を 1fr にしていると、
        図を 18rem に広げても名前の後ろに 1440px で約660px の空白が残った（#1071 ファン評価2周目） */
     grid-template-columns: 2.6rem 1.8rem minmax(0, 16rem) minmax(18rem, 1fr) 3.6rem;

@@ -286,6 +286,13 @@
       "noPositionPlain": "着順なし"
     },
     "refundTag": "返還艇あり",
+    "columns": {
+      "position": "着",
+      "boat": "枠",
+      "racer": "ボートレーサー",
+      "start": "ST",
+      "time": "レースタイム"
+    },
     "partialNoRaceTag": "不成立の勝式あり",
     "payoutNoRace": "不成立（返還）",
     "partialVoidByStarters": "正常にスタートした艇が{{count}}艇のため、{{types}}は不成立（返還）です",
@@ -950,8 +957,7 @@
     "missBadge": "❌ 外れ",
     "view": "詳細を見る",
     "dataTableExpand": "調子・展示・回収率まで見る",
-    "noRace": "不成立",
-    "refundBadge": "返還あり"
+    "noRace": "不成立"
   },
   "turnPatternList": {
     "title": "展開予測",

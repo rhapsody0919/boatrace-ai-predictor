@@ -286,6 +286,13 @@
       "noPositionPlain": "無名次"
     },
     "refundTag": "有退款艇",
+    "columns": {
+      "position": "名次",
+      "boat": "艇號",
+      "racer": "選手",
+      "start": "ST",
+      "time": "比賽時間"
+    },
     "partialNoRaceTag": "部分投注類型不成立",
     "payoutNoRace": "不成立（退款）",
     "partialVoidByStarters": "正常起跑的艇只有{{count}}艇，因此{{types}}不成立（退款）",
@@ -538,8 +545,7 @@
     "missBadge": "❌ 未命中",
     "view": "查看詳情",
     "dataTableExpand": "查看調子、展示、回收率",
-    "noRace": "不成立",
-    "refundBadge": "有退款"
+    "noRace": "不成立"
   },
   "turnPatternList": {
     "title": "轉彎預測",

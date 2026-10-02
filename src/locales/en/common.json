@@ -290,6 +290,13 @@
       "noPositionPlain": "No finishing position"
     },
     "refundTag": "Refunded boats",
+    "columns": {
+      "position": "Pos.",
+      "boat": "Boat #",
+      "racer": "Racer",
+      "start": "ST",
+      "time": "Race time"
+    },
     "partialNoRaceTag": "Some bet types void",
     "payoutNoRace": "Void (refunded)",
     "partialVoidByStarters": "Only {{count}} boats started normally, so {{types}} were void (refunded)",
@@ -543,8 +550,7 @@
     "missBadge": "❌ Missed",
     "view": "View details",
     "dataTableExpand": "See form, exhibition, return rate",
-    "noRace": "Void",
-    "refundBadge": "Refunds"
+    "noRace": "Void"
   },
   "turnPatternList": {
     "title": "Turn Prediction",
