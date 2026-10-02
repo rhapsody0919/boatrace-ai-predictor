@@ -11,6 +11,7 @@ import { supabaseDataService } from "../../services/supabaseDataService";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import TrendLineChart from "./TrendLineChart";
+import { bestOf } from "../../utils/bestOf";
 import DrillDownHeader from "./DrillDownHeader";
 import "./MotorConditionChart.css";
 
@@ -80,14 +81,12 @@ function StPredictabilityChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drillDownRacer]);
 
-  const bestDeviation =
-    breakdown.filter((r) => r.avg_deviation !== null).length > 0
-      ? Math.min(
-          ...breakdown
-            .filter((r) => r.avg_deviation !== null)
-            .map((r) => r.avg_deviation),
-        )
-      : null;
+  // ズレが最も小さい艇（同値は全部）。表示と同じ小数3桁で比べる（R1）
+  const bestDeviationBoats = bestOf(
+    breakdown.map((r) => ({ boat: r.boat_number, value: r.avg_deviation })),
+    "min",
+    { digits: 3 },
+  );
 
   const chartData = (trendData?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
@@ -179,7 +178,7 @@ function StPredictabilityChart({
                 {breakdown.map((row) => (
                   <tr
                     key={row.boat_number}
-                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""} ${row.avg_deviation === bestDeviation && bestDeviation !== null ? "best-motor" : ""}`}
+                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""} ${bestDeviationBoats.has(row.boat_number) ? "best-motor" : ""}`}
                     onClick={() =>
                       row.racer_id !== null && setDrillDownRacer(row.racer_id)
                     }

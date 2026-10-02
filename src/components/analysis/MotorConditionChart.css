@@ -187,8 +187,9 @@
   color: var(--text-primary);
 }
 
+/* 数値の列。以前は値に関係なく全セルを緑にしていたが、緑は「基準より良い」専用にした
+   （docs/design/race-detail-ui-unify R5）。良し悪しの色は power-index-good/-bad 等が付ける */
 .motor-ranking-table td.rate {
-  color: var(--color-success-text);
   font-weight: var(--font-weight-medium);
 }
 
@@ -282,9 +283,9 @@
   color: var(--text-primary);
 }
 
+/* 2連率。何とも比べていないので色は付けない（R5） */
 .usage-history-rate {
   font-weight: var(--font-weight-semibold);
-  color: var(--color-success-text);
 }
 
 .usage-history-rate.is-small-sample {
@@ -375,14 +376,11 @@
     inset 0 -2px 0 var(--brand-accent-primary);
 }
 
-/* 優出数・優勝数・1着率の1位・2位セル強調（kyoteibiyori等の出走表に倣う、BOA-264追加調査） */
+/* 優出数・優勝数・1着率の1位のセル強調（同値は全部。2位の薄い金はやめた。R1） */
 .motor-stat-rank1 {
-  background-color: color-mix(in srgb, var(--brand-accent-primary) 28%, transparent);
-  font-weight: var(--font-weight-semibold);
-}
-
-.motor-stat-rank2 {
-  background-color: color-mix(in srgb, var(--brand-accent-primary) 12%, transparent);
+  background-color: var(--ind-best-bg);
+  box-shadow: inset 0 0 0 1px var(--ind-best-ring);
+  font-weight: var(--font-weight-bold);
 }
 
 .back-to-ranking-btn {

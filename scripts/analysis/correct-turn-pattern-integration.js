@@ -3,7 +3,7 @@
  * シンプルなクエリで全データ取得後、ローカルでフィルタリング
  */
 
-import { supabase } from "../lib/supabaseClient.js";
+import { fetchAll } from "../lib/supabaseClient.js";
 import fs from "fs/promises";
 
 console.log(`\n=== 正確版: patterns配列を使った展開予測統合分析 ===\n`);
@@ -22,44 +22,30 @@ console.log(`(3週間前～2週間前。レース結果確定確保)\n`);
 console.log(`データ取得中...`);
 
 // Step 1: predictionsテーブルから対象期間のデータを取得（predicted_at でフィルタ）
-let allPredictions = [];
-let offset = 0;
-const pageSize = 500;
-
-while (true) {
-  const { data: pagePreds } = await supabase
-    .from("predictions")
-    .select(`race_id, model_id, feature_contributions`)
-    .eq("model_id", "standard")
-    .gte("predicted_at", startDateStr)
-    .lte("predicted_at", endDateStr)
-    .range(offset, offset + pageSize - 1);
-
-  if (!pagePreds || pagePreds.length === 0) break;
-  allPredictions = allPredictions.concat(pagePreds);
-  offset += pageSize;
-}
+const allPredictions = await fetchAll(
+  "predictions",
+  `race_id, model_id, feature_contributions`,
+  (q) =>
+    q
+      .eq("model_id", "standard")
+      .gte("predicted_at", startDateStr)
+      .lte("predicted_at", endDateStr)
+      .order("race_id")
+      .order("model_id"),
+);
 
 console.log(`  predictions: ${allPredictions.length}件`);
 
 // Step 2: racesテーブルから対象期間のデータを取得（race_results を持つものに限定）
-let allRaces = [];
-offset = 0;
-
-while (true) {
-  const { data: pageRaces } = await supabase
-    .from("races")
-    .select(
-      `race_id, race_date, race_results!inner(rank1, rank2, rank3, payout_trifecta, payout_trio)`,
-    )
-    .gte("race_date", startDateStr)
-    .lte("race_date", endDateStr)
-    .range(offset, offset + pageSize - 1);
-
-  if (!pageRaces || pageRaces.length === 0) break;
-  allRaces = allRaces.concat(pageRaces);
-  offset += pageSize;
-}
+const allRaces = await fetchAll(
+  "races",
+  `race_id, race_date, race_results!inner(rank1, rank2, rank3, payout_trifecta, payout_trio)`,
+  (q) =>
+    q
+      .gte("race_date", startDateStr)
+      .lte("race_date", endDateStr)
+      .order("race_id"),
+);
 
 console.log(`  races (with results): ${allRaces.length}件\n`);
 

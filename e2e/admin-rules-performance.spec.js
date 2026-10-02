@@ -231,7 +231,11 @@ test.describe("管理画面 /admin/rules の運用成績", () => {
       PERFORMANCE_API,
       fulfillJson({
         startDate: "2026-01-16",
-        data: { total: { samples: 0, hits: 0, payout: 0 }, by_rule: [], by_week: [] },
+        data: {
+          total: { samples: 0, hits: 0, payout: 0 },
+          by_rule: [],
+          by_week: [],
+        },
       }),
     );
     await page.goto("/admin/rules");
@@ -254,5 +258,67 @@ test.describe("管理画面 /admin/rules の運用成績", () => {
     await expect(page.locator(".admin-rules-error-state")).toContainText(
       "get_admin_rule_performance 呼び出しエラー",
     );
+  });
+
+  // BOA-676: loadHistoryData は catch で console.error するだけで、historyData/historyTotal を
+  // 更新しないまま終わっていた。取得失敗が「対象期間に履歴なし」という空の一覧に化け、
+  // 画面からは取得できていないことに気づけなかった。履歴タブの predictions クエリ
+  // （getRuleApplicationHistory、race_id=gte./lt. を使う）だけを失敗させ、
+  // 本日タブの predictions クエリ（race_id=like.、beforeEach で空配列を返す）とは区別する。
+  // 失敗は履歴タブ単位なので、ページ全体をreloadするDataFetchErrorではなく、
+  // 他タブの状態を保ったまま再取得できるInlineFetchError（.inline-fetch-error）を使う
+  test("履歴タブのAPIが失敗したら「対象期間に履歴なし」にせずエラーを出し、再試行で復帰する", async ({
+    page,
+  }) => {
+    const HISTORY_PREDICTIONS = /\/rest\/v1\/predictions\?.*race_id=gte\./;
+    await page.route(
+      PERFORMANCE_API,
+      fulfillJson({
+        startDate: "2026-01-16",
+        data: {
+          total: { samples: 0, hits: 0, payout: 0 },
+          by_rule: [],
+          by_week: [],
+        },
+      }),
+    );
+    // 最初の1回だけ失敗させ、再試行後は空の履歴データで成功させる
+    let historyRequestCount = 0;
+    await page.route(HISTORY_PREDICTIONS, (route) => {
+      historyRequestCount += 1;
+      if (historyRequestCount === 1) {
+        return route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({
+            message: "履歴取得に失敗しました（テスト用）",
+          }),
+        });
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "content-range": "0-0/0" },
+        body: JSON.stringify([]),
+      });
+    });
+    await page.goto("/admin/rules");
+    await page.getByRole("button", { name: "履歴", exact: true }).click();
+
+    await expect(
+      page.locator(".history-tab .inline-fetch-error"),
+    ).toContainText("履歴取得に失敗しました（テスト用）");
+    // 空の一覧（0件）としての表示（期間成績サマリー・表・ページネーション）は出さない
+    await expect(page.locator(".history-tab .history-summary")).toHaveCount(0);
+    await expect(page.locator(".history-tab .rules-table")).toHaveCount(0);
+
+    // 再試行すると、ページ全体をreloadせず（InlineFetchErrorはDataFetchErrorと
+    // 違いonRetryで該当箇所だけ取り直す）、履歴タブだけ成功表示に戻る
+    await page.locator(".history-tab .inline-fetch-error__retry").click();
+    await expect(page.locator(".history-tab .inline-fetch-error")).toHaveCount(
+      0,
+    );
+    await expect(page.locator(".history-tab .history-summary")).toBeVisible();
+    expect(historyRequestCount).toBeGreaterThanOrEqual(2);
   });
 });

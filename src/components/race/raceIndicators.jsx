@@ -7,6 +7,7 @@
  */
 import { Fragment } from "react";
 import { Link } from "react-router-dom";
+import { bestOf } from "../../utils/bestOf";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
 import {
   meetPrevRunState,
@@ -70,19 +71,6 @@ const byBoat = (rows) => {
   return map;
 };
 
-function bestOf(candidates, dir = "max") {
-  const values = candidates.filter(
-    (c) => c.value !== null && c.value !== undefined,
-  );
-  if (values.length === 0) return null;
-  const vs = values.map((c) => c.value);
-  if (Math.min(...vs) === Math.max(...vs)) return null;
-  const best = values.reduce((a, b) => {
-    if (dir === "min") return b.value < a.value ? b : a;
-    return b.value > a.value ? b : a;
-  });
-  return best.boat;
-}
 
 /**
  * オリジナル展示（一周・半周ラップ・まわり足・直線）の行を作る（BOA-452 / FR-4b）。
@@ -137,7 +125,7 @@ function buildOriginalExhibitionRows(t, originalExhibition) {
         shortLabel: t(meta.labelKey),
         // 発走の直前に出る値なので直前情報タブへ（展示タイムと同じ扱い）
         category: "beforeInfo",
-        best: bestOf(candidates, "min"),
+        best: bestOf(candidates, "min", { digits: 2 }),
         render: (p) => {
           const value = toNumber(byBoat[p.number]?.[kind]);
           return value !== null ? (
@@ -261,7 +249,7 @@ function buildRowDefs({
       label: t("dataTable.rowWinRate"),
       shortLabel: t("review.cols.winRate"),
       tab: null,
-      best: bestOf(cand.winRate),
+      best: bestOf(cand.winRate, "max", { digits: 2 }),
       render: (p) => (
         <span className="drt-value">
           <span className="drt-grade">
@@ -277,7 +265,7 @@ function buildRowDefs({
       label: t("dataTable.rowLocalWinRate"),
       shortLabel: t("review.cols.localWinRate"),
       tab: "racecard",
-      best: bestOf(cand.localWinRate),
+      best: bestOf(cand.localWinRate, "max", { digits: 2 }),
       render: (p) => {
         const rate = toNumber(p.localWinRate);
         return rate !== null ? (
@@ -292,7 +280,7 @@ function buildRowDefs({
       label: t("dataTable.rowTwoRate"),
       shortLabel: t("review.cols.twoRate"),
       tab: "racecard",
-      best: bestOf(cand.twoRate),
+      best: bestOf(cand.twoRate, "max", { digits: 1 }),
       render: (p) => {
         const rate = toNumber(p.global2Rate);
         return rate !== null ? (
@@ -319,7 +307,7 @@ function buildRowDefs({
           : null;
       })(),
       tab: "motor",
-      best: bestOf(cand.motor),
+      best: bestOf(cand.motor, "max", { digits: 1 }),
       render: (p) => {
         const row = motorByBoat.get(p.number);
         const rate = toNumber(row?.motor_2rate ?? p.motor2Rate);
@@ -359,6 +347,8 @@ function buildRowDefs({
       tab: "racer",
       best: bestOf(
         (racerForm ?? []).map((r) => ({ boat: r.boat_number, value: r.delta })),
+        "max",
+        { digits: 2 },
       ),
       render: (p) => {
         const row = formByBoat.get(p.number);
@@ -381,7 +371,7 @@ function buildRowDefs({
       label: t("dataTable.rowAvgSt"),
       shortLabel: t("review.cols.avgSt"),
       tab: "racecard",
-      best: bestOf(cand.avgSt, "min"),
+      best: bestOf(cand.avgSt, "min", { digits: 2 }),
       render: (p) => {
         const rate = toNumber(statsByBoat.get(p.number)?.avgST);
         return rate !== null ? (
@@ -396,7 +386,7 @@ function buildRowDefs({
       label: t("dataTable.rowSt"),
       shortLabel: t("review.cols.st"),
       tab: "st",
-      best: bestOf(cand.st, "min"),
+      best: bestOf(cand.st, "min", { digits: 2 }),
       render: (p) => {
         const row = stByBoat.get(p.number);
         if (!row || !row.sample_count) return ph("stPredictability");
@@ -412,7 +402,7 @@ function buildRowDefs({
       // 直前情報タブへ分離（BOA-304）: 発走30/15/10分前まで未確定のため
       category: "beforeInfo",
       tab: "st",
-      best: bestOf(cand.exSt, "min"),
+      best: bestOf(cand.exSt, "min", { digits: 2 }),
       render: (p) => {
         const rate = toNumber(stByBoat.get(p.number)?.exhibition_st);
         return rate !== null ? (
@@ -429,7 +419,7 @@ function buildRowDefs({
       // 直前情報タブへ分離（BOA-304）: 発走30/15/10分前まで未確定のため
       category: "beforeInfo",
       tab: "extrend",
-      best: bestOf(cand.exhibition, "min"),
+      best: bestOf(cand.exhibition, "min", { digits: 2 }),
       render: (p) => {
         const row = exByBoat.get(p.number);
         if (!row) return ph("exhibitionTime");
@@ -653,7 +643,7 @@ function buildRowDefs({
       label: t("dataTable.rowCourseRate"),
       shortLabel: t("review.cols.courseRate"),
       tab: "attackdefense",
-      best: bestOf(cand.courseRate),
+      best: bestOf(cand.courseRate, "max", { digits: 0 }),
       render: (p) => {
         const cr = courseRateOf(statsByBoat, p.number);
         if (!cr) return ph("racerStats");
@@ -694,7 +684,7 @@ function buildRowDefs({
       label: t("dataTable.rowReturnRate"),
       shortLabel: t("review.cols.returnRate"),
       tab: "returnrate",
-      best: bestOf(cand.returnRate),
+      best: bestOf(cand.returnRate, "max", { digits: 0 }),
       render: (p) => {
         const row = rateByBoat.get(p.number);
         if (!row || !row.sample_count) return ph("returnRate");

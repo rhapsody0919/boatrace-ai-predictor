@@ -38,6 +38,13 @@
  *    fetchAll・getRaceSchedule 等の8関数が、失敗を空配列・部分結果にするのを既定にしていた
  *    （安全な挙動がオプトイン）。既定は例外にし、握りつぶしてよい呼び出し側だけが
  *    `{ throwOnError: false }` を理由付きで明示する
+ * 6. `scripts/` で `throwOnError: false` を明示する行の直前（空行を除く1行上）に、
+ *    `握りつぶし可（BOA-391）: <理由>` のコメントがあること。握りつぶしの明示を、
+ *    書き方をそろえて一覧できる形にする（`grep -rn "握りつぶし可" scripts` で全件を引ける）
+ * 7. `scripts/` で `.range()` を使う（自前でページングする）ファイルに、取得エラーを受けて
+ *    ログだけ出して `break` / `return null` / `return []` / `return` で続行する書き方が無いこと。
+ *    部分結果が「全件」に、失敗が「データなし」に化ける（2026-10-02 の棚卸しで本番経路に11箇所あった）。
+ *    共通の fetchAll を使うか、例外にする
  */
 
 import fs from "fs";
@@ -119,6 +126,18 @@ for (const file of scriptFiles) {
   const lines = text.split("\n");
   lines.forEach((line, i) => {
     if (/^\s*(\/\/|\*)/.test(line)) return;
+    // 検証スクリプトは、既定と opt-out の両方を試すために false を渡すので対象外
+    const isVerify = /(^|\/)verify-[^/]*\.js$/.test(rel);
+    if (!isVerify && /\bthrowOnError:\s*false\b/.test(line)) {
+      // 6: 明示の opt-out には、直前の行に理由の印を付ける
+      let j = i - 1;
+      while (j >= 0 && lines[j].trim() === "") j--;
+      if (j < 0 || !lines[j].includes("握りつぶし可（BOA-391）:")) {
+        errors.push(
+          `${rel}:${i + 1}: throwOnError: false の直前に「// 握りつぶし可（BOA-391）: <理由>」のコメントが無い（BOA-391）`,
+        );
+      }
+    }
     if (/\bthrowOnError\s*=\s*false\b/.test(line)) {
       errors.push(
         `${rel}:${i + 1}: 引数の既定が「失敗を握りつぶす」になっている（${line.trim()}）。` +
@@ -126,6 +145,23 @@ for (const file of scriptFiles) {
       );
     }
   });
+}
+
+// 7: 自前のページングで、取得エラーをログだけにして続行していないか（BOA-391）
+const SWALLOW_RE =
+  /if \(\s*!?\w*[Ee]rror\w*\s*\)\s*\{\s*console\.(?:error|warn|log)\([^;]*\);\s*(?:break|return null|return \[\]|return)\s*;?\s*\}/g;
+for (const file of scriptFiles) {
+  const rel = path.relative(ROOT, file);
+  if (/(^|\/)verify-[^/]*\.js$/.test(rel)) continue;
+  const text = fs.readFileSync(file, "utf8");
+  if (!text.includes(".range(")) continue;
+  for (const m of text.matchAll(SWALLOW_RE)) {
+    const line = text.slice(0, m.index).split("\n").length;
+    errors.push(
+      `${rel}:${line}: 取得エラーをログだけにして続行している（部分結果・失敗が「データなし」に化ける）。` +
+        "共通の fetchAll を使うか、例外にすること（BOA-391）",
+    );
+  }
 }
 
 if (errors.length > 0) {

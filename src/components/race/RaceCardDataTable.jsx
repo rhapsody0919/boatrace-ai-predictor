@@ -41,7 +41,7 @@ function RaceCardDataTable({ raceId, players }) {
   );
 
   const cellClass = (boat, best) =>
-    `rcdt-cell ${best !== null && boat === best ? "rcdt-best" : ""}`;
+    `rcdt-cell ${best?.has(boat) ? "rcdt-best" : ""}`;
 
   const renderRows = (list) =>
     list.map((row) => (

@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { bestOf } from "../../utils/bestOf";
 import "./MotorConditionChart.css";
 
 const VENUE_NAMES = {
@@ -127,14 +128,13 @@ function RacerBoatReturnRateChart({
     loadBreakdown();
   }, [selectedRace]);
 
-  const bestWinReturnRate =
-    breakdown.length > 0
-      ? Math.max(
-          ...breakdown
-            .filter((r) => r.win_return_rate !== null)
-            .map((r) => r.win_return_rate),
-        )
-      : null;
+  // 単勝回収率が最も高い艇（同値は全部）。表示と同じ整数で比べる（R1）。
+  // 0% しかいないときは強調しない（> 0 の条件は以前から）
+  const bestWinReturnBoats = bestOf(
+    breakdown.map((r) => ({ boat: r.boat_number, value: r.win_return_rate })),
+    "max",
+    { digits: 0 },
+  );
 
   return (
     <div className="motor-condition-container">
@@ -217,8 +217,8 @@ function RacerBoatReturnRateChart({
                 <tr
                   key={row.boat_number}
                   className={`motor-ranking-row non-clickable-row ${
-                    row.win_return_rate === bestWinReturnRate &&
-                    bestWinReturnRate > 0
+                    bestWinReturnBoats.has(row.boat_number) &&
+                    row.win_return_rate > 0
                       ? "best-motor"
                       : ""
                   }`}

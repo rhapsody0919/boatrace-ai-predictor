@@ -7,7 +7,11 @@
 // 日別に集計するシンプルな構造に変更。マイグレーション033
 // （predictions.is_hit_turn追加）の適用が前提。
 
-import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
+import {
+  supabase,
+  isSupabaseEnabled,
+  fetchAll,
+} from "../lib/supabaseClient.js";
 
 const MODEL_ID = "unified";
 
@@ -17,31 +21,12 @@ function jstDateStr(date) {
   return jst.toISOString().split("T")[0];
 }
 
-// predictions（unified）から指定範囲を全件取得（ページネーション付き）
+// predictions（unified）から指定範囲を全件取得（共通 fetchAll。失敗は例外にし、途中までの結果で
+// キャッシュを書かない。BOA-391）。unified は1レース1行なので race_id で一意に並ぶ
 async function fetchUnifiedPredictionsRange(startDate) {
-  let allData = [];
-  let from = 0;
-  const pageSize = 1000;
-
-  while (true) {
-    const { data: page, error } = await supabase
-      .from("predictions")
-      .select("race_id, is_hit_turn")
-      .eq("model_id", MODEL_ID)
-      .gte("race_id", startDate)
-      .range(from, from + pageSize - 1);
-
-    if (error) {
-      console.error("  fetchUnifiedPredictionsRange error:", error.message);
-      break;
-    }
-    if (!page || page.length === 0) break;
-    allData = allData.concat(page);
-    if (page.length < pageSize) break;
-    from += pageSize;
-  }
-
-  return allData;
+  return fetchAll("predictions", "race_id, is_hit_turn", (q) =>
+    q.eq("model_id", MODEL_ID).gte("race_id", startDate).order("race_id"),
+  );
 }
 
 // race_history_cache を構築・更新
@@ -59,26 +44,10 @@ async function updateRaceHistoryCache() {
   const predictions = await fetchUnifiedPredictionsRange(ninetyDaysAgoStr);
   console.log(`  取得したunified予測: ${predictions.length}件`);
 
-  // race_id ごとの レース情報を取得（total を計数）
-  let allRaces = [];
-  let from = 0;
-  const pageSize = 1000;
-  while (true) {
-    const { data: page, error } = await supabase
-      .from("races")
-      .select("race_id")
-      .gte("race_id", ninetyDaysAgoStr)
-      .range(from, from + pageSize - 1);
-
-    if (error) {
-      console.error("  races テーブル取得エラー:", error.message);
-      break;
-    }
-    if (!page || page.length === 0) break;
-    allRaces = allRaces.concat(page);
-    if (page.length < pageSize) break;
-    from += pageSize;
-  }
+  // race_id ごとの レース情報を取得（total を計数）。失敗は例外（BOA-391）
+  const allRaces = await fetchAll("races", "race_id", (q) =>
+    q.gte("race_id", ninetyDaysAgoStr).order("race_id"),
+  );
 
   // 日付別に集計
   const dayMap = new Map(); // date -> { totalRaces, finishedRaces, turnRaces, turnHits }

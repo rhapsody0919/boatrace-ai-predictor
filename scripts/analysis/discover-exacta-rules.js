@@ -6,6 +6,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { fetchAll } from '../lib/supabaseClient.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -49,28 +50,12 @@ async function main() {
   // データ取得（ページネーション）
   console.log('📥 データ取得中... (2026-01-01以降)');
 
-  const allPredictions = [];
-  let offset = 0;
-  const pageSize = 1000;
-
-  while (true) {
-    const { data, error } = await supabase
-      .from('predictions')
-      .select('race_id, top_pick, top_2nd, top_3rd, confidence')
-      .gte('predicted_at', '2026-01-01')
-      .eq('model_id', 'standard')
-      .range(offset, offset + pageSize - 1);
-
-    if (error) {
-      console.error('予測データ取得エラー:', error);
-      break;
-    }
-    if (!data || data.length === 0) break;
-
-    allPredictions.push(...data);
-    offset += pageSize;
-    if (data.length < pageSize) break;
-  }
+  const allPredictions = await fetchAll(
+    'predictions',
+    'race_id, top_pick, top_2nd, top_3rd, confidence',
+    q => q.gte('predicted_at', '2026-01-01').eq('model_id', 'standard').order('race_id').order('model_id'),
+    { client: supabase }
+  );
 
   console.log(`  予測データ: ${allPredictions.length}件`);
 
@@ -86,9 +71,8 @@ async function main() {
       .select('race_id, rank1, rank2, rank3, payout_trio')
       .in('race_id', batch);
 
-    if (!error && data) {
-      allResults.push(...data);
-    }
+    if (error) throw new Error(`race_results取得エラー: ${error.message}`);
+    allResults.push(...data);
   }
 
   console.log(`  結果データ: ${allResults.length}件\n`);

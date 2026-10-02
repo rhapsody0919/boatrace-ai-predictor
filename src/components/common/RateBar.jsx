@@ -5,7 +5,8 @@ import "./RateBar.css";
  *
  * レース詳細の6艇表（公式2連率、塗りは艇色）と、分析ツールの「モーターランキング」
  * （2連率、塗りは中立色）で使う。良し悪しで棒を塗り分けない（UI統一ルール R4）。
- * 最良は値ラベルで示す（`best`。同じ値の最良が複数あれば、どれも true）。
+ * 最良は値ラベルで示す（`best`。同じ値の最良が複数あれば、どれも true）。見た目は共通クラス
+ * `.ind-best`（src/styles/indicators.css、UI統一ルール R1）。
  *
  * 値ラベルは棒の右端に重ねた札にする。札の背景を `--surface-card` にして、2号艇（黒）・
  * 4号艇（青）の塗りの上でも読めるようにする。札を棒の外に出すと、375px で6艇表の列幅が
@@ -31,7 +32,9 @@ export default function RateBar({ value, max, fill, best = false, label }) {
           style={{ width: `${(ratio * 100).toFixed(2)}%`, background: fill }}
         />
       )}
-      <span className={`rate-bar-label${best ? " is-best" : ""}`}>{label}</span>
+      <span className={`rate-bar-label${best ? " is-best ind-best" : ""}`}>
+        {label}
+      </span>
     </div>
   );
 }

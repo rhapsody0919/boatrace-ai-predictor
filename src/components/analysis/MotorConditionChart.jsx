@@ -31,6 +31,7 @@ import {
 import { translatePartName } from "../race/raceIndicators";
 import RateBar from "../common/RateBar";
 import { BOAT_COLORS } from "../../utils/colors";
+import { bestOf } from "../../utils/bestOf";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
 
@@ -391,16 +392,16 @@ function MotorConditionChart({
   const officialRateValues = officialRates.filter((v) => v !== null);
   const officialRateMax =
     officialRateValues.length > 0 ? Math.max(...officialRateValues) : null;
-  // 最良の値ラベル（UI統一ルール R1）。同じ値の最良は全部、全艇同値・値なしなら付けない。
-  // 判定は表示する1桁の値で行う。生の値だと「38.3」と「38.3」（38.33 と 38.28）の片方にだけ
-  // 印が付く（9/15〜10/02 で14レース。データ精度検証）
-  const roundedRate = (v) => (v === null ? null : Math.round(v * 10) / 10);
-  const roundedRateValues = officialRateValues.map(roundedRate);
-  const officialRateBest =
-    roundedRateValues.length > 0 &&
-    Math.min(...roundedRateValues) !== Math.max(...roundedRateValues)
-      ? Math.max(...roundedRateValues)
-      : null;
+  // 最良の値ラベル（UI統一ルール R1）。判定はレース詳細の他の表と同じ bestOf（同じ値の最良は全部、
+  // 全艇同値・値なしなら付けない）。表示と同じ1桁で比べる。生の値だと「38.3」に見える 38.33 と
+  // 38.28 の片方にだけ印が付く（9/15〜10/02 で14レース。データ精度検証）。
+  // 行全体の .best-motor（期間の2連率の最大）は外した。棒の札と別の列を指すと、どちらが最良か
+  // 分からないため（BOA-428、UI統一レーンと合意）
+  const officialRateBestBoats = bestOf(
+    breakdown.map((r, i) => ({ boat: r.boat_number, value: officialRates[i] })),
+    "max",
+    { digits: 1 },
+  );
   // 会場内順位の列（BOA-428）。会場サイトの値を出さない会場（戸田・平和島・浜名湖・宮島）と、
   // その日以前のスナップショットが無いときは列ごと畳む。取得の失敗は列を残して印を出す
   // （列が黙って消えると、データが無い会場と区別できない）
@@ -446,21 +447,16 @@ function MotorConditionChart({
       ? (r.first_place_count / r.race_count) * 100
       : null,
   );
-  const rankClassFor = (values) => {
-    const distinct = [...new Set(values.filter((v) => v !== null))].sort(
-      (a, b) => b - a,
+  // 1位だけを金で示す（同値は全部、全艇同値なら無し）。以前は2位も薄い金で示していたが、
+  // レース詳細の色分けのルール（最良だけ金。docs/design/race-detail-ui-unify R1）にそろえた。
+  // 引数は breakdown の行番号
+  const rankClassFor = (values, digits) => {
+    const best = bestOf(
+      values.map((value, i) => ({ boat: i, value })),
+      "max",
+      { digits },
     );
-    // 全艇が同値（例: まだ実績が無く全て0）の場合は「1位」を強調する意味が
-    // 無いため、RaceCardDataTable.jsxのrankClass()と同じくハイライトなしにする
-    if (distinct.length <= 1) return () => "";
-    return (value) => {
-      if (value === null || value === undefined) return "";
-      if (distinct[0] !== undefined && value === distinct[0])
-        return "motor-stat-rank1";
-      if (distinct[1] !== undefined && value === distinct[1])
-        return "motor-stat-rank2";
-      return "";
-    };
+    return (i) => (best.has(i) ? "motor-stat-rank1" : "");
   };
   // 全艇が null（その会場・その節で1着率が取れていない）の列は出さない。
   // 「-」だけが6行並んで横幅を50px食い、肝心の2連率・機力指数を画面外へ
@@ -482,11 +478,15 @@ function MotorConditionChart({
   );
   // 9列の表は390pxでは右が切れる。切れていることに気づけるようにする
   const rankingScroll = useHorizontalScrollHint([breakdown.length]);
-  const finalCountRankClass = rankClassFor(breakdown.map((r) => r.final_count));
+  const finalCountRankClass = rankClassFor(
+    breakdown.map((r) => r.final_count),
+    0,
+  );
   const championshipCountRankClass = rankClassFor(
     breakdown.map((r) => r.championship_count),
+    0,
   );
-  const firstPlaceRateRankClass = rankClassFor(firstPlaceRates);
+  const firstPlaceRateRankClass = rankClassFor(firstPlaceRates, 1);
   const drillPowerIndexTone = powerIndexTone(
     powerIndex?.power_index,
     powerIndex?.sample_count,
@@ -756,11 +756,7 @@ function MotorConditionChart({
                             value={officialRates[i]}
                             max={officialRateMax}
                             fill={BOAT_COLORS[row.boat_number]?.bg}
-                            best={
-                              officialRateBest !== null &&
-                              roundedRate(officialRates[i]) ===
-                                officialRateBest
-                            }
+                            best={officialRateBestBoats.has(row.boat_number)}
                             label={
                               officialRates[i] !== null
                                 ? officialRates[i].toFixed(1)
@@ -827,7 +823,7 @@ function MotorConditionChart({
                         )}
                         {showFirstPlaceRate && (
                           <td
-                            className={`rate ${firstPlaceRateRankClass(firstPlaceRates[i])}`}
+                            className={`rate ${firstPlaceRateRankClass(i)}`}
                           >
                             {firstPlaceRates[i] !== null
                               ? `${firstPlaceRates[i].toFixed(1)}%`
@@ -852,14 +848,14 @@ function MotorConditionChart({
                         </td>
                         {showFinalCount && (
                           <td
-                            className={`rate ${finalCountRankClass(row.final_count)}`}
+                            className={`rate ${finalCountRankClass(i)}`}
                           >
                             {row.final_count ?? "-"}
                           </td>
                         )}
                         {showChampionshipCount && (
                           <td
-                            className={`rate ${championshipCountRankClass(row.championship_count)}`}
+                            className={`rate ${championshipCountRankClass(i)}`}
                           >
                             {row.championship_count ?? "-"}
                           </td>

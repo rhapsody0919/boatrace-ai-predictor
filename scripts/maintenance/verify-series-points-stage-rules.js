@@ -42,6 +42,7 @@ import {
   isAbsentStartRow,
   flyingRacerIdsInMeet,
   postPrelimFlyingRacerIds,
+  withdrawnBeforePrelimEnd,
   runFinishLabel,
   officialMarkOf,
 } from "../../src/components/race/seriesPoints.js";
@@ -52,6 +53,7 @@ import {
   layoutTrendByDate,
 } from "../../src/utils/trendDateLayout.js";
 import { buildMeets, fetchAllByRaceId } from "../lib/meetBoundaries.js";
+import { pickMeetPretestByRacer } from "../../src/utils/pretestRows.js";
 
 let failures = 0;
 function check(label, actual, expected) {
@@ -1669,6 +1671,64 @@ check(
     ["2026-09-22"],
   );
   check("中止が無ければ空", noRaceDaysOf(ids, new Set()), []);
+}
+
+// ---- 予選中に帰った選手は予選の翌日から外す（BOA-674） ------------------------
+// 桐生 2026-09-20〜25（予選の締め 9/23 12R）。北川・田中は 9/22 が最後の走
+// （予選中に帰郷）。菊池は予選の後の 9/24 1R まで走った（これは最終日の判定で外す）
+{
+  const END = "2026-09-23-01-12";
+  const entries = [
+    { race_id: "2026-09-22-01-03", racer_id: 3054 }, // 北川
+    { race_id: "2026-09-22-01-05", racer_id: 3792 }, // 田中
+    { race_id: "2026-09-23-01-09", racer_id: 3538 }, // 菊池
+    { race_id: "2026-09-24-01-01", racer_id: 3538 },
+    { race_id: "2026-09-24-01-03", racer_id: 4834 }, // 浜本（最後まで走る）
+  ];
+  check(
+    "予選の翌日から、予選の締めより後に1走も無い選手を外す",
+    withdrawnBeforePrelimEnd(entries, END, "2026-09-24").sort(),
+    [3054, 3792],
+  );
+  check(
+    "予選終了日（当日）はまだ判定しない",
+    withdrawnBeforePrelimEnd(entries, END, "2026-09-23"),
+    [],
+  );
+  check(
+    "予選の締めが分からない節では外さない",
+    withdrawnBeforePrelimEnd(entries, null, "2026-09-25"),
+    [],
+  );
+}
+
+// ---- 過去のレースは後の日付の前検の行も使い、別の節の行はモーター番号で弾く ----
+// 津 2026-09-21 初日の節は前検の行が 9/23 からしか無い（BOA-679）。前検は節の中で
+// 変わらないので 9/23 の行でよい。同じ選手が次の節で別のモーターに乗った行は使わない
+{
+  const rows = [
+    { racer_id: 1, race_date: "2026-09-23", motor_number: 33, pretest_time: 6.68 },
+    { racer_id: 1, race_date: "2026-09-24", motor_number: 33, pretest_time: 6.68 },
+    { racer_id: 2, race_date: "2026-09-26", motor_number: 70, pretest_time: 6.90 }, // 別の節
+    { racer_id: 2, race_date: "2026-09-23", motor_number: 12, pretest_time: 6.72 },
+  ];
+  const picked = pickMeetPretestByRacer(
+    rows,
+    new Map([
+      [1, 33],
+      [2, 12],
+    ]),
+  );
+  check(
+    "選手ごとに今節のモーターの行の最も古いものを採る",
+    [picked.get(1)?.race_date, picked.get(2)?.pretest_time],
+    ["2026-09-23", 6.72],
+  );
+  const onlyOther = pickMeetPretestByRacer(
+    [{ racer_id: 2, race_date: "2026-09-26", motor_number: 70 }],
+    new Map([[2, 12]]),
+  );
+  check("今節のモーターの行が無ければ採らない", onlyOther.has(2), false);
 }
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);
