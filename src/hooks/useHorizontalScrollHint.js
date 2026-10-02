@@ -1,5 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+/** 右に残っている幅がこれ以下なら「›」は出さず、薄いフェードだけにする（px） */
+export const HSCROLL_PEEK_MAX = 24;
+
+/**
+ * 横スクロールの手がかりの出し方を決める（純関数。verify-frontend-pure-functions で固定）。
+ *
+ * - 右に残っている幅が HSCROLL_PEEK_MAX を超える: 「›」と幅40pxのフェード（hasMore）
+ * - 1px より多く HSCROLL_PEEK_MAX 以下: 「›」は出さず、残りの幅＋12px（最大40px）の薄いフェードだけ
+ *   （以前は 5px 残りでも40pxのフェードと「›」が、ほぼ見えている最後の列を覆っていた。
+ *   逆に4px以下の残りでは何も出ず、最後の列の端が黙って切れていた。#1130 ファン評価2・3周目）
+ * - 左に1pxより多く送られている: 「‹」（hasLess）
+ *
+ * @param {{scrollWidth: number, clientWidth: number, scrollLeft: number}} box
+ * @returns {{hasMore: boolean, hasLess: boolean, peekFadeWidth: number}}
+ */
+export function horizontalScrollHintState({
+  scrollWidth,
+  clientWidth,
+  scrollLeft,
+}) {
+  const remaining = scrollWidth - clientWidth - scrollLeft;
+  const hasMore = remaining > HSCROLL_PEEK_MAX;
+  const peekFadeWidth =
+    !hasMore && remaining > 1 ? Math.min(40, Math.round(remaining) + 12) : 0;
+  return { hasMore, hasLess: scrollLeft > 1, peekFadeWidth };
+}
+
 /**
  * 横スクロールする箱に「まだ右に続く」ことを知らせる手がかりを付けるフック。
  *
@@ -32,8 +59,29 @@ export function useHorizontalScrollHint(deps = []) {
   const update = useCallback(() => {
     const el = ref.current;
     if (!el) return;
-    setHasMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 4);
-    setHasLess(el.scrollLeft > 4);
+    const state = horizontalScrollHintState({
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
+      scrollLeft: el.scrollLeft,
+    });
+    setHasMore(state.hasMore);
+    setHasLess(state.hasLess);
+    // 少しだけ切れているとき（「›」を出すほどではない）は、切れた量に合わせた薄いフェードだけを
+    // 出す。呼び出し側の JSX を変えずに済むよう、手がかりの箱（.hscroll-hint）に data 属性で渡す
+    // （React が管理する className は再描画で上書きされるため使わない）
+    const hint = el.closest(".hscroll-hint");
+    if (hint) {
+      if (state.peekFadeWidth > 0) {
+        hint.dataset.hscrollPeek = "true";
+        hint.style.setProperty(
+          "--hscroll-peek-width",
+          `${state.peekFadeWidth}px`,
+        );
+      } else {
+        delete hint.dataset.hscrollPeek;
+        hint.style.removeProperty("--hscroll-peek-width");
+      }
+    }
   }, []);
 
   useEffect(() => {

@@ -39,6 +39,7 @@ const TARGETS = {
   dateUtils: "src/utils/dateUtils.js",
   prevResult: "src/utils/prevResult.js",
   meetGrouping: "src/utils/meetGrouping.js",
+  hscrollHint: "src/hooks/useHorizontalScrollHint.js",
 };
 
 const show = (v) => JSON.stringify(v);
@@ -1429,6 +1430,39 @@ function suiteMeetGrouping(m, check) {
   );
 }
 
+// --- horizontalScrollHintState: 横スクロールの手がかり（「›」・フェード）の出し方
+// （#1130 ファン評価。全コース表で5px残りでも40pxのフェードと「›」が最後の列を覆い、
+// 4px以下の残りでは何も出なかった）
+function suiteHscrollHint(m, check) {
+  const st = (scrollWidth, clientWidth, scrollLeft) =>
+    m.horizontalScrollHintState({ scrollWidth, clientWidth, scrollLeft });
+  check("hscroll: 収まっていれば何も出さない", st(300, 300, 0), {
+    hasMore: false,
+    hasLess: false,
+    peekFadeWidth: 0,
+  });
+  check(
+    "hscroll: 残り4px（以前は何も出なかった）は「›」なしの薄いフェード（16px）",
+    st(320, 316, 0),
+    { hasMore: false, hasLess: false, peekFadeWidth: 16 },
+  );
+  check(
+    "hscroll: 残り24pxまでは「›」を出さない（フェード36px）",
+    st(340, 316, 0),
+    { hasMore: false, hasLess: false, peekFadeWidth: 36 },
+  );
+  check("hscroll: 残り25px以上は「›」と幅40pxのフェード", st(357, 301, 0), {
+    hasMore: true,
+    hasLess: false,
+    peekFadeWidth: 0,
+  });
+  check("hscroll: 右端まで送ったら「›」は消え、「‹」が出る", st(357, 301, 56), {
+    hasMore: false,
+    hasLess: true,
+    peekFadeWidth: 0,
+  });
+}
+
 const SUITES = {
   prevResult: suitePrevResult,
   basicInfoStats: suiteBasicInfoStats,
@@ -1438,6 +1472,7 @@ const SUITES = {
   weatherInfo: suiteWeatherInfo,
   dateUtils: suiteDateUtils,
   meetGrouping: suiteMeetGrouping,
+  hscrollHint: suiteHscrollHint,
 };
 
 // ---------------------------------------------------------------------------

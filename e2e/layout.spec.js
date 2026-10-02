@@ -924,3 +924,145 @@ async function checkBeforeInfoExhibitionCard(page, path, width) {
     Math.max(0, m.card[0]) - 0.5,
   );
 }
+
+// 横スクロールの手がかり（useHorizontalScrollHint）。右に残っている幅に合わせて出し方を変える
+// （#1130 ファン評価で見送った P3 を共通部品で直したもの）。
+// - 残り 24px 超: 「›」（押せる幅 44px 以上）と右端のフェード（.has-more）
+// - 残り 1〜24px: 「›」は出さず、残りに合わせた薄いフェードだけ（data-hscroll-peek）
+//   以前は 5px 残りでも 40px のフェードと「›」がほぼ見えている最後の列を覆い、4px 以下では何も出なかった
+// - 残り 1px 以下: 何も出さない
+// このフックを使う画面ごとに、そのときの表示と、右端の手前 10px まで送った表示の両方を確かめる。
+// 本番データの列幅ではたまたま境目を踏まないことがあるため、送る位置はテストで決める
+const HSCROLL_SCREENS = [
+  {
+    name: "直前情報の展示情報",
+    path: "/race/2026-09-29-16-12?tab=beforeInfo",
+    ready: ".rbi-card .drt-table",
+  },
+  {
+    name: "今節の予想表・日別表",
+    path: "/race/2026-09-21-02-05?tab=meet",
+    ready: ".race-history-table-row",
+    // 今節は本番 Supabase を2段で引き、表が出るまで1〜2分かかる日がある（race-detail-mobile.spec.js）。
+    // 溢れるのはスマホ幅だけなので、そこだけで確かめる
+    mobileOnly: true,
+  },
+  {
+    name: "モーター情報の一覧とコース別成績",
+    path: "/race/2026-09-29-16-12?tab=motor",
+    ready: ".motor-ranking-row",
+    // 行を押すと、そのモーターのコース別成績（MotorWakuStatsGrid）が開く
+    open: async (page) => {
+      await checkHscrollHints(page, "モーター一覧");
+      await page.locator(".motor-ranking-row").first().click();
+      await expect(page.locator(".motor-waku-table")).toBeVisible({
+        timeout: 30000,
+      });
+    },
+  },
+];
+
+test.describe("レイアウト: 横スクロールの手がかりは右に残っている幅に合わせて出す", () => {
+  for (const screen of HSCROLL_SCREENS) {
+    test(screen.name, async ({ page }, testInfo) => {
+      test.skip(
+        screen.mobileOnly && testInfo.project.name !== "layout-mobile",
+        "スマホ幅でだけ溢れる画面",
+      );
+      test.slow();
+      await page.goto(screen.path, { waitUntil: "domcontentloaded" });
+      await expect(page.locator(screen.ready).first()).toBeVisible({
+        timeout: 90000,
+      });
+      if (screen.open) await screen.open(page);
+      await checkHscrollHints(page, screen.name);
+    });
+  }
+});
+
+/** 画面にある .hscroll-hint を全部確かめる */
+async function checkHscrollHints(page, label) {
+  const hints = page.locator(".hscroll-hint");
+  const count = await hints.count();
+  expect(count, `${label}: 手がかりの箱`).toBeGreaterThan(0);
+  for (let i = 0; i < count; i++) {
+    const hint = hints.nth(i);
+    if (!(await hint.isVisible())) continue;
+    const at = `${label}[${i}]`;
+    // そのときの表示。表がそろうまでは幅が変わるので、落ち着くまで読み直す
+    await expect
+      .poll(async () => hintMismatch(await readHint(hint)), {
+        timeout: 15000,
+        message: `${at}: そのときの表示`,
+      })
+      .toBe("");
+    const first = await readHint(hint);
+    if (first.hasMore) {
+      expect(first.moreWidth, `${at}: 「›」の押せる幅`).toBeGreaterThanOrEqual(
+        44,
+      );
+    }
+    if (first.maxScroll <= 30) continue;
+    // 右端の手前 10px まで送る: 「›」は出さず、10px＋12px の薄いフェードだけ
+    await setScroll(hint, 10);
+    await expect
+      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 残り10px` })
+      .toMatchObject({
+        remaining: 10,
+        hasMore: false,
+        moreButton: false,
+        peek: "true",
+        peekWidth: "22px",
+      });
+    // 右端まで送る: 何も出さない
+    await setScroll(hint, 0);
+    await expect
+      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 右端` })
+      .toMatchObject({ remaining: 0, hasMore: false, peek: null });
+    await setScroll(hint, null);
+  }
+}
+
+/** そのときの残りの幅に対して、出ている手がかりが合っていなければ食い違いを文で返す（合っていれば空文字） */
+function hintMismatch(h) {
+  // 境目の判定は丸める前の幅で行う（フックと同じ）
+  const hasMore = h.remainingRaw > 24;
+  const want = {
+    hasMore,
+    moreButton: hasMore,
+    peek: !hasMore && h.remainingRaw > 1 ? "true" : null,
+  };
+  const got = { hasMore: h.hasMore, moreButton: h.moreButton, peek: h.peek };
+  return JSON.stringify(want) === JSON.stringify(got)
+    ? ""
+    : `残り${h.remaining}px で ${JSON.stringify(got)}（期待 ${JSON.stringify(want)}）`;
+}
+
+/** 横に送る。fromEnd は右端からの距離（px）、null なら左端へ戻す */
+async function setScroll(hint, fromEnd) {
+  await hint.evaluate((el, d) => {
+    const box = [el, ...el.querySelectorAll("*")].find((n) =>
+      ["auto", "scroll"].includes(getComputedStyle(n).overflowX),
+    );
+    box.scrollLeft = d === null ? 0 : box.scrollWidth - box.clientWidth - d;
+  }, fromEnd);
+}
+
+async function readHint(hint) {
+  return hint.evaluate((el) => {
+    const box = [el, ...el.querySelectorAll("*")].find((n) =>
+      ["auto", "scroll"].includes(getComputedStyle(n).overflowX),
+    );
+    const more = el.querySelector(":scope > .hscroll-more");
+    return {
+      remaining: Math.round(box.scrollWidth - box.clientWidth - box.scrollLeft),
+      remainingRaw: box.scrollWidth - box.clientWidth - box.scrollLeft,
+      maxScroll: box.scrollWidth - box.clientWidth,
+      hasMore: el.classList.contains("has-more"),
+      moreButton: Boolean(more),
+      moreWidth: more ? more.getBoundingClientRect().width : 0,
+      peek: el.dataset.hscrollPeek ?? null,
+      peekWidth: el.style.getPropertyValue("--hscroll-peek-width") || null,
+    };
+  });
+}
