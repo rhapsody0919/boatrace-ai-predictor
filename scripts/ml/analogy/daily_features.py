@@ -98,6 +98,7 @@ def missing_races(race_ids: list[str], rows: list[dict]) -> list[str]:
 
 
 def _get_all(path: str) -> list[dict]:
+    """offset で全件を読む。path の order は一意な並び（主キー）にする（一意でないと、ページの間で行が抜け・重なる）"""
     out, offset = [], 0
     while True:
         page, _ = db.request("GET", f"{path}&limit=1000&offset={offset}")
@@ -122,13 +123,14 @@ def main():
     if not races:
         raise SystemExit(f"{today} のレースが DB にありません（朝の初期化の遅れ）")
     absent = {e["race_id"] for e in _get_all(
-        f"race_entries?select=race_id&is_absent=is.true&race_id=like.{today}*&order=race_id")}
+        f"race_entries?select=race_id&is_absent=is.true&race_id=like.{today}*&order=race_id,boat_number")}
     targets = select_targets(races, absent, now)
 
     df, _ = F.build_with_maps(F.D, branch_map=branch_map)
     rows = feature_rows(df, targets, names, version)
     existing = {(e["race_id"], e["boat_number"]): e["input_hash"] for e in _get_all(
-        f"analogy_race_features?select=race_id,boat_number,input_hash&race_id=like.{today}*&order=race_id")}
+        f"analogy_race_features?select=race_id,boat_number,input_hash&race_id=like.{today}*"
+        "&order=race_id,boat_number")}
     write = rows_to_write(rows, existing, now)
     for i in range(0, len(write), db.BATCH):
         db.request("POST", "analogy_race_features?on_conflict=race_id,boat_number", write[i:i + db.BATCH],

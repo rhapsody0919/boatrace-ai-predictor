@@ -160,7 +160,7 @@ export const COUNT_CHECKS = Object.freeze([
     denominator: "expected",
     minDenominator: 100,
     requiresTable: "analogy_race_features",
-    note: "BOA-271 B。日次の特徴量ジョブ（JST 6:40・9:40・13:40）の書き込み。当日の欠けは日次ジョブ自身と 7:20 の dispatch が通知する",
+    note: "BOA-271 B。日次の特徴量ジョブ（JST 6:40・9:40・13:40）の書き込み。当日の欠けは日次ジョブ自身が失敗として通知する（7:20 の拾い直しの dispatch は T10-7 で足す）",
   },
   {
     id: "racer_period_stats.covered",

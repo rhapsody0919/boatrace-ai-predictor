@@ -58,3 +58,18 @@ def test_week_ranges_cover_month_without_gaps():
     r = json.loads(out.stdout.strip().splitlines()[-1])
     assert r[0][0] == "2026-09-01" and r[-1][1] == "2026-10-01"
     assert all(a[1] == b[0] for a, b in zip(r, r[1:]))
+
+
+def test_paged_reads_order_by_primary_key(monkeypatch):
+    """offset で読むので、order は一意（race_id だけだと 1,000 行を超える日にページの間で行が抜ける）"""
+    paths = []
+
+    def fake(method, path, body=None, prefer=None):
+        paths.append(path)
+        return [], {}
+    monkeypatch.setattr(DF.db, "request", fake)
+    DF._get_all("race_entries?select=race_id&order=race_id,boat_number")
+    src = Path(DF.__file__).read_text()
+    for table in ("race_entries?", "analogy_race_features?"):
+        i = src.index(table)
+        assert "order=race_id,boat_number" in src[i:i + 200], table
