@@ -5,13 +5,12 @@
 グレード・ラウンドが不明のレースは「all」にだけ入る。n が0のセルは作らない。
 share_sd は seed を変えた再学習（同じ行の SHAP）でのシェアの標準偏差。
 
-train.py が書いた SHAP（data/ml/analogy/out/shap_*.npz）を読み、profiles.json に書く。
+train.py が学習の直後に呼ぶ（SHAP を書き出さずにメモリ上で集計する）。
 """
 
 from __future__ import annotations
 
 import itertools
-import json
 
 import numpy as np
 import pandas as pd
@@ -99,20 +98,3 @@ def slice_profiles(keys: pd.DataFrame, contribs: list[np.ndarray], feats: list[s
         })
     return rows
 
-
-def main():
-    from train import OUT  # noqa: WPS433 （train.py と同じ出力先）
-
-    meta = json.loads((OUT / "train_meta.json").read_text())
-    keys = pd.read_pickle(OUT / "shap_keys.pkl")
-    rows = []
-    for target in meta["targets"]:
-        z = np.load(OUT / f"shap_{target['name']}.npz")
-        contribs = [z[k] for k in sorted(z.files)]
-        rows += slice_profiles(keys, contribs, meta["features"], THEMES, target["finish_target"])
-        print(f"{target['name']}: {len(contribs)} モデル、累計 {len(rows):,} セル", flush=True)
-    (OUT / "profiles.json").write_text(json.dumps(rows, ensure_ascii=False))
-
-
-if __name__ == "__main__":
-    main()

@@ -1,0 +1,97 @@
+name: Train Analogy Finder
+
+# BOA-271 アナロジー・ファインダーの主モデル（寄与度 FR-1）を学習し、寄与度プロファイルを
+# analogy_models・analogy_contribution_profiles に書いて、表示に使う版を切り替える。
+# docs/design/analogy-finder/plan.md「スクリプト構成と実行タイミング」。
+#
+# schedule は使わない（ADR-0080。GitHub Actions の定時実行は遅れ・欠落が常態）。
+# 週次の起動は Vercel Cron（日曜 JST 4:00）からの workflow_dispatch（api/cron/analogy-dispatch.js、
+# 別タスク T3-4）。それまでは手動で実行する。
+# 品質ゲート（train.py）で止まったときは何も書かず、今の版の表示を続ける。
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_version:
+        description: "版の名前（省略時は JST の今日の日付）"
+        required: false
+        default: ""
+
+concurrency:
+  group: train-analogy
+  cancel-in-progress: false
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      ANALOGY_MODEL_VERSION: ${{ inputs.model_version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - name: Install Python deps
+        run: pip install -r scripts/ml/requirements.txt pytest
+
+      - name: Test (as-of・リーク防止・ラウンド区分・集計)
+        run: python -m pytest scripts/ml/analogy/tests -q
+
+      - name: Export training data
+        run: node scripts/ml/analogy/export_pool.js
+
+      - name: Build features
+        working-directory: scripts/ml/analogy
+        run: python features.py
+
+      - name: Download active model (品質ゲートの比較用)
+        run: node scripts/ml/analogy/storage.js download-active
+
+      - name: Train, quality gate, contribution profiles
+        working-directory: scripts/ml/analogy
+        run: python train.py
+
+      - name: Upload model to Storage
+        run: node scripts/ml/analogy/storage.js upload-model
+
+      - name: Write profiles and activate
+        working-directory: scripts/ml/analogy
+        run: python db.py write
+
+      - name: Summary
+        if: always()
+        run: |
+          meta=data/ml/analogy/out/train_meta.json
+          failed=data/ml/analogy/out/gate_failed.json
+          if [ -f "$failed" ]; then
+            echo "## 品質ゲートで停止" >> "$GITHUB_STEP_SUMMARY"
+            jq '.gate' "$failed" >> "$GITHUB_STEP_SUMMARY"
+          elif [ -f "$meta" ]; then
+            echo "## 版 $(jq -r .model_version $meta)" >> "$GITHUB_STEP_SUMMARY"
+            jq '{periods: .metrics.periods, n_races: .metrics.n_races, gate: .metrics.gate, win: (.metrics.win | {logloss_model, logloss_baseline, paired_logloss_model_minus_baseline})}' "$meta" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Notify Slack (失敗時のみ)
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          reason="ジョブの失敗"
+          if [ -f data/ml/analogy/out/gate_failed.json ]; then
+            reason="品質ゲートで停止: $(jq -r '.gate.reasons | join(" / ")' data/ml/analogy/out/gate_failed.json)"
+          fi
+          payload=$(jq -n --arg reason "$reason" --arg url "$RUN_URL" \
+            '{text: (":rotating_light: *アナロジー・ファインダーの週次学習が失敗しました*（表示は前の版のまま）\n" + $reason + "\n" + $url)}')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
