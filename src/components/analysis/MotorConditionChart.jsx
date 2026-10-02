@@ -1081,6 +1081,9 @@ function MotorConditionChart({
               yTickDecimals={2}
               yAxisDomain={exhibitionAxis?.domain}
               yTicks={exhibitionAxis?.ticks}
+              // 速い（小さい）ほど上。素の向きだと「線が上がった＝良くなった」と
+              // 逆に読まれる（race-detail-ui-unify FR-5、今節タブのスパークラインと同じ向き）
+              yReversed
               tooltipFormatter={(value) => value.toFixed(2)}
               series={[
                 {
