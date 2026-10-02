@@ -935,7 +935,7 @@
     "excludedReason_awardExcluded": "Excluded from prizes",
     "excludedReason_flying": "Excluded from prizes (F this series)",
     "excludedMore": "; {{count}} more",
-    "excludedReasonSuffix": ": ",
+    "excludedReasonSuffix": " – ",
     "excludedGroupSeparator": "; ",
     "excludedListLabel": "Not ranked: ",
     "borderPendingSeries": "The semi-final line is shown once every racer heading for the same final has run at least once.",

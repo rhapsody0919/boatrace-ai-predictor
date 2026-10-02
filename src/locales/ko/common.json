@@ -930,7 +930,7 @@
     "excludedReason_awardExcluded": "상전 제외",
     "excludedReason_flying": "상전 제외(이번 시리즈 F)",
     "excludedMore": "; 그 밖 {{count}}명",
-    "excludedReasonSuffix": ": ",
+    "excludedReasonSuffix": " – ",
     "excludedGroupSeparator": "; ",
     "excludedListLabel": "순위 대상 외: ",
     "borderPendingSeries": "준우승전 기준은 같은 우승전을 목표로 하는 선수가 모두 한 번씩 출주한 뒤에 표시합니다.",

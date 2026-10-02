@@ -229,3 +229,14 @@ test("対象外の一覧は理由を先に表のセルと同じ書き方で出�
   expect(borderTop).toBeGreaterThan(order[2]);
   await expect(page.locator(".rmt-sub").nth(1)).toContainText("準優の目安は");
 });
+
+test("英語の対象外の一覧で、見出しと理由のコロンが二重にならない", async ({ page }) => {
+  // 理由を前に出したら「Not ranked: Withdrew: …」とコロンが続いた（BOA-714 セルフレビュー）
+  await page.goto("/en/race/2026-09-25-01-07");
+  await page.locator(".race-tabs-btn").nth(2).click();
+  const list = page.locator(".rmt-excluded-list");
+  await expect(list).toContainText(
+    "Not ranked: Excluded from prizes (F this series) – 大澤普司; Withdrew – ",
+    { timeout: 30000 },
+  );
+});
