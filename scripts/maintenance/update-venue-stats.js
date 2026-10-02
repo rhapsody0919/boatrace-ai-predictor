@@ -52,6 +52,17 @@ async function updateVenueStats() {
       .eq("code", venueCode);
     if (error) failures.push(`${venueCode}: ${error.message}`);
   }
+  // 期間内にレースが無い会場（改修で長期休催など）は、前回の値が残らないよう空にする。
+  // ランキングは保存値を読むので、残すと休催前の勝率が出続ける
+  const { error: clearError } = await supabase
+    .from("venues")
+    .update({
+      avg_first_win_rate: null,
+      avg_first_win_rate_race_count: null,
+      updated_at: now,
+    })
+    .not("code", "in", `(${[...venueStats.keys()].join(",") || "0"})`);
+  if (clearError) failures.push(`期間外の会場: ${clearError.message}`);
   if (failures.length > 0) {
     throw new Error(
       `venues の更新に失敗（${failures.length}会場）: ${failures.join(" / ")}`,
