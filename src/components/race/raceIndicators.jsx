@@ -341,11 +341,21 @@ function buildRowDefs({
       label: t("dataTable.rowForm"),
       shortLabel: t("review.cols.form"),
       tab: "racer",
-      best: bestOf(
-        (racerForm ?? []).map((r) => ({ boat: r.boat_number, value: r.delta })),
-        "max",
-        { digits: 2 },
-      ),
+      // 上がった艇（Δ > 0）の中の最良だけを強調する。全員が下がっているときに「下がり方が
+      // 最も小さい艇」へ金枠を付けると、赤（悪い）の値に金（最良）が重なる（R1・R2。
+      // 埋め込み分析の選手調子と同じ条件）
+      best: (() => {
+        const rows = racerForm ?? [];
+        const best = bestOf(
+          rows.map((r) => ({ boat: r.boat_number, value: r.delta })),
+          "max",
+          { digits: 2 },
+        );
+        const up = new Set(
+          rows.filter((r) => r.delta > 0).map((r) => r.boat_number),
+        );
+        return new Set([...best].filter((boat) => up.has(boat)));
+      })(),
       render: (p) => {
         const row = formByBoat.get(p.number);
         if (!row || row.delta === null || row.delta === undefined)
@@ -367,11 +377,13 @@ function buildRowDefs({
       label: t("dataTable.rowAvgSt"),
       shortLabel: t("review.cols.avgSt"),
       tab: "racecard",
-      best: bestOf(cand.avgSt, "min", { digits: 2 }),
+      // 平均STは小数3桁で出す。2桁だと 0.127〜0.134 が全部「0.13」になり、表示桁で比べる
+      // 最良（R1）が5艇同時に光った（2026-10-02 児島12R。ユーザー承認で3桁に）
+      best: bestOf(cand.avgSt, "min", { digits: 3 }),
       render: (p) => {
         const rate = toNumber(statsByBoat.get(p.number)?.avgST);
         return rate !== null ? (
-          <span className="drt-value">{rate.toFixed(2)}</span>
+          <span className="drt-value">{rate.toFixed(3)}</span>
         ) : (
           ph("racerStats")
         );

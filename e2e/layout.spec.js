@@ -955,3 +955,210 @@ async function checkBeforeInfoExhibitionCard(page, path, width) {
     expect(m.vw - right, `${width}px: カードの右の余白`).toBeCloseTo(8, 0);
   }
 }
+
+// 横スクロールの手がかり（useHorizontalScrollHint）。右に残っている幅に合わせて出し方を変える
+// （#1130 ファン評価で見送った P3 を共通部品で直したもの）。
+// - 残り 12px 超: 「›」（押せる幅 44px 以上）と右端のフェード（.has-more）
+// - 残り 1〜12px: 「›」は出さず、幅 12px の細いフェードだけ（data-hscroll-peek）
+//   以前は 5px 残りでも 40px のフェードと「›」がほぼ見えている最後の列を覆い、4px 以下では何も出なかった。
+//   境目を 24px にした版では、20px 残りで「›」が消えて最後の列が無いように見えた（PR #1169 ファン評価1周目）
+// - 残り 1px 以下: 何も出さない
+// このフックを使う画面ごとに、そのときの表示と、右端の手前 10px まで送った表示の両方を確かめる。
+// 本番データの列幅ではたまたま境目を踏まないことがあるため、送る位置はテストで決める
+const HSCROLL_SCREENS = [
+  {
+    name: "直前情報の展示情報",
+    path: "/race/2026-09-29-16-12?tab=beforeInfo",
+    ready: ".rbi-card .drt-table",
+    // #1127 以降は 320px でも表が収まる（溢れていないときに手がかりを出さないことを確かめる）
+  },
+  {
+    name: "今節の得点率早見",
+    path: "/race/2026-09-29-16-12?tab=meet",
+    ready: ".rmt-forecast-scroll table",
+    mobileOnly: true,
+  },
+  {
+    // このレースは中止で得点率早見が出ない。日別表だけを見る
+    name: "今節の日別表",
+    path: "/race/2026-09-21-02-05?tab=meet",
+    ready: ".race-history-table-row",
+    // 今節は本番 Supabase を2段で引き、表が出るまで1〜2分かかる日がある（race-detail-mobile.spec.js）。
+    // 溢れるのはスマホ幅だけなので、そこだけで確かめる
+    mobileOnly: true,
+  },
+  {
+    name: "モーター情報の一覧とコース別成績",
+    path: "/race/2026-09-29-16-12?tab=motor",
+    ready: ".motor-ranking-row",
+    // 行を押すと、そのモーターのコース別成績（MotorWakuStatsGrid）が開く
+    open: async (page) => {
+      await checkHscrollHints(page, "モーター一覧");
+      await page.locator(".motor-ranking-row").first().click();
+      await expect(page.locator(".motor-waku-table")).toBeVisible({
+        timeout: 30000,
+      });
+    },
+  },
+  {
+    name: "枠別情報の全コース表",
+    path: "/race/2026-09-29-16-12?tab=waku",
+    ready: ".rwit-fold-summary",
+    open: async (page) => {
+      await page.locator(".rwit-fold-summary").first().click();
+      await expect(page.locator(".rwit-grid-hscroll")).toBeVisible({
+        timeout: 30000,
+      });
+    },
+  },
+];
+
+test.describe("レイアウト: 横スクロールの手がかりは右に残っている幅に合わせて出す", () => {
+  for (const screen of HSCROLL_SCREENS) {
+    test(screen.name, async ({ page }, testInfo) => {
+      test.skip(
+        screen.mobileOnly && testInfo.project.name !== "layout-mobile",
+        "スマホ幅でだけ溢れる画面",
+      );
+      test.slow();
+      await page.goto(screen.path, { waitUntil: "domcontentloaded" });
+      await expect(page.locator(screen.ready).first()).toBeVisible({
+        timeout: 90000,
+      });
+      if (screen.open) await screen.open(page);
+      await checkHscrollHints(page, screen.name);
+    });
+  }
+});
+
+/** 画面にある .hscroll-hint を全部確かめる */
+async function checkHscrollHints(page, label) {
+  const hints = page.locator(".hscroll-hint");
+  const count = await hints.count();
+  expect(count, `${label}: 手がかりの箱`).toBeGreaterThan(0);
+  for (let i = 0; i < count; i++) {
+    const hint = hints.nth(i);
+    if (!(await hint.isVisible())) continue;
+    const at = `${label}[${i}]`;
+    // そのときの表示。表がそろうまでは幅が変わるので、落ち着くまで読み直す
+    await expect
+      .poll(async () => hintMismatch(await readHint(hint)), {
+        timeout: 15000,
+        message: `${at}: そのときの表示`,
+      })
+      .toBe("");
+    const { maxScroll } = await readHint(hint);
+    if (maxScroll <= 30) continue;
+    // 右端の手前 20px まで送る: まだ「›」を出す
+    await readHint(hint, 20);
+    await expect
+      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 残り20px` })
+      .toMatchObject({
+        remaining: 20,
+        hasMore: true,
+        moreButton: true,
+        peek: null,
+      });
+    // 右端の手前 10px まで送る: 「›」は出さず、幅 12px の細いフェードだけ
+    await readHint(hint, 10);
+    await expect
+      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 残り10px` })
+      .toMatchObject({
+        remaining: 10,
+        hasMore: false,
+        moreButton: false,
+        peek: "true",
+        peekWidth: "12px",
+      });
+    // 右端まで送る: 何も出さない
+    await readHint(hint, 0);
+    await expect
+      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 右端` })
+      .toMatchObject({ remaining: 0, hasMore: false, peek: null });
+    await expectGlyphDisc(hint, ".hscroll-less", at);
+    // 左端へ戻すと「›」が出る。押せる幅は 44px 以上（以前は 28px で押し損ねやすかった）
+    await readHint(hint, null);
+    await expect
+      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 左端` })
+      .toMatchObject({ hasMore: true, moreButton: true });
+    expect(
+      (await readHint(hint)).moreWidth,
+      `${at}: 「›」の押せる幅`,
+    ).toBeGreaterThanOrEqual(44);
+    await expectGlyphDisc(hint, ".hscroll-more", at);
+    // 押せる範囲を広げても、記号は以前と同じく端に寄せる。真ん中に置くと見出しの文字に
+    // 寄って「ST›」のように続けて読めた（PR #1169 のレビュー）
+    expect(
+      (await readHint(hint)).moreGlyphFromRight,
+      `${at}: 「›」の記号の位置`,
+    ).toBeLessThanOrEqual(16);
+  }
+}
+
+/**
+ * 「›」「‹」の記号の後ろに面の色の円を敷いているか。左の列が固定されていない表では、記号の下を
+ * 見出しの文字が流れて「枠番」の「枠」と一体に見えた（PR #1169 ファン評価1周目）
+ */
+async function expectGlyphDisc(hint, sel, at) {
+  const bgImage = await hint.evaluate((el, s) => {
+    const b = el.querySelector(`:scope > ${s}`);
+    return b ? getComputedStyle(b).backgroundImage : null;
+  }, sel);
+  if (bgImage !== null) {
+    expect(bgImage, `${at}: ${sel} の記号の下地`).toContain("radial-gradient");
+  }
+}
+
+/** そのときの残りの幅に対して、出ている手がかりが合っていなければ食い違いを文で返す（合っていれば空文字） */
+function hintMismatch(h) {
+  // 境目の判定は丸める前の幅で行う（フックと同じ）
+  const hasMore = h.remainingRaw > 12;
+  const want = {
+    hasMore,
+    moreButton: hasMore,
+    peek: !hasMore && h.remainingRaw > 1 ? "true" : null,
+  };
+  const got = { hasMore: h.hasMore, moreButton: h.moreButton, peek: h.peek };
+  return JSON.stringify(want) === JSON.stringify(got)
+    ? ""
+    : `残り${h.remaining}px で ${JSON.stringify(got)}（期待 ${JSON.stringify(want)}）`;
+}
+
+/**
+ * 手がかりの箱（.hscroll-hint）の状態を読む。fromEnd を渡すと先に横へ送る
+ * （右端からの距離 px。null なら左端へ戻す）。
+ * スクロールするのは箱そのもの（直前情報）か中の要素（モーター・今節）で、外枠にも overflow-x: auto が
+ * 付いている画面がある。実際に溢れている要素を選び、どれも溢れていなければいちばん内側を使う
+ */
+async function readHint(hint, fromEnd) {
+  return hint.evaluate((el, d) => {
+    const boxes = [el, ...el.querySelectorAll("*")].filter((n) =>
+      ["auto", "scroll"].includes(getComputedStyle(n).overflowX),
+    );
+    const box =
+      boxes.find((n) => n.scrollWidth > n.clientWidth) ?? boxes.at(-1);
+    if (d !== undefined) {
+      box.scrollLeft = d === null ? 0 : box.scrollWidth - box.clientWidth - d;
+    }
+    const more = el.querySelector(":scope > .hscroll-more");
+    return {
+      remaining: Math.round(box.scrollWidth - box.clientWidth - box.scrollLeft),
+      remainingRaw: box.scrollWidth - box.clientWidth - box.scrollLeft,
+      maxScroll: box.scrollWidth - box.clientWidth,
+      hasMore: el.classList.contains("has-more"),
+      moreButton: Boolean(more),
+      moreWidth: more ? more.getBoundingClientRect().width : 0,
+      // 「›」の記号の中心から箱の右端までの距離
+      moreGlyphFromRight: more
+        ? (() => {
+            const range = document.createRange();
+            range.selectNodeContents(more);
+            const g = range.getBoundingClientRect();
+            return more.getBoundingClientRect().right - (g.left + g.right) / 2;
+          })()
+        : null,
+      peek: el.dataset.hscrollPeek ?? null,
+      peekWidth: el.style.getPropertyValue("--hscroll-peek-width") || null,
+    };
+  }, fromEnd);
+}
