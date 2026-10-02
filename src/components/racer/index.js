@@ -9,6 +9,7 @@ export { default as GradeFilterChips } from "./GradeFilterChips";
 export { default as RegistrationPeriodFilterSelect } from "./RegistrationPeriodFilterSelect";
 export { default as HometownFilterSelect } from "./HometownFilterSelect";
 export { default as RacerTable } from "./RacerTable";
+export { SORTABLE_KEYS } from "./racerColumns";
 export { default as RacerCompactRow } from "./RacerCompactRow";
 export { default as RacerListPagination } from "./RacerListPagination";
 export { default as RacerFilterToolbar } from "./RacerFilterToolbar";

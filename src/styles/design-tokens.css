@@ -117,6 +117,10 @@
   --text-secondary: var(--color-gray-600);
   --brand-accent-primary: var(--ryujin-gold-800);
   --brand-accent-secondary: var(--ryujin-silver-700);
+  /* 6艇の中の最良値の強調（金の薄い塗りと枠。docs/design/race-detail-ui-unify R1）。
+     --brand-accent-primary から作るので、ダークでは同じ要素の上で金500に切り替わる */
+  --ind-best-bg: color-mix(in srgb, var(--brand-accent-primary) 14%, transparent);
+  --ind-best-ring: color-mix(in srgb, var(--brand-accent-primary) 40%, transparent);
   /* 3着表示専用。金銀と同じ理由でライト背景では--color-bronzeのままだと
      コントラスト不足（2.99:1）になるため、テーマごとに階調を分ける */
   --podium-bronze-text: #8f5419;

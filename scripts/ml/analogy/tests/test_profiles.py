@@ -84,3 +84,39 @@ def test_feature_missing_from_model_is_an_error():
         P.slice_profiles(keys, [contrib], FEATS,
                          THEMES + [{"key": "c", "groups": [{"key": "c1", "label": "C", "features": ["f9"]}]}],
                          finish_target=1)
+
+
+def test_day_bootstrap_sd_reflects_day_to_day_variation():
+    """share_sd は seed の揺れに加えて、日単位のブートストラップ（同じモデルの SHAP を日で
+    再標本化）での揺れを含む（データサイエンス体制のレビュー、2026-10-02）。"""
+    rng = np.random.default_rng(1)
+    rows = []
+    for r in range(60):  # 30日 × 2レース
+        for b in range(1, 7):
+            rows.append({"race_id": r, "boat_number": b, "venue_code": 1, "grade": "G1",
+                         "round": "yosen",
+                         "race_date": pd.Timestamp("2026-01-01") + pd.Timedelta(days=r // 2)})
+    keys = pd.DataFrame(rows)
+    stable = np.ones((len(keys), len(FEATS) + 1))
+    noisy = stable.copy()
+    # 日によって f3（テーマ b）の大きさが大きく変わる
+    noisy[:, 2] = np.repeat(rng.uniform(0.1, 5.0, 30), 12)
+    s_stable = P.slice_profiles(keys, [stable], FEATS, THEMES, finish_target=1, n_boot=50)
+    s_noisy = P.slice_profiles(keys, [noisy], FEATS, THEMES, finish_target=1, n_boot=50)
+    pick = lambda rows: next(r for r in rows if (r["venue_code"], r["grade"], r["round"],  # noqa: E731
+                                                   r["boat_number"]) == (0, "all", "all", 0))
+    assert pick(s_stable)["share_sd"]["b"] < 1e-9
+    assert pick(s_noisy)["share_sd"]["b"] > 0.01
+
+
+def test_sd_combines_seed_and_day_bootstrap():
+    keys, contrib = frame()
+    other = contrib.copy()
+    other[:, 2] *= 3
+    seed_only = P.slice_profiles(keys, [contrib, other], FEATS, THEMES, finish_target=1, n_boot=0)
+    both = P.slice_profiles(keys, [contrib, other], FEATS, THEMES, finish_target=1, n_boot=30)
+    a = next(r for r in seed_only if r["boat_number"] == 0 and r["venue_code"] == 0
+             and r["grade"] == "all" and r["round"] == "all")
+    b = next(r for r in both if r["boat_number"] == 0 and r["venue_code"] == 0
+             and r["grade"] == "all" and r["round"] == "all")
+    assert b["share_sd"]["b"] >= a["share_sd"]["b"]

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import Header from "../components/Header";
 import {
   RacerTable,
+  SORTABLE_KEYS,
   RacerCompactRow,
   RacerListPagination,
   RacerFilterToolbar,
@@ -18,6 +19,15 @@ const PAGE_SIZE = 50;
 const EMPTY_RANGE = { min: null, max: null };
 const DEFAULT_SORT_KEY = "winRate";
 const DEFAULT_SORT_DIR = "desc";
+// spec.md FR4 の例（?sort=height）のように、列名の短い呼び方でも並ぶようにする（BOA-470）。
+// 画面の操作で作る URL は列のキー（height_cm 等）のまま
+const SORT_KEY_ALIASES = { height: "height_cm", weight: "weight_kg" };
+
+/** URL の sort を列のキーに直す。知らないキーは既定（勝率）に戻す（並ばないまま表示しない） */
+function normalizeSortKey(raw) {
+  const key = SORT_KEY_ALIASES[raw] ?? raw;
+  return SORTABLE_KEYS.includes(key) ? key : DEFAULT_SORT_KEY;
+}
 
 function parseListParam(searchParams, key) {
   const raw = searchParams.get(key);
@@ -80,8 +90,8 @@ export default function RacersPage() {
     [searchParams],
   );
 
-  const sortKey = searchParams.get("sort") || DEFAULT_SORT_KEY;
-  const sortDir = searchParams.get("dir") || DEFAULT_SORT_DIR;
+  const sortKey = normalizeSortKey(searchParams.get("sort"));
+  const sortDir = searchParams.get("dir") === "asc" ? "asc" : DEFAULT_SORT_DIR;
   // ?page=abc等の不正な値はNaNになりうるため、有効な正の整数以外は1にフォールバックする
   const rawPage = Number(searchParams.get("page"));
   const currentPage = Number.isFinite(rawPage) && rawPage >= 1 ? rawPage : 1;

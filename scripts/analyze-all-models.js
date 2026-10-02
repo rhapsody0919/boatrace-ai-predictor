@@ -40,8 +40,7 @@ async function analyzeModel(modelId) {
     .range(0, 5000);
 
   if (predError) {
-    console.error('予測取得エラー:', predError.message);
-    return null;
+    throw new Error(`予測取得エラー: ${predError.message}`);
   }
 
   console.log(`江戸川予測数: ${edogawaPreds?.length || 0}件`);

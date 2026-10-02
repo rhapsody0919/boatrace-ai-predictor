@@ -29,6 +29,7 @@ import {
   officialTallyState,
 } from "../../utils/motorGeneration";
 import { translatePartName } from "../race/raceIndicators";
+import { bestOf } from "../../utils/bestOf";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
 
@@ -365,10 +366,13 @@ function MotorConditionChart({
       rate3: meet.rate3,
     }));
 
-  const bestMotor2Rate =
-    breakdown.length > 0
-      ? Math.max(...breakdown.map((r) => r.motor_2rate ?? 0))
-      : null;
+  // 2連率が最も高い艇（同値は全部）。表示と同じ小数1桁で比べる（BOA-474 の桁そろえと同じ理由）。
+  // 判定はレース詳細の他の表と同じ bestOf（docs/design/race-detail-ui-unify R1）
+  const bestMotorBoats = bestOf(
+    breakdown.map((r) => ({ boat: r.boat_number, value: r.motor_2rate })),
+    "max",
+    { digits: 1 },
+  );
 
   // BOA-301: embedded時のFR-2/3枠番グリッドで強調表示する「今日の艇番」。
   // 今日のレースはまだ実施前のため実進入コース(actual_course)は存在せず、
@@ -387,21 +391,16 @@ function MotorConditionChart({
       ? (r.first_place_count / r.race_count) * 100
       : null,
   );
-  const rankClassFor = (values) => {
-    const distinct = [...new Set(values.filter((v) => v !== null))].sort(
-      (a, b) => b - a,
+  // 1位だけを金で示す（同値は全部、全艇同値なら無し）。以前は2位も薄い金で示していたが、
+  // レース詳細の色分けのルール（最良だけ金。docs/design/race-detail-ui-unify R1）にそろえた。
+  // 引数は breakdown の行番号
+  const rankClassFor = (values, digits) => {
+    const best = bestOf(
+      values.map((value, i) => ({ boat: i, value })),
+      "max",
+      { digits },
     );
-    // 全艇が同値（例: まだ実績が無く全て0）の場合は「1位」を強調する意味が
-    // 無いため、RaceCardDataTable.jsxのrankClass()と同じくハイライトなしにする
-    if (distinct.length <= 1) return () => "";
-    return (value) => {
-      if (value === null || value === undefined) return "";
-      if (distinct[0] !== undefined && value === distinct[0])
-        return "motor-stat-rank1";
-      if (distinct[1] !== undefined && value === distinct[1])
-        return "motor-stat-rank2";
-      return "";
-    };
+    return (i) => (best.has(i) ? "motor-stat-rank1" : "");
   };
   // 全艇が null（その会場・その節で1着率が取れていない）の列は出さない。
   // 「-」だけが6行並んで横幅を50px食い、肝心の2連率・機力指数を画面外へ
@@ -423,11 +422,15 @@ function MotorConditionChart({
   );
   // 9列の表は390pxでは右が切れる。切れていることに気づけるようにする
   const rankingScroll = useHorizontalScrollHint([breakdown.length]);
-  const finalCountRankClass = rankClassFor(breakdown.map((r) => r.final_count));
+  const finalCountRankClass = rankClassFor(
+    breakdown.map((r) => r.final_count),
+    0,
+  );
   const championshipCountRankClass = rankClassFor(
     breakdown.map((r) => r.championship_count),
+    0,
   );
-  const firstPlaceRateRankClass = rankClassFor(firstPlaceRates);
+  const firstPlaceRateRankClass = rankClassFor(firstPlaceRates, 1);
   const drillPowerIndexTone = powerIndexTone(
     powerIndex?.power_index,
     powerIndex?.sample_count,
@@ -652,9 +655,7 @@ function MotorConditionChart({
                         key={row.boat_number}
                         className={[
                           "motor-ranking-row",
-                          row.motor_2rate === bestMotor2Rate
-                            ? "best-motor"
-                            : "",
+                          bestMotorBoats.has(row.boat_number) ? "best-motor" : "",
                           // 他のタブで選んだ艇は、一覧のまま行で示す（ドリルダウンは
                           // 自動で開かない。一覧が主役で、初回の表示を変えない。BOA-494 案A）
                           row.boat_number === focusedBoat ? "is-focused" : "",
@@ -755,7 +756,7 @@ function MotorConditionChart({
                         )}
                         {showFirstPlaceRate && (
                           <td
-                            className={`rate ${firstPlaceRateRankClass(firstPlaceRates[i])}`}
+                            className={`rate ${firstPlaceRateRankClass(i)}`}
                           >
                             {firstPlaceRates[i] !== null
                               ? `${firstPlaceRates[i].toFixed(1)}%`
@@ -780,14 +781,14 @@ function MotorConditionChart({
                         </td>
                         {showFinalCount && (
                           <td
-                            className={`rate ${finalCountRankClass(row.final_count)}`}
+                            className={`rate ${finalCountRankClass(i)}`}
                           >
                             {row.final_count ?? "-"}
                           </td>
                         )}
                         {showChampionshipCount && (
                           <td
-                            className={`rate ${championshipCountRankClass(row.championship_count)}`}
+                            className={`rate ${championshipCountRankClass(i)}`}
                           >
                             {row.championship_count ?? "-"}
                           </td>

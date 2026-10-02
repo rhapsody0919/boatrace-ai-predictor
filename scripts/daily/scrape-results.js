@@ -5,6 +5,7 @@ import {
   supabase,
   isSupabaseEnabled,
   VENUE_NAMES,
+  fetchAll,
 } from "../lib/supabaseClient.js";
 import {
   getTodayDateJST,
@@ -1257,7 +1258,15 @@ export async function scrapeAndSaveResults(races, targetDate) {
   // 全件scrape済みになった時点で「新規データなし」が続き、二度と
   // このチェックが走らなくなる（2026-09-06、当日分の的中フラグが
   // 132件全件NULLのまま固着していた実例で発覚）
-  await fixMissingHitFlags(getDateDaysAgo(9), targetDate);
+  // 結果は保存済みのため、補完の失敗で結果取得そのものを失敗扱いにしない（補完は次の実行・日次の
+  // result-catchup がやり直す。BOA-391 で fixMissingHitFlags の取得失敗が例外になったため）
+  try {
+    await fixMissingHitFlags(getDateDaysAgo(9), targetDate);
+  } catch (error) {
+    console.error(
+      `⚠️ 的中フラグの補完に失敗（次の実行で再試行）: ${error.message}`,
+    );
+  }
 
   return { updated: newResults.length > 0, count: newResults.length };
 }
@@ -1503,7 +1512,7 @@ async function scrapeResults(dateStr = null) {
   const targetDate = dateStr || getTodayDateJST();
   console.log(`Starting race result scraping: ${targetDate}`);
 
-  // 失敗したら下の「races テーブルから全件」のフォールバックに進む設計のため、従来どおり空配列で受ける（BOA-391）
+  // 握りつぶし可（BOA-391）: 失敗したら下の「races テーブルから全件」のフォールバックに進む設計のため、空配列で受ける
   const schedule = await getRaceSchedule(targetDate, { throwOnError: false });
   let races;
   if (schedule.length > 0) {
@@ -1540,27 +1549,6 @@ async function scrapeResults(dateStr = null) {
   await scrapeAndSaveResults(races, targetDate);
 }
 
-// Supabaseのデフォルトlimit(1000行)を超えるクエリを.range()でページネーションして全件取得する
-async function fetchAllRange(table, select, buildQuery, client = supabase) {
-  const results = [];
-  const pageSize = 1000;
-  let from = 0;
-  while (true) {
-    const { data, error } = await buildQuery(
-      client.from(table).select(select),
-    ).range(from, from + pageSize - 1);
-    if (error) {
-      console.error(`  ❌ ${table}取得エラー:`, error.message);
-      break;
-    }
-    if (!data || data.length === 0) break;
-    results.push(...data);
-    if (data.length < pageSize) break;
-    from += pageSize;
-  }
-  return results;
-}
-
 // 結果があるのにis_hit_winがNULLの予測を修正
 // startDate〜endDate（両端含む、race_id昇順比較）の範囲で欠落を検知・修復する。
 // 通常呼び出しは直近数日分の範囲を渡し、当日限定では拾えない過去日の
@@ -1577,15 +1565,17 @@ export async function fixMissingHitFlags(
   // （2026-09-06発覚: 日付範囲を広げた際に無ページネーションのままだったため、範囲内の件数が
   // 1000件を超えると挿入順で末尾＝直近日（当日）の結果が切り捨てられ、当日分の欠落が
   // 一切修復されないまま固着していた）
-  const missingPredictions = await fetchAllRange(
+  // 共通 fetchAll（失敗は例外。以前の自前のループは途中までの結果で続行し、欠落件数を少なく報告していた。BOA-391）
+  const missingPredictions = await fetchAll(
     "predictions",
     `prediction_id, race_id, top_pick, top_2nd, top_3rd, feature_contributions, ${HIT_COLUMNS.join(", ")}`,
     (q) =>
       q
         .gte("race_id", startDate)
         .lt("race_id", `${endDate}~`)
-        .is("is_hit_win", null),
-    client,
+        .is("is_hit_win", null)
+        .order("prediction_id"),
+    { client },
   );
 
   if (missingPredictions.length === 0) {
@@ -1597,11 +1587,12 @@ export async function fixMissingHitFlags(
   );
 
   // 結果データを取得（同様にページネーション）
-  const results = await fetchAllRange(
+  const results = await fetchAll(
     "race_results",
     "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio, race_status, refund_boats",
-    (q) => q.gte("race_id", startDate).lt("race_id", `${endDate}~`),
-    client,
+    (q) =>
+      q.gte("race_id", startDate).lt("race_id", `${endDate}~`).order("race_id"),
+    { client },
   );
 
   const resultsMap = new Map();

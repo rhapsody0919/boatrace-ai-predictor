@@ -443,6 +443,9 @@ function processRacersWithScoreFn(racers, scoreFn, turnResult, exhibitionData) {
       boatNumber: racer.boatNumber,
       boat2Rate: racer.boat2Rate.toFixed(1),
       boat3Rate: racer.boat3Rate?.toFixed(1) || null,
+      // F数・L数（BOA-590。朝の初期化の出走表から。無ければ undefined のまま＝書かない）
+      fCount: racer.fCount,
+      lCount: racer.lCount,
       aiScore: scoreFn(racer, idx, turnResult, exEntry, avgExTime),
     };
   });
@@ -1055,6 +1058,14 @@ async function writeToSupabase(
           ai_score_standard: player.aiScore,
           ai_score_safe_bet: safeBetPlayer?.aiScore || 0,
           ai_score_upset_focus: upsetPlayer?.aiScore || 0,
+          // F数・L数は、値が取れた艇だけに付ける（null を送ると既存の値を NULL で上書きする。行ごとに列がそろわない
+          // 分は upsertChangedRows が既存の値で補う。BOA-590）
+          ...(Number.isInteger(player.fCount)
+            ? { f_count: player.fCount }
+            : {}),
+          ...(Number.isInteger(player.lCount)
+            ? { l_count: player.lCount }
+            : {}),
         });
       }
     }
@@ -1067,6 +1078,10 @@ async function writeToSupabase(
         keyColumns: ["race_id", "boat_number"],
         label: "race_entries",
         stampUpdatedAt: true,
+        // F数・L数はマイグレーション081の列。未適用のDBでは、その列だけ除いて書く（BOA-590）
+        optionalColumnGroups: {
+          "マイグレーション081（F数・L数）": ["f_count", "l_count"],
+        },
       }),
     );
 
@@ -1869,6 +1884,7 @@ async function main() {
     await generateAndWriteFromRacesData({
       racesData,
       date: today,
+      // 握りつぶし可（BOA-391）: CLI だけ。morning-init の後続（unified・pcexpect・Deploy Hook）を止めない（上のコメント）
       throwOnError: false,
     });
 
