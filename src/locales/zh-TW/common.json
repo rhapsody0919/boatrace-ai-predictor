@@ -147,6 +147,9 @@
     "reasonsJaOnly": "AI詳細判定依據目前僅提供日文版本。"
   },
   "volatilityAccuracy": {
+    "loading": "資料載入中...",
+    "noData": "目前實測資料尚不足。新的AI預測模型於2026年8月11日啟用，資料累積後即會顯示。",
+    "chartNote": "※ 新的AI預測模型於2026年8月11日才啟用，目前已統計{{count}}場（每日增加）。場數較少時，數值可能波動較大。",
     "title": "🌪️ 內道崩盤預測實績（過去90天）",
     "level": {
       "low": "熱門穩定",
@@ -270,14 +273,14 @@
     "mark": {
       "flying": "F（偷跑、退款）",
       "late": "L（出發延遲、退款）",
-      "absent": "欠（缺席、退款）",
-      "capsized": "転（翻覆失格）",
-      "fell": "落（落水失格）",
-      "sank": "沈（沉沒失格）",
-      "obstruction": "妨（妨礙失格）",
-      "engineStall": "エ（引擎熄火失格）",
-      "notFinished": "不（未完賽失格）",
-      "disqualified": "失（失格）",
+      "absent": "缺賽（退款）",
+      "capsized": "翻覆（失格）",
+      "fell": "落水（失格）",
+      "sank": "沉沒（失格）",
+      "obstruction": "妨礙（失格）",
+      "engineStall": "熄火（失格）",
+      "notFinished": "未完賽（失格）",
+      "disqualified": "失格",
       "noPosition": "無名次（比賽不成立）",
       "refunded": "退款",
       "noPositionPlain": "無名次"
@@ -285,6 +288,8 @@
     "refundTag": "有退款艇",
     "partialNoRaceTag": "部分投注類型不成立",
     "payoutNoRace": "不成立（退款）",
+    "payoutNoAmount": "官方派彩資料中沒有記載金額",
+    "payoutNoAmountNote": "「—」表示官方派彩資料中沒有記載金額的組合",
     "payoutSpecial": "特別派彩",
     "volatilityOutcomeNotJudgeable": "不列入判定（比賽不成立）",
     "stLegend": "右側箭頭為起跑時機（ST）。黃線為起跑線，越接近越早起跑。越過起跑線的紅色箭頭為起步犯規"
@@ -302,6 +307,7 @@
     "finish": "名次",
     "technique": "獲勝方式",
     "payout": "單勝派彩",
+    "payoutCell": "¥{{amount}}",
     "grades": {
       "ippan": "一般賽",
       "G1": "G1",
@@ -311,7 +317,9 @@
     },
     "exhibition": "展示",
     "exhibitionCell": "{{time}}({{rank}})",
-    "startTimingCell": "{{time}}({{rank}})"
+    "startTimingCell": "{{time}}({{rank}})",
+    "stRankLegend": "ST 後（ ）內的數字為該場6艇中的名次（不含F）",
+    "finishUnknownShort": "名次外"
   },
   "panel": {
     "noData": "尚無預測資料",
@@ -593,7 +601,16 @@
     "periodHeader": "期間/條件",
     "nHeader": "出賽數",
     "allCoursesFold": "查看全部6條航道的成績",
-    "periodCaveat": "※「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（2025年12月以後，最多過去2年）。與官方網站的勝率母體不同。"
+    "periodCaveat": "※「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（2025年12月以後，最多過去2年）。與官方網站的勝率母體不同。",
+    "recentFinishesNoteScoped": "{{scope}}從{{course}}道（實際進入航線）出賽的最近{{n}}場",
+    "recentScope": {
+      "current": "2025年12月以後",
+      "last3m": "最近3個月",
+      "last1m": "最近1個月",
+      "local": "本場地",
+      "ippan": "一般戰",
+      "sgg1": "SG、G1"
+    }
   },
   "aiPredictionTab": {
     "cancelled": "本場比賽已中止，因此沒有AI預測。",
@@ -708,8 +725,8 @@
       "winPlaceFinal": "單勝為猜中第1名的艇，複勝為猜中前2名內的艇。複勝以下限-上限範圍顯示"
     },
     "trendTitle": "{{combo}} 賠率趨勢",
-    "deadlineLabel": "截止\u200b前夕",
-    "minutesBeforeLabel": "截止前\u200b{{n}}分鐘",
+    "deadlineLabel": "截止​前夕",
+    "minutesBeforeLabel": "截止前​{{n}}分鐘",
     "noData": "此組合尚無賠率資料",
     "noBetTypeData": "此投注方式尚無賠率資料",
     "emptyTitle": "尚無賠率資料",
@@ -717,7 +734,7 @@
     "noVotes": "無投注",
     "winPlaceChip": "單勝、複勝",
     "boatColumn": "艇",
-    "liveTrendLabel": "最新\u200b（截止前\u200b{{n}}分鐘）",
+    "liveTrendLabel": "最新​（截止前​{{n}}分鐘）",
     "snapshotAtDeadline": "{{time}} 擷取（截止前夕）",
     "snapshotAt": "{{time}} 擷取",
     "snapshotBefore": "{{time}} 擷取（截止前{{n}}分鐘）",
@@ -745,7 +762,7 @@
     "officialOddsLink": "查看官方網站的賠率",
     "finalDeadlineAt": "{{time}} 截止（JST）",
     "finalSource": "取自BOATRACE官方網站",
-    "finalTrendLabel": "截止時\u200b（官方）",
+    "finalTrendLabel": "截止時​（官方）",
     "finalTrendNote": "「截止前○分鐘」的數值為當時擷取的官方顯示值（官方更新會延遲數分鐘）",
     "finalMissingForBetType": "此投注類型未能取得截止時賠率（官方），因此顯示截止前擷取的數值",
     "finalExactaMissing": "未能取得二連單的截止時賠率（官方），因此「2單」顯示為「-」（二連單分頁有截止前擷取的數值）",
@@ -807,7 +824,7 @@
     "compareTrendRange": "橫軸為日期（{{from}}〜{{to}}）。一天出賽2場的日子左右錯開，選手未出賽的日子線會中斷。每列最後一個點是該選手的前一場。",
     "compareTrendRangeOneDay": "橫軸為日期（{{day}}）。當天出賽2場的選手左右錯開。每列最後一個點是該選手的前一場。",
     "compareTrendHint": "點選該列，下方的詳細資料會切換為該選手",
-    "compareTrendFinishNote": "點下方的數字是該場的名次（F＝偷跑，缺＝缺賽，轉、落、妨等為官方標記）。",
+    "compareTrendFinishNote": "點下方的數字是該場的名次。沒有名次的場次以記號顯示（F＝偷跑、缺賽、翻覆、熄火等，完整說明請點資料出賽表「本梯次前一場」列的 ?）。",
     "compareTrendEmpty": "尚無足夠場次可繪製走勢",
     "prelimOverNoteDay": "預賽已於第{{day}}天（{{date}}）結束。得分率就此確定，今日名次不會再改變。",
     "trendLastHeader": "前一場",
@@ -865,7 +882,8 @@
     },
     "periodSummary": "▸ 依期間篩選",
     "periodCaveat": "※與等級條件組合時的「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（2025年12月以後，最多過去2年）",
-    "winRateSwitchCaveat": "※套用等級、期間篩選後的「勝率」並非官方的勝率點數，而是該條件下實際取得第1名的比例（%）",
+    "winRateSwitchCaveat": "※以等級、期間篩選後，顯示的不是官方的勝率（點數），而是該條件下取得第1名的比例（第1名率，%）",
+    "relativeBarNote": "※長條長度僅為這6艇之間的比較。即使差距很小，長度也會拉得很開，實際差距請看數字",
     "sampleCount": "(n={{n}})",
     "noData": "（無資料）",
     "viewTrend": "最近10場",
@@ -873,10 +891,11 @@
     "loading": "載入中...",
     "noHistory": "沒有出賽紀錄資料",
     "noVenueData": "沒有各賽場的成績資料（未達規定場次）",
-    "trendNote": "最近10場（不受上方等級、期間條件影響，一律顯示最新10場。點選日期可前往該場詳情）",
+    "trendNote": "本場之前的最近10場（由新到舊，不受上方等級、期間條件影響）。點選列可前往該場詳情",
     "finishUnknown": "名次外（名次不明）",
     "finishAbsent": "缺賽",
     "venueRankingFor": "{{metric}}排行",
+    "venueRankingNote": "本站統計、可取得的全部期間（不受等級、期間篩選影響）。僅列出出賽5場以上的賽場",
     "currentVenueRank": "本節的{{venue}}在全{{total}}個賽場中排名第{{rank}}",
     "viewConditions": "依條件",
     "viewMeet": "本梯次",
@@ -899,6 +918,7 @@
     "meetTrendStFlat": "與平常相同",
     "meetEmpty": "本梯次尚未出賽（本場為第一戰）",
     "conditionsNote": "各條件下的{{metric}}（本站統計、可取得的全部期間）。與上方長條圖的官方數值計算方式不同，因此數字不會一致。",
+    "conditionsNoteFiltered": "各條件下的{{metric}}（本站統計、可取得的全部期間）。上方長條圖依篩選條件統計，本表則不受篩選影響、涵蓋全部期間與等級，因此數字可能不一致。",
     "conditions": {
       "national": "全國",
       "local": "當地",
@@ -915,6 +935,7 @@
     "conditionsBaseNoteSeparator": "、",
     "conditionsCourseCaveat": "※本表為不分航道的合計（該選手從今日的{{boat}}號艇出賽過{{n}}場）。各艇號、航道的成績請見「艇號別資訊」分頁",
     "conditionsFinalDayCaveat": "※最終日包含優勝戰，晉級的選手會進入1號艇。請注意這同時反映了艇號的優勢，而不只是選手實力",
+    "conditionsWaveExcludedNote": "※「浪高5cm以上」已排除{{venue}}的出賽（{{n}}場）。{{venue}}以5cm為單位記錄浪高，即使水面平靜也會記為5cm",
     "conditionsFStNote": "有F時的平均ST {{holding}}（n={{holdingN}}）／無F時 {{clean}}（n={{cleanN}}）。有F的選手起步方式會改變，因此看ST比看勝率更貼切",
     "conditionsAllZeroHint": "此指標各條件皆低於1%，看不出各列的差異。以外側航道為主的選手勝負在於能否搶進前三，改看前三名率較能看出差異",
     "conditionsAllZeroAction": "改看前三名率",
@@ -1053,6 +1074,8 @@
     "hide": "▲ 收起比賽列表"
   },
   "analysis": {
+    "racerPageLink": "→ 選手頁面（日文）",
+    "racerPageShort": "選手頁面（日文）",
     "loading": "數據載入中...",
     "error": "錯誤: {{message}}",
     "noRacesToday": "今天沒有舉行的比賽",
@@ -1840,7 +1863,10 @@
     "hiddenOlder": "（← 左側還有{{n}}場）",
     "flying": "F",
     "stRank": "(第{{n}})",
-    "legend": "上排為實際進入的航道，中排為名次，下排為起跑時間與該場的起跑順位"
+    "legend": "最上方為日期，接著是實際進入航線、名次、ST及該場內的ST名次。點選方塊，下方會顯示該場的場地、R、種別",
+    "detail": "{{date}} {{venue}}{{race}}R{{stage}}，{{course}}，{{finish}}，ST {{st}}",
+    "stageWithGrade": "（{{grade}} {{stage}}）",
+    "stageOnly": "（{{stage}}）"
   },
   "venueDaySummary": {
     "collapsedTeaser": "已確定{{n}}R，1號艇逃脫率{{rate}}%",
@@ -1863,6 +1889,13 @@
     "ledeDayPartial": "已確定{{n}}場中，已知決勝手法的{{m}}場為 {{techniques}}。",
     "loading": "讀取中..."
   },
+  "loadingScreen": {
+    "title": "資料載入中...",
+    "description": "請稍候",
+    "ariaLabel": "載入中"
+  },
+  "breadcrumbLabel": "導覽路徑",
+  "listSeparator": "、",
   "termHintLabel": "查看用語說明",
   "termHints": {
     "winRate": "選手的全國勝率，是級別評定所用的成績。數值越高代表實力越強",

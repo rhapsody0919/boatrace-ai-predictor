@@ -147,6 +147,9 @@
     "reasonsJaOnly": "AI의 상세 판단 근거는 현재 일본어로만 제공됩니다."
   },
   "volatilityAccuracy": {
+    "loading": "데이터를 불러오는 중...",
+    "noData": "아직 실측 데이터가 충분하지 않습니다. 2026년 8월 11일에 운영을 시작한 새 AI 예측 모델의 데이터가 쌓이면 표시됩니다.",
+    "chartNote": "※ 새 AI 예측 모델은 2026년 8월 11일에 운영을 시작했기 때문에 현재 {{count}}경주를 집계 중입니다(매일 증가). 건수가 적을 때는 수치의 변동이 클 수 있습니다.",
     "title": "🌪️ 인코스 붕괴 예측 실적（최근 90일）",
     "level": {
       "low": "인기 안정",
@@ -285,6 +288,8 @@
     "refundTag": "반환정 있음",
     "partialNoRaceTag": "일부 승식 불성립",
     "payoutNoRace": "불성립(반환)",
+    "payoutNoAmount": "공식 배당금에 금액이 기재되어 있지 않습니다",
+    "payoutNoAmountNote": "「—」는 공식 배당금에 금액이 기재되어 있지 않은 조합입니다",
     "payoutSpecial": "특별 지급",
     "volatilityOutcomeNotJudgeable": "판정 대상 외(불성립)",
     "stLegend": "오른쪽 화살표는 스타트 타이밍(ST). 노란 선이 스타트 라인이며, 선에 가까울수록 빠른 스타트. 선을 넘은 빨간 화살표는 플라잉"
@@ -302,6 +307,7 @@
     "finish": "착순",
     "technique": "결정수",
     "payout": "단승 배당금",
+    "payoutCell": "¥{{amount}}",
     "grades": {
       "ippan": "일반전",
       "G1": "G1",
@@ -311,7 +317,9 @@
     },
     "exhibition": "전시",
     "exhibitionCell": "{{time}}({{rank}})",
-    "startTimingCell": "{{time}}({{rank}})"
+    "startTimingCell": "{{time}}({{rank}})",
+    "stRankLegend": "ST 옆 ( ) 안의 숫자는 그 경주 6척 중 순위(F 제외)",
+    "finishUnknownShort": "착외"
   },
   "panel": {
     "noData": "예측 데이터가 없습니다",
@@ -593,7 +601,16 @@
     "periodHeader": "기간·조건",
     "nHeader": "주수",
     "allCoursesFold": "전체 6개 코스 성적 보기",
-    "periodCaveat": "※'이번 기'는 공식 기 구분이 아니라 당사 데이터로 확인할 수 있는 전체 기간(2025년 12월 이후, 최대 과거 2년)을 대상으로 합니다. 공식 사이트의 승률과는 모집단이 다릅니다."
+    "periodCaveat": "※'이번 기'는 공식 기 구분이 아니라 당사 데이터로 확인할 수 있는 전체 기간(2025년 12월 이후, 최대 과거 2년)을 대상으로 합니다. 공식 사이트의 승률과는 모집단이 다릅니다.",
+    "recentFinishesNoteScoped": "{{scope}}{{course}}코스(실제 진입 코스)에서 출주한 최근 {{n}}경기",
+    "recentScope": {
+      "current": "2025년 12월 이후 ",
+      "last3m": "최근 3개월 ",
+      "last1m": "최근 1개월 ",
+      "local": "당지 ",
+      "ippan": "일반전 ",
+      "sgg1": "SG·G1 "
+    }
   },
   "aiPredictionTab": {
     "cancelled": "이 경주는 중지되어 AI 예상이 없습니다",
@@ -807,7 +824,7 @@
     "compareTrendRange": "가로축은 날짜입니다({{from}}~{{to}}). 하루에 2경주를 뛴 날은 좌우로 나누고, 그 선수가 뛰지 않은 날은 선을 끊었습니다. 각 행의 마지막 점이 그 선수의 전주입니다.",
     "compareTrendRangeOneDay": "가로축은 날짜입니다({{day}}). 그날 2경주를 뛴 선수는 좌우로 나누었습니다. 각 행의 마지막 점이 그 선수의 전주입니다.",
     "compareTrendHint": "행을 탭하면 아래 상세가 그 선수로 바뀝니다",
-    "compareTrendFinishNote": "점 아래 숫자는 그 경주의 착순입니다(F=플라잉, 결=결장, 전·락·방 등은 공식 표기).",
+    "compareTrendFinishNote": "점 아래 숫자는 그 경주의 착순입니다. 착순이 없는 경주는 기호로 표시합니다(F=플라잉, 결장, 전복, 엔스트 등. 전체 설명은 데이터 출주표 「이번 시리즈 직전 경주」 행의 ?를 누르세요).",
     "compareTrendEmpty": "추이를 그릴 주행이 아직 없습니다",
     "prelimOverNoteDay": "예선은 {{day}}일째({{date}})에 끝났습니다. 득점률은 여기서 확정되어 오늘 착순으로는 바뀌지 않습니다.",
     "trendLastHeader": "직전",
@@ -865,7 +882,8 @@
     },
     "periodSummary": "▸ 기간으로 좁히기",
     "periodCaveat": "※등급 조건과 조합한 「이번 기」는 공식 기 구분이 아니라, 당사 데이터로 확인할 수 있는 전체 기간(2025년 12월 이후, 최대 과거 2년)을 대상으로 합니다",
-    "winRateSwitchCaveat": "※등급, 기간을 좁힌 「승률」은 공식 승률 점수가 아니라, 해당 조건에서 실제로 1착이 된 비율(%)을 표시합니다",
+    "winRateSwitchCaveat": "※등급·기간으로 좁히면 공식 승률(점수)이 아니라, 해당 조건에서 1착이 된 비율(1착률, %)을 표시합니다",
+    "relativeBarNote": "※막대 길이는 이 6정 안에서의 비교입니다. 차이가 작아도 길이는 크게 벌어지므로, 차이의 크기는 숫자로 확인해 주세요",
     "sampleCount": "(n={{n}})",
     "noData": "(데이터 없음)",
     "viewTrend": "최근 10경기",
@@ -873,10 +891,11 @@
     "loading": "불러오는 중...",
     "noHistory": "출주 이력 데이터가 없습니다",
     "noVenueData": "경기장별 성적 데이터가 없습니다(규정 경기 수 미만)",
-    "trendNote": "최근 10경기(위의 등급·기간 조건과 관계없이 항상 최신 10경기를 표시. 날짜를 누르면 해당 경주 상세로 이동)",
+    "trendNote": "이 경주 이전의 최근 10경기(최신순, 위의 등급·기간 조건과 관계없음). 행을 누르면 해당 경주 상세로 이동",
     "finishUnknown": "착외(순위 불명)",
     "finishAbsent": "결장",
     "venueRankingFor": "{{metric}} 랭킹",
+    "venueRankingNote": "당사 집계·확보 가능한 전체 기간(등급·기간 필터와 관계없음). 5주 이상 출주한 경기장만 표시합니다",
     "currentVenueRank": "이번 시리즈의 {{venue}}는 전체 {{total}}개 경기장 중 {{rank}}위",
     "viewConditions": "조건별",
     "viewMeet": "이번 시리즈",
@@ -899,6 +918,7 @@
     "meetTrendStFlat": "평소와 같음",
     "meetEmpty": "이번 시리즈에서는 아직 출주하지 않았습니다(이 경주가 첫 출주입니다)",
     "conditionsNote": "조건별 {{metric}}(당사 집계·확보 가능한 전체 기간). 위 막대의 공식 수치와는 산출 방식이 달라 숫자가 일치하지 않습니다.",
+    "conditionsNoteFiltered": "조건별 {{metric}}(당사 집계·확보 가능한 전체 기간). 위 막대는 좁힌 조건으로 집계하고, 이 표는 필터와 관계없이 전체 기간·전체 등급이므로 숫자가 일치하지 않을 수 있습니다.",
     "conditions": {
       "national": "전국",
       "local": "당지",
@@ -915,6 +935,7 @@
     "conditionsBaseNoteSeparator": "·",
     "conditionsCourseCaveat": "※이 표는 모든 코스를 합친 집계입니다(오늘과 같은 {{boat}}번 보트로 출주한 것은 과거 {{n}}회). 번호별·코스별 성적은 「번호별 정보」 탭에서 볼 수 있습니다",
     "conditionsFinalDayCaveat": "※최종일에는 우승전이 포함되어, 올라온 선수가 1번 보트에 들어갑니다. 선수의 힘뿐 아니라 좋은 번호를 받은 결과도 반영된 수치라는 점에 유의하세요",
+    "conditionsWaveExcludedNote": "※「파고 5cm 이상」에서는 {{venue}}의 출주({{n}}주)를 제외합니다. {{venue}}는 파고를 5cm 단위로 기록해, 잔잔한 수면도 5cm로 기록되기 때문입니다",
     "conditionsFStNote": "F 보유 시 평균 ST {{holding}}(n={{holdingN}}) / F 없음 {{clean}}(n={{cleanN}}). F를 가진 선수는 스타트를 밟는 방식이 달라지므로, 승률보다 ST로 보는 편이 맞습니다",
     "conditionsAllZeroHint": "이 지표는 모든 조건이 1% 미만이라 행 사이의 차이를 읽을 수 없습니다. 바깥 코스 중심의 선수는 3착 안에 드는지가 승부이므로, 3연대율로 보면 차이가 드러납니다",
     "conditionsAllZeroAction": "3연대율로 보기",
@@ -1053,6 +1074,8 @@
     "hide": "▲ 레이스 목록 접기"
   },
   "analysis": {
+    "racerPageLink": "→ 선수 페이지(일본어)",
+    "racerPageShort": "선수 페이지(일본어)",
     "loading": "데이터 로딩 중...",
     "error": "오류: {{message}}",
     "noRacesToday": "오늘 개최 중인 레이스가 없습니다",
@@ -1840,7 +1863,10 @@
     "hiddenOlder": " (← 왼쪽에 {{n}}경주 더)",
     "flying": "F",
     "stRank": "({{n}}위)",
-    "legend": "위는 실제 진입 코스, 가운데는 착순, 아래는 ST와 그 경주에서의 ST 순위"
+    "legend": "맨 위는 날짜, 다음은 실제 진입 코스·착순·ST와 그 경주 내 ST 순위. 타일을 누르면 그 경주의 경정장·R·종별이 아래에 나옵니다",
+    "detail": "{{date}} {{venue}} {{race}}R{{stage}} · {{course}} · {{finish}} · ST {{st}}",
+    "stageWithGrade": " ({{grade}} {{stage}})",
+    "stageOnly": " ({{stage}})"
   },
   "venueDaySummary": {
     "collapsedTeaser": "확정 {{n}}R · 1번 보트 도망 비율 {{rate}}%",
@@ -1863,6 +1889,13 @@
     "ledeDayPartial": "확정 {{n}}경주 중 결정타가 확인된 {{m}}경주는 {{techniques}}입니다.",
     "loading": "불러오는 중..."
   },
+  "loadingScreen": {
+    "title": "데이터를 불러오는 중...",
+    "description": "잠시만 기다려 주세요",
+    "ariaLabel": "불러오는 중"
+  },
+  "breadcrumbLabel": "이동 경로",
+  "listSeparator": ", ",
   "termHintLabel": "용어 설명 보기",
   "termHints": {
     "winRate": "선수의 전국 승률로, 급별 평가에 쓰이는 성적입니다. 수치가 높을수록 실력이 위로 평가됩니다",

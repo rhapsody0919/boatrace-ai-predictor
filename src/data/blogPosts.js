@@ -1527,7 +1527,19 @@ export const blogPosts = [
 ];
 
 // Get featured posts
-export const getFeaturedPosts = () => blogPosts.filter((post) => post.featured);
+// lang を渡すと、その言語で読める記事（翻訳版のメタデータ）から選ぶ（BOA-653）
+export const getFeaturedPosts = (lang = "ja") =>
+  getPostsForLang(lang).filter((post) => post.featured);
+
+// 指定言語で読める記事（翻訳版のメタデータを重ねたもの）。ja は全記事。
+// 翻訳版は、その言語のデータがある記事だけ（未翻訳記事は一覧に出さない）
+export const getPostsForLang = (lang) => {
+  const config = BLOG_LANG_CONFIG[lang];
+  if (!config) return blogPosts;
+  return blogPosts
+    .filter((post) => config.isAvailable(post.id))
+    .map((post) => ({ ...post, ...config.getOverride(post.id) }));
+};
 
 // Get posts by category
 export const getPostsByCategory = (category) =>
@@ -1537,8 +1549,8 @@ export const getPostsByCategory = (category) =>
 export const getPostById = (id) => blogPosts.find((post) => post.id === id);
 
 // Get latest posts
-export const getLatestPosts = (limit = 5) =>
-  [...blogPosts]
+export const getLatestPosts = (limit = 5, lang = "ja") =>
+  [...getPostsForLang(lang)]
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, limit);
 

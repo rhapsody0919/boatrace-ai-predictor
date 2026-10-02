@@ -148,6 +148,9 @@
     "reasonsJaOnly": "Detailed AI reasoning is currently available in Japanese only."
   },
   "volatilityAccuracy": {
+    "loading": "Loading data...",
+    "noData": "Not enough measured data yet. Results will appear once data from the new AI prediction model (launched on August 11, 2026) accumulates.",
+    "chartNote": "* The new AI prediction model launched on August 11, 2026, so {{count}} races have been counted so far (growing daily). While the count is small, the figures may swing widely.",
     "title": "🌪️ Upset Index Track Record (last 90 days)",
     "level": {
       "low": "Favorite friendly",
@@ -289,6 +292,8 @@
     "refundTag": "Refunded boats",
     "partialNoRaceTag": "Some bet types void",
     "payoutNoRace": "Void (refunded)",
+    "payoutNoAmount": "No amount is listed in the official payouts",
+    "payoutNoAmountNote": "\"—\" marks a combination with no amount listed in the official payouts",
     "payoutSpecial": "Special payout",
     "volatilityOutcomeNotJudgeable": "Not judged (void race)",
     "stLegend": "The arrows on the right show start timing (ST). The yellow line is the start line; the closer to it, the faster the start. A red arrow past the line is a false start"
@@ -306,6 +311,7 @@
     "finish": "Finish",
     "technique": "Winning technique",
     "payout": "Win Payout",
+    "payoutCell": "¥{{amount}}",
     "grades": {
       "ippan": "Regular",
       "G1": "G1",
@@ -315,7 +321,9 @@
     },
     "exhibition": "Trial",
     "exhibitionCell": "{{time}}({{rank}})",
-    "startTimingCell": "{{time}}({{rank}})"
+    "startTimingCell": "{{time}}({{rank}})",
+    "stRankLegend": "The number in ( ) after ST is the rank among the six boats in that race (flying starts excluded)",
+    "finishUnknownShort": "Out"
   },
   "panel": {
     "noData": "Prediction data is not available",
@@ -598,7 +606,16 @@
     "periodHeader": "Period / condition",
     "nHeader": "Races",
     "allCoursesFold": "Show the record for all six courses",
-    "periodCaveat": "\"This term\" is not the official term division: it covers every race in our data (since Dec 2025, up to the past two years), so the population differs from the win rate on the official site."
+    "periodCaveat": "\"This term\" is not the official term division: it covers every race in our data (since Dec 2025, up to the past two years), so the population differs from the win rate on the official site.",
+    "recentFinishesNoteScoped": "Runs from course {{course}} (the course actually entered) {{scope}}: last {{n}}",
+    "recentScope": {
+      "current": "since Dec 2025",
+      "last3m": "in the last 3 months",
+      "last1m": "in the last month",
+      "local": "at this venue",
+      "ippan": "in General races",
+      "sgg1": "in SG/G1 races"
+    }
   },
   "aiPredictionTab": {
     "cancelled": "This race was cancelled, so there is no AI prediction.",
@@ -812,7 +829,7 @@
     "compareTrendRange": "The horizontal axis is the date ({{from}}–{{to}}). On days with two races the dots are shifted left and right, and the line breaks on days the racer did not race. The last dot in each row is the racer's previous race.",
     "compareTrendRangeOneDay": "The horizontal axis is the date ({{day}}). Racers with two races that day have their dots shifted left and right. The last dot in each row is the racer's previous race.",
     "compareTrendHint": "Tap a row to switch the details below to that racer",
-    "compareTrendFinishNote": "The number under each dot is the finish in that race (F = flying start, Abs = absent; other marks follow the official notation).",
+    "compareTrendFinishNote": "The number under each dot is the finish in that race. Races without a finish show a mark (F = flying start, Abs = absent, Eng = engine stall, etc.; tap ? on the \"Last race this series\" row of the data table for the full list).",
     "compareTrendEmpty": "Not enough runs yet to draw a trend",
     "prelimOverNoteDay": "The preliminaries ended on day {{day}} ({{date}}). The score rate is final and today's finish will not change it.",
     "trendLastHeader": "Last",
@@ -870,7 +887,8 @@
     },
     "periodSummary": "▸ Filter by period",
     "periodCaveat": "* When combined with a grade filter, \"Current term\" is not the official term division: it covers every period we have data for (since Dec 2025, up to the past two years)",
-    "winRateSwitchCaveat": "* When a grade or period filter is applied, \"Win rate\" is not the official win-rate points but the actual share of 1st-place finishes (%) under those conditions",
+    "winRateSwitchCaveat": "* With a grade or period filter, this shows the 1st-place rate (% of races won under those conditions), not the official win-rate points",
+    "relativeBarNote": "* Bar length compares only these 6 boats. Even a small gap can make a big difference in length, so check the numbers for the actual gap",
     "sampleCount": "(n={{n}})",
     "noData": "(No data)",
     "viewTrend": "Last 10 races",
@@ -878,10 +896,11 @@
     "loading": "Loading...",
     "noHistory": "No race history available",
     "noVenueData": "No record by venue available (below the minimum number of races)",
-    "trendNote": "The last 10 races, regardless of the grade and period filters above. Tap a date to open that race",
+    "trendNote": "The last 10 races before this one, newest first, regardless of the grade and period filters above. Tap a row to open that race",
     "finishUnknown": "Unplaced (rank unknown)",
     "finishAbsent": "Absent",
     "venueRankingFor": "{{metric}} ranking",
+    "venueRankingNote": "Our own tally over all available data (regardless of the grade or period filter). Only venues with 5 or more races are listed.",
     "currentVenueRank": "{{venue}}, this meet's venue, ranks {{rank}} of {{total}}",
     "viewConditions": "By condition",
     "viewMeet": "This series",
@@ -904,6 +923,7 @@
     "meetTrendStFlat": "same as usual",
     "meetEmpty": "No races yet in this series (this is the racer's first one)",
     "conditionsNote": "{{metric}} by condition (our own tally, all available data). It will not match the official figures in the bars above, which are calculated differently.",
+    "conditionsNoteFiltered": "{{metric}} by condition (our own tally, all available data). The bars above use your grade/period filter, while this table always covers all periods and grades, so the numbers may differ.",
     "conditions": {
       "national": "All venues",
       "local": "This venue",
@@ -920,6 +940,7 @@
     "conditionsBaseNoteSeparator": ", ",
     "conditionsCourseCaveat": "* These figures cover every starting position; only {{n}} of those starts were from lane {{boat}}, today's lane. For lane- and course-specific records, see the \"Lane Stats\" tab",
     "conditionsFinalDayCaveat": "* The final day includes the championship race, where the racers who came through the series take the inside lane. Read it as much a sign of a good draw as of the racer's own strength",
+    "conditionsWaveExcludedNote": "* \"Waves 5cm+\" excludes races at {{venue}} ({{n}} races). {{venue}} records wave height in 5cm steps, so even calm water is recorded as 5cm",
     "conditionsFStNote": "Average ST carrying an F: {{holding}} (n={{holdingN}}) / with no F: {{clean}} (n={{cleanN}}). A racer with an F changes how hard they push the start, so ST reads better than win rate here",
     "conditionsAllZeroHint": "Every row of this metric is under 1%, so the conditions cannot be told apart. For racers who mostly start from the outside lanes, the top-3 rate shows the differences that matter",
     "conditionsAllZeroAction": "Show top-3 rate",
@@ -1058,6 +1079,8 @@
     "hide": "▲ Collapse race list"
   },
   "analysis": {
+    "racerPageLink": "→ Racer page (Japanese)",
+    "racerPageShort": "Racer page (JA)",
     "loading": "Loading data...",
     "error": "Error: {{message}}",
     "noRacesToday": "No races are held today",
@@ -1848,7 +1871,10 @@
     "hiddenOlder": " (← {{n}} more to the left)",
     "flying": "F",
     "stRank": "(#{{n}})",
-    "legend": "Top: course actually taken. Middle: finish. Bottom: start timing and its rank in that race"
+    "legend": "Top: date. Then the course actually entered, the finish, and ST with its rank in that race. Tap a tile to see the venue, race and stage below",
+    "detail": "{{date}} {{venue}} R{{race}}{{stage}} · {{course}} · {{finish}} · ST {{st}}",
+    "stageWithGrade": " ({{grade}} {{stage}})",
+    "stageOnly": " ({{stage}})"
   },
   "venueDaySummary": {
     "collapsedTeaser": "{{n}} races settled / Boat 1 nige rate {{rate}}%",
@@ -1871,6 +1897,13 @@
     "ledeDayPartial": "Of the {{n}} settled races, the {{m}} with a recorded winning move: {{techniques}}.",
     "loading": "Loading..."
   },
+  "loadingScreen": {
+    "title": "Loading data...",
+    "description": "Please wait a moment",
+    "ariaLabel": "Loading"
+  },
+  "breadcrumbLabel": "Breadcrumb",
+  "listSeparator": ", ",
   "termHintLabel": "Show what this term means",
   "termHints": {
     "winRate": "The racer's national win rate, the figure used for class ratings. Higher means a stronger racer",
