@@ -32,6 +32,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/campaignResultRetrospective.js` | 企画エントリの結果確定後、「なぜ当たった/外れたか」を実データで説明する | buildResultRetrospective |
 | `scripts/lib/campaignVolatilityModel.js` | イン崩れ狙い企画（docs/design/sns-hub-campaign-pipeline/）用の買い目生成モデル。 | computeCampaignPicks, MODEL_NAME |
 | `scripts/lib/cancellationStatus.js` | レース中止・順延検出の状態遷移ロジック（BOA-254） | isCancellationConfirmed, computeCancellationTransition, CONFIRM_STREAK_THRESHOLD, CANCELLATION_CONFIRMED, CANCELLATION_TENTATIVE |
+| `scripts/lib/compareWithAllowlist.js` | 違反（{ file, code, ... }）と許可リスト（{ file, code, reason }）を突き合わせる（純関数）。 | compareWithAllowlist |
 | `scripts/lib/contentChannels/captureScreenshot.js` | ブログ/note/YouTubeサムネイル用のスクリーンショット取得。 | captureScreenshot |
 | `scripts/lib/contentChannels/channelMatrix.js` | ネタ種別→展開先チャネルの対応表（spec.md FR2）。 | getChannelsForTopic, CHANNEL_MATRIX |
 | `scripts/lib/contentChannels/coverImageStrategy.js` | ブログ/note/YouTubeサムネイルのカバー画像調達方法を、ネタ種別ごとに決める。 | getCoverImageStrategy |
@@ -172,6 +173,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
 | `scripts/lib/snsTopics.js` | SNSコンテンツ ネタ生成ライン用 sns_content_types / sns_target_accounts / | getActiveContentTypes, getContentTypeByKey, getTopicCategories, getActiveTopicCategoryByKey, enabledChannelsOf ほか13件 |
 | `scripts/lib/statisticalTests.js` | 統計検証ユーティリティ（正規近似ベース、外部ライブラリ非依存） | normalCDF, pearsonCorrelation, pearsonPValue, proportionZTest |
+| `scripts/lib/stripNonCode.js` | コメント・文字列・テンプレート・正規表現リテラルの中身を空白に置き換える簡易な字句解析（純関数）。 | stripNonCode |
 | `scripts/lib/supabaseClient.js` | バッチ処理用 Supabaseクライアント | fetchAll, supabase, isSupabaseEnabled, VENUE_NAMES, VENUE_CODES |
 | `scripts/lib/turnPrediction.js` | 1マーク展開予測ロジック v5（バックエンド用） | predictFirstMarkV2, predictFirstMark |
 | `scripts/lib/unchangedRows.js` | 「変更の無い行は書かない」ための共通ライブラリ（WS8(b)、BOA-349） | normalizeTimestamp, roundToScale, normalizeValue, diffRows, planWriteAll ほか8件 |
@@ -262,4 +264,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 227 ファイル / export 1127 件。
+対象 229 ファイル / export 1129 件。
