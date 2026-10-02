@@ -1304,6 +1304,23 @@ export const supabaseDataService = {
   },
 
   /**
+   * 期間中・これからの節（race_series）を返す。非開催会場の次開催日に使う（BOA-225）。
+   * 1会場あたり翌月末までで数節なので、全会場で100行に届かない
+   */
+  async getUpcomingSeries(today) {
+    return withCache(`upcoming-series-${today}`, async () => {
+      if (!supabase) throw new Error("Supabase client not initialized");
+      const { data, error } = await supabase
+        .from("race_series")
+        .select("venue_code,start_date,end_date")
+        .gte("end_date", today)
+        .order("start_date");
+      if (error) throw new Error(`race_series の取得に失敗: ${error.message}`);
+      return data ?? [];
+    });
+  },
+
+  /**
    * 予測データを取得（predictions/YYYY-MM-DD.json形式で返す）
    * Phase 2: Edge API経由でCDNキャッシュを活用
    */

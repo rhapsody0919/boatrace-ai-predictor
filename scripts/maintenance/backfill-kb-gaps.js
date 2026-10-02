@@ -6,7 +6,8 @@
  *   --item=st          項目4: race_start_timings に行が無いレースへ、スタートの行を挿入する
  *   --item=exhibition  項目6: 展示タイムが無い艇（行が無い・行はあるが NULL）に、展示タイムの列だけを書く
  *   --item=conditions  項目5: race_conditions の NULL の列（天候・風向・風速・波高・ステージ）だけを埋める
- *   --item=finish_code 項目7（BOA-553）: race_start_timings の既存の行の公式の成績コード（NULL だけ）を埋める
+ *   --item=finish_code 項目7（BOA-553）: race_start_timings の既存の行の公式の成績コード（NULL だけ）を埋める。
+ *                      BOA-582: 同じ行の着欄・着（NULL だけ。失格 S0〜S2 は K から決まらないので埋めない）も同じ回で埋める
  *   --item=race_status 項目8（BOA-480）: race_results の race_status・refund_boats が NULL のレースを、K から導いて埋める
  *   --item=rate2       項目3: race_entries の2連率（全国・当地）の NULL だけを埋める（登録番号が一致する艇のみ）
  *
@@ -110,18 +111,14 @@ export async function planDay(item, day, date, client = supabase, out = {}) {
   if (item === "finish_code") {
     const rows = await read(
       def.table,
-      "race_id, boat_number, official_finish_code",
+      "race_id, boat_number, official_finish_code, finish_mark, finish_rank",
       date,
       client,
     );
     return buildFinishCodeRows(
       day,
-      new Map(
-        rows.map((r) => [
-          `${r.race_id}|${r.boat_number}`,
-          r.official_finish_code ?? null,
-        ]),
-      ),
+      new Map(rows.map((r) => [`${r.race_id}|${r.boat_number}`, r])),
+      out,
     );
   }
   if (item === "race_status") {
@@ -277,6 +274,9 @@ async function main() {
   );
   if (Object.keys(tally).length > 0) {
     console.log(`  値の内訳: ${JSON.stringify(tally)}`);
+  }
+  if (out.filled) {
+    console.log(`  NULL から埋める艇（列ごと）: ${JSON.stringify(out.filled)}`);
   }
   if (out.anomalies.length > 0) {
     console.log(
