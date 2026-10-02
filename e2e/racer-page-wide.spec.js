@@ -199,4 +199,34 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
       expect(ratios.tick).toBeGreaterThanOrEqual(4.5);
     });
   }
+
+  test("会場×枠番で絞ったカードは、1440pxで7枚1段・768pxで4＋3枚に並び、平均STは3桁（BOA-624）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    // 以前は 1440px で5枚＋2枚に割れて右に3枠分の空きが出た。平均STは 0.17（2桁）だった
+    await page.goto("/racer/4069");
+    await page.locator("select").first().waitFor({ timeout: 30000 });
+    await page.locator("select").nth(0).selectOption({ label: "児島" });
+    await page.locator("select").nth(1).selectOption({ index: 1 });
+    const grid = page.locator(".racer-vc-cards-grid");
+    await expect(grid).toBeVisible({ timeout: 30000 });
+    const rowsOf = () =>
+      grid.evaluate((g) => {
+        const tops = [...g.children].map((c) =>
+          Math.round(c.getBoundingClientRect().top),
+        );
+        return [...new Set(tops)].map(
+          (t) => tops.filter((x) => x === t).length,
+        );
+      });
+    expect(await rowsOf()).toEqual([7]);
+    await expect(
+      grid
+        .locator(".racer-stat-card", { hasText: "平均ST" })
+        .locator(".racer-stat-value"),
+    ).toHaveText(/^0\.\d{3}$/);
+    await page.setViewportSize({ width: 768, height: 900 });
+    await expect.poll(rowsOf).toEqual([4, 3]);
+  });
 });

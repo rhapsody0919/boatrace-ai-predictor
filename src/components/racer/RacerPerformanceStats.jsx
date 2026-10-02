@@ -816,7 +816,7 @@ export default function RacerPerformanceStats({
         )}
 
       {vcVenueFixed && vcBoatFixed && vcData && vcData.n > 0 && (
-        <div className="racer-stat-cards-grid">
+        <div className="racer-stat-cards-grid racer-vc-cards-grid">
           <div className="racer-stat-card">
             <h3>勝率</h3>
             <span className="racer-stat-value">
@@ -865,7 +865,8 @@ export default function RacerPerformanceStats({
           <div className="racer-stat-card">
             <h3>平均ST</h3>
             <span className="racer-stat-value">
-              {vcData.avgSt !== null ? vcData.avgSt.toFixed(2) : "-"}
+              {/* 上の平均STカード（0.175）と桁をそろえる（BOA-624） */}
+              {vcData.avgSt !== null ? vcData.avgSt.toFixed(3) : "-"}
             </span>
             <p className="racer-stat-note">{vcData.stN}回</p>
           </div>
