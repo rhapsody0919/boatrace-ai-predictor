@@ -157,14 +157,15 @@ test.describe("管理画面 /admin/rules の運用成績", () => {
   }) => {
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push(e.message));
-    // 後から登録した route が先に評価される。M10-W002（三国 1R・信頼度A・1着予想3）に当たる予想を1件返す
+    // 後から登録した route が先に評価される。三国 1R・1着予想3 の予想を1件返す。
+    // confidence 50 は confMin 75 の M10-P002・M10-T003 に当たらず、M10-W002（単勝）だけに当たる
     await page.route(
       PREDICTIONS,
       fulfillJson([
         {
           race_id: "2026-01-20-10-01",
           model_id: "standard",
-          confidence: "A",
+          confidence: 50,
           top_pick: 3,
           top_2nd: 1,
           top_3rd: 2,
