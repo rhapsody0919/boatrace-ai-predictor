@@ -60,9 +60,9 @@
 - [ ] T3b-4 報告・文書の数値には「値／指標／A−B（比較対象）／母集団・部分集合／期間（cal・test）／データ版／結果 JSON のパス#キー」を付ける
 
 ## T3c レースごとの寄与度（B、ADR-0083。推論側＝このレーン。学習側は feature/boa-271-perrace-train）
-- [ ] T3c-1（**先にマージする**。学習ジョブがこれを必要とする）`src/utils/analogyTreeShap.js`（dump_model の JSON から推論と TreeSHAP。カテゴリ分岐・欠損の向き）と、直前情報8列を作る関数（float32: DB から読んだ値は fround、差は float32 の Kahan 和の平均を fround して引く、順位は float32 で同値は min、無風・風向 null の扱いは features.py に合わせる）、`scripts/ml/analogy/treeshap-parity.js`（parity_fixture.json を読み、特徴量は完全一致・SHAP は最大差 < 1e-9・合計＝生スコア。一致しなければ終了コード1）。CI 用の小さな固定モデルと固定データの verify（ci）
+- [x] T3c-1（PR #1177、#1176 の後にマージ。**先にマージする**。学習ジョブがこれを必要とする）`src/utils/analogyTreeShap.js`（dump_model の JSON から推論と TreeSHAP。カテゴリ分岐・欠損の向き）と、直前情報8列を作る関数（float32: DB から読んだ値は fround、差は float32 の Kahan 和の平均を fround して引く、順位は float32 で同値は min、無風・風向 null の扱いは features.py に合わせる）、`scripts/ml/analogy/treeshap-parity.js`（parity_fixture.json を読み、特徴量は完全一致・SHAP は最大差 < 1e-9・合計＝生スコア。一致しなければ終了コード1）。CI 用の小さな固定モデルと固定データの verify（ci）
 - [ ] T3c-2 マイグレーション（推論側）: `analogy_race_contributions`（主キー `(race_id, stage)`、RLS・匿名は SELECT のみ、締切前だけ書く・既にあれば書かない）
-- [ ] T3c-3 `src/utils/analogyRaceContribution.js`: テーマ集計（中心化した |SHAP| のシェア、艇ごと・テーマごと・グループごとの符号つきの値、展示のグループが最も押し上げた艇）
+- [ ] T3c-3 テーマ集計の呼び出し: 集計の本体（中心化した |SHAP| のシェア、艇・テーマ・グループごとの値、グループが最も押し上げた艇）は #1177 の `src/utils/analogyRaceContribution.js` に入った。ここで残るのは、Cron（T3c-4・T3c-5）と API（T3c-6）からそれを呼び出して保存・返すことだけ
 - [ ] T3c-4 出走表時点の段: `api/cron/analogy-snapshots.js` で、特徴量があり段が無い締切前のレース（欠場が分かっていれば出さない）を計算
 - [ ] T3c-5 展示後の段: 展示取得のフック（`runSlotsWithRefresh` の後）と、毎分の起動での拾い直し（6艇の展示あり・欠場なし・締切前・展示後の段なし、件数に上限）。切り替えは専用の環境変数。失敗は取得の成否に影響させない
 - [ ] T3c-6 API `GET /api/analogy/race-contribution/[raceId]`
