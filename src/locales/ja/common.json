@@ -286,6 +286,13 @@
       "noPositionPlain": "着順なし"
     },
     "refundTag": "返還艇あり",
+    "columns": {
+      "position": "着",
+      "boat": "枠",
+      "racer": "ボートレーサー",
+      "start": "ST",
+      "time": "レースタイム"
+    },
     "partialNoRaceTag": "不成立の勝式あり",
     "payoutNoRace": "不成立（返還）",
     "partialVoidByStarters": "正常にスタートした艇が{{count}}艇のため、{{types}}は不成立（返還）です",
@@ -480,7 +487,14 @@
     "rankPlain": "{{rank}}位",
     "pretestRank": "{{rank}}位",
     "compareSub": "節の出場は{{total}}人。",
-    "compareSubExcluded": "節の出場は{{all}}人（順位の対象は{{total}}人。賞典除外・途中帰郷の{{excluded}}人を除く）。",
+    "compareSubExcluded": "節の出場は{{all}}人（順位の対象は{{total}}人。賞典除外・途中帰郷・欠場の{{excluded}}人を除く）。",
+    "notYetRunNote": "「今節初戦」は、このレースが今節の最初の走で、まだ得点率がない選手です。",
+    "notYetRunCancelled": "未出走",
+    "notYetRunCancelledNote": "「未出走」は、今節まだ1走もしていない選手です。",
+    "meetEmptyCancelled": "今節はまだ走っていません。",
+    "notYetRun": "今節初戦",
+    "compareSubSeriesExcluded": "同じ優勝戦をめざすのは{{all}}人（順位の対象は{{total}}人。賞典除外・途中帰郷・欠場の{{excluded}}人を除く）。",
+    "compareSubSeries": "同じ優勝戦をめざすのは{{total}}人。",
     "borderLine": "準優の目安は{{slots}}位（{{rate}}）。",
     "rankTiedTitle": "同率{{tied}}人",
     "pretestCell": "{{time}}（{{rank}}位）",
@@ -494,8 +508,8 @@
     "finishLabelPrelim": "予選の着順",
     "borderNote": "点線より上が準優の目安内（番組は未定のため確定ではありません）。",
     "prelimOverNote": "予選は{{date}}で終了。得点率はここで確定していて、今日の着順では動きません。",
-    "seriesSplitNote": "この節はＷ優勝戦で、勝ち上がりが2つに分かれています（節全体は{{meetTotal}}人）。節内順位と準優の目安は、この6艇と同じ優勝戦をめざす{{total}}人の中で出しています。",
-    "seriesSplitNoteNoBorder": "この節はＷ優勝戦で、勝ち上がりが2つに分かれています（節全体は{{meetTotal}}人）。節内順位は、この6艇と同じ優勝戦をめざす{{total}}人の中で出しています。",
+    "seriesSplitNote": "この節はＷ優勝戦で、勝ち上がりが2つに分かれています（節全体は{{meetTotal}}人）。節内順位と準優の目安は、この6艇と同じ優勝戦をめざす選手の中で出しています。",
+    "seriesSplitNoteNoBorder": "この節はＷ優勝戦で、勝ち上がりが2つに分かれています（節全体は{{meetTotal}}人）。節内順位は、この6艇と同じ優勝戦をめざす選手の中で出しています。",
     "seriesMixedNote": "この節はＷ優勝戦で勝ち上がりが2つに分かれていますが、このレースは両方の選手が乗っているため、節内順位は節全体の{{total}}人で出しています。",
     "rankSourceNote": "節内順位は当社計算です。公式の得点率一覧が取れている開催では、公式の備考（賞典除外・途中帰郷）で順位の対象外を判定しています。取れていない開催では、予選が終わるまでに今節F（フライング）を切った選手を賞典除外、「節の最終日に出走が無い選手」を離脱として推定します（予選が終わった後のFでは順位から外しません。公式も同じ）。",
     "rankSourceNoteOfficial": "得点率・節内順位は公式の得点率一覧（予選終了時点）の値です。減点・賞典除外・途中帰郷も公式のとおりに反映しています。予選中は公式の一覧がまだ出ないため当社計算になります。",
@@ -523,6 +537,7 @@
     "prelimOverNoteDay": "予選は{{day}}日目（{{date}}）で終了。得点率はここで確定していて、今日の着順では動きません。",
     "prelimNoRaceDays": "{{days}}はレースが1つも行われなかったので、日目に数えていません（公式の日目と同じ数え方です）。",
     "compareTrendNoRaceDays": "{{days}}はレースが1つも行われなかったので、目盛りにありません。",
+    "cancelledNoForecast": "このレースは中止のため、得点率は動きません。",
     "listSeparator": "・",
     "trendLastHeader": "前走",
     "trendFinishHeader": "点の下＝着順",
@@ -942,8 +957,7 @@
     "missBadge": "❌ 外れ",
     "view": "詳細を見る",
     "dataTableExpand": "調子・展示・回収率まで見る",
-    "noRace": "不成立",
-    "refundBadge": "返還あり"
+    "noRace": "不成立"
   },
   "turnPatternList": {
     "title": "展開予測",

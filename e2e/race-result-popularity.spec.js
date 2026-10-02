@@ -168,7 +168,9 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
     // 複勝は上限の小さい順: 1号艇 1.0 → 1人気、3号艇 10.9（5号艇 10.3 の次）→ 3人気
     await expect(popOf(root, "複勝", "1").first()).toHaveText("1人気※");
     await expect(
-      root.locator(".rr-payout-row").filter({ hasText: "¥200" }).first(),
+      // 払戻表は公式の並び（3連単〜拡連複・単勝・複勝。BOA-558 の5）なので、¥200 は拡連複にも
+      // あり得る。複勝の3号艇の行に絞る
+      popOf(root, "複勝", "3").locator(".."),
     ).toContainText("3人気");
     // 公式の人気（3連単4人気）はそのまま
     await expect(
@@ -185,7 +187,9 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
     // 3号艇: 下限 2.5 は6艇中5番目だが、上限 9.0 は1号艇（1.0）の次 → 2人気
     const root = await openResult(page, KOJIMA, REORDERED);
     await expect(
-      root.locator(".rr-payout-row").filter({ hasText: "¥200" }).first(),
+      // 払戻表は公式の並び（3連単〜拡連複・単勝・複勝。BOA-558 の5）なので、¥200 は拡連複にも
+      // あり得る。複勝の3号艇の行に絞る
+      popOf(root, "複勝", "3").locator(".."),
     ).toContainText("2人気");
   });
 
@@ -195,7 +199,10 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
     const root = await openResult(page, KOJIMA, FINAL_ROW);
     await expect(popOf(root, "単勝", "1")).toHaveText("1人気※");
     await expect(
-      root.locator(".rr-payout-row").filter({ hasText: "¥1,530" }).locator(".rr-pop"),
+      root
+        .locator(".rr-payout-row")
+        .filter({ hasText: "¥1,530" })
+        .locator(".rr-pop"),
     ).toHaveText("4人気");
     const note = page.getByTestId("payout-popularity-note");
     await expect(note).toContainText("※");
@@ -215,9 +222,19 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
           ...KOJIMA.result,
           payoutRows: KOJIMA.result.payoutRows.map((row) =>
             row.betType === "3tan"
-              ? { ...row, combination: "5-4-2", payout: 103540, popularity: 120 }
+              ? {
+                  ...row,
+                  combination: "5-4-2",
+                  payout: 103540,
+                  popularity: 120,
+                }
               : row.betType === "3fuku"
-                ? { ...row, combination: "2-4-5", payout: 10050, popularity: 15 }
+                ? {
+                    ...row,
+                    combination: "2-4-5",
+                    payout: 10050,
+                    popularity: 15,
+                  }
                 : row,
           ),
         },
@@ -256,7 +273,9 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
               if (overlap) out.push(`人気と金額が重なる: ${row.textContent}`);
             }
             // 金額が組番（3着の艇番）に重ならない（ファン評価3周目: 320pxで最大16px重なっていた）
-            const amountBox = row.querySelector(".rr-amount").getBoundingClientRect();
+            const amountBox = row
+              .querySelector(".rr-amount")
+              .getBoundingClientRect();
             const lastItem = items[items.length - 1];
             if (lastItem && amountBox.width > 0) {
               const c = lastItem.getBoundingClientRect();
@@ -307,7 +326,9 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
     const root = await openResult(page, KOJIMA, tied);
     // 1号艇 1.0 が1人気、3号艇と5号艇（2.0-10.9）は並ぶため「2〜3人気」
     await expect(
-      root.locator(".rr-payout-row").filter({ hasText: "¥200" }).first(),
+      // 払戻表は公式の並び（3連単〜拡連複・単勝・複勝。BOA-558 の5）なので、¥200 は拡連複にも
+      // あり得る。複勝の3号艇の行に絞る
+      popOf(root, "複勝", "3").locator(".."),
     ).toContainText("2〜3人気");
   });
 
@@ -322,7 +343,12 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
         refundBoats: [6],
         payoutRows: KOJIMA.result.payoutRows.map((row) =>
           row.betType === "win" || row.betType === "place"
-            ? { ...row, combination: null, payout: null, payoutStatus: "no_race" }
+            ? {
+                ...row,
+                combination: null,
+                payout: null,
+                payoutStatus: "no_race",
+              }
             : row,
         ),
       },

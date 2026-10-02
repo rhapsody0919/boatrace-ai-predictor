@@ -821,3 +821,46 @@ test.describe("レイアウト: 会場のレース一覧カード（出走表の
     }
   });
 });
+
+// 直前情報の展示情報カード（本番の不具合、2026-10-02）。スマホで表だけを calc(50% - 50vw) で
+// 画面の端まで広げていたため、表がカードの左右の枠の外へ覆い被さり、端末によっては表が画面の
+// 左端より外へ押し出されて行見出しの頭（「展示ST」→「示ST」）が切れた
+for (const path of ["/race/2026-09-29-16-12", "/en/race/2026-09-29-16-12"]) {
+  test.describe(`レイアウト: 直前情報の展示情報カード（${path.startsWith("/en") ? "en" : "ja"}）`, () => {
+    test("表がカードの内側に収まり、行見出しが画面の左端で切れない", async ({
+      page,
+    }) => {
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      await page
+        .locator(".race-tabs-btn")
+        .filter({ hasText: /直前情報|Just Before/ })
+        .first()
+        .click({ timeout: 30000 });
+      const table = page.locator(".rbi-card .drt-table").first();
+      await expect(table).toBeVisible({ timeout: 30000 });
+      const m = await table.evaluate((el) => {
+        const card = el.closest(".rbi-card").getBoundingClientRect();
+        const wrap = el.closest(".drt-table-wrapper").getBoundingClientRect();
+        const labels = [...el.querySelectorAll(".drt-label-cell")].map(
+          (c) => c.getBoundingClientRect().left,
+        );
+        return {
+          card: [card.left, card.right],
+          wrap: [wrap.left, wrap.right],
+          minLabelLeft: Math.min(...labels),
+          vw: document.documentElement.clientWidth,
+        };
+      });
+      // 表（横スクロールの枠）はカードの左右の枠の内側にある
+      expect(m.wrap[0]).toBeGreaterThanOrEqual(m.card[0] - 0.5);
+      expect(m.wrap[1]).toBeLessThanOrEqual(m.card[1] + 0.5);
+      // カードも画面からはみ出さない
+      expect(m.card[0]).toBeGreaterThanOrEqual(-0.5);
+      expect(m.card[1]).toBeLessThanOrEqual(m.vw + 0.5);
+      // 行見出しの左端が画面とカードの内側にある（頭が切れない）
+      expect(m.minLabelLeft).toBeGreaterThanOrEqual(
+        Math.max(0, m.card[0]) - 0.5,
+      );
+    });
+  });
+}

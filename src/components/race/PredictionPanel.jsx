@@ -386,6 +386,7 @@ function PredictionPanel({
                   raceId={analysisRaceId}
                   venueCode={venueCode}
                   players={prediction.allPlayers}
+                  isCancelled={isCancelled}
                 />
               ),
             },
