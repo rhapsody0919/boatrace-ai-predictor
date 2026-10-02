@@ -434,8 +434,20 @@ function RaceWakuInfoTab({
               key={p.number}
               type="button"
               className={`rwit-boat-chip${active ? " is-active" : ""}`}
+              // 艇番の丸は、選んだときだけ艇の文字色で塗り、数字はその反対の白黒にする。
+              // ページの地の色のままだと、1・5号艇（黒字）はダークで、2・3・4・6号艇（白字）は
+              // ライトで、丸の地と数字が同化した。数字を艇の色にすると、赤・青では白との
+              // コントラストが約4:1で足りない（BOA-693）
               style={
-                active ? { background: color.bg, color: color.text } : undefined
+                active
+                  ? {
+                      background: color.bg,
+                      color: color.text,
+                      "--rwit-chip-num-bg": color.text,
+                      "--rwit-chip-num-fg":
+                        color.text === "#ffffff" ? "#000000" : "#ffffff",
+                    }
+                  : undefined
               }
               onClick={() => selectBoat(p.number)}
               aria-pressed={active}
