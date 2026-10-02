@@ -174,6 +174,33 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
   });
 });
 
+// BOA-653: 非jaのトップに日本語の直書きが残っていた（データ一覧の導線・ja記事のブログ・曜日・フッターの日付）
+test("英語のトップに ja 専用の導線・ja 記事・日本語の日付を出さない（BOA-653）", async ({
+  page,
+}) => {
+  const JA = /[\u3040-\u30FF\u4E00-\u9FFF]/;
+  await page.goto("/en/");
+  await page.locator(".blog-preview-card").first().waitFor({ timeout: 30000 });
+  await expect(page.locator(".home-digest-link")).toHaveCount(0);
+  for (const text of await page
+    .locator(".blog-preview-card .blog-preview-title")
+    .allTextContents()) {
+    expect(text).not.toMatch(JA);
+  }
+  await expect(page.locator("h2", { hasText: "🏁" }).first()).not.toContainText(
+    /[日月火水木金土]\)/,
+  );
+  await expect(page.locator(".site-footer-updated")).not.toContainText("年");
+
+  // ja は従来どおりデータ一覧への導線がある（言語の記憶を消してから開く）
+  await page.evaluate(() => localStorage.clear());
+  await page.goto("/");
+  await expect(page.locator(".home-digest-link")).toHaveAttribute(
+    "href",
+    "/today",
+  );
+});
+
 // BOA-655: 分析ツールの非ja表示に日本語が残っていた（会場名・注記・選手ページのリンク）
 test("英語の分析ツールで会場名・注記・選手ページのリンクを日本語で出さない（BOA-655）", async ({
   page,
