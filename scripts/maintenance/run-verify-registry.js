@@ -43,6 +43,14 @@ const TIMEOUT_MS = 180_000;
 const timeoutOf = (entry) =>
   entry.timeoutSec ? entry.timeoutSec * 1000 : TIMEOUT_MS;
 
+// 検証スクリプト（とその子孫）に渡す環境変数。NODE_USE_SYSTEM_CA だけを外す（BOA-657）。
+// これがあると node は起動のたびに OS の証明書ストアを読みに行き、手元の macOS では1回あたり
+// 0.1〜0.6秒（負荷が高いと最大2.7秒）待つ。他の変数は起動時間に影響しないことを実測で確認した
+// ので、許可リストに絞らない（スクリプトごとに要る変数＝SUPABASE_*・CI・GITHUB_* 等を落とさないため）。
+// tier=ci は GitHub Actions（この変数が無い）で通っているので、外しても結果は変わらない。
+// 利用者の環境設定そのものは変えない
+const { NODE_USE_SYSTEM_CA: _systemCa, ...childEnv } = process.env;
+
 const args = process.argv.slice(2);
 const listOnly = args.includes("--list");
 const checkOnly = args.includes("--check");
@@ -145,6 +153,7 @@ function runScript(entry) {
       [path.join(HERE, entry.script), ...(entry.args ?? [])],
       {
         cwd: ROOT,
+        env: childEnv,
         // プロセスグループを作り、タイムアウト時に孫プロセスごと落とす
         // （spawnSync で別プロセスを起こす検証スクリプトがあるため）
         detached: true,
