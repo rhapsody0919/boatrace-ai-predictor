@@ -753,6 +753,50 @@ describeFR("FR-4", "今節・枠別情報タブ", () => {
     }
   });
 
+  // PR #1187 ファン評価2周目: 選択中の行（押されている行）の最良は、行の塗りと混ざって
+  // 灰色の箱に見えていた。枠の線は不透明の金（--brand-accent-primary）であること
+  test("[plan §6] 今節の選択中の行でも、最良の枠は不透明の金の線", async ({
+    page,
+  }) => {
+    await openRaceDetail(page);
+    await openTab(page, "今節");
+    await installHelpers(page);
+    const table = page.getByRole("table").first();
+    // 最良のセルがある行を押して選択中にする
+    const idx = await table.evaluate((t) =>
+      [...t.querySelectorAll("tbody tr")].findIndex((tr) =>
+        [...tr.querySelectorAll("td")].some((td) => window.__acc.isBest(td)),
+      ),
+    );
+    test.skip(idx < 0, "6艇の今節の表に最良のセルが無い");
+    await table
+      .locator("tbody tr")
+      .nth(idx)
+      .getByRole("button")
+      .first()
+      .click();
+    const rings = await table.evaluate((table) => {
+      const gold = window.__acc.tokenColor("--brand-accent-primary");
+      const row = [...table.querySelectorAll("tbody tr")].find((tr) =>
+        tr.querySelector('[aria-pressed="true"]'),
+      );
+      if (!row) return null;
+      return [...row.querySelectorAll("td")]
+        .filter((td) => window.__acc.isBest(td))
+        .map((td) => {
+          const m = getComputedStyle(td).boxShadow.match(/rgba?\(([^)]+)\)/);
+          const [r, g, b, a = 1] = m[1].split(/[ ,/]+/).map(Number);
+          return (
+            a >= 0.99 &&
+            Math.abs(r - gold.r) + Math.abs(g - gold.g) + Math.abs(b - gold.b) <
+              24
+          );
+        });
+    });
+    test.skip(!rings || rings.length === 0, "選択中の行に最良のセルが無い");
+    expect(rings.every(Boolean), JSON.stringify(rings)).toBe(true);
+  });
+
   // plan §6（PR #1187 ファン評価1周目 P1）: ST考察の指標はコースで水準が違い、生の値の
   // 最良はほぼ内側の艇に付く。カードの見方は「同コース・同級別の平均との差」なので金枠を付けない
   test("[plan §6] 枠別情報のST考察には最良の金枠を付けない", async ({

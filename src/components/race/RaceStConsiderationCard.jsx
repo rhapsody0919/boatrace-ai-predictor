@@ -38,6 +38,7 @@ import {
   indexBaseline,
   getBaselineCell,
   diffFromBaseline,
+  diffTone,
   expectedBreakoutCount,
 } from "../../utils/courseBaseline";
 import TermHintButton from "./TermHintButton";
@@ -54,11 +55,8 @@ function formatDiff(diff) {
   return `${sign}${abs}`;
 }
 
-function diffClass(isBetter, diff) {
-  if (isBetter === null || isBetter === undefined) return "";
-  // 「0.0」と出る差には色を付けない（記号の無い緑・赤にしない。R2）
-  if (Number(Math.abs(diff).toFixed(1)) === 0) return "";
-  return isBetter ? " is-better" : " is-worse";
+function diffClass(tone) {
+  return tone === "better" ? " is-better" : tone === "worse" ? " is-worse" : "";
 }
 
 function RaceStConsiderationCard({
@@ -257,7 +255,7 @@ function RaceStConsiderationCard({
                       </span>
                       {diff !== null && (
                         <span
-                          className={`rsc-diff${diffClass(isBetter, diff)}`}
+                          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small }))}`}
                         >
                           {formatDiff(diff)}
                         </span>
@@ -308,6 +306,9 @@ function RaceStConsiderationCard({
                     count === null || expected === null
                       ? null
                       : count - expected;
+                  const breakoutSmall =
+                    (stats?.n ?? 0) > 0 &&
+                    (stats?.n ?? 0) < SMALL_SAMPLE_THRESHOLD;
                   const breakoutBetter =
                     breakoutDiff === null || (count === 0 && expected < 1)
                       ? null
@@ -321,7 +322,7 @@ function RaceStConsiderationCard({
                       </span>
                       {breakoutDiff !== null && (
                         <span
-                          className={`rsc-diff${diffClass(breakoutBetter, breakoutDiff)}`}
+                          className={`rsc-diff${diffClass(diffTone({ isBetter: breakoutBetter, diff: breakoutDiff, small: breakoutSmall }))}`}
                         >
                           {formatDiff(breakoutDiff)}
                         </span>
@@ -363,7 +364,7 @@ function RaceStConsiderationCard({
                       </span>
                       {diff !== null && (
                         <span
-                          className={`rsc-diff${diffClass(isBetter, diff)}`}
+                          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small }))}`}
                         >
                           {formatDiff(diff)}
                         </span>

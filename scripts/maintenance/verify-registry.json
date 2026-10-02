@@ -655,9 +655,9 @@
       "guards": "6艇の中の最良値の判定 bestOf（src/utils/bestOf.js、docs/design/race-detail-ui-unify R1）。同値の最良を全部返すこと、全艇同値と値なしは空、表示の桁で丸めて比べること（54.84 と 54.80、平均の浮動小数の誤差）、null と NaN を除くこと"
     },
     {
-      "script": "verify-meet-st-verdict-tone.js",
+      "script": "verify-race-indicator-tones.js",
       "tier": "ci",
-      "guards": "今節タブの「今節のST」判定文の色 meetStVerdictTone（docs/design/race-detail-ui-unify plan §6）。差 0.01 や今節2走以下では緑・赤を付けないこと、差 0.02 以上・3走以上で早い＝緑・遅い＝赤、浮動小数の誤差を2桁で丸めて判定すること"
+      "guards": "レース詳細の緑・赤を付けるかの判定（docs/design/race-detail-ui-unify plan §6）。今節のST判定文 meetStVerdictTone: 差 0.01 や今節2走以下では色なし、差 0.02 以上・3走以上で早い＝緑・遅い＝赤、浮動小数の誤差を2桁で丸める。ST考察の平均との差 diffTone: 走数の少ない艇・0.0 と出る差・向きなしは色なし"
     },
     {
       "script": "verify-disqualified-finish-marks.js",
