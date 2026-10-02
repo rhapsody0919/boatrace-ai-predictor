@@ -624,7 +624,7 @@
         "contribution": "貢獻度"
       },
       "contribution": {
-        "lede": "依名次查看哪些資料、以多大程度發揮作用，以主題別比例呈現。",
+        "lede": "在相同條件的過去比賽中，依名次查看哪些資料、以多大程度發揮作用，以主題別比例呈現。",
         "foot": "比例表示在相同條件的過去比賽中，各主題影響的相對大小（全部主題合計100%）。"
       },
       "targetsLabel": "名次",
@@ -656,7 +656,6 @@
       "boatLabel": "{{n}}號艇",
       "themeColumn": "主題",
       "venueAll": "全部場地",
-      "allBoats": "全部艇",
       "widened": "比賽數較少，已擴大至{{steps}}統計",
       "widenedSteps": {
         "venue": "全部場地",
@@ -731,7 +730,12 @@
           "branch": "支部・主場"
         }
       },
-      "loading": "載入中…"
+      "loading": "載入中…",
+      "scope": "{{venue}}・{{grade}}・{{round}}的過去比賽",
+      "listSeparator": "・",
+      "period": "{{from}}〜{{to}}",
+      "listAllBoats": "各主題（全部艇）",
+      "listAllBoatsCompare": "各主題（全部艇。各艇號的數值見上表）"
     }
   },
   "beforeInfo": {

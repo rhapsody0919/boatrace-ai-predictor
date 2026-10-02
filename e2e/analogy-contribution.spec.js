@@ -1,5 +1,9 @@
 import { test, expect } from "./fixtures.js";
-import { THEMES, contribution } from "./analogy-contribution-fixture.js";
+import {
+  THEMES,
+  boatRow,
+  contribution,
+} from "./analogy-contribution-fixture.js";
 
 /**
  * アナロジー・ファインダーの寄与度（BOA-271 FR-1）。
@@ -242,6 +246,67 @@ test.describe("アナロジー・ファインダーの寄与度（BOA-271 FR-1�
     fail = false;
     await section.getByRole("button", { name: /再/ }).click();
     await expect(section.getByText("n=1,234レース（7,404艇）")).toBeVisible();
+  });
+
+  test("API が失敗しても Supabase の直読みで出し、レースが少ないスライスは広げる", async ({
+    page,
+  }) => {
+    await setup(page, (p) => contribution(p));
+    await page.route("**/api/analogy/contribution*", (route) =>
+      route.fulfill({ status: 500, json: { error: "x" } }),
+    );
+    await page.route("**/rest/v1/analogy_models*", (route) =>
+      route.fulfill({
+        json: [
+          {
+            model_version: "2026-10-05",
+            trained_at: "2026-10-05T00:00:00Z",
+            themes: THEMES,
+            metrics: { periods: { test: ["2025-10-02", "2026-10-01"] } },
+          },
+        ],
+      }),
+    );
+    // このレースのスライス（津・G1・準優勝戦）は12レースしかない。全会場に広げると500レース
+    const rows = [0, 1, 2, 3, 4, 5, 6].flatMap((b) => [
+      boatRow(b, 1, 12, THEMES),
+      boatRow(b, 1, 500, THEMES, { venue_code: 0 }),
+    ]);
+    await page.route("**/rest/v1/analogy_contribution_profiles*", (route) =>
+      route.fulfill({ json: rows }),
+    );
+    await openAiTab(page);
+    const section = sectionOf(page);
+    await expect(section.getByText("n=500レース（3,000艇）")).toBeVisible();
+    await expect(
+      section.getByText("レース数が少ないため、全会場に広げて集計しています"),
+    ).toBeVisible();
+    await expect(section.getByText("小標本")).toHaveCount(0);
+  });
+
+  test("テーブルがまだ無い（マイグレーション未適用）ときは節を出さない", async ({
+    page,
+  }) => {
+    await setup(page, (p) => contribution(p));
+    await page.route("**/api/analogy/contribution*", (route) =>
+      route.fulfill({ status: 404, body: "not found" }),
+    );
+    let asked = 0;
+    await page.route("**/rest/v1/analogy_models*", (route) => {
+      asked += 1;
+      return route.fulfill({
+        status: 404,
+        json: {
+          code: "PGRST205",
+          message: "Could not find the table 'public.analogy_models'",
+        },
+      });
+    });
+    await openAiTab(page);
+    await expect.poll(() => asked).toBeGreaterThan(0);
+    await expect(page.locator(".prediction-result")).toBeVisible();
+    await expect(page.locator(".af-section")).toHaveCount(0);
+    await expect(page.getByRole("alert")).toHaveCount(0);
   });
 
   test("375px で横スクロールが出ない", async ({ page }) => {

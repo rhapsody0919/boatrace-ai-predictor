@@ -624,7 +624,7 @@
         "contribution": "기여도"
       },
       "contribution": {
-        "lede": "착순별로 어떤 데이터가 얼마나 영향을 주는지 테마별 비율로 봅니다.",
+        "lede": "같은 조건의 과거 레이스에서 착순에 어떤 데이터가 얼마나 영향을 주었는지 테마별 비율로 봅니다.",
         "foot": "비율은 같은 조건의 과거 레이스에서 테마별 영향의 상대적인 크기를 나타냅니다(전체 테마 합계 100%)."
       },
       "targetsLabel": "착순",
@@ -650,13 +650,12 @@
         "yusho": "우승전",
         "other": "기타"
       },
-      "compare": "번호로 비교",
+      "compare": "보트 번호로 비교",
       "boatA": "번호 A",
       "boatB": "번호 B",
       "boatLabel": "{{n}}번",
       "themeColumn": "테마",
       "venueAll": "전체 경주장",
-      "allBoats": "전체 보트",
       "widened": "레이스 수가 적어 {{steps}}(으)로 넓혀 집계했습니다",
       "widenedSteps": {
         "venue": "전체 경주장",
@@ -731,7 +730,12 @@
           "branch": "지부・홈"
         }
       },
-      "loading": "불러오는 중…"
+      "loading": "불러오는 중…",
+      "scope": "{{venue}}・{{grade}}・{{round}}의 과거 레이스",
+      "listSeparator": "・",
+      "period": "{{from}}~{{to}}",
+      "listAllBoats": "테마별(전체 보트)",
+      "listAllBoatsCompare": "테마별(전체 보트. 번호별 값은 위 표)"
     }
   },
   "beforeInfo": {

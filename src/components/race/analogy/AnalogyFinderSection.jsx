@@ -3,7 +3,8 @@
  *
  * 今は寄与度（FR-1）だけを出す。類似レース（FR-2）・組み合わせ（FR-3）は類似の定義が決まってから
  * 同じ節に切り替えとして足す（docs/design/analogy-finder/screens.md）。
- * 学習前（is_active の版が無い）は節ごと出さない。予想（predictions）の有無とは切り離す。
+ * 学習前（is_active の版が無い・テーブル未適用）は節ごと出さない。最初の結果が出るまでは枠も描かない。
+ * 予想（predictions）の有無とは切り離す。
  */
 import { useCallback, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,9 +24,13 @@ export default function AnalogyFinderSection({
 }) {
   const { t } = useTranslation();
   const headingId = useId();
-  const [unavailable, setUnavailable] = useState(false);
-  const handleUnavailable = useCallback(() => setUnavailable(true), []);
-  if (unavailable) return null;
+  // 最初の結果が出るまでは枠ごと隠す（学習前・テーブル未適用のとき、見出しが一瞬出て消えるのを防ぐ）
+  const [phase, setPhase] = useState("pending");
+  const handleStatus = useCallback((status) => {
+    if (status === "unavailable") setPhase("unavailable");
+    else if (status === "ready" || status === "error") setPhase("shown");
+  }, []);
+  if (phase === "unavailable") return null;
   const defaultGrade = GRADES.includes(raceGrade) ? raceGrade : "all";
   const defaultRound =
     roundFromStageCategory(
@@ -33,7 +38,11 @@ export default function AnalogyFinderSection({
       Boolean(raceStage),
     ) ?? "all";
   return (
-    <section className="af-section" aria-labelledby={headingId}>
+    <section
+      className="af-section"
+      aria-labelledby={headingId}
+      hidden={phase === "pending"}
+    >
       <h2 id={headingId} className="af-title">
         {t("aiPredictionTab.analogy.title")}
       </h2>
@@ -46,7 +55,7 @@ export default function AnalogyFinderSection({
           venueName={venueName}
           defaultGrade={defaultGrade}
           defaultRound={defaultRound}
-          onUnavailable={handleUnavailable}
+          onStatus={handleStatus}
         />
       </div>
     </section>

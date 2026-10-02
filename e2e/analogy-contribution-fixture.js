@@ -27,7 +27,7 @@ export const THEMES = [
 }));
 const BASE = [0.345, 0.38, 0.142, 0.051, 0.027, 0.055];
 
-function boatRow(boat, target, nRaces, themes) {
+export function boatRow(boat, target, nRaces, themes, slice = {}) {
   // 艇番・着順ごとに値を少しずらす（切り替えで表示が変わることを見るため）
   const raw = themes.map(
     (_, i) => (BASE[i] ?? 0.05) * (1 + 0.1 * ((boat + target + i) % 3)),
@@ -40,6 +40,7 @@ function boatRow(boat, target, nRaces, themes) {
     venue_code: 9,
     grade: "G1",
     round: "junyu",
+    ...slice,
     boat_number: boat,
     n_races: nRaces,
     n_boats: boat === 0 ? nRaces * 6 : nRaces,

@@ -629,7 +629,7 @@
         "contribution": "Contribution"
       },
       "contribution": {
-        "lede": "See which data matters, and how much, for each finishing position — shown as shares by theme.",
+        "lede": "In past races under the same conditions, see which data mattered for each finishing position, and how much, as shares by theme.",
         "foot": "Shares show the relative size of each theme's influence in past races under the same conditions (all themes add up to 100%)."
       },
       "targetsLabel": "Finish",
@@ -655,14 +655,13 @@
         "yusho": "Final",
         "other": "Other"
       },
-      "compare": "Compare by boat #",
+      "compare": "Compare boats",
       "boatA": "Boat A",
       "boatB": "Boat B",
       "boatLabel": "Boat {{n}}",
       "themeColumn": "Theme",
       "venueAll": "All venues",
-      "allBoats": "All boats",
-      "widened": "Too few races, so this widens to {{steps}}",
+      "widened": "Too few races, so these figures cover {{steps}}",
       "widenedSteps": {
         "venue": "all venues",
         "round": "all rounds",
@@ -736,7 +735,12 @@
           "branch": "Branch & home venue"
         }
       },
-      "loading": "Loading…"
+      "loading": "Loading…",
+      "scope": "Past races: {{venue}} · {{grade}} · {{round}}",
+      "listSeparator": ", ",
+      "period": "{{from}} – {{to}}",
+      "listAllBoats": "By theme (all boats)",
+      "listAllBoatsCompare": "By theme (all boats; per-boat values in the table above)"
     }
   },
   "beforeInfo": {

@@ -38,7 +38,11 @@ export default function useAnalogyContribution({
     };
   }, [key, venue, grade, round, target, reloadKey]);
 
-  const retry = useCallback(() => setReloadKey((k) => k + 1), []);
+  // 再試行を押したら「読み込み中」に戻す（押しても見た目が変わらないと、再失敗と区別がつかない）
+  const retry = useCallback(() => {
+    setFailedKey(null);
+    setReloadKey((k) => k + 1);
+  }, []);
   if (failedKey === key) return { status: "error", data: null, retry };
   if (fetched?.key === key) {
     return fetched.data.available

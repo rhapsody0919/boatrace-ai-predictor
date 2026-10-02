@@ -316,7 +316,7 @@
         "contribution": "寄与度"
       },
       "contribution": {
-        "lede": "着順ごとに、どのデータがどれだけ効いているかをテーマ別の割合で見ます。",
+        "lede": "条件が同じ過去のレースで、着順にどのデータがどれだけ効いていたかを、テーマ別の割合で見ます。",
         "foot": "割合は、条件が同じ過去のレースで、テーマごとの効き方の相対的な大きさを示します（全テーマで合計100%）。"
       },
       "targetsLabel": "着順",
@@ -348,7 +348,6 @@
       "boatLabel": "{{n}}号艇",
       "themeColumn": "テーマ",
       "venueAll": "全会場",
-      "allBoats": "全艇",
       "widened": "レース数が少ないため、{{steps}}に広げて集計しています",
       "widenedSteps": {
         "venue": "全会場",
@@ -423,7 +422,12 @@
           "branch": "支部・地元"
         }
       },
-      "loading": "読み込み中…"
+      "loading": "読み込み中…",
+      "scope": "{{venue}}・{{grade}}・{{round}}の過去のレース",
+      "listSeparator": "・",
+      "period": "{{from}}〜{{to}}",
+      "listAllBoats": "テーマ別（全艇）",
+      "listAllBoatsCompare": "テーマ別（全艇。艇番ごとの値は上の表）"
     }
   },
   "beforeInfo": {

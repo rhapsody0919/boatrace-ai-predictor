@@ -26,9 +26,9 @@ export default function ContributionView({
   venueName,
   defaultGrade,
   defaultRound,
-  onUnavailable,
+  onStatus,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [target, setTarget] = useState(1);
   const [grade, setGrade] = useState(defaultGrade || "all");
   const [round, setRound] = useState(defaultRound || "all");
@@ -43,10 +43,10 @@ export default function ContributionView({
     target,
   });
 
-  // 学習前（is_active の版が無い）は節ごと出さない。判定は節が持つ
+  // 節の出し方（学習前は出さない・最初の結果が出るまで枠を描かない）は節が決める
   useEffect(() => {
-    if (status === "unavailable") onUnavailable?.();
-  }, [status, onUnavailable]);
+    onStatus?.(status);
+  }, [status, onStatus]);
   if (status === "unavailable") return null;
 
   const tr = (key, opts) => t(`aiPredictionTab.analogy.${key}`, opts);
@@ -186,31 +186,28 @@ export default function ContributionView({
       {data && (
         <>
           <p className="af-scope">
-            <span translate="no">
-              {resolved.venue === 0 ? tr("venueAll") : venueName}
-            </span>
-            {"・"}
-            {gradeLabel(resolved.grade)}
-            {"・"}
-            {roundLabel(resolved.round)}
-            {" / "}
-            {compare
-              ? `${tr("boatLabel", { n: boatA })} vs ${tr("boatLabel", { n: boatB })}`
-              : tr("allBoats")}
+            {tr("scope", {
+              venue: resolved.venue === 0 ? tr("venueAll") : venueName,
+              grade: gradeLabel(resolved.grade),
+              round: roundLabel(resolved.round),
+            })}
           </p>
           {data.widened.length > 0 && (
             <p className="af-note af-widened">
               {tr("widened", {
                 steps: data.widened
                   .map((s) => tr(`widenedSteps.${s}`))
-                  .join("・"),
+                  .join(tr("listSeparator")),
               })}
             </p>
           )}
 
           <div className="af-radar-wrap">
             <ContributionRadar
-              labels={data.themes.map(themeShort)}
+              axes={data.themes.map((th) => ({
+                key: th.key,
+                label: themeShort(th),
+              }))}
               series={radarSeries}
               ariaLabel={tr("radarLabel")}
             />
@@ -229,12 +226,15 @@ export default function ContributionView({
           <p className="af-meta">
             <span>
               {tr("n", {
-                races: all.n_races.toLocaleString(),
-                boats: all.n_boats.toLocaleString(),
+                races: all.n_races.toLocaleString(i18n.language),
+                boats: all.n_boats.toLocaleString(i18n.language),
               })}
             </span>
             <span>
-              {ym(all.period_from)}〜{ym(all.period_to)}
+              {tr("period", {
+                from: ym(all.period_from),
+                to: ym(all.period_to),
+              })}
             </span>
             <span>{tr("model", { version: data.modelVersion })}</span>
             {data.smallSample && (
@@ -252,6 +252,9 @@ export default function ContributionView({
             />
           )}
 
+          <p className="af-list-label">
+            {compare ? tr("listAllBoatsCompare") : tr("listAllBoats")}
+          </p>
           <ul className="af-theme-list">
             {entries.map((e) => {
               const open = openTheme === e.key;

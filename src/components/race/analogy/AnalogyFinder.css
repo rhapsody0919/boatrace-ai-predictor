@@ -69,7 +69,8 @@
 .af-segment button.is-active {
   background: var(--brand-accent-primary);
   border-color: var(--brand-accent-primary);
-  color: var(--color-white);
+  /* ダークでは背景が明るい金になるので、白でなく面の色（RaceOddsListTab.css と同じ組み合わせ） */
+  color: var(--surface-card);
 }
 
 .af-conditions summary {
@@ -217,6 +218,13 @@
 }
 
 /* ---- テーマ別の棒 ---- */
+.af-list-label {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+}
+
 .af-theme-list {
   list-style: none;
   margin: 0 0 var(--spacing-2);
@@ -266,7 +274,7 @@
   padding: 0 var(--spacing-1-5);
   border-radius: var(--radius-sm);
   background: var(--brand-accent-primary);
-  color: var(--color-white);
+  color: var(--surface-card);
   font-size: var(--font-size-2xs);
   vertical-align: 1px;
 }

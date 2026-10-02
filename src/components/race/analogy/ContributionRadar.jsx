@@ -12,8 +12,8 @@ const point = (i, n, r) => {
   return [CENTER + r * Math.cos(angle), CENTER + r * Math.sin(angle)];
 };
 
-export default function ContributionRadar({ labels, series, ariaLabel }) {
-  const n = labels.length;
+export default function ContributionRadar({ axes, series, ariaLabel }) {
+  const n = axes.length;
   if (n < 3) return null;
   const max = Math.max(0.1, ...series.flatMap((s) => s.values));
   // 目盛りの外周は最大値を10%刻みで切り上げる（小さいシェアのテーマも形が見えるように）
@@ -33,16 +33,16 @@ export default function ContributionRadar({ labels, series, ariaLabel }) {
         <polygon
           key={ring}
           className="af-radar-ring"
-          points={labels
+          points={axes
             .map((_, i) => point(i, n, ring * RADIUS).join(","))
             .join(" ")}
         />
       ))}
-      {labels.map((label, i) => {
+      {axes.map((axis, i) => {
         const [x, y] = point(i, n, RADIUS);
         return (
           <line
-            key={label}
+            key={axis.key}
             className="af-radar-axis"
             x1={CENTER}
             y1={CENTER}
@@ -62,7 +62,7 @@ export default function ContributionRadar({ labels, series, ariaLabel }) {
             const [x, y] = point(i, n, r(v));
             return (
               <circle
-                key={labels[i]}
+                key={axes[i].key}
                 className="af-radar-dot"
                 cx={x}
                 cy={y}
@@ -72,20 +72,20 @@ export default function ContributionRadar({ labels, series, ariaLabel }) {
           })}
         </g>
       ))}
-      {labels.map((label, i) => {
+      {axes.map((axis, i) => {
         const [x, y] = point(i, n, RADIUS + 16);
         const dx = x - CENTER;
         const anchor = dx > 8 ? "start" : dx < -8 ? "end" : "middle";
         return (
           <text
-            key={label}
+            key={axis.key}
             className="af-radar-label"
             x={x}
             y={y}
             textAnchor={anchor}
             dominantBaseline="middle"
           >
-            <tspan x={x}>{label}</tspan>
+            <tspan x={x}>{axis.label}</tspan>
             {showValues && (
               <tspan className="af-radar-label-value" x={x} dy="1.2em">
                 {Math.round(series[0].values[i] * 100)}%
