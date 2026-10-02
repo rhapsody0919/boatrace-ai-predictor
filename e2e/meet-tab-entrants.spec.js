@@ -58,7 +58,7 @@ test("Ｗ優勝戦で分けたときは「同じ優勝戦をめざす」人数�
 }) => {
   await openMeetTab(page, "2026-09-25-01-07");
   await expect(page.locator(".rmt-sub").first()).toContainText(
-    "同じ優勝戦をめざすのは24人（順位の対象は19人。賞典除外・途中帰郷・欠場の5人を除く）",
+    "同じ優勝戦をめざすのは24人（順位の対象は19人。下に名前を出した5人を除く）",
   );
   await expect(page.locator(".rmt-sub").first()).not.toContainText(
     "節の出場",
@@ -70,7 +70,7 @@ test("除いた人数を足すと出場人数になり、表に無い印の凡�
 }) => {
   await openMeetTab(page, "2026-09-28-09-11");
   await expect(page.locator(".rmt-sub").first()).toContainText(
-    "節の出場は47人（順位の対象は42人。賞典除外・途中帰郷・欠場の5人を除く）",
+    "節の出場は47人（順位の対象は42人。下に名前を出した5人を除く）",
   );
   await expect(page.locator(".rmt-compare .rmt-warn")).toHaveCount(0);
   // 除いた5人を理由ごとに名前で出す（BOA-697）
@@ -168,7 +168,7 @@ test("中止があった日も、人数の足し算が合う", async ({ page }) 
   const text = await page.locator(".rmt-sub").first().innerText();
   const all = Number(text.match(/節の出場は(\d+)人/)?.[1]);
   const total = Number(text.match(/順位の対象は(?:今節を走った)?(\d+)人/)?.[1]);
-  const excluded = Number(text.match(/欠場の(\d+)人/)?.[1] ?? 0);
+  const excluded = Number(text.match(/名前を出した(\d+)人/)?.[1] ?? 0);
   const notYet = Number(text.match(/まだ走っていない(\d+)人/)?.[1] ?? 0);
   expect(total + excluded + notYet).toBe(all);
 });
@@ -180,7 +180,7 @@ test("予選の最終日から、予選中に帰った選手を順位の対象�
   // 1走も無い。以前は予選の翌日（または最終日）まで順位と準優の目安の計算に残った
   await openMeetTab(page, "2026-09-23-01-09");
   await expect(page.locator(".rmt-sub").first()).toContainText(
-    "同じ優勝戦をめざすのは24人（順位の対象は21人。賞典除外・途中帰郷・欠場の3人を除く）",
+    "同じ優勝戦をめざすのは24人（順位の対象は21人。下に名前を出した3人を除く）",
   );
   // 予選の後の扱いの説明は、予選が終わるまで出さない
   await expect(page.locator(".rmt-rank-note")).not.toContainText(

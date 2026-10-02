@@ -795,7 +795,7 @@ function RaceMeetTab({
               7人以上は6人まで出して「ほか◯人」と畳む（行が長くなりすぎないように） */}
           {excludedGroups.length > 0 && (
             <p className="rmt-excluded-list">
-              {t("meetTab.excludedListLabel")}
+              <strong>{t("meetTab.excludedListLabel")}</strong>
               {(() => {
                 let budget = EXCLUDED_LIST_MAX;
                 const parts = [];
