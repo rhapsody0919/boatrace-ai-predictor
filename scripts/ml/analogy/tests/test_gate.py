@@ -5,6 +5,8 @@
 1着だけでなく2着以内・3着以内にもゲートを置く。
 """
 
+import pytest
+
 import train as T
 
 
@@ -72,3 +74,41 @@ def test_stale_reference_warns_but_does_not_fail():
 def test_fresh_reference_has_no_warning():
     ref = {"version": "2026-10-02", "win": 1.200, "top2": 0.50, "top3": 0.56, "age_days": 90}
     assert T.quality_gate(metrics(), reference=ref)["warnings"] == []
+
+
+# ---------------------------------------------------------------- 出走表時点専用モデル win_racecard（ADR 案（#1134「レースごとの寄与度」））
+def with_racecard(rc=None):
+    m = metrics()
+    m["win_racecard"] = rc or win(model=1.21)
+    return m
+
+
+def test_racecard_not_beating_baseline_fails():
+    g = T.quality_gate(with_racecard(win(ci_hi=0.001)), reference=None)
+    assert not g["passed"] and any("出走表時点" in r for r in g["reasons"])
+
+
+def test_racecard_missing_from_reference_is_skipped_with_warning():
+    ref = {"version": "2026-10-02", "win": 1.20, "top2": 0.50, "top3": 0.56, "win_racecard": None}
+    g = T.quality_gate(with_racecard(), reference=ref)
+    assert g["passed"]
+    assert g["reference"]["deltas"]["win_racecard"] is None
+    assert any("比較なし" in w for w in g["warnings"])
+
+
+def test_racecard_worse_than_reference_fails_once_reference_has_it():
+    ref = {"version": "2026-11-01", "win": 1.20, "top2": 0.50, "top3": 0.56, "win_racecard": 1.20}
+    g = T.quality_gate(with_racecard(win(model=1.21)), reference=ref)
+    assert not g["passed"]
+
+
+def test_win_missing_from_reference_is_still_an_error():
+    ref = {"version": "2026-10-02", "win": None, "top2": 0.50, "top3": 0.56}
+    with pytest.raises(RuntimeError, match="黙って省かない"):
+        T.quality_gate(metrics(), reference=ref)
+
+
+def test_racecard_is_not_in_targets():
+    """TARGETS に入れると profiles の1着の行が二重になる"""
+    assert T.RACECARD[0] not in [n for n, *_ in T.TARGETS]
+    assert len({ft for _, _, ft, _ in T.TARGETS}) == len(T.TARGETS)
