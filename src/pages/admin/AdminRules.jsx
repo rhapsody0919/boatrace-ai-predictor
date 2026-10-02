@@ -15,7 +15,7 @@ import { getRuleApplicationHistory } from "../../services/adminRuleService";
 import { fetchRulePerformance } from "../../services/adminRulePerformance";
 import "./AdminRules.css";
 import { errorMessageOf } from "../../utils/errorMessage.js";
-import DataFetchError from "../../components/DataFetchError";
+import InlineFetchError from "../../components/InlineFetchError";
 
 // タブ定義
 const TABS = [
@@ -101,7 +101,9 @@ function AdminRules() {
   }, [today]);
 
   // 取得失敗を「対象期間に履歴なし」に化けさせない（BOA-676）。
-  // 失敗を historyError に保持し、履歴タブは空の一覧ではなく DataFetchError を出す
+  // 履歴タブ単位の失敗なので、ページ全体をreloadするDataFetchErrorではなく、
+  // 他タブの状態を保ったままセクション単位で再取得できるInlineFetchErrorを使う
+  // （.claude/rules/frontend-data-fetch.md の3、RaceResult.jsx等の既存実装と同じ扱い）
   const loadHistoryData = useCallback(async () => {
     setHistoryError(null);
     try {
@@ -265,6 +267,7 @@ function AdminRules() {
             historyData={historyData}
             historyTotal={historyTotal}
             historyError={historyError}
+            onRetryHistory={loadHistoryData}
             historyPage={historyPage}
             pageSize={HISTORY_PAGE_SIZE}
             onPageChange={setHistoryPage}
@@ -641,6 +644,7 @@ function HistoryTab({
   historyData,
   historyTotal,
   historyError,
+  onRetryHistory,
   historyPage,
   pageSize,
   onPageChange,
@@ -693,7 +697,7 @@ function HistoryTab({
       </div>
 
       {historyError ? (
-        <DataFetchError detail={historyError} />
+        <InlineFetchError message={historyError} onRetry={onRetryHistory} />
       ) : (
         <>
           <div className="history-summary">
