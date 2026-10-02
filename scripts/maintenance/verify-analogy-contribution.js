@@ -6,11 +6,13 @@
  *    一段ずつ広げ、広げた段を返す（plan「API」、設計レビュー #6）
  * 2. 広げきっても30未満なら、その一番広いスライスを小標本として返す
  * 3. テーマは themes 配列の順と数で並べる（テーマ数を固定しない。spec FR-1「テーマ数は可変」）
+ * 5. 表示する % は、四捨五入しても合計が100（内訳は親の値）になるように丸める（ファン評価2周目）
  * 4. 順位を強調してよいのは、上下の隣の順位との差がどちらも SD の2倍以上のときだけ（spec FR-1「安定性」）
  */
 import {
   MIN_RACES,
   resolveContributionSlice,
+  roundToTotal,
   themeEntries,
 } from "../../src/utils/analogyContribution.js";
 
@@ -162,6 +164,21 @@ check(
     "シェアに無いテーマ（後から足したテーマで古い版など）は0として並べる",
     missing.length === 4 && missing[3].share === 0,
   );
+}
+
+// 7. 表示する % の丸め（最大剰余法）
+{
+  const sum = (a) => a.reduce((x, y) => x + y, 0);
+  const a = roundToTotal([0.345, 0.372, 0.142, 0.06, 0.035, 0.046], 100);
+  check("6テーマの % の合計が100になる", sum(a) === 100);
+  check(
+    "切り捨てで足りない分は端数の大きい順に1ずつ足す",
+    JSON.stringify(a) === JSON.stringify([35, 37, 14, 6, 3, 5]) ||
+      JSON.stringify(a) === JSON.stringify([34, 37, 14, 6, 4, 5]),
+  );
+  const b = roundToTotal([0.05, 0.21, 0.08, 0.05, 0.02], 40);
+  check("内訳は親の % に合計がそろう", sum(b) === 40);
+  check("全部0でも壊れない", sum(roundToTotal([0, 0, 0], 0)) === 0);
 }
 
 if (failures.length) {

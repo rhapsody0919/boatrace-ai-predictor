@@ -193,4 +193,109 @@ test.describe("レース詳細の表示の細部", () => {
       expect(Math.max(...ws) - Math.min(...ws)).toBeLessThanOrEqual(0.01);
     }
   });
+
+  test("375px: 枠別情報の全コース表は切れていることが「›」で分かり、ST考察は枠に収まる（BOA-607）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // 2026-09-26 津5R（チケットの再現レース）
+    await page.goto("/race/2026-09-26-09-05");
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    // ST考察の表は 375px で6艇とも枠の中（#1064 で等幅・最小幅を外した）
+    const rsc = page.locator(".rsc-grid-wrapper").first();
+    await expect(rsc).toBeVisible({ timeout: 30000 });
+    expect(
+      await rsc.evaluate((el) => el.scrollWidth - el.clientWidth),
+    ).toBeLessThanOrEqual(1);
+
+    // 全コース表は 5〜6コースが切れる。横に続く手がかり（「›」）を出す
+    await page.locator(".rwit-fold-summary").click();
+    const grid = page.locator(".rwit-grid-wrapper");
+    await expect(grid.locator(".rwit-grid")).toBeVisible({ timeout: 30000 });
+    expect(
+      await grid.evaluate((el) => el.scrollWidth - el.clientWidth),
+    ).toBeGreaterThan(4);
+    const more = page.locator(".rwit-grid-hscroll .hscroll-more");
+    await expect(more).toBeVisible();
+    // 押すと右へ送られ、左へ戻す「‹」が出る
+    await more.click();
+    await expect
+      .poll(() => grid.evaluate((el) => el.scrollLeft))
+      .toBeGreaterThan(0);
+    await expect(
+      page.locator(".rwit-grid-hscroll .hscroll-less"),
+    ).toBeVisible();
+
+    // フェードを付ける箱が、スクロールする箱の右端まで覆う。以前は箱が4px内側で終わり、
+    // フェードの外に切れた列の文字がくっきり残った（#1130 ファン評価1周目）
+    const edges = await page.evaluate(() => {
+      const hint = document
+        .querySelector(".rwit-grid-hscroll")
+        .getBoundingClientRect();
+      const wrap = document
+        .querySelector(".rwit-grid-wrapper")
+        .getBoundingClientRect();
+      return { hintRight: hint.right, wrapRight: wrap.right };
+    });
+    expect(edges.hintRight).toBeGreaterThanOrEqual(edges.wrapRight - 0.5);
+
+    // 想定コースが外の選手（4〜6号艇）を選んでも、「想定」の列が初めから見える位置まで送られ、
+    // 右端のフェード（幅40px）と「›」の下にも入らない。指標を替えても同じ（#1130 ファン評価
+    // 1・2周目）。行見出しはスクロールする箱の左端にぴったり付き、左に流れた数字が覗かない
+    await page.locator(".rwit-grid-hscroll .hscroll-less").click();
+    await expect.poll(() => grid.evaluate((el) => el.scrollLeft)).toBe(0);
+    const todayColumnState = () =>
+      page.evaluate(() => {
+        const wrap = document.querySelector(".rwit-grid-wrapper");
+        const th = wrap.querySelector(".rwit-grid-course-th.is-today");
+        if (!th) return "no-today";
+        const w = wrap.getBoundingClientRect();
+        const c = th.getBoundingClientRect();
+        const label = wrap
+          .querySelector(".rwit-grid-label-th")
+          .getBoundingClientRect();
+        const hasMore =
+          wrap.scrollWidth - wrap.clientWidth - wrap.scrollLeft > 4;
+        const rightLimit = w.right - (hasMore ? 40 : 0);
+        if (label.left - w.left > 0.5)
+          return `label-gap ${label.left - w.left}`;
+        // 行見出しの右端で途中まで隠れた列が無い（右端まで送り切った時を除く。同 3周目）
+        const atMax =
+          wrap.scrollLeft >= wrap.scrollWidth - wrap.clientWidth - 1;
+        if (!atMax) {
+          for (const head of wrap.querySelectorAll(".rwit-grid-course-th")) {
+            const r = head.getBoundingClientRect();
+            if (r.left < label.right - 0.5 && r.right > label.right + 0.5) {
+              return `straddle ${head.textContent.trim()} ${Math.round(r.left)}-${Math.round(r.right)} / ${Math.round(label.right)}`;
+            }
+          }
+        }
+        return c.right <= rightLimit + 0.5 && c.left >= label.right - 0.5
+          ? "visible"
+          : `hidden ${Math.round(c.left)}-${Math.round(c.right)} / ${Math.round(label.right)}-${Math.round(rightLimit)}`;
+      });
+    for (const width of [375, 320]) {
+      await page.setViewportSize({ width, height: 812 });
+      for (const boat of ["4", "5", "6"]) {
+        await page
+          .locator(".rwit-boat-chip")
+          .filter({
+            has: page.locator(".rwit-boat-chip-num", {
+              hasText: new RegExp(`^${boat}$`),
+            }),
+          })
+          .click();
+        for (const metric of ["1着率", "2連対率", "3連対率"]) {
+          await page
+            .locator(".rwit-metric-row .rwit-chip", { hasText: metric })
+            .click();
+          await expect
+            .poll(todayColumnState, {
+              message: `${width}px・${boat}号艇・${metric}`,
+            })
+            .toBe("visible");
+        }
+      }
+    }
+  });
 });

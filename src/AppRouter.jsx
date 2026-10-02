@@ -14,6 +14,7 @@ import {
   getAvailableLanguages,
 } from "./config/languages";
 import { refreshAdsOnRouteChange, trackPageView } from "./utils/analytics";
+import { pageViewPath } from "./utils/raceUrlState";
 import App from "./App";
 import VenueGridPage from "./pages/VenueGridPage";
 import VenueRaceListPage from "./pages/VenueRaceListPage";
@@ -133,14 +134,14 @@ const PAGE_VIEW_SETTLE_MS = 500;
 
 function PageViewTracker() {
   const { pathname, search } = useLocation();
+  // レース詳細のタブ・艇の選択（?tab=・?boat=）は、選ぶたびに URL を書き換える（BOA-493）。
+  // それを除いた URL の変化だけを1件と数える。除かないと押した回数だけ PV が増える
+  const path = pageViewPath(pathname, search);
 
   useEffect(() => {
-    const id = setTimeout(
-      () => trackPageView(`${pathname}${search}`),
-      PAGE_VIEW_SETTLE_MS,
-    );
+    const id = setTimeout(() => trackPageView(path), PAGE_VIEW_SETTLE_MS);
     return () => clearTimeout(id);
-  }, [pathname, search]);
+  }, [path]);
 
   return null;
 }
