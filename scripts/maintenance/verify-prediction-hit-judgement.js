@@ -330,24 +330,31 @@ async function evaluateTrigger(sql, judge) {
 // ---------------------------------------------------------------------------
 // (c) 欠落の補完
 // ---------------------------------------------------------------------------
-/** fixMissingHitFlags が使う範囲（select・gte・lt・is・range）と update・eq だけの偽クライアント */
+/**
+ * fixMissingHitFlags が使う範囲（select・gte・lt・is・order・range）と update・eq だけの偽クライアント。
+ * 共通の fetchAll は .range() を先に呼んでから絞り込みを足すため、await されたときに結果を返す（thenable）
+ */
 function fakeClient(tables) {
   const updates = [];
   return {
     updates,
     from(table) {
       const filters = [];
+      let bounds = [0, Infinity];
       const q = {
         select: () => q,
         gte: (c, v) => (filters.push((r) => r[c] >= v), q),
         lt: (c, v) => (filters.push((r) => r[c] < v), q),
         is: (c, v) => (filters.push((r) => (r[c] ?? null) === v), q),
-        range: async (from, to) => ({
-          data: tables[table]
-            .filter((r) => filters.every((f) => f(r)))
-            .slice(from, to + 1),
-          error: null,
-        }),
+        order: () => q,
+        range: (from, to) => ((bounds = [from, to]), q),
+        then: (resolve, reject) =>
+          Promise.resolve({
+            data: tables[table]
+              .filter((r) => filters.every((f) => f(r)))
+              .slice(bounds[0], bounds[1] + 1),
+            error: null,
+          }).then(resolve, reject),
         update: (data) => ({
           eq: async (c, v) => {
             updates.push({ table, [c]: v, data });
