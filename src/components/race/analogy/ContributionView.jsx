@@ -188,8 +188,15 @@ export default function ContributionView({
           <p className="af-scope">
             {tr("scope", {
               venue: resolved.venue === 0 ? tr("venueAll") : venueName,
-              grade: gradeLabel(resolved.grade),
-              round: roundLabel(resolved.round),
+              // 「すべて」は選択肢の言い方。範囲の説明では「全グレード」「全ラウンド」と書く
+              grade:
+                resolved.grade === "all"
+                  ? tr("widenedSteps.grade")
+                  : gradeLabel(resolved.grade),
+              round:
+                resolved.round === "all"
+                  ? tr("widenedSteps.round")
+                  : roundLabel(resolved.round),
             })}
           </p>
           {data.widened.length > 0 && (
