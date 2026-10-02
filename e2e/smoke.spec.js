@@ -2481,7 +2481,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
       await page.goto(`/race/2026-09-24-01-${r}`);
       await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
       const sub = page.locator(".rmt-sub").first();
-      await expect(sub).toContainText("節の出場は", { timeout: 30000 });
+      // Ｗ優勝戦で分けた節なので「同じ優勝戦をめざすのは◯人」と書く（BOA-660）
+      await expect(sub).toContainText("同じ優勝戦をめざすのは", {
+        timeout: 30000,
+      });
       totals.push(
         await page.locator(".rmt-series-note, .rmt-sub").allInnerTexts(),
       );
@@ -2527,9 +2530,11 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 別の勝ち上がりの選手を混ぜて順位を振っていた（BOA-476／BOA-511）。
     // 表示中の6艇と同じ側だけを母集団にするので24人。さらに 9/22 5R（予選男子）で
     // Fを切った大澤普司は賞典除外として順位の対象から外すので23人（BOA-587）
-    // 除外の選手も節は走っているので「出場」は24人のまま、順位の対象を分けて書く
+    // 除外の選手も節は走っているので24人のまま、順位の対象を分けて書く。
+    // Ｗ優勝戦で分けた節は「節の出場」ではなく「同じ優勝戦をめざすのは」と書く
+    // （下の注記の「節全体は48人」と食い違って読めた。BOA-660）
     await expect(page.locator(".rmt-sub")).toContainText(
-      "節の出場は24人（順位の対象は23人",
+      "同じ優勝戦をめざすのは24人（順位の対象は23人",
     );
     // 人数が半分になる理由を1行で断る（黙って半分にすると「なぜ減った」になる）
     await expect(page.locator(".rmt-series-note")).toContainText(
