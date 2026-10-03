@@ -1127,7 +1127,7 @@
     "periodFetchError": "無法取得前期成績",
     "accidentBadgeOver": "事故率{{rate}} 超過B2線",
     "accidentBadgeNear": "距B2線還差{{need}}分",
-    "accidentTitle": "本期事故率（參考・{{from}}〜{{to}}）",
+    "accidentTitle": "本期事故率（參考，{{from}}〜{{to}}）",
     "accidentRate": "事故率 {{rate}}",
     "accidentBreakdown": "事故分{{points}}÷出賽{{starts}}（{{kinds}}）",
     "accidentKindCount": "{{kind}}{{n}}",
@@ -1143,7 +1143,7 @@
     "accidentLineOver": "超過B2線（0.70）",
     "accidentLineNear": "距B2線（0.70）還差{{need}}分",
     "accidentNoStarts": "本期尚未出賽",
-    "accidentNote": "事故分依官方配分（F・出發延遲20分、妨害失格15分、選手責任的失格・缺賽10分。本期第2次以後的F加分）。不含不良航法・待機行動違規（2分），因此可能低於官方數值。超過0.70時，下次級別審查將降為B2級",
+    "accidentNote": "事故分依官方配分（F、出發延遲20分，妨害失格15分，選手責任的失格、缺賽10分。本期第2次以後的F加分）。不含不良航法、待機行動違規（2分），因此可能低於官方數值。超過0.70時，下次級別審查將降為B2級",
     "accidentFetchError": "無法取得本期事故率",
     "meetScoreForecastTitle": "今日名次會讓得分率這樣變動",
     "meetScorePrelimOver": "預賽得分率 {{rate}}（{{n}}場、{{source}}、已確定）"
