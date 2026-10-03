@@ -510,6 +510,66 @@ async function getRacerPages() {
   return racerPages;
 }
 
+// 節ページ（/venue/:venueCode/meet/:startDate、BOA-682）。対象は SG/G1/G2 の節で、
+// 出走表・結果がある 2025-12-02 以降（それより前の節は中身が出せず「見つからない」になる。
+// 2019年以降の SG/G1/G2 は409節あり、下限が無いと約1,450 URL が空のページになる）から
+// 今日+14日まで（開幕前の節を記事からのリンク先として先に載せる）。
+// グランプリ・クイーンズクライマックス・トーナメントは節ページの対象外なので載せない。
+// race_series は6,312行あるので fetchAll でページングする（1000行で黙って切れる）。
+// **取得の失敗は握りつぶさない**（例外のまま main で終了コード1にする。節の URL が
+// 黙って sitemap から落ちると、気づかないまま索引から消える。design-reviewer 指摘4）
+const MEET_PAGE_DATA_FROM = "2025-12-02";
+
+async function getMeetPages(latest) {
+  const { supabase, isSupabaseEnabled, fetchAll } =
+    await import("./lib/supabaseClient.js");
+  if (!isSupabaseEnabled()) {
+    console.warn("⚠️ Supabase未設定のため、節ページはスキップします");
+    return [];
+  }
+  const { isOutOfScopeMeetTitle, MEET_PAGE_GRADES } = await import(
+    "../src/utils/meetPageModel.js"
+  );
+  const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const until = new Date(todayJst);
+  until.setUTCDate(until.getUTCDate() + 14);
+  const rows = await fetchAll(
+    "race_series",
+    "venue_code, start_date, end_date, title, grade",
+    (q) =>
+      q
+        .in("grade", MEET_PAGE_GRADES)
+        .gte("start_date", MEET_PAGE_DATA_FROM)
+        .lte("start_date", until.toISOString().slice(0, 10))
+        .order("venue_code")
+        .order("start_date"),
+    { client: supabase },
+  );
+  const meets = rows.filter((r) => !isOutOfScopeMeetTitle(r.title));
+  const pages = [];
+  for (const m of meets) {
+    const venueLatest = latest.byVenue.get(m.venue_code) ?? null;
+    // 開幕前の節は lastmod を出さない。開催中・終了後は節の最終日と最新の開催日の早いほう
+    const lastmod =
+      venueLatest && venueLatest >= m.start_date
+        ? venueLatest < m.end_date
+          ? venueLatest
+          : m.end_date
+        : null;
+    const basePath = `/venue/${m.venue_code}/meet/${m.start_date}`;
+    for (const { code } of SUPPORTED_LANGUAGES) {
+      pages.push({
+        loc: localizePath(basePath, code),
+        lastmod,
+        changefreq: "daily",
+        priority: code === DEFAULT_LANGUAGE ? "0.7" : "0.6",
+      });
+    }
+  }
+  console.log(`📊 節ページ: ${meets.length}節（${pages.length} URL）`);
+  return pages;
+}
+
 // 開催日（JSTの今日以前で最新）。全体と会場別。取れなければ null（lastmod を出さない）
 async function getLatestRaceDates() {
   const result = { overall: null, byVenue: new Map() };
@@ -571,6 +631,7 @@ async function generateSitemap() {
   const racePages = await getRacePages();
   const racerPages = await getRacerPages();
   const latest = await getLatestRaceDates();
+  const meetPages = await getMeetPages(latest);
   const blogIndexLastmod = (lang) => {
     const posts =
       lang === "en"
@@ -607,6 +668,7 @@ async function generateSitemap() {
     ...blogPosts,
     ...racePages,
     ...racerPages,
+    ...meetPages,
   ];
 
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
