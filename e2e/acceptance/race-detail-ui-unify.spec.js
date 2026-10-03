@@ -6,7 +6,7 @@
 // 実装された FR を PENDING から外して有効にする。
 import { test, expect } from "../fixtures.js";
 
-const PENDING = new Set(["FR-1", "FR-3", "FR-6", "FR-7"]);
+const PENDING = new Set(["FR-1", "FR-3", "FR-7"]);
 const describeFR = (fr, title, body) =>
   (PENDING.has(fr) ? test.describe.fixme : test.describe)(
     `[${fr}] ${title}`,
@@ -1052,6 +1052,36 @@ describeFR("FR-6", "AI予想・オッズ一覧・結果タブ", () => {
     const low = ratios.filter((r) => r.ratio < 4.5);
     expect(low, JSON.stringify(low)).toEqual([]);
   });
+
+  // PR #1209 ファン評価1周目: 段階ラベルの文字が、薄い色を重ねた地の上で 3.5〜3.8:1 だった。
+  // ライト・ダークとも 4.5:1 以上で、アイコンの波紋より前面にあること
+  for (const scheme of ["light", "dark"]) {
+    test(`[plan §10] イン崩れ注意度の段階ラベルは ${scheme} で4.5:1以上、波紋より前面`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await openRaceDetail(page);
+      await openTab(page, "AI予想");
+      await installHelpers(page);
+      const card = page.locator(".volatility-display").first();
+      const visible = await card
+        .waitFor({ state: "visible", timeout: 15000 })
+        .then(() => true)
+        .catch(() => false);
+      test.skip(!visible, "イン崩れ注意度（発走前）が表示されていない");
+      const r = await card.evaluate((el) => {
+        const badge = [...el.querySelectorAll("span")].find(
+          (s) => getComputedStyle(s).borderRadius === "12px",
+        );
+        return {
+          ratio: window.__acc.contrast(badge),
+          z: getComputedStyle(badge).zIndex,
+        };
+      });
+      expect(r.ratio).toBeGreaterThanOrEqual(4.5);
+      expect(Number(r.z)).toBeGreaterThanOrEqual(1);
+    });
+  }
 
   test("[spec FR-6 / R3] オッズ一覧には良し悪しの色（緑・赤・金枠）を付けない", async ({
     page,

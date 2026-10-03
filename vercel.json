@@ -167,6 +167,14 @@
       "schedule": "30 20 * * *"
     },
     {
+      "path": "/api/cron/fan-period",
+      "schedule": "0 21 * * *"
+    },
+    {
+      "path": "/api/cron/fan-period",
+      "schedule": "30 21 * * *"
+    },
+    {
       "path": "/api/cron/racer-course-technique-stats",
       "schedule": "0 4 * * *"
     },

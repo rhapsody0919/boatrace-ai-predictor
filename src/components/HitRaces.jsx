@@ -9,6 +9,7 @@ import { getJSTDateInfo, getDateListJST } from "../utils/dateUtils";
 import { HitRaceCard, HitStats, VenueStatsTable } from "./hits";
 import "./HitRaces.css";
 import { TURN_JUDGEMENT, judgeTurnPrediction } from "../utils/raceOutcome";
+import { pickHitPattern } from "../utils/turnPrediction";
 
 /**
  * 予測データから展開予測的中レースを抽出する（BOA-174、unified一本化）
@@ -29,8 +30,12 @@ function extractHitRaces(predictions) {
     .filter(({ judgement }) => judgement?.status === TURN_JUDGEMENT.HIT)
     .map(({ race, patterns, judgement }) => {
       const { winner } = judgement;
-      // winnerCourse は名前に反して「枠なり前提の艇番」（BOA-708）。艇番どうしで照合する
-      const matchedPattern = patterns.find((p) => p.winnerCourse === winner);
+      // 同じ艇の候補が複数あるときは、実際の決まり手と同じ候補を選ぶ（PR #1197 ファン評価3周目）
+      const matchedPattern = pickHitPattern(
+        patterns,
+        winner,
+        race.result?.winningTechnique,
+      );
 
       const parts = race.raceId.split("-");
       const date = `${parts[0]}-${parts[1]}-${parts[2]}`;

@@ -65,7 +65,7 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
         }),
       };
     });
-    expect(texts.frontRunner).toContain("4号艇が1着（2コースから）");
+    expect(texts.frontRunner).toContain("4号艇が2コースから1着");
     expect(texts.sameCourse).toContain("1号艇が1着");
     expect(texts.sameCourse).not.toContain("コースから");
     expect(texts.unknown).toContain("3号艇が1着");
@@ -134,5 +134,17 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
     await expect(headers.nth(2)).toHaveText(
       "会場全体で1号艇が負けた割合の平均",
     );
+  });
+
+  test("的中率ページの展開予測の説明は、1着の艇で判定すると書く", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.goto("/accuracy", { waitUntil: "domcontentloaded" });
+    const note = page.locator(".turn-accuracy-hero-note");
+    await expect(note).toContainText("いずれかの艇が実際に1着になった割合", {
+      timeout: 60000,
+    });
+    await expect(page.locator("body")).not.toContainText("1着コースと一致");
   });
 });

@@ -2165,3 +2165,63 @@ Disk IO: 1日1回。全て共有バッファに載っており、ディスクか
 - **閾値の妥当性**: ピットレポート（暫定95%）・期別成績（暫定97%）は、平常時の実測が無い。shadow・live後に見直す。既存の項目は、2026-09-14〜09-20の実測で、`coverage.trifecta_all`（BOA-352の障害の1日）以外は99%以上
 - **順延日の実地確認**: 順延・中止の確定が遅れる日（`race_status`ジョブのlive化前）に、翌朝の評価で誤警告が出ないこと。次の順延日で確認する
 - `race_special_notes`が0件で正常かの確認（info→forbid か削除）
+
+## V. 期別成績（`fan_period`、fan の定期取り込み）の導入（[racer-period-stats/plan.md §8.2](../racer-period-stats/plan.md)）
+
+対象: `api/cron/fan-period.js`（06:00・06:30 JST）。対象日より前に終わった期の公式の期別成績（fan、約180KB）が未取り込みなら1回取得し、`racer_period_stats` に変更のある行だけ書く。生ファイルは Storage の `raw-pages` と台帳 `raw_snapshots` に置く。マージ直後は `off`（何もしない）。2026-10-03 ユーザー承認。
+
+### V-1. 台帳の作成（ユーザーが実行。マージの前でも後でもよい）
+
+Supabase Dashboard > SQL Editor で `docs/db-migration/125_raw_snapshots.sql` の全文を実行する（BEGIN〜COMMIT を含む。新規テーブルの作成のみ）。
+
+確認（読み取り）:
+
+```sql
+SELECT relrowsecurity FROM pg_class WHERE relname = 'raw_snapshots' AND relkind = 'r';  -- true
+SELECT has_table_privilege('anon', 'public.raw_snapshots', 'SELECT');                  -- false
+```
+
+### V-2. shadow（ユーザーが実行。マージ・デプロイの後）
+
+取得・解析・既存行との差分の集計だけを行い、書かない・保管しない。
+
+```sql
+INSERT INTO scrape_job_state (job, mode) VALUES ('fan_period', 'shadow')
+ON CONFLICT (job) DO UPDATE SET mode = 'shadow', updated_at = now();
+```
+
+確認（Claude が行う）: 取り込み済みの fan2604 を取り直し、既存行との差分が0件であることを見る（取得先へ1リクエスト）。
+
+```
+curl -s -H "Authorization: Bearer $CRON_SECRET" "https://www.boat-ai.jp/api/cron/fan-period?fanId=fan2604"
+```
+
+（`$CRON_SECRET` はシェルに渡すが、値は出力・記録しない。）期待: `status: "parsed"`、`diff: {rows: 1643, toWrite: 0, unchanged: 1643, existing: 1643}`。`toWrite` が0でなければ、パーサーか列の対応の差なので live にしない。
+
+```sql
+SELECT job, mode, last_success_at, last_target_date, last_rows_written, last_error, last_report
+FROM scrape_job_state WHERE job = 'fan_period';
+```
+
+期待: 翌朝 06:00 の実行後、`last_error` が NULL、`last_report.status` が `already_imported`（10月中）または `unpublished`（11/1 以降、fan2610 の公開前）。
+
+### V-3. live（ユーザーが実行。V-2 で差分0を確かめた後）
+
+```sql
+UPDATE scrape_job_state SET mode = 'live', updated_at = now() WHERE job = 'fan_period';
+```
+
+確認: fan2610 が公開された翌朝、`last_report.status` が `imported`、`racer_period_stats` に `period_year = 2027 AND period_no = 1` の行が約1,650行入り、`raw_snapshots` に `key = 'fan2610'` の行が1行あること。
+
+```sql
+SELECT count(*) FROM racer_period_stats WHERE period_year = 2027 AND period_no = 1;
+SELECT key, storage_path, bytes, captured_at FROM raw_snapshots WHERE page_type = 'fan' ORDER BY captured_at DESC LIMIT 3;
+```
+
+### V-4. 切り戻し
+
+```sql
+UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job = 'fan_period';
+```
+
+再デプロイは不要。手動の取り込みは従来どおり `scripts/maintenance/fan-backfill.js`。
