@@ -48,7 +48,7 @@
   - 体重・支部: `race_entries.weight_kg`・`branch` が 2026-02 16%・03 0%・04〜08 3〜8%・09 37%。前日までの最後の値を期限なしで持ち回るので、本体期間は数か月前の値になる（「選手・属性」）
   - **風向**: 下の節
 
-### 風向（オーケストレーターの申し送り2）
+### 風向（オーケストレーターの申し送り2）→ #1213 で対応（ユーザー決定は案1。回転は方位マークから決まる固定値、除外なし。docs/design/analogy-finder/wind-basis.md）
 - 本体の `race_conditions.wind_direction` は 2025-12・01 がほぼ全件 NULL（K/B 補完は風向を書かない。`kbGapFill.js` のコメント）、2026-02〜09 は約1割が NULL（うち約6割は風速0で、features.py が無風＝0 にする。残りの風速>0 の NULL は月 117〜278 レース）
 - より大きい問題: K ファイル（長期分＝fit 期間）と DB（直前情報ページ。test・推論）で風向の基準が違う。固定データの日（2026-09-11 の12会場・2026-03-15 の2会場）で突き合わせると、会場ごとにほぼ一定の回転がある（江戸川 K北→DB西南西 10/12、平和島 K北→DB東 5/5、児島 K南→DB西・K南東→DB南西（+90°）、宮島 K東→DB南東 6/11、若松 K北東→DB東北東）。DB の風向は、ページの水面の図に対する向き（会場ごとに回る）と推定する（未確認）
   - 影響: fit は K の基準だけで学習しているので、test と推論の `wind_x`・`wind_y` は別の座標で入る。「環境」テーマの風の寄与と、レースごとの寄与度（直前情報8列に風が入る）がずれる
@@ -58,13 +58,13 @@
   - どちらも画面の数字が変わるので、決まったら独立エージェントで検証する
 
 ## ユーザー作業の手順
-### A. 学習のやり直し（#1178 → #1205 のマージの後）
-前提: #1205（`KB_CACHE_VERSION` v2）が master にあること。無いまま走らせると、長期分は v1 のキャッシュ（最終日が全件 false）を読み、`check_final_day` で止まる（害は無いが無駄）。欠場艇の行の補完（#1199）の本番適用も先に済ませる（本体分は毎回 DB から読むので、学習より前に入っていればよい）。
-1. Supabase Dashboard → Storage → バケット（`scripts/ml/analogy/storage.js` の `BUCKET`）→ `source/v1/` を削除する（v2 にしたので読まれないが、BOA-696 の前の値を残さない）
-2. GitHub → Actions → Train Analogy Finder → Run workflow（branch: master）
-   - `record_perrace`: 風向の扱いが決まるまでは **false**。事前登録5 の記録は、特徴量が確定した版で1回だけ取る
+### A. 学習のやり直し（1回にまとめる。#1178 → #1205 → #1213（風向）のマージの後）
+前提: #1213 まで master にあること、欠場艇の行の補完（#1199）の本番適用が済んでいること（本体分は毎回 DB から読むので、学習より前に入っていればよい）。#1205 が無いまま走らせると、長期分は v1 のキャッシュ（最終日が全件 false）を読み、`check_final_day` で止まる。
+1. Supabase Dashboard → Storage → バケット `analogy` → `source/v1/` を削除する（v2 にしたので読まれないが、BOA-696 の前の値を残さない）
+2. GitHub → Actions → Train Analogy Finder → Run workflow（branch: master、`record_perrace`: **true**）。風向の扱いが決まり特徴量が確定したので、事前登録5 の記録もこの1回で取る
    - 初回は長期分（2019-04〜2025-12）を DB から読み直して v2 のキャッシュを置くので、普段より Disk IO が多い（Dashboard の Disk IO を前後で確認する）
-3. 確認: Step Summary の「版 … に切り替えた」、一致検査（Parity check）が緑、`analogy_models` の新しい版が is_active
+3. 確認: Step Summary の「版 … に切り替えた」、一致検査（Parity check）が緑、`analogy_models` の新しい版が is_active、`per_race_meta.json` に `wind_basis` がある
+   - 手元で同じデータを使った学習（2026-10-03）は品質ゲートを通過した（1着の対数損失 1.19099、参照版より -0.00056）
 
 ### B. T10-7 の有効化（A が1回成功し、123・124 を適用した後）
 1. GitHub → Settings → Developer settings → Fine-grained tokens → 新規。Repository access はこのリポジトリだけ、Permissions は Actions: Read and write だけ。有効期限を決めてカレンダーに入れる（期限切れは scrape-monitor が1回目の失敗から Slack に出す）
