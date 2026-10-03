@@ -50,6 +50,7 @@ import {
   MEET_SMALL_SAMPLE_RUNS,
 } from "./seriesPoints";
 import { finishMarkKeyOf } from "../../utils/prevResult";
+import { raceStageLabel } from "../../constants/raceStageConfig";
 import RaceHistoryTable from "./RaceHistoryTable";
 import { bestOf } from "../../utils/bestOf";
 import MeetSparkline from "./MeetSparkline";
@@ -89,7 +90,7 @@ function RaceMeetTab({
   // 中止が確定したレース（BOA-658）。行われないレースに「今日の着順でこう動く」を出さない
   isCancelled = false,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // 着順の欄の公式の記号（エ・転 等）を、データ出走表と同じ言語ごとの表記にする
   const finishLabelOf = (finish) => {
     if (typeof finish !== "string") return finish;
@@ -1357,7 +1358,13 @@ function RaceMeetTab({
           // （BOA-636。375pxで10.4pxの灰色だった）
           <p className="rmt-forecast rmt-forecast-settled">
             {isAfterPrelim
-              ? t("basicInfo.meetScoreNoForecast", { stage })
+              ? t("basicInfo.meetScoreNoForecast", {
+                  // 公式の日本語の種別名（準優勝戦等）をそのまま入れていた。ja 以外では
+                  // 見出しのチップと同じ区分の訳にする（BOA-713。ko で「準優勝戦」の漢字が
+                  // 2位決定戦と読まれ、チップの「준결승전」とも食い違っていた）
+                  stage:
+                    raceStageLabel(stage, t, i18n.language)?.text ?? stage,
+                })
               : t(
                   prelimEndDay
                     ? "meetTab.prelimOverNoteDay"
