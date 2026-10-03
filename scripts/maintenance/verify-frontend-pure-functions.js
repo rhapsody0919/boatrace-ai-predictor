@@ -1577,6 +1577,25 @@ function suiteHscrollHint(m, check) {
     ],
     [178, 250, 40],
   );
+  // 送る先を列の境目にそろえる（PR #1202 ファン評価2周目）。列の境目（固定の列を引いた位置）は 0・60・120・180・240
+  const starts = [0, 60, 120, 180, 240];
+  const snap = (current, step, direction, max = 263) =>
+    m.snapScrollTarget({ current, step, direction, max, columnStarts: starts });
+  check(
+    "hscroll: 送る先は、目安（今の位置＋8割）を越えない、いちばん遠い列の境目",
+    [
+      snap(0, 218, 1),
+      snap(120, 100, 1),
+      snap(240, 100, -1),
+      snap(180, 218, -1),
+    ],
+    [180, 180, 180, 0],
+  );
+  check(
+    "hscroll: 1列も越えないときは次の列の境目、端を越えるときは端",
+    [snap(0, 40, 1), snap(240, 40, 1), snap(200, 300, 1), snap(130, 5, -1)],
+    [60, 263, 263, 120],
+  );
   check("hscroll: 右端まで送ったら「›」は消え、「‹」が出る", st(357, 301, 56), {
     hasMore: false,
     hasLess: true,
@@ -1663,6 +1682,12 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  [
+    "hscrollHint",
+    "送る先を列の境目にそろえない（PR #1202 ファン評価2周目の退行）",
+    "if (within.length > 0) return within[within.length - 1];",
+    "if (within.length > 0) return raw;",
+  ],
   [
     "volatilityLevel",
     "表示の数値をラベルの範囲に収めない（PR #1186 ファン評価の退行）",

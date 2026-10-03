@@ -635,6 +635,22 @@ test.describe("レース詳細の表示の細部", () => {
       await more.click();
       const less = hint.locator(":scope > .hscroll-less");
       await expect(less).toBeVisible();
+      // 送った先は列の境目。固定の列のすぐ右に、切れた列の破片を残さない（PR #1202 ファン評価2周目。
+      // 375px のコース別成績で「1コース 2%」（実際は 87.2%）と読めた）
+      const cut = await hint.evaluate((el) => {
+        const cells = [...el.querySelector("tr").children];
+        let stickyRight = el.getBoundingClientRect().left;
+        for (const c of cells) {
+          const style = getComputedStyle(c);
+          if (style.position !== "sticky" || style.left === "auto") break;
+          stickyRight = c.getBoundingClientRect().right;
+        }
+        const firstVisible = cells
+          .map((c) => c.getBoundingClientRect())
+          .find((r) => r.right > stickyRight + 1);
+        return firstVisible ? stickyRight - firstVisible.left : 0;
+      });
+      expect(cut, "固定の列の右に切れた列が残らない").toBeLessThanOrEqual(1);
       // 送ったあとも、左端の列は同じ位置に残る
       expect(Math.abs((await stickyLeft()) - before)).toBeLessThanOrEqual(1);
       await less.click();
@@ -698,5 +714,30 @@ test.describe("レース詳細の表示の細部", () => {
     expect(m.raceLeft - m.boxLeft).toBeLessThan(80);
     // 送ったあとは、固定した列の右端に線を引く
     expect(await lineOf()).not.toBe("none");
+  });
+  test("375px: モーターのコース別成績は「›」を押すと列の境目で止まり、「1コース 2%」のような切れた値を残さない（PR #1202 ファン評価2周目）", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${RACE}?tab=motor`);
+    await page.locator(".motor-ranking-row").first().click({ timeout: 60000 });
+    await page.locator(".motor-waku-expand-btn").click();
+    const hint = page.locator(".mwsg-hint");
+    await expect(hint.locator(":scope > .hscroll-more")).toBeVisible({
+      timeout: 30000,
+    });
+    await hint.locator(":scope > .hscroll-more").click();
+    await expect(hint.locator(":scope > .hscroll-less")).toBeVisible();
+    const cut = await hint.evaluate((el) => {
+      const cells = [...el.querySelector("tr").children];
+      const stickyRight = cells[0].getBoundingClientRect().right;
+      const firstVisible = cells
+        .slice(1)
+        .map((c) => c.getBoundingClientRect())
+        .find((r) => r.right > stickyRight + 1);
+      return stickyRight - firstVisible.left;
+    });
+    expect(cut).toBeLessThanOrEqual(1);
   });
 });
