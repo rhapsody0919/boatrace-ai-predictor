@@ -1,0 +1,52 @@
+/* モーターのコース別成績（MotorWakuStatsGrid）の横スクロール。表本体の見た目は
+   MotorConditionChart.css にあり、ここは横に送ったときの振る舞いだけを持つ。
+   同じクラス名を2つの CSS で定義しないよう、この部品だけのクラス（mwsg-）で指す */
+
+/* この表はカード面（.table-wrapper の --surface-card）に載る。フェードと固定の列の地を
+   カード面に合わせる（既定のページ面だと右端と固定の列に段差が出る） */
+.mwsg-hint {
+  --hscroll-fade-color: var(--surface-card);
+}
+
+/* コースの列は横に送っても残す。送るとコースの列が消え、3連率と展示タイムが6行並ぶだけで
+   どの行が何コースか分からなくなっていた（BOA-704） */
+.mwsg-table th:first-child,
+.mwsg-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--hscroll-fade-color, var(--surface-card));
+}
+
+/* 固定した列の右端の線は、横に送ったとき（「‹」が出ているとき）だけ引く（PR #1202 ファン評価1周目） */
+.mwsg-hint:has(> .hscroll-less) .mwsg-table :is(th, td):first-child {
+  box-shadow: inset -1px 0 0 var(--border-hairline);
+}
+
+.mwsg-table thead th:first-child {
+  background: var(--surface-page);
+}
+
+/* 強調の行（今日のコース）は半透明の色を重ねているので、固定の列にも同じ色を地の上に重ねる */
+.mwsg-table .motor-waku-row-highlight td:first-child {
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--text-secondary) 12%, transparent),
+      color-mix(in srgb, var(--text-secondary) 12%, transparent)
+    ),
+    var(--hscroll-fade-color, var(--surface-card));
+}
+
+/* 固定の列は自分の地を塗るので、行に乗せたときの色も同じにそろえる */
+.mwsg-table .motor-waku-row:hover td:first-child {
+  background: var(--surface-page);
+}
+
+.mwsg-table .motor-waku-row-highlight:hover td:first-child {
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--text-secondary) 18%, transparent),
+      color-mix(in srgb, var(--text-secondary) 18%, transparent)
+    ),
+    var(--hscroll-fade-color, var(--surface-card));
+}
