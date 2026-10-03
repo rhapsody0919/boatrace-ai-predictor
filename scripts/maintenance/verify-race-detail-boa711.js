@@ -63,11 +63,24 @@ check(
 );
 check(
   "ST考察: 360px 未満では平均・注記を折る（320px で表がカードからはみ出した）",
-  /@media \(max-width: 359px\) \{\s*\.rsc-baseline,\s*\.rsc-note-small \{\s*white-space: normal/.test(stCss),
+  /@media \(max-width: 359px\) \{\s*\.rsc-baseline,\s*\.rsc-note-small \{\s*white-space: normal/.test(
+    stCss,
+  ),
 );
 check(
-  "ST考察の注記に「±0.1以内は色なし」を書く",
-  json("src/locales/ja/common.json").stConsideration.caveat.includes("±0.1以内"),
+  "ST考察: 率（安定率・出遅率）の差は ±1.0 以内を色なし、抜出は ±0.1（注記も分けて書く）",
+  (st.match(/threshold: RATE_TONE_THRESHOLD/g) ?? []).length === 2 &&
+    /const RATE_TONE_THRESHOLD = 1;/.test(st) &&
+    json("src/locales/ja/common.json").stConsideration.caveat.includes(
+      "率は±1.0以内・抜出は±0.1以内",
+    ),
+);
+check(
+  "抜出の「?」の説明: 「平均」は期待回数（率×この選手の走数）だと書く（4言語）",
+  LANGS.every((l) => {
+    const h = json(`src/locales/${l}/common.json`).termHints.stBreakout;
+    return /走数|races|場數|출주 수/.test(h) && !h.includes("平均回数です");
+  }),
 );
 check(
   "ST考察: 「〜ほど良い」は行見出しの列の中で折り返す（375px で隣の列にはみ出した）",

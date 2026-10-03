@@ -38,8 +38,24 @@ const TONE_CASES = [
   ["0.0 と出る差は色なし", { isBetter: true, diff: 0.04 }, null],
   // BOA-711: 表示で ±0.1 の差は「平均どおり」。−0.1 が赤くなっていた
   ["−0.1 は色なし", { isBetter: false, diff: -0.1 }, null],
-  ["+0.1（丸めの誤差 0.09999）も色なし", { isBetter: true, diff: 0.09999 }, null],
+  [
+    "+0.1（丸めの誤差 0.09999）も色なし",
+    { isBetter: true, diff: 0.09999 },
+    null,
+  ],
   ["±0.2 からは色", { isBetter: false, diff: -0.2 }, "worse"],
+  // 率（%）の行は ±1.0 以内を色なし（安定率 48.3 と平均48.5 の −0.2 が赤くなっていた。BOA-711）
+  [
+    "率の行: −0.2 は色なし",
+    { isBetter: false, diff: -0.2, threshold: 1 },
+    null,
+  ],
+  ["率の行: ±1.0 は色なし", { isBetter: true, diff: 1.0, threshold: 1 }, null],
+  [
+    "率の行: ±1.1 からは色",
+    { isBetter: true, diff: 1.1, threshold: 1 },
+    "better",
+  ],
   ["isBetter が null は色なし", { isBetter: null, diff: 0 }, null],
   ["diff が null は色なし", { isBetter: true, diff: null }, null],
 ];

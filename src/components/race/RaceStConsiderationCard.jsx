@@ -60,6 +60,9 @@ function formatDiff(diff) {
 const round1 = (v) =>
   v === null || v === undefined ? null : Number(Number(v).toFixed(1));
 
+/** 率（安定率・出遅率）の差は ±1.0 以内を色なし（抜出の回数は diffTone の既定 ±0.1。BOA-711） */
+const RATE_TONE_THRESHOLD = 1;
+
 function diffClass(tone) {
   return tone === "better" ? " is-better" : tone === "worse" ? " is-worse" : "";
 }
@@ -278,7 +281,7 @@ function RaceStConsiderationCard({
                       </span>
                       {diff !== null && (
                         <span
-                          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small }))}`}
+                          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small, threshold: RATE_TONE_THRESHOLD }))}`}
                         >
                           {formatDiff(diff)}
                         </span>
@@ -393,7 +396,7 @@ function RaceStConsiderationCard({
                       </span>
                       {diff !== null && (
                         <span
-                          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small }))}`}
+                          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small, threshold: RATE_TONE_THRESHOLD }))}`}
                         >
                           {formatDiff(diff)}
                         </span>
