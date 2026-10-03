@@ -441,7 +441,9 @@ function RaceWakuInfoTab({
               style={
                 active
                   ? {
-                      background: color.bg,
+                      // 赤・青・緑は白い名前とのコントラストが足りないので、一段濃い色にする
+                      // （トークンがある艇だけ。白・黒・黄は公式の色のまま。BOA-703）
+                      background: `var(--boat-${p.number}-strong, ${color.bg})`,
                       color: color.text,
                       "--rwit-chip-num-bg": color.text,
                       "--rwit-chip-num-fg":
