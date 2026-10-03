@@ -900,6 +900,11 @@ input:focus-visible,
 }
 
 /* 1号艇（白）は明るい地に溶けるので、形に沿った濃い輪郭を付ける */
+.rr-st-dot.is-black {
+  /* 2号艇の黒い矢印はダークの紺の帯に溶けるので、明るい輪郭を付ける（BOA-711） */
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.85));
+}
+
 .rr-st-dot.is-white {
   /* 0.6px では1着行のベージュ地で輪郭が弱かった（BOA-586） */
   filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.95))

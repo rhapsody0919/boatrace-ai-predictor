@@ -253,7 +253,15 @@ function RacerTechniqueProfileChart({
                   ticks={[0, 20, 40, 60, 80, 100]}
                 />
                 <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
-                <Legend />
+                <Legend
+                  // 凡例の文字は本文色にし、色は横の四角で示す。系列の色（橙・灰）の文字は
+                  // ライトで約2〜2.5:1 と読みにくかった（BOA-711）
+                  formatter={(value) => (
+                    <span style={{ color: "var(--text-primary)" }}>
+                      {value}
+                    </span>
+                  )}
+                />
                 {allTechniques.map((technique, idx) => (
                   <Bar
                     key={technique}
