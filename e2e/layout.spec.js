@@ -990,6 +990,11 @@ const HSCROLL_SCREENS = [
     ready: ".motor-ranking-row",
     // 行を押すと、そのモーターのコース別成績（MotorWakuStatsGrid）が開く
     open: async (page) => {
+      // 会場内順位の列（#1153）は一覧の行が出たあとに足される。列が増える前に送ると、
+      // 送ったあとに表が広がり、残りの幅が 20px・10px にならない（CI で 71px 残った）
+      await expect(page.locator(".motor-venue-rank-head")).toBeVisible({
+        timeout: 30000,
+      });
       await checkHscrollHints(page, "モーター一覧");
       await page.locator(".motor-ranking-row").first().click();
       await expect(page.locator(".motor-waku-table")).toBeVisible({
