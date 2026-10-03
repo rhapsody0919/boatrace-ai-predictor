@@ -156,3 +156,12 @@
   - 展示前の段では天候・水面を出さない（spec・screens に書く）
 - Version 13: https://claude.ai/artifact/PmBJj2kX13venVRWs5E2Cw 。ソースは [mock-v13/](./mock-v13/)。第5回の検証（[verification-round5.md](./verification-round5.md)）の指摘は、反論1件（#9、ユーザー指示どおり）以外すべて採用
 - 未確認: seed の揺れ（再学習の版が Storage に無い）、本番の直前情報の天候と kb の結果時点の値の違い
+
+## 16. 2026-10-03 深夜 Version 14 公開（§15 の後。次のセッションはここから）
+- ユーザーの判断（2026-10-03）: 当初の v6 の構成が一番わかりやすい。知りたいのは「○号艇が○着に入るには、枠以外で何が効くか」
+- 1つ目のタブを「○号艇が○着に入るかを左右しやすい材料（枠以外）」にした（寄与度の量の定義を変える）
+  - 量: テーマ・グループ単位の SHAP を、レースの中で中心化 → 艇番の中で中心化。|値| の平均の構成比を取る
+  - 向き: 「6艇の中で〜ほど見込みが上がる」
+  - そのほか: 2艇の比較、会場・グレード・ラウンドの比較、今日のその艇
+  - spec FR-1・FR-1b、#1177 の計算、本番 profiles.py は、承認後にこの定義に合わせて直す
+- Version 14: https://claude.ai/artifact/PmBJj2kX13venVRWs5E2Cw 。ソースは [mock-v14/](./mock-v14/)。第6回の検証（[verification-round6.md](./verification-round6.md)）の指摘はすべて採用
