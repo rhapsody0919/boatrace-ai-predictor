@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   horizontalScrollHintState,
   horizontalScrollStep,
+  snapScrollTarget,
 } from "../utils/horizontalScrollHint";
 
 /**
@@ -28,14 +29,35 @@ import {
  * @returns {{ref: object, hasMore: boolean, hasLess: boolean, update: Function,
  *   scrollRight: Function, scrollLeft: Function}}
  */
-/** 固定の左の列（1行目の先頭のセルが position: sticky のとき）の幅を引いた、1回に送る幅 */
-function stepOf(el) {
-  const first = el.querySelector("tr > :first-child");
-  const stickyWidth =
-    first && getComputedStyle(first).position === "sticky"
-      ? first.getBoundingClientRect().width
-      : 0;
-  return horizontalScrollStep({ clientWidth: el.clientWidth, stickyWidth });
+/**
+ * 「›」「‹」で送る先の scrollLeft。固定の左の列（1行目の先頭から続く、横に固定した sticky のセル。
+ * 今節の日別表は日付と R の2列）の幅を引いた見える幅の8割を目安に、列の境目にそろえる
+ */
+function scrollTargetOf(el, direction) {
+  const row = el.querySelector("tr");
+  const box = el.getBoundingClientRect();
+  const cells = row ? [...row.children] : [];
+  let stickyWidth = 0;
+  for (const cell of cells) {
+    // 見出し行は縦にも固定（top: 0）していて position は sticky になる。横に固定した列だけを数える
+    const style = getComputedStyle(cell);
+    if (style.position !== "sticky" || style.left === "auto") break;
+    stickyWidth += cell.getBoundingClientRect().width;
+  }
+  const columnStarts = cells.map(
+    (cell) =>
+      cell.getBoundingClientRect().left -
+      box.left +
+      el.scrollLeft -
+      stickyWidth,
+  );
+  return snapScrollTarget({
+    current: el.scrollLeft,
+    step: horizontalScrollStep({ clientWidth: el.clientWidth, stickyWidth }),
+    direction,
+    max: el.scrollWidth - el.clientWidth,
+    columnStarts,
+  });
 }
 
 export function useHorizontalScrollHint(deps = []) {
@@ -102,14 +124,14 @@ export function useHorizontalScrollHint(deps = []) {
     if (!el) return;
     // `scroll-behavior: smooth` は使わない。動きを減らす設定の環境では
     // プログラムからのスクロールが一切効かなくなる（RaceTabs.css に実例）
-    el.scrollLeft += stepOf(el);
+    el.scrollLeft = scrollTargetOf(el, 1);
     update();
   }, [update]);
 
   const scrollLeft = useCallback(() => {
     const el = ref.current;
     if (!el) return;
-    el.scrollLeft -= stepOf(el);
+    el.scrollLeft = scrollTargetOf(el, -1);
     update();
   }, [update]);
 

@@ -61,7 +61,7 @@ import {
   sparkLeftPercent,
 } from "../../utils/trendDateLayout";
 import "./RaceMeetTab.css";
-import "../common/HorizontalScrollHint.css";
+import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
 
 // 順位の対象外の理由 → 画面の文言キー（meetTab.<key> と meetTab.<key>Title）。BOA-587
 const EXCLUDED_LABEL_KEY = {
@@ -110,8 +110,10 @@ function RaceMeetTab({
   const {
     ref: forecastRef,
     hasMore: forecastHasMore,
+    hasLess: forecastHasLess,
     update: forecastUpdate,
     scrollRight: forecastScrollRight,
+    scrollLeft: forecastScrollLeft,
     // 行数が決まってから測り直す（マウント直後は取得前で幅が無い）
   } = useHorizontalScrollHint([sortedPlayers.length, board?.meetStart]);
   // 選んでいる艇はタブをまたいで共有する（BOA-492）。共有値が null（＝まだ
@@ -959,18 +961,17 @@ function RaceMeetTab({
       {forecastRows.length > 0 && (
         <div className="rmt-card">
           <h3 className="rmt-card-title">{t("meetTab.forecastTitle")}</h3>
-          <div className={`hscroll-hint${forecastHasMore ? " has-more" : ""}`}>
-            {forecastHasMore && (
-              <button
-                type="button"
-                className="hscroll-more"
-                onClick={forecastScrollRight}
-                aria-hidden="true"
-                tabIndex={-1}
-              >
-                ›
-              </button>
-            )}
+          <div
+            className={`rmt-forecast-hint hscroll-hint${forecastHasMore ? " has-more" : ""}`}
+          >
+            {/* 右へ送ると艇番・選手名の列が消えて、ボタンでは戻れなかった。左の列を固定し、
+                「‹」も出す（BOA-699・BOA-704） */}
+            <HorizontalScrollButtons
+              hasMore={forecastHasMore}
+              hasLess={forecastHasLess}
+              onMore={forecastScrollRight}
+              onLess={forecastScrollLeft}
+            />
             <div
               className="rmt-forecast-scroll"
               ref={forecastRef}
@@ -1414,7 +1415,9 @@ function RaceMeetTab({
         ) : meet.length === 0 ? (
           <p className="rmt-empty">
             {t(
-              isCancelled ? "meetTab.meetEmptyCancelled" : "basicInfo.meetEmpty",
+              isCancelled
+                ? "meetTab.meetEmptyCancelled"
+                : "basicInfo.meetEmpty",
             )}
           </p>
         ) : (
