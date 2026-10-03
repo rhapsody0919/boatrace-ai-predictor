@@ -1175,6 +1175,7 @@
     "rowCourseRate": "艇號勝率",
     "loading": "數據載入中…",
     "motorResetNote": "剛更換",
+    "motorNewNote": "新馬達、尚無成績",
     "motorBadgeUp": "機力↑",
     "motorBadgeDown": "機力↓"
   },

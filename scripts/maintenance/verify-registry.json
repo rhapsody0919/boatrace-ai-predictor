@@ -139,6 +139,11 @@
       "guards": "racerStats（中身は枠番、BOA-284 で枠番キー維持と決定）を画面が courseRaceCounts・courseRateOf・table.courseWinRate で読まないこと、境界の toWakuRacerStats が wakuRaceCounts に詰め替えること（BOA-302）"
     },
     {
+      "script": "verify-motor-unrated.js",
+      "tier": "ci",
+      "guards": "モーター2連率0の「実績なし」の判定（BOA-702）。新モーターで未使用のモーターを「—」、走って2着以内0回の本当の0%は0.0%のまま。当日は自社の走数、過去は会場公式の出走数、生成側（本日のデータ一覧）は切替日以降の出走数"
+    },
+    {
       "script": "verify-race-outcome.js",
       "tier": "ci",
       "guards": "不成立・返還の判定関数（src/utils/raceOutcome.js）の回帰と変異検証、画面側が展開予測の的中を rank1 の直接比較・旧フラグ isNoRace で判定していないこと（BOA-543）"

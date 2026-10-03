@@ -8,6 +8,7 @@
 import { Fragment } from "react";
 import { Link } from "react-router-dom";
 import { bestOf } from "../../utils/bestOf";
+import { isMotorUnrated } from "../../utils/motorGeneration";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
 import {
   meetPrevRunState,
@@ -169,6 +170,10 @@ function buildRowDefs({
   } = analysis;
 
   const motorByBoat = byBoat(motor);
+  // 会場公式の出走数があるか（モーター2連率0の「実績なし」の判定に使う。BOA-702）
+  const venueHasOfficialStats = [...motorByBoat.values()].some(
+    (r) => r?.race_count !== null && r?.race_count !== undefined,
+  );
   const formByBoat = byBoat(racerForm);
   const stByBoat = byBoat(stPredictability);
   const exByBoat = byBoat(exhibitionTime);
@@ -295,11 +300,16 @@ function buildRowDefs({
       key: "motor",
       label: t("dataTable.rowMotor"),
       shortLabel: t("review.cols.motor"),
-      // モーター交換直後（全艇2連率0%）は理由をラベル横に注記する
+      // 実績なしのモーター（BOA-702）、または全艇2連率0%（モーター交換直後で、会場公式の
+      // 出走数が無く実績なしと断定できない）は、理由をラベル横に注記する
       note: (() => {
         const values = cand.motor.map((c) => c.value).filter((v) => v !== null);
-        return values.length > 0 && values.every((v) => v === 0)
-          ? t("dataTable.motorResetNote")
+        if (values.length > 0 && values.every((v) => v === 0))
+          return t("dataTable.motorResetNote");
+        return [...motorByBoat.values()].some((r) =>
+          isMotorUnrated(r, venueHasOfficialStats),
+        )
+          ? t("dataTable.motorNewNote")
           : null;
       })(),
       tab: "motor",
@@ -312,6 +322,9 @@ function buildRowDefs({
         const values = cand.motor.map((c) => c.value).filter((v) => v !== null);
         const allZero = values.length > 0 && values.every((v) => v === 0);
         if (allZero) return "—";
+        // 一部の艇だけ実績なし（新モーターで未使用）も「—」。本当に0%（走って2着以内0回）は
+        // 0.0% のまま出す（BOA-702）
+        if (isMotorUnrated(row, venueHasOfficialStats)) return "—";
         const powerIndex = toNumber(row?.power_index);
         return (
           <span className="drt-value">

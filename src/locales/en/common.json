@@ -1180,6 +1180,7 @@
     "rowCourseRate": "Lane win rate",
     "loading": "Loading analytics…",
     "motorResetNote": "New motors",
+    "motorNewNote": "New motor, no record yet",
     "motorBadgeUp": "Motor ↑",
     "motorBadgeDown": "Motor ↓"
   },
