@@ -3,6 +3,7 @@
  */
 import { SocialShareButtons } from "../SocialShareButtons";
 import { generateTurnHitShareText, shareUrlFor } from "../../utils/share";
+import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
 
 function HitRaceCard({
   hitRace,
@@ -25,6 +26,9 @@ function HitRaceCard({
   };
 
   const probability = hitRace.matchedPattern?.probability;
+  // 予想確率は「その艇がその決まり手で1着になる確率」なので、決まり手も添える。無いと艇の1着確率に
+  // 読めた（同じ艇の別の決まり手の確率は含まない。PR #1197 ファン評価2周目）
+  const technique = TECHNIQUE_NAMES[hitRace.matchedPattern?.technique] ?? null;
 
   return (
     <div
@@ -56,14 +60,20 @@ function HitRaceCard({
 
       <div className="turn-hit-detail">
         <div className="turn-hit-course">
-          <span className="turn-hit-course-label">1マーク先頭</span>
+          {/* 上位候補のどれかが1着になれば的中で、ここに出るのはその当たった候補（本命とは限らない）。
+              「1マーク先頭」は展開予測の説明（1着）と食い違い、「1着予想」は本命に推したように読めた
+              （BOA-710、PR #1197 ファン評価1周目） */}
+          <span className="turn-hit-course-label">的中した候補</span>
           <span className="turn-hit-course-value">
             {hitRace.winnerCourse}コース
           </span>
         </div>
         {probability != null && (
           <div className="turn-hit-probability">
-            予想確率 {(probability * 100).toFixed(0)}%
+            {/* 決まり手は AI の予想として書く（実際の決まり手と違うことがある。的中の判定は1着の艇だけ。
+                PR #1197 ファン評価3周目） */}
+            予想: {technique ? `${technique} ` : ""}
+            {(probability * 100).toFixed(0)}%
           </div>
         )}
       </div>
@@ -78,6 +88,7 @@ function HitRaceCard({
             raceNo: hitRace.raceNumber,
             date: hitRace.date,
             winnerCourse: hitRace.winnerCourse,
+            technique,
             probability,
           })}
           hashtags={["ボートレース", "展開予測", "龍神レーダー"]}
