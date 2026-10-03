@@ -1360,6 +1360,7 @@
       "venueRankTotal": "/{{total}}",
       "venueRankError": "Unavailable",
       "venueRankSourceNote": "Venue rank counts the top-2 rate in the {{venue}} official site's motor records (retrieved {{date}}). The bar is the official top-2 rate from the race card (series start); because the sources differ, bar length and rank can disagree",
+      "venueRankSourceNotePeriodEnd": "Venue rank counts the top-2 rate in the {{venue}} official site's motor records (tallied through {{date}}). The bar is the official top-2 rate from the race card (series start); because the sources differ, bar length and rank can disagree",
       "motorRiderMixNote": "A motor's top-2 rate also reflects the skill of the racers who used it",
       "officialSourceNote": "Note: \"Trial\" and \"Official top-2 (series start)\" are shown exactly as published on the BOAT RACE Official Website (fixed when the series starts; they do not change mid-series). \"Top-2 rate\", \"Top-3 rate\" and the power index are our own recalculations over the selected period.",
       "officialModeSourceNote": "※ For past races, \"Top-2 rate\", \"Top-3 rate\" and \"Trial\" are the BOAT RACE official website values as of the race card. In the list, the \"Power index\" is shown only for today's races (tap a row to see the value up to just before this race).",
@@ -1449,7 +1450,8 @@
       "racerWakuEmpty": "No racers found for this motor/lane combination",
       "racerWakuNote": "💡 Counts only races since the current motor went into service where this motor was used in this lane. Values in orange come from fewer than {{n}} starts and are for reference only.",
       "drillPreGeneration": "Motor #{{n}} in this race is from before the motor changeover and is a different motor from the current #{{n}}, so its trend, power index and usage history are not shown.",
-      "drillAsOfRaceNote": "💡 This shows this motor's status up to just before this race (this race and later races are not included)."
+      "drillAsOfRaceNote": "💡 This shows this motor's status up to just before this race (this race and later races are not included).",
+      "barScaleNote": "The longest bar is the highest of the six motors. "
     },
     "racerForm": {
       "title": "📈 Racer Form",

@@ -201,4 +201,36 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
       timeout: 30000,
     });
   });
+  test("会場サイトの集計の締め日があれば、注記は取得日ではなく古い方の締め日を出す", async ({
+    page,
+  }) => {
+    // びわこは 9/09 締めと 9/18 締めが混ざるのに「取得日 10/3」と出て、順位が新しく見えた（ファン評価3周目 P1）
+    await page.route("**/rest/v1/venue_motor_stats*", async (route) => {
+      const response = await fetchRecorded(route);
+      const body = await response.json().catch(() => null);
+      if (!Array.isArray(body) || body.length < 10) {
+        return route.fulfill({ response });
+      }
+      body.forEach((row, i) => {
+        row.stats_period_end = i % 3 === 0 ? "2026-09-09" : "2026-09-18";
+      });
+      await route.fulfill({ response, json: body });
+    });
+    await page.goto(KOJIMA_7R);
+    await expect(page.locator(".motor-venue-rank-note")).toContainText(
+      "（2026/9/9 締め）",
+      { timeout: 30000 },
+    );
+    await expect(page.locator(".motor-venue-rank-note")).not.toContainText(
+      "取得日",
+    );
+  });
+
+  test("棒の長さの基準（6基の最大を全長）を注記に書く", async ({ page }) => {
+    await page.goto(KOJIMA_7R);
+    await expect(page.locator(".motor-venue-rank-note")).toContainText(
+      "棒は6基の最大を全長にしています",
+      { timeout: 30000 },
+    );
+  });
 });

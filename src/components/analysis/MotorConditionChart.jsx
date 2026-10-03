@@ -919,19 +919,26 @@ function MotorConditionChart({
               <p className="table-note motor-venue-rank-note">
                 {venueRanks?.state === "ok" && (
                   <>
-                    {t("analysis.motor.venueRankSourceNote", {
-                      venue: t(
-                        `venues.${selectedVenue}`,
-                        VENUE_NAMES[selectedVenue] || String(selectedVenue),
-                      ),
-                      date: venueRanks.scrapedDate
-                        .replaceAll("-", "/")
-                        .replace(/\/0(\d)/g, "/$1"),
-                    })}
+                    {/* 日付は、会場サイトの集計の締め日があればそれ（「9/18 締め」）、無ければ取得日 */}
+                    {t(
+                      venueRanks.periodEnd
+                        ? "analysis.motor.venueRankSourceNotePeriodEnd"
+                        : "analysis.motor.venueRankSourceNote",
+                      {
+                        venue: t(
+                          `venues.${selectedVenue}`,
+                          VENUE_NAMES[selectedVenue] || String(selectedVenue),
+                        ),
+                        date: (venueRanks.periodEnd ?? venueRanks.scrapedDate)
+                          .replaceAll("-", "/")
+                          .replace(/\/0(\d)/g, "/$1"),
+                      },
+                    )}
                     <br />
                   </>
                 )}
                 {/* 選手の実力が混ざる注意は、会場内順位の有無にかかわらず出す（ファン評価） */}
+                {t("analysis.motor.barScaleNote")}
                 {t("analysis.motor.motorRiderMixNote")}
               </p>
             )}

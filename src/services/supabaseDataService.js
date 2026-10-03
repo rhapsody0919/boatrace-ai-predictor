@@ -3229,7 +3229,7 @@ export const supabaseDataService = {
           const { data, error } = await supabase
             .from("venue_motor_stats")
             .select(
-              "motor_number, win_rate, top2_rate, top3_rate, accident_rate, final_count, championship_count, race_count",
+              "motor_number, win_rate, top2_rate, top3_rate, accident_rate, final_count, championship_count, race_count, stats_period_end",
             )
             .eq("venue_code", venueCode)
             .eq("scraped_date", latestRow.scraped_date);
@@ -3259,7 +3259,7 @@ export const supabaseDataService = {
    * @param {number} venueCode
    * @param {string|null} asOfDate
    *   - 出走数 0（集計前）のモーターは順位に入れない（画面は「-」）
-   * @returns {Promise<{state:"ok", scrapedDate:string, total:number, ranks:Map<number,{rank:number,tied:number}>}|{state:"empty"}|{state:"error"}>}
+   * @returns {Promise<{state:"ok", scrapedDate:string, periodEnd:string|null, total:number, ranks:Map<number,{rank:number,tied:number}>}|{state:"empty"}|{state:"error"}>}
    */
   async getVenueMotorRanks(venueCode, asOfDate = null) {
     if (VENUE_SITE_STATS_HIDDEN.includes(Number(venueCode))) {
@@ -3275,9 +3275,17 @@ export const supabaseDataService = {
     }));
     const ranks = rankBy(rows, "top2Rate");
     if (ranks.size === 0) return { state: "empty" };
+    // 会場サイトの集計の締め日。びわこ・唐津・大村は節の途中で止まっていて、取得日（10/3）と
+    // 中身の時点（9/18 締め等）がずれる。締め日が混ざる会場（びわこは 9/09 と 9/18）は古い方を出す
+    // （2026-10-02 ユーザー判断、ファン評価3周目の P1）。締め日の無い会場は null（画面は取得日）
+    const periodEnds = snapshot.rows
+      .map((row) => row.stats_period_end)
+      .filter(Boolean)
+      .sort();
     return {
       state: "ok",
       scrapedDate: snapshot.scrapedDate,
+      periodEnd: periodEnds[0] ?? null,
       total: ranks.size,
       ranks,
     };
