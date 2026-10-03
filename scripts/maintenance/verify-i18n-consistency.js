@@ -188,7 +188,9 @@ for (const lang of ["en", "ko"]) {
 // 6. ko で使わないと決めた訳語（BOA-713）
 const KO_RETIRED_TERMS = [
   { term: "준우승", use: "준결승전（準優勝戦）・준결승 진출전（準優進出戦）" },
-  { term: "상전", use: "준결승·결승 제외（賞典除外）" },
+  { term: "상전", use: "준결승전·우승전 출전 제외（賞典除外）" },
+  // 우승전（優勝戦）と対にならない「결승」の組（BOA-713 ファン評価2周目）
+  { term: "준결승·결승", use: "준결승전·우승전 출전 제외（賞典除外）" },
 ];
 checked += 1;
 for (const { term, use } of KO_RETIRED_TERMS) {
