@@ -1349,28 +1349,29 @@ export const supabaseDataService = {
     const ids = [...new Set(raceIds)].filter(Boolean);
     if (ids.length === 0) return {};
     // 的中レース一覧の「全期間」は1500件を超え、.in() 1本では URL が長すぎて 400 になる
-    const fetchChunked = async (table, select, values) =>
-      (
-        await Promise.all(
-          chunkArray(values, 500).map((chunk) =>
-            fetchAllByIn(table, select, "race_id", chunk),
-          ),
-        )
-      ).flat();
-    const results = await fetchChunked(
-      "race_results",
-      "race_id, rank1, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
-      ids,
+    // テーブル名はリテラルで fetchAllByIn に渡す（verify-fetch-all-by-in-order の静的検査）
+    const fetchChunked = async (values, fetchChunk) =>
+      (await Promise.all(chunkArray(values, 500).map(fetchChunk))).flat();
+    const results = await fetchChunked(ids, (chunk) =>
+      fetchAllByIn(
+        "race_results",
+        "race_id, rank1, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+        "race_id",
+        chunk,
+      ),
     );
     const missing = results
       .filter((r) => r.rank1 != null && r[`actual_course_${r.rank1}`] == null)
       .map((r) => r.race_id);
     const timings =
       missing.length > 0
-        ? await fetchChunked(
-            "race_start_timings",
-            "race_id, boat_number, entry_course",
-            missing,
+        ? await fetchChunked(missing, (chunk) =>
+            fetchAllByIn(
+              "race_start_timings",
+              "race_id, boat_number, entry_course",
+              "race_id",
+              chunk,
+            ),
           )
         : [];
     const entryByKey = new Map(
