@@ -76,6 +76,8 @@ def test_per_race_meta_feature_names_follow_booster(models, tmp_path):
     assert meta["models"]["win_racecard"]["feature_names"] == rc.feature_name()
     assert meta["models"]["win"]["num_trees"] == 20
     assert meta["live_features"] == LIVE_FEATURES
+    # 推論側の JS が本体の風向を同じ表で直す（windOffsetFor）
+    assert meta["wind_basis"] == F.load_wind_basis()
     assert meta["themes"] == THEMES and "features" in meta["themes"][0]["groups"][0]
     assert meta["models"]["win"]["file"] == "model_win.json"
     assert set(win.feature_name()) == set(rc.feature_name()) | set(LIVE_FEATURES)
