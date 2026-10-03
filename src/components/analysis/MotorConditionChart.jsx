@@ -661,7 +661,7 @@ function MotorConditionChart({
         breakdown.length > 0 && (
           <>
             <div
-              className={`table-wrapper mcc-list-hint hscroll-hint${rankingScroll.hasMore ? " has-more" : ""}`}
+              className={`table-wrapper hscroll-hint mcc-list-hint${rankingScroll.hasMore ? " has-more" : ""}`}
             >
               <HorizontalScrollButtons
                 hasMore={rankingScroll.hasMore}
