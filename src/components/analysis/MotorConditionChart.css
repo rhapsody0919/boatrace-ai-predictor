@@ -409,6 +409,8 @@
   left: 0;
   z-index: 1;
   background: var(--surface-card);
+  /* 行（.motor-ranking-row）と同じ速さで色を変える。そろえないと左の2列だけ先に変わる */
+  transition: background-color 0.15s ease;
 }
 
 .mcc-list-table :is(th, td):nth-child(2) {

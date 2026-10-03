@@ -675,13 +675,21 @@ test.describe("レース詳細の表示の細部", () => {
   }
   // 枠の列は幅を決めて、選手名の列をその右に固定する（BOA-699）。決めた幅に艇色のチップが
   // 収まらないと、チップが選手名の下に潜る。内余白が変わる 768px の境目と、PC幅で溢れる 800px も通す
-  for (const width of [320, 768, 800, 1440]) {
-    test(`${width}px: モーター一覧の枠のチップが枠の列に収まり、選手名と重ならない（BOA-699）`, async ({
+  // 見出しの語の長さは言語で変わるので、英語（Lane）も通す
+  for (const [width, lang] of [
+    [320, ""],
+    [768, ""],
+    [800, ""],
+    [1440, ""],
+    [375, "/en"],
+    [800, "/en"],
+  ]) {
+    test(`${width}px${lang}: モーター一覧の枠のチップが枠の列に収まり、選手名と重ならない（BOA-699）`, async ({
       page,
     }) => {
       test.slow();
       await page.setViewportSize({ width, height: 900 });
-      await page.goto(`${RACE}?tab=motor`);
+      await page.goto(`${lang}${RACE}?tab=motor`);
       await expect(page.locator(".motor-venue-rank-head")).toBeVisible({
         timeout: 90000,
       });
@@ -693,6 +701,10 @@ test.describe("レース詳細の表示の細部", () => {
           return { chipRight: chip.right, laneRight: lane.right, nameLeft: name.left };
         }),
       );
+      const head = await page.locator(".mcc-list-table thead th").first().evaluate(
+        (th) => th.scrollWidth - th.clientWidth,
+      );
+      expect(head, "枠の見出しが列からはみ出さない").toBeLessThanOrEqual(0);
       for (const r of m) {
         expect(r.chipRight).toBeLessThanOrEqual(r.laneRight);
         expect(Math.abs(r.nameLeft - r.laneRight)).toBeLessThanOrEqual(1);
