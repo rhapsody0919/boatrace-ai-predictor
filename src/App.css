@@ -633,7 +633,10 @@ input:focus-visible,
 }
 
 .rr-row.is-winner {
-  background: color-mix(in srgb, var(--ryujin-gold-500) 10%, transparent);
+  /* 2026-10-03 ユーザー判断（BOA-711 U3）: 地を20%に上げ、左に金の線。10%ではダークで灰の帯に見えた */
+  background: color-mix(in srgb, var(--ryujin-gold-500) 20%, transparent);
+  /* 線は行の外（カードの内余白）に引く。内側に引くと「1着」の「1」に重なった（ファン評価1周目） */
+  box-shadow: -4px 0 0 0 var(--ryujin-gold-500);
 }
 
 .rr-pos {
@@ -643,7 +646,9 @@ input:focus-visible,
 }
 
 .rr-row.is-winner .rr-pos {
-  color: var(--brand-accent-primary);
+  /* 金20%の帯の上で、ダークの金（#c9a227）は 4.41:1 と AA を割った（#1218 ファン評価3周目）。
+     本文色を3割混ぜ、ライトは濃く・ダークは明るく寄せる（ダークで約5.7:1） */
+  color: color-mix(in srgb, var(--brand-accent-primary) 70%, var(--text-primary));
 }
 
 .rr-row.is-second .rr-pos {
