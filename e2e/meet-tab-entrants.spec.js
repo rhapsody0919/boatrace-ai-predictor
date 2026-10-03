@@ -212,13 +212,15 @@ test("対象外の一覧は理由を先に表のセルと同じ書き方で出�
   const list = page.locator(".rmt-excluded-list");
   await expect(list).toContainText("順位の対象外：賞典除外（今節F） 大澤普司");
   await expect(list).toContainText("／途中帰郷 ");
-  // 上から: 表 → 準優の目安（点線の意味、BOA-722）→ Ｗ優勝戦の注記 → 人数の行 →
-  // 対象外の一覧 → 表の印の説明（金枠・⚠ 等、BOA-722）。人数の行と一覧は隣り合う（BOA-714）
+  // 上から: 表 → Ｗ優勝戦の注記 → 準優の目安（点線の意味、BOA-722）→ 人数の行 →
+  // 対象外の一覧 → 表の印の説明（金枠・⚠ 等、BOA-722）。人数の行と一覧は隣り合う（BOA-714）。
+  // Ｗ優勝戦の注記を目安より先に置くのは、「12位」を母数（24人）の説明より先に
+  // 出すと、見出しの「48人中」の12位と読めたため（BOA-722 ファン評価1周目）
   const order = await page.evaluate(() =>
     [
       ".rmt-compare",
-      ".rmt-border-note",
       ".rmt-series-note",
+      ".rmt-border-note",
       ".rmt-sub",
       ".rmt-excluded-list",
       ".rmt-table-notes",

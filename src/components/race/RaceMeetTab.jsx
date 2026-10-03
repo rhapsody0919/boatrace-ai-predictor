@@ -761,9 +761,30 @@ function RaceMeetTab({
             </tbody>
           </table>
           <p className="rmt-hint">{t("meetTab.rowHint")}</p>
+          {/* **Ｗ優勝戦の節**は1つの節に独立した2つの勝ち上がりが同居する
+              （全期間で6節）。何も言わずに人数が半分になると「なぜ減ったのか」に
+              なるので、節全体の人数と併せて断る。準優の目安が出ていない日は
+              その語に触れない。両方の選手が乗るレース（予選終了後の消化レース。
+              実データでは多摩川に5本）では分けられないので、そちらも断る（BOA-511）。
+              人数の行より先に置く。後ろにあると「24人」が先に来て、表の見出し
+              「前検（48人中）」と食い違って見えた（BOA-714）。準優の目安の段落よりも
+              先に置く。後ろにあると「準優の目安は12位」が、母数（24人）の説明より先に
+              出て、見出しの48人の中の12位と読めた（BOA-722 ファン評価1周目） */}
+          {board?.isSplitMeet && (
+            <p className="rmt-series-note">
+              {seriesSplit
+                ? t(
+                    showBorderBadge
+                      ? "meetTab.seriesSplitNote"
+                      : "meetTab.seriesSplitNoteNoBorder",
+                    { meetTotal },
+                  )
+                : t("meetTab.seriesMixedNote", { total: rankedOnly.length })}
+            </p>
+          )}
           {/* 準優の目安（表の点線の意味）は表のすぐ下に置く。対象外の一覧の後ろに
-              あると、点線を見てから意味が読めるまで4段落離れ、Ｗ優勝戦の注記が目安の
-              値より先に「準優の目安は…」と書く前後関係にもなった（BOA-722） */}
+              あると、点線を見てから意味が読めるまで4段落離れた（BOA-722）。Ｗ優勝戦の節
+              では、母数を断る注記の次に置く */}
           {(showBorderBadge || borderPendingShown) && (
             <p className="rmt-border-note">
               {showBorderBadge && (
@@ -787,25 +808,6 @@ function RaceMeetTab({
                     ? "meetTab.borderPendingSeries"
                     : "meetTab.borderPending",
                 )}
-            </p>
-          )}
-          {/* **Ｗ優勝戦の節**は1つの節に独立した2つの勝ち上がりが同居する
-              （全期間で6節）。何も言わずに人数が半分になると「なぜ減ったのか」に
-              なるので、節全体の人数と併せて断る。準優の目安が出ていない日は
-              その語に触れない。両方の選手が乗るレース（予選終了後の消化レース。
-              実データでは多摩川に5本）では分けられないので、そちらも断る（BOA-511）。
-              人数の行より先に置く。後ろにあると「24人」が先に来て、表の見出し
-              「前検（48人中）」と食い違って見えた（BOA-714） */}
-          {board?.isSplitMeet && (
-            <p className="rmt-series-note">
-              {seriesSplit
-                ? t(
-                    showBorderBadge
-                      ? "meetTab.seriesSplitNote"
-                      : "meetTab.seriesSplitNoteNoBorder",
-                    { meetTotal },
-                  )
-                : t("meetTab.seriesMixedNote", { total: rankedOnly.length })}
             </p>
           )}
           <p className="rmt-sub">
