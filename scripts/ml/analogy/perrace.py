@@ -78,7 +78,7 @@ def select_parity_races(test: pd.DataFrame, cond_raw: pd.DataFrame, n: int = FIX
                         seed: int = 0) -> list[int]:
     """一致検査に使うレース（本体分だけ。DB の行の形が取れる期間）。境目になりやすい例を先に入れ、
     残りを無作為に足す: 無風（風向が空・風速0）、風向が空で風速>0、展示タイムの同値、本体に現れる
-    天候の各値、支部の番号の最小・最大、ラウンド・グレード不明、風向の回転を除外した会場の風のあるレース。
+    天候の各値、支部の番号の最小・最大、ラウンド・グレード不明、各会場の風のあるレース（風向の回転）。
     風向を K ファイルで埋めたレース（features.main_wind）は外す（推論では起きず、DB の行の形では再現できない）。"""
     t = test[test["race_date"] > F.KB_END]
     fill = set(F.rid_to_int(pd.read_csv(F.K_WIND_FILL_FILE, dtype=str)["race_id"]).tolist())
@@ -106,8 +106,9 @@ def select_parity_races(test: pd.DataFrame, cond_raw: pd.DataFrame, n: int = FIX
         add(t.loc[t["branch_code"] == bc.max(), "race_id"])
     add(t.loc[t["round_code"].isna(), "race_id"])
     add(t.loc[t["grade_code"].isna(), "race_id"])
-    excluded = F.load_wind_basis()["excluded_venues"]
-    add(c.loc[((c["rid"] // 100) % 100).isin(excluded) & (c["wind_direction"] != "") & (ws > 0), "rid"])
+    windy = c.loc[(c["wind_direction"] != "") & (ws > 0)]
+    for v in range(1, 25):
+        add(windy.loc[(windy["rid"] // 100) % 100 == v, "rid"])
     rest = [r for r in cand if r not in picks]
     k = max(0, min(n - len(picks), len(rest)))
     picks += [int(r) for r in np.random.default_rng(seed).choice(rest, k, replace=False)]

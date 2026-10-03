@@ -194,45 +194,40 @@ const exitCode = (dir) => {
   );
 
   // 本体の風向の会場ごとの回転（wind_basis。BOA-271 風向の基準）
-  const basis = {
-    offsets_deg: { 3: 245.1, 6: 89.6 },
-    excluded_venues: [13],
-  };
+  const basis = { offsets_deg: { 3: 247.5, 6: 90 } };
   check("回転の表が無い版は回さない（0）", windOffsetFor(null, 3) === 0);
-  check("表の会場は、その角度", windOffsetFor(basis, 3) === 245.1);
-  check(
-    "除外した会場・表に無い会場は NaN",
-    Number.isNaN(windOffsetFor(basis, 13)) &&
-      Number.isNaN(windOffsetFor(basis, 99)),
-  );
+  check("表の会場は、その角度", windOffsetFor(basis, 3) === 247.5);
+  check("表に無い会場は NaN", Number.isNaN(windOffsetFor(basis, 99)));
   {
-    // DB の「東」（90°）から 89.6° を引く → ほぼ北（K の基準）。風速2 → wind_y≈2
-    const w = windComponents("東", 2, 89.6);
+    // DB の「東」（90°）から 90° を引く → 北（K の基準）。風速2 → wind_y=2
+    const w = windComponents("東", 2, 90);
     check(
-      "回転を引いてから成分にする（東−89.6° → 北寄り）",
-      Math.abs(w.wind_y - 2) < 1e-3 && Math.abs(w.wind_x) < 0.02,
+      "回転を引いてから成分にする（東−90° → 北）",
+      w.wind_y === 2 && w.wind_x === 0,
     );
     const ex = windComponents("北", 3, NaN);
     check(
-      "除外した会場の風は NaN、無風は0のまま",
+      "回転が NaN の会場の風は NaN、無風は0のまま",
       Number.isNaN(ex.wind_x) &&
         JSON.stringify(windComponents(null, 0, NaN)) === '{"wind_x":0,"wind_y":0}',
     );
   }
   {
-    // 固定データに回転と除外が入っていて、回転を外すと一致しなくなること（作り直しの取りこぼしの検知）
+    // 固定データに回転が入っていて、回転を外すと一致しなくなること（作り直しの取りこぼしの検知）
     const d = load();
     check(
       "固定データの per_race_meta に wind_basis がある",
-      !!d.meta.wind_basis?.offsets_deg &&
-        d.meta.wind_basis.excluded_venues.includes(13),
+      Object.keys(d.meta.wind_basis?.offsets_deg ?? {}).length === 24,
     );
-    const r13 = d.fixture.races.find((r) => r.race_id.slice(11, 13) === "13");
-    const ix = d.meta.models.win.feature_names.indexOf("wind_x");
+    const rotated = d.fixture.races.filter(
+      (r) =>
+        d.meta.wind_basis.offsets_deg[Number(r.race_id.slice(11, 13))] !== 0 &&
+        r.live_raw.conditions.wind_direction &&
+        Number(r.live_raw.conditions.wind_speed) > 0,
+    );
     check(
-      "固定データの除外した会場（13）の風のあるレースは、期待値の wind_x が欠損",
-      r13?.live_raw.conditions.wind_speed > 0 &&
-        r13.expected.win.features.every((f) => f[ix] === null),
+      "固定データに、回転の0でない会場の風のあるレースが10件以上ある",
+      rotated.length >= 10,
     );
     const { wind_basis: _, ...noBasis } = d.meta;
     const r = checkParity({ ...d, meta: noBasis });

@@ -1,286 +1,233 @@
 {
  "offsets_deg": {
-  "1": 115.81,
-  "2": 152.51,
-  "3": 245.13,
-  "4": 267.7,
-  "5": 357.16,
-  "6": 89.61,
-  "7": 52.72,
-  "8": 2.86,
-  "9": 333.71,
-  "10": 104.58,
-  "11": 92.44,
-  "12": 90.21,
-  "13": 24.1,
-  "14": 137.15,
-  "15": 314.03,
-  "16": 87.11,
-  "17": 37.8,
-  "18": 311.66,
-  "19": 48.18,
-  "20": 22.51,
-  "21": 180.81,
-  "22": 202.83,
-  "23": 62.04,
-  "24": 225.36
+  "1": 112.5,
+  "2": 157.5,
+  "3": 247.5,
+  "4": 270,
+  "5": 0,
+  "6": 90,
+  "7": 45,
+  "8": 0,
+  "9": 337.5,
+  "10": 112.5,
+  "11": 90,
+  "12": 90,
+  "13": 22.5,
+  "14": 135,
+  "15": 315,
+  "16": 90,
+  "17": 45,
+  "18": 315,
+  "19": 45,
+  "20": 22.5,
+  "21": 180,
+  "22": 202.5,
+  "23": 67.5,
+  "24": 225
  },
- "excluded_venues": [
-  13
- ],
  "method": {
-  "definition": "本体の風向の角度から offsets_deg を引くと、K ファイル（方位）の基準になる。excluded_venues の会場は風向を欠損にする",
+  "definition": "本体の風向の角度から offsets_deg（(方位マーク − 9) × 22.5°）を引くと、K ファイル（方位）の基準になる",
   "period": [
    "2025-12-03",
    "2026-09-30"
   ],
   "min_speed": 1,
-  "strong_speed": 3,
-  "exclude_below": 0.7,
   "pairs": 32049,
   "k_missing_days": 0,
-  "script": "scripts/ml/analogy/estimate-wind-basis.js"
+  "script": "scripts/ml/analogy/build-wind-basis.js"
  },
  "venues": {
   "1": {
+   "direction_mark": 14,
    "n": 1378,
-   "offset_deg": 115.81,
-   "resultant_length": 0.763,
-   "match22": 0.629,
-   "match45": 0.774,
-   "n_strong": 703,
-   "match45_strong": 0.865,
-   "raw_match22": 0.05
+   "mode_deg": 112.5,
+   "exact_after": 0.629,
+   "within45_after": 0.873,
+   "exact_before": 0
   },
   "2": {
+   "direction_mark": 16,
    "n": 936,
-   "offset_deg": 152.51,
-   "resultant_length": 0.856,
-   "match22": 0.684,
-   "match45": 0.846,
-   "n_strong": 288,
-   "match45_strong": 0.934,
-   "raw_match22": 0.006
+   "mode_deg": 157.5,
+   "exact_after": 0.684,
+   "within45_after": 0.936,
+   "exact_before": 0
   },
   "3": {
+   "direction_mark": 4,
    "n": 1267,
-   "offset_deg": 245.13,
-   "resultant_length": 0.789,
-   "match22": 0.681,
-   "match45": 0.792,
-   "n_strong": 774,
-   "match45_strong": 0.866,
-   "raw_match22": 0.037
+   "mode_deg": 247.5,
+   "exact_after": 0.681,
+   "within45_after": 0.887,
+   "exact_before": 0
   },
   "4": {
+   "direction_mark": 5,
    "n": 1310,
-   "offset_deg": 267.7,
-   "resultant_length": 0.782,
-   "match22": 0.733,
-   "match45": 0.821,
-   "n_strong": 570,
-   "match45_strong": 0.942,
-   "raw_match22": 0.017
+   "mode_deg": 270,
+   "exact_after": 0.733,
+   "within45_after": 0.887,
+   "exact_before": 0.017
   },
   "5": {
+   "direction_mark": 9,
    "n": 1255,
-   "offset_deg": 357.16,
-   "resultant_length": 0.603,
-   "match22": 0.443,
-   "match45": 0.62,
-   "n_strong": 253,
-   "match45_strong": 0.747,
-   "raw_match22": 0.443
+   "mode_deg": 0,
+   "exact_after": 0.443,
+   "within45_after": 0.763,
+   "exact_before": 0.443
   },
   "6": {
+   "direction_mark": 13,
    "n": 1507,
-   "offset_deg": 89.61,
-   "resultant_length": 0.817,
-   "match22": 0.704,
-   "match45": 0.808,
-   "n_strong": 971,
-   "match45_strong": 0.876,
-   "raw_match22": 0.027
+   "mode_deg": 90,
+   "exact_after": 0.704,
+   "within45_after": 0.914,
+   "exact_before": 0.027
   },
   "7": {
+   "direction_mark": 11,
    "n": 1449,
-   "offset_deg": 52.72,
-   "resultant_length": 0.783,
-   "match22": 0.651,
-   "match45": 0.796,
-   "n_strong": 536,
-   "match45_strong": 0.864,
-   "raw_match22": 0.068
+   "mode_deg": 45,
+   "exact_after": 0.651,
+   "within45_after": 0.863,
+   "exact_before": 0.068
   },
   "8": {
+   "direction_mark": 9,
    "n": 1633,
-   "offset_deg": 2.86,
-   "resultant_length": 0.815,
-   "match22": 0.652,
-   "match45": 0.782,
-   "n_strong": 619,
-   "match45_strong": 0.89,
-   "raw_match22": 0.652
+   "mode_deg": 0,
+   "exact_after": 0.652,
+   "within45_after": 0.905,
+   "exact_before": 0.652
   },
   "9": {
+   "direction_mark": 8,
    "n": 1206,
-   "offset_deg": 333.71,
-   "resultant_length": 0.867,
-   "match22": 0.774,
-   "match45": 0.899,
-   "n_strong": 629,
-   "match45_strong": 0.963,
-   "raw_match22": 0.824
+   "mode_deg": 337.5,
+   "exact_after": 0.774,
+   "within45_after": 0.949,
+   "exact_before": 0
   },
   "10": {
+   "direction_mark": 14,
    "n": 1311,
-   "offset_deg": 104.58,
-   "resultant_length": 0.725,
-   "match22": 0.634,
-   "match45": 0.767,
-   "n_strong": 591,
-   "match45_strong": 0.9,
-   "raw_match22": 0.098
+   "mode_deg": 112.5,
+   "exact_after": 0.634,
+   "within45_after": 0.851,
+   "exact_before": 0
   },
   "11": {
+   "direction_mark": 13,
    "n": 1220,
-   "offset_deg": 92.44,
-   "resultant_length": 0.732,
-   "match22": 0.598,
-   "match45": 0.75,
-   "n_strong": 487,
-   "match45_strong": 0.813,
-   "raw_match22": 0.027
+   "mode_deg": 90,
+   "exact_after": 0.598,
+   "within45_after": 0.869,
+   "exact_before": 0.027
   },
   "12": {
+   "direction_mark": 13,
    "n": 724,
-   "offset_deg": 90.21,
-   "resultant_length": 0.736,
-   "match22": 0.622,
-   "match45": 0.747,
-   "n_strong": 239,
-   "match45_strong": 0.879,
-   "raw_match22": 0.019
+   "mode_deg": 90,
+   "exact_after": 0.622,
+   "within45_after": 0.878,
+   "exact_before": 0.019
   },
   "13": {
+   "direction_mark": 10,
    "n": 1453,
-   "offset_deg": 24.1,
-   "resultant_length": 0.638,
-   "match22": 0.425,
-   "match45": 0.63,
-   "n_strong": 819,
-   "match45_strong": 0.686,
-   "raw_match22": 0.606
+   "mode_deg": 22.5,
+   "exact_after": 0.425,
+   "within45_after": 0.811,
+   "exact_before": 0
   },
   "14": {
+   "direction_mark": 15,
    "n": 1145,
-   "offset_deg": 137.15,
-   "resultant_length": 0.839,
-   "match22": 0.701,
-   "match45": 0.834,
-   "n_strong": 362,
-   "match45_strong": 0.914,
-   "raw_match22": 0.007
+   "mode_deg": 135,
+   "exact_after": 0.701,
+   "within45_after": 0.94,
+   "exact_before": 0.007
   },
   "15": {
+   "direction_mark": 7,
    "n": 1375,
-   "offset_deg": 314.03,
-   "resultant_length": 0.742,
-   "match22": 0.572,
-   "match45": 0.719,
-   "n_strong": 304,
-   "match45_strong": 0.875,
-   "raw_match22": 0.148
+   "mode_deg": 315,
+   "exact_after": 0.572,
+   "within45_after": 0.867,
+   "exact_before": 0.148
   },
   "16": {
+   "direction_mark": 13,
    "n": 1626,
-   "offset_deg": 87.11,
-   "resultant_length": 0.659,
-   "match22": 0.563,
-   "match45": 0.696,
-   "n_strong": 547,
-   "match45_strong": 0.826,
-   "raw_match22": 0.066
+   "mode_deg": 90,
+   "exact_after": 0.563,
+   "within45_after": 0.796,
+   "exact_before": 0.066
   },
   "17": {
+   "direction_mark": 11,
    "n": 1343,
-   "offset_deg": 37.8,
-   "resultant_length": 0.738,
-   "match22": 0.617,
-   "match45": 0.761,
-   "n_strong": 489,
-   "match45_strong": 0.875,
-   "raw_match22": 0.144
+   "mode_deg": 45,
+   "exact_after": 0.617,
+   "within45_after": 0.853,
+   "exact_before": 0.144
   },
   "18": {
+   "direction_mark": 7,
    "n": 1575,
-   "offset_deg": 311.66,
-   "resultant_length": 0.676,
-   "match22": 0.502,
-   "match45": 0.685,
-   "n_strong": 682,
-   "match45_strong": 0.755,
-   "raw_match22": 0.155
+   "mode_deg": 315,
+   "exact_after": 0.502,
+   "within45_after": 0.84,
+   "exact_before": 0.155
   },
   "19": {
+   "direction_mark": 11,
    "n": 1407,
-   "offset_deg": 48.18,
-   "resultant_length": 0.821,
-   "match22": 0.645,
-   "match45": 0.807,
-   "n_strong": 583,
-   "match45_strong": 0.877,
-   "raw_match22": 0.111
+   "mode_deg": 45,
+   "exact_after": 0.645,
+   "within45_after": 0.918,
+   "exact_before": 0.111
   },
   "20": {
+   "direction_mark": 10,
    "n": 1509,
-   "offset_deg": 22.51,
-   "resultant_length": 0.89,
-   "match22": 0.755,
-   "match45": 0.86,
-   "n_strong": 853,
-   "match45_strong": 0.913,
-   "raw_match22": 0.858
+   "mode_deg": 22.5,
+   "exact_after": 0.755,
+   "within45_after": 0.962,
+   "exact_before": 0
   },
   "21": {
+   "direction_mark": 1,
    "n": 1244,
-   "offset_deg": 180.81,
-   "resultant_length": 0.788,
-   "match22": 0.685,
-   "match45": 0.783,
-   "n_strong": 574,
-   "match45_strong": 0.862,
-   "raw_match22": 0.012
+   "mode_deg": 180,
+   "exact_after": 0.685,
+   "within45_after": 0.883,
+   "exact_before": 0.012
   },
   "22": {
+   "direction_mark": 2,
    "n": 1342,
-   "offset_deg": 202.83,
-   "resultant_length": 0.888,
-   "match22": 0.823,
-   "match45": 0.891,
-   "n_strong": 905,
-   "match45_strong": 0.922,
-   "raw_match22": 0.02
+   "mode_deg": 202.5,
+   "exact_after": 0.823,
+   "within45_after": 0.95,
+   "exact_before": 0
   },
   "23": {
+   "direction_mark": 12,
    "n": 1357,
-   "offset_deg": 62.04,
-   "resultant_length": 0.731,
-   "match22": 0.644,
-   "match45": 0.77,
-   "n_strong": 807,
-   "match45_strong": 0.846,
-   "raw_match22": 0.166
+   "mode_deg": 67.5,
+   "exact_after": 0.644,
+   "within45_after": 0.861,
+   "exact_before": 0
   },
   "24": {
+   "direction_mark": 3,
    "n": 1477,
-   "offset_deg": 225.36,
-   "resultant_length": 0.692,
-   "match22": 0.548,
-   "match45": 0.684,
-   "n_strong": 288,
-   "match45_strong": 0.896,
-   "raw_match22": 0.018
+   "mode_deg": 225,
+   "exact_after": 0.548,
+   "within45_after": 0.828,
+   "exact_before": 0.018
   }
  }
 }

@@ -92,15 +92,13 @@ export function rankMinAscending(values) {
 
 /**
  * 本体の風向（直前情報ページのアイコン）から引く角度。per_race_meta.json の wind_basis（features.py の
- * wind_basis.json）の会場の値。表が無い版（回転を入れる前の版）は 0、除外した会場・表に無い会場は NaN（風向を欠損にする）
- * @param {{offsets_deg: Record<string, number>, excluded_venues: number[]}|null|undefined} windBasis
+ * wind_basis.json）の会場の値。表が無い版（回転を入れる前の版）は 0、表に無い会場は NaN（風向を欠損にする）
+ * @param {{offsets_deg: Record<string, number>}|null|undefined} windBasis
  * @param {number} venueCode
  */
 export function windOffsetFor(windBasis, venueCode) {
   if (!windBasis) return 0;
-  const v = Number(venueCode);
-  if (windBasis.excluded_venues.includes(v)) return NaN;
-  return windBasis.offsets_deg[String(v)] ?? NaN;
+  return windBasis.offsets_deg[String(Number(venueCode))] ?? NaN;
 }
 
 /**

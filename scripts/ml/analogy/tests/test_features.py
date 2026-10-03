@@ -261,15 +261,15 @@ def test_kb_final_day_precondition():
 
 
 def test_wind_basis_file_covers_all_venues():
-    """回転の表は24会場すべてにあり、除外した会場は表の会場（wind_basis.json、estimate-wind-basis.js）"""
+    """回転の表は24会場すべてにあり、22.5° の倍数（方位マーク (M−9)×22.5°。build-wind-basis.js）"""
     b = F.load_wind_basis()
     assert sorted(int(v) for v in b["offsets_deg"]) == list(range(1, 25))
-    assert set(b["excluded_venues"]) <= set(range(1, 25))
+    assert all(o % 22.5 == 0 and 0 <= o < 360 for o in b["offsets_deg"].values())
 
 
-def test_main_wind_rotates_fills_and_excludes(tmp_path):
-    """本体の風向: 会場の回転を引く・除外した会場は欠損・DB が空で風速>0 は K の値（回転なし）・無風は0"""
-    basis = {"offsets_deg": {"3": 90.0, "13": 10.0}, "excluded_venues": [13]}
+def test_main_wind_rotates_and_fills(tmp_path):
+    """本体の風向: 会場の回転を引く・表に無い会場は欠損・DB が空で風速>0 は K の値（回転なし）・無風は0"""
+    basis = {"offsets_deg": {"3": 90.0}}
     fill = tmp_path / "fill.csv"
     fill.write_text("race_id,wind_direction\n2025-12-10-03-02,南\n")
     cond = pd.DataFrame({
@@ -283,15 +283,15 @@ def test_main_wind_rotates_fills_and_excludes(tmp_path):
     assert out["wind_y"].iloc[0] == pytest.approx(2.0) and out["wind_x"].iloc[0] == pytest.approx(0.0, abs=1e-6)
     # 空で風速>0 → K の「南」をそのまま（回転しない）
     assert out["wind_y"].iloc[1] == pytest.approx(-3.0)
-    # 除外した会場の風は欠損、無風は0
+    # 表に無い会場（13）の風は欠損、無風は0
     assert np.isnan(out["wind_x"].iloc[2])
     assert out["wind_x"].iloc[3] == 0.0
     # K の値が無い空・風速>0 は欠損のまま
     assert np.isnan(out["wind_x"].iloc[4])
 
 
-def test_k_wind_fill_is_limited_to_gap_months():
-    """K で埋めるのは DB の風向がほぼ全件空の 2025-12・2026-01 だけ（他の月の空は推論と同じく欠損）"""
+def test_k_wind_fill_is_main_period_k_directions():
+    """K で埋めるのは本体の期間（2025-12-03〜）のレースで、値は K の方位か無風"""
     f = pd.read_csv(F.K_WIND_FILL_FILE, dtype=str)
-    assert len(f) > 0 and f["race_id"].str.slice(0, 7).isin(["2025-12", "2026-01"]).all()
+    assert len(f) > 0 and (f["race_id"].str.slice(0, 10) >= "2025-12-03").all()
     assert f["wind_direction"].isin(F.DIR16 + ["無風"]).all()

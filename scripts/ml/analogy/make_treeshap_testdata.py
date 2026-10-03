@@ -78,7 +78,7 @@ def live_raw(rng: np.random.Generator, n_races: int) -> tuple[pd.DataFrame, pd.D
 
 def live_features(ex: pd.DataFrame, cond: pd.DataFrame, basis: dict | None = None) -> pd.DataFrame:
     """features.py の load_main・add_relative と同じ式（DB の値 → float32 → 8列）。
-    basis を渡すと、cond の venue の回転を風向から引く（features.main_wind と同じ。除外した会場は欠損）"""
+    basis を渡すと、cond の venue の回転を風向から引く（features.main_wind と同じ）"""
     ex = ex.copy()
     ex["exh_time"] = pd.to_numeric(ex["exhibition_time"], errors="coerce").astype("float32")
     cond = cond.copy()
@@ -164,10 +164,9 @@ def main():
     frc = racecard_frame(rng, n_fix)
     fex, fcond = live_raw(rng, n_fix)
     fex, fcond, frc = fixture_cases(rng, fex, fcond, frc)
-    # 会場はレースごとに1〜24（race_id の VV）。風向の回転と、除外した会場（風向が欠損）を通す
+    # 会場はレースごとに1〜24（race_id の VV）。全会場の風向の回転を通す
     fcond["venue"] = np.arange(n_fix) % 24 + 1
     basis = load_wind_basis()
-    fcond.loc[12, ["wind_direction", "wind_speed"]] = ["北", 3.0]  # 13番（除外した会場）の風 → 欠損
     full_ex = pd.DataFrame({"race_id": np.repeat(np.arange(n_fix), 6),
                             "boat_number": np.tile(np.arange(1, 7), n_fix)}) \
         .merge(fex, on=["race_id", "boat_number"], how="left")
