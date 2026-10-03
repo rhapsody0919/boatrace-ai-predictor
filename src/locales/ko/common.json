@@ -1361,6 +1361,7 @@
       "quotedLabelSeparator": "",
       "rate2PeriodHeader": "2연대율({{period}})",
       "rate3Header": "3연대율 (%)",
+      "rate3PeriodHeader": "3연대율({{period}})",
       "powerIndexHeader": "기력 지수",
       "finalCountHeader": "우승전 진출",
       "championshipCountHeader": "우승",

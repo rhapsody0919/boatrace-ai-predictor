@@ -713,7 +713,19 @@ function MotorConditionChart({
                           })}
                         </th>
                       )}
-                      <th>{t("analysis.motor.rate3Header")}</th>
+                      {/* 当日のレースの3連率も期間の再計算なので、2連率と同じく期間を書く。
+                          書かないと公式の3連率と読み違える（ファン評価2周目） */}
+                      <th>
+                        {officialMode
+                          ? t("analysis.motor.rate3Header")
+                          : t("analysis.motor.rate3PeriodHeader", {
+                              period: t(
+                                periodDays === 30
+                                  ? "analysis.motor.period30"
+                                  : "analysis.motor.period90",
+                              ),
+                            })}
+                      </th>
                       {hasPretest && (
                         <th>{t("analysis.motor.pretestTimeHeader")}</th>
                       )}

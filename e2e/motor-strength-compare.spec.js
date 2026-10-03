@@ -44,6 +44,9 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
     expect(heads[2]).toBe("機番");
     expect(heads[3]).toBe("公式2連率（節時点）");
     expect(heads[4]).toBe("会場内順位");
+    // 当日扱いなら、期間の再計算の2連率・3連率はどちらも見出しに期間を書く（公式の値と読み違えない）
+    const periodHeads = heads.filter((h) => /連率（(過去|直近)/.test(h));
+    expect([0, 2]).toContain(periodHeads.length);
     expect(rows).toHaveLength(6);
     const max = Math.max(...rows.map((r) => r.value));
     for (const r of rows) {

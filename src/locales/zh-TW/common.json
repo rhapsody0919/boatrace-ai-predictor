@@ -1361,6 +1361,7 @@
       "quotedLabelSeparator": "",
       "rate2PeriodHeader": "2連率（{{period}}）",
       "rate3Header": "3連率 (%)",
+      "rate3PeriodHeader": "3連率（{{period}}）",
       "powerIndexHeader": "機力指數",
       "finalCountHeader": "優出數",
       "championshipCountHeader": "優勝數",

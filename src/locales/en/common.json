@@ -1369,6 +1369,7 @@
       "quotedLabelSeparator": ", ",
       "rate2PeriodHeader": "Top-2 rate ({{period}})",
       "rate3Header": "Top-3 rate (%)",
+      "rate3PeriodHeader": "Top-3 rate ({{period}})",
       "powerIndexHeader": "Power index",
       "finalCountHeader": "Finals",
       "championshipCountHeader": "Championships",
