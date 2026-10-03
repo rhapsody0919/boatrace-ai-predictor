@@ -1,0 +1,178 @@
+/* 会場モーターランキング（BOA-428 子3）。色は意味トークンだけ（UI統一ルール R6） */
+.vmr-container {
+  padding: var(--spacing-6);
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  margin-bottom: 2rem;
+}
+
+.vmr-container h2 {
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--spacing-2);
+  color: var(--text-primary);
+}
+
+.vmr-description {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-4);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+}
+
+.vmr-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+  flex-wrap: wrap;
+}
+
+.vmr-controls label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.vmr-venue-select {
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-md);
+  border-radius: var(--radius-sm);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background-color: var(--surface-page);
+  color: var(--text-primary);
+  min-width: 120px;
+}
+
+.vmr-venue-select:focus {
+  border-color: var(--brand-accent-primary);
+}
+
+.vmr-state {
+  padding: var(--spacing-6);
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--font-size-md);
+}
+
+.vmr-error {
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--color-error);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+}
+
+/* 出典と取得日（表の上） */
+.vmr-source {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.vmr-table-wrapper {
+  --hscroll-fade-color: var(--surface-card);
+  border-radius: var(--radius-md);
+  border: var(--border-width-1) solid var(--border-hairline);
+}
+
+/* 横スクロールは内側が持つ（外側は「›」とフェードを重ねる基準） */
+.vmr-table-scroll {
+  overflow-x: auto;
+}
+
+.vmr-table {
+  /* 列幅は中身の幅（375px で 順位・機番・2連率 が最初の画面に入る）。広い画面では 100% */
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-base);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmr-table th,
+.vmr-table td {
+  padding: var(--spacing-2) var(--spacing-3);
+  text-align: center;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.vmr-table thead {
+  background: var(--surface-page);
+  border-bottom: var(--border-width-2) solid var(--border-hairline);
+}
+
+.vmr-table th {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.vmr-table tbody tr + tr {
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+.vmr-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.vmr-sort-mark {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.vmr-sort-btn.is-active .vmr-sort-mark {
+  color: var(--brand-accent-primary);
+}
+
+.vmr-rank,
+.vmr-no {
+  font-weight: var(--font-weight-semibold);
+}
+
+.vmr-table td.vmr-rate {
+  min-width: 96px;
+}
+
+.vmr-user {
+  text-align: left;
+}
+
+.vmr-note {
+  margin-top: var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  background: var(--surface-page);
+  border-left: 3px solid var(--brand-accent-primary);
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 768px) {
+  .vmr-container {
+    padding: var(--spacing-4) var(--spacing-3);
+  }
+
+  .vmr-container h2 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .vmr-table {
+    font-size: var(--font-size-sm);
+  }
+
+  .vmr-table th,
+  .vmr-table td {
+    padding: var(--spacing-2) var(--spacing-1-5);
+  }
+
+  .vmr-table td.vmr-rate,
+  .vmr-table td.vmr-rate .rate-bar {
+    min-width: 72px;
+  }
+}

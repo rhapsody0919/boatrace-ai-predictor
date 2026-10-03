@@ -1445,6 +1445,22 @@
       "drillAsOfRaceNote": "💡 這是此比賽之前的狀況（不含此比賽及之後的比賽）。",
       "barScaleNote": "橫條以6台中的最高值為全長。"
     },
+    "motorRanking": {
+      "title": "🏁 馬達排行榜",
+      "description": "選擇賽艇場後，將該場所有馬達依2連率排列。點擊欄位標題，也可依馬達編號、優勝次數、前檢時間排序。",
+      "rankHeader": "名次",
+      "rateHeader": "2連率",
+      "officialRateHeader": "官方2連率",
+      "finalHeader": "晉級優勝戰",
+      "championshipHeader": "優勝",
+      "userHeader": "本節使用選手",
+      "userHeaderRecent": "最近節次的使用選手（{{date}}）",
+      "sourceVenueSite": "出處：{{venue}}官方網站的馬達成績（取得日 {{date}}）",
+      "sourcePretest": "出處：BOATRACE 官方前檢資料（僅限最近節次使用的馬達）",
+      "sortNote": "點擊馬達、2連率、優勝、前檢的標題即可排序（前檢由快到慢）。數值相同為同一名次",
+      "fetchError": "無法取得馬達成績",
+      "empty": "此賽艇場最近節次沒有馬達資料"
+    },
     "racerForm": {
       "title": "📈 選手狀態",
       "description": "選擇本日舉辦中的比賽，即可比較各選手目前的全國勝率與約90天前的全國勝率，了解狀態是上升還是下降。",
@@ -1567,6 +1583,7 @@
       "outcome": "📊 名次組合分布",
       "technique": "🎯 獲勝方式",
       "motor": "🔧 馬達狀況",
+      "motorranking": "🏁 馬達排行榜",
       "racer": "📈 選手狀態",
       "st": "⏱️ ST落差",
       "topstart": "🚀 搶先起航",
@@ -1595,6 +1612,10 @@
       "motor": {
         "name": "馬達狀況",
         "description": "分析本日比賽各艇號的馬達2連率、3連率"
+      },
+      "motorranking": {
+        "name": "馬達排行榜",
+        "description": "依2連率、晉級優勝戰、優勝、前檢時間排列賽艇場的所有馬達"
       },
       "racer": {
         "name": "選手狀態",
@@ -1711,6 +1732,23 @@
           }
         ],
         "articleLinkText": "什麼是馬達狀況？了解本日比賽艇號別2連率的新功能"
+      },
+      "motorranking": {
+        "title": "關於馬達排行榜",
+        "dataView": "將各賽艇場官方網站公開的馬達成績（2連率、晉級優勝戰次數、優勝次數）整理成該場所有馬達的一覽。前檢時間與使用選手來自 BOATRACE 官方最近節次的前檢資料。戶田、平和島、濱名湖、宮島僅以 BOATRACE 官方2連率排列最近節次使用的馬達。",
+        "tips": [
+          {
+            "strong": "2連率排名靠前的馬達",
+            "text": " = 在該場容易進入前2名的馬達。搭配本節由誰使用一起看，可作為出賽表的判斷依據"
+          },
+          {
+            "strong": "前檢時間快的馬達",
+            "text": " = 節次首日前測得的本節速度參考"
+          },
+          {
+            "text": "馬達的2連率也包含了使用過的選手的實力。點擊馬達編號可查看各節次的走勢"
+          }
+        ]
       },
       "racer": {
         "title": "關於選手狀態",

@@ -23,13 +23,14 @@ PR は2本に分ける。PR-A（子1）は UI統一レーンの PR2（`bestOf` �
 
 ## PR-B 子3: 会場モーターランキング（新しいタブ）
 
-- [ ] T11 `getVenueMotorList(venueCode)`: スナップショット＋会場の最新の前検日1日分の `motor_pretest_stats`（使用者・前検・データの無い会場の公式2連率）＋その節の出走表（選手名・モーターが走った直近の `race_id`）。戻り値に state・出典の種類（会場サイト / BOATRACE 公式の前検データ）・取得日・前検日
-- [ ] T12 `VenueMotorRanking.jsx` / `.css`: 会場の選択、出典・取得日の行、表（順位・機番・2連率の棒（中立色）・優出・優勝・前検・使用者）、並べ替え（T3）、2連率1位の札に R1（同率は全部）、機番→ドリルダウン（`race_id` 付き、使われていないモーターはリンクなし）、使用者→選手ページ（`translate="no"`）、前検日が今日でなければ「直近の節の使用者（{{date}}）」、`error` はエラー表示、`useHorizontalScrollHint`、注記
-- [ ] T13 タブの登録: `TAB_KEYS` の `motor` の次に `motorranking`、`analysisPage.tabs` / `analysisPage.info` / `analysisPage.features.motorranking` を4言語、`scripts/lib/contentTopics/dataInsightSource.js` のタブ一覧、`venue_code` のディープリンク
-- [ ] T14 ADR-0067 に追記（会場公式サイトのモーター成績の全モーター一覧での再表示。出典と取得日を出す。取得は増やさない。戸田・平和島・浜名湖・宮島は前検データの値だけ。ADR-0067:21 と実装の食い違い、BOA-681）
-- [ ] T15 `docs/design/motor-strength-compare/content-index.json` を作る
-- [ ] T16 E2E: タブが開く、直近の節の前検のモーターがすべて一覧にある、取得失敗でエラー（ルートで加工）、2連率の並べ替えで同値が同じ順位、データの無い会場で出典の行が替わる、375px でページに横スクロールなし。`e2e/layout.spec.js` に新しいタブを足す
-- [ ] T17 データ精度: 件数・順位・優出・優勝を本番の `venue_motor_stats` と、使用者を出走表と突き合わせる（`data-accuracy-verifier`）
+- [x] T11 `getVenueMotorList(venueCode)`: スナップショット＋会場の最新の前検日1日分の `motor_pretest_stats`（使用者・前検・データの無い会場の公式2連率）＋その節の出走表（選手名・モーターが走った直近の `race_id`）。戻り値に state・出典の種類（会場サイト / BOATRACE 公式の前検データ）・取得日・前検日
+- [x] T12 `VenueMotorRanking.jsx` / `.css`: 会場の選択、出典・取得日の行、表（順位・機番・2連率の棒（中立色）・優出・優勝・前検・使用者）、並べ替え（T3）、2連率1位の札に R1（同率は全部）、機番→ドリルダウン（`race_id` 付き、使われていないモーターはリンクなし）、使用者→選手ページ（`translate="no"`）、前検日が今日でなければ「直近の節の使用者（{{date}}）」、`error` はエラー表示、`useHorizontalScrollHint`、注記
+- [x] T13 タブの登録: `TAB_KEYS` の `motor` の次に `motorranking`、`analysisPage.tabs` / `analysisPage.info` / `analysisPage.features.motorranking` を4言語、`scripts/lib/contentTopics/dataInsightSource.js` のタブ一覧、`venue_code` のディープリンク
+- [x] T14 ADR-0067 に追記（会場公式サイトのモーター成績の全モーター一覧での再表示。出典と取得日を出す。取得は増やさない。戸田・平和島・浜名湖・宮島は前検データの値だけ。ADR-0067:21 と実装の食い違い、BOA-681）
+- [x] T15 `docs/design/motor-strength-compare/content-index.json` を作る
+- [x] T16 E2E: タブが開く、直近の節の前検のモーターがすべて一覧にある、取得失敗でエラー（ルートで加工）、2連率の並べ替えで同値が同じ順位、データの無い会場で出典の行が替わる、375px でページに横スクロールなし。`e2e/layout.spec.js` に新しいタブを足す
+- [x] T17 データ精度: 件数・順位・優出・優勝を本番の `venue_motor_stats` と、使用者を出走表と突き合わせる（`data-accuracy-verifier`）
+  - 結果: 5会場（児島・丸亀・大村・戸田・浜名湖）294行で全項目一致。前検データは前検日の名簿の複製で、節の途中で入った選手が載らない（丸亀 50号機の使用者が出ない、浜名湖 29号機が消える）ことが分かったので、使用者を今節の出走表で補う（`currentSeriesRiders`）
 - [ ] T18 自動レビュー → build → 関連 spec と layout → PR・レビューコメント → ファン評価ループ
 
 ## 完了監査
