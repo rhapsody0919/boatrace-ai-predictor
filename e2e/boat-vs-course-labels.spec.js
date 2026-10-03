@@ -93,4 +93,46 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
     });
     expect(values).toEqual([2, 2, null, null]);
   });
+
+  test("的中レース一覧の全期間（1500件超）でも、1着の艇の進入コースを取れる", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.goto("/about", { waitUntil: "domcontentloaded" });
+    const result = await page.evaluate(async () => {
+      const { dataService } = await import("/src/services/dataService.js");
+      // 全期間（14日）を開いたときと同じ規模。1本の .in() では URL が長すぎて 400 になっていた
+      const ids = ["2026-08-13-01-02"];
+      for (let day = 1; day <= 14; day += 1) {
+        for (let venue = 1; venue <= 24; venue += 1) {
+          for (let race = 1; race <= 12; race += 1) {
+            ids.push(
+              `2026-08-${String(day).padStart(2, "0")}-${String(venue).padStart(2, "0")}-${String(race).padStart(2, "0")}`,
+            );
+          }
+        }
+      }
+      const courses = await dataService.getRaceWinnerCourses(
+        ids.slice(0, 1600),
+      );
+      return courses["2026-08-13-01-02"];
+    });
+    expect(result).toEqual({ boat: 6, course: 1 });
+  });
+
+  test("イン崩れの表は、比べる列と基準の列をどちらも1号艇で書く", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.goto("/accuracy", { waitUntil: "domcontentloaded" });
+    const details = page.locator(".vas-venue-details");
+    await details.locator("summary").click({ timeout: 60000 });
+    const headers = details.locator("thead th");
+    await expect(headers.nth(1)).toHaveText(
+      "イン崩れ確率高ラベル時に1号艇が負けた割合",
+    );
+    await expect(headers.nth(2)).toHaveText(
+      "会場全体で1号艇が負けた割合の平均",
+    );
+  });
 });

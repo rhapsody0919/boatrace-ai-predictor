@@ -1348,10 +1348,18 @@ export const supabaseDataService = {
     if (!supabase) throw new Error("Supabase client not initialized");
     const ids = [...new Set(raceIds)].filter(Boolean);
     if (ids.length === 0) return {};
-    const results = await fetchAllByIn(
+    // 的中レース一覧の「全期間」は1500件を超え、.in() 1本では URL が長すぎて 400 になる
+    const fetchChunked = async (table, select, values) =>
+      (
+        await Promise.all(
+          chunkArray(values, 500).map((chunk) =>
+            fetchAllByIn(table, select, "race_id", chunk),
+          ),
+        )
+      ).flat();
+    const results = await fetchChunked(
       "race_results",
       "race_id, rank1, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
-      "race_id",
       ids,
     );
     const missing = results
@@ -1359,10 +1367,9 @@ export const supabaseDataService = {
       .map((r) => r.race_id);
     const timings =
       missing.length > 0
-        ? await fetchAllByIn(
+        ? await fetchChunked(
             "race_start_timings",
             "race_id, boat_number, entry_course",
-            "race_id",
             missing,
           )
         : [];
