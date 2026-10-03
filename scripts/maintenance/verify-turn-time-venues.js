@@ -53,6 +53,16 @@ check(
     JSON.stringify([...DISTINCT_TURN_TIME_VENUE_CODES].sort((a, b) => a - b)),
 );
 
+// 注記の値の水準は「11〜12秒台」。「11秒台」と言い切ると、毎節出る12秒台の値（徳山は約9%）と
+// 食い違った（#1222 ファン評価1周目）
+const note = JSON.parse(
+  readFileSync(path.join(root, "src/locales/ja/common.json"), "utf8"),
+).beforeInfo.turnTimeVenueNote;
+check(
+  "注記の値の水準は「11〜12秒台」（「11秒台」と言い切らない）",
+  note.includes("11〜12秒台") && !note.includes("（11秒台）"),
+);
+
 if (failures.length > 0) {
   console.error(`\nverify-turn-time-venues: ${failures.length}件失敗`);
   process.exit(1);

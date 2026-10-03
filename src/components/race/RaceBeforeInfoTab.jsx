@@ -955,14 +955,15 @@ function RaceBeforeInfoTab({
             {t("beforeInfo.preExhibitionNote")}
           </p>
         )}
-        <p className="rbi-note">💡 {t("beforeInfo.detailTableNote")}</p>
-        {/* 金枠と⚠の意味（PR #1193 ファン評価1周目: 件数が少なくて金枠を外したことが読めなかった） */}
-        <p className="rbi-note">{t("beforeInfo.bestLegend")}</p>
+        {/* 「※」の行に近いよう、表の下の注記の先頭に置く（ファン評価1周目） */}
         {showTurnTimeNote && (
           <p className="rbi-note" data-testid="rbi-turn-time-venue-note">
             ※ {t("beforeInfo.turnTimeVenueNote")}
           </p>
         )}
+        <p className="rbi-note">💡 {t("beforeInfo.detailTableNote")}</p>
+        {/* 金枠と⚠の意味（PR #1193 ファン評価1周目: 件数が少なくて金枠を外したことが読めなかった） */}
+        <p className="rbi-note">{t("beforeInfo.bestLegend")}</p>
         {exhibitionCourseOutOfRange && (
           <p className="rbi-note" data-testid="exhibition-course-out-of-range">
             {t("beforeInfo.exhibitionCourseOutOfRange")}
