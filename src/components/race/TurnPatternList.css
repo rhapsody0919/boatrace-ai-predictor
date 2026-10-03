@@ -81,6 +81,16 @@
   color: var(--text-primary);
 }
 
+/* 確定後の的中・不的中（race-detail-ui-unify R2）。文の頭に ✅ / ❌ が付くので
+   色だけに頼らない。以前はクラスだけあって CSS が無かった */
+.turn-pattern-summary--hit {
+  color: var(--color-success-text);
+}
+
+.turn-pattern-summary--miss {
+  color: var(--color-error-text);
+}
+
 /* BOA-543: 判定対象外（不成立のレース・返還艇の候補）。候補は残し、枠を点線・文字を弱めて区別する
    （opacity で薄くすると艇番の文字のコントラストが基準を割るため使わない） */
 .turn-pattern-row--void {

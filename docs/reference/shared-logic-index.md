@@ -59,6 +59,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/disqualifiedFinishMark.js` | BOA-582(2): 失格（Kファイルの成績コード S0〜S2）の艇の着欄（finish_mark）を、結果ページから決める（純関数）。 | buildDisqualifiedMarkRows, DISQUALIFIED_MARKS, isDisqualifiedCode |
 | `scripts/lib/erDiagramFromDdl.js` | docs/db-migration/ のSQL DDLからmermaid erDiagramを機械的に導出する。 | parseTablesFromSql, findLinkedMigrations, buildMermaidErDiagram, DB_MIGRATION_DIR, DESIGN_DIR |
 | `scripts/lib/fakeSupabaseClient.js` | 検証用の偽のSupabaseクライアント（メモリ上のテーブル。DB・ネットワークに接続しない）。 | fakeClient |
+| `scripts/lib/fanPeriodJob.js` | 期別成績（fan、racer_period_stats）の定期取り込み。共通ラッパ向けハンドラー（api/cron/fan-period.js）。 | fanIdEndedBefore, periodOfFanId, daysSincePeriodEnd, fanRawPath, runFanPeriodJob ほか2件 |
 | `scripts/lib/fanPeriodParser.js` | 公式「レーサー期別成績」ファイル（fan）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | parseFanId, fanIdOf, buildFanUrl, fanArchiveRelPath, listFanIds ほか14件 |
 | `scripts/lib/fanPeriodRows.js` | fan中間形式（fan-period/v1）→ DBの行への変換（純関数） | courseColumns, buildStatsRows, buildProfileSyncRows, FAN_TABLES, STATS_COLUMNS ほか1件 |
 | `scripts/lib/fortuneTelling/index.js` | 4占術の共通インターフェース | FORTUNE_SYSTEMS |
@@ -76,7 +77,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/isotonic-regression.js` | — | IsotonicCalibrator |
 | `scripts/lib/kbArchiveRows.js` | K/B中間形式（kb-day/v1）→ アーカイブ表（kb_archive_*）の行への変換 | raceTimeToSeconds, classifyStage, buildArchiveRows, KB_ARCHIVE_TABLES |
 | `scripts/lib/kbFileParser.js` | 公式ダウンロードデータ（Kファイル=競走成績、Bファイル=番組表）の全項目パーサー | buildKbUrl, kbArchiveRelPath, decodeLzhText, decodeLzhBytes, classifyKFileVenues ほか9件 |
-| `scripts/lib/kbGapFill.js` | K/Bファイル（kb-day/v1。kb-backfill.js parse の出力）から、本体テーブルの欠落を補う行を作る（純関数）。 | assertColumnSet, buildStartTimingRows, buildExhibitionRows, normalizeKStage, buildConditionsRows ほか6件 |
+| `scripts/lib/kbGapFill.js` | K/Bファイル（kb-day/v1。kb-backfill.js parse の出力）から、本体テーブルの欠落を補う行を作る（純関数）。 | assertColumnSet, buildStartTimingRows, buildMissingBoatRows, buildExhibitionRows, normalizeKStage ほか7件 |
 | `scripts/lib/kbResultsBackfillRows.js` | K/Bアーカイブ（kb-day/v1、scripts/lib/kbFileParser.js）から race_results の欠損行を | classifyMissingResult, buildRaceFactsForDay, buildRaceResultRow, MISSING_STATUS |
 | `scripts/lib/kelly-criterion.js` | — | kellyFraction, halfKelly, quarterKelly |
 | `scripts/lib/kfileParser.js` | 公式成績ファイル（Kファイル）のダウンロード・解凍・パース（BOA-257） | fetchKFileText, parseKFileText, parseKFileRankings, _internal |
@@ -138,7 +139,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/racerStStats.js` | 選手のST統計（racer_aggregated_stats の avg_st / avg_st_last_30 / st_stddev / | countsAsStart, computeRacerStStats, fetchRacerEntries, fetchStartTimingsForEntries, RECENT_ST_WINDOW |
 | `scripts/lib/racesInit/digest.js` | 朝の初期化（races-init）の shadow で記録する、レースごとのダイジェスト（純粋関数。DB・取得先に接続しない）。 | raceIdOf, digestScrapedRace, digestScrapedVenue, digestDbRace, compareRaceDigests |
 | `scripts/lib/racesInit/ghaSkip.js` | GitHub Actions 側の朝の初期化（morning-init.js）を止める変数 SKIP_MORNING_INIT_ON_GHA の判定（純粋関数）… | decideMorningInitOnGha, FALLBACK_FROM_JST_HOUR |
-| `scripts/lib/racesInit/job.js` | 朝の初期化（A8、races・race_entries・predictions の初期化）の共通ラッパ向けハンドラー（tasks.md T4b-07-4、 | backoffMinutes, resolveVenuesLimit, isBreakerOpenError, runRacesInitJob, createPredictCodeOnTick ほか2件 |
+| `scripts/lib/racesInit/job.js` | 朝の初期化（A8、races・race_entries・predictions の初期化）の共通ラッパ向けハンドラー（tasks.md T4b-07-4、 | backoffMinutes, resolveVenuesLimit, isBreakerOpenError, defaultCheckNoProgram, runRacesInitJob ほか3件 |
 | `scripts/lib/racesInit/predictCodeCheck.js` | 予測ロジックの変更検知による再生成（WS4b T4b-07-5、plan.md §4.2(d)・設計判断(g)）。 | hashFiles, computePredictCodeHash, checkPredictCodeChange, PREDICT_CODE_HASH_JOB, PREDICT_LOGIC_FILES |
 | `scripts/lib/rawHtmlArchive.js` | 取得した生HTMLの保管（optimal-scraping-design.md §2.2・承認済みQ1）の最小実装。 | rawHtmlPath, archiveRawHtml, RAW_HTML_BUCKET |
 | `scripts/lib/reportComparison.js` | 定点観測レポート（search-console-report.js / i18n-demand-report.js）の | findPreviousReport, findRecentReports, detectTrend, perDay, formatDelta |
@@ -212,7 +213,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/analytics.js` | — | getCookieConsent, setCookieConsent, initAdSense, initTrackingIfConsented, initGA ほか6件 |
 | `src/utils/bestOf.js` | 6艇を並べた値の中で、レース内の最良の艇番を返す（docs/design/race-detail-ui-unify spec R1）。 | bestOf |
 | `src/utils/blogFaqSchema.js` | — | extractFaqItems, buildFaqPageSchema |
-| `src/utils/chartDomain.js` | 展示タイムの推移グラフの縦軸（範囲と目盛り）（BOA-557）。 | exhibitionTimeAxis |
+| `src/utils/chartDomain.js` | 展示タイムの推移グラフの縦軸（範囲と目盛り）（BOA-557）。 | exhibitionTimeAxis, exhibitionSparklineY |
 | `src/utils/colors.js` | カラーユーティリティ | getRecoveryColorClass, MODEL_COLORS, BOAT_COLORS, BOAT_LINE_COLORS, HIT_COLORS ほか1件 |
 | `src/utils/competitionRank.js` | 同じ値は同じ順位にする順位（競技順位方式: 1, 2, 2, 4 …）（純関数、BOA-529）。 | competitionRank |
 | `src/utils/courseBaseline.js` | ST考察の「同コース・同級別の平均との差」の算出（phase a FR-1） | indexBaseline, getBaselineCell, diffFromBaseline, diffTone, expectedBreakoutCount ほか1件 |
@@ -243,12 +244,13 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/smallSampleRate.js` | 出走数が少ないときの率の出し方（BOA-513、2026-09-29 ファン4人のパネルで決定）。 | formatRateOrCount, powerIndexTone, formatPowerIndex |
 | `src/utils/stConsideration.js` | ST考察（安定率・出遅率・抜出）の算出（phase a FR-1） | deriveRaceStContext, computeStConsideration, computeStHistogram, getStHistory, STABLE_THRESHOLD ほか3件 |
 | `src/utils/stDeviation.js` | 本番STと展示STのズレ（/本番ST − 展示ST/）。どちらかが無い（null・undefined）走は null。 | stDeviation |
+| `src/utils/techniqueColors.js` | 決まり手の色（グラフの棒・帯・凡例の点）。色そのものは design-tokens.css の | techniqueColor |
 | `src/utils/theme.js` | — | getTheme, setTheme, subscribe |
 | `src/utils/trendDateLayout.js` | `MeetSparkline` の viewBox の幅と左右の余白。日付の見出しを点と同じ横位置に置くため共有する | dayTickLabels, sparkLeftPercent, dayCenter, layoutTrendByDate, SPARK_VIEW_W ほか1件 |
-| `src/utils/turnPrediction.js` | 決まり手ユーティリティ（フロントエンド用） | TECHNIQUE_NAMES |
+| `src/utils/turnPrediction.js` | 決まり手ユーティリティ（フロントエンド用） | pickHitPattern, TECHNIQUE_NAMES |
 | `src/utils/venueSeriesTitle.js` | 会場ページの title・description に入れる節タイトルを決める（集客レーン Phase3、2026-09-30）。 | getVenueSeriesTitle |
 | `src/utils/venueUtils.js` | — | VENUE_CODE_TO_BLOG_ID, getVenueBlogId, getVenueGuidePath |
-| `src/utils/volatilityLevel.js` | getVolatilityLevel - イン崩れ指数（percentile）からレベルを判定する共通ヘルパー | getVolatilityLevel |
+| `src/utils/volatilityLevel.js` | getVolatilityLevel - イン崩れ指数（percentile）からレベルを判定する共通ヘルパー | getVolatilityLevel, volatilityDisplayValue |
 | `src/utils/webShare.js` | Web Share API 対応判定ヘルパー | canShareVideo, shareVideoFile, downloadFileBlob |
 | `src/utils/wilson.js` | wilson - 二項比率のWilson信頼区間（純関数） | wilsonLowerBound, wilsonLowerBoundFromRate, isSmallSample |
 
@@ -279,4 +281,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 244 ファイル / export 1180 件。
+対象 246 ファイル / export 1193 件。
