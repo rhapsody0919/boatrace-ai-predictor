@@ -2555,7 +2555,9 @@ export const supabaseDataService = {
       // v7: 当日のレースの行に official_3rate（「集計前」の判定）を追加
       // v8: 過去レースの行にも official_3rate を追加し、当日の機力指数を
       //     「このレースの直前まで」にした（BOA-557）
-      `race-motor-breakdown-v8-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
+      // v9: 前検の取得失敗を空の前検として保存しないようにした（BOA-686）。v8 には、失敗が
+      //     「前検なし」として最長7日残っている可能性があるため読まない
+      `race-motor-breakdown-v9-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -7995,24 +7997,21 @@ const ORIGINAL_EXHIBITION_KINDS = ["一周", "半周ラップ", "まわり足", 
  * 根拠と、今節タブ（節の最初の行）と必ず一致することの実測は
  * `src/utils/pretestRows.js` に書いてある。
  *
- * 取得に失敗しても前検の列が出ないだけで他の列は読めるため、ここは
- * 例外を投げずに空のMapへ倒す（`.throwOnError()` の例外はここで捕まえる）。
+ * 取得の失敗は投げる（`.throwOnError()` の例外をそのまま上に流す）。以前は空のMapへ倒していたが、
+ * 呼び出し元の getRaceMotorBreakdown は withCache の中なので、失敗が「この節は前検なし」として
+ * 過去レースでは7日間キャッシュに残り、リロードしても前検の列が出なかった（BOA-686）。
+ * 例外なら withCache は保存せず、画面は取得失敗を出して取り直せる。
  * @returns {Promise<Map<number, object>>}
  */
 async function fetchPretestByRacer(venueCode, date) {
   if (!supabase || !date) return new Map();
-  try {
-    const { data } = await supabase
-      .from("motor_pretest_stats")
-      .select("racer_id, race_date, pretest_time, pretest_rank")
-      .eq("venue_code", venueCode)
-      .gte("race_date", shiftDate(date, -PRETEST_LOOKBACK_DAYS))
-      .lte("race_date", date);
-    return pickLatestPretestByRacer(data ?? []);
-  } catch (error) {
-    console.error("前検タイム取得エラー:", error?.message ?? String(error));
-    return new Map();
-  }
+  const { data } = await supabase
+    .from("motor_pretest_stats")
+    .select("racer_id, race_date, pretest_time, pretest_rank")
+    .eq("venue_code", venueCode)
+    .gte("race_date", shiftDate(date, -PRETEST_LOOKBACK_DAYS))
+    .lte("race_date", date);
+  return pickLatestPretestByRacer(data ?? []);
 }
 
 /**
