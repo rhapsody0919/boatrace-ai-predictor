@@ -73,6 +73,13 @@
   flex-shrink: 0;
 }
 
+.volatility-highlights__percentile-max {
+  margin-left: 0.2em;
+  font-size: 0.8em;
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
 .volatility-highlights__turn {
   color: var(--text-secondary);
   font-size: 0.8rem;

@@ -147,6 +147,49 @@ check(
     read("src/components/race/VolatilityDisplay.jsx"),
   ),
 );
+// 2026-10-03 ユーザー判断（BOA-711 U1・U3・U4・U5・1b）
+const tokens = read("src/styles/design-tokens.css");
+check(
+  "U1: 最良の金枠は、地が明るい金の20%、枠が濃い金の不透明",
+  tokens.includes(
+    "--ind-best-bg: color-mix(in srgb, var(--ryujin-gold-500) 20%, transparent);",
+  ) && tokens.includes("--ind-best-ring: var(--brand-accent-primary);"),
+);
+check(
+  "U3: 結果タブの1着の帯は金の20%＋左に金の線",
+  /\.rr-row\.is-winner \{[^}]*--ryujin-gold-500\) 20%[^}]*inset 3px 0 0 0 var\(--ryujin-gold-500\)/.test(
+    read("src/App.css"),
+  ),
+);
+check(
+  "U4: イン崩れの比較バーは「/ 100」を添え、見出しは「崩れやすさ（同会場で0〜100）」",
+  read("src/components/race/VolatilityPercentileBar.jsx").includes(
+    't("volatility.percentileBarMax100")',
+  ) &&
+    json("src/locales/ja/common.json").volatility.percentileBarLabel ===
+      "崩れやすさ（同会場で0〜100）" &&
+    LANGS.every(
+      (l) =>
+        json(`src/locales/${l}/common.json`).volatility.percentileBarMax100 ===
+        "/ 100",
+    ),
+);
+check(
+  "U5: ST考察の走数の少ない値は灰（補足の色）",
+  /\.rsc-value\.is-small-sample \{[^}]*color: var\(--text-secondary\)/.test(
+    stCss,
+  ),
+);
+check(
+  "1b: 直前情報の今節一周・まわり足・直線にも、前走の最良に金枠",
+  /const bestPrev = bestOf\([\s\S]{0,300}"min"/.test(
+    read("src/components/race/RaceBeforeInfoTab.jsx"),
+  ) &&
+    read("src/components/race/RaceBeforeInfoTab.jsx").includes(
+      "bestPrev.has(p.number)",
+    ),
+);
+
 if (failures.length > 0) {
   console.error(`\nverify-race-detail-boa711: ${failures.length}件失敗`);
   process.exit(1);

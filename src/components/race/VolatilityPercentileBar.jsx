@@ -24,7 +24,14 @@ function VolatilityPercentileBar({ percentile }) {
     <div className={`vpb vpb--${tone}`} data-testid="volatility-percentile-bar">
       <div className="vpb-head">
         <span className="vpb-label">{t("volatility.percentileBarLabel")}</span>
-        <span className="vpb-value">{pct}</span>
+        {/* 「100」だけだと「確率100%」と読まれた。0〜100 の物差しだと分かるよう「/ 100」を添える
+            （2026-10-03 ユーザー判断、BOA-711 U4） */}
+        <span className="vpb-value">
+          {pct}
+          <span className="vpb-value-max">
+            {t("volatility.percentileBarMax100")}
+          </span>
+        </span>
       </div>
       <div className="vpb-track">
         <div className="vpb-fill" style={{ width: `${pct}%` }} />

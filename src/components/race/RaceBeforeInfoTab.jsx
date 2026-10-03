@@ -370,6 +370,17 @@ function RaceBeforeInfoTab({
           };
           const anyValue = sortedPlayers.some((p) => valueFor(p) !== null);
           if (!anyValue) return null;
+          // 前走の最良（どれもタイムで低いほど良い、2桁）に金枠。「今節展示」と同じ規則で、
+          // 比べた前走の値だけを囲む（2026-10-03 ユーザー判断、BOA-711）
+          const bestPrev = bestOf(
+            sortedPlayers.map((p) => ({
+              boat: p.number,
+              value:
+                p.racerId && p.motorNumber ? (valueFor(p)?.prev ?? null) : null,
+            })),
+            "min",
+            { digits: 2 },
+          );
           return {
             key: kind.key,
             label: t(kind.labelKey),
@@ -389,7 +400,9 @@ function RaceBeforeInfoTab({
                 );
               return (
                 <span className="drt-value">
-                  <span className="drt-sub">
+                  <span
+                    className={`drt-sub${bestPrev.has(p.number) ? " ind-best" : ""}`}
+                  >
                     {t("beforeInfo.prevAbbrev")} {v.prev.toFixed(2)}
                   </span>
                   <span className="drt-sub">

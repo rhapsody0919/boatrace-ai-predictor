@@ -115,3 +115,22 @@ test.describe("ホームの注目レース: 結果のあるレースは中止扱
     });
   }
 });
+
+// BOA-711 U4（2026-10-03 ユーザー判断）: 「95%」は確率に読まれたので、レース詳細の比較バーと同じく
+// 「95 / 100」（0〜100 の物差し）で出す。崩れやすい側の見出しのアイコンはカードと同じ 🌪️
+test("ホームの注目レース: 崩れやすさは「/ 100」で出し、% を付けない。見出しは 🌪️（BOA-711）", async ({
+  page,
+}) => {
+  await setup(page, { edge: true });
+  await page.goto("/");
+  await readHighlights(page);
+  const values = await page
+    .locator(".volatility-highlights__percentile")
+    .allInnerTexts();
+  expect(values.length).toBeGreaterThan(0);
+  for (const v of values) {
+    expect(v).toMatch(/^\d+\s*\/ 100$/);
+  }
+  await expect(page.locator(".volatility-highlights")).toContainText("🌪️");
+  await expect(page.locator(".volatility-highlights")).not.toContainText("⚠️");
+});

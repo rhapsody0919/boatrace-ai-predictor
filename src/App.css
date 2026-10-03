@@ -633,7 +633,9 @@ input:focus-visible,
 }
 
 .rr-row.is-winner {
-  background: color-mix(in srgb, var(--ryujin-gold-500) 10%, transparent);
+  /* 2026-10-03 ユーザー判断（BOA-711 U3）: 地を20%に上げ、左に金の線。10%ではダークで灰の帯に見えた */
+  background: color-mix(in srgb, var(--ryujin-gold-500) 20%, transparent);
+  box-shadow: inset 3px 0 0 0 var(--ryujin-gold-500);
 }
 
 .rr-pos {

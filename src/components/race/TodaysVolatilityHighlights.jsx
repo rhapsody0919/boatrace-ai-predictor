@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { getRaceId } from "../../utils/raceId";
 import { isRaceCancelled } from "../../utils/raceCancellation";
+import { volatilityDisplayValue } from "../../utils/volatilityLevel";
 import "./TodaysVolatilityHighlights.css";
 
 const HIGHLIGHT_COUNT = 5;
@@ -80,8 +81,13 @@ function RaceLink({ race, t }) {
             </span>
           )}
         </span>
+        {/* 「100%」は確率に読まれた。レース詳細の比較バーと同じく「100 / 100」（0〜100 の物差し）で
+            出し、値もバーと同じ丸め方にする（2026-10-03 ユーザー判断、BOA-711 U4） */}
         <span className="volatility-highlights__percentile">
-          {Math.round(race.percentile * 100)}%
+          {volatilityDisplayValue(race.percentile)}
+          <span className="volatility-highlights__percentile-max">
+            {t("volatility.percentileBarMax100")}
+          </span>
         </span>
       </div>
       {tp && typeof tp.probability === "number" && (
@@ -115,7 +121,8 @@ function TodaysVolatilityHighlights({ venuesData }) {
       </h2>
       <div className="volatility-highlights__columns">
         <HighlightList
-          title={`⚠️ ${t("volatility.levelHigh")}`}
+          // アイコンはレース詳細のイン崩れ注意度カードと同じ 🌪️（2026-10-03 ユーザー判断、BOA-711）
+          title={`🌪️ ${t("volatility.levelHigh")}`}
           races={highRaces}
           t={t}
         />
