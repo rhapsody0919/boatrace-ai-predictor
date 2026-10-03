@@ -391,3 +391,13 @@
   white-space: normal;
   line-height: 1.2;
 }
+
+/* 360px 未満は列が狭く、折らないと表がカードから 4px はみ出し、6号艇の差が欠けた
+   （BOA-711 ファン評価2周目、320px）。この幅だけは「平均／42.4」と折る。
+   .rsc-baseline の指定（nowrap）より後ろに置く */
+@media (max-width: 359px) {
+  .rsc-baseline,
+  .rsc-note-small {
+    white-space: normal;
+  }
+}

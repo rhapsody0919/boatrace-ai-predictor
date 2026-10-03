@@ -62,6 +62,14 @@ check(
     /\.rsc-note-small \{[^}]*text-wrap: balance/.test(stCss),
 );
 check(
+  "ST考察: 360px 未満では平均・注記を折る（320px で表がカードからはみ出した）",
+  /@media \(max-width: 359px\) \{\s*\.rsc-baseline,\s*\.rsc-note-small \{\s*white-space: normal/.test(stCss),
+);
+check(
+  "ST考察の注記に「±0.1以内は色なし」を書く",
+  json("src/locales/ja/common.json").stConsideration.caveat.includes("±0.1以内"),
+);
+check(
   "ST考察: 「〜ほど良い」は行見出しの列の中で折り返す（375px で隣の列にはみ出した）",
   /\.rsc-dir \{[^}]*white-space: normal/.test(stCss),
 );
