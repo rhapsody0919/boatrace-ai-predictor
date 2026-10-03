@@ -78,9 +78,9 @@ test("除いた人数を足すと出場人数になり、表に無い印の凡�
   await expect(list).toContainText("順位の対象外：");
   await expect(list.locator("[translate=no]")).not.toHaveCount(0);
   await expect(list).not.toContainText("ほか");
-  await expect(page.locator(".rmt-sub").first()).not.toContainText(
-    "3走未満",
-  );
+  await expect(
+    page.locator(".rmt-sub, .rmt-table-notes", { hasText: "3走未満" }),
+  ).toHaveCount(0);
 });
 
 test("375pxで、今節初戦の行があっても列見出し「前検」がカードからはみ出さない", async ({
@@ -138,7 +138,7 @@ test("まだ全員が1走していない間は準優の目安を伏せ、人数�
   await openMeetTab(page, "2026-10-01-19-05");
   // 目安の文は人数の行と別の段落（BOA-714）
   const sub = page.locator(".rmt-sub").first();
-  const border = page.locator(".rmt-sub").nth(1);
+  const border = page.locator(".rmt-border-note");
   await expect(border).toContainText("準優の目安は、出場選手が全員1走してから出します。");
   await expect(border).not.toContainText("準優の目安は18位");
   await expect(sub).toContainText("まだ走っていない21人を除く");
@@ -148,7 +148,7 @@ test("まだ全員が1走していない間は準優の目安を伏せ、人数�
 test("全員が走った後は目安を出し、何走時点の目安かを断る", async ({ page }) => {
   // 津 9/23 12R（9/22 中止の翌日）。この日の途中までは初めて走る選手がいて伏せていた
   await openMeetTab(page, "2026-09-23-09-12");
-  const sub = page.locator(".rmt-sub").nth(1);
+  const sub = page.locator(".rmt-border-note");
   await expect(sub).toContainText("準優の目安は18位");
   await expect(sub).toContainText(
     "走した時点の目安で、予選が終わるまでは動きます。",
@@ -212,22 +212,23 @@ test("対象外の一覧は理由を先に表のセルと同じ書き方で出�
   const list = page.locator(".rmt-excluded-list");
   await expect(list).toContainText("順位の対象外：賞典除外（今節F） 大澤普司");
   await expect(list).toContainText("／途中帰郷 ");
+  // 上から: 表 → 準優の目安（点線の意味、BOA-722）→ Ｗ優勝戦の注記 → 人数の行 →
+  // 対象外の一覧 → 表の印の説明（金枠・⚠ 等、BOA-722）。人数の行と一覧は隣り合う（BOA-714）
   const order = await page.evaluate(() =>
     [
+      ".rmt-compare",
+      ".rmt-border-note",
       ".rmt-series-note",
       ".rmt-sub",
       ".rmt-excluded-list",
+      ".rmt-table-notes",
     ].map((sel) => document.querySelector(sel).getBoundingClientRect().top),
   );
-  // Ｗ優勝戦の注記 → 人数の行 → 対象外の一覧の順
   expect(order).toEqual([...order].sort((a, b) => a - b));
-  // 準優の目安の段落は対象外の一覧の後ろ
-  const borderTop = await page
-    .locator(".rmt-sub")
-    .nth(1)
-    .evaluate((el) => el.getBoundingClientRect().top);
-  expect(borderTop).toBeGreaterThan(order[2]);
-  await expect(page.locator(".rmt-sub").nth(1)).toContainText("準優の目安は");
+  await expect(page.locator(".rmt-border-note")).toContainText("準優の目安は");
+  // 人数の行は凡例の後ろに付けず、段落の頭から始まる（BOA-722）
+  await expect(page.locator(".rmt-sub").first()).not.toContainText("金の枠");
+  await expect(page.locator(".rmt-table-notes")).toContainText("金の枠");
 });
 
 test("英語の対象外の一覧で、見出しと理由のコロンが二重にならない", async ({ page }) => {

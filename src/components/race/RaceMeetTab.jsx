@@ -583,7 +583,13 @@ function RaceMeetTab({
   const showFinishAbsentNote = [...ranking, ...absentOnly]
     .filter(inTable)
     .some((r) => r.finishes.includes(FINISH_ABSENT));
+  const showBestLegend = bestRate.size + bestRank.size + bestPretest.size > 0;
+  const showSmallSampleLegend = ranking
+    .filter(inTable)
+    .some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS);
   const hasTableNotes =
+    showBestLegend ||
+    showSmallSampleLegend ||
     showPostPrelimFlyingNote ||
     showAbsentNote ||
     notYetRun.length > 0 ||
@@ -755,6 +761,34 @@ function RaceMeetTab({
             </tbody>
           </table>
           <p className="rmt-hint">{t("meetTab.rowHint")}</p>
+          {/* 準優の目安（表の点線の意味）は表のすぐ下に置く。対象外の一覧の後ろに
+              あると、点線を見てから意味が読めるまで4段落離れ、Ｗ優勝戦の注記が目安の
+              値より先に「準優の目安は…」と書く前後関係にもなった（BOA-722） */}
+          {(showBorderBadge || borderPendingShown) && (
+            <p className="rmt-border-note">
+              {showBorderBadge && (
+                <>
+                  {" "}
+                  {t("meetTab.borderLine", {
+                    slots,
+                    rate: border.toFixed(2),
+                  })}{" "}
+                  {t("meetTab.borderNote")}{" "}
+                  {/* 何走時点の目安かを断る。2日目の朝の目安は、予選終了時の目安と
+                      平均0.46点ずれる（BOA-690 の実測。数値は画面に出さない） */}
+                  {t("meetTab.borderAsOfRuns", { runs: medianRuns })}
+                </>
+              )}
+              {/* まだ全員が走っていない間は目安を出さない理由を書く（BOA-690）。
+                  Ｗ優勝戦では「出場選手」が24人か48人か読めないので書き分ける */}
+              {borderPendingShown &&
+                t(
+                  seriesSplit
+                    ? "meetTab.borderPendingSeries"
+                    : "meetTab.borderPending",
+                )}
+            </p>
+          )}
           {/* **Ｗ優勝戦の節**は1つの節に独立した2つの勝ち上がりが同居する
               （全期間で6節）。何も言わずに人数が半分になると「なぜ減ったのか」に
               なるので、節全体の人数と併せて断る。準優の目安が出ていない日は
@@ -775,15 +809,6 @@ function RaceMeetTab({
             </p>
           )}
           <p className="rmt-sub">
-            {/* 金枠の意味（PR #1187 ファン評価1周目: 説明がどこにも無かった） */}
-            {bestRate.size + bestRank.size + bestPretest.size > 0 && (
-              <>{t("meetTab.bestLegend")} </>
-            )}
-            {ranking
-              .filter(inTable)
-              .some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS) && (
-              <>{t("meetTab.smallSampleLegend")} </>
-            )}
             {/* 賞典除外・途中帰郷の選手も節は走っているので、「出場」から外さない。
                 順位の対象の人数と分けて書く（ファン評価2周目: 出場50人なのに
                 前検51位の選手がいた） */}
@@ -874,11 +899,15 @@ function RaceMeetTab({
               })()}
             </p>
           )}
-          {/* 表の印の説明と準優の目安は人数の行と分けて、対象外の一覧の後ろに置く。
-              続けて書くと「下に名前を出した◯人」と名前の一覧の間にこれらの文が入り、
-              375pxで4行離れた（BOA-714） */}
-          {(hasTableNotes || showBorderBadge || borderPendingShown) && (
-            <p className="rmt-sub">
+          {/* 表の印の説明（金枠・⚠・予選後F・欠場・今節初戦・欠）は1つの段落にまとめ、
+              対象外の一覧の後ろに置く。人数の行に付けると、人数が金枠の説明の後ろに
+              来て探しにくく、「下に名前を出した◯人」と一覧の間に挟まると離れた
+              （BOA-714・BOA-722） */}
+          {hasTableNotes && (
+            <p className="rmt-table-notes">
+              {/* 金枠の意味（PR #1187 ファン評価1周目: 説明がどこにも無かった） */}
+              {showBestLegend && <>{t("meetTab.bestLegend")} </>}
+              {showSmallSampleLegend && <>{t("meetTab.smallSampleLegend")} </>}
               {/* 「予選後F」の意味（セルの title はタッチ端末で読めない。BOA-626）。
                   **表の6艇に印が出ているときだけ**断る。節の誰かに居るだけで出すと、
                   表に印が無いのに説明だけ出て「どこにあるのか」と迷う（ファン評価1周目） */}
@@ -901,27 +930,6 @@ function RaceMeetTab({
               {/* 着順の並びの「欠」の意味と、得点率の分母から外していること
                   （一部欠場の開催でも書く。BOA-504 ファン評価） */}
               {showFinishAbsentNote && <> {t("meetTab.finishAbsentNote")}</>}
-              {showBorderBadge && (
-                <>
-                  {" "}
-                  {t("meetTab.borderLine", {
-                    slots,
-                    rate: border.toFixed(2),
-                  })}{" "}
-                  {t("meetTab.borderNote")}{" "}
-                  {/* 何走時点の目安かを断る。2日目の朝の目安は、予選終了時の目安と
-                      平均0.46点ずれる（BOA-690 の実測。数値は画面に出さない） */}
-                  {t("meetTab.borderAsOfRuns", { runs: medianRuns })}
-                </>
-              )}
-              {/* まだ全員が走っていない間は目安を出さない理由を書く（BOA-690）。
-                  Ｗ優勝戦では「出場選手」が24人か48人か読めないので書き分ける */}
-              {borderPendingShown &&
-                t(
-                  seriesSplit
-                    ? "meetTab.borderPendingSeries"
-                    : "meetTab.borderPending",
-                )}
             </p>
           )}
           {/* 公式の順位表は52名中3名（賞典除外1・途中帰郷2）を順位から外す。
@@ -1387,8 +1395,7 @@ function RaceMeetTab({
                   // 公式の日本語の種別名（準優勝戦等）をそのまま入れていた。ja 以外では
                   // 見出しのチップと同じ区分の訳にする（BOA-713。ko で「準優勝戦」の漢字が
                   // 2位決定戦と読まれ、チップの「준결승전」とも食い違っていた）
-                  stage:
-                    raceStageLabel(stage, t, i18n.language)?.text ?? stage,
+                  stage: raceStageLabel(stage, t, i18n.language)?.text ?? stage,
                 })
               : t(
                   prelimEndDay
