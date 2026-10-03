@@ -165,3 +165,9 @@
   - そのほか: 2艇の比較、会場・グレード・ラウンドの比較、今日のその艇
   - spec FR-1・FR-1b、#1177 の計算、本番 profiles.py は、承認後にこの定義に合わせて直す
 - Version 14: https://claude.ai/artifact/PmBJj2kX13venVRWs5E2Cw 。ソースは [mock-v14/](./mock-v14/)。第6回の検証（[verification-round6.md](./verification-round6.md)）の指摘はすべて採用
+- 分担（2026-10-03 オーケストレーター経由、学習側と合意）:
+  - 学習側レーン: 出走表時点の2着以内・3着以内のモデルを足し、6本にする（train.py・perrace.py・storage.js・treeshap-parity.js）。事前登録5 への追記から始める
+  - このレーン: 定義の変更（二重の中心化、1号艇の格の合算、枠を割合から除く。profiles.py・JS の集計）。Version 14 のユーザー承認の後に着手する
+  - analogyRaceContribution.js は両方が触るので、着手のときに学習側レーンと調整する
+  - 2回目の学習は、両方がそろってからユーザーに1回だけ頼む
+  - 「1号艇の格の合算」は集計だけの変更で、学習し直しは要らない（2026-10-03 回答）
