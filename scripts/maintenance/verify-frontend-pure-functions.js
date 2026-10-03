@@ -1597,6 +1597,21 @@ function suiteHscrollHint(m, check) {
     [snap(0, 40, 1), snap(240, 40, 1), snap(200, 300, 1), snap(130, 5, -1)],
     [60, 263, 263, 120],
   );
+  // 右端の位置も列の境目にそろえる余白（PR #1202 ファン評価3周目）
+  check(
+    "hscroll: 右端が列の途中なら、次の列の境目まで届く余白を足す",
+    m.tailPaddingFor({ naturalMax: 126, columnStarts: [0, 60, 146, 220] }),
+    20,
+  );
+  check(
+    "hscroll: 右端がすでに列の境目、少しだけ切れている、先に列が無いときは足さない",
+    [
+      m.tailPaddingFor({ naturalMax: 146, columnStarts: [0, 60, 146, 220] }),
+      m.tailPaddingFor({ naturalMax: 10, columnStarts: [0, 30] }),
+      m.tailPaddingFor({ naturalMax: 300, columnStarts: [0, 60, 146, 220] }),
+    ],
+    [0, 0, 0],
+  );
   check("hscroll: 右端まで送ったら「›」は消え、「‹」が出る", st(357, 301, 56), {
     hasMore: false,
     hasLess: true,
@@ -1713,6 +1728,12 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  [
+    "hscrollHint",
+    "右端に余白を足さない（PR #1202 ファン評価3周目の退行）",
+    "return next === undefined ? 0 : Math.ceil(next - naturalMax);",
+    "return 0;",
+  ],
   [
     "hscrollHint",
     "送る先を列の境目にそろえない（PR #1202 ファン評価2周目の退行）",

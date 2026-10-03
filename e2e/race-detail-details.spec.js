@@ -794,4 +794,86 @@ test.describe("レース詳細の表示の細部", () => {
     });
     expect(cut).toBeLessThanOrEqual(1);
   });
+  for (const screen of [
+    {
+      name: "今節の日別表（中止のレース）",
+      path: "/race/2026-09-21-02-05?tab=meet",
+      hint: ".race-history-hscroll",
+      ready: ".race-history-table-row",
+    },
+    {
+      name: "枠別情報の全コース表",
+      path: `${RACE}?tab=waku`,
+      hint: ".rwit-grid-hscroll",
+      ready: ".rwit-fold-summary",
+      open: async (page) => {
+        await page.locator(".rwit-fold-summary").first().click();
+      },
+    },
+  ]) {
+    test(`320px: ${screen.name}は右端まで送っても、固定した列のすぐ右に切れた値を残さない（PR #1202 ファン評価3周目）`, async ({
+      page,
+    }) => {
+      // 右端の位置が列の境目と一致せず、最後の1回だけ「6.71(6)」が「71(6)」に見えていた
+      test.slow();
+      await page.setViewportSize({ width: 320, height: 812 });
+      await page.goto(screen.path);
+      await expect(page.locator(screen.ready).first()).toBeVisible({
+        timeout: 90000,
+      });
+      if (screen.open) await screen.open(page);
+      const hint = page.locator(screen.hint).first();
+      const more = hint.locator(":scope > .hscroll-more");
+      await expect(more).toBeVisible({ timeout: 30000 });
+      while (await more.isVisible()) await more.click();
+      const cut = await hint.evaluate((el) => {
+        const cells = [...el.querySelector("tr").children];
+        let stickyRight = null;
+        for (const c of cells) {
+          const style = getComputedStyle(c);
+          if (style.position !== "sticky" || style.left === "auto") break;
+          stickyRight = c.getBoundingClientRect().right;
+        }
+        const firstVisible = cells
+          .map((c) => c.getBoundingClientRect())
+          .find((r) => r.right > stickyRight + 1);
+        return stickyRight - firstVisible.left;
+      });
+      expect(cut, "固定の列の右に切れた列が残らない").toBeLessThanOrEqual(1);
+    });
+  }
+  test("320px: 表の余白が外れても測り直せば、右端は列の境目にそろう（PR #1215 レビュー）", async ({
+    page,
+  }) => {
+    // 足した余白の量を箱の側に持っていると、表だけが作り直されたとき（余白が外れたとき）に
+    // 食い違い、右端が列の途中に戻る
+    test.slow();
+    await page.setViewportSize({ width: 320, height: 812 });
+    await page.goto("/race/2026-09-21-02-05?tab=meet");
+    const hint = page.locator(".race-history-hscroll").first();
+    await expect(hint.locator(".race-history-table-row").first()).toBeVisible({
+      timeout: 90000,
+    });
+    await expect
+      .poll(() =>
+        hint.evaluate((el) => el.querySelector("table").style.marginRight),
+      )
+      .not.toBe("");
+    await hint.evaluate((el) => {
+      el.querySelector("table").style.marginRight = "";
+      window.dispatchEvent(new Event("resize"));
+    });
+    const more = hint.locator(":scope > .hscroll-more");
+    await expect(more).toBeVisible();
+    while (await more.isVisible()) await more.click();
+    const cut = await hint.evaluate((el) => {
+      const cells = [...el.querySelector("tr").children];
+      const stickyRight = cells[1].getBoundingClientRect().right;
+      const firstVisible = cells
+        .map((c) => c.getBoundingClientRect())
+        .find((r) => r.right > stickyRight + 1);
+      return stickyRight - firstVisible.left;
+    });
+    expect(cut).toBeLessThanOrEqual(1);
+  });
 });
