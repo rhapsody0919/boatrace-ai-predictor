@@ -44,3 +44,40 @@ export function horizontalScrollHintState({
 export function horizontalScrollStep({ clientWidth, stickyWidth }) {
   return Math.max(40, Math.round((clientWidth - stickyWidth) * 0.8));
 }
+
+/**
+ * 「›」「‹」で送る先を、列の境目にそろえる。
+ *
+ * 見える幅の8割だけ送ると、列の途中で止まり、固定の列のすぐ右に切れた値だけが残った。375px の
+ * モーターのコース別成績で「1コース 2%」（実際は 87.2%）と読めた（PR #1202 ファン評価2周目）。
+ * 送りたい位置（今の位置 ± step）を越えない範囲で、いちばん遠い列の境目に止める。1列も越えない
+ * ときは次の列の境目まで送る。端（0・max）を越えるときは端に止める
+ *
+ * @param {{current: number, step: number, direction: 1|-1, max: number, columnStarts: number[]}} args
+ *   columnStarts は、その列の左端が固定の列の右端にそろうときの scrollLeft
+ * @returns {number}
+ */
+export function snapScrollTarget({
+  current,
+  step,
+  direction,
+  max,
+  columnStarts,
+}) {
+  const raw = current + direction * step;
+  if (direction > 0 && raw >= max) return max;
+  if (direction < 0 && raw <= 0) return 0;
+  const starts = [...new Set(columnStarts.map((v) => Math.round(v)))]
+    .filter((v) => v > 0 && v < max)
+    .sort((a, b) => a - b);
+  if (direction > 0) {
+    const within = starts.filter((v) => v > current + 1 && v <= raw);
+    if (within.length > 0) return within[within.length - 1];
+    const next = starts.find((v) => v > current + 1);
+    return next ?? max;
+  }
+  const within = starts.filter((v) => v < current - 1 && v >= raw);
+  if (within.length > 0) return within[0];
+  const prev = [...starts].reverse().find((v) => v < current - 1);
+  return prev ?? 0;
+}

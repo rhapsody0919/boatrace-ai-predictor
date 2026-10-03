@@ -40,6 +40,7 @@ const TARGETS = {
   prevResult: "src/utils/prevResult.js",
   nextOpenDate: "src/utils/nextOpenDate.js",
   meetGrouping: "src/utils/meetGrouping.js",
+  turnPrediction: "src/utils/turnPrediction.js",
   volatilityLevel: "src/utils/volatilityLevel.js",
   hscrollHint: "src/utils/horizontalScrollHint.js",
 };
@@ -1577,6 +1578,25 @@ function suiteHscrollHint(m, check) {
     ],
     [178, 250, 40],
   );
+  // 送る先を列の境目にそろえる（PR #1202 ファン評価2周目）。列の境目（固定の列を引いた位置）は 0・60・120・180・240
+  const starts = [0, 60, 120, 180, 240];
+  const snap = (current, step, direction, max = 263) =>
+    m.snapScrollTarget({ current, step, direction, max, columnStarts: starts });
+  check(
+    "hscroll: 送る先は、目安（今の位置＋8割）を越えない、いちばん遠い列の境目",
+    [
+      snap(0, 218, 1),
+      snap(120, 100, 1),
+      snap(240, 100, -1),
+      snap(180, 218, -1),
+    ],
+    [180, 180, 180, 0],
+  );
+  check(
+    "hscroll: 1列も越えないときは次の列の境目、端を越えるときは端",
+    [snap(0, 40, 1), snap(240, 40, 1), snap(200, 300, 1), snap(130, 5, -1)],
+    [60, 263, 263, 120],
+  );
   check("hscroll: 右端まで送ったら「›」は消え、「‹」が出る", st(357, 301, 56), {
     hasMore: false,
     hasLess: true,
@@ -1617,6 +1637,35 @@ function suiteNextOpenDate(m, check) {
   );
 }
 
+// --- pickHitPattern: 的中レースで見せる「当たった候補」（PR #1197 ファン評価3周目）
+function suiteTurnPrediction(m, check) {
+  const patterns = [
+    { winnerCourse: 1, technique: "nige", probability: 0.44 },
+    { winnerCourse: 2, technique: "makuri", probability: 0.09 },
+    { winnerCourse: 2, technique: "sashi", probability: 0.07 },
+  ];
+  check(
+    "pickHitPattern: 同じ艇の候補が複数あれば、実際の決まり手と同じ候補を選ぶ",
+    m.pickHitPattern(patterns, 2, "差し"),
+    patterns[2],
+  );
+  check(
+    "pickHitPattern: 実際の決まり手の候補が無ければ、同じ艇の最初の候補",
+    m.pickHitPattern(patterns, 2, "抜き"),
+    patterns[1],
+  );
+  check(
+    "pickHitPattern: 決まり手が分からないときも同じ艇の最初の候補",
+    m.pickHitPattern(patterns, 2, null),
+    patterns[1],
+  );
+  check(
+    "pickHitPattern: 1着の艇の候補が無ければ null",
+    m.pickHitPattern(patterns, 5, "まくり"),
+    null,
+  );
+}
+
 // --- volatilityDisplayValue: イン崩れ指数の表示の数値がラベルの境目をまたがない（PR #1186 ファン評価）
 function suiteVolatilityLevel(m, check) {
   const show = (p) => [m.getVolatilityLevel(p), m.volatilityDisplayValue(p)];
@@ -1654,6 +1703,7 @@ const SUITES = {
   weatherInfo: suiteWeatherInfo,
   dateUtils: suiteDateUtils,
   meetGrouping: suiteMeetGrouping,
+  turnPrediction: suiteTurnPrediction,
   volatilityLevel: suiteVolatilityLevel,
   hscrollHint: suiteHscrollHint,
 };
@@ -1663,6 +1713,18 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  [
+    "hscrollHint",
+    "送る先を列の境目にそろえない（PR #1202 ファン評価2周目の退行）",
+    "if (within.length > 0) return within[within.length - 1];",
+    "if (within.length > 0) return raw;",
+  ],
+  [
+    "turnPrediction",
+    "実際の決まり手を見ずに、同じ艇の最初の候補を選ぶ（PR #1197 ファン評価3周目の退行）",
+    "return exact ?? sameBoat[0] ?? null;",
+    "return sameBoat[0] ?? null;",
+  ],
   [
     "volatilityLevel",
     "表示の数値をラベルの範囲に収めない（PR #1186 ファン評価の退行）",

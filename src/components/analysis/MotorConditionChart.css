@@ -154,6 +154,15 @@
   white-space: nowrap;
 }
 
+/* モーター調子の6艇表だけ、列幅を中身の幅にする（nowrap なので折れない）。min-width: 620px だと
+   375px で余った幅が左の列（枠番・選手名・機番）に配られ、棒と会場内順位が画面の外に押し出された
+   （BOA-428。左から5列を最初の画面に入れる）。広い画面では 100% に伸ばす。
+   .motor-ranking-table は他の分析タブの表でも使うので、この表に絞る */
+.motor-condition-container .motor-ranking-table {
+  width: max-content;
+  min-width: 100%;
+}
+
 .motor-ranking-table thead {
   background: var(--surface-page);
   border-bottom: var(--border-width-2) solid var(--border-hairline);
@@ -188,6 +197,35 @@
 .motor-ranking-table td.rate {
   font-weight: var(--font-weight-medium);
 }
+
+/* 公式2連率の棒と会場内順位（BOA-428）。良し悪しの色は付けない（UI統一ルール R4・R5）。
+   375px で左から5列（枠・選手・機番・棒・順位）が横スクロールなしで入る幅にする */
+.motor-ranking-table td.motor-rate-bar-cell {
+  min-width: 84px;
+}
+
+/* 会場内順位は「20位タイ/60」を1つの文字列で出し、幅で自然に折り返す（母数を block にすると、
+   画面から読む文字列に改行が入り「20位タイ\n/60」になる。受け入れE2E）。375px で列幅を詰めるため、
+   母数の前で折れるよう、順位と母数をそれぞれ折れない塊にする */
+.motor-ranking-table td.motor-venue-rank {
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.motor-venue-rank-main {
+  white-space: nowrap;
+}
+
+/* 母数は小さく添える（375px で列幅を詰める。BOA-428） */
+.motor-venue-rank-total {
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+}
+
+/* 棒と会場内順位の見出しは2行に折ってよい（承認済みのモックと同じ。列幅を中身で決める） */
+
 
 .motor-ranking-table td.power-index-good {
   color: var(--color-success-text);
@@ -458,6 +496,30 @@
   .motor-ranking-table th,
   .motor-ranking-table td {
     padding: 0.5rem;
+  }
+
+  .motor-condition-container .motor-ranking-table th,
+  .motor-condition-container .motor-ranking-table td {
+    padding: 0.5rem 0.3rem;
+  }
+
+  /* 狭い画面だけ、棒と会場内順位の見出しを折る。表の幅が max-content なので、幅を決めないと
+     折れない。広い画面で幅を決めると「会場/内順/位」と語の途中で折れた（ファン評価） */
+  .motor-ranking-table th.motor-wrap-head {
+    white-space: normal;
+    width: 3.5em;
+  }
+
+  /* 狭い画面だけ、「20位タイ」で1行が埋まる幅にして母数「/60」を次の行へ折る（BOA-428） */
+  .motor-ranking-table td.motor-venue-rank {
+    white-space: normal;
+    width: 4.6em;
+  }
+
+  /* 375px で会場内順位の列まで、右端の「›」に隠れずに入る幅（BOA-428） */
+  .motor-ranking-table td.motor-rate-bar-cell,
+  .motor-ranking-table td.motor-rate-bar-cell .rate-bar {
+    min-width: 52px;
   }
 }
 
