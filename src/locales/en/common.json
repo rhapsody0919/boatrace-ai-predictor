@@ -1589,7 +1589,8 @@
       "racecard": "📋 Race Card Data",
       "venueranking": "🏟️ Venue Ranking",
       "venuegrade": "📊 Venue × Grade",
-      "volatility": "🌪️ Upset Index Track Record"
+      "volatility": "🌪️ Upset Index Track Record",
+      "weather": "🌬️ Wind & Course 1"
     },
     "features": {
       "outcome": {
@@ -1663,6 +1664,10 @@
       "volatility": {
         "name": "Upset Index Track Record",
         "description": "Shows how accurately the new AI model's upset index (warning/standard/stable) has predicted actual outcomes"
+      },
+      "weather": {
+        "name": "Wind & Course-1 Wins",
+        "description": "How wind direction (tail/head) and strength change the course-1 win rate versus the venue average, from official race results"
       }
     },
     "info": {
@@ -1987,6 +1992,23 @@
             "text": "This is the same metric shown as the \"Upset Alert\" badge on each race's prediction screen"
           }
         ]
+      },
+      "weather": {
+        "title": "About wind and course-1 wins",
+        "dataView": "Using about 370,000 races from the official results (K files) since February 2020, we convert the wind at race time to the water's direction (tailwind = from Mark 2 toward Mark 1) and compare the course-1 win rate with the same venue's average. The comparison and pass criteria were fixed before looking at the results.",
+        "tips": [
+          {
+            "strong": "Tailwinds of 4 m+",
+            "text": " lower the course-1 win rate at almost every venue"
+          },
+          {
+            "strong": "Headwinds of 4 m+",
+            "text": " vary a lot by venue, so check your venue"
+          },
+          {
+            "text": "The pre-race wind may be the previous race's value and can change before the start. Use it as a guide."
+          }
+        ]
       }
     },
     "notice": {
@@ -2149,5 +2171,54 @@
     "stLate": "The share of starts 0.1 seconds or more behind the fastest starter in that race. Because this tends to rise on outer courses, the gap from the average for the same course and class is shown too. Flying starts are excluded. This is our own aggregation and will not match similarly named stats on other sites",
     "flyingCount": "Class is the value on this race's program. F is the number of flying starts this term (gold = 1, red = 2) and resets to 0 on May 1 and November 1. A \"this meet\" tag means the racer had a flying start between the first day of this meet and yesterday: they still run the rest of the meet but cannot enter this meet's semifinal or final (excluded from prizes; today's F is not counted). L is the number of late starts, which is different from \"Slow\" below. Consistent and Slow exclude races with a flying start",
     "nigeSimulation": "Using only races where the course 1 boat won by Nige (Escape), the share of each course that finished 2nd. This is aggregated from this venue's actual results, not a prediction"
+  },
+  "weatherInEscape": {
+    "loading": "Loading…",
+    "fetchError": "Could not load the wind and course-1 win data.",
+    "lead": "How wind direction and strength change the course-1 win rate, compared with the average at the same venue.",
+    "pooledTitle": "All 24 venues",
+    "headline": "With a tailwind of 4 m or more, the course-1 win rate falls below the venue average at almost every venue ({{same}} of {{total}}; average {{tail}} pt). With a headwind of 4 m or more, venues differ widely: some drop a lot, others barely change. At 2–3 m there is almost no change.",
+    "bins": {
+      "head_strong": "Strong headwind",
+      "head": "Headwind",
+      "calm_cross": "Light / crosswind",
+      "tail": "Tailwind",
+      "tail_strong": "Strong tailwind"
+    },
+    "binSubs": {
+      "head_strong": "4 m+",
+      "head": "2–3 m",
+      "calm_cross": "≤1 m or cross",
+      "tail": "2–3 m",
+      "tail_strong": "4 m+"
+    },
+    "diagram": {
+      "mark1": "Mark 1",
+      "mark2": "Mark 2",
+      "stand": "Stands",
+      "caption": "Tailwind = wind blowing from Mark 2 toward Mark 1. Headwind is the opposite. Mark 1 is on the right, seen from the stands."
+    },
+    "barAria": "{{label}}: course-1 win rate {{rate}}% ({{diff}} pt vs venue average)",
+    "diffPt": "{{diff}} pt",
+    "raceCount_one": "{{countText}} race",
+    "raceCount_other": "{{countText}} races",
+    "reference": "Reference only",
+    "pooledNote": "The vertical line is the overall average ({{base}}%). Each bar is the overall average plus the within-venue difference (the race-weighted average gap from each venue's own average). 97.5% range of the difference: strong tailwind {{tailLow}} to {{tailHigh}} pt, strong headwind {{headLow}} to {{headHigh}} pt.",
+    "techniqueTitle": "How winning techniques shift (all 24 venues)",
+    "techniqueLead": "Strong headwinds bring more makuri; strong tailwinds bring more sashi.",
+    "techniqueNote": "The technique mix is a descriptive tally. Unlike the course-1 win rate, it was not tested (no ranges or per-venue direction checks).",
+    "venueTitle": "Choose a venue",
+    "venueAverage": "{{venue}} average: {{rate}}% ({{countText}} races)",
+    "tooFew": "Too few races to show",
+    "rankingTitle": "Change by venue in strong wind",
+    "rankingLead": "Largest drop first. Venues with 1,000+ races only.",
+    "diffHeader": "vs venue avg",
+    "rateHeader": "Win rate",
+    "countHeader": "Races",
+    "rankingExcluded": "Excluded (under 1,000 races): {{venues}}",
+    "footSource": "Period {{from}}–{{to}}, {{countText}} races from the official race results (K files). The comparison and pass criteria were fixed before looking at the results.",
+    "footTiming": "Wind is the confirmed value at race time. The pre-race weather may still show the previous race's value.",
+    "footAdjusted": "Matching season, time of day (race number) and the course-1 racer's class gives nearly the same strong-wind differences (strong headwind {{head}} pt, strong tailwind {{tail}} pt).",
+    "footWave": "In light or cross winds (≤1 m), races with 6–9 cm waves were {{diff}} pt vs the venue average ({{countText}} races; few venues have many such races, so treat as reference)."
   }
 }
