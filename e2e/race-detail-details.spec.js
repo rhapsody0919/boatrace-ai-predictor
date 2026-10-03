@@ -656,4 +656,47 @@ test.describe("レース詳細の表示の細部", () => {
     ]);
     expect(cellBg).toBe(rowBg);
   });
+  test("320px: 今節の日別表は日付とRの列を固定し、1日2走の日もどの走か分かる（PR #1202 ファン評価1周目）", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width: 320, height: 812 });
+    await page.goto(`${RACE}?tab=meet`);
+    const hint = page.locator(".race-history-hscroll").first();
+    await expect(hint.locator(".race-history-table-row").first()).toBeVisible({
+      timeout: 90000,
+    });
+    // 線は送る前は引かない（表が収まる幅で空きの端を強調しない）
+    const lineOf = () =>
+      hint.evaluate(
+        (el) =>
+          getComputedStyle(
+            el.querySelector(".race-history-table tbody tr td:nth-child(2)"),
+          ).boxShadow,
+      );
+    expect(await lineOf()).toBe("none");
+    await page.addStyleTag({
+      content: ".race-history-table { min-width: 640px; }",
+    });
+    const more = hint.locator(":scope > .hscroll-more");
+    while (await more.isVisible()) await more.click();
+    const m = await hint.evaluate((el) => {
+      const row = el.querySelector(".race-history-table tbody tr");
+      const [date, race] = [...row.querySelectorAll("td")]
+        .slice(0, 2)
+        .map((c) => c.getBoundingClientRect());
+      return {
+        gap: race.left - date.right,
+        raceText: row.querySelectorAll("td")[1].textContent.trim(),
+        boxLeft: el.getBoundingClientRect().left,
+        raceLeft: race.left,
+      };
+    });
+    // 右端まで送っても、R の列は日付の列のすぐ右に残る
+    expect(Math.abs(m.gap)).toBeLessThanOrEqual(1);
+    expect(m.raceText).toMatch(/^\d+R$/);
+    expect(m.raceLeft - m.boxLeft).toBeLessThan(80);
+    // 送ったあとは、固定した列の右端に線を引く
+    expect(await lineOf()).not.toBe("none");
+  });
 });

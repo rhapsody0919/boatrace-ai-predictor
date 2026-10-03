@@ -935,7 +935,9 @@ function RaceMeetTab({
       {forecastRows.length > 0 && (
         <div className="rmt-card">
           <h3 className="rmt-card-title">{t("meetTab.forecastTitle")}</h3>
-          <div className={`hscroll-hint${forecastHasMore ? " has-more" : ""}`}>
+          <div
+            className={`rmt-forecast-hint hscroll-hint${forecastHasMore ? " has-more" : ""}`}
+          >
             {/* 右へ送ると艇番・選手名の列が消えて、ボタンでは戻れなかった。左の列を固定し、
                 「‹」も出す（BOA-699・BOA-704） */}
             <HorizontalScrollButtons

@@ -175,7 +175,11 @@ function RaceHistoryTable({
         onLess={scrollLeft}
       />
       <div className="race-history-table-wrapper" ref={ref} onScroll={update}>
-        <table className="race-history-table">
+        {/* 同じ節の走だけが並ぶ表（今節タブ）では、日付だけだと1日2走の日にどちらの走か分からない。
+            日付とRの2列を固定する（PR #1202 ファン評価1周目） */}
+        <table
+          className={`race-history-table${compactDate && !shows("venue") ? " race-history-table--pin-race" : ""}`}
+        >
           <thead>
             <tr>
               <th>{t("raceHistoryTable.date")}</th>

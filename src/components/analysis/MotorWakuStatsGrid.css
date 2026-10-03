@@ -16,6 +16,10 @@
   left: 0;
   z-index: 1;
   background: var(--hscroll-fade-color, var(--surface-card));
+}
+
+/* 固定した列の右端の線は、横に送ったとき（「‹」が出ているとき）だけ引く（PR #1202 ファン評価1周目） */
+.mwsg-hint:has(> .hscroll-less) .mwsg-table :is(th, td):first-child {
   box-shadow: inset -1px 0 0 var(--border-hairline);
 }
 

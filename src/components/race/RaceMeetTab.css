@@ -413,6 +413,15 @@
   left: 0;
   z-index: 1;
   background: var(--hscroll-fade-color, var(--surface-card));
+}
+
+/* 固定した列の右端の線は、横に送ったとき（「‹」が出ているとき）だけ引く。広い画面で常に出すと、
+   選手名の右の大きな空きの端を線で強調してしまった（PR #1202 ファン評価1周目） */
+.rmt-forecast-hint:has(> .hscroll-less)
+  .rmt-forecast-table
+  thead
+  th:first-child,
+.rmt-forecast-hint:has(> .hscroll-less) .rmt-forecast-table tbody th {
   box-shadow: inset -1px 0 0 var(--border-hairline);
 }
 
@@ -428,9 +437,7 @@
 /* 選択中の行は背景で塗らない。塗ると「目安に届くセルの色」と混ざり、
    届いていない艇の行まで色付きに見える（実際に1号艇で起きた） */
 .rmt-forecast-table tbody tr.is-current th {
-  box-shadow:
-    inset 3px 0 0 0 var(--brand-accent-primary),
-    inset -1px 0 0 var(--border-hairline);
+  box-shadow: inset 3px 0 0 0 var(--brand-accent-primary);
   padding-left: 6px;
 }
 
@@ -691,4 +698,14 @@
 /* 名前を探す人が見つけられるように、行頭だけ本文の色で太くする（ファン評価1周目） */
 .rmt-excluded-list strong {
   color: var(--text-primary);
+}
+
+.rmt-forecast-hint:has(> .hscroll-less)
+  .rmt-forecast-table
+  tbody
+  tr.is-current
+  th {
+  box-shadow:
+    inset 3px 0 0 0 var(--brand-accent-primary),
+    inset -1px 0 0 var(--border-hairline);
 }
