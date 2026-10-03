@@ -119,6 +119,10 @@ function TodaysVolatilityHighlights({ venuesData }) {
       <h2 className="volatility-highlights__title">
         {t("home.volatilityHighlightsTitle")}
       </h2>
+      {/* 数字が確率に読まれないよう、物差しの意味を書く（BOA-711 U4 のファン評価1周目） */}
+      <p className="volatility-highlights__scale-note">
+        {t("home.volatilityHighlightsScaleNote")}
+      </p>
       <div className="volatility-highlights__columns">
         <HighlightList
           // アイコンはレース詳細のイン崩れ注意度カードと同じ 🌪️（2026-10-03 ユーザー判断、BOA-711）

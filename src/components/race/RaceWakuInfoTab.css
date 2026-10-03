@@ -387,7 +387,9 @@
 
 .rwit-grid-value.is-small-sample,
 .rwit-grid-n.is-small-sample {
-  color: var(--color-warning-text);
+  /* 走数の少ない値は灰（ST考察と同じ。注意の黄は金に見え、最良と読まれた。
+     2026-10-03 ユーザー判断 BOA-711 U5） */
+  color: var(--text-secondary);
 }
 
 .rwit-grid-warn {
@@ -549,7 +551,9 @@ thead .rwit-today-label-th {
 
 .rwit-today-value.is-small-sample,
 .rwit-today-n-td.is-small-sample {
-  color: var(--color-warning-text);
+  /* 走数の少ない値は灰（ST考察と同じ。注意の黄は金に見え、最良と読まれた。
+     2026-10-03 ユーザー判断 BOA-711 U5） */
+  color: var(--text-secondary);
 }
 
 .rwit-today-n-td {

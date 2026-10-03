@@ -156,8 +156,8 @@ check(
   ) && tokens.includes("--ind-best-ring: var(--brand-accent-primary);"),
 );
 check(
-  "U3: 結果タブの1着の帯は金の20%＋左に金の線",
-  /\.rr-row\.is-winner \{[^}]*--ryujin-gold-500\) 20%[^}]*inset 3px 0 0 0 var\(--ryujin-gold-500\)/.test(
+  "U3: 結果タブの1着の帯は金の20%＋左に金の線（行の外に引き、「1着」の文字に重ねない）",
+  /\.rr-row\.is-winner \{[^}]*--ryujin-gold-500\) 20%[^}]*box-shadow: -4px 0 0 0 var\(--ryujin-gold-500\)/.test(
     read("src/App.css"),
   ),
 );
@@ -178,6 +178,19 @@ check(
   "U5: ST考察の走数の少ない値は灰（補足の色）",
   /\.rsc-value\.is-small-sample \{[^}]*color: var\(--text-secondary\)/.test(
     stCss,
+  ),
+);
+check(
+  "U5: 枠別情報のコース別成績の走数の少ない値も灰（ST考察とそろえる）",
+  [
+    /\.rwit-grid-value\.is-small-sample,\s*\.rwit-grid-n\.is-small-sample \{[^}]*color: var\(--text-secondary\)/,
+    /\.rwit-today-value\.is-small-sample,\s*\.rwit-today-n-td\.is-small-sample \{[^}]*color: var\(--text-secondary\)/,
+  ].every((re) => re.test(read("src/components/race/RaceWakuInfoTab.css"))),
+);
+check(
+  "直前情報の金枠の凡例に「今節〜の行は前走で比べる」を書く",
+  json("src/locales/ja/common.json").beforeInfo.bestLegend.includes(
+    "前走の値で比べます",
   ),
 );
 check(
