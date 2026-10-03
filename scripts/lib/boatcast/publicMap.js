@@ -65,13 +65,13 @@ export const ORITEN_PUBLIC_MAP = Object.freeze({
   "09": pub("津", THREE),
   10: pub("三国", THREE),
   11: pub("びわこ", THREE),
-  12: pub("住之江", TWO), // 直線なし
-  13: pub("尼崎", TWO), // 直線なし
+  12: pub("住之江", TWO), // 直線なし。まわり足は他場より計測区間が長く、11秒台（他場は5秒台。2026-10-03 の実測）
+  13: pub("尼崎", TWO), // 直線なし。まわり足は11秒台（住之江と同じ）
   14: pub("鳴門", THREE),
   15: pub("丸亀", THREE),
   16: pub("児島", THREE),
   17: pub("宮島", THREE),
-  18: pub("徳山", TWO), // 直線なし
+  18: pub("徳山", TWO), // 直線なし。まわり足は11秒台（住之江と同じ）
   19: pub("下関", THREE),
   20: pub("若松", THREE),
   21: pub("芦屋", THREE),
