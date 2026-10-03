@@ -37,6 +37,7 @@ import {
   RACES_INIT_VENUES_PER_INVOCATION,
   backoffMinutes,
   createPredictCodeOnTick,
+  defaultCheckNoProgram,
   isBreakerOpenError,
   resolveVenuesLimit,
   runRacesInitJob,
@@ -197,6 +198,7 @@ function newDeps({
   failVenues = new Map(),
   clock = null,
   venueCost = 0,
+  noProgramVenues = [],
 } = {}) {
   const calls = {
     getVenues: 0,
@@ -207,6 +209,7 @@ function newDeps({
     slots: 0,
     unified: 0,
     hook: 0,
+    noProgramChecks: [],
   };
   const state = { venues, existing, failVenues, unifiedFails: false };
   const deps = {
@@ -242,6 +245,11 @@ function newDeps({
     triggerDeployHook: async () => {
       calls.hook++;
       return { triggered: true };
+    },
+    // 番組の無い中止の会場の確認（BOA-721）。既定は「番組なしではない」（従来どおり失敗にする）
+    checkNoProgram: async (date, code) => {
+      calls.noProgramChecks.push(code);
+      return noProgramVenues.includes(code);
     },
   };
   return { deps, calls, state };
@@ -1676,6 +1684,91 @@ const at = (minutes, base = T0) => new Date(base.getTime() + minutes * 60_000);
       !/predict-code-hash/.test(summaryText) &&
       !/host:/.test(summaryText),
     summaryText,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (z) BOA-721: 番組の無い中止の会場（節の打ち切り等）は、失敗にせず済みにして、後始末に進む
+// ---------------------------------------------------------------------------
+{
+  const env = newEnv({ mode: "live" });
+  const { deps, calls } = newDeps({
+    venues: [1, 2],
+    failVenues: new Map([[2, "発走時刻を1件も取得できません（会場2）"]]),
+    noProgramVenues: [2],
+  });
+  const res = await env.invoke(T0, { deps });
+  const report = env.row().last_report;
+  check(
+    "(z) 番組の無い中止の会場（会場2）: 失敗にせず済み（noProgram）。races は書かない。全会場が済み、後始末（予定表・unified）に進み、対象日を処理済みにする",
+    res.status === 200 &&
+      calls.write.join() === "1" &&
+      calls.noProgramChecks.join() === "2" &&
+      report.noProgram?.join() === "2" &&
+      report.done === true &&
+      calls.slots === 1 &&
+      calls.unified === 1 &&
+      env.row().last_target_date === DATE,
+    show({ body: res.body, report }),
+  );
+  const env2 = newEnv({ mode: "live" });
+  const d2 = newDeps({
+    venues: [1, 2],
+    failVenues: new Map([[2, "発走時刻を1件も取得できません（会場2）"]]),
+    noProgramVenues: [],
+  });
+  await env2.invoke(T0, { deps: d2.deps });
+  const r2 = env2.row().last_report;
+  check(
+    "(z) 番組なしと確かめられない会場（中止でない・出走表が未公開等）: 従来どおり失敗のまま（済みにせず、後始末に進まない）",
+    r2.pending?.join() === "2" &&
+      (r2.noProgram ?? []).length === 0 &&
+      r2.done === false &&
+      d2.calls.slots === 0,
+    show(r2),
+  );
+}
+{
+  // defaultCheckNoProgram: 一覧の状態欄が日全体の中止 かつ 1R の出走表が「データがありません」のときだけ true
+  const index = (status) =>
+    `<table><tbody><tr><td class="is-arrow1"><a href="/owpc/pc/race/raceindex?jcd=13&hd=20260517">x</a></td><td colspan="3">${status}</td></tr></tbody></table>`;
+  const racelistNoData = "<div>※ データがありません。</div>";
+  const racelistData =
+    '<table><tbody class="is-fs12"><tr><td>1</td></tr></tbody></table>';
+  const make = (indexHtml, racelistHtml) => async (url) =>
+    /race\/index/.test(url) ? indexHtml : racelistHtml;
+  const results = [];
+  for (const [label, idx, rl, want] of [
+    ["中止＋データがありません", index("中止"), racelistNoData, true],
+    ["中止順延＋データがありません", index("中止順延"), racelistNoData, true],
+    [
+      "中止＋出走表あり（全日中止だが番組はある）",
+      index("中止"),
+      racelistData,
+      false,
+    ],
+    [
+      "状態欄が空（中止でない）＋データがありません（未公開）",
+      index(""),
+      racelistNoData,
+      false,
+    ],
+    [
+      "7R以降中止＋データがありません",
+      index("7R以降中止"),
+      racelistNoData,
+      false,
+    ],
+  ]) {
+    const got = await defaultCheckNoProgram("2026-05-17", 13, {
+      fetchHtml: make(idx, rl),
+    });
+    results.push([label, got, want]);
+  }
+  check(
+    "(z) defaultCheckNoProgram: 一覧で日全体の中止 かつ 出走表が「データがありません」のときだけ true（片方だけなら false）",
+    results.every(([, got, want]) => got === want),
+    show(results),
   );
 }
 
