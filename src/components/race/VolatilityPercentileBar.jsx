@@ -12,10 +12,8 @@ import "./VolatilityPercentileBar.css";
  * 確率0%に見えた）。
  *
  * @param {number} percentile 0〜1。高いほど1号艇が崩れやすい
- * @param {boolean} [onLight] 常に明るい地のカード（VolatilityDisplay）に載せるとき true。
- *   ダークモードでもカードの地が明るいので、意味トークンではなく固定の色にする
  */
-function VolatilityPercentileBar({ percentile, onLight = false }) {
+function VolatilityPercentileBar({ percentile }) {
   const { t } = useTranslation();
   // 数値はラベルの境目をまたがない値にする（同じ70で「標準」と「イン崩れ確率高」が出ないように）
   const pct = volatilityDisplayValue(percentile);
@@ -23,10 +21,7 @@ function VolatilityPercentileBar({ percentile, onLight = false }) {
   const tone = getVolatilityLevel(percentile) ?? "standard";
 
   return (
-    <div
-      className={`vpb vpb--${tone}${onLight ? " vpb--on-light" : ""}`}
-      data-testid="volatility-percentile-bar"
-    >
+    <div className={`vpb vpb--${tone}`} data-testid="volatility-percentile-bar">
       <div className="vpb-head">
         <span className="vpb-label">{t("volatility.percentileBarLabel")}</span>
         <span className="vpb-value">{pct}</span>
