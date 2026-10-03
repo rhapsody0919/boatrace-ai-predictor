@@ -42,6 +42,53 @@
   color: var(--text-primary);
 }
 
+/* 日付の列は横に送っても残す。送ると日付・R・着順が画面の外に出て、残った列がどの走か
+   分からなくなっていた（BOA-704）。地の色は、この表が載っている面の色（--hscroll-fade-color）
+   に合わせる */
+.race-history-table th:first-child,
+.race-history-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--hscroll-fade-color, var(--surface-page));
+}
+
+/* 今節タブ（同じ節の走だけ）では R の列も固定する。1日2走の日は、日付だけではどちらの走か
+   分からなかった（PR #1202 ファン評価1周目）。R の列を日付の列のすぐ右に止めるため、
+   日付の列の幅を決めておく（月日だけなので「10/28」まで入る） */
+.race-history-table--pin-race th:first-child,
+.race-history-table--pin-race td:first-child {
+  box-sizing: border-box;
+  width: 4em;
+  min-width: 4em;
+  max-width: 4em;
+}
+
+.race-history-table--pin-race th:nth-child(2),
+.race-history-table--pin-race td:nth-child(2) {
+  position: sticky;
+  left: 4em;
+  z-index: 1;
+  background: var(--hscroll-fade-color, var(--surface-page));
+}
+
+/* 固定した列の右端の線は、横に送ったとき（「‹」が出ているとき）だけ引く。表が収まる幅で
+   常に出すと、空いた所の端を線で強調してしまった（PR #1202 ファン評価1周目） */
+.race-history-hscroll:has(> .hscroll-less)
+  .race-history-table:not(.race-history-table--pin-race)
+  :is(th, td):first-child,
+.race-history-hscroll:has(> .hscroll-less)
+  .race-history-table--pin-race
+  :is(th, td):nth-child(2) {
+  box-shadow: inset -1px 0 0 var(--border-hairline);
+}
+
+/* 固定の列は自分の地を塗るので、行に乗せたときの色も同じにそろえる */
+.race-history-table-row:hover td:first-child,
+.race-history-table--pin-race .race-history-table-row:hover td:nth-child(2) {
+  background: var(--surface-page);
+}
+
 /* 着順の色（直近の走の帯 RecentRunsBar と同じ。1着＝金、5・6着と記号＝赤） */
 .race-history-table td.race-history-finish-first {
   color: var(--brand-accent-primary);

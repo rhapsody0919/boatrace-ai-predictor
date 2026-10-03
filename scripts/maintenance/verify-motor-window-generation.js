@@ -299,10 +299,14 @@ check(
       champ.includes("${beforeKey(beforeRaceId)}"),
   );
   check(
+    // 会場全体の取得は getVenueMotorSnapshot に移した（BOA-428。一覧の6基と共有する）
     "会場内順位: asOfDate 以前のスナップショットで順位を出す",
     methodBody("getVenueMotorRanking").includes(
-      '.lte("scraped_date", asOfDate ?? "9999-12-31")',
-    ),
+      "this.getVenueMotorSnapshot(venueCode, asOfDate)",
+    ) &&
+      methodBody("getVenueMotorSnapshot").includes(
+        '.lte("scraped_date", asOfDate ?? "9999-12-31")',
+      ),
   );
   check(
     // 当日のレースも「このレースの直前まで」（BOA-557）

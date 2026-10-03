@@ -141,7 +141,7 @@ group by d
 order by 1`;
 
 /**
- * レースごとの寄与度の特徴量（analogy_race_features。マイグレーション123、BOA-271 B）。期待件数 = 開催中止(confirmed)を
+ * レースごとの寄与度の特徴量（analogy_race_features。マイグレーション127、BOA-271 B）。期待件数 = 開催中止(confirmed)を
  * 除いたレースの出走行、with_features = 特徴量の行がある出走行。日次の特徴量ジョブ（JST 6:40）が全レースを書く
  * （欠場の分かったレースも消さない）ので、分母から欠場を外さない。
  */
@@ -321,8 +321,8 @@ export const DATA_HEALTH_FUNCTIONS = Object.freeze([
     args: FROM_TO,
     shape: "rows",
     description:
-      "データ健全性の日次監視: 出走行のうち、レースごとの寄与度の特徴量（analogy_race_features、123）がある行の数",
-    migration: "124_data_health_analogy_race_features.sql",
+      "データ健全性の日次監視: 出走行のうち、レースごとの寄与度の特徴量（analogy_race_features、127）がある行の数",
+    migration: "128_data_health_analogy_race_features.sql",
     body: analogyRaceFeaturesSql,
   },
   {
@@ -360,7 +360,7 @@ export const DATA_HEALTH_FUNCTIONS = Object.freeze([
     shape: "object",
     description:
       "データ健全性の日次監視: 主要テーブルに1行以上あるか（空テーブルの検知）。対象テーブルは関数の中の固定の一覧",
-    migration: "124_data_health_analogy_race_features.sql",
+    migration: "128_data_health_analogy_race_features.sql",
     body: tableRowsSql,
   },
 ]);

@@ -143,24 +143,37 @@ export function buildRaceResultRow(
   // combo単位で{amount, popularity}を格納しているscrapePayouts()の構造から
   // 実際の着順に対応するコンボを引き当てる
   const sortedPairKey = (a, b) => [a, b].sort((x, y) => x - y).join("-");
+  // 特払は組番が無く、キー「特払」で入る（raceResultRows.js buildLegacyPayouts）。着順の組番で引けなければ、
+  // その額を使う（旧列にも特払は70を入れる。plan.md「race-result-full-fields」。BOA-383）。
+  // 引けない組番が2つ以上ある勝式は、どれが特払か区別できないので使わない。例: 単勝が特払のレースでは、
+  // 1着艇の複勝の払戻が空欄（no_amount）で旧形式に入らず、組番で引けない
+  const entriesByCombo = (kind, combos) => {
+    const map = payouts[kind] ?? {};
+    const missing = combos.filter((c) => !map[c]).length;
+    return combos.map(
+      (c) => map[c] ?? (missing === 1 ? map["特払"] : undefined),
+    );
+  };
   const winEntry = payouts.win ? Object.values(payouts.win)[0] : null;
-  const placeEntries = payouts.place ? Object.entries(payouts.place) : [];
-  const place1Entry = placeEntries.find(
-    ([k]) => k === String(result.rank1),
-  )?.[1];
-  const place2Entry = placeEntries.find(
-    ([k]) => k === String(result.rank2),
-  )?.[1];
+  const [place1Entry, place2Entry] = entriesByCombo("place", [
+    String(result.rank1),
+    String(result.rank2),
+  ]);
   const trioEntry = payouts.trio ? Object.values(payouts.trio)[0] : null;
   const trifectaEntry = payouts.trifecta
     ? Object.values(payouts.trifecta)[0]
     : null;
-  const exactaEntry = payouts.exacta?.[`${result.rank1}-${result.rank2}`];
-  const quinellaEntry =
-    payouts.quinella?.[sortedPairKey(result.rank1, result.rank2)];
-  const wide1Entry = payouts.wide?.[sortedPairKey(result.rank1, result.rank2)];
-  const wide2Entry = payouts.wide?.[sortedPairKey(result.rank1, result.rank3)];
-  const wide3Entry = payouts.wide?.[sortedPairKey(result.rank2, result.rank3)];
+  const [exactaEntry] = entriesByCombo("exacta", [
+    `${result.rank1}-${result.rank2}`,
+  ]);
+  const [quinellaEntry] = entriesByCombo("quinella", [
+    sortedPairKey(result.rank1, result.rank2),
+  ]);
+  const [wide1Entry, wide2Entry, wide3Entry] = entriesByCombo("wide", [
+    sortedPairKey(result.rank1, result.rank2),
+    sortedPairKey(result.rank1, result.rank3),
+    sortedPairKey(result.rank2, result.rank3),
+  ]);
 
   return {
     race_id: raceId,

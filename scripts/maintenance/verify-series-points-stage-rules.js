@@ -549,7 +549,11 @@ check(
     check(
       "全走欠場の選手を選んだ詳細に欠場の見出し、「欠」があれば意味の注記を出す",
       meetTab.includes('t("meetTab.absentDetail")') &&
-        /r\.finishes\.includes\(FINISH_ABSENT\)[\s\S]{0,80}t\("meetTab\.finishAbsentNote"\)/.test(
+        // 注記の条件は const に切り出してある（BOA-714 で段落を分けたため）
+        /showFinishAbsentNote = [^;]*r\.finishes\.includes\(FINISH_ABSENT\)/.test(
+          meetTab,
+        ) &&
+        /showFinishAbsentNote && <> \{t\("meetTab\.finishAbsentNote"\)\}/.test(
           meetTab,
         ),
       true,
