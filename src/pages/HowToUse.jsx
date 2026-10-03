@@ -228,8 +228,8 @@ export default function HowToUse() {
             <h4>💡 展開予測</h4>
             <ul>
               <li>
-                1マーク（最初のターン）で
-                <strong>どの艇が先頭になりそうか</strong>
+                1マーク（最初のターン）の攻防で
+                <strong>どの艇がどの決まり手で1着になりそうか</strong>
                 を、確率付きの上位パターンとして提示します
               </li>
               <li>
@@ -255,7 +255,8 @@ export default function HowToUse() {
           <div className="example-box">
             <p className="example-title">📌 例</p>
             <p>
-              展開予測で「1コースが39%で先頭」「3コースが10%で先頭」と出ていれば、1コースを軸にしつつ3コースも警戒する、といった読み方ができます
+              展開予測で「1コース 逃げ 39%」「3コース まくり
+              10%」と出ていれば、1コースを軸にしつつ3コースも警戒する、といった読み方ができます
             </p>
           </div>
         </>
