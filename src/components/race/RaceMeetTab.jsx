@@ -50,6 +50,7 @@ import {
   MEET_SMALL_SAMPLE_RUNS,
 } from "./seriesPoints";
 import { finishMarkKeyOf } from "../../utils/prevResult";
+import { raceStageLabel } from "../../constants/raceStageConfig";
 import RaceHistoryTable from "./RaceHistoryTable";
 import { bestOf } from "../../utils/bestOf";
 import MeetSparkline from "./MeetSparkline";
@@ -60,7 +61,7 @@ import {
   sparkLeftPercent,
 } from "../../utils/trendDateLayout";
 import "./RaceMeetTab.css";
-import "../common/HorizontalScrollHint.css";
+import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
 
 // 順位の対象外の理由 → 画面の文言キー（meetTab.<key> と meetTab.<key>Title）。BOA-587
 const EXCLUDED_LABEL_KEY = {
@@ -89,7 +90,7 @@ function RaceMeetTab({
   // 中止が確定したレース（BOA-658）。行われないレースに「今日の着順でこう動く」を出さない
   isCancelled = false,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // 着順の欄の公式の記号（エ・転 等）を、データ出走表と同じ言語ごとの表記にする
   const finishLabelOf = (finish) => {
     if (typeof finish !== "string") return finish;
@@ -109,8 +110,10 @@ function RaceMeetTab({
   const {
     ref: forecastRef,
     hasMore: forecastHasMore,
+    hasLess: forecastHasLess,
     update: forecastUpdate,
     scrollRight: forecastScrollRight,
+    scrollLeft: forecastScrollLeft,
     // 行数が決まってから測り直す（マウント直後は取得前で幅が無い）
   } = useHorizontalScrollHint([sortedPlayers.length, board?.meetStart]);
   // 選んでいる艇はタブをまたいで共有する（BOA-492）。共有値が null（＝まだ
@@ -933,18 +936,17 @@ function RaceMeetTab({
       {forecastRows.length > 0 && (
         <div className="rmt-card">
           <h3 className="rmt-card-title">{t("meetTab.forecastTitle")}</h3>
-          <div className={`hscroll-hint${forecastHasMore ? " has-more" : ""}`}>
-            {forecastHasMore && (
-              <button
-                type="button"
-                className="hscroll-more"
-                onClick={forecastScrollRight}
-                aria-hidden="true"
-                tabIndex={-1}
-              >
-                ›
-              </button>
-            )}
+          <div
+            className={`rmt-forecast-hint hscroll-hint${forecastHasMore ? " has-more" : ""}`}
+          >
+            {/* 右へ送ると艇番・選手名の列が消えて、ボタンでは戻れなかった。左の列を固定し、
+                「‹」も出す（BOA-699・BOA-704） */}
+            <HorizontalScrollButtons
+              hasMore={forecastHasMore}
+              hasLess={forecastHasLess}
+              onMore={forecastScrollRight}
+              onLess={forecastScrollLeft}
+            />
             <div
               className="rmt-forecast-scroll"
               ref={forecastRef}
@@ -1356,7 +1358,13 @@ function RaceMeetTab({
           // （BOA-636。375pxで10.4pxの灰色だった）
           <p className="rmt-forecast rmt-forecast-settled">
             {isAfterPrelim
-              ? t("basicInfo.meetScoreNoForecast", { stage })
+              ? t("basicInfo.meetScoreNoForecast", {
+                  // 公式の日本語の種別名（準優勝戦等）をそのまま入れていた。ja 以外では
+                  // 見出しのチップと同じ区分の訳にする（BOA-713。ko で「準優勝戦」の漢字が
+                  // 2位決定戦と読まれ、チップの「준결승전」とも食い違っていた）
+                  stage:
+                    raceStageLabel(stage, t, i18n.language)?.text ?? stage,
+                })
               : t(
                   prelimEndDay
                     ? "meetTab.prelimOverNoteDay"
@@ -1382,7 +1390,9 @@ function RaceMeetTab({
         ) : meet.length === 0 ? (
           <p className="rmt-empty">
             {t(
-              isCancelled ? "meetTab.meetEmptyCancelled" : "basicInfo.meetEmpty",
+              isCancelled
+                ? "meetTab.meetEmptyCancelled"
+                : "basicInfo.meetEmpty",
             )}
           </p>
         ) : (

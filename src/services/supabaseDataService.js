@@ -36,6 +36,10 @@ import { isRaceCancelled } from "../utils/raceCancellation.js";
 import { competitionRank } from "../utils/competitionRank.js";
 import { toWakuRacerStats } from "../utils/racerStats.js";
 import {
+  VENUE_SITE_STATS_HIDDEN,
+  rankBy,
+} from "../utils/venueMotorRanking.js";
+import {
   countsForSeriesScore,
   shouldUseOfficialSeries,
   prelimEndRaceIdOf,
@@ -3133,13 +3137,79 @@ export const supabaseDataService = {
       // asOfDate（YYYY-MM-DD）を渡すと、その日以前で最新のスナップショットで順位を
       // 出す（過去レースのドリルダウン、BOA-521）
       // v2: 同じ値は同じ順位・tied を追加（BOA-529）
+      // v3: 出走数 0 のモーターを順位・母数から外す（BOA-428。一覧の6基とそろえる）
       asOfDate === null
-        ? `venue-motor-ranking-v2-${venueCode}-${motorNumber}-${metric}`
-        : `venue-motor-ranking-v2-asof-${venueCode}-${motorNumber}-${metric}-${asOfDate}`,
+        ? `venue-motor-ranking-v3-${venueCode}-${motorNumber}-${metric}`
+        : `venue-motor-ranking-v3-asof-${venueCode}-${motorNumber}-${metric}-${asOfDate}`,
       async () => {
+        // 会場全体の取得は getVenueMotorSnapshot に任せる（会場×日付でキャッシュ。BOA-428）。
+        // 取得の失敗・データ無しは、これまでどおり null（ドリルダウンは出さないだけ）
+        const snapshot = await this.getVenueMotorSnapshot(venueCode, asOfDate);
+        if (snapshot.state !== "ok") return null;
+
+        const columnByMetric = {
+          winRate: "win_rate",
+          top2Rate: "top2_rate",
+          top3Rate: "top3_rate",
+          accidentRate: "accident_rate",
+        };
+        const column = columnByMetric[metric] ?? "top2_rate";
+        // 事故率のみ低いほど良いため昇順、他は降順
+        const ascending = metric === "accidentRate";
+
+        // 出走数 0（入れ替え直後で集計前）のモーターは、値が 0 でも順位・母数に入れない。
+        // 一覧の6基（getVenueMotorRanks）と同じ扱いにして、同じ画面で母数がずれないようにする（BOA-428）
+        const valued = snapshot.rows.filter(
+          (row) =>
+            row[column] !== null &&
+            row[column] !== undefined &&
+            row.race_count !== 0,
+        );
+        const own = valued.find((row) => row.motor_number === motorNumber);
+        if (!own) return null;
+        // 同じ値は同じ順位（BOA-529）。並べ替えた位置を順位にすると、同値の中の
+        // 順位が DB の行順で決まっていた
+        const { rank, tied } = competitionRank(
+          valued.map((row) => Number(row[column])),
+          Number(own[column]),
+          { ascending },
+        );
+
+        return {
+          rank,
+          tied,
+          total: valued.length,
+          metric,
+          value: own[column],
+          scrapedDate: snapshot.scrapedDate,
+        };
+      },
+    );
+  },
+
+  /**
+   * 会場の全モーターの会場公式サイトの成績（`venue_motor_stats`）を、1つのスナップショット
+   * （その日以前で最新の `scraped_date`）で返す（BOA-428）。2クエリ、会場×日付でキャッシュ。
+   *
+   * 戻り値は3通り。「無い」と「失敗」を分けるのは、失敗を「データの無い会場」と取り違えて、
+   * 違う出典の一覧に差し替えないため（BOA-428 設計レビュー）:
+   *   - `{ state: "ok", scrapedDate, rows }`
+   *   - `{ state: "empty" }` … 会場にデータが無い（戸田・平和島）、またはその日以前に無い
+   *   - `{ state: "error", fetchFailed: true }` … 取得の失敗。fetchFailed なので withCache は保存しない
+   * 例外は投げない（ドリルダウンの Promise.all を巻き込まない）。
+   * 浜名湖・宮島を出さない判断（VENUE_SITE_STATS_HIDDEN）は呼び出し側で行う。既存のドリルダウン
+   * （getVenueMotorRanking）の表示は変えないため
+   * @param {number} venueCode
+   * @param {string|null} asOfDate YYYY-MM-DD。null なら最新
+   */
+  getVenueMotorSnapshot(venueCode, asOfDate = null) {
+    return withCache(
+      `venue-motor-snapshot-v1-${venueCode}-${asOfDate ?? "latest"}`,
+      async () => {
+        const failed = { state: "error", fetchFailed: true };
         if (!supabase) {
           console.error("Supabase client not initialized");
-          return null;
+          return failed;
         }
         try {
           const { data: latestRow, error: latestError } = await supabase
@@ -3152,60 +3222,73 @@ export const supabaseDataService = {
             .maybeSingle();
           if (latestError) {
             console.error("venue_motor_stats取得エラー:", latestError.message);
-            return null;
+            return failed;
           }
-          if (!latestRow) return null;
+          if (!latestRow) return { state: "empty" };
 
           const { data, error } = await supabase
             .from("venue_motor_stats")
             .select(
-              "motor_number, win_rate, top2_rate, top3_rate, accident_rate",
+              "motor_number, win_rate, top2_rate, top3_rate, accident_rate, final_count, championship_count, race_count, stats_period_end",
             )
             .eq("venue_code", venueCode)
             .eq("scraped_date", latestRow.scraped_date);
           if (error) {
             console.error("venue_motor_stats取得エラー:", error.message);
-            return null;
+            return failed;
           }
-          if (!data || data.length === 0) return null;
-
-          const columnByMetric = {
-            winRate: "win_rate",
-            top2Rate: "top2_rate",
-            top3Rate: "top3_rate",
-            accidentRate: "accident_rate",
-          };
-          const column = columnByMetric[metric] ?? "top2_rate";
-          // 事故率のみ低いほど良いため昇順、他は降順
-          const ascending = metric === "accidentRate";
-
-          const valued = data.filter(
-            (row) => row[column] !== null && row[column] !== undefined,
-          );
-          const own = valued.find((row) => row.motor_number === motorNumber);
-          if (!own) return null;
-          // 同じ値は同じ順位（BOA-529）。並べ替えた位置を順位にすると、同値の中の
-          // 順位が DB の行順で決まっていた
-          const { rank, tied } = competitionRank(
-            valued.map((row) => Number(row[column])),
-            Number(own[column]),
-            { ascending },
-          );
-
+          if (!data || data.length === 0) return { state: "empty" };
           return {
-            rank,
-            tied,
-            total: valued.length,
-            metric,
-            value: own[column],
+            state: "ok",
             scrapedDate: latestRow.scraped_date,
+            rows: data,
           };
         } catch (err) {
           console.error("venue_motor_stats取得エラー(例外):", err.message);
-          return null;
+          return failed;
         }
       },
     );
+  },
+
+  /**
+   * レースの6基の「会場内順位」（会場公式サイトの2連率、`top2_rate`）をまとめて返す（BOA-428 子1）。
+   * 会場全体を1回だけ引く（1基ずつ getVenueMotorRanking を呼ぶと 2クエリ×6）。
+   *   - 当日のレースは最新のスナップショット（asOfDate = null）、過去のレースはレース日以前で最新
+   *   - 浜名湖・宮島は会場サイトの値を出さない（VENUE_SITE_STATS_HIDDEN、2026-10-02 ユーザー判断）
+   * @param {number} venueCode
+   * @param {string|null} asOfDate
+   *   - 出走数 0（集計前）のモーターは順位に入れない（画面は「-」）
+   * @returns {Promise<{state:"ok", scrapedDate:string, periodEnd:string|null, total:number, ranks:Map<number,{rank:number,tied:number}>}|{state:"empty"}|{state:"error"}>}
+   */
+  async getVenueMotorRanks(venueCode, asOfDate = null) {
+    if (VENUE_SITE_STATS_HIDDEN.includes(Number(venueCode))) {
+      return { state: "empty" };
+    }
+    const snapshot = await this.getVenueMotorSnapshot(venueCode, asOfDate);
+    if (snapshot.state !== "ok") return { state: snapshot.state };
+    // 出走数が 0 のモーター（入れ替え直後でまだ走っていない）は、2連率の 0 が「集計前」なので
+    // 順位にも母数にも入れない（唐津は 9/22 時点で65基中19基。「40位タイ」と出ていた。データ精度検証）
+    const rows = snapshot.rows.map((row) => ({
+      motorNumber: row.motor_number,
+      top2Rate: row.race_count === 0 ? null : row.top2_rate,
+    }));
+    const ranks = rankBy(rows, "top2Rate");
+    if (ranks.size === 0) return { state: "empty" };
+    // 会場サイトの集計の締め日。びわこ・唐津・大村は節の途中で止まっていて、取得日（10/3）と
+    // 中身の時点（9/18 締め等）がずれる。締め日が混ざる会場（びわこは 9/09 と 9/18）は古い方を出す
+    // （2026-10-02 ユーザー判断、ファン評価3周目の P1）。締め日の無い会場は null（画面は取得日）
+    const periodEnds = snapshot.rows
+      .map((row) => row.stats_period_end)
+      .filter(Boolean)
+      .sort();
+    return {
+      state: "ok",
+      scrapedDate: snapshot.scrapedDate,
+      periodEnd: periodEnds[0] ?? null,
+      total: ranks.size,
+      ranks,
+    };
   },
 
   /**

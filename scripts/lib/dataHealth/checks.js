@@ -272,7 +272,7 @@ export const EMPTY_TABLE_POLICIES = Object.freeze({
   racer_period_stats: { policy: "pending", note: "fan ファイルの取り込み前" },
   analogy_race_features: {
     policy: "pending",
-    note: "BOA-271 B の日次の特徴量ジョブの稼働前（マイグレーション123）",
+    note: "BOA-271 B の日次の特徴量ジョブの稼働前（マイグレーション126）",
   },
 });
 

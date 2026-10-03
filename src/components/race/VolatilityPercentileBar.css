@@ -1,0 +1,98 @@
+/* イン崩れ指数の 0〜100 バー（VolatilityPercentileBar.jsx）。
+   ページ・カードの地に載せる配色（意味トークン。ダークモードで反転する）。
+   VolatilityDisplay もカードの地をトークンから作るようにしたので、明るい地専用の配色は外した
+   （race-detail-ui-unify FR-6） */
+.vpb {
+  --vpb-bg: var(--surface-page);
+  --vpb-label: var(--text-secondary);
+  --vpb-track: var(--border-hairline);
+  --vpb-median: var(--text-secondary);
+  --vpb-ends: var(--text-secondary);
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--vpb-bg);
+  border-radius: 6px;
+}
+
+/* 値と棒の色は段階で決める（getVolatilityLevel と同じ low / standard / high） */
+.vpb--low {
+  --vpb-tone: var(--color-success-light);
+}
+.vpb--standard {
+  --vpb-tone: var(--color-info);
+}
+.vpb--high {
+  --vpb-tone: var(--color-warning-light);
+}
+
+.vpb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.vpb-label {
+  font-size: 0.82rem;
+  color: var(--vpb-label);
+}
+
+.vpb-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--vpb-tone);
+}
+
+.vpb-track {
+  position: relative;
+  height: 6px;
+  background: var(--vpb-track);
+  border-radius: 3px;
+}
+
+.vpb-fill {
+  position: absolute;
+  left: 0;
+  height: 100%;
+  background: var(--vpb-tone);
+  border-radius: 3px;
+}
+
+/* 真ん中（標準）の目印 */
+.vpb-median {
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--vpb-median);
+  border-radius: 1px;
+  transform: translateX(-50%);
+}
+
+/* 両端と真ん中のラベル。両端に寄せて並べると、文字幅の差だけ「標準」が真ん中の目印から
+   ずれたので、3等分して真ん中は中央に置く */
+.vpb-ends {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  font-size: 0.68rem;
+  color: var(--vpb-ends);
+  margin-top: 0.25rem;
+}
+
+.vpb-ends > span:last-child {
+  text-align: right;
+}
+
+.vpb-marker {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--vpb-tone);
+  /* 地の色で縁取って、トラック・真ん中の目印と重なっても見分けられるようにする */
+  box-shadow: 0 0 0 2px var(--vpb-bg);
+  transform: translate(-50%, -50%);
+}

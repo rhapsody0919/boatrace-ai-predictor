@@ -1,4 +1,4 @@
--- 123: レースごとの寄与度（B）の特徴量の表（BOA-271）
+-- 126: レースごとの寄与度（B）の特徴量の表（BOA-271）
 -- 対応spec/plan: docs/design/analogy-finder/plan.md（「学習側の設計」）、ADR 案（#1134「レースごとの寄与度」）
 --
 -- 背景: レースごとの寄与度は、Vercel の JS が TreeSHAP で計算する（出走表時点の段と展示後の段、ADR 案（#1134））。選手の過去30走の
@@ -9,7 +9,7 @@
 -- テーブル
 --   analogy_race_features  レース×艇の36特徴量（features の並びは per_race_meta.json の models.win_racecard.feature_names）
 --
--- 監視の関数（data-health）は 124 に分けた（data-health の関数のマイグレーションには anon への GRANT を置かない規律のため）
+-- 監視の関数（data-health）は 127 に分けた（data-health の関数のマイグレーションには anon への GRANT を置かない規律のため）
 --
 -- 書き込み: service_role（日次の特徴量ジョブ scripts/ml/analogy/daily_features.py）。締切前で、input_hash（model_version と
 --   36列から作る）が変わったときだけ上書きする。発走後は書かない。匿名（anon）は SELECT だけ（推論側の Vercel 関数が読む）。
@@ -17,7 +17,7 @@
 -- 行数: 1日 約150R×6艇＝約900行、1行 約250B（features は real[36]）。年 約0.08GB。行は消さない
 --
 -- ⚠️ 本番へ未適用。適用はユーザーが行う。
--- 適用の順序: この SQL → 124 → 日次の特徴量ジョブを有効にする。data-health の監視は、表が空の間は「未導入」と扱う。
+-- 適用の順序: この SQL → 127 → 日次の特徴量ジョブを有効にする。data-health の監視は、表が空の間は「未導入」と扱う。
 
 BEGIN;
 

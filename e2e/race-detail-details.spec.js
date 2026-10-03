@@ -58,6 +58,63 @@ test.describe("レース詳細の表示の細部", () => {
     await expect(tip).not.toContainText("lead");
   });
 
+  test("1440px: AI予想の展開予測で、決まり手と確率が離れすぎない（BOA-619 の残り、race-detail-ui-unify FR-6）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    // 発走前の AI予想（.prediction-result）と確定後の振り返り（.race-ai-prediction-tab）の
+    // どちらになるかは録画の時刻しだいなので、トップのレースから辿って出た方を測る
+    await page.goto("/");
+    await page
+      .getByRole("link", { name: /\d{1,2}\s*R/ })
+      .first()
+      .click();
+    await page.waitForURL(/\/race\//);
+    await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
+    const row = page.locator(".turn-pattern-row").first();
+    await expect(row).toBeVisible({ timeout: 30000 });
+    // 以前は発走前の表示で約1130px 離れていた。720px の箱の中なら 600px を超えない
+    await expect
+      .poll(() =>
+        row.evaluate((r) => {
+          const range = document.createRange();
+          range.selectNodeContents(r.querySelector(".turn-pattern-technique"));
+          return (
+            r.querySelector(".turn-pattern-prob").getBoundingClientRect().left -
+            range.getBoundingClientRect().right
+          );
+        }),
+      )
+      .toBeLessThan(600);
+  });
+
+  test("確定後の展開予測の的中は緑、不的中は赤（race-detail-ui-unify R2）", async ({
+    page,
+  }) => {
+    await page.goto(`${RACE}?tab=aiPrediction`);
+    const summary = page.locator(
+      ".turn-pattern-summary--hit, .turn-pattern-summary--miss",
+    );
+    await expect(summary).toBeVisible({ timeout: 30000 });
+    const { color, success, error, hit } = await summary.evaluate((el) => {
+      const probe = (v) => {
+        const s = document.createElement("span");
+        s.style.color = `var(${v})`;
+        el.appendChild(s);
+        const c = getComputedStyle(s).color;
+        s.remove();
+        return c;
+      };
+      return {
+        color: getComputedStyle(el).color,
+        success: probe("--color-success-text"),
+        error: probe("--color-error-text"),
+        hit: el.classList.contains("turn-pattern-summary--hit"),
+      };
+    });
+    expect(color).toBe(hit ? success : error);
+  });
+
   test("基本情報の勝率バー: 最下位の艇も棒が空にならない（BOA-618）", async ({
     page,
   }) => {
@@ -338,6 +395,107 @@ test.describe("レース詳細の表示の細部", () => {
       }
     }
   });
+  for (const lang of ["ja", "en"]) {
+    test(`AI予想の振り返り（${lang}）: 確率と丸数字の説明を出し、イン崩れ指数はレース前と同じバーで見せる（BOA-706）`, async ({
+      page,
+    }) => {
+      await page.goto(`${lang === "ja" ? "" : "/en"}${RACE}?tab=aiPrediction`);
+      const tab = page.locator(".race-ai-prediction-tab");
+      await expect(tab.locator(".turn-pattern-row").first()).toBeVisible({
+        timeout: 30000,
+      });
+      // 「47%」が何の値か・丸数字が何かを書く（以前はレース前だけ出していた）
+      await expect(tab.locator(".turn-pattern-caption")).toContainText(
+        lang === "ja"
+          ? "丸数字の艇がその決まり手で1着になる確率"
+          : "the chance that the circled lane wins",
+      );
+      // 指数は「会場内パーセンタイル0」と文字で出さず、0〜100 のバーで出す
+      await expect(tab.getByTestId("volatility-percentile-bar")).toBeVisible();
+      // バーの色の段階は、ラベル（本命有利）と同じ基準（getVolatilityLevel の low）
+      await expect(tab.getByTestId("volatility-percentile-bar")).toHaveClass(
+        /vpb--low/,
+      );
+      // 何と比べた 0〜100 かを、レース前のカードと同じ一文で書く（ファン評価1・3周目）
+      await expect(tab).toContainText(
+        lang === "ja"
+          ? "過去90日・同会場のレースと比較"
+          : "over the last 90 days",
+      );
+      await expect(tab).not.toContainText(
+        lang === "ja" ? "パーセンタイル" : "percentile",
+      );
+    });
+  }
+
+  test("AI予想の振り返り: イン崩れ指数のバーの文字は、ライト・ダークとも地の色と見分けられる（BOA-706）", async ({
+    page,
+  }) => {
+    await page.goto(`${RACE}?tab=aiPrediction`);
+    const bar = page.getByTestId("volatility-percentile-bar");
+    await expect(bar).toBeVisible({ timeout: 30000 });
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate(
+        (t) => document.documentElement.setAttribute("data-theme", t),
+        theme,
+      );
+      const { label, ends, bg } = await bar.evaluate((el) => ({
+        label: getComputedStyle(el.querySelector(".vpb-label")).color,
+        ends: getComputedStyle(el.querySelector(".vpb-ends")).color,
+        bg: getComputedStyle(el).backgroundColor,
+      }));
+      expect(contrast(label, bg), `${theme}: 見出し`).toBeGreaterThanOrEqual(
+        4.5,
+      );
+      // 端の「堅い・標準・崩れやすい」は小さい補助の文字。3:1 を下限にする
+      expect(contrast(ends, bg), `${theme}: 端の文字`).toBeGreaterThanOrEqual(
+        3,
+      );
+    }
+  });
+  test("イン崩れ指数のバー: 今の値の位置に印を置き、「標準」の文字は真ん中の目印の真下（PR #1186 ファン評価1周目）", async ({
+    page,
+  }) => {
+    // 児島12R は指数0。塗りが見えず、真ん中の「標準」の目印だけが目に入っていた
+    for (const width of [375, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${RACE}?tab=aiPrediction`);
+      const bar = page.getByTestId("volatility-percentile-bar");
+      await expect(bar).toBeVisible({ timeout: 30000 });
+      const m = await bar.evaluate((el) => {
+        const c = (q) => {
+          const r = el.querySelector(q).getBoundingClientRect();
+          return {
+            left: r.left,
+            center: (r.left + r.right) / 2,
+            width: r.width,
+          };
+        };
+        return {
+          track: c(".vpb-track"),
+          marker: c(".vpb-marker"),
+          median: c(".vpb-median"),
+          middleLabel: c(".vpb-ends > span:nth-child(2)"),
+          value: Number(el.querySelector(".vpb-value").textContent),
+        };
+      });
+      // 印は値の位置（0なら左端）にあり、見える大きさがある
+      expect(m.marker.width, `${width}px: 印の大きさ`).toBeGreaterThanOrEqual(
+        10,
+      );
+      expect(
+        Math.abs(
+          m.marker.center - (m.track.left + (m.track.width * m.value) / 100),
+        ),
+        `${width}px: 印の位置`,
+      ).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(m.middleLabel.center - m.median.center),
+        `${width}px: 「標準」の文字と真ん中の目印`,
+      ).toBeLessThanOrEqual(2);
+    }
+  });
+
   test("375px: 直前情報の展示情報の表は、右へ送ったら「‹」で左へ戻せる（BOA-699）", async ({
     page,
   }) => {
@@ -418,5 +576,168 @@ test.describe("レース詳細の表示の細部", () => {
         "押したあと最初に全部見える列は、押す前に見えていた最後の列の次まで",
       ).toBeLessThanOrEqual(before.lastFull + 1);
     }
+  });
+  // 横に送っても、行を見分ける左端の列（艇番・選手名・日付・コース）が残り、「‹」で戻れる
+  // （BOA-699・BOA-704）。以前は送ると左端の列が消え、「‹」も無い表があった
+  for (const screen of [
+    {
+      name: "今節の得点率早見",
+      path: `${RACE}?tab=meet`,
+      hint: ".hscroll-hint:has(.rmt-forecast-scroll)",
+      sticky: ".rmt-forecast-table tbody tr:first-child th",
+      table: ".rmt-forecast-table",
+    },
+    {
+      name: "今節の日別表",
+      path: `${RACE}?tab=meet`,
+      hint: ".race-history-hscroll",
+      sticky: ".race-history-table tbody tr:first-child td:first-child",
+      table: ".race-history-table",
+    },
+    {
+      name: "モーターのコース別成績",
+      path: `${RACE}?tab=motor`,
+      open: async (page) => {
+        await page
+          .locator(".motor-ranking-row")
+          .first()
+          .click({ timeout: 60000 });
+        await page.locator(".motor-waku-expand-btn").click();
+      },
+      hint: ".mwsg-hint",
+      sticky: ".mwsg-table tbody tr:first-child td:first-child",
+      table: ".mwsg-table",
+    },
+  ]) {
+    test(`320px: ${screen.name}は横に送っても左端の列が残り、「‹」で戻れる（BOA-699・BOA-704）`, async ({
+      page,
+    }) => {
+      test.slow();
+      await page.setViewportSize({ width: 320, height: 812 });
+      await page.goto(screen.path);
+      if (screen.open) await screen.open(page);
+      const hint = page.locator(screen.hint).first();
+      await expect(hint).toBeVisible({ timeout: 90000 });
+      // 表がどれだけ溢れるかは文字の幅で変わる（CI の Linux では 320px でも得点率早見が収まった）。
+      // 送る操作そのものを確かめるため、表を広げて必ず溢れさせる
+      await page.addStyleTag({
+        content: `${screen.table} { min-width: 640px; }`,
+      });
+      const more = hint.locator(":scope > .hscroll-more");
+      await expect(more).toBeVisible({ timeout: 30000 });
+      const stickyLeft = () =>
+        hint.evaluate((el, sel) => {
+          const cell = el.querySelector(sel).getBoundingClientRect();
+          const box = el.getBoundingClientRect();
+          return Math.round(cell.left - box.left);
+        }, screen.sticky);
+      const before = await stickyLeft();
+      await more.click();
+      const less = hint.locator(":scope > .hscroll-less");
+      await expect(less).toBeVisible();
+      // 送った先は列の境目。固定の列のすぐ右に、切れた列の破片を残さない（PR #1202 ファン評価2周目。
+      // 375px のコース別成績で「1コース 2%」（実際は 87.2%）と読めた）
+      const cut = await hint.evaluate((el) => {
+        const cells = [...el.querySelector("tr").children];
+        let stickyRight = el.getBoundingClientRect().left;
+        for (const c of cells) {
+          const style = getComputedStyle(c);
+          if (style.position !== "sticky" || style.left === "auto") break;
+          stickyRight = c.getBoundingClientRect().right;
+        }
+        const firstVisible = cells
+          .map((c) => c.getBoundingClientRect())
+          .find((r) => r.right > stickyRight + 1);
+        return firstVisible ? stickyRight - firstVisible.left : 0;
+      });
+      expect(cut, "固定の列の右に切れた列が残らない").toBeLessThanOrEqual(1);
+      // 送ったあとも、左端の列は同じ位置に残る
+      expect(Math.abs((await stickyLeft()) - before)).toBeLessThanOrEqual(1);
+      await less.click();
+      await expect(less).toHaveCount(0);
+    });
+  }
+  test("今節の日別表: 固定した日付の列も、行に乗せたとき行と同じ色になる（PR #1202 レビュー）", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await page.goto(`${RACE}?tab=meet`);
+    const row = page.locator(".race-history-table-row").first();
+    await expect(row).toBeVisible({ timeout: 90000 });
+    await row.hover();
+    const [rowBg, cellBg] = await row.evaluate((r) => [
+      getComputedStyle(r).backgroundColor,
+      getComputedStyle(r.querySelector("td")).backgroundColor,
+    ]);
+    expect(cellBg).toBe(rowBg);
+  });
+  test("320px: 今節の日別表は日付とRの列を固定し、1日2走の日もどの走か分かる（PR #1202 ファン評価1周目）", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width: 320, height: 812 });
+    await page.goto(`${RACE}?tab=meet`);
+    const hint = page.locator(".race-history-hscroll").first();
+    await expect(hint.locator(".race-history-table-row").first()).toBeVisible({
+      timeout: 90000,
+    });
+    // 線は送る前は引かない（表が収まる幅で空きの端を強調しない）
+    const lineOf = () =>
+      hint.evaluate(
+        (el) =>
+          getComputedStyle(
+            el.querySelector(".race-history-table tbody tr td:nth-child(2)"),
+          ).boxShadow,
+      );
+    expect(await lineOf()).toBe("none");
+    await page.addStyleTag({
+      content: ".race-history-table { min-width: 640px; }",
+    });
+    const more = hint.locator(":scope > .hscroll-more");
+    while (await more.isVisible()) await more.click();
+    const m = await hint.evaluate((el) => {
+      const row = el.querySelector(".race-history-table tbody tr");
+      const [date, race] = [...row.querySelectorAll("td")]
+        .slice(0, 2)
+        .map((c) => c.getBoundingClientRect());
+      return {
+        gap: race.left - date.right,
+        raceText: row.querySelectorAll("td")[1].textContent.trim(),
+        boxLeft: el.getBoundingClientRect().left,
+        raceLeft: race.left,
+      };
+    });
+    // 右端まで送っても、R の列は日付の列のすぐ右に残る
+    expect(Math.abs(m.gap)).toBeLessThanOrEqual(1);
+    expect(m.raceText).toMatch(/^\d+R$/);
+    expect(m.raceLeft - m.boxLeft).toBeLessThan(80);
+    // 送ったあとは、固定した列の右端に線を引く
+    expect(await lineOf()).not.toBe("none");
+  });
+  test("375px: モーターのコース別成績は「›」を押すと列の境目で止まり、「1コース 2%」のような切れた値を残さない（PR #1202 ファン評価2周目）", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${RACE}?tab=motor`);
+    await page.locator(".motor-ranking-row").first().click({ timeout: 60000 });
+    await page.locator(".motor-waku-expand-btn").click();
+    const hint = page.locator(".mwsg-hint");
+    await expect(hint.locator(":scope > .hscroll-more")).toBeVisible({
+      timeout: 30000,
+    });
+    await hint.locator(":scope > .hscroll-more").click();
+    await expect(hint.locator(":scope > .hscroll-less")).toBeVisible();
+    const cut = await hint.evaluate((el) => {
+      const cells = [...el.querySelector("tr").children];
+      const stickyRight = cells[0].getBoundingClientRect().right;
+      const firstVisible = cells
+        .slice(1)
+        .map((c) => c.getBoundingClientRect())
+        .find((r) => r.right > stickyRight + 1);
+      return stickyRight - firstVisible.left;
+    });
+    expect(cut).toBeLessThanOrEqual(1);
   });
 });
