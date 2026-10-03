@@ -119,8 +119,8 @@ export async function backfillMissingVenueDay(opts, deps) {
     .select("race_id")
     .in("race_id", raceIds);
   if (e3) throw new Error(`predictions の読み取りに失敗: ${e3.message}`);
-  const confirmed = (after ?? []).filter(
-    (r) => isCancellationConfirmed(r.cancellation_status),
+  const confirmed = (after ?? []).filter((r) =>
+    isCancellationConfirmed(r.cancellation_status),
   ).length;
   log(
     `[APPLY] races ${after?.length ?? 0}/${raceIds.length}・中止の確定 ${confirmed}・予想 ${preds?.length ?? 0}件（0のはず）`,
