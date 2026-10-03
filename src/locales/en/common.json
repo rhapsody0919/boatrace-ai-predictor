@@ -798,6 +798,7 @@
     "secondsUnit": "s",
     "detailTableTitle": "Exhibition details",
     "bestLegend": "A gold frame marks the best value among the six boats (all ties are marked). ⚠ means few samples; if the best value has ⚠, no boat is marked.",
+    "turnTimeVenueNote": "At this venue, turn speed is the venue's own measurement and runs at a different level from other venues (around 11–12 s). Compare it only within the same race.",
     "detailTableNote": "Exhibition-fastest win rate and entry course from this lane cover races since Dec 2025 (both up to 2 years); this-meet exhibition trend covers races since this motor was assigned",
     "preExhibitionNote": "Weight and adjustment weight are pre-exhibition values. Tilt is published after the exhibition run",
     "entryWeightFetchError": "Couldn't load the race card weights",
