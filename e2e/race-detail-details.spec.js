@@ -788,4 +788,38 @@ test.describe("レース詳細の表示の細部", () => {
       expect(cut, "固定の列の右に切れた列が残らない").toBeLessThanOrEqual(1);
     });
   }
+  test("320px: 表の余白が外れても測り直せば、右端は列の境目にそろう（PR #1215 レビュー）", async ({
+    page,
+  }) => {
+    // 足した余白の量を箱の側に持っていると、表だけが作り直されたとき（余白が外れたとき）に
+    // 食い違い、右端が列の途中に戻る
+    test.slow();
+    await page.setViewportSize({ width: 320, height: 812 });
+    await page.goto("/race/2026-09-21-02-05?tab=meet");
+    const hint = page.locator(".race-history-hscroll").first();
+    await expect(hint.locator(".race-history-table-row").first()).toBeVisible({
+      timeout: 90000,
+    });
+    await expect
+      .poll(() =>
+        hint.evaluate((el) => el.querySelector("table").style.marginRight),
+      )
+      .not.toBe("");
+    await hint.evaluate((el) => {
+      el.querySelector("table").style.marginRight = "";
+      window.dispatchEvent(new Event("resize"));
+    });
+    const more = hint.locator(":scope > .hscroll-more");
+    await expect(more).toBeVisible();
+    while (await more.isVisible()) await more.click();
+    const cut = await hint.evaluate((el) => {
+      const cells = [...el.querySelector("tr").children];
+      const stickyRight = cells[1].getBoundingClientRect().right;
+      const firstVisible = cells
+        .map((c) => c.getBoundingClientRect())
+        .find((r) => r.right > stickyRight + 1);
+      return stickyRight - firstVisible.left;
+    });
+    expect(cut).toBeLessThanOrEqual(1);
+  });
 });

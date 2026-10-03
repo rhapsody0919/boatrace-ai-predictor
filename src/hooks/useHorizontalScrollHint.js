@@ -72,13 +72,13 @@ function scrollTargetOf(el, direction) {
 
 /**
  * 右端の位置も列の境目にそろうよう、表の右に余白（margin-right）を足す（PR #1202 ファン評価3周目）。
- * 足した量は data-hscroll-tail に持ち、測り直すときは足す前の幅で計算する（足した分で次の量が
- * 変わらないように）
+ * 測り直すときは足す前の幅で計算する（足した分で次の量が変わらないように）。足した量は表自身の
+ * style から読む（箱の側に持つと、表だけが作り直されたときに実際の余白と食い違う）
  */
 function applyTailPadding(el) {
   const table = el.firstElementChild;
   if (!table) return;
-  const prev = Number(el.dataset.hscrollTail || 0);
+  const prev = parseFloat(table.style.marginRight) || 0;
   const naturalMax = el.scrollWidth - prev - el.clientWidth;
   const extra = tailPaddingFor({
     naturalMax,
@@ -86,8 +86,6 @@ function applyTailPadding(el) {
   });
   if (extra === prev) return;
   table.style.marginRight = extra ? `${extra}px` : "";
-  if (extra) el.dataset.hscrollTail = String(extra);
-  else delete el.dataset.hscrollTail;
 }
 
 export function useHorizontalScrollHint(deps = []) {
