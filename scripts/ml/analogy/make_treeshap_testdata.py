@@ -23,7 +23,7 @@ import lightgbm as lgb
 import numpy as np
 import pandas as pd
 
-from features import DIR16, WEATHER_CODE, encode_race_level
+from features import DIR16, WEATHER_CODE, encode_race_level, load_wind_basis, wind_offset
 from themes import CATEGORICAL, FEATURES, THEMES
 
 OUT = Path(__file__).resolve().parent / "testdata" / "treeshap-parity"
@@ -76,15 +76,18 @@ def live_raw(rng: np.random.Generator, n_races: int) -> tuple[pd.DataFrame, pd.D
     return ex, cond
 
 
-def live_features(ex: pd.DataFrame, cond: pd.DataFrame) -> pd.DataFrame:
-    """features.py の load_main・add_relative と同じ式（DB の値 → float32 → 8列）"""
+def live_features(ex: pd.DataFrame, cond: pd.DataFrame, basis: dict | None = None) -> pd.DataFrame:
+    """features.py の load_main・add_relative と同じ式（DB の値 → float32 → 8列）。
+    basis を渡すと、cond の venue の回転を風向から引く（features.main_wind と同じ。除外した会場は欠損）"""
     ex = ex.copy()
     ex["exh_time"] = pd.to_numeric(ex["exhibition_time"], errors="coerce").astype("float32")
     cond = cond.copy()
     for c in ("wind_speed", "wave_height"):
         cond[c] = pd.to_numeric(cond[c], errors="coerce").astype("float32")
     cond["is_final_day"] = False
-    enc = encode_race_level(cond, "weather", "wind_direction", "wind_speed", "is_final_day")
+    offset = 0.0 if basis is None else wind_offset(cond["venue"], basis)
+    enc = encode_race_level(cond, "weather", "wind_direction", "wind_speed", "is_final_day",
+                            wind_offset=offset)
     calm = cond["wind_direction"].isna() & (cond["wind_speed"] == 0)
     enc.loc[calm.to_numpy(), ["wind_x", "wind_y"]] = np.float32(0)
     df = ex.merge(cond[["race_id", "wind_speed", "wave_height"]], on="race_id", how="left") \
@@ -161,10 +164,14 @@ def main():
     frc = racecard_frame(rng, n_fix)
     fex, fcond = live_raw(rng, n_fix)
     fex, fcond, frc = fixture_cases(rng, fex, fcond, frc)
+    # 会場はレースごとに1〜24（race_id の VV）。風向の回転と、除外した会場（風向が欠損）を通す
+    fcond["venue"] = np.arange(n_fix) % 24 + 1
+    basis = load_wind_basis()
+    fcond.loc[12, ["wind_direction", "wind_speed"]] = ["北", 3.0]  # 13番（除外した会場）の風 → 欠損
     full_ex = pd.DataFrame({"race_id": np.repeat(np.arange(n_fix), 6),
                             "boat_number": np.tile(np.arange(1, 7), n_fix)}) \
         .merge(fex, on=["race_id", "boat_number"], how="left")
-    FX = pd.concat([frc, live_features(full_ex, fcond)], axis=1)
+    FX = pd.concat([frc, live_features(full_ex, fcond, basis)], axis=1)
 
     races = []
     for r in range(n_fix):
@@ -178,7 +185,7 @@ def main():
         c = fcond.iloc[r]
         exh_rows = fex[fex["race_id"] == r]
         races.append({
-            "race_id": f"2026-01-01-01-{r + 1:02d}",
+            "race_id": f"2026-01-01-{int(fcond['venue'].iloc[r]):02d}-01",
             "racecard_features": [{"boat_number": b + 1,
                                    "features": [to_db_number(v) for v in frc.iloc[r * 6 + b][RACECARD]]}
                                   for b in range(6)],
@@ -199,7 +206,7 @@ def main():
 
     OUT.mkdir(parents=True, exist_ok=True)
     meta = {"model_version": MODEL_VERSION, "dtype": "float32", "live_features": LIVE,
-            "categorical_maps": {"branch_code": {}}, "themes": THEMES, "models": {}}
+            "categorical_maps": {"branch_code": {}}, "wind_basis": basis, "themes": THEMES, "models": {}}
     for name, b in boosters.items():
         file = f"model_{name}.json.gz"
         with gzip.GzipFile(OUT / file, "wb", mtime=0) as f:

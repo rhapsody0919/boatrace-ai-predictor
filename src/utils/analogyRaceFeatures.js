@@ -91,15 +91,29 @@ export function rankMinAscending(values) {
 }
 
 /**
- * 風の成分。features.py の encode_race_level と同じ式（風向の角度×風速。無風は0）。
- * 無風は「風向が無風」または「風向が空で風速0」。風向が空で風速>0・風速が空・未知の風向は NaN（学習側と合意、ADR 案（#1134「レースごとの寄与度」））
+ * 本体の風向（直前情報ページのアイコン）から引く角度。per_race_meta.json の wind_basis（features.py の
+ * wind_basis.json）の会場の値。表が無い版（回転を入れる前の版）は 0、除外した会場・表に無い会場は NaN（風向を欠損にする）
+ * @param {{offsets_deg: Record<string, number>, excluded_venues: number[]}|null|undefined} windBasis
+ * @param {number} venueCode
  */
-export function windComponents(windDirection, windSpeed) {
+export function windOffsetFor(windBasis, venueCode) {
+  if (!windBasis) return 0;
+  const v = Number(venueCode);
+  if (windBasis.excluded_venues.includes(v)) return NaN;
+  return windBasis.offsets_deg[String(v)] ?? NaN;
+}
+
+/**
+ * 風の成分。features.py の encode_race_level と同じ式（(風向の角度−回転)×風速。無風は0）。
+ * 無風は「風向が無風」または「風向が空で風速0」。風向が空で風速>0・風速が空・未知の風向は NaN（学習側と合意、ADR 案（#1134「レースごとの寄与度」））
+ * @param {number} [offsetDeg] windOffsetFor の値（NaN なら無風以外は欠損）
+ */
+export function windComponents(windDirection, windSpeed, offsetDeg = 0) {
   const dir = blankToNull(windDirection);
   const ws = toFloat32(windSpeed);
   if (dir === "無風" || (dir === null && ws === 0))
     return { wind_x: 0, wind_y: 0 };
-  const ang = lookup(DIR_ANGLE, dir) ?? NaN;
+  const ang = (lookup(DIR_ANGLE, dir) ?? NaN) - offsetDeg;
   const rad = ang * DEG2RAD;
   return {
     wind_x: Math.fround(ws * Math.sin(rad)),
@@ -113,9 +127,15 @@ export function windComponents(windDirection, windSpeed) {
  * @param {number[]} p.boatNumbers レースの艇番（この順で返す。並びは艇番の昇順にすること＝pandas の平均の足し順）
  * @param {{boat_number:number, exhibition_time:unknown}[]} p.exhibition exhibition_data の行（無い艇は欠損）
  * @param {{weather:unknown, wind_direction:unknown, wind_speed:unknown, wave_height:unknown}} p.conditions race_conditions の行
+ * @param {number} [p.windOffset] windOffsetFor(meta.wind_basis, 会場) の値
  * @returns {Record<string, number>[]} 艇ごとの {列名: float32 の値}
  */
-export function buildLiveFeatures({ boatNumbers, exhibition, conditions }) {
+export function buildLiveFeatures({
+  boatNumbers,
+  exhibition,
+  conditions,
+  windOffset = 0,
+}) {
   const sorted = [...boatNumbers].sort((a, b) => a - b);
   if (sorted.some((b, i) => b !== boatNumbers[i])) {
     throw new Error(
@@ -130,7 +150,7 @@ export function buildLiveFeatures({ boatNumbers, exhibition, conditions }) {
   const rank = rankMinAscending(exh);
   const c = conditions ?? {};
   const weather = lookup(WEATHER_CODE, blankToNull(c.weather)) ?? NaN;
-  const wind = windComponents(c.wind_direction, c.wind_speed);
+  const wind = windComponents(c.wind_direction, c.wind_speed, windOffset);
   const windSpeed = toFloat32(c.wind_speed);
   const wave = toFloat32(c.wave_height);
   return boatNumbers.map((_, i) => ({

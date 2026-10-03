@@ -51,6 +51,23 @@ ROUND_CODE = {r: i for i, r in enumerate(ROUNDS)}
 DIR16 = ["北", "北北東", "北東", "東北東", "東", "東南東", "南東", "南南東",
          "南", "南南西", "南西", "西南西", "西", "西北西", "北西", "北北西"]
 DIR_ANGLE = {d: i * 22.5 for i, d in enumerate(DIR16)}
+# 本体の風向（直前情報・結果ページのアイコン）は方位ではなく、会場ごとに一定の角度だけ回っている。長期分（K ファイル、
+# 方位）の基準に直す表。作り方と根拠は wind_basis.json の method と docs/design/analogy-finder/wind-basis.md
+WIND_BASIS_FILE = Path(__file__).resolve().parent / "wind_basis.json"
+# 本体の 2025-12・2026-01 は DB の風向がほぼ全件空なので、K ファイルの風向（方位、回転なし）で埋める
+K_WIND_FILL_FILE = Path(__file__).resolve().parent / "k_wind_fill.csv"
+
+
+def load_wind_basis(path: Path = WIND_BASIS_FILE) -> dict:
+    """{"offsets_deg": {"1": 角度, …}, "excluded_venues": [会場番号]}（per_race_meta.json にもそのまま入れる）"""
+    b = json.loads(path.read_text())
+    return {"offsets_deg": b["offsets_deg"], "excluded_venues": b["excluded_venues"]}
+
+
+def wind_offset(venue_code: pd.Series, basis: dict) -> pd.Series:
+    """本体の風向から引く角度。除外した会場は NaN（風向を欠損にする。無風は0のまま）"""
+    off = venue_code.astype(int).astype(str).map(basis["offsets_deg"]).astype("float64")
+    return off.where(~venue_code.astype(int).isin(basis["excluded_venues"]))
 VENUE_PREF = {1: "群馬", 2: "埼玉", 3: "東京", 4: "東京", 5: "東京", 6: "静岡",
               7: "愛知", 8: "愛知", 9: "三重", 10: "福井", 11: "滋賀", 12: "大阪",
               13: "兵庫", 14: "徳島", 15: "香川", 16: "岡山", 17: "広島", 18: "山口",
@@ -142,10 +159,13 @@ def _bool(s: pd.Series) -> pd.Series:
                   "True": True, "False": False}).fillna(False).astype(bool)
 
 
-def encode_race_level(r: pd.DataFrame, weather, wind_dir, wind_speed, final_day) -> pd.DataFrame:
+def encode_race_level(r: pd.DataFrame, weather, wind_dir, wind_speed, final_day,
+                      wind_offset: pd.Series | float = 0.0) -> pd.DataFrame:
+    """wind_offset: 風向の角度から引く値（本体を K の基準に直す。長期分は0）。NaN は風向を欠損にする"""
     out = pd.DataFrame({"race_id": r["race_id"]})
     out["weather_code"] = r[weather].map(WEATHER_CODE).astype("float32")
-    ang = r[wind_dir].map(DIR_ANGLE)
+    # 推論側の JS（analogyRaceFeatures.js の windComponents）と同じ計算の順（角度−回転 → ラジアン）にする
+    ang = r[wind_dir].map(DIR_ANGLE) - wind_offset
     ws = pd.to_numeric(r[wind_speed], errors="coerce")
     # 本体は無風を「風向が空・風速0」で持つ（'無風' の行は無い）。風向が空で風速>0 は不明（NaN）
     calm = (r[wind_dir] == "無風") | (r[wind_dir].isna() & (ws == 0))
@@ -208,6 +228,20 @@ def load_kb(src: Path = D) -> pd.DataFrame:
     return df
 
 
+def main_wind(cond: pd.DataFrame, basis: dict,
+              fill_path: Path = K_WIND_FILL_FILE) -> tuple[pd.DataFrame, pd.Series]:
+    """本体の風向と、引く角度。DB の風向が空で風速>0 のうち K の風向があるレース（2025-12・2026-01）は、
+    K の値（方位）を入れて回転しない。それ以外は会場の回転を引く。"""
+    cond = cond.copy()
+    offset = wind_offset((cond["race_id"] // 100) % 100, basis)  # race_id は rid_to_int の後（YYYYMMDDVVRR）
+    f = pd.read_csv(fill_path, dtype=str)
+    fill = pd.Series(f["wind_direction"].to_numpy(), index=rid_to_int(f["race_id"]).to_numpy())
+    ws = pd.to_numeric(cond["wind_speed"], errors="coerce")
+    use_k = cond["wind_direction"].isna() & (ws > 0) & cond["race_id"].isin(fill.index)
+    cond.loc[use_k, "wind_direction"] = cond.loc[use_k, "race_id"].map(fill)
+    return cond, offset.where(~use_k, 0.0)
+
+
 def load_main(src: Path = D) -> pd.DataFrame:
     races = read("races", src)
     ent = read("entries", src)
@@ -221,7 +255,9 @@ def load_main(src: Path = D) -> pd.DataFrame:
     df = df.merge(exh[["race_id", "boat_number", "exhibition_time", "is_absent"]]
                   .rename(columns={"is_absent": "exh_absent"}),
                   on=["race_id", "boat_number"], how="left")
-    enc = encode_race_level(cond, "weather", "wind_direction", "wind_speed", "is_final_day")
+    cond, offset = main_wind(cond, load_wind_basis())
+    enc = encode_race_level(cond, "weather", "wind_direction", "wind_speed", "is_final_day",
+                            wind_offset=offset)
     enc["round"] = cond["race_stage"].map(round_from_stage)
     df = df.merge(cond[["race_id", "wind_speed", "wave_height", "series_day"]],
                   on="race_id", how="left").merge(enc, on="race_id", how="left")

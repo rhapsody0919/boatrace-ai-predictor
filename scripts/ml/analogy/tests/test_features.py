@@ -258,3 +258,40 @@ def test_kb_final_day_precondition():
         F.check_final_day(pd.Series([False] * 100))
     F.check_final_day(pd.Series([True] * 18 + [False] * 82))
     F.check_final_day(pd.Series(["true"] * 18 + ["false"] * 82))
+
+
+def test_wind_basis_file_covers_all_venues():
+    """回転の表は24会場すべてにあり、除外した会場は表の会場（wind_basis.json、estimate-wind-basis.js）"""
+    b = F.load_wind_basis()
+    assert sorted(int(v) for v in b["offsets_deg"]) == list(range(1, 25))
+    assert set(b["excluded_venues"]) <= set(range(1, 25))
+
+
+def test_main_wind_rotates_fills_and_excludes(tmp_path):
+    """本体の風向: 会場の回転を引く・除外した会場は欠損・DB が空で風速>0 は K の値（回転なし）・無風は0"""
+    basis = {"offsets_deg": {"3": 90.0, "13": 10.0}, "excluded_venues": [13]}
+    fill = tmp_path / "fill.csv"
+    fill.write_text("race_id,wind_direction\n2025-12-10-03-02,南\n")
+    cond = pd.DataFrame({
+        "race_id": F.rid_to_int(pd.Series(["2025-12-10-03-01", "2025-12-10-03-02", "2025-12-10-13-01",
+                                           "2025-12-10-13-02", "2025-12-10-03-03"])),
+        "weather": "晴", "wind_direction": ["東", None, "北", None, None],
+        "wind_speed": [2.0, 3.0, 3.0, 0.0, 4.0], "is_final_day": False})
+    c, off = F.main_wind(cond, basis, fill)
+    out = F.encode_race_level(c, "weather", "wind_direction", "wind_speed", "is_final_day", wind_offset=off)
+    # 03 の「東」−90° → 北（K の基準）
+    assert out["wind_y"].iloc[0] == pytest.approx(2.0) and out["wind_x"].iloc[0] == pytest.approx(0.0, abs=1e-6)
+    # 空で風速>0 → K の「南」をそのまま（回転しない）
+    assert out["wind_y"].iloc[1] == pytest.approx(-3.0)
+    # 除外した会場の風は欠損、無風は0
+    assert np.isnan(out["wind_x"].iloc[2])
+    assert out["wind_x"].iloc[3] == 0.0
+    # K の値が無い空・風速>0 は欠損のまま
+    assert np.isnan(out["wind_x"].iloc[4])
+
+
+def test_k_wind_fill_is_limited_to_gap_months():
+    """K で埋めるのは DB の風向がほぼ全件空の 2025-12・2026-01 だけ（他の月の空は推論と同じく欠損）"""
+    f = pd.read_csv(F.K_WIND_FILL_FILE, dtype=str)
+    assert len(f) > 0 and f["race_id"].str.slice(0, 7).isin(["2025-12", "2026-01"]).all()
+    assert f["wind_direction"].isin(F.DIR16 + ["無風"]).all()

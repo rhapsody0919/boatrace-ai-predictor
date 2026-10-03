@@ -1,0 +1,286 @@
+{
+ "offsets_deg": {
+  "1": 115.81,
+  "2": 152.51,
+  "3": 245.13,
+  "4": 267.7,
+  "5": 357.16,
+  "6": 89.61,
+  "7": 52.72,
+  "8": 2.86,
+  "9": 333.71,
+  "10": 104.58,
+  "11": 92.44,
+  "12": 90.21,
+  "13": 24.1,
+  "14": 137.15,
+  "15": 314.03,
+  "16": 87.11,
+  "17": 37.8,
+  "18": 311.66,
+  "19": 48.18,
+  "20": 22.51,
+  "21": 180.81,
+  "22": 202.83,
+  "23": 62.04,
+  "24": 225.36
+ },
+ "excluded_venues": [
+  13
+ ],
+ "method": {
+  "definition": "本体の風向の角度から offsets_deg を引くと、K ファイル（方位）の基準になる。excluded_venues の会場は風向を欠損にする",
+  "period": [
+   "2025-12-03",
+   "2026-09-30"
+  ],
+  "min_speed": 1,
+  "strong_speed": 3,
+  "exclude_below": 0.7,
+  "pairs": 32049,
+  "k_missing_days": 0,
+  "script": "scripts/ml/analogy/estimate-wind-basis.js"
+ },
+ "venues": {
+  "1": {
+   "n": 1378,
+   "offset_deg": 115.81,
+   "resultant_length": 0.763,
+   "match22": 0.629,
+   "match45": 0.774,
+   "n_strong": 703,
+   "match45_strong": 0.865,
+   "raw_match22": 0.05
+  },
+  "2": {
+   "n": 936,
+   "offset_deg": 152.51,
+   "resultant_length": 0.856,
+   "match22": 0.684,
+   "match45": 0.846,
+   "n_strong": 288,
+   "match45_strong": 0.934,
+   "raw_match22": 0.006
+  },
+  "3": {
+   "n": 1267,
+   "offset_deg": 245.13,
+   "resultant_length": 0.789,
+   "match22": 0.681,
+   "match45": 0.792,
+   "n_strong": 774,
+   "match45_strong": 0.866,
+   "raw_match22": 0.037
+  },
+  "4": {
+   "n": 1310,
+   "offset_deg": 267.7,
+   "resultant_length": 0.782,
+   "match22": 0.733,
+   "match45": 0.821,
+   "n_strong": 570,
+   "match45_strong": 0.942,
+   "raw_match22": 0.017
+  },
+  "5": {
+   "n": 1255,
+   "offset_deg": 357.16,
+   "resultant_length": 0.603,
+   "match22": 0.443,
+   "match45": 0.62,
+   "n_strong": 253,
+   "match45_strong": 0.747,
+   "raw_match22": 0.443
+  },
+  "6": {
+   "n": 1507,
+   "offset_deg": 89.61,
+   "resultant_length": 0.817,
+   "match22": 0.704,
+   "match45": 0.808,
+   "n_strong": 971,
+   "match45_strong": 0.876,
+   "raw_match22": 0.027
+  },
+  "7": {
+   "n": 1449,
+   "offset_deg": 52.72,
+   "resultant_length": 0.783,
+   "match22": 0.651,
+   "match45": 0.796,
+   "n_strong": 536,
+   "match45_strong": 0.864,
+   "raw_match22": 0.068
+  },
+  "8": {
+   "n": 1633,
+   "offset_deg": 2.86,
+   "resultant_length": 0.815,
+   "match22": 0.652,
+   "match45": 0.782,
+   "n_strong": 619,
+   "match45_strong": 0.89,
+   "raw_match22": 0.652
+  },
+  "9": {
+   "n": 1206,
+   "offset_deg": 333.71,
+   "resultant_length": 0.867,
+   "match22": 0.774,
+   "match45": 0.899,
+   "n_strong": 629,
+   "match45_strong": 0.963,
+   "raw_match22": 0.824
+  },
+  "10": {
+   "n": 1311,
+   "offset_deg": 104.58,
+   "resultant_length": 0.725,
+   "match22": 0.634,
+   "match45": 0.767,
+   "n_strong": 591,
+   "match45_strong": 0.9,
+   "raw_match22": 0.098
+  },
+  "11": {
+   "n": 1220,
+   "offset_deg": 92.44,
+   "resultant_length": 0.732,
+   "match22": 0.598,
+   "match45": 0.75,
+   "n_strong": 487,
+   "match45_strong": 0.813,
+   "raw_match22": 0.027
+  },
+  "12": {
+   "n": 724,
+   "offset_deg": 90.21,
+   "resultant_length": 0.736,
+   "match22": 0.622,
+   "match45": 0.747,
+   "n_strong": 239,
+   "match45_strong": 0.879,
+   "raw_match22": 0.019
+  },
+  "13": {
+   "n": 1453,
+   "offset_deg": 24.1,
+   "resultant_length": 0.638,
+   "match22": 0.425,
+   "match45": 0.63,
+   "n_strong": 819,
+   "match45_strong": 0.686,
+   "raw_match22": 0.606
+  },
+  "14": {
+   "n": 1145,
+   "offset_deg": 137.15,
+   "resultant_length": 0.839,
+   "match22": 0.701,
+   "match45": 0.834,
+   "n_strong": 362,
+   "match45_strong": 0.914,
+   "raw_match22": 0.007
+  },
+  "15": {
+   "n": 1375,
+   "offset_deg": 314.03,
+   "resultant_length": 0.742,
+   "match22": 0.572,
+   "match45": 0.719,
+   "n_strong": 304,
+   "match45_strong": 0.875,
+   "raw_match22": 0.148
+  },
+  "16": {
+   "n": 1626,
+   "offset_deg": 87.11,
+   "resultant_length": 0.659,
+   "match22": 0.563,
+   "match45": 0.696,
+   "n_strong": 547,
+   "match45_strong": 0.826,
+   "raw_match22": 0.066
+  },
+  "17": {
+   "n": 1343,
+   "offset_deg": 37.8,
+   "resultant_length": 0.738,
+   "match22": 0.617,
+   "match45": 0.761,
+   "n_strong": 489,
+   "match45_strong": 0.875,
+   "raw_match22": 0.144
+  },
+  "18": {
+   "n": 1575,
+   "offset_deg": 311.66,
+   "resultant_length": 0.676,
+   "match22": 0.502,
+   "match45": 0.685,
+   "n_strong": 682,
+   "match45_strong": 0.755,
+   "raw_match22": 0.155
+  },
+  "19": {
+   "n": 1407,
+   "offset_deg": 48.18,
+   "resultant_length": 0.821,
+   "match22": 0.645,
+   "match45": 0.807,
+   "n_strong": 583,
+   "match45_strong": 0.877,
+   "raw_match22": 0.111
+  },
+  "20": {
+   "n": 1509,
+   "offset_deg": 22.51,
+   "resultant_length": 0.89,
+   "match22": 0.755,
+   "match45": 0.86,
+   "n_strong": 853,
+   "match45_strong": 0.913,
+   "raw_match22": 0.858
+  },
+  "21": {
+   "n": 1244,
+   "offset_deg": 180.81,
+   "resultant_length": 0.788,
+   "match22": 0.685,
+   "match45": 0.783,
+   "n_strong": 574,
+   "match45_strong": 0.862,
+   "raw_match22": 0.012
+  },
+  "22": {
+   "n": 1342,
+   "offset_deg": 202.83,
+   "resultant_length": 0.888,
+   "match22": 0.823,
+   "match45": 0.891,
+   "n_strong": 905,
+   "match45_strong": 0.922,
+   "raw_match22": 0.02
+  },
+  "23": {
+   "n": 1357,
+   "offset_deg": 62.04,
+   "resultant_length": 0.731,
+   "match22": 0.644,
+   "match45": 0.77,
+   "n_strong": 807,
+   "match45_strong": 0.846,
+   "raw_match22": 0.166
+  },
+  "24": {
+   "n": 1477,
+   "offset_deg": 225.36,
+   "resultant_length": 0.692,
+   "match22": 0.548,
+   "match45": 0.684,
+   "n_strong": 288,
+   "match45_strong": 0.896,
+   "raw_match22": 0.018
+  }
+ }
+}
