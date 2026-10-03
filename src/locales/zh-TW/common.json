@@ -373,7 +373,7 @@
     "freeAccessNoticeRest": "— 無需開戶或加入會員，現在就能使用所有功能",
     "todayRaces": "今日賽事",
     "volatilityHighlightsTitle": "🌪️ 今日內道崩盤指數精選",
-    "volatilityHighlightsScaleNote": "數字是與同賽場賽事相比的崩盤傾向（0〜100），不是機率。",
+    "volatilityHighlightsScaleNote": "數字是與同賽場賽事相比的崩盤傾向排名（0〜100，100為最容易崩盤）。",
     "volatilityHighlightsTurnPrediction": "預測第1名：{{course}}號艇（{{technique}}、{{probability}}%）",
     "volatilityHighlightsAccuracyLink": "查看實測準確率 →",
     "dataType": "比賽資料",

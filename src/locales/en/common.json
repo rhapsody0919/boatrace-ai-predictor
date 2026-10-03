@@ -377,7 +377,7 @@
     "freeAccessNoticeRest": "— use every feature right now, no bank account or membership required",
     "todayRaces": "Today's Races",
     "volatilityHighlightsTitle": "🌪️ Today's Upset Index Highlights",
-    "volatilityHighlightsScaleNote": "The number is how upset-prone the race is compared with others at the same venue (0–100), not a probability.",
+    "volatilityHighlightsScaleNote": "The number ranks how upset-prone the race is among races at the same venue (0–100; 100 is the most upset-prone).",
     "volatilityHighlightsTurnPrediction": "Predicted winner: Boat {{course}} ({{technique}}, {{probability}}%)",
     "volatilityHighlightsAccuracyLink": "See our track record →",
     "dataType": "Race data",

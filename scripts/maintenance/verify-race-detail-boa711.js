@@ -188,6 +188,23 @@ check(
   ].every((re) => re.test(read("src/components/race/RaceWakuInfoTab.css"))),
 );
 check(
+  "枠別情報の全コース表の想定コースは灰の点線（金の線は最良の印なので使わない）",
+  /\.rwit-grid-cell\.is-own-course \.rwit-grid-cell-button \{[^}]*outline: 1px dashed var\(--text-secondary\)/.test(
+    read("src/components/race/RaceWakuInfoTab.css"),
+  ),
+);
+check(
+  "走数の少ない値は灰＋太字にしない（ダークで灰と白の差が小さい）",
+  /\.rsc-value\.is-small-sample \{[^}]*font-weight: var\(--font-weight-normal\)/.test(
+    stCss,
+  ) &&
+    (
+      read("src/components/race/RaceWakuInfoTab.css").match(
+        /is-small-sample \{[^}]*--text-secondary\);[^}]*font-weight: var\(--font-weight-normal\)/g,
+      ) ?? []
+    ).length === 2,
+);
+check(
   "直前情報の金枠の凡例に「今節〜の行は前走で比べる」を書く",
   json("src/locales/ja/common.json").beforeInfo.bestLegend.includes(
     "前走の値で比べます",
