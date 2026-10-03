@@ -19,6 +19,10 @@
  *   node --env-file=.env.local scripts/maintenance/backfill-missing-venue-day.js --date=2026-06-03 --venues=3,7 --cancelled --apply  # 書き込み
  */
 import { pathToFileURL } from "node:url";
+import {
+  CANCELLATION_CONFIRMED,
+  isCancellationConfirmed,
+} from "../lib/cancellationStatus.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const raceIdOf = (date, venue, race) =>
@@ -99,7 +103,7 @@ export async function backfillMissingVenueDay(opts, deps) {
   if (opts.cancelled) {
     const { error } = await client
       .from("races")
-      .update({ cancellation_status: "confirmed" })
+      .update({ cancellation_status: CANCELLATION_CONFIRMED })
       .in("race_id", raceIds)
       .is("cancellation_status", null);
     if (error) throw new Error(`中止の確定の書き込みに失敗: ${error.message}`);
@@ -116,7 +120,7 @@ export async function backfillMissingVenueDay(opts, deps) {
     .in("race_id", raceIds);
   if (e3) throw new Error(`predictions の読み取りに失敗: ${e3.message}`);
   const confirmed = (after ?? []).filter(
-    (r) => r.cancellation_status === "confirmed",
+    (r) => isCancellationConfirmed(r.cancellation_status),
   ).length;
   log(
     `[APPLY] races ${after?.length ?? 0}/${raceIds.length}・中止の確定 ${confirmed}・予想 ${preds?.length ?? 0}件（0のはず）`,
