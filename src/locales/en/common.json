@@ -114,7 +114,22 @@
       "out_strong": "Outside-lane favoring",
       "balanced": "Balanced"
     },
-    "fetchError": "Could not load this venue's water characteristics."
+    "fetchError": "Could not load this venue's water characteristics.",
+    "details": {
+      "summary": "More details (top-2 / top-3 rates, winning techniques)",
+      "placeRatesTitle": "Finish rates by boat number",
+      "placeRatesNote": "Top-2 rate = finished 1st or 2nd; top-3 rate = finished in the top 3 ({{count}} races)",
+      "boat": "Boat",
+      "winRate": "Win",
+      "top2Rate": "Top 2",
+      "top3Rate": "Top 3",
+      "techniqueTitle": "How each boat won",
+      "techniqueNote": "Breakdown of winning techniques in races each boat number won. Counts in parentheses.",
+      "winCount_one": "{{count}} win",
+      "winCount_other": "{{count}} wins",
+      "smallSampleNote": "Shares for boats with few wins can swing widely.",
+      "outcomeLink": "See this venue's most common results (Analysis tools)"
+    }
   },
   "raceDetailPage": {
     "metaTitle": "{{venue}} Race {{race}} AI data analysis ({{date}}) - Ryujin Radar",

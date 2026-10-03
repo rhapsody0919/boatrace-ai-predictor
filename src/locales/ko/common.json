@@ -113,7 +113,21 @@
       "out_strong": "아웃코스 강세",
       "balanced": "균형형"
     },
-    "fetchError": "경기장 수면 특성을 불러오지 못했습니다."
+    "fetchError": "경기장 수면 특성을 불러오지 못했습니다.",
+    "details": {
+      "summary": "자세히 보기 (2연대율·3연대율, 결정수 내역)",
+      "placeRatesTitle": "정번별 연대율",
+      "placeRatesNote": "2연대율은 2착 이내, 3연대율은 3착 이내에 든 비율 ({{count}}레이스)",
+      "boat": "정",
+      "winRate": "1착률",
+      "top2Rate": "2연대율",
+      "top3Rate": "3연대율",
+      "techniqueTitle": "이겼을 때의 결정수",
+      "techniqueNote": "정번별로 1착한 레이스의 결정수 내역. 괄호 안은 횟수",
+      "winCount": "1착 {{count}}회",
+      "smallSampleNote": "1착 횟수가 적은 정번은 비율이 크게 흔들릴 수 있습니다.",
+      "outcomeLink": "이 경기장의 자주 나온 결과 순위 보기 (분석 도구)"
+    }
   },
   "raceDetailPage": {
     "metaTitle": "{{venue}} {{race}}R AI 데이터 분석 ({{date}}) - 용신 레이더",
