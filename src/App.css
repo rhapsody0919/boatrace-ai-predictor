@@ -526,6 +526,15 @@ input:focus-visible,
   text-align: center;
 }
 
+/* 前付けで艇番とコースが違ったレースの注記（BOA-708）。判定（艇番）の補足なので控えめに */
+.result-verify-entry-note {
+  margin: 0.5rem 0 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
 .result-volatility-line {
   margin: 0 0 0.35rem;
   font-size: 0.9rem;

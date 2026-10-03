@@ -33,6 +33,7 @@ import {
 } from "../components/race/basicInfoStats.js";
 import { tallyWinPlaceShow } from "../utils/racerConditionStats.js";
 import { isRaceCancelled } from "../utils/raceCancellation.js";
+import { winnerEntryCourseOf } from "../utils/raceOutcome.js";
 import { competitionRank } from "../utils/competitionRank.js";
 import { toWakuRacerStats } from "../utils/racerStats.js";
 import {
@@ -1337,6 +1338,63 @@ export const supabaseDataService = {
       if (error) throw new Error(`race_series の取得に失敗: ${error.message}`);
       return data ?? [];
     });
+  },
+
+  /**
+   * 1着の艇と、その艇が実際に入ったコースをレースごとに返す（BOA-708）。
+   * 的中判定は艇番で行い、表示だけ「N号艇（Mコース）」と添えるために使う。
+   * 進入は race_results.actual_course を優先し、無いレース（当日分）だけ
+   * race_start_timings.entry_course で補う。結果が無いレースは返さない。
+   * @param {string[]} raceIds
+   * @returns {Promise<Record<string, {boat: number, course: number|null}>>}
+   */
+  async getRaceWinnerCourses(raceIds) {
+    if (!supabase) throw new Error("Supabase client not initialized");
+    const ids = [...new Set(raceIds)].filter(Boolean);
+    if (ids.length === 0) return {};
+    // 的中レース一覧の「全期間」は1500件を超え、.in() 1本では URL が長すぎて 400 になる
+    // テーブル名はリテラルで fetchAllByIn に渡す（verify-fetch-all-by-in-order の静的検査）
+    const fetchChunked = async (values, fetchChunk) =>
+      (await Promise.all(chunkArray(values, 500).map(fetchChunk))).flat();
+    const results = await fetchChunked(ids, (chunk) =>
+      fetchAllByIn(
+        "race_results",
+        "race_id, rank1, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+        "race_id",
+        chunk,
+      ),
+    );
+    const missing = results
+      .filter((r) => r.rank1 != null && r[`actual_course_${r.rank1}`] == null)
+      .map((r) => r.race_id);
+    const timings =
+      missing.length > 0
+        ? await fetchChunked(missing, (chunk) =>
+            fetchAllByIn(
+              "race_start_timings",
+              "race_id, boat_number, entry_course",
+              "race_id",
+              chunk,
+            ),
+          )
+        : [];
+    const entryByKey = new Map(
+      timings.map((t) => [`${t.race_id}#${t.boat_number}`, t.entry_course]),
+    );
+    return Object.fromEntries(
+      results
+        .filter((r) => r.rank1 != null)
+        .map((r) => [
+          r.race_id,
+          {
+            boat: r.rank1,
+            course: winnerEntryCourseOf(
+              r,
+              entryByKey.get(`${r.race_id}#${r.rank1}`) ?? null,
+            ),
+          },
+        ]),
+    );
   },
 
   /**

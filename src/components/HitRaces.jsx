@@ -48,7 +48,8 @@ function extractHitRaces(predictions) {
         raceNumber: parseInt(raceNo),
         date,
         placeCode: parseInt(placeCode),
-        winnerCourse: winner,
+        // 1着の艇番。実際に入ったコースは表示中のカードだけ別に引く（winnerCourses）
+        winnerBoat: winner,
         matchedPattern,
         result: race.result,
       };
@@ -164,25 +165,6 @@ function HitRaces({ fetchWithRetry, lastUpdated, onRefresh, isRefreshing }) {
     return Object.values(stats).sort((a, b) => b.hitCount - a.hitCount);
   }, [selectedPeriod, hitRacesToday, hitRacesYesterday, hitRacesAll]);
 
-  if (initialLoading) {
-    return (
-      <LoadingScreen
-        title="的中レースを読み込み中..."
-        description="データを取得しています"
-      />
-    );
-  }
-
-  if (hitRacesToday.length === 0 && hitRacesYesterday.length === 0) {
-    return (
-      <div className="no-data-container">
-        <div className="icon">&#x1F3AF;</div>
-        <h2>展開予測の的中レースはまだありません</h2>
-        <p>レース結果が確定すると、ここに的中レースが表示されます。</p>
-      </div>
-    );
-  }
-
   const getDisplayRaces = () => {
     if (selectedPeriod === "today")
       return showAllToday ? hitRacesToday : hitRacesToday.slice(0, 8);
@@ -215,6 +197,50 @@ function HitRaces({ fetchWithRetry, lastUpdated, onRefresh, isRefreshing }) {
   const getMaxDisplay = () => (selectedPeriod === "all" ? 12 : 8);
   const currentHitRaces = getCurrentHitRaces();
   const displayRaces = getDisplayRaces();
+  const displayRaceIds = displayRaces.map((r) => r.raceId).join(",");
+
+  // 表示中のカードの、1着の艇が実際に入ったコース（BOA-708）。前付けで艇番とコースが
+  // 違うレースだけ「N号艇（Mコース）」と添える補足なので、取れなければ艇番だけを出す
+  // （失敗は記録して、カードは艇番で描く。的中の一覧そのものは止めない）
+  const [winnerCourses, setWinnerCourses] = useState({});
+  useEffect(() => {
+    if (!displayRaceIds) return undefined;
+    let cancelled = false;
+    dataService
+      .getRaceWinnerCourses(displayRaceIds.split(","))
+      .then((courses) => {
+        if (!cancelled) setWinnerCourses(courses);
+      })
+      .catch((error) => {
+        console.error(
+          "1着艇の進入コースの取得に失敗（艇番だけで表示）:",
+          error,
+        );
+        if (!cancelled) setWinnerCourses({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [displayRaceIds]);
+
+  if (initialLoading) {
+    return (
+      <LoadingScreen
+        title="的中レースを読み込み中..."
+        description="データを取得しています"
+      />
+    );
+  }
+
+  if (hitRacesToday.length === 0 && hitRacesYesterday.length === 0) {
+    return (
+      <div className="no-data-container">
+        <div className="icon">&#x1F3AF;</div>
+        <h2>展開予測の的中レースはまだありません</h2>
+        <p>レース結果が確定すると、ここに的中レースが表示されます。</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -277,6 +303,9 @@ function HitRaces({ fetchWithRetry, lastUpdated, onRefresh, isRefreshing }) {
                 <HitRaceCard
                   key={hitRace.raceId}
                   hitRace={hitRace}
+                  winnerEntryCourse={
+                    winnerCourses[hitRace.raceId]?.course ?? null
+                  }
                   variant={
                     selectedPeriod === "all"
                       ? hitRace.date === todayStr
