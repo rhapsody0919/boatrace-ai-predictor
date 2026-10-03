@@ -1140,6 +1140,9 @@ async function readHint(hint, fromEnd) {
     const box =
       boxes.find((n) => n.scrollWidth > n.clientWidth) ?? boxes.at(-1);
     if (d !== undefined) {
+      // 列を固定した表は、列の境目にしか止まらない（BOA-741）。ここで確かめるのは「残りの幅に応じた
+      // 手がかりの出し分け」なので、止める仕組みを外して任意の位置に置く
+      box.style.scrollSnapType = "none";
       box.scrollLeft = d === null ? 0 : box.scrollWidth - box.clientWidth - d;
     }
     const more = el.querySelector(":scope > .hscroll-more");

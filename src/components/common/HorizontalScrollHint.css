@@ -105,3 +105,13 @@
   line-height: 1;
   cursor: pointer;
 }
+
+/* 列を固定した表は、指で送ったときも列の境目に止める（BOA-741）。止める位置（固定した列の右端）は
+   フックが scroll-padding-left に入れ、止めるかどうかを data-hscroll-snap で渡す */
+[data-hscroll-snap="true"] {
+  scroll-snap-type: x mandatory;
+}
+
+[data-hscroll-snap="true"] :is(th, td) {
+  scroll-snap-align: start;
+}
