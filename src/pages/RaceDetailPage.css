@@ -59,7 +59,11 @@
   .race-detail-page-v2 .rwit-card:has(.rwit-bars),
   /* 枠別情報のカードの右端をそろえる。ST考察だけ 1552px に広がり、上下のカードと
      ギザギザに並んでいた（BOA-619） */
-  .race-detail-page-v2 .rsc-card {
+  .race-detail-page-v2 .rsc-card,
+  /* 枠別情報の注記・選手チップの段も、下のカードと右端をそろえる。注記だけ 1392px に広がり、
+     1200px のカードより右へ出ていた（BOA-703） */
+  .race-detail-page-v2 .rwit-note,
+  .race-detail-page-v2 .rwit-chip-row {
     max-width: 1200px;
   }
 
@@ -85,7 +89,10 @@
      下の共有ボタンもページ中央なので、中心をそろえる
    - 結果の払戻金: 表だけ 640px で止める。上の着順の行は ST の棒で間が埋まるので広いままにする */
 @media (min-width: 1025px) {
-  .race-detail-page-v2 .race-ai-prediction-tab {
+  /* 発走前の AI予想（.prediction-result）も同じ 720px に。展開予測の決まり手と確率が
+     1440px で約1130px 離れていた（race-detail-ui-unify FR-6、BOA-619 の残り） */
+  .race-detail-page-v2 .race-ai-prediction-tab,
+  .race-detail-page-v2 .prediction-result {
     max-width: 720px;
     margin-inline: auto;
   }
@@ -266,7 +273,10 @@
       .rol-disclaimer,
       .rol-status,
       .race-tabs-empty,
-      .motor-condition-container
+      .motor-condition-container,
+      /* 結果タブの「この日の水面傾向」は .race-result の中のカードで、外の内余白に
+         自分の 16px が重なっていた（race-detail-ui-unify screens「二重の余白」） */
+      .vds-card
     ) {
     padding-left: var(--rdp-card-pad);
     padding-right: var(--rdp-card-pad);

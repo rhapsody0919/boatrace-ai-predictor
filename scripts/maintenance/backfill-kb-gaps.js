@@ -10,6 +10,8 @@
  *                      BOA-582: 同じ行の着欄・着（NULL だけ。失格 S0〜S2 は K から決まらないので埋めない）も同じ回で埋める
  *   --item=race_status 項目8（BOA-480）: race_results の race_status・refund_boats が NULL のレースを、K から導いて埋める
  *   --item=rate2       項目3: race_entries の2連率（全国・当地）の NULL だけを埋める（登録番号が一致する艇のみ）
+ *   --item=missing_boats 欠場艇等（BOA-327 の前提）: K にあって race_start_timings に行の無い艇の行を挿入する（既存の行には
+ *                      触れない）。欠場（K0/K1）は着欄「欠」・ST と進入は NULL。走った艇は K の ST・進入・F・L と着欄・着
  *
  * 書くのは項目ごとに決めた列だけ（kbGapFill.js の GAP_FILL_ITEMS）。書く直前に、すべての行の列の集合が同じかを
  * 検査する（PostgREST の一括 upsert は、行ごとに列が違うと無い列を NULL で書く）。既存の値は上書きしない。
@@ -37,6 +39,7 @@ import {
   buildRaceStatusRows,
   buildRate2Rows,
   buildStartTimingRows,
+  buildMissingBoatRows,
 } from "../lib/kbGapFill.js";
 
 export const DEFAULT_ARCHIVE_DIR =
@@ -91,6 +94,18 @@ export async function planDay(item, day, date, client = supabase, out = {}) {
     return buildStartTimingRows(day, {
       raceIds: new Set(races.map((r) => r.race_id)),
       withRows: new Set(existing.map((r) => r.race_id)),
+    });
+  }
+  if (item === "missing_boats") {
+    const [races, existing] = await Promise.all([
+      read("races", "race_id", date, client),
+      read(def.table, "race_id, boat_number", date, client),
+    ]);
+    return buildMissingBoatRows(day, {
+      raceIds: new Set(races.map((r) => r.race_id)),
+      existingKeys: new Set(
+        existing.map((r) => `${r.race_id}|${r.boat_number}`),
+      ),
     });
   }
   if (item === "exhibition") {

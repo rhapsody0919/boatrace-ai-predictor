@@ -57,9 +57,15 @@ function TurnPatternList({ patterns, result = null }) {
 
   return (
     <div className="turn-pattern-list">
-      {!isResultMode && (
-        <p className="turn-pattern-caption">{t("turnPatternList.caption")}</p>
-      )}
+      {/* レース後の振り返りでも、%が何の値かを書く。書かないと「47%」を的中率や過去の決着率と
+          取り違えやすく、丸数字がコース番号であることも分からなかった（BOA-706） */}
+      <p className="turn-pattern-caption">
+        {t(
+          isResultMode
+            ? "turnPatternList.captionResult"
+            : "turnPatternList.caption",
+        )}
+      </p>
       {displayPatterns.map((pattern, index) => {
         // 不成立のレースは行ごとの印を付けず、まとめの「判定対象外（不成立）」だけにする
         const isRefunded =

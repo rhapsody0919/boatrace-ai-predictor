@@ -6,7 +6,7 @@
 // 実装された FR を PENDING から外して有効にする。
 import { test, expect } from "../fixtures.js";
 
-const PENDING = new Set(["FR-1", "FR-3", "FR-5", "FR-6", "FR-7"]);
+const PENDING = new Set(["FR-1", "FR-3", "FR-7"]);
 const describeFR = (fr, title, body) =>
   (PENDING.has(fr) ? test.describe.fixme : test.describe)(
     `[${fr}] ${title}`,
@@ -924,12 +924,72 @@ describeFR("FR-5", "モータ情報・直前情報タブ", () => {
         .filter((v) => v !== null);
       return new Set(nums).size > 1;
     });
-    for (const l of withSpread) {
+    // ⚠（件数が少ない参考値）の艇がいる行は、⚠ が最良だと金枠をどの艇にも付けない
+    // （plan §7、注記に記載）ので「強調が1つはある」を求めない
+    for (const l of withSpread.filter(
+      (x) => !x.cells.some((c) => c.text.includes("⚠")),
+    )) {
       expect(
         l.cells.some((c) => c.best),
         `「${l.label}」に強調が無い`,
       ).toBe(true);
     }
+  });
+
+  // PR #1193 ファン評価1周目: セル全体に金枠を付けると、比べていない平均・2連対率まで
+  // 太字の金枠に入り「平均でも最良」と読まれた。金枠は比べた値（前走・1着率）だけ
+  test("[plan §7] 展示情報の「展示1位率」「今節展示」の金枠は、比べた値だけを囲む", async ({
+    page,
+  }) => {
+    await openRaceDetail(page);
+    await openTab(page, "直前情報");
+    await installHelpers(page);
+    // 選手ごとの集計は後から読み込まれる
+    await page
+      .getByText(/前走/)
+      .first()
+      .waitFor({ state: "visible", timeout: 20000 })
+      .catch(() => {});
+    const framed = await page.evaluate(() =>
+      [...document.querySelectorAll("tr")]
+        .filter((tr) =>
+          /展示タイム1位|展示1位|今節展示|今節の展示/.test(
+            tr.cells[0]?.textContent ?? "",
+          ),
+        )
+        .flatMap((tr) => [...tr.querySelectorAll("td *")])
+        .filter(
+          (el) =>
+            window.__acc.isBest(el) &&
+            ![...el.children].some((c) => window.__acc.isBest(c)),
+        )
+        .map((el) => el.textContent.trim()),
+    );
+    test.skip(framed.length === 0, "該当行に金枠が無い");
+    for (const text of framed) {
+      expect(text, `比べていない値まで金枠に入っている: ${text}`).not.toMatch(
+        /平均|2連対|3連対/,
+      );
+    }
+  });
+
+  // PR #1193 ファン評価1周目: 2号艇の黒い棒がダークの背景に溶けた。1号艇（白）と同じく輪郭を付ける
+  test("[plan §7] 展示タイムの棒は1号艇と2号艇に輪郭がある", async ({
+    page,
+  }) => {
+    await openRaceDetail(page);
+    await openTab(page, "直前情報");
+    await page
+      .locator("path.recharts-rectangle")
+      .first()
+      .waitFor({ state: "visible", timeout: 20000 })
+      .catch(() => {});
+    const strokes = await page
+      .locator("path.recharts-rectangle")
+      .evaluateAll((els) => els.map((e) => e.getAttribute("stroke")));
+    test.skip(strokes.length < 2, "展示タイムの棒が出ていない");
+    expect(strokes[0]).not.toBe("none");
+    expect(strokes[1]).not.toBe("none");
   });
 
   test("[spec FR-5] 直前情報タブの各表で最良の規則（同値は全部・全艇同値は無し）が守られる", async ({
@@ -992,6 +1052,36 @@ describeFR("FR-6", "AI予想・オッズ一覧・結果タブ", () => {
     const low = ratios.filter((r) => r.ratio < 4.5);
     expect(low, JSON.stringify(low)).toEqual([]);
   });
+
+  // PR #1209 ファン評価1周目: 段階ラベルの文字が、薄い色を重ねた地の上で 3.5〜3.8:1 だった。
+  // ライト・ダークとも 4.5:1 以上で、アイコンの波紋より前面にあること
+  for (const scheme of ["light", "dark"]) {
+    test(`[plan §10] イン崩れ注意度の段階ラベルは ${scheme} で4.5:1以上、波紋より前面`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await openRaceDetail(page);
+      await openTab(page, "AI予想");
+      await installHelpers(page);
+      const card = page.locator(".volatility-display").first();
+      const visible = await card
+        .waitFor({ state: "visible", timeout: 15000 })
+        .then(() => true)
+        .catch(() => false);
+      test.skip(!visible, "イン崩れ注意度（発走前）が表示されていない");
+      const r = await card.evaluate((el) => {
+        const badge = [...el.querySelectorAll("span")].find(
+          (s) => getComputedStyle(s).borderRadius === "12px",
+        );
+        return {
+          ratio: window.__acc.contrast(badge),
+          z: getComputedStyle(badge).zIndex,
+        };
+      });
+      expect(r.ratio).toBeGreaterThanOrEqual(4.5);
+      expect(Number(r.z)).toBeGreaterThanOrEqual(1);
+    });
+  }
 
   test("[spec FR-6 / R3] オッズ一覧には良し悪しの色（緑・赤・金枠）を付けない", async ({
     page,
