@@ -621,7 +621,9 @@ test.describe("レース詳細の表示の細部", () => {
       // 表がどれだけ溢れるかは文字の幅で変わる（CI の Linux では 320px でも得点率早見が収まった）。
       // 送る操作そのものを確かめるため、表を広げて必ず溢れさせる
       await page.addStyleTag({
-        content: `${screen.table} { min-width: 640px; }`,
+        // 表ごとの指定（例: .motor-condition-container .motor-ranking-table の min-width）に
+        // 負けないよう !important にする（#1153 で、テストで当てた幅が効かなくなっていた）
+        content: `${screen.table} { min-width: 640px !important; }`,
       });
       const more = hint.locator(":scope > .hscroll-more");
       await expect(more).toBeVisible({ timeout: 30000 });
@@ -724,6 +726,12 @@ test.describe("レース詳細の表示の細部", () => {
     await page.locator(".motor-ranking-row").first().click({ timeout: 60000 });
     await page.locator(".motor-waku-expand-btn").click();
     const hint = page.locator(".mwsg-hint");
+    await expect(hint).toBeVisible({ timeout: 30000 });
+    // #1153 で表の余白が詰まり、375px の実データではほぼ収まる（7px だけ溢れる）。
+    // 送る先が列の境目にそろうことを確かめるため、表を広げて途中で止まる長さにする
+    await page.addStyleTag({
+      content: ".mwsg-table { min-width: 640px !important; }",
+    });
     await expect(hint.locator(":scope > .hscroll-more")).toBeVisible({
       timeout: 30000,
     });
