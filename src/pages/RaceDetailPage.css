@@ -59,7 +59,11 @@
   .race-detail-page-v2 .rwit-card:has(.rwit-bars),
   /* 枠別情報のカードの右端をそろえる。ST考察だけ 1552px に広がり、上下のカードと
      ギザギザに並んでいた（BOA-619） */
-  .race-detail-page-v2 .rsc-card {
+  .race-detail-page-v2 .rsc-card,
+  /* 枠別情報の注記・選手チップの段も、下のカードと右端をそろえる。注記だけ 1392px に広がり、
+     1200px のカードより右へ出ていた（BOA-703） */
+  .race-detail-page-v2 .rwit-note,
+  .race-detail-page-v2 .rwit-chip-row {
     max-width: 1200px;
   }
 

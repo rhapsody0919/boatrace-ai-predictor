@@ -577,6 +577,52 @@ test.describe("レース詳細の表示の細部", () => {
       ).toBeLessThanOrEqual(before.lastFull + 1);
     }
   });
+  test("枠別情報: 選んだ艇チップの選手名が、ライト・ダークとも6艇すべてで地の色と4.5:1以上（BOA-703）", async ({
+    page,
+  }) => {
+    // 公式の配色の赤・青・緑の地に白い名前だと 4.23・3.68・3.30 だった。選んだチップだけ一段濃くする
+    await page.goto(`${RACE}?tab=waku`);
+    const chips = page.locator(".rwit-boat-chip");
+    await expect(chips).toHaveCount(6, { timeout: 30000 });
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate(
+        (t) => document.documentElement.setAttribute("data-theme", t),
+        theme,
+      );
+      for (let i = 0; i < 6; i++) {
+        const chip = chips.nth(i);
+        await chip.click();
+        await expect(chip).toHaveAttribute("aria-pressed", "true");
+        const { boat, fg, bg } = await chip.evaluate((el) => ({
+          boat: el.querySelector(".rwit-boat-chip-num").textContent.trim(),
+          fg: getComputedStyle(el.querySelector(".rwit-boat-chip-name")).color,
+          bg: getComputedStyle(el).backgroundColor,
+        }));
+        expect(
+          contrast(fg, bg),
+          `${theme}・${boat}号艇: 名前 ${fg} / 地 ${bg}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  test("1440px: 枠別情報の注記と選手チップの段は、下のカードと右端がそろう（BOA-703）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${RACE}?tab=waku`);
+    // カードの幅は中の表が出てから決まる（表が出る前は注記と同じ幅で、比べても意味が無い）
+    const card = page.locator(".rwit-card:has(.rwit-today-table)").first();
+    await expect(card).toBeVisible({ timeout: 30000 });
+    const rights = await page.evaluate(() =>
+      [".rwit-note", ".rwit-chip-row", ".rwit-card:has(.rwit-today-table)"].map(
+        (sel) =>
+          Math.round(document.querySelector(sel).getBoundingClientRect().right),
+      ),
+    );
+    expect(Math.max(...rights) - Math.min(...rights)).toBeLessThanOrEqual(1);
+  });
+
   // 横に送っても、行を見分ける左端の列（艇番・選手名・日付・コース）が残り、「‹」で戻れる
   // （BOA-699・BOA-704）。以前は送ると左端の列が消え、「‹」も無い表があった
   for (const screen of [
