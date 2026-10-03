@@ -112,6 +112,8 @@
   scroll-snap-type: x mandatory;
 }
 
-[data-hscroll-snap="true"] :is(th, td) {
+/* 列の境目はどの行でも同じなので、行ごとの先頭の行だけに付ける（全部のセルに付けると、同じ位置が
+   行の数だけ登録される） */
+[data-hscroll-snap="true"] tr:first-child > :is(th, td) {
   scroll-snap-align: start;
 }
