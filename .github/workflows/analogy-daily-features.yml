@@ -8,7 +8,7 @@ name: Analogy Daily Features
 # api/cron/analogy-dispatch.js（JST 6:40・9:40・13:40、7:20 は欠けがあるときだけ）からの workflow_dispatch。
 # 対象の全レースに行がそろわなければ失敗し、Slack に知らせる。
 #
-# 有効にする順序（逆にすると毎朝失敗して Slack に流れる）: マイグレーション 126・127 の適用 → 週次の学習
+# 有効にする順序（逆にすると毎朝失敗して Slack に流れる）: マイグレーション 127・128 の適用 → 週次の学習
 # （train-analogy.yml）が1回成功する（レースごとの寄与度を含む版の per_race_meta.json と、本体分の月の
 # キャッシュ analogy/source/main/ を置く。BOA-696 の修正と KB_CACHE_VERSION の更新の後）→ この workflow の起動を始める
 

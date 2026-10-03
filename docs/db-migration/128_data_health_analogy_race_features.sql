@@ -1,11 +1,11 @@
--- 127: data-health の日次監視に、レースごとの寄与度の特徴量（analogy_race_features、126）の充足率を足す（BOA-271 B）
+-- 128: data-health の日次監視に、レースごとの寄与度の特徴量（analogy_race_features、127）の充足率を足す（BOA-271 B）
 -- 対応spec/plan: docs/design/analogy-finder/plan.md（「学習側の設計」の監視）
 --
 -- 関数（SQL の正本は scripts/lib/dataHealth/functions.js。render-data-health-functions.js で生成して貼った）
 --   data_health_analogy_race_features(p_from, p_to)  出走行（開催中止を除く）のうち、特徴量の行がある数。service_role のみ
 --   data_health_table_rows()                         空テーブルの検知の対象に analogy_race_features を足す（CREATE OR REPLACE）
 --
--- ⚠️ 本番へ未適用。適用はユーザーが行う。126 の後に適用する（analogy_race_features を参照する）。
+-- ⚠️ 本番へ未適用。適用はユーザーが行う。127 の後に適用する（analogy_race_features を参照する）。
 --   読み取りの集計関数の追加・置き換えだけで、表は書き換えない。
 
 BEGIN;
@@ -43,7 +43,7 @@ $data_health$;
 
 REVOKE ALL ON FUNCTION data_health_analogy_race_features(date, date) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION data_health_analogy_race_features(date, date) TO service_role;
-COMMENT ON FUNCTION data_health_analogy_race_features(date, date) IS 'データ健全性の日次監視: 出走行のうち、レースごとの寄与度の特徴量（analogy_race_features、126）がある行の数';
+COMMENT ON FUNCTION data_health_analogy_race_features(date, date) IS 'データ健全性の日次監視: 出走行のうち、レースごとの寄与度の特徴量（analogy_race_features、127）がある行の数';
 
 -- data_health_table_rows
 CREATE OR REPLACE FUNCTION data_health_table_rows()
