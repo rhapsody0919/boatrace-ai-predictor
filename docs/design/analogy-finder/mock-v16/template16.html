@@ -179,6 +179,13 @@ details.fold>summary{cursor:pointer;font-family:"Zen Kaku Gothic New",sans-serif
 .chip.slit .k{font-size:12.5px;font-weight:700}
 .stepn{display:inline-grid;place-items:center;width:1.5em;height:1.5em;border-radius:50%;background:var(--accent-strong);color:var(--card);font-size:12px;margin-right:6px}
 table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl th,table.rl td{padding:4px 6px;border-bottom:1px solid var(--border);text-align:left}.mono{font-family:"JetBrains Mono",monospace}
+.pats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pat{display:grid;gap:4px;text-align:left;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);padding:6px;font:inherit;font-size:11px;cursor:pointer}
+.pat.any{grid-column:1/-1}
+.pat .k{font-size:12.5px;font-weight:700}.pat .fq{color:var(--text2)}
+.pat svg{width:100%;height:auto;display:block;border-radius:5px}
+.pat[aria-pressed="true"]{border:2px solid var(--accent-strong);padding:5px;background:var(--sunken)}
+@media (max-width:360px){.pats{grid-template-columns:1fr}}
 .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px}
 .tabs button{font-family:"Zen Kaku Gothic New",sans-serif;font-size:12.5px;font-weight:700;border:1px solid var(--border);background:var(--sunken);color:var(--text2);border-radius:8px;padding:8px 4px;cursor:pointer;line-height:1.3}
 .tabs button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--ivory-100)}
@@ -452,7 +459,7 @@ function renderFlow(a){
     const op=sel?.95:(st.flowSel?.12:(0.25+0.6*Math.min(1,c/(tot*.08||1))));
     h+=`<path d="M${x0},${y0}C${mx},${y0} ${mx},${y1} ${x1},${y1}" stroke="${FLOW[x]}" stroke-width="${w}" fill="none" stroke-opacity="${op}" data-l="${p},${x},${y},${c}" style="cursor:pointer"/>`;});});
   pos.forEach((o,p)=>{for(let b=1;b<=6;b++){if(!o[b].h)continue;h+=`<rect x="${X[p]}" y="${o[b].y}" width="${W}" height="${o[b].h}" fill="${BC[b][0]}" stroke="${p===0&&st.flowFirst===b?"#fff":"#94a3b8"}" stroke-width="${p===0&&st.flowFirst===b?2:.8}" ${p===0?`data-first="${b}" style="cursor:pointer"`:""}/>`;if(o[b].h>=11)h+=`<text x="${X[p]+W/2}" y="${o[b].y+o[b].h/2+4}" text-anchor="middle" font-size="11" font-weight="700" fill="${BC[b][1]}" font-family="JetBrains Mono,monospace">${b}</text>`;
-    h+=`<text x="${p===2?X[p]+W+6:p===0?X[p]-6:X[p]+W+4}" y="${o[b].y+o[b].h/2+4}" text-anchor="${p===0?"end":"start"}" font-size="10" fill="#e8d089" font-family="JetBrains Mono,monospace">${col[p][b]||""}</text>`;}});
+    h+=`<text x="${p===2?X[p]+W+6:p===0?X[p]-6:X[p]+W+4}" y="${o[b].y+o[b].h/2+4}" text-anchor="${p===0?"end":"start"}" font-size="10" fill="#e8d089" font-family="JetBrains Mono,monospace">${col[p][b]?col[p][b].toLocaleString()+"件":""}</text>`;}});
   ["1着","2着","3着"].forEach((tx,p)=>h+=`<text x="${X[p]+W/2}" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#f3ead0" font-family="Zen Kaku Gothic New,sans-serif">${tx}</text>`);
   svg.innerHTML=h;
   $("flowNote").textContent=st.flowFirst?"":"2着→3着の帯は、1着の艇を問わずに数えている。1着の箱をタップすると、その艇が勝ったレースだけで 1→2→3 の流れを描き直す";
@@ -702,7 +709,7 @@ function hexRadar(svg, labels, series) {
     h += `<line x1="${Cc[0]}" y1="${Cc[1]}" x2="${x}" y2="${y}" stroke="rgba(201,162,39,.2)"/>`;
   });
   [1, 6].forEach((k) => {
-    h += `<text x="${Cc[0] + 4}" y="${Cc[1] - rr(k) + 10}" fill="#e8d089" opacity=".75" font-size="9" font-family="Zen Kaku Gothic New,sans-serif">${k === 1 ? "6艇で一番" : "最下位"}</text>`;
+    h += `<text x="${Cc[0] + 4}" y="${Cc[1] - rr(k) + 10}" fill="#e8d089" opacity=".75" font-size="9" font-family="Zen Kaku Gothic New,sans-serif">${k}位</text>`;
   });
   series.forEach((s) => {
     if (s.v.every((x) => x != null))
@@ -787,10 +794,10 @@ function renderFacts() {
   };
   hexRadar(
     $("hexFacts"),
-    mats.map(([k]) => [SHORT[k], pos(A, k) != null ? `今日 ${pos(A, k)}番目` : "今日 —"]),
+    mats.map(([k]) => [SHORT[k], pos(A, k) != null ? `${pos(A, k)}位/6艇中` : "今日 —"]),
     [{ v: typ, c: "#cbd5e1", dash: true }, { v: mats.map(([k]) => pos(A, k)), c: LINE6[A] }, ...(exB ? [{ v: mats.map(([k]) => pos(Bb, k)), c: LINE6[Bb] }] : [])],
   );
-  $("hexKey").innerHTML = `<span style="--sc:${LINE6[A]}"><i></i>今日の${A}号艇（6艇の中で何番目か）</span>${exB ? `<span style="--sc:${LINE6[Bb]}"><i></i>今日の${Bb}号艇</span>` : ""}<span style="--sc:#cbd5e1"><i class="d"></i>${sname}で${A}号艇が${RT[st.rank]}に入ったときの平均</span>`;
+  $("hexKey").innerHTML = `<span style="--sc:${LINE6[A]}"><i></i>今日の${A}号艇（6艇中の順位）</span>${exB ? `<span style="--sc:${LINE6[Bb]}"><i></i>今日の${Bb}号艇</span>` : ""}<span style="--sc:#cbd5e1"><i class="d"></i>${sname}で${A}号艇が${RT[st.rank]}に入ったときの平均</span>`;
   const mx = Math.max(...rows.flatMap((r) => r.p.filter((x) => x != null)), uP) * 1.12;
   const strip = (r) => {
     const today = pos(A, r.k);
@@ -818,15 +825,15 @@ function renderFacts() {
     let bLine = "";
     if (exB) {
       const pb = [1, 6].map((rk) => rate(Bb, r.k, rk));
-      bLine = `<p class="sub">${Bb}号艇なら: 一番${r.hi}とき ${pc(pb[0][0] / pb[0][1], 0)} ／ 一番${r.lo}とき ${pc(pb[1][0] / pb[1][1], 0)}（ふだん ${pc(usual(Bb)[0] / usual(Bb)[1], 0)}）</p>${line(Bb, r, `今日の${Bb}号艇`)}`;
+      bLine = `<p class="sub">${Bb}号艇なら: 一番${r.hi}とき ${pc(pb[0][0] / pb[0][1], 0)} ／ 一番${r.lo}とき ${pc(pb[1][0] / pb[1][1], 0)}（全体では ${pc(usual(Bb)[0] / usual(Bb)[1], 0)}）</p>${line(Bb, r, `今日の${Bb}号艇`)}`;
     }
     return `<div class="eff ${cls}"><div class="eh"><b>${r.l}</b><span class="gap">${lab}${!cls && d < 0 ? `（一番${r.lo}ときのほうが高い）` : ""}</span></div>
       <div class="pair"><div><span>6艇で一番${r.hi}とき</span><b>${pc(r.p[0], 0)}</b><small>${b[0].toLocaleString()}/${b[1].toLocaleString()}</small></div><div><span>6艇で一番${r.lo}とき</span><b>${pc(r.p[5], 0)}</b><small>${w[0].toLocaleString()}/${w[1].toLocaleString()}</small></div></div>
       ${strip(r)}${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
   };
   const allClass = new Set([1, 2, 3, 4, 5, 6].map((b) => RF.ex[b].class)).size === 1;
-  $("factsOut").innerHTML = `<div class="big1"><span>${sname}で、${A}号艇が${RT[st.rank]}に入った割合（ふだん）</span><b>${pc(uP, 1)}</b><small>${U[0].toLocaleString()}/${U[1].toLocaleString()}レース（${T1.period[0]}〜${T1.period[1]}）</small></div>
-  <p class="sub">${FSCOPE_DESC[st.fscope]}で、${A}号艇のその材料が6艇の中で一番良かったときと一番悪かったときに、${RT[st.rank]}に入った割合を比べた。差がはっきりしているものから、差の大きい順に並べている（差が近い材料どうしは、入れ替わってもおかしくない）。材料どうしは重なっていて（全国勝率と直近の1着率は、どちらも選手の格を見ている）、どれが効いたのかは分けられない。棒の点線は、ふだんの割合</p>
+  $("factsOut").innerHTML = `<div class="big1"><span>${sname}の全体で、${A}号艇が${RT[st.rank]}に入った割合</span><b>${pc(uP, 1)}</b><small>${U[0].toLocaleString()}/${U[1].toLocaleString()}レース（${T1.period[0]}〜${T1.period[1]}）</small></div>
+  <p class="sub">${FSCOPE_DESC[st.fscope]}で、${A}号艇のその材料が6艇の中で一番良かったときと一番悪かったときに、${RT[st.rank]}に入った割合を比べた。差がはっきりしているものから、差の大きい順に並べている（差が近い材料どうしは、入れ替わってもおかしくない）。材料どうしは重なっていて（全国勝率と直近の1着率は、どちらも選手の格を見ている）、どれが効いたのかは分けられない。棒の点線は、全体での割合（上の大きい数字）</p>
   <div class="effs">${rows.map(card).join("")}</div>
   ${allClass ? `<p class="foot">級別: 今日は6艇とも ${ex.class} なので差がつかない</p>` : ""}
   <p class="foot">数えた割合で、原因とは限らない。「差ははっきりしない」は、一番良いときと一番悪いときの95%の幅が重なるもの。「差が大きい」は5ポイント以上。同じ値の艇は、一番良い・一番悪いの両方に含めている。${st.stage === "pre" ? "展示タイムは展示の後に出る。" : "2025-11 以前の展示タイムは結果ファイルから取っていて、取り方が違う。"}</p>`;
@@ -844,7 +851,7 @@ function renderFacts() {
             wa = c.wkAll
               ? c.wkAll.boats[b][mk]
               : D.start["20|all|all"].boats[b][mk];
-          return `<div class="fr"><span>${bn(b)} ${b}号艇</span><span class="wtrk"><span class="f" style="width:${w.p * 100}%;background:${LINE6[b]}"></span><span class="w" style="left:${w.lo * 100}%;width:${(w.hi - w.lo) * 100}%"></span><span class="nt" style="left:${wa.p * 100}%"></span></span><span class="v">${pc(w.p, 0)} <small>ふだん ${pc(wa.p, 0)}</small></span></div>`;
+          return `<div class="fr"><span>${bn(b)} ${b}号艇</span><span class="wtrk"><span class="f" style="width:${w.p * 100}%;background:${LINE6[b]}"></span><span class="w" style="left:${w.lo * 100}%;width:${(w.hi - w.lo) * 100}%"></span><span class="nt" style="left:${wa.p * 100}%"></span></span><span class="v">${pc(w.p, 0)} <small>若松全体 ${pc(wa.p, 0)}</small></span></div>`;
         })
         .join(
           "",
@@ -885,6 +892,32 @@ const SLIT = [
 ];
 const SLITN = Object.fromEntries(SLIT.map(([k, l]) => [k, l]));
 const MIN_N = 30;
+
+// スリットの絵（BOA-635 のモックの SlitScene と同じ描き方。横から見た並び、1艇身≒0.13秒の実縮尺）
+const SLIT_EX = {
+  flat: [0, 0.01, 0, 0.02, 0.01, 0.02],
+  wall: [0.01, 0, 0.01, 0.05, 0.07, 0.06],
+  d2: [0, 0.05, 0, 0.01, 0.02, 0.02],
+  d3: [0, 0.01, 0.05, 0, 0.02, 0.03],
+  kado: [0.03, 0.04, 0.03, 0, 0.02, 0.03],
+  d1: [0.05, 0, 0.01, 0.01, 0.02, 0.02],
+  dash: [0.05, 0.06, 0.05, 0, 0.01, 0],
+};
+let sceneSeq = 0;
+function slitScene(stc, h = 110) {
+  const n = stc.length, W = 260, H = h, top = 4, lane = (H - top - 14) / n, L = 64, lineX = W - 14, SPB = 0.13;
+  const mn = Math.min(...stc), gid = "wat" + ++sceneSeq;
+  const boats = stc
+    .map((v, i) => {
+      const x = lineX - ((v - mn) / SPB) * L, y = top + lane * i + lane / 2, hh = Math.max(3, lane * 0.32), col = BC[i + 1][0];
+      return `<g><path d="M${x - L} ${y - hh} L${x - L * 0.22} ${y - hh} Q${x} ${y - hh * 0.4} ${x} ${y} Q${x} ${y + hh * 0.4} ${x - L * 0.22} ${y + hh} L${x - L} ${y + hh} Z" fill="#f4f1ea" stroke="#556070" stroke-width=".8"/><path d="M${x - L - 10} ${y + hh * 0.2} q-8 -2 -16 0 q8 2 16 0" fill="#ffffff" fill-opacity=".55"/><rect x="${x - L * 0.62}" y="${y - hh * 0.75}" width="${L * 0.22}" height="${hh * 1.5}" rx="${hh * 0.5}" fill="${col}" stroke="#1f2937" stroke-width=".6"/><circle cx="${x - L * 0.38}" cy="${y}" r="${hh * 0.72}" fill="${col}" stroke="#1f2937" stroke-width=".6"/><text x="${x - L + 7}" y="${y + 3.5}" font-size="${Math.min(10, lane * 0.6)}" font-family="JetBrains Mono, monospace" font-weight="700" fill="#1f2937">${i + 1}</text></g>`;
+    })
+    .join("");
+  const waves = [...Array(n)].map((_, i) => `<path d="M0 ${top + lane * (i + 1)} q20 -2 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0" stroke="#ffffff" stroke-opacity=".18" fill="none"/>`).join("");
+  const scale = `<g><line x1="12" y1="${H - 6}" x2="${12 + L}" y2="${H - 6}" stroke="#e8f1ff" stroke-width="1.2"/><line x1="12" y1="${H - 9}" x2="12" y2="${H - 3}" stroke="#e8f1ff"/><line x1="${12 + L}" y1="${H - 9}" x2="${12 + L}" y2="${H - 3}" stroke="#e8f1ff"/><text x="${16 + L}" y="${H - 3}" font-size="9" fill="#e8f1ff">1艇身（約0.13秒）</text></g>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="スリット通過の並び（横から見た図。数字はコース）"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4f73"/><stop offset="1" stop-color="#123a57"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#${gid})"/>${waves}<line x1="${lineX}" y1="0" x2="${lineX}" y2="${H}" stroke="#ff8a3d" stroke-width="1.8"/><text x="${lineX - 4}" y="${H - 4}" font-size="9" text-anchor="end" fill="#ffd2b0">スリット</text>${boats}${scale}</svg>`;
+}
+
 const yen = (v) => (v == null ? "—" : v.toLocaleString() + "円");
 function renderFlowX(a, o, S) {
   const svg = $(o.svg);
@@ -956,7 +989,7 @@ function renderFlowX(a, o, S) {
       h += `<rect x="${X[p]}" y="${r[b].y}" width="${W}" height="${r[b].h}" fill="${BC[b][0]}" stroke="${on ? "#fff" : "#94a3b8"}" stroke-width="${on ? 2 : 0.8}" ${p === 0 ? `data-first="${b}" style="cursor:pointer"` : ""}/>`;
       if (r[b].h >= 11)
         h += `<text x="${X[p] + W / 2}" y="${r[b].y + r[b].h / 2 + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="${BC[b][1]}" font-family="JetBrains Mono,monospace">${b}</text>`;
-      h += `<text x="${p === 2 ? X[p] + W + 6 : p === 0 ? X[p] - 6 : X[p] + W + 4}" y="${r[b].y + r[b].h / 2 + 4}" text-anchor="${p === 0 ? "end" : "start"}" font-size="10" fill="#e8d089" font-family="JetBrains Mono,monospace">${col[p][b] || ""}</text>`;
+      h += `<text x="${p === 2 ? X[p] + W + 6 : p === 0 ? X[p] - 6 : X[p] + W + 4}" y="${r[b].y + r[b].h / 2 + 4}" text-anchor="${p === 0 ? "end" : "start"}" font-size="10" fill="#e8d089" font-family="JetBrains Mono,monospace">${col[p][b] ? col[p][b].toLocaleString() + "件" : ""}</text>`;
     }
   });
   ["1着", "2着", "3着"].forEach(
@@ -1021,7 +1054,7 @@ function renderScn() {
   const chips = SLIT.map(([k, l]) => {
     const x = cell(S.entry, k),
       inEntry = cell(S.entry, "any").n;
-    return `<button type="button" class="chip slit" data-s="${k}" aria-pressed="${S.slit === k}"><span class="k">${l}</span><span>${k === "any" ? `${x.n.toLocaleString()}件` : `${share(x.n, inEntry)}（${x.n.toLocaleString()}件）`}${x.n >= MIN_N ? `・1号艇1着 ${pc(x.b1_win.p, 0)}` : ""}</span></button>`;
+    return `<button type="button" class="pat${k === "any" ? " any" : ""}" data-s="${k}" aria-pressed="${S.slit === k}"><span class="k">${l}</span>${k === "any" ? "" : slitScene(SLIT_EX[k])}<span class="fq">${k === "any" ? `${x.n.toLocaleString()}件` : `${share(x.n, inEntry)}（${x.n.toLocaleString()}件）`}${x.n >= MIN_N ? `・1号艇1着 ${pc(x.b1_win.p, 0)}` : ""}</span></button>`;
   }).join("");
   const def = SLIT.find(([k]) => k === S.slit)[2];
   const scopeName = SCN_SCOPE.find(([k]) => k === S.scope)[1];
@@ -1079,7 +1112,7 @@ function renderScn() {
   <div class="ents">${entryRow("all")}${entryRow("waku")}${entryRow("mae")}${openMae ? MAE_SUB.map((e) => entryRow(e, true)).join("") : ""}${entryRow("inlost")}</div>
   <p class="foot">${post ? `今日の展示は、6艇とも枠なりだった。展示が枠なりだったレースの 93% は、本番も枠なりだった（全国、2026-04 以降の 2,023 レース）。` : "展示の後は、今日の展示の進入に当てはまる型に印が付く。"}割合は、${scopeName}の全レースの中での割合。スロー・ダッシュの別は記録が無いので分けていない</p>
   <h3><span class="stepn">2</span>スタートはどう並ぶ？（スリットの形）</h3>
-  <div class="chips">${chips}</div>
+  <div class="pats">${chips}</div><p class="foot">絵は横から見た並びの例（数字はコース、右の線がスリット。縮尺は1艇身≒0.13秒）</p>
   <p class="foot">${def ? `${SLITN[S.slit]}: ${def}。` : ""}1つのレースが2つ以上の形に当てはまることがある（足すと100%を超える）。形の決め方は、過去率チェッカー（BOA-635）と同じ。割合は、選んだ進入の中での割合。スリットの形は、今日の情報からは選べない（展示の ST と本番のつながりは、まだ数えていない）</p>
   <h3><span class="stepn">3</span>そのとき、どう決まった？</h3>
   ${res}
@@ -1105,7 +1138,7 @@ function renderScn() {
         )),
     );
   $("scnOut")
-    .querySelectorAll(".chip.slit")
+    .querySelectorAll(".pat")
     .forEach(
       (b) =>
         (b.onclick = () => (

@@ -90,6 +90,13 @@ R('.tabs{display:grid;', '''.effs{display:grid;gap:10px}
 .chip.slit .k{font-size:12.5px;font-weight:700}
 .stepn{display:inline-grid;place-items:center;width:1.5em;height:1.5em;border-radius:50%;background:var(--accent-strong);color:var(--card);font-size:12px;margin-right:6px}
 table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl th,table.rl td{padding:4px 6px;border-bottom:1px solid var(--border);text-align:left}.mono{font-family:"JetBrains Mono",monospace}
+.pats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pat{display:grid;gap:4px;text-align:left;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);padding:6px;font:inherit;font-size:11px;cursor:pointer}
+.pat.any{grid-column:1/-1}
+.pat .k{font-size:12.5px;font-weight:700}.pat .fq{color:var(--text2)}
+.pat svg{width:100%;height:auto;display:block;border-radius:5px}
+.pat[aria-pressed="true"]{border:2px solid var(--accent-strong);padding:5px;background:var(--sunken)}
+@media (max-width:360px){.pats{grid-template-columns:1fr}}
 .tabs{display:grid;''')
 a = t.index('<div class="note"><b>モック Version 15')
 b = t.index('</div>', a) + 6
@@ -105,5 +112,6 @@ t = t[:a] + '''<section class="confirm" aria-labelledby="cf">
       <li>展開シナリオ: ①進入 → ②スリットの形 → ③結果（1着・3着以内・決まり手・万舟・着順の流れ・3連単）。30件未満は1件ずつの一覧。展示後は今日の展示の進入に印</li>
     </ol>
   </section>''' + t[b:]
+R('${col[p][b]||""}</text>`;}});', '${col[p][b]?col[p][b].toLocaleString()+"件":""}</text>`;}});')
 io.open('template16.html', 'w', encoding='utf-8').write(t)
 print('ok')

@@ -46,7 +46,7 @@ function hexRadar(svg, labels, series) {
     h += `<line x1="${Cc[0]}" y1="${Cc[1]}" x2="${x}" y2="${y}" stroke="rgba(201,162,39,.2)"/>`;
   });
   [1, 6].forEach((k) => {
-    h += `<text x="${Cc[0] + 4}" y="${Cc[1] - rr(k) + 10}" fill="#e8d089" opacity=".75" font-size="9" font-family="Zen Kaku Gothic New,sans-serif">${k === 1 ? "6艇で一番" : "最下位"}</text>`;
+    h += `<text x="${Cc[0] + 4}" y="${Cc[1] - rr(k) + 10}" fill="#e8d089" opacity=".75" font-size="9" font-family="Zen Kaku Gothic New,sans-serif">${k}位</text>`;
   });
   series.forEach((s) => {
     if (s.v.every((x) => x != null))
@@ -131,10 +131,10 @@ function renderFacts() {
   };
   hexRadar(
     $("hexFacts"),
-    mats.map(([k]) => [SHORT[k], pos(A, k) != null ? `今日 ${pos(A, k)}番目` : "今日 —"]),
+    mats.map(([k]) => [SHORT[k], pos(A, k) != null ? `${pos(A, k)}位/6艇中` : "今日 —"]),
     [{ v: typ, c: "#cbd5e1", dash: true }, { v: mats.map(([k]) => pos(A, k)), c: LINE6[A] }, ...(exB ? [{ v: mats.map(([k]) => pos(Bb, k)), c: LINE6[Bb] }] : [])],
   );
-  $("hexKey").innerHTML = `<span style="--sc:${LINE6[A]}"><i></i>今日の${A}号艇（6艇の中で何番目か）</span>${exB ? `<span style="--sc:${LINE6[Bb]}"><i></i>今日の${Bb}号艇</span>` : ""}<span style="--sc:#cbd5e1"><i class="d"></i>${sname}で${A}号艇が${RT[st.rank]}に入ったときの平均</span>`;
+  $("hexKey").innerHTML = `<span style="--sc:${LINE6[A]}"><i></i>今日の${A}号艇（6艇中の順位）</span>${exB ? `<span style="--sc:${LINE6[Bb]}"><i></i>今日の${Bb}号艇</span>` : ""}<span style="--sc:#cbd5e1"><i class="d"></i>${sname}で${A}号艇が${RT[st.rank]}に入ったときの平均</span>`;
   const mx = Math.max(...rows.flatMap((r) => r.p.filter((x) => x != null)), uP) * 1.12;
   const strip = (r) => {
     const today = pos(A, r.k);
@@ -162,15 +162,15 @@ function renderFacts() {
     let bLine = "";
     if (exB) {
       const pb = [1, 6].map((rk) => rate(Bb, r.k, rk));
-      bLine = `<p class="sub">${Bb}号艇なら: 一番${r.hi}とき ${pc(pb[0][0] / pb[0][1], 0)} ／ 一番${r.lo}とき ${pc(pb[1][0] / pb[1][1], 0)}（ふだん ${pc(usual(Bb)[0] / usual(Bb)[1], 0)}）</p>${line(Bb, r, `今日の${Bb}号艇`)}`;
+      bLine = `<p class="sub">${Bb}号艇なら: 一番${r.hi}とき ${pc(pb[0][0] / pb[0][1], 0)} ／ 一番${r.lo}とき ${pc(pb[1][0] / pb[1][1], 0)}（全体では ${pc(usual(Bb)[0] / usual(Bb)[1], 0)}）</p>${line(Bb, r, `今日の${Bb}号艇`)}`;
     }
     return `<div class="eff ${cls}"><div class="eh"><b>${r.l}</b><span class="gap">${lab}${!cls && d < 0 ? `（一番${r.lo}ときのほうが高い）` : ""}</span></div>
       <div class="pair"><div><span>6艇で一番${r.hi}とき</span><b>${pc(r.p[0], 0)}</b><small>${b[0].toLocaleString()}/${b[1].toLocaleString()}</small></div><div><span>6艇で一番${r.lo}とき</span><b>${pc(r.p[5], 0)}</b><small>${w[0].toLocaleString()}/${w[1].toLocaleString()}</small></div></div>
       ${strip(r)}${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
   };
   const allClass = new Set([1, 2, 3, 4, 5, 6].map((b) => RF.ex[b].class)).size === 1;
-  $("factsOut").innerHTML = `<div class="big1"><span>${sname}で、${A}号艇が${RT[st.rank]}に入った割合（ふだん）</span><b>${pc(uP, 1)}</b><small>${U[0].toLocaleString()}/${U[1].toLocaleString()}レース（${T1.period[0]}〜${T1.period[1]}）</small></div>
-  <p class="sub">${FSCOPE_DESC[st.fscope]}で、${A}号艇のその材料が6艇の中で一番良かったときと一番悪かったときに、${RT[st.rank]}に入った割合を比べた。差がはっきりしているものから、差の大きい順に並べている（差が近い材料どうしは、入れ替わってもおかしくない）。材料どうしは重なっていて（全国勝率と直近の1着率は、どちらも選手の格を見ている）、どれが効いたのかは分けられない。棒の点線は、ふだんの割合</p>
+  $("factsOut").innerHTML = `<div class="big1"><span>${sname}の全体で、${A}号艇が${RT[st.rank]}に入った割合</span><b>${pc(uP, 1)}</b><small>${U[0].toLocaleString()}/${U[1].toLocaleString()}レース（${T1.period[0]}〜${T1.period[1]}）</small></div>
+  <p class="sub">${FSCOPE_DESC[st.fscope]}で、${A}号艇のその材料が6艇の中で一番良かったときと一番悪かったときに、${RT[st.rank]}に入った割合を比べた。差がはっきりしているものから、差の大きい順に並べている（差が近い材料どうしは、入れ替わってもおかしくない）。材料どうしは重なっていて（全国勝率と直近の1着率は、どちらも選手の格を見ている）、どれが効いたのかは分けられない。棒の点線は、全体での割合（上の大きい数字）</p>
   <div class="effs">${rows.map(card).join("")}</div>
   ${allClass ? `<p class="foot">級別: 今日は6艇とも ${ex.class} なので差がつかない</p>` : ""}
   <p class="foot">数えた割合で、原因とは限らない。「差ははっきりしない」は、一番良いときと一番悪いときの95%の幅が重なるもの。「差が大きい」は5ポイント以上。同じ値の艇は、一番良い・一番悪いの両方に含めている。${st.stage === "pre" ? "展示タイムは展示の後に出る。" : "2025-11 以前の展示タイムは結果ファイルから取っていて、取り方が違う。"}</p>`;
@@ -188,7 +188,7 @@ function renderFacts() {
             wa = c.wkAll
               ? c.wkAll.boats[b][mk]
               : D.start["20|all|all"].boats[b][mk];
-          return `<div class="fr"><span>${bn(b)} ${b}号艇</span><span class="wtrk"><span class="f" style="width:${w.p * 100}%;background:${LINE6[b]}"></span><span class="w" style="left:${w.lo * 100}%;width:${(w.hi - w.lo) * 100}%"></span><span class="nt" style="left:${wa.p * 100}%"></span></span><span class="v">${pc(w.p, 0)} <small>ふだん ${pc(wa.p, 0)}</small></span></div>`;
+          return `<div class="fr"><span>${bn(b)} ${b}号艇</span><span class="wtrk"><span class="f" style="width:${w.p * 100}%;background:${LINE6[b]}"></span><span class="w" style="left:${w.lo * 100}%;width:${(w.hi - w.lo) * 100}%"></span><span class="nt" style="left:${wa.p * 100}%"></span></span><span class="v">${pc(w.p, 0)} <small>若松全体 ${pc(wa.p, 0)}</small></span></div>`;
         })
         .join(
           "",
