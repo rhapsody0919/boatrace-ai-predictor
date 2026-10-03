@@ -206,6 +206,7 @@ const KO_RETIRED_TERMS = [
   },
   // 「절」は韓国語で「節（期間）」の意味では一般的でなく、タブ名の「이번 시리즈」と別物に読める（BOA-720）
   { term: "이번 절", use: "이번 시리즈（今節）", row: "今節（ko）" },
+  { term: "같은 절", use: "같은 시리즈（同じ節）", row: "今節（ko）" },
 ];
 checked += 1;
 for (const { term, use, row } of KO_RETIRED_TERMS) {
