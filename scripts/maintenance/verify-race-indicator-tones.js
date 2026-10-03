@@ -13,7 +13,7 @@
  * 2. 枠別情報タブ ST考察の平均との差 `diffTone`（src/utils/courseBaseline.js）
  *    （PR #1187 ファン評価2周目）:
  *   - 走数が少ない艇（small）は色なし（1走で「−56.1」が赤く出ていた）
- *   - 表示の1桁で 0.0 になる差は色なし（記号の無い緑・赤にしない）
+ *   - 表示の1桁で ±0.1 以内の差は色なし（「0.0」は記号が無い、「−0.1」は実質平均どおり。BOA-711）
  *   - 向きが決まらない（isBetter が null）なら色なし
  */
 import { meetStVerdictTone } from "../../src/components/race/basicInfoStats.js";
@@ -36,6 +36,10 @@ const TONE_CASES = [
   ["平均より悪い・走数十分は worse", { isBetter: false, diff: -8.4 }, "worse"],
   ["走数が少ないと色なし", { isBetter: false, diff: -56.1, small: true }, null],
   ["0.0 と出る差は色なし", { isBetter: true, diff: 0.04 }, null],
+  // BOA-711: 表示で ±0.1 の差は「平均どおり」。−0.1 が赤くなっていた
+  ["−0.1 は色なし", { isBetter: false, diff: -0.1 }, null],
+  ["+0.1（丸めの誤差 0.09999）も色なし", { isBetter: true, diff: 0.09999 }, null],
+  ["±0.2 からは色", { isBetter: false, diff: -0.2 }, "worse"],
   ["isBetter が null は色なし", { isBetter: null, diff: 0 }, null],
   ["diff が null は色なし", { isBetter: true, diff: null }, null],
 ];

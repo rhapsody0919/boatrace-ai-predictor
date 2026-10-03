@@ -90,7 +90,8 @@ export function diffFromBaseline(value, baseline, direction) {
  * 平均との差に良し悪しの色を付けるか（race-detail-ui-unify R2）。
  *
  * - 向きが決まらない（差が無い・値が無い）なら色なし
- * - 表示の1桁で0になる差（「0.0」と出る）は色なし。記号の無い緑・赤にしない
+ * - 表示の1桁で ±0.1 以内の差は色なし。「0.0」は記号が無く、「−0.1」は実質「平均どおり」
+ *   なのに赤くなっていた（BOA-711）。差は表示した値どうしで出したものを渡す
  * - 走数が少ない（small）ときは色なし。1走で「−56.1」が赤く出て、初見の選手を
  *   「スタートが極端に悪い」と断定して見せていた（PR #1187 ファン評価2周目。
  *   今節タブのSTの判定文も3走未満は色を付けない）
@@ -102,7 +103,7 @@ export function diffTone({ isBetter, diff, small = false }) {
   if (isBetter === null || isBetter === undefined) return null;
   if (diff === null || diff === undefined) return null;
   if (small) return null;
-  if (Number(Math.abs(diff).toFixed(1)) === 0) return null;
+  if (Number(Math.abs(diff).toFixed(1)) <= 0.1) return null;
   return isBetter ? "better" : "worse";
 }
 

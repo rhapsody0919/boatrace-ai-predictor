@@ -15,6 +15,12 @@
   border-radius: 6px;
 }
 
+/* イン崩れ注意度のカードの中ではカードの地に合わせる。ページの地（ベージュ）だと、
+   段階の色を混ぜたカードの中で浮いた（BOA-711） */
+.volatility-display .vpb {
+  --vpb-bg: var(--surface-card);
+}
+
 /* 値と棒の色は段階で決める（getVolatilityLevel と同じ low / standard / high） */
 .vpb--low {
   --vpb-tone: var(--color-success-light);
