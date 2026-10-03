@@ -608,6 +608,20 @@ test.describe("レース詳細の表示の細部", () => {
       sticky: ".mwsg-table tbody tr:first-child td:first-child",
       table: ".mwsg-table",
     },
+    {
+      // 枠と選手名の2列を固定する。選手名の列が残れば、その左の枠の列も残っている
+      name: "モーター一覧",
+      path: `${RACE}?tab=motor`,
+      // 会場内順位の列は一覧の行のあとから足され、表が広がる。足されてから送る
+      open: async (page) => {
+        await expect(page.locator(".motor-venue-rank-head")).toBeVisible({
+          timeout: 90000,
+        });
+      },
+      hint: ".mcc-list-hint",
+      sticky: ".mcc-list-table tbody tr:first-child td:nth-child(2)",
+      table: ".mcc-list-table",
+    },
   ]) {
     test(`320px: ${screen.name}は横に送っても左端の列が残り、「‹」で戻れる（BOA-699・BOA-704）`, async ({
       page,
@@ -659,6 +673,53 @@ test.describe("レース詳細の表示の細部", () => {
       await expect(less).toHaveCount(0);
     });
   }
+  // 枠の列は幅を決めて、選手名の列をその右に固定する（BOA-699）。決めた幅に艇色のチップが
+  // 収まらないと、チップが選手名の下に潜る。内余白が変わる 768px の境目と、PC幅で溢れる 800px も通す
+  for (const width of [320, 768, 800, 1440]) {
+    test(`${width}px: モーター一覧の枠のチップが枠の列に収まり、選手名と重ならない（BOA-699）`, async ({
+      page,
+    }) => {
+      test.slow();
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${RACE}?tab=motor`);
+      await expect(page.locator(".motor-venue-rank-head")).toBeVisible({
+        timeout: 90000,
+      });
+      const m = await page.locator(".mcc-list-table").evaluate((t) =>
+        [...t.querySelectorAll("tbody tr")].map((tr) => {
+          const chip = tr.querySelector(".rr-boat-chip").getBoundingClientRect();
+          const lane = tr.children[0].getBoundingClientRect();
+          const name = tr.children[1].getBoundingClientRect();
+          return { chipRight: chip.right, laneRight: lane.right, nameLeft: name.left };
+        }),
+      );
+      for (const r of m) {
+        expect(r.chipRight).toBeLessThanOrEqual(r.laneRight);
+        expect(Math.abs(r.nameLeft - r.laneRight)).toBeLessThanOrEqual(1);
+      }
+    });
+  }
+  test("モーター一覧: 固定した枠と選手名の列も、行に乗せたとき行と同じ色になる（BOA-699）", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width: 375, height: 900 });
+    await page.goto(`${RACE}?tab=motor`);
+    const row = page.locator(".mcc-list-table .motor-ranking-row").first();
+    await expect(row).toBeVisible({ timeout: 90000 });
+    await row.hover();
+    // 行の色は 0.15 秒かけて変わる（transition）。変わり終わってから比べる
+    await expect
+      .poll(() =>
+        row.evaluate((r) => {
+          const bg = (el) => getComputedStyle(el).backgroundColor;
+          return [bg(r.children[0]), bg(r.children[1])].every(
+            (c) => c === bg(r),
+          );
+        }),
+      )
+      .toBe(true);
+  });
   test("今節の日別表: 固定した日付の列も、行に乗せたとき行と同じ色になる（PR #1202 レビュー）", async ({
     page,
   }) => {
