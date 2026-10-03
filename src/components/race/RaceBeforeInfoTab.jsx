@@ -76,6 +76,8 @@ import "./RaceBeforeInfoTab.css";
 import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
 import { formatCapturedAtJst } from "../../utils/formatters";
 import { bestOf } from "../../utils/bestOf";
+import { hasDistinctTurnTime } from "../../utils/turnTimeVenues";
+import { parseRaceId } from "../../utils/raceId";
 
 /**
  * 今節展示情報に出すオリジナル展示の種別（BOA-473）。
@@ -553,6 +555,18 @@ function RaceBeforeInfoTab({
     exhibitionCourseRow !== null &&
     hasExhibitionCourse(analysis.motorMaintenance);
 
+  // 住之江・尼崎・徳山の「まわり足」は会場独自の計測で、他場と値の水準が違う（11秒台）。
+  // 行の見出しに「※」を付け、表の下に注記を出す（data-catalog E12）
+  const turnTimeDiffers = hasDistinctTurnTime(parseRaceId(raceId)?.venueCode);
+  const TURN_ROW_KEYS = ["oriTurn", "meetOriTurn"];
+  const markTurnRow = (row) =>
+    turnTimeDiffers && TURN_ROW_KEYS.includes(row.key)
+      ? {
+          ...row,
+          label: `${row.label} ※`,
+          shortLabel: `${row.shortLabel} ※`,
+        }
+      : row;
   const rows = [
     ...(exhibitionCourseRow ? [exhibitionCourseRow] : []),
     ...buildBeforeInfoRows({
@@ -564,7 +578,9 @@ function RaceBeforeInfoTab({
       entryWeights,
     }),
     ...extraRows,
-  ];
+  ].map(markTurnRow);
+  const showTurnTimeNote =
+    turnTimeDiffers && rows.some((r) => TURN_ROW_KEYS.includes(r.key));
 
   const deepLink = (tab) =>
     venueCode && raceId
@@ -942,6 +958,11 @@ function RaceBeforeInfoTab({
         <p className="rbi-note">💡 {t("beforeInfo.detailTableNote")}</p>
         {/* 金枠と⚠の意味（PR #1193 ファン評価1周目: 件数が少なくて金枠を外したことが読めなかった） */}
         <p className="rbi-note">{t("beforeInfo.bestLegend")}</p>
+        {showTurnTimeNote && (
+          <p className="rbi-note" data-testid="rbi-turn-time-venue-note">
+            ※ {t("beforeInfo.turnTimeVenueNote")}
+          </p>
+        )}
         {exhibitionCourseOutOfRange && (
           <p className="rbi-note" data-testid="exhibition-course-out-of-range">
             {t("beforeInfo.exhibitionCourseOutOfRange")}

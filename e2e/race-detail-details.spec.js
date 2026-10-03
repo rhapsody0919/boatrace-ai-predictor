@@ -115,6 +115,29 @@ test.describe("レース詳細の表示の細部", () => {
     expect(color).toBe(hit ? success : error);
   });
 
+  // 住之江・尼崎・徳山のまわり足は会場独自の計測で、他場と値の水準が違う（11秒台。data-catalog E12）。
+  // 行の見出しに「※」を付け、表の下に注記を出す。ほかの会場には出さない
+  test("直前情報: 住之江のまわり足には「※」と会場独自の計測の注記が出て、大村には出ない", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-10-02-12-12?tab=beforeInfo");
+    const note = page.getByTestId("rbi-turn-time-venue-note");
+    await expect(note).toBeVisible({ timeout: 30000 });
+    await expect(note).toContainText("会場独自の計測");
+    await expect(
+      page.locator(".race-before-info-tab").getByText("まわり足 ※").first(),
+    ).toBeVisible();
+
+    await page.goto("/race/2026-10-02-24-01?tab=beforeInfo");
+    await expect(
+      page.locator(".race-before-info-tab").getByText("まわり足").first(),
+    ).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("rbi-turn-time-venue-note")).toHaveCount(0);
+    await expect(
+      page.locator(".race-before-info-tab").getByText("まわり足 ※"),
+    ).toHaveCount(0);
+  });
+
   test("基本情報の勝率バー: 最下位の艇も棒が空にならない（BOA-618）", async ({
     page,
   }) => {
