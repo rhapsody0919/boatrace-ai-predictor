@@ -42,3 +42,26 @@ test("ja の今節タブは従来どおり公式の種別名（準優勝戦）�
   const note = await openSettledNote(page, `/race/${RACE}`, "今節");
   await expect(note).toContainText("準優勝戦");
 });
+
+test("Ｗ準優戦（男女Ｗ優勝戦の節）も準優勝戦の区分で訳す", async ({ page }) => {
+  await page.goto("/about", { waitUntil: "domcontentloaded" });
+  const labels = await page.evaluate(async () => {
+    const { raceStageLabel } =
+      await import("/src/constants/raceStageConfig.js");
+    const t = (key) => key;
+    return ["Ｗ準優戦前半", "Ｗ準優戦後半", "準優勝戦", "準優進出戦"].map(
+      (stage) => [
+        raceStageLabel(stage, t, "ko"),
+        raceStageLabel(stage, t, "ja"),
+      ],
+    );
+  });
+  expect(labels.map(([ko]) => ko.text)).toEqual([
+    "raceStage.semifinal",
+    "raceStage.semifinal",
+    "raceStage.semifinal",
+    "raceStage.semifinalQualifier",
+  ]);
+  // ja は公式の種別名のまま
+  expect(labels[0][1]).toEqual({ text: "Ｗ準優戦前半", isOfficial: true });
+});
