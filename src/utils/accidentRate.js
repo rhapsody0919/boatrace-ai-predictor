@@ -18,7 +18,8 @@ export const ACCIDENT_NEAR_POINTS = 20;
  * 選手の行に目印を出す最少の出走回数。F1本（20点）だけで 0.70 を超えるのは出走28走以下のとき
  * （20÷28=0.714、20÷29=0.689）。期の初めに「F1本だけで超え」の目印が大量に出るのを避ける
  * （2026-06-30 時点で10走以上なら超え120人・付近284人、30走以上なら超え20人・付近225人。
- *  10/02 時点では30走以上で超え26人・付近106人＝全1,625人の約8%）。開いた欄には走数によらず出す
+ *  10/02 時点では30走以上で超え26人・付近106人＝全1,625人の約8%）。開いた欄は、未満のうちは事故率と内訳だけを出し、
+ *  超え・残り点は出さない
  */
 export const ACCIDENT_BADGE_MIN_STARTS = 30;
 
@@ -45,10 +46,12 @@ export function currentPeriodRange(raceDate) {
  * @param {{from: string}} range currentPeriodRange の戻り値（2本目以降の F の加点の有無に使う）
  * @returns {{starts: number, points: number, rate: number|null, need: number,
  *            counts: {F: number, L1: number, K1: number, S1: number, S2: number},
- *            status: "over"|"near"|null, showBadge: boolean}}
+ *            status: "over"|"near"|null, settled: boolean, showBadge: boolean}}
  *   rate は小数第2位で切り捨てた値。need は今の出走数のまま 0.70 を超える（0.71以上になる）までの点数（0以上）。
  *   status は over（超え）・near（事故点1点以上で、あと ACCIDENT_NEAR_POINTS 点以内）・null。
- *   showBadge は選手の行に目印を出すか（status があり、出走が ACCIDENT_BADGE_MIN_STARTS 以上）
+ *   settled は出走が ACCIDENT_BADGE_MIN_STARTS 以上か。未満のうちは1本の事故で大きく動くので、
+ *   画面は超え・残り点を出さない（期の序盤に無事故の選手へ「あと8点」と出していた。PR #1219 ファン評価1周目）。
+ *   showBadge は選手の行に目印を出すか（status があり、settled）
  */
 export function computeAccidentStats(row, range) {
   const starts = row?.starts ?? 0;
@@ -84,6 +87,7 @@ export function computeAccidentStats(row, range) {
     need,
     counts,
     status,
+    settled: starts >= ACCIDENT_BADGE_MIN_STARTS,
     showBadge: status !== null && starts >= ACCIDENT_BADGE_MIN_STARTS,
   };
 }

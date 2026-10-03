@@ -213,8 +213,10 @@ check(
     );
     return (
       a.status === "over" &&
+      a.settled === false &&
       a.showBadge === false &&
       b.status === "over" &&
+      b.settled === true &&
       b.showBadge === true
     );
   })(),

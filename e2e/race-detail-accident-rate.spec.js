@@ -73,8 +73,12 @@ test("行は「超え」と「あと20点以内」の選手にだけ目印を出
     "事故率0.78 B2ライン超え",
   );
   await expect(page.locator(".rbit-accident-badge:not(.is-over)")).toHaveText(
-    "B2ラインまで あと6点",
+    "事故率 B2ラインまで あと6点",
   );
+  // 目印が出ているときだけ、何の点数かの凡例を出す（予選の得点と取り違えない。PR #1219 ファン評価1周目）
+  await expect(
+    page.locator(".rbit-note", { hasText: "予選の得点とは別" }),
+  ).toBeVisible();
 
   // 超えの選手を開く
   await page
@@ -157,4 +161,58 @@ test("取得に失敗したら、開いた欄に再試行つきのエラーを�
   await expect(page.locator(".rbit-accident-badge")).toHaveCount(2, {
     timeout: 25000,
   });
+});
+
+test("出走30走未満は、開いた欄に残り点・超えを出さない（期の序盤に無事故の選手へ「あと8点」と出さない）", async ({
+  page,
+}) => {
+  await mockRpc(page, (route, ids) =>
+    route.fulfill({
+      json: ids.map((racer_id, i) =>
+        i === 0
+          ? {
+              racer_id,
+              starts: 14,
+              incidents: [
+                { race_id: "2026-05-10-01-01", code: "F", stage: "予選" },
+              ],
+            }
+          : { racer_id, starts: 14, incidents: [] },
+      ),
+    }),
+  );
+  await openBasicInfo(page);
+  await expect(page.locator(".rbit-accident-badge")).toHaveCount(0);
+  await expect(
+    page.locator(".rbit-note", { hasText: "予選の得点とは別" }),
+  ).toHaveCount(0);
+  for (const i of [0, 1]) {
+    await page.locator(".rbit-bar-row").nth(i).click();
+    const box = page.locator(".rbit-accident");
+    await expect(box.locator(".rbit-accident-line")).toHaveText(
+      "出走が少ないうちは1本の事故で大きく動くため、B2ラインまでの残り点は出走30走から出します",
+      { timeout: 25000 },
+    );
+    // F1本・14走（1.42）でも赤にしない
+    await expect(box).not.toHaveClass(/is-over/);
+  }
+});
+
+test("期の初日のレースは、期間の終わりを書かない（「05-01〜04-30」と逆にしない）", async ({
+  page,
+}) => {
+  await mockRpc(page, (route) => route.fulfill({ json: [] }));
+  await page.goto("/race/2026-05-01-01-08");
+  await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+  await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
+    timeout: 25000,
+  });
+  await page.locator(".rbit-bar-row").first().click();
+  await expect(page.locator(".rbit-accident-heading")).toHaveText(
+    "今期の事故率（目安・2026-05-01〜）",
+    { timeout: 25000 },
+  );
+  await expect(page.locator(".rbit-accident-values")).toHaveText(
+    "今期の出走はまだありません",
+  );
 });

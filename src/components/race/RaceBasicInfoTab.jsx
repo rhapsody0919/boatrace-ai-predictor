@@ -47,7 +47,10 @@ import {
 import InlineFetchError from "../InlineFetchError";
 import FlyingBadge from "./FlyingBadge";
 import { bestOf } from "../../utils/bestOf";
-import { computeAccidentStats } from "../../utils/accidentRate";
+import {
+  ACCIDENT_BADGE_MIN_STARTS,
+  computeAccidentStats,
+} from "../../utils/accidentRate";
 import "./RaceBasicInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
@@ -257,6 +260,8 @@ function RaceBasicInfoTab({
     const last = new Date(`${range.to}T00:00:00Z`);
     last.setUTCDate(last.getUTCDate() - 1);
     const lastStr = last.toISOString().slice(0, 10);
+    // 期の初日のレースは、前日が期の前になる（「2026-05-01〜04-30」と逆になる。ファン評価1周目）
+    if (lastStr < range.from) return { from: range.from, to: null };
     return {
       from: range.from,
       to:
@@ -688,10 +693,14 @@ function RaceBasicInfoTab({
                       .join(t("basicInfo.accidentKindSeparator"));
                     return (
                       <div
-                        className={`rbit-accident${acc.status === "over" ? " is-over" : ""}`}
+                        className={`rbit-accident${acc.settled && acc.status === "over" ? " is-over" : ""}`}
                       >
                         <div className="rbit-accident-heading">
-                          {t("basicInfo.accidentTitle", accidentRangeLabel)}
+                          {accidentRangeLabel.to
+                            ? t("basicInfo.accidentTitle", accidentRangeLabel)
+                            : t("basicInfo.accidentTitleOpen", {
+                                from: accidentRangeLabel.from,
+                              })}
                         </div>
                         {acc.starts === 0 ? (
                           <p className="rbit-accident-values">
@@ -714,11 +723,15 @@ function RaceBasicInfoTab({
                               })}
                             </span>
                             <span className="rbit-accident-line">
-                              {acc.status === "over"
-                                ? t("basicInfo.accidentLineOver")
-                                : t("basicInfo.accidentLineNear", {
-                                    need: acc.need,
-                                  })}
+                              {!acc.settled
+                                ? t("basicInfo.accidentLineEarly", {
+                                    min: ACCIDENT_BADGE_MIN_STARTS,
+                                  })
+                                : acc.status === "over"
+                                  ? t("basicInfo.accidentLineOver")
+                                  : t("basicInfo.accidentLineNear", {
+                                      need: acc.need,
+                                    })}
                             </span>
                           </div>
                         )}
@@ -1246,6 +1259,11 @@ function RaceBasicInfoTab({
       {(officialRates ?? []).some(
         (r) => (r.f_count ?? 0) > 0 || (r.l_count ?? 0) > 0,
       ) && <p className="rbit-note">{t("flyingBadge.legend")}</p>}
+      {/* 事故率の目印の凡例（BOA-327）。目印が1つでも出ているときだけ。「あと◯点」を予選の得点と
+          取り違えないよう、何の点数かを書く（ファン評価1周目） */}
+      {[...accidentByRacer.values()].some((a) => a.showBadge) && (
+        <p className="rbit-note">{t("basicInfo.accidentLegend")}</p>
+      )}
     </div>
   );
 }
