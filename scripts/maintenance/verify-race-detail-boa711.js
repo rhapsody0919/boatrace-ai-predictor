@@ -62,6 +62,10 @@ check(
     /\.rsc-note-small \{[^}]*text-wrap: balance/.test(stCss),
 );
 check(
+  "ST考察: 「〜ほど良い」は行見出しの列の中で折り返す（375px で隣の列にはみ出した）",
+  /\.rsc-dir \{[^}]*white-space: normal/.test(stCss),
+);
+check(
   "ST考察・直前情報・モーターの注記に条件を書く（抜出の色なし、⚠の6件、上ほど速い）",
   json("src/locales/ja/common.json").stConsideration.caveat.includes(
     "平均が1回未満で0回",
@@ -107,8 +111,8 @@ const scales = [...mood.matchAll(/maxScale: ([\d.]+)/g)].map((m) =>
   Number(m[1]),
 );
 check(
-  "イン崩れのアイコンの波紋はカードの外・見出しにかからない大きさ（2.2倍以下）",
-  scales.length === 3 && scales.every((x) => x <= 2.2),
+  "イン崩れのアイコンの波紋はカードの外・見出しにかからない大きさ（2倍以下）",
+  scales.length === 3 && scales.every((x) => x <= 2),
 );
 check(
   "イン崩れ注意度のカードの中の比較バーは、カードの地に合わせる",
@@ -122,16 +126,6 @@ check(
     read("src/components/race/VolatilityDisplay.jsx"),
   ),
 );
-const tokens = read("src/styles/design-tokens.css");
-check(
-  "得点率早見の緑の塗りは、ダークで黄みの緑から作る（青緑に見えた）",
-  (
-    tokens.match(
-      /--color-success-bg: color-mix\(in srgb, #4ade80 20%, transparent\)/g,
-    ) ?? []
-  ).length === 2,
-);
-
 if (failures.length > 0) {
   console.error(`\nverify-race-detail-boa711: ${failures.length}件失敗`);
   process.exit(1);

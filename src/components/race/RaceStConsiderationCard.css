@@ -386,6 +386,8 @@
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-normal);
   color: var(--text-secondary);
-  /* 375px の行見出しの列（60px）に1行で入らないので折り返す。折らないと隣の列に重なった */
+  /* 375px の行見出しの列（60px）に1行で入らないので折り返す。行見出しは nowrap なので
+     明示的に戻す。折らないと隣の列に8pxはみ出した（BOA-711 ファン評価1周目） */
+  white-space: normal;
   line-height: 1.2;
 }

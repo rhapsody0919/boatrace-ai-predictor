@@ -17,7 +17,7 @@ const LEVEL_CONFIG = {
     rings: 5,
     duration: 1.15,
     delayStep: 0.28,
-    maxScale: 2.2,
+    maxScale: 2,
     color: "var(--color-warning-light)",
   },
   standard: {
