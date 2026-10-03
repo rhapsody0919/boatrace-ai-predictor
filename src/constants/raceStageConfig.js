@@ -75,11 +75,7 @@ const RACE_STAGE_CATEGORY_RULES = [
     key: "semifinalQualifier",
     test: (s) => s.includes("準々") || s.includes("準優進出"),
   },
-  // 男女Ｗ優勝戦の節は「Ｗ準優戦前半」「Ｗ準優戦後半」と書く（BOA-713 のレビューで発見）
-  {
-    key: "semifinal",
-    test: (s) => s.includes("準優勝戦") || s.includes("準優戦"),
-  },
+  { key: "semifinal", test: (s) => s.includes("準優勝戦") },
   { key: "final", test: (s) => s.includes("優勝戦") },
   { key: "dream", test: (s) => s.includes("ドリーム") || s.includes("DR") },
   {
