@@ -20,6 +20,13 @@
  *   node scripts/ml/analogy/export_pool.js --no-cache # 手元（Storage を読み書きしない）
  *   node scripts/ml/analogy/export_pool.js --no-cache races results # 指定したテーブルだけ（動作確認用）
  *   node scripts/ml/analogy/export_pool.js --refresh-kb # 長期分を DB から取り直して Storage を上書き
+ *   node scripts/ml/analogy/export_pool.js --daily      # 日次の特徴量ジョブ（BOA-271 B、daily_features.py の前）
+ *
+ * 日次（--daily）: DB から読むのは本体分の前月と当月（JST）だけ。それより前の本体分は、週次の学習が置いた
+ * `analogy/source/main/{テーブル}/{YYYY-MM}.csv.gz`、長期分は `analogy/source/{KB_CACHE_VERSION}/` から読む。
+ * Storage には書かない（読み取りだけ）。キャッシュの月が1つでも欠けていれば失敗する（欠けた月を飛ばすと
+ * 選手の過去30走が黙って短くなるため）。DB は7日ずつに分けて読む（深い OFFSET を避ける）。
+ * 週次（--daily でなく Storage を使うとき）: 本体分の当月より前の月を `source/main/` に上書きで置く。
  */
 
 import fs from "fs";
@@ -30,6 +37,7 @@ import { fileURLToPath } from "url";
 import { supabase } from "../../lib/supabaseClient.js";
 import { BUCKET, ensureBucket } from "./storage.js";
 import { assertCachedHeader } from "./storageRules.js";
+import { weekRanges } from "./week-ranges.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_DIR =
@@ -42,6 +50,11 @@ const CONCURRENCY = 6;
 const args = new Set(process.argv.slice(2));
 const USE_CACHE = !args.has("--no-cache");
 const REFRESH_KB = args.has("--refresh-kb");
+const DAILY = args.has("--daily");
+if (DAILY && !USE_CACHE)
+  throw new Error(
+    "--daily は Storage のキャッシュを読む（--no-cache と同時に使えない）",
+  );
 const ONLY = [...args].filter((a) => !a.startsWith("--"));
 
 const csvCell = (v) => {
@@ -67,6 +80,10 @@ function months(from, to) {
 // 月の境目は JST で決める（UTC だと毎月1日の JST 0:00〜9:00 に当月を取りこぼす。race_id の日付は JST）
 const thisMonth = () =>
   new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 7);
+const prevMonth = (m) => {
+  const [y, mo] = m.split("-").map(Number);
+  return mo === 1 ? ym(y - 1, 12) : ym(y, mo - 1);
+};
 
 async function fetchRange(table, cols, orderCols, rangeCol, lo, hi) {
   const rows = [];
@@ -88,35 +105,71 @@ async function fetchRange(table, cols, orderCols, rangeCol, lo, hi) {
   }
 }
 
-/** 長期分の1か月: Storage にあればそれを、無ければ DB から読んで Storage に置く */
+/** Storage のキャッシュ（先頭行が列名の CSV.gz）の本体。無ければ null */
+async function readCache(t, key) {
+  const { data, error } = await supabase.storage.from(BUCKET).download(key);
+  if (error) return null;
+  // キャッシュは先頭行に列名を持つ。列が今のコードと違えば黙って読まずに失敗する
+  const csv = zlib.gunzipSync(Buffer.from(await data.arrayBuffer())).toString();
+  assertCachedHeader(csv, t.colList, key);
+  const nl = csv.indexOf("\n");
+  return nl === -1 ? "" : csv.slice(nl + 1);
+}
+
+async function writeCache(t, key, body) {
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(key, zlib.gzipSync(`${t.colList.join(",")}\n${body}`), {
+      upsert: true,
+      contentType: "application/gzip",
+    });
+  if (error) throw new Error(`${key} の保存に失敗: ${error.message}`);
+}
+
+const mainCacheKey = (t, lo) => `source/main/${t.name}/${lo}.csv.gz`;
+
+/** 本体分の1か月。日次は前月より前を Storage から（無ければ失敗）、前月・当月は DB から7日ずつ読む。
+ * 週次は DB から読み、当月より前の月を Storage に置く（前月も置く。月が替わった直後の日次は、前々月を
+ * キャッシュから読むため。前月は補完で変わりうるが、日次は前月を DB から読むので古い値は使わない） */
+async function mainMonth(t, lo, hi) {
+  const month = thisMonth();
+  if (DAILY && lo < prevMonth(month)) {
+    const body = await readCache(t, mainCacheKey(t, lo));
+    if (body === null)
+      throw new Error(
+        `${mainCacheKey(t, lo)} がありません（週次の学習が置く。日次は DB から読み直さない）`,
+      );
+    return body;
+  }
+  const ranges = DAILY ? weekRanges(lo, hi) : [[lo, hi]];
+  const rows = [];
+  for (const [a, b] of ranges)
+    rows.push(
+      ...(await fetchRange(t.table, t.cols, t.order, t.rangeCol, a, b)),
+    );
+  const body = toCsv(t.colList, rows);
+  if (USE_CACHE && !DAILY && lo < month)
+    await writeCache(t, mainCacheKey(t, lo), body);
+  return body;
+}
+
+/** 長期分の1か月: Storage にあればそれを、無ければ DB から読んで Storage に置く（日次は無ければ失敗） */
 async function kbMonth(t, lo, hi) {
   const key = `source/${KB_CACHE_VERSION}/${t.name}/${lo}.csv.gz`;
   if (USE_CACHE && !REFRESH_KB) {
-    const { data, error } = await supabase.storage.from(BUCKET).download(key);
-    if (!error) {
-      // キャッシュは先頭行に列名を持つ。列が今のコードと違えば黙って読まずに失敗する
-      const csv = zlib
-        .gunzipSync(Buffer.from(await data.arrayBuffer()))
-        .toString();
-      assertCachedHeader(csv, t.colList, key);
-      const nl = csv.indexOf("\n");
-      return nl === -1 ? "" : csv.slice(nl + 1);
-    }
+    const body = await readCache(t, key);
+    if (body !== null) return body;
+    if (DAILY)
+      throw new Error(
+        `${key} がありません（日次は DB から長期分を読み直さない）`,
+      );
   }
   const rows = await fetchRange(t.table, t.cols, t.order, t.rangeCol, lo, hi);
   // 長期のアーカイブに空の月は無い。0行を置くと以後ずっと空のまま読まれるので失敗にする
   if (rows.length === 0)
     throw new Error(`${t.table} ${lo}: 0行（キャッシュしない）`);
   const body = toCsv(t.colList, rows);
-  if (USE_CACHE) {
-    const { error } = await supabase.storage
-      .from(BUCKET)
-      .upload(key, zlib.gzipSync(`${t.colList.join(",")}\n${body}`), {
-        upsert: true,
-        contentType: "application/gzip",
-      });
-    if (error) throw new Error(`${key} の保存に失敗: ${error.message}`);
-  }
+  if (USE_CACHE) await writeCache(t, key, body);
   return body;
 }
 
@@ -135,10 +188,12 @@ async function exportTable(t) {
       const [lo, hi] = t.ranges[i];
       chunks[i] = t.kb
         ? await kbMonth(t, lo, hi)
-        : toCsv(
-            t.colList,
-            await fetchRange(t.table, t.cols, t.order, t.rangeCol, lo, hi),
-          );
+        : t.rangeCol
+          ? await mainMonth(t, lo, hi)
+          : toCsv(
+              t.colList,
+              await fetchRange(t.table, t.cols, t.order, t.rangeCol, lo, hi),
+            );
     }
   }
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
@@ -251,7 +306,7 @@ const TABLES = [
 async function main() {
   if (!supabase) throw new Error("Supabase 環境変数が未設定（.env.local）");
   fs.mkdirSync(OUT_DIR, { recursive: true });
-  if (USE_CACHE) await ensureBucket();
+  if (USE_CACHE && !DAILY) await ensureBucket();
   // テーブルを指定して書き出したときは、前回の manifest に上書きで足す（指定しなかったテーブルの記録を消さない）
   const manifestPath = path.join(OUT_DIR, "export_manifest.json");
   const previous =
@@ -271,7 +326,9 @@ async function main() {
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 1));
 }
 
-main().catch((e) => {
-  console.error("❌", e.message || e);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((e) => {
+    console.error("❌", e.message || e);
+    process.exit(1);
+  });
+}

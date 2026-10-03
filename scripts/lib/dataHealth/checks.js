@@ -151,6 +151,18 @@ export const COUNT_CHECKS = Object.freeze([
     requiresTable: "race_series",
   },
   {
+    id: "analogy_race_features.covered",
+    label: "レースごとの寄与度の特徴量(出走行)",
+    classification: "count",
+    severity: "alert",
+    fn: "data_health_analogy_race_features",
+    numerator: "with_features",
+    denominator: "expected",
+    minDenominator: 100,
+    requiresTable: "analogy_race_features",
+    note: "BOA-271 B。日次の特徴量ジョブ（JST 6:40・9:40・13:40）の書き込み。当日の欠けは日次ジョブ自身が失敗として通知する（7:20 の拾い直しの dispatch は T10-7 で足す）",
+  },
+  {
     id: "racer_period_stats.covered",
     label: "選手の期別成績(出走した選手)",
     classification: "count",
@@ -258,6 +270,10 @@ export const EMPTY_TABLE_POLICIES = Object.freeze({
   },
   race_series: { policy: "pending", note: "月間スケジュールの取り込み前" },
   racer_period_stats: { policy: "pending", note: "fan ファイルの取り込み前" },
+  analogy_race_features: {
+    policy: "pending",
+    note: "BOA-271 B の日次の特徴量ジョブの稼働前（マイグレーション127）",
+  },
 });
 
 /**
