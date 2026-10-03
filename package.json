@@ -88,6 +88,7 @@
     "verify:race-cancellation": "node scripts/maintenance/verify-race-cancellation-usage.js",
     "verify:race-outcome": "node scripts/maintenance/verify-race-outcome.js",
     "verify:actionlint": "node scripts/maintenance/verify-actionlint.js",
+    "verify:db-apply": "node scripts/maintenance/verify-db-apply.js",
     "setup:actionlint": "node scripts/maintenance/install-actionlint.js",
     "verify:ci": "node scripts/maintenance/run-verify-registry.js",
     "verify:registry": "node scripts/maintenance/run-verify-registry.js --check",

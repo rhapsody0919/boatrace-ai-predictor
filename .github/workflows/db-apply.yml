@@ -1,0 +1,125 @@
+name: DB Apply (production)
+
+# docs/db-migration/ のマイグレーション1本を本番 DB に適用する。手順は docs/operation/db-apply.md。
+#
+#   inspect  承認の前。secret を読まない。パスの検証・sha256・触るテーブル・確認 SQL・本文を job summary に出し、
+#            トランザクションに包めない文・psql のメタコマンドがあればここで落とす
+#   apply    Environment production-db（required reviewer の承認が要る）。sha256 を再照合してから psql で適用する
+#   record   適用の後。APPLIED.md を「適用済み」にするブランチを作り PR を開く（マージは人が行う）
+#
+# 起動・承認はユーザー本人が Actions 画面で行う。Claude からの起動・承認はフック（.claude/hooks/guard-deploy-approval.sh）で止めている。
+# データの一括投入（数万行の upsert スクリプト）は対象外。必要になったら別のワークフローにする。
+
+on:
+  workflow_dispatch:
+    inputs:
+      migration:
+        description: "適用するファイル（例: docs/db-migration/122_venues_first_win_rate_race_count.sql）"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# 同時に2本走らせない（2本目は1本目の終了を待つ）
+concurrency:
+  group: db-apply
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    # fork では動かさない（fork の Actions にはこのリポジトリの secret・Environment は無いが、念のため）
+    if: github.repository == 'rhapsody0919/boatrace-ai-predictor'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sha256: ${{ steps.inspect.outputs.sha256 }}
+    steps:
+      - name: master からの起動か
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          if [ "$REF" != "refs/heads/master" ]; then
+            echo "::error::master 以外（$REF）からは起動できない。Actions 画面の Use workflow from で master を選ぶ"
+            exit 1
+          fi
+
+      # 起動した時点の master のコミット（github.sha）を取り出す。apply も同じコミットを取り出すので、
+      # 承認を待つ間に master が進んでも、承認したものと違うファイルは適用されない
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: 検査（job summary に出す）
+        id: inspect
+        env:
+          MIGRATION: ${{ inputs.migration }}
+        run: node scripts/db/db-apply.js inspect "$MIGRATION"
+
+  apply:
+    needs: inspect
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # required reviewer の承認を待つ。承認するまで、この job は secret を読めない
+    environment: production-db
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      # ubuntu の runner には PostgreSQL 16 の psql が入っている。無ければ入れる
+      - name: psql の用意
+        run: |
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -q
+            sudo apt-get install -y -q postgresql-client
+          fi
+          psql --version
+
+      - name: 適用（sha256 を再照合し、1つのトランザクションで実行）
+        env:
+          MIGRATION: ${{ inputs.migration }}
+          EXPECTED_SHA256: ${{ needs.inspect.outputs.sha256 }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: node scripts/db/db-apply.js apply "$MIGRATION" "$EXPECTED_SHA256"
+
+  record:
+    needs: [inspect, apply]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      # 台帳は最新の master に足す（承認を待つ間に master が進んでいても衝突しないように）
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: master
+
+      - name: APPLIED.md を更新して PR を作る
+        env:
+          MIGRATION: ${{ inputs.migration }}
+          SHA256: ${{ needs.inspect.outputs.sha256 }}
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          node scripts/db/db-apply.js mark-applied "$MIGRATION" "$SHA256"
+          file=$(basename "$MIGRATION")
+          # record だけを再実行したとき（PR の作成で落ちた等）に、1回目に push したブランチと名前がぶつからないよう試行回数も入れる
+          branch="db-apply/${file%.sql}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add docs/db-migration/APPLIED.md
+          git commit -m "docs: ${file} を本番に適用済みとして台帳に記録する [db-apply]"
+          git push origin "$branch"
+          body=$(printf '%s\n\n%s\n%s\n\n%s\n' \
+            "db-apply ワークフローで \`${MIGRATION}\` を本番 DB に適用した。台帳（docs/db-migration/APPLIED.md）の行を「適用済み」にする。" \
+            "- run: ${RUN_URL}" \
+            "- sha256: \`${SHA256}\`" \
+            "GITHUB_TOKEN が作った PR では他のワークフロー（Quality Gates）が自動では走らない。走らせるには PR を閉じて開き直す。")
+          gh pr create --base master --head "$branch" \
+            --title "docs: ${file} を本番に適用済みとして台帳に記録する" \
+            --body "$body"
