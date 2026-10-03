@@ -1,6 +1,7 @@
 /* イン崩れ指数の 0〜100 バー（VolatilityPercentileBar.jsx）。
-   既定はページ・カードの地に載せる配色（意味トークン。ダークモードで反転する）。
-   常に明るい地のカード（VolatilityDisplay）に載せるときは .vpb--on-light で以前の固定色にする */
+   ページ・カードの地に載せる配色（意味トークン。ダークモードで反転する）。
+   VolatilityDisplay もカードの地をトークンから作るようにしたので、明るい地専用の配色は外した
+   （race-detail-ui-unify FR-6） */
 .vpb {
   --vpb-bg: var(--surface-page);
   --vpb-label: var(--text-secondary);
@@ -12,14 +13,6 @@
   padding: 0.6rem 0.75rem;
   background: var(--vpb-bg);
   border-radius: 6px;
-}
-
-.vpb--on-light {
-  --vpb-bg: rgba(255, 255, 255, 0.55);
-  --vpb-label: #555;
-  --vpb-track: #e0e0e0;
-  --vpb-median: #616161;
-  --vpb-ends: #999;
 }
 
 /* 値と棒の色は段階で決める（getVolatilityLevel と同じ low / standard / high） */
