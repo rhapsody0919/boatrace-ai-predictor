@@ -33,6 +33,7 @@ import {
 } from "../components/race/basicInfoStats.js";
 import { tallyWinPlaceShow } from "../utils/racerConditionStats.js";
 import { isRaceCancelled } from "../utils/raceCancellation.js";
+import { currentPeriodRange } from "../utils/accidentRate.js";
 import { competitionRank } from "../utils/competitionRank.js";
 import { toWakuRacerStats } from "../utils/racerStats.js";
 import {
@@ -7407,6 +7408,53 @@ export const supabaseDataService = {
           if (isPermissionDeniedError(error)) {
             // 095（匿名へのSELECT公開）が未適用の間はここを通る
             return { state: "forbidden", rows: [], fetchFailed: true };
+          }
+          throw error;
+        }
+      },
+    );
+  },
+
+  /**
+   * 選手の今期の事故率（目安）の元データ（BOA-327、マイグレーション126の RPC get_racer_accident_records）。
+   * 選手ごとに出走回数と事故の走（F・L1・K1・S1・S2）だけを返す。点数の計算は src/utils/accidentRate.js。
+   *
+   * 期間は今期の初日から、表示中のレースの前日まで（過去のレースはそのレース時点の値になる）。
+   * RPC が未適用（関数が無い）ときは {state: "unavailable"} を返し、画面は目印も欄も出さない
+   * （取得の失敗とは区別する。失敗は例外で上に流す）。
+   *
+   * @param {Array<number>} racerIds 登録番号
+   * @param {string} raceDate `YYYY-MM-DD`
+   * @returns {Promise<{rows: Array<{racer_id: number, starts: number, incidents: Array}>, range: {from: string, to: string}}|{state: "unavailable", rows: [], fetchFailed: true}>}
+   */
+  getRacerAccidentRecords(racerIds, raceDate) {
+    const ids = [...new Set((racerIds ?? []).filter(Boolean))].sort(
+      (a, b) => a - b,
+    );
+    const range = raceDate ? currentPeriodRange(raceDate) : null;
+    if (ids.length === 0 || !range)
+      return Promise.resolve({ rows: [], range });
+    return withCache(
+      `racer-accident-records-v1-${range.from}-${range.to}-${ids.join(",")}`,
+      async () => {
+        if (!supabase) {
+          throw new Error("Supabase client not initialized");
+        }
+        try {
+          const { data } = await supabase.rpc("get_racer_accident_records", {
+            p_racer_ids: ids,
+            p_from: range.from,
+            p_to: range.to,
+          });
+          return { rows: data ?? [], range };
+        } catch (error) {
+          // 126 が未適用（関数が無い）: PostgREST は PGRST202、PostgreSQL は 42883
+          if (
+            error?.code === "PGRST202" ||
+            error?.code === "42883" ||
+            isPermissionDeniedError(error)
+          ) {
+            return { state: "unavailable", rows: [], fetchFailed: true };
           }
           throw error;
         }

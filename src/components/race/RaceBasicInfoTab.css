@@ -133,6 +133,72 @@
   min-width: 0;
 }
 
+/* 今期の事故率の目印（BOA-327）。行の2段目（名前の列から右端まで）に出す */
+.rbit-accident-badge {
+  grid-column: 2 / -1;
+  justify-self: start;
+  margin-top: calc(-1 * var(--spacing-1));
+  flex-shrink: 0;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.4;
+  padding: 0 var(--spacing-1);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-full);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.rbit-accident-badge.is-over {
+  border-color: var(--color-error-text);
+  color: var(--color-error-text);
+}
+
+/* 開いた欄の今期の事故率（BOA-327） */
+.rbit-accident {
+  margin-bottom: var(--spacing-3);
+  padding-bottom: var(--spacing-2);
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+}
+
+.rbit-accident-heading {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-1);
+}
+
+.rbit-accident-values {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-1) var(--spacing-3);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rbit-accident-rate {
+  font-weight: var(--font-weight-bold);
+}
+
+.rbit-accident-breakdown {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rbit-accident.is-over .rbit-accident-rate,
+.rbit-accident.is-over .rbit-accident-line {
+  color: var(--color-error-text);
+}
+
+.rbit-accident-note {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
 .rbit-name {
   font-size: var(--font-size-sm);
   overflow: hidden;
