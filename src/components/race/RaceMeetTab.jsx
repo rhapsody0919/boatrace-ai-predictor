@@ -61,7 +61,7 @@ import {
   sparkLeftPercent,
 } from "../../utils/trendDateLayout";
 import "./RaceMeetTab.css";
-import "../common/HorizontalScrollHint.css";
+import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
 
 // 順位の対象外の理由 → 画面の文言キー（meetTab.<key> と meetTab.<key>Title）。BOA-587
 const EXCLUDED_LABEL_KEY = {
@@ -110,8 +110,10 @@ function RaceMeetTab({
   const {
     ref: forecastRef,
     hasMore: forecastHasMore,
+    hasLess: forecastHasLess,
     update: forecastUpdate,
     scrollRight: forecastScrollRight,
+    scrollLeft: forecastScrollLeft,
     // 行数が決まってから測り直す（マウント直後は取得前で幅が無い）
   } = useHorizontalScrollHint([sortedPlayers.length, board?.meetStart]);
   // 選んでいる艇はタブをまたいで共有する（BOA-492）。共有値が null（＝まだ
@@ -271,6 +273,9 @@ function RaceMeetTab({
     !prelimOver &&
     bordersReady &&
     border !== undefined;
+  // まだ全員が1走していないので目安を伏せている間（BOA-690）
+  const borderPendingShown =
+    !bordersReady && !isCancelled && !isAfterPrelim && !prelimOver;
   const showBorder =
     !isCancelled &&
     bordersReady &&
@@ -565,6 +570,25 @@ function RaceMeetTab({
     );
   };
 
+  // 表の印の説明（人数の行の後ろの段落に出す。BOA-714）
+  const showPostPrelimFlyingNote = sortedPlayers.some((p) =>
+    ranking.some(
+      (r) =>
+        r.racerId === p.racerId &&
+        r.rank !== null &&
+        postPrelimFlying.has(r.racerId),
+    ),
+  );
+  const showAbsentNote = absentOnly.some(inTable);
+  const showFinishAbsentNote = [...ranking, ...absentOnly]
+    .filter(inTable)
+    .some((r) => r.finishes.includes(FINISH_ABSENT));
+  const hasTableNotes =
+    showPostPrelimFlyingNote ||
+    showAbsentNote ||
+    notYetRun.length > 0 ||
+    showFinishAbsentNote;
+
   return (
     <div className="race-meet-tab">
       <p className="rmt-note">{t("meetTab.note")}</p>
@@ -731,6 +755,25 @@ function RaceMeetTab({
             </tbody>
           </table>
           <p className="rmt-hint">{t("meetTab.rowHint")}</p>
+          {/* **Ｗ優勝戦の節**は1つの節に独立した2つの勝ち上がりが同居する
+              （全期間で6節）。何も言わずに人数が半分になると「なぜ減ったのか」に
+              なるので、節全体の人数と併せて断る。準優の目安が出ていない日は
+              その語に触れない。両方の選手が乗るレース（予選終了後の消化レース。
+              実データでは多摩川に5本）では分けられないので、そちらも断る（BOA-511）。
+              人数の行より先に置く。後ろにあると「24人」が先に来て、表の見出し
+              「前検（48人中）」と食い違って見えた（BOA-714） */}
+          {board?.isSplitMeet && (
+            <p className="rmt-series-note">
+              {seriesSplit
+                ? t(
+                    showBorderBadge
+                      ? "meetTab.seriesSplitNote"
+                      : "meetTab.seriesSplitNoteNoBorder",
+                    { meetTotal },
+                  )
+                : t("meetTab.seriesMixedNote", { total: rankedOnly.length })}
+            </p>
+          )}
           <p className="rmt-sub">
             {/* 金枠の意味（PR #1187 ファン評価1周目: 説明がどこにも無かった） */}
             {bestRate.size + bestRank.size + bestPretest.size > 0 && (
@@ -782,66 +825,12 @@ function RaceMeetTab({
                 },
               );
             })()}
-            {/* 「予選後F」の意味（セルの title はタッチ端末で読めない。BOA-626）。
-                **表の6艇に印が出ているときだけ**断る。節の誰かに居るだけで出すと、
-                表に印が無いのに説明だけ出て「どこにあるのか」と迷う（ファン評価1周目） */}
-            {sortedPlayers.some((p) =>
-              ranking.some(
-                (r) =>
-                  r.racerId === p.racerId &&
-                  r.rank !== null &&
-                  postPrelimFlying.has(r.racerId),
-              ),
-            ) && <> {t("meetTab.postPrelimFlyingNote")}</>}
-            {/* 「欠場」の理由。セルの title はタッチ端末で読めないので本文にも書く
-                （BOA-504 ファン評価） */}
-            {absentOnly.some(inTable) && <> {t("meetTab.absentNote")}</>}
-            {notYetRun.length > 0 && (
-              <>
-                {" "}
-                {t(
-                  isCancelled
-                    ? "meetTab.notYetRunCancelledNote"
-                    : "meetTab.notYetRunNote",
-                )}
-              </>
-            )}
-            {/* 着順の並びの「欠」の意味と、得点率の分母から外していること
-                （一部欠場の開催でも書く。BOA-504 ファン評価） */}
-            {[...ranking, ...absentOnly]
-              .filter(inTable)
-              .some((r) => r.finishes.includes(FINISH_ABSENT)) && (
-              <> {t("meetTab.finishAbsentNote")}</>
-            )}
-            {showBorderBadge && (
-              <>
-                {" "}
-                {t("meetTab.borderLine", {
-                  slots,
-                  rate: border.toFixed(2),
-                })}{" "}
-                {t("meetTab.borderNote")}{" "}
-                {/* 何走時点の目安かを断る。2日目の朝の目安は、予選終了時の目安と
-                    平均0.46点ずれる（BOA-690 の実測。数値は画面に出さない） */}
-                {t("meetTab.borderAsOfRuns", { runs: medianRuns })}
-              </>
-            )}
-            {/* まだ全員が走っていない間は目安を出さない理由を書く（BOA-690） */}
-            {!bordersReady && !isCancelled && !isAfterPrelim && !prelimOver && (
-              <>
-                {" "}
-                {/* Ｗ優勝戦では「出場選手」が24人か48人か読めないので書き分ける */}
-                {t(
-                  seriesSplit
-                    ? "meetTab.borderPendingSeries"
-                    : "meetTab.borderPending",
-                )}
-              </>
-            )}
           </p>
           {/* 順位の対象外の内訳（BOA-697）。人数だけでは誰が外れたか分からず、予選の後に
               順位が動いた理由も読めなかった。公式の備考欄に近い形で名前を理由ごとに出す。
-              7人以上は6人まで出して「ほか◯人」と畳む（行が長くなりすぎないように） */}
+              7人以上は6人まで出して「ほか◯人」と畳む（行が長くなりすぎないように）。
+              理由を名前の前に置き、表のセルと同じ書き方（賞典除外（今節F））にそろえる。
+              名前の後ろに括弧で付けると括弧が入れ子になった（BOA-714） */}
           {excludedGroups.length > 0 && (
             <p className="rmt-excluded-list">
               <strong>{t("meetTab.excludedListLabel")}</strong>
@@ -855,12 +844,17 @@ function RaceMeetTab({
                   parts.push(
                     <span key={g.reason}>
                       {parts.length > 0 && t("meetTab.excludedGroupSeparator")}
-                      <span translate="no">
-                        {shown.join(t("meetTab.listSeparator"))}
-                      </span>
-                      {t("meetTab.excludedReasonWrap", {
-                        reason: t(`meetTab.excludedReason_${g.reason}`),
-                      })}
+                      {t(`meetTab.excludedReason_${g.reason}`)}
+                      {t("meetTab.excludedReasonSuffix")}
+                      {/* 名前の途中で改行しない（375pxで「北川／幸典」と切れた。BOA-714 ファン評価） */}
+                      {shown.map((name, i) => (
+                        <span key={name}>
+                          {i > 0 && t("meetTab.listSeparator")}
+                          <span className="rmt-excluded-name" translate="no">
+                            {name}
+                          </span>
+                        </span>
+                      ))}
                     </span>,
                   );
                 }
@@ -880,21 +874,54 @@ function RaceMeetTab({
               })()}
             </p>
           )}
-          {/* **Ｗ優勝戦の節**は1つの節に独立した2つの勝ち上がりが同居する
-              （全期間で6節）。何も言わずに人数が半分になると「なぜ減ったのか」に
-              なるので、節全体の人数と併せて断る。準優の目安が出ていない日は
-              その語に触れない。両方の選手が乗るレース（予選終了後の消化レース。
-              実データでは多摩川に5本）では分けられないので、そちらも断る（BOA-511） */}
-          {board?.isSplitMeet && (
-            <p className="rmt-series-note">
-              {seriesSplit
-                ? t(
-                    showBorderBadge
-                      ? "meetTab.seriesSplitNote"
-                      : "meetTab.seriesSplitNoteNoBorder",
-                    { meetTotal },
-                  )
-                : t("meetTab.seriesMixedNote", { total: rankedOnly.length })}
+          {/* 表の印の説明と準優の目安は人数の行と分けて、対象外の一覧の後ろに置く。
+              続けて書くと「下に名前を出した◯人」と名前の一覧の間にこれらの文が入り、
+              375pxで4行離れた（BOA-714） */}
+          {(hasTableNotes || showBorderBadge || borderPendingShown) && (
+            <p className="rmt-sub">
+              {/* 「予選後F」の意味（セルの title はタッチ端末で読めない。BOA-626）。
+                  **表の6艇に印が出ているときだけ**断る。節の誰かに居るだけで出すと、
+                  表に印が無いのに説明だけ出て「どこにあるのか」と迷う（ファン評価1周目） */}
+              {showPostPrelimFlyingNote && (
+                <> {t("meetTab.postPrelimFlyingNote")}</>
+              )}
+              {/* 「欠場」の理由。セルの title はタッチ端末で読めないので本文にも書く
+                  （BOA-504 ファン評価） */}
+              {showAbsentNote && <> {t("meetTab.absentNote")}</>}
+              {notYetRun.length > 0 && (
+                <>
+                  {" "}
+                  {t(
+                    isCancelled
+                      ? "meetTab.notYetRunCancelledNote"
+                      : "meetTab.notYetRunNote",
+                  )}
+                </>
+              )}
+              {/* 着順の並びの「欠」の意味と、得点率の分母から外していること
+                  （一部欠場の開催でも書く。BOA-504 ファン評価） */}
+              {showFinishAbsentNote && <> {t("meetTab.finishAbsentNote")}</>}
+              {showBorderBadge && (
+                <>
+                  {" "}
+                  {t("meetTab.borderLine", {
+                    slots,
+                    rate: border.toFixed(2),
+                  })}{" "}
+                  {t("meetTab.borderNote")}{" "}
+                  {/* 何走時点の目安かを断る。2日目の朝の目安は、予選終了時の目安と
+                      平均0.46点ずれる（BOA-690 の実測。数値は画面に出さない） */}
+                  {t("meetTab.borderAsOfRuns", { runs: medianRuns })}
+                </>
+              )}
+              {/* まだ全員が走っていない間は目安を出さない理由を書く（BOA-690）。
+                  Ｗ優勝戦では「出場選手」が24人か48人か読めないので書き分ける */}
+              {borderPendingShown &&
+                t(
+                  seriesSplit
+                    ? "meetTab.borderPendingSeries"
+                    : "meetTab.borderPending",
+                )}
             </p>
           )}
           {/* 公式の順位表は52名中3名（賞典除外1・途中帰郷2）を順位から外す。
@@ -934,18 +961,17 @@ function RaceMeetTab({
       {forecastRows.length > 0 && (
         <div className="rmt-card">
           <h3 className="rmt-card-title">{t("meetTab.forecastTitle")}</h3>
-          <div className={`hscroll-hint${forecastHasMore ? " has-more" : ""}`}>
-            {forecastHasMore && (
-              <button
-                type="button"
-                className="hscroll-more"
-                onClick={forecastScrollRight}
-                aria-hidden="true"
-                tabIndex={-1}
-              >
-                ›
-              </button>
-            )}
+          <div
+            className={`rmt-forecast-hint hscroll-hint${forecastHasMore ? " has-more" : ""}`}
+          >
+            {/* 右へ送ると艇番・選手名の列が消えて、ボタンでは戻れなかった。左の列を固定し、
+                「‹」も出す（BOA-699・BOA-704） */}
+            <HorizontalScrollButtons
+              hasMore={forecastHasMore}
+              hasLess={forecastHasLess}
+              onMore={forecastScrollRight}
+              onLess={forecastScrollLeft}
+            />
             <div
               className="rmt-forecast-scroll"
               ref={forecastRef}
@@ -1389,7 +1415,9 @@ function RaceMeetTab({
         ) : meet.length === 0 ? (
           <p className="rmt-empty">
             {t(
-              isCancelled ? "meetTab.meetEmptyCancelled" : "basicInfo.meetEmpty",
+              isCancelled
+                ? "meetTab.meetEmptyCancelled"
+                : "basicInfo.meetEmpty",
             )}
           </p>
         ) : (
