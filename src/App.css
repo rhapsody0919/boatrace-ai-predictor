@@ -646,7 +646,9 @@ input:focus-visible,
 }
 
 .rr-row.is-winner .rr-pos {
-  color: var(--brand-accent-primary);
+  /* 金20%の帯の上で、ダークの金（#c9a227）は 4.41:1 と AA を割った（#1218 ファン評価3周目）。
+     本文色を3割混ぜ、ライトは濃く・ダークは明るく寄せる（ダークで約5.7:1） */
+  color: color-mix(in srgb, var(--brand-accent-primary) 70%, var(--text-primary));
 }
 
 .rr-row.is-second .rr-pos {

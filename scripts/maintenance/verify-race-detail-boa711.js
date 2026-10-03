@@ -205,6 +205,27 @@ check(
     ).length === 2,
 );
 check(
+  "枠別情報の全コース表の想定コースの見出しも点線（金の枠にしない）",
+  /\.rwit-grid-course-th\.is-today \{[^}]*outline: 2px dashed/.test(
+    read("src/components/race/RaceWakuInfoTab.css"),
+  ) &&
+    !/\.rwit-grid-course-th\.is-today \{[^}]*brand-accent-primary/.test(
+      read("src/components/race/RaceWakuInfoTab.css"),
+    ),
+);
+check(
+  "結果の1着の「1着」の文字は、金に本文色を3割混ぜる（ダークの帯の上で AA を割った）",
+  /\.rr-row\.is-winner \.rr-pos \{[^}]*color-mix\(in srgb, var\(--brand-accent-primary\) 70%, var\(--text-primary\)\)/.test(
+    read("src/App.css"),
+  ),
+);
+check(
+  "ホームの注記は「順位」と書かない（「1 / 100」が1位＝一番崩れやすいと逆に読めた）",
+  !json(
+    "src/locales/ja/common.json",
+  ).home.volatilityHighlightsScaleNote.includes("順位"),
+);
+check(
   "直前情報の金枠の凡例に「今節〜の行は前走で比べる」を書く",
   json("src/locales/ja/common.json").beforeInfo.bestLegend.includes(
     "前走の値で比べます",
