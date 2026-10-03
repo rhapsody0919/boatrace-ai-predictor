@@ -699,6 +699,9 @@
 .rmt-excluded-list strong {
   color: var(--text-primary);
 }
+.rmt-excluded-list .rmt-excluded-name {
+  white-space: nowrap;
+}
 
 .rmt-forecast-hint:has(> .hscroll-less)
   .rmt-forecast-table
