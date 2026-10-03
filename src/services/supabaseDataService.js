@@ -7875,7 +7875,7 @@ export const supabaseDataService = {
         };
       });
 
-      // 会場によって項目が違う（例: 児島は「一周|まわり足」の2項目だけ）。
+      // 会場によって項目が違う（例: 住之江・尼崎・徳山は「一周|まわり足」の2項目だけ）。
       // ヘッダの item_labels（"一周|まわり足|直線"）を正として順番を決め、
       // 実際に値がある種別だけ残す。ヘッダが無ければ既定の順に落とす
       const present = new Set(measured.map((row) => row.kind));
