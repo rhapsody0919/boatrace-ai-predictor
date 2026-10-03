@@ -81,3 +81,25 @@ export function snapScrollTarget({
   const prev = [...starts].reverse().find((v) => v < current - 1);
   return prev ?? 0;
 }
+
+/**
+ * 右端までスクロールした位置も列の境目にそろえるため、表の右に足す余白（px）。
+ *
+ * 途中の送りは列の境目にそろえても、右端の位置（scrollWidth − clientWidth）は列の境目と
+ * 一致しない。そのため右端まで送った最後の1回だけ、固定した列のすぐ右に切れた値が残った
+ * （320px の今節の日別表で展示「6.71(6)」が「71(6)」。PR #1202 ファン評価3周目）。
+ * 右端より先にある最初の列の境目まで届くよう、差の分だけ余白を足す。少しだけ切れているとき
+ * （HSCROLL_PEEK_MAX 以下で「›」を出さない）は足さない
+ *
+ * @param {{naturalMax: number, columnStarts: number[]}} args naturalMax は余白を足す前の右端の位置
+ * @returns {number}
+ */
+export function tailPaddingFor({ naturalMax, columnStarts }) {
+  if (naturalMax <= HSCROLL_PEEK_MAX) return 0;
+  // 右端がすでに列の境目なら足さない
+  if (columnStarts.some((v) => Math.abs(v - naturalMax) <= 1)) return 0;
+  const next = columnStarts
+    .filter((v) => v > naturalMax + 1)
+    .sort((a, b) => a - b)[0];
+  return next === undefined ? 0 : Math.ceil(next - naturalMax);
+}
