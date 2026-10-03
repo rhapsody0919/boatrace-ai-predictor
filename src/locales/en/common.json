@@ -1133,7 +1133,7 @@
     "accidentBadgeOver": "Accident rate {{rate}}, over B2 line",
     "accidentBadgeNear": "{{need}} pts to B2 line",
     "accidentTitle": "Accident rate this term (estimate, {{from}} – {{to}})",
-    "accidentRate": "Accident rate {{rate}}",
+    "accidentRateLabel": "Accident rate",
     "accidentBreakdown": "{{points}} accident pts ÷ {{starts}} starts ({{kinds}})",
     "accidentKindCount": "{{kind}} {{n}}",
     "accidentKindSeparator": ", ",

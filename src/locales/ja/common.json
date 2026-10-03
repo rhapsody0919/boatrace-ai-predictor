@@ -814,7 +814,7 @@
     "accidentBadgeOver": "事故率{{rate}} B2ライン超え",
     "accidentBadgeNear": "B2ラインまで あと{{need}}点",
     "accidentTitle": "今期の事故率（目安・{{from}}〜{{to}}）",
-    "accidentRate": "事故率 {{rate}}",
+    "accidentRateLabel": "事故率",
     "accidentBreakdown": "事故点{{points}}÷出走{{starts}}（{{kinds}}）",
     "accidentKindCount": "{{kind}}{{n}}",
     "accidentKindSeparator": "・",

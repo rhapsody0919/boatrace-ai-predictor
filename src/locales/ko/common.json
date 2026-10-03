@@ -1128,7 +1128,7 @@
     "accidentBadgeOver": "사고율 {{rate}} B2 라인 초과",
     "accidentBadgeNear": "B2 라인까지 {{need}}점",
     "accidentTitle": "이번 기 사고율(참고·{{from}}〜{{to}})",
-    "accidentRate": "사고율 {{rate}}",
+    "accidentRateLabel": "사고율",
     "accidentBreakdown": "사고점 {{points}}÷출주 {{starts}}({{kinds}})",
     "accidentKindCount": "{{kind}} {{n}}",
     "accidentKindSeparator": "·",

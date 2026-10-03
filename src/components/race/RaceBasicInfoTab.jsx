@@ -699,10 +699,12 @@ function RaceBasicInfoTab({
                           </p>
                         ) : (
                           <div className="rbit-accident-values">
+                            {/* 数字だけを太字にする（承認済みモックどおり） */}
                             <span className="rbit-accident-rate">
-                              {t("basicInfo.accidentRate", {
-                                rate: acc.rate.toFixed(2),
-                              })}
+                              {t("basicInfo.accidentRateLabel")}{" "}
+                              <span className="rbit-accident-rate-num">
+                                {acc.rate.toFixed(2)}
+                              </span>
                             </span>
                             <span className="rbit-accident-breakdown">
                               {t("basicInfo.accidentBreakdown", {

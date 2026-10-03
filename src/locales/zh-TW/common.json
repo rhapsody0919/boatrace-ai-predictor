@@ -1128,7 +1128,7 @@
     "accidentBadgeOver": "事故率{{rate}} 超過B2線",
     "accidentBadgeNear": "距B2線還差{{need}}分",
     "accidentTitle": "本期事故率（參考，{{from}}〜{{to}}）",
-    "accidentRate": "事故率 {{rate}}",
+    "accidentRateLabel": "事故率",
     "accidentBreakdown": "事故分{{points}}÷出賽{{starts}}（{{kinds}}）",
     "accidentKindCount": "{{kind}}{{n}}",
     "accidentKindSeparator": "、",
