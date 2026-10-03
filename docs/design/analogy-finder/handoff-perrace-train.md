@@ -72,6 +72,29 @@
 3. SQL（Supabase、書き込み）: `insert into scrape_job_state (job, mode) values ('analogy_dispatch_train','shadow'),('analogy_dispatch_features','shadow') on conflict (job) do update set mode = excluded.mode;`
 4. 翌朝 6:40・7:20 の応答（`last_report`）で `wouldDispatch` を確かめ、`mode='live'` にする
 
+## 2026-10-03 午後の状態（次のセッションはここから）
+- マージ済み: #1178（マイグレーションは 127・128 に振り直した。126 は #1219）、#1205（T10-4）、#1213（風向）
+- ユーザーに依頼中（オーケストレーター経由）: 127・128 の適用 → Storage の analogy/source/v1/ の削除 → train-analogy.yml を1回（record_perrace: true）。手順書はオーケストレーターに送った
+- #1207（T10-7）: ユーザーの確認待ち（PAT・Vercel の環境変数）
+- 寄与度の定義の変更（Version 14。二重の中心化、1号艇の行だけ boat1 グループを national に足す、枠を割合から除く）は、モック作り直しレーンが profiles.py と JS の集計で持つ。特徴量もモデルも変えない
+- 2回目の学習は、下の「6本への拡張」と定義の PR がそろってから、ユーザーに1回だけ頼む（オーケストレーターが説明する）
+
+### 次の作業: 3タブ用に、レースごとの寄与度のモデルを6本にする（このレーンの担当、ユーザー承認済み 10/3）
+事前登録5 の追記B（84c23dd86・a1b3d4aab）で、判定と記録は学習の前に決めてある。実装はこの通りにする（変えたら事後と明記）。
+- train.py
+  - `RACECARD` を3本のリストにする: `("win_racecard","y_win",250)`、`("top2_racecard","y_top2",250)`、`("top3_racecard","y_top3",330)`。特徴量は `RACECARD_FEATURES`、seed 0
+  - 評価: win は `evaluate_win_races`、top は `evaluate_topk`（レース単位の対数損失の配列も返すようにする。記録1のペア差に要る）
+  - `OPTIONAL_REFERENCE`・`TARGET_LABEL`・`GATE_MAX_DEGRADATION`（top は 0.002）に2本を足す。`quality_gate` の `names` の固定の一覧も広げる。`reference_logloss` も3本を回す
+  - `write_perrace`: 6本（win・top2・top3・3本の racecard）を `model_dump` し、per_race_meta の models・一致検査の固定データの expected に入れる。記録1に top2・top3 の展示の効果（`*_racecard` − 展示後）、記録2に 2着以内・3着以内の2段のシェアの分布と1位の入れ替わり、`missing_types` を6本ぶん
+  - `train_meta` の `racecard` を3本ぶんに
+- perrace.py: `per_race_meta(version, models: dict[name, (booster, dump)], maps)` に変える。`parity_fixture` は渡したモデルを全部回す（既に dict）
+- storage.js: `PER_RACE_FILES` に `model_top2.json`・`model_top3.json`・`model_top2_racecard.json`・`model_top3_racecard.json` を足す（`OPTIONAL_REFERENCE_FILES` に racecard の .txt 2本も）
+- treeshap-parity.js: `MODELS` を6本にする。`prepareModels` の約束は「racecard 3本は同じ列」「展示後3本は racecard の列＋直前情報8列」。`raceInputs` は名前で racecard か展示後かを判定して入力を作る
+- `src/utils/analogyRaceContribution.js` は列名と SHAP を受け取るだけで、モデルの種類に依存しないので変えなくてよい（モック作り直しレーンとぶつからない）
+- daily_features.py・analogy_race_features は変えない（racecard 3本は同じ36列。並びは win_racecard の feature_names）
+- CI の固定データ（make_treeshap_testdata.py）を6本で作り直し、verify-analogy-treeshap.js・pytest を広げる。手元で合成データの train.py を最後まで流す（tests の `synthetic()`）
+- 学習時間は、seed 0 の学習2本ぶん（全体の1割程度）増える見込み
+
 ## 手元で動かすとき
 - Python は 3.12 の venv に `scripts/ml/analogy/requirements.txt` を入れる（pandas 3.0.6・lightgbm 4.7.0）。macOS では `DYLD_LIBRARY_PATH` に `site-packages/sklearn/.dylibs` を通す。`nice` を挟むと SIP で DYLD が消えるので、挟まない
 - `train.py` の結合確認は合成データで行える。今回は、`tests/test_perrace.py` の `synthetic()` で 6,000R を作り、`out/reference/` に参照版の3本を置いて最後まで流した
