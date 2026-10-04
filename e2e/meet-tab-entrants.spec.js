@@ -281,7 +281,7 @@ test("和文の注記で句点の後に半角スペースを入れない（英�
   // 「準優の目安は12位（5.40）。 点線より上が…」と空白が入っていた（BOA-738）
   await openMeetTab(page, "2026-09-23-09-12");
   const ja = await page.locator(".rmt-border-note").innerText();
-  expect(ja).toContain("。点線より上が");
+  expect(ja).toContain("。青い点線より上が");
   expect(ja).not.toMatch(/。 /);
   await page.goto("/en/race/2026-09-23-09-12");
   await page.locator(".race-tabs-btn").nth(2).click();
@@ -314,4 +314,20 @@ test("表に⚠が無いときは、金枠の凡例で⚠に触れない", async
   // ⚠の艇でも前検には金枠が付く。凡例が列を書かないと「⚠の艇には付かない」と読め、
   // 前検の金枠と食い違って見えた（BOA-738 ファン評価2周目）
   await expect(page.locator(".rmt-compare .rmt-pretest.ind-best").first()).toBeVisible();
+});
+
+test("表の6艇に準優の目安内がいないときは、点線の説明でなく「いません」と書く", async ({
+  page,
+}) => {
+  // 尼崎 9/26 9R（予選中）。点線は目安内の最後の艇の行の下に引くので、6艇とも目安外だと
+  // 点線が無い。それでも「点線より上が準優の目安内」と書き、無い線を探させた（BOA-756）
+  await openMeetTab(page, "2026-09-26-13-09");
+  await expect(page.locator(".rmt-compare .is-border-edge")).toHaveCount(0);
+  const note = page.locator(".rmt-border-note");
+  await expect(note).toContainText("この6艇に準優の目安内の選手はいません");
+  await expect(note).not.toContainText("点線");
+  // 目安内の艇がいるレースでは点線の説明を出す（津 9/23 12R）
+  await openMeetTab(page, "2026-09-23-09-12");
+  await expect(page.locator(".rmt-compare .is-border-edge")).toHaveCount(1);
+  await expect(page.locator(".rmt-border-note")).toContainText("点線より上が");
 });
