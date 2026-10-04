@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { useRaceAnalysisData } from "./useRaceAnalysisData";
 import {
   toNumber,
-  courseRateOf,
+  wakuRateOf,
   translateTechnique,
 } from "../components/race/raceIndicators";
 import { TECHNIQUE_NAMES } from "../utils/turnPrediction";
@@ -188,7 +188,7 @@ function buildRows(t, players, analysis) {
     {
       label: t("dataTable.rowCourseRate"),
       values: players.map((p) => {
-        const cr = courseRateOf(statsByBoat, p.number);
+        const cr = wakuRateOf(statsByBoat, p.number);
         return cr ? `${cr.rate.toFixed(0)}% (${cr.wins}/${cr.total})` : DASH;
       }),
     },

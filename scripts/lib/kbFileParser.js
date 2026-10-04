@@ -165,6 +165,8 @@ const K_DAY_LINE_RE =
 const K_SUMMARY_ROW_RE = /^\s+\d{1,2}R\s+\S+/;
 // 同着で払戻が複数ある場合の、レース番号なしの継続行（例: "               1-2-5     520    1-2-5     200"）
 const K_SUMMARY_CONT_RE = /^\s{10,}\d(?:-\d){1,2}\s+\d+/;
+/** 払戻金の要約に出る中止の行（例: "           1R  中　止"。全角スペースの有無は問わない。BOA-412） */
+const K_SUMMARY_CANCELLED_RE = /^\s+(\d{1,2})R\s+中[\s\u3000]*止\s*$/;
 const K_RACE_HDR_RE =
   /^\s{0,4}(\d{1,2})R\s+(.*?)\s+H(\d+)m\s+(\S+)\s+風\s+(\S+?)\s+(\d+)m\s+波\s+(\d+)cm\s*$/;
 const K_RESULT_HDR_RE = /^\s+着\s+艇\s+登番/;
@@ -323,6 +325,9 @@ function parseKVenue(lines, venueCode) {
     is_final_day: false,
     date_in_body: null,
     payout_summary_lines: [],
+    // 払戻金の要約に「NR 中　止」と書かれたレース番号（昇順）。成績の本体には中止のレースの記録が無いため、
+    // 全日中止（races が空）と途中打ち切り（前半は成績あり）を、ここで区別できる（BOA-412）
+    cancelled_race_numbers: [],
     races: [],
     unparsed: [],
   };
@@ -380,6 +385,8 @@ function parseKVenue(lines, venueCode) {
       (K_SUMMARY_ROW_RE.test(line) || K_SUMMARY_CONT_RE.test(line)) &&
       !K_RACE_HDR_RE.test(line)
     ) {
+      const cancelled = K_SUMMARY_CANCELLED_RE.exec(line);
+      if (cancelled) out.cancelled_race_numbers.push(toInt(cancelled[1]));
       out.payout_summary_lines.push(line.trimEnd());
       continue;
     }
@@ -427,8 +434,13 @@ function parseKVenue(lines, venueCode) {
   if (out.day_label) {
     const dm = /第(\d+)日/.exec(out.day_label);
     if (dm) out.series_day = Number.parseInt(dm[1], 10);
+    // 実際の K/B は最終日も「第N日」と書き、「最終日」とは書かない（2019-04〜2026-09 の全ファイルで「最終日」0件。
+    // BOA-696）。is_final_day は K/B からは決まらないので、使う側は race_series の終了日で判定する
     if (out.day_label === "最終日") out.is_final_day = true;
   }
+  out.cancelled_race_numbers = [...new Set(out.cancelled_race_numbers)].sort(
+    (a, b) => a - b,
+  );
   return out;
 }
 
@@ -556,6 +568,8 @@ function parseBVenue(lines, venueCode) {
   if (out.day_label) {
     const dm = /第(\d+)日/.exec(out.day_label);
     if (dm) out.series_day = Number.parseInt(dm[1], 10);
+    // 実際の K/B は最終日も「第N日」と書き、「最終日」とは書かない（2019-04〜2026-09 の全ファイルで「最終日」0件。
+    // BOA-696）。is_final_day は K/B からは決まらないので、使う側は race_series の終了日で判定する
     if (out.day_label === "最終日") out.is_final_day = true;
   }
   return out;
@@ -602,6 +616,10 @@ export function summarizeKbDay(day) {
     k_venues: kVenues.length,
     k_pending_venues: kVenues.filter((v) => v.status === "pending").length,
     k_races: kRaces.length,
+    k_cancelled_races: kVenues.reduce(
+      (n, v) => n + (v.cancelled_race_numbers?.length ?? 0),
+      0,
+    ),
     k_boat_rows: kRaces.reduce((n, r) => n + r.rows.length, 0),
     k_unparsed_lines: kVenues.reduce((n, v) => n + v.unparsed.length, 0),
     k_extra_lines: kRaces.reduce((n, r) => n + r.extra_lines.length, 0),
@@ -617,6 +635,7 @@ export const _internal = {
   K_VENUE_HDR_RE,
   B_ENTRY_RE,
   B_RACE_HDR_RE,
+  K_SUMMARY_CANCELLED_RE,
   parseKResultRow,
   parseStartField,
   splitVenueBlocks,

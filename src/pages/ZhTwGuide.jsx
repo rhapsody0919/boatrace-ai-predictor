@@ -301,8 +301,8 @@ export default function ZhTwGuide() {
         <section className="eg-section">
           <h2>🤖 如何看懂龍神雷達的預測</h2>
           <p>
-            龍神雷達為每場比賽分析 45 項數據 —
-            選手成績、馬達性能、賽場特性、起跑時機等 — 並清楚呈現每個選擇的
+            龍神雷達為每場比賽分析選手成績、馬達性能、賽場特性、起跑時機等數據，
+            並清楚呈現每個選擇的
             <strong>理由</strong>。完全免費。
           </p>
           <ol className="eg-steps">

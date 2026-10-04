@@ -225,12 +225,18 @@ export function isTrioHit(predTop3, rank1, rank2, rank3) {
 
 /**
  * 展開予測的中判定（unifiedモデル専用）
- * turnPrediction.patternsのいずれかのwinnerCourseが実際の1着コースと
+ * turnPrediction.patternsのいずれかのwinnerCourseが1着の艇番と
  * 一致すれば的中（scripts/analysis/verify-turn-prediction-accuracy-v6.js、
  * scripts/daily/calculate-unified-model-accuracy.js、
- * src/components/race/RaceCard.jsxのisTurnHitと同じ定義。ADR 0013）
- * @param {Array<{winnerCourse: number}>} patterns - turnPrediction.patterns
- * @param {number} rank1 - 実際の1着コース
+ * src/utils/raceOutcome.js の judgeTurnPrediction と同じ定義。ADR 0013）
+ *
+ * **艇番どうしで比べる**（BOA-708）。winnerCourse は名前に反して「枠なり（艇番＝コース）を
+ * 前提にした艇番」で、予測は「N号艇がこの決まり手で勝つ」という艇の予測（turnPrediction.js は
+ * course に艇番を渡している）。rank1 も1着の艇番。前付けのあったレースでは実際の進入コースと
+ * 違うが、判定は予測の主張（艇）に合わせて艇番で行う。表示で進入コースを添える場合は
+ * src/utils/raceOutcome.js の winnerEntryCourseOf を使う
+ * @param {Array<{winnerCourse: number}>} patterns - turnPrediction.patterns（winnerCourse は艇番）
+ * @param {number} rank1 - 1着の艇番
  * @returns {boolean}
  */
 export function isTurnHit(patterns, rank1) {

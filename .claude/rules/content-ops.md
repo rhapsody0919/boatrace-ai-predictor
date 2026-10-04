@@ -4,6 +4,7 @@ paths:
   - "note-articles/**"
   - "sns-video-studio/**"
   - "src/data/blogPosts*.js"
+  - "src/data/blog-posts/**"
   - "src/pages/admin/SnsHubAdmin*"
   - "scripts/lib/contentChannels/**"
   - "scripts/lib/contentTopics/**"
@@ -47,10 +48,10 @@ paths:
 - **画像を組み合わせる**: 実際の機能のスクリーンショット（Playwrightで撮影したもので良い）を最低1枚、記事内に配置する。装飾目的の画像は不要
 - 用語・文体は `.claude/rules/code-style.md`（「競艇」使用禁止等）に従う
 - **「よくある質問」セクションを設ける**: `BlogPost.jsx`が`## よくある質問`セクションを自動検出してFAQPage構造化データを生成する（`src/utils/blogFaqSchema.js`）ため、`### 質問文` + 回答段落の形式でFAQセクションを含めると追加コード不要でSEO/AI引用対策になる
-- **タイトル・メタディスクリプションの文字数**: `blogPosts.js`の`title`は30〜60字、`description`は120〜160字に収める（2026-09-08追加。検索結果でタイトル・スニペットが途中で切れるのを防ぐ）
+- **タイトル・メタディスクリプションの文字数**: `src/data/blog-posts/{slug}.json`の`title`は30〜60字、`description`は120〜160字に収める（2026-09-08追加。検索結果でタイトル・スニペットが途中で切れるのを防ぐ）
 - **画像alt属性**: カバー画像の`![alt](path)`は空文字にせず、内容を要約した説明を入れる（画像SEO）
 - **内部リンク**: 本文中に、関連する過去記事や分析ツール（`/winning-technique`等）へのリンクを最低1本含める
-- **featured記事は英訳も同時作成する（2026-08-11〜）**: featured記事（`blogPosts.js`の`featured: true`）を新規公開する際は、英語版（`public/blog/{slug}-en.md` + `src/data/blogPostsEn.js`へのエントリ追加）も同一PRまたは近接PRで作成する。対象言語は英語のみ（zh-TW/koは対象外、需要が確認できるまで見送り）。ブログi18nの実装パターン・設計判断は`docs/design/blog-i18n/`（spec/screens/plan/tasks）・`docs/adr/0005〜0007`を参照
+- **featured記事は英訳も同時作成する（2026-08-11〜）**: featured記事（`src/data/blog-posts/{slug}.json`の`featured: true`。並び順は`featuredRank`）を新規公開する際は、英語版（`public/blog/{slug}-en.md` + `src/data/blogPostsEn.js`へのエントリ追加）も同一PRまたは近接PRで作成する。対象言語は英語のみ（zh-TW/koは対象外、需要が確認できるまで見送り）。ブログi18nの実装パターン・設計判断は`docs/design/blog-i18n/`（spec/screens/plan/tasks）・`docs/adr/0005〜0007`を参照
 
 ### フローA-4: 新規ページ追加時のsitemap登録（必須）
 2026-07-31時点で、`/winning-technique`が`scripts/generate-sitemap.js`への追加漏れで長期間sitemap.xmlに未掲載、Google未インデックスのままだった実績あり（Search Console実データで検索クリック・表示回数0件と確認）。同じ漏れを繰り返さないため、新しい静的ページ・ルート（`AppRouter.jsx`に`<Route>`を追加するもの）を実装したら、**同じPRで**`scripts/generate-sitemap.js`の`staticPages`（多言語対応ページは`LOCALIZED_PAGES`/`LANGUAGE_ONLY_PAGES`）にも追記する。ページ単体の実装が完了した時点で完了とせず、sitemap反映まで含めて1タスクとして扱う。

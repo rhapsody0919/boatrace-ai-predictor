@@ -1988,6 +1988,14 @@ test.describe("レースページ再設計（BOA-168）", () => {
       /^（出走表・全国 \d+\.\d%、前期から[+−±]\d+\.\dpt）$/,
     );
     await expect(page.locator(".rbit-period-note")).toHaveCount(0);
+    // 前期の優出・優勝と、前期を含む直近2年（4期）の合計（BOA-326）。
+    // 範囲は期の定義から決まる（レース日の前期の終わり〜その2年前の5月）
+    const finals = page.locator(".rbit-period-finals");
+    await expect(finals).toContainText(/優出 \d+回/);
+    await expect(finals).toContainText(/優勝 \d+回/);
+    await expect(page.locator(".rbit-period-recent")).toHaveText(
+      /^直近2年（\d{4}\/(05|11)〜\d{4}\/(04|10)）優出 \d+回・優勝 \d+回$/,
+    );
 
     // この表が全コース込みであることと、今日の枠での走数を常時出す
     // （ボートレースファンのレビュー指摘A: 外枠専業の選手と枠が均等に回る選手で
@@ -2658,7 +2666,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 除外の選手も節は走っているので24人のまま、順位の対象を分けて書く。
     // Ｗ優勝戦で分けた節は「節の出場」ではなく「同じ優勝戦をめざすのは」と書く
     // （下の注記の「節全体は48人」と食い違って読めた。BOA-660）
-    await expect(page.locator(".rmt-sub")).toContainText(
+    await expect(page.locator(".rmt-sub").first()).toContainText(
       "同じ優勝戦をめざすのは24人（順位の対象は21人",
     );
     // 人数が半分になる理由を1行で断る（黙って半分にすると「なぜ減った」になる）
@@ -3165,8 +3173,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 1000行を超える選手がいる）、待たずに次のレースへ移ると2ページ目が録画に入らず、
     // 速い再生でだけ出て本番へ素通りしていた（BOA-556）。走数は取得前「—」、
     // 取得後は数字（0を含む）になる
+    // 走数が少ない艇は⚠が付く（race-detail-ui-unify plan §6）
     await expect(page.locator(".rsc-grid .rsc-runs")).toHaveText(
-      Array(6).fill(/^\d+$/),
+      Array(6).fill(/^⚠?\d+$/),
       // 録画（本番に繋ぐ）では6選手分の2年窓を取るので、他の待ちと同じ長さにする
       { timeout: 25000 },
     );
@@ -4653,9 +4662,15 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
 
     const table = page.locator(".motor-ranking-table").first();
     await expect(table.locator("thead")).toContainText("前検");
-    // 過去レースは2連率の列そのものが出走表時点の公式値なので、同じ値になる
-    // 「公式2連率（節時点）」の列は畳む（BOA-329、2026-09-29 ユーザー判断(c)）
-    await expect(table.locator("thead")).not.toContainText("公式2連率");
+    // 過去レースは2連率の列そのものが出走表時点の公式値なので、同じ値の列を2本並べない
+    // （BOA-329、2026-09-29 ユーザー判断(c)）。BOA-428 で、残す1本の見出しを当日と同じ
+    // 「公式2連率（節時点）」にした（承認済みのモック）。期間で集計した2連率の列は出さない
+    await expect(
+      table.locator("thead th", { hasText: "公式2連率" }),
+    ).toHaveCount(1);
+    await expect(table.locator("thead")).not.toContainText(
+      /2連率（(過去|直近)/,
+    );
     // 6艇のどれかに前検の秒数（6.60〜6.9x）が出ている
     await expect(table.locator("td.motor-pretest-cell").first()).toHaveText(
       /\d\.\d{2}/,
@@ -4682,8 +4697,13 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
     await expect(table.locator("td.motor-pretest-cell")).toHaveCount(0);
     // 過去レースでは2連率の列が race_entries 由来の公式値で、前検が無くても出る。
     // 期間の切り替えは出さず、公式値である旨の注記に置き換える（BOA-329）
-    await expect(table.locator("thead")).toContainText("2連率");
-    await expect(table.locator("thead")).not.toContainText("公式2連率");
+    // 1本だけの2連率の列は、BOA-428 から見出しが「公式2連率（節時点）」
+    await expect(
+      table.locator("thead th", { hasText: "公式2連率" }),
+    ).toHaveCount(1);
+    await expect(table.locator("thead")).not.toContainText(
+      /2連率（(過去|直近)/,
+    );
     await expect(page.locator(".period-toggle")).toHaveCount(0);
     await expect(
       page.getByText("出走表時点の公式値で表示しています"),
@@ -5478,6 +5498,9 @@ test.describe("レース詳細の見出し: グレードとレース種別（BOA
     ["2026-09-20-14-10", "選抜戦", null],
     // ファン評価3周目: 予選期間の「予選選抜」は最終日の選抜戦と分ける
     ["2026-09-17-15-11", "予選特別戦", "予選選抜"],
+    // 男女Ｗ優勝戦の準優勝戦は「Ｗ準優戦前半」（「勝」が無い）。以前は「会場独自の
+    // レース名」として原文のまま出ていた（BOA-728）
+    ["2026-03-24-05-03", "🥈 準優勝戦", "W準優戦前半"],
   ]) {
     test(`${raceId} の種別は「${label}」`, async ({ page }) => {
       await page.goto(`/race/${raceId}`);

@@ -1,7 +1,7 @@
 name: Race Notices Drift Monitor
 
 # レース特記事項（FR-1、BOA-318/319/320）の構造変化検知。
-# api/cron/race-notices.js（Vercel Function、10分間隔）がrace_notices_healthに
+# api/cron/race-notices.js（Vercel Function、夜1回 22:30 JST＋補足 23:00・23:30）がrace_notices_healthに
 # 書き込む日次集計を読み、driftHealth.js（BOA-285）のコアロジックで
 # 連続構造起因失敗日数を判定する。新規のHTTPリクエストは行わない。
 

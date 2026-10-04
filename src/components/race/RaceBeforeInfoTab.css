@@ -155,7 +155,10 @@
 }
 
 /* 「1コース」が375pxのセル幅で「1コー／ス」と折れて読みにくかった
-   （2026-09-28、実画面のスクショで確認）。コース表記は折り返さない */
+   （2026-09-28、実画面のスクショで確認）。コース表記は語の途中では折らない。
+   空白では折ってよい: 英語版の「Course 1」を1行に保つと 375px で列が 55px になり、
+   展示情報の表が 27〜42px はみ出していた（#1148 の layout 検査） */
 .race-before-info-tab .drt-entry-course {
-  white-space: nowrap;
+  white-space: normal;
+  word-break: keep-all;
 }
