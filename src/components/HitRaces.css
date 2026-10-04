@@ -253,6 +253,11 @@
   align-items: center;
 }
 
+/* 「（本命）」「（2コース進入）」を語の途中で折り返さない（BOA-724） */
+.turn-hit-nowrap {
+  white-space: nowrap;
+}
+
 .turn-hit-course-label {
   color: var(--text-secondary);
   font-weight: 500;

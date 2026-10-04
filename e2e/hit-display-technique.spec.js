@@ -197,3 +197,56 @@ test("A-2 (b): AI予想タブのまとめは、本命が予想どおりに勝っ
     "✅ 予想通りの展開でした（本命の艇が予想の決まり手で1着）",
   );
 });
+
+test("ファン評価3周目: 1着の艇の行は、AIが一番に推した決まり手のまま出し、外れは「実際」で示す", async ({
+  page,
+}) => {
+  test.slow();
+  // 2026-09-29 大村10R: AIの本命は1号艇の逃げ（46%）。1号艇が抜きで1着。
+  // 以前は1号艇の行が「抜き 11%」に差し替わり、本命の%が2番手より低く見えた
+  await page.goto("/race/2026-09-29-24-10", { waitUntil: "domcontentloaded" });
+  await page.locator(".race-tabs-btn", { hasText: /^AI予想$/ }).click();
+  const hitRow = page.locator(".turn-pattern-row--hit");
+  await expect(hitRow).toHaveCount(1, { timeout: 60000 });
+  await expect(hitRow.locator(".turn-pattern-technique")).toHaveText(
+    "逃げ（実際: 抜き）",
+  );
+  const probs = await page
+    .locator(".turn-pattern-prob")
+    .evaluateAll((els) => els.map((el) => parseInt(el.textContent, 10)));
+  // 予想の順位（🥇🥈🥉）どおりに%が並ぶ
+  expect([...probs].sort((a, b) => b - a)).toEqual(probs);
+  // 結果確定後の説明に、メダルは予想の順位だと書く（着順に見えた。BOA-748 の原因）
+  await expect(page.locator(".turn-pattern-caption")).toContainText(
+    "予想の順位（着順ではありません）",
+  );
+});
+
+test("ファン評価3周目: 的中カードの「（本命）」「（2コース進入）」を語の途中で折り返さない", async ({
+  page,
+}) => {
+  test.slow();
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/hit-races", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: /全期間/ }).click();
+  const more = page.locator(".show-more-button");
+  await more.waitFor({ timeout: 60000 });
+  await more.click();
+  await expect(page.locator(".turn-hit-nowrap").first()).toBeVisible({
+    timeout: 60000,
+  });
+  // 1行に収まっている＝文字の矩形の上端がすべて同じ（括弧と中身で text node が分かれるため、
+  // 矩形の数ではなく行数で見る）
+  const rows = await page.locator(".turn-hit-nowrap").evaluateAll((els) =>
+    els.map((el) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const tops = new Set(
+        [...range.getClientRects()].map((r) => Math.round(r.top)),
+      );
+      return { text: el.textContent, lines: tops.size };
+    }),
+  );
+  expect(rows.length).toBeGreaterThan(0);
+  expect(rows.filter((r) => r.lines !== 1)).toEqual([]);
+});

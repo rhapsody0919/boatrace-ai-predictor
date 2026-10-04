@@ -60,22 +60,17 @@ function TurnPatternList({
 
   // 実際の決まり手（日本語）。的中は1着の艇だけで判定するので、決まり手が外れていることがある
   const actualTechnique = result?.winningTechnique ?? null;
-  // 1着の艇は、実際の決まり手と同じ候補があればそれを出す（的中レース一覧のカードと同じ候補。
-  // pickHitPattern、BOA-724）。他の艇は確率の一番高い決まり手
+  // 1着の艇の、確率が一番高い候補（下の重複除去で残る行と同じ。的中レース一覧のカードとも同じ）
   const hitPattern =
     hasHit && actualWinner != null
-      ? pickHitPattern(patterns, actualWinner, actualTechnique)
+      ? pickHitPattern(patterns, actualWinner)
       : null;
   const seenCourses = new Set();
-  const displayPatterns = patterns
-    .filter((p) => {
-      if (seenCourses.has(p.winnerCourse)) return false;
-      seenCourses.add(p.winnerCourse);
-      return true;
-    })
-    .map((p) =>
-      hitPattern && p.winnerCourse === hitPattern.winnerCourse ? hitPattern : p,
-    );
+  const displayPatterns = patterns.filter((p) => {
+    if (seenCourses.has(p.winnerCourse)) return false;
+    seenCourses.add(p.winnerCourse);
+    return true;
+  });
   // 本命（1番手の候補）が、予想の決まり手・艇番どおりのコースで1着になったときだけ「予想通り」と言う。
   // 2番手以下が当たった、決まり手が違う、前付けで勝った、のどれかなら控えめなまとめにする
   // （BOA-724 の A-2 を (b) に。共有文と同じ区別）

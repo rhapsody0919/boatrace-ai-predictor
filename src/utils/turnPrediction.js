@@ -15,23 +15,19 @@ export const TECHNIQUE_NAMES = {
 
 /**
  * 展開予測が的中したレースで、「当たった候補」として見せるパターンを選ぶ。
+ * 1着の艇の候補のうち、確率が一番高いもの（AI予想タブでその艇の行に出ている候補）を返す。
  *
- * 的中の判定は1着の艇だけを見る（決まり手は見ない）。同じ艇の候補が複数あるとき（例: 2号艇の
- * まくり 9% と 差し 7%）、先頭の候補を選ぶと、実際の決まり手（差し）と違う決まり手を出してしまう。
- * 的中の15〜20%で、カード・共有文の決まり手が公式の結果と食い違っていた（PR #1197 ファン評価3周目）。
- * 実際の決まり手と同じ候補があればそれを、無ければ同じ艇の最初の候補を返す
+ * 以前（PR #1197）は、実際の決まり手と同じ候補があればそちらを選んでいた。決まり手の食い違いを
+ * 見せないためだったが、AIの本命が「逃げ 46%」なのに「抜き 11%」と出て、本命の%が2番手より
+ * 低く見えるレースがあった（BOA-724 ファン評価3周目）。決まり手の食い違いは「（実際: 抜き）」で
+ * 示すので（techniqueDiffers）、候補はAIが実際に一番に推した形のまま出す
  *
- * @param {Array<{winnerCourse: number, technique: string, probability: number}>} patterns
+ * @param {Array<{winnerCourse: number, technique: string, probability: number}>} patterns 確率の高い順
  * @param {number} winner 1着の艇番
- * @param {string|null|undefined} winningTechnique 実際の決まり手（日本語。例: "差し"）
  * @returns {object|null}
  */
-export function pickHitPattern(patterns, winner, winningTechnique) {
-  const sameBoat = (patterns ?? []).filter((p) => p.winnerCourse === winner);
-  const exact = sameBoat.find(
-    (p) => TECHNIQUE_NAMES[p.technique] === winningTechnique,
-  );
-  return exact ?? sameBoat[0] ?? null;
+export function pickHitPattern(patterns, winner) {
+  return (patterns ?? []).find((p) => p.winnerCourse === winner) ?? null;
 }
 
 /**

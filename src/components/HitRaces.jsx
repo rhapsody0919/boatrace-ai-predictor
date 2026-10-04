@@ -30,12 +30,8 @@ function extractHitRaces(predictions) {
     .filter(({ judgement }) => judgement?.status === TURN_JUDGEMENT.HIT)
     .map(({ race, patterns, judgement }) => {
       const { winner } = judgement;
-      // 同じ艇の候補が複数あるときは、実際の決まり手と同じ候補を選ぶ（PR #1197 ファン評価3周目）
-      const matchedPattern = pickHitPattern(
-        patterns,
-        winner,
-        race.result?.winningTechnique,
-      );
+      // 1着の艇の、確率が一番高い候補（AI予想タブのその艇の行と同じ。BOA-724）
+      const matchedPattern = pickHitPattern(patterns, winner);
 
       const parts = race.raceId.split("-");
       const date = `${parts[0]}-${parts[1]}-${parts[2]}`;

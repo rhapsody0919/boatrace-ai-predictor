@@ -73,14 +73,25 @@ function HitRaceCard({
               （BOA-710、PR #1197 ファン評価1周目） */}
           <span className="turn-hit-course-label">
             的中した候補
-            {hitRace.pickRank > 0 &&
-              `（${hitRace.pickRank === 1 ? "本命" : `予想${hitRace.pickRank}番手`}）`}
+            {/* 括弧の中で折り返さない（「本 / 命」と割れた。ファン評価3周目） */}
+            {hitRace.pickRank > 0 && (
+              <span className="turn-hit-nowrap">
+                （
+                {hitRace.pickRank === 1
+                  ? "本命"
+                  : `予想${hitRace.pickRank}番手`}
+                ）
+              </span>
+            )}
           </span>
           <span className="turn-hit-course-value">
             {hitRace.winnerBoat}号艇
             {winnerEntryCourse != null &&
-              winnerEntryCourse !== hitRace.winnerBoat &&
-              `（${winnerEntryCourse}コース進入）`}
+              winnerEntryCourse !== hitRace.winnerBoat && (
+                <span className="turn-hit-nowrap">
+                  （{winnerEntryCourse}コース進入）
+                </span>
+              )}
           </span>
         </div>
         {probability != null && (
