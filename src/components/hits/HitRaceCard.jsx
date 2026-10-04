@@ -76,7 +76,7 @@ function HitRaceCard({
             {hitRace.winnerBoat}号艇
             {winnerEntryCourse != null &&
               winnerEntryCourse !== hitRace.winnerBoat &&
-              `（${winnerEntryCourse}コース）`}
+              `（${winnerEntryCourse}コース進入）`}
           </span>
         </div>
         {probability != null && (

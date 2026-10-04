@@ -318,14 +318,12 @@ export const generateTurnHitShareText = (race) => {
     race.probability != null
       ? `（AIの予想: ${race.technique ? `${race.technique} ` : ""}${(race.probability * 100).toFixed(0)}%${actualNote}）`
       : "";
-  const asPredictedLine = isAsPredicted({
+  const asPredicted = isAsPredicted({
     predictedTechnique: race.technique,
     actualTechnique: race.actualTechnique,
     winnerBoat,
     winnerEntryCourse: race.winnerEntryCourse,
-  })
-    ? "\n予想通りの展開でした ✅"
-    : "";
+  });
 
   let dateStr = "";
   if (race.date) {
@@ -335,12 +333,19 @@ export const generateTurnHitShareText = (race) => {
     }
   }
 
+  const header = `【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}`;
+  // 決まり手かコースが予想と違うレースは、1着の艇が当たっただけ。「予想通り」や「AIの分析力」の
+  // ように決まり手まで当たったと受け取れる言い方をしない（BOA-724 ファン評価1周目）
+  if (!asPredicted) {
+    return `🌊 展開予測で1着の艇が的中${header}\n\n龍神レーダーで展開予測をチェック`;
+  }
+  // 共有はレース当日とは限らないので、「今日も」等の日付に依存する言い方はしない
   const messages = [
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}${asPredictedLine}\n\n龍神レーダーで展開予測的中🎉\nAIの分析力に驚いてます！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}${asPredictedLine}\n\n龍神レーダーで展開予測的中🎉\n無料でこの精度はすごい！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}${asPredictedLine}\n\n龍神レーダーで展開予測的中🎉\nデータ分析の力を実感！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}${asPredictedLine}\n\n龍神レーダーで展開予測的中🎉\n今日もAI予想が当たった！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}${asPredictedLine}\n\n龍神レーダーで展開予測的中🎉\n的中率の高さに満足してます！`,
+    `🌊 展開予測的中！${header}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nAIの分析力に驚いてます！`,
+    `🌊 展開予測的中！${header}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n無料でこの精度はすごい！`,
+    `🌊 展開予測的中！${header}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nデータ分析の力を実感！`,
+    `🌊 展開予測的中！${header}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nまたAI予想が当たった！`,
+    `🌊 展開予測的中！${header}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n的中率の高さに満足してます！`,
   ];
 
   return messages[Math.floor(Math.random() * messages.length)];

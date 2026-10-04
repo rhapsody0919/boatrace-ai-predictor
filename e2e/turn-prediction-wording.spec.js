@@ -96,7 +96,7 @@ test("的中レースの展開予測のカードは「的中した候補」と�
   // 決まり手は実際の結果と違うことがあるので、この欄には書かず、AI の予想として書く。
   // 値は1着の艇番で、進入コースが違うときだけ添える（BOA-708）
   await expect(page.locator(".turn-hit-course-value").first()).toHaveText(
-    /^\d号艇(（\dコース）)?$/,
+    /^\d号艇(（\dコース進入）)?$/,
   );
   await expect(page.locator(".turn-hit-probability").first()).toHaveText(
     // 実際の決まり手と違うときは「（実際: ◯◯）」を添える（BOA-724）

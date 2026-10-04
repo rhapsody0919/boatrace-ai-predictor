@@ -24,7 +24,11 @@
  */
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
-import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
+import {
+  TECHNIQUE_NAMES,
+  pickHitPattern,
+  techniqueDiffers,
+} from "../../utils/turnPrediction";
 import { TURN_JUDGEMENT, judgeTurnPrediction } from "../../utils/raceOutcome";
 import "./TurnPatternList.css";
 
@@ -48,12 +52,29 @@ function TurnPatternList({ patterns, result = null }) {
   const hasHit = judgement?.status === TURN_JUDGEMENT.HIT;
   const actualWinner = judgement?.winner ?? null;
 
+  // 実際の決まり手（日本語）。的中は1着の艇だけで判定するので、決まり手が外れていることがある
+  const actualTechnique = result?.winningTechnique ?? null;
+  // 1着の艇は、実際の決まり手と同じ候補があればそれを出す（的中レース一覧のカードと同じ候補。
+  // pickHitPattern、BOA-724）。他の艇は確率の一番高い決まり手
+  const hitPattern =
+    hasHit && actualWinner != null
+      ? pickHitPattern(patterns, actualWinner, actualTechnique)
+      : null;
   const seenCourses = new Set();
-  const displayPatterns = patterns.filter((p) => {
-    if (seenCourses.has(p.winnerCourse)) return false;
-    seenCourses.add(p.winnerCourse);
-    return true;
-  });
+  const displayPatterns = patterns
+    .filter((p) => {
+      if (seenCourses.has(p.winnerCourse)) return false;
+      seenCourses.add(p.winnerCourse);
+      return true;
+    })
+    .map((p) =>
+      hitPattern && p.winnerCourse === hitPattern.winnerCourse ? hitPattern : p,
+    );
+  // 決まり手の英語キー（実際の決まり手を各言語の名前で出すため）
+  const actualTechniqueKey =
+    Object.keys(TECHNIQUE_NAMES).find(
+      (key) => TECHNIQUE_NAMES[key] === actualTechnique,
+    ) ?? null;
 
   return (
     <div className="turn-pattern-list">
@@ -101,6 +122,20 @@ function TurnPatternList({ patterns, result = null }) {
             )}
             <span className="turn-pattern-technique">
               {translateTechnique(pattern.technique)}
+              {/* 予想した決まり手が外れていても艇が1着なら的中になる。「① 的中 逃げ」だけだと
+                  逃げが当たったと読めるので、実際の決まり手を添える（BOA-724。カードと同じ） */}
+              {isMatch &&
+                actualTechniqueKey &&
+                techniqueDiffers(
+                  TECHNIQUE_NAMES[pattern.technique],
+                  actualTechnique,
+                ) && (
+                  <span className="turn-pattern-actual">
+                    {t("turnPatternList.actualTechnique", {
+                      technique: translateTechnique(actualTechniqueKey),
+                    })}
+                  </span>
+                )}
             </span>
             <span className="turn-pattern-prob">
               {Math.round(pattern.probability * 100)}%

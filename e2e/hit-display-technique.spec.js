@@ -64,6 +64,49 @@ test("A-2: 共有文は、決まり手もコースも予想どおりのときだ
   );
   expect(texts.courseDiffers).not.toContain("予想通り");
   expect(texts.unknownActual).not.toContain("予想通り");
+  // 予想と違うレースは、見出し・締めでも決まり手まで当たったように言わない（ファン評価1周目）
+  for (const text of [
+    texts.techniqueDiffers,
+    texts.courseDiffers,
+    texts.unknownActual,
+  ]) {
+    expect(text).toContain("展開予測で1着の艇が的中");
+    expect(text).not.toMatch(/展開予測的中！|AIの分析力|この精度|当たった/);
+  }
+  // 共有はレース当日とは限らない
+  for (let i = 0; i < 30; i += 1) {
+    const text = await page.evaluate(async () => {
+      const { generateTurnHitShareText } = await import("/src/utils/share.js");
+      return generateTurnHitShareText({
+        venue: "戸田",
+        raceNo: 11,
+        date: "2026-09-27",
+        winnerBoat: 1,
+        winnerEntryCourse: 1,
+        technique: "逃げ",
+        actualTechnique: "逃げ",
+        probability: 0.6,
+      });
+    });
+    expect(text).not.toContain("今日も");
+  }
+});
+
+test("A-1: AI予想タブで、予想の決まり手が外れた的中には実際の決まり手を添える", async ({
+  page,
+}) => {
+  test.slow();
+  // 2026-09-30 大村10R: 1号艇が1着（予想は逃げ、実際は抜き）
+  await page.goto("/race/2026-09-30-24-10", { waitUntil: "domcontentloaded" });
+  await page.locator(".race-tabs-btn", { hasText: /^AI予想$/ }).click();
+  const hitRow = page.locator(".turn-pattern-row--hit");
+  await expect(hitRow).toHaveCount(1, { timeout: 60000 });
+  await expect(hitRow.locator(".turn-pattern-actual")).toHaveText(
+    "（実際: 抜き）",
+  );
+  await expect(page.locator(".turn-pattern-summary")).toHaveText(
+    "✅ 上位予想の艇が1着になりました",
+  );
 });
 
 test("A-1: AI予想タブの「的中」は、決まり手と%の後ろではなく艇番の隣に付ける", async ({
@@ -105,4 +148,9 @@ test("A-3: 的中レースのカードは、予想の決まり手が実際と違
     // 予想と実際が同じなら添えない
     expect(m[1]).not.toBe(m[2]);
   }
+  // 全期間の見出しが白地に白文字にならない（ファン評価1周目）
+  const bg = await page
+    .locator(".hit-races-section.all")
+    .evaluate((el) => getComputedStyle(el).backgroundImage);
+  expect(bg).toContain("gradient");
 });
