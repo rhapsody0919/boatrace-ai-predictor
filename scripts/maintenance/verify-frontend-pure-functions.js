@@ -1742,7 +1742,7 @@ function suiteVolatilityLevel(m, check) {
     "standard",
     69,
   ]);
-  check("volatility: 0.7037 はイン崩れ確率高で70", show(0.7037), ["high", 70]);
+  check("volatility: 0.7037 はイン崩れ注意（高）で70", show(0.7037), ["high", 70]);
   check("volatility: 0.3 は本命有利で30", show(0.3), ["low", 30]);
   check("volatility: 0.3004 は標準で31（四捨五入の30にしない）", show(0.3004), [
     "standard",

@@ -50,6 +50,13 @@
   color: var(--vpb-tone);
 }
 
+.vpb-value-max {
+  margin-left: 0.2em;
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-normal);
+  color: var(--vpb-label);
+}
+
 .vpb-track {
   position: relative;
   height: 6px;

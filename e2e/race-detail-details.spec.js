@@ -499,7 +499,11 @@ test.describe("レース詳細の表示の細部", () => {
           marker: c(".vpb-marker"),
           median: c(".vpb-median"),
           middleLabel: c(".vpb-ends > span:nth-child(2)"),
-          value: Number(el.querySelector(".vpb-value").textContent),
+          // 値の後ろに「/ 100」が付く（BOA-711 U4）ので、先頭の数だけ読む
+          value: Number.parseInt(
+            el.querySelector(".vpb-value").textContent,
+            10,
+          ),
         };
       });
       // 印は値の位置（0なら左端）にあり、見える大きさがある
@@ -971,5 +975,27 @@ test.describe("レース詳細の表示の細部", () => {
       return stickyRight - firstVisible.left;
     });
     expect(cut).toBeLessThanOrEqual(1);
+  });
+});
+
+// モーターのコース別成績は、実際に進入したコースで集計している（列の見出し・注記も「コース」）。
+// 日本語の見出しだけ「枠番別成績」が残り、「‹」で列の見出しが隠れると、枠番の表と読み違えた
+// （BOA-751、PR #1225 ファン評価1周目。ほかの3言語はコース）
+test("モーター: コース別成績の見出しと戻るリンクは「コース別成績」（BOA-751）", async ({
+  page,
+}) => {
+  test.slow();
+  await page.goto(`${RACE}?tab=motor`);
+  await page.locator(".motor-ranking-row").first().click({ timeout: 60000 });
+  const grid = page.locator(".motor-waku-stats-grid");
+  await expect(grid.locator(".selected-motor-heading")).toHaveText(
+    "コース別成績",
+    { timeout: 30000 },
+  );
+  await expect(grid.locator("thead th").first()).toHaveText("コース");
+  // 行を押すと、そのコースの選手ごとの成績に入る。戻るリンクも同じ呼び方
+  await grid.locator(".motor-waku-row").first().click();
+  await expect(page.getByText("← コース別成績に戻る")).toBeVisible({
+    timeout: 30000,
   });
 });
