@@ -1190,6 +1190,7 @@
     "rowCourseRate": "枠番勝率",
     "loading": "分析データを読み込み中…",
     "motorResetNote": "交換直後",
+    "motorUnusedNote": "新モーター・実績なし",
     "motorBadgeUp": "機力↑",
     "motorBadgeDown": "機力↓"
   },

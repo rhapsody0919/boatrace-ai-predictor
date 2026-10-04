@@ -746,6 +746,11 @@
       "guards": "races が丸1日無い会場日の補完（backfill-missing-venue-day.js、BOA-721）: 既定は書かない・races のある会場日は上書きしない・出走表が12レースそろわなければ止める・中止の確定を全レースに立てる・過去の日付に予想を作らない"
     },
     {
+      "script": "verify-motor-usage.js",
+      "tier": "ci",
+      "guards": "モーターの使用回数と「未使用（新モーター・実績なし）」の判定（src/utils/motorUsage.js、BOA-702）。使用回数は会場公式の出走数と、世代の始まりから数えた自社の出走数のうち、分かっているものの大きいほう。取得失敗の行の出走数・期間で切り詰めた窓や世代不明の自社の数は使わない。未使用は表示する2連率が0で使用回数0と分かるときだけ"
+    },
+    {
       "script": "verify-winning-technique-filled.js",
       "tier": "ci",
       "guards": "前日以前のレースで、決まり手（race_results.winning_technique）が欠けていないか（BOA-749。2026-09-16 住之江7R が着順・払戻ありで NULL のまま残っていた）。CI では判定の純関数（不成立・中止・1着なし・当日を除く）と、取り直しのコマンドの分割（--apply の30件上限）を検証する。VERIFY_PRODUCTION=1 のときだけ本番を読み、欠けがあれば exit 1 で取り直しのコマンドを出す。nightly-verify-db.yml が毎晩この形で実行する"
