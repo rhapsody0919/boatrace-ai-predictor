@@ -53,7 +53,7 @@ async function fetchRecentResults(fromDate) {
         .not("rank1", "is", null)
         .not("rank2", "is", null)
         .not("rank3", "is", null)
-        .gte("race_id", fromDate),
+        .gte("race_id", fromDate).order("race_id"),
   );
   return rows;
 }

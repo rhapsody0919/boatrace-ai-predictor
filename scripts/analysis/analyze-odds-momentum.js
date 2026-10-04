@@ -54,12 +54,13 @@ async function loadData({ from, to }) {
     fetchAll(
       "race_odds",
       "race_id, captured_at, odds_win_1, odds_win_2, odds_win_3, odds_win_4, odds_win_5, odds_win_6",
-      rangeFilter("race_id"),
+      (q) => rangeFilter("race_id")(q).order("race_id").order("captured_at"),
     ),
     fetchAll(
       "race_results",
       "race_id, rank1, payout_win, is_cancelled, is_no_race",
-      (q) => rangeFilter("race_id")(q.not("rank1", "is", null)),
+      (q) =>
+        rangeFilter("race_id")(q.not("rank1", "is", null)).order("race_id"),
     ),
   ]);
   console.log(`  odds_snapshots=${oddsRows.length}, results=${results.length}`);

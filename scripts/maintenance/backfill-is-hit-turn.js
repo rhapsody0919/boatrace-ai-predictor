@@ -28,7 +28,7 @@ async function main() {
   const predictions = await fetchAll(
     "predictions",
     "prediction_id, race_id, feature_contributions",
-    (q) => q.eq("model_id", "unified").is("is_hit_turn", null),
+    (q) => q.eq("model_id", "unified").is("is_hit_turn", null).order("race_id").order("model_id").order("prediction_id"),
   );
   console.log(`  ${predictions.length}件`);
 
@@ -40,7 +40,7 @@ async function main() {
   const raceIds = [...new Set(predictions.map((p) => p.race_id))];
   console.log(`race_results取得中... (対象レース: ${raceIds.length}件)`);
   const results = await fetchAll("race_results", "race_id, rank1", (q) =>
-    q.in("race_id", raceIds).not("rank1", "is", null),
+    q.in("race_id", raceIds).not("rank1", "is", null).order("race_id"),
   );
   const resultByRaceId = new Map(results.map((r) => [r.race_id, r]));
   console.log(`  ${results.length}件（結果確定済み）`);

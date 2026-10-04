@@ -46,7 +46,7 @@ async function loadSeries(from, to) {
   const rows = await fetchAll(
     "race_series",
     "venue_code, start_date, end_date, grade",
-    (q) => q.lte("start_date", to).gte("end_date", from),
+    (q) => q.lte("start_date", to).gte("end_date", from).order("venue_code").order("start_date"),
     { throwOnError: true },
   );
   // venue_code → [series...] の索引
@@ -74,7 +74,7 @@ async function runGrade({ from, to }) {
   const races = await fetchAll(
     "races",
     "race_id, venue_code, race_date, race_number",
-    (q) => q.is("race_grade", null).gte("race_date", from).lte("race_date", to),
+    (q) => q.is("race_grade", null).gte("race_date", from).lte("race_date", to).order("race_id"),
     { throwOnError: true },
   );
 
@@ -140,13 +140,13 @@ async function runSeriesDay({ from, to }) {
   const conds = await fetchAll(
     "race_conditions",
     "race_id, series_day",
-    (q) => q.is("series_day", null).gte("race_id", idFrom).lte("race_id", idTo),
+    (q) => q.is("series_day", null).gte("race_id", idFrom).lte("race_id", idTo).order("race_id"),
     { throwOnError: true },
   );
   const races = await fetchAll(
     "races",
     "race_id, venue_code, race_date",
-    (q) => q.gte("race_id", idFrom).lte("race_id", idTo),
+    (q) => q.gte("race_id", idFrom).lte("race_id", idTo).order("race_id"),
     { throwOnError: true },
   );
   const raceMetaByIds = new Map(races.map((r) => [r.race_id, r]));
@@ -209,10 +209,10 @@ async function runSeriesDay({ from, to }) {
 async function runStatus({ from, to }) {
   const [gradeNull, seriesDayNull, seriesRows] = await Promise.all([
     fetchAll("races", "race_id", (q) =>
-      q.is("race_grade", null).gte("race_date", from).lte("race_date", to),
+      q.is("race_grade", null).gte("race_date", from).lte("race_date", to).order("race_id"),
     ),
-    fetchAll("race_conditions", "race_id", (q) => q.is("series_day", null)),
-    fetchAll("race_series", "venue_code"),
+    fetchAll("race_conditions", "race_id", (q) => q.is("series_day", null).order("race_id")),
+    fetchAll("race_series", "venue_code", (q) => q.order("venue_code").order("start_date")),
   ]);
   console.log(
     JSON.stringify(
