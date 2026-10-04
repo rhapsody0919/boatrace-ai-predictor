@@ -189,6 +189,7 @@ table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl t
 .stripcap{margin:0;font-size:11px;color:var(--muted)}.rlist{display:grid;gap:6px}.rc{border:1px solid var(--border);border-radius:8px;padding:6px 8px;display:grid;gap:2px;font-size:12px}.rc .bnrow{display:inline-flex;gap:2px;vertical-align:middle}.rc3{color:var(--text2);font-size:11.5px}
 .scope{position:relative}.sonar-tip{position:absolute;z-index:3;width:220px;background:var(--card);color:var(--text);border:1px solid var(--accent-strong);border-radius:8px;padding:6px 8px;font-size:12px;line-height:1.5;box-shadow:0 4px 14px rgba(0,0,0,.35);pointer-events:none}.sonar-tip .bnrow{display:inline-flex;gap:2px;vertical-align:middle}#sonar [data-race]{stroke:transparent;stroke-width:16px}#sonar{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}
 .dt{margin-right:.45em}
+.hint{border:1px solid var(--accent-strong);border-radius:10px;padding:10px 12px;display:grid;gap:8px;background:var(--card)}.hint-h{display:grid;gap:2px}.hint-h b{font-size:14px}.hint-h .muted{font-size:11.5px}.hint-pic svg{width:100%;height:auto;border-radius:6px;display:block}.hint-t th,.hint-t td{padding:3px 4px;font-size:11.5px;text-align:center;font-family:"JetBrains Mono",monospace}.hint-t th:first-child{text-align:left;font-family:inherit;white-space:nowrap}.hint-t td small{display:block;font-size:9.5px;color:var(--muted)}.hint-t td.dim{opacity:.5}.hint h4{margin:2px 0 0;font-size:13px}.hintcs{display:grid;gap:6px}.hintc{display:grid;gap:2px;text-align:left;border:1px solid var(--border);border-radius:8px;background:var(--sunken);color:var(--text);padding:6px 8px;font:inherit;font-size:12px;cursor:pointer}.hintc .hr{color:var(--text2)}.hintc b{font-family:"JetBrains Mono",monospace}.hintb{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;color:var(--card);background:var(--accent-strong);border-radius:4px;padding:1px 5px;vertical-align:1px}
 .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px}
 .tabs button{font-family:"Zen Kaku Gothic New",sans-serif;font-size:12.5px;font-weight:700;border:1px solid var(--border);background:var(--sunken);color:var(--text2);border-radius:8px;padding:8px 4px;cursor:pointer;line-height:1.3}
 .tabs button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--ivory-100)}
@@ -340,7 +341,7 @@ const C=D.sim.conditions;
 // 4条件の並び（うしろから外す順）と任意3条件
 const CH=[["勝率差",`1号艇がほかの最高より ${(-C.gap_band_range.hi).toFixed(2)}〜${(-C.gap_band_range.lo).toFixed(2)} 低い`],["1号艇",`${C.b1_class}級`],["会場",C.venue_name],["勝率トップ",`${C.top_boat}号艇`]];
 const OPT=[["round","ラウンド","優勝戦"],["grade","グレード","G1"],["motor","1号艇のモーター","6艇中5〜6位"]];
-const st={tab:"ai",stage:"post",fscope:"wkA1",scn:{scope:"v20A1",entry:"waku",slit:"any",ff:null,fs:null},pb:1,rank:1,boat:0,ni:9,swKnn:"mix",noSS:false,open:null,listAll:false,flow:"all",flowSel:null,flowFirst:null,swOrder:"sim",swTh:"7",two:false,b2:1,pick:null,v:"20",g:"all",r:"all",cmp:"nat"};
+const st={tab:"ai",stage:"post",fscope:"wkA1",scn:{hsrc:"C",scope:"v20A1",entry:"waku",slit:"any",ff:null,fs:null},pb:1,rank:1,boat:0,ni:9,swKnn:"mix",noSS:false,open:null,listAll:false,flow:"all",flowSel:null,flowFirst:null,swOrder:"sim",swTh:"7",two:false,b2:1,pick:null,v:"20",g:"all",r:"all",cmp:"nat"};
 const $=id=>document.getElementById(id);
 const bn=n=>`<span class="bn" style="background:${BC[n][0]};color:${BC[n][1]}">${n}</span>`;
 const pc=(p,d=1)=>(p*100).toFixed(d)+"%";
@@ -958,18 +959,19 @@ const SLIT_EX = {
   dash: [0.05, 0.06, 0.05, 0, 0.01, 0],
 };
 let sceneSeq = 0;
-function slitScene(stc, h = 110) {
+function slitScene(stc, h = 110, ref = null) {
   const n = stc.length, W = 260, H = h, top = 4, lane = (H - top - 14) / n, L = 64, lineX = W - 14, SPB = 0.13;
-  const mn = Math.min(...stc), gid = "wat" + ++sceneSeq;
+  const mn = Math.min(...stc, ...(ref || [])), gid = "wat" + ++sceneSeq;
   const boats = stc
     .map((v, i) => {
       const x = lineX - ((v - mn) / SPB) * L, y = top + lane * i + lane / 2, hh = Math.max(3, lane * 0.32), col = BC[i + 1][0];
       return `<g><path d="M${x - L} ${y - hh} L${x - L * 0.22} ${y - hh} Q${x} ${y - hh * 0.4} ${x} ${y} Q${x} ${y + hh * 0.4} ${x - L * 0.22} ${y + hh} L${x - L} ${y + hh} Z" fill="#f4f1ea" stroke="#556070" stroke-width=".8"/><path d="M${x - L - 10} ${y + hh * 0.2} q-8 -2 -16 0 q8 2 16 0" fill="#ffffff" fill-opacity=".55"/><rect x="${x - L * 0.62}" y="${y - hh * 0.75}" width="${L * 0.22}" height="${hh * 1.5}" rx="${hh * 0.5}" fill="${col}" stroke="#1f2937" stroke-width=".6"/><circle cx="${x - L * 0.38}" cy="${y}" r="${hh * 0.72}" fill="${col}" stroke="#1f2937" stroke-width=".6"/><text x="${x - L + 7}" y="${y + 3.5}" font-size="${Math.min(10, lane * 0.6)}" font-family="JetBrains Mono, monospace" font-weight="700" fill="#1f2937">${i + 1}</text></g>`;
     })
     .join("");
+  const refs = ref ? ref.map((v, i) => { const x = lineX - ((v - mn) / SPB) * L, y = top + lane * i + lane / 2; return `<line x1="${x}" y1="${y - lane * 0.48}" x2="${x}" y2="${y + lane * 0.48}" stroke="#e8d089" stroke-width="1.8" stroke-dasharray="3 2"/>`; }).join("") : "";
   const waves = [...Array(n)].map((_, i) => `<path d="M0 ${top + lane * (i + 1)} q20 -2 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0" stroke="#ffffff" stroke-opacity=".18" fill="none"/>`).join("");
   const scale = `<g><line x1="12" y1="${H - 6}" x2="${12 + L}" y2="${H - 6}" stroke="#e8f1ff" stroke-width="1.2"/><line x1="12" y1="${H - 9}" x2="12" y2="${H - 3}" stroke="#e8f1ff"/><line x1="${12 + L}" y1="${H - 9}" x2="${12 + L}" y2="${H - 3}" stroke="#e8f1ff"/><text x="${16 + L}" y="${H - 3}" font-size="12" fill="#e8f1ff">1艇身（約0.13秒）</text></g>`;
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="スリット通過の並び（横から見た図。数字はコース）"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4f73"/><stop offset="1" stop-color="#123a57"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#${gid})"/>${waves}<line x1="${lineX}" y1="0" x2="${lineX}" y2="${H}" stroke="#ff8a3d" stroke-width="1.8"/><text x="${lineX - 4}" y="${H - 4}" font-size="12" text-anchor="end" fill="#ffd2b0">スリット</text>${boats}${scale}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="スリット通過の並び（横から見た図。数字はコース）"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4f73"/><stop offset="1" stop-color="#123a57"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#${gid})"/>${waves}<line x1="${lineX}" y1="0" x2="${lineX}" y2="${H}" stroke="#ff8a3d" stroke-width="1.8"/><text x="${lineX - 4}" y="${H - 4}" font-size="12" text-anchor="end" fill="#ffd2b0">スリット</text>${boats}${refs}${scale}</svg>`;
 }
 
 const yen = (v) => (v == null ? "—" : v.toLocaleString() + "円");
@@ -1108,7 +1110,7 @@ function renderScn() {
   const chips = SLIT.map(([k, l]) => {
     const x = cell(S.entry, k),
       inEntry = cell(S.entry, "any").n;
-    return `<button type="button" class="pat${k === "any" ? " any" : ""}" data-s="${k}" aria-pressed="${S.slit === k}"><span class="k">${l}</span>${k === "any" ? "" : slitScene(SLIT_EX[k])}<span class="fq">${k === "any" || inEntry < MIN_N ? `${x.n.toLocaleString()}件` : `${share(x.n, inEntry)}（${x.n.toLocaleString()}件）`}${x.n >= MIN_N ? `・1号艇の1着率${pc(x.b1_win.p, 0)}` : ""}</span></button>`;
+    return `<button type="button" class="pat${k === "any" ? " any" : ""}" data-s="${k}" aria-pressed="${S.slit === k}"><span class="k">${l}${hintForms().has(k) ? `<span class="hintb">平均STから出やすい</span>` : ""}</span>${k === "any" ? "" : slitScene(SLIT_EX[k])}<span class="fq">${k === "any" || inEntry < MIN_N ? `${x.n.toLocaleString()}件` : `${share(x.n, inEntry)}（${x.n.toLocaleString()}件）`}${x.n >= MIN_N ? `・1号艇の1着率${pc(x.b1_win.p, 0)}` : ""}</span></button>`;
   // 進入の件数が少ないときは割合を出さない（③の扱いと合わせる）
   }).join("");
   const def = SLIT.find(([k]) => k === S.slit)[2];
@@ -1185,12 +1187,14 @@ function renderScn() {
   <h3><span class="stepn">1</span>進入はどうなる？</h3>
   <div class="ents">${entryRow("all")}${entryRow("waku")}${entryRow("mae")}${openMae ? MAE_SUB.map((e) => entryRow(e, true)).join("") : ""}${entryRow("inlost")}</div>
   <p class="foot">${post ? `今日の展示は、6艇とも枠なりだった。展示が枠なりだったレースの93%は、本番も枠なりだった（全国、2026/4以降の2,023レース）。` : "展示の後は、今日の展示の進入に当てはまる型に印が付く。"}割合は、${allOf(scopeName)}の中での割合。スロー・ダッシュの別は記録が無いので分けていない</p>
+  ${hintHtml()}
   <h3><span class="stepn">2</span>スタートはどう並ぶ？（スリットの形）</h3>
   <div class="pats">${chips}</div><p class="foot">カド＝ダッシュ勢（助走を長くとる艇）の一番内。7つの形は、枠なりのときのカド（4コース）を基準に決めている。カド受け＝その1つ内（枠なりなら3コース）。絵は横から見た並びの例（数字はコース、右の線がスリット。縮尺は1艇身≒0.13秒）</p>
   <p class="foot">${def ? `${SLITN[S.slit]}: ${def}。` : ""}1つのレースが2つ以上の形に当てはまることがある（足すと100%を超える）。割合は、選んだ進入の中での割合。スリットの形は、今日の展示からは選べない。展示で2コース凹みだったとき、本番も2コース凹みになったのは38%。展示が別の形でも27%は本番で2コース凹みになった。展示の形は少し参考になる程度（2026/4以降の2,280レース）。${post ? "参考: 今日の展示の形は2コース凹み・イン凹み（3号艇は展示でフライング）" : "展示の後に、今日の展示のスリットの形を参考に出す"}</p>
   <h3><span class="stepn">3</span>そのとき、どう決まった？</h3>
   ${res}
   <p class="foot">数えた割合で、原因とは限らない。スリットの形はレース後に分かるもので、「もしこうなったら」の参考。返還（F・L・欠場）があったレース${EXCL[S.scope].toLocaleString()}件を除くので、「来る艇の条件」の件数とは合わない</p>`;
+  wireHint();
   $("scnScope")
     .querySelectorAll("button")
     .forEach(
@@ -1226,6 +1230,97 @@ function renderScn() {
       c,
       { svg: "scnSankey", note: "scnNote", tip: "scnTip", tri: "scnTri" },
       S,
+    );
+}
+
+// ---------- 今日のスタートの手がかり（展開シナリオの②の上。予想ではなく、数えた値） ----------
+const HINT_SRC = [
+  ["C", "このコースで"],
+  ["A", "全体"],
+];
+// 今日の展示ST（展示後だけ出す。F は早く越えた秒数）
+const EXH_ST = [
+  [0.07, ""],
+  [0.01, ""],
+  [0.09, "F"],
+  [0.05, ""],
+  [0.05, ""],
+  [0.21, ""],
+];
+const fmtST = (v) =>
+  v == null ? "—" : "." + String(Math.round(v * 100)).padStart(2, "0");
+function hintHtml() {
+  const H = D.hint;
+  if (!H || !H.example) return "";
+  const S = st.scn,
+    src = S.hsrc || "C",
+    ex = H.example,
+    vals = ex[src],
+    ref = ex.E,
+    hit = ex[src + "_conds"] || {},
+    post = st.stage === "post";
+  const pop = H.pop[src];
+  const conds = H.conds.filter((c) => hit[c.id]);
+  const rate = (o) => (o && o[1] ? pc(o[0] / o[1], 0) : "—");
+  const condRows = conds.length
+    ? conds
+        .map((c) => {
+          const v = c[src];
+          return `<button type="button" class="hintc" data-hs="${c.form}"><span class="hl">${c.label}</span><span class="hr">→ 過去、${SLITN[c.form]}になったのは <b>${rate(v.hit)}</b>（そうでないとき ${rate(v.miss)}）</span></button>`;
+        })
+        .join("")
+    : `<p class="foot">今日の並びは、どの条件にも当てはまらない</p>`;
+  const nameRow = (lab, arr, fmt, dim) =>
+    `<tr><th>${lab}</th>${arr.map((v, i) => `<td${dim && dim[i] ? ' class="dim"' : ""}>${fmt(v, i)}</td>`).join("")}</tr>`;
+  const bRuns = ex.B_n || [];
+  return `<div class="hint">
+    <div class="hint-h"><b>今日のスタートの手がかり</b><span class="muted">平均STの並び（予想ではなく、過去の記録）</span></div>
+    <div class="row"><span class="lbl">並べ方</span><div class="seg" id="hintSrc">${HINT_SRC.map(([k, l]) => `<button type="button" data-v="${k}" aria-pressed="${src === k}">${l}</button>`).join("")}</div></div>
+    <div class="hint-pic">${slitScene(vals, 132, ref)}</div>
+    <p class="foot">${src === "C" ? "各選手が、今日のコースで走ったときの平均ST（直近の走、最大30走）" : "各選手の平均ST（直近30走、コースを問わない）"}。点線は若松の各コースのふだん（全選手の平均）。点線より右にいる艇は、ふだんより早い</p>
+    <div class="tbl"><table class="hint-t"><thead><tr><th></th>${[1, 2, 3, 4, 5, 6].map((b) => `<th>${bn(b)}</th>`).join("")}</tr></thead><tbody>
+      ${nameRow("このコースで", ex.C, (v) => fmtST(v))}
+      ${nameRow("全体", ex.A, (v) => fmtST(v))}
+      ${nameRow(
+        "若松で",
+        ex.B,
+        (v, i) =>
+          `${fmtST(v)}<small>${bRuns[i] != null ? bRuns[i] + "走" : ""}</small>`,
+        bRuns.map((n) => n != null && n < 10),
+      )}
+      ${nameRow("若松のふだん", ex.E, (v) => fmtST(v))}
+      ${post ? nameRow("今日の展示", EXH_ST, ([v, f]) => (f ? `F${fmtST(v)}` : fmtST(v))) : ""}
+    </tbody></table></div>
+    <p class="foot">若松での平均STは参考（走数が少ない選手が多く、ぶれやすい）。${post ? "展示STは参考で、本番のSTとの関係は弱い。" : "展示STは展示の後に出る。"}</p>
+    <h4>当てはまる条件（${src === "C" ? "このコースでの平均ST" : "全体の平均ST"}で判定）</h4>
+    <div class="hintcs">${condRows}</div>
+    <p class="foot">全国の枠なりのレース（${pop.toLocaleString()}件）で数えた。当てはまっても外れる方が多い（決め手ではなく手がかり）。押すと下の②でその形を選ぶ</p>
+  </div>`;
+}
+function hintForms() {
+  const H = D.hint;
+  if (!H || !H.example) return new Set();
+  const src = st.scn.hsrc || "C",
+    hit = H.example[src + "_conds"] || {};
+  return new Set(H.conds.filter((c) => hit[c.id]).map((c) => c.form));
+}
+function wireHint() {
+  const seg = $("hintSrc");
+  if (!seg) return;
+  seg
+    .querySelectorAll("button")
+    .forEach(
+      (b) => (b.onclick = () => ((st.scn.hsrc = b.dataset.v), renderScn())),
+    );
+  document
+    .querySelectorAll(".hintc")
+    .forEach(
+      (b) =>
+        (b.onclick = () => (
+          (st.scn.slit = b.dataset.hs),
+          (st.scn.ff = st.scn.fs = null),
+          renderScn()
+        )),
     );
 }
 

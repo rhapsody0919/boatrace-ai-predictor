@@ -53,7 +53,7 @@ R('''  </section>
 # JS
 a = t.index('// ---------- 来る艇の条件（数えた値） ----------')
 b = t.index('// ---------- くわしく ----------')
-t = t[:a] + io.open('part16_facts.js', encoding='utf-8').read() + '\n' + io.open('part16_scn.js', encoding='utf-8').read() + '\n' + t[b:]
+t = t[:a] + io.open('part16_facts.js', encoding='utf-8').read() + '\n' + io.open('part16_scn.js', encoding='utf-8').read() + '\n' + io.open('part16_hint.js', encoding='utf-8').read() + '\n' + t[b:]
 R('order();renderSim();renderAi();renderC();renderFacts();', 'order();renderSim();renderAi();renderFacts();renderScn();')
 R('$("hFacts").textContent=`${st.pb}号艇が${RT[st.rank]}に来るとき`;', '$("hFacts").textContent=`${st.pb}号艇が${RT[st.rank]}に入ったのは、どんなとき？`;')
 R('["radar","themeList","cOut","aiPanel"]', '["radar","themeList"]')
@@ -362,5 +362,8 @@ R('.ent .b1{font-size:11.5px;color:var(--muted);min-width:7.5em;text-align:right
 t = t.replace('材料', '項目').replace('他艇の要素', '他艇の項目').replace('要素ごとの割合', '項目ごとの割合')
 t = t.replace('AI の', 'AIの').replace('AI が', 'AIが').replace('AI 予想', 'AI予想')
 t = t.replace('過去の平均ST', '平均ST（直近30走）').replace('過去30走の平均ST', '平均ST（直近30走）')
+# 今日のスタートの手がかり
+R('.tabs{display:grid;', '.hint{border:1px solid var(--accent-strong);border-radius:10px;padding:10px 12px;display:grid;gap:8px;background:var(--card)}.hint-h{display:grid;gap:2px}.hint-h b{font-size:14px}.hint-h .muted{font-size:11.5px}.hint-pic svg{width:100%;height:auto;border-radius:6px;display:block}.hint-t th,.hint-t td{padding:3px 4px;font-size:11.5px;text-align:center;font-family:"JetBrains Mono",monospace}.hint-t th:first-child{text-align:left;font-family:inherit;white-space:nowrap}.hint-t td small{display:block;font-size:9.5px;color:var(--muted)}.hint-t td.dim{opacity:.5}.hint h4{margin:2px 0 0;font-size:13px}.hintcs{display:grid;gap:6px}.hintc{display:grid;gap:2px;text-align:left;border:1px solid var(--border);border-radius:8px;background:var(--sunken);color:var(--text);padding:6px 8px;font:inherit;font-size:12px;cursor:pointer}.hintc .hr{color:var(--text2)}.hintc b{font-family:"JetBrains Mono",monospace}.hintb{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;color:var(--card);background:var(--accent-strong);border-radius:4px;padding:1px 5px;vertical-align:1px}\n.tabs{display:grid;')
+R('scn:{scope:"v20A1",', 'scn:{hsrc:"C",scope:"v20A1",')
 io.open('template16.html', 'w', encoding='utf-8').write(t)
 print('ok')

@@ -36,18 +36,19 @@ const SLIT_EX = {
   dash: [0.05, 0.06, 0.05, 0, 0.01, 0],
 };
 let sceneSeq = 0;
-function slitScene(stc, h = 110) {
+function slitScene(stc, h = 110, ref = null) {
   const n = stc.length, W = 260, H = h, top = 4, lane = (H - top - 14) / n, L = 64, lineX = W - 14, SPB = 0.13;
-  const mn = Math.min(...stc), gid = "wat" + ++sceneSeq;
+  const mn = Math.min(...stc, ...(ref || [])), gid = "wat" + ++sceneSeq;
   const boats = stc
     .map((v, i) => {
       const x = lineX - ((v - mn) / SPB) * L, y = top + lane * i + lane / 2, hh = Math.max(3, lane * 0.32), col = BC[i + 1][0];
       return `<g><path d="M${x - L} ${y - hh} L${x - L * 0.22} ${y - hh} Q${x} ${y - hh * 0.4} ${x} ${y} Q${x} ${y + hh * 0.4} ${x - L * 0.22} ${y + hh} L${x - L} ${y + hh} Z" fill="#f4f1ea" stroke="#556070" stroke-width=".8"/><path d="M${x - L - 10} ${y + hh * 0.2} q-8 -2 -16 0 q8 2 16 0" fill="#ffffff" fill-opacity=".55"/><rect x="${x - L * 0.62}" y="${y - hh * 0.75}" width="${L * 0.22}" height="${hh * 1.5}" rx="${hh * 0.5}" fill="${col}" stroke="#1f2937" stroke-width=".6"/><circle cx="${x - L * 0.38}" cy="${y}" r="${hh * 0.72}" fill="${col}" stroke="#1f2937" stroke-width=".6"/><text x="${x - L + 7}" y="${y + 3.5}" font-size="${Math.min(10, lane * 0.6)}" font-family="JetBrains Mono, monospace" font-weight="700" fill="#1f2937">${i + 1}</text></g>`;
     })
     .join("");
+  const refs = ref ? ref.map((v, i) => { const x = lineX - ((v - mn) / SPB) * L, y = top + lane * i + lane / 2; return `<line x1="${x}" y1="${y - lane * 0.48}" x2="${x}" y2="${y + lane * 0.48}" stroke="#e8d089" stroke-width="1.8" stroke-dasharray="3 2"/>`; }).join("") : "";
   const waves = [...Array(n)].map((_, i) => `<path d="M0 ${top + lane * (i + 1)} q20 -2 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0" stroke="#ffffff" stroke-opacity=".18" fill="none"/>`).join("");
   const scale = `<g><line x1="12" y1="${H - 6}" x2="${12 + L}" y2="${H - 6}" stroke="#e8f1ff" stroke-width="1.2"/><line x1="12" y1="${H - 9}" x2="12" y2="${H - 3}" stroke="#e8f1ff"/><line x1="${12 + L}" y1="${H - 9}" x2="${12 + L}" y2="${H - 3}" stroke="#e8f1ff"/><text x="${16 + L}" y="${H - 3}" font-size="12" fill="#e8f1ff">1艇身（約0.13秒）</text></g>`;
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="スリット通過の並び（横から見た図。数字はコース）"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4f73"/><stop offset="1" stop-color="#123a57"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#${gid})"/>${waves}<line x1="${lineX}" y1="0" x2="${lineX}" y2="${H}" stroke="#ff8a3d" stroke-width="1.8"/><text x="${lineX - 4}" y="${H - 4}" font-size="12" text-anchor="end" fill="#ffd2b0">スリット</text>${boats}${scale}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="スリット通過の並び（横から見た図。数字はコース）"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4f73"/><stop offset="1" stop-color="#123a57"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#${gid})"/>${waves}<line x1="${lineX}" y1="0" x2="${lineX}" y2="${H}" stroke="#ff8a3d" stroke-width="1.8"/><text x="${lineX - 4}" y="${H - 4}" font-size="12" text-anchor="end" fill="#ffd2b0">スリット</text>${boats}${refs}${scale}</svg>`;
 }
 
 const yen = (v) => (v == null ? "—" : v.toLocaleString() + "円");
@@ -186,7 +187,7 @@ function renderScn() {
   const chips = SLIT.map(([k, l]) => {
     const x = cell(S.entry, k),
       inEntry = cell(S.entry, "any").n;
-    return `<button type="button" class="pat${k === "any" ? " any" : ""}" data-s="${k}" aria-pressed="${S.slit === k}"><span class="k">${l}</span>${k === "any" ? "" : slitScene(SLIT_EX[k])}<span class="fq">${k === "any" || inEntry < MIN_N ? `${x.n.toLocaleString()}件` : `${share(x.n, inEntry)}（${x.n.toLocaleString()}件）`}${x.n >= MIN_N ? `・1号艇の1着率${pc(x.b1_win.p, 0)}` : ""}</span></button>`;
+    return `<button type="button" class="pat${k === "any" ? " any" : ""}" data-s="${k}" aria-pressed="${S.slit === k}"><span class="k">${l}${hintForms().has(k) ? `<span class="hintb">平均STから出やすい</span>` : ""}</span>${k === "any" ? "" : slitScene(SLIT_EX[k])}<span class="fq">${k === "any" || inEntry < MIN_N ? `${x.n.toLocaleString()}件` : `${share(x.n, inEntry)}（${x.n.toLocaleString()}件）`}${x.n >= MIN_N ? `・1号艇の1着率${pc(x.b1_win.p, 0)}` : ""}</span></button>`;
   // 進入の件数が少ないときは割合を出さない（③の扱いと合わせる）
   }).join("");
   const def = SLIT.find(([k]) => k === S.slit)[2];
@@ -263,12 +264,14 @@ function renderScn() {
   <h3><span class="stepn">1</span>進入はどうなる？</h3>
   <div class="ents">${entryRow("all")}${entryRow("waku")}${entryRow("mae")}${openMae ? MAE_SUB.map((e) => entryRow(e, true)).join("") : ""}${entryRow("inlost")}</div>
   <p class="foot">${post ? `今日の展示は、6艇とも枠なりだった。展示が枠なりだったレースの93%は、本番も枠なりだった（全国、2026/4以降の2,023レース）。` : "展示の後は、今日の展示の進入に当てはまる型に印が付く。"}割合は、${allOf(scopeName)}の中での割合。スロー・ダッシュの別は記録が無いので分けていない</p>
+  ${hintHtml()}
   <h3><span class="stepn">2</span>スタートはどう並ぶ？（スリットの形）</h3>
   <div class="pats">${chips}</div><p class="foot">カド＝ダッシュ勢（助走を長くとる艇）の一番内。7つの形は、枠なりのときのカド（4コース）を基準に決めている。カド受け＝その1つ内（枠なりなら3コース）。絵は横から見た並びの例（数字はコース、右の線がスリット。縮尺は1艇身≒0.13秒）</p>
   <p class="foot">${def ? `${SLITN[S.slit]}: ${def}。` : ""}1つのレースが2つ以上の形に当てはまることがある（足すと100%を超える）。割合は、選んだ進入の中での割合。スリットの形は、今日の展示からは選べない。展示で2コース凹みだったとき、本番も2コース凹みになったのは38%。展示が別の形でも27%は本番で2コース凹みになった。展示の形は少し参考になる程度（2026/4以降の2,280レース）。${post ? "参考: 今日の展示の形は2コース凹み・イン凹み（3号艇は展示でフライング）" : "展示の後に、今日の展示のスリットの形を参考に出す"}</p>
   <h3><span class="stepn">3</span>そのとき、どう決まった？</h3>
   ${res}
   <p class="foot">数えた割合で、原因とは限らない。スリットの形はレース後に分かるもので、「もしこうなったら」の参考。返還（F・L・欠場）があったレース${EXCL[S.scope].toLocaleString()}件を除くので、「来る艇の条件」の件数とは合わない</p>`;
+  wireHint();
   $("scnScope")
     .querySelectorAll("button")
     .forEach(
