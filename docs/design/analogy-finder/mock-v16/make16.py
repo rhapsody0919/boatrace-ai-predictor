@@ -236,5 +236,131 @@ t = t[:_i] + """function renderDetail(){
   <p class="foot">期間はどれも 2019-04-01〜2026-09-26（例のレースの前日まで）。棒のひげ（95%の幅）は、レースどうしが独立だとして計算している。類似レースは会場や同じ節に固まることがあるので、実際の幅はやや広い</p>`;
 }
 """ + t[_j:]
+# ---------- ファンレビューの日本語の直し（49項目。文言と表示の書式だけ。数え方・データは変えない） ----------
+# 上部
+R('<span class="lbl">情報</span>', '<span class="lbl">時点</span>')
+R('<div class="row"><span class="lbl">範囲</span><div class="seg" id="fscopeSeg"></div></div>', '<div class="row"><span class="lbl">数えるレース</span><div class="seg" id="fscopeSeg"></div></div>')
+R('<p class="foot">外側ほど、6艇の中で上。実線が今日、点線が選んだ範囲でこの艇番が来たときの平均</p>', '<p class="foot">外側ほど6艇の中で上位。実線は今日の順位、点線は同じ艇番が来たレースでの平均の順位</p>')
+R('$("hFacts").textContent=`${st.pb}号艇が${RT[st.rank]}に入ったのは、どんなとき？`;', '$("hFacts").textContent=`${st.pb}号艇が${RV(st.rank)}のは、どんなとき？`;')
+R('${n}号艇と比べる</option>', '${n}号艇</option>')
+R('<div class="row" style="justify-content:space-between"><span class="foot">少なく</span><span class="foot" id="pctLbl"></span><span class="foot">多く</span></div>',
+  '<div class="row" style="justify-content:space-between"><span class="foot">少なく</span><span class="foot">多く</span></div><p class="foot" id="pctLbl" style="margin:2px 0 0"></p>')
+# AI の見立て
+R('<summary>AI の見立て（補助）: ほかの材料をそろえたうえで、どの材料が効くか</summary>', '<summary>AIの見立て（補助）: ほかの項目をそろえたうえで、どの項目が効くか</summary>')
+R('<p class="sub">AI（寄与度用のモデル。AI 予想とは別）の見立て。いろいろなレースでその艇番の見込みが上下するとき、その上下をどの材料が生んでいるかの割合。枠は艇番で決まっているので入れていない</p>',
+  '<p class="sub" id="aiSub">AIが「この艇番の勝ちやすさを動かしているのはどの項目か」を見た割合（AI予想とは別の分析）。大きいほど、その項目しだいで結果が動きやすい</p>')
+R('aria-label="材料の割合の図"', 'aria-label="項目の割合の図"')
+R('''    <details class="more"><summary>展示前の見立て</summary><p class="foot" style="margin-top:6px">本番は朝に出走表の時点の見立てを出し、展示の後にこの値へ置き換える。展示前は展示タイムと天候・水面を使わないので、その行は出さない。モックの版（2026-10-02）には出走表の時点のモデルが無いので、空にしている。</p></details>
+''', '')
+R('<p class="foot">上の数えた値は、ほかの材料や選手の強さが全部まざった率。AI の見立ては、それらを別に数えた後の残りなので、向きが逆になることがある（例: 級別やモーター）。AI の見立てで、原因の断定ではない。割合が大きい材料ほど、その艇番の見込みを大きく上下させているという意味で、「それがあれば勝てる」という意味ではない。</p>',
+  '<p class="foot" id="aiFoot">上の数えた値には選手の強さなどが全部まざっている。AIはそれを分けて見るので、向きが逆になることがある（例: 級別・モーター）。原因の断定ではない。割合が大きい項目ほど、その艇番の結果を大きく動かしているという意味で、「それがあれば勝てる」という意味ではない。</p>')
+R('<div id="aiPre" class="warn" hidden>展示前の AI の見立ては、出走表の時点のモデルが学習されると出る（モックの版にはまだ無い）。展示後に切り替えると見られる</div>',
+  '<div id="aiPre" class="warn" hidden>展示前のAIの見立ては準備中。展示後に切り替えると見られる</div>')
+R('["radar","themeList"].forEach(id=>{', '["hAi","aiSub","aiFoot"].forEach(id=>$(id).hidden=pre);["radar","themeList"].forEach(id=>{')
+R('$("hAi").textContent = `${A}号艇が${RT[st.rank]}に入るかを左右しやすい材料`;', '$("hAi").textContent = `${A}号艇が${st.rank === 1 ? "1着になる" : RT[st.rank] + "に入る"}かを左右しやすい項目`;')
+R('["venue", "会場・R番号"],', '["venue", "会場・レース番号"],')
+R('${BP.dir[m][A][g] || ""}${Bb ? `<br>${Bb}号艇: ${BP.dir[m][Bb][g] || ""}` : ""}', '${fmtDir(g, BP.dir[m][A][g])}${Bb ? `<br>${Bb}号艇: ${fmtDir(g, BP.dir[m][Bb][g])}` : ""}')
+_a = t.index('`<p class="foot">割合は、その艇番の見込みが上下するうち'); _b = t.index('</p>`;', _a) + 6
+t = t[:_a] + '''`<p class="foot">割合は、プラスにもマイナスにも動かした大きさを合わせて分けたもの（${fmtD(BP.period)}）。中を開くと、項目ごとの割合と、どちら向きに動くかが出る。${vb ? "2艇を重ねたときは割合の形の比較で、効き方の大きさの比較ではない。" : ""}${A === 1 ? "1号艇は、枠の有利さと選手の格がまざる分（約15%）を枠に入れているので、選手の実力が小さめに出る。" : ""}</p>`;''' + t[_b:]
+R('このモデルの集計期間（約1年）では', 'AIの集計期間（約1年）では')
+R('モデルの学習の揺れは入っていない', 'AIの学習の揺れは入っていない')
+# 共通の関数: 項目名・基準の文・値の書式・AIの向きの文（data.js はそのまま、表示の前に置き換える）
+R('const fmtT=(k,v)=>/^recent_/.test(String(k))&&typeof v==="string"?v.split("/").map(x=>x!==""&&!isNaN(+x)?Math.round(+x*100)+"%":x).join("/"):v;',
+  r'''const LABEL={race_number_band:"レース番号（1〜4R／5〜8R／9〜12R）",race_number:"レース番号",n_A1:"A1の艇数",win_gap_band:"1号艇と勝率トップの勝率差（5段階）",top_boat:"勝率トップの艇",nat_win_rank_4:"6艇の勝率順位",recent_top3_30_6:"6艇の直近30走の3連率",st_mean30_6:"6艇の平均ST（直近30走）",b1_st_rank_band:"1号艇の平均ST順位（2位ごと）",b1_motor_rank_band:"1号艇のモーター2連率の順位（2位ごと）",b1_boat_rank_band:"1号艇のボート2連率の順位（2位ごと）",wind_bin:"風速",wave_bin:"波高",grade_bin:"一般戦かどうか",is_final_day:"最終日かどうか",exh_time_diff_6:"6艇の展示タイムの差（平均との差）"};
+const RULE={venue:"同じ会場",race_number_band:"区分（1〜4R／5〜8R／9〜12R）が同じ",race_number:"同じ",b1_class:"同じ",class_all6:"6艇とも級別が同じ",n_A1:"同じ",win_gap_band:"1号艇と勝率トップの差が同じ区分（5段階）",top_boat:"同じ（勝率が同じなら艇番の小さいほう）",nat_win_6:"6艇の全国勝率が、平均して0.50以内の差",nat_win_rank_4:"勝率の順位が同じ艇が4艇以上",b1_nat_win:"差が0.50以内",loc_win_6:"6艇の当地勝率が、平均して0.75以内の差（当地の記録が無い選手は除く）",recent_win30_6:"6艇で、平均して10ポイント以内の差",recent_top3_30_6:"6艇で、平均して10ポイント以内の差",st_mean30_6:"6艇の平均STが、平均して0.02秒以内の差",b1_st_rank_band:"区分（1〜2位／3〜4位／5〜6位）が同じ",b1_motor_rank_band:"6艇中の順位の区分（1〜2位／3〜4位／5〜6位）が同じ",motor_2_6:"6艇で、平均して5ポイント以内の差",b1_boat_rank_band:"6艇中の順位の区分（1〜2位／3〜4位／5〜6位）が同じ",boat_2_6:"6艇で、平均して5ポイント以内の差",weather:"同じ",wind_bin:"風速の区分（0〜2m／3〜4m／5m以上）が同じ",wind_vector:"風向きと風速が近い（差1.5m以内）",wave_bin:"区分（0〜2cm／3〜5cm／6cm以上）が同じ",grade:"同じ",grade_bin:"一般戦かどうかが同じ",round:"同じ",series_day:"同じ",is_final_day:"同じ",age_6:"6艇の年齢が、平均して3歳以内の差",weight_6:"6艇の体重が、平均して2.0kg以内の差",n_local:"同じ",exh_time_diff_6:"6艇の展示タイムの差が、平均して0.03秒以内"};
+const relabel=it=>({...it,label:LABEL[it.key]||it.label,rule:RULE[it.key]||cleanRule(it.rule)});
+const fmtT=(k,v)=>{if(typeof v!=="string")return v;let s=v;k=String(k);
+  if(/^recent_/.test(k))s=s.split("/").map(x=>x!==""&&!isNaN(+x)?Math.round(+x*100)+"%":x).join("/");
+  if(k==="motor_2_6"||k==="boat_2_6"||k==="weight_6")s=s.split("/").map(x=>x!==""&&!isNaN(+x)?(+x).toFixed(1):x).join("/");
+  if(k==="weather")s=s.replace(/^晴$/,"晴れ");
+  if(k==="grade_bin")s=s==="一般"?"一般戦":s==="G3以上"?"一般戦ではない":s;
+  if(k==="win_gap_band")s=s.replace(/（帯(\d)）/,(_,b)=>`（下から${+b+1}段階目）`);
+  return s.replace(/(^|[^0-9.])-(?=\d)/g,"$1−").replace(/([^\x00-\x7f])\s+([0-9A-Za-z])/g,"$1$2").replace(/([0-9A-Za-z%])\s+([^\x00-\x7f])/g,"$1$2");};
+const GORD=["SG","G1","G2","G3","一般"];
+const fmtDir=(g,s)=>{s=String(s||"");if(!s)return "";
+  if(g==="boat1")return "1号艇が強いかどうかで変わる（どちらに動くかは艇番・着順による）";
+  if(/中くらいで見込みが上がる（まっすぐな向きではない）/.test(s))return g==="age"?"中堅の年齢で上がりやすい（若いほど・年配ほど、ではない）":g==="weight"?"中くらいの体重で上がりやすい（軽いほど・重いほど、ではない）":s;
+  if(g==="grade")s=s.replace(/(上がる|下がる): ([^／]+)/g,(_,h,l)=>`${h}: ${l==="—"?l:l.split("・").sort((a,b)=>GORD.indexOf(a)-GORD.indexOf(b)).join("・")}`);
+  if(g==="round")s=s.replace(/その他/g,"一般戦など");
+  return s.replace(/R番号/g,"レース番号").replace(new RegExp("過去"+"の平均ST","g"),"平均ST（直近30走）");};
+const fmtD2=v=>String(v??"").replace(/(\d{4})-(\d{2})(?:-(\d{2}))?/g,(_,y,m,d)=>`${y}/${+m}${d?"/"+(+d):""}`);
+const gjoin=(g,s)=>`${g}${s?(/[0-9A-Za-z]$/.test(g)?"":" ")+s:""}`;
+// 類似レースで必ずそろえる条件のうち、レースの種類（例: G1以上の優勝戦）
+const layerKind=()=>{const L=(K.pool&&K.pool.layer_cond)||"",r=(L.match(/ラウンド（(.+?)）/)||[])[1],g=(L.match(/グレード（(.+?)）/)||[])[1];return r&&g?`${g}の${r}`:r||g||"";};
+let CMPS="若松の全レース";''')
+R('function setK(){K=st.stage==="post"&&D.knn4?D.knn4:(st.swKnn==="mix"&&D.knn3?D.knn3:D.knn);ITEM=',
+  'function setK(){K=st.stage==="post"&&D.knn4?D.knn4:(st.swKnn==="mix"&&D.knn3?D.knn3:D.knn);K={...K,items:K.items.map(relabel)};ITEM=')
+# 類似レース: 冒頭の説明・スライダー・何が似ている
+_a = t.index('  $("simSub").textContent='); _b = t.index('\n', _a)
+t = t[:_a] + r'''  {const kind=layerKind(),layered=(st.swKnn==="mix"||st.stage==="post")&&D.knn3;$("simSub").innerHTML=layered?`${kind?`今日と同じ「${kind}」で、`:""}1号艇の級別・1号艇と勝率トップの差・勝率トップの艇番が${kind?"":"今日と"}そろう過去レース${K.pool&&K.pool.layer_n?`${K.pool.layer_n}件`:""}を、出走表が似ている順に並べた。展示後は展示タイム・天候・風・波も見ている${/優勝戦/.test(kind)?`<span class="foot" style="display:block;margin-top:4px">※優勝戦以外の名前の決勝（〇〇王座決定戦など）はまだ入れていない</span>`:""}`:`出走表の数字が今日の若松12Rに近い過去レースを、似ている順に並べた。同じ会場のレースを優先して探している（会場が違うと遠く数える）。${st.stage==="post"?"展示後は展示タイム・天候・風・波も見ている":"展示前は出走表の情報だけで見ている"}`;}''' + t[_b:]
+R('$("pctLbl").textContent=far?`${N}件目（いちばん遠い）でも、近さの計算に使う${fc.length}項目のうち ${fc.filter(m=>m===2).length}項目が同じ・${fc.filter(m=>m===1).length}項目が近い`:"";',
+  '$("pctLbl").textContent=far?`一番遠い${N}件目でも、${fc.length}項目中${fc.filter(m=>m===2).length}項目が同じ・${fc.filter(m=>m===1).length}項目が近い`:"";')
+R('<span class="v">${pc(r.rate,0)}<small>${nr!=null&&nr>r.rate+.005?` 近いも含め ${pc(nr,0)}`:""}</small></span>', '<span class="v">${pc(r.rate,0)}<small>${nr!=null&&nr>r.rate+.005?`（近いも含め${pc(nr,0)}）`:""}</small></span>')
+R('$("likeTop").innerHTML=`<p class="sub">この ${N}件のうち、その項目が今日と同じ（基準は全項目の表に）レースの割合</p>${CONDK.length?`<p class="foot">条件でそろえた項目（${CONDK.map(k=>ITEM[k]?ITEM[k].label:k).join("・")}）は、全件が今日と同じなので、ここには出していない</p>`:""}`',
+  '$("likeTop").innerHTML=`<p class="sub">${N}件のうち、今日と同じだったレースの割合（何を同じとみなすかは、下の全項目の表に）</p>${CONDK.length?`<p class="foot">条件でそろえた項目（${[layerKind(),"1号艇の級別","勝率差","勝率トップの艇"].filter(Boolean).join("・")}）は全件そろっているので出していない。${/G1以上/.test((K.pool&&K.pool.layer_cond)||"")?"グレードはG1とSGが混ざる":""}</p>`:""}`')
+R('$("likeMore").textContent=`全 ${K.items.length} 項目（近さの計算に使わない項目も含む）を見る`;', '$("likeMore").textContent=`全${K.items.length}項目（近さの計算に使わない項目も含む）を見る`;')
+R('<thead><tr><th>項目（今日の値）</th><th>同じ（${N}件）</th><th>近いまで</th><th>全レース</th></tr></thead>', '<thead><tr><th>項目（今日の値）</th><th>同じ（${N}件中）</th><th>近いも含む</th><th>全レースで同じ割合</th></tr></thead>')
+# 1件ずつ見比べる
+R('<span class="nm">${x.d} ${x.v} ${x.rn}R<small>${x.g==="ippan"?"一般":x.g} ${x.res.stage||RN[x.rd]||""}', '<span class="nm"><span class="dt">${fmtD2(x.d)}</span>${x.v}${x.rn}R<small>${gjoin(x.g==="ippan"?"一般":x.g,x.res.stage||RN[x.rd]||"")}')
+R('<span class="sc"><span class="up">○${s2}</span> <span class="warn2">△${s1}</span> <span class="down">×${s0}</span></span>', '<span class="sc"><span class="up">同じ${s2}</span>・<span class="warn2">近い${s1}</span>・<span class="down">違う${s0}</span></span>')
+R('`　3連単 ${x.res.payout_3tan.toLocaleString()}円', '`　3連単${x.res.payout_3tan.toLocaleString()}円', 2)
+R('<br><small>着: ${x.res.finish.map((f,i)=>`${i+1}号艇 ${fin(f)}`).join("・")}　ST順: ${x.res.st_rank.map(v=>v??"—").join("/")}　進入: ${x.res.course.join("")}</small>',
+  '<br><small>着順: ${(x.o||[]).join("-")}（全艇: ${x.res.finish.map((f,i)=>`${i+1}号艇${fin(f)}`).join("・")}）　ST順（1号艇から）: ${x.res.st_rank.map(v=>v??"—").join("/")}　進入: ${x.res.course.slice(0,3).join("")}/${x.res.course.slice(3).join("")}</small>')
+R('function sonarTipHtml(x){return `<b>${x.r}番目に似ている</b><br>${x.d} ${x.v} ${x.rn}R ${GN[x.g]||x.g||""} ${RN[x.rd]||x.rd||""}<br>', 'function sonarTipHtml(x){return `<b>${x.r}番目に似ている</b><br><span class="dt">${fmtD2(x.d)}</span>${x.v}${x.rn}R ${gjoin(GN[x.g]||x.g||"",RN[x.rd]||x.rd||"")}<br>')
+# 類似レースの決まり方
+R('<span>ひげ＝95%の幅。棒をタップ</span>', '<span>棒の横線＝件数が少ないときのぶれ幅（だいたいこの間に入る）。棒をタップ</span>')
+R('data-tip="${x}/${n}件・95%の幅 ${pc(lo)}〜${pc(hi)}${extra}${natP!=null?`・比べる相手 ${pc(natP)}`:""}"',
+  'data-lab="${String(lab).replace(/<span class="bn"[^>]*>\\d<\\/span>\\s*/g,"").replace(/<[^>]+>/g,"")}" data-tip="${n}件中${x}件（${pc(p,0)}、ぶれ幅${Math.round(lo*100)}〜${pc(hi,0)}）。${(extra+(natP!=null?`・${CMPS}${pc(natP,0)}`:"")).replace(/^・/,"")}"')
+R('tipEl.textContent=b.querySelector("span").textContent+": "+b.dataset.tip;', 'tipEl.textContent=(b.dataset.lab||b.querySelector("span").textContent)+": "+b.dataset.tip;')
+R('$("resT").textContent=`似ている順の ${N}件で（同じ節を${st.noSS?"除く":"含む"}）`;', '$("resT").textContent=`似ている順の${N}件で${K.pool&&K.pool.layer_n?"":st.noSS?"（今日と同じ節のレースは除く）":"（今日と同じ節のレースも含む）"}`;')
+R('height:12px"></i>${cmpLayer()?cmpLayer().name:"若松の全レース（似ているかを問わない）"}`;', 'height:12px"></i>点線: ${cmpLayer()?cmpLayer().name:"若松の全レース（似ているかを問わない）"}`;')
+R('  const LY=cmpLayer();\n', '  const LY=cmpLayer();CMPS=LY?LY.short:"若松の全レース";\n')
+R('`${all8.n!==N?`・${all8.n}件では ${pc(all8.hit[t][b-1]/all8.n)}`:""}・全国 ${pc(NAT.n_hit[b][RK[t]]/NAT.n)}`', '`${all8.n!==N?`・${all8.n}件では${pc(all8.hit[t][b-1]/all8.n,0)}`:""}・全国${pc(NAT.n_hit[b][RK[t]]/NAT.n,0)}`')
+R('${N}件だと割合はぶれやすい（ひげが長い）。${all8.n!==N?`棒をタップすると ${all8.n}件での割合も出る`', '${N}件だと割合はぶれやすい（ぶれ幅が広い）。${all8.n!==N?`棒をタップすると${all8.n}件での割合も出る`')
+R('`・全国 ${pc(NAT.technique[k]/NAT.n)}`', '`・全国${pc(NAT.technique[k]/NAT.n,0)}`')
+R('if(D.knn5layer)return {...D.knn5layer,name:`グレードを問わない優勝戦（勝率の3条件はそろえる）${D.knn5layer.n}件。類似レース${K.nb.length}件はこの中に入る、ひとつ広い範囲`};',
+  'if(D.knn5layer)return {...D.knn5layer,name:`グレードを問わない優勝戦（ほかの条件は同じ）${D.knn5layer.n}件`,short:"グレードを問わない優勝戦"};')
+R('name:`全国・6艇ともA1の優勝戦（${c.n.toLocaleString()}件。類似レースとは条件が違う）`};', 'name:`全国・6艇ともA1の優勝戦（${c.n.toLocaleString()}件。類似レースとは条件が違う）`,short:"全国・6艇ともA1の優勝戦"};')
+R('name:`条件（${D.knn3layer.cond||"勝率差・1号艇の級別・勝率トップ"}）がそろった過去レース全体（${D.knn3layer.n.toLocaleString()}件）`}:null;}', 'name:`条件（${D.knn3layer.cond||"勝率差・1号艇の級別・勝率トップ"}）がそろった過去レース全体（${D.knn3layer.n.toLocaleString()}件）`,short:"条件がそろった過去レース全体"}:null;}')
+R('<div class="card">艇（扇・棒・下の艇ボタン）を選ぶと、「その艇が勝ったとき、ほかの艇はどうだった？」が出る</div>', '<div class="card">上の棒かソナーの扇を押すと、その艇が勝ったとき、ほかの艇はどうだったかが出る</div>')
+R('b1s:"1号艇の ST が4番手以下",st1_tie:`${k}号艇の ST がトップ（同タイム含む）`', 'b1s:"1号艇のSTが4番手以下",st1_tie:`${k}号艇のSTがトップ（同タイム含む）`')
+R('<h3>${bn(k)} ${k}号艇が勝った ${hitR.length}件、ほかの艇は？</h3>', '<h3>${bn(k)} ${k}号艇が勝った${hitR.length}件、ほかの艇は？</h3>')
+R('くらべる相手: ${cmpName}（${C1.length}件）', '比べる相手: ${cmpName}（${C1.length}件）')
+R('<div class="warn">この ${nb.length}件では ${k}号艇が勝ったレースは0件。', '<div class="warn">この${nb.length}件では${k}号艇が勝ったレースは0件。')
+R('"2着→3着の帯は、1着の艇を問わずに数えている。1着の箱をタップすると、その艇が勝ったレースだけで 1→2→3 の流れを描き直す"', '"2着→3着の帯は、1着の艇を問わずに数えている。1着の四角をタップすると、その艇が勝ったレースだけで1→2→3の流れを描き直す"')
+R('`${b}号艇が勝った ${a.win[b-1]}件だけで描いている（1→2→3 の本当の流れ）。上の一覧でも色を付けている`', '`${b}号艇が勝った${a.win[b-1]}件だけで、1着→2着→3着をつないで描いている。上の一覧でも色を付けている`')
+R('`${p?"2着":"1着"} ${x}号艇 → ${p?"3着":"2着"} ${y}号艇: ${c}件（${tot}件中）。上の一覧でも色を付けている`', '`${p?"2着":"1着"}の${x}号艇 → ${p?"3着":"2着"}の${y}号艇: ${c}件（${tot}件中）。上の一覧でも色を付けている`')
+R('$("triMore").textContent=`ほかの ${Math.max(0,all.length-topN)} 通りも見る（出た組み合わせは全 ${all.length} 通り。件数が同じものはまとめて上に出している）`;', '$("triMore").textContent=`残り${Math.max(0,all.length-topN)}通りを見る（全${all.length}通り）`;')
+# 使っている項目
+_a = t.index('  const notUsed=K.items.filter(it=>!it.inDist).map(it=>it.label);'); _b = t.index('$("detail").innerHTML=', _a)
+t = t[:_a] + '''  const pre=st.stage==="pre",PREH={weather:1,wind_bin:1,wind_vector:1,wave_bin:1,exh_time_diff_6:1};
+  const notUsed=K.items.filter(it=>!it.inDist&&!(pre&&PREH[it.key])).map(it=>it.label);
+  const layered=(st.swKnn==="mix"||st.stage==="post")&&K.pool&&K.pool.layer_cond;
+  const cond=layered?[layerKind(),"1号艇の級別","1号艇と勝率トップの差","勝率トップの艇番"].filter(Boolean).join("・"):"なし（全部の項目で似ている順に並べる）";
+  ''' + t[_b:]
+R('<ul><li>材料: 今節の平均着順点・全国勝率・当地勝率・直近30走の1着率・モーター2連率・ボート2連率・過去30走の平均ST・展示タイム（展示の後だけ）。全国勝率・当地勝率・モーター2連率・ボート2連率は出走表の値、展示タイムは直前情報の値。直近30走の1着率・過去30走の平均ST・今節の平均着順点は、',
+  '<ul><li>項目: 今節の平均着順点・全国勝率・当地勝率・直近30走の1着率・モーター2連率・ボート2連率・平均ST（直近30走）・展示タイム（展示の後だけ）。全国勝率・当地勝率・モーター2連率・ボート2連率は出走表の値、展示タイムは直前情報の値。直近30走の1着率・平均ST（直近30走）・今節の平均着順点は、')
+R('<li>${st.stage==="post"?"展示後は、展示タイム・天候・風・波も近さに入れている":"展示前は、展示タイム・天候・風・波はまだ分からないので使っていない"}</li></ul>', '<li>${st.stage==="post"?"展示後は、展示タイム・天候・風・波も近さに入れている":"展示前は天候・風・波・展示タイムを使わず、見比べにも出さない"}</li></ul>')
+R('<p class="foot">期間はどれも 2019-04-01〜2026-09-26（例のレースの前日まで）。棒のひげ（95%の幅）は、レースどうしが独立だとして計算している。類似レースは会場や同じ節に固まることがあるので、実際の幅はやや広い</p>',
+  '<p class="foot">数えた値は2019/4/1〜2026/9/26。AIの見立ては2025/10〜2026/9のデータで作った。ぶれ幅は1レースずつ別々に起きたとみなした計算。似たレースは同じ会場・同じ節に偏るので、実際はもう少し広い</p>')
+# 冒頭の説明（モックの注記）の書式
+R('本番 DB、2019-04-01〜例のレースの前日まで', '本番DB、2019/4/1〜例のレースの前日まで')
+R('<b>若松 12R（2026-09-27、G1 ヤングダービー優勝戦、6艇とも A1）</b>', '<b>若松12R（2026/9/27、G1ヤングダービー優勝戦、6艇ともA1）</b>')
+R('結果は 4-1-5 差し、3連単 11,580円', '結果は4-1-5差し、3連単11,580円')
+R('<small>今日 ${String(fmtT(k,K.today[k])??"—")', '<small>今日: ${String(fmtT(k,K.today[k])??"—")')
+R('ib:`${k}号艇より内の艇に F・出遅れ・失格`', 'ib:`${k}号艇より内の艇にF・出遅れ・失格`')
+R('（${fmtD(BP.period)}）', r'（${fmtD(BP.period).replace(/([0-9]) (?=[^\x00-\x7f])/g,"$1").replace(/（(.*)）$/,"。$1")}）')
+R('.tabs{display:grid;', '.dt{margin-right:.45em}\n.tabs{display:grid;')
+R('<span class="eyebrow">アナロジー・ファインダー · 若松 12R</span>', '<span class="eyebrow">アナロジー・ファインダー · 若松12R</span>')
+R('範囲の既定は「若松・6艇とも A1」', '数えるレースの既定は「若松・6艇ともA1」')
+# 表示の書式（CSS）: 棒の下の順位を2行に、件数の少ない進入の行を折り返す
+R('.strip{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;height:96px}', '.strip{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;height:112px}')
+R('.strip .col{display:grid;grid-template-rows:14px 1fr 16px;', '.strip .col{display:grid;grid-template-rows:14px 1fr 28px;')
+R('.strip .rk{white-space:nowrap;font-size:10px}', '.strip .rk{white-space:nowrap;font-size:10px;line-height:1.3}')
+R('.ent .b1{font-size:11.5px;color:var(--muted);min-width:7.5em;text-align:right}', '.ent .b1{font-size:11.5px;color:var(--muted);min-width:7.5em;max-width:10em;text-align:right}')
+# 語の統一（材料・要素 → 項目、AI の後ろの空白）
+t = t.replace('材料', '項目').replace('他艇の要素', '他艇の項目').replace('要素ごとの割合', '項目ごとの割合')
+t = t.replace('AI の', 'AIの').replace('AI が', 'AIが').replace('AI 予想', 'AI予想')
+t = t.replace('過去の平均ST', '平均ST（直近30走）').replace('過去30走の平均ST', '平均ST（直近30走）')
 io.open('template16.html', 'w', encoding='utf-8').write(t)
 print('ok')
