@@ -1596,6 +1596,44 @@ const fullColumns = {
     "修正計画: 既に正しい行は、race_results を書かない（変更の無い行を書かない）",
     Object.keys(fixed.resultUpdate).length === 0,
   );
+  // 決まり手は、空のときだけ埋める（BOA-749。2026-09-16 住之江7R が NULL のまま残っていた）
+  const techniquePlan = (
+    existingTechnique,
+    newTechnique,
+    { omit = false } = {},
+  ) => {
+    const base = {
+      ...newRow,
+      race_status: "partial_refund",
+      refund_boats: [3, 4, 5, 6],
+      remark: "【返還艇あり】",
+    };
+    const existingRow = { ...base, winning_technique: existingTechnique };
+    if (omit) delete existingRow.winning_technique;
+    return buildFixPlan(
+      existingRow,
+      { ...newRow, winning_technique: newTechnique },
+      parsed,
+      { results: true, timings: false, payouts: false },
+    ).resultUpdate;
+  };
+  check(
+    "修正計画: 決まり手が空なら、再取得した値で埋める",
+    same(techniquePlan(null, "まくり"), { winning_technique: "まくり" }),
+    show(techniquePlan(null, "まくり")),
+  );
+  check(
+    "修正計画: 決まり手に値があれば、再取得した値が違っても上書きしない",
+    !("winning_technique" in techniquePlan("逃げ", "まくり")),
+  );
+  check(
+    "修正計画: 再取得したページから決まり手を読めなくても（null）、既存の値を消さない",
+    !("winning_technique" in techniquePlan("逃げ", null)),
+  );
+  check(
+    "修正計画: 既存の行に決まり手の列が無い（読み出していない）ときは書かない",
+    !("winning_technique" in techniquePlan(null, "まくり", { omit: true })),
+  );
 }
 {
   // --apply: 実行の流れ（インメモリ）。汚れた2レースを直す。2回目は変更なし

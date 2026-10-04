@@ -274,6 +274,45 @@ check(
   );
 }
 
+// 2026-10-03 ユーザー判断（BOA-711 U2）: 準優の目安の線・目安に届く得点率は青。金は最良だけ
+{
+  const meet = read("src/components/race/RaceMeetTab.css");
+  check(
+    "U2: 準優の目安の点線・左の帯・早見の得点率は青（--color-info-text）",
+    /tr\.is-border-edge td \{[^}]*dashed var\(--color-info-text\)/.test(meet) &&
+      /tr\.is-in-border th \{[^}]*inset 3px 0 0 0 var\(--color-info-text\)/.test(
+        meet,
+      ) &&
+      /td\.rmt-rate\.is-in-border \{[^}]*color: var\(--color-info-text\)/.test(
+        meet,
+      ),
+  );
+}
+
+{
+  const meet = read("src/components/race/RaceMeetTab.css");
+  check(
+    "U2: 得点率早見・6艇の推移の選択中の印に金を使わない（金は最良だけ）",
+    /\.rmt-forecast-table tbody tr\.is-current th \{[^}]*inset 3px 0 0 0 var\(--text-primary\)/.test(
+      meet,
+    ) &&
+      /\.rmt-trend-row\[aria-pressed="true"\] \{[^}]*inset 3px 0 0 var\(--text-primary\)/.test(
+        meet,
+      ) &&
+      !/\.rmt-trend-row[^{]*\{[^}]*--brand-accent-primary/.test(meet),
+  );
+  check(
+    "U2: 青の意味を文で書く（点線は「青い点線」、早見の青い得点率の注記）",
+    json("src/locales/ja/common.json").meetTab.borderNote.includes(
+      "青い点線",
+    ) &&
+      LANGS.every(
+        (l) =>
+          json(`src/locales/${l}/common.json`).meetTab.forecastRateBlueNote,
+      ),
+  );
+}
+
 if (failures.length > 0) {
   console.error(`\nverify-race-detail-boa711: ${failures.length}件失敗`);
   process.exit(1);
