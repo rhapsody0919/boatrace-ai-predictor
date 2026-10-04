@@ -27,24 +27,6 @@
   );
 }
 
-/* 少しだけ切れているとき（src/utils/horizontalScrollHint.js の HSCROLL_PEEK_MAX 以下）は「›」を出さず、
-   細いフェードだけを出す。幅は --hscroll-peek-width（フックが設定） */
-.hscroll-hint[data-hscroll-peek="true"]::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: var(--hscroll-peek-width, 16px);
-  pointer-events: none;
-  z-index: 5;
-  background: linear-gradient(
-    to right,
-    transparent,
-    var(--hscroll-fade-color, var(--surface-page))
-  );
-}
-
 .hscroll-more {
   position: absolute;
   /* 上端に寄せる。箱の高さいっぱいに置くと、縦に長い表では「›」が
@@ -104,4 +86,16 @@
   font-weight: var(--font-weight-bold);
   line-height: 1;
   cursor: pointer;
+}
+
+/* 列を固定した表は、指で送ったときも列の境目に止める（BOA-741）。止める位置（固定した列の右端）は
+   フックが scroll-padding-left に入れ、止めるかどうかを data-hscroll-snap で渡す */
+[data-hscroll-snap="true"] {
+  scroll-snap-type: x mandatory;
+}
+
+/* 列の境目はどの行でも同じなので、行ごとの先頭の行だけに付ける（全部のセルに付けると、同じ位置が
+   行の数だけ登録される） */
+[data-hscroll-snap="true"] tr:first-child > :is(th, td) {
+  scroll-snap-align: start;
 }
