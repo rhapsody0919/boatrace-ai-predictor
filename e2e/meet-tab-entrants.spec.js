@@ -288,3 +288,13 @@ test("和文の注記で句点の後に半角スペースを入れない（英�
   const en = await page.locator(".rmt-border-note").innerText({ timeout: 30000 });
   expect(en).toMatch(/\)\. \S/);
 });
+
+test("韓国語の⚠の説明は走数と分かる書き方にする", async ({ page }) => {
+  // 「3주 미만」が「3週間未満」と読めた。表のすぐ下に出すようにしたので目立つ（BOA-738 ファン評価1周目）
+  await page.goto("/ko/race/2026-09-23-09-12");
+  await page.locator(".race-tabs-btn").nth(2).click();
+  const hint = page.locator(".rmt-hint").nth(1);
+  await expect(hint).toHaveText("⚠는 출주 3회 미만(득점률이 아직 불안정합니다).", {
+    timeout: 30000,
+  });
+});

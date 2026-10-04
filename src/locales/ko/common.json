@@ -963,7 +963,7 @@
     "finishSeparator": "-",
     "finishDq": "실격",
     "finishAbsent": "결",
-    "smallSampleLegend": "⚠ 는 3주 미만(득점률이 아직 거칠다).",
+    "smallSampleLegend": "⚠는 출주 3회 미만(득점률이 아직 불안정합니다).",
     "finishLabel": "착순",
     "finishLabelPrelim": "예선 착순",
     "borderNote": "점선 위가 준결승전 기준 안입니다(편성이 확정되지 않아 확정은 아닙니다).",
