@@ -3,7 +3,7 @@
  */
 import { SocialShareButtons } from "../SocialShareButtons";
 import { generateTurnHitShareText, shareUrlFor } from "../../utils/share";
-import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
+import { TECHNIQUE_NAMES, techniqueDiffers } from "../../utils/turnPrediction";
 
 function HitRaceCard({
   hitRace,
@@ -34,10 +34,7 @@ function HitRaceCard({
   // 的中の判定は1着の艇だけで、決まり手は見ない。予想した決まり手が実際と違うときは、
   // 実際の決まり手を添える（BOA-724。「予想: 逃げ」だけだと、逃げが当たったように読めた）
   const actualTechnique = hitRace.result?.winningTechnique ?? null;
-  const actualDiffers =
-    technique != null &&
-    actualTechnique != null &&
-    technique !== actualTechnique;
+  const actualDiffers = techniqueDiffers(technique, actualTechnique);
 
   return (
     <div

@@ -35,6 +35,22 @@ export function pickHitPattern(patterns, winner, winningTechnique) {
 }
 
 /**
+ * 予想した決まり手と実際の決まり手が、どちらも分かっていて食い違うか（BOA-724）。
+ * 的中カードの「（実際: 差し）」と共有文の「、実際: 差し」で同じ判定を使う
+ *
+ * @param {string|null|undefined} predictedTechnique 日本語の決まり手名
+ * @param {string|null|undefined} actualTechnique 日本語の決まり手名
+ * @returns {boolean}
+ */
+export function techniqueDiffers(predictedTechnique, actualTechnique) {
+  return (
+    predictedTechnique != null &&
+    actualTechnique != null &&
+    predictedTechnique !== actualTechnique
+  );
+}
+
+/**
  * 的中したレースが「予想どおりの展開」だったか（BOA-724）。
  *
  * 的中の判定は1着の艇だけを見る（判定と公開している的中率は変えない）。そのため、決まり手が

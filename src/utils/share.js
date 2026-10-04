@@ -3,7 +3,7 @@
  */
 
 import { MODEL_NAMES } from "../constants";
-import { isAsPredicted } from "./turnPrediction";
+import { isAsPredicted, techniqueDiffers } from "./turnPrediction";
 
 /** panel.sharePrediction の文面の数（v1〜vN） */
 const SHARE_PREDICTION_VARIANTS = 5;
@@ -311,12 +311,9 @@ export const generateTurnHitShareText = (race) => {
       : "";
   // 決まり手は AI の予想として書く。実際の決まり手と違うことがあり、「2コース（まくり）が1着」と
   // 書くと結果を言い切ってしまう（的中の判定は1着の艇だけ。PR #1197 ファン評価3周目）
-  const actualNote =
-    race.technique &&
-    race.actualTechnique &&
-    race.technique !== race.actualTechnique
-      ? `、実際: ${race.actualTechnique}`
-      : "";
+  const actualNote = techniqueDiffers(race.technique, race.actualTechnique)
+    ? `、実際: ${race.actualTechnique}`
+    : "";
   const predictionStr =
     race.probability != null
       ? `（AIの予想: ${race.technique ? `${race.technique} ` : ""}${(race.probability * 100).toFixed(0)}%${actualNote}）`
