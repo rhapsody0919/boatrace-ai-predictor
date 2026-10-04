@@ -1187,6 +1187,7 @@
     "rowTwoRate": "全國2連率",
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
+    "exStFlagTitle": "F＝起步展示時起步犯規，L＝起步展示時起步延遲（官方標示）。不列入最佳值的比較",
     "rowCourseRate": "艇號勝率",
     "loading": "數據載入中…",
     "motorResetNote": "剛更換",

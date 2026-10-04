@@ -1192,6 +1192,7 @@
     "rowTwoRate": "National top-2 rate",
     "rowAvgSt": "Avg ST",
     "rowExSt": "Exhibition ST",
+    "exStFlagTitle": "F = false start, L = late start in the start exhibition (official notation). Excluded from the best-value comparison",
     "rowCourseRate": "Lane win rate",
     "loading": "Loading analytics…",
     "motorResetNote": "New motors",

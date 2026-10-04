@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { formatExhibitionSt } from "../../utils/formatters";
 import "./MotorConditionChart.css";
 import "./RaceCardDataTable.css";
 
@@ -298,7 +299,13 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
                     >
                       {fmt(row.exhibition_time)}
                     </td>
-                    <td>{fmt(row.exhibition_st)}</td>
+                    {/* 展示のフライング・出遅れは公式の表記（F.01 等）で出す（BOA-759） */}
+                    <td>
+                      {formatExhibitionSt(
+                        row.exhibition_st,
+                        row.exhibition_start_flag,
+                      ) ?? "—"}
+                    </td>
                     <td>
                       {counts && counts.total > 0
                         ? `${counts.wins ?? 0}/${counts.total}（${(((counts.wins ?? 0) / counts.total) * 100).toFixed(0)}%）`

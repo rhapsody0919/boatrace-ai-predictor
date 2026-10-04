@@ -1187,6 +1187,7 @@
     "rowTwoRate": "전국 연대율",
     "rowAvgSt": "평균 ST",
     "rowExSt": "전시 ST",
+    "exStFlagTitle": "F＝스타트 전시에서의 플라잉, L＝스타트 전시에서의 출발 지연(공식 표기). 최고값 비교에서는 제외합니다",
     "rowCourseRate": "번호 승률",
     "loading": "분석 데이터 로딩 중…",
     "motorResetNote": "교체 직후",
