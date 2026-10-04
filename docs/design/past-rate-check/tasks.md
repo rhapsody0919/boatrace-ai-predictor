@@ -7,6 +7,14 @@
 本機能は新しいデータ取得を含まない（FR-2 の母集団と RPC を読むだけ）ので、`data-acquisition.md` の「完了の定義」3行は BOA-271 FR-2 の tasks 側で満たす。本機能は T0-3 で、本番の母集団に値の約束が守られていることだけを実測する。
 
 ## 再開するときに読むこと（引き継ぎ）
+- **2026-10-04 時点の土台（最新）**: BOA-271 は モック v16 に書き直された（PR #1134 head 0c8a6ea07、`docs/design/analogy-finder/` の spec・plan・ADR-0085・handoff §22）。マイグレーション120（層別 S*・`get_analogy_similar_races`）は本番に適用せず置き換える。代わりに v16 の朝のバッチが、今日の各レースについて BOA-635 用の `layer/{race_id}.json.gz`（v16 の層の全件の結果、新しい順に最大2,000件）を Storage（非公開バケット `analogy-v16`、実行ごとのパスで上書きしない）に作る。v16 の層は会場を含まず、ラウンド・グレード（優勝戦・準優勝戦、G1以上）を含む。層の大きさは中央値 7,286件・p90 58,119件なので、大半のレースで2,000件に切り詰める
+- **BOA-635 レーンの回答（2026-10-04、オーケストレーター経由で FR-2 側の合意待ち）**: この層を分母にすることに合意。会場は不要（spec に会場ごとの表示が無い。会場を混ぜた影響は T0-1 の Brier skill で測る）。layer ファイルへの要件: 列は旧 `get_analogy_similar_races` と同じ・並びは race_date 降順＋race_id 降順、行の外に n_total・n_returned・pool_from・pool_cutoff・層の条件・run_id、層の説明文の関数は FR-2 と共用、値の約束 D-1〜D-5 を v16 の export でも pytest で固定、保存は (race_id, run_id) で紐づけ（run_id が違えば「変わっています」）、展示後も racecard の段の layer を使う、snapshot 無し・empty_layer・absent では出さない、API `/api/analogy/layer/[raceId]` は BOA-635 で作る案、gzip 後100KB 超なら1,000件
+- **再開の条件（2026-10-04 に書き直し。下の旧条件より優先）**:
+  - 設計の書き直し: FR-2 側の合意の返事が来たら、spec「データ（土台）」・保存の紐づけ・照合・ADR-0081・plan・tasks・受け入れ E2E を v16 の layer ファイル前提に書き直す（`get_analogy_similar_races` 前提の今の記述は置き換える）
+  - 実装（T1〜）: v16 の朝のバッチが本番で layer ファイルと `analogy_v16_snapshots` を作っていること、layer の形が FR-2 の実装で確定していること、v16 の節の描画位置（早期 return の分岐の外）が master に入っていること
+  - T0-1（定番／レアの線の検証）: v16 の層の選び方を Python で再現できること（FR-2 の T1: `v16_defs.py`・`export_pool.js` の列追加）。そのうえで #1138 の分析ルール（事前登録の単独コミット＋push、その前に second-opinion-reviewer で1パス、数値に出典）
+  - 不要になった条件: 119／120 の本番適用、層別 S* の分析スクリプト、`get_analogy_similar_races`、#1122 の T9-1（v16 で節を作り直すため。扱いはオーケストレーターに確認中）
+- 以下は 2026-10-03 までの経緯（土台が層別 S*・k-NN の間を揺れた記録）
 - **2026-10-03 時点で土台が未確定**: ユーザーが FR-2 の方針を戻し、層別 S* をやめて k-NN（近い順）とスライダーに戻す見込み（モック・統計の検証・セカンドオピニオンの後にユーザー承認）。承認されると、下に書いた119／120 の層別・スナップショット・ADR-0082・`get_analogy_similar_races`（自動の深さ）が作り直しになる。初版（k-NN・`get_analogy_neighbors`、ADR-0080 寄り）の設計はこのブランチの履歴（f77b0cdbd〜74ede63e9 の spec・plan・ADR-0081）に残っている。続報（同日）: FR-2 の検証者は、BOA-635 については層別（マイグレーション120 の RPC）を残すことを推奨している（発生率の分母が「何件まで見るか」のスライダーで変わってはいけないため）。FR-2 が k-NN に戻っても、BOA-635 は層別の RPC のままになる可能性がある。再開はオーケストレーターから FR-2 の確定した形を受け取ってから行い、それに合わせて spec の「データ（土台）」・件数の決め方・保存の紐づけ・ADR-0081 を書き直す
 - 土台: BOA-271 FR-2 の層別 S*（ブランチ feature/boa-271-fr2-strat、PR #1134、マイグレーション119、ADR-0082）。`get_analogy_neighbors`（115、近傍800件）は作られない。spec・plan・ADR-0081 はすべて119 の `get_analogy_similar_races` 前提に書き直し済み
 - FR-2 レーンとの合意（2026-10-02）: 層の新しい順最大2,000件、8列、行の外の項目、深さは自動に固定、行の範囲は `pool_cutoff` 以前（直近7日の作り直しで行の出入りあり）、Edge API `/api/analogy/similar-races/[raceId]` は本機能で作る、深さ1〜3の索引3本は本番適用後に EXPLAIN を見て使われないものを落とす
