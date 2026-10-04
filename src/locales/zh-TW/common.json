@@ -972,6 +972,7 @@
     "finishLabel": "名次",
     "finishLabelPrelim": "預賽名次",
     "borderNote": "藍色虛線以上為準優門檻之內（賽程尚未排定，並非確定）。",
+    "borderNoneInTable": "這6艇中沒有準優門檻之內的選手（賽程尚未排定，並非確定）。",
     "prelimOverNote": "預賽已於{{date}}結束。得分率就此確定，不會因今日的名次而變動。",
     "seriesSplitNote": "本梯次為Ｗ優勝戰，晉級路線分為兩組（本梯次共{{meetTotal}}人）。梯次名次與準優門檻，僅以與顯示中6艇同樣以該優勝戰為目標的選手計算。",
     "seriesSplitNoteNoBorder": "本梯次為Ｗ優勝戰，晉級路線分為兩組（本梯次共{{meetTotal}}人）。梯次名次僅以與顯示中6艇同樣以該優勝戰為目標的選手計算。",
