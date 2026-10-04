@@ -946,6 +946,8 @@
     "volatilityHighlightsTurnPrediction": "最有力の展開: {{course}}コース{{technique}} {{probability}}%",
     "volatilityHighlightsClosed": "締切",
     "volatilityHighlightsClosedNote": "締切前のレースが少ないため、締切済みのレースから選んでいます。",
+    "volatilityHighlightsResult": "結果: {{boat}}号艇が1着",
+    "volatilityHighlightsResultPending": "結果: 反映待ち",
     "volatilityHighlightsAccuracyLink": "実測精度を見る →",
     "dataType": "レースデータ",
     "loadingTitle": "レースデータを読み込み中...",

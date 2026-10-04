@@ -135,3 +135,9 @@
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
 }
+
+/* 締切済みのレースの結果（振り返り）。予測の行と区別できるよう、本文の色にする */
+.volatility-highlights__result {
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}

@@ -46,6 +46,8 @@ function flattenRaces(venuesData, nowHHMM) {
             { startTime: race.startTime, result: race.result },
             nowHHMM,
           ) !== RACE_STATUS.UPCOMING,
+        // 1着の艇番（結果が出ていれば）。締切済みのレースの振り返りに出す
+        rank1: race.result?.rank1 ?? null,
         // turnPrediction は get_today_races RPC（052マイグレーション）が返す場合のみ
         // 存在する。未適用環境ではundefinedのため、無いものとして扱う
         turnPrediction: race.turnPrediction || null,
@@ -110,6 +112,16 @@ function RaceLink({ race, t }) {
             technique: t(`techniques.${tp.technique}`, tp.technique),
             probability: Math.round(tp.probability * 100),
           })}
+        </div>
+      )}
+      {/* 締切済みのレースは結果も出す（振り返り）。予測はコース番号（「1コース逃げ」）、結果は艇番なので、
+          「結果: 3号艇が1着」と結果だと分かる形にして、コースと号艇を混ぜて読ませない。
+          進入コースはホームのデータ（get_today_races）に無いので出さない */}
+      {race.closed && (
+        <div className="volatility-highlights__result">
+          {race.rank1 != null
+            ? t("home.volatilityHighlightsResult", { boat: race.rank1 })
+            : t("home.volatilityHighlightsResultPending")}
         </div>
       )}
     </Link>

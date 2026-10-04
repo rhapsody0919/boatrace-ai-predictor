@@ -148,11 +148,12 @@ test("ホームの注目レース: 崩れやすさは「/ 100」で出し、% �
 
 // BOA-757: 締切を過ぎたレースが締切前と区別なく並び、これから見るレースを選ぶ導線にならなかった。
 // 締切前のレースが2本以上あれば締切前だけから選び、残っていなければ締切済みから選んで札と注記を付ける
+// 1R は3号艇が1着の結果あり。ほかは結果がまだ無い（反映待ち）
 const DAY_RACES = [95, 80, 60, 40, 20, 5].map((p, i) => ({
   raceNo: i + 1,
   startTime: `${10 + i}:00`,
   cancellationStatus: null,
-  rank1: null,
+  rank1: i === 0 ? 3 : null,
   percentile: p / 100,
 }));
 
@@ -174,6 +175,8 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     await expect(
       page.locator(".volatility-highlights__closed-note"),
     ).toHaveCount(0);
+    // 締切前のレースに結果の行は出さない
+    await expect(page.locator(".volatility-highlights__result")).toHaveCount(0);
   });
 
   test("16:00: 全レースが締切済みなら締切済みから選び、札と注記を付ける", async ({
@@ -195,6 +198,15 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     await expect(
       page.locator(".volatility-highlights__closed-note"),
     ).toContainText("締切済みのレースから選んでいます");
+    // 振り返りとして結果も出す。予測（コース）と混ざらないよう「結果: N号艇が1着」の形
+    const results = page.locator(".volatility-highlights__result");
+    await expect(results).toHaveCount(6);
+    await expect(
+      page.locator(`a[href="/race/${raceIdOf(1)}"] .volatility-highlights__result`),
+    ).toHaveText("結果: 3号艇が1着");
+    await expect(
+      page.locator(`a[href="/race/${raceIdOf(2)}"] .volatility-highlights__result`),
+    ).toHaveText("結果: 反映待ち");
   });
 
   // 「崩れやすさ100」と「1着予想: 1号艇」が並び矛盾して見えた。最有力の1パターンで、値はコース番号

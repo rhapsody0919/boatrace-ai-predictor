@@ -381,6 +381,8 @@
     "volatilityHighlightsTurnPrediction": "Most likely: Course {{course}} {{technique}} {{probability}}%",
     "volatilityHighlightsClosed": "Closed",
     "volatilityHighlightsClosedNote": "Few races are left before the deadline, so these are picked from races that have closed.",
+    "volatilityHighlightsResult": "Result: Boat {{boat}} won",
+    "volatilityHighlightsResultPending": "Result: not yet posted",
     "volatilityHighlightsAccuracyLink": "See our track record →",
     "dataType": "Race data",
     "loadingTitle": "Loading race data...",

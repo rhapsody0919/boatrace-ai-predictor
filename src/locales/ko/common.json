@@ -377,6 +377,8 @@
     "volatilityHighlightsTurnPrediction": "가장 유력한 전개: {{course}}코스 {{technique}} {{probability}}%",
     "volatilityHighlightsClosed": "마감",
     "volatilityHighlightsClosedNote": "마감 전 레이스가 적어 마감된 레이스에서 골랐습니다.",
+    "volatilityHighlightsResult": "결과: {{boat}}번 보트가 1착",
+    "volatilityHighlightsResultPending": "결과: 반영 대기",
     "volatilityHighlightsAccuracyLink": "실측 정확도 보기 →",
     "dataType": "경주 데이터",
     "loadingTitle": "경주 데이터 로딩 중...",
