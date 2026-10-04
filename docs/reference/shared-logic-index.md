@@ -56,7 +56,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/dataHealth/job.js` | 汎用の日次監視 data_health（完了の定義C）の実行。api/cron/data-health.js が、共通ラッパ | createRpcCaller, readDeliveredKeys, runDataHealthChecks, runDataHealthJob, DATA_HEALTH_JOB ほか1件 |
 | `scripts/lib/dateUtils.js` | 日付ユーティリティ（バックエンド用） | getTodayDateJST, getYesterdayDateJST, getDateDaysAgo, formatDateForUrl, parseDateArg ほか5件 |
 | `scripts/lib/deployHookPolicy.js` | Vercel Deploy Hook を叩くかどうかの判定（BOA-361）。 | decideDeployHook, DEPLOY_HOOK_WINDOW_MINUTES |
-| `scripts/lib/disqualifiedFinishMark.js` | BOA-582(2): 失格（Kファイルの成績コード S0〜S2）の艇の着欄（finish_mark）を、結果ページから決める（純関数）。 | buildDisqualifiedMarkRows, DISQUALIFIED_MARKS, isDisqualifiedCode |
+| `scripts/lib/disqualifiedFinishMark.js` | BOA-582(2): 失格（Kファイルの成績コード S0〜S2）の艇の着欄（finish_mark）を、結果ページから決める（純関数）。 | buildDisqualifiedMarkRows, buildOfficialRowRows, DISQUALIFIED_MARKS, isDisqualifiedCode |
 | `scripts/lib/erDiagramFromDdl.js` | docs/db-migration/ のSQL DDLからmermaid erDiagramを機械的に導出する。 | parseTablesFromSql, findLinkedMigrations, buildMermaidErDiagram, DB_MIGRATION_DIR, DESIGN_DIR |
 | `scripts/lib/fakeSupabaseClient.js` | 検証用の偽のSupabaseクライアント（メモリ上のテーブル。DB・ネットワークに接続しない）。 | fakeClient |
 | `scripts/lib/fanPeriodJob.js` | 期別成績（fan、racer_period_stats）の定期取り込み。共通ラッパ向けハンドラー（api/cron/fan-period.js）。 | fanIdEndedBefore, periodOfFanId, daysSincePeriodEnd, fanRawPath, runFanPeriodJob ほか2件 |
@@ -93,7 +93,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/officialFinishCode.js` | 公式の成績コード（Kファイルの着順欄。01〜06・F・L0・L1・K0・K1・S0・S1・S2 等）を、 | buildOfficialFinishCodeRows, OFFICIAL_FINISH_CODE_COLUMN |
 | `scripts/lib/openingDayBackfill.js` | 節の初日の欠落（racesに1行も無い会場日）を、公式サイトの過去日ページから補うCLI | parseOnly, selectTargets, buildRaceRows, createThrottledFetch, tallyOutcomes ほか10件 |
 | `scripts/lib/optionalColumns.js` | 「マイグレーション未適用のDBでも壊れない」書き込みの共通処理 | isColumnMissingError, stripColumns, createOptionalColumnState, upsertWithOptionalColumns |
-| `scripts/lib/outcomeDistribution.js` | 出目分布（3連単の出現パターン）の会場別集計。純粋関数（DBに触れない）。 | aggregateOutcomeDistribution, TRIFECTA_PAYOUT_COLUMN |
+| `scripts/lib/outcomeDistribution.js` | 出目分布（3連単の出現パターン）の会場別集計。純粋関数（DBに触れない）。 | hasThreePlaced, aggregateOutcomeDistribution, TRIFECTA_PAYOUT_COLUMN |
 | `scripts/lib/parametric-calibration.js` | — | solveLinear, PlattCalibrator, BetaCalibrator, OddsAwareCalibrator |
 | `scripts/lib/payoutCalculator.js` | 配当・回収率ユーティリティ | calculateRecoveryRate, getTrifectaKey, getTrioKey, calculateHitRate, payoutToRecoveryRate ほか1件 |
 | `scripts/lib/pitReportJob.js` | ピットレポート（選手コメント）の取得ジョブ（BOA-379、docs/design/pit-comments/plan.md）。 | buildPitReportUrl, fetchPitReportHtml, processPitReportRace, createPitReportSlotHandler, createPitReportStore ほか3件 |
@@ -221,7 +221,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/digestMetrics.js` | digestMetrics - 「本日のデータ一覧」（BOA-402）の指標計算（純関数） | computeSkillDelta, computePredicted, computeZScore, computeConsistency, computeFeaturedScore ほか11件 |
 | `src/utils/errorMessage.js` | 例外から、画面のエラー状態に入れる文言を取り出す（BOA-668）。 | errorMessageOf |
 | `src/utils/formatters.js` | フォーマット関数 | formatCapturedAtJst, formatPercent, formatDate, formatDateLocalized, formatDateShort ほか4件 |
-| `src/utils/horizontalScrollHint.js` | 右に残っている幅がこれ以下なら「›」は出さず、細いフェードだけにする（px） | horizontalScrollHintState, horizontalScrollStep, snapScrollTarget, tailPaddingFor, HSCROLL_PEEK_MAX ほか1件 |
+| `src/utils/horizontalScrollHint.js` | 右に残っている幅がこれを超えたら「溢れている」とみなす（px）。「›」を出す、右に余白を足す、 | horizontalScrollHintState, horizontalScrollStep, snapScrollTarget, tailPaddingFor, HSCROLL_MORE_MIN ほか1件 |
 | `src/utils/meetGrouping.js` | meetGrouping - 節（開催）のグルーピング共通ロジック | groupIntoCurrentMeet, groupIntoMeetBeforeRace, findMeetStartDate |
 | `src/utils/motorGeneration.js` | モーターの世代（入れ替え単位）の判定。 | currentMotorGenerationStart, isInMotorGeneration, formatGenerationDate, isClippedByGeneration, officialTallyState |
 | `src/utils/nextOpenDate.js` | 非開催会場の「次開催日」を節（race_series）から求める（BOA-225）。 | computeNextOpenDates, formatMonthDay |
@@ -283,4 +283,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 248 ファイル / export 1203 件。
+対象 248 ファイル / export 1205 件。

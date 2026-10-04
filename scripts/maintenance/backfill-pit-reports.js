@@ -17,7 +17,11 @@
  *   node --env-file=.env.local scripts/maintenance/backfill-pit-reports.js --from=2026-09-21 --to=2026-10-01          # dry-run
  *   node --env-file=.env.local scripts/maintenance/backfill-pit-reports.js --from=2026-09-21 --to=2026-10-01 --apply  # 書き込み
  */
-import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
+import {
+  fetchAll,
+  isSupabaseEnabled,
+  supabase,
+} from "../lib/supabaseClient.js";
 import {
   fetchPitReportHtml,
   processPitReportRace,
@@ -106,18 +110,49 @@ export function summarizePitReportBackfill(runs) {
   };
 }
 
-async function fetchAll(table, columns, build) {
-  const pageSize = 1000;
-  const rows = [];
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await build(
-      supabase.from(table).select(columns),
-    ).range(from, from + pageSize - 1);
-    if (error)
-      throw new Error(`${table} の読み取りに失敗しました: ${error.message}`);
-    rows.push(...(data ?? []));
-    if ((data ?? []).length < pageSize) return rows;
+/**
+ * 取り直す対象を選ぶための入力（races・race_pit_reports・出走表の艇数）を読む。
+ * ページ送りは共通の fetchAll（既定で取得エラーを投げる）に、決まった並び順を付けて行う。並び順が無いと、
+ * PostgREST はページの間で行の重複・欠落を起こしうる（1000行を超える race_entries で艇数がずれる。BOA-745）。
+ *
+ * @param {import("@supabase/supabase-js").SupabaseClient} client
+ * @param {string} from YYYY-MM-DD
+ * @param {string} to YYYY-MM-DD
+ */
+export async function loadBackfillInputs(client, from, to) {
+  const races = await fetchAll(
+    "races",
+    "race_id, race_date, start_time, race_grade, race_number",
+    (q) =>
+      q
+        .gte("race_date", from)
+        .lte("race_date", to)
+        .in("race_grade", ["SG", "G1", "G2"])
+        .order("race_id"),
+    { client },
+  );
+  const reports = await fetchAll(
+    "race_pit_reports",
+    "race_id, status, comment_count",
+    (q) => q.gte("race_id", from).lt("race_id", `${to}~`).order("race_id"),
+    { client },
+  );
+  // 対象の race_id を200件ずつに分けて読む（期間が長いと .in() の URL が長くなりすぎるため）。
+  // 200レース×6艇で1000行を超えるので、ページ送りの並び順が要る
+  const raceIds = races.map((r) => r.race_id);
+  const entryCounts = new Map();
+  for (let i = 0; i < raceIds.length; i += 200) {
+    const chunk = raceIds.slice(i, i + 200);
+    const entries = await fetchAll(
+      "race_entries",
+      "race_id, boat_number",
+      (q) => q.in("race_id", chunk).order("race_id").order("boat_number"),
+      { client },
+    );
+    for (const e of entries)
+      entryCounts.set(e.race_id, (entryCounts.get(e.race_id) ?? 0) + 1);
   }
+  return { races, reports, entryCounts };
 }
 
 function getArg(name) {
@@ -134,35 +169,11 @@ async function main() {
     throw new Error("--from=YYYY-MM-DD [--to=YYYY-MM-DD] を指定してください");
   }
 
-  const races = await fetchAll(
-    "races",
-    "race_id, race_date, start_time, race_grade, race_number",
-    (q) =>
-      q
-        .gte("race_date", from)
-        .lte("race_date", to)
-        .in("race_grade", ["SG", "G1", "G2"]),
+  const { races, reports, entryCounts } = await loadBackfillInputs(
+    supabase,
+    from,
+    to,
   );
-  const raceIds = races.map((r) => r.race_id);
-  const inRange = (q) => q.gte("race_id", from).lt("race_id", `${to}~`);
-  const reports = await fetchAll(
-    "race_pit_reports",
-    "race_id, status, comment_count",
-    inRange,
-  );
-  // 対象の race_id を200件ずつに分けて読む（期間が長いと .in() の URL が長くなりすぎるため）
-  const entries = [];
-  for (let i = 0; i < raceIds.length; i += 200) {
-    const chunk = raceIds.slice(i, i + 200);
-    entries.push(
-      ...(await fetchAll("race_entries", "race_id", (q) =>
-        q.in("race_id", chunk),
-      )),
-    );
-  }
-  const entryCounts = new Map();
-  for (const e of entries)
-    entryCounts.set(e.race_id, (entryCounts.get(e.race_id) ?? 0) + 1);
 
   const targets = planPitReportBackfill(races, reports, entryCounts);
   console.log(

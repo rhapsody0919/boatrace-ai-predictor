@@ -1600,28 +1600,25 @@ function suiteHscrollHint(m, check) {
   check("hscroll: 収まっていれば何も出さない", st(300, 300, 0), {
     hasMore: false,
     hasLess: false,
-    peekFadeWidth: 0,
   });
-  check(
-    "hscroll: 残り4px（以前は何も出なかった）は「›」なしの細いフェード（12px）",
-    st(320, 316, 0),
-    { hasMore: false, hasLess: false, peekFadeWidth: 12 },
-  );
-  check(
-    "hscroll: 残り12pxまでは「›」を出さない（フェード12px）",
-    st(328, 316, 0),
-    { hasMore: false, hasLess: false, peekFadeWidth: 12 },
-  );
-  // 20px残りで「›」を出さず32pxのフェードにした版では、最後の列が無いように見えた（PR #1169 ファン評価1周目）
-  check("hscroll: 残り20pxは「›」と幅40pxのフェード", st(336, 316, 0), {
+  check("hscroll: 残り1px以下は何も出さない", st(301, 300, 0), {
+    hasMore: false,
+    hasLess: false,
+  });
+  // 12px以下の残りで「›」を出さず細いフェードだけにしていた版では、380pxの枠別の全コース表で
+  // 「(n=20)」が「(n=2」に読めた（BOA-735、ユーザー判断で境目を下げた）
+  check("hscroll: 残り4pxでも「›」を出す", st(320, 316, 0), {
     hasMore: true,
     hasLess: false,
-    peekFadeWidth: 0,
+  });
+  check("hscroll: 残り20pxは「›」を出す", st(336, 316, 0), {
+    hasMore: true,
+    hasLess: false,
   });
   check(
     "hscroll: 左に12px以下しか送っていなければ「‹」は出さない（PR #1192 ファン評価2周目）",
-    st(315, 312, 3),
-    { hasMore: false, hasLess: false, peekFadeWidth: 0 },
+    st(320, 300, 3),
+    { hasMore: true, hasLess: false },
   );
   check(
     "hscroll: 1回に送る幅は、固定の左の列を引いた見える幅の8割",
@@ -1658,18 +1655,22 @@ function suiteHscrollHint(m, check) {
     20,
   );
   check(
-    "hscroll: 右端がすでに列の境目、少しだけ切れている、先に列が無いときは足さない",
+    "hscroll: 右端がすでに列の境目、溢れが1px以下、先に列が無いときは足さない",
     [
       m.tailPaddingFor({ naturalMax: 146, columnStarts: [0, 60, 146, 220] }),
-      m.tailPaddingFor({ naturalMax: 10, columnStarts: [0, 30] }),
+      m.tailPaddingFor({ naturalMax: 1, columnStarts: [0, 30] }),
       m.tailPaddingFor({ naturalMax: 300, columnStarts: [0, 60, 146, 220] }),
     ],
     [0, 0, 0],
   );
+  check(
+    "hscroll: 少しだけ（10px）溢れる表にも、次の列の境目まで届く余白を足す（BOA-735）",
+    m.tailPaddingFor({ naturalMax: 10, columnStarts: [0, 30] }),
+    20,
+  );
   check("hscroll: 右端まで送ったら「›」は消え、「‹」が出る", st(357, 301, 56), {
     hasMore: false,
     hasLess: true,
-    peekFadeWidth: 0,
   });
 }
 
@@ -1786,7 +1787,7 @@ function suiteVolatilityLevel(m, check) {
     "standard",
     69,
   ]);
-  check("volatility: 0.7037 はイン崩れ確率高で70", show(0.7037), ["high", 70]);
+  check("volatility: 0.7037 はイン崩れ注意（高）で70", show(0.7037), ["high", 70]);
   check("volatility: 0.3 は本命有利で30", show(0.3), ["low", 30]);
   check("volatility: 0.3004 は標準で31（四捨五入の30にしない）", show(0.3004), [
     "standard",
@@ -1858,21 +1859,21 @@ const MUTANTS = [
   ],
   [
     "hscrollHint",
-    "4pxの残りで「›」を出す（#1130 ファン評価で見送った P3 の退行）",
-    "const hasMore = remaining > HSCROLL_PEEK_MAX;",
-    "const hasMore = remaining > 4;",
+    "少しだけ溢れるときに「›」を出さない（BOA-735 の退行）",
+    "hasMore: remaining > HSCROLL_MORE_MIN,",
+    "hasMore: remaining > 12,",
   ],
   [
     "hscrollHint",
-    "境目を24pxに戻す（PR #1169 ファン評価1周目の退行）",
-    "export const HSCROLL_PEEK_MAX = 12;",
-    "export const HSCROLL_PEEK_MAX = 24;",
+    "「‹」を指が少し触れただけで出す（PR #1192 ファン評価2周目の退行）",
+    "export const HSCROLL_LESS_MIN = 12;",
+    "export const HSCROLL_LESS_MIN = 1;",
   ],
   [
     "hscrollHint",
-    "少しだけ切れているときのフェードを出さない",
-    "!hasMore && remaining > 1 ? HSCROLL_PEEK_FADE : 0;",
-    "0;",
+    "少しだけ溢れる表に右の余白を足さない（BOA-735 の退行）",
+    "if (naturalMax <= HSCROLL_MORE_MIN) return 0;",
+    "if (naturalMax <= 12) return 0;",
   ],
   [
     "basicInfoStats",

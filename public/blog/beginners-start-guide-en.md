@@ -115,7 +115,7 @@ This is where **Ryujin Radar (boat-ai.jp)**'s AI predictions come in.
 - **View AI predictions for every race, completely free**
 - Racer data, motor performance, and lane-specific results are analyzed automatically
 - **First-Mark Turn Predictions** simulate how the race is likely to unfold
-- The **Upset Index** shows you in advance which races are likely to be upset-prone (labeled "High upset chance," "Standard," or "Favorite friendly")
+- The **Upset Index** shows you in advance which races are likely to be upset-prone (labeled "Upset alert (high)," "Standard," or "Favorite friendly")
 
 ### A recommended workflow for beginners
 

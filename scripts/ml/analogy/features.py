@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import unicodedata
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
@@ -81,7 +82,8 @@ def _has_special(s: str) -> bool:
 # src/constants/raceStageConfig.js の RACE_STAGE_CATEGORY_RULES と同じ順序（tests で一致を固定）
 _STAGE_RULES = [
     ("semifinalQualifier", lambda s: "準々" in s or "準優進出" in s),
-    ("semifinal", lambda s: "準優勝戦" in s),
+    # 男女Ｗ優勝戦の「Ｗ準優戦前半/後半」も準優勝戦（BOA-728、raceStageConfig.js と同じ）
+    ("semifinal", lambda s: re.search(r"準優勝?戦", s) is not None),
     ("final", lambda s: "優勝戦" in s),
     ("dream", lambda s: "ドリーム" in s or "DR" in s),
     ("qualifierSpecial", lambda s: "予選" in s and _has_special(s)),

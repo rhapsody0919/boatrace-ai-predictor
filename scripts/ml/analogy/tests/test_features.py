@@ -82,7 +82,8 @@ def test_theme_features_are_unique():
 STAGES = ["予選", "一般戦", "準優勝戦", "優勝戦", "準々優勝戦", "準優進出戦", "ツッキー優勝戦",
           "ＭＤ優勝戦", "ドリーム戦", "ペイペイDR", "予選特賞", "予選特選", "一般特選", "一般特賞",
           "選抜戦", "記者選抜戦", "特別選抜戦", "予選ドリーム戦", "予選選抜", "一般選抜",
-          "朝からセンプル", "サンライズX戦", "カタメン１予選", "特選", "団体・優勝戦", "一般", ""]
+          "朝からセンプル", "サンライズX戦", "カタメン１予選", "特選", "団体・優勝戦", "一般",
+          "Ｗ準優戦前半", "Ｗ準優戦後半", "準優勝戦☆", "S戦準優勝戦", ""]
 
 CATEGORY_TO_ROUND = {"qualifier": "yosen", "qualifierSpecial": "yosen", "semifinal": "junyu",
                      "final": "yusho"}
@@ -104,6 +105,13 @@ def test_round_matches_race_stage_config_js():
     for stage, cat in zip(STAGES, cats):
         expected = None if cat is None and stage == "" else CATEGORY_TO_ROUND.get(cat, "other")
         assert F.round_from_stage(stage) == expected, (stage, cat)
+
+
+def test_round_w_semifinal_is_junyu():
+    # 男女Ｗ優勝戦の準優勝戦は「Ｗ準優戦前半/後半」（「勝」が無い）。以前は "other" だった（BOA-728）
+    assert F.round_from_stage("Ｗ準優戦前半") == "junyu"
+    assert F.round_from_stage("Ｗ準優戦後半") == "junyu"
+    assert F.round_from_stage("準優進出戦") == "other"
 
 
 def test_round_unknown_stage_is_none():
