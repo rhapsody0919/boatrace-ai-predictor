@@ -685,6 +685,11 @@
       "guards": "6艇の中の最良値の判定 bestOf（src/utils/bestOf.js、docs/design/race-detail-ui-unify R1）。同値の最良を全部返すこと、全艇同値と値なしは空、表示の桁で丸めて比べること（54.84 と 54.80、平均の浮動小数の誤差）、null と NaN を除くこと"
     },
     {
+      "script": "verify-race-detail-boa711.js",
+      "tier": "ci",
+      "guards": "レース詳細の色分け統一の積み残し（BOA-711）の修正。今節の着順の1着の金・選択行の太字なし、ST考察の差を表示値どうしで出す・向きの文字・折り返し、注記の条件、推移グラフの左の余白、的中タグの緑、決まり手の凡例の文字色、2号艇の矢印の輪郭、波紋の大きさ、比較バーの地、高の段階の地"
+    },
+    {
       "script": "verify-turn-time-venues.js",
       "tier": "ci",
       "guards": "まわり足が会場独自の計測で他場と値の水準が違う会場の判定（src/utils/turnTimeVenues.js、data-catalog E12）。住之江・尼崎・徳山だけを対象にし、scripts/lib/boatcast/publicMap.js の直線なし（TWO）の会場と一致すること"

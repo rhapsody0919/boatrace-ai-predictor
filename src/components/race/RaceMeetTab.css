@@ -121,7 +121,8 @@
 }
 
 .rmt-finishes .is-win {
-  color: var(--text-primary);
+  /* 1着は金（日別の表・推移の着順と同じ。BOA-711） */
+  color: var(--brand-accent-primary);
   font-weight: var(--font-weight-bold);
 }
 
@@ -141,8 +142,8 @@
 }
 
 .rmt-compare tbody tr.is-current {
+  /* 選択中は塗りだけで示す。太字にすると、最良の金枠（太字）と区別しづらかった（BOA-711） */
   background: var(--color-primary-alpha-10);
-  font-weight: var(--font-weight-bold);
 }
 
 /* 選択中の行の最良は、行の青い塗りと金の薄い塗りが混ざって灰色の箱に見え、
@@ -380,6 +381,17 @@
 /* 得点率早見（6艇×着順）。公式の「得点率早見」と同じ行列 */
 .rmt-forecast-scroll {
   overflow-x: auto;
+}
+
+/* PC幅では表を読みやすい幅で止める。箱の幅いっぱいに広げると、余りが全部選手名の列に入り、
+   1440px で選手名の列が 853px になって、名前と「今日では届かず」等の数値が離れすぎた
+   （BOA-736。払戻金の表を 640px で止めた BOA-619 と同じ型）。1024px でも 672px あったので、
+   タブレット横（769px〜）から効かせる。768px 以下は箱が 640px 前後かそれより狭く、横に送るので
+   広いまま。「›」の位置も表の右端にそろうよう、ボタンを含む箱ごと止める */
+@media (min-width: 769px) {
+  .rmt-forecast-hint {
+    max-width: 640px;
+  }
 }
 
 .rmt-forecast-table {

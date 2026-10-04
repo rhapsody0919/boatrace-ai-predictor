@@ -1232,4 +1232,36 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
       ).toBeLessThanOrEqual(640);
     }
   });
+
+  // 今節タブの得点率早見。箱の幅いっぱいに広がり、余りが全部選手名の列に入って、
+  // 1440px で選手名の列が 853px、1024px でも 672px あった（BOA-736）。指定は 769px から効く
+  test("今節の得点率早見: 選手名と得点率・着順の列が近い", async ({
+    page,
+  }, testInfo) => {
+    const widths =
+      testInfo.project.name === "layout-desktop"
+        ? [900, 1100, 1440]
+        : testInfo.project.name === "layout-wide"
+          ? [1920]
+          : [];
+    test.skip(widths.length === 0, "769px 以上だけの指定");
+    for (const width of widths) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/race/2026-09-23-09-12?tab=meet", {
+        waitUntil: "domcontentloaded",
+      });
+      const head = page.locator(".rmt-forecast-table thead th").first();
+      await expect(head).toBeVisible({ timeout: 30000 });
+      const m = await page.evaluate(() => ({
+        name: document
+          .querySelector(".rmt-forecast-table thead th")
+          .getBoundingClientRect().width,
+        table: document
+          .querySelector(".rmt-forecast-table")
+          .getBoundingClientRect().width,
+      }));
+      expect(m.table, `${width}px: 表の幅`).toBeLessThanOrEqual(640);
+      expect(m.name, `${width}px: 選手名の列の幅`).toBeLessThanOrEqual(400);
+    }
+  });
 });
