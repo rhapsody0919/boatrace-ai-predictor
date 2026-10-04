@@ -944,22 +944,25 @@ function suiteBasicInfoStats(m, check) {
 
   // --- pickPeriodStats
   const RD = "2026-09-29"; // 前期 = (2026,2)、直近2年 = (2025,1)〜(2026,2)
+  const ok = (rows) => ({ rows, latestImported: true });
   check(
-    "pickPeriodStats: 該当選手が無い・取得結果が配列でない（state付きオブジェクト）なら null",
+    "pickPeriodStats: 該当選手が無い・取得結果が権限エラー（state付き）なら null",
     [
       m.pickPeriodStats(
-        [{ racer_id: 1, period_year: 2026, period_no: 2 }],
+        ok([{ racer_id: 1, period_year: 2026, period_no: 2 }]),
         2,
         RD,
       ),
-      m.pickPeriodStats({ state: "forbidden" }, 1, RD),
+      m.pickPeriodStats({ state: "forbidden", rows: [] }, 1, RD),
     ],
     [null, null],
   );
   check(
-    "pickPeriodStats: 前期の行が無ければ、古い期の行があっても null（古い期を前期として出さない）",
+    "pickPeriodStats: 前期を取り込み済みなのにその選手の前期が無ければ、古い期があっても null（選手ごとの欠けでは前々期に切り替えない）",
     m.pickPeriodStats(
-      [{ racer_id: 1, period_year: 2026, period_no: 1, finals: 3, wins: 1 }],
+      ok([
+        { racer_id: 1, period_year: 2026, period_no: 1, finals: 3, wins: 1 },
+      ]),
       1,
       RD,
     ),
@@ -968,7 +971,7 @@ function suiteBasicInfoStats(m, check) {
   check(
     "pickPeriodStats: 出走0の新人（win_rate=NULL）は null のまま（0 にしない）",
     m.pickPeriodStats(
-      [
+      ok([
         {
           racer_id: 4320,
           period_year: 2026,
@@ -979,7 +982,7 @@ function suiteBasicInfoStats(m, check) {
           finals: 0,
           wins: 0,
         },
-      ],
+      ]),
       4320,
       RD,
     ),
@@ -993,6 +996,8 @@ function suiteBasicInfoStats(m, check) {
       finals: 0,
       wins: 0,
       recent: { finals: 0, wins: 0, from: "2024-05-01", to: "2026-04-30" },
+      fallback: false,
+      pending: null,
     },
   );
   // 2026-09-29 13場12R 1号艇 馬場貴也（4262）の本番値。前期 優出5・優勝1、直近2年 優出22・優勝6
@@ -1011,17 +1016,66 @@ function suiteBasicInfoStats(m, check) {
     wins,
   }));
   const babaPicked = m.pickPeriodStats(
-    [
+    ok([
       ...baba,
       { racer_id: 9999, period_year: 2026, period_no: 2, finals: 50, wins: 50 },
-    ],
+    ]),
     4262,
     RD,
   );
   check(
     "pickPeriodStats: 前期の優出・優勝と、前期を含む4期の合計（範囲外の期・他の選手は足さない）",
-    [babaPicked.finals, babaPicked.wins, babaPicked.recent],
-    [5, 1, { finals: 22, wins: 6, from: "2024-05-01", to: "2026-04-30" }],
+    [
+      babaPicked.finals,
+      babaPicked.wins,
+      babaPicked.recent,
+      babaPicked.fallback,
+    ],
+    [
+      5,
+      1,
+      { finals: 22, wins: 6, from: "2024-05-01", to: "2026-04-30" },
+      false,
+    ],
+  );
+
+  // 期替わり直後（2026-11-05）: 前期 (2027,1)=2026-05-01〜10-31 の fan がまだ公開されていない
+  const RD_NOV = "2026-11-05";
+  const fb = m.pickPeriodStats(
+    { rows: baba, latestImported: false },
+    4262,
+    RD_NOV,
+  );
+  check(
+    "pickPeriodStats: 前期を表として取り込んでいなければ、前々期と、前々期で終わる4期の合計を出し、公開待ちの期を返す",
+    [fb.fallback, fb.finals, fb.wins, fb.recent, fb.pending],
+    [
+      true,
+      5,
+      1,
+      // (2026,2)〜(2025,1) の4期。(2024,2) は範囲外
+      { finals: 22, wins: 6, from: "2024-05-01", to: "2026-04-30" },
+      { calcFrom: "2026-05-01", calcTo: "2026-10-31" },
+    ],
+  );
+  check(
+    "pickPeriodStats: 取り込み済み（latestImported=true）なら、前期の行が無い選手は前々期に切り替えず null",
+    m.pickPeriodStats({ rows: baba, latestImported: true }, 4262, RD_NOV),
+    null,
+  );
+  check(
+    "pickPeriodStats: 前々期の行も無ければ null（前々々期までは遡らない）",
+    m.pickPeriodStats(
+      {
+        rows: [
+          { racer_id: 1, period_year: 2026, period_no: 1, finals: 1, wins: 0 },
+        ],
+        latestImported: false,
+      },
+      1,
+      RD_NOV,
+    ),
+    null,
   );
 }
 
