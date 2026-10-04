@@ -556,6 +556,7 @@
     "hitTag": "命中",
     "summaryHit": "✅ 其中一項預測命中",
     "summaryMiss": "❌ 第1名是{{winnerNumber}}號艇，不在預測名單中",
+    "winnerEntryCourse": "第1名的{{boat}}號艇從第{{course}}道進場（本場艇號與航道不同，命中以艇號判定）",
     "notJudgeable": "不列入判定（比賽不成立）",
     "notJudgeableBody": "因未決定第1名，不判定命中與否",
     "refundedTag": "退款（不列入判定）"

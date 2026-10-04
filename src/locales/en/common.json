@@ -561,6 +561,7 @@
     "hitTag": "Hit",
     "summaryHit": "✅ One of the top predictions hit",
     "summaryMiss": "❌ Boat {{winnerNumber}} won, which wasn't among the top predictions",
+    "winnerEntryCourse": "The winner, Boat {{boat}}, started from course {{course}} (boat number and course differ in this race; hits are judged by boat number)",
     "notJudgeable": "Not judged (void race)",
     "notJudgeableBody": "No winner was decided, so hit/miss is not judged",
     "refundedTag": "Refunded (not judged)"
