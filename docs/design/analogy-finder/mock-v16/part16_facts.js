@@ -83,11 +83,13 @@ function hexRadar(svg, labels, series) {
 const FSCOPE = [
   ["wkA1", "若松・6艇ともA1"],
   ["natA1", "全国・6艇ともA1"],
+  ["natA1Y", "全国・6艇ともA1の優勝戦"],
   ["wk", "若松の全レース"],
 ];
 const FSCOPE_DESC = {
   wkA1: "若松で、6艇とも A1 だったレース（今日と同じ級別の組み合わせ）",
   natA1: "全国で、6艇とも A1 だったレース（今日と同じ級別の組み合わせ）",
+  natA1Y: "全国で、6艇とも A1 だった優勝戦（今日と同じ級別の組み合わせとラウンド。件数が少ないので幅が広い）",
   wk: "若松の全レース（級別の組み合わせはそろえていない。格の差があるレースが多い）",
 };
 const DIR = { nat_win: 1, loc_win: 1, recent_win30: 1, motor_2: 1, boat_2: 1, st_mean30: -1, exh_time: -1, series_score: 1 };
@@ -127,6 +129,7 @@ function renderFacts() {
   const U = usual(A),
     uP = U[0] / U[1];
   const level = (b, w) => {
+    if (!b || !w || !b[1] || !w[1]) return ["比べられない（当てはまるレースが無い）", "weak", 0];
     const [bl, bh] = wilson(b[0], b[1]),
       [wl, wh] = wilson(w[0], w[1]),
       d = b[0] / b[1] - w[0] / w[1];
@@ -137,7 +140,7 @@ function renderFacts() {
     .map(([k, l, hi, lo]) => {
       const all = [1, 2, 3, 4, 5, 6].map((r) => rate(A, k, r));
       const p = all.map((x) => (x && x[1] ? x[0] / x[1] : null));
-      return { k, l, hi, lo, all, p, lv: level(all[0], all[5]), spread: p[0] - p[5] };
+      return { k, l, hi, lo, all, p, lv: level(all[0], all[5]), spread: p[0] != null && p[5] != null ? p[0] - p[5] : 0 };
     })
     .sort((a, b) => (a.lv[1] === "weak") - (b.lv[1] === "weak") || Math.abs(b.spread) - Math.abs(a.spread));
   const typ = mats.map(([k]) => S.typ[A][k][t]);
@@ -183,7 +186,7 @@ function renderFacts() {
       bLine = `<p class="sub">${Bb}号艇なら: 一番${r.hi}とき ${pc(pb[0][0] / pb[0][1], 0)} ／ 一番${r.lo}とき ${pc(pb[1][0] / pb[1][1], 0)}（全体では ${pc(usual(Bb)[0] / usual(Bb)[1], 0)}）</p>${line(Bb, r, `今日の${Bb}号艇`)}`;
     }
     return `<div class="eff ${cls}"><div class="eh"><b>${r.l}</b><small class="md">${MDESC[r.k]}</small><span class="gap">${lab}${!cls && d < 0 ? `（一番${r.lo}ときのほうが高い）` : ""}</span></div>
-      <div class="pair"><div><span>6艇で一番${r.hi}とき</span><b>${pc(r.p[0], 0)}</b><small>${b[0].toLocaleString()}/${b[1].toLocaleString()}</small></div><div><span>6艇で一番${r.lo}とき</span><b>${pc(r.p[5], 0)}</b><small>${w[0].toLocaleString()}/${w[1].toLocaleString()}</small></div></div>
+      <div class="pair"><div><span>6艇で一番${r.hi}とき</span><b>${r.p[0] == null ? "—" : pc(r.p[0], 0)}</b><small>${b[0].toLocaleString()}/${b[1].toLocaleString()}</small></div><div><span>6艇で一番${r.lo}とき</span><b>${r.p[5] == null ? "—" : pc(r.p[5], 0)}</b><small>${w[0].toLocaleString()}/${w[1].toLocaleString()}</small></div></div>
       ${strip(r)}<p class="stripcap">棒の上の数字は%（左ほど${r.hi}）。点線は全体の ${pc(uP, 1)}。枠で囲んだ棒が今日の位置</p>${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
   };
   const allClass = new Set([1, 2, 3, 4, 5, 6].map((b) => RF.ex[b].class)).size === 1;

@@ -30,7 +30,7 @@ for b in range(1, 7):
               "top2": (ranks[:, :2] == b).any(1),
               "top3": (ranks[:, :3] == b).any(1)}
 MATS = [("nat_win", 1), ("loc_win", 1), ("recent_win30", 1), ("motor_2", 1), ("boat_2", 1), ("st_mean30", -1), ("exh_time", -1), ("series_score", 1)]
-SCOPES = {"wk": pool & (venue == 20), "wkA1": pool & (venue == 20) & a1, "natA1": pool & a1}
+SCOPES = {"wk": pool & (venue == 20), "wkA1": pool & (venue == 20) & a1, "natA1": pool & a1, "natA1Y": pool & a1 & (r["round"].to_numpy() == "yusho")}
 out = {"period": ["2019-04-01", "2026-09-26"], "scopes": {}}
 for sk, m in SCOPES.items():
     S = {"n": int(m.sum()), "usual": {}, "by": {}, "typ": {}}
