@@ -1130,10 +1130,14 @@ test.describe("横スクロールの表の仕上げ", () => {
       const hint = page.locator(".mcc-list-hint");
       await hint.locator(":scope > .hscroll-more").click();
       await expect(hint.locator(":scope > .hscroll-less")).toBeVisible();
-      const { line, bg } = await hint.evaluate((el) => {
+      const { line, bg, ring } = await hint.evaluate((el) => {
         const td = el.querySelector("tbody tr td:nth-child(2)");
         const shadow = getComputedStyle(td).boxShadow;
         const color = shadow.slice(0, shadow.lastIndexOf(")") + 1);
+        // 「‹」の丸の縁（radial-gradient の色の段）も同じ色で描く
+        const ringImage = getComputedStyle(
+          el.querySelector(":scope > .hscroll-less"),
+        ).backgroundImage;
         const back = getComputedStyle(td).backgroundColor;
         // 半透明の線の色を背景に重ねた色（キャンバスで合成する）
         const cv = document.createElement("canvas");
@@ -1145,8 +1149,13 @@ test.describe("横スクロールの表の仕上げ", () => {
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, 1, 1);
         const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-        return { line: `rgb(${r}, ${g}, ${b})`, bg: back };
+        return {
+          line: `rgb(${r}, ${g}, ${b})`,
+          bg: back,
+          ring: ringImage.includes(color),
+        };
       });
+      expect(ring, "「‹」の丸の縁が、固定した列の右の線と同じ色").toBe(true);
       // 罫線の色のままだと、ライト約1.4:1・ダーク約1.2:1だった
       expect(contrast(line, bg), `線 ${line} / 地 ${bg}`).toBeGreaterThanOrEqual(2);
     });
