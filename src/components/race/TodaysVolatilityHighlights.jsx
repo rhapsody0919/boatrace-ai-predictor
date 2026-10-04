@@ -13,11 +13,13 @@ import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { getRaceId } from "../../utils/raceId";
 import { isRaceCancelled } from "../../utils/raceCancellation";
 import { volatilityDisplayValue } from "../../utils/volatilityLevel";
+import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
+import { pickVolatilityHighlights } from "../../utils/volatilityHighlights";
 import "./TodaysVolatilityHighlights.css";
 
 const HIGHLIGHT_COUNT = 5;
 
-function flattenRaces(venuesData) {
+function flattenRaces(venuesData, nowHHMM) {
   const races = [];
   for (const venue of venuesData || []) {
     for (const race of venue.races || []) {
@@ -38,6 +40,12 @@ function flattenRaces(venuesData) {
         raceNo: race.raceNo,
         startTime: race.startTime || null,
         percentile: race.volatility.percentile,
+        // 締切を過ぎたか（結果が出たレースも含む）。締切前のレースから選ぶために使う（BOA-757）
+        closed:
+          getRaceStatus(
+            { startTime: race.startTime, result: race.result },
+            nowHHMM,
+          ) !== RACE_STATUS.UPCOMING,
         // turnPrediction は get_today_races RPC（052マイグレーション）が返す場合のみ
         // 存在する。未適用環境ではundefinedのため、無いものとして扱う
         turnPrediction: race.turnPrediction || null,
@@ -80,6 +88,11 @@ function RaceLink({ race, t }) {
               {race.startTime}
             </span>
           )}
+          {race.closed && (
+            <span className="volatility-highlights__closed">
+              {t("home.volatilityHighlightsClosed")}
+            </span>
+          )}
         </span>
         {/* 「100%」は確率に読まれた。レース詳細の比較バーと同じく「100 / 100」（0〜100 の物差し）で
             出し、値もバーと同じ丸め方にする（2026-10-03 ユーザー判断、BOA-711 U4） */}
@@ -103,16 +116,18 @@ function RaceLink({ race, t }) {
   );
 }
 
-function TodaysVolatilityHighlights({ venuesData }) {
+function TodaysVolatilityHighlights({ venuesData, nowHHMM = null }) {
   const { t } = useTranslation();
 
-  const races = flattenRaces(venuesData);
-  const n = Math.min(HIGHLIGHT_COUNT, Math.floor(races.length / 2));
-  if (n === 0) return null;
-
-  const sorted = [...races].sort((a, b) => b.percentile - a.percentile);
-  const highRaces = sorted.slice(0, n);
-  const lowRaces = sorted.slice(races.length - n).reverse();
+  const {
+    high: highRaces,
+    low: lowRaces,
+    allClosed,
+  } = pickVolatilityHighlights(
+    flattenRaces(venuesData, nowHHMM),
+    HIGHLIGHT_COUNT,
+  );
+  if (highRaces.length === 0) return null;
 
   return (
     <section className="volatility-highlights">
@@ -123,6 +138,12 @@ function TodaysVolatilityHighlights({ venuesData }) {
       <p className="volatility-highlights__scale-note">
         {t("home.volatilityHighlightsScaleNote")}
       </p>
+      {/* 締切前のレースが残っていない時間帯（夕方以降）だけ、締切済みから選んでいることを書く */}
+      {allClosed && (
+        <p className="volatility-highlights__closed-note">
+          {t("home.volatilityHighlightsClosedNote")}
+        </p>
+      )}
       <div className="volatility-highlights__columns">
         <HighlightList
           // アイコンはレース詳細のイン崩れ注意度カードと同じ 🌪️（2026-10-03 ユーザー判断、BOA-711）

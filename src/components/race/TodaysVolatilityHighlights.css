@@ -118,3 +118,20 @@
     flex: 1 1 auto;
   }
 }
+
+/* 締切を過ぎたレースの札（BOA-757）。締切前のレースが残っていない時間帯だけ出る */
+.volatility-highlights__closed {
+  margin-left: 0.4em;
+  padding: 0 0.4em;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.volatility-highlights__closed-note {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
