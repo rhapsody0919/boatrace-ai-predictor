@@ -154,15 +154,16 @@
     inset 0 0 0 100vmax var(--ind-best-bg);
 }
 
-/* 準優の目安の「線」。どこが境目かは数字を突き合わせないと読めなかった */
+/* 準優の目安の「線」。どこが境目かは数字を突き合わせないと読めなかった。
+   目安は青（情報色）。金は「6艇で最良」の印だけに使う（2026-10-03 ユーザー判断、BOA-711 U2） */
 .rmt-compare tbody tr.is-border-edge th,
 .rmt-compare tbody tr.is-border-edge td {
-  border-bottom: 2px dashed var(--brand-accent-primary);
+  border-bottom: 2px dashed var(--color-info-text);
 }
 
 /* 目安内の行は左に帯を引く（セル内のバッジは列幅を食って前検を切る） */
 .rmt-compare tbody tr.is-in-border th {
-  box-shadow: inset 3px 0 0 0 var(--brand-accent-primary);
+  box-shadow: inset 3px 0 0 0 var(--color-info-text);
   padding-left: 6px;
 }
 
@@ -452,7 +453,8 @@
 /* 選択中の行は背景で塗らない。塗ると「目安に届くセルの色」と混ざり、
    届いていない艇の行まで色付きに見える（実際に1号艇で起きた） */
 .rmt-forecast-table tbody tr.is-current th {
-  box-shadow: inset 3px 0 0 0 var(--brand-accent-primary);
+  /* 選択中の印は本文色。金は「6艇で最良」、青は「準優の目安」の印なので使わない（BOA-711 U2 のファン評価） */
+  box-shadow: inset 3px 0 0 0 var(--text-primary);
   padding-left: 6px;
 }
 
@@ -484,7 +486,8 @@
    公式も得点率は文字色、早見はセルの塗りで区別している */
 .rmt-forecast-table td.rmt-rate.is-in-border {
   background: none;
-  color: var(--brand-accent-primary);
+  /* 目安に届く得点率は青（BOA-711 U2。金は最良だけ） */
+  color: var(--color-info-text);
 }
 
 /* 6艇の推移（同じ縦の物差しで6行並べる） */
@@ -558,14 +561,15 @@
 }
 
 .rmt-trend-row:hover {
-  background: color-mix(in srgb, var(--brand-accent-primary) 5%, transparent);
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
 }
 
 .rmt-trend-row[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--brand-accent-primary) 10%, transparent);
+  /* 選択中は本文色の薄い地と帯（金は最良、青は準優の目安の印。BOA-711 U2 のファン評価） */
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
   /* 背景の濃さだけだとホバー中の行と見分けがつかない（2026-09-29 ファン評価）。
      選択中だけ左に帯を付ける */
-  box-shadow: inset 3px 0 0 var(--brand-accent-primary);
+  box-shadow: inset 3px 0 0 var(--text-primary);
 }
 
 .rmt-trend-label {
