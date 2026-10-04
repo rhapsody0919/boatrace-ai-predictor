@@ -10,7 +10,9 @@ name: Nightly DB Verify
 # BOA-431 で同型の再発が起きている。この欠陥はCIでもE2Eでも検知できない
 # （CIは本番RPCに繋げず、E2Eはフォールバック経路が同じキーを返すため画面が壊れない）。
 #
-# 実行するのは読み取りだけの2本。残る3本は載せない:
+# 実行するのは読み取りだけの3本。verify-winning-technique-filled.js（BOA-749）は tier=ci で、
+# PRでは判定の純関数だけを検証し、ここで VERIFY_PRODUCTION=1 を付けて本番の欠けを見る。
+# tier=manual の残る3本は載せない:
 #   verify-morning-digest.js       generate-morning-digest.yml が生成直後に毎日実行済み
 #   verify-scrape-slots-on-db.js   検証用スロットを実DBに作る（--execute が要る）
 #   verify-topic-target-claim.js   実Supabaseへの並行実行テストで書き込みを伴う
@@ -43,11 +45,13 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          # verify-winning-technique-filled.js は、これが無いと本番を読まない（BOA-749）
+          VERIFY_PRODUCTION: '1'
         run: |
           set +e
           OUTPUT=""
           EXIT_CODE=0
-          for script in verify-rpc-output-keys verify-format-column-migration; do
+          for script in verify-rpc-output-keys verify-format-column-migration verify-winning-technique-filled; do
             echo "--- $script"
             RESULT=$(node "scripts/maintenance/$script.js" 2>&1)
             CODE=$?
@@ -80,7 +84,7 @@ jobs:
         run: |
           payload=$(jq -n --arg summary "$SUMMARY" '
             ":rotating_light: *本番DBの検証が失敗しました*\n" as $head
-            | "\nRPCの出力キーが欠けている場合、画面はフォールバック経路で壊れずに動くため気づけません（BOA-363 / BOA-431）。マイグレーションの CREATE OR REPLACE で古い定義を土台にしていないか確認してください。" as $tail
+            | "\n[verify-rpc-output-keys] RPCの出力キーが欠けている場合、画面はフォールバック経路で壊れずに動くため気づけません（BOA-363 / BOA-431）。マイグレーションの CREATE OR REPLACE で古い定義を土台にしていないか確認してください。\n[verify-winning-technique-filled] 決まり手の欠け（BOA-749）。ログの audit-race-result-anomalies.js --apply を実行すると、公式の結果ページから埋めます（本番への書き込み）。" as $tail
             | {
                 attachments: [{
                   color: "#c0392b",
