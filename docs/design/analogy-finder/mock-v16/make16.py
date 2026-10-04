@@ -117,5 +117,27 @@ R('${col[p][b]||""}</text>`;}});', '${col[p][b]?col[p][b].toLocaleString()+"件"
 t = t.replace('類似レース（類似している過去レース）', '類似レース').replace('似たレース（類似している過去レース）', '類似レース')
 t = t.replace('似たレースの決まり方（類似している過去レースの傾向）', '類似レースの決まり方')
 t = t.replace('似たレース', '類似レース')
+# 第1周のファン評価の直し
+import re as _re
+R('.lk .lkb{display:block}', '.lk .lkb{display:block}.lk .lkb .wtrk{display:block}')
+R('@media (max-width:480px){.br{grid-template-columns:5em 1fr 5.6em}', '@media (max-width:480px){.br{grid-template-columns:5em 1fr auto}.pats{grid-template-columns:1fr}')
+R('.br{display:grid;grid-template-columns:5.8em 1fr 6.2em;', '.br{display:grid;grid-template-columns:5.8em 1fr auto;')
+R('$("sharedN").hidden=st.tab!=="sim";', '$("sharedN").hidden=st.tab!=="sim";$("rankSeg").closest(".row").hidden=st.tab==="scn";')
+R('$("pctLbl").textContent=far?`${N}件目のレースでも ○${fc.filter(m=>m===2).length} △${fc.filter(m=>m===1).length} ×${fc.filter(m=>m===0).length}`:"";',
+  '$("pctLbl").textContent=far?`${N}件目（いちばん遠い）でも、${fc.length}項目のうち ${fc.filter(m=>m===2).length}項目が同じ・${fc.filter(m=>m===1).length}項目が近い`:"";')
+R('` △込み ${pc(nr,0)}`', '` 近いも含め ${pc(nr,0)}`')
+R('展示タイム・天候・風・波は、出走表の時点では分からないので近さの計算に入れていない</li>', '${st.stage==="post"?"展示後は、展示タイム・天候・風・波も近さの計算に入れている":"展示前は、展示タイム・天候・風・波は分からないので近さの計算に入れていない"}</li>')
+R('点線は全国の全レース</li>', '点線は、棒の上の凡例に書いた比べる相手（類似レースのタブでは、条件がそろった過去レース全体）</li>')
+R('pb:4,', 'pb:1,')
+t = _re.sub(r'K\.today\[([^\]]+)\]', r'fmtT(\1,K.today[\1])', t)
+R('const isBad=', 'const fmtT=(k,v)=>/^recent_/.test(String(k))&&typeof v==="string"?v.split("/").map(x=>x!==""&&!isNaN(+x)?Math.round(+x*100)+"%":x).join("/"):v;\nconst isBad=')
+# タブ②のサンキー図も小さい画面で読めるように
+R('<svg id="sankey" viewBox="0 0 640 400"', '<svg id="sankey" viewBox="0 0 400 400"')
+R('const X=[40,300,560],W=26,', 'const X=[44,188,332],W=22,')
+R('font-size="10" fill="#e8d089" font-family="JetBrains Mono,monospace">${col[p][b]', 'font-size="12" fill="#e8d089" font-family="JetBrains Mono,monospace">${col[p][b]')
+R('text-anchor="middle" font-size="12" font-weight="700" fill="#f3ead0" font-family="Zen Kaku Gothic New,sans-serif">${tx}', 'text-anchor="middle" font-size="14" font-weight="700" fill="#f3ead0" font-family="Zen Kaku Gothic New,sans-serif">${tx}')
+R('.eff.weak{opacity:.6}', '.eff.weak .pair,.eff.weak .strip,.eff.weak .eh b,.eff.weak .gap{opacity:.6}')
+R('.hero .n{', '.hero .n small{font-size:14px;margin-left:2px}.hero .n{')
+R('.tabs{display:grid;', '.stripcap{margin:0;font-size:11px;color:var(--muted)}.rlist{display:grid;gap:6px}.rc{border:1px solid var(--border);border-radius:8px;padding:6px 8px;display:grid;gap:2px;font-size:12px}.rc .bnrow{display:inline-flex;gap:2px;vertical-align:middle}.rc3{color:var(--text2);font-size:11.5px}\n.tabs{display:grid;')
 io.open('template16.html', 'w', encoding='utf-8').write(t)
 print('ok')

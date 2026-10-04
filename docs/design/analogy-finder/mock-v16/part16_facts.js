@@ -8,6 +8,7 @@ const RFM = [
   ["boat_2", "ボート2連率", "高い", "低い"],
   ["st_mean30", "過去の平均ST", "早い", "遅い"],
   ["exh_time", "展示タイム", "速い", "遅い"],
+  ["series_score", "今節の平均点", "高い", "低い"],
 ];
 // 材料の説明（モーターとボートの違いが分かるように）
 const MDESC = {
@@ -17,7 +18,8 @@ const MDESC = {
   motor_2: "モーター＝エンジン。節ごとに抽選で割り当てられる。そのモーターがこれまで2着以内に入った割合で、エンジンの力の目安",
   boat_2: "ボート＝船体（エンジンを載せる艇）。モーターとは別に抽選で割り当てられる。そのボートがこれまで2着以内に入った割合",
   st_mean30: "その選手の直近30走のスタートタイミングの平均（小さいほど早い）",
-  exh_time: "今日の展示航走の一周タイム（小さいほど速い）",
+  exh_time: "今日の展示航走で計る、直線のタイム（小さいほど速い）",
+  series_score: "この節のこれまでのレースの着順を、1着10点・2着8点・3着6点・4着4点・5着2点・6着1点で平均した値（F・L・失格は0点）。公式の得点率と違い、準優勝戦も含める。節の初走は値が無い",
 };
 const SHORT = {
   nat_win: "全国勝率",
@@ -27,6 +29,7 @@ const SHORT = {
   boat_2: "ボート",
   st_mean30: "平均ST",
   exh_time: "展示タイム",
+  series_score: "今節",
 };
 const rfMats = () =>
   st.stage === "post" ? RFM : RFM.filter(([k]) => k !== "exh_time");
@@ -87,17 +90,18 @@ const FSCOPE_DESC = {
   natA1: "全国で、6艇とも A1 だったレース（今日と同じ級別の組み合わせ）",
   wk: "若松の全レース（級別の組み合わせはそろえていない。格の差があるレースが多い）",
 };
-const DIR = { nat_win: 1, loc_win: 1, recent_win30: 1, motor_2: 1, boat_2: 1, st_mean30: -1, exh_time: -1 };
+const DIR = { nat_win: 1, loc_win: 1, recent_win30: 1, motor_2: 1, boat_2: 1, st_mean30: -1, exh_time: -1, series_score: 1 };
 // 今日の艇の、6艇の中での位置（同じ値の艇も数える。指摘4）
 function todayPos(b, k) {
-  const vals = [1, 2, 3, 4, 5, 6].map((x) => D.rf.ex[x][k].value);
+  const exv = (x) => (k === "series_score" ? D.tab1.ex_series[x] : D.rf.ex[x][k]);
+  const vals = [1, 2, 3, 4, 5, 6].map((x) => exv(x).value);
   const v = vals[b - 1];
   if (v == null) return null;
   const ok = vals.filter((x) => x != null);
   const best = DIR[k] > 0 ? Math.max(...ok) : Math.min(...ok),
     worst = DIR[k] > 0 ? Math.min(...ok) : Math.max(...ok);
   const same = ok.filter((x) => x === v).length;
-  return { bucket: v === best ? 1 : v === worst ? 6 : D.rf.ex[b][k].rank, same };
+  return { bucket: v === best ? 1 : v === worst ? 6 : exv(b).rank, same };
 }
 function renderFacts() {
   const RF = D.rf,
@@ -176,12 +180,12 @@ function renderFacts() {
     }
     return `<div class="eff ${cls}"><div class="eh"><b>${r.l}</b><small class="md">${MDESC[r.k]}</small><span class="gap">${lab}${!cls && d < 0 ? `（一番${r.lo}ときのほうが高い）` : ""}</span></div>
       <div class="pair"><div><span>6艇で一番${r.hi}とき</span><b>${pc(r.p[0], 0)}</b><small>${b[0].toLocaleString()}/${b[1].toLocaleString()}</small></div><div><span>6艇で一番${r.lo}とき</span><b>${pc(r.p[5], 0)}</b><small>${w[0].toLocaleString()}/${w[1].toLocaleString()}</small></div></div>
-      ${strip(r)}${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
+      ${strip(r)}<p class="stripcap">棒の上の数字は%（左ほど${r.hi}）。点線は全体の ${pc(uP, 1)}</p>${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
   };
   const allClass = new Set([1, 2, 3, 4, 5, 6].map((b) => RF.ex[b].class)).size === 1;
   $("factsOut").innerHTML = `<div class="big1"><span>${sname}の全体で、${A}号艇が${RT[st.rank]}に入った割合</span><b>${pc(uP, 1)}</b><small>${U[0].toLocaleString()}/${U[1].toLocaleString()}レース（${T1.period[0]}〜${T1.period[1]}）</small></div>
   <p class="sub">${FSCOPE_DESC[st.fscope]}で、${A}号艇のその材料が6艇の中で一番良かったときと一番悪かったときに、${RT[st.rank]}に入った割合を比べた。差がはっきりしているものから、差の大きい順に並べている（差が近い材料どうしは、入れ替わってもおかしくない）。材料どうしは重なっていて（全国勝率と直近の1着率は、どちらも選手の格を見ている）、どれが効いたのかは分けられない。棒の点線は、全体での割合（上の大きい数字）</p>
-  <div class="effs">${rows.map(card).join("")}</div>
+  <div class="effs">${rows.filter((r) => r.k !== "boat_2").map(card).join("")}${rows.filter((r) => r.k === "boat_2").map((r) => `<details class="more boatfold"><summary>ボート2連率（着順との関係が小さい材料）</summary><p class="sub">全国・6艇とも A1 のレースでは、ボート2連率が6艇で一番高いとき・低いときの差は0〜3ポイントで、モーター2連率（5〜8ポイント）より着順との関係が小さかった。気にしすぎなくてよい材料として残している</p>${card(r)}</details>`).join("")}</div>
   ${allClass ? `<p class="foot">級別: 今日は6艇とも ${ex.class} なので差がつかない</p>` : ""}
   <p class="foot">数えた割合で、原因とは限らない。「差ははっきりしない」は、一番良いときと一番悪いときの95%の幅が重なるもの。「差が大きい」は5ポイント以上。同じ値の艇は、一番良い・一番悪いの両方に含めている。${st.stage === "pre" ? "展示タイムは展示の後に出る。" : "2025-11 以前の展示タイムは結果ファイルから取っていて、取り方が違う。"}</p>`;
 

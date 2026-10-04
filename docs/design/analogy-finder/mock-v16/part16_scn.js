@@ -60,8 +60,8 @@ function renderFlowX(a, o, S) {
     .map(([k, c]) => [k.split("-").map(Number), c])
     .filter(([x]) => !S.ff || x[0] === S.ff);
   const tot = tri.reduce((s, [, c]) => s + c, 0);
-  const X = [40, 300, 560],
-    W = 26,
+  const X = [44, 188, 332],
+    W = 22,
     H = 340,
     top = 30,
     gap = 8;
@@ -124,12 +124,12 @@ function renderFlowX(a, o, S) {
       h += `<rect x="${X[p]}" y="${r[b].y}" width="${W}" height="${r[b].h}" fill="${BC[b][0]}" stroke="${on ? "#fff" : "#94a3b8"}" stroke-width="${on ? 2 : 0.8}" ${p === 0 ? `data-first="${b}" style="cursor:pointer"` : ""}/>`;
       if (r[b].h >= 11)
         h += `<text x="${X[p] + W / 2}" y="${r[b].y + r[b].h / 2 + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="${BC[b][1]}" font-family="JetBrains Mono,monospace">${b}</text>`;
-      h += `<text x="${p === 2 ? X[p] + W + 6 : p === 0 ? X[p] - 6 : X[p] + W + 4}" y="${r[b].y + r[b].h / 2 + 4}" text-anchor="${p === 0 ? "end" : "start"}" font-size="10" fill="#e8d089" font-family="JetBrains Mono,monospace">${col[p][b] ? col[p][b].toLocaleString() + "件" : ""}</text>`;
+      h += `<text x="${p === 2 ? X[p] + W + 6 : p === 0 ? X[p] - 6 : X[p] + W + 4}" y="${r[b].y + r[b].h / 2 + 4}" text-anchor="${p === 0 ? "end" : "start"}" font-size="12" fill="#e8d089" font-family="JetBrains Mono,monospace">${col[p][b] ? col[p][b].toLocaleString() + "件" : ""}</text>`;
     }
   });
   ["1着", "2着", "3着"].forEach(
     (tx, p) =>
-      (h += `<text x="${X[p] + W / 2}" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#f3ead0" font-family="Zen Kaku Gothic New,sans-serif">${tx}</text>`),
+      (h += `<text x="${X[p] + W / 2}" y="18" text-anchor="middle" font-size="14" font-weight="700" fill="#f3ead0" font-family="Zen Kaku Gothic New,sans-serif">${tx}</text>`),
   );
   svg.innerHTML = h;
   $(o.note).textContent = S.ff
@@ -160,7 +160,7 @@ function renderFlowX(a, o, S) {
   );
   const all = tri.sort((u, v) => v[1] - u[1]);
   const row = ([x, c]) =>
-    `<div class="br" style="cursor:default"><span class="bnrow">${x.map(bn).join("")}</span><span class="wtrk"><span class="f" style="width:${(c / all[0][1]) * 100}%"></span></span><span class="v">${c.toLocaleString()}/${tot.toLocaleString()}件</span></div>`;
+    `<div class="br" style="cursor:default"><span class="bnrow">${x.map(bn).join("")}</span><span class="wtrk"><span class="f" style="width:${(c / all[0][1]) * 100}%"></span></span><span class="v">${pc(c / tot, 1)} <small>${c.toLocaleString()}件</small></span></div>`;
   $(o.tri).innerHTML =
     all.slice(0, 5).map(row).join("") || `<p class="foot">0件</p>`;
 }
@@ -195,7 +195,9 @@ function renderScn() {
   const scopeName = SCN_SCOPE.find(([k]) => k === S.scope)[1];
   const baseName = S.slit !== "any" && S.entry !== "all" ? `進入が${ENTRY[S.entry]}だったレース全体（どの形でも）` : `${scopeName}の全レース`;
   const EXCL = { v20: 293, v20G1: 11, all: 7480 };
-  const head = `${scopeName}で、${S.entry === "all" && S.slit === "any" ? "<b>すべて</b>の" : `${S.entry !== "all" ? `進入が<b>${ENTRY[S.entry]}</b>` : ""}${S.entry !== "all" && S.slit !== "any" ? "、" : ""}${S.slit !== "any" ? `スリットが<b>${SLITN[S.slit]}</b>` : ""}だった`}レース`;
+  const ENTRY_PH = { waku: "進入が枠なりだった", mae: "前付けがあった（1号艇はイン）", mae6: "6号艇だけが前付けした", mae5: "5号艇だけが前付けした", mae56: "5・6号艇が前付けした", maeOther: "そのほかの前付けがあった", inlost: "1号艇がインを取られた" };
+  const conds = [S.entry !== "all" ? `<b>${ENTRY_PH[S.entry]}</b>` : "", S.slit !== "any" ? `スリットが<b>${SLITN[S.slit]}</b>だった` : ""].filter(Boolean);
+  const head = `${scopeName}で、${conds.length ? conds.join("、") : "<b>すべての</b>"}レース`;
   let res = "";
   if (!c.n) res = `<p class="warn">${head}は、過去に1件も無い</p>`;
   else if (c.n < MIN_N) {
@@ -204,18 +206,14 @@ function renderScn() {
         .map((v, i) => (v ? `${i + 1}号艇 ${v}件` : ""))
         .filter(Boolean)
         .join("・");
-    res = `<div class="hero"><span class="n">${c.n}</span><span class="t">件。${head}は少ないので、割合ではなく1件ずつ並べる</span></div>
+    res = `<div class="hero"><span class="n">${c.n}<small>件</small></span><span class="t">${head}は少ないので、割合ではなく1件ずつ並べる</span></div>
     <p class="sub">1着: ${sum(c.first_boat)}。万舟 ${c.manshu}件</p>
-    <div class="tbl"><table class="rl"><thead><tr><th>日付</th><th>レース</th><th>着順</th><th>決まり手</th><th>3連単</th><th>進入（コース順の艇番）</th><th>スリット</th></tr></thead><tbody>${(
-      c.races || []
-    )
+    <div class="rlist">${(c.races || [])
       .map((r) => {
-        const byCourse = [1, 2, 3, 4, 5, 6].map(
-          (cs) => r.course_by_boat.indexOf(cs) + 1,
-        );
-        return `<tr><td>${r.date}</td><td>${r.venue} ${r.race_number}R ${r.grade}${r.stage ? " " + r.stage : ""}</td><td class="mono">${r.finish_1_2_3}</td><td>${r.technique}</td><td class="mono">${yen(r.payout_3tan)}</td><td class="mono">${byCourse.join(" ")}</td><td>${r.forms.map((f) => SLITN[f]).join("・")}</td></tr>`;
+        const byCourse = [1, 2, 3, 4, 5, 6].map((cs) => r.course_by_boat.indexOf(cs) + 1);
+        return `<div class="rc"><div class="rc1"><b>${r.date}</b> ${r.venue} ${r.race_number}R ${r.grade}${r.stage ? " " + r.stage : ""}</div><div class="rc2"><span class="bnrow">${r.finish_1_2_3.split("-").map((b) => bn(+b)).join("")}</span> ${r.technique}　3連単 <b class="mono">${yen(r.payout_3tan)}</b></div><div class="rc3">進入（1コースから）<span class="mono">${byCourse.join(" ")}</span>　スリット: ${r.forms.length ? r.forms.map((f) => SLITN[f]).join("・") : "7形のどれにも当たらない"}</div></div>`;
       })
-      .join("")}</tbody></table></div>`;
+      .join("")}</div>`;
   } else {
     const bar = (lab, x, n, ref, color) => {
       const p = x / n,
@@ -228,7 +226,7 @@ function renderScn() {
     const bt = base.technique;
     const hit3 = (b) =>
       c.first_boat[b - 1] + c.second_boat[b - 1] + c.third_boat[b - 1];
-    res = `<div class="hero"><span class="n">${c.n.toLocaleString()}</span><span class="t">件。${head}（${scopeName}の全レースの ${share(c.n, whole.n)}）</span></div>
+    res = `<div class="hero"><span class="n">${c.n.toLocaleString()}<small>件</small></span><span class="t">${head}（${scopeName}の全レースの ${share(c.n, whole.n)}）</span></div>
     <div class="key"><span><i style="background:var(--bar)"></i>このシナリオ</span><span><i style="border-left:2px dotted var(--hit);width:2px;height:12px"></i>${baseName}</span><span>ひげ＝95%の幅</span></div>
     <h3>1着になった艇</h3><div class="bars">${[1, 2, 3, 4, 5, 6].map((b) => bar(`${bn(b)} ${b}号艇`, c.first_boat[b - 1], c.n, base.first_boat[b - 1] / base.n, LINE6[b])).join("")}</div>
     <h3>3着以内に入った艇</h3><div class="bars">${[1, 2, 3, 4, 5, 6].map((b) => bar(`${bn(b)} ${b}号艇`, hit3(b), c.n, (base.first_boat[b - 1] + base.second_boat[b - 1] + base.third_boat[b - 1]) / base.n, LINE6[b])).join("")}</div>
@@ -236,7 +234,7 @@ function renderScn() {
     <div class="big1"><span>万舟（3連単 1万円以上）</span><b>${pc(c.manshu / c.payout_known, 0)}</b><small>${c.manshu.toLocaleString()}/${c.payout_known.toLocaleString()}レース（${baseName}は ${pc(base.manshu / base.payout_known, 0)}）</small></div>
     ${
       c.tri
-        ? `<h3>着順の流れ</h3><div class="scope" style="background:var(--navy-900)"><svg id="scnSankey" viewBox="0 0 640 400" role="img" aria-label="このシナリオの1着→2着→3着の流れ"></svg></div><div class="tip" id="scnTip">帯をタップすると件数が出る</div><p class="foot" id="scnNote"></p><h3>よく出た3連単</h3><div class="bars" id="scnTri"></div>`
+        ? `<h3>着順の流れ</h3><div class="scope" style="background:var(--navy-900)"><svg id="scnSankey" viewBox="0 0 400 400" role="img" aria-label="このシナリオの1着→2着→3着の流れ"></svg></div><div class="tip" id="scnTip">帯をタップすると件数が出る</div><p class="foot" id="scnNote"></p><h3>よく出た3連単</h3><div class="bars" id="scnTri"></div>`
         : `<p class="foot">着順の流れ（サンキー図）と3連単の組み合わせは集計中</p>`
     }`;
   }
@@ -247,7 +245,7 @@ function renderScn() {
   <div class="ents">${entryRow("all")}${entryRow("waku")}${entryRow("mae")}${openMae ? MAE_SUB.map((e) => entryRow(e, true)).join("") : ""}${entryRow("inlost")}</div>
   <p class="foot">${post ? `今日の展示は、6艇とも枠なりだった。展示が枠なりだったレースの 93% は、本番も枠なりだった（全国、2026-04 以降の 2,023 レース）。` : "展示の後は、今日の展示の進入に当てはまる型に印が付く。"}割合は、${scopeName}の全レースの中での割合。スロー・ダッシュの別は記録が無いので分けていない</p>
   <h3><span class="stepn">2</span>スタートはどう並ぶ？（スリットの形）</h3>
-  <div class="pats">${chips}</div><p class="foot">絵は横から見た並びの例（数字はコース、右の線がスリット。縮尺は1艇身≒0.13秒）</p>
+  <div class="pats">${chips}</div><p class="foot">カド＝4コース（内の3艇より後ろから助走をとる、最初の艇）。カド受け＝3コース。絵は横から見た並びの例（数字はコース、右の線がスリット。縮尺は1艇身≒0.13秒）</p>
   <p class="foot">${def ? `${SLITN[S.slit]}: ${def}。` : ""}1つのレースが2つ以上の形に当てはまることがある（足すと100%を超える）。形の決め方は、過去率チェッカー（BOA-635）と同じ。割合は、選んだ進入の中での割合。スリットの形は、今日の情報からは選べない（展示の ST と本番のつながりは、まだ数えていない）</p>
   <h3><span class="stepn">3</span>そのとき、どう決まった？</h3>
   ${res}
