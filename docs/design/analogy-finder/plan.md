@@ -231,6 +231,7 @@ erDiagram
 | 判定の3段階・並び | spec A-7 | `verify-analogy-facts.js`（ci） |
 | 進入の型・前付け | [entry-slit/prep7.md](./entry-slit/prep7.md) の maeduke（艇番より内のコースに入った艇） | pytest と `analogyScenario.js` の固定データ |
 | スリットの7形 | BOA-635 の spec「スリットの判定」1段目（round(ST×100) の整数で比べる）。展示 F は負 | 同上。BOA-635 と同じ固定データを使う |
+| F の ST の符号 | 本番の ST は −abs(ST)（長期 `kb_boats.start_timing` の F は負、本体 `race_start_timings.start_timing` の F は正で入っている。2026-10-04 の T1 事前登録のレビューで確認、kb の F 8,726件は全件負・本体の F 1,077件は全件正）。展示 ST の F も負にする（spec「実装で直すこと」2） | pytest（出どころ別の符号の検査） |
 | 手がかりの8条件 | [slit-hint/slitpred2_hint.json](./slit-hint/slitpred2_hint.json)（平均STは 1/1000秒に丸める。このコースで5走未満は全体で埋める） | 同上 |
 | 攻める艇 | [slit-hint/mark1.md](./slit-hint/mark1.md) | 同上 |
 | 今節の平均着順点（前日まで） | [mock-v16/series-score.md](./mock-v16/series-score.md) の定義で、同じ日の前の走を含めない（spec Q6） | pytest（例のレースの6艇の値） |
