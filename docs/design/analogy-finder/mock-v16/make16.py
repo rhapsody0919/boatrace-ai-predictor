@@ -53,7 +53,7 @@ R('''  </section>
 # JS
 a = t.index('// ---------- 来る艇の条件（数えた値） ----------')
 b = t.index('// ---------- くわしく ----------')
-t = t[:a] + io.open('part16_facts.js', encoding='utf-8').read() + '\n' + io.open('part16_scn.js', encoding='utf-8').read() + '\n' + io.open('part16_hint.js', encoding='utf-8').read() + '\n' + t[b:]
+t = t[:a] + io.open('part16_facts.js', encoding='utf-8').read() + '\n' + io.open('part16_scn.js', encoding='utf-8').read() + '\n' + io.open('part16_hint.js', encoding='utf-8').read() + '\n' + io.open('part16_mark.js', encoding='utf-8').read() + '\n' + t[b:]
 R('order();renderSim();renderAi();renderC();renderFacts();', 'order();renderSim();renderAi();renderFacts();renderScn();')
 R('$("hFacts").textContent=`${st.pb}号艇が${RT[st.rank]}に来るとき`;', '$("hFacts").textContent=`${st.pb}号艇が${RT[st.rank]}に入ったのは、どんなとき？`;')
 R('["radar","themeList","cOut","aiPanel"]', '["radar","themeList"]')
@@ -367,5 +367,7 @@ R('.tabs{display:grid;', '.hint{border:1px solid var(--accent-strong);border-rad
 R('scn:{scope:"v20A1",', 'scn:{hsrc:"C",scope:"v20A1",')
 # 手がかりパネル 第10回・ファン評価の直し
 R('.tabs{display:grid;', '.hint-pic{max-width:520px}.hint-t td .fst{color:var(--warn)}.hintc[aria-pressed="true"]{border:2px solid var(--accent-strong);padding:5px 7px}.hintc small{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}.hintb{white-space:normal}\n.tabs{display:grid;')
+# ③ 1マークはどうなる？
+R('.tabs{display:grid;', '.mk-t th,.mk-t td{padding:4px 6px;font-size:12px}.mk-t td{font-family:"JetBrains Mono",monospace;text-align:right}.mk-t tr.grp th{font-size:11.5px;color:var(--text2);padding-top:8px}.mk-t tr.today{background:var(--sunken)}.mk-t tr.today th{font-weight:700}.mk-t th small{display:inline-block;margin-left:4px;font-size:10px;color:var(--card);background:var(--accent-strong);border-radius:3px;padding:0 4px}\n.tabs{display:grid;')
 io.open('template16.html', 'w', encoding='utf-8').write(t)
 print('ok')
