@@ -1,4 +1,4 @@
-# BOA-702 後半: 本日のデータ一覧に会場公式のモーター出走数を持たせる（マイグレーション129）の適用手順
+# BOA-702 後半: 本日のデータ一覧に会場公式のモーター出走数を持たせる（マイグレーション131）の適用手順
 
 「本日のデータ一覧」（/today）のカードは、一度も使われていない新モーターの2連率を「モーター2連率 0.0%」と出しており、「2着以内0回」と読まれる。データ出走表（PR #1241）と同じ判定（`src/utils/motorUsage.js`）で「モーター2連率 —（新モーター・実績なし）」に切り替えるため、/today が読む `morning_digest_rows` に会場公式の出走数 `motor_race_count` を足す（ADR-0070 で /today は `morning_digest_days`・`morning_digest_rows` の2表だけを読む）。
 
@@ -6,7 +6,7 @@
 
 | 手順 | 内容 | 必須 |
 |---|---|---|
-| 1 | 列を足す（マイグレーション129） | 必須 |
+| 1 | 列を足す（マイグレーション131） | 必須 |
 | 2 | 適用の確認 | 必須 |
 | 3 | 既存の行に出走数を埋める | 任意（過去日を `?date=` で開いたときの表示を直す） |
 
@@ -14,7 +14,7 @@
 
 ## 1. 列を足す
 
-`docs/db-migration/129_morning_digest_rows_motor_race_count.sql` の全文を実行する（BEGIN〜COMMIT を含む）。NULL 可・既定値なしの列の追加はメタデータの変更だけで一瞬（表は約600行）。
+`docs/db-migration/131_morning_digest_rows_motor_race_count.sql` の全文を実行する（BEGIN〜COMMIT を含む）。NULL 可・既定値なしの列の追加はメタデータの変更だけで一瞬（表は約600行）。
 
 ```sql
 BEGIN;
@@ -41,7 +41,7 @@ SELECT has_column_privilege('anon', 'public.morning_digest_rows', 'motor_race_co
 -- → true（098 の表単位の GRANT SELECT がそのまま効く）
 ```
 
-適用後、APPLIED.md の 129 の行を「適用済み」に直す（根拠に上の結果を書く）。
+適用後、APPLIED.md の 131 の行を「適用済み」に直す（根拠に上の結果を書く）。
 
 ## 3. 既存の行に出走数を埋める（任意）
 

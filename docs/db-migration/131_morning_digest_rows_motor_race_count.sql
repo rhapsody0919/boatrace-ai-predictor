@@ -1,4 +1,4 @@
--- 129: morning_digest_rows に会場公式のモーター出走数 motor_race_count を足す（BOA-702 後半）
+-- 131: morning_digest_rows に会場公式のモーター出走数 motor_race_count を足す（BOA-702 後半）
 --
 -- ⚠️ この案は「本番へ未適用」。適用はユーザーが実行する。手順・確認・戻し方は docs/issues/boa-702-digest-motor-race-count.md
 --

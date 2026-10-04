@@ -827,7 +827,7 @@ async function buildReturned(date, prevDate, todayRaces) {
  * の順で書く。途中で落ちると generated_at が NULL のまま残り、ページは「未生成」として
  * 扱える。逆順だと「該当0件」と混同される。
  */
-/** マイグレーションの適用前でも書き込みを止めない列（129: motor_race_count） */
+/** マイグレーションの適用前でも書き込みを止めない列（131: motor_race_count） */
 const OPTIONAL_ROW_COLUMNS = ["motor_race_count"];
 
 async function write(date, dayRow, rows) {
@@ -842,7 +842,7 @@ async function write(date, dayRow, rows) {
     .eq("digest_date", date);
   if (delErr) throw delErr;
 
-  // motor_race_count（マイグレーション129）が未適用の DB では、その列だけを除いて書く（生成は止めない）
+  // motor_race_count（マイグレーション131）が未適用の DB では、その列だけを除いて書く（生成は止めない）
   let payload = rows;
   for (let i = 0; i < payload.length; i += 200) {
     let { error } = await supabase
@@ -850,7 +850,7 @@ async function write(date, dayRow, rows) {
       .insert(payload.slice(i, i + 200));
     if (error && isColumnMissingError(error, OPTIONAL_ROW_COLUMNS)) {
       console.warn(
-        `  ⚠️ morning_digest_rows に ${OPTIONAL_ROW_COLUMNS.join(", ")} がありません（マイグレーション129が未適用）。この列を除いて書きます`,
+        `  ⚠️ morning_digest_rows に ${OPTIONAL_ROW_COLUMNS.join(", ")} がありません（マイグレーション131が未適用）。この列を除いて書きます`,
       );
       payload = stripColumns(payload, OPTIONAL_ROW_COLUMNS);
       ({ error } = await supabase
