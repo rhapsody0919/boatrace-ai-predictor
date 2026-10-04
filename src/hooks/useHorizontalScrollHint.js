@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  HSCROLL_MORE_MIN,
   horizontalScrollHintState,
   horizontalScrollStep,
   snapScrollTarget,
@@ -75,17 +76,38 @@ function scrollTargetOf(el, direction) {
  * 測り直すときは足す前の幅で計算する（足した分で次の量が変わらないように）。足した量は表自身の
  * style から読む（箱の側に持つと、表だけが作り直されたときに実際の余白と食い違う）
  */
-function applyTailPadding(el) {
+function applyTailPadding(el, columnStarts) {
   const table = el.firstElementChild;
   if (!table) return;
   const prev = parseFloat(table.style.marginRight) || 0;
   const naturalMax = el.scrollWidth - prev - el.clientWidth;
-  const extra = tailPaddingFor({
-    naturalMax,
-    columnStarts: columnsOf(el).columnStarts,
-  });
+  const extra = tailPaddingFor({ naturalMax, columnStarts });
   if (extra === prev) return;
   table.style.marginRight = extra ? `${extra}px` : "";
+}
+
+/**
+ * 列を固定した表は、指で送ったときも列の境目に止める（BOA-741）。止まる位置が自由だと、固定した
+ * 選手名のすぐ右に頭の欠けた値が並び、「51位/60」が「1位/60」に読めた（PR #1223 ファン評価1周目）。
+ * 止める位置は固定した列の右端（scroll-padding-left）。表の右に余白を足した後で呼び、右端も列の境目に
+ * なっていることを前提にする（tailPaddingFor は HSCROLL_MORE_MIN より多く溢れる表に余白を足す）
+ */
+function applyColumnSnap(el, stickyWidth) {
+  const table = el.firstElementChild;
+  const padding = parseFloat(table?.style.marginRight) || 0;
+  const naturalMax = el.scrollWidth - padding - el.clientWidth;
+  // 固定した列が見える幅より広いと、止める位置が箱の外になる。そのときは止めない
+  const snap =
+    stickyWidth > 0 &&
+    stickyWidth < el.clientWidth &&
+    naturalMax > HSCROLL_MORE_MIN;
+  if (snap) {
+    el.dataset.hscrollSnap = "true";
+    el.style.scrollPaddingLeft = `${stickyWidth}px`;
+  } else if (el.dataset.hscrollSnap) {
+    delete el.dataset.hscrollSnap;
+    el.style.scrollPaddingLeft = "";
+  }
 }
 
 export function useHorizontalScrollHint(deps = []) {
@@ -103,30 +125,17 @@ export function useHorizontalScrollHint(deps = []) {
     });
     setHasMore(state.hasMore);
     setHasLess(state.hasLess);
-    // 少しだけ切れているとき（「›」を出すほどではない）は、切れた量に合わせた薄いフェードだけを
-    // 出す。呼び出し側の JSX を変えずに済むよう、手がかりの箱（.hscroll-hint）に data 属性で渡す
-    // （React が管理する className は再描画で上書きされるため使わない）
-    // 指で送るあいだは毎フレーム呼ばれるので、値が変わったときだけ書き換える
-    const hint = el.closest(".hscroll-hint");
-    const peekWidth = state.peekFadeWidth > 0 ? `${state.peekFadeWidth}px` : "";
-    if (
-      hint &&
-      hint.style.getPropertyValue("--hscroll-peek-width") !== peekWidth
-    ) {
-      if (peekWidth) {
-        hint.dataset.hscrollPeek = "true";
-        hint.style.setProperty("--hscroll-peek-width", peekWidth);
-      } else {
-        delete hint.dataset.hscrollPeek;
-        hint.style.removeProperty("--hscroll-peek-width");
-      }
-    }
   }, []);
 
   useEffect(() => {
     // 大きさが変わったときは、右端の余白を測り直してから手がかりを決める（スクロールのたびには測らない）
     const remeasure = () => {
-      if (ref.current) applyTailPadding(ref.current);
+      const el = ref.current;
+      if (el) {
+        const { stickyWidth, columnStarts } = columnsOf(el);
+        applyTailPadding(el, columnStarts);
+        applyColumnSnap(el, stickyWidth);
+      }
       update();
     };
     remeasure();

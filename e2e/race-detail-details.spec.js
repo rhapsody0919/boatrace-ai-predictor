@@ -557,12 +557,24 @@ test.describe("レース詳細の表示の細部", () => {
     await page.goto(`${RACE}?tab=beforeInfo`);
     const hint = page.locator(".rbi-card .hscroll-hint:has(.drt-table)");
     await expect(hint.locator(".drt-table")).toBeVisible({ timeout: 30000 });
-    await expect(hint).not.toHaveAttribute("data-hscroll-peek", "true");
+    await expect(hint.locator(":scope > .hscroll-more")).toHaveCount(0);
     await page.addStyleTag({
       content:
         ".rbi-card .drt-table { margin-right: -6px; width: calc(100% + 6px); }",
     });
-    await expect(hint).toHaveAttribute("data-hscroll-peek", "true");
+    // 6px だけ溢れても「›」を出す（BOA-735。以前は 12px 以下では細いフェードだけで、380px の枠別の
+    // 全コース表で「(n=20)」が「(n=2」に読めた）
+    const more = hint.locator(":scope > .hscroll-more");
+    await expect(more).toBeVisible();
+    // 押すと右端まで送り、最後の列が欠けずに全部見える
+    await more.click();
+    await expect(more).toHaveCount(0);
+    const cut = await hint.evaluate((el) => {
+      const box = el.querySelector(".drt-table-wrapper").getBoundingClientRect();
+      const cells = [...el.querySelector(".drt-table tr").children];
+      return cells.at(-1).getBoundingClientRect().right - box.right;
+    });
+    expect(cut, "最後の列の右端が箱の外に出ていない").toBeLessThanOrEqual(1);
   });
   test("320px: 左の列を固定した表で「›」を押しても、列を読み飛ばさない（PR #1192 ファン評価2周目）", async ({
     page,
@@ -650,6 +662,21 @@ test.describe("レース詳細の表示の細部", () => {
     expect(Math.max(...rights) - Math.min(...rights)).toBeLessThanOrEqual(1);
   });
 
+  // 固定した列の右端と、その右で最初に見える列の左端の差（切れて隠れている幅）
+  const cutAtSticky = (hint) =>
+    hint.evaluate((el) => {
+      const cells = [...el.querySelector("tr").children];
+      let stickyRight = el.getBoundingClientRect().left;
+      for (const c of cells) {
+        const style = getComputedStyle(c);
+        if (style.position !== "sticky" || style.left === "auto") break;
+        stickyRight = c.getBoundingClientRect().right;
+      }
+      const firstVisible = cells
+        .map((c) => c.getBoundingClientRect())
+        .find((r) => r.right > stickyRight + 1);
+      return firstVisible ? stickyRight - firstVisible.left : 0;
+    });
   // 横に送っても、行を見分ける左端の列（艇番・選手名・日付・コース）が残り、「‹」で戻れる
   // （BOA-699・BOA-704）。以前は送ると左端の列が消え、「‹」も無い表があった
   for (const screen of [
@@ -659,6 +686,7 @@ test.describe("レース詳細の表示の細部", () => {
       hint: ".hscroll-hint:has(.rmt-forecast-scroll)",
       sticky: ".rmt-forecast-table tbody tr:first-child th",
       table: ".rmt-forecast-table",
+      pinned: 1,
     },
     {
       name: "今節の日別表",
@@ -666,6 +694,7 @@ test.describe("レース詳細の表示の細部", () => {
       hint: ".race-history-hscroll",
       sticky: ".race-history-table tbody tr:first-child td:first-child",
       table: ".race-history-table",
+      pinned: 2,
     },
     {
       name: "モーターのコース別成績",
@@ -680,6 +709,7 @@ test.describe("レース詳細の表示の細部", () => {
       hint: ".mwsg-hint",
       sticky: ".mwsg-table tbody tr:first-child td:first-child",
       table: ".mwsg-table",
+      pinned: 1,
     },
     {
       // 枠と選手名の2列を固定する。選手名の列が残れば、その左の枠の列も残っている
@@ -694,6 +724,7 @@ test.describe("レース詳細の表示の細部", () => {
       hint: ".mcc-list-hint",
       sticky: ".mcc-list-table tbody tr:first-child td:nth-child(2)",
       table: ".mcc-list-table",
+      pinned: 2,
     },
   ]) {
     test(`320px: ${screen.name}は横に送っても左端の列が残り、「‹」で戻れる（BOA-699・BOA-704）`, async ({
@@ -726,24 +757,80 @@ test.describe("レース詳細の表示の細部", () => {
       await expect(less).toBeVisible();
       // 送った先は列の境目。固定の列のすぐ右に、切れた列の破片を残さない（PR #1202 ファン評価2周目。
       // 375px のコース別成績で「1コース 2%」（実際は 87.2%）と読めた）
-      const cut = await hint.evaluate((el) => {
-        const cells = [...el.querySelector("tr").children];
-        let stickyRight = el.getBoundingClientRect().left;
-        for (const c of cells) {
-          const style = getComputedStyle(c);
-          if (style.position !== "sticky" || style.left === "auto") break;
-          stickyRight = c.getBoundingClientRect().right;
-        }
-        const firstVisible = cells
-          .map((c) => c.getBoundingClientRect())
-          .find((r) => r.right > stickyRight + 1);
-        return firstVisible ? stickyRight - firstVisible.left : 0;
-      });
-      expect(cut, "固定の列の右に切れた列が残らない").toBeLessThanOrEqual(1);
+      expect(
+        await cutAtSticky(hint),
+        "固定の列の右に切れた列が残らない",
+      ).toBeLessThanOrEqual(1);
       // 送ったあとも、左端の列は同じ位置に残る
       expect(Math.abs((await stickyLeft()) - before)).toBeLessThanOrEqual(1);
       await less.click();
       await expect(less).toHaveCount(0);
+    });
+    // 指で送ったときも列の境目に止める（BOA-741）。止まる位置が自由だと、固定した選手名のすぐ右に
+    // 頭の欠けた値が並び、「51位/60」が「1位/60」に読めた（PR #1223 ファン評価1周目。止まる位置の
+    // 32〜56% で起きた）。横のホイールで、列の途中に当たる量だけ送る
+    test(`320px: ${screen.name}は指で途中まで送っても、固定の列の右に切れた値を残さない（BOA-741）`, async ({
+      page,
+    }) => {
+      test.slow();
+      await page.setViewportSize({ width: 320, height: 812 });
+      await page.goto(screen.path);
+      if (screen.open) await screen.open(page);
+      const hint = page.locator(screen.hint).first();
+      await expect(hint).toBeVisible({ timeout: 90000 });
+      // 表の min-width で広げると、余りが固定した列（選手名）に入り、固定の列が見える幅より広くなる。
+      // 固定していない列だけを広げて溢れさせる
+      await page.addStyleTag({
+        content: `${screen.table} :is(th, td):nth-child(n + ${screen.pinned + 1}) { min-width: 64px !important; }`,
+      });
+      await expect(hint.locator(":scope > .hscroll-more")).toBeVisible({
+        timeout: 30000,
+      });
+      const scrollerLeft = (reset) =>
+        hint.evaluate((el, r) => {
+          const scroller = [el, ...el.querySelectorAll("*")].find(
+            (n) =>
+              ["auto", "scroll"].includes(getComputedStyle(n).overflowX) &&
+              n.scrollWidth > n.clientWidth + 1,
+          );
+          if (r) scroller.scrollLeft = 0;
+          return scroller.scrollLeft;
+        }, reset);
+      // ホイールは表の本文の上で回す（見出しの上だと縦に固定した行の外になる表がある）
+      const firstRow = hint.locator("tbody tr").first();
+      await firstRow.scrollIntoViewIfNeeded();
+      const row = await firstRow.boundingBox();
+      const visible = await hint.boundingBox();
+      // 行は表の幅（640px）で画面より広い。画面に見えている箱の中ほどで回す
+      await page.mouse.move(
+        visible.x + visible.width / 2,
+        row.y + row.height / 2,
+      );
+      // 小さく送ると、境目に止める仕組みで元の位置（0）に戻ることがある。大きく送った回で、
+      // 実際に送れたことも確かめる（送れていないと、切れた値が無いのは当たり前）
+      // ホイールの送りは数フレームかけて動き、境目に止める動きも後から来る。動き出す前の 0 で
+      // 判定しないよう、少し待ってから、位置が動かなくなるまで待つ
+      const settledLeft = async () => {
+        await page.waitForTimeout(300);
+        let prev = await scrollerLeft(false);
+        for (;;) {
+          await page.waitForTimeout(150);
+          const now = await scrollerLeft(false);
+          if (now === prev) return now;
+          prev = now;
+        }
+      };
+      let moved = 0;
+      for (const delta of [23, 57, 101, 149]) {
+        await scrollerLeft(true);
+        await page.mouse.wheel(delta, 0);
+        moved = Math.max(moved, await settledLeft());
+        expect(
+          await cutAtSticky(hint),
+          `${delta}px 送ったあと、固定の列の右に切れた列が残らない`,
+        ).toBeLessThanOrEqual(1);
+      }
+      expect(moved, "ホイールで表が送れた").toBeGreaterThan(0);
     });
   }
   // 枠の列は幅を決めて、選手名の列をその右に固定する（BOA-699）。決めた幅に艇色のチップが
