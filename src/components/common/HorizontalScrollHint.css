@@ -27,24 +27,6 @@
   );
 }
 
-/* 少しだけ切れているとき（src/utils/horizontalScrollHint.js の HSCROLL_PEEK_MAX 以下）は「›」を出さず、
-   細いフェードだけを出す。幅は --hscroll-peek-width（フックが設定） */
-.hscroll-hint[data-hscroll-peek="true"]::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: var(--hscroll-peek-width, 16px);
-  pointer-events: none;
-  z-index: 5;
-  background: linear-gradient(
-    to right,
-    transparent,
-    var(--hscroll-fade-color, var(--surface-page))
-  );
-}
-
 .hscroll-more {
   position: absolute;
   /* 上端に寄せる。箱の高さいっぱいに置くと、縦に長い表では「›」が

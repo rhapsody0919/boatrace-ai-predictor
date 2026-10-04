@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  HSCROLL_PEEK_MAX,
   horizontalScrollHintState,
   horizontalScrollStep,
   snapScrollTarget,
@@ -90,8 +89,7 @@ function applyTailPadding(el, columnStarts) {
  * 列を固定した表は、指で送ったときも列の境目に止める（BOA-741）。止まる位置が自由だと、固定した
  * 選手名のすぐ右に頭の欠けた値が並び、「51位/60」が「1位/60」に読めた（PR #1223 ファン評価1周目）。
  * 止める位置は固定した列の右端（scroll-padding-left）。表の右に余白を足した後で呼び、右端も列の境目に
- * なっていることを前提にする。少しだけ溢れる表（HSCROLL_PEEK_MAX 以下）は余白を足さず右端が境目に
- * ならないので止めない（止めると、溢れた数 px に指で届かなくなる）
+ * なっていることを前提にする（tailPaddingFor は 1px より多く溢れる表に余白を足す）
  */
 function applyColumnSnap(el, stickyWidth) {
   const table = el.firstElementChild;
@@ -101,7 +99,7 @@ function applyColumnSnap(el, stickyWidth) {
   const snap =
     stickyWidth > 0 &&
     stickyWidth < el.clientWidth &&
-    naturalMax > HSCROLL_PEEK_MAX;
+    naturalMax > 1;
   if (snap) {
     el.dataset.hscrollSnap = "true";
     el.style.scrollPaddingLeft = `${stickyWidth}px`;
@@ -126,24 +124,6 @@ export function useHorizontalScrollHint(deps = []) {
     });
     setHasMore(state.hasMore);
     setHasLess(state.hasLess);
-    // 少しだけ切れているとき（「›」を出すほどではない）は、切れた量に合わせた薄いフェードだけを
-    // 出す。呼び出し側の JSX を変えずに済むよう、手がかりの箱（.hscroll-hint）に data 属性で渡す
-    // （React が管理する className は再描画で上書きされるため使わない）
-    // 指で送るあいだは毎フレーム呼ばれるので、値が変わったときだけ書き換える
-    const hint = el.closest(".hscroll-hint");
-    const peekWidth = state.peekFadeWidth > 0 ? `${state.peekFadeWidth}px` : "";
-    if (
-      hint &&
-      hint.style.getPropertyValue("--hscroll-peek-width") !== peekWidth
-    ) {
-      if (peekWidth) {
-        hint.dataset.hscrollPeek = "true";
-        hint.style.setProperty("--hscroll-peek-width", peekWidth);
-      } else {
-        delete hint.dataset.hscrollPeek;
-        hint.style.removeProperty("--hscroll-peek-width");
-      }
-    }
   }, []);
 
   useEffect(() => {

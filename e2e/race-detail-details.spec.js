@@ -553,12 +553,24 @@ test.describe("レース詳細の表示の細部", () => {
     await page.goto(`${RACE}?tab=beforeInfo`);
     const hint = page.locator(".rbi-card .hscroll-hint:has(.drt-table)");
     await expect(hint.locator(".drt-table")).toBeVisible({ timeout: 30000 });
-    await expect(hint).not.toHaveAttribute("data-hscroll-peek", "true");
+    await expect(hint.locator(":scope > .hscroll-more")).toHaveCount(0);
     await page.addStyleTag({
       content:
         ".rbi-card .drt-table { margin-right: -6px; width: calc(100% + 6px); }",
     });
-    await expect(hint).toHaveAttribute("data-hscroll-peek", "true");
+    // 6px だけ溢れても「›」を出す（BOA-735。以前は 12px 以下では細いフェードだけで、380px の枠別の
+    // 全コース表で「(n=20)」が「(n=2」に読めた）
+    const more = hint.locator(":scope > .hscroll-more");
+    await expect(more).toBeVisible();
+    // 押すと右端まで送り、最後の列が欠けずに全部見える
+    await more.click();
+    await expect(more).toHaveCount(0);
+    const cut = await hint.evaluate((el) => {
+      const box = el.querySelector(".drt-table-wrapper").getBoundingClientRect();
+      const cells = [...el.querySelector(".drt-table tr").children];
+      return cells.at(-1).getBoundingClientRect().right - box.right;
+    });
+    expect(cut, "最後の列の右端が箱の外に出ていない").toBeLessThanOrEqual(1);
   });
   test("320px: 左の列を固定した表で「›」を押しても、列を読み飛ばさない（PR #1192 ファン評価2周目）", async ({
     page,

@@ -1,22 +1,17 @@
-/** 右に残っている幅がこれ以下なら「›」は出さず、細いフェードだけにする（px） */
-export const HSCROLL_PEEK_MAX = 12;
-
-/** 少しだけ切れているときの細いフェードの幅（px） */
-export const HSCROLL_PEEK_FADE = 12;
+/** 左に送った量がこれを超えたら「‹」を出す（px）。指が少し触れただけで出さないため */
+export const HSCROLL_LESS_MIN = 12;
 
 /**
  * 横スクロールの手がかりの出し方を決める（純関数。verify-frontend-pure-functions で固定）。
  *
- * - 右に残っている幅が HSCROLL_PEEK_MAX を超える: 「›」と幅40pxのフェード（hasMore）
- * - 1px より多く HSCROLL_PEEK_MAX 以下: 「›」は出さず、幅 HSCROLL_PEEK_FADE の細いフェードだけ
- *   （以前は 5px 残りでも40pxのフェードと「›」が、ほぼ見えている最後の列を覆っていた。
- *   逆に4px以下の残りでは何も出ず、最後の列の端が黙って切れていた。#1130 ファン評価2・3周目）
- *   境目を24px・フェードを「残り＋12px」にした最初の版では、20px残りで32pxのフェードが最後の列の
- *   見えている部分を覆い、「›」も無いため列ごと無いように見えた（PR #1169 ファン評価1周目）
- * - 左に HSCROLL_PEEK_MAX より多く送られている: 「‹」（hasLess）
+ * - 右に 1px より多く残っている: 「›」と幅40pxのフェード（hasMore）
+ *   以前は 12px 以下の残りでは「›」を出さず細いフェードだけにしていた（#1169）。380〜386px の
+ *   枠別の全コース表で 4〜10px だけ溢れ、6コースの「(n=20)」が「(n=2」に読めた。右の余白
+ *   （tailPaddingFor）も足されず、指で送らない限り読めなかった（BOA-735、ユーザー判断で境目を下げた）
+ * - 左に HSCROLL_LESS_MIN より多く送られている: 「‹」（hasLess）
  *
  * @param {{scrollWidth: number, clientWidth: number, scrollLeft: number}} box
- * @returns {{hasMore: boolean, hasLess: boolean, peekFadeWidth: number}}
+ * @returns {{hasMore: boolean, hasLess: boolean}}
  */
 export function horizontalScrollHintState({
   scrollWidth,
@@ -24,11 +19,9 @@ export function horizontalScrollHintState({
   scrollLeft,
 }) {
   const remaining = scrollWidth - clientWidth - scrollLeft;
-  const hasMore = remaining > HSCROLL_PEEK_MAX;
-  const peekFadeWidth = !hasMore && remaining > 1 ? HSCROLL_PEEK_FADE : 0;
-  // 「‹」も「›」と同じ境目にする。1pxを超えたら出していたため、指が少し触れただけで丸い「‹」が
-  // 出て、押しても数px戻るだけだった（PR #1192 ファン評価2周目）
-  return { hasMore, hasLess: scrollLeft > HSCROLL_PEEK_MAX, peekFadeWidth };
+  // 「‹」は1pxを超えたら出していたため、指が少し触れただけで丸い「‹」が出て、押しても数px戻るだけ
+  // だった（PR #1192 ファン評価2周目）
+  return { hasMore: remaining > 1, hasLess: scrollLeft > HSCROLL_LESS_MIN };
 }
 
 /**
@@ -88,14 +81,13 @@ export function snapScrollTarget({
  * 途中の送りは列の境目にそろえても、右端の位置（scrollWidth − clientWidth）は列の境目と
  * 一致しない。そのため右端まで送った最後の1回だけ、固定した列のすぐ右に切れた値が残った
  * （320px の今節の日別表で展示「6.71(6)」が「71(6)」。PR #1202 ファン評価3周目）。
- * 右端より先にある最初の列の境目まで届くよう、差の分だけ余白を足す。少しだけ切れているとき
- * （HSCROLL_PEEK_MAX 以下で「›」を出さない）は足さない
+ * 右端より先にある最初の列の境目まで届くよう、差の分だけ余白を足す。溢れが 1px 以下なら足さない
  *
  * @param {{naturalMax: number, columnStarts: number[]}} args naturalMax は余白を足す前の右端の位置
  * @returns {number}
  */
 export function tailPaddingFor({ naturalMax, columnStarts }) {
-  if (naturalMax <= HSCROLL_PEEK_MAX) return 0;
+  if (naturalMax <= 1) return 0;
   // 右端がすでに列の境目なら足さない
   if (columnStarts.some((v) => Math.abs(v - naturalMax) <= 1)) return 0;
   const next = columnStarts
