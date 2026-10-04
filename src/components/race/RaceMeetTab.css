@@ -531,7 +531,8 @@
 .rmt-metric-chip.is-active {
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  border-color: var(--brand-accent-primary);
+  /* 選んでいる印は本文色。金は「6艇で最良」の印なので使わない（BOA-757） */
+  border-color: var(--text-primary);
 }
 
 .rmt-trend-head {

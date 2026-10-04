@@ -1050,6 +1050,16 @@ function RaceMeetTab({
                                 : ""
                             }`}
                           >
+                            {/* 走数が少ない得点率は、目安に届いて青くても当てにならない。
+                                比較表と同じ⚠を付ける（BOA-757） */}
+                            {row.runs < MEET_SMALL_SAMPLE_RUNS && (
+                              <span
+                                className="rmt-warn"
+                                title={t("basicInfo.smallSampleTitle")}
+                              >
+                                ⚠
+                              </span>
+                            )}
                             {row.rate.toFixed(2)}
                           </td>
                           {hasNeeded && (
@@ -1490,7 +1500,8 @@ function RaceMeetTab({
                     ),
                   }))}
                   baseline={st.baseAvg}
-                  color="var(--brand-accent-primary)"
+                  // 金は「6艇で最良」の印。ダークでは5号艇の線と同じ色にも見えた（BOA-757）
+                  color="var(--text-primary)"
                   markLast={!lastSt?.mark}
                 />
                 <div className="rmt-spark-foot">
