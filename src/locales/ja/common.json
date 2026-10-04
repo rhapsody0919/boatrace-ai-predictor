@@ -129,11 +129,11 @@
     "seriesDayNth": "{{day}}日目"
   },
   "volatility": {
-    "levelHigh": "イン崩れ確率高",
+    "levelHigh": "イン崩れ注意（高）",
     "levelLow": "本命有利",
     "description": "過去90日・同会場のレースと比較した、1号艇が崩れやすいかどうかの相対指標です",
     "attentionTitle": "イン崩れ注意度",
-    "attentionHigh": "イン崩れ確率高",
+    "attentionHigh": "イン崩れ注意（高）",
     "attentionLow": "本命有利",
     "attentionStandard": "標準",
     "percentileBarLabel": "崩れやすさ（同会場で0〜100）",
@@ -156,17 +156,17 @@
     "level": {
       "low": "本命有利",
       "medium": "標準",
-      "high": "イン崩れ確率高"
+      "high": "イン崩れ注意（高）"
     },
     "baselineTitle": "全体平均 {{rate}}%",
-    "summaryPrefix": "「イン崩れ確率高」ラベルが付与されたレースでは、実際に",
+    "summaryPrefix": "「イン崩れ注意（高）」ラベルが付与されたレースでは、実際に",
     "summarySuffix": "の確率で1号艇が1着になっていません",
     "summaryBaseline": "（全体平均: {{rate}}%）",
     "legendBaseline": "縦線 = 全体平均 {{rate}}%",
     "legendCount": "（集計: {{count}}レース）",
     "gradeDetailsSummary": "グレード別の詳細を見る",
     "gradeHeader": "グレード",
-    "highUpsetRateHeader": "イン崩れ確率高ラベル時に1号艇が負けた割合",
+    "highUpsetRateHeader": "イン崩れ注意（高）ラベル時に1号艇が負けた割合",
     "baselineRateHeader": "会場全体で1号艇が負けた割合の平均",
     "countHeader": "件数",
     "gradeIppan": "一般",

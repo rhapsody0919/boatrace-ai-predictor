@@ -133,7 +133,7 @@ test("ホームの注目レース: 崩れやすさは「/ 100」で出し、% �
   }
   await expect(page.locator(".volatility-highlights")).toContainText("🌪️");
   await expect(page.locator(".volatility-highlights")).not.toContainText("⚠️");
-  // 数字が確率に読まれないよう、物差しの意味を書く。すぐ下の「イン崩れ確率高」と食い違わないよう、
+  // 数字が確率に読まれないよう、物差しの意味を書く。すぐ下の「イン崩れ注意（高）」と食い違わないよう、
   // 「確率ではない」とは書かず順位だと書く（ファン評価1・2周目）
   await expect(
     page.locator(".volatility-highlights__scale-note"),

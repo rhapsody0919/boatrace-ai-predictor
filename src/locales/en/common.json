@@ -130,11 +130,11 @@
     "seriesDayNth": "Day {{day}}"
   },
   "volatility": {
-    "levelHigh": "High upset chance",
+    "levelHigh": "Upset alert (high)",
     "levelLow": "Favorite friendly",
     "description": "A relative measure of how likely lane 1 is to lose, compared to races at this venue over the last 90 days",
     "attentionTitle": "Upset alert level",
-    "attentionHigh": "High upset chance",
+    "attentionHigh": "Upset alert (high)",
     "attentionLow": "Favorite friendly",
     "attentionStandard": "Average",
     "percentileBarLabel": "Upset tendency (0–100 within this venue)",
@@ -157,17 +157,17 @@
     "level": {
       "low": "Favorite friendly",
       "medium": "Average",
-      "high": "High upset chance"
+      "high": "Upset alert (high)"
     },
     "baselineTitle": "Overall average {{rate}}%",
-    "summaryPrefix": "In races labeled \"High upset chance\", boat 1 actually failed to finish 1st",
+    "summaryPrefix": "In races labeled \"Upset alert (high)\", boat 1 actually failed to finish 1st",
     "summarySuffix": "of the time",
     "summaryBaseline": "(overall average: {{rate}}%)",
     "legendBaseline": "Vertical line = overall average {{rate}}%",
     "legendCount": "(sample: {{count}} races)",
     "gradeDetailsSummary": "View breakdown by grade",
     "gradeHeader": "Grade",
-    "highUpsetRateHeader": "Boat 1 loss rate when labeled \"High upset chance\"",
+    "highUpsetRateHeader": "Boat 1 loss rate when labeled \"Upset alert (high)\"",
     "baselineRateHeader": "Venue-wide average boat 1 loss rate",
     "countHeader": "Races",
     "gradeIppan": "General",

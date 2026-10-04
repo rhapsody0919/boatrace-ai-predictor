@@ -368,6 +368,9 @@
   --color-error-text: #f26b6b;
   --color-error-dark-text: #e87272;
   --color-info-text: var(--color-info);
+  /* ダークでは金を半透明で紺に混ぜると灰緑に見えた。暗い金の不透明な地にする。地の上の緑・赤の文字
+     （調子の↑↓等）が 4.5:1 を割らない暗さ（2026-10-04 ユーザー判断、BOA-711） */
+  --ind-best-bg: color-mix(in srgb, var(--ryujin-gold-500) 20%, #160f03);
 }
 
 [data-theme="light"] {
@@ -398,5 +401,8 @@
     --color-error-text: #f26b6b;
     --color-error-dark-text: #e87272;
     --color-info-text: var(--color-info);
+    /* ダークでは金を半透明で紺に混ぜると灰緑に見えた。暗い金の不透明な地にする。地の上の緑・赤の文字
+       （調子の↑↓等）が 4.5:1 を割らない暗さ（2026-10-04 ユーザー判断、BOA-711） */
+    --ind-best-bg: color-mix(in srgb, var(--ryujin-gold-500) 20%, #160f03);
   }
 }

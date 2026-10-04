@@ -4,7 +4,7 @@
  * 画面はブラウザでしか動かないため、ソースと文言を検査する（verify-motor-tab-readability.js と同じ方式）。
  * 数値の判定（ST考察の差の色 diffTone）は verify-race-indicator-tones.js で検査する。
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -156,10 +156,18 @@ check(
   ) && tokens.includes("--ind-best-ring: var(--brand-accent-primary);"),
 );
 check(
-  "U3: 結果タブの1着の帯は金の20%＋左に金の線（行の外に引き、「1着」の文字に重ねない）",
-  /\.rr-row\.is-winner \{[^}]*--ryujin-gold-500\) 20%[^}]*box-shadow: -4px 0 0 0 var\(--ryujin-gold-500\)/.test(
+  "U3: 結果タブの1着の帯は最良の金枠と同じ地＋左に金の線（行の外に引き、「1着」の文字に重ねない）",
+  /\.rr-row\.is-winner \{[^}]*background: var\(--ind-best-bg\)[^}]*box-shadow: -4px 0 0 0 var\(--ryujin-gold-500\)/.test(
     read("src/App.css"),
   ),
+);
+check(
+  "ダークの金の地は暗い金の不透明な地（紺に半透明で混ぜると灰緑に見えた。2026-10-04 ユーザー判断）",
+  (
+    tokens.match(
+      /--ind-best-bg: color-mix\(in srgb, var\(--ryujin-gold-500\) 20%, #160f03\);/g,
+    ) ?? []
+  ).length === 2,
 );
 check(
   "U4: イン崩れの比較バーは「/ 100」を添え、見出しは「崩れやすさ（同会場で0〜100）」",
@@ -240,6 +248,31 @@ check(
       "bestPrev.has(p.number)",
     ),
 );
+
+// 2026-10-04 ユーザー判断: 「イン崩れ確率高」を「イン崩れ注意（高）」に改名（0〜100 の数字と並ぶと確率に
+// 読まれた）。画面・4言語の訳・ブログに旧名・旧訳が残っていないこと
+{
+  const OLD = [
+    "イン崩れ確率高",
+    "High upset chance",
+    "冷門機率高",
+    "이변 가능성 높음",
+  ];
+  const files = [
+    ...LANGS.map((l) => `src/locales/${l}/common.json`),
+    "src/pages/HowToUse.jsx",
+    ...readdirSync(path.join(root, "public/blog"))
+      .filter((f) => f.endsWith(".md"))
+      .map((f) => `public/blog/${f}`),
+  ];
+  const left = files.filter((f) => OLD.some((o) => read(f).includes(o)));
+  check(
+    `「イン崩れ確率高」の旧名・旧訳が画面・ブログに残っていない（残り: ${left.join(", ") || "なし"}）`,
+    left.length === 0 &&
+      json("src/locales/ja/common.json").volatility.levelHigh ===
+        "イン崩れ注意（高）",
+  );
+}
 
 if (failures.length > 0) {
   console.error(`\nverify-race-detail-boa711: ${failures.length}件失敗`);

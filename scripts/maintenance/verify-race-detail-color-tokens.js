@@ -73,14 +73,14 @@ check(
 
 // --brand-accent-primary（ライトでは濃い金 #6b500f）から作ると、払戻の最高額の行で文字の
 // コントラストが 4.37 と AA を割った（PR #1194 ファン評価2周目）。元の色と同じパレットの金にする。
-// 1着の行は 2026-10-03 のユーザー判断で 20%（BOA-711 U3）
+// 1着の行は最良の金枠と同じ --ind-best-bg（2026-10-03・04 のユーザー判断、BOA-711 U3）
 check(
-  "結果タブの金の背景（1着の行・最速ST・払戻の最高額）は --ryujin-gold-500 から作る",
+  "結果タブの金の背景（最速ST・払戻の最高額）は --ryujin-gold-500 から、1着の行は --ind-best-bg",
   (
     appCss.match(
       /color-mix\(in srgb, var\(--ryujin-gold-500\) (?:1[26]|20)%, transparent\)/g,
     ) ?? []
-  ).length === 3 &&
+  ).length === 2 &&
     !/\.rr-[a-z-]+[^{]*\{[^}]*--brand-accent-primary\) (?:1[026]|20)%/.test(
       appCss,
     ),

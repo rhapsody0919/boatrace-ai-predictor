@@ -129,11 +129,11 @@
     "seriesDayNth": "第{{day}}天"
   },
   "volatility": {
-    "levelHigh": "冷門機率高",
+    "levelHigh": "冷門注意（高）",
     "levelLow": "熱門穩定",
     "description": "與該賽場過去90天的賽事相比，1號位落敗可能性的相對指標",
     "attentionTitle": "1號位失守注意度",
-    "attentionHigh": "冷門機率高",
+    "attentionHigh": "冷門注意（高）",
     "attentionLow": "熱門穩定",
     "attentionStandard": "普通",
     "percentileBarLabel": "崩盤傾向（同賽場0〜100）",
@@ -156,17 +156,17 @@
     "level": {
       "low": "熱門穩定",
       "medium": "普通",
-      "high": "冷門機率高"
+      "high": "冷門注意（高）"
     },
     "baselineTitle": "整體平均 {{rate}}%",
-    "summaryPrefix": "標示「冷門機率高」的比賽中，實際上1號艇未獲得第1名的機率為",
+    "summaryPrefix": "標示「冷門注意（高）」的比賽中，實際上1號艇未獲得第1名的機率為",
     "summarySuffix": "",
     "summaryBaseline": "（整體平均：{{rate}}%）",
     "legendBaseline": "縱線＝整體平均 {{rate}}%",
     "legendCount": "（統計：{{count}}場）",
     "gradeDetailsSummary": "查看各等級詳情",
     "gradeHeader": "等級",
-    "highUpsetRateHeader": "標示「冷門機率高」時1號艇的落敗機率",
+    "highUpsetRateHeader": "標示「冷門注意（高）」時1號艇的落敗機率",
     "baselineRateHeader": "賽場整體1號艇落敗機率平均值",
     "countHeader": "件數",
     "gradeIppan": "一般",

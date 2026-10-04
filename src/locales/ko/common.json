@@ -129,11 +129,11 @@
     "seriesDayNth": "{{day}}일째"
   },
   "volatility": {
-    "levelHigh": "이변 가능성 높음",
+    "levelHigh": "이변 주의(높음)",
     "levelLow": "인기 안정",
     "description": "최근 90일간 같은 경정장 레이스와 비교한, 1번 보트가 질 가능성의 상대 지표입니다",
     "attentionTitle": "1코스 이변 주의도",
-    "attentionHigh": "이변 가능성 높음",
+    "attentionHigh": "이변 주의(높음)",
     "attentionLow": "인기 안정",
     "attentionStandard": "보통",
     "percentileBarLabel": "무너지기 쉬움(같은 경정장에서 0~100)",
@@ -156,17 +156,17 @@
     "level": {
       "low": "인기 안정",
       "medium": "보통",
-      "high": "이변 가능성 높음"
+      "high": "이변 주의(높음)"
     },
     "baselineTitle": "전체 평균 {{rate}}%",
-    "summaryPrefix": "「이변 가능성 높음」라벨이 부여된 레이스에서는, 실제로",
+    "summaryPrefix": "「이변 주의(높음)」라벨이 부여된 레이스에서는, 실제로",
     "summarySuffix": "확률로 1번 보트가 1착이 되지 못했습니다",
     "summaryBaseline": "（전체 평균: {{rate}}%）",
     "legendBaseline": "세로선 = 전체 평균 {{rate}}%",
     "legendCount": "（집계: {{count}}경주）",
     "gradeDetailsSummary": "그레이드별 상세 보기",
     "gradeHeader": "그레이드",
-    "highUpsetRateHeader": "「이변 가능성 높음」라벨 시 1번 보트가 진 비율",
+    "highUpsetRateHeader": "「이변 주의(높음)」라벨 시 1번 보트가 진 비율",
     "baselineRateHeader": "경정장 전체 1번 보트가 진 비율 평균",
     "countHeader": "건수",
     "gradeIppan": "일반",
