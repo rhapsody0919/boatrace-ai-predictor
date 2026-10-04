@@ -64,6 +64,8 @@ export function techniqueDiffers(predictedTechnique, actualTechnique) {
  * @param {string|null|undefined} p.actualTechnique 実際の決まり手（日本語）
  * @param {number|null|undefined} p.winnerBoat 1着の艇番
  * @param {number|null|undefined} p.winnerEntryCourse 1着の艇の進入コース（不明なら null）
+ * @param {boolean} [p.isTopPick=true] 当たった候補が1番手（本命）か。2番手以下が当たっても
+ *   「予想通り」とは言わない（本命は外れているため。BOA-724 の A-2 を (b) に）
  * @returns {boolean}
  */
 export function isAsPredicted({
@@ -71,7 +73,9 @@ export function isAsPredicted({
   actualTechnique,
   winnerBoat,
   winnerEntryCourse,
+  isTopPick = true,
 }) {
+  if (!isTopPick) return false;
   if (winnerEntryCourse != null && winnerEntryCourse !== winnerBoat) {
     return false;
   }

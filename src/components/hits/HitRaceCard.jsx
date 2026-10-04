@@ -107,6 +107,7 @@ function HitRaceCard({
             winnerEntryCourse,
             technique,
             actualTechnique,
+            isTopPick: hitRace.isTopPick,
             probability,
           })}
           hashtags={["ボートレース", "展開予測", "龍神レーダー"]}

@@ -41,6 +41,16 @@ test("A-2: 共有文は、決まり手もコースも予想どおりのときだ
         actualTechnique: "差し",
         probability: 0.54,
       }),
+      // 例: 戸田 9/30 8R。本命は1号艇の逃げ、当たったのは2番手の3号艇のまくり
+      secondPick: generateTurnHitShareText({
+        ...base,
+        winnerBoat: 3,
+        winnerEntryCourse: 3,
+        technique: "まくり",
+        actualTechnique: "まくり",
+        isTopPick: false,
+        probability: 0.13,
+      }),
       unknownActual: generateTurnHitShareText({
         ...base,
         winnerBoat: 3,
@@ -66,6 +76,7 @@ test("A-2: 共有文は、決まり手もコースも予想どおりのときだ
   expect(texts.unknownActual).not.toContain("予想通り");
   // 予想と違うレースは、見出し・締めでも決まり手まで当たったように言わない（ファン評価1周目）
   for (const text of [
+    texts.secondPick,
     texts.techniqueDiffers,
     texts.courseDiffers,
     texts.unknownActual,

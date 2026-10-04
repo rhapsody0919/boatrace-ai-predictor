@@ -1767,6 +1767,17 @@ function suiteTurnPrediction(m, check) {
     false,
   );
   check(
+    "isAsPredicted: 2番手以下の候補が当たったときは false（本命は外れている）",
+    m.isAsPredicted({
+      predictedTechnique: "まくり",
+      actualTechnique: "まくり",
+      winnerBoat: 3,
+      winnerEntryCourse: 3,
+      isTopPick: false,
+    }),
+    false,
+  );
+  check(
     "isAsPredicted: 実際の決まり手が分からなければ false",
     as("逃げ", null, 1, 1),
     false,

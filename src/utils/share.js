@@ -323,6 +323,7 @@ export const generateTurnHitShareText = (race) => {
     actualTechnique: race.actualTechnique,
     winnerBoat,
     winnerEntryCourse: race.winnerEntryCourse,
+    isTopPick: race.isTopPick ?? true,
   });
 
   let dateStr = "";

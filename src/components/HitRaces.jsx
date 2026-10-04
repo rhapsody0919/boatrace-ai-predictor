@@ -51,6 +51,8 @@ function extractHitRaces(predictions) {
         // 1着の艇番。実際に入ったコースは表示中のカードだけ別に引く（winnerCourses）
         winnerBoat: winner,
         matchedPattern,
+        // 当たった候補が1番手（本命）か。2番手以下なら共有文で「予想通り」と言わない（BOA-724）
+        isTopPick: matchedPattern != null && matchedPattern === patterns[0],
         result: race.result,
       };
     })
