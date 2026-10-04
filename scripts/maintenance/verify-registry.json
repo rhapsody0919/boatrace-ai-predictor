@@ -362,6 +362,11 @@
       "guards": "選手の平均ST・直近30走・ST標準偏差（scripts/lib/racerStStats.js、BOA-581）: 1000行上限での取りこぼし・Fの除外・直近30走の並び・取得エラーの例外化"
     },
     {
+      "script": "verify-race-series-final-title.js",
+      "tier": "ci",
+      "guards": "race_conditions の race_title・is_final_day を race_series から埋める候補（BOA-695、backfill-race-series-meta.js final-title）。既存値を上書きしない、最終日は race_date = end_date、節の外・重なり・races に無い行は書かない、全行が同じ3列を持つこと"
+    },
+    {
       "script": "verify-rls-migration.js",
       "tier": "ci",
       "guards": "マイグレーション076（RLS無効テーブルの匿名書き込みの是正、BOA-370）をPGlite上で実際に適用して検証"
