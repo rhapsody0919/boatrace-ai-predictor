@@ -281,7 +281,7 @@ test("和文の注記で句点の後に半角スペースを入れない（英�
   // 「準優の目安は12位（5.40）。 点線より上が…」と空白が入っていた（BOA-738）
   await openMeetTab(page, "2026-09-23-09-12");
   const ja = await page.locator(".rmt-border-note").innerText();
-  expect(ja).toContain("。点線より上が");
+  expect(ja).toContain("。青い点線より上が");
   expect(ja).not.toMatch(/。 /);
   await page.goto("/en/race/2026-09-23-09-12");
   await page.locator(".race-tabs-btn").nth(2).click();
