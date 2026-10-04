@@ -121,7 +121,7 @@ def _floats(a) -> list:
 
 def parity_fixture(version: str, test: pd.DataFrame, ids: list[int], cond_raw: pd.DataFrame,
                    exh_raw: pd.DataFrame, models: dict[str, lgb.Booster]) -> dict:
-    """racecard_features は analogy_race_features.features に書くのと同じ値・並び（win_racecard の並び）。
+    """racecard_features は出走表時点の36列（win_racecard の feature_names の並び、PostgREST の real[] と同じ数値の形）。
     live_raw は exhibition_data・race_conditions の DB の値のまま。expected は Python の入力と pred_contrib
     （最後の列が期待値）。"""
     rc_names = models["win_racecard"].feature_name()

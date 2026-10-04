@@ -1,7 +1,7 @@
 /**
  * アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: DB の行からモデルの入力を作る純粋関数。
  *
- * - 出走表時点の36列は学習側の日次ジョブが `analogy_race_features.features`（real[]）に書いたものを読むだけ
+ * - 出走表時点の36列は Python（features.py）が作った値を読むだけ（レースごとの寄与度を DB に置く表 analogy_race_features は、2026-10-04 のユーザー決定 Q2 で廃止）
  * - 直前情報8列（LIVE_FEATURES）は、展示タイムと気象から scripts/ml/analogy/features.py と同じ式で作る
  *
  * float32 の約束（ADR 案（#1134「レースごとの寄与度」） 決定5）: 学習は float32 の値で木を作るので、分岐の閾値が名目値の
@@ -166,8 +166,8 @@ export function buildLiveFeatures({
 /**
  * モデルの入力（featureNames の並びの float32 の値、欠損は NaN）を作る。
  * @param {string[]} featureNames モデルの列の並び（per_race_meta.json の feature_names＝booster.feature_name()）
- * @param {string[]} racecardNames `analogy_race_features.features` の列の並び（win_racecard の feature_names）
- * @param {(number|string|null)[]} racecardValues その艇の `features`（real[]）
+ * @param {string[]} racecardNames 出走表時点の36列の並び（win_racecard の feature_names）
+ * @param {(number|string|null)[]} racecardValues その艇の36列の値
  * @param {Record<string, number>|null} live buildLiveFeatures のその艇の値（出走表時点の段は null）
  */
 export function modelInput(featureNames, racecardNames, racecardValues, live) {
