@@ -31,6 +31,13 @@ function HitRaceCard({
   // 予想確率は「その艇がその決まり手で1着になる確率」なので、決まり手も添える。無いと艇の1着確率に
   // 読めた（同じ艇の別の決まり手の確率は含まない。PR #1197 ファン評価2周目）
   const technique = TECHNIQUE_NAMES[hitRace.matchedPattern?.technique] ?? null;
+  // 的中の判定は1着の艇だけで、決まり手は見ない。予想した決まり手が実際と違うときは、
+  // 実際の決まり手を添える（BOA-724。「予想: 逃げ」だけだと、逃げが当たったように読めた）
+  const actualTechnique = hitRace.result?.winningTechnique ?? null;
+  const actualDiffers =
+    technique != null &&
+    actualTechnique != null &&
+    technique !== actualTechnique;
 
   return (
     <div
@@ -81,6 +88,11 @@ function HitRaceCard({
                 PR #1197 ファン評価3周目） */}
             予想: {technique ? `${technique} ` : ""}
             {(probability * 100).toFixed(0)}%
+            {actualDiffers && (
+              <span className="turn-hit-actual">
+                （実際: {actualTechnique}）
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -97,6 +109,7 @@ function HitRaceCard({
             winnerBoat: hitRace.winnerBoat,
             winnerEntryCourse,
             technique,
+            actualTechnique,
             probability,
           })}
           hashtags={["ボートレース", "展開予測", "龍神レーダー"]}

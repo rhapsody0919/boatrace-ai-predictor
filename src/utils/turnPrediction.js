@@ -33,3 +33,35 @@ export function pickHitPattern(patterns, winner, winningTechnique) {
   );
   return exact ?? sameBoat[0] ?? null;
 }
+
+/**
+ * 的中したレースが「予想どおりの展開」だったか（BOA-724）。
+ *
+ * 的中の判定は1着の艇だけを見る（判定と公開している的中率は変えない）。そのため、決まり手が
+ * 外れていても、前付けで艇番と違うコースから勝っても「的中」になる。そうしたレースで
+ * 「予想通りの展開でした」と言うと事実と違う（例: 「1号艇が2コースから1着（AIの予想: 逃げ）」）。
+ * 決まり手が予想と同じで、かつ進入コースが艇番と違わないときだけ true にする。
+ * 実際の決まり手が分からないときも、予想どおりとは言えないので false
+ *
+ * @param {object} p
+ * @param {string|null|undefined} p.predictedTechnique 当たった候補の決まり手（日本語）
+ * @param {string|null|undefined} p.actualTechnique 実際の決まり手（日本語）
+ * @param {number|null|undefined} p.winnerBoat 1着の艇番
+ * @param {number|null|undefined} p.winnerEntryCourse 1着の艇の進入コース（不明なら null）
+ * @returns {boolean}
+ */
+export function isAsPredicted({
+  predictedTechnique,
+  actualTechnique,
+  winnerBoat,
+  winnerEntryCourse,
+}) {
+  if (winnerEntryCourse != null && winnerEntryCourse !== winnerBoat) {
+    return false;
+  }
+  return (
+    predictedTechnique != null &&
+    actualTechnique != null &&
+    predictedTechnique === actualTechnique
+  );
+}

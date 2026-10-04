@@ -92,17 +92,19 @@ function TurnPatternList({ patterns, result = null }) {
             >
               {pattern.winnerCourse}
             </span>
+            {/* 「的中」は艇の印。判定は1着の艇だけで決まり手は見ないため、決まり手と%の後ろに
+                付けると「その決まり手が当たった」と読めた（BOA-724） */}
+            {isMatch && (
+              <span className="turn-pattern-hit-tag">
+                {t("turnPatternList.hitTag")}
+              </span>
+            )}
             <span className="turn-pattern-technique">
               {translateTechnique(pattern.technique)}
             </span>
             <span className="turn-pattern-prob">
               {Math.round(pattern.probability * 100)}%
             </span>
-            {isMatch && (
-              <span className="turn-pattern-hit-tag">
-                {t("turnPatternList.hitTag")}
-              </span>
-            )}
             {isRefunded && (
               <span className="turn-pattern-void-tag">
                 {t("turnPatternList.refundedTag")}

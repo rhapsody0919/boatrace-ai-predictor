@@ -3,6 +3,7 @@
  */
 
 import { MODEL_NAMES } from "../constants";
+import { isAsPredicted } from "./turnPrediction";
 
 /** panel.sharePrediction の文面の数（v1〜vN） */
 const SHARE_PREDICTION_VARIANTS = 5;
@@ -293,8 +294,10 @@ export const generatePredictionShareText = (race, model = "standard", t) => {
  * unifiedモデルは複勝予想・展開予測の2種類のみのため、レース単位の的中は
  * 展開予測的中（予想パターンの艇が実際に1着）のみを扱う。展開予測は「その艇がその決まり手で
  * 1着になる確率」なので、「1マークで先頭」とは書かない（BOA-710）
- * @param {Object} race - { venue, raceNo, date, winnerBoat, winnerEntryCourse, technique, probability }
- *   technique は日本語の決まり手名。予想確率はその決まり手で1着になる確率なので、あれば添える
+ * @param {Object} race - { venue, raceNo, date, winnerBoat, winnerEntryCourse, technique, actualTechnique, probability }
+ *   technique は日本語の決まり手名。予想確率はその決まり手で1着になる確率なので、あれば添える。
+ *   actualTechnique は実際の決まり手（日本語）。予想と違えば「実際: ◯◯」を添え、
+ *   「予想通りの展開でした」は出さない（BOA-724。的中の判定は1着の艇だけ）
  */
 export const generateTurnHitShareText = (race) => {
   const venue = race.venue || "不明";
@@ -308,10 +311,24 @@ export const generateTurnHitShareText = (race) => {
       : "";
   // 決まり手は AI の予想として書く。実際の決まり手と違うことがあり、「2コース（まくり）が1着」と
   // 書くと結果を言い切ってしまう（的中の判定は1着の艇だけ。PR #1197 ファン評価3周目）
+  const actualNote =
+    race.technique &&
+    race.actualTechnique &&
+    race.technique !== race.actualTechnique
+      ? `、実際: ${race.actualTechnique}`
+      : "";
   const predictionStr =
     race.probability != null
-      ? `（AIの予想: ${race.technique ? `${race.technique} ` : ""}${(race.probability * 100).toFixed(0)}%）`
+      ? `（AIの予想: ${race.technique ? `${race.technique} ` : ""}${(race.probability * 100).toFixed(0)}%${actualNote}）`
       : "";
+  const asPredictedLine = isAsPredicted({
+    predictedTechnique: race.technique,
+    actualTechnique: race.actualTechnique,
+    winnerBoat,
+    winnerEntryCourse: race.winnerEntryCourse,
+  })
+    ? "\n予想通りの展開でした ✅"
+    : "";
 
   let dateStr = "";
   if (race.date) {
@@ -322,11 +339,11 @@ export const generateTurnHitShareText = (race) => {
   }
 
   const messages = [
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nAIの分析力に驚いてます！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n無料でこの精度はすごい！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nデータ分析の力を実感！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n今日もAI予想が当たった！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n的中率の高さに満足してます！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}${asPredictedLine}\n\n龍神レーダーで展開予測的中🎉\nAIの分析力に驚いてます！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}${asPredictedLine}\n\n龍神レーダーで展開予測的中🎉\n無料でこの精度はすごい！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}${asPredictedLine}\n\n龍神レーダーで展開予測的中🎉\nデータ分析の力を実感！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}${asPredictedLine}\n\n龍神レーダーで展開予測的中🎉\n今日もAI予想が当たった！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}${asPredictedLine}\n\n龍神レーダーで展開予測的中🎉\n的中率の高さに満足してます！`,
   ];
 
   return messages[Math.floor(Math.random() * messages.length)];

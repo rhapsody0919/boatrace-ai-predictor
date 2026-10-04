@@ -1733,6 +1733,44 @@ function suiteTurnPrediction(m, check) {
     m.pickHitPattern(patterns, 5, "まくり"),
     null,
   );
+  // isAsPredicted: 「予想通りの展開でした」を言ってよいか（BOA-724）
+  const as = (
+    predictedTechnique,
+    actualTechnique,
+    winnerBoat,
+    winnerEntryCourse,
+  ) =>
+    m.isAsPredicted({
+      predictedTechnique,
+      actualTechnique,
+      winnerBoat,
+      winnerEntryCourse,
+    });
+  check(
+    "isAsPredicted: 決まり手が同じで枠なりなら true",
+    as("逃げ", "逃げ", 1, 1),
+    true,
+  );
+  check(
+    "isAsPredicted: 進入コースが分からなくても決まり手が同じなら true",
+    as("差し", "差し", 2, null),
+    true,
+  );
+  check(
+    "isAsPredicted: 決まり手が違えば false",
+    as("差し", "まくり", 2, 2),
+    false,
+  );
+  check(
+    "isAsPredicted: 艇番と違うコースから勝てば false（1号艇が2コースから）",
+    as("逃げ", "逃げ", 1, 2),
+    false,
+  );
+  check(
+    "isAsPredicted: 実際の決まり手が分からなければ false",
+    as("逃げ", null, 1, 1),
+    false,
+  );
 }
 
 // --- volatilityDisplayValue: イン崩れ指数の表示の数値がラベルの境目をまたがない（PR #1186 ファン評価）
