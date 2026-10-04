@@ -271,6 +271,8 @@ check(
     left.length === 0 &&
       json("src/locales/ja/common.json").volatility.levelHigh ===
         "イン崩れ注意（高）",
+  );
+}
 
 // 2026-10-03 ユーザー判断（BOA-711 U2）: 準優の目安の線・目安に届く得点率は青。金は最良だけ
 {
