@@ -35,6 +35,15 @@
   font-size: var(--font-size-sm);
 }
 
+/* PC・タブレット横では表を読みやすい幅で止める。箱の幅いっぱいに広げると、余りが選手名の
+   列に入り、1440px で表が 1174px、選手名と得点率・節内順位・前検の間が約800px 離れた
+   （BOA-755）。すぐ下の得点率早見（BOA-736）と同じ 769px〜・640px にそろえる */
+@media (min-width: 769px) {
+  .rmt-compare {
+    max-width: 640px;
+  }
+}
+
 .rmt-compare th,
 .rmt-compare td {
   padding: var(--spacing-1) 0;
