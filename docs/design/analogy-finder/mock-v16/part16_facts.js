@@ -134,6 +134,7 @@ function renderFacts() {
     return [Math.abs(d) >= 0.05 ? "差が大きい" : "差は小さい", "", d];
   };
   const rows = mats
+    .filter(([k]) => !(k === "series_score" && st.fscope === "natA1Y"))
     .map(([k, l, hi, lo]) => {
       const all = [1, 2, 3, 4, 5, 6].map((r) => rate(A, k, r));
       const p = all.map((x) => (x && x[1] ? x[0] / x[1] : null));
@@ -180,7 +181,7 @@ function renderFacts() {
     let bLine = "";
     if (exB) {
       const pb = [1, 6].map((rk) => rate(Bb, r.k, rk));
-      bLine = `<p class="sub">${Bb}号艇なら: 一番${r.hi}とき ${pc(pb[0][0] / pb[0][1], 0)} ／ 一番${r.lo}とき ${pc(pb[1][0] / pb[1][1], 0)}（全体では ${pc(usual(Bb)[0] / usual(Bb)[1], 0)}）</p>${line(Bb, r, `今日の${Bb}号艇`)}`;
+      bLine = `<p class="sub">${Bb}号艇なら: 一番${r.hi}とき ${(pb[0] && pb[0][1] ? pc(pb[0][0] / pb[0][1], 0) : "—")} ／ 一番${r.lo}とき ${(pb[1] && pb[1][1] ? pc(pb[1][0] / pb[1][1], 0) : "—")}（全体では ${pc(usual(Bb)[0] / usual(Bb)[1], 0)}）</p>${line(Bb, r, `今日の${Bb}号艇`)}`;
     }
     return `<div class="eff ${cls}"><div class="eh"><b>${r.l}</b><small class="md">${MDESC[r.k]}</small><span class="gap">${lab}${!cls && d < 0 ? `（一番${r.lo}ときのほうが高い）` : ""}</span></div>
       <div class="pair"><div><span>6艇で一番${r.hi}とき</span><b>${r.p[0] == null ? "—" : pc(r.p[0], 0)}</b><small>${b[0].toLocaleString()}/${b[1].toLocaleString()}</small></div><div><span>6艇で一番${r.lo}とき</span><b>${r.p[5] == null ? "—" : pc(r.p[5], 0)}</b><small>${w[0].toLocaleString()}/${w[1].toLocaleString()}</small></div></div>
@@ -189,9 +190,9 @@ function renderFacts() {
   const allClass = new Set([1, 2, 3, 4, 5, 6].map((b) => RF.ex[b].class)).size === 1;
   $("factsOut").innerHTML = `<div class="big1"><span>${sname}の全体で、${A}号艇が${RT[st.rank]}に入った割合</span><b>${pc(uP, 1)}</b><small>${U[0].toLocaleString()}/${U[1].toLocaleString()}レース（${T1.period[0]}〜${T1.period[1]}）</small></div>
   <p class="sub">${FSCOPE_DESC[st.fscope]}で、${A}号艇のその材料が6艇の中で一番良かったときと一番悪かったときに、${RT[st.rank]}に入った割合を比べた。差がはっきりしているものから、差の大きい順に並べている（差が近い材料どうしは、入れ替わってもおかしくない）。「差が大きい」は5ポイント以上の差、「差ははっきりしない」は件数が少ないなどで95%の幅が重なるもの（差の数字が大きくても、件数が少ないとこうなる）。材料どうしは重なっていて（全国勝率と直近の1着率は、どちらも選手の格を見ている）、どれが効いたのかは分けられない。棒の点線は、全体での割合（上の大きい数字）</p>
-  <div class="effs">${rows.filter((r) => r.k !== "boat_2").map(card).join("")}${rows.filter((r) => r.k === "boat_2").map((r) => `<details class="more boatfold"><summary>ボート2連率（着順との関係が小さい材料）</summary><p class="sub">全国・6艇とも A1 のレースでは、ボート2連率が6艇で一番高いとき・低いときの差は0〜3ポイントで、モーター2連率（5〜8ポイント）より着順との関係が小さかった。気にしすぎなくてよい材料として残している</p>${card(r)}</details>`).join("")}</div>
+  <div class="effs">${rows.filter((r) => r.k !== "boat_2").map(card).join("")}${rows.filter((r) => r.k === "boat_2").map((r) => `<details class="more boatfold"><summary>ボート2連率（着順との関係が小さい材料）</summary><p class="sub">全国・6艇とも A1 のレースで、2着以内・3着以内に入る割合を見ると、ボート2連率が6艇で一番高いとき・低いときの差は0〜3ポイントで、モーター2連率（4〜8ポイント）より着順との関係が小さかった（1着で見るとモーターも差が小さい艇番がある）。気にしすぎなくてよい材料として残している</p>${card(r)}</details>`).join("")}</div>
   ${allClass ? `<p class="foot">級別: 今日は6艇とも ${ex.class} なので差がつかない</p>` : ""}
-  <p class="foot">数えた割合で、原因とは限らない。「差ははっきりしない」は、一番良いときと一番悪いときの95%の幅が重なるもの。「差が大きい」は5ポイント以上。同じ値の艇は、一番良い・一番悪いの両方に含めている。${st.stage === "pre" ? "展示タイムは展示の後に出る。" : "2025-11 以前の展示タイムは結果ファイルから取っていて、取り方が違う。"}</p>`;
+  <p class="foot">${st.fscope === "natA1Y" ? "優勝戦の範囲では、今節の平均着順点を出していない（優勝戦の枠は準優までの成績で決まるので、点の順位がほぼ枠と同じになり、比べる意味が無い）。この範囲の件数（566）は、展開シナリオ（556、返還艇のレースを除く）と違う。" : ""}今節の平均着順点は、節の序盤（1〜2走）の値も含めて数えている（1レース分の着順で決まるので同じ値が多く、差が小さめに出る）。数えた割合で、原因とは限らない。「差ははっきりしない」は、一番良いときと一番悪いときの95%の幅が重なるもの。「差が大きい」は5ポイント以上。同じ値の艇は、一番良い・一番悪いの両方に含めている。${st.stage === "pre" ? "展示タイムは展示の後に出る。" : "2025-11 以前の展示タイムは結果ファイルから取っていて、取り方が違う。"}</p>`;
 
   const c = D.cond;
   if (st.stage === "post" && c) {

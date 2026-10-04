@@ -185,5 +185,10 @@ R('を、今日のレースと比べて近い順に並べた（k近傍）。', '
 R('<li>同じ節を除くと、保存している800件から除くので、800件より少なくなる（本番では除いた後に800件をそろえる）</li>', '')
 R('.ci .cv{font-family:"JetBrains Mono",monospace;font-size:11.5px;word-break:break-all}', '.ci .cv{font-family:"JetBrains Mono",monospace;font-size:11.5px;word-break:normal;overflow-wrap:anywhere}')
 R('<span class="cv">${(k==="grade"?(GN[x.t[k]]||x.t[k]):fmtT(k,x.t[k]))??"—"}<small>今日 ${fmtT(k,K.today[k])??"—"}</small>', '<span class="cv">${String((k==="grade"?(GN[x.t[k]]||x.t[k]):fmtT(k,x.t[k]))??"—").replace(/\\//g,"/\\u200b")}<small>今日 ${String(fmtT(k,K.today[k])??"—").replace(/\\//g,"/\\u200b")}</small>')
+# 統計の検証 第9回
+R('(N<100?`<div class="warn">${N}件だと割合はぶれやすい（ひげが長い）。棒をタップすると ${all8.n}件での割合も出る</div>`:"")', '(N<100?`<div class="warn">${N}件だと割合はぶれやすい（ひげが長い）。${all8.n!==N?`棒をタップすると ${all8.n}件での割合も出る`:"条件がそろった過去レースの全件を出している"}</div>`:"")')
+R("const c=D.scn.scopes.allA1Y.cells.all.forms.any,bf={};for(let b=1;b<=6;b++){const w=c.first_boat[b-1],s=c.second_boat[b-1],th=c.third_boat[b-1];bf[b]={win:w,top2:w+s,top3:w+s+th};}return {n:c.n,boat_finish:bf,technique:c.technique,name:`全国・6艇ともA1の優勝戦（${c.n.toLocaleString()}件。類似レースは条件がそろった全件なので、ひとつ広い範囲と比べる）`};",
+  "if(D.knn5layer)return {...D.knn5layer,name:`グレードを問わない優勝戦（勝率の3条件はそろえる）${D.knn5layer.n}件。類似レース${K.nb.length}件はこの中に入る、ひとつ広い範囲`};const c=D.scn.scopes.allA1Y.cells.all.forms.any,bf={};for(let b=1;b<=6;b++){const w=c.first_boat[b-1],s=c.second_boat[b-1],th=c.third_boat[b-1];bf[b]={win:w,top2:w+s,top3:w+s+th};}return {n:c.n,boat_finish:bf,technique:c.technique,name:`全国・6艇ともA1の優勝戦（${c.n.toLocaleString()}件。類似レースとは条件が違う）`};")
+R('に絞り、`+"', 'に絞り、${K.pool&&K.pool.layer_cond&&/グレード/.test(K.pool.layer_cond)?"（名前の違う決勝＝王座決定戦・賞金女王決定戦・決勝戦などは、まだ含めていない）":""}`+"')
 io.open('template16.html', 'w', encoding='utf-8').write(t)
 print('ok')

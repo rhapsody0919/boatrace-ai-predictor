@@ -370,7 +370,7 @@ const isBad=f=>!/^[1-6]$/.test(String(f));
 function renderSim(){
   const nb=curNb(),N=nb.length,P=K.pool.n;
   $("nLbl").textContent=N;
-  $("simSub").textContent=(st.stage==="post"?"展示後: 展示タイム・天候・風・波も近さに入れている。":"展示前: 出走表の情報だけで近さを測っている。")+((st.swKnn==="mix"||st.stage==="post")&&D.knn3?`${K.pool&&K.pool.layer_cond?K.pool.layer_cond:(K.pool&&K.pool.layer_n?"ラウンド（優勝戦）・":"")+"勝率差の帯・1号艇の級別・勝率トップの艇"}が今日と同じ過去レース${K.pool&&K.pool.layer_n?`（${K.pool.layer_n}件）`:""}に絞り、`+"その中を、出走表の数字が今日の若松12Rに近い順に並べた（会場が同じものを近く数える）":"出走表の数字が今日の若松12Rに近い過去レースを、似ている順に並べた。同じ会場のレースを優先して探している（会場が違うと遠く数える）");
+  $("simSub").textContent=(st.stage==="post"?"展示後: 展示タイム・天候・風・波も近さに入れている。":"展示前: 出走表の情報だけで近さを測っている。")+((st.swKnn==="mix"||st.stage==="post")&&D.knn3?`${K.pool&&K.pool.layer_cond?K.pool.layer_cond:(K.pool&&K.pool.layer_n?"ラウンド（優勝戦）・":"")+"勝率差の帯・1号艇の級別・勝率トップの艇"}が今日と同じ過去レース${K.pool&&K.pool.layer_n?`（${K.pool.layer_n}件）`:""}に絞り、${K.pool&&K.pool.layer_cond&&/グレード/.test(K.pool.layer_cond)?"（名前の違う決勝＝王座決定戦・賞金女王決定戦・決勝戦などは、まだ含めていない）":""}`+"その中を、出走表の数字が今日の若松12Rに近い順に並べた（会場が同じものを近く数える）":"出走表の数字が今日の若松12Rに近い過去レースを、似ている順に並べた。同じ会場のレースを優先して探している（会場が違うと遠く数える）");
   const far=nb[N-1],fc=far?Object.entries(far.m).filter(([k,m])=>m!=null&&ITEM[k]?.inDist&&!DUP[k]).map(([,m])=>m):[];
   $("pctLbl").textContent=far?`${N}件目（いちばん遠い）でも、近さの計算に使う${fc.length}項目のうち ${fc.filter(m=>m===2).length}項目が同じ・${fc.filter(m=>m===1).length}項目が近い`:"";
   $("ssLbl").textContent=st.noSS?`除いている（${K.nb.slice(0,NSd[st.ni]+40).filter(n=>n.ss).length?"":""}今日と同じ節の前日までのレース）`:`含めている（この中に ${nb.filter(n=>n.ss).length}件）`;
@@ -391,7 +391,7 @@ function renderSim(){
   renderCmp(nb);renderRes(nb);
 }
 // 比べる相手: 層の全件を並べている（層＝類似レース全体）ときは、層と同じになるので、全国・6艇ともA1の優勝戦を置く
-function cmpLayer(){if(st.swKnn!=="mix")return null;const P=K.pool||{};if(P.layer_n&&P.layer_n===K.nb.length&&D.scn&&D.scn.scopes.allA1Y){const c=D.scn.scopes.allA1Y.cells.all.forms.any,bf={};for(let b=1;b<=6;b++){const w=c.first_boat[b-1],s=c.second_boat[b-1],th=c.third_boat[b-1];bf[b]={win:w,top2:w+s,top3:w+s+th};}return {n:c.n,boat_finish:bf,technique:c.technique,name:`全国・6艇ともA1の優勝戦（${c.n.toLocaleString()}件。類似レースは条件がそろった全件なので、ひとつ広い範囲と比べる）`};}return D.knn3layer?{...D.knn3layer,name:`条件（${D.knn3layer.cond||"勝率差・1号艇の級別・勝率トップ"}）がそろった過去レース全体（${D.knn3layer.n.toLocaleString()}件）`}:null;}
+function cmpLayer(){if(st.swKnn!=="mix")return null;const P=K.pool||{};if(P.layer_n&&P.layer_n===K.nb.length&&D.scn&&D.scn.scopes.allA1Y){if(D.knn5layer)return {...D.knn5layer,name:`グレードを問わない優勝戦（勝率の3条件はそろえる）${D.knn5layer.n}件。類似レース${K.nb.length}件はこの中に入る、ひとつ広い範囲`};const c=D.scn.scopes.allA1Y.cells.all.forms.any,bf={};for(let b=1;b<=6;b++){const w=c.first_boat[b-1],s=c.second_boat[b-1],th=c.third_boat[b-1];bf[b]={win:w,top2:w+s,top3:w+s+th};}return {n:c.n,boat_finish:bf,technique:c.technique,name:`全国・6艇ともA1の優勝戦（${c.n.toLocaleString()}件。類似レースとは条件が違う）`};}return D.knn3layer?{...D.knn3layer,name:`条件（${D.knn3layer.cond||"勝率差・1号艇の級別・勝率トップ"}）がそろった過去レース全体（${D.knn3layer.n.toLocaleString()}件）`}:null;}
 function renderSonar(nb){
   const svg=$("sonar"),cx=220,cy=220,R=188,LM=K.nb.length<800?K.nb.length:800,lin=LM<100,rOf=rk=>lin?18+(R-24)*Math.max(1,rk)/LM:18+(R-24)*Math.log10(Math.max(1,rk))/Math.log10(800);
   const ang=b=>-90+(b-1)*60;let h="";
@@ -430,7 +430,7 @@ function renderRes(nb){
   $("hWin").textContent=t===1?"どの艇が勝った？":`どの艇が${RT[t]}に入った？`;
   const LY=cmpLayer();
   const W20=D.start["20|all|all"],wk={1:"win",2:"top2",3:"top3"}[t],C20=D.cube["20|all|all"],all8=agg(st.noSS?K.nb.filter(n=>!n.ss).slice(0,800):K.nb.slice(0,800));
-  $("barWin").innerHTML=[1,2,3,4,5,6].map(b=>wbar(`${bn(b)} ${b}号艇`,a.hit[t][b-1],N,LY?LY.boat_finish[b][wk]/LY.n:W20.boats[b][wk].p,st.boat===b,b,`${all8.n!==N?`・${all8.n}件では ${pc(all8.hit[t][b-1]/all8.n)}`:""}・全国 ${pc(NAT.n_hit[b][RK[t]]/NAT.n)}`)).join("")+(N<100?`<div class="warn">${N}件だと割合はぶれやすい（ひげが長い）。棒をタップすると ${all8.n}件での割合も出る</div>`:"");
+  $("barWin").innerHTML=[1,2,3,4,5,6].map(b=>wbar(`${bn(b)} ${b}号艇`,a.hit[t][b-1],N,LY?LY.boat_finish[b][wk]/LY.n:W20.boats[b][wk].p,st.boat===b,b,`${all8.n!==N?`・${all8.n}件では ${pc(all8.hit[t][b-1]/all8.n)}`:""}・全国 ${pc(NAT.n_hit[b][RK[t]]/NAT.n)}`)).join("")+(N<100?`<div class="warn">${N}件だと割合はぶれやすい（ひげが長い）。${all8.n!==N?`棒をタップすると ${all8.n}件での割合も出る`:"条件がそろった過去レースの全件を出している"}</div>`:"");
   wireTips($("barWin"),$("barTip"));
   $("barTech").innerHTML=TECH.map((k,i)=>wbar(k,a.tech[k]||0,N,LY?(LY.technique[k]||0)/LY.n:C20[9+i]/C20[0],false,null,`・全国 ${pc(NAT.technique[k]/NAT.n)}`)).join("");
   wireTips($("barTech"),$("barTip"));
@@ -804,6 +804,7 @@ function renderFacts() {
     return [Math.abs(d) >= 0.05 ? "差が大きい" : "差は小さい", "", d];
   };
   const rows = mats
+    .filter(([k]) => !(k === "series_score" && st.fscope === "natA1Y"))
     .map(([k, l, hi, lo]) => {
       const all = [1, 2, 3, 4, 5, 6].map((r) => rate(A, k, r));
       const p = all.map((x) => (x && x[1] ? x[0] / x[1] : null));
@@ -850,7 +851,7 @@ function renderFacts() {
     let bLine = "";
     if (exB) {
       const pb = [1, 6].map((rk) => rate(Bb, r.k, rk));
-      bLine = `<p class="sub">${Bb}号艇なら: 一番${r.hi}とき ${pc(pb[0][0] / pb[0][1], 0)} ／ 一番${r.lo}とき ${pc(pb[1][0] / pb[1][1], 0)}（全体では ${pc(usual(Bb)[0] / usual(Bb)[1], 0)}）</p>${line(Bb, r, `今日の${Bb}号艇`)}`;
+      bLine = `<p class="sub">${Bb}号艇なら: 一番${r.hi}とき ${(pb[0] && pb[0][1] ? pc(pb[0][0] / pb[0][1], 0) : "—")} ／ 一番${r.lo}とき ${(pb[1] && pb[1][1] ? pc(pb[1][0] / pb[1][1], 0) : "—")}（全体では ${pc(usual(Bb)[0] / usual(Bb)[1], 0)}）</p>${line(Bb, r, `今日の${Bb}号艇`)}`;
     }
     return `<div class="eff ${cls}"><div class="eh"><b>${r.l}</b><small class="md">${MDESC[r.k]}</small><span class="gap">${lab}${!cls && d < 0 ? `（一番${r.lo}ときのほうが高い）` : ""}</span></div>
       <div class="pair"><div><span>6艇で一番${r.hi}とき</span><b>${r.p[0] == null ? "—" : pc(r.p[0], 0)}</b><small>${b[0].toLocaleString()}/${b[1].toLocaleString()}</small></div><div><span>6艇で一番${r.lo}とき</span><b>${r.p[5] == null ? "—" : pc(r.p[5], 0)}</b><small>${w[0].toLocaleString()}/${w[1].toLocaleString()}</small></div></div>
@@ -859,9 +860,9 @@ function renderFacts() {
   const allClass = new Set([1, 2, 3, 4, 5, 6].map((b) => RF.ex[b].class)).size === 1;
   $("factsOut").innerHTML = `<div class="big1"><span>${sname}の全体で、${A}号艇が${RT[st.rank]}に入った割合</span><b>${pc(uP, 1)}</b><small>${U[0].toLocaleString()}/${U[1].toLocaleString()}レース（${T1.period[0]}〜${T1.period[1]}）</small></div>
   <p class="sub">${FSCOPE_DESC[st.fscope]}で、${A}号艇のその材料が6艇の中で一番良かったときと一番悪かったときに、${RT[st.rank]}に入った割合を比べた。差がはっきりしているものから、差の大きい順に並べている（差が近い材料どうしは、入れ替わってもおかしくない）。「差が大きい」は5ポイント以上の差、「差ははっきりしない」は件数が少ないなどで95%の幅が重なるもの（差の数字が大きくても、件数が少ないとこうなる）。材料どうしは重なっていて（全国勝率と直近の1着率は、どちらも選手の格を見ている）、どれが効いたのかは分けられない。棒の点線は、全体での割合（上の大きい数字）</p>
-  <div class="effs">${rows.filter((r) => r.k !== "boat_2").map(card).join("")}${rows.filter((r) => r.k === "boat_2").map((r) => `<details class="more boatfold"><summary>ボート2連率（着順との関係が小さい材料）</summary><p class="sub">全国・6艇とも A1 のレースでは、ボート2連率が6艇で一番高いとき・低いときの差は0〜3ポイントで、モーター2連率（5〜8ポイント）より着順との関係が小さかった。気にしすぎなくてよい材料として残している</p>${card(r)}</details>`).join("")}</div>
+  <div class="effs">${rows.filter((r) => r.k !== "boat_2").map(card).join("")}${rows.filter((r) => r.k === "boat_2").map((r) => `<details class="more boatfold"><summary>ボート2連率（着順との関係が小さい材料）</summary><p class="sub">全国・6艇とも A1 のレースで、2着以内・3着以内に入る割合を見ると、ボート2連率が6艇で一番高いとき・低いときの差は0〜3ポイントで、モーター2連率（4〜8ポイント）より着順との関係が小さかった（1着で見るとモーターも差が小さい艇番がある）。気にしすぎなくてよい材料として残している</p>${card(r)}</details>`).join("")}</div>
   ${allClass ? `<p class="foot">級別: 今日は6艇とも ${ex.class} なので差がつかない</p>` : ""}
-  <p class="foot">数えた割合で、原因とは限らない。「差ははっきりしない」は、一番良いときと一番悪いときの95%の幅が重なるもの。「差が大きい」は5ポイント以上。同じ値の艇は、一番良い・一番悪いの両方に含めている。${st.stage === "pre" ? "展示タイムは展示の後に出る。" : "2025-11 以前の展示タイムは結果ファイルから取っていて、取り方が違う。"}</p>`;
+  <p class="foot">${st.fscope === "natA1Y" ? "優勝戦の範囲では、今節の平均着順点を出していない（優勝戦の枠は準優までの成績で決まるので、点の順位がほぼ枠と同じになり、比べる意味が無い）。この範囲の件数（566）は、展開シナリオ（556、返還艇のレースを除く）と違う。" : ""}今節の平均着順点は、節の序盤（1〜2走）の値も含めて数えている（1レース分の着順で決まるので同じ値が多く、差が小さめに出る）。数えた割合で、原因とは限らない。「差ははっきりしない」は、一番良いときと一番悪いときの95%の幅が重なるもの。「差が大きい」は5ポイント以上。同じ値の艇は、一番良い・一番悪いの両方に含めている。${st.stage === "pre" ? "展示タイムは展示の後に出る。" : "2025-11 以前の展示タイムは結果ファイルから取っていて、取り方が違う。"}</p>`;
 
   const c = D.cond;
   if (st.stage === "post" && c) {
@@ -1134,7 +1135,7 @@ function renderScn() {
   <p class="foot">${post ? `今日の展示は、6艇とも枠なりだった。展示が枠なりだったレースの 93% は、本番も枠なりだった（全国、2026-04 以降の 2,023 レース）。` : "展示の後は、今日の展示の進入に当てはまる型に印が付く。"}割合は、${scopeName}の全レースの中での割合。スロー・ダッシュの別は記録が無いので分けていない</p>
   <h3><span class="stepn">2</span>スタートはどう並ぶ？（スリットの形）</h3>
   <div class="pats">${chips}</div><p class="foot">カド＝ダッシュ勢（助走を長くとる艇）の一番内。枠なりなら4コースで、7形の判定は4コースで見ている。カド受け＝その1つ内（枠なりなら3コース）。絵は横から見た並びの例（数字はコース、右の線がスリット。縮尺は1艇身≒0.13秒）</p>
-  <p class="foot">${def ? `${SLITN[S.slit]}: ${def}。` : ""}1つのレースが2つ以上の形に当てはまることがある（足すと100%を超える）。形の決め方は、過去に発生した割合を見る機能と同じ。割合は、選んだ進入の中での割合。スリットの形は、今日の展示からは選べない。展示の形は本番の形の手がかりにならなかった（展示で2コース凹みだったレースのうち、本番も2コース凹みは38%。全体の32%とほとんど変わらない。2026-04 以降の 2,280 レース）</p>
+  <p class="foot">${def ? `${SLITN[S.slit]}: ${def}。` : ""}1つのレースが2つ以上の形に当てはまることがある（足すと100%を超える）。形の決め方は、過去に発生した割合を見る機能と同じ。割合は、選んだ進入の中での割合。スリットの形は、今日の展示からは選べない。展示の形は本番の形を少しだけ当てるが、決め手にはならない（展示で2コース凹み → 本番も2コース凹み 38%、展示が別の形 → 27%。2026-04 以降の 2,280 レース）。参考: 今日の展示の形は2コース凹み・イン凹み（3号艇は展示でフライング）</p>
   <h3><span class="stepn">3</span>そのとき、どう決まった？</h3>
   ${res}
   <p class="foot">数えた割合で、原因とは限らない。スリットの形はレースの後に分かるもので、レース前に分かるわけではない（「もしこうなったら」の参考）。${P.period[0]}〜${P.period[1]}、返還艇がいたレース（${scopeName}で ${EXCL[S.scope].toLocaleString()} レース）は除いているので、1つ目のタブの件数とは合わない</p>`;

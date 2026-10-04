@@ -61,6 +61,8 @@ const layerOf = (k) => {
   k.neighbors.forEach((n) => { const o = n.rank123; if (!o || o.length < 3) return; o.forEach((b, i) => { if (i < 1) bf[b].win++; if (i < 2) bf[b].top2++; bf[b].top3++; }); const tq = n.result.technique; tech[tq] = (tech[tq] || 0) + 1; });
   return { n: k.neighbors.length, boat_finish: bf, technique: tech, cond: (k.pool && k.pool.layer_cond) || "ラウンド・勝率差の帯・1号艇の級別・勝率トップ" };
 };
+const k5 = fs.existsSync(SP + "knn/knn5.json") ? rd("knn/knn5.json") : null;
+const k5l = k5 && k5.pool && k5.pool.layer_n === k5.neighbors.length ? layerOf(k5) : null;
 const k3l = k3 && k3.pool && k3.pool.layer_n && k3.pool.layer_n === k3.neighbors.length ? layerOf(k3) : fs.existsSync(SP + "knn/knn3-layer.json") ? rd("knn/knn3-layer.json") : null;
 // 条件ごとのテーマ単位の割合。environment6 は 6テーマの「環境」。[割合, 全国との差, 差のSD]
 const shareOf = (c) => c ? {
@@ -156,6 +158,7 @@ const D = {
   knn3: knnOf(k3),
   share: shareOf(sc),
   knn3layer: k3l,
+  knn5layer: k5l,
   bp: bpOf(bpj),
   knn4: knnOf(k4),
   rf: rfOf(rfj),
