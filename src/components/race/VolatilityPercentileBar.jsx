@@ -15,16 +15,23 @@ import "./VolatilityPercentileBar.css";
  */
 function VolatilityPercentileBar({ percentile }) {
   const { t } = useTranslation();
-  // 数値はラベルの境目をまたがない値にする（同じ70で「標準」と「イン崩れ確率高」が出ないように）
+  // 数値はラベルの境目をまたがない値にする（同じ70で「標準」と「イン崩れ注意（高）」が出ないように）
   const pct = volatilityDisplayValue(percentile);
-  // 色の段階は、ラベル（本命有利・イン崩れ確率高）と同じ基準で決める
+  // 色の段階は、ラベル（本命有利・イン崩れ注意（高））と同じ基準で決める
   const tone = getVolatilityLevel(percentile) ?? "standard";
 
   return (
     <div className={`vpb vpb--${tone}`} data-testid="volatility-percentile-bar">
       <div className="vpb-head">
         <span className="vpb-label">{t("volatility.percentileBarLabel")}</span>
-        <span className="vpb-value">{pct}</span>
+        {/* 「100」だけだと「確率100%」と読まれた。0〜100 の物差しだと分かるよう「/ 100」を添える
+            （2026-10-03 ユーザー判断、BOA-711 U4） */}
+        <span className="vpb-value">
+          {pct}
+          <span className="vpb-value-max">
+            {t("volatility.percentileBarMax100")}
+          </span>
+        </span>
       </div>
       <div className="vpb-track">
         <div className="vpb-fill" style={{ width: `${pct}%` }} />

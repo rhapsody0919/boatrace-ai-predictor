@@ -129,7 +129,7 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
     await details.locator("summary").click({ timeout: 60000 });
     const headers = details.locator("thead th");
     await expect(headers.nth(1)).toHaveText(
-      "イン崩れ確率高ラベル時に1号艇が負けた割合",
+      "イン崩れ注意（高）ラベル時に1号艇が負けた割合",
     );
     await expect(headers.nth(2)).toHaveText(
       "会場全体で1号艇が負けた割合の平均",
