@@ -242,5 +242,7 @@
 - ブランチ: `lane/boa-271-v16-design`（fa61e6213 から）を `feature/boa-271-fr2-strat` に fast-forward で push（Draft PR #1134）
 - spec.md・screens.md・plan.md・tasks.md を Version 16 準拠に全面書き直し（旧版は `git show fa61e6213:…`）。ADR-0085 案（数えた値と類似レースは朝の Python バッチで今日の分だけ作り Storage に置く。ADR-0082 を置き換え）
 - ユーザー確認待ち（spec「未確定事項」Q1〜Q5）: Q1 級別がそろわないレースの数えるレースの既定、Q2 レースごとの寄与度（旧 FR-1b）をやめるか、Q3 AIの見立てを範囲に連動させるか、Q4 マイグレーション 120 を適用せず置き換えるか、Q5 モックに無い状態の文言
-- design-reviewer・acceptance-test-writer の結果と対応は下に追記する
+- design-reviewer: 条件付きで可。P1×7・P2×7・P3 をすべて採用して反映（記録は design-review-v16.md）。主な変更: 今節の平均着順点の as-of（Q6 を追加）、級別の交絡（Q1 に「構成＋選んだ艇の級別」）、BOA-635 用に層の全件を作る（Q4）、展示後の候補を min(層, 10,000)＋厳密さの判定、専用の workflow と Vercel Cron（日次の特徴量ジョブは一度も動いていない）、export_pool の列の追加、非公開の別バケット `analogy-v16`、実行ごとの版のパス、欠場（Q5）、優勝戦の日の今節の点（Q7 を追加）、118 に stage 列
+- 受け入れ E2E: `e2e/acceptance/analogy-finder.spec.js` 78件（`ANALOGY_RACE_ID` が要る。未確定に依存するテストは名前に「（Qn 未確定）」）。曖昧点の回答は screens「細部の約束」
+- 未確定は Q1〜Q7（spec）。回答が来たら spec・screens を直し、受け入れ E2E を acceptance-test-writer に追随させる
 - /step4 とマイグレーションの本番適用は、Q1〜Q5 の回答とユーザーの実装の承認の後
