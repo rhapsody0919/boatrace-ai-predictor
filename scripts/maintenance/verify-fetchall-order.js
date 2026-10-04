@@ -184,7 +184,13 @@ const files = execSync("git ls-files scripts api", { cwd: ROOT })
   .toString()
   .trim()
   .split("\n")
-  .filter((f) => /\.(m?js|jsx)$/.test(f) && !f.includes("__fixtures__"));
+  // この検査自身は、実行時の例外を確かめるために、わざと並び順の無い呼び出しを書いている（(b)）ので外す
+  .filter(
+    (f) =>
+      /\.(m?js|jsx)$/.test(f) &&
+      !f.includes("__fixtures__") &&
+      f !== "scripts/maintenance/verify-fetchall-order.js",
+  );
 const found = [];
 let calls = 0;
 for (const file of files) {
