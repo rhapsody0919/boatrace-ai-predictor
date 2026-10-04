@@ -156,6 +156,12 @@
   background: linear-gradient(135deg, #475569 0%, #334155 100%);
 }
 
+/* 全期間にも地の色を付ける。無いと白文字の見出し「過去14日間の的中レース」が白地に溶けた
+   （BOA-724 のファン評価） */
+.hit-races-section.all {
+  background: linear-gradient(135deg, var(--color-primary-700) 0%, #075985 100%);
+}
+
 .hit-races-section h2 {
   color: white !important;
   margin-bottom: 1rem;
@@ -245,6 +251,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+/* 「（本命）」「（2コース進入）」を語の途中で折り返さない（BOA-724） */
+.turn-hit-nowrap {
+  white-space: nowrap;
 }
 
 .turn-hit-course-label {

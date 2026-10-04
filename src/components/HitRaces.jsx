@@ -30,12 +30,8 @@ function extractHitRaces(predictions) {
     .filter(({ judgement }) => judgement?.status === TURN_JUDGEMENT.HIT)
     .map(({ race, patterns, judgement }) => {
       const { winner } = judgement;
-      // 同じ艇の候補が複数あるときは、実際の決まり手と同じ候補を選ぶ（PR #1197 ファン評価3周目）
-      const matchedPattern = pickHitPattern(
-        patterns,
-        winner,
-        race.result?.winningTechnique,
-      );
+      // 1着の艇の、確率が一番高い候補（AI予想タブのその艇の行と同じ。BOA-724）
+      const matchedPattern = pickHitPattern(patterns, winner);
 
       const parts = race.raceId.split("-");
       const date = `${parts[0]}-${parts[1]}-${parts[2]}`;
@@ -51,6 +47,12 @@ function extractHitRaces(predictions) {
         // 1着の艇番。実際に入ったコースは表示中のカードだけ別に引く（winnerCourses）
         winnerBoat: winner,
         matchedPattern,
+        // 当たった候補が1番手（本命）か。2番手以下なら共有文で「予想通り」と言わない（BOA-724）
+        isTopPick: matchedPattern != null && matchedPattern === patterns[0],
+        // 当たった艇が上位候補の何番手か（艇単位。AI予想タブの🥇🥈🥉と同じ数え方）。
+        // 本命の63%も3番手の5%も同じ「展開予測的中」に見えた（BOA-724 ファン評価2周目）
+        pickRank:
+          [...new Set(patterns.map((p) => p.winnerCourse))].indexOf(winner) + 1,
         result: race.result,
       };
     })
