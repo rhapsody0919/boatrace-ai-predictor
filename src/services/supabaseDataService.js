@@ -2593,6 +2593,11 @@ export const supabaseDataService = {
    *   その時点のスナップショット）。無ければ null
    * とし、rate_source: "official" を付ける（当日以降は "recalc"）。
    * 当日のレースの再計算は、期間を現行モーターの世代で切り詰める（getMotorPowerIndex）
+   *
+   * 戻り値は `{ rows, fetchFailed? }`。会場公式サイトのモーター成績（優出・優勝・1着率・出走数）の取得に
+   * 失敗した行は `venue_stats_failed: true` を付け、そのときは fetchFailed を付けて withCache に保存させない
+   * （BOA-740。他の列は出し、その列だけ「取得失敗」と表示する）
+   * @returns {Promise<{rows: Array<Object>, fetchFailed?: boolean}>}
    */
   getRaceMotorBreakdown(raceId, venueCode = null, days = 90) {
     const past = isPastRace(raceId);
@@ -2615,11 +2620,13 @@ export const supabaseDataService = {
       //     「このレースの直前まで」にした（BOA-557）
       // v9: 前検の取得失敗を空の前検として保存しないようにした（BOA-686）。v8 には、失敗が
       //     「前検なし」として最長7日残っている可能性があるため読まない
-      `race-motor-breakdown-v9-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
+      // v10: 戻り値を { rows, fetchFailed? } にし、会場公式のモーター成績の取得失敗を行に印として残す
+      //     （BOA-740）。v9 は配列の形で、失敗も「成績なし」として最長7日残っている可能性があるため読まない
+      `race-motor-breakdown-v10-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
-          return [];
+          return { rows: [] };
         }
 
         const { data, error } = await supabase
@@ -2632,10 +2639,15 @@ export const supabaseDataService = {
 
         if (error) {
           console.error("race_entries取得エラー:", error.message);
-          return [];
+          return { rows: [] };
         }
         const rows = data ?? [];
-        if (venueCode === null) return rows;
+        if (venueCode === null) return { rows };
+        // 会場公式のモーター成績が1艇でも取れなかったら、結果を保存させない（BOA-740）
+        const settle = (out) =>
+          out.some((r) => r.venue_stats_failed)
+            ? { rows: out, fetchFailed: true }
+            : { rows: out };
 
         if (past) {
           const raceDate = raceId.slice(0, 10);
@@ -2647,7 +2659,7 @@ export const supabaseDataService = {
             ),
             fetchPretestByRacer(venueCode, raceDate),
           ]);
-          return rows.map((row, i) => {
+          const out = rows.map((row, i) => {
             const pretest = pretestAsOf.get(row.racer_id) ?? null;
             return {
               ...row,
@@ -2663,8 +2675,10 @@ export const supabaseDataService = {
               championship_count: statsAsOf[i]?.championshipCount ?? null,
               first_place_count: statsAsOf[i]?.firstPlaceCount ?? null,
               race_count: statsAsOf[i]?.raceCount ?? null,
+              venue_stats_failed: statsAsOf[i]?.fetchFailed === true,
             };
           });
+          return settle(out);
         }
 
         const [powerIndexes, venueMotorStatsList, pretestByRacer] =
@@ -2692,7 +2706,7 @@ export const supabaseDataService = {
         // race_entries.motor_2rate/3rateは公式サイトの「モーター抽選日からの通算」
         // 値でperiod非依存のため、そのまま使うと機力指数だけ期間が変わり
         // 2連率/3連率が変わらないという不整合が生じる（ユーザー指摘、2026-09-13）
-        return rows.map((row, i) => {
+        const out = rows.map((row, i) => {
           const pretest = pretestByRacer.get(row.racer_id) ?? null;
           return {
             ...row,
@@ -2716,8 +2730,10 @@ export const supabaseDataService = {
               venueMotorStatsList[i]?.championshipCount ?? null,
             first_place_count: venueMotorStatsList[i]?.firstPlaceCount ?? null,
             race_count: venueMotorStatsList[i]?.raceCount ?? null,
+            venue_stats_failed: venueMotorStatsList[i]?.fetchFailed === true,
           };
         });
+        return settle(out);
       },
     );
   },
@@ -3007,6 +3023,11 @@ export const supabaseDataService = {
    * 公開項目が異なるため、値が無い項目はnullのまま返す（戸田・平和島は
    * データ自体が無いため常にnull）。「機力指数+16.6だが抽選後8走しかしていない
    * ので信頼度低め」のように、他のモーター指標の信頼度を判断する材料として使う
+   *
+   * 取得に失敗したときは `{ fetchFailed: true }` を返す（BOA-740）。null（その会場・モーターの行が無い）と
+   * 区別し、withCache に保存させない（frontend-data-fetch.md §4）。以前は失敗も null にしていたため、
+   * 「会場公式の成績なし」として30分キャッシュに残り、画面も失敗を知らせなかった
+   * @returns {Promise<Object|null|{fetchFailed: true}>}
    */
   getVenueMotorStats(venueCode, motorNumber, asOfDate = null) {
     return withCache(
@@ -3022,10 +3043,10 @@ export const supabaseDataService = {
         }
 
         // このメソッドはRaceDetailの機力指数・モーター調子ドリルダウンの
-        // Promise.allに同居させて呼ぶ想定のため、ネットワークレベルの例外
-        // （supabase-jsが{data,error}を返さずreject自体する稀なケース）が
-        // Promise.all全体を巻き込んで他の取得済みデータまで消さないよう、
-        // 内部でtry/catchして安全側（null）にフォールバックする
+        // Promise.allに同居させて呼ぶ想定のため、例外（クライアントの .throwOnError()）が
+        // Promise.all全体を巻き込んで他の取得済みデータまで消さないよう、内部で捕まえる。
+        // ただし null（行なし）には倒さず、失敗と分かる値を返す（BOA-740）
+        const failed = { fetchFailed: true };
         try {
           const { data, error } = await supabase
             .from("venue_motor_stats")
@@ -3039,7 +3060,7 @@ export const supabaseDataService = {
 
           if (error) {
             console.error("venue_motor_stats取得エラー:", error.message);
-            return null;
+            return failed;
           }
           if (!data) return null;
 
@@ -3063,7 +3084,7 @@ export const supabaseDataService = {
           };
         } catch (err) {
           console.error("venue_motor_stats取得エラー(例外):", err.message);
-          return null;
+          return failed;
         }
       },
     );
