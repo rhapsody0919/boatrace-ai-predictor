@@ -35,6 +35,14 @@ export const dataService = {
   },
 
   /**
+   * 1着の艇と、その艇が実際に入ったコース（BOA-708）
+   * @param {string[]} raceIds
+   */
+  async getRaceWinnerCourses(raceIds) {
+    return supabaseDataService.getRaceWinnerCourses(raceIds);
+  },
+
+  /**
    * 精度統計データを取得
    */
   async getAccuracy() {

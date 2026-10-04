@@ -93,7 +93,9 @@ function collectFiles(dir, acc) {
       continue;
     }
     if (stat.isDirectory()) collectFiles(full, acc);
-    else if (/\.(js|jsx)$/.test(entry)) acc.push(full);
+    // 他の検証が変異検証のために一時的に書くファイル（*.__mutant*.js）は対象外（並行実行で、読む前に消えて ENOENT になる）
+    else if (/\.(js|jsx)$/.test(entry) && !entry.includes(".__mutant"))
+      acc.push(full);
   }
   return acc;
 }

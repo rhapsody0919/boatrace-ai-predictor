@@ -1,0 +1,59 @@
+/* 選手ページ「レース条件別の成績」（BOA-336） */
+.racer-cond-table td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 条件名（「波5cm以上」等）は折り返すと読みにくいので1行に保つ */
+.racer-cond-table td:first-child {
+  white-space: nowrap;
+}
+
+/* 375px で「51.4%↑+15.3」が3列並ぶと表が横にはみ出すので、狭い幅では差を値の下に送る */
+.racer-cond-diff {
+  display: inline-block;
+  margin-left: 0.25em;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.racer-cond-diff.is-better {
+  color: var(--color-success-text);
+}
+
+.racer-cond-diff.is-worse {
+  color: var(--color-error-text);
+}
+
+.racer-cond-overall td {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.racer-cond-table .racer-cond-group td {
+  padding-top: var(--spacing-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-align: left;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+  .racer-cond-diff {
+    display: block;
+    margin-left: 0;
+  }
+
+  .racer-cond-stats .racer-cond-table {
+    font-size: var(--font-size-xs);
+  }
+
+  .racer-cond-stats .racer-cond-table th,
+  .racer-cond-stats .racer-cond-table td {
+    padding-left: var(--spacing-1);
+    padding-right: var(--spacing-1);
+  }
+
+  .racer-cond-stats .racer-cond-table th {
+    white-space: nowrap;
+  }
+}

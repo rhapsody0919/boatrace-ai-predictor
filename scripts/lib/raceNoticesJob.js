@@ -34,7 +34,8 @@ export async function runRaceNoticesJob(
     concurrency = RACE_NOTICES_CONCURRENCY,
   } = {},
 ) {
-  const date = toJstDateString(ctx.now());
+  // 日次ジョブ（22:30指定）。対象日は共通ラッパが指定時刻から解決する（23:00・23:30 の補足の起動も同じ日）
+  const date = ctx.targetDate ?? toJstDateString(ctx.now());
   // DB障害を「開催会場なし」にしない（getRaceSchedule の既定も例外。BOA-391。意図を明示するため指定を残す）
   const schedule = await getSchedule(date, {
     throwOnError: true,
@@ -107,5 +108,10 @@ export async function runRaceNoticesJob(
     rowsWritten: result.notesInserted + result.healthWritten,
     report: alerts.length > 0 ? { ...summary, alerts } : summary,
     body: summary,
+    // 取得に失敗した会場・時間切れで着手しなかった会場があれば、対象日を処理済みにしない。夜1回の取得なので、
+    // 一時的な失敗で、その会場の1日分（race_notices_health の had_success）が欠けないよう、補足の起動
+    // （23:00・23:30）が取り直す。had_success は前の起動の成功を引き継ぐ（scrape-race-information.js）
+    incomplete:
+      result.venuesFailed.length > 0 || result.venuesNotAttempted.length > 0,
   };
 }

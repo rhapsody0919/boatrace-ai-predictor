@@ -32,9 +32,9 @@ const TARGETS = [
     brand: "용신 레이더",
   },
   {
-    label: "src/data/blogPosts.js (ja)",
-    dir: "src/data",
-    match: (f) => f === "blogPosts.js",
+    label: "src/data/blog-posts/*.json (ja)",
+    dir: "src/data/blog-posts",
+    match: (f) => f.endsWith(".json"),
     brand: "龍神レーダー",
   },
   {

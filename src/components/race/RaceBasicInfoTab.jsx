@@ -46,6 +46,7 @@ import {
 } from "./basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
 import FlyingBadge from "./FlyingBadge";
+import { bestOf } from "../../utils/bestOf";
 import "./RaceBasicInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
@@ -356,6 +357,24 @@ function RaceBasicInfoTab({
     return Math.max(0, Math.min(100, value));
   };
 
+  // 6艇の中で最良の値（同値は全部）に金枠を付ける（race-detail-ui-unify R1）。
+  // 棒は艇色のまま、値のラベルで示す（R4）。表示と同じ桁で比べる
+  const valueDigits =
+    metric === "avgSt"
+      ? 3
+      : metric === "winRate" && !needsOwnAggregation
+        ? 2
+        : 1;
+  // 走数が少ない値（棒を薄く出しているもの）は比べない。条件で絞ると「2走で2連対率100%」の
+  // ような値が最良になり、金枠が最も当てにならない値に付く
+  const bestBoats = bestOf(
+    values
+      .filter((v) => !v.loading && !v.isSmallSample)
+      .map(({ boat, value }) => ({ boat, value })),
+    metric === "avgSt" ? "min" : "max",
+    { digits: valueDigits },
+  );
+
   const isPresetActive = (preset) =>
     preset.scope === scope && preset.grade === grade;
 
@@ -534,16 +553,18 @@ function RaceBasicInfoTab({
                 <span className="rbit-value">
                   {loading ? (
                     <span className="rbit-skeleton" aria-hidden="true" />
-                  ) : metric === "avgSt" ? (
-                    value !== null ? (
-                      value.toFixed(2)
-                    ) : (
-                      "—"
-                    )
-                  ) : metric === "winRate" ? (
-                    formatWinRate(value, needsOwnAggregation)
                   ) : (
-                    formatRate(value)
+                    <span
+                      className={`rbit-value-num${bestBoats.has(boat) ? " ind-best" : ""}`}
+                    >
+                      {metric === "avgSt"
+                        ? value !== null && value !== undefined
+                          ? value.toFixed(valueDigits)
+                          : "—"
+                        : metric === "winRate"
+                          ? formatWinRate(value, needsOwnAggregation)
+                          : formatRate(value)}
+                    </span>
                   )}
                   {n !== null && n !== undefined && (
                     <span
@@ -744,6 +765,7 @@ function RaceBasicInfoTab({
                       const period = pickPeriodStats(
                         periodStats,
                         player?.racerId,
+                        (raceId ?? "").slice(0, 10),
                       );
                       // 前期と出走表の値の差（BOA-439）。出走表の値は上のバーの
                       // 既定（全国・今期）と同じ公式値（race_entries、追加クエリ無し）。
@@ -764,19 +786,40 @@ function RaceBasicInfoTab({
                         period?.calcTo ?? null,
                       );
                       const raceDate = (raceId ?? "").slice(0, 10);
+                      // 前期を取り込む前に前々期を出しているとき（period.fallback）も差を出さない。
+                      // 出走表の勝率は前期の成績に近く、前々期との差を「前期から」と読ませると誤る
                       const diffWithheld = Boolean(
-                        diffShownFrom && raceDate && raceDate < diffShownFrom,
+                        period?.fallback ||
+                        (diffShownFrom && raceDate && raceDate < diffShownFrom),
                       );
+                      // 前々期を出しているときの、差を出さない理由。コードが知っている事実
+                      // （前期を取り込んでいない・差を出し始める日）だけを書く。「公式の公開待ち」
+                      // 「出走表は前期に近い」は日付によって外れる（期の初め3か月を過ぎれば公式は
+                      // 公開済みで、出走表も前期から離れる）。ファン評価1周目・2周目で同じ注記に
+                      // 指摘が続いたため、外の事実を言い切らない形にした
+                      const fallbackDiffNote = (p, date) => {
+                        const from = periodDiffShownFrom(p.pending.calcTo);
+                        return from && date && date < from
+                          ? t("basicInfo.periodDiffFallbackNoteDate", {
+                              date: from,
+                            })
+                          : t("basicInfo.periodDiffFallbackNote");
+                      };
                       // 2連対率の差は率の変化ではなくポイント差なので pt を付ける
                       const diffLabel = (d, unit = "", diffUnit = unit) =>
                         d && (
                           <span
+                            // 勝率・2連対率とも高いほど良い。上がった＝緑、下がった＝赤
+                            // （差の数字に＋−が付く。race-detail-ui-unify R2）。
+                            // 差を出さない期の初め（diffWithheld）は色を付けない
                             className={`rbit-period-diff${
-                              d.sign > 0
-                                ? " is-up"
-                                : d.sign < 0
-                                  ? " is-down"
-                                  : ""
+                              diffWithheld
+                                ? ""
+                                : d.sign > 0
+                                  ? " is-up ind-good"
+                                  : d.sign < 0
+                                    ? " is-down ind-bad"
+                                    : ""
                             }`}
                           >
                             {diffWithheld
@@ -986,13 +1029,32 @@ function RaceBasicInfoTab({
                           {/* 「前期」は公式の期別成績で、単位が点。自社集計の
                               1着率%と同じ列に混ぜられないため別枠にする */}
                           {period && (
-                            <div className="rbit-period">
+                            <div
+                              className={`rbit-period${period.fallback ? " is-fallback" : ""}`}
+                            >
                               <div className="rbit-period-heading">
-                                {t("basicInfo.periodTitle", {
-                                  from: period.calcFrom,
-                                  to: period.calcTo,
-                                })}
+                                {t(
+                                  period.fallback
+                                    ? "basicInfo.periodTitleFallback"
+                                    : "basicInfo.periodTitle",
+                                  {
+                                    from: period.calcFrom,
+                                    to: period.calcTo,
+                                  },
+                                )}
                               </div>
+                              {/* 公式の fan が公開される前（期替わり直後）は前々期を出す。
+                                  その期を表として取り込んでいないときだけ（pickPeriodStats） */}
+                              {/* 値の行は通常の前期と同じ見た目なので、見出しの「々」1文字だけに
+                                  頼らず、この注記を本文と同じ大きさ・色で出す（ファン評価1周目 P2） */}
+                              {period.fallback && (
+                                <p className="rbit-period-note rbit-period-pending">
+                                  {t("basicInfo.periodFallbackNote", {
+                                    from: period.pending.calcFrom,
+                                    to: period.pending.calcTo,
+                                  })}
+                                </p>
+                              )}
                               <div className="rbit-period-values">
                                 <span>
                                   {t("basicInfo.periodWinRate", {
@@ -1024,11 +1086,51 @@ function RaceBasicInfoTab({
                                   })}
                                 </span>
                               </div>
+                              {/* 優出・優勝（BOA-326）。公式の期別成績の前期の値と、
+                                  前期を含む直近4期の合計。1艇ずつの表示で6艇の
+                                  比較ではないので、最良の金枠は付けない */}
+                              <div className="rbit-period-finals">
+                                <span>
+                                  {t("basicInfo.periodFinals", {
+                                    value: period.finals ?? "—",
+                                  })}
+                                </span>
+                                <span>
+                                  {t("basicInfo.periodWins", {
+                                    value: period.wins ?? "—",
+                                  })}
+                                </span>
+                                {/* 範囲と回数を分け、回数は1つの塊で折り返す（375pxで「回」だけが
+                                    次の行に落ちた。ファン評価2周目 P2） */}
+                                <span className="rbit-period-recent">
+                                  {t(
+                                    period.fallback
+                                      ? "basicInfo.periodRecentRangeFallback"
+                                      : "basicInfo.periodRecentRange",
+                                    {
+                                      from: period.recent.from
+                                        .slice(0, 7)
+                                        .replace("-", "/"),
+                                      to: period.recent.to
+                                        .slice(0, 7)
+                                        .replace("-", "/"),
+                                    },
+                                  )}
+                                  <span className="rbit-period-recent-counts">
+                                    {t("basicInfo.periodRecentCounts", {
+                                      finals: period.recent.finals,
+                                      wins: period.recent.wins,
+                                    })}
+                                  </span>
+                                </span>
+                              </div>
                               {diffWithheld && (winDiff || top2Diff) && (
                                 <p className="rbit-period-note">
-                                  {t("basicInfo.periodDiffWithheldNote", {
-                                    date: diffShownFrom,
-                                  })}
+                                  {period.fallback
+                                    ? fallbackDiffNote(period, raceDate)
+                                    : t("basicInfo.periodDiffWithheldNote", {
+                                        date: diffShownFrom,
+                                      })}
                                 </p>
                               )}
                             </div>

@@ -1,3 +1,4 @@
+import { pathToFileURL } from "node:url";
 import { supabase, fetchAll } from "../lib/supabaseClient.js";
 import { NOT_NO_RACE_FILTER } from "../lib/raceOutcomeFilters.js";
 
@@ -44,11 +45,13 @@ function getNinetyDaysAgoJST() {
 
 // 会場×枠番ごとに「そのレースで最速STを記録した回数」と「その時に1着だった回数」を集計する
 // （フライングは異常値のためトップスタート判定から除外。参加数にはカウントする）
-function aggregateTopStarts(startTimings, raceResults) {
+export function aggregateTopStarts(startTimings, raceResults) {
   const raceIdToVenue = new Map();
   const byRace = new Map();
 
   startTimings.forEach((row) => {
+    // 欠場艇の行（finish_mark='欠'）は出走していないので、参加数にもトップスタートの判定にも入れない
+    if (row.finish_mark === "欠") return;
     const venueCode = parseInt(row.race_id.split("-")[3], 10);
     raceIdToVenue.set(row.race_id, venueCode);
     if (!byRace.has(row.race_id)) byRace.set(row.race_id, []);
@@ -84,7 +87,11 @@ function aggregateTopStarts(startTimings, raceResults) {
     // 同着（複数艇が同じ最速ST）の場合、艇番の若い順など恣意的なタイブレークは
     // インコースが有利になるバイアスを生むため、どちらの艇にも属さない扱いとして
     // トップスタート集計から除外する（参加数=raceCountはタイの艇にもそのまま計上する）
-    const validRows = rows.filter((row) => !row.is_flying);
+    // ST の無い行（欠場・出遅れの一部）も除く。Math.min は null を 0 とみなすため、混ざるとそのレースの
+    // トップスタートが消える
+    const validRows = rows.filter(
+      (row) => !row.is_flying && row.start_timing != null,
+    );
     if (validRows.length === 0) return;
     const minStartTiming = Math.min(...validRows.map((r) => r.start_timing));
     const topStartCandidates = validRows.filter(
@@ -165,7 +172,7 @@ async function main() {
 
   const startTimings = await fetchAll(
     "race_start_timings",
-    "race_id, boat_number, start_timing, is_flying",
+    "race_id, boat_number, start_timing, is_flying, finish_mark",
     (q) => q.gte("race_id", ninetyDaysAgo),
   );
   console.log(`race_start_timings取得完了: ${startTimings.length}件`);
@@ -193,7 +200,12 @@ async function main() {
   console.log("合計挿入件数: " + totalInserted + "件");
 }
 
-main().catch((err) => {
-  console.error("エラー:", err.message);
-  process.exit(1);
-});
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  main().catch((err) => {
+    console.error("エラー:", err.message);
+    process.exit(1);
+  });
+}

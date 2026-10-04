@@ -25,7 +25,10 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from train import OUT
+import features as F
+
+# 学習の出力先（train.OUT と同じ）。日次の特徴量ジョブも使うので、train（lightgbm）を読み込まない
+OUT = F.D / "out"
 
 BATCH = 1000
 DRIFT_THRESHOLD = 0.03

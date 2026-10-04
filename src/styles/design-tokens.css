@@ -19,13 +19,13 @@
 
   /* プライマリーカラー - ブランドの主要色（青系） */
   --color-primary-400: #38bdf8;
-  --color-primary-500: #0ea5e9;  /* メイン: 170回使用 */
-  --color-primary-600: #0284c7;  /* ダーク: 35回使用 */
+  --color-primary-500: #0ea5e9; /* メイン: 170回使用 */
+  --color-primary-600: #0284c7; /* ダーク: 35回使用 */
   --color-primary-700: #0369a1;
 
   /* セカンダリーカラー - アクセント色 */
-  --color-secondary-500: #06b6d4;  /* シアン系 */
-  --color-accent-500: #FF6B35;     /* オレンジ系アクセント */
+  --color-secondary-500: #06b6d4; /* シアン系 */
+  --color-accent-500: #ff6b35; /* オレンジ系アクセント */
 
   /* セマンティックカラー - 意味を持つ色 */
   --color-success-light: #4caf50;
@@ -42,6 +42,14 @@
 
   --color-info: #2196f3;
   --color-info-light: #60a5fa;
+
+  /* 艇の色（赤・青・緑）を白い文字の地に使うときの一段濃い色（BOA-703）。公式の配色
+     （src/utils/colors.js の BOAT_COLORS）のままだと白い文字とのコントラストが 3.3〜4.2 で、
+     4.5 に届かない。表の見出しなど公式の配色を見せる所はそのままにし、白い文字を載せる
+     地（枠別情報の選んだ選手チップ）にだけ使う。テーマで変えない固定値 */
+  --boat-3-strong: #c62828;
+  --boat-4-strong: #1565c0;
+  --boat-6-strong: #2e7d32;
 
   /* テキスト色専用の状態色（BOA-204）。上のsuccess/warning/error/infoは背景色として
      既に個別検証済みの値がある（例: src/pages/Blog.css の色エラー背景）ため、
@@ -61,31 +69,31 @@
   --color-info-text: #0a6dbc;
 
   /* ボートレースグレード */
-  --color-grade-sg: #7c3aed;      /* スーパーG */
-  --color-grade-g1: #dc2626;      /* G1 */
-  --color-grade-g2: #2563eb;      /* G2 */
-  --color-grade-g3: #047857;      /* G3（白文字バッジでWCAG AA 4.5:1以上） */
+  --color-grade-sg: #7c3aed; /* スーパーG */
+  --color-grade-g1: #dc2626; /* G1 */
+  --color-grade-g2: #2563eb; /* G2 */
+  --color-grade-g3: #047857; /* G3（白文字バッジでWCAG AA 4.5:1以上） */
 
   /* グレースケール - 背景、テキスト、ボーダーなど */
-  --color-gray-50: #f8fafc;      /* 最も明るい背景 */
+  --color-gray-50: #f8fafc; /* 最も明るい背景 */
   --color-gray-100: #f1f5f9;
-  --color-gray-200: #e2e8f0;     /* ボーダー、区切り線 */
+  --color-gray-200: #e2e8f0; /* ボーダー、区切り線 */
   --color-gray-300: #cbd5e1;
   --color-gray-400: #94a3b8;
-  --color-gray-500: #64748b;     /* 補助テキスト */
-  --color-gray-600: #475569;     /* セカンダリテキスト */
+  --color-gray-500: #64748b; /* 補助テキスト */
+  --color-gray-600: #475569; /* セカンダリテキスト */
   --color-gray-700: #334155;
-  --color-gray-800: #1e293b;     /* メインテキスト: 106回使用 */
-  --color-gray-900: #0f172a;     /* 最も暗いテキスト */
+  --color-gray-800: #1e293b; /* メインテキスト: 106回使用 */
+  --color-gray-900: #0f172a; /* 最も暗いテキスト */
 
   /* ユーティリティカラー */
   --color-white: #ffffff;
   --color-black: #000000;
 
   /* 特殊カラー - 表彰台など */
-  --color-gold: #ffd700;         /* 1着 */
-  --color-silver: #c0c0c0;       /* 2着 */
-  --color-bronze: #cd7f32;       /* 3着 */
+  --color-gold: #ffd700; /* 1着 */
+  --color-silver: #c0c0c0; /* 2着 */
+  --color-bronze: #cd7f32; /* 3着 */
 
   /* ========================================
      龍神レーダー ブランドトークン (Ryujin Radar Brand Tokens)
@@ -93,19 +101,19 @@
      ======================================== */
 
   /* Layer 1: ベースパレット - 生の色値、モード非依存 */
-  --ryujin-gold-300: #e8d089;    /* ハイライト・罫線の細い強調線（ダーク用） */
-  --ryujin-gold-500: #c9a227;    /* 本体色（ダーク用） */
-  --ryujin-gold-700: #8a6a1a;    /* 塗り用の深い色 */
-  --ryujin-gold-800: #6b500f;    /* ライト背景でのテキスト用（コントラスト確保） */
-  --ryujin-silver-300: #e2e6ea;  /* ハイライト（ダーク用） */
-  --ryujin-silver-500: #9aa3ad;  /* 本体色（ダーク用） */
-  --ryujin-silver-700: #5c636b;  /* ライト背景でのテキスト用（コントラスト確保） */
-  --ryujin-navy-100: #142842;    /* ダークテーマのカード背景 */
-  --ryujin-navy-300: #24344d;    /* ダークテーマの罫線 */
-  --ryujin-navy-600: #0d1b2e;    /* ダークテーマのページ背景 */
-  --ryujin-ivory-100: #fbf9f3;   /* ライトテーマのカード背景 */
-  --ryujin-ivory-300: #ddd4bf;   /* ライトテーマの罫線 */
-  --ryujin-ivory-600: #f7f3ea;   /* ライトテーマのページ背景 */
+  --ryujin-gold-300: #e8d089; /* ハイライト・罫線の細い強調線（ダーク用） */
+  --ryujin-gold-500: #c9a227; /* 本体色（ダーク用） */
+  --ryujin-gold-700: #8a6a1a; /* 塗り用の深い色 */
+  --ryujin-gold-800: #6b500f; /* ライト背景でのテキスト用（コントラスト確保） */
+  --ryujin-silver-300: #e2e6ea; /* ハイライト（ダーク用） */
+  --ryujin-silver-500: #9aa3ad; /* 本体色（ダーク用） */
+  --ryujin-silver-700: #5c636b; /* ライト背景でのテキスト用（コントラスト確保） */
+  --ryujin-navy-100: #142842; /* ダークテーマのカード背景 */
+  --ryujin-navy-300: #24344d; /* ダークテーマの罫線 */
+  --ryujin-navy-600: #0d1b2e; /* ダークテーマのページ背景 */
+  --ryujin-ivory-100: #fbf9f3; /* ライトテーマのカード背景 */
+  --ryujin-ivory-300: #ddd4bf; /* ライトテーマの罫線 */
+  --ryujin-ivory-600: #f7f3ea; /* ライトテーマのページ背景 */
 
   /* Layer 2: 意味トークン - コンポーネントが参照する値。ライトテーマをデフォルトとする
      金銀アクセントはライト/ダークで背景の明度が逆転するため、テーマごとに異なる階調を割り当てる
@@ -119,13 +127,32 @@
   --brand-accent-secondary: var(--ryujin-silver-700);
   /* 6艇の中の最良値の強調（金の薄い塗りと枠。docs/design/race-detail-ui-unify R1）。
      --brand-accent-primary から作るので、ダークでは同じ要素の上で金500に切り替わる */
-  --ind-best-bg: color-mix(in srgb, var(--brand-accent-primary) 14%, transparent);
-  --ind-best-ring: color-mix(in srgb, var(--brand-accent-primary) 40%, transparent);
+  /* 2026-10-03 ユーザー判断（BOA-711 U1）: 地は明るい金（--ryujin-gold-500）の20%、枠は濃い金の
+     不透明。以前は濃い金（ライト #6b500f）の14%・40%で、ライトでは茶・灰に見え「金」と読めなかった */
+  --ind-best-bg: color-mix(in srgb, var(--ryujin-gold-500) 20%, transparent);
+  --ind-best-ring: var(--brand-accent-primary);
+  /* 基準に届く・良いセルの薄い緑の塗り（R2）。--color-success-text から作るので、
+     ダークでは同じ要素の上で明るい緑に切り替わる */
+  --color-success-bg: color-mix(
+    in srgb,
+    var(--color-success-text) 16%,
+    transparent
+  );
   /* 3着表示専用。金銀と同じ理由でライト背景では--color-bronzeのままだと
      コントラスト不足（2.99:1）になるため、テーマごとに階調を分ける */
   --podium-bronze-text: #8f5419;
 
   /* 透明度バリエーション - プライマリーカラー */
+  /* 決まり手の色（src/utils/techniqueColors.js）。カテゴリの色で良し悪しは無い。
+     棒・帯の塗りに使い、文字色には使わない（ライト・ダークとも同じ値で背景から見分けられる） */
+  --technique-color-1: #0ea5e9; /* 逃げ */
+  --technique-color-2: #10b981; /* 差し */
+  --technique-color-3: #f59e0b; /* まくり */
+  --technique-color-4: #ef4444; /* まくり差し */
+  --technique-color-5: #8b5cf6; /* 抜き */
+  --technique-color-6: #94a3b8; /* 恵まれ・その他 */
+  --technique-color-7: #ec4899;
+
   --color-primary-alpha-10: rgba(14, 165, 233, 0.1);
   --color-primary-alpha-20: rgba(14, 165, 233, 0.2);
   --color-primary-alpha-30: rgba(14, 165, 233, 0.3);
@@ -148,29 +175,41 @@
   --color-white-alpha-90: rgba(255, 255, 255, 0.9);
 
   /* 背景グラデーション */
-  --gradient-primary: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
-  --gradient-success: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
-  --gradient-warning: linear-gradient(135deg, var(--color-warning) 0%, var(--color-warning-dark) 100%);
+  --gradient-primary: linear-gradient(
+    135deg,
+    var(--color-primary-500) 0%,
+    var(--color-primary-600) 100%
+  );
+  --gradient-success: linear-gradient(
+    135deg,
+    var(--color-success) 0%,
+    var(--color-success-dark) 100%
+  );
+  --gradient-warning: linear-gradient(
+    135deg,
+    var(--color-warning) 0%,
+    var(--color-warning-dark) 100%
+  );
 
   /* ========================================
      タイポグラフィ (Typography)
      ======================================== */
 
   /* フォントサイズ - remベース（16px = 1rem） */
-  --font-size-2xs: 0.65rem;   /* 10.4px - 小さなラベル */
-  --font-size-xs: 0.75rem;    /* 12px - キャプション */
-  --font-size-sm: 0.85rem;    /* 13.6px - 小さいテキスト: 31回使用 */
-  --font-size-base: 0.9rem;   /* 14.4px - 標準テキスト: 41回使用 */
-  --font-size-md: 0.95rem;    /* 15.2px - やや大きめ: 21回使用 */
-  --font-size-lg: 1rem;       /* 16px - 大きめテキスト: 27回使用 */
-  --font-size-xl: 1.1rem;     /* 17.6px - 小見出し: 31回使用 */
-  --font-size-2xl: 1.2rem;    /* 19.2px - 見出し: 23回使用 */
-  --font-size-3xl: 1.3rem;    /* 20.8px - 中見出し: 21回使用 */
-  --font-size-4xl: 1.5rem;    /* 24px - 大見出し: 36回使用 */
-  --font-size-5xl: 1.75rem;   /* 28px - 大きな見出し: 16回使用 */
-  --font-size-6xl: 2rem;      /* 32px - 特大見出し: 17回使用 */
-  --font-size-7xl: 2.5rem;    /* 40px - ヒーロー: 13回使用 */
-  --font-size-8xl: 3rem;      /* 48px - 超大見出し: 8回使用 */
+  --font-size-2xs: 0.65rem; /* 10.4px - 小さなラベル */
+  --font-size-xs: 0.75rem; /* 12px - キャプション */
+  --font-size-sm: 0.85rem; /* 13.6px - 小さいテキスト: 31回使用 */
+  --font-size-base: 0.9rem; /* 14.4px - 標準テキスト: 41回使用 */
+  --font-size-md: 0.95rem; /* 15.2px - やや大きめ: 21回使用 */
+  --font-size-lg: 1rem; /* 16px - 大きめテキスト: 27回使用 */
+  --font-size-xl: 1.1rem; /* 17.6px - 小見出し: 31回使用 */
+  --font-size-2xl: 1.2rem; /* 19.2px - 見出し: 23回使用 */
+  --font-size-3xl: 1.3rem; /* 20.8px - 中見出し: 21回使用 */
+  --font-size-4xl: 1.5rem; /* 24px - 大見出し: 36回使用 */
+  --font-size-5xl: 1.75rem; /* 28px - 大きな見出し: 16回使用 */
+  --font-size-6xl: 2rem; /* 32px - 特大見出し: 17回使用 */
+  --font-size-7xl: 2.5rem; /* 40px - ヒーロー: 13回使用 */
+  --font-size-8xl: 3rem; /* 48px - 超大見出し: 8回使用 */
 
   /* フォントウェイト */
   --font-weight-normal: 400;
@@ -193,27 +232,27 @@
   /* 基本スペーシングスケール - 0.25rem (4px) 刻み */
   --spacing-0: 0;
   --spacing-px: 1px;
-  --spacing-0-5: 0.125rem;   /* 2px */
-  --spacing-1: 0.25rem;      /* 4px */
-  --spacing-1-5: 0.375rem;   /* 6px */
-  --spacing-2: 0.5rem;       /* 8px - 29回使用 */
-  --spacing-2-5: 0.625rem;   /* 10px - 9回使用 */
-  --spacing-3: 0.75rem;      /* 12px - 27回使用 */
-  --spacing-3-5: 0.875rem;   /* 14px - 10回使用 */
-  --spacing-4: 1rem;         /* 16px - 55回使用(最頻) */
-  --spacing-4-5: 1.125rem;   /* 18px */
-  --spacing-5: 1.25rem;      /* 20px - 17回使用 */
-  --spacing-6: 1.5rem;       /* 24px - 35回使用 */
-  --spacing-7: 1.75rem;      /* 28px */
-  --spacing-8: 2rem;         /* 32px - 34回使用 */
-  --spacing-9: 2.25rem;      /* 36px */
-  --spacing-10: 2.5rem;      /* 40px */
-  --spacing-11: 2.75rem;     /* 44px */
-  --spacing-12: 3rem;        /* 48px - 8回使用 */
-  --spacing-14: 3.5rem;      /* 56px */
-  --spacing-16: 4rem;        /* 64px - 4回使用 */
-  --spacing-20: 5rem;        /* 80px */
-  --spacing-24: 6rem;        /* 96px */
+  --spacing-0-5: 0.125rem; /* 2px */
+  --spacing-1: 0.25rem; /* 4px */
+  --spacing-1-5: 0.375rem; /* 6px */
+  --spacing-2: 0.5rem; /* 8px - 29回使用 */
+  --spacing-2-5: 0.625rem; /* 10px - 9回使用 */
+  --spacing-3: 0.75rem; /* 12px - 27回使用 */
+  --spacing-3-5: 0.875rem; /* 14px - 10回使用 */
+  --spacing-4: 1rem; /* 16px - 55回使用(最頻) */
+  --spacing-4-5: 1.125rem; /* 18px */
+  --spacing-5: 1.25rem; /* 20px - 17回使用 */
+  --spacing-6: 1.5rem; /* 24px - 35回使用 */
+  --spacing-7: 1.75rem; /* 28px */
+  --spacing-8: 2rem; /* 32px - 34回使用 */
+  --spacing-9: 2.25rem; /* 36px */
+  --spacing-10: 2.5rem; /* 40px */
+  --spacing-11: 2.75rem; /* 44px */
+  --spacing-12: 3rem; /* 48px - 8回使用 */
+  --spacing-14: 3.5rem; /* 56px */
+  --spacing-16: 4rem; /* 64px - 4回使用 */
+  --spacing-20: 5rem; /* 80px */
+  --spacing-24: 6rem; /* 96px */
 
   /* ========================================
      ボーダー (Borders)
@@ -229,13 +268,13 @@
   /* ボーダー半径 */
   --radius-none: 0;
   --radius-sm: 6px;
-  --radius-md: 8px;          /* 28回使用 */
-  --radius-lg: 12px;         /* 55回使用(最頻) */
-  --radius-xl: 16px;         /* 20回使用 */
+  --radius-md: 8px; /* 28回使用 */
+  --radius-lg: 12px; /* 55回使用(最頻) */
+  --radius-xl: 16px; /* 20回使用 */
   --radius-2xl: 20px;
   --radius-3xl: 24px;
-  --radius-full: 9999px;     /* 完全な円形 */
-  --radius-circle: 50%;      /* 完全な円形(%) */
+  --radius-full: 9999px; /* 完全な円形 */
+  --radius-circle: 50%; /* 完全な円形(%) */
 
   /* ========================================
      シャドウ (Shadows)
@@ -245,7 +284,7 @@
   --shadow-none: none;
   --shadow-xs: 0 1px 2px var(--color-black-alpha-10);
   --shadow-sm: 0 2px 4px var(--color-black-alpha-10);
-  --shadow-base: 0 2px 8px var(--color-black-alpha-10);        /* 最頻 */
+  --shadow-base: 0 2px 8px var(--color-black-alpha-10); /* 最頻 */
   --shadow-md: 0 4px 12px var(--color-black-alpha-10);
   --shadow-lg: 0 4px 20px var(--color-black-alpha-15);
   --shadow-xl: 0 8px 24px var(--color-black-alpha-15);
@@ -275,9 +314,10 @@
 
   /* よく使うトランジション */
   --transition-all: all var(--transition-medium) var(--ease-in-out);
-  --transition-colors: color var(--transition-medium) var(--ease-in-out),
-                       background-color var(--transition-medium) var(--ease-in-out),
-                       border-color var(--transition-medium) var(--ease-in-out);
+  --transition-colors:
+    color var(--transition-medium) var(--ease-in-out),
+    background-color var(--transition-medium) var(--ease-in-out),
+    border-color var(--transition-medium) var(--ease-in-out);
   --transition-transform: transform var(--transition-medium) var(--ease-in-out);
 
   /* ========================================
@@ -328,6 +368,9 @@
   --color-error-text: #f26b6b;
   --color-error-dark-text: #e87272;
   --color-info-text: var(--color-info);
+  /* ダークでは金を半透明で紺に混ぜると灰緑に見えた。暗い金の不透明な地にする。地の上の緑・赤の文字
+     （調子の↑↓等）が 4.5:1 を割らない暗さ（2026-10-04 ユーザー判断、BOA-711） */
+  --ind-best-bg: color-mix(in srgb, var(--ryujin-gold-500) 20%, #160f03);
 }
 
 [data-theme="light"] {
@@ -358,5 +401,8 @@
     --color-error-text: #f26b6b;
     --color-error-dark-text: #e87272;
     --color-info-text: var(--color-info);
+    /* ダークでは金を半透明で紺に混ぜると灰緑に見えた。暗い金の不透明な地にする。地の上の緑・赤の文字
+       （調子の↑↓等）が 4.5:1 を割らない暗さ（2026-10-04 ユーザー判断、BOA-711） */
+    --ind-best-bg: color-mix(in srgb, var(--ryujin-gold-500) 20%, #160f03);
   }
 }

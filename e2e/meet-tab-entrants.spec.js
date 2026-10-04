@@ -28,7 +28,8 @@ test("初日の2Rでも6艇とも行が出て、出場人数は出走表から�
     "今節初戦",
   );
   await expect(page.locator(".rmt-sub").first()).toContainText(
-    "節の出場は47人。",
+    // まだ走っていない選手も書き足す（BOA-690）
+    "節の出場は47人（順位の対象は今節を走った6人。まだ走っていない41人を除く）。",
   );
 });
 
@@ -37,7 +38,11 @@ test("初日の1R（6艇とも初戦）でも表と出場人数を出し、同�
 }) => {
   await openMeetTab(page, "2026-09-21-09-01");
   await expect(page.locator(".rmt-compare tbody tr")).toHaveCount(6);
-  await expect(page.locator(".rmt-sub").first()).toContainText("節の出場は");
+  // 全員が初戦なら「順位の対象は0人」と書かない（BOA-697）
+  await expect(page.locator(".rmt-sub").first()).toContainText(
+    "節の出場は47人（まだ全員が今節初戦）。",
+  );
+  await expect(page.locator(".rmt-excluded-list")).toHaveCount(0);
   await expect(
     page.locator(".rmt-empty", { hasText: "今節はまだ走っていません" }),
   ).toHaveCount(1);
@@ -53,7 +58,7 @@ test("Ｗ優勝戦で分けたときは「同じ優勝戦をめざす」人数�
 }) => {
   await openMeetTab(page, "2026-09-25-01-07");
   await expect(page.locator(".rmt-sub").first()).toContainText(
-    "同じ優勝戦をめざすのは24人（順位の対象は19人。賞典除外・途中帰郷・欠場の5人を除く）",
+    "同じ優勝戦をめざすのは24人（順位の対象は19人。下に名前を出した5人を除く）",
   );
   await expect(page.locator(".rmt-sub").first()).not.toContainText(
     "節の出場",
@@ -65,12 +70,17 @@ test("除いた人数を足すと出場人数になり、表に無い印の凡�
 }) => {
   await openMeetTab(page, "2026-09-28-09-11");
   await expect(page.locator(".rmt-sub").first()).toContainText(
-    "節の出場は47人（順位の対象は42人。賞典除外・途中帰郷・欠場の5人を除く）",
+    "節の出場は47人（順位の対象は42人。下に名前を出した5人を除く）",
   );
   await expect(page.locator(".rmt-compare .rmt-warn")).toHaveCount(0);
-  await expect(page.locator(".rmt-sub").first()).not.toContainText(
-    "3走未満",
-  );
+  // 除いた5人を理由ごとに名前で出す（BOA-697）
+  const list = page.locator(".rmt-excluded-list");
+  await expect(list).toContainText("順位の対象外：");
+  await expect(list.locator("[translate=no]")).not.toHaveCount(0);
+  await expect(list).not.toContainText("ほか");
+  await expect(
+    page.locator(".rmt-sub, .rmt-table-notes", { hasText: "3走未満" }),
+  ).toHaveCount(0);
 });
 
 test("375pxで、今節初戦の行があっても列見出し「前検」がカードからはみ出さない", async ({
@@ -119,3 +129,131 @@ for (const path of ["/race/2026-09-25-01-07", "/en/race/2026-09-25-01-07"]) {
     expect(minGap).toBeGreaterThanOrEqual(6);
   });
 }
+
+test("まだ全員が1走していない間は準優の目安を伏せ、人数にまだ走っていない選手を書き足す", async ({
+  page,
+}) => {
+  // 下関の初日 5R。以前は走った24人の中の18位を「準優の目安は18位（2.00）」と出し、
+  // 人数も「45人（対象24人）」と足し算が合わなかった（BOA-690）
+  await openMeetTab(page, "2026-10-01-19-05");
+  // 目安の文は人数の行と別の段落（BOA-714）
+  const sub = page.locator(".rmt-sub").first();
+  const border = page.locator(".rmt-border-note");
+  await expect(border).toContainText("準優の目安は、出場選手が全員1走してから出します。");
+  await expect(border).not.toContainText("準優の目安は18位");
+  await expect(sub).toContainText("まだ走っていない21人を除く");
+  await expect(page.locator(".rmt-needed")).toHaveCount(0);
+});
+
+test("全員が走った後は目安を出し、何走時点の目安かを断る", async ({ page }) => {
+  // 津 9/23 12R（9/22 中止の翌日）。この日の途中までは初めて走る選手がいて伏せていた
+  await openMeetTab(page, "2026-09-23-09-12");
+  const sub = page.locator(".rmt-border-note");
+  await expect(sub).toContainText("準優の目安は18位");
+  await expect(sub).toContainText(
+    "走した時点の目安で、予選が終わるまでは動きます。",
+  );
+});
+
+test("Ｗ優勝戦では前検の列見出しに節全体の人数を出す", async ({ page }) => {
+  // 節内順位は片側24人の中、前検の順位は節全体48人の中（公式の値）。分母を見せる（BOA-690）
+  await openMeetTab(page, "2026-09-24-01-03");
+  await expect(page.locator(".rmt-compare thead th").last()).toHaveText(
+    "前検（48人中）",
+  );
+});
+
+test("中止があった日も、人数の足し算が合う", async ({ page }) => {
+  // 津 9/21 は 5R 以降が中止。中止になったレースにしか番組が無かった選手が、
+  // 「まだ走っていない」にも数えられず、足し算が合わなかった（PR #1184 ファン評価1周目）
+  await openMeetTab(page, "2026-09-21-09-12");
+  const text = await page.locator(".rmt-sub").first().innerText();
+  const all = Number(text.match(/節の出場は(\d+)人/)?.[1]);
+  const total = Number(text.match(/順位の対象は(?:今節を走った)?(\d+)人/)?.[1]);
+  const excluded = Number(text.match(/名前を出した(\d+)人/)?.[1] ?? 0);
+  const notYet = Number(text.match(/まだ走っていない(\d+)人/)?.[1] ?? 0);
+  expect(total + excluded + notYet).toBe(all);
+});
+
+test("予選の最終日から、予選中に帰った選手を順位の対象から外す", async ({
+  page,
+}) => {
+  // 桐生 9/23（予選の最終日）。北川・田中は 9/22 が最後の走で、9/23 の番組に
+  // 1走も無い。以前は予選の翌日（または最終日）まで順位と準優の目安の計算に残った
+  await openMeetTab(page, "2026-09-23-01-09");
+  await expect(page.locator(".rmt-sub").first()).toContainText(
+    "同じ優勝戦をめざすのは24人（順位の対象は21人。下に名前を出した3人を除く）",
+  );
+  // 予選の後の扱いの説明は、予選が終わるまで出さない
+  await expect(page.locator(".rmt-rank-note")).not.toContainText(
+    "予選の後に帰った",
+  );
+});
+
+test("予選中のレースでは、後で付いた公式の備考（途中帰郷）で外さない", async ({
+  page,
+}) => {
+  // 児島G1 10/1 9R（予選の最終日）。公式の得点率一覧の行は予選の最終日の夜に取得した
+  // もので、丸野一樹は「途中帰郷」。でもこのレースの3号艇として走っている。
+  // 以前はこの備考をさかのぼって当て「対象外」にしていた（PR #1149 ファン評価2周目）
+  await openMeetTab(page, "2026-10-01-16-09");
+  const row = page.locator(".rmt-compare tbody tr", { hasText: "丸野一樹" });
+  await expect(row.locator(".rmt-rank")).not.toContainText("対象外");
+  await expect(row.locator(".rmt-rank")).toContainText("位");
+});
+
+test("対象外の一覧は理由を先に表のセルと同じ書き方で出し、人数の行の直後に置く", async ({
+  page,
+}) => {
+  // 桐生 9/23 5R（予選中のＷ優勝戦）。以前は「大澤普司（賞典除外・今節F）」と
+  // 名前の後ろに理由を付け、表のセル「賞典除外（今節F）」と書き方が違った。
+  // 人数の行と一覧の間に準優の目安の文が入り、Ｗ優勝戦の注記は人数の行の後ろにあった（BOA-714）
+  await openMeetTab(page, "2026-09-23-01-05");
+  const list = page.locator(".rmt-excluded-list");
+  await expect(list).toContainText("順位の対象外：賞典除外（今節F） 大澤普司");
+  await expect(list).toContainText("／途中帰郷 ");
+  // 上から: 表 → Ｗ優勝戦の注記 → 準優の目安（点線の意味、BOA-722）→ 人数の行 →
+  // 対象外の一覧 → 表の印の説明（金枠・⚠ 等、BOA-722）。人数の行と一覧は隣り合う（BOA-714）。
+  // Ｗ優勝戦の注記を目安より先に置くのは、「12位」を母数（24人）の説明より先に
+  // 出すと、見出しの「48人中」の12位と読めたため（BOA-722 ファン評価1周目）
+  const order = await page.evaluate(() =>
+    [
+      ".rmt-compare",
+      ".rmt-series-note",
+      ".rmt-border-note",
+      ".rmt-sub",
+      ".rmt-excluded-list",
+      ".rmt-table-notes",
+    ].map((sel) => document.querySelector(sel).getBoundingClientRect().top),
+  );
+  expect(order).toEqual([...order].sort((a, b) => a - b));
+  await expect(page.locator(".rmt-border-note")).toContainText("準優の目安は");
+  // 人数の行は凡例の後ろに付けず、段落の頭から始まる（BOA-722）
+  await expect(page.locator(".rmt-sub").first()).not.toContainText("金の枠");
+  await expect(page.locator(".rmt-table-notes")).toContainText("金の枠");
+});
+
+test("英語の対象外の一覧で、見出しと理由のコロンが二重にならない", async ({ page }) => {
+  // 理由を前に出したら「Not ranked: Withdrew: …」とコロンが続いた（BOA-714 セルフレビュー）
+  await page.goto("/en/race/2026-09-25-01-07");
+  await page.locator(".race-tabs-btn").nth(2).click();
+  const list = page.locator(".rmt-excluded-list");
+  await expect(list).toContainText(
+    "Not ranked: Excluded from prizes (F this series) – 大澤普司; Withdrew – ",
+    { timeout: 30000 },
+  );
+});
+
+test("375pxで、対象外の一覧の選手名が途中で改行されない", async ({ page }) => {
+  // 「北川」で改行して次の行が「幸典」になっていた（BOA-714 ファン評価1周目）
+  await page.setViewportSize({ width: 375, height: 812 });
+  await openMeetTab(page, "2026-09-25-01-07");
+  const names = page.locator(".rmt-excluded-list .rmt-excluded-name");
+  await expect(names).not.toHaveCount(0);
+  const multiLine = await names.evaluateAll((els) =>
+    els
+      .filter((el) => el.getClientRects().length > 1)
+      .map((el) => el.textContent),
+  );
+  expect(multiLine).toEqual([]);
+});

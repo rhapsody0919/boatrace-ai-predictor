@@ -1,0 +1,80 @@
+name: Analogy Daily Features
+
+# BOA-271 レースごとの寄与度（B）の日次の特徴量ジョブ。今日のレースの36特徴量（出走表時点）を
+# analogy_race_features に書く。推論側の Vercel の JS がこの行から TreeSHAP を計算する。
+# docs/design/analogy-finder/plan.md「学習側の設計」。
+#
+# schedule は使わない（GitHub Actions の定時実行は遅れ・欠落が常態）。起動は Vercel Cron の
+# api/cron/analogy-dispatch.js（JST 6:40・9:40・13:40、7:20 は欠けがあるときだけ）からの workflow_dispatch。
+# 対象の全レースに行がそろわなければ失敗し、Slack に知らせる。
+#
+# 有効にする順序（逆にすると毎朝失敗して Slack に流れる）: マイグレーション 127・128 の適用 → 週次の学習
+# （train-analogy.yml）が1回成功する（レースごとの寄与度を含む版の per_race_meta.json と、本体分の月の
+# キャッシュ analogy/source/main/ を置く。BOA-696 の修正と KB_CACHE_VERSION の更新の後）→ この workflow の起動を始める
+
+on:
+  workflow_dispatch:
+
+# 7:20 の拾い直しが 6:40 の回の途中で起動しても二重に走らせない（後の回は前の回の終わりを待つ）
+concurrency:
+  group: analogy-daily-features
+  cancel-in-progress: false
+
+jobs:
+  features:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install Python deps
+        run: pip install -r scripts/ml/analogy/requirements.txt
+
+      # 長期分・前々月以前の本体分は Storage のキャッシュ（読み取りだけ）、前月・当月は DB から
+      - name: Export data (daily)
+        run: node scripts/ml/analogy/export_pool.js --daily
+
+      - name: Download per_race_meta of the active version
+        run: node scripts/ml/analogy/storage.js download-active-meta
+
+      - name: Build and write features
+        working-directory: scripts/ml/analogy
+        run: python daily_features.py
+
+      - name: Summary
+        if: always()
+        run: |
+          s=data/ml/analogy/out/daily_features_summary.json
+          if [ -f "$s" ]; then
+            echo "## 日次の特徴量" >> "$GITHUB_STEP_SUMMARY"
+            jq . "$s" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Notify Slack (失敗時のみ)
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          s=data/ml/analogy/out/daily_features_summary.json
+          if [ -f "$s" ]; then
+            reason="行がそろわないレース $(jq -r '.missing_races | length' "$s") 件（対象 $(jq -r .targets "$s") 件）: $(jq -r '.missing_races[:10] | join(", ")' "$s")"
+          else
+            reason="特徴量を書く前に失敗（書き出し・キャッシュの欠け・per_race_meta の取得 等）"
+          fi
+          payload=$(jq -n --arg reason "$reason" --arg url "$RUN_URL" \
+            '{text: (":rotating_light: *レースごとの寄与度の日次の特徴量ジョブが失敗しました*\n" + $reason + "\n" + $url)}')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"

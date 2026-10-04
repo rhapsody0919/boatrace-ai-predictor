@@ -227,14 +227,13 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
                 <th>{t("table.avgST")}</th>
                 <th>{t("table.exhibitionTime")}</th>
                 <th>{t("table.exhibitionST")}</th>
-                <th>{t("table.courseWinRate")}</th>
+                <th>{t("table.wakuWinRate")}</th>
               </tr>
             </thead>
             <tbody>
               {entries.map((row) => {
                 const stats = statsByBoat.get(row.boat_number);
-                const course = stats?.course ?? row.boat_number;
-                const counts = stats?.courseRaceCounts?.[String(course)];
+                const counts = stats?.wakuRaceCounts?.[String(row.boat_number)];
                 return (
                   <tr key={row.boat_number}>
                     <td className="rcd-boat">{row.boat_number}</td>

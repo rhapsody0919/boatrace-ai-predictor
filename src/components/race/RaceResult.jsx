@@ -224,7 +224,7 @@ function StartTimingTrack({
       />
       <span
         ref={dotRef}
-        className={`rr-st-dot${boatNumber === 1 && !isFlying ? " is-white" : ""}`}
+        className={`rr-st-dot${boatNumber === 1 && !isFlying ? " is-white" : ""}${boatNumber === 2 && !isFlying ? " is-black" : ""}`}
         style={{ left: reducedMotion ? `${finalPosition}%` : "0%" }}
       >
         {/* 形（clip-path）は子に持たせる。親に付けた輪郭（drop-shadow）が
@@ -827,7 +827,16 @@ function RaceResult({ prediction, raceId }) {
             <span>{t("result.columns.boat")}</span>
             <span>{t("result.columns.racer")}</span>
             <span className="rr-head-st">{t("result.columns.start")}</span>
-            <span className="rr-head-time">{t("result.columns.time")}</span>
+            {/* 768px 以下は列が 2.4〜2.8rem しか無く、「レースタイム」が 15px はみ出して
+                カードの外で切れた（race-detail-ui-unify PR5 ファン評価1周目）。短い見出しにする */}
+            <span className="rr-head-time">
+              <span className="rr-head-time-full">
+                {t("result.columns.time")}
+              </span>
+              <span className="rr-head-time-short">
+                {t("result.columns.timeShort")}
+              </span>
+            </span>
           </div>
           {rows.map((row) => {
             const { key, position, boat, time } = row;

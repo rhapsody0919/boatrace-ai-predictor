@@ -124,7 +124,7 @@ async function main() {
     };
   }
 
-  // 会場別: 「イン崩れ確率高」ラベル時の実際のイン崩れ率 vs 会場全体の平均
+  // 会場別: 「イン崩れ注意（高）」ラベル時の実際のイン崩れ率 vs 会場全体の平均
   // （VolatilityAccuracySection.jsxが期待するshapeに合わせる。BOA-175）
   const venueCodes = [...new Set(joined.map((r) => r.venueCode))];
   const byVenue = venueCodes

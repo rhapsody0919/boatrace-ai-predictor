@@ -18,10 +18,16 @@ const RACE_STAGE_BADGE_CONFIG = {
 // 判定順序と除外を誤ると優勝戦バッジ（🏆）が付く。実データに「準々優勝戦」が
 // 4件あり、旧実装ではこれが優勝戦扱いになっていた（BOA-457）。
 // 「準優進出戦」（準優の1つ前の勝ち上がり戦、実データ39件）は準優勝戦ではない
+//
+// 男女Ｗ優勝戦の節は準優勝戦を「Ｗ準優戦前半」「Ｗ準優戦後半」と書く（「勝」が無い。
+// 実データ8件）。「準優勝戦」だけを見ると準優勝戦に当たらず、得点率の計算
+// （seriesPoints.js の classifyStage。「準優」を含めば勝ち上がり戦）と食い違った（BOA-728）
+const isSemifinalText = (s) => /準優勝?戦/.test(s);
+
 export function getRaceStageKey(raceStage) {
   if (!raceStage) return null;
   if (raceStage.includes("準々") || raceStage.includes("準優進出")) return null;
-  if (raceStage.includes("準優勝戦")) return "semifinal";
+  if (isSemifinalText(raceStage)) return "semifinal";
   if (raceStage.includes("優勝戦")) return "final";
   return null;
 }
@@ -75,7 +81,7 @@ const RACE_STAGE_CATEGORY_RULES = [
     key: "semifinalQualifier",
     test: (s) => s.includes("準々") || s.includes("準優進出"),
   },
-  { key: "semifinal", test: (s) => s.includes("準優勝戦") },
+  { key: "semifinal", test: isSemifinalText },
   { key: "final", test: (s) => s.includes("優勝戦") },
   { key: "dream", test: (s) => s.includes("ドリーム") || s.includes("DR") },
   {

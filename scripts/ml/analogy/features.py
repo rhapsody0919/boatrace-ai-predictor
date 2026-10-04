@@ -14,14 +14,24 @@ Phase M からの変更点:
   - 1〜3着に返還艇（F・出遅れ）が入るレースは完全レースから外す（本体の rank は返還艇も
     公式の並びのまま入っている）。データの穴（2025-12〜2026-03）は K/B 補完で埋まったので外さない
 
-使い方: python features.py   → data/ml/analogy/boats.pkl
+レースごとの寄与度（B、ADR 案（#1134「レースごとの寄与度」）・plan「学習側の設計」）のため、出走表の時点（朝 6:40）に分かる値で
+定義する列がある。朝の初期化は体重・支部・節の日目・最終日を書かず、2連率は toFixed(1) で丸めて書く
+（発走60分前の取り直しで上書きされる）。学習の行は取り直し後の値なので、次のようにそろえる:
+  - 本体期間の節の日目・最終日は race_series から導く（race_conditions の値は使わない）
+  - 体重・支部は前日までに分かっている最後の値（当日の値は使わない）
+  - 2連率4列は JS の toFixed(1) と同じ丸め
+  - 風向が空で風速0は無風（0）
+
+使い方: python features.py   → data/ml/analogy/boats.pkl・categorical_maps.json
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import unicodedata
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 import numpy as np
@@ -42,6 +52,22 @@ ROUND_CODE = {r: i for i, r in enumerate(ROUNDS)}
 DIR16 = ["北", "北北東", "北東", "東北東", "東", "東南東", "南東", "南南東",
          "南", "南南西", "南西", "西南西", "西", "西北西", "北西", "北北西"]
 DIR_ANGLE = {d: i * 22.5 for i, d in enumerate(DIR16)}
+# 本体の風向（直前情報・結果ページのアイコン）は方位ではなく、ページの水面の図（会場ごとに北の向きが違う）に対する向き。
+# 長期分（K ファイル、方位）の基準に直す表。作り方と根拠は build-wind-basis.js と docs/design/analogy-finder/wind-basis.md
+WIND_BASIS_FILE = Path(__file__).resolve().parent / "wind_basis.json"
+# 本体で DB の風向が空・風速>0 のレース（2025-12・01 はほぼ全件、他の月は K/B の補完で風速だけ入った行）は、
+# K ファイルの風向（方位、回転なし）で埋める
+K_WIND_FILL_FILE = Path(__file__).resolve().parent / "k_wind_fill.csv"
+
+
+def load_wind_basis(path: Path = WIND_BASIS_FILE) -> dict:
+    """{"offsets_deg": {"1": 角度, …}}（per_race_meta.json にもそのまま入れる）"""
+    return {"offsets_deg": json.loads(path.read_text())["offsets_deg"]}
+
+
+def wind_offset(venue_code: pd.Series, basis: dict) -> pd.Series:
+    """本体の風向から引く角度。表に無い会場は NaN（風向を欠損にする。無風は0のまま）"""
+    return venue_code.astype(int).astype(str).map(basis["offsets_deg"]).astype("float64")
 VENUE_PREF = {1: "群馬", 2: "埼玉", 3: "東京", 4: "東京", 5: "東京", 6: "静岡",
               7: "愛知", 8: "愛知", 9: "三重", 10: "福井", 11: "滋賀", 12: "大阪",
               13: "兵庫", 14: "徳島", 15: "香川", 16: "岡山", 17: "広島", 18: "山口",
@@ -56,7 +82,8 @@ def _has_special(s: str) -> bool:
 # src/constants/raceStageConfig.js の RACE_STAGE_CATEGORY_RULES と同じ順序（tests で一致を固定）
 _STAGE_RULES = [
     ("semifinalQualifier", lambda s: "準々" in s or "準優進出" in s),
-    ("semifinal", lambda s: "準優勝戦" in s),
+    # 男女Ｗ優勝戦の「Ｗ準優戦前半/後半」も準優勝戦（BOA-728、raceStageConfig.js と同じ）
+    ("semifinal", lambda s: re.search(r"準優勝?戦", s) is not None),
     ("final", lambda s: "優勝戦" in s),
     ("dream", lambda s: "ドリーム" in s or "DR" in s),
     ("qualifierSpecial", lambda s: "予選" in s and _has_special(s)),
@@ -85,6 +112,22 @@ def round_from_kb_kind(kind) -> str | None:
 
 
 # ---------------------------------------------------------------- 読み込み
+# 朝の経路（generate-predictions.js）が toFixed(1) で丸めて書く2連率の元の列名（長期・本体）
+RATE_COLUMNS = {"national_2rate", "global_2rate", "local_2rate", "motor_2rate", "boat_2rate"}
+
+
+def _round1(v: float) -> float:
+    # float64 の正確な10進値で最も近い方、ちょうど中間なら大きい方（JS の Number.prototype.toFixed）
+    return float(Decimal(v).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP))
+
+
+def round1_like_js(s: pd.Series) -> pd.Series:
+    """JS の parseFloat(x.toFixed(1)) と同じ値（float64 のうちに丸める。値の種類が少ないので一意な値で計算）。"""
+    s = pd.to_numeric(s, errors="coerce").astype("float64")
+    u = s.dropna().unique()
+    return s.map(dict(zip(u, (_round1(v) for v in u))))
+
+
 def rid_to_int(s: pd.Series) -> pd.Series:
     """race_id 'YYYY-MM-DD-VV-RR' → int64 YYYYMMDDVVRR（文字列のままだとメモリが足りないため）。"""
     c = s.astype("category")
@@ -104,6 +147,8 @@ def read(name: str, src: Path = D, **kw) -> pd.DataFrame:
     d = pd.read_csv(path, low_memory=False, **kw)
     if "race_id" in d.columns:
         d["race_id"] = rid_to_int(d["race_id"])
+    for c in RATE_COLUMNS & set(d.columns):
+        d[c] = round1_like_js(d[c])
     for c in d.columns:
         if d[c].dtype == "float64":
             d[c] = d[c].astype("float32")
@@ -115,18 +160,36 @@ def _bool(s: pd.Series) -> pd.Series:
                   "True": True, "False": False}).fillna(False).astype(bool)
 
 
-def encode_race_level(r: pd.DataFrame, weather, wind_dir, wind_speed, final_day) -> pd.DataFrame:
+def encode_race_level(r: pd.DataFrame, weather, wind_dir, wind_speed, final_day,
+                      wind_offset: pd.Series | float = 0.0) -> pd.DataFrame:
+    """wind_offset: 風向の角度から引く値（本体を K の基準に直す。長期分は0）。NaN は風向を欠損にする"""
     out = pd.DataFrame({"race_id": r["race_id"]})
     out["weather_code"] = r[weather].map(WEATHER_CODE).astype("float32")
-    ang = r[wind_dir].map(DIR_ANGLE)
-    calm = r[wind_dir] == "無風"
+    # 推論側の JS（analogyRaceFeatures.js の windComponents）と同じ計算の順（角度−回転 → ラジアン）にする
+    ang = r[wind_dir].map(DIR_ANGLE) - wind_offset
     ws = pd.to_numeric(r[wind_speed], errors="coerce")
+    # 本体は無風を「風向が空・風速0」で持つ（'無風' の行は無い）。風向が空で風速>0 は不明（NaN）
+    calm = (r[wind_dir] == "無風") | (r[wind_dir].isna() & (ws == 0))
     # 風向は長期が8方位・本体が16方位なので、角度×風速のベクトル成分にそろえる（無風は0）
     out["wind_x"] = np.where(calm, 0.0, ws * np.sin(np.deg2rad(ang))).astype("float32")
     out["wind_y"] = np.where(calm, 0.0, ws * np.cos(np.deg2rad(ang))).astype("float32")
     out["is_final_day_num"] = r[final_day].map(
         {True: 1, False: 0, "True": 1, "False": 0, "true": 1, "false": 0}).astype("float32")
     return out
+
+
+# 長期の会場日のうち最終日の割合の下限。BOA-696（#1166）の前は K/B が最終日も「第N日」と書くため全件 false
+# だった（期待は 31,023 日中 約5,579＝約18%）。事前登録5 の前提で、満たさなければ学習しない
+MIN_FINAL_DAY_RATE = 0.10
+
+
+def check_final_day(is_final_day: pd.Series) -> None:
+    v = is_final_day.astype(str).str.lower()
+    rate = float((v == "true").mean()) if len(v) else 0.0
+    if rate < MIN_FINAL_DAY_RATE:
+        raise RuntimeError(
+            f"長期の is_final_day が true の会場日が {rate:.1%}（下限 {MIN_FINAL_DAY_RATE:.0%}）。BOA-696 の修正が"
+            "入っていないか、Storage のキャッシュが古い（export_pool.js の KB_CACHE_VERSION を上げる）")
 
 
 def load_kb(src: Path = D) -> pd.DataFrame:
@@ -140,6 +203,7 @@ def load_kb(src: Path = D) -> pd.DataFrame:
     r = read("kb_races", src)
     r = r[_bool(r["has_result"]) & (pd.to_datetime(r["race_date"]) <= KB_END)]
     vd = pd.read_csv(src / "kb_venue_days.csv", low_memory=False)
+    check_final_day(vd["is_final_day"])
     r = r.merge(vd[["venue_day_id", "series_day", "is_final_day", "race_grade"]],
                 on="venue_day_id", how="left")
     enc = encode_race_level(r, "weather", "wind_direction", "wind_speed", "is_final_day")
@@ -165,6 +229,20 @@ def load_kb(src: Path = D) -> pd.DataFrame:
     return df
 
 
+def main_wind(cond: pd.DataFrame, basis: dict,
+              fill_path: Path = K_WIND_FILL_FILE) -> tuple[pd.DataFrame, pd.Series]:
+    """本体の風向と、引く角度。DB の風向が空で風速>0 のうち K の風向があるレースは、K の値（方位）を入れて
+    回転しない。それ以外は会場の回転を引く。"""
+    cond = cond.copy()
+    offset = wind_offset((cond["race_id"] // 100) % 100, basis)  # race_id は rid_to_int の後（YYYYMMDDVVRR）
+    f = pd.read_csv(fill_path, dtype=str)
+    fill = pd.Series(f["wind_direction"].to_numpy(), index=rid_to_int(f["race_id"]).to_numpy())
+    ws = pd.to_numeric(cond["wind_speed"], errors="coerce")
+    use_k = cond["wind_direction"].isna() & (ws > 0) & cond["race_id"].isin(fill.index)
+    cond.loc[use_k, "wind_direction"] = cond.loc[use_k, "race_id"].map(fill)
+    return cond, offset.where(~use_k, 0.0)
+
+
 def load_main(src: Path = D) -> pd.DataFrame:
     races = read("races", src)
     ent = read("entries", src)
@@ -178,7 +256,9 @@ def load_main(src: Path = D) -> pd.DataFrame:
     df = df.merge(exh[["race_id", "boat_number", "exhibition_time", "is_absent"]]
                   .rename(columns={"is_absent": "exh_absent"}),
                   on=["race_id", "boat_number"], how="left")
-    enc = encode_race_level(cond, "weather", "wind_direction", "wind_speed", "is_final_day")
+    cond, offset = main_wind(cond, load_wind_basis())
+    enc = encode_race_level(cond, "weather", "wind_direction", "wind_speed", "is_final_day",
+                            wind_offset=offset)
     enc["round"] = cond["race_stage"].map(round_from_stage)
     df = df.merge(cond[["race_id", "wind_speed", "wave_height", "series_day"]],
                   on="race_id", how="left").merge(enc, on="race_id", how="left")
@@ -238,6 +318,24 @@ def attach_grade_from_series(df: pd.DataFrame, series: pd.DataFrame) -> pd.DataF
     return out.drop(columns=["grade_series"])
 
 
+def series_day_from_series(df: pd.DataFrame, series: pd.DataFrame) -> pd.DataFrame:
+    """節の日目・最終日を race_series（会場・開始日〜終了日）から導く。朝の初期化は race_conditions の
+    series_day・is_final_day を書かないので、出走表の時点の値としてはこれを使う。節が重なる日は開始日が
+    新しい方。節が無ければ NaN。"""
+    s = series[["venue_code", "start_date", "end_date"]].copy()
+    s["start_date"] = pd.to_datetime(s["start_date"])
+    s["end_date"] = pd.to_datetime(s["end_date"])
+    keys = df[["venue_code", "race_date"]].drop_duplicates()
+    m = keys.merge(s, on="venue_code")
+    m = m[(m["race_date"] >= m["start_date"]) & (m["race_date"] <= m["end_date"])]
+    m = m.sort_values("start_date", ascending=False).drop_duplicates(["venue_code", "race_date"])
+    m["series_day"] = ((m["race_date"] - m["start_date"]).dt.days + 1).astype("float32")
+    m["is_final_day_num"] = (m["race_date"] == m["end_date"]).astype("float32")
+    out = df.drop(columns=["series_day", "is_final_day_num"], errors="ignore")
+    return out.merge(m[["venue_code", "race_date", "series_day", "is_final_day_num"]],
+                     on=["venue_code", "race_date"], how="left")
+
+
 # ---------------------------------------------------------------- 選手の履歴（日単位でずらす）
 def _rolling_before(df: pd.DataFrame, col: str, min_periods: int, how: str) -> pd.Series:
     """その走より前の HISTORY_WINDOW 走の集計（df は racer_id・日付・R番号順）。"""
@@ -273,13 +371,27 @@ def add_history(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def forward_fill_profile(df: pd.DataFrame) -> pd.DataFrame:
-    """体重・支部の前方補完（出走表の値が無い期間がある）。前の走の既知値だけを使う。"""
+def profile_as_of_previous_day(df: pd.DataFrame) -> pd.DataFrame:
+    """体重・支部を「前日までに分かっている最後の値」にする（df は racer_id・日付・R番号順）。
+    朝の初期化は当日の体重・支部を書かない（発走60分前に入る）ので、当日の値も同じ日の前の走の値も使わない。"""
+    first = df.groupby([df["racer_id"], df["race_date"]], sort=False).cumcount() == 0
+    keys = [df["racer_id"], df["race_date"]]
     for c in ("weight", "branch"):
         prev = df.groupby("racer_id", sort=False)[c].shift(1)
         prev = prev.groupby(df["racer_id"], sort=False).ffill()
-        df[c] = df[c].fillna(prev)
+        df[c] = prev.where(first).groupby(keys, sort=False).ffill()
     return df
+
+
+def make_branch_map(branch: pd.Series) -> dict[str, int]:
+    """支部の文字列 → 番号（文字列の順。今までの astype("category").cat.codes と同じ番号）。
+    学習時に作って categorical_maps.json に保存し、日次の特徴量ジョブはこの表で符号化する。"""
+    return {b: i for i, b in enumerate(sorted(branch.dropna().astype(str).unique()))}
+
+
+def encode_branch(branch: pd.Series, branch_map: dict[str, int]) -> pd.Series:
+    """表に無い支部は NaN（学習で見ていない値を既存の番号に寄せない）。"""
+    return branch.map(branch_map).astype("float32")
 
 
 # ---------------------------------------------------------------- レース内の相対値・ラベル
@@ -314,14 +426,21 @@ def add_labels(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def build(src: Path = D) -> pd.DataFrame:
+def build_with_maps(src: Path = D, branch_map: dict[str, int] | None = None):
+    """特徴量と、符号化の対応表。branch_map を渡すとその表で符号化する（日次の特徴量ジョブ）。
+    渡さなければデータから作る（学習）。"""
     df = pd.concat([load_kb(src), load_main(src)], ignore_index=True)
     for c in df.columns:
         if df[c].dtype == "float64":
             df[c] = df[c].astype("float32")
-    df = attach_grade_from_series(df, pd.read_csv(src / "race_series.csv"))
+    series = pd.read_csv(src / "race_series.csv")
+    df = attach_grade_from_series(df, series)
+    main = df["race_date"] > KB_END
+    derived = series_day_from_series(df[["venue_code", "race_date"]], series)
+    for c in ("series_day", "is_final_day_num"):
+        df[c] = df[c].astype("float32").where(~main, derived[c].to_numpy())
     df = df.sort_values(["racer_id", "race_date", "race_number", "race_id"]).reset_index(drop=True)
-    df = forward_fill_profile(df)
+    df = profile_as_of_previous_day(df)
     df = add_history(df)
 
     df["cls_ord"] = df["cls"].astype(object).map(CLASS_ORD).astype("float32")
@@ -330,11 +449,18 @@ def build(src: Path = D) -> pd.DataFrame:
     br = df["branch"].astype(object)
     df["is_local"] = np.where(br.isna(), np.nan,
                               (br == df["venue_code"].map(VENUE_PREF)).astype(float)).astype("float32")
-    df["branch_code"] = df["branch"].astype("category").cat.codes.astype("float32").where(br.notna())
+    if branch_map is None:
+        branch_map = make_branch_map(br)
+    df["branch_code"] = encode_branch(br, branch_map)
 
     df = add_relative(df)
     df = add_labels(df)
-    return df.sort_values(["race_date", "race_id", "boat_number"]).reset_index(drop=True)
+    df = df.sort_values(["race_date", "race_id", "boat_number"]).reset_index(drop=True)
+    return df, {"branch_code": branch_map}
+
+
+def build(src: Path = D) -> pd.DataFrame:
+    return build_with_maps(src)[0]
 
 
 def complete_races(df: pd.DataFrame) -> pd.DataFrame:
@@ -342,8 +468,9 @@ def complete_races(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def main():
-    df = build()
+    df, maps = build_with_maps()
     df.to_pickle(D / "boats.pkl")
+    (D / "categorical_maps.json").write_text(json.dumps(maps, ensure_ascii=False, indent=1))
     ok = df[df["race_ok"] & (df["boat_number"] == 1)]
     summary = {"rows": int(len(df)), "races": int(df["race_id"].nunique()),
                "races_ok": int(len(ok)),

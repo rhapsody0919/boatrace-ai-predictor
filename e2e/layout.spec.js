@@ -511,7 +511,7 @@ test.describe("レイアウト: /hit-races は的中が列数より少なくて�
  * カテゴリで絞ると件数が列数を下回る（「リスク管理」1件・「実績分析」2件・
  * 「上級者向け」3件）。1440px以上は3列なので、1件のカテゴリで右に2列分の空白が残る。
  *
- * 記事はバンドルされた静的データ（src/data/blogPosts.js）なので、本番データにも
+ * 記事はバンドルされた静的データ（src/data/blog-posts/*.json）なので、本番データにも
  * 通信にも依存しない。カテゴリを全部押して、そのたびにグリッドを検査する。
  */
 test.describe("レイアウト: /blog はカテゴリで絞って件数が列数より少なくても幅を余らせない（BOA-528）", () => {
@@ -881,7 +881,9 @@ for (const path of ["/race/2026-09-29-16-12", "/en/race/2026-09-29-16-12"]) {
       page,
     }, testInfo) => {
       const widths =
-        testInfo.project.name === "layout-mobile" ? [320, 375, 390] : [null];
+        testInfo.project.name === "layout-mobile"
+          ? [320, 375, 390, 520, 600, 700]
+          : [null];
       for (const width of widths) {
         if (width) await page.setViewportSize({ width, height: 812 });
         await checkBeforeInfoExhibitionCard(page, path, width);
@@ -906,11 +908,21 @@ async function checkBeforeInfoExhibitionCard(page, path, width) {
     const labels = [...el.querySelectorAll(".drt-label-cell")].map(
       (c) => c.getBoundingClientRect().left,
     );
+    const wrapEl = el.closest(".drt-table-wrapper");
+    // 同じタブの、表を持たないカード（水面・展示タイム・進入など）
+    const others = [...document.querySelectorAll(".rbi-card")]
+      .filter((c) => !c.querySelector(".drt-table-wrapper") && c.offsetParent)
+      .map((c) => {
+        const r = c.getBoundingClientRect();
+        return [r.left, r.right];
+      });
     return {
       card: [card.left, card.right],
       wrap: [wrap.left, wrap.right],
       minLabelLeft: Math.min(...labels),
       vw: document.documentElement.clientWidth,
+      tableOverflow: wrapEl.scrollWidth - wrapEl.clientWidth,
+      others,
     };
   });
   // 表（横スクロールの枠）はカードの左右の枠の内側にある
@@ -923,4 +935,333 @@ async function checkBeforeInfoExhibitionCard(page, path, width) {
   expect(m.minLabelLeft, `${at}行見出し`).toBeGreaterThanOrEqual(
     Math.max(0, m.card[0]) - 0.5,
   );
+  if (!width) return;
+  // 375〜767px: 6艇が表の横スクロール無しで入る（以前は 520px で表 531px / 表示枠 438px）。
+  // 320px は対象外: 列の幅が 11px の文字の幅だけで決まり、CI（Linux のフォント）では 34px はみ出す
+  // （Mac の Chromium・Preview では 312/312 で収まる）。表は横スクロールのヒント付きで読める。
+  // 320px で横スクロールを無くすには列の中身を折る必要があり、仕様（FR-1 は 520・600・700px）の外
+  if (width >= 375) {
+    expect(
+      m.tableOverflow,
+      `${width}px: 展示情報の表の横スクロール`,
+    ).toBeLessThanOrEqual(1);
+  }
+  // 767px 以下: ほかのカードは画面の左右 8px（docs/design/race-detail-ui-unify FR-1 案B）
+  for (const [left, right] of m.others) {
+    expect(left, `${width}px: カードの左の余白`).toBeCloseTo(8, 0);
+    expect(m.vw - right, `${width}px: カードの右の余白`).toBeCloseTo(8, 0);
+  }
 }
+
+// 横スクロールの手がかり（useHorizontalScrollHint）。右に残っている幅に合わせて出し方を変える
+// （#1130 ファン評価で見送った P3 を共通部品で直したもの）。
+// - 残り 12px 超: 「›」（押せる幅 44px 以上）と右端のフェード（.has-more）
+// - 残り 1〜12px: 「›」は出さず、幅 12px の細いフェードだけ（data-hscroll-peek）
+//   以前は 5px 残りでも 40px のフェードと「›」がほぼ見えている最後の列を覆い、4px 以下では何も出なかった。
+//   境目を 24px にした版では、20px 残りで「›」が消えて最後の列が無いように見えた（PR #1169 ファン評価1周目）
+// - 残り 1px 以下: 何も出さない
+// このフックを使う画面ごとに、そのときの表示と、右端の手前 10px まで送った表示の両方を確かめる。
+// 本番データの列幅ではたまたま境目を踏まないことがあるため、送る位置はテストで決める
+const HSCROLL_SCREENS = [
+  {
+    name: "直前情報の展示情報",
+    path: "/race/2026-09-29-16-12?tab=beforeInfo",
+    ready: ".rbi-card .drt-table",
+    // #1127 以降は 320px でも表が収まる（溢れていないときに手がかりを出さないことを確かめる）
+  },
+  {
+    name: "今節の得点率早見",
+    path: "/race/2026-09-29-16-12?tab=meet",
+    ready: ".rmt-forecast-scroll table",
+    mobileOnly: true,
+  },
+  {
+    // このレースは中止で得点率早見が出ない。日別表だけを見る
+    name: "今節の日別表",
+    path: "/race/2026-09-21-02-05?tab=meet",
+    ready: ".race-history-table-row",
+    // 今節は本番 Supabase を2段で引き、表が出るまで1〜2分かかる日がある（race-detail-mobile.spec.js）。
+    // 溢れるのはスマホ幅だけなので、そこだけで確かめる
+    mobileOnly: true,
+  },
+  {
+    name: "モーター情報の一覧とコース別成績",
+    path: "/race/2026-09-29-16-12?tab=motor",
+    ready: ".motor-ranking-row",
+    // 行を押すと、そのモーターのコース別成績（MotorWakuStatsGrid）が開く
+    open: async (page) => {
+      // 会場内順位の列（#1153）は一覧の行が出たあとに足される。列が増える前に送ると、
+      // 送ったあとに表が広がり、残りの幅が 20px・10px にならない（CI で 71px 残った）
+      await expect(page.locator(".motor-venue-rank-head")).toBeVisible({
+        timeout: 30000,
+      });
+      await checkHscrollHints(page, "モーター一覧");
+      await page.locator(".motor-ranking-row").first().click();
+      await expect(page.locator(".motor-waku-table")).toBeVisible({
+        timeout: 30000,
+      });
+    },
+  },
+  {
+    name: "枠別情報の全コース表",
+    path: "/race/2026-09-29-16-12?tab=waku",
+    ready: ".rwit-fold-summary",
+    open: async (page) => {
+      await page.locator(".rwit-fold-summary").first().click();
+      await expect(page.locator(".rwit-grid-hscroll")).toBeVisible({
+        timeout: 30000,
+      });
+    },
+  },
+];
+
+test.describe("レイアウト: 横スクロールの手がかりは右に残っている幅に合わせて出す", () => {
+  for (const screen of HSCROLL_SCREENS) {
+    test(screen.name, async ({ page }, testInfo) => {
+      test.skip(
+        screen.mobileOnly && testInfo.project.name !== "layout-mobile",
+        "スマホ幅でだけ溢れる画面",
+      );
+      test.slow();
+      await page.goto(screen.path, { waitUntil: "domcontentloaded" });
+      await expect(page.locator(screen.ready).first()).toBeVisible({
+        timeout: 90000,
+      });
+      if (screen.open) await screen.open(page);
+      await checkHscrollHints(page, screen.name);
+    });
+  }
+});
+
+/** 画面にある .hscroll-hint を全部確かめる */
+async function checkHscrollHints(page, label) {
+  const hints = page.locator(".hscroll-hint");
+  const count = await hints.count();
+  expect(count, `${label}: 手がかりの箱`).toBeGreaterThan(0);
+  for (let i = 0; i < count; i++) {
+    const hint = hints.nth(i);
+    if (!(await hint.isVisible())) continue;
+    const at = `${label}[${i}]`;
+    // そのときの表示。表がそろうまでは幅が変わるので、落ち着くまで読み直す
+    await expect
+      .poll(async () => hintMismatch(await readHint(hint)), {
+        timeout: 15000,
+        message: `${at}: そのときの表示`,
+      })
+      .toBe("");
+    const { maxScroll } = await readHint(hint);
+    if (maxScroll <= 30) continue;
+    // 右端の手前 20px まで送る: まだ「›」を出す
+    await readHint(hint, 20);
+    await expect
+      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 残り20px` })
+      .toMatchObject({
+        remaining: 20,
+        hasMore: true,
+        moreButton: true,
+        peek: null,
+      });
+    // 右端の手前 10px まで送る: 「›」は出さず、幅 12px の細いフェードだけ
+    await readHint(hint, 10);
+    await expect
+      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 残り10px` })
+      .toMatchObject({
+        remaining: 10,
+        hasMore: false,
+        moreButton: false,
+        peek: "true",
+        peekWidth: "12px",
+      });
+    // 右端まで送る: 何も出さない
+    await readHint(hint, 0);
+    await expect
+      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 右端` })
+      .toMatchObject({ remaining: 0, hasMore: false, peek: null });
+    await expectGlyphDisc(hint, ".hscroll-less", at);
+    // 左端へ戻すと「›」が出る。押せる幅は 44px 以上（以前は 28px で押し損ねやすかった）
+    await readHint(hint, null);
+    await expect
+      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 左端` })
+      .toMatchObject({ hasMore: true, moreButton: true });
+    expect(
+      (await readHint(hint)).moreWidth,
+      `${at}: 「›」の押せる幅`,
+    ).toBeGreaterThanOrEqual(44);
+    await expectGlyphDisc(hint, ".hscroll-more", at);
+    // 押せる範囲を広げても、記号は以前と同じく端に寄せる。真ん中に置くと見出しの文字に
+    // 寄って「ST›」のように続けて読めた（PR #1169 のレビュー）
+    expect(
+      (await readHint(hint)).moreGlyphFromRight,
+      `${at}: 「›」の記号の位置`,
+    ).toBeLessThanOrEqual(16);
+  }
+}
+
+/**
+ * 「›」「‹」の記号の後ろに面の色の円を敷いているか。左の列が固定されていない表では、記号の下を
+ * 見出しの文字が流れて「枠番」の「枠」と一体に見えた（PR #1169 ファン評価1周目）
+ */
+async function expectGlyphDisc(hint, sel, at) {
+  const bgImage = await hint.evaluate((el, s) => {
+    const b = el.querySelector(`:scope > ${s}`);
+    return b ? getComputedStyle(b).backgroundImage : null;
+  }, sel);
+  if (bgImage !== null) {
+    expect(bgImage, `${at}: ${sel} の記号の下地`).toContain("radial-gradient");
+  }
+}
+
+/** そのときの残りの幅に対して、出ている手がかりが合っていなければ食い違いを文で返す（合っていれば空文字） */
+function hintMismatch(h) {
+  // 境目の判定は丸める前の幅で行う（フックと同じ）
+  const hasMore = h.remainingRaw > 12;
+  const want = {
+    hasMore,
+    moreButton: hasMore,
+    peek: !hasMore && h.remainingRaw > 1 ? "true" : null,
+  };
+  const got = { hasMore: h.hasMore, moreButton: h.moreButton, peek: h.peek };
+  return JSON.stringify(want) === JSON.stringify(got)
+    ? ""
+    : `残り${h.remaining}px で ${JSON.stringify(got)}（期待 ${JSON.stringify(want)}）`;
+}
+
+/**
+ * 手がかりの箱（.hscroll-hint）の状態を読む。fromEnd を渡すと先に横へ送る
+ * （右端からの距離 px。null なら左端へ戻す）。
+ * スクロールするのは箱そのもの（直前情報）か中の要素（モーター・今節）で、外枠にも overflow-x: auto が
+ * 付いている画面がある。実際に溢れている要素を選び、どれも溢れていなければいちばん内側を使う
+ */
+async function readHint(hint, fromEnd) {
+  return hint.evaluate((el, d) => {
+    const boxes = [el, ...el.querySelectorAll("*")].filter((n) =>
+      ["auto", "scroll"].includes(getComputedStyle(n).overflowX),
+    );
+    const box =
+      boxes.find((n) => n.scrollWidth > n.clientWidth) ?? boxes.at(-1);
+    if (d !== undefined) {
+      box.scrollLeft = d === null ? 0 : box.scrollWidth - box.clientWidth - d;
+    }
+    const more = el.querySelector(":scope > .hscroll-more");
+    return {
+      remaining: Math.round(box.scrollWidth - box.clientWidth - box.scrollLeft),
+      remainingRaw: box.scrollWidth - box.clientWidth - box.scrollLeft,
+      maxScroll: box.scrollWidth - box.clientWidth,
+      hasMore: el.classList.contains("has-more"),
+      moreButton: Boolean(more),
+      moreWidth: more ? more.getBoundingClientRect().width : 0,
+      // 「›」の記号の中心から箱の右端までの距離
+      moreGlyphFromRight: more
+        ? (() => {
+            const range = document.createRange();
+            range.selectNodeContents(more);
+            const g = range.getBoundingClientRect();
+            return more.getBoundingClientRect().right - (g.left + g.right) / 2;
+          })()
+        : null,
+      peek: el.dataset.hscrollPeek ?? null,
+      peekWidth: el.style.getPropertyValue("--hscroll-peek-width") || null,
+    };
+  }, fromEnd);
+}
+
+// PC幅で、1行に名前と数値を並べるリストが 1200px の箱の両端に離れない（BOA-619 項目3）。
+// 1440px で、展開予測の決まり手と確率が約1000px、払戻金の券種と金額も約1000px離れていた
+test.describe("レイアウト: PC幅で名前と数値を離しすぎない（BOA-619）", () => {
+  const RACE = "/race/2026-09-29-16-12"; // 児島12R（確定済み）
+
+  // 指定は 1025px から効く。箱が 1200px で止まる前の帯（1025〜1279px）も通すため、
+  // layout-desktop のときは 1100px でも確かめる
+  const widthsFor = (testInfo) => {
+    if (testInfo.project.name === "layout-desktop") return [1100, 1440];
+    if (testInfo.project.name === "layout-wide") return [1920];
+    return [];
+  };
+
+  test("AI予想の振り返り: 決まり手と確率が近く、ページの中央に置く", async ({
+    page,
+  }, testInfo) => {
+    const widths = widthsFor(testInfo);
+    test.skip(widths.length === 0, "PC幅（1025px以上）だけの指定");
+    for (const width of widths) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${RACE}?tab=aiPrediction`, {
+        waitUntil: "domcontentloaded",
+      });
+      const row = page.locator(".turn-pattern-row").first();
+      await expect(row).toBeVisible({ timeout: 30000 });
+      const m = await row.evaluate((el) => {
+        const r = (q) => el.querySelector(q).getBoundingClientRect();
+        const tab = el
+          .closest(".race-ai-prediction-tab")
+          .getBoundingClientRect();
+        const box = el.closest(".race-tabs-panel").getBoundingClientRect();
+        return {
+          gap: r(".turn-pattern-prob").left - r(".turn-pattern-technique").left,
+          tabCenter: (tab.left + tab.right) / 2,
+          boxCenter: (box.left + box.right) / 2,
+        };
+      });
+      expect(
+        m.gap,
+        `${width}px: 決まり手の左端から確率の左端まで`,
+      ).toBeLessThanOrEqual(700);
+      expect(
+        Math.abs(m.tabCenter - m.boxCenter),
+        `${width}px: 振り返りの中心`,
+      ).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test("結果の払戻金: 券種と金額が近い", async ({ page }, testInfo) => {
+    const widths = widthsFor(testInfo);
+    test.skip(widths.length === 0, "PC幅（1025px以上）だけの指定");
+    for (const width of widths) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${RACE}?tab=result`, { waitUntil: "domcontentloaded" });
+      const row = page.locator(".rr-payout-row").first();
+      await expect(row).toBeVisible({ timeout: 30000 });
+      const gap = await row.evaluate(
+        (el) =>
+          el.querySelector(".rr-amount").getBoundingClientRect().right -
+          el.querySelector(".rr-payout-type").getBoundingClientRect().left,
+      );
+      expect(
+        gap,
+        `${width}px: 券種の左端から金額の右端まで`,
+      ).toBeLessThanOrEqual(640);
+    }
+  });
+
+  // 今節タブの得点率早見。箱の幅いっぱいに広がり、余りが全部選手名の列に入って、
+  // 1440px で選手名の列が 853px、1024px でも 672px あった（BOA-736）。指定は 769px から効く
+  test("今節の得点率早見: 選手名と得点率・着順の列が近い", async ({
+    page,
+  }, testInfo) => {
+    const widths =
+      testInfo.project.name === "layout-desktop"
+        ? [900, 1100, 1440]
+        : testInfo.project.name === "layout-wide"
+          ? [1920]
+          : [];
+    test.skip(widths.length === 0, "769px 以上だけの指定");
+    for (const width of widths) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/race/2026-09-23-09-12?tab=meet", {
+        waitUntil: "domcontentloaded",
+      });
+      const head = page.locator(".rmt-forecast-table thead th").first();
+      await expect(head).toBeVisible({ timeout: 30000 });
+      const m = await page.evaluate(() => ({
+        name: document
+          .querySelector(".rmt-forecast-table thead th")
+          .getBoundingClientRect().width,
+        table: document
+          .querySelector(".rmt-forecast-table")
+          .getBoundingClientRect().width,
+      }));
+      expect(m.table, `${width}px: 表の幅`).toBeLessThanOrEqual(640);
+      expect(m.name, `${width}px: 選手名の列の幅`).toBeLessThanOrEqual(400);
+    }
+  });
+});
