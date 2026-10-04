@@ -71,7 +71,11 @@ function HitRaceCard({
           {/* 上位候補のどれかが1着になれば的中で、ここに出るのはその当たった候補（本命とは限らない）。
               「1マーク先頭」は展開予測の説明（1着）と食い違い、「1着予想」は本命に推したように読めた
               （BOA-710、PR #1197 ファン評価1周目） */}
-          <span className="turn-hit-course-label">的中した候補</span>
+          <span className="turn-hit-course-label">
+            的中した候補
+            {hitRace.pickRank > 0 &&
+              `（${hitRace.pickRank === 1 ? "本命" : `予想${hitRace.pickRank}番手`}）`}
+          </span>
           <span className="turn-hit-course-value">
             {hitRace.winnerBoat}号艇
             {winnerEntryCourse != null &&

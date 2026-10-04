@@ -553,7 +553,7 @@
     "title": "轉彎預測",
     "caption": "可能獲得第1名的候選艇（最多3艇，依機率排序）",
     "captionResult": "這是賽前的預測。%是圓圈數字的艇以該獲勝方式獲得第1名的機率。",
-    "hitTag": "命中",
+    "hitTag": "第1名",
     "summaryHit": "✅ 上位預測中的艇獲得第1名",
     "summaryAsPredicted": "✅ 與預測相同的展開（第1順位預測的艇以預測的獲勝方式獲得第1名）",
     "actualTechnique": "（實際：{{technique}}）",

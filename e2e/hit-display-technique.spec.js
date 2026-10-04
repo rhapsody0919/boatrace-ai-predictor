@@ -135,6 +135,8 @@ test("A-1: AI予想タブの「的中」は、決まり手と%の後ろではな
   }));
   expect(order.prev).toContain("turn-pattern-boat");
   expect(order.next).toContain("turn-pattern-technique");
+  // 「的中 差し」と続いて決まり手が当たったと読めたので、艇の印は「1着」と書く（ファン評価2周目）
+  await expect(tag).toHaveText("1着");
 });
 
 test("A-3: 的中レースのカードは、予想の決まり手が実際と違うときに実際の決まり手を添える", async ({
@@ -159,6 +161,15 @@ test("A-3: 的中レースのカードは、予想の決まり手が実際と違
     // 予想と実際が同じなら添えない
     expect(m[1]).not.toBe(m[2]);
   }
+  // 当たった候補が何番手か（本命か、予想N番手か）を添える（ファン評価2周目）
+  const labels = await page
+    .locator(".turn-hit-course-label")
+    .evaluateAll((els) => els.map((el) => el.textContent));
+  for (const label of labels) {
+    expect(label).toMatch(/^的中した候補（(本命|予想\d番手)）$/);
+  }
+  expect(labels.some((l) => l.includes("本命"))).toBe(true);
+  expect(labels.some((l) => /予想[2-9]番手/.test(l))).toBe(true);
   // 全期間の見出しが白地に白文字にならない（ファン評価1周目）
   const bg = await page
     .locator(".hit-races-section.all")

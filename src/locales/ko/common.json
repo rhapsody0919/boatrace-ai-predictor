@@ -553,7 +553,7 @@
     "title": "전개 예측",
     "caption": "1착이 될 가능성이 높은 정의 후보입니다（최대 3정, 확률순）",
     "captionResult": "레이스 전 예상입니다. %는 동그라미 숫자의 보트가 그 결정수로 1착이 될 확률입니다.",
-    "hitTag": "적중",
+    "hitTag": "1착",
     "summaryHit": "✅ 상위 예측의 보트가 1착을 했습니다",
     "summaryAsPredicted": "✅ 예상대로의 전개였습니다(1순위 예상 보트가 예상한 결정수로 1착)",
     "actualTechnique": "(실제: {{technique}})",

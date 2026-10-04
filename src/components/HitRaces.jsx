@@ -53,6 +53,10 @@ function extractHitRaces(predictions) {
         matchedPattern,
         // 当たった候補が1番手（本命）か。2番手以下なら共有文で「予想通り」と言わない（BOA-724）
         isTopPick: matchedPattern != null && matchedPattern === patterns[0],
+        // 当たった艇が上位候補の何番手か（艇単位。AI予想タブの🥇🥈🥉と同じ数え方）。
+        // 本命の63%も3番手の5%も同じ「展開予測的中」に見えた（BOA-724 ファン評価2周目）
+        pickRank:
+          [...new Set(patterns.map((p) => p.winnerCourse))].indexOf(winner) + 1,
         result: race.result,
       };
     })

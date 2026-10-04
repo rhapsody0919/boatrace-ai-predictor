@@ -92,7 +92,8 @@ test("的中レースの展開予測のカードは「的中した候補」と�
   const label = page.locator(".turn-hit-course-label").first();
   await expect(label).toBeVisible({ timeout: 30000 });
   // 上位候補のどれかが当たれば的中なので、本命に推したように読める「1着予想」とは書かない
-  await expect(label).toHaveText("的中した候補");
+  // 当たった候補が何番手かも添える（BOA-724 ファン評価2周目）
+  await expect(label).toHaveText(/^的中した候補（(本命|予想\d番手)）$/);
   // 決まり手は実際の結果と違うことがあるので、この欄には書かず、AI の予想として書く。
   // 値は1着の艇番で、進入コースが違うときだけ添える（BOA-708）
   await expect(page.locator(".turn-hit-course-value").first()).toHaveText(

@@ -558,7 +558,7 @@
     "title": "Turn Prediction",
     "caption": "Candidates likely to finish 1st (up to 3 boats, ranked by probability)",
     "captionResult": "Pre-race prediction. The % is the chance that the circled lane wins with that winning technique.",
-    "hitTag": "Hit",
+    "hitTag": "Won",
     "summaryHit": "✅ A boat from the top predictions won",
     "summaryAsPredicted": "✅ Went as predicted (the top pick won with the predicted technique)",
     "actualTechnique": "(actual: {{technique}})",

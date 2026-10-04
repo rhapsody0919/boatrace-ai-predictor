@@ -131,8 +131,9 @@ function TurnPatternList({
             >
               {pattern.winnerCourse}
             </span>
-            {/* 「的中」は艇の印。判定は1着の艇だけで決まり手は見ないため、決まり手と%の後ろに
-                付けると「その決まり手が当たった」と読めた（BOA-724） */}
+            {/* 艇の印。判定は1着の艇だけで決まり手は見ないため、決まり手と%の後ろに付けると
+                「その決まり手が当たった」と読めた（BOA-724）。艇番の隣に移しても「的中 差し」と
+                続いて読めたので、文言も「1着」にした（ファン評価2周目） */}
             {isMatch && (
               <span className="turn-pattern-hit-tag">
                 {t("turnPatternList.hitTag")}
