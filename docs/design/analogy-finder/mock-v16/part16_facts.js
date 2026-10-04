@@ -8,7 +8,7 @@ const RFM = [
   ["boat_2", "ボート2連率", "高い", "低い"],
   ["st_mean30", "過去の平均ST", "早い", "遅い"],
   ["exh_time", "展示タイム", "速い", "遅い"],
-  ["series_score", "今節の平均点", "高い", "低い"],
+  ["series_score", "今節の平均着順点", "高い", "低い"],
 ];
 // 材料の説明（モーターとボートの違いが分かるように）
 const MDESC = {
@@ -57,9 +57,6 @@ function hexRadar(svg, labels, series) {
   labels.forEach((_, i) => {
     const [x, y] = pt(i, Rr);
     h += `<line x1="${Cc[0]}" y1="${Cc[1]}" x2="${x}" y2="${y}" stroke="rgba(201,162,39,.2)"/>`;
-  });
-  [1, 6].forEach((k) => {
-    h += `<text x="${Cc[0] + 4}" y="${Cc[1] - rr(k) + 10}" fill="#e8d089" opacity=".75" font-size="13" font-family="Zen Kaku Gothic New,sans-serif">${k}位</text>`;
   });
   series.forEach((s) => {
     if (s.v.every((x) => x != null))
@@ -161,7 +158,7 @@ function renderFacts() {
       .map((p, i) => {
         const [x, n] = r.all[i] || [0, 0],
           on = today === i + 1;
-        return `<div class="col${on ? " on" : ""}" title="${x}/${n}"><span class="pv">${p == null ? "—" : Math.round(p * 100)}</span><span class="plot"><span class="bar" style="height:${p == null ? 0 : (p / mx) * 100}%;background:${LINE6[A]}"></span><span class="usual" style="bottom:${(uP / mx) * 100}%"></span></span><span class="rk">${i === 0 ? `一番${r.hi}` : i === 5 ? `一番${r.lo}` : i + 1}</span></div>`;
+        return `<div class="col${on ? " on" : ""}" title="${x}/${n}"><span class="pv">${p == null ? "—" : Math.round(p * 100)}</span><span class="plot"><span class="bar" style="height:${p == null ? 0 : (p / mx) * 100}%;background:${LINE6[A]}"></span><span class="usual" style="bottom:${(uP / mx) * 100}%"></span></span><span class="rk">${i === 0 ? `一番${r.hi}` : i === 5 ? `一番${r.lo}` : `${i + 1}位`}</span></div>`;
       })
       .join("")}</div>`;
   };
@@ -187,11 +184,11 @@ function renderFacts() {
     }
     return `<div class="eff ${cls}"><div class="eh"><b>${r.l}</b><small class="md">${MDESC[r.k]}</small><span class="gap">${lab}${!cls && d < 0 ? `（一番${r.lo}ときのほうが高い）` : ""}</span></div>
       <div class="pair"><div><span>6艇で一番${r.hi}とき</span><b>${r.p[0] == null ? "—" : pc(r.p[0], 0)}</b><small>${b[0].toLocaleString()}/${b[1].toLocaleString()}</small></div><div><span>6艇で一番${r.lo}とき</span><b>${r.p[5] == null ? "—" : pc(r.p[5], 0)}</b><small>${w[0].toLocaleString()}/${w[1].toLocaleString()}</small></div></div>
-      ${strip(r)}<p class="stripcap">棒の上の数字は%（左ほど${r.hi}）。点線は全体の ${pc(uP, 1)}。枠で囲んだ棒が今日の位置</p>${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
+      ${strip(r)}<p class="stripcap">棒の上の数字は%、下は6艇中の順位（左ほど${r.hi}）。点線は全体の ${pc(uP, 1)}。枠で囲んだ棒が今日の位置</p>${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
   };
   const allClass = new Set([1, 2, 3, 4, 5, 6].map((b) => RF.ex[b].class)).size === 1;
   $("factsOut").innerHTML = `<div class="big1"><span>${sname}の全体で、${A}号艇が${RT[st.rank]}に入った割合</span><b>${pc(uP, 1)}</b><small>${U[0].toLocaleString()}/${U[1].toLocaleString()}レース（${T1.period[0]}〜${T1.period[1]}）</small></div>
-  <p class="sub">${FSCOPE_DESC[st.fscope]}で、${A}号艇のその材料が6艇の中で一番良かったときと一番悪かったときに、${RT[st.rank]}に入った割合を比べた。差がはっきりしているものから、差の大きい順に並べている（差が近い材料どうしは、入れ替わってもおかしくない）。材料どうしは重なっていて（全国勝率と直近の1着率は、どちらも選手の格を見ている）、どれが効いたのかは分けられない。棒の点線は、全体での割合（上の大きい数字）</p>
+  <p class="sub">${FSCOPE_DESC[st.fscope]}で、${A}号艇のその材料が6艇の中で一番良かったときと一番悪かったときに、${RT[st.rank]}に入った割合を比べた。差がはっきりしているものから、差の大きい順に並べている（差が近い材料どうしは、入れ替わってもおかしくない）。「差が大きい」は5ポイント以上の差、「差ははっきりしない」は件数が少ないなどで95%の幅が重なるもの（差の数字が大きくても、件数が少ないとこうなる）。材料どうしは重なっていて（全国勝率と直近の1着率は、どちらも選手の格を見ている）、どれが効いたのかは分けられない。棒の点線は、全体での割合（上の大きい数字）</p>
   <div class="effs">${rows.filter((r) => r.k !== "boat_2").map(card).join("")}${rows.filter((r) => r.k === "boat_2").map((r) => `<details class="more boatfold"><summary>ボート2連率（着順との関係が小さい材料）</summary><p class="sub">全国・6艇とも A1 のレースでは、ボート2連率が6艇で一番高いとき・低いときの差は0〜3ポイントで、モーター2連率（5〜8ポイント）より着順との関係が小さかった。気にしすぎなくてよい材料として残している</p>${card(r)}</details>`).join("")}</div>
   ${allClass ? `<p class="foot">級別: 今日は6艇とも ${ex.class} なので差がつかない</p>` : ""}
   <p class="foot">数えた割合で、原因とは限らない。「差ははっきりしない」は、一番良いときと一番悪いときの95%の幅が重なるもの。「差が大きい」は5ポイント以上。同じ値の艇は、一番良い・一番悪いの両方に含めている。${st.stage === "pre" ? "展示タイムは展示の後に出る。" : "2025-11 以前の展示タイムは結果ファイルから取っていて、取り方が違う。"}</p>`;

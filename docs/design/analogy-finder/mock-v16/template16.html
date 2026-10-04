@@ -81,7 +81,7 @@ h3{font-family:"Zen Kaku Gothic New",sans-serif;font-size:14.5px;margin:4px 0 0}
 .pr{display:grid;grid-template-columns:1fr 7em;gap:8px;align-items:center;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--text2);font-variant-numeric:tabular-nums}
 .pr span:last-child{text-align:right}
 .ind{display:grid;gap:3px;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px}
-.tbl{overflow-x:auto}
+.tbl{overflow-x:auto}#likeAll td:first-child{white-space:normal;min-width:7.5em;max-width:18em;overflow-wrap:anywhere}#likeAll th,#likeAll td{padding:5px 4px;font-size:11.5px}#likeAll td:not(:first-child) small{display:block}#likeAll td small{font-size:10.5px}
 table{border-collapse:collapse;width:100%;font-size:12px}
 th,td{padding:6px 7px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
 td{font-variant-numeric:tabular-nums}
@@ -135,7 +135,7 @@ details.fold>summary{cursor:pointer;font-family:"Zen Kaku Gothic New",sans-serif
 .cg{display:grid;gap:2px}
 .ci{display:grid;grid-template-columns:1.4em minmax(0,1fr) minmax(0,1.2fr);gap:6px;font-size:12px;align-items:baseline}
 .ci .mk{font-weight:700;text-align:center}
-.ci .cv{font-family:"JetBrains Mono",monospace;font-size:11.5px;word-break:break-all}.ci .cv small{display:block;color:var(--muted)}
+.ci .cv{font-family:"JetBrains Mono",monospace;font-size:11.5px;word-break:normal;overflow-wrap:anywhere}.ci .cv small{display:block;color:var(--muted)}
 @media (prefers-reduced-motion:no-preference){.pulse{animation:pl 2.4s ease-out infinite}@keyframes pl{0%{r:6;opacity:.9}100%{r:22;opacity:0}}}
 [hidden]{display:none!important}
 .rankbar{position:static!important}
@@ -364,6 +364,7 @@ let NSd=NS;function setNS(){const L=K.nb.length;NSd=L<800?[...NS.filter(x=>x<L),
 function curNb(){const all=st.noSS?K.nb.filter(n=>!n.ss):K.nb;return all.slice(0,NSd[st.ni]);}
 function agg(nb){const a={n:nb.length,win:[0,0,0,0,0,0],hit:{1:[0,0,0,0,0,0],2:[0,0,0,0,0,0],3:[0,0,0,0,0,0]},tech:{},tri:{}};
   nb.forEach(x=>{const o=x.o;if(!o||o.length<3)return;a.win[o[0]-1]++;o.forEach((b,i)=>{for(let t=i+1;t<=3;t++)a.hit[t][b-1]++;});const tq=x.res.technique;a.tech[tq]=(a.tech[tq]||0)+1;const k=o.join("");a.tri[k]=(a.tri[k]||0)+1;});return a;}
+const cleanRule=s=>String(s||"").replace(/120 の/g,"").replace(/MD-6 の/g,"").replace(/motor と同じ式で/g,"モーターと同じ数え方で").replace(/motor_rank（1 \+ 1号艇より高い艇の数）/g,"順位").replace(/motor_rank/g,"順位").replace(/\|差\|/g,"差");
 const fmtT=(k,v)=>/^recent_/.test(String(k))&&typeof v==="string"?v.split("/").map(x=>x!==""&&!isNaN(+x)?Math.round(+x*100)+"%":x).join("/"):v;
 const isBad=f=>!/^[1-6]$/.test(String(f));
 function renderSim(){
@@ -371,7 +372,7 @@ function renderSim(){
   $("nLbl").textContent=N;
   $("simSub").textContent=(st.stage==="post"?"展示後: 展示タイム・天候・風・波も近さに入れている。":"展示前: 出走表の情報だけで近さを測っている。")+((st.swKnn==="mix"||st.stage==="post")&&D.knn3?`${K.pool&&K.pool.layer_cond?K.pool.layer_cond:(K.pool&&K.pool.layer_n?"ラウンド（優勝戦）・":"")+"勝率差の帯・1号艇の級別・勝率トップの艇"}が今日と同じ過去レース${K.pool&&K.pool.layer_n?`（${K.pool.layer_n}件）`:""}に絞り、`+"その中を、出走表の数字が今日の若松12Rに近い順に並べた（会場が同じものを近く数える）":"出走表の数字が今日の若松12Rに近い過去レースを、似ている順に並べた。同じ会場のレースを優先して探している（会場が違うと遠く数える）");
   const far=nb[N-1],fc=far?Object.entries(far.m).filter(([k,m])=>m!=null&&ITEM[k]?.inDist&&!DUP[k]).map(([,m])=>m):[];
-  $("pctLbl").textContent=far?`${N}件目（いちばん遠い）でも、${fc.length}項目のうち ${fc.filter(m=>m===2).length}項目が同じ・${fc.filter(m=>m===1).length}項目が近い`:"";
+  $("pctLbl").textContent=far?`${N}件目（いちばん遠い）でも、近さの計算に使う${fc.length}項目のうち ${fc.filter(m=>m===2).length}項目が同じ・${fc.filter(m=>m===1).length}項目が近い`:"";
   $("ssLbl").textContent=st.noSS?`除いている（${K.nb.slice(0,NSd[st.ni]+40).filter(n=>n.ss).length?"":""}今日と同じ節の前日までのレース）`:`含めている（この中に ${nb.filter(n=>n.ss).length}件）`;
   $("ssChip").setAttribute("aria-pressed",st.noSS);
   renderSonar(nb);
@@ -385,15 +386,17 @@ function renderSim(){
   const weak=main.filter(r=>r.rate<.5).sort((a,b)=>a.rate-b.rate);
   const bar=(r)=>{const nr=nearRate(r);return `<div class="lk"><span>${r.it.label}<small>今日: ${fmtT(r.it.key,K.today[r.it.key])??"—"}</small></span><span class="lkb"><span class="wtrk" style="height:10px"><span class="f" style="width:${r.rate*100}%"></span>${nr!=null?`<span class="w" style="left:${r.rate*100}%;width:${Math.max(0,nr-r.rate)*100}%;opacity:.35"></span>`:""}</span></span><span class="v">${pc(r.rate,0)}<small>${nr!=null&&nr>r.rate+.005?` 近いも含め ${pc(nr,0)}`:""}</small></span></div>`;};
   $("likeTop").innerHTML=`<p class="sub">この ${N}件のうち、その項目が今日と同じ（基準は全項目の表に）レースの割合</p>${CONDK.length?`<p class="foot">条件でそろえた項目（${CONDK.map(k=>ITEM[k]?ITEM[k].label:k).join("・")}）は、全件が今日と同じなので、ここには出していない</p>`:""}`+(strong.map(bar).join("")||`<p class="foot">半分以上がそろう項目は無い</p>`)+(weak.length?`<h3 style="font-size:13px;margin-top:8px">そろっていない（半分未満）</h3>`+weak.map(bar).join(""):"")+`<p class="foot" style="margin-top:6px">近さで重く見た順: 全国の成績・直近の成績・平均ST・当地の成績・会場（AI が重く見る項目で近さを決めている）</p>`;
-  $("likeMore").textContent=`全 ${K.items.length} 項目を見る`;
-  $("likeAll").innerHTML=`<thead><tr><th>項目</th><th>今日</th><th>同じ（${N}件）</th><th>近いまで</th><th>全レース</th></tr></thead><tbody>${rows.slice().sort((a,b)=>(b.rate??-1)-(a.rate??-1)).map(r=>{const near=nb.map(x=>x.m[r.it.key]).filter(x=>x!=null);const nr=near.length?near.filter(x=>x>=1).length/near.length:null;return `<tr><td>${r.it.label}${r.it.inDist?"":` <small class="muted">（近さの計算には入れていない）</small>`}<br><small class="muted">${r.it.rule}</small></td><td>${fmtT(r.it.key,K.today[r.it.key])??"—"}</td><td>${r.rate==null?"—":pc(r.rate,0)+` <small>${r.same}/${r.n}</small>`}</td><td>${nr==null?"—":pc(nr,0)}</td><td>${pc(r.it.pool,0)}</td></tr>`;}).join("")}</tbody>`;
+  $("likeMore").textContent=`全 ${K.items.length} 項目（近さの計算に使わない項目も含む）を見る`;
+  $("likeAll").innerHTML=`<thead><tr><th>項目（今日の値）</th><th>同じ（${N}件）</th><th>近いまで</th><th>全レース</th></tr></thead><tbody>${rows.slice().sort((a,b)=>(b.rate??-1)-(a.rate??-1)).map(r=>{const near=nb.map(x=>x.m[r.it.key]).filter(x=>x!=null);const nr=near.length?near.filter(x=>x>=1).length/near.length:null;return `<tr><td>${r.it.label}${r.it.inDist?"":` <small class="muted">（近さの計算には入れていない）</small>`}<br><small>今日: ${fmtT(r.it.key,K.today[r.it.key])??"—"}</small><br><small class="muted">${cleanRule(r.it.rule)}</small></td><td>${r.rate==null?"—":pc(r.rate,0)+` <small>${r.same}/${r.n}</small>`}</td><td>${nr==null?"—":pc(nr,0)}</td><td>${pc(r.it.pool,0)}</td></tr>`;}).join("")}</tbody>`;
   renderCmp(nb);renderRes(nb);
 }
+// 比べる相手: 層の全件を並べている（層＝類似レース全体）ときは、層と同じになるので、全国・6艇ともA1の優勝戦を置く
+function cmpLayer(){if(st.swKnn!=="mix")return null;const P=K.pool||{};if(P.layer_n&&P.layer_n===K.nb.length&&D.scn&&D.scn.scopes.allA1Y){const c=D.scn.scopes.allA1Y.cells.all.forms.any,bf={};for(let b=1;b<=6;b++){const w=c.first_boat[b-1],s=c.second_boat[b-1],th=c.third_boat[b-1];bf[b]={win:w,top2:w+s,top3:w+s+th};}return {n:c.n,boat_finish:bf,technique:c.technique,name:`全国・6艇ともA1の優勝戦（${c.n.toLocaleString()}件。類似レースは条件がそろった全件なので、ひとつ広い範囲と比べる）`};}return D.knn3layer?{...D.knn3layer,name:`条件（${D.knn3layer.cond||"勝率差・1号艇の級別・勝率トップ"}）がそろった過去レース全体（${D.knn3layer.n.toLocaleString()}件）`}:null;}
 function renderSonar(nb){
   const svg=$("sonar"),cx=220,cy=220,R=188,LM=K.nb.length<800?K.nb.length:800,lin=LM<100,rOf=rk=>lin?18+(R-24)*Math.max(1,rk)/LM:18+(R-24)*Math.log10(Math.max(1,rk))/Math.log10(800);
   const ang=b=>-90+(b-1)*60;let h="";
   for(let b=1;b<=6;b++){const a0=(ang(b)-30)*Math.PI/180,a1=(ang(b)+30)*Math.PI/180;h+=`<path d="M${cx},${cy}L${cx+R*Math.cos(a0)},${cy+R*Math.sin(a0)}A${R},${R} 0 0 1 ${cx+R*Math.cos(a1)},${cy+R*Math.sin(a1)}Z" fill="${FLOW[b]}" fill-opacity="${st.boat===b?.16:.05}" stroke="#0d1b2e" data-sec="${b}" style="cursor:pointer"/>`;}
-  (lin?[...new Set([5,10,LM].filter(x=>x<=LM))]:[10,100,800]).forEach(k=>{h+=`<circle cx="${cx}" cy="${cy}" r="${rOf(k)}" fill="none" stroke="#c9a227" stroke-opacity="${k<=nb.length?.45:.18}" ${k>nb.length?'stroke-dasharray="3 4"':""}/><text x="${cx+4}" y="${cy-rOf(k)+11}" fill="#e8d089" font-size="9.5" opacity=".8" font-family="JetBrains Mono,monospace">${k}番目</text>`;});
+  (lin?[...new Set([5,10,LM].filter(x=>x<=LM))]:[10,100,800]).forEach(k=>{h+=`<circle cx="${cx}" cy="${cy}" r="${rOf(k)}" fill="none" stroke="#c9a227" stroke-opacity="${k<=nb.length?.45:.18}" ${k>nb.length?'stroke-dasharray="3 4"':""}/><text x="${cx+4}" y="${cy-rOf(k)+11}" fill="#e8d089" font-size="14" opacity=".9" font-family="JetBrains Mono,monospace">${k}番目</text>`;});
   const idxIn={1:0,2:0,3:0,4:0,5:0,6:0},cnt={1:0,2:0,3:0,4:0,5:0,6:0};nb.forEach(x=>{if(x.o)cnt[x.o[0]]++;});
   nb.forEach(x=>{if(!x.o)return;const b=x.o[0],i=idxIn[b]++;const frac=(((x.r*0.6180339)%1)*0.84)+0.08;const a=(ang(b)-30+60*frac)*Math.PI/180;const rr=rOf(x.rank??x.r);
     const hl=st.pick===x.r;h+=`<circle cx="${(cx+rr*Math.cos(a)).toFixed(1)}" cy="${(cy+rr*Math.sin(a)).toFixed(1)}" r="${hl?6:nb.length>300?2.4:nb.length>100?3.2:4.2}" fill="${FLOW[b]}" stroke="${hl?"#fff":x.ss?"#e8d089":"#0d1b2e"}" stroke-width="${hl?2.5:x.ss?1.6:.8}" data-race="${x.r}" style="cursor:pointer"/>`;});
@@ -407,7 +410,7 @@ function renderSonar(nb){
 }
 function cmpDetail(x){
   const groups=[["レースの条件",["venue","race_number_band","grade","grade_bin","round","series_day","is_final_day"]],["選手の力関係",["class_all6","n_A1","b1_class","win_gap_band","top_boat","nat_win_6","nat_win_rank_4","b1_nat_win","loc_win_6","recent_win30_6","recent_top3_30_6"]],["スタート",["st_mean30_6","b1_st_rank_band"]],["モーター・ボート",["motor_2_6","b1_motor_rank_band","boat_2_6","b1_boat_rank_band"]],["体重・年齢・地元",["age_6","weight_6","n_local"]],...(st.stage==="post"?[["天候・水面"+(ITEM.weather&&ITEM.weather.inDist?"":"（近さの計算には入れていない）"),["weather","wind_bin","wind_vector","wave_bin"]],["展示"+(ITEM.exh_time_diff_6&&ITEM.exh_time_diff_6.inDist?"":"（参考。近さの計算には入れていない）"),["exh_time_diff_6"]]]:[])];
-  return groups.map(([gname,keys])=>`<div class="cg"><div class="lbl">${gname}</div>${keys.filter(k=>ITEM[k]).map(k=>{const m=x.m[k];return `<div class="ci"><span class="mk ${m==null?"muted":MC[m]}">${m==null?"—":MK[m]}</span><span>${ITEM[k].label}</span><span class="cv">${(k==="grade"?(GN[x.t[k]]||x.t[k]):fmtT(k,x.t[k]))??"—"}<small>今日 ${fmtT(k,K.today[k])??"—"}</small></span></div>`;}).join("")}</div>`).join("");
+  return groups.map(([gname,keys])=>`<div class="cg"><div class="lbl">${gname}</div>${keys.filter(k=>ITEM[k]).map(k=>{const m=x.m[k];return `<div class="ci"><span class="mk ${m==null?"muted":MC[m]}">${m==null?"—":MK[m]}</span><span>${ITEM[k].label}</span><span class="cv">${String((k==="grade"?(GN[x.t[k]]||x.t[k]):fmtT(k,x.t[k]))??"—").replace(/\//g,"/\u200b")}<small>今日 ${String(fmtT(k,K.today[k])??"—").replace(/\//g,"/\u200b")}</small></span></div>`;}).join("")}</div>`).join("");
 }
 function renderCmp(nb){
   const show=nb.slice(0,st.listAll?nb.length:20);
@@ -423,11 +426,11 @@ function renderRes(nb){
   const a=agg(nb),N=a.n,t=st.rank;
   $("resN").textContent=N+"件";
   $("resT").textContent=`似ている順の ${N}件で（同じ節を${st.noSS?"除く":"含む"}）`;
-  const lk=document.querySelector("#secRes .key span:nth-child(2)");if(lk)lk.innerHTML=`<i style="border-left:2px dotted var(--hit);width:2px;height:12px"></i>${st.swKnn==="mix"&&D.knn3layer?`条件（${D.knn3layer.cond||"勝率差・1号艇の級別・勝率トップ"}）がそろった過去レース全体（${D.knn3layer.n.toLocaleString()}件）`:"若松の全レース（似ているかを問わない）"}`;
+  const lk=document.querySelector("#secRes .key span:nth-child(2)");if(lk)lk.innerHTML=`<i style="border-left:2px dotted var(--hit);width:2px;height:12px"></i>${cmpLayer()?cmpLayer().name:"若松の全レース（似ているかを問わない）"}`;
   $("hWin").textContent=t===1?"どの艇が勝った？":`どの艇が${RT[t]}に入った？`;
-  const LY=st.swKnn==="mix"&&D.knn3layer?D.knn3layer:null;
+  const LY=cmpLayer();
   const W20=D.start["20|all|all"],wk={1:"win",2:"top2",3:"top3"}[t],C20=D.cube["20|all|all"],all8=agg(st.noSS?K.nb.filter(n=>!n.ss).slice(0,800):K.nb.slice(0,800));
-  $("barWin").innerHTML=[1,2,3,4,5,6].map(b=>wbar(`${bn(b)} ${b}号艇`,a.hit[t][b-1],N,LY?LY.boat_finish[b][wk]/LY.n:W20.boats[b][wk].p,st.boat===b,b,`・${all8.n}件では ${pc(all8.hit[t][b-1]/all8.n)}・全国 ${pc(NAT.n_hit[b][RK[t]]/NAT.n)}`)).join("")+(N<100?`<div class="warn">${N}件だと割合はぶれやすい（ひげが長い）。棒をタップすると ${all8.n}件での割合も出る</div>`:"");
+  $("barWin").innerHTML=[1,2,3,4,5,6].map(b=>wbar(`${bn(b)} ${b}号艇`,a.hit[t][b-1],N,LY?LY.boat_finish[b][wk]/LY.n:W20.boats[b][wk].p,st.boat===b,b,`${all8.n!==N?`・${all8.n}件では ${pc(all8.hit[t][b-1]/all8.n)}`:""}・全国 ${pc(NAT.n_hit[b][RK[t]]/NAT.n)}`)).join("")+(N<100?`<div class="warn">${N}件だと割合はぶれやすい（ひげが長い）。棒をタップすると ${all8.n}件での割合も出る</div>`:"");
   wireTips($("barWin"),$("barTip"));
   $("barTech").innerHTML=TECH.map((k,i)=>wbar(k,a.tech[k]||0,N,LY?(LY.technique[k]||0)/LY.n:C20[9+i]/C20[0],false,null,`・全国 ${pc(NAT.technique[k]/NAT.n)}`)).join("");
   wireTips($("barTech"),$("barTip"));
@@ -675,7 +678,7 @@ const RFM = [
   ["boat_2", "ボート2連率", "高い", "低い"],
   ["st_mean30", "過去の平均ST", "早い", "遅い"],
   ["exh_time", "展示タイム", "速い", "遅い"],
-  ["series_score", "今節の平均点", "高い", "低い"],
+  ["series_score", "今節の平均着順点", "高い", "低い"],
 ];
 // 材料の説明（モーターとボートの違いが分かるように）
 const MDESC = {
@@ -724,9 +727,6 @@ function hexRadar(svg, labels, series) {
   labels.forEach((_, i) => {
     const [x, y] = pt(i, Rr);
     h += `<line x1="${Cc[0]}" y1="${Cc[1]}" x2="${x}" y2="${y}" stroke="rgba(201,162,39,.2)"/>`;
-  });
-  [1, 6].forEach((k) => {
-    h += `<text x="${Cc[0] + 4}" y="${Cc[1] - rr(k) + 10}" fill="#e8d089" opacity=".75" font-size="13" font-family="Zen Kaku Gothic New,sans-serif">${k}位</text>`;
   });
   series.forEach((s) => {
     if (s.v.every((x) => x != null))
@@ -828,7 +828,7 @@ function renderFacts() {
       .map((p, i) => {
         const [x, n] = r.all[i] || [0, 0],
           on = today === i + 1;
-        return `<div class="col${on ? " on" : ""}" title="${x}/${n}"><span class="pv">${p == null ? "—" : Math.round(p * 100)}</span><span class="plot"><span class="bar" style="height:${p == null ? 0 : (p / mx) * 100}%;background:${LINE6[A]}"></span><span class="usual" style="bottom:${(uP / mx) * 100}%"></span></span><span class="rk">${i === 0 ? `一番${r.hi}` : i === 5 ? `一番${r.lo}` : i + 1}</span></div>`;
+        return `<div class="col${on ? " on" : ""}" title="${x}/${n}"><span class="pv">${p == null ? "—" : Math.round(p * 100)}</span><span class="plot"><span class="bar" style="height:${p == null ? 0 : (p / mx) * 100}%;background:${LINE6[A]}"></span><span class="usual" style="bottom:${(uP / mx) * 100}%"></span></span><span class="rk">${i === 0 ? `一番${r.hi}` : i === 5 ? `一番${r.lo}` : `${i + 1}位`}</span></div>`;
       })
       .join("")}</div>`;
   };
@@ -854,11 +854,11 @@ function renderFacts() {
     }
     return `<div class="eff ${cls}"><div class="eh"><b>${r.l}</b><small class="md">${MDESC[r.k]}</small><span class="gap">${lab}${!cls && d < 0 ? `（一番${r.lo}ときのほうが高い）` : ""}</span></div>
       <div class="pair"><div><span>6艇で一番${r.hi}とき</span><b>${r.p[0] == null ? "—" : pc(r.p[0], 0)}</b><small>${b[0].toLocaleString()}/${b[1].toLocaleString()}</small></div><div><span>6艇で一番${r.lo}とき</span><b>${r.p[5] == null ? "—" : pc(r.p[5], 0)}</b><small>${w[0].toLocaleString()}/${w[1].toLocaleString()}</small></div></div>
-      ${strip(r)}<p class="stripcap">棒の上の数字は%（左ほど${r.hi}）。点線は全体の ${pc(uP, 1)}。枠で囲んだ棒が今日の位置</p>${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
+      ${strip(r)}<p class="stripcap">棒の上の数字は%、下は6艇中の順位（左ほど${r.hi}）。点線は全体の ${pc(uP, 1)}。枠で囲んだ棒が今日の位置</p>${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
   };
   const allClass = new Set([1, 2, 3, 4, 5, 6].map((b) => RF.ex[b].class)).size === 1;
   $("factsOut").innerHTML = `<div class="big1"><span>${sname}の全体で、${A}号艇が${RT[st.rank]}に入った割合</span><b>${pc(uP, 1)}</b><small>${U[0].toLocaleString()}/${U[1].toLocaleString()}レース（${T1.period[0]}〜${T1.period[1]}）</small></div>
-  <p class="sub">${FSCOPE_DESC[st.fscope]}で、${A}号艇のその材料が6艇の中で一番良かったときと一番悪かったときに、${RT[st.rank]}に入った割合を比べた。差がはっきりしているものから、差の大きい順に並べている（差が近い材料どうしは、入れ替わってもおかしくない）。材料どうしは重なっていて（全国勝率と直近の1着率は、どちらも選手の格を見ている）、どれが効いたのかは分けられない。棒の点線は、全体での割合（上の大きい数字）</p>
+  <p class="sub">${FSCOPE_DESC[st.fscope]}で、${A}号艇のその材料が6艇の中で一番良かったときと一番悪かったときに、${RT[st.rank]}に入った割合を比べた。差がはっきりしているものから、差の大きい順に並べている（差が近い材料どうしは、入れ替わってもおかしくない）。「差が大きい」は5ポイント以上の差、「差ははっきりしない」は件数が少ないなどで95%の幅が重なるもの（差の数字が大きくても、件数が少ないとこうなる）。材料どうしは重なっていて（全国勝率と直近の1着率は、どちらも選手の格を見ている）、どれが効いたのかは分けられない。棒の点線は、全体での割合（上の大きい数字）</p>
   <div class="effs">${rows.filter((r) => r.k !== "boat_2").map(card).join("")}${rows.filter((r) => r.k === "boat_2").map((r) => `<details class="more boatfold"><summary>ボート2連率（着順との関係が小さい材料）</summary><p class="sub">全国・6艇とも A1 のレースでは、ボート2連率が6艇で一番高いとき・低いときの差は0〜3ポイントで、モーター2連率（5〜8ポイント）より着順との関係が小さかった。気にしすぎなくてよい材料として残している</p>${card(r)}</details>`).join("")}</div>
   ${allClass ? `<p class="foot">級別: 今日は6艇とも ${ex.class} なので差がつかない</p>` : ""}
   <p class="foot">数えた割合で、原因とは限らない。「差ははっきりしない」は、一番良いときと一番悪いときの95%の幅が重なるもの。「差が大きい」は5ポイント以上。同じ値の艇は、一番良い・一番悪いの両方に含めている。${st.stage === "pre" ? "展示タイムは展示の後に出る。" : "2025-11 以前の展示タイムは結果ファイルから取っていて、取り方が違う。"}</p>`;
@@ -936,8 +936,8 @@ function slitScene(stc, h = 110) {
     })
     .join("");
   const waves = [...Array(n)].map((_, i) => `<path d="M0 ${top + lane * (i + 1)} q20 -2 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0" stroke="#ffffff" stroke-opacity=".18" fill="none"/>`).join("");
-  const scale = `<g><line x1="12" y1="${H - 6}" x2="${12 + L}" y2="${H - 6}" stroke="#e8f1ff" stroke-width="1.2"/><line x1="12" y1="${H - 9}" x2="12" y2="${H - 3}" stroke="#e8f1ff"/><line x1="${12 + L}" y1="${H - 9}" x2="${12 + L}" y2="${H - 3}" stroke="#e8f1ff"/><text x="${16 + L}" y="${H - 3}" font-size="9" fill="#e8f1ff">1艇身（約0.13秒）</text></g>`;
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="スリット通過の並び（横から見た図。数字はコース）"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4f73"/><stop offset="1" stop-color="#123a57"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#${gid})"/>${waves}<line x1="${lineX}" y1="0" x2="${lineX}" y2="${H}" stroke="#ff8a3d" stroke-width="1.8"/><text x="${lineX - 4}" y="${H - 4}" font-size="9" text-anchor="end" fill="#ffd2b0">スリット</text>${boats}${scale}</svg>`;
+  const scale = `<g><line x1="12" y1="${H - 6}" x2="${12 + L}" y2="${H - 6}" stroke="#e8f1ff" stroke-width="1.2"/><line x1="12" y1="${H - 9}" x2="12" y2="${H - 3}" stroke="#e8f1ff"/><line x1="${12 + L}" y1="${H - 9}" x2="${12 + L}" y2="${H - 3}" stroke="#e8f1ff"/><text x="${16 + L}" y="${H - 3}" font-size="12" fill="#e8f1ff">1艇身（約0.13秒）</text></g>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="スリット通過の並び（横から見た図。数字はコース）"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4f73"/><stop offset="1" stop-color="#123a57"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#${gid})"/>${waves}<line x1="${lineX}" y1="0" x2="${lineX}" y2="${H}" stroke="#ff8a3d" stroke-width="1.8"/><text x="${lineX - 4}" y="${H - 4}" font-size="12" text-anchor="end" fill="#ffd2b0">スリット</text>${boats}${scale}</svg>`;
 }
 
 const yen = (v) => (v == null ? "—" : v.toLocaleString() + "円");
@@ -1076,7 +1076,8 @@ function renderScn() {
   const chips = SLIT.map(([k, l]) => {
     const x = cell(S.entry, k),
       inEntry = cell(S.entry, "any").n;
-    return `<button type="button" class="pat${k === "any" ? " any" : ""}" data-s="${k}" aria-pressed="${S.slit === k}"><span class="k">${l}</span>${k === "any" ? "" : slitScene(SLIT_EX[k])}<span class="fq">${k === "any" ? `${x.n.toLocaleString()}件` : `${share(x.n, inEntry)}（${x.n.toLocaleString()}件）`}${x.n >= MIN_N ? `・1号艇1着 ${pc(x.b1_win.p, 0)}` : ""}</span></button>`;
+    return `<button type="button" class="pat${k === "any" ? " any" : ""}" data-s="${k}" aria-pressed="${S.slit === k}"><span class="k">${l}</span>${k === "any" ? "" : slitScene(SLIT_EX[k])}<span class="fq">${k === "any" || inEntry < MIN_N ? `${x.n.toLocaleString()}件` : `${share(x.n, inEntry)}（${x.n.toLocaleString()}件）`}${x.n >= MIN_N ? `・1号艇1着 ${pc(x.b1_win.p, 0)}` : ""}</span></button>`;
+  // 進入の件数が少ないときは割合を出さない（③の扱いと合わせる）
   }).join("");
   const def = SLIT.find(([k]) => k === S.slit)[2];
   const scopeName = SCN_SCOPE.find(([k]) => k === S.scope)[1];
@@ -1098,7 +1099,7 @@ function renderScn() {
     <div class="rlist">${(c.races || [])
       .map((r) => {
         const byCourse = [1, 2, 3, 4, 5, 6].map((cs) => r.course_by_boat.indexOf(cs) + 1);
-        return `<div class="rc"><div class="rc1"><b>${r.date}</b> ${r.venue} ${r.race_number}R ${r.grade}${r.stage ? " " + r.stage : ""}</div><div class="rc2"><span class="bnrow">${r.finish_1_2_3.split("-").map((b) => bn(+b)).join("")}</span> ${r.technique}　3連単 <b class="mono">${yen(r.payout_3tan)}</b></div><div class="rc3">進入（1コースから）<span class="mono">${byCourse.join(" ")}</span>　スリット: ${r.forms.length ? r.forms.map((f) => SLITN[f]).join("・") : "7形のどれにも当たらない"}</div></div>`;
+        return `<div class="rc"><div class="rc1"><b>${r.date}</b> ${r.venue} ${r.race_number}R ${({ ippan: "一般" })[r.grade] || r.grade}${r.stage ? " " + r.stage : ""}</div><div class="rc2"><span class="bnrow">${r.finish_1_2_3.split("-").map((b) => bn(+b)).join("")}</span> ${r.technique}　3連単 <b class="mono">${yen(r.payout_3tan)}</b></div><div class="rc3">進入（1コースから）<span class="mono">${byCourse.join(" ")}</span>　スリット: ${r.forms.length ? r.forms.map((f) => SLITN[f]).join("・") : "7形のどれにも当たらない"}</div></div>`;
       })
       .join("")}</div>`;
   } else {
@@ -1133,7 +1134,7 @@ function renderScn() {
   <p class="foot">${post ? `今日の展示は、6艇とも枠なりだった。展示が枠なりだったレースの 93% は、本番も枠なりだった（全国、2026-04 以降の 2,023 レース）。` : "展示の後は、今日の展示の進入に当てはまる型に印が付く。"}割合は、${scopeName}の全レースの中での割合。スロー・ダッシュの別は記録が無いので分けていない</p>
   <h3><span class="stepn">2</span>スタートはどう並ぶ？（スリットの形）</h3>
   <div class="pats">${chips}</div><p class="foot">カド＝ダッシュ勢（助走を長くとる艇）の一番内。枠なりなら4コースで、7形の判定は4コースで見ている。カド受け＝その1つ内（枠なりなら3コース）。絵は横から見た並びの例（数字はコース、右の線がスリット。縮尺は1艇身≒0.13秒）</p>
-  <p class="foot">${def ? `${SLITN[S.slit]}: ${def}。` : ""}1つのレースが2つ以上の形に当てはまることがある（足すと100%を超える）。形の決め方は、過去率チェッカー（BOA-635）と同じ。割合は、選んだ進入の中での割合。スリットの形は、今日の展示からは選べない。展示の形は本番の形の手がかりにならなかった（展示で2コース凹みだったレースのうち、本番も2コース凹みは38%。全体の32%とほとんど変わらない。2026-04 以降の 2,280 レース）</p>
+  <p class="foot">${def ? `${SLITN[S.slit]}: ${def}。` : ""}1つのレースが2つ以上の形に当てはまることがある（足すと100%を超える）。形の決め方は、過去に発生した割合を見る機能と同じ。割合は、選んだ進入の中での割合。スリットの形は、今日の展示からは選べない。展示の形は本番の形の手がかりにならなかった（展示で2コース凹みだったレースのうち、本番も2コース凹みは38%。全体の32%とほとんど変わらない。2026-04 以降の 2,280 レース）</p>
   <h3><span class="stepn">3</span>そのとき、どう決まった？</h3>
   ${res}
   <p class="foot">数えた割合で、原因とは限らない。スリットの形はレースの後に分かるもので、レース前に分かるわけではない（「もしこうなったら」の参考）。${P.period[0]}〜${P.period[1]}、返還艇がいたレース（${scopeName}で ${EXCL[S.scope].toLocaleString()} レース）は除いているので、1つ目のタブの件数とは合わない</p>`;
@@ -1152,7 +1153,7 @@ function renderScn() {
     .forEach(
       (b) =>
         (b.onclick = () => (
-          (S.entry = b.dataset.e),
+          (S.entry = b.dataset.e), (S.slit = "any"),
           (S.ff = S.fs = null),
           renderScn()
         )),
@@ -1179,14 +1180,14 @@ function renderScn() {
 function renderDetail(){
   
   $("detail").innerHTML=`<ul>
-  <li>類似レース: 出走表の数字（6艇の級別・全国勝率・当地勝率・直近30走の成績・平均ST・モーター/ボート2連率・年齢・体重・地元、会場・R番号・グレード・ラウンド・節の日目）を、今日のレースと比べて近い順に並べた（k近傍）。会場が違うと距離を足す。${st.stage==="post"?"展示後は、展示タイム・天候・風・波も近さの計算に入れている":"展示前は、展示タイム・天候・風・波は分からないので近さの計算に入れていない"}</li>
+  <li>類似レース: 出走表の数字（6艇の級別・全国勝率・当地勝率・直近30走の成績・平均ST・モーター/ボート2連率・年齢・体重・地元、会場・R番号・グレード・ラウンド・節の日目）を、今日のレースと比べて近い順に並べた。会場が違うと距離を足す。${st.stage==="post"?"展示後は、展示タイム・天候・風・波も近さの計算に入れている":"展示前は、展示タイム・天候・風・波は分からないので近さの計算に入れていない"}</li>
   <li>近さの重み: 寄与度用のモデル（版 ${D.meta.modelVersion}）で、着順の見込みを大きく動かす項目ほど重く見る。モデルの予想の値は使っていない</li>
   <li>探したのは 2019-04-01〜2026-09-26（例のレースの前日まで）の ${D.knn.pool.n.toLocaleString()}レース。長期データの「最終日か」は値が使えないので近さに入れていない</li>
   <li>「何が似ている？」の割合は、近いレースの中でその項目が今日と同じ帯に入る割合。全レースでの割合と比べている。似ているからといって、同じ結果になるとは限らない。近い順に少なく絞るほど、結果の割合はぶれやすい（ひげが長くなる）</li>
-  <li>ソナーは似ている順の何番目かで置いている（10・100・800番目の輪）。点の向き（扇の中の位置）に意味はない</li>
-  <li>推奨の選び方では、勝率差の帯・1号艇の級別・勝率トップの艇の3つが同じレースだけに絞り、その中を似ている順に並べる（当てはまりへの影響が大きい3つを必ずそろえるため）</li>
+  <li>ソナーは似ている順の何番目かで置いている（件数に合わせた輪。数字は似ている順の何番目か）。点の向き（扇の中の位置）に意味はない</li>
+  <li>推奨の選び方では、${K.pool&&K.pool.layer_cond?K.pool.layer_cond:"勝率差の帯・1号艇の級別・勝率トップの艇"}が同じレースだけに絞り、その中を似ている順に並べる（優勝戦・準優勝戦はラウンド、G1・SG はグレードもそろえる）</li>
   <li>ひげ（95%の幅）はレースどうしが独立だとして計算している。類似レースは会場や同じ節に固まるので、実際の幅はやや広い</li>
-  <li>同じ節を除くと、保存している800件から除くので、800件より少なくなる（本番では除いた後に800件をそろえる）</li>
+  
   <li>全国の割合（2019-04-01〜2026-09-26 の 408,723レース）と、類似レースを探した母集団（408,888レース）は、2着・3着が無いレースなどの扱いで165レース違う</li>
   <li>棒のひげは 95% の幅（Wilson）。点線は、棒の上の凡例に書いた比べる相手（類似レースのタブでは、条件がそろった過去レース全体）</li>
   <li>「ほかの艇は？」のくらべる相手は、結果で機械的に決まらない群（1号艇とその艇以外が勝ったレース）</li>

@@ -46,8 +46,8 @@ function slitScene(stc, h = 110) {
     })
     .join("");
   const waves = [...Array(n)].map((_, i) => `<path d="M0 ${top + lane * (i + 1)} q20 -2 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0" stroke="#ffffff" stroke-opacity=".18" fill="none"/>`).join("");
-  const scale = `<g><line x1="12" y1="${H - 6}" x2="${12 + L}" y2="${H - 6}" stroke="#e8f1ff" stroke-width="1.2"/><line x1="12" y1="${H - 9}" x2="12" y2="${H - 3}" stroke="#e8f1ff"/><line x1="${12 + L}" y1="${H - 9}" x2="${12 + L}" y2="${H - 3}" stroke="#e8f1ff"/><text x="${16 + L}" y="${H - 3}" font-size="9" fill="#e8f1ff">1艇身（約0.13秒）</text></g>`;
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="スリット通過の並び（横から見た図。数字はコース）"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4f73"/><stop offset="1" stop-color="#123a57"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#${gid})"/>${waves}<line x1="${lineX}" y1="0" x2="${lineX}" y2="${H}" stroke="#ff8a3d" stroke-width="1.8"/><text x="${lineX - 4}" y="${H - 4}" font-size="9" text-anchor="end" fill="#ffd2b0">スリット</text>${boats}${scale}</svg>`;
+  const scale = `<g><line x1="12" y1="${H - 6}" x2="${12 + L}" y2="${H - 6}" stroke="#e8f1ff" stroke-width="1.2"/><line x1="12" y1="${H - 9}" x2="12" y2="${H - 3}" stroke="#e8f1ff"/><line x1="${12 + L}" y1="${H - 9}" x2="${12 + L}" y2="${H - 3}" stroke="#e8f1ff"/><text x="${16 + L}" y="${H - 3}" font-size="12" fill="#e8f1ff">1艇身（約0.13秒）</text></g>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="スリット通過の並び（横から見た図。数字はコース）"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4f73"/><stop offset="1" stop-color="#123a57"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#${gid})"/>${waves}<line x1="${lineX}" y1="0" x2="${lineX}" y2="${H}" stroke="#ff8a3d" stroke-width="1.8"/><text x="${lineX - 4}" y="${H - 4}" font-size="12" text-anchor="end" fill="#ffd2b0">スリット</text>${boats}${scale}</svg>`;
 }
 
 const yen = (v) => (v == null ? "—" : v.toLocaleString() + "円");
@@ -186,7 +186,8 @@ function renderScn() {
   const chips = SLIT.map(([k, l]) => {
     const x = cell(S.entry, k),
       inEntry = cell(S.entry, "any").n;
-    return `<button type="button" class="pat${k === "any" ? " any" : ""}" data-s="${k}" aria-pressed="${S.slit === k}"><span class="k">${l}</span>${k === "any" ? "" : slitScene(SLIT_EX[k])}<span class="fq">${k === "any" ? `${x.n.toLocaleString()}件` : `${share(x.n, inEntry)}（${x.n.toLocaleString()}件）`}${x.n >= MIN_N ? `・1号艇1着 ${pc(x.b1_win.p, 0)}` : ""}</span></button>`;
+    return `<button type="button" class="pat${k === "any" ? " any" : ""}" data-s="${k}" aria-pressed="${S.slit === k}"><span class="k">${l}</span>${k === "any" ? "" : slitScene(SLIT_EX[k])}<span class="fq">${k === "any" || inEntry < MIN_N ? `${x.n.toLocaleString()}件` : `${share(x.n, inEntry)}（${x.n.toLocaleString()}件）`}${x.n >= MIN_N ? `・1号艇1着 ${pc(x.b1_win.p, 0)}` : ""}</span></button>`;
+  // 進入の件数が少ないときは割合を出さない（③の扱いと合わせる）
   }).join("");
   const def = SLIT.find(([k]) => k === S.slit)[2];
   const scopeName = SCN_SCOPE.find(([k]) => k === S.scope)[1];
@@ -208,7 +209,7 @@ function renderScn() {
     <div class="rlist">${(c.races || [])
       .map((r) => {
         const byCourse = [1, 2, 3, 4, 5, 6].map((cs) => r.course_by_boat.indexOf(cs) + 1);
-        return `<div class="rc"><div class="rc1"><b>${r.date}</b> ${r.venue} ${r.race_number}R ${r.grade}${r.stage ? " " + r.stage : ""}</div><div class="rc2"><span class="bnrow">${r.finish_1_2_3.split("-").map((b) => bn(+b)).join("")}</span> ${r.technique}　3連単 <b class="mono">${yen(r.payout_3tan)}</b></div><div class="rc3">進入（1コースから）<span class="mono">${byCourse.join(" ")}</span>　スリット: ${r.forms.length ? r.forms.map((f) => SLITN[f]).join("・") : "7形のどれにも当たらない"}</div></div>`;
+        return `<div class="rc"><div class="rc1"><b>${r.date}</b> ${r.venue} ${r.race_number}R ${({ ippan: "一般" })[r.grade] || r.grade}${r.stage ? " " + r.stage : ""}</div><div class="rc2"><span class="bnrow">${r.finish_1_2_3.split("-").map((b) => bn(+b)).join("")}</span> ${r.technique}　3連単 <b class="mono">${yen(r.payout_3tan)}</b></div><div class="rc3">進入（1コースから）<span class="mono">${byCourse.join(" ")}</span>　スリット: ${r.forms.length ? r.forms.map((f) => SLITN[f]).join("・") : "7形のどれにも当たらない"}</div></div>`;
       })
       .join("")}</div>`;
   } else {
@@ -243,7 +244,7 @@ function renderScn() {
   <p class="foot">${post ? `今日の展示は、6艇とも枠なりだった。展示が枠なりだったレースの 93% は、本番も枠なりだった（全国、2026-04 以降の 2,023 レース）。` : "展示の後は、今日の展示の進入に当てはまる型に印が付く。"}割合は、${scopeName}の全レースの中での割合。スロー・ダッシュの別は記録が無いので分けていない</p>
   <h3><span class="stepn">2</span>スタートはどう並ぶ？（スリットの形）</h3>
   <div class="pats">${chips}</div><p class="foot">カド＝ダッシュ勢（助走を長くとる艇）の一番内。枠なりなら4コースで、7形の判定は4コースで見ている。カド受け＝その1つ内（枠なりなら3コース）。絵は横から見た並びの例（数字はコース、右の線がスリット。縮尺は1艇身≒0.13秒）</p>
-  <p class="foot">${def ? `${SLITN[S.slit]}: ${def}。` : ""}1つのレースが2つ以上の形に当てはまることがある（足すと100%を超える）。形の決め方は、過去率チェッカー（BOA-635）と同じ。割合は、選んだ進入の中での割合。スリットの形は、今日の展示からは選べない。展示の形は本番の形の手がかりにならなかった（展示で2コース凹みだったレースのうち、本番も2コース凹みは38%。全体の32%とほとんど変わらない。2026-04 以降の 2,280 レース）</p>
+  <p class="foot">${def ? `${SLITN[S.slit]}: ${def}。` : ""}1つのレースが2つ以上の形に当てはまることがある（足すと100%を超える）。形の決め方は、過去に発生した割合を見る機能と同じ。割合は、選んだ進入の中での割合。スリットの形は、今日の展示からは選べない。展示の形は本番の形の手がかりにならなかった（展示で2コース凹みだったレースのうち、本番も2コース凹みは38%。全体の32%とほとんど変わらない。2026-04 以降の 2,280 レース）</p>
   <h3><span class="stepn">3</span>そのとき、どう決まった？</h3>
   ${res}
   <p class="foot">数えた割合で、原因とは限らない。スリットの形はレースの後に分かるもので、レース前に分かるわけではない（「もしこうなったら」の参考）。${P.period[0]}〜${P.period[1]}、返還艇がいたレース（${scopeName}で ${EXCL[S.scope].toLocaleString()} レース）は除いているので、1つ目のタブの件数とは合わない</p>`;
@@ -262,7 +263,7 @@ function renderScn() {
     .forEach(
       (b) =>
         (b.onclick = () => (
-          (S.entry = b.dataset.e),
+          (S.entry = b.dataset.e), (S.slit = "any"),
           (S.ff = S.fs = null),
           renderScn()
         )),
