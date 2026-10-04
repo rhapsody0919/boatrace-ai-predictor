@@ -197,7 +197,7 @@ check(
       "official_3rate: row.motor_3rate ?? null",
     ) &&
     read("src/services/supabaseDataService.js").includes(
-      "`race-motor-breakdown-v8-",
+      "`race-motor-breakdown-v9-",
     ),
 );
 check(

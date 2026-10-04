@@ -11,6 +11,7 @@ import { supabaseDataService } from "../../services/supabaseDataService";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
+import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
 import RacerGradeBadge from "../racer/RacerGradeBadge";
 import MotorStatBadgeRow from "../MotorStatBadgeRow";
 import MotorRecordStatCards from "../MotorRecordStatCards";
@@ -660,27 +661,20 @@ function MotorConditionChart({
         breakdown.length > 0 && (
           <>
             <div
-              className={`table-wrapper hscroll-hint${rankingScroll.hasMore ? " has-more" : ""}`}
+              className={`table-wrapper hscroll-hint mcc-list-hint${rankingScroll.hasMore ? " has-more" : ""}`}
             >
-              {rankingScroll.hasMore && (
-                <button
-                  type="button"
-                  className="hscroll-more"
-                  onClick={rankingScroll.scrollRight}
-                  /* 装飾兼ショートカット。表自体は指でスワイプできるので
-                   支援技術には出さない */
-                  aria-hidden="true"
-                  tabIndex={-1}
-                >
-                  ›
-                </button>
-              )}
+              <HorizontalScrollButtons
+                hasMore={rankingScroll.hasMore}
+                hasLess={rankingScroll.hasLess}
+                onMore={rankingScroll.scrollRight}
+                onLess={rankingScroll.scrollLeft}
+              />
               <div
                 className="table-scroll"
                 ref={rankingScroll.ref}
                 onScroll={rankingScroll.update}
               >
-                <table className="motor-ranking-table">
+                <table className="motor-ranking-table mcc-list-table">
                   <thead>
                     <tr>
                       <th>{t("analysis.laneHeader")}</th>

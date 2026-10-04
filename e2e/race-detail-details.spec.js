@@ -115,6 +115,29 @@ test.describe("レース詳細の表示の細部", () => {
     expect(color).toBe(hit ? success : error);
   });
 
+  // 住之江・尼崎・徳山のまわり足は会場独自の計測で、他場と値の水準が違う（11〜12秒台。data-catalog E12）。
+  // 行の見出しに「※」を付け、表の下に注記を出す。ほかの会場には出さない
+  test("直前情報: 住之江のまわり足には「※」と会場独自の計測の注記が出て、大村には出ない", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-10-02-12-12?tab=beforeInfo");
+    const note = page.getByTestId("rbi-turn-time-venue-note");
+    await expect(note).toBeVisible({ timeout: 30000 });
+    await expect(note).toContainText("会場独自の計測");
+    await expect(
+      page.locator(".race-before-info-tab").getByText("まわり足 ※").first(),
+    ).toBeVisible();
+
+    await page.goto("/race/2026-10-02-24-01?tab=beforeInfo");
+    await expect(
+      page.locator(".race-before-info-tab").getByText("まわり足").first(),
+    ).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("rbi-turn-time-venue-note")).toHaveCount(0);
+    await expect(
+      page.locator(".race-before-info-tab").getByText("まわり足 ※"),
+    ).toHaveCount(0);
+  });
+
   test("基本情報の勝率バー: 最下位の艇も棒が空にならない（BOA-618）", async ({
     page,
   }) => {
@@ -577,6 +600,52 @@ test.describe("レース詳細の表示の細部", () => {
       ).toBeLessThanOrEqual(before.lastFull + 1);
     }
   });
+  test("枠別情報: 選んだ艇チップの選手名が、ライト・ダークとも6艇すべてで地の色と4.5:1以上（BOA-703）", async ({
+    page,
+  }) => {
+    // 公式の配色の赤・青・緑の地に白い名前だと 4.23・3.68・3.30 だった。選んだチップだけ一段濃くする
+    await page.goto(`${RACE}?tab=waku`);
+    const chips = page.locator(".rwit-boat-chip");
+    await expect(chips).toHaveCount(6, { timeout: 30000 });
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate(
+        (t) => document.documentElement.setAttribute("data-theme", t),
+        theme,
+      );
+      for (let i = 0; i < 6; i++) {
+        const chip = chips.nth(i);
+        await chip.click();
+        await expect(chip).toHaveAttribute("aria-pressed", "true");
+        const { boat, fg, bg } = await chip.evaluate((el) => ({
+          boat: el.querySelector(".rwit-boat-chip-num").textContent.trim(),
+          fg: getComputedStyle(el.querySelector(".rwit-boat-chip-name")).color,
+          bg: getComputedStyle(el).backgroundColor,
+        }));
+        expect(
+          contrast(fg, bg),
+          `${theme}・${boat}号艇: 名前 ${fg} / 地 ${bg}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  test("1440px: 枠別情報の注記と選手チップの段は、下のカードと右端がそろう（BOA-703）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${RACE}?tab=waku`);
+    // カードの幅は中の表が出てから決まる（表が出る前は注記と同じ幅で、比べても意味が無い）
+    const card = page.locator(".rwit-card:has(.rwit-today-table)").first();
+    await expect(card).toBeVisible({ timeout: 30000 });
+    const rights = await page.evaluate(() =>
+      [".rwit-note", ".rwit-chip-row", ".rwit-card:has(.rwit-today-table)"].map(
+        (sel) =>
+          Math.round(document.querySelector(sel).getBoundingClientRect().right),
+      ),
+    );
+    expect(Math.max(...rights) - Math.min(...rights)).toBeLessThanOrEqual(1);
+  });
+
   // 固定した列の右端と、その右で最初に見える列の左端の差（切れて隠れている幅）
   const cutAtSticky = (hint) =>
     hint.evaluate((el) => {
@@ -625,6 +694,21 @@ test.describe("レース詳細の表示の細部", () => {
       sticky: ".mwsg-table tbody tr:first-child td:first-child",
       table: ".mwsg-table",
       pinned: 1,
+    },
+    {
+      // 枠と選手名の2列を固定する。選手名の列が残れば、その左の枠の列も残っている
+      name: "モーター一覧",
+      path: `${RACE}?tab=motor`,
+      // 会場内順位の列は一覧の行のあとから足され、表が広がる。足されてから送る
+      open: async (page) => {
+        await expect(page.locator(".motor-venue-rank-head")).toBeVisible({
+          timeout: 90000,
+        });
+      },
+      hint: ".mcc-list-hint",
+      sticky: ".mcc-list-table tbody tr:first-child td:nth-child(2)",
+      table: ".mcc-list-table",
+      pinned: 2,
     },
   ]) {
     test(`320px: ${screen.name}は横に送っても左端の列が残り、「‹」で戻れる（BOA-699・BOA-704）`, async ({
@@ -733,6 +817,65 @@ test.describe("レース詳細の表示の細部", () => {
       expect(moved, "ホイールで表が送れた").toBeGreaterThan(0);
     });
   }
+  // 枠の列は幅を決めて、選手名の列をその右に固定する（BOA-699）。決めた幅に艇色のチップが
+  // 収まらないと、チップが選手名の下に潜る。内余白が変わる 768px の境目と、PC幅で溢れる 800px も通す
+  // 見出しの語の長さは言語で変わるので、英語（Lane）も通す
+  for (const [width, lang] of [
+    [320, ""],
+    [768, ""],
+    [800, ""],
+    [1440, ""],
+    [375, "/en"],
+    [800, "/en"],
+  ]) {
+    test(`${width}px${lang}: モーター一覧の枠のチップが枠の列に収まり、選手名と重ならない（BOA-699）`, async ({
+      page,
+    }) => {
+      test.slow();
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${lang}${RACE}?tab=motor`);
+      await expect(page.locator(".motor-venue-rank-head")).toBeVisible({
+        timeout: 90000,
+      });
+      const m = await page.locator(".mcc-list-table").evaluate((t) =>
+        [...t.querySelectorAll("tbody tr")].map((tr) => {
+          const chip = tr.querySelector(".rr-boat-chip").getBoundingClientRect();
+          const lane = tr.children[0].getBoundingClientRect();
+          const name = tr.children[1].getBoundingClientRect();
+          return { chipRight: chip.right, laneRight: lane.right, nameLeft: name.left };
+        }),
+      );
+      const head = await page.locator(".mcc-list-table thead th").first().evaluate(
+        (th) => th.scrollWidth - th.clientWidth,
+      );
+      expect(head, "枠の見出しが列からはみ出さない").toBeLessThanOrEqual(0);
+      for (const r of m) {
+        expect(r.chipRight).toBeLessThanOrEqual(r.laneRight);
+        expect(Math.abs(r.nameLeft - r.laneRight)).toBeLessThanOrEqual(1);
+      }
+    });
+  }
+  test("モーター一覧: 固定した枠と選手名の列も、行に乗せたとき行と同じ色になる（BOA-699）", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width: 375, height: 900 });
+    await page.goto(`${RACE}?tab=motor`);
+    const row = page.locator(".mcc-list-table .motor-ranking-row").first();
+    await expect(row).toBeVisible({ timeout: 90000 });
+    await row.hover();
+    // 行の色は 0.15 秒かけて変わる（transition）。変わり終わってから比べる
+    await expect
+      .poll(() =>
+        row.evaluate((r) => {
+          const bg = (el) => getComputedStyle(el).backgroundColor;
+          return [bg(r.children[0]), bg(r.children[1])].every(
+            (c) => c === bg(r),
+          );
+        }),
+      )
+      .toBe(true);
+  });
   test("今節の日別表: 固定した日付の列も、行に乗せたとき行と同じ色になる（PR #1202 レビュー）", async ({
     page,
   }) => {

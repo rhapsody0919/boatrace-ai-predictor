@@ -33,6 +33,7 @@ import {
 } from "../components/race/basicInfoStats.js";
 import { tallyWinPlaceShow } from "../utils/racerConditionStats.js";
 import { isRaceCancelled } from "../utils/raceCancellation.js";
+import { winnerEntryCourseOf } from "../utils/raceOutcome.js";
 import { competitionRank } from "../utils/competitionRank.js";
 import { toWakuRacerStats } from "../utils/racerStats.js";
 import {
@@ -1340,6 +1341,63 @@ export const supabaseDataService = {
   },
 
   /**
+   * 1着の艇と、その艇が実際に入ったコースをレースごとに返す（BOA-708）。
+   * 的中判定は艇番で行い、表示だけ「N号艇（Mコース）」と添えるために使う。
+   * 進入は race_results.actual_course を優先し、無いレース（当日分）だけ
+   * race_start_timings.entry_course で補う。結果が無いレースは返さない。
+   * @param {string[]} raceIds
+   * @returns {Promise<Record<string, {boat: number, course: number|null}>>}
+   */
+  async getRaceWinnerCourses(raceIds) {
+    if (!supabase) throw new Error("Supabase client not initialized");
+    const ids = [...new Set(raceIds)].filter(Boolean);
+    if (ids.length === 0) return {};
+    // 的中レース一覧の「全期間」は1500件を超え、.in() 1本では URL が長すぎて 400 になる
+    // テーブル名はリテラルで fetchAllByIn に渡す（verify-fetch-all-by-in-order の静的検査）
+    const fetchChunked = async (values, fetchChunk) =>
+      (await Promise.all(chunkArray(values, 500).map(fetchChunk))).flat();
+    const results = await fetchChunked(ids, (chunk) =>
+      fetchAllByIn(
+        "race_results",
+        "race_id, rank1, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+        "race_id",
+        chunk,
+      ),
+    );
+    const missing = results
+      .filter((r) => r.rank1 != null && r[`actual_course_${r.rank1}`] == null)
+      .map((r) => r.race_id);
+    const timings =
+      missing.length > 0
+        ? await fetchChunked(missing, (chunk) =>
+            fetchAllByIn(
+              "race_start_timings",
+              "race_id, boat_number, entry_course",
+              "race_id",
+              chunk,
+            ),
+          )
+        : [];
+    const entryByKey = new Map(
+      timings.map((t) => [`${t.race_id}#${t.boat_number}`, t.entry_course]),
+    );
+    return Object.fromEntries(
+      results
+        .filter((r) => r.rank1 != null)
+        .map((r) => [
+          r.race_id,
+          {
+            boat: r.rank1,
+            course: winnerEntryCourseOf(
+              r,
+              entryByKey.get(`${r.race_id}#${r.rank1}`) ?? null,
+            ),
+          },
+        ]),
+    );
+  },
+
+  /**
    * 予測データを取得（predictions/YYYY-MM-DD.json形式で返す）
    * Phase 2: Edge API経由でCDNキャッシュを活用
    */
@@ -2555,7 +2613,9 @@ export const supabaseDataService = {
       // v7: 当日のレースの行に official_3rate（「集計前」の判定）を追加
       // v8: 過去レースの行にも official_3rate を追加し、当日の機力指数を
       //     「このレースの直前まで」にした（BOA-557）
-      `race-motor-breakdown-v8-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
+      // v9: 前検の取得失敗を空の前検として保存しないようにした（BOA-686）。v8 には、失敗が
+      //     「前検なし」として最長7日残っている可能性があるため読まない
+      `race-motor-breakdown-v9-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -7367,29 +7427,32 @@ export const supabaseDataService = {
    *
    * @param {Array<number>} racerIds 登録番号
    * @param {string} raceDate `YYYY-MM-DD`。この日より前に終わった期を引く
+   * @returns {Promise<{rows: Array<Object>, latestImported: boolean}|{state: "forbidden", rows: [], fetchFailed: true}>}
+   *   rows は直近5期分。latestImported は前期の行が表に1行でもあるか（false なら前々期を出す）
    */
   getRacerPeriodStats(racerIds, raceDate) {
     const ids = [...new Set((racerIds ?? []).filter(Boolean))].sort(
       (a, b) => a - b,
     );
-    if (ids.length === 0 || !raceDate) return Promise.resolve([]);
+    if (ids.length === 0 || !raceDate)
+      return Promise.resolve({ rows: [], latestImported: true });
 
     // 「前期」と、直近2年（前期を含む4期）の優出・優勝の合計に使う期（BOA-326）。
+    // 前期を取り込む前（期替わり直後）は前々期で終わる4期を使うので、1期多く取る。
     // 期の求め方は periodsEndedBefore のコメント参照
-    const periods = periodsEndedBefore(raceDate, RECENT_PERIOD_COUNT);
-    if (periods.length === 0) return Promise.resolve([]);
+    const periods = periodsEndedBefore(raceDate, RECENT_PERIOD_COUNT + 1);
+    if (periods.length === 0) return Promise.resolve({ rows: [], latestImported: true });
     const years = [...new Set(periods.map((p) => p.periodYear))].sort();
     const [latest] = periods;
 
     return withCache(
-      `racer-period-stats-v2-${latest.periodYear}-${latest.periodNo}-${ids.join(",")}`,
+      `racer-period-stats-v3-${latest.periodYear}-${latest.periodNo}-${ids.join(",")}`,
       async () => {
         if (!supabase) {
           throw new Error("Supabase client not initialized");
         }
         try {
-          // 4期は最大3つの period_year にまたがる。年で絞って取り、範囲外の期
-          // （3年分なら最大2期）は落とす（6人×最大6行）
+          // 5期は最大4つの period_year にまたがる。年で絞って取り、範囲外の期は落とす（6人×最大8行）
           const { data } = await supabase
             .from("racer_period_stats")
             .select(
@@ -7397,12 +7460,23 @@ export const supabaseDataService = {
             )
             .in("period_year", years)
             .in("racer_id", ids);
-          return (data ?? []).filter((r) =>
-            periods.some(
-              (p) =>
-                r.period_year === p.periodYear && r.period_no === p.periodNo,
+          // 前期を「期として」取り込んだか。選手ごとの欠け（長期休場で fan に載らない等）では判定しない。
+          // 公式の fan は期の終わりから15〜60日遅れて公開されるため、11/1・5/1 からしばらくは0行になる
+          const { data: latestRows } = await supabase
+            .from("racer_period_stats")
+            .select("racer_id")
+            .eq("period_year", latest.periodYear)
+            .eq("period_no", latest.periodNo)
+            .limit(1);
+          return {
+            rows: (data ?? []).filter((r) =>
+              periods.some(
+                (p) =>
+                  r.period_year === p.periodYear && r.period_no === p.periodNo,
+              ),
             ),
-          );
+            latestImported: (latestRows ?? []).length > 0,
+          };
         } catch (error) {
           if (isPermissionDeniedError(error)) {
             // 095（匿名へのSELECT公開）が未適用の間はここを通る
@@ -7875,7 +7949,7 @@ export const supabaseDataService = {
         };
       });
 
-      // 会場によって項目が違う（例: 児島は「一周|まわり足」の2項目だけ）。
+      // 会場によって項目が違う（例: 住之江・尼崎・徳山は「一周|まわり足」の2項目だけ）。
       // ヘッダの item_labels（"一周|まわり足|直線"）を正として順番を決め、
       // 実際に値がある種別だけ残す。ヘッダが無ければ既定の順に落とす
       const present = new Set(measured.map((row) => row.kind));
@@ -7995,24 +8069,21 @@ const ORIGINAL_EXHIBITION_KINDS = ["一周", "半周ラップ", "まわり足", 
  * 根拠と、今節タブ（節の最初の行）と必ず一致することの実測は
  * `src/utils/pretestRows.js` に書いてある。
  *
- * 取得に失敗しても前検の列が出ないだけで他の列は読めるため、ここは
- * 例外を投げずに空のMapへ倒す（`.throwOnError()` の例外はここで捕まえる）。
+ * 取得の失敗は投げる（`.throwOnError()` の例外をそのまま上に流す）。以前は空のMapへ倒していたが、
+ * 呼び出し元の getRaceMotorBreakdown は withCache の中なので、失敗が「この節は前検なし」として
+ * 過去レースでは7日間キャッシュに残り、リロードしても前検の列が出なかった（BOA-686）。
+ * 例外なら withCache は保存せず、画面は取得失敗を出して取り直せる。
  * @returns {Promise<Map<number, object>>}
  */
 async function fetchPretestByRacer(venueCode, date) {
   if (!supabase || !date) return new Map();
-  try {
-    const { data } = await supabase
-      .from("motor_pretest_stats")
-      .select("racer_id, race_date, pretest_time, pretest_rank")
-      .eq("venue_code", venueCode)
-      .gte("race_date", shiftDate(date, -PRETEST_LOOKBACK_DAYS))
-      .lte("race_date", date);
-    return pickLatestPretestByRacer(data ?? []);
-  } catch (error) {
-    console.error("前検タイム取得エラー:", error?.message ?? String(error));
-    return new Map();
-  }
+  const { data } = await supabase
+    .from("motor_pretest_stats")
+    .select("racer_id, race_date, pretest_time, pretest_rank")
+    .eq("venue_code", venueCode)
+    .gte("race_date", shiftDate(date, -PRETEST_LOOKBACK_DAYS))
+    .lte("race_date", date);
+  return pickLatestPretestByRacer(data ?? []);
 }
 
 /**
