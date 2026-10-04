@@ -504,6 +504,37 @@ test.describe("レイアウト: /hit-races は的中が列数より少なくて�
 });
 
 /**
+ * BOA-754 の再現テスト。/hit-races の期間タブ（今日・昨日・全期間（14日間））が
+ * 375px で2段に割れ、「全期間」がタブに見えなかった。どの幅でも1段に並び、はみ出さないこと
+ */
+test.describe("レイアウト: /hit-races の期間タブは1段に並ぶ（BOA-754）", () => {
+  test("期間タブの3つが同じ行にあり、枠からはみ出さない", async ({ page }) => {
+    await serveFixedHitRaces(page, "all");
+    await gotoAndSettle(page, "/hit-races");
+    const selector = page.locator(".period-selector");
+    await expect(selector).toBeVisible({ timeout: 30000 });
+    const state = await selector.evaluate((el) => {
+      const buttons = [...el.querySelectorAll("button")];
+      const box = el.getBoundingClientRect();
+      return {
+        count: buttons.length,
+        tops: [
+          ...new Set(
+            buttons.map((b) => Math.round(b.getBoundingClientRect().top)),
+          ),
+        ],
+        overflowRight: Math.max(
+          ...buttons.map((b) => b.getBoundingClientRect().right - box.right),
+        ),
+      };
+    });
+    expect(state.count).toBe(3);
+    expect(state.tops, "期間タブが2段に割れている").toHaveLength(1);
+    expect(state.overflowRight).toBeLessThanOrEqual(1);
+  });
+});
+
+/**
  * BOA-528 の再現テスト（/blog のカテゴリ絞り込み）。
  *
  * `/blog` の記事一覧（`.blog-grid`）は `repeat(auto-fill, minmax(320px, 1fr))` で
