@@ -81,6 +81,6 @@
 ## T8 仕上げ
 - [ ] T8-1 `npm run test:layout`（AI予想タブの節の3タブ。375/768/1024/1440/1920px）とダークモードの目視
 - [ ] T8-2 データ精度の検証（`data-accuracy-verifier`）: 3タブの数字を本番 DB から数え直して照合。例のレースはモックの数字との差を説明できること
-- [ ] T8-3 受け入れ E2E（`e2e/acceptance/analogy-finder.spec.js`）をローカルで実行
+- [ ] T8-3 受け入れ E2E（`e2e/acceptance/analogy-finder.spec.js`）をローカルで実行。例のレースの raceId は `2026-09-27-20-12`（`ANALOGY_RACE_ID=2026-09-27-20-12 npx playwright test --config=playwright.acceptance.config.js e2e/acceptance/analogy-finder.spec.js`）。級別が混ざる予選と優勝戦の日の確認（Q1・Q7）は、テストが facts・scenario の応答を差し替えて行う
 - [ ] T8-4 承認モックとの比較（`mock-diff-checker`）と、ファン評価ループ（`.claude/rules/review-fix-cycle.md`。新しい主要表示のため）
 - [ ] T8-5 完了監査: このファイルの全チェックボックスと、コミット・本番の実測を突き合わせる
