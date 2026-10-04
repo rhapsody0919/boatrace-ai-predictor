@@ -447,7 +447,7 @@
   thead
   th:first-child,
 .rmt-forecast-hint:has(> .hscroll-less) .rmt-forecast-table tbody th {
-  box-shadow: inset -1px 0 0 var(--border-hairline);
+  box-shadow: inset -1px 0 0 var(--hscroll-edge-line, var(--border-hairline));
 }
 
 .rmt-forecast-table tbody tr {
@@ -738,5 +738,5 @@
   th {
   box-shadow:
     inset 3px 0 0 0 var(--brand-accent-primary),
-    inset -1px 0 0 var(--border-hairline);
+    inset -1px 0 0 var(--hscroll-edge-line, var(--border-hairline));
 }

@@ -424,7 +424,7 @@
 
 /* 固定した列の右端の線は、横に送ったとき（「‹」が出ているとき）だけ引く（PR #1202 ファン評価1周目） */
 .mcc-list-hint:has(> .hscroll-less) .mcc-list-table :is(th, td):nth-child(2) {
-  box-shadow: inset -1px 0 0 var(--border-hairline);
+  box-shadow: inset -1px 0 0 var(--hscroll-edge-line, var(--border-hairline));
 }
 
 /* 選んでいる艇の行は、線を引いても上下の帯を消さない */
@@ -433,7 +433,7 @@
   .motor-ranking-row.is-focused
   > td:nth-child(2) {
   box-shadow:
-    inset -1px 0 0 var(--border-hairline),
+    inset -1px 0 0 var(--hscroll-edge-line, var(--border-hairline)),
     inset 0 2px 0 var(--brand-accent-primary),
     inset 0 -2px 0 var(--brand-accent-primary);
 }

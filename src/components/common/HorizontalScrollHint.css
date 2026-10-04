@@ -4,6 +4,11 @@
    （2026-09-27、タブバーで同じことが起きた）。 */
 .hscroll-hint {
   position: relative;
+  /* 固定した列の右の線（横に送ったときだけ出る）と、「›」「‹」の丸の縁の色。罫線の色
+     （--border-hairline）だと、ダークで背景との差が約1.2:1しか無く、境目も丸も見えなかった
+     （PR #1223・#1225 ファン評価、BOA-742・BOA-752）。補助テキストの色を半分に薄めて、
+     ライト・ダークとも罫線より一段はっきりさせる */
+  --hscroll-edge-line: color-mix(in srgb, var(--text-secondary) 50%, transparent);
 }
 
 .hscroll-hint.has-more::after {
@@ -51,7 +56,7 @@
   background: radial-gradient(
     circle at calc(100% - 14px) 50%,
     var(--hscroll-fade-color, var(--surface-page)) 0 11px,
-    var(--border-hairline) 11px 12px,
+    var(--hscroll-edge-line) 11px 12px,
     transparent 12.5px
   );
   color: var(--text-primary);
@@ -78,7 +83,7 @@
   background: radial-gradient(
     circle at 14px 50%,
     var(--hscroll-fade-color, var(--surface-page)) 0 11px,
-    var(--border-hairline) 11px 12px,
+    var(--hscroll-edge-line) 11px 12px,
     transparent 12.5px
   );
   color: var(--text-primary);

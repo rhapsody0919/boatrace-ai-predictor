@@ -1643,6 +1643,23 @@ function suiteHscrollHint(m, check) {
     ],
     [180, 180, 180, 0],
   );
+  // 「‹」で左端までの残りが目安の4分の1以下なら左端まで戻す（BOA-742。375px のモーター一覧で
+  // 233→37→0 と2回かかった）。右は右端が列の途中のことがあるので、手前の列の境目で止める
+  check(
+    "hscroll: 「‹」で左端までの残りが目安の4分の1以下なら、1回で左端まで戻す（右は境目で止める）",
+    [
+      m.snapScrollTarget({
+        current: 233,
+        step: 205,
+        direction: -1,
+        max: 233,
+        columnStarts: [0, 37, 98, 159],
+      }),
+      snap(120, 120, -1),
+      snap(0, 218, 1),
+    ],
+    [0, 0, 180],
+  );
   check(
     "hscroll: 1列も越えないときは次の列の境目、端を越えるときは端",
     [snap(0, 40, 1), snap(240, 40, 1), snap(200, 300, 1), snap(130, 5, -1)],
@@ -1812,6 +1829,12 @@ const MUTANTS = [
     "送る幅から固定の左の列を引かない（PR #1192 ファン評価2周目の退行）",
     "Math.round((clientWidth - stickyWidth) * 0.8)",
     "Math.round(clientWidth * 0.8)",
+  ],
+  [
+    "hscrollHint",
+    "端の手前の列の境目で止め、「‹」を2回押させる（BOA-742 の退行）",
+    "if (direction < 0 && raw <= step / 4) return 0;",
+    "if (direction < 0 && raw <= 0) return 0;",
   ],
   [
     "hscrollHint",
