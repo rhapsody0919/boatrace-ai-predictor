@@ -1125,11 +1125,12 @@ function RaceMeetTab({
                   rate: border.toFixed(2),
                 })
               : t("meetTab.forecastNoteNoBorder")}
-            {/* 得点率の列の青い文字の意味（BOA-711 U2 のファン評価: どこにも書かれていなかった） */}
-            {showBorderBadge && border !== undefined && (
-              <> {t("meetTab.forecastRateBlueNote")}</>
-            )}
           </p>
+          {/* 得点率の列の青い文字の意味（BOA-711 U2 のファン評価: どこにも書かれていなかった）。
+              文をつなぐ空白の扱い（和文で「。 」にしない）が要らないよう、段落を分ける */}
+          {showBorderBadge && border !== undefined && (
+            <p className="rmt-sub">{t("meetTab.forecastRateBlueNote")}</p>
+          )}
           {/* 目安の出し方と誤差、必要得点の式は長いので折りたたむ。
               実測の差（若松G1 0.07 / 桐生一般 0.83）まで書くのは、
               「数位ずれる」を具体で示さないと目安の精度を過信されるため */}
