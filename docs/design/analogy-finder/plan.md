@@ -60,7 +60,7 @@ flowchart LR
 範囲ごとに作るもの（今日のレースが使う範囲キーの和集合。同じキーは1回だけ）:
 | 出力 | キー | 中身 |
 |---|---|---|
-| `facts/{key}.json.gz` | `VC:{会場}:{組み合わせ}[:{選んだ艇の級別}]`・`NC:…`・`NCR:…:{yusho/junyu}`・`VA:{会場}`（キーの形は spec Q1 の回答で決める） | 艇番×項目×6つの順位（1と6は同じ値を含む）×着順の件数［当たり, 母数］、艇番×着順の全体、艇番×着順×項目の「来たときの平均の順位」、VA だけ風速区分×艇番×着順 |
+| `facts/{key}.json.gz` | `VC:{会場}:{組み合わせ}:{艇番}{級別}`・`NC:{組み合わせ}:{艇番}{級別}`・`NCR:{組み合わせ}:{艇番}{級別}:{yusho/junyu}`・`VA:{会場}`（spec Q1。今日の6艇それぞれの「艇番＋級別」の分だけキーができる。タブ3の scenario は1号艇の分だけ） | 艇番×項目×6つの順位（1と6は同じ値を含む）×着順の件数［当たり, 母数］、艇番×着順の全体、艇番×着順×項目の「来たときの平均の順位」、VA だけ風速区分×艇番×着順 |
 | `scenario/{key}.json.gz` | 上の4つ＋`VG:{会場}`・`NA` | 進入の型（8つ）×形（どの形でも＋7つ）ごとの: 件数、1着の艇・3着以内の艇・決まり手・万舟の件数、3連単の件数（出たものだけ）、30件未満なら1件ずつの行。手がかりの8条件×形の［当てはまる・当てはまらない］の件数（このコース・全体の2通り）。③の攻める艇・1号艇の表（展示タイム順位・モーター順位の区分ごと）と、同じ区分の NC の値 |
 
 - 範囲キーの数: 1日 約150〜180レースで、数百キーの見込み（初回に実測）。scenario のファイルはモックの scn.js を範囲ごとに gzip して 16〜35KB（design-reviewer の実測）
@@ -94,7 +94,7 @@ AIの見立て（spec FR-E）のための変更。学習側レーンの担当（
 ### Storage（非公開のバケット `analogy-v16`）
 `analogy` バケット（非公開。学習データ・モデル・長期データのキャッシュが入っている）とは分ける。API は service key で読むので、公開は要らない。保持: `similar/`（候補）は7日で消す。ほかは時点の固定のため残す。容量は初回に実測し、年の見込みを出す（候補を除いて1日 数十MB の見込み）。
 
-### DB（マイグレーション。spec Q4 の回答で決める）
+### DB（マイグレーション。spec Q4 で 120 を置き換えると決定）
 新しい表は1つと、118 の表への列の追加（上の「寄与度用モデルの集計」）。番号は実装 PR の時点で origin/master の最新を確認する（120 を作り直すか、新しい番号にする）。
 
 | 表 | 列 | 書き手 |
@@ -108,11 +108,11 @@ AIの見立て（spec FR-E）のための変更。学習側レーンの担当（
 | 対象 | 状態 | 扱い |
 |---|---|---|
 | 118 `analogy_models`・`analogy_contribution_profiles` | 本番適用済み | そのまま使う（AIの見立て）。7テーマ・新しい量の定義は行の中身（themes・shares）の変更で、列は変えない |
-| 120（層別 S* の母集団・スナップショット・RPC 2本） | 未適用、このブランチだけ | 適用しない。作り直すか消す（spec Q4）。PGlite の検証 `verify-analogy-strata-migration.js` も一緒に消す |
-| 127 `analogy_race_features`・128、日次の特徴量ジョブ | master にあり未適用、ジョブは一度も動いていない | v16 では使わない。spec Q2 で「レースごとの寄与度をやめる」なら適用しない（書くだけで誰も読まない表になる） |
-| ADR-0083 の `analogy_race_contributions` | 未作成 | spec Q2 で「やめる」なら作らない |
+| 120（層別 S* の母集団・スナップショット・RPC 2本） | 未適用、このブランチだけ | 適用しない（Q4 で決定）。BOA-635 のレーンとの合意（T0-2）の後に消す。PGlite の検証 `verify-analogy-strata-migration.js` も一緒に消す |
+| 127 `analogy_race_features`・128、日次の特徴量ジョブ | master にあり未適用、ジョブは一度も動いていない | v16 では使わない。Q2 で「レースごとの寄与度をやめる」と決まったので適用しない（書くだけで誰も読まない表になる）。master のコード・SQL の扱いは学習側レーンと決める（T0-4） |
+| ADR-0083 の `analogy_race_contributions` | 未作成 | 作らない（Q2） |
 
-現行の 120 の ER 図（Q4 の回答まで残す。置き換えたら `generate-er-diagram.js` で作り直す）:
+現行の 120 の ER 図（120 を消すまで残す。新しいマイグレーションを書いたら `generate-er-diagram.js` で作り直す）:
 
 ```mermaid
 erDiagram
@@ -187,14 +187,14 @@ erDiagram
 |---|---|---|
 | 完全レース・返還の除外 | `features.py`（タブ1・2は返還を含める、タブ3は除く） | pytest |
 | 優勝戦・準優勝戦の判定 | spec「優勝戦・準優勝戦の判定」。JS `raceStageConfig.js`・Python `features.py` | 固定の文字列で JS と Python を照合（`scripts/ml/analogy/tests/test_features.py`）。最終日12R の照合は pytest |
-| 級別の組み合わせ | 6艇の級別を A1・A2・B1・B2 の順に並べた構成（spec Q1 の回答で確定） | pytest |
+| 級別の組み合わせ | 6艇の級別を A1・A2・B1・B2 の順に並べた構成＋選んだ艇の級別（spec Q1）。VC が300件未満なら既定を NC に | pytest |
 | 6艇中の順位と同じ値 | 1位・6位は同じ値を含む、2〜5位は min 順位（`tab1_facts.py`） | pytest と JS の `analogyFacts.js` の固定データ |
 | 判定の3段階・並び | spec A-7 | `verify-analogy-facts.js`（ci） |
 | 進入の型・前付け | [entry-slit/prep7.md](./entry-slit/prep7.md) の maeduke（艇番より内のコースに入った艇） | pytest と `analogyScenario.js` の固定データ |
 | スリットの7形 | BOA-635 の spec「スリットの判定」1段目（round(ST×100) の整数で比べる）。展示 F は負 | 同上。BOA-635 と同じ固定データを使う |
 | 手がかりの8条件 | [slit-hint/slitpred2_hint.json](./slit-hint/slitpred2_hint.json)（平均STは 1/1000秒に丸める。このコースで5走未満は全体で埋める） | 同上 |
 | 攻める艇 | [slit-hint/mark1.md](./slit-hint/mark1.md) | 同上 |
-| 今節の平均着順点 | [mock-v16/series-score.md](./mock-v16/series-score.md) | pytest（例のレースの6艇の値） |
+| 今節の平均着順点（前日まで） | [mock-v16/series-score.md](./mock-v16/series-score.md) の定義で、同じ日の前の走を含めない（spec Q6） | pytest（例のレースの6艇の値） |
 | k-NN の距離 | [mock-v16/knn_build.py](./mock-v16/knn_build.py)。重みは表示中の版の `model_win` の SHAP、L は cal で引き直す | 例のレースで knn78.md の14件の並びを再現（pytest） |
 | Wilson 区間 | 95%、z=1.96 | JS の固定データ |
 | 3連単の払戻 | 本体 `race_results.payout_trio`（列名と券種が逆）、長期は kb | pytest |
@@ -221,7 +221,7 @@ erDiagram
 | `before_exhibition` | それ以外 |
 
 - 艇番・着順・進入・形の切り替えは画面で行う（取り直さない）。stage を変えたときだけ取り直す
-- 今節の平均着順点を出さない範囲（spec A-4・Q7）では、facts からその項目を外す
+- NCR が優勝戦のときは facts から今節の平均着順点を外す（spec A-4）。今日が優勝戦・準優勝戦のときの「今日の一文」を出さない処理は画面で行う（Q7）
 
 ## フロントエンド
 
@@ -270,7 +270,7 @@ flowchart TD
 2026-10-04 の design-reviewer（v16 の書き直し）の指摘と対応は [design-review-v16.md](./design-review-v16.md)。2026-10-01・10-02 の指摘（k-NN・層別の時のもの）は旧版の plan にある。
 
 ## 残る判断
-- spec の未確定 Q1〜Q7
+- spec の Q1〜Q7 は決定済み（2026-10-04）
 - BOA-635 との接続（上）
 - Storage の保持期間（初回の実測で見直す）
 - 展示後の候補の件数（T2-4 の一致率で決める）

@@ -1,7 +1,7 @@
 # ADR-0085: アナロジー・ファインダー（v16）の数えた値と類似レースは、朝の Python バッチで今日の分だけ作り Storage に置く
 
-- 状態: 提案（BOA-271。spec の未確定 Q2・Q4 の回答と、design-reviewer の後に確定）
-- 置き換えるもの: [ADR-0082](./0082-analogy-strata-counted-in-sql.md)（層別 S* を SQL の RPC で数える）。[ADR-0083](./0083-per-race-contribution-treeshap-in-js.md) のうち、レースごとの寄与度を画面に出す部分（Q2 で「やめる」と決まった場合）
+- 状態: 採用（2026-10-04。design-reviewer の指摘を反映し、ユーザーが spec の Q2・Q4 を推奨どおりに決定）
+- 置き換えるもの: [ADR-0082](./0082-analogy-strata-counted-in-sql.md)（層別 S* を SQL の RPC で数える）。[ADR-0083](./0083-per-race-contribution-treeshap-in-js.md) のうち、レースごとの寄与度を作って画面に出す部分（Q2 でやめると決定。JS の TreeSHAP のコードは残す）
 - 関連: [ADR-0080](./0080-analogy-neighbors-precomputed-in-batch.md)（近傍のバッチ。v16 の類似レースは k-NN に戻ったので、考え方は近い）
 
 ## 背景

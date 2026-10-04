@@ -2,7 +2,7 @@
 
 元: [spec.md](./spec.md)・[screens.md](./screens.md)・[plan.md](./plan.md)。依存順。1タスク＝1コミット〜1PR。2026-10-02 までの版は `git show fa61e6213:docs/design/analogy-finder/tasks.md`（済みのタスクの記録もそちら）。
 
-**着手条件**: spec の未確定 Q1〜Q5 の回答、design-reviewer と受け入れ E2E（`/step4` の事前条件）、ユーザーの実装の承認（オーケストレーター経由）。本番 DB への書き込み（マイグレーションの適用）はユーザーが行う。
+**着手条件**: design-reviewer と受け入れ E2E（`/step4` の事前条件。済み）、BOA-635 との合意（T0-2）、ユーザーの実装の承認（オーケストレーター経由）。本番 DB への書き込み（マイグレーションの適用）はユーザーが行う。
 
 ## 済み（旧版から引き継ぐもの）
 - [x] Phase M（寄与度用モデル、MD-1〜MD-7）。v16 では AIの見立てと類似レースの距離の重みに使う
@@ -12,10 +12,10 @@
 - [x] モック Version 16 の承認（2026-10-04、mock/APPROVED.md）
 
 ## T0 準備
-- [ ] T0-1 spec の未確定 Q1〜Q7 をオーケストレーター経由でユーザーに確認し、spec・screens・plan に反映する。spec・screens が変わったら受け入れ E2E を acceptance-test-writer に書き直させる
+- [x] T0-1 spec の Q1〜Q7 をユーザーに確認し（2026-10-04「全部推奨で」）、spec・screens・plan に反映。受け入れ E2E を acceptance-test-writer に追随させる
 - [ ] T0-2 BOA-635 のレーンと行の渡し方を合意し直す（plan「BOA-635 との接続」。`layer/{race_id}.json.gz` の形と、v16 の層を分母にしてよいか）。**T2 より前に済ませる**
-- [ ] T0-3 マイグレーション 120 の扱い（Q4）に合わせて、120 と `verify-analogy-strata-migration.js` を消すか作り直す。`verify-registry.json`・`check-anon-access.js` の ANON_RPCS・APPLIED.md から 120 の分を外す
-- [ ] T0-4 学習側レーンと分担を確かめる（plan「寄与度用モデルの集計」: Version 14 の量の定義・7テーマ・向き・出走表時点のモデルを3本にして同じ集計・118 の `analogy_contribution_profiles` に `stage` 列を足すマイグレーション・優勝戦の判定）。Q2 で「レースごとの寄与度をやめる」なら、日次の特徴量ジョブ・127・128・`parity_fixture.json` の切り替えの扱いを学習側と決める
+- [ ] T0-3 マイグレーション 120 は適用しない（Q4 で決定）。T0-2 の合意の後に、120 と `verify-analogy-strata-migration.js` を消すか作り直す。`verify-registry.json`・`check-anon-access.js` の ANON_RPCS・APPLIED.md から 120 の分を外す
+- [ ] T0-4 学習側レーンと分担を確かめる（plan「寄与度用モデルの集計」: Version 14 の量の定義・7テーマ・向き・出走表時点のモデルを3本にして同じ集計・118 の `analogy_contribution_profiles` に `stage` 列を足すマイグレーション・優勝戦の判定）。Q2 でレースごとの寄与度をやめると決まったので、日次の特徴量ジョブ・127・128・`parity_fixture.json` の切り替え・出走表時点モデル（win_racecard）の扱いを学習側と決める（出走表時点のモデルは展示前の AIの見立てに使うので残す）
 - [ ] T0-5 dispatch 用の fine-grained PAT を作り、Vercel の環境変数 `GITHUB_ACTIONS_DISPATCH_TOKEN` に入れる（ユーザーの作業）
 
 ## T1 データの前提と定義（spec「実装で直すこと」）
@@ -23,7 +23,7 @@
 - [ ] T1-0b タブ3の母集団（返還の除外・進入不明の除外）を Python で作り、モックの SQL の母集団（若松・6艇ともA1 1,117件、全国・6艇ともA1 24,871件）を再現する pytest
 分析の規律（旧 T3b）に従う: 事前登録を単独でコミット・push → second-opinion-reviewer で方法論を見る → 実行 → 結果のコミットに事前登録の SHA。数値には出典（値／指標／比較／母集団／期間／データ版／JSON#キー）。
 - [ ] T1-1 優勝戦・準優勝戦の判定を広げる（名前のルールだけ。準優勝戦の判定を先に）。JS `raceStageConfig.js`・Python `features.py` を同じ規則にし、固定の文字列で一致検査（`tests/test_features.py`）。最終日12R の照合は pytest の検査だけ。6艇ともA1の優勝戦で取りこぼしていた22R が入ること、優勝戦のバッジ・今節の得点の画面が意図どおり変わることを確かめる
-- [ ] T1-2 今節の平均着順点の as-of（spec Q6）を反映し、走数の絞り込み（3走以上か4走以上か）を決める（第9回 指摘3）
+- [ ] T1-2 今節の平均着順点を前日までの定義にし（spec Q6）、走数の絞り込み（3走以上か4走以上か）を決める（第9回 指摘3）
 - [ ] T1-3 返還レースの除外がカド一撃の4号艇の1着率に与える影響を数えて記録（第10・11回）
 - [ ] T1-4 手がかりの条件のしきい値（.01／.02／.03）を期間分割で確かめる（第10回）
 - [ ] T1-5 1号艇の展示タイムが系統的に速い理由を調べ、③の注記を直すか決める（第11回）
@@ -46,7 +46,7 @@
 - [ ] T3-1 マイグレーション（`analogy_v16_snapshots` と、118 の `analogy_contribution_profiles` への `stage` 列。番号は origin/master の最新を確認）と PGlite の検証（ci）。ヘッダーに plan.md の参照を書き、`generate-er-diagram.js analogy-finder` で plan の ER 図を作り直す
 - [ ] T3-2 マイグレーションの本番適用をユーザーに依頼する（書き込み SQL だけを渡す）。適用後、読み取りで表・ポリシー・匿名の権限を確かめ、APPLIED.md に行を足す
 - [ ] T3-3 Storage の非公開のバケット `analogy-v16` を作り（`analogy` とは分ける）、`similar/`（候補）の7日の削除を夜の確認のジョブに入れる
-- [ ] T3-4 127・128 の扱い（spec Q2 が「やめる」なら適用しない。学習側レーンと決める）
+- [ ] T3-4 127・128 は適用しない（Q2）。master のコード（daily_features.py・workflow）と SQL を残すか消すかを学習側レーンと決める
 
 ## T4 展示後の段（Vercel の JS）
 - [ ] T4-1 `src/utils/analogySimilarRerank.js`（純粋関数）: 候補ファイルと展示の値から、展示後の距離で並べ直す。T2-4 の Python の結果と固定データで一致（順位が完全一致、距離の差 < 1e-6）
