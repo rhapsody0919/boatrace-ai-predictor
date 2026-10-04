@@ -368,6 +368,8 @@ R('scn:{scope:"v20A1",', 'scn:{hsrc:"C",scope:"v20A1",')
 # 手がかりパネル 第10回・ファン評価の直し
 R('.tabs{display:grid;', '.hint-pic{max-width:520px}.hint-t td .fst{color:var(--warn)}.hintc[aria-pressed="true"]{border:2px solid var(--accent-strong);padding:5px 7px}.hintc small{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}.hintb{white-space:normal}\n.tabs{display:grid;')
 # ③ 1マークはどうなる？
-R('.tabs{display:grid;', '.mk-t th,.mk-t td{padding:4px 6px;font-size:12px}.mk-t td{font-family:"JetBrains Mono",monospace;text-align:right}.mk-t tr.grp th{font-size:11.5px;color:var(--text2);padding-top:8px}.mk-t tr.today{background:var(--sunken)}.mk-t tr.today th{font-weight:700}.mk-t th small{display:inline-block;margin-left:4px;font-size:10px;color:var(--card);background:var(--accent-strong);border-radius:3px;padding:0 4px}\n.tabs{display:grid;')
+R('.tabs{display:grid;', '.mk-t th,.mk-t td{padding:4px 4px;font-size:11.5px;white-space:normal}.mk-t tbody th{max-width:6.5em}.mk-t thead th{font-size:11px}.mk-t td{font-family:"JetBrains Mono",monospace;text-align:right}.mk-t tr.grp th{font-size:11.5px;color:var(--text2);padding-top:8px}.mk-t tr.today{background:var(--sunken)}.mk-t tr.today th{font-weight:700}.mk-t th small{display:inline-block;margin-left:4px;font-size:10px;color:var(--card);background:var(--accent-strong);border-radius:3px;padding:0 4px}\n.tabs{display:grid;')
+# ③ 第11回・ファン評価
+R('.tabs{display:grid;', '.mk-t td small{display:block;font-size:10px;color:var(--muted)}.mk-t td em{display:block;font-style:normal;font-size:10px;color:var(--text2)}.mk-t td .few{opacity:.6}.mk-t th small.uc{display:block;background:none;padding:0;margin:2px 0 0;font-weight:400;font-size:10.5px;color:var(--warn)}\n.tabs{display:grid;')
 io.open('template16.html', 'w', encoding='utf-8').write(t)
 print('ok')

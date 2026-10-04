@@ -37,7 +37,9 @@ idx = np.where(POP)[0]
 F = np.zeros((len(r), 8), bool); F[idx] = forms(np.round(sr[idx] * 100).astype(int))
 ATT = {'kado': 4, 'd1': 2, 'd2': 3, 'd3': 4, 'dash': 4, 'flat': None, 'wall': None}
 yusho = (r['round'].values == 'yusho')
-SC = {'nat': POP, 'wkA1': POP & (r.venue_code.values == 20) & (cls == 4).all(1), 'allA1Y': POP & (cls == 4).all(1) & yusho}
+wk = (r.venue_code.values == 20); a1 = (cls == 4).all(1)
+SC = {'nat': POP, 'wk': POP & wk, 'wkA1': POP & wk & a1, 'allA1': POP & a1, 'allA1Y': POP & a1 & yusho}
+STI = np.full(sr.shape, -999, int); STI[idx] = np.round(sr[idx] * 100).astype(int)
 
 def X(m, base): return [int((m & base).sum()), int(base.sum())]
 def metrics(sel, a):
@@ -63,7 +65,9 @@ out = {'period': ['2019-04-01', str(END.date())],
                  'attacker': ATT, 'rank': 'motor_2_rank・exh_time_rank（features.py の rank(method="min")、レース内6艇。モーターは高いほど1位、展示タイムは速い（小さい）ほど1位。同じ値は同じ順位（小さいほう））',
                  'motor_rank_needs': 'モーター2連率が6艇そろうレースだけ', 'exh_rank_needs': '展示タイムが6艇そろうレースだけ',
                  'technique_source': '本番Supabase 読み取り（MCP execute_sql SELECT、2026-10-04 取得、md5一致）: race_date≦2025-12-02 は kb_archive_races.technique、以降は race_results.winning_technique',
-                 'b1_nige': '1着が1号艇かつ決まり手が逃げ', 'inner_top2': '攻める艇−1 号艇の2着以内（イン凹みでは1号艇と同じ）'},
+                 'b1_nige': '1着が1号艇かつ決まり手が逃げ', 'inner_top2': '攻める艇−1 号艇の2着以内（イン凹みでは1号艇と同じ）',
+                 'overlap': 'forms.<形>.overlap.<ほかの形> = [その形にも当たるR, この形のR]（全国の枠なりだけ）',
+                 'att_lead': 'forms.<形>.att_lead = [攻める艇の本番STが内側の艇（攻める艇−1号艇）より0.05秒以上早いR, この形のR]（全国の枠なりだけ。STはround(×100)の整数で比較）'},
        'scopes': {}, 'forms': {}}
 out['tech_counts'] = {TK[k]: int(v) for k, v in pd.Series(tech[POP]).value_counts().items()}
 for s, m in SC.items():
@@ -79,6 +83,10 @@ for j, f in enumerate(FORMS):
             fo['by_exh'][s] = {k: metrics(sel & exok & v, a) for k, v in band(exhr[:, a - 1]).items()}
         fo['b1_by_motor'][s] = {k: metrics(sel & motok & v, None) for k, v in band(motr[:, 0]).items()}
         fo['b1_by_exh'][s] = {k: metrics(sel & exok & v, None) for k, v in band(exhr[:, 0]).items()}
+    sel = SC['nat'] & F[:, j]
+    fo['overlap'] = {g: X(F[:, k], sel) for k, g in enumerate(FORMS) if k != j}  # nat のみ。分母＝この形のレース
+    if a is not None:  # 攻める艇の本番STが内側の艇（a−1号艇）より 0.05秒以上早い（小さい）。nat のみ
+        fo['att_lead'] = X((STI[:, a - 2] - STI[:, a - 1]) >= 5, sel)
     out['forms'][f] = fo
 # 参考: 形を問わない全体
 out['any_form'] = {s: metrics(m, None) for s, m in SC.items()}
