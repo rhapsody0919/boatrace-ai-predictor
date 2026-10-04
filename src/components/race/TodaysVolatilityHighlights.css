@@ -119,11 +119,13 @@
   }
 }
 
-/* 締切を過ぎたレースの札（BOA-757）。締切前のレースが残っていない時間帯だけ出る */
+/* 締切を過ぎたレースの札（BOA-757）。締切前のレースが残っていない時間帯だけ出る。
+   枠を罫線の色にすると、ダークで背景に溶けて時刻の続きの文字に見えた（PR #1248 ファン評価1周目） */
 .volatility-highlights__closed {
   margin-left: 0.4em;
   padding: 0 0.4em;
-  border: var(--border-width-1) solid var(--border-hairline);
+  border: var(--border-width-1) solid
+    color-mix(in srgb, var(--text-secondary) 50%, transparent);
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   font-size: 0.75rem;

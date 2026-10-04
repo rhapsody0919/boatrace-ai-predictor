@@ -12,7 +12,10 @@ import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { getRaceId } from "../../utils/raceId";
 import { isRaceCancelled } from "../../utils/raceCancellation";
-import { volatilityDisplayValue } from "../../utils/volatilityLevel";
+import {
+  getVolatilityLevel,
+  volatilityDisplayValue,
+} from "../../utils/volatilityLevel";
 import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
 import { pickVolatilityHighlights } from "../../utils/volatilityHighlights";
 import "./TodaysVolatilityHighlights.css";
@@ -40,6 +43,8 @@ function flattenRaces(venuesData, nowHHMM) {
         raceNo: race.raceNo,
         startTime: race.startTime || null,
         percentile: race.volatility.percentile,
+        // 列に入れるかの段階（レース詳細と同じ基準）
+        level: getVolatilityLevel(race.volatility.percentile),
         // 締切を過ぎたか（結果が出たレースも含む）。締切前のレースから選ぶために使う（BOA-757）
         closed:
           getRaceStatus(
@@ -139,7 +144,7 @@ function TodaysVolatilityHighlights({ venuesData, nowHHMM = null }) {
     flattenRaces(venuesData, nowHHMM),
     HIGHLIGHT_COUNT,
   );
-  if (highRaces.length === 0) return null;
+  if (highRaces.length === 0 && lowRaces.length === 0) return null;
 
   return (
     <section className="volatility-highlights">
@@ -150,7 +155,7 @@ function TodaysVolatilityHighlights({ venuesData, nowHHMM = null }) {
       <p className="volatility-highlights__scale-note">
         {t("home.volatilityHighlightsScaleNote")}
       </p>
-      {/* 締切前のレースが1本以下の時間帯（夕方以降）だけ、締切済みから選んでいることを書く */}
+      {/* 締切前のレースが残っていない時間帯（夜）だけ、振り返りとして出していることを書く */}
       {allClosed && (
         <p className="volatility-highlights__closed-note">
           {t("home.volatilityHighlightsClosedNote")}

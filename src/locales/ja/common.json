@@ -945,7 +945,7 @@
     "volatilityHighlightsScaleNote": "数字は同じ会場のレースと比べた崩れやすさ（0〜100、100が最も崩れやすい）です。",
     "volatilityHighlightsTurnPrediction": "最有力の展開: {{course}}コース{{technique}} {{probability}}%",
     "volatilityHighlightsClosed": "締切",
-    "volatilityHighlightsClosedNote": "締切前のレースが少ないため、締切済みのレースから選んでいます。",
+    "volatilityHighlightsClosedNote": "本日のレースはすべて締切済みです。振り返りとして表示しています。",
     "volatilityHighlightsResult": "結果: {{boat}}号艇が1着",
     "volatilityHighlightsResultPending": "結果: 反映待ち",
     "volatilityHighlightsAccuracyLink": "実測精度を見る →",

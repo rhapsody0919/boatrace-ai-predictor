@@ -148,8 +148,9 @@ test("ホームの注目レース: 崩れやすさは「/ 100」で出し、% �
 
 // BOA-757: 締切を過ぎたレースが締切前と区別なく並び、これから見るレースを選ぶ導線にならなかった。
 // 締切前のレースが2本以上あれば締切前だけから選び、残っていなければ締切済みから選んで札と注記を付ける
+// 10〜15時の6本。段階は 高: 1R（95）・4R（80）、標準: 3R（60）・5R（40）、本命有利: 2R（20）・6R（5）。
 // 1R は3号艇が1着の結果あり。ほかは結果がまだ無い（反映待ち）
-const DAY_RACES = [95, 80, 60, 40, 20, 5].map((p, i) => ({
+const DAY_RACES = [95, 20, 60, 80, 40, 5].map((p, i) => ({
   raceNo: i + 1,
   startTime: `${10 + i}:00`,
   cancellationStatus: null,
@@ -168,7 +169,7 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     });
     await page.goto("/");
     const [high, low] = await readHighlights(page);
-    // 締切前は 13・14・15時の3本 → 上位・下位1本ずつ
+    // 締切前は 13時（80・高）・14時（40・標準）・15時（5・本命有利）の3本
     expect(high).toEqual([`/race/${raceIdOf(4)}`]);
     expect(low).toEqual([`/race/${raceIdOf(6)}`]);
     await expect(page.locator(".volatility-highlights__closed")).toHaveCount(0);
@@ -189,24 +190,60 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     });
     await page.goto("/");
     const [high, low] = await readHighlights(page);
-    expect(high).toEqual([1, 2, 3].map((n) => `/race/${raceIdOf(n)}`));
-    expect(low).toEqual([6, 5, 4].map((n) => `/race/${raceIdOf(n)}`));
-    await expect(page.locator(".volatility-highlights__closed")).toHaveCount(6);
+    expect(high).toEqual([1, 4].map((n) => `/race/${raceIdOf(n)}`));
+    expect(low).toEqual([6, 2].map((n) => `/race/${raceIdOf(n)}`));
+    await expect(page.locator(".volatility-highlights__closed")).toHaveCount(4);
     await expect(page.locator(".volatility-highlights__closed").first()).toHaveText(
       "締切",
     );
     await expect(
       page.locator(".volatility-highlights__closed-note"),
-    ).toContainText("締切済みのレースから選んでいます");
+    ).toContainText("振り返りとして表示しています");
     // 振り返りとして結果も出す。予測（コース）と混ざらないよう「結果: N号艇が1着」の形
     const results = page.locator(".volatility-highlights__result");
-    await expect(results).toHaveCount(6);
+    await expect(results).toHaveCount(4);
     await expect(
       page.locator(`a[href="/race/${raceIdOf(1)}"] .volatility-highlights__result`),
     ).toHaveText("結果: 3号艇が1着");
     await expect(
       page.locator(`a[href="/race/${raceIdOf(2)}"] .volatility-highlights__result`),
     ).toHaveText("結果: 反映待ち");
+  });
+
+  // 夕方の残り数本の中で上位・下位を切ると、崩れやすさ28〜33の「標準」が「イン崩れ注意（高）」に
+  // 入った（PR #1248 ファン評価1周目）。列にはレース詳細と同じ段階のレースだけを入れる
+  test("13:30: 締切前の「標準」（14時・40）は「イン崩れ注意（高）」に入れない", async ({
+    page,
+  }) => {
+    await setup(page, {
+      edge: true,
+      races: DAY_RACES,
+      now: "2026-09-29T13:30:00+09:00",
+    });
+    await page.goto("/");
+    const columns = await readHighlights(page);
+    expect(columns).toEqual([[`/race/${raceIdOf(6)}`]]);
+    await expect(page.locator(".volatility-highlights")).not.toContainText(
+      "イン崩れ注意（高）",
+    );
+  });
+
+  // 締切前が1本だけになると、まだ買えるその1本が一覧から消えていた（PR #1248 ファン評価1周目）
+  test("14:30: 締切前が1本だけでも、そのレースを出す（締切の札・注記は出さない）", async ({
+    page,
+  }) => {
+    await setup(page, {
+      edge: true,
+      races: DAY_RACES,
+      now: "2026-09-29T14:30:00+09:00",
+    });
+    await page.goto("/");
+    const columns = await readHighlights(page);
+    expect(columns).toEqual([[`/race/${raceIdOf(6)}`]]);
+    await expect(page.locator(".volatility-highlights__closed")).toHaveCount(0);
+    await expect(
+      page.locator(".volatility-highlights__closed-note"),
+    ).toHaveCount(0);
   });
 
   // 「崩れやすさ100」と「1着予想: 1号艇」が並び矛盾して見えた。最有力の1パターンで、値はコース番号

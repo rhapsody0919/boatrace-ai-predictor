@@ -1741,25 +1741,42 @@ function suiteTurnPrediction(m, check) {
 // --- pickVolatilityHighlights（BOA-757）: ホームのイン崩れ注意度ハイライトの選び方。
 // 締切を過ぎたレースが締切前と区別なく並び、これから見るレースを選ぶ導線にならなかった
 function suiteVolatilityHighlights(m, check) {
-  const race = (id, percentile, closed) => ({ id, percentile, closed });
+  const level = (p) => (p >= 70 ? "high" : p <= 30 ? "low" : "standard");
+  const race = (id, p, closed) => ({ id, percentile: p, level: level(p), closed });
   const ids = (r) => ({
     high: r.high.map((x) => x.id),
     low: r.low.map((x) => x.id),
     allClosed: r.allClosed,
   });
-  // 締切済みの a（90）・f（5）は、締切前が2本以上あれば選ばない
+  // 締切済みの a（95）・f（5）は、締切前が1本でもあれば選ばない
   const races = [
-    race("a", 90, true),
+    race("a", 95, true),
     race("b", 80, false),
-    race("c", 60, false),
+    race("c", 75, false),
     race("d", 40, false),
     race("e", 20, false),
     race("f", 5, true),
   ];
   check(
-    "volatilityHighlights: 締切前が2本以上なら、締切前だけから上位・下位を選ぶ",
+    "volatilityHighlights: 締切前が残っていれば、締切前だけから段階ごとに選ぶ",
     ids(m.pickVolatilityHighlights(races, 5)),
-    { high: ["b", "c"], low: ["e", "d"], allClosed: false },
+    { high: ["b", "c"], low: ["e"], allClosed: false },
+  );
+  // PR #1248 ファン評価1周目: 夕方の残り数本で、崩れやすさ28〜33の「標準」が「高」の列に入った
+  check(
+    "volatilityHighlights: 「標準」（31〜69）のレースはどちらの列にも入れない",
+    ids(
+      m.pickVolatilityHighlights(
+        [race("x", 33, false), race("y", 45, false), race("z", 14, false)],
+        5,
+      ),
+    ),
+    { high: [], low: ["z"], allClosed: false },
+  );
+  check(
+    "volatilityHighlights: 締切前が1本だけでも、そのレースを出す",
+    ids(m.pickVolatilityHighlights([race("a", 95, true), race("q", 85, false)], 5)),
+    { high: ["q"], low: [], allClosed: false },
   );
   check(
     "volatilityHighlights: 全部締切済みなら、締切済みから選び allClosed",
@@ -1770,22 +1787,6 @@ function suiteVolatilityHighlights(m, check) {
       ),
     ),
     { high: ["a", "b"], low: ["f", "e"], allClosed: true },
-  );
-  // 締切前が1本だと上位・下位に分けられず一覧ごと消えるので、締切前0本と同じ扱い
-  check(
-    "volatilityHighlights: 締切前が1本だけなら、全レースから選ぶ",
-    ids(
-      m.pickVolatilityHighlights(
-        races.map((r) => ({ ...r, closed: r.id !== "c" })),
-        1,
-      ),
-    ),
-    { high: ["a"], low: ["f"], allClosed: true },
-  );
-  check(
-    "volatilityHighlights: 対象が1本以下なら何も出さない",
-    ids(m.pickVolatilityHighlights([race("a", 50, false)], 5)),
-    { high: [], low: [], allClosed: true },
   );
 }
 
@@ -1841,6 +1842,12 @@ const MUTANTS = [
     "締切済みのレースも締切前と一緒に選ぶ（BOA-757 の退行）",
     "const pool = allClosed ? races : open;",
     "const pool = races;",
+  ],
+  [
+    "volatilityHighlights",
+    "段階を見ずに崩れやすさの順で切る（PR #1248 ファン評価1周目の退行）",
+    '.filter((r) => r.level === "high")',
+    ".filter(() => true)",
   ],
   [
     "hscrollHint",

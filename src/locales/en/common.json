@@ -380,7 +380,7 @@
     "volatilityHighlightsScaleNote": "The number shows how upset-prone the race is compared with races at the same venue (0–100; 100 is the most upset-prone).",
     "volatilityHighlightsTurnPrediction": "Most likely: Course {{course}} {{technique}} {{probability}}%",
     "volatilityHighlightsClosed": "Closed",
-    "volatilityHighlightsClosedNote": "Few races are left before the deadline, so these are picked from races that have closed.",
+    "volatilityHighlightsClosedNote": "All of today's races have closed. These are shown as a look back.",
     "volatilityHighlightsResult": "Result: Boat {{boat}} won",
     "volatilityHighlightsResultPending": "Result: not yet posted",
     "volatilityHighlightsAccuracyLink": "See our track record →",
