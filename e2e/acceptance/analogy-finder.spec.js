@@ -2,15 +2,17 @@ import { test, expect } from "../fixtures.js";
 
 // アナロジー・ファインダー（BOA-271、モック Version 16 準拠）の受け入れE2E。
 // docs/design/analogy-finder/spec.md と screens.md だけから書いた（plan/tasks/src は読んでいない）。
+// spec の Q1〜Q7 は 2026-10-04 にユーザーが推奨の案で決定済み（spec「決定事項」）。その内容で書いている。
 //
 // ■ 開くレース
 //   spec の例のレース 2026-09-27 若松12R（6艇ともA1、G1優勝戦）。
 //   spec・screens に raceId の形式もレースまでの導線も書かれていないため、固定値を環境変数で渡す。
 //     ANALOGY_RACE_ID=<若松12R の raceId> npx playwright test --config=playwright.acceptance.config.js e2e/acceptance/analogy-finder.spec.js
 //   画面は /race/:raceId の「AI予想」タブ（screens「画面の構造と操作要素」URL行）。
-//
-// ■ 未確定事項（spec Q1・Q5・Q6・Q7）に依存するテストは、承認版（モック Version 16）の挙動で書き、
-//   テスト名に「（Qn 未確定）」を付けた。ユーザーの回答で変わったら、そのテストを書き直す。
+//   Q1（級別が混ざったレース）・Q7（優勝戦でない日）を確かめるテストは、同じレースを開いたまま
+//   facts・scenario の応答だけを「級別が混ざった予選のレース」に差し替えている（mixed: true）。
+//   画面が数えるレースの名前・今日のラウンドを facts 以外（ページのレース情報）から作る実装だと、
+//   このテストは仕様と関係なく赤になる。その場合は、級別が混ざった予選のレースの raceId を別に渡す形に書き直す。
 //
 // ■ API はすべて page.route でモックする（screens「データ取得」の3本）。
 //   実装前で応答の形が決まっていないため、下の形を仮定した。数字の検証はこの形を前提にしている。
@@ -27,15 +29,17 @@ import { test, expect } from "../fixtures.js";
 //                       // reflecting = 展示データは入ったが展示後の段が未保存（「展示の結果を反映しています」）
 //                       // closed = 締切を過ぎても展示後の段が無い（1行を出さない）
 //     stage: "before"|"after",
-//     race: { venue, raceNumber, date, grade, round, classSummary },
+//     race: { venue, raceNumber, date, grade, round, classSummary },   // round で優勝戦・準優勝戦の日を判定（Q7）
 //     period: { from: "2019-04-01", to: "2026-09-26" },
-//     scopes: [{ key: "VC"|"NC"|"NCR"|"VA", label }],
+//     scopes: [{ key, label, n }],                    // 1号艇を選んだときの数えるレース
+//     scopesByBoat: { [boat]: [{ key: "VC"|"NC"|"NCR"|"VA", label, n }] },
+//                       // 名前と件数は選んだ艇の級別で変わる（Q1）。VC の n<300 なら既定は NC
 //     items: [{ key, label, better: "高い"|"速い"|"早い", worse: "低い"|"遅い", folded?: true }],
 //                       // 展示前は exhibition_time を含めない
 //     today: {
-//       boats: [{ boat, values: { [itemKey]: number|null }, ranks: { [itemKey]: { rank, ties }|null } }],
+//       boats: [{ boat, racerClass, values: { [itemKey]: number|null }, ranks: { [itemKey]: { rank, ties }|null } }],
 //       wind: { speed, wave } | null,   // 展示前は null
-//       classAllSame: "A1" | null,
+//       classAllSame: "A1" | null,      // 6艇とも同じ級別のときだけ
 //     },
 //     counts: { [scopeKey]: { [finish "1"|"2"|"3"]: { [boat "1".."6"]: {
 //       total: { hits, n },
@@ -63,7 +67,7 @@ import { test, expect } from "../fixtures.js";
 //   GET /api/analogy/scenario/{raceId}?scope=&stage=     （進入・形の切り替えでは取り直さない）
 //   {
 //     scope, stage,
-//     scopes: [{ key, label }],                       // 6つ
+//     scopes: [{ key, label }],                       // 級別は1号艇でそろえた名前（Q1）
 //     total,                                          // 数えるレースの件数
 //     entryPatterns: [{ key, label, n, share, boat1: { hits, n }, todayExhibition?: true, parent?: "maezuke" }],
 //     exhibitionEntry: { pattern, label, hits, n, since: "2026-04" } | null,   // 展示前は null
@@ -71,6 +75,7 @@ import { test, expect } from "../fixtures.js";
 //     slitHint: { boats: [{ boat, course: { st, n }, overall: { st, n }, venue: { st, n },
 //                           venueAll: { st }, exhibition: { st, flying }|null }],
 //                 conditions: [{ key, label, shapeKey, shapeLabel, hits, n, elseHits, elseN }] },
+//                       // 札を付けるか（30件以上・高い・ぶれ幅が重ならない）は画面で判定する前提
 //     cells: { [entryKey]: { [shapeKey "any"|...]: {
 //       n, share, boat1: { hits, n },
 //       attack: null | { attackerBoat, aheadRate: { hits, n },
@@ -88,6 +93,9 @@ const RACE_ID = process.env.ANALOGY_RACE_ID ?? "";
 const VENUE = "若松";
 const PERIOD = { from: "2019-04-01", to: "2026-09-26" };
 const PERIOD_TEXT = "2019/4/1〜2026/9/26";
+const SERIES_LABEL = "今節の平均着順点（前日まで）"; // Q6
+const Q7_NOTE =
+  "優勝戦・準優勝戦の日は、点の順位がほぼ枠の順になるので、今日の一文は出していない";
 
 // ---------- 共通 ----------
 
@@ -108,12 +116,7 @@ const hashStr = (s) =>
 // ---------- facts（タブ1） ----------
 
 const ITEMS = [
-  {
-    key: "series_score",
-    label: "今節の平均着順点",
-    better: "高い",
-    worse: "低い",
-  },
+  { key: "series_score", label: SERIES_LABEL, better: "高い", worse: "低い" },
   {
     key: "exhibition_time",
     label: "展示タイム",
@@ -147,7 +150,7 @@ const LOWER_IS_BETTER = new Set(["exhibition_time", "avg_st"]);
 
 // 今日の6艇の値（1号艇が index 0）
 const TODAY_VALUES = {
-  series_score: [8.67, 8.33, 8.0, 7.71, 7.33, 6.67], // spec Q7 の例のレースの値（枠の順）
+  series_score: [8.67, 8.33, 8.0, 7.71, 7.33, 6.67], // spec A-4 の例のレースの値（枠の順）
   exhibition_time: [6.72, 6.75, 6.78, 6.74, 6.8, 6.77],
   local_win_rate: [6.5, 7.2, 6.5, 5.8, 6.5, 6.9], // 1号艇は高いほうから3番目・3艇が同じ値
   national_win_rate: [8.67, 7.8, 7.1, 6.67, 7.1, 7.5], // 1号艇は6艇で一番高い（6.67〜8.67）
@@ -215,19 +218,31 @@ const ITEM_OVERRIDES = {
     [9800, 20000],
     [9600, 20000],
   ]),
+  // 今節の平均着順点（前日まで）: 一番高いとき71%（170/240）
+  "VC|1|1|series_score": buckets([
+    [170, 240],
+    [150, 240],
+    [140, 240],
+    [120, 240],
+    [100, 240],
+    [70, 240],
+  ]),
 };
 
-const factsCell = (scope, finish, boat, itemKeys) => {
-  const n = SCOPE_N[scope];
+const factsCell = (scope, finish, boat, itemKeys, nOverride) => {
+  const n = nOverride ?? SCOPE_N[scope];
   const p = Math.min(0.99, BASE_P[finish][boat - 1] * SCOPE_FACTOR[scope]);
   const total =
-    scope === "VC" && finish === 1 && boat === 1
+    scope === "VC" && finish === 1 && boat === 1 && nOverride == null
       ? { hits: 743, n: 1134 }
       : { hits: Math.round(n * p), n };
   const items = {};
   const avgRank = {};
   itemKeys.forEach((key, j) => {
-    const ov = ITEM_OVERRIDES[`${scope}|${finish}|${boat}|${key}`];
+    const ov =
+      nOverride == null
+        ? ITEM_OVERRIDES[`${scope}|${finish}|${boat}|${key}`]
+        : undefined;
     const bn = Math.round(n / 5);
     items[key] =
       ov ??
@@ -320,12 +335,44 @@ const aiOutlook = () => {
   return out;
 };
 
-function buildFacts({ stage, status = "ok", afterStatus = "ready" }) {
+// 例のレース（6艇ともA1・G1優勝戦）と、Q1・Q7 を確かめるための級別が混ざった予選のレース
+const ALL_A1_CLASSES = ["A1", "A1", "A1", "A1", "A1", "A1"];
+const MIXED_CLASSES = ["A1", "A1", "A2", "B1", "B1", "B1"];
+const MIXED_COMBO = "A1が2艇・A2が1艇・B1が3艇";
+// 級別が混ざったレースの VC の件数（選んだ艇ごと）。1・2号艇は300件未満 → 既定が NC になる
+const MIXED_VC_N = { 1: 180, 2: 180, 3: 450, 4: 520, 5: 520, 6: 520 };
+const MIXED_NC_N = 4200;
+const mixedScopeLabel = (prefix, boat) =>
+  `${prefix}・${MIXED_COMBO}（${boat}号艇は${MIXED_CLASSES[boat - 1]}）`;
+
+const scopesFor = (mixed, boat) => {
+  if (!mixed) {
+    return [
+      { key: "VC", label: "若松・6艇ともA1", n: SCOPE_N.VC },
+      { key: "NC", label: "全国・6艇ともA1", n: SCOPE_N.NC },
+      { key: "NCR", label: "全国・6艇ともA1の優勝戦", n: SCOPE_N.NCR },
+      { key: "VA", label: "若松の全レース", n: SCOPE_N.VA },
+    ];
+  }
+  // 予選の日なので NCR は出さない
+  return [
+    { key: "VC", label: mixedScopeLabel("若松", boat), n: MIXED_VC_N[boat] },
+    { key: "NC", label: mixedScopeLabel("全国", boat), n: MIXED_NC_N },
+    { key: "VA", label: "若松の全レース", n: SCOPE_N.VA },
+  ];
+};
+
+function buildFacts({
+  stage,
+  status = "ok",
+  afterStatus = "ready",
+  mixed = false,
+}) {
   const before = isBeforeStage(stage) || afterStatus !== "ready";
   const items = ITEMS.filter((it) => !(before && it.key === "exhibition_time"));
   const keys = items.map((it) => it.key);
   const counts = {};
-  for (const scope of ["VC", "NC", "NCR", "VA"]) {
+  for (const scope of mixed ? ["VC", "NC", "VA"] : ["VC", "NC", "NCR", "VA"]) {
     counts[scope] = {};
     for (const f of [1, 2, 3]) {
       counts[scope][f] = {};
@@ -333,7 +380,13 @@ function buildFacts({ stage, status = "ok", afterStatus = "ready" }) {
         // NCR（優勝戦）は今節の平均着順点を集計に含めない（screens データ取得）
         const k =
           scope === "NCR" ? keys.filter((x) => x !== "series_score") : keys;
-        counts[scope][f][b] = factsCell(scope, f, b, k);
+        const nOverride =
+          mixed && scope === "VC"
+            ? MIXED_VC_N[b]
+            : mixed && scope === "NC"
+              ? MIXED_NC_N
+              : undefined;
+        counts[scope][f][b] = factsCell(scope, f, b, k, nOverride);
       }
     }
   }
@@ -356,21 +409,20 @@ function buildFacts({ stage, status = "ok", afterStatus = "ready" }) {
       venue: VENUE,
       raceNumber: 12,
       date: "2026-09-27",
-      grade: "G1",
-      round: "優勝戦",
-      classSummary: "6艇ともA1",
+      grade: mixed ? "一般" : "G1",
+      round: mixed ? "予選" : "優勝戦",
+      classSummary: mixed ? MIXED_COMBO : "6艇ともA1",
     },
     period: PERIOD,
-    scopes: [
-      { key: "VC", label: "若松・6艇ともA1" },
-      { key: "NC", label: "全国・6艇ともA1" },
-      { key: "NCR", label: "全国・6艇ともA1の優勝戦" },
-      { key: "VA", label: "若松の全レース" },
-    ],
+    scopes: scopesFor(mixed, 1),
+    scopesByBoat: Object.fromEntries(
+      [1, 2, 3, 4, 5, 6].map((b) => [b, scopesFor(mixed, b)]),
+    ),
     items,
     today: {
       boats: [1, 2, 3, 4, 5, 6].map((boat) => ({
         boat,
+        racerClass: (mixed ? MIXED_CLASSES : ALL_A1_CLASSES)[boat - 1],
         values: Object.fromEntries(
           keys.map((k) => [k, TODAY_VALUES[k][boat - 1]]),
         ),
@@ -379,7 +431,7 @@ function buildFacts({ stage, status = "ok", afterStatus = "ready" }) {
         ),
       })),
       wind: before ? null : { speed: 3, wave: 2 },
-      classAllSame: "A1",
+      classAllSame: mixed ? null : "A1",
     },
     counts,
     windWave: before ? null : windWave,
@@ -603,6 +655,8 @@ const ENTRIES = [
   { key: "maezuke_other", label: "その他", share: 0.01, parent: "maezuke" },
   { key: "in_taken", label: "1号艇がインを取られた", share: null }, // 12件固定（30件未満）
 ];
+// 札の文言（screens「細部の約束」）
+const HINT_TAG = "平均STが当てはまる 19%（当てはまらないとき10%）";
 
 const scenarioResult = (n, seed) => {
   const w = [0.5, 0.15, 0.12, 0.12, 0.07, 0.04];
@@ -701,7 +755,7 @@ const cellN = (total, e, s, i) => {
   return Math.round(base * (0.05 + i * 0.02));
 };
 
-function buildScenario(url) {
+function buildScenario(url, { mixed = false } = {}) {
   const q = new URL(url).searchParams;
   const scope = q.get("scope") ?? "";
   const before = isBeforeStage(q.get("stage"));
@@ -720,17 +774,26 @@ function buildScenario(url) {
       };
     });
   });
+  const scopes = mixed
+    ? [
+        // タブ3の級別は1号艇でそろえる（Q1）。予選・一般なので NCR・VG は無い
+        { key: "VC", label: mixedScopeLabel("若松", 1) },
+        { key: "NC", label: mixedScopeLabel("全国", 1) },
+        { key: "VA", label: "若松の全レース" },
+        { key: "NA", label: "全国の全レース" },
+      ]
+    : [
+        { key: "VC", label: "若松・6艇ともA1" },
+        { key: "NC", label: "全国・6艇ともA1" },
+        { key: "NCR", label: "全国・6艇ともA1の優勝戦" },
+        { key: "VA", label: "若松の全レース" },
+        { key: "VG", label: "若松のG1" },
+        { key: "NA", label: "全国の全レース" },
+      ];
   return {
     scope,
     stage: before ? "before" : "after",
-    scopes: [
-      { key: "VC", label: "若松・6艇ともA1" },
-      { key: "NC", label: "全国・6艇ともA1" },
-      { key: "NCR", label: "全国・6艇ともA1の優勝戦" },
-      { key: "VA", label: "若松の全レース" },
-      { key: "VG", label: "若松のG1" },
-      { key: "NA", label: "全国の全レース" },
-    ],
+    scopes,
     total,
     entryPatterns: ENTRIES.map((e) => {
       const n = entryN(total, e);
@@ -766,7 +829,7 @@ function buildScenario(url) {
           : { st: boat === 3 ? 0.09 : 0.1 + boat * 0.01, flying: boat === 3 },
       })),
       conditions: [
-        // 上げる・30件以上・ぶれ幅が重ならない → 札が付く
+        // 上げる・30件以上・ぶれ幅が重ならない → 2コース凹みに札が付く
         {
           key: "c_two_dent",
           label: "2号艇の平均STが1号艇・3号艇より.02以上遅い",
@@ -777,7 +840,7 @@ function buildScenario(url) {
           elseHits: 120,
           elseN: 1200,
         },
-        // 下げる → 「むしろなりにくい」
+        // 下げる → 「むしろなりにくい」、札なし
         {
           key: "c_kado",
           label: "4号艇の平均STが3号艇より.01以上遅い",
@@ -818,6 +881,7 @@ async function mockApis(page, opts = {}) {
       stage: new URL(url).searchParams.get("stage"),
       status: opts.factsStatus ?? "ok",
       afterStatus: opts.afterStatus ?? "ready",
+      mixed: opts.mixed ?? false,
     });
     await route.fulfill({
       status: 200,
@@ -841,7 +905,7 @@ async function mockApis(page, opts = {}) {
   await page.route("**/api/analogy/scenario/**", async (route) => {
     const url = route.request().url();
     calls.scenario.push(url);
-    const body = buildScenario(url);
+    const body = buildScenario(url, { mixed: opts.mixed ?? false });
     last.scenario = body;
     await route.fulfill({
       status: 200,
@@ -878,8 +942,12 @@ const afterBtn = (s) =>
 const beforeBtn = (s) =>
   timeGroup(s).getByRole("button", { name: "展示前（出走表）" });
 const finishGroup = (s) => s.getByRole("group", { name: "着順" });
+const boatGroup = (s) => s.getByRole("group", { name: "艇番" });
 const tab = (s, name) => s.getByRole("tab", { name });
 const panel = (s) => s.getByRole("tabpanel");
+const scopeGroup = (s) => panel(s).getByRole("group", { name: "数えるレース" });
+const scopeBtn = (s, name) =>
+  scopeGroup(s).getByRole("button", { name, exact: true });
 const card = (s, label) =>
   panel(s)
     .getByRole("article")
@@ -921,7 +989,7 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
     await expect(beforeBtn(section)).toHaveAttribute("aria-pressed", "false");
   });
 
-  test("[screens 状態（Q5 未確定）] 展示データがまだ無いときは「展示後」を押せず「展示の後に選べる」と出る", async ({
+  test("[screens 状態 / spec Q5] 展示データがまだ無いときは「展示後」を押せず「展示の後に選べる」と出る", async ({
     page,
   }) => {
     await mockApis(page, { afterStatus: "no_exhibition" });
@@ -934,7 +1002,7 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
     );
   });
 
-  test("[screens 状態（Q5 未確定）] 展示後の段がまだ保存されていないときは「展示後」を押せず「展示の結果を反映しています」", async ({
+  test("[screens 状態 / spec Q5] 展示後の段がまだ保存されていないときは「展示後」を押せず「展示の結果を反映しています」", async ({
     page,
   }) => {
     await mockApis(page, { afterStatus: "reflecting" });
@@ -945,7 +1013,7 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
     await expect(section.getByText("展示の後に選べる")).toHaveCount(0);
   });
 
-  test("[screens 状態（Q5 未確定）] 締切後も展示後の段が無いときは「展示後」を押せず、下の1行も出さない", async ({
+  test("[screens 状態 / spec Q5] 締切後も展示後の段が無いときは「展示後」を押せず、下の1行も出さない", async ({
     page,
   }) => {
     await mockApis(page, { afterStatus: "closed" });
@@ -958,7 +1026,7 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
     );
   });
 
-  test("[screens 状態 / spec Q5（未確定）] 出走表の後に欠場が分かったレースは節の中を1行だけにする", async ({
+  test("[spec 時点 欠場 / screens 状態] 出走表の後に欠場が分かったレースは節の中を1行だけにする", async ({
     page,
   }) => {
     await mockApis(page, { factsStatus: "scratched" });
@@ -972,7 +1040,7 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
     await expect(section.getByRole("group", { name: "時点" })).toHaveCount(0);
   });
 
-  test("[screens S-1 / 状態（Q5 未確定）] 保存が無いレースは節の中を「このレースは、表示できるデータがありません」だけにする", async ({
+  test("[screens S-1 / 状態] 保存が無いレースは節の中を「このレースは、表示できるデータがありません」だけにする", async ({
     page,
   }) => {
     await mockApis(page, { factsStatus: "not_saved" });
@@ -1041,10 +1109,7 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
     await mockApis(page);
     const section = await openSection(page);
     const urlBefore = page.url();
-    await section
-      .getByRole("group", { name: "艇番" })
-      .getByRole("button", { name: "3" })
-      .click();
+    await boatGroup(section).getByRole("button", { name: "3" }).click();
     await openTab(section, "類似レース");
     expect(page.url()).toBe(urlBefore);
     const again = await openSection(page);
@@ -1053,13 +1118,11 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
       "true",
     );
     await expect(
-      again
-        .getByRole("group", { name: "艇番" })
-        .getByRole("button", { name: "1" }),
+      boatGroup(again).getByRole("button", { name: "1" }),
     ).toHaveAttribute("aria-pressed", "true");
   });
 
-  test("[screens 状態（Q5 未確定）] 取得に失敗したら、そのタブの中に案内を出し、ほかのタブは使える", async ({
+  test("[screens 状態 / spec Q5] 取得に失敗したら、そのタブの中に案内を出し、ほかのタブは使える", async ({
     page,
   }) => {
     await mockApis(page, { factsFail: true });
@@ -1117,11 +1180,6 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
 // ======================================================================
 
 test.describe("アナロジー・ファインダー: 来る艇の条件", () => {
-  const scopeBtn = (s, name) =>
-    panel(s)
-      .getByRole("group", { name: "数えるレース" })
-      .getByRole("button", { name });
-
   test("[spec FR-A A-1] 見出しは「1号艇が1着になったのは、どんなとき？」で、艇番の既定は1", async ({
     page,
   }) => {
@@ -1133,12 +1191,10 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
         name: "1号艇が1着になったのは、どんなとき？",
       }),
     ).toBeVisible();
-    const boats = section.getByRole("group", { name: "艇番" });
-    await expect(boats.getByRole("button")).toHaveCount(6);
-    await expect(boats.getByRole("button", { name: "1" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    await expect(boatGroup(section).getByRole("button")).toHaveCount(6);
+    await expect(
+      boatGroup(section).getByRole("button", { name: "1" }),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 
   test("[spec 着順 / FR-A] 艇番・着順を変えると見出しが「3号艇が2着以内に入ったのは、どんなとき？」になる", async ({
@@ -1146,10 +1202,7 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
   }) => {
     await mockApis(page);
     const section = await openSection(page);
-    await section
-      .getByRole("group", { name: "艇番" })
-      .getByRole("button", { name: "3" })
-      .click();
+    await boatGroup(section).getByRole("button", { name: "3" }).click();
     await expect(
       panel(section).getByRole("heading", {
         level: 3,
@@ -1172,16 +1225,12 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
     ).toBeVisible();
   });
 
-  test("[spec A-3 / 数えるレース（Q1 未確定: 名前）] 今日が優勝戦なので、数えるレースはVC・NC・NCR・VAの4つ、既定はVC", async ({
+  test("[spec A-3 / 数えるレース] 6艇ともA1の優勝戦は、数えるレースがVC・NC・NCR・VAの4つで、既定はVC（名前は「若松・6艇ともA1」）", async ({
     page,
   }) => {
     await mockApis(page);
     const section = await openSection(page);
-    await expect(
-      panel(section)
-        .getByRole("group", { name: "数えるレース" })
-        .getByRole("button"),
-    ).toHaveCount(4);
+    await expect(scopeGroup(section).getByRole("button")).toHaveCount(4);
     await expect(scopeBtn(section, "若松・6艇ともA1")).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -1189,9 +1238,73 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
     await expect(scopeBtn(section, "全国・6艇ともA1")).toBeVisible();
     await expect(scopeBtn(section, "全国・6艇ともA1の優勝戦")).toBeVisible();
     await expect(scopeBtn(section, "若松の全レース")).toBeVisible();
+    await expect(panel(section).getByText(/全国で数えています/)).toHaveCount(0);
   });
 
-  test("[spec A-6 / 割合の桁（Q1 未確定: 名前）] 大きい数字に範囲・艇番・着順・割合（小数1桁）・件数・期間が出る", async ({
+  test("[spec 数えるレース Q1] 級別が混ざったレースは名前に組み合わせと選んだ艇の級別が入り、VCが300件未満なら既定がNCで1行が出る", async ({
+    page,
+  }) => {
+    await mockApis(page, { mixed: true });
+    const section = await openSection(page);
+    await expect(scopeGroup(section).getByRole("button")).toHaveCount(3); // 予選なので NCR は無い
+    await expect(scopeBtn(section, mixedScopeLabel("全国", 1))).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(scopeBtn(section, mixedScopeLabel("若松", 1))).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    await expect(scopeBtn(section, mixedScopeLabel("若松", 1))).toBeEnabled(); // VC は選べるまま
+    await expect(
+      panel(section).getByText(
+        "若松で同じ組み合わせのレースは180件と少ないので、全国で数えています",
+      ),
+    ).toBeVisible();
+    await expect(
+      panel(section).getByText(`${mixedScopeLabel("全国", 1)}で、1号艇の1着率`),
+    ).toBeVisible();
+  });
+
+  test("[spec 数えるレース Q1] 艇番を変えると数えるレースの名前と既定が選び直される", async ({
+    page,
+  }) => {
+    await mockApis(page, { mixed: true });
+    const section = await openSection(page);
+    await expect(scopeBtn(section, mixedScopeLabel("全国", 1))).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await boatGroup(section).getByRole("button", { name: "3" }).click();
+    // 3号艇（A2）は VC が450件 → 既定は VC に戻り、1行は消える
+    await expect(scopeBtn(section, mixedScopeLabel("若松", 3))).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(scopeBtn(section, mixedScopeLabel("全国", 3))).toBeVisible();
+    await expect(scopeBtn(section, mixedScopeLabel("若松", 1))).toHaveCount(0);
+    await expect(panel(section).getByText(/全国で数えています/)).toHaveCount(0);
+    await expect(
+      panel(section).getByText(`${mixedScopeLabel("若松", 3)}で、3号艇の1着率`),
+    ).toBeVisible();
+    const vc3 = buildFacts({ stage: "after", mixed: true }).counts.VC[1][3]
+      .total;
+    await expect(
+      panel(section).getByText(new RegExp(`${vc3.hits}/${vc3.n}レース`)),
+    ).toBeVisible();
+  });
+
+  test("[spec 数えるレース Q1 / A-4] 級別が混ざったレースでは、級別のカードも級別の1行も出さない", async ({
+    page,
+  }) => {
+    await mockApis(page, { mixed: true });
+    const section = await openSection(page);
+    await expect(card(section, "全国勝率")).toBeVisible();
+    await expect(card(section, "級別")).toHaveCount(0);
+    await expect(panel(section).getByText(/^級別: /)).toHaveCount(0);
+  });
+
+  test("[spec A-6 / 割合の桁] 大きい数字に範囲・艇番・着順・割合（小数1桁）・件数・期間が出る", async ({
     page,
   }) => {
     await mockApis(page);
@@ -1204,7 +1317,7 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
     ).toBeVisible();
   });
 
-  test("[spec A-6 / 受入基準（Q1 未確定: 名前）] 数えるレースを変えると大きい数字が変わる", async ({
+  test("[spec A-6 / 受入基準] 数えるレースを変えると大きい数字が変わる", async ({
     page,
   }) => {
     await mockApis(page);
@@ -1230,10 +1343,7 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
     await mockApis(page);
     const section = await openSection(page);
     const p = panel(section);
-    await section
-      .getByRole("group", { name: "艇番" })
-      .getByRole("button", { name: "2" })
-      .click();
+    await boatGroup(section).getByRole("button", { name: "2" }).click();
     await finishGroup(section).getByRole("button", { name: "3着以内" }).click();
     const vc = buildFacts({ stage: "after" }).counts.VC[3][2].total;
     await expect(
@@ -1356,16 +1466,38 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
     await expect(c).not.toContainText("今日の1号艇は");
   });
 
-  test("[spec A-4（Q6・Q7 未確定）] VC では今節の平均着順点のカードと今日の一文が出る（承認版の挙動）", async ({
+  test("[spec A-4 Q6・Q7] 優勝戦の日は「今節の平均着順点（前日まで）」のカードに率は出すが、今日の一文を出さず注記を出す", async ({
     page,
   }) => {
     await mockApis(page);
     const section = await openSection(page);
-    const c = card(section, "今節の平均着順点");
+    const c = card(section, SERIES_LABEL);
+    await expect(c).toBeVisible();
+    await expect(c.getByRole("heading").first()).toContainText(SERIES_LABEL);
+    await expect(c).toContainText("6艇で一番高いとき");
+    await expect(c).toContainText("71%");
+    await expect(c).toContainText("170/240");
+    await expect(c).toContainText(Q7_NOTE);
+    await expect(c).not.toContainText("今日の1号艇は");
+    // 範囲を問わない（Q7）
+    await scopeBtn(section, "若松の全レース").click();
+    await expect(card(section, SERIES_LABEL)).toContainText(Q7_NOTE);
+    await expect(card(section, SERIES_LABEL)).not.toContainText(
+      "今日の1号艇は",
+    );
+  });
+
+  test("[spec A-4 Q7] 優勝戦・準優勝戦でない日は、今節の平均着順点（前日まで）の今日の一文を出し、注記は出さない", async ({
+    page,
+  }) => {
+    await mockApis(page, { mixed: true });
+    const section = await openSection(page);
+    const c = card(section, SERIES_LABEL);
     await expect(c).toBeVisible();
     await expect(c).toContainText(
-      "今日の1号艇は今節の平均着順点が6艇で一番高い（今日8.67、6艇は6.67〜8.67）",
+      `今日の1号艇は${SERIES_LABEL}が6艇で一番高い（今日8.67、6艇は6.67〜8.67）`,
     );
+    await expect(c).not.toContainText(Q7_NOTE);
   });
 
   test("[spec A-7 説明文] 項目ごとのカードの説明文が出る", async ({ page }) => {
@@ -1378,12 +1510,12 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
     ).toBeVisible();
   });
 
-  test("[spec A-4 / 受入基準（Q1 未確定: 名前）] NCR（優勝戦）では今節の平均着順点のカードを出さない", async ({
+  test("[spec A-4 / 受入基準] NCR（優勝戦）では今節の平均着順点（前日まで）のカードを出さない", async ({
     page,
   }) => {
     await mockApis(page);
     const section = await openSection(page);
-    await expect(card(section, "今節の平均着順点")).toBeVisible();
+    await expect(card(section, SERIES_LABEL)).toBeVisible();
     await scopeBtn(section, "全国・6艇ともA1の優勝戦").click();
     await expect(
       panel(section).getByText("全国・6艇ともA1の優勝戦で、1号艇の1着率"),
@@ -1391,7 +1523,7 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
     await expect(card(section, "今節の平均着順点")).toHaveCount(0);
   });
 
-  test("[spec A-4（Q1 未確定）] 6艇とも同じ級別なら「級別: 今日は6艇ともA1なので差がつかない」", async ({
+  test("[spec 数えるレース / A-4] 6艇とも同じ級別なら「級別: 今日は6艇ともA1なので差がつかない」の1行だけで、級別のカードは出さない", async ({
     page,
   }) => {
     await mockApis(page);
@@ -1399,6 +1531,7 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
     await expect(
       panel(section).getByText("級別: 今日は6艇ともA1なので差がつかない"),
     ).toBeVisible();
+    await expect(card(section, "級別")).toHaveCount(0);
   });
 
   test("[spec A-8] ボート2連率は一番下に畳まれ、開くとカードと注記が出る", async ({
@@ -1432,7 +1565,6 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
       (o) => o.trim(),
     );
     expect(options).toEqual(["2号艇", "3号艇", "4号艇", "5号艇", "6号艇"]);
-    await expect(select).toHaveValue(/.+/);
     await expect(card(section, "全国勝率")).toContainText(
       /2号艇の場合: 一番高いとき(\d+%|—)／一番低いとき(\d+%|—)（2号艇の全体の1着率\d+%）/,
     );
@@ -1534,10 +1666,7 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
         .last();
     await expect(themeBox()).toBeVisible();
     const before = await themeBox().innerText();
-    await section
-      .getByRole("group", { name: "艇番" })
-      .getByRole("button", { name: "2" })
-      .click();
+    await boatGroup(section).getByRole("button", { name: "2" }).click();
     await expect(
       panel(section).getByRole("heading", {
         level: 3,
@@ -1605,14 +1734,13 @@ test.describe("アナロジー・ファインダー: 類似レース", () => {
     ).toHaveCount(0);
   });
 
-  test("[spec B-4] 段は層の件数未満の段と、最後に層の件数（10…100, 120）", async ({
+  test("[spec B-4 / screens 細部] 段は層の件数未満の段と最後に層の件数で、矢印キーで1段ずつ動く", async ({
     page,
   }) => {
     await mockApis(page);
     const section = await openSection(page);
     await openTab(section, "類似レース");
-    const slider = sliderOf(section);
-    await slider.focus();
+    await sliderOf(section).focus();
     await page.keyboard.press("End");
     await expect(
       panel(section).getByText("120件", { exact: true }).first(),
@@ -1658,7 +1786,7 @@ test.describe("アナロジー・ファインダー: 類似レース", () => {
     ).toHaveCount(0);
   });
 
-  test("[spec B-4/B-5/B-8 受入基準] スライダーを最小にすると件数・ソナーの点・決まり方が10件に連動する", async ({
+  test("[spec B-4/B-5/B-8 受入基準] スライダーを最小にすると件数・ソナーの点と扇・決まり方が10件に連動する", async ({
     page,
   }) => {
     await mockApis(page);
@@ -1683,8 +1811,11 @@ test.describe("アナロジー・ファインダー: 類似レース", () => {
         name: /^\d{4}\/\d{1,2}\/\d{1,2} .+\d+R 1着\d号艇$/,
       }),
     ).toHaveCount(10);
+    // 扇の件数はスライダーの件数の中で数える（screens 細部）。先頭10件の1着: 1号艇7・2号艇1・3号艇1・4号艇1
+    await expect(
+      sonar.getByRole("button", { name: "1号艇が勝ったレース 7件" }),
+    ).toBeVisible();
     await expect(panel(section).getByText(/似ている順の10件で/)).toBeVisible();
-    // 先頭10件の1着: 1号艇7・2号艇1・3号艇1・4号艇1
     await expect(winBar(section, 1, 7, 10)).toBeVisible();
   });
 
@@ -1766,7 +1897,7 @@ test.describe("アナロジー・ファインダー: 類似レース", () => {
     ).toBeVisible();
   });
 
-  test("[spec B-8 / screens ソナー] ソナーの扇を押すと棒と同じく、その艇が勝ったレースに着順の流れが絞られる", async ({
+  test("[spec B-8 / screens ソナー] ソナーの扇を押すと棒と同じく、吹き出しが出てその艇が勝ったレースに着順の流れが絞られる", async ({
     page,
   }) => {
     await mockApis(page);
@@ -2021,7 +2152,7 @@ test.describe("アナロジー・ファインダー: 類似レース", () => {
     ).toBeVisible();
   });
 
-  test("[screens 状態（Q5 未確定）] 層が0件ならタブ2は1行だけで、スライダー・決まり方も出さない", async ({
+  test("[screens 状態 / spec Q5] 層が0件ならタブ2は1行だけで、スライダー・決まり方も出さない", async ({
     page,
   }) => {
     await mockApis(page, { similarStatus: "empty" });
@@ -2048,6 +2179,8 @@ test.describe("アナロジー・ファインダー: 展開シナリオ", () => 
     panel(s).getByRole("heading", {
       name: /②の形のとき、どう決まった？（③の順位では分けていない）/,
     });
+  const OTHER_ENTRY_NOTE =
+    "枠なり以外を選んでいる。この手がかりは枠なりのときのものなので、そのまま当てはまらない（②の札も外している）";
   const scenarioFor = async (last) => {
     await expect.poll(() => last.scenario).not.toBeNull();
     return last.scenario;
@@ -2066,17 +2199,17 @@ test.describe("アナロジー・ファインダー: 展開シナリオ", () => 
     await expect(finishGroup(section)).toHaveCount(0);
   });
 
-  test("[spec C-0（Q1 未確定: 名前）] 数えるレースは6つ（G1の今日は若松のG1も）、既定はVC", async ({
+  test("[spec C-0] 数えるレースは6つ（G1の今日は若松のG1も）、既定はVC", async ({
     page,
   }) => {
     await mockApis(page);
     const section = await openSection(page);
     await openTab(section, "展開シナリオ");
-    const scopes = panel(section).getByRole("group", { name: "数えるレース" });
-    await expect(scopes.getByRole("button")).toHaveCount(6);
-    await expect(
-      scopes.getByRole("button", { name: "若松・6艇ともA1" }),
-    ).toHaveAttribute("aria-pressed", "true");
+    await expect(scopeGroup(section).getByRole("button")).toHaveCount(6);
+    await expect(scopeBtn(section, "若松・6艇ともA1")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     for (const name of [
       "全国・6艇ともA1",
       "全国・6艇ともA1の優勝戦",
@@ -2084,8 +2217,22 @@ test.describe("アナロジー・ファインダー: 展開シナリオ", () => 
       "若松のG1",
       "全国の全レース",
     ]) {
-      await expect(scopes.getByRole("button", { name })).toBeVisible();
+      await expect(scopeBtn(section, name)).toBeVisible();
     }
+  });
+
+  test("[spec 数えるレース Q1 / screens S-1c] タブ3の数えるレースの級別は1号艇で、タブ1の艇番を変えても変わらない", async ({
+    page,
+  }) => {
+    await mockApis(page, { mixed: true });
+    const section = await openSection(page);
+    await boatGroup(section).getByRole("button", { name: "3" }).click();
+    await expect(scopeBtn(section, mixedScopeLabel("若松", 3))).toBeVisible();
+    await openTab(section, "展開シナリオ");
+    await expect(scopeBtn(section, mixedScopeLabel("若松", 1))).toBeVisible();
+    await expect(scopeBtn(section, mixedScopeLabel("全国", 1))).toBeVisible();
+    await expect(scopeBtn(section, mixedScopeLabel("若松", 3))).toHaveCount(0);
+    await expect(scopeBtn(section, "若松のG1")).toHaveCount(0); // G1 でない日は VG を出さない
   });
 
   test("[spec C-1] ①進入の既定は枠なりで、型に1号艇の1着率が出る。30件未満の型は率を出さない", async ({
@@ -2179,6 +2326,7 @@ test.describe("アナロジー・ファインダー: 展開シナリオ", () => 
     }
     await expect(table).toContainText(/\.\d{3}/); // 平均STは3桁（.133）
     await expect(table).toContainText(/F\.\d{2}/); // 展示のFは「F.09」
+    await expect(panel(section).getByText(OTHER_ENTRY_NOTE)).toHaveCount(0);
   });
 
   test("[spec C-2 / 受入基準] 率を上げる条件を押すと②でその形が選ばれる。下げる条件は「むしろなりにくい」", async ({
@@ -2200,6 +2348,35 @@ test.describe("アナロジー・ファインダー: 展開シナリオ", () => 
     await expect(btnStartsWith(section, "2コース凹み")).toHaveAttribute(
       "aria-pressed",
       "true",
+    );
+  });
+
+  test("[spec C-2 / screens 細部 / 受入基準] ②の札は率を上げる条件の形にだけ付き、下げる条件の形には付かない", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await expect(btnStartsWith(section, "2コース凹み")).toContainText(HINT_TAG);
+    await expect(btnStartsWith(section, "カド一撃")).not.toContainText(
+      "平均STが当てはまる",
+    );
+    await expect(btnStartsWith(section, "横一線")).not.toContainText(
+      "平均STが当てはまる",
+    );
+  });
+
+  test("[spec C-2 / screens 細部] 枠なり以外を選ぶと手がかりに注意が出て、②の札が外れる", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await expect(btnStartsWith(section, "2コース凹み")).toContainText(HINT_TAG);
+    await btnStartsWith(section, "前付けあり（1号艇イン）").click();
+    await expect(panel(section).getByText(OTHER_ENTRY_NOTE)).toBeVisible();
+    await expect(btnStartsWith(section, "2コース凹み")).not.toContainText(
+      "平均STが当てはまる",
     );
   });
 
@@ -2239,7 +2416,7 @@ test.describe("アナロジー・ファインダー: 展開シナリオ", () => 
     );
   });
 
-  test("[spec C-4 / ぶれ幅・件数の扱い] 形を選ぶまでは③に案内の1行、選ぶと表（50件未満は値を残して「少ない」を添える）", async ({
+  test("[spec C-4 / screens 細部] 形を選ぶまでは③に案内の1行、選ぶと表（50件未満は同じセルに値と「少ない」）", async ({
     page,
   }) => {
     await mockApis(page);
@@ -2392,10 +2569,7 @@ test.describe("アナロジー・ファインダー: 展開シナリオ", () => 
         .first(),
     ).toBeVisible();
     const before = calls.scenario.length;
-    await panel(section)
-      .getByRole("group", { name: "数えるレース" })
-      .getByRole("button", { name: "全国の全レース" })
-      .click();
+    await scopeBtn(section, "全国の全レース").click();
     await expect.poll(() => calls.scenario.length).toBeGreaterThan(before);
     await expect.poll(() => last.scenario.cells.wakunari.any.n).not.toBe(n1);
     const n2 = last.scenario.cells.wakunari.any.n;
