@@ -228,3 +228,12 @@
   3. design-reviewer と acceptance-test-writer（SDD の規則どおり、/step4 の前）
   4. /step4 とマイグレーションの本番適用は、上の 1〜3 の後、ユーザー確認を取ってから
 - 実装で直すこと: §19 の3点に加え、verification-round10・11 の「残した点」（返還レースの除外の影響、しきい値の期間分割、1号艇の展示タイムが速い理由）、今節の平均着順点の走数の絞り込み
+- git に入っていないデータ（このレーンのスクラッチパッド。/private/tmp 配下なので、OS の再起動などで消える可能性がある）
+  - 場所: /private/tmp/claude-501/-Users-terukina-boatrace-ai-predictor--claude-worktrees-confident-chatelet-c22064/42ade70b-827e-48f3-b33a-05c6914c677c/scratchpad/
+  - model-prep/（898MB）: 学習時コード（code-at-train/features.py）と、本番 DB から取った CSV（kb_boats・kb_races・races・entries など）、venv
+  - knn/（1.2GB）: 母集団 work2/races.pkl・boats.npz、類似レースの knn5〜8.json と作るスクリプト
+  - tab1/（341MB）: 来る艇の条件の tab1.json、今節の平均着順点 series_score_rows.pkl
+  - slitpred/（379MB）: 平均ST の集計 work2_boats.pkl、slitpred2_hint.json、mark1.json
+  - prep/（4MB）: 展開シナリオの prep8.json・prep8b.json・prep9a/9b.json・prep10.json と raw/
+  - mock/（43MB）: data.js・scn.js、analogy-finder-v16.html（承認版）
+  - スクリプトと md は docs/design/analogy-finder/（entry-slit/・slit-hint/・mock-v16/）に写してある。JSON と pkl は大きいので写していない。消えた場合は、写したスクリプトで作り直せる（本番 DB は SELECT だけ）
