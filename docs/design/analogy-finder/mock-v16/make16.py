@@ -139,5 +139,13 @@ R('text-anchor="middle" font-size="12" font-weight="700" fill="#f3ead0" font-fam
 R('.eff.weak{opacity:.6}', '.eff.weak .pair,.eff.weak .strip,.eff.weak .eh b,.eff.weak .gap{opacity:.6}')
 R('.hero .n{', '.hero .n small{font-size:14px;margin-left:2px}.hero .n{')
 R('.tabs{display:grid;', '.stripcap{margin:0;font-size:11px;color:var(--muted)}.rlist{display:grid;gap:6px}.rc{border:1px solid var(--border);border-radius:8px;padding:6px 8px;display:grid;gap:2px;font-size:12px}.rc .bnrow{display:inline-flex;gap:2px;vertical-align:middle}.rc3{color:var(--text2);font-size:11.5px}\n.tabs{display:grid;')
+# 類似レース: 層が800件に届かないときのスライダーと文言（v16、ラウンドをそろえた版）
+R('推奨: 勝率差・1号艇の級別・勝率トップは必ずそろえ、その中を似ている順', '推奨: ラウンド（優勝戦）・勝率差・1号艇の級別・勝率トップは必ずそろえ、その中を似ている順')
+R('`3条件がそろった過去レース全体（${D.knn3layer.n.toLocaleString()}件）`', '`条件（${D.knn3layer.cond||"勝率差・1号艇の級別・勝率トップ"}）がそろった過去レース全体（${D.knn3layer.n.toLocaleString()}件）`')
+R('function curNb(){const all=st.noSS?K.nb.filter(n=>!n.ss):K.nb;return all.slice(0,NS[st.ni]);}',
+  'let NSd=NS;function setNS(){const L=K.nb.length;NSd=L<800?[...NS.filter(x=>x<L),L]:NS;$("nSlider").max=NSd.length-1;if(st.ni>NSd.length-1)st.ni=NSd.length-1;}\nfunction curNb(){const all=st.noSS?K.nb.filter(n=>!n.ss):K.nb;return all.slice(0,NSd[st.ni]);}')
+t = t.replace('NS[st.ni]', 'NSd[st.ni]')
+R('"勝率差の帯・1号艇の級別・勝率トップの艇が今日と同じ過去レースに絞り、', '`${K.pool&&K.pool.layer_n?"ラウンド（優勝戦）・":""}勝率差の帯・1号艇の級別・勝率トップの艇が今日と同じ過去レース${K.pool&&K.pool.layer_n?`（${K.pool.layer_n}件）`:""}に絞り、`+"')
+R('setK();$("nSlider").value=st.ni;', 'setK();setNS();$("nSlider").value=st.ni;')
 io.open('template16.html', 'w', encoding='utf-8').write(t)
 print('ok')

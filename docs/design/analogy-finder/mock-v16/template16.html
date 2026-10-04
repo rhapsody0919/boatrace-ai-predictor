@@ -208,7 +208,7 @@ table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl t
 
   <div class="mockbox" aria-label="モックの切り替え">
     <span class="t">モックの切り替え（比べる用。本番には出さない）</span>
-    <div class="row"><span class="lbl">類似レースの選び方</span><div class="seg" id="swKnn"><button type="button" data-v="mix" aria-pressed="true">推奨: 勝率差・1号艇の級別・勝率トップは必ずそろえ、その中を似ている順</button><button type="button" data-v="pure" aria-pressed="false">代案: 全部を似ている順（当初どおり）</button></div></div>
+    <div class="row"><span class="lbl">類似レースの選び方</span><div class="seg" id="swKnn"><button type="button" data-v="mix" aria-pressed="true">推奨: ラウンド（優勝戦）・勝率差・1号艇の級別・勝率トップは必ずそろえ、その中を似ている順</button><button type="button" data-v="pure" aria-pressed="false">代案: 全部を似ている順（当初どおり）</button></div></div>
     <div class="row"><span class="lbl">テーマ</span><div class="seg" id="swTh"><button type="button" data-v="7" aria-pressed="true">推奨: 7テーマ</button><button type="button" data-v="6" aria-pressed="false">代案: 6テーマ</button></div></div>
   </div>
 
@@ -360,7 +360,8 @@ let ITEM=Object.fromEntries(K.items.map(x=>[x.key,x]));
 function setK(){K=st.stage==="post"&&D.knn4?D.knn4:(st.swKnn==="mix"&&D.knn3?D.knn3:D.knn);ITEM=Object.fromEntries(K.items.map(x=>[x.key,x]));}
 const DUP={n_A1:"class_all6",race_number:"race_number_band",grade_bin:"grade",wind_vector:"wind_bin"};
 const MK=["×","△","○"],MC=["down","warn2","up"];
-function curNb(){const all=st.noSS?K.nb.filter(n=>!n.ss):K.nb;return all.slice(0,NS[st.ni]);}
+let NSd=NS;function setNS(){const L=K.nb.length;NSd=L<800?[...NS.filter(x=>x<L),L]:NS;$("nSlider").max=NSd.length-1;if(st.ni>NSd.length-1)st.ni=NSd.length-1;}
+function curNb(){const all=st.noSS?K.nb.filter(n=>!n.ss):K.nb;return all.slice(0,NSd[st.ni]);}
 function agg(nb){const a={n:nb.length,win:[0,0,0,0,0,0],hit:{1:[0,0,0,0,0,0],2:[0,0,0,0,0,0],3:[0,0,0,0,0,0]},tech:{},tri:{}};
   nb.forEach(x=>{const o=x.o;if(!o||o.length<3)return;a.win[o[0]-1]++;o.forEach((b,i)=>{for(let t=i+1;t<=3;t++)a.hit[t][b-1]++;});const tq=x.res.technique;a.tech[tq]=(a.tech[tq]||0)+1;const k=o.join("");a.tri[k]=(a.tri[k]||0)+1;});return a;}
 const fmtT=(k,v)=>/^recent_/.test(String(k))&&typeof v==="string"?v.split("/").map(x=>x!==""&&!isNaN(+x)?Math.round(+x*100)+"%":x).join("/"):v;
@@ -368,10 +369,10 @@ const isBad=f=>!/^[1-6]$/.test(String(f));
 function renderSim(){
   const nb=curNb(),N=nb.length,P=K.pool.n;
   $("nLbl").textContent=N;
-  $("simSub").textContent=(st.stage==="post"?"展示後: 展示タイム・天候・風・波も近さに入れている。":"展示前: 出走表の情報だけで近さを測っている。")+((st.swKnn==="mix"||st.stage==="post")&&D.knn3?"勝率差の帯・1号艇の級別・勝率トップの艇が今日と同じ過去レースに絞り、その中を、出走表の数字が今日の若松12Rに近い順に並べた（会場が同じものを近く数える）":"出走表の数字が今日の若松12Rに近い過去レースを、似ている順に並べた。同じ会場のレースを優先して探している（会場が違うと遠く数える）");
+  $("simSub").textContent=(st.stage==="post"?"展示後: 展示タイム・天候・風・波も近さに入れている。":"展示前: 出走表の情報だけで近さを測っている。")+((st.swKnn==="mix"||st.stage==="post")&&D.knn3?`${K.pool&&K.pool.layer_n?"ラウンド（優勝戦）・":""}勝率差の帯・1号艇の級別・勝率トップの艇が今日と同じ過去レース${K.pool&&K.pool.layer_n?`（${K.pool.layer_n}件）`:""}に絞り、`+"その中を、出走表の数字が今日の若松12Rに近い順に並べた（会場が同じものを近く数える）":"出走表の数字が今日の若松12Rに近い過去レースを、似ている順に並べた。同じ会場のレースを優先して探している（会場が違うと遠く数える）");
   const far=nb[N-1],fc=far?Object.entries(far.m).filter(([k,m])=>m!=null&&ITEM[k]?.inDist&&!DUP[k]).map(([,m])=>m):[];
   $("pctLbl").textContent=far?`${N}件目（いちばん遠い）でも、${fc.length}項目のうち ${fc.filter(m=>m===2).length}項目が同じ・${fc.filter(m=>m===1).length}項目が近い`:"";
-  $("ssLbl").textContent=st.noSS?`除いている（${K.nb.slice(0,NS[st.ni]+40).filter(n=>n.ss).length?"":""}今日と同じ節の前日までのレース）`:`含めている（この中に ${nb.filter(n=>n.ss).length}件）`;
+  $("ssLbl").textContent=st.noSS?`除いている（${K.nb.slice(0,NSd[st.ni]+40).filter(n=>n.ss).length?"":""}今日と同じ節の前日までのレース）`:`含めている（この中に ${nb.filter(n=>n.ss).length}件）`;
   $("ssChip").setAttribute("aria-pressed",st.noSS);
   renderSonar(nb);
   // 何が似ている？
@@ -421,7 +422,7 @@ function renderRes(nb){
   const a=agg(nb),N=a.n,t=st.rank;
   $("resN").textContent=N+"件";
   $("resT").textContent=`似ている順の ${N}件で（同じ節を${st.noSS?"除く":"含む"}）`;
-  const lk=document.querySelector("#secRes .key span:nth-child(2)");if(lk)lk.innerHTML=`<i style="border-left:2px dotted var(--hit);width:2px;height:12px"></i>${st.swKnn==="mix"&&D.knn3layer?`3条件がそろった過去レース全体（${D.knn3layer.n.toLocaleString()}件）`:"若松の全レース（似ているかを問わない）"}`;
+  const lk=document.querySelector("#secRes .key span:nth-child(2)");if(lk)lk.innerHTML=`<i style="border-left:2px dotted var(--hit);width:2px;height:12px"></i>${st.swKnn==="mix"&&D.knn3layer?`条件（${D.knn3layer.cond||"勝率差・1号艇の級別・勝率トップ"}）がそろった過去レース全体（${D.knn3layer.n.toLocaleString()}件）`:"若松の全レース（似ているかを問わない）"}`;
   $("hWin").textContent=t===1?"どの艇が勝った？":`どの艇が${RT[t]}に入った？`;
   const LY=st.swKnn==="mix"&&D.knn3layer?D.knn3layer:null;
   const W20=D.start["20|all|all"],wk={1:"win",2:"top2",3:"top3"}[t],C20=D.cube["20|all|all"],all8=agg(st.noSS?K.nb.filter(n=>!n.ss).slice(0,800):K.nb.slice(0,800));
@@ -1190,7 +1191,7 @@ function order(){$("secAi").hidden=st.tab!=="ai";$("secSim").hidden=$("secRes").
 function render(){
   document.querySelectorAll("#rankSeg button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.r===st.rank));
   [["swTh"],["swKnn"]].forEach(([id])=>document.querySelectorAll(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st[id])));
-  setK();$("nSlider").value=st.ni;
+  setK();setNS();$("nSlider").value=st.ni;
   document.querySelectorAll("#flowF button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===st.flow));
   order();renderSim();renderAi();renderFacts();renderScn();$("hFacts").textContent=`${st.pb}号艇が${RT[st.rank]}に入ったのは、どんなとき？`;document.querySelectorAll("#stageSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.stage));const pre=st.stage==="pre";$("aiPre").hidden=!pre;["radar","themeList"].forEach(id=>{const e=$(id);if(e){const box=id==="radar"?e.closest(".scope"):e;box.style.display=pre?"none":"";}});renderDetail();
 }
