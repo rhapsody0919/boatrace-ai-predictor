@@ -153,7 +153,7 @@
     "loading": "Loading data...",
     "noData": "Not enough measured data yet. Results will appear once data from the new AI prediction model (launched on August 11, 2026) accumulates.",
     "chartNote": "* The new AI prediction model launched on August 11, 2026, so {{count}} races have been counted so far (growing daily). While the count is small, the figures may swing widely.",
-    "title": "🌪️ Upset Index Track Record (last 90 days)",
+    "title": "🌪️ Upset Index Track Record (since August 11, 2026)",
     "level": {
       "low": "Favorite friendly",
       "medium": "Average",
