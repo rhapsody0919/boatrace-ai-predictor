@@ -81,7 +81,7 @@ test("A-2: 共有文は、決まり手もコースも予想どおりのときだ
     texts.courseDiffers,
     texts.unknownActual,
   ]) {
-    expect(text).toContain("展開予測で1着の艇が的中");
+    expect(text).toContain("🌊 1着の艇が的中【");
     expect(text).not.toMatch(/展開予測的中！|AIの分析力|この精度|当たった/);
   }
   // 共有はレース当日とは限らない
@@ -249,4 +249,42 @@ test("ファン評価3周目: 的中カードの「（本命）」「（2コー�
   );
   expect(rows.length).toBeGreaterThan(0);
   expect(rows.filter((r) => r.lines !== 1)).toEqual([]);
+});
+
+test("カードの見出しは、本命が予想どおりに勝ったときだけ「展開予測的中」にする（共有文と同じ区別）", async ({
+  page,
+}) => {
+  test.slow();
+  await page.goto("/hit-races", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: /全期間/ }).click();
+  const more = page.locator(".show-more-button");
+  await more.waitFor({ timeout: 60000 });
+  await more.click();
+  const cardOf = (venue, raceNo, date) =>
+    page
+      .locator(".race-card")
+      .filter({ hasText: date })
+      .filter({
+        has: page.locator(".race-card-venue", {
+          hasText: new RegExp(`^${venue}$`),
+        }),
+      })
+      .filter({
+        has: page.locator(".race-card-number", {
+          hasText: new RegExp(`^${raceNo}$`),
+        }),
+      })
+      .first();
+  // 戸田 9/27 11R: 本命の1号艇が1コースから逃げ
+  await expect(
+    cardOf("戸田", "11R", "2026-09-27").locator(".hit-badge"),
+  ).toHaveText("🌊 展開予測的中", { timeout: 60000 });
+  // 戸田 9/30 8R: 2番手の3号艇
+  await expect(
+    cardOf("戸田", "8R", "2026-09-30").locator(".hit-badge"),
+  ).toHaveText("🌊 1着の艇が的中");
+  // 大村 9/29 10R: 本命の1号艇だが決まり手が外れ（逃げ→抜き）
+  await expect(
+    cardOf("大村", "10R", "2026-09-29").locator(".hit-badge"),
+  ).toHaveText("🌊 1着の艇が的中");
 });

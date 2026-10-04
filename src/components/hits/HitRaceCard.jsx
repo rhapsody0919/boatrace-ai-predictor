@@ -3,7 +3,11 @@
  */
 import { SocialShareButtons } from "../SocialShareButtons";
 import { generateTurnHitShareText, shareUrlFor } from "../../utils/share";
-import { TECHNIQUE_NAMES, techniqueDiffers } from "../../utils/turnPrediction";
+import {
+  TECHNIQUE_NAMES,
+  isAsPredicted,
+  techniqueDiffers,
+} from "../../utils/turnPrediction";
 
 function HitRaceCard({
   hitRace,
@@ -35,6 +39,15 @@ function HitRaceCard({
   // 実際の決まり手を添える（BOA-724。「予想: 逃げ」だけだと、逃げが当たったように読めた）
   const actualTechnique = hitRace.result?.winningTechnique ?? null;
   const actualDiffers = techniqueDiffers(technique, actualTechnique);
+  // 見出しも共有文と同じ区別にする。本命が予想の決まり手・艇番どおりのコースで勝ったときだけ
+  // 「展開予測的中」、それ以外（2番手以下・決まり手外れ・前付け）は「1着の艇が的中」（BOA-724、ユーザー判断）
+  const asPredicted = isAsPredicted({
+    predictedTechnique: technique,
+    actualTechnique,
+    winnerBoat: hitRace.winnerBoat,
+    winnerEntryCourse,
+    isTopPick: hitRace.isTopPick ?? true,
+  });
 
   return (
     <div
@@ -48,7 +61,9 @@ function HitRaceCard({
           <div className="race-card-venue">{hitRace.venue}</div>
           <div className="race-card-number">{hitRace.raceNumber}R</div>
         </div>
-        <div className={`hit-badge ${variant}`}>🌊 展開予測的中</div>
+        <div className={`hit-badge ${variant}`}>
+          {asPredicted ? "🌊 展開予測的中" : "🌊 1着の艇が的中"}
+        </div>
       </div>
 
       {showDate && (
