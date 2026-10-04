@@ -385,6 +385,59 @@
     inset 0 -2px 0 var(--brand-accent-primary);
 }
 
+/* モーター一覧の枠と選手名の列は、横に送っても残す。送ると右端に枠も選手名も1つも残らず、
+   どの艇の値か分からなかった（BOA-699）。375px だけでなく 769〜950px 付近でも表が溢れる。
+   選手名の列の left を決めるため、枠の列の幅を決める（中身は艇色のチップ 23px と左右の内余白）。
+   .motor-ranking-table は他の表でも使うので、この一覧だけのクラス（mcc-list-）で指す */
+.mcc-list-hint {
+  --hscroll-fade-color: var(--surface-card);
+}
+
+.mcc-list-table {
+  --mcc-lane-width: 3.25rem;
+}
+
+.mcc-list-table :is(th, td):first-child {
+  box-sizing: border-box;
+  width: var(--mcc-lane-width);
+  min-width: var(--mcc-lane-width);
+  max-width: var(--mcc-lane-width);
+}
+
+.mcc-list-table :is(th, td):is(:first-child, :nth-child(2)) {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface-card);
+  /* 行（.motor-ranking-row）と同じ速さで色を変える。そろえないと左の2列だけ先に変わる */
+  transition: background-color 0.15s ease;
+}
+
+.mcc-list-table :is(th, td):nth-child(2) {
+  left: var(--mcc-lane-width);
+}
+
+.mcc-list-table thead th:is(:first-child, :nth-child(2)),
+.mcc-list-table .motor-ranking-row:hover > td:is(:first-child, :nth-child(2)) {
+  background: var(--surface-page);
+}
+
+/* 固定した列の右端の線は、横に送ったとき（「‹」が出ているとき）だけ引く（PR #1202 ファン評価1周目） */
+.mcc-list-hint:has(> .hscroll-less) .mcc-list-table :is(th, td):nth-child(2) {
+  box-shadow: inset -1px 0 0 var(--border-hairline);
+}
+
+/* 選んでいる艇の行は、線を引いても上下の帯を消さない */
+.mcc-list-hint:has(> .hscroll-less)
+  .mcc-list-table
+  .motor-ranking-row.is-focused
+  > td:nth-child(2) {
+  box-shadow:
+    inset -1px 0 0 var(--border-hairline),
+    inset 0 2px 0 var(--brand-accent-primary),
+    inset 0 -2px 0 var(--brand-accent-primary);
+}
+
 /* 優出数・優勝数・1着率の1位のセル強調（同値は全部。2位の薄い金はやめた。R1） */
 .motor-stat-rank1 {
   background-color: var(--ind-best-bg);
@@ -514,6 +567,11 @@
   .motor-ranking-table td.motor-venue-rank {
     white-space: normal;
     width: 4.6em;
+  }
+
+  /* 狭い画面は内余白が 0.3rem なので、枠の列も詰める（チップ 23px＋内余白で 38px） */
+  .mcc-list-table {
+    --mcc-lane-width: 2.5rem;
   }
 
   /* 375px で会場内順位の列まで、右端の「›」に隠れずに入る幅（BOA-428） */
