@@ -1600,28 +1600,25 @@ function suiteHscrollHint(m, check) {
   check("hscroll: 収まっていれば何も出さない", st(300, 300, 0), {
     hasMore: false,
     hasLess: false,
-    peekFadeWidth: 0,
   });
-  check(
-    "hscroll: 残り4px（以前は何も出なかった）は「›」なしの細いフェード（12px）",
-    st(320, 316, 0),
-    { hasMore: false, hasLess: false, peekFadeWidth: 12 },
-  );
-  check(
-    "hscroll: 残り12pxまでは「›」を出さない（フェード12px）",
-    st(328, 316, 0),
-    { hasMore: false, hasLess: false, peekFadeWidth: 12 },
-  );
-  // 20px残りで「›」を出さず32pxのフェードにした版では、最後の列が無いように見えた（PR #1169 ファン評価1周目）
-  check("hscroll: 残り20pxは「›」と幅40pxのフェード", st(336, 316, 0), {
+  check("hscroll: 残り1px以下は何も出さない", st(301, 300, 0), {
+    hasMore: false,
+    hasLess: false,
+  });
+  // 12px以下の残りで「›」を出さず細いフェードだけにしていた版では、380pxの枠別の全コース表で
+  // 「(n=20)」が「(n=2」に読めた（BOA-735、ユーザー判断で境目を下げた）
+  check("hscroll: 残り4pxでも「›」を出す", st(320, 316, 0), {
     hasMore: true,
     hasLess: false,
-    peekFadeWidth: 0,
+  });
+  check("hscroll: 残り20pxは「›」を出す", st(336, 316, 0), {
+    hasMore: true,
+    hasLess: false,
   });
   check(
     "hscroll: 左に12px以下しか送っていなければ「‹」は出さない（PR #1192 ファン評価2周目）",
-    st(315, 312, 3),
-    { hasMore: false, hasLess: false, peekFadeWidth: 0 },
+    st(320, 300, 3),
+    { hasMore: true, hasLess: false },
   );
   check(
     "hscroll: 1回に送る幅は、固定の左の列を引いた見える幅の8割",
@@ -1658,18 +1655,22 @@ function suiteHscrollHint(m, check) {
     20,
   );
   check(
-    "hscroll: 右端がすでに列の境目、少しだけ切れている、先に列が無いときは足さない",
+    "hscroll: 右端がすでに列の境目、溢れが1px以下、先に列が無いときは足さない",
     [
       m.tailPaddingFor({ naturalMax: 146, columnStarts: [0, 60, 146, 220] }),
-      m.tailPaddingFor({ naturalMax: 10, columnStarts: [0, 30] }),
+      m.tailPaddingFor({ naturalMax: 1, columnStarts: [0, 30] }),
       m.tailPaddingFor({ naturalMax: 300, columnStarts: [0, 60, 146, 220] }),
     ],
     [0, 0, 0],
   );
+  check(
+    "hscroll: 少しだけ（10px）溢れる表にも、次の列の境目まで届く余白を足す（BOA-735）",
+    m.tailPaddingFor({ naturalMax: 10, columnStarts: [0, 30] }),
+    20,
+  );
   check("hscroll: 右端まで送ったら「›」は消え、「‹」が出る", st(357, 301, 56), {
     hasMore: false,
     hasLess: true,
-    peekFadeWidth: 0,
   });
 }
 
@@ -1706,7 +1707,7 @@ function suiteNextOpenDate(m, check) {
   );
 }
 
-// --- pickHitPattern: 的中レースで見せる「当たった候補」（PR #1197 ファン評価3周目）
+// --- pickHitPattern: 的中レースで見せる「当たった候補」（PR #1197、BOA-724 で確率の一番高い候補に）
 function suiteTurnPrediction(m, check) {
   const patterns = [
     { winnerCourse: 1, technique: "nige", probability: 0.44 },
@@ -1714,24 +1715,68 @@ function suiteTurnPrediction(m, check) {
     { winnerCourse: 2, technique: "sashi", probability: 0.07 },
   ];
   check(
-    "pickHitPattern: 同じ艇の候補が複数あれば、実際の決まり手と同じ候補を選ぶ",
-    m.pickHitPattern(patterns, 2, "差し"),
-    patterns[2],
-  );
-  check(
-    "pickHitPattern: 実際の決まり手の候補が無ければ、同じ艇の最初の候補",
-    m.pickHitPattern(patterns, 2, "抜き"),
+    "pickHitPattern: 同じ艇の候補が複数あっても、確率が一番高い候補（実際の決まり手では選ばない。BOA-724）",
+    m.pickHitPattern(patterns, 2),
     patterns[1],
   );
   check(
-    "pickHitPattern: 決まり手が分からないときも同じ艇の最初の候補",
-    m.pickHitPattern(patterns, 2, null),
-    patterns[1],
+    "pickHitPattern: 1号艇は本命の候補",
+    m.pickHitPattern(patterns, 1),
+    patterns[0],
   );
   check(
     "pickHitPattern: 1着の艇の候補が無ければ null",
-    m.pickHitPattern(patterns, 5, "まくり"),
+    m.pickHitPattern(patterns, 5),
     null,
+  );
+  // isAsPredicted: 「予想通りの展開でした」を言ってよいか（BOA-724）
+  const as = (
+    predictedTechnique,
+    actualTechnique,
+    winnerBoat,
+    winnerEntryCourse,
+  ) =>
+    m.isAsPredicted({
+      predictedTechnique,
+      actualTechnique,
+      winnerBoat,
+      winnerEntryCourse,
+    });
+  check(
+    "isAsPredicted: 決まり手が同じで枠なりなら true",
+    as("逃げ", "逃げ", 1, 1),
+    true,
+  );
+  check(
+    "isAsPredicted: 進入コースが分からなくても決まり手が同じなら true",
+    as("差し", "差し", 2, null),
+    true,
+  );
+  check(
+    "isAsPredicted: 決まり手が違えば false",
+    as("差し", "まくり", 2, 2),
+    false,
+  );
+  check(
+    "isAsPredicted: 艇番と違うコースから勝てば false（1号艇が2コースから）",
+    as("逃げ", "逃げ", 1, 2),
+    false,
+  );
+  check(
+    "isAsPredicted: 2番手以下の候補が当たったときは false（本命は外れている）",
+    m.isAsPredicted({
+      predictedTechnique: "まくり",
+      actualTechnique: "まくり",
+      winnerBoat: 3,
+      winnerEntryCourse: 3,
+      isTopPick: false,
+    }),
+    false,
+  );
+  check(
+    "isAsPredicted: 実際の決まり手が分からなければ false",
+    as("逃げ", null, 1, 1),
+    false,
   );
 }
 
@@ -1796,9 +1841,9 @@ const MUTANTS = [
   ],
   [
     "turnPrediction",
-    "実際の決まり手を見ずに、同じ艇の最初の候補を選ぶ（PR #1197 ファン評価3周目の退行）",
-    "return exact ?? sameBoat[0] ?? null;",
-    "return sameBoat[0] ?? null;",
+    "2番手以下の候補が当たっても「予想通り」にする（BOA-724 A-2 (b) の退行）",
+    "if (!isTopPick) return false;",
+    "if (false) return false;",
   ],
   [
     "volatilityLevel",
@@ -1814,21 +1859,21 @@ const MUTANTS = [
   ],
   [
     "hscrollHint",
-    "4pxの残りで「›」を出す（#1130 ファン評価で見送った P3 の退行）",
-    "const hasMore = remaining > HSCROLL_PEEK_MAX;",
-    "const hasMore = remaining > 4;",
+    "少しだけ溢れるときに「›」を出さない（BOA-735 の退行）",
+    "hasMore: remaining > HSCROLL_MORE_MIN,",
+    "hasMore: remaining > 12,",
   ],
   [
     "hscrollHint",
-    "境目を24pxに戻す（PR #1169 ファン評価1周目の退行）",
-    "export const HSCROLL_PEEK_MAX = 12;",
-    "export const HSCROLL_PEEK_MAX = 24;",
+    "「‹」を指が少し触れただけで出す（PR #1192 ファン評価2周目の退行）",
+    "export const HSCROLL_LESS_MIN = 12;",
+    "export const HSCROLL_LESS_MIN = 1;",
   ],
   [
     "hscrollHint",
-    "少しだけ切れているときのフェードを出さない",
-    "!hasMore && remaining > 1 ? HSCROLL_PEEK_FADE : 0;",
-    "0;",
+    "少しだけ溢れる表に右の余白を足さない（BOA-735 の退行）",
+    "if (naturalMax <= HSCROLL_MORE_MIN) return 0;",
+    "if (naturalMax <= 12) return 0;",
   ],
   [
     "basicInfoStats",
