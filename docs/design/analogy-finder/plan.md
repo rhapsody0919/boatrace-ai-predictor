@@ -3,91 +3,103 @@
 元: [spec.md](./spec.md)・[screens.md](./screens.md)。2026-10-02 までの版（層別 S* を SQL の RPC で数える、ADR-0082。レースごとの寄与度を JS の TreeSHAP で出す、ADR-0083）は `git show fa61e6213:docs/design/analogy-finder/plan.md`。
 
 技術判断の要点（ADR 案は [ADR-0085](../../adr/0085-analogy-v16-daily-batch-to-storage.md)。ADR-0082 を置き換え、ADR-0083 の画面の部分を止める）:
-1. 数える処理はすべて Python のバッチで行う。v16 の数えた値は、選手の過去の走から作る as-of の値（直近30走の1着率・平均ST・今節の平均着順点・コース別の平均ST）を条件に使い、`features.py` でしか作れない。SQL・JS に同じ計算を書き直さない
-2. バッチは**今日のレースが使う範囲だけ**を数える。範囲（会場×級別の組み合わせなど）の全組み合わせの集計表は作らない（タブ3は範囲×進入×形で数百セル×結果のベクトルになり、全会場・全組み合わせでは数千万セル）
-3. 集計と類似レースの候補は Supabase Storage に JSON（gzip）で置き、DB には時点の固定のための小さなメタデータだけを置く
-4. 展示後の段は Vercel の JS が、朝に作った候補（似ている順の上位 3,000件）を展示の項目で並べ直す。全母集団の距離計算は Vercel では行わない
+1. 数える処理はすべて Python のバッチで行う。v16 の数えた値は、選手の過去の走から作る as-of の値（直近30走の1着率・平均ST・今節の平均着順点・コース別の平均ST）を条件に使い、`features.py` と同じデータでしか作れない。SQL・JS に同じ計算を書き直さない
+2. バッチは**今日のレースが使う範囲だけ**を数える。範囲の全組み合わせの集計表は作らない（タブ3は範囲×進入×形で数百セル×結果のベクトルになり、全会場・全組み合わせでは数千万セル）
+3. 出力は Supabase Storage の非公開のバケット `analogy-v16` に JSON（gzip）で置き、実行ごとの版のパスにして上書きしない。DB には時点の固定のための小さなメタデータだけを置く
+4. 展示後の段は Vercel の JS が、朝に作った候補（出走表時点の近い順 上位 min(層の件数, 10,000) 件）を展示の項目で並べ直す。全母集団の距離計算は Vercel では行わない
+5. 既存の日次の特徴量ジョブ（レースごとの寄与度用。一度も動いていない）には相乗りしない。v16 は専用の workflow と、それを起動する Vercel Cron を新しく作る
 
 ## 全体の流れ
 
 ```mermaid
 flowchart LR
-  subgraph Batch["Python バッチ（GitHub Actions。起動は Vercel Cron → workflow_dispatch）"]
-    SRC[(kb_archive_* ／ races・race_entries・race_results・race_start_timings・exhibition_data・race_conditions)] --> FB[features.build 全期間・as-of]
-    FB --> DF[daily_features.py 既存: analogy_race_features]
-    FB --> M[analogy_v16_morning.py 今日のレース]
-    M --> ST1[(Storage analogy/v16/YYYY-MM-DD/ facts・scenario・similar・today)]
-    M --> SN[(analogy_v16_snapshots stage=racecard)]
+  subgraph Batch["Python バッチ（GitHub Actions analogy-v16-morning.yml。起動は Vercel Cron analogy-v16-dispatch → workflow_dispatch）"]
+    SRC[(kb_archive_* ／ races・race_entries・race_results・race_start_timings・exhibition_data・race_conditions)] --> EXP[export_pool.js 列を追加]
+    EXP --> FB[features.build ＋ v16_defs 全期間・as-of]
+    FB --> M[v16_morning.py 今日のレース]
+    M --> ST1[(Storage analogy-v16/日付/実行ID/ facts・scenario・similar・today・layer)]
+    ST1 --> SN[(analogy_v16_snapshots stage=racecard)]
   end
   subgraph Vercel
-    EX[展示の取得 preRaceHandlers の後] --> RR[analogy-v16 展示後の段: 候補を並べ直す・今日の展示の値]
+    EXC[Vercel Cron analogy-v16-exhibition 2分ごと] --> RR[展示後の段: 候補を並べ直す・今日の展示の値・欠場の検知]
+    HK[展示の取得の後のフック 任意] --> RR
     ST1 --> RR
     RR --> ST2[(Storage …/exhibition/)]
-    RR --> SN2[(analogy_v16_snapshots stage=exhibition)]
-    API1[api/analogy/facts] & API2[api/analogy/similar] & API3[api/analogy/scenario]
+    ST2 --> SN2[(analogy_v16_snapshots stage=exhibition)]
+    API[api/analogy/facts・similar・scenario service key で読む]
   end
-  ST1 & ST2 & SN & SN2 --> API1 & API2 & API3
-  PR[(analogy_contribution_profiles 118)] --> API1
-  API1 & API2 & API3 --> UI[AI予想タブ アナロジー・ファインダー節]
+  SN & SN2 --> API
+  ST1 & ST2 --> API
+  PR[(analogy_contribution_profiles 118)] --> API
+  API --> UI[AI予想タブ アナロジー・ファインダー節]
+  ST1 -. layer 層の全件 .-> B635[BOA-635]
 ```
 
 ## バッチ
 
+### 前提の作業（T1）
+- `export_pool.js` に列を足す: 実進入（本体 `race_results.actual_course_1..6`、長期 `kb_archive_boats.course`）、決まり手、3連単の払戻（本体 `race_results.payout_trio`）、展示の進入・展示 ST・`start_flag`、本番 ST と F・出遅れ。長期分の列を足すので `KB_CACHE_VERSION` を上げ、長期分を書き出し直す（`assertCachedHeader` が古いキャッシュを拒む。学習の workflow を1回回す）
+- `features.py` に無い値（今節の平均着順点・コース別の平均ST・進入の型・スリットの形・攻める艇・手がかりの条件）は `v16_defs.py` に置く。モックの数字は別のコード（`series_score.py`・slit-hint・prep の SQL）で作ったので、タブ3の母集団（例: 若松・6艇ともA1 1,117件、全国・6艇ともA1 24,871件）を Python で再現する pytest を先に作る
+
 ### 朝のバッチ `scripts/ml/analogy/v16_morning.py`（新規）
-既存の日次の特徴量ジョブ（`.github/workflows/analogy-daily-features.yml`、Vercel Cron JST 6:40・9:40・13:40 → workflow_dispatch、7:20 は拾い直し）に段を足す。`features.build` は1回だけ回し、`daily_features.py` と同じデータで続けて計算する（データの読み込みを2回にしない）。
-
-対象: 今日（JST）の、締切まで10分以上あり、中止でなく、6艇の出走表がそろったレース。9:40・13:40 の回は、出走表の内容のハッシュが変わったレース（欠場・選手の差し替え）と、まだ作っていないレースだけ作り直す。
-
-母集団: 2019-04-01〜前日の完全レース（spec「母集団と期間」）。`pool_cutoff`＝前日。本体の実進入は K ファイル（12:00 同期）で入るので、前日分の進入が無いレースはタブ3の母集団から外れる（件数を `scenario` の `excluded` に書く）。
+- workflow `.github/workflows/analogy-v16-morning.yml`（schedule なし、workflow_dispatch のみ）。起動は新しい Vercel Cron `api/cron/analogy-v16-dispatch.js`: JST 7:10（K ファイルの同期 7:00 の後。前日分の実進入がそろってから）・9:40・13:40。7:40 は「今日のレースの racecard の段がそろっていないとき」だけ起動する（拾い直し）。dispatch のトークン `GITHUB_ACTIONS_DISPATCH_TOKEN`（fine-grained PAT）はユーザーが作る
+- 締切の早いレース（8:30 前後）に間に合うよう、7:10 の回は 20分以内で終える。`features.build` は 249万行で11秒（2026-10-02 の学習の実測）、書き出しは4分。k-NN と範囲ごとの集計を足した所要時間は初回に実測する
+- 対象: 今日（JST）の、締切まで10分以上あり、中止でなく、6艇の出走表がそろい、欠場が分かっていないレース。9:40・13:40 の回は、出走表の内容のハッシュが変わったレース（選手の差し替え）と、まだ作っていないレースだけ作る
+- 母集団: 2019-04-01〜前日の完全レース（spec「母集団と期間」）。`pool_cutoff`＝前日。前日分で実進入がまだ無いレースはタブ3の母集団から外し、件数を `scenario` の `excluded` に書く
+- 出力のパス: `analogy-v16/{日付}/{実行ID}/…`。実行ごとに新しいパスに書き、既にあるファイルは上書きしない。snapshot が実行IDを指すので、同じ日の後の実行で範囲のファイルが変わっても、表示済みのレースの数字は変わらない
+- 書く順: Storage に全ファイルを書き終えてから、DB の snapshot を書く（逆にすると、パスはあるのにファイルが無い snapshot が残る）
 
 1レースごとに作るもの:
-| 出力 | 中身 | 置き場所 |
-|---|---|---|
-| today（出走表時点） | 6艇の項目の値と6艇中の順位（同じ値の数）: 今節の平均着順点・当地勝率・全国勝率・平均ST（直近30走）・直近30走の1着率・モーター2連率・ボート2連率。級別の組み合わせ・ラウンド（優勝戦の判定は spec のもの）・グレード。コース別の平均ST（このコース・全体・会場で、走数つき）。手がかりの8条件の当否 | `today/{race_id}.json` |
-| similar（出走表時点） | そろえる条件の層の中の、出走表時点の距離の近い順。上位 3,000件（層がそれより少なければ全件）について: race_id・距離²（会場ペナルティ前）・会場一致・展示の段に使う項目の値（展示タイムの差・順位6艇分、天候・風・波）・見比べる全33項目の値・結果（1〜3着・決まり手・3連単と払戻・進入）。層の件数、比べる相手の層の件数と1着の艇の件数、全33項目の「全レースで同じ割合」 | `similar/{race_id}.json.gz`（候補）、`similar-racecard/{race_id}.json.gz`（表示する上位800件。時点の固定用） |
+| 出力 | 中身 |
+|---|---|
+| `today/{race_id}.json` | 6艇の項目の値と6艇中の順位（同じ値の数）: 今節の平均着順点・当地勝率・全国勝率・平均ST（直近30走）・直近30走の1着率・モーター2連率・ボート2連率。級別の組み合わせ・ラウンド・グレード・使う範囲キー。コース別の平均ST（このコース・全体・会場で、走数つき）。手がかりの8条件の当否 |
+| `similar/{race_id}.json.gz`（候補） | そろえる条件の層の中の、出走表時点の近い順 上位 K 件（K＝min(層の件数, 10,000)）: race_id・出走表の距離²（会場ペナルティ前）・会場一致・展示の段に使う項目の値（展示タイムの差・順位6艇分、天候・風・波）。展示の距離の重み・標準化の値・λ_展示 |
+| `similar-racecard/{race_id}.json.gz` | 表示する上位800件（各件の全33項目の値・結果（1〜3着・決まり手・3連単と払戻・進入・コース順の ST））。層の件数、比べる相手の層の件数と1着の艇の件数、全33項目の「全レースで同じ割合」 |
+| `layer/{race_id}.json.gz` | BOA-635 用。層の全件の結果を新しい順に最大2,000件（列は旧 `get_analogy_similar_races` と同じ: race_date・rank1〜3・winning_technique・course_by_boat・st_by_course・payout_3tan）と `n_total`（spec Q4。BOA-635 のレーンとの合意で形を決める） |
 
 範囲ごとに作るもの（今日のレースが使う範囲キーの和集合。同じキーは1回だけ）:
 | 出力 | キー | 中身 |
 |---|---|---|
-| facts | `VC:{会場}:{組み合わせ}`・`NC:{組み合わせ}`・`NCR:{組み合わせ}:{yusho/junyu}`・`VA:{会場}` | 艇番×項目×6つの順位（1と6は同じ値を含む）×着順（1着・2着以内・3着以内）の件数［当たり, 母数］、艇番×着順の全体、艇番×着順×項目の「来たときの平均の順位」、VA だけ風速区分×艇番×着順 |
-| scenario | 上の4つ＋`VG:{会場}`・`NA` | 進入の型（8つ）×形（どの形でも＋7つ）ごとの: 件数、1着の艇・3着以内の艇・決まり手・万舟の件数、3連単の件数（出たものだけ）、30件未満なら1件ずつの行。手がかりの8条件×形の［当てはまる・当てはまらない］の件数（このコース・全体の2通り）。③の攻める艇・1号艇の表（展示タイム順位・モーター順位の区分ごと）と、同じ区分の NC の値 |
+| `facts/{key}.json.gz` | `VC:{会場}:{組み合わせ}[:{選んだ艇の級別}]`・`NC:…`・`NCR:…:{yusho/junyu}`・`VA:{会場}`（キーの形は spec Q1 の回答で決める） | 艇番×項目×6つの順位（1と6は同じ値を含む）×着順の件数［当たり, 母数］、艇番×着順の全体、艇番×着順×項目の「来たときの平均の順位」、VA だけ風速区分×艇番×着順 |
+| `scenario/{key}.json.gz` | 上の4つ＋`VG:{会場}`・`NA` | 進入の型（8つ）×形（どの形でも＋7つ）ごとの: 件数、1着の艇・3着以内の艇・決まり手・万舟の件数、3連単の件数（出たものだけ）、30件未満なら1件ずつの行。手がかりの8条件×形の［当てはまる・当てはまらない］の件数（このコース・全体の2通り）。③の攻める艇・1号艇の表（展示タイム順位・モーター順位の区分ごと）と、同じ区分の NC の値 |
 
-- 範囲キーの数: 1日 約150〜180レースで、VC 約150・NC 約60・VA 24・VG 数個・NA 1 の見込み（実装の最初に1日分で実測する）
-- 所要時間の目安: `features.build`（今の日次ジョブと同じ）＋ k-NN（今日のレース×層の件数×337次元）＋範囲ごとの集計。締切の早いレース（8:30 前後）に間に合うよう、6:40 の回で 20分以内を目標にし、初回に実測する
-- 失敗の扱い: 対象のレースに today・similar がそろわなければ失敗にする（書けた分は書いてから）。Slack に知らせる（既存の日次ジョブと同じ）
+- 範囲キーの数: 1日 約150〜180レースで、数百キーの見込み（初回に実測）。scenario のファイルはモックの scn.js を範囲ごとに gzip して 16〜35KB（design-reviewer の実測）
+- 失敗の扱い: 対象のレースに today・similar がそろわなければ失敗にする（書けた分は書いてから）。Slack に知らせる
 
 ### 寄与度用モデルの集計（学習側レーン、週次）
-AIの見立て（spec FR-E）のための、`profiles.py` の集計の変更。学習側レーンの担当（2026-10-03 合意の分担）:
+AIの見立て（spec FR-E）のための変更。学習側レーンの担当（2026-10-03 合意の分担）:
 - 量の定義を Version 14 にする（レース内で中心化 → 艇番の中で中心化、|値| の平均の構成比。枠は割合から除き、1号艇の格の分は枠に入れる）
-- テーマを7つにする（`themes.py` の組み直し。学習し直しは要らない）: 選手の実力／スタート・展示／モーター・ボート／体重・年齢・地元／会場・レース番号／天候・水面／レースの条件
+- テーマを7つにする（`themes.py` のグループの付け替え。学習し直しは要らない）
 - 項目ごとの向き（「高いほど見込みが上がる」など）を集計に入れる
-- 出走表時点のモデル（`win_racecard` と2着以内・3着以内の2本、計3本）でも同じ集計を作る（展示前の AIの見立て）
-- 優勝戦の判定の変更（spec）をラウンドの特徴量に入れる（学習し直しが要る。次の週次の学習で反映）
+- 出走表時点のモデルを3本（1着・2着以内・3着以内。今は `win_racecard` の1着だけ）にし、同じ集計を作る（展示前の AIの見立て）。118 の `analogy_contribution_profiles` には段を区別する列が無いので、列 `stage`（'exhibition'／'racecard'、既定 'exhibition'）を足して主キーに入れるマイグレーションを作る（版名で分ける案は、`analogy_models` の is_active の切り替えと噛み合わないので採らない）
+- 優勝戦の判定の変更（spec）をラウンドの特徴量に入れる（学習し直しが要る）
 
 ### 夜の確認 `scripts/maintenance/verify-analogy-v16.js`（nightly）
-前日の Storage の出力と DB のメタデータを読み、レースの数・欠け・作成時刻（締切前か）を数える。例のレース（2026-09-27 若松12R）について、モックの数字（tab1.json・prep8・mark1・knn78 の値）を同じ定義で再現できるかを、固定の期待値で確かめる（data-accuracy の常設化）。
+前日の Storage の出力と DB のメタデータを読み、レースの数・欠け・作成時刻（締切前か）・展示後の段の充足率と厳密さ（下）を数える。例のレース（2026-09-27 若松12R）について、出し直した期待値（tasks T1-6）を同じ定義で再現できるかを確かめる。候補ファイル（`similar/`）の7日より古いものを消す。
 
 ## 展示後の段（Vercel の JS）
 
-- 起動: 展示の取得（`scripts/lib/scrapeJobs/preRaceHandlers.js` の `runSlotsWithRefresh` の後）で、展示を書いたレースについて実行する。失敗しても展示の取得の成否に影響させない。毎分の展示の取得の起動で「6艇の展示タイムあり・締切前・展示後の段なし」を拾い直す（件数に上限）。切り替えは専用の環境変数
+- 起動: 専用の Vercel Cron `api/cron/analogy-v16-exhibition.js`（2分ごと）が「6艇の展示タイムあり・締切前・展示後の段なし」のレースを拾う（件数に上限）。展示の取得の Cron（`createExhibitionCronHandler`、mode が off だと即 skipped）には依存しない。遅れを縮めるため、展示の取得（`preRaceHandlers.js` の `runSlotsWithRefresh` の後）からも呼ぶ（失敗しても取得の成否に影響させない）。二重に動いても snapshot の `ON CONFLICT DO NOTHING` で1回になる
 - やること:
-  1. 6艇の展示の値（展示タイム、天候・風・波、展示の進入、展示ST）を読む。展示タイムのレース内の差・順位は `src/utils/` の直前情報の関数（#1177 で作った、`features.py` と同じ式・float32 の約束）を使う
-  2. `similar/{race_id}.json.gz` を読み、候補ごとに 距離²（展示の段）＝ 出走表の距離² ＋ 展示の項目の距離² ＋ λ_展示 ×（会場が違う）で並べ直し、上位800件を `similar-exhibition/{race_id}.json.gz` に書く。重み・標準化の値・λ は朝のバッチが候補ファイルに入れる
-  3. 今日の展示の値（展示タイムの順位、風速区分、展示の進入の型、展示 ST の形。展示 F の ST は負にする）を `today-exhibition/{race_id}.json` に書く
-  4. `analogy_v16_snapshots` に stage=exhibition の行を書く（締切前だけ、既にあれば書かない）
-- 近似: 並べ直しは出走表時点の上位 3,000件の中だけで行う。層が 3,000件以下なら厳密と同じ。T2-4 で、過去の 1,000レースについて「全件で厳密に計算した展示後の上位800件」と比べた一致率（目標 99%以上）を測る。足りなければ候補の件数を増やす
+  1. 欠場の検知: `race_entries.is_absent` か `exhibition_data` の欠場が1艇でもあれば、snapshot に stage=exhibition・status='absent' を書いて終わる（画面は欠場の1行。spec Q5）
+  2. 6艇の展示の値（展示タイム、天候・風・波、展示の進入、展示ST）を読む。展示タイムのレース内の差・順位・天候・風の成分は #1177 の `src/utils/analogyRaceFeatures.js`（`features.py` と同じ式・float32）を使う
+  3. 候補ファイルを読み、候補ごとに 距離²＝出走表の距離²＋展示の項目の距離²＋λ_展示×（会場が違う）で並べ直し、上位800件の全33項目と結果を `similar-racecard` と同じ形で書く（全33項目の値は `similar-racecard` に無い候補の分も要るので、候補ファイルに K 件分の項目の値を入れるか、別ファイルにするかは T2-6 のサイズの実測で決める）
+  4. 厳密さの判定: 展示の距離²は0以上なので、候補の K 番目の出走表の距離²が、並べ直した800番目の距離²以上なら結果は厳密。snapshot に `exact` を記録する
+  5. 今日の展示の値（展示タイムの順位、風速区分、展示の進入の型、展示 ST の形。展示 F の ST は負にする）を書く
+  6. Storage に書き終えてから snapshot（stage=exhibition）を書く（締切前だけ、既にあれば書かない）
+- 近似の妥当性: design-reviewer の簡易の再現（数値の項目だけの距離、最大の層 58,119件）で、候補 3,000件の一致率は平均 84.5%（最小 31%）、6,000件で 95.7%。層は p50 7,286件・p90 58,119件。候補を10,000件にし、T2-4 で層の大きさ別に本番の距離で一致率を測る（目標 99%以上。足りなければ増やすか、大きい層だけ層の全件にする）
 
 ## データ設計
 
-### Storage（バケット `analogy`、公開読み取り）
-`analogy/v16/{YYYY-MM-DD}/` の下に、上の表のファイル。API は CDN 経由で読む。保持: `similar/`（候補、約250KB/レース）は7日で消す。ほか（表示した上位800件・today・facts・scenario）は時点の固定のため残す。容量の見込み: 残すもので1日 約40MB（初回に実測）、年 約15GB。
+### Storage（非公開のバケット `analogy-v16`）
+`analogy` バケット（非公開。学習データ・モデル・長期データのキャッシュが入っている）とは分ける。API は service key で読むので、公開は要らない。保持: `similar/`（候補）は7日で消す。ほかは時点の固定のため残す。容量は初回に実測し、年の見込みを出す（候補を除いて1日 数十MB の見込み）。
 
 ### DB（マイグレーション。spec Q4 の回答で決める）
-新しい表は1つ。番号は実装 PR の時点で origin/master の最新を確認する（120 を作り直すか、新しい番号にする）。
+新しい表は1つと、118 の表への列の追加（上の「寄与度用モデルの集計」）。番号は実装 PR の時点で origin/master の最新を確認する（120 を作り直すか、新しい番号にする）。
 
 | 表 | 列 | 書き手 |
 |---|---|---|
-| `analogy_v16_snapshots` | `race_id`（races の外部キー）・`stage`（'racecard' / 'exhibition'）・`computed_at`・`pool_cutoff`（date）・`model_version`（重みに使った版）・`similar_path`・`today_path`・`n_layer`・`status`（'ok' / 'empty_layer'）。主キー `(race_id, stage)` | 朝のバッチ（racecard）、Vercel の JS（exhibition）。service_role。締切前だけ書く。racecard は出走表のハッシュが変わったときだけ上書き、exhibition は既にあれば書かない |
+| `analogy_v16_snapshots` | `race_id`（races の外部キー）・`stage`（'racecard' / 'exhibition'）・`run_id`・`computed_at`・`pool_cutoff`（date）・`model_version`（重みに使った版）・`n_layer`・`status`（'ok' / 'empty_layer' / 'absent'）・`exact`（展示後の並べ直しが厳密か）。主キー `(race_id, stage)` | 朝のバッチ（racecard）、Vercel の JS（exhibition）。service_role。締切前だけ書く。racecard は出走表のハッシュが変わったときだけ上書き、exhibition は既にあれば書かない |
 
 - RLS 有効・匿名は SELECT のみ
 - 行数: 1日 約300行、1行 約200B
@@ -97,7 +109,7 @@ AIの見立て（spec FR-E）のための、`profiles.py` の集計の変更。�
 |---|---|---|
 | 118 `analogy_models`・`analogy_contribution_profiles` | 本番適用済み | そのまま使う（AIの見立て）。7テーマ・新しい量の定義は行の中身（themes・shares）の変更で、列は変えない |
 | 120（層別 S* の母集団・スナップショット・RPC 2本） | 未適用、このブランチだけ | 適用しない。作り直すか消す（spec Q4）。PGlite の検証 `verify-analogy-strata-migration.js` も一緒に消す |
-| 127 `analogy_race_features`・128 | master にあり未適用 | 日次の特徴量ジョブがそのまま使う（朝のバッチと同じ workflow）。spec Q2 で「レースごとの寄与度をやめる」なら、127 の表を推論側が読む用途は無くなるが、日次ジョブの成否の監視（128）に使うので残す |
+| 127 `analogy_race_features`・128、日次の特徴量ジョブ | master にあり未適用、ジョブは一度も動いていない | v16 では使わない。spec Q2 で「レースごとの寄与度をやめる」なら適用しない（書くだけで誰も読まない表になる） |
 | ADR-0083 の `analogy_race_contributions` | 未作成 | spec Q2 で「やめる」なら作らない |
 
 現行の 120 の ER 図（Q4 の回答まで残す。置き換えたら `generate-er-diagram.js` で作り直す）:
@@ -189,16 +201,27 @@ erDiagram
 
 ## API
 
-いずれも Vercel の Node 関数（Storage の gzip を読む）。Storage・DB の失敗は 502 と `no-store`。
+いずれも Vercel の Node 関数（service key で Storage の gzip を読む）。snapshot の `run_id` のパスから読む。Storage・DB の失敗は 502 と `no-store`。
 
 | エンドポイント | 中身 | キャッシュ |
 |---|---|---|
-| `GET /api/analogy/facts/[raceId]?stage=` | today（stage に応じて展示の値を重ねる）＋使う範囲キー（VC・NC・NCR・VA）の facts ＋ AIの見立て（`analogy_contribution_profiles` の表示中の版、stage に応じて展示ありの版か出走表時点の版、無ければ `available: false`） | 締切前 `s-maxage=60`、締切後 `s-maxage=86400` |
-| `GET /api/analogy/similar/[raceId]?stage=` | 表示する上位800件（各件の全33項目・結果・距離の順位）、層の件数、比べる相手、全レースで同じ割合。展示後の段が無いときは racecard の結果と `exhibition_pending: true` / `exhibition_missing: true`（締切後） | 同上 |
-| `GET /api/analogy/scenario/[raceId]?scope=` | 範囲キーの scenario 全体（進入×形の全セル。画面が選択に応じて取り出す）＋ today の手がかりの当否・展示の進入/形 | 同上 |
+| `GET /api/analogy/facts/[raceId]?stage=` | `status`（下）、today（stage=exhibition なら展示の値を重ねる）、使う範囲キー（VC・NC・NCR・VA）の facts、AIの見立て（`analogy_contribution_profiles` の表示中の版の、stage に応じた段。無ければ `ai.available: false`） | 締切前 `s-maxage=60`、締切後 `s-maxage=86400` |
+| `GET /api/analogy/similar/[raceId]?stage=` | `status`、表示する上位800件（各件の全33項目・結果）、層の件数、比べる相手、全レースで同じ割合 | 同上 |
+| `GET /api/analogy/scenario/[raceId]?scope=&stage=` | `status`、範囲キーの scenario 全体（進入×形の全セル。画面が選択に応じて取り出す）、today の手がかりの当否、stage=exhibition なら展示の進入・形 | 同上 |
 
-- facts と scenario はファイル全体を返し、選択の切り替え（艇番・着順・進入・形）は画面で行う（取り直しをしない）。1ファイルの大きさを初回に実測し、100KB（gzip 後）を超えるなら分ける
-- 例のレースの日付より前のレース（公開前）は snapshot が無い。API は `available: false` を返し、画面は screens「状態」に従う
+`status`（screens「状態」と対応。画面は時刻で判定しない）:
+| status | 条件 |
+|---|---|
+| `absent` | exhibition の snapshot が status='absent' |
+| `not_saved` | racecard の snapshot が無い |
+| `empty_layer` | racecard の snapshot が status='empty_layer'（タブ2だけ） |
+| `exhibition_ready` | exhibition の snapshot がある（「展示後」を押せる） |
+| `exhibition_reflecting` | 6艇の展示タイムがあり、締切前で、exhibition の snapshot が無い |
+| `exhibition_missing` | 締切を過ぎて exhibition の snapshot が無い |
+| `before_exhibition` | それ以外 |
+
+- 艇番・着順・進入・形の切り替えは画面で行う（取り直さない）。stage を変えたときだけ取り直す
+- 今節の平均着順点を出さない範囲（spec A-4・Q7）では、facts からその項目を外す
 
 ## フロントエンド
 
@@ -223,15 +246,17 @@ flowchart TD
 - 類似レースのスライダーの件数での集計（1着の艇・決まり手・サンキー・3連単・何が似ている？）は画面の純粋関数（`analogyAggregate.js`。旧版の同名の関数を作り直す）
 - 文言は `aiPredictionTab.analogy.*`（4言語）
 
-## BOA-635 との接続（作り直し。オーケストレーター経由で BOA-635 のレーンと合意する）
-- 旧版の合意（`get_analogy_similar_races`、層別の自動の深さ・最大2,000件）は、120 を置き換えると無くなる
-- 案: BOA-635 は `similar-racecard/{race_id}.json.gz`（表示する上位800件。各件に1〜3着・決まり手・進入・コース順の ST・3連単の払戻）を読む。スリットの7形・進入の型の判定は `analogyScenario.js` を共用する
-- 2,000件 → 800件に減る。BOA-635 の判定に十分かは BOA-635 のレーンが決める
+## BOA-635 との接続（作り直し。spec Q4、オーケストレーター経由で BOA-635 のレーンと合意する）
+- 旧版の合意（120 の `analogy_pool_outcomes` と `get_analogy_similar_races`、層別の自動の深さ・最大2,000件）は、120 を置き換えると無くなる。BOA-635 の tasks（着手条件・T0-1・T0-3・T1-4・T5-3）はこれを前提にしている
+- BOA-635 の検証者の推奨は「発生率の分母がスライダーで変わってはいけない」。似ている順の上位800件を渡すとこれに反するので、渡さない
+- 案: v16 の朝のバッチが `layer/{race_id}.json.gz`（v16 の層の全件の結果、新しい順に最大2,000件、`n_total`）を作り、BOA-635 が読む。v16 の層は会場を含まず、ラウンド・グレードを含む点が旧 S*（会場を含む4条件）と違う。BOA-635 の分母として妥当かは BOA-635 のレーンが決める
+- スリットの7形・進入の型の判定は `analogyScenario.js`（JS）と `v16_defs.py`（Python）を BOA-635 と共用する
+- T0-2 で合意してから T2 に入る
 
 ## 既存サービス層・共通ライブラリとの連携
-- Cron の起動は既存の `api/cron/analogy-dispatch.js`（未実装なら、FR-1 の週次の起動と同じものを作る。GitHub のトークン `GITHUB_ACTIONS_DISPATCH_TOKEN` はユーザーが作る）
-- Supabase の呼び出しは `scripts/lib/supabaseClient.js`（service key）、Python は `scripts/ml/analogy/db.py`、Storage は `storage.js`
-- 中止の判定は `races.cancellation_status`、締切は `races.start_time`（JST）
+- Vercel Cron は `vercel.json` の crons と `createScrapeCronHandler` 系の共通ラッパ（job の登録・`scrape_job_state` のモード・最終成功の監視）。dispatch は FR-1 の週次の起動（未実装）と同じ仕組みにし、1つの関数で両方を起動できるようにする
+- Supabase の呼び出しは `scripts/lib/supabaseClient.js`（service key）、Python は `scripts/ml/analogy/db.py`、Storage は `storage.js` にバケット名の引数を足して使う
+- 中止の判定は `races.cancellation_status`、締切は `races.start_time`（JST）、欠場は `race_entries.is_absent`
 
 ## 検証
 - pytest（`scripts/ml/analogy/tests/`）: 上の定義の表。as-of（前日までの走だけ、今節の平均着順点は同じ日の前の走を含む）
@@ -242,9 +267,10 @@ flowchart TD
 - 展示後の並べ直しの近似の一致率（T2-4）
 
 ## 設計レビューの指摘と対応
-2026-10-01・10-02 の design-reviewer の指摘（k-NN・層別の時のもの）は旧版の plan にある。このうち v16 に残るもの: GitHub Actions の schedule を使わない（Vercel Cron → dispatch）、as-of を日単位でずらす、節を予想の有無の分岐の外に出す、`withCache` の途中状態を残さない、マイグレーションの番号の重複に注意。
+2026-10-04 の design-reviewer（v16 の書き直し）の指摘と対応は [design-review-v16.md](./design-review-v16.md)。2026-10-01・10-02 の指摘（k-NN・層別の時のもの）は旧版の plan にある。
 
 ## 残る判断
-- spec の未確定 Q1〜Q5
+- spec の未確定 Q1〜Q7
 - BOA-635 との接続（上）
-- Storage の保持期間（年 約15GB の見込み。初回の実測で見直す）
+- Storage の保持期間（初回の実測で見直す）
+- 展示後の候補の件数（T2-4 の一致率で決める）
