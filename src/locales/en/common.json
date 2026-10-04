@@ -964,7 +964,7 @@
     "pretestCell": "{{time}} (#{{rank}})",
     "rowHint": "Tap a row to switch the details below to that racer.",
     "bestLegend": "A gold frame marks the best value among the six boats (all ties are marked).",
-    "bestLegendWarn": "If the best value belongs to a ⚠ racer with few runs, no boat is marked.",
+    "bestLegendWarn": "In the score rate and series rank columns, if the best value belongs to a ⚠ racer with few runs, no boat is marked in that column.",
     "classTitle": "Class",
     "finishSeparator": "-",
     "finishDq": "DQ",

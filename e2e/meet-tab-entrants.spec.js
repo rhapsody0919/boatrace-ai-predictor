@@ -294,7 +294,7 @@ test("韓国語の⚠の説明は走数と分かる書き方にする", async ({
   await page.goto("/ko/race/2026-09-23-09-12");
   await page.locator(".race-tabs-btn").nth(2).click();
   const hint = page.locator(".rmt-hint").nth(1);
-  await expect(hint).toHaveText("⚠는 출주 3회 미만(득점률이 아직 불안정합니다).", {
+  await expect(hint).toHaveText("⚠는 출주 3회 미만입니다(득점률이 아직 불안정).", {
     timeout: 30000,
   });
 });
@@ -309,6 +309,9 @@ test("表に⚠が無いときは、金枠の凡例で⚠に触れない", async
   // ⚠があるレースでは断りを出す（津 9/23 12R、6艇すべて⚠）
   await openMeetTab(page, "2026-09-23-09-12");
   await expect(page.locator(".rmt-table-notes")).toContainText(
-    "（同じ値は全部）。最も良い値が走数の少ない⚠の艇のときは",
+    "（同じ値は全部）。得点率・節内順位で最も良い値が走数の少ない⚠の艇のときは、その列は",
   );
+  // ⚠の艇でも前検には金枠が付く。凡例が列を書かないと「⚠の艇には付かない」と読め、
+  // 前検の金枠と食い違って見えた（BOA-738 ファン評価2周目）
+  await expect(page.locator(".rmt-compare .rmt-pretest.ind-best").first()).toBeVisible();
 });
