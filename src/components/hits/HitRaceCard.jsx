@@ -7,6 +7,8 @@ import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
 
 function HitRaceCard({
   hitRace,
+  // 1着の艇が実際に入ったコース（無ければ null）。艇番と違うときだけ添える（BOA-708）
+  winnerEntryCourse = null,
   variant = "today",
   showDate = false,
   onClick,
@@ -59,13 +61,18 @@ function HitRaceCard({
       )}
 
       <div className="turn-hit-detail">
+        {/* 以前は「1マーク先頭 Nコース」だったが、値は1着の艇番（BOA-708）。
+            前付けのあったレースでは艇番とコースが違い、誤表示になっていた */}
         <div className="turn-hit-course">
           {/* 上位候補のどれかが1着になれば的中で、ここに出るのはその当たった候補（本命とは限らない）。
               「1マーク先頭」は展開予測の説明（1着）と食い違い、「1着予想」は本命に推したように読めた
               （BOA-710、PR #1197 ファン評価1周目） */}
           <span className="turn-hit-course-label">的中した候補</span>
           <span className="turn-hit-course-value">
-            {hitRace.winnerCourse}コース
+            {hitRace.winnerBoat}号艇
+            {winnerEntryCourse != null &&
+              winnerEntryCourse !== hitRace.winnerBoat &&
+              `（${winnerEntryCourse}コース）`}
           </span>
         </div>
         {probability != null && (
@@ -87,7 +94,8 @@ function HitRaceCard({
             venue: hitRace.venue,
             raceNo: hitRace.raceNumber,
             date: hitRace.date,
-            winnerCourse: hitRace.winnerCourse,
+            winnerBoat: hitRace.winnerBoat,
+            winnerEntryCourse,
             technique,
             probability,
           })}

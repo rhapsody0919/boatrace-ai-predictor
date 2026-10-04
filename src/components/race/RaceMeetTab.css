@@ -234,6 +234,8 @@
 }
 
 .rmt-sub,
+.rmt-border-note,
+.rmt-table-notes,
 .rmt-rank-note,
 .rmt-series-note,
 .rmt-source,
@@ -404,6 +406,26 @@
 .rmt-forecast-table tbody th {
   text-align: left;
   width: 99%;
+}
+
+/* 艇番・選手名の列は横に送っても残す。送ると艇番の丸が消え、選手名も途中で切れて
+   （「竜太」「井繁」）、どの艇の行か分からなくなっていた（BOA-704） */
+.rmt-forecast-table thead th:first-child,
+.rmt-forecast-table tbody th {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--hscroll-fade-color, var(--surface-card));
+}
+
+/* 固定した列の右端の線は、横に送ったとき（「‹」が出ているとき）だけ引く。広い画面で常に出すと、
+   選手名の右の大きな空きの端を線で強調してしまった（PR #1202 ファン評価1周目） */
+.rmt-forecast-hint:has(> .hscroll-less)
+  .rmt-forecast-table
+  thead
+  th:first-child,
+.rmt-forecast-hint:has(> .hscroll-less) .rmt-forecast-table tbody th {
+  box-shadow: inset -1px 0 0 var(--border-hairline);
 }
 
 .rmt-forecast-table tbody tr {
@@ -679,4 +701,17 @@
 /* 名前を探す人が見つけられるように、行頭だけ本文の色で太くする（ファン評価1周目） */
 .rmt-excluded-list strong {
   color: var(--text-primary);
+}
+.rmt-excluded-list .rmt-excluded-name {
+  white-space: nowrap;
+}
+
+.rmt-forecast-hint:has(> .hscroll-less)
+  .rmt-forecast-table
+  tbody
+  tr.is-current
+  th {
+  box-shadow:
+    inset 3px 0 0 0 var(--brand-accent-primary),
+    inset -1px 0 0 var(--border-hairline);
 }

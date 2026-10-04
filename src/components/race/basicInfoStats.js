@@ -667,20 +667,34 @@ export function periodsEndedBefore(raceDate, count = 1) {
  * 直近2年の範囲は期の定義から決める（6艇で同じ表記になる）。範囲内に行が
  * 無い期（登録前の新人など）は0回として足す。
  *
- * @param {Array<Object>|{state: string}} rows `getRacerPeriodStats` の戻り値
- *   （直近4期分。前期以外の行も混ざる）
+ * ## 前期をまだ取り込んでいないとき（期替わり直後）
+ *
+ * 公式の fan は期の終わりから15〜60日遅れて公開される。その間（`latestImported`
+ * が false）は、前々期の値と、前々期で終わる4期の合計を返し、`fallback` を立てる。
+ * 判定は表全体（その期の行が1行も無いか）で行う。選手ごとの欠け（長期休場で
+ * fan に載らない等）では切り替えない（「公開待ち」と事実と違う注記が出るため）。
+ * 遡るのは前々期まで。前々期の行も無ければ null。
+ *
+ * @param {{rows: Array<Object>, latestImported: boolean}|{state: string, rows: []}} result
+ *   `getRacerPeriodStats` の戻り値
  * @param {number|null} racerId
  * @param {string} raceDate `YYYY-MM-DD`。この日より前に終わった期を「前期」とする
  * @returns {{winRate: number|null, top2Rate: number|null, avgSt: number|null,
  *            starts: number|null, calcFrom: string|null, calcTo: string|null,
  *            finals: number|null, wins: number|null,
- *            recent: {finals: number, wins: number, from: string, to: string}|null}|null}
- *   前期の行が無ければ null（呼び出し側は枠ごと出さない）
+ *            recent: {finals: number, wins: number, from: string, to: string},
+ *            fallback: boolean,
+ *            pending: {calcFrom: string, calcTo: string}|null}|null}
+ *   表示する期の行が無ければ null（呼び出し側は枠ごと出さない）。
+ *   pending は公開待ちの前期の算出期間（fallback のときだけ）
  */
-export function pickPeriodStats(rows, racerId, raceDate) {
+export function pickPeriodStats(result, racerId, raceDate) {
+  const rows = result?.rows;
   if (!Array.isArray(rows) || !racerId) return null;
-  const periods = periodsEndedBefore(raceDate, RECENT_PERIOD_COUNT);
-  if (periods.length === 0) return null;
+  const all = periodsEndedBefore(raceDate, RECENT_PERIOD_COUNT + 1);
+  if (all.length === 0) return null;
+  const fallback = result.latestImported === false;
+  const periods = fallback ? all.slice(1) : all.slice(0, RECENT_PERIOD_COUNT);
   const [latest] = periods;
   const own = rows.filter((r) => r.racer_id === racerId);
   const row = own.find(
@@ -711,6 +725,10 @@ export function pickPeriodStats(rows, racerId, raceDate) {
       from: oldest.calcFrom,
       to: latest.calcTo,
     },
+    fallback,
+    pending: fallback
+      ? { calcFrom: all[0].calcFrom, calcTo: all[0].calcTo }
+      : null,
   };
 }
 
