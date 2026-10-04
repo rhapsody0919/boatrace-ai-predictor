@@ -2,18 +2,18 @@
 
 元: [spec.md](./spec.md)・[screens.md](./screens.md)・[plan.md](./plan.md)。依存順。1タスク＝1コミット〜1PR。
 
-**着手条件（spec「実装開始の前提条件」）**: BOA-271 FR-2（層別 S*）のマイグレーション119（`get_analogy_similar_races` を含む）が本番に適用され、母集団の投入とスナップショットの日次作成が動いていること。BOA-271 の `BoatBadge` の切り出しと T9-1（節の描画を分岐の外に出す）が master に入っていること。T0 は FR-2 の層の定義（分析スクリプト）があれば先に進めてよい（画面のコードは書かない）。
+**着手条件（spec「実装開始の前提条件」）**: BOA-271 v16 の朝のバッチが本番で layer ファイルと `analogy_v16_snapshots` を作っていること、layer ファイルの形と取得の API の経路が BOA-271 の実装で確定していること、v16 の節の描画位置（早期 return の分岐の外）が master に入っていること。`BoatBadge` は master に入った（#1118）。T0-1 は v16 の層の選び方を Python で再現できれば先に進めてよい（画面のコードは書かない）。
 
-本機能は新しいデータ取得を含まない（FR-2 の母集団と RPC を読むだけ）ので、`data-acquisition.md` の「完了の定義」3行は BOA-271 FR-2 の tasks 側で満たす。本機能は T0-3 で、本番の母集団に値の約束が守られていることだけを実測する。
+本機能は新しいデータ取得を含まない（BOA-271 v16 の layer ファイルを読むだけ）ので、`data-acquisition.md` の「完了の定義」3行は BOA-271 v16 の tasks 側で満たす。本機能は T0-3 で、layer ファイルに値の約束が守られていることだけを実測する。
 
 ## 再開するときに読むこと（引き継ぎ）
 - **2026-10-04 時点の土台（最新）**: BOA-271 は モック v16 に書き直された（PR #1134 head 0c8a6ea07、`docs/design/analogy-finder/` の spec・plan・ADR-0085・handoff §22）。マイグレーション120（層別 S*・`get_analogy_similar_races`）は本番に適用せず置き換える。代わりに v16 の朝のバッチが、今日の各レースについて BOA-635 用の `layer/{race_id}.json.gz`（v16 の層の全件の結果、新しい順に最大2,000件）を Storage（非公開バケット `analogy-v16`、実行ごとのパスで上書きしない）に作る。v16 の層は会場を含まず、ラウンド・グレード（優勝戦・準優勝戦、G1以上）を含む。層の大きさは中央値 7,286件・p90 58,119件なので、大半のレースで2,000件に切り詰める
-- **BOA-635 レーンの回答（2026-10-04、オーケストレーター経由で FR-2 側の合意待ち）**: この層を分母にすることに合意。会場は不要（spec に会場ごとの表示が無い。会場を混ぜた影響は T0-1 の Brier skill で測る）。layer ファイルへの要件: 列は旧 `get_analogy_similar_races` と同じ・並びは race_date 降順＋race_id 降順、行の外に n_total・n_returned・pool_from・pool_cutoff・層の条件・run_id、層の説明文の関数は FR-2 と共用、値の約束 D-1〜D-5 を v16 の export でも pytest で固定、保存は (race_id, run_id) で紐づけ（run_id が違えば「変わっています」）、展示後も racecard の段の layer を使う、snapshot 無し・empty_layer・absent では出さない、API `/api/analogy/layer/[raceId]` は BOA-635 で作る案、gzip 後100KB 超なら1,000件
+- **BOA-635 レーンの回答（2026-10-04、オーケストレーター経由で BOA-271 側に渡した。3（説明文の関数）と7（API の相乗りか別か）は BOA-271 側が決めて知らせる）**: この層を分母にすることに合意。会場は不要（spec に会場ごとの表示が無い。会場を混ぜた影響は T0-1 の Brier skill で測る）。layer ファイルへの要件: 列は旧 `get_analogy_similar_races` と同じ・並びは race_date 降順＋race_id 降順、行の外に n_total・n_returned・pool_from・pool_cutoff・層の条件・run_id、層の説明文の関数は FR-2 と共用、値の約束 D-1〜D-5 を v16 の export でも pytest で固定、保存は (race_id, run_id) で紐づけ（run_id が違えば「変わっています」）、展示後も racecard の段の layer を使う、snapshot 無し・empty_layer・absent では出さない、API `/api/analogy/layer/[raceId]` は BOA-635 で作る案、gzip 後100KB 超なら1,000件
 - **再開の条件（2026-10-04 に書き直し。下の旧条件より優先）**:
-  - 設計の書き直し: FR-2 側の合意の返事が来たら、spec「データ（土台）」・保存の紐づけ・照合・ADR-0081・plan・tasks・受け入れ E2E を v16 の layer ファイル前提に書き直す（`get_analogy_similar_races` 前提の今の記述は置き換える）
+  - 設計の書き直し: 済み（2026-10-04。spec「データ（土台）」・保存の紐づけ（runId）・照合・ADR-0081 第3版・plan・screens・tasks）。受け入れ E2E は取得の経路（API）が BOA-271 側で決まってから書き直させる（今の E2E は `get_analogy_similar_races` の RPC を route で止める前提のまま）。説明文の関数・API の経路が決まったら spec・plan の「BOA-271 側で決める」を埋める
   - 実装（T1〜）: v16 の朝のバッチが本番で layer ファイルと `analogy_v16_snapshots` を作っていること、layer の形が FR-2 の実装で確定していること、v16 の節の描画位置（早期 return の分岐の外）が master に入っていること
   - T0-1（定番／レアの線の検証）: v16 の層の選び方を Python で再現できること（FR-2 の T1: `v16_defs.py`・`export_pool.js` の列追加）。そのうえで #1138 の分析ルール（事前登録の単独コミット＋push、その前に second-opinion-reviewer で1パス、数値に出典）
-  - 不要になった条件: 119／120 の本番適用、層別 S* の分析スクリプト、`get_analogy_similar_races`、#1122 の T9-1（v16 で節を作り直すため。扱いはオーケストレーターに確認中）
+  - 不要になった条件: 119／120 の本番適用、層別 S* の分析スクリプト、`get_analogy_similar_races`、#1122 の T9-1（v16 で節を作り直し、描画位置は v16 plan で BOA-635 と共有と明記された）
 - 以下は 2026-10-03 までの経緯（土台が層別 S*・k-NN の間を揺れた記録）
 - **2026-10-03 時点で土台が未確定**: ユーザーが FR-2 の方針を戻し、層別 S* をやめて k-NN（近い順）とスライダーに戻す見込み（モック・統計の検証・セカンドオピニオンの後にユーザー承認）。承認されると、下に書いた119／120 の層別・スナップショット・ADR-0082・`get_analogy_similar_races`（自動の深さ）が作り直しになる。初版（k-NN・`get_analogy_neighbors`、ADR-0080 寄り）の設計はこのブランチの履歴（f77b0cdbd〜74ede63e9 の spec・plan・ADR-0081）に残っている。続報（同日）: FR-2 の検証者は、BOA-635 については層別（マイグレーション120 の RPC）を残すことを推奨している（発生率の分母が「何件まで見るか」のスライダーで変わってはいけないため）。FR-2 が k-NN に戻っても、BOA-635 は層別の RPC のままになる可能性がある。再開はオーケストレーターから FR-2 の確定した形を受け取ってから行い、それに合わせて spec の「データ（土台）」・件数の決め方・保存の紐づけ・ADR-0081 を書き直す
 - 土台: BOA-271 FR-2 の層別 S*（ブランチ feature/boa-271-fr2-strat、PR #1134、マイグレーション119、ADR-0082）。`get_analogy_neighbors`（115、近傍800件）は作られない。spec・plan・ADR-0081 はすべて119 の `get_analogy_similar_races` 前提に書き直し済み
@@ -32,17 +32,17 @@
 - 別スコープ: BOA-665（更新ボタンが `boatai:` のユーザー設定を消す）は多言語・共通UIレーンに回った
 
 ## T0 準備（分析のみ、画面なし）
-- [ ] T0-1 定番／レアの線の検証（spec FR-3 の手順1〜8で固定済み）: `scripts/analysis/past-rate-check/label-threshold.py`。test 2026-04〜09 の各レースで、FR-2 の層別 S* と同じ規則（自動の深さの層、そのレースの日より前の母集団、新しい順最大2,000件）で比べる行を作り、型ごとに線のまわりの実際の発生率で合否、ラベルが付く割合・Wilson 区間・Brier skill を報告。初期値 (15, 5) → 候補 (20, 5)・(15, 3)・(25, 3)・(10, 3) の順で最初に全型で合格した線を採る。手順7に当たる型はユーザーに戻す（オーケストレーター経由）。結果を `analysis/label-threshold-result.md` に書き、spec FR-3 に x・y を書き戻す
+- [ ] T0-1 定番／レアの線の検証（spec FR-3 の手順1〜8で固定済み。#1138 の分析ルール: 事前登録を単独コミットで push、その前に second-opinion-reviewer で1パス、数値に出典）: `scripts/analysis/past-rate-check/label-threshold.py`。test 2026-04〜09 の各レースで、BOA-271 v16 の層と同じ規則（そろえる条件が同じ層、そのレースの日より前の母集団、新しい順最大2,000件。v16 の `v16_defs.py`・`features.build` を使う）で比べる行を作り、型ごとに線のまわりの実際の発生率で合否、ラベルが付く割合・Wilson 区間・Brier skill（会場を混ぜた層の影響もここで見る）を、切り詰めあり／なしに分けて報告。初期値 (15, 5) → 候補 (20, 5)・(15, 3)・(25, 3)・(10, 3) の順で最初に全型で合格した線を採る。手順7に当たる型はユーザーに戻す（オーケストレーター経由）。結果を `analysis/label-threshold-result.md` に書き、spec FR-3 に x・y を書き戻す
 - [ ] T0-1a 判定式の二重実装の検査: 固定データ10件で、Python の判定と `src/utils/pastRate/count.js`（T1-1 で書く）の件数が一致することを確かめる小さな検査を同じディレクトリに置く（T1-1 の後に実行）
 - [ ] T0-2 形に添える全国の出現率を、K/B 補完後のデータ（2026-03〜09 以降の最新6か月、F・出遅れ・欠場を除く、コース順の本番 ST、1/100秒の整数で比較。コース順の源は本体 `race_results.actual_course_*`・長期 `kb_archive_boats.course`。`race_start_timings.entry_course` は 2026-08 までほぼ空なので使わない）で出し直し、`analysis/slit-pattern-rates.md` に件数・期間・クエリと一緒に残す。`patterns.js` に入れる値はこの表から取る
-- [ ] T0-3 本番の値の約束の実測（FR-2 の母集団の投入の後）: `analogy_pool_outcomes` で、(a) `payout_3tan` が本体の `race_results.payout_trio` と一致し `payout_trifecta`（3連複）と一致しないこと（無作為100R）、(b) F・出遅れのあるレースで該当コースの `st_by_course` が NULL、(c) 不成立のレースで `payout_3tan` が NULL（`race_status` が NULL の行も含め、返還艇が6艇・払戻 NULL の不成立候補で確かめる。`race_status` は 2026-09-20 より前でほぼ NULL）、(d) 実進入不明の期間で `course_by_boat` が艇番で埋まっていないこと、(e) rank1〜3 に返還艇が入るレースと不成立のレースが母集団に無い（D-5。`race_start_timings.finish_mark` と `race_results.refund_boats` を独立の正解として照合する。119 はフラグだけで判定しているので、差があれば FR-2 レーンに戻す）、(f) `get_analogy_similar_races` を発走前と発走後に呼んで、条件・深さ・cutoff が同じで、行の出入りが直近7日の作り直しの分だけであること（D-6・行の範囲の固定）、(h) 深さ1〜4の RPC で `EXPLAIN (ANALYZE, BUFFERS)` を取り、FR-2 レーンが119 に足した深さ1〜3用の索引3本が使われているかを確かめ、使われない索引は落とす（FR-2 レーンと合意）、(i) 層が2,000件を超えるレース（切り詰め）の割合を数え、spec の推測（1〜2割）を実測で置き換える、(g) 応答の gzip 後の大きさ（100KB を超えるなら FR-2 レーンに1,000件への変更を依頼）。結果を `analysis/pool-contract-check.md` に残す。違えば BOA-271 のレーンに戻す
+- [ ] T0-3 本番の値の約束の実測（v16 の朝のバッチの初回の後）: 数レースの layer ファイルで、(a) `payout_3tan` が本体の `race_results.payout_trio` と一致し `payout_trifecta`（3連複）と一致しないこと（無作為100R）、(b) F・出遅れのあるレースで該当コースの `st_by_course` が NULL、(c) 不成立のレースが行に無い（`race_status` が NULL の行も含め、返還艇が6艇・払戻 NULL の不成立候補で確かめる）、(d) 実進入不明の期間で `course_by_boat` が艇番で埋まっていないこと、(e) rank1〜3 に返還艇が入るレースが行に無い（D-5。`race_start_timings.finish_mark` と `race_results.refund_boats` を独立の正解として照合する）、(f) 同じ run_id なら発走前と発走後で同じ行が返る（D-6）、(g) 応答の gzip 後の大きさ（100KB を超えるなら BOA-271 側に1,000件への変更を依頼）、(i) 層が2,000件を超えるレース（切り詰め）の割合を数える。結果を `analysis/pool-contract-check.md` に残す。違えば BOA-271 側に戻す
 
 ## T1 判定の純粋関数とデータ取得（画面より先）
 - [ ] T1-1 `scripts/maintenance/verify-past-rate-count.js` を先に書き、落ちることを確かめる（固定の行データ20件程度。期待値は SQL の numeric で出したもの。各形で差が線ちょうどの行（0.15/0.10、0.21/0.16 等の浮動小数で割れる組を含む）、除いた件数の理由の混在（決着なし＋ST 欠け）、6型の一致件数・分母・除いた件数・着順の点数・流しの内訳・展開の2着の内訳・スリット2形の AND・3形目で最古が外れる・自分で作るの判定・配当の境界 1,000／10,000 ちょうど・N=0）。`verify-registry.json` に ci で登録
 - [ ] T1-2 `src/utils/pastRate/patterns.js`（7形・強さの段・1艇身 0.13秒・全国の出現率）と `count.js`（`countPastRate`・`orderPoints`・`decisionOf`）を書き、T1-1 を通す。決まり手は `TECHNIQUE_NAMES` で DB の日本語と対応させる
 - [ ] T1-3 `src/utils/pastRate/label.js`（T0-1 の x・y）。境界値（x ちょうどで定番、y ちょうどは無印）を T1-1 に足す
-- [ ] T1-4 Edge API `api/analogy/similar-races/[raceId].js`（RPC `get_analogy_similar_races` の結果を返す。キャッシュはスナップショットあり・締切前 `s-maxage=300`、締切後 `86400`、なし `300`、NULL・エラーは `no-store`。FR-2 の `api/analogy/similar` と同じ流儀）
-- [ ] T1-5 `src/services/analogyService.js` に `getAnalogySimilarRaces(raceId)`（T1-4 の API、失敗時は RPC `get_analogy_similar_races` の直読み、`raceId` 単位のキャッシュ、NULL・エラーは残さない）と `useAnalogySimilarRaces` を足す。失敗を state に持つ（`frontend-data-fetch.md` の3）
+- [ ] T1-4 取得の API: BOA-271 側の決定に従う。BOA-635 で作る場合は `api/analogy/layer/[raceId].js`（`analogy_v16_snapshots` の racecard の段から run_id を引き、Storage の layer ファイルを service key で読んで返す。snapshot が無い・`empty_layer`・`absent` はその状態を返す。キャッシュは BOA-271 の API と同じ規則、NULL・エラーは `no-store`）
+- [ ] T1-5 `src/services/analogyService.js` に `getAnalogyLayer(raceId)`（T1-4 の API、`raceId` 単位のキャッシュ、NULL・エラーは残さない）と `useAnalogyLayer` を足す。失敗を state に持つ（`frontend-data-fetch.md` の3）
 
 ## T2 端末内保存
 - [ ] T2-1 `src/utils/pastRate/storage.js`（キー `boatai-user:past-rate-check:v1`、1レース×1型で置き換え、入力時刻から30日、上限1,000件、締切以降は保存しない、締切不明は未確定なら保存、壊れた値は捨てて作り直す、形の違う Entry だけ捨てる、書く直前に読み直す、締切以降の Entry は振り返りに出さない、例外は吸収して console）。T1-1 の verify に保存の節を足す（メモリ実装の localStorage を差し込み、`getItem`／`setItem` が例外を投げる場合、`dataService.clearCache()` 相当の `boatai:*` 全削除の後も残ること、照合は depth・poolCutoff・conditions で行い、snapshotAt が null から時刻に変わっただけでは「変わった」にしないことを含める）
@@ -57,7 +57,7 @@
 - [ ] T3-7 `PastRateChecker`（型の切り替え、型ごとの入力の保持、入力が変わったら結果を隠す、`types`・`value`/`onChange`・`persist`、ボタンで数えて保存）
 
 ## T4 組み込み
-- [ ] T4-1 `PredictionPanel` → `RaceAiPredictionTab` に `raceStartTime` を渡し、タブの先頭（BOA-271 T9-1 で分岐の外に出した位置の先頭）に `PastRateChecker` を置く。中止・`rows` が0行・取得中では出さない。取得失敗は `InlineFetchError`（再試行つき）
+- [ ] T4-1 `PredictionPanel` → `RaceAiPredictionTab` に `raceStartTime` を渡し、タブの先頭（BOA-271 v16 で節の描画を分岐の外に出した位置の先頭）に `PastRateChecker` を置く。中止・`rows` が0行・取得中では出さない。取得失敗は `InlineFetchError`（再試行つき）
 - [ ] T4-2 `PastRateReview` を書き、`RaceResult` の払戻表の下に置く（保存した型を型の順に保存した数字とラベルで、無ければ決着の行だけ、決着は `buildResultRows` の着順で1〜3着がそろわなければ決着の行なし、不成立と `rows` が0行では出さない（`snapshot: false` でも出す）、取得失敗は `InlineFetchError`、スナップショットが違えば注記）
 - [ ] T4-3 barrel export（`PastRateChecker`・`PastRateReview`）
 - [ ] T4-4 i18n（`aiPredictionTab.pastRate.*`・`result.pastRate.*`、4言語）。スリットの形の名前・「艇身」の訳、決まり手は既存キー。画面に「競艇」を出さない。「AI がやらないこと」の文言を足さない
@@ -65,7 +65,7 @@
 ## T5 検証と仕上げ
 - [ ] T5-1 `npm run test:layout` に AI予想タブの部品と結果タブの振り返りを足す（375/768/1024/1440/1920px）。スリットの7形の一覧が375px で横にはみ出さないこと。ダークモードの目視（Playwright のスクリーンショット）
 - [ ] T5-2 受け入れ E2E（`e2e/acceptance/past-rate-check.spec.js`、`acceptance-test-writer` が書いたもの）をローカルで実行する。書き換えない
-- [ ] T5-3 データ精度の検証（`data-accuracy-verifier`）: 本番の数レースで、`analogy_pool_outcomes` の同じ層の新しい順2,000件を SQL で数えた件数（6型、分母・除いた件数）と画面の数字が一致すること、結果タブの決着の行が一致すること
+- [ ] T5-3 データ精度の検証（`data-accuracy-verifier`）: 本番の数レースで、layer ファイルの行を Python で数えた件数（6型、分母・除いた件数）と画面の数字が一致すること、結果タブの決着の行が一致すること
 - [ ] T5-4 ファン評価ループ（`.claude/rules/review-fix-cycle.md`。新しい主要表示のため、オーケストレーターが「ファン評価あり」と指定した場合）
 - [ ] T5-5 Linear: BOA-627 の保存項目3（ユーザーの読みと発走前の時刻）を本機能で満たしたことをコメントする
 - [ ] T5-6 完了監査: このファイルの全チェックボックスと、コミット・実測を突き合わせる
