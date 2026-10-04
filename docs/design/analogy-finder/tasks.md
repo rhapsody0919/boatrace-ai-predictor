@@ -20,7 +20,7 @@
   - 7テーマ・Version 14 の量の定義・向き・出走表時点のモデル3本（profiles stage=racecard）・118 の stage 列（提案番号 129）・優勝戦の判定は、学習側の新しいセッションで1本の PR＋列追加のマイグレーション。学習は1回。着手の条件は「向き」の定義が plan にあること（2026-10-04 に書いた）
   - 一致検査 `treeshap-parity.js` は今の2本のまま。「寄与度のモデルを6本にする」は取り下げ
   - #1207 は学習側が「学習の dispatch＋v16 の朝のバッチの dispatch」に作り直す（v16 の起動は T2-5b で FR-2 側が足す）
-- [ ] T0-5 dispatch 用の fine-grained PAT を作り、Vercel の環境変数 `GITHUB_ACTIONS_DISPATCH_TOKEN`（Production）に入れる（ユーザーの作業。手順はオーケストレーターへの報告に添えた）
+- [x] T0-5 dispatch 用の fine-grained PAT（Actions: Read and write、boatrace-ai-predictor のみ）を Vercel の環境変数 `GITHUB_ACTIONS_DISPATCH_TOKEN`（Production）に登録（ユーザー、2026-10-05）。有効期限が来たら作り直して差し替える
 
 ## T1 データの前提と定義（spec「実装で直すこと」）
 - [ ] T1-0a `export_pool.js` に列を足す（実進入・決まり手・3連単の払戻・展示の進入・展示 ST・start_flag・本番 ST と F・出遅れ、返還艇の判定に使う `finish_mark`・`refund_boats`）。`KB_CACHE_VERSION` を上げ、学習の workflow を1回回して長期分を書き出し直す（plan「前提の作業」）。BOA-635 の値の約束 D-1〜D-5（plan「BOA-635 との接続」）を固定データの pytest で固定する（3連単は `payout_trio`、F・出遅れ・欠場の ST は null、不成立の払戻は null、実進入不明は null、1〜3着に返還艇が入るレースと不成立は layer の行に入れない）
