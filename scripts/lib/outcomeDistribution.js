@@ -17,6 +17,12 @@ import { placedRanks } from "./raceOutcomeFilters.js";
 /** 3連単の配当の列（列名と中身が逆: payout_trio = 3連単） */
 export const TRIFECTA_PAYOUT_COLUMN = "payout_trio";
 
+/** 返還艇を飛ばしても1〜3着がそろうか（そろわなければ3連単の出目が無い） */
+export function hasThreePlaced(result) {
+  const { rank1, rank2, rank3 } = placedRanks(result);
+  return rank1 != null && rank2 != null && rank3 != null;
+}
+
 /**
  * @param {Array<{race_id: string, rank1: number, rank2: number, rank3: number, refund_boats?: number[]|null,
  *   payout_trio?: number|null}>} raceResults refund_boats を渡さないと返還艇を飛ばせない
@@ -28,12 +34,6 @@ export const TRIFECTA_PAYOUT_COLUMN = "payout_trio";
  * avg_payout: そのパターンで決まったレースのうち、3連単の配当があるレースの平均（円、四捨五入）。
  * 配当が無いレース（不成立等）は、平均の分母に入れない（入れると0円として平均を引き下げる）。1件も無ければ0
  */
-/** 返還艇を飛ばしても1〜3着がそろうか（そろわなければ3連単の出目が無い） */
-export function hasThreePlaced(result) {
-  const { rank1, rank2, rank3 } = placedRanks(result);
-  return rank1 != null && rank2 != null && rank3 != null;
-}
-
 export function aggregateOutcomeDistribution(raceResults, { today }) {
   const byVenue = new Map();
   for (const result of raceResults.filter(hasThreePlaced)) {
