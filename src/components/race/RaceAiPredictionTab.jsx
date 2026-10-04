@@ -207,7 +207,13 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
             <h5 className="result-verify-title">
               {t("result.turnSectionTitle")}
             </h5>
-            <TurnPatternList patterns={turnPatterns} result={result} />
+            <TurnPatternList
+              patterns={turnPatterns}
+              result={result}
+              winnerEntryCourse={
+                winner.raceId === raceId ? winner.course : null
+              }
+            />
             {showWinnerCourse && (
               <p className="result-verify-entry-note">
                 {t("turnPatternList.winnerEntryCourse", {

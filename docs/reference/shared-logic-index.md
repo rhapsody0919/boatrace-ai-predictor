@@ -115,7 +115,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceNoticesJob.js` | レース特記事項（A5、race_special_notes）の共通ラッパ向けハンドラー（BOA-353 T4b-11-1、plan.md §2.2）。 | runRaceNoticesJob, RACE_NOTICES_CONCURRENCY |
 | `scripts/lib/raceOutcomeFilters.js` | 不成立（race_status='no_race'）のレースを集計から外すための共通の部品（BOA-545）。 | isNoRaceResult, placedRanks, NOT_NO_RACE_FILTER |
 | `scripts/lib/raceResultAudit.js` | 既存の race_results の誤り（Q6: 返還・不成立の払戻¥100、非完走艇の着順）を特定する純関数群。 | analyzeRaceFromDb, parseRaceId, summarizeDbFindings, isRefundedKFinish, kDayToRaceFacts ほか4件 |
-| `scripts/lib/raceResultFix.js` | 既存の race_results の誤り（Q6）を、公式の結果ページの再取得で修正するための計画づくりと書き込み。 | buildFixPlan, applyFixPlan, FIX_RESULT_COLUMNS, FIX_EXTRA_COLUMNS |
+| `scripts/lib/raceResultFix.js` | 既存の race_results の誤り（Q6）を、公式の結果ページの再取得で修正するための計画づくりと書き込み。 | buildFixPlan, applyFixPlan, FIX_RESULT_COLUMNS, FILL_ONLY_COLUMNS, FIX_EXTRA_COLUMNS |
 | `scripts/lib/raceResultParser.js` | 公式の結果ページ（boatrace.jp raceresult）の全項目パーサー（純関数。DB・取得先に接続しない） | parseRaceSeconds, parseStartCell, classifyRaceStatus, parseRaceResultPage, RESULT_PARSER_VERSION ほか2件 |
 | `scripts/lib/raceResultRows.js` | 結果ページの全項目（scripts/lib/raceResultParser.js）から、DBへ書く行・旧形式の解析結果を作る（純関数）。 | toLegacyResult, buildResultExtras, buildTimingRows, buildPayoutRows |
 | `scripts/lib/raceResultSchema.js` | 結果系の新しい列・テーブル（マイグレーション077〜079・119）が、接続先のDBに適用済みかの判定。 | detectResultSchema, clearResultSchemaCache, RESULT_SCHEMA_TARGETS, SCHEMA_CACHE_TTL_MS |
@@ -247,7 +247,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/techniqueColors.js` | 決まり手の色（グラフの棒・帯・凡例の点）。色そのものは design-tokens.css の | techniqueColor |
 | `src/utils/theme.js` | — | getTheme, setTheme, subscribe |
 | `src/utils/trendDateLayout.js` | `MeetSparkline` の viewBox の幅と左右の余白。日付の見出しを点と同じ横位置に置くため共有する | dayTickLabels, sparkLeftPercent, dayCenter, layoutTrendByDate, SPARK_VIEW_W ほか1件 |
-| `src/utils/turnPrediction.js` | 決まり手ユーティリティ（フロントエンド用） | pickHitPattern, TECHNIQUE_NAMES |
+| `src/utils/turnPrediction.js` | 決まり手ユーティリティ（フロントエンド用） | pickHitPattern, techniqueDiffers, isAsPredicted, TECHNIQUE_NAMES |
 | `src/utils/turnTimeVenues.js` | オリジナル展示の「まわり足」が会場独自の計測で、他場と値の水準が違う会場（会場コード）。 | hasDistinctTurnTime, DISTINCT_TURN_TIME_VENUE_CODES |
 | `src/utils/venueMotorRanking.js` | 会場のモーターの順位と並べ替え（純関数、BOA-428）。 | rankBy, sortMotorRows, VENUE_SITE_STATS_HIDDEN, MOTOR_SORT_KEYS |
 | `src/utils/venueSeriesTitle.js` | 会場ページの title・description に入れる節タイトルを決める（集客レーン Phase3、2026-09-30）。 | getVenueSeriesTitle |
@@ -283,4 +283,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 248 ファイル / export 1205 件。
+対象 248 ファイル / export 1208 件。
