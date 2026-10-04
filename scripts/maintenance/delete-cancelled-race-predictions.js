@@ -40,7 +40,7 @@ async function findTargetRaceIds() {
   const cancelledRaces = await fetchAll(
     "races",
     "race_id, race_date, venue_code, race_number, cancellation_status",
-    (q) => q.not("cancellation_status", "is", null),
+    (q) => q.not("cancellation_status", "is", null).order("race_id"),
     { throwOnError: true },
   );
   if (cancelledRaces.length === 0) return [];

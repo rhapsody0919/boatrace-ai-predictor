@@ -744,6 +744,11 @@
       "script": "verify-missing-venue-day.js",
       "tier": "ci",
       "guards": "races が丸1日無い会場日の補完（backfill-missing-venue-day.js、BOA-721）: 既定は書かない・races のある会場日は上書きしない・出走表が12レースそろわなければ止める・中止の確定を全レースに立てる・過去の日付に予想を作らない"
+    },
+    {
+      "script": "verify-fetchall-order.js",
+      "tier": "ci",
+      "guards": "共通の fetchAll（scripts/lib/supabaseClient.js）が並び順の無いページ送りをしないこと（BOA-753。1000行を超えるとページの間で行が重複・欠落する。BOA-595・BOA-745 に続く3回目で仕組みにした）。(a) 静的: scripts/・api/ の fetchAll の呼び出しすべてに、組み立て（第3引数、変数なら同じファイルの定義）の .order( か、理由付きの unordered があること。(b) 実行時: 並び順の無いクエリは最初のリクエストの前に例外（呼び出し元と直し方つき）、理由が空の unordered も例外。(c) 変異検証。確かめない範囲: await import() で取り出した fetchAll の呼び出し（実行時の検査が止める）"
     }
   ]
 }
