@@ -211,5 +211,30 @@ function wireSonarTip(svg,nb){const tip=$("sonarTip"),box=svg.closest(".scope");
   document.addEventListener("pointerdown",ev=>{if(!ev.target.closest||!ev.target.closest("#sonar [data-race]"))hide();},{once:true});}
 function renderSonar(nb){""")
 R('.tabs{display:grid;', '.scope{position:relative}.sonar-tip{position:absolute;z-index:3;width:220px;background:var(--card);color:var(--text);border:1px solid var(--accent-strong);border-radius:8px;padding:6px 8px;font-size:12px;line-height:1.5;box-shadow:0 4px 14px rgba(0,0,0,.35);pointer-events:none}.sonar-tip .bnrow{display:inline-flex;gap:2px;vertical-align:middle}#sonar [data-race]{stroke:transparent;stroke-width:16px}#sonar{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}\n.tabs{display:grid;')
+# 「くわしく」→「使っている項目」（ユーザー指示 2026-10-04: 何の項目で算出しているかは残す、重みは不要）
+R('<details class="fold"><summary>くわしく</summary>', '<details class="fold"><summary>使っている項目（どの数字から出しているか）</summary>')
+_i = t.index('function renderDetail'); _j = t.index('function order', _i)
+t = t[:_i] + """function renderDetail(){
+  const grp=[["レースの条件",["venue","race_number_band","race_number","grade","grade_bin","round","series_day","is_final_day"]],["選手の力関係",["class_all6","n_A1","b1_class","win_gap_band","top_boat","nat_win_6","nat_win_rank_4","b1_nat_win","loc_win_6","recent_win30_6","recent_top3_30_6"]],["スタート",["st_mean30_6","b1_st_rank_band"]],["モーター・ボート",["motor_2_6","b1_motor_rank_band","boat_2_6","b1_boat_rank_band"]],["体重・年齢・地元",["age_6","weight_6","n_local"]],["天候・水面",["weather","wind_bin","wind_vector","wave_bin"]],["展示",["exh_time_diff_6"]]];
+  const lab=k=>ITEM[k]?ITEM[k].label:null;
+  const used=grp.map(([g,ks])=>[g,ks.filter(k=>ITEM[k]&&ITEM[k].inDist).map(lab)]).filter(([,l])=>l.length);
+  const notUsed=K.items.filter(it=>!it.inDist).map(it=>it.label);
+  const cond=K.pool&&K.pool.layer_cond?K.pool.layer_cond:"勝率差の帯・1号艇の級別・勝率トップの艇";
+  $("detail").innerHTML=`<h3>来る艇の条件</h3>
+  <ul><li>材料: 今節の平均着順点・全国勝率・当地勝率・直近30走の1着率・モーター2連率・ボート2連率・過去30走の平均ST・展示タイム（展示の後だけ）。全国勝率・当地勝率・モーター2連率・ボート2連率は出走表の値、展示タイムは直前情報の値。直近30走の1着率・過去30走の平均ST・今節の平均着順点は、その選手の過去のレース結果から計算している</li>
+  <li>着順: 1着・2着以内・3着以内。過去レースの結果を数えている</li>
+  <li>今日の風・波: 風速と波高（展示の時点の値）</li></ul>
+  <h3>類似レース</h3>
+  <ul><li>必ずそろえる条件: ${cond}</li>
+  <li>近さを測る項目（${st.stage==="post"?"展示後":"展示前"}）:<ul>${used.map(([g,l])=>`<li>${g}: ${l.join("・")}</li>`).join("")}</ul></li>
+  ${notUsed.length?`<li>見比べには出すが、近さには使っていない項目: ${notUsed.join("・")}</li>`:""}
+  <li>${st.stage==="post"?"展示後は、展示タイム・天候・風・波も近さに入れている":"展示前は、展示タイム・天候・風・波はまだ分からないので使っていない"}</li></ul>
+  <h3>展開シナリオ</h3>
+  <ul><li>進入: 過去レースの本番の進入コース（どの艇が何コースに入ったか）</li>
+  <li>スリットの形: 過去レースの本番のスタートタイミングを、コース順に並べて判定</li>
+  <li>結果: 1〜3着の艇・決まり手・3連単の払戻</li></ul>
+  <p class="foot">期間はどれも 2019-04-01〜2026-09-26（例のレースの前日まで）。棒のひげ（95%の幅）は、レースどうしが独立だとして計算している。類似レースは会場や同じ節に固まることがあるので、実際の幅はやや広い</p>`;
+}
+""" + t[_j:]
 io.open('template16.html', 'w', encoding='utf-8').write(t)
 print('ok')

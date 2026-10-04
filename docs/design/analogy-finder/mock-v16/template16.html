@@ -308,7 +308,7 @@ table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl t
   </section>
   </div>
 
-  <details class="fold"><summary>くわしく</summary>
+  <details class="fold"><summary>使っている項目（どの数字から出しているか）</summary>
     <div class="inner detail" id="detail"></div>
   </details>
 
@@ -1185,25 +1185,26 @@ function renderScn() {
 
 // ---------- くわしく ----------
 function renderDetail(){
-  
-  $("detail").innerHTML=`<ul>
-  <li>類似レース: 出走表の数字（6艇の級別・全国勝率・当地勝率・直近30走の成績・平均ST・モーター/ボート2連率・年齢・体重・地元、会場・R番号・グレード・ラウンド・節の日目）を、今日のレースと比べて近い順に並べた。会場が違うと距離を足す。${st.stage==="post"?"展示後は、展示タイム・天候・風・波も近さの計算に入れている":"展示前は、展示タイム・天候・風・波は分からないので近さの計算に入れていない"}</li>
-  <li>近さの重み: 寄与度用のモデル（版 ${D.meta.modelVersion}）で、着順の見込みを大きく動かす項目ほど重く見る。モデルの予想の値は使っていない</li>
-  <li>探したのは 2019-04-01〜2026-09-26（例のレースの前日まで）の ${D.knn.pool.n.toLocaleString()}レース。長期データの「最終日か」は値が使えないので近さに入れていない</li>
-  <li>「何が似ている？」の割合は、近いレースの中でその項目が今日と同じ帯に入る割合。全レースでの割合と比べている。似ているからといって、同じ結果になるとは限らない。近い順に少なく絞るほど、結果の割合はぶれやすい（ひげが長くなる）</li>
-  <li>ソナーは似ている順の何番目かで置いている（件数に合わせた輪。数字は似ている順の何番目か）。点の向き（扇の中の位置）に意味はない</li>
-  <li>推奨の選び方では、${K.pool&&K.pool.layer_cond?K.pool.layer_cond:"勝率差の帯・1号艇の級別・勝率トップの艇"}が同じレースだけに絞り、その中を似ている順に並べる（優勝戦・準優勝戦はラウンド、G1・SG はグレードもそろえる）</li>
-  <li>ひげ（95%の幅）はレースどうしが独立だとして計算している。類似レースは会場や同じ節に固まるので、実際の幅はやや広い</li>
-  
-  <li>全国の割合（2019-04-01〜2026-09-26 の 408,723レース）と、類似レースを探した母集団（408,888レース）は、2着・3着が無いレースなどの扱いで165レース違う</li>
-  <li>棒のひげは 95% の幅（Wilson）。点線は、棒の上の凡例に書いた比べる相手（類似レースのタブでは、条件がそろった過去レース全体）</li>
-  <li>「ほかの艇は？」のくらべる相手は、結果で機械的に決まらない群（1号艇とその艇以外が勝ったレース）</li>
-  <li>長期データには3着の同着が ${NAT.boats_in_top3_beyond_3n}件ある。3着以内の数は同着の両方を数えている</li>
-  <li>AIの見立て: 寄与度用のモデル（版 ${D.meta.modelVersion}、AI 予想とは別）の説明。テーマごとに、そのテーマの材料を足し合わせた上で6艇の平均からどれだけ動かしたかを割合にした。原因の断定ではない</li>
-  </ul>
-`;
+  const grp=[["レースの条件",["venue","race_number_band","race_number","grade","grade_bin","round","series_day","is_final_day"]],["選手の力関係",["class_all6","n_A1","b1_class","win_gap_band","top_boat","nat_win_6","nat_win_rank_4","b1_nat_win","loc_win_6","recent_win30_6","recent_top3_30_6"]],["スタート",["st_mean30_6","b1_st_rank_band"]],["モーター・ボート",["motor_2_6","b1_motor_rank_band","boat_2_6","b1_boat_rank_band"]],["体重・年齢・地元",["age_6","weight_6","n_local"]],["天候・水面",["weather","wind_bin","wind_vector","wave_bin"]],["展示",["exh_time_diff_6"]]];
+  const lab=k=>ITEM[k]?ITEM[k].label:null;
+  const used=grp.map(([g,ks])=>[g,ks.filter(k=>ITEM[k]&&ITEM[k].inDist).map(lab)]).filter(([,l])=>l.length);
+  const notUsed=K.items.filter(it=>!it.inDist).map(it=>it.label);
+  const cond=K.pool&&K.pool.layer_cond?K.pool.layer_cond:"勝率差の帯・1号艇の級別・勝率トップの艇";
+  $("detail").innerHTML=`<h3>来る艇の条件</h3>
+  <ul><li>材料: 今節の平均着順点・全国勝率・当地勝率・直近30走の1着率・モーター2連率・ボート2連率・過去30走の平均ST・展示タイム（展示の後だけ）。全国勝率・当地勝率・モーター2連率・ボート2連率は出走表の値、展示タイムは直前情報の値。直近30走の1着率・過去30走の平均ST・今節の平均着順点は、その選手の過去のレース結果から計算している</li>
+  <li>着順: 1着・2着以内・3着以内。過去レースの結果を数えている</li>
+  <li>今日の風・波: 風速と波高（展示の時点の値）</li></ul>
+  <h3>類似レース</h3>
+  <ul><li>必ずそろえる条件: ${cond}</li>
+  <li>近さを測る項目（${st.stage==="post"?"展示後":"展示前"}）:<ul>${used.map(([g,l])=>`<li>${g}: ${l.join("・")}</li>`).join("")}</ul></li>
+  ${notUsed.length?`<li>見比べには出すが、近さには使っていない項目: ${notUsed.join("・")}</li>`:""}
+  <li>${st.stage==="post"?"展示後は、展示タイム・天候・風・波も近さに入れている":"展示前は、展示タイム・天候・風・波はまだ分からないので使っていない"}</li></ul>
+  <h3>展開シナリオ</h3>
+  <ul><li>進入: 過去レースの本番の進入コース（どの艇が何コースに入ったか）</li>
+  <li>スリットの形: 過去レースの本番のスタートタイミングを、コース順に並べて判定</li>
+  <li>結果: 1〜3着の艇・決まり手・3連単の払戻</li></ul>
+  <p class="foot">期間はどれも 2019-04-01〜2026-09-26（例のレースの前日まで）。棒のひげ（95%の幅）は、レースどうしが独立だとして計算している。類似レースは会場や同じ節に固まることがあるので、実際の幅はやや広い</p>`;
 }
-
 function order(){$("secAi").hidden=st.tab!=="ai";$("secSim").hidden=$("secRes").hidden=st.tab!=="sim";$("secScn").hidden=st.tab!=="scn";document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.t===st.tab));$("sharedN").hidden=st.tab!=="sim";$("rankSeg").closest(".row").hidden=st.tab==="scn";}
 function render(){
   document.querySelectorAll("#rankSeg button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.r===st.rank));
