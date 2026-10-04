@@ -1446,6 +1446,8 @@
       "firstUseBadge": "First use",
       "officialPendingBadge": "Not yet tallied",
       "officialPendingNote": " \"Not yet tallied\" means this motor is in the first meet it has been used in, so its official cumulative Top-2 rate is not available yet (it stays 0.0 until that meet ends).",
+      "venueStatsFailedCell": "Failed to load",
+      "venueStatsFailedNote": "Could not load the venue's official motor stats (1st-place rate, Finals, Championships). Reload the page to retry the cells marked \"Failed to load\".",
       "wakuStatsHeading": "Results by lane",
       "wakuStatsWindowNote": "💡 Window: since the {{date}} motor changeover (the previous motor with the same number is excluded). Values in orange come from fewer than {{n}} starts and are for reference only.",
       "wakuStatsUnknownGeneration": "Not shown because the start date of the current motor is unavailable (to avoid mixing in results from the previous motor with the same number).",

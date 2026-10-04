@@ -188,8 +188,8 @@ check(
 );
 // 公式の 0.0 が「集計前」か「本当に0%」かを区別する（2026-09-29 ファン4人・ユーザー承認）
 check(
-  "一覧: 公式2連率・3連率がどちらも0で、結果の出た走があり、会場公式の出走数が0（集計前）のときだけ「集計前」を添える（公式の0.0は残す）",
-  /isOfficialPending = \(row\) =>\s*Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*\(row\.rate_source === "official" \|\| row\.sample_count > 0\) &&\s*officialTallyState\(venueHasOfficialStats, row\.race_count\) === "pending"/.test(
+  "一覧: 公式2連率・3連率がどちらも0で、結果の出た走があり、会場公式の出走数が0（集計前）のときだけ「集計前」を添える（公式の0.0は残す。会場公式の成績が取れなかった行には付けない、BOA-740）",
+  /isOfficialPending = \(row\) =>\s*!row\.venue_stats_failed &&\s*Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*\(row\.rate_source === "official" \|\| row\.sample_count > 0\) &&\s*officialTallyState\(venueHasOfficialStats, row\.race_count\) === "pending"/.test(
     chart,
   ) &&
     chart.includes('t("analysis.motor.officialPendingBadge")') &&
@@ -197,7 +197,7 @@ check(
       "official_3rate: row.motor_3rate ?? null",
     ) &&
     read("src/services/supabaseDataService.js").includes(
-      "`race-motor-breakdown-v9-",
+      "`race-motor-breakdown-v10-",
     ),
 );
 check(

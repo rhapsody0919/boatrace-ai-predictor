@@ -1438,6 +1438,8 @@
       "firstUseBadge": "첫 사용",
       "officialPendingBadge": "집계 전",
       "officialPendingNote": " 「집계 전」은 이 모터가 처음 사용되는 절의 도중이라 공식 2연대율 누계가 아직 없음을 나타냅니다(그 절이 끝날 때까지 0.0으로 유지됩니다).",
+      "venueStatsFailedCell": "불러오기 실패",
+      "venueStatsFailedNote": "경정장 공식 사이트의 모터 성적(1착률, 우승전 진출, 우승)을 불러오지 못했습니다. 「불러오기 실패」 칸은 페이지를 새로고침하면 다시 불러옵니다.",
       "wakuStatsHeading": "코스별 성적",
       "wakuStatsWindowNote": "💡 집계 기간: {{date}} 모터 교체 이후(교체 전 같은 번호의 다른 모터는 포함하지 않음). 주황색 값은 {{n}}회 미만이라 참고치입니다.",
       "wakuStatsUnknownGeneration": "현재 모터의 사용 개시일을 가져오지 못해 표시하지 않습니다(교체 전 같은 번호의 다른 모터 성적이 섞이는 것을 피하기 위해).",

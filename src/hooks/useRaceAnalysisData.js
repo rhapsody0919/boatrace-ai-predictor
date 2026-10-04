@@ -17,8 +17,12 @@ import { useState, useEffect, useCallback } from "react";
 import { supabaseDataService } from "../services/supabaseDataService";
 
 const SOURCES = {
+  // サービス層は { rows, fetchFailed? } を返す（会場公式のモーター成績の取得失敗をキャッシュさせないため、
+  // BOA-740）。失敗した行は venue_stats_failed を持つ。画面は行だけを使う
   motor: (raceId, venueCode) =>
-    supabaseDataService.getRaceMotorBreakdown(raceId, venueCode ?? null),
+    supabaseDataService
+      .getRaceMotorBreakdown(raceId, venueCode ?? null)
+      .then((result) => result.rows),
   racerForm: (raceId) => supabaseDataService.getRaceRacerFormBreakdown(raceId),
   stPredictability: (raceId) =>
     supabaseDataService.getRaceStPredictabilityBreakdown(raceId),

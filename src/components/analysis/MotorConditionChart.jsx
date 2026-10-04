@@ -126,7 +126,8 @@ function MotorConditionChart({
         setLoading(true);
         setError(null);
         if (isNewRaceOrVenue) setDrillDownMotor(null);
-        const data = await supabaseDataService.getRaceMotorBreakdown(
+        // { rows, fetchFailed? }。会場公式のモーター成績が取れなかった行は venue_stats_failed（BOA-740）
+        const { rows: data } = await supabaseDataService.getRaceMotorBreakdown(
           selectedRace,
           selectedVenue,
           periodDays,
@@ -335,7 +336,9 @@ function MotorConditionChart({
   // 会場は断定しないので付けない。2026-09-29 ファン4人のパネル・ユーザー承認、ファン評価 P1）
   // 過去レースの行（公式値）は自社の走数を持たないので、走数の条件は見ない
   // （BOA-557。会場公式の出走数がレース日時点で 0 なら、公式の累計はまだ付いていない）
+  // 会場公式のモーター成績が取れなかった行（BOA-740）。出走数が無いので「集計前」とは断定しない
   const isOfficialPending = (row) =>
+    !row.venue_stats_failed &&
     Number(row.official_2rate) === 0 &&
     Number(row.official_3rate) === 0 &&
     (row.rate_source === "official" || row.sample_count > 0) &&
@@ -467,14 +470,28 @@ function MotorConditionChart({
   // 「-」だけが6行並んで横幅を50px食い、肝心の2連率・機力指数を画面外へ
   // 押し出していた（2026-09-27、ファン視点のレビュー。条件別タブで
   // n=0の行を畳んだBOA-432と同じ考え方）
-  const showFirstPlaceRate = firstPlaceRates.some((v) => v !== null);
+  // 会場公式のモーター成績の取得に失敗した行があるとき（BOA-740）は、列を畳まず、その行に「取得失敗」を出す。
+  // 畳むと「この会場は公式が出していない」と同じ見た目になり、失敗が見えない
+  const venueStatsFailed = breakdown.some((r) => r.venue_stats_failed);
+  const showFirstPlaceRate =
+    venueStatsFailed || firstPlaceRates.some((v) => v !== null);
   // 優出数・優勝数も、会場の全モーターで値が無い（会場公式サイトが出していない）ときは
   // 列ごと畳む。「-」が並ぶと「0回」と読まれる（BOA-513、ファン4人のパネル）
-  const showFinalCount = breakdown.some(
-    (r) => r.final_count !== null && r.final_count !== undefined,
-  );
-  const showChampionshipCount = breakdown.some(
-    (r) => r.championship_count !== null && r.championship_count !== undefined,
+  const showFinalCount =
+    venueStatsFailed ||
+    breakdown.some(
+      (r) => r.final_count !== null && r.final_count !== undefined,
+    );
+  const showChampionshipCount =
+    venueStatsFailed ||
+    breakdown.some(
+      (r) =>
+        r.championship_count !== null && r.championship_count !== undefined,
+    );
+  const venueStatsFailedCell = (
+    <span className="motor-stat-failed">
+      {t("analysis.motor.venueStatsFailedCell")}
+    </span>
   );
   // 前検タイムも同じ扱い（BOA-451）。節に前検の行が無い開催では列ごと出さない
   // （ADR-0067 の 2026-09-26 追記「節に前検の行が無い場合は行ごと出さない」と同じ）
@@ -860,7 +877,9 @@ function MotorConditionChart({
                           <td
                             className={`rate ${firstPlaceRateRankClass(i)}`}
                           >
-                            {firstPlaceRates[i] !== null
+                            {row.venue_stats_failed
+                              ? venueStatsFailedCell
+                              : firstPlaceRates[i] !== null
                               ? `${firstPlaceRates[i].toFixed(1)}%`
                               : "-"}
                           </td>
@@ -885,14 +904,18 @@ function MotorConditionChart({
                           <td
                             className={`rate ${finalCountRankClass(i)}`}
                           >
-                            {row.final_count ?? "-"}
+                            {row.venue_stats_failed
+                              ? venueStatsFailedCell
+                              : (row.final_count ?? "-")}
                           </td>
                         )}
                         {showChampionshipCount && (
                           <td
                             className={`rate ${championshipCountRankClass(i)}`}
                           >
-                            {row.championship_count ?? "-"}
+                            {row.venue_stats_failed
+                              ? venueStatsFailedCell
+                              : (row.championship_count ?? "-")}
                           </td>
                         )}
                       </tr>
@@ -934,6 +957,11 @@ function MotorConditionChart({
                 {/* 選手の実力が混ざる注意は、会場内順位の有無にかかわらず出す（ファン評価） */}
                 {t("analysis.motor.barScaleNote")}
                 {t("analysis.motor.motorRiderMixNote")}
+              </p>
+            )}
+            {venueStatsFailed && (
+              <p className="table-note motor-venue-stats-failed-note">
+                {t("analysis.motor.venueStatsFailedNote")}
               </p>
             )}
             <p className="table-note motor-official-source-note">
@@ -1078,6 +1106,11 @@ function MotorConditionChart({
             ].filter(Boolean)}
           />
 
+          {venueMotorStats?.fetchFailed && (
+            <p className="table-note motor-venue-stats-failed-note">
+              {t("analysis.motor.venueStatsFailedNote")}
+            </p>
+          )}
           <MotorRecordStatCards
             cards={[
               venueMotorStats?.finalCount !== null &&
@@ -1108,7 +1141,8 @@ function MotorConditionChart({
           {/* 鮮度・会場内順位・1着率・優出・優勝は会場公式サイトのスナップショットで、
               節の終わりにしか更新されない。下の機力指数・使用履歴（当サイトの集計）と
               走数が合わないことを先に断る（BOA-513、2026-09-28 ファン評価） */}
-          {(venueMotorStats || venueMotorRanking) && (
+          {((venueMotorStats && !venueMotorStats.fetchFailed) ||
+            venueMotorRanking) && (
             <p className="table-note">
               {t("analysis.motor.officialSnapshotNote")}
               {/* 会場内順位に添えた値は会場公式サイトの2連率で、小数2桁目を切り捨てる。
