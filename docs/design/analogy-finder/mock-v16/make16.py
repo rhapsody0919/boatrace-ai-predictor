@@ -140,26 +140,30 @@ R('.eff.weak{opacity:.6}', '.eff.weak .pair,.eff.weak .strip,.eff.weak .eh b,.ef
 R('.hero .n{', '.hero .n small{font-size:14px;margin-left:2px}.hero .n{')
 R('.tabs{display:grid;', '.stripcap{margin:0;font-size:11px;color:var(--muted)}.rlist{display:grid;gap:6px}.rc{border:1px solid var(--border);border-radius:8px;padding:6px 8px;display:grid;gap:2px;font-size:12px}.rc .bnrow{display:inline-flex;gap:2px;vertical-align:middle}.rc3{color:var(--text2);font-size:11.5px}\n.tabs{display:grid;')
 # 類似レース: 層が800件に届かないときのスライダーと文言（v16、ラウンドをそろえた版）
-R('推奨: 勝率差・1号艇の級別・勝率トップは必ずそろえ、その中を似ている順', '推奨: ラウンド（優勝戦）・勝率差・1号艇の級別・勝率トップは必ずそろえ、その中を似ている順')
+R('推奨: 勝率差・1号艇の級別・勝率トップは必ずそろえ、その中を似ている順', '推奨: ラウンド（優勝戦）・グレード（G1以上）・勝率差・1号艇の級別・勝率トップは必ずそろえ、その中を似ている順')
 R('`3条件がそろった過去レース全体（${D.knn3layer.n.toLocaleString()}件）`', '`条件（${D.knn3layer.cond||"勝率差・1号艇の級別・勝率トップ"}）がそろった過去レース全体（${D.knn3layer.n.toLocaleString()}件）`')
 R('function curNb(){const all=st.noSS?K.nb.filter(n=>!n.ss):K.nb;return all.slice(0,NS[st.ni]);}',
   'let NSd=NS;function setNS(){const L=K.nb.length;NSd=L<800?[...NS.filter(x=>x<L),L]:NS;$("nSlider").max=NSd.length-1;if(st.ni>NSd.length-1)st.ni=NSd.length-1;}\nfunction curNb(){const all=st.noSS?K.nb.filter(n=>!n.ss):K.nb;return all.slice(0,NSd[st.ni]);}')
 t = t.replace('NS[st.ni]', 'NSd[st.ni]')
-R('"勝率差の帯・1号艇の級別・勝率トップの艇が今日と同じ過去レースに絞り、', '`${K.pool&&K.pool.layer_n?"ラウンド（優勝戦）・":""}勝率差の帯・1号艇の級別・勝率トップの艇が今日と同じ過去レース${K.pool&&K.pool.layer_n?`（${K.pool.layer_n}件）`:""}に絞り、`+"')
+R('"勝率差の帯・1号艇の級別・勝率トップの艇が今日と同じ過去レースに絞り、', '`${K.pool&&K.pool.layer_cond?K.pool.layer_cond:(K.pool&&K.pool.layer_n?"ラウンド（優勝戦）・":"")+"勝率差の帯・1号艇の級別・勝率トップの艇"}が今日と同じ過去レース${K.pool&&K.pool.layer_n?`（${K.pool.layer_n}件）`:""}に絞り、`+"')
 R('setK();$("nSlider").value=st.ni;', 'setK();setNS();$("nSlider").value=st.ni;')
 # ファン評価 第2周
 R('（${x.res.popularity_3tan}番人気）', '${x.res.popularity_3tan!=null?`（${x.res.popularity_3tan}番人気）`:""}')
 R('<span class="cv">${x.t[k]??"—"}<small>', '<span class="cv">${(k==="grade"?(GN[x.t[k]]||x.t[k]):fmtT(k,x.t[k]))??"—"}<small>')
 R('${natP!=null?`・全国 ${pc(natP)}`:""}', '${natP!=null?`・比べる相手 ${pc(natP)}`:""}')
 R('let NSd=NS;function setNS(){const L=K.nb.length;NSd=L<800?[...NS.filter(x=>x<L),L]:NS;$("nSlider").max=NSd.length-1;if(st.ni>NSd.length-1)st.ni=NSd.length-1;}',
-  'let NSd=NS;function setNS(){const L=K.nb.length;NSd=L<800?[...NS.filter(x=>x<L),L]:NS;$("nSlider").max=NSd.length-1;if(!st.niTouched)st.ni=L<800?Math.max(0,NSd.indexOf(30)):9;if(st.ni>NSd.length-1)st.ni=NSd.length-1;const lay=!!(K.pool&&K.pool.layer_n);$("ssChip").closest(".row").hidden=lay;}')
+  'let NSd=NS;function setNS(){const L=K.nb.length;NSd=L<800?[...NS.filter(x=>x<L),L]:NS;$("nSlider").max=NSd.length-1;if(!st.niTouched)st.ni=L<800?(NSd.indexOf(30)>=0?NSd.indexOf(30):NSd.length-1):9;if(st.ni>NSd.length-1)st.ni=NSd.length-1;const lay=!!(K.pool&&K.pool.layer_n);$("ssChip").closest(".row").hidden=lay;}')
 R('$("nSlider").oninput=e=>{st.ni=+e.target.value;', '$("nSlider").oninput=e=>{st.niTouched=true;st.ni=+e.target.value;')
 R('<span>TARGET: 若松12R</span>', '<span>今日: 若松12R</span>')
 R('$("sonarCap").textContent=`HITS: ${nb.length}`;', '$("sonarCap").textContent=`表示中: ${nb.length}件`;')
 R('const main=rows.filter(r=>r.it.inDist&&!DUP[r.it.key]&&r.rate!=null&&r.n>=5);',
-  'const CONDK=st.swKnn==="mix"?["win_gap_band","b1_class","top_boat",...(K.pool&&K.pool.layer_n?["round"]:[])]:[];\n  const main=rows.filter(r=>r.it.inDist&&!DUP[r.it.key]&&r.rate!=null&&r.n>=5&&!CONDK.includes(r.it.key));')
+  'const CONDK=st.swKnn==="mix"?["win_gap_band","b1_class","top_boat",...(K.pool&&K.pool.layer_n?["round"]:[]),...(K.pool&&K.pool.layer_cond&&/グレード/.test(K.pool.layer_cond)?["grade","grade_bin"]:[])]:[];\n  const main=rows.filter(r=>r.it.inDist&&!DUP[r.it.key]&&r.rate!=null&&r.n>=5&&!CONDK.includes(r.it.key));')
 R('$("likeTop").innerHTML=`<p class="sub">この ${N}件のうち、その項目が今日と同じ（基準は全項目の表に）レースの割合</p>`',
   '$("likeTop").innerHTML=`<p class="sub">この ${N}件のうち、その項目が今日と同じ（基準は全項目の表に）レースの割合</p>${CONDK.length?`<p class="foot">条件でそろえた項目（${CONDK.map(k=>ITEM[k]?ITEM[k].label:k).join("・")}）は、全件が今日と同じなので、ここには出していない</p>`:""}`')
 R('<span class="v">${c}/${tot}件</span>', '<span class="v">${pc(c/tot,1)} <small>${c}件</small></span>')
+# ソナー: 層が少ないときは件数に合わせた目盛りにする
+R('rOf=rk=>18+(R-24)*Math.log10(Math.max(1,rk))/Math.log10(800);', 'LM=K.nb.length<800?K.nb.length:800,lin=LM<100,rOf=rk=>lin?18+(R-24)*Math.max(1,rk)/LM:18+(R-24)*Math.log10(Math.max(1,rk))/Math.log10(800);')
+R('[10,100,800].forEach(k=>{h+=`<circle', '(lin?[...new Set([5,10,LM].filter(x=>x<=LM))]:[10,100,800]).forEach(k=>{h+=`<circle')
+R('輪は10・100・800番目）', '輪は何番目かの目安）')
 io.open('template16.html', 'w', encoding='utf-8').write(t)
 print('ok')

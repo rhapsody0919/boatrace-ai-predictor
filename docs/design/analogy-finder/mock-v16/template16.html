@@ -208,7 +208,7 @@ table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl t
 
   <div class="mockbox" aria-label="モックの切り替え">
     <span class="t">モックの切り替え（比べる用。本番には出さない）</span>
-    <div class="row"><span class="lbl">類似レースの選び方</span><div class="seg" id="swKnn"><button type="button" data-v="mix" aria-pressed="true">推奨: ラウンド（優勝戦）・勝率差・1号艇の級別・勝率トップは必ずそろえ、その中を似ている順</button><button type="button" data-v="pure" aria-pressed="false">代案: 全部を似ている順（当初どおり）</button></div></div>
+    <div class="row"><span class="lbl">類似レースの選び方</span><div class="seg" id="swKnn"><button type="button" data-v="mix" aria-pressed="true">推奨: ラウンド（優勝戦）・グレード（G1以上）・勝率差・1号艇の級別・勝率トップは必ずそろえ、その中を似ている順</button><button type="button" data-v="pure" aria-pressed="false">代案: 全部を似ている順（当初どおり）</button></div></div>
     <div class="row"><span class="lbl">テーマ</span><div class="seg" id="swTh"><button type="button" data-v="7" aria-pressed="true">推奨: 7テーマ</button><button type="button" data-v="6" aria-pressed="false">代案: 6テーマ</button></div></div>
   </div>
 
@@ -269,7 +269,7 @@ table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl t
     <p class="sub" id="simSub"></p>
     <div class="scope"><svg id="sonar" viewBox="0 0 440 440" role="img" aria-label="類似レースのソナー。中心が今日のレースで、近いほど似ている。扇は1着の艇"></svg>
       <div class="scope-cap"><span>今日: 若松12R</span><span id="sonarCap"></span></div></div>
-    <p class="foot">中心に近い点ほど、今日のレースと出走表の数字が近い（似ている順の何番目かで置いている。輪は10・100・800番目）。扇は1着になった艇。点を押すとそのレースを今日と見比べる</p>
+    <p class="foot">中心に近い点ほど、今日のレースと出走表の数字が近い（似ている順の何番目かで置いている。輪は何番目かの目安）。扇は1着になった艇。点を押すとそのレースを今日と見比べる</p>
     <div class="likes">
       <h3>何が似ている？</h3>
       <div id="likeTop"></div>
@@ -360,7 +360,7 @@ let ITEM=Object.fromEntries(K.items.map(x=>[x.key,x]));
 function setK(){K=st.stage==="post"&&D.knn4?D.knn4:(st.swKnn==="mix"&&D.knn3?D.knn3:D.knn);ITEM=Object.fromEntries(K.items.map(x=>[x.key,x]));}
 const DUP={n_A1:"class_all6",race_number:"race_number_band",grade_bin:"grade",wind_vector:"wind_bin"};
 const MK=["×","△","○"],MC=["down","warn2","up"];
-let NSd=NS;function setNS(){const L=K.nb.length;NSd=L<800?[...NS.filter(x=>x<L),L]:NS;$("nSlider").max=NSd.length-1;if(!st.niTouched)st.ni=L<800?Math.max(0,NSd.indexOf(30)):9;if(st.ni>NSd.length-1)st.ni=NSd.length-1;const lay=!!(K.pool&&K.pool.layer_n);$("ssChip").closest(".row").hidden=lay;}
+let NSd=NS;function setNS(){const L=K.nb.length;NSd=L<800?[...NS.filter(x=>x<L),L]:NS;$("nSlider").max=NSd.length-1;if(!st.niTouched)st.ni=L<800?(NSd.indexOf(30)>=0?NSd.indexOf(30):NSd.length-1):9;if(st.ni>NSd.length-1)st.ni=NSd.length-1;const lay=!!(K.pool&&K.pool.layer_n);$("ssChip").closest(".row").hidden=lay;}
 function curNb(){const all=st.noSS?K.nb.filter(n=>!n.ss):K.nb;return all.slice(0,NSd[st.ni]);}
 function agg(nb){const a={n:nb.length,win:[0,0,0,0,0,0],hit:{1:[0,0,0,0,0,0],2:[0,0,0,0,0,0],3:[0,0,0,0,0,0]},tech:{},tri:{}};
   nb.forEach(x=>{const o=x.o;if(!o||o.length<3)return;a.win[o[0]-1]++;o.forEach((b,i)=>{for(let t=i+1;t<=3;t++)a.hit[t][b-1]++;});const tq=x.res.technique;a.tech[tq]=(a.tech[tq]||0)+1;const k=o.join("");a.tri[k]=(a.tri[k]||0)+1;});return a;}
@@ -369,7 +369,7 @@ const isBad=f=>!/^[1-6]$/.test(String(f));
 function renderSim(){
   const nb=curNb(),N=nb.length,P=K.pool.n;
   $("nLbl").textContent=N;
-  $("simSub").textContent=(st.stage==="post"?"展示後: 展示タイム・天候・風・波も近さに入れている。":"展示前: 出走表の情報だけで近さを測っている。")+((st.swKnn==="mix"||st.stage==="post")&&D.knn3?`${K.pool&&K.pool.layer_n?"ラウンド（優勝戦）・":""}勝率差の帯・1号艇の級別・勝率トップの艇が今日と同じ過去レース${K.pool&&K.pool.layer_n?`（${K.pool.layer_n}件）`:""}に絞り、`+"その中を、出走表の数字が今日の若松12Rに近い順に並べた（会場が同じものを近く数える）":"出走表の数字が今日の若松12Rに近い過去レースを、似ている順に並べた。同じ会場のレースを優先して探している（会場が違うと遠く数える）");
+  $("simSub").textContent=(st.stage==="post"?"展示後: 展示タイム・天候・風・波も近さに入れている。":"展示前: 出走表の情報だけで近さを測っている。")+((st.swKnn==="mix"||st.stage==="post")&&D.knn3?`${K.pool&&K.pool.layer_cond?K.pool.layer_cond:(K.pool&&K.pool.layer_n?"ラウンド（優勝戦）・":"")+"勝率差の帯・1号艇の級別・勝率トップの艇"}が今日と同じ過去レース${K.pool&&K.pool.layer_n?`（${K.pool.layer_n}件）`:""}に絞り、`+"その中を、出走表の数字が今日の若松12Rに近い順に並べた（会場が同じものを近く数える）":"出走表の数字が今日の若松12Rに近い過去レースを、似ている順に並べた。同じ会場のレースを優先して探している（会場が違うと遠く数える）");
   const far=nb[N-1],fc=far?Object.entries(far.m).filter(([k,m])=>m!=null&&ITEM[k]?.inDist&&!DUP[k]).map(([,m])=>m):[];
   $("pctLbl").textContent=far?`${N}件目（いちばん遠い）でも、${fc.length}項目のうち ${fc.filter(m=>m===2).length}項目が同じ・${fc.filter(m=>m===1).length}項目が近い`:"";
   $("ssLbl").textContent=st.noSS?`除いている（${K.nb.slice(0,NSd[st.ni]+40).filter(n=>n.ss).length?"":""}今日と同じ節の前日までのレース）`:`含めている（この中に ${nb.filter(n=>n.ss).length}件）`;
@@ -378,7 +378,7 @@ function renderSim(){
   // 何が似ている？
   const PREHIDE={weather:1,wind_bin:1,wind_vector:1,wave_bin:1,exh_time_diff_6:1};
   const rows=K.items.filter(it=>!(st.stage==="pre"&&PREHIDE[it.key])).map(it=>{const v=nb.map(x=>x.m[it.key]).filter(x=>x!=null);const same=v.filter(x=>x===2).length;return {it,same,n:v.length,rate:v.length?same/v.length:null};});
-  const CONDK=st.swKnn==="mix"?["win_gap_band","b1_class","top_boat",...(K.pool&&K.pool.layer_n?["round"]:[])]:[];
+  const CONDK=st.swKnn==="mix"?["win_gap_band","b1_class","top_boat",...(K.pool&&K.pool.layer_n?["round"]:[]),...(K.pool&&K.pool.layer_cond&&/グレード/.test(K.pool.layer_cond)?["grade","grade_bin"]:[])]:[];
   const main=rows.filter(r=>r.it.inDist&&!DUP[r.it.key]&&r.rate!=null&&r.n>=5&&!CONDK.includes(r.it.key));
   const nearRate=r=>{const v=nb.map(x=>x.m[r.it.key]).filter(x=>x!=null);return v.length?v.filter(x=>x>=1).length/v.length:null;};
   const strong=main.filter(r=>r.rate>=.5).sort((a,b)=>b.rate-a.rate);
@@ -390,10 +390,10 @@ function renderSim(){
   renderCmp(nb);renderRes(nb);
 }
 function renderSonar(nb){
-  const svg=$("sonar"),cx=220,cy=220,R=188,rOf=rk=>18+(R-24)*Math.log10(Math.max(1,rk))/Math.log10(800);
+  const svg=$("sonar"),cx=220,cy=220,R=188,LM=K.nb.length<800?K.nb.length:800,lin=LM<100,rOf=rk=>lin?18+(R-24)*Math.max(1,rk)/LM:18+(R-24)*Math.log10(Math.max(1,rk))/Math.log10(800);
   const ang=b=>-90+(b-1)*60;let h="";
   for(let b=1;b<=6;b++){const a0=(ang(b)-30)*Math.PI/180,a1=(ang(b)+30)*Math.PI/180;h+=`<path d="M${cx},${cy}L${cx+R*Math.cos(a0)},${cy+R*Math.sin(a0)}A${R},${R} 0 0 1 ${cx+R*Math.cos(a1)},${cy+R*Math.sin(a1)}Z" fill="${FLOW[b]}" fill-opacity="${st.boat===b?.16:.05}" stroke="#0d1b2e" data-sec="${b}" style="cursor:pointer"/>`;}
-  [10,100,800].forEach(k=>{h+=`<circle cx="${cx}" cy="${cy}" r="${rOf(k)}" fill="none" stroke="#c9a227" stroke-opacity="${k<=nb.length?.45:.18}" ${k>nb.length?'stroke-dasharray="3 4"':""}/><text x="${cx+4}" y="${cy-rOf(k)+11}" fill="#e8d089" font-size="9.5" opacity=".8" font-family="JetBrains Mono,monospace">${k}番目</text>`;});
+  (lin?[...new Set([5,10,LM].filter(x=>x<=LM))]:[10,100,800]).forEach(k=>{h+=`<circle cx="${cx}" cy="${cy}" r="${rOf(k)}" fill="none" stroke="#c9a227" stroke-opacity="${k<=nb.length?.45:.18}" ${k>nb.length?'stroke-dasharray="3 4"':""}/><text x="${cx+4}" y="${cy-rOf(k)+11}" fill="#e8d089" font-size="9.5" opacity=".8" font-family="JetBrains Mono,monospace">${k}番目</text>`;});
   const idxIn={1:0,2:0,3:0,4:0,5:0,6:0},cnt={1:0,2:0,3:0,4:0,5:0,6:0};nb.forEach(x=>{if(x.o)cnt[x.o[0]]++;});
   nb.forEach(x=>{if(!x.o)return;const b=x.o[0],i=idxIn[b]++;const frac=(((x.r*0.6180339)%1)*0.84)+0.08;const a=(ang(b)-30+60*frac)*Math.PI/180;const rr=rOf(x.rank??x.r);
     const hl=st.pick===x.r;h+=`<circle cx="${(cx+rr*Math.cos(a)).toFixed(1)}" cy="${(cy+rr*Math.sin(a)).toFixed(1)}" r="${hl?6:nb.length>300?2.4:nb.length>100?3.2:4.2}" fill="${FLOW[b]}" stroke="${hl?"#fff":x.ss?"#e8d089":"#0d1b2e"}" stroke-width="${hl?2.5:x.ss?1.6:.8}" data-race="${x.r}" style="cursor:pointer"/>`;});

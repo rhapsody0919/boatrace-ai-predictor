@@ -10,7 +10,7 @@ const p4 = fs.existsSync(SP + "prep/prep4.json") ? rd("prep/prep4.json") : null;
 const p5 = fs.existsSync(SP + "prep/prep5.json") ? rd("prep/prep5.json") : null;
 const k2 = fs.existsSync(SP + "knn/knn2.json") ? rd("knn/knn2.json") : null;
 // v16: 優勝戦・準優勝戦はラウンドもそろえた版（knn5・knn6）があればそちらを使う
-const k3 = fs.existsSync(SP + "knn/knn5.json") ? rd("knn/knn5.json") : fs.existsSync(SP + "knn/knn3.json") ? rd("knn/knn3.json") : null;
+const k3 = fs.existsSync(SP + "knn/knn7.json") ? rd("knn/knn7.json") : fs.existsSync(SP + "knn/knn5.json") ? rd("knn/knn5.json") : fs.existsSync(SP + "knn/knn3.json") ? rd("knn/knn3.json") : null;
 const p6 = fs.existsSync(SP + "prep/prep6.json") ? rd("prep/prep6.json") : null;
 const sc = fs.existsSync(SP + "model-prep/share-cube2.json") ? rd("model-prep/share-cube2.json") : (fs.existsSync(SP + "model-prep/share-cube.json") ? rd("model-prep/share-cube.json") : null);
 const bpj = fs.existsSync(SP + "model-prep/boat-profile2.json") ? rd("model-prep/boat-profile2.json") : (fs.existsSync(SP + "model-prep/boat-profile.json") ? rd("model-prep/boat-profile.json") : null);
@@ -39,7 +39,7 @@ const bpOf = (j) => j ? {
   cube: Object.fromEntries(Object.entries(j.cube).map(([k, v]) => [k, v.shares ? { n: v.n, s: Object.fromEntries(Object.entries(v.shares).map(([m, bs]) => [m, Object.fromEntries(Object.entries(bs).map(([b, x]) => [b, Object.fromEntries(Object.entries(x.theme).map(([t, [sh, sd]]) => [t, [sh, r4b(sd)]]))]))])) } : { n: v.n }])),
   ex: Object.fromEntries(Object.entries(j.example_race).map(([m, arr]) => [m, Object.fromEntries(arr.map((x) => [x.boat, { t: Object.fromEntries(Object.entries(x.theme).map(([k, v]) => [k, r4b(v)])), g: Object.fromEntries(Object.entries(x.group).map(([k, v]) => [k, r4b(v)])), sum: r4b(x.theme_sum) }]))])),
 } : null;
-const k4 = fs.existsSync(SP + "knn/knn6.json") ? rd("knn/knn6.json") : fs.existsSync(SP + "knn/knn4.json") ? rd("knn/knn4.json") : null;
+const k4 = fs.existsSync(SP + "knn/knn8.json") ? rd("knn/knn8.json") : fs.existsSync(SP + "knn/knn6.json") ? rd("knn/knn6.json") : fs.existsSync(SP + "knn/knn4.json") ? rd("knn/knn4.json") : null;
 const rfj = fs.existsSync(SP + "rank-facts/rank-facts2.json") ? rd("rank-facts/rank-facts2.json") : (fs.existsSync(SP + "rank-facts/rank-facts.json") ? rd("rank-facts/rank-facts.json") : null);
 // 今日と同じ順位だったときの着内率（数えた値）。[x, n] だけ持ち、割合と区間は画面で出す
 const xn = (o) => o ? [o.x, o.n] : [0, 0];
@@ -59,7 +59,7 @@ const layerOf = (k) => {
   const bf = {}, tech = {};
   for (let b = 1; b <= 6; b++) bf[b] = { win: 0, top2: 0, top3: 0 };
   k.neighbors.forEach((n) => { const o = n.rank123; if (!o || o.length < 3) return; o.forEach((b, i) => { if (i < 1) bf[b].win++; if (i < 2) bf[b].top2++; bf[b].top3++; }); const tq = n.result.technique; tech[tq] = (tech[tq] || 0) + 1; });
-  return { n: k.neighbors.length, boat_finish: bf, technique: tech, cond: "ラウンド・勝率差の帯・1号艇の級別・勝率トップ" };
+  return { n: k.neighbors.length, boat_finish: bf, technique: tech, cond: (k.pool && k.pool.layer_cond) || "ラウンド・勝率差の帯・1号艇の級別・勝率トップ" };
 };
 const k3l = k3 && k3.pool && k3.pool.layer_n && k3.pool.layer_n === k3.neighbors.length ? layerOf(k3) : fs.existsSync(SP + "knn/knn3-layer.json") ? rd("knn/knn3-layer.json") : null;
 // 条件ごとのテーマ単位の割合。environment6 は 6テーマの「環境」。[割合, 全国との差, 差のSD]

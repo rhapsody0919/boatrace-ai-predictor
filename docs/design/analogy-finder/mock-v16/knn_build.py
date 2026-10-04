@@ -190,6 +190,10 @@ def gap_band_arr(nat):
 # （予選・その他の日は足さない）。round_code: 0=予選・1=準優・2=優勝戦・3=その他（features.ROUNDS）
 ROUND_COND = os.environ.get("KNN_ROUND") == "1"
 ROUND_FIX = (F.ROUND_CODE["junyu"], F.ROUND_CODE["yusho"])
+# knn7/knn8: KNN_GRADE=1 なら、今日のグレードが G1・SG のときだけ「グレードが G1 以上」を層の条件に足す
+# （それ以外のグレードの日は足さない）。grade_code: 0=一般・1=G3・2=G2・3=G1・4=SG（features.GRADES）
+GRADE_COND = os.environ.get("KNN_GRADE") == "1"
+GRADE_MIN = F.GRADE_CODE["G1"]
 
 
 def layer_mask(boats, qi, r=None):
@@ -209,6 +213,15 @@ def layer_mask(boats, qi, r=None):
             key["round"] = F.ROUNDS[int(qrc)]
         else:
             key["round"] = None  # 今日が優勝戦・準優勝戦でないので足していない
+    if GRADE_COND:
+        gc = r["grade_code"].to_numpy()
+        qgc = gc[qi]
+        if np.isfinite(qgc) and int(qgc) >= GRADE_MIN:
+            m = m & np.isfinite(gc) & (gc >= GRADE_MIN)
+            key["grade_min_code"] = GRADE_MIN
+            key["grade_min"] = "G1"
+        else:
+            key["grade_min"] = None  # 今日が G1・SG でないので足していない
     return m, key
 
 

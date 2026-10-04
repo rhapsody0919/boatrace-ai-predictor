@@ -86,12 +86,23 @@ def wind_dir_name(x, y, ws):
 
 
 TAG = os.environ.get("KNN_TAG", "knn2")
-BASE = {"knn2": "knn", "knn3": "knn2", "knn4": "knn3", "knn5": "knn3", "knn6": "knn4"}[TAG]  # 比較する1つ前の版
+BASE = {"knn2": "knn", "knn3": "knn2", "knn4": "knn3", "knn5": "knn3", "knn6": "knn4", "knn7": "knn5", "knn8": "knn6"}[TAG]  # 比較する1つ前の版
 # 近傍に使う距離の版。knn4（展示後の段）は with_exh（展示タイム・天候・風・波を含む）。もう一方は参考の重なりに使う
-PRIMARY = {"knn4": "with_exh", "knn6": "with_exh"}.get(TAG, "racecard")
-BASE_PRIMARY = {"knn4": "with_exh", "knn6": "with_exh"}.get(BASE, "racecard")
+PRIMARY = {"knn4": "with_exh", "knn6": "with_exh", "knn8": "with_exh"}.get(TAG, "racecard")
+BASE_PRIMARY = {"knn4": "with_exh", "knn6": "with_exh", "knn8": "with_exh"}.get(BASE, "racecard")
 OTHER = "racecard" if PRIMARY == "with_exh" else "with_exh"
 OVK = "overlap_with_exh" if OTHER == "with_exh" else f"overlap_with_{OTHER}"  # knn3 と同じキー名
+
+
+def layer_cond(key):
+    """そろえた層の条件の日本語の列（「グレード（G1以上）」は今日が G1 以上のとき、ラウンドは優勝戦・準優のときだけ）"""
+    parts = []
+    if key.get("round_code") is not None:
+        parts.append(f"ラウンド（{ROUND_JA[key['round']]}）")
+    if key.get("grade_min"):
+        parts.append(f"グレード（{key['grade_min']}以上）")
+    parts += ["勝率差の帯", "1号艇の級別", "勝率トップ"]
+    return "・".join(parts)
 
 
 def wdir(tag):
@@ -485,7 +496,7 @@ def main():
                   "series": {"venue_code": int(q(venue)), "start_date": str(qs["start_date"].date()),
                              "end_date": str(qs["end_date"].date()), "grade": qs["grade"]}},
         "method": {
-            "base": f"MD-6 knn_p。knn_build.py（KNN_TAG={TAG if TAG in ('knn5', 'knn6') else 'knn2'}）",
+            "base": f"MD-6 knn_p。knn_build.py（KNN_TAG={TAG if TAG in ('knn5', 'knn6', 'knn7', 'knn8') else 'knn2'}）",
             "weights_model": info["model_version"] + "/model_win.txt",
             "lambda_mult": info["lambda_mult"], "L": var["L"], "lambda": lam,
             "excluded_from_distance": var["excluded"], "groups_in_distance": var["groups_in_distance"],
@@ -501,8 +512,9 @@ def main():
         },
         "pool": {"period": info["pool_period"], "n": npool, "by_source": info["n_pool_by_source"],
                  **({"layer_n": int(lm.sum()), "n_ranked": ktop,
-                     "note": (f"探した母集団は {npool:,}R。層（{'ラウンド＋' if 'round_code' in info['layer']['key'] else ''}勝率差の帯・1号艇の級別・"
-                              f"勝率1位の艇が今日と同じ）は {int(lm.sum()):,}R。近傍（neighbors）は"
+                     "layer_cond": layer_cond(info["layer"]["key"]),
+                     "note": (f"探した母集団は {npool:,}R。層（{layer_cond(info['layer']['key'])}を今日とそろえた）は "
+                              f"{int(lm.sum()):,}R。近傍（neighbors）は"
                               + (f"層の全件 {ktop:,}R を似ている順に並べたもの（800件に届かない）" if ktop < 800
                                  else f"層の中を似ている順に並べた先頭 {ktop:,}R"))}
                     if lm is not None else {})},
