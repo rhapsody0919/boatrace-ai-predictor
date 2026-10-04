@@ -1816,8 +1816,8 @@ const MUTANTS = [
   [
     "hscrollHint",
     "少しだけ溢れるときに「›」を出さない（BOA-735 の退行）",
-    "return { hasMore: remaining > 1,",
-    "return { hasMore: remaining > 12,",
+    "hasMore: remaining > HSCROLL_MORE_MIN,",
+    "hasMore: remaining > 12,",
   ],
   [
     "hscrollHint",
@@ -1828,7 +1828,7 @@ const MUTANTS = [
   [
     "hscrollHint",
     "少しだけ溢れる表に右の余白を足さない（BOA-735 の退行）",
-    "if (naturalMax <= 1) return 0;",
+    "if (naturalMax <= HSCROLL_MORE_MIN) return 0;",
     "if (naturalMax <= 12) return 0;",
   ],
   [

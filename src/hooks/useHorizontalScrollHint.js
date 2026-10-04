@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  HSCROLL_MORE_MIN,
   horizontalScrollHintState,
   horizontalScrollStep,
   snapScrollTarget,
@@ -89,7 +90,7 @@ function applyTailPadding(el, columnStarts) {
  * 列を固定した表は、指で送ったときも列の境目に止める（BOA-741）。止まる位置が自由だと、固定した
  * 選手名のすぐ右に頭の欠けた値が並び、「51位/60」が「1位/60」に読めた（PR #1223 ファン評価1周目）。
  * 止める位置は固定した列の右端（scroll-padding-left）。表の右に余白を足した後で呼び、右端も列の境目に
- * なっていることを前提にする（tailPaddingFor は 1px より多く溢れる表に余白を足す）
+ * なっていることを前提にする（tailPaddingFor は HSCROLL_MORE_MIN より多く溢れる表に余白を足す）
  */
 function applyColumnSnap(el, stickyWidth) {
   const table = el.firstElementChild;
@@ -99,7 +100,7 @@ function applyColumnSnap(el, stickyWidth) {
   const snap =
     stickyWidth > 0 &&
     stickyWidth < el.clientWidth &&
-    naturalMax > 1;
+    naturalMax > HSCROLL_MORE_MIN;
   if (snap) {
     el.dataset.hscrollSnap = "true";
     el.style.scrollPaddingLeft = `${stickyWidth}px`;
