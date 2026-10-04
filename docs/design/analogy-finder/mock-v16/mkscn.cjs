@@ -18,7 +18,8 @@ for (const [sk, s] of Object.entries(P.scopes)) {
     }
   }
 }
-if (P9) for (const [sk, s] of Object.entries(P9.scopes)) {
+const P10 = fs.existsSync(__dirname + '/../prep/prep10.json') ? require('../prep/prep10.json') : null;
+for (const PX of [P9, P10]) if (PX) for (const [sk, s] of Object.entries(PX.scopes)) {
   scopes[sk] = { cells: {} };
   for (const [ek, e] of Object.entries(s.cells)) {
     scopes[sk].cells[ek] = { forms: {} };

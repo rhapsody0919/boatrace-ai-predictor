@@ -1,5 +1,6 @@
 // ---------- 展開シナリオ（進入 → スリット → 結果。数えた値） ----------
-const SCN_SCOPE = [["v20A1", "若松・6艇ともA1"], ["allA1", "全国・6艇ともA1"], ["v20", "若松の全レース"], ["v20G1", "若松のG1"], ["all", "全国の全レース"]];
+const SCN_SCOPE = [["v20A1", "若松・6艇ともA1"], ["allA1", "全国・6艇ともA1"],
+  ["allA1Y", "全国・6艇ともA1の優勝戦"], ["v20", "若松の全レース"], ["v20G1", "若松のG1"], ["all", "全国の全レース"]];
 const ENTRY = {
   all: "どの進入でも",
   waku: "枠なり",
@@ -190,7 +191,7 @@ function renderScn() {
   const def = SLIT.find(([k]) => k === S.slit)[2];
   const scopeName = SCN_SCOPE.find(([k]) => k === S.scope)[1];
   const baseName = S.slit !== "any" && S.entry !== "all" ? `進入が${ENTRY[S.entry]}だったレース全体（どの形でも）` : `${scopeName}の全レース`;
-  const EXCL = { v20: 293, v20G1: 11, all: 7480, v20A1: 17, allA1: 411 };
+  const EXCL = { v20: 293, v20G1: 11, all: 7480, v20A1: 17, allA1: 411, allA1Y: 18 };
   const ENTRY_PH = { waku: "進入が枠なりだった", mae: "前付けがあった（1号艇はイン）", mae6: "6号艇だけが前付けした", mae5: "5号艇だけが前付けした", mae56: "5・6号艇が前付けした", maeOther: "そのほかの前付けがあった", inlost: "1号艇がインを取られた" };
   const conds = [S.entry !== "all" ? `<b>${ENTRY_PH[S.entry]}</b>` : "", S.slit !== "any" ? `スリットが<b>${SLITN[S.slit]}</b>だった` : ""].filter(Boolean);
   const head = `${scopeName}で、${conds.length ? conds.join("、") : "<b>すべての</b>"}レース`;
