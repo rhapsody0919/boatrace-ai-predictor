@@ -1235,6 +1235,43 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
 
   // 今節タブの得点率早見。箱の幅いっぱいに広がり、余りが全部選手名の列に入って、
   // 1440px で選手名の列が 853px、1024px でも 672px あった（BOA-736）。指定は 769px から効く
+  // 今節タブの比較表（6艇の今節）。1440px で表が 1174px に広がり、選手名と得点率・節内順位・
+  // 前検の間が約800px 離れた（BOA-755）。得点率早見（BOA-736）と同じ 769px〜・640px。
+  // 最終日（予選の着順が8走並ぶ）でもセルの中身がはみ出さないことを見る
+  test("今節の比較表: 選手名と得点率・順位・前検の列が近く、中身がはみ出さない", async ({
+    page,
+  }, testInfo) => {
+    const widths =
+      testInfo.project.name === "layout-desktop"
+        ? [900, 1100, 1440]
+        : testInfo.project.name === "layout-wide"
+          ? [1920]
+          : [];
+    test.skip(widths.length === 0, "769px 以上だけの指定");
+    for (const race of ["2026-09-23-09-12", "2026-09-28-09-11"]) {
+      for (const width of widths) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(`/race/${race}?tab=meet`, {
+          waitUntil: "domcontentloaded",
+        });
+        await expect(page.locator(".rmt-compare tbody tr")).toHaveCount(6, {
+          timeout: 30000,
+        });
+        const m = await page.evaluate(() => {
+          const t = document.querySelector(".rmt-compare");
+          return {
+            table: t.getBoundingClientRect().width,
+            overflow: [...t.querySelectorAll("th, td")].filter(
+              (el) => el.scrollWidth > el.clientWidth + 1,
+            ).length,
+          };
+        });
+        expect(m.table, `${race} ${width}px: 表の幅`).toBeLessThanOrEqual(640);
+        expect(m.overflow, `${race} ${width}px: はみ出したセル`).toBe(0);
+      }
+    }
+  });
+
   test("今節の得点率早見: 選手名と得点率・着順の列が近い", async ({
     page,
   }, testInfo) => {
