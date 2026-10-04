@@ -162,6 +162,30 @@ check(
   );
 }
 
+{
+  const meet = read("src/components/race/RaceMeetTab.css");
+  check(
+    "U2: 得点率早見・6艇の推移の選択中の印に金を使わない（金は最良だけ）",
+    /\.rmt-forecast-table tbody tr\.is-current th \{[^}]*inset 3px 0 0 0 var\(--text-primary\)/.test(
+      meet,
+    ) &&
+      /\.rmt-trend-row\[aria-pressed="true"\] \{[^}]*inset 3px 0 0 var\(--text-primary\)/.test(
+        meet,
+      ) &&
+      !/\.rmt-trend-row[^{]*\{[^}]*--brand-accent-primary/.test(meet),
+  );
+  check(
+    "U2: 青の意味を文で書く（点線は「青い点線」、早見の青い得点率の注記）",
+    json("src/locales/ja/common.json").meetTab.borderNote.includes(
+      "青い点線",
+    ) &&
+      LANGS.every(
+        (l) =>
+          json(`src/locales/${l}/common.json`).meetTab.forecastRateBlueNote,
+      ),
+  );
+}
+
 if (failures.length > 0) {
   console.error(`\nverify-race-detail-boa711: ${failures.length}件失敗`);
   process.exit(1);
