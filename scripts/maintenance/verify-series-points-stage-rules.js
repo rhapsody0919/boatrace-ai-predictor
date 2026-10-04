@@ -549,11 +549,10 @@ check(
     check(
       "全走欠場の選手を選んだ詳細に欠場の見出し、「欠」があれば意味の注記を出す",
       meetTab.includes('t("meetTab.absentDetail")') &&
-        // 注記の条件は const に切り出してある（BOA-714 で段落を分けたため）
-        /showFinishAbsentNote = [^;]*r\.finishes\.includes\(FINISH_ABSENT\)/.test(
-          meetTab,
-        ) &&
-        /showFinishAbsentNote && <> \{t\("meetTab\.finishAbsentNote"\)\}/.test(
+        // 「欠」を含む走の判定で注記を出し分けていること。条件を変数に切り出す・
+        // 段落を組み替える（BOA-714・BOA-738）たびに書き方の照合が外れたので、
+        // 変数名と JSX の書き方には依存しない（判定の式と、その変数で注記を出すことだけ見る）
+        /(\w+) = [^;]*r\.finishes\.includes\(FINISH_ABSENT\)[\s\S]*\b\1 &&[\s\S]{0,40}t\("meetTab\.finishAbsentNote"\)/.test(
           meetTab,
         ),
       true,

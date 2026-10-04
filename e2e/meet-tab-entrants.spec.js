@@ -78,9 +78,9 @@ test("除いた人数を足すと出場人数になり、表に無い印の凡�
   await expect(list).toContainText("順位の対象外：");
   await expect(list.locator("[translate=no]")).not.toHaveCount(0);
   await expect(list).not.toContainText("ほか");
-  await expect(
-    page.locator(".rmt-sub, .rmt-table-notes", { hasText: "3走未満" }),
-  ).toHaveCount(0);
+  await expect(page.locator(".rmt-card").first()).not.toContainText(
+    "3走未満",
+  );
 });
 
 test("375pxで、今節初戦の行があっても列見出し「前検」がカードからはみ出さない", async ({
@@ -256,4 +256,35 @@ test("375pxで、対象外の一覧の選手名が途中で改行されない", 
       .map((el) => el.textContent),
   );
   expect(multiLine).toEqual([]);
+});
+
+test("⚠の説明は表のすぐ下に出し、金枠の凡例と印の説明は段落を分ける", async ({
+  page,
+}) => {
+  // 津 9/23 12R（予選中）。6艇すべてに⚠が付くのに、説明は表の下4段落目にあった。
+  // 金枠の凡例と印の説明も1段落に混ざっていた（BOA-738、ファン評価2周続けて）
+  await openMeetTab(page, "2026-09-23-09-12");
+  const hints = page.locator(".rmt-hint");
+  await expect(hints.nth(1)).toHaveText("⚠ は3走未満（得点率がまだ荒い）。");
+  const [hintTop, borderTop] = await page.evaluate(() =>
+    [".rmt-hint + .rmt-hint", ".rmt-border-note"].map(
+      (sel) => document.querySelector(sel).getBoundingClientRect().top,
+    ),
+  );
+  expect(hintTop).toBeLessThan(borderTop);
+  await expect(page.locator(".rmt-table-notes")).not.toContainText("⚠ は3走未満");
+});
+
+test("和文の注記で句点の後に半角スペースを入れない（英語は入れる）", async ({
+  page,
+}) => {
+  // 「準優の目安は12位（5.40）。 点線より上が…」と空白が入っていた（BOA-738）
+  await openMeetTab(page, "2026-09-23-09-12");
+  const ja = await page.locator(".rmt-border-note").innerText();
+  expect(ja).toContain("。点線より上が");
+  expect(ja).not.toMatch(/。 /);
+  await page.goto("/en/race/2026-09-23-09-12");
+  await page.locator(".race-tabs-btn").nth(2).click();
+  const en = await page.locator(".rmt-border-note").innerText({ timeout: 30000 });
+  expect(en).toMatch(/\)\. \S/);
 });
