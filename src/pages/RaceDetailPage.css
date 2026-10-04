@@ -360,6 +360,14 @@
     border-radius: 0;
   }
 
+  /* 直前情報の表は高さの上限（部品の 70vh）を外し、表の内側でスクロールさせない。行が16前後あり
+     375px で表 716px / 枠 630px と下の「今節直線」等の行が内側で切れ、続きがあると気づけなかった
+     （BOA-757）。1行目の艇番は見出しの固定が効かなくなるが、表は1画面にほぼ収まる。
+     データ出走表は行が多いので、見出しを固定する上限を残す */
+  .race-detail-page-v2 .rbi-card .drt-table-wrapper {
+    max-height: none;
+  }
+
   /* 表はカードの内余白を打ち消し、画面の端から 4px に置く */
   .race-detail-page-v2 .rbi-card .hscroll-hint:has(> .drt-table-wrapper) {
     margin-left: calc(-1 * var(--rdp-card-pad));

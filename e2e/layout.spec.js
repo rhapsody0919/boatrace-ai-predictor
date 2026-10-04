@@ -880,6 +880,8 @@ for (const path of ["/race/2026-09-29-16-12", "/en/race/2026-09-29-16-12"]) {
     test("表がカードの内側に収まり、行見出しが画面の左端で切れない", async ({
       page,
     }, testInfo) => {
+      // 6つの幅でページを開き直すので、既定の 60 秒では足りないことがある
+      test.slow();
       const widths =
         testInfo.project.name === "layout-mobile"
           ? [320, 375, 390, 520, 600, 700]
@@ -922,6 +924,7 @@ async function checkBeforeInfoExhibitionCard(page, path, width) {
       minLabelLeft: Math.min(...labels),
       vw: document.documentElement.clientWidth,
       tableOverflow: wrapEl.scrollWidth - wrapEl.clientWidth,
+      tableVOverflow: wrapEl.scrollHeight - wrapEl.clientHeight,
       others,
     };
   });
@@ -935,6 +938,12 @@ async function checkBeforeInfoExhibitionCard(page, path, width) {
   expect(m.minLabelLeft, `${at}行見出し`).toBeGreaterThanOrEqual(
     Math.max(0, m.card[0]) - 0.5,
   );
+  // 表の内側で縦にスクロールしない。375px で表 716px / 枠 630px と下の行（今節直線など）が
+  // 内側で切れ、続きがあると気づけなかった（BOA-757）
+  expect(
+    m.tableVOverflow,
+    `${at}展示情報の表の縦スクロール`,
+  ).toBeLessThanOrEqual(1);
   if (!width) return;
   // 375〜767px: 6艇が表の横スクロール無しで入る（以前は 520px で表 531px / 表示枠 438px）。
   // 320px は対象外: 列の幅が 11px の文字の幅だけで決まり、CI（Linux のフォント）では 34px はみ出す
