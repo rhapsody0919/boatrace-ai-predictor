@@ -47,7 +47,10 @@ import {
   runFinishLabel,
   officialMarkOf,
 } from "../../src/components/race/seriesPoints.js";
-import { getRaceStageKey } from "../../src/constants/raceStageConfig.js";
+import {
+  getRaceStageKey,
+  getRaceStageCategory,
+} from "../../src/constants/raceStageConfig.js";
 import {
   dayCenter,
   dayTickLabels,
@@ -757,6 +760,23 @@ check("バッジ: 会場名付きの優勝戦", getRaceStageKey("ツッキー優
 check("バッジ: 準優勝戦", getRaceStageKey("準優勝戦"), "semifinal");
 check("バッジ: 準々優勝戦は山場でない", getRaceStageKey("準々優勝戦"), null);
 check("バッジ: 準優進出戦は準優でない", getRaceStageKey("準優進出戦"), null);
+// 男女Ｗ優勝戦の準優勝戦は「Ｗ準優戦前半/後半」と書く（「勝」が無い）。以前は準優勝戦に
+// 当たらず、見出しのチップが「会場独自の名前」、英韓中の文中に原文の日本語が入った（BOA-728）
+check(
+  "バッジ: Ｗ準優戦前半は準優勝戦",
+  getRaceStageKey("Ｗ準優戦前半"),
+  "semifinal",
+);
+check(
+  "区分: Ｗ準優戦後半は準優勝戦",
+  getRaceStageCategory("Ｗ準優戦後半")?.key,
+  "semifinal",
+);
+check(
+  "区分: 準優進出戦は準優勝戦でない",
+  getRaceStageCategory("準優進出戦")?.key,
+  "semifinalQualifier",
+);
 check("バッジ: 予選", getRaceStageKey("予選"), null);
 
 // ---- 5. 全件取得のページング -----------------------------------------------
