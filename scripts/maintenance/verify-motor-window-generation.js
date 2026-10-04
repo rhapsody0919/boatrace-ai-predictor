@@ -147,7 +147,7 @@ check(
 check(
   "一覧表: 過去/当日をキャッシュのキーに含める（v5〜）",
   breakdown.includes(
-    '`race-motor-breakdown-v9-${past ? "official" : "recalc"}-',
+    '`race-motor-breakdown-v10-${past ? "official" : "recalc"}-',
   ),
 );
 const pastBranch = breakdown.slice(

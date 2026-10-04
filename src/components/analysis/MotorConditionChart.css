@@ -702,3 +702,14 @@ td.rate.is-small-sample {
 .power-index-summary.is-small-sample {
   color: var(--color-warning-text);
 }
+
+/* 会場公式のモーター成績の取得失敗（BOA-740）。「-」（値なし）と見分けられるよう文字で示す */
+.motor-condition-container .motor-stat-failed {
+  color: var(--color-error-text);
+  font-size: 0.8em;
+  white-space: nowrap;
+}
+
+.motor-condition-container .motor-venue-stats-failed-note {
+  color: var(--color-error-text);
+}

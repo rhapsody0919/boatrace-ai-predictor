@@ -112,7 +112,11 @@
 }
 
 .rsc-value.is-small-sample {
-  color: var(--color-warning-text);
+  /* 2026-10-03 ユーザー判断（BOA-711 U5）: 灰（補足の色）。注意の黄は金に見え、
+     「出遅率100.0」が最良のように読めた。走数の⚠はそのまま。ダークでは灰と白の差が
+     小さいので、太さも落として区別する（#1218 ファン評価2周目） */
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-normal);
 }
 
 .rsc-muted {

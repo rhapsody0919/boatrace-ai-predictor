@@ -499,7 +499,11 @@ test.describe("レース詳細の表示の細部", () => {
           marker: c(".vpb-marker"),
           median: c(".vpb-median"),
           middleLabel: c(".vpb-ends > span:nth-child(2)"),
-          value: Number(el.querySelector(".vpb-value").textContent),
+          // 値の後ろに「/ 100」が付く（BOA-711 U4）ので、先頭の数だけ読む
+          value: Number.parseInt(
+            el.querySelector(".vpb-value").textContent,
+            10,
+          ),
         };
       });
       // 印は値の位置（0なら左端）にあり、見える大きさがある

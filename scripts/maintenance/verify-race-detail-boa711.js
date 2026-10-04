@@ -4,7 +4,7 @@
  * 画面はブラウザでしか動かないため、ソースと文言を検査する（verify-motor-tab-readability.js と同じ方式）。
  * 数値の判定（ST考察の差の色 diffTone）は verify-race-indicator-tones.js で検査する。
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -147,6 +147,131 @@ check(
     read("src/components/race/VolatilityDisplay.jsx"),
   ),
 );
+// 2026-10-03 ユーザー判断（BOA-711 U1・U3・U4・U5・1b）
+const tokens = read("src/styles/design-tokens.css");
+check(
+  "U1: 最良の金枠は、地が明るい金の20%、枠が濃い金の不透明",
+  tokens.includes(
+    "--ind-best-bg: color-mix(in srgb, var(--ryujin-gold-500) 20%, transparent);",
+  ) && tokens.includes("--ind-best-ring: var(--brand-accent-primary);"),
+);
+check(
+  "U3: 結果タブの1着の帯は最良の金枠と同じ地＋左に金の線（行の外に引き、「1着」の文字に重ねない）",
+  /\.rr-row\.is-winner \{[^}]*background: var\(--ind-best-bg\)[^}]*box-shadow: -4px 0 0 0 var\(--ryujin-gold-500\)/.test(
+    read("src/App.css"),
+  ),
+);
+check(
+  "ダークの金の地は暗い金の不透明な地（紺に半透明で混ぜると灰緑に見えた。2026-10-04 ユーザー判断）",
+  (
+    tokens.match(
+      /--ind-best-bg: color-mix\(in srgb, var\(--ryujin-gold-500\) 20%, #160f03\);/g,
+    ) ?? []
+  ).length === 2,
+);
+check(
+  "U4: イン崩れの比較バーは「/ 100」を添え、見出しは「崩れやすさ（同会場で0〜100）」",
+  read("src/components/race/VolatilityPercentileBar.jsx").includes(
+    't("volatility.percentileBarMax100")',
+  ) &&
+    json("src/locales/ja/common.json").volatility.percentileBarLabel ===
+      "崩れやすさ（同会場で0〜100）" &&
+    LANGS.every(
+      (l) =>
+        json(`src/locales/${l}/common.json`).volatility.percentileBarMax100 ===
+        "/ 100",
+    ),
+);
+check(
+  "U5: ST考察の走数の少ない値は灰（補足の色）",
+  /\.rsc-value\.is-small-sample \{[^}]*color: var\(--text-secondary\)/.test(
+    stCss,
+  ),
+);
+check(
+  "U5: 枠別情報のコース別成績の走数の少ない値も灰（ST考察とそろえる）",
+  [
+    /\.rwit-grid-value\.is-small-sample,\s*\.rwit-grid-n\.is-small-sample \{[^}]*color: var\(--text-secondary\)/,
+    /\.rwit-today-value\.is-small-sample,\s*\.rwit-today-n-td\.is-small-sample \{[^}]*color: var\(--text-secondary\)/,
+  ].every((re) => re.test(read("src/components/race/RaceWakuInfoTab.css"))),
+);
+check(
+  "枠別情報の全コース表の想定コースは灰の点線（金の線は最良の印なので使わない）",
+  /\.rwit-grid-cell\.is-own-course \.rwit-grid-cell-button \{[^}]*outline: 1px dashed var\(--text-secondary\)/.test(
+    read("src/components/race/RaceWakuInfoTab.css"),
+  ),
+);
+check(
+  "走数の少ない値は灰＋太字にしない（ダークで灰と白の差が小さい）",
+  /\.rsc-value\.is-small-sample \{[^}]*font-weight: var\(--font-weight-normal\)/.test(
+    stCss,
+  ) &&
+    (
+      read("src/components/race/RaceWakuInfoTab.css").match(
+        /is-small-sample \{[^}]*--text-secondary\);[^}]*font-weight: var\(--font-weight-normal\)/g,
+      ) ?? []
+    ).length === 2,
+);
+check(
+  "枠別情報の全コース表の想定コースの見出しも点線（金の枠にしない）",
+  /\.rwit-grid-course-th\.is-today \{[^}]*outline: 2px dashed/.test(
+    read("src/components/race/RaceWakuInfoTab.css"),
+  ) &&
+    !/\.rwit-grid-course-th\.is-today \{[^}]*brand-accent-primary/.test(
+      read("src/components/race/RaceWakuInfoTab.css"),
+    ),
+);
+check(
+  "結果の1着の「1着」の文字は、金に本文色を3割混ぜる（ダークの帯の上で AA を割った）",
+  /\.rr-row\.is-winner \.rr-pos \{[^}]*color-mix\(in srgb, var\(--brand-accent-primary\) 70%, var\(--text-primary\)\)/.test(
+    read("src/App.css"),
+  ),
+);
+check(
+  "ホームの注記は「順位」と書かない（「1 / 100」が1位＝一番崩れやすいと逆に読めた）",
+  !json(
+    "src/locales/ja/common.json",
+  ).home.volatilityHighlightsScaleNote.includes("順位"),
+);
+check(
+  "直前情報の金枠の凡例に「今節〜の行は前走で比べる」を書く",
+  json("src/locales/ja/common.json").beforeInfo.bestLegend.includes(
+    "前走の値で比べます",
+  ),
+);
+check(
+  "1b: 直前情報の今節一周・まわり足・直線にも、前走の最良に金枠",
+  /const bestPrev = bestOf\([\s\S]{0,300}"min"/.test(
+    read("src/components/race/RaceBeforeInfoTab.jsx"),
+  ) &&
+    read("src/components/race/RaceBeforeInfoTab.jsx").includes(
+      "bestPrev.has(p.number)",
+    ),
+);
+
+// 2026-10-04 ユーザー判断: 「イン崩れ確率高」を「イン崩れ注意（高）」に改名（0〜100 の数字と並ぶと確率に
+// 読まれた）。画面・4言語の訳・ブログに旧名・旧訳が残っていないこと
+{
+  const OLD = [
+    "イン崩れ確率高",
+    "High upset chance",
+    "冷門機率高",
+    "이변 가능성 높음",
+  ];
+  const files = [
+    ...LANGS.map((l) => `src/locales/${l}/common.json`),
+    "src/pages/HowToUse.jsx",
+    ...readdirSync(path.join(root, "public/blog"))
+      .filter((f) => f.endsWith(".md"))
+      .map((f) => `public/blog/${f}`),
+  ];
+  const left = files.filter((f) => OLD.some((o) => read(f).includes(o)));
+  check(
+    `「イン崩れ確率高」の旧名・旧訳が画面・ブログに残っていない（残り: ${left.join(", ") || "なし"}）`,
+    left.length === 0 &&
+      json("src/locales/ja/common.json").volatility.levelHigh ===
+        "イン崩れ注意（高）",
+
 // 2026-10-03 ユーザー判断（BOA-711 U2）: 準優の目安の線・目安に届く得点率は青。金は最良だけ
 {
   const meet = read("src/components/race/RaceMeetTab.css");

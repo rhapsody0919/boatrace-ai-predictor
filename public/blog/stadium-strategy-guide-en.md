@@ -139,7 +139,7 @@ Using Ryujin Radar's analysis data, here are all 24 venues ranked by **lane-1 wi
 **Strategy:**
 - Check wind speed and direction (be cautious of a headwind)
 - Weight racers with a motor 2nd-place rate of 40%+
-- Target a longshot when the Upset Index shows "High upset chance"
+- Target a longshot when the Upset Index shows "Upset alert (high)"
 
 **Ryujin Radar's Upset Index tendency:** Standard
 
@@ -175,7 +175,7 @@ Using Ryujin Radar's analysis data, here are all 24 venues ranked by **lane-1 wi
 - Avoid racers who looked close to a flying start in the exhibition
 - Inside passes from lanes 2–4 land often
 
-**Ryujin Radar's Upset Index tendency:** Standard to high upset chance
+**Ryujin Radar's Upset Index tendency:** Standard to upset alert (high)
 
 ---
 
@@ -191,7 +191,7 @@ Using Ryujin Radar's analysis data, here are all 24 venues ranked by **lane-1 wi
 - Always check the exhibition run
 - Target local racers who specialize in Edogawa's conditions
 
-**Ryujin Radar's Upset Index tendency:** High upset chance
+**Ryujin Radar's Upset Index tendency:** Upset alert (high)
 
 ---
 
@@ -207,7 +207,7 @@ Using Ryujin Radar's analysis data, here are all 24 venues ranked by **lane-1 wi
 - Lighter racers have an advantage
 - Target racers skilled at motor tuning
 
-**Ryujin Radar's Upset Index tendency:** Standard to high upset chance
+**Ryujin Radar's Upset Index tendency:** Standard to upset alert (high)
 
 ![Lane-1 win rate spectrum by venue. Led by Omura at 65.2%, through Tokuyama, Ashiya, Shimonoseki, Suminoe, Heiwajima, Hamanako, Toda, Kiryu, and Edogawa — representative venues color-coded across 4 tiers from extremely inside-favoring to outside-favoring](/images/blog/venue-winrate-spectrum-en.jpg)
 
@@ -272,7 +272,7 @@ Ryujin Radar analyzes each venue's character and factors it into its predictions
 ### 1. Reflects each venue's Upset Index tendency
 
 - Omura, Tokuyama → low upset chance, favorite friendly
-- Edogawa, Toda → high upset chance, prone to volatility
+- Edogawa, Toda → upset alert (high), prone to volatility
 - All others → a standard upset tendency
 
 ### 2. Factors venue-specific lane-1 win rate into the AI score

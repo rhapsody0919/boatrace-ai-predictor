@@ -50,15 +50,15 @@ A Trio bet requires correctly picking the 3 boats that finish in the top 3 (orde
 
 ## How AI prediction works, and reading each race's volatility
 
-Ryujin Radar analyzes every race with a single unified AI model. On top of that, each race's volatility is visualized through the "Upset Index," a percentile-based indicator that classifies races as "High upset chance," "Standard," or "Favorite friendly."
+Ryujin Radar analyzes every race with a single unified AI model. On top of that, each race's volatility is visualized through the "Upset Index," a percentile-based indicator that classifies races as "Upset alert (high)," "Standard," or "Favorite friendly."
 
 | Item | Description |
 |------|------|
 | Prediction model | One unified model (analyzes all factors holistically) |
 | Volatility indicator | Upset Index |
-| Labels | High upset chance / Standard / Favorite friendly |
+| Labels | Upset alert (high) / Standard / Favorite friendly |
 
-**The key point: AI prediction is no silver bullet.** Use the Upset Index to adjust your approach to each race — betting conservatively on "Favorite friendly" races and keeping an eye on big payouts on "High upset chance" ones.
+**The key point: AI prediction is no silver bullet.** Use the Upset Index to adjust your approach to each race — betting conservatively on "Favorite friendly" races and keeping an eye on big payouts on "Upset alert (high)" ones.
 
 ---
 
@@ -114,7 +114,7 @@ No matter how accurate it is, AI has real limits.
 2. **Be selective about races** — instead of betting on everything, focus on the races the AI is most confident about
 3. **Manage your bankroll strictly** — set a daily budget and don't chase a single big win
 4. **Take a long-term view** — judge performance over a month, not by a single day's win or loss
-5. **Use the Upset Index as a guide** — bet conservatively on "Favorite friendly" races, and watch for big payouts on "High upset chance" ones
+5. **Use the Upset Index as a guide** — bet conservatively on "Favorite friendly" races, and watch for big payouts on "Upset alert (high)" ones
 
 ---
 
