@@ -1,1524 +1,2281 @@
 import { test, expect } from "../fixtures.js";
 
-// BOA-271 アナロジー・ファインダー 受け入れE2E（2026-10-02 版の spec・screens で全面書き直し）
-// 入力: docs/design/analogy-finder/spec.md・screens.md のみ（plan/tasks/src は読んでいない）
-// 対象: FR-1（1-b）・FR-1b（1-a）・FR-2（「ほかのテーマでも絞る」を含む）・FR-3
-// 画面の構造・操作要素は screens.md「画面の構造と操作要素」、1-a の文言は
-// 「1-a の段のラベルと注記」の表に従う。
+// アナロジー・ファインダー（BOA-271、モック Version 16 準拠）の受け入れE2E。
+// docs/design/analogy-finder/spec.md と screens.md だけから書いた（plan/tasks/src は読んでいない）。
 //
-// ---------------------------------------------------------------------------
-// 仮定した API 応答のキー（spec・screens に形の記載が無いため。実装側が合わせるか、
-// テストを直すかを後で判断する）
-// ---------------------------------------------------------------------------
-// GET /api/analogy/race-contribution/[raceId]（FR-1b）
-//   応答が JSON の null           … 計算できなかったレース（1-a を出さない）
-//   status                        … "after_exhibition"（展示後）
-//                                   "before_not_yet"（(a) まだ展示が終わっていない）
-//                                   "before_reflecting"（(b) 反映中）
-//                                   "before_incomplete"（(c) 展示タイムがそろわない）
-//                                   "before_no_value"（(d) 締切後も展示後の値が無い）
-//                                   "absent"（欠場が分かっている）
-//   model_version                 … 1-a の下に出すモデルの版（文字列をそのまま出す前提）
-//   exhibition_as_of              … 展示後の時点 "HH:MM"
-//   themes[]                      … { key, name, share }（今の段の値。share は 0〜1）
-//   boats[]                       … { boat_number, contribution }（符号つき。+ が押し上げ）
-//   before_exhibition             … { themes[], boats[] }（展示後のとき、折りたたみに出す出走表時点の値）
-//   change                        … { boat_number, feature_group }（変化の1行。展示後のときだけ）
+// ■ 開くレース
+//   spec の例のレース 2026-09-27 若松12R（6艇ともA1、G1優勝戦）。
+//   spec・screens に raceId の形式もレースまでの導線も書かれていないため、固定値を環境変数で渡す。
+//     ANALOGY_RACE_ID=<若松12R の raceId> npx playwright test --config=playwright.acceptance.config.js e2e/acceptance/analogy-finder.spec.js
+//   画面は /race/:raceId の「AI予想」タブ（screens「画面の構造と操作要素」URL行）。
 //
-// GET /api/analogy/similar/[raceId]?depth=N（FR-2・FR-3 で共有）
-//   応答が JSON の null           … get_analogy_similar が NULL（2・3 を出さない）
-//   depth 無しの要求              … 自動の深さで返す（auto_depth）
-//   as_of                         … データ段の時刻 "HH:MM"（「出走表 7:30 時点」）
-//   race_finished                 … 確定済みのレースか（「（発走前）」を付ける）
-//   depth / auto_depth            … 使った深さ（4=4条件すべて）／自動で選んだ深さ
-//   conditions[]                  … { key, name, value, theme }（自動の4条件、上から順）
-//   counts_by_depth               … { "4": n4, "3": n3, "2": n2, "1": n1 }
-//   n                             … 今の層の件数
-//   period                        … { from: "YYYY-MM", to: "YYYY-MM" }
-//   extra_filters[]               … { key, name, value, theme, count }（ほかのテーマでも絞る。
-//                                   value が null なら今日の値が分からない＝出さない。count は「足すと N件」）
-//   applied_extra[]               … 適用中の任意条件の key
-//   distributions                 … { kimarite[], winner_boat[], winner_course[], top_trifecta[] }
-//                                   各要素 { label, count }
-//   races[]                       … { date: "YYYY-MM-DD", venue, race_number }（新しい順20件）
-//   trifecta[]                    … { combo: "1-2-3", count }（FR-3 のサンキー・組み合わせ一覧の元）
-//   course_flow[]                 … { winner_course, kimarite, second_course, count }（コールアウト用）
-//   任意条件の要求                … クエリに "round" / "motor" を含む文字列があれば、その条件で絞った応答を返す
-//                                   （パラメータ名は仮定。key をそのまま使う前提）
-// ---------------------------------------------------------------------------
+// ■ API はすべて page.route でモックする（screens「データ取得」の3本）。
+//   実装前で応答の形が決まっていないため、下の形を仮定した。数字の検証はこの形を前提にしている。
+//   実装の形が違う場合は、build* 関数（応答の組み立て）だけを合わせ、検証（expect）は変えないこと。
+//
+//   GET /api/analogy/facts/{raceId}?stage=before|after
+//   {
+//     stage: "before"|"after",
+//     exhibitionAvailable: boolean,          // false なら「展示後」を押せない
+//     race: { venue, raceNumber, date, grade, round, classSummary },
+//     period: { from: "2019-04-01", to: "2026-09-26" },
+//     scopes: [{ key: "VC"|"NC"|"NCR"|"VA", label }],
+//     items: [{ key, label, better: "高い"|"速い"|"早い", worse: "低い"|"遅い", folded?: true }],
+//                                             // 展示前は exhibition_time を含めない
+//     today: {
+//       boats: [{ boat, values: { [itemKey]: number|null }, ranks: { [itemKey]: { rank, ties }|null } }],
+//       wind: { speed, wave } | null,         // 展示前は null
+//       classAllSame: "A1" | null,
+//     },
+//     counts: { [scopeKey]: { [finish "1"|"2"|"3"]: { [boat "1".."6"]: {
+//       total: { hits, n },
+//       avgRank: { [itemKey]: number },       // 六角形の点線
+//       items: { [itemKey]: [{ rank: 1..6, hits, n }] },  // 6艇中の順位ごと（同じ値は両端に含めて集計済み）
+//     } } } },
+//     windWave: { [finish]: { [boat]: { hits, n, allHits, allN } } } | null,   // 展示前は null
+//     aiOutlook: { [finish]: { [boat]: [{ theme, share, items: [{ label, share, direction }] }] } } | null,
+//                                             // 展示前の集計が無ければ null
+//   }
+//
+//   GET /api/analogy/similar/{raceId}?stage=before|after
+//   {
+//     stage, status: "ok"|"empty"|"not_saved"|"pending_after"|"before_only",
+//     stratum: { n, label: "G1以上の優勝戦", conditions: [{ label, value }] },
+//     items: [{ key, label, todayValue, aligned: boolean, usedForDistance: boolean }],  // 33項目
+//     weightOrder: [itemLabel...],
+//     races: [{ raceId, date, venue, raceNumber, grade, round, finish: [1着,2着,3着], kimarite,
+//               trifectaPayout, entry: "123/456", stOrder: [..6], matches: { [itemKey]: "same"|"near"|"diff" } }],
+//                                             // 似ている順。最大800件
+//     comparison: { label: "グレードを問わない優勝戦（ほかの条件は同じ）", n, boats: [{ boat, hits }],
+//                   national: [{ boat, hits, n }] },
+//   }
+//
+//   GET /api/analogy/scenario/{raceId}?scope=&entry=&shape=&stage=
+//   {
+//     scope, entry, shape, stage,
+//     scopes: [{ key, label }],               // 6つ
+//     total,                                  // 数えるレースの件数
+//     entryPatterns: [{ key, label, n, share, boat1: { hits, n }, todayExhibition?: true,
+//                       children?: [{ key, label, n, share, boat1 }] }],
+//     exhibitionEntry: { pattern, label, hits, n, since: "2026-04" } | null,   // 展示前は null
+//     slitHint: { boats: [{ boat, course: { st, n }, overall: { st, n }, venue: { st, n },
+//                           venueAll: { st }, exhibition: { st, flying }|null }],
+//                 conditions: [{ key, label, shapeKey, shapeLabel, hits, n, elseHits, elseN, raises }] },
+//     shapes: [{ key, label, n, share, boat1: { hits, n }, hint?: true }],     // "any" と7つ
+//     attack: null | { attackerBoat, aheadRate: { hits, n },
+//                      exTime: [{ band, hits, n, national: { hits, n }, today? }],
+//                      motor: [...], boat1: { exTime: [...], motor: [...] } },  // 形を選ぶまで null
+//     result: { n, win: [{ boat, hits }], top3: [{ boat, hits }], kimarite: [{ label, hits }],
+//               manshu: { hits, n, allHits, allN },
+//               races: [{ date, venue, raceNumber, entry, finish: [..3], kimarite, payout }] },
+//   }
+//   モックの件数の作り方: 形を選ぶと result.n = 12（30件未満）。それ以外は scope 文字列のハッシュで決める。
 
-const SECTION_HEADING = "アナロジー・ファインダー";
-const H_WHAT = "何が効いているか";
-const H_RACE = "このレースの6艇の差の内訳";
-const H_SLICE = "同じ条件のレース全体の内訳";
-const H_SIMILAR = "類似度の高い過去レース";
-const H_COMBO = "組み合わせ";
-const THEMES = [
-  "会場×枠・進入",
-  "選手・基礎成績",
-  "ST・直前情報",
-  "機力",
-  "環境",
-  "選手・属性",
+const RACE_ID = process.env.ANALOGY_RACE_ID ?? "";
+
+const VENUE = "若松";
+const PERIOD = { from: "2019-04-01", to: "2026-09-26" };
+const PERIOD_TEXT = "2019/4/1〜2026/9/26";
+
+// ---------- 共通 ----------
+
+const isBeforeStage = (stage) => /before|pre/i.test(stage ?? "");
+const isPicked = (v) =>
+  v != null && v !== "" && !/^(any|all|none|null|undefined)$/i.test(v);
+
+const fmtDate = (iso) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${y}/${m}/${d}`;
+};
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// 割合の表記（整数 or 小数1桁）のどちらでも通す
+const pctRe = (hits, n) => {
+  const p = (hits / n) * 100;
+  return `(?:${Math.round(p)}|${p.toFixed(1)})%`;
+};
+const hashStr = (s) =>
+  [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+
+// ---------- facts（タブ1） ----------
+
+const ITEMS = [
+  {
+    key: "series_score",
+    label: "今節の平均着順点",
+    better: "高い",
+    worse: "低い",
+  },
+  {
+    key: "exhibition_time",
+    label: "展示タイム",
+    better: "速い",
+    worse: "遅い",
+  },
+  { key: "local_win_rate", label: "当地勝率", better: "高い", worse: "低い" },
+  {
+    key: "national_win_rate",
+    label: "全国勝率",
+    better: "高い",
+    worse: "低い",
+  },
+  { key: "avg_st", label: "平均ST（直近30走）", better: "早い", worse: "遅い" },
+  {
+    key: "recent_win_rate",
+    label: "直近30走の1着率",
+    better: "高い",
+    worse: "低い",
+  },
+  { key: "motor_2rate", label: "モーター2連率", better: "高い", worse: "低い" },
+  {
+    key: "boat_2rate",
+    label: "ボート2連率",
+    better: "高い",
+    worse: "低い",
+    folded: true,
+  },
 ];
-const ACCIDENT_NOTE = "類似の判定には事故情報を含まない";
-const ABSENT_LINE =
-  "欠場があったため、このレースの6艇の差の内訳は出していません";
-const NOT_AUTO_NOTE = "この条件は自動では使っていません";
-const NOTE_A = "展示の後に更新します";
-const NOTE_B = "展示の結果を反映しています";
-const NOTE_C = "このレースは展示データがそろっていないため、展示前の値です";
-const FORBIDDEN = /間に合わない|間に合わなかった|失敗|エラー/;
-const DIST_HEADINGS = [
-  "決まり手",
-  "1着の艇番",
-  "1着の進入コース",
-  "よく出た出目",
+// 小さいほど良い項目
+const LOWER_IS_BETTER = new Set(["exhibition_time", "avg_st"]);
+
+// 今日の6艇の値（1号艇が index 0）
+const TODAY_VALUES = {
+  series_score: [null, 7.5, 6.0, 8.0, 5.5, 6.25], // 1号艇は値なし → 今日の一文を出さない
+  exhibition_time: [6.72, 6.75, 6.78, 6.74, 6.8, 6.77],
+  local_win_rate: [6.5, 7.2, 6.5, 5.8, 6.5, 6.9], // 1号艇は高いほうから3番目・3艇が同じ値
+  national_win_rate: [8.67, 7.8, 7.1, 6.67, 7.1, 7.5], // 1号艇は6艇で一番高い（6.67〜8.67）
+  avg_st: [0.13, 0.15, 0.14, 0.16, 0.15, 0.17],
+  recent_win_rate: [0.4, 0.27, 0.23, 0.5, 0.27, 0.27],
+  motor_2rate: [45.2, 38.1, 52.3, 41.0, 36.5, 48.8],
+  boat_2rate: [40.1, 35.2, 38.8, 42.0, 33.3, 36.6],
+};
+
+const rankOf = (key, values, idx) => {
+  const v = values[idx];
+  if (v == null) return null;
+  const lower = LOWER_IS_BETTER.has(key);
+  const better = values.filter(
+    (x) => x != null && (lower ? x < v : x > v),
+  ).length;
+  const ties = values.filter((x) => x === v).length;
+  return { rank: better + 1, ties };
+};
+
+const SCOPE_N = { VC: 1134, NC: 5210, NCR: 588, VA: 41230 };
+const SCOPE_FACTOR = { VC: 1, NC: 0.97, NCR: 1.03, VA: 0.85 };
+const BASE_P = {
+  1: [0.655, 0.13, 0.11, 0.06, 0.03, 0.015],
+  2: [0.82, 0.38, 0.32, 0.27, 0.15, 0.06],
+  3: [0.9, 0.6, 0.52, 0.47, 0.32, 0.19],
+};
+const buckets = (pairs) =>
+  pairs.map(([hits, n], i) => ({ rank: i + 1, hits, n }));
+// 判定・並び・今日の一文を確かめるための固定値（数えるレース|着順|艇番|項目）
+const ITEM_OVERRIDES = {
+  // 差が大きい: 76%（205/270）と 15%（40/260）
+  "VC|1|1|national_win_rate": buckets([
+    [205, 270],
+    [180, 260],
+    [160, 250],
+    [120, 240],
+    [80, 250],
+    [40, 260],
+  ]),
+  // 差ははっきりしない: 63%（120/190）と 61%（110/180）でぶれ幅が重なる
+  "VC|1|1|local_win_rate": buckets([
+    [120, 190],
+    [115, 185],
+    [112, 182],
+    [110, 180],
+    [112, 183],
+    [110, 180],
+  ]),
+  // 逆向き・差が大きい: 一番高いとき40%、一番低いとき64%
+  "VC|1|1|motor_2rate": buckets([
+    [100, 250],
+    [110, 250],
+    [120, 250],
+    [130, 250],
+    [140, 250],
+    [160, 250],
+  ]),
+  // 差は小さい: 52% と 48%（件数が多くぶれ幅が重ならない、差5ポイント未満）
+  "VA|1|1|avg_st": buckets([
+    [10400, 20000],
+    [10200, 20000],
+    [10100, 20000],
+    [9900, 20000],
+    [9800, 20000],
+    [9600, 20000],
+  ]),
+};
+
+const facts = (scope, finish, boat, itemKeys) => {
+  const n = SCOPE_N[scope];
+  const p = Math.min(0.99, BASE_P[finish][boat - 1] * SCOPE_FACTOR[scope]);
+  const total =
+    scope === "VC" && finish === 1 && boat === 1
+      ? { hits: 743, n: 1134 }
+      : { hits: Math.round(n * p), n };
+  const items = {};
+  const avgRank = {};
+  itemKeys.forEach((key, j) => {
+    const ov = ITEM_OVERRIDES[`${scope}|${finish}|${boat}|${key}`];
+    const bn = Math.round(n / 5);
+    items[key] =
+      ov ??
+      [1, 2, 3, 4, 5, 6].map((r) => ({
+        rank: r,
+        n: bn,
+        hits: Math.round(
+          bn *
+            Math.max(
+              0.005,
+              Math.min(0.99, total.hits / total.n + (3.5 - r) * 0.002),
+            ),
+        ),
+      }));
+    avgRank[key] =
+      Math.round((1.8 + ((boat + j + finish) % 4) * 0.7) * 10) / 10;
+  });
+  return { total, avgRank, items };
+};
+
+const AI_THEMES = [
+  "選手の実力",
+  "スタート・展示",
+  "モーター・ボート",
+  "体重・年齢・地元",
+  "会場・レース番号",
+  "天候・水面",
+  "レースの条件",
 ];
-const RC_MODEL_VERSION = "rc-2026.10.01";
+const AI_SHARES = [0.34, 0.22, 0.15, 0.09, 0.11, 0.05, 0.04];
+const AI_ITEMS = {
+  選手の実力: [
+    {
+      label: "全国勝率",
+      share: 0.21,
+      direction: "6艇の中で全国勝率が高いほど見込みが上がる",
+    },
+  ],
+  "スタート・展示": [
+    {
+      label: "平均ST",
+      share: 0.12,
+      direction: "6艇の中で平均STが早いほど見込みが上がる",
+    },
+  ],
+  "モーター・ボート": [
+    {
+      label: "モーター2連率",
+      share: 0.1,
+      direction: "6艇の中でモーター2連率が高いほど見込みが上がる",
+    },
+  ],
+  "体重・年齢・地元": [
+    {
+      label: "年齢",
+      share: 0.05,
+      direction: "中堅の年齢で上がりやすい（若いほど・年配ほど、ではない）",
+    },
+  ],
+  "会場・レース番号": [
+    {
+      label: "会場",
+      share: 0.08,
+      direction: "上がる: 徳山・大村・尼崎／下がる: 江戸川・平和島・戸田",
+    },
+  ],
+  "天候・水面": [
+    { label: "風速", share: 0.03, direction: "風が強いほど見込みが下がる" },
+  ],
+  レースの条件: [
+    {
+      label: "グレード",
+      share: 0.02,
+      direction: "グレードが高いほど見込みが上がる",
+    },
+  ],
+};
+const aiOutlook = () => {
+  const out = {};
+  for (const f of [1, 2, 3]) {
+    out[f] = {};
+    for (let b = 1; b <= 6; b++) {
+      out[f][b] = AI_THEMES.map((theme, t) => ({
+        theme,
+        share: AI_SHARES[(t + b - 1 + f - 1) % AI_SHARES.length],
+        items: AI_ITEMS[theme],
+      }));
+    }
+  }
+  return out;
+};
 
-// ---------------------------------------------------------------------------
-// 固定データ
-// ---------------------------------------------------------------------------
-
-function themes(shares) {
-  const keys = {
-    "会場×枠・進入": "venue_lane",
-    "選手・基礎成績": "racer_base",
-    "ST・直前情報": "st_pre",
-    機力: "machine",
-    環境: "environment",
-    "選手・属性": "racer_attr",
-  };
-  return Object.entries(shares).map(([name, share]) => ({
-    key: keys[name],
-    name,
-    share,
-  }));
-}
-
-// 展示後: 上位2テーマの差 .151（強調あり）。機力 > 環境（任意条件はモーターが先）
-const AFTER_THEMES = themes({
-  "選手・基礎成績": 0.452,
-  "会場×枠・進入": 0.301,
-  "ST・直前情報": 0.148,
-  機力: 0.052,
-  "選手・属性": 0.031,
-  環境: 0.016,
-});
-// 展示前（出走表時点）: ST・直前情報 .061 が展示後の .148 と区別できる値
-const BEFORE_THEMES = themes({
-  "選手・基礎成績": 0.487,
-  "会場×枠・進入": 0.336,
-  "ST・直前情報": 0.061,
-  機力: 0.067,
-  "選手・属性": 0.033,
-  環境: 0.016,
-});
-// 上位2テーマの差 .03（強調なし）
-const CLOSE_THEMES = themes({
-  "選手・基礎成績": 0.4,
-  "会場×枠・進入": 0.37,
-  "ST・直前情報": 0.12,
-  機力: 0.06,
-  "選手・属性": 0.03,
-  環境: 0.02,
-});
-const BOATS = [
-  { boat_number: 1, contribution: 0.12 },
-  { boat_number: 2, contribution: -0.05 },
-  { boat_number: 3, contribution: 0.02 },
-  { boat_number: 4, contribution: 0.08 },
-  { boat_number: 5, contribution: -0.09 },
-  { boat_number: 6, contribution: -0.08 },
-];
-
-function raceContribution(status, overrides = {}) {
-  const after = status === "after_exhibition";
+function buildFacts({ stage, exhibitionAvailable = true, aiBefore = false }) {
+  const before = isBeforeStage(stage);
+  const items = ITEMS.filter((it) => !(before && it.key === "exhibition_time"));
+  const keys = items.map((it) => it.key);
+  const counts = {};
+  for (const scope of ["VC", "NC", "NCR", "VA"]) {
+    counts[scope] = {};
+    for (const f of [1, 2, 3]) {
+      counts[scope][f] = {};
+      for (let b = 1; b <= 6; b++) {
+        // NCR（優勝戦）は今節の平均着順点を出さない。集計にも含めない想定
+        const k =
+          scope === "NCR" ? keys.filter((x) => x !== "series_score") : keys;
+        counts[scope][f][b] = facts(scope, f, b, k);
+      }
+    }
+  }
+  const windWave = {};
+  for (const f of [1, 2, 3]) {
+    windWave[f] = {};
+    for (let b = 1; b <= 6; b++) {
+      windWave[f][b] = {
+        hits: 40 + b * 3 + f,
+        n: 120 + b,
+        allHits: 300 + b * 7,
+        allN: 900,
+      };
+    }
+  }
   return {
-    status,
-    model_version: RC_MODEL_VERSION,
-    exhibition_as_of: after ? "15:32" : null,
-    themes: after ? AFTER_THEMES : BEFORE_THEMES,
-    boats: BOATS,
-    before_exhibition: after ? { themes: BEFORE_THEMES, boats: BOATS } : null,
-    change: after ? { boat_number: 4, feature_group: "展示タイム" } : null,
-    ...overrides,
+    stage: before ? "before" : "after",
+    exhibitionAvailable,
+    race: {
+      venue: VENUE,
+      raceNumber: 12,
+      date: "2026-09-27",
+      grade: "G1",
+      round: "優勝戦",
+      classSummary: "6艇ともA1",
+    },
+    period: PERIOD,
+    scopes: [
+      { key: "VC", label: "若松・6艇ともA1" },
+      { key: "NC", label: "全国・6艇ともA1" },
+      { key: "NCR", label: "全国・6艇ともA1の優勝戦" },
+      { key: "VA", label: "若松の全レース" },
+    ],
+    items,
+    today: {
+      boats: [1, 2, 3, 4, 5, 6].map((boat) => ({
+        boat,
+        values: Object.fromEntries(
+          keys.map((k) => [k, TODAY_VALUES[k][boat - 1]]),
+        ),
+        ranks: Object.fromEntries(
+          keys.map((k) => [k, rankOf(k, TODAY_VALUES[k], boat - 1)]),
+        ),
+      })),
+      wind: before ? null : { speed: 3, wave: 2 },
+      classAllSame: "A1",
+    },
+    counts,
+    windWave: before ? null : windWave,
+    aiOutlook: before && !aiBefore ? null : aiOutlook(),
   };
 }
 
-const CONDITIONS = [
-  {
-    key: "win_rate_diff_band",
-    name: "勝率差",
-    value: "−0.49〜+0.19",
-    theme: "選手・基礎成績",
-  },
-  {
+// ---------- similar（タブ2） ----------
+
+const SIM_VENUES = [
+  "若松",
+  "徳山",
+  "大村",
+  "住之江",
+  "尼崎",
+  "下関",
+  "芦屋",
+  "福岡",
+];
+const KIMARITE = {
+  1: "逃げ",
+  2: "差し",
+  3: "まくり",
+  4: "まくり差し",
+  5: "抜き",
+  6: "恵まれ",
+};
+
+const SIM_ITEMS = (() => {
+  const list = [];
+  for (let b = 1; b <= 6; b++)
+    list.push({ key: `nwr${b}`, label: `${b}号艇の全国勝率`, group: "card" });
+  for (let b = 1; b <= 6; b++)
+    list.push({ key: `st${b}`, label: `${b}号艇の平均ST`, group: "card" });
+  for (let b = 1; b <= 6; b++)
+    list.push({
+      key: `mot${b}`,
+      label: `${b}号艇のモーター2連率`,
+      group: "card",
+    });
+  for (let b = 1; b <= 6; b++)
+    list.push({
+      key: `ext${b}`,
+      label: `${b}号艇の展示タイム`,
+      group: "after",
+    });
+  list.push({ key: "weather", label: "天候", group: "after" });
+  list.push({ key: "wind", label: "風速", group: "after" });
+  list.push({ key: "wave", label: "波高", group: "after" });
+  list.push({ key: "venue", label: "会場", group: "card" });
+  list.push({ key: "race_no", label: "レース番号", group: "card" });
+  list.push({
+    key: "final_day",
+    label: "最終日かどうか",
+    group: "card",
+    usedForDistance: false,
+  });
+  list.push({
     key: "boat1_class",
-    name: "1号艇の級別",
-    value: "A1級",
-    theme: "選手・基礎成績",
-  },
-  { key: "venue", name: "会場", value: "大村", theme: "会場×枠・進入" },
-  {
-    key: "top_win_rate_boat",
-    name: "勝率1位の艇",
-    value: "1号艇",
-    theme: "選手・基礎成績",
-  },
-];
+    label: "1号艇の級別",
+    group: "card",
+    aligned: true,
+  });
+  list.push({
+    key: "gap_band",
+    label: "1号艇と勝率トップの差",
+    group: "card",
+    aligned: true,
+  });
+  list.push({
+    key: "top_boat",
+    label: "勝率トップの艇番",
+    group: "card",
+    aligned: true,
+  });
+  return list.map((it) => ({
+    aligned: false,
+    usedForDistance: true,
+    todayValue: "—",
+    ...it,
+  }));
+})();
 
-// 合計が n になる件数の配列を作る（最後の要素で端数を合わせる）
-function dist(labels, n, ratios) {
-  const counts = ratios.map((r) => Math.floor(n * r));
-  const rest = n - counts.reduce((a, b) => a + b, 0);
-  counts[counts.length - 1] += rest;
-  return labels.map((label, i) => ({ label, count: counts[i] }));
-}
-const KIMARITE = ["逃げ", "差し", "まくり", "まくり差し", "抜き", "恵まれ"];
-const BOAT_LABELS = ["1号艇", "2号艇", "3号艇", "4号艇", "5号艇", "6号艇"];
-const COURSE_LABELS = [
-  "1コース",
-  "2コース",
-  "3コース",
-  "4コース",
-  "5コース",
-  "6コース",
-];
-
-// n=640 の基本の層。逃げ 352件 55.0%
-const BASE_KIMARITE = [
-  { label: "逃げ", count: 352 },
-  { label: "差し", count: 102 },
-  { label: "まくり", count: 83 },
-  { label: "まくり差し", count: 70 },
-  { label: "抜き", count: 28 },
-  { label: "恵まれ", count: 5 },
-];
-// 14通り、合計 640。上位10件＋「その他」4件。1号艇以外の1着を含む
-const BASE_TRIFECTA = [
-  { combo: "1-2-3", count: 120 },
-  { combo: "1-3-2", count: 90 },
-  { combo: "1-2-4", count: 70 },
-  { combo: "1-4-2", count: 52 },
-  { combo: "2-1-3", count: 50 },
-  { combo: "1-3-4", count: 45 },
-  { combo: "3-1-2", count: 40 },
-  { combo: "4-1-2", count: 35 },
-  { combo: "1-4-3", count: 30 },
-  { combo: "2-3-1", count: 28 },
-  { combo: "5-1-2", count: 25 },
-  { combo: "3-4-1", count: 20 },
-  { combo: "6-1-2", count: 20 },
-  { combo: "4-5-6", count: 15 },
-];
-
-function recentRaces(count) {
-  const venues = ["大村", "徳山", "下関", "芦屋"];
-  return Array.from({ length: count }, (_, i) => {
-    const d = new Date(Date.UTC(2026, 8, 28 - i));
+// 似ている順の120件。1着: 1号艇77・2号艇14・3号艇12・4号艇9・5号艇5・6号艇3
+const SIM_RACES = (() => {
+  const head = [1, 1, 2, 1, 1, 3, 1, 4, 1, 1];
+  const rest = { 1: 70, 2: 13, 3: 11, 4: 8, 5: 5, 6: 3 };
+  const pool = Object.entries(rest).flatMap(([b, c]) =>
+    Array(c).fill(Number(b)),
+  );
+  const order = pool
+    .map((b, k) => ({ b, key: (k * 37) % pool.length }))
+    .sort((x, y) => x.key - y.key)
+    .map((x) => x.b);
+  const winners = [...head, ...order];
+  const w1Combos = [
+    ...Array(18).fill([2, 4]),
+    ...Array(12).fill([2, 3]),
+    ...Array(9).fill([3, 2]),
+  ];
+  const w1Rest = [
+    [3, 4],
+    [4, 2],
+    [2, 5],
+    [5, 3],
+    [4, 3],
+    [2, 6],
+    [3, 5],
+    [4, 5],
+  ];
+  let w1 = 0;
+  const other = {};
+  const start = Date.UTC(2019, 5, 1);
+  return winners.map((w, i) => {
+    let second;
+    let third;
+    if (w === 1) {
+      [second, third] =
+        w1 < w1Combos.length
+          ? w1Combos[w1]
+          : w1Rest[(w1 - w1Combos.length) % w1Rest.length];
+      w1++;
+    } else {
+      const k = other[w] ?? 0;
+      other[w] = k + 1;
+      second = 1;
+      third = [2, 3, 4, 5, 6].filter((b) => b !== w)[k % 4];
+    }
+    const date = new Date(start + i * 17 * 86400000).toISOString().slice(0, 10);
+    const matches = Object.fromEntries(
+      SIM_ITEMS.map((it, j) => {
+        if (it.aligned) return [it.key, "same"];
+        if (j % 7 === 3) return [it.key, i % 4 === 0 ? "same" : "diff"]; // 半分未満しかそろわない項目
+        return [
+          it.key,
+          (i + j) % 5 === 0 ? "diff" : (i + j) % 3 === 0 ? "near" : "same",
+        ];
+      }),
+    );
     return {
-      date: d.toISOString().slice(0, 10),
-      venue: venues[i % venues.length],
-      race_number: (i % 12) + 1,
+      raceId: `sim-${i}`,
+      date,
+      venue: SIM_VENUES[i % SIM_VENUES.length],
+      raceNumber: 12,
+      grade: "G1",
+      round: "優勝戦",
+      finish: [w, second, third],
+      kimarite: KIMARITE[w],
+      trifectaPayout: 800 + ((i * 523) % 30000),
+      entry: "123/456",
+      stOrder: [1, 2, 2, 5, 2, 6],
+      matches,
     };
   });
-}
+})();
 
-function scaledTrifecta(n) {
-  const total = BASE_TRIFECTA.reduce((a, b) => a + b.count, 0);
-  const rows = BASE_TRIFECTA.map((r) => ({
-    combo: r.combo,
-    count: Math.max(1, Math.floor((r.count * n) / total)),
-  }));
-  const rest = n - rows.reduce((a, b) => a + b.count, 0);
-  rows[0].count += rest;
-  return rows;
-}
+const simRaceLabel = (r) =>
+  `${fmtDate(r.date)}\\s?${escapeRe(r.venue)}${r.raceNumber}R`;
 
-function similarLayer({
-  depth,
-  autoDepth,
-  counts,
-  n,
-  extraFilters,
-  appliedExtra,
-}) {
-  const isBase = n === 640;
+function buildSimilar({ stage, status = "ok" }) {
+  const before =
+    isBeforeStage(stage) ||
+    status === "pending_after" ||
+    status === "before_only";
+  const races =
+    status === "empty" || status === "not_saved"
+      ? []
+      : before
+        ? [...SIM_RACES].reverse()
+        : SIM_RACES;
   return {
-    as_of: "07:30",
-    race_finished: false,
-    depth,
-    auto_depth: autoDepth,
-    conditions: CONDITIONS,
-    counts_by_depth: counts,
-    n,
-    period: { from: "2019-04", to: "2026-09" },
-    extra_filters: extraFilters,
-    applied_extra: appliedExtra,
-    distributions: {
-      kimarite: isBase
-        ? BASE_KIMARITE
-        : dist(KIMARITE, n, [0.542, 0.2, 0.13, 0.08, 0.04, 0.008]),
-      winner_boat: dist(
-        BOAT_LABELS,
-        n,
-        [0.55, 0.156, 0.125, 0.094, 0.047, 0.028],
-      ),
-      winner_course: dist(
-        COURSE_LABELS,
-        n,
-        [0.555, 0.153, 0.125, 0.092, 0.047, 0.028],
-      ),
-      top_trifecta: [
-        { label: "1-2-3", count: Math.round(n * 0.1875) },
-        { label: "1-3-2", count: Math.round(n * 0.14) },
-        { label: "1-2-4", count: Math.round(n * 0.109) },
+    stage: isBeforeStage(stage) ? "before" : "after",
+    status,
+    stratum: {
+      n: races.length,
+      label: "G1以上の優勝戦",
+      conditions: [
+        { label: "1号艇の級別", value: "A1" },
+        { label: "1号艇と勝率トップの差", value: "+0.19以上" },
+        { label: "勝率トップの艇番", value: "1号艇" },
+        { label: "ラウンド", value: "優勝戦" },
+        { label: "グレード", value: "G1以上" },
       ],
     },
-    races: recentRaces(20),
-    trifecta: isBase ? BASE_TRIFECTA : scaledTrifecta(n),
-    course_flow: [
-      { winner_course: 4, kimarite: "まくり", second_course: 1, count: 12 },
-      { winner_course: 4, kimarite: "まくり", second_course: 5, count: 9 },
-    ],
+    items: SIM_ITEMS.filter(
+      (it) => !(isBeforeStage(stage) && it.group === "after"),
+    ),
+    weightOrder: ["1号艇の全国勝率", "1号艇の平均ST", "1号艇のモーター2連率"],
+    races,
+    comparison: {
+      label: "グレードを問わない優勝戦（ほかの条件は同じ）",
+      n: 76,
+      boats: [
+        { boat: 1, hits: 49 },
+        { boat: 2, hits: 8 },
+        { boat: 3, hits: 7 },
+        { boat: 4, hits: 6 },
+        { boat: 5, hits: 4 },
+        { boat: 6, hits: 2 },
+      ],
+      national: [1, 2, 3, 4, 5, 6].map((boat) => ({
+        boat,
+        hits: [55, 14, 12, 10, 6, 3][boat - 1],
+        n: 100,
+      })),
+    },
   };
 }
 
-const COUNTS = { 4: 640, 3: 1204, 2: 3530, 1: 9811 };
-const EXTRA_FILTERS = [
-  { key: "round", name: "ラウンド", value: "予選", theme: "環境", count: 212 },
-  { key: "grade", name: "グレード", value: "G1", theme: "環境", count: 0 },
-  {
-    key: "motor",
-    name: "1号艇のモーター",
-    value: "6艇中1〜2位",
-    theme: "機力",
-    count: 24,
-  },
+// ---------- scenario（タブ3） ----------
+
+const SHAPES = [
+  { key: "any", label: "どの形でも" },
+  { key: "flat", label: "横一線" },
+  { key: "inner3", label: "内3艇そろう" },
+  { key: "two_dent", label: "2コース凹み" },
+  { key: "kado_uke_dent", label: "カド受け凹み" },
+  { key: "kado_ippatsu", label: "カド一撃" },
+  { key: "in_dent", label: "イン凹み" },
+  { key: "dash_lead", label: "ダッシュ勢先行" },
 ];
 
-// 既定: 4条件のまま 640件
-function similarDefault(url) {
-  const s = url.toString();
-  const depthParam = url.searchParams.get("depth");
-  if (s.includes("round")) {
-    return similarLayer({
-      depth: 4,
-      autoDepth: 4,
-      counts: COUNTS,
-      n: 212,
-      extraFilters: EXTRA_FILTERS,
-      appliedExtra: ["round"],
-    });
-  }
-  if (s.includes("motor")) {
-    return similarLayer({
-      depth: 4,
-      autoDepth: 4,
-      counts: COUNTS,
-      n: 24,
-      extraFilters: EXTRA_FILTERS,
-      appliedExtra: ["motor"],
-    });
-  }
-  const depth = depthParam ? Number(depthParam) : 4;
-  return similarLayer({
-    depth,
-    autoDepth: 4,
-    counts: COUNTS,
-    n: COUNTS[depth],
-    extraFilters: EXTRA_FILTERS,
-    appliedExtra: [],
-  });
-}
-
-// 自動で「勝率1位の艇」を外した: 4条件 41件 → 3条件 286件
-const AUTO_COUNTS = { 4: 41, 3: 286, 2: 2210, 1: 9811 };
-function similarAutoDropped(url) {
-  const depthParam = url.searchParams.get("depth");
-  const depth = depthParam ? Number(depthParam) : 3;
-  return similarLayer({
-    depth,
-    autoDepth: 3,
-    counts: AUTO_COUNTS,
-    n: AUTO_COUNTS[depth],
-    extraFilters: EXTRA_FILTERS,
-    appliedExtra: [],
-  });
-}
-
-// ---------------------------------------------------------------------------
-// ルートと画面の操作
-// ---------------------------------------------------------------------------
-
-// state は可変。値を変えて page.reload() すると別の状態を返す（unroute を使わないため）
-async function mockAnalogyApis(page, state) {
-  await page.route(
-    /\/api\/analogy\/race-contribution\/[^/?#]+/,
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(state.contribution ?? null),
-      });
+function buildScenario(url) {
+  const q = new URL(url).searchParams;
+  const scope = q.get("scope") ?? "";
+  const entry = q.get("entry") ?? "";
+  const shape = q.get("shape") ?? "";
+  const before = isBeforeStage(q.get("stage"));
+  const total = 300 + (hashStr(scope || "default") % 2000);
+  const entryN = isPicked(entry)
+    ? Math.round(total * (0.8 - (hashStr(entry) % 10) / 100))
+    : total;
+  const n = isPicked(shape) ? 12 : entryN;
+  const races = Array.from({ length: n }, (_, i) => ({
+    date: new Date(Date.UTC(2020, 0, 1) + i * 9 * 86400000)
+      .toISOString()
+      .slice(0, 10),
+    venue: SIM_VENUES[i % SIM_VENUES.length],
+    raceNumber: (i % 12) + 1,
+    entry: i % 3 === 0 ? "231/456" : "123/456",
+    finish: [1 + (i % 6), 1 + ((i + 1) % 6), 1 + ((i + 2) % 6)],
+    kimarite: KIMARITE[1 + (i % 6)],
+    payout: 1000 + ((i * 731) % 40000),
+  }));
+  return {
+    scope,
+    entry,
+    shape,
+    stage: before ? "before" : "after",
+    scopes: [
+      { key: "VC", label: "若松・6艇ともA1" },
+      { key: "NC", label: "全国・6艇ともA1" },
+      { key: "NCR", label: "全国・6艇ともA1の優勝戦" },
+      { key: "VA", label: "若松の全レース" },
+      { key: "VG", label: "若松のG1" },
+      { key: "NA", label: "全国の全レース" },
+    ],
+    total,
+    entryPatterns: [
+      {
+        key: "any",
+        label: "どの進入でも",
+        n: total,
+        share: 1,
+        boat1: { hits: Math.round(total * 0.6), n: total },
+      },
+      {
+        key: "wakunari",
+        label: "枠なり",
+        n: Math.round(total * 0.8),
+        share: 0.8,
+        boat1: { hits: Math.round(total * 0.5), n: Math.round(total * 0.8) },
+        ...(before ? {} : { todayExhibition: true }),
+      },
+      {
+        key: "maezuke",
+        label: "前付けあり（1号艇イン）",
+        n: Math.round(total * 0.15),
+        share: 0.15,
+        boat1: { hits: Math.round(total * 0.08), n: Math.round(total * 0.15) },
+        children: [
+          {
+            key: "maezuke6",
+            label: "6号艇だけ",
+            n: 40,
+            share: 0.06,
+            boat1: { hits: 22, n: 40 },
+          },
+          {
+            key: "maezuke5",
+            label: "5号艇だけ",
+            n: 35,
+            share: 0.05,
+            boat1: { hits: 19, n: 35 },
+          },
+          {
+            key: "maezuke56",
+            label: "5・6号艇",
+            n: 20,
+            share: 0.03,
+            boat1: { hits: 10, n: 20 },
+          },
+          {
+            key: "maezuke_other",
+            label: "その他",
+            n: 10,
+            share: 0.01,
+            boat1: { hits: 4, n: 10 },
+          },
+        ],
+      },
+      {
+        key: "in_taken",
+        label: "1号艇がインを取られた",
+        n: 12,
+        share: 0.01,
+        boat1: { hits: 2, n: 12 },
+      },
+    ],
+    exhibitionEntry: before
+      ? null
+      : {
+          pattern: "wakunari",
+          label: "枠なり",
+          hits: 1882,
+          n: 2023,
+          since: "2026-04",
+        },
+    slitHint: {
+      boats: [1, 2, 3, 4, 5, 6].map((boat) => ({
+        boat,
+        course: { st: 0.13 + boat * 0.003, n: 22 },
+        overall: { st: 0.14 + boat * 0.002, n: 30 },
+        venue: { st: 0.135 + boat * 0.002, n: 12 },
+        venueAll: { st: 0.15 + boat * 0.002 },
+        exhibition: before
+          ? null
+          : { st: boat === 3 ? 0.09 : 0.1 + boat * 0.01, flying: boat === 3 },
+      })),
+      conditions: [
+        {
+          key: "c_two_dent",
+          label: "2号艇の平均STが1号艇・3号艇より.02以上遅い",
+          shapeKey: "two_dent",
+          shapeLabel: "2コース凹み",
+          hits: 57,
+          n: 300,
+          elseHits: 120,
+          elseN: 1200,
+          raises: true,
+        },
+        {
+          key: "c_kado",
+          label: "4号艇の平均STが3号艇より.01以上遅い",
+          shapeKey: "kado_ippatsu",
+          shapeLabel: "カド一撃",
+          hits: 20,
+          n: 400,
+          elseHits: 110,
+          elseN: 1100,
+          raises: false,
+        },
+      ],
     },
-  );
-  await page.route(/\/api\/analogy\/similar\/[^/?#]+/, async (route) => {
-    const url = new URL(route.request().url());
-    const body = state.similar ? state.similar(url) : null;
+    shapes: SHAPES.map((s, i) => ({
+      ...s,
+      n: s.key === "any" ? entryN : Math.round(entryN * (0.05 + i * 0.02)),
+      share: s.key === "any" ? 1 : 0.05 + i * 0.02,
+      boat1: { hits: Math.round(entryN * 0.3), n: entryN },
+      ...(s.key === "two_dent" ? { hint: true } : {}),
+    })),
+    attack: isPicked(shape)
+      ? {
+          attackerBoat: 4,
+          aheadRate: { hits: 30, n: 80 },
+          exTime: [
+            {
+              band: "1〜2位",
+              hits: 16,
+              n: 45,
+              national: { hits: 120, n: 300 },
+              today: true,
+            },
+            {
+              band: "3〜4位",
+              hits: 24,
+              n: 60,
+              national: { hits: 100, n: 310 },
+            },
+            { band: "5〜6位", hits: 5, n: 30, national: { hits: 60, n: 280 } },
+          ],
+          motor: [
+            {
+              band: "1〜2位",
+              hits: 20,
+              n: 55,
+              national: { hits: 110, n: 290 },
+            },
+            { band: "3〜4位", hits: 15, n: 50, national: { hits: 95, n: 300 } },
+            { band: "5〜6位", hits: 9, n: 30, national: { hits: 70, n: 300 } },
+          ],
+          boat1: {
+            exTime: [
+              { band: "1〜2位", hits: 30, n: 70 },
+              { band: "3〜4位", hits: 20, n: 50 },
+              { band: "5〜6位", hits: 6, n: 15 },
+            ],
+            motor: [
+              { band: "1〜2位", hits: 28, n: 60 },
+              { band: "3〜4位", hits: 18, n: 50 },
+              { band: "5〜6位", hits: 10, n: 25 },
+            ],
+          },
+        }
+      : null,
+    result: {
+      n,
+      win: [1, 2, 3, 4, 5, 6].map((boat) => ({
+        boat,
+        hits: Math.round(n * [0.5, 0.15, 0.12, 0.12, 0.07, 0.04][boat - 1]),
+      })),
+      top3: [1, 2, 3, 4, 5, 6].map((boat) => ({
+        boat,
+        hits: Math.round(n * [0.85, 0.6, 0.5, 0.5, 0.35, 0.2][boat - 1]),
+      })),
+      kimarite: Object.values(KIMARITE).map((label, i) => ({
+        label,
+        hits: Math.round(n * [0.5, 0.15, 0.12, 0.12, 0.07, 0.04][i]),
+      })),
+      manshu: {
+        hits: Math.round(n * 0.2),
+        n,
+        allHits: Math.round(total * 0.18),
+        allN: total,
+      },
+      races,
+    },
+  };
+}
+
+// ---------- ルート・導線 ----------
+
+/**
+ * API のモックを入れる。opts で状態を切り替える。
+ * 戻り値の calls に各エンドポイントの呼び出しURLが溜まる（遅延取得の確認用）。
+ */
+async function mockApis(page, opts = {}) {
+  const calls = { facts: [], similar: [], scenario: [] };
+  const last = { scenario: null };
+  await page.route("**/api/analogy/facts/**", async (route) => {
+    const url = route.request().url();
+    calls.facts.push(url);
+    if (opts.factsFail) {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "fail" }),
+      });
+      return;
+    }
+    const stage = new URL(url).searchParams.get("stage");
+    const body = buildFacts({
+      stage: opts.exhibitionAvailable === false ? "before" : stage,
+      exhibitionAvailable: opts.exhibitionAvailable ?? true,
+      aiBefore: opts.aiBefore ?? false,
+    });
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify(body),
     });
   });
+  await page.route("**/api/analogy/similar/**", async (route) => {
+    const url = route.request().url();
+    calls.similar.push(url);
+    const stage = new URL(url).searchParams.get("stage");
+    const body = buildSimilar({ stage, status: opts.similarStatus ?? "ok" });
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(body),
+    });
+  });
+  await page.route("**/api/analogy/scenario/**", async (route) => {
+    const url = route.request().url();
+    calls.scenario.push(url);
+    const body = buildScenario(url);
+    last.scenario = body;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(body),
+    });
+  });
+  return { calls, last };
 }
 
-// レース詳細は /race/:raceId（screens.md）。API は固定データを返すが、レース詳細そのものは
-// 本番（録画）のデータで開くため、レースIDを固定値で書かず日別一覧 /races から辿る。
-// /races のレースへのリンク名は仕様に無いため「NR」を含むリンクを仮定する（報告の曖昧点参照）
-async function openRaceDetail(page) {
-  await page.goto("/races");
-  const raceLink = page.getByRole("link", { name: /\d{1,2}\s*R/ }).first();
-  await expect(raceLink).toBeVisible();
-  await raceLink.click();
-  await expect(page).toHaveURL(/\/race\/[^/?#]+/);
-}
-
-async function openAiPredictionTab(page) {
-  // タブ名「AI予想」（screens.md）。既存タブの role は仕様に無いので tab/button を許容する
-  const aiTab = page
+async function openSection(page) {
+  if (!RACE_ID) {
+    throw new Error(
+      "ANALOGY_RACE_ID が未設定。2026-09-27 若松12R の raceId を環境変数で渡す（spec・screens に raceId と導線が無いため）",
+    );
+  }
+  await page.goto(`/race/${RACE_ID}`);
+  await page
     .getByRole("tab", { name: /AI予想/ })
     .or(page.getByRole("button", { name: /AI予想/ }))
-    .first();
-  await expect(aiTab).toBeVisible();
-  await aiTab.click();
-}
-
-function sectionOf(page) {
-  // <section aria-labelledby> → 見出しで名前の付いた region
-  return page.getByRole("region", { name: SECTION_HEADING });
-}
-
-async function openSection(page, state) {
-  await mockAnalogyApis(page, state);
-  await openRaceDetail(page);
-  await openAiPredictionTab(page);
-  const section = sectionOf(page);
-  await expect(section).toBeVisible();
-  return section;
-}
-
-async function reopenSection(page) {
-  await page.reload();
-  await openAiPredictionTab(page);
-  const section = sectionOf(page);
-  await expect(section).toBeVisible();
-  return section;
-}
-
-// 節の innerText のうち、start の見出しから end の見出しの手前まで
-async function textBetween(section, start, end) {
-  const text = await section.innerText();
-  const from = text.indexOf(start);
-  if (from < 0) return "";
-  const rest = text.slice(from);
-  if (!end) return rest;
-  const to = rest.indexOf(end, start.length);
-  return to > 0 ? rest.slice(0, to) : rest;
-}
-
-// 2（似ている過去レース）の範囲: 見出しから h3「組み合わせ」の行の手前まで
-const COMBO_LINE = /\n\s*組み合わせ\s*\n/;
-async function part2Text(section) {
-  const text = await section.innerText();
-  const from = text.indexOf(H_SIMILAR);
-  if (from < 0) return "";
-  const rest = text.slice(from);
-  const to = rest.search(COMBO_LINE);
-  return to > 0 ? rest.slice(0, to) : rest;
-}
-async function part3Text(section) {
-  const text = await section.innerText();
-  const from = text.indexOf(H_SIMILAR);
-  const rest = from >= 0 ? text.slice(from) : text;
-  const m = rest.search(COMBO_LINE);
-  return m >= 0 ? rest.slice(m) : "";
-}
-async function part1aText(section) {
-  return textBetween(section, H_RACE, H_SLICE);
-}
-
-function conditionGroup(section) {
-  return section.getByRole("group", { name: "条件", exact: true });
-}
-function extraGroup(section) {
-  return section.getByRole("group", {
-    name: "ほかのテーマでも絞る",
-    exact: true,
+    .or(page.getByRole("link", { name: /AI予想/ }))
+    .first()
+    .click();
+  const section = page.getByRole("region", {
+    name: /アナロジー・ファインダー/,
   });
-}
-async function highlightedChipTexts(group) {
-  // data-highlight="true" は screens.md の構造の表で決まっている属性
-  return group.evaluate((el) =>
-    Array.from(el.querySelectorAll('[data-highlight="true"]')).map(
-      (e) => e.textContent ?? "",
-    ),
-  );
+  await expect(section).toBeVisible();
+  return section;
 }
 
-// シェア（0〜1）が % または小数で出ていることを表す正規表現
-function shareRe(share) {
-  const pct = share * 100;
-  const int = Math.round(pct);
-  const one = pct.toFixed(1).replace(".", "\\.").replace(/\\\.0$/, "(?:\\.0)?");
-  const dec = String(share).replace(/^0/, "").replace(".", "\\.");
-  return new RegExp(`(^|[^\\d.])(${one}|${int})\\s*%|(^|[^\\d])0?${dec}(?!\\d)`);
+const timeGroup = (s) => s.getByRole("group", { name: "時点" });
+const finishGroup = (s) => s.getByRole("group", { name: "着順" });
+const tab = (s, name) => s.getByRole("tab", { name });
+const panel = (s) => s.getByRole("tabpanel");
+const card = (s, label) =>
+  panel(s)
+    .getByRole("article")
+    .filter({
+      has: s
+        .page()
+        .getByRole("heading", { name: new RegExp(`^${escapeRe(label)}`) }),
+    });
+
+async function openTab(section, name) {
+  await tab(section, name).click();
+  await expect(tab(section, name)).toHaveAttribute("aria-selected", "true");
 }
 
-function num(n) {
-  // 1,204 と 1204 の両方を許す
-  const s = String(n);
-  return s.length > 3 ? `${s.slice(0, -3)},?${s.slice(-3)}` : s;
-}
+// ======================================================================
+// 節・共通の操作
+// ======================================================================
 
-// ---------------------------------------------------------------------------
-// S-1 節の配置・全体の流れ
-// ---------------------------------------------------------------------------
-
-test.describe("S-1 節の構造", () => {
-  test("[screens S-1/構造] AI予想タブに見出し（h2相当）「アナロジー・ファインダー」の節（region）が出る", async ({
+test.describe("アナロジー・ファインダー: 節と共通の操作", () => {
+  test("[screens S-1 / 構造] AI予想タブに節があり、見出しに会場とRが出る", async ({
     page,
   }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
+    await mockApis(page);
+    const section = await openSection(page);
     await expect(
-      section.getByRole("heading", { name: SECTION_HEADING, level: 2 }),
+      section
+        .getByRole("heading", { name: /アナロジー・ファインダー/ })
+        .first(),
+    ).toContainText(`${VENUE}12R`);
+  });
+
+  test("[screens S-1 2 / spec 時点] 展示データがあれば時点の既定は「展示後（直前情報も）」", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await expect(
+      timeGroup(section).getByRole("button", { name: "展示後（直前情報も）" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      timeGroup(section).getByRole("button", { name: "展示前（出走表）" }),
+    ).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("[spec 時点 / screens 状態] 展示データがそろう前は「展示後」を押せず、「展示の後に選べる」と出る", async ({
+    page,
+  }) => {
+    await mockApis(page, { exhibitionAvailable: false });
+    const section = await openSection(page);
+    await expect(
+      timeGroup(section).getByRole("button", { name: "展示後（直前情報も）" }),
+    ).toBeDisabled();
+    await expect(
+      timeGroup(section).getByRole("button", { name: "展示前（出走表）" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(section.getByText("展示の後に選べる")).toBeVisible();
+  });
+
+  test("[screens 構造] 着順は「1着」「2着以内」「3着以内」、既定は1着", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    const g = finishGroup(section);
+    await expect(g.getByRole("button")).toHaveCount(3);
+    await expect(g.getByRole("button", { name: "1着" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(g.getByRole("button", { name: "2着以内" })).toBeVisible();
+    await expect(g.getByRole("button", { name: "3着以内" })).toBeVisible();
+  });
+
+  test("[screens S-1 2] タブは3つで、既定は「来る艇の条件」", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await expect(section.getByRole("tablist").getByRole("tab")).toHaveCount(3);
+    await expect(tab(section, "来る艇の条件")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(tab(section, "類似レース")).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
+    await expect(tab(section, "展開シナリオ")).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
+  });
+
+  test("[screens データ取得] 類似レース・展開シナリオのデータはタブを開くまで取得しない", async ({
+    page,
+  }) => {
+    const { calls } = await mockApis(page);
+    const section = await openSection(page);
+    await expect(
+      panel(section).getByRole("heading", { level: 3 }).first(),
+    ).toBeVisible();
+    expect(calls.facts.length).toBeGreaterThan(0);
+    expect(calls.similar).toHaveLength(0);
+    expect(calls.scenario).toHaveLength(0);
+    await openTab(section, "類似レース");
+    await expect.poll(() => calls.similar.length).toBeGreaterThan(0);
+    expect(calls.scenario).toHaveLength(0);
+  });
+
+  test("[screens S-1 / spec やらないこと] 選んだタブ・艇番はURLに残さず、開き直すと既定に戻る", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    const urlBefore = page.url();
+    await section
+      .getByRole("group", { name: "艇番" })
+      .getByRole("button", { name: "3" })
+      .click();
+    await openTab(section, "類似レース");
+    expect(page.url()).toBe(urlBefore);
+    const again = await openSection(page);
+    await expect(tab(again, "来る艇の条件")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(
+      again
+        .getByRole("group", { name: "艇番" })
+        .getByRole("button", { name: "1" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("[screens 状態] facts の取得に失敗したら、そのタブに案内を出し、ほかのタブは使える", async ({
+    page,
+  }) => {
+    await mockApis(page, { factsFail: true });
+    const section = await openSection(page);
+    await expect(
+      section.getByText("表示できませんでした。時間をおいて開き直してください"),
+    ).toBeVisible();
+    await openTab(section, "類似レース");
+    await expect(
+      panel(section).getByRole("slider", { name: /似ている順に/ }),
     ).toBeVisible();
   });
 
-  test("[screens S-1 Q1] 中は「何が効いているか」→「似ている過去レース」→「組み合わせ」の順の縦の1本の流れ（h3）", async ({
+  test("[spec 位置づけ / FR-E] 節の中に「寄与度」「モデル」「競艇」の語が出ない", async ({
     page,
   }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const h1 = section.getByRole("heading", { name: H_WHAT, level: 3 });
-    const h2 = section.getByRole("heading", { name: H_SIMILAR, level: 3 });
-    const h3 = section.getByRole("heading", {
-      name: H_COMBO,
-      exact: true,
-      level: 3,
-    });
-    await expect(h1).toBeVisible();
-    await expect(h2).toBeVisible();
-    await expect(h3).toBeVisible();
-    const [b1, b2, b3] = await Promise.all([
-      h1.boundingBox(),
-      h2.boundingBox(),
-      h3.boundingBox(),
-    ]);
-    expect(b1 && b2 && b3).toBeTruthy();
-    expect(b1.y).toBeLessThan(b2.y);
-    expect(b2.y).toBeLessThan(b3.y);
-    // Q1: タブ切り替えはやめる
-    await expect(section.getByRole("tab", { name: "類似レース" })).toHaveCount(
+    await mockApis(page);
+    const section = await openSection(page);
+    await section
+      .getByText(
+        "AIの見立て（補助）: ほかの項目をそろえたうえで、どの項目が効くか",
+      )
+      .click();
+    await section
+      .getByText("使っている項目（どの数字から出しているか）")
+      .click();
+    const text1 = await section.innerText();
+    await openTab(section, "類似レース");
+    await expect(
+      panel(section).getByRole("heading", { name: "類似レース" }),
+    ).toBeVisible();
+    const text2 = await section.innerText();
+    await openTab(section, "展開シナリオ");
+    await expect(
+      panel(section).getByRole("heading", { name: "展開シナリオ" }),
+    ).toBeVisible();
+    const text3 = await section.innerText();
+    for (const t of [text1, text2, text3]) {
+      expect(t).not.toContain("寄与度");
+      expect(t).not.toContain("モデル");
+      expect(t).not.toContain("競艇");
+    }
+  });
+});
+
+// ======================================================================
+// タブ1 来る艇の条件（FR-A・FR-E）
+// ======================================================================
+
+test.describe("アナロジー・ファインダー: 来る艇の条件", () => {
+  test("[spec FR-A A-1] 見出しは「1号艇が1着になったのは、どんなとき？」で、艇番の既定は1", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await expect(
+      panel(section).getByRole("heading", {
+        level: 3,
+        name: "1号艇が1着になったのは、どんなとき？",
+      }),
+    ).toBeVisible();
+    const boats = section.getByRole("group", { name: "艇番" });
+    await expect(boats.getByRole("button")).toHaveCount(6);
+    await expect(boats.getByRole("button", { name: "1" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  test("[spec 着順 / FR-A] 艇番・着順を変えると見出しが「3号艇が2着以内に入ったのは、どんなとき？」になる", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await section
+      .getByRole("group", { name: "艇番" })
+      .getByRole("button", { name: "3" })
+      .click();
+    await expect(
+      panel(section).getByRole("heading", {
+        level: 3,
+        name: "3号艇が1着になったのは、どんなとき？",
+      }),
+    ).toBeVisible();
+    await finishGroup(section).getByRole("button", { name: "2着以内" }).click();
+    await expect(
+      panel(section).getByRole("heading", {
+        level: 3,
+        name: "3号艇が2着以内に入ったのは、どんなとき？",
+      }),
+    ).toBeVisible();
+    await finishGroup(section).getByRole("button", { name: "3着以内" }).click();
+    await expect(
+      panel(section).getByRole("heading", {
+        level: 3,
+        name: "3号艇が3着以内に入ったのは、どんなとき？",
+      }),
+    ).toBeVisible();
+  });
+
+  test("[spec A-3 / 数えるレース] 今日が優勝戦なので、数えるレースはVC・NC・NCR・VAの4つ、既定はVC", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    const scopes = panel(section).getByRole("group", { name: "数えるレース" });
+    await expect(scopes.getByRole("button")).toHaveCount(4);
+    await expect(
+      scopes.getByRole("button", { name: "若松・6艇ともA1" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      scopes.getByRole("button", { name: "全国・6艇ともA1" }),
+    ).toBeVisible();
+    await expect(
+      scopes.getByRole("button", { name: "全国・6艇ともA1の優勝戦" }),
+    ).toBeVisible();
+    await expect(
+      scopes.getByRole("button", { name: "若松の全レース" }),
+    ).toBeVisible();
+  });
+
+  test("[spec A-6] 大きい数字に範囲・艇番・着順・割合・件数・期間が出る", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    const p = panel(section);
+    await expect(p.getByText("若松・6艇ともA1で、1号艇の1着率")).toBeVisible();
+    await expect(p.getByText("65.5%", { exact: true })).toBeVisible();
+    await expect(
+      p.getByText(`743/1,134レース（${PERIOD_TEXT}）`),
+    ).toBeVisible();
+  });
+
+  test("[spec A-6 / 受入基準] 数えるレースを変えると大きい数字が変わる", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    const p = panel(section);
+    await p
+      .getByRole("group", { name: "数えるレース" })
+      .getByRole("button", { name: "全国・6艇ともA1" })
+      .click();
+    await expect(p.getByText("全国・6艇ともA1で、1号艇の1着率")).toBeVisible();
+    const nc = buildFacts({ stage: "after" }).counts.NC[1][1].total;
+    await expect(
+      p.getByText(
+        new RegExp(
+          `${escapeRe(nc.hits.toLocaleString("en-US"))}/${escapeRe(nc.n.toLocaleString("en-US"))}レース`,
+        ),
+      ),
+    ).toBeVisible();
+    await expect(p.getByText("743/1,134レース", { exact: false })).toHaveCount(
       0,
     );
   });
 
-  test("[spec 2段階の全体計画/screens S-1] 既存の展開予測・イン崩れ注意度は残り、節はその下にある", async ({
+  test("[spec A-5] 六角形のラベルに今日の6艇中の順位が出て、展示後は展示タイムの軸がある", async ({
     page,
   }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const heading = section.getByRole("heading", { name: SECTION_HEADING });
-    const turn = page.getByText(/展開予測/).first();
-    const volatility = page.getByText(/イン崩れ注意度/).first();
-    // 節は予想の有無と切り離して出るが、既存ブロックは予想が無いレースでは出ない
-    test.skip(
-      !(await turn.isVisible()) || !(await volatility.isVisible()),
-      "このレースには既存の予想ブロックが無い（予想なしのレース）",
+    await mockApis(page);
+    const section = await openSection(page);
+    const hex = panel(section).getByRole("img", { name: /6艇中/ }).first();
+    await expect(hex).toHaveAttribute("aria-label", /全国勝率\s*6艇中1位/);
+    await expect(hex).toHaveAttribute("aria-label", /展示タイム/);
+  });
+
+  test("[spec A-7] カード「全国勝率」: 一番高いとき76%（205/270）、判定「差が大きい」、6つの順位の棒", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    const c = card(section, "全国勝率");
+    await expect(c).toContainText("6艇で一番高いとき");
+    await expect(c).toContainText("76%");
+    await expect(c).toContainText("205/270");
+    await expect(c).toContainText("6艇で一番低いとき");
+    await expect(c).toContainText("15%");
+    await expect(c).toContainText("40/260");
+    await expect(c).toContainText("差が大きい");
+    await expect(c.getByRole("img")).toHaveAttribute(
+      "aria-label",
+      /76%[\s\S]*69%[\s\S]*64%[\s\S]*50%[\s\S]*32%[\s\S]*15%/,
     );
-    const [hBox, tBox, vBox] = await Promise.all([
-      heading.boundingBox(),
-      turn.boundingBox(),
-      volatility.boundingBox(),
-    ]);
-    expect(hBox && tBox && vBox).toBeTruthy();
-    expect(tBox.y).toBeLessThan(hBox.y);
-    expect(vBox.y).toBeLessThan(hBox.y);
   });
 
-  test("[spec FR-1b/screens 1 の見出し] h3「何が効いているか」の下に「寄与度用のモデルの説明」の1行がある", async ({
+  test("[spec A-7 判定] ぶれ幅が重なる項目は「差ははっきりしない」", async ({
     page,
   }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
+    await mockApis(page);
+    const section = await openSection(page);
+    const c = card(section, "当地勝率");
+    await expect(c).toContainText("差ははっきりしない");
+    await expect(c).not.toContainText("差が大きい");
+    await expect(c).not.toContainText("差は小さい");
+  });
+
+  test("[spec A-7 判定] 悪いときのほうが高い項目は「（一番低いときのほうが高い）」を添える", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    const c = card(section, "モーター2連率");
+    await expect(c).toContainText("差が大きい");
+    await expect(c).toContainText("（一番低いときのほうが高い）");
+  });
+
+  test("[spec A-7 判定] ぶれ幅が重ならず差が5ポイント未満の項目は「差は小さい」", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await panel(section)
+      .getByRole("group", { name: "数えるレース" })
+      .getByRole("button", { name: "若松の全レース" })
+      .click();
+    const c = card(section, "平均ST（直近30走）");
+    await expect(c).toContainText("差は小さい");
+    await expect(c).toContainText("6艇で一番早いとき");
+  });
+
+  test("[spec A-7 並び] 差がはっきりしているものが先、その中は差の大きい順、はっきりしないものは後", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await expect(card(section, "全国勝率")).toBeVisible();
+    const headings = await panel(section)
+      .getByRole("article")
+      .getByRole("heading")
+      .allInnerTexts();
+    const idx = (label) => headings.findIndex((h) => h.startsWith(label));
+    expect(idx("全国勝率")).toBeGreaterThanOrEqual(0);
+    expect(idx("全国勝率")).toBeLessThan(idx("モーター2連率")); // 61pt > 24pt（どちらもはっきり）
+    expect(idx("モーター2連率")).toBeLessThan(idx("当地勝率")); // はっきりしないものは後
+  });
+
+  test("[spec A-7 今日の一文] 6艇で一番高いときの一文に今日の値・6艇の幅・同じ条件の率と件数が出る", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    const c = card(section, "全国勝率");
+    await expect(c).toContainText(
+      "今日の1号艇は全国勝率が6艇で一番高い（今日8.67、6艇は6.67〜8.67）",
+    );
+    await expect(c).toContainText(
+      /同じ条件の1号艇は、過去に76%が1着（205\/270件、ぶれ幅\d+〜\d+%）/,
+    );
+  });
+
+  test("[spec A-7 今日の一文] 中間の順位は「高いほうから3番目（3艇が同じ値」と出る", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await expect(card(section, "当地勝率")).toContainText(
+      "今日の1号艇は当地勝率が高いほうから3番目（3艇が同じ値",
+    );
+  });
+
+  test("[spec A-7 今日の一文] 今日の値が無い項目（節の初走）は一文を出さない", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    const c = card(section, "今節の平均着順点");
+    await expect(c).toBeVisible();
+    await expect(c).not.toContainText("今日の1号艇は");
+  });
+
+  test("[spec A-7 説明文] 項目ごとのカードの説明文が出る", async ({ page }) => {
+    await mockApis(page);
+    const section = await openSection(page);
     await expect(
-      section.getByRole("heading", { name: H_WHAT, level: 3 }),
+      panel(section).getByText(
+        "各項目が6艇で一番良かったとき・一番悪かったときの1着率を比べた。差がはっきりしている順に並べている（項目どうしは重なっていて、どれが効いたかまでは分けられない）",
+      ),
+    ).toBeVisible();
+  });
+
+  test("[spec A-4 / 受入基準] NCR（優勝戦）では今節の平均着順点のカードを出さない", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await expect(card(section, "今節の平均着順点")).toBeVisible();
+    await panel(section)
+      .getByRole("group", { name: "数えるレース" })
+      .getByRole("button", { name: "全国・6艇ともA1の優勝戦" })
+      .click();
+    await expect(
+      panel(section).getByText("全国・6艇ともA1の優勝戦で、1号艇の1着率"),
+    ).toBeVisible();
+    await expect(card(section, "今節の平均着順点")).toHaveCount(0);
+  });
+
+  test("[spec A-4] 6艇とも同じ級別なら「級別: 今日は6艇ともA1なので差がつかない」", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await expect(
+      panel(section).getByText("級別: 今日は6艇ともA1なので差がつかない"),
+    ).toBeVisible();
+  });
+
+  test("[spec A-8] ボート2連率は一番下に畳まれ、開くとカードが出る", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    const summary = panel(section).getByText(
+      "ボート2連率（着順との関係が小さい項目）",
+    );
+    await expect(summary).toBeVisible();
+    await expect(card(section, "ボート2連率")).toBeHidden();
+    await summary.click();
+    await expect(card(section, "ボート2連率")).toBeVisible();
+    await expect(
+      panel(section).getByText(
+        /ボート2連率が一番高いとき・低いときの差は2着以内・3着以内で/,
+      ),
+    ).toBeVisible();
+  });
+
+  test("[spec A-2] もう1艇と比べる: 自分の艇番は選べず、選ぶとカードに比べる艇の1行が出る", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await panel(section).getByText("もう1艇と比べる").click();
+    const select = panel(section).getByLabel("比べる艇");
+    await expect(select).toBeVisible();
+    const options = await select.getByRole("option").allInnerTexts();
+    expect(options.some((o) => /^\s*1(号艇)?\s*$/.test(o))).toBe(false);
+    const two = options.find((o) => /^\s*2(号艇)?\s*$/.test(o));
+    expect(
+      two,
+      `比べる艇の選択肢に2号艇が無い: ${options.join(",")}`,
+    ).toBeTruthy();
+    await select.selectOption({ label: two.trim() });
+    await expect(card(section, "全国勝率")).toContainText(
+      /2号艇の場合: 一番高いとき(\d+%|—)／一番低いとき(\d+%|—)（2号艇の全体の1着率\d+%）/,
+    );
+  });
+
+  test("[spec A-9] 展示後は今日の風・波の見出しと艇番ごとの「（風を問わず{z}%）」が出る", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await expect(
+      panel(section).getByText("今日の風・波（風3m・波2cm）に近いレースでは"),
     ).toBeVisible();
     await expect(
-      section.getByText(/寄与度用のモデルの説明/).first(),
+      panel(section)
+        .getByText(/\d+%（風を問わず\d+%）/)
+        .first(),
     ).toBeVisible();
   });
 
-  test("[spec 位置づけ・非機能要件] 「AI がやらないこと」の説明文・「競艇」・総合点（AI指数）が節に無い", async ({
+  test("[spec 時点 / A-4 / A-9 / 受入基準] 展示前に切り替えると展示タイムのカード・六角形の軸・風・波が消える", async ({
     page,
   }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    await section.getByText(H_SLICE, { exact: true }).click();
-    const text = await section.innerText();
-    expect(text).not.toMatch(/AI\s*がやらないこと/);
-    expect(text).not.toContain("競艇");
-    expect(text).not.toMatch(/AI指数|総合点|総合スコア/);
+    await mockApis(page);
+    const section = await openSection(page);
+    await expect(card(section, "展示タイム")).toBeVisible();
+    await timeGroup(section)
+      .getByRole("button", { name: "展示前（出走表）" })
+      .click();
+    await expect(
+      timeGroup(section).getByRole("button", { name: "展示前（出走表）" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(card(section, "展示タイム")).toHaveCount(0);
+    await expect(
+      panel(section).getByRole("img", { name: /6艇中/ }).first(),
+    ).not.toHaveAttribute("aria-label", /展示タイム/);
+    await expect(
+      panel(section).getByText("今日の風・波は、展示の後に出る"),
+    ).toBeVisible();
+    await expect(panel(section).getByText(/今日の風・波（風/)).toHaveCount(0);
   });
 
-  test("[screens 1-a の段のラベルと注記] どの状態でも節に「間に合わない」「失敗」「エラー」が出ない", async ({
+  test("[spec A-11] 脚注に「数えた割合で、原因とは限らない」がある", async ({
     page,
   }) => {
-    const state = {
-      contribution: raceContribution("before_not_yet"),
-      similar: similarDefault,
-    };
-    let section = await openSection(page, state);
-    const statuses = [
-      "before_not_yet",
-      "before_reflecting",
-      "before_incomplete",
-      "before_no_value",
-      "after_exhibition",
-      "absent",
-    ];
-    for (const status of statuses) {
-      state.contribution = raceContribution(status);
-      section = await reopenSection(page);
-      await expect(section.getByText(H_SIMILAR)).toBeVisible();
-      expect(await section.innerText(), `状態 ${status}`).not.toMatch(
-        FORBIDDEN,
-      );
-    }
-    // 計算できなかったレース・似たレースが無いレース
-    state.contribution = null;
-    state.similar = () => null;
-    section = await reopenSection(page);
-    expect(await section.innerText()).not.toMatch(FORBIDDEN);
+    await mockApis(page);
+    const section = await openSection(page);
+    await expect(
+      panel(section)
+        .getByText(/数えた割合で、原因とは限らない/)
+        .first(),
+    ).toBeVisible();
+  });
+
+  test("[spec FR-E] AIの見立ては畳まれていて、開くと7テーマ、テーマを開くと項目と向きが出る", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    const summary = panel(section).getByText(
+      "AIの見立て（補助）: ほかの項目をそろえたうえで、どの項目が効くか",
+    );
+    await expect(summary).toBeVisible();
+    await expect(panel(section).getByText("選手の実力")).toBeHidden();
+    await summary.click();
+    await expect(
+      panel(section)
+        .getByText("1号艇が1着になったかを左右しやすい項目")
+        .or(panel(section).getByText(/1号艇が1着.*を左右しやすい項目/))
+        .first(),
+    ).toBeVisible();
+    for (const t of AI_THEMES)
+      await expect(
+        panel(section).getByText(t, { exact: true }).first(),
+      ).toBeVisible();
+    await panel(section)
+      .getByText("選手の実力", { exact: true })
+      .first()
+      .click();
+    await expect(
+      panel(section).getByText("6艇の中で全国勝率が高いほど見込みが上がる"),
+    ).toBeVisible();
+  });
+
+  test("[spec FR-E 受入基準] AIの見立ては艇番を変えると割合が変わる", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    const summary = panel(section).getByText(
+      "AIの見立て（補助）: ほかの項目をそろえたうえで、どの項目が効くか",
+    );
+    await summary.click();
+    const themeRow = panel(section)
+      .getByText(/選手の実力/)
+      .first();
+    await expect(themeRow).toBeVisible();
+    const before = await panel(section)
+      .getByRole("group")
+      .filter({ hasText: "選手の実力" })
+      .last()
+      .innerText();
+    await section
+      .getByRole("group", { name: "艇番" })
+      .getByRole("button", { name: "2" })
+      .click();
+    await expect(
+      panel(section).getByRole("heading", {
+        level: 3,
+        name: "2号艇が1着になったのは、どんなとき？",
+      }),
+    ).toBeVisible();
+    if (
+      await panel(section)
+        .getByText(/選手の実力/)
+        .first()
+        .isHidden()
+    )
+      await summary.click();
+    await expect
+      .poll(async () =>
+        panel(section)
+          .getByRole("group")
+          .filter({ hasText: "選手の実力" })
+          .last()
+          .innerText(),
+      )
+      .not.toBe(before);
+  });
+
+  test("[spec FR-E] 展示前で集計が無いときは準備中の1文だけで、見出しも出さない", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await timeGroup(section)
+      .getByRole("button", { name: "展示前（出走表）" })
+      .click();
+    await expect(
+      panel(section).getByText(
+        "展示前のAIの見立ては準備中。展示後に切り替えると見られる",
+      ),
+    ).toBeVisible();
+    await expect(
+      panel(section).getByText(
+        "AIの見立て（補助）: ほかの項目をそろえたうえで、どの項目が効くか",
+      ),
+    ).toHaveCount(0);
   });
 });
 
-// ---------------------------------------------------------------------------
-// FR-1b 1-a このレースの6艇の差の内訳
-// ---------------------------------------------------------------------------
+// ======================================================================
+// タブ2 類似レース（FR-B）
+// ======================================================================
 
-test.describe("FR-1b 1-a", () => {
-  test("[spec FR-1b/screens 1-a 展示後] 段のラベル「展示後」と小さく「展示 15:32 時点」、変化の1行に艇番が入る", async ({
+test.describe("アナロジー・ファインダー: 類似レース", () => {
+  const sliderOf = (s) =>
+    panel(s).getByRole("slider", { name: /似ている順に/ });
+
+  test("[spec B-4] スライダーの既定は層の件数（400未満のとき）で、全件を出している旨が出る", async ({
     page,
   }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    await expect(section.getByRole("heading", { name: H_RACE })).toBeVisible();
-    const t = await part1aText(section);
-    expect(t).toContain("展示後");
-    expect(t).toMatch(/展示\s*15:32\s*時点/);
-    // spec FR-1b: 「展示タイムが押し上げたのは4号艇」
-    expect(t).toMatch(/展示タイムが押し上げたのは\s*4号艇/);
-    // 展示後の段では「展示前の値」のラベル・注記は出ない（折りたたみの summary を除く）
-    expect(t).not.toContain(NOTE_A);
-    expect(t).not.toContain(NOTE_B);
-    expect(t).not.toContain(NOTE_C);
-  });
-
-  test("[spec FR-1b 受入基準] 展示後の段で「展示前の値を見る」を開くと出走表時点の値が出る", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const summary = section.getByText("展示前の値を見る", { exact: true });
-    await expect(summary).toBeVisible();
-    // 展示後の ST・直前情報 .148 は見えていて、展示前の .061 は閉じている間は見えない
-    expect(await part1aText(section)).toMatch(shareRe(0.148));
-    expect(await part1aText(section)).not.toMatch(shareRe(0.061));
-    await summary.click();
-    await expect.poll(async () => part1aText(section)).toMatch(shareRe(0.061));
-  });
-
-  test("[spec FR-1b] テーマ別のシェアを6テーマで出し、「市場」は出さない", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const t = await part1aText(section);
-    for (const theme of THEMES) expect(t).toContain(theme);
-    expect(t).not.toContain("市場");
-    // 選手・基礎成績 .452
-    expect(t).toMatch(shareRe(0.452));
-  });
-
-  test("[spec FR-1b/screens RaceContributionView] 艇ごとの押し上げ／押し下げを符号つきで出す", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const t = await part1aText(section);
-    expect(t).toMatch(/[+＋]\s*(0?\.\d+|\d+(\.\d+)?\s*(pt|%))/);
-    expect(t).toMatch(/[−-]\s*(0?\.\d+|\d+(\.\d+)?\s*(pt|%))/);
-  });
-
-  test("[screens 1-a (a)] まだ展示が終わっていない: 「展示前の値」＋「展示の後に更新します」、変化の1行・折りたたみは無い", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("before_not_yet"),
-      similar: similarDefault,
-    });
-    await expect(section.getByRole("heading", { name: H_RACE })).toBeVisible();
-    const t = await part1aText(section);
-    expect(t).toContain("展示前の値");
-    expect(t).toContain(NOTE_A);
-    expect(t).not.toMatch(/押し上げたのは/);
-    expect(t).not.toMatch(/展示\s*\d{1,2}:\d{2}\s*時点/);
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    await expect(sliderOf(section)).toBeVisible();
     await expect(
-      section.getByText("展示前の値を見る", { exact: true }),
+      panel(section).getByText("120件", { exact: true }).first(),
+    ).toBeVisible();
+    await expect(panel(section).getByText("少なく")).toBeVisible();
+    await expect(panel(section).getByText("多く")).toBeVisible();
+    await expect(
+      panel(section).getByText("条件がそろった過去レースの全件を出している"),
+    ).toBeVisible();
+  });
+
+  test("[spec B-3] 説明文にそろえた条件（優勝戦・G1以上）と固定の文が出る。直す前の※注記は出ない", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    await expect(
+      panel(section).getByRole("heading", { level: 3, name: "類似レース" }),
+    ).toBeVisible();
+    const desc = panel(section).getByText(
+      /1号艇の級別・1号艇と勝率トップの差・勝率トップの艇番がそろう過去レース\d+件を、出走表が似ている順に並べた/,
+    );
+    await expect(desc).toBeVisible();
+    await expect(desc).toContainText(/今日と同じ『[^』]*優勝戦[^』]*』で/);
+    await expect(desc).toContainText(/G1/);
+    await expect(
+      panel(section).getByText(/※優勝戦以外の名前の決勝/),
     ).toHaveCount(0);
   });
 
-  test("[screens 1-a (b)] 展示後まだ反映されていない: 「展示前の値」＋「展示の結果を反映しています」", async ({
+  test("[spec B-4/B-5/B-8 受入基準] スライダーを最小にすると件数・ソナーの点・決まり方が10件に連動する", async ({
     page,
   }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("before_reflecting"),
-      similar: similarDefault,
-    });
-    await expect(section.getByRole("heading", { name: H_RACE })).toBeVisible();
-    const t = await part1aText(section);
-    expect(t).toContain("展示前の値");
-    expect(t).toContain(NOTE_B);
-    expect(t).not.toContain(NOTE_A);
-    expect(t).not.toContain(NOTE_C);
-  });
-
-  test("[screens 1-a (c)] 展示タイムがそろわない: 「展示前の値」＋「このレースは展示データがそろっていないため、展示前の値です」", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("before_incomplete"),
-      similar: similarDefault,
-    });
-    await expect(section.getByRole("heading", { name: H_RACE })).toBeVisible();
-    const t = await part1aText(section);
-    expect(t).toContain("展示前の値");
-    expect(t).toContain(NOTE_C);
-  });
-
-  test("[screens 1-a (d)] 締切後も展示後の値が無い: 「展示前の値」だけで注記（理由）を書かない", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("before_no_value"),
-      similar: similarDefault,
-    });
-    await expect(section.getByRole("heading", { name: H_RACE })).toBeVisible();
-    const t = await part1aText(section);
-    expect(t).toContain("展示前の値");
-    expect(t).not.toContain(NOTE_A);
-    expect(t).not.toContain(NOTE_B);
-    expect(t).not.toContain(NOTE_C);
-    // 事実でない理由（データがそろっていない等）を書かない
-    expect(t).not.toMatch(/そろっていない|取得できな|遅れ/);
-  });
-
-  test("[spec FR-1b 受入基準/screens S-1] 欠場があるレースでは1-aを出さず、欠場の1行を出す。1-b は出す", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("absent"),
-      similar: similarDefault,
-    });
-    await expect(section.getByText(ABSENT_LINE)).toBeVisible();
-    await expect(section.getByRole("heading", { name: H_RACE })).toHaveCount(0);
-    await expect(section.getByText(/展示前の値|展示後/)).toHaveCount(0);
-    await expect(section.getByText(H_SLICE, { exact: true })).toBeVisible();
-  });
-
-  test("[screens S-1] 計算できなかったレースでは1-aを出さず、1-b は出す", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: null,
-      similar: similarDefault,
-    });
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    const slider = sliderOf(section);
+    await slider.focus();
+    await page.keyboard.press("Home");
     await expect(
-      section.getByRole("heading", { name: H_WHAT, level: 3 }),
+      panel(section).getByText("10件", { exact: true }).first(),
     ).toBeVisible();
-    await expect(section.getByRole("heading", { name: H_RACE })).toHaveCount(0);
-    await expect(section.getByText(H_SLICE, { exact: true })).toBeVisible();
-  });
-
-  test("[screens S-1] 1-a の下にモデルの版を出す（展示前・展示後とも）", async ({
-    page,
-  }) => {
-    const state = {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    };
-    let section = await openSection(page, state);
-    expect(await part1aText(section)).toContain(RC_MODEL_VERSION);
-    state.contribution = raceContribution("before_not_yet");
-    section = await reopenSection(page);
-    expect(await part1aText(section)).toContain(RC_MODEL_VERSION);
-  });
-
-  test("[spec FR-1b] 変化の1行はテーマのシェアの差を文にしない", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const t = await part1aText(section);
-    // 「ST・直前の比重が上がった」のような文を出さない
-    expect(t).not.toMatch(/(比重|シェア|割合)が(上が|下が|増え|減)/);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// FR-1 1-b 同じ条件のレース全体の内訳（既存の寄与度の部品。API は固定しない）
-// ---------------------------------------------------------------------------
-
-test.describe("FR-1 1-b", () => {
-  async function openSlice(page) {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const summary = section.getByText(H_SLICE, { exact: true });
-    await expect(summary).toBeVisible();
-    await summary.click();
-    return section;
-  }
-
-  test("[screens 1-b Q2] 「同じ条件のレース全体の内訳」は折りたたみで、開くと各テーマに「全体との差 ±N.Npt」か「全体とほぼ同じ」が出る", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const diff = section.getByText(
-      /全体との差\s*[+＋−-]?\s*\d+(\.\d+)?\s*pt|全体とほぼ同じ/,
-    );
-    await expect(diff.first()).toBeHidden();
-    await section.getByText(H_SLICE, { exact: true }).click();
-    await expect(diff.first()).toBeVisible();
-    const t = await textBetween(section, H_SLICE, H_SIMILAR);
-    for (const theme of THEMES) expect(t).toContain(theme);
-    const matches = t.match(
-      /全体との差\s*[+＋−-]?\s*\d+(\.\d+)?\s*pt|全体とほぼ同じ/g,
-    );
-    expect((matches ?? []).length).toBeGreaterThanOrEqual(THEMES.length);
-    expect(t).not.toContain("市場");
-  });
-
-  test("[spec FR-1 受入基準] 着順タブ（1着／2着以内／3着以内）の切り替えで内訳が変わる", async ({
-    page,
-  }) => {
-    const section = await openSlice(page);
-    const tab = (name) =>
-      section
-        .getByRole("tab", { name, exact: true })
-        .or(section.getByRole("button", { name, exact: true }))
-        .first();
-    for (const name of ["1着", "2着以内", "3着以内"]) {
-      await expect(tab(name)).toBeVisible();
-    }
-    await tab("1着").click();
-    const before = await textBetween(section, H_SLICE, H_SIMILAR);
-    await tab("3着以内").click();
-    await expect
-      .poll(async () => textBetween(section, H_SLICE, H_SIMILAR))
-      .not.toBe(before);
-  });
-
-  test("[spec FR-1 受入基準] グレード・ラウンドの切り替えでシェアと n が変わる", async ({
-    page,
-  }) => {
-    const section = await openSlice(page);
-    const detail = section.getByText("詳細条件", { exact: true });
-    if (await detail.isVisible()) await detail.click();
-    const grade = section.getByRole("combobox", { name: /グレード/ });
-    const round = section.getByRole("combobox", { name: /ラウンド/ });
-    await grade.selectOption({ label: "一般" });
-    const before = await textBetween(section, H_SLICE, H_SIMILAR);
-    await grade.selectOption({ label: "SG" });
-    await expect
-      .poll(async () => textBetween(section, H_SLICE, H_SIMILAR))
-      .not.toBe(before);
-    await round.selectOption({ label: "予選" });
-    const mid = await textBetween(section, H_SLICE, H_SIMILAR);
-    await round.selectOption({ label: "優勝戦" });
-    await expect
-      .poll(async () => textBetween(section, H_SLICE, H_SIMILAR))
-      .not.toBe(mid);
-  });
-
-  test("[spec FR-1] グレード（一般／G3／G2／G1／SG）とラウンド（予選／準優勝戦／優勝戦／その他）を選べる", async ({
-    page,
-  }) => {
-    const section = await openSlice(page);
-    const detail = section.getByText("詳細条件", { exact: true });
-    if (await detail.isVisible()) await detail.click();
-    const grade = section.getByRole("combobox", { name: /グレード/ });
-    const round = section.getByRole("combobox", { name: /ラウンド/ });
-    for (const g of ["一般", "G3", "G2", "G1", "SG"]) {
-      await expect(
-        grade.getByRole("option", { name: g, exact: true }),
-      ).toBeAttached();
-    }
-    for (const r of ["予選", "準優勝戦", "優勝戦", "その他"]) {
-      await expect(
-        round.getByRole("option", { name: r, exact: true }),
-      ).toBeAttached();
-    }
-  });
-
-  test("[spec FR-1] n（レース数と艇数）・集計期間・モデル版を出し、n（レース数）<30 のときだけ「小標本」", async ({
-    page,
-  }) => {
-    const section = await openSlice(page);
-    const t = await textBetween(section, H_SLICE, H_SIMILAR);
-    const m = t.match(/([\d,]+)\s*レース/);
-    expect(m, "レース数の表示が無い").toBeTruthy();
-    expect(t).toMatch(/[\d,]+\s*艇/);
-    expect(t).toMatch(/\d{4}.{0,2}\d{1,2}.{0,3}〜/);
-    expect(t).toMatch(/モデル/);
-    const races = Number(m[1].replace(/,/g, ""));
-    if (races < 30) expect(t).toContain("小標本");
-    else expect(t).not.toContain("小標本");
-  });
-
-  test("[spec FR-1 受入基準] 艇番比較の比較表（テーマ／艇番A／艇番B）に両艇番の値が並ぶ", async ({
-    page,
-  }) => {
-    const section = await openSlice(page);
-    const toggle = section
-      .getByRole("checkbox", { name: /比較/ })
-      .or(section.getByRole("button", { name: /艇番.*比較|比較/ }))
-      .first();
-    await toggle.click();
-    const table = section.getByRole("table").filter({
-      has: page.getByRole("columnheader", { name: /テーマ/ }),
-    });
-    await expect(table).toBeVisible();
-    await expect(table.getByRole("columnheader")).toHaveCount(3);
-    for (const theme of THEMES) {
-      const row = table.getByRole("row").filter({ hasText: theme });
-      await expect(row).toBeVisible();
-      const cells = await row.getByRole("cell").allInnerTexts();
-      expect(cells.length).toBeGreaterThanOrEqual(2);
-      expect(cells.at(-1)).toMatch(/\d/);
-      expect(cells.at(-2)).toMatch(/\d/);
-    }
-  });
-
-  test("[spec FR-1 受入基準] テーマを押すと個別項目の内訳が開き、個別値は参考である旨が出る", async ({
-    page,
-  }) => {
-    const section = await openSlice(page);
-    const theme = section
-      .getByRole("button", { name: /選手・基礎成績/ })
-      .first();
-    await expect(theme).toBeVisible();
-    await theme.click();
-    await expect(section.getByText(/参考/).first()).toBeVisible();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// FR-2 似ている過去レース
-// ---------------------------------------------------------------------------
-
-test.describe("FR-2 似ている過去レース", () => {
-  test("[screens 2 の見出し Q7/S-1 データ段] h3「類似度の高い過去レース」の下に「出走表 7:30 時点のデータ（前日までの成績）」", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const heading = section.getByRole("heading", { name: H_SIMILAR, level: 3 });
-    await expect(heading).toBeVisible();
-    const tier = section.getByText(
-      /出走表\s*7:30\s*時点のデータ（前日までの成績）/,
-    );
-    await expect(tier.first()).toBeVisible();
-    const [hb, tb] = await Promise.all([
-      heading.boundingBox(),
-      tier.first().boundingBox(),
-    ]);
-    expect(hb && tb).toBeTruthy();
-    expect(tb.y).toBeGreaterThan(hb.y);
-    // 発走前のレースでは「（発走前）」を付けない
-    expect(await part2Text(section)).not.toContain("（発走前）");
-  });
-
-  test("[screens S-1 データ段] 確定済みのレースはデータ段に「（発走前）」を付ける", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: (url) => ({ ...similarDefault(url), race_finished: true }),
-    });
     await expect(
-      section
-        .getByText(
-          /出走表\s*7:30\s*時点のデータ（前日までの成績）\s*（発走前）/,
-        )
-        .first(),
+      panel(section).getByText(
+        /一番遠い10件目でも、\d+項目中\d+項目が同じ・\d+項目が近い/,
+      ),
     ).toBeVisible();
-  });
-
-  test("[spec FR-1b] 展示後でも似ているレースは出走表時点のまま（データ段に展示の時刻が入らない）", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const t = await part2Text(section);
-    expect(t).toMatch(/出走表\s*7:30\s*時点/);
-    expect(t).not.toMatch(/展示\s*15:32/);
-  });
-
-  test("[spec FR-2/screens 条件チップ] 「条件」グループに4条件（名前と値）が並び、「外す」は末尾の1つだけ", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const group = conditionGroup(section);
-    await expect(group).toBeVisible();
-    const t = await group.innerText();
-    for (const name of ["勝率差", "1号艇の級別", "会場", "勝率1位の艇"]) {
-      expect(t).toContain(name);
-    }
-    expect(t).toMatch(/[−-]0\.49\s*〜\s*[+＋]0\.19/);
-    expect(t).toContain("A1");
-    expect(t).toContain("大村");
-    await expect(group.getByRole("button", { name: /外す/ })).toHaveCount(1);
-    await expect(group.getByRole("button", { name: /戻す/ })).toHaveCount(0);
-  });
-
-  test("[spec FR-2 文面ルール1・2・4] 理由の一文は条件の値と「この4つがすべて同じ過去レース」と件数。%を見出しに出さず、帯は範囲のまま", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const reason = section.getByText(/この4つがすべて同じ過去レース/).first();
-    await expect(reason).toBeVisible();
-    const r = await reason.innerText();
-    expect(r).toMatch(/640\s*件/);
-    expect(r).not.toMatch(/%/);
-    expect(r).toMatch(/[−-]0\.49\s*〜\s*[+＋]0\.19/);
-    expect(r).not.toMatch(/勝率差が(大きい|小さい|拮抗|近い)/);
-    expect(r).toContain("大村");
-    expect(r).toContain("A1");
-  });
-
-  test("[spec FR-2 文面ルール5・6] 2 の中に「AI」「類似度○%」「ほぼ同じ」、条件外の項目が似ているという言い方が無い", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
     await expect(
-      section.getByText(/この4つがすべて同じ過去レース/).first(),
+      panel(section).getByRole("img", { name: "今日に似た過去レース10件" }),
     ).toBeVisible();
-    const t = await part2Text(section);
-    expect(t).not.toMatch(/AI/);
-    expect(t).not.toMatch(/類似度\s*\d+\s*%/);
-    expect(t).not.toContain("ほぼ同じ");
-    expect(t).not.toMatch(/(モーター|機力|展示|気象|風|波).{0,8}似て/);
-  });
-
-  test("[spec FR-2 受入基準] 階級ラベル（鉄板級／有力／混戦／大混戦／まだ参考程度）を出さない", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
     await expect(
-      section.getByText(/この4つがすべて同じ過去レース/).first(),
-    ).toBeVisible();
-    const t = (await part2Text(section)) + (await part3Text(section));
-    for (const label of ["鉄板級", "有力", "混戦", "まだ参考程度"]) {
-      expect(t).not.toContain(label);
-    }
-    for (const emoji of ["🔥", "📌", "⚖️", "🌊", "🌀"]) {
-      expect(t).not.toContain(emoji);
-    }
-  });
-
-  test("[spec FR-2 受入基準/screens 条件チップ] 末尾を「外す」と親の層に広がり件数・分布・n が連動し、「戻す」で元に戻る", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const group = conditionGroup(section);
-    await expect(
-      section.getByText(/352\s*件\s*55\.0\s*%/).first(),
-    ).toBeVisible();
-    await group.getByRole("button", { name: /外す/ }).click();
-    // 4条件 640件 → 3条件 1,204件
-    await expect
-      .poll(async () => part2Text(section))
-      .toMatch(new RegExp(`${num(1204)}\\s*件`));
-    await expect(section.getByText(/352\s*件\s*55\.0\s*%/)).toHaveCount(0);
-    // 外したチップの先頭に「戻す」、末尾（3つ目）に「外す」
-    await expect(group.getByRole("button", { name: /戻す/ })).toHaveCount(1);
-    await expect(group.getByRole("button", { name: /外す/ })).toHaveCount(1);
-    // 使った条件・外した条件・件数が常に出る
-    const g = await group.innerText();
-    expect(g).toContain("勝率1位の艇");
-    await group.getByRole("button", { name: /戻す/ }).click();
-    await expect(
-      section.getByText(/352\s*件\s*55\.0\s*%/).first(),
-    ).toBeVisible();
-    await expect(group.getByRole("button", { name: /戻す/ })).toHaveCount(0);
-  });
-
-  test("[spec FR-2 件数と戻し方/screens 似ている理由] 自動で外したときは「同じ4条件では 41件と少ないため、『勝率1位の艇』を外して 286件で見ています」", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarAutoDropped,
-    });
-    await expect(
-      section
-        .getByText(
-          /同じ4条件では\s*41\s*件と少ないため、『勝率1位の艇』を外して\s*286\s*件で見ています/,
-        )
-        .first(),
-    ).toBeVisible();
-    const group = conditionGroup(section);
-    await expect(group.getByRole("button", { name: /戻す/ })).toHaveCount(1);
-    // 戻すと4条件（41件）でも表示する
-    await group.getByRole("button", { name: /戻す/ }).click();
-    await expect
-      .poll(async () => part2Text(section))
-      .toMatch(/この4つがすべて同じ過去レース[\s\S]*41\s*件/);
-  });
-
-  test("[spec FR-1b/screens 条件チップ Q4] 1-a の上位2テーマのシェアの差が .05 以上なら、上位テーマ（選手・基礎成績）のチップだけ強調する", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const group = conditionGroup(section);
-    await expect(group).toBeVisible();
-    const texts = (await highlightedChipTexts(group)).join(" | ");
-    expect(texts).toContain("勝率1位の艇");
-    expect(texts).toContain("級別");
-    expect(texts).toContain("勝率差");
-    expect(texts).not.toContain("大村");
-  });
-
-  test("[spec FR-1b/screens 条件チップ Q4] 上位2テーマのシェアの差が .05 未満ならチップを強調しない", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition", {
-        themes: CLOSE_THEMES,
-        before_exhibition: { themes: CLOSE_THEMES, boats: BOATS },
+      panel(section).getByRole("button", {
+        name: /^\d{4}\/\d{1,2}\/\d{1,2} .+\d+R 1着\d号艇$/,
       }),
-      similar: similarDefault,
-    });
-    const group = conditionGroup(section);
-    await expect(group).toBeVisible();
-    expect(await highlightedChipTexts(group)).toHaveLength(0);
+    ).toHaveCount(10);
+    await expect(panel(section).getByText(/似ている順の10件で/)).toBeVisible();
+    await expect(
+      panel(section).getByText("10件だと割合はぶれやすい（ぶれ幅が広い）"),
+    ).toBeVisible();
+    // 先頭10件の1着: 1号艇7・2号艇1・3号艇1・4号艇1
+    await expect(
+      panel(section).getByRole("button", {
+        name: new RegExp(`^1号艇 ${pctRe(7, 10)} 7件$`),
+      }),
+    ).toBeVisible();
   });
 
-  test("[spec FR-2/screens 分布] 「決まり手」「1着の艇番」「1着の進入コース」「よく出た出目」の4ブロックに n と期間、行は「N件 x.x%」（件数÷n）", async ({
+  test("[spec B-8] どの艇が勝った？: 艇番ごとの割合・件数と、比べる相手の名前と件数の凡例", async ({
     page,
   }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    for (const name of DIST_HEADINGS) {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    await expect(
+      panel(section).getByRole("heading", {
+        level: 3,
+        name: "類似レースの決まり方",
+      }),
+    ).toBeVisible();
+    const wins = { 1: 77, 2: 14, 3: 12, 4: 9, 5: 5, 6: 3 };
+    for (const [b, k] of Object.entries(wins)) {
       await expect(
-        section.getByRole("heading", { name, exact: true }),
+        panel(section).getByRole("button", {
+          name: new RegExp(`^${b}号艇 ${pctRe(k, 120)} ${k}件$`),
+        }),
       ).toBeVisible();
     }
-    // 逃げ 352 ÷ 640 = 55.0%
     await expect(
-      section.getByText(/352\s*件\s*55\.0\s*%/).first(),
+      panel(section).getByText(
+        /点線: グレードを問わない優勝戦（ほかの条件は同じ）\s*76件/,
+      ),
     ).toBeVisible();
-    const t = await part2Text(section);
-    const periods =
-      t.match(/2019.{0,3}0?4[\s\S]{0,6}〜[\s\S]{0,3}2026.{0,3}0?9/g) ?? [];
-    expect(periods.length).toBeGreaterThanOrEqual(DIST_HEADINGS.length);
-    const ns = t.match(/n\s*[=＝]\s*640(?!\d)|640\s*件/g) ?? [];
-    expect(ns.length).toBeGreaterThanOrEqual(DIST_HEADINGS.length);
   });
 
-  test("[spec FR-2 件数と戻し方 Q5] 30件未満でも割合（件数÷n）を出し、件数を添える", async ({
+  test("[spec B-8] 棒を押すと吹き出しが出て、着順の流れがその艇が勝ったレースに絞られる", async ({
     page,
   }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const motor = extraGroup(section).getByRole("button", {
-      name: /1号艇のモーター/,
-    });
-    await motor.click();
-    // 24件の層: 逃げ 13 ÷ 24 = 54.2%
-    await expect(
-      section.getByText(/13\s*件\s*54\.2\s*%/).first(),
-    ).toBeVisible();
-    expect(await part2Text(section)).toMatch(/24\s*件/);
-  });
-
-  test("[spec FR-2/screens 一覧] 「同じ条件の過去レース」に新しい順20件（日付 会場 R）", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    await expect(
-      section.getByText("同じ条件の過去レース", { exact: true }).first(),
-    ).toBeVisible();
-    const items = section
-      .getByRole("listitem")
-      .filter({ hasText: /(大村|徳山|下関|芦屋)[\s\S]*\d{1,2}\s*R/ });
-    await expect(items).toHaveCount(20);
-    // 新しい順: 先頭が 2026-09-28 大村 1R
-    const first = await items.first().innerText();
-    expect(first).toMatch(/9.{0,2}28/);
-    expect(first).toContain("大村");
-    const last = await items.last().innerText();
-    expect(last).toMatch(/9.{0,2}0?9(?!\d)/);
-  });
-
-  test("[spec FR-2] 常設の注記「類似の判定には事故情報を含まない」が出る", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    await expect(section.getByText(ACCIDENT_NOTE).first()).toBeVisible();
-  });
-
-  test("[screens S-1] get_analogy_similar が NULL なら 2・3 を出さず、1 は出す", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: () => null,
-    });
-    await expect(
-      section.getByRole("heading", { name: H_WHAT, level: 3 }),
-    ).toBeVisible();
-    await expect(section.getByRole("heading", { name: H_SIMILAR })).toHaveCount(
-      0,
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    await panel(section)
+      .getByRole("button", {
+        name: new RegExp(`^2号艇 ${pctRe(14, 120)} 14件$`),
+      })
+      .click();
+    await expect(panel(section).getByRole("status")).toContainText(
+      new RegExp(`2号艇: 120件中14件（${pctRe(14, 120)}、ぶれ幅\\d+〜\\d+%）`),
     );
     await expect(
-      section.getByRole("heading", { name: H_COMBO, exact: true }),
-    ).toHaveCount(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// FR-2 ほかのテーマでも絞る（Q6）
-// ---------------------------------------------------------------------------
-
-test.describe("FR-2 ほかのテーマでも絞る", () => {
-  test("[spec FR-2 Q6/screens] 今日の値と「足すと N件」を名前に持つトグル（aria-pressed）が並び、0件のものは押せない", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const group = extraGroup(section);
-    await expect(group).toBeVisible();
-    const round = group.getByRole("button", {
-      name: /ラウンド[:：]\s*予選.*足すと\s*212\s*件/,
-    });
-    const grade = group.getByRole("button", {
-      name: /グレード[:：]\s*G1.*足すと\s*0\s*件/,
-    });
-    const motor = group.getByRole("button", {
-      name: /1号艇のモーター[:：]\s*6艇中1〜2位.*足すと\s*24\s*件/,
-    });
-    await expect(round).toHaveAttribute("aria-pressed", "false");
-    await expect(motor).toHaveAttribute("aria-pressed", "false");
-    await expect(grade).toBeDisabled();
-    await expect(round).toBeEnabled();
-  });
-
-  test("[spec FR-2 Q6/screens] 押すと aria-pressed が true、理由に「さらに『ラウンド: 予選』で絞って N件」、下に「この条件は自動では使っていません」", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const group = extraGroup(section);
-    await expect(section.getByText(NOT_AUTO_NOTE)).toHaveCount(0);
-    const round = group.getByRole("button", { name: /ラウンド[:：]\s*予選/ });
-    await round.click();
-    await expect(round).toHaveAttribute("aria-pressed", "true");
-    await expect(section.getByText(NOT_AUTO_NOTE).first()).toBeVisible();
-    await expect(
-      section
-        .getByText(/さらに『ラウンド[:：]\s*予選』で絞って\s*212\s*件/)
+      panel(section)
+        .getByRole("button", { name: /^1着 2号艇→2着 \d号艇 \d+件$/ })
         .first(),
     ).toBeVisible();
-    // 4条件の部分はそのまま残る
     await expect(
-      section.getByText(/この4つがすべて同じ過去レース/).first(),
-    ).toBeVisible();
-    // オフに戻すと注記が消え、640件に戻る
-    await round.click();
-    await expect(round).toHaveAttribute("aria-pressed", "false");
-    await expect(section.getByText(NOT_AUTO_NOTE)).toHaveCount(0);
-    await expect(
-      section.getByText(/352\s*件\s*55\.0\s*%/).first(),
-    ).toBeVisible();
+      panel(section).getByRole("button", { name: /^1着 1号艇→/ }),
+    ).toHaveCount(0);
   });
 
-  test("[spec FR-2 Q6] 今日のレースの値が分からない条件は出さない", async ({
+  test("[spec B-8 受入基準] どう決まった？に決まり手の割合と件数が出る", async ({
     page,
   }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: (url) => ({
-        ...similarDefault(url),
-        extra_filters: EXTRA_FILTERS.map((f) =>
-          f.key === "motor" ? { ...f, value: null } : f,
-        ),
-      }),
-    });
-    const group = extraGroup(section);
-    await expect(group.getByRole("button", { name: /ラウンド/ })).toBeVisible();
-    await expect(group.getByRole("button", { name: /モーター/ })).toHaveCount(
-      0,
-    );
-  });
-
-  test("[screens ほかのテーマでも絞る] 並びは 1-a の寄与度の順（機力 > 環境 ならモーターが先）で、「効く順」とは書かない", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const group = extraGroup(section);
-    const motor = group.getByRole("button", { name: /1号艇のモーター/ });
-    const round = group.getByRole("button", { name: /ラウンド/ });
-    await expect(motor).toBeVisible();
-    await expect(round).toBeVisible();
-    const names = await group
-      .getByRole("button")
-      .evaluateAll((els) =>
-        els.map((e) => e.getAttribute("aria-label") || e.textContent || ""),
-      );
-    const iMotor = names.findIndex((n) => n.includes("モーター"));
-    const iRound = names.findIndex((n) => n.includes("ラウンド"));
-    expect(iMotor).toBeGreaterThanOrEqual(0);
-    expect(iMotor).toBeLessThan(iRound);
-    expect(await section.innerText()).not.toContain("効く順");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// FR-3 組み合わせ
-// ---------------------------------------------------------------------------
-
-const BAND_12 = /^1着 ([1-6])号艇→2着 ([1-6])号艇 (\d+)件 (\d+(?:\.\d+)?)%$/;
-const BAND_23 = /^2着 [1-6]号艇→3着 [1-6]号艇 \d+件 \d+(?:\.\d+)?%$/;
-
-test.describe("FR-3 組み合わせ", () => {
-  test("[spec FR-3 受入基準] サンキーは1着→2着→3着の3段が常に出て、1→2 の帯の件数・%（件数÷n）が類似レースの層と一致する", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
     await expect(
-      section.getByRole("heading", { name: H_COMBO, exact: true, level: 3 }),
-    ).toBeVisible();
-    // 1-2: 1-2-3(120) + 1-2-4(70) = 190 → 190/640 = 29.7%
-    await expect(
-      section.getByRole("button", { name: "1着 1号艇→2着 2号艇 190件 29.7%" }),
+      panel(section).getByRole("heading", { name: "どう決まった？" }).first(),
     ).toBeVisible();
     await expect(
-      section.getByRole("button", { name: BAND_23 }).first(),
-    ).toBeAttached();
-    // 少ない流れ（4-5: 15件）も「その他」にまとめない
-    await expect(
-      section.getByRole("button", { name: "1着 4号艇→2着 5号艇 15件 2.3%" }),
-    ).toBeAttached();
-    await expect(section.getByRole("button", { name: /その他/ })).toHaveCount(
-      0,
-    );
-    // 図の下に全体の n
-    expect(await part3Text(section)).toMatch(/n\s*[=＝]\s*640(?!\d)|640\s*件/);
-  });
-
-  test("[spec FR-3] 帯をタップすると件数と%を出す", async ({ page }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const band = section.getByRole("button", {
-      name: "1着 1号艇→2着 2号艇 190件 29.7%",
-    });
-    await band.click();
-    await expect(
-      section.getByText(/190\s*件[・\s]*29\.7\s*%/).first(),
+      panel(section)
+        .getByText(new RegExp(`逃げ\\s*${pctRe(77, 120)}\\s*77件`))
+        .first(),
     ).toBeVisible();
   });
 
-  test("[spec FR-3/screens 3] 組み合わせ一覧は上位10件と「その他」の1行で、シェアの合計が100%（丸め誤差を除く）", async ({
+  test("[spec B-8 受入基準] 着順の流れは常に1着→2着→3着の3段で、「1号艇以外が勝ったレース」に切り替えられる", async ({
     page,
   }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    await expect(
+      panel(section).getByRole("heading", { name: "着順の流れ" }).first(),
+    ).toBeVisible();
+    await expect(
+      panel(section)
+        .getByRole("button", { name: /^1着 \d号艇→2着 \d号艇 \d+件$/ })
+        .first(),
+    ).toBeVisible();
+    await expect(
+      panel(section)
+        .getByRole("button", { name: /^2着 \d号艇→3着 \d号艇 \d+件$/ })
+        .first(),
+    ).toBeVisible();
+    const toggle = panel(section).getByRole("button", {
+      name: "1号艇以外が勝ったレース",
     });
     await expect(
-      section.getByRole("heading", { name: H_COMBO, exact: true }),
-    ).toBeVisible();
-    const lines = (await part3Text(section))
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
-    const comboLines = lines.filter(
-      (l) => /(^|\D)[1-6]-[1-6]-[1-6](\D|$)/.test(l) && /%/.test(l),
-    );
-    const otherLines = lines.filter((l) => /^その他/.test(l) && /%/.test(l));
-    const combos = new Set(
-      comboLines.map((l) => l.match(/[1-6]-[1-6]-[1-6]/)[0]),
-    );
-    expect(combos.size).toBe(10);
-    // 11位以下（5-1-2・3-4-1・6-1-2・4-5-6）は一覧に個別の行を持たない
-    for (const c of ["5-1-2", "3-4-1", "6-1-2", "4-5-6"])
-      expect(combos.has(c)).toBe(false);
-    expect(otherLines).toHaveLength(1);
-    // 同じ組み合わせが複数行に出ても1回だけ数える
-    const byCombo = new Map();
-    for (const l of comboLines) {
-      const c = l.match(/[1-6]-[1-6]-[1-6]/)[0];
-      if (!byCombo.has(c)) byCombo.set(c, l);
-    }
-    let total = 0;
-    for (const l of [...byCombo.values(), ...otherLines]) {
-      total += Number(l.match(/(\d+(?:\.\d+)?)\s*%/)[1]);
-    }
-    expect(total).toBeGreaterThanOrEqual(99);
-    expect(total).toBeLessThanOrEqual(101);
-  });
-
-  test("[spec FR-3/screens 3] 「1号艇以外が1着のレースだけ」を押すと aria-pressed が true になり、1号艇1着の帯・組み合わせが消える", async ({
-    page,
-  }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    const toggle = section.getByRole("button", {
-      name: "1号艇以外が1着のレースだけ",
-    });
-    await expect(toggle).toHaveAttribute("aria-pressed", "false");
+      panel(section).getByRole("button", { name: "すべて" }),
+    ).toHaveAttribute("aria-pressed", "true");
     await toggle.click();
     await expect(toggle).toHaveAttribute("aria-pressed", "true");
     await expect(
-      section.getByRole("button", { name: /^1着 1号艇→/ }),
+      panel(section).getByRole("button", { name: /^1着 1号艇→/ }),
     ).toHaveCount(0);
     await expect(
-      section.getByRole("button", { name: /^1着 2号艇→/ }).first(),
+      panel(section)
+        .getByRole("button", { name: /^2着 \d号艇→3着 \d号艇 \d+件$/ })
+        .first(),
     ).toBeVisible();
-    const t = await part3Text(section);
-    expect(t).not.toMatch(/(^|\D)1-[2-6]-[2-6]/m);
   });
 
-  test("[spec FR-3/screens 3] 組み合わせは2と同じ層: 条件を外すと n が連動する", async ({
+  test("[spec B-8] よく出た3連単の上位3つと「残り{k}通りを見る（全{m}通り）」", async ({
     page,
   }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    expect(await part3Text(section)).toMatch(/640/);
-    await conditionGroup(section).getByRole("button", { name: /外す/ }).click();
-    await expect
-      .poll(async () => part3Text(section))
-      .toMatch(new RegExp(num(1204)));
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    const combos = new Set(SIM_RACES.map((r) => r.finish.join("-")));
+    const m = combos.size;
     await expect(
-      section.getByRole("button", { name: BAND_12 }).first(),
+      panel(section).getByRole("heading", { name: "よく出た3連単" }).first(),
     ).toBeVisible();
+    await expect(
+      panel(section)
+        .getByText(new RegExp(`1-2-4\\s*${pctRe(18, 120)}\\s*18件`))
+        .first(),
+    ).toBeVisible();
+    await expect(
+      panel(section)
+        .getByText(new RegExp(`1-2-3\\s*${pctRe(12, 120)}\\s*12件`))
+        .first(),
+    ).toBeVisible();
+    await expect(
+      panel(section)
+        .getByText(new RegExp(`1-3-2\\s*${pctRe(9, 120)}\\s*9件`))
+        .first(),
+    ).toBeVisible();
+    await expect(
+      panel(section).getByText(`残り${m - 3}通りを見る（全${m}通り）`),
+    ).toBeVisible();
+  });
+
+  test("[spec B-6] 何が似ている？: 半分未満の項目は「そろっていない」側、そろえた条件の項目は出さない、全33項目の表", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    await panel(section)
+      .getByText("何が似ている？（項目ごとに、今日と同じだった割合）")
+      .click();
+    await expect(
+      panel(section).getByText(/そろっていない（半分未満）/),
+    ).toBeVisible();
+    await expect(panel(section).getByText(/近さで重く見た順:/)).toBeVisible();
+    await expect(
+      panel(section).getByText("勝率トップの艇番", { exact: true }),
+    ).toBeHidden();
+    await panel(section)
+      .getByText("全33項目（近さの計算に使わない項目も含む）を見る")
+      .click();
+    const table = panel(section).getByRole("table");
+    await expect(
+      table.getByRole("columnheader", { name: "項目（今日の値）" }),
+    ).toBeVisible();
+    await expect(
+      table.getByRole("columnheader", { name: "同じ（120件中）" }),
+    ).toBeVisible();
+    await expect(
+      table.getByRole("columnheader", { name: "近いも含む" }),
+    ).toBeVisible();
+    await expect(
+      table.getByRole("columnheader", { name: "全レースで同じ割合" }),
+    ).toBeVisible();
+    await expect(
+      table.getByRole("row", { name: /最終日かどうか/ }),
+    ).toContainText("—");
+  });
+
+  test("[spec B-7] 1件ずつ見比べる: 行は似ている順で、押すと全項目の比較が開く", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    await panel(section)
+      .getByText("1件ずつ見比べる（今日と全項目を並べる）")
+      .click();
+    const first = SIM_RACES[0];
+    const row = panel(section).getByRole("button", {
+      name: new RegExp(
+        `${simRaceLabel(first)}[\\s\\S]*同じ\\d+・近い\\d+・違う\\d+`,
+      ),
+    });
+    await expect(row).toBeVisible();
+    await row.click();
+    await expect(row).toHaveAttribute("aria-expanded", "true");
+    await expect(
+      panel(section)
+        .getByText(/（全艇: 1号艇\d着/)
+        .first(),
+    ).toBeVisible();
+  });
+
+  test("[spec B-5] ソナーの点をタップすると、そのレースが「1件ずつ見比べる」で開く", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    const first = SIM_RACES[0];
+    const point = panel(section).getByRole("button", {
+      name: `${fmtDate(first.date)} ${first.venue}12R 1着${first.finish[0]}号艇`,
+    });
+    await point.click();
+    const row = panel(section).getByRole("button", {
+      name: new RegExp(
+        `${simRaceLabel(first)}[\\s\\S]*同じ\\d+・近い\\d+・違う\\d+`,
+      ),
+    });
+    await expect(row).toBeVisible();
+    await expect(row).toHaveAttribute("aria-expanded", "true");
+  });
+
+  test("[spec B-2 受入基準] 展示前と展示後で似ている順の並びが変わる", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    await panel(section)
+      .getByText("1件ずつ見比べる（今日と全項目を並べる）")
+      .click();
+    const afterFirst = SIM_RACES[0];
+    const beforeFirst = SIM_RACES[SIM_RACES.length - 1];
+    const rowRe = (r) =>
+      new RegExp(`${simRaceLabel(r)}[\\s\\S]*同じ\\d+・近い\\d+・違う\\d+`);
+    await expect(
+      panel(section)
+        .getByRole("button", { name: /同じ\d+・近い\d+・違う\d+/ })
+        .first(),
+    ).toHaveAccessibleName(rowRe(afterFirst));
+    await timeGroup(section)
+      .getByRole("button", { name: "展示前（出走表）" })
+      .click();
+    if (
+      await panel(section)
+        .getByRole("button", { name: /同じ\d+・近い\d+・違う\d+/ })
+        .first()
+        .isHidden()
+    ) {
+      await panel(section)
+        .getByText("1件ずつ見比べる（今日と全項目を並べる）")
+        .click();
+    }
+    await expect(
+      panel(section)
+        .getByRole("button", { name: /同じ\d+・近い\d+・違う\d+/ })
+        .first(),
+    ).toHaveAccessibleName(rowRe(beforeFirst));
+  });
+
+  test("[spec B-8 脚注] 類似レースの脚注に「似ているからといって、同じ結果になるとは限らない」", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    await expect(
+      panel(section).getByText(
+        /似ているからといって、同じ結果になるとは限らない/,
+      ),
+    ).toBeVisible();
+    await expect(
+      panel(section).getByText(
+        /AIの見立てと同じ向きになりやすい（別々の裏付けにはならない）/,
+      ),
+    ).toBeVisible();
+  });
+
+  test("[screens 状態] 層が0件ならタブ2は1行だけで、決まり方も出さない", async ({
+    page,
+  }) => {
+    await mockApis(page, { similarStatus: "empty" });
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    await expect(
+      panel(section).getByText("今日と同じ条件の過去レースがありません"),
+    ).toBeVisible();
+    await expect(
+      panel(section).getByRole("heading", { name: "類似レースの決まり方" }),
+    ).toHaveCount(0);
+    await expect(panel(section).getByRole("slider")).toHaveCount(0);
+  });
+
+  test("[screens S-1 / 状態] 保存の無いレースはタブ2を「このレースの類似レースは保存されていません」の1行にする", async ({
+    page,
+  }) => {
+    await mockApis(page, { similarStatus: "not_saved" });
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    await expect(
+      panel(section).getByText("このレースの類似レースは保存されていません"),
+    ).toBeVisible();
+    await expect(
+      panel(section).getByRole("heading", { name: "類似レースの決まり方" }),
+    ).toHaveCount(0);
+  });
+
+  test("[screens 状態] 展示後の並べ直しがまだのときは展示前の並びで「展示の結果を反映しています」", async ({
+    page,
+  }) => {
+    await mockApis(page, { similarStatus: "pending_after" });
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    await expect(
+      panel(section).getByText("展示の結果を反映しています"),
+    ).toBeVisible();
+    await expect(
+      panel(section).getByRole("slider", { name: /似ている順に/ }),
+    ).toBeVisible();
+  });
+
+  test("[screens 状態] 締切後も展示後の並びが無いときは「展示前の並びです」", async ({
+    page,
+  }) => {
+    await mockApis(page, { similarStatus: "before_only" });
+    const section = await openSection(page);
+    await openTab(section, "類似レース");
+    await expect(panel(section).getByText("展示前の並びです")).toBeVisible();
   });
 });
 
-// ---------------------------------------------------------------------------
-// 非機能要件
-// ---------------------------------------------------------------------------
+// ======================================================================
+// タブ3 展開シナリオ（FR-C）
+// ======================================================================
 
-test.describe("375px", () => {
-  test.use({ viewport: { width: 375, height: 812 } });
+test.describe("アナロジー・ファインダー: 展開シナリオ", () => {
+  const entryButton = (s, name) =>
+    panel(s).getByRole("button", { name: new RegExp(`^${escapeRe(name)}`) });
+  const shapeButton = (s, name) =>
+    panel(s).getByRole("button", { name: new RegExp(`^${escapeRe(name)}`) });
 
-  test("[spec 非機能要件] 375px で節（展示後・1-b と展示前を開いた状態）に横スクロールが出ない", async ({
+  test("[spec 着順 / screens] 展開シナリオのタブでは着順の切り替えを出さない", async ({
     page,
   }) => {
-    const section = await openSection(page, {
-      contribution: raceContribution("after_exhibition"),
-      similar: similarDefault,
-    });
-    await section.getByText("展示前の値を見る", { exact: true }).click();
-    await section.getByText(H_SLICE, { exact: true }).click();
+    await mockApis(page);
+    const section = await openSection(page);
+    await expect(finishGroup(section)).toBeVisible();
+    await openTab(section, "展開シナリオ");
     await expect(
-      section.getByRole("heading", { name: H_COMBO, exact: true }),
+      panel(section).getByRole("heading", { level: 3, name: "展開シナリオ" }),
     ).toBeVisible();
-    const overflow = await page.evaluate(
-      () =>
-        document.documentElement.scrollWidth -
-        document.documentElement.clientWidth,
+    await expect(finishGroup(section)).toHaveCount(0);
+  });
+
+  test("[spec C-0] 数えるレースは6つ（G1の今日は若松のG1も）、既定はVC", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    const scopes = panel(section).getByRole("group", { name: "数えるレース" });
+    await expect(scopes.getByRole("button")).toHaveCount(6);
+    await expect(
+      scopes.getByRole("button", { name: "若松・6艇ともA1" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    for (const name of [
+      "全国・6艇ともA1",
+      "全国・6艇ともA1の優勝戦",
+      "若松の全レース",
+      "若松のG1",
+      "全国の全レース",
+    ]) {
+      await expect(scopes.getByRole("button", { name })).toBeVisible();
+    }
+  });
+
+  test("[spec C-1] ①進入の型に1号艇の1着率が出て、30件未満の型は率を出さない", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await expect(
+      panel(section).getByRole("heading", { name: /進入はどうなる？/ }),
+    ).toBeVisible();
+    await expect(entryButton(section, "枠なり")).toContainText(
+      /1号艇の1着率\d+%/,
     );
-    expect(overflow).toBeLessThanOrEqual(0);
+    await expect(entryButton(section, "前付けあり（1号艇イン）")).toBeVisible();
+    const taken = entryButton(section, "1号艇がインを取られた");
+    await expect(taken).toContainText("12件（少ないので1着率は出さない）");
+    await expect(taken).not.toContainText("1号艇の1着率");
+  });
+
+  test("[spec C-1] 前付けありの下に「6号艇だけ・5号艇だけ・5・6号艇・その他」を選べる", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await entryButton(section, "前付けあり（1号艇イン）").click();
+    for (const name of ["6号艇だけ", "5号艇だけ", "5・6号艇", "その他"]) {
+      await expect(entryButton(section, name)).toBeVisible();
+    }
+  });
+
+  test("[spec C-1] 展示後は今日の展示に当てはまる型に「今日の展示」の印と、展示→本番の一致率が出る", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await expect(entryButton(section, "枠なり")).toContainText("今日の展示");
+    await expect(
+      panel(section).getByText(
+        new RegExp(
+          `展示が枠なりだったレースの${pctRe(1882, 2023)}は、本番も枠なりだった`,
+        ),
+      ),
+    ).toBeVisible();
+  });
+
+  test("[spec C-2] 枠なりを選ぶと今日のスタートの手がかり（使う平均ST・表）が出る", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await entryButton(section, "枠なり").click();
+    await expect(
+      panel(section).getByRole("heading", { name: "今日のスタートの手がかり" }),
+    ).toBeVisible();
+    await expect(
+      panel(section).getByText(
+        "平均STの並び（予想ではなく、過去の記録）。進入が枠なりになった場合の手がかり",
+      ),
+    ).toBeVisible();
+    const st = panel(section).getByRole("group", { name: "使う平均ST" });
+    await expect(st.getByRole("button", { name: "このコース" })).toBeVisible();
+    await expect(st.getByRole("button", { name: "全体" })).toBeVisible();
+    const table = panel(section)
+      .getByRole("table")
+      .filter({ hasText: "このコース" });
+    for (const name of [
+      /^このコース/,
+      /^全体/,
+      /^若松で/,
+      /^若松の全選手（コース別）/,
+      /^今日の展示/,
+    ]) {
+      await expect(table.getByRole("row", { name })).toBeVisible();
+    }
+    await expect(table).toContainText(/\.\d{3}/); // 平均STは3桁（.133）
+    await expect(table).toContainText(/F\.\d{2}/); // 展示のFは「F.09」
+  });
+
+  test("[spec C-2] 率を上げる条件を押すと②でその形が選ばれる。下げる条件は「むしろなりにくい」", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await entryButton(section, "枠なり").click();
+    const raise = panel(section).getByRole("button", {
+      name: /→ 過去、2コース凹みになったのは19%（当てはまらないとき10%）/,
+    });
+    await expect(raise).toBeVisible();
+    await expect(panel(section).getByText(/むしろなりにくい/)).toBeVisible();
+    await raise.click();
+    await expect(shapeButton(section, "2コース凹み")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  test("[spec C-3] ②スリットの形は「どの形でも」と7つの形で、既定は「どの形でも」", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await expect(
+      panel(section).getByRole("heading", {
+        name: /スタートはどう並ぶ？（スリットの形）/,
+      }),
+    ).toBeVisible();
+    await expect(shapeButton(section, "どの形でも")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    for (const s of SHAPES.slice(1))
+      await expect(shapeButton(section, s.label)).toBeVisible();
+    await expect(shapeButton(section, "カド一撃")).toContainText(
+      /1号艇の1着率\d+%/,
+    );
+  });
+
+  test("[spec C-4] 形を選ぶまでは③に案内の1行、選ぶと攻める艇の表（「36%（16/45）」・50件未満は「少ない」）", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await expect(
+      panel(section).getByRole("heading", {
+        name: /攻めは決まった？（攻める艇と1号艇の着順）/,
+      }),
+    ).toBeVisible();
+    await expect(
+      panel(section).getByText(
+        "②でスリットの形を選ぶと、その形のときに攻める艇が勝ちきったか、1号艇が逃げたかが出る",
+      ),
+    ).toBeVisible();
+    await shapeButton(section, "カド一撃").click();
+    await expect(
+      panel(section).getByText(
+        "②でスリットの形を選ぶと、その形のときに攻める艇が勝ちきったか、1号艇が逃げたかが出る",
+      ),
+    ).toHaveCount(0);
+    const table = panel(section)
+      .getByRole("table")
+      .filter({ hasText: "36%（16/45）" });
+    await expect(table.first()).toBeVisible();
+    await expect(table.first()).toContainText("40%（24/60）");
+    await expect(table.first()).toContainText("少ない");
+  });
+
+  test("[spec C-5 / 受入基準] ④が30件未満なら割合を出さず1件ずつの一覧（進入 231/456 形式）", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await shapeButton(section, "カド一撃").click();
+    await expect(
+      panel(section).getByRole("heading", {
+        name: /②の形のとき、どう決まった？（③の順位では分けていない）/,
+      }),
+    ).toBeVisible();
+    const items = panel(section)
+      .getByRole("listitem")
+      .filter({ hasText: /\d{3}\/\d{3}/ });
+    await expect(items).toHaveCount(12);
+    await expect(panel(section).getByText("1着になった艇")).toHaveCount(0);
+  });
+
+  test("[spec C-5] 形を選ばないときの④に1着の艇・3着以内・決まり手・万舟・着順の流れ・よく出た3連単が出る", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    const p = panel(section);
+    await expect(
+      p.getByRole("heading", { name: /②の形のとき、どう決まった？/ }),
+    ).toBeVisible();
+    for (const name of [
+      "1着になった艇",
+      "3着以内に入った艇",
+      "どう決まった？",
+      "万舟（3連単1万円以上）",
+      "着順の流れ",
+      "よく出た3連単",
+    ]) {
+      await expect(p.getByText(name, { exact: false }).first()).toBeVisible();
+    }
+    await expect(
+      p.getByRole("button", { name: /^2着 \d号艇→3着 \d号艇 \d+件$/ }).first(),
+    ).toBeVisible();
+  });
+
+  test("[spec C-5 脚注] 返還レースを除くので来る艇の条件の件数とは合わない旨が出る", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await expect(
+      panel(section).getByText(
+        /スリットの形はレース後に分かるもので、『もしこうなったら』の参考/,
+      ),
+    ).toBeVisible();
+    await expect(
+      panel(section).getByText(
+        /返還（F・L・欠場）があったレース[\d,]+件を除くので、『来る艇の条件』の件数とは合わない/,
+      ),
+    ).toBeVisible();
+  });
+
+  test("[spec FR-C 受入基準] 数えるレースを変えると④の件数が変わる", async ({
+    page,
+  }) => {
+    const { last } = await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await expect.poll(() => last.scenario?.result.n ?? null).not.toBeNull();
+    const n1 = last.scenario.result.n;
+    await expect(
+      panel(section)
+        .getByText(new RegExp(`${escapeRe(n1.toLocaleString("en-US"))}件`))
+        .first(),
+    ).toBeVisible();
+    await panel(section)
+      .getByRole("group", { name: "数えるレース" })
+      .getByRole("button", { name: "全国の全レース" })
+      .click();
+    await expect.poll(() => last.scenario?.result.n).not.toBe(n1);
+    const n2 = last.scenario.result.n;
+    await expect(
+      panel(section)
+        .getByText(new RegExp(`${escapeRe(n2.toLocaleString("en-US"))}件`))
+        .first(),
+    ).toBeVisible();
+  });
+
+  test("[spec C-1/C-2/C-3 / 受入基準] 展示前は「今日の展示」の印・展示の行・展示の形を出さない", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await timeGroup(section)
+      .getByRole("button", { name: "展示前（出走表）" })
+      .click();
+    await expect(
+      timeGroup(section).getByRole("button", { name: "展示前（出走表）" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(entryButton(section, "枠なり")).not.toContainText(
+      "今日の展示",
+    );
+    await expect(panel(section).getByText(/本番も枠なりだった/)).toHaveCount(0);
+    await expect(
+      panel(section).getByText(/参考: 今日の展示の形は/),
+    ).toHaveCount(0);
+    await entryButton(section, "枠なり").click();
+    const table = panel(section)
+      .getByRole("table")
+      .filter({ hasText: "このコース" });
+    await expect(table).toBeVisible();
+    await expect(table.getByRole("row", { name: /^今日の展示/ })).toHaveCount(
+      0,
+    );
+  });
+});
+
+// ======================================================================
+// 使っている項目（FR-D）
+// ======================================================================
+
+test.describe("アナロジー・ファインダー: 使っている項目", () => {
+  test("[spec FR-D] 折りたたみを開くと、数えた値の期間が出る", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await section
+      .getByText("使っている項目（どの数字から出しているか）")
+      .click();
+    await expect(
+      section.getByText(new RegExp(`数えた値は${escapeRe(PERIOD_TEXT)}`)),
+    ).toBeVisible();
+  });
+
+  test("[spec FR-D] 展示前は「展示前は天候・風・波・展示タイムを使わず、見比べにも出さない」と書く", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await timeGroup(section)
+      .getByRole("button", { name: "展示前（出走表）" })
+      .click();
+    await section
+      .getByText("使っている項目（どの数字から出しているか）")
+      .click();
+    await expect(
+      section.getByText(
+        /展示前は天候・風・波・展示タイムを使わず、見比べにも出さない/,
+      ),
+    ).toBeVisible();
   });
 });
