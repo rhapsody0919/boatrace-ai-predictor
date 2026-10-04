@@ -37,6 +37,8 @@ function TrendLineChart({
             間引かれて一部しか出ない（BOA-557）。斜めにして全部出す */}
         <XAxis
           dataKey="date"
+          // 縦軸のいちばん下の目盛りと横軸の最初の日付が左下の角で接していた（BOA-711）
+          padding={{ left: 12 }}
           {...(slantXLabels
             ? { angle: -35, textAnchor: "end", height: 60, interval: 0 }
             : {})}

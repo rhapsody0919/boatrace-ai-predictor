@@ -138,9 +138,11 @@
 
 .rsc-note-small {
   display: block;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-2xs);
   color: var(--text-secondary);
-  transform: scale(0.92);
+  /* 「内側な／し」と1文字だけ折れた（BOA-711）。折らないと 375px の列（約38px）から
+     はみ出して隣に重なるので、行の長さをそろえて折る（「内側／なし」） */
+  text-wrap: balance;
 }
 
 .rsc-grade {
@@ -373,4 +375,29 @@
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   line-height: 1.1;
+  /* 375px で「平均／42.4」と折れる列と折れない列が混ざり、行の高さがずれた（BOA-711） */
+  white-space: nowrap;
+}
+
+/* 行見出しの下の「高いほど良い／低いほど良い」。差の ＋− の良し悪しは行で逆になるので、
+   色が見分けにくくても読めるよう文字で添える（BOA-711） */
+.rsc-dir {
+  display: block;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+  /* 375px の行見出しの列（60px）に1行で入らないので折り返す。行見出しは nowrap なので
+     明示的に戻す。折らないと隣の列に8pxはみ出した（BOA-711 ファン評価1周目） */
+  white-space: normal;
+  line-height: 1.2;
+}
+
+/* 360px 未満は列が狭く、折らないと表がカードから 4px はみ出し、6号艇の差が欠けた
+   （BOA-711 ファン評価2周目、320px）。この幅だけは「平均／42.4」と折る。
+   .rsc-baseline の指定（nowrap）より後ろに置く */
+@media (max-width: 359px) {
+  .rsc-baseline,
+  .rsc-note-small {
+    white-space: normal;
+  }
 }

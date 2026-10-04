@@ -121,7 +121,8 @@
 }
 
 .rmt-finishes .is-win {
-  color: var(--text-primary);
+  /* 1着は金（日別の表・推移の着順と同じ。BOA-711） */
+  color: var(--brand-accent-primary);
   font-weight: var(--font-weight-bold);
 }
 
@@ -141,8 +142,8 @@
 }
 
 .rmt-compare tbody tr.is-current {
+  /* 選択中は塗りだけで示す。太字にすると、最良の金枠（太字）と区別しづらかった（BOA-711） */
   background: var(--color-primary-alpha-10);
-  font-weight: var(--font-weight-bold);
 }
 
 /* 選択中の行の最良は、行の青い塗りと金の薄い塗りが混ざって灰色の箱に見え、
