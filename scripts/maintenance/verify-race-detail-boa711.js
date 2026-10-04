@@ -147,6 +147,21 @@ check(
     read("src/components/race/VolatilityDisplay.jsx"),
   ),
 );
+// 2026-10-03 ユーザー判断（BOA-711 U2）: 準優の目安の線・目安に届く得点率は青。金は最良だけ
+{
+  const meet = read("src/components/race/RaceMeetTab.css");
+  check(
+    "U2: 準優の目安の点線・左の帯・早見の得点率は青（--color-info-text）",
+    /tr\.is-border-edge td \{[^}]*dashed var\(--color-info-text\)/.test(meet) &&
+      /tr\.is-in-border th \{[^}]*inset 3px 0 0 0 var\(--color-info-text\)/.test(
+        meet,
+      ) &&
+      /td\.rmt-rate\.is-in-border \{[^}]*color: var\(--color-info-text\)/.test(
+        meet,
+      ),
+  );
+}
+
 if (failures.length > 0) {
   console.error(`\nverify-race-detail-boa711: ${failures.length}件失敗`);
   process.exit(1);
