@@ -1011,7 +1011,7 @@
     "forecastRankHeader": "{{rank}}",
     "forecastNote": "A highlighted cell means that, with that finish today, the racer should be at or above the semi-final line ({{slots}}th = {{rate}}) at the end of today. On days with more qualifying races tomorrow, it does not settle the semi-final. Racers with two or more qualifying races left today are not highlighted, because one finish alone does not decide it. \"Points needed\" is what it takes to reach that line, counting only today's carded qualifying races (it changes if there are more qualifying races tomorrow).",
     "forecastNoteNoBorder": "The score rate you would have after that finish. Assumes a clean finish.",
-    "forecastRateBlueNote": "A blue score rate means the racer is already at or above the semi-final line now.",
+    "forecastRateBlueNote": "A blue score rate means the racer is at or above the semi-final line right now. It can drop with today's finish, so read it together with the points-needed column.",
     "colNeeded": "Points needed",
     "neededPoints": "{{points}}",
     "neededPointsRuns": "{{runs}} races today",
