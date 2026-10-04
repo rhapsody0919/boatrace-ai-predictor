@@ -158,3 +158,13 @@
   font-weight: var(--font-weight-bold);
   vertical-align: middle;
 }
+
+/* 列に入るレースが無いときの「該当なし」 */
+.volatility-highlights__empty {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: var(--border-width-1) dashed var(--border-hairline);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}

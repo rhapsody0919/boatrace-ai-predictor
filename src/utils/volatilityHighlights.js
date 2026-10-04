@@ -12,7 +12,9 @@
  * @param {Array<{percentile: number, level: "high"|"standard"|"low", closed: boolean}>} races
  *   中止・代わりの値（isFallback）を除いたレース
  * @param {number} maxCount 列ごとの最大本数
- * @returns {{high: Array, low: Array, allClosed: boolean}}
+ * - 選ぶ対象（pool）が1本でもあれば、片方の列が空でも節は出す（呼び出し側が「該当なし」と書く）。
+ *   空の列や節ごと消すと、夕方に崩れ注意の列だけ・節ごとが説明なく消えた（PR #1248 ファン評価2周目）
+ * @returns {{high: Array, low: Array, allClosed: boolean, poolSize: number}}
  */
 export function pickVolatilityHighlights(races, maxCount) {
   const open = races.filter((r) => !r.closed);
@@ -26,5 +28,5 @@ export function pickVolatilityHighlights(races, maxCount) {
     .filter((r) => r.level === "low")
     .sort((a, b) => a.percentile - b.percentile)
     .slice(0, maxCount);
-  return { high, low, allClosed };
+  return { high, low, allClosed, poolSize: pool.length };
 }

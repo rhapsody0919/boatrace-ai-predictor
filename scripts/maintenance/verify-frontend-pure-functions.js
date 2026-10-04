@@ -1778,6 +1778,13 @@ function suiteVolatilityHighlights(m, check) {
     ids(m.pickVolatilityHighlights([race("a", 95, true), race("q", 85, false)], 5)),
     { high: ["q"], low: [], allClosed: false },
   );
+  // 締切前が「標準」だけでも、選ぶ対象はあるので節は出す（PR #1248 ファン評価2周目）
+  check(
+    "volatilityHighlights: 締切前が「標準」だけでも poolSize は残り、節を出せる",
+    m.pickVolatilityHighlights([race("a", 95, true), race("s", 45, false)], 5)
+      .poolSize,
+    1,
+  );
   check(
     "volatilityHighlights: 全部締切済みなら、締切済みから選び allClosed",
     ids(

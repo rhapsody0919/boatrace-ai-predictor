@@ -63,18 +63,23 @@ function flattenRaces(venuesData, nowHHMM) {
   return races;
 }
 
-function HighlightList({ title, races, t }) {
-  if (races.length === 0) return null;
+// 列が空でも見出しと「該当なし」を出す。列ごと消すと、崩れ注意のレースが無いのか読み込めていないのかが
+// 分からず、1440px では残った列が全幅に伸びた（PR #1248 ファン評価2周目）
+function HighlightList({ title, races, emptyText, t }) {
   return (
     <div className="volatility-highlights__column">
       <h3 className="volatility-highlights__column-title">{title}</h3>
-      <ul className="volatility-highlights__list">
-        {races.map((race) => (
-          <li key={race.raceId}>
-            <RaceLink race={race} t={t} />
-          </li>
-        ))}
-      </ul>
+      {races.length === 0 ? (
+        <p className="volatility-highlights__empty">{emptyText}</p>
+      ) : (
+        <ul className="volatility-highlights__list">
+          {races.map((race) => (
+            <li key={race.raceId}>
+              <RaceLink race={race} t={t} />
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -153,11 +158,13 @@ function TodaysVolatilityHighlights({ venuesData, nowHHMM = null }) {
     high: highRaces,
     low: lowRaces,
     allClosed,
+    poolSize,
   } = pickVolatilityHighlights(
     flattenRaces(venuesData, nowHHMM),
     HIGHLIGHT_COUNT,
   );
-  if (highRaces.length === 0 && lowRaces.length === 0) return null;
+  if (poolSize === 0) return null;
+  const emptyKey = allClosed ? "Closed" : "Open";
 
   return (
     <section className="volatility-highlights">
@@ -179,11 +186,13 @@ function TodaysVolatilityHighlights({ venuesData, nowHHMM = null }) {
           // アイコンはレース詳細のイン崩れ注意度カードと同じ 🌪️（2026-10-03 ユーザー判断、BOA-711）
           title={`🌪️ ${t("volatility.levelHigh")}`}
           races={highRaces}
+          emptyText={t(`home.volatilityHighlightsHighEmpty${emptyKey}`)}
           t={t}
         />
         <HighlightList
           title={`🎯 ${t("volatility.levelLow")}`}
           races={lowRaces}
+          emptyText={t(`home.volatilityHighlightsLowEmpty${emptyKey}`)}
           t={t}
         />
       </div>

@@ -222,10 +222,33 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     });
     await page.goto("/");
     const columns = await readHighlights(page);
-    expect(columns).toEqual([[`/race/${raceIdOf(6)}`]]);
-    await expect(page.locator(".volatility-highlights")).not.toContainText(
-      "イン崩れ注意（高）",
+    expect(columns).toEqual([[], [`/race/${raceIdOf(6)}`]]);
+    // 列は消さず、該当なしと書く（PR #1248 ファン評価2周目。列ごと消えると読み込めていないのと区別できなかった）
+    await expect(page.locator(".volatility-highlights__empty")).toHaveText(
+      "締切前のレースに、崩れやすさ70以上のレースはありません。",
     );
+  });
+
+  // 締切前に残ったレースが「標準」だけになると、節ごと消えていた（PR #1248 ファン評価2周目。20:38〜20:44）
+  test("締切前が「標準」だけでも節を出し、両方の列に該当なしと書く", async ({
+    page,
+  }) => {
+    const races = [
+      { raceNo: 1, startTime: "10:00", cancellationStatus: null, rank1: 1, percentile: 0.95 },
+      { raceNo: 2, startTime: "15:00", cancellationStatus: null, rank1: null, percentile: 0.45 },
+    ];
+    await setup(page, {
+      edge: true,
+      races,
+      now: "2026-09-29T12:00:00+09:00",
+    });
+    await page.goto("/");
+    const columns = await readHighlights(page);
+    expect(columns).toEqual([[], []]);
+    await expect(page.locator(".volatility-highlights__empty")).toHaveText([
+      "締切前のレースに、崩れやすさ70以上のレースはありません。",
+      "締切前のレースに、崩れやすさ30以下のレースはありません。",
+    ]);
   });
 
   // 締切前が1本だけになると、まだ買えるその1本が一覧から消えていた（PR #1248 ファン評価1周目）
@@ -239,7 +262,7 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     });
     await page.goto("/");
     const columns = await readHighlights(page);
-    expect(columns).toEqual([[`/race/${raceIdOf(6)}`]]);
+    expect(columns).toEqual([[], [`/race/${raceIdOf(6)}`]]);
     await expect(page.locator(".volatility-highlights__closed")).toHaveCount(0);
     await expect(
       page.locator(".volatility-highlights__closed-note"),
