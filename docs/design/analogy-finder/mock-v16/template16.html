@@ -153,7 +153,7 @@ details.fold>summary{cursor:pointer;font-family:"Zen Kaku Gothic New",sans-serif
 .effs{display:grid;gap:10px}
 .eff{border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:grid;gap:6px;background:var(--card)}
 .eff.weak{opacity:.6}
-.eff .eh{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.eff .eh{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;font-size:13.5px}.eff .eh .md{order:3;flex-basis:100%;font-size:11px;color:var(--muted);font-weight:400}
 .eff .rkn{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted);border:1px solid var(--border);border-radius:50%;width:1.7em;height:1.7em;display:grid;place-items:center}
 .eff .gap{margin-left:auto;font-size:12px;color:var(--accent-strong);font-weight:700}
 .eff .pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}.eff .pair>div{display:grid;gap:0;background:var(--sunken);border-radius:6px;padding:6px 8px;font-size:11.5px}.eff .pair b{font-family:"JetBrains Mono",monospace;font-size:20px;line-height:1.2}.eff .pair small{color:var(--muted);font-size:10.5px}
@@ -203,11 +203,11 @@ table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl t
 </style>
 
 <div class="wrap">
-  <div class="note"><b>モック Version 16（2026-10-04）</b>。3タブ: 来る艇の条件（数えた値。範囲は今日と同じ級別の組み合わせが既定）／似たレース（似たレースの決まり方も同じタブ）／展開シナリオ（進入 → スリット → 結果）。上の「展示前／展示後」で切り替わる。数字はすべて実データ（本番 DB、2019-04-01〜例のレースの前日まで）。例のレースは <b>若松 12R（2026-09-27、G1 ヤングダービー優勝戦、6艇とも A1）</b>で、発走前に見ている想定（結果は 4-1-5 差し、3連単 11,580円）。</div>
+  <div class="note"><b>モック Version 16（2026-10-04）</b>。3タブ: 来る艇の条件（数えた値。範囲は今日と同じ級別の組み合わせが既定）／類似レース（類似レースの決まり方も同じタブ）／展開シナリオ（進入 → スリット → 結果）。上の「展示前／展示後」で切り替わる。数字はすべて実データ（本番 DB、2019-04-01〜例のレースの前日まで）。例のレースは <b>若松 12R（2026-09-27、G1 ヤングダービー優勝戦、6艇とも A1）</b>で、発走前に見ている想定（結果は 4-1-5 差し、3連単 11,580円）。</div>
 
   <div class="mockbox" aria-label="モックの切り替え">
     <span class="t">モックの切り替え（比べる用。本番には出さない）</span>
-    <div class="row"><span class="lbl">似たレースの選び方</span><div class="seg" id="swKnn"><button type="button" data-v="mix" aria-pressed="true">推奨: 勝率差・1号艇の級別・勝率トップは必ずそろえ、その中を似ている順</button><button type="button" data-v="pure" aria-pressed="false">代案: 全部を似ている順（当初どおり）</button></div></div>
+    <div class="row"><span class="lbl">類似レースの選び方</span><div class="seg" id="swKnn"><button type="button" data-v="mix" aria-pressed="true">推奨: 勝率差・1号艇の級別・勝率トップは必ずそろえ、その中を似ている順</button><button type="button" data-v="pure" aria-pressed="false">代案: 全部を似ている順（当初どおり）</button></div></div>
     <div class="row"><span class="lbl">テーマ</span><div class="seg" id="swTh"><button type="button" data-v="7" aria-pressed="true">推奨: 7テーマ</button><button type="button" data-v="6" aria-pressed="false">代案: 6テーマ</button></div></div>
   </div>
 
@@ -219,7 +219,7 @@ table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl t
     <div class="row" style="margin-bottom:6px"><span class="lbl">情報</span><div class="seg" id="stageSeg"><button type="button" data-v="pre" aria-pressed="false">展示前（出走表）</button><button type="button" data-v="post" aria-pressed="true">展示後（直前情報も）</button></div></div>
     <div class="row"><span class="lbl">着順</span>
     <div class="seg" id="rankSeg"><button type="button" data-r="1" aria-pressed="true">1着</button><button type="button" data-r="2" aria-pressed="false">2着以内</button><button type="button" data-r="3" aria-pressed="false">3着以内</button></div></div>
-    <div class="tabs" role="tablist" id="tabs"><button type="button" role="tab" data-t="ai" aria-selected="true">来る艇の条件</button><button type="button" role="tab" data-t="sim" aria-selected="false">似たレース</button><button type="button" role="tab" data-t="scn" aria-selected="false">展開シナリオ</button></div>
+    <div class="tabs" role="tablist" id="tabs"><button type="button" role="tab" data-t="ai" aria-selected="true">来る艇の条件</button><button type="button" role="tab" data-t="sim" aria-selected="false">類似レース</button><button type="button" role="tab" data-t="scn" aria-selected="false">展開シナリオ</button></div>
     <div id="sharedN">
     <div class="slider">
       <div class="row" style="justify-content:space-between"><span class="lbl">似ている順に</span><span class="sv"><b id="nLbl"></b>件</span></div>
@@ -264,9 +264,9 @@ table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl t
 
 
   <section class="block" id="secSim" aria-labelledby="hSim">
-    <h2 id="hSim">似たレース（類似している過去レース）</h2>
+    <h2 id="hSim">類似レース</h2>
     <p class="sub" id="simSub"></p>
-    <div class="scope"><svg id="sonar" viewBox="0 0 440 440" role="img" aria-label="似たレースのソナー。中心が今日のレースで、近いほど似ている。扇は1着の艇"></svg>
+    <div class="scope"><svg id="sonar" viewBox="0 0 440 440" role="img" aria-label="類似レースのソナー。中心が今日のレースで、近いほど似ている。扇は1着の艇"></svg>
       <div class="scope-cap"><span>TARGET: 若松12R</span><span id="sonarCap"></span></div></div>
     <p class="foot">中心に近い点ほど、今日のレースと出走表の数字が近い（似ている順の何番目かで置いている。輪は10・100・800番目）。扇は1着になった艇。点を押すとそのレースを今日と見比べる</p>
     <div class="likes">
@@ -281,10 +281,10 @@ table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl t
   </section>
 
   <section class="block" id="secRes" aria-labelledby="hRes">
-    <h2 id="hRes">似たレースの決まり方（類似している過去レースの傾向）</h2>
+    <h2 id="hRes">類似レースの決まり方</h2>
     <div class="hero"><span class="n" id="resN"></span><span class="t" id="resT"></span></div>
     <h3 id="hWin"></h3>
-    <div class="key"><span><i style="background:var(--bar)"></i>似たレース</span><span><i style="border-left:2px dotted var(--hit);width:2px;height:12px"></i>若松の全レース（似ているかを問わない）</span><span>ひげ＝95%の幅。棒をタップ</span></div>
+    <div class="key"><span><i style="background:var(--bar)"></i>類似レース</span><span><i style="border-left:2px dotted var(--hit);width:2px;height:12px"></i>若松の全レース（似ているかを問わない）</span><span>ひげ＝95%の幅。棒をタップ</span></div>
     <div class="bars" id="barWin"></div>
     <div class="tip" id="barTip"></div>
     <h3>どう決まった？</h3>
@@ -293,13 +293,13 @@ table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl t
     <h3 style="margin-top:8px">着順の流れ</h3>
     <p class="sub">1着 → 2着 → 3着。帯の太さが件数。少ない流れも薄く全部描いている。帯をタップ</p>
     <div class="row"><div class="seg" id="flowF"><button type="button" data-f="all" aria-pressed="true">すべて</button><button type="button" data-f="not1" aria-pressed="false">1号艇以外が勝ったレース</button></div></div>
-    <div class="scope" style="background:var(--navy-900)"><svg id="sankey" viewBox="0 0 640 400" role="img" aria-label="似たレースの1着→2着→3着の流れ"></svg></div>
+    <div class="scope" style="background:var(--navy-900)"><svg id="sankey" viewBox="0 0 640 400" role="img" aria-label="類似レースの1着→2着→3着の流れ"></svg></div>
     <div class="tip" id="flowTip">帯をタップすると件数が出る</div>
     <p class="foot" id="flowNote"></p>
     <h3>よく出た3連単</h3>
     <div class="bars" id="triTop"></div>
     <details class="more"><summary id="triMore">ほかの組み合わせも見る</summary><div class="bars" id="triAll" style="margin-top:6px"></div></details>
-    <p class="foot">数えた割合で、原因とは限らない。似ているからといって、同じ結果になるとは限らない。AI が重く見る項目で似たレースを選んでいるので、AI の見立てと同じ向きになりやすい（別々の裏付けにはならない）。</p>
+    <p class="foot">数えた割合で、原因とは限らない。似ているからといって、同じ結果になるとは限らない。AI が重く見る項目で類似レースを選んでいるので、AI の見立てと同じ向きになりやすい（別々の裏付けにはならない）。</p>
   </section>
   <section class="block" id="secScn" aria-labelledby="hScn" hidden>
     <h2 id="hScn">展開シナリオ</h2>
@@ -316,7 +316,7 @@ table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl t
     <ol>
       <li>来る艇の条件: 材料ごとに「6艇で一番良いとき／一番悪いとき」の割合と、今日の艇の一文。範囲の既定は「若松・6艇とも A1」（今日と同じ級別の組み合わせ）。全レースにすると格の差の影響で勝率が強く出る</li>
       <li>来る艇の条件の判定: 番号の順位をやめ、「差が大きい／差は小さい／差ははっきりしない」の3段階にした</li>
-      <li>似たレース: 今までどおり（スライダー・ソナー・何が似ているか・1件ずつ）。その下に似たレースの決まり方（サンキー図・3連単）</li>
+      <li>類似レース: 今までどおり（スライダー・ソナー・何が似ているか・1件ずつ）。その下に類似レースの決まり方（サンキー図・3連単）</li>
       <li>展開シナリオ: ①進入 → ②スリットの形 → ③結果（1着・3着以内・決まり手・万舟・着順の流れ・3連単）。30件未満は1件ずつの一覧。展示後は今日の展示の進入に印</li>
     </ol>
   </section>
@@ -353,7 +353,7 @@ function wbar(lab,x,n,natP,sel,id,extra=""){const p=n?x/n:0,[lo,hi]=wilson(x,n);
   return `<button type="button" class="br${sel?" sel":""}" ${id?`data-b="${id}"`:""} data-tip="${x}/${n}件・95%の幅 ${pc(lo)}〜${pc(hi)}${extra}${natP!=null?`・全国 ${pc(natP)}`:""}"><span>${lab}</span><span class="wtrk"><span class="f" style="width:${p*100}%"></span>${n?`<span class="w" style="left:${lo*100}%;width:${(hi-lo)*100}%"></span>`:""}${natP!=null?`<span class="nt" style="left:${natP*100}%"></span>`:""}</span><span class="v">${pc(p,0)} <small>${x}件</small></span></button>`;}
 function wireTips(el,tipEl){el.querySelectorAll(".br").forEach(b=>b.onclick=()=>{tipEl.textContent=b.querySelector("span").textContent+": "+b.dataset.tip;if(b.dataset.b){st.boat=st.boat===+b.dataset.b?0:+b.dataset.b;render();}});}
 
-// ---------- 似たレース（k-NN） ----------
+// ---------- 類似レース（k-NN） ----------
 let K=D.knn;const NS=[10,20,30,50,75,100,150,200,300,400,600,800];
 let ITEM=Object.fromEntries(K.items.map(x=>[x.key,x]));
 function setK(){K=st.stage==="post"&&D.knn4?D.knn4:(st.swKnn==="mix"&&D.knn3?D.knn3:D.knn);ITEM=Object.fromEntries(K.items.map(x=>[x.key,x]));}
@@ -672,6 +672,16 @@ const RFM = [
   ["st_mean30", "過去の平均ST", "早い", "遅い"],
   ["exh_time", "展示タイム", "速い", "遅い"],
 ];
+// 材料の説明（モーターとボートの違いが分かるように）
+const MDESC = {
+  nat_win: "全国のレースでの勝率（出走表の値。選手の成績）",
+  loc_win: "この会場（若松）での勝率（出走表の値。選手の成績）",
+  recent_win30: "その選手の直近30走で1着だった割合（選手の成績）",
+  motor_2: "モーター＝エンジン。節ごとに抽選で割り当てられる。そのモーターがこれまで2着以内に入った割合で、エンジンの力の目安",
+  boat_2: "ボート＝船体（エンジンを載せる艇）。モーターとは別に抽選で割り当てられる。そのボートがこれまで2着以内に入った割合",
+  st_mean30: "その選手の直近30走のスタートタイミングの平均（小さいほど早い）",
+  exh_time: "今日の展示航走の一周タイム（小さいほど速い）",
+};
 const SHORT = {
   nat_win: "全国勝率",
   loc_win: "当地勝率",
@@ -827,7 +837,7 @@ function renderFacts() {
       const pb = [1, 6].map((rk) => rate(Bb, r.k, rk));
       bLine = `<p class="sub">${Bb}号艇なら: 一番${r.hi}とき ${pc(pb[0][0] / pb[0][1], 0)} ／ 一番${r.lo}とき ${pc(pb[1][0] / pb[1][1], 0)}（全体では ${pc(usual(Bb)[0] / usual(Bb)[1], 0)}）</p>${line(Bb, r, `今日の${Bb}号艇`)}`;
     }
-    return `<div class="eff ${cls}"><div class="eh"><b>${r.l}</b><span class="gap">${lab}${!cls && d < 0 ? `（一番${r.lo}ときのほうが高い）` : ""}</span></div>
+    return `<div class="eff ${cls}"><div class="eh"><b>${r.l}</b><small class="md">${MDESC[r.k]}</small><span class="gap">${lab}${!cls && d < 0 ? `（一番${r.lo}ときのほうが高い）` : ""}</span></div>
       <div class="pair"><div><span>6艇で一番${r.hi}とき</span><b>${pc(r.p[0], 0)}</b><small>${b[0].toLocaleString()}/${b[1].toLocaleString()}</small></div><div><span>6艇で一番${r.lo}とき</span><b>${pc(r.p[5], 0)}</b><small>${w[0].toLocaleString()}/${w[1].toLocaleString()}</small></div></div>
       ${strip(r)}${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
   };
@@ -1159,15 +1169,15 @@ function renderScn() {
 function renderDetail(){
   
   $("detail").innerHTML=`<ul>
-  <li>似たレース: 出走表の数字（6艇の級別・全国勝率・当地勝率・直近30走の成績・平均ST・モーター/ボート2連率・年齢・体重・地元、会場・R番号・グレード・ラウンド・節の日目）を、今日のレースと比べて近い順に並べた（k近傍）。会場が違うと距離を足す。展示タイム・天候・風・波は、出走表の時点では分からないので近さの計算に入れていない</li>
+  <li>類似レース: 出走表の数字（6艇の級別・全国勝率・当地勝率・直近30走の成績・平均ST・モーター/ボート2連率・年齢・体重・地元、会場・R番号・グレード・ラウンド・節の日目）を、今日のレースと比べて近い順に並べた（k近傍）。会場が違うと距離を足す。展示タイム・天候・風・波は、出走表の時点では分からないので近さの計算に入れていない</li>
   <li>近さの重み: 寄与度用のモデル（版 ${D.meta.modelVersion}）で、着順の見込みを大きく動かす項目ほど重く見る。モデルの予想の値は使っていない</li>
   <li>探したのは 2019-04-01〜2026-09-26（例のレースの前日まで）の ${D.knn.pool.n.toLocaleString()}レース。長期データの「最終日か」は値が使えないので近さに入れていない</li>
   <li>「何が似ている？」の割合は、近いレースの中でその項目が今日と同じ帯に入る割合。全レースでの割合と比べている。似ているからといって、同じ結果になるとは限らない。近い順に少なく絞るほど、結果の割合はぶれやすい（ひげが長くなる）</li>
   <li>ソナーは似ている順の何番目かで置いている（10・100・800番目の輪）。点の向き（扇の中の位置）に意味はない</li>
   <li>推奨の選び方では、勝率差の帯・1号艇の級別・勝率トップの艇の3つが同じレースだけに絞り、その中を似ている順に並べる（当てはまりへの影響が大きい3つを必ずそろえるため）</li>
-  <li>ひげ（95%の幅）はレースどうしが独立だとして計算している。似たレースは会場や同じ節に固まるので、実際の幅はやや広い</li>
+  <li>ひげ（95%の幅）はレースどうしが独立だとして計算している。類似レースは会場や同じ節に固まるので、実際の幅はやや広い</li>
   <li>同じ節を除くと、保存している800件から除くので、800件より少なくなる（本番では除いた後に800件をそろえる）</li>
-  <li>全国の割合（2019-04-01〜2026-09-26 の 408,723レース）と、似たレースを探した母集団（408,888レース）は、2着・3着が無いレースなどの扱いで165レース違う</li>
+  <li>全国の割合（2019-04-01〜2026-09-26 の 408,723レース）と、類似レースを探した母集団（408,888レース）は、2着・3着が無いレースなどの扱いで165レース違う</li>
   <li>棒のひげは 95% の幅（Wilson）。点線は全国の全レース</li>
   <li>「ほかの艇は？」のくらべる相手は、結果で機械的に決まらない群（1号艇とその艇以外が勝ったレース）</li>
   <li>長期データには3着の同着が ${NAT.boats_in_top3_beyond_3n}件ある。3着以内の数は同着の両方を数えている</li>

@@ -9,6 +9,16 @@ const RFM = [
   ["st_mean30", "過去の平均ST", "早い", "遅い"],
   ["exh_time", "展示タイム", "速い", "遅い"],
 ];
+// 材料の説明（モーターとボートの違いが分かるように）
+const MDESC = {
+  nat_win: "全国のレースでの勝率（出走表の値。選手の成績）",
+  loc_win: "この会場（若松）での勝率（出走表の値。選手の成績）",
+  recent_win30: "その選手の直近30走で1着だった割合（選手の成績）",
+  motor_2: "モーター＝エンジン。節ごとに抽選で割り当てられる。そのモーターがこれまで2着以内に入った割合で、エンジンの力の目安",
+  boat_2: "ボート＝船体（エンジンを載せる艇）。モーターとは別に抽選で割り当てられる。そのボートがこれまで2着以内に入った割合",
+  st_mean30: "その選手の直近30走のスタートタイミングの平均（小さいほど早い）",
+  exh_time: "今日の展示航走の一周タイム（小さいほど速い）",
+};
 const SHORT = {
   nat_win: "全国勝率",
   loc_win: "当地勝率",
@@ -164,7 +174,7 @@ function renderFacts() {
       const pb = [1, 6].map((rk) => rate(Bb, r.k, rk));
       bLine = `<p class="sub">${Bb}号艇なら: 一番${r.hi}とき ${pc(pb[0][0] / pb[0][1], 0)} ／ 一番${r.lo}とき ${pc(pb[1][0] / pb[1][1], 0)}（全体では ${pc(usual(Bb)[0] / usual(Bb)[1], 0)}）</p>${line(Bb, r, `今日の${Bb}号艇`)}`;
     }
-    return `<div class="eff ${cls}"><div class="eh"><b>${r.l}</b><span class="gap">${lab}${!cls && d < 0 ? `（一番${r.lo}ときのほうが高い）` : ""}</span></div>
+    return `<div class="eff ${cls}"><div class="eh"><b>${r.l}</b><small class="md">${MDESC[r.k]}</small><span class="gap">${lab}${!cls && d < 0 ? `（一番${r.lo}ときのほうが高い）` : ""}</span></div>
       <div class="pair"><div><span>6艇で一番${r.hi}とき</span><b>${pc(r.p[0], 0)}</b><small>${b[0].toLocaleString()}/${b[1].toLocaleString()}</small></div><div><span>6艇で一番${r.lo}とき</span><b>${pc(r.p[5], 0)}</b><small>${w[0].toLocaleString()}/${w[1].toLocaleString()}</small></div></div>
       ${strip(r)}${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
   };

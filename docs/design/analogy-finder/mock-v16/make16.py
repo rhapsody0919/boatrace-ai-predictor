@@ -64,7 +64,7 @@ R('const st={tab:"ai",stage:"post",scope:"layer",', 'const st={tab:"ai",stage:"p
 R('.tabs{display:grid;', '''.effs{display:grid;gap:10px}
 .eff{border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:grid;gap:6px;background:var(--card)}
 .eff.weak{opacity:.6}
-.eff .eh{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.eff .eh{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;font-size:13.5px}.eff .eh .md{order:3;flex-basis:100%;font-size:11px;color:var(--muted);font-weight:400}
 .eff .rkn{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted);border:1px solid var(--border);border-radius:50%;width:1.7em;height:1.7em;display:grid;place-items:center}
 .eff .gap{margin-left:auto;font-size:12px;color:var(--accent-strong);font-weight:700}
 .eff .pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}.eff .pair>div{display:grid;gap:0;background:var(--sunken);border-radius:6px;padding:6px 8px;font-size:11.5px}.eff .pair b{font-family:"JetBrains Mono",monospace;font-size:20px;line-height:1.2}.eff .pair small{color:var(--muted);font-size:10.5px}
@@ -113,5 +113,9 @@ t = t[:a] + '''<section class="confirm" aria-labelledby="cf">
     </ol>
   </section>''' + t[b:]
 R('${col[p][b]||""}</text>`;}});', '${col[p][b]?col[p][b].toLocaleString()+"件":""}</text>`;}});')
+# 「似たレース」→「類似レース」（ユーザー指示 2026-10-04）
+t = t.replace('類似レース（類似している過去レース）', '類似レース').replace('似たレース（類似している過去レース）', '類似レース')
+t = t.replace('似たレースの決まり方（類似している過去レースの傾向）', '類似レースの決まり方')
+t = t.replace('似たレース', '類似レース')
 io.open('template16.html', 'w', encoding='utf-8').write(t)
 print('ok')
