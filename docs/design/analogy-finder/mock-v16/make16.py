@@ -58,7 +58,7 @@ R('order();renderSim();renderAi();renderC();renderFacts();', 'order();renderSim(
 R('$("hFacts").textContent=`${st.pb}号艇が${RT[st.rank]}に来るとき`;', '$("hFacts").textContent=`${st.pb}号艇が${RT[st.rank]}に入ったのは、どんなとき？`;')
 R('["radar","themeList","cOut","aiPanel"]', '["radar","themeList"]')
 R('document.querySelectorAll("#scopeSeg button").forEach(b=>b.onclick=()=>{st.scope=b.dataset.s;render();});\n', '')
-R('const st={tab:"ai",stage:"post",scope:"layer",', 'const st={tab:"ai",stage:"post",fscope:"wkA1",scn:{scope:"v20",entry:"waku",slit:"any",ff:null,fs:null},')
+R('const st={tab:"ai",stage:"post",scope:"layer",', 'const st={tab:"ai",stage:"post",fscope:"wkA1",scn:{scope:"v20A1",entry:"waku",slit:"any",ff:null,fs:null},')
 
 # CSS
 R('.tabs{display:grid;', '''.effs{display:grid;gap:10px}
