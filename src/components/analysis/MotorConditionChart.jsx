@@ -343,8 +343,9 @@ function MotorConditionChart({
     Number(row.official_3rate) === 0 &&
     (row.rate_source === "official" || row.sample_count > 0) &&
     officialTallyState(venueHasOfficialStats, row.race_count) === "pending";
+  // 会場公式の成績が取れなかったとき（BOA-740）は出走数が無いだけなので、「集計前」とは断定しない
   const drillTallyState = officialTallyState(
-    venueHasOfficialStats,
+    venueHasOfficialStats && !venueMotorStats?.fetchFailed,
     venueMotorStats?.raceCount,
   );
   const chartData = (

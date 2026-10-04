@@ -261,6 +261,12 @@ check(
   chart.includes('t("analysis.motor.powerIndexSmallSampleNote"'),
 );
 check(
+  "1基の詳細: 会場公式の成績が取れなかったとき（fetchFailed）は、推移グラフを「集計前」と判定しない（BOA-740）",
+  /officialTallyState\(\s*venueHasOfficialStats && !venueMotorStats\?\.fetchFailed,\s*venueMotorStats\?\.raceCount,?\s*\)/.test(
+    chart,
+  ),
+);
+check(
   "選手ページ: 参考値の文言をレースページと同じ「— 走数が少ないため参考値」にそろえる",
   card.includes('" — 走数が少ないため参考値"'),
 );
