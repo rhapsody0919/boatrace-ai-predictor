@@ -919,7 +919,15 @@ function RaceMeetTab({
           {showBestLegend && (
             <p className="rmt-table-notes">
               {/* 金枠の意味（PR #1187 ファン評価1周目: 説明がどこにも無かった） */}
-              {showBestLegend && t("meetTab.bestLegend")}
+              {/* ⚠の艇に金枠を付けない断りは、表に⚠があるときだけ。⚠の説明を表に⚠が
+                  あるときだけ出すようにしたので、⚠が無いと何の記号か書いた文が無いまま
+                  凡例だけが⚠に触れた（BOA-746） */}
+              {showBestLegend &&
+                (showSmallSampleLegend
+                  ? [t("meetTab.bestLegend"), t("meetTab.bestLegendWarn")].join(
+                      sp,
+                    )
+                  : t("meetTab.bestLegend"))}
             </p>
           )}
           {/* 表の印（予選後F・欠場・今節初戦・欠）の説明は金枠の凡例と段落を分ける。

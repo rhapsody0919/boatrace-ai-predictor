@@ -298,3 +298,17 @@ test("韓国語の⚠の説明は走数と分かる書き方にする", async ({
     timeout: 30000,
   });
 });
+
+test("表に⚠が無いときは、金枠の凡例で⚠に触れない", async ({ page }) => {
+  // 桐生 9/25 7R（予選後、6艇とも3走以上）。⚠の説明は出ないのに、凡例だけが
+  // 「走数の少ない⚠の艇のときは…」と⚠に触れていた（BOA-746）
+  await openMeetTab(page, "2026-09-25-01-07");
+  const legend = page.locator(".rmt-table-notes");
+  await expect(legend).toContainText("金の枠は6艇の中で最も良い値");
+  await expect(legend).not.toContainText("⚠");
+  // ⚠があるレースでは断りを出す（津 9/23 12R、6艇すべて⚠）
+  await openMeetTab(page, "2026-09-23-09-12");
+  await expect(page.locator(".rmt-table-notes")).toContainText(
+    "（同じ値は全部）。最も良い値が走数の少ない⚠の艇のときは",
+  );
+});
