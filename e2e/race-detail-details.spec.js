@@ -115,6 +115,29 @@ test.describe("レース詳細の表示の細部", () => {
     expect(color).toBe(hit ? success : error);
   });
 
+  // 住之江・尼崎・徳山のまわり足は会場独自の計測で、他場と値の水準が違う（11〜12秒台。data-catalog E12）。
+  // 行の見出しに「※」を付け、表の下に注記を出す。ほかの会場には出さない
+  test("直前情報: 住之江のまわり足には「※」と会場独自の計測の注記が出て、大村には出ない", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-10-02-12-12?tab=beforeInfo");
+    const note = page.getByTestId("rbi-turn-time-venue-note");
+    await expect(note).toBeVisible({ timeout: 30000 });
+    await expect(note).toContainText("会場独自の計測");
+    await expect(
+      page.locator(".race-before-info-tab").getByText("まわり足 ※").first(),
+    ).toBeVisible();
+
+    await page.goto("/race/2026-10-02-24-01?tab=beforeInfo");
+    await expect(
+      page.locator(".race-before-info-tab").getByText("まわり足").first(),
+    ).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("rbi-turn-time-venue-note")).toHaveCount(0);
+    await expect(
+      page.locator(".race-before-info-tab").getByText("まわり足 ※"),
+    ).toHaveCount(0);
+  });
+
   test("基本情報の勝率バー: 最下位の艇も棒が空にならない（BOA-618）", async ({
     page,
   }) => {
@@ -580,5 +603,377 @@ test.describe("レース詳細の表示の細部", () => {
         "押したあと最初に全部見える列は、押す前に見えていた最後の列の次まで",
       ).toBeLessThanOrEqual(before.lastFull + 1);
     }
+  });
+  test("枠別情報: 選んだ艇チップの選手名が、ライト・ダークとも6艇すべてで地の色と4.5:1以上（BOA-703）", async ({
+    page,
+  }) => {
+    // 公式の配色の赤・青・緑の地に白い名前だと 4.23・3.68・3.30 だった。選んだチップだけ一段濃くする
+    await page.goto(`${RACE}?tab=waku`);
+    const chips = page.locator(".rwit-boat-chip");
+    await expect(chips).toHaveCount(6, { timeout: 30000 });
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate(
+        (t) => document.documentElement.setAttribute("data-theme", t),
+        theme,
+      );
+      for (let i = 0; i < 6; i++) {
+        const chip = chips.nth(i);
+        await chip.click();
+        await expect(chip).toHaveAttribute("aria-pressed", "true");
+        const { boat, fg, bg } = await chip.evaluate((el) => ({
+          boat: el.querySelector(".rwit-boat-chip-num").textContent.trim(),
+          fg: getComputedStyle(el.querySelector(".rwit-boat-chip-name")).color,
+          bg: getComputedStyle(el).backgroundColor,
+        }));
+        expect(
+          contrast(fg, bg),
+          `${theme}・${boat}号艇: 名前 ${fg} / 地 ${bg}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  test("1440px: 枠別情報の注記と選手チップの段は、下のカードと右端がそろう（BOA-703）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${RACE}?tab=waku`);
+    // カードの幅は中の表が出てから決まる（表が出る前は注記と同じ幅で、比べても意味が無い）
+    const card = page.locator(".rwit-card:has(.rwit-today-table)").first();
+    await expect(card).toBeVisible({ timeout: 30000 });
+    const rights = await page.evaluate(() =>
+      [".rwit-note", ".rwit-chip-row", ".rwit-card:has(.rwit-today-table)"].map(
+        (sel) =>
+          Math.round(document.querySelector(sel).getBoundingClientRect().right),
+      ),
+    );
+    expect(Math.max(...rights) - Math.min(...rights)).toBeLessThanOrEqual(1);
+  });
+
+  // 横に送っても、行を見分ける左端の列（艇番・選手名・日付・コース）が残り、「‹」で戻れる
+  // （BOA-699・BOA-704）。以前は送ると左端の列が消え、「‹」も無い表があった
+  for (const screen of [
+    {
+      name: "今節の得点率早見",
+      path: `${RACE}?tab=meet`,
+      hint: ".hscroll-hint:has(.rmt-forecast-scroll)",
+      sticky: ".rmt-forecast-table tbody tr:first-child th",
+      table: ".rmt-forecast-table",
+    },
+    {
+      name: "今節の日別表",
+      path: `${RACE}?tab=meet`,
+      hint: ".race-history-hscroll",
+      sticky: ".race-history-table tbody tr:first-child td:first-child",
+      table: ".race-history-table",
+    },
+    {
+      name: "モーターのコース別成績",
+      path: `${RACE}?tab=motor`,
+      open: async (page) => {
+        await page
+          .locator(".motor-ranking-row")
+          .first()
+          .click({ timeout: 60000 });
+        await page.locator(".motor-waku-expand-btn").click();
+      },
+      hint: ".mwsg-hint",
+      sticky: ".mwsg-table tbody tr:first-child td:first-child",
+      table: ".mwsg-table",
+    },
+    {
+      // 枠と選手名の2列を固定する。選手名の列が残れば、その左の枠の列も残っている
+      name: "モーター一覧",
+      path: `${RACE}?tab=motor`,
+      // 会場内順位の列は一覧の行のあとから足され、表が広がる。足されてから送る
+      open: async (page) => {
+        await expect(page.locator(".motor-venue-rank-head")).toBeVisible({
+          timeout: 90000,
+        });
+      },
+      hint: ".mcc-list-hint",
+      sticky: ".mcc-list-table tbody tr:first-child td:nth-child(2)",
+      table: ".mcc-list-table",
+    },
+  ]) {
+    test(`320px: ${screen.name}は横に送っても左端の列が残り、「‹」で戻れる（BOA-699・BOA-704）`, async ({
+      page,
+    }) => {
+      test.slow();
+      await page.setViewportSize({ width: 320, height: 812 });
+      await page.goto(screen.path);
+      if (screen.open) await screen.open(page);
+      const hint = page.locator(screen.hint).first();
+      await expect(hint).toBeVisible({ timeout: 90000 });
+      // 表がどれだけ溢れるかは文字の幅で変わる（CI の Linux では 320px でも得点率早見が収まった）。
+      // 送る操作そのものを確かめるため、表を広げて必ず溢れさせる
+      await page.addStyleTag({
+        // 表ごとの指定（例: .motor-condition-container .motor-ranking-table の min-width）に
+        // 負けないよう !important にする（#1153 で、テストで当てた幅が効かなくなっていた）
+        content: `${screen.table} { min-width: 640px !important; }`,
+      });
+      const more = hint.locator(":scope > .hscroll-more");
+      await expect(more).toBeVisible({ timeout: 30000 });
+      const stickyLeft = () =>
+        hint.evaluate((el, sel) => {
+          const cell = el.querySelector(sel).getBoundingClientRect();
+          const box = el.getBoundingClientRect();
+          return Math.round(cell.left - box.left);
+        }, screen.sticky);
+      const before = await stickyLeft();
+      await more.click();
+      const less = hint.locator(":scope > .hscroll-less");
+      await expect(less).toBeVisible();
+      // 送った先は列の境目。固定の列のすぐ右に、切れた列の破片を残さない（PR #1202 ファン評価2周目。
+      // 375px のコース別成績で「1コース 2%」（実際は 87.2%）と読めた）
+      const cut = await hint.evaluate((el) => {
+        const cells = [...el.querySelector("tr").children];
+        let stickyRight = el.getBoundingClientRect().left;
+        for (const c of cells) {
+          const style = getComputedStyle(c);
+          if (style.position !== "sticky" || style.left === "auto") break;
+          stickyRight = c.getBoundingClientRect().right;
+        }
+        const firstVisible = cells
+          .map((c) => c.getBoundingClientRect())
+          .find((r) => r.right > stickyRight + 1);
+        return firstVisible ? stickyRight - firstVisible.left : 0;
+      });
+      expect(cut, "固定の列の右に切れた列が残らない").toBeLessThanOrEqual(1);
+      // 送ったあとも、左端の列は同じ位置に残る
+      expect(Math.abs((await stickyLeft()) - before)).toBeLessThanOrEqual(1);
+      await less.click();
+      await expect(less).toHaveCount(0);
+    });
+  }
+  // 枠の列は幅を決めて、選手名の列をその右に固定する（BOA-699）。決めた幅に艇色のチップが
+  // 収まらないと、チップが選手名の下に潜る。内余白が変わる 768px の境目と、PC幅で溢れる 800px も通す
+  // 見出しの語の長さは言語で変わるので、英語（Lane）も通す
+  for (const [width, lang] of [
+    [320, ""],
+    [768, ""],
+    [800, ""],
+    [1440, ""],
+    [375, "/en"],
+    [800, "/en"],
+  ]) {
+    test(`${width}px${lang}: モーター一覧の枠のチップが枠の列に収まり、選手名と重ならない（BOA-699）`, async ({
+      page,
+    }) => {
+      test.slow();
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${lang}${RACE}?tab=motor`);
+      await expect(page.locator(".motor-venue-rank-head")).toBeVisible({
+        timeout: 90000,
+      });
+      const m = await page.locator(".mcc-list-table").evaluate((t) =>
+        [...t.querySelectorAll("tbody tr")].map((tr) => {
+          const chip = tr.querySelector(".rr-boat-chip").getBoundingClientRect();
+          const lane = tr.children[0].getBoundingClientRect();
+          const name = tr.children[1].getBoundingClientRect();
+          return { chipRight: chip.right, laneRight: lane.right, nameLeft: name.left };
+        }),
+      );
+      const head = await page.locator(".mcc-list-table thead th").first().evaluate(
+        (th) => th.scrollWidth - th.clientWidth,
+      );
+      expect(head, "枠の見出しが列からはみ出さない").toBeLessThanOrEqual(0);
+      for (const r of m) {
+        expect(r.chipRight).toBeLessThanOrEqual(r.laneRight);
+        expect(Math.abs(r.nameLeft - r.laneRight)).toBeLessThanOrEqual(1);
+      }
+    });
+  }
+  test("モーター一覧: 固定した枠と選手名の列も、行に乗せたとき行と同じ色になる（BOA-699）", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width: 375, height: 900 });
+    await page.goto(`${RACE}?tab=motor`);
+    const row = page.locator(".mcc-list-table .motor-ranking-row").first();
+    await expect(row).toBeVisible({ timeout: 90000 });
+    await row.hover();
+    // 行の色は 0.15 秒かけて変わる（transition）。変わり終わってから比べる
+    await expect
+      .poll(() =>
+        row.evaluate((r) => {
+          const bg = (el) => getComputedStyle(el).backgroundColor;
+          return [bg(r.children[0]), bg(r.children[1])].every(
+            (c) => c === bg(r),
+          );
+        }),
+      )
+      .toBe(true);
+  });
+  test("今節の日別表: 固定した日付の列も、行に乗せたとき行と同じ色になる（PR #1202 レビュー）", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await page.goto(`${RACE}?tab=meet`);
+    const row = page.locator(".race-history-table-row").first();
+    await expect(row).toBeVisible({ timeout: 90000 });
+    await row.hover();
+    const [rowBg, cellBg] = await row.evaluate((r) => [
+      getComputedStyle(r).backgroundColor,
+      getComputedStyle(r.querySelector("td")).backgroundColor,
+    ]);
+    expect(cellBg).toBe(rowBg);
+  });
+  test("320px: 今節の日別表は日付とRの列を固定し、1日2走の日もどの走か分かる（PR #1202 ファン評価1周目）", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width: 320, height: 812 });
+    await page.goto(`${RACE}?tab=meet`);
+    const hint = page.locator(".race-history-hscroll").first();
+    await expect(hint.locator(".race-history-table-row").first()).toBeVisible({
+      timeout: 90000,
+    });
+    // 線は送る前は引かない（表が収まる幅で空きの端を強調しない）
+    const lineOf = () =>
+      hint.evaluate(
+        (el) =>
+          getComputedStyle(
+            el.querySelector(".race-history-table tbody tr td:nth-child(2)"),
+          ).boxShadow,
+      );
+    expect(await lineOf()).toBe("none");
+    await page.addStyleTag({
+      content: ".race-history-table { min-width: 640px; }",
+    });
+    const more = hint.locator(":scope > .hscroll-more");
+    while (await more.isVisible()) await more.click();
+    const m = await hint.evaluate((el) => {
+      const row = el.querySelector(".race-history-table tbody tr");
+      const [date, race] = [...row.querySelectorAll("td")]
+        .slice(0, 2)
+        .map((c) => c.getBoundingClientRect());
+      return {
+        gap: race.left - date.right,
+        raceText: row.querySelectorAll("td")[1].textContent.trim(),
+        boxLeft: el.getBoundingClientRect().left,
+        raceLeft: race.left,
+      };
+    });
+    // 右端まで送っても、R の列は日付の列のすぐ右に残る
+    expect(Math.abs(m.gap)).toBeLessThanOrEqual(1);
+    expect(m.raceText).toMatch(/^\d+R$/);
+    expect(m.raceLeft - m.boxLeft).toBeLessThan(80);
+    // 送ったあとは、固定した列の右端に線を引く
+    expect(await lineOf()).not.toBe("none");
+  });
+  test("375px: モーターのコース別成績は「›」を押すと列の境目で止まり、「1コース 2%」のような切れた値を残さない（PR #1202 ファン評価2周目）", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${RACE}?tab=motor`);
+    await page.locator(".motor-ranking-row").first().click({ timeout: 60000 });
+    await page.locator(".motor-waku-expand-btn").click();
+    const hint = page.locator(".mwsg-hint");
+    await expect(hint).toBeVisible({ timeout: 30000 });
+    // #1153 で表の余白が詰まり、375px の実データではほぼ収まる（7px だけ溢れる）。
+    // 送る先が列の境目にそろうことを確かめるため、表を広げて途中で止まる長さにする
+    await page.addStyleTag({
+      content: ".mwsg-table { min-width: 640px !important; }",
+    });
+    await expect(hint.locator(":scope > .hscroll-more")).toBeVisible({
+      timeout: 30000,
+    });
+    await hint.locator(":scope > .hscroll-more").click();
+    await expect(hint.locator(":scope > .hscroll-less")).toBeVisible();
+    const cut = await hint.evaluate((el) => {
+      const cells = [...el.querySelector("tr").children];
+      const stickyRight = cells[0].getBoundingClientRect().right;
+      const firstVisible = cells
+        .slice(1)
+        .map((c) => c.getBoundingClientRect())
+        .find((r) => r.right > stickyRight + 1);
+      return stickyRight - firstVisible.left;
+    });
+    expect(cut).toBeLessThanOrEqual(1);
+  });
+  for (const screen of [
+    {
+      name: "今節の日別表（中止のレース）",
+      path: "/race/2026-09-21-02-05?tab=meet",
+      hint: ".race-history-hscroll",
+      ready: ".race-history-table-row",
+    },
+    {
+      name: "枠別情報の全コース表",
+      path: `${RACE}?tab=waku`,
+      hint: ".rwit-grid-hscroll",
+      ready: ".rwit-fold-summary",
+      open: async (page) => {
+        await page.locator(".rwit-fold-summary").first().click();
+      },
+    },
+  ]) {
+    test(`320px: ${screen.name}は右端まで送っても、固定した列のすぐ右に切れた値を残さない（PR #1202 ファン評価3周目）`, async ({
+      page,
+    }) => {
+      // 右端の位置が列の境目と一致せず、最後の1回だけ「6.71(6)」が「71(6)」に見えていた
+      test.slow();
+      await page.setViewportSize({ width: 320, height: 812 });
+      await page.goto(screen.path);
+      await expect(page.locator(screen.ready).first()).toBeVisible({
+        timeout: 90000,
+      });
+      if (screen.open) await screen.open(page);
+      const hint = page.locator(screen.hint).first();
+      const more = hint.locator(":scope > .hscroll-more");
+      await expect(more).toBeVisible({ timeout: 30000 });
+      while (await more.isVisible()) await more.click();
+      const cut = await hint.evaluate((el) => {
+        const cells = [...el.querySelector("tr").children];
+        let stickyRight = null;
+        for (const c of cells) {
+          const style = getComputedStyle(c);
+          if (style.position !== "sticky" || style.left === "auto") break;
+          stickyRight = c.getBoundingClientRect().right;
+        }
+        const firstVisible = cells
+          .map((c) => c.getBoundingClientRect())
+          .find((r) => r.right > stickyRight + 1);
+        return stickyRight - firstVisible.left;
+      });
+      expect(cut, "固定の列の右に切れた列が残らない").toBeLessThanOrEqual(1);
+    });
+  }
+  test("320px: 表の余白が外れても測り直せば、右端は列の境目にそろう（PR #1215 レビュー）", async ({
+    page,
+  }) => {
+    // 足した余白の量を箱の側に持っていると、表だけが作り直されたとき（余白が外れたとき）に
+    // 食い違い、右端が列の途中に戻る
+    test.slow();
+    await page.setViewportSize({ width: 320, height: 812 });
+    await page.goto("/race/2026-09-21-02-05?tab=meet");
+    const hint = page.locator(".race-history-hscroll").first();
+    await expect(hint.locator(".race-history-table-row").first()).toBeVisible({
+      timeout: 90000,
+    });
+    await expect
+      .poll(() =>
+        hint.evaluate((el) => el.querySelector("table").style.marginRight),
+      )
+      .not.toBe("");
+    await hint.evaluate((el) => {
+      el.querySelector("table").style.marginRight = "";
+      window.dispatchEvent(new Event("resize"));
+    });
+    const more = hint.locator(":scope > .hscroll-more");
+    await expect(more).toBeVisible();
+    while (await more.isVisible()) await more.click();
+    const cut = await hint.evaluate((el) => {
+      const cells = [...el.querySelector("tr").children];
+      const stickyRight = cells[1].getBoundingClientRect().right;
+      const firstVisible = cells
+        .map((c) => c.getBoundingClientRect())
+        .find((r) => r.right > stickyRight + 1);
+      return stickyRight - firstVisible.left;
+    });
+    expect(cut).toBeLessThanOrEqual(1);
   });
 });

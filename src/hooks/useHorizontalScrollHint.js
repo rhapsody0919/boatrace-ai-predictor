@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   horizontalScrollHintState,
   horizontalScrollStep,
+  snapScrollTarget,
+  tailPaddingFor,
 } from "../utils/horizontalScrollHint";
 
 /**
@@ -28,14 +30,62 @@ import {
  * @returns {{ref: object, hasMore: boolean, hasLess: boolean, update: Function,
  *   scrollRight: Function, scrollLeft: Function}}
  */
-/** 固定の左の列（1行目の先頭のセルが position: sticky のとき）の幅を引いた、1回に送る幅 */
-function stepOf(el) {
-  const first = el.querySelector("tr > :first-child");
-  const stickyWidth =
-    first && getComputedStyle(first).position === "sticky"
-      ? first.getBoundingClientRect().width
-      : 0;
-  return horizontalScrollStep({ clientWidth: el.clientWidth, stickyWidth });
+/**
+ * 表の1行目から、横に固定した左の列の幅と、各列の左端が固定した列の右端にそろうときの
+ * scrollLeft を測る。見出し行は縦にも固定（top: 0）していて position は sticky になるので、
+ * 横に固定した列（left が auto でないもの）だけを数える
+ */
+function columnsOf(el) {
+  const row = el.querySelector("tr");
+  const box = el.getBoundingClientRect();
+  const cells = row ? [...row.children] : [];
+  let stickyWidth = 0;
+  for (const cell of cells) {
+    const style = getComputedStyle(cell);
+    if (style.position !== "sticky" || style.left === "auto") break;
+    stickyWidth += cell.getBoundingClientRect().width;
+  }
+  const columnStarts = cells.map(
+    (cell) =>
+      cell.getBoundingClientRect().left -
+      box.left +
+      el.scrollLeft -
+      stickyWidth,
+  );
+  return { stickyWidth, columnStarts };
+}
+
+/**
+ * 「›」「‹」で送る先の scrollLeft。固定の左の列（今節の日別表は日付と R の2列）の幅を引いた
+ * 見える幅の8割を目安に、列の境目にそろえる
+ */
+function scrollTargetOf(el, direction) {
+  const { stickyWidth, columnStarts } = columnsOf(el);
+  return snapScrollTarget({
+    current: el.scrollLeft,
+    step: horizontalScrollStep({ clientWidth: el.clientWidth, stickyWidth }),
+    direction,
+    max: el.scrollWidth - el.clientWidth,
+    columnStarts,
+  });
+}
+
+/**
+ * 右端の位置も列の境目にそろうよう、表の右に余白（margin-right）を足す（PR #1202 ファン評価3周目）。
+ * 測り直すときは足す前の幅で計算する（足した分で次の量が変わらないように）。足した量は表自身の
+ * style から読む（箱の側に持つと、表だけが作り直されたときに実際の余白と食い違う）
+ */
+function applyTailPadding(el) {
+  const table = el.firstElementChild;
+  if (!table) return;
+  const prev = parseFloat(table.style.marginRight) || 0;
+  const naturalMax = el.scrollWidth - prev - el.clientWidth;
+  const extra = tailPaddingFor({
+    naturalMax,
+    columnStarts: columnsOf(el).columnStarts,
+  });
+  if (extra === prev) return;
+  table.style.marginRight = extra ? `${extra}px` : "";
 }
 
 export function useHorizontalScrollHint(deps = []) {
@@ -74,16 +124,21 @@ export function useHorizontalScrollHint(deps = []) {
   }, []);
 
   useEffect(() => {
-    update();
-    const raf = requestAnimationFrame(update);
-    window.addEventListener("resize", update);
+    // 大きさが変わったときは、右端の余白を測り直してから手がかりを決める（スクロールのたびには測らない）
+    const remeasure = () => {
+      if (ref.current) applyTailPadding(ref.current);
+      update();
+    };
+    remeasure();
+    const raf = requestAnimationFrame(remeasure);
+    window.addEventListener("resize", remeasure);
     // 窓の幅が変わらなくても、文字の読み込みや中身の差し替えで表の幅は後から変わる。
     // 最初の計測だけでは、英語の 320px で表が3px溢れているのに手がかりが出なかった
     // （PR #1192 ファン評価1周目）。箱と中身の大きさの変化でも測り直す
     const el = ref.current;
     const observer =
       el && typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(update)
+        ? new ResizeObserver(remeasure)
         : null;
     if (observer) {
       observer.observe(el);
@@ -91,7 +146,7 @@ export function useHorizontalScrollHint(deps = []) {
     }
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener("resize", update);
+      window.removeEventListener("resize", remeasure);
       observer?.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -102,14 +157,14 @@ export function useHorizontalScrollHint(deps = []) {
     if (!el) return;
     // `scroll-behavior: smooth` は使わない。動きを減らす設定の環境では
     // プログラムからのスクロールが一切効かなくなる（RaceTabs.css に実例）
-    el.scrollLeft += stepOf(el);
+    el.scrollLeft = scrollTargetOf(el, 1);
     update();
   }, [update]);
 
   const scrollLeft = useCallback(() => {
     const el = ref.current;
     if (!el) return;
-    el.scrollLeft -= stepOf(el);
+    el.scrollLeft = scrollTargetOf(el, -1);
     update();
   }, [update]);
 
