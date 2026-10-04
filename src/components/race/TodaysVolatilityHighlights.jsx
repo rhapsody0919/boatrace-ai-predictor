@@ -18,6 +18,7 @@ import {
 } from "../../utils/volatilityLevel";
 import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
 import { pickVolatilityHighlights } from "../../utils/volatilityHighlights";
+import { BOAT_COLORS } from "../../utils/colors";
 import "./TodaysVolatilityHighlights.css";
 
 const HIGHLIGHT_COUNT = 5;
@@ -110,10 +111,22 @@ function RaceLink({ race, t }) {
           </span>
         </span>
       </div>
+      {/* 展開予測でいちばん確率の高い1パターン。値は艇番として扱う（レース詳細の AI予想タブと同じく、
+          艇色の丸数字で出す。的中も艇番で判定している）。「1コース逃げ」とコースで書いた版は、詳細の
+          「① 逃げ」と別物に読めた（PR #1248 ファン評価1周目） */}
       {tp && typeof tp.probability === "number" && (
         <div className="volatility-highlights__turn">
-          {t("home.volatilityHighlightsTurnPrediction", {
-            course: tp.winnerCourse,
+          {t("home.volatilityHighlightsTurnLabel")}
+          <span
+            className="volatility-highlights__boat"
+            style={{
+              background: BOAT_COLORS[tp.winnerCourse]?.bg,
+              color: BOAT_COLORS[tp.winnerCourse]?.text,
+            }}
+          >
+            {tp.winnerCourse}
+          </span>
+          {t("home.volatilityHighlightsTurnBody", {
             technique: t(`techniques.${tp.technique}`, tp.technique),
             probability: Math.round(tp.probability * 100),
           })}

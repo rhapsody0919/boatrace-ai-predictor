@@ -246,8 +246,9 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     ).toHaveCount(0);
   });
 
-  // 「崩れやすさ100」と「1着予想: 1号艇」が並び矛盾して見えた。最有力の1パターンで、値はコース番号
-  test("2行目は「最有力の展開: 1コース逃げ 38%」（1着予想・号艇とは書かない）", async ({
+  // 「崩れやすさ100」と「1着予想: 1号艇」が並び矛盾して見えた。最有力の1パターンだと分かる言い方にし、
+  // 値はレース詳細の AI予想タブと同じく艇番の丸数字で出す（「1コース」と書いた版は詳細と別物に読めた）
+  test("2行目は「最有力の展開: ①逃げ 38%」（1着予想・コースとは書かない）", async ({
     page,
   }) => {
     const races = DAY_RACES.map((r) => ({
@@ -258,9 +259,10 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     await page.goto("/");
     await readHighlights(page);
     const turn = page.locator(".volatility-highlights__turn").first();
-    await expect(turn).toHaveText("最有力の展開: 1コース逃げ 38%");
-    await expect(page.locator(".volatility-highlights")).not.toContainText(
-      "1着予想",
-    );
+    await expect(turn).toHaveText(/^最有力の展開:\s*1\s*逃げ 38%$/);
+    await expect(turn.locator(".volatility-highlights__boat")).toHaveText("1");
+    const section = page.locator(".volatility-highlights");
+    await expect(section).not.toContainText("1着予想");
+    await expect(section).not.toContainText("コース逃げ");
   });
 });
