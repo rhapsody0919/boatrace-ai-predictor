@@ -187,6 +187,7 @@ table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl t
 .pat[aria-pressed="true"]{border:2px solid var(--accent-strong);padding:5px;background:var(--sunken)}
 @media (max-width:360px){.pats{grid-template-columns:1fr}}
 .stripcap{margin:0;font-size:11px;color:var(--muted)}.rlist{display:grid;gap:6px}.rc{border:1px solid var(--border);border-radius:8px;padding:6px 8px;display:grid;gap:2px;font-size:12px}.rc .bnrow{display:inline-flex;gap:2px;vertical-align:middle}.rc3{color:var(--text2);font-size:11.5px}
+.scope{position:relative}.sonar-tip{position:absolute;z-index:3;width:220px;background:var(--card);color:var(--text);border:1px solid var(--accent-strong);border-radius:8px;padding:6px 8px;font-size:12px;line-height:1.5;box-shadow:0 4px 14px rgba(0,0,0,.35);pointer-events:none}.sonar-tip .bnrow{display:inline-flex;gap:2px;vertical-align:middle}#sonar [data-race]{stroke:transparent;stroke-width:16px}#sonar{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}
 .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px}
 .tabs button{font-family:"Zen Kaku Gothic New",sans-serif;font-size:12.5px;font-weight:700;border:1px solid var(--border);background:var(--sunken);color:var(--text2);border-radius:8px;padding:8px 4px;cursor:pointer;line-height:1.3}
 .tabs button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--ivory-100)}
@@ -268,13 +269,12 @@ table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl t
     <h2 id="hSim">類似レース</h2>
     <p class="sub" id="simSub"></p>
     <div class="scope"><svg id="sonar" viewBox="0 0 440 440" role="img" aria-label="類似レースのソナー。中心が今日のレースで、近いほど似ている。扇は1着の艇"></svg>
-      <div class="scope-cap"><span>今日: 若松12R</span><span id="sonarCap"></span></div></div>
-    <p class="foot">中心に近い点ほど、今日のレースと出走表の数字が近い（似ている順の何番目かで置いている。輪は何番目かの目安）。扇は1着になった艇。点を押すとそのレースを今日と見比べる</p>
-    <div class="likes">
-      <h3>何が似ている？</h3>
-      <div id="likeTop"></div>
+      <div class="sonar-tip" id="sonarTip" hidden></div><div class="scope-cap"><span>今日: 若松12R</span><span id="sonarCap"></span></div></div>
+    <p class="foot">中心に近い点ほど、今日のレースと出走表の数字が近い（似ている順の何番目かで置いている。輪は何番目かの目安）。扇は1着になった艇。点を長押し（パソコンはマウスを重ねる）とレースの情報、タップするとそのレースを今日と見比べる</p>
+    <details class="more likes"><summary>何が似ている？（項目ごとに、今日と同じだった割合）</summary>
+      <div id="likeTop" style="margin-top:6px"></div>
       <details class="more"><summary id="likeMore">全部の項目を見る</summary><div class="tbl" style="margin-top:6px"><table id="likeAll"></table></div></details>
-    </div>
+    </details>
     <details class="more cmpwrap"><summary>1件ずつ見比べる（今日と全項目を並べる）</summary>
       <p class="sub" style="margin-top:6px">行を押すと、今日のレースと全項目を並べる。○ 同じ　△ 近い　× 違う</p>
       <div id="cmpList"></div>
@@ -392,6 +392,12 @@ function renderSim(){
 }
 // 比べる相手: 層の全件を並べている（層＝類似レース全体）ときは、層と同じになるので、全国・6艇ともA1の優勝戦を置く
 function cmpLayer(){if(st.swKnn!=="mix")return null;const P=K.pool||{};if(P.layer_n&&P.layer_n===K.nb.length&&D.scn&&D.scn.scopes.allA1Y){if(D.knn5layer)return {...D.knn5layer,name:`グレードを問わない優勝戦（勝率の3条件はそろえる）${D.knn5layer.n}件。類似レース${K.nb.length}件はこの中に入る、ひとつ広い範囲`};const c=D.scn.scopes.allA1Y.cells.all.forms.any,bf={};for(let b=1;b<=6;b++){const w=c.first_boat[b-1],s=c.second_boat[b-1],th=c.third_boat[b-1];bf[b]={win:w,top2:w+s,top3:w+s+th};}return {n:c.n,boat_finish:bf,technique:c.technique,name:`全国・6艇ともA1の優勝戦（${c.n.toLocaleString()}件。類似レースとは条件が違う）`};}return D.knn3layer?{...D.knn3layer,name:`条件（${D.knn3layer.cond||"勝率差・1号艇の級別・勝率トップ"}）がそろった過去レース全体（${D.knn3layer.n.toLocaleString()}件）`}:null;}
+// ソナーの点の長押し（スマホ）・マウスを重ねる（パソコン）で、レースの情報を出す
+let lpFired=false,lpTimer=null;
+function sonarTipHtml(x){return `<b>${x.r}番目に似ている</b><br>${x.d} ${x.v} ${x.rn}R ${GN[x.g]||x.g||""} ${RN[x.rd]||x.rd||""}<br><span class="bnrow">${(x.o||[]).map(bn).join("")}</span> ${x.res&&x.res.technique||""}${x.res&&x.res.payout_3tan?`　3連単 ${x.res.payout_3tan.toLocaleString()}円`:""}`;}
+function wireSonarTip(svg,nb){const tip=$("sonarTip"),box=svg.closest(".scope");const show=(e)=>{const x=nb[+e.dataset.race];if(!x)return;tip.innerHTML=sonarTipHtml(x);tip.hidden=false;const br=box.getBoundingClientRect(),er=e.getBoundingClientRect();tip.style.left=Math.max(4,Math.min(br.width-224,er.left-br.left-100))+"px";tip.style.top=(er.top-br.top+14)+"px";};const hide=()=>{tip.hidden=true;};
+  svg.querySelectorAll("[data-race]").forEach(e=>{e.addEventListener("pointerdown",ev=>{if(ev.pointerType==="mouse")return;clearTimeout(lpTimer);lpTimer=setTimeout(()=>{lpFired=true;show(e);},450);});["pointerup","pointercancel","pointerleave"].forEach(k=>e.addEventListener(k,ev=>{if(ev.pointerType!=="mouse")clearTimeout(lpTimer);}));e.addEventListener("mouseenter",()=>show(e));e.addEventListener("mouseleave",hide);e.addEventListener("contextmenu",ev=>ev.preventDefault());});
+  document.addEventListener("pointerdown",ev=>{if(!ev.target.closest||!ev.target.closest("#sonar [data-race]"))hide();},{once:true});}
 function renderSonar(nb){
   const svg=$("sonar"),cx=220,cy=220,R=188,LM=K.nb.length<800?K.nb.length:800,lin=LM<100,rOf=rk=>lin?18+(R-24)*Math.max(1,rk)/LM:18+(R-24)*Math.log10(Math.max(1,rk))/Math.log10(800);
   const ang=b=>-90+(b-1)*60;let h="";
@@ -406,7 +412,7 @@ function renderSonar(nb){
   svg.innerHTML=h;
   $("sonarCap").textContent=`表示中: ${nb.length}件`;
   svg.querySelectorAll("[data-sec]").forEach(e=>e.onclick=()=>{const b=+e.dataset.sec;st.boat=st.boat===b?0:b;render();});
-  svg.querySelectorAll("[data-race]").forEach(e=>e.onclick=ev=>{ev.stopPropagation();st.pick=+e.dataset.race;st.open=st.pick;render();const w=document.querySelector(".cmpwrap");if(w)w.open=true;document.getElementById("nb-"+st.pick)?.scrollIntoView({block:"nearest",behavior:"smooth"});});
+  wireSonarTip(svg,nb);svg.querySelectorAll("[data-race]").forEach(e=>e.onclick=ev=>{ev.stopPropagation();if(lpFired){lpFired=false;return;}st.pick=+e.dataset.race;st.open=st.pick;render();const w=document.querySelector(".cmpwrap");if(w)w.open=true;document.getElementById("nb-"+st.pick)?.scrollIntoView({block:"nearest",behavior:"smooth"});});
 }
 function cmpDetail(x){
   const groups=[["レースの条件",["venue","race_number_band","grade","grade_bin","round","series_day","is_final_day"]],["選手の力関係",["class_all6","n_A1","b1_class","win_gap_band","top_boat","nat_win_6","nat_win_rank_4","b1_nat_win","loc_win_6","recent_win30_6","recent_top3_30_6"]],["スタート",["st_mean30_6","b1_st_rank_band"]],["モーター・ボート",["motor_2_6","b1_motor_rank_band","boat_2_6","b1_boat_rank_band"]],["体重・年齢・地元",["age_6","weight_6","n_local"]],...(st.stage==="post"?[["天候・水面"+(ITEM.weather&&ITEM.weather.inDist?"":"（近さの計算には入れていない）"),["weather","wind_bin","wind_vector","wave_bin"]],["展示"+(ITEM.exh_time_diff_6&&ITEM.exh_time_diff_6.inDist?"":"（参考。近さの計算には入れていない）"),["exh_time_diff_6"]]]:[])];

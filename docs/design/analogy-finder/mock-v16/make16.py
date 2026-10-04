@@ -190,5 +190,26 @@ R('(N<100?`<div class="warn">${N}件だと割合はぶれやすい（ひげが�
 R("const c=D.scn.scopes.allA1Y.cells.all.forms.any,bf={};for(let b=1;b<=6;b++){const w=c.first_boat[b-1],s=c.second_boat[b-1],th=c.third_boat[b-1];bf[b]={win:w,top2:w+s,top3:w+s+th};}return {n:c.n,boat_finish:bf,technique:c.technique,name:`全国・6艇ともA1の優勝戦（${c.n.toLocaleString()}件。類似レースは条件がそろった全件なので、ひとつ広い範囲と比べる）`};",
   "if(D.knn5layer)return {...D.knn5layer,name:`グレードを問わない優勝戦（勝率の3条件はそろえる）${D.knn5layer.n}件。類似レース${K.nb.length}件はこの中に入る、ひとつ広い範囲`};const c=D.scn.scopes.allA1Y.cells.all.forms.any,bf={};for(let b=1;b<=6;b++){const w=c.first_boat[b-1],s=c.second_boat[b-1],th=c.third_boat[b-1];bf[b]={win:w,top2:w+s,top3:w+s+th};}return {n:c.n,boat_finish:bf,technique:c.technique,name:`全国・6艇ともA1の優勝戦（${c.n.toLocaleString()}件。類似レースとは条件が違う）`};")
 R('に絞り、`+"', 'に絞り、${K.pool&&K.pool.layer_cond&&/グレード/.test(K.pool.layer_cond)?"（名前の違う決勝＝王座決定戦・賞金女王決定戦・決勝戦などは、まだ含めていない）":""}`+"')
+# ユーザー要望（2026-10-04）: ソナーの点は長押しでレース情報、何が似ているは折りたたみ
+R('<span>今日: 若松12R</span>', '<span>今日: 若松12R</span>')
+R('<div class="scope-cap"><span>今日: 若松12R</span>', '<div class="sonar-tip" id="sonarTip" hidden></div><div class="scope-cap"><span>今日: 若松12R</span>')
+R("""    <div class="likes">
+      <h3>何が似ている？</h3>
+      <div id="likeTop"></div>""", """    <details class="more likes"><summary>何が似ている？（項目ごとに、今日と同じだった割合）</summary>
+      <div id="likeTop" style="margin-top:6px"></div>""")
+R("""<table id="likeAll"></table></div></details>
+    </div>""", """<table id="likeAll"></table></div></details>
+    </details>""")
+R('<p class="foot">中心に近い点ほど、今日のレースと出走表の数字が近い（似ている順の何番目かで置いている。輪は何番目かの目安）。扇は1着になった艇。点を押すとそのレースを今日と見比べる</p>',
+  '<p class="foot">中心に近い点ほど、今日のレースと出走表の数字が近い（似ている順の何番目かで置いている。輪は何番目かの目安）。扇は1着になった艇。点を長押し（パソコンはマウスを重ねる）とレースの情報、タップするとそのレースを今日と見比べる</p>')
+R('svg.querySelectorAll("[data-race]").forEach(e=>e.onclick=ev=>{ev.stopPropagation();', 'wireSonarTip(svg,nb);svg.querySelectorAll("[data-race]").forEach(e=>e.onclick=ev=>{ev.stopPropagation();if(lpFired){lpFired=false;return;}')
+R('function renderSonar(nb){', """// ソナーの点の長押し（スマホ）・マウスを重ねる（パソコン）で、レースの情報を出す
+let lpFired=false,lpTimer=null;
+function sonarTipHtml(x){return `<b>${x.r}番目に似ている</b><br>${x.d} ${x.v} ${x.rn}R ${GN[x.g]||x.g||""} ${RN[x.rd]||x.rd||""}<br><span class="bnrow">${(x.o||[]).map(bn).join("")}</span> ${x.res&&x.res.technique||""}${x.res&&x.res.payout_3tan?`　3連単 ${x.res.payout_3tan.toLocaleString()}円`:""}`;}
+function wireSonarTip(svg,nb){const tip=$("sonarTip"),box=svg.closest(".scope");const show=(e)=>{const x=nb[+e.dataset.race];if(!x)return;tip.innerHTML=sonarTipHtml(x);tip.hidden=false;const br=box.getBoundingClientRect(),er=e.getBoundingClientRect();tip.style.left=Math.max(4,Math.min(br.width-224,er.left-br.left-100))+"px";tip.style.top=(er.top-br.top+14)+"px";};const hide=()=>{tip.hidden=true;};
+  svg.querySelectorAll("[data-race]").forEach(e=>{e.addEventListener("pointerdown",ev=>{if(ev.pointerType==="mouse")return;clearTimeout(lpTimer);lpTimer=setTimeout(()=>{lpFired=true;show(e);},450);});["pointerup","pointercancel","pointerleave"].forEach(k=>e.addEventListener(k,ev=>{if(ev.pointerType!=="mouse")clearTimeout(lpTimer);}));e.addEventListener("mouseenter",()=>show(e));e.addEventListener("mouseleave",hide);e.addEventListener("contextmenu",ev=>ev.preventDefault());});
+  document.addEventListener("pointerdown",ev=>{if(!ev.target.closest||!ev.target.closest("#sonar [data-race]"))hide();},{once:true});}
+function renderSonar(nb){""")
+R('.tabs{display:grid;', '.scope{position:relative}.sonar-tip{position:absolute;z-index:3;width:220px;background:var(--card);color:var(--text);border:1px solid var(--accent-strong);border-radius:8px;padding:6px 8px;font-size:12px;line-height:1.5;box-shadow:0 4px 14px rgba(0,0,0,.35);pointer-events:none}.sonar-tip .bnrow{display:inline-flex;gap:2px;vertical-align:middle}#sonar [data-race]{stroke:transparent;stroke-width:16px}#sonar{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}\n.tabs{display:grid;')
 io.open('template16.html', 'w', encoding='utf-8').write(t)
 print('ok')
