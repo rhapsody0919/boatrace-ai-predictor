@@ -268,7 +268,7 @@ table.rl{font-size:11.5px;border-collapse:collapse;white-space:nowrap}table.rl t
     <h2 id="hSim">類似レース</h2>
     <p class="sub" id="simSub"></p>
     <div class="scope"><svg id="sonar" viewBox="0 0 440 440" role="img" aria-label="類似レースのソナー。中心が今日のレースで、近いほど似ている。扇は1着の艇"></svg>
-      <div class="scope-cap"><span>TARGET: 若松12R</span><span id="sonarCap"></span></div></div>
+      <div class="scope-cap"><span>今日: 若松12R</span><span id="sonarCap"></span></div></div>
     <p class="foot">中心に近い点ほど、今日のレースと出走表の数字が近い（似ている順の何番目かで置いている。輪は10・100・800番目）。扇は1着になった艇。点を押すとそのレースを今日と見比べる</p>
     <div class="likes">
       <h3>何が似ている？</h3>
@@ -351,7 +351,7 @@ const NAT=D.sets["0000"];
 const fin=f=>/^\d+$/.test(f)?`${+f}着`:f==="F"?"F（返還）":f==="L"?"出遅れ（返還）":/^S/.test(f)?"失格":f==="K"||f==="欠"?"欠場":f;
 function parentKey(){if(st.opt)return "1111";const o=[...st.on],i=o.lastIndexOf(1);if(i<0)return null;o[i]=0;return o.join("");}
 function wbar(lab,x,n,natP,sel,id,extra=""){const p=n?x/n:0,[lo,hi]=wilson(x,n);
-  return `<button type="button" class="br${sel?" sel":""}" ${id?`data-b="${id}"`:""} data-tip="${x}/${n}件・95%の幅 ${pc(lo)}〜${pc(hi)}${extra}${natP!=null?`・全国 ${pc(natP)}`:""}"><span>${lab}</span><span class="wtrk"><span class="f" style="width:${p*100}%"></span>${n?`<span class="w" style="left:${lo*100}%;width:${(hi-lo)*100}%"></span>`:""}${natP!=null?`<span class="nt" style="left:${natP*100}%"></span>`:""}</span><span class="v">${pc(p,0)} <small>${x}件</small></span></button>`;}
+  return `<button type="button" class="br${sel?" sel":""}" ${id?`data-b="${id}"`:""} data-tip="${x}/${n}件・95%の幅 ${pc(lo)}〜${pc(hi)}${extra}${natP!=null?`・比べる相手 ${pc(natP)}`:""}"><span>${lab}</span><span class="wtrk"><span class="f" style="width:${p*100}%"></span>${n?`<span class="w" style="left:${lo*100}%;width:${(hi-lo)*100}%"></span>`:""}${natP!=null?`<span class="nt" style="left:${natP*100}%"></span>`:""}</span><span class="v">${pc(p,0)} <small>${x}件</small></span></button>`;}
 function wireTips(el,tipEl){el.querySelectorAll(".br").forEach(b=>b.onclick=()=>{tipEl.textContent=b.querySelector("span").textContent+": "+b.dataset.tip;if(b.dataset.b){st.boat=st.boat===+b.dataset.b?0:+b.dataset.b;render();}});}
 
 // ---------- 類似レース（k-NN） ----------
@@ -360,7 +360,7 @@ let ITEM=Object.fromEntries(K.items.map(x=>[x.key,x]));
 function setK(){K=st.stage==="post"&&D.knn4?D.knn4:(st.swKnn==="mix"&&D.knn3?D.knn3:D.knn);ITEM=Object.fromEntries(K.items.map(x=>[x.key,x]));}
 const DUP={n_A1:"class_all6",race_number:"race_number_band",grade_bin:"grade",wind_vector:"wind_bin"};
 const MK=["×","△","○"],MC=["down","warn2","up"];
-let NSd=NS;function setNS(){const L=K.nb.length;NSd=L<800?[...NS.filter(x=>x<L),L]:NS;$("nSlider").max=NSd.length-1;if(st.ni>NSd.length-1)st.ni=NSd.length-1;}
+let NSd=NS;function setNS(){const L=K.nb.length;NSd=L<800?[...NS.filter(x=>x<L),L]:NS;$("nSlider").max=NSd.length-1;if(!st.niTouched)st.ni=L<800?Math.max(0,NSd.indexOf(30)):9;if(st.ni>NSd.length-1)st.ni=NSd.length-1;const lay=!!(K.pool&&K.pool.layer_n);$("ssChip").closest(".row").hidden=lay;}
 function curNb(){const all=st.noSS?K.nb.filter(n=>!n.ss):K.nb;return all.slice(0,NSd[st.ni]);}
 function agg(nb){const a={n:nb.length,win:[0,0,0,0,0,0],hit:{1:[0,0,0,0,0,0],2:[0,0,0,0,0,0],3:[0,0,0,0,0,0]},tech:{},tri:{}};
   nb.forEach(x=>{const o=x.o;if(!o||o.length<3)return;a.win[o[0]-1]++;o.forEach((b,i)=>{for(let t=i+1;t<=3;t++)a.hit[t][b-1]++;});const tq=x.res.technique;a.tech[tq]=(a.tech[tq]||0)+1;const k=o.join("");a.tri[k]=(a.tri[k]||0)+1;});return a;}
@@ -378,12 +378,13 @@ function renderSim(){
   // 何が似ている？
   const PREHIDE={weather:1,wind_bin:1,wind_vector:1,wave_bin:1,exh_time_diff_6:1};
   const rows=K.items.filter(it=>!(st.stage==="pre"&&PREHIDE[it.key])).map(it=>{const v=nb.map(x=>x.m[it.key]).filter(x=>x!=null);const same=v.filter(x=>x===2).length;return {it,same,n:v.length,rate:v.length?same/v.length:null};});
-  const main=rows.filter(r=>r.it.inDist&&!DUP[r.it.key]&&r.rate!=null&&r.n>=5);
+  const CONDK=st.swKnn==="mix"?["win_gap_band","b1_class","top_boat",...(K.pool&&K.pool.layer_n?["round"]:[])]:[];
+  const main=rows.filter(r=>r.it.inDist&&!DUP[r.it.key]&&r.rate!=null&&r.n>=5&&!CONDK.includes(r.it.key));
   const nearRate=r=>{const v=nb.map(x=>x.m[r.it.key]).filter(x=>x!=null);return v.length?v.filter(x=>x>=1).length/v.length:null;};
   const strong=main.filter(r=>r.rate>=.5).sort((a,b)=>b.rate-a.rate);
   const weak=main.filter(r=>r.rate<.5).sort((a,b)=>a.rate-b.rate);
   const bar=(r)=>{const nr=nearRate(r);return `<div class="lk"><span>${r.it.label}<small>今日: ${fmtT(r.it.key,K.today[r.it.key])??"—"}</small></span><span class="lkb"><span class="wtrk" style="height:10px"><span class="f" style="width:${r.rate*100}%"></span>${nr!=null?`<span class="w" style="left:${r.rate*100}%;width:${Math.max(0,nr-r.rate)*100}%;opacity:.35"></span>`:""}</span></span><span class="v">${pc(r.rate,0)}<small>${nr!=null&&nr>r.rate+.005?` 近いも含め ${pc(nr,0)}`:""}</small></span></div>`;};
-  $("likeTop").innerHTML=`<p class="sub">この ${N}件のうち、その項目が今日と同じ（基準は全項目の表に）レースの割合</p>`+(strong.map(bar).join("")||`<p class="foot">半分以上がそろう項目は無い</p>`)+(weak.length?`<h3 style="font-size:13px;margin-top:8px">そろっていない（半分未満）</h3>`+weak.map(bar).join(""):"")+`<p class="foot" style="margin-top:6px">近さで重く見た順: 全国の成績・直近の成績・平均ST・当地の成績・会場（AI が重く見る項目で近さを決めている）</p>`;
+  $("likeTop").innerHTML=`<p class="sub">この ${N}件のうち、その項目が今日と同じ（基準は全項目の表に）レースの割合</p>${CONDK.length?`<p class="foot">条件でそろえた項目（${CONDK.map(k=>ITEM[k]?ITEM[k].label:k).join("・")}）は、全件が今日と同じなので、ここには出していない</p>`:""}`+(strong.map(bar).join("")||`<p class="foot">半分以上がそろう項目は無い</p>`)+(weak.length?`<h3 style="font-size:13px;margin-top:8px">そろっていない（半分未満）</h3>`+weak.map(bar).join(""):"")+`<p class="foot" style="margin-top:6px">近さで重く見た順: 全国の成績・直近の成績・平均ST・当地の成績・会場（AI が重く見る項目で近さを決めている）</p>`;
   $("likeMore").textContent=`全 ${K.items.length} 項目を見る`;
   $("likeAll").innerHTML=`<thead><tr><th>項目</th><th>今日</th><th>同じ（${N}件）</th><th>近いまで</th><th>全レース</th></tr></thead><tbody>${rows.slice().sort((a,b)=>(b.rate??-1)-(a.rate??-1)).map(r=>{const near=nb.map(x=>x.m[r.it.key]).filter(x=>x!=null);const nr=near.length?near.filter(x=>x>=1).length/near.length:null;return `<tr><td>${r.it.label}${r.it.inDist?"":` <small class="muted">（近さの計算には入れていない）</small>`}<br><small class="muted">${r.it.rule}</small></td><td>${fmtT(r.it.key,K.today[r.it.key])??"—"}</td><td>${r.rate==null?"—":pc(r.rate,0)+` <small>${r.same}/${r.n}</small>`}</td><td>${nr==null?"—":pc(nr,0)}</td><td>${pc(r.it.pool,0)}</td></tr>`;}).join("")}</tbody>`;
   renderCmp(nb);renderRes(nb);
@@ -400,13 +401,13 @@ function renderSonar(nb){
   for(let b=1;b<=6;b++){const a=ang(b)*Math.PI/180,x=cx+(R+18)*Math.cos(a),y=cy+(R+18)*Math.sin(a);h+=`<g data-sec="${b}" style="cursor:pointer"><rect x="${x-11}" y="${y-11}" width="22" height="22" rx="4" fill="${BC[b][0]}" stroke="#94a3b8"/><text x="${x}" y="${y+5}" text-anchor="middle" font-size="13" font-weight="700" fill="${BC[b][1]}" font-family="JetBrains Mono,monospace">${b}</text></g>`;}
   h+=`<circle cx="${cx}" cy="${cy}" r="6" fill="#e8d089"/><circle cx="${cx}" cy="${cy}" r="6" fill="none" stroke="#e8d089" class="pulse"/>`;
   svg.innerHTML=h;
-  $("sonarCap").textContent=`HITS: ${nb.length}`;
+  $("sonarCap").textContent=`表示中: ${nb.length}件`;
   svg.querySelectorAll("[data-sec]").forEach(e=>e.onclick=()=>{const b=+e.dataset.sec;st.boat=st.boat===b?0:b;render();});
   svg.querySelectorAll("[data-race]").forEach(e=>e.onclick=ev=>{ev.stopPropagation();st.pick=+e.dataset.race;st.open=st.pick;render();const w=document.querySelector(".cmpwrap");if(w)w.open=true;document.getElementById("nb-"+st.pick)?.scrollIntoView({block:"nearest",behavior:"smooth"});});
 }
 function cmpDetail(x){
   const groups=[["レースの条件",["venue","race_number_band","grade","grade_bin","round","series_day","is_final_day"]],["選手の力関係",["class_all6","n_A1","b1_class","win_gap_band","top_boat","nat_win_6","nat_win_rank_4","b1_nat_win","loc_win_6","recent_win30_6","recent_top3_30_6"]],["スタート",["st_mean30_6","b1_st_rank_band"]],["モーター・ボート",["motor_2_6","b1_motor_rank_band","boat_2_6","b1_boat_rank_band"]],["体重・年齢・地元",["age_6","weight_6","n_local"]],...(st.stage==="post"?[["天候・水面"+(ITEM.weather&&ITEM.weather.inDist?"":"（近さの計算には入れていない）"),["weather","wind_bin","wind_vector","wave_bin"]],["展示"+(ITEM.exh_time_diff_6&&ITEM.exh_time_diff_6.inDist?"":"（参考。近さの計算には入れていない）"),["exh_time_diff_6"]]]:[])];
-  return groups.map(([gname,keys])=>`<div class="cg"><div class="lbl">${gname}</div>${keys.filter(k=>ITEM[k]).map(k=>{const m=x.m[k];return `<div class="ci"><span class="mk ${m==null?"muted":MC[m]}">${m==null?"—":MK[m]}</span><span>${ITEM[k].label}</span><span class="cv">${x.t[k]??"—"}<small>今日 ${fmtT(k,K.today[k])??"—"}</small></span></div>`;}).join("")}</div>`).join("");
+  return groups.map(([gname,keys])=>`<div class="cg"><div class="lbl">${gname}</div>${keys.filter(k=>ITEM[k]).map(k=>{const m=x.m[k];return `<div class="ci"><span class="mk ${m==null?"muted":MC[m]}">${m==null?"—":MK[m]}</span><span>${ITEM[k].label}</span><span class="cv">${(k==="grade"?(GN[x.t[k]]||x.t[k]):fmtT(k,x.t[k]))??"—"}<small>今日 ${fmtT(k,K.today[k])??"—"}</small></span></div>`;}).join("")}</div>`).join("");
 }
 function renderCmp(nb){
   const show=nb.slice(0,st.listAll?nb.length:20);
@@ -414,7 +415,7 @@ function renderCmp(nb){
   const flt=x=>{if(st.flow==="not1"&&x.o&&x.o[0]===1)return false;if(st.flowFirst&&x.o&&x.o[0]!==st.flowFirst)return false;if(st.flowSel){const f=st.flowSel;return x.o&&x.o[f.p]===f.a&&x.o[f.p+1]===f.b;}return true;};
   $("cmpList").innerHTML=show.map(x=>{const [s2,s1,s0]=cnt(x),op=st.open===x.r,hl=(st.flowSel||st.flowFirst)&&flt(x);
     return `<div class="nbr${op?" open":""}${hl?" hl":""}" id="nb-${x.r}"><button type="button" class="nbh" data-r="${x.r}"><span class="rk">${x.r}</span><span class="nm">${x.d} ${x.v} ${x.rn}R<small>${x.g==="ippan"?"一般":x.g} ${x.res.stage||RN[x.rd]||""}${x.ss?` <b class="ss">同じ節</b>`:""}</small></span><span class="sc"><span class="up">○${s2}</span> <span class="warn2">△${s1}</span> <span class="down">×${s0}</span></span><span class="bnrow">${(x.o||[]).map(bn).join("")}</span></button>
-    ${op?`<div class="nbd"><div class="res">結果: <span class="bnrow">${(x.o||[]).map(bn).join("")}</span> ${x.res.technique||""}${x.res.payout_3tan?`　3連単 ${x.res.payout_3tan.toLocaleString()}円（${x.res.popularity_3tan}番人気）`:""}<br><small>着: ${x.res.finish.map((f,i)=>`${i+1}号艇 ${fin(f)}`).join("・")}　ST順: ${x.res.st_rank.map(v=>v??"—").join("/")}　進入: ${x.res.course.join("")}</small></div>${cmpDetail(x)}</div>`:""}</div>`;}).join("")+(nb.length>20?`<button type="button" class="btn" id="listAll">${st.listAll?"20件に戻す":`残り ${nb.length-20}件も見る`}</button>`:"");
+    ${op?`<div class="nbd"><div class="res">結果: <span class="bnrow">${(x.o||[]).map(bn).join("")}</span> ${x.res.technique||""}${x.res.payout_3tan?`　3連単 ${x.res.payout_3tan.toLocaleString()}円${x.res.popularity_3tan!=null?`（${x.res.popularity_3tan}番人気）`:""}`:""}<br><small>着: ${x.res.finish.map((f,i)=>`${i+1}号艇 ${fin(f)}`).join("・")}　ST順: ${x.res.st_rank.map(v=>v??"—").join("/")}　進入: ${x.res.course.join("")}</small></div>${cmpDetail(x)}</div>`:""}</div>`;}).join("")+(nb.length>20?`<button type="button" class="btn" id="listAll">${st.listAll?"20件に戻す":`残り ${nb.length-20}件も見る`}</button>`:"");
   $("cmpList").querySelectorAll(".nbh").forEach(b=>b.onclick=()=>{const r=+b.dataset.r;st.open=st.open===r?null:r;st.pick=st.open;render();});
   const la=$("listAll");if(la)la.onclick=()=>{st.listAll=!st.listAll;render();};
 }
@@ -469,7 +470,7 @@ function renderFlow(a){
   svg.querySelectorAll("[data-first]").forEach(e=>e.onclick=()=>{const b=+e.dataset.first;st.flowFirst=st.flowFirst===b?null:b;st.flowSel=null;$("flowTip").textContent=st.flowFirst?`${b}号艇が勝った ${a.win[b-1]}件だけで描いている（1→2→3 の本当の流れ）。上の一覧でも色を付けている`:"帯をタップすると件数が出る";render();});
   svg.querySelectorAll("[data-l]").forEach(e=>e.onclick=()=>{const [p,x,y,c]=e.dataset.l.split(",").map(Number);st.flowSel=st.flowSel&&st.flowSel.p===p&&st.flowSel.a===x&&st.flowSel.b===y?null:{p,a:x,b:y,c};$("flowTip").textContent=st.flowSel?`${p?"2着":"1着"} ${x}号艇 → ${p?"3着":"2着"} ${y}号艇: ${c}件（${tot}件中）。上の一覧でも色を付けている`:"帯をタップすると件数が出る";render();});
   const all=tri.sort((u,v)=>v[1]-u[1]);
-  const row=([x,c])=>`<div class="br" style="cursor:default"><span class="bnrow">${x.map(bn).join("")}</span><span class="wtrk"><span class="f" style="width:${c/all[0][1]*100}%"></span></span><span class="v">${c}/${tot}件</span></div>`;
+  const row=([x,c])=>`<div class="br" style="cursor:default"><span class="bnrow">${x.map(bn).join("")}</span><span class="wtrk"><span class="f" style="width:${c/all[0][1]*100}%"></span></span><span class="v">${pc(c/tot,1)} <small>${c}件</small></span></div>`;
   const cut=all.length>5?all[4][1]:0,topN=all.filter(([,c])=>c>=cut&&c>1).length||Math.min(5,all.length);
   $("triTop").innerHTML=all.slice(0,topN).map(row).join("")||`<p class="foot">0件</p>`;
   $("triMore").textContent=`ほかの ${Math.max(0,all.length-topN)} 通りも見る（出た組み合わせは全 ${all.length} 通り。件数が同じものはまとめて上に出している）`;
@@ -709,7 +710,7 @@ const rankWord = (r, hi, lo) =>
 function hexRadar(svg, labels, series) {
   const n = labels.length,
     Cc = [200, 182],
-    Rr = 118,
+    Rr = 100,
     pt = (i, r) => {
       const a = -Math.PI / 2 + (2 * Math.PI * i) / n;
       return [Cc[0] + r * Math.cos(a), Cc[1] + r * Math.sin(a)];
@@ -725,7 +726,7 @@ function hexRadar(svg, labels, series) {
     h += `<line x1="${Cc[0]}" y1="${Cc[1]}" x2="${x}" y2="${y}" stroke="rgba(201,162,39,.2)"/>`;
   });
   [1, 6].forEach((k) => {
-    h += `<text x="${Cc[0] + 4}" y="${Cc[1] - rr(k) + 10}" fill="#e8d089" opacity=".75" font-size="9" font-family="Zen Kaku Gothic New,sans-serif">${k}位</text>`;
+    h += `<text x="${Cc[0] + 4}" y="${Cc[1] - rr(k) + 10}" fill="#e8d089" opacity=".75" font-size="13" font-family="Zen Kaku Gothic New,sans-serif">${k}位</text>`;
   });
   series.forEach((s) => {
     if (s.v.every((x) => x != null))
@@ -741,7 +742,7 @@ function hexRadar(svg, labels, series) {
     const [x, y] = pt(i, Rr + 20),
       dx = x - Cc[0],
       an = dx > 8 ? "start" : dx < -8 ? "end" : "middle";
-    h += `<text x="${x}" y="${y}" text-anchor="${an}" fill="#f3ead0" font-size="11" font-weight="700" font-family="Zen Kaku Gothic New,sans-serif"><tspan x="${x}">${t[0]}</tspan>${t[1] ? `<tspan x="${x}" dy="1.25em" fill="#e8d089" font-size="10.5">${t[1]}</tspan>` : ""}</text>`;
+    h += `<text x="${x}" y="${y}" text-anchor="${an}" fill="#f3ead0" font-size="16" font-weight="700" font-family="Zen Kaku Gothic New,sans-serif"><tspan x="${x}">${t[0]}</tspan>${t[1] ? `<tspan x="${x}" dy="1.25em" fill="#e8d089" font-size="15">${t[1]}</tspan>` : ""}</text>`;
   });
   svg.innerHTML = h;
 }
@@ -758,6 +759,8 @@ const FSCOPE_DESC = {
 };
 const DIR = { nat_win: 1, loc_win: 1, recent_win30: 1, motor_2: 1, boat_2: 1, st_mean30: -1, exh_time: -1, series_score: 1 };
 // 今日の艇の、6艇の中での位置（同じ値の艇も数える。指摘4）
+const todayVal = (b, k) => (k === "series_score" ? D.tab1.ex_series[b] : D.rf.ex[b][k]).value;
+const fmtV = (k, v) => v == null ? "—" : k === "recent_win30" ? Math.round(v * 100) + "%" : k === "motor_2" || k === "boat_2" ? v.toFixed(1) + "%" : k === "st_mean30" ? v.toFixed(2) : k === "exh_time" ? v.toFixed(2) : v.toFixed(2);
 function todayPos(b, k) {
   const exv = (x) => (k === "series_score" ? D.tab1.ex_series[x] : D.rf.ex[x][k]);
   const vals = [1, 2, 3, 4, 5, 6].map((x) => exv(x).value);
@@ -833,7 +836,9 @@ function renderFacts() {
     if (!x || !x[1]) return "";
     const [lo, hi] = wilson(x[0], x[1]);
     const where = rankWord(p.bucket, r.hi, r.lo) + (p.same > 1 ? `（${p.same}艇が同じ値）` : "");
-    return `<p class="today"><b>${prefix}</b>は${r.l}が<b>${where}</b>。${sname}で、そういう${b}号艇は過去 <b>${pc(x[0] / x[1], 0)}</b> が${RT[st.rank]}（${x[0].toLocaleString()}/${x[1].toLocaleString()}、95%の幅 ${pc(lo, 0)}〜${pc(hi, 0)}）</p>`;
+    const vs = [1, 2, 3, 4, 5, 6].map((x) => todayVal(x, r.k)).filter((v) => v != null);
+    const valTxt = vs.length ? `（今日 ${fmtV(r.k, todayVal(b, r.k))}。6艇は ${fmtV(r.k, Math.min(...vs))}〜${fmtV(r.k, Math.max(...vs))}）` : "";
+    return `<p class="today"><b>${prefix}</b>は${r.l}が<b>${where}</b>${valTxt}。${sname}で、そういう${b}号艇は過去 <b>${pc(x[0] / x[1], 0)}</b> が${RT[st.rank]}（${x[0].toLocaleString()}/${x[1].toLocaleString()}、95%の幅 ${pc(lo, 0)}〜${pc(hi, 0)}）</p>`;
   };
   const card = (r) => {
     const b = r.all[0],
@@ -846,7 +851,7 @@ function renderFacts() {
     }
     return `<div class="eff ${cls}"><div class="eh"><b>${r.l}</b><small class="md">${MDESC[r.k]}</small><span class="gap">${lab}${!cls && d < 0 ? `（一番${r.lo}ときのほうが高い）` : ""}</span></div>
       <div class="pair"><div><span>6艇で一番${r.hi}とき</span><b>${pc(r.p[0], 0)}</b><small>${b[0].toLocaleString()}/${b[1].toLocaleString()}</small></div><div><span>6艇で一番${r.lo}とき</span><b>${pc(r.p[5], 0)}</b><small>${w[0].toLocaleString()}/${w[1].toLocaleString()}</small></div></div>
-      ${strip(r)}<p class="stripcap">棒の上の数字は%（左ほど${r.hi}）。点線は全体の ${pc(uP, 1)}</p>${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
+      ${strip(r)}<p class="stripcap">棒の上の数字は%（左ほど${r.hi}）。点線は全体の ${pc(uP, 1)}。枠で囲んだ棒が今日の位置</p>${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
   };
   const allClass = new Set([1, 2, 3, 4, 5, 6].map((b) => RF.ex[b].class)).size === 1;
   $("factsOut").innerHTML = `<div class="big1"><span>${sname}の全体で、${A}号艇が${RT[st.rank]}に入った割合</span><b>${pc(uP, 1)}</b><small>${U[0].toLocaleString()}/${U[1].toLocaleString()}レース（${T1.period[0]}〜${T1.period[1]}）</small></div>
@@ -860,7 +865,7 @@ function renderFacts() {
     const mk = MKEY[st.rank];
     const W = c.wkWind01.boats[A][mk];
     $("windOut").innerHTML =
-      `<h3>今日の風・波では（風1m・波1cm）</h3><div class="bars">${[
+      `<h3>今日の風・波では（風1m・波1cm）</h3><p class="sub">この欄だけは、6艇ともA1に絞ると件数が足りないので、若松の全レースで数えている。比べる相手（点線）も若松の全レース</p><div class="bars">${[
         1, 2, 3, 4, 5, 6,
       ]
         .map((b) => {
@@ -868,7 +873,7 @@ function renderFacts() {
             wa = c.wkAll
               ? c.wkAll.boats[b][mk]
               : D.start["20|all|all"].boats[b][mk];
-          return `<div class="fr"><span>${bn(b)} ${b}号艇</span><span class="wtrk"><span class="f" style="width:${w.p * 100}%;background:${LINE6[b]}"></span><span class="w" style="left:${w.lo * 100}%;width:${(w.hi - w.lo) * 100}%"></span><span class="nt" style="left:${wa.p * 100}%"></span></span><span class="v">${pc(w.p, 0)} <small>若松全体 ${pc(wa.p, 0)}</small></span></div>`;
+          return `<div class="fr"><span>${bn(b)} ${b}号艇</span><span class="wtrk"><span class="f" style="width:${w.p * 100}%;background:${LINE6[b]}"></span><span class="w" style="left:${w.lo * 100}%;width:${(w.hi - w.lo) * 100}%"></span><span class="nt" style="left:${wa.p * 100}%"></span></span><span class="v">${pc(w.p, 0)} <small>風を問わず ${pc(wa.p, 0)}</small></span></div>`;
         })
         .join(
           "",
@@ -1123,7 +1128,7 @@ function renderScn() {
   <div class="ents">${entryRow("all")}${entryRow("waku")}${entryRow("mae")}${openMae ? MAE_SUB.map((e) => entryRow(e, true)).join("") : ""}${entryRow("inlost")}</div>
   <p class="foot">${post ? `今日の展示は、6艇とも枠なりだった。展示が枠なりだったレースの 93% は、本番も枠なりだった（全国、2026-04 以降の 2,023 レース）。` : "展示の後は、今日の展示の進入に当てはまる型に印が付く。"}割合は、${scopeName}の全レースの中での割合。スロー・ダッシュの別は記録が無いので分けていない</p>
   <h3><span class="stepn">2</span>スタートはどう並ぶ？（スリットの形）</h3>
-  <div class="pats">${chips}</div><p class="foot">カド＝4コース（内の3艇より後ろから助走をとる、最初の艇）。カド受け＝3コース。絵は横から見た並びの例（数字はコース、右の線がスリット。縮尺は1艇身≒0.13秒）</p>
+  <div class="pats">${chips}</div><p class="foot">カド＝ダッシュ勢（助走を長くとる艇）の一番内。枠なりなら4コースで、7形の判定は4コースで見ている。カド受け＝その1つ内（枠なりなら3コース）。絵は横から見た並びの例（数字はコース、右の線がスリット。縮尺は1艇身≒0.13秒）</p>
   <p class="foot">${def ? `${SLITN[S.slit]}: ${def}。` : ""}1つのレースが2つ以上の形に当てはまることがある（足すと100%を超える）。形の決め方は、過去率チェッカー（BOA-635）と同じ。割合は、選んだ進入の中での割合。スリットの形は、今日の展示からは選べない。展示の形は本番の形の手がかりにならなかった（展示で2コース凹みだったレースのうち、本番も2コース凹みは38%。全体の32%とほとんど変わらない。2026-04 以降の 2,280 レース）</p>
   <h3><span class="stepn">3</span>そのとき、どう決まった？</h3>
   ${res}
@@ -1199,7 +1204,7 @@ document.querySelectorAll("#rankSeg button").forEach(b=>b.onclick=()=>{st.rank=+
 document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{st.tab=b.dataset.t;render();});
 document.querySelectorAll("#stageSeg button").forEach(b=>b.onclick=()=>{st.stage=b.dataset.v;st.open=null;st.pick=null;st.flowSel=null;st.flowFirst=null;render();});
 [["swTh"],["swKnn"]].forEach(([id])=>document.querySelectorAll(`#${id} button`).forEach(b=>b.onclick=()=>{st[id]=b.dataset.v;st.open=null;st.pick=null;st.flowSel=null;st.flowFirst=null;render();}));
-$("nSlider").oninput=e=>{st.ni=+e.target.value;st.flowSel=null;st.flowFirst=null;render();};
+$("nSlider").oninput=e=>{st.niTouched=true;st.ni=+e.target.value;st.flowSel=null;st.flowFirst=null;render();};
 $("ssChip").onclick=()=>{st.noSS=!st.noSS;st.flowSel=null;st.flowFirst=null;render();};
 document.querySelectorAll("#flowF button").forEach(b=>b.onclick=()=>{st.flow=b.dataset.f;st.flowSel=null;st.flowFirst=null;$("flowTip").textContent="帯をタップすると件数が出る";render();});
 $("two").onchange=e=>{st.two=e.target.checked;if(st.two&&st.b2===st.pb)st.b2=st.pb===6?5:st.pb+1;render();};

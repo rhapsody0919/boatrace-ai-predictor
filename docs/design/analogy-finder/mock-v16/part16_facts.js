@@ -43,7 +43,7 @@ const rankWord = (r, hi, lo) =>
 function hexRadar(svg, labels, series) {
   const n = labels.length,
     Cc = [200, 182],
-    Rr = 118,
+    Rr = 100,
     pt = (i, r) => {
       const a = -Math.PI / 2 + (2 * Math.PI * i) / n;
       return [Cc[0] + r * Math.cos(a), Cc[1] + r * Math.sin(a)];
@@ -59,7 +59,7 @@ function hexRadar(svg, labels, series) {
     h += `<line x1="${Cc[0]}" y1="${Cc[1]}" x2="${x}" y2="${y}" stroke="rgba(201,162,39,.2)"/>`;
   });
   [1, 6].forEach((k) => {
-    h += `<text x="${Cc[0] + 4}" y="${Cc[1] - rr(k) + 10}" fill="#e8d089" opacity=".75" font-size="9" font-family="Zen Kaku Gothic New,sans-serif">${k}位</text>`;
+    h += `<text x="${Cc[0] + 4}" y="${Cc[1] - rr(k) + 10}" fill="#e8d089" opacity=".75" font-size="13" font-family="Zen Kaku Gothic New,sans-serif">${k}位</text>`;
   });
   series.forEach((s) => {
     if (s.v.every((x) => x != null))
@@ -75,7 +75,7 @@ function hexRadar(svg, labels, series) {
     const [x, y] = pt(i, Rr + 20),
       dx = x - Cc[0],
       an = dx > 8 ? "start" : dx < -8 ? "end" : "middle";
-    h += `<text x="${x}" y="${y}" text-anchor="${an}" fill="#f3ead0" font-size="11" font-weight="700" font-family="Zen Kaku Gothic New,sans-serif"><tspan x="${x}">${t[0]}</tspan>${t[1] ? `<tspan x="${x}" dy="1.25em" fill="#e8d089" font-size="10.5">${t[1]}</tspan>` : ""}</text>`;
+    h += `<text x="${x}" y="${y}" text-anchor="${an}" fill="#f3ead0" font-size="16" font-weight="700" font-family="Zen Kaku Gothic New,sans-serif"><tspan x="${x}">${t[0]}</tspan>${t[1] ? `<tspan x="${x}" dy="1.25em" fill="#e8d089" font-size="15">${t[1]}</tspan>` : ""}</text>`;
   });
   svg.innerHTML = h;
 }
@@ -92,6 +92,8 @@ const FSCOPE_DESC = {
 };
 const DIR = { nat_win: 1, loc_win: 1, recent_win30: 1, motor_2: 1, boat_2: 1, st_mean30: -1, exh_time: -1, series_score: 1 };
 // 今日の艇の、6艇の中での位置（同じ値の艇も数える。指摘4）
+const todayVal = (b, k) => (k === "series_score" ? D.tab1.ex_series[b] : D.rf.ex[b][k]).value;
+const fmtV = (k, v) => v == null ? "—" : k === "recent_win30" ? Math.round(v * 100) + "%" : k === "motor_2" || k === "boat_2" ? v.toFixed(1) + "%" : k === "st_mean30" ? v.toFixed(2) : k === "exh_time" ? v.toFixed(2) : v.toFixed(2);
 function todayPos(b, k) {
   const exv = (x) => (k === "series_score" ? D.tab1.ex_series[x] : D.rf.ex[x][k]);
   const vals = [1, 2, 3, 4, 5, 6].map((x) => exv(x).value);
@@ -167,7 +169,9 @@ function renderFacts() {
     if (!x || !x[1]) return "";
     const [lo, hi] = wilson(x[0], x[1]);
     const where = rankWord(p.bucket, r.hi, r.lo) + (p.same > 1 ? `（${p.same}艇が同じ値）` : "");
-    return `<p class="today"><b>${prefix}</b>は${r.l}が<b>${where}</b>。${sname}で、そういう${b}号艇は過去 <b>${pc(x[0] / x[1], 0)}</b> が${RT[st.rank]}（${x[0].toLocaleString()}/${x[1].toLocaleString()}、95%の幅 ${pc(lo, 0)}〜${pc(hi, 0)}）</p>`;
+    const vs = [1, 2, 3, 4, 5, 6].map((x) => todayVal(x, r.k)).filter((v) => v != null);
+    const valTxt = vs.length ? `（今日 ${fmtV(r.k, todayVal(b, r.k))}。6艇は ${fmtV(r.k, Math.min(...vs))}〜${fmtV(r.k, Math.max(...vs))}）` : "";
+    return `<p class="today"><b>${prefix}</b>は${r.l}が<b>${where}</b>${valTxt}。${sname}で、そういう${b}号艇は過去 <b>${pc(x[0] / x[1], 0)}</b> が${RT[st.rank]}（${x[0].toLocaleString()}/${x[1].toLocaleString()}、95%の幅 ${pc(lo, 0)}〜${pc(hi, 0)}）</p>`;
   };
   const card = (r) => {
     const b = r.all[0],
@@ -180,7 +184,7 @@ function renderFacts() {
     }
     return `<div class="eff ${cls}"><div class="eh"><b>${r.l}</b><small class="md">${MDESC[r.k]}</small><span class="gap">${lab}${!cls && d < 0 ? `（一番${r.lo}ときのほうが高い）` : ""}</span></div>
       <div class="pair"><div><span>6艇で一番${r.hi}とき</span><b>${pc(r.p[0], 0)}</b><small>${b[0].toLocaleString()}/${b[1].toLocaleString()}</small></div><div><span>6艇で一番${r.lo}とき</span><b>${pc(r.p[5], 0)}</b><small>${w[0].toLocaleString()}/${w[1].toLocaleString()}</small></div></div>
-      ${strip(r)}<p class="stripcap">棒の上の数字は%（左ほど${r.hi}）。点線は全体の ${pc(uP, 1)}</p>${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
+      ${strip(r)}<p class="stripcap">棒の上の数字は%（左ほど${r.hi}）。点線は全体の ${pc(uP, 1)}。枠で囲んだ棒が今日の位置</p>${line(A, r, `今日の${A}号艇`)}${bLine}</div>`;
   };
   const allClass = new Set([1, 2, 3, 4, 5, 6].map((b) => RF.ex[b].class)).size === 1;
   $("factsOut").innerHTML = `<div class="big1"><span>${sname}の全体で、${A}号艇が${RT[st.rank]}に入った割合</span><b>${pc(uP, 1)}</b><small>${U[0].toLocaleString()}/${U[1].toLocaleString()}レース（${T1.period[0]}〜${T1.period[1]}）</small></div>
@@ -194,7 +198,7 @@ function renderFacts() {
     const mk = MKEY[st.rank];
     const W = c.wkWind01.boats[A][mk];
     $("windOut").innerHTML =
-      `<h3>今日の風・波では（風1m・波1cm）</h3><div class="bars">${[
+      `<h3>今日の風・波では（風1m・波1cm）</h3><p class="sub">この欄だけは、6艇ともA1に絞ると件数が足りないので、若松の全レースで数えている。比べる相手（点線）も若松の全レース</p><div class="bars">${[
         1, 2, 3, 4, 5, 6,
       ]
         .map((b) => {
@@ -202,7 +206,7 @@ function renderFacts() {
             wa = c.wkAll
               ? c.wkAll.boats[b][mk]
               : D.start["20|all|all"].boats[b][mk];
-          return `<div class="fr"><span>${bn(b)} ${b}号艇</span><span class="wtrk"><span class="f" style="width:${w.p * 100}%;background:${LINE6[b]}"></span><span class="w" style="left:${w.lo * 100}%;width:${(w.hi - w.lo) * 100}%"></span><span class="nt" style="left:${wa.p * 100}%"></span></span><span class="v">${pc(w.p, 0)} <small>若松全体 ${pc(wa.p, 0)}</small></span></div>`;
+          return `<div class="fr"><span>${bn(b)} ${b}号艇</span><span class="wtrk"><span class="f" style="width:${w.p * 100}%;background:${LINE6[b]}"></span><span class="w" style="left:${w.lo * 100}%;width:${(w.hi - w.lo) * 100}%"></span><span class="nt" style="left:${wa.p * 100}%"></span></span><span class="v">${pc(w.p, 0)} <small>風を問わず ${pc(wa.p, 0)}</small></span></div>`;
         })
         .join(
           "",
