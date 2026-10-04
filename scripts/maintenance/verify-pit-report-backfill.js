@@ -6,7 +6,10 @@
  *       満たないものだけ。not_target・全艇そろったもの・対象外のグレードやレース番号は選ばない。出走表が読めない
  *       レースは、取り直す側に倒す
  *   (b) 集計: 前後のコメント数・増えたレース数・書き込み行数。取得に失敗したレースは今の件数のまま数える
- *   (c) 変異検証: 選び方・集計を壊した版で、上の検証が失敗する
+ *   (d) 入力の読み込み（loadBackfillInputs）: 1000行を超える出走表でも、艇数がずれない。偽のクライアントは、
+ *       並び順を指定しないとリクエストごとに行の並びが変わる（PostgREST の挙動。ページの間で重複・欠落が起きる）。
+ *       並び順を付けてページを送れば、200レース×6艇＝1200行を全部1回ずつ読める（BOA-745）
+ *   (c) 変異検証: 選び方・集計・読み込みを壊した版で、上の検証が失敗する
  *
  * 実行: node scripts/maintenance/verify-pit-report-backfill.js
  */
@@ -96,11 +99,99 @@ function evaluate(m) {
   return failed;
 }
 
+// (d) 入力の読み込み。偽のクライアント: from().select().range() の後に絞り込み・並び順を付け、await で結果を返す
+function createFakeClient(tables) {
+  let requests = 0;
+  const field = (row, key) => row[key];
+  return {
+    from(table) {
+      const filters = [];
+      const orders = [];
+      let range = [0, Infinity];
+      const builder = {
+        select: () => builder,
+        range: (a, b) => {
+          range = [a, b];
+          return builder;
+        },
+        gte: (k, v) => (filters.push((r) => field(r, k) >= v), builder),
+        lte: (k, v) => (filters.push((r) => field(r, k) <= v), builder),
+        lt: (k, v) => (filters.push((r) => field(r, k) < v), builder),
+        in: (k, vs) => (filters.push((r) => vs.includes(field(r, k))), builder),
+        order: (k) => (orders.push(k), builder),
+        then(resolve) {
+          requests++;
+          let rows = (tables[table] ?? []).filter((r) =>
+            filters.every((f) => f(r)),
+          );
+          if (orders.length > 0) {
+            rows = [...rows].sort((x, y) => {
+              for (const k of orders) {
+                if (x[k] < y[k]) return -1;
+                if (x[k] > y[k]) return 1;
+              }
+              return 0;
+            });
+          } else {
+            // 並び順なし: リクエストごとに並びが変わる（ページの間で重複・欠落が起きる）
+            const shift = (requests * 397) % Math.max(rows.length, 1);
+            rows = [...rows.slice(shift), ...rows.slice(0, shift)];
+          }
+          resolve({ data: rows.slice(range[0], range[1] + 1), error: null });
+        },
+      };
+      return builder;
+    },
+  };
+}
+
+const LOAD_RACES = Array.from({ length: 200 }, (_, i) => ({
+  race_id: `2026-02-${String(1 + Math.floor(i / 12)).padStart(2, "0")}-16-${String((i % 12) + 1).padStart(2, "0")}`,
+  race_date: `2026-02-${String(1 + Math.floor(i / 12)).padStart(2, "0")}`,
+  start_time: "15:00:00",
+  race_grade: "G1",
+  race_number: (i % 12) + 1,
+}));
+const LOAD_ENTRIES = LOAD_RACES.flatMap((r) =>
+  [1, 2, 3, 4, 5, 6].map((b) => ({ race_id: r.race_id, boat_number: b })),
+);
+
+async function evaluateLoad(mod) {
+  const failed = [];
+  if (typeof mod.loadBackfillInputs !== "function") {
+    return ["loadBackfillInputs が無い"];
+  }
+  const client = createFakeClient({
+    races: LOAD_RACES,
+    race_pit_reports: [],
+    race_entries: LOAD_ENTRIES,
+  });
+  const { races, entryCounts } = await mod.loadBackfillInputs(
+    client,
+    "2026-02-01",
+    "2026-02-28",
+  );
+  if (races.length !== 200) failed.push(`races ${races.length}件（期待200）`);
+  const wrong = LOAD_RACES.filter((r) => entryCounts.get(r.race_id) !== 6);
+  if (wrong.length > 0) {
+    failed.push(
+      `艇数が6でないレース ${wrong.length}件（例 ${wrong[0].race_id}: ${entryCounts.get(wrong[0].race_id)}）`,
+    );
+  }
+  return failed;
+}
+
 const realFailed = evaluate(real);
 check(
   "(a)(b) 対象の選び方・集計",
   realFailed.length === 0,
   realFailed.join(" / "),
+);
+const realLoadFailed = await evaluateLoad(real);
+check(
+  "(d) 入力の読み込み: 1200行の出走表でも、200レースすべての艇数が6（並び順を付けてページを送る）",
+  realLoadFailed.length === 0,
+  realLoadFailed.join(" / "),
 );
 
 // (c) 変異検証: 本体の文字列を置き換えた版を一時ファイルに書いて評価する
@@ -129,6 +220,11 @@ const MUTANTS = [
     'result.outcome === "error" ? target.before : parsed',
     "parsed",
   ],
+  [
+    "出走表のページ送りで並び順を付けない（BOA-745 の前の形）",
+    '(q) => q.in("race_id", chunk).order("race_id").order("boat_number")',
+    '(q) => q.in("race_id", chunk)',
+  ],
 ];
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pit-backfill-"));
 for (const [label, from, to] of MUTANTS) {
@@ -150,7 +246,8 @@ for (const [label, from, to] of MUTANTS) {
   );
   let failed;
   try {
-    failed = evaluate(await import(pathToFileURL(file).href));
+    const mod = await import(pathToFileURL(file).href);
+    failed = [...evaluate(mod), ...(await evaluateLoad(mod))];
   } catch (e) {
     failed = [`例外: ${e.message}`];
   }
