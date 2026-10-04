@@ -1185,6 +1185,7 @@
     "rowCourseRate": "번호 승률",
     "loading": "분석 데이터 로딩 중…",
     "motorResetNote": "교체 직후",
+    "motorUnusedNote": "새 모터·실적 없음",
     "motorBadgeUp": "기력↑",
     "motorBadgeDown": "기력↓"
   },
