@@ -54,6 +54,13 @@
   color: var(--text-primary);
 }
 
+/* 実際の決まり手（予想と違うとき）。予想の決まり手より一段控えめにする（BOA-724） */
+.turn-pattern-actual {
+  margin-left: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
 .turn-pattern-prob {
   flex-shrink: 0;
   font-weight: var(--font-weight-bold);

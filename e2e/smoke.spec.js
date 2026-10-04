@@ -3535,8 +3535,9 @@ test.describe("的中レース一覧のunified一本化（BOA-174）", () => {
 
     const raceCardCount = await page.locator(".race-card").count();
     if (raceCardCount > 0) {
+      // 本命が予想どおりに勝ったときだけ「展開予測的中」、それ以外は「1着の艇が的中」（BOA-724）
       await expect(page.locator(".hit-badge").first()).toHaveText(
-        /展開予測的中/,
+        /展開予測的中|1着の艇が的中/,
       );
       await expect(page.locator(".turn-hit-detail").first()).toBeVisible();
     }
