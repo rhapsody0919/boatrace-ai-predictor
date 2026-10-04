@@ -194,7 +194,7 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     );
     await expect(
       page.locator(".volatility-highlights__closed-note"),
-    ).toContainText("締切済みのレースです");
+    ).toContainText("締切済みのレースから選んでいます");
   });
 
   // 「崩れやすさ100」と「1着予想: 1号艇」が並び矛盾して見えた。最有力の1パターンで、値はコース番号

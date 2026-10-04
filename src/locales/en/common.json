@@ -380,7 +380,7 @@
     "volatilityHighlightsScaleNote": "The number shows how upset-prone the race is compared with races at the same venue (0–100; 100 is the most upset-prone).",
     "volatilityHighlightsTurnPrediction": "Most likely: Course {{course}} {{technique}} {{probability}}%",
     "volatilityHighlightsClosed": "Closed",
-    "volatilityHighlightsClosedNote": "No races are left before the deadline, so these races have closed.",
+    "volatilityHighlightsClosedNote": "Few races are left before the deadline, so these are picked from races that have closed.",
     "volatilityHighlightsAccuracyLink": "See our track record →",
     "dataType": "Race data",
     "loadingTitle": "Loading race data...",

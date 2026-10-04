@@ -376,7 +376,7 @@
     "volatilityHighlightsScaleNote": "숫자는 같은 경정장 레이스와 비교한 무너지기 쉬움(0~100, 100이 가장 무너지기 쉬움)입니다.",
     "volatilityHighlightsTurnPrediction": "가장 유력한 전개: {{course}}코스 {{technique}} {{probability}}%",
     "volatilityHighlightsClosed": "마감",
-    "volatilityHighlightsClosedNote": "마감 전 레이스가 남아 있지 않아 마감된 레이스입니다.",
+    "volatilityHighlightsClosedNote": "마감 전 레이스가 적어 마감된 레이스에서 골랐습니다.",
     "volatilityHighlightsAccuracyLink": "실측 정확도 보기 →",
     "dataType": "경주 데이터",
     "loadingTitle": "경주 데이터 로딩 중...",

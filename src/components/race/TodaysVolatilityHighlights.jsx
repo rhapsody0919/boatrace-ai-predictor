@@ -138,7 +138,7 @@ function TodaysVolatilityHighlights({ venuesData, nowHHMM = null }) {
       <p className="volatility-highlights__scale-note">
         {t("home.volatilityHighlightsScaleNote")}
       </p>
-      {/* 締切前のレースが残っていない時間帯（夕方以降）だけ、締切済みから選んでいることを書く */}
+      {/* 締切前のレースが1本以下の時間帯（夕方以降）だけ、締切済みから選んでいることを書く */}
       {allClosed && (
         <p className="volatility-highlights__closed-note">
           {t("home.volatilityHighlightsClosedNote")}
