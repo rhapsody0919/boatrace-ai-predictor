@@ -884,7 +884,7 @@ for (const path of ["/race/2026-09-29-16-12", "/en/race/2026-09-29-16-12"]) {
       test.slow();
       const widths =
         testInfo.project.name === "layout-mobile"
-          ? [320, 375, 390, 520, 600, 700]
+          ? [320, 375, 390, 520, 600, 700, 768]
           : [null];
       for (const width of widths) {
         if (width) await page.setViewportSize({ width, height: 812 });
@@ -955,7 +955,9 @@ async function checkBeforeInfoExhibitionCard(page, path, width) {
       `${width}px: 展示情報の表の横スクロール`,
     ).toBeLessThanOrEqual(1);
   }
-  // 767px 以下: ほかのカードは画面の左右 8px（docs/design/race-detail-ui-unify FR-1 案B）
+  // 767px 以下: ほかのカードは画面の左右 8px（docs/design/race-detail-ui-unify FR-1 案B）。
+  // 768px は表の縦スクロールの境目を確かめるために通すだけ（BOA-757）
+  if (width > 767) return;
   for (const [left, right] of m.others) {
     expect(left, `${width}px: カードの左の余白`).toBeCloseTo(8, 0);
     expect(m.vw - right, `${width}px: カードの右の余白`).toBeCloseTo(8, 0);
