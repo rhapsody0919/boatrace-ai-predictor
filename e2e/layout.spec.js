@@ -880,7 +880,7 @@ for (const path of ["/race/2026-09-29-16-12", "/en/race/2026-09-29-16-12"]) {
     test("表がカードの内側に収まり、行見出しが画面の左端で切れない", async ({
       page,
     }, testInfo) => {
-      // 6つの幅でページを開き直すので、既定の 60 秒では足りないことがある
+      // 7つの幅でページを開き直すので、既定の 60 秒では足りないことがある
       test.slow();
       const widths =
         testInfo.project.name === "layout-mobile"
