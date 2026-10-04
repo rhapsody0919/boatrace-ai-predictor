@@ -165,3 +165,24 @@ test("A-3: 的中レースのカードは、予想の決まり手が実際と違
     .evaluate((el) => getComputedStyle(el).backgroundImage);
   expect(bg).toContain("gradient");
 });
+
+test("A-2 (b): AI予想タブのまとめは、本命が予想どおりに勝ったときだけ「予想通り」と言う", async ({
+  page,
+}) => {
+  test.slow();
+  const summaryOf = async (raceId) => {
+    await page.goto(`/race/${raceId}`, { waitUntil: "domcontentloaded" });
+    await page.locator(".race-tabs-btn", { hasText: /^AI予想$/ }).click();
+    const summary = page.locator(".turn-pattern-summary--hit");
+    await expect(summary).toHaveCount(1, { timeout: 60000 });
+    return summary;
+  };
+  // 戸田 9/30 8R: 本命は1号艇の逃げ、当たったのは2番手の3号艇のまくり
+  await expect(await summaryOf("2026-09-30-02-08")).toHaveText(
+    "✅ 上位予想の艇が1着になりました",
+  );
+  // 戸田 9/27 11R: 本命の1号艇が1コースから逃げ
+  await expect(await summaryOf("2026-09-27-02-11")).toHaveText(
+    "✅ 予想通りの展開でした（本命の艇が予想の決まり手で1着）",
+  );
+});

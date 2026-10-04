@@ -560,6 +560,7 @@
     "captionResult": "Pre-race prediction. The % is the chance that the circled lane wins with that winning technique.",
     "hitTag": "Hit",
     "summaryHit": "✅ A boat from the top predictions won",
+    "summaryAsPredicted": "✅ Went as predicted (the top pick won with the predicted technique)",
     "actualTechnique": "(actual: {{technique}})",
     "summaryMiss": "❌ Boat {{winnerNumber}} won, which wasn't among the top predictions",
     "winnerEntryCourse": "The winner, Boat {{boat}}, started from course {{course}} (boat number and course differ in this race; hits are judged by boat number)",

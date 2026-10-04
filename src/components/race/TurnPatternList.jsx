@@ -27,6 +27,7 @@ import { BOAT_COLORS } from "../../utils/colors";
 import {
   TECHNIQUE_NAMES,
   pickHitPattern,
+  isAsPredicted,
   techniqueDiffers,
 } from "../../utils/turnPrediction";
 import { TURN_JUDGEMENT, judgeTurnPrediction } from "../../utils/raceOutcome";
@@ -34,7 +35,12 @@ import "./TurnPatternList.css";
 
 const RANK_ICONS = ["🥇", "🥈", "🥉"];
 
-function TurnPatternList({ patterns, result = null }) {
+function TurnPatternList({
+  patterns,
+  result = null,
+  // 1着の艇が実際に入ったコース（不明なら null）。「予想通り」を言うかの判定に使う（BOA-724）
+  winnerEntryCourse = null,
+}) {
   const { t } = useTranslation();
 
   if (!Array.isArray(patterns) || patterns.length === 0) return null;
@@ -70,6 +76,18 @@ function TurnPatternList({ patterns, result = null }) {
     .map((p) =>
       hitPattern && p.winnerCourse === hitPattern.winnerCourse ? hitPattern : p,
     );
+  // 本命（1番手の候補）が、予想の決まり手・艇番どおりのコースで1着になったときだけ「予想通り」と言う。
+  // 2番手以下が当たった、決まり手が違う、前付けで勝った、のどれかなら控えめなまとめにする
+  // （BOA-724 の A-2 を (b) に。共有文と同じ区別）
+  const asPredicted =
+    hitPattern != null &&
+    isAsPredicted({
+      predictedTechnique: TECHNIQUE_NAMES[hitPattern.technique],
+      actualTechnique,
+      winnerBoat: actualWinner,
+      winnerEntryCourse,
+      isTopPick: hitPattern === patterns[0],
+    });
   // 決まり手の英語キー（実際の決まり手を各言語の名前で出すため）
   const actualTechniqueKey =
     Object.keys(TECHNIQUE_NAMES).find(
@@ -164,7 +182,11 @@ function TurnPatternList({ patterns, result = null }) {
           className={`turn-pattern-summary${hasHit ? " turn-pattern-summary--hit" : " turn-pattern-summary--miss"}`}
         >
           {hasHit
-            ? t("turnPatternList.summaryHit")
+            ? t(
+                asPredicted
+                  ? "turnPatternList.summaryAsPredicted"
+                  : "turnPatternList.summaryHit",
+              )
             : t("turnPatternList.summaryMiss", { winnerNumber: actualWinner })}
         </p>
       )}

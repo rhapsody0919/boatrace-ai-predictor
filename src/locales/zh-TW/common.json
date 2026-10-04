@@ -555,6 +555,7 @@
     "captionResult": "這是賽前的預測。%是圓圈數字的艇以該獲勝方式獲得第1名的機率。",
     "hitTag": "命中",
     "summaryHit": "✅ 上位預測中的艇獲得第1名",
+    "summaryAsPredicted": "✅ 與預測相同的展開（第1順位預測的艇以預測的獲勝方式獲得第1名）",
     "actualTechnique": "（實際：{{technique}}）",
     "summaryMiss": "❌ 第1名是{{winnerNumber}}號艇，不在預測名單中",
     "winnerEntryCourse": "第1名的{{boat}}號艇從第{{course}}道進場（本場艇號與航道不同，命中以艇號判定）",

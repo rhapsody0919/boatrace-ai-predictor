@@ -1122,6 +1122,7 @@
     "captionResult": "レース前の予想です。%は、丸数字の艇がその決まり手で1着になる確率です。",
     "hitTag": "的中",
     "summaryHit": "✅ 上位予想の艇が1着になりました",
+    "summaryAsPredicted": "✅ 予想通りの展開でした（本命の艇が予想の決まり手で1着）",
     "actualTechnique": "（実際: {{technique}}）",
     "summaryMiss": "❌ 上位予想に無い{{winnerNumber}}号艇が1着でした",
     "winnerEntryCourse": "1着の{{boat}}号艇は{{course}}コースから進入しました（艇番とコースが違うレースです。的中は艇番で判定しています）",
