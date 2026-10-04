@@ -820,6 +820,9 @@ async function buildReturned(date, prevDate, todayRaces) {
 // 書き込み
 // ---------------------------------------------------------------------------
 
+/** マイグレーションの適用前でも書き込みを止めない列（131: motor_race_count） */
+const OPTIONAL_ROW_COLUMNS = ["motor_race_count"];
+
 /**
  * 書き込み順は **rows が先、generated_at の確定が最後**（ADR-0070、レビュー指摘M-8）。
  * morning_digest_rows は morning_digest_days をFK参照するため、
@@ -827,9 +830,6 @@ async function buildReturned(date, prevDate, todayRaces) {
  * の順で書く。途中で落ちると generated_at が NULL のまま残り、ページは「未生成」として
  * 扱える。逆順だと「該当0件」と混同される。
  */
-/** マイグレーションの適用前でも書き込みを止めない列（131: motor_race_count） */
-const OPTIONAL_ROW_COLUMNS = ["motor_race_count"];
-
 async function write(date, dayRow, rows) {
   const { error: dayErr } = await supabase
     .from("morning_digest_days")
