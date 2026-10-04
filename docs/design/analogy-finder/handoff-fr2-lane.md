@@ -237,3 +237,10 @@
   - prep/（4MB）: 展開シナリオの prep8.json・prep8b.json・prep9a/9b.json・prep10.json と raw/
   - mock/（43MB）: data.js・scn.js、analogy-finder-v16.html（承認版）
   - スクリプトと md は docs/design/analogy-finder/（entry-slit/・slit-hint/・mock-v16/）に写してある。JSON と pkl は大きいので写していない。消えた場合は、写したスクリプトで作り直せる（本番 DB は SELECT だけ）
+
+## 21. 2026-10-04 夕方 設計を Version 16 に合わせて書き直し（§20 の 1〜3。次のセッションはここから）
+- ブランチ: `lane/boa-271-v16-design`（fa61e6213 から）を `feature/boa-271-fr2-strat` に fast-forward で push（Draft PR #1134）
+- spec.md・screens.md・plan.md・tasks.md を Version 16 準拠に全面書き直し（旧版は `git show fa61e6213:…`）。ADR-0085 案（数えた値と類似レースは朝の Python バッチで今日の分だけ作り Storage に置く。ADR-0082 を置き換え）
+- ユーザー確認待ち（spec「未確定事項」Q1〜Q5）: Q1 級別がそろわないレースの数えるレースの既定、Q2 レースごとの寄与度（旧 FR-1b）をやめるか、Q3 AIの見立てを範囲に連動させるか、Q4 マイグレーション 120 を適用せず置き換えるか、Q5 モックに無い状態の文言
+- design-reviewer・acceptance-test-writer の結果と対応は下に追記する
+- /step4 とマイグレーションの本番適用は、Q1〜Q5 の回答とユーザーの実装の承認の後
