@@ -226,3 +226,17 @@ def test_boat1_group_direction_is_varies_for_boats_2_to_6():
         "key": "boat1", "share": pytest.approx(pick(rows, boat=3)["breakdown"]["rec"][1]["share"]),
         "direction": "varies", "direction_basis": None}
     assert "direction" in pick(rows, boat=1)["breakdown"]["rec"][0]
+
+
+def test_direction_basis_is_strict_json_for_few_values_and_constant_y():
+    """値ごとの区分（地元 0/1）の m_mid と、y が一定の ρ は NaN になる。素の NaN は PostgREST が
+    「invalid json」で拒む（run 37278559069 の書き込みの失敗）ので null にする"""
+    import json
+    rng = np.random.default_rng(0)
+    day = np.repeat(np.arange(40), 10)
+    W = np.ones((5, 40))
+    few = P.numeric_direction((rng.random(400) < 0.3).astype(float), rng.normal(size=400), day, W, 40)
+    assert few["basis"]["m_mid"] is None
+    flat = P.numeric_direction(rng.normal(size=400), np.zeros(400), day, W, 40)
+    assert flat["basis"]["rho"] is None and flat["direction"] == "none"
+    json.dumps([few, flat], allow_nan=False)

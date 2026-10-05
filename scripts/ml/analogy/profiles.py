@@ -223,6 +223,13 @@ def judge(m_lo: float, m_mid: float, m_hi: float, rho: float) -> str:
     return "higher" if rho > 0 else "lower"
 
 
+def _num(v: float) -> float | None:
+    """JSON に書ける数（NaN・±Inf は null）。値ごとの区分の m_mid や、y が一定の項目の ρ は NaN になる。
+    Python の json は NaN を素のまま書き、PostgREST が「invalid json」で拒む（run 37278559069）"""
+    v = float(v)
+    return v if np.isfinite(v) else None
+
+
 def _rank(a: np.ndarray) -> np.ndarray:
     return pd.Series(a).rank(method="average").to_numpy()
 
@@ -277,9 +284,9 @@ def numeric_direction(x: np.ndarray, y: np.ndarray, day: np.ndarray, W: np.ndarr
     ranges = [[float(x[band == k].min()), float(x[band == k].max())] if (band == k).any() else None
               for k in range(3)]
     return {"direction": final, "basis": {
-        "rho": rho, "m_low": m[0], "m_mid": m[1], "m_high": m[2], "band_ranges": ranges,
-        "band_n": [int((band == k).sum()) for k in range(3)], "n": int(len(x)),
-        "overall": overall, "boot_agree": agree}}
+        "rho": _num(rho), "m_low": _num(m[0]), "m_mid": _num(m[1]), "m_high": _num(m[2]),
+        "band_ranges": ranges, "band_n": [int((band == k).sum()) for k in range(3)], "n": int(len(x)),
+        "overall": overall, "boot_agree": _num(agree)}}
 
 
 def category_direction(x: np.ndarray, y: np.ndarray, day: np.ndarray, W: np.ndarray,
@@ -291,7 +298,7 @@ def category_direction(x: np.ndarray, y: np.ndarray, day: np.ndarray, W: np.ndar
     means = {v: float(y[x == v].mean()) for v in vals}
     order = sorted(vals, key=lambda v: means[v])
     top, bottom = order[::-1][:3], order[:3]
-    basis = {"values": [{"value": label(v), "mean": means[v], "n": int((x == v).sum())}
+    basis = {"values": [{"value": label(v), "mean": _num(means[v]), "n": int((x == v).sum())}
                         for v in order[::-1]]}
     if not order or max(abs(means[v]) for v in set(top) | set(bottom)) < DIFF_MIN:
         return {"direction": "none", "basis": basis}
