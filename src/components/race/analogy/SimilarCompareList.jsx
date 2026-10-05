@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useLocalizedPath } from "../../../hooks/useLocalizedPath";
 import { useTranslation } from "react-i18next";
 import BoatBadge from "../BoatBadge";
 import { fmtDate, fmtEntry, venueLabel } from "../../../utils/analogyFormat";
@@ -30,8 +32,13 @@ function stOrder(x) {
 
 function Detail({ x, items, exhibitionStage, today, t }) {
   const st = stOrder(x);
+  const localize = useLocalizedPath();
   return (
     <div className="af-nbd">
+      {/* そのレースのページへ（2026-10-06 ユーザー指摘） */}
+      <Link className="af-nb-link" to={localize(`/race/${x.race_id}`)}>
+        {t(`${k}.openRace`)}
+      </Link>
       <p className="af-res">
         {t(`${k}.result`)}{" "}
         <span className="af-bnrow">

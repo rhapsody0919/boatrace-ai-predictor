@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import BoatBadge from "../BoatBadge";
 import { SCOPE_LINE } from "./analogyColors";
 import { fmtCount, fmtFactValue, fmtPct } from "../../../utils/analogyFormat";
 import { rateOf, todayLine, usualOf } from "../../../utils/analogyFacts";
@@ -146,6 +147,11 @@ export default function FactCard({
           </div>
         ))}
       </div>
+      {/* 棒は6艇ではなく「この艇が6艇中何位だったか」の6区分。どの艇の棒かを上に書く（2026-10-06 ユーザー指摘） */}
+      <p className="af-strip-title">
+        <BoatBadge n={boat} size="xs" />{" "}
+        {t(`${k}.stripTitle`, { boat, item: label, rate: rateName })}
+      </p>
       <div className="af-strip" role="img" aria-label={stripAria}>
         {row.rates.map((p, i) => {
           const on = todayPos === i + 1;
@@ -156,7 +162,7 @@ export default function FactCard({
               title={row.all[i] ? `${row.all[i][0]}/${row.all[i][1]}` : ""}
             >
               <span className="af-num">
-                {p === null ? "—" : Math.round(p * 100)}
+                {p === null ? "—" : `${Math.round(p * 100)}%`}
               </span>
               <span className="af-strip-plot">
                 <span

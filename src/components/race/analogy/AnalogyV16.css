@@ -1275,3 +1275,22 @@ button.af-bar {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* カードの棒の見出し（どの艇の棒か） */
+.af-strip-title {
+  margin: 6px 0 2px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* 類似レースの1件から、そのレースのページへ */
+.af-nb-link {
+  display: inline-block;
+  margin: 4px 0 6px;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
