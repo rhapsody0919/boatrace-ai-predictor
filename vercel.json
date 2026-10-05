@@ -201,6 +201,22 @@
     {
       "path": "/api/cron/analogy-dispatch-train",
       "schedule": "0 19 * * 6"
+    },
+    {
+      "path": "/api/cron/analogy-dispatch-morning",
+      "schedule": "10 22 * * *"
+    },
+    {
+      "path": "/api/cron/analogy-dispatch-morning",
+      "schedule": "40 22 * * *"
+    },
+    {
+      "path": "/api/cron/analogy-dispatch-morning",
+      "schedule": "40 0 * * *"
+    },
+    {
+      "path": "/api/cron/analogy-dispatch-morning",
+      "schedule": "40 4 * * *"
     }
   ],
   "functions": {
