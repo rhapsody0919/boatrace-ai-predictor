@@ -665,9 +665,19 @@
       "guards": "展示タイム1位率の集計（update-exhibition-time-top-stats.js）が、展示タイムが NULL の行（展示ST先行・展示前の体重だけの行・展示なし）を分母に入れないこと、同着の最速を数えないこと（BOA-520。PR #917 で見つかった率の薄まり）"
     },
     {
+      "script": "verify-index-jsonld.js",
+      "tier": "ci",
+      "guards": "index.html の JSON-LD に、実在しない評価（aggregateRating・review）と受け口の無い SearchAction を書かないこと、各ブロックが JSON として読めること。2025-12-20 に架空の評価（4.5・100件）が入り、AIクローラー向けスナップショットにも出ていた（Google の構造化データ方針違反。docs/proposal/ai-agent-era-strategy.md Phase 0）"
+    },
+    {
+      "script": "verify-no-accuracy-claims-in-meta.js",
+      "tier": "ci",
+      "guards": "サイト全体の説明文（index.html の meta・OGP・Twitter カード・JSON-LD、useSocialMeta の既定値、About の meta description、llms.txt の冒頭と生成スクリプト）に「高精度」「精度」「的中」「回収率」「必勝」が戻らないこと。的中率の土俵で戦わない方針（BOA-617）と、数えた値を主役にする方針（BOA-271）に合わせて 2026-10-05 に書き直した（docs/proposal/ai-agent-era-strategy.md R5）。ブログ記事とページ本文は対象外"
+    },
+    {
       "script": "verify-middleware-routing.js",
       "tier": "ci",
-      "guards": "middleware.js の管理画面Basic認証（/admin/rules・/admin/sns-hub は認証なしで401、一般ページは素通り、環境変数が未設定・空なら拒否、':'入りパスワードは最初の':'で分割、UTF-8で復号、壊れたbase64で例外を出さず401。判定は api/_lib/adminAuth.js の requireAdminAuth と共有）と、AIスナップショット配信の経路（resolveSnapshotPath が返すパスが config.matcher に一致し、管理画面がスナップショットに振り分けられないこと）。BOA-555で /admin/rules が本番で認証なしに開けていた"
+      "guards": "middleware.js の管理画面Basic認証（/admin/rules・/admin/sns-hub は認証なしで401、一般ページは素通り、環境変数が未設定・空なら拒否、':'入りパスワードは最初の':'で分割、UTF-8で復号、壊れたbase64で例外を出さず401。判定は api/_lib/adminAuth.js の requireAdminAuth と共有）と、AIスナップショット配信の経路（resolveSnapshotPath が返すパスが config.matcher に一致し、管理画面がスナップショットに振り分けられないこと。検索・ユーザー起点の取得に使う UA（OAI-SearchBot・ChatGPT-User・Claude-SearchBot・Claude-User・Perplexity-User・bingbot・Applebot・DuckDuckBot）もスナップショットに振り分け、Googlebot と人間のブラウザは振り分けないこと）。BOA-555で /admin/rules が本番で認証なしに開けていた"
     },
     {
       "script": "verify-pit-report-backfill.js",

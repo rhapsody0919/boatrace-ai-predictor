@@ -108,7 +108,26 @@ def test_win_missing_from_reference_is_still_an_error():
         T.quality_gate(metrics(), reference=ref)
 
 
-def test_racecard_is_not_in_targets():
-    """TARGETS に入れると profiles の1着の行が二重になる"""
-    assert T.RACECARD[0] not in [n for n, *_ in T.TARGETS]
-    assert len({ft for _, _, ft, _ in T.TARGETS}) == len(T.TARGETS)
+def test_racecard_models_are_separate_from_targets():
+    """出走表時点の3本は TARGETS と別（profiles は段ごとに着順1〜3を1回ずつ作る）"""
+    rc = [n for n, *_ in T.RACECARD]
+    assert rc == ["win_racecard", "top2_racecard", "top3_racecard"]
+    assert not set(rc) & {n for n, *_ in T.TARGETS}
+    assert sorted(ft for _, _, ft, _ in T.RACECARD) == sorted(ft for _, _, ft, _ in T.TARGETS) == [1, 2, 3]
+    # 追記B: 木の数は展示後の同じ着順と同じ
+    assert [r for *_, r in T.RACECARD] == [r for *_, r in T.TARGETS]
+
+
+def test_top_racecard_not_beating_baseline_fails():
+    m = metrics()
+    m["top3_racecard"] = topk(ci_hi=0.002)
+    g = T.quality_gate(m, reference=None)
+    assert not g["passed"] and any("3着以内（出走表時点）" in r for r in g["reasons"])
+
+
+def test_top_racecard_missing_from_reference_is_skipped():
+    m = metrics()
+    m["top2_racecard"] = topk()
+    ref = {"version": "2026-10-02", "win": 1.20, "top2": 0.50, "top3": 0.56}
+    g = T.quality_gate(m, reference=ref)
+    assert g["passed"] and g["reference"]["deltas"]["top2_racecard"] is None
