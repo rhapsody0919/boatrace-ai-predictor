@@ -18,10 +18,11 @@ const data = JSON.parse(
 export const ANALOGY_V16_RACE = "2026-09-27-20-12";
 
 /** facts・similar・scenario の API を固定の応答に差し替え、機能フラグの内部確認の印を立てる */
-export async function routeAnalogyV16(page) {
-  await page.addInitScript(() =>
-    localStorage.setItem("boatai-user:analogy-finder-preview", "1"),
-  );
+export async function routeAnalogyV16(page, { preview = true } = {}) {
+  if (preview)
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai-user:analogy-finder-preview", "1"),
+    );
   await page.route("**/api/analogy/facts/**", (route) =>
     route.fulfill({ json: data.facts }),
   );
