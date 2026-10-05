@@ -111,3 +111,103 @@ export function hintConditions(avgStByCourse) {
     flat03: Math.max(...c) - Math.min(...c) <= 30,
   };
 }
+
+// ---------------------------------------------------------------- 画面（タブ3）の判定
+
+/** 手がかりの条件ごとに見る形（Python の v16_scenario.HINT_FORM） */
+export const HINT_FORM = {
+  kado4: "kado",
+  kado4_02: "kado",
+  in_slow02: "d1",
+  in_fastest: "d1",
+  d2_slow01: "d2",
+  d3_slow01: "d3",
+  dash03: "dash",
+  flat03: "flat",
+};
+/** ①の型の並び（mae の下に4つ） */
+export const ENTRY_TYPES = ["all", "waku", "mae", "inlost"];
+export const MAE_SUB = ["mae6", "mae5", "mae56", "maeOther"];
+/** 攻める艇（Python の v16_defs.ATTACK_BOAT） */
+export const ATTACK_BOAT = { kado: 4, d3: 4, dash: 4, d2: 3, d1: 2 };
+/** タブ3で割合を出さない件数（spec C-1・C-5）、③で薄くする件数（spec C-4） */
+export const MIN_SCENARIO = 30;
+export const SMALL_ATTACK = 50;
+
+/**
+ * 今日の当てはまる手がかりの行（spec C-2）。率は②の数えるレース（scenario.hints）で数える。
+ * kind: "up"（札を付ける。当てはまった30件以上・率が高い・ぶれ幅が重ならない）／"down"（むしろなりにくい）／
+ * "unclear"（札なしで率だけ）
+ * @param {object} scenarioHints scenario.hints（{course|overall: {条件: {形: {hit:[x,n], miss:[x,n]}}}}）
+ * @param {Record<string, boolean>} todayHits today.hints.course か overall
+ * @param {"course"|"overall"} version
+ * @param {(x:number, n:number) => [number, number]|null} interval Wilson 区間
+ */
+export function hintRows(scenarioHints, todayHits, version, interval) {
+  return HINTS.filter((h) => todayHits?.[h]).map((id) => {
+    const form = HINT_FORM[id];
+    const c = scenarioHints?.[version]?.[id]?.[form];
+    const hit = c?.hit ?? [0, 0];
+    const miss = c?.miss ?? [0, 0];
+    const ph = hit[1] ? hit[0] / hit[1] : null;
+    const pm = miss[1] ? miss[0] / miss[1] : null;
+    let kind = "unclear";
+    if (ph !== null && pm !== null && hit[1] >= MIN_SCENARIO) {
+      const [hl, hh] = interval(hit[0], hit[1]);
+      const [ml, mh] = interval(miss[0], miss[1]);
+      const apart = hl > mh || ml > hh;
+      if (apart) kind = ph > pm ? "up" : "down";
+    }
+    return { id, form, hit, miss, ph, pm, kind };
+  });
+}
+
+/** ②の札: 形ごとに1つ（当てはまったときの率が一番高い "up" の条件。screens「細部の約束」） */
+export function hintBadgeByForm(rows) {
+  const out = {};
+  for (const r of rows) {
+    if (r.kind !== "up") continue;
+    if (!out[r.form] || r.ph > out[r.form].ph) out[r.form] = r;
+  }
+  return out;
+}
+
+/** 6艇の値 → min 順位（大きいほど良い hib。欠損は null） */
+export function minRanks(values, hib) {
+  return values.map((v) => {
+    if (v === null || v === undefined || Number.isNaN(v)) return null;
+    return (
+      1 +
+      values.filter(
+        (o) =>
+          o !== null &&
+          o !== undefined &&
+          !Number.isNaN(o) &&
+          (hib ? o > v : o < v),
+      ).length
+    );
+  });
+}
+
+/** 6艇中の順位 → ③の区分（1〜2位 top・3〜4位 mid・5〜6位 low） */
+export const rankBand = (rank) =>
+  rank === null || rank === undefined
+    ? null
+    : rank <= 2
+      ? "top"
+      : rank <= 4
+        ? "mid"
+        : "low";
+
+/**
+ * 上位と下位の差が2標準誤差を超えるか（spec C-4「この範囲では、上位と下位の差ははっきりしない」の逆）
+ * @param {[number, number]} a
+ * @param {[number, number]} b
+ */
+export function clearDiff(a, b) {
+  if (!a || !b || !a[1] || !b[1]) return false;
+  const p1 = a[0] / a[1];
+  const p2 = b[0] / b[1];
+  const se = Math.sqrt((p1 * (1 - p1)) / a[1] + (p2 * (1 - p2)) / b[1]);
+  return Math.abs(p1 - p2) > 2 * se;
+}

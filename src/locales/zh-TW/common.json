@@ -795,7 +795,26 @@
       "listAllBoats": "各主題（全部艇）",
       "listAllBoatsCompare": "各主題（全部艇。各艇號的數值見上表）",
       "magnitudeNote": "比例是不分有利或不利的「影響大小」。",
-      "compareCaption": "各艇號的影響比例（%，每欄合計100%）。下方「全部艇」是包含2〜5號艇在內、6艇合計的數值。"
+      "compareCaption": "各艇號的影響比例（%，每欄合計100%）。下方「全部艇」是包含2〜5號艇在內、6艇合計的數值。",
+      "layer": {
+        "g1plus": "G1以上",
+        "gradeRound": "{{grade}}的{{round}}",
+        "races": "1號艇級別、1號艇與勝率第一的差距、勝率第一的艇號皆相同的過去比賽",
+        "racesCount": "1號艇級別、1號艇與勝率第一的差距、勝率第一的艇號皆相同的過去比賽{{count}}場",
+        "withKind": "與今天同為「{{kind}}」，{{races}}",
+        "plain": "與今天相同，{{races}}"
+      },
+      "scopeNames": {
+        "allSame": "6艇皆為{{cls}}",
+        "classCount": "{{cls}} {{n}}艇",
+        "selected": "（{{boat}}號艇為{{cls}}）",
+        "combo": "{{where}}、{{combo}}{{selected}}",
+        "national": "全國",
+        "withRound": "{{base}}的{{round}}",
+        "venueAll": "{{venue}}的全部比賽",
+        "venueG1": "{{venue}}的G1",
+        "nationalAll": "全國的全部比賽"
+      }
     }
   },
   "beforeInfo": {

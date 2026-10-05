@@ -76,9 +76,9 @@
 - [ ] T5-4 録画再生の E2E に新しい API が素通しされることの確認
 
 ## T6 共通部品と純粋関数
-- [ ] T6-1 `BoatBadge` を `src/components/race/BoatBadge.jsx` に切り出す（見た目が変わらないことを E2E で確認）
-- [ ] T6-2 `analogyFacts.js`・`analogyScenario.js`・`analogyAggregate.js`・`analogyFormat.js`・`analogyLayer.js`（層の説明文 `describeAnalogyLayer`。BOA-635 と共用）・Wilson 区間と `scripts/maintenance/verify-analogy-facts.js`（ci）。Python の T2-1 と同じ固定データ
-- [ ] T6-3 `src/services/analogyService.js` に3つの取得、`useAnalogyFacts`・`useAnalogySimilar`・`useAnalogyScenario`
+- [x] T6-1 （#1118 で切り出し済み。`src/components/race/BoatBadge.jsx`、クラス名は rol- のまま）`BoatBadge` を `src/components/race/BoatBadge.jsx` に切り出す（見た目が変わらないことを E2E で確認）
+- [x] T6-2 （(d1)。順位・Wilson・判定は Python の固定データ `testdata/v16-ui-cases.json`（`make_v16_ui_cases.py`）と一致。Wilson は既存の `src/utils/wilson.js` に `wilsonInterval` を足した。展開シナリオの画面の判定は `analogyScenario.js` に足した）`analogyFacts.js`・`analogyScenario.js`・`analogyAggregate.js`・`analogyFormat.js`・`analogyLayer.js`（層の説明文 `describeAnalogyLayer`。BOA-635 と共用）・Wilson 区間と `scripts/maintenance/verify-analogy-facts.js`（ci）。Python の T2-1 と同じ固定データ
+- [x] T6-3 （(d1)。フックは `src/hooks/useAnalogyV16.js`。キャッシュは CDN と同じ60秒）`src/services/analogyService.js` に3つの取得、`useAnalogyFacts`・`useAnalogySimilar`・`useAnalogyScenario`
 
 ## T7 画面（screens.md）
 - [ ] T7-1 `AnalogyFinderSection` の作り直しと `AnalogyControls`（時点・着順・タブ、状態の表）

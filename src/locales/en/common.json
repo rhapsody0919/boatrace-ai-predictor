@@ -801,7 +801,26 @@
       "listAllBoats": "By theme (all boats)",
       "listAllBoatsCompare": "By theme (all boats; per-boat values in the table above)",
       "magnitudeNote": "Shares show how strongly each theme mattered, whether it helped or hurt.",
-      "compareCaption": "Share of influence by boat (%; each column adds up to 100%). \"All boats\" below combines all six boats, including boats 2–5."
+      "compareCaption": "Share of influence by boat (%; each column adds up to 100%). \"All boats\" below combines all six boats, including boats 2–5.",
+      "layer": {
+        "g1plus": "G1 or higher",
+        "gradeRound": "{{round}} ({{grade}})",
+        "races": "past races with the same boat-1 class, boat-1 gap to the top win rate, and top-win-rate boat",
+        "racesCount": "{{count}} past races with the same boat-1 class, boat-1 gap to the top win rate, and top-win-rate boat",
+        "withKind": "Same \"{{kind}}\" as today: {{races}}",
+        "plain": "As today, {{races}}"
+      },
+      "scopeNames": {
+        "allSame": "all six {{cls}}",
+        "classCount": "{{n}} × {{cls}}",
+        "selected": " (boat {{boat}} is {{cls}})",
+        "combo": "{{where}} · {{combo}}{{selected}}",
+        "national": "All venues",
+        "withRound": "{{base}}, {{round}}",
+        "venueAll": "All races at {{venue}}",
+        "venueG1": "G1 races at {{venue}}",
+        "nationalAll": "All races, all venues"
+      }
     }
   },
   "beforeInfo": {
