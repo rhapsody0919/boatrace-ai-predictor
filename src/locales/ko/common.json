@@ -351,6 +351,23 @@
       "v3": "🏁 용신 레이더 예상【{{date}}{{venue}} {{raceNo}}R】\n\n모델: {{model}}\n본명: {{topPick}}번 보트\n추천: {{top3}}\n\n이렇게 정확한 예상을 무료로 볼 수 있어서 좋아요✨\n오늘도 적중하길!",
       "v4": "🏁 용신 레이더 예상【{{date}}{{venue}} {{raceNo}}R】\n\n모델: {{model}}\n본명: {{topPick}}번 보트\n추천: {{top3}}\n\n전개 예측으로 보면 이 예상은 믿을 만해 보여요!\n여러분은 어떻게 생각하세요?🤔",
       "v5": "🏁 용신 레이더 예상【{{date}}{{venue}} {{raceNo}}R】\n\n모델: {{model}}\n본명: {{topPick}}번 보트\n추천: {{top3}}\n\n요즘 적중률이 올라가고 있어서 기뻐요😊\nAI 예상을 참고해 보세요!"
+    },
+    "shareTurnHit": {
+      "headAsPredicted": "🌊 전개 예측 적중!【{{date}}{{venue}} {{raceNo}}R】",
+      "headWinner": "🌊 1착 보트가 전개 예측 안에 있었습니다【{{date}}{{venue}} {{raceNo}}R】",
+      "winner": "{{boat}}번 보트가 1착",
+      "winnerFromCourse": "{{boat}}번 보트가 {{course}}코스에서 1착",
+      "prediction": " (AI 예상: {{detail}})",
+      "actual": ", 실제: {{technique}}",
+      "asPredicted": "예상대로의 전개였습니다 ✅",
+      "closingWinner": "용신 레이더에서 전개 예측을 확인하세요",
+      "closing": {
+        "v1": "용신 레이더 전개 예측 적중🎉\nAI 분석력에 놀랐어요!",
+        "v2": "용신 레이더 전개 예측 적중🎉\n무료로 이 정확도는 대단해요!",
+        "v3": "용신 레이더 전개 예측 적중🎉\n데이터 분석의 힘을 실감!",
+        "v4": "용신 레이더 전개 예측 적중🎉\n또 AI 예상이 맞았어요!",
+        "v5": "용신 레이더 전개 예측 적중🎉\n적중률이 만족스러워요!"
+      }
     }
   },
   "home": {

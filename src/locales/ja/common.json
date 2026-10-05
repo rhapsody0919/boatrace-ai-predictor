@@ -921,6 +921,23 @@
       "v3": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n無料でここまで精度の高い予想が見られるのは嬉しい✨\n今日も当たりますように！",
       "v4": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n展開予測から見て、この予想は信頼できそう！\n皆さんはどう思いますか？🤔",
       "v5": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n最近的中率が上がってきてて嬉しい😊\nAIの予想、参考にしてみてください！"
+    },
+    "shareTurnHit": {
+      "headAsPredicted": "🌊 展開予測的中！【{{date}}{{venue}}{{raceNo}}R】",
+      "headWinner": "🌊 1着の艇が的中【{{date}}{{venue}}{{raceNo}}R】",
+      "winner": "{{boat}}号艇が1着",
+      "winnerFromCourse": "{{boat}}号艇が{{course}}コースから1着",
+      "prediction": "（AIの予想: {{detail}}）",
+      "actual": "、実際: {{technique}}",
+      "asPredicted": "予想通りの展開でした ✅",
+      "closingWinner": "龍神レーダーで展開予測をチェック",
+      "closing": {
+        "v1": "龍神レーダーで展開予測的中🎉\nAIの分析力に驚いてます！",
+        "v2": "龍神レーダーで展開予測的中🎉\n無料でこの精度はすごい！",
+        "v3": "龍神レーダーで展開予測的中🎉\nデータ分析の力を実感！",
+        "v4": "龍神レーダーで展開予測的中🎉\nまたAI予想が当たった！",
+        "v5": "龍神レーダーで展開予測的中🎉\n的中率の高さに満足してます！"
+      }
     }
   },
   "home": {
