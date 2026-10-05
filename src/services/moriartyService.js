@@ -49,8 +49,8 @@ export async function getMoriartyStats(daysWindow = null) {
       query = query.gte("date", cutoff.toISOString().split("T")[0]);
     }
 
-    const { data, error } = await query;
-    if (error || !data || data.length === 0) return {};
+    const { data } = await query;
+    if (!data || data.length === 0) return {};
 
     const operation_days = data.length;
     const total_predictions = data.reduce(
@@ -137,7 +137,7 @@ export async function getMoriartyRecommendations(date) {
   if (!supabase) return [];
   try {
     const targetDate = date || jstToday();
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("bet_recommendations")
       .select(
         "race_id, expected_value, bet_fraction, actual_hit, actual_payout, reasons",
@@ -147,7 +147,7 @@ export async function getMoriartyRecommendations(date) {
       .like("race_id", `${targetDate}%`)
       .order("expected_value", { ascending: false });
 
-    if (error || !data) return [];
+    if (!data) return [];
 
     return data.map((row) => {
       const parts = (row.race_id || "").split("-");
@@ -177,7 +177,7 @@ export async function getMoriartyROIHistory(daysWindow = 30) {
     const cutoff = new Date(Date.now() - daysWindow * 24 * 60 * 60 * 1000);
     const cutoffStr = cutoff.toISOString().split("T")[0];
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("model_performance_daily")
       .select(
         "date, total_predictions, win_hits, investment, payout_win, recovery_rate_win",
@@ -186,7 +186,7 @@ export async function getMoriartyROIHistory(daysWindow = 30) {
       .gte("date", cutoffStr)
       .order("date", { ascending: true });
 
-    if (error || !data || data.length === 0) return [];
+    if (!data || data.length === 0) return [];
 
     let cumInvestment = 0;
     let cumPayout = 0;
@@ -219,14 +219,14 @@ export async function getMoriartyVenueBreakdown(daysWindow = 30) {
     const cutoff = new Date(Date.now() - daysWindow * 24 * 60 * 60 * 1000);
     const cutoffStr = cutoff.toISOString().split("T")[0];
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("model_performance_daily")
       .select("date, by_venue")
       .eq("model_id", "moriarty")
       .gte("date", cutoffStr)
       .order("date", { ascending: true });
 
-    if (error || !data || data.length === 0) return [];
+    if (!data || data.length === 0) return [];
 
     const venueAgg = {};
     for (const row of data) {
@@ -264,14 +264,14 @@ export async function getMoriartyCalibrationData() {
   try {
     // skip 行は actual_hit を強制的に false にしているため、実際に賭けた
     // 推奨（非 skip）だけでキャリブレーションを評価する
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("bet_recommendations")
       .select("expected_value, actual_hit")
       .eq("model_id", "moriarty")
       .neq("recommendation", "skip")
       .not("actual_hit", "is", null);
 
-    if (error || !data || data.length === 0) return [];
+    if (!data || data.length === 0) return [];
 
     const buckets = {};
     for (const row of data) {
