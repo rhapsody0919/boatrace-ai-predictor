@@ -7,7 +7,8 @@
  *   shadow              並べ直しの計算だけ（Storage・snapshot へ書かない）
  *   live                書く
  *
- * cron式（vercel.json）は UTC。`*\/2 23,0-12 * * *` ＝ JST 8:00〜21:58 の2分ごと（最終レースの締切は 21 時前後）
+ * cron式（vercel.json）は UTC。`*\/2 21-23,0-14 * * *` ＝ JST 6:00〜23:58 の2分ごと。レースが無い時間は対象0件ですぐ終わる。
+ * 死活監視（scrape-monitor、常駐型は25分）が JST 7:25〜24:00 に効くので、その帯を覆う（race_status と同じ）
  *
  * maxDuration は、レジストリ（analogy_v16_exhibition.maxDurationSec）と同じ値をリテラルで書く。
  */

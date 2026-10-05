@@ -12,7 +12,7 @@
     },
     {
       "path": "/api/cron/analogy-exhibition",
-      "schedule": "*/2 23,0-12 * * *"
+      "schedule": "*/2 21-23,0-14 * * *"
     },
     {
       "path": "/api/cron/race-status",

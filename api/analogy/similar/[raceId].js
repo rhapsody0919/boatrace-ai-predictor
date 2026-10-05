@@ -14,7 +14,13 @@ import {
 
 export const config = { runtime: "edge" };
 
-export default createHandler(async ({ raceId, stage, snapshot }) => {
+export default createHandler(async ({ raceId, stage, state, snapshot }) => {
+  // 層が0件はタブ2だけの状態（plan の status の表）。欠場（absent）は共通の判定のまま
+  if (
+    state.racecard?.status === "empty_layer" &&
+    state.exhibition?.status !== "absent"
+  )
+    return { status: "empty_layer", n_layer: 0 };
   if (!snapshot || snapshot.status !== "ok")
     return { n_layer: snapshot?.n_layer ?? null };
   const kind =
