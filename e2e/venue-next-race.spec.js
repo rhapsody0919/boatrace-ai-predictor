@@ -279,7 +279,8 @@ test.describe("差し込んだ会場カードの折りたたみ（ユーザー�
       .getByTestId("venue-next-race-cards")
       .locator("details.collapsible-section")
       .first();
-    await first.locator("summary").click();
+    // カードの中に「もっと詳しく」の折りたたみ（BOA-269）があるので、直下の見出しだけを押す
+    await first.locator(":scope > summary").click();
     expect(await first.evaluate((e) => e.open)).toBe(true);
     await expect(first.locator(".venue-hud-row")).toHaveCount(6);
     await page.reload();

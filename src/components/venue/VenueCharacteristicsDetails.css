@@ -1,0 +1,200 @@
+/* 会場特徴カードの「もっと詳しく」（BOA-269）。色はトークンだけを使う */
+.venue-details {
+  margin-top: var(--spacing-3);
+  border-top: 1px solid var(--border-hairline);
+  padding-top: var(--spacing-2);
+}
+
+.venue-details__summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: 44px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--brand-accent-primary);
+}
+
+.venue-details__summary::-webkit-details-marker {
+  display: none;
+}
+
+.venue-details__summary::after {
+  content: "▸";
+  font-size: var(--font-size-xs);
+}
+
+.venue-details[open] > .venue-details__summary::after {
+  content: "▾";
+}
+
+.venue-details__summary:focus-visible {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: 2px;
+}
+
+.venue-details__body {
+  display: grid;
+  gap: var(--spacing-4);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 768px) {
+  .venue-details__body {
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--spacing-6);
+  }
+
+  .venue-details__link {
+    grid-column: 1 / -1;
+  }
+}
+
+.venue-details h3 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-1) 0;
+}
+
+.venue-details__sub {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin: 0 0 var(--spacing-2) 0;
+  line-height: 1.5;
+}
+
+.venue-details__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.venue-details__table th,
+.venue-details__table td {
+  padding: var(--spacing-1) var(--spacing-1);
+  border-bottom: 1px solid var(--border-hairline);
+  text-align: right;
+}
+
+.venue-details__table th:first-child,
+.venue-details__table td:first-child {
+  text-align: left;
+}
+
+.venue-details__table th {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+}
+
+.venue-details-lane {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+}
+
+.venue-details__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1) var(--spacing-3);
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--spacing-2) 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.venue-details__legend li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.venue-details__legend .venue-details__swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.venue-details__techniques {
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+.venue-details__technique-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  column-gap: var(--spacing-2);
+  row-gap: 2px;
+  align-items: center;
+}
+
+.venue-details__stack {
+  display: flex;
+  height: 16px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--border-hairline);
+}
+
+.venue-details__stack .venue-details__swatch {
+  display: block;
+  height: 100%;
+}
+
+.venue-details__count {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.venue-details__count.is-small-sample {
+  color: var(--color-warning-text);
+}
+
+.venue-details__breakdown {
+  grid-column: 2 / -1;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.venue-details__swatch.is-nige {
+  background: var(--technique-nige);
+}
+.venue-details__swatch.is-sashi {
+  background: var(--technique-sashi);
+}
+.venue-details__swatch.is-makuri {
+  background: var(--technique-makuri);
+}
+.venue-details__swatch.is-makurizashi {
+  background: var(--technique-makurizashi);
+}
+.venue-details__swatch.is-nuki {
+  background: var(--technique-nuki);
+}
+.venue-details__swatch.is-megumare,
+.venue-details__swatch.is-other {
+  background: var(--technique-megumare);
+}
+
+.venue-details__link {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.venue-details__link a {
+  color: var(--color-info-text);
+}
