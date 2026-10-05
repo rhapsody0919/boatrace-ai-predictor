@@ -119,12 +119,48 @@ def test_round_unknown_stage_is_none():
     assert F.round_from_stage(np.nan) is None
 
 
-def test_round_from_kb_stage_kind():
-    assert F.round_from_kb_kind("qualifier") == "yosen"
-    assert F.round_from_kb_kind("semifinal") == "junyu"
-    assert F.round_from_kb_kind("final") == "yusho"
-    assert F.round_from_kb_kind("other") == "other"
-    assert F.round_from_kb_kind(None) is None
+def test_round_from_kb_name_empty_uses_stage_kind():
+    assert F.round_from_kb_kind(None, "qualifier") == "yosen"
+    assert F.round_from_kb_kind(np.nan, "semifinal") == "junyu"
+    assert F.round_from_kb_kind("", "final") == "yusho"
+    assert F.round_from_kb_kind(None, "other") == "other"
+    assert F.round_from_kb_kind(None, None) is None
+
+
+def test_round_from_kb_name_first_then_stage_kind():
+    """優勝戦の判定 v2: 長期は名前を先に見て、決まらないときだけ stage_kind（t1_1_stage_rule.py の kb_new）"""
+    # 準優進出戦は stage_kind が semifinal でも準優勝戦にしない（Q-C(3)）
+    assert F.round_from_kb_kind("準優進出戦", "semifinal") == "other"
+    # 名前で準優勝戦・優勝戦が決まれば stage_kind が other でもそちら
+    assert F.round_from_kb_kind("準決勝戦", "other") == "junyu"
+    assert F.round_from_kb_kind("団体・優勝", "other") == "yusho"
+    assert F.round_from_kb_kind("決勝戦", "other") == "yusho"
+    # 名前で決まらなければ stage_kind（優勝戦・準優勝戦も stage_kind で拾う）
+    assert F.round_from_kb_kind("一般", "final") == "yusho"
+    assert F.round_from_kb_kind("準優勝", "semifinal") == "junyu"
+    assert F.round_from_kb_kind("予選", "qualifier") == "yosen"
+    assert F.round_from_kb_kind("一般", "other") == "other"
+
+
+STAGE_RULE_V2 = json.loads((Path(__file__).resolve().parents[1] / "testdata"
+                            / "stage-rule-v2-cases.json").read_text())
+
+
+def test_stage_category_v2_matches_t1_1_cases():
+    """#1134 の T1-1 の一致検査の82件（名前だけの判定）。JS（raceStageConfig.js）との比較は v16 T1-1 で足す"""
+    cases = STAGE_RULE_V2["cases"]
+    assert len(cases) == 82
+    wrong = [(c["stage"], F.stage_category(c["stage"]), c["expected_category"]) for c in cases
+             if F.stage_category(c["stage"]) != c["expected_category"]]
+    assert wrong == []
+
+
+def test_round_v1_keeps_old_rule_for_records():
+    # 記録用の旧定義: 準決・決勝戦・〜優 は優勝戦・準優勝戦にならない
+    assert F.round_from_stage_v1("準決勝戦") == "other"
+    assert F.round_from_stage_v1("決勝戦") == "other"
+    assert F.round_from_stage("決勝戦") == "yusho"
+    assert F.round_from_stage_v1("優勝戦") == "yusho"
 
 
 # ---------------------------------------------------------------- ラベル・完全レース

@@ -118,15 +118,6 @@ def test_parity_fixture_contrib_sums_to_raw_score(models):
     assert [b["features"] for b in r0["racecard_features"]] == r0["expected"]["win_racecard"]["features"]
 
 
-def test_centered_theme_shares_sum_to_one(models):
-    df, win, _ = models
-    s = df.iloc[:60]
-    sh = P.centered_theme_shares(win.predict(s[win.feature_name()].astype("float32"), pred_contrib=True),
-                                 win.feature_name())
-    assert sh.shape == (10, len(THEMES))
-    assert sh.sum(axis=1) == pytest.approx(np.ones(10))
-
-
 def test_exhibition_effect_masks(models):
     df, _, _ = models
     n = df["race_id"].nunique()
@@ -156,11 +147,24 @@ def test_definition_record():
     assert r["branch_map_size"] == 2
 
 
-def test_fan_visible_record_shapes(models):
+def test_stage_profile_record(models):
+    """事前登録5 の記録2（追記C）: 段ごとの全国の割合、2段の比較、向きの内訳"""
+    import profiles as PR
     df, win, rc = models
-    rec = P.fan_visible_record(df, win, rc, [rc], n=30)
-    assert rec["n_races"] == 30 and rec["scale"] == "sample30"
-    assert set(rec["shares"]) == {"exhibition", "racecard"}
-    assert rec["racecard_reseed"][0]["mean_abs_diff"] == pytest.approx(0.0)
-    assert sum(rec["exhibition_pushed_boat"]["boat_number_counts"].values()) == 30
-    assert 0 <= rec["chip_emphasis_rate"]["racecard"] <= 1
+    keys = df[["race_id", "race_date", "venue_code", "boat_number"]].assign(grade="G1", round="yosen")
+    keys["boat_number"] = keys["boat_number"].astype(int)
+    rows = []
+    for stage, m in (("exhibition", win), ("racecard", rc)):
+        c = m.predict(df[m.feature_name()].astype("float32"), pred_contrib=True)
+        rows += PR.slice_profiles(keys, [c], m.feature_name(), THEMES, 1, stage=stage, values=df)
+    rec = P.stage_profile_record(rows)
+    assert set(rec["national"]) == {f"{s}|1|{b}" for s in ("exhibition", "racecard") for b in range(1, 7)}
+    assert "weatherWater" in rec["national"]["exhibition|1|2"]["shares"]
+    assert "weatherWater" not in rec["national"]["racecard|1|2"]["shares"]
+    b = rec["between_stages"]["1|2"]
+    assert "exhibitionTime" not in b["top1_group_common_racecard"]
+    assert 0 <= b["l1_common_groups_renormalized"] <= 2
+    d = rec["directions"]["exhibition|1"]
+    # 6艇 × 数値の向きのグループ（boat1 は 2〜6号艇で varies）
+    assert d["varies"] == 5
+    assert d["category_none"] + d["category_some"] + d["category_empty"] == 6 * 4

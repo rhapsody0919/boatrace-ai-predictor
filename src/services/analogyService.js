@@ -10,6 +10,7 @@
  */
 import { supabase } from "./supabaseClient";
 import {
+  DEFAULT_STAGE,
   resolveContributionSlice,
   sliceCandidates,
 } from "../utils/analogyContribution.js";
@@ -18,8 +19,10 @@ const cache = new Map();
 const UNAVAILABLE_TTL_MS = 10 * 60 * 1000;
 let unavailableUntil = 0;
 
-const contributionKey = ({ venue, grade, round, target }) =>
-  `contribution|${venue}|${grade}|${round}|${target}`;
+const withStage = (params) => ({ stage: DEFAULT_STAGE, ...params });
+
+const contributionKey = ({ venue, grade, round, target, stage }) =>
+  `contribution|${stage}|${venue}|${grade}|${round}|${target}`;
 
 async function fromApi(params) {
   const q = new URLSearchParams({
@@ -27,6 +30,7 @@ async function fromApi(params) {
     grade: params.grade,
     round: params.round,
     target: String(params.target),
+    stage: params.stage,
   });
   const res = await fetch(`/api/analogy/contribution?${q}`);
   if (!res.ok) throw new Error(`寄与度の API が HTTP ${res.status}`);
@@ -58,9 +62,10 @@ async function fromSupabase(params) {
   const { data: rows } = await supabase
     .from("analogy_contribution_profiles")
     .select(
-      "venue_code,grade,round,boat_number,n_boats,n_races,period_from,period_to,shares,share_sd,breakdown",
+      "venue_code,grade,round,boat_number,n_boats,n_races,period_from,period_to,shares,share_sd,breakdown,frame_ratio",
     )
     .eq("model_version", model.model_version)
+    .eq("stage", params.stage)
     .eq("finish_target", params.target)
     .in("venue_code", uniq(cands.map((c) => c.venue)))
     .in("grade", uniq(cands.map((c) => c.grade)))
@@ -68,7 +73,7 @@ async function fromSupabase(params) {
   const slice = resolveContributionSlice(rows, params);
   if (!slice)
     throw new Error(
-      `版 ${model.model_version} に target=${params.target} の行がありません`,
+      `版 ${model.model_version} に stage=${params.stage} target=${params.target} の行がありません`,
     );
   return {
     available: true,
@@ -82,10 +87,12 @@ async function fromSupabase(params) {
 }
 
 /**
- * @param {{venue:number, grade:string, round:string, target:1|2|3}} params
+ * @param {{venue:number, grade:string, round:string, target:1|2|3, stage?:"exhibition"|"racecard"}} input
+ *   stage は省略時 exhibition（展示後のモデルの集計）
  * @returns {Promise<object>} available=false なら学習前（節を出さない）。失敗は例外
  */
-export async function getAnalogyContribution(params) {
+export async function getAnalogyContribution(input) {
+  const params = withStage(input);
   const key = contributionKey(params);
   if (cache.has(key)) return cache.get(key);
   // 学習前の判定は版全体についてなので、条件を問わず共有する
