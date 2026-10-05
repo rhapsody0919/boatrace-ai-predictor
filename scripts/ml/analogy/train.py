@@ -73,8 +73,8 @@ TARGET_LABEL = {"win": "1着", "top2": "2着以内", "top3": "3着以内", "win_
                 "top2_racecard": "2着以内（出走表時点）", "top3_racecard": "3着以内（出走表時点）"}
 # 参照版に無くても止めないモデル（この版で足したもの。参照版を更新するまでは比較を飛ばす）
 OPTIONAL_REFERENCE = {"win_racecard", "top2_racecard", "top3_racecard"}
-# 参照版の学習の終わりからこの日数を過ぎたら、更新を促す（参照版は見ていないデータが増えるほど
-# 評価が自然に悪くなり、「参照版より悪化しない」が実質緩むため）
+# 参照版の学習の終わりから、今回の学習の終わりまでがこの日数を過ぎたら、更新を促す（参照版は見ていない
+# データが増えるほど評価が自然に悪くなり、「参照版より悪化しない」が実質緩むため）
 REFERENCE_MAX_AGE_DAYS = 183
 # 日単位のブートストラップの回数（シェアの SD）
 N_BOOT = int(os.environ.get("ANALOGY_N_BOOT", "100"))
@@ -201,6 +201,13 @@ def evaluate_topk_races(m, train, test, label) -> tuple[dict, np.ndarray]:
              "paired_race_logloss_model_minus_baseline": M.paired_ci(ll - llb, days)}, ll)
 
 
+def reference_age_days(ref_fit_end, current_fit_end) -> int:
+    """参照版がどれだけ古いか: 参照版の学習期間の終わりから、今回の学習期間の終わりまでの日数。
+    以前は今回の test の最終日までで測っていたので、test（12か月）と温度合わせ（3か月）の分、同じ週に学習した
+    版でも約456日になり、REFERENCE_MAX_AGE_DAYS を必ず超えて毎週警告が出ていた（版 2026-10-06 の学習で判明）"""
+    return int((pd.Timestamp(current_fit_end) - pd.Timestamp(ref_fit_end)).days)
+
+
 def reference_logloss(train: pd.DataFrame, temp: pd.DataFrame, test: pd.DataFrame) -> dict | None:
     """参照版のモデルを、今回と同じ test で評価し直す。参照版が決まっていなければ None（初回）。
     決まっているのにモデルが無いのは異常（比較を黙って省かない）なので失敗させる。"""
@@ -211,8 +218,9 @@ def reference_logloss(train: pd.DataFrame, temp: pd.DataFrame, test: pd.DataFram
     out = {"version": version}
     meta_path = REFERENCE_DIR / "train_meta.json"
     if meta_path.exists():
-        fit_end = json.loads(meta_path.read_text())["metrics"]["periods"]["fit"][1]
-        out["age_days"] = int((test["race_date"].max() - pd.Timestamp(fit_end)).days)
+        ref_fit_end = json.loads(meta_path.read_text())["metrics"]["periods"]["fit"][1]
+        # 今回の学習期間の終わり＝温度合わせの期間の前日（split の規則）
+        out["age_days"] = reference_age_days(ref_fit_end, temp["race_date"].min() - pd.Timedelta(days=1))
     for name, label, _, _ in TARGETS + RACECARD:
         path = REFERENCE_DIR / f"model_{name}.txt"
         if not path.exists() and name in OPTIONAL_REFERENCE:
