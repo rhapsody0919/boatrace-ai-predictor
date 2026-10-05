@@ -697,7 +697,7 @@
     {
       "script": "verify-analogy-facts.js",
       "tier": "ci",
-      "guards": "アナロジー・ファインダー v16（BOA-271）の定義の固定データ。優勝戦・準優勝戦の判定 v2 が固定の82件（scripts/ml/analogy/testdata/stage-rule-v2-cases.json）と一致し、サイトのバッジ（getRaceStageKey）と今節の得点の除外（seriesPoints.js の classifyStage）が同じ判定に従うこと"
+      "guards": "アナロジー・ファインダー v16（BOA-271）の定義の固定データ。優勝戦・準優勝戦の判定 v2 が固定の82件（scripts/ml/analogy/testdata/stage-rule-v2-cases.json）と一致し、サイトのバッジ（getRaceStageKey）と今節の得点の除外（seriesPoints.js の classifyStage）が同じ判定に従うこと。展示後の類似レースの並べ直し（src/utils/analogySimilarRerank.js）が Python の展示後の厳密な並び（testdata/v16-rerank.json）と順位で完全に一致すること"
     },
     {
       "script": "verify-analogy-v16-snapshots-migration.js",

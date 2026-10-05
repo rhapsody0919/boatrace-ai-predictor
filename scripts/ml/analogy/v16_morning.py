@@ -416,8 +416,9 @@ def main():
         })
         write_local(out, f"similar/{rid}.json", {
             "race_id": rid, "candidates": [F.int_to_rid(int(races["race_id"].iat[j])) for j in idx],
+            "n_layer": n_layer, "lambda_racecard": info["lambda"],
             "d2_racecard": [round(float(x), 6) for x in d2], "venue_match": [bool(venue[j] == venue[i]) for j in idx],
-            "exhibition": exh_header | {"values": np.round(Xe[idx], 4).tolist()},
+            "exhibition": exh_header | {"values": np.round(Xe[idx], 6).tolist()},
         })
         lay = prl.loc[prl.index.isin(races["race_id"][lm]) & prl["layer_ok"]].sort_values(
             ["race_date", "race_id"], ascending=False)

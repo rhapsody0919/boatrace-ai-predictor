@@ -1,0 +1,84 @@
+/**
+ * アナロジー・ファインダー v16 の類似レースを、展示の後に並べ直す（BOA-271 tasks T4-1。plan「展示後の段」）。純粋関数。
+ *
+ * 朝のバッチ（scripts/ml/analogy/v16_morning.py）が、出走表の時点の距離で選んだ候補（層の中の近い順に最大
+ * 10,000件）の候補ファイルを作る。展示後の表し方（knn8）は、出走表の表し方（knn7）に「展示・天候・風・波」の
+ * 列を足したもので、標準化・カテゴリ・重みは同じなので、
+ *   展示後の距離² ＝ 出走表の距離²（d2_racecard、会場のペナルティ前）＋ 足した列の距離² ＋ λ_展示×（会場が違う）
+ * になる。足した列の候補の値は候補ファイルに重み付きで入っているので、今日の展示の値を同じ式で重み付けすれば
+ * 並べ直せる。
+ *
+ * float32 の約束: Python は z 化と重み付けを float32 で行う（v16_similar.build_z・weight_vector）ので、
+ * 今日の値も Math.fround でそろえる。Python との一致は scripts/ml/analogy/testdata/v16-rerank.json で検査する。
+ */
+
+const f32 = Math.fround;
+
+/** 欠損（null・undefined・NaN）→ NaN */
+const num = (v) =>
+  v === null || v === undefined || Number.isNaN(Number(v)) ? NaN : Number(v);
+
+/**
+ * 今日の展示後の値を、候補ファイルの列（exhibition.columns）と同じ並びの重み付きの値にする
+ * @param {{columns: {feature:string, slot:number, kind:string, cat?:number}[], weights:number[],
+ *   norm: Record<string, {mean:number, sd:number}>}} header 候補ファイルの exhibition
+ * @param {{boats: Record<string, (number|null)[]>, race: Record<string, number|null>}} today
+ *   boats は exh_time・exh_time_diff・exh_time_rank の艇番順の値、race は weather_code・wind_x・wind_y・
+ *   wind_speed・wave_height（src/utils/analogyRaceFeatures.js の buildLiveFeatures と同じ値）
+ * @returns {number[]}
+ */
+export function exhibitionVector(header, today) {
+  return header.columns.map((col, j) => {
+    const w = f32(header.weights[j]);
+    if (col.kind === "race_cat") {
+      const v = num(today.race[col.feature]);
+      const code = Number.isNaN(v) ? -1 : v;
+      return code === col.cat ? w : 0;
+    }
+    const raw =
+      col.kind === "boat_num"
+        ? num(today.boats[col.feature]?.[col.slot - 1])
+        : num(today.race[col.feature]);
+    const { mean, sd } = header.norm[col.feature];
+    const z = f32(f32(f32(raw) - f32(mean)) / f32(sd));
+    return Number.isNaN(z) ? 0 : f32(z * w);
+  });
+}
+
+/**
+ * 候補を展示後の距離で並べ直し、上位 k 件を返す。
+ * exact: 候補の外のレースが上位 k 件に入りえないことが言えるか。候補が層の全件なら必ず厳密。そうでなければ、
+ *   候補の外のレースの展示後の距離² ≥ 出走表の距離²（ペナルティ込み）≥ 候補の最後の出走表の距離²（ペナルティ込み）
+ *   から λ の差の分を引いた値、を下限として、それが k 件目の展示後の距離²以上なら厳密
+ * @param {object} file 候補ファイル（similar/{race_id}.json）
+ * @param {object} today exhibitionVector の today
+ * @param {number} [k]
+ * @returns {{neighbors: {race_id:string, d2:number}[], exact: boolean}}
+ */
+export function rerankSimilar(file, today, k = 800) {
+  const ex = file.exhibition;
+  const q = exhibitionVector(ex, today);
+  const lam = ex.lambda;
+  const scored = file.candidates.map((race_id, c) => {
+    const v = ex.values[c];
+    let d2 = file.d2_racecard[c];
+    for (let j = 0; j < q.length; j++) d2 += (v[j] - q[j]) ** 2;
+    if (!file.venue_match[c]) d2 += lam;
+    return { race_id, d2, c };
+  });
+  scored.sort((a, b) => a.d2 - b.d2 || a.c - b.c);
+  const neighbors = scored
+    .slice(0, k)
+    .map(({ race_id, d2 }) => ({ race_id, d2 }));
+  const n = file.candidates.length;
+  let exact = n >= file.n_layer;
+  if (!exact) {
+    const last = n - 1;
+    const lastRacecard =
+      file.d2_racecard[last] +
+      (file.venue_match[last] ? 0 : file.lambda_racecard);
+    const bound = lastRacecard - Math.max(0, file.lambda_racecard - lam);
+    exact = bound >= neighbors[neighbors.length - 1].d2;
+  }
+  return { neighbors, exact };
+}
