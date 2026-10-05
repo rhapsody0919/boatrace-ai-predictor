@@ -1707,13 +1707,13 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
     await expect(g.getByRole("button", { name: "3着以内" })).toBeVisible();
   });
 
-  test("[screens S-1 2] タブは3つで、既定は「来る艇の条件」", async ({
+  test("[screens S-1 2] タブは3つで、既定は「差がつく材料」", async ({
     page,
   }) => {
     await mockApis(page);
     const section = await openSection(page);
     await expect(section.getByRole("tablist").getByRole("tab")).toHaveCount(3);
-    await expect(tab(section, "来る艇の条件")).toHaveAttribute(
+    await expect(tab(section, "差がつく材料")).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -1753,7 +1753,7 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
     await openTab(section, "類似レース");
     expect(page.url()).toBe(urlBefore);
     const again = await openSection(page);
-    await expect(tab(again, "来る艇の条件")).toHaveAttribute(
+    await expect(tab(again, "差がつく材料")).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -1816,10 +1816,10 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
 });
 
 // ======================================================================
-// タブ1 来る艇の条件（FR-A・FR-E）
+// タブ1 差がつく材料（FR-A・FR-E）
 // ======================================================================
 
-test.describe("アナロジー・ファインダー: 来る艇の条件", () => {
+test.describe("アナロジー・ファインダー: 差がつく材料", () => {
   test("[spec FR-A A-1] 見出しは「1号艇が1着になったのは、どんなとき？」で、艇番の既定は1", async ({
     page,
   }) => {
@@ -3384,7 +3384,7 @@ test.describe("アナロジー・ファインダー: 展開シナリオ", () => 
     ).toBeVisible();
   });
 
-  test("[spec C-5 脚注] 返還レースを除くので来る艇の条件の件数とは合わない旨が出る", async ({
+  test("[spec C-5 脚注] 返還レースを除くので差がつく材料の件数とは合わない旨が出る", async ({
     page,
   }) => {
     await mockApis(page);
@@ -3397,7 +3397,7 @@ test.describe("アナロジー・ファインダー: 展開シナリオ", () => 
     ).toBeVisible();
     await expect(
       panel(section).getByText(
-        /返還（F・L・欠場）があったレース[\d,]+件を除くので、『来る艇の条件』の件数とは合わない/,
+        /返還（F・L・欠場）があったレース[\d,]+件を除くので、『差がつく材料』の件数とは合わない/,
       ),
     ).toBeVisible();
   });

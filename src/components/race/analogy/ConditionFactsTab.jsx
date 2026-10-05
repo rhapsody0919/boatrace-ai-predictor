@@ -33,7 +33,7 @@ const k = "aiPredictionTab.analogy.facts";
 const FACT_SCOPES = ["VC", "NC", "NCR", "VA"];
 
 /**
- * 来る艇の条件（タブ1、spec FR-A・FR-E、screens S-1a）
+ * 差がつく材料（タブ1、spec FR-A・FR-E、screens S-1a）
  * @param {{data: object, stage: "racecard"|"exhibition", target: 1|2|3}} props data は facts の応答
  */
 export default function ConditionFactsTab({ data, stage, target }) {

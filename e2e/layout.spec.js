@@ -814,7 +814,7 @@ test.describe("レイアウト: AI予想タブのアナロジー・ファイン�
     expectNoWastedGrids(await inspectGrids(page));
   };
 
-  test("来る艇の条件: 比べる艇と折りたたみを開いても横スクロールが出ない", async ({
+  test("差がつく材料: 比べる艇と折りたたみを開いても横スクロールが出ない", async ({
     page,
   }) => {
     const section = await openSection(page);

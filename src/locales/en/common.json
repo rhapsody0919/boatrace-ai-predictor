@@ -831,7 +831,7 @@
       },
       "tabs": {
         "label": "View",
-        "facts": "Who finishes, and when",
+        "facts": "Key factors",
         "similar": "Similar races",
         "scenario": "Race scenarios"
       },
@@ -1374,7 +1374,7 @@
       },
       "sources": {
         "summary": "Items used (which numbers these come from)",
-        "facts": "Who finishes, and when",
+        "facts": "Key factors",
         "factsItems": "Items: avg. finish points this meet (to yesterday), national win rate, local win rate, 1st-place rate (last 30 races), motor top-2 rate, boat top-2 rate, avg. ST (last 30 races), exhibition time (after the exhibition only). National win rate, local win rate, motor top-2 rate and boat top-2 rate are race card values; exhibition time is from pre-race info. 1st-place rate (last 30 races), avg. ST (last 30 races) and meet finish points are calculated from the racer's past results (all up to yesterday)",
         "factsFinish": "Finish: 1st, top 2, top 3, counted from past race results",
         "factsWind": "Today's wind and waves: wind speed and wave height (values at the exhibition). Wind bands are 0–1 m / 2–3 m / 4–5 m / 6 m+ (different from the wind bands for similar races). At venues where wave height carries information separate from wind speed (correlation below 0.9 in past races at the venue), races are also grouped by wave height (0–2 cm / 3–5 cm / 6 cm+), falling back to wind only if today's group has fewer than 300 races. At other venues wave height is recorded at almost the same value as wind speed, so races are grouped by wind only",
@@ -1636,7 +1636,7 @@
         "payout": "Trifecta ¥{{yen}}",
         "entryLabel": "Entry {{e}}",
         "slitLabel": "Slit: {{forms}}",
-        "foot": "These are counted shares, not necessarily causes. The slit shape is only known after the race, so treat it as a \"what if\" reference. {{n}} races with refunds (F, L, withdrawal) are excluded, so counts do not match \"Who finishes, and when\" (the excluded count also includes races with no 3rd place or unknown entry courses)",
+        "foot": "These are counted shares, not necessarily causes. The slit shape is only known after the race, so treat it as a \"what if\" reference. {{n}} races with refunds (F, L, withdrawal) are excluded, so counts do not match \"Key factors\" (the excluded count also includes races with no 3rd place or unknown entry courses)",
         "attackerName": "{{boat}} ({{role}}). ",
         "withParen": "{{core}} ({{paren}})",
         "hintPicA1": "In all-A1 races, most boats sit to the right. ",
