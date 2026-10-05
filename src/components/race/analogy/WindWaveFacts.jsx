@@ -42,9 +42,7 @@ export default function WindWaveFacts({
           : t(`${k}.headingWind`, { wind, wave })}
       </h3>
       <p className="af-sub">{t(`${k}.sub`, { venue: venueName })}</p>
-      {view.mode === "wind" && !view.waveVenue && (
-        <p className="af-sub">{t(`${k}.windOnly`)}</p>
-      )}
+      {view.sameAsWind && <p className="af-sub">{t(`${k}.windOnly`)}</p>}
       {view.mode === "waveFew" && (
         <p className="af-sub">
           {t(`${k}.waveFew`, { n: fmtCount(view.waveN) })}

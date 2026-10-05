@@ -556,15 +556,20 @@ check(
 );
 check(
   "風・波: 波＝風の会場は「波高は風速とほぼ同じ」の注記を出す",
-  windWaveView(va(false, 9999), exh).waveVenue,
-  false,
+  windWaveView(va(false, 9999), exh).sameAsWind,
+  true,
 );
 check(
   "風・波: 波で分ける会場でも今日の波高が無ければ風だけ・注記は出さない",
-  (({ mode, waveVenue }) => ({ mode, waveVenue }))(
+  (({ mode, sameAsWind }) => ({ mode, sameAsWind }))(
     windWaveView(va(true, 500), { wind_speed: 3 }),
   ),
-  { mode: "wind", waveVenue: true },
+  { mode: "wind", sameAsWind: false },
+);
+check(
+  "風・波: Q-F3 より前の集計（wave_mode 無し）は注記を出さない",
+  windWaveView({ wind: { "2-3": pair(10) } }, exh).sameAsWind,
+  false,
 );
 check(
   "風・波: 今日の風が無ければ出さない",

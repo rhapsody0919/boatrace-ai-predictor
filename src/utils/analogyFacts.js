@@ -268,11 +268,12 @@ export const MIN_WIND_WAVE = 300;
  * 今日の風・波の欄の数え方（spec A-9、2026-10-05 ユーザー決定 Q-F3）
  * - "wave": 波高が風速と別の情報を持つ会場（facts の VA の wave_mode.use_wave）で、今日の風×波の区分が300件以上
  * - "waveFew": 同じ会場だが、今日の風×波の区分が300件未満なので風だけで数える（waveN にその件数）
- * - "wind": 波高が風速とほぼ同じ値で記録される会場（風だけで数える）。waveVenue は、波でも分ける会場だが今日の波高が
- *   無い・集計が古いために風だけで数えたとき true（「波高は風速とほぼ同じ」の注記を出さない）
+ * - "wind": 風だけで数える。sameAsWind は、集計が「この会場の波高は風速とほぼ同じ値」と判定したとき（wave_mode が
+ *   あって use_wave=false）だけ true（注記を出す）。波でも分ける会場で今日の波高が無いとき、Q-F3 より前の集計
+ *   （wave_mode が無い）のときは false
  * @param {object|null} vaFacts facts の VA の集計（wind・wind_wave・wave_mode）
  * @param {object|null} exhibition 今日の展示（wind_speed・wave_height）
- * @returns {{mode: "wave"|"waveFew"|"wind", rows: object, n: number, waveN?: number, waveVenue?: boolean, wind: string, wave: string|null}|null}
+ * @returns {{mode: "wave"|"waveFew"|"wind", rows: object, n: number, waveN?: number, sameAsWind?: boolean, wind: string, wave: string|null}|null}
  */
 export function windWaveView(vaFacts, exhibition) {
   const wind = exhibition?.wind_band ?? windBand(exhibition?.wind_speed);
@@ -280,9 +281,16 @@ export function windWaveView(vaFacts, exhibition) {
   if (!rows) return null;
   const wave = waveBand(exhibition?.wave_height);
   const n = rows["1"]?.win?.[1] ?? 0;
-  const waveVenue = Boolean(vaFacts.wave_mode?.use_wave);
-  if (!waveVenue || !wave || !vaFacts.wind_wave)
-    return { mode: "wind", rows, n, waveVenue, wind, wave };
+  const mode = vaFacts.wave_mode;
+  if (!mode?.use_wave || !wave || !vaFacts.wind_wave)
+    return {
+      mode: "wind",
+      rows,
+      n,
+      sameAsWind: Boolean(mode) && !mode.use_wave,
+      wind,
+      wave,
+    };
   const cell = vaFacts.wind_wave[wind]?.[wave];
   const waveN = cell?.["1"]?.win?.[1] ?? 0;
   if (waveN >= MIN_WIND_WAVE)
