@@ -109,6 +109,12 @@ for (const scope of Object.values(today.scope_keys["1"])) {
     scope,
     scope_keys: today.scope_keys["1"],
     scenario,
+    reference: (() => {
+      const REF = { VC: "NC", NCR: "NC", VA: "NA", VG: "NA" };
+      const rk = today.scope_keys["1"][REF[scope.split(":")[0]]];
+      const rf = rk ? read("scenario", rk) : null;
+      return rf ? { scope: rk, attack: rf.attack } : null;
+    })(),
     hints: today.hints,
     course_st: today.course_st,
     exhibition,

@@ -912,6 +912,551 @@ function buildScenario(url, { mixed = false } = {}) {
 
 // ---------- ルート・導線 ----------
 
+// ---------- 実装の応答の形への変換（2026-10-05、BOA-271 (d) の実装レーン） ----------
+// 冒頭の約束「実装の形が違う場合は build* 関数（応答の組み立て）だけを合わせ、検証（expect）は変えない」に従い、
+// 上の build* の仮定の形を、実装の API（api/analogy/{facts,similar,scenario}/[raceId].js と既存の
+// api/analogy/contribution.js）の形に変換する。build* と検証は書き換えていない。
+// 実装の応答の形の正は scripts/ml/analogy/v16_morning.py（today・facts・scenario・similar-racecard）、
+// scripts/lib/analogyV16Exhibition.js（today-exhibition・similar-exhibition）、api/_lib/analogyV16.js の resolveStatus。
+
+const VENUE_CODE = {
+  若松: 20,
+  徳山: 18,
+  大村: 24,
+  住之江: 12,
+  尼崎: 13,
+  下関: 19,
+  芦屋: 21,
+  福岡: 22,
+};
+const ITEM_KEY = {
+  series_score: "series_score",
+  exhibition_time: "exh_time",
+  local_win_rate: "loc_win",
+  national_win_rate: "nat_win",
+  avg_st: "st_mean30",
+  recent_win_rate: "recent_win30",
+  motor_2rate: "motor_2",
+  boat_2rate: "boat_2",
+};
+const TARGET_OF = { 1: "win", 2: "top2", 3: "top3" };
+const ROUND_CODE = { 優勝戦: "yusho", 準優勝戦: "junyu" };
+const CLASS_KEYS = ["A1", "A2", "B1", "B2"];
+const comboOf = (classes) =>
+  CLASS_KEYS.map((c) => classes.filter((x) => x === c).length).join("-");
+
+/** 選んだ艇の範囲キー（v16_defs.scope_keys と同じ形） */
+function scopeKeysOf(classes, boat, round, grade) {
+  const combo = comboOf(classes);
+  const sel = `${boat}${classes[boat - 1]}`;
+  const r = ROUND_CODE[round];
+  return {
+    VC: `VC:20:${combo}:${sel}`,
+    NC: `NC:${combo}:${sel}`,
+    ...(r ? { NCR: `NCR:${combo}:${sel}:${r}` } : {}),
+    VA: "VA:20",
+    ...(grade === "G1" ? { VG: "VG:20" } : {}),
+    NA: "NA",
+  };
+}
+
+/** 実装の stage（racecard・exhibition）→ build* の stage（before・after） */
+const stageOf = (stage) => (stage === "racecard" ? "before" : "after");
+
+const API_STATUS = {
+  ready: "exhibition_ready",
+  no_exhibition: "before_exhibition",
+  reflecting: "exhibition_reflecting",
+  closed: "exhibition_missing",
+};
+const factsApiStatus = (f) =>
+  f.status === "scratched"
+    ? "absent"
+    : f.status === "not_saved"
+      ? "not_saved"
+      : API_STATUS[f.afterStatus];
+
+/** 今日の展示（today-exhibition）。展示 ST は buildScenario の slitHint と同じ値（3号艇が F.09） */
+const todayExhibitionApi = () => ({
+  exh_time: TODAY_VALUES.exhibition_time,
+  exh_time_rank: TODAY_VALUES.exhibition_time.map(
+    (v) => 1 + TODAY_VALUES.exhibition_time.filter((o) => o < v).length,
+  ),
+  exh_time_diff: [0, 0, 0, 0, 0, 0],
+  weather_code: 1,
+  wind_x: 0,
+  wind_y: -3,
+  wind_speed: 3,
+  wave_height: 2,
+  wind_band: "2-3",
+  course_by_boat: [1, 2, 3, 4, 5, 6],
+  entry_type: "waku",
+  st_by_course: [1, 2, 3, 4, 5, 6].map((b) =>
+    b === 3 ? -0.09 : 0.1 + b * 0.01,
+  ),
+  forms: ["flat"],
+});
+
+/** buildFacts の形 → api/analogy/facts の形 */
+function toFactsApi(f) {
+  const status = factsApiStatus(f);
+  if (status === "absent" || status === "not_saved") return { status };
+  const classes = f.today.boats.map((b) => b.racerClass);
+  const grade = f.race.grade === "G1" ? "G1" : "ippan";
+  const scopeKeys = Object.fromEntries(
+    [1, 2, 3, 4, 5, 6].map((b) => [
+      String(b),
+      scopeKeysOf(classes, b, f.race.round, grade),
+    ]),
+  );
+  const facts = {};
+  for (const [kind, byFinish] of Object.entries(f.counts)) {
+    for (let sel = 1; sel <= 6; sel++) {
+      const key = scopeKeysOf(classes, sel, f.race.round, grade)[kind];
+      const out = {
+        n: byFinish[1][sel].total.n,
+        usual: {},
+        by: {},
+        typ: {},
+        period: [PERIOD.from, PERIOD.to],
+      };
+      for (let b = 1; b <= 6; b++) {
+        out.usual[b] = {};
+        out.by[b] = {};
+        out.typ[b] = {};
+        for (const fin of [1, 2, 3]) {
+          const cell = byFinish[fin][b];
+          const t = TARGET_OF[fin];
+          out.usual[b][t] = [cell.total.hits, cell.total.n];
+          for (const [ik, rows] of Object.entries(cell.items)) {
+            const k = ITEM_KEY[ik];
+            out.by[b][k] ??= {};
+            out.typ[b][k] ??= {};
+            for (const r of rows) {
+              out.by[b][k][r.rank] ??= {};
+              out.by[b][k][r.rank][t] = [r.hits, r.n];
+            }
+            out.typ[b][k][t] = cell.avgRank[ik];
+          }
+        }
+      }
+      if (kind === "VA" && f.windWave) {
+        out.wind = { "2-3": {} };
+        for (let b = 1; b <= 6; b++) {
+          out.wind["2-3"][b] = {};
+          for (const fin of [1, 2, 3]) {
+            const w = f.windWave[fin][b];
+            out.wind["2-3"][b][TARGET_OF[fin]] = [w.hits, w.n];
+            out.usual[b][TARGET_OF[fin]] = [w.allHits, w.allN];
+          }
+        }
+      }
+      facts[key] = out;
+    }
+  }
+  const items = Object.fromEntries(
+    Object.entries(TODAY_VALUES)
+      .filter(([k]) => k !== "exhibition_time")
+      .map(([k]) => [
+        ITEM_KEY[k],
+        {
+          values: f.today.boats.map((b) => b.values[k] ?? null),
+          positions: [],
+        },
+      ]),
+  );
+  return {
+    status,
+    run_id: "acceptance",
+    today: {
+      race_id: RACE_ID,
+      venue_code: 20,
+      grade,
+      round: ROUND_CODE[f.race.round] ?? "yosen",
+      class_combo: comboOf(classes),
+      classes,
+      scope_keys: scopeKeys,
+      items,
+      series_runs_before_today: f.today.boats.map((b) => b.priorRuns),
+      exh_agreement: {
+        n: 2023,
+        period: ["2026-04-01", PERIOD.to],
+        entry: { waku: [1882, 2023] },
+        forms_n: 2280,
+        forms: { flat: { hit: [10, 40], miss: [300, 2240] } },
+      },
+    },
+    facts,
+    exhibition: status === "exhibition_ready" ? todayExhibitionApi() : null,
+  };
+}
+
+/** buildFacts の aiOutlook → api/analogy/contribution の形（AIの見立ては既存の API を読む） */
+const AI_THEME_KEY = {
+  選手の実力: "racerRecord",
+  "スタート・展示": "startExhibition",
+  "モーター・ボート": "machine",
+  "体重・年齢・地元": "racerProfile",
+  "会場・レース番号": "venueRace",
+  "天候・水面": "weatherWater",
+  レースの条件: "raceFormat",
+};
+const AI_GROUP = {
+  全国勝率: ["national", "higher"],
+  当地勝率: ["local", null],
+  平均ST: ["pastSt", "lower"],
+  モーター2連率: ["motor", "higher"],
+  年齢: ["age", "middle"],
+  体重: ["weight", null],
+  会場: ["venue", { up: [18, 24, 13], down: [3, 4, 2] }],
+  風速: ["wind", "lower"],
+  グレード: ["grade", "higher"],
+};
+function toContributionApi(f, url) {
+  const q = new URL(url).searchParams;
+  const target = Number(q.get("target") ?? 1);
+  if (q.get("stage") === "racecard" || !f.aiOutlook)
+    return { available: false, stageMissing: true };
+  const boats = {};
+  for (let b = 1; b <= 6; b++) {
+    const rows = f.aiOutlook[target][b];
+    boats[b] = {
+      boat_number: b,
+      n_races: 44092,
+      frame_ratio: b === 1 ? 0.15 : null,
+      shares: Object.fromEntries(
+        rows.map((r) => [AI_THEME_KEY[r.theme], r.share]),
+      ),
+      breakdown: Object.fromEntries(
+        rows.map((r) => [
+          AI_THEME_KEY[r.theme],
+          r.items.map((it) => {
+            const [key, dir] = AI_GROUP[it.label];
+            return { key, share: it.share, direction: dir ?? "none" };
+          }),
+        ]),
+      ),
+    };
+  }
+  return {
+    available: true,
+    modelVersion: "acceptance",
+    themes: AI_THEMES.map((name) => ({ key: AI_THEME_KEY[name], name })),
+    testPeriod: ["2025-10-03", "2026-09-26"],
+    boats,
+  };
+}
+
+/** 類似レースの33項目の「同じ・近い・違う」（buildSimilar の matches と同じ作り方を、実装の項目のキーで） */
+const SIM_ITEM_KEYS = [
+  "venue",
+  "race_number_band",
+  "race_number",
+  "grade",
+  "grade_bin",
+  "round",
+  "series_day",
+  "is_final_day",
+  "class_all6",
+  "n_A1",
+  "b1_class",
+  "win_gap_band",
+  "top_boat",
+  "nat_win_6",
+  "nat_win_rank_4",
+  "b1_nat_win",
+  "loc_win_6",
+  "recent_win30_6",
+  "recent_top3_30_6",
+  "st_mean30_6",
+  "b1_st_rank_band",
+  "motor_2_6",
+  "b1_motor_rank_band",
+  "boat_2_6",
+  "b1_boat_rank_band",
+  "age_6",
+  "weight_6",
+  "n_local",
+  "weather",
+  "wind_bin",
+  "wind_vector",
+  "wave_bin",
+  "exh_time_diff_6",
+];
+const SIM_ALIGNED = new Set([
+  "b1_class",
+  "win_gap_band",
+  "top_boat",
+  "round",
+  "grade",
+  "grade_bin",
+]);
+const LEVEL = { same: 2, near: 1, diff: 0 };
+const simItemsOf = (i) =>
+  Object.fromEntries(
+    SIM_ITEM_KEYS.map((key, j) => {
+      if (key === "is_final_day") return [key, -1];
+      if (SIM_ALIGNED.has(key)) return [key, 2];
+      if (j % 7 === 3) return [key, i % 4 === 0 ? 2 : 0];
+      return [
+        key,
+        LEVEL[(i + j) % 5 === 0 ? "diff" : (i + j) % 3 === 0 ? "near" : "same"],
+      ];
+    }),
+  );
+
+/** buildSimilar の形 → api/analogy/similar の形 */
+function toSimilarApi(s) {
+  if (s.status === "empty") return { status: "empty_layer", n_layer: 0 };
+  const cond = {
+    b1_class: "A1",
+    gap_band: 4,
+    top_boat: 1,
+    round: "yusho",
+    grade_g1plus: true,
+  };
+  const winner = s.comparison.boats.map((b) => b.hits);
+  return {
+    status: "exhibition_ready",
+    run_id: "acceptance",
+    exact: true,
+    similar: {
+      race_id: RACE_ID,
+      conditions: cond,
+      n_layer: s.stratum.n,
+      compare: {
+        name: "grade",
+        conditions: { ...cond, grade_g1plus: false },
+        n: s.comparison.n,
+        winner,
+        top2: winner,
+        top3: winner,
+        technique: {},
+      },
+      national: {
+        n: 100,
+        winner: s.comparison.national.map((b) => b.hits),
+        top2: s.comparison.national.map((b) => b.hits),
+        top3: s.comparison.national.map((b) => b.hits),
+      },
+      pool_rate: {},
+      today_display: null,
+      neighbors: s.races.map((r) => {
+        const i = SIM_RACES.indexOf(r);
+        const venue = VENUE_CODE[r.venue];
+        return {
+          race_id: `${r.date}-${String(venue).padStart(2, "0")}-${String(r.raceNumber).padStart(2, "0")}`,
+          distance: 0.5 + i / 100,
+          items: simItemsOf(i),
+          date: r.date,
+          venue_code: venue,
+          race_number: r.raceNumber,
+          grade: "G1",
+          round: "yusho",
+          finish: r.finish,
+          technique: r.kimarite,
+          payout_3tan: r.trifectaPayout,
+          course_by_boat: [1, 2, 3, 4, 5, 6],
+          st_by_course: r.stOrder.map((o) => 0.1 + o * 0.01),
+        };
+      }),
+    },
+  };
+}
+
+const ENTRY_KEY = {
+  any: "all",
+  wakunari: "waku",
+  maezuke: "mae",
+  maezuke6: "mae6",
+  maezuke5: "mae5",
+  maezuke56: "mae56",
+  maezuke_other: "maeOther",
+  in_taken: "inlost",
+};
+const SHAPE_KEY = {
+  any: "any",
+  flat: "flat",
+  inner3: "wall",
+  two_dent: "d2",
+  kado_uke_dent: "d3",
+  kado_ippatsu: "kado",
+  in_dent: "d1",
+  dash_lead: "dash",
+};
+const HINT_ID = { c_two_dent: "d2_slow01", c_kado: "kado4" };
+const BAND_OF = { "1〜2位": "top", "3〜4位": "mid", "5〜6位": "low" };
+/** "231/456"（コース順の艇番）→ 艇番順のコース */
+const courseByBoatOf = (entry) => {
+  const order = entry.replace("/", "").split("").map(Number);
+  return [1, 2, 3, 4, 5, 6].map((b) => order.indexOf(b) + 1);
+};
+
+function cellApi(c) {
+  const r = c.result;
+  const win = r.win.map((x) => x.hits);
+  const top3 = r.top3.map((x) => x.hits);
+  const second = top3.map((v, i) => Math.round((v - win[i]) / 2));
+  return {
+    n: c.n,
+    first_boat: win,
+    second_boat: second,
+    third_boat: top3.map((v, i) => v - win[i] - second[i]),
+    technique: Object.fromEntries(r.kimarite.map((k) => [k.label, k.hits])),
+    payout_known: r.manshu.n,
+    manshu: r.manshu.hits,
+    b1_win: c.boat1.hits,
+    tri: Object.fromEntries(
+      r.flows.map(([a, b, d, n]) => [`${a}-${b}-${d}`, n]),
+    ),
+    ...(r.races
+      ? {
+          races: r.races.map((x, i) => ({
+            race_id: `${x.date}-${String(VENUE_CODE[x.venue]).padStart(2, "0")}-${String(x.raceNumber).padStart(2, "0")}#${i}`,
+            date: x.date,
+            venue_code: VENUE_CODE[x.venue],
+            finish_1_2_3: x.finish.join("-"),
+            technique: x.kimarite,
+            payout_3tan: x.payout,
+            course_by_boat: courseByBoatOf(x.entry),
+            forms: [],
+          })),
+        }
+      : {}),
+  };
+}
+
+function attackApi(a) {
+  if (!a) return null;
+  const bands = (rows, key, ref = false) =>
+    Object.fromEntries(
+      rows.map((x) => [
+        BAND_OF[x.band],
+        { [key]: ref ? [x.national.hits, x.national.n] : [x.hits, x.n] },
+      ]),
+    );
+  const merge = (...parts) => {
+    const out = {};
+    for (const p of parts)
+      for (const [b, v] of Object.entries(p))
+        out[b] = { ...(out[b] ?? {}), ...v };
+    return out;
+  };
+  const sum = (rows) => [
+    rows.reduce((s, x) => s + x.hits, 0),
+    rows.reduce((s, x) => s + x.n, 0),
+  ];
+  return {
+    attacker: a.attackerBoat,
+    all: {
+      n: sum(a.exTime)[1],
+      winner: [0, 0, 0, sum(a.exTime)[0], 0, 0],
+      att_win: sum(a.exTime),
+      att_top2: sum(a.exTime),
+      b1_nige: sum(a.boat1.exTime),
+      b1_top2: sum(a.boat1.exTime),
+    },
+    by_exh: merge(bands(a.exTime, "att_win"), bands(a.boat1.exTime, "b1_nige")),
+    by_motor: merge(bands(a.motor, "att_win"), bands(a.boat1.motor, "b1_nige")),
+    b1_by_exh: merge(
+      bands(a.boat1.exTime, "b1_nige"),
+      bands(a.boat1.exTime, "b1_top2"),
+    ),
+    b1_by_motor: merge(
+      bands(a.boat1.motor, "b1_nige"),
+      bands(a.boat1.motor, "b1_top2"),
+    ),
+    att_lead: [a.aheadRate.hits, a.aheadRate.n],
+    overlap: {},
+  };
+}
+
+/** ③の比べる相手（全国）: buildScenario の national の件数を、実装の reference.attack の形に */
+function referenceAttack(sc) {
+  const out = {};
+  for (const [sk, c] of Object.entries(sc.cells.wakunari)) {
+    if (sk === "any" || !c.attack) continue;
+    const nat = (rows) =>
+      Object.fromEntries(
+        rows.map((x) => [
+          BAND_OF[x.band],
+          { att_win: [x.national.hits, x.national.n] },
+        ]),
+      );
+    out[SHAPE_KEY[sk]] = {
+      by_exh: nat(c.attack.exTime),
+      by_motor: nat(c.attack.motor),
+    };
+  }
+  return out;
+}
+
+/** buildScenario の形 → api/analogy/scenario の形 */
+function toScenarioApi(sc, url, { mixed = false } = {}) {
+  const q = new URL(url).searchParams;
+  const classes = mixed ? MIXED_CLASSES : ALL_A1_CLASSES;
+  const round = mixed ? "予選" : "優勝戦";
+  const keys = scopeKeysOf(classes, 1, round, mixed ? "ippan" : "G1");
+  const cells = {};
+  const attack = {};
+  for (const [ek, byShape] of Object.entries(sc.cells)) {
+    cells[ENTRY_KEY[ek]] = { forms: {} };
+    for (const [sk, c] of Object.entries(byShape)) {
+      cells[ENTRY_KEY[ek]].forms[SHAPE_KEY[sk]] = cellApi(c);
+      if (ek === "wakunari" && sk !== "any")
+        attack[SHAPE_KEY[sk]] = attackApi(c.attack);
+    }
+  }
+  const hintsCounts = {};
+  for (const cnd of sc.slitHint.conditions) {
+    hintsCounts[HINT_ID[cnd.key]] = {
+      [SHAPE_KEY[cnd.shapeKey]]: {
+        hit: [cnd.hits, cnd.n],
+        miss: [cnd.elseHits, cnd.elseN],
+      },
+      any: { hit: [cnd.n, cnd.n], miss: [cnd.elseN, cnd.elseN] },
+    };
+  }
+  const hb = sc.slitHint.boats;
+  const exhibition = isBeforeStage(q.get("stage"))
+    ? null
+    : todayExhibitionApi();
+  return {
+    status: "exhibition_ready",
+    run_id: "acceptance",
+    scope: q.get("scope") || keys.VC,
+    scope_keys: keys,
+    reference:
+      keys.NC && (q.get("scope") || keys.VC).startsWith("VC")
+        ? { scope: keys.NC, attack: referenceAttack(sc) }
+        : null,
+    scenario: {
+      n: sc.total,
+      n_refund_excluded: 17,
+      cells,
+      hints: { course: hintsCounts, overall: hintsCounts },
+      attack,
+    },
+    hints: {
+      course: { d2_slow01: true, kado4: true },
+      overall: { d2_slow01: true, kado4: true },
+    },
+    course_st: {
+      overall: hb.map((b) => b.overall.st),
+      course: hb.map((b) => b.course.st),
+      course_n: hb.map((b) => b.course.n),
+      course_filled: hb.map((b) => b.course.st),
+      venue: hb.map((b) => b.venue.st),
+      venue_n: hb.map((b) => b.venue.n),
+      venue_course_all: {
+        mean: hb.map((b) => b.venueAll.st),
+        n: hb.map(() => 12000),
+      },
+    },
+    exhibition,
+  };
+}
+
 /**
  * API のモックを入れる。opts で状態を切り替える。
  * 戻り値の calls に各エンドポイントの呼び出しURLが溜まる（遅延取得・取り直しの確認用）。
@@ -919,6 +1464,7 @@ function buildScenario(url, { mixed = false } = {}) {
 async function mockApis(page, opts = {}) {
   const calls = { facts: [], similar: [], scenario: [] };
   const last = { scenario: null };
+  let lastFacts = null;
   await page.route("**/api/analogy/facts/**", async (route) => {
     const url = route.request().url();
     calls.facts.push(url);
@@ -938,23 +1484,25 @@ async function mockApis(page, opts = {}) {
       ...(opts.round ? { round: opts.round } : {}),
       ...(opts.priorRuns ? { priorRuns: opts.priorRuns } : {}),
     });
+    lastFacts = body;
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(body),
+      body: JSON.stringify(toFactsApi(body)),
     });
   });
   await page.route("**/api/analogy/similar/**", async (route) => {
     const url = route.request().url();
     calls.similar.push(url);
     const body = buildSimilar({
-      stage: new URL(url).searchParams.get("stage"),
+      // 実装の stage は racecard（展示前）・exhibition（展示後）
+      stage: stageOf(new URL(url).searchParams.get("stage")),
       status: opts.similarStatus ?? "ok",
     });
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(body),
+      body: JSON.stringify(toSimilarApi(body)),
     });
   });
   await page.route("**/api/analogy/scenario/**", async (route) => {
@@ -965,8 +1513,28 @@ async function mockApis(page, opts = {}) {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(body),
+      body: JSON.stringify(
+        toScenarioApi(body, url, { mixed: opts.mixed ?? false }),
+      ),
     });
+  });
+  // AIの見立ては既存の寄与度の API を読む（facts には入らない）
+  await page.route("**/api/analogy/contribution**", async (route) => {
+    const url = route.request().url();
+    const body = lastFacts ?? buildFacts({ stage: "after" });
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(toContributionApi(body, url)),
+    });
+  });
+  // 公開前は機能フラグで隠しているので、内部確認の印（src/config/featureFlags.js）を付けて開く
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem("boatai-user:analogy-finder-preview", "1");
+    } catch {
+      // 印が付けられない環境では URL の ?analogy=1 を使う
+    }
   });
   return { calls, last };
 }

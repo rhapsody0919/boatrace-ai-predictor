@@ -95,7 +95,7 @@ export default function SlitHint({
           : t(`${k}.hintPicOverall`)}
         {version === "course" &&
           filled.length > 0 &&
-          t(`${k}.hintFilled`, { boats: filled.join("・") })}
+          t(`${k}.hintFilled`, { boats: filled.join(t("aiPredictionTab.analogy.listSeparator")) })}
       </p>
       <div className="af-tbl">
         <table className="af-hint-t">
@@ -153,7 +153,7 @@ export default function SlitHint({
       <p className="af-foot">
         {t(`${k}.hintVenueFoot`)}
         {fewVenue.length > 0 &&
-          t(`${k}.hintFewVenue`, { boats: fewVenue.join("・") })}
+          t(`${k}.hintFewVenue`, { boats: fewVenue.join(t("aiPredictionTab.analogy.listSeparator")) })}
         {exhibitionStage ? t(`${k}.hintExhPost`) : t(`${k}.hintExhPre`)}
       </p>
       <h4 className="af-h4">

@@ -8,7 +8,6 @@ import ScenarioRaceList from "./ScenarioRaceList";
 import FinishSankey from "./FinishSankey";
 import TrifectaList from "./TrifectaList";
 import { BoatBars, TechniqueBars } from "./OutcomeBars";
-import { useAnalogyScenario } from "../../../hooks/useAnalogyV16";
 import {
   fmtCount,
   fmtDate,
@@ -26,8 +25,6 @@ import { wilsonInterval } from "../../../utils/wilson";
 
 const k = "aiPredictionTab.analogy.scenario";
 const SCOPES = ["VC", "NC", "NCR", "VA", "VG", "NA"];
-/** ③の比べる相手（spec C-4「全国・同じ組み合わせの同じ区分の率」）。会場の範囲は全国の同じ範囲 */
-const REF_SCOPE = { VC: "NC", NCR: "NC", VA: "NA", VG: "NA" };
 
 /**
  * 展開シナリオ（タブ3、spec FR-C、screens S-1c）
@@ -45,13 +42,6 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
   const exhibition = exhibitionStage ? data.exhibition : null;
   const keys = data.scope_keys ?? {};
   const scopeKey = data.scope;
-  const refKey = keys[REF_SCOPE[scopeKind(scopeKey)]] ?? null;
-  const ref = useAnalogyScenario(
-    raceId,
-    refKey,
-    "exhibition",
-    Boolean(refKey) && slit !== "any",
-  );
   const sc = data.scenario;
   if (!sc?.cells)
     return (
@@ -355,14 +345,14 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
                 : t(`${k}.noForm`),
             }) +
             (flyBoats.length
-              ? t(`${k}.slitFly`, { boats: flyBoats.join("・") })
+              ? t(`${k}.slitFly`, { boats: flyBoats.join(t("aiPredictionTab.analogy.listSeparator")) })
               : "")
           : t(`${k}.slitPre`)}
       </p>
       <AttackTable
         attack={sc.attack}
-        refAttack={ref.data?.scenario?.attack ?? null}
-        refName={refKey ? scopeName(refKey, t) : null}
+        refAttack={data.reference?.attack ?? null}
+        refName={data.reference ? scopeName(data.reference.scope, t) : null}
         slit={slit}
         waku={waku}
         exhibitionStage={exhibitionStage}
