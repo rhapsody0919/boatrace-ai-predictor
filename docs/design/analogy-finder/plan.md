@@ -53,7 +53,7 @@ flowchart LR
 1レースごとに作るもの:
 | 出力 | 中身 |
 |---|---|
-| `today/{race_id}.json` | 6艇の項目の値と6艇中の順位（同じ値の数）: 今節の平均着順点・当地勝率・全国勝率・平均ST（直近30走）・直近30走の1着率・モーター2連率・ボート2連率。級別の組み合わせ・ラウンド・グレード・使う範囲キー。コース別の平均ST（このコース・全体・会場で、走数つき）。手がかりの8条件の当否 |
+| `today/{race_id}.json` | 6艇の項目の値と6艇中の順位（同じ値の数）: 今節の平均着順点（と6艇それぞれの前日までの走数。序盤の注記 spec Q-D に使う）・当地勝率・全国勝率・平均ST（直近30走）・直近30走の1着率・モーター2連率・ボート2連率。級別の組み合わせ・ラウンド・グレード・使う範囲キー。コース別の平均ST（このコース・全体・会場で、走数つき）。手がかりの8条件の当否 |
 | `similar/{race_id}.json.gz`（候補） | そろえる条件の層の中の、出走表時点の近い順 上位 K 件（K＝min(層の件数, 10,000)）: race_id・出走表の距離²（会場ペナルティ前）・会場一致・展示の段に使う項目の値（展示タイムの差・順位6艇分、天候・風・波）。展示の距離の重み・標準化の値・λ_展示 |
 | `similar-racecard/{race_id}.json.gz` | 表示する上位800件（各件の全33項目の値・結果（1〜3着・決まり手・3連単と払戻・進入・コース順の ST））。層の件数、比べる相手の層の件数と1着の艇の件数、全33項目の「全レースで同じ割合」 |
 | `layer/{race_id}.json.gz` | BOA-635 用。層の結果を新しい順に最大2,000件と、行の外の項目（形は下の「BOA-635 との接続」。2026-10-04 合意） |
@@ -78,9 +78,9 @@ AIの見立て（spec FR-E）のための変更。学習側レーンの担当（
    - 読み手に stage の条件を足す: `api/analogy/contribution.js`・`src/services/analogyService.js`・`src/utils/analogyContribution.js`・`db.py`
    - 順序: 列の追加（ユーザーが本番に適用）→ `db.py` が stage を書くコードのマージ → 学習
    - 番号は学習側の PR 時点の origin/master の最大＋1 をオーケストレーターに確かめる（2026-10-04 時点の提案は 129。下の「DB」）
-5. 優勝戦・準優勝戦の判定の変更（spec、T1-1）をラウンドの特徴量（`round_from_stage`・`round_from_kb_kind`）に入れる。BOA-728（W準優勝戦、#1229 でマージ済み）とそろえる。同じ学習の回に入れる
+5. 優勝戦・準優勝戦の判定の変更（spec「優勝戦・準優勝戦の判定」v2、T1-1）をラウンドの特徴量（`round_from_stage`・`round_from_kb_kind`）に入れる。長期も名前を先に見て、`stage_kind` は名前で決まらないときだけ使う。準優進出戦は準優勝戦にしない（Q-C(3)）。一致検査は `t1-1-stage-rule.json` の `consistency_check_strings`（82件）。BOA-728（W準優勝戦、#1229 でマージ済み）とそろえる。同じ学習の回に入れる
 
-#### 向きの計算（spec FR-E の「項目ごとの向き」。2026-10-04 設計側で決定、見せ方の2点はユーザー確認中）
+#### 向きの計算（spec FR-E の「項目ごとの向き」。2026-10-04 設計側で決定、見せ方の2点は 2026-10-05 に決定: Q-A 揺れの確認を入れる・Q-B 両端で上がる形は「はっきりしない」）
 承認版モック（`mock/build-data.mjs` の `dirText`、boat-profile2 の数値から作った）の規則を土台にし、モックで決めていなかった3点（同じ値の扱い・揺れの確認・両端で上がる形）を足す。
 
 - 対象: 艇番（1〜6）×着順（1着・2着以内・3着以内）×段（exhibition・racecard）ごと、テーマの内訳のグループごと。母集団は profiles と同じ（寄与度用モデルの評価期間の全国のレース）
@@ -106,9 +106,10 @@ AIの見立て（spec FR-E）のための変更。学習側レーンの担当（
   2. min(m_低, m_高) − m_中 ≥ 0.01 →「はっきりしない」（両端で上がる形。boat-profile2 の 270組で0件。文を増やさない）
   3. |ρ| < 0.3 または |m_高 − m_低| < 0.01 →「はっきりしない」
   4. それ以外 → ρ の符号で「高い側ほど上がる」／「低い側ほど上がる」（branch は「地元だと上がる」／「地元以外だと上がる」）
-- 揺れの確認: profiles の share_sd と同じ日単位のブートストラップ（200回）の各回で同じ判定をし、全体の判定と同じになった回が8割未満なら「はっきりしない」にする。ブートストラップの ρ は、全体で1回付けた順位に日ごとの重みを掛けた重み付き相関で近似してよい（並べ替えを200回しないため）
+- 揺れの確認（Q-A で決定）: profiles の share_sd と同じ日単位のブートストラップ（200回）の各回で同じ判定をし、全体の判定と同じになった回が8割未満なら「はっきりしない」にする。ブートストラップの ρ は、全体で1回付けた順位に日ごとの重みを掛けた重み付き相関で近似してよい（並べ替えを200回しないため）
 - カテゴリ（venue・weather・grade・round）: 値ごとの y の平均（件数200未満の値は除く）。上位3つと下位3つの |平均| の最大が 0.01 未満なら「どれでもほとんど変わらない」。それ以外は、上位3つのうち平均 > +0.005 を「上がる」、下位3つのうち平均 < −0.005 を「下がる」に並べる（無ければ「—」）。各値はブートストラップの8割以上で符号が同じものだけ残す。並びはグレードは SG・G1・G2・G3・一般、ラウンドは予選・準優勝戦・優勝戦・一般戦など（日本語の直し 19）
 - 展示前（stage=racecard）: 直前情報のグループ（exhibitionTime・wind・wave・weather）はモデルに無いので向きを出さない（割合も無い）
+- 画面の文: `none`（判定2・3・揺れの確認で「はっきりしない」になったもの）は「向きははっきりしない」（spec FR-E）。`varies` は boat1 の固定の文
 - 保存: `analogy_contribution_profiles.breakdown` に、グループごとに `direction`（`higher`・`lower`・`middle`・`none`・`varies`、カテゴリは `{up: [...], down: [...]}` か `none`）と、判定の根拠（ρ・m_低/中/高・区分の値の範囲・件数・ブートストラップで同じ判定になった割合）を入れる。文は画面が i18n のキーで組み立てる（4言語。`aiPredictionTab.analogy.direction.*`）
 - しきい値（0.01・0.3・8割・200件）は定数1か所（`profiles.py`）に置き、変えるときは学習を1回流す
 - 実データでの当てはめ（boat-profile2、版 2026-10-02、2025-10-03〜2026-09-26 から2025-12・2026-01 を除いた 44,092R、`~/boatrace-data-archive/boa271-fr2-scratch-2026-10-04/model-prep/boat-profile2.json#direction`）: モックの規則で数値の270組が 高低の向き 203・中くらい 6・はっきりしない 61、両端で上がる形は0。境目に近い向き（|ρ| < 0.4 か |m_高 − m_低| < 0.015）が19組あり、揺れの確認で「はっきりしない」に変わりうる。カテゴリ72組は ほとんど変わらない 38・上がる/下がるあり 34（揺れの確認は未計算。学習の回で数える）
@@ -147,16 +148,15 @@ AIの見立て（spec FR-E）のための変更。学習側レーンの担当（
 | 対象 | 状態 | 扱い |
 |---|---|---|
 | 118 `analogy_models`・`analogy_contribution_profiles` | 本番適用済み | そのまま使う（AIの見立て）。7テーマ・新しい量の定義・向きは行の中身（themes・shares・breakdown）の変更。列は `stage` を1つ足す（129 の提案、学習側） |
-| 120（層別 S* の母集団・スナップショット・RPC 2本） | 未適用、このブランチだけ | 適用しない（Q4 で決定）。BOA-635 のレーンと合意した（T0-2、2026-10-04）ので消す（T0-3）。PGlite の検証 `verify-analogy-strata-migration.js`・`verify-registry.json` の行・`check-anon-access.js` の ANON_RPCS の13本・`package.json` の `verify:analogy-strata-migration` も一緒に消し、APPLIED.md の 120 の行は「廃止（v16 で置き換え、適用しない）」にする |
+| 120（層別 S* の母集団・スナップショット・RPC 2本） | 未適用、このブランチだけ | 廃止（Q4、T0-2 で BOA-635 と合意）。T0-3 で SQL・PGlite の検証・`verify-registry.json` の行・`check-anon-access.js` の13本・`package.json` のスクリプトを消し、APPLIED.md の 120 の行を「廃止」にした（2026-10-05）。番号 120 は再利用しない |
 | 127 `analogy_race_features`・128、日次の特徴量ジョブ | master にあり未適用、ジョブは一度も動いていない | 廃止（Q2。T0-4 で学習側と合意）。学習側レーンが小さい PR で消す（毎朝 data-health のアラートが出ているため先に）: 127・128 の SQL（APPLIED.md に「廃止（Q2、適用しない）」の行）、`daily_features.py` と test の該当部分、`.github/workflows/analogy-daily-features.yml`、data-health の `analogy_race_features` の監視（`checks.js`・`functions.js`・`verify-data-health-job.js`）。残すもの: `export_pool.js --daily` と `week-ranges.js`（v16 の朝のバッチで使う）、`storage.js` の download-active-meta。workflow の削除を含むのでマージはユーザーの承認 |
 | ADR-0083 の `analogy_race_contributions` | 未作成 | 作らない（Q2） |
 
-現行の 120 の ER 図（120 を消すまで残す。新しいマイグレーションを書いたら `generate-er-diagram.js` で作り直す）:
+現行の ER 図（118 のみ。120 の ER 図は 120 と一緒に消した。130 `analogy_v16_snapshots` のマイグレーションを書いたら T3-1 で `generate-er-diagram.js analogy-finder` で作り直す）:
 
 ```mermaid
 erDiagram
     analogy_contribution_profiles }o--|| analogy_models : "model_version"
-    analogy_snapshots }o--|| races : "race_id"
     analogy_models {
         text model_version PK
         timestamptz trained_at
@@ -181,43 +181,6 @@ erDiagram
         jsonb share_sd
         jsonb breakdown
     }
-    analogy_pool_outcomes {
-        varchar race_id PK
-        date race_date
-        smallint venue_code
-        smallint race_number
-        text b1_class
-        numeric(4,2) b1_win_gap
-        smallint gap_band "生成列 analogy_gap_band(b1_win_gap)"
-        smallint top_boat
-        text round
-        text grade
-        smallint b1_motor_band
-        smallint rank1
-        smallint rank2
-        smallint rank3
-        text winning_technique
-        smallint winner_course
-        smallint[] course_by_boat
-        numeric(4,2)[] st_by_course
-        integer payout_3tan
-        text source
-        timestamptz updated_at
-    }
-    analogy_snapshots {
-        varchar race_id PK
-        text b1_class
-        numeric(4,2) b1_win_gap
-        smallint gap_band
-        smallint venue_code
-        smallint top_boat
-        smallint auto_depth
-        integer[] n_by_depth
-        date pool_from
-        date pool_cutoff
-        jsonb distribution
-        timestamptz created_at
-    }
 ```
 
 ## 定義（バッチ・JS・画面で同じものを使う）
@@ -225,7 +188,7 @@ erDiagram
 | 定義 | 正 | 一致の検査 |
 |---|---|---|
 | 完全レース・返還の除外 | `features.py`（タブ1・2は返還を含める、タブ3は除く） | pytest |
-| 優勝戦・準優勝戦の判定 | spec「優勝戦・準優勝戦の判定」。JS `raceStageConfig.js`・Python `features.py` | 固定の文字列で JS と Python を照合（`scripts/ml/analogy/tests/test_features.py`）。最終日12R の照合は pytest |
+| 優勝戦・準優勝戦の判定 | spec「優勝戦・準優勝戦の判定」（v2）。JS `raceStageConfig.js`・Python `features.py`（`v16_defs.py` は `features.py` を使う） | `analysis/t1/t1-1-stage-rule.json` の `consistency_check_strings` 82件で JS と Python を照合（JS は `verify-analogy-facts.js`、Python は `scripts/ml/analogy/tests/test_features.py`）。最終日12R の照合は pytest |
 | 級別の組み合わせ | 6艇の級別を A1・A2・B1・B2 の順に並べた構成＋選んだ艇の級別（spec Q1）。VC が300件未満なら既定を NC に | pytest |
 | 6艇中の順位と同じ値 | 1位・6位は同じ値を含む、2〜5位は min 順位（`tab1_facts.py`） | pytest と JS の `analogyFacts.js` の固定データ |
 | 判定の3段階・並び | spec A-7 | `verify-analogy-facts.js`（ci） |
@@ -264,7 +227,7 @@ erDiagram
 | `before_exhibition` | それ以外 |
 
 - 艇番・着順・進入・形の切り替えは画面で行う（取り直さない）。stage を変えたときだけ取り直す
-- NCR が優勝戦のときは facts から今節の平均着順点を外す（spec A-4）。今日が優勝戦・準優勝戦のときの「今日の一文」を出さない処理は画面で行う（Q7）
+- NCR が優勝戦のときは facts から今節の平均着順点を外す（spec A-4）。今日が優勝戦・準優勝戦のときの「今日の一文」を出さない処理（Q7）と、序盤の注記を出すかの判定（today の前日までの走数、Q-D）は画面で行う
 
 ## フロントエンド
 
@@ -365,6 +328,6 @@ BOA-635 のレーンが、v16 の層（新しい順に最大2,000件）を分母
 ## 残る判断
 - spec の Q1〜Q7 は決定済み（2026-10-04）
 - BOA-635 との接続は合意済み（2026-10-04）。layer ファイルのキー名・API の経路・説明文の関数は上のとおり FR-2 側で決めた
-- 向きの見せ方の2点（揺れの確認で「はっきりしない」が増えること、両端で上がる形を「はっきりしない」にまとめること）はユーザー確認中（オーケストレーター経由）
+- 向きの見せ方の2点は決定済み（2026-10-05、spec Q-A・Q-B）。T1 の見せ方（優勝戦の判定の例外・序盤の注記・1号艇の注記）も決定済み（spec Q-C〜Q-E）
 - Storage の保持期間（初回の実測で見直す）
 - 展示後の候補の件数（T2-4 の一致率で決める）
