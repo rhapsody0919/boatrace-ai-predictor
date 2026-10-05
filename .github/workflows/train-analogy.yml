@@ -16,11 +16,6 @@ on:
         description: "版の名前（省略時は JST の今日の日付）"
         required: false
         default: ""
-      record_perrace:
-        description: "事前登録5 の記録2（ファンに見える値・seed の揺れ）を取る。初回の本番学習で1回だけ（約数分増える）"
-        type: boolean
-        required: false
-        default: false
 
 concurrency:
   group: train-analogy
@@ -34,7 +29,6 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
       ANALOGY_MODEL_VERSION: ${{ inputs.model_version }}
-      ANALOGY_RECORD_PERRACE: ${{ inputs.record_perrace && '1' || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -98,7 +92,7 @@ jobs:
         run: |
           drift=data/ml/analogy/out/drift.json
           if [ "$(jq -r .flagged "$drift")" != "true" ]; then exit 0; fi
-          detail=$(jq -r '[.changes[] | "finish_target=\(.finish_target) \(.theme) \(.max_abs_change * 1000 | round / 1000)"] | join(" / ")' "$drift")
+          detail=$(jq -r '[.changes[] | "\(.stage) finish_target=\(.finish_target) \(.theme) \(.max_abs_change * 1000 | round / 1000)"] | join(" / ")' "$drift")
           payload=$(jq -n --arg d "$detail" --arg prev "$(jq -r .previous "$drift")" --arg url "$RUN_URL" \
             '{text: (":warning: *アナロジー・ファインダーの寄与度のシェアが前の版（" + $prev + "）から大きく動きました*（切り替えは済み）\n" + $d + "\n" + $url)}')
           curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"

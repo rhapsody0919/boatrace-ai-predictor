@@ -17,7 +17,6 @@
  * 巻き込まれないよう、既存の表示は PredictionBlocks に分け、節はその外に置く。
  * BOA-635 も同じ場所（PredictionBlocks の外）に部品を置く前提なので、この形を変えるときは知らせる。
  */
-import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -28,7 +27,7 @@ import OutcomePatternPreview from "./OutcomePatternPreview";
 import { getVolatilityLevel } from "../../utils/volatilityLevel";
 import { isJudgeable } from "../../utils/raceOutcome";
 import VolatilityPercentileBar from "./VolatilityPercentileBar";
-import { dataService } from "../../services/dataService";
+import { useRaceWinnerCourse } from "../../hooks/useRaceWinnerCourse";
 import AnalogyFinderSection from "./analogy/AnalogyFinderSection";
 import { isAnalogyFinderEnabled } from "../../config/featureFlags";
 
@@ -84,32 +83,9 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
   // 1着の艇が実際に入ったコース（BOA-708）。的中は艇番で判定するが、前付けで艇番と
   // コースが違ったレースでは「逆に見える」ので、注記で添える。当日は entry_course で補い、
   // それも無ければ出さない（取得に失敗しても注記を出さないだけで、判定の表示は止めない）
-  const [winner, setWinner] = useState({
-    raceId: null,
-    boat: null,
-    course: null,
-  });
-  useEffect(() => {
-    if (!finished || !raceId) return undefined;
-    let cancelled = false;
-    dataService
-      .getRaceWinnerCourses([raceId])
-      .then((byRace) => {
-        const w = byRace[raceId];
-        if (!cancelled && w) setWinner({ raceId, ...w });
-      })
-      .catch((error) => {
-        console.error(
-          "1着艇の進入コースの取得に失敗（注記を出さない）:",
-          error,
-        );
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [finished, raceId]);
+  const winner = useRaceWinnerCourse(raceId, finished);
   const showWinnerCourse =
-    winner.raceId === raceId &&
+    winner != null &&
     winner.course != null &&
     winner.boat != null &&
     winner.course !== winner.boat;
@@ -210,9 +186,7 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
             <TurnPatternList
               patterns={turnPatterns}
               result={result}
-              winnerEntryCourse={
-                winner.raceId === raceId ? winner.course : null
-              }
+              winnerEntryCourse={winner?.course ?? null}
             />
             {showWinnerCourse && (
               <p className="result-verify-entry-note">

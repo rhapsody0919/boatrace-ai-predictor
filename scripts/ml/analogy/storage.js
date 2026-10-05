@@ -1,7 +1,8 @@
 /**
  * BOA-271 アナロジー・ファインダーの Supabase Storage 連携（バケット `analogy`）
  *
- * - `{model_version}/model_{win,top2,top3,win_racecard}.txt.gz`・`train_meta.json.gz`: 学習した主モデル。
+ * - `{model_version}/model_{win,top2,top3,win_racecard,top2_racecard,top3_racecard}.txt.gz`・`train_meta.json.gz`:
+ *   学習した主モデル。
  *   次の週の品質ゲートで、参照版を同じ test で評価し直すのに使う
  * - `{model_version}/model_{win,win_racecard}.json.gz`・`per_race_meta.json.gz`・`parity_fixture.json.gz`:
  *   レースごとの寄与度（B、ADR 案（#1134「レースごとの寄与度」））。推論側の JS が読む（plan「学習側の設計」）
@@ -14,6 +15,7 @@
  *   node scripts/ml/analogy/storage.js upload-model     # out/ → {version}/
  *   node scripts/ml/analogy/storage.js download-reference  # 参照版（reference.json）→ out/reference/
  *   node scripts/ml/analogy/storage.js download-active-meta  # 表示中の版の per_race_meta.json → out/active/（日次の特徴量ジョブ）
+ *   node scripts/ml/analogy/storage.js download-active-model # 表示中の版の model_win.txt → out/active/（v16 の朝のバッチ）
  */
 
 import fs from "fs/promises";
@@ -24,6 +26,7 @@ import { supabase, isSupabaseEnabled } from "../../lib/supabaseClient.js";
 import {
   assertUploadable,
   isNotFound,
+  listingHas,
   versionsToPrune,
 } from "./storageRules.js";
 
@@ -37,7 +40,11 @@ const MODEL_FILES = [
   "train_meta.json",
 ];
 // 参照版に無くても止めないファイル（この版で足したモデル。train.py の OPTIONAL_REFERENCE と同じ）
-const OPTIONAL_REFERENCE_FILES = ["model_win_racecard.txt"];
+const OPTIONAL_REFERENCE_FILES = [
+  "model_win_racecard.txt",
+  "model_top2_racecard.txt",
+  "model_top3_racecard.txt",
+];
 // レースごとの寄与度（B）のために置くファイル
 const PER_RACE_FILES = [
   "model_win.json",
@@ -141,6 +148,16 @@ async function pruneModels(active) {
   }
 }
 
+/** 参照版のフォルダにファイルがあるか（一覧で確かめる。一覧の取得の失敗は失敗させる） */
+async function referenceHasFile(version, fileName) {
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .list(version, { limit: 100, search: fileName });
+  if (error)
+    throw new Error(`${version}/ の一覧の取得に失敗: ${error.message}`);
+  return listingHas(data, fileName);
+}
+
 async function downloadReference() {
   const version = await referenceVersion();
   if (!version) {
@@ -155,11 +172,11 @@ async function downloadReference() {
       .from(BUCKET)
       .download(key);
     // この版で足したモデルは、参照版に無くてよい（train.py がその比較だけを「比較なし」と記録する）
-    // 無いとき（404）だけ。通信・権限のエラーで飛ばすと、参照版との比較が黙って省かれる
+    // 無いときだけ。通信・権限のエラーで飛ばすと、参照版との比較が黙って省かれる
     if (
       dlError &&
       OPTIONAL_REFERENCE_FILES.includes(name) &&
-      isNotFound(dlError)
+      (isNotFound(dlError) || !(await referenceHasFile(version, `${name}.gz`)))
     ) {
       console.log(`  参照版 ${version} に ${name} が無い。その比較は省く`);
       continue;
@@ -173,26 +190,33 @@ async function downloadReference() {
   }
 }
 
-/** 表示中の版（is_active）の per_race_meta.json。日次の特徴量ジョブが、特徴量の並び・支部の対応表・版に使う */
-async function downloadActiveMeta() {
+/**
+ * 表示中の版（is_active）のファイルを out/active/ に置き、版の名前を out/active/version.txt に書く。
+ * per_race_meta.json は日次の特徴量ジョブ（特徴量の並び・支部の対応表・版）、model_win.txt は v16 の朝のバッチ
+ * （類似レースの距離の重み）が使う
+ */
+async function downloadActive(names) {
   const version = await activeVersion();
   if (!version)
     throw new Error("表示中の版（analogy_models.is_active）がありません");
-  const key = `${version}/per_race_meta.json.gz`;
-  const { data: blob, error } = await supabase.storage
-    .from(BUCKET)
-    .download(key);
-  if (error)
-    throw new Error(
-      `${key} を取れません（レースごとの寄与度を含む版の学習の前か、Storage の不具合）: ${error.message}`,
-    );
   const dir = path.join(OUT_DIR, "active");
   await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(
-    path.join(dir, "per_race_meta.json"),
-    zlib.gunzipSync(Buffer.from(await blob.arrayBuffer())),
-  );
-  console.log(`  ⬇️ ${key}`);
+  for (const name of names) {
+    const key = `${version}/${name}.gz`;
+    const { data: blob, error } = await supabase.storage
+      .from(BUCKET)
+      .download(key);
+    if (error)
+      throw new Error(
+        `${key} を取れません（その版の学習の前か、Storage の不具合）: ${error.message}`,
+      );
+    await fs.writeFile(
+      path.join(dir, name),
+      zlib.gunzipSync(Buffer.from(await blob.arrayBuffer())),
+    );
+    console.log(`  ⬇️ ${key}`);
+  }
+  await fs.writeFile(path.join(dir, "version.txt"), version);
 }
 
 async function main() {
@@ -200,10 +224,13 @@ async function main() {
   const cmd = process.argv[2];
   if (cmd === "upload-model") await uploadModel();
   else if (cmd === "download-reference") await downloadReference();
-  else if (cmd === "download-active-meta") await downloadActiveMeta();
+  else if (cmd === "download-active-meta")
+    await downloadActive(["per_race_meta.json"]);
+  else if (cmd === "download-active-model")
+    await downloadActive(["model_win.txt"]);
   else
     throw new Error(
-      "使い方: node scripts/ml/analogy/storage.js <upload-model|download-reference|download-active-meta>",
+      "使い方: node scripts/ml/analogy/storage.js <upload-model|download-reference|download-active-meta|download-active-model>",
     );
 }
 

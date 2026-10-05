@@ -15,9 +15,13 @@ test("A-2: 共有文は、決まり手もコースも予想どおりのときだ
   await page.goto("/about", { waitUntil: "domcontentloaded" });
   const texts = await page.evaluate(async () => {
     const { generateTurnHitShareText } = await import("/src/utils/share.js");
+    const { default: i18n } = await import("/src/i18n.js");
+    // /hit-races は ja 専用なので ja の文面で確かめる（BOA-754 で文面を locale に移した）
+    const share = (race) =>
+      generateTurnHitShareText(race, i18n.getFixedT("ja"));
     const base = { venue: "鳴門", raceNo: 12, date: "2026-10-02" };
     return {
-      asPredicted: generateTurnHitShareText({
+      asPredicted: share({
         ...base,
         winnerBoat: 1,
         winnerEntryCourse: 1,
@@ -25,7 +29,7 @@ test("A-2: 共有文は、決まり手もコースも予想どおりのときだ
         actualTechnique: "逃げ",
         probability: 0.54,
       }),
-      techniqueDiffers: generateTurnHitShareText({
+      techniqueDiffers: share({
         ...base,
         winnerBoat: 2,
         winnerEntryCourse: 2,
@@ -33,7 +37,7 @@ test("A-2: 共有文は、決まり手もコースも予想どおりのときだ
         actualTechnique: "まくり",
         probability: 0.1,
       }),
-      courseDiffers: generateTurnHitShareText({
+      courseDiffers: share({
         ...base,
         winnerBoat: 1,
         winnerEntryCourse: 2,
@@ -42,7 +46,7 @@ test("A-2: 共有文は、決まり手もコースも予想どおりのときだ
         probability: 0.54,
       }),
       // 例: 戸田 9/30 8R。本命は1号艇の逃げ、当たったのは2番手の3号艇のまくり
-      secondPick: generateTurnHitShareText({
+      secondPick: share({
         ...base,
         winnerBoat: 3,
         winnerEntryCourse: 3,
@@ -51,7 +55,7 @@ test("A-2: 共有文は、決まり手もコースも予想どおりのときだ
         isTopPick: false,
         probability: 0.13,
       }),
-      unknownActual: generateTurnHitShareText({
+      unknownActual: share({
         ...base,
         winnerBoat: 3,
         winnerEntryCourse: 3,
@@ -88,7 +92,11 @@ test("A-2: 共有文は、決まり手もコースも予想どおりのときだ
   for (let i = 0; i < 30; i += 1) {
     const text = await page.evaluate(async () => {
       const { generateTurnHitShareText } = await import("/src/utils/share.js");
-      return generateTurnHitShareText({
+      const { default: i18n } = await import("/src/i18n.js");
+      // /hit-races は ja 専用なので ja の文面で確かめる（BOA-754 で文面を locale に移した）
+      const share = (race) =>
+        generateTurnHitShareText(race, i18n.getFixedT("ja"));
+      return share({
         venue: "戸田",
         raceNo: 11,
         date: "2026-09-27",

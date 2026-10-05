@@ -10,7 +10,7 @@ name: Nightly DB Verify
 # BOA-431 で同型の再発が起きている。この欠陥はCIでもE2Eでも検知できない
 # （CIは本番RPCに繋げず、E2Eはフォールバック経路が同じキーを返すため画面が壊れない）。
 #
-# 実行するのは読み取りだけの3本。verify-winning-technique-filled.js（BOA-749）は tier=ci で、
+# 実行するのは読み取りだけの3本と、verify-analogy-v16（BOA-271 v16 の前日の出力。--cleanup で Storage の古い候補ファイルを消す）。verify-winning-technique-filled.js（BOA-749）は tier=ci で、
 # PRでは判定の純関数だけを検証し、ここで VERIFY_PRODUCTION=1 を付けて本番の欠けを見る。
 # tier=manual の残る3本は載せない:
 #   verify-morning-digest.js       generate-morning-digest.yml が生成直後に毎日実行済み
@@ -51,9 +51,12 @@ jobs:
           set +e
           OUTPUT=""
           EXIT_CODE=0
-          for script in verify-rpc-output-keys verify-format-column-migration verify-winning-technique-filled; do
+          for script in verify-rpc-output-keys verify-format-column-migration verify-winning-technique-filled verify-analogy-v16; do
             echo "--- $script"
-            RESULT=$(node "scripts/maintenance/$script.js" 2>&1)
+            # verify-analogy-v16 は Storage の7日より前の候補ファイル（similar/）も消す（BOA-271 T3-3）
+            ARGS=""
+            if [ "$script" = "verify-analogy-v16" ]; then ARGS="--cleanup"; fi
+            RESULT=$(node "scripts/maintenance/$script.js" $ARGS 2>&1)
             CODE=$?
             echo "$RESULT"
             if [ "$CODE" -ne 0 ]; then

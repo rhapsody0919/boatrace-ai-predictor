@@ -8,6 +8,7 @@
  * 3. テーマは themes 配列の順と数で並べる（テーマ数を固定しない。spec FR-1「テーマ数は可変」）
  * 5. 表示する % は、四捨五入しても合計が100（内訳は親の値）になるように丸める（ファン評価2周目）
  * 4. 順位を強調してよいのは、上下の隣の順位との差がどちらも SD の2倍以上のときだけ（spec FR-1「安定性」）
+ * 6. API の段（stage、マイグレーション 132）: 省略時は展示後（exhibition）、racecard を受け付け、ほかは 400
  */
 import {
   MIN_RACES,
@@ -15,6 +16,7 @@ import {
   roundToTotal,
   themeEntries,
 } from "../../src/utils/analogyContribution.js";
+import { parseParams } from "../../api/analogy/contribution.js";
 
 const failures = [];
 const check = (label, ok) => {
@@ -179,6 +181,20 @@ check(
   const b = roundToTotal([0.05, 0.21, 0.08, 0.05, 0.02], 40);
   check("内訳は親の % に合計がそろう", sum(b) === 40);
   check("全部0でも壊れない", sum(roundToTotal([0, 0, 0], 0)) === 0);
+}
+
+{
+  console.log("\n6. API の段（stage）");
+  const p = (q) => parseParams(new URLSearchParams(q));
+  check("stage を省略すると exhibition", p("target=1").stage === "exhibition");
+  check("stage=racecard を受け付ける", p("stage=racecard").stage === "racecard");
+  let threw = false;
+  try {
+    p("stage=pre");
+  } catch (e) {
+    threw = e instanceof RangeError;
+  }
+  check("知らない stage は RangeError（400）", threw);
 }
 
 if (failures.length) {

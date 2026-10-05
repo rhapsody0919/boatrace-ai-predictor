@@ -1,0 +1,325 @@
+{
+ "tag": "knnp",
+ "k": 1600,
+ "S_star": [
+  "Gap5",
+  "C1",
+  "V",
+  "Ntop"
+ ],
+ "n_races": 2003,
+ "kept_count_dist": {
+  "0": 0.371,
+  "1": 0.283,
+  "2": 0.179,
+  "3": 0.105,
+  "4": 0.047,
+  "5+": 0.015
+ },
+ "kept_count_mean": 1.22,
+ "axes": {
+  "会場": {
+   "match_nb": 0.294,
+   "match_base": 1.0,
+   "ratio_of_means": 0.29,
+   "share_ratio_ge_1_5": 0.0,
+   "kept_share": 0.0,
+   "excluded": [
+    "S*の軸"
+   ]
+  },
+  "1号艇の級別": {
+   "match_nb": 0.677,
+   "match_base": 1.0,
+   "ratio_of_means": 0.68,
+   "share_ratio_ge_1_5": 0.0,
+   "kept_share": 0.0,
+   "excluded": [
+    "S*の軸"
+   ]
+  },
+  "1号艇の勝率順位帯": {
+   "match_nb": 0.666,
+   "match_base": 0.775,
+   "ratio_of_means": 0.86,
+   "share_ratio_ge_1_5": 0.119,
+   "kept_share": 0.0,
+   "excluded": [
+    "Gap5と入れ子",
+    "Gap5と相関0.743",
+    "C1と入れ子",
+    "Ntopと入れ子",
+    "Ntopと相関0.708"
+   ]
+  },
+  "1号艇と他艇の勝率差5帯": {
+   "match_nb": 0.464,
+   "match_base": 1.0,
+   "ratio_of_means": 0.46,
+   "share_ratio_ge_1_5": 0.0,
+   "kept_share": 0.0,
+   "excluded": [
+    "S*の軸",
+    "Ntopと入れ子"
+   ]
+  },
+  "2〜6号艇のA級の数": {
+   "match_nb": 0.399,
+   "match_base": 0.319,
+   "ratio_of_means": 1.25,
+   "share_ratio_ge_1_5": 0.355,
+   "kept_share": 0.355,
+   "excluded": null
+  },
+  "勝率1位の艇": {
+   "match_nb": 0.61,
+   "match_base": 1.0,
+   "ratio_of_means": 0.61,
+   "share_ratio_ge_1_5": 0.0,
+   "kept_share": 0.0,
+   "excluded": [
+    "S*の軸",
+    "Gap5と入れ子"
+   ]
+  },
+  "1号艇のモーター順位帯": {
+   "match_nb": 0.363,
+   "match_base": 0.335,
+   "ratio_of_means": 1.08,
+   "share_ratio_ge_1_5": 0.026,
+   "kept_share": 0.026,
+   "excluded": null
+  },
+  "1号艇の平均ST順位帯": {
+   "match_nb": 0.421,
+   "match_base": 0.382,
+   "ratio_of_means": 1.1,
+   "share_ratio_ge_1_5": 0.091,
+   "kept_share": 0.091,
+   "excluded": null
+  },
+  "グレード": {
+   "match_nb": 0.748,
+   "match_base": 0.683,
+   "ratio_of_means": 1.1,
+   "share_ratio_ge_1_5": 0.126,
+   "kept_share": 0.126,
+   "excluded": null
+  },
+  "ラウンド": {
+   "match_nb": 0.529,
+   "match_base": 0.523,
+   "ratio_of_means": 1.01,
+   "share_ratio_ge_1_5": 0.137,
+   "kept_share": 0.137,
+   "excluded": null
+  },
+  "レース番号帯": {
+   "match_nb": 0.475,
+   "match_base": 0.478,
+   "ratio_of_means": 0.99,
+   "share_ratio_ge_1_5": 0.195,
+   "kept_share": 0.195,
+   "excluded": null
+  },
+  "1号艇の全国勝率": {
+   "match_nb": 0.428,
+   "match_base": 0.342,
+   "ratio_of_means": 1.25,
+   "share_ratio_ge_1_5": 0.235,
+   "kept_share": 0.0,
+   "excluded": [
+    "Gap5と入れ子",
+    "C1と入れ子"
+   ]
+  },
+  "2〜6号艇の最高勝率": {
+   "match_nb": 0.378,
+   "match_base": 0.342,
+   "ratio_of_means": 1.11,
+   "share_ratio_ge_1_5": 0.17,
+   "kept_share": 0.0,
+   "excluded": [
+    "Gap5と入れ子"
+   ]
+  },
+  "1号艇の直近の勝率": {
+   "match_nb": 0.446,
+   "match_base": 0.383,
+   "ratio_of_means": 1.16,
+   "share_ratio_ge_1_5": 0.118,
+   "kept_share": 0.118,
+   "excluded": null
+  },
+  "1号艇の当地勝率": {
+   "match_nb": 0.357,
+   "match_base": 0.34,
+   "ratio_of_means": 1.05,
+   "share_ratio_ge_1_5": 0.085,
+   "kept_share": 0.085,
+   "excluded": null
+  },
+  "1号艇の平均ST": {
+   "match_nb": 0.378,
+   "match_base": 0.337,
+   "ratio_of_means": 1.12,
+   "share_ratio_ge_1_5": 0.053,
+   "kept_share": 0.053,
+   "excluded": null
+  },
+  "1号艇のモーター2連率": {
+   "match_nb": 0.371,
+   "match_base": 0.338,
+   "ratio_of_means": 1.1,
+   "share_ratio_ge_1_5": 0.01,
+   "kept_share": 0.01,
+   "excluded": null
+  },
+  "節の日目": {
+   "match_nb": 0.524,
+   "match_base": 0.501,
+   "ratio_of_means": 1.05,
+   "share_ratio_ge_1_5": 0.015,
+   "kept_share": 0.015,
+   "excluded": null
+  },
+  "1号艇の年齢": {
+   "match_nb": 0.384,
+   "match_base": 0.365,
+   "ratio_of_means": 1.05,
+   "share_ratio_ge_1_5": 0.007,
+   "kept_share": 0.007,
+   "excluded": null
+  },
+  "1号艇の体重": {
+   "match_nb": 0.465,
+   "match_base": 0.451,
+   "ratio_of_means": 1.03,
+   "share_ratio_ge_1_5": 0.004,
+   "kept_share": 0.004,
+   "excluded": null
+  }
+ },
+ "corr_with_Sstar": {
+  "会場": {
+   "Gap5": 0.064,
+   "C1": 0.072,
+   "V": 1.0,
+   "Ntop": 0.051
+  },
+  "1号艇の級別": {
+   "Gap5": 0.405,
+   "C1": 1.0,
+   "V": 0.072,
+   "Ntop": 0.277
+  },
+  "1号艇の勝率順位帯": {
+   "Gap5": 0.743,
+   "C1": 0.455,
+   "V": 0.081,
+   "Ntop": 0.708
+  },
+  "1号艇と他艇の勝率差5帯": {
+   "Gap5": 1.0,
+   "C1": 0.405,
+   "V": 0.064,
+   "Ntop": 0.448
+  },
+  "2〜6号艇のA級の数": {
+   "Gap5": 0.198,
+   "C1": 0.271,
+   "V": 0.116,
+   "Ntop": 0.134
+  },
+  "勝率1位の艇": {
+   "Gap5": 0.448,
+   "C1": 0.277,
+   "V": 0.051,
+   "Ntop": 1.0
+  },
+  "1号艇のモーター順位帯": {
+   "Gap5": 0.007,
+   "C1": 0.004,
+   "V": 0.024,
+   "Ntop": 0.013
+  },
+  "1号艇の平均ST順位帯": {
+   "Gap5": 0.193,
+   "C1": 0.148,
+   "V": 0.032,
+   "Ntop": 0.151
+  },
+  "グレード": {
+   "Gap5": 0.099,
+   "C1": 0.206,
+   "V": 0.037,
+   "Ntop": 0.031
+  },
+  "ラウンド": {
+   "Gap5": 0.167,
+   "C1": 0.183,
+   "V": 0.106,
+   "Ntop": 0.133
+  },
+  "レース番号帯": {
+   "Gap5": 0.205,
+   "C1": 0.304,
+   "V": 0.023,
+   "Ntop": 0.12
+  },
+  "1号艇の全国勝率": {
+   "Gap5": 0.44,
+   "C1": 0.574,
+   "V": 0.06,
+   "Ntop": 0.276
+  },
+  "2〜6号艇の最高勝率": {
+   "Gap5": 0.226,
+   "C1": 0.099,
+   "V": 0.054,
+   "Ntop": 0.197
+  },
+  "1号艇の直近の勝率": {
+   "Gap5": 0.304,
+   "C1": 0.392,
+   "V": 0.045,
+   "Ntop": 0.184
+  },
+  "1号艇の当地勝率": {
+   "Gap5": 0.293,
+   "C1": 0.444,
+   "V": 0.054,
+   "Ntop": 0.197
+  },
+  "1号艇の平均ST": {
+   "Gap5": 0.178,
+   "C1": 0.24,
+   "V": 0.037,
+   "Ntop": 0.109
+  },
+  "1号艇のモーター2連率": {
+   "Gap5": 0.014,
+   "C1": 0.022,
+   "V": 0.036,
+   "Ntop": 0.01
+  },
+  "節の日目": {
+   "Gap5": 0.075,
+   "C1": 0.07,
+   "V": 0.044,
+   "Ntop": 0.049
+  },
+  "1号艇の年齢": {
+   "Gap5": 0.085,
+   "C1": 0.131,
+   "V": 0.04,
+   "Ntop": 0.055
+  },
+  "1号艇の体重": {
+   "Gap5": 0.067,
+   "C1": 0.099,
+   "V": 0.028,
+   "Ntop": 0.045
+  }
+ }
+}

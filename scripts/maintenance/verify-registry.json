@@ -665,9 +665,19 @@
       "guards": "展示タイム1位率の集計（update-exhibition-time-top-stats.js）が、展示タイムが NULL の行（展示ST先行・展示前の体重だけの行・展示なし）を分母に入れないこと、同着の最速を数えないこと（BOA-520。PR #917 で見つかった率の薄まり）"
     },
     {
+      "script": "verify-index-jsonld.js",
+      "tier": "ci",
+      "guards": "index.html の JSON-LD に、実在しない評価（aggregateRating・review）と受け口の無い SearchAction を書かないこと、各ブロックが JSON として読めること。2025-12-20 に架空の評価（4.5・100件）が入り、AIクローラー向けスナップショットにも出ていた（Google の構造化データ方針違反。docs/proposal/ai-agent-era-strategy.md Phase 0）"
+    },
+    {
+      "script": "verify-no-accuracy-claims-in-meta.js",
+      "tier": "ci",
+      "guards": "サイト全体の説明文（index.html の meta・OGP・Twitter カード・JSON-LD、useSocialMeta の既定値、About の meta description、llms.txt の冒頭と生成スクリプト）に「高精度」「精度」「的中」「回収率」「必勝」が戻らないこと。的中率の土俵で戦わない方針（BOA-617）と、数えた値を主役にする方針（BOA-271）に合わせて 2026-10-05 に書き直した（docs/proposal/ai-agent-era-strategy.md R5）。ブログ記事とページ本文は対象外"
+    },
+    {
       "script": "verify-middleware-routing.js",
       "tier": "ci",
-      "guards": "middleware.js の管理画面Basic認証（/admin/rules・/admin/sns-hub は認証なしで401、一般ページは素通り、環境変数が未設定・空なら拒否、':'入りパスワードは最初の':'で分割、UTF-8で復号、壊れたbase64で例外を出さず401。判定は api/_lib/adminAuth.js の requireAdminAuth と共有）と、AIスナップショット配信の経路（resolveSnapshotPath が返すパスが config.matcher に一致し、管理画面がスナップショットに振り分けられないこと）。BOA-555で /admin/rules が本番で認証なしに開けていた"
+      "guards": "middleware.js の管理画面Basic認証（/admin/rules・/admin/sns-hub は認証なしで401、一般ページは素通り、環境変数が未設定・空なら拒否、':'入りパスワードは最初の':'で分割、UTF-8で復号、壊れたbase64で例外を出さず401。判定は api/_lib/adminAuth.js の requireAdminAuth と共有）と、AIスナップショット配信の経路（resolveSnapshotPath が返すパスが config.matcher に一致し、管理画面がスナップショットに振り分けられないこと。検索・ユーザー起点の取得に使う UA（OAI-SearchBot・ChatGPT-User・Claude-SearchBot・Claude-User・Perplexity-User・bingbot・Applebot・DuckDuckBot）もスナップショットに振り分け、Googlebot と人間のブラウザは振り分けないこと）。BOA-555で /admin/rules が本番で認証なしに開けていた"
     },
     {
       "script": "verify-pit-report-backfill.js",
@@ -683,6 +693,28 @@
       "script": "verify-analogy-contribution.js",
       "tier": "ci",
       "guards": "アナロジー・ファインダーの寄与度（BOA-271 FR-1）で、レース数30未満のスライスを会場→ラウンド→グレードの順に広げること、テーマを themes 配列の順と数で並べること（テーマ数を固定しない）、SD の2倍に満たない隣どうしの順位を強調しないこと（API と画面の直読みで共有する src/utils/analogyContribution.js）"
+    },
+    {
+      "script": "verify-analogy-facts.js",
+      "tier": "ci",
+      "guards": "アナロジー・ファインダー v16（BOA-271）の定義の固定データ。優勝戦・準優勝戦の判定 v2 が固定の82件（scripts/ml/analogy/testdata/stage-rule-v2-cases.json）と一致し、サイトのバッジ（getRaceStageKey）と今節の得点の除外（seriesPoints.js の classifyStage）が同じ判定に従うこと。展示後の類似レースの並べ直し（src/utils/analogySimilarRerank.js）が Python の展示後の厳密な並び（testdata/v16-rerank.json）と順位で完全に一致すること"
+    },
+    {
+      "script": "verify-analogy-v16.js",
+      "tier": "manual",
+      "guards": "アナロジー・ファインダー v16（BOA-271）の前日の出力: 出走表の段が締切前にそろった割合（99%）、6艇の展示タイムがそろったレースの展示後の段が締切前にそろった割合（95%）。--cleanup で Storage の7日より前の similar/ を消す",
+      "reason": "本番の analogy_v16_snapshots・races・exhibition_data を読み、--cleanup は本番 Storage を消すため。Nightly DB Verify（JST 3:00）が毎晩実行する",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-analogy-v16.js"
+    },
+    {
+      "script": "verify-analogy-v16-api.js",
+      "tier": "ci",
+      "guards": "アナロジー・ファインダー v16（BOA-271）の展示後の段と読み出しの API の純粋関数: 展示後の段の対象の選び方（racecard あり・exhibition なし・締切前・6艇の展示タイムか欠場）、今日の展示の値（展示の進入の型・展示 ST の形・風速区分）、並べ直した上位の33項目の付け直し、画面と layer の状態、キャッシュ、NCR が優勝戦のときに今節の平均着順点を外すこと"
+    },
+    {
+      "script": "verify-analogy-v16-snapshots-migration.js",
+      "tier": "ci",
+      "guards": "マイグレーション133（BOA-271 v16 の analogy_v16_snapshots）を PGlite に適用し、RLS 有効・anon/authenticated は SELECT のみ・service_role は書ける・主キーの重複は ON CONFLICT DO NOTHING で1行・段ごとの列の約束（CHECK）・races の外部キー・冪等・ロールバックを確かめる"
     },
     {
       "script": "verify-analogy-storage.js",
@@ -779,6 +811,11 @@
       "script": "verify-volatility-accuracy-heading.js",
       "tier": "ci",
       "guards": "精度ページの「イン崩れ予測の実績」の見出しが、集計（calculate-unified-volatility-accuracy.js）の期間と合っていること（BOA-717）。集計が期間を絞っていない間は、4言語の見出しが「直近N日」を名乗らず、運用開始日（2026-08-11）を書いていること。集計に期間の条件を足すと失敗するので、見出しを合わせ直してから更新する"
+    },
+    {
+      "script": "verify-ai-copy-text.js",
+      "tier": "ci",
+      "guards": "「AI用にコピー」の文面（src/utils/aiCopyText.js、BOA-770）。4言語で、末尾の出典1行（ブランド名＋表示言語のレース詳細URL）、見出し直後のレースの前提の行（日付・締切・グレード／節・水面の条件、取れない項目は「未取得」）、コピーした時刻（JST）と展示前の断り、表にある行の注記、券種にかかわらず展開予測が入ること。「競艇」・的中や回収を示唆する語が追加した文言に無いこと"
     },
     {
       "script": "verify-analogy-dispatch.js",

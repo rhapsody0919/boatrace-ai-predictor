@@ -1,0 +1,20 @@
+  <section class="block" id="secAi" aria-labelledby="hAi">
+    <h2 id="hAi"></h2>
+    <p class="sub">AI（寄与度用のモデル。AI 予想とは別）の見立て。いろいろなレースでその艇番の見込みが上下するとき、その上下をどの材料が生んでいるかの割合。枠は艇番で決まっているので入れていない</p>
+    <div class="row"><span class="lbl">艇番</span><div class="seg" id="pbSeg"></div></div>
+    <div class="row"><label class="row lbl" style="gap:4px;font-weight:500"><input type="checkbox" id="two"> 比べる</label><select id="boatB" aria-label="比べる艇番"></select></div>
+    <div class="scope"><svg id="radar" viewBox="-50 0 500 370" role="img" aria-label="材料の割合の図"></svg></div>
+    <div class="legend" id="legendA"></div>
+    <div id="themeList"></div>
+    <div style="border-top:1px dashed var(--border);padding-top:10px;display:grid;gap:8px">
+      <h3>会場・グレード・ラウンドで比べる</h3>
+      <div class="row"><select id="cV" aria-label="会場"></select><select id="cG" aria-label="グレード"></select><select id="cR" aria-label="ラウンド"></select></div>
+      <div id="cOut"></div>
+    </div>
+    <div style="border-top:1px dashed var(--border);padding-top:10px;display:grid;gap:8px">
+      <h3 id="hToday"></h3>
+      <div id="aiPanel"></div>
+    </div>
+    <details class="more"><summary>展示前の見立て</summary><p class="foot" style="margin-top:6px">本番は朝に出走表の時点の見立てを出し、展示の後にこの値へ置き換える。展示前は展示タイムと天候・水面を使わないので、その行は出さない。モックの版（2026-10-02）には出走表の時点のモデルが無いので、空にしている。</p></details>
+    <p class="foot">AI の見立てで、原因の断定ではない。割合が大きい材料ほど、その艇番の見込みを大きく上下させているという意味で、「それがあれば勝てる」という意味ではない。</p>
+  </section>

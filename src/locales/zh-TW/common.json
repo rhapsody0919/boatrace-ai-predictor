@@ -113,7 +113,21 @@
       "out_strong": "外道優勢",
       "balanced": "平衡型"
     },
-    "fetchError": "無法載入本場地的水面特性。"
+    "fetchError": "無法載入本場地的水面特性。",
+    "details": {
+      "summary": "查看更多（2連率、3連率、決勝方式明細）",
+      "placeRatesTitle": "各艇號的連對率",
+      "placeRatesNote": "2連率為進入前2名、3連率為進入前3名的比例（{{count}}場）",
+      "boat": "艇",
+      "winRate": "第1名率",
+      "top2Rate": "2連率",
+      "top3Rate": "3連率",
+      "techniqueTitle": "獲勝時的決勝方式",
+      "techniqueNote": "各艇號獲得第1名的比賽中，決勝方式的明細。括號內為次數",
+      "winCount": "第1名{{count}}次",
+      "smallSampleNote": "第1名次數較少的艇號，比例容易波動。",
+      "outcomeLink": "查看此賽場的常見結果排行（分析工具）"
+    }
   },
   "raceDetailPage": {
     "metaTitle": "{{venue}} 第{{race}}場 AI數據分析（{{date}}）- 龍神雷達",
@@ -351,6 +365,23 @@
       "v3": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n能免費看到這麼精準的預測真開心✨\n希望今天也能命中！",
       "v4": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n從轉彎預測來看，這個預測似乎很可靠！\n大家覺得呢？🤔",
       "v5": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n最近命中率越來越高，好開心😊\n歡迎參考AI預測！"
+    },
+    "shareTurnHit": {
+      "headAsPredicted": "🌊 轉彎預測命中！【{{date}}{{venue}}{{raceNo}}R】",
+      "headWinner": "🌊 第1名的艇在轉彎預測中【{{date}}{{venue}}{{raceNo}}R】",
+      "winner": "{{boat}}號艇獲得第1名",
+      "winnerFromCourse": "{{boat}}號艇從第{{course}}道獲得第1名",
+      "prediction": "（AI預測：{{detail}}）",
+      "actual": "，實際：{{technique}}",
+      "asPredicted": "與預測相同的展開 ✅",
+      "closingWinner": "在龍神雷達查看轉彎預測",
+      "closing": {
+        "v1": "龍神雷達的轉彎預測命中🎉\nAI的分析能力令人驚訝！",
+        "v2": "龍神雷達的轉彎預測命中🎉\n免費就有這種準確度太厲害了！",
+        "v3": "龍神雷達的轉彎預測命中🎉\n感受到數據分析的力量！",
+        "v4": "龍神雷達的轉彎預測命中🎉\nAI預測又命中了！",
+        "v5": "龍神雷達的轉彎預測命中🎉\n對命中率很滿意！"
+      }
     }
   },
   "home": {
@@ -1223,7 +1254,6 @@
   "aiCopy": {
     "bannerLabel": "複製給AI使用",
     "bannerCatchphrase": "讓你的AI也能分析！",
-    "inlineButtonLabel": "複製給AI使用",
     "toastSuccess": "已複製",
     "toastError": "複製失敗",
     "promptSelectorWin": "單勝",
@@ -1243,9 +1273,46 @@
     "turnPredictionColSecond": "第2名熱門",
     "turnPredictionColThird": "第3名熱門",
     "turnPredictionDistributionLabel": "整體決勝招式傾向",
-    "turnPredictionStrengthLabel": "依第一標展開預測計算的綜合實力排名",
     "promptVolatilityTrifecta": "以上是被判定為「內圈崩盤注意度」偏高（1號艇可能無法像平常一樣順利搶得領先）的比賽出賽表數據，以及第一標展開預測（依決勝招式分類的獲勝機率、第2、3名熱門艇）。請根據這份展開預測數據，判斷實際最有可能獲得第一名的艇號與決勝招式，並提出3組值得鎖定的3連單組合，附上理由。若1號艇的搶先機率依然偏高，請不要排除，將其納入候選。",
-    "previewToggleLabel": "查看將複製的提問內容"
+    "previewToggleLabel": "查看將複製的完整內容",
+    "promptSelectorTurn": "詢問展開",
+    "promptSelectorDataOnly": "只要數據",
+    "promptTurn": "以上是賽艇的出賽表數據與第一標展開預測。請考量水面條件（標示「尚未取得」的項目請不要推測），告訴我第一標可能會如何展開，以及值得注意的艇，並說明理由。",
+    "promptDataOnly": "以上是賽艇的出賽表數據。接下來我會提問。",
+    "unpublished": "尚未取得",
+    "gradeIppan": "一般",
+    "premiseDate": "日期",
+    "premiseDeadline": "截止預定（日本時間）",
+    "premiseMeet": "等級、賽程",
+    "premiseConditions": "水面條件",
+    "premiseWind": "風",
+    "premiseObservedAt": "{{time}}觀測",
+    "premiseAsOf": "複製時間",
+    "premiseAsOfValue": "{{time}}（日本時間）",
+    "premiseExhibitionUnpublished": "展示：未反映（展示前，或在開啟此頁面後才公布，因此展示ST、展示進入為「—」，展示時間為括號內的過去90天平均。體重、傾角、零件更換只填入已公布的部分）",
+    "notesHeading": "項目註記",
+    "note": {
+      "winRate": "F1、F2為出賽表上本期的偷跑次數，附「(本節)」表示其中有在本節前一天以前發生的（不得參加本節準決賽、決賽）。L1為本期起跑延遲次數",
+      "motor": "本站統計此馬達過去90天（僅限換裝後）的2連率。與官方出賽表的賽程時點2連率數值不同",
+      "form": "目前全國勝率與約90天前全國勝率的差。↑為上升，↓為下降",
+      "avgSt": "正式比賽起跑時機的平均（秒，本站累積的全部期間）。越小代表起跑越快",
+      "st": "過去90天展示ST與正式ST差距的平均（秒）。±後的數字越小，代表越能照展示起跑",
+      "exSt": "當天起跑展示的時機。F.01 等為起跑展示中的偷跑，L 為起跑延遲（官方標記）",
+      "exhibition": "當天的展示時間（秒）。括號內的值是當天展示前，改以顯示的過去90天平均展示時間",
+      "exhibitionCourse": "起跑展示時進入的水道（官方賽前資訊）。括號表示比艇號更內側、外側進入。正式比賽的進入可能不同",
+      "partsChanged": "為本場比賽更換的零件、螺旋槳。不代表更換的好壞",
+      "courseRate": "以與本次相同艇號出賽時的第1名率（第1名次數/出賽次數，本站累積的全部期間）",
+      "technique": "該選手獲得第1名時最常見的決勝招式（括號為過去90天的第1名次數），不分艇號計算",
+      "returnRate": "該選手以此艇號出賽、過去180天單勝的實際數值。僅供參考，不保證結果",
+      "dash": "「—」：無數據，或尚未取得"
+    },
+    "sourceLine": "出處：龍神雷達 {{url}}",
+    "followUpHeading": "貼上後的提問範例",
+    "followUp1": "根據水面條件與展開預測，預測第一標的展開",
+    "followUp2": "這之中你最在意哪一艘？也告訴我理由",
+    "followUp3": "第一標可能處於不利的是哪一艘？理由是什麼？",
+    "turnPredictionCandidateNote": "第2名熱門、第3名熱門是在該決勝招式下，進入第2、3名機率最高的艇（括號內為該機率）。同一艘艇可能同時出現在兩欄",
+    "inlinePromptCaption": "將附上「{{label}}」的提問一起複製（可在上方橫幅切換）"
   },
   "review": {
     "finishPosition": "第{{position}}名",

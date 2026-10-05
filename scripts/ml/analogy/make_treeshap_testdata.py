@@ -24,7 +24,8 @@ import numpy as np
 import pandas as pd
 
 from features import DIR16, WEATHER_CODE, encode_race_level, load_wind_basis, wind_offset
-from themes import CATEGORICAL, FEATURES, THEMES
+from perrace import META_THEMES
+from themes import CATEGORICAL, FEATURES
 
 OUT = Path(__file__).resolve().parent / "testdata" / "treeshap-parity"
 LIVE = ["exh_time", "exh_time_diff", "exh_time_rank", "weather_code", "wind_x", "wind_y",
@@ -205,7 +206,7 @@ def main():
 
     OUT.mkdir(parents=True, exist_ok=True)
     meta = {"model_version": MODEL_VERSION, "dtype": "float32", "live_features": LIVE,
-            "categorical_maps": {"branch_code": {}}, "wind_basis": basis, "themes": THEMES, "models": {}}
+            "categorical_maps": {"branch_code": {}}, "wind_basis": basis, "themes": META_THEMES, "models": {}}
     for name, b in boosters.items():
         file = f"model_{name}.json.gz"
         with gzip.GzipFile(OUT / file, "wb", mtime=0) as f:
