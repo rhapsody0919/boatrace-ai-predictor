@@ -526,6 +526,15 @@ input:focus-visible,
   text-align: center;
 }
 
+/* 前付けで艇番とコースが違ったレースの注記（BOA-708）。判定（艇番）の補足なので控えめに */
+.result-verify-entry-note {
+  margin: 0.5rem 0 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
 .result-volatility-line {
   margin: 0 0 0.35rem;
   font-size: 0.9rem;
@@ -633,7 +642,11 @@ input:focus-visible,
 }
 
 .rr-row.is-winner {
-  background: color-mix(in srgb, var(--ryujin-gold-500) 10%, transparent);
+  /* 2026-10-03 ユーザー判断（BOA-711 U3）: 地を20%に上げ、左に金の線。10%ではダークで灰の帯に見えた */
+  /* 地は最良の金枠と同じトークン（ダークでは暗い金の不透明な地。2026-10-04 ユーザー判断） */
+  background: var(--ind-best-bg);
+  /* 線は行の外（カードの内余白）に引く。内側に引くと「1着」の「1」に重なった（ファン評価1周目） */
+  box-shadow: -4px 0 0 0 var(--ryujin-gold-500);
 }
 
 .rr-pos {
@@ -643,7 +656,9 @@ input:focus-visible,
 }
 
 .rr-row.is-winner .rr-pos {
-  color: var(--brand-accent-primary);
+  /* 金20%の帯の上で、ダークの金（#c9a227）は 4.41:1 と AA を割った（#1218 ファン評価3周目）。
+     本文色を3割混ぜ、ライトは濃く・ダークは明るく寄せる（ダークで約5.7:1） */
+  color: color-mix(in srgb, var(--brand-accent-primary) 70%, var(--text-primary));
 }
 
 .rr-row.is-second .rr-pos {
@@ -900,6 +915,11 @@ input:focus-visible,
 }
 
 /* 1号艇（白）は明るい地に溶けるので、形に沿った濃い輪郭を付ける */
+.rr-st-dot.is-black {
+  /* 2号艇の黒い矢印はダークの紺の帯に溶けるので、明るい輪郭を付ける（BOA-711） */
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.85));
+}
+
 .rr-st-dot.is-white {
   /* 0.6px では1着行のベージュ地で輪郭が弱かった（BOA-586） */
   filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.95))

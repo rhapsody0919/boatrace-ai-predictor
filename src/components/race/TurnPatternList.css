@@ -54,6 +54,13 @@
   color: var(--text-primary);
 }
 
+/* 実際の決まり手（予想と違うとき）。予想の決まり手より一段控えめにする（BOA-724） */
+.turn-pattern-actual {
+  margin-left: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
 .turn-pattern-prob {
   flex-shrink: 0;
   font-weight: var(--font-weight-bold);
@@ -65,9 +72,10 @@
   flex-shrink: 0;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
+  /* 要約文（✅ 的中）と同じ緑（BOA-711） */
+  color: var(--color-success-text);
   background: var(--surface-card);
-  border: var(--border-width-1) solid var(--color-success);
+  border: var(--border-width-1) solid var(--color-success-text);
   padding: 2px var(--spacing-2);
   border-radius: var(--radius-md);
   white-space: nowrap;

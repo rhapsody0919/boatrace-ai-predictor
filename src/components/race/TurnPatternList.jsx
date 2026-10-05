@@ -24,13 +24,23 @@
  */
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
-import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
+import {
+  TECHNIQUE_NAMES,
+  pickHitPattern,
+  isAsPredicted,
+  techniqueDiffers,
+} from "../../utils/turnPrediction";
 import { TURN_JUDGEMENT, judgeTurnPrediction } from "../../utils/raceOutcome";
 import "./TurnPatternList.css";
 
 const RANK_ICONS = ["🥇", "🥈", "🥉"];
 
-function TurnPatternList({ patterns, result = null }) {
+function TurnPatternList({
+  patterns,
+  result = null,
+  // 1着の艇が実際に入ったコース（不明なら null）。「予想通り」を言うかの判定に使う（BOA-724）
+  winnerEntryCourse = null,
+}) {
   const { t } = useTranslation();
 
   if (!Array.isArray(patterns) || patterns.length === 0) return null;
@@ -48,12 +58,36 @@ function TurnPatternList({ patterns, result = null }) {
   const hasHit = judgement?.status === TURN_JUDGEMENT.HIT;
   const actualWinner = judgement?.winner ?? null;
 
+  // 実際の決まり手（日本語）。的中は1着の艇だけで判定するので、決まり手が外れていることがある
+  const actualTechnique = result?.winningTechnique ?? null;
+  // 1着の艇の、確率が一番高い候補（下の重複除去で残る行と同じ。的中レース一覧のカードとも同じ）
+  const hitPattern =
+    hasHit && actualWinner != null
+      ? pickHitPattern(patterns, actualWinner)
+      : null;
   const seenCourses = new Set();
   const displayPatterns = patterns.filter((p) => {
     if (seenCourses.has(p.winnerCourse)) return false;
     seenCourses.add(p.winnerCourse);
     return true;
   });
+  // 本命（1番手の候補）が、予想の決まり手・艇番どおりのコースで1着になったときだけ「予想通り」と言う。
+  // 2番手以下が当たった、決まり手が違う、前付けで勝った、のどれかなら控えめなまとめにする
+  // （BOA-724 の A-2 を (b) に。共有文と同じ区別）
+  const asPredicted =
+    hitPattern != null &&
+    isAsPredicted({
+      predictedTechnique: TECHNIQUE_NAMES[hitPattern.technique],
+      actualTechnique,
+      winnerBoat: actualWinner,
+      winnerEntryCourse,
+      isTopPick: hitPattern === patterns[0],
+    });
+  // 決まり手の英語キー（実際の決まり手を各言語の名前で出すため）
+  const actualTechniqueKey =
+    Object.keys(TECHNIQUE_NAMES).find(
+      (key) => TECHNIQUE_NAMES[key] === actualTechnique,
+    ) ?? null;
 
   return (
     <div className="turn-pattern-list">
@@ -92,17 +126,34 @@ function TurnPatternList({ patterns, result = null }) {
             >
               {pattern.winnerCourse}
             </span>
-            <span className="turn-pattern-technique">
-              {translateTechnique(pattern.technique)}
-            </span>
-            <span className="turn-pattern-prob">
-              {Math.round(pattern.probability * 100)}%
-            </span>
+            {/* 艇の印。判定は1着の艇だけで決まり手は見ないため、決まり手と%の後ろに付けると
+                「その決まり手が当たった」と読めた（BOA-724）。艇番の隣に移しても「的中 差し」と
+                続いて読めたので、文言も「1着」にした（ファン評価2周目） */}
             {isMatch && (
               <span className="turn-pattern-hit-tag">
                 {t("turnPatternList.hitTag")}
               </span>
             )}
+            <span className="turn-pattern-technique">
+              {translateTechnique(pattern.technique)}
+              {/* 予想した決まり手が外れていても艇が1着なら的中になる。「① 的中 逃げ」だけだと
+                  逃げが当たったと読めるので、実際の決まり手を添える（BOA-724。カードと同じ） */}
+              {isMatch &&
+                actualTechniqueKey &&
+                techniqueDiffers(
+                  TECHNIQUE_NAMES[pattern.technique],
+                  actualTechnique,
+                ) && (
+                  <span className="turn-pattern-actual">
+                    {t("turnPatternList.actualTechnique", {
+                      technique: translateTechnique(actualTechniqueKey),
+                    })}
+                  </span>
+                )}
+            </span>
+            <span className="turn-pattern-prob">
+              {Math.round(pattern.probability * 100)}%
+            </span>
             {isRefunded && (
               <span className="turn-pattern-void-tag">
                 {t("turnPatternList.refundedTag")}
@@ -127,7 +178,11 @@ function TurnPatternList({ patterns, result = null }) {
           className={`turn-pattern-summary${hasHit ? " turn-pattern-summary--hit" : " turn-pattern-summary--miss"}`}
         >
           {hasHit
-            ? t("turnPatternList.summaryHit")
+            ? t(
+                asPredicted
+                  ? "turnPatternList.summaryAsPredicted"
+                  : "turnPatternList.summaryHit",
+              )
             : t("turnPatternList.summaryMiss", { winnerNumber: actualWinner })}
         </p>
       )}

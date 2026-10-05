@@ -76,6 +76,8 @@ import "./RaceBeforeInfoTab.css";
 import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
 import { formatCapturedAtJst } from "../../utils/formatters";
 import { bestOf } from "../../utils/bestOf";
+import { hasDistinctTurnTime } from "../../utils/turnTimeVenues";
+import { parseRaceId } from "../../utils/raceId";
 
 /**
  * 今節展示情報に出すオリジナル展示の種別（BOA-473）。
@@ -370,6 +372,17 @@ function RaceBeforeInfoTab({
           };
           const anyValue = sortedPlayers.some((p) => valueFor(p) !== null);
           if (!anyValue) return null;
+          // 前走の最良（どれもタイムで低いほど良い、2桁）に金枠。「今節展示」と同じ規則で、
+          // 比べた前走の値だけを囲む（2026-10-03 ユーザー判断、BOA-711）
+          const bestPrev = bestOf(
+            sortedPlayers.map((p) => ({
+              boat: p.number,
+              value:
+                p.racerId && p.motorNumber ? (valueFor(p)?.prev ?? null) : null,
+            })),
+            "min",
+            { digits: 2 },
+          );
           return {
             key: kind.key,
             label: t(kind.labelKey),
@@ -389,7 +402,9 @@ function RaceBeforeInfoTab({
                 );
               return (
                 <span className="drt-value">
-                  <span className="drt-sub">
+                  <span
+                    className={`drt-sub${bestPrev.has(p.number) ? " ind-best" : ""}`}
+                  >
                     {t("beforeInfo.prevAbbrev")} {v.prev.toFixed(2)}
                   </span>
                   <span className="drt-sub">
@@ -553,6 +568,18 @@ function RaceBeforeInfoTab({
     exhibitionCourseRow !== null &&
     hasExhibitionCourse(analysis.motorMaintenance);
 
+  // 住之江・尼崎・徳山の「まわり足」は会場独自の計測で、他場と値の水準が違う（11秒台）。
+  // 行の見出しに「※」を付け、表の下に注記を出す（data-catalog E12）
+  const turnTimeDiffers = hasDistinctTurnTime(parseRaceId(raceId)?.venueCode);
+  const TURN_ROW_KEYS = ["oriTurn", "meetOriTurn"];
+  const markTurnRow = (row) =>
+    turnTimeDiffers && TURN_ROW_KEYS.includes(row.key)
+      ? {
+          ...row,
+          label: `${row.label} ※`,
+          shortLabel: `${row.shortLabel} ※`,
+        }
+      : row;
   const rows = [
     ...(exhibitionCourseRow ? [exhibitionCourseRow] : []),
     ...buildBeforeInfoRows({
@@ -564,7 +591,9 @@ function RaceBeforeInfoTab({
       entryWeights,
     }),
     ...extraRows,
-  ];
+  ].map(markTurnRow);
+  const showTurnTimeNote =
+    turnTimeDiffers && rows.some((r) => TURN_ROW_KEYS.includes(r.key));
 
   const deepLink = (tab) =>
     venueCode && raceId
@@ -937,6 +966,12 @@ function RaceBeforeInfoTab({
         {showPreExhibitionNote && (
           <p className="rbi-note" data-testid="rbi-pre-exhibition-note">
             {t("beforeInfo.preExhibitionNote")}
+          </p>
+        )}
+        {/* 「※」の行に近いよう、表の下の注記の先頭に置く（ファン評価1周目） */}
+        {showTurnTimeNote && (
+          <p className="rbi-note" data-testid="rbi-turn-time-venue-note">
+            ※ {t("beforeInfo.turnTimeVenueNote")}
           </p>
         )}
         <p className="rbi-note">💡 {t("beforeInfo.detailTableNote")}</p>

@@ -16,7 +16,7 @@
  *   node --env-file=.env.local scripts/maintenance/audit-race-result-anomalies.js --apply --race-ids=ID,ID,... --confirm=件数
  *   - --confirm は、--race-ids の件数と一致させる（意図しない件数の実行を防ぐ）。上限は既定30件（--max-races で変更）
  *   - 1リクエストずつ、3秒以上の間隔（jitter付き）、429・503で即中止。User-Agent は BoatraceAIBot/1.0
- *   - 書くのは、修正の列（rank4〜6・払戻・人気・race_status・refund_boats・remark）と、艇別・払戻明細
+ *   - 書くのは、修正の列（rank4〜6・払戻・人気・race_status・refund_boats・remark）、空の決まり手（埋めるだけ。BOA-749）と、艇別・払戻明細
  *     （対応するマイグレーション077〜079が適用済みのときだけ）。変更の無い列は書かない
  */
 
@@ -39,6 +39,7 @@ import {
 import {
   applyFixPlan,
   buildFixPlan,
+  FILL_ONLY_COLUMNS,
   FIX_RESULT_COLUMNS,
 } from "../lib/raceResultFix.js";
 import {
@@ -207,6 +208,7 @@ export async function runApply(
       .select(
         [
           ...FIX_RESULT_COLUMNS,
+          ...FILL_ONLY_COLUMNS,
           ...(schema.results ? ["race_status", "refund_boats", "remark"] : []),
         ].join(","),
       )

@@ -71,6 +71,8 @@ const EXCLUDED_LABEL_KEY = {
   awardExcluded: "awardExcluded",
   flying: "flyingExcluded",
 };
+// 句点の後に空白を入れない言語（BOA-738）
+const CJK_SENTENCE_LANGS = new Set(["ja", "zh-TW"]);
 // 順位の対象外の内訳で名前を出す上限（超えた分は「ほか◯人」、BOA-697）
 const EXCLUDED_LIST_MAX = 6;
 // 準優・優勝戦に乗れない（必要得点を出さない）理由
@@ -273,6 +275,9 @@ function RaceMeetTab({
     !prelimOver &&
     bordersReady &&
     border !== undefined;
+  // まだ全員が1走していないので目安を伏せている間（BOA-690）
+  const borderPendingShown =
+    !bordersReady && !isCancelled && !isAfterPrelim && !prelimOver;
   const showBorder =
     !isCancelled &&
     bordersReady &&
@@ -459,6 +464,10 @@ function RaceMeetTab({
       row: ranking.find((r) => r.racerId === p.racerId),
     }))
     .filter((x) => x.row);
+  // 表の6艇に準優の目安内の艇がいるか（いなければ点線が引かれない。BOA-756）
+  const tableHasInBorder = compareRows.some(({ row }) =>
+    rankInBorder(row, slots),
+  );
   const bestRate = bestOf(
     compareRows.map(({ boat, row }) => ({
       boat,
@@ -566,6 +575,42 @@ function RaceMeetTab({
       </th>
     );
   };
+
+  // 文と文の区切り。和文（ja・zh-TW）は句点の後に空白を入れない（BOA-738）。
+  // 空白だけの値は locale の検査で「中身が空のキー」になるので、言語で分ける
+  const sp = CJK_SENTENCE_LANGS.has(i18n.language) ? "" : " ";
+  // 表の印の説明（人数の行の後ろの段落に出す。BOA-714）
+  const showPostPrelimFlyingNote = sortedPlayers.some((p) =>
+    ranking.some(
+      (r) =>
+        r.racerId === p.racerId &&
+        r.rank !== null &&
+        postPrelimFlying.has(r.racerId),
+    ),
+  );
+  const showAbsentNote = absentOnly.some(inTable);
+  const showFinishAbsentNote = [...ranking, ...absentOnly]
+    .filter(inTable)
+    .some((r) => r.finishes.includes(FINISH_ABSENT));
+  const showBestLegend = bestRate.size + bestRank.size + bestPretest.size > 0;
+  const showSmallSampleLegend = ranking
+    .filter(inTable)
+    .some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS);
+  // 表の印の説明。印が表の6艇に出ているときだけ断る（セルの title はタッチ端末で
+  // 読めない）。予選後F（BOA-626）、全走欠場（BOA-504）、今節初戦・未出走（BOA-660）、
+  // 着順の「欠」とその分母（BOA-504）
+  const markNotes = [
+    showPostPrelimFlyingNote && t("meetTab.postPrelimFlyingNote"),
+    showAbsentNote && t("meetTab.absentNote"),
+    notYetRun.length > 0 &&
+      t(
+        isCancelled
+          ? "meetTab.notYetRunCancelledNote"
+          : "meetTab.notYetRunNote",
+      ),
+    showFinishAbsentNote && t("meetTab.finishAbsentNote"),
+  ].filter(Boolean);
+  const hasMarkNotes = markNotes.length > 0;
 
   return (
     <div className="race-meet-tab">
@@ -733,16 +778,63 @@ function RaceMeetTab({
             </tbody>
           </table>
           <p className="rmt-hint">{t("meetTab.rowHint")}</p>
+          {/* ⚠の意味は表のすぐ下に出す。予選序盤は6艇すべてに⚠が付き、説明が表の下
+              4段落目では「この記号は何か」を探すことになった（BOA-738、ファン評価2周続けて） */}
+          {showSmallSampleLegend && (
+            <p className="rmt-hint">{t("meetTab.smallSampleLegend")}</p>
+          )}
+          {/* **Ｗ優勝戦の節**は1つの節に独立した2つの勝ち上がりが同居する
+              （全期間で6節）。何も言わずに人数が半分になると「なぜ減ったのか」に
+              なるので、節全体の人数と併せて断る。準優の目安が出ていない日は
+              その語に触れない。両方の選手が乗るレース（予選終了後の消化レース。
+              実データでは多摩川に5本）では分けられないので、そちらも断る（BOA-511）。
+              人数の行より先に置く。後ろにあると「24人」が先に来て、表の見出し
+              「前検（48人中）」と食い違って見えた（BOA-714）。準優の目安の段落よりも
+              先に置く。後ろにあると「準優の目安は12位」が、母数（24人）の説明より先に
+              出て、見出しの48人の中の12位と読めた（BOA-722 ファン評価1周目） */}
+          {board?.isSplitMeet && (
+            <p className="rmt-series-note">
+              {seriesSplit
+                ? t(
+                    showBorderBadge
+                      ? "meetTab.seriesSplitNote"
+                      : "meetTab.seriesSplitNoteNoBorder",
+                    { meetTotal },
+                  )
+                : t("meetTab.seriesMixedNote", { total: rankedOnly.length })}
+            </p>
+          )}
+          {/* 準優の目安（表の点線の意味）は表のすぐ下に置く。対象外の一覧の後ろに
+              あると、点線を見てから意味が読めるまで4段落離れた（BOA-722）。Ｗ優勝戦の節
+              では、母数を断る注記の次に置く */}
+          {(showBorderBadge || borderPendingShown) && (
+            <p className="rmt-border-note">
+              {/* 何走時点の目安かを断る。2日目の朝の目安は、予選終了時の目安と
+                  平均0.46点ずれる（BOA-690 の実測。数値は画面に出さない） */}
+              {showBorderBadge &&
+                [
+                  t("meetTab.borderLine", { slots, rate: border.toFixed(2) }),
+                  // 点線は目安内の最後の艇の行の下に引くので、表の6艇に目安内が
+                  // 1艇もいないと点線が無い。そのときに「点線より上が…」と書くと、
+                  // 無い線を探させた（BOA-756、PR #1234 ファン評価3周目）
+                  t(
+                    tableHasInBorder
+                      ? "meetTab.borderNote"
+                      : "meetTab.borderNoneInTable",
+                  ),
+                  t("meetTab.borderAsOfRuns", { runs: medianRuns }),
+                ].join(sp)}
+              {/* まだ全員が走っていない間は目安を出さない理由を書く（BOA-690）。
+                  Ｗ優勝戦では「出場選手」が24人か48人か読めないので書き分ける */}
+              {borderPendingShown &&
+                t(
+                  seriesSplit
+                    ? "meetTab.borderPendingSeries"
+                    : "meetTab.borderPending",
+                )}
+            </p>
+          )}
           <p className="rmt-sub">
-            {/* 金枠の意味（PR #1187 ファン評価1周目: 説明がどこにも無かった） */}
-            {bestRate.size + bestRank.size + bestPretest.size > 0 && (
-              <>{t("meetTab.bestLegend")} </>
-            )}
-            {ranking
-              .filter(inTable)
-              .some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS) && (
-              <>{t("meetTab.smallSampleLegend")} </>
-            )}
             {/* 賞典除外・途中帰郷の選手も節は走っているので、「出場」から外さない。
                 順位の対象の人数と分けて書く（ファン評価2周目: 出場50人なのに
                 前検51位の選手がいた） */}
@@ -784,66 +876,12 @@ function RaceMeetTab({
                 },
               );
             })()}
-            {/* 「予選後F」の意味（セルの title はタッチ端末で読めない。BOA-626）。
-                **表の6艇に印が出ているときだけ**断る。節の誰かに居るだけで出すと、
-                表に印が無いのに説明だけ出て「どこにあるのか」と迷う（ファン評価1周目） */}
-            {sortedPlayers.some((p) =>
-              ranking.some(
-                (r) =>
-                  r.racerId === p.racerId &&
-                  r.rank !== null &&
-                  postPrelimFlying.has(r.racerId),
-              ),
-            ) && <> {t("meetTab.postPrelimFlyingNote")}</>}
-            {/* 「欠場」の理由。セルの title はタッチ端末で読めないので本文にも書く
-                （BOA-504 ファン評価） */}
-            {absentOnly.some(inTable) && <> {t("meetTab.absentNote")}</>}
-            {notYetRun.length > 0 && (
-              <>
-                {" "}
-                {t(
-                  isCancelled
-                    ? "meetTab.notYetRunCancelledNote"
-                    : "meetTab.notYetRunNote",
-                )}
-              </>
-            )}
-            {/* 着順の並びの「欠」の意味と、得点率の分母から外していること
-                （一部欠場の開催でも書く。BOA-504 ファン評価） */}
-            {[...ranking, ...absentOnly]
-              .filter(inTable)
-              .some((r) => r.finishes.includes(FINISH_ABSENT)) && (
-              <> {t("meetTab.finishAbsentNote")}</>
-            )}
-            {showBorderBadge && (
-              <>
-                {" "}
-                {t("meetTab.borderLine", {
-                  slots,
-                  rate: border.toFixed(2),
-                })}{" "}
-                {t("meetTab.borderNote")}{" "}
-                {/* 何走時点の目安かを断る。2日目の朝の目安は、予選終了時の目安と
-                    平均0.46点ずれる（BOA-690 の実測。数値は画面に出さない） */}
-                {t("meetTab.borderAsOfRuns", { runs: medianRuns })}
-              </>
-            )}
-            {/* まだ全員が走っていない間は目安を出さない理由を書く（BOA-690） */}
-            {!bordersReady && !isCancelled && !isAfterPrelim && !prelimOver && (
-              <>
-                {" "}
-                {/* Ｗ優勝戦では「出場選手」が24人か48人か読めないので書き分ける */}
-                {t(
-                  seriesSplit
-                    ? "meetTab.borderPendingSeries"
-                    : "meetTab.borderPending",
-                )}
-              </>
-            )}
           </p>
           {/* 順位の対象外の内訳（BOA-697）。人数だけでは誰が外れたか分からず、予選の後に
               順位が動いた理由も読めなかった。公式の備考欄に近い形で名前を理由ごとに出す。
-              7人以上は6人まで出して「ほか◯人」と畳む（行が長くなりすぎないように） */}
+              7人以上は6人まで出して「ほか◯人」と畳む（行が長くなりすぎないように）。
+              理由を名前の前に置き、表のセルと同じ書き方（賞典除外（今節F））にそろえる。
+              名前の後ろに括弧で付けると括弧が入れ子になった（BOA-714） */}
           {excludedGroups.length > 0 && (
             <p className="rmt-excluded-list">
               <strong>{t("meetTab.excludedListLabel")}</strong>
@@ -857,12 +895,17 @@ function RaceMeetTab({
                   parts.push(
                     <span key={g.reason}>
                       {parts.length > 0 && t("meetTab.excludedGroupSeparator")}
-                      <span translate="no">
-                        {shown.join(t("meetTab.listSeparator"))}
-                      </span>
-                      {t("meetTab.excludedReasonWrap", {
-                        reason: t(`meetTab.excludedReason_${g.reason}`),
-                      })}
+                      {t(`meetTab.excludedReason_${g.reason}`)}
+                      {t("meetTab.excludedReasonSuffix")}
+                      {/* 名前の途中で改行しない（375pxで「北川／幸典」と切れた。BOA-714 ファン評価） */}
+                      {shown.map((name, i) => (
+                        <span key={name}>
+                          {i > 0 && t("meetTab.listSeparator")}
+                          <span className="rmt-excluded-name" translate="no">
+                            {name}
+                          </span>
+                        </span>
+                      ))}
                     </span>,
                   );
                 }
@@ -882,22 +925,26 @@ function RaceMeetTab({
               })()}
             </p>
           )}
-          {/* **Ｗ優勝戦の節**は1つの節に独立した2つの勝ち上がりが同居する
-              （全期間で6節）。何も言わずに人数が半分になると「なぜ減ったのか」に
-              なるので、節全体の人数と併せて断る。準優の目安が出ていない日は
-              その語に触れない。両方の選手が乗るレース（予選終了後の消化レース。
-              実データでは多摩川に5本）では分けられないので、そちらも断る（BOA-511） */}
-          {board?.isSplitMeet && (
-            <p className="rmt-series-note">
-              {seriesSplit
-                ? t(
-                    showBorderBadge
-                      ? "meetTab.seriesSplitNote"
-                      : "meetTab.seriesSplitNoteNoBorder",
-                    { meetTotal },
-                  )
-                : t("meetTab.seriesMixedNote", { total: rankedOnly.length })}
+          {/* 金枠の凡例は対象外の一覧の後ろに置く。人数の行に付けると、人数が金枠の説明の
+              後ろに来て探しにくかった（BOA-722） */}
+          {showBestLegend && (
+            <p className="rmt-table-notes">
+              {/* 金枠の意味（PR #1187 ファン評価1周目: 説明がどこにも無かった） */}
+              {/* ⚠の艇に金枠を付けない断りは、表に⚠があるときだけ。⚠の説明を表に⚠が
+                  あるときだけ出すようにしたので、⚠が無いと何の記号か書いた文が無いまま
+                  凡例だけが⚠に触れた（BOA-746） */}
+              {showBestLegend &&
+                (showSmallSampleLegend
+                  ? [t("meetTab.bestLegend"), t("meetTab.bestLegendWarn")].join(
+                      sp,
+                    )
+                  : t("meetTab.bestLegend"))}
             </p>
+          )}
+          {/* 表の印（予選後F・欠場・今節初戦・欠）の説明は金枠の凡例と段落を分ける。
+              1段落に混ざると「予選後F」を探す人が金枠の文から読むことになった（BOA-738） */}
+          {hasMarkNotes && (
+            <p className="rmt-mark-notes">{markNotes.join(sp)}</p>
           )}
           {/* 公式の順位表は52名中3名（賞典除外1・途中帰郷2）を順位から外す。
               当社は全員で順位を振るため下位ほどズレる（2026-09-27に若松G1で
@@ -914,7 +961,10 @@ function RaceMeetTab({
             {/* 予選の後の扱い（Fは外さない・帰郷は外す）は、予選が終わってから
                 関係する話なので、予選中は出さない（注記が長くなるだけだった） */}
             {!usesOfficialScore && prelimOver && (
-              <> {t("meetTab.rankSourceNoteAfterPrelim")}</>
+              <>
+                {sp}
+                {t("meetTab.rankSourceNoteAfterPrelim")}
+              </>
             )}
           </p>
           <p className="rmt-source">{t("basicInfo.meetPretestSource")}</p>
@@ -1011,6 +1061,16 @@ function RaceMeetTab({
                                 : ""
                             }`}
                           >
+                            {/* 走数が少ない得点率は、目安に届いて青くても当てにならない。
+                                比較表と同じ⚠を付ける（BOA-757） */}
+                            {row.runs < MEET_SMALL_SAMPLE_RUNS && (
+                              <span
+                                className="rmt-warn"
+                                title={t("basicInfo.smallSampleTitle")}
+                              >
+                                ⚠
+                              </span>
+                            )}
                             {row.rate.toFixed(2)}
                           </td>
                           {hasNeeded && (
@@ -1091,6 +1151,11 @@ function RaceMeetTab({
                 })
               : t("meetTab.forecastNoteNoBorder")}
           </p>
+          {/* 得点率の列の青い文字の意味（BOA-711 U2 のファン評価: どこにも書かれていなかった）。
+              文をつなぐ空白の扱い（和文で「。 」にしない）が要らないよう、段落を分ける */}
+          {showBorderBadge && border !== undefined && (
+            <p className="rmt-sub">{t("meetTab.forecastRateBlueNote")}</p>
+          )}
           {/* 目安の出し方と誤差、必要得点の式は長いので折りたたむ。
               実測の差（若松G1 0.07 / 桐生一般 0.83）まで書くのは、
               「数位ずれる」を具体で示さないと目安の精度を過信されるため */}
@@ -1246,7 +1311,7 @@ function RaceMeetTab({
                   （ファン評価3周目、予選確定の一文と同じ大きさ） */}
               {trendNoRaceDays.length > 0 && (
                 <>
-                  {" "}
+                  {sp}
                   <span className="rmt-trend-noday">
                     {t("meetTab.compareTrendNoRaceDays", {
                       days: mdList(trendNoRaceDays),
@@ -1362,8 +1427,7 @@ function RaceMeetTab({
                   // 公式の日本語の種別名（準優勝戦等）をそのまま入れていた。ja 以外では
                   // 見出しのチップと同じ区分の訳にする（BOA-713。ko で「準優勝戦」の漢字が
                   // 2位決定戦と読まれ、チップの「준결승전」とも食い違っていた）
-                  stage:
-                    raceStageLabel(stage, t, i18n.language)?.text ?? stage,
+                  stage: raceStageLabel(stage, t, i18n.language)?.text ?? stage,
                 })
               : t(
                   prelimEndDay
@@ -1376,7 +1440,7 @@ function RaceMeetTab({
                 （BOA-636、PR #1044 ファン評価） */}
             {!isAfterPrelim && noRaceDaysBeforePrelimEnd.length > 0 && (
               <>
-                {" "}
+                {sp}
                 {t("meetTab.prelimNoRaceDays", {
                   days: mdList(noRaceDaysBeforePrelimEnd),
                 })}
@@ -1447,7 +1511,8 @@ function RaceMeetTab({
                     ),
                   }))}
                   baseline={st.baseAvg}
-                  color="var(--brand-accent-primary)"
+                  // 金は「6艇で最良」の印。ダークでは5号艇の線と同じ色にも見えた（BOA-757）
+                  color="var(--text-primary)"
                   markLast={!lastSt?.mark}
                 />
                 <div className="rmt-spark-foot">

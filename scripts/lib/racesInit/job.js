@@ -100,7 +100,7 @@ async function defaultExistingVenueCodes(client, date) {
   const rows = await fetchAll(
     "races",
     "race_id",
-    (q) => q.gte("race_id", date).lt("race_id", `${date}~`),
+    (q) => q.gte("race_id", date).lt("race_id", `${date}~`).order("race_id"),
     { client, throwOnError: true },
   );
   return new Set(rows.map((r) => Number(r.race_id.slice(11, 13))));

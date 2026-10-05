@@ -218,7 +218,8 @@ function VolatilityDisplay({
       : level === "low"
         ? "var(--color-success-text)"
         : "var(--color-info-text)";
-  const bg = `color-mix(in srgb, ${tone} 8%, var(--surface-card))`;
+  // 「高」は橙が紺に混ざると灰に寄ったので、少し濃くする（BOA-711）
+  const bg = `color-mix(in srgb, ${tone} ${level === "high" ? 12 : 8}%, var(--surface-card))`;
   const border = tone;
   const attentionLabel =
     level === "high"

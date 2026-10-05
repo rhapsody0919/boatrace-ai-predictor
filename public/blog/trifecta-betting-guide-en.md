@@ -175,7 +175,7 @@ Ryujin Radar publishes free **AI predictions** built from integrated racer, moto
 
 3. **Adjust your approach based on the Upset Index**
    - "Favorite friendly" label → a tighter, favorite-leaning bet of 6–8 combinations
-   - "High upset chance" label → spread wider with 12 combinations, or switch to an outside anchor
+   - "Upset alert (high)" label → spread wider with 12 combinations, or switch to an outside anchor
 
 4. **Use the detailed turn data to narrow 2nd- and 3rd-place candidates**
    - Racers with strong attacking numbers → good 2nd-place candidates

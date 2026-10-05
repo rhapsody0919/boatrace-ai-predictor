@@ -35,6 +35,15 @@
   font-size: var(--font-size-sm);
 }
 
+/* PC・タブレット横では表を読みやすい幅で止める。箱の幅いっぱいに広げると、余りが選手名の
+   列に入り、1440px で表が 1174px、選手名と得点率・節内順位・前検の間が約800px 離れた
+   （BOA-755）。すぐ下の得点率早見（BOA-736）と同じ 769px〜・640px にそろえる */
+@media (min-width: 769px) {
+  .rmt-compare {
+    max-width: 640px;
+  }
+}
+
 .rmt-compare th,
 .rmt-compare td {
   padding: var(--spacing-1) 0;
@@ -121,7 +130,8 @@
 }
 
 .rmt-finishes .is-win {
-  color: var(--text-primary);
+  /* 1着は金（日別の表・推移の着順と同じ。BOA-711） */
+  color: var(--brand-accent-primary);
   font-weight: var(--font-weight-bold);
 }
 
@@ -141,8 +151,8 @@
 }
 
 .rmt-compare tbody tr.is-current {
+  /* 選択中は塗りだけで示す。太字にすると、最良の金枠（太字）と区別しづらかった（BOA-711） */
   background: var(--color-primary-alpha-10);
-  font-weight: var(--font-weight-bold);
 }
 
 /* 選択中の行の最良は、行の青い塗りと金の薄い塗りが混ざって灰色の箱に見え、
@@ -153,15 +163,16 @@
     inset 0 0 0 100vmax var(--ind-best-bg);
 }
 
-/* 準優の目安の「線」。どこが境目かは数字を突き合わせないと読めなかった */
+/* 準優の目安の「線」。どこが境目かは数字を突き合わせないと読めなかった。
+   目安は青（情報色）。金は「6艇で最良」の印だけに使う（2026-10-03 ユーザー判断、BOA-711 U2） */
 .rmt-compare tbody tr.is-border-edge th,
 .rmt-compare tbody tr.is-border-edge td {
-  border-bottom: 2px dashed var(--brand-accent-primary);
+  border-bottom: 2px dashed var(--color-info-text);
 }
 
 /* 目安内の行は左に帯を引く（セル内のバッジは列幅を食って前検を切る） */
 .rmt-compare tbody tr.is-in-border th {
-  box-shadow: inset 3px 0 0 0 var(--brand-accent-primary);
+  box-shadow: inset 3px 0 0 0 var(--color-info-text);
   padding-left: 6px;
 }
 
@@ -233,6 +244,9 @@
 }
 
 .rmt-sub,
+.rmt-border-note,
+.rmt-table-notes,
+.rmt-mark-notes,
 .rmt-rank-note,
 .rmt-series-note,
 .rmt-source,
@@ -379,6 +393,17 @@
   overflow-x: auto;
 }
 
+/* PC幅では表を読みやすい幅で止める。箱の幅いっぱいに広げると、余りが全部選手名の列に入り、
+   1440px で選手名の列が 853px になって、名前と「今日では届かず」等の数値が離れすぎた
+   （BOA-736。払戻金の表を 640px で止めた BOA-619 と同じ型）。1024px でも 672px あったので、
+   タブレット横（769px〜）から効かせる。768px 以下は箱が 640px 前後かそれより狭く、横に送るので
+   広いまま。「›」の位置も表の右端にそろうよう、ボタンを含む箱ごと止める */
+@media (min-width: 769px) {
+  .rmt-forecast-hint {
+    max-width: 640px;
+  }
+}
+
 .rmt-forecast-table {
   width: 100%;
   border-collapse: collapse;
@@ -422,7 +447,7 @@
   thead
   th:first-child,
 .rmt-forecast-hint:has(> .hscroll-less) .rmt-forecast-table tbody th {
-  box-shadow: inset -1px 0 0 var(--border-hairline);
+  box-shadow: inset -1px 0 0 var(--hscroll-edge-line, var(--border-hairline));
 }
 
 .rmt-forecast-table tbody tr {
@@ -437,7 +462,8 @@
 /* 選択中の行は背景で塗らない。塗ると「目安に届くセルの色」と混ざり、
    届いていない艇の行まで色付きに見える（実際に1号艇で起きた） */
 .rmt-forecast-table tbody tr.is-current th {
-  box-shadow: inset 3px 0 0 0 var(--brand-accent-primary);
+  /* 選択中の印は本文色。金は「6艇で最良」、青は「準優の目安」の印なので使わない（BOA-711 U2 のファン評価） */
+  box-shadow: inset 3px 0 0 0 var(--text-primary);
   padding-left: 6px;
 }
 
@@ -469,7 +495,8 @@
    公式も得点率は文字色、早見はセルの塗りで区別している */
 .rmt-forecast-table td.rmt-rate.is-in-border {
   background: none;
-  color: var(--brand-accent-primary);
+  /* 目安に届く得点率は青（BOA-711 U2。金は最良だけ） */
+  color: var(--color-info-text);
 }
 
 /* 6艇の推移（同じ縦の物差しで6行並べる） */
@@ -504,7 +531,8 @@
 .rmt-metric-chip.is-active {
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  border-color: var(--brand-accent-primary);
+  /* 選んでいる印は本文色。金は「6艇で最良」の印なので使わない（BOA-757） */
+  border-color: var(--text-primary);
 }
 
 .rmt-trend-head {
@@ -543,14 +571,15 @@
 }
 
 .rmt-trend-row:hover {
-  background: color-mix(in srgb, var(--brand-accent-primary) 5%, transparent);
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
 }
 
 .rmt-trend-row[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--brand-accent-primary) 10%, transparent);
+  /* 選択中は本文色の薄い地と帯（金は最良、青は準優の目安の印。BOA-711 U2 のファン評価） */
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
   /* 背景の濃さだけだとホバー中の行と見分けがつかない（2026-09-29 ファン評価）。
      選択中だけ左に帯を付ける */
-  box-shadow: inset 3px 0 0 var(--brand-accent-primary);
+  box-shadow: inset 3px 0 0 var(--text-primary);
 }
 
 .rmt-trend-label {
@@ -699,6 +728,9 @@
 .rmt-excluded-list strong {
   color: var(--text-primary);
 }
+.rmt-excluded-list .rmt-excluded-name {
+  white-space: nowrap;
+}
 
 .rmt-forecast-hint:has(> .hscroll-less)
   .rmt-forecast-table
@@ -707,5 +739,5 @@
   th {
   box-shadow:
     inset 3px 0 0 0 var(--brand-accent-primary),
-    inset -1px 0 0 var(--border-hairline);
+    inset -1px 0 0 var(--hscroll-edge-line, var(--border-hairline));
 }

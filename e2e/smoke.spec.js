@@ -2666,7 +2666,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 除外の選手も節は走っているので24人のまま、順位の対象を分けて書く。
     // Ｗ優勝戦で分けた節は「節の出場」ではなく「同じ優勝戦をめざすのは」と書く
     // （下の注記の「節全体は48人」と食い違って読めた。BOA-660）
-    await expect(page.locator(".rmt-sub")).toContainText(
+    await expect(page.locator(".rmt-sub").first()).toContainText(
       "同じ優勝戦をめざすのは24人（順位の対象は21人",
     );
     // 人数が半分になる理由を1行で断る（黙って半分にすると「なぜ減った」になる）
@@ -3535,8 +3535,9 @@ test.describe("的中レース一覧のunified一本化（BOA-174）", () => {
 
     const raceCardCount = await page.locator(".race-card").count();
     if (raceCardCount > 0) {
+      // 本命が予想どおりに勝ったときだけ「展開予測的中」、それ以外は「1着の艇が的中」（BOA-724）
       await expect(page.locator(".hit-badge").first()).toHaveText(
-        /展開予測的中/,
+        /展開予測的中|1着の艇が的中/,
       );
       await expect(page.locator(".turn-hit-detail").first()).toBeVisible();
     }
@@ -5498,6 +5499,9 @@ test.describe("レース詳細の見出し: グレードとレース種別（BOA
     ["2026-09-20-14-10", "選抜戦", null],
     // ファン評価3周目: 予選期間の「予選選抜」は最終日の選抜戦と分ける
     ["2026-09-17-15-11", "予選特別戦", "予選選抜"],
+    // 男女Ｗ優勝戦の準優勝戦は「Ｗ準優戦前半」（「勝」が無い）。以前は「会場独自の
+    // レース名」として原文のまま出ていた（BOA-728）
+    ["2026-03-24-05-03", "🥈 準優勝戦", "W準優戦前半"],
   ]) {
     test(`${raceId} の種別は「${label}」`, async ({ page }) => {
       await page.goto(`/race/${raceId}`);

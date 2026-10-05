@@ -82,7 +82,8 @@ def test_theme_features_are_unique():
 STAGES = ["予選", "一般戦", "準優勝戦", "優勝戦", "準々優勝戦", "準優進出戦", "ツッキー優勝戦",
           "ＭＤ優勝戦", "ドリーム戦", "ペイペイDR", "予選特賞", "予選特選", "一般特選", "一般特賞",
           "選抜戦", "記者選抜戦", "特別選抜戦", "予選ドリーム戦", "予選選抜", "一般選抜",
-          "朝からセンプル", "サンライズX戦", "カタメン１予選", "特選", "団体・優勝戦", "一般", ""]
+          "朝からセンプル", "サンライズX戦", "カタメン１予選", "特選", "団体・優勝戦", "一般",
+          "Ｗ準優戦前半", "Ｗ準優戦後半", "準優勝戦☆", "S戦準優勝戦", ""]
 
 CATEGORY_TO_ROUND = {"qualifier": "yosen", "qualifierSpecial": "yosen", "semifinal": "junyu",
                      "final": "yusho"}
@@ -104,6 +105,13 @@ def test_round_matches_race_stage_config_js():
     for stage, cat in zip(STAGES, cats):
         expected = None if cat is None and stage == "" else CATEGORY_TO_ROUND.get(cat, "other")
         assert F.round_from_stage(stage) == expected, (stage, cat)
+
+
+def test_round_w_semifinal_is_junyu():
+    # 男女Ｗ優勝戦の準優勝戦は「Ｗ準優戦前半/後半」（「勝」が無い）。以前は "other" だった（BOA-728）
+    assert F.round_from_stage("Ｗ準優戦前半") == "junyu"
+    assert F.round_from_stage("Ｗ準優戦後半") == "junyu"
+    assert F.round_from_stage("準優進出戦") == "other"
 
 
 def test_round_unknown_stage_is_none():
@@ -258,3 +266,40 @@ def test_kb_final_day_precondition():
         F.check_final_day(pd.Series([False] * 100))
     F.check_final_day(pd.Series([True] * 18 + [False] * 82))
     F.check_final_day(pd.Series(["true"] * 18 + ["false"] * 82))
+
+
+def test_wind_basis_file_covers_all_venues():
+    """回転の表は24会場すべてにあり、22.5° の倍数（方位マーク (M−9)×22.5°。build-wind-basis.js）"""
+    b = F.load_wind_basis()
+    assert sorted(int(v) for v in b["offsets_deg"]) == list(range(1, 25))
+    assert all(o % 22.5 == 0 and 0 <= o < 360 for o in b["offsets_deg"].values())
+
+
+def test_main_wind_rotates_and_fills(tmp_path):
+    """本体の風向: 会場の回転を引く・表に無い会場は欠損・DB が空で風速>0 は K の値（回転なし）・無風は0"""
+    basis = {"offsets_deg": {"3": 90.0}}
+    fill = tmp_path / "fill.csv"
+    fill.write_text("race_id,wind_direction\n2025-12-10-03-02,南\n")
+    cond = pd.DataFrame({
+        "race_id": F.rid_to_int(pd.Series(["2025-12-10-03-01", "2025-12-10-03-02", "2025-12-10-13-01",
+                                           "2025-12-10-13-02", "2025-12-10-03-03"])),
+        "weather": "晴", "wind_direction": ["東", None, "北", None, None],
+        "wind_speed": [2.0, 3.0, 3.0, 0.0, 4.0], "is_final_day": False})
+    c, off = F.main_wind(cond, basis, fill)
+    out = F.encode_race_level(c, "weather", "wind_direction", "wind_speed", "is_final_day", wind_offset=off)
+    # 03 の「東」−90° → 北（K の基準）
+    assert out["wind_y"].iloc[0] == pytest.approx(2.0) and out["wind_x"].iloc[0] == pytest.approx(0.0, abs=1e-6)
+    # 空で風速>0 → K の「南」をそのまま（回転しない）
+    assert out["wind_y"].iloc[1] == pytest.approx(-3.0)
+    # 表に無い会場（13）の風は欠損、無風は0
+    assert np.isnan(out["wind_x"].iloc[2])
+    assert out["wind_x"].iloc[3] == 0.0
+    # K の値が無い空・風速>0 は欠損のまま
+    assert np.isnan(out["wind_x"].iloc[4])
+
+
+def test_k_wind_fill_is_main_period_k_directions():
+    """K で埋めるのは本体の期間（2025-12-03〜）のレースで、値は K の方位か無風"""
+    f = pd.read_csv(F.K_WIND_FILL_FILE, dtype=str)
+    assert len(f) > 0 and (f["race_id"].str.slice(0, 10) >= "2025-12-03").all()
+    assert f["wind_direction"].isin(F.DIR16 + ["無風"]).all()

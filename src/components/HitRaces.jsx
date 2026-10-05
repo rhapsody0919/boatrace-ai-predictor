@@ -30,12 +30,8 @@ function extractHitRaces(predictions) {
     .filter(({ judgement }) => judgement?.status === TURN_JUDGEMENT.HIT)
     .map(({ race, patterns, judgement }) => {
       const { winner } = judgement;
-      // 同じ艇の候補が複数あるときは、実際の決まり手と同じ候補を選ぶ（PR #1197 ファン評価3周目）
-      const matchedPattern = pickHitPattern(
-        patterns,
-        winner,
-        race.result?.winningTechnique,
-      );
+      // 1着の艇の、確率が一番高い候補（AI予想タブのその艇の行と同じ。BOA-724）
+      const matchedPattern = pickHitPattern(patterns, winner);
 
       const parts = race.raceId.split("-");
       const date = `${parts[0]}-${parts[1]}-${parts[2]}`;
@@ -48,8 +44,15 @@ function extractHitRaces(predictions) {
         raceNumber: parseInt(raceNo),
         date,
         placeCode: parseInt(placeCode),
-        winnerCourse: winner,
+        // 1着の艇番。実際に入ったコースは表示中のカードだけ別に引く（winnerCourses）
+        winnerBoat: winner,
         matchedPattern,
+        // 当たった候補が1番手（本命）か。2番手以下なら共有文で「予想通り」と言わない（BOA-724）
+        isTopPick: matchedPattern != null && matchedPattern === patterns[0],
+        // 当たった艇が上位候補の何番手か（艇単位。AI予想タブの🥇🥈🥉と同じ数え方）。
+        // 本命の63%も3番手の5%も同じ「展開予測的中」に見えた（BOA-724 ファン評価2周目）
+        pickRank:
+          [...new Set(patterns.map((p) => p.winnerCourse))].indexOf(winner) + 1,
         result: race.result,
       };
     })
@@ -164,25 +167,6 @@ function HitRaces({ fetchWithRetry, lastUpdated, onRefresh, isRefreshing }) {
     return Object.values(stats).sort((a, b) => b.hitCount - a.hitCount);
   }, [selectedPeriod, hitRacesToday, hitRacesYesterday, hitRacesAll]);
 
-  if (initialLoading) {
-    return (
-      <LoadingScreen
-        title="的中レースを読み込み中..."
-        description="データを取得しています"
-      />
-    );
-  }
-
-  if (hitRacesToday.length === 0 && hitRacesYesterday.length === 0) {
-    return (
-      <div className="no-data-container">
-        <div className="icon">&#x1F3AF;</div>
-        <h2>展開予測の的中レースはまだありません</h2>
-        <p>レース結果が確定すると、ここに的中レースが表示されます。</p>
-      </div>
-    );
-  }
-
   const getDisplayRaces = () => {
     if (selectedPeriod === "today")
       return showAllToday ? hitRacesToday : hitRacesToday.slice(0, 8);
@@ -215,6 +199,50 @@ function HitRaces({ fetchWithRetry, lastUpdated, onRefresh, isRefreshing }) {
   const getMaxDisplay = () => (selectedPeriod === "all" ? 12 : 8);
   const currentHitRaces = getCurrentHitRaces();
   const displayRaces = getDisplayRaces();
+  const displayRaceIds = displayRaces.map((r) => r.raceId).join(",");
+
+  // 表示中のカードの、1着の艇が実際に入ったコース（BOA-708）。前付けで艇番とコースが
+  // 違うレースだけ「N号艇（Mコース）」と添える補足なので、取れなければ艇番だけを出す
+  // （失敗は記録して、カードは艇番で描く。的中の一覧そのものは止めない）
+  const [winnerCourses, setWinnerCourses] = useState({});
+  useEffect(() => {
+    if (!displayRaceIds) return undefined;
+    let cancelled = false;
+    dataService
+      .getRaceWinnerCourses(displayRaceIds.split(","))
+      .then((courses) => {
+        if (!cancelled) setWinnerCourses(courses);
+      })
+      .catch((error) => {
+        console.error(
+          "1着艇の進入コースの取得に失敗（艇番だけで表示）:",
+          error,
+        );
+        if (!cancelled) setWinnerCourses({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [displayRaceIds]);
+
+  if (initialLoading) {
+    return (
+      <LoadingScreen
+        title="的中レースを読み込み中..."
+        description="データを取得しています"
+      />
+    );
+  }
+
+  if (hitRacesToday.length === 0 && hitRacesYesterday.length === 0) {
+    return (
+      <div className="no-data-container">
+        <div className="icon">&#x1F3AF;</div>
+        <h2>展開予測の的中レースはまだありません</h2>
+        <p>レース結果が確定すると、ここに的中レースが表示されます。</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -277,6 +305,9 @@ function HitRaces({ fetchWithRetry, lastUpdated, onRefresh, isRefreshing }) {
                 <HitRaceCard
                   key={hitRace.raceId}
                   hitRace={hitRace}
+                  winnerEntryCourse={
+                    winnerCourses[hitRace.raceId]?.course ?? null
+                  }
                   variant={
                     selectedPeriod === "all"
                       ? hitRace.date === todayStr
