@@ -21,6 +21,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
+import { isUnusedMotor } from "../../utils/motorUsage";
 import "./DigestRaceCard.css";
 
 function DigestRaceCard({
@@ -80,7 +81,17 @@ function DigestRaceCard({
         {open && (
           <footer className="digest-card__foot">
             {row.motor_2rate !== null && (
-              <span>モーター2連率 {Number(row.motor_2rate).toFixed(1)}%</span>
+              <span>
+                モーター2連率{" "}
+                {/* 一度も使われていない新モーター（2連率0・会場公式の出走数0）は、0.0% だと「2着以内0回」と
+                    読まれるため「—」＋注記（BOA-702）。出走数が分からない行（会場公式に出走数が無い会場、
+                    マイグレーション131の前に生成した行）は従来どおり 0.0% */}
+                {isUnusedMotor(Number(row.motor_2rate), {
+                  race_count: row.motor_race_count,
+                })
+                  ? `—（${t("dataTable.motorUnusedNote")}）`
+                  : `${Number(row.motor_2rate).toFixed(1)}%`}
+              </span>
             )}
             {row.volatility_percentile !== null && (
               <span>
