@@ -18,7 +18,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 
 | ファイル | 役割 | 主なexport |
 | --- | --- | --- |
-| `scripts/lib/analogyDispatch.js` | BOA-271 アナロジー・ファインダー: GitHub Actions の workflow_dispatch を Vercel Cron から起動する（学習… | dispatchWorkflow, createAnalogyDispatchRun, GITHUB_REPO, DISPATCH_WORKFLOWS |
+| `scripts/lib/analogyDispatch.js` | BOA-271 アナロジー・ファインダー: GitHub Actions の workflow_dispatch を Vercel Cron から起動する（学習… | morningRetryNeeded, morningShouldDispatch, dispatchWorkflow, createAnalogyDispatchRun, GITHUB_REPO ほか1件 |
 | `scripts/lib/analogyV16Exhibition.js` | アナロジー・ファインダー v16 の展示後の段（BOA-271 tasks T4-2・T4-3。plan「展示後の段」）。 | selectExhibitionTargets, todayExhibition, exhibitionNeighbors, displayRow, runAnalogyV16Exhibition ほか1件 |
 | `scripts/lib/archiveDownloader.js` | 公式サイトの静的ファイル・ページを、生のまま保管する取得ループ（fan・月間スケジュールのCLI共通） | readJsonl, fetchOnce, planItems, runArchiveDownload, HARD_MIN_INTERVAL_MS ほか4件 |
 | `scripts/lib/beforeInfoParser.js` | 公式の直前情報ページ（boatrace.jp beforeinfo）の全項目パーサー（純関数。DB・取得先に接続しない） | parseStartExhibitionCell, parseBeforeInfoDocument, parseBeforeInfoPage, BEFOREINFO_PARSER_VERSION |
@@ -298,4 +298,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 263 ファイル / export 1334 件。
+対象 263 ファイル / export 1336 件。
