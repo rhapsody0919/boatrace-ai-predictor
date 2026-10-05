@@ -12,6 +12,7 @@ import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import TrendLineChart from "./TrendLineChart";
 import { bestOf } from "../../utils/bestOf";
+import { formatExhibitionSt } from "../../utils/formatters";
 import DrillDownHeader from "./DrillDownHeader";
 import "./MotorConditionChart.css";
 
@@ -178,7 +179,7 @@ function StPredictabilityChart({
                 {breakdown.map((row) => (
                   <tr
                     key={row.boat_number}
-                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""} ${bestDeviationBoats.has(row.boat_number) ? "best-motor" : ""}`}
+                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""}`}
                     onClick={() =>
                       row.racer_id !== null && setDrillDownRacer(row.racer_id)
                     }
@@ -188,11 +189,16 @@ function StPredictabilityChart({
                       {row.player_name?.replace(/\s+/g, "")}
                     </td>
                     <td className="rate">
-                      {row.exhibition_st !== null
-                        ? row.exhibition_st.toFixed(2)
-                        : t("analysis.notMeasured")}
+                      {/* 展示のフライング・出遅れは公式の表記（F.01 等）で出す（BOA-759） */}
+                      {formatExhibitionSt(
+                        row.exhibition_st,
+                        row.exhibition_start_flag,
+                      ) ?? t("analysis.notMeasured")}
                     </td>
-                    <td className="rate">
+                    {/* 最良は行全体ではなく、比べている値（平均ズレ）のセルに金枠（R1） */}
+                    <td
+                      className={`rate${bestDeviationBoats.has(row.boat_number) ? " ind-best" : ""}`}
+                    >
                       {row.avg_deviation !== null
                         ? row.avg_deviation.toFixed(3)
                         : t("analysis.noData")}

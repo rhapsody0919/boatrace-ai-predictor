@@ -79,7 +79,7 @@ async function fetchRaceResults(periodDays) {
         .not("rank1", "is", null)
         .not("rank2", "is", null)
         .not("rank3", "is", null)
-        .gte("race_id", fromDate),
+        .gte("race_id", fromDate).order("race_id"),
   );
   const map = new Map();
   for (const r of data) map.set(r.race_id, r);
@@ -95,7 +95,7 @@ async function fetchPredictions(periodDays) {
       q
         .eq("is_shadow", false)
         .not("is_hit_win", "is", null)
-        .gte("race_id", fromDate),
+        .gte("race_id", fromDate).order("race_id").order("model_id").order("prediction_id"),
   );
 }
 

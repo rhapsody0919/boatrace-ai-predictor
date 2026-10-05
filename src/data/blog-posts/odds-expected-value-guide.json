@@ -1,0 +1,18 @@
+{
+  "id": "odds-expected-value-guide",
+  "title": "ボートレースのオッズとは？見方と期待値で舟券を選ぶ方法",
+  "description": "ボートレースのオッズとは何か、見方の基本から期待値の考え方までデータで解説。過剰人気の罠、オッズの歪みを狙う方法、舟券種別ごとの損益分岐オッズまで。",
+  "date": "2026-03-12",
+  "category": "データ分析",
+  "tags": [
+    "オッズ",
+    "期待値",
+    "過剰人気",
+    "舟券",
+    "データ分析"
+  ],
+  "readTime": "9分",
+  "featured": true,
+  "image": "/images/blog/odds-expected-value-matrix-ja.jpg",
+  "featuredRank": 4
+}

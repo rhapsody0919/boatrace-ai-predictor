@@ -53,3 +53,22 @@ export function assertCachedHeader(csv, expectedColumns, key) {
     );
   }
 }
+
+/**
+ * Storage のダウンロードのエラーが「ファイルが無い」か。参照版に無くてよいファイル（この版で足したモデル）は
+ * 無いときだけ飛ばし、通信・権限のエラーでは失敗させる（飛ばすと参照版との比較が黙って省かれる）
+ */
+export function isNotFound(error) {
+  const status = String(error?.statusCode ?? error?.status ?? "");
+  return status === "404" || /not found/i.test(error?.message ?? "");
+}
+
+/**
+ * フォルダの一覧（storage.list の data）に、そのファイル名があるか。Supabase Storage は無いファイルの download を
+ * 400（StorageUnknownError、message は "{}"）で返し isNotFound では見分けられないので、一覧で無いことを確かめる
+ */
+export function listingHas(entries, fileName) {
+  if (!Array.isArray(entries))
+    throw new Error("Storage の一覧が配列でない（一覧の取得に失敗）");
+  return entries.some((e) => e?.name === fileName);
+}

@@ -16,14 +16,18 @@
 | 上位3艇に返還艇がある予想 | 3連系が「外れ」 | 3連系が NULL（単勝・複勝は通常どおり） |
 | 成績の集計（`models`・`accuracy_cache`） | 母数は is_hit_win がある全予想（返還も「投資100円・戻り0円」） | 母数は券種ごとの「判定した予想」の数 |
 
-成績の変化（dry-run、2026-10-01 時点の本番データ）:
+成績の変化（dry-run、2026-10-02 の夕方の本番データ。race_status の補完（K から、2025-12〜）の後）:
 
 | モデル | 書き直す行 | 単勝 的中率 | 単勝 回収率 | 3連単 的中率 | 3連単 回収率 |
 |---|---:|---|---|---|---|
-| standard | 74 | 27.03%→27.05%（+0.016pt） | 77.41%→77.45%（+0.046pt） | 3.69%→3.70%（+0.005pt） | 80.79%→80.89%（+0.102pt） |
-| safeBet | 72 | 49.36%→49.40%（+0.038pt） | 88.22%→88.29%（+0.076pt） | 6.74%→6.75%（+0.007pt） | 79.09%→79.19%（+0.107pt） |
-| upsetFocus | 74 | 19.16%→19.17%（+0.005pt） | 74.69%→74.74%（+0.045pt） | 2.06%→2.06%（-0.002pt） | 72.79%→72.89%（+0.093pt） |
-| unified | 43 | 55.77%→55.91%（+0.132pt） | 91.74%→91.96%（+0.217pt） | （3連系は予想しない） | |
+| standard | 1,172 | 26.97%→27.11%（+0.146pt） | 77.57%→77.99%（+0.420pt） | 3.69%→3.74%（+0.053pt） | 80.84%→82.02%（+1.172pt） |
+| safeBet | 1,110 | 49.38%→49.72%（+0.336pt） | 88.30%→88.91%（+0.608pt） | 6.74%→6.84%（+0.096pt） | 78.91%→80.05%（+1.146pt） |
+| upsetFocus | 1,132 | 19.14%→19.23%（+0.087pt） | 74.81%→75.17%（+0.367pt） | 2.06%→2.08%（+0.025pt） | 74.32%→75.38%（+1.060pt） |
+| unified | 188 | 55.75%→56.21%（+0.457pt） | 92.13%→92.88%（+0.755pt） | （3連系は予想しない） | |
+
+3連単は、DB の列名の逆転のため `is_hit_trio`・`payout_trio` の列（dry-run の出力では trio の行）。
+
+2026-10-01 時点の dry-run（書き直す 263行）から大きく増えたのは、race_status の補完で、一部返還のレースが 117 から 1,254 に増えたため（race_status が入っていなかった 2025-12〜2026-09-20 のレースに、K から入った）。
 
 複勝・3連複を含む全券種の値は、PRの本文と dry-run の出力にある。
 
@@ -45,7 +49,7 @@ from predictions p join race_results r using (race_id)
 where r.race_status in ('no_race','partial_refund');
 ```
 
-期待値（2026-10-01 時点）は `25 / 83 / 162`。適用までに不成立・返還のレースが増えれば、数字も増える。
+期待値（2026-10-02 の夕方、race_status の補完の後）は `25 / 791 / 1937`。適用までに不成立・返還のレースが増えれば、数字も増える。対象は不成立 8レース・一部返還 1,214レース（予想のあるレース）の予想 3,771行。
 
 ### 2. マイグレーション117を適用する
 
@@ -62,19 +66,34 @@ select position('race_status' in pg_get_functiondef('public.update_prediction_re
 
 ### 3. 既存の予想を書き直す
 
-ユーザーの手元のターミナルで実行する。
+書き直しの前に、対象の予想の判定の列の控えを取る（戻すときに使う。手順「元に戻す」）。SQL Editor で実行する。
+
+```sql
+CREATE TABLE backup_boa544_pred_hits AS
+SELECT p.prediction_id, p.is_hit_win, p.is_hit_place, p.is_hit_trifecta, p.is_hit_trio, p.is_hit_turn,
+       p.payout_win, p.payout_place, p.payout_trifecta, p.payout_trio
+FROM predictions p JOIN race_results r USING (race_id)
+WHERE r.race_status IN ('no_race', 'partial_refund');
+ALTER TABLE backup_boa544_pred_hits ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON backup_boa544_pred_hits FROM anon, authenticated;
+SELECT count(*) FROM backup_boa544_pred_hits;
+```
+
+期待: 3,771（2026-10-02 の夕方。手順1の対象の予想の数。増えていれば、その分だけ多い）。書き直す 3,602行は、すべてこの中に入る。
+
+続けて、ユーザーの手元のターミナルで実行する。
 
 ```bash
 node --env-file=.env.local scripts/maintenance/backfill-refund-hit-flags.js
 ```
 
-上は dry-run。期待値は「不成立 8レース・一部返還 117レース、予想 311行のうち、書き直す 263行」（適用時点で増えていれば、その分だけ多い）。
+上は dry-run。期待値（2026-10-02 の夕方）は「不成立 8レース・一部返還 1254レース、予想 3771行のうち、書き直す 3602行」（適用時点で増えていれば、その分だけ多い）。変わる列ごとの行数は is_hit_trifecta 2,055・is_hit_trio 2,029・payout_win 1,878・payout_trio 1,602・payout_trifecta 1,298・payout_place 1,210・is_hit_win 816・is_hit_place 816・is_hit_turn 7。
 
 ```bash
 node --env-file=.env.local scripts/maintenance/backfill-refund-hit-flags.js --apply
 ```
 
-`[APPLY] 263行を書き直した` が出れば完了。途中で失敗しても、再実行すれば残りだけを書く。
+`[APPLY] 3602行を書き直した`（dry-run と同じ数）が出れば完了。途中で失敗しても、再実行すれば残りだけを書く。
 
 ### 4. 適用後の確認（読み取りのみ）
 
@@ -87,7 +106,25 @@ node --env-file=.env.local scripts/maintenance/backfill-refund-hit-flags.js --ap
 ## 元に戻す
 
 - トリガー: 117 の冒頭の「元に戻す」の SQL を実行する。関数と発火条件が 097 の状態に戻る。
-- 書き直した予想: 元の値には自動では戻らない。必要なら、旧規則での再判定（`race_status` を見ない判定）を別途行う。書き直すのは不成立・返還のレースの予想だけ（約260行）で、通常のレースには触れない。
+- 書き直した予想: 手順3の控え（`backup_boa544_pred_hits`）から戻す。書き直すのは不成立・返還のレースの予想だけ（約3,600行）で、通常のレースには触れない。
+
+```sql
+BEGIN;
+UPDATE predictions p
+SET is_hit_win = b.is_hit_win, is_hit_place = b.is_hit_place, is_hit_trifecta = b.is_hit_trifecta,
+    is_hit_trio = b.is_hit_trio, is_hit_turn = b.is_hit_turn, payout_win = b.payout_win,
+    payout_place = b.payout_place, payout_trifecta = b.payout_trifecta, payout_trio = b.payout_trio
+FROM backup_boa544_pred_hits b
+WHERE p.prediction_id = b.prediction_id
+  AND (p.is_hit_win, p.is_hit_place, p.is_hit_trifecta, p.is_hit_trio, p.is_hit_turn,
+       p.payout_win, p.payout_place, p.payout_trifecta, p.payout_trio)
+      IS DISTINCT FROM (b.is_hit_win, b.is_hit_place, b.is_hit_trifecta, b.is_hit_trio, b.is_hit_turn,
+       b.payout_win, b.payout_place, b.payout_trifecta, b.payout_trio);
+COMMIT;
+```
+
+  戻すのは書き直した行（約3,600行）だけ。戻した後、手順1の SQL が書き直し前の値（`25 / 791 / 1937`）に戻ることを確かめ、成績の集計（手順5）を回し直す。トリガー（117）も戻す場合は、上の「トリガー」の手順を別に行う（予想の控えから戻すことと、トリガーを戻すことは独立している）。
+- 控えを消す: 翌日の成績の集計（`models`・`accuracy_cache`）が新しい規則で出たことを確かめたら、`DROP TABLE backup_boa544_pred_hits;` を実行する。
 
 ## 対象外（このPRでは直さない）
 

@@ -11,11 +11,11 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 | 区分 | 件数 |
 |---|---|
-| テーブル・ビューの定義 | 82 |
-| 読んでいる（テーブルを直接） | 54 |
+| テーブル・ビューの定義 | 84 |
+| 読んでいる（テーブルを直接） | 55 |
 | 読んでいる（RPC経由のみ） | 0 |
 | 画面から読んでいない（例外登録あり） | 23 |
-| **画面から読んでいない（例外登録なし＝要判断）** | **5** |
+| **画面から読んでいない（例外登録なし＝要判断）** | **6** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 0 |
 
 「例外登録なし」は、取得したのに表示に繋がっていない候補。表示するか、`scripts/maintenance/display-coverage-exceptions.json` に理由を書いて例外にするかのどちらかを選ぶ。
@@ -24,15 +24,16 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 画面が呼んでいるRPC: `get_admin_rule_performance` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_today_races`
 
-## 要判断: 画面から読んでいない（例外登録なし）（5件）
+## 要判断: 画面から読んでいない（例外登録なし）（6件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
+| `analogy_v16_snapshots` | 表 | 133_analogy_v16_snapshots.sql | なし | GRANT（133_analogy_v16_snapshots.sql） |  |
 | `external_predictions` | 表 | 021_external_predictions.sql | なし | GRANT（021_external_predictions.sql） |  |
 | `prediction_odds` | 表 | 011_prediction_odds.sql | なし | ポリシー（011_prediction_odds.sql） |  |
 | `race_payouts` | 表 | 079_race_payouts.sql | なし | GRANT（109_predictions_rpc_race_status_payouts.sql） |  |
-| `race_series` | 表 | 084_race_series.sql | なし | GRANT（095_phase_a_numeric_public_read.sql） |  |
 | `race_special_notes` | 表 | 060_race_special_notes.sql | なし | 記述なし |  |
+| `raw_snapshots` | 表 | 125_raw_snapshots.sql | なし | 記述なし |  |
 
 ## 画面から読んでいない（例外登録あり）（23件）
 
@@ -62,7 +63,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `venue_course_technique_baseline` | 表 | 098_morning_data_digest.sql | なし | GRANT（098_morning_data_digest.sql） | 会場×グレード×実進入コースの決まり手ベースライン（098）。上と同じく集計の中間テーブル |
 | `venue_entry_course_stats` | 表 | 064_venue_entry_course_stats.sql | なし | 記述なし | 「表示には使わず、自前計算の全国値の検証にのみ使う」とユーザー判断済み（BOA-293、orchestration.md）。読み手が無いことは既知 |
 
-## 画面から読んでいる（54件）
+## 画面から読んでいる（55件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -94,6 +95,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `race_pit_comments` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
 | `race_pit_reports` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
 | `race_results` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_admin_rule_performance(API), get_race_return_rate(画面), get_race_technique_profile(画面), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
+| `race_series` | 表 | 084_race_series.sql | 画面が直接 | GRANT（095_phase_a_numeric_public_read.sql） |  |
 | `racer_grade_cache` | 表 | 054_racer_grade_cache_table.sql | 画面が直接 | GRANT（054_racer_grade_cache_table.sql） |  |
 | `racer_news` | 表 | 036_create_racer_news.sql | 画面が直接 | ポリシー（036_create_racer_news.sql） |  |
 | `racer_period_stats` | 表 | 083_racer_period_stats.sql | 画面が直接 | GRANT（095_phase_a_numeric_public_read.sql） |  |

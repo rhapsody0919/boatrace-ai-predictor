@@ -11,6 +11,8 @@
  *   (f) 変異検証: 上を壊した版で、検証が失敗する
  *   (g) BOA-480: race_status・refund_boats を K から導く規則（返還は F・L0/L1・K0/K1、失格は返還しない、不成立の判定、
  *       未知の表記は異常）と、書き込み（同じ値ごとに update().in()、race_status が NULL の行だけ）
+ *   (h) BOA-553/582: 成績コードと、同じ行の着欄・着（K から決まるものだけ。失格 S0〜S2 は書かない）。既存の値は
+ *       上書きしない・行の無い艇は作らない・変わらない艇は書かない。書き込みの列は5列＋updated_at
  *
  * 実行: node scripts/maintenance/verify-kb-gap-fill.js
  */
@@ -688,6 +690,361 @@ async function evaluateGroupWrite(cli) {
     const failed = await withMutant(rel, from, to, run);
     check(
       `(g) 変異検証: ${label} → 検証が失敗する（${failed.length}項目）`,
+      failed.length > 0,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// (h) BOA-553/582: 成績コードと着欄・着（項目7）
+// ---------------------------------------------------------------------------
+const FC_DAY = {
+  date: DATE,
+  k: {
+    venues: [
+      {
+        venue_code: 1,
+        races: [
+          {
+            race_number: 1,
+            rows: ["01", "F", "S1", "02", "K1", "03"].map((c, i) => ({
+              boat_number: i + 1,
+              finish_raw: c,
+            })),
+          },
+          {
+            race_number: 2,
+            rows: ["S0", "L0", "00", "S2", "04", "01"].map((c, i) => ({
+              boat_number: i + 1,
+              finish_raw: c,
+            })),
+          },
+        ],
+      },
+    ],
+  },
+};
+const fcEmpty = {
+  official_finish_code: null,
+  finish_mark: null,
+  finish_rank: null,
+};
+
+function evaluateFinishCode(gm) {
+  const failed = [];
+  const expect = (label, pass, detail) => {
+    if (!pass) failed.push(`${label}${detail ? ` ${detail}` : ""}`);
+  };
+  const conv = [
+    "01",
+    "06",
+    "F",
+    "L0",
+    "L1",
+    "K0",
+    "K1",
+    "00",
+    "S0",
+    "S1",
+    "S2",
+    "X",
+  ].map((c) => gm.finishMarkFromCode(c));
+  expect(
+    "(h) 成績コード→着欄・着: 01〜06は着、F・L・欠・_ は着なし、S0〜S2・未知は null",
+    same(conv, [
+      { finish_mark: "1", finish_rank: 1 },
+      { finish_mark: "6", finish_rank: 6 },
+      { finish_mark: "F", finish_rank: null },
+      { finish_mark: "L", finish_rank: null },
+      { finish_mark: "L", finish_rank: null },
+      { finish_mark: "欠", finish_rank: null },
+      { finish_mark: "欠", finish_rank: null },
+      { finish_mark: "_", finish_rank: null },
+      null,
+      null,
+      null,
+      null,
+    ]),
+    show(conv),
+  );
+  // R1: 1号艇=全部NULL、2号艇=成績コードだけ既存、3号艇=S1で全部NULL、4号艇=着欄・着が既存（結果ページ由来）で
+  //     成績コードだけNULL、5号艇=3列とも既存、6号艇=行が無い
+  // R2: 1号艇=S0で結果ページ由来の「転」が既存、5号艇=既存の値がKと食い違う、他は全部NULL
+  const existing = new Map([
+    [`${R1}|1`, fcEmpty],
+    [`${R1}|2`, { ...fcEmpty, official_finish_code: "F" }],
+    [`${R1}|3`, fcEmpty],
+    [
+      `${R1}|4`,
+      { official_finish_code: null, finish_mark: "2", finish_rank: 2 },
+    ],
+    [
+      `${R1}|5`,
+      { official_finish_code: "K1", finish_mark: "欠", finish_rank: null },
+    ],
+    [
+      `${R2}|1`,
+      { official_finish_code: null, finish_mark: "転", finish_rank: null },
+    ],
+    [`${R2}|2`, fcEmpty],
+    [`${R2}|3`, fcEmpty],
+    [`${R2}|4`, fcEmpty],
+    // 5号艇: 既存の3列が K（04）と食い違う。どれも上書きしない（=書かない）
+    [
+      `${R2}|5`,
+      { official_finish_code: "05", finish_mark: "5", finish_rank: 5 },
+    ],
+    [`${R2}|6`, fcEmpty],
+  ]);
+  const out = {};
+  const rows = gm.buildFinishCodeRows(FC_DAY, existing, out);
+  const row = (raceId, boat, code, mark, rank) => ({
+    race_id: raceId,
+    boat_number: boat,
+    official_finish_code: code,
+    finish_mark: mark,
+    finish_rank: rank,
+  });
+  expect(
+    "(h) 行の組み立て: NULL だけ埋め、既存の値は持ち回る。S0〜S2 は着欄を書かない。行の無い艇・変わらない艇は書かない",
+    same(rows, [
+      row(R1, 1, "01", "1", 1),
+      row(R1, 2, "F", "F", null),
+      row(R1, 3, "S1", null, null),
+      row(R1, 4, "02", "2", 2),
+      row(R2, 1, "S0", "転", null),
+      row(R2, 2, "L0", "L", null),
+      row(R2, 3, "00", "_", null),
+      row(R2, 4, "S2", null, null),
+      row(R2, 6, "01", "1", 1),
+    ]),
+    show(rows),
+  );
+  expect(
+    "(h) dry-run の内訳: 列ごとに NULL から埋めた艇の数",
+    same(out.filled, {
+      official_finish_code: 8,
+      finish_mark: 5,
+      finish_rank: 2,
+    }),
+    show(out.filled),
+  );
+  // 成績コードを書き終えた後の再実行（成績コードは全艇あり、着欄はNULL）: 着欄の差分の行だけ
+  const after = new Map(
+    [1, 2, 3].map((n) => [
+      `${R1}|${n}`,
+      { ...fcEmpty, official_finish_code: ["01", "F", "S1"][n - 1] },
+    ]),
+  );
+  const again = gm.buildFinishCodeRows(FC_DAY, after);
+  expect(
+    "(h) 成績コードの書き込み後の再実行: 着欄が決まる艇だけ（S1 の艇は書かない）",
+    same(again, [row(R1, 1, "01", "1", 1), row(R1, 2, "F", "F", null)]),
+    show(again),
+  );
+  return failed;
+}
+
+async function evaluateFinishCodeWrite(m) {
+  const calls = [];
+  const client = {
+    from: (table) => ({
+      upsert: async (rows, opts) => (
+        calls.push({ table, rows, opts }),
+        { error: null }
+      ),
+    }),
+  };
+  await m.writeRows(
+    "finish_code",
+    [
+      {
+        race_id: R1,
+        boat_number: 1,
+        official_finish_code: "01",
+        finish_mark: "1",
+        finish_rank: 1,
+      },
+    ],
+    {
+      client,
+      pause: async () => {},
+      now: () => new Date("2026-10-02T00:00:00Z"),
+    },
+  );
+  const c = calls[0];
+  return c &&
+    c.table === "race_start_timings" &&
+    c.opts.ignoreDuplicates === false &&
+    c.opts.onConflict === "race_id,boat_number" &&
+    Object.keys(c.rows[0]).sort().join() ===
+      "boat_number,finish_mark,finish_rank,official_finish_code,race_id,updated_at"
+    ? []
+    : [`(h) 書き込みの列・オプション ${show(c)}`];
+}
+
+{
+  const fc = evaluateFinishCode(g);
+  check(
+    "(h) 成績コードと着欄・着（BOA-553/582）",
+    fc.length === 0,
+    fc.join(" / "),
+  );
+  const fw = await evaluateFinishCodeWrite(cli);
+  check("(h) 成績コードと着欄・着の書き込み", fw.length === 0, fw.join(" / "));
+  for (const [label, from, to] of [
+    ["失格（S1）を転覆と読む", '"00": "_",', '"00": "_",\n    S1: "転",'],
+    [
+      "既存の着欄を上書きする",
+      "finish_mark: derived ? derived.finish_mark : before.finish_mark,",
+      "finish_mark: finishMarkFromCode(code)?.finish_mark ?? before.finish_mark,",
+    ],
+    [
+      "既存の成績コードを上書きする",
+      "official_finish_code: before.official_finish_code ?? code,",
+      "official_finish_code: code,",
+    ],
+    [
+      "行の無い艇も作る",
+      "existingByKey.get(`${raceId}|${r.boat_number}`);\n      if (!cur) continue;",
+      "existingByKey.get(`${raceId}|${r.boat_number}`) ?? {};",
+    ],
+  ]) {
+    const failed = await withMutant(LIB, from, to, (m) =>
+      evaluateFinishCode(m),
+    );
+    check(
+      `(h) 変異検証: ${label} → 検証が失敗する（${failed.length}項目）`,
+      failed.length > 0,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// (i) 欠場艇等の行（missing_boats、BOA-327 の前提）: K にあって行の無い艇を、9/21 以降の結果ページの取得と同じ形で作る
+// ---------------------------------------------------------------------------
+const MB_R1 = `${DATE}-01-01`;
+const MB_DAY = {
+  date: DATE,
+  k: {
+    venues: [
+      {
+        venue_code: 1,
+        races: [
+          {
+            race_number: 1,
+            rows: [
+              {
+                boat_number: 1,
+                finish_raw: "01",
+                course: 1,
+                start_timing: 0.12,
+              },
+              {
+                boat_number: 2,
+                finish_raw: "K1",
+                course: null,
+                start_timing: null,
+              },
+              {
+                boat_number: 3,
+                finish_raw: "K0",
+                course: null,
+                start_timing: null,
+              },
+              {
+                boat_number: 4,
+                finish_raw: "F",
+                course: 4,
+                start_timing: -0.02,
+                is_flying: true,
+              },
+              {
+                boat_number: 5,
+                finish_raw: "L0",
+                course: null,
+                start_timing: null,
+                is_late_start: true,
+              },
+              {
+                boat_number: 6,
+                finish_raw: "S1",
+                course: 6,
+                start_timing: 0.15,
+              },
+            ],
+          },
+          // races に無いレース（作らない）
+          {
+            race_number: 2,
+            rows: [{ boat_number: 1, finish_raw: "K0", course: null }],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+function evaluateMissingBoats(gm) {
+  const rows = gm.buildMissingBoatRows(MB_DAY, {
+    raceIds: new Set([MB_R1]),
+    existingKeys: new Set([`${MB_R1}|1`]),
+  });
+  const row = (b, st, fly, late, course, mark, rank, code) => ({
+    race_id: MB_R1,
+    boat_number: b,
+    start_timing: st,
+    is_flying: fly,
+    is_late_start: late,
+    entry_course: course,
+    finish_mark: mark,
+    finish_rank: rank,
+    official_finish_code: code,
+    created_at: null,
+  });
+  const want = [
+    row(2, null, false, false, null, "欠", null, "K1"),
+    row(3, null, false, false, null, "欠", null, "K0"),
+    row(4, 0.02, true, false, 4, "F", null, "F"),
+    row(5, null, false, true, null, "L", null, "L0"),
+    row(6, 0.15, false, false, 6, null, null, "S1"),
+  ];
+  return show(rows) === show(want) &&
+    Object.keys(rows[0]).sort().join() ===
+      [...gm.GAP_FILL_ITEMS.missing_boats.columns].sort().join()
+    ? []
+    : [`(i) 行 ${show(rows)}`];
+}
+
+{
+  const mb = evaluateMissingBoats(g);
+  check(
+    "(i) 欠場艇等の行: 行の無い艇だけ（既存の1号艇は作らない）、races にあるレースだけ。欠場は「欠」・ST と進入は NULL、F は ST の絶対値、L は is_late_start、失格は着欄 NULL。成績コードは K のまま、created_at は NULL。列は GAP_FILL_ITEMS と同じ",
+    mb.length === 0,
+    mb.join(" / "),
+  );
+  for (const [label, from, to] of [
+    [
+      "既存の行のある艇も作る",
+      "if (existingKeys.has(`${raceId}|${r.boat_number}`)) continue;",
+      "",
+    ],
+    [
+      "races に無いレースも作る",
+      "    if (!raceIds.has(raceId)) continue;\n    for (const r of race.rows ?? []) {\n      if (!Number.isInteger(r.boat_number)) continue;\n      if (existingKeys",
+      "    for (const r of race.rows ?? []) {\n      if (!Number.isInteger(r.boat_number)) continue;\n      if (existingKeys",
+    ],
+    [
+      "created_at に取得時刻を入れる",
+      "        created_at: null,\n      });\n    }\n  }\n  return rows;\n}\n\n/**\n * 項目6",
+      "        created_at: new Date().toISOString(),\n      });\n    }\n  }\n  return rows;\n}\n\n/**\n * 項目6",
+    ],
+  ]) {
+    const failed = await withMutant(LIB, from, to, (m) =>
+      evaluateMissingBoats(m),
+    );
+    check(
+      `(i) 変異検証: ${label} → 検証が失敗する（${failed.length}項目）`,
       failed.length > 0,
     );
   }

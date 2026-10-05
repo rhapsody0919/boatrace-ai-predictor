@@ -455,7 +455,12 @@ async function getRacerPages() {
     const entries = await fetchAll(
       "race_entries",
       "racer_id, grade, race_id",
-      (q) => q.gte("race_id", activeSince).not("racer_id", "is", null),
+      (q) =>
+        q
+          .gte("race_id", activeSince)
+          .not("racer_id", "is", null)
+          .order("race_id")
+          .order("boat_number"),
     );
     const latestByRacerId = new Map();
     for (const row of entries) {

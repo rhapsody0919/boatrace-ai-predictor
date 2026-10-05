@@ -1,11 +1,12 @@
 /**
  * Vercel Edge Function: アナロジー・ファインダーの寄与度（BOA-271 FR-1）
  *
- * GET /api/analogy/contribution?venue=&grade=&round=&target=
+ * GET /api/analogy/contribution?venue=&grade=&round=&target=&stage=
  *   venue  0〜24（0=全会場、省略時0）
  *   grade  all|ippan|G3|G2|G1|SG（省略時 all）
  *   round  all|yosen|junyu|yusho|other（省略時 all）
  *   target 1|2|3（1着／2着以内／3着以内、省略時1）
+ *   stage  exhibition|racecard（展示後／出走表時点のモデルの集計、省略時 exhibition。マイグレーション 132）
  *
  * is_active の版の themes と、該当スライスの行（全艇と艇番1〜6）を返す。レース数が30未満のスライスは
  * 「会場→全会場」「ラウンド→全ラウンド」「グレード→全グレード」の順に一段ずつ広げ、広げた段を返す
@@ -14,9 +15,11 @@
  * is_active の版が無い（学習前）・エラーの応答はキャッシュさせない。
  */
 import {
+  DEFAULT_STAGE,
   FINISH_TARGETS,
   GRADES,
   ROUNDS,
+  STAGES,
   resolveContributionSlice,
   sliceCandidates,
 } from "../../src/utils/analogyContribution.js";
@@ -44,6 +47,7 @@ export function parseParams(searchParams) {
   const grade = searchParams.get("grade") || "all";
   const round = searchParams.get("round") || "all";
   const target = Number(searchParams.get("target") ?? 1);
+  const stage = searchParams.get("stage") || DEFAULT_STAGE;
   if (!Number.isInteger(venue) || venue < 0 || venue > 24)
     throw new RangeError("venue は 0〜24");
   if (grade !== "all" && !GRADES.includes(grade))
@@ -51,7 +55,9 @@ export function parseParams(searchParams) {
   if (round !== "all" && !ROUNDS.includes(round))
     throw new RangeError(`round は all|${ROUNDS.join("|")}`);
   if (!FINISH_TARGETS.includes(target)) throw new RangeError("target は 1|2|3");
-  return { venue, grade, round, target };
+  if (!STAGES.includes(stage))
+    throw new RangeError(`stage は ${STAGES.join("|")}`);
+  return { venue, grade, round, target, stage };
 }
 
 class TableMissingError extends Error {}
@@ -92,8 +98,9 @@ export default async function handler(req) {
     const cands = sliceCandidates(params);
     const inList = (vals) => `in.(${[...new Set(vals)].join(",")})`;
     const rows = await rest(
-      "analogy_contribution_profiles?select=venue_code,grade,round,boat_number,n_boats,n_races,period_from,period_to,shares,share_sd,breakdown" +
+      "analogy_contribution_profiles?select=venue_code,grade,round,boat_number,n_boats,n_races,period_from,period_to,shares,share_sd,breakdown,frame_ratio" +
         `&model_version=eq.${encodeURIComponent(model.model_version)}` +
+        `&stage=eq.${params.stage}` +
         `&finish_target=eq.${params.target}` +
         `&venue_code=${inList(cands.map((c) => c.venue))}` +
         `&grade=${inList(cands.map((c) => c.grade))}` +
@@ -103,7 +110,7 @@ export default async function handler(req) {
     if (!slice) {
       // 全会場・全グレード・全ラウンドの行すら無いのは学習の書き込みの異常
       throw new Error(
-        `版 ${model.model_version} に target=${params.target} の行がありません`,
+        `版 ${model.model_version} に stage=${params.stage} target=${params.target} の行がありません`,
       );
     }
     return json(

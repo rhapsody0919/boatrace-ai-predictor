@@ -157,7 +157,7 @@ Ryujin Radar analyzes these signals together and displays an "Upset Index" for e
 
 - **😌 Favorite friendly**: lane 1 is favored, best suited for a favorite-focused bet
 - **😐 Standard**: a balanced race
-- **😬 High upset chance**: an upset is likely, worth considering a bet aimed at a bigger payout
+- **😬 Upset alert (high)**: an upset is likely, worth considering a bet aimed at a bigger payout
 
 Using this Upset Index to adjust how you bet lets you optimize both hit rate and return rate.
 
@@ -189,7 +189,7 @@ Let's verify this with an actual race.
 - **3rd**: lane 2
 - **Trifecta**: 5-4-2 → payout of **¥28,340**
 
-Ryujin Radar's Upset Index showed "High upset chance," and lane 5 did indeed take 1st place, hitting exactly.
+Ryujin Radar's Upset Index showed "Upset alert (high)," and lane 5 did indeed take 1st place, hitting exactly.
 
 ---
 
@@ -208,7 +208,7 @@ Here are the 5 signals that predict a volatile race.
 ### How to use Ryujin Radar
 
 - Check the "Upset Index" for each race
-- If the Upset Index shows "😬 High upset chance" → consider a bet aimed at a bigger payout
+- If the Upset Index shows "😬 Upset alert (high)" → consider a bet aimed at a bigger payout
 - Cross-check the signals yourself to raise your confidence further
 
 **Spotting a volatile race in advance** is a key skill for winning consistently at boat racing. Put data-driven predictions into practice with Ryujin Radar!

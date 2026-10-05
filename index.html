@@ -28,21 +28,23 @@
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1b2e" />
 
     <!-- SEO Meta Tags（description / canonical はアプリが言語別に出力するため静的定義しない） -->
-    <meta name="keywords" content="ボートレース,AI分析,予測精度,データサイエンス,無料,データ分析,モーター性能,選手データ,龍神レーダー" />
+    <meta name="keywords" content="ボートレース,AI分析,過去データ,データサイエンス,無料,データ分析,モーター性能,選手データ,龍神レーダー" />
     <meta name="author" content="龍神レーダー" />
 
     <!-- OGP Tags -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="龍神レーダー" />
     <meta property="og:title" content="龍神レーダー - 無料のボートレースAI予想＆データ分析" />
-    <meta property="og:description" content="45項目のデータをAIが分析するボートレース予測サービス。高精度なレース展開分析を完全無料・登録不要で今すぐ使えます。" />
-    <meta property="og:url" content="https://www.boat-ai.jp/" />
+    <meta property="og:description" content="選手成績・モーター・展示・スタートのデータを、過去の実際のレース結果で数えて見える化するボートレースのデータ分析サービス。全24場に対応し、完全無料・登録不要で使えます。" />
+    <!-- og:url は静的に置かない（BOA-691）。JS を実行しない Facebook 等は og:url が指す URL を
+         辿ってその情報を使うため、トップ固定だとレース詳細・記事の共有がすべてトップ扱いになる。
+         無ければ共有された URL そのものが使われる。記事など URL を持つページは useSocialMeta が付ける -->
     <meta property="og:image" content="https://www.boat-ai.jp/ogp-image.png" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="龍神レーダー - 無料のボートレースAI予想＆データ分析" />
-    <meta name="twitter:description" content="45項目のデータをAIが分析するボートレース予測サービス。高精度なレース展開分析を完全無料で提供。" />
+    <meta name="twitter:description" content="選手成績・モーター・展示・スタートのデータを、過去の実際のレース結果で数えて見える化するボートレースのデータ分析サービス。完全無料・登録不要。" />
     <meta name="twitter:image" content="https://www.boat-ai.jp/ogp-image.png" />
 
     <!-- Robots -->
@@ -57,12 +59,7 @@
       "@type": "WebSite",
       "name": "龍神レーダー",
       "url": "https://www.boat-ai.jp/",
-      "description": "AI技術を活用したボートレース予想サービス。45項目以上のデータを総合的に分析し、高精度な予想を提供。",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://www.boat-ai.jp/?q={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
+      "description": "選手成績・モーター・展示・スタートのデータを、過去の実際のレース結果で数えて見える化するボートレースのデータ分析サービス。"
     }
     </script>
     <script type="application/ld+json">
@@ -76,12 +73,17 @@
         "price": "0",
         "priceCurrency": "JPY"
       },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.5",
-        "ratingCount": "100"
-      },
-      "description": "AIボートレース分析サービス。45項目以上のデータを分析し、高精度なレース展開予測を提供。"
+      "description": "選手成績・モーター・展示・スタートのデータを、過去の実際のレース結果で数えて見える化するボートレースのデータ分析サービス。"
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "龍神レーダー",
+      "url": "https://www.boat-ai.jp/",
+      "logo": "https://www.boat-ai.jp/logo.png",
+      "sameAs": ["https://x.com/kyouteiboatai"]
     }
     </script>
 

@@ -123,7 +123,7 @@ function AccuracyDashboard({ onRefresh, isRefreshing }) {
           </p>
           <p className="turn-accuracy-hero-note">
             過去{modelAccuracy.turn.totalRaces}
-            レースの実測値（1マーク展開の予想パターンいずれかが実際の1着コースと一致した割合）
+            レースの実測値（1マーク展開の予想パターンのいずれかの艇が実際に1着になった割合）
           </p>
 
           {modelAccuracy.turn.byVenue &&
@@ -184,7 +184,7 @@ function AccuracyDashboard({ onRefresh, isRefreshing }) {
           <h4>💡 展開予測の的中率について</h4>
           <div className="info-section">
             <p>
-              展開予測は、1マーク（最初のターン）でどの艇が先頭になるかを予想する機能です。上位パターンのいずれかが実際の1着コースと一致すれば「的中」としてカウントしています。
+              展開予測は、1マーク（最初のターン）の攻防でどの艇が1着になるかを予想する機能です。上位パターンのいずれかの艇が実際に1着になれば「的中」としてカウントしています（艇番で判定。前付けで進入コースが変わっても、その艇が勝てば的中）。
             </p>
           </div>
           <div className="info-section">

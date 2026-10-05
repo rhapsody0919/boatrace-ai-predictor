@@ -6,7 +6,7 @@ import "./About.css";
 
 const TITLE = "龍神レーダーについて | AIボートレース予想サービスの詳細";
 const DESCRIPTION =
-  "龍神レーダーは45項目以上のデータをAIが分析するボートレース予測サービス。データサイエンスに基づく高精度分析を完全無料・登録不要で提供します。";
+  "龍神レーダーは、選手成績・モーター・展示・スタートのデータを、過去の実際のレース結果で数えて見える化するボートレースのデータ分析サービスです。完全無料・登録不要で使えます。";
 
 export default function About() {
   const navigate = useNavigate();
@@ -109,7 +109,7 @@ export default function About() {
           <h2>龍神レーダーとは</h2>
           <p>
             龍神レーダーは、人工知能（AI）を活用したボートレース予想サービスです。
-            45項目以上のデータを総合的に分析し、高精度な予想を提供します。
+            選手成績・モーター・展示・スタートのデータを総合的に分析し、高精度な予想を提供します。
           </p>
           <p>
             従来の「勘」や「経験」に頼る予想ではなく、データとAIの力で、
@@ -170,7 +170,7 @@ export default function About() {
         </section>
 
         <section className="about-section">
-          <h2>📊 AIが分析する45項目のデータ</h2>
+          <h2>📊 龍神レーダーが扱うデータ</h2>
           <div className="data-grid">
             <div className="data-category">
               <h3>選手データ</h3>
@@ -284,7 +284,7 @@ export default function About() {
               <div className="step-number">2</div>
               <div className="step-content">
                 <h3>データ分析</h3>
-                <p>45項目以上のデータを総合的に分析</p>
+                <p>選手成績・モーター・展示・スタートのデータを総合的に分析</p>
               </div>
             </div>
             <div className="ai-step">

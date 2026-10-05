@@ -43,6 +43,7 @@ import { createSupabaseStore } from "../scrapeJobs/store.js";
 import { makeFetchHtml } from "../scrapeJobs/htmlFetch.js";
 import { jstMinutesOfDay } from "../scrapeJobs/time.js";
 import { digestScrapedVenue } from "./digest.js";
+import { parseVenueStatuses, raceIndexUrl } from "../raceStatusParsers.js";
 
 /** 1回の呼び出しで処理する会場数の上限（時間の許す限り、この数まで。1会場約30秒） */
 export const RACES_INIT_VENUES_PER_INVOCATION = 8;
@@ -99,7 +100,7 @@ async function defaultExistingVenueCodes(client, date) {
   const rows = await fetchAll(
     "races",
     "race_id",
-    (q) => q.gte("race_id", date).lt("race_id", `${date}~`),
+    (q) => q.gte("race_id", date).lt("race_id", `${date}~`).order("race_id"),
     { client, throwOnError: true },
   );
   return new Set(rows.map((r) => Number(r.race_id.slice(11, 13))));
@@ -163,6 +164,29 @@ async function defaultDeployHook() {
   }
 }
 
+/**
+ * 番組の無い中止の会場か（BOA-721）。節が打ち切られた日は、開催場一覧に「中止」として載るが、出走表・直前情報は
+ * 「データがありません」で、発走時刻も無い（2026-05-17 尼崎・2026-07-30 津の実例）。この会場は取り直しても
+ * 出走表が取れないので、失敗にせず「済み（番組なし）」として扱う。races は作らない。
+ *
+ * 2条件がそろうときだけ true にする。片方だけなら false（従来どおり失敗にして再試行する。出走表の未公開や
+ * ページの構造の変化を、番組なしと取り違えないため）。
+ *   1. 開催場一覧（race/index?hd=）の状態欄が、日全体の中止・順延（1R以降）
+ *   2. 1R の出走表（race/racelist）が「データがありません」
+ */
+export async function defaultCheckNoProgram(date, venueCode, { fetchHtml }) {
+  const statuses = parseVenueStatuses(await fetchHtml(raceIndexUrl(date)));
+  const status = statuses.find((v) => v.venueCode === venueCode)?.status;
+  if (!(status?.kind === "cancelled_from" && status.fromRace === 1))
+    return false;
+  const ymd = date.replace(/-/g, "");
+  const jcd = String(venueCode).padStart(2, "0");
+  const racelist = await fetchHtml(
+    `https://www.boatrace.jp/owpc/pc/race/racelist?rno=1&jcd=${jcd}&hd=${ymd}`,
+  );
+  return /データがありません/.test(racelist);
+}
+
 const DEFAULT_DEPS = Object.freeze({
   getVenues: getTodayVenues,
   scrapeVenue,
@@ -171,6 +195,7 @@ const DEFAULT_DEPS = Object.freeze({
   ensureSlots: defaultEnsureSlots,
   ensureUnified: defaultEnsureUnified,
   triggerDeployHook: defaultDeployHook,
+  checkNoProgram: defaultCheckNoProgram,
 });
 
 // ---------------------------------------------------------------------------
@@ -186,6 +211,8 @@ const newCursor = ({ date, mode, venues, existing, now }) => ({
   existing: [...existing].sort((a, b) => a - b),
   targets: venues.filter((v) => !existing.has(v)),
   settled: [],
+  // 番組の無い中止の会場（BOA-721）。settled にも入る（済み）。races は書かない
+  noProgram: [],
   attempts: {},
   retryAfter: {},
   lastErrors: {},
@@ -292,6 +319,31 @@ export async function runRacesInitJob(ctx, deps = {}) {
         breakerOpen = true;
         break;
       }
+      // 番組の無い中止の会場（節の打ち切り等）は、失敗にせず済みにする（BOA-721）。確認自体の失敗は、
+      // 番組なしと判断できないので、元の失敗として扱う
+      let noProgram = false;
+      try {
+        noProgram = await d.checkNoProgram(date, code, { fetchHtml });
+      } catch (checkError) {
+        if (isBreakerOpenError(checkError)) {
+          cursor.attempts[code] -= 1;
+          breakerOpen = true;
+          break;
+        }
+        console.error(
+          `⚠️ races-init 会場${code}: 番組なしの確認に失敗: ${truncateError(checkError)}`,
+        );
+      }
+      if (noProgram) {
+        (cursor.noProgram ??= []).push(code);
+        cursor.settled.push(code);
+        delete cursor.retryAfter[code];
+        delete cursor.lastErrors[code];
+        console.log(
+          `ℹ️ races-init 会場${code}: 開催場一覧で中止、出走表が「データがありません」（番組なし）。races を作らずに済みにする`,
+        );
+        continue;
+      }
       const message = truncateError(error);
       cursor.lastErrors[code] = message;
       cursor.retryAfter[code] = new Date(
@@ -371,6 +423,7 @@ export async function runRacesInitJob(ctx, deps = {}) {
     existingVenues: cursor.existing.length,
     venues: cursor.venues.length,
     settled: cursor.settled.length,
+    noProgram: cursor.noProgram ?? [],
     pending,
     races: cursor.races,
     entries: cursor.entries,

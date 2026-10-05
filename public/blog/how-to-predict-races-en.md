@@ -171,7 +171,7 @@ Honestly, checking all 6 factors for every single race is a lot of work. This is
 | Exhibition data | Factors in exhibition time and start exhibition |
 | Lane tendencies | Accounts for each venue's lane-1 1st-place rate |
 | Weather adjustment | Factors in wind direction and speed |
-| Upset Index | Quantifies how likely a race is to be volatile, as a percentile ("High upset chance," "Standard," or "Favorite friendly") |
+| Upset Index | Quantifies how likely a race is to be volatile, as a percentile ("Upset alert (high)," "Standard," or "Favorite friendly") |
 
 ### How to predict using AI
 

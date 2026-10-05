@@ -5,7 +5,7 @@ import { raceStageLabel } from "../../constants/raceStageConfig";
 import { translateTechnique } from "./raceIndicators";
 import { finishMarkKeyOf } from "../../utils/prevResult";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
-import "../common/HorizontalScrollHint.css";
+import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
 import "./RaceHistoryTable.css";
 
 /**
@@ -136,6 +136,15 @@ function RaceHistoryTable({
       mark
     );
   };
+  // 着順の色は直近の走の帯（RecentRunsBar）とそろえる。1着＝金、5・6着と
+  // F・L・転覆などの記号＝赤（race-detail-ui-unify FR-4）。欠場は色を付けない
+  const finishClassOf = (race) =>
+    race.finishRank === 1
+      ? "race-history-finish-first"
+      : race.finishRank >= 5 ||
+          (race.finishRank == null && race.finishMark && !race.absent)
+        ? "race-history-finish-bad"
+        : undefined;
   const shows = (key) => !omitColumns.includes(key);
   // 列数・行数が決まってから測り直す（取得前は幅が無く、右に続くと分からない）。
   // 表の幅を変えるプロップは漏れなく並べる。1つでも抜けると、溢れが解消しても
@@ -159,32 +168,18 @@ function RaceHistoryTable({
     <div
       className={`race-history-hscroll hscroll-hint${hasMore ? " has-more" : ""}`}
     >
-      {hasLess && (
-        <button
-          type="button"
-          className="hscroll-less"
-          onClick={scrollLeft}
-          aria-hidden="true"
-          tabIndex={-1}
-        >
-          ‹
-        </button>
-      )}
-      {hasMore && (
-        <button
-          type="button"
-          className="hscroll-more"
-          onClick={scrollRight}
-          /* 装飾兼ショートカット。表の中身はキーボード・支援技術からは
-             スクロールせずに辿れるため、支援技術には出さない */
-          aria-hidden="true"
-          tabIndex={-1}
-        >
-          ›
-        </button>
-      )}
+      <HorizontalScrollButtons
+        hasMore={hasMore}
+        hasLess={hasLess}
+        onMore={scrollRight}
+        onLess={scrollLeft}
+      />
       <div className="race-history-table-wrapper" ref={ref} onScroll={update}>
-        <table className="race-history-table">
+        {/* 同じ節の走だけが並ぶ表（今節タブ）では、日付だけだと1日2走の日にどちらの走か分からない。
+            日付とRの2列を固定する（PR #1202 ファン評価1周目） */}
+        <table
+          className={`race-history-table${compactDate && !shows("venue") ? " race-history-table--pin-race" : ""}`}
+        >
           <thead>
             <tr>
               <th>{t("raceHistoryTable.date")}</th>
@@ -228,7 +223,7 @@ function RaceHistoryTable({
                     以前は右から3番目で、375px の直近10走（11列・930px）では
                     右へ約640px送らないと見えず、今節タブの日別の表では横スクロールの
                     ぼかしに重なっていた（BOA-569） */}
-                <td>
+                <td className={finishClassOf(race)}>
                   {race.finishRank ??
                     (race.absent
                       ? t("basicInfo.finishAbsent")

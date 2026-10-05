@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { formatExhibitionSt } from "../../utils/formatters";
 import "./MotorConditionChart.css";
 import "./RaceCardDataTable.css";
 
@@ -227,14 +228,13 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
                 <th>{t("table.avgST")}</th>
                 <th>{t("table.exhibitionTime")}</th>
                 <th>{t("table.exhibitionST")}</th>
-                <th>{t("table.courseWinRate")}</th>
+                <th>{t("table.wakuWinRate")}</th>
               </tr>
             </thead>
             <tbody>
               {entries.map((row) => {
                 const stats = statsByBoat.get(row.boat_number);
-                const course = stats?.course ?? row.boat_number;
-                const counts = stats?.courseRaceCounts?.[String(course)];
+                const counts = stats?.wakuRaceCounts?.[String(row.boat_number)];
                 return (
                   <tr key={row.boat_number}>
                     <td className="rcd-boat">{row.boat_number}</td>
@@ -299,7 +299,13 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
                     >
                       {fmt(row.exhibition_time)}
                     </td>
-                    <td>{fmt(row.exhibition_st)}</td>
+                    {/* 展示のフライング・出遅れは公式の表記（F.01 等）で出す（BOA-759） */}
+                    <td>
+                      {formatExhibitionSt(
+                        row.exhibition_st,
+                        row.exhibition_start_flag,
+                      ) ?? "—"}
+                    </td>
                     <td>
                       {counts && counts.total > 0
                         ? `${counts.wins ?? 0}/${counts.total}（${(((counts.wins ?? 0) / counts.total) * 100).toFixed(0)}%）`

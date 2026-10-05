@@ -25,30 +25,35 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from train import OUT
+import features as F
+
+# 学習の出力先（train.OUT と同じ）。日次の特徴量ジョブも使うので、train（lightgbm）を読み込まない
+OUT = F.D / "out"
 
 BATCH = 1000
 DRIFT_THRESHOLD = 0.03
 
 
-def _overall(rows: list[dict]) -> dict[int, dict]:
-    return {r["finish_target"]: r["shares"] for r in rows
+def _overall(rows: list[dict]) -> dict[tuple[str, int], dict]:
+    # stage が無い行（132 の前に書いた版）は展示後
+    return {(r.get("stage", "exhibition"), r["finish_target"]): r["shares"] for r in rows
             if (r["venue_code"], r["grade"], r["round"], r["boat_number"]) == (0, "all", "all", 0)}
 
 
 def share_drift(prev_rows: list[dict], new_rows: list[dict], threshold: float = DRIFT_THRESHOLD,
                 previous_version: str | None = None) -> dict:
-    """前の版と今回の版で、着順ごとの全体のシェアがテーマ別にどれだけ動いたか。
-    前の版に無いテーマ（後から足したテーマ）は0から動いたとみなす。"""
+    """前の版と今回の版で、段×着順ごとの全体のシェアがテーマ別にどれだけ動いたか。
+    前の版に無いテーマ（後から足したテーマ）は0から動いたとみなす。前の版に無い段は比べない。"""
     prev, new = _overall(prev_rows), _overall(new_rows)
     changes = []
-    for ft, shares in sorted(new.items()):
-        if ft not in prev:
+    for (stage, ft), shares in sorted(new.items()):
+        if (stage, ft) not in prev:
             continue
-        deltas = {k: shares.get(k, 0.0) - prev[ft].get(k, 0.0) for k in set(shares) | set(prev[ft])}
+        old = prev[(stage, ft)]
+        deltas = {k: shares.get(k, 0.0) - old.get(k, 0.0) for k in set(shares) | set(old)}
         theme = max(deltas, key=lambda k: abs(deltas[k]))
-        changes.append({"finish_target": ft, "theme": theme, "max_abs_change": abs(deltas[theme]),
-                        "deltas": deltas})
+        changes.append({"stage": stage, "finish_target": ft, "theme": theme,
+                        "max_abs_change": abs(deltas[theme]), "deltas": deltas})
     return {"flagged": any(c["max_abs_change"] >= threshold for c in changes),
             "changes": changes, "previous": previous_version}
 
@@ -107,7 +112,7 @@ def write() -> None:
     previous_active = previous[0]["model_version"] if previous else None
     prev_rows = []
     if previous_active:
-        prev_rows, _ = request("GET", "analogy_contribution_profiles?select=finish_target,venue_code,"
+        prev_rows, _ = request("GET", "analogy_contribution_profiles?select=stage,finish_target,venue_code,"
                                "grade,round,boat_number,shares"
                                f"&model_version=eq.{q(previous_active)}&venue_code=eq.0&grade=eq.all"
                                "&round=eq.all&boat_number=eq.0")
@@ -115,7 +120,8 @@ def write() -> None:
     (OUT / "drift.json").write_text(json.dumps(drift, ensure_ascii=False, indent=1))
     if drift["changes"]:
         print(f"  前の版 {previous_active} からのシェアの最大の変化: "
-              + ", ".join(f"finish_target={c['finish_target']} {c['theme']} {c['max_abs_change']:.3f}"
+              + ", ".join(f"{c['stage']} finish_target={c['finish_target']} {c['theme']} "
+                          f"{c['max_abs_change']:.3f}"
                           for c in drift["changes"]))
     try:
         _insert(version, meta, profiles)

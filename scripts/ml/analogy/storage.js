@@ -1,8 +1,11 @@
 /**
  * BOA-271 アナロジー・ファインダーの Supabase Storage 連携（バケット `analogy`）
  *
- * - `{model_version}/model_{win,top2,top3}.txt.gz`・`train_meta.json.gz`: 学習した主モデル。
- *   次の週の品質ゲートで、今の is_active の版を同じ test で評価し直すのに使う
+ * - `{model_version}/model_{win,top2,top3,win_racecard,top2_racecard,top3_racecard}.txt.gz`・`train_meta.json.gz`:
+ *   学習した主モデル。
+ *   次の週の品質ゲートで、参照版を同じ test で評価し直すのに使う
+ * - `{model_version}/model_{win,win_racecard}.json.gz`・`per_race_meta.json.gz`・`parity_fixture.json.gz`:
+ *   レースごとの寄与度（B、ADR 案（#1134「レースごとの寄与度」））。推論側の JS が読む（plan「学習側の設計」）
  * - `source/...`: 長期データの月ごとのキャッシュ（export_pool.js）
  * モデルの版は直近3つと表示中の版だけ残す（plan「Storage の版は直近3つだけ残す」）。表示中の版と同じ名前では
  * アップロードしない（規則は storageRules.js）。
@@ -11,6 +14,8 @@
  * 使い方:
  *   node scripts/ml/analogy/storage.js upload-model     # out/ → {version}/
  *   node scripts/ml/analogy/storage.js download-reference  # 参照版（reference.json）→ out/reference/
+ *   node scripts/ml/analogy/storage.js download-active-meta  # 表示中の版の per_race_meta.json → out/active/（日次の特徴量ジョブ）
+ *   node scripts/ml/analogy/storage.js download-active-model # 表示中の版の model_win.txt → out/active/（v16 の朝のバッチ）
  */
 
 import fs from "fs/promises";
@@ -18,15 +23,40 @@ import path from "path";
 import zlib from "zlib";
 import { fileURLToPath } from "url";
 import { supabase, isSupabaseEnabled } from "../../lib/supabaseClient.js";
-import { assertUploadable, versionsToPrune } from "./storageRules.js";
+import {
+  assertUploadable,
+  isNotFound,
+  listingHas,
+  versionsToPrune,
+} from "./storageRules.js";
 
 export const BUCKET = "analogy";
 const KEEP_MODEL_VERSIONS = 3;
+// 参照版の評価し直しに使うファイル
 const MODEL_FILES = [
   "model_win.txt",
   "model_top2.txt",
   "model_top3.txt",
   "train_meta.json",
+];
+// 参照版に無くても止めないファイル（この版で足したモデル。train.py の OPTIONAL_REFERENCE と同じ）
+const OPTIONAL_REFERENCE_FILES = [
+  "model_win_racecard.txt",
+  "model_top2_racecard.txt",
+  "model_top3_racecard.txt",
+];
+// レースごとの寄与度（B）のために置くファイル
+const PER_RACE_FILES = [
+  "model_win.json",
+  "model_win_racecard.json",
+  "per_race_meta.json",
+  "parity_fixture.json",
+  "perrace_record.json",
+];
+const UPLOAD_FILES = [
+  ...MODEL_FILES,
+  ...OPTIONAL_REFERENCE_FILES,
+  ...PER_RACE_FILES,
 ];
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -81,7 +111,7 @@ async function uploadModel() {
   const active = await activeVersion();
   assertUploadable(version, active);
   await ensureBucket();
-  for (const name of MODEL_FILES) {
+  for (const name of UPLOAD_FILES) {
     const buf = await fs.readFile(path.join(OUT_DIR, name));
     const key = `${version}/${name}.gz`;
     const { error } = await supabase.storage
@@ -110,11 +140,22 @@ async function pruneModels(active) {
     reference ? [reference] : [],
   );
   for (const v of old) {
-    const keys = MODEL_FILES.map((n) => `${v}/${n}.gz`);
+    // 古い版にファイルが無くても remove は失敗しない（足す前の版を含めて消せる）
+    const keys = UPLOAD_FILES.map((n) => `${v}/${n}.gz`);
     const { error: rmError } = await supabase.storage.from(BUCKET).remove(keys);
     if (rmError) throw new Error(`${v} の削除に失敗: ${rmError.message}`);
     console.log(`  🗑️ ${v}`);
   }
+}
+
+/** 参照版のフォルダにファイルがあるか（一覧で確かめる。一覧の取得の失敗は失敗させる） */
+async function referenceHasFile(version, fileName) {
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .list(version, { limit: 100, search: fileName });
+  if (error)
+    throw new Error(`${version}/ の一覧の取得に失敗: ${error.message}`);
+  return listingHas(data, fileName);
 }
 
 async function downloadReference() {
@@ -125,12 +166,22 @@ async function downloadReference() {
   }
   const dir = path.join(OUT_DIR, "reference");
   await fs.mkdir(dir, { recursive: true });
-  for (const name of MODEL_FILES) {
+  for (const name of [...MODEL_FILES, ...OPTIONAL_REFERENCE_FILES]) {
     const key = `${version}/${name}.gz`;
     const { data: blob, error: dlError } = await supabase.storage
       .from(BUCKET)
       .download(key);
-    // 参照版のモデルが無いのは異常（品質ゲートの比較が黙って省かれる）なので失敗させる
+    // この版で足したモデルは、参照版に無くてよい（train.py がその比較だけを「比較なし」と記録する）
+    // 無いときだけ。通信・権限のエラーで飛ばすと、参照版との比較が黙って省かれる
+    if (
+      dlError &&
+      OPTIONAL_REFERENCE_FILES.includes(name) &&
+      (isNotFound(dlError) || !(await referenceHasFile(version, `${name}.gz`)))
+    ) {
+      console.log(`  参照版 ${version} に ${name} が無い。その比較は省く`);
+      continue;
+    }
+    // それ以外の参照版のモデルが無いのは異常（品質ゲートの比較が黙って省かれる）なので失敗させる
     if (dlError)
       throw new Error(`${key} が Storage にありません: ${dlError.message}`);
     const buf = zlib.gunzipSync(Buffer.from(await blob.arrayBuffer()));
@@ -139,14 +190,47 @@ async function downloadReference() {
   }
 }
 
+/**
+ * 表示中の版（is_active）のファイルを out/active/ に置き、版の名前を out/active/version.txt に書く。
+ * per_race_meta.json は日次の特徴量ジョブ（特徴量の並び・支部の対応表・版）、model_win.txt は v16 の朝のバッチ
+ * （類似レースの距離の重み）が使う
+ */
+async function downloadActive(names) {
+  const version = await activeVersion();
+  if (!version)
+    throw new Error("表示中の版（analogy_models.is_active）がありません");
+  const dir = path.join(OUT_DIR, "active");
+  await fs.mkdir(dir, { recursive: true });
+  for (const name of names) {
+    const key = `${version}/${name}.gz`;
+    const { data: blob, error } = await supabase.storage
+      .from(BUCKET)
+      .download(key);
+    if (error)
+      throw new Error(
+        `${key} を取れません（その版の学習の前か、Storage の不具合）: ${error.message}`,
+      );
+    await fs.writeFile(
+      path.join(dir, name),
+      zlib.gunzipSync(Buffer.from(await blob.arrayBuffer())),
+    );
+    console.log(`  ⬇️ ${key}`);
+  }
+  await fs.writeFile(path.join(dir, "version.txt"), version);
+}
+
 async function main() {
   if (!isSupabaseEnabled()) throw new Error("Supabase 環境変数が未設定です");
   const cmd = process.argv[2];
   if (cmd === "upload-model") await uploadModel();
   else if (cmd === "download-reference") await downloadReference();
+  else if (cmd === "download-active-meta")
+    await downloadActive(["per_race_meta.json"]);
+  else if (cmd === "download-active-model")
+    await downloadActive(["model_win.txt"]);
   else
     throw new Error(
-      "使い方: node scripts/ml/analogy/storage.js <upload-model|download-reference>",
+      "使い方: node scripts/ml/analogy/storage.js <upload-model|download-reference|download-active-meta|download-active-model>",
     );
 }
 

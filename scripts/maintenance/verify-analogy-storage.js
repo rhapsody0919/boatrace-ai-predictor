@@ -5,10 +5,13 @@
  * 1. 古い版を消すとき、表示中の版（is_active）と参照版（reference.json）は数に関係なく残す
  * 2. 表示中の版と同じ名前ではアップロードしない（同じ日の再実行で上書きしない）
  * 3. 長期データのキャッシュの列名が今のコードの列と違えば失敗する
+ * 4. 参照版に無くてよいファイルは「無い」（404）ときだけ飛ばし、通信・権限のエラーは飛ばさない
  */
 import {
   assertCachedHeader,
   assertUploadable,
+  isNotFound,
+  listingHas,
   versionsToPrune,
 } from "../ml/analogy/storageRules.js";
 
@@ -73,6 +76,36 @@ check(
 check(
   "列名の行しか無いキャッシュも列名で判定する",
   !throws(() => assertCachedHeader("a,b", ["a", "b"], "k")),
+);
+check(
+  "404 は「無い」と判定する",
+  isNotFound({ statusCode: "404", message: "x" }),
+);
+check(
+  "Object not found は「無い」と判定する",
+  isNotFound({ message: "Object not found" }),
+);
+check(
+  "503 は「無い」と判定しない（参照版との比較を黙って省かない）",
+  !isNotFound({ statusCode: "503", message: "Service Unavailable" }),
+);
+check(
+  "通信のエラーは「無い」と判定しない",
+  !isNotFound({ message: "fetch failed" }),
+);
+
+check(
+  "一覧にファイルがあれば「ある」",
+  listingHas([{ name: "model_win.txt.gz" }], "model_win.txt.gz"),
+);
+check(
+  "一覧に無ければ「無い」（Supabase は無いファイルの download を 400・message \"{}\" で返す）",
+  !listingHas([{ name: "model_win.txt.gz" }], "model_win_racecard.txt.gz") &&
+    !isNotFound({ name: "StorageUnknownError", message: "{}" }),
+);
+check(
+  "一覧の取得に失敗（data が null）なら失敗させる（参照版との比較を黙って省かない）",
+  throws(() => listingHas(null, "model_win_racecard.txt.gz")),
 );
 
 if (failures.length) {

@@ -132,9 +132,7 @@ async function main() {
   const { getPostById } = await import("../../src/data/blogPosts.js");
   const meta = getPostById(slug);
   if (!meta) {
-    console.error(
-      `❌ src/data/blogPosts.jsに id='${slug}' のエントリが見つかりません`,
-    );
+    console.error(`❌ src/data/blog-posts/${slug}.json が見つかりません`);
     process.exit(1);
   }
 

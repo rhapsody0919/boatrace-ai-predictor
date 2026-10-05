@@ -48,3 +48,13 @@ def test_share_drift_small_change_is_not_flagged_and_new_theme_counts_from_zero(
 def test_share_drift_without_previous_version():
     assert db.share_drift([], [overall(1, {"a": 1.0})], threshold=0.03) == {
         "flagged": False, "changes": [], "previous": None}
+
+
+def test_share_drift_compares_same_stage_and_old_rows_are_exhibition():
+    # 132 の前に書いた版の行には stage が無い（展示後）。出走表時点の段は前の版に無いので比べない
+    prev = [overall(1, {"a": 0.50, "b": 0.50})]
+    new = [overall(1, {"a": 0.51, "b": 0.49}) | {"stage": "exhibition"},
+           overall(1, {"a": 0.9, "b": 0.1}) | {"stage": "racecard"}]
+    d = db.share_drift(prev, new, threshold=0.03)
+    assert not d["flagged"]
+    assert [(c["stage"], c["finish_target"]) for c in d["changes"]] == [("exhibition", 1)]

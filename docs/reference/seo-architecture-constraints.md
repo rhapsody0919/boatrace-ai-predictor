@@ -8,6 +8,7 @@ BOA-161（ブログ記事のOGP/Twitterカード未反映バグ）の調査で�
 - ページ固有の `<title>` / `<meta>` / `<link rel="canonical">` タグは、Reactコンポーネントがマウントされた後にJavaScriptで書き換えられる。
 - Googlebot、および一部のX(Twitter)クローラーはJSレンダリングに対応しているため、`title` / `meta description` / 構造化データ（JSON-LD）等はReactでの実装で正しく取得できる。
 - Facebookなど**JavaScriptを実行しないクローラー**は、初期HTML（`index.html` に静的に書かれたタグ）しか見ない。ReactコンポーネントがJSで書き換えたページ固有のOGP/Twitterカードタグは反映されない。
+- `og:url` は `index.html` に静的に置かない（BOA-691、ADR 0084）。Facebook は `og:url` が指す URL を辿ってその情報を使うため、トップ固定の `og:url` があると、JS を実行しないクローラーには全ページがトップとして扱われ、レース詳細や記事を共有してもトップに飛ぶ。無ければ共有された URL そのものが使われる。URL を持つページ（記事・一覧等）は `useSocialMeta` が `og:url` タグを作って付ける
 
 ## 今後の判断軸
 
@@ -23,3 +24,4 @@ SEO・集客施策を検討・実装する際は、その施策が「JS実行後
 ## 関連
 
 - BOA-161: ブログ記事のOGP/Twitterカードが記事ごとに上書きされない
+- BOA-691 / ADR 0084: シェアの URL をトップ固定から今見ているページへ。静的な `og:url` を外した

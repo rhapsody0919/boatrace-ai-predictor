@@ -18,11 +18,47 @@ const RACE_STAGE_BADGE_CONFIG = {
 // 判定順序と除外を誤ると優勝戦バッジ（🏆）が付く。実データに「準々優勝戦」が
 // 4件あり、旧実装ではこれが優勝戦扱いになっていた（BOA-457）。
 // 「準優進出戦」（準優の1つ前の勝ち上がり戦、実データ39件）は準優勝戦ではない
+//
+// 男女Ｗ優勝戦の節は準優勝戦を「Ｗ準優戦前半」「Ｗ準優戦後半」と書く（「勝」が無い。
+// 実データ8件）。「準優勝戦」だけを見ると準優勝戦に当たらず、得点率の計算
+// （seriesPoints.js の classifyStage。「準優」を含めば勝ち上がり戦）と食い違った（BOA-728）
+//
+// 優勝戦・準優勝戦の判定 v2（BOA-271 T1-1。spec「優勝戦・準優勝戦の判定」、正は
+// docs/design/analogy-finder/analysis/t1/t1-1-stage-rule.json）。「優勝戦」を含まない名前の
+// 優勝戦（決勝戦・王将位決定戦・賞金女王決定・〜優 等）と準優勝戦（準決勝戦・セミファイナル）も拾う。
+// 名前は NFKC で正規化してから当てる。features.py の round_from_stage も同じ規則にそろえる（学習側）
+// （固定の82件 scripts/ml/analogy/testdata/stage-rule-v2-cases.json で一致を検査する）
+const isSemifinalQualifierText = (s) =>
+  s.includes("準々") || s.includes("準優進出");
+const isSemifinalText = (s) =>
+  /準優勝?戦/.test(s) || s.includes("準決") || s.includes("セミファイナル");
+const FINAL_WORDS = [
+  "優勝戦",
+  "決勝戦",
+  "王座決定戦",
+  "賞金女王決定",
+  "王将位決定戦",
+];
+const isFinalText = (s) => {
+  if (FINAL_WORDS.some((w) => s.includes(w))) return true;
+  // 「ファイナル選（抜）」は初日の選抜戦、「ファイナル進出戦」は勝ち上がり戦
+  if (
+    s.includes("ファイナル") &&
+    !s.includes("進出") &&
+    !s.includes("ファイナル選")
+  )
+    return true;
+  // 長い名前は6文字で切れ、「〜優勝戦」の「戦」や「勝戦」が落ちる（「県内選手権優」「ゴールド優勝」）
+  const t = s.replace(/\s/g, "");
+  return (t.endsWith("優") || t.endsWith("優勝")) && !s.includes("準優");
+};
+
 export function getRaceStageKey(raceStage) {
   if (!raceStage) return null;
-  if (raceStage.includes("準々") || raceStage.includes("準優進出")) return null;
-  if (raceStage.includes("準優勝戦")) return "semifinal";
-  if (raceStage.includes("優勝戦")) return "final";
+  const s = raceStage.normalize("NFKC");
+  if (isSemifinalQualifierText(s)) return null;
+  if (isSemifinalText(s)) return "semifinal";
+  if (isFinalText(s)) return "final";
   return null;
 }
 
@@ -71,12 +107,9 @@ const hasSpecial = (s) =>
   s.includes("選抜");
 
 const RACE_STAGE_CATEGORY_RULES = [
-  {
-    key: "semifinalQualifier",
-    test: (s) => s.includes("準々") || s.includes("準優進出"),
-  },
-  { key: "semifinal", test: (s) => s.includes("準優勝戦") },
-  { key: "final", test: (s) => s.includes("優勝戦") },
+  { key: "semifinalQualifier", test: isSemifinalQualifierText },
+  { key: "semifinal", test: isSemifinalText },
+  { key: "final", test: isFinalText },
   { key: "dream", test: (s) => s.includes("ドリーム") || s.includes("DR") },
   {
     key: "qualifierSpecial",

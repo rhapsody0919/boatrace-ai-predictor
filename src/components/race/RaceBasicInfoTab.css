@@ -189,6 +189,12 @@
   white-space: nowrap;
 }
 
+/* 6艇で最良の値（.ind-best、src/styles/indicators.css）。金の枠が数字に接しないよう少し空ける */
+.rbit-value-num {
+  padding: 0 var(--spacing-1);
+  border-radius: var(--radius-sm);
+}
+
 .rbit-n {
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
@@ -285,8 +291,14 @@
   border-radius: var(--radius-sm);
 }
 
+/* 今日の会場。固定の水色（--color-primary-alpha-10）はダークで変わらないため、テーマで
+   切り替わる銀から作る（race-detail-ui-unify R6） */
 .rbit-venue-item.is-current {
-  background: var(--color-primary-alpha-10);
+  background: color-mix(
+    in srgb,
+    var(--brand-accent-secondary) 14%,
+    transparent
+  );
   font-weight: var(--font-weight-bold);
 }
 
@@ -417,6 +429,39 @@
   gap: var(--spacing-1) var(--spacing-3);
   font-size: var(--font-size-sm);
   color: var(--text-primary);
+}
+
+.rbit-period-finals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-1) var(--spacing-3);
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rbit-period-recent {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rbit-period-recent-counts {
+  display: inline-block;
+  margin-left: 0.25em;
+}
+
+/* 前期を取り込む前に前々期を出しているとき。古い期の値が主役に見えないよう、
+   見出しを本文色・太字にし、値は薄くする（ファン評価2周目 P2） */
+.rbit-period.is-fallback .rbit-period-heading {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.rbit-period.is-fallback .rbit-period-values,
+.rbit-period.is-fallback .rbit-period-finals {
+  color: var(--text-secondary);
 }
 
 /* 今節の「変化」（FR-3 Phase A）。生データの表より前に、通常値との差を出す */
@@ -554,6 +599,13 @@
   margin: var(--spacing-1) 0 0;
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
+}
+
+/* 前期が公開待ちで前々期を出しているときの注記。値の行は通常と同じ見た目なので、
+   前々期だと気づけるよう本文と同じ大きさ・色にする */
+.rbit-period-note.rbit-period-pending {
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
 }
 
 .rbit-period-diff {

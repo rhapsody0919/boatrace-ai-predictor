@@ -1,0 +1,12 @@
+{
+  "feature": "BOA-211 分析ツール「風とイン逃げ率」タブ",
+  "released": "2026-10-02",
+  "content": {
+    "static_pages": ["/winning-technique?tab=weather"],
+    "note_articles": [],
+    "blog_posts": [],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}

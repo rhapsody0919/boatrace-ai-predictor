@@ -3,9 +3,27 @@
  */
 
 import { MODEL_NAMES } from "../constants";
+import {
+  TECHNIQUE_NAMES,
+  isAsPredicted,
+  pickHitPattern,
+  techniqueDiffers,
+} from "./turnPrediction";
+import { TURN_JUDGEMENT, judgeTurnPrediction } from "./raceOutcome";
 
 /** panel.sharePrediction の文面の数（v1〜vN） */
 const SHARE_PREDICTION_VARIANTS = 5;
+
+// シェアで送る URL の基点。プレビュー環境・開発機から共有しても本番のページを指すようにする
+const SITE_ORIGIN = "https://www.boat-ai.jp";
+
+/**
+ * シェアボタンで送る URL（BOA-691）。以前はどのページからでもトップ固定で、レース詳細から
+ * 共有しても受け取った人はそのレースに戻れなかった
+ * @param {string} pathWithSearch - 例 "/en/race/2026-10-02-02-09?tab=meet&boat=3"
+ */
+export const shareUrlFor = (pathWithSearch) =>
+  `${SITE_ORIGIN}${pathWithSearch}`;
 
 /**
  * AI予想をXでシェア
@@ -277,20 +295,37 @@ export const generatePredictionShareText = (race, model = "standard", t) => {
   });
 };
 
+/** panel.shareTurnHit.closing の文面の数（v1〜vN） */
+const SHARE_TURN_HIT_VARIANTS = 5;
+
+/** 日本語の決まり手名を、表示中の言語の名前にする（techniques.* のキー経由） */
+const techniqueLabel = (name, t) => {
+  if (!name) return null;
+  const key = Object.keys(TECHNIQUE_NAMES).find(
+    (k) => TECHNIQUE_NAMES[k] === name,
+  );
+  return key ? t(`techniques.${key}`, { defaultValue: name }) : name;
+};
+
 /**
  * 展開予測的中結果のシェアテキストを生成（react-share用、BOA-174）
  * unifiedモデルは複勝予想・展開予測の2種類のみのため、レース単位の的中は
- * 展開予測的中（1マークでの予想パターンが実際の1着コースと一致）のみを扱う
- * @param {Object} race - { venue, raceNo, date, winnerCourse, probability }
+ * 展開予測的中（予想パターンの艇が実際に1着）のみを扱う。展開予測は「その艇がその決まり手で
+ * 1着になる確率」なので、「1マークで先頭」とは書かない（BOA-710）
+ *
+ * 文面は表示中の言語で出す（panel.shareTurnHit.*。BOA-754 でレース詳細の結果確定後の共有にも
+ * 使うため4言語にした。/hit-races は ja 専用なので ja の文面になる）
+ *
+ * @param {Object} race - { venue, raceNo, date, winnerBoat, winnerEntryCourse, technique, actualTechnique, isTopPick, probability }
+ *   technique は日本語の決まり手名。予想確率はその決まり手で1着になる確率なので、あれば添える。
+ *   actualTechnique は実際の決まり手（日本語）。予想と違えば「実際: ◯◯」を添え、
+ *   「予想通りの展開でした」は出さない（BOA-724。的中の判定は1着の艇だけ）
+ * @param {(key: string, options?: object) => string} t - i18next の t
  */
-export const generateTurnHitShareText = (race) => {
-  const venue = race.venue || "不明";
+export const generateTurnHitShareText = (race, t) => {
+  const venue = race.venue || "?";
   const raceNo = race.raceNo || "?";
-  const winnerCourse = race.winnerCourse;
-  const probabilityStr =
-    race.probability != null
-      ? `（予想確率${(race.probability * 100).toFixed(0)}%）`
-      : "";
+  const winnerBoat = race.winnerBoat;
 
   let dateStr = "";
   if (race.date) {
@@ -299,14 +334,84 @@ export const generateTurnHitShareText = (race) => {
       dateStr = `${parts[1]}/${parts[2]} `;
     }
   }
+  const label = { date: dateStr, venue, raceNo };
 
-  const messages = [
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nAIの分析力に驚いてます！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n無料でこの精度はすごい！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nデータ分析の力を実感！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n今日もAI予想が当たった！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n的中率の高さに満足してます！`,
-  ];
+  // 1着の艇番と、その艇が実際に入ったコース（BOA-708。以前は艇番を「Nコース」と書いていた）。
+  // コースは艇番と違うときだけ書く。括弧を重ねないよう「Nコースから」を文に入れる
+  const winnerLine =
+    race.winnerEntryCourse != null && race.winnerEntryCourse !== winnerBoat
+      ? t("panel.shareTurnHit.winnerFromCourse", {
+          boat: winnerBoat,
+          course: race.winnerEntryCourse,
+        })
+      : t("panel.shareTurnHit.winner", { boat: winnerBoat });
 
-  return messages[Math.floor(Math.random() * messages.length)];
+  // 決まり手は AI の予想として書く。実際の決まり手と違うことがあり、結果として言い切らない
+  // （的中の判定は1着の艇だけ。PR #1197 ファン評価3周目）
+  const technique = techniqueLabel(race.technique, t);
+  const prob =
+    race.probability != null ? (race.probability * 100).toFixed(0) : null;
+  const actualNote = techniqueDiffers(race.technique, race.actualTechnique)
+    ? t("panel.shareTurnHit.actual", {
+        technique: techniqueLabel(race.actualTechnique, t),
+      })
+    : "";
+  const predictionStr =
+    prob != null
+      ? t("panel.shareTurnHit.prediction", {
+          detail: `${technique ? `${technique} ` : ""}${prob}%${actualNote}`,
+        })
+      : "";
+
+  const asPredicted = isAsPredicted({
+    predictedTechnique: race.technique,
+    actualTechnique: race.actualTechnique,
+    winnerBoat,
+    winnerEntryCourse: race.winnerEntryCourse,
+    isTopPick: race.isTopPick ?? true,
+  });
+  const body = `${winnerLine}${predictionStr}`;
+  // 決まり手かコースが予想と違う、または2番手以下が当たったレースは、1着の艇が当たっただけ。
+  // 「予想通り」や「AIの分析力」のように決まり手まで当たったと受け取れる言い方をしない（BOA-724）
+  if (!asPredicted) {
+    return `${t("panel.shareTurnHit.headWinner", label)}\n\n${body}\n\n${t("panel.shareTurnHit.closingWinner")}`;
+  }
+  // 共有はレース当日とは限らないので、「今日も」等の日付に依存する言い方はしない
+  const variant = Math.floor(Math.random() * SHARE_TURN_HIT_VARIANTS) + 1;
+  return `${t("panel.shareTurnHit.headAsPredicted", label)}\n\n${body}\n${t("panel.shareTurnHit.asPredicted")}\n\n${t(`panel.shareTurnHit.closing.v${variant}`)}`;
+};
+
+/**
+ * 結果確定後のレースの共有文（BOA-754、ユーザー承認の推奨案）。
+ * 展開予測の候補のどれかが1着なら、的中の共有文（generateTurnHitShareText）を返す。
+ * どの候補も1着でない・判定できない（不成立等）レースは null（呼び出し側は共有ボタンを出さない）。
+ * 発走前の予想の文面（「推奨: 1-4 最近的中率が上がってきてて嬉しい」）を、結果が出た後に
+ * そのまま共有させていた（BOA-724 ファン評価2周目）
+ *
+ * @param {{venue?: string, raceNo?: number|string, date?: string, patterns?: Array,
+ *   result?: object, winnerEntryCourse?: number|null}} race
+ * @param {(key: string, options?: object) => string} t
+ * @returns {string|null}
+ */
+export const generateResultShareText = (race, t) => {
+  const patterns = race.patterns;
+  if (!Array.isArray(patterns) || patterns.length === 0) return null;
+  const judgement = judgeTurnPrediction(patterns, race.result);
+  if (judgement?.status !== TURN_JUDGEMENT.HIT) return null;
+  const hitPattern = pickHitPattern(patterns, judgement.winner);
+  if (!hitPattern) return null;
+  return generateTurnHitShareText(
+    {
+      venue: race.venue,
+      raceNo: race.raceNo,
+      date: race.date,
+      winnerBoat: judgement.winner,
+      winnerEntryCourse: race.winnerEntryCourse ?? null,
+      technique: TECHNIQUE_NAMES[hitPattern.technique] ?? null,
+      actualTechnique: race.result?.winningTechnique ?? null,
+      isTopPick: hitPattern === patterns[0],
+      probability: hitPattern.probability,
+    },
+    t,
+  );
 };

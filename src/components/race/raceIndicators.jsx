@@ -8,6 +8,8 @@
 import { Fragment } from "react";
 import { Link } from "react-router-dom";
 import { bestOf } from "../../utils/bestOf";
+import { formatExhibitionSt } from "../../utils/formatters";
+import { isUnusedMotor, motorUsageCount } from "../../utils/motorUsage";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
 import {
   meetPrevRunState,
@@ -48,15 +50,12 @@ export const toNumber = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 
-// 艇の枠番別勝率（枠番での1着数/出走数）。racerStatsから算出する
-// 注: race_results.course_1〜6は艇番と常に一致しており、実際の進入変化
-// （前づけ）を区別できていない既知の制約がある（BOA-257）。表示ラベルは
-// 「枠番」に統一しているが、内部の変数名・関数名はcourse系のまま残している
-export function courseRateOf(statsByBoat, boat) {
+// 艇の枠番別勝率（枠番での1着数/出走数）。racerStats から算出する。
+// 枠番キーは BOA-284 で決定（実進入コースではない。src/utils/racerStats.js）
+export function wakuRateOf(statsByBoat, boat) {
   const stats = statsByBoat.get(boat);
   if (!stats) return null;
-  const course = stats.course ?? boat;
-  const counts = stats.courseRaceCounts?.[String(course)];
+  const counts = stats.wakuRaceCounts?.[String(boat)];
   if (!counts || !counts.total) return null;
   return {
     wins: counts.wins ?? 0,
@@ -70,7 +69,6 @@ const byBoat = (rows) => {
   (rows ?? []).forEach((row) => map.set(row.boat_number, row));
   return map;
 };
-
 
 /**
  * オリジナル展示（一周・半周ラップ・まわり足・直線）の行を作る（BOA-452 / FR-4b）。
@@ -94,7 +92,7 @@ const ORIGINAL_EXHIBITION_ROW_META = {
 
 /**
  * 出典表記に並べる項目名（その会場・そのレースで実際に出した種別だけ）を訳して返す。
- * 児島のように「一周・まわり足」しか計測しない会場で「直線」まで書くと、
+ * 住之江・尼崎・徳山のように「一周・まわり足」しか計測しない会場で「直線」まで書くと、
  * 出していない値の出典を名乗ることになるため、行と同じ集合から作る
  */
 export function originalExhibitionKindLabels(t, kinds) {
@@ -224,9 +222,11 @@ function buildRowDefs({
       boat: r.boat_number,
       value: r.sample_count > 0 ? toNumber(r.avg_deviation) : null,
     })),
+    // 展示でフライング・出遅れした艇（F.01 等）は最良の候補から外す。値は印を外した正の数で、
+    // そのままだと F の艇が一番早く見えて金枠が付いた（BOA-759）
     exSt: (stPredictability ?? []).map((r) => ({
       boat: r.boat_number,
-      value: toNumber(r.exhibition_st),
+      value: r.exhibition_start_flag ? null : toNumber(r.exhibition_st),
     })),
     exhibition: (exhibitionTime ?? []).map((r) => ({
       boat: r.boat_number,
@@ -240,7 +240,7 @@ function buildRowDefs({
 
   cand.courseRate = players.map((p) => ({
     boat: p.number,
-    value: courseRateOf(statsByBoat, p.number)?.rate ?? null,
+    value: wakuRateOf(statsByBoat, p.number)?.rate ?? null,
   }));
 
   return [
@@ -299,8 +299,13 @@ function buildRowDefs({
       key: "motor",
       label: t("dataTable.rowMotor"),
       shortLabel: t("review.cols.motor"),
-      // モーター交換直後（全艇2連率0%）は理由をラベル横に注記する
+      // 未使用の新モーター（2連率0・使用回数0）があれば、その「—」の意味を注記する（BOA-702）。
+      // 使用回数が分からず全艇0%（モーター交換直後）のときは、従来どおり「交換直後」
       note: (() => {
+        const unused = cand.motor.some((c) =>
+          isUnusedMotor(c.value, motorByBoat.get(c.boat)),
+        );
+        if (unused) return t("dataTable.motorUnusedNote");
         const values = cand.motor.map((c) => c.value).filter((v) => v !== null);
         return values.length > 0 && values.every((v) => v === 0)
           ? t("dataTable.motorResetNote")
@@ -312,10 +317,13 @@ function buildRowDefs({
         const row = motorByBoat.get(p.number);
         const rate = toNumber(row?.motor_2rate ?? p.motor2Rate);
         if (rate === null) return ph("motor");
-        // 全艇0%（モーター交換直後で実績なし）は0.0%表示が誤解を招くため「—」
+        // 一度も使われていない新モーター（2連率0・使用回数0）は、0.0% だと「2着以内0回」と読まれるため「—」（BOA-702）。
+        // 使用回数が1以上なら本物の0%なので 0.0% のまま
+        if (isUnusedMotor(rate, row)) return "—";
+        // 使用回数が分からず全艇0%（モーター交換直後で実績なし）も「—」（従来の扱い）
         const values = cand.motor.map((c) => c.value).filter((v) => v !== null);
         const allZero = values.length > 0 && values.every((v) => v === 0);
-        if (allZero) return "—";
+        if (allZero && motorUsageCount(row) === null) return "—";
         const powerIndex = toNumber(row?.power_index);
         return (
           <span className="drt-value">
@@ -345,11 +353,21 @@ function buildRowDefs({
       label: t("dataTable.rowForm"),
       shortLabel: t("review.cols.form"),
       tab: "racer",
-      best: bestOf(
-        (racerForm ?? []).map((r) => ({ boat: r.boat_number, value: r.delta })),
-        "max",
-        { digits: 2 },
-      ),
+      // 上がった艇（Δ > 0）の中の最良だけを強調する。全員が下がっているときに「下がり方が
+      // 最も小さい艇」へ金枠を付けると、赤（悪い）の値に金（最良）が重なる（R1・R2。
+      // 埋め込み分析の選手調子と同じ条件）
+      best: (() => {
+        const rows = racerForm ?? [];
+        const best = bestOf(
+          rows.map((r) => ({ boat: r.boat_number, value: r.delta })),
+          "max",
+          { digits: 2 },
+        );
+        const up = new Set(
+          rows.filter((r) => r.delta > 0).map((r) => r.boat_number),
+        );
+        return new Set([...best].filter((boat) => up.has(boat)));
+      })(),
       render: (p) => {
         const row = formByBoat.get(p.number);
         if (!row || row.delta === null || row.delta === undefined)
@@ -371,11 +389,13 @@ function buildRowDefs({
       label: t("dataTable.rowAvgSt"),
       shortLabel: t("review.cols.avgSt"),
       tab: "racecard",
-      best: bestOf(cand.avgSt, "min", { digits: 2 }),
+      // 平均STは小数3桁で出す。2桁だと 0.127〜0.134 が全部「0.13」になり、表示桁で比べる
+      // 最良（R1）が5艇同時に光った（2026-10-02 児島12R。ユーザー承認で3桁に）
+      best: bestOf(cand.avgSt, "min", { digits: 3 }),
       render: (p) => {
         const rate = toNumber(statsByBoat.get(p.number)?.avgST);
         return rate !== null ? (
-          <span className="drt-value">{rate.toFixed(2)}</span>
+          <span className="drt-value">{rate.toFixed(3)}</span>
         ) : (
           ph("racerStats")
         );
@@ -404,11 +424,18 @@ function buildRowDefs({
       tab: "st",
       best: bestOf(cand.exSt, "min", { digits: 2 }),
       render: (p) => {
-        const rate = toNumber(stByBoat.get(p.number)?.exhibition_st);
-        return rate !== null ? (
-          <span className="drt-value">{rate.toFixed(2)}</span>
+        const row = stByBoat.get(p.number);
+        const shown = formatExhibitionSt(
+          row?.exhibition_st,
+          row?.exhibition_start_flag,
+        );
+        if (shown === null) return ph("stPredictability");
+        return row?.exhibition_start_flag ? (
+          <span className="drt-value" title={t("dataTable.exStFlagTitle")}>
+            {shown}
+          </span>
         ) : (
-          ph("stPredictability")
+          <span className="drt-value">{shown}</span>
         );
       },
     },
@@ -445,7 +472,7 @@ function buildRowDefs({
     // （ボートレース日和の「展示情報」も 展示→周回→周り足→直線→ST の順で、
     // 「直線で伸びるが回りが重い」のような読み方をこの並びが支えている）。
     //
-    // 出せる項目は会場によって違う（児島は一周・まわり足のみ）ので、
+    // 出せる項目は会場によって違う（住之江・尼崎・徳山は一周・まわり足のみ）ので、
     // 取れた種別ぶんだけ行を作る。取れていない・096未適用で権限が無い場合は
     // originalExhibition が null / state != "published" になり、行は1つも作られない
     // （「—」を6つ並べない。ADR-0067 の前検タイム追記と同じ扱い）
@@ -645,7 +672,7 @@ function buildRowDefs({
       tab: "attackdefense",
       best: bestOf(cand.courseRate, "max", { digits: 0 }),
       render: (p) => {
-        const cr = courseRateOf(statsByBoat, p.number);
+        const cr = wakuRateOf(statsByBoat, p.number);
         if (!cr) return ph("racerStats");
         return (
           <span className="drt-value">

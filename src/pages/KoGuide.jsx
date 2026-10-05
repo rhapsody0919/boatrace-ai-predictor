@@ -367,8 +367,8 @@ export default function KoGuide() {
         <section className="eg-section">
           <h2>🤖 용신 레이더 예측 보는 법</h2>
           <p>
-            용신 레이더는 경주당 45개 데이터 — 선수 성적, 모터 성능, 경정장
-            특성, 스타트 타이밍 등 — 를 분석해 모든 추천의 <strong>이유</strong>
+            용신 레이더는 경주마다 선수 성적, 모터 성능, 경정장 특성, 스타트
+            타이밍 등의 데이터를 분석해 모든 추천의 <strong>이유</strong>
             까지 보여줍니다. 완전 무료입니다.
           </p>
           <ol className="eg-steps">

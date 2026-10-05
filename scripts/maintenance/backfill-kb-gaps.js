@@ -6,9 +6,12 @@
  *   --item=st          項目4: race_start_timings に行が無いレースへ、スタートの行を挿入する
  *   --item=exhibition  項目6: 展示タイムが無い艇（行が無い・行はあるが NULL）に、展示タイムの列だけを書く
  *   --item=conditions  項目5: race_conditions の NULL の列（天候・風向・風速・波高・ステージ）だけを埋める
- *   --item=finish_code 項目7（BOA-553）: race_start_timings の既存の行の公式の成績コード（NULL だけ）を埋める
+ *   --item=finish_code 項目7（BOA-553）: race_start_timings の既存の行の公式の成績コード（NULL だけ）を埋める。
+ *                      BOA-582: 同じ行の着欄・着（NULL だけ。失格 S0〜S2 は K から決まらないので埋めない）も同じ回で埋める
  *   --item=race_status 項目8（BOA-480）: race_results の race_status・refund_boats が NULL のレースを、K から導いて埋める
  *   --item=rate2       項目3: race_entries の2連率（全国・当地）の NULL だけを埋める（登録番号が一致する艇のみ）
+ *   --item=missing_boats 欠場艇等（BOA-327 の前提）: K にあって race_start_timings に行の無い艇の行を挿入する（既存の行には
+ *                      触れない）。欠場（K0/K1）は着欄「欠」・ST と進入は NULL。走った艇は K の ST・進入・F・L と着欄・着
  *
  * 書くのは項目ごとに決めた列だけ（kbGapFill.js の GAP_FILL_ITEMS）。書く直前に、すべての行の列の集合が同じかを
  * 検査する（PostgREST の一括 upsert は、行ごとに列が違うと無い列を NULL で書く）。既存の値は上書きしない。
@@ -36,6 +39,7 @@ import {
   buildRaceStatusRows,
   buildRate2Rows,
   buildStartTimingRows,
+  buildMissingBoatRows,
 } from "../lib/kbGapFill.js";
 
 export const DEFAULT_ARCHIVE_DIR =
@@ -71,9 +75,21 @@ function* datesBetween(from, to) {
   }
 }
 
-const inDay = (date) => (q) => q.gte("race_id", date).lt("race_id", `${date}~`);
+// 主キーで並べる（BOA-753。並び順が無いと、1000行を超える日にページの間で行が重複・欠落する）
+const PER_BOAT_TABLES = new Set([
+  "race_start_timings",
+  "race_entries",
+  "exhibition_data",
+]);
+const inDay = (date, table) => (q) => {
+  const ordered = q
+    .gte("race_id", date)
+    .lt("race_id", `${date}~`)
+    .order("race_id");
+  return PER_BOAT_TABLES.has(table) ? ordered.order("boat_number") : ordered;
+};
 const read = (table, columns, date, client) =>
-  fetchAll(table, columns, inDay(date), { client, throwOnError: true });
+  fetchAll(table, columns, inDay(date, table), { client, throwOnError: true });
 
 /**
  * 1日分の書く行を作る（DBの読み取りだけ）。
@@ -90,6 +106,18 @@ export async function planDay(item, day, date, client = supabase, out = {}) {
     return buildStartTimingRows(day, {
       raceIds: new Set(races.map((r) => r.race_id)),
       withRows: new Set(existing.map((r) => r.race_id)),
+    });
+  }
+  if (item === "missing_boats") {
+    const [races, existing] = await Promise.all([
+      read("races", "race_id", date, client),
+      read(def.table, "race_id, boat_number", date, client),
+    ]);
+    return buildMissingBoatRows(day, {
+      raceIds: new Set(races.map((r) => r.race_id)),
+      existingKeys: new Set(
+        existing.map((r) => `${r.race_id}|${r.boat_number}`),
+      ),
     });
   }
   if (item === "exhibition") {
@@ -110,18 +138,14 @@ export async function planDay(item, day, date, client = supabase, out = {}) {
   if (item === "finish_code") {
     const rows = await read(
       def.table,
-      "race_id, boat_number, official_finish_code",
+      "race_id, boat_number, official_finish_code, finish_mark, finish_rank",
       date,
       client,
     );
     return buildFinishCodeRows(
       day,
-      new Map(
-        rows.map((r) => [
-          `${r.race_id}|${r.boat_number}`,
-          r.official_finish_code ?? null,
-        ]),
-      ),
+      new Map(rows.map((r) => [`${r.race_id}|${r.boat_number}`, r])),
+      out,
     );
   }
   if (item === "race_status") {
@@ -277,6 +301,9 @@ async function main() {
   );
   if (Object.keys(tally).length > 0) {
     console.log(`  値の内訳: ${JSON.stringify(tally)}`);
+  }
+  if (out.filled) {
+    console.log(`  NULL から埋める艇（列ごと）: ${JSON.stringify(out.filled)}`);
   }
   if (out.anomalies.length > 0) {
     console.log(

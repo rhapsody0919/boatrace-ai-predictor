@@ -23,6 +23,7 @@ import {
   VenueRankingChart,
   VenueGradeMatrix,
   VolatilityAccuracyChart,
+  WeatherInEscapeChart,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
@@ -46,6 +47,7 @@ const TAB_KEYS = [
   "venueranking",
   "venuegrade",
   "volatility",
+  "weather",
 ];
 
 // 詳しい解説記事（ja専用ブログのため、非ja言語では該当info-cardごと非表示にする）
@@ -242,6 +244,9 @@ function WinningTechniqueAnalysis() {
           {activeTab === "venueranking" && <VenueRankingChart />}
           {activeTab === "venuegrade" && <VenueGradeMatrix />}
           {activeTab === "volatility" && <VolatilityAccuracyChart />}
+          {activeTab === "weather" && (
+            <WeatherInEscapeChart initialVenueCode={initialVenueCode} />
+          )}
 
           <section className="info-section">
             {TAB_KEYS.includes(activeTab) &&

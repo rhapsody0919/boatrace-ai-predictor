@@ -20,6 +20,10 @@ export const dataService = {
     return supabaseDataService.getRaces();
   },
 
+  async getUpcomingSeries(today) {
+    return supabaseDataService.getUpcomingSeries(today);
+  },
+
   /**
    * 予想データを取得
    * @param {string} date - 日付文字列（YYYY-MM-DD形式）
@@ -28,6 +32,14 @@ export const dataService = {
    */
   async getPredictions(date, options = {}) {
     return supabaseDataService.getPredictions(date, options);
+  },
+
+  /**
+   * 1着の艇と、その艇が実際に入ったコース（BOA-708）
+   * @param {string[]} raceIds
+   */
+  async getRaceWinnerCourses(raceIds) {
+    return supabaseDataService.getRaceWinnerCourses(raceIds);
   },
 
   /**
