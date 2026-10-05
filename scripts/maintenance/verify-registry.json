@@ -779,6 +779,11 @@
       "script": "verify-volatility-accuracy-heading.js",
       "tier": "ci",
       "guards": "精度ページの「イン崩れ予測の実績」の見出しが、集計（calculate-unified-volatility-accuracy.js）の期間と合っていること（BOA-717）。集計が期間を絞っていない間は、4言語の見出しが「直近N日」を名乗らず、運用開始日（2026-08-11）を書いていること。集計に期間の条件を足すと失敗するので、見出しを合わせ直してから更新する"
+    },
+    {
+      "script": "verify-analogy-dispatch.js",
+      "tier": "ci",
+      "guards": "BOA-271 アナロジーの週次の学習の workflow_dispatch（失敗の即時通知・shadow で起動しない・cron の配線）"
     }
   ]
 }
