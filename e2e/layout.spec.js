@@ -1337,3 +1337,56 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
     }
   });
 });
+
+// 枠別情報タブ（BOA-757）。折れるなら全部の列・行で同じ位置で折る
+test.describe("レイアウト: 枠別情報の ST考察と「1コースが逃げたとき」の折れ方がそろう", () => {
+  test("ST考察の「平均◯◯」と「2連単 ◯%」の高さが行の中でそろう", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "layout-mobile",
+      "スマホ幅（320・375px）だけの指定",
+    );
+    for (const [path, width] of [
+      ["/race/2026-09-28-09-11", 320],
+      ["/en/race/2026-09-23-09-12", 320],
+      ["/ko/race/2026-09-23-09-12", 320],
+      ["/race/2026-09-28-09-11", 375],
+    ]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${path}?tab=waku`, { waitUntil: "domcontentloaded" });
+      await expect(page.locator(".rsc-baseline").first()).toBeVisible({
+        timeout: 30000,
+      });
+      await expect(page.locator(".nsc-exacta").first()).toBeVisible({
+        timeout: 30000,
+      });
+      const m = await page.evaluate(() => ({
+        // 行ごとの「平均◯◯」の高さの種類の数（1ならそろっている）
+        baseline: [...document.querySelectorAll(".rsc-grid tbody tr")]
+          .map(
+            (tr) =>
+              new Set(
+                [...tr.querySelectorAll(".rsc-baseline")].map((e) =>
+                  Math.round(e.getBoundingClientRect().height),
+                ),
+              ).size,
+          )
+          .filter((n) => n > 0),
+        exacta: new Set(
+          [...document.querySelectorAll(".nsc-exacta")].map((e) =>
+            Math.round(e.getBoundingClientRect().height),
+          ),
+        ).size,
+        overflow:
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      }));
+      for (const n of m.baseline) {
+        expect(n, `${path} ${width}px: 「平均」の高さの種類`).toBe(1);
+      }
+      expect(m.exacta, `${path} ${width}px: 「2連単」の高さの種類`).toBe(1);
+      expect(m.overflow, `${path} ${width}px: 横スクロール`).toBe(0);
+    }
+  });
+});
