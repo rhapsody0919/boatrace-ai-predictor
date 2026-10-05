@@ -25,6 +25,7 @@ import { supabase, isSupabaseEnabled } from "../../lib/supabaseClient.js";
 import {
   assertUploadable,
   isNotFound,
+  listingHas,
   versionsToPrune,
 } from "./storageRules.js";
 
@@ -146,6 +147,16 @@ async function pruneModels(active) {
   }
 }
 
+/** 参照版のフォルダにファイルがあるか（一覧で確かめる。一覧の取得の失敗は失敗させる） */
+async function referenceHasFile(version, fileName) {
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .list(version, { limit: 100, search: fileName });
+  if (error)
+    throw new Error(`${version}/ の一覧の取得に失敗: ${error.message}`);
+  return listingHas(data, fileName);
+}
+
 async function downloadReference() {
   const version = await referenceVersion();
   if (!version) {
@@ -160,11 +171,11 @@ async function downloadReference() {
       .from(BUCKET)
       .download(key);
     // この版で足したモデルは、参照版に無くてよい（train.py がその比較だけを「比較なし」と記録する）
-    // 無いとき（404）だけ。通信・権限のエラーで飛ばすと、参照版との比較が黙って省かれる
+    // 無いときだけ。通信・権限のエラーで飛ばすと、参照版との比較が黙って省かれる
     if (
       dlError &&
       OPTIONAL_REFERENCE_FILES.includes(name) &&
-      isNotFound(dlError)
+      (isNotFound(dlError) || !(await referenceHasFile(version, `${name}.gz`)))
     ) {
       console.log(`  参照版 ${version} に ${name} が無い。その比較は省く`);
       continue;
