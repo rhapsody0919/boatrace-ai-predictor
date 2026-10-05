@@ -442,9 +442,8 @@ def main():
             "race_id": rid, "conditions": cond, "n_layer": n_layer,
             "pool_rate": {k: float((v[pool] == 2).mean()) for k, v in lv.items()},
             "today_display": today_disp,
-            "compare": {"name": cmp_name, "conditions": cmp_cond, "n": int(cm.sum()),
-                        "winner": [int((cm & (ranks[:, 0] == b)).sum()) for b in range(1, 7)]},
-            "national": {"n": int(pool.sum()), "winner": [int((pool & (ranks[:, 0] == b)).sum()) for b in range(1, 7)]},
+            "compare": {"name": cmp_name, "conditions": cmp_cond} | outcome_counts(cm),
+            "national": outcome_counts(pool),
             "neighbors": [{"race_id": F.int_to_rid(int(races["race_id"].iat[j])), "distance": round(float(np.sqrt(e)), 4),
                            "items": {k: int(v[j]) for k, v in lv.items()}, "display": S.display_row(disp, c)}
                           | result_of(j)
@@ -481,6 +480,17 @@ def main():
             "course_filled": V.fill_course_st(tcs["course"], tcs["course_n"], overall),
             "venue": tcs["venue"], "venue_n": tcs["venue_n"], "venue_course_all": tcs["venue_course_all"]})
         write_local(out, f"today/{rid}.json", payload | {"exh_agreement": agreement})
+
+    tech_all = races["race_id"].map(prl["winning_technique"]).to_numpy(dtype=object)
+
+    def outcome_counts(m: np.ndarray) -> dict:
+        """比べる相手・全国の件数（spec B-8 の点線）: 1着・2着以内・3着以内の艇番ごとの件数と決まり手"""
+        top2 = [(m & ((ranks[:, 0] == b) | (ranks[:, 1] == b))).sum() for b in range(1, 7)]
+        top3 = [(m & (ranks[:, :3] == b).any(axis=1)).sum() for b in range(1, 7)]
+        tech = pd.Series(tech_all[m]).dropna().value_counts()
+        return {"n": int(m.sum()), "winner": [int((m & (ranks[:, 0] == b)).sum()) for b in range(1, 7)],
+                "top2": [int(x) for x in top2], "top3": [int(x) for x in top3],
+                "technique": {str(k): int(v) for k, v in tech.items()}}
 
     failed = {}
     def result_of(j: int) -> dict:
