@@ -23,10 +23,10 @@
 - [x] T0-5 dispatch 用の fine-grained PAT（Actions: Read and write、boatrace-ai-predictor のみ）を Vercel の環境変数 `GITHUB_ACTIONS_DISPATCH_TOKEN`（Production）に登録（ユーザー、2026-10-05）。有効期限が来たら作り直して差し替える
 
 ## T1 データの前提と定義（spec「実装で直すこと」）
-- [ ] T1-0a `export_pool.js` に列を足す（実進入・決まり手・3連単の払戻・展示の進入・展示 ST・start_flag・本番 ST と F・出遅れ、返還艇の判定に使う `finish_mark`・`refund_boats`）。`KB_CACHE_VERSION` を上げ、学習の workflow を1回回して長期分を書き出し直す（plan「前提の作業」）。BOA-635 の値の約束 D-1〜D-5（plan「BOA-635 との接続」）を固定データの pytest で固定する（3連単は `payout_trio`、F・出遅れ・欠場の ST は null、不成立の払戻は null、実進入不明は null、1〜3着に返還艇が入るレースと不成立は layer の行に入れない）
-- [ ] T1-0b タブ3の母集団（返還の除外・進入不明の除外）を Python で作り、モックの SQL の母集団（若松・6艇ともA1 1,117件、全国・6艇ともA1 24,871件）を再現する pytest
+- [x] T1-0a （#1262 マージ済み 2026-10-05）`export_pool.js` に列を足す（実進入・決まり手・3連単の払戻・展示の進入・展示 ST・start_flag・本番 ST と F・出遅れ、返還艇の判定に使う `finish_mark`・`refund_boats`）。`KB_CACHE_VERSION` を上げ、学習の workflow を1回回して長期分を書き出し直す（plan「前提の作業」）。BOA-635 の値の約束 D-1〜D-5（plan「BOA-635 との接続」）を固定データの pytest で固定する（3連単は `payout_trio`、F・出遅れ・欠場の ST は null、不成立の払戻は null、実進入不明は null、1〜3着に返還艇が入るレースと不成立は layer の行に入れない）
+- [x] T1-0b （#1262 マージ済み。本番の書き出しで 24,871・1,117 を再現）タブ3の母集団（返還の除外・進入不明の除外）を Python で作り、モックの SQL の母集団（若松・6艇ともA1 1,117件、全国・6艇ともA1 24,871件）を再現する pytest
 分析の規律（旧 T3b）に従う: 事前登録を単独でコミット・push → second-opinion-reviewer で方法論を見る → 実行 → 結果のコミットに事前登録の SHA。数値には出典（値／指標／比較／母集団／期間／データ版／JSON#キー）。
-- [ ] T1-1 優勝戦・準優勝戦の判定を v2 に広げる（分析は済み 2026-10-04: [analysis/t1/t1-result.md](./analysis/t1/t1-result.md)。ルールは spec「優勝戦・準優勝戦の判定」、正は `t1-1-stage-rule.json` の `rules` と一致検査の文字列82件 `consistency_check_strings`。ユーザーに戻した3件は 2026-10-05 に決定: 関ヶ原決戦・オオムラGP は優勝戦にしない、準優進出戦は準優勝戦にしない（Q-C））。分担（2026-10-05 オーケストレーター）:
+- [x] T1-1 （JS は #1262、Python は学習側 #1259、どちらもマージ済み。82件の JS⇔Python の突き合わせは #1259）優勝戦・準優勝戦の判定を v2 に広げる（分析は済み 2026-10-04: [analysis/t1/t1-result.md](./analysis/t1/t1-result.md)。ルールは spec「優勝戦・準優勝戦の判定」、正は `t1-1-stage-rule.json` の `rules` と一致検査の文字列82件 `consistency_check_strings`。ユーザーに戻した3件は 2026-10-05 に決定: 関ヶ原決戦・オオムラGP は優勝戦にしない、準優進出戦は準優勝戦にしない（Q-C））。分担（2026-10-05 オーケストレーター）:
   - Python（`features.py` の `round_from_stage`・`round_from_kb_kind`）は学習側レーンが入れる（plan「寄与度用モデルの集計」5）
   - JS（`src/constants/raceStageConfig.js` の `RACE_STAGE_CATEGORY_RULES`）は v16 のこのタスクで入れる。サイトの優勝戦のバッジと今節の得点（`seriesPoints.js`）の分類が本体で6レース変わる（準決勝戦 2、決勝戦・王将位決定戦・県内選手権優・賞金女王決定 各1）。画面が変わるので、変わる6レースの一覧（race_id・名前・旧→新）を PR に書き、ユーザーの承認を得てからマージする。該当画面（優勝戦のバッジ・今節の得点）を E2E で確かめる
   - JS 側の一致検査: `verify-analogy-facts.js`（ci）に82件を入れる。Python 側の `tests/test_features.py` の `test_round_matches_race_stage_config_js` の `STAGES` に82件の名前を足し、JS と Python の答えが82件の `expected` と一致することを確かめる
@@ -39,14 +39,14 @@
 - [x] T1-3 （2026-10-04、記録だけ。カド一撃の4号艇は除外で +0.4pt 程度、2pt に届かない）返還レースの除外がカド一撃の4号艇の1着率に与える影響を数えて記録（第10・11回）
 - [x] T1-4 （2026-10-04、6条件とも今の値を残す）手がかりの条件のしきい値（.01／.02／.03）を期間分割で確かめる（第10回）
 - [x] T1-5 （2026-10-04 分析、2026-10-05 決定 Q-E）1号艇の展示タイムは位置・測り方の分で約0.017秒速い。③の1号艇の表の注記を spec C-4 の文に直す（実装は T7-6・T7-8）
-- [ ] T1-6 例のレース（2026-09-27 若松12R）のモックの数字を、本番の定義で出し直した期待値の固定データを作る（`scripts/ml/analogy/testdata/v16-example.json`）。T1-1 で数字が変わるもの（優勝戦の層・類似レースの14件）は出し直した値にし、差を記録する
+- [x] T1-6 （#1267。diff_from_mock に層 14→15件・NCR 566→599件などを記録）例のレース（2026-09-27 若松12R）のモックの数字を、本番の定義で出し直した期待値の固定データを作る（`scripts/ml/analogy/testdata/v16-example.json`）。T1-1 で数字が変わるもの（優勝戦の層・類似レースの14件）は出し直した値にし、差を記録する
 
 ## T2 朝のバッチ（scripts/ml/analogy/）
-- [ ] T2-1 `v16_defs.py`: plan「定義」の表の Python 側（級別の組み合わせ・6艇中の順位と同じ値・進入の型・スリットの7形（展示 F は負）・手がかりの8条件・攻める艇・今節の平均着順点・コース別の平均ST）と pytest。テストは先に書き、落ちることを確かめてから実装する
-- [ ] T2-2 `v16_facts.py`: 範囲キーごとの facts（艇番×項目×順位×着順の件数、全体、来たときの平均の順位、VA の風速区分）。pytest で例のレースの tab1.json の値を再現
-- [ ] T2-3 `v16_scenario.py`: 範囲キーごとの scenario（進入×形の結果、30件未満の行、手がかりの当否の件数、③の表）。例のレースの prep8・mark1・slitpred2_hint の値を再現
-- [ ] T2-4 `v16_similar.py`: そろえる条件の層、出走表時点の距離（重みは表示中の版の `model_win`、L は cal で引き直す）、上位 min(層の件数, 10,000) 件の候補ファイルと表示する上位800件、BOA-635 用の layer ファイル（plan「BOA-635 との接続」の形。並びは race_date 降順・race_id の文字列の降順、D-5 の除外、`n_total` は除外後の件数）、全33項目の「同じ・近い」と全レースで同じ割合、比べる相手の層。例のレースで knn78.md の14件の並びを再現（T1-1 の後は出し直した値）。**展示後の並べ直しの近似の一致率**: 過去の 1,000レースで、全件の厳密な展示後の上位800件と、候補の中で並べ直した上位800件の一致率を、層の大きさ別に測り、`analysis/` に記録（目標 99%以上。足りなければ候補を増やすか、大きい層は全件にする）
-- [ ] T2-5 `v16_morning.py`: 上の3つを今日のレースに対して回し、Storage（非公開のバケット `analogy-v16`、`{日付}/{実行ID}/`、上書きしない）に書き終えてから `analogy_v16_snapshots`（stage=racecard）に書く。対象・作り直しの条件・失敗の扱いは plan。過去の日付を指定して作り直す CLI の引数も付ける
+- [x] T2-1 （#1267）`v16_defs.py`: plan「定義」の表の Python 側（級別の組み合わせ・6艇中の順位と同じ値・進入の型・スリットの7形（展示 F は負）・手がかりの8条件・攻める艇・今節の平均着順点・コース別の平均ST）と pytest。テストは先に書き、落ちることを確かめてから実装する
+- [x] T2-2 （#1267。tab1.json と全件一致）`v16_facts.py`: 範囲キーごとの facts（艇番×項目×順位×着順の件数、全体、来たときの平均の順位、VA の風速区分）。pytest で例のレースの tab1.json の値を再現
+- [x] T2-3 （#1267。prep9b・mark1・t1-4 と突き合わせ）`v16_scenario.py`: 範囲キーごとの scenario（進入×形の結果、30件未満の行、手がかりの当否の件数、③の表）。例のレースの prep8・mark1・slitpred2_hint の値を再現
+- [ ] T2-4 （層・距離・33項目は #1267 で済み、knn7 と一致。残りは展示後の近似の一致率の測定。(c) の JS と合わせる）`v16_similar.py`: そろえる条件の層、出走表時点の距離（重みは表示中の版の `model_win`、L は cal で引き直す）、上位 min(層の件数, 10,000) 件の候補ファイルと表示する上位800件、BOA-635 用の layer ファイル（plan「BOA-635 との接続」の形。並びは race_date 降順・race_id の文字列の降順、D-5 の除外、`n_total` は除外後の件数）、全33項目の「同じ・近い」と全レースで同じ割合、比べる相手の層。例のレースで knn78.md の14件の並びを再現（T1-1 の後は出し直した値）。**展示後の並べ直しの近似の一致率**: 過去の 1,000レースで、全件の厳密な展示後の上位800件と、候補の中で並べ直した上位800件の一致率を、層の大きさ別に測り、`analysis/` に記録（目標 99%以上。足りなければ候補を増やすか、大きい層は全件にする）
+- [ ] T2-5 （コードは #1267。残りは本番での初回の実行。学習の workflow を1回回した後に dispatch する）`v16_morning.py`: 上の3つを今日のレースに対して回し、Storage（非公開のバケット `analogy-v16`、`{日付}/{実行ID}/`、上書きしない）に書き終えてから `analogy_v16_snapshots`（stage=racecard）に書く。対象・作り直しの条件・失敗の扱いは plan。過去の日付を指定して作り直す CLI の引数も付ける
 - [ ] T2-5b `.github/workflows/analogy-v16-morning.yml`（workflow_dispatch のみ）と、学習側が作り直した #1207 の `scripts/lib/analogyDispatch.js` に v16 の起動を足す（`api/cron/analogy-dispatch-v16.js`、JST 7:10・9:40・13:40、7:40 は racecard の段が無いレースがあるときだけ）。`vercel.json` の crons（UTC で書き JST を併記）とジョブのレジストリ（kind monitor・`failureAlertAfter: 1`）に登録。初回の起動と結果の確認（T0-5 の PAT が要る）
 - [ ] T2-6 所要時間と出力の大きさを本番と同じ条件で1回測る（7:10 の回で20分以内、facts・scenario のファイルが gzip 後100KB 以内か、layer が2,000件で gzip 後100KB 以内か。layer が超えたら1,000件に下げて BOA-635 に知らせる）。超えたら plan を直す
 - 完了の定義（data-acquisition.md）:
@@ -55,8 +55,8 @@
   - 継続監視: `verify-analogy-v16.js`（T5-3）が前日の欠け・作成時刻を毎晩数え、閾値（99%）を下回ったら Slack に通知。workflow の失敗・Cron の未実行（最終成功からの経過時間）も Slack に通知
 
 ## T3 DB と Storage
-- [ ] T3-1 マイグレーション `analogy_v16_snapshots`（提案番号 130。PR 時点の origin/master の最大＋1 をオーケストレーターに確かめる）と PGlite の検証（ci）。118 への `stage` 列（提案番号 129）は学習側の PR。ヘッダーに plan.md の参照を書き、`generate-er-diagram.js analogy-finder` で plan の ER 図を作り直す
-- [ ] T3-2 マイグレーションの本番適用をユーザーに依頼する（書き込み SQL だけを渡す）。適用後、読み取りで表・ポリシー・匿名の権限を確かめ、APPLIED.md に行を足す
+- [x] T3-1 （#1267。番号は 133、racecard_hash 列を足した）マイグレーション `analogy_v16_snapshots`（提案番号 130。PR 時点の origin/master の最大＋1 をオーケストレーターに確かめる）と PGlite の検証（ci）。118 への `stage` 列（提案番号 129）は学習側の PR。ヘッダーに plan.md の参照を書き、`generate-er-diagram.js analogy-finder` で plan の ER 図を作り直す
+- [x] T3-2 （2026-10-05 ユーザー適用、読み取りで確認、APPLIED.md 済み）マイグレーションの本番適用をユーザーに依頼する（書き込み SQL だけを渡す）。適用後、読み取りで表・ポリシー・匿名の権限を確かめ、APPLIED.md に行を足す
 - [ ] T3-3 Storage の非公開のバケット `analogy-v16` を作り（`analogy` とは分ける）、`similar/`（候補）の7日の削除を夜の確認のジョブに入れる
 - [x] T3-4 127・128 は適用せず廃止（Q2、T0-4 で学習側と合意。削除の PR は学習側）
 

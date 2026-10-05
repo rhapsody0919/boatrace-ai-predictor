@@ -275,3 +275,15 @@
 - 制約: BOA-271 は代理判定・自動マージなし（マージはしない）。本番 DB への書き込みはしない。git add は対象ファイルを明示、force push はしない。別スコープは Linear に起票して番号をオーケストレーターに送る
 - ブランチの注意: `feature/boa-271-fr2-strat` は別の worktree（exciting-aryabhata-fc27f6）がチェックアウトしている。新しい worktree では origin の最新から別名のブランチを切り、`git push origin HEAD:feature/boa-271-fr2-strat` で進めた（fast-forward）。PR を4本に分けるので、(a) を master 向けの新しいブランチにするか #1134 の上に積むかを最初に決める
 - 次: `/step4 analogy-finder`（tasks.md の T1-0a から）
+
+## 25. 2026-10-05 /step4 の (a)(b)（§24 の後。次のセッションはここから）
+- PR の向き: (a)〜(d) は master 向けの新しいブランチに出す。#1134 には積まない（#1134 は CONFLICTING で、コードが master より古いため。オーケストレーターの了承済み）。#1134 の設計書は、別途 master を取り込んでからマージする
+- (a) #1262 はマージ済み: T1-0a・T1-0b・T1-1（JS）。サイトのバッジ・今節の得点が6レースで変わった（ユーザー承認済み）。別スコープで BOA-771 を起票（準々決勝戦が得点率に入る）
+- (b) #1267 はユーザーの確認待ち: T2-1〜T2-5・T3-1・T1-6。ブランチは feature/boa-271-v16-b。133 は適用済み
+  - 部品はモックの出力と同じ入力で突き合わせた: tab1.json・mark1.json・knn7.json は一致、prep9b はほぼ一致（同着の3着で2レース分）、t1-4 は約0.02% の差
+  - 手元で試すときは、本体は export_pool.js、長期は ~/boatrace-data-archive/boa271-fr2-scratch-2026-10-04 のアーカイブを使った。アーカイブの照合は ANALOGY_MOCK_DIR・ANALOGY_DATA_DIR を付けたときだけ走る
+- 学習側とは、#1259（Python の優勝戦 v2）がマージ済み。export_pool.js は master の形（全表 v3）にそろった。#1261 は学習の dispatch で、学習の手動実行の後にマージする予定
+- 次:
+  - #1267 のマージ後の順序: 学習の workflow を1回手動で回す → Analogy v16 Morning を dispatch して T2-6 を測る
+  - T2-5b（起動の Cron）は #1261 のマージ後に、同じ cron ハンドラに足す
+  - (c)（T4・T5）は来週
