@@ -176,3 +176,23 @@ def test_exhibition_agreement_counts_entry_and_forms():
     assert out["entry"]["waku"] == [2, 3]          # 展示は3件とも枠なり、本番は2件
     assert out["forms_n"] == 2                     # 展示 ST が欠ける c は形の母数に入れない
     assert out["forms"]["d2"] == {"hit": [1, 2], "miss": [0, 0]}
+
+
+def test_exhibition_agreement_flying_rule():
+    # 展示の F.05 までは .00 として形を判定し、F.06 以上の艇がいる展示は形の母数に入れない（Q-F6）
+    races = pd.DataFrame({
+        "race_id": ["s", "d"], "race_date": ["2026-09-01", "2026-09-02"],
+        "course_by_boat": [[1, 2, 3, 4, 5, 6]] * 2,
+        "st_by_course": [[0.15, 0.20, 0.15, 0.15, 0.15, 0.15]] * 2,
+    })
+    exh = pd.DataFrame({
+        "race_id": ["s", "d"],
+        "exh_course_by_boat": [[1, 2, 3, 4, 5, 6]] * 2,
+        # s: 1コース F.05 → .00、2コース .05 は両隣（.00・.00）より .05 遅いので 2コース凹み
+        # d: 3コース F.09 → 形を判定しない（旧扱いでは 2コース .01 − min(.07, −.09) で 2コース凹みになっていた）
+        "exh_st_by_course": [[-0.05, 0.05, 0.0, 0.10, 0.10, 0.10], [0.07, 0.01, -0.09, 0.12, 0.12, 0.12]],
+    })
+    out = SC.exhibition_agreement(races, exh)
+    assert out["forms_n"] == 1
+    assert out["forms"]["d2"] == {"hit": [1, 1], "miss": [0, 0]}
+

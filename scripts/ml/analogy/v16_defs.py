@@ -128,6 +128,21 @@ def signed_st(st, is_flying) -> np.ndarray:
     return np.where(np.asarray(is_flying, dtype=bool), -np.abs(st), st)
 
 
+FLY_SHALLOW_MAX = 5  # 展示の F がこれ以下（1/100秒。F.05 まで）なら .00 として形を判定する（Q-F6）
+
+
+def exh_form_st(st_by_course) -> np.ndarray:
+    """展示 ST（コース順、F は負）→ 形の判定に使う ST（2026-10-06 ユーザー決定 Q-F6）。F.01〜.05 は .00 にし、
+    F.06 以上の艇がいる行は全コースを NaN にする（形を判定しない）。展示の F の艇は本番では F でない艇と同じ ST で、
+    浅い F は展示 .00〜.05 の艇と、深い F は展示 .11〜.20 の艇と同じくらいの本番 ST になる（3,691R の実測）"""
+    st = np.atleast_2d(np.asarray(st_by_course, dtype=float)).copy()
+    c = st_cent(np.nan_to_num(st))
+    deep = ((c < -FLY_SHALLOW_MAX) & ~np.isnan(st)).any(axis=1)
+    st[(c < 0) & ~np.isnan(st)] = 0.0
+    st[deep] = np.nan
+    return st
+
+
 def slit_forms_matrix(st_by_course) -> dict[str, np.ndarray]:
     """(n,6) のコース順の ST（F は負）から7形の (n,) bool。1艇でも欠ける行はすべて False。形は重なりうる"""
     st = np.atleast_2d(np.asarray(st_by_course, dtype=float))

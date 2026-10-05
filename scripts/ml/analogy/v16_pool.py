@@ -179,13 +179,14 @@ def layer_row(r: pd.Series) -> dict:
 
 def load_exhibition_layout(src: Path = D) -> pd.DataFrame:
     """本体の展示の進入と展示 ST（レースごと）: race_id・exh_course_by_boat（艇番順）・exh_st_by_course（コース順、F は負、
-    欠場・欠けは null）。展示→本番の一致率（spec C-1・C-3 の注記）に使う。6艇の展示の進入がそろうレースだけ"""
+    出遅れ・欠場・欠けは null）。展示→本番の一致率（spec C-1・C-3 の注記）に使う。6艇の展示の進入がそろうレースだけ"""
     x = _csv(src, "exhibition", ["race_id", "boat_number", "exhibition_course", "start_timing", "start_flag",
                                  "is_absent"])
     x = x[~_bool(x["is_absent"])]
     course = x.pivot(index="race_id", columns="boat_number", values="exhibition_course").reindex(columns=range(1, 7))
     st = pd.to_numeric(x["start_timing"], errors="coerce")
-    x = x.assign(_st=np.where(x["start_flag"].eq("F"), -st.abs(), st))
+    # F は負、出遅れ（L）は欠け（展示の形を判定しない。Q-F6）
+    x = x.assign(_st=np.where(x["start_flag"].eq("F"), -st.abs(), np.where(x["start_flag"].eq("L"), np.nan, st)))
     stw = x.pivot(index="race_id", columns="boat_number", values="_st").reindex(columns=range(1, 7))
     c = course.to_numpy(dtype=float)
     ok = (np.sort(np.nan_to_num(c), axis=1) == np.arange(1, 7)).all(axis=1)
