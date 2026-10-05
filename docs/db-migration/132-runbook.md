@@ -69,8 +69,9 @@ select model_version, stage, count(*) from analogy_contribution_profiles group b
 
 ## 3. 学習（Actions の手動実行）
 - 前提: 欠場艇の行の補完（#1199）・風向（#1213）が入った master であること（入っている）
-- 長期分のキャッシュは kb_races だけ v3 になる（名前 `stage` を足したため）。初回は kb_races の長期分（2019-04〜2025-12、約37万行）を
-  DB から読み直して `analogy/source/v3/kb_races/` に置く。ほかの表は v2 のキャッシュを読む。前後で Supabase Dashboard の Disk IO を確認する
+- 長期分のキャッシュは全表 v3 になる（#1262 で v16 の列と名前 `stage` を足したため）。初回は長期分（2019-04〜2025-12、kb_boats 約220万行・
+  kb_races 約37万行・kb_venue_days）を DB から読み直して `analogy/source/v3/` に置く。前後で Supabase Dashboard の Disk IO を確認する。
+  v16 の朝のバッチ（#1262 の書き出し）が先に v3 を置いていれば、読み直しは起きない
 - 所要時間の見込み: 前回（約50分）に、出走表時点の3本の学習・seed の再学習・集計の分（数十分）が加わる。timeout は240分
 - テーマのキーを入れ替える初回なので、前の版との比較（drift）は必ず「大きく変わった」になり、Slack に通知が出る（想定どおり。止まらない）
 - 品質ゲート（事前登録5 の判定1〜5）で止まったら何も書かれず、今の版の表示が続く。そのときは Step Summary の理由をオーケストレーターに知らせる
@@ -93,7 +94,7 @@ order by 1, 2;
 ```
 - Step Summary の「版 … に切り替えた」、一致検査（Parity check）が緑
 - 事前登録5 の記録（`perrace_record.json`、Storage の `{版}/perrace_record.json.gz`）を、事前登録の SHA（e115e3592・24081d9d8）つきで `analysis/` に書く（学習側レーン）
-- 古いキャッシュ `analogy/source/v2/kb_races/` は読まれなくなる。学習が1回成功した後に Dashboard → Storage で消してよい（ほかの表の `source/v2/` は消さない）
+- 古いキャッシュ `analogy/source/v2/` は読まれなくなる。学習が1回成功した後に Dashboard → Storage で消してよい
 
 ## 戻し方
 コードを先に戻す（PR の revert をマージする）。その後、出走表時点の行を消してから列と主キーを戻す。
