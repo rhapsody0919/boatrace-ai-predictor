@@ -10,8 +10,9 @@
   4日以内・日付が変わっても series_day が減っていない」で続きとみなす
 
 コース別の平均ST（slit-hint/build2.py・slitpred2.md の C）: 選手×コースの直近30走。コースが分かるのは枠なりの
-レースの走だけ。F・出遅れ（返還）の走は平均から除き、窓には数える。欠場の走は窓に入れない。n は窓の中の
-F・出遅れでない走の数。5走未満の埋め方は v16_defs.fill_course_st。
+レースの走だけ（枠なりは実進入で判定する。分析は K ファイルの枠なりの印を使っていたので、件数がわずかに違う）。
+F・出遅れの走（features.py の is_flying・is_late）は平均から除き、窓には数える。窓に入れる走の集合は features.py の
+st_mean30 と同じ（欠場の行も含む）。n は窓の中の F・出遅れでない走の数。5走未満の埋め方は v16_defs.fill_course_st。
 """
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from features import D, KB_END, _bool
+from features import D, KB_END, _bool, rid_to_int
 
 PTS = {1: 10, 2: 8, 3: 6, 4: 4, 5: 2, 6: 1}
 WINDOW = 30
@@ -141,11 +142,16 @@ def rolling_st_asof(hist: pd.DataFrame, targets: pd.DataFrame, keys: list[str],
     return m.sort_values("_row").reset_index(drop=True)[["mean", "n"]]
 
 
-def st_history(boats: pd.DataFrame, races: pd.DataFrame) -> pd.DataFrame:
-    """v16_pool の艇の行・レースの行から、ST の履歴（欠場を除く全走）。waku は枠なりのレースの走か"""
-    b = boats[~boats["absent"]].copy()
-    b["race_date"] = pd.to_datetime(b["race_date"])
-    b["st_ok"] = b["st"].where(~b["returned"])
-    waku = races.set_index("race_id")["course_by_boat"].map(lambda cb: list(cb) == [1, 2, 3, 4, 5, 6])
-    b["waku"] = b["race_id"].map(waku).fillna(False).astype(bool)
-    return b[["racer_id", "race_id", "race_date", "race_number", "boat_number", "course", "st_ok", "waku"]]
+def st_history(rows: pd.DataFrame, races: pd.DataFrame) -> pd.DataFrame:
+    """ST の履歴。rows は features.load_kb・load_main を縦につないだ艇の行（窓に入れる走の集合を features.py の
+    st_mean30 とそろえる。欠場・結果の無い行も ST が NaN の走として窓に数える）。waku は v16_pool のレースの行の
+    実進入で6艇とも枠なりか（実進入が分からないレースは False）"""
+    waku = races["course_by_boat"].map(lambda cb: list(cb) == [1, 2, 3, 4, 5, 6])
+    waku.index = rid_to_int(races["race_id"]).to_numpy()
+    st_ok = rows["st_result"].where(~rows["is_flying"].astype(bool) & ~rows["is_late"].astype(bool))
+    return pd.DataFrame({
+        "racer_id": rows["racer_id"], "race_id": rows["race_id"], "race_date": pd.to_datetime(rows["race_date"]),
+        "race_number": rows["race_number"], "boat_number": rows["boat_number"],
+        "st_ok": pd.to_numeric(st_ok, errors="coerce").astype("float64"),
+        "waku": rows["race_id"].map(waku).fillna(False).astype(bool).to_numpy(),
+    }).assign(course=lambda d: d["boat_number"].astype("float64").where(d["waku"]))  # 枠なりならコース＝艇番

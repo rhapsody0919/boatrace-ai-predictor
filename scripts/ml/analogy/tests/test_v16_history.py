@@ -95,13 +95,11 @@ def test_example_race_series_score():
 
 @needs_real
 def test_example_race_course_and_overall_st():
+    import features as F
     import v16_pool as P
-    boats, races = P.load_kb_boats(REAL)
-    mb, mr = P.load_main_boats(REAL)
-    boats = pd.concat([boats, mb], ignore_index=True)
-    races = pd.concat([P.build_races(*P.load_kb_boats(REAL)), P.build_races(mb, mr)], ignore_index=True)
-    h = H.st_history(boats, races)
-    t = h[h["race_id"] == EXAMPLE].sort_values("boat_number")[["racer_id", "race_date", "boat_number"]]
+    rows = pd.concat([F.load_kb(REAL), F.load_main(REAL)], ignore_index=True)
+    h = H.st_history(rows, P.load_races(REAL))
+    t = h[h["race_id"] == 202609272012].sort_values("boat_number")[["racer_id", "race_date", "boat_number"]]
     t = t.assign(course=t["boat_number"])
     # slit-hint/slitpred2_hint.json example: C（このコース、枠なりの走だけ）・A（全体）
     c = H.rolling_st_asof(h[h["waku"]], t, keys=["racer_id", "course"])

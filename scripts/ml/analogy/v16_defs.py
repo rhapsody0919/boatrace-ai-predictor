@@ -128,21 +128,26 @@ def signed_st(st, is_flying) -> np.ndarray:
     return np.where(np.asarray(is_flying, dtype=bool), -np.abs(st), st)
 
 
-def slit_forms(st_by_course) -> dict[str, bool]:
-    """コース順の ST（F は負）から7形。形は重なりうる。1艇でも欠ければすべて False"""
-    st = np.asarray(st_by_course, dtype=float)
-    if np.isnan(st).any():
-        return {k: False for k in SLIT_FORMS}
-    c = st_cent(st)
-    return {
-        "flat": c.max() - c.min() <= 6,
-        "wall": c[:3].max() - c[:3].min() <= 2,
-        "d2": c[1] - min(c[0], c[2]) >= 5,
-        "d3": c[2] - min(c[1], c[3]) >= 5,
-        "kado": c[:3].min() - c[3] >= 3,
-        "d1": c[0] - c[1] >= 5,
-        "dash": c[:3].sum() - c[3:].sum() >= 15,
+def slit_forms_matrix(st_by_course) -> dict[str, np.ndarray]:
+    """(n,6) のコース順の ST（F は負）から7形の (n,) bool。1艇でも欠ける行はすべて False。形は重なりうる"""
+    st = np.atleast_2d(np.asarray(st_by_course, dtype=float))
+    ok = ~np.isnan(st).any(axis=1)
+    c = st_cent(np.nan_to_num(st))
+    forms = {
+        "flat": c.max(1) - c.min(1) <= 6,
+        "wall": c[:, :3].max(1) - c[:, :3].min(1) <= 2,
+        "d2": c[:, 1] - np.minimum(c[:, 0], c[:, 2]) >= 5,
+        "d3": c[:, 2] - np.minimum(c[:, 1], c[:, 3]) >= 5,
+        "kado": c[:, :3].min(1) - c[:, 3] >= 3,
+        "d1": c[:, 0] - c[:, 1] >= 5,
+        "dash": c[:, :3].sum(1) - c[:, 3:].sum(1) >= 15,
     }
+    return {k: v & ok for k, v in forms.items()}
+
+
+def slit_forms(st_by_course) -> dict[str, bool]:
+    """1レース分の slit_forms_matrix"""
+    return {k: bool(v[0]) for k, v in slit_forms_matrix(st_by_course).items()}
 
 
 # ---------------------------------------------------------------- 手がかりの8条件
