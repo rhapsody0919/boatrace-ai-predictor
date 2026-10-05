@@ -31,6 +31,7 @@ import v16_scenario as SC
 import v16_similar as S
 
 JST = timezone(timedelta(hours=9))
+WIND_BASIS = F.load_wind_basis()
 POOL_FROM = "2019-04-01"
 MAX_CANDIDATES = 10_000
 MAX_SHOWN = 800
@@ -141,9 +142,22 @@ def today_payload(i: int, races: pd.DataFrame, arrays: dict, keys: dict, course_
         "classes": list(arrays["cls_name"][i]), "scope_keys": keys, "items": vals,
         "series_runs_before_today": runs, "early_series_note": V.early_series_note(runs),
         "course_st": course_st,
+        # 展示後の段（JS）が今日の風の成分を作るときの、会場の風向の回転（features.py の wind_basis.json）
+        "wind_offset_deg": WIND_BASIS["offsets_deg"].get(str(int(races["venue_code"].iat[i]))),
         "hints": {"course": V.hint_conditions(course_st["course_filled"]),
                   "overall": V.hint_conditions(course_st["overall"])},
     }
+
+
+EXH_RACE_COLS = ("weather_code", "wind_x", "wind_y", "wind_speed", "wave_height")
+# 展示タイムの差・順位は JS が展示タイムから作る（src/utils/analogyRaceFeatures.js の meanFloat32・rankMinAscending は
+# pandas の float32 と一致を検査済み）ので、候補ファイルには展示タイムだけを持たせる
+EXH_BOAT_COLS = ("exh_time",)
+
+
+def f32_list(values) -> list:
+    """float32 の値を、float32 に戻すと同じ値になる最短の10進表記の数にする（欠損は null）"""
+    return [None if not np.isfinite(v) else float(str(np.float32(v))) for v in values]
 
 
 def gz(obj) -> bytes:
@@ -382,7 +396,7 @@ def main():
     Xe, info_e = build_distance(arrays, races, feats, weights, "exhibition", pool)
     rc_cols = {(m["feature"], m["slot"], m.get("cat")) for m in info["meta"]}
     extra = [j for j, m in enumerate(info_e["meta"]) if (m["feature"], m["slot"], m.get("cat")) not in rc_cols]
-    Xe = Xe[:, extra]
+    del Xe  # 列の情報と L だけ使う（候補の値は生の値で持たせ、JS が重み付けする）
     extra_meta = [info_e["meta"][j] for j in extra]
     extra_feats = sorted({m["feature"] for m in extra_meta})
     exh_header = {"lambda": info_e["lambda"], "L": info_e["L"], "columns": extra_meta,
@@ -407,17 +421,33 @@ def main():
         idx, d2, d2p = S.rank_layer(X, X[i], venue, int(venue[i]), info["lambda"], lm, MAX_CANDIDATES)
         lv = S.item_levels(races, arrays, i, clusters, is_kb)
         shown = idx[:MAX_SHOWN]
+        cmp_cond, cmp_name = S.compare_conditions(cond)
+        cm = S.layer_mask(cmp_cond, b1, gap, top, races["round"].to_numpy(dtype=object),
+                          races["grade"].to_numpy(dtype=object)) & pool
         write_local(out, f"similar-racecard/{rid}.json", {
             "race_id": rid, "conditions": cond, "n_layer": n_layer,
             "pool_rate": {k: float((v[pool] == 2).mean()) for k, v in lv.items()},
+            "compare": {"name": cmp_name, "conditions": cmp_cond, "n": int(cm.sum()),
+                        "winner": [int((cm & (ranks[:, 0] == b)).sum()) for b in range(1, 7)]},
+            "national": {"n": int(pool.sum()), "winner": [int((pool & (ranks[:, 0] == b)).sum()) for b in range(1, 7)]},
             "neighbors": [{"race_id": F.int_to_rid(int(races["race_id"].iat[j])), "distance": round(float(np.sqrt(e)), 4),
-                           "items": {k: int(v[j]) for k, v in lv.items()},
-                           "finish": [int(x) for x in ranks[j]]} for j, e in zip(shown, d2p[:MAX_SHOWN])],
+                           "items": {k: int(v[j]) for k, v in lv.items()}} | result_of(j)
+                          for j, e in zip(shown, d2p[:MAX_SHOWN])],
         })
+        # 展示後の段（JS）が並べ直した800件に、33項目と結果を付けられるように: 出走表の時点で決まる項目の判定、
+        # 展示で決まる項目（天候・風・波・展示タイムの差）の生の値、結果を候補ごとに持たせる
         write_local(out, f"similar/{rid}.json", {
             "race_id": rid, "candidates": [F.int_to_rid(int(races["race_id"].iat[j])) for j in idx],
+            "n_layer": n_layer, "lambda_racecard": info["lambda"],
             "d2_racecard": [round(float(x), 6) for x in d2], "venue_match": [bool(venue[j] == venue[i]) for j in idx],
-            "exhibition": exh_header | {"values": np.round(Xe[idx], 4).tolist()},
+            "exhibition": exh_header,
+            "items_racecard": {k: v[idx].tolist() for k, v in lv.items() if k not in S.EXHIBITION_ITEMS},
+            # 展示の列の生の値。float32 の最短表記で持たせ、JS が今日の値と同じ式で z 化・重み付けする
+            # （Python の float32 の値を JSON を通して変えずに渡すため。展示後の33項目の判定にも使う）
+            "exhibition_raw": {"race": {k: f32_list(races[k].to_numpy()[idx]) for k in EXH_RACE_COLS},
+                               "boats": {k: [f32_list(row) for row in arrays[k][idx]] for k in EXH_BOAT_COLS}},
+            "results": [{k: v for k, v in result_of(j).items() if k not in ("date", "venue_code", "race_number")}
+                        for j in idx],  # 日付・会場・R は race_id から分かる
         })
         lay = prl.loc[prl.index.isin(races["race_id"][lm]) & prl["layer_ok"]].sort_values(
             ["race_date", "race_id"], ascending=False)
@@ -433,6 +463,20 @@ def main():
             "course_filled": V.fill_course_st(tcs["course"], tcs["course_n"], overall)}))
 
     failed = {}
+    def result_of(j: int) -> dict:
+        """過去レースの結果（similar の各件。spec B-7・B-8）"""
+        rid_int = int(races["race_id"].iat[j])
+        out = {"date": str(races["race_date"].iat[j])[:10], "venue_code": int(venue[j]),
+               "race_number": int(races["race_number"].iat[j]), "grade": races["grade"].iat[j],
+               "round": races["round"].iat[j], "finish": [int(x) for x in ranks[j]]}
+        if rid_int in prl.index:
+            r = prl.loc[rid_int]
+            lr = P.layer_row(r) if r["layer_ok"] else {}
+            out |= {"technique": None if pd.isna(r["winning_technique"]) else r["winning_technique"],
+                    "payout_3tan": None if pd.isna(r["payout_3tan"]) else int(r["payout_3tan"]),
+                    "course_by_boat": list(r["course_by_boat"]), "st_by_course": lr.get("st_by_course")}
+        return out
+
     for i in today:
         rid = F.int_to_rid(int(races["race_id"].iat[i]))
         try:

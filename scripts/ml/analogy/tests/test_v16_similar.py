@@ -110,3 +110,12 @@ def test_item_levels_match_mock_knn7():
         assert got == nb["item_match"], nb["race_id"]
     for s in exp["similarity"]:
         assert float((lv[s["key"]][pool] == 2).mean()) == pytest.approx(s["pool_rate"]), s["key"]
+
+
+def test_compare_conditions():
+    c = S.layer_conditions("A1", 1, 4, "yusho", "G1")
+    assert S.compare_conditions(c) == (c | {"grade_g1plus": False}, "grade")
+    c = S.layer_conditions("A1", 1, 4, "junyu", "ippan")
+    assert S.compare_conditions(c) == (c | {"round": None}, "round")
+    c = S.layer_conditions("B1", 2, 1, "yosen", "ippan")
+    assert S.compare_conditions(c) == (c, "none")

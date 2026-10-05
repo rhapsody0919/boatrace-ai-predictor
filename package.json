@@ -40,6 +40,7 @@
     "generate:display-coverage": "node scripts/maintenance/generate-display-coverage.js",
     "verify:actual-course-kfile": "node scripts/maintenance/verify-actual-course-kfile-parser.js",
     "verify:analogy-facts": "node scripts/maintenance/verify-analogy-facts.js",
+    "verify:analogy-v16-api": "node scripts/maintenance/verify-analogy-v16-api.js",
     "verify:analogy-v16-snapshots-migration": "node scripts/maintenance/verify-analogy-v16-snapshots-migration.js",
     "verify:kb-backfill": "node scripts/maintenance/verify-kb-file-parser.js",
     "verify:fan-period": "node scripts/maintenance/verify-fan-period.js",
