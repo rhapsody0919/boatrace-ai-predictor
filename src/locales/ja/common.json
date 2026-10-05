@@ -1187,6 +1187,7 @@
     "rowTwoRate": "全国2連率",
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
+    "exStFlagTitle": "F＝スタート展示でのフライング、L＝スタート展示での出遅れ（公式の表記）。最良の比較からは外しています",
     "rowCourseRate": "枠番勝率",
     "loading": "分析データを読み込み中…",
     "motorResetNote": "交換直後",
