@@ -3315,13 +3315,6 @@ export const supabaseDataService = {
             .maybeSingle(),
         ]);
         if (snapshot.state === "error") return failed;
-        if (latestPretest.error) {
-          console.error(
-            "motor_pretest_stats取得エラー:",
-            latestPretest.error.message,
-          );
-          return failed;
-        }
         const pretestDate = latestPretest.data?.race_date ?? null;
 
         let pretestRows = [];
@@ -3346,13 +3339,6 @@ export const supabaseDataService = {
               .gte("race_id", addDaysToDateString(pretestDate, -8))
               .lte("race_id", `${jstToday()}-99`),
           ]);
-          if (pretest.error || entries.error) {
-            console.error(
-              "モーターの使用者の取得エラー:",
-              (pretest.error ?? entries.error).message,
-            );
-            return failed;
-          }
           pretestRows = pretest.data ?? [];
           riders = currentSeriesRiders(entries.data ?? [], pretestDate);
           // 出走表に名前が無い選手（まだ走っていない）だけ racer_profiles から引く
@@ -3362,14 +3348,10 @@ export const supabaseDataService = {
             (id) => ![...riders.values()].some((e) => e.racer_id === id),
           );
           if (withoutName.length > 0) {
-            const { data: profiles, error } = await supabase
+            const { data: profiles } = await supabase
               .from("racer_profiles")
               .select("racer_id, name")
               .in("racer_id", withoutName);
-            if (error) {
-              console.error("racer_profiles取得エラー:", error.message);
-              return failed;
-            }
             nameByRacer = new Map(
               (profiles ?? []).map((p) => [p.racer_id, p.name]),
             );
