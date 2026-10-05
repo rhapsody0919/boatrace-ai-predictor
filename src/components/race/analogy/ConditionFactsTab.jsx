@@ -189,7 +189,7 @@ export default function ConditionFactsTab({ data, stage, target }) {
           })}
         </p>
       )}
-      <div className="af-scope">
+      <div className="af-dark">
         <FactHexagon
           axes={axes}
           ariaLabel={hexAria}

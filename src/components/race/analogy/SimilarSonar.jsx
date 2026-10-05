@@ -62,7 +62,7 @@ export default function SimilarSonar({
     });
   };
   return (
-    <div className="af-scope af-sonar" ref={box}>
+    <div className="af-dark af-sonar" ref={box}>
       <svg
         viewBox="0 0 440 440"
         role="group"
@@ -234,7 +234,7 @@ export default function SimilarSonar({
             : ""}
         </div>
       )}
-      <div className="af-scope-cap">
+      <div className="af-dark-cap">
         <span>{todayLabel}</span>
         <span>
           {t("aiPredictionTab.analogy.similar.shown", { n: fmtCount(n) })}

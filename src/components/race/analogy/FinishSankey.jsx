@@ -116,7 +116,7 @@ export default function FinishSankey({ tri, first, onFirst }) {
           </button>
         ))}
       </div>
-      <div className="af-scope af-scope-flat">
+      <div className="af-dark af-dark-flat">
         <svg viewBox="0 0 400 400" role="img" aria-label={t(`${k}.aria`)}>
           {paths}
           {pos.map((o, p) =>

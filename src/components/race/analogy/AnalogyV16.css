@@ -214,7 +214,7 @@
 }
 
 /* ---- 暗い図の枠（六角形・ソナー・サンキー） ---- */
-.af-scope {
+.af-dark {
   position: relative;
   background: radial-gradient(
     ellipse at 50% 50%,
@@ -225,7 +225,7 @@
   padding: var(--spacing-1-5);
 }
 
-.af-scope svg {
+.af-dark svg {
   display: block;
   width: 100%;
   height: auto;
@@ -648,7 +648,7 @@ button.af-bar {
   color: var(--text-secondary);
 }
 
-.af-scope-cap {
+.af-dark-cap {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
@@ -660,7 +660,7 @@ button.af-bar {
   padding: 2px var(--spacing-2) var(--spacing-1);
 }
 
-.af-scope-flat {
+.af-dark-flat {
   background: var(--ryujin-navy-600);
 }
 
