@@ -9,6 +9,7 @@
  *    今日の展示で判定し直す。結果を付ける
  * 4. 画面の状態（resolveStatus）と layer の状態（layerStatus）、キャッシュ（cacheControl）
  * 5. NCR が優勝戦のときは facts から今節の平均着順点を外す（withoutSeriesScoreOnFinal、spec A-4）
+ * 6. 夜の確認（verify-analogy-v16.js）の数え方と、similar/ を消す日付の選び方
  */
 import {
   cacheControl,
@@ -17,6 +18,7 @@ import {
 } from "../../api/_lib/analogyV16.js";
 import { layerStatus } from "../../api/analogy/layer/[raceId].js";
 import { withoutSeriesScoreOnFinal } from "../../api/analogy/facts/[raceId].js";
+import { datesToClean, summarizeDay } from "./verify-analogy-v16.js";
 import {
   exhibitionNeighbors,
   selectExhibitionTargets,
@@ -256,6 +258,63 @@ check(
   Object.keys(withoutSeriesScoreOnFinal("VC:20:6-0-0-0:1A1", facts).by[1]),
   ["series_score", "nat_win"],
 );
+
+// ---- 6. 夜の確認の数え方 ----------------------------------------------------
+{
+  const r = (id, start, cancel = null) => ({
+    race_id: id,
+    race_date: "2026-10-05",
+    start_time: start,
+    cancellation_status: cancel,
+  });
+  const at = (hhmm) => `2026-10-05T${hhmm}:00+09:00`;
+  const races = [
+    r("p", "10:00:00"),
+    r("q", "11:00:00"),
+    r("x", "12:00:00", "confirmed"),
+    r("y", "13:00:00"),
+  ];
+  const snaps = [
+    { race_id: "p", stage: "racecard", computed_at: at("07:20"), exact: null },
+    {
+      race_id: "p",
+      stage: "exhibition",
+      computed_at: at("09:55"),
+      exact: true,
+    },
+    { race_id: "q", stage: "racecard", computed_at: at("11:05"), exact: null }, // 締切後
+  ];
+  const six = (id) =>
+    [1, 2, 3, 4, 5, 6].map((b) => ({
+      race_id: id,
+      boat_number: b,
+      exhibition_time: 6.8,
+      is_absent: false,
+    }));
+  const s = summarizeDay(
+    races,
+    snaps,
+    [...six("p"), ...six("q")],
+    [{ race_id: "y", is_absent: true }],
+  );
+  check("夜の確認: 中止・欠場を分母から除く", s.eligible, 2);
+  check("夜の確認: 出走表の段", [s.racecard, s.racecardOnTime], [2, 1]);
+  check(
+    "夜の確認: 展示後の段",
+    [s.exhEligible, s.exhibition, s.exhibitionOnTime, s.exact],
+    [2, 1, 1, 1],
+  );
+  check(
+    "夜の確認: 欠け",
+    [s.missingRacecard, s.missingExhibition],
+    [[], ["q"]],
+  );
+  check(
+    "similar/ を消す日付（7日より前）",
+    datesToClean(["2026-09-27", "2026-09-28", "2026-10-04", "x"], "2026-10-05"),
+    ["2026-09-27"],
+  );
+}
 
 if (failures > 0) {
   console.error(`\n❌ ${failures} 件の不一致`);

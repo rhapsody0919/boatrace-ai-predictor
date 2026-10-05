@@ -205,3 +205,33 @@ export function createHandler(build) {
     }
   };
 }
+
+/** Storage の prefix の直下（フォルダは id が null の行） */
+export async function listObjects(prefix) {
+  const { url, key } = env();
+  const out = [];
+  for (let offset = 0; ; offset += 1000) {
+    const res = await fetch(`${url}/storage/v1/object/list/${BUCKET}`, {
+      method: "POST",
+      headers: { ...authHeaders(key), "Content-Type": "application/json" },
+      body: JSON.stringify({ prefix, limit: 1000, offset }),
+    });
+    if (!res.ok)
+      throw new UpstreamError(`storage list ${prefix}: HTTP ${res.status}`);
+    const rows = await res.json();
+    out.push(...rows);
+    if (rows.length < 1000) return out;
+  }
+}
+
+/** Storage のファイルを消す（パスの配列） */
+export async function deleteObjects(paths) {
+  if (paths.length === 0) return;
+  const { url, key } = env();
+  const res = await fetch(`${url}/storage/v1/object/${BUCKET}`, {
+    method: "DELETE",
+    headers: { ...authHeaders(key), "Content-Type": "application/json" },
+    body: JSON.stringify({ prefixes: paths }),
+  });
+  if (!res.ok) throw new UpstreamError(`storage delete: HTTP ${res.status}`);
+}
