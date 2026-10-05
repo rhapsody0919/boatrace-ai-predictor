@@ -21,7 +21,7 @@ flowchart LR
     ST1 --> SN[(analogy_v16_snapshots stage=racecard)]
   end
   subgraph Vercel
-    EXC[Vercel Cron analogy-v16-exhibition 2分ごと] --> RR[展示後の段: 候補を並べ直す・今日の展示の値・欠場の検知]
+    EXC[Vercel Cron analogy-exhibition 2分ごと] --> RR[展示後の段: 候補を並べ直す・今日の展示の値・欠場の検知]
     HK[展示の取得の後のフック 任意] --> RR
     ST1 --> RR
     RR --> ST2[(Storage …/exhibition/)]
@@ -77,7 +77,7 @@ AIの見立て（spec FR-E）のための変更。学習側レーンの担当（
 4. 118 の `analogy_contribution_profiles` に列 `stage text NOT NULL DEFAULT 'exhibition'`（CHECK 'exhibition'・'racecard'）を足し、主キーを stage を含む形に作り直す。既存の 12,180 行は exhibition になる（版名で分ける案は、`analogy_models` の is_active の切り替えと噛み合わないので採らない）
    - 読み手に stage の条件を足す: `api/analogy/contribution.js`・`src/services/analogyService.js`・`src/utils/analogyContribution.js`・`db.py`
    - 順序: 列の追加（ユーザーが本番に適用）→ `db.py` が stage を書くコードのマージ → 学習
-   - 番号は学習側の PR 時点の origin/master の最大＋1 をオーケストレーターに確かめる（2026-10-04 時点の提案は 129。下の「DB」）
+   - 番号は 132（`132_analogy_contribution_profiles_stage.sql`、学習側。下の「DB」）
 5. 優勝戦・準優勝戦の判定の変更（spec「優勝戦・準優勝戦の判定」v2、T1-1）をラウンドの特徴量（`round_from_stage`・`round_from_kb_kind`）に入れる。長期も名前を先に見て、`stage_kind` は名前で決まらないときだけ使う。準優進出戦は準優勝戦にしない（Q-C(3)）。一致検査は `t1-1-stage-rule.json` の `consistency_check_strings`（82件）。BOA-728（W準優勝戦、#1229 でマージ済み）とそろえる。同じ学習の回に入れる
 
 #### 向きの計算（spec FR-E の「項目ごとの向き」。2026-10-04 設計側で決定、見せ方の2点は 2026-10-05 に決定: Q-A 揺れの確認を入れる・Q-B 両端で上がる形は「はっきりしない」）
@@ -119,7 +119,7 @@ AIの見立て（spec FR-E）のための変更。学習側レーンの担当（
 
 ## 展示後の段（Vercel の JS）
 
-- 起動: 専用の Vercel Cron `api/cron/analogy-v16-exhibition.js`（2分ごと）が「6艇の展示タイムあり・締切前・展示後の段なし」のレースを拾う（件数に上限）。展示の取得の Cron（`createExhibitionCronHandler`、mode が off だと即 skipped）には依存しない。遅れを縮めるため、展示の取得（`preRaceHandlers.js` の `runSlotsWithRefresh` の後）からも呼ぶ（失敗しても取得の成否に影響させない）。二重に動いても snapshot の `ON CONFLICT DO NOTHING` で1回になる
+- 起動: 専用の Vercel Cron `api/cron/analogy-exhibition.js`（2分ごと。#1269 で作った名前。モードは off が既定）が「6艇の展示タイムあり・締切前・展示後の段なし」のレースを拾う（件数に上限）。展示の取得の Cron（`createExhibitionCronHandler`、mode が off だと即 skipped）には依存しない。遅れを縮めるため、展示の取得（`preRaceHandlers.js` の `runSlotsWithRefresh` の後）からも呼ぶ（失敗しても取得の成否に影響させない）。二重に動いても snapshot の `ON CONFLICT DO NOTHING` で1回になる
 - やること:
   1. 欠場の検知: `race_entries.is_absent` か `exhibition_data` の欠場が1艇でもあれば、snapshot に stage=exhibition・status='absent' を書いて終わる（画面は欠場の1行。spec Q5）
   2. 6艇の展示の値（展示タイム、天候・風・波、展示の進入、展示ST）を読む。展示タイムのレース内の差・順位・天候・風の成分は #1177 の `src/utils/analogyRaceFeatures.js`（`features.py` と同じ式・float32）を使う
@@ -135,11 +135,11 @@ AIの見立て（spec FR-E）のための変更。学習側レーンの担当（
 `analogy` バケット（非公開。学習データ・モデル・長期データのキャッシュが入っている）とは分ける。API は service key で読むので、公開は要らない。保持: `similar/`（候補）は7日で消す。ほかは時点の固定のため残す。容量は初回に実測し、年の見込みを出す（候補を除いて1日 数十MB の見込み）。
 
 ### DB（マイグレーション。spec Q4 で 120 を置き換えると決定）
-新しい表は1つと、118 の表への列の追加（上の「寄与度用モデルの集計」）。番号は実装 PR の時点で origin/master の最大＋1 を確かめ、オーケストレーターに先に伝える。2026-10-04 時点: origin/master の最大は 128（127・128 は廃止して消すが、番号は使い直さない。123・124・126 は他のブランチで使われている）。提案は **129＝118 への stage 列（学習側の PR）**、**130＝`analogy_v16_snapshots`（FR-2 の T3-1）**。120 は使い直さない（APPLIED.md に「廃止」の行を残す）。
+新しい表は1つと、118 の表への列の追加（上の「寄与度用モデルの集計」）。番号は確定済み: **132＝118 への stage 列（`132_analogy_contribution_profiles_stage.sql`、学習側）**、**133＝`analogy_v16_snapshots`（`133_analogy_v16_snapshots.sql`、FR-2 の T3-1、#1267。2026-10-05 本番適用済み）**。設計時の提案（129・130）は他の PR に番号を譲って振り直した。120・127・128 は使い直さない（APPLIED.md に「廃止」の行を残す）。
 
 | 表 | 列 | 書き手 |
 |---|---|---|
-| `analogy_v16_snapshots` | `race_id`（races の外部キー）・`stage`（'racecard' / 'exhibition'）・`run_id`・`computed_at`・`pool_cutoff`（date）・`model_version`（重みに使った版）・`n_layer`・`status`（'ok' / 'empty_layer' / 'absent'）・`exact`（展示後の並べ直しが厳密か）。主キー `(race_id, stage)` | 朝のバッチ（racecard）、Vercel の JS（exhibition）。service_role。締切前だけ書く。racecard は出走表のハッシュが変わったときだけ上書き、exhibition は既にあれば書かない |
+| `analogy_v16_snapshots` | `race_id`（races の外部キー）・`stage`（'racecard' / 'exhibition'）・`run_id`・`computed_at`・`pool_cutoff`（date）・`model_version`（重みに使った版）・`n_layer`・`status`（'ok' / 'empty_layer' / 'absent'）・`exact`（展示後の並べ直しが厳密か）・`racecard_hash`（racecard の段の出走表のハッシュ。作り直しの判定に使う。設計の表に無かったので T3-1 で足した）。主キー `(race_id, stage)`。CHECK で racecard は exact が null・absent にしない・ハッシュあり、を強制（133 のファイル） | 朝のバッチ（racecard）、Vercel の JS（exhibition）。service_role。締切前だけ書く。racecard は出走表のハッシュが変わったときだけ上書き、exhibition は既にあれば書かない |
 
 - RLS 有効・匿名は SELECT のみ
 - 行数: 1日 約300行、1行 約200B
@@ -147,16 +147,17 @@ AIの見立て（spec FR-E）のための変更。学習側レーンの担当（
 ### 既存の表・マイグレーションの扱い
 | 対象 | 状態 | 扱い |
 |---|---|---|
-| 118 `analogy_models`・`analogy_contribution_profiles` | 本番適用済み | そのまま使う（AIの見立て）。7テーマ・新しい量の定義・向きは行の中身（themes・shares・breakdown）の変更。列は `stage` を1つ足す（129 の提案、学習側） |
+| 118 `analogy_models`・`analogy_contribution_profiles` | 本番適用済み | そのまま使う（AIの見立て）。7テーマ・新しい量の定義・向きは行の中身（themes・shares・breakdown）の変更。列は `stage` を1つ足す（132、学習側） |
 | 120（層別 S* の母集団・スナップショット・RPC 2本） | 未適用、このブランチだけ | 廃止（Q4、T0-2 で BOA-635 と合意）。T0-3 で SQL・PGlite の検証・`verify-registry.json` の行・`check-anon-access.js` の13本・`package.json` のスクリプトを消し、APPLIED.md の 120 の行を「廃止」にした（2026-10-05）。番号 120 は再利用しない |
 | 127 `analogy_race_features`・128、日次の特徴量ジョブ | master にあり未適用、ジョブは一度も動いていない | 廃止（Q2。T0-4 で学習側と合意）。学習側レーンが小さい PR で消す（毎朝 data-health のアラートが出ているため先に）: 127・128 の SQL（APPLIED.md に「廃止（Q2、適用しない）」の行）、`daily_features.py` と test の該当部分、`.github/workflows/analogy-daily-features.yml`、data-health の `analogy_race_features` の監視（`checks.js`・`functions.js`・`verify-data-health-job.js`）。残すもの: `export_pool.js --daily` と `week-ranges.js`（v16 の朝のバッチで使う）、`storage.js` の download-active-meta。workflow の削除を含むのでマージはユーザーの承認 |
 | ADR-0083 の `analogy_race_contributions` | 未作成 | 作らない（Q2） |
 
-現行の ER 図（118 のみ。120 の ER 図は 120 と一緒に消した。130 `analogy_v16_snapshots` のマイグレーションを書いたら T3-1 で `generate-er-diagram.js analogy-finder` で作り直す）:
+ER 図（118・132・133 から `generate-er-diagram.js analogy-finder` で作った）:
 
 ```mermaid
 erDiagram
     analogy_contribution_profiles }o--|| analogy_models : "model_version"
+    analogy_v16_snapshots }o--|| races : "race_id"
     analogy_models {
         text model_version PK
         timestamptz trained_at
@@ -180,6 +181,20 @@ erDiagram
         jsonb shares
         jsonb share_sd
         jsonb breakdown
+        text stage
+        double_precision frame_ratio
+    }
+    analogy_v16_snapshots {
+        varchar race_id PK
+        text stage PK
+        text run_id
+        timestamptz computed_at
+        date pool_cutoff
+        text model_version
+        integer n_layer
+        text status
+        boolean exact
+        text racecard_hash
     }
 ```
 
@@ -204,11 +219,11 @@ erDiagram
 
 ## API
 
-いずれも Vercel の Node 関数（service key で Storage の gzip を読む）。snapshot の `run_id` のパスから読む。Storage・DB の失敗は 502 と `no-store`。
+いずれも Vercel の Edge 関数（#1269。fetch と DecompressionStream だけで service key で Storage の gzip を読む）。snapshot の `run_id` のパスから読む。入力の誤りは 400、Storage・DB の失敗は 502（どちらも `no-store`）。応答の形の正は各 `api/analogy/*/[raceId].js` の先頭のコメント
 
 | エンドポイント | 中身 | キャッシュ |
 |---|---|---|
-| `GET /api/analogy/facts/[raceId]?stage=` | `status`（下）、today（stage=exhibition なら展示の値を重ねる）、使う範囲キー（VC・NC・NCR・VA）の facts、AIの見立て（`analogy_contribution_profiles` の表示中の版の、stage に応じた段。無ければ `ai.available: false`） | 締切前 `s-maxage=60`、締切後 `s-maxage=86400` |
+| `GET /api/analogy/facts/[raceId]?stage=` | `status`（下）、today（6艇の値と順位・範囲キー・前日までの走数）、使う範囲キー（VC・NC・NCR・VA）の facts、stage=exhibition なら exhibition（展示タイム・順位・風速区分）。AIの見立ては facts に入れず、画面が既存の `/api/analogy/contribution`（stage 付き、#1259）を読む（#1269 で決めた） | 締切前 `s-maxage=60`、締切後 `s-maxage=86400` |
 | `GET /api/analogy/similar/[raceId]?stage=` | `status`、表示する上位800件（各件の全33項目・結果）、層の件数、比べる相手、全レースで同じ割合 | 同上 |
 | `GET /api/analogy/scenario/[raceId]?scope=&stage=` | `status`、範囲キーの scenario 全体（進入×形の全セル。画面が選択に応じて取り出す）、today の手がかりの当否、stage=exhibition なら展示の進入・形 | 同上 |
 | `GET /api/analogy/layer/[raceId]` | BOA-635 用。layer ファイルの中身と `status`（下の「BOA-635 との接続」） | 同上 |
@@ -220,10 +235,10 @@ erDiagram
 |---|---|
 | `absent` | exhibition の snapshot が status='absent' |
 | `not_saved` | racecard の snapshot が無い |
-| `empty_layer` | racecard の snapshot が status='empty_layer'（タブ2だけ） |
+| `empty_layer` | racecard の snapshot が status='empty_layer'（タブ2だけ。共通の `resolveStatus` では判定せず、similar・layer の API が返す） |
 | `exhibition_ready` | exhibition の snapshot がある（「展示後」を押せる） |
+| `exhibition_missing` | 締切を過ぎて exhibition の snapshot が無い（判定の順は `resolveStatus` のとおり、締切後を先に見る） |
 | `exhibition_reflecting` | 6艇の展示タイムがあり、締切前で、exhibition の snapshot が無い |
-| `exhibition_missing` | 締切を過ぎて exhibition の snapshot が無い |
 | `before_exhibition` | それ以外 |
 
 - 艇番・着順・進入・形の切り替えは画面で行う（取り直さない）。stage を変えたときだけ取り直す

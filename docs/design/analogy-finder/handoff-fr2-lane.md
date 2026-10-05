@@ -300,3 +300,11 @@
   - AIの見立ては /api/analogy/contribution（stage 付き、#1259）を読む。向きの文は学習側の profiles の direction
   - 受け入れ E2E（e2e/acceptance/analogy-finder.spec.js）は #1134 にある。(d) の前に #1134 の master 取り込みが要る（オーケストレーターが段取りする）
   - 画面の見せ方の判断は案＋推奨でオーケストレーター経由（BOA-271 は代理判定・自動マージなし）
+
+## 27. 2026-10-05 夜 設計書 #1134 の master 取り込み（§26 の後。(d) はここから）
+- #1134 に origin/master を merge で取り込んだ（衝突は APPLIED.md だけ。master 側の行に 120 の「廃止」の行を足した）。設計書・受け入れ E2E を master に入れるため Draft を外した
+- 実装に合わせて直したもの: マイグレーション番号（132＝stage 列、133＝analogy_v16_snapshots。設計時の提案 129・130 は振り直し）、133 の racecard_hash 列と CHECK、API は Edge 関数で AIの見立ては facts に入れず `/api/analogy/contribution` を読む、status の判定の順（`resolveStatus`）、展示後の Cron の名前 `api/cron/analogy-exhibition.js`
+- ER 図を 118・132・133 から作り直した（T3-1）。生成スクリプト（`scripts/lib/erDiagramFromDdl.js`）が `public.` 付きの表名を拾えず 133 が図に出なかったので、`(?:public\.)?` を許すよう直した。132 の主キーの作り直し（ALTER の ADD PRIMARY KEY）は生成スクリプトが扱わないので、図では stage が PK に出ない
+- 133 のファイルのヘッダーのコメントは Cron の名前が古い（analogy-v16-exhibition）が、本番適用済みのファイルなので触っていない
+- 受け入れ E2E（95件）は `playwright.config.js` の smoke が `acceptance/` を除外しているので、CI では走らない（PR ゲート外、BOA-467 の運用どおり）。(d) の完了監査（T8-3）でローカル実行する
+- (d) の着手点は §26 のとおり（T6-1〜T6-3・T7-1〜T7-8・T8-1〜T8-5）。#1269（c）のマージ後に、master から新しいブランチで始める

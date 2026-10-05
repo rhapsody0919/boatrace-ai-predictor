@@ -17,7 +17,7 @@
 - [x] T0-3 マイグレーション 120 を消した（2026-10-05）: `120_analogy_strata.sql`・`verify-analogy-strata-migration.js`・`package.json` の `verify:analogy-strata-migration`・`verify-registry.json` の行・`check-anon-access.js` の ANON_RPCS の13本。APPLIED.md の 120 の行は「廃止（v16 で置き換え、適用しない）」、plan の 120 の ER 図も消した
 - [x] T0-4 学習側レーンと分担を確かめる（2026-10-04 合意。plan「寄与度用モデルの集計」「既存の表・マイグレーションの扱い」）
   - 127・128・日次の特徴量ジョブは廃止。学習側が小さい PR で消す（workflow の削除を含むのでマージはユーザーの承認）
-  - 7テーマ・Version 14 の量の定義・向き・出走表時点のモデル3本（profiles stage=racecard）・118 の stage 列（提案番号 129）・優勝戦の判定は、学習側の新しいセッションで1本の PR＋列追加のマイグレーション。学習は1回。着手の条件は「向き」の定義が plan にあること（2026-10-04 に書いた）
+  - 7テーマ・Version 14 の量の定義・向き・出走表時点のモデル3本（profiles stage=racecard）・118 の stage 列（132）・優勝戦の判定は、学習側の新しいセッションで1本の PR＋列追加のマイグレーション。学習は1回。着手の条件は「向き」の定義が plan にあること（2026-10-04 に書いた）
   - 一致検査 `treeshap-parity.js` は今の2本のまま。「寄与度のモデルを6本にする」は取り下げ
   - #1207 は学習側が「学習の dispatch＋v16 の朝のバッチの dispatch」に作り直す（v16 の起動は T2-5b で FR-2 側が足す）
 - [x] T0-5 dispatch 用の fine-grained PAT（Actions: Read and write、boatrace-ai-predictor のみ）を Vercel の環境変数 `GITHUB_ACTIONS_DISPATCH_TOKEN`（Production）に登録（ユーザー、2026-10-05）。有効期限が来たら作り直して差し替える
@@ -55,7 +55,7 @@
   - 継続監視: `verify-analogy-v16.js`（T5-3）が前日の欠け・作成時刻を毎晩数え、閾値（99%）を下回ったら Slack に通知。workflow の失敗・Cron の未実行（最終成功からの経過時間）も Slack に通知
 
 ## T3 DB と Storage
-- [x] T3-1 （#1267。番号は 133、racecard_hash 列を足した）マイグレーション `analogy_v16_snapshots`（提案番号 130。PR 時点の origin/master の最大＋1 をオーケストレーターに確かめる）と PGlite の検証（ci）。118 への `stage` 列（提案番号 129）は学習側の PR。ヘッダーに plan.md の参照を書き、`generate-er-diagram.js analogy-finder` で plan の ER 図を作り直す
+- [x] T3-1 （#1267。番号は 133、racecard_hash 列を足した）マイグレーション `analogy_v16_snapshots`（133）と PGlite の検証（ci）。118 への `stage` 列（132）は学習側の PR。ヘッダーに plan.md の参照を書き、`generate-er-diagram.js analogy-finder` で plan の ER 図を作り直す
 - [x] T3-2 （2026-10-05 ユーザー適用、読み取りで確認、APPLIED.md 済み）マイグレーションの本番適用をユーザーに依頼する（書き込み SQL だけを渡す）。適用後、読み取りで表・ポリシー・匿名の権限を確かめ、APPLIED.md に行を足す
 - [x] T3-3 （#1269。バケットは朝のバッチの初回で作る。similar/ の7日での削除は夜の確認の --cleanup）Storage の非公開のバケット `analogy-v16` を作り（`analogy` とは分ける）、`similar/`（候補）の7日の削除を夜の確認のジョブに入れる
 - [x] T3-4 127・128 は適用せず廃止（Q2、T0-4 で学習側と合意。削除の PR は学習側）
