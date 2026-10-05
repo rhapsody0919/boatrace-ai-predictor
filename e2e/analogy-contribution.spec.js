@@ -248,4 +248,22 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await expect(w).toContainText("若松で風0〜1mだったレースで");
     });
   });
+
+  test("展示で深いフライング（F.06以上）の艇がいるレースは、今日の展示の形を出さない（Q-F6）", async ({
+    page,
+  }) => {
+    // 例のレース（若松12R）は展示で3号艇が F.09
+    await setup(page);
+    await openAiTab(page);
+    const section = sectionOf(page);
+    await section.getByRole("tab", { name: "展開シナリオ" }).click();
+    await expect(
+      section.getByText(
+        /参考: 今日の展示の形は出していない（展示で深いフライング（F\.06以上）/,
+      ),
+    ).toBeVisible();
+    await expect(
+      section.getByText(/参考: 今日の展示の形は(?!出していない)/),
+    ).toHaveCount(0);
+  });
 });

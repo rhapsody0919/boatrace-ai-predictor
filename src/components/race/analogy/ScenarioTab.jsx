@@ -344,22 +344,24 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
               n: fmtCount(agreement.forms_n),
             })
           : ""}
-        {exhibitionStage
-          ? t(`${k}.slitToday`, {
-              forms: exhForms.length
-                ? exhForms
-                    .map(formName)
-                    .join(t("aiPredictionTab.analogy.listSeparator"))
-                : t(`${k}.noForm`),
-            }) +
-            (flyBoats.length
-              ? t(`${k}.slitFly`, {
-                  boats: flyBoats.join(
-                    t("aiPredictionTab.analogy.listSeparator"),
-                  ),
-                })
-              : "")
-          : t(`${k}.slitPre`)}
+        {exhibitionStage && exhibition?.forms_excluded
+          ? t(`${k}.slitDeepFly`)
+          : exhibitionStage
+            ? t(`${k}.slitToday`, {
+                forms: exhForms.length
+                  ? exhForms
+                      .map(formName)
+                      .join(t("aiPredictionTab.analogy.listSeparator"))
+                  : t(`${k}.noForm`),
+              }) +
+              (flyBoats.length
+                ? t(`${k}.slitFlyShallow`, {
+                    boats: flyBoats.join(
+                      t("aiPredictionTab.analogy.listSeparator"),
+                    ),
+                  })
+                : "")
+            : t(`${k}.slitPre`)}
       </p>
       <AttackTable
         attack={sc.attack}

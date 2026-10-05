@@ -38,6 +38,27 @@ export const stCent = (st) => roundHalfUp(st * 100);
 /** F の ST は負（出どころを問わず −abs） */
 export const signedSt = (st, isFlying) => (isFlying ? -Math.abs(st) : st);
 
+/** 展示の F がこれ以下（1/100秒。F.05 まで）なら .00 として形を判定する（Python の v16_defs.FLY_SHALLOW_MAX。Q-F6） */
+export const FLY_SHALLOW_MAX = 5;
+
+/**
+ * 今日の展示の形（2026-10-06 ユーザー決定 Q-F6）。F.01〜.05 は .00 として判定し、F.06 以上か出遅れの艇がいれば
+ * 判定しない（excluded）。Python の v16_defs.exh_form_st と同じ
+ * @param {(number|null)[]} stByCourse コース順の展示 ST（F は負）
+ * @param {boolean} [hasLate] 展示で出遅れの艇がいる
+ * @returns {{forms: string[], excluded: boolean}}
+ */
+export function exhibitionForms(stByCourse, hasLate = false) {
+  const deep =
+    hasLate ||
+    stByCourse.some((v) => !isMissing(v) && stCent(v) < -FLY_SHALLOW_MAX);
+  if (deep) return { forms: [], excluded: true };
+  const f = slitForms(
+    stByCourse.map((v) => (!isMissing(v) && stCent(v) < 0 ? 0 : v)),
+  );
+  return { forms: SLIT_FORMS.filter((k) => f[k]), excluded: false };
+}
+
 /**
  * コース順の ST（F は負）→ 7形の当否。1艇でも欠ければすべて false。形は重なりうる
  * @param {(number|null)[]} stByCourse
@@ -54,8 +75,9 @@ export function slitForms(stByCourse) {
   return {
     flat: max(c) - min(c) <= 6,
     wall: max(inner) - min(inner) <= 2,
-    d2: c[1] - Math.min(c[0], c[2]) >= 5,
-    d3: c[2] - Math.min(c[1], c[3]) >= 5,
+    // 凹み: 両隣より0.05秒以上遅い（2026-10-06 ユーザー決定、BOA-777。Python の v16_defs と同じ）
+    d2: c[1] - Math.max(c[0], c[2]) >= 5,
+    d3: c[2] - Math.max(c[1], c[3]) >= 5,
     kado: min(inner) - c[3] >= 3,
     d1: c[0] - c[1] >= 5,
     dash: sum(inner) - sum(c.slice(3)) >= 15,

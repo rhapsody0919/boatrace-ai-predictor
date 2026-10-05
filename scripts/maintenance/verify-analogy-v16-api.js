@@ -117,13 +117,54 @@ check(
   [0.15, 0.15, 0.15, -0.05, 0.15, 0.15],
 );
 check("風速区分", te.wind_band, "2-3");
-// 3コースは両隣の小さいほう（4コースの −5）より 0.20 遅いので、カド受け凹み（d3）にも当たる（形は重なる）
+// 3コースは4コース（−5）より遅いが2コースとは同じなので、カド受け凹み（d3）には当たらない（凹みは両隣より
+// 0.05秒以上遅いとき。2026-10-06 ユーザー決定 Q-F4、BOA-777。以前は早い方の隣だけと比べていたので当たっていた）
 check("展示 ST の形（4コースの3号艇が F で前に出る）", te.forms, [
   "wall",
-  "d3",
   "kado",
   "dash",
 ]);
+
+check("浅い F だけなら形を判定する", te.forms_excluded, false);
+// Q-F6: 展示の F.05 までは .00 として判定（上の4コース F.05 は .00 → カド一撃・ダッシュ勢先行）。
+// F.06 以上か出遅れの艇がいれば形を判定しない
+const exhOf = (st, flag) =>
+  todayExhibition(
+    [1, 2, 3, 4, 5, 6].map((b) => ({
+      boat_number: b,
+      exhibition_course: b,
+      start_timing: st[b - 1],
+      start_flag: flag[b - 1],
+    })),
+    live,
+    { wind_speed: 3, wave_height: 2 },
+  );
+const ex1 = exhOf(
+  [0.07, 0.01, 0.09, 0.12, 0.12, 0.12],
+  [null, null, "F", null, null, null],
+);
+check(
+  "例のレース（3号艇 F.09）は形を判定しない",
+  [ex1.forms, ex1.forms_excluded],
+  [[], true],
+);
+check("F は負のまま表示用に残す", ex1.st_by_course[2], -0.09);
+const ex2 = exhOf(
+  [0.15, 0.15, 0.15, 0.15, 0.15, 0.15],
+  [null, null, null, null, null, "L"],
+);
+check(
+  "出遅れの艇がいれば形を判定しない",
+  [ex2.forms, ex2.forms_excluded],
+  [[], true],
+);
+const ex3 = exhOf(
+  [0.05, 0.05, 0.0, 0.1, 0.1, 0.1],
+  ["F", null, null, null, null, null],
+);
+// 1コース F.05 → .00、2コース .05 は両隣（.00・.00）より .05 遅い（Python の test_exhibition_agreement_flying_rule と同じ）
+check("F.05 は .00 として判定する", ex3.forms.includes("d2"), true);
+check("F.05 は .00 として判定する（判定した）", ex3.forms_excluded, false);
 
 // ---- 3. 並べ直した上位の33項目 ----------------------------------------------
 const file = {

@@ -1,0 +1,949 @@
+{
+ "model_version": "2026-10-06",
+ "test_n_races": {
+  "trained": 54867,
+  "profiles": 54867
+ },
+ "undefined_cells": 1134,
+ "nonfinite_to_null": {},
+ "profiles_by_stage": {
+  "national": {
+   "exhibition|1|1": {
+    "shares": {
+     "racerRecord": 0.5349218273050231,
+     "startExhibition": 0.19514256626089052,
+     "machine": 0.07682395400597386,
+     "racerProfile": 0.054985405819231524,
+     "venueRace": 0.06847971273171692,
+     "weatherWater": 0.03760294900153461,
+     "raceFormat": 0.03204358487562938
+    },
+    "share_sd": {
+     "racerRecord": 0.002994374385404673,
+     "startExhibition": 0.0013682375228227335,
+     "machine": 0.0009434302886028921,
+     "racerProfile": 0.0007572047011475931,
+     "venueRace": 0.0012994710414071175,
+     "weatherWater": 0.0009230336111629186,
+     "raceFormat": 0.0012539074980958027
+    }
+   },
+   "exhibition|1|2": {
+    "shares": {
+     "racerRecord": 0.5486722592413134,
+     "startExhibition": 0.2375559435843847,
+     "machine": 0.09701261063612457,
+     "racerProfile": 0.05828366972111325,
+     "venueRace": 0.03425892661569248,
+     "weatherWater": 0.006747273335354992,
+     "raceFormat": 0.017469316866016556
+    },
+    "share_sd": {
+     "racerRecord": 0.0025620203364455653,
+     "startExhibition": 0.0015244185597453484,
+     "machine": 0.001110106079268074,
+     "racerProfile": 0.0005714073868668915,
+     "venueRace": 0.001401069026076888,
+     "weatherWater": 0.0004031508942765403,
+     "raceFormat": 0.0008894252824856651
+    }
+   },
+   "exhibition|1|3": {
+    "shares": {
+     "racerRecord": 0.5464381673446878,
+     "startExhibition": 0.2385377366609714,
+     "machine": 0.09902570821758994,
+     "racerProfile": 0.05707255582441612,
+     "venueRace": 0.03181632047621006,
+     "weatherWater": 0.010373352400330278,
+     "raceFormat": 0.016736159075794288
+    },
+    "share_sd": {
+     "racerRecord": 0.0026606222345814715,
+     "startExhibition": 0.0027859836624364296,
+     "machine": 0.0019789929232376454,
+     "racerProfile": 0.0006876069115999833,
+     "venueRace": 0.0009278301879786436,
+     "weatherWater": 0.0007262335696344388,
+     "raceFormat": 0.0010553828570327997
+    }
+   },
+   "exhibition|1|4": {
+    "shares": {
+     "racerRecord": 0.5452284537821427,
+     "startExhibition": 0.2544229842839347,
+     "machine": 0.09611090051821854,
+     "racerProfile": 0.053228418173222575,
+     "venueRace": 0.029401249731526087,
+     "weatherWater": 0.012501879189687707,
+     "raceFormat": 0.009106114321267714
+    },
+    "share_sd": {
+     "racerRecord": 0.002570863518410326,
+     "startExhibition": 0.0018782118494113517,
+     "machine": 0.002284239581677569,
+     "racerProfile": 0.0009394065305433347,
+     "venueRace": 0.0006814880956590455,
+     "weatherWater": 0.0006513959137631905,
+     "raceFormat": 0.0005930274704005201
+    }
+   },
+   "exhibition|1|5": {
+    "shares": {
+     "racerRecord": 0.5765009868558477,
+     "startExhibition": 0.22977836311775574,
+     "machine": 0.0878769336089072,
+     "racerProfile": 0.05202067149647303,
+     "venueRace": 0.034318818449153764,
+     "weatherWater": 0.012221574740749397,
+     "raceFormat": 0.007282651731113187
+    },
+    "share_sd": {
+     "racerRecord": 0.0035627610649228963,
+     "startExhibition": 0.0028003924629786876,
+     "machine": 0.0018398238727681592,
+     "racerProfile": 0.0010322813901728002,
+     "venueRace": 0.0015799622970764633,
+     "weatherWater": 0.000705199435462939,
+     "raceFormat": 0.0003295109266011055
+    }
+   },
+   "exhibition|1|6": {
+    "shares": {
+     "racerRecord": 0.6090510585453808,
+     "startExhibition": 0.21687553724331285,
+     "machine": 0.07749383459211379,
+     "racerProfile": 0.04624194740150614,
+     "venueRace": 0.03480291001568482,
+     "weatherWater": 0.00765328197675234,
+     "raceFormat": 0.00788143022524942
+    },
+    "share_sd": {
+     "racerRecord": 0.003972155176487692,
+     "startExhibition": 0.00413563811248058,
+     "machine": 0.0015790494291700004,
+     "racerProfile": 0.0010991399703533875,
+     "venueRace": 0.0014709093634165495,
+     "weatherWater": 0.0004458013857659578,
+     "raceFormat": 0.0003106988017783702
+    }
+   },
+   "exhibition|2|1": {
+    "shares": {
+     "racerRecord": 0.5665224280322012,
+     "startExhibition": 0.18856579711339938,
+     "machine": 0.08229188574054887,
+     "racerProfile": 0.044577547491191076,
+     "venueRace": 0.06338305549368795,
+     "weatherWater": 0.02792463442018014,
+     "raceFormat": 0.026734651708791426
+    },
+    "share_sd": {
+     "racerRecord": 0.0029733402305833884,
+     "startExhibition": 0.0011073720832513614,
+     "machine": 0.000561039016985979,
+     "racerProfile": 0.00040696320187661724,
+     "venueRace": 0.0012761244275138863,
+     "weatherWater": 0.001086600677080288,
+     "raceFormat": 0.0010619712354298704
+    }
+   },
+   "exhibition|2|2": {
+    "shares": {
+     "racerRecord": 0.5995317157379236,
+     "startExhibition": 0.21556341502787207,
+     "machine": 0.09440903091691012,
+     "racerProfile": 0.043900231887550385,
+     "venueRace": 0.032726059919966285,
+     "weatherWater": 0.004281684672539797,
+     "raceFormat": 0.009587861837237718
+    },
+    "share_sd": {
+     "racerRecord": 0.001997165915335461,
+     "startExhibition": 0.0011555931984993666,
+     "machine": 0.0008689351756069527,
+     "racerProfile": 0.00024869060181225826,
+     "venueRace": 0.0009707810496017764,
+     "weatherWater": 0.0004435682762990007,
+     "raceFormat": 0.00016464809351062336
+    }
+   },
+   "exhibition|2|3": {
+    "shares": {
+     "racerRecord": 0.6026194302681737,
+     "startExhibition": 0.21706442931170117,
+     "machine": 0.09846817093282022,
+     "racerProfile": 0.04480342087032313,
+     "venueRace": 0.021694802223733777,
+     "weatherWater": 0.004589610963436287,
+     "raceFormat": 0.010760135429811626
+    },
+    "share_sd": {
+     "racerRecord": 0.0017661820707037782,
+     "startExhibition": 0.0012930639363646914,
+     "machine": 0.0012399905954932338,
+     "racerProfile": 0.00029392632051984435,
+     "venueRace": 0.0005637637771898934,
+     "weatherWater": 0.0003266291916590551,
+     "raceFormat": 0.00018260878337870732
+    }
+   },
+   "exhibition|2|4": {
+    "shares": {
+     "racerRecord": 0.6139178227791389,
+     "startExhibition": 0.21222236307513728,
+     "machine": 0.09163605352665904,
+     "racerProfile": 0.042564491112300686,
+     "venueRace": 0.022798697900015034,
+     "weatherWater": 0.007145446636328701,
+     "raceFormat": 0.009715124970420503
+    },
+    "share_sd": {
+     "racerRecord": 0.001273796782893456,
+     "startExhibition": 0.0010702581549511727,
+     "machine": 0.000748263010810136,
+     "racerProfile": 0.0002793536299247299,
+     "venueRace": 0.00046297772558634084,
+     "weatherWater": 0.0006737274064133889,
+     "raceFormat": 0.00036547170004590544
+    }
+   },
+   "exhibition|2|5": {
+    "shares": {
+     "racerRecord": 0.6398104270322852,
+     "startExhibition": 0.1875152607274187,
+     "machine": 0.08039143870505985,
+     "racerProfile": 0.04353448198427448,
+     "venueRace": 0.03184525770883761,
+     "weatherWater": 0.008102451311304486,
+     "raceFormat": 0.008800682530819658
+    },
+    "share_sd": {
+     "racerRecord": 0.001664509239376381,
+     "startExhibition": 0.001028290425029042,
+     "machine": 0.0009344029276602904,
+     "racerProfile": 0.0005545234924064102,
+     "venueRace": 0.001138239548167542,
+     "weatherWater": 0.0008312960266760789,
+     "raceFormat": 0.00023337240910566373
+    }
+   },
+   "exhibition|2|6": {
+    "shares": {
+     "racerRecord": 0.6628641317115437,
+     "startExhibition": 0.170316447244216,
+     "machine": 0.06959144753953815,
+     "racerProfile": 0.04108805218969097,
+     "venueRace": 0.03928298622231681,
+     "weatherWater": 0.00816659707227019,
+     "raceFormat": 0.008690338020424149
+    },
+    "share_sd": {
+     "racerRecord": 0.0023462912953281963,
+     "startExhibition": 0.001228804661550878,
+     "machine": 0.0008512195385812781,
+     "racerProfile": 0.00099684496152708,
+     "venueRace": 0.0010691262284719947,
+     "weatherWater": 0.00039947148976703605,
+     "raceFormat": 0.0002571581317917571
+    }
+   },
+   "exhibition|3|1": {
+    "shares": {
+     "racerRecord": 0.5886906299505338,
+     "startExhibition": 0.18134160022450407,
+     "machine": 0.08474541345514854,
+     "racerProfile": 0.04508568852855278,
+     "venueRace": 0.05819061870603935,
+     "weatherWater": 0.020262398536717765,
+     "raceFormat": 0.021683650598503714
+    },
+    "share_sd": {
+     "racerRecord": 0.004502590778736451,
+     "startExhibition": 0.0025755638210790775,
+     "machine": 0.0012300608458294456,
+     "racerProfile": 0.00038687005085775745,
+     "venueRace": 0.0009232135880447732,
+     "weatherWater": 0.0006556696299867343,
+     "raceFormat": 0.0012504337883109244
+    }
+   },
+   "exhibition|3|2": {
+    "shares": {
+     "racerRecord": 0.6150920089241115,
+     "startExhibition": 0.20063289784382174,
+     "machine": 0.09370760213262098,
+     "racerProfile": 0.045090138709692106,
+     "venueRace": 0.03053038275125996,
+     "weatherWater": 0.0042993688756982045,
+     "raceFormat": 0.01064760076279556
+    },
+    "share_sd": {
+     "racerRecord": 0.0030807702308571086,
+     "startExhibition": 0.0017769770428960282,
+     "machine": 0.0010035869410802904,
+     "racerProfile": 0.00037121359737089213,
+     "venueRace": 0.00113198624024646,
+     "weatherWater": 0.00048206530076631414,
+     "raceFormat": 0.0003597800643342524
+    }
+   },
+   "exhibition|3|3": {
+    "shares": {
+     "racerRecord": 0.619464048216631,
+     "startExhibition": 0.20035912727514024,
+     "machine": 0.09595569292986054,
+     "racerProfile": 0.047132209195800925,
+     "venueRace": 0.022548458301271876,
+     "weatherWater": 0.004349746308917535,
+     "raceFormat": 0.010190717772377835
+    },
+    "share_sd": {
+     "racerRecord": 0.003595152972539405,
+     "startExhibition": 0.00220846996180391,
+     "machine": 0.0015330073687691871,
+     "racerProfile": 0.0005353210501154296,
+     "venueRace": 0.0006250604813519527,
+     "weatherWater": 0.0002796238615542504,
+     "raceFormat": 0.00037497616103145375
+    }
+   },
+   "exhibition|3|4": {
+    "shares": {
+     "racerRecord": 0.6376464490090801,
+     "startExhibition": 0.19088519128346562,
+     "machine": 0.08999195581764008,
+     "racerProfile": 0.04632523217509704,
+     "venueRace": 0.02035708319864564,
+     "weatherWater": 0.005207045108722833,
+     "raceFormat": 0.009587043407348768
+    },
+    "share_sd": {
+     "racerRecord": 0.0034524805401446187,
+     "startExhibition": 0.002399626483954476,
+     "machine": 0.0010153121662062987,
+     "racerProfile": 0.0004442133875723043,
+     "venueRace": 0.0002562073111128373,
+     "weatherWater": 0.00022360661612036978,
+     "raceFormat": 0.0004240758802121222
+    }
+   },
+   "exhibition|3|5": {
+    "shares": {
+     "racerRecord": 0.656042407384584,
+     "startExhibition": 0.17249296615719303,
+     "machine": 0.08162858841572229,
+     "racerProfile": 0.04584500004307347,
+     "venueRace": 0.028735574537151254,
+     "weatherWater": 0.004967663848375029,
+     "raceFormat": 0.010287799613900948
+    },
+    "share_sd": {
+     "racerRecord": 0.003290170752423464,
+     "startExhibition": 0.0020585061657143184,
+     "machine": 0.0006447679210110894,
+     "racerProfile": 0.00045037104036438,
+     "venueRace": 0.0008397356323769138,
+     "weatherWater": 0.0001908724839817389,
+     "raceFormat": 0.0005195229477268672
+    }
+   },
+   "exhibition|3|6": {
+    "shares": {
+     "racerRecord": 0.6775053848139437,
+     "startExhibition": 0.15414248500144004,
+     "machine": 0.07178296125698422,
+     "racerProfile": 0.041112866964614525,
+     "venueRace": 0.03975461433329631,
+     "weatherWater": 0.0054209680883711775,
+     "raceFormat": 0.010280719541349927
+    },
+    "share_sd": {
+     "racerRecord": 0.0033320038493613335,
+     "startExhibition": 0.0016422504974520058,
+     "machine": 0.0011281870594428572,
+     "racerProfile": 0.0007849488096449038,
+     "venueRace": 0.0010139386572953382,
+     "weatherWater": 0.00027705474928424727,
+     "raceFormat": 0.00037343766750147945
+    }
+   },
+   "racecard|1|1": {
+    "shares": {
+     "racerRecord": 0.6092399910703451,
+     "startExhibition": 0.09217706045843556,
+     "machine": 0.10270088530682057,
+     "racerProfile": 0.07561082172979831,
+     "venueRace": 0.07937715792224591,
+     "raceFormat": 0.040894083512354545
+    },
+    "share_sd": {
+     "racerRecord": 0.003460003711163227,
+     "startExhibition": 0.0018680701835763435,
+     "machine": 0.0012533395741631782,
+     "racerProfile": 0.0006436053766945185,
+     "venueRace": 0.001392521670923329,
+     "raceFormat": 0.0008489721065321239
+    }
+   },
+   "racecard|1|2": {
+    "shares": {
+     "racerRecord": 0.6260518322302535,
+     "startExhibition": 0.0969692764546991,
+     "machine": 0.13035204472564244,
+     "racerProfile": 0.08859564048127794,
+     "venueRace": 0.036884714703430514,
+     "raceFormat": 0.02114649140469644
+    },
+    "share_sd": {
+     "racerRecord": 0.002724739760166078,
+     "startExhibition": 0.000927510444769401,
+     "machine": 0.0010605719394745294,
+     "racerProfile": 0.0007241569421405513,
+     "venueRace": 0.0014364461944946774,
+     "raceFormat": 0.0013788296832968642
+    }
+   },
+   "racecard|1|3": {
+    "shares": {
+     "racerRecord": 0.6217954516057921,
+     "startExhibition": 0.10213556286488674,
+     "machine": 0.13421522534801106,
+     "racerProfile": 0.08900630609804479,
+     "venueRace": 0.03296095515491544,
+     "raceFormat": 0.019886498928349858
+    },
+    "share_sd": {
+     "racerRecord": 0.003123731270730986,
+     "startExhibition": 0.0017802073600666293,
+     "machine": 0.0011514013435913345,
+     "racerProfile": 0.0008918327332747006,
+     "venueRace": 0.001397370845249325,
+     "raceFormat": 0.0008212954256182816
+    }
+   },
+   "racecard|1|4": {
+    "shares": {
+     "racerRecord": 0.6127790384899866,
+     "startExhibition": 0.13315074613438893,
+     "machine": 0.1318403320882441,
+     "racerProfile": 0.07814420146091129,
+     "venueRace": 0.031841407829401924,
+     "raceFormat": 0.012244273997067154
+    },
+    "share_sd": {
+     "racerRecord": 0.0012195561540070618,
+     "startExhibition": 0.0010061699299696246,
+     "machine": 0.0010875364624526372,
+     "racerProfile": 0.0007940448256198233,
+     "venueRace": 0.0007850727859703839,
+     "raceFormat": 0.0005514195186104417
+    }
+   },
+   "racecard|1|5": {
+    "shares": {
+     "racerRecord": 0.6412369727161987,
+     "startExhibition": 0.11800764309561015,
+     "machine": 0.11748335534509548,
+     "racerProfile": 0.07491445984167727,
+     "venueRace": 0.03819732968095581,
+     "raceFormat": 0.010160239320462656
+    },
+    "share_sd": {
+     "racerRecord": 0.0032632689119649026,
+     "startExhibition": 0.0017829177467916942,
+     "machine": 0.0012473421492598346,
+     "racerProfile": 0.0006582749752478385,
+     "venueRace": 0.0019273255500059348,
+     "raceFormat": 0.00041786594619449034
+    }
+   },
+   "racecard|1|6": {
+    "shares": {
+     "racerRecord": 0.6743559775805802,
+     "startExhibition": 0.11152278252039753,
+     "machine": 0.10547555082452209,
+     "racerProfile": 0.06191875431041704,
+     "venueRace": 0.03712346410402185,
+     "raceFormat": 0.009603470660061258
+    },
+    "share_sd": {
+     "racerRecord": 0.0037068545721605883,
+     "startExhibition": 0.0008169785912861723,
+     "machine": 0.0014730210563812542,
+     "racerProfile": 0.0014864933373086309,
+     "venueRace": 0.001824730102565367,
+     "raceFormat": 0.0006341211725538089
+    }
+   },
+   "racecard|2|1": {
+    "shares": {
+     "racerRecord": 0.6372097356204623,
+     "startExhibition": 0.08604420285081134,
+     "machine": 0.1094772868195809,
+     "racerProfile": 0.05811905075804928,
+     "venueRace": 0.07410110285515199,
+     "raceFormat": 0.035048621095944095
+    },
+    "share_sd": {
+     "racerRecord": 0.0013157691159852614,
+     "startExhibition": 0.0014189645150703848,
+     "machine": 0.0011420117167807177,
+     "racerProfile": 0.0005982846157641641,
+     "venueRace": 0.0018929374152837956,
+     "raceFormat": 0.000969228925390467
+    }
+   },
+   "racecard|2|2": {
+    "shares": {
+     "racerRecord": 0.6786916772163574,
+     "startExhibition": 0.08365029554563864,
+     "machine": 0.12856750990718643,
+     "racerProfile": 0.062460691271428566,
+     "venueRace": 0.03416312274189635,
+     "raceFormat": 0.012466703317492878
+    },
+    "share_sd": {
+     "racerRecord": 0.00149043344634951,
+     "startExhibition": 0.0009333146721706835,
+     "machine": 0.0008359402332186348,
+     "racerProfile": 0.00028705677419126627,
+     "venueRace": 0.0008454392987755353,
+     "raceFormat": 0.0005928592959915973
+    }
+   },
+   "racecard|2|3": {
+    "shares": {
+     "racerRecord": 0.6820008887210062,
+     "startExhibition": 0.08195172394813909,
+     "machine": 0.13029325907627187,
+     "racerProfile": 0.06668348271971825,
+     "venueRace": 0.024575873614107888,
+     "raceFormat": 0.014494771920756926
+    },
+    "share_sd": {
+     "racerRecord": 0.0011073930662205153,
+     "startExhibition": 0.0011387962866435063,
+     "machine": 0.000987748485485188,
+     "racerProfile": 0.0009227378928439155,
+     "venueRace": 0.0008465461565847001,
+     "raceFormat": 0.0005089480480375145
+    }
+   },
+   "racecard|2|4": {
+    "shares": {
+     "racerRecord": 0.6877131480568657,
+     "startExhibition": 0.09308985378074337,
+     "machine": 0.12036873051816839,
+     "racerProfile": 0.06114140204087458,
+     "venueRace": 0.02469212537984638,
+     "raceFormat": 0.012994740223501618
+    },
+    "share_sd": {
+     "racerRecord": 0.0019287893795727304,
+     "startExhibition": 0.0015762232363625357,
+     "machine": 0.001412980751534202,
+     "racerProfile": 0.0005689112167624361,
+     "venueRace": 0.0008338285843234748,
+     "raceFormat": 0.00016733960208699562
+    }
+   },
+   "racecard|2|5": {
+    "shares": {
+     "racerRecord": 0.7051162610823797,
+     "startExhibition": 0.08255740089196331,
+     "machine": 0.10712530020850754,
+     "racerProfile": 0.05914646362854204,
+     "venueRace": 0.03441560237510242,
+     "raceFormat": 0.011638971813505032
+    },
+    "share_sd": {
+     "racerRecord": 0.0012437992739466458,
+     "startExhibition": 0.0011946931425349126,
+     "machine": 0.0012186415400740704,
+     "racerProfile": 0.0006439891208890351,
+     "venueRace": 0.0014548571924617568,
+     "raceFormat": 0.0006342667907903568
+    }
+   },
+   "racecard|2|6": {
+    "shares": {
+     "racerRecord": 0.7231443111268137,
+     "startExhibition": 0.07684323714303695,
+     "machine": 0.09428637992505715,
+     "racerProfile": 0.05006961092083399,
+     "venueRace": 0.04426037622084321,
+     "raceFormat": 0.011396084663415072
+    },
+    "share_sd": {
+     "racerRecord": 0.0015439381085866476,
+     "startExhibition": 0.0009280462399115826,
+     "machine": 0.0011689162568995527,
+     "racerProfile": 0.0008926949858545477,
+     "venueRace": 0.001149829143135586,
+     "raceFormat": 0.0006377111310134163
+    }
+   },
+   "racecard|3|1": {
+    "shares": {
+     "racerRecord": 0.656949280311923,
+     "startExhibition": 0.07229433777069896,
+     "machine": 0.11283382891201398,
+     "racerProfile": 0.0595388381685552,
+     "venueRace": 0.06664348537543095,
+     "raceFormat": 0.03174022946137786
+    },
+    "share_sd": {
+     "racerRecord": 0.002194061814065486,
+     "startExhibition": 0.001683580404869855,
+     "machine": 0.0012204407877357748,
+     "racerProfile": 0.0005866414239878722,
+     "venueRace": 0.0017190548455250079,
+     "raceFormat": 0.000871777365111907
+    }
+   },
+   "racecard|3|2": {
+    "shares": {
+     "racerRecord": 0.6996436900160838,
+     "startExhibition": 0.06460102983087194,
+     "machine": 0.12672552297844397,
+     "racerProfile": 0.06353705509325693,
+     "venueRace": 0.03201478339330433,
+     "raceFormat": 0.013477918688039013
+    },
+    "share_sd": {
+     "racerRecord": 0.003014416594541521,
+     "startExhibition": 0.0009906829265928549,
+     "machine": 0.0013000835963821122,
+     "racerProfile": 0.000679394746750133,
+     "venueRace": 0.0009498176204393792,
+     "raceFormat": 0.00019313963035839647
+    }
+   },
+   "racecard|3|3": {
+    "shares": {
+     "racerRecord": 0.7029666801823805,
+     "startExhibition": 0.060301465818790145,
+     "machine": 0.12939264833618605,
+     "racerProfile": 0.06930107510188978,
+     "venueRace": 0.024340231804282037,
+     "raceFormat": 0.013697898756471432
+    },
+    "share_sd": {
+     "racerRecord": 0.0026906346031969758,
+     "startExhibition": 0.001042155469910688,
+     "machine": 0.0008699546658915814,
+     "racerProfile": 0.0011203170159535738,
+     "venueRace": 0.0006630437406975702,
+     "raceFormat": 0.0002767055259076038
+    }
+   },
+   "racecard|3|4": {
+    "shares": {
+     "racerRecord": 0.7175928392887477,
+     "startExhibition": 0.061338663434012196,
+     "machine": 0.12011083806110535,
+     "racerProfile": 0.06567688627153702,
+     "venueRace": 0.022223812124822974,
+     "raceFormat": 0.013056960819774756
+    },
+    "share_sd": {
+     "racerRecord": 0.0024723446827454297,
+     "startExhibition": 0.0010705822685289112,
+     "machine": 0.0010654348747315002,
+     "racerProfile": 0.0007991769425796366,
+     "venueRace": 0.0008253423531923818,
+     "raceFormat": 0.00021915733006060538
+    }
+   },
+   "racecard|3|5": {
+    "shares": {
+     "racerRecord": 0.7269668198384635,
+     "startExhibition": 0.05606194026526449,
+     "machine": 0.10701532290971906,
+     "racerProfile": 0.0648957150293731,
+     "venueRace": 0.03126407169779221,
+     "raceFormat": 0.013796130259387734
+    },
+    "share_sd": {
+     "racerRecord": 0.001629013353063563,
+     "startExhibition": 0.0011520010228247247,
+     "machine": 0.0011087331288377963,
+     "racerProfile": 0.0009750396640523605,
+     "venueRace": 0.0007472374205420646,
+     "raceFormat": 0.0006477335402905963
+    }
+   },
+   "racecard|3|6": {
+    "shares": {
+     "racerRecord": 0.7424416331650668,
+     "startExhibition": 0.05259774695078973,
+     "machine": 0.09321122192947146,
+     "racerProfile": 0.0556194762972584,
+     "venueRace": 0.04283459192861294,
+     "raceFormat": 0.013295329728800681
+    },
+    "share_sd": {
+     "racerRecord": 0.0016158911557000832,
+     "startExhibition": 0.0014483429565322547,
+     "machine": 0.0013816728054955145,
+     "racerProfile": 0.0009263568286667327,
+     "venueRace": 0.0005580987262380397,
+     "raceFormat": 0.00019845267748386936
+    }
+   }
+  },
+  "between_stages": {
+   "1|1": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.24353396060644458,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.06086842142478976,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "1|2": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.2879206075947262,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.08771661275481606,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "1|3": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.28317769999249975,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.10380159674156765,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "1|4": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.25504635548877924,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.09630383014355526,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "1|5": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.2357630147850406,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.08533022493885924,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "1|6": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.2183587914225828,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.07906454637040013,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "2|1": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.23296782294535612,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.07145953452174696,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "2|2": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.2681079236370069,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.10398806809353896,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "2|3": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.27481502169056077,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.1016262925450074,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "2|4": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.24541046522511642,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.10414556666668016,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "2|5": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.2180181709822153,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.11192335317199723,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "2|6": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.19511301727462835,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.10917396177112812,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "3|1": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.23835692344432796,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.0745595457927039,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "3|2": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.27636310490159777,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.08575946384298311,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "3|3": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.2844650692216177,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.09520933939463222,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "3|4": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.26430010080762967,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.09646884581352871,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "3|5": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.23782971563223215,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.08962570761045148,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   },
+   "3|6": {
+    "top1_exhibition": "racerRecord",
+    "top1_racecard": "racerRecord",
+    "l1_common_themes_raw": 0.2085104441896719,
+    "top1_group_common_exhibition": "national",
+    "top1_group_common_racecard": "national",
+    "l1_common_groups_renormalized": 0.08459696546061472,
+    "top1_swapped": false,
+    "top1_group_common_swapped": false
+   }
+  },
+  "top1_swapped_count": 0,
+  "top1_group_common_swapped_count": 0,
+  "directions": {
+   "exhibition|1": {
+    "higher": 50,
+    "lower": 23,
+    "middle": 0,
+    "none": 17,
+    "varies": 5,
+    "unstable_to_none": 0,
+    "category_none": 8,
+    "category_some": 16,
+    "category_empty": 0
+   },
+   "exhibition|2": {
+    "higher": 47,
+    "lower": 22,
+    "middle": 0,
+    "none": 21,
+    "varies": 5,
+    "unstable_to_none": 0,
+    "category_none": 14,
+    "category_some": 10,
+    "category_empty": 0
+   },
+   "exhibition|3": {
+    "higher": 47,
+    "lower": 21,
+    "middle": 6,
+    "none": 16,
+    "varies": 5,
+    "unstable_to_none": 0,
+    "category_none": 15,
+    "category_some": 9,
+    "category_empty": 0
+   },
+   "racecard|1": {
+    "higher": 44,
+    "lower": 18,
+    "middle": 4,
+    "none": 6,
+    "varies": 5,
+    "unstable_to_none": 0,
+    "category_none": 4,
+    "category_some": 14,
+    "category_empty": 0
+   },
+   "racecard|2": {
+    "higher": 44,
+    "lower": 16,
+    "middle": 5,
+    "none": 7,
+    "varies": 5,
+    "unstable_to_none": 0,
+    "category_none": 7,
+    "category_some": 11,
+    "category_empty": 0
+   },
+   "racecard|3": {
+    "higher": 44,
+    "lower": 15,
+    "middle": 5,
+    "none": 8,
+    "varies": 5,
+    "unstable_to_none": 0,
+    "category_none": 8,
+    "category_some": 10,
+    "category_empty": 0
+   }
+  }
+ }
+}

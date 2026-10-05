@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from v16_defs import HINTS, SLIT_FORMS, _round_half_up, slit_forms_matrix
+from v16_defs import HINTS, SLIT_FORMS, _round_half_up, exh_form_st, slit_forms_matrix
 
 ENTRY_TYPES = ("all", "waku", "inlost", "mae", "mae6", "mae5", "mae56", "maeOther")
 FORMS = ("any",) + SLIT_FORMS
@@ -192,7 +192,9 @@ def scope_attack(base: np.ndarray, forms: dict[str, np.ndarray], r1, r2, tech, m
                               for k, v in _bands(motor_rank[:, a - 1]).items()}
             fo["by_exh"] = {k: _attack_metrics(sel & exok & v, r1, r2, tech, a)
                             for k, v in _bands(exh_rank[:, a - 1]).items()}
-            if st_cent is not None and f != "d1":  # イン凹みでは出さない（spec C-4）
+            # 凹み（イン・2コース・カド受け）では出さない（spec C-4）。凹みは「攻める艇の内の艇が両隣より
+            # 0.05秒以上遅い」なので、攻める艇が内の艇より前に出た割合は定義から100%になる（2026-10-06 BOA-777）
+            if st_cent is not None and f not in ("d1", "d2", "d3"):
                 fo["att_lead"] = _x((st_cent[:, a - 2] - st_cent[:, a - 1]) >= 5, sel)
         out[f] = fo
     out["any_form"] = _attack_metrics(base, r1, r2, tech, None)
@@ -212,7 +214,8 @@ def exhibition_agreement(races: pd.DataFrame, exh: pd.DataFrame) -> dict:
     act = entry_types(matrix(m["course_by_boat"]))
     exe = entry_types(matrix(m["exh_course_by_boat"]))
     out["entry"] = {t: [int((exe[t] & act[t]).sum()), int(exe[t].sum())] for t in ENTRY_TYPES if t != "all"}
-    ast, est = matrix(m["st_by_course"]), matrix(m["exh_st_by_course"])
+    # 展示の形は今日の展示と同じ扱い（F.05 までは .00、F.06 以上の艇がいる展示は数えない。Q-F6）
+    ast, est = matrix(m["st_by_course"]), exh_form_st(matrix(m["exh_st_by_course"]))
     both = ~np.isnan(ast).any(axis=1) & ~np.isnan(est).any(axis=1)
     af, ef = slit_forms_matrix(ast), slit_forms_matrix(est)
     out["forms_n"] = int(both.sum())
