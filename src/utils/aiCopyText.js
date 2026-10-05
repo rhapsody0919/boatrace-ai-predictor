@@ -209,11 +209,7 @@ function weatherLine(t, weather) {
  * @param {Date} now
  * @param {boolean|null} exhibitionPublished 展示タイム・展示STのどれかが出ているか（取得失敗で不明なら null）
  */
-export function buildPremiseLines(
-  t,
-  context,
-  { now, exhibitionPublished },
-) {
+export function buildPremiseLines(t, context, { now, exhibitionPublished }) {
   const unpublished = t("aiCopy.unpublished");
   const grade = context.raceGrade
     ? (GRADE_LABELS[context.raceGrade] ?? t("aiCopy.gradeIppan"))
@@ -294,9 +290,7 @@ export function buildAiCopyText({
   if (players.length === 0) return "";
   return [
     `## ${heading}`,
-    buildPremiseLines(t, context, { now, exhibitionPublished }).join(
-      "\n",
-    ),
+    buildPremiseLines(t, context, { now, exhibitionPublished }).join("\n"),
     toMarkdownTable(t, players, rows),
     buildNotes(t, rows),
     buildTurnPredictionSection(t, players, turnPrediction),

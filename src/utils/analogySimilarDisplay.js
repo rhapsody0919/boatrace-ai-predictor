@@ -162,15 +162,15 @@ export function itemValue(key, d, t) {
 
 /**
  * 今日の表示用の値。展示後は、展示の時点で決まる値を今日の展示（facts の exhibition）で上書きする
- * @param {object|null} todayDisplay similar の today_display
+ * @param {object|null} racecardDisplay similar の today_display
  * @param {object|null} exhibition facts の exhibition（展示後だけ）
  */
-export function todayDisplay(todayDisplay, exhibition) {
-  if (!todayDisplay) return null;
-  if (!exhibition) return todayDisplay;
+export function todayDisplay(racecardDisplay, exhibition) {
+  if (!racecardDisplay) return null;
+  if (!exhibition) return racecardDisplay;
   const r2 = (v) => (isNum(v) ? Math.round(v * 100) / 100 : null);
   return {
-    ...todayDisplay,
+    ...racecardDisplay,
     weather: exhibition.weather_code ?? null,
     ws: exhibition.wind_speed ?? null,
     wave: exhibition.wave_height ?? null,

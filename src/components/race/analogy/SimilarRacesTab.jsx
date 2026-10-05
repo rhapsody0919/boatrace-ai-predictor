@@ -131,6 +131,7 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
   const [stepIdx, setStepIdx] = useState(null);
   const [boat, setBoat] = useState(null);
   const [open, setOpen] = useState(null);
+  const [not1, setNot1] = useState(false);
   const [cmpExpanded, setCmpExpanded] = useState(false);
   const exhibitionStage = stage === "exhibition";
 
@@ -173,8 +174,8 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
   const tip = boat
     ? boatTip(t, boat, ag.hit[target][boat - 1], ag.n, [
         t(`${k}.tipNational`, { p: fmtPct(natRate(boat)) }),
-        ...(cmp?.n
-          ? [`${cmpName}${fmtPct(cmpRate(cmp[tk] ?? cmp.winner, boat))}`]
+        ...(cmp?.n && cmp[tk]
+          ? [`${cmpName}${fmtPct(cmpRate(cmp[tk], boat))}`]
           : []),
       ])
     : null;
@@ -307,7 +308,7 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
         counts={ag.hit[target]}
         n={ag.n}
         reference={[1, 2, 3, 4, 5, 6].map((b) =>
-          cmpRate(cmp?.[tk] ?? cmp?.winner ?? [], b),
+          cmp?.[tk] ? cmpRate(cmp[tk], b) : null,
         )}
         selected={boat}
         onSelect={selectBoat}
@@ -325,9 +326,15 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
       <OtherBoats neighbors={nb} boat={boat} />
       <h4 className="af-h4">{t("aiPredictionTab.analogy.flow.heading")}</h4>
       <p className="af-sub">{t("aiPredictionTab.analogy.flow.lede")}</p>
-      <FinishSankey tri={ag.tri} first={boat} onFirst={setBoat} />
+      <FinishSankey
+        tri={ag.tri}
+        first={boat}
+        onFirst={setBoat}
+        not1={not1}
+        onNot1={setNot1}
+      />
       <h4 className="af-h4">{t(`${k}.triHeading`)}</h4>
-      <TrifectaList tri={ag.tri} first={boat} />
+      <TrifectaList tri={ag.tri} first={boat} not1={not1} />
       <p className="af-foot">{t(`${k}.foot`)}</p>
     </div>
   );

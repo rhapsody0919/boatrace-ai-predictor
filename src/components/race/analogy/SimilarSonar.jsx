@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import BoatBadge from "../BoatBadge";
 import { BOAT_COLORS } from "../../../utils/colors";
@@ -31,6 +31,7 @@ export default function SimilarSonar({
   const box = useRef(null);
   const timer = useRef(null);
   const longPressed = useRef(false);
+  useEffect(() => () => clearTimeout(timer.current), []);
   const lm = Math.min(total, 800);
   const lin = lm < 100;
   const rOf = (rk) =>

@@ -28,6 +28,7 @@ export function getDeadlineStatus(raceId, startTime, now = new Date()) {
   if (!deadline) return null;
   const diffMs = deadline.getTime() - now.getTime();
   if (diffMs <= 0) return DEADLINE_STATUS.CLOSED;
-  if (diffMs <= WARNING_WINDOW_MINUTES * 60 * 1000) return DEADLINE_STATUS.CLOSING_SOON;
+  if (diffMs <= WARNING_WINDOW_MINUTES * 60 * 1000)
+    return DEADLINE_STATUS.CLOSING_SOON;
   return DEADLINE_STATUS.ACCEPTING;
 }

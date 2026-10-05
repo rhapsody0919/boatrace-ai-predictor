@@ -15,12 +15,13 @@ const GAP = 8;
  * 着順の流れ（1着→2着→3着のサンキー。spec B-8・C-5。承認版モックの renderFlow と同じ描き方）
  * 帯の太さ＝件数、少ない流れも薄く全部描く。帯・1着の四角は押せる（名前「1着 1号艇→2着 2号艇 3件」）。
  * 1着の四角を押すと、その艇が勝ったレースだけで描き直す（first・onFirst は親が持つ。棒・扇と共有するため）
- * @param {{tri: Record<string, number>, first: number|null, onFirst: (b: number|null) => void, idPrefix: string}} props
+ * 「すべて／1号艇以外が勝ったレース」（not1）も親が持つ（よく出た3連単を同じ条件で絞るため）
+ * @param {{tri: Record<string, number>, first: number|null, onFirst: (b: number|null) => void, not1: boolean,
+ *   onNot1: (v: boolean) => void}} props
  */
-export default function FinishSankey({ tri, first, onFirst }) {
+export default function FinishSankey({ tri, first, onFirst, not1, onNot1 }) {
   const { t } = useTranslation();
-  const [not1, setNot1] = useState(false);
-  const [sel, setSel] = useState(null);
+  const [picked, setSel] = useState(null);
   const k = "aiPredictionTab.analogy.flow";
   const rows = trifectaList(tri, { first, not1 });
   const tot = rows.reduce((s, [, c]) => s + c, 0);
@@ -57,6 +58,13 @@ export default function FinishSankey({ tri, first, onFirst }) {
       .map(([key, c]) => [p, ...key.split("-").map(Number), c])
       .sort((u, v) => u[0] - v[0] || u[1] - v[1] || u[2] - v[2]);
   });
+  // 選んだ帯が、条件を変えた後の流れに無ければ選んでいないことにする（全部の帯が薄くなるのを防ぐ）
+  const hit = picked
+    ? links.find(
+        ([p, a, b]) => p === picked.p && a === picked.a && b === picked.b,
+      )
+    : null;
+  const sel = hit ? { p: hit[0], a: hit[1], b: hit[2], c: hit[3] } : null;
   const name = (p, a, b, c) =>
     t(`${k}.link`, { from: p + 1, a, to: p + 2, b, n: fmtCount(c) });
   const paths = links.map(([p, a, b, c]) => {
@@ -108,7 +116,7 @@ export default function FinishSankey({ tri, first, onFirst }) {
             type="button"
             aria-pressed={not1 === v}
             onClick={() => {
-              setNot1(v);
+              onNot1(v);
               setSel(null);
             }}
           >

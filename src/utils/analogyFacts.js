@@ -221,6 +221,9 @@ export function defaultScope(keys, countOf) {
   if (!keys?.VC)
     return { key: keys?.NC ?? keys?.VA, fellBack: false, vcCount: null };
   const n = countOf(keys.VC);
+  // VC の集計が応答に無い（朝のバッチで作れなかった）ときも全国で数える
+  if (n === null && keys.NC)
+    return { key: keys.NC, fellBack: false, vcCount: null };
   if (n !== null && n < MIN_VC_RACES && keys.NC)
     return { key: keys.NC, fellBack: true, vcCount: n };
   return { key: keys.VC, fellBack: false, vcCount: n };

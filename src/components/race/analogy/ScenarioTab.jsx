@@ -38,6 +38,7 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
   const [slit, setSlit] = useState("any");
   const [version, setVersion] = useState("course");
   const [first, setFirst] = useState(null);
+  const [not1, setNot1] = useState(false);
   const exhibitionStage = stage === "exhibition";
   const exhibition = exhibitionStage ? data.exhibition : null;
   const keys = data.scope_keys ?? {};
@@ -234,11 +235,17 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
           </small>
         </div>
         <h4 className="af-h4">{t("aiPredictionTab.analogy.flow.heading")}</h4>
-        <FinishSankey tri={c.tri} first={first} onFirst={setFirst} />
+        <FinishSankey
+          tri={c.tri}
+          first={first}
+          onFirst={setFirst}
+          not1={not1}
+          onNot1={setNot1}
+        />
         <h4 className="af-h4">
           {t("aiPredictionTab.analogy.similar.triHeading")}
         </h4>
-        <TrifectaList tri={c.tri} first={first} />
+        <TrifectaList tri={c.tri} first={first} not1={not1} />
       </>
     );
 
@@ -345,7 +352,11 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
                 : t(`${k}.noForm`),
             }) +
             (flyBoats.length
-              ? t(`${k}.slitFly`, { boats: flyBoats.join(t("aiPredictionTab.analogy.listSeparator")) })
+              ? t(`${k}.slitFly`, {
+                  boats: flyBoats.join(
+                    t("aiPredictionTab.analogy.listSeparator"),
+                  ),
+                })
               : "")
           : t(`${k}.slitPre`)}
       </p>

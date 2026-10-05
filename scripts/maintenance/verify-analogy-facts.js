@@ -332,6 +332,11 @@ check(
   { key: keys.NC, fellBack: true, vcCount: 299 },
 );
 check(
+  "既定の範囲（VC の集計が無い）",
+  defaultScope(keys, (k) => (k === keys.VC ? null : 500)).key,
+  keys.NC,
+);
+check(
   "既定の範囲（級別なし）",
   defaultScope({ VA: "VA:20" }, () => 0).key,
   "VA:20",

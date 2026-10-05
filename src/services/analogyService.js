@@ -128,9 +128,12 @@ export async function getAnalogyContribution(input) {
 const V16_TTL_MS = 60 * 1000;
 const v16Cache = new Map();
 
+const V16_MAX_ENTRIES = 12;
+
 async function getV16(path) {
   const hit = v16Cache.get(path);
   if (hit && Date.now() - hit.at < V16_TTL_MS) return hit.body;
+  v16Cache.delete(path);
   const res = await fetch(path);
   if (!res.ok)
     throw new Error(
@@ -142,6 +145,9 @@ async function getV16(path) {
       `アナロジー・ファインダーの API の応答の形が違う（${path.split("?")[0]}）`,
     );
   v16Cache.set(path, { at: Date.now(), body });
+  // 1レース 0.4MB ほどあるので、古いものから捨てる（Map は入れた順）
+  while (v16Cache.size > V16_MAX_ENTRIES)
+    v16Cache.delete(v16Cache.keys().next().value);
   return body;
 }
 
