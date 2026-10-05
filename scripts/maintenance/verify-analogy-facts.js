@@ -8,6 +8,8 @@
  * 2. 展示後の類似レースの並べ直し（tasks T4-1）: src/utils/analogySimilarRerank.js が、Python（v16_similar）の展示後の
  *    表し方での厳密な並び（scripts/ml/analogy/testdata/v16-rerank.json、例のレース）と、順位が完全に一致し、
  *    距離²の差が 1e-5 未満であること。候補が層より少ないときの厳密さの判定
+ * 3. 展開シナリオの定義（src/utils/analogyScenario.js）: スリットの7形・進入の型と前付け・風速区分・手がかりの8条件が、
+ *    Python（v16_defs・v16_facts）で作った固定データ（scripts/ml/analogy/testdata/v16-defs-cases.json）と一致すること
  *
  * 使い方: node scripts/maintenance/verify-analogy-facts.js
  */
@@ -20,6 +22,13 @@ import {
 } from "../../src/constants/raceStageConfig.js";
 import { classifyStage } from "../../src/components/race/seriesPoints.js";
 import { rerankSimilar } from "../../src/utils/analogySimilarRerank.js";
+import {
+  entryType,
+  hintConditions,
+  maedukeBoats,
+  slitForms,
+  windBand,
+} from "../../src/utils/analogyScenario.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CASES = path.join(
@@ -115,6 +124,24 @@ check(
   ).exact,
   false,
 );
+
+// ---- 3. 展開シナリオの定義 ------------------------------------------------
+const defs = JSON.parse(
+  fs.readFileSync(
+    path.join(__dirname, "../ml/analogy/testdata/v16-defs-cases.json"),
+    "utf8",
+  ),
+);
+for (const c of defs.slit_forms)
+  check(`スリットの形 ${c.st.join(",")}`, slitForms(c.st), c.forms);
+for (const c of defs.entry_types) {
+  check(`進入の型 ${c.course.join(",")}`, entryType(c.course), c.type);
+  check(`前付け ${c.course.join(",")}`, maedukeBoats(c.course), c.maeduke);
+}
+for (const c of defs.wind_bands)
+  check(`風速区分 ${c.wind_speed}`, windBand(c.wind_speed), c.band);
+for (const c of defs.hints)
+  check(`手がかり ${c.avg_st.join(",")}`, hintConditions(c.avg_st), c.conds);
 
 if (failures > 0) {
   console.error(`\n❌ ${failures} 件の不一致`);
