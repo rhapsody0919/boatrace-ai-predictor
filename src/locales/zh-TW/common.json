@@ -351,6 +351,23 @@
       "v3": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n能免費看到這麼精準的預測真開心✨\n希望今天也能命中！",
       "v4": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n從轉彎預測來看，這個預測似乎很可靠！\n大家覺得呢？🤔",
       "v5": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n最近命中率越來越高，好開心😊\n歡迎參考AI預測！"
+    },
+    "shareTurnHit": {
+      "headAsPredicted": "🌊 轉彎預測命中！【{{date}}{{venue}}{{raceNo}}R】",
+      "headWinner": "🌊 第1名的艇在轉彎預測中【{{date}}{{venue}}{{raceNo}}R】",
+      "winner": "{{boat}}號艇獲得第1名",
+      "winnerFromCourse": "{{boat}}號艇從第{{course}}道獲得第1名",
+      "prediction": "（AI預測：{{detail}}）",
+      "actual": "，實際：{{technique}}",
+      "asPredicted": "與預測相同的展開 ✅",
+      "closingWinner": "在龍神雷達查看轉彎預測",
+      "closing": {
+        "v1": "龍神雷達的轉彎預測命中🎉\nAI的分析能力令人驚訝！",
+        "v2": "龍神雷達的轉彎預測命中🎉\n免費就有這種準確度太厲害了！",
+        "v3": "龍神雷達的轉彎預測命中🎉\n感受到數據分析的力量！",
+        "v4": "龍神雷達的轉彎預測命中🎉\nAI預測又命中了！",
+        "v5": "龍神雷達的轉彎預測命中🎉\n對命中率很滿意！"
+      }
     }
   },
   "home": {
