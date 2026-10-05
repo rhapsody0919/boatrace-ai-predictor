@@ -273,3 +273,43 @@ def item_levels(races: pd.DataFrame, boats: dict[str, np.ndarray], qi: int, clus
         "n_local": lv(nloc == nloc[qi], np.abs(nloc - nloc[qi]) == 1, np.isnan(np.asarray(B["is_local"], float)).all(1)),
         "exh_time_diff_6": thr(B["exh_time_diff"], 0.03, 0.05),
     }
+
+
+# ---------------------------------------------------------------- 33項目の表示用の値（spec B-6・B-7。画面の「今日: …」と見比べ）
+# 画面（src/utils/analogySimilarDisplay.js）が項目ごとの文に組み立てる元の値。数値は丸めて整数・小数で持つ（大きさを抑える）。
+# 艇別は6艇の配列。欠損は null
+DISPLAY_BOAT = (("nat", "nat_win", 2), ("nat_rank", "nat_win_rank", 0), ("loc", "loc_win", 2),
+                ("rw", "recent_win30", 3), ("rt3", "recent_top3_30", 3), ("st", "st_mean30", 3),
+                ("motor", "motor_2", 1), ("boat", "boat_2", 1), ("age", "age", 0), ("weight", "weight", 1),
+                ("cls", "cls_ord", 0), ("local", "is_local", 0), ("exh_diff", "exh_time_diff", 2))
+DISPLAY_RACE = (("rn", "race_number", 0), ("sday", "series_day", 0), ("final", "is_final_day_num", 0),
+                ("weather", "weather_code", 0), ("ws", "wind_speed", 0), ("wx", "wind_x", 1), ("wy", "wind_y", 1),
+                ("wave", "wave_height", 0))
+
+
+def _num(v, nd):
+    if v is None or not np.isfinite(v):
+        return None
+    return int(round(float(v))) if nd == 0 else round(float(v), nd)
+
+
+def display_columns(races: pd.DataFrame, boats: dict[str, np.ndarray], idx: np.ndarray, is_kb: np.ndarray) -> dict:
+    """idx のレースの表示用の値を列で（{名前: [件ごとの値]}。艇別は件ごとに6艇の配列）。長期の最終日は使えないので null"""
+    out = {}
+    for name, col, nd in DISPLAY_BOAT:
+        a = np.asarray(boats[col], dtype=float)[idx]
+        out[name] = [[_num(v, nd) for v in row] for row in a]
+    for name, col, nd in DISPLAY_RACE:
+        v = races[col].to_numpy(dtype=float)[idx]
+        if name == "final":
+            v = np.where(is_kb[idx], np.nan, v)
+        out[name] = [_num(x, nd) for x in v]
+    out["grade"] = [None if pd.isna(g) else str(g) for g in races["grade"].to_numpy(dtype=object)[idx]]
+    out["round"] = [None if pd.isna(g) else str(g) for g in races["round"].to_numpy(dtype=object)[idx]]
+    out["venue"] = [int(v) for v in races["venue_code"].to_numpy()[idx]]
+    return out
+
+
+def display_row(cols: dict, k: int) -> dict:
+    """display_columns の k 件目"""
+    return {name: v[k] for name, v in cols.items()}

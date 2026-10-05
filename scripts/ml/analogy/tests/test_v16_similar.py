@@ -119,3 +119,17 @@ def test_compare_conditions():
     assert S.compare_conditions(c) == (c | {"round": None}, "round")
     c = S.layer_conditions("B1", 2, 1, "yosen", "ippan")
     assert S.compare_conditions(c) == (c, "none")
+
+
+def test_display_columns_rounds_and_hides_final_day_of_long_term():
+    races = pd.DataFrame({"race_number": [12.0, 1.0], "series_day": [6.0, 1.0], "is_final_day_num": [1.0, 0.0],
+                          "weather_code": [1.0, np.nan], "wind_speed": [1.4, 3.0], "wind_x": [-1.04, 0.0],
+                          "wind_y": [0.0, 2.0], "wave_height": [1.0, 5.0], "grade": ["G1", None],
+                          "round": ["yusho", "yosen"], "venue_code": [20, 2]})
+    six = lambda a, b: np.array([[a] * 6, [b] * 6], dtype=float)  # noqa: E731
+    boats = {c: six(1.234, np.nan) for _, c, _ in S.DISPLAY_BOAT}
+    cols = S.display_columns(races, boats, np.array([1, 0]), np.array([False, True]))
+    assert cols["final"] == [None, 1]            # 長期（is_kb）の最終日は使えない
+    assert cols["nat"][1] == [1.23] * 6 and cols["nat"][0] == [None] * 6
+    assert cols["weather"] == [None, 1] and cols["wx"] == [0.0, -1.0] and cols["grade"] == [None, "G1"]
+    assert S.display_row(cols, 1)["rn"] == 12 and S.display_row(cols, 1)["venue"] == 20

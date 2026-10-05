@@ -107,3 +107,17 @@ def test_example_race_course_and_overall_st():
     assert c["n"].tolist() == [30, 30, 30, 30, 30, 29]
     a = H.rolling_st_asof(h, t, keys=["racer_id"])
     assert a["mean"].tolist() == pytest.approx([0.15, 0.1153, 0.13, 0.1087, 0.1183, 0.1787], abs=1e-4)
+
+
+def test_venue_course_st_uses_waku_runs_before_the_day_and_skips_f():
+    hist = pd.DataFrame({
+        "venue_code": [20.0, 20.0, 20.0, 20.0, 1.0],
+        "race_date": pd.to_datetime(["2026-09-25", "2026-09-26", "2026-09-26", "2026-09-27", "2026-09-25"]),
+        "waku": [True, True, False, True, True],
+        "course": [1.0, 1.0, np.nan, 1.0, 1.0],
+        "st_ok": [0.10, 0.20, 0.30, 0.50, 0.90],
+    })
+    hist.loc[len(hist)] = [20.0, pd.Timestamp("2026-09-25"), True, 2.0, np.nan]  # F は st_ok が NaN
+    out = H.venue_course_st(hist, 20, "2026-09-27")
+    assert out["mean"][0] == pytest.approx(0.15) and out["n"][0] == 2  # 当日・枠なりでない・他会場は入れない
+    assert out["mean"][1] is None and out["n"][1] == 0

@@ -81,6 +81,7 @@
 - [ ] T6-3 `src/services/analogyService.js` に3つの取得、`useAnalogyFacts`・`useAnalogySimilar`・`useAnalogyScenario`
 
 ## T7 画面（screens.md）
+- [x] T6-4 （(d1b)。承認版の画面にあって朝のバッチの出力に無かった値を足した）類似レースの33項目の表示用の値（similar-racecard の各件と today_display、候補すべては similar-display/、展示後の段が800件に付ける）、手がかりの表の「{会場}で」「{会場}の全選手（コース別）」の平均ST（today.course_st の venue・venue_n・venue_course_all）、展示→本番の一致率（today.exh_agreement）、タブ3の脚注の返還レースの件数（scenario.n_refund_excluded）、today-exhibition の天候・風の成分・展示タイムの差、similar の API の展示後に層の情報を合わせる
 - [ ] T7-1 `AnalogyFinderSection` の作り直しと `AnalogyControls`（時点・着順・タブ、状態の表）
 - [ ] T7-2 来る艇の条件: `ConditionFactsTab`・`FactHexagon`・`FactCard`（今節の平均着順点の注記2種: 序盤 Q-D・優勝戦/準優勝戦の日 Q7）・ボートの折りたたみ・`WindWaveFacts`
 - [ ] T7-3 `AiOutlook`（AIの見立て、展示前の準備中）

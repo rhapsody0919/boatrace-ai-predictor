@@ -93,6 +93,14 @@ export function todayExhibition(exhRows, live, cond) {
     exh_time_rank: live.map((v) =>
       Number.isNaN(v.exh_time_rank) ? null : v.exh_time_rank,
     ),
+    exh_time_diff: live.map((v) =>
+      Number.isNaN(v.exh_time_diff) ? null : v.exh_time_diff,
+    ),
+    weather_code: Number.isNaN(live[0]?.weather_code)
+      ? null
+      : (live[0]?.weather_code ?? null),
+    wind_x: Number.isNaN(live[0]?.wind_x) ? null : (live[0]?.wind_x ?? null),
+    wind_y: Number.isNaN(live[0]?.wind_y) ? null : (live[0]?.wind_y ?? null),
     wind_speed: cond?.wind_speed ?? null,
     wave_height: cond?.wave_height ?? null,
     wind_band: windBand(cond?.wind_speed ?? null),
@@ -103,8 +111,11 @@ export function todayExhibition(exhRows, live, cond) {
   };
 }
 
-/** 並べ直した上位に、33項目（展示で決まる5項目は今日の展示で判定し直す）と結果を付ける */
-export function exhibitionNeighbors(file, reranked, today) {
+/**
+ * 並べ直した上位に、33項目（展示で決まる5項目は今日の展示で判定し直す）と結果と、表示用の値（similar-display の列。
+ * 無ければ付けない）を付ける
+ */
+export function exhibitionNeighbors(file, reranked, today, display = null) {
   const index = new Map(file.candidates.map((id, c) => [id, c]));
   return reranked.neighbors.map(({ race_id, d2 }) => {
     const c = index.get(race_id);
@@ -123,14 +134,20 @@ export function exhibitionNeighbors(file, reranked, today) {
       race_id,
       distance: Math.round(Math.sqrt(d2) * 1e4) / 1e4,
       items,
+      ...(display ? { display: displayRow(display.columns, c) } : {}),
       ...file.results[c],
     };
   });
 }
 
+/** similar-display の列の c 件目（Python の v16_similar.display_row と同じ） */
+export function displayRow(columns, c) {
+  return Object.fromEntries(Object.entries(columns).map(([k, v]) => [k, v[c]]));
+}
+
 async function buildRace(raceId, racecardSnap, ctx, runId) {
   const rc = racecardSnap;
-  const [file, todayRc, exhRows, conds] = await Promise.all([
+  const [file, todayRc, exhRows, conds, display] = await Promise.all([
     readObject(objectPath(raceId, rc.run_id, "similar", raceId)),
     readObject(objectPath(raceId, rc.run_id, "today", raceId)),
     rest(
@@ -139,6 +156,8 @@ async function buildRace(raceId, racecardSnap, ctx, runId) {
     rest(
       `race_conditions?race_id=eq.${raceId}&select=weather,wind_direction,wind_speed,wave_height`,
     ),
+    // 表示用の値（無い回＝この列を足す前の朝のバッチの回は、値なしで並べ直す）
+    readObject(objectPath(raceId, rc.run_id, "similar-display", raceId)),
   ]);
   if (!file || !todayRc)
     throw new Error(
@@ -172,10 +191,12 @@ async function buildRace(raceId, racecardSnap, ctx, runId) {
     racecard_run_id: rc.run_id,
     n_layer: file.n_layer,
     exact: reranked.exact,
-    neighbors: exhibitionNeighbors(file, reranked, {
-      race: today.race,
-      exh_time: today.boats.exh_time,
-    }),
+    neighbors: exhibitionNeighbors(
+      file,
+      reranked,
+      { race: today.race, exh_time: today.boats.exh_time },
+      display,
+    ),
   };
   const exhibition = todayExhibition(exhRows, live, cond);
   if (ctx.mode === "live") {

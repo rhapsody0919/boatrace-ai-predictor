@@ -349,6 +349,8 @@ def main():
                    & all_races["tab3_ok"]]
     pr = pr.assign(_rid=F.rid_to_int(pr["race_id"])).set_index("_rid")
     t3 = races.loc[pool & races["race_id"].isin(pr.index).to_numpy()]
+    ret = all_races.assign(_rid=F.rid_to_int(all_races["race_id"])).set_index("_rid")["n_ret"]
+    refund = races["race_id"].map(ret).fillna(0).to_numpy() > 0
     t3i = t3.index.to_numpy()
     d = SC.prepare(pr.loc[t3["race_id"].to_numpy()].reset_index(drop=True))
     hist = H.st_history(df, all_races)  # F.build の行は load_kb・load_main と同じ行（窓に入れる走の集合が同じ）
@@ -374,6 +376,8 @@ def main():
         s["hints"] = SC.scope_hints(m, d, {"course": C, "overall": A})
         s["attack"] = SC.scope_attack(m & d["entries"]["waku"] & base3, d["forms"], d["ranks"][:, 0],
                                       d["ranks"][:, 1], d["tech"], motor_rank, exh_rank, V.st_cent(np.nan_to_num(st6)))
+        # 脚注「返還（F・L・欠場）があったレース{n}件を除く」（spec C-5）: 範囲のタブ1・2の母集団のうち返還艇のいるレース
+        s["n_refund_excluded"] = int((scope_masks(key, races, arrays["cls_name"], combos) & pool & refund).sum())
         s["key"], s["period"] = key, [POOL_FROM, str(cutoff.date())]
         write_local(out, f"scenario/{key.replace(':', '_')}.json", s)
     log("scenario", len(scn_keys))
@@ -384,8 +388,16 @@ def main():
                        "course": np.tile(np.arange(1, 7, dtype=float), len(today))})
     tt["racer_id"] = tt["racer_id"].astype(hist["racer_id"].dtype)
     tc = H.rolling_st_asof(hist[hist["waku"]], tt, ["racer_id", "course"])
+    tv = tt.assign(venue_code=np.repeat(races["venue_code"].to_numpy(dtype="float64")[today], 6))
+    vc = H.rolling_st_asof(hist, tv, ["racer_id", "venue_code"])  # 会場での直近30走（コースを問わない）
     today_course = {i: {"course": [None if pd.isna(m) else float(m) for m in tc["mean"].iloc[6 * k:6 * k + 6]],
-                        "course_n": [int(n) for n in tc["n"].iloc[6 * k:6 * k + 6]]} for k, i in enumerate(today)}
+                        "course_n": [int(n) for n in tc["n"].iloc[6 * k:6 * k + 6]],
+                        "venue": [None if pd.isna(m) else float(m) for m in vc["mean"].iloc[6 * k:6 * k + 6]],
+                        "venue_n": [int(n) for n in vc["n"].iloc[6 * k:6 * k + 6]],
+                        "venue_course_all": H.venue_course_st(hist, int(races["venue_code"].iat[i]), a.date)}
+                    for k, i in enumerate(today)}
+    # 展示→本番の一致率（全国、展示の進入の記録がある期間。spec C-1・C-3 の注記。今日のレースによらない）
+    agreement = SC.exhibition_agreement(pr.reset_index(drop=True), P.load_exhibition_layout(src))
 
     # レースごと: similar・layer・today
     weights, feats = load_weights(Path(a.model), df[df["race_id"].isin(races["race_id"][pool])], races[pool])
@@ -422,17 +434,21 @@ def main():
         lv = S.item_levels(races, arrays, i, clusters, is_kb)
         shown = idx[:MAX_SHOWN]
         cmp_cond, cmp_name = S.compare_conditions(cond)
+        disp = S.display_columns(races, arrays, idx, is_kb)  # 候補すべての表示用の値（展示後の段が800件に付ける）
+        today_disp = S.display_row(S.display_columns(races, arrays, np.array([i]), is_kb), 0)
         cm = S.layer_mask(cmp_cond, b1, gap, top, races["round"].to_numpy(dtype=object),
                           races["grade"].to_numpy(dtype=object)) & pool
         write_local(out, f"similar-racecard/{rid}.json", {
             "race_id": rid, "conditions": cond, "n_layer": n_layer,
             "pool_rate": {k: float((v[pool] == 2).mean()) for k, v in lv.items()},
+            "today_display": today_disp,
             "compare": {"name": cmp_name, "conditions": cmp_cond, "n": int(cm.sum()),
                         "winner": [int((cm & (ranks[:, 0] == b)).sum()) for b in range(1, 7)]},
             "national": {"n": int(pool.sum()), "winner": [int((pool & (ranks[:, 0] == b)).sum()) for b in range(1, 7)]},
             "neighbors": [{"race_id": F.int_to_rid(int(races["race_id"].iat[j])), "distance": round(float(np.sqrt(e)), 4),
-                           "items": {k: int(v[j]) for k, v in lv.items()}} | result_of(j)
-                          for j, e in zip(shown, d2p[:MAX_SHOWN])],
+                           "items": {k: int(v[j]) for k, v in lv.items()}, "display": S.display_row(disp, c)}
+                          | result_of(j)
+                          for c, (j, e) in enumerate(zip(shown, d2p[:MAX_SHOWN]))],
         })
         # 展示後の段（JS）が並べ直した800件に、33項目と結果を付けられるように: 出走表の時点で決まる項目の判定、
         # 展示で決まる項目（天候・風・波・展示タイムの差）の生の値、結果を候補ごとに持たせる
@@ -449,6 +465,8 @@ def main():
             "results": [{k: v for k, v in result_of(j).items() if k not in ("date", "venue_code", "race_number")}
                         for j in idx],  # 日付・会場・R は race_id から分かる
         })
+        # 表示用の値は候補ファイルと別に置く（展示後の段だけが読む。候補ファイルの大きさを増やさない）
+        write_local(out, f"similar-display/{rid}.json", {"race_id": rid, "today": today_disp, "columns": disp})
         lay = prl.loc[prl.index.isin(races["race_id"][lm]) & prl["layer_ok"]].sort_values(
             ["race_date", "race_id"], ascending=False)
         write_local(out, f"layer/{rid}.json", {
@@ -458,9 +476,11 @@ def main():
         })
         overall = [None if not np.isfinite(x) else float(x) for x in arrays["st_mean30"][i]]
         tcs = today_course[i]
-        write_local(out, f"today/{rid}.json", today_payload(i, races, arrays, keys_by_race[i], {
+        payload = today_payload(i, races, arrays, keys_by_race[i], {
             "overall": overall, "course": tcs["course"], "course_n": tcs["course_n"],
-            "course_filled": V.fill_course_st(tcs["course"], tcs["course_n"], overall)}))
+            "course_filled": V.fill_course_st(tcs["course"], tcs["course_n"], overall),
+            "venue": tcs["venue"], "venue_n": tcs["venue_n"], "venue_course_all": tcs["venue_course_all"]})
+        write_local(out, f"today/{rid}.json", payload | {"exh_agreement": agreement})
 
     failed = {}
     def result_of(j: int) -> dict:
