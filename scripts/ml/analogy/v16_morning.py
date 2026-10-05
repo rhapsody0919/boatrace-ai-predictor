@@ -171,7 +171,8 @@ def f32_list(values) -> list:
 
 
 def gz(obj) -> bytes:
-    return gzip.compress(json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode())
+    # 圧縮レベルは5（既定の9は1日分で約8分かかり、大きさは数%しか変わらない。T2-6）
+    return gzip.compress(json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode(), compresslevel=5)
 
 
 def write_local(out: Path, rel: str, obj) -> None:
