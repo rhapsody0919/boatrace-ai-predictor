@@ -5,8 +5,8 @@
  *
  *   - 末尾に出典1行（表示言語のブランド名＋そのレース詳細ページの表示言語の URL）がある
  *   - 先頭（見出しの直後）にレースの前提の行（日付・締切・グレード／節・水面の条件）があり、
- *     取れない項目は「未発表」と書く
- *   - データの時点（JST）があり、展示前なら展示系が未発表である旨がある
+ *     取れない項目は「未取得」と書く
+ *   - コピーした時刻（JST）があり、展示前なら展示系が未反映である旨がある
  *   - 項目の注記が表にある行のぶんだけ入る（調子・ST安定度・展示タイムの括弧・集計期間・「—」）
  *   - 1マーク展開予測が券種にかかわらず入る
  *   - 「競艇」や、的中・回収を示唆する語が追加した文言に無い（BOA-617）
@@ -54,6 +54,7 @@ const row = (key, label) => ({ key, label, values: players.map(() => "—") });
 const ROWS = [
   row("name", "name"),
   row("winRate", "winRate"),
+  row("motor", "motor"),
   row("form", "form"),
   row("avgSt", "avgSt"),
   row("st", "st"),
@@ -172,7 +173,7 @@ for (const lang of LANGS) {
   );
 
   // 注記（行名は表の行と同じ文字列。訳語のずれで注記を引けなくならないように）
-  for (const key of ["winRate", "form", "avgSt", "st", "exSt", "exhibition", "exhibitionCourse", "partsChanged", "courseRate", "technique", "returnRate"]) {
+  for (const key of ["winRate", "motor", "form", "avgSt", "st", "exSt", "exhibition", "exhibitionCourse", "partsChanged", "courseRate", "technique", "returnRate"]) {
     check(`[${lang}] 注記 ${key}（表の行名つき）`, text.includes(`\n- ${key}: ${a.note[key]}`));
   }
   check(`[${lang}] 「—」の注記`, text.includes(`- ${a.note.dash}`));
@@ -208,7 +209,7 @@ for (const lang of LANGS) {
     exhibitionPublished: true,
   });
   check(
-    `[${lang}] 気象が無いと各項目が未発表`,
+    `[${lang}] 気象が無いと各項目が未取得`,
     noWeather.includes(`${dict.beforeInfo.waveHeightLabel} ${a.unpublished}`) &&
       noWeather.includes(`${a.premiseWind} ${a.unpublished}`),
   );

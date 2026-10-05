@@ -23,6 +23,7 @@ const GRADE_LABELS = { SG: "SG", G1: "G1", G2: "G2", G3: "G3" };
 // 注記の対象（表の行の順に並べる）。「—」の注記は常に末尾に付ける
 export const AI_COPY_NOTE_KEYS = [
   "winRate",
+  "motor",
   "form",
   "avgSt",
   "st",
@@ -157,7 +158,7 @@ export function buildTurnPredictionSection(t, players, turnPrediction) {
 
 const isNum = (v) => typeof v === "number" && Number.isFinite(v);
 
-/** 天候・風・波・気温・水温の1行。取れない項目は「未発表」と書く */
+/** 天候・風・波・気温・水温の1行。取れない項目は「未取得」と書く（公式は発表済みでも、このレースの値をまだ取得していないことがあるため「未発表」とは書かない） */
 function weatherLine(t, weather) {
   const unpublished = t("aiCopy.unpublished");
   const w = weather ?? {};
