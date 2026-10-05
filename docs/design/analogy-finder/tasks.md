@@ -45,7 +45,7 @@
 - [x] T2-1 （#1267）`v16_defs.py`: plan「定義」の表の Python 側（級別の組み合わせ・6艇中の順位と同じ値・進入の型・スリットの7形（展示 F は負）・手がかりの8条件・攻める艇・今節の平均着順点・コース別の平均ST）と pytest。テストは先に書き、落ちることを確かめてから実装する
 - [x] T2-2 （#1267。tab1.json と全件一致）`v16_facts.py`: 範囲キーごとの facts（艇番×項目×順位×着順の件数、全体、来たときの平均の順位、VA の風速区分）。pytest で例のレースの tab1.json の値を再現
 - [x] T2-3 （#1267。prep9b・mark1・t1-4 と突き合わせ）`v16_scenario.py`: 範囲キーごとの scenario（進入×形の結果、30件未満の行、手がかりの当否の件数、③の表）。例のレースの prep8・mark1・slitpred2_hint の値を再現
-- [ ] T2-4 （層・距離・33項目は #1267 で済み、knn7 と一致。残りは展示後の近似の一致率の測定。(c) の JS と合わせる）`v16_similar.py`: そろえる条件の層、出走表時点の距離（重みは表示中の版の `model_win`、L は cal で引き直す）、上位 min(層の件数, 10,000) 件の候補ファイルと表示する上位800件、BOA-635 用の layer ファイル（plan「BOA-635 との接続」の形。並びは race_date 降順・race_id の文字列の降順、D-5 の除外、`n_total` は除外後の件数）、全33項目の「同じ・近い」と全レースで同じ割合、比べる相手の層。例のレースで knn78.md の14件の並びを再現（T1-1 の後は出し直した値）。**展示後の並べ直しの近似の一致率**: 過去の 1,000レースで、全件の厳密な展示後の上位800件と、候補の中で並べ直した上位800件の一致率を、層の大きさ別に測り、`analysis/` に記録（目標 99%以上。足りなければ候補を増やすか、大きい層は全件にする）
+- [ ] T2-4 （層・距離・33項目は #1267、出力の形は #1269 で済み。残りは展示後の近似の一致率の測定（朝のバッチの初回の後））`v16_similar.py`: そろえる条件の層、出走表時点の距離（重みは表示中の版の `model_win`、L は cal で引き直す）、上位 min(層の件数, 10,000) 件の候補ファイルと表示する上位800件、BOA-635 用の layer ファイル（plan「BOA-635 との接続」の形。並びは race_date 降順・race_id の文字列の降順、D-5 の除外、`n_total` は除外後の件数）、全33項目の「同じ・近い」と全レースで同じ割合、比べる相手の層。例のレースで knn78.md の14件の並びを再現（T1-1 の後は出し直した値）。**展示後の並べ直しの近似の一致率**: 過去の 1,000レースで、全件の厳密な展示後の上位800件と、候補の中で並べ直した上位800件の一致率を、層の大きさ別に測り、`analysis/` に記録（目標 99%以上。足りなければ候補を増やすか、大きい層は全件にする）
 - [ ] T2-5 （コードは #1267。残りは本番での初回の実行。学習の workflow を1回回した後に dispatch する）`v16_morning.py`: 上の3つを今日のレースに対して回し、Storage（非公開のバケット `analogy-v16`、`{日付}/{実行ID}/`、上書きしない）に書き終えてから `analogy_v16_snapshots`（stage=racecard）に書く。対象・作り直しの条件・失敗の扱いは plan。過去の日付を指定して作り直す CLI の引数も付ける
 - [ ] T2-5b `.github/workflows/analogy-v16-morning.yml`（workflow_dispatch のみ）と、学習側が作り直した #1207 の `scripts/lib/analogyDispatch.js` に v16 の起動を足す（`api/cron/analogy-dispatch-v16.js`、JST 7:10・9:40・13:40、7:40 は racecard の段が無いレースがあるときだけ）。`vercel.json` の crons（UTC で書き JST を併記）とジョブのレジストリ（kind monitor・`failureAlertAfter: 1`）に登録。初回の起動と結果の確認（T0-5 の PAT が要る）
 - [ ] T2-6 所要時間と出力の大きさを本番と同じ条件で1回測る（7:10 の回で20分以内、facts・scenario のファイルが gzip 後100KB 以内か、layer が2,000件で gzip 後100KB 以内か。layer が超えたら1,000件に下げて BOA-635 に知らせる）。超えたら plan を直す
@@ -57,22 +57,22 @@
 ## T3 DB と Storage
 - [x] T3-1 （#1267。番号は 133、racecard_hash 列を足した）マイグレーション `analogy_v16_snapshots`（提案番号 130。PR 時点の origin/master の最大＋1 をオーケストレーターに確かめる）と PGlite の検証（ci）。118 への `stage` 列（提案番号 129）は学習側の PR。ヘッダーに plan.md の参照を書き、`generate-er-diagram.js analogy-finder` で plan の ER 図を作り直す
 - [x] T3-2 （2026-10-05 ユーザー適用、読み取りで確認、APPLIED.md 済み）マイグレーションの本番適用をユーザーに依頼する（書き込み SQL だけを渡す）。適用後、読み取りで表・ポリシー・匿名の権限を確かめ、APPLIED.md に行を足す
-- [ ] T3-3 Storage の非公開のバケット `analogy-v16` を作り（`analogy` とは分ける）、`similar/`（候補）の7日の削除を夜の確認のジョブに入れる
+- [x] T3-3 （#1269。バケットは朝のバッチの初回で作る。similar/ の7日での削除は夜の確認の --cleanup）Storage の非公開のバケット `analogy-v16` を作り（`analogy` とは分ける）、`similar/`（候補）の7日の削除を夜の確認のジョブに入れる
 - [x] T3-4 127・128 は適用せず廃止（Q2、T0-4 で学習側と合意。削除の PR は学習側）
 
 ## T4 展示後の段（Vercel の JS）
-- [ ] T4-1 `src/utils/analogySimilarRerank.js`（純粋関数）: 候補ファイルと展示の値から、展示後の距離で並べ直す。T2-4 の Python の結果と固定データで一致（順位が完全一致、距離の差 < 1e-6）
-- [ ] T4-2 今日の展示の値（展示タイムの順位・風速区分・展示の進入の型・展示 ST の形）を作る。`analogyScenario.js` を使う
-- [ ] T4-3 起動: 専用の Vercel Cron `api/cron/analogy-v16-exhibition.js`（2分ごと。6艇の展示タイムあり・締切前・展示後の段なし、件数に上限。展示の取得の Cron のモードに依存しない）と、`preRaceHandlers.js` の `runSlotsWithRefresh` の後からの呼び出し（失敗は取得の成否に影響させない）。欠場の検知（status='absent'）、厳密さの判定（`exact`）、Storage → DB の順に書く
+- [x] T4-1 （#1269。Python の展示後の厳密な並びと順位が完全一致、距離²の差 2.0e-7）`src/utils/analogySimilarRerank.js`（純粋関数）: 候補ファイルと展示の値から、展示後の距離で並べ直す。T2-4 の Python の結果と固定データで一致（順位が完全一致、距離の差 < 1e-6）
+- [x] T4-2 （#1269。analogyScenario.js、Python の固定データと全件一致）今日の展示の値（展示タイムの順位・風速区分・展示の進入の型・展示 ST の形）を作る。`analogyScenario.js` を使う
+- [ ] T4-3 （#1269 で Cron は済み。モードは off が既定。展示の取得からの呼び出しは公開前の実測で要否を決める）起動: 専用の Vercel Cron `api/cron/analogy-v16-exhibition.js`（2分ごと。6艇の展示タイムあり・締切前・展示後の段なし、件数に上限。展示の取得の Cron のモードに依存しない）と、`preRaceHandlers.js` の `runSlotsWithRefresh` の後からの呼び出し（失敗は取得の成否に影響させない）。欠場の検知（status='absent'）、厳密さの判定（`exact`）、Storage → DB の順に書く
 - 完了の定義:
   - 件数: 土日を含む直近5日で、6艇の展示タイムがそろったレースのうち展示後の段が締切前に作られた割合が95%以上（99% にしないのは、展示の取得が締切の約10分前に集中し、取得の遅れ・Vercel の起動の遅れを除けないため。届かない分は画面で「展示前」のまま出せる）
   - タイミング: 展示の取得から段の作成までの時間の分布（中央値・p95）
   - 継続監視: `verify-analogy-v16.js` が前日の充足率を数え、閾値で Slack に通知
 
 ## T5 API と監視
-- [ ] T5-1 `api/analogy/facts/[raceId].js`・`api/analogy/similar/[raceId].js`・`api/analogy/scenario/[raceId].js`・`api/analogy/layer/[raceId].js`（BOA-635 用）と共通の読み出し `api/_lib/analogyV16.js`（plan「API」「BOA-635 との接続」。キャッシュ・失敗の扱い・status）
+- [x] T5-1 （#1269。AIの見立ては facts に入れず既存の /api/analogy/contribution を画面が読む）`api/analogy/facts/[raceId].js`・`api/analogy/similar/[raceId].js`・`api/analogy/scenario/[raceId].js`・`api/analogy/layer/[raceId].js`（BOA-635 用）と共通の読み出し `api/_lib/analogyV16.js`（plan「API」「BOA-635 との接続」。キャッシュ・失敗の扱い・status）
 - [ ] T5-2 AIの見立て: `analogy_contribution_profiles` の表示中の版から、艇番×着順×段の7テーマと項目・向き（plan「向きの計算」の `direction`。揺れの確認・両端で上がる形は 2026-10-05 決定 Q-A・Q-B。`none` は「向きははっきりしない」）を返す（学習側の集計の変更 T0-4 の後）。`/api/analogy/contribution` に stage の条件を足す（学習側の 129 の後）
-- [ ] T5-3 `scripts/maintenance/verify-analogy-v16.js`（nightly、`verify-registry.json` に登録）: 前日の出力の欠け・作成時刻・展示後の段の充足率、例のレースの固定データの再現
+- [x] T5-3 （#1269。Nightly DB Verify に載せた。未稼働のときは通す）`scripts/maintenance/verify-analogy-v16.js`（nightly、`verify-registry.json` に登録）: 前日の出力の欠け・作成時刻・展示後の段の充足率、例のレースの固定データの再現
 - [ ] T5-4 録画再生の E2E に新しい API が素通しされることの確認
 
 ## T6 共通部品と純粋関数

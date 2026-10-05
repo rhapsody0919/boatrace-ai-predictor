@@ -287,3 +287,16 @@
   - #1267 のマージ後の順序: 学習の workflow を1回手動で回す → Analogy v16 Morning を dispatch して T2-6 を測る
   - T2-5b（起動の Cron）は #1261 のマージ後に、同じ cron ハンドラに足す
   - (c)（T4・T5）は来週
+
+## 26. 2026-10-05 夕 (c)（§25 の後。次のセッションはここから (d)）
+- (b) #1267 はマージ済み（ユーザー承認）。T2-6（朝のバッチの手動 dispatch と計測）はユーザー承認済み。順序は、#1268 マージ → ユーザーが学習を再実行 → オーケストレーターの知らせを待ってから `gh workflow run "Analogy v16 Morning"` → 所要時間・大きさ・snapshots の行数・失敗の有無をオーケストレーターに報告
+- (c) #1269 はユーザーの確認待ち。ブランチは feature/boa-271-v16-c
+  - 展示後の段の並べ直し（analogySimilarRerank.js）、定義の JS（analogyScenario.js）、展示後の段の Cron（api/cron/analogy-exhibition.js、モードは off が既定）、API 4本（api/analogy/{facts,similar,scenario,layer}/[raceId].js、Edge）、夜の確認（verify-analogy-v16.js）
+  - 朝のバッチの出力の形も変えた（候補ファイルに結果・28項目・展示の生の値、similar-racecard に結果・比べる相手・全国、today に風向の回転）。T2-6 を #1269 のマージ前に回すと古い形のファイルになるが、展示後の段は off なので害はない。#1269 のマージ後の回から新しい形になる
+- (d) の着手点（新しいセッションで）:
+  - T6-1〜T6-3・T7-1〜T7-8・T8-1〜T8-5。API の応答の形は #1269 の api/analogy/*/[raceId].js の先頭のコメントと api/_lib/analogyV16.js の resolveStatus
+  - 例のレースの期待値は scripts/ml/analogy/testdata/v16-example.json
+  - 画面で使う定義（スリットの形・進入の型・手がかり・風速区分）は src/utils/analogyScenario.js。展示で決まる5項目は src/utils/analogySimilarRerank.js にある
+  - AIの見立ては /api/analogy/contribution（stage 付き、#1259）を読む。向きの文は学習側の profiles の direction
+  - 受け入れ E2E（e2e/acceptance/analogy-finder.spec.js）は #1134 にある。(d) の前に #1134 の master 取り込みが要る（オーケストレーターが段取りする）
+  - 画面の見せ方の判断は案＋推奨でオーケストレーター経由（BOA-271 は代理判定・自動マージなし）
