@@ -6,6 +6,8 @@
  *   (b) inputs のキーが train-analogy.yml の workflow_dispatch.inputs にある（無いキーは GitHub が 422 で拒む）
  *   (c) 監視: failureAlertAfter: 1 のジョブは1回目の失敗で通知、既定のジョブは3回目まで通知しない。週1回で死活の誤報を出さない
  *   (d) 配線: レジストリ（monitor・validateRegistry）、api/cron の maxDuration と modeGated、vercel.json の cron
+ *   (e) v16 の朝のバッチ（T2-5b）: analogy-v16-morning.yml を起動する。7:40 の起動だけ、出走表の段が無い今日のレース
+ *       （締切まで10分以上・中止でない）があるときに起動し、ほかの起動は常に起動する。配線（レジストリ・api/cron・vercel.json）
  *
  * 使い方: node scripts/maintenance/verify-analogy-dispatch.js
  */
@@ -15,6 +17,8 @@ import { fileURLToPath } from "node:url";
 import {
   DISPATCH_WORKFLOWS,
   createAnalogyDispatchRun,
+  morningRetryNeeded,
+  morningShouldDispatch,
 } from "../lib/analogyDispatch.js";
 import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
 import { evaluateJobStates } from "../lib/scrapeJobs/monitor.js";
@@ -105,7 +109,9 @@ const run = (f, env = ENV) =>
     const declared = [...block.matchAll(/^ {6}([a-z_]+):\s*$/gm)].map(
       (m) => m[1],
     );
-    const unknown = Object.keys(def.inputs).filter((k) => !declared.includes(k));
+    const unknown = Object.keys(def.inputs).filter(
+      (k) => !declared.includes(k),
+    );
     check(
       unknown.length === 0,
       `(b) ${def.workflow} の inputs のキーが workflow に宣言されている`,
@@ -188,6 +194,115 @@ const run = (f, env = ENV) =>
   check(
     same(crons, ["0 19 * * 6"]),
     "(d) vercel.json: 日曜 JST 4:00（UTC 土曜 19:00）に1本",
+    JSON.stringify(crons),
+  );
+}
+
+// ---------------------------------------------------------------- (e)
+{
+  const races = [
+    {
+      race_id: "2026-10-04-20-01",
+      race_date: "2026-10-04",
+      start_time: "07:45:00",
+      cancellation_status: null,
+    },
+    {
+      race_id: "2026-10-04-20-02",
+      race_date: "2026-10-04",
+      start_time: "08:30:00",
+      cancellation_status: null,
+    },
+    {
+      race_id: "2026-10-04-20-03",
+      race_date: "2026-10-04",
+      start_time: "09:00:00",
+      cancellation_status: "confirmed",
+    },
+  ];
+  const t = at("07:40");
+  check(
+    morningRetryNeeded(races, new Set(["2026-10-04-20-02"]), t) === false,
+    "(e) 締切まで10分未満・中止のレースは拾い直さない",
+  );
+  check(
+    morningRetryNeeded(races, new Set(), t) === true,
+    "(e) 出走表の段が無い、締切まで10分以上のレースがあれば拾い直す",
+  );
+  const fakeClient = (snaps) => ({
+    from: (table) => {
+      const q = {
+        select: () => q,
+        eq: () => q,
+        like: () => q,
+        throwOnError: async () => ({ data: table === "races" ? races : snaps }),
+      };
+      return q;
+    },
+  });
+  const runM = (f) =>
+    createAnalogyDispatchRun("v16_morning", {
+      fetchImpl: f,
+      env: ENV,
+      shouldDispatch: morningShouldDispatch,
+    });
+  let f = fakeFetch();
+  let r = await runM(f)({ ...ctxOf(at("07:10")), client: fakeClient([]) });
+  check(
+    r.report?.dispatched === true &&
+      f.calls[0]?.url.endsWith("/workflows/analogy-v16-morning.yml/dispatches"),
+    "(e) 7:10 は常に起動する（analogy-v16-morning.yml）",
+    JSON.stringify(r),
+  );
+  f = fakeFetch();
+  r = await runM(f)({
+    ...ctxOf(at("07:40")),
+    client: fakeClient([{ race_id: "2026-10-04-20-02" }]),
+  });
+  check(
+    r.report?.dispatched === false && f.calls.length === 0,
+    "(e) 7:40 は全レース作成済みなら起動しない",
+    JSON.stringify(r),
+  );
+  f = fakeFetch();
+  r = await runM(f)({ ...ctxOf(at("07:40")), client: fakeClient([]) });
+  check(
+    r.report?.dispatched === true,
+    "(e) 7:40 は出走表の段が無いレースがあれば起動する",
+    JSON.stringify(r),
+  );
+  f = fakeFetch();
+  r = await runM(f)({ ...ctxOf(at("13:40")), client: null });
+  check(
+    r.report?.dispatched === true,
+    "(e) 13:40 は DB を見ずに起動する",
+    JSON.stringify(r),
+  );
+
+  const def = SCRAPE_JOBS.analogy_dispatch_morning;
+  check(
+    def?.kind === "monitor" && def.failureAlertAfter === 1,
+    "(e) analogy_dispatch_morning: monitor・failureAlertAfter 1",
+  );
+  const src = fs.readFileSync(
+    path.join(ROOT, "api/cron/analogy-dispatch-morning.js"),
+    "utf8",
+  );
+  check(
+    Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def?.maxDurationSec &&
+      /modeGated:\s*true/.test(src) &&
+      src.includes('job: "analogy_dispatch_morning"'),
+    "(e) api/cron/analogy-dispatch-morning.js: maxDuration がレジストリと一致し、モードのゲートを掛ける",
+  );
+  const vercel = JSON.parse(
+    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
+  );
+  const crons = vercel.crons
+    .filter((c) => c.path === "/api/cron/analogy-dispatch-morning")
+    .map((c) => c.schedule);
+  check(
+    same(crons, ["10 22 * * *", "40 22 * * *", "40 0 * * *", "40 4 * * *"]),
+    "(e) vercel.json: JST 7:10・7:40・9:40・13:40",
     JSON.stringify(crons),
   );
 }
