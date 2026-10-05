@@ -48,23 +48,23 @@ def form_masks(st: np.ndarray) -> dict[str, np.ndarray]:
     return {"any": np.ones(len(st), bool)} | slit_forms_matrix(st)
 
 
-def _cell(m: np.ndarray, d: dict, rows: pd.DataFrame) -> dict:
-    ranks, tech, pay = d["ranks"], d["tech"], d["pay"]
+def _cell(m: np.ndarray, d: dict, entry: str) -> dict:
+    ranks, tech, pay = d["ranks"], d["tech_code"], d["pay"]  # 決まり手は整数の符号（文字列の比較は遅い）
     n = int(m.sum())
     out = {"n": n}
     for k, name in enumerate(("first_boat", "second_boat", "third_boat")):
         out[name] = [int((m & (ranks[:, k] == b)).sum()) for b in range(1, 7)]
-    out["technique"] = {t: int((m & (tech == t)).sum()) for t in TECHNIQUES}
+    out["technique"] = {t: int((m & (tech == k)).sum()) for k, t in enumerate(TECHNIQUES)}
     known = m & ~np.isnan(pay)
     out["payout_known"] = int(known.sum())
     out["manshu"] = int((known & (pay >= MANSHU)).sum())
     out["b1_win"] = int((m & (ranks[:, 0] == 1)).sum())
-    keys = pd.Series([f"{a}-{b}-{c}" for a, b, c in ranks[m].astype(int)])
-    out["tri"] = {k: int(v) for k, v in keys.value_counts().sort_index().items()}
-    out["win_tech"] = {str(b): {t: int((m & (ranks[:, 0] == b) & (tech == t)).sum()) for t in TECHNIQUES}
+    codes, counts = np.unique(d["tri_code"][m], return_counts=True)
+    out["tri"] = {f"{c // 100}-{c // 10 % 10}-{c % 10}": int(k) for c, k in zip(codes, counts)}
+    out["win_tech"] = {str(b): {t: int((m & (ranks[:, 0] == b) & (tech == k)).sum()) for k, t in enumerate(TECHNIQUES)}
                        for b in range(1, 7)}
     if 0 < n < MAX_ROWS:
-        out["races"] = rows.loc[m].to_dict("records")
+        out["races"] = [r | {"entry_type": entry} for r in d["rows"].loc[m].to_dict("records")]
     return out
 
 
@@ -84,7 +84,10 @@ def prepare(races: pd.DataFrame) -> dict:
     })
     return {
         "ranks": races[["rank1", "rank2", "rank3"]].to_numpy(dtype=float),
+        "tri_code": races[["rank1", "rank2", "rank3"]].to_numpy(dtype=int) @ np.array([100, 10, 1]),
         "tech": races["winning_technique"].fillna("その他").to_numpy(dtype=object),
+        "tech_code": races["winning_technique"].fillna("その他").map({t: k for k, t in enumerate(TECHNIQUES)})
+        .to_numpy(dtype=int),
         "pay": races["payout_3tan"].to_numpy(dtype=float),
         "entries": entry_types(course), "forms": forms, "st": st, "rows": rows,
     }
@@ -95,8 +98,7 @@ def scope_cells(mask: np.ndarray, d: dict) -> dict:
     cells = {}
     for e in ENTRY_TYPES:
         em = m & d["entries"][e]
-        rows = d["rows"].assign(entry_type=e)
-        cells[e] = {"forms": {f: _cell(em & d["forms"][f], d, rows) for f in FORMS}}
+        cells[e] = {"forms": {f: _cell(em & d["forms"][f], d, e) for f in FORMS}}
     return {"n": int(m.sum()), "cells": cells}
 
 
@@ -144,16 +146,17 @@ def _x(hit: np.ndarray, base: np.ndarray) -> list[int]:
 
 
 def _attack_metrics(sel: np.ndarray, r1: np.ndarray, r2: np.ndarray, tech: np.ndarray, a: int | None) -> dict:
+    code = TECHNIQUES.index  # tech は決まり手の整数の符号（−1 は記録なし）
     o = {"n": int(sel.sum()), "winner": [int((sel & (r1 == k)).sum()) for k in range(1, 7)],
-         "b1_nige": _x((r1 == 1) & (tech == "逃げ"), sel), "b1_win": _x(r1 == 1, sel),
+         "b1_nige": _x((r1 == 1) & (tech == code("逃げ")), sel), "b1_win": _x(r1 == 1, sel),
          "b1_top2": _x((r1 == 1) | (r2 == 1), sel),
-         "tech_known_n": int((sel & np.isin(tech, TECHNIQUES)).sum())}
+         "tech_known_n": int((sel & (tech >= 0)).sum())}
     if a is not None:
         o["att_win"] = _x(r1 == a, sel)
         o["att_top2"] = _x((r1 == a) | (r2 == a), sel)
         for t, k in (("まくり", "makuri"), ("まくり差し", "makurizashi"), ("差し", "sashi")):
-            o[f"att_{k}"] = _x((r1 == a) & (tech == t), sel)
-            o[f"att_{k}_of_win"] = _x((r1 == a) & (tech == t), sel & (r1 == a))
+            o[f"att_{k}"] = _x((r1 == a) & (tech == code(t)), sel)
+            o[f"att_{k}_of_win"] = _x((r1 == a) & (tech == code(t)), sel & (r1 == a))
         o["inner_boat"] = a - 1
         o["inner_top2"] = _x((r1 == a - 1) | (r2 == a - 1), sel)
     return o
@@ -170,7 +173,8 @@ def scope_attack(base: np.ndarray, forms: dict[str, np.ndarray], r1, r2, tech, m
     コース順）で、攻める艇が内の艇より 0.05秒以上前に出た割合 att_lead に使う"""
     from v16_defs import ATTACK_BOAT
     r1, r2 = np.asarray(r1), np.asarray(r2)
-    tech = np.asarray(tech, dtype=object)
+    tech = pd.Series(np.asarray(tech, dtype=object)).map({t: k for k, t in enumerate(TECHNIQUES)}) \
+        .fillna(-1).to_numpy(dtype=int)
     motok = ~np.isnan(motor_rank).any(axis=1)
     exok = ~np.isnan(exh_rank).any(axis=1)
     out = {}

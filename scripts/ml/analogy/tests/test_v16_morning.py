@@ -27,3 +27,15 @@ def test_attach_series_with_string_race_ids():
     M.attach_series(arr, pd.DataFrame({"race_id": [202609272012]}), series)
     assert arr["series_score"][0, 0] == 8.5 and np.isnan(arr["series_score"][0, 2])
     assert arr["series_runs"][0].tolist() == [6, 0, 0, 0, 0, 0]
+
+
+def test_select_targets():
+    from datetime import datetime, timedelta
+    now = datetime(2026, 10, 5, 7, 10, tzinfo=M.JST)
+    row = lambda rid, mins, **kw: {"race_id": rid, "deadline": now + timedelta(minutes=mins),  # noqa: E731
+                                   "cancelled": False, "absent": False, "snapshot_hash": None} | kw
+    rows = [row("a", 60), row("b", 9), row("c", 10), row("d", 60, cancelled=True), row("e", 60, absent=True),
+            row("f", 60, snapshot_hash="h1"), row("g", 60, snapshot_hash="old"), row("h", 60),
+            row("i", 60) | {"deadline": None}]
+    hashes = {k: "h1" for k in "abcdefgi"}  # h は6艇の出走表がそろっていない
+    assert M.select_targets(rows, now, hashes) == ["a", "c", "g"]

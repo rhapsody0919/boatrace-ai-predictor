@@ -207,6 +207,50 @@ def write_snapshots(rows: list[dict]) -> None:
                 prefer="resolution=merge-duplicates,return=minimal")
 
 
+MIN_MINUTES_BEFORE_DEADLINE = 10
+
+
+def select_targets(rows: list[dict], now: datetime, hashes: dict[str, str]) -> list[str]:
+    """作るレース（plan「朝のバッチ」の対象）: 締切まで10分以上・中止でない・欠場が分かっていない、かつ
+    racecard の snapshot が無いか、出走表のハッシュが変わった（選手の差し替え）。rows は fetch_today の戻り値、
+    hashes は今の出走表のハッシュ {race_id: hash}"""
+    out = []
+    for r in rows:
+        if r["cancelled"] or r["absent"] or r["deadline"] is None:
+            continue
+        if r["deadline"] - now < timedelta(minutes=MIN_MINUTES_BEFORE_DEADLINE):
+            continue
+        if r["race_id"] not in hashes:  # 6艇の出走表がそろっていない
+            continue
+        if r["snapshot_hash"] is not None and r["snapshot_hash"] == hashes[r["race_id"]]:
+            continue
+        out.append(r["race_id"])
+    return out
+
+
+def fetch_today(date: str) -> list[dict]:
+    """今日のレースの締切・中止・欠場と、racecard の snapshot のハッシュ（DB は読み取りのみ）。
+    races.start_time を締切時刻（JST）として使う"""
+    from db import request
+
+    races, _ = request("GET", f"races?race_date=eq.{date}&select=race_id,start_time,cancellation_status")
+    ids = ",".join(r["race_id"] for r in races) or "none"
+    absent = set()
+    for table in ("race_entries", "exhibition_data"):
+        rows, _ = request("GET", f"{table}?race_id=in.({ids})&is_absent=is.true&select=race_id")
+        absent |= {r["race_id"] for r in rows}
+    snaps, _ = request("GET", f"analogy_v16_snapshots?race_id=in.({ids})&stage=eq.racecard"
+                              "&select=race_id,racecard_hash")
+    snap = {r["race_id"]: r["racecard_hash"] for r in snaps}
+    out = []
+    for r in races:
+        st = r["start_time"]
+        deadline = None if not st else datetime.fromisoformat(f"{date}T{st}").replace(tzinfo=JST)
+        out.append({"race_id": r["race_id"], "deadline": deadline, "cancelled": bool(r["cancellation_status"]),
+                    "absent": r["race_id"] in absent, "snapshot_hash": snap.get(r["race_id"])})
+    return out
+
+
 def racecard_hash(arrays: dict, i: int) -> str:
     """出走表の内容のハッシュ（選手の差し替えを見分ける）。6艇の選手番号・級別・勝率・モーター・ボートの2連率"""
     import hashlib
@@ -252,6 +296,13 @@ def main():
     if a.races:
         want = {F.rid_to_int(pd.Series([r])).iat[0] for r in a.races.split(",")}
         today = np.array([i for i in today if int(races["race_id"].iat[i]) in want])
+    elif a.upload:
+        hashes = {F.int_to_rid(int(races["race_id"].iat[i])): racecard_hash(arrays, i) for i in today}
+        want = set(select_targets(fetch_today(a.date), datetime.now(JST), hashes))
+        today = np.array([i for i in today if F.int_to_rid(int(races["race_id"].iat[i])) in want], dtype=int)
+        if len(today) == 0:
+            log("作るレースが無い（すべて作成済み・締切間近・中止・欠場）")
+            return
     fr = arrays["finish_rank"]
     ranks = np.stack([np.where((fr == k).any(1), (fr == k).argmax(1) + 1, 0) for k in (1, 2, 3)], 1)
     log("races", len(races), "pool", int(pool.sum()), "today", len(today))
@@ -274,14 +325,16 @@ def main():
     log("facts", len(fact_keys))
 
     # 範囲ごと: scenario（タブ3。1号艇の範囲キー）
-    pr = P.load_races(src)
-    pr = pr[(pr["race_date"] >= POOL_FROM) & (pr["race_date"] <= str(cutoff.date())) & pr["tab3_ok"]]
+    all_races = P.load_races(src)  # 過去レースの結果の行（タブ3の母集団・layer・枠なりの判定）。重いので1回だけ
+    pr = all_races[(all_races["race_date"] >= POOL_FROM) & (all_races["race_date"] <= str(cutoff.date()))
+                   & all_races["tab3_ok"]]
     pr = pr.assign(_rid=F.rid_to_int(pr["race_id"])).set_index("_rid")
     t3 = races.loc[pool & races["race_id"].isin(pr.index).to_numpy()]
     t3i = t3.index.to_numpy()
     d = SC.prepare(pr.loc[t3["race_id"].to_numpy()].reset_index(drop=True))
     rows = pd.concat([F.load_kb(src), F.load_main(src)], ignore_index=True)
-    hist = H.st_history(rows, P.load_races(src))
+    hist = H.st_history(rows, all_races)
+    del rows
     tgt = pd.DataFrame({"racer_id": arrays["racer_id"][t3i].ravel(),
                         "race_date": np.repeat(races["race_date"].to_numpy()[t3i], 6),
                         "course": np.tile(np.arange(1, 7, dtype=float), len(t3i))})
@@ -321,13 +374,26 @@ def main():
     weights, feats = load_weights(Path(a.model), df[df["race_id"].isin(races["race_id"][pool])], races[pool])
     X, info = build_distance(arrays, races, feats, weights, "racecard", pool)
     log("distance", X.shape, "L", round(info["L"], 4))
+    # 展示後の段（JS）の並べ直しに使う列: 展示後の表し方（knn8）にあって出走表の表し方（knn7）に無い列。
+    # 標準化・カテゴリ・重みは同じなので、展示後の距離² ＝ 出走表の距離² ＋ これらの列の距離²
+    Xe, info_e = build_distance(arrays, races, feats, weights, "exhibition", pool)
+    rc_cols = {(m["feature"], m["slot"], m.get("cat")) for m in info["meta"]}
+    extra = [j for j, m in enumerate(info_e["meta"]) if (m["feature"], m["slot"], m.get("cat")) not in rc_cols]
+    Xe = Xe[:, extra]
+    extra_meta = [info_e["meta"][j] for j in extra]
+    extra_feats = sorted({m["feature"] for m in extra_meta})
+    exh_header = {"lambda": info_e["lambda"], "L": info_e["L"], "columns": extra_meta,
+                  "weights": S.weight_vector(extra_meta, weights).tolist(),
+                  "norm": {f: info_e["norm"][f] for f in extra_feats if f in info_e["norm"]},
+                  "categories": {f: info_e["categories"][f] for f in extra_feats if f in info_e["categories"]}}
+    log("exhibition columns", len(extra), "L", round(info_e["L"], 4))
     b1 = arrays["cls_name"][:, 0]
     gap, top = S.gap_band(arrays["nat_win"]), S.top_boat(arrays["nat_win"])
     venue = races["venue_code"].astype(int).to_numpy()
     clusters = S.venue_clusters(venue, ranks[:, 0], pool)
     is_kb = (races["race_date"] <= F.KB_END).to_numpy()
     n_layers = {}
-    prl = P.load_races(src).assign(_rid=lambda x: F.rid_to_int(x["race_id"])).set_index("_rid")
+    prl = all_races.assign(_rid=lambda x: F.rid_to_int(x["race_id"])).set_index("_rid")
     for i in today:
         rid = F.int_to_rid(int(races["race_id"].iat[i]))
         cond = S.layer_conditions(b1[i], gap[i], top[i], races["round"].iat[i], races["grade"].iat[i])
@@ -348,6 +414,7 @@ def main():
         write_local(out, f"similar/{rid}.json", {
             "race_id": rid, "candidates": [F.int_to_rid(int(races["race_id"].iat[j])) for j in idx],
             "d2_racecard": [round(float(x), 6) for x in d2], "venue_match": [bool(venue[j] == venue[i]) for j in idx],
+            "exhibition": exh_header | {"values": np.round(Xe[idx], 4).tolist()},
         })
         lay = prl.loc[prl.index.isin(races["race_id"][lm]) & prl["layer_ok"]].sort_values(
             ["race_date", "race_id"], ascending=False)
