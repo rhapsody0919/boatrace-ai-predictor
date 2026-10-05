@@ -16,6 +16,10 @@ on:
         description: "版の名前（省略時は JST の今日の日付）"
         required: false
         default: ""
+      write_only_version:
+        description: "学習せず、Storage に置いた版の profiles を DB に書いて切り替えるだけ（書き込みの段で失敗した版の名前。例 2026-10-05）"
+        required: false
+        default: ""
 
 concurrency:
   group: train-analogy
@@ -49,23 +53,28 @@ jobs:
         run: python -m pytest scripts/ml/analogy/tests -q
 
       - name: Export training data
+        if: inputs.write_only_version == ''
         run: node scripts/ml/analogy/export_pool.js
 
       - name: Build features
+        if: inputs.write_only_version == ''
         working-directory: scripts/ml/analogy
         run: python features.py
 
       # 品質ゲートの比較の相手は固定した参照版（scripts/ml/analogy/reference.json）。直前の版ではない
       - name: Download reference model (品質ゲートの比較用)
+        if: inputs.write_only_version == ''
         run: node scripts/ml/analogy/storage.js download-reference
 
       - name: Train, quality gate, contribution profiles
+        if: inputs.write_only_version == ''
         working-directory: scripts/ml/analogy
         run: python train.py
 
       # レースごとの寄与度の JS（TreeSHAP・直前情報8列）が学習側と一致するか（ADR 案（#1134）決定6）。
       # 一致しなければアップロードも切り替えもしない（表示は前の版のまま）。終了コード 0 一致 / 1 不一致 / 2 入力の不備
       - name: Parity check (treeshap-parity.js)
+        if: inputs.write_only_version == ''
         run: |
           set +e
           node scripts/ml/analogy/treeshap-parity.js data/ml/analogy/out/
@@ -77,7 +86,15 @@ jobs:
           fi
 
       - name: Upload model to Storage
+        if: inputs.write_only_version == ''
         run: node scripts/ml/analogy/storage.js upload-model
+
+      # 書き込みだけやり直す（学習と Storage への置き場は前の実行のもの）
+      - name: Download trained version (write_only_version)
+        if: inputs.write_only_version != ''
+        env:
+          WRITE_ONLY_VERSION: ${{ inputs.write_only_version }}
+        run: node scripts/ml/analogy/storage.js download-trained "$WRITE_ONLY_VERSION"
 
       - name: Write profiles and activate
         working-directory: scripts/ml/analogy

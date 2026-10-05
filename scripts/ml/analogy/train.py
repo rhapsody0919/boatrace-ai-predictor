@@ -377,8 +377,9 @@ def main():
                                 "test": [str(test["race_date"].min().date()), str(test["race_date"].max().date())]},
                     "n_races": {"fit": n(fit), "temperature": n(temp), "test": n(test)}},
     }
-    (OUT / "train_meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1))
-    (OUT / "profiles.json").write_text(json.dumps(profiles, ensure_ascii=False))
+    # allow_nan=False: NaN を素のまま書くと PostgREST が拒むので、学習の出力の時点で止める（db.py も同じ）
+    (OUT / "train_meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1, allow_nan=False))
+    (OUT / "profiles.json").write_text(json.dumps(profiles, ensure_ascii=False, allow_nan=False))
     print(f"done: {len(profiles):,} セル ({time.time() - t0:.0f}s)")
 
 
