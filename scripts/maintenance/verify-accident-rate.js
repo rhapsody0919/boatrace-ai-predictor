@@ -221,18 +221,25 @@ check(
     );
   })(),
 );
-// Fの無い選手（失格5回＝事故点50）。出走98なら ceil(0.71×98)=70 であと20、出走100なら 71 であと21
+// Fの無い選手（失格5回＝事故点50）。次の1走のF（20点）は出走にも数えるので、(50+20)÷(出走+1) で判定する。
+// 出走97: 70÷98=0.714 で超える → ライン付近。出走98: 70÷99=0.707 は切り捨てて0.70 → 超えないのでライン付近にしない
 const fiveS = ["a", "b", "c", "d", "e"].map((id) => inc("S1", id));
+const at97 = computeAccidentStats({ starts: 97, incidents: fiveS }, NOW);
 const at98 = computeAccidentStats({ starts: 98, incidents: fiveS }, NOW);
-const at100 = computeAccidentStats({ starts: 100, incidents: fiveS }, NOW);
 check(
-  "Fの無い選手の「ライン付近」は、あと20点以内まで（21点なら出さない）",
-  at98.points === 50 &&
-    at98.need === 20 &&
-    at98.status === "near" &&
-    at100.need === 21 &&
-    at100.status === null,
-  JSON.stringify({ at98, at100 }),
+  "ライン付近の判定は、次の1走も出走に数える（Fの無い選手: 出走97はライン付近、出走98は付けない）",
+  at97.status === "near" && at98.status === null && at98.need === 20,
+  JSON.stringify({ at97, at98 }),
+);
+// 蜂須瑞生（2026-10-04 本番）: F1・出走70・事故点20。次のF（30点）でも 50÷71=0.704 → 0.70 で超えない
+const hachisu = computeAccidentStats(
+  { starts: 70, incidents: [inc("F", "a")] },
+  NOW,
+);
+check(
+  "F1・出走70・事故点20（あと30点）は、次のFでも 50÷71=0.704 で超えないのでライン付近にしない（ファン評価3周目）",
+  hachisu.need === 30 && hachisu.status === null && hachisu.showBadge === false,
+  JSON.stringify(hachisu),
 );
 
 // 今期すでにFを切っている選手は、次のFが30点（2本目以降の加点）。河内一馬（2026-10-05 本番）: F1・失格1で
