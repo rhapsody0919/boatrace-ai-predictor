@@ -1622,7 +1622,7 @@
         "payout": "Trifecta ¥{{yen}}",
         "entryLabel": "Entry {{e}}",
         "slitLabel": "Slit: {{forms}}",
-        "foot": "These are counted shares, not necessarily causes. The slit shape is only known after the race, so treat it as a \"what if\" reference. {{n}} races with refunds (F, L, withdrawal) are excluded, so counts do not match \"Who finishes, and when\" (this count also includes races with no 3rd place or unknown entry courses)",
+        "foot": "These are counted shares, not necessarily causes. The slit shape is only known after the race, so treat it as a \"what if\" reference. {{n}} races with refunds (F, L, withdrawal) are excluded, so counts do not match \"Who finishes, and when\" (the excluded count also includes races with no 3rd place or unknown entry courses)",
         "attackerName": "{{boat}} ({{role}}). ",
         "withParen": "{{core}} ({{paren}})",
         "hintPicA1": "In all-A1 races, most boats sit to the right. ",
