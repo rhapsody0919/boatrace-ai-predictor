@@ -137,7 +137,8 @@ export default function AnalogyFinderSection({ raceId }) {
           data={scenario.data}
           stage={stage}
           onScope={setScenarioScope}
-          venueCode={Number(venueCode)}
+          today={facts.data?.today ?? null}
+          raceId={raceId}
         />
       ) : (
         <p className="af-v16-line">
