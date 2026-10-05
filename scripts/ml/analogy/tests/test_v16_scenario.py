@@ -155,3 +155,22 @@ def test_scope_attack_matches_mock_mark1():
                 if "att_lead" in got[f]:
                     assert got[f]["att_lead"] == e["att_lead"], f
         assert got["any_form"] == exp["any_form"][s]
+
+
+def test_exhibition_agreement_counts_entry_and_forms():
+    races = pd.DataFrame({
+        "race_id": ["a", "b", "c"], "race_date": ["2026-04-10", "2026-05-01", "2026-09-26"],
+        "course_by_boat": [[1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6], [1, 3, 4, 5, 6, 2]],
+        "st_by_course": [[0.15, 0.20, 0.15, 0.15, 0.15, 0.15], [0.15] * 6, [0.15] * 6],
+    })
+    exh = pd.DataFrame({
+        "race_id": ["a", "b", "c", "z"],
+        "exh_course_by_boat": [[1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6]],
+        "exh_st_by_course": [[0.15, 0.21, 0.15, 0.15, 0.15, 0.15], [0.15, 0.21, 0.15, 0.15, 0.15, 0.15], [None] * 6,
+                             [0.1] * 6],
+    })
+    out = SC.exhibition_agreement(races, exh)
+    assert out["n"] == 3 and out["period"] == ["2026-04-10", "2026-09-26"]
+    assert out["entry"]["waku"] == [2, 3]          # 展示は3件とも枠なり、本番は2件
+    assert out["forms_n"] == 2                     # 展示 ST が欠ける c は形の母数に入れない
+    assert out["forms"]["d2"] == {"hit": [1, 2], "miss": [0, 0]}
