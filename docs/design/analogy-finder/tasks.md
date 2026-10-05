@@ -94,6 +94,6 @@
 ## T8 仕上げ
 - [x] T8-1 （#1272。e2e/layout.spec.js の旧 FR-1 の検査を v16 の3タブに置き換え、例のレースの固定の応答 e2e/analogy-v16-fixture.json.gz で5幅とも通過）`npm run test:layout`（AI予想タブの節の3タブ。375/768/1024/1440/1920px）とダークモードの目視
 - [x] T8-2 （#1272。data-accuracy-verifier が例のレースの全タブの値を本番 DB から SQL で数え直し、すべて一致。見つかった2件（長期の同着で2着以内・3着以内から艇が抜ける、タブ3の除外件数）は #1271 で修正）データ精度の検証（`data-accuracy-verifier`）: 3タブの数字を本番 DB から数え直して照合。例のレースはモックの数字との差を説明できること
-- [x] T8-3 （#1272。95件中93件通過。残る2件はテストの見出しの部分一致で、テストの修正はユーザーの承認待ち）受け入れ E2E（`e2e/acceptance/analogy-finder.spec.js`）をローカルで実行。例のレースの raceId は `2026-09-27-20-12`（`ANALOGY_RACE_ID=2026-09-27-20-12 npx playwright test --config=playwright.acceptance.config.js e2e/acceptance/analogy-finder.spec.js`）。級別が混ざる予選と優勝戦の日の確認（Q1・Q7）は、テストが facts・scenario の応答を差し替えて行う
-- [ ] T8-4 （#1272。mock-diff-checker の差は反映済み、ファン評価2周。残る P2 の3点 Q-F1〜F3 はユーザーの判断待ち）承認モックとの比較（`mock-diff-checker`）と、ファン評価ループ（`.claude/rules/review-fix-cycle.md`。新しい主要表示のため）
+- [x] T8-3 （#1272。`exact: true` をユーザー承認で入れて 95/95。#1274 の後も 95/95）受け入れ E2E（`e2e/acceptance/analogy-finder.spec.js`）をローカルで実行。例のレースの raceId は `2026-09-27-20-12`（`ANALOGY_RACE_ID=2026-09-27-20-12 npx playwright test --config=playwright.acceptance.config.js e2e/acceptance/analogy-finder.spec.js`）。級別が混ざる予選と優勝戦の日の確認（Q1・Q7）は、テストが facts・scenario の応答を差し替えて行う
+- [ ] T8-4 （#1272・#1274・#1277・#1278。mock-diff-checker の差は反映済み。ファン評価は上限の3周まで回した。2周目の P2 は Q-F1〜F3、3周目の P1・P2 は Q-F4（凹みを両隣より遅いに、BOA-777）・Q-F5（「件数が少なく差ははっきりしない」）で反映。展示 F の扱いは Q-F6（#1278）。P3 は BOA-778 にまとめ、2026-10-06 ユーザー決定で公開前に直す。実データでもう1周する（2026-10-06 ユーザー決定））承認モックとの比較（`mock-diff-checker`）と、ファン評価ループ（`.claude/rules/review-fix-cycle.md`。新しい主要表示のため）
 - [ ] T8-5 完了監査: このファイルの全チェックボックスと、コミット・本番の実測を突き合わせる
