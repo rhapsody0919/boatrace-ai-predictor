@@ -600,6 +600,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
     },
     {
+      "script": "verify-digest-motor-race-count.js",
+      "tier": "ci",
+      "guards": "「本日のデータ一覧」の行に付ける会場公式のモーター出走数（motor_race_count、BOA-702）。会場とモーター番号の組で引くこと、2連率の無い行・番号が分からない行は NULL、全行に同じキーを持たせること"
+    },
+    {
       "script": "verify-morning-digest.js",
       "tier": "manual",
       "guards": "「本日のデータ一覧」（BOA-402）の集計",

@@ -523,7 +523,7 @@ async function fetchRacesForVenueSince(venueCode, cutoff, untilDate = null) {
   const pageSize = 1000;
   let from = 0;
   while (true) {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("races")
       .select("race_id, race_date")
       .eq("venue_code", venueCode)
@@ -536,10 +536,6 @@ async function fetchRacesForVenueSince(venueCode, cutoff, untilDate = null) {
       .order("race_id")
       .range(from, from + pageSize - 1);
 
-    if (error) {
-      console.error("races取得エラー:", error.message);
-      break;
-    }
     if (!data || data.length === 0) break;
     allData.push(...data);
     if (data.length < pageSize) break;
@@ -670,11 +666,7 @@ function fetchMotorDailySeries(
         ),
       );
       let entries = [];
-      results.forEach(({ data, error }) => {
-        if (error) {
-          console.error("race_entries取得エラー:", error.message);
-          return;
-        }
+      results.forEach(({ data }) => {
         entries = entries.concat(data);
       });
       if (entries.length === 0) return { window, series: [] };
@@ -1350,12 +1342,11 @@ export const supabaseDataService = {
   async getUpcomingSeries(today) {
     return withCache(`upcoming-series-${today}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("race_series")
         .select("venue_code,start_date,end_date")
         .gte("end_date", today)
         .order("start_date");
-      if (error) throw new Error(`race_series の取得に失敗: ${error.message}`);
       return data ?? [];
     });
   },
@@ -1521,16 +1512,11 @@ export const supabaseDataService = {
         const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
 
         // モデル情報を取得
-        const { data: models, error: modelsError } = await supabase
+        const { data: models } = await supabase
           .from("models")
           .select(
             "model_id, display_name, total_predictions, hit_rate_win, hit_rate_place, hit_rate_trifecta, hit_rate_trio, recovery_rate_win, recovery_rate_place, recovery_rate_trifecta, recovery_rate_trio",
           );
-
-        if (modelsError) {
-          console.error("Supabase getAccuracy error:", modelsError.message);
-          return { lastUpdated: null, models: {} };
-        }
 
         // ページネーション付きでデータを取得するヘルパー関数
         // race_id形式: YYYY-MM-DD-VV-RR なので、endDateには末尾を追加して正しく比較
@@ -1556,9 +1542,9 @@ export const supabaseDataService = {
               query = query.lte("race_id", adjustedEndDate);
             }
 
-            const { data: page, error } = await query;
+            const { data: page } = await query;
 
-            if (error || !page || page.length === 0) break;
+            if (!page || page.length === 0) break;
             allData = allData.concat(page);
             if (page.length < pageSize) break;
             from += pageSize;
@@ -1869,17 +1855,13 @@ export const supabaseDataService = {
       const pageSize = 1000;
 
       while (true) {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("races")
           .select("race_date")
           .gte("race_date", startDateStr)
           .order("race_date", { ascending: false })
           .range(offset, offset + pageSize - 1);
 
-        if (error) {
-          console.error("Supabase getAvailableDates error:", error.message);
-          break;
-        }
         if (!data || data.length === 0) break;
 
         allData.push(...data);
@@ -1926,16 +1908,12 @@ export const supabaseDataService = {
         return { days: [] };
       }
 
-      const { data: rows, error } = await supabase
+      const { data: rows } = await supabase
         .from("race_history_cache")
         .select("data")
         .eq("key", "race_history_summary_90")
         .single();
 
-      if (error) {
-        console.error("Supabase race_history_cache error:", error.message);
-        return { days: [] };
-      }
       return rows?.data || { days: [] };
     });
   },
@@ -1954,16 +1932,12 @@ export const supabaseDataService = {
         return null;
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("venues")
         .select("water_type, cluster")
         .eq("code", venueCode)
         .maybeSingle();
 
-      if (error) {
-        console.error("venues取得エラー:", error.message);
-        return null;
-      }
       if (!data) return null;
 
       return { waterType: data.water_type, cluster: data.cluster };
@@ -1991,18 +1965,11 @@ export const supabaseDataService = {
       const pageSize = 1000;
       let from = 0;
       while (true) {
-        const { data: page, error } = await supabase
+        const { data: page } = await supabase
           .from("outcome_distribution")
           .select("first_boat, count_90days")
           .range(from, from + pageSize - 1);
 
-        if (error) {
-          console.error(
-            "outcome_distribution(全国平均)取得エラー:",
-            error.message,
-          );
-          return null;
-        }
         if (!page || page.length === 0) break;
         data.push(...page);
         if (page.length < pageSize) break;
@@ -2065,23 +2032,12 @@ export const supabaseDataService = {
         };
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("outcome_distribution")
         .select("*")
         .eq("venue_code", venueCode)
         .order("first_boat")
         .order("count_90days", { ascending: false });
-
-      if (error) {
-        console.error("Supabase getOutcomeDistribution error:", error.message);
-        return {
-          venue_code: venueCode,
-          venue_name: "",
-          total_races: 0,
-          last_updated: null,
-          data: {},
-        };
-      }
 
       if (!data || data.length === 0) {
         return {
@@ -2172,25 +2128,12 @@ export const supabaseDataService = {
         };
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("winning_technique_stats")
         .select("*")
         .eq("venue_code", venueCode)
         .order("boat_number")
         .order("percentage", { ascending: false });
-
-      if (error) {
-        console.error(
-          "Supabase getWinningTechniqueStats error:",
-          error.message,
-        );
-        return {
-          venue_code: venueCode,
-          venue_name: "",
-          last_updated: null,
-          data: {},
-        };
-      }
 
       if (!data || data.length === 0) {
         return {
@@ -2278,15 +2221,10 @@ export const supabaseDataService = {
         return [];
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("races")
         .select("venue_code")
         .eq("race_date", today);
-
-      if (error) {
-        console.error("races取得エラー:", error.message);
-        return [];
-      }
 
       return [...new Set(data.map((r) => r.venue_code))].sort((a, b) => a - b);
     });
@@ -2307,17 +2245,13 @@ export const supabaseDataService = {
         return [];
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("races")
         .select("race_id, race_number, start_time")
         .eq("venue_code", venueCode)
         .eq("race_date", today)
         .order("race_number");
 
-      if (error) {
-        console.error("races取得エラー:", error.message);
-        return [];
-      }
       return data ?? [];
     });
   },
@@ -2341,7 +2275,7 @@ export const supabaseDataService = {
         return [];
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("race_entries")
         .select(
           "boat_number, win_rate, local_win_rate, global_2rate, local_2rate, global_3rate, local_3rate, f_count, l_count",
@@ -2349,13 +2283,6 @@ export const supabaseDataService = {
         .eq("race_id", raceId)
         .order("boat_number");
 
-      if (error) {
-        console.error(
-          "race_entries(公式勝率/連対率)取得エラー:",
-          error.message,
-        );
-        return [];
-      }
       return data ?? [];
     });
   },
@@ -2649,7 +2576,7 @@ export const supabaseDataService = {
           return { rows: [] };
         }
 
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("race_entries")
           .select(
             "boat_number, player_name, racer_id, motor_number, motor_2rate, motor_3rate",
@@ -2657,10 +2584,6 @@ export const supabaseDataService = {
           .eq("race_id", raceId)
           .order("boat_number");
 
-        if (error) {
-          console.error("race_entries取得エラー:", error.message);
-          return { rows: [] };
-        }
         const rows = data ?? [];
         if (venueCode === null) return { rows };
         // 会場公式のモーター成績が1艇でも取れなかったら、結果を保存させない（BOA-740）
@@ -2823,11 +2746,7 @@ export const supabaseDataService = {
           ),
         );
         let entries = [];
-        entryResults.forEach(({ data, error }) => {
-          if (error) {
-            console.error("race_entries取得エラー:", error.message);
-            return;
-          }
+        entryResults.forEach(({ data }) => {
           entries = entries.concat(data ?? []);
         });
         if (entries.length === 0) return windowed;
@@ -2845,11 +2764,7 @@ export const supabaseDataService = {
           ),
         );
         const resultByRaceId = new Map();
-        resultResults.forEach(({ data, error }) => {
-          if (error) {
-            console.error("race_results取得エラー:", error.message);
-            return;
-          }
+        resultResults.forEach(({ data }) => {
           (data ?? []).forEach((r) => resultByRaceId.set(r.race_id, r));
         });
 
@@ -2931,11 +2846,7 @@ export const supabaseDataService = {
           ),
         );
         let entries = [];
-        entryResults.forEach(({ data, error }) => {
-          if (error) {
-            console.error("race_entries取得エラー:", error.message);
-            return;
-          }
+        entryResults.forEach(({ data }) => {
           entries = entries.concat(data ?? []);
         });
         if (entries.length === 0) return [];
@@ -2955,11 +2866,7 @@ export const supabaseDataService = {
           ),
         );
         const resultByRaceId = new Map();
-        resultResults.forEach(({ data, error }) => {
-          if (error) {
-            console.error("race_results取得エラー:", error.message);
-            return;
-          }
+        resultResults.forEach(({ data }) => {
           (data ?? []).forEach((r) => resultByRaceId.set(r.race_id, r));
         });
 
@@ -3068,7 +2975,7 @@ export const supabaseDataService = {
         // ただし null（行なし）には倒さず、失敗と分かる値を返す（BOA-740）
         const failed = { fetchFailed: true };
         try {
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from("venue_motor_stats")
             .select("*")
             .eq("venue_code", venueCode)
@@ -3078,10 +2985,6 @@ export const supabaseDataService = {
             .limit(1)
             .maybeSingle();
 
-          if (error) {
-            console.error("venue_motor_stats取得エラー:", error.message);
-            return failed;
-          }
           if (!data) return null;
 
           return {
@@ -3145,7 +3048,7 @@ export const supabaseDataService = {
           const generationStart = await getMotorGenerationStart(venueCode);
           if (generationStart === null) return { generationStart, wins: [] };
 
-          const { data: stageRows, error: stageError } = await supabase
+          const { data: stageRows } = await supabase
             .from("race_conditions")
             .select("race_id, race_stage, races!inner(venue_code)")
             // 「優勝戦」で終わるものをDBで粗く絞り、「準優勝戦」「準々優勝戦」の
@@ -3155,10 +3058,6 @@ export const supabaseDataService = {
             //  実データの race_stage は349種あった。BOA-457）
             .like("race_stage", "%優勝戦")
             .eq("races.venue_code", venueCode);
-          if (stageError) {
-            console.error("race_conditions取得エラー:", stageError.message);
-            return failed;
-          }
           const raceIds = (stageRows ?? [])
             .filter((r) => isFinalStage(r.race_stage))
             .map((r) => r.race_id)
@@ -3167,30 +3066,22 @@ export const supabaseDataService = {
             .filter((raceId) => beforeRaceId === null || raceId < beforeRaceId);
           if (raceIds.length === 0) return { generationStart, wins: [] };
 
-          const { data: entries, error: entriesError } = await supabase
+          const { data: entries } = await supabase
             .from("race_entries")
             .select("race_id, boat_number, racer_id, player_name")
             .in("race_id", raceIds)
             .eq("motor_number", motorNumber);
-          if (entriesError) {
-            console.error("race_entries取得エラー:", entriesError.message);
-            return failed;
-          }
           if (!entries || entries.length === 0) {
             return { generationStart, wins: [] };
           }
 
-          const { data: results, error: resultsError } = await supabase
+          const { data: results } = await supabase
             .from("race_results")
             .select("race_id, rank1")
             .in(
               "race_id",
               entries.map((e) => e.race_id),
             );
-          if (resultsError) {
-            console.error("race_results取得エラー:", resultsError.message);
-            return failed;
-          }
           const rank1ByRaceId = new Map(
             (results ?? []).map((r) => [r.race_id, r.rank1]),
           );
@@ -3313,7 +3204,7 @@ export const supabaseDataService = {
           return failed;
         }
         try {
-          const { data: latestRow, error: latestError } = await supabase
+          const { data: latestRow } = await supabase
             .from("venue_motor_stats")
             .select("scraped_date")
             .eq("venue_code", venueCode)
@@ -3321,23 +3212,15 @@ export const supabaseDataService = {
             .order("scraped_date", { ascending: false })
             .limit(1)
             .maybeSingle();
-          if (latestError) {
-            console.error("venue_motor_stats取得エラー:", latestError.message);
-            return failed;
-          }
           if (!latestRow) return { state: "empty" };
 
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from("venue_motor_stats")
             .select(
               "motor_number, win_rate, top2_rate, top3_rate, accident_rate, final_count, championship_count, race_count, stats_period_end",
             )
             .eq("venue_code", venueCode)
             .eq("scraped_date", latestRow.scraped_date);
-          if (error) {
-            console.error("venue_motor_stats取得エラー:", error.message);
-            return failed;
-          }
           if (!data || data.length === 0) return { state: "empty" };
           return {
             state: "ok",
@@ -3479,11 +3362,7 @@ export const supabaseDataService = {
           ),
         );
         let entries = [];
-        entryResults.forEach(({ data, error }) => {
-          if (error) {
-            console.error("race_entries取得エラー:", error.message);
-            return;
-          }
+        entryResults.forEach(({ data }) => {
           entries = entries.concat(data ?? []);
         });
         if (entries.length === 0) return { generationStart, rows: emptyRows() };
@@ -3639,11 +3518,7 @@ export const supabaseDataService = {
           ),
         );
         let entries = [];
-        entryResults.forEach(({ data, error }) => {
-          if (error) {
-            console.error("race_entries取得エラー:", error.message);
-            return;
-          }
+        entryResults.forEach(({ data }) => {
           entries = entries.concat(data ?? []);
         });
         if (entries.length === 0) return { generationStart, rows: [] };
@@ -3732,15 +3607,13 @@ export const supabaseDataService = {
         return [];
       }
 
-      const { data: current, error: curError } = await supabase
+      const { data: current } = await supabase
         .from("race_entries")
         .select("boat_number, player_name, racer_id, win_rate, local_win_rate")
         .eq("race_id", raceId)
         .order("boat_number");
 
-      if (curError || !current || current.length === 0) {
-        if (curError)
-          console.error("race_entries取得エラー:", curError.message);
+      if (!current || current.length === 0) {
         return [];
       }
 
@@ -3757,17 +3630,13 @@ export const supabaseDataService = {
       windowStart.setDate(windowStart.getDate() - 14);
       const windowStartStr = windowStart.toISOString().split("T")[0];
 
-      const { data: past, error: pastError } = await supabase
+      const { data: past } = await supabase
         .from("race_entries")
         .select("race_id, racer_id, win_rate")
         .in("racer_id", racerIds)
         .gte("race_id", windowStartStr)
         .lte("race_id", cutoff)
         .order("race_id", { ascending: false });
-
-      if (pastError) {
-        console.error("過去データ取得エラー:", pastError.message);
-      }
 
       // race_id降順のため、各racer_idごとに最初に出てくるものが cutoff に最も近い記録
       const pastByRacer = new Map();
@@ -3804,17 +3673,12 @@ export const supabaseDataService = {
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       const cutoff = ninetyDaysAgo.toISOString().split("T")[0];
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("race_entries")
         .select("race_id, win_rate, local_win_rate")
         .eq("racer_id", racerId)
         .gte("race_id", cutoff)
         .order("race_id");
-
-      if (error) {
-        console.error("race_entries取得エラー:", error.message);
-        return { racer_id: racerId, trend: [] };
-      }
 
       // 日付単位でdedupe（同日の複数レースは同じ値のため最初の1件を採用）
       const byDate = new Map();
@@ -3845,7 +3709,7 @@ export const supabaseDataService = {
         return null;
       }
 
-      const { data: current, error: curError } = await supabase
+      const { data: current } = await supabase
         .from("race_entries")
         .select("race_id, win_rate, local_win_rate")
         .eq("racer_id", racerId)
@@ -3853,9 +3717,7 @@ export const supabaseDataService = {
         .limit(1)
         .maybeSingle();
 
-      if (curError || !current) {
-        if (curError)
-          console.error("race_entries取得エラー:", curError.message);
+      if (!current) {
         return null;
       }
 
@@ -3867,7 +3729,7 @@ export const supabaseDataService = {
       windowStart.setDate(windowStart.getDate() - 14);
       const windowStartStr = windowStart.toISOString().split("T")[0];
 
-      const { data: past, error: pastError } = await supabase
+      const { data: past } = await supabase
         .from("race_entries")
         .select("win_rate")
         .eq("racer_id", racerId)
@@ -3876,10 +3738,6 @@ export const supabaseDataService = {
         .order("race_id", { ascending: false })
         .limit(1)
         .maybeSingle();
-
-      if (pastError) {
-        console.error("過去データ取得エラー:", pastError.message);
-      }
 
       const pastWinRate = past?.win_rate ?? null;
       return {
@@ -3908,15 +3766,13 @@ export const supabaseDataService = {
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       const cutoffStr = ninetyDaysAgo.toISOString().split("T")[0];
 
-      const { data: entries, error: entriesError } = await supabase
+      const { data: entries } = await supabase
         .from("race_entries")
         .select("race_id, boat_number")
         .eq("racer_id", racerId)
         .gte("race_id", cutoffStr);
 
-      if (entriesError || !entries || entries.length === 0) {
-        if (entriesError)
-          console.error("race_entries取得エラー:", entriesError.message);
+      if (!entries || entries.length === 0) {
         return { racer_id: racerId, win_count: 0, techniques: [] };
       }
 
@@ -3969,7 +3825,7 @@ export const supabaseDataService = {
         return null;
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("racer_aggregated_stats")
         .select(
           "avg_st, avg_st_last_30, st_stddev, flying_rate, total_races, course_race_counts",
@@ -3978,10 +3834,6 @@ export const supabaseDataService = {
         .eq("venue_code", 0)
         .maybeSingle();
 
-      if (error) {
-        console.error("racer_aggregated_stats取得エラー:", error.message);
-        return null;
-      }
       return data;
     });
   },
@@ -4011,7 +3863,7 @@ export const supabaseDataService = {
         const pageSize = 1000;
         let from = 0;
         while (true) {
-          const { data: page, error } = await supabase
+          const { data: page } = await supabase
             .from("racer_profiles")
             .select(
               "racer_id, name, name_kana, branch, height_cm, weight_kg, registration_period, hometown, birth_date",
@@ -4019,13 +3871,6 @@ export const supabaseDataService = {
             .order("racer_id")
             .range(from, from + pageSize - 1);
 
-          if (error) {
-            // withCacheは成功時（.then）のみキャッシュするため、ここは[]を返さず
-            // throwする。[]を返すと一時的なエラーが24時間キャッシュされ、
-            // 取得済み分のデータも道連れで破棄されてしまう
-            // （2026-09-08、コードレビューで発見）
-            throw new Error(`racer_profiles取得エラー: ${error.message}`);
-          }
           if (!page || page.length === 0) break;
           data.push(...page);
           if (page.length < pageSize) break;
@@ -4050,17 +3895,12 @@ export const supabaseDataService = {
           console.error("Supabase client not initialized");
           return [];
         }
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("racer_grade_cache")
           .select("data")
           .eq("key", "latest_grades")
           .single();
 
-        if (error) {
-          // withCacheは成功時（.then）のみキャッシュするため、ここは[]を返さず
-          // throwする（getAllRacersLiteと同じ理由、2026-09-08コードレビューで発見）
-          throw new Error(`racer_grade_cache取得エラー: ${error.message}`);
-        }
         return data?.data ?? [];
       },
       24 * 60 * 60 * 1000,
@@ -4115,15 +3955,13 @@ export const supabaseDataService = {
       cutoffDate.setDate(cutoffDate.getDate() - 730);
       const cutoffStr = cutoffDate.toISOString().split("T")[0];
 
-      const { data: entries, error: entriesError } = await supabase
+      const { data: entries } = await supabase
         .from("race_entries")
         .select("race_id, boat_number")
         .eq("racer_id", racerId)
         .gte("race_id", cutoffStr);
 
-      if (entriesError || !entries || entries.length === 0) {
-        if (entriesError)
-          console.error("race_entries取得エラー:", entriesError.message);
+      if (!entries || entries.length === 0) {
         return [];
       }
 
@@ -4227,15 +4065,13 @@ export const supabaseDataService = {
 
       // gradeはST考察のベースライン（st_course_baselineの(course, grade)セル）を
       // 引くのに使う（phase a FR-1）。race_entries.gradeは実測でnull 0件・4値（A1/A2/B1/B2）
-      const { data: entries, error: entriesError } = await supabase
+      const { data: entries } = await supabase
         .from("race_entries")
         .select("race_id, boat_number, grade, f_count")
         .eq("racer_id", racerId)
         .gte("race_id", cutoffStr);
 
-      if (entriesError || !entries || entries.length === 0) {
-        if (entriesError)
-          console.error("race_entries取得エラー:", entriesError.message);
+      if (!entries || entries.length === 0) {
         return [];
       }
 
@@ -4508,7 +4344,7 @@ export const supabaseDataService = {
       async () => {
         if (!supabase || !racerId || !motorNumber || !beforeRaceId) return [];
 
-        const { data: entries, error } = await supabase
+        const { data: entries } = await supabase
           .from("race_entries")
           .select("race_id, boat_number")
           .eq("racer_id", racerId)
@@ -4517,10 +4353,6 @@ export const supabaseDataService = {
           .order("race_id", { ascending: false })
           .limit(30);
 
-        if (error) {
-          console.error("今節展示情報（出走履歴）取得エラー:", error.message);
-          return [];
-        }
         if (!entries || entries.length === 0) return [];
 
         // **会場で絞り、表示中のレースを目印に足してから切る**（BOA-591）。
@@ -4647,15 +4479,13 @@ export const supabaseDataService = {
       cutoffDate.setDate(cutoffDate.getDate() - 730);
       const cutoffStr = cutoffDate.toISOString().split("T")[0];
 
-      const { data: entries, error: entriesError } = await supabase
+      const { data: entries } = await supabase
         .from("race_entries")
         .select("race_id, boat_number")
         .eq("racer_id", racerId)
         .gte("race_id", cutoffStr);
 
-      if (entriesError || !entries || entries.length === 0) {
-        if (entriesError)
-          console.error("race_entries取得エラー:", entriesError.message);
+      if (!entries || entries.length === 0) {
         return [];
       }
 
@@ -4788,15 +4618,13 @@ export const supabaseDataService = {
       cutoffDate.setDate(cutoffDate.getDate() - 180);
       const cutoffStr = cutoffDate.toISOString().split("T")[0];
 
-      const { data: entries, error: entriesError } = await supabase
+      const { data: entries } = await supabase
         .from("race_entries")
         .select("race_id, boat_number")
         .eq("racer_id", racerId)
         .gte("race_id", cutoffStr);
 
-      if (entriesError || !entries || entries.length === 0) {
-        if (entriesError)
-          console.error("race_entries取得エラー:", entriesError.message);
+      if (!entries || entries.length === 0) {
         return [];
       }
 
@@ -4973,29 +4801,21 @@ export const supabaseDataService = {
 
       // RPC優先（サーバー側集計でegressを約1/25に削減、029マイグレーション）。
       // 未適用環境では旧クライアント集計にフォールバックする
-      const { data: rpcData, error: rpcError } = await supabase.rpc(
+      const { data: rpcData } = await supabase.rpc(
         "get_race_st_predictability",
         { p_race_id: raceId },
       );
-      if (!rpcError && Array.isArray(rpcData)) {
+      if (Array.isArray(rpcData)) {
         return rpcData;
       }
-      if (rpcError) {
-        console.warn(
-          "get_race_st_predictability RPC未適用のため旧ロジックで取得:",
-          rpcError.message,
-        );
-      }
 
-      const { data: entries, error: entriesError } = await supabase
+      const { data: entries } = await supabase
         .from("race_entries")
         .select("boat_number, player_name, racer_id")
         .eq("race_id", raceId)
         .order("boat_number");
 
-      if (entriesError || !entries || entries.length === 0) {
-        if (entriesError)
-          console.error("race_entries取得エラー:", entriesError.message);
+      if (!entries || entries.length === 0) {
         return [];
       }
 
@@ -5024,16 +4844,12 @@ export const supabaseDataService = {
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       const cutoffStr = ninetyDaysAgo.toISOString().split("T")[0];
 
-      const { data: pastEntries, error: pastError } = await supabase
+      const { data: pastEntries } = await supabase
         .from("race_entries")
         .select("race_id, boat_number, racer_id")
         .in("racer_id", racerIds)
         .gte("race_id", cutoffStr)
         .lt("race_id", raceId);
-
-      if (pastError) {
-        console.error("過去出走データ取得エラー:", pastError.message);
-      }
 
       const pastRaceIds = [
         ...new Set((pastEntries ?? []).map((e) => e.race_id)),
@@ -5124,16 +4940,14 @@ export const supabaseDataService = {
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       const cutoffStr = ninetyDaysAgo.toISOString().split("T")[0];
 
-      const { data: pastEntries, error: entriesError } = await supabase
+      const { data: pastEntries } = await supabase
         .from("race_entries")
         .select("race_id, boat_number")
         .eq("racer_id", racerId)
         .gte("race_id", cutoffStr)
         .order("race_id");
 
-      if (entriesError || !pastEntries || pastEntries.length === 0) {
-        if (entriesError)
-          console.error("race_entries取得エラー:", entriesError.message);
+      if (!pastEntries || pastEntries.length === 0) {
         return { racer_id: racerId, trend: [] };
       }
 
@@ -5206,29 +5020,21 @@ export const supabaseDataService = {
 
       // RPC優先（サーバー側集計でegressを約1/25に削減、029マイグレーション）。
       // 未適用環境では旧クライアント集計にフォールバックする
-      const { data: rpcData, error: rpcError } = await supabase.rpc(
+      const { data: rpcData } = await supabase.rpc(
         "get_race_exhibition_trend",
         { p_race_id: raceId },
       );
-      if (!rpcError && Array.isArray(rpcData)) {
+      if (Array.isArray(rpcData)) {
         return rpcData;
       }
-      if (rpcError) {
-        console.warn(
-          "get_race_exhibition_trend RPC未適用のため旧ロジックで取得:",
-          rpcError.message,
-        );
-      }
 
-      const { data: entries, error: entriesError } = await supabase
+      const { data: entries } = await supabase
         .from("race_entries")
         .select("boat_number, player_name, racer_id")
         .eq("race_id", raceId)
         .order("boat_number");
 
-      if (entriesError || !entries || entries.length === 0) {
-        if (entriesError)
-          console.error("race_entries取得エラー:", entriesError.message);
+      if (!entries || entries.length === 0) {
         return [];
       }
 
@@ -5256,16 +5062,12 @@ export const supabaseDataService = {
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       const cutoffStr = ninetyDaysAgo.toISOString().split("T")[0];
 
-      const { data: pastEntries, error: pastError } = await supabase
+      const { data: pastEntries } = await supabase
         .from("race_entries")
         .select("race_id, boat_number, racer_id")
         .in("racer_id", racerIds)
         .gte("race_id", cutoffStr)
         .lt("race_id", raceId);
-
-      if (pastError) {
-        console.error("過去出走データ取得エラー:", pastError.message);
-      }
 
       const pastRaceIds = [
         ...new Set((pastEntries ?? []).map((e) => e.race_id)),
@@ -5428,16 +5230,14 @@ export const supabaseDataService = {
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       const cutoffStr = ninetyDaysAgo.toISOString().split("T")[0];
 
-      const { data: pastEntries, error: entriesError } = await supabase
+      const { data: pastEntries } = await supabase
         .from("race_entries")
         .select("race_id, boat_number")
         .eq("racer_id", racerId)
         .gte("race_id", cutoffStr)
         .order("race_id");
 
-      if (entriesError || !pastEntries || pastEntries.length === 0) {
-        if (entriesError)
-          console.error("race_entries取得エラー:", entriesError.message);
+      if (!pastEntries || pastEntries.length === 0) {
         return { racer_id: racerId, trend: [] };
       }
 
@@ -5519,7 +5319,7 @@ export const supabaseDataService = {
         // 上限日付はSG/G1でも最長6日程度の開催に対する安全マージンで、同一
         // 会場での次開催のデータが誤って混入しないようにする
         const upperBoundDate = addDaysToDateString(meetStartDate, 10);
-        const { data: rawEntries, error: entriesError } = await supabase
+        const { data: rawEntries } = await supabase
           .from("race_entries")
           .select("race_id, boat_number")
           .eq("racer_id", racerId)
@@ -5527,13 +5327,6 @@ export const supabaseDataService = {
           .lte("race_id", upperBoundDate)
           .order("race_id");
 
-        if (entriesError) {
-          console.error(
-            "race_entries(今節成績)取得エラー:",
-            entriesError.message,
-          );
-          return empty;
-        }
         const entries = (rawEntries || []).filter(
           (e) => extractVenueCodeFromRaceId(e.race_id) === venueCode,
         );
@@ -5575,12 +5368,6 @@ export const supabaseDataService = {
               .maybeSingle(),
           ]);
 
-        if (seriesPointsRes.error) {
-          console.error(
-            "racer_series_points取得エラー:",
-            seriesPointsRes.error.message,
-          );
-        }
         const seriesPoints = seriesPointsRes.data ?? null;
 
         const resultsByRaceId = new Map(resultsRows.map((r) => [r.race_id, r]));
@@ -5650,7 +5437,7 @@ export const supabaseDataService = {
       }
 
       // shadow予測が併存する可能性があるためmaybeSingleは使わず最新1件を取る
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("predictions")
         .select("model_id, feature_contributions, predicted_at")
         .eq("race_id", raceId)
@@ -5658,10 +5445,6 @@ export const supabaseDataService = {
         .order("predicted_at", { ascending: false })
         .limit(1);
 
-      if (error) {
-        console.error("predictions取得エラー:", error.message);
-        return null;
-      }
       return toWakuRacerStats(data?.[0]?.feature_contributions?.racerStats);
     });
   },
@@ -5678,7 +5461,7 @@ export const supabaseDataService = {
         return null;
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("race_odds")
         .select(
           "odds_place_1_low, odds_place_1_high, odds_place_2_low, odds_place_2_high, odds_place_3_low, odds_place_3_high, odds_place_4_low, odds_place_4_high, odds_place_5_low, odds_place_5_high, odds_place_6_low, odds_place_6_high",
@@ -5687,10 +5470,6 @@ export const supabaseDataService = {
         .order("captured_at", { ascending: false })
         .limit(1);
 
-      if (error) {
-        console.error("race_odds（複勝）取得エラー:", error.message);
-        return null;
-      }
       const row = data?.[0];
       if (!row) return null;
       return [1, 2, 3, 4, 5, 6].map((n) => ({
@@ -5727,20 +5506,13 @@ export const supabaseDataService = {
             (n) => `odds_win_${n}, odds_place_${n}_low, odds_place_${n}_high`,
           )
           .join(", ");
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("race_odds")
           .select(
             `captured_at, trifecta_all, trio_all, exacta_all, quinella_all, wide_all, ${winPlaceColumns}`,
           )
           .eq("race_id", raceId)
           .order("captured_at", { ascending: true });
-
-        // エラーは[]にせず投げる（withCacheは失敗をキャッシュしないため、
-        // 一時的なDBエラーの空結果が長時間固定されるのを防げる。
-        // 呼び出し側で「データなし」表示にフォールバックする）
-        if (error) {
-          throw new Error(`race_odds（全通り系）取得エラー: ${error.message}`);
-        }
 
         // 単勝・複勝は艇番（"1"〜"6"）→ 値。null は「票0（公式の0.0）か未取得」で、保存時に区別していない
         // （scrape-odds.js が 0.0 を null にする）。画面では「票なし（または未取得）」として扱う
@@ -5858,16 +5630,12 @@ export const supabaseDataService = {
           console.error("Supabase client not initialized");
           return null;
         }
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("accuracy_cache")
           .select("data")
           .eq("key", "unified_model_accuracy")
           .single();
 
-        if (error) {
-          console.error("unified_model_accuracy取得エラー:", error.message);
-          return null;
-        }
         return data?.data ?? null;
       },
       6 * 60 * 60 * 1000, // 6時間キャッシュ（日次バッチでしか更新されないため長め）
@@ -5888,19 +5656,12 @@ export const supabaseDataService = {
           console.error("Supabase client not initialized");
           return null;
         }
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("accuracy_cache")
           .select("data")
           .eq("key", "unified_volatility_accuracy")
           .single();
 
-        if (error) {
-          console.error(
-            "unified_volatility_accuracy取得エラー:",
-            error.message,
-          );
-          return null;
-        }
         return data?.data ?? null;
       },
       6 * 60 * 60 * 1000,
@@ -5932,9 +5693,7 @@ export const supabaseDataService = {
           .eq("race_id", raceId),
       ]);
 
-      if (entriesRes.error || !entriesRes.data) {
-        if (entriesRes.error)
-          console.error("race_entries取得エラー:", entriesRes.error.message);
+      if (!entriesRes.data) {
         return [];
       }
       const exByBoat = new Map(
@@ -5962,7 +5721,7 @@ export const supabaseDataService = {
         return null;
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("race_results")
         .select(
           "race_id, rank1, rank2, rank3, winning_technique, race_status",
@@ -5970,10 +5729,6 @@ export const supabaseDataService = {
         .eq("race_id", raceId)
         .maybeSingle();
 
-      if (error) {
-        console.error("race_results取得エラー:", error.message);
-        return null;
-      }
       return data ?? null;
     });
   },
@@ -5993,29 +5748,20 @@ export const supabaseDataService = {
 
       // RPC優先（サーバー側集計でegressを約1/25に削減、029マイグレーション）。
       // 未適用環境では旧クライアント集計にフォールバックする
-      const { data: rpcData, error: rpcError } = await supabase.rpc(
-        "get_race_return_rate",
-        { p_race_id: raceId },
-      );
-      if (!rpcError && Array.isArray(rpcData)) {
+      const { data: rpcData } = await supabase.rpc("get_race_return_rate", {
+        p_race_id: raceId,
+      });
+      if (Array.isArray(rpcData)) {
         return rpcData;
       }
-      if (rpcError) {
-        console.warn(
-          "get_race_return_rate RPC未適用のため旧ロジックで取得:",
-          rpcError.message,
-        );
-      }
 
-      const { data: entries, error: entriesError } = await supabase
+      const { data: entries } = await supabase
         .from("race_entries")
         .select("boat_number, player_name, racer_id")
         .eq("race_id", raceId)
         .order("boat_number");
 
-      if (entriesError || !entries || entries.length === 0) {
-        if (entriesError)
-          console.error("race_entries取得エラー:", entriesError.message);
+      if (!entries || entries.length === 0) {
         return [];
       }
 
@@ -6039,17 +5785,13 @@ export const supabaseDataService = {
       const pageSize = 1000;
       let from = 0;
       while (true) {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("race_entries")
           .select("race_id, boat_number, racer_id")
           .in("racer_id", racerIds)
           .gte("race_id", cutoffStr)
           .lt("race_id", raceId)
           .range(from, from + pageSize - 1);
-        if (error) {
-          console.error("過去出走データ取得エラー:", error.message);
-          break;
-        }
         if (!data || data.length === 0) break;
         relevantPastEntries.push(...data);
         if (data.length < pageSize) break;
@@ -6146,13 +5888,12 @@ export const supabaseDataService = {
           return { rising: [], falling: [] };
         }
 
-        const { data: races, error: racesError } = await supabase
+        const { data: races } = await supabase
           .from("races")
           .select("race_id, venue_code, race_number")
           .eq("race_date", today);
 
-        if (racesError || !races || races.length === 0) {
-          if (racesError) console.error("races取得エラー:", racesError.message);
+        if (!races || races.length === 0) {
           return { rising: [], falling: [] };
         }
 
@@ -6190,17 +5931,13 @@ export const supabaseDataService = {
         const pageSize = 1000;
         let from = 0;
         while (true) {
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from("race_entries")
             .select("race_id, racer_id, win_rate")
             .gte("race_id", windowStartStr)
             .lte("race_id", cutoff)
             .order("race_id", { ascending: false })
             .range(from, from + pageSize - 1);
-          if (error) {
-            console.error("過去データ取得エラー:", error.message);
-            break;
-          }
           if (!data || data.length === 0) break;
           pastRows.push(...data);
           if (data.length < pageSize) break;
@@ -6271,13 +6008,12 @@ export const supabaseDataService = {
           return empty;
         }
 
-        const { data: races, error: racesError } = await supabase
+        const { data: races } = await supabase
           .from("races")
           .select("race_id, venue_code")
           .eq("race_date", today);
 
-        if (racesError || !races || races.length === 0) {
-          if (racesError) console.error("races取得エラー:", racesError.message);
+        if (!races || races.length === 0) {
           return empty;
         }
 
@@ -6422,14 +6158,13 @@ export const supabaseDataService = {
           return { ...empty, fetchFailed: true };
         }
 
-        const { data: races, error: racesError } = await supabase
+        const { data: races } = await supabase
           .from("races")
           .select("race_id")
           .eq("race_date", date)
           .eq("venue_code", venueCode);
 
-        if (racesError || !races || races.length === 0) {
-          if (racesError) console.error("races取得エラー:", racesError.message);
+        if (!races || races.length === 0) {
           return empty;
         }
 
@@ -6511,14 +6246,11 @@ export const supabaseDataService = {
           console.error("Supabase client not initialized");
           return [];
         }
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("venues")
           .select("code, avg_first_win_rate, avg_first_win_rate_race_count")
           .not("avg_first_win_rate", "is", null)
           .gte("avg_first_win_rate_race_count", minRaceCount);
-        if (error) {
-          throw new Error(`venues取得エラー: ${error.message}`);
-        }
         return (data ?? [])
           .map((v) => ({
             venue_code: v.code,
@@ -6543,29 +6275,21 @@ export const supabaseDataService = {
 
       // RPC優先（サーバー側集計でegressを約1/25に削減、029マイグレーション）。
       // 未適用環境では旧クライアント集計にフォールバックする
-      const { data: rpcData, error: rpcError } = await supabase.rpc(
+      const { data: rpcData } = await supabase.rpc(
         "get_race_technique_profile",
         { p_race_id: raceId },
       );
-      if (!rpcError && Array.isArray(rpcData)) {
+      if (Array.isArray(rpcData)) {
         return rpcData;
       }
-      if (rpcError) {
-        console.warn(
-          "get_race_technique_profile RPC未適用のため旧ロジックで取得:",
-          rpcError.message,
-        );
-      }
 
-      const { data: entries, error: entriesError } = await supabase
+      const { data: entries } = await supabase
         .from("race_entries")
         .select("boat_number, player_name, racer_id")
         .eq("race_id", raceId)
         .order("boat_number");
 
-      if (entriesError || !entries || entries.length === 0) {
-        if (entriesError)
-          console.error("race_entries取得エラー:", entriesError.message);
+      if (!entries || entries.length === 0) {
         return [];
       }
 
@@ -6584,16 +6308,12 @@ export const supabaseDataService = {
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       const cutoffStr = ninetyDaysAgo.toISOString().split("T")[0];
 
-      const { data: pastEntries, error: pastError } = await supabase
+      const { data: pastEntries } = await supabase
         .from("race_entries")
         .select("race_id, boat_number, racer_id")
         .in("racer_id", racerIds)
         .gte("race_id", cutoffStr)
         .lt("race_id", raceId);
-
-      if (pastError) {
-        console.error("過去出走データ取得エラー:", pastError.message);
-      }
 
       const pastRaceIds = [
         ...new Set((pastEntries ?? []).map((e) => e.race_id)),
@@ -6665,16 +6385,11 @@ export const supabaseDataService = {
         return { venue_code: venueCode, last_updated: null, data: [] };
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("top_start_stats")
         .select("*")
         .eq("venue_code", venueCode)
         .order("boat_number");
-
-      if (error) {
-        console.error("Supabase getTopStartStats error:", error.message);
-        return { venue_code: venueCode, last_updated: null, data: [] };
-      }
 
       return {
         venue_code: venueCode,
@@ -6700,22 +6415,12 @@ export const supabaseDataService = {
         };
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("losing_technique_stats")
         .select("*")
         .eq("venue_code", venueCode)
         .order("boat_number")
         .order("percentage", { ascending: false });
-
-      if (error) {
-        console.error("Supabase getLosingTechniqueStats error:", error.message);
-        return {
-          venue_code: venueCode,
-          venue_name: "",
-          last_updated: null,
-          data: {},
-        };
-      }
 
       if (!data || data.length === 0) {
         return {
@@ -7584,26 +7289,12 @@ export const supabaseDataService = {
         };
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("nige_outcome_distribution")
         .select("*")
         .eq("venue_code", venueCode)
         .order("first_boat")
         .order("count_90days", { ascending: false });
-
-      if (error) {
-        console.error(
-          "Supabase getNigeOutcomeDistribution error:",
-          error.message,
-        );
-        return {
-          venue_code: venueCode,
-          venue_name: "",
-          total_races: 0,
-          last_updated: null,
-          data: {},
-        };
-      }
 
       if (!data || data.length === 0) {
         return {
@@ -7687,19 +7378,11 @@ export const supabaseDataService = {
         return { venue_code: venueCode, last_updated: null, data: [] };
       }
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("exhibition_time_top_stats")
         .select("*")
         .eq("venue_code", venueCode)
         .order("boat_number");
-
-      if (error) {
-        console.error(
-          "Supabase getExhibitionTimeTopStats error:",
-          error.message,
-        );
-        return { venue_code: venueCode, last_updated: null, data: [] };
-      }
 
       return {
         venue_code: venueCode,
@@ -7716,7 +7399,7 @@ export const supabaseDataService = {
    */
   async getUnifiedTrifectaReference(raceId) {
     if (!supabase || !raceId) return null;
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("bet_recommendations")
       .select(
         "recommendation, expected_value, expected_hit_rate, expected_payout, reasons",
@@ -7725,7 +7408,7 @@ export const supabaseDataService = {
       .eq("race_id", raceId)
       .maybeSingle();
 
-    if (error || !data) return null;
+    if (!data) return null;
 
     return {
       recommendation: data.recommendation,
@@ -7748,7 +7431,7 @@ export const supabaseDataService = {
     // 進入は本番STの entry_course（2026-09-21 からほぼ全件）を先に、無ければ Kファイル由来の
     // race_results.actual_course_<艇番>（翌日以降に入る）で埋める（BOA-625。徳山 9/14 7R は
     // entry_course が無いが actual_course はある）
-    const [{ data, error }, { data: courseRow }] = await Promise.all([
+    const [{ data }, { data: courseRow }] = await Promise.all([
       supabase
         .from("race_start_timings")
         .select(
@@ -7765,7 +7448,7 @@ export const supabaseDataService = {
         .maybeSingle(),
     ]);
 
-    if (error || !data) return [];
+    if (!data) return [];
 
     // finish_mark / finish_rank（077、2026-09-21から全件）は結果タブの着順の組み立てに使う
     // （BOA-543）。rank1〜rank6 は公式ページの並び順のままで返還艇（F・L・欠）が混ざるため
@@ -7799,19 +7482,12 @@ export const supabaseDataService = {
         console.error("Supabase client not initialized");
         return [];
       }
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("venue_grade_boat_stats")
         .select(
           "race_grade, boat_number, race_count, wins, top2, top3, technique_breakdown, manshu_count, payout_count, payout_trio_sum",
         )
         .eq("venue_code", venueCode);
-      if (error) {
-        // withCacheは成功時（.then）のみキャッシュするため、ここで[]を返すと
-        // 一時的なエラーが正常な「データなし」として30分キャッシュされてしまう
-        // （getAllRacersLiteと同じ理由、2026-09-08のコードレビューで発見済みの
-        // バグクラス）。必ずthrowしてキャッシュさせない
-        throw new Error(`venue_grade_boat_stats取得エラー: ${error.message}`);
-      }
       return data ?? [];
     });
   },
@@ -7823,12 +7499,9 @@ export const supabaseDataService = {
   getVenuesWithGradeStats() {
     return withCache("venues-with-grade-stats", async () => {
       if (!supabase) return [];
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("venue_grade_boat_stats")
         .select("venue_code");
-      if (error) {
-        throw new Error(`venue_grade_boat_stats取得エラー: ${error.message}`);
-      }
       return [...new Set((data ?? []).map((r) => r.venue_code))].sort(
         (a, b) => a - b,
       );

@@ -13,28 +13,26 @@ import { groupIntoCurrentMeet } from "../utils/meetGrouping";
 
 async function getRacerProfile(racerId) {
   if (!supabase) return null;
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("racer_profiles")
     .select(
       "racer_id, name, name_kana, birth_date, height_cm, weight_kg, blood_type, branch, hometown, registration_period",
     )
     .eq("racer_id", racerId)
     .maybeSingle();
-  if (error) throw new Error(`選手プロフィール取得エラー: ${error.message}`);
   return data;
 }
 
 // 最新の出走の級と開催日。開催日はインデックス判定（src/utils/racerIndexPolicy.js）に使う
 async function getLatestEntry(racerId) {
   if (!supabase) return { grade: null, raceDate: null };
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("race_entries")
     .select("grade, race_id")
     .eq("racer_id", racerId)
     .order("race_id", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (error) throw new Error(`級別取得エラー: ${error.message}`);
   return {
     grade: data?.grade ?? null,
     raceDate: data?.race_id ? (parseRaceId(data.race_id)?.date ?? null) : null,
@@ -43,14 +41,13 @@ async function getLatestEntry(racerId) {
 
 async function getRacerNews(racerId) {
   if (!supabase) return [];
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("racer_news")
     .select(
       "id, title, summary, source_url, source_name, published_at, created_at",
     )
     .eq("racer_id", racerId)
     .order("created_at", { ascending: false });
-  if (error) throw new Error(`選手ニュース取得エラー: ${error.message}`);
   return data ?? [];
 }
 
@@ -82,7 +79,7 @@ export async function getRacerPageData(racerId) {
  * （モーターは節単位で入れ替わるため、日付の連続性で節の範囲を推定できる）
  */
 async function getCurrentMeetRaceEntries(racerId, motorNumber) {
-  const { data: entries, error } = await supabase
+  const { data: entries } = await supabase
     .from("race_entries")
     .select("race_id, boat_number")
     .eq("racer_id", racerId)
@@ -90,10 +87,6 @@ async function getCurrentMeetRaceEntries(racerId, motorNumber) {
     .order("race_id", { ascending: false })
     .limit(30);
 
-  if (error) {
-    console.error("今節の出走取得エラー:", error.message);
-    return [];
-  }
   if (!entries || entries.length === 0) return [];
 
   // 最新の走と同じ会場に絞る（BOA-591）。モーター番号は会場ごとに振られるので、
@@ -120,7 +113,7 @@ async function getCurrentMeetRaceEntries(racerId, motorNumber) {
 export async function getRacerCurrentMotorStatus(racerId) {
   if (!supabase) return null;
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("race_entries")
     .select("race_id, motor_number")
     .eq("racer_id", racerId)
@@ -128,10 +121,6 @@ export async function getRacerCurrentMotorStatus(racerId) {
     .limit(1)
     .maybeSingle();
 
-  if (error) {
-    console.error("直近出走取得エラー:", error.message);
-    return null;
-  }
   if (!data || data.motor_number === null || data.motor_number === undefined) {
     return null;
   }
@@ -159,19 +148,15 @@ export async function getRacerCurrentMotorStatus(racerId) {
   const meetRaceIds = meetEntries.map((e) => e.race_id);
   let exhibitionByKey = new Map();
   if (meetRaceIds.length > 0) {
-    const { data: exhibitionRows, error: exError } = await supabase
+    const { data: exhibitionRows } = await supabase
       .from("exhibition_data")
       .select(
         "race_id, boat_number, exhibition_time, propeller_change, parts_changed",
       )
       .in("race_id", meetRaceIds);
-    if (exError) {
-      console.error("展示タイム取得エラー:", exError.message);
-    } else {
-      exhibitionByKey = new Map(
-        (exhibitionRows ?? []).map((e) => [`${e.race_id}-${e.boat_number}`, e]),
-      );
-    }
+    exhibitionByKey = new Map(
+      (exhibitionRows ?? []).map((e) => [`${e.race_id}-${e.boat_number}`, e]),
+    );
   }
 
   const meetTrend = meetEntries
