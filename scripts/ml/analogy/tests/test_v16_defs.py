@@ -178,3 +178,14 @@ def test_attack_boat_went_ahead():
                                         ([0, 0, 0, 0, 0, 0], False), ([0, 1, 4, 4, 4, 4], True)])
 def test_early_series_note(runs, note):
     assert V.early_series_note(runs) is note
+
+
+def test_exh_form_st_flying():
+    # Q-F6: F.01〜.05 は .00、F.06 以上の艇がいる行は全部 NaN。欠けはそのまま
+    got = V.exh_form_st([[-0.05, 0.10, 0.12, 0.12, 0.12, 0.12],
+                         [-0.06, 0.10, 0.12, 0.12, 0.12, 0.12],
+                         [0.10, None, 0.12, 0.12, 0.12, 0.12]])
+    assert got[0].tolist() == [0.0, 0.10, 0.12, 0.12, 0.12, 0.12]
+    assert np.isnan(got[1]).all()
+    assert np.isnan(got[2][1]) and got[2][0] == 0.10
+

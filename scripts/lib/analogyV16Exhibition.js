@@ -19,8 +19,8 @@ import {
 import { buildLiveFeatures } from "../../src/utils/analogyRaceFeatures.js";
 import {
   entryType,
+  exhibitionForms,
   signedSt,
-  slitForms,
   windBand,
 } from "../../src/utils/analogyScenario.js";
 import {
@@ -69,7 +69,8 @@ export function selectExhibitionTargets(snaps, races, exh, entries, now) {
 }
 
 /**
- * 今日の展示の値（today-exhibition。T4-2）: 展示タイムと順位、風速区分、展示の進入の型、展示 ST の形（F は負）
+ * 今日の展示の値（today-exhibition。T4-2）: 展示タイムと順位、風速区分、展示の進入の型、展示 ST（F は負）と
+ * 展示の形（F.05 までは .00 として判定、F.06 以上か出遅れの艇がいれば判定しない。Q-F6）
  * @param {object[]} exhRows exhibition_data の6行
  * @param {object} live buildLiveFeatures の6艇
  * @param {object} cond race_conditions の行
@@ -87,7 +88,8 @@ export function todayExhibition(exhRows, live, cond) {
     if (course[i] && st !== null && st !== undefined)
       stByCourse[course[i] - 1] = signedSt(Number(st), r.start_flag === "F");
   });
-  const forms = slitForms(stByCourse);
+  const hasLate = BOATS.some((b) => byBoat.get(b)?.start_flag === "L");
+  const { forms, excluded } = exhibitionForms(stByCourse, hasLate);
   return {
     exh_time: live.map((v) => (Number.isNaN(v.exh_time) ? null : v.exh_time)),
     exh_time_rank: live.map((v) =>
@@ -107,7 +109,9 @@ export function todayExhibition(exhRows, live, cond) {
     course_by_boat: course,
     entry_type: entryType(course),
     st_by_course: stByCourse,
-    forms: Object.keys(forms).filter((f) => forms[f]),
+    forms,
+    // F.06 以上か出遅れの艇がいるので展示の形を判定しなかった（Q-F6）
+    forms_excluded: excluded,
   };
 }
 

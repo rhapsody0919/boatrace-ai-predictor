@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from v16_defs import HINTS, SLIT_FORMS, _round_half_up, slit_forms_matrix
+from v16_defs import HINTS, SLIT_FORMS, _round_half_up, exh_form_st, slit_forms_matrix
 
 ENTRY_TYPES = ("all", "waku", "inlost", "mae", "mae6", "mae5", "mae56", "maeOther")
 FORMS = ("any",) + SLIT_FORMS
@@ -214,7 +214,8 @@ def exhibition_agreement(races: pd.DataFrame, exh: pd.DataFrame) -> dict:
     act = entry_types(matrix(m["course_by_boat"]))
     exe = entry_types(matrix(m["exh_course_by_boat"]))
     out["entry"] = {t: [int((exe[t] & act[t]).sum()), int(exe[t].sum())] for t in ENTRY_TYPES if t != "all"}
-    ast, est = matrix(m["st_by_course"]), matrix(m["exh_st_by_course"])
+    # 展示の形は今日の展示と同じ扱い（F.05 までは .00、F.06 以上の艇がいる展示は数えない。Q-F6）
+    ast, est = matrix(m["st_by_course"]), exh_form_st(matrix(m["exh_st_by_course"]))
     both = ~np.isnan(ast).any(axis=1) & ~np.isnan(est).any(axis=1)
     af, ef = slit_forms_matrix(ast), slit_forms_matrix(est)
     out["forms_n"] = int(both.sum())
