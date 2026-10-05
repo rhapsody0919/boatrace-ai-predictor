@@ -75,6 +75,16 @@ def class_names(cls_ord: np.ndarray) -> np.ndarray:
     return np.vectorize(lambda v: CLASS_NAME.get(v))(np.where(np.isfinite(cls_ord), cls_ord, 0.0))
 
 
+def top3_boats(finish_rank: np.ndarray) -> np.ndarray:
+    """(n,6) の艇番順の着 → (n,3) の1〜3着の艇番（着のある艇を (着, 艇番) の順に並べた先頭3艇。無ければ 0）。
+    長期の同着は着を 1,2,2,4 のように付けるので、「着が k の艇」で引くと同着の2艇目が抜ける（v16_pool.build_races と同じ並べ方）"""
+    fr = np.asarray(finish_rank, dtype=float)
+    key = np.where(np.isfinite(fr) & (fr >= 1), fr * 10 + np.arange(6), np.inf)
+    order = np.argsort(key, axis=1, kind="stable")[:, :3]
+    ok = np.take_along_axis(np.isfinite(key), order, axis=1)
+    return np.where(ok, order + 1, 0)
+
+
 # ---------------------------------------------------------------- 範囲
 def scope_masks(key: str, races: pd.DataFrame, cls: np.ndarray, combos: np.ndarray) -> np.ndarray:
     """範囲キー（v16_defs.scope_keys の値）→ races のマスク"""
@@ -323,7 +333,7 @@ def main():
             log("作るレースが無い（すべて作成済み・締切間近・中止・欠場）")
             return
     fr = arrays["finish_rank"]
-    ranks = np.stack([np.where((fr == k).any(1), (fr == k).argmax(1) + 1, 0) for k in (1, 2, 3)], 1)
+    ranks = top3_boats(fr)
     log("races", len(races), "pool", int(pool.sum()), "today", len(today))
 
     # 範囲ごと: facts（タブ1）
@@ -349,8 +359,6 @@ def main():
                    & all_races["tab3_ok"]]
     pr = pr.assign(_rid=F.rid_to_int(pr["race_id"])).set_index("_rid")
     t3 = races.loc[pool & races["race_id"].isin(pr.index).to_numpy()]
-    ret = all_races.assign(_rid=F.rid_to_int(all_races["race_id"])).set_index("_rid")["n_ret"]
-    refund = races["race_id"].map(ret).fillna(0).to_numpy() > 0
     t3i = t3.index.to_numpy()
     d = SC.prepare(pr.loc[t3["race_id"].to_numpy()].reset_index(drop=True))
     hist = H.st_history(df, all_races)  # F.build の行は load_kb・load_main と同じ行（窓に入れる走の集合が同じ）
@@ -376,8 +384,9 @@ def main():
         s["hints"] = SC.scope_hints(m, d, {"course": C, "overall": A})
         s["attack"] = SC.scope_attack(m & d["entries"]["waku"] & base3, d["forms"], d["ranks"][:, 0],
                                       d["ranks"][:, 1], d["tech"], motor_rank, exh_rank, V.st_cent(np.nan_to_num(st6)))
-        # 脚注「返還（F・L・欠場）があったレース{n}件を除く」（spec C-5）: 範囲のタブ1・2の母集団のうち返還艇のいるレース
-        s["n_refund_excluded"] = int((scope_masks(key, races, arrays["cls_name"], combos) & pool & refund).sum())
+        # 脚注「返還（F・L・欠場）があったレースなど{n}件を除く」（spec C-5）: タブ1・2の母集団との差（返還のほか、
+        # 3着が無い・実進入が分からないレースも除く。どちらの件数とも合うように差で持つ）
+        s["n_refund_excluded"] = int((scope_masks(key, races, arrays["cls_name"], combos) & pool).sum()) - s["n"]
         s["key"], s["period"] = key, [POOL_FROM, str(cutoff.date())]
         write_local(out, f"scenario/{key.replace(':', '_')}.json", s)
     log("scenario", len(scn_keys))
