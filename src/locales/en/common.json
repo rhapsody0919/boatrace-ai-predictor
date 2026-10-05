@@ -1508,7 +1508,7 @@
         "hintCount": "{{n}} races. {{form}} = in the race, {{def}}",
         "hintNone": "Today's order matches none of the conditions",
         "hintFoot": "Counted in wakunari races in {{scope}} ({{n}}; races with flying or late starts etc. excluded). {{few}}Even when a condition matches, it misses more often than not (a clue, not a deciding factor). Tap to select that shape in ② below",
-        "hintBadge": "When avg. ST matches {{ph}} ({{pm}} when not)",
+        "hintBadge": "Today's avg. ST matches",
         "slitHeading": "How will the start line up? (slit shape)",
         "forms": {
           "any": {

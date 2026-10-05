@@ -709,7 +709,9 @@ const ENTRIES = [
   { key: "in_taken", label: "1号艇がインを取られた", share: null }, // 12件固定（30件未満）
 ];
 // 札の文言（screens「細部の約束」）
-const HINT_TAG = "平均STが当てはまる 19%（当てはまらないとき10%）";
+// 2026-10-05 ユーザー決定 Q-F2（オーケストレーター経由）: 札は率を外し「今日の平均STが当てはまる」までにする
+// （同じボタンの形の出現率と取り違えるため）。率は上の「当てはまる条件」の欄に出す
+const HINT_TAG = "今日の平均STが当てはまる";
 
 const scenarioResult = (n, seed) => {
   const w = [0.5, 0.15, 0.12, 0.12, 0.07, 0.04];
@@ -1782,7 +1784,7 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
     const text1 = await section.innerText();
     await openTab(section, "類似レース");
     await expect(
-      panel(section).getByRole("heading", { name: "類似レース" }),
+      panel(section).getByRole("heading", { name: "類似レース", exact: true }),
     ).toBeVisible();
     const text2 = await section.innerText();
     await openTab(section, "展開シナリオ");
@@ -2569,7 +2571,11 @@ test.describe("アナロジー・ファインダー: 類似レース", () => {
     const section = await openSection(page);
     await openTab(section, "類似レース");
     await expect(
-      panel(section).getByRole("heading", { level: 3, name: "類似レース" }),
+      panel(section).getByRole("heading", {
+        level: 3,
+        name: "類似レース",
+        exact: true,
+      }),
     ).toBeVisible();
     const text =
       "今日と同じ『G1以上の優勝戦』で、1号艇の級別・1号艇と勝率トップの差・勝率トップの艇番がそろう過去レース120件を、出走表が似ている順に並べた。展示後は展示タイム・天候・風・波も見ている";

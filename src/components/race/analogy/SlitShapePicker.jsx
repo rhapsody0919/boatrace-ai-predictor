@@ -33,14 +33,7 @@ export default function SlitShapePicker({ forms, slit, onSlit, badges }) {
           >
             <span className="af-pat-k">
               {t(`${k}.forms.${f}.name`)}
-              {badge && (
-                <span className="af-hintb">
-                  {t(`${k}.hintBadge`, {
-                    ph: fmtPct(badge.ph),
-                    pm: fmtPct(badge.pm),
-                  })}
-                </span>
-              )}
+              {badge && <span className="af-hintb">{t(`${k}.hintBadge`)}</span>}
             </span>
             {f !== "any" && <SlitShapeIcon st={SLIT_EXAMPLE[f]} />}
             <span className="af-pat-fq">

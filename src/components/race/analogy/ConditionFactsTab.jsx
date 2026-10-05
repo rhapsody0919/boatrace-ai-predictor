@@ -54,8 +54,13 @@ export default function ConditionFactsTab({ data, stage, target }) {
   const scopeFacts = facts[scopeKey];
   const showFellBack = !pickedKind && def.fellBack;
   const values = todayValues(today, exhibition);
+  // 優勝戦・準優勝戦の日は、今節の平均着順点の順位がほぼ枠の順になるので、六角形の軸とカードの今日の枠を
+  // 出さない（率と注記は出す。2026-10-05 ユーザー決定 Q-F1、spec A-4 Q7 の延長）
+  const finalDay = hidesSeriesScoreLine(today);
   const items = FACT_ITEMS.filter(
-    (it) => exhibitionStage || it.key !== "exh_time",
+    (it) =>
+      (exhibitionStage || it.key !== "exh_time") &&
+      !(finalDay && it.key === "series_score"),
   );
   const vs = (key) => values[key] ?? null;
   const cmp = compareOpen && compareBoat !== boat ? compareBoat : null;
@@ -108,7 +113,9 @@ export default function ConditionFactsTab({ data, stage, target }) {
       scopeFacts={scopeFacts}
       values={vs(row.key)}
       target={target}
-      todayPos={rankOf(row.key, boat)}
+      todayPos={
+        row.key === "series_score" && finalDay ? null : rankOf(row.key, boat)
+      }
       hideLine={row.key === "series_score" && hideSeriesLine}
       note={row.key === "series_score" ? note : null}
     />
