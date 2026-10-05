@@ -15,6 +15,7 @@
  *   node scripts/ml/analogy/storage.js upload-model     # out/ → {version}/
  *   node scripts/ml/analogy/storage.js download-reference  # 参照版（reference.json）→ out/reference/
  *   node scripts/ml/analogy/storage.js download-active-meta  # 表示中の版の per_race_meta.json → out/active/（日次の特徴量ジョブ）
+ *   node scripts/ml/analogy/storage.js download-active-model # 表示中の版の model_win.txt → out/active/（v16 の朝のバッチ）
  */
 
 import fs from "fs/promises";
@@ -178,26 +179,33 @@ async function downloadReference() {
   }
 }
 
-/** 表示中の版（is_active）の per_race_meta.json。日次の特徴量ジョブが、特徴量の並び・支部の対応表・版に使う */
-async function downloadActiveMeta() {
+/**
+ * 表示中の版（is_active）のファイルを out/active/ に置き、版の名前を out/active/version.txt に書く。
+ * per_race_meta.json は日次の特徴量ジョブ（特徴量の並び・支部の対応表・版）、model_win.txt は v16 の朝のバッチ
+ * （類似レースの距離の重み）が使う
+ */
+async function downloadActive(names) {
   const version = await activeVersion();
   if (!version)
     throw new Error("表示中の版（analogy_models.is_active）がありません");
-  const key = `${version}/per_race_meta.json.gz`;
-  const { data: blob, error } = await supabase.storage
-    .from(BUCKET)
-    .download(key);
-  if (error)
-    throw new Error(
-      `${key} を取れません（レースごとの寄与度を含む版の学習の前か、Storage の不具合）: ${error.message}`,
-    );
   const dir = path.join(OUT_DIR, "active");
   await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(
-    path.join(dir, "per_race_meta.json"),
-    zlib.gunzipSync(Buffer.from(await blob.arrayBuffer())),
-  );
-  console.log(`  ⬇️ ${key}`);
+  for (const name of names) {
+    const key = `${version}/${name}.gz`;
+    const { data: blob, error } = await supabase.storage
+      .from(BUCKET)
+      .download(key);
+    if (error)
+      throw new Error(
+        `${key} を取れません（その版の学習の前か、Storage の不具合）: ${error.message}`,
+      );
+    await fs.writeFile(
+      path.join(dir, name),
+      zlib.gunzipSync(Buffer.from(await blob.arrayBuffer())),
+    );
+    console.log(`  ⬇️ ${key}`);
+  }
+  await fs.writeFile(path.join(dir, "version.txt"), version);
 }
 
 async function main() {
@@ -205,10 +213,13 @@ async function main() {
   const cmd = process.argv[2];
   if (cmd === "upload-model") await uploadModel();
   else if (cmd === "download-reference") await downloadReference();
-  else if (cmd === "download-active-meta") await downloadActiveMeta();
+  else if (cmd === "download-active-meta")
+    await downloadActive(["per_race_meta.json"]);
+  else if (cmd === "download-active-model")
+    await downloadActive(["model_win.txt"]);
   else
     throw new Error(
-      "使い方: node scripts/ml/analogy/storage.js <upload-model|download-reference|download-active-meta>",
+      "使い方: node scripts/ml/analogy/storage.js <upload-model|download-reference|download-active-meta|download-active-model>",
     );
 }
 

@@ -700,6 +700,11 @@
       "guards": "アナロジー・ファインダー v16（BOA-271）の定義の固定データ。優勝戦・準優勝戦の判定 v2 が固定の82件（scripts/ml/analogy/testdata/stage-rule-v2-cases.json）と一致し、サイトのバッジ（getRaceStageKey）と今節の得点の除外（seriesPoints.js の classifyStage）が同じ判定に従うこと"
     },
     {
+      "script": "verify-analogy-v16-snapshots-migration.js",
+      "tier": "ci",
+      "guards": "マイグレーション133（BOA-271 v16 の analogy_v16_snapshots）を PGlite に適用し、RLS 有効・anon/authenticated は SELECT のみ・service_role は書ける・主キーの重複は ON CONFLICT DO NOTHING で1行・段ごとの列の約束（CHECK）・races の外部キー・冪等・ロールバックを確かめる"
+    },
+    {
       "script": "verify-analogy-storage.js",
       "tier": "ci",
       "guards": "アナロジー・ファインダーの学習（BOA-271）で、Storage の古い版を消すときに表示中の版を残すこと、表示中の版と同じ名前ではモデルを上書きしないこと、長期データのキャッシュの列名が今のコードと違えば失敗すること（scripts/ml/analogy/storageRules.js）"

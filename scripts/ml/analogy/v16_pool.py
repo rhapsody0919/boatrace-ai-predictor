@@ -25,9 +25,6 @@ import pandas as pd
 from features import D, KB_END, _bool
 
 TECHNIQUES = ("逃げ", "差し", "まくり", "まくり差し", "抜き", "恵まれ")
-BOAT_COLS = ["race_id", "race_date", "venue_code", "boat_number", "cls", "course", "st", "finish_rank",
-             "absent", "returned"]
-RACE_COLS = ["race_id", "race_date", "venue_code", "winning_technique", "payout_3tan"]
 
 
 def _csv(src: Path, name: str, cols: list[str]) -> pd.DataFrame:
@@ -47,19 +44,21 @@ def _technique(s: pd.Series) -> pd.Series:
 
 def load_kb_boats(src: Path = D) -> tuple[pd.DataFrame, pd.DataFrame]:
     """長期（〜2025-12-02、has_result のレース）の艇の行とレースの行"""
-    r = _csv(src, "kb_races", ["race_id", "race_date", "venue_code", "has_result", "technique", "payout_3tan"])
+    r = _csv(src, "kb_races", ["race_id", "race_date", "venue_code", "race_number", "has_result", "technique",
+                               "payout_3tan"])
     r = r[_bool(r["has_result"]) & (pd.to_datetime(r["race_date"]) <= KB_END)]
     races = pd.DataFrame({"race_id": r["race_id"], "race_date": r["race_date"], "venue_code": r["venue_code"],
-                          "winning_technique": _technique(r["technique"]),
+                          "race_number": r["race_number"], "winning_technique": _technique(r["technique"]),
                           "payout_3tan": pd.to_numeric(r["payout_3tan"], errors="coerce")})
-    b = _csv(src, "kb_boats", ["race_id", "boat_number", "class", "course", "start_timing", "is_flying",
+    b = _csv(src, "kb_boats", ["race_id", "boat_number", "racer_id", "class", "course", "start_timing", "is_flying",
                                "is_late_start", "finish_raw", "finish_rank"])
-    b = b.merge(races[["race_id", "race_date", "venue_code"]], on="race_id", how="inner")
+    b = b.merge(races[["race_id", "race_date", "venue_code", "race_number"]], on="race_id", how="inner")
     fr = b["finish_raw"]
     returned = fr.isin(["F", "L0", "L1"]) | _bool(b["is_flying"]) | _bool(b["is_late_start"])
     absent = (fr.isna() | fr.str.startswith("K", na=False)) & ~returned
     boats = pd.DataFrame({
         "race_id": b["race_id"], "race_date": b["race_date"], "venue_code": b["venue_code"],
+        "race_number": b["race_number"], "racer_id": b["racer_id"],
         "boat_number": b["boat_number"].astype(int), "cls": b["class"],
         "course": pd.to_numeric(b["course"], errors="coerce"),
         "st": pd.to_numeric(b["start_timing"], errors="coerce"),
@@ -72,7 +71,7 @@ def load_kb_boats(src: Path = D) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 def load_main_boats(src: Path = D) -> tuple[pd.DataFrame, pd.DataFrame]:
     """本体（2025-12-03〜）の艇の行とレースの行。中止・順延・不成立のレースは入れない"""
-    races = _csv(src, "races", ["race_id", "race_date", "venue_code", "cancellation_status"])
+    races = _csv(src, "races", ["race_id", "race_date", "venue_code", "race_number", "cancellation_status"])
     res = _csv(src, "results", ["race_id", "rank1", "rank2", "rank3", "rank4", "rank5", "rank6", "is_cancelled",
                                 "is_no_race", "race_status", "refund_boats", "winning_technique", "payout_trio"]
                + [f"actual_course_{i}" for i in range(1, 7)])
@@ -80,7 +79,7 @@ def load_main_boats(src: Path = D) -> tuple[pd.DataFrame, pd.DataFrame]:
     res = res[res["rank1"].notna() & ~_bool(res["is_cancelled"]) & ~_bool(res["is_no_race"])
               & res["race_status"].ne("no_race")]
     rr = races.drop(columns="cancellation_status").merge(res, on="race_id", how="inner")
-    e = _csv(src, "entries", ["race_id", "boat_number", "grade", "is_absent"])
+    e = _csv(src, "entries", ["race_id", "boat_number", "racer_id", "grade", "is_absent"])
     x = _csv(src, "exhibition", ["race_id", "boat_number", "is_absent"]).rename(columns={"is_absent": "x_absent"})
     st = _csv(src, "start_timings", ["race_id", "boat_number", "start_timing", "is_flying", "is_late_start",
                                      "finish_mark"])
@@ -99,13 +98,14 @@ def load_main_boats(src: Path = D) -> tuple[pd.DataFrame, pd.DataFrame]:
     absent = (_bool(e["is_absent"]) | _bool(e["x_absent"])).to_numpy()
     boats = pd.DataFrame({
         "race_id": e["race_id"], "race_date": e["race_date"], "venue_code": e["venue_code"],
+        "race_number": e["race_number"], "racer_id": e["racer_id"],
         "boat_number": bn, "cls": e["grade"], "course": course,
         "st": pd.to_numeric(e["start_timing"], errors="coerce"),
         "finish_rank": np.where(returned | absent, np.nan, raw_rank),
         "absent": absent, "returned": returned, "_raw_rank": raw_rank,
     })
     out_races = pd.DataFrame({"race_id": rr["race_id"], "race_date": rr["race_date"],
-                              "venue_code": rr["venue_code"],
+                              "venue_code": rr["venue_code"], "race_number": rr["race_number"],
                               "winning_technique": _technique(rr["winning_technique"]),
                               "payout_3tan": pd.to_numeric(rr["payout_trio"], errors="coerce")})
     return boats, out_races
@@ -151,7 +151,7 @@ def build_races(boats: pd.DataFrame, races: pd.DataFrame) -> pd.DataFrame:
     agg["st_by_course"] = to_list(by_course, float)
     agg["course_known"] = (np.sort(np.nan_to_num(course), axis=1) == np.arange(1, 7)).all(axis=1)
 
-    out = races.set_index("race_id")[["race_date", "venue_code", "winning_technique", "payout_3tan"]].join(
+    out = races.set_index("race_id")[["race_date", "venue_code", "race_number", "winning_technique", "payout_3tan"]].join(
         agg, how="inner")
     # D-5（不成立は load_* で除いた）
     out["layer_ok"] = ~out["returned_top3"] & out["rank1"].notna() & out["rank2"].notna() & out["rank3"].notna()
