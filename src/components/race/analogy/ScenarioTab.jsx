@@ -289,7 +289,7 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
               today: t(`${k}.todayEntry.${todayEntry}`),
               entry: t(`${k}.entryShort.${todayEntry}`),
               p: fmtPct(entryAgree[0] / entryAgree[1]),
-              since: fmtDate(agreement.period?.[0]),
+              since: fmtDate(String(agreement.period?.[0] ?? "").slice(0, 7)),
               n: fmtCount(entryAgree[1]),
             })
           : exhibitionStage
@@ -310,6 +310,7 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
         onForm={chooseForm}
         waku={waku}
         baseN={baseN}
+        allA1={(today?.classes ?? []).every((c) => c === "A1")}
       />
       <h4 className="af-h4">
         <span className="af-stepn">2</span>
@@ -339,7 +340,7 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
                   ? formAgree.miss[0] / formAgree.miss[1]
                   : null,
               ),
-              since: fmtDate(agreement.period?.[0]),
+              since: fmtDate(String(agreement.period?.[0] ?? "").slice(0, 7)),
               n: fmtCount(agreement.forms_n),
             })
           : ""}

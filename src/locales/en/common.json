@@ -920,7 +920,7 @@
           "loc_win": {
             "label": "Local win rate",
             "short": "Local win rate",
-            "desc": "Win rate at this venue (race card value; the racer's record)"
+            "desc": "Win rate at this venue ({{venue}}) (race card value; racer record)"
           },
           "recent_win30": {
             "label": "1st-place rate, last 30 races",
@@ -1356,7 +1356,8 @@
             "fog": "Fog",
             "typhoon": "Typhoon"
           }
-        }
+        },
+        "allShownAfterFew": ". Showing every past race that matches the conditions"
       },
       "sources": {
         "summary": "Items used (which numbers these come from)",
@@ -1479,7 +1480,7 @@
           "overall": "Overall"
         },
         "hintSrcFoot": "This course = average only when in today's course (usually use this). Overall = average across all courses (mixes in different start positions)",
-        "hintPicCourse": "Each racer's avg. ST over the last 30 wakunari races in today's course (roughly six months to a year). Dotted line: the average of all racers in that course at {{venue}} (any class). Right of the dotted line = earlier than that average. Look at the gaps between boats.",
+        "hintPicCourse": "Each racer's average ST over the last 30 races when entering today's course in wakunari (roughly the last 6–12 months). The dotted line is the average of all racers who ran that course at {{venue}} (any class). Right of the dotted line = earlier than that average. ",
         "hintPicOverall": "Each racer's avg. ST over the last 30 races (any course). Course differences in starts are mixed in, so no dotted line is shown. Look at the gaps between boats.",
         "hintFilled": "Boat {{boats}} has fewer than 5 runs in this course, so the overall avg. ST is used. ",
         "hintRowHead": "Avg. ST",
@@ -1487,7 +1488,7 @@
         "hintVenueAll": "All racers at {{venue}} (by course)",
         "hintExh": "Today's exhibition",
         "runs": "{{n}} runs",
-        "hintVenueFoot": "Avg. ST at the venue is for reference (up to the last 30 races). ",
+        "hintVenueFoot": "The average ST at {{venue}} is for reference (up to the last 30 races). ",
         "hintFewVenue": "Boat {{boats}} has few runs at this venue, so values can swing. ",
         "hintExhPost": "Exhibition ST is for reference; its link to the race ST is weak (per-boat correlation 0.08, vs. 0.28 for avg. ST). F.09 = crossed the start line 0.09s early in the exhibition (no penalty in the exhibition).",
         "hintExhPre": "Exhibition ST is available after the exhibition.",
@@ -1506,7 +1507,7 @@
         "hintDown": "{{form}} is actually less likely: {{ph}} ({{pm}} when not matching)",
         "hintCount": "{{n}} races. {{form}} = in the race, {{def}}",
         "hintNone": "Today's order matches none of the conditions",
-        "hintFoot": "Counted over wakunari races in {{scope}} ({{n}} races, excluding races with an F or late start, etc.). Even when it matches, it misses more often than not (a clue, not a deciding factor). Tap to select that shape in ② below",
+        "hintFoot": "Counted in wakunari races in {{scope}} ({{n}}; races with flying or late starts etc. excluded). {{few}}Even when a condition matches, it misses more often than not (a clue, not a deciding factor). Tap to select that shape in ② below",
         "hintBadge": "When avg. ST matches {{ph}} ({{pm}} when not)",
         "slitHeading": "How will the start line up? (slit shape)",
         "forms": {
@@ -1623,7 +1624,10 @@
         "slitLabel": "Slit: {{forms}}",
         "foot": "These are counted shares, not necessarily causes. The slit shape is only known after the race, so treat it as a \"what if\" reference. {{n}} races with refunds (F, L, withdrawal) are excluded, so counts do not match \"Who finishes, and when\"",
         "attackerName": "{{boat}} ({{role}}). ",
-        "withParen": "{{core}} ({{paren}})"
+        "withParen": "{{core}} ({{paren}})",
+        "hintPicA1": "In all-A1 races, most boats sit to the right. ",
+        "hintPicTail": "What matters is the gap between boats.",
+        "hintFew": "The sample is small, so the range is wide. "
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
       "sentenceSep": ". "

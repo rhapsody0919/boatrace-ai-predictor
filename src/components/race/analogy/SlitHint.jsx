@@ -31,6 +31,7 @@ export default function SlitHint({
   onForm,
   waku,
   baseN,
+  allA1 = false,
 }) {
   const { t } = useTranslation();
   const lbl = useId();
@@ -91,7 +92,9 @@ export default function SlitHint({
       </div>
       <p className="af-foot">
         {version === "course"
-          ? t(`${k}.hintPicCourse`, { venue: vName })
+          ? t(`${k}.hintPicCourse`, { venue: vName }) +
+            (allA1 ? t(`${k}.hintPicA1`) : "") +
+            t(`${k}.hintPicTail`)
           : t(`${k}.hintPicOverall`)}
         {version === "course" &&
           filled.length > 0 &&
@@ -153,7 +156,7 @@ export default function SlitHint({
         </table>
       </div>
       <p className="af-foot">
-        {t(`${k}.hintVenueFoot`)}
+        {t(`${k}.hintVenueFoot`, { venue: vName })}
         {fewVenue.length > 0 &&
           t(`${k}.hintFewVenue`, {
             boats: fewVenue.join(t("aiPredictionTab.analogy.listSeparator")),
@@ -202,7 +205,11 @@ export default function SlitHint({
         )}
       </div>
       <p className="af-foot">
-        {t(`${k}.hintFoot`, { scope, n: fmtCount(baseN) })}
+        {t(`${k}.hintFoot`, {
+          scope,
+          n: fmtCount(baseN),
+          few: baseN < 3000 ? t(`${k}.hintFew`) : "",
+        })}
       </p>
     </div>
   );

@@ -62,6 +62,7 @@ function TodaySentence({ row, values, boat, scopeFacts, target }) {
  *   compareValues?: (number|null)[]|null, target: 1|2|3, todayPos: number|null, hideLine: boolean, note: string|null}} props
  */
 export default function FactCard({
+  venueName,
   row,
   boat,
   compareBoat,
@@ -124,7 +125,7 @@ export default function FactCard({
       <div className="af-card-head">
         <h4>{label}</h4>
         <small className="af-card-desc">
-          {t(`${k}.items.${row.key}.desc`)}
+          {t(`${k}.items.${row.key}.desc`, { venue: venueName })}
         </small>
         <span className="af-card-judge">
           {t(`${k}.judge.${row.judge.level}`)}
@@ -174,9 +175,15 @@ export default function FactCard({
               </span>
               <span className="af-strip-rank">
                 {i === 0
-                  ? t(`${k}.stripTop`, { word: word(row.good) })
+                  ? t(`${k}.stripTop`, { word: word(row.good) }).replace(
+                      /^(.+?)(（.+）)$/,
+                      "$1\n$2",
+                    )
                   : i === 5
-                    ? t(`${k}.stripBottom`, { word: word(row.bad) })
+                    ? t(`${k}.stripBottom`, { word: word(row.bad) }).replace(
+                        /^(.+?)(（.+）)$/,
+                        "$1\n$2",
+                      )
                     : t(`${k}.stripRank`, { rank: i + 1 })}
               </span>
             </div>

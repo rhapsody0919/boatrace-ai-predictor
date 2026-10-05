@@ -317,7 +317,10 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
         {tip ?? ""}
       </p>
       {N < FEW_SIMILAR ? (
-        <p className="af-warn">{t(`${k}.few`, { n: fmtCount(N) })}</p>
+        <p className="af-warn">
+          {t(`${k}.few`, { n: fmtCount(N) })}
+          {allShown ? t(`${k}.allShownAfterFew`) : ""}
+        </p>
       ) : allShown ? (
         <p className="af-foot">{t(`${k}.allShown`)}</p>
       ) : null}

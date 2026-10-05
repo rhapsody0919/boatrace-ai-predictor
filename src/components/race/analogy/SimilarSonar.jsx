@@ -192,6 +192,13 @@ export default function SimilarSonar({
             </g>
           );
         })}
+        <g className="af-sweep" pointerEvents="none">
+          <path
+            d={`M${CX},${CY}L${CX + R},${CY}A${R},${R} 0 0 1 ${CX + R * Math.cos(0.35)},${CY + R * Math.sin(0.35)}Z`}
+            fill="#c9a227"
+            fillOpacity=".12"
+          />
+        </g>
         <circle
           cx={CX}
           cy={CY}

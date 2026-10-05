@@ -5,6 +5,8 @@
  */
 
 .af-v16 {
+  /* 点線（比べる相手・全体の率）の色。承認版モックの --hit */
+  --af-hit: #0f766e;
   /* 承認版モックと同じく、広い画面でも読みやすい幅（約680px）で中央に置く */
   max-width: 720px;
   margin-inline: auto;
@@ -399,13 +401,13 @@
   position: absolute;
   left: 0;
   right: 0;
-  border-top: 2px dotted var(--color-info);
+  border-top: 2px dotted var(--af-hit);
 }
 
 .af-strip-rank {
   font-size: 10px;
   line-height: 1.3;
-  white-space: nowrap;
+  white-space: pre-line;
 }
 
 .af-today {
@@ -501,7 +503,7 @@ button.af-bar {
   top: -3px;
   width: 0;
   height: 18px;
-  border-left: 2px dotted var(--color-info);
+  border-left: 2px dotted var(--af-hit);
 }
 
 .af-key {
@@ -524,7 +526,7 @@ button.af-bar {
 .af-key i.is-dot {
   width: 2px;
   height: 12px;
-  border-left: 2px dotted var(--color-info);
+  border-left: 2px dotted var(--af-hit);
   border-radius: 0;
 }
 
@@ -1219,4 +1221,51 @@ button.af-bar {
 .af-lk .af-bar-v small {
   display: block;
   font-size: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .af-v16 {
+    --af-hit: #2dd4bf;
+  }
+}
+
+:root[data-theme="dark"] .af-v16 {
+  --af-hit: #2dd4bf;
+}
+
+.af-card.is-weak .af-card-head h4 {
+  color: var(--text-secondary);
+}
+
+.af-strip-col.is-today .af-strip-rank {
+  color: var(--brand-accent-primary);
+}
+
+.af-strip-rank small {
+  display: block;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .af-sonar .af-sweep {
+    animation: af-sweep 8s linear infinite;
+    transform-origin: 220px 220px;
+  }
+
+  @keyframes af-sweep {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+.af-panel-split {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+@media (max-width: 480px) {
+  .af-pats {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

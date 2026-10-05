@@ -51,7 +51,7 @@ export default function SlitShapePicker({ forms, slit, onSlit, badges }) {
                     n: fmtCount(x.n),
                   })}
               {x.n >= MIN_SCENARIO &&
-                `・${t(`${k}.b1Win`, { p: fmtPct(x.b1_win / x.n) })}`}
+                `${t("aiPredictionTab.analogy.listSeparator")}${t(`${k}.b1Win`, { p: fmtPct(x.b1_win / x.n) })}`}
             </span>
           </button>
         );

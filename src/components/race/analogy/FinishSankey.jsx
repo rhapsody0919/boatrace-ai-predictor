@@ -196,6 +196,9 @@ export default function FinishSankey({ tri, first, onFirst, not1, onNot1 }) {
                       textAnchor={p === 0 ? "end" : "start"}
                       fontSize="12"
                       fill={SCOPE_SUBTEXT}
+                      stroke="#060d18"
+                      strokeWidth="3"
+                      paintOrder="stroke"
                       pointerEvents="none"
                     >
                       {t("aiPredictionTab.analogy.count", {

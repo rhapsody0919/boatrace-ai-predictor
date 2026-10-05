@@ -101,6 +101,7 @@ export default function ConditionFactsTab({ data, stage, target }) {
   const card = (row) => (
     <FactCard
       key={row.key}
+      venueName={venueLabel(venue, t)}
       row={row}
       boat={boat}
       compareBoat={cmp}
