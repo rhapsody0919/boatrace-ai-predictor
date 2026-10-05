@@ -78,7 +78,7 @@ test("除いた人数を足すと出場人数になり、表に無い印の凡�
   await expect(list).toContainText("順位の対象外：");
   await expect(list.locator("[translate=no]")).not.toHaveCount(0);
   await expect(list).not.toContainText("ほか");
-  await expect(page.locator(".rmt-sub").first()).not.toContainText(
+  await expect(page.locator(".rmt-card").first()).not.toContainText(
     "3走未満",
   );
 });
@@ -138,7 +138,7 @@ test("まだ全員が1走していない間は準優の目安を伏せ、人数�
   await openMeetTab(page, "2026-10-01-19-05");
   // 目安の文は人数の行と別の段落（BOA-714）
   const sub = page.locator(".rmt-sub").first();
-  const border = page.locator(".rmt-sub").nth(1);
+  const border = page.locator(".rmt-border-note");
   await expect(border).toContainText("準優の目安は、出場選手が全員1走してから出します。");
   await expect(border).not.toContainText("準優の目安は18位");
   await expect(sub).toContainText("まだ走っていない21人を除く");
@@ -148,7 +148,7 @@ test("まだ全員が1走していない間は準優の目安を伏せ、人数�
 test("全員が走った後は目安を出し、何走時点の目安かを断る", async ({ page }) => {
   // 津 9/23 12R（9/22 中止の翌日）。この日の途中までは初めて走る選手がいて伏せていた
   await openMeetTab(page, "2026-09-23-09-12");
-  const sub = page.locator(".rmt-sub").nth(1);
+  const sub = page.locator(".rmt-border-note");
   await expect(sub).toContainText("準優の目安は18位");
   await expect(sub).toContainText(
     "走した時点の目安で、予選が終わるまでは動きます。",
@@ -212,22 +212,25 @@ test("対象外の一覧は理由を先に表のセルと同じ書き方で出�
   const list = page.locator(".rmt-excluded-list");
   await expect(list).toContainText("順位の対象外：賞典除外（今節F） 大澤普司");
   await expect(list).toContainText("／途中帰郷 ");
+  // 上から: 表 → Ｗ優勝戦の注記 → 準優の目安（点線の意味、BOA-722）→ 人数の行 →
+  // 対象外の一覧 → 表の印の説明（金枠・⚠ 等、BOA-722）。人数の行と一覧は隣り合う（BOA-714）。
+  // Ｗ優勝戦の注記を目安より先に置くのは、「12位」を母数（24人）の説明より先に
+  // 出すと、見出しの「48人中」の12位と読めたため（BOA-722 ファン評価1周目）
   const order = await page.evaluate(() =>
     [
+      ".rmt-compare",
       ".rmt-series-note",
+      ".rmt-border-note",
       ".rmt-sub",
       ".rmt-excluded-list",
+      ".rmt-table-notes",
     ].map((sel) => document.querySelector(sel).getBoundingClientRect().top),
   );
-  // Ｗ優勝戦の注記 → 人数の行 → 対象外の一覧の順
   expect(order).toEqual([...order].sort((a, b) => a - b));
-  // 準優の目安の段落は対象外の一覧の後ろ
-  const borderTop = await page
-    .locator(".rmt-sub")
-    .nth(1)
-    .evaluate((el) => el.getBoundingClientRect().top);
-  expect(borderTop).toBeGreaterThan(order[2]);
-  await expect(page.locator(".rmt-sub").nth(1)).toContainText("準優の目安は");
+  await expect(page.locator(".rmt-border-note")).toContainText("準優の目安は");
+  // 人数の行は凡例の後ろに付けず、段落の頭から始まる（BOA-722）
+  await expect(page.locator(".rmt-sub").first()).not.toContainText("金の枠");
+  await expect(page.locator(".rmt-table-notes")).toContainText("金の枠");
 });
 
 test("英語の対象外の一覧で、見出しと理由のコロンが二重にならない", async ({ page }) => {
@@ -253,4 +256,121 @@ test("375pxで、対象外の一覧の選手名が途中で改行されない", 
       .map((el) => el.textContent),
   );
   expect(multiLine).toEqual([]);
+});
+
+test("⚠の説明は表のすぐ下に出し、金枠の凡例と印の説明は段落を分ける", async ({
+  page,
+}) => {
+  // 津 9/23 12R（予選中）。6艇すべてに⚠が付くのに、説明は表の下4段落目にあった。
+  // 金枠の凡例と印の説明も1段落に混ざっていた（BOA-738、ファン評価2周続けて）
+  await openMeetTab(page, "2026-09-23-09-12");
+  const hints = page.locator(".rmt-hint");
+  await expect(hints.nth(1)).toHaveText("⚠ は3走未満（得点率がまだ荒い）。");
+  const [hintTop, borderTop] = await page.evaluate(() =>
+    [".rmt-hint + .rmt-hint", ".rmt-border-note"].map(
+      (sel) => document.querySelector(sel).getBoundingClientRect().top,
+    ),
+  );
+  expect(hintTop).toBeLessThan(borderTop);
+  await expect(page.locator(".rmt-table-notes")).not.toContainText("⚠ は3走未満");
+});
+
+test("和文の注記で句点の後に半角スペースを入れない（英語は入れる）", async ({
+  page,
+}) => {
+  // 「準優の目安は12位（5.40）。 点線より上が…」と空白が入っていた（BOA-738）
+  await openMeetTab(page, "2026-09-23-09-12");
+  const ja = await page.locator(".rmt-border-note").innerText();
+  expect(ja).toContain("。青い点線より上が");
+  expect(ja).not.toMatch(/。 /);
+  await page.goto("/en/race/2026-09-23-09-12");
+  await page.locator(".race-tabs-btn").nth(2).click();
+  const en = await page.locator(".rmt-border-note").innerText({ timeout: 30000 });
+  expect(en).toMatch(/\)\. \S/);
+});
+
+test("韓国語の⚠の説明は走数と分かる書き方にする", async ({ page }) => {
+  // 「3주 미만」が「3週間未満」と読めた。表のすぐ下に出すようにしたので目立つ（BOA-738 ファン評価1周目）
+  await page.goto("/ko/race/2026-09-23-09-12");
+  await page.locator(".race-tabs-btn").nth(2).click();
+  const hint = page.locator(".rmt-hint").nth(1);
+  await expect(hint).toHaveText("⚠는 출주 3회 미만입니다(득점률이 아직 불안정).", {
+    timeout: 30000,
+  });
+});
+
+test("表に⚠が無いときは、金枠の凡例で⚠に触れない", async ({ page }) => {
+  // 桐生 9/25 7R（予選後、6艇とも3走以上）。⚠の説明は出ないのに、凡例だけが
+  // 「走数の少ない⚠の艇のときは…」と⚠に触れていた（BOA-746）
+  await openMeetTab(page, "2026-09-25-01-07");
+  const legend = page.locator(".rmt-table-notes");
+  await expect(legend).toContainText("金の枠は6艇の中で最も良い値");
+  await expect(legend).not.toContainText("⚠");
+  // ⚠があるレースでは断りを出す（津 9/23 12R、6艇すべて⚠）
+  await openMeetTab(page, "2026-09-23-09-12");
+  await expect(page.locator(".rmt-table-notes")).toContainText(
+    "（同じ値は全部）。得点率・節内順位で最も良い値が走数の少ない⚠の艇のときは、その列は",
+  );
+  // ⚠の艇でも前検には金枠が付く。凡例が列を書かないと「⚠の艇には付かない」と読め、
+  // 前検の金枠と食い違って見えた（BOA-738 ファン評価2周目）
+  await expect(page.locator(".rmt-compare .rmt-pretest.ind-best").first()).toBeVisible();
+});
+
+test("表の6艇に準優の目安内がいないときは、点線の説明でなく「いません」と書く", async ({
+  page,
+}) => {
+  // 尼崎 9/26 9R（予選中）。点線は目安内の最後の艇の行の下に引くので、6艇とも目安外だと
+  // 点線が無い。それでも「点線より上が準優の目安内」と書き、無い線を探させた（BOA-756）
+  await openMeetTab(page, "2026-09-26-13-09");
+  await expect(page.locator(".rmt-compare .is-border-edge")).toHaveCount(0);
+  const note = page.locator(".rmt-border-note");
+  await expect(note).toContainText("この6艇に準優の目安内の選手はいません");
+  await expect(note).not.toContainText("点線");
+  // 目安内の艇がいるレースでは点線の説明を出す（津 9/23 12R）
+  await openMeetTab(page, "2026-09-23-09-12");
+  await expect(page.locator(".rmt-compare .is-border-edge")).toHaveCount(1);
+  await expect(page.locator(".rmt-border-note")).toContainText("点線より上が");
+});
+
+test("得点率早見の得点率にも、走数が少ないときは⚠を付ける", async ({ page }) => {
+  // 津 9/23 12R（予選中、6艇とも3走未満）。比較表には⚠があるのに、早見の得点率には無く、
+  // 目安に届いて青い得点率が当てになる値に見えた（BOA-757）
+  await openMeetTab(page, "2026-09-23-09-12");
+  await expect(page.locator(".rmt-forecast-table td.rmt-rate .rmt-warn")).toHaveCount(6);
+});
+
+test("推移の ST/展示 の選択中の枠と、選んだ艇の ST の線に金を使わない", async ({
+  page,
+}) => {
+  // 金は「6艇で最良」の印。選択中の枠と ST の線が金で、ダークでは5号艇の線と同じ色に
+  // 見えた（BOA-757）
+  // 津 9/28 11R（最終日、選んだ艇が今節を何走もしていて ST の線が引かれる）
+  await openMeetTab(page, "2026-09-28-09-11");
+  await expect(page.locator(".rmt-metric-chip.is-active")).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(
+    page.locator(".rmt-spark .meet-sparkline-line").first(),
+  ).toBeAttached({ timeout: 30000 });
+  const colors = await page.evaluate(() => {
+    const css = (v) => {
+      const el = document.createElement("span");
+      el.style.color = v;
+      document.body.appendChild(el);
+      const c = getComputedStyle(el).color;
+      el.remove();
+      return c;
+    };
+    const chip = document.querySelector(".rmt-metric-chip.is-active");
+    const line = document.querySelector(".rmt-spark .meet-sparkline-line");
+    return {
+      gold: css("var(--brand-accent-primary)"),
+      chip: chip ? getComputedStyle(chip).borderTopColor : null,
+      line: line ? getComputedStyle(line).stroke : null,
+    };
+  });
+  expect(colors.chip).not.toBeNull();
+  expect(colors.chip).not.toBe(colors.gold);
+  expect(colors.line).not.toBeNull();
+  expect(colors.line).not.toBe(colors.gold);
 });

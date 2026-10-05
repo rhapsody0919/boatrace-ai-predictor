@@ -13,6 +13,7 @@ import {
   translateTechnique,
 } from "../components/race/raceIndicators";
 import { TECHNIQUE_NAMES } from "../utils/turnPrediction";
+import { formatExhibitionSt } from "../utils/formatters";
 import {
   AI_COPY_PROMPT_TYPES,
   getAiCopyPromptText,
@@ -114,8 +115,12 @@ function buildRows(t, players, analysis) {
     {
       label: t("dataTable.rowExSt"),
       values: players.map((p) => {
-        const v = toNumber(stByBoat.get(p.number)?.exhibition_st);
-        return v !== null ? v.toFixed(2) : DASH;
+        // 展示のフライング・出遅れは公式の表記（F.01 等）で書く（BOA-759）
+        const row = stByBoat.get(p.number);
+        return (
+          formatExhibitionSt(row?.exhibition_st, row?.exhibition_start_flag) ??
+          DASH
+        );
       }),
     },
     {

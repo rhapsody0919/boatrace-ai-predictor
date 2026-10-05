@@ -126,7 +126,7 @@ function venueCodeFromRaceId(raceId) {
 async function fetchOutcomeDistribution() {
   const data = await fetchAll(
     "outcome_distribution",
-    "venue_code, first_boat, second_boat, third_boat, count_90days, total_races, probability, avg_payout",
+    "venue_code, first_boat, second_boat, third_boat, count_90days, total_races, probability, avg_payout", (q) => q.order("id"),
   );
   const byVenueFirst = new Map();
   for (const row of data) {
@@ -153,7 +153,7 @@ async function fetchRaceResults(from, to) {
         .not("rank2", "is", null)
         .not("rank3", "is", null)
         .gte("race_id", from)
-        .lte("race_id", `${to}-99-99`),
+        .lte("race_id", `${to}-99-99`).order("race_id"),
   );
   const map = new Map();
   for (const r of data) map.set(r.race_id, r);
@@ -173,7 +173,7 @@ async function fetchPredictions(from, to) {
       q
         .eq("is_shadow", false)
         .gte("race_id", from)
-        .lte("race_id", `${to}-99-99`),
+        .lte("race_id", `${to}-99-99`).order("race_id").order("model_id").order("prediction_id"),
   );
 }
 

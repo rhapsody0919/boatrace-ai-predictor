@@ -367,6 +367,11 @@
       "guards": "選手の平均ST・直近30走・ST標準偏差（scripts/lib/racerStStats.js、BOA-581）: 1000行上限での取りこぼし・Fの除外・直近30走の並び・取得エラーの例外化"
     },
     {
+      "script": "verify-race-series-final-title.js",
+      "tier": "ci",
+      "guards": "race_conditions の race_title・is_final_day を race_series から埋める候補（BOA-695、backfill-race-series-meta.js final-title）。既存値を上書きしない、最終日は race_date = end_date、節の外・重なり・races に無い行は書かない、全行が同じ3列を持つこと"
+    },
+    {
       "script": "verify-rls-migration.js",
       "tier": "ci",
       "guards": "マイグレーション076（RLS無効テーブルの匿名書き込みの是正、BOA-370）をPGlite上で実際に適用して検証"
@@ -650,6 +655,11 @@
       "guards": "出目分布・逃げ成功時分布の「3連単」の平均配当が3連単の列（payout_trio。列名と中身が逆）で集計されること、配当の無いレースを平均の分母に入れないこと、ルールの追跡の3連複の払戻が payout_trifecta であること（BOA-535。実データ・江戸川456レースのフィクスチャで、本番のSQLの値と照合）"
     },
     {
+      "script": "verify-outcome-distribution-refund.js",
+      "tier": "ci",
+      "guards": "出目分布・逃げ成功時分布の日次集計が、一部返還の返還艇（refund_boats）を3着に数えないこと。返還艇を飛ばすと1〜3着がそろわないレースはパターンにも total_races にも入れず、件数の合計が total_races と一致すること（BOA-579 の積み残し。2026-07-04〜10-01 の実データ5レース）"
+    },
+    {
       "script": "verify-exhibition-time-top-stats.js",
       "tier": "ci",
       "guards": "展示タイム1位率の集計（update-exhibition-time-top-stats.js）が、展示タイムが NULL の行（展示ST先行・展示前の体重だけの行・展示なし）を分母に入れないこと、同着の最速を数えないこと（BOA-520。PR #917 で見つかった率の薄まり）"
@@ -688,6 +698,21 @@
       "script": "verify-best-of.js",
       "tier": "ci",
       "guards": "6艇の中の最良値の判定 bestOf（src/utils/bestOf.js、docs/design/race-detail-ui-unify R1）。同値の最良を全部返すこと、全艇同値と値なしは空、表示の桁で丸めて比べること（54.84 と 54.80、平均の浮動小数の誤差）、null と NaN を除くこと"
+    },
+    {
+      "script": "verify-races-derived-backfill.js",
+      "tier": "ci",
+      "guards": "races の導出列の埋め直し（build-races-derived-backfill-sql.js、BOA-630）が、generate-predictions.js と同じ式（丸めてから平均・母標準偏差）で計算し、6列とも NULL の行だけを更新し（既存の値を上書きしない・再実行は0件）、モデルの出力の列（volatility_* 等）に触れないこと"
+    },
+    {
+      "script": "verify-race-detail-boa711.js",
+      "tier": "ci",
+      "guards": "レース詳細の色分け統一の積み残し（BOA-711）の修正。今節の着順の1着の金・選択行の太字なし、ST考察の差を表示値どうしで出す・向きの文字・折り返し、注記の条件、推移グラフの左の余白、的中タグの緑、決まり手の凡例の文字色、2号艇の矢印の輪郭、波紋の大きさ、比較バーの地、高の段階の地"
+    },
+    {
+      "script": "verify-turn-time-venues.js",
+      "tier": "ci",
+      "guards": "まわり足が会場独自の計測で他場と値の水準が違う会場の判定（src/utils/turnTimeVenues.js、data-catalog E12）。住之江・尼崎・徳山だけを対象にし、scripts/lib/boatcast/publicMap.js の直線なし（TWO）の会場と一致すること"
     },
     {
       "script": "verify-race-detail-color-tokens.js",
@@ -734,6 +759,26 @@
       "script": "verify-missing-venue-day.js",
       "tier": "ci",
       "guards": "races が丸1日無い会場日の補完（backfill-missing-venue-day.js、BOA-721）: 既定は書かない・races のある会場日は上書きしない・出走表が12レースそろわなければ止める・中止の確定を全レースに立てる・過去の日付に予想を作らない"
+    },
+    {
+      "script": "verify-fetchall-order.js",
+      "tier": "ci",
+      "guards": "共通の fetchAll（scripts/lib/supabaseClient.js）が並び順の無いページ送りをしないこと（BOA-753。1000行を超えるとページの間で行が重複・欠落する。BOA-595・BOA-745 に続く3回目で仕組みにした）。(a) 静的: scripts/・api/ の fetchAll の呼び出しすべてに、組み立て（第3引数、変数なら同じファイルの定義）の .order( か、理由付きの unordered があること。(b) 実行時: 並び順の無いクエリは最初のリクエストの前に例外（呼び出し元と直し方つき）、理由が空の unordered も例外。(c) 変異検証。確かめない範囲: await import() で取り出した fetchAll の呼び出し（実行時の検査が止める）"
+    },
+    {
+      "script": "verify-motor-usage.js",
+      "tier": "ci",
+      "guards": "モーターの使用回数と「未使用（新モーター・実績なし）」の判定（src/utils/motorUsage.js、BOA-702）。使用回数は会場公式の出走数と、世代の始まりから数えた自社の出走数のうち、分かっているものの大きいほう。取得失敗の行の出走数・期間で切り詰めた窓や世代不明の自社の数は使わない。未使用は表示する2連率が0で使用回数0と分かるときだけ"
+    },
+    {
+      "script": "verify-winning-technique-filled.js",
+      "tier": "ci",
+      "guards": "前日以前のレースで、決まり手（race_results.winning_technique）が欠けていないか（BOA-749。2026-09-16 住之江7R が着順・払戻ありで NULL のまま残っていた）。CI では判定の純関数（不成立・中止・1着なし・当日を除く）と、取り直しのコマンドの分割（--apply の30件上限）を検証する。VERIFY_PRODUCTION=1 のときだけ本番を読み、欠けがあれば exit 1 で取り直しのコマンドを出す。nightly-verify-db.yml が毎晩この形で実行する"
+    },
+    {
+      "script": "verify-volatility-accuracy-heading.js",
+      "tier": "ci",
+      "guards": "精度ページの「イン崩れ予測の実績」の見出しが、集計（calculate-unified-volatility-accuracy.js）の期間と合っていること（BOA-717）。集計が期間を絞っていない間は、4言語の見出しが「直近N日」を名乗らず、運用開始日（2026-08-11）を書いていること。集計に期間の条件を足すと失敗するので、見出しを合わせ直してから更新する"
     }
   ]
 }

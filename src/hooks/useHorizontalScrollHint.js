@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  HSCROLL_MORE_MIN,
   horizontalScrollHintState,
   horizontalScrollStep,
   snapScrollTarget,
+  tailPaddingFor,
 } from "../utils/horizontalScrollHint";
 
 /**
@@ -30,16 +32,16 @@ import {
  *   scrollRight: Function, scrollLeft: Function}}
  */
 /**
- * 「›」「‹」で送る先の scrollLeft。固定の左の列（1行目の先頭から続く、横に固定した sticky のセル。
- * 今節の日別表は日付と R の2列）の幅を引いた見える幅の8割を目安に、列の境目にそろえる
+ * 表の1行目から、横に固定した左の列の幅と、各列の左端が固定した列の右端にそろうときの
+ * scrollLeft を測る。見出し行は縦にも固定（top: 0）していて position は sticky になるので、
+ * 横に固定した列（left が auto でないもの）だけを数える
  */
-function scrollTargetOf(el, direction) {
+function columnsOf(el) {
   const row = el.querySelector("tr");
   const box = el.getBoundingClientRect();
   const cells = row ? [...row.children] : [];
   let stickyWidth = 0;
   for (const cell of cells) {
-    // 見出し行は縦にも固定（top: 0）していて position は sticky になる。横に固定した列だけを数える
     const style = getComputedStyle(cell);
     if (style.position !== "sticky" || style.left === "auto") break;
     stickyWidth += cell.getBoundingClientRect().width;
@@ -51,6 +53,15 @@ function scrollTargetOf(el, direction) {
       el.scrollLeft -
       stickyWidth,
   );
+  return { stickyWidth, columnStarts };
+}
+
+/**
+ * 「›」「‹」で送る先の scrollLeft。固定の左の列（今節の日別表は日付と R の2列）の幅を引いた
+ * 見える幅の8割を目安に、列の境目にそろえる
+ */
+function scrollTargetOf(el, direction) {
+  const { stickyWidth, columnStarts } = columnsOf(el);
   return snapScrollTarget({
     current: el.scrollLeft,
     step: horizontalScrollStep({ clientWidth: el.clientWidth, stickyWidth }),
@@ -58,6 +69,45 @@ function scrollTargetOf(el, direction) {
     max: el.scrollWidth - el.clientWidth,
     columnStarts,
   });
+}
+
+/**
+ * 右端の位置も列の境目にそろうよう、表の右に余白（margin-right）を足す（PR #1202 ファン評価3周目）。
+ * 測り直すときは足す前の幅で計算する（足した分で次の量が変わらないように）。足した量は表自身の
+ * style から読む（箱の側に持つと、表だけが作り直されたときに実際の余白と食い違う）
+ */
+function applyTailPadding(el, columnStarts) {
+  const table = el.firstElementChild;
+  if (!table) return;
+  const prev = parseFloat(table.style.marginRight) || 0;
+  const naturalMax = el.scrollWidth - prev - el.clientWidth;
+  const extra = tailPaddingFor({ naturalMax, columnStarts });
+  if (extra === prev) return;
+  table.style.marginRight = extra ? `${extra}px` : "";
+}
+
+/**
+ * 列を固定した表は、指で送ったときも列の境目に止める（BOA-741）。止まる位置が自由だと、固定した
+ * 選手名のすぐ右に頭の欠けた値が並び、「51位/60」が「1位/60」に読めた（PR #1223 ファン評価1周目）。
+ * 止める位置は固定した列の右端（scroll-padding-left）。表の右に余白を足した後で呼び、右端も列の境目に
+ * なっていることを前提にする（tailPaddingFor は HSCROLL_MORE_MIN より多く溢れる表に余白を足す）
+ */
+function applyColumnSnap(el, stickyWidth) {
+  const table = el.firstElementChild;
+  const padding = parseFloat(table?.style.marginRight) || 0;
+  const naturalMax = el.scrollWidth - padding - el.clientWidth;
+  // 固定した列が見える幅より広いと、止める位置が箱の外になる。そのときは止めない
+  const snap =
+    stickyWidth > 0 &&
+    stickyWidth < el.clientWidth &&
+    naturalMax > HSCROLL_MORE_MIN;
+  if (snap) {
+    el.dataset.hscrollSnap = "true";
+    el.style.scrollPaddingLeft = `${stickyWidth}px`;
+  } else if (el.dataset.hscrollSnap) {
+    delete el.dataset.hscrollSnap;
+    el.style.scrollPaddingLeft = "";
+  }
 }
 
 export function useHorizontalScrollHint(deps = []) {
@@ -75,37 +125,29 @@ export function useHorizontalScrollHint(deps = []) {
     });
     setHasMore(state.hasMore);
     setHasLess(state.hasLess);
-    // 少しだけ切れているとき（「›」を出すほどではない）は、切れた量に合わせた薄いフェードだけを
-    // 出す。呼び出し側の JSX を変えずに済むよう、手がかりの箱（.hscroll-hint）に data 属性で渡す
-    // （React が管理する className は再描画で上書きされるため使わない）
-    // 指で送るあいだは毎フレーム呼ばれるので、値が変わったときだけ書き換える
-    const hint = el.closest(".hscroll-hint");
-    const peekWidth = state.peekFadeWidth > 0 ? `${state.peekFadeWidth}px` : "";
-    if (
-      hint &&
-      hint.style.getPropertyValue("--hscroll-peek-width") !== peekWidth
-    ) {
-      if (peekWidth) {
-        hint.dataset.hscrollPeek = "true";
-        hint.style.setProperty("--hscroll-peek-width", peekWidth);
-      } else {
-        delete hint.dataset.hscrollPeek;
-        hint.style.removeProperty("--hscroll-peek-width");
-      }
-    }
   }, []);
 
   useEffect(() => {
-    update();
-    const raf = requestAnimationFrame(update);
-    window.addEventListener("resize", update);
+    // 大きさが変わったときは、右端の余白を測り直してから手がかりを決める（スクロールのたびには測らない）
+    const remeasure = () => {
+      const el = ref.current;
+      if (el) {
+        const { stickyWidth, columnStarts } = columnsOf(el);
+        applyTailPadding(el, columnStarts);
+        applyColumnSnap(el, stickyWidth);
+      }
+      update();
+    };
+    remeasure();
+    const raf = requestAnimationFrame(remeasure);
+    window.addEventListener("resize", remeasure);
     // 窓の幅が変わらなくても、文字の読み込みや中身の差し替えで表の幅は後から変わる。
     // 最初の計測だけでは、英語の 320px で表が3px溢れているのに手がかりが出なかった
     // （PR #1192 ファン評価1周目）。箱と中身の大きさの変化でも測り直す
     const el = ref.current;
     const observer =
       el && typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(update)
+        ? new ResizeObserver(remeasure)
         : null;
     if (observer) {
       observer.observe(el);
@@ -113,7 +155,7 @@ export function useHorizontalScrollHint(deps = []) {
     }
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener("resize", update);
+      window.removeEventListener("resize", remeasure);
       observer?.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

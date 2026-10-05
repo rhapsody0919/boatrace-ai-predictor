@@ -224,7 +224,7 @@ function StartTimingTrack({
       />
       <span
         ref={dotRef}
-        className={`rr-st-dot${boatNumber === 1 && !isFlying ? " is-white" : ""}`}
+        className={`rr-st-dot${boatNumber === 1 && !isFlying ? " is-white" : ""}${boatNumber === 2 && !isFlying ? " is-black" : ""}`}
         style={{ left: reducedMotion ? `${finalPosition}%` : "0%" }}
       >
         {/* 形（clip-path）は子に持たせる。親に付けた輪郭（drop-shadow）が

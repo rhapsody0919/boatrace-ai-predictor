@@ -4,6 +4,11 @@
    （2026-09-27、タブバーで同じことが起きた）。 */
 .hscroll-hint {
   position: relative;
+  /* 固定した列の右の線（横に送ったときだけ出る）と、「›」「‹」の丸の縁の色。罫線の色
+     （--border-hairline）だと、ダークで背景との差が約1.2:1しか無く、境目も丸も見えなかった
+     （PR #1223・#1225 ファン評価、BOA-742・BOA-752）。補助テキストの色を半分に薄めて、
+     ライト・ダークとも罫線より一段はっきりさせる */
+  --hscroll-edge-line: color-mix(in srgb, var(--text-secondary) 50%, transparent);
 }
 
 .hscroll-hint.has-more::after {
@@ -24,24 +29,6 @@
     to right,
     transparent,
     var(--hscroll-fade-color, var(--surface-page)) 70%
-  );
-}
-
-/* 少しだけ切れているとき（src/utils/horizontalScrollHint.js の HSCROLL_PEEK_MAX 以下）は「›」を出さず、
-   細いフェードだけを出す。幅は --hscroll-peek-width（フックが設定） */
-.hscroll-hint[data-hscroll-peek="true"]::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: var(--hscroll-peek-width, 16px);
-  pointer-events: none;
-  z-index: 5;
-  background: linear-gradient(
-    to right,
-    transparent,
-    var(--hscroll-fade-color, var(--surface-page))
   );
 }
 
@@ -69,7 +56,7 @@
   background: radial-gradient(
     circle at calc(100% - 14px) 50%,
     var(--hscroll-fade-color, var(--surface-page)) 0 11px,
-    var(--border-hairline) 11px 12px,
+    var(--hscroll-edge-line) 11px 12px,
     transparent 12.5px
   );
   color: var(--text-primary);
@@ -96,7 +83,7 @@
   background: radial-gradient(
     circle at 14px 50%,
     var(--hscroll-fade-color, var(--surface-page)) 0 11px,
-    var(--border-hairline) 11px 12px,
+    var(--hscroll-edge-line) 11px 12px,
     transparent 12.5px
   );
   color: var(--text-primary);
@@ -104,4 +91,16 @@
   font-weight: var(--font-weight-bold);
   line-height: 1;
   cursor: pointer;
+}
+
+/* 列を固定した表は、指で送ったときも列の境目に止める（BOA-741）。止める位置（固定した列の右端）は
+   フックが scroll-padding-left に入れ、止めるかどうかを data-hscroll-snap で渡す */
+[data-hscroll-snap="true"] {
+  scroll-snap-type: x mandatory;
+}
+
+/* 列の境目はどの行でも同じなので、行ごとの先頭の行だけに付ける（全部のセルに付けると、同じ位置が
+   行の数だけ登録される） */
+[data-hscroll-snap="true"] tr:first-child > :is(th, td) {
+  scroll-snap-align: start;
 }

@@ -85,25 +85,25 @@ export async function loadDataset({ from, to }) {
     fetchAll(
       "race_entries",
       "race_id, boat_number, grade, win_rate, local_win_rate, motor_2rate, boat_2rate",
-      rangeFilter("race_id"),
+      (q) => rangeFilter("race_id")(q).order("race_id").order("boat_number"),
     ),
     fetchAll(
       "exhibition_data",
       "race_id, boat_number, exhibition_time, start_timing",
-      rangeFilter("race_id"),
+      (q) => rangeFilter("race_id")(q).order("race_id").order("boat_number"),
     ),
     fetchAll(
       "race_results",
       "race_id, rank1, rank2, rank3, payout_win, is_cancelled, is_no_race",
       (q) => {
         q = q.not("rank1", "is", null);
-        return rangeFilter("race_id")(q);
+        return rangeFilter("race_id")(q).order("race_id");
       },
     ),
     fetchAll(
       "race_odds",
       "race_id, captured_at, odds_win_1, odds_win_2, odds_win_3, odds_win_4, odds_win_5, odds_win_6",
-      rangeFilter("race_id"),
+      (q) => rangeFilter("race_id")(q).order("race_id").order("captured_at"),
     ),
   ]);
   console.log(

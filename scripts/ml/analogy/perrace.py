@@ -53,6 +53,8 @@ def per_race_meta(version: str, win: tuple, racecard: tuple, maps: dict) -> dict
                    "win_racecard": model_entry(*racecard, "model_win_racecard.json")},
         "live_features": LIVE_FEATURES,
         "categorical_maps": maps,
+        # 本体の風向の会場ごとの回転（features.py の wind_basis.json）。推論側の JS が同じ表で直す
+        "wind_basis": F.load_wind_basis(),
         "themes": THEMES,
     }
 
@@ -76,9 +78,11 @@ def select_parity_races(test: pd.DataFrame, cond_raw: pd.DataFrame, n: int = FIX
                         seed: int = 0) -> list[int]:
     """一致検査に使うレース（本体分だけ。DB の行の形が取れる期間）。境目になりやすい例を先に入れ、
     残りを無作為に足す: 無風（風向が空・風速0）、風向が空で風速>0、展示タイムの同値、本体に現れる
-    天候の各値、支部の番号の最小・最大、ラウンド・グレード不明。"""
+    天候の各値、支部の番号の最小・最大、ラウンド・グレード不明、各会場の風のあるレース（風向の回転）。
+    風向を K ファイルで埋めたレース（features.main_wind）は外す（推論では起きず、DB の行の形では再現できない）。"""
     t = test[test["race_date"] > F.KB_END]
-    cand = sorted(t["race_id"].unique().tolist())
+    fill = set(F.rid_to_int(pd.read_csv(F.K_WIND_FILL_FILE, dtype=str)["race_id"]).tolist())
+    cand = sorted(r for r in t["race_id"].unique().tolist() if r not in fill)
     cset = set(cand)
     c = cond_raw[cond_raw["rid"].isin(cset)]
     ws = pd.to_numeric(c["wind_speed"], errors="coerce")
@@ -102,6 +106,9 @@ def select_parity_races(test: pd.DataFrame, cond_raw: pd.DataFrame, n: int = FIX
         add(t.loc[t["branch_code"] == bc.max(), "race_id"])
     add(t.loc[t["round_code"].isna(), "race_id"])
     add(t.loc[t["grade_code"].isna(), "race_id"])
+    windy = c.loc[(c["wind_direction"] != "") & (ws > 0)]
+    for v in range(1, 25):
+        add(windy.loc[(windy["rid"] // 100) % 100 == v, "rid"])
     rest = [r for r in cand if r not in picks]
     k = max(0, min(n - len(picks), len(rest)))
     picks += [int(r) for r in np.random.default_rng(seed).choice(rest, k, replace=False)]
@@ -114,7 +121,7 @@ def _floats(a) -> list:
 
 def parity_fixture(version: str, test: pd.DataFrame, ids: list[int], cond_raw: pd.DataFrame,
                    exh_raw: pd.DataFrame, models: dict[str, lgb.Booster]) -> dict:
-    """racecard_features は analogy_race_features.features に書くのと同じ値・並び（win_racecard の並び）。
+    """racecard_features は出走表時点の36列（win_racecard の feature_names の並び、PostgREST の real[] と同じ数値の形）。
     live_raw は exhibition_data・race_conditions の DB の値のまま。expected は Python の入力と pred_contrib
     （最後の列が期待値）。"""
     rc_names = models["win_racecard"].feature_name()
