@@ -16,12 +16,13 @@ def write(d: Path, name: str, rows: list[dict]):
 
 
 def kb_boat(race_id, boat, course, st, finish_raw, rank, flying=False, late=False, cls="A1"):
-    return {"race_id": race_id, "boat_number": boat, "class": cls, "course": course, "start_timing": st,
+    return {"race_id": race_id, "boat_number": boat, "racer_id": 4000 + boat, "class": cls, "course": course, "start_timing": st,
             "is_flying": flying, "is_late_start": late, "finish_raw": finish_raw, "finish_rank": rank}
 
 
 def main_boat(race_id, boat, st, mark, flying=False, late=False, absent=False, grade="A1"):
-    return ({"race_id": race_id, "boat_number": boat, "grade": grade, "is_absent": absent},
+    return ({"race_id": race_id, "boat_number": boat, "racer_id": 4000 + boat, "grade": grade,
+             "is_absent": absent},
             {"race_id": race_id, "boat_number": boat, "is_absent": absent},
             {"race_id": race_id, "boat_number": boat, "start_timing": st, "is_flying": flying,
              "is_late_start": late, "finish_mark": mark})
@@ -45,19 +46,19 @@ def src(tmp_path):
     # ---- 長期
     kb_races = [
         # K1: 6号艇が F（着外）。layer には入る・展開シナリオの母集団には入らない
-        {"race_id": "2025-11-01-20-12", "race_date": "2025-11-01", "venue_code": 20, "has_result": True,
+        {"race_id": "2025-11-01-20-12", "race_date": "2025-11-01", "venue_code": 20, "race_number": 1, "has_result": True,
          "technique": "まくり", "payout_3tan": 12340},
         # K2: 返還なし・6艇とも進入あり
-        {"race_id": "2025-11-02-20-01", "race_date": "2025-11-02", "venue_code": 20, "has_result": True,
+        {"race_id": "2025-11-02-20-01", "race_date": "2025-11-02", "venue_code": 20, "race_number": 1, "has_result": True,
          "technique": "逃げ", "payout_3tan": 450},
         # K3: 3号艇が出走前の欠場（K0）・決まり手が6分類の外
-        {"race_id": "2025-11-02-20-02", "race_date": "2025-11-02", "venue_code": 20, "has_result": True,
+        {"race_id": "2025-11-02-20-02", "race_date": "2025-11-02", "venue_code": 20, "race_number": 1, "has_result": True,
          "technique": "不明", "payout_3tan": None},
         # K5: 2号艇と5号艇が1着同着（長期は着を 1,1,3 と付ける）
-        {"race_id": "2025-11-02-20-04", "race_date": "2025-11-02", "venue_code": 20, "has_result": True,
+        {"race_id": "2025-11-02-20-04", "race_date": "2025-11-02", "venue_code": 20, "race_number": 1, "has_result": True,
          "technique": "差し", "payout_3tan": 3210},
         # K4: 結果なし（入れない）
-        {"race_id": "2025-11-02-20-03", "race_date": "2025-11-02", "venue_code": 20, "has_result": False,
+        {"race_id": "2025-11-02-20-03", "race_date": "2025-11-02", "venue_code": 20, "race_number": 1, "has_result": False,
          "technique": None, "payout_3tan": None},
     ]
     kb_boats = []
@@ -76,7 +77,8 @@ def src(tmp_path):
     write(src_dir, "kb_boats", kb_boats)
 
     # ---- 本体
-    races = [{"race_id": r, "race_date": r[:10], "venue_code": int(r[11:13]), "cancellation_status": cs}
+    races = [{"race_id": r, "race_date": r[:10], "venue_code": int(r[11:13]), "race_number": int(r[14:]),
+              "cancellation_status": cs}
              for r, cs in [("2026-09-27-20-12", None), ("2026-09-27-20-11", None), ("2026-09-27-20-10", None),
                            ("2026-09-27-20-09", None), ("2026-09-27-20-08", "confirmed")]]
     results = [
