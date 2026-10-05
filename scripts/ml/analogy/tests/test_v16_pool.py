@@ -53,6 +53,9 @@ def src(tmp_path):
         # K3: 3号艇が出走前の欠場（K0）・決まり手が6分類の外
         {"race_id": "2025-11-02-20-02", "race_date": "2025-11-02", "venue_code": 20, "has_result": True,
          "technique": "不明", "payout_3tan": None},
+        # K5: 2号艇と5号艇が1着同着（長期は着を 1,1,3 と付ける）
+        {"race_id": "2025-11-02-20-04", "race_date": "2025-11-02", "venue_code": 20, "has_result": True,
+         "technique": "差し", "payout_3tan": 3210},
         # K4: 結果なし（入れない）
         {"race_id": "2025-11-02-20-03", "race_date": "2025-11-02", "venue_code": 20, "has_result": False,
          "technique": None, "payout_3tan": None},
@@ -67,6 +70,8 @@ def src(tmp_path):
         kb_boats.append(kb_boat("2025-11-02-20-02", b, None if k else b, None if k else 0.2,
                                 "K0" if k else str(b if b < 3 else b - 1), None if k else (b if b < 3 else b - 1)))
         kb_boats.append(kb_boat("2025-11-02-20-03", b, b, 0.2, None, None))
+        dh = {1: 3, 2: 1, 3: 4, 4: 5, 5: 1, 6: 6}[b]
+        kb_boats.append(kb_boat("2025-11-02-20-04", b, b, 0.15, f"0{dh}", dh))
     write(src_dir := tmp_path, "kb_races", kb_races)
     write(src_dir, "kb_boats", kb_boats)
 
@@ -107,7 +112,7 @@ def src(tmp_path):
 
 def test_only_races_with_results_and_not_cancelled(src):
     assert sorted(src.index) == ["2025-11-01-20-12", "2025-11-02-20-01", "2025-11-02-20-02",
-                                 "2026-09-27-20-09", "2026-09-27-20-11", "2026-09-27-20-12"]
+                                 "2025-11-02-20-04", "2026-09-27-20-09", "2026-09-27-20-11", "2026-09-27-20-12"]
 
 
 def test_d1_payout_3tan_from_payout_trio_and_kb(src):
@@ -151,6 +156,13 @@ def test_layer_row_shape(src):
     k3 = row(src, "2025-11-02-20-02")
     assert k3["winning_technique"] is None
     assert k3["st_by_course"][2] is None
+
+
+def test_kb_dead_heat_keeps_three_places_in_layer(src):
+    r = src.loc["2025-11-02-20-04"]
+    assert (r["rank1"], r["rank2"], r["rank3"]) == (2, 5, 1)
+    assert r["layer_ok"]
+    assert not r["tab3_ok"]  # 1着が2艇（モックの SQL の母集団と同じく除く）
 
 
 def test_tab3_population_excludes_returned_absent_unknown_course(src):

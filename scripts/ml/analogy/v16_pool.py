@@ -125,32 +125,31 @@ def build_races(boats: pd.DataFrame, races: pd.DataFrame) -> pd.DataFrame:
         "has_r3": (b["finish_rank"] == 3).groupby(rid).any(),
         "all_a1": b["cls"].eq("A1").groupby(rid).all() & (g.size() == 6),
     })
-    for k in (1, 2, 3):  # 同着は艇番の小さい艇を先に（DB の rank の並びと同じ）
-        hit = b[b["finish_rank"] == k].drop_duplicates("race_id")
+    # 1〜3着の艇番は、着のある艇を (着, 艇番) の順に並べた先頭3艇。長期の同着は着を 1,1,3 と付けるので、
+    # 「着が k の艇」で引くと2着が欠ける。本体の rank1..6 は同着も順に並べている（同じ結果になる）
+    placed = b[b["finish_rank"].notna()].sort_values(["race_id", "finish_rank", "boat_number"])
+    pos = placed.groupby("race_id", sort=False).cumcount()
+    for k in (1, 2, 3):
+        hit = placed[pos == k - 1]
         agg[f"rank{k}"] = hit.set_index("race_id")["boat_number"].reindex(agg.index).astype("Int64")
 
-    # D-4: 実進入が分からない艇は null。D-2: 返還・欠場の艇の ST は null
-    course = b["course"].where(b["course"].between(1, 6))
-    st = b["st"].where(~b["returned"] & ~b["absent"])
-    course_by_boat, st_by_course = {}, {}
-    for race_id, idx in g.indices.items():
-        cb = [None] * 6
-        sc = [None] * 6
-        for i in idx:
-            c = course.iat[i]
-            cb[int(b["boat_number"].iat[i]) - 1] = None if pd.isna(c) else int(c)
-        taken = [c for c in cb if c is not None]
-        for i in idx:
-            c = cb[int(b["boat_number"].iat[i]) - 1]
-            s = st.iat[i]
-            if c is not None and taken.count(c) == 1 and not pd.isna(s):
-                sc[c - 1] = round(float(s), 2)
-        course_by_boat[race_id] = cb
-        st_by_course[race_id] = sc
-    agg["course_by_boat"] = pd.Series(course_by_boat)
-    agg["st_by_course"] = pd.Series(st_by_course)
-    agg["course_known"] = agg["course_by_boat"].map(lambda cb: sorted(c for c in cb if c is not None)
-                                                    == [1, 2, 3, 4, 5, 6])
+    # D-4: 実進入が分からない艇は null。D-2: 返還・欠場の艇の ST は null。艇番×レースの (n,6) に並べる
+    wide = lambda col: (b.pivot(index="race_id", columns="boat_number", values=col)  # noqa: E731
+                        .reindex(index=agg.index, columns=range(1, 7)).to_numpy(dtype=float, copy=True))
+    course = wide("course")
+    course[(course < 1) | (course > 6)] = np.nan
+    st = wide("st")
+    st[(wide("returned") == 1) | (wide("absent") == 1)] = np.nan
+    cnt = np.stack([(course == c).sum(axis=1) for c in range(1, 7)], axis=1)
+    r, bo = np.nonzero(~np.isnan(course))
+    ci = course[r, bo].astype(int) - 1
+    keep = (cnt[r, ci] == 1) & ~np.isnan(st[r, bo])
+    by_course = np.full(course.shape, np.nan)
+    by_course[r[keep], ci[keep]] = np.round(st[r[keep], bo[keep]], 2)
+    to_list = lambda a, f: [[None if np.isnan(v) else f(v) for v in row] for row in a]  # noqa: E731
+    agg["course_by_boat"] = to_list(course, int)
+    agg["st_by_course"] = to_list(by_course, float)
+    agg["course_known"] = (np.sort(np.nan_to_num(course), axis=1) == np.arange(1, 7)).all(axis=1)
 
     out = races.set_index("race_id")[["race_date", "venue_code", "winning_technique", "payout_3tan"]].join(
         agg, how="inner")
