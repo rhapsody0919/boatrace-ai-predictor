@@ -9,6 +9,8 @@
  */
 import { useTranslation } from "react-i18next";
 import { useRaceAnalysisData } from "./useRaceAnalysisData";
+import { useRaceEntryFlyingRows } from "./useRaceEntryFlyingRows";
+import { useCurrentMeetFlyingBoats } from "./useCurrentMeetFlyingBoats";
 import {
   toNumber,
   wakuRateOf,
@@ -20,6 +22,7 @@ import { getAiCopyPromptText } from "../utils/aiCopyPrompts";
 import { aiCopyPageUrl, buildAiCopyText } from "../utils/aiCopyText";
 import { isRaceCancelled } from "../utils/raceCancellation";
 import { meetPrevRunState, meetPrevRunWhenParams } from "../utils/prevResult";
+import { splitRacerName } from "../utils/racerName";
 
 const DASH = "—";
 
@@ -47,7 +50,7 @@ function buildMotorRow(t, players, motorByBoat) {
   };
 }
 
-function buildRows(t, players, analysis) {
+function buildRows(t, players, analysis, flying) {
   const motorByBoat = byBoat(analysis.motor);
   const formByBoat = byBoat(analysis.racerForm);
   const stByBoat = byBoat(analysis.stPredictability);
@@ -64,15 +67,30 @@ function buildRows(t, players, analysis) {
     {
       key: "name",
       label: t("aiCopy.playerNameLabel"),
-      values: players.map((p) => p.name ?? DASH),
+      // 公式の全角空白の桁揃え（全角空白の連続）は外し、姓と名を半角空白1つで区切る
+      values: players.map((p) =>
+        p.name ? splitRacerName(p.name).join(" ") : DASH,
+      ),
     },
     {
       key: "winRate",
       label: t("dataTable.rowWinRate"),
       values: players.map((p) => {
+        // データ出走表の F・L バッジ（FlyingBadge）と同じ値を級別の後ろに書く。
+        // F持ちはスタートを控えるので、AI に渡す文面から落とさない（BOA-770 ファン評価）
         const v = toNumber(p.winRate);
-        if (v === null) return DASH;
-        return p.grade ? `${p.grade} ${v.toFixed(2)}` : v.toFixed(2);
+        const row = flying.rows?.get(p.number);
+        const fCount = row?.f_count > 0 ? row.f_count : 0;
+        const lCount = row?.l_count > 0 ? row.l_count : 0;
+        const head = [
+          p.grade,
+          fCount
+            ? `F${fCount}${flying.currentMeet.has(p.number) ? `(${t("flyingBadge.currentMeet")})` : ""}`
+            : null,
+          lCount ? `L${lCount}` : null,
+          v !== null ? v.toFixed(2) : null,
+        ].filter(Boolean);
+        return head.length > 0 ? head.join(" ") : DASH;
       }),
     },
     {
@@ -106,8 +124,9 @@ function buildRows(t, players, analysis) {
       key: "avgSt",
       label: t("dataTable.rowAvgSt"),
       values: players.map((p) => {
+        // データ出走表と同じ小数3桁（raceIndicators.jsx の平均ST行）
         const v = toNumber(statsByBoat.get(p.number)?.avgST);
-        return v !== null ? v.toFixed(2) : DASH;
+        return v !== null ? v.toFixed(3) : DASH;
       }),
     },
     {
@@ -271,6 +290,8 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
   // キャッシュキー・in-flightデデュープが分岐し、同じレースのモーター内訳を
   // 二重に取得してしまう（BOA-265でDataRaceTable側にvenueCodeを追加した際に発覚）
   const analysis = useRaceAnalysisData(raceId, { venueCode });
+  const flyingRows = useRaceEntryFlyingRows(raceId);
+  const currentMeetFlying = useCurrentMeetFlyingBoats(raceId);
 
   const players = [...(prediction?.allPlayers ?? [])].sort(
     (a, b) => a.number - b.number,
@@ -303,7 +324,10 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
         weather: prediction?.weather ?? raw.weather ?? null,
       },
       players,
-      rows: buildRows(t, players, analysis),
+      rows: buildRows(t, players, analysis, {
+        rows: flyingRows,
+        currentMeet: currentMeetFlying,
+      }),
       turnPrediction: prediction?.turnPrediction,
       prompt: getAiCopyPromptText(t, promptType),
       pageUrl: aiCopyPageUrl(raceId, lang),

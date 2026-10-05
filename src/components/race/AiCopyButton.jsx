@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useAiCopyText } from "../../hooks/useAiCopyText";
+import { getAiCopyPromptLabel } from "../../utils/aiCopyPrompts";
 
 export default function AiCopyButton({
   variant = "inline",
@@ -44,7 +45,7 @@ export default function AiCopyButton({
     ...(variant === "inline" && { marginTop: "0.75rem" }),
   };
 
-  return (
+  const button = (
     <button
       type="button"
       className={`ai-copy-btn ai-copy-btn-${variant}`}
@@ -53,5 +54,26 @@ export default function AiCopyButton({
     >
       {t("aiCopy.bannerLabel")}
     </button>
+  );
+
+  if (variant !== "inline") return button;
+
+  // ページ末尾のボタンは単独だと SNS 共有の仲間に見え、どの質問が付くかも分からないため、
+  // 上のバナーで選んでいる質問を添える（BOA-770 ファン評価）
+  return (
+    <div className="ai-copy-inline">
+      {button}
+      <p
+        style={{
+          margin: "6px 0 0",
+          fontSize: "var(--font-size-sm)",
+          color: "var(--text-secondary)",
+        }}
+      >
+        {t("aiCopy.inlinePromptCaption", {
+          label: getAiCopyPromptLabel(t, promptType),
+        })}
+      </p>
+    </div>
   );
 }

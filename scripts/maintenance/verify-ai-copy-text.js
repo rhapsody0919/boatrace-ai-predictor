@@ -53,6 +53,7 @@ const players = [1, 2, 3, 4, 5, 6].map((n) => ({
 const row = (key, label) => ({ key, label, values: players.map(() => "—") });
 const ROWS = [
   row("name", "name"),
+  row("winRate", "winRate"),
   row("form", "form"),
   row("avgSt", "avgSt"),
   row("st", "st"),
@@ -169,20 +170,14 @@ for (const lang of LANGS) {
     text.includes(a.premiseExhibitionUnpublished),
   );
 
-  // 注記
-  for (const key of [
-    "form",
-    "avgSt",
-    "st",
-    "exSt",
-    "exhibition",
-    "partsChanged",
-    "courseRate",
-    "returnRate",
-    "dash",
-  ]) {
-    check(`[${lang}] 注記 ${key}`, text.includes(`- ${a.note[key]}`));
+  // 注記（行名は表の行と同じ文字列。訳語のずれで注記を引けなくならないように）
+  for (const key of ["winRate", "form", "avgSt", "st", "exSt", "exhibition", "partsChanged", "courseRate", "returnRate"]) {
+    check(`[${lang}] 注記 ${key}（表の行名つき）`, text.includes(`\n- ${key}: ${a.note[key]}`));
   }
+  check(`[${lang}] 「—」の注記`, text.includes(`- ${a.note.dash}`));
+  // 総合力順位は画面に無く、1着候補と食い違って読めるので入れない
+  check(`[${lang}] 総合力順位を入れない`, !text.includes(" > "));
+  check(`[${lang}] 2着・3着の列の説明`, text.includes(a.turnPredictionCandidateNote));
   // 表の後ろに注記、注記の後ろに展開予測
   const tableEnd = text.lastIndexOf("| returnRate |");
   const notesAt = text.indexOf(a.notesHeading);

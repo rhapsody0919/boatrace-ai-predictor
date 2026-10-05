@@ -3742,6 +3742,24 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
     expect(clipboardText).not.toContain("競艇");
   });
 
+  test("375px でもコピー後のトーストが下部ナビに隠れない", async ({ page }) => {
+    // 以前はトーストの z-index（70）が RaceBottomNav（1500）より低く、スマホでは
+    // 「コピーしました」が見えなかった（BOA-770 ファン評価）
+    await page.setViewportSize({ width: 375, height: 800 });
+    await openFixedRaceBeforeStart(page);
+    const bannerButton = page.locator(".ai-copy-btn-banner");
+    await expect(bannerButton).toBeVisible({ timeout: 15000 });
+    await bannerButton.click();
+    const toast = page.getByRole("status");
+    await expect(toast).toHaveText("コピーしました");
+    const onTop = await toast.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return el.contains(hit);
+    });
+    expect(onTop).toBe(true);
+  });
+
   test("プレビューでコピーされる全文（表と出典を含む）が見られる", async ({
     page,
   }) => {
@@ -3756,6 +3774,10 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
     // 「データだけ」に切り替えると質問文が差し替わる
     await page.getByRole("radio", { name: "データだけ" }).click();
     await expect(preview).toContainText("このあと質問します。");
+    // ページ末尾のボタンに、上で選んだ質問が添えられる（BOA-770 ファン評価）
+    await expect(page.locator(".ai-copy-inline")).toContainText(
+      "質問「データだけ」付きでコピーします",
+    );
   });
 });
 

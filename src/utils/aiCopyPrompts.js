@@ -69,3 +69,10 @@ export function getAiCopyPromptText(t, promptType) {
     PROMPT_KEY_MAP[promptType] ?? PROMPT_KEY_MAP[AI_COPY_PROMPT_TYPES.WIN];
   return t(entry.promptKey);
 }
+
+/** 質問の種別の表示名（ページ末尾のボタンに、どの質問付きでコピーするかを添える） */
+export function getAiCopyPromptLabel(t, promptType) {
+  const entry =
+    PROMPT_KEY_MAP[promptType] ?? PROMPT_KEY_MAP[AI_COPY_PROMPT_TYPES.WIN];
+  return t(entry.labelKey);
+}

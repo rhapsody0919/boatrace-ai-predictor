@@ -20,8 +20,9 @@ const DASH = "—";
 // 一般（ippan）以外は公式の表記がそのまま各言語で通じる
 const GRADE_LABELS = { SG: "SG", G1: "G1", G2: "G2", G3: "G3" };
 
-// 注記の対象（表の行の順に並べる。行が無い項目の注記は出さない）
+// 注記の対象（表の行の順に並べる）。「—」の注記は常に末尾に付ける
 export const AI_COPY_NOTE_KEYS = [
+  "winRate",
   "form",
   "avgSt",
   "st",
@@ -30,7 +31,6 @@ export const AI_COPY_NOTE_KEYS = [
   "partsChanged",
   "courseRate",
   "returnRate",
-  "dash",
 ];
 
 const JST_DATE_TIME = new Intl.DateTimeFormat("en-CA", {
@@ -98,7 +98,8 @@ const techniqueLabel = (t, technique) =>
   t(`techniques.${technique}`, TECHNIQUE_NAMES[technique] ?? technique);
 
 /**
- * 1マーク展開予測（決まり手×コース別の勝利確率・2着3着分布・boatStrengths）を Markdown にする。
+ * 1マーク展開予測（決まり手×コース別の勝利確率・2着3着分布）を Markdown にする。
+ * boatStrengths（総合力順位）は画面に出ておらず、表の1着候補と食い違って読めるため入れない（BOA-770 ファン評価）。
  * generate-predictions.js が日次で保存済みのデータなので、追加の取得は無い。
  * 以前は「イン崩れ狙い」のときだけ入れていたが、券種にかかわらず入れる（BOA-770 推奨6）
  */
@@ -135,27 +136,18 @@ export function buildTurnPredictionSection(t, players, turnPrediction) {
     )
     .join(" / ");
 
-  const strengthRanking = (turnPrediction.boatStrengths ?? [])
-    .map((score, i) => ({ boatNumber: i + 1, score }))
-    .sort((a, b) => b.score - a.score)
-    .map((b) => boatLabel(t, b.boatNumber, playerByBoat))
-    .join(" > ");
-
   const lines = [
     `### ${t("aiCopy.turnPredictionHeading")}`,
     "",
     [toLine(header), toLine(header.map(() => "---")), ...rows].join("\n"),
   ];
+  // 2着・3着の列は「その着に入る確率が最も高い艇」なので同じ艇が並ぶことがある。
+  // 説明が無いと読み違えるため、表の直後に1行添える（BOA-770 ファン評価）
+  lines.push("", t("aiCopy.turnPredictionCandidateNote"));
   if (distributionLine) {
     lines.push(
       "",
       `${t("aiCopy.turnPredictionDistributionLabel")}: ${distributionLine}`,
-    );
-  }
-  if (strengthRanking) {
-    lines.push(
-      "",
-      `${t("aiCopy.turnPredictionStrengthLabel")}: ${strengthRanking}`,
     );
   }
   return lines.join("\n");
@@ -250,13 +242,21 @@ export function buildPremiseLines(
   return lines.map((line) => `- ${line}`);
 }
 
-/** 項目の注記（1項目1行）。表に無い行の注記は出さない */
-export function buildNotes(t, rowKeys) {
-  const present = new Set([...rowKeys, "dash"]);
-  const lines = AI_COPY_NOTE_KEYS.filter((key) => present.has(key)).map(
-    (key) => `- ${t(`aiCopy.note.${key}`)}`,
+/**
+ * 項目の注記（1項目1行）。表に無い行の注記は出さない。
+ * 行名は表の行と同じ文字列を使う（注記を行名で引けるように。訳語のずれを作らない）
+ * @param {Array<{key:string,label:string}>} rows
+ */
+export function buildNotes(t, rows) {
+  const labelByKey = new Map(rows.map((r) => [r.key, r.label]));
+  const lines = AI_COPY_NOTE_KEYS.filter((key) => labelByKey.has(key)).map(
+    (key) => `- ${labelByKey.get(key)}: ${t(`aiCopy.note.${key}`)}`,
   );
-  return [`${t("aiCopy.notesHeading")}:`, ...lines].join("\n");
+  return [
+    `${t("aiCopy.notesHeading")}:`,
+    ...lines,
+    `- ${t("aiCopy.note.dash")}`,
+  ].join("\n");
 }
 
 /**
@@ -294,10 +294,7 @@ export function buildAiCopyText({
       "\n",
     ),
     toMarkdownTable(t, players, rows),
-    buildNotes(
-      t,
-      rows.map((r) => r.key),
-    ),
+    buildNotes(t, rows),
     buildTurnPredictionSection(t, players, turnPrediction),
     prompt,
     t("aiCopy.sourceLine", { url: pageUrl }),
