@@ -448,6 +448,14 @@ export const SCRAPE_JOBS = Object.freeze({
     leaseSec: 300,
     maxDurationSec: 120,
   },
+  // BOA-271 アナロジー・ファインダー v16 の展示後の段（類似レースの並べ直し。plan「展示後の段」、tasks T4-3）。
+  // 2分ごとに、6艇の展示タイムがそろった（か欠場が分かった）締切前のレースを最大20件処理する。外部サイトへは通信しない。
+  // 実装: scripts/lib/analogyV16Exhibition.js、api/cron/analogy-exhibition.js
+  analogy_v16_exhibition: {
+    kind: "continuous",
+    leaseSec: 120,
+    maxDurationSec: 120,
+  },
 });
 
 /**

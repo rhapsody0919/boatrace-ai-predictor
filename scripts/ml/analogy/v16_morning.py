@@ -31,6 +31,7 @@ import v16_scenario as SC
 import v16_similar as S
 
 JST = timezone(timedelta(hours=9))
+WIND_BASIS = F.load_wind_basis()
 POOL_FROM = "2019-04-01"
 MAX_CANDIDATES = 10_000
 MAX_SHOWN = 800
@@ -141,6 +142,8 @@ def today_payload(i: int, races: pd.DataFrame, arrays: dict, keys: dict, course_
         "classes": list(arrays["cls_name"][i]), "scope_keys": keys, "items": vals,
         "series_runs_before_today": runs, "early_series_note": V.early_series_note(runs),
         "course_st": course_st,
+        # 展示後の段（JS）が今日の風の成分を作るときの、会場の風向の回転（features.py の wind_basis.json）
+        "wind_offset_deg": WIND_BASIS["offsets_deg"].get(str(int(races["venue_code"].iat[i]))),
         "hints": {"course": V.hint_conditions(course_st["course_filled"]),
                   "overall": V.hint_conditions(course_st["overall"])},
     }
