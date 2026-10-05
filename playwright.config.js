@@ -55,6 +55,12 @@ export default defineConfig({
   // コールドスタートで1回目だけ遅れることで、2回目はキャッシュが温まり通る。
   // 2回続けて落ちるものは本物の不具合として失敗のまま残る
   retries: process.env.CI ? 1 : 0,
+  // 既定ではファイル単位でworkerに割り振るため、smoke.spec.js（5千行超）を
+  // 1 workerが直列に流し、CIの所要22〜45分の大半をこの1本が占めていた。
+  // テスト単位で割り振ってworkerを使い切る。CIのubuntu-latestは4 vCPUで、
+  // 既定（コア数の半分=2）では余らせていたので明示的に増やす
+  fullyParallel: true,
+  workers: process.env.CI ? 4 : undefined,
   // JSONも出すのは、skipされたテストを機械的に数えるため。
   // データ依存の test.skip() が常に真になると、そのテストは無言で無効化され、
   // 「テストがある」まま何も検証しない状態が続く。実際に320px横スクロールの
