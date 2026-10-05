@@ -81,6 +81,22 @@ export function entryType(courseByBoat) {
   return { 6: "mae6", 5: "mae5", "5,6": "mae56" }[m] ?? "maeOther";
 }
 
+// 波高の区分（cm。Python の v16_facts.WAVE_BANDS。Q-F3）
+export const WAVE_BANDS = [
+  ["0-2", 0, 2],
+  ["3-5", 3, 5],
+  ["6+", 6, Infinity],
+];
+
+/** 波高（cm）→ 区分。無ければ null */
+export function waveBand(waveHeight) {
+  if (isMissing(waveHeight)) return null;
+  const hit = WAVE_BANDS.find(
+    ([, lo, hi]) => waveHeight >= lo && waveHeight <= hi,
+  );
+  return hit ? hit[0] : null;
+}
+
 /** 風速（m）→ spec A-9 の区分。無ければ null */
 export function windBand(windSpeed) {
   if (isMissing(windSpeed)) return null;

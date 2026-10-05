@@ -1,6 +1,6 @@
 import { test, expect } from "./fixtures.js";
 import { contribution } from "./analogy-contribution-fixture.js";
-import { routeAnalogyV16 } from "./analogy-v16-fixture.js";
+import { analogyV16Facts, routeAnalogyV16 } from "./analogy-v16-fixture.js";
 
 /**
  * アナロジー・ファインダーの節の smoke（BOA-271 v16）。
@@ -14,6 +14,7 @@ import { routeAnalogyV16 } from "./analogy-v16-fixture.js";
  *   - 予想が無いレースでも節を出す（予想の有無と切り離す）
  *   - 保存の無いレース（status=not_saved）は節の中を1行だけにする
  *   - AIの見立ては寄与度 API を全国（venue=0・all・all）と時点（stage）で読む。展示前の集計が無ければ準備中の1文
+ *   - 今日の風・波の欄は、会場ごとに風だけ／風×波で数える（spec A-9、Q-F3）
  */
 
 const DATE = "2026-09-22";
@@ -182,5 +183,69 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       ),
     ).toBeVisible();
     expect(await section.innerText()).not.toMatch(/寄与度|モデル|競艇/);
+  });
+
+  test.describe("今日の風・波の欄（spec A-9、Q-F3）", () => {
+    // 例のレース（若松12R）は今日の風1m・波1cm → 風の区分 0-1・波の区分 0-2
+    const VA = "VA:20";
+    const withWave = (n) => {
+      const f = analogyV16Facts();
+      const va = f.facts[VA];
+      va.wave_mode = { corr: 0.52, n: 15000, use_wave: true };
+      for (let b = 1; b <= 6; b++)
+        for (const t of ["win", "top2", "top3"])
+          va.wind_wave["0-1"]["0-2"][String(b)][t] = [Math.min(n, 100), n];
+      return f;
+    };
+    const windSection = (page) => sectionOf(page).locator(".af-wind");
+
+    test("波高が風速とほぼ同じ会場は風だけで数え、見出しに今日の波を添える", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openAiTab(page);
+      const w = windSection(page);
+      await expect(
+        w.getByText("今日の風（1m）に近いレースでは（今日の波1cm）"),
+      ).toBeVisible();
+      await expect(
+        w.getByText(
+          "この会場の波高は風速とほぼ同じ値で記録されるので、風で数えている",
+        ),
+      ).toBeVisible();
+      await expect(w).toContainText("若松で風0〜1mだったレースで");
+    });
+
+    test("波高が別の情報を持つ会場で今日の区分が300件以上なら風×波で数える", async ({
+      page,
+    }) => {
+      await setup(page, { facts: withWave(300) });
+      await openAiTab(page);
+      const w = windSection(page);
+      await expect(
+        w.getByText("今日の風・波（風1m・波1cm）に近いレースでは"),
+      ).toBeVisible();
+      await expect(w).toContainText(
+        "若松で風0〜1m・波0〜2cmだったレースで、各艇番が1着になった割合（300レース）",
+      );
+      await expect(
+        w.getByText(/風で数えている|風だけで数えています/),
+      ).toHaveCount(0);
+    });
+
+    test("波高が別の情報を持つ会場でも今日の区分が300件未満なら風だけに戻して1行注記", async ({
+      page,
+    }) => {
+      await setup(page, { facts: withWave(299) });
+      await openAiTab(page);
+      const w = windSection(page);
+      await expect(
+        w.getByText("今日の風（1m）に近いレースでは（今日の波1cm）"),
+      ).toBeVisible();
+      await expect(
+        w.getByText("波で分けると299件と少ないので、風だけで数えています"),
+      ).toBeVisible();
+      await expect(w).toContainText("若松で風0〜1mだったレースで");
+    });
   });
 });

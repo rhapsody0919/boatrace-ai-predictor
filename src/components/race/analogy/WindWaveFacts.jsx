@@ -3,12 +3,13 @@ import BoatBadge from "../BoatBadge";
 import RateBar from "./RateBar";
 import { SCOPE_LINE } from "./analogyColors";
 import { fmtCount, fmtPct, venueLabel } from "../../../utils/analogyFormat";
-import { TARGET_KEY, rateOf } from "../../../utils/analogyFacts";
+import { TARGET_KEY, rateOf, windWaveView } from "../../../utils/analogyFacts";
 
 const k = "aiPredictionTab.analogy.facts.wind";
 
 /**
- * 今日の風・波（spec A-9）。展示後だけ。会場の全レース（VA）で、今日と同じ風速区分のレースの各艇番の率
+ * 今日の風・波（spec A-9、Q-F3）。展示後だけ。会場の全レース（VA）で、今日と同じ風速区分（波高が風速と別の
+ * 情報を持つ会場では波高区分も）のレースの各艇番の率。数え方は windWaveView が決める
  * @param {{exhibition: object|null, vaFacts: object|null, venue: number, target: 1|2|3, exhibitionStage: boolean}} props
  */
 export default function WindWaveFacts({
@@ -20,23 +21,36 @@ export default function WindWaveFacts({
 }) {
   const { t } = useTranslation();
   if (!exhibitionStage) return <p className="af-foot">{t(`${k}.pre`)}</p>;
-  const band = exhibition?.wind_band;
-  const rows = band ? vaFacts?.wind?.[band] : null;
-  if (!rows) return null;
+  const view = windWaveView(vaFacts, exhibition);
+  if (!view) return null;
   const tk = TARGET_KEY[target];
   const venueName = venueLabel(venue, t);
+  const wind = exhibition.wind_speed ?? "—";
+  const wave = exhibition.wave_height ?? "—";
+  const isWave = view.mode === "wave";
+  const band = isWave
+    ? t(`${k}.bandsWave`, {
+        wind: t(`${k}.bands.${view.wind}`),
+        wave: t(`${k}.waveBands.${view.wave}`),
+      })
+    : t(`${k}.bands.${view.wind}`);
   return (
     <div className="af-wind">
       <h3 className="af-h3">
-        {t(`${k}.heading`, {
-          wind: exhibition.wind_speed ?? "—",
-          wave: exhibition.wave_height ?? "—",
-        })}
+        {isWave
+          ? t(`${k}.heading`, { wind, wave })
+          : t(`${k}.headingWind`, { wind, wave })}
       </h3>
       <p className="af-sub">{t(`${k}.sub`, { venue: venueName })}</p>
+      {view.sameAsWind && <p className="af-sub">{t(`${k}.windOnly`)}</p>}
+      {view.mode === "waveFew" && (
+        <p className="af-sub">
+          {t(`${k}.waveFew`, { n: fmtCount(view.waveN) })}
+        </p>
+      )}
       <div className="af-bars">
         {[1, 2, 3, 4, 5, 6].map((b) => {
-          const [hits, n] = rows[String(b)][tk];
+          const [hits, n] = view.rows[String(b)][tk];
           const all = rateOf(vaFacts.usual?.[String(b)]?.[tk]);
           return (
             <RateBar
@@ -60,11 +74,11 @@ export default function WindWaveFacts({
         })}
       </div>
       <p className="af-foot">
-        {t(`${k}.foot`, {
+        {t(isWave ? `${k}.footWave` : `${k}.foot`, {
           venue: venueName,
-          band: t(`${k}.bands.${band}`),
+          band,
           finish: t(`aiPredictionTab.analogy.finishWord.${target}`),
-          n: fmtCount(rows["1"][tk][1]),
+          n: fmtCount(view.n),
         })}
       </p>
     </div>
