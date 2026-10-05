@@ -997,7 +997,7 @@
         },
         "lede": "Shares showing which items the AI found moving this boat number's chances (a separate analysis from the AI prediction). The larger the share, the more the result moves with that item",
         "preparing": "The AI view before the exhibition is not ready yet. Switch to after the exhibition to see it",
-        "foot": "Shares split the combined size of positive and negative effects ({{period}}, {{races}} races at all venues). Open a row to see each item's share and its direction. ",
+        "foot": "Shares split the combined size of positive and negative effects ({{period}}, {{races}} races at all venues). Open a row to see each item's share and its direction.  Item shares split each theme by their ratio within that theme.",
         "boat1Note": "For Boat 1, the part where lane advantage and racer class mix (about {{pct}}%) is assigned to the lane, so racer ability shows up smaller. ",
         "foot2": "The counted figures above mix in everything, such as racer strength. The AI separates these, so the direction can be reversed (e.g. class, motor). This is not a claim of cause. A larger share means the item moves this boat number's result more, not that having it wins races. ",
         "windNote": " (tailwind and headwind are not distinguished)",
