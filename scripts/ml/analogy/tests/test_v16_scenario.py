@@ -1,4 +1,8 @@
 """v16 展開シナリオ（タブ3）の範囲ごとの集計 scenario（tasks T2-3）"""
+import json
+import os
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -80,3 +84,74 @@ def test_hint_matrix_matches_scalar_definition():
     m = SC.hint_matrix(a)
     for i in range(len(a)):
         assert {k: bool(v[i]) for k, v in m.items()} == V.hint_conditions(a[i])
+
+
+def test_scope_attack_small():
+    forms = {f: np.zeros(3, bool) for f in SC.SLIT_FORMS}
+    forms["kado"][:] = [True, True, False]
+    r1, r2 = np.array([4, 1, 1]), np.array([1, 4, 2])
+    tech = np.array(["まくり", "逃げ", "逃げ"], dtype=object)
+    motor = np.array([[6, 5, 4, 1, 3, 2], [1, 2, 3, 6, 4, 5], [1, 2, 3, 4, 5, 6]], dtype=float)
+    exh = np.full((3, 6), np.nan)
+    cent = np.array([[15, 15, 16, 10, 18, 18], [15, 15, 16, 12, 18, 18], [15] * 6])
+    out = SC.scope_attack(np.ones(3, bool), forms, r1, r2, tech, motor, exh, cent)
+    k = out["kado"]
+    assert k["attacker"] == 4 and k["all"]["att_win"] == [1, 2] and k["all"]["att_makuri"] == [1, 2]
+    assert k["all"]["b1_nige"] == [1, 2] and k["all"]["inner_top2"] == [0, 2]
+    assert k["by_motor"]["top"]["att_win"] == [1, 1] and k["by_motor"]["low"]["att_win"] == [0, 1]
+    assert k["by_exh"]["top"]["n"] == 0  # 展示タイムがそろわない
+    assert k["att_lead"] == [1, 2]       # 3号艇より 0.05 秒以上前（16−10=6、16−12=4）
+    assert "att_lead" not in out["d1"] and out["flat"]["attacker"] is None
+
+
+# ---- モックの入力（アーカイブの slitpred・knn/work2）があるときだけ: slit-hint/mark1.py の mark1.json と一致する
+MOCK = Path(os.environ["ANALOGY_MOCK_DIR"]) if os.environ.get("ANALOGY_MOCK_DIR") else None
+
+
+@pytest.mark.skipif(MOCK is None, reason="モックの入力が無い")
+def test_scope_attack_matches_mock_mark1():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("mock_load", MOCK / "slitpred/load.py")
+    L = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(L)
+    r, _ = L.load()
+    b = np.load(MOCK / "knn/work2/boats.npz", allow_pickle=True)
+    sm, sr = b["st_mean30"], b["st_result"]
+    ret = (b["is_flying"] | b["is_late"]).any(1)
+    pop = ((r.race_date <= pd.Timestamp("2026-09-26")).values & r.waku.values & ~ret
+           & ~np.isnan(sr).any(1) & ~np.isnan(sm).any(1))
+    tk = {}
+    for f, src in (("tkA", "kb"), ("tkB", "kb"), ("tkM", "main")):
+        for t in (MOCK / f"slitpred/raw/{f}.txt").read_text().split(","):
+            tk[(src, t[:6], int(t[6:8]))] = t[8:]
+    ymd = r.race_date.dt.strftime("%y%m%d").values
+    srcs = np.where(r.race_date <= pd.Timestamp("2025-12-02"), "kb", "main")
+    code = {"N": "逃げ", "M": "まくり", "S": "差し", "X": "まくり差し", "B": "抜き", "E": "恵まれ", "O": "その他"}
+    tech = np.full(len(r), None, dtype=object)
+    for i in np.where(pop)[0]:
+        s = tk.get((srcs[i], ymd[i], int(r.venue_code.values[i])))
+        if s is not None:
+            tech[i] = code.get(s[int(r.race_number.values[i]) - 1])
+    idx = np.where(pop)[0]
+    cent = np.full(sr.shape, -999, int)
+    cent[idx] = np.round(sr[idx] * 100).astype(int)
+    F8 = np.zeros((len(r), 8), bool)
+    F8[idx] = L.forms(cent[idx])
+    forms = {f: F8[:, j] for j, f in enumerate(SC.SLIT_FORMS)}
+    cls = b["cls_ord"]
+    scopes = {"nat": pop, "wkA1": pop & (r.venue_code.values == 20) & (cls == 4).all(1)}
+    exp = json.loads((MOCK / "slitpred/mark1.json").read_text())
+    r1, r2 = r.rank1.values.astype(int), r.rank2.values.astype(int)
+    for s, m in scopes.items():
+        got = json.loads(json.dumps(SC.scope_attack(m, forms, r1, r2, tech, b["motor_2_rank"], b["exh_time_rank"],
+                                                    cent)))
+        for f in SC.SLIT_FORMS:
+            e = exp["forms"][f]
+            for key in ("all", "by_motor", "by_exh", "b1_by_motor", "b1_by_exh"):
+                if s in e.get(key, {}):
+                    assert got[f][key] == e[key][s], (s, f, key)
+            if s == "nat":
+                assert got[f]["overlap"] == e["overlap"], f
+                if "att_lead" in got[f]:
+                    assert got[f]["att_lead"] == e["att_lead"], f
+        assert got["any_form"] == exp["any_form"][s]
