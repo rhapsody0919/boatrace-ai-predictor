@@ -87,3 +87,26 @@ def test_matches_mock_knn7():
                                                                  f"{str(v)[8:10]}-{str(v)[10:12]}")]
     assert ids == [n["race_id"] for n in exp]
     assert np.round(np.sqrt(d2p), 3).tolist() == pytest.approx([n["distance"] for n in exp], abs=1e-3)
+
+
+@pytest.mark.skipif(MOCK is None, reason="モックの入力が無い")
+def test_item_levels_match_mock_knn7():
+    W = MOCK / "knn/work5"
+    r = pd.read_pickle(W / "races.pkl")
+    B = dict(np.load(W / "boats.npz"))
+    pool = r["is_pool"].to_numpy()
+    qi = int(np.where(r["is_query"])[0][0])
+    venue = r["venue_code"].astype(int).to_numpy()
+    clusters = S.venue_clusters(venue, r["rank1"].to_numpy(), pool)
+    is_kb = r["race_date"].to_numpy() <= np.datetime64("2025-12-02")
+    lv = S.item_levels(r, B, qi, clusters, is_kb)
+    exp = json.loads((MOCK / "knn/knn7.json").read_text())
+    assert list(lv) == [s["key"] for s in exp["similarity"]]
+    pos = pd.Series(np.arange(len(r)), index=r["race_id"].map(lambda v: f"{str(v)[:4]}-{str(v)[4:6]}-{str(v)[6:8]}-"
+                                                                          f"{str(v)[8:10]}-{str(v)[10:12]}"))
+    for nb in exp["neighbors"]:
+        i = pos[nb["race_id"]]
+        got = {k: (None if v[i] == -1 else int(v[i])) for k, v in lv.items()}
+        assert got == nb["item_match"], nb["race_id"]
+    for s in exp["similarity"]:
+        assert float((lv[s["key"]][pool] == 2).mean()) == pytest.approx(s["pool_rate"]), s["key"]

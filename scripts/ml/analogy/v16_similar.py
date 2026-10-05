@@ -146,3 +146,116 @@ def rank_layer(X: np.ndarray, xq: np.ndarray, venue: np.ndarray, venue_q: int, l
     d2p = d2 + np.where(venue[idx] != venue_q, np.float32(lam), np.float32(0))
     order = np.argsort(d2p, kind="stable")[:k]
     return idx[order], d2[order], d2p[order]
+
+
+# ---------------------------------------------------------------- 全33項目の「同じ・近い」（spec B-6。mock-v16/knn2_report.py）
+# 値: 2＝同じ、1＝近い、0＝違う、−1＝今日かそのレースのどちらかが欠損。基準の文言は screens・日本語の直し 24〜26（JS 側）
+def venue_clusters(venue: np.ndarray, rank1: np.ndarray, pool: np.ndarray) -> dict[int, int]:
+    """母集団の1号艇1着率で24場を6場ずつ4群（MD-6）"""
+    p_in = pd.Series(rank1[pool] == 1).groupby(venue[pool]).mean().sort_values()
+    return {int(v): gi for gi, g in enumerate(np.array_split(p_in.index.to_numpy(), 4)) for v in g}
+
+
+def _rank_band(rank: np.ndarray) -> np.ndarray:
+    return np.where(~np.isfinite(rank), -1, np.where(rank <= 2, 0, np.where(rank <= 4, 1, 2)))
+
+
+def _b1_rank(x: np.ndarray) -> np.ndarray:
+    b1 = x[:, 0]
+    rk = 1 + (x[:, 1:] > b1[:, None]).sum(1).astype(float)
+    return np.where(np.isfinite(b1), rk, np.nan)
+
+
+def item_levels(races: pd.DataFrame, boats: dict[str, np.ndarray], qi: int, clusters: dict[int, int],
+                is_kb: np.ndarray) -> dict[str, np.ndarray]:
+    """races・boats（レース順、qi が今日のレース）の各レースについて、今日と比べた33項目の値 {項目: (n,) int8}"""
+    import warnings
+
+    n = len(races)
+    none = np.zeros(n, bool)
+
+    def lv(same, near, null):
+        return np.where(null, -1, np.where(same, 2, np.where(near, 1, 0))).astype(np.int8)
+
+    def mean_abs6(a):
+        d = np.abs(a - a[qi][None, :])
+        with np.errstate(invalid="ignore"), warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            return np.nanmean(np.where(np.isfinite(d), d, np.nan), axis=1)
+
+    def thr(a, t_same, t_near):
+        m = mean_abs6(np.asarray(a, dtype=float))
+        return lv(m <= t_same, m <= t_near, ~np.isfinite(m))
+
+    def band_adj(b, missing=-1):
+        return lv(b == b[qi], np.abs(b - b[qi]) == 1, (b == missing) | (b[qi] == missing))
+
+    B = boats
+    venue = races["venue_code"].astype(int).to_numpy()
+    vclu = np.array([clusters.get(int(v), -1) for v in venue])
+    rn = races["race_number"].to_numpy(dtype=float)
+    cls = np.asarray(B["cls_ord"], dtype=float)
+    c1 = cls[:, 0]
+    nat = np.asarray(B["nat_win"], dtype=float)
+    gapb = gap_band(nat)
+    natf = np.where(np.isfinite(nat), nat, -np.inf)
+    top = natf.argmax(1) + 1
+    second = np.argsort(-natf, axis=1, kind="stable")[:, 1] + 1
+    nr = np.asarray(B["nat_win_rank"], dtype=float)
+    same_nr = (nr == nr[qi]).sum(1)
+    same_cls = (np.nan_to_num(cls, nan=-1) == np.nan_to_num(cls[qi], nan=-1)).sum(1)
+    nA1 = (cls == 4).sum(1)
+    gc = races["grade_code"].to_numpy(dtype=float)
+    rc = races["round_code"].to_numpy(dtype=float)
+    wc = races["weather_code"].to_numpy(dtype=float)
+    ws = races["wind_speed"].to_numpy(dtype=float)
+    wx = races["wind_x"].to_numpy(dtype=float)
+    wy = races["wind_y"].to_numpy(dtype=float)
+    wave = races["wave_height"].to_numpy(dtype=float)
+    sday = races["series_day"].to_numpy(dtype=float)
+    fin = races["is_final_day_num"].to_numpy(dtype=float)
+    fin_null = ~np.isfinite(fin) | is_kb  # 長期の最終日は使えないので null 扱い
+    nloc = np.nansum(B["is_local"], 1)
+    rb = (rn - 1) // 4
+    rain, dry = np.isin(wc, [2, 3]), np.isin(wc, [0, 1])
+    wb = np.where(~np.isfinite(ws), -1, np.where(ws <= 2, 0, np.where(ws <= 4, 1, 2)))
+    wd = np.sqrt((wx - wx[qi]) ** 2 + (wy - wy[qi]) ** 2)
+    wvb = np.where(~np.isfinite(wave), -1, np.where(wave <= 2, 0, np.where(wave <= 5, 1, 2)))
+    gb = np.where(~np.isfinite(gc), -1, np.where(gc == 0, 0, 1))
+    b1n = nat[:, 0]
+    return {
+        "venue": lv(venue == venue[qi], vclu == vclu[qi], none),
+        "race_number_band": band_adj(rb),
+        "race_number": lv(rn == rn[qi], np.abs(rn - rn[qi]) <= 2, none),
+        "b1_class": lv(c1 == c1[qi], np.abs(c1 - c1[qi]) == 1, ~np.isfinite(c1) | ~np.isfinite(c1[qi])),
+        "class_all6": lv(same_cls == 6, same_cls >= 4, np.isnan(cls).all(1)),
+        "n_A1": lv(nA1 == nA1[qi], np.abs(nA1 - nA1[qi]) == 1, none),
+        "win_gap_band": band_adj(gapb, missing=5),
+        "top_boat": lv(top == top[qi], second == top[qi], ~np.isfinite(nat).any(1)),
+        "nat_win_6": thr(nat, 0.5, 0.8),
+        "nat_win_rank_4": lv(same_nr >= 4, same_nr >= 2, ~np.isfinite(nr).any(1)),
+        "b1_nat_win": lv(np.abs(b1n - b1n[qi]) <= 0.5, np.abs(b1n - b1n[qi]) <= 1.0, ~np.isfinite(b1n)),
+        "loc_win_6": thr(B["loc_win"], 0.75, 1.2),
+        "recent_win30_6": thr(B["recent_win30"], 0.10, 0.15),
+        "recent_top3_30_6": thr(B["recent_top3_30"], 0.10, 0.15),
+        "st_mean30_6": thr(B["st_mean30"], 0.02, 0.03),
+        "b1_st_rank_band": band_adj(_rank_band(np.asarray(B["st_mean30_rank"], dtype=float)[:, 0])),
+        "b1_motor_rank_band": band_adj(_rank_band(_b1_rank(np.asarray(B["motor_2"], dtype=float)))),
+        "motor_2_6": thr(B["motor_2"], 5, 8),
+        "b1_boat_rank_band": band_adj(_rank_band(_b1_rank(np.asarray(B["boat_2"], dtype=float)))),
+        "boat_2_6": thr(B["boat_2"], 5, 8),
+        "weather": lv(wc == wc[qi], (rain & rain[qi]) | (dry & dry[qi]), ~np.isfinite(wc) | ~np.isfinite(wc[qi])),
+        "wind_bin": band_adj(wb),
+        "wind_vector": lv(wd <= 1.5, wd <= 2.5, ~np.isfinite(wd)),
+        "wave_bin": band_adj(wvb),
+        "grade": lv(gc == gc[qi], np.abs(gc - gc[qi]) == 1, ~np.isfinite(gc) | ~np.isfinite(gc[qi])),
+        "grade_bin": lv(gb == gb[qi], none, (gb == -1) | (gb[qi] == -1)),
+        "round": lv(rc == rc[qi], (np.abs(rc - rc[qi]) == 1) & (rc != 3) & (rc[qi] != 3),
+                    ~np.isfinite(rc) | ~np.isfinite(rc[qi])),
+        "series_day": lv(sday == sday[qi], np.abs(sday - sday[qi]) == 1, ~np.isfinite(sday) | ~np.isfinite(sday[qi])),
+        "is_final_day": lv(fin == fin[qi], none, fin_null),
+        "age_6": thr(B["age"], 3, 5),
+        "weight_6": thr(B["weight"], 2, 3),
+        "n_local": lv(nloc == nloc[qi], np.abs(nloc - nloc[qi]) == 1, np.isnan(np.asarray(B["is_local"], float)).all(1)),
+        "exh_time_diff_6": thr(B["exh_time_diff"], 0.03, 0.05),
+    }
