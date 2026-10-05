@@ -125,7 +125,7 @@ export function prepareModels(meta, dumps) {
  * @returns {{boatNumbers:number[], inputs: Record<string, Float64Array[]>}}
  */
 export function raceInputs(models, race, windBasis = null) {
-  // 行は {boat_number, features}（analogy_race_features の行の形）か、艇番の昇順の features の配列
+  // 行は {boat_number, features}（出走表時点の36列）か、艇番の昇順の features の配列
   const rows = (race.racecard_features ?? [])
     .map((r, i) => (Array.isArray(r) ? { boat_number: i + 1, features: r } : r))
     .sort((a, b) => a.boat_number - b.boat_number);

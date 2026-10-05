@@ -80,7 +80,7 @@
 .race-history-hscroll:has(> .hscroll-less)
   .race-history-table--pin-race
   :is(th, td):nth-child(2) {
-  box-shadow: inset -1px 0 0 var(--border-hairline);
+  box-shadow: inset -1px 0 0 var(--hscroll-edge-line, var(--border-hairline));
 }
 
 /* 固定の列は自分の地を塗るので、行に乗せたときの色も同じにそろえる */

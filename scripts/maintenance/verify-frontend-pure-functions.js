@@ -1644,6 +1644,23 @@ function suiteHscrollHint(m, check) {
     ],
     [180, 180, 180, 0],
   );
+  // 「‹」で左端までの残りが目安の4分の1以下なら左端まで戻す（BOA-742。375px のモーター一覧で
+  // 233→37→0 と2回かかった）。右は右端が列の途中のことがあるので、手前の列の境目で止める
+  check(
+    "hscroll: 「‹」で左端までの残りが目安の4分の1以下なら、1回で左端まで戻す（右は境目で止める）",
+    [
+      m.snapScrollTarget({
+        current: 233,
+        step: 205,
+        direction: -1,
+        max: 233,
+        columnStarts: [0, 37, 98, 159],
+      }),
+      snap(120, 120, -1),
+      snap(0, 218, 1),
+    ],
+    [0, 0, 180],
+  );
   check(
     "hscroll: 1列も越えないときは次の列の境目、端を越えるときは端",
     [snap(0, 40, 1), snap(240, 40, 1), snap(200, 300, 1), snap(130, 5, -1)],
@@ -1708,7 +1725,7 @@ function suiteNextOpenDate(m, check) {
   );
 }
 
-// --- pickHitPattern: 的中レースで見せる「当たった候補」（PR #1197 ファン評価3周目）
+// --- pickHitPattern: 的中レースで見せる「当たった候補」（PR #1197、BOA-724 で確率の一番高い候補に）
 function suiteTurnPrediction(m, check) {
   const patterns = [
     { winnerCourse: 1, technique: "nige", probability: 0.44 },
@@ -1716,24 +1733,68 @@ function suiteTurnPrediction(m, check) {
     { winnerCourse: 2, technique: "sashi", probability: 0.07 },
   ];
   check(
-    "pickHitPattern: 同じ艇の候補が複数あれば、実際の決まり手と同じ候補を選ぶ",
-    m.pickHitPattern(patterns, 2, "差し"),
-    patterns[2],
-  );
-  check(
-    "pickHitPattern: 実際の決まり手の候補が無ければ、同じ艇の最初の候補",
-    m.pickHitPattern(patterns, 2, "抜き"),
+    "pickHitPattern: 同じ艇の候補が複数あっても、確率が一番高い候補（実際の決まり手では選ばない。BOA-724）",
+    m.pickHitPattern(patterns, 2),
     patterns[1],
   );
   check(
-    "pickHitPattern: 決まり手が分からないときも同じ艇の最初の候補",
-    m.pickHitPattern(patterns, 2, null),
-    patterns[1],
+    "pickHitPattern: 1号艇は本命の候補",
+    m.pickHitPattern(patterns, 1),
+    patterns[0],
   );
   check(
     "pickHitPattern: 1着の艇の候補が無ければ null",
-    m.pickHitPattern(patterns, 5, "まくり"),
+    m.pickHitPattern(patterns, 5),
     null,
+  );
+  // isAsPredicted: 「予想通りの展開でした」を言ってよいか（BOA-724）
+  const as = (
+    predictedTechnique,
+    actualTechnique,
+    winnerBoat,
+    winnerEntryCourse,
+  ) =>
+    m.isAsPredicted({
+      predictedTechnique,
+      actualTechnique,
+      winnerBoat,
+      winnerEntryCourse,
+    });
+  check(
+    "isAsPredicted: 決まり手が同じで枠なりなら true",
+    as("逃げ", "逃げ", 1, 1),
+    true,
+  );
+  check(
+    "isAsPredicted: 進入コースが分からなくても決まり手が同じなら true",
+    as("差し", "差し", 2, null),
+    true,
+  );
+  check(
+    "isAsPredicted: 決まり手が違えば false",
+    as("差し", "まくり", 2, 2),
+    false,
+  );
+  check(
+    "isAsPredicted: 艇番と違うコースから勝てば false（1号艇が2コースから）",
+    as("逃げ", "逃げ", 1, 2),
+    false,
+  );
+  check(
+    "isAsPredicted: 2番手以下の候補が当たったときは false（本命は外れている）",
+    m.isAsPredicted({
+      predictedTechnique: "まくり",
+      actualTechnique: "まくり",
+      winnerBoat: 3,
+      winnerEntryCourse: 3,
+      isTopPick: false,
+    }),
+    false,
+  );
+  check(
+    "isAsPredicted: 実際の決まり手が分からなければ false",
+    as("逃げ", null, 1, 1),
+    false,
   );
 }
 
@@ -1870,9 +1931,9 @@ const MUTANTS = [
   ],
   [
     "turnPrediction",
-    "実際の決まり手を見ずに、同じ艇の最初の候補を選ぶ（PR #1197 ファン評価3周目の退行）",
-    "return exact ?? sameBoat[0] ?? null;",
-    "return sameBoat[0] ?? null;",
+    "2番手以下の候補が当たっても「予想通り」にする（BOA-724 A-2 (b) の退行）",
+    "if (!isTopPick) return false;",
+    "if (false) return false;",
   ],
   [
     "volatilityLevel",
@@ -1885,6 +1946,12 @@ const MUTANTS = [
     "送る幅から固定の左の列を引かない（PR #1192 ファン評価2周目の退行）",
     "Math.round((clientWidth - stickyWidth) * 0.8)",
     "Math.round(clientWidth * 0.8)",
+  ],
+  [
+    "hscrollHint",
+    "端の手前の列の境目で止め、「‹」を2回押させる（BOA-742 の退行）",
+    "if (direction < 0 && raw <= step / 4) return 0;",
+    "if (direction < 0 && raw <= 0) return 0;",
   ],
   [
     "hscrollHint",

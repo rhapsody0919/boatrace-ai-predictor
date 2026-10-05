@@ -313,10 +313,15 @@ async function buildRacerNameMap(client, { strict = false } = {}) {
   // 超えるため fetchAll() でページネーションする（.range()無しの単発selectだと
   // 後半の選手が対応表から漏れ、racer_idが解決できなくなる）。
   // strict（共通ラッパ）では、取得エラーを部分結果にせず例外にする（DB障害を成功にしない）
-  const data = await fetchAll("racer_profiles", "racer_id,name", undefined, {
-    throwOnError: strict,
-    client,
-  });
+  const data = await fetchAll(
+    "racer_profiles",
+    "racer_id,name",
+    (q) => q.order("racer_id"),
+    {
+      throwOnError: strict,
+      client,
+    },
+  );
 
   for (const row of data ?? []) {
     const key = normalizeRacerName(row.name);

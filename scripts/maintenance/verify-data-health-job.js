@@ -175,7 +175,6 @@ const MIGRATION_FILES = Object.freeze([
   "105_data_health_coverage_exhibition_row.sql",
   "107_data_health_cancellation_with_result.sql",
   "121_data_health_pre_race_series_day.sql",
-  "128_data_health_analogy_race_features.sql",
 ]);
 const MIGRATION_FILE = MIGRATION_FILES[0];
 const migrationSqlByFile = new Map(
@@ -315,7 +314,6 @@ CREATE TABLE race_entries (race_id varchar(20), boat_number smallint, racer_id i
 CREATE TABLE race_pit_reports (race_id varchar(20) primary key, status text);
 CREATE TABLE race_series (venue_code smallint, start_date date, end_date date, primary key (venue_code, start_date));
 CREATE TABLE racer_period_stats (racer_id integer, period_year smallint, period_no smallint, primary key (racer_id, period_year, period_no));
-CREATE TABLE analogy_race_features (race_id varchar(20), boat_number smallint, primary key (race_id, boat_number));
 CREATE TABLE race_payouts (race_id varchar(20));
 CREATE TABLE racer_profiles (racer_id integer);
 CREATE TABLE racer_series_points (racer_id integer);
@@ -375,9 +373,6 @@ INSERT INTO race_pit_reports VALUES ('2026-09-18-03-08','published'), ('2026-09-
 INSERT INTO race_series VALUES (1,'2026-09-16','2026-09-21');
 -- 期別成績: 会場1の1レース目の選手のうち1001・1002だけ（1001は2期分）
 INSERT INTO racer_period_stats VALUES (1001,2026,1),(1001,2026,2),(1002,2026,2);
--- レースごとの寄与度の特徴量（123）: 1レース目の4艇だけ。確定中止の2レース目の行は数えない
-INSERT INTO analogy_race_features SELECT '2026-09-18-01-01', g FROM generate_series(1,4) g;
-INSERT INTO analogy_race_features SELECT '2026-09-18-01-02', g FROM generate_series(1,6) g;
 `);
 
 {
@@ -476,19 +471,6 @@ INSERT INTO analogy_race_features SELECT '2026-09-18-01-02', g FROM generate_ser
   check(
     "data_health_racer_period_stats: 出走した選手（重複なし・確定中止を除く）のうち、成績がある選手を数える（複数期でも1人）",
     d1.expected === 12 && d1.with_stats === 2,
-    show(d1),
-  );
-}
-{
-  const rows = await call(
-    "data_health_analogy_race_features",
-    "2026-09-18",
-    "2026-09-19",
-  );
-  const d1 = rows.find((r) => r.d === "2026-09-18");
-  check(
-    "data_health_analogy_race_features: 出走行（確定中止を除く）のうち、特徴量の行がある数を数える",
-    d1.expected === 12 && d1.with_features === 4,
     show(d1),
   );
 }
@@ -2003,7 +1985,6 @@ CREATE TABLE race_entries (race_id varchar(20), boat_number smallint, racer_id i
 CREATE TABLE race_pit_reports (race_id varchar(20) primary key, status text);
 CREATE TABLE race_series (venue_code smallint, start_date date, end_date date, primary key (venue_code, start_date));
 CREATE TABLE racer_period_stats (racer_id integer, period_year smallint, period_no smallint, primary key (racer_id, period_year, period_no));
-CREATE TABLE analogy_race_features (race_id varchar(20), boat_number smallint, primary key (race_id, boat_number));
 CREATE TABLE race_payouts (race_id varchar(20)); CREATE TABLE racer_profiles (racer_id integer); CREATE TABLE racer_series_points (racer_id integer);
 CREATE TABLE venue_entry_course_stats (venue_code smallint); CREATE TABLE venue_motor_stats (venue_code smallint); CREATE TABLE external_predictions (race_id varchar(20)); CREATE TABLE race_special_notes (race_id varchar(20));
 INSERT INTO races VALUES

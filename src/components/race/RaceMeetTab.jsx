@@ -464,6 +464,10 @@ function RaceMeetTab({
       row: ranking.find((r) => r.racerId === p.racerId),
     }))
     .filter((x) => x.row);
+  // 表の6艇に準優の目安内の艇がいるか（いなければ点線が引かれない。BOA-756）
+  const tableHasInBorder = compareRows.some(({ row }) =>
+    rankInBorder(row, slots),
+  );
   const bestRate = bestOf(
     compareRows.map(({ boat, row }) => ({
       boat,
@@ -810,7 +814,14 @@ function RaceMeetTab({
               {showBorderBadge &&
                 [
                   t("meetTab.borderLine", { slots, rate: border.toFixed(2) }),
-                  t("meetTab.borderNote"),
+                  // 点線は目安内の最後の艇の行の下に引くので、表の6艇に目安内が
+                  // 1艇もいないと点線が無い。そのときに「点線より上が…」と書くと、
+                  // 無い線を探させた（BOA-756、PR #1234 ファン評価3周目）
+                  t(
+                    tableHasInBorder
+                      ? "meetTab.borderNote"
+                      : "meetTab.borderNoneInTable",
+                  ),
                   t("meetTab.borderAsOfRuns", { runs: medianRuns }),
                 ].join(sp)}
               {/* まだ全員が走っていない間は目安を出さない理由を書く（BOA-690）。
@@ -1050,6 +1061,16 @@ function RaceMeetTab({
                                 : ""
                             }`}
                           >
+                            {/* 走数が少ない得点率は、目安に届いて青くても当てにならない。
+                                比較表と同じ⚠を付ける（BOA-757） */}
+                            {row.runs < MEET_SMALL_SAMPLE_RUNS && (
+                              <span
+                                className="rmt-warn"
+                                title={t("basicInfo.smallSampleTitle")}
+                              >
+                                ⚠
+                              </span>
+                            )}
                             {row.rate.toFixed(2)}
                           </td>
                           {hasNeeded && (
@@ -1490,7 +1511,8 @@ function RaceMeetTab({
                     ),
                   }))}
                   baseline={st.baseAvg}
-                  color="var(--brand-accent-primary)"
+                  // 金は「6艇で最良」の印。ダークでは5号艇の線と同じ色にも見えた（BOA-757）
+                  color="var(--text-primary)"
                   markLast={!lastSt?.mark}
                 />
                 <div className="rmt-spark-foot">

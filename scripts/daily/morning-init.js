@@ -272,7 +272,7 @@ async function main() {
       // 欠ける（以前は素の .select() のみで、fetchAll の range ページネーションを
       // 使っていなかった）。ensureUnifiedPredictions と同じ fetchAll に統一する
       const entries = await fetchAll("race_entries", "race_id", (q) =>
-        q.gte("race_id", date).lt("race_id", `${date}~`),
+        q.gte("race_id", date).lt("race_id", `${date}~`).order("race_id").order("boat_number"),
       );
       const allTodayRaceIds = [
         ...new Set((entries || []).map((e) => e.race_id)),

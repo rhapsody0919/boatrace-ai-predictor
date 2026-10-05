@@ -56,6 +56,12 @@ export function horizontalScrollStep({ clientWidth, stickyWidth }) {
  * 送りたい位置（今の位置 ± step）を越えない範囲で、いちばん遠い列の境目に止める。1列も越えない
  * ときは次の列の境目まで送る。端（0・max）を越えるときは端に止める
  *
+ * 「‹」で左端までの残りが目安の4分の1以下なら、左端まで戻す。目安は見える幅の8割なので、はみ出しは
+ * 見える幅の2割以内で、列を読み飛ばさない。以前は左端の手前の列の境目で止まり、「‹」を2回押さないと
+ * 左端に戻らなかった（375px のモーター一覧で 233→37→0。PR #1223 ファン評価1周目、BOA-742）。
+ * 右側には同じ扱いをしない。右端は列の境目とは限らない（最後の列が見える幅より広い表では列の途中）ため、
+ * 1回で右端まで送ると、最後の列の頭が固定の列の下に隠れたまま止まる
+ *
  * @param {{current: number, step: number, direction: 1|-1, max: number, columnStarts: number[]}} args
  *   columnStarts は、その列の左端が固定の列の右端にそろうときの scrollLeft
  * @returns {number}
@@ -69,7 +75,7 @@ export function snapScrollTarget({
 }) {
   const raw = current + direction * step;
   if (direction > 0 && raw >= max) return max;
-  if (direction < 0 && raw <= 0) return 0;
+  if (direction < 0 && raw <= step / 4) return 0;
   const starts = [...new Set(columnStarts.map((v) => Math.round(v)))]
     .filter((v) => v > 0 && v < max)
     .sort((a, b) => a - b);

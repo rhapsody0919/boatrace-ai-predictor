@@ -436,6 +436,26 @@ export const FETCH_ALL_BY_IN_ORDER = Object.freeze({
 // （race_id 1件につき最大6艇分の行がある race_start_timings/exhibition_data 等、
 // 「in()のキー数 × 1行あたりの行数」が1000を超えうるクエリで使用する）。
 // 取得の失敗は、クライアントの .throwOnError() 既定（ADR-0069）で例外になる（途中までの結果を返さない）
+/**
+ * 展示STの行に、展示のフライング・出遅れの印（exhibition_data.start_flag）を足す（BOA-759）。
+ * start_timing は印を外した正の数（F.01→0.01）なので、印が無いと F の艇が一番早く見え、
+ * 「最良」の金枠が付いていた
+ */
+async function attachExhibitionStartFlags(raceId, rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return rows;
+  const { data } = await supabase
+    .from("exhibition_data")
+    .select("boat_number, start_flag")
+    .eq("race_id", raceId);
+  const flagByBoat = new Map(
+    (data ?? []).map((e) => [e.boat_number, e.start_flag ?? null]),
+  );
+  return rows.map((row) => ({
+    ...row,
+    exhibition_start_flag: flagByBoat.get(row.boat_number) ?? null,
+  }));
+}
+
 async function fetchAllByIn(table, select, column, values) {
   const orderKeys = FETCH_ALL_BY_IN_ORDER[table];
   if (!orderKeys) {
@@ -4941,7 +4961,11 @@ export const supabaseDataService = {
    * 展示STが本番の参考になるか（ズレが小さいほど安定）を選手ごとの過去実績から示す
    */
   getRaceStPredictabilityBreakdown(raceId) {
-    return withCache(`race-st-predictability-${raceId}`, async () => {
+    // 印を足した形をキャッシュする（印の無い旧い形と混ざらないよう、キーを変えた）
+    return withCache(`race-st-predictability-v2-${raceId}`, async () =>
+      attachExhibitionStartFlags(
+        raceId,
+        await (async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -5080,7 +5104,9 @@ export const supabaseDataService = {
           sample_count: deviations.length,
         };
       });
-    });
+        })(),
+      ),
+    );
   },
 
   /**
@@ -5886,7 +5912,7 @@ export const supabaseDataService = {
    * 分析ツールの「出走表データ」タブで使用する。AIスコアは含めない
    */
   getRaceEntriesDetail(raceId) {
-    return withCache(`race-entries-detail-${raceId}`, async () => {
+    return withCache(`race-entries-detail-v2-${raceId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -5902,7 +5928,7 @@ export const supabaseDataService = {
           .order("boat_number"),
         supabase
           .from("exhibition_data")
-          .select("boat_number, exhibition_time, start_timing")
+          .select("boat_number, exhibition_time, start_timing, start_flag")
           .eq("race_id", raceId),
       ]);
 
@@ -5918,6 +5944,8 @@ export const supabaseDataService = {
         ...row,
         exhibition_time: exByBoat.get(row.boat_number)?.exhibition_time ?? null,
         exhibition_st: exByBoat.get(row.boat_number)?.start_timing ?? null,
+        // 展示のフライング・出遅れの印（BOA-759）
+        exhibition_start_flag: exByBoat.get(row.boat_number)?.start_flag ?? null,
       }));
     });
   },

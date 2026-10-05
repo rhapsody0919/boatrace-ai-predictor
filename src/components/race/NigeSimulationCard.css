@@ -93,8 +93,11 @@
 
 .nsc-exacta {
   flex-shrink: 0;
-  width: 70px;
+  min-width: 70px;
   text-align: right;
+  /* 「2連単 19.1%」を折らない。幅を固定していたため、値の桁数で1行に収まる行と
+     「2連単／19.1%」と折れる行が混ざった（BOA-757）。余った幅は横棒の側で吸収する */
+  white-space: nowrap;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
 }
@@ -136,6 +139,6 @@
   }
 
   .nsc-exacta {
-    width: 62px;
+    min-width: 62px;
   }
 }

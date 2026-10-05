@@ -315,3 +315,62 @@ test("表に⚠が無いときは、金枠の凡例で⚠に触れない", async
   // 前検の金枠と食い違って見えた（BOA-738 ファン評価2周目）
   await expect(page.locator(".rmt-compare .rmt-pretest.ind-best").first()).toBeVisible();
 });
+
+test("表の6艇に準優の目安内がいないときは、点線の説明でなく「いません」と書く", async ({
+  page,
+}) => {
+  // 尼崎 9/26 9R（予選中）。点線は目安内の最後の艇の行の下に引くので、6艇とも目安外だと
+  // 点線が無い。それでも「点線より上が準優の目安内」と書き、無い線を探させた（BOA-756）
+  await openMeetTab(page, "2026-09-26-13-09");
+  await expect(page.locator(".rmt-compare .is-border-edge")).toHaveCount(0);
+  const note = page.locator(".rmt-border-note");
+  await expect(note).toContainText("この6艇に準優の目安内の選手はいません");
+  await expect(note).not.toContainText("点線");
+  // 目安内の艇がいるレースでは点線の説明を出す（津 9/23 12R）
+  await openMeetTab(page, "2026-09-23-09-12");
+  await expect(page.locator(".rmt-compare .is-border-edge")).toHaveCount(1);
+  await expect(page.locator(".rmt-border-note")).toContainText("点線より上が");
+});
+
+test("得点率早見の得点率にも、走数が少ないときは⚠を付ける", async ({ page }) => {
+  // 津 9/23 12R（予選中、6艇とも3走未満）。比較表には⚠があるのに、早見の得点率には無く、
+  // 目安に届いて青い得点率が当てになる値に見えた（BOA-757）
+  await openMeetTab(page, "2026-09-23-09-12");
+  await expect(page.locator(".rmt-forecast-table td.rmt-rate .rmt-warn")).toHaveCount(6);
+});
+
+test("推移の ST/展示 の選択中の枠と、選んだ艇の ST の線に金を使わない", async ({
+  page,
+}) => {
+  // 金は「6艇で最良」の印。選択中の枠と ST の線が金で、ダークでは5号艇の線と同じ色に
+  // 見えた（BOA-757）
+  // 津 9/28 11R（最終日、選んだ艇が今節を何走もしていて ST の線が引かれる）
+  await openMeetTab(page, "2026-09-28-09-11");
+  await expect(page.locator(".rmt-metric-chip.is-active")).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(
+    page.locator(".rmt-spark .meet-sparkline-line").first(),
+  ).toBeAttached({ timeout: 30000 });
+  const colors = await page.evaluate(() => {
+    const css = (v) => {
+      const el = document.createElement("span");
+      el.style.color = v;
+      document.body.appendChild(el);
+      const c = getComputedStyle(el).color;
+      el.remove();
+      return c;
+    };
+    const chip = document.querySelector(".rmt-metric-chip.is-active");
+    const line = document.querySelector(".rmt-spark .meet-sparkline-line");
+    return {
+      gold: css("var(--brand-accent-primary)"),
+      chip: chip ? getComputedStyle(chip).borderTopColor : null,
+      line: line ? getComputedStyle(line).stroke : null,
+    };
+  });
+  expect(colors.chip).not.toBeNull();
+  expect(colors.chip).not.toBe(colors.gold);
+  expect(colors.line).not.toBeNull();
+  expect(colors.line).not.toBe(colors.gold);
+});
