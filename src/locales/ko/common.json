@@ -799,15 +799,15 @@
       "layer": {
         "g1plus": "G1 이상",
         "gradeRound": "{{grade}}의 {{round}}",
-        "races": "1호정의 급별, 1호정과 승률 1위의 차, 승률 1위 정번이 같은 과거 레이스",
-        "racesCount": "1호정의 급별, 1호정과 승률 1위의 차, 승률 1위 정번이 같은 과거 레이스 {{count}}건",
+        "races": "1번 보트의 급별, 1번 보트와 승률 1위의 차, 승률 1위 정번이 같은 과거 레이스",
+        "racesCount": "1번 보트의 급별, 1번 보트와 승률 1위의 차, 승률 1위 정번이 같은 과거 레이스 {{count}}건",
         "withKind": "오늘과 같은 「{{kind}}」에서, {{races}}",
         "plain": "오늘과 같이, {{races}}"
       },
       "scopeNames": {
         "allSame": "6정 모두 {{cls}}",
         "classCount": "{{cls}} {{n}}정",
-        "selected": "({{boat}}호정은 {{cls}})",
+        "selected": "({{boat}}번 보트는 {{cls}})",
         "combo": "{{where}}, {{combo}}{{selected}}",
         "national": "전국",
         "withRound": "{{base}}의 {{round}}",
