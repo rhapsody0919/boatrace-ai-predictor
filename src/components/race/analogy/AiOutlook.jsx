@@ -3,6 +3,7 @@ import useAnalogyContribution from "../../../hooks/useAnalogyContribution";
 import { SCOPE_LINE } from "./analogyColors";
 import { fmtDate } from "../../../utils/analogyFormat";
 import { directionText, to100 } from "../../../utils/analogyOutlook";
+import { roundToTotal } from "../../../utils/analogyContribution";
 
 const k = "aiPredictionTab.analogy.outlook";
 
@@ -42,7 +43,10 @@ export default function AiOutlook({ boat, target, stage }) {
         <p className="af-sub">{t("aiPredictionTab.analogy.states.loading")}</p>
       </details>
     );
-  const themes = data.themes ?? [];
+  // その段のモデルに無いテーマ（展示前の天候・水面。plan「向きの計算」）は割合も内訳も無いので出さない
+  const themes = (data.themes ?? []).filter(
+    (th) => row.shares?.[th.key] !== undefined,
+  );
   const shares = themes.map((th) => row.shares?.[th.key] ?? 0);
   const pct = to100(shares);
   const max = Math.max(...shares, 0.0001);
@@ -81,7 +85,16 @@ export default function AiOutlook({ boat, target, stage }) {
                 <span className="af-num">{pct[i]}%</span>
               </summary>
               <div className="af-ai-items">
-                {(row.breakdown?.[th.key] ?? []).map((g) => {
+                {(() => {
+                  // 項目の割合はテーマの中での比で、テーマの % に合計をそろえる（内訳の share とテーマの割合は分母が
+                  // 違うので、そのままだと合わない。学習側の回答 2026-10-06、旧 ContributionBreakdown と同じ）
+                  const groups = row.breakdown?.[th.key] ?? [];
+                  const gp = roundToTotal(
+                    groups.map((g) => g.share),
+                    pct[i],
+                  );
+                  return groups.map((g, gi) => ({ ...g, pct: gp[gi] }));
+                })().map((g) => {
                   const dir = directionText(g.key, g.direction, t);
                   const name =
                     g.key === "national" && boat === 1
@@ -90,9 +103,7 @@ export default function AiOutlook({ boat, target, stage }) {
                   return (
                     <div key={g.key} className="af-ai-item">
                       <span>{name}</span>
-                      <span className="af-num">
-                        {Math.round(g.share * 100)}%
-                      </span>
+                      <span className="af-num">{g.pct}%</span>
                       {dir && (
                         <span className="af-ai-dir">
                           {dir}

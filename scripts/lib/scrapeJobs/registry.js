@@ -410,6 +410,15 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
     failureAlertAfter: 1,
   },
+  // BOA-271 v16 の朝のバッチの起動（analogy-v16-morning.yml。scripts/lib/analogyDispatch.js、T2-5b）。
+  // 1日4回（7:10・7:40 は拾い直しだけ・9:40・13:40）なので、学習の起動と同じく monitor でモードのゲートを api/cron 側で掛ける
+  analogy_dispatch_morning: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+  },
 
   // ↓ N23・N29（tasks.md T4b-20・T4b-21）
   // N23 前検タイム・前検順位・節時点のモーター/ボート2連対率（motor_pretest_stats）。05:20指定（cron: 05:30・06:00・06:30 JST。
