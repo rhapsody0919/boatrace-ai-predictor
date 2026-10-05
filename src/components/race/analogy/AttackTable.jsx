@@ -207,10 +207,13 @@ export default function AttackTable({
           <p className="af-sub">
             {t(`${k}.attacker`)}{" "}
             <b>
-              <BoatBadge n={att} size="sm" /> {boatName(att)}（
-              {t(`${k}.role.${slit}`)}）
+              <BoatBadge n={att} size="sm" />{" "}
+              {t(`${k}.attackerName`, {
+                boat: boatName(att),
+                role: t(`${k}.role.${slit}`),
+              })}
             </b>
-            。{t(`${k}.attackerNote`)}
+            {t(`${k}.attackerNote`)}
           </p>
           <div className="af-big">
             <span>

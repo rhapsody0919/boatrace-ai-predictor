@@ -4,6 +4,7 @@ import { fmtCount, fmtPct } from "../../../utils/analogyFormat";
 import { TOP_TRIFECTA, trifectaList } from "../../../utils/analogyAggregate";
 
 function Row({ combo, count, total, max }) {
+  const { t } = useTranslation();
   return (
     <div className="af-bar">
       <span className="af-tri">
@@ -21,7 +22,10 @@ function Row({ combo, count, total, max }) {
         />
       </span>
       <span className="af-bar-v">
-        {fmtPct(count / total, 1)} <small>{fmtCount(count)}件</small>
+        {fmtPct(count / total, 1)}{" "}
+        <small>
+          {t("aiPredictionTab.analogy.count", { n: fmtCount(count) })}
+        </small>
       </span>
     </div>
   );

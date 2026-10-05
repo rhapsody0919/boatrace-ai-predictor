@@ -40,7 +40,11 @@ export function BoatBars({
             onClick={onSelect ? () => onSelect(b) : undefined}
             ariaLabel={
               onSelect
-                ? `${t("aiPredictionTab.analogy.boat", { n: b })} ${fmtPct(n ? hits / n : null)} ${fmtCount(hits)}件`
+                ? t("aiPredictionTab.analogy.barLabel", {
+                    boat: b,
+                    p: fmtPct(n ? hits / n : null),
+                    n: fmtCount(hits),
+                  })
                 : undefined
             }
           />

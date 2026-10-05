@@ -37,14 +37,14 @@ function TodaySentence({ row, values, boat, scopeFacts, target }) {
     }),
   ]
     .filter(Boolean)
-    .join("。");
+    .join(t("aiPredictionTab.analogy.sentenceSep"));
   return (
     <p className="af-today">
       {t(`${k}.todayLine`, {
         boat,
         item: t(`${k}.items.${row.key}.label`),
         where,
-        inner: `（${inner}）`,
+        inner: t(`${k}.paren`, { inner }),
         rate: fmtPct(line.rate),
         finish: t(`aiPredictionTab.analogy.targets.${target}`),
         hits: fmtCount(line.hit[0]),

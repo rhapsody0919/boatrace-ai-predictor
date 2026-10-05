@@ -144,7 +144,12 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
         ]
       : []),
   ];
-  const heroT = `${core}${parens.length ? `（${parens.join(t("aiPredictionTab.analogy.listComma", "、"))}）` : ""}`;
+  const heroT = parens.length
+    ? t(`${k}.withParen`, {
+        core,
+        paren: parens.join(t("aiPredictionTab.analogy.listComma")),
+      })
+    : core;
   const head = E || sl ? t(`${k}.headIn`, { scope, core }) : core;
   const baseName =
     sl && E

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { wilsonInterval } from "../../../utils/wilson";
 import { fmtCount, fmtPct } from "../../../utils/analogyFormat";
 
@@ -17,6 +18,7 @@ export default function RateBar({
   onClick,
   ariaLabel,
 }) {
+  const { t } = useTranslation();
   const p = n ? hits / n : 0;
   const ci = n ? wilsonInterval(hits, n) : null;
   const body = (
@@ -46,7 +48,10 @@ export default function RateBar({
       <span className="af-bar-v">
         {value ?? (
           <>
-            {fmtPct(n ? p : null)} <small>{fmtCount(hits)}件</small>
+            {fmtPct(n ? p : null)}{" "}
+            <small>
+              {t("aiPredictionTab.analogy.count", { n: fmtCount(hits) })}
+            </small>
           </>
         )}
       </span>
