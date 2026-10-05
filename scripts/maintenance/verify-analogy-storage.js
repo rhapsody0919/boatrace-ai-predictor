@@ -11,6 +11,7 @@ import {
   assertCachedHeader,
   assertUploadable,
   isNotFound,
+  listingHas,
   versionsToPrune,
 } from "../ml/analogy/storageRules.js";
 
@@ -91,6 +92,20 @@ check(
 check(
   "通信のエラーは「無い」と判定しない",
   !isNotFound({ message: "fetch failed" }),
+);
+
+check(
+  "一覧にファイルがあれば「ある」",
+  listingHas([{ name: "model_win.txt.gz" }], "model_win.txt.gz"),
+);
+check(
+  "一覧に無ければ「無い」（Supabase は無いファイルの download を 400・message \"{}\" で返す）",
+  !listingHas([{ name: "model_win.txt.gz" }], "model_win_racecard.txt.gz") &&
+    !isNotFound({ name: "StorageUnknownError", message: "{}" }),
+);
+check(
+  "一覧の取得に失敗（data が null）なら失敗させる（参照版との比較を黙って省かない）",
+  throws(() => listingHas(null, "model_win_racecard.txt.gz")),
 );
 
 if (failures.length) {
