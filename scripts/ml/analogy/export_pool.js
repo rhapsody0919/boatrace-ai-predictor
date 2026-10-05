@@ -20,7 +20,7 @@
  *   node scripts/ml/analogy/export_pool.js --no-cache # 手元（Storage を読み書きしない）
  *   node scripts/ml/analogy/export_pool.js --no-cache races results # 指定したテーブルだけ（動作確認用）
  *   node scripts/ml/analogy/export_pool.js --refresh-kb # 長期分を DB から取り直して Storage を上書き
- *   node scripts/ml/analogy/export_pool.js --daily      # 日次の特徴量ジョブ（BOA-271 B、daily_features.py の前）
+ *   node scripts/ml/analogy/export_pool.js --daily      # 今日のレースの特徴量を作る前（v16 の朝のバッチ。本体の前月・当月だけ DB から読む）
  *
  * 日次（--daily）: DB から読むのは本体分の前月と当月（JST）だけ。それより前の本体分は、週次の学習が置いた
  * `analogy/source/main/{テーブル}/{YYYY-MM}.csv.gz`、長期分は `analogy/source/{KB_CACHE_VERSION}/` から読む。
