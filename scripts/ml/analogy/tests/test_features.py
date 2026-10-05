@@ -147,11 +147,19 @@ STAGE_RULE_V2 = json.loads((Path(__file__).resolve().parents[1] / "testdata"
 
 
 def test_stage_category_v2_matches_t1_1_cases():
-    """#1134 の T1-1 の一致検査の82件（名前だけの判定）。JS（raceStageConfig.js）との比較は v16 T1-1 で足す"""
+    """#1134 の T1-1 の一致検査の82件（名前だけの判定）"""
     cases = STAGE_RULE_V2["cases"]
     assert len(cases) == 82
     wrong = [(c["stage"], F.stage_category(c["stage"]), c["expected_category"]) for c in cases
              if F.stage_category(c["stage"]) != c["expected_category"]]
+    assert wrong == []
+
+
+def test_stage_category_v2_matches_race_stage_config_js():
+    """82件で JS（raceStageConfig.js の getRaceStageCategory、#1262 で v2）と Python の種別が一致する"""
+    stages = [c["stage"] for c in STAGE_RULE_V2["cases"]]
+    js = js_categories(stages)
+    wrong = [(s, F.stage_category(s), j) for s, j in zip(stages, js) if F.stage_category(s) != j]
     assert wrong == []
 
 

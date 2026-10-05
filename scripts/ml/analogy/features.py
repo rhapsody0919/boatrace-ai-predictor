@@ -81,8 +81,7 @@ def _has_special(s: str) -> bool:
 
 # 優勝戦・準優勝戦の判定 v2（#1134 の docs/design/analogy-finder/analysis/t1/t1-1-stage-rule.json の rules。
 # 一致検査の82件は tests/test_features.py）。準々・準優進出は準優勝戦にしない（Q-C(3)）。
-# src/constants/raceStageConfig.js の RACE_STAGE_CATEGORY_RULES は v16 T1-1 で v2 にそろえる。それまでは
-# 準決・セミファイナル・決勝戦・〜優 などの名前（本体で6レース）だけ JS と答えが違う
+# src/constants/raceStageConfig.js の RACE_STAGE_CATEGORY_RULES（#1262 で v2）と同じ答え（82件で突き合わせる）
 def _strip_ws(s: str) -> str:
     return re.sub(r"\s", "", s)
 

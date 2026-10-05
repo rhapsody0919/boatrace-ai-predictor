@@ -113,7 +113,21 @@
       "out_strong": "アウト強い",
       "balanced": "バランス型"
     },
-    "fetchError": "会場の水面特性を読み込めませんでした。"
+    "fetchError": "会場の水面特性を読み込めませんでした。",
+    "details": {
+      "summary": "もっと詳しく（2連率・3連率、決まり手の内訳）",
+      "placeRatesTitle": "枠番別の連対率",
+      "placeRatesNote": "2連率は2着以内、3連率は3着以内に入った割合（{{count}}レース）",
+      "boat": "枠",
+      "winRate": "1着率",
+      "top2Rate": "2連率",
+      "top3Rate": "3連率",
+      "techniqueTitle": "勝ったときの決まり手",
+      "techniqueNote": "枠番ごとの、1着になったレースの決まり手の内訳。（）は回数",
+      "winCount": "1着{{count}}回",
+      "smallSampleNote": "1着の回数が少ない枠は、割合がぶれやすい点に注意してください。",
+      "outcomeLink": "この会場の出目ランキングを見る（分析ツール）"
+    }
   },
   "raceDetailPage": {
     "metaTitle": "{{venue}}競艇 {{race}}R AI予想・展開予測（{{date}}）- 龍神レーダー",
@@ -921,6 +935,23 @@
       "v3": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n無料でここまで精度の高い予想が見られるのは嬉しい✨\n今日も当たりますように！",
       "v4": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n展開予測から見て、この予想は信頼できそう！\n皆さんはどう思いますか？🤔",
       "v5": "🏁 龍神レーダー予想【{{date}}{{venue}}{{raceNo}}R】\n\nモデル: {{model}}\n本命: {{topPick}}号艇\n推奨: {{top3}}\n\n最近的中率が上がってきてて嬉しい😊\nAIの予想、参考にしてみてください！"
+    },
+    "shareTurnHit": {
+      "headAsPredicted": "🌊 展開予測的中！【{{date}}{{venue}}{{raceNo}}R】",
+      "headWinner": "🌊 1着の艇が的中【{{date}}{{venue}}{{raceNo}}R】",
+      "winner": "{{boat}}号艇が1着",
+      "winnerFromCourse": "{{boat}}号艇が{{course}}コースから1着",
+      "prediction": "（AIの予想: {{detail}}）",
+      "actual": "、実際: {{technique}}",
+      "asPredicted": "予想通りの展開でした ✅",
+      "closingWinner": "龍神レーダーで展開予測をチェック",
+      "closing": {
+        "v1": "龍神レーダーで展開予測的中🎉\nAIの分析力に驚いてます！",
+        "v2": "龍神レーダーで展開予測的中🎉\n無料でこの精度はすごい！",
+        "v3": "龍神レーダーで展開予測的中🎉\nデータ分析の力を実感！",
+        "v4": "龍神レーダーで展開予測的中🎉\nまたAI予想が当たった！",
+        "v5": "龍神レーダーで展開予測的中🎉\n的中率の高さに満足してます！"
+      }
     }
   },
   "home": {
@@ -944,7 +975,14 @@
     "todayRaces": "本日開催中のレース",
     "volatilityHighlightsTitle": "🌪️ 本日のイン崩れ注意度ハイライト",
     "volatilityHighlightsScaleNote": "数字は同じ会場のレースと比べた崩れやすさ（0〜100、100が最も崩れやすい）です。",
-    "volatilityHighlightsTurnPrediction": "1着予想: {{course}}号艇（{{technique}}・{{probability}}%）",
+    "volatilityHighlightsClosed": "締切",
+    "volatilityHighlightsClosedNote": "本日のレースはすべて締切済みです。振り返りとして表示しています。",
+    "volatilityHighlightsHighEmptyOpen": "締切前のレースに、崩れやすさ70以上のレースはありません。",
+    "volatilityHighlightsLowEmptyOpen": "締切前のレースに、崩れやすさ30以下のレースはありません。",
+    "volatilityHighlightsHighEmptyClosed": "本日、崩れやすさ70以上のレースはありませんでした。",
+    "volatilityHighlightsLowEmptyClosed": "本日、崩れやすさ30以下のレースはありませんでした。",
+    "volatilityHighlightsResult": "結果: {{boat}}号艇が1着",
+    "volatilityHighlightsResultPending": "結果: 反映待ち",
     "volatilityHighlightsAccuracyLink": "実測精度を見る →",
     "dataType": "レースデータ",
     "loadingTitle": "レースデータを読み込み中...",
@@ -1600,7 +1638,8 @@
       "racecard": "📋 出走表データ",
       "venueranking": "🏟️ 会場ランキング",
       "venuegrade": "📊 会場×グレード分析",
-      "volatility": "🌪️ イン崩れ指数の実績"
+      "volatility": "🌪️ イン崩れ指数の実績",
+      "weather": "🌬️ 風とイン逃げ率"
     },
     "features": {
       "outcome": {
@@ -1674,6 +1713,10 @@
       "volatility": {
         "name": "イン崩れ指数の実績",
         "description": "新AI予想モデルのイン崩れ指数（警戒/標準/堅い）が実際にどれくらい当たっているかを実測値で公開"
+      },
+      "weather": {
+        "name": "風とイン逃げ率",
+        "description": "風の向き（追い風・向かい風）と強さで、1コースの1着率が会場の平均とどれだけ変わるかを、公式の競走成績から集計"
       }
     },
     "info": {
@@ -1998,6 +2041,23 @@
             "text": "各レースの予想画面に表示される「イン崩れ注意度」バッジと同じ指標です"
           }
         ]
+      },
+      "weather": {
+        "title": "風とイン逃げ率について",
+        "dataView": "公式の競走成績（Kファイル）2020年2月以降の約37万レースで、レース時点の風を水面の向き（追い風＝2マークから1マークへ吹く風）に直し、1コースの1着率を同じ会場の平均と比べています。比べ方と判定の基準は、結果を見る前に決めました。",
+        "tips": [
+          {
+            "strong": "追い風4m以上",
+            "text": "はほとんどの会場で1コースの1着率が下がります"
+          },
+          {
+            "strong": "向かい風4m以上",
+            "text": "は会場による差が大きいので、会場を選んで確かめてください"
+          },
+          {
+            "text": "直前情報の風は前のレースの値のことがあり、発走までに変わることもあります。目安として使ってください"
+          }
+        ]
       }
     },
     "notice": {
@@ -2163,5 +2223,53 @@
     "stLate": "そのレースで一番早くスタートを切った艇より、0.1秒以上遅れた割合です。外のコースほど高くなる傾向があるため、同じコース・同じ級別の平均との差も併記しています。フライングの走は数えていません。当サービスの独自集計で、他サイトの同名の指標とは一致しません",
     "flyingCount": "級別は、このレースの出走表の値です。Fは今期のフライング本数（金1本・赤2本）で、5月1日・11月1日に0に戻ります。「今節」付きは今節の初日から前日までにFを切った選手で、節の残りは走りますが、この節の準優勝戦・優勝戦の対象外です（賞典除外。当日のFは含みません）。Lは出遅れの本数で、下の出遅率とは別物です。安定率・出遅率はFの走を除いて数えます",
     "nigeSimulation": "1コースの艇が逃げて1着になったレースだけを集めて、2着に来たコースの割合を出したものです。この会場の実績を集計したもので、予想ではありません"
+  },
+  "weatherInEscape": {
+    "loading": "集計を読み込んでいます…",
+    "fetchError": "風とイン逃げ率の集計を読み込めませんでした。",
+    "lead": "風の向きと強さで、1コースの1着率（イン逃げ率）がどう変わるか。同じ会場の平均と比べています。",
+    "pooledTitle": "全24会場まとめ",
+    "headline": "追い風4m以上では、ほとんどの会場（{{total}}会場中{{same}}）でイン逃げ率が会場の平均より下がります（平均{{tail}}pt）。向かい風4m以上は会場による差が大きく、大きく下がる会場とほぼ変わらない会場があります。2〜3mでは、ほとんど変わりません。",
+    "bins": {
+      "head_strong": "向かい風・強",
+      "head": "向かい風",
+      "calm_cross": "弱い・横風",
+      "tail": "追い風",
+      "tail_strong": "追い風・強"
+    },
+    "binSubs": {
+      "head_strong": "4m以上",
+      "head": "2〜3m",
+      "calm_cross": "1m以下・横風",
+      "tail": "2〜3m",
+      "tail_strong": "4m以上"
+    },
+    "diagram": {
+      "mark1": "1マーク",
+      "mark2": "2マーク",
+      "stand": "スタンド",
+      "caption": "追い風＝2マークから1マークへ吹く風。向かい風はその逆。スタンドから見て右が1マーク"
+    },
+    "barAria": "{{label}} 1コース1着率 {{rate}}%（会場平均との差 {{diff}}pt）",
+    "diffPt": "{{diff}}pt",
+    "raceCount": "{{countText}}件",
+    "reference": "参考値",
+    "pooledNote": "縦線は全体の平均（{{base}}%）。各区分の値は、全体の平均に会場内の差（同じ会場の平均との差を件数で重み付けした平均）を足したものです。差の97.5%の幅: 追い風・強 {{tailLow}}〜{{tailHigh}}pt、向かい風・強 {{headLow}}〜{{headHigh}}pt",
+    "techniqueTitle": "決まり手の変わり方（全24会場）",
+    "techniqueLead": "向かい風が強いとまくり、追い風が強いと差しが増えます",
+    "techniqueNote": "決まり手の構成は記録のための集計で、イン逃げ率のような判定（区間・会場ごとの向きの確認）はしていません。",
+    "venueTitle": "会場を選ぶ",
+    "venueAverage": "{{venue}}の平均: {{rate}}%（{{countText}}レース）",
+    "tooFew": "件数が少ないため表示しません",
+    "rankingTitle": "強風のときの会場別の変化",
+    "rankingLead": "下がり方の大きい順。1,000件以上の会場だけ",
+    "diffHeader": "会場平均との差",
+    "rateHeader": "1着率",
+    "countHeader": "件数",
+    "rankingExcluded": "1,000件未満のため除外: {{venues}}",
+    "footSource": "期間 {{from}}〜{{to}}、公式の競走成績（Kファイル）{{countText}}レース。結果を見る前に、比べ方と判定の基準を決めてから集計しています。",
+    "footTiming": "風はレース時点の確定値です。直前情報の気象は前のレースの値のことがあります。",
+    "footAdjusted": "季節・時間帯（レース番号）・1コースの選手の級別をそろえて比べても、強風の差はほぼ同じでした（向かい風・強 {{head}}pt、追い風・強 {{tail}}pt）。",
+    "footWave": "風の弱いとき（1m以下・横風）に限ると、波が6〜9cmのレースは会場平均より{{diff}}pt（{{countText}}件。該当の多い会場が限られるため参考）。"
   }
 }

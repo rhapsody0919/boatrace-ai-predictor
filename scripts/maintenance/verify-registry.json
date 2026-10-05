@@ -685,6 +685,11 @@
       "guards": "アナロジー・ファインダーの寄与度（BOA-271 FR-1）で、レース数30未満のスライスを会場→ラウンド→グレードの順に広げること、テーマを themes 配列の順と数で並べること（テーマ数を固定しない）、SD の2倍に満たない隣どうしの順位を強調しないこと（API と画面の直読みで共有する src/utils/analogyContribution.js）"
     },
     {
+      "script": "verify-analogy-facts.js",
+      "tier": "ci",
+      "guards": "アナロジー・ファインダー v16（BOA-271）の定義の固定データ。優勝戦・準優勝戦の判定 v2 が固定の82件（scripts/ml/analogy/testdata/stage-rule-v2-cases.json）と一致し、サイトのバッジ（getRaceStageKey）と今節の得点の除外（seriesPoints.js の classifyStage）が同じ判定に従うこと"
+    },
+    {
       "script": "verify-analogy-storage.js",
       "tier": "ci",
       "guards": "アナロジー・ファインダーの学習（BOA-271）で、Storage の古い版を消すときに表示中の版を残すこと、表示中の版と同じ名前ではモデルを上書きしないこと、長期データのキャッシュの列名が今のコードと違えば失敗すること（scripts/ml/analogy/storageRules.js）"

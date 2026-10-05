@@ -142,6 +142,16 @@
      コントラスト不足（2.99:1）になるため、テーマごとに階調を分ける */
   --podium-bronze-text: #8f5419;
 
+  /* 決まり手の色（帯グラフの塗り）。分析ツールの決まり手チャートと同じ色相。まくり差しだけは、
+     赤が「悪い」の意味（色分けのルール R2）と紛れるため桃色にする。
+     ライト・ダークどちらの背景でも塗りとして見分けられる中間の明度（BOA-269） */
+  --technique-nige: #0ea5e9;
+  --technique-sashi: #10b981;
+  --technique-makuri: #f59e0b;
+  --technique-makurizashi: #ec4899;
+  --technique-nuki: #8b5cf6;
+  --technique-megumare: #94a3b8;
+
   /* 透明度バリエーション - プライマリーカラー */
   /* 決まり手の色（src/utils/techniqueColors.js）。カテゴリの色で良し悪しは無い。
      棒・帯の塗りに使い、文字色には使わない（ライト・ダークとも同じ値で背景から見分けられる） */

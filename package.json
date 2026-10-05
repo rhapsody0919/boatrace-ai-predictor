@@ -39,6 +39,7 @@
     "verify:display-coverage": "node scripts/maintenance/verify-display-coverage.js",
     "generate:display-coverage": "node scripts/maintenance/generate-display-coverage.js",
     "verify:actual-course-kfile": "node scripts/maintenance/verify-actual-course-kfile-parser.js",
+    "verify:analogy-facts": "node scripts/maintenance/verify-analogy-facts.js",
     "verify:kb-backfill": "node scripts/maintenance/verify-kb-file-parser.js",
     "verify:fan-period": "node scripts/maintenance/verify-fan-period.js",
     "verify:racelist-backfill": "node scripts/maintenance/verify-racelist-backfill.js",

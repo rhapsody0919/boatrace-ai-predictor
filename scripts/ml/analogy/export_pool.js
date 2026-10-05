@@ -9,7 +9,7 @@
  * 長期分は過去のアーカイブで変わらないので、月ごとの CSV（gzip）を Supabase Storage の
  * `analogy/source/{KB_CACHE_VERSION}/{テーブル}/{YYYY-MM}.csv.gz` に置き、2回目以降は DB を読まない
  * （Disk IO の節約。plan「Disk IO の見積り」）。長期分を補完・訂正したときは KB_CACHE_VERSION を上げる
- * （テーブル1つの列を足すだけなら、そのテーブルの cacheVersion だけを上げる。古いキャッシュを読まなくなる。古い版の Storage の物は自動では消えないので、手で消す）か、--refresh-kb で取り直す。本体分（2025-12〜）は補完・訂正で値が変わるので毎回 DB から読む
+ * （古いキャッシュを読まなくなる。古い版の Storage の物は自動では消えないので、手で消す）か、--refresh-kb で取り直す。本体分（2025-12〜）は補完・訂正で値が変わるので毎回 DB から読む
  * （約10か月分で、長期の約1/8）。
  *
  * 出力: data/ml/analogy/*.csv（ANALOGY_DATA_DIR で変更可、gitignore 対象）と export_manifest.json
@@ -45,9 +45,8 @@ const OUT_DIR =
   path.join(__dirname, "../../../data/ml/analogy");
 const PAGE = 1000;
 // v2: BOA-696（kb_archive_venue_days.is_final_day を race_series の終了日で補う）の後。v1 は最終日が全件 false
-const KB_CACHE_VERSION = "v2";
-// kb_races だけ v3: 優勝戦の判定 v2 で長期も名前（stage）を見るので列を足した（BOA-271。ほかの表は v2 のまま読む）
-const KB_RACES_CACHE_VERSION = "v3";
+// v3: v16（BOA-271 T1-0a）で長期の列を足した（kb_boats の course、kb_races の stage・technique・payout_3tan）
+const KB_CACHE_VERSION = "v3";
 const CONCURRENCY = 6;
 
 const args = new Set(process.argv.slice(2));
@@ -158,7 +157,7 @@ async function mainMonth(t, lo, hi) {
 
 /** 長期分の1か月: Storage にあればそれを、無ければ DB から読んで Storage に置く（日次は無ければ失敗） */
 async function kbMonth(t, lo, hi) {
-  const key = `source/${t.cacheVersion ?? KB_CACHE_VERSION}/${t.name}/${lo}.csv.gz`;
+  const key = `source/${KB_CACHE_VERSION}/${t.name}/${lo}.csv.gz`;
   if (USE_CACHE && !REFRESH_KB) {
     const body = await readCache(t, key);
     if (body !== null) return body;
@@ -224,7 +223,7 @@ const TABLES = [
   {
     name: "kb_boats",
     table: "kb_archive_boats",
-    cols: "race_id, boat_number, racer_id, class, age, branch, weight, national_win_rate, national_2rate, local_win_rate, local_2rate, motor_2rate, boat_2rate, exhibition_time, start_timing, is_flying, is_late_start, finish_raw, finish_rank",
+    cols: "race_id, boat_number, racer_id, class, age, branch, weight, national_win_rate, national_2rate, local_win_rate, local_2rate, motor_2rate, boat_2rate, exhibition_time, course, start_timing, is_flying, is_late_start, finish_raw, finish_rank",
     order: ["race_id", "boat_number"],
     rangeCol: "race_id",
     ranges: KB_MONTHS,
@@ -233,12 +232,11 @@ const TABLES = [
   {
     name: "kb_races",
     table: "kb_archive_races",
-    cols: "race_id, venue_day_id, race_date, venue_code, race_number, stage, stage_kind, weather, wind_direction, wind_speed, wave_height, has_result",
+    cols: "race_id, venue_day_id, race_date, venue_code, race_number, stage, stage_kind, weather, wind_direction, wind_speed, wave_height, has_result, technique, payout_3tan",
     order: ["race_id"],
     rangeCol: "race_id",
     ranges: KB_MONTHS,
     kb: true,
-    cacheVersion: KB_RACES_CACHE_VERSION,
   },
   {
     name: "kb_venue_days",
@@ -276,7 +274,7 @@ const TABLES = [
   {
     name: "exhibition",
     table: "exhibition_data",
-    cols: "race_id, boat_number, exhibition_time, is_absent",
+    cols: "race_id, boat_number, exhibition_time, exhibition_course, start_timing, start_flag, is_absent",
     order: ["race_id", "boat_number"],
     rangeCol: "race_id",
     ranges: MAIN_MONTHS,
@@ -292,7 +290,8 @@ const TABLES = [
   {
     name: "results",
     table: "race_results",
-    cols: "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race",
+    // payout_trio は列名と券種が逆で、3連単の払戻（plan「定義」）。actual_course_N は N号艇の実進入コース
+    cols: "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race, race_status, refund_boats, winning_technique, payout_trio, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
     order: ["race_id"],
     rangeCol: "race_id",
     ranges: MAIN_MONTHS,
@@ -300,7 +299,7 @@ const TABLES = [
   {
     name: "start_timings",
     table: "race_start_timings",
-    cols: "race_id, boat_number, start_timing, is_flying, is_late_start",
+    cols: "race_id, boat_number, start_timing, is_flying, is_late_start, finish_mark",
     order: ["race_id", "boat_number"],
     rangeCol: "race_id",
     ranges: MAIN_MONTHS,
