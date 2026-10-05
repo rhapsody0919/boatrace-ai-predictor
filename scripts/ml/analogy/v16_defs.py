@@ -16,6 +16,8 @@ JS の analogyFacts.js・analogyScenario.js（T6-2）と同じ固定データで
 """
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 
 CLASSES = ("A1", "A2", "B1", "B2")
@@ -55,25 +57,36 @@ def default_scope(n_vc: int) -> str:
 # ---------------------------------------------------------------- 6艇中の順位と同じ値
 
 
-def rank_positions(values, higher_is_better: bool) -> list[set[int]]:
-    """各艇がどの順位（1〜6）に数えられるか。1位は最良と同じ値の艇すべて、6位は最悪と同じ値の艇すべて、
-    2〜5位は min 順位。最悪に並ぶ艇は min 順位と6位の両方に入る。欠損の艇はどこにも入らない（順位は欠損を除いて付ける）"""
-    v = np.asarray(values, dtype=float)
+def min_rank(values, higher_is_better: bool) -> np.ndarray:
+    """(n,6) の各艇の min 順位（欠損を除いて付ける。欠損の艇は NaN）。features.py の *_rank と同じ"""
+    v = np.atleast_2d(np.asarray(values, dtype=float))
     s = v if higher_is_better else -v
     ok = ~np.isnan(s)
-    out: list[set[int]] = [set() for _ in v]
-    if not ok.any():
-        return out
-    best, worst = np.nanmax(s), np.nanmin(s)
-    for i in np.nonzero(ok)[0]:
-        r = 1 + int(np.sum(s[ok] > s[i]))  # min 順位
-        pos = {r} if 2 <= r <= 5 else set()
-        if np.isclose(s[i], best):
-            pos = {1}
-        if np.isclose(s[i], worst):
-            pos |= {6}
-        out[i] = pos
+    better = (s[:, None, :] > s[:, :, None]) & ok[:, None, :]  # [i, 自分, 相手]: 相手のほうが良い
+    return np.where(ok, 1 + better.sum(axis=2), np.nan)
+
+
+def position_masks(values, higher_is_better: bool) -> dict[str, np.ndarray]:
+    """6艇中の順位のマスク {"1".."6": (n,6) bool}。1位は最良と同じ値の艇すべて、6位は最悪と同じ値の艇すべて、
+    2〜5位は min 順位。最悪に並ぶ艇は min 順位と6位の両方に入る。欠損の艇はどこにも入らない"""
+    v = np.atleast_2d(np.asarray(values, dtype=float))
+    s = v if higher_is_better else -v
+    ok = ~np.isnan(s)
+    with np.errstate(invalid="ignore"), warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)  # 6艇とも欠損の行
+        best = np.nanmax(s, axis=1, keepdims=True)
+        worst = np.nanmin(s, axis=1, keepdims=True)
+    rk = min_rank(v, higher_is_better)
+    out = {"1": ok & np.isclose(s, best), "6": ok & np.isclose(s, worst)}
+    for k in range(2, 6):
+        out[str(k)] = ok & (rk == k)
     return out
+
+
+def rank_positions(values, higher_is_better: bool) -> list[set[int]]:
+    """1レース分（6艇）の position_masks を、艇ごとの順位の集合にしたもの"""
+    m = position_masks(values, higher_is_better)
+    return [{int(k) for k in m if m[k][0, i]} for i in range(len(values))]
 
 
 # ---------------------------------------------------------------- 進入の型
