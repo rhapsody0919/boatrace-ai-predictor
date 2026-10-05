@@ -1,6 +1,7 @@
 // AIクローラー・SNSシェアボット向け静的スナップショット配信の対象ボット定義（ADR 0032）
 // middleware.js（配信判定）とscripts/verification/verify-ai-snapshots.js（検証）の両方から読み込む
 
+// Googlebot は入れない（JS を描画して人間と同じ画面を見るため。UA で出し分けない）
 export const AI_CRAWLER_USER_AGENTS = [
   "GPTBot",
   "ClaudeBot",
@@ -8,6 +9,16 @@ export const AI_CRAWLER_USER_AGENTS = [
   "Google-Extended",
   "facebookexternalhit",
   "Twitterbot",
+  // 検索の出典・ユーザーの質問時の取得に使う UA（docs/proposal/ai-agent-era-strategy.md Phase 0）。
+  // ChatGPT 検索の出典に出るには OAI-SearchBot が要る（OpenAI の bots ドキュメント）
+  "OAI-SearchBot",
+  "ChatGPT-User",
+  "Claude-SearchBot",
+  "Claude-User",
+  "Perplexity-User",
+  "bingbot",
+  "Applebot",
+  "DuckDuckBot",
 ];
 
 export function isTargetBot(userAgent) {
