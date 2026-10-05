@@ -221,18 +221,51 @@ check(
     );
   })(),
 );
-// F2本（20＋2本目30）＝事故点50。出走98なら ceil(0.71×98)=70 であと20、出走100なら 71 であと21
-const twoF = [inc("F", "a"), inc("F", "b")];
-const at98 = computeAccidentStats({ starts: 98, incidents: twoF }, NOW);
-const at100 = computeAccidentStats({ starts: 100, incidents: twoF }, NOW);
+// Fの無い選手（失格5回＝事故点50）。出走98なら ceil(0.71×98)=70 であと20、出走100なら 71 であと21
+const fiveS = ["a", "b", "c", "d", "e"].map((id) => inc("S1", id));
+const at98 = computeAccidentStats({ starts: 98, incidents: fiveS }, NOW);
+const at100 = computeAccidentStats({ starts: 100, incidents: fiveS }, NOW);
 check(
-  "「ライン付近」は、あと20点以内まで（21点なら出さない）",
+  "Fの無い選手の「ライン付近」は、あと20点以内まで（21点なら出さない）",
   at98.points === 50 &&
     at98.need === 20 &&
     at98.status === "near" &&
     at100.need === 21 &&
     at100.status === null,
   JSON.stringify({ at98, at100 }),
+);
+
+// 今期すでにFを切っている選手は、次のFが30点（2本目以降の加点）。河内一馬（2026-10-05 本番）: F1・失格1で
+// 事故点30・出走76 → あと24点。次のFで (30+30)÷76=0.78 になり超えるので「ライン付近」にする（ファン評価2周目）
+const kawachi = computeAccidentStats(
+  { starts: 76, incidents: [inc("F", "a"), inc("S1", "b")] },
+  NOW,
+);
+check(
+  "F持ちの選手は、あと30点以内なら「ライン付近」（次のFは2本目以降の加点込みで30点）",
+  kawachi.points === 30 &&
+    kawachi.need === 24 &&
+    kawachi.status === "near" &&
+    kawachi.showBadge === true,
+  JSON.stringify(kawachi),
+);
+check(
+  "改正前の期は、F持ちでも次のFは20点（あと21点ならライン付近にしない）",
+  (() => {
+    const r = computeAccidentStats(
+      {
+        starts: 100,
+        incidents: [
+          inc("F", "a"),
+          inc("S1", "b"),
+          inc("S1", "c"),
+          inc("S1", "d"),
+        ],
+      },
+      { from: "2024-11-01", to: "2025-03-01" },
+    );
+    return r.points === 50 && r.need === 21 && r.status === null;
+  })(),
 );
 
 // 6. RPC（PGlite）

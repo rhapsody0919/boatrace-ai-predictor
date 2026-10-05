@@ -827,7 +827,7 @@
     "accidentTitle": "今期の事故率（目安・{{from}}〜{{to}}）",
     "accidentTitleOpen": "今期の事故率（目安・{{from}}〜）",
     "accidentLineEarly": "出走が少ないうちは1本の事故で大きく動くため、B2ラインまでの残り点は出走{{min}}走から出します",
-    "accidentLegend": "事故率＝今期の事故点÷出走回数（目安）。0.70を超えると次の級別審査でB2級。「あと◯点」は、F・出遅れ（20点）や失格・欠場（10点）でB2ラインを超えるまでの事故点（予選の得点とは別）",
+    "accidentLegend": "事故率＝今期の事故点÷出走回数（目安）。0.70を超えると次の級別審査でB2級。「あと◯点」は、B2ラインを超えるまでの事故点（予選の得点とは別）。F・出遅れ20点（今期2本目以降のFは30点）、妨害失格15点、失格・欠場10点",
     "accidentRateLabel": "事故率",
     "accidentBreakdown": "事故点{{points}}÷出走{{starts}}（{{kinds}}）",
     "accidentKindCount": "{{kind}}{{n}}",

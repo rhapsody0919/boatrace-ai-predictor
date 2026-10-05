@@ -1150,7 +1150,7 @@
     "accidentTitle": "Accident rate this term (estimate, {{from}} – {{to}})",
     "accidentTitleOpen": "Accident rate this term (estimate, from {{from}})",
     "accidentLineEarly": "With few starts, one accident moves the rate a lot, so the points left to the B2 line are shown from {{min}} starts",
-    "accidentLegend": "Accident rate = accident points this term ÷ starts (estimate). Above 0.70 the racer drops to class B2 at the next class review. \"N pts to B2 line\" counts accident points (F / late start 20, disqualification or scratch 10), not qualifying-series points.",
+    "accidentLegend": "Accident rate = accident points this term ÷ starts (estimate). Above 0.70 the racer drops to class B2 at the next class review. \"N pts to B2 line\" counts accident points, not qualifying-series points: F / late start 20 (30 for a second or later F this term), obstruction 15, disqualification or scratch 10.",
     "accidentRateLabel": "Accident rate",
     "accidentBreakdown": "{{points}} accident pts ÷ {{starts}} starts ({{kinds}})",
     "accidentKindCount": "{{kind}} {{n}}",

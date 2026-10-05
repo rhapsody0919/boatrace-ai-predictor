@@ -12,7 +12,7 @@ import { periodsEndedBefore } from "../components/race/basicInfoStats.js";
 
 /** B2 級になる事故率の上限（これを超えると B2） */
 export const ACCIDENT_RATE_LINE = 0.7;
-/** 「ライン付近」の残り点数（F1本＝20点で超える） */
+/** 「ライン付近」の残り点数の基本（F・出遅れ1本＝20点。今期すでにFを切っていれば次のFは30点） */
 export const ACCIDENT_NEAR_POINTS = 20;
 /**
  * 選手の行に目印を出す最少の出走回数。F1本（20点）だけで 0.70 を超えるのは出走28走以下のとき
@@ -48,7 +48,7 @@ export function currentPeriodRange(raceDate) {
  *            counts: {F: number, L1: number, K1: number, S1: number, S2: number},
  *            status: "over"|"near"|null, settled: boolean, showBadge: boolean}}
  *   rate は小数第2位で切り捨てた値。need は今の出走数のまま 0.70 を超える（0.71以上になる）までの点数（0以上）。
- *   status は over（超え）・near（事故点1点以上で、あと ACCIDENT_NEAR_POINTS 点以内）・null。
+ *   status は over（超え）・near（事故点1点以上で、次の F・出遅れ1本で超える。F持ちは30点、それ以外は20点以内）・null。
  *   settled は出走が ACCIDENT_BADGE_MIN_STARTS 以上か。未満のうちは1本の事故で大きく動くので、
  *   画面は超え・残り点を出さない（期の序盤に無事故の選手へ「あと8点」と出していた。PR #1219 ファン評価1周目）。
  *   showBadge は選手の行に目印を出すか（status があり、settled）
@@ -77,8 +77,11 @@ export function computeAccidentStats(row, range) {
   const need =
     starts > 0 ? Math.max(0, Math.ceil((71 * starts) / 100) - points) : 0;
   const over = rate !== null && rate > ACCIDENT_RATE_LINE;
-  const near =
-    !over && points > 0 && starts > 0 && need <= ACCIDENT_NEAR_POINTS;
+  // 「ライン付近」は、次の F・出遅れ1本で超える選手。今期すでにFを切っている選手は、次のFが
+  // 2本目以降の加点込みで30点になる（PR #1219 ファン評価2周目: F1の選手が「あと24点」で目印から外れていた）
+  const nextFlyingPoints =
+    ACCIDENT_NEAR_POINTS + (secondFlyingRule && counts.F >= 1 ? 10 : 0);
+  const near = !over && points > 0 && starts > 0 && need <= nextFlyingPoints;
   const status = over ? "over" : near ? "near" : null;
   return {
     starts,

@@ -1145,7 +1145,7 @@
     "accidentTitle": "本期事故率（參考，{{from}}〜{{to}}）",
     "accidentTitleOpen": "本期事故率（參考，{{from}}〜）",
     "accidentLineEarly": "出賽數少時一次事故就會大幅變動，因此距B2線的剩餘分數從出賽{{min}}場起顯示",
-    "accidentLegend": "事故率＝本期事故分÷出賽數（參考）。超過0.70時下次級別審查降為B2級。「還差◯分」是F、出發延遲（20分）或失格、缺賽（10分）超過B2線為止的事故分（與預賽得分不同）",
+    "accidentLegend": "事故率＝本期事故分÷出賽數（參考）。超過0.70時下次級別審查降為B2級。「還差◯分」是超過B2線為止的事故分（與預賽得分不同）。F、出發延遲20分（本期第2次以後的F為30分），妨害失格15分，失格、缺賽10分",
     "accidentRateLabel": "事故率",
     "accidentBreakdown": "事故分{{points}}÷出賽{{starts}}（{{kinds}}）",
     "accidentKindCount": "{{kind}}{{n}}",

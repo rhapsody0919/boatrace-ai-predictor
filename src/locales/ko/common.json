@@ -1145,7 +1145,7 @@
     "accidentTitle": "이번 기 사고율(참고·{{from}}〜{{to}})",
     "accidentTitleOpen": "이번 기 사고율(참고·{{from}}〜)",
     "accidentLineEarly": "출주가 적을 때는 사고 한 번으로 크게 변하므로, B2 라인까지 남은 점수는 출주 {{min}}회부터 표시합니다",
-    "accidentLegend": "사고율＝이번 기 사고점÷출주 수(참고). 0.70을 넘으면 다음 등급 심사에서 B2급. 「◯점」은 F·출발 지연(20점)이나 실격·결장(10점)으로 B2 라인을 넘기까지의 사고점(예선 득점과는 별개)",
+    "accidentLegend": "사고율＝이번 기 사고점÷출주 수(참고). 0.70을 넘으면 다음 등급 심사에서 B2급. 「◯점」은 B2 라인을 넘기까지의 사고점(예선 득점과는 별개). F·출발 지연 20점(이번 기 2번째 이후의 F는 30점), 방해 실격 15점, 실격·결장 10점",
     "accidentRateLabel": "사고율",
     "accidentBreakdown": "사고점 {{points}}÷출주 {{starts}}({{kinds}})",
     "accidentKindCount": "{{kind}} {{n}}",
