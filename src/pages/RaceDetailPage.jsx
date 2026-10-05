@@ -214,17 +214,6 @@ function RaceDetailPage() {
     ? localize(`/venue/${parsed.venueCode}`)
     : `/races/${date}/${parsed.venueCode}`;
 
-  const selectedRace = racePrediction
-    ? {
-        id: racePrediction.raceId,
-        venue: venueName,
-        venueCode: racePrediction.venueCode,
-        raceNumber: racePrediction.raceNumber,
-        startTime: racePrediction.startTime,
-        rawData: racePrediction,
-      }
-    : null;
-
   const prediction = racePrediction
     ? buildPrediction(racePrediction, t("errors.noPredictionData"))
     : null;
@@ -255,6 +244,19 @@ function RaceDetailPage() {
   // 節タイトル（BOA-509）
   const rawSeriesTitle = racePrediction ? venueValue("raceTitle") : null;
   const seriesTitle = rawSeriesTitle ? rawSeriesTitle.normalize("NFKC") : null;
+  const selectedRace = racePrediction
+    ? {
+        id: racePrediction.raceId,
+        venue: venueName,
+        venueCode: racePrediction.venueCode,
+        raceNumber: racePrediction.raceNumber,
+        startTime: racePrediction.startTime,
+        // 「AI用にコピー」の前提の行に、見出しと同じ日目・節タイトルを入れる（BOA-770）
+        seriesDayLabel,
+        seriesTitle,
+        rawData: racePrediction,
+      }
+    : null;
   // 一般（ippan）は GRADE_CONFIG に無いのでバッジを出さない（BOA-96 と同じ）
   const gradeConfig = GRADE_CONFIG[racePrediction?.raceGrade];
   const stageChip = racePrediction

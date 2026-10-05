@@ -4,16 +4,13 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import AiCopyPromptSelector from "./AiCopyPromptSelector";
 import AiCopyButton from "./AiCopyButton";
 import { useAiCopyText } from "../../hooks/useAiCopyText";
-import { getAiCopyPromptText } from "../../utils/aiCopyPrompts";
 
-const scrollToDataRaceTable = () => {
-  document
-    .getElementById("data-race-table")
-    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-};
-
-// 脈動リングを時間差で2重に描画し、ping通知のような目立つ演出にする
+// 脈動リングを時間差で2重に描画し、ping通知のような目立つ演出にする。
+// 常時脈動はうるさいので、表示直後に数回だけ鳴らして止める（BOA-770 推奨11）
 const PING_RINGS = [0, 0.7];
+const PING_REPEAT = 2;
+
+const FOLLOW_UP_KEYS = ["aiCopy.followUp1", "aiCopy.followUp2", "aiCopy.followUp3"];
 
 export default function AiCopyBanner({
   raceId,
@@ -32,7 +29,12 @@ export default function AiCopyBanner({
   // 肝心のボタンだけ無いという壊れて見える状態を避けるため、
   // バナー全体をisReadyでゲートする（同じキャッシュ済みフックの再呼び出しのため
   // 追加のデータ取得コストは発生しない）
-  const { isReady } = useAiCopyText({ raceId, prediction, race, venueCode });
+  const { isReady, buildText } = useAiCopyText({
+    raceId,
+    prediction,
+    race,
+    venueCode,
+  });
 
   if (!isReady) return null;
 
@@ -80,7 +82,7 @@ export default function AiCopyBanner({
                 animate={{ scale: [1, 1.8], opacity: [0.6, 0] }}
                 transition={{
                   duration: 1.4,
-                  repeat: Infinity,
+                  repeat: PING_REPEAT,
                   ease: "easeOut",
                   delay,
                 }}
@@ -102,16 +104,12 @@ export default function AiCopyBanner({
               race={race}
               venueCode={venueCode}
               promptType={promptType}
-              onBeforeCopy={scrollToDataRaceTable}
               onCopy={onCopy}
             />
           </div>
         </div>
-        {/* バッジ自体は独立要素のためPlaywrightのクリック対象にならず、
-            上下バウンスを付けても操作性に影響しない */}
-        <motion.span
-          animate={prefersReducedMotion ? {} : { y: [0, -4, 0] }}
-          transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+        {/* 以前は上下に跳ね続けていたが、うるさいので止めた（BOA-770 推奨11） */}
+        <span
           style={{
             fontSize: "var(--font-size-sm)",
             fontWeight: 700,
@@ -123,7 +121,7 @@ export default function AiCopyBanner({
           }}
         >
           {t("aiCopy.bannerCatchphrase")}
-        </motion.span>
+        </span>
       </div>
       <AiCopyPromptSelector
         value={promptType}
@@ -165,22 +163,52 @@ export default function AiCopyBanner({
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            style={{ width: "100%", overflow: "hidden" }}
+            style={{ width: "100%", minWidth: 0, overflow: "hidden" }}
           >
-            <p
+            {/* コピーされる全文（表・注記・出典を含む、BOA-770 推奨9）。表は横に長いので
+                この箱の中だけで横スクロールさせ、ページ全体をはみ出させない */}
+            <pre
+              data-testid="ai-copy-preview"
               style={{
                 margin: "8px 0 0",
                 padding: "10px 12px",
                 background: "#ffffff",
                 border: "1px solid var(--color-primary-alpha-30)",
                 borderRadius: "var(--radius-sm)",
+                fontSize: "var(--font-size-xs)",
+                color: "var(--color-gray-700)",
+                lineHeight: 1.6,
+                maxHeight: "320px",
+                overflow: "auto",
+                whiteSpace: "pre",
+                fontFamily: "inherit",
+              }}
+            >
+              {buildText(promptType)}
+            </pre>
+            <p
+              style={{
+                margin: "8px 0 0",
+                fontSize: "var(--font-size-sm)",
+                fontWeight: 600,
+                color: "var(--color-gray-700)",
+              }}
+            >
+              {t("aiCopy.followUpHeading")}
+            </p>
+            <ul
+              style={{
+                margin: "4px 0 0",
+                paddingLeft: "1.25rem",
                 fontSize: "var(--font-size-sm)",
                 color: "var(--color-gray-600)",
                 lineHeight: 1.6,
               }}
             >
-              {getAiCopyPromptText(t, promptType)}
-            </p>
+              {FOLLOW_UP_KEYS.map((key) => (
+                <li key={key}>{t(key)}</li>
+              ))}
+            </ul>
           </motion.div>
         )}
       </AnimatePresence>

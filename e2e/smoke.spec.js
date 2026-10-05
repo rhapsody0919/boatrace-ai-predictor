@@ -3716,21 +3716,46 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
 
     const bannerButton = page.locator(".ai-copy-btn-banner");
     await expect(bannerButton).toBeVisible({ timeout: 15000 });
+    const scrollBefore = await page.evaluate(() => window.scrollY);
     await bannerButton.click();
 
     const toast = page.getByRole("status");
     await expect(toast).toBeVisible();
     await expect(toast).toHaveText("コピーしました");
+    // コピーしても読んでいた位置から動かない（以前はデータ出走表へスクロールしていた。BOA-770）
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
 
     const clipboardText = await page.evaluate(() =>
       navigator.clipboard.readText(),
     );
-    // 見出し・表・プロンプト文の3ブロックが揃っており、
+    // 見出し → レースの前提 → 表 → 注記 → 質問文 → 出典（BOA-770）。
     // 値の未解決を示す undefined/NaN が混入していないことを確認する
-    expect(clipboardText).toMatch(/^## .+\n\n\|/);
+    expect(clipboardText).toMatch(/^## .+\n\n- 日付: \d{4}-\d{2}-\d{2}\n- 締切予定: /);
+    expect(clipboardText).toContain("- データの時点: ");
     expect(clipboardText).toContain("| 項目 |");
+    expect(clipboardText).toContain("項目の注記:");
+    expect(clipboardText).toMatch(
+      /\n出典: 龍神レーダー https:\/\/www\.boat-ai\.jp\/race\/\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/,
+    );
     expect(clipboardText).not.toContain("undefined");
     expect(clipboardText).not.toContain("NaN");
+    expect(clipboardText).not.toContain("競艇");
+  });
+
+  test("プレビューでコピーされる全文（表と出典を含む）が見られる", async ({
+    page,
+  }) => {
+    await openFixedRaceBeforeStart(page);
+    await expect(page.locator(".ai-copy-btn-banner")).toBeVisible({
+      timeout: 15000,
+    });
+    await page.getByRole("button", { name: "コピーされる全文を見る" }).click();
+    const preview = page.getByTestId("ai-copy-preview");
+    await expect(preview).toContainText("| 項目 |");
+    await expect(preview).toContainText("出典: 龍神レーダー");
+    // 「データだけ」に切り替えると質問文が差し替わる
+    await page.getByRole("radio", { name: "データだけ" }).click();
+    await expect(preview).toContainText("このあと質問します。");
   });
 });
 

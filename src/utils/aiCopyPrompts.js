@@ -7,6 +7,10 @@ export const AI_COPY_PROMPT_TYPES = {
   WIN: "win",
   TRIFECTA: "trifecta",
   TRIO: "trio",
+  // 1マークの展開と注目艇を聞く（BOA-770 推奨8）
+  TURN: "turn",
+  // 質問を付けずデータだけ渡す。貼ってから自分で聞く人向け（BOA-770 推奨8）
+  DATA_ONLY: "dataOnly",
   VOLATILITY_TRIFECTA: "volatilityTrifecta",
 };
 
@@ -22,6 +26,14 @@ const PROMPT_KEY_MAP = {
   [AI_COPY_PROMPT_TYPES.TRIO]: {
     promptKey: "aiCopy.promptTrio",
     labelKey: "aiCopy.promptSelectorTrio",
+  },
+  [AI_COPY_PROMPT_TYPES.TURN]: {
+    promptKey: "aiCopy.promptTurn",
+    labelKey: "aiCopy.promptSelectorTurn",
+  },
+  [AI_COPY_PROMPT_TYPES.DATA_ONLY]: {
+    promptKey: "aiCopy.promptDataOnly",
+    labelKey: "aiCopy.promptSelectorDataOnly",
   },
   [AI_COPY_PROMPT_TYPES.VOLATILITY_TRIFECTA]: {
     promptKey: "aiCopy.promptVolatilityTrifecta",

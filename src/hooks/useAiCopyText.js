@@ -4,6 +4,8 @@
  * Markdown表＋選択中の分析依頼プロンプトを組み立てて返す。
  * 値の整形はraceIndicators.jsxのbuildIndicatorRowsのrender()と同じロジックを
  * プレーンテキスト向けに書き直したもの（JSXを返すbuildIndicatorRowsはそのまま流用できないため）。
+ * 行を作るところまでがこのフックで、文面の組み立て（前提の行・注記・出典など）は
+ * 純関数の utils/aiCopyText.js が行う（BOA-770）。
  */
 import { useTranslation } from "react-i18next";
 import { useRaceAnalysisData } from "./useRaceAnalysisData";
@@ -11,13 +13,11 @@ import {
   toNumber,
   wakuRateOf,
   translateTechnique,
+  translatePartName,
 } from "../components/race/raceIndicators";
-import { TECHNIQUE_NAMES } from "../utils/turnPrediction";
 import { formatExhibitionSt } from "../utils/formatters";
-import {
-  AI_COPY_PROMPT_TYPES,
-  getAiCopyPromptText,
-} from "../utils/aiCopyPrompts";
+import { getAiCopyPromptText } from "../utils/aiCopyPrompts";
+import { aiCopyPageUrl, buildAiCopyText } from "../utils/aiCopyText";
 import { isRaceCancelled } from "../utils/raceCancellation";
 import { meetPrevRunState, meetPrevRunWhenParams } from "../utils/prevResult";
 
@@ -38,7 +38,8 @@ function buildMotorRow(t, players, motorByBoat) {
   const allZero = values.length > 0 && values.every((v) => v === 0);
 
   return {
-    label: t("dataTable.rowMotor"),
+    key: "motor",
+      label: t("dataTable.rowMotor"),
     values: values.map((v) => {
       if (allZero || v === null) return DASH;
       return `${v.toFixed(1)}%`;
@@ -61,10 +62,12 @@ function buildRows(t, players, analysis) {
 
   return [
     {
+      key: "name",
       label: t("aiCopy.playerNameLabel"),
       values: players.map((p) => p.name ?? DASH),
     },
     {
+      key: "winRate",
       label: t("dataTable.rowWinRate"),
       values: players.map((p) => {
         const v = toNumber(p.winRate);
@@ -73,6 +76,7 @@ function buildRows(t, players, analysis) {
       }),
     },
     {
+      key: "localWinRate",
       label: t("dataTable.rowLocalWinRate"),
       values: players.map((p) => {
         const v = toNumber(p.localWinRate);
@@ -80,6 +84,7 @@ function buildRows(t, players, analysis) {
       }),
     },
     {
+      key: "twoRate",
       label: t("dataTable.rowTwoRate"),
       values: players.map((p) => {
         const v = toNumber(p.global2Rate);
@@ -88,6 +93,7 @@ function buildRows(t, players, analysis) {
     },
     buildMotorRow(t, players, motorByBoat),
     {
+      key: "form",
       label: t("dataTable.rowForm"),
       values: players.map((p) => {
         const row = formByBoat.get(p.number);
@@ -97,6 +103,7 @@ function buildRows(t, players, analysis) {
       }),
     },
     {
+      key: "avgSt",
       label: t("dataTable.rowAvgSt"),
       values: players.map((p) => {
         const v = toNumber(statsByBoat.get(p.number)?.avgST);
@@ -104,6 +111,7 @@ function buildRows(t, players, analysis) {
       }),
     },
     {
+      key: "st",
       label: t("dataTable.rowSt"),
       values: players.map((p) => {
         const row = stByBoat.get(p.number);
@@ -113,6 +121,7 @@ function buildRows(t, players, analysis) {
       }),
     },
     {
+      key: "exSt",
       label: t("dataTable.rowExSt"),
       values: players.map((p) => {
         // 展示のフライング・出遅れは公式の表記（F.01 等）で書く（BOA-759）
@@ -124,6 +133,7 @@ function buildRows(t, players, analysis) {
       }),
     },
     {
+      key: "exhibition",
       label: t("dataTable.rowExhibition"),
       values: players.map((p) => {
         const row = exByBoat.get(p.number);
@@ -139,6 +149,7 @@ function buildRows(t, players, analysis) {
       }),
     },
     {
+      key: "todayWeight",
       label: t("dataTable.rowTodayWeight"),
       values: players.map((p) => {
         const weight = toNumber(maintenanceByBoat.get(p.number)?.today_weight);
@@ -146,6 +157,7 @@ function buildRows(t, players, analysis) {
       }),
     },
     {
+      key: "tilt",
       label: t("dataTable.rowTilt"),
       values: players.map((p) => {
         const tilt = toNumber(maintenanceByBoat.get(p.number)?.tilt);
@@ -154,6 +166,7 @@ function buildRows(t, players, analysis) {
       }),
     },
     {
+      key: "adjustmentWeight",
       label: t("dataTable.rowAdjustmentWeight"),
       values: players.map((p) => {
         const weight = toNumber(
@@ -163,6 +176,21 @@ function buildRows(t, players, analysis) {
       }),
     },
     {
+      // 部品交換・プロペラ交換（データ出走表の「部品交換」と同じ値、BOA-770 推奨7）
+      key: "partsChanged",
+      label: t("dataTable.rowPartsChanged"),
+      values: players.map((p) => {
+        const row = maintenanceByBoat.get(p.number);
+        if (!row) return DASH;
+        const items = [
+          ...(row.parts_changed ?? []).map((part) => translatePartName(t, part)),
+          ...(row.propeller_change ? [t("analysis.motor.propellerChanged")] : []),
+        ];
+        return items.length > 0 ? items.join(t("listSeparator")) : DASH;
+      }),
+    },
+    {
+      key: "prevResult",
       label: t("dataTable.rowPrevResult"),
       values: players.map((p) => {
         // データ出走表と同じ読み方にそろえる（prevResult.js、BOA-569 / BOA-610）
@@ -191,6 +219,7 @@ function buildRows(t, players, analysis) {
       }),
     },
     {
+      key: "courseRate",
       label: t("dataTable.rowCourseRate"),
       values: players.map((p) => {
         const cr = wakuRateOf(statsByBoat, p.number);
@@ -198,6 +227,7 @@ function buildRows(t, players, analysis) {
       }),
     },
     {
+      key: "technique",
       label: t("dataTable.rowTechnique"),
       values: players.map((p) => {
         const row = techByBoat.get(p.number);
@@ -209,6 +239,7 @@ function buildRows(t, players, analysis) {
       }),
     },
     {
+      key: "returnRate",
       label: t("dataTable.rowReturnRate"),
       values: players.map((p) => {
         const row = rateByBoat.get(p.number);
@@ -220,110 +251,17 @@ function buildRows(t, players, analysis) {
   ];
 }
 
-function boatLabel(t, boatNumber, playerByBoat) {
-  const name = playerByBoat.get(boatNumber)?.name;
-  const n = t("analysis.boatN", { n: boatNumber });
-  return name ? `${n} ${name}` : n;
-}
-
-// {course: probability}形式の分布から最有力の艇番を1つ選ぶ（無ければnull）
-function topCandidate(dist) {
-  if (!dist) return null;
-  const entries = Object.entries(dist);
-  if (entries.length === 0) return null;
-  const [course, prob] = entries.reduce((best, cur) =>
-    cur[1] > best[1] ? cur : best,
+// 展示タイム・展示STのどれかが出ていれば「展示後」とみなす
+function isExhibitionPublished(analysis) {
+  const hasValue = (v) => v !== null && v !== undefined;
+  return (
+    (analysis.exhibitionTime ?? []).some((r) => hasValue(r.exhibition_time)) ||
+    (analysis.stPredictability ?? []).some((r) => hasValue(r.exhibition_st))
   );
-  return { boatNumber: Number(course), probability: prob };
-}
-
-// イン崩れ注意度に最適化したプロンプト用: turnPrediction（決まり手×コース別の
-// 勝利確率・2着3着分布・boatStrengths）をMarkdown化する。generate-predictions.js
-// が日次で計算・保存済みのデータをそのまま使うため、追加のデータ取得は発生しない
-function buildTurnPredictionSection(t, players, turnPrediction) {
-  if (!turnPrediction?.patterns?.length) return "";
-
-  const playerByBoat = byBoat(players, "number");
-
-  const header = [
-    t("aiCopy.turnPredictionColTechnique"),
-    t("aiCopy.turnPredictionColWinner"),
-    t("aiCopy.turnPredictionColProbability"),
-    t("aiCopy.turnPredictionColSecond"),
-    t("aiCopy.turnPredictionColThird"),
-  ];
-  const toLine = (cells) => `| ${cells.join(" | ")} |`;
-
-  const rows = turnPrediction.patterns.map((p) => {
-    const techniqueLabel = t(
-      `techniques.${p.technique}`,
-      TECHNIQUE_NAMES[p.technique] ?? p.technique,
-    );
-    const second = topCandidate(p.secondPlace);
-    const third = topCandidate(p.thirdPlace);
-    return toLine([
-      techniqueLabel,
-      boatLabel(t, p.winnerCourse, playerByBoat),
-      `${Math.round(p.probability * 100)}%`,
-      second
-        ? `${boatLabel(t, second.boatNumber, playerByBoat)}（${Math.round(second.probability * 100)}%）`
-        : DASH,
-      third
-        ? `${boatLabel(t, third.boatNumber, playerByBoat)}（${Math.round(third.probability * 100)}%）`
-        : DASH,
-    ]);
-  });
-
-  const table = [toLine(header), toLine(header.map(() => "---")), ...rows].join(
-    "\n",
-  );
-
-  const distributionLine = Object.entries(turnPrediction.distribution ?? {})
-    .sort((a, b) => b[1] - a[1])
-    .map(
-      ([technique, prob]) =>
-        `${t(`techniques.${technique}`, TECHNIQUE_NAMES[technique] ?? technique)} ${Math.round(prob * 100)}%`,
-    )
-    .join(" / ");
-
-  const strengths = turnPrediction.boatStrengths ?? [];
-  const strengthRanking = strengths
-    .map((score, i) => ({ boatNumber: i + 1, score }))
-    .sort((a, b) => b.score - a.score)
-    .map((b) => boatLabel(t, b.boatNumber, playerByBoat))
-    .join(" > ");
-
-  const lines = [`### ${t("aiCopy.turnPredictionHeading")}`, "", table];
-  if (distributionLine) {
-    lines.push(
-      "",
-      `${t("aiCopy.turnPredictionDistributionLabel")}: ${distributionLine}`,
-    );
-  }
-  if (strengthRanking) {
-    lines.push(
-      "",
-      `${t("aiCopy.turnPredictionStrengthLabel")}: ${strengthRanking}`,
-    );
-  }
-  return lines.join("\n");
-}
-
-function toMarkdownTable(t, players, rows) {
-  const header = [
-    t("aiCopy.tableItemHeader"),
-    ...players.map((p) => t("analysis.boatN", { n: p.number })),
-  ];
-  const separator = header.map(() => "---");
-  const lines = rows.map((row) => [row.label, ...row.values]);
-
-  const toLine = (cells) => `| ${cells.join(" | ")} |`;
-
-  return [toLine(header), toLine(separator), ...lines.map(toLine)].join("\n");
 }
 
 export function useAiCopyText({ raceId, prediction, race, venueCode }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // venueCodeを渡さないとDataRaceTable側のuseRaceAnalysisData呼び出しと
   // キャッシュキー・in-flightデデュープが分岐し、同じレースのモーター内訳を
   // 二重に取得してしまう（BOA-265でDataRaceTable側にvenueCodeを追加した際に発覚）
@@ -335,28 +273,38 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
 
   const buildText = (promptType) => {
     if (players.length === 0) return "";
-
-    const rows = buildRows(t, players, analysis);
-    const table = toMarkdownTable(t, players, rows);
+    const lang = i18n.resolvedLanguage;
+    const raw = race?.rawData ?? {};
     // 会場名はvenues.*i18nキー経由で翻訳する（他箇所と同じ既存パターン。
     // race?.venueは日本語の生値のため、非ja言語では直接使えない）
     const venueLabel = venueCode
       ? t(`venues.${venueCode}`, race?.venue ?? "")
       : (race?.venue ?? "");
-    const heading = t("aiCopy.markdownHeading", {
-      venue: venueLabel,
-      race: race?.raceNumber ?? "",
+
+    return buildAiCopyText({
+      t,
+      lang,
+      heading: t("aiCopy.markdownHeading", {
+        venue: venueLabel,
+        race: race?.raceNumber ?? "",
+      }),
+      context: {
+        date: (raceId ?? "").slice(0, 10),
+        startTime: race?.startTime || null,
+        raceGrade: prediction?.raceGrade ?? raw.raceGrade ?? null,
+        seriesTitle: race?.seriesTitle ?? null,
+        seriesDayLabel: race?.seriesDayLabel ?? null,
+        raceStage: prediction?.raceStage ?? raw.raceStage ?? null,
+        weather: prediction?.weather ?? raw.weather ?? null,
+      },
+      players,
+      rows: buildRows(t, players, analysis),
+      turnPrediction: prediction?.turnPrediction,
+      prompt: getAiCopyPromptText(t, promptType),
+      pageUrl: aiCopyPageUrl(raceId, lang),
+      now: new Date(),
+      exhibitionPublished: isExhibitionPublished(analysis),
     });
-    const prompt = getAiCopyPromptText(t, promptType);
-
-    const turnPredictionSection =
-      promptType === AI_COPY_PROMPT_TYPES.VOLATILITY_TRIFECTA
-        ? buildTurnPredictionSection(t, players, prediction?.turnPrediction)
-        : "";
-
-    return [`## ${heading}`, table, turnPredictionSection, prompt]
-      .filter(Boolean)
-      .join("\n\n");
   };
 
   // analysisは複数クエリの並列取得（30分TTLキャッシュ）で、DataRaceTableと

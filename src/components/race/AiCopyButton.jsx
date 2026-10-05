@@ -8,7 +8,6 @@ export default function AiCopyButton({
   race,
   venueCode,
   promptType,
-  onBeforeCopy,
   onCopy,
 }) {
   const { t } = useTranslation();
@@ -22,7 +21,6 @@ export default function AiCopyButton({
   if (!isReady) return null;
 
   const handleCopy = async () => {
-    onBeforeCopy?.();
     try {
       const text = buildText(promptType);
       await navigator.clipboard.writeText(text);
@@ -32,12 +30,8 @@ export default function AiCopyButton({
     }
   };
 
-  const label =
-    variant === "banner"
-      ? t("aiCopy.bannerLabel")
-      : t("aiCopy.inlineButtonLabel");
-
-  const baseStyle = {
+  // 上のバナーと下のボタンは同じ機能なので、同じ見た目・同じ文言にそろえる（BOA-770 推奨12）
+  const style = {
     border: "none",
     cursor: "pointer",
     borderRadius: "var(--radius-md)",
@@ -45,17 +39,10 @@ export default function AiCopyButton({
     color: "#ffffff",
     background: "var(--gradient-primary)",
     whiteSpace: "nowrap",
+    padding: "10px 18px",
+    fontSize: "1rem",
+    ...(variant === "inline" && { marginTop: "0.75rem" }),
   };
-
-  const style =
-    variant === "banner"
-      ? { ...baseStyle, padding: "10px 18px", fontSize: "1rem" }
-      : {
-          ...baseStyle,
-          padding: "6px 14px",
-          fontSize: "var(--font-size-sm)",
-          marginTop: "0.75rem",
-        };
 
   return (
     <button
@@ -64,7 +51,7 @@ export default function AiCopyButton({
       onClick={handleCopy}
       style={style}
     >
-      {label}
+      {t("aiCopy.bannerLabel")}
     </button>
   );
 }
