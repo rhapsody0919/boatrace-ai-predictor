@@ -9,7 +9,8 @@
  * まだ一度も snapshot が無い（公開前・朝のバッチの起動前）ときは「未稼働」として通す（毎晩の誤報を出さない）。
  * 展示後の段の Cron がまだ一度も書いていないときは、展示後の段の閾値を見ない。
  *
- * --cleanup: Storage の非公開のバケット analogy-v16 の、7日より前の日付の similar/（候補ファイル）を消す（plan「Storage」）
+ * --cleanup: Storage の非公開のバケット analogy-v16 の、7日より前の日付の similar/（候補ファイル）と、前日より前の
+ *   similar-display/（候補の表示用の値。展示後の段がその日のうちに1回読むだけ）を消す（plan「Storage」）
  * --date YYYY-MM-DD: 数える日（省略時は前日）
  *
  * 使い方: node --env-file=.env.local scripts/maintenance/verify-analogy-v16.js [--date 2026-10-05] [--cleanup]
@@ -24,6 +25,11 @@ import {
 export const RACECARD_MIN = 0.99;
 export const EXHIBITION_MIN = 0.95;
 export const KEEP_SIMILAR_DAYS = 7;
+/** 消すフォルダと残す日数 */
+export const CLEANUP = [
+  ["similar", KEEP_SIMILAR_DAYS],
+  ["similar-display", 1],
+];
 
 const argv = process.argv.slice(2);
 const argOf = (name) => {
@@ -92,22 +98,22 @@ export function datesToClean(folders, today, keepDays = KEEP_SIMILAR_DAYS) {
 }
 
 async function cleanup(today) {
-  const top = await listObjects("");
-  const dates = datesToClean(
-    top.filter((r) => r.id === null).map((r) => r.name),
-    today,
-  );
+  const top = (await listObjects(""))
+    .filter((r) => r.id === null)
+    .map((r) => r.name);
   let n = 0;
-  for (const date of dates) {
-    for (const run of (await listObjects(`${date}/`)).filter(
-      (r) => r.id === null,
-    )) {
-      const files = await listObjects(`${date}/${run.name}/similar/`);
-      const paths = files
-        .filter((f) => f.id !== null)
-        .map((f) => `${date}/${run.name}/similar/${f.name}`);
-      await deleteObjects(paths);
-      n += paths.length;
+  for (const [kind, keep] of CLEANUP) {
+    for (const date of datesToClean(top, today, keep)) {
+      for (const run of (await listObjects(`${date}/`)).filter(
+        (r) => r.id === null,
+      )) {
+        const files = await listObjects(`${date}/${run.name}/${kind}/`);
+        const paths = files
+          .filter((f) => f.id !== null)
+          .map((f) => `${date}/${run.name}/${kind}/${f.name}`);
+        await deleteObjects(paths);
+        n += paths.length;
+      }
     }
   }
   return n;
@@ -166,7 +172,7 @@ async function main() {
   }
   if (argv.includes("--cleanup"))
     console.log(
-      `🧹 similar/ を ${await cleanup(today)} 件消した（${KEEP_SIMILAR_DAYS}日より前）`,
+      `🧹 similar/（${KEEP_SIMILAR_DAYS}日より前）・similar-display/（前日より前）を ${await cleanup(today)} 件消した`,
     );
 }
 

@@ -23,6 +23,7 @@ train.py が学習の直後に呼ぶ（SHAP を書き出さずにメモリ上で
 from __future__ import annotations
 
 import itertools
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -190,7 +191,10 @@ def _boot_theme_sd(boot, n_cells: int, n_boot: int, seed: int) -> np.ndarray:
         tot = np.column_stack([np.bincount(pos, weights=w * vals[:, t], minlength=n_cells)
                                for t in range(vals.shape[1])])
         out[b] = _shares(tot)
-    return np.nanstd(out, axis=0, ddof=1)
+    # 抽出された回が1回以下のセルは NaN（呼び出し側で seed の SD だけにする）。そのときの警告は出さない
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        return np.nanstd(out, axis=0, ddof=1)
 
 
 # ---------------------------------------------------------------- 向き
@@ -221,6 +225,13 @@ def judge(m_lo: float, m_mid: float, m_hi: float, rho: float) -> str:
     if abs(rho) < RHO_MIN or abs(m_hi - m_lo) < DIFF_MIN:
         return "none"
     return "higher" if rho > 0 else "lower"
+
+
+def _num(v: float) -> float | None:
+    """JSON に書ける数（NaN・±Inf は null）。値ごとの区分の m_mid や、y が一定の項目の ρ は NaN になる。
+    Python の json は NaN を素のまま書き、PostgREST が「invalid json」で拒む（run 37278559069）"""
+    v = float(v)
+    return v if np.isfinite(v) else None
 
 
 def _rank(a: np.ndarray) -> np.ndarray:
@@ -277,9 +288,9 @@ def numeric_direction(x: np.ndarray, y: np.ndarray, day: np.ndarray, W: np.ndarr
     ranges = [[float(x[band == k].min()), float(x[band == k].max())] if (band == k).any() else None
               for k in range(3)]
     return {"direction": final, "basis": {
-        "rho": rho, "m_low": m[0], "m_mid": m[1], "m_high": m[2], "band_ranges": ranges,
-        "band_n": [int((band == k).sum()) for k in range(3)], "n": int(len(x)),
-        "overall": overall, "boot_agree": agree}}
+        "rho": _num(rho), "m_low": _num(m[0]), "m_mid": _num(m[1]), "m_high": _num(m[2]),
+        "band_ranges": ranges, "band_n": [int((band == k).sum()) for k in range(3)], "n": int(len(x)),
+        "overall": overall, "boot_agree": _num(agree)}}
 
 
 def category_direction(x: np.ndarray, y: np.ndarray, day: np.ndarray, W: np.ndarray,
@@ -291,7 +302,7 @@ def category_direction(x: np.ndarray, y: np.ndarray, day: np.ndarray, W: np.ndar
     means = {v: float(y[x == v].mean()) for v in vals}
     order = sorted(vals, key=lambda v: means[v])
     top, bottom = order[::-1][:3], order[:3]
-    basis = {"values": [{"value": label(v), "mean": means[v], "n": int((x == v).sum())}
+    basis = {"values": [{"value": label(v), "mean": _num(means[v]), "n": int((x == v).sum())}
                         for v in order[::-1]]}
     if not order or max(abs(means[v]) for v in set(top) | set(bottom)) < DIFF_MIN:
         return {"direction": "none", "basis": basis}
@@ -339,14 +350,39 @@ def national_directions(keys: pd.DataFrame, gv: np.ndarray, gkeys: list[str],
 
 
 # ---------------------------------------------------------------- 本体
+def nonfinite_to_null(rows: list[dict]) -> tuple[list[dict], dict[str, int]]:
+    """書き出す前に、有限でない数（NaN・±Inf）を null にし、場所（キーの並び）ごとの件数を返す。
+    原因の分かっている NaN（1レースだけのセル・向きの根拠）は手前で扱っているので、ここで拾うのは想定外の値。
+    割合（shares）が有限でないのは集計の不具合なので失敗させる（null にすると画面が壊れる）"""
+    counts: dict[str, int] = {}
+
+    def clean(o, path):
+        if isinstance(o, float) and not np.isfinite(o):
+            counts[path] = counts.get(path, 0) + 1
+            return None
+        if isinstance(o, dict):
+            return {k: clean(v, f"{path}.{k}" if path else k) for k, v in o.items()}
+        if isinstance(o, list):
+            return [clean(v, f"{path}[]") for v in o]
+        return o
+    out = [clean(r, "") for r in rows]
+    bad = {k: v for k, v in counts.items() if k.split(".")[0] == "shares"}
+    if bad:
+        raise ValueError(f"割合（shares）に有限でない値がある: {bad}")
+    return out, counts
+
+
 def slice_profiles(keys: pd.DataFrame, contribs: list[np.ndarray], feats: list[str],
                    themes: list[dict] = THEMES, finish_target: int = 1,
                    n_boot: int = 0, boot_seed: int = 0, stage: str = "exhibition",
-                   values: pd.DataFrame | None = None) -> list[dict]:
+                   values: pd.DataFrame | None = None, report: dict | None = None) -> list[dict]:
     """keys: 艇ごとの race_id・race_date・venue_code・grade・round・boat_number（contrib と同じ行順。
     レースごとに艇番1〜6の順）。contribs: pred_contrib の配列（最後の列は期待値）。先頭が表示に使う
     モデル、残りは seed 違い。n_boot: 日単位のブートストラップの回数（0 なら seed の揺れだけ）。
-    values: 向きの代表の特徴量（keys と同じ行順）。None なら向きを付けない。"""
+    values: 向きの代表の特徴量（keys と同じ行順）。None なら向きを付けない。
+    1レースだけのセル（艇番の中で中心化すると全部0になり、割合が 0/0 で決まらない）は書かない。読み手は
+    レース数の少ないセルを一段広げて読む（analogyContribution.js）ので、無いセルも同じく広げる。
+    report を渡すと、書かなかったセルの数を report["undefined_cells"] に足す。"""
     keys = keys.reset_index(drop=True)
     _race_shape(keys)
     themes = available_themes(feats, themes)
@@ -373,8 +409,12 @@ def slice_profiles(keys: pd.DataFrame, contribs: list[np.ndarray], feats: list[s
     dirs = (national_directions(keys, gv0, gkeys, values) if values is not None else {})
     meta = cells[["n_boats", "n_races", "period_from", "period_to"]].to_dict("records")
     rows = []
+    undefined = 0
     for j, key in enumerate(cells.index):
         rec = dict(zip(KEY_COLS, key))
+        if not np.all(np.isfinite(theme_shares[0][j])):
+            undefined += 1
+            continue
         boat = int(rec["boat_number"])
         sd = None
         if seed_sd is not None or boot_sd is not None:
@@ -412,4 +452,6 @@ def slice_profiles(keys: pd.DataFrame, contribs: list[np.ndarray], feats: list[s
             "share_sd": sd, "breakdown": breakdown,
             "frame_ratio": float(frame_ratio[j]) if np.isfinite(frame_ratio[j]) else None,
         })
+    if report is not None:
+        report["undefined_cells"] = report.get("undefined_cells", 0) + undefined
     return rows

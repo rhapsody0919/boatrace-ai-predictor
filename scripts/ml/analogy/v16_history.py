@@ -142,6 +142,16 @@ def rolling_st_asof(hist: pd.DataFrame, targets: pd.DataFrame, keys: list[str],
     return m.sort_values("_row").reset_index(drop=True)[["mean", "n"]]
 
 
+def venue_course_st(hist: pd.DataFrame, venue: int, date) -> dict[str, list]:
+    """会場のコース別の全選手の平均ST（前日まで、枠なりの走、F・出遅れを除く。タブ3の手がかりの表「{会場}の全選手」。
+    分析 slit-hint/build2.py の E と同じ）。{"mean": [6], "n": [6]}"""
+    h = hist[(hist["venue_code"] == venue) & hist["waku"] & (hist["race_date"] < pd.Timestamp(date))
+             & hist["st_ok"].notna()]
+    g = h.groupby("course")["st_ok"].agg(["mean", "size"])
+    return {"mean": [None if c not in g.index else round(float(g.at[c, "mean"]), 4) for c in range(1, 7)],
+            "n": [0 if c not in g.index else int(g.at[c, "size"]) for c in range(1, 7)]}
+
+
 def st_history(rows: pd.DataFrame, races: pd.DataFrame) -> pd.DataFrame:
     """ST の履歴。rows は features.load_kb・load_main を縦につないだ艇の行（窓に入れる走の集合を features.py の
     st_mean30 とそろえる。欠場・結果の無い行も ST が NaN の走として窓に数える）。waku は v16_pool のレースの行の
@@ -152,6 +162,7 @@ def st_history(rows: pd.DataFrame, races: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame({
         "racer_id": rows["racer_id"], "race_id": rows["race_id"], "race_date": pd.to_datetime(rows["race_date"]),
         "race_number": rows["race_number"], "boat_number": rows["boat_number"],
+        "venue_code": pd.to_numeric(rows["venue_code"], errors="coerce").astype("float64"),
         "st_ok": pd.to_numeric(st_ok, errors="coerce").astype("float64"),
         "waku": rows["race_id"].map(waku).fillna(False).astype(bool).to_numpy(),
     }).assign(course=lambda d: d["boat_number"].astype("float64").where(d["waku"]))  # 枠なりならコース＝艇番

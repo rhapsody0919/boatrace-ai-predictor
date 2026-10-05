@@ -58,3 +58,12 @@ def test_share_drift_compares_same_stage_and_old_rows_are_exhibition():
     d = db.share_drift(prev, new, threshold=0.03)
     assert not d["flagged"]
     assert [(c["stage"], c["finish_target"]) for c in d["changes"]] == [("exhibition", 1)]
+
+
+def test_request_refuses_nan_before_sending(monkeypatch):
+    """NaN を送ると PostgREST は「Empty or invalid json」としか返さない。送る前に原因の分かる失敗にする"""
+    import pytest
+    monkeypatch.setenv("SUPABASE_URL", "http://127.0.0.1:9")
+    monkeypatch.setenv("SUPABASE_SERVICE_KEY", "k")
+    with pytest.raises(db.PostgrestError, match="NaN"):
+        db.request("POST", "analogy_contribution_profiles", [{"x": float("nan")}])

@@ -15,6 +15,9 @@
  *   node scripts/ml/analogy/storage.js upload-model     # out/ → {version}/
  *   node scripts/ml/analogy/storage.js download-reference  # 参照版（reference.json）→ out/reference/
  *   node scripts/ml/analogy/storage.js download-active-meta  # 表示中の版の per_race_meta.json → out/active/（日次の特徴量ジョブ）
+ *   node scripts/ml/analogy/storage.js upload-profiles  # out/ の profiles.json・profiles_record.json → {version}/
+ *   node scripts/ml/analogy/storage.js download-trained 2026-10-05  # 学習済みの版の train_meta・profiles → out/（書き込みだけやり直す）
+ *   node scripts/ml/analogy/storage.js download-trained-models 2026-10-05  # train_meta・モデル（seed ごと）→ out/（profiles だけやり直す）
  *   node scripts/ml/analogy/storage.js download-active-model # 表示中の版の model_win.txt → out/active/（v16 の朝のバッチ）
  */
 
@@ -53,10 +56,21 @@ const PER_RACE_FILES = [
   "parity_fixture.json",
   "perrace_record.json",
 ];
+// DB に書く寄与度の行。書き込み（db.py write）が失敗したとき、学習をやり直さずに書き込みだけやり直すため
+// （train-analogy.yml の write_only_version）に、書き込みの前に置く
+const PROFILE_FILES = ["profiles.json", "profiles_record.json"];
+// 学習の段（train.py --train-only）が置くファイル。seed を変えたモデルは train_meta.seed_model_files に並ぶ。
+// profiles の計算だけやり直すとき（train-analogy.yml の profiles_only_version）に読む
 const UPLOAD_FILES = [
   ...MODEL_FILES,
   ...OPTIONAL_REFERENCE_FILES,
   ...PER_RACE_FILES,
+];
+const MAIN_MODEL_FILES = [
+  "model_win.txt",
+  "model_top2.txt",
+  "model_top3.txt",
+  ...OPTIONAL_REFERENCE_FILES,
 ];
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -103,15 +117,32 @@ async function activeVersion() {
   return data[0]?.model_version ?? null;
 }
 
-async function uploadModel() {
-  const meta = JSON.parse(
+async function readMeta() {
+  return JSON.parse(
     await fs.readFile(path.join(OUT_DIR, "train_meta.json"), "utf8"),
   );
-  const version = meta.model_version;
+}
+
+async function uploadModel() {
+  const meta = await readMeta();
+  await uploadFiles(meta.model_version, [
+    ...UPLOAD_FILES,
+    ...(meta.seed_model_files ?? []),
+  ]);
+  await pruneModels(await activeVersion());
+}
+
+/** profiles の段（train.py --profiles-only）の出力。書き込み（db.py write）の前に置く */
+async function uploadProfiles() {
+  const meta = await readMeta();
+  await uploadFiles(meta.model_version, PROFILE_FILES);
+}
+
+async function uploadFiles(version, names) {
   const active = await activeVersion();
   assertUploadable(version, active);
   await ensureBucket();
-  for (const name of UPLOAD_FILES) {
+  for (const name of names) {
     const buf = await fs.readFile(path.join(OUT_DIR, name));
     const key = `${version}/${name}.gz`;
     const { error } = await supabase.storage
@@ -123,7 +154,6 @@ async function uploadModel() {
     if (error) throw new Error(`${key} の保存に失敗: ${error.message}`);
     console.log(`  ⬆️ ${key}`);
   }
-  await pruneModels(active);
 }
 
 /** 新しい順に KEEP_MODEL_VERSIONS 個と、表示中の版を残して消す（storageRules.js） */
@@ -140,8 +170,13 @@ async function pruneModels(active) {
     reference ? [reference] : [],
   );
   for (const v of old) {
-    // 古い版にファイルが無くても remove は失敗しない（足す前の版を含めて消せる）
-    const keys = UPLOAD_FILES.map((n) => `${v}/${n}.gz`);
+    // 版のフォルダのファイルを全部消す（seed のモデル等、版によって数が違うので一覧から）
+    const { data: files, error: lsError } = await supabase.storage
+      .from(BUCKET)
+      .list(v, { limit: 1000 });
+    if (lsError) throw new Error(`${v} の一覧の取得に失敗: ${lsError.message}`);
+    const keys = files.map((f) => `${v}/${f.name}`);
+    if (keys.length === 0) continue;
     const { error: rmError } = await supabase.storage.from(BUCKET).remove(keys);
     if (rmError) throw new Error(`${v} の削除に失敗: ${rmError.message}`);
     console.log(`  🗑️ ${v}`);
@@ -200,6 +235,33 @@ async function downloadActive(names) {
   if (!version)
     throw new Error("表示中の版（analogy_models.is_active）がありません");
   const dir = path.join(OUT_DIR, "active");
+  await downloadVersion(version, names, dir);
+  await fs.writeFile(path.join(dir, "version.txt"), version);
+}
+
+/** 学習済みの版の train_meta.json・profiles.json を out/ に置く（書き込みだけやり直す。train-analogy.yml の write_only_version） */
+async function downloadTrained(version) {
+  if (!version) throw new Error("版の名前を指定する（例: 2026-10-05）");
+  await downloadVersion(version, ["train_meta.json", ...PROFILE_FILES], OUT_DIR);
+}
+
+/** 学習済みの版の train_meta.json とモデル（seed ごと）を out/ に置く（profiles の計算だけやり直す。profiles_only_version） */
+async function downloadTrainedModels(version) {
+  if (!version) throw new Error("版の名前を指定する（例: 2026-10-05）");
+  await downloadVersion(version, ["train_meta.json"], OUT_DIR);
+  const meta = await readMeta();
+  if (!Array.isArray(meta.seed_model_files))
+    throw new Error(
+      `版 ${version} の train_meta に seed_model_files が無い（seed のモデルを置く前の版。profiles だけのやり直しはできない）`,
+    );
+  await downloadVersion(
+    version,
+    [...MAIN_MODEL_FILES, ...meta.seed_model_files],
+    OUT_DIR,
+  );
+}
+
+async function downloadVersion(version, names, dir) {
   await fs.mkdir(dir, { recursive: true });
   for (const name of names) {
     const key = `${version}/${name}.gz`;
@@ -216,7 +278,6 @@ async function downloadActive(names) {
     );
     console.log(`  ⬇️ ${key}`);
   }
-  await fs.writeFile(path.join(dir, "version.txt"), version);
 }
 
 async function main() {
@@ -228,9 +289,13 @@ async function main() {
     await downloadActive(["per_race_meta.json"]);
   else if (cmd === "download-active-model")
     await downloadActive(["model_win.txt"]);
+  else if (cmd === "download-trained") await downloadTrained(process.argv[3]);
+  else if (cmd === "download-trained-models")
+    await downloadTrainedModels(process.argv[3]);
+  else if (cmd === "upload-profiles") await uploadProfiles();
   else
     throw new Error(
-      "使い方: node scripts/ml/analogy/storage.js <upload-model|download-reference|download-active-meta|download-active-model>",
+      "使い方: node scripts/ml/analogy/storage.js <upload-model|upload-profiles|download-reference|download-active-meta|download-active-model|download-trained <版>|download-trained-models <版>>",
     );
 }
 

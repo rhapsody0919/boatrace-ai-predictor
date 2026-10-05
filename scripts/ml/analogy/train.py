@@ -30,10 +30,14 @@ perrace.py が書く（2本のまま）。
 再現のため、メトリクスに学習したコードのコミット（GITHUB_SHA）と、書き出したデータの件数・最大値・
 内容のハッシュ（export_manifest.json）を残す。
 
-使い方: python train.py   （features.py の後）
-出力: data/ml/analogy/out/model_{win,top2,top3,win_racecard,top2_racecard,top3_racecard}.txt・train_meta.json
-      ・profiles.json・model_win.json・model_win_racecard.json・per_race_meta.json・parity_fixture.json
-      ・perrace_record.json
+使い方: python train.py [--train-only | --profiles-only]   （features.py の後）
+  --train-only    学習・品質ゲート・seed の再学習まで（モデルと train_meta を書く。profiles は作らない）
+  --profiles-only out/ の train_meta とモデル（seed ごと）から profiles だけ作る（学習しない）
+  引数なしは両方
+出力: data/ml/analogy/out/model_{win,top2,top3,win_racecard,top2_racecard,top3_racecard}.txt と
+      その seed 1〜 の model_{名前}_seed{seed}.txt・train_meta.json・model_win.json・model_win_racecard.json
+      ・per_race_meta.json・parity_fixture.json・perrace_record.json（--train-only）、
+      profiles.json・profiles_record.json（--profiles-only）
 """
 
 from __future__ import annotations
@@ -52,7 +56,7 @@ import pandas as pd
 import features as F
 import metrics as M
 import perrace as P
-from profiles import slice_profiles
+from profiles import nonfinite_to_null, slice_profiles
 from themes import CATEGORICAL, FEATURES, RACECARD_FEATURES, THEMES, themes_for_db
 
 OUT = F.D / "out"
@@ -247,6 +251,8 @@ def profile_keys(test: pd.DataFrame) -> pd.DataFrame:
 
 
 RACECARD_NAMES = {n for n, _, _, _ in RACECARD}
+# 事前登録5 追記C の記録2（段ごとの profiles の分布）。profiles の段で書く
+PROFILES_RECORD = "profiles_record.json"
 
 
 def with_round_v1(df: pd.DataFrame) -> pd.DataFrame:
@@ -275,10 +281,11 @@ def _features_for(name: str) -> list[str]:
     return RACECARD_FEATURES if name in RACECARD_NAMES else FEATURES
 
 
-def write_perrace(version, fit, temp, test, models: dict, race_ll: dict, profiles: list[dict]) -> dict:
+def write_perrace(version, fit, temp, test, models: dict, race_ll: dict) -> dict:
     """展示後の段の一致検査用の書き出しと、事前登録5 の記録（perrace.py）。記録の全体は perrace_record.json
     （Storage にも置く）に書き、analogy_models.metrics には展示の効果の要約だけを入れる（metrics は画面の
-    読み込みでも取られるため小さく保つ）。JSON ダンプ・固定データは win・win_racecard の2本（追記C）。"""
+    読み込みでも取られるため小さく保つ）。JSON ダンプ・固定データは win・win_racecard の2本（追記C）。
+    記録2（段ごとの profiles の分布）は profiles の段で profiles_record.json に書く。"""
     m_win, m_rc = models["win"], models["win_racecard"]
     dumps = {"win": P.model_dump(m_win, OUT / "model_win.json"),
              "win_racecard": P.model_dump(m_rc, OUT / "model_win_racecard.json")}
@@ -303,36 +310,47 @@ def write_perrace(version, fit, temp, test, models: dict, race_ll: dict, profile
         "parity_fixture_races": len(ids),
         "definitions": P.definition_record(cond_raw, pd.read_csv(F.D / "race_series.csv"), maps),
         "round_v2_changes": round_change_record(fit, temp, test),
-        # 記録2（追記C）: 段ごとの profiles の分布
-        "profiles_by_stage": P.stage_profile_record(profiles),
     }
     (OUT / "perrace_record.json").write_text(json.dumps(rec, ensure_ascii=False, indent=1))
     print(f"  perrace: {json.dumps(rec['exhibition_effect'], ensure_ascii=False)[:400]}", flush=True)
     return {"exhibition_effect": effect, "parity_fixture_races": len(ids),
-            "record_file": "perrace_record.json"}
+            "record_file": "perrace_record.json", "profiles_record_file": PROFILES_RECORD}
 
 
-def main():
+def seed_model_file(name: str, seed: int) -> str:
+    return f"model_{name}.txt" if seed == SEEDS[0] else f"model_{name}_seed{seed}.txt"
+
+
+def load_data(end: str | None = None):
+    """end: この日までのデータで分ける（profiles だけ後日やり直すとき、学習した回と同じ test にするため）"""
+    df = F.complete_races(pd.read_pickle(F.D / "boats.pkl"))
+    if end is not None:
+        df = df[df["race_date"] <= pd.Timestamp(end)]
+    return split(df)
+
+
+def train_phase() -> dict:
+    """学習・品質ゲート・seed を変えた再学習。モデル（seed ごと）・train_meta・一致検査の固定データを out/ に書く。
+    profiles はここでは作らない（profiles_phase）。モデルを先に Storage に置けば、profiles の計算と書き込みだけを
+    やり直せる（train-analogy.yml の profiles_only_version）"""
     t0 = time.time()
     OUT.mkdir(parents=True, exist_ok=True)
-    df = F.complete_races(pd.read_pickle(F.D / "boats.pkl"))
-    train, fit, temp, test = split(df)
+    train, fit, temp, test = load_data()
     jst = timezone(timedelta(hours=9))
     version = os.environ.get("ANALOGY_MODEL_VERSION") or datetime.now(jst).strftime("%Y-%m-%d")
     n = lambda d: int(d["race_id"].nunique())  # noqa: E731
     print(f"version {version}  fit {n(fit):,}R  temperature {n(temp):,}R  test {n(test):,}R "
           f"({test['race_date'].min().date()}〜{test['race_date'].max().date()})", flush=True)
 
-    keys = profile_keys(test)
     metrics, models, race_ll = {}, {}, {}
-    # 先に seed0 の6本を学習・評価して品質ゲートを通す（通らなければ SHAP の計算をせずに止める）
+    # 先に seed0 の6本を学習・評価して品質ゲートを通す（通らなければ seed の再学習をせずに止める）
     for name, label, _, rounds in TARGETS + RACECARD:
         m = fit_model(fit, label, rounds, SEEDS[0], _features_for(name))
         if _is_win(name):
             metrics[name], race_ll[name] = evaluate_win_races(m, train, temp, test)
         else:
             metrics[name], race_ll[name] = evaluate_topk_races(m, train, test, label)
-        m.save_model(str(OUT / f"model_{name}.txt"))
+        m.save_model(str(OUT / seed_model_file(name, SEEDS[0])))
         models[name] = m
         print(f"  {name}: {json.dumps(metrics[name], ensure_ascii=False)[:300]}", flush=True)
     gate = quality_gate(metrics, reference_logloss(train, temp, test))
@@ -346,21 +364,16 @@ def main():
         (OUT / "gate_failed.json").write_text(json.dumps(metrics, ensure_ascii=False, indent=1))
         sys.exit("品質ゲートで止めた: " + " / ".join(gate["reasons"]))
 
-    profiles = []
-    for stage, specs in (("exhibition", TARGETS), ("racecard", RACECARD)):
-        for name, label, finish_target, rounds in specs:
-            feats = _features_for(name)
-            contribs = []
-            for seed in SEEDS:
-                m = models[name] if seed == SEEDS[0] else fit_model(fit, label, rounds, seed, feats)
-                contribs.append(m.predict(test[feats].astype("float32"), pred_contrib=True)
-                                .astype("float32"))
-                print(f"    {name} seed {seed} ({time.time() - t0:.0f}s)", flush=True)
-            profiles += slice_profiles(keys, contribs, feats, THEMES, finish_target, n_boot=N_BOOT,
-                                       stage=stage, values=test)
+    # share_sd の seed の揺れに使う再学習（seed 0 以外）。ファイルに書き、profiles の段で読む
+    seed_files = []
+    for name, label, _, rounds in TARGETS + RACECARD:
+        for seed in SEEDS[1:]:
+            fit_model(fit, label, rounds, seed, _features_for(name)).save_model(
+                str(OUT / seed_model_file(name, seed)))
+            seed_files.append(seed_model_file(name, seed))
+            print(f"    {name} seed {seed} ({time.time() - t0:.0f}s)", flush=True)
 
-    perrace_metrics = write_perrace(version, fit, temp, test, models, race_ll, profiles)
-
+    perrace_metrics = write_perrace(version, fit, temp, test, models, race_ll)
     meta = {
         "model_version": version,
         "trained_at": datetime.now(timezone.utc).isoformat(),
@@ -369,6 +382,7 @@ def main():
         "targets": [{"name": n_, "finish_target": ft, "rounds": r} for n_, _, ft, r in TARGETS],
         "racecard": [{"name": n_, "finish_target": ft, "rounds": r, "features": RACECARD_FEATURES,
                       "seed": SEEDS[0]} for n_, _, ft, r in RACECARD],
+        "seed_model_files": seed_files,
         "metrics": {**metrics, "perrace": perrace_metrics, "seeds": SEEDS, "n_boot": N_BOOT, "train_frac": TRAIN_FRAC,
                     "provenance": code_and_data_provenance(),
                     "periods": {"fit": [str(fit["race_date"].min().date()), str(fit["race_date"].max().date())],
@@ -377,9 +391,64 @@ def main():
                                 "test": [str(test["race_date"].min().date()), str(test["race_date"].max().date())]},
                     "n_races": {"fit": n(fit), "temperature": n(temp), "test": n(test)}},
     }
-    (OUT / "train_meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1))
-    (OUT / "profiles.json").write_text(json.dumps(profiles, ensure_ascii=False))
-    print(f"done: {len(profiles):,} セル ({time.time() - t0:.0f}s)")
+    # allow_nan=False: NaN を素のまま書くと PostgREST が拒むので、学習の出力の時点で止める（db.py も同じ）
+    (OUT / "train_meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1, allow_nan=False))
+    print(f"train done ({time.time() - t0:.0f}s)")
+    return meta
+
+
+def profiles_phase() -> list[dict]:
+    """out/ の train_meta.json と seed ごとのモデルから profiles を作る（学習はしない）。
+    seed・ブートストラップの回数は train_meta の値を使う（学習した回と同じ集計にするため）"""
+    t0 = time.time()
+    meta = json.loads((OUT / "train_meta.json").read_text())
+    seeds, n_boot = meta["metrics"]["seeds"], meta["metrics"]["n_boot"]
+    period = meta["metrics"]["periods"]["test"]
+    _, _, _, test = load_data(end=period[1])
+    got = [str(test["race_date"].min().date()), str(test["race_date"].max().date())]
+    if got != period:
+        raise RuntimeError(f"test の期間が学習した回と違う（学習 {period}、今回 {got}）。データの書き出しを確かめる")
+    # 後日やり直すと、最終日（学習した時点では途中だった日）のレースが増えていることがある。止めずに記録する
+    n_test = {"trained": meta["metrics"]["n_races"]["test"], "profiles": int(test["race_id"].nunique())}
+    if n_test["trained"] != n_test["profiles"]:
+        print(f"  注意: test のレース数が学習した回と違う（{n_test}）。最終日 {period[1]} のレースが後から増えた分",
+              flush=True)
+    keys = profile_keys(test)
+    profiles, report = [], {"undefined_cells": 0}
+    for stage, specs in (("exhibition", TARGETS), ("racecard", RACECARD)):
+        for name, _, finish_target, _ in specs:
+            feats = _features_for(name)
+            contribs = []
+            for seed in seeds:
+                file = f"model_{name}.txt" if seed == seeds[0] else f"model_{name}_seed{seed}.txt"
+                m = lgb.Booster(model_file=str(OUT / file))
+                if m.feature_name() != feats:
+                    raise RuntimeError(f"{file} の特徴量が今のコードと違う")
+                contribs.append(m.predict(test[feats].astype("float32"), pred_contrib=True)
+                                .astype("float32"))
+            profiles += slice_profiles(keys, contribs, feats, THEMES, finish_target, n_boot=n_boot,
+                                       stage=stage, values=test, report=report)
+            print(f"    profiles {name} ({time.time() - t0:.0f}s)", flush=True)
+    profiles, nulled = nonfinite_to_null(profiles)
+    print(f"  1レースだけで割合が決まらず書かなかったセル: {report['undefined_cells']:,}"
+          f"  有限でない値を null にした場所: {json.dumps(nulled, ensure_ascii=False)}", flush=True)
+    rec = {"model_version": meta["model_version"], "test_n_races": n_test,
+           "undefined_cells": report["undefined_cells"],
+           "nonfinite_to_null": nulled, "profiles_by_stage": P.stage_profile_record(profiles)}
+    (OUT / PROFILES_RECORD).write_text(json.dumps(rec, ensure_ascii=False, indent=1, allow_nan=False))
+    (OUT / "profiles.json").write_text(json.dumps(profiles, ensure_ascii=False, allow_nan=False))
+    print(f"profiles done: {len(profiles):,} セル ({time.time() - t0:.0f}s)")
+    return profiles
+
+
+def main():
+    args = sys.argv[1:]
+    if args not in ([], ["--train-only"], ["--profiles-only"]):
+        sys.exit("使い方: python train.py [--train-only | --profiles-only]")
+    if args != ["--profiles-only"]:
+        train_phase()
+    if args != ["--train-only"]:
+        profiles_phase()
 
 
 if __name__ == "__main__":

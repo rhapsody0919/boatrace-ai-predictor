@@ -55,3 +55,10 @@ def test_example_fixture_matches_known_values():
     assert d["similar"]["n_layer"] == 15 and d["similar"]["neighbors"][0]["race_id"] == "2021-10-14-16-12"
     assert d["facts"]["VC:20:6-0-0-0:1A1"]["n"] == 1134 and d["facts"]["NC:6-0-0-0:1A1"]["n"] == 25290
     assert d["scenario"]["VC:20:6-0-0-0:1A1"]["n"] == 1117 and d["scenario"]["NC:6-0-0-0:1A1"]["n"] == 24871
+
+
+def test_top3_boats_keeps_tied_boats():
+    """長期の同着（着 6,4,2,1,2,5）: 2着の3号艇・5号艇の両方を入れ、3着は 5号艇になる（データ精度の検証で見つかった）"""
+    import v16_morning as M
+    fr = np.array([[6, 4, 2, 1, 2, 5], [1, 2, 3, np.nan, 4, 5], [np.nan] * 6])
+    assert M.top3_boats(fr).tolist() == [[4, 3, 5], [1, 2, 3], [0, 0, 0]]

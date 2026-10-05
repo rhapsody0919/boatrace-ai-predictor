@@ -18,7 +18,8 @@ import {
 } from "../../api/_lib/analogyV16.js";
 import { layerStatus } from "../../api/analogy/layer/[raceId].js";
 import { withoutSeriesScoreOnFinal } from "../../api/analogy/facts/[raceId].js";
-import { datesToClean, summarizeDay } from "./verify-analogy-v16.js";
+import { mergeExhibition } from "../../api/analogy/similar/[raceId].js";
+import { CLEANUP, datesToClean, summarizeDay } from "./verify-analogy-v16.js";
 import {
   exhibitionNeighbors,
   selectExhibitionTargets,
@@ -116,10 +117,10 @@ check(
   [0.15, 0.15, 0.15, -0.05, 0.15, 0.15],
 );
 check("風速区分", te.wind_band, "2-3");
-// 3コースは両隣の小さいほう（4コースの −5）より 0.20 遅いので、カド受け凹み（d3）にも当たる（形は重なる）
+// 3コースは4コース（−5）より遅いが2コースとは同じなので、カド受け凹み（d3）には当たらない（凹みは両隣より
+// 0.05秒以上遅いとき。2026-10-06 ユーザー決定 Q-F4、BOA-777。以前は早い方の隣だけと比べていたので当たっていた）
 check("展示 ST の形（4コースの3号艇が F で前に出る）", te.forms, [
   "wall",
-  "d3",
   "kado",
   "dash",
 ]);
@@ -176,6 +177,46 @@ check("出走表の時点の項目は候補ファイルのまま", nb[0].items.v
 check("展示で決まる項目は判定し直す（晴と雨は違う）", nb[0].items.weather, 0);
 check("展示で決まる項目（曇りと晴は近い）", nb[1].items.weather, 1);
 check("結果を付ける", nb[0].finish, [4, 1, 5]);
+check("表示用の値は無ければ付けない", "display" in nb[0], false);
+const nbd = exhibitionNeighbors(
+  file,
+  { neighbors: [{ race_id: "y", d2: 0.25 }] },
+  { race: { wind_speed: 1 }, exh_time: [6.8, 6.8, 6.8, 6.8, 6.8, 6.8] },
+  {
+    columns: {
+      nat: [
+        [1, 1, 1, 1, 1, 1],
+        [2, 2, 2, 2, 2, 2],
+      ],
+      rn: [3, 7],
+    },
+  },
+);
+check("表示用の値は候補の位置で付ける", nbd[0].display, {
+  nat: [2, 2, 2, 2, 2, 2],
+  rn: 7,
+});
+check(
+  "今日の展示に風の成分と展示タイムの差",
+  Object.keys(te).filter((k) =>
+    ["weather_code", "wind_x", "wind_y", "exh_time_diff"].includes(k),
+  ),
+  ["exh_time_diff", "weather_code", "wind_x", "wind_y"],
+);
+// 展示後の類似レースは、層の情報を出走表の段のファイルから合わせる
+check(
+  "展示後の類似レースに層の情報を合わせる",
+  mergeExhibition(
+    { conditions: { round: "yusho" }, n_layer: 15, neighbors: [1] },
+    { neighbors: [2], exact: true },
+  ),
+  { conditions: { round: "yusho" }, n_layer: 15, neighbors: [2], exact: true },
+);
+check(
+  "展示後のファイルが無ければ null",
+  mergeExhibition({ n_layer: 1 }, null),
+  null,
+);
 
 // ---- 4. 状態とキャッシュ ----------------------------------------------------
 const st = (o, passed) =>
@@ -313,6 +354,16 @@ check(
     "similar/ を消す日付（7日より前）",
     datesToClean(["2026-09-27", "2026-09-28", "2026-10-04", "x"], "2026-10-05"),
     ["2026-09-27"],
+  );
+  const displayKeep = CLEANUP.find(([k]) => k === "similar-display")[1];
+  check(
+    "similar-display/ を消す日付（前日より前）",
+    datesToClean(
+      ["2026-10-03", "2026-10-04", "2026-10-05"],
+      "2026-10-05",
+      displayKeep,
+    ),
+    ["2026-10-03"],
   );
 }
 

@@ -75,6 +75,16 @@ def class_names(cls_ord: np.ndarray) -> np.ndarray:
     return np.vectorize(lambda v: CLASS_NAME.get(v))(np.where(np.isfinite(cls_ord), cls_ord, 0.0))
 
 
+def top3_boats(finish_rank: np.ndarray) -> np.ndarray:
+    """(n,6) の艇番順の着 → (n,3) の1〜3着の艇番（着のある艇を (着, 艇番) の順に並べた先頭3艇。無ければ 0）。
+    長期の同着は着を 1,2,2,4 のように付けるので、「着が k の艇」で引くと同着の2艇目が抜ける（v16_pool.build_races と同じ並べ方）"""
+    fr = np.asarray(finish_rank, dtype=float)
+    key = np.where(np.isfinite(fr) & (fr >= 1), fr * 10 + np.arange(6), np.inf)
+    order = np.argsort(key, axis=1, kind="stable")[:, :3]
+    ok = np.take_along_axis(np.isfinite(key), order, axis=1)
+    return np.where(ok, order + 1, 0)
+
+
 # ---------------------------------------------------------------- 範囲
 def scope_masks(key: str, races: pd.DataFrame, cls: np.ndarray, combos: np.ndarray) -> np.ndarray:
     """範囲キー（v16_defs.scope_keys の値）→ races のマスク"""
@@ -323,7 +333,7 @@ def main():
             log("作るレースが無い（すべて作成済み・締切間近・中止・欠場）")
             return
     fr = arrays["finish_rank"]
-    ranks = np.stack([np.where((fr == k).any(1), (fr == k).argmax(1) + 1, 0) for k in (1, 2, 3)], 1)
+    ranks = top3_boats(fr)
     log("races", len(races), "pool", int(pool.sum()), "today", len(today))
 
     # 範囲ごと: facts（タブ1）
@@ -338,7 +348,9 @@ def main():
                         if s in ("VC", "NC", "NCR", "VA")})
     for key in fact_keys:
         m = scope_masks(key, races, arrays["cls_name"], combos) & pool
-        f = FA.scope_facts(m, prep, ranks, races["wind_speed"].to_numpy() if key.startswith("VA") else None)
+        va = key.startswith("VA")
+        f = FA.scope_facts(m, prep, ranks, races["wind_speed"].to_numpy() if va else None,
+                           races["wave_height"].to_numpy() if va else None)
         f["key"], f["period"] = key, [POOL_FROM, str(cutoff.date())]
         write_local(out, f"facts/{key.replace(':', '_')}.json", f)
     log("facts", len(fact_keys))
@@ -374,6 +386,9 @@ def main():
         s["hints"] = SC.scope_hints(m, d, {"course": C, "overall": A})
         s["attack"] = SC.scope_attack(m & d["entries"]["waku"] & base3, d["forms"], d["ranks"][:, 0],
                                       d["ranks"][:, 1], d["tech"], motor_rank, exh_rank, V.st_cent(np.nan_to_num(st6)))
+        # 脚注「返還（F・L・欠場）があったレースなど{n}件を除く」（spec C-5）: タブ1・2の母集団との差（返還のほか、
+        # 3着が無い・実進入が分からないレースも除く。どちらの件数とも合うように差で持つ）
+        s["n_refund_excluded"] = int((scope_masks(key, races, arrays["cls_name"], combos) & pool).sum()) - s["n"]
         s["key"], s["period"] = key, [POOL_FROM, str(cutoff.date())]
         write_local(out, f"scenario/{key.replace(':', '_')}.json", s)
     log("scenario", len(scn_keys))
@@ -384,8 +399,16 @@ def main():
                        "course": np.tile(np.arange(1, 7, dtype=float), len(today))})
     tt["racer_id"] = tt["racer_id"].astype(hist["racer_id"].dtype)
     tc = H.rolling_st_asof(hist[hist["waku"]], tt, ["racer_id", "course"])
+    tv = tt.assign(venue_code=np.repeat(races["venue_code"].to_numpy(dtype="float64")[today], 6))
+    vc = H.rolling_st_asof(hist, tv, ["racer_id", "venue_code"])  # 会場での直近30走（コースを問わない）
     today_course = {i: {"course": [None if pd.isna(m) else float(m) for m in tc["mean"].iloc[6 * k:6 * k + 6]],
-                        "course_n": [int(n) for n in tc["n"].iloc[6 * k:6 * k + 6]]} for k, i in enumerate(today)}
+                        "course_n": [int(n) for n in tc["n"].iloc[6 * k:6 * k + 6]],
+                        "venue": [None if pd.isna(m) else float(m) for m in vc["mean"].iloc[6 * k:6 * k + 6]],
+                        "venue_n": [int(n) for n in vc["n"].iloc[6 * k:6 * k + 6]],
+                        "venue_course_all": H.venue_course_st(hist, int(races["venue_code"].iat[i]), a.date)}
+                    for k, i in enumerate(today)}
+    # 展示→本番の一致率（全国、展示の進入の記録がある期間。spec C-1・C-3 の注記。今日のレースによらない）
+    agreement = SC.exhibition_agreement(pr.reset_index(drop=True), P.load_exhibition_layout(src))
 
     # レースごと: similar・layer・today
     weights, feats = load_weights(Path(a.model), df[df["race_id"].isin(races["race_id"][pool])], races[pool])
@@ -422,17 +445,20 @@ def main():
         lv = S.item_levels(races, arrays, i, clusters, is_kb)
         shown = idx[:MAX_SHOWN]
         cmp_cond, cmp_name = S.compare_conditions(cond)
+        disp = S.display_columns(races, arrays, idx, is_kb)  # 候補すべての表示用の値（展示後の段が800件に付ける）
+        today_disp = S.display_row(S.display_columns(races, arrays, np.array([i]), is_kb), 0)
         cm = S.layer_mask(cmp_cond, b1, gap, top, races["round"].to_numpy(dtype=object),
                           races["grade"].to_numpy(dtype=object)) & pool
         write_local(out, f"similar-racecard/{rid}.json", {
             "race_id": rid, "conditions": cond, "n_layer": n_layer,
             "pool_rate": {k: float((v[pool] == 2).mean()) for k, v in lv.items()},
-            "compare": {"name": cmp_name, "conditions": cmp_cond, "n": int(cm.sum()),
-                        "winner": [int((cm & (ranks[:, 0] == b)).sum()) for b in range(1, 7)]},
-            "national": {"n": int(pool.sum()), "winner": [int((pool & (ranks[:, 0] == b)).sum()) for b in range(1, 7)]},
+            "today_display": today_disp,
+            "compare": {"name": cmp_name, "conditions": cmp_cond} | outcome_counts(cm),
+            "national": national_counts,
             "neighbors": [{"race_id": F.int_to_rid(int(races["race_id"].iat[j])), "distance": round(float(np.sqrt(e)), 4),
-                           "items": {k: int(v[j]) for k, v in lv.items()}} | result_of(j)
-                          for j, e in zip(shown, d2p[:MAX_SHOWN])],
+                           "items": {k: int(v[j]) for k, v in lv.items()}, "display": S.display_row(disp, c)}
+                          | result_of(j)
+                          for c, (j, e) in enumerate(zip(shown, d2p[:MAX_SHOWN]))],
         })
         # 展示後の段（JS）が並べ直した800件に、33項目と結果を付けられるように: 出走表の時点で決まる項目の判定、
         # 展示で決まる項目（天候・風・波・展示タイムの差）の生の値、結果を候補ごとに持たせる
@@ -449,6 +475,8 @@ def main():
             "results": [{k: v for k, v in result_of(j).items() if k not in ("date", "venue_code", "race_number")}
                         for j in idx],  # 日付・会場・R は race_id から分かる
         })
+        # 表示用の値は候補ファイルと別に置く（展示後の段だけが読む。候補ファイルの大きさを増やさない）
+        write_local(out, f"similar-display/{rid}.json", {"race_id": rid, "today": today_disp, "columns": disp})
         lay = prl.loc[prl.index.isin(races["race_id"][lm]) & prl["layer_ok"]].sort_values(
             ["race_date", "race_id"], ascending=False)
         write_local(out, f"layer/{rid}.json", {
@@ -458,9 +486,24 @@ def main():
         })
         overall = [None if not np.isfinite(x) else float(x) for x in arrays["st_mean30"][i]]
         tcs = today_course[i]
-        write_local(out, f"today/{rid}.json", today_payload(i, races, arrays, keys_by_race[i], {
+        payload = today_payload(i, races, arrays, keys_by_race[i], {
             "overall": overall, "course": tcs["course"], "course_n": tcs["course_n"],
-            "course_filled": V.fill_course_st(tcs["course"], tcs["course_n"], overall)}))
+            "course_filled": V.fill_course_st(tcs["course"], tcs["course_n"], overall),
+            "venue": tcs["venue"], "venue_n": tcs["venue_n"], "venue_course_all": tcs["venue_course_all"]})
+        write_local(out, f"today/{rid}.json", payload | {"exh_agreement": agreement})
+
+    tech_all = races["race_id"].map(prl["winning_technique"]).to_numpy(dtype=object)
+
+    def outcome_counts(m: np.ndarray) -> dict:
+        """比べる相手・全国の件数（spec B-8 の点線）: 1着・2着以内・3着以内の艇番ごとの件数と決まり手"""
+        top2 = [(m & ((ranks[:, 0] == b) | (ranks[:, 1] == b))).sum() for b in range(1, 7)]
+        top3 = [(m & (ranks[:, :3] == b).any(axis=1)).sum() for b in range(1, 7)]
+        tech = pd.Series(tech_all[m]).dropna().value_counts()
+        return {"n": int(m.sum()), "winner": [int((m & (ranks[:, 0] == b)).sum()) for b in range(1, 7)],
+                "top2": [int(x) for x in top2], "top3": [int(x) for x in top3],
+                "technique": {str(k): int(v) for k, v in tech.items()}}
+
+    national_counts = outcome_counts(pool)  # どのレースでも同じなので1回だけ数える
 
     failed = {}
     def result_of(j: int) -> dict:

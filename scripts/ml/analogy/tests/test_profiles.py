@@ -78,19 +78,20 @@ def test_boat1_group_is_added_to_national_only_for_boat1():
 
 
 def test_slices_counts_and_unknown_grade_only_in_all():
-    keys, contrib = frame()
+    # 4レース: 会場1 は G1・予選（0,2）、会場2 はグレード不明・優勝戦（1,3）
+    keys, contrib = frame(n_races=4)
     rows = P.slice_profiles(keys, [contrib], FEATS, THEMES, finish_target=2, stage="racecard")
     idx = {(r["venue_code"], r["grade"], r["round"], r["boat_number"]): r for r in rows}
     allrow = idx[(0, "all", "all", 0)]
-    assert (allrow["n_races"], allrow["n_boats"]) == (2, 12)
-    assert idx[(0, "all", "all", 3)]["n_boats"] == 2
-    assert idx[(0, "G1", "all", 0)]["n_races"] == 1
-    # グレード不明のレース（2本目）は「全グレード」にだけ入る
+    assert (allrow["n_races"], allrow["n_boats"]) == (4, 24)
+    assert idx[(0, "all", "all", 3)]["n_boats"] == 4
+    assert idx[(0, "G1", "all", 0)]["n_races"] == 2
+    # グレード不明のレースは「全グレード」にだけ入る
     assert not any(k[1] not in ("all", "G1") for k in idx)
-    assert idx[(2, "all", "yusho", 0)]["n_races"] == 1
+    assert idx[(2, "all", "yusho", 0)]["n_races"] == 2
     assert (2, "G1", "all", 0) not in idx  # n=0 のセルは書かない
     assert all(r["finish_target"] == 2 and r["stage"] == "racecard" for r in rows)
-    assert allrow["period_from"] == "2026-01-01" and allrow["period_to"] == "2026-01-02"
+    assert allrow["period_from"] == "2026-01-01" and allrow["period_to"] == "2026-01-04"
 
 
 def test_rows_must_be_races_of_boats_1_to_6():
@@ -226,3 +227,42 @@ def test_boat1_group_direction_is_varies_for_boats_2_to_6():
         "key": "boat1", "share": pytest.approx(pick(rows, boat=3)["breakdown"]["rec"][1]["share"]),
         "direction": "varies", "direction_basis": None}
     assert "direction" in pick(rows, boat=1)["breakdown"]["rec"][0]
+
+
+def test_direction_basis_is_strict_json_for_few_values_and_constant_y():
+    """値ごとの区分（地元 0/1）の m_mid と、y が一定の ρ は NaN になる。素の NaN は PostgREST が
+    「invalid json」で拒む（run 37278559069 の書き込みの失敗）ので null にする"""
+    import json
+    rng = np.random.default_rng(0)
+    day = np.repeat(np.arange(40), 10)
+    W = np.ones((5, 40))
+    few = P.numeric_direction((rng.random(400) < 0.3).astype(float), rng.normal(size=400), day, W, 40)
+    assert few["basis"]["m_mid"] is None
+    flat = P.numeric_direction(rng.normal(size=400), np.zeros(400), day, W, 40)
+    assert flat["basis"]["rho"] is None and flat["direction"] == "none"
+    json.dumps([few, flat], allow_nan=False)
+
+
+def test_single_race_cell_is_not_written():
+    """1レースだけのセルは、艇番の中で中心化すると全部0になり割合が 0/0（NaN）になる。本番の形のデータで
+    NaN になったのはこのセルだけだった（各着順・段で189行。run 37304986570 の失敗）。書かずに数える"""
+    import json
+    keys, contrib = frame(n_races=3, venue=(1, 1, 2), grade=("G1",), rnd=("yosen",))
+    report = {}
+    rows = P.slice_profiles(keys, [contrib, contrib * 1.1], FEATS, THEMES, finish_target=1, n_boot=20,
+                            report=report)
+    idx = {(r["venue_code"], r["grade"], r["round"], r["boat_number"]) for r in rows}
+    assert (2, "G1", "yosen", 1) not in idx and (2, "all", "all", 0) not in idx  # 会場2 は1レースだけ
+    assert (1, "G1", "yosen", 1) in idx and (0, "all", "all", 0) in idx
+    assert report["undefined_cells"] > 0
+    json.dumps(rows, allow_nan=False)
+
+
+def test_nonfinite_to_null_records_paths_and_refuses_shares():
+    rows = [{"shares": {"a": 0.5}, "frame_ratio": float("nan"),
+             "breakdown": {"a": [{"key": "a1", "share": float("inf")}]}}]
+    out, counts = P.nonfinite_to_null(rows)
+    assert out[0]["frame_ratio"] is None and out[0]["breakdown"]["a"][0]["share"] is None
+    assert counts == {"frame_ratio": 1, "breakdown.a[].share": 1}
+    with pytest.raises(ValueError, match="shares"):
+        P.nonfinite_to_null([{"shares": {"a": float("nan")}}])

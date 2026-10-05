@@ -74,7 +74,11 @@ def request(method: str, path: str, body=None, prefer: str | None = None):
     headers = {"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"}
     if prefer:
         headers["Prefer"] = prefer
-    data = None if body is None else json.dumps(body, ensure_ascii=False).encode()
+    # NaN・Inf は JSON に無いので、送る前に止める（PostgREST の「Empty or invalid json」は原因が分からない）
+    try:
+        data = None if body is None else json.dumps(body, ensure_ascii=False, allow_nan=False).encode()
+    except ValueError as e:
+        raise PostgrestError(f"{method} {path}: 送る値に NaN・Inf がある（{e}）") from e
     req = urllib.request.Request(f"{url}/rest/v1/{path}", data=data, method=method, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=120) as res:
