@@ -3760,6 +3760,31 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
     expect(onTop).toBe(true);
   });
 
+  test("375px のプレビューで、表以外（前提の行・質問文・出典）は折り返して読める", async ({
+    page,
+  }) => {
+    // 以前は全文を1つの <pre>（折り返しなし）で出しており、375px で質問文と
+    // 出典が箱の右に切れていた（BOA-770 ファン評価2周目）
+    await page.setViewportSize({ width: 375, height: 800 });
+    await openFixedRaceBeforeStart(page);
+    await expect(page.locator(".ai-copy-btn-banner")).toBeVisible({
+      timeout: 15000,
+    });
+    await page.getByRole("button", { name: "コピーされる全文を見る" }).click();
+    const preview = page.getByTestId("ai-copy-preview");
+    await expect(preview).toContainText("出典: 龍神レーダー");
+    const overflowing = await preview.evaluate((el) =>
+      [...el.querySelectorAll("pre")]
+        .filter((pre) => !pre.textContent.startsWith("|"))
+        .filter((pre) => pre.scrollWidth > pre.clientWidth + 1)
+        .map((pre) => pre.textContent.slice(0, 30)),
+    );
+    expect(overflowing).toEqual([]);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(375);
+  });
+
   test("プレビューでコピーされる全文（表と出典を含む）が見られる", async ({
     page,
   }) => {

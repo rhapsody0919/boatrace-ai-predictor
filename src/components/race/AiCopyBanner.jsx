@@ -165,9 +165,10 @@ export default function AiCopyBanner({
             transition={{ duration: 0.2 }}
             style={{ width: "100%", minWidth: 0, overflow: "hidden" }}
           >
-            {/* コピーされる全文（表・注記・出典を含む、BOA-770 推奨9）。表は横に長いので
-                この箱の中だけで横スクロールさせ、ページ全体をはみ出させない */}
-            <pre
+            {/* コピーされる全文（表・注記・出典を含む、BOA-770 推奨9）。
+                表だけは横に長いので折り返さずに箱の中で横スクロールさせ、前提の行・注記・
+                質問文は折り返して読めるようにする（375px で質問文が切れていた。ファン評価2周目） */}
+            <div
               data-testid="ai-copy-preview"
               style={{
                 margin: "8px 0 0",
@@ -179,13 +180,29 @@ export default function AiCopyBanner({
                 color: "var(--color-gray-700)",
                 lineHeight: 1.6,
                 maxHeight: "320px",
-                overflow: "auto",
-                whiteSpace: "pre",
-                fontFamily: "inherit",
+                overflowY: "auto",
               }}
             >
-              {buildText(promptType)}
-            </pre>
+              {buildText(promptType)
+                .split("\n\n")
+                .map((block, i) => {
+                  const isTable = block.startsWith("|");
+                  return (
+                    <pre
+                      key={i}
+                      style={{
+                        margin: i === 0 ? 0 : "8px 0 0",
+                        fontFamily: "inherit",
+                        whiteSpace: isTable ? "pre" : "pre-wrap",
+                        overflowWrap: isTable ? "normal" : "anywhere",
+                        overflowX: isTable ? "auto" : "visible",
+                      }}
+                    >
+                      {block}
+                    </pre>
+                  );
+                })}
+            </div>
             <p
               style={{
                 margin: "8px 0 0",

@@ -59,8 +59,10 @@ const ROWS = [
   row("st", "st"),
   row("exSt", "exSt"),
   row("exhibition", "exhibition"),
+  row("exhibitionCourse", "exhibitionCourse"),
   row("partsChanged", "partsChanged"),
   row("courseRate", "courseRate"),
+  row("technique", "technique"),
   row("returnRate", "returnRate"),
 ];
 const TURN = {
@@ -93,7 +95,6 @@ const build = (lang, overrides = {}) => {
     dict,
     text: buildAiCopyText({
       t,
-      lang,
       heading: t("aiCopy.markdownHeading", { venue: "V", race: 5 }),
       context: {
         date: RACE_ID.slice(0, 10),
@@ -171,7 +172,7 @@ for (const lang of LANGS) {
   );
 
   // 注記（行名は表の行と同じ文字列。訳語のずれで注記を引けなくならないように）
-  for (const key of ["winRate", "form", "avgSt", "st", "exSt", "exhibition", "partsChanged", "courseRate", "returnRate"]) {
+  for (const key of ["winRate", "form", "avgSt", "st", "exSt", "exhibition", "exhibitionCourse", "partsChanged", "courseRate", "technique", "returnRate"]) {
     check(`[${lang}] 注記 ${key}（表の行名つき）`, text.includes(`\n- ${key}: ${a.note[key]}`));
   }
   check(`[${lang}] 「—」の注記`, text.includes(`- ${a.note.dash}`));
@@ -180,6 +181,9 @@ for (const lang of LANGS) {
   check(`[${lang}] 2着・3着の列の説明`, text.includes(a.turnPredictionCandidateNote));
   // 表の後ろに注記、注記の後ろに展開予測
   const tableEnd = text.lastIndexOf("| returnRate |");
+  // 種別はページの見出しと同じく分類名で出す（会場独自の名前「東尋坊ドリーム」→「ドリーム戦」）
+  const { text: dream } = build(lang, { context: { raceStage: "東尋坊ドリーム" } });
+  check(`[${lang}] 種別は分類名`, dream.includes(` / ${lookup(dict, "raceStage.dream")}\n`), dream.split("\n")[4]);
   const notesAt = text.indexOf(a.notesHeading);
   const turnAt = text.indexOf(a.turnPredictionHeading);
   check(

@@ -16,6 +16,7 @@ import {
   wakuRateOf,
   translateTechnique,
   translatePartName,
+  isExhibitionCourseOutOfRange,
 } from "../components/race/raceIndicators";
 import { formatExhibitionSt } from "../utils/formatters";
 import { getAiCopyPromptText } from "../utils/aiCopyPrompts";
@@ -50,7 +51,7 @@ function buildMotorRow(t, players, motorByBoat) {
   };
 }
 
-function buildRows(t, players, analysis, flying) {
+function buildRows(t, players, analysis, flying, raceId) {
   const motorByBoat = byBoat(analysis.motor);
   const formByBoat = byBoat(analysis.racerForm);
   const stByBoat = byBoat(analysis.stPredictability);
@@ -67,10 +68,7 @@ function buildRows(t, players, analysis, flying) {
     {
       key: "name",
       label: t("aiCopy.playerNameLabel"),
-      // 公式の全角空白の桁揃え（全角空白の連続）は外し、姓と名を半角空白1つで区切る
-      values: players.map((p) =>
-        p.name ? splitRacerName(p.name).join(" ") : DASH,
-      ),
+      values: players.map((p) => p.name ?? DASH),
     },
     {
       key: "winRate",
@@ -167,6 +165,32 @@ function buildRows(t, players, analysis, flying) {
         return DASH;
       }),
     },
+    // 展示進入（スタート展示のコース、直前情報タブの行と同じ値）。前づけで進入が変わると
+    // 1マークの展開の前提が変わるため入れる。取得開始前のレースでは行ごと出さない（BOA-770 ファン評価）
+    ...(isExhibitionCourseOutOfRange(raceId, analysis.motorMaintenance)
+      ? []
+      : [
+          {
+            key: "exhibitionCourse",
+            label: t("beforeInfo.rowExhibitionCourse"),
+            values: players.map((p) => {
+              const row = maintenanceByBoat.get(p.number);
+              if (!row) return DASH;
+              if (row.is_absent === true)
+                return t("beforeInfo.exhibitionAbsent");
+              const course = toNumber(row.exhibition_course);
+              if (course === null) return DASH;
+              const moved =
+                course < p.number
+                  ? t("beforeInfo.exhibitionCourseMovedIn")
+                  : course > p.number
+                    ? t("beforeInfo.exhibitionCourseMovedOut")
+                    : null;
+              const head = t("dataTable.prevResultCourse", { course });
+              return moved ? `${head}(${moved})` : head;
+            }),
+          },
+        ]),
     {
       key: "todayWeight",
       label: t("dataTable.rowTodayWeight"),
@@ -293,9 +317,11 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
   const flyingRows = useRaceEntryFlyingRows(raceId);
   const currentMeetFlying = useCurrentMeetFlyingBoats(raceId);
 
-  const players = [...(prediction?.allPlayers ?? [])].sort(
-    (a, b) => a.number - b.number,
-  );
+  // 公式の全角空白の桁揃え（全角空白の連続）は外し、姓と名を半角空白1つで区切る。
+  // 表と展開予測の両方で同じ名前にするため、ここで1回だけ整える
+  const players = [...(prediction?.allPlayers ?? [])]
+    .sort((a, b) => a.number - b.number)
+    .map((p) => (p.name ? { ...p, name: splitRacerName(p.name).join(" ") } : p));
 
   const buildText = (promptType) => {
     if (players.length === 0) return "";
@@ -309,7 +335,6 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
 
     return buildAiCopyText({
       t,
-      lang,
       heading: t("aiCopy.markdownHeading", {
         venue: venueLabel,
         race: race?.raceNumber ?? "",
@@ -324,10 +349,13 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
         weather: prediction?.weather ?? raw.weather ?? null,
       },
       players,
-      rows: buildRows(t, players, analysis, {
-        rows: flyingRows,
-        currentMeet: currentMeetFlying,
-      }),
+      rows: buildRows(
+        t,
+        players,
+        analysis,
+        { rows: flyingRows, currentMeet: currentMeetFlying },
+        raceId,
+      ),
       turnPrediction: prediction?.turnPrediction,
       prompt: getAiCopyPromptText(t, promptType),
       pageUrl: aiCopyPageUrl(raceId, lang),

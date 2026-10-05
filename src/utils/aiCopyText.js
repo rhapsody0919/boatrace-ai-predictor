@@ -12,7 +12,7 @@ import {
   translateWeather,
   translateWindDirection,
 } from "../components/race/weatherInfo.js";
-import { raceStageLabel } from "../constants/raceStageConfig.js";
+import { getRaceStageCategory } from "../constants/raceStageConfig.js";
 import { localizePath } from "../config/languages.js";
 
 const DASH = "—";
@@ -28,8 +28,10 @@ export const AI_COPY_NOTE_KEYS = [
   "st",
   "exSt",
   "exhibition",
+  "exhibitionCourse",
   "partsChanged",
   "courseRate",
+  "technique",
   "returnRate",
 ];
 
@@ -203,20 +205,23 @@ function weatherLine(t, weather) {
  * @param {string|null} context.seriesDayLabel 「3日目」等（画面の見出しと同じもの）
  * @param {string|null} context.raceStage race_conditions.race_stage（公式表記）
  * @param {object|null} context.weather prediction.weather
- * @param {string} lang
  * @param {Date} now
  * @param {boolean|null} exhibitionPublished 展示タイム・展示STのどれかが出ているか（取得失敗で不明なら null）
  */
 export function buildPremiseLines(
   t,
   context,
-  { lang, now, exhibitionPublished },
+  { now, exhibitionPublished },
 ) {
   const unpublished = t("aiCopy.unpublished");
   const grade = context.raceGrade
     ? (GRADE_LABELS[context.raceGrade] ?? t("aiCopy.gradeIppan"))
     : null;
-  const stage = raceStageLabel(context.raceStage, t, lang)?.text ?? null;
+  // 種別はページの見出しのチップと同じ出し方（分類できれば分類名、できなければ公式表記）
+  const category = getRaceStageCategory(context.raceStage);
+  const stage = category
+    ? t(category.i18nKey)
+    : (context.raceStage?.normalize("NFKC") ?? null);
   const meet = [
     grade,
     context.seriesTitle,
@@ -263,7 +268,6 @@ export function buildNotes(t, rows) {
  * 文面全体
  * @param {object} args
  * @param {Function} args.t
- * @param {string} args.lang
  * @param {string} args.heading 見出し（会場・R入り）
  * @param {object} args.context buildPremiseLines の context
  * @param {Array} args.players 枠番順
@@ -276,7 +280,6 @@ export function buildNotes(t, rows) {
  */
 export function buildAiCopyText({
   t,
-  lang,
   heading,
   context,
   players,
@@ -290,7 +293,7 @@ export function buildAiCopyText({
   if (players.length === 0) return "";
   return [
     `## ${heading}`,
-    buildPremiseLines(t, context, { lang, now, exhibitionPublished }).join(
+    buildPremiseLines(t, context, { now, exhibitionPublished }).join(
       "\n",
     ),
     toMarkdownTable(t, players, rows),
