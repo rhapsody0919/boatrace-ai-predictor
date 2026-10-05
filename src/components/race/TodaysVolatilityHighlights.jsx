@@ -18,7 +18,6 @@ import {
 } from "../../utils/volatilityLevel";
 import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
 import { pickVolatilityHighlights } from "../../utils/volatilityHighlights";
-import { BOAT_COLORS } from "../../utils/colors";
 import "./TodaysVolatilityHighlights.css";
 
 const HIGHLIGHT_COUNT = 5;
@@ -54,9 +53,6 @@ function flattenRaces(venuesData, nowHHMM) {
           ) !== RACE_STATUS.UPCOMING,
         // 1着の艇番（結果が出ていれば）。締切済みのレースの振り返りに出す
         rank1: race.result?.rank1 ?? null,
-        // turnPrediction は get_today_races RPC（052マイグレーション）が返す場合のみ
-        // 存在する。未適用環境ではundefinedのため、無いものとして扱う
-        turnPrediction: race.turnPrediction || null,
       });
     }
   }
@@ -86,7 +82,6 @@ function HighlightList({ title, races, emptyText, t }) {
 
 function RaceLink({ race, t }) {
   const localize = useLocalizedPath();
-  const tp = race.turnPrediction;
   return (
     <Link
       to={localize(`/race/${race.raceId}`)}
@@ -116,29 +111,10 @@ function RaceLink({ race, t }) {
           </span>
         </span>
       </div>
-      {/* 展開予測でいちばん確率の高い1パターン。値は艇番として扱う（レース詳細の AI予想タブと同じく、
-          艇色の丸数字で出す。的中も艇番で判定している）。「1コース逃げ」とコースで書いた版は、詳細の
-          「① 逃げ」と別物に読めた（PR #1248 ファン評価1周目） */}
-      {tp && typeof tp.probability === "number" && (
-        <div className="volatility-highlights__turn">
-          {t("home.volatilityHighlightsTurnLabel")}
-          <span
-            className="volatility-highlights__boat"
-            style={{
-              background: BOAT_COLORS[tp.winnerCourse]?.bg,
-              color: BOAT_COLORS[tp.winnerCourse]?.text,
-            }}
-          >
-            {tp.winnerCourse}
-          </span>
-          {t("home.volatilityHighlightsTurnBody", {
-            technique: t(`techniques.${tp.technique}`, tp.technique),
-            probability: Math.round(tp.probability * 100),
-          })}
-        </div>
-      )}
-      {/* 締切済みのレースは結果も出す（振り返り）。予測はコース番号（「1コース逃げ」）、結果は艇番なので、
-          「結果: 3号艇が1着」と結果だと分かる形にして、コースと号艇を混ぜて読ませない。
+      {/* 展開予測（最有力の展開）は出さない。ほぼ全レースが「① 逃げ」で見分けに使えず、同じ会場内の
+          相対値である崩れやすさと並ぶと、「イン崩れ注意（高）」の列で逃げが最有力と言っているように
+          見えた（PR #1248 ファン評価1・2周目、ユーザー判断で外した）。展開は各レースの AI予想タブで見る */}
+      {/* 締切済みのレースは結果も出す（振り返り）。「結果: 3号艇が1着」と結果だと分かる形にする。
           進入コースはホームのデータ（get_today_races）に無いので出さない */}
       {race.closed && (
         <div className="volatility-highlights__result">

@@ -374,8 +374,6 @@
     "todayRaces": "今日賽事",
     "volatilityHighlightsTitle": "🌪️ 今日內道崩盤指數精選",
     "volatilityHighlightsScaleNote": "數字是與同賽場賽事相比的崩盤傾向（0〜100，100為最容易崩盤）。",
-    "volatilityHighlightsTurnLabel": "最有可能：",
-    "volatilityHighlightsTurnBody": "{{technique}} {{probability}}%",
     "volatilityHighlightsClosed": "已截止",
     "volatilityHighlightsClosedNote": "今日比賽皆已截止，以下作為回顧顯示。",
     "volatilityHighlightsHighEmptyOpen": "截止前的比賽中，沒有崩盤傾向70以上的比賽。",

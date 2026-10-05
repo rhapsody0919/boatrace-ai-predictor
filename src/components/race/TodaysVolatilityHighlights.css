@@ -86,11 +86,6 @@
   color: var(--text-secondary);
 }
 
-.volatility-highlights__turn {
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-}
-
 .volatility-highlights__accuracy-link {
   margin: 0.6rem 0 0;
   text-align: right;
@@ -138,25 +133,10 @@
   color: var(--text-secondary);
 }
 
-/* 締切済みのレースの結果（振り返り）。予測の行と区別できるよう、本文の色にする */
+/* 締切済みのレースの結果（振り返り）。補助の文字（時刻・札）と区別できるよう、本文の色にする */
 .volatility-highlights__result {
   color: var(--text-primary);
   font-size: 0.8rem;
-}
-
-/* 最有力の展開の艇番。レース詳細の AI予想タブ（.turn-pattern-boat）と同じく艇色の丸で出す */
-.volatility-highlights__boat {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
-  margin: 0 0.3em;
-  border-radius: var(--radius-circle);
-  border: var(--border-width-1) solid var(--border-hairline);
-  font-size: 0.7rem;
-  font-weight: var(--font-weight-bold);
-  vertical-align: middle;
 }
 
 /* 列に入るレースが無いときの「該当なし」 */

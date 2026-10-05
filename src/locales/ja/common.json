@@ -943,8 +943,6 @@
     "todayRaces": "本日開催中のレース",
     "volatilityHighlightsTitle": "🌪️ 本日のイン崩れ注意度ハイライト",
     "volatilityHighlightsScaleNote": "数字は同じ会場のレースと比べた崩れやすさ（0〜100、100が最も崩れやすい）です。",
-    "volatilityHighlightsTurnLabel": "最有力の展開:",
-    "volatilityHighlightsTurnBody": "{{technique}} {{probability}}%",
     "volatilityHighlightsClosed": "締切",
     "volatilityHighlightsClosedNote": "本日のレースはすべて締切済みです。振り返りとして表示しています。",
     "volatilityHighlightsHighEmptyOpen": "締切前のレースに、崩れやすさ70以上のレースはありません。",

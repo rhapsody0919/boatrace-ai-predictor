@@ -269,11 +269,10 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     ).toHaveCount(0);
   });
 
-  // 「崩れやすさ100」と「1着予想: 1号艇」が並び矛盾して見えた。最有力の1パターンだと分かる言い方にし、
-  // 値はレース詳細の AI予想タブと同じく艇番の丸数字で出す（「1コース」と書いた版は詳細と別物に読めた）
-  test("2行目は「最有力の展開: ①逃げ 38%」（1着予想・コースとは書かない）", async ({
-    page,
-  }) => {
+  // 展開予測の2行目（「1着予想: 1号艇」→「最有力の展開: ① 逃げ」）は、ほぼ全レースが逃げで見分けに使えず、
+  // 「イン崩れ注意（高）」の列で逃げが最有力と言っているように見えた（PR #1248 ファン評価1・2周目）。
+  // ユーザー判断で外した。データに展開予測があっても出さない
+  test("展開予測（1着予想・最有力の展開）は出さない", async ({ page }) => {
     const races = DAY_RACES.map((r) => ({
       ...r,
       turnPrediction: { winnerCourse: 1, technique: "nige", probability: 0.38 },
@@ -281,11 +280,9 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     await setup(page, { edge: true, races });
     await page.goto("/");
     await readHighlights(page);
-    const turn = page.locator(".volatility-highlights__turn").first();
-    await expect(turn).toHaveText(/^最有力の展開:\s*1\s*逃げ 38%$/);
-    await expect(turn.locator(".volatility-highlights__boat")).toHaveText("1");
     const section = page.locator(".volatility-highlights");
+    await expect(section).not.toContainText("最有力の展開");
     await expect(section).not.toContainText("1着予想");
-    await expect(section).not.toContainText("コース逃げ");
+    await expect(section).not.toContainText("逃げ");
   });
 });

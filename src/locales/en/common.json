@@ -378,8 +378,6 @@
     "todayRaces": "Today's Races",
     "volatilityHighlightsTitle": "🌪️ Today's Upset Index Highlights",
     "volatilityHighlightsScaleNote": "The number shows how upset-prone the race is compared with races at the same venue (0–100; 100 is the most upset-prone).",
-    "volatilityHighlightsTurnLabel": "Most likely:",
-    "volatilityHighlightsTurnBody": "{{technique}} {{probability}}%",
     "volatilityHighlightsClosed": "Closed",
     "volatilityHighlightsClosedNote": "All of today's races have closed. These are shown as a look back.",
     "volatilityHighlightsHighEmptyOpen": "No race before the deadline has a score of 70 or more.",
