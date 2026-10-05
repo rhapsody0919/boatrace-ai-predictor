@@ -36,8 +36,6 @@ function RaceAiPredictionTab({
   venueCode,
   venueName,
   raceId,
-  raceGrade = null,
-  raceStage = null,
   isCancelled = false,
 }) {
   const { t } = useTranslation();
@@ -63,13 +61,7 @@ function RaceAiPredictionTab({
       />
       {/* 公開までは機能フラグで隠す（隠している間は描かないので API も呼ばない。src/config/featureFlags.js） */}
       {isAnalogyFinderEnabled() && (
-        <AnalogyFinderSection
-          key={raceId}
-          venueCode={venueCode}
-          venueName={venueName}
-          raceGrade={raceGrade}
-          raceStage={raceStage}
-        />
+        <AnalogyFinderSection key={raceId} raceId={raceId} />
       )}
     </>
   );

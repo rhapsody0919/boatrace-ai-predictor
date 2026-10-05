@@ -107,6 +107,10 @@ export default async function handler(req) {
         `&round=${inList(cands.map((c) => c.round))}`,
     );
     const slice = resolveContributionSlice(rows, params);
+    // 出走表時点（racecard）の集計がまだ無い版（出走表時点のモデル3本を足す前の版）は「準備中」
+    // （spec FR-E「展示前: 集計が無ければ準備中の1文」。v16 の AIの見立てが stageMissing を見る）
+    if (!slice && params.stage === "racecard" && rows.length === 0)
+      return json({ available: false, stageMissing: true }, 200, "no-store");
     if (!slice) {
       // 全会場・全グレード・全ラウンドの行すら無いのは学習の書き込みの異常
       throw new Error(

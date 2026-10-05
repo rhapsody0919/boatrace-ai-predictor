@@ -1,0 +1,68 @@
+import { wilsonInterval } from "../../../utils/wilson";
+import { fmtCount, fmtPct } from "../../../utils/analogyFormat";
+
+/**
+ * 割合の横棒（ぶれ幅の横線・比べる相手の点線つき。承認版モックの wbar）。onClick があればボタン
+ * @param {{label: React.ReactNode, hits: number, n: number, reference?: number|null, color?: string,
+ *   value?: React.ReactNode, selected?: boolean, onClick?: () => void, ariaLabel?: string}} props
+ */
+export default function RateBar({
+  label,
+  hits,
+  n,
+  reference = null,
+  color,
+  value,
+  selected = false,
+  onClick,
+  ariaLabel,
+}) {
+  const p = n ? hits / n : 0;
+  const ci = n ? wilsonInterval(hits, n) : null;
+  const body = (
+    <>
+      <span>{label}</span>
+      <span className="af-trk">
+        <span
+          className="af-trk-f"
+          style={{
+            width: `${p * 100}%`,
+            ...(color ? { background: color } : {}),
+          }}
+        />
+        {ci && (
+          <span
+            className="af-trk-w"
+            style={{
+              left: `${ci[0] * 100}%`,
+              width: `${(ci[1] - ci[0]) * 100}%`,
+            }}
+          />
+        )}
+        {reference !== null && reference !== undefined && (
+          <span className="af-trk-nt" style={{ left: `${reference * 100}%` }} />
+        )}
+      </span>
+      <span className="af-bar-v">
+        {value ?? (
+          <>
+            {fmtPct(n ? p : null)} <small>{fmtCount(hits)}件</small>
+          </>
+        )}
+      </span>
+    </>
+  );
+  return onClick ? (
+    <button
+      type="button"
+      className={`af-bar${selected ? " is-selected" : ""}`}
+      aria-label={ariaLabel}
+      aria-pressed={selected}
+      onClick={onClick}
+    >
+      {body}
+    </button>
+  ) : (
+    <div className="af-bar">{body}</div>
+  );
+}

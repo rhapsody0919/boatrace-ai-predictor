@@ -74,6 +74,9 @@ async function fromSupabase(params) {
     .in("grade", uniq(cands.map((c) => c.grade)))
     .in("round", uniq(cands.map((c) => c.round)));
   const slice = resolveContributionSlice(rows, params);
+  // 出走表時点の集計がまだ無い版は「準備中」（api/analogy/contribution.js と同じ）
+  if (!slice && params.stage === "racecard" && rows.length === 0)
+    return { available: false, stageMissing: true };
   if (!slice)
     throw new Error(
       `版 ${model.model_version} に stage=${params.stage} target=${params.target} の行がありません`,
@@ -111,7 +114,9 @@ export async function getAnalogyContribution(input) {
     result = await fromSupabase(params);
   }
   if (result.available) cache.set(key, result);
-  else unavailableUntil = Date.now() + UNAVAILABLE_TTL_MS;
+  // 出走表時点の集計が無いだけ（stageMissing）は、展示後の集計まで止めない
+  else if (!result.stageMissing)
+    unavailableUntil = Date.now() + UNAVAILABLE_TTL_MS;
   return result;
 }
 
