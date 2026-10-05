@@ -197,3 +197,26 @@ def scope_attack(base: np.ndarray, forms: dict[str, np.ndarray], r1, r2, tech, m
         out[f] = fo
     out["any_form"] = _attack_metrics(base, r1, r2, tech, None)
     return out
+
+
+# ---------------------------------------------------------------- 展示→本番の一致（spec C-1・C-3 の注記）
+def exhibition_agreement(races: pd.DataFrame, exh: pd.DataFrame) -> dict:
+    """races（v16_pool.load_races の行。tab3_ok のレースを渡す）と exh（v16_pool.load_exhibition_layout）から、全国の
+    「展示の進入の型が t のとき、本番も t だった」[件数, 母数] と、「展示の形が f のとき・f でないとき、本番が f だった」。
+    期間は exh のある本体のレース（展示の進入の記録がある期間）"""
+    m = races.merge(exh, on="race_id", how="inner")
+    out = {"n": int(len(m)), "period": [str(m["race_date"].min())[:10] if len(m) else None,
+                                       str(m["race_date"].max())[:10] if len(m) else None]}
+    if len(m) == 0:
+        return out | {"entry": {}, "forms": {}}
+    act = entry_types(matrix(m["course_by_boat"]))
+    exe = entry_types(matrix(m["exh_course_by_boat"]))
+    out["entry"] = {t: [int((exe[t] & act[t]).sum()), int(exe[t].sum())] for t in ENTRY_TYPES if t != "all"}
+    ast, est = matrix(m["st_by_course"]), matrix(m["exh_st_by_course"])
+    both = ~np.isnan(ast).any(axis=1) & ~np.isnan(est).any(axis=1)
+    af, ef = slit_forms_matrix(ast), slit_forms_matrix(est)
+    out["forms_n"] = int(both.sum())
+    out["forms"] = {f: {"hit": [int((both & ef[f] & af[f]).sum()), int((both & ef[f]).sum())],
+                        "miss": [int((both & ~ef[f] & af[f]).sum()), int((both & ~ef[f]).sum())]}
+                    for f in SLIT_FORMS}
+    return out
