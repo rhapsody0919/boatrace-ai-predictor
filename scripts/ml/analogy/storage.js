@@ -1,7 +1,8 @@
 /**
  * BOA-271 アナロジー・ファインダーの Supabase Storage 連携（バケット `analogy`）
  *
- * - `{model_version}/model_{win,top2,top3,win_racecard}.txt.gz`・`train_meta.json.gz`: 学習した主モデル。
+ * - `{model_version}/model_{win,top2,top3,win_racecard,top2_racecard,top3_racecard}.txt.gz`・`train_meta.json.gz`:
+ *   学習した主モデル。
  *   次の週の品質ゲートで、参照版を同じ test で評価し直すのに使う
  * - `{model_version}/model_{win,win_racecard}.json.gz`・`per_race_meta.json.gz`・`parity_fixture.json.gz`:
  *   レースごとの寄与度（B、ADR 案（#1134「レースごとの寄与度」））。推論側の JS が読む（plan「学習側の設計」）
@@ -37,7 +38,11 @@ const MODEL_FILES = [
   "train_meta.json",
 ];
 // 参照版に無くても止めないファイル（この版で足したモデル。train.py の OPTIONAL_REFERENCE と同じ）
-const OPTIONAL_REFERENCE_FILES = ["model_win_racecard.txt"];
+const OPTIONAL_REFERENCE_FILES = [
+  "model_win_racecard.txt",
+  "model_top2_racecard.txt",
+  "model_top3_racecard.txt",
+];
 // レースごとの寄与度（B）のために置くファイル
 const PER_RACE_FILES = [
   "model_win.json",
