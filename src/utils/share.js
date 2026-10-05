@@ -3,6 +3,7 @@
  */
 
 import { MODEL_NAMES } from "../constants";
+import { isAsPredicted, techniqueDiffers } from "./turnPrediction";
 
 /** panel.sharePrediction の文面の数（v1〜vN） */
 const SHARE_PREDICTION_VARIANTS = 5;
@@ -291,17 +292,39 @@ export const generatePredictionShareText = (race, model = "standard", t) => {
 /**
  * 展開予測的中結果のシェアテキストを生成（react-share用、BOA-174）
  * unifiedモデルは複勝予想・展開予測の2種類のみのため、レース単位の的中は
- * 展開予測的中（1マークでの予想パターンが実際の1着コースと一致）のみを扱う
- * @param {Object} race - { venue, raceNo, date, winnerCourse, probability }
+ * 展開予測的中（予想パターンの艇が実際に1着）のみを扱う。展開予測は「その艇がその決まり手で
+ * 1着になる確率」なので、「1マークで先頭」とは書かない（BOA-710）
+ * @param {Object} race - { venue, raceNo, date, winnerBoat, winnerEntryCourse, technique, actualTechnique, probability }
+ *   technique は日本語の決まり手名。予想確率はその決まり手で1着になる確率なので、あれば添える。
+ *   actualTechnique は実際の決まり手（日本語）。予想と違えば「実際: ◯◯」を添え、
+ *   「予想通りの展開でした」は出さない（BOA-724。的中の判定は1着の艇だけ）
  */
 export const generateTurnHitShareText = (race) => {
   const venue = race.venue || "不明";
   const raceNo = race.raceNo || "?";
-  const winnerCourse = race.winnerCourse;
-  const probabilityStr =
-    race.probability != null
-      ? `（予想確率${(race.probability * 100).toFixed(0)}%）`
+  // 1着の艇番と、その艇が実際に入ったコース（BOA-708。以前は艇番を「Nコース」と書いていた）。
+  // コースは艇番と違うときだけ書く。括弧を重ねないよう「Nコースから」を文に入れる
+  const winnerBoat = race.winnerBoat;
+  const fromCourse =
+    race.winnerEntryCourse != null && race.winnerEntryCourse !== winnerBoat
+      ? `${race.winnerEntryCourse}コースから`
       : "";
+  // 決まり手は AI の予想として書く。実際の決まり手と違うことがあり、「2コース（まくり）が1着」と
+  // 書くと結果を言い切ってしまう（的中の判定は1着の艇だけ。PR #1197 ファン評価3周目）
+  const actualNote = techniqueDiffers(race.technique, race.actualTechnique)
+    ? `、実際: ${race.actualTechnique}`
+    : "";
+  const predictionStr =
+    race.probability != null
+      ? `（AIの予想: ${race.technique ? `${race.technique} ` : ""}${(race.probability * 100).toFixed(0)}%${actualNote}）`
+      : "";
+  const asPredicted = isAsPredicted({
+    predictedTechnique: race.technique,
+    actualTechnique: race.actualTechnique,
+    winnerBoat,
+    winnerEntryCourse: race.winnerEntryCourse,
+    isTopPick: race.isTopPick ?? true,
+  });
 
   let dateStr = "";
   if (race.date) {
@@ -311,12 +334,19 @@ export const generateTurnHitShareText = (race) => {
     }
   }
 
+  const header = `【${dateStr}${venue}${raceNo}R】\n\n${winnerBoat}号艇が${fromCourse}1着${predictionStr}`;
+  // 決まり手かコースが予想と違うレースは、1着の艇が当たっただけ。「予想通り」や「AIの分析力」の
+  // ように決まり手まで当たったと受け取れる言い方をしない（BOA-724 ファン評価1周目）
+  if (!asPredicted) {
+    return `🌊 1着の艇が的中${header}\n\n龍神レーダーで展開予測をチェック`;
+  }
+  // 共有はレース当日とは限らないので、「今日も」等の日付に依存する言い方はしない
   const messages = [
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nAIの分析力に驚いてます！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n無料でこの精度はすごい！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nデータ分析の力を実感！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n今日もAI予想が当たった！`,
-    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n的中率の高さに満足してます！`,
+    `🌊 展開予測的中！${header}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nAIの分析力に驚いてます！`,
+    `🌊 展開予測的中！${header}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n無料でこの精度はすごい！`,
+    `🌊 展開予測的中！${header}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nデータ分析の力を実感！`,
+    `🌊 展開予測的中！${header}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\nまたAI予想が当たった！`,
+    `🌊 展開予測的中！${header}\n予想通りの展開でした ✅\n\n龍神レーダーで展開予測的中🎉\n的中率の高さに満足してます！`,
   ];
 
   return messages[Math.floor(Math.random() * messages.length)];

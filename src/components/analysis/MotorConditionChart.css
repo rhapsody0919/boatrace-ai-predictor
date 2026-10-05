@@ -154,6 +154,15 @@
   white-space: nowrap;
 }
 
+/* モーター調子の6艇表だけ、列幅を中身の幅にする（nowrap なので折れない）。min-width: 620px だと
+   375px で余った幅が左の列（枠番・選手名・機番）に配られ、棒と会場内順位が画面の外に押し出された
+   （BOA-428。左から5列を最初の画面に入れる）。広い画面では 100% に伸ばす。
+   .motor-ranking-table は他の分析タブの表でも使うので、この表に絞る */
+.motor-condition-container .motor-ranking-table {
+  width: max-content;
+  min-width: 100%;
+}
+
 .motor-ranking-table thead {
   background: var(--surface-page);
   border-bottom: var(--border-width-2) solid var(--border-hairline);
@@ -188,6 +197,35 @@
 .motor-ranking-table td.rate {
   font-weight: var(--font-weight-medium);
 }
+
+/* 公式2連率の棒と会場内順位（BOA-428）。良し悪しの色は付けない（UI統一ルール R4・R5）。
+   375px で左から5列（枠・選手・機番・棒・順位）が横スクロールなしで入る幅にする */
+.motor-ranking-table td.motor-rate-bar-cell {
+  min-width: 84px;
+}
+
+/* 会場内順位は「20位タイ/60」を1つの文字列で出し、幅で自然に折り返す（母数を block にすると、
+   画面から読む文字列に改行が入り「20位タイ\n/60」になる。受け入れE2E）。375px で列幅を詰めるため、
+   母数の前で折れるよう、順位と母数をそれぞれ折れない塊にする */
+.motor-ranking-table td.motor-venue-rank {
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.motor-venue-rank-main {
+  white-space: nowrap;
+}
+
+/* 母数は小さく添える（375px で列幅を詰める。BOA-428） */
+.motor-venue-rank-total {
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+}
+
+/* 棒と会場内順位の見出しは2行に折ってよい（承認済みのモックと同じ。列幅を中身で決める） */
+
 
 .motor-ranking-table td.power-index-good {
   color: var(--color-success-text);
@@ -347,6 +385,59 @@
     inset 0 -2px 0 var(--brand-accent-primary);
 }
 
+/* モーター一覧の枠と選手名の列は、横に送っても残す。送ると右端に枠も選手名も1つも残らず、
+   どの艇の値か分からなかった（BOA-699）。375px だけでなく 769〜950px 付近でも表が溢れる。
+   選手名の列の left を決めるため、枠の列の幅を決める（中身は艇色のチップ 23px と左右の内余白）。
+   .motor-ranking-table は他の表でも使うので、この一覧だけのクラス（mcc-list-）で指す */
+.mcc-list-hint {
+  --hscroll-fade-color: var(--surface-card);
+}
+
+.mcc-list-table {
+  --mcc-lane-width: 3.25rem;
+}
+
+.mcc-list-table :is(th, td):first-child {
+  box-sizing: border-box;
+  width: var(--mcc-lane-width);
+  min-width: var(--mcc-lane-width);
+  max-width: var(--mcc-lane-width);
+}
+
+.mcc-list-table :is(th, td):is(:first-child, :nth-child(2)) {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface-card);
+  /* 行（.motor-ranking-row）と同じ速さで色を変える。そろえないと左の2列だけ先に変わる */
+  transition: background-color 0.15s ease;
+}
+
+.mcc-list-table :is(th, td):nth-child(2) {
+  left: var(--mcc-lane-width);
+}
+
+.mcc-list-table thead th:is(:first-child, :nth-child(2)),
+.mcc-list-table .motor-ranking-row:hover > td:is(:first-child, :nth-child(2)) {
+  background: var(--surface-page);
+}
+
+/* 固定した列の右端の線は、横に送ったとき（「‹」が出ているとき）だけ引く（PR #1202 ファン評価1周目） */
+.mcc-list-hint:has(> .hscroll-less) .mcc-list-table :is(th, td):nth-child(2) {
+  box-shadow: inset -1px 0 0 var(--hscroll-edge-line, var(--border-hairline));
+}
+
+/* 選んでいる艇の行は、線を引いても上下の帯を消さない */
+.mcc-list-hint:has(> .hscroll-less)
+  .mcc-list-table
+  .motor-ranking-row.is-focused
+  > td:nth-child(2) {
+  box-shadow:
+    inset -1px 0 0 var(--hscroll-edge-line, var(--border-hairline)),
+    inset 0 2px 0 var(--brand-accent-primary),
+    inset 0 -2px 0 var(--brand-accent-primary);
+}
+
 /* 優出数・優勝数・1着率の1位のセル強調（同値は全部。2位の薄い金はやめた。R1） */
 .motor-stat-rank1 {
   background-color: var(--ind-best-bg);
@@ -458,6 +549,35 @@
   .motor-ranking-table th,
   .motor-ranking-table td {
     padding: 0.5rem;
+  }
+
+  .motor-condition-container .motor-ranking-table th,
+  .motor-condition-container .motor-ranking-table td {
+    padding: 0.5rem 0.3rem;
+  }
+
+  /* 狭い画面だけ、棒と会場内順位の見出しを折る。表の幅が max-content なので、幅を決めないと
+     折れない。広い画面で幅を決めると「会場/内順/位」と語の途中で折れた（ファン評価） */
+  .motor-ranking-table th.motor-wrap-head {
+    white-space: normal;
+    width: 3.5em;
+  }
+
+  /* 狭い画面だけ、「20位タイ」で1行が埋まる幅にして母数「/60」を次の行へ折る（BOA-428） */
+  .motor-ranking-table td.motor-venue-rank {
+    white-space: normal;
+    width: 4.6em;
+  }
+
+  /* 狭い画面は内余白が 0.3rem なので、枠の列も詰める（チップ 23px＋内余白で 38px） */
+  .mcc-list-table {
+    --mcc-lane-width: 2.5rem;
+  }
+
+  /* 375px で会場内順位の列まで、右端の「›」に隠れずに入る幅（BOA-428） */
+  .motor-ranking-table td.motor-rate-bar-cell,
+  .motor-ranking-table td.motor-rate-bar-cell .rate-bar {
+    min-width: 52px;
   }
 }
 
@@ -581,4 +701,15 @@ td.rate.is-small-sample {
 .motor-ranking-table td.power-index.is-small-sample,
 .power-index-summary.is-small-sample {
   color: var(--color-warning-text);
+}
+
+/* 会場公式のモーター成績の取得失敗（BOA-740）。「-」（値なし）と見分けられるよう文字で示す */
+.motor-condition-container .motor-stat-failed {
+  color: var(--color-error-text);
+  font-size: 0.8em;
+  white-space: nowrap;
+}
+
+.motor-condition-container .motor-venue-stats-failed-note {
+  color: var(--color-error-text);
 }

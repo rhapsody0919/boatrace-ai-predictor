@@ -99,6 +99,11 @@
       "guards": "Deploy Hookを叩く条件の判定（scripts/lib/deployHookPolicy.js、BOA-361）"
     },
     {
+      "script": "verify-fan-period-job.js",
+      "tier": "ci",
+      "guards": "期別成績（fan）の定期取り込み（scripts/lib/fanPeriodJob.js、api/cron/fan-period.js）。対象日→fanの対応、取り込み済みなら0リクエスト、未公開404はその日で済み（06:30の補足は叩かない）、期の終わりから105日超は取得せず通知、live の書き込みと生ファイルの保管（raw-pages・raw_snapshots）、shadow は書かない、異常・HTTP 500 は error、保管失敗でも取り込みは成功。vercel.json の06:00・06:30、レジストリ、125のRLS"
+    },
+    {
       "script": "verify-fan-period.js",
       "tier": "ci",
       "guards": "期別成績ファイル（fan）のパーサー・行変換・取得〜投入CLI"
@@ -107,6 +112,11 @@
       "script": "verify-feature-contributions-dedup.js",
       "tier": "ci",
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
+    },
+    {
+      "script": "verify-venue-motor-ranking.js",
+      "tier": "ci",
+      "guards": "会場のモーターの順位と並べ替え（同値は同じ順位・値なしは末尾・機番で並べたときは2連率の順位・浜名湖と宮島を出さない一覧）の回帰と変異検証（BOA-428）"
     },
     {
       "script": "verify-venue-first-win-rate.js",
@@ -350,6 +360,11 @@
       "script": "verify-racer-st-stats.js",
       "tier": "ci",
       "guards": "選手の平均ST・直近30走・ST標準偏差（scripts/lib/racerStStats.js、BOA-581）: 1000行上限での取りこぼし・Fの除外・直近30走の並び・取得エラーの例外化"
+    },
+    {
+      "script": "verify-race-series-final-title.js",
+      "tier": "ci",
+      "guards": "race_conditions の race_title・is_final_day を race_series から埋める候補（BOA-695、backfill-race-series-meta.js final-title）。既存値を上書きしない、最終日は race_date = end_date、節の外・重なり・races に無い行は書かない、全行が同じ3列を持つこと"
     },
     {
       "script": "verify-rls-migration.js",
@@ -640,6 +655,11 @@
       "guards": "出目分布・逃げ成功時分布の「3連単」の平均配当が3連単の列（payout_trio。列名と中身が逆）で集計されること、配当の無いレースを平均の分母に入れないこと、ルールの追跡の3連複の払戻が payout_trifecta であること（BOA-535。実データ・江戸川456レースのフィクスチャで、本番のSQLの値と照合）"
     },
     {
+      "script": "verify-outcome-distribution-refund.js",
+      "tier": "ci",
+      "guards": "出目分布・逃げ成功時分布の日次集計が、一部返還の返還艇（refund_boats）を3着に数えないこと。返還艇を飛ばすと1〜3着がそろわないレースはパターンにも total_races にも入れず、件数の合計が total_races と一致すること（BOA-579 の積み残し。2026-07-04〜10-01 の実データ5レース）"
+    },
+    {
       "script": "verify-exhibition-time-top-stats.js",
       "tier": "ci",
       "guards": "展示タイム1位率の集計（update-exhibition-time-top-stats.js）が、展示タイムが NULL の行（展示ST先行・展示前の体重だけの行・展示なし）を分母に入れないこと、同着の最速を数えないこと（BOA-520。PR #917 で見つかった率の薄まり）"
@@ -680,6 +700,26 @@
       "guards": "6艇の中の最良値の判定 bestOf（src/utils/bestOf.js、docs/design/race-detail-ui-unify R1）。同値の最良を全部返すこと、全艇同値と値なしは空、表示の桁で丸めて比べること（54.84 と 54.80、平均の浮動小数の誤差）、null と NaN を除くこと"
     },
     {
+      "script": "verify-races-derived-backfill.js",
+      "tier": "ci",
+      "guards": "races の導出列の埋め直し（build-races-derived-backfill-sql.js、BOA-630）が、generate-predictions.js と同じ式（丸めてから平均・母標準偏差）で計算し、6列とも NULL の行だけを更新し（既存の値を上書きしない・再実行は0件）、モデルの出力の列（volatility_* 等）に触れないこと"
+    },
+    {
+      "script": "verify-race-detail-boa711.js",
+      "tier": "ci",
+      "guards": "レース詳細の色分け統一の積み残し（BOA-711）の修正。今節の着順の1着の金・選択行の太字なし、ST考察の差を表示値どうしで出す・向きの文字・折り返し、注記の条件、推移グラフの左の余白、的中タグの緑、決まり手の凡例の文字色、2号艇の矢印の輪郭、波紋の大きさ、比較バーの地、高の段階の地"
+    },
+    {
+      "script": "verify-turn-time-venues.js",
+      "tier": "ci",
+      "guards": "まわり足が会場独自の計測で他場と値の水準が違う会場の判定（src/utils/turnTimeVenues.js、data-catalog E12）。住之江・尼崎・徳山だけを対象にし、scripts/lib/boatcast/publicMap.js の直線なし（TWO）の会場と一致すること"
+    },
+    {
+      "script": "verify-race-detail-color-tokens.js",
+      "tier": "ci",
+      "guards": "レース詳細まわりの色の直書きをトークンにしたこと（docs/design/race-detail-ui-unify R6・FR-6）。決まり手の色は techniqueColors.js の1か所で決め、4コンポーネントに hex を複製しない。名前ごとの色の割り当て。結果タブの金の背景に rgba を直書きしない"
+    },
+    {
       "script": "verify-race-indicator-tones.js",
       "tier": "ci",
       "guards": "レース詳細の緑・赤を付けるかの判定（docs/design/race-detail-ui-unify plan §6）。今節のST判定文 meetStVerdictTone: 差 0.01 や今節2走以下では色なし、差 0.02 以上・3走以上で早い＝緑・遅い＝赤、浮動小数の誤差を2桁で丸める。ST考察の平均との差 diffTone: 走数の少ない艇・0.0 と出る差・向きなしは色なし"
@@ -714,6 +754,31 @@
       "script": "verify-absent-start-rows.js",
       "tier": "ci",
       "guards": "race_start_timings の欠場艇の行（finish_mark='欠'、ST は NULL）を、読み手が出走・ST として数えないこと。展示STと本番STのズレ（stDeviation）・選手の出走数とF率（racerStStats）・会場×枠番のトップスタート（update-top-start-stats）・得点率の配点の検証スクリプト。9/21 以降の欠場艇の行で、欠場を出走に数え、ST の NULL を 0 として計算に混ぜていた"
+    },
+    {
+      "script": "verify-missing-venue-day.js",
+      "tier": "ci",
+      "guards": "races が丸1日無い会場日の補完（backfill-missing-venue-day.js、BOA-721）: 既定は書かない・races のある会場日は上書きしない・出走表が12レースそろわなければ止める・中止の確定を全レースに立てる・過去の日付に予想を作らない"
+    },
+    {
+      "script": "verify-fetchall-order.js",
+      "tier": "ci",
+      "guards": "共通の fetchAll（scripts/lib/supabaseClient.js）が並び順の無いページ送りをしないこと（BOA-753。1000行を超えるとページの間で行が重複・欠落する。BOA-595・BOA-745 に続く3回目で仕組みにした）。(a) 静的: scripts/・api/ の fetchAll の呼び出しすべてに、組み立て（第3引数、変数なら同じファイルの定義）の .order( か、理由付きの unordered があること。(b) 実行時: 並び順の無いクエリは最初のリクエストの前に例外（呼び出し元と直し方つき）、理由が空の unordered も例外。(c) 変異検証。確かめない範囲: await import() で取り出した fetchAll の呼び出し（実行時の検査が止める）"
+    },
+    {
+      "script": "verify-motor-usage.js",
+      "tier": "ci",
+      "guards": "モーターの使用回数と「未使用（新モーター・実績なし）」の判定（src/utils/motorUsage.js、BOA-702）。使用回数は会場公式の出走数と、世代の始まりから数えた自社の出走数のうち、分かっているものの大きいほう。取得失敗の行の出走数・期間で切り詰めた窓や世代不明の自社の数は使わない。未使用は表示する2連率が0で使用回数0と分かるときだけ"
+    },
+    {
+      "script": "verify-winning-technique-filled.js",
+      "tier": "ci",
+      "guards": "前日以前のレースで、決まり手（race_results.winning_technique）が欠けていないか（BOA-749。2026-09-16 住之江7R が着順・払戻ありで NULL のまま残っていた）。CI では判定の純関数（不成立・中止・1着なし・当日を除く）と、取り直しのコマンドの分割（--apply の30件上限）を検証する。VERIFY_PRODUCTION=1 のときだけ本番を読み、欠けがあれば exit 1 で取り直しのコマンドを出す。nightly-verify-db.yml が毎晩この形で実行する"
+    },
+    {
+      "script": "verify-volatility-accuracy-heading.js",
+      "tier": "ci",
+      "guards": "精度ページの「イン崩れ予測の実績」の見出しが、集計（calculate-unified-volatility-accuracy.js）の期間と合っていること（BOA-717）。集計が期間を絞っていない間は、4言語の見出しが「直近N日」を名乗らず、運用開始日（2026-08-11）を書いていること。集計に期間の条件を足すと失敗するので、見出しを合わせ直してから更新する"
     }
   ]
 }

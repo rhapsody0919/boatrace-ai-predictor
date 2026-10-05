@@ -26,11 +26,15 @@ test("予選後にFを切った選手は、順位の下に「予選後F」が出
   const row = page.locator(".rmt-compare tbody tr", { hasText: "武田光史" });
   await expect(row.locator(".rmt-rank")).toContainText("5位");
   await expect(row.locator(".rmt-post-flying")).toHaveText("予選後F");
-  await expect(page.locator(".rmt-sub").first()).toContainText("予選後F");
+  // 印の説明は、人数の行と対象外の一覧の間に挟まないよう、一覧の後ろの段落に出す（BOA-714）
+  await expect(page.locator(".rmt-sub").first()).not.toContainText("予選後F");
+  await expect(page.locator(".rmt-mark-notes")).toContainText("予選後F");
 });
 
 test("表の6艇に予選後Fの選手がいなければ、注記も出さない", async ({ page }) => {
   await openMeetTab(page, "2026-09-25-01-09");
   await expect(page.locator(".rmt-compare .rmt-post-flying")).toHaveCount(0);
-  await expect(page.locator(".rmt-sub").first()).not.toContainText("予選後F");
+  await expect(
+    page.locator(".rmt-sub, .rmt-table-notes, .rmt-mark-notes", { hasText: "予選後F" }),
+  ).toHaveCount(0);
 });

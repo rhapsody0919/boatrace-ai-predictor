@@ -8,6 +8,7 @@
  *
  * ディレクトリに置くもの（学習側が作る。形は ADR 案（#1134「レースごとの寄与度」）「境界の合意」と docs/design/analogy-finder/plan.md）:
  * - per_race_meta.json: { model_version, dtype: "float32", models: { win, win_racecard: {file, feature_names, num_trees, objective} },
+ *     wind_basis（本体の風向の会場ごとの回転。無い版は回転しない）,
  *     live_features, categorical_maps, themes }
  * - models.*.file（dump_model() の JSON。.gz でも可）
  * - parity_fixture.json: { model_version, races: [{ race_id,
@@ -31,6 +32,7 @@ import {
   LIVE_FEATURES,
   buildLiveFeatures,
   modelInput,
+  windOffsetFor,
 } from "../../../src/utils/analogyRaceFeatures.js";
 
 export const TOLERANCE = 1e-9;
@@ -122,8 +124,8 @@ export function prepareModels(meta, dumps) {
  * 1レースの2本のモデルの入力（艇番の昇順）。推論側の本番の経路と同じ関数で作る
  * @returns {{boatNumbers:number[], inputs: Record<string, Float64Array[]>}}
  */
-export function raceInputs(models, race) {
-  // 行は {boat_number, features}（analogy_race_features の行の形）か、艇番の昇順の features の配列
+export function raceInputs(models, race, windBasis = null) {
+  // 行は {boat_number, features}（出走表時点の36列）か、艇番の昇順の features の配列
   const rows = (race.racecard_features ?? [])
     .map((r, i) => (Array.isArray(r) ? { boat_number: i + 1, features: r } : r))
     .sort((a, b) => a.boat_number - b.boat_number);
@@ -133,6 +135,8 @@ export function raceInputs(models, race) {
     boatNumbers,
     exhibition: race.live_raw?.exhibition ?? [],
     conditions: race.live_raw?.conditions ?? {},
+    // 会場は race_id（YYYY-MM-DD-VV-RR）から
+    windOffset: windOffsetFor(windBasis, Number(race.race_id.slice(11, 13))),
   });
   return {
     boatNumbers,
@@ -178,7 +182,7 @@ export function checkParity({ meta, dumps, fixture }) {
   );
 
   for (const race of fixture.races) {
-    const { inputs } = raceInputs(models, race);
+    const { inputs } = raceInputs(models, race, meta.wind_basis ?? null);
     for (const name of MODELS) {
       const exp = race.expected?.[name];
       const s = stats[name];

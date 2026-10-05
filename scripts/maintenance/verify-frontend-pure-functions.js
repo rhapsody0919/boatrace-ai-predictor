@@ -40,6 +40,8 @@ const TARGETS = {
   prevResult: "src/utils/prevResult.js",
   nextOpenDate: "src/utils/nextOpenDate.js",
   meetGrouping: "src/utils/meetGrouping.js",
+  turnPrediction: "src/utils/turnPrediction.js",
+  volatilityLevel: "src/utils/volatilityLevel.js",
   hscrollHint: "src/utils/horizontalScrollHint.js",
 };
 
@@ -942,22 +944,25 @@ function suiteBasicInfoStats(m, check) {
 
   // --- pickPeriodStats
   const RD = "2026-09-29"; // 前期 = (2026,2)、直近2年 = (2025,1)〜(2026,2)
+  const ok = (rows) => ({ rows, latestImported: true });
   check(
-    "pickPeriodStats: 該当選手が無い・取得結果が配列でない（state付きオブジェクト）なら null",
+    "pickPeriodStats: 該当選手が無い・取得結果が権限エラー（state付き）なら null",
     [
       m.pickPeriodStats(
-        [{ racer_id: 1, period_year: 2026, period_no: 2 }],
+        ok([{ racer_id: 1, period_year: 2026, period_no: 2 }]),
         2,
         RD,
       ),
-      m.pickPeriodStats({ state: "forbidden" }, 1, RD),
+      m.pickPeriodStats({ state: "forbidden", rows: [] }, 1, RD),
     ],
     [null, null],
   );
   check(
-    "pickPeriodStats: 前期の行が無ければ、古い期の行があっても null（古い期を前期として出さない）",
+    "pickPeriodStats: 前期を取り込み済みなのにその選手の前期が無ければ、古い期があっても null（選手ごとの欠けでは前々期に切り替えない）",
     m.pickPeriodStats(
-      [{ racer_id: 1, period_year: 2026, period_no: 1, finals: 3, wins: 1 }],
+      ok([
+        { racer_id: 1, period_year: 2026, period_no: 1, finals: 3, wins: 1 },
+      ]),
       1,
       RD,
     ),
@@ -966,7 +971,7 @@ function suiteBasicInfoStats(m, check) {
   check(
     "pickPeriodStats: 出走0の新人（win_rate=NULL）は null のまま（0 にしない）",
     m.pickPeriodStats(
-      [
+      ok([
         {
           racer_id: 4320,
           period_year: 2026,
@@ -977,7 +982,7 @@ function suiteBasicInfoStats(m, check) {
           finals: 0,
           wins: 0,
         },
-      ],
+      ]),
       4320,
       RD,
     ),
@@ -991,6 +996,8 @@ function suiteBasicInfoStats(m, check) {
       finals: 0,
       wins: 0,
       recent: { finals: 0, wins: 0, from: "2024-05-01", to: "2026-04-30" },
+      fallback: false,
+      pending: null,
     },
   );
   // 2026-09-29 13場12R 1号艇 馬場貴也（4262）の本番値。前期 優出5・優勝1、直近2年 優出22・優勝6
@@ -1009,17 +1016,66 @@ function suiteBasicInfoStats(m, check) {
     wins,
   }));
   const babaPicked = m.pickPeriodStats(
-    [
+    ok([
       ...baba,
       { racer_id: 9999, period_year: 2026, period_no: 2, finals: 50, wins: 50 },
-    ],
+    ]),
     4262,
     RD,
   );
   check(
     "pickPeriodStats: 前期の優出・優勝と、前期を含む4期の合計（範囲外の期・他の選手は足さない）",
-    [babaPicked.finals, babaPicked.wins, babaPicked.recent],
-    [5, 1, { finals: 22, wins: 6, from: "2024-05-01", to: "2026-04-30" }],
+    [
+      babaPicked.finals,
+      babaPicked.wins,
+      babaPicked.recent,
+      babaPicked.fallback,
+    ],
+    [
+      5,
+      1,
+      { finals: 22, wins: 6, from: "2024-05-01", to: "2026-04-30" },
+      false,
+    ],
+  );
+
+  // 期替わり直後（2026-11-05）: 前期 (2027,1)=2026-05-01〜10-31 の fan がまだ公開されていない
+  const RD_NOV = "2026-11-05";
+  const fb = m.pickPeriodStats(
+    { rows: baba, latestImported: false },
+    4262,
+    RD_NOV,
+  );
+  check(
+    "pickPeriodStats: 前期を表として取り込んでいなければ、前々期と、前々期で終わる4期の合計を出し、公開待ちの期を返す",
+    [fb.fallback, fb.finals, fb.wins, fb.recent, fb.pending],
+    [
+      true,
+      5,
+      1,
+      // (2026,2)〜(2025,1) の4期。(2024,2) は範囲外
+      { finals: 22, wins: 6, from: "2024-05-01", to: "2026-04-30" },
+      { calcFrom: "2026-05-01", calcTo: "2026-10-31" },
+    ],
+  );
+  check(
+    "pickPeriodStats: 取り込み済み（latestImported=true）なら、前期の行が無い選手は前々期に切り替えず null",
+    m.pickPeriodStats({ rows: baba, latestImported: true }, 4262, RD_NOV),
+    null,
+  );
+  check(
+    "pickPeriodStats: 前々期の行も無ければ null（前々々期までは遡らない）",
+    m.pickPeriodStats(
+      {
+        rows: [
+          { racer_id: 1, period_year: 2026, period_no: 1, finals: 1, wins: 0 },
+        ],
+        latestImported: false,
+      },
+      1,
+      RD_NOV,
+    ),
+    null,
   );
 }
 
@@ -1544,28 +1600,25 @@ function suiteHscrollHint(m, check) {
   check("hscroll: 収まっていれば何も出さない", st(300, 300, 0), {
     hasMore: false,
     hasLess: false,
-    peekFadeWidth: 0,
   });
-  check(
-    "hscroll: 残り4px（以前は何も出なかった）は「›」なしの細いフェード（12px）",
-    st(320, 316, 0),
-    { hasMore: false, hasLess: false, peekFadeWidth: 12 },
-  );
-  check(
-    "hscroll: 残り12pxまでは「›」を出さない（フェード12px）",
-    st(328, 316, 0),
-    { hasMore: false, hasLess: false, peekFadeWidth: 12 },
-  );
-  // 20px残りで「›」を出さず32pxのフェードにした版では、最後の列が無いように見えた（PR #1169 ファン評価1周目）
-  check("hscroll: 残り20pxは「›」と幅40pxのフェード", st(336, 316, 0), {
+  check("hscroll: 残り1px以下は何も出さない", st(301, 300, 0), {
+    hasMore: false,
+    hasLess: false,
+  });
+  // 12px以下の残りで「›」を出さず細いフェードだけにしていた版では、380pxの枠別の全コース表で
+  // 「(n=20)」が「(n=2」に読めた（BOA-735、ユーザー判断で境目を下げた）
+  check("hscroll: 残り4pxでも「›」を出す", st(320, 316, 0), {
     hasMore: true,
     hasLess: false,
-    peekFadeWidth: 0,
+  });
+  check("hscroll: 残り20pxは「›」を出す", st(336, 316, 0), {
+    hasMore: true,
+    hasLess: false,
   });
   check(
     "hscroll: 左に12px以下しか送っていなければ「‹」は出さない（PR #1192 ファン評価2周目）",
-    st(315, 312, 3),
-    { hasMore: false, hasLess: false, peekFadeWidth: 0 },
+    st(320, 300, 3),
+    { hasMore: true, hasLess: false },
   );
   check(
     "hscroll: 1回に送る幅は、固定の左の列を引いた見える幅の8割",
@@ -1576,10 +1629,65 @@ function suiteHscrollHint(m, check) {
     ],
     [178, 250, 40],
   );
+  // 送る先を列の境目にそろえる（PR #1202 ファン評価2周目）。列の境目（固定の列を引いた位置）は 0・60・120・180・240
+  const starts = [0, 60, 120, 180, 240];
+  const snap = (current, step, direction, max = 263) =>
+    m.snapScrollTarget({ current, step, direction, max, columnStarts: starts });
+  check(
+    "hscroll: 送る先は、目安（今の位置＋8割）を越えない、いちばん遠い列の境目",
+    [
+      snap(0, 218, 1),
+      snap(120, 100, 1),
+      snap(240, 100, -1),
+      snap(180, 218, -1),
+    ],
+    [180, 180, 180, 0],
+  );
+  // 「‹」で左端までの残りが目安の4分の1以下なら左端まで戻す（BOA-742。375px のモーター一覧で
+  // 233→37→0 と2回かかった）。右は右端が列の途中のことがあるので、手前の列の境目で止める
+  check(
+    "hscroll: 「‹」で左端までの残りが目安の4分の1以下なら、1回で左端まで戻す（右は境目で止める）",
+    [
+      m.snapScrollTarget({
+        current: 233,
+        step: 205,
+        direction: -1,
+        max: 233,
+        columnStarts: [0, 37, 98, 159],
+      }),
+      snap(120, 120, -1),
+      snap(0, 218, 1),
+    ],
+    [0, 0, 180],
+  );
+  check(
+    "hscroll: 1列も越えないときは次の列の境目、端を越えるときは端",
+    [snap(0, 40, 1), snap(240, 40, 1), snap(200, 300, 1), snap(130, 5, -1)],
+    [60, 263, 263, 120],
+  );
+  // 右端の位置も列の境目にそろえる余白（PR #1202 ファン評価3周目）
+  check(
+    "hscroll: 右端が列の途中なら、次の列の境目まで届く余白を足す",
+    m.tailPaddingFor({ naturalMax: 126, columnStarts: [0, 60, 146, 220] }),
+    20,
+  );
+  check(
+    "hscroll: 右端がすでに列の境目、溢れが1px以下、先に列が無いときは足さない",
+    [
+      m.tailPaddingFor({ naturalMax: 146, columnStarts: [0, 60, 146, 220] }),
+      m.tailPaddingFor({ naturalMax: 1, columnStarts: [0, 30] }),
+      m.tailPaddingFor({ naturalMax: 300, columnStarts: [0, 60, 146, 220] }),
+    ],
+    [0, 0, 0],
+  );
+  check(
+    "hscroll: 少しだけ（10px）溢れる表にも、次の列の境目まで届く余白を足す（BOA-735）",
+    m.tailPaddingFor({ naturalMax: 10, columnStarts: [0, 30] }),
+    20,
+  );
   check("hscroll: 右端まで送ったら「›」は消え、「‹」が出る", st(357, 301, 56), {
     hasMore: false,
     hasLess: true,
-    peekFadeWidth: 0,
   });
 }
 
@@ -1616,6 +1724,106 @@ function suiteNextOpenDate(m, check) {
   );
 }
 
+// --- pickHitPattern: 的中レースで見せる「当たった候補」（PR #1197、BOA-724 で確率の一番高い候補に）
+function suiteTurnPrediction(m, check) {
+  const patterns = [
+    { winnerCourse: 1, technique: "nige", probability: 0.44 },
+    { winnerCourse: 2, technique: "makuri", probability: 0.09 },
+    { winnerCourse: 2, technique: "sashi", probability: 0.07 },
+  ];
+  check(
+    "pickHitPattern: 同じ艇の候補が複数あっても、確率が一番高い候補（実際の決まり手では選ばない。BOA-724）",
+    m.pickHitPattern(patterns, 2),
+    patterns[1],
+  );
+  check(
+    "pickHitPattern: 1号艇は本命の候補",
+    m.pickHitPattern(patterns, 1),
+    patterns[0],
+  );
+  check(
+    "pickHitPattern: 1着の艇の候補が無ければ null",
+    m.pickHitPattern(patterns, 5),
+    null,
+  );
+  // isAsPredicted: 「予想通りの展開でした」を言ってよいか（BOA-724）
+  const as = (
+    predictedTechnique,
+    actualTechnique,
+    winnerBoat,
+    winnerEntryCourse,
+  ) =>
+    m.isAsPredicted({
+      predictedTechnique,
+      actualTechnique,
+      winnerBoat,
+      winnerEntryCourse,
+    });
+  check(
+    "isAsPredicted: 決まり手が同じで枠なりなら true",
+    as("逃げ", "逃げ", 1, 1),
+    true,
+  );
+  check(
+    "isAsPredicted: 進入コースが分からなくても決まり手が同じなら true",
+    as("差し", "差し", 2, null),
+    true,
+  );
+  check(
+    "isAsPredicted: 決まり手が違えば false",
+    as("差し", "まくり", 2, 2),
+    false,
+  );
+  check(
+    "isAsPredicted: 艇番と違うコースから勝てば false（1号艇が2コースから）",
+    as("逃げ", "逃げ", 1, 2),
+    false,
+  );
+  check(
+    "isAsPredicted: 2番手以下の候補が当たったときは false（本命は外れている）",
+    m.isAsPredicted({
+      predictedTechnique: "まくり",
+      actualTechnique: "まくり",
+      winnerBoat: 3,
+      winnerEntryCourse: 3,
+      isTopPick: false,
+    }),
+    false,
+  );
+  check(
+    "isAsPredicted: 実際の決まり手が分からなければ false",
+    as("逃げ", null, 1, 1),
+    false,
+  );
+}
+
+// --- volatilityDisplayValue: イン崩れ指数の表示の数値がラベルの境目をまたがない（PR #1186 ファン評価）
+function suiteVolatilityLevel(m, check) {
+  const show = (p) => [m.getVolatilityLevel(p), m.volatilityDisplayValue(p)];
+  check("volatility: 0.6975 は標準で69（四捨五入の70にしない）", show(0.6975), [
+    "standard",
+    69,
+  ]);
+  check("volatility: 0.7037 はイン崩れ注意（高）で70", show(0.7037), ["high", 70]);
+  check("volatility: 0.3 は本命有利で30", show(0.3), ["low", 30]);
+  check("volatility: 0.3004 は標準で31（四捨五入の30にしない）", show(0.3004), [
+    "standard",
+    31,
+  ]);
+  check(
+    "volatility: 0 と 1 はそのまま",
+    [show(0), show(1)],
+    [
+      ["low", 0],
+      ["high", 100],
+    ],
+  );
+  check("volatility: 標準の中はそのまま四捨五入", show(0.555), [
+    "standard",
+    56,
+  ]);
+}
+
 const SUITES = {
   nextOpenDate: suiteNextOpenDate,
   prevResult: suitePrevResult,
@@ -1626,6 +1834,8 @@ const SUITES = {
   weatherInfo: suiteWeatherInfo,
   dateUtils: suiteDateUtils,
   meetGrouping: suiteMeetGrouping,
+  turnPrediction: suiteTurnPrediction,
+  volatilityLevel: suiteVolatilityLevel,
   hscrollHint: suiteHscrollHint,
 };
 
@@ -1636,27 +1846,57 @@ const SUITES = {
 const MUTANTS = [
   [
     "hscrollHint",
+    "右端に余白を足さない（PR #1202 ファン評価3周目の退行）",
+    "return next === undefined ? 0 : Math.ceil(next - naturalMax);",
+    "return 0;",
+  ],
+  [
+    "hscrollHint",
+    "送る先を列の境目にそろえない（PR #1202 ファン評価2周目の退行）",
+    "if (within.length > 0) return within[within.length - 1];",
+    "if (within.length > 0) return raw;",
+  ],
+  [
+    "turnPrediction",
+    "2番手以下の候補が当たっても「予想通り」にする（BOA-724 A-2 (b) の退行）",
+    "if (!isTopPick) return false;",
+    "if (false) return false;",
+  ],
+  [
+    "volatilityLevel",
+    "表示の数値をラベルの範囲に収めない（PR #1186 ファン評価の退行）",
+    "return Math.min(Math.max(value, 31), 69);",
+    "return value;",
+  ],
+  [
+    "hscrollHint",
     "送る幅から固定の左の列を引かない（PR #1192 ファン評価2周目の退行）",
     "Math.round((clientWidth - stickyWidth) * 0.8)",
     "Math.round(clientWidth * 0.8)",
   ],
   [
     "hscrollHint",
-    "4pxの残りで「›」を出す（#1130 ファン評価で見送った P3 の退行）",
-    "const hasMore = remaining > HSCROLL_PEEK_MAX;",
-    "const hasMore = remaining > 4;",
+    "端の手前の列の境目で止め、「‹」を2回押させる（BOA-742 の退行）",
+    "if (direction < 0 && raw <= step / 4) return 0;",
+    "if (direction < 0 && raw <= 0) return 0;",
   ],
   [
     "hscrollHint",
-    "境目を24pxに戻す（PR #1169 ファン評価1周目の退行）",
-    "export const HSCROLL_PEEK_MAX = 12;",
-    "export const HSCROLL_PEEK_MAX = 24;",
+    "少しだけ溢れるときに「›」を出さない（BOA-735 の退行）",
+    "hasMore: remaining > HSCROLL_MORE_MIN,",
+    "hasMore: remaining > 12,",
   ],
   [
     "hscrollHint",
-    "少しだけ切れているときのフェードを出さない",
-    "!hasMore && remaining > 1 ? HSCROLL_PEEK_FADE : 0;",
-    "0;",
+    "「‹」を指が少し触れただけで出す（PR #1192 ファン評価2周目の退行）",
+    "export const HSCROLL_LESS_MIN = 12;",
+    "export const HSCROLL_LESS_MIN = 1;",
+  ],
+  [
+    "hscrollHint",
+    "少しだけ溢れる表に右の余白を足さない（BOA-735 の退行）",
+    "if (naturalMax <= HSCROLL_MORE_MIN) return 0;",
+    "if (naturalMax <= 12) return 0;",
   ],
   [
     "basicInfoStats",

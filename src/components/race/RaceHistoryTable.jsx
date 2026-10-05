@@ -5,7 +5,7 @@ import { raceStageLabel } from "../../constants/raceStageConfig";
 import { translateTechnique } from "./raceIndicators";
 import { finishMarkKeyOf } from "../../utils/prevResult";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
-import "../common/HorizontalScrollHint.css";
+import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
 import "./RaceHistoryTable.css";
 
 /**
@@ -168,32 +168,18 @@ function RaceHistoryTable({
     <div
       className={`race-history-hscroll hscroll-hint${hasMore ? " has-more" : ""}`}
     >
-      {hasLess && (
-        <button
-          type="button"
-          className="hscroll-less"
-          onClick={scrollLeft}
-          aria-hidden="true"
-          tabIndex={-1}
-        >
-          ‹
-        </button>
-      )}
-      {hasMore && (
-        <button
-          type="button"
-          className="hscroll-more"
-          onClick={scrollRight}
-          /* 装飾兼ショートカット。表の中身はキーボード・支援技術からは
-             スクロールせずに辿れるため、支援技術には出さない */
-          aria-hidden="true"
-          tabIndex={-1}
-        >
-          ›
-        </button>
-      )}
+      <HorizontalScrollButtons
+        hasMore={hasMore}
+        hasLess={hasLess}
+        onMore={scrollRight}
+        onLess={scrollLeft}
+      />
       <div className="race-history-table-wrapper" ref={ref} onScroll={update}>
-        <table className="race-history-table">
+        {/* 同じ節の走だけが並ぶ表（今節タブ）では、日付だけだと1日2走の日にどちらの走か分からない。
+            日付とRの2列を固定する（PR #1202 ファン評価1周目） */}
+        <table
+          className={`race-history-table${compactDate && !shows("venue") ? " race-history-table--pin-race" : ""}`}
+        >
           <thead>
             <tr>
               <th>{t("raceHistoryTable.date")}</th>

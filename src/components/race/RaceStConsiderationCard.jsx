@@ -55,6 +55,14 @@ function formatDiff(diff) {
   return `${sign}${abs}`;
 }
 
+/** 表示と同じ1桁に丸める。差は丸めた値どうしで出す（BOA-711: 「32.1 −0.7 平均32.9」と
+ * 画面の数字の引き算と食い違った）。色の判定（diffTone）も同じ差で行う */
+const round1 = (v) =>
+  v === null || v === undefined ? null : Number(Number(v).toFixed(1));
+
+/** 率（安定率・出遅率）の差は ±1.0 以内を色なし（抜出の回数は diffTone の既定 ±0.1。BOA-711） */
+const RATE_TONE_THRESHOLD = 1;
+
 function diffClass(tone) {
   return tone === "better" ? " is-better" : tone === "worse" ? " is-worse" : "";
 }
@@ -250,12 +258,15 @@ function RaceStConsiderationCard({
                 <th className="rsc-label-th" scope="row">
                   <span>{t("stConsideration.stable")}</span>
                   <TermHintButton termKey="stStable" />
+                  <span className="rsc-dir">
+                    {t("stConsideration.dirHigher")}
+                  </span>
                 </th>
                 {columns.map(({ player, stats, cell }) => {
                   const value = stats?.stableRate ?? null;
                   const { diff, isBetter } = diffFromBaseline(
-                    value,
-                    cell?.stable_rate ?? null,
+                    round1(value),
+                    round1(cell?.stable_rate),
                     METRIC_DIRECTION.stableRate,
                   );
                   const small =
@@ -270,7 +281,7 @@ function RaceStConsiderationCard({
                       </span>
                       {diff !== null && (
                         <span
-                          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small }))}`}
+                          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small, threshold: RATE_TONE_THRESHOLD }))}`}
                         >
                           {formatDiff(diff)}
                         </span>
@@ -297,6 +308,9 @@ function RaceStConsiderationCard({
                 <th className="rsc-label-th" scope="row">
                   <span>{t("stConsideration.breakout")}</span>
                   <TermHintButton termKey="stBreakout" />
+                  <span className="rsc-dir">
+                    {t("stConsideration.dirMore")}
+                  </span>
                 </th>
                 {columns.map(({ player, course, stats, cell }) => {
                   if (course === 1) {
@@ -320,7 +334,7 @@ function RaceStConsiderationCard({
                   const breakoutDiff =
                     count === null || expected === null
                       ? null
-                      : count - expected;
+                      : count - round1(expected);
                   const breakoutSmall =
                     (stats?.n ?? 0) > 0 &&
                     (stats?.n ?? 0) < SMALL_SAMPLE_THRESHOLD;
@@ -359,12 +373,15 @@ function RaceStConsiderationCard({
                 <th className="rsc-label-th" scope="row">
                   <span>{t("stConsideration.late")}</span>
                   <TermHintButton termKey="stLate" />
+                  <span className="rsc-dir">
+                    {t("stConsideration.dirLower")}
+                  </span>
                 </th>
                 {columns.map(({ player, stats, cell }) => {
                   const value = stats?.lateRate ?? null;
                   const { diff, isBetter } = diffFromBaseline(
-                    value,
-                    cell?.late_rate ?? null,
+                    round1(value),
+                    round1(cell?.late_rate),
                     METRIC_DIRECTION.lateRate,
                   );
                   const small =
@@ -379,7 +396,7 @@ function RaceStConsiderationCard({
                       </span>
                       {diff !== null && (
                         <span
-                          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small }))}`}
+                          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small, threshold: RATE_TONE_THRESHOLD }))}`}
                         >
                           {formatDiff(diff)}
                         </span>

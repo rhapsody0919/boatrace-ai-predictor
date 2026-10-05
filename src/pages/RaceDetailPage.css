@@ -18,6 +18,17 @@
   }
 }
 
+/* 768px 以下では、直前情報の表だけ高さの上限（部品の 70vh）を外し、表の内側でスクロールさせない。
+   行が16前後あり、375px で表 716px / 枠 630px と下の「今節直線」等の行と金枠が内側で切れ、続きが
+   あると気づけなかった（BOA-757）。1行目の艇番は見出しの固定が効かなくなるが、表は1画面にほぼ
+   収まる。データ出走表は行が多いので、見出しを固定する上限を残す。上の 769px 以上の指定とすき間が
+   できないよう 768px までにする（768px だけ上限が残っていた。ファン評価1周目） */
+@media (max-width: 768px) {
+  .race-detail-page-v2 .rbi-card .drt-table-wrapper {
+    max-height: none;
+  }
+}
+
 /* 広い画面ではデータ出走表の文字も一段大きくする（13.6px → 15px）。
    表の部品（DataRaceTable.css）ではなくページ側で指定する。表はこのページ以外でも使う */
 @media (min-width: 1280px) {
@@ -59,7 +70,11 @@
   .race-detail-page-v2 .rwit-card:has(.rwit-bars),
   /* 枠別情報のカードの右端をそろえる。ST考察だけ 1552px に広がり、上下のカードと
      ギザギザに並んでいた（BOA-619） */
-  .race-detail-page-v2 .rsc-card {
+  .race-detail-page-v2 .rsc-card,
+  /* 枠別情報の注記・選手チップの段も、下のカードと右端をそろえる。注記だけ 1392px に広がり、
+     1200px のカードより右へ出ていた（BOA-703） */
+  .race-detail-page-v2 .rwit-note,
+  .race-detail-page-v2 .rwit-chip-row {
     max-width: 1200px;
   }
 
@@ -85,7 +100,10 @@
      下の共有ボタンもページ中央なので、中心をそろえる
    - 結果の払戻金: 表だけ 640px で止める。上の着順の行は ST の棒で間が埋まるので広いままにする */
 @media (min-width: 1025px) {
-  .race-detail-page-v2 .race-ai-prediction-tab {
+  /* 発走前の AI予想（.prediction-result）も同じ 720px に。展開予測の決まり手と確率が
+     1440px で約1130px 離れていた（race-detail-ui-unify FR-6、BOA-619 の残り） */
+  .race-detail-page-v2 .race-ai-prediction-tab,
+  .race-detail-page-v2 .prediction-result {
     max-width: 720px;
     margin-inline: auto;
   }
@@ -266,7 +284,10 @@
       .rol-disclaimer,
       .rol-status,
       .race-tabs-empty,
-      .motor-condition-container
+      .motor-condition-container,
+      /* 結果タブの「この日の水面傾向」は .race-result の中のカードで、外の内余白に
+         自分の 16px が重なっていた（race-detail-ui-unify screens「二重の余白」） */
+      .vds-card
     ) {
     padding-left: var(--rdp-card-pad);
     padding-right: var(--rdp-card-pad);

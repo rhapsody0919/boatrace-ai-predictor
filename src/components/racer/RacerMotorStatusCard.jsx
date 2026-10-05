@@ -94,6 +94,11 @@ export default function RacerMotorStatusCard({ status }) {
               key: "meetCount",
               text: `${venueMotorStats.meetCount}節目`,
             },
+          // 会場公式のモーター成績が取れなかった（BOA-740）。値が無い会場と同じく黙って消さない
+          venueMotorStats?.fetchFailed && {
+            key: "fetchFailed",
+            text: "取得失敗（再読み込みで取り直します）",
+          },
         ].filter(Boolean)}
       />
 

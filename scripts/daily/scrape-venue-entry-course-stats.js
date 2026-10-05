@@ -91,7 +91,7 @@ async function buildRacerIdMap(raceIds, client = supabase) {
   const rows = await fetchAll(
     "race_entries",
     "race_id,boat_number,racer_id",
-    (q) => q.in("race_id", raceIds),
+    (q) => q.in("race_id", raceIds).order("race_id").order("boat_number"),
     { client },
   );
   const map = new Map();

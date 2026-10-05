@@ -126,7 +126,7 @@ async function main() {
       let query = q.not("rank1", "is", null).not("rank2", "is", null);
       if (from) query = query.gte("race_id", from);
       if (to) query = query.lte("race_id", to);
-      return query;
+      return query.order("race_id");
     },
   );
   const validResults = results.filter((r) => !r.is_cancelled && !r.is_no_race);
