@@ -286,7 +286,8 @@ def main():
     cols = sorted(set(FACT_ITEMS + ["racer_id", "cls_ord", "branch_code", "nat_win_rank", "st_mean30_rank", "recent_top3_30",
                                     "age", "weight", "is_local", "exh_time_diff", "exh_time_rank", "finish_rank"]
                       + [f for f in df.columns if f not in ("race_id", "race_date", "branch", "cls",
-                                                            "grade", "round", "race_ok") and df[f].dtype != object]))
+                                                            "grade", "round", "race_ok")
+                         and (pd.api.types.is_numeric_dtype(df[f]) or pd.api.types.is_bool_dtype(df[f]))]))
     races, arrays = race_arrays(df[keep], [c for c in cols if c in df.columns])
     attach_series(arrays, races, series)
     arrays["cls_name"] = class_names(arrays["cls_ord"])

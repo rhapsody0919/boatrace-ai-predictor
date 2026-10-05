@@ -39,3 +39,19 @@ def test_select_targets():
             row("i", 60) | {"deadline": None}]
     hashes = {k: "h1" for k in "abcdefgi"}  # h は6艇の出走表がそろっていない
     assert M.select_targets(rows, now, hashes) == ["a", "c", "g"]
+
+
+def test_example_fixture_matches_known_values():
+    """例のレースの固定データ（tasks T1-6）が、分析で確かめた値（t1-2・slitpred2_hint・knn7）と食い違っていない"""
+    import json
+    from pathlib import Path
+
+    d = json.loads((Path(__file__).resolve().parents[1] / "testdata/v16-example.json").read_text())
+    t = d["today"]
+    assert [round(v, 4) for v in t["items"]["series_score"]["values"]] == [8.6667, 8.3333, 8.0, 7.7143, 7.3333, 6.6667]
+    assert t["series_runs_before_today"] == [6, 6, 7, 7, 6, 6]
+    assert t["course_st"]["course"] == [0.15, 0.1503, 0.1333, 0.1267, 0.142, 0.1755]
+    assert t["hints"]["course"]["kado4"] and not t["hints"]["course"]["in_slow02"]
+    assert d["similar"]["n_layer"] == 15 and d["similar"]["neighbors"][0]["race_id"] == "2021-10-14-16-12"
+    assert d["facts"]["VC:20:6-0-0-0:1A1"]["n"] == 1134 and d["facts"]["NC:6-0-0-0:1A1"]["n"] == 25290
+    assert d["scenario"]["VC:20:6-0-0-0:1A1"]["n"] == 1117 and d["scenario"]["NC:6-0-0-0:1A1"]["n"] == 24871
