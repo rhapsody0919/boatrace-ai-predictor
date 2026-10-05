@@ -298,7 +298,11 @@ def main():
         today = np.array([i for i in today if int(races["race_id"].iat[i]) in want])
     elif a.upload:
         hashes = {F.int_to_rid(int(races["race_id"].iat[i])): racecard_hash(arrays, i) for i in today}
-        want = set(select_targets(fetch_today(a.date), datetime.now(JST), hashes))
+        rows_today = fetch_today(a.date)
+        no_deadline = [r["race_id"] for r in rows_today if r["deadline"] is None and not r["cancelled"]]
+        if no_deadline:
+            log("締切時刻（races.start_time）が無いので作らない:", ",".join(no_deadline))
+        want = set(select_targets(rows_today, datetime.now(JST), hashes))
         today = np.array([i for i in today if F.int_to_rid(int(races["race_id"].iat[i])) in want], dtype=int)
         if len(today) == 0:
             log("作るレースが無い（すべて作成済み・締切間近・中止・欠場）")
@@ -332,9 +336,7 @@ def main():
     t3 = races.loc[pool & races["race_id"].isin(pr.index).to_numpy()]
     t3i = t3.index.to_numpy()
     d = SC.prepare(pr.loc[t3["race_id"].to_numpy()].reset_index(drop=True))
-    rows = pd.concat([F.load_kb(src), F.load_main(src)], ignore_index=True)
-    hist = H.st_history(rows, all_races)
-    del rows
+    hist = H.st_history(df, all_races)  # F.build の行は load_kb・load_main と同じ行（窓に入れる走の集合が同じ）
     tgt = pd.DataFrame({"racer_id": arrays["racer_id"][t3i].ravel(),
                         "race_date": np.repeat(races["race_date"].to_numpy()[t3i], 6),
                         "course": np.tile(np.arange(1, 7, dtype=float), len(t3i))})
@@ -394,8 +396,8 @@ def main():
     is_kb = (races["race_date"] <= F.KB_END).to_numpy()
     n_layers = {}
     prl = all_races.assign(_rid=lambda x: F.rid_to_int(x["race_id"])).set_index("_rid")
-    for i in today:
-        rid = F.int_to_rid(int(races["race_id"].iat[i]))
+    def write_race(i: int, rid: str, out: Path) -> None:
+        """1レース分の similar（候補）・similar-racecard・layer・today"""
         cond = S.layer_conditions(b1[i], gap[i], top[i], races["round"].iat[i], races["grade"].iat[i])
         lm = S.layer_mask(cond, b1, gap, top, races["round"].to_numpy(dtype=object),
                           races["grade"].to_numpy(dtype=object)) & pool
@@ -428,12 +430,23 @@ def main():
         write_local(out, f"today/{rid}.json", today_payload(i, races, arrays, keys_by_race[i], {
             "overall": overall, "course": tcs["course"], "course_n": tcs["course_n"],
             "course_filled": V.fill_course_st(tcs["course"], tcs["course_n"], overall)}))
-    log("races done", len(today))
+
+    failed = {}
+    for i in today:
+        rid = F.int_to_rid(int(races["race_id"].iat[i]))
+        try:
+            write_race(i, rid, out)
+        except Exception as e:  # 1レースの失敗で他のレースを止めない（書けた分は書いてから失敗にする）
+            failed[rid] = f"{type(e).__name__}: {e}"
+            log("失敗", rid, failed[rid])
+    done = [i for i in today if F.int_to_rid(int(races["race_id"].iat[i])) not in failed]
+
+    log("races done", len(done), "failed", len(failed))
     if a.upload:
         ensure_bucket()
         n = upload_dir(out, f"{a.date}/{a.run_id}")
         snaps = []
-        for i in today:
+        for i in done:
             rid = F.int_to_rid(int(races["race_id"].iat[i]))
             snaps.append({"race_id": rid, "stage": "racecard", "run_id": a.run_id,
                           "computed_at": datetime.now(timezone.utc).isoformat(), "pool_cutoff": str(cutoff.date()),
@@ -442,6 +455,8 @@ def main():
                           "racecard_hash": racecard_hash(arrays, i)})
         write_snapshots(snaps)
         log("uploaded", n, "files", len(snaps), "snapshots")
+    if failed:
+        raise SystemExit(f"today・similar を作れなかったレース {len(failed)} 件: {failed}")
 
 
 if __name__ == "__main__":
