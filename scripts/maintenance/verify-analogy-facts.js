@@ -96,8 +96,8 @@ const tiny = {
     columns: [{ feature: "wind_speed", slot: 0, kind: "race_num" }],
     weights: [1],
     norm: { wind_speed: { mean: 0, sd: 1 } },
-    values: [[0], [0], [0]],
   },
+  exhibition_raw: { race: { wind_speed: [0, 0, 0] }, boats: {} },
 };
 const today0 = { boats: {}, race: { wind_speed: 0 } };
 check(
@@ -109,7 +109,7 @@ check(
 check(
   "厳密でない（下限 0.9 < 2件目 1.2）",
   rerankSimilar(
-    { ...tiny, exhibition: { ...tiny.exhibition, values: [[0], [1], [1]] } },
+    { ...tiny, exhibition_raw: { race: { wind_speed: [0, 1, 1] }, boats: {} } },
     today0,
     2,
   ).exact,

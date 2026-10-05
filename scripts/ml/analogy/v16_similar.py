@@ -66,6 +66,16 @@ def layer_mask(cond: dict, b1_class, gap, top, round_, grade) -> np.ndarray:
     return m
 
 
+def compare_conditions(cond: dict) -> tuple[dict, str]:
+    """比べる相手（spec B-8）: そろえる条件からグレードを外した層。今日が G1・SG でなければラウンドを外した層。
+    どちらも外せない日（予選の一般戦など）は、そろえる条件の3つだけ（＝同じ層）"""
+    if cond["grade_g1plus"]:
+        return cond | {"grade_g1plus": False}, "grade"
+    if cond["round"] is not None:
+        return cond | {"round": None}, "round"
+    return cond, "none"
+
+
 # ---------------------------------------------------------------- 表し方・重み・距離
 def boat_num_features(features: list[str], stage: str) -> list[str]:
     drop = set(RACE_NUM + RACE_CAT + BOAT_CAT + EXCLUDED + DROP[stage]) | (set(EXH) if stage == "racecard" else set())
@@ -146,6 +156,10 @@ def rank_layer(X: np.ndarray, xq: np.ndarray, venue: np.ndarray, venue_q: int, l
     d2p = d2 + np.where(venue[idx] != venue_q, np.float32(lam), np.float32(0))
     order = np.argsort(d2p, kind="stable")[:k]
     return idx[order], d2[order], d2p[order]
+
+
+# 今日の展示の時点で決まる項目（出走表の時点は今日の値が無いので −1）。展示後の段は JS がこれだけを判定し直す
+EXHIBITION_ITEMS = ("weather", "wind_bin", "wind_vector", "wave_bin", "exh_time_diff_6")
 
 
 # ---------------------------------------------------------------- 全33項目の「同じ・近い」（spec B-6。mock-v16/knn2_report.py）

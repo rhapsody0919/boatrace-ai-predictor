@@ -5,12 +5,14 @@
  * 10,000件）の候補ファイルを作る。展示後の表し方（knn8）は、出走表の表し方（knn7）に「展示・天候・風・波」の
  * 列を足したもので、標準化・カテゴリ・重みは同じなので、
  *   展示後の距離² ＝ 出走表の距離²（d2_racecard、会場のペナルティ前）＋ 足した列の距離² ＋ λ_展示×（会場が違う）
- * になる。足した列の候補の値は候補ファイルに重み付きで入っているので、今日の展示の値を同じ式で重み付けすれば
- * 並べ直せる。
+ * になる。足した列は、候補の生の値（exhibition_raw。float32 の最短表記。展示タイムの差と順位は展示タイムから作る）と今日の値を
+ * 同じ式で z 化・重み付けする。
  *
  * float32 の約束: Python は z 化と重み付けを float32 で行う（v16_similar.build_z・weight_vector）ので、
  * 今日の値も Math.fround でそろえる。Python との一致は scripts/ml/analogy/testdata/v16-rerank.json で検査する。
  */
+
+import { meanFloat32, rankMinAscending } from "./analogyRaceFeatures.js";
 
 const f32 = Math.fround;
 
@@ -46,6 +48,30 @@ export function exhibitionVector(header, today) {
 }
 
 /**
+ * 6艇の展示タイム（艇番順、float32、欠損は NaN）→ exh_time・exh_time_diff・exh_time_rank（features.py と同じ:
+ * 差はレース内の float32 の平均との差、順位は小さいほど上の min 順位）
+ */
+export function exhibitionBoats(exh) {
+  const mean = meanFloat32(exh);
+  return {
+    exh_time: exh,
+    exh_time_diff: exh.map((v) => f32(v - mean)),
+    exh_time_rank: rankMinAscending(exh),
+  };
+}
+
+/** 候補ファイルの exhibition_raw（列ごとの配列）から、c 件目の候補の展示の値を exhibitionVector の today の形で */
+export function candidateValues(raw, c) {
+  const race = Object.fromEntries(
+    Object.entries(raw.race).map(([k, vs]) => [k, vs[c]]),
+  );
+  const exh = (raw.boats.exh_time?.[c] ?? []).map((v) =>
+    v === null ? NaN : f32(v),
+  );
+  return { race, boats: exhibitionBoats(exh) };
+}
+
+/**
  * 候補を展示後の距離で並べ直し、上位 k 件を返す。
  * exact: 候補の外のレースが上位 k 件に入りえないことが言えるか。候補が層の全件なら必ず厳密。そうでなければ、
  *   候補の外のレースの展示後の距離² ≥ 出走表の距離²（ペナルティ込み）≥ 候補の最後の出走表の距離²（ペナルティ込み）
@@ -57,10 +83,11 @@ export function exhibitionVector(header, today) {
  */
 export function rerankSimilar(file, today, k = 800) {
   const ex = file.exhibition;
+  const raw = file.exhibition_raw;
   const q = exhibitionVector(ex, today);
   const lam = ex.lambda;
   const scored = file.candidates.map((race_id, c) => {
-    const v = ex.values[c];
+    const v = exhibitionVector(ex, candidateValues(raw, c));
     let d2 = file.d2_racecard[c];
     for (let j = 0; j < q.length; j++) d2 += (v[j] - q[j]) ** 2;
     if (!file.venue_match[c]) d2 += lam;
