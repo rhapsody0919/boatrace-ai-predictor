@@ -1,4 +1,6 @@
 import { test, expect } from "./fixtures.js";
+import fs from "fs";
+import zlib from "zlib";
 import { contribution } from "./analogy-contribution-fixture.js";
 import { analogyV16Facts, routeAnalogyV16 } from "./analogy-v16-fixture.js";
 
@@ -265,5 +267,85 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
     await expect(
       section.getByText(/参考: 今日の展示の形は(?!出していない)/),
     ).toHaveCount(0);
+  });
+
+  test.describe("AIの見立て（T5-2、本番の版 2026-10-06 の応答）", () => {
+    const outlook = JSON.parse(
+      zlib.gunzipSync(
+        fs.readFileSync(
+          new URL("./analogy-outlook-fixture.json.gz", import.meta.url),
+        ),
+      ),
+    );
+    const openOutlook = async (page, stage) => {
+      await setup(page);
+      await page.route("**/api/analogy/contribution*", (route) => {
+        const st = new URL(route.request().url()).searchParams.get("stage");
+        return route.fulfill({
+          json: outlook[st === "racecard" ? "racecard" : "exhibition"],
+        });
+      });
+      await openAiTab(page);
+      const section = sectionOf(page);
+      if (stage === "racecard")
+        await section.getByRole("button", { name: "展示前（出走表）" }).click();
+      await section.locator(".af-boat-btn").nth(1).click();
+      const ai = section.locator(".af-ai");
+      await ai.locator("summary").first().click();
+      await ai.locator(".af-ai-theme").evaluateAll((ds) =>
+        ds.forEach((d) => {
+          d.open = true;
+        }),
+      );
+      return ai;
+    };
+
+    test("展示後は7テーマで、項目ごとの向きとカテゴリの上がる・下がるを出す", async ({
+      page,
+    }) => {
+      const ai = await openOutlook(page, "exhibition");
+      await expect(ai.locator(".af-ai-theme")).toHaveCount(7);
+      await expect(ai).toContainText(
+        "6艇の中で全国勝率が高いほど見込みが上がる",
+      );
+      await expect(ai).toContainText(
+        "6艇の中で展示タイムが速いほど見込みが上がる",
+      );
+      // グレードは SG・G1・G2…の順、ラウンドは予選・準優勝戦・優勝戦・一般戦などの順に並べる
+      await expect(ai).toContainText("上がる: SG・G1・G2／下がる: —");
+      await expect(ai).toContainText(
+        "上がる: 予選／下がる: 準優勝戦・優勝戦・一般戦など",
+      );
+      await expect(ai).toContainText("1号艇が強いかどうかで変わる");
+      await expect(ai).not.toContainText(/寄与度|モデル/);
+    });
+
+    test("展示前は、その段に無いテーマ（天候・水面）を出さない", async ({
+      page,
+    }) => {
+      const ai = await openOutlook(page, "racecard");
+      await expect(ai.locator(".af-ai-theme")).toHaveCount(6);
+      await expect(ai).not.toContainText("天候・水面");
+      await expect(ai).not.toContainText("展示タイム");
+    });
+
+    test("項目の割合はテーマの % に合計がそろう（グループが1つのテーマはテーマと同じ値）", async ({
+      page,
+    }) => {
+      // 展示前の「スタート・展示」は平均STだけ。内訳の share（0.077）とテーマの割合（0.097）は分母が違うので、
+      // そのまま出すと 8% と 10% で合わなかった（学習側の回答 2026-10-06）
+      const ai = await openOutlook(page, "racecard");
+      const theme = ai.locator(".af-ai-theme", { hasText: "スタート・展示" });
+      const themePct = await theme.locator("summary .af-num").innerText();
+      await expect(theme.locator(".af-ai-item .af-num")).toHaveText([themePct]);
+      for (const th of await ai.locator(".af-ai-theme").all()) {
+        const total = parseInt(
+          await th.locator("summary .af-num").innerText(),
+          10,
+        );
+        const items = await th.locator(".af-ai-item .af-num").allInnerTexts();
+        expect(items.reduce((a, x) => a + parseInt(x, 10), 0)).toBe(total);
+      }
+    });
   });
 });
