@@ -109,3 +109,67 @@ export function rerankSimilar(file, today, k = 800) {
   }
   return { neighbors, exact };
 }
+
+// ---- 展示で決まる5項目の「同じ・近い」（v16_similar.item_levels の weather・wind_bin・wind_vector・wave_bin・
+// exh_time_diff_6 と同じ基準）。2 同じ・1 近い・0 違う・−1 欠損
+export const EXHIBITION_ITEMS = [
+  "weather",
+  "wind_bin",
+  "wind_vector",
+  "wave_bin",
+  "exh_time_diff_6",
+];
+
+const missing = (v) => v === null || v === undefined || Number.isNaN(v);
+const level = (same, near, isNull) => (isNull ? -1 : same ? 2 : near ? 1 : 0);
+const band3 = (v, a, b) => (missing(v) ? -1 : v <= a ? 0 : v <= b ? 1 : 2);
+const bandAdj = (x, q) =>
+  level(x === q, Math.abs(x - q) === 1, x === -1 || q === -1);
+
+/**
+ * @param {{race: Record<string, number|null>, exh_time: (number|null)[]}} today
+ * @param {{race: Record<string, number|null>, exh_time: (number|null)[]}} cand
+ * @returns {Record<string, number>}
+ */
+export function exhibitionItemLevels(today, cand) {
+  const wc = cand.race.weather_code;
+  const qw = today.race.weather_code;
+  const rain = (v) => v === 2 || v === 3;
+  const dry = (v) => v === 0 || v === 1;
+  const wd = Math.sqrt(
+    (cand.race.wind_x - today.race.wind_x) ** 2 +
+      (cand.race.wind_y - today.race.wind_y) ** 2,
+  );
+  const diffs = (exh) =>
+    exhibitionBoats(exh.map((v) => (missing(v) ? NaN : f32(v)))).exh_time_diff;
+  const dq = diffs(today.exh_time);
+  const dc = diffs(cand.exh_time);
+  // Python は float32 の配列のまま nanmean し、しきい値も float32 に落として比べる（6要素は順に足すのと同じ）
+  let sum = 0;
+  let n = 0;
+  dc.forEach((v, i) => {
+    const d = f32(Math.abs(f32(v - dq[i])));
+    if (!Number.isNaN(d)) {
+      sum = f32(sum + d);
+      n += 1;
+    }
+  });
+  const m = n ? f32(sum / n) : NaN;
+  return {
+    weather: level(
+      wc === qw,
+      (rain(wc) && rain(qw)) || (dry(wc) && dry(qw)),
+      missing(wc) || missing(qw),
+    ),
+    wind_bin: bandAdj(
+      band3(cand.race.wind_speed, 2, 4),
+      band3(today.race.wind_speed, 2, 4),
+    ),
+    wind_vector: level(wd <= 1.5, wd <= 2.5, missing(wd)),
+    wave_bin: bandAdj(
+      band3(cand.race.wave_height, 2, 5),
+      band3(today.race.wave_height, 2, 5),
+    ),
+    exh_time_diff_6: level(m <= f32(0.03), m <= f32(0.05), Number.isNaN(m)),
+  };
+}

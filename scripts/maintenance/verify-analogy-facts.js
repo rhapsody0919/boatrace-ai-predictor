@@ -21,7 +21,10 @@ import {
   getRaceStageKey,
 } from "../../src/constants/raceStageConfig.js";
 import { classifyStage } from "../../src/components/race/seriesPoints.js";
-import { rerankSimilar } from "../../src/utils/analogySimilarRerank.js";
+import {
+  exhibitionItemLevels,
+  rerankSimilar,
+} from "../../src/utils/analogySimilarRerank.js";
 import {
   entryType,
   hintConditions,
@@ -124,6 +127,21 @@ check(
   ).exact,
   false,
 );
+
+// 展示で決まる5項目の「同じ・近い」（Python の item_levels と同じ基準）
+const exhItems = JSON.parse(
+  fs.readFileSync(
+    path.join(__dirname, "../ml/analogy/testdata/v16-exh-items.json"),
+    "utf8",
+  ),
+);
+exhItems.candidates.forEach((c, j) => {
+  check(
+    `展示で決まる5項目 ${j}`,
+    exhibitionItemLevels(exhItems.today, c),
+    c.levels,
+  );
+});
 
 // ---- 3. 展開シナリオの定義 ------------------------------------------------
 const defs = JSON.parse(
