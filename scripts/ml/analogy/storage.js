@@ -15,6 +15,7 @@
  *   node scripts/ml/analogy/storage.js upload-model     # out/ → {version}/
  *   node scripts/ml/analogy/storage.js download-reference  # 参照版（reference.json）→ out/reference/
  *   node scripts/ml/analogy/storage.js download-active-meta  # 表示中の版の per_race_meta.json → out/active/（日次の特徴量ジョブ）
+ *   node scripts/ml/analogy/storage.js download-trained 2026-10-05  # 学習済みの版の train_meta・profiles → out/（書き込みだけやり直す）
  *   node scripts/ml/analogy/storage.js download-active-model # 表示中の版の model_win.txt → out/active/（v16 の朝のバッチ）
  */
 
@@ -53,10 +54,14 @@ const PER_RACE_FILES = [
   "parity_fixture.json",
   "perrace_record.json",
 ];
+// DB に書く寄与度の行。書き込み（db.py write）が失敗したとき、学習をやり直さずに書き込みだけやり直すため
+// （train-analogy.yml の write_only_version）に、書き込みの前に置く
+const PROFILE_FILES = ["profiles.json"];
 const UPLOAD_FILES = [
   ...MODEL_FILES,
   ...OPTIONAL_REFERENCE_FILES,
   ...PER_RACE_FILES,
+  ...PROFILE_FILES,
 ];
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -200,6 +205,17 @@ async function downloadActive(names) {
   if (!version)
     throw new Error("表示中の版（analogy_models.is_active）がありません");
   const dir = path.join(OUT_DIR, "active");
+  await downloadVersion(version, names, dir);
+  await fs.writeFile(path.join(dir, "version.txt"), version);
+}
+
+/** 学習済みの版の train_meta.json・profiles.json を out/ に置く（書き込みだけやり直す。train-analogy.yml の write_only_version） */
+async function downloadTrained(version) {
+  if (!version) throw new Error("版の名前を指定する（例: 2026-10-05）");
+  await downloadVersion(version, ["train_meta.json", ...PROFILE_FILES], OUT_DIR);
+}
+
+async function downloadVersion(version, names, dir) {
   await fs.mkdir(dir, { recursive: true });
   for (const name of names) {
     const key = `${version}/${name}.gz`;
@@ -216,7 +232,6 @@ async function downloadActive(names) {
     );
     console.log(`  ⬇️ ${key}`);
   }
-  await fs.writeFile(path.join(dir, "version.txt"), version);
 }
 
 async function main() {
@@ -228,9 +243,10 @@ async function main() {
     await downloadActive(["per_race_meta.json"]);
   else if (cmd === "download-active-model")
     await downloadActive(["model_win.txt"]);
+  else if (cmd === "download-trained") await downloadTrained(process.argv[3]);
   else
     throw new Error(
-      "使い方: node scripts/ml/analogy/storage.js <upload-model|download-reference|download-active-meta|download-active-model>",
+      "使い方: node scripts/ml/analogy/storage.js <upload-model|download-reference|download-active-meta|download-active-model|download-trained <版>>",
     );
 }
 

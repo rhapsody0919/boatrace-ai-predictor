@@ -19,3 +19,15 @@ def test_kb_cache_version_is_after_boa696():
     src = (ROOT / "scripts/ml/analogy/export_pool.js").read_text()
     v = re.search(r'const KB_CACHE_VERSION = "v(\d+)"', src)
     assert v and int(v.group(1)) >= 2
+
+
+def test_write_only_skips_training_and_downloads_before_write():
+    """書き込みの段で失敗した版を、学習をやり直さずに書き直せる（profiles.json を書き込みの前に Storage に置く）"""
+    src = (ROOT / "scripts/ml/analogy/storage.js").read_text()
+    assert '"profiles.json"' in src and "...PROFILE_FILES" in src
+    for step in ("Export training data", "Build features", "Train, quality gate, contribution profiles",
+                 "Upload model to Storage"):
+        block = WF[WF.index(f"- name: {step}"):]
+        assert block.split("\n")[1].strip() == "if: inputs.write_only_version == ''", step
+    assert WF.index("storage.js upload-model") < WF.index("python db.py write")
+    assert WF.index("storage.js download-trained") < WF.index("python db.py write")
