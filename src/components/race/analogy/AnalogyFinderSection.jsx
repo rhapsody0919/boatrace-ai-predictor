@@ -121,7 +121,7 @@ export default function AnalogyFinderSection({ raceId }) {
           data={similar.data}
           stage={stage}
           target={target}
-          raceId={raceId}
+          exhibition={facts.data?.exhibition ?? null}
         />
       ) : (
         <p className="af-v16-line">

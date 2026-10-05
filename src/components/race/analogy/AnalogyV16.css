@@ -587,3 +587,336 @@ button.af-bar {
     grid-template-columns: 1.2em 7em minmax(0, 1fr) 3em;
   }
 }
+
+/* ---- タブ2 類似レース ---- */
+.af-slider {
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2-5) var(--spacing-3);
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+.af-slider input {
+  width: 100%;
+  accent-color: var(--brand-accent-primary);
+}
+
+.af-between {
+  justify-content: space-between;
+}
+
+.af-sv b {
+  font-size: var(--font-size-xl);
+  color: var(--brand-accent-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.af-v16 .af-h4 {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.af-hero {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.af-hero-n {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.af-tip {
+  margin: 0;
+  min-height: 1.6em;
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.af-muted {
+  color: var(--text-secondary);
+}
+
+.af-scope-cap {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--ryujin-gold-300);
+  opacity: 0.75;
+  padding: 2px var(--spacing-2) var(--spacing-1);
+}
+
+.af-scope-flat {
+  background: var(--ryujin-navy-600);
+}
+
+.af-sonar svg {
+  -webkit-touch-callout: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.af-sonar-tip {
+  position: absolute;
+  z-index: 3;
+  width: 220px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-1-5) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+}
+
+.af-bnrow {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.af-tri {
+  display: inline-flex;
+  align-items: center;
+}
+
+.af-tri-sep {
+  margin: 0 1px;
+  color: var(--text-secondary);
+}
+
+.af-lk {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 6.5em;
+  gap: var(--spacing-2);
+  align-items: center;
+  font-size: var(--font-size-xs);
+  padding: 3px 0;
+}
+
+.af-lk small {
+  display: block;
+  color: var(--text-secondary);
+  font-size: var(--font-size-2xs);
+  overflow-wrap: anywhere;
+}
+
+.af-trk-near {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: var(--brand-accent-primary);
+  opacity: 0.35;
+}
+
+.af-tbl {
+  overflow-x: auto;
+}
+
+.af-like-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--font-size-2xs);
+}
+
+.af-like-table th,
+.af-like-table td {
+  padding: 5px 4px;
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+  text-align: left;
+  vertical-align: top;
+}
+
+.af-like-table td:first-child {
+  min-width: 7.5em;
+  overflow-wrap: anywhere;
+}
+
+.af-like-table small {
+  display: block;
+}
+
+.af-nbr {
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+.af-nbr.is-open {
+  background: var(--surface-page);
+}
+
+.af-nbh {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2.2em minmax(0, 1fr) auto;
+  grid-template-areas:
+    "rk nm o"
+    "rk sc o";
+  gap: 0 var(--spacing-2);
+  align-items: center;
+  padding: var(--spacing-1-5) 2px;
+  cursor: pointer;
+}
+
+.af-nb-rk {
+  grid-area: rk;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.af-nb-nm {
+  grid-area: nm;
+  font-size: var(--font-size-xs);
+}
+
+.af-nb-nm small {
+  display: block;
+  color: var(--text-secondary);
+}
+
+.af-nb-sc {
+  grid-area: sc;
+  font-size: var(--font-size-2xs);
+}
+
+.af-nbh .af-bnrow {
+  grid-area: o;
+}
+
+.af-nbd {
+  padding: var(--spacing-1) 0 var(--spacing-2-5) 2.2em;
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+.af-res {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-1-5) var(--spacing-2-5);
+}
+
+.af-res small {
+  display: block;
+  color: var(--text-secondary);
+}
+
+.af-cg {
+  display: grid;
+  gap: 2px;
+}
+
+.af-ci {
+  display: grid;
+  grid-template-columns: 1.4em minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: var(--spacing-1-5);
+  font-size: var(--font-size-xs);
+  align-items: baseline;
+}
+
+.af-mk {
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.af-mk.is-same {
+  color: var(--color-success-text);
+}
+
+.af-mk.is-near {
+  color: var(--color-warning-text);
+}
+
+.af-mk.is-diff {
+  color: var(--color-error-text);
+}
+
+.af-cv {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.af-cv small {
+  display: block;
+  color: var(--text-secondary);
+}
+
+.af-card-note {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-2) var(--spacing-3);
+}
+
+.af-other {
+  display: grid;
+  gap: var(--spacing-1-5);
+}
+
+.af-ind {
+  display: grid;
+  gap: 3px;
+  padding: var(--spacing-1-5) 0;
+  border-top: var(--border-width-1) solid var(--border-hairline);
+  font-size: var(--font-size-xs);
+}
+
+.af-pair-bars {
+  display: grid;
+  gap: 3px;
+}
+
+.af-pr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 6em;
+  gap: var(--spacing-2);
+  align-items: center;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.af-pr > .af-num {
+  text-align: right;
+}
+
+.af-trk-f.is-hit,
+.af-key i.is-hit {
+  background: var(--color-info);
+}
+
+.af-trk-f.is-base,
+.af-key i.is-base {
+  background: var(--color-gray-500);
+}
+
+.af-key i.is-bar {
+  background: var(--brand-accent-primary);
+}
+
+.af-flow {
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+@media (max-width: 480px) {
+  .af-lk {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 5.5em;
+  }
+}
