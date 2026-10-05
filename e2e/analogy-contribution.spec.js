@@ -292,7 +292,11 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await setup(page);
       await openAiTab(page);
       const list = sectionOf(page).locator(".af-foot-list").first();
-      expect(await list.locator("li").count()).toBeGreaterThanOrEqual(4);
+      // 節の中身（facts）が届いてから数える（届く前は ul が無く 0 件になる）
+      await expect(list.locator("li").first()).toBeVisible();
+      await expect
+        .poll(() => list.locator("li").count())
+        .toBeGreaterThanOrEqual(4);
       const size = await list.evaluate((el) =>
         parseFloat(getComputedStyle(el).fontSize),
       );
