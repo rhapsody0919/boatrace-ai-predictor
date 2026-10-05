@@ -972,7 +972,17 @@
             "2-3": "2–3m",
             "4-5": "4–5m",
             "6+": "6m or more"
-          }
+          },
+          "headingWind": "Races with wind close to today's ({{wind}} m) (today's waves {{wave}} cm)",
+          "windOnly": "At this venue, wave height is recorded at almost the same value as wind speed, so races are grouped by wind",
+          "waveFew": "Splitting by waves leaves only {{n}} races, so races are grouped by wind only",
+          "bandsWave": "wind {{wind}}, waves {{wave}}",
+          "waveBands": {
+            "0-2": "0–2 cm",
+            "3-5": "3–5 cm",
+            "6+": "6 cm+"
+          },
+          "footWave": "Share of races at {{venue}} with {{band}} in which each boat {{finish}} ({{n}} races). The dotted line is all races at {{venue}}. Wind is grouped by speed only (tailwind and headwind are not separated). Past wind and waves are recorded at the start; today's values are from the exhibition"
         },
         "legend": "Line on a bar = likely range when there are few races (the value usually falls within it)",
         "paren": " ({{inner}})"
@@ -1364,7 +1374,7 @@
         "facts": "Who finishes, and when",
         "factsItems": "Items: avg. finish points this meet (to yesterday), national win rate, local win rate, 1st-place rate (last 30 races), motor top-2 rate, boat top-2 rate, avg. ST (last 30 races), exhibition time (after the exhibition only). National win rate, local win rate, motor top-2 rate and boat top-2 rate are race card values; exhibition time is from pre-race info. 1st-place rate (last 30 races), avg. ST (last 30 races) and meet finish points are calculated from the racer's past results (all up to yesterday)",
         "factsFinish": "Finish: 1st, top 2, top 3, counted from past race results",
-        "factsWind": "Today's wind and waves: wind speed and wave height (as of the exhibition). Wind speed bands are 0–1m / 2–3m / 4–5m / 6m or more (different from the bands in Similar races)",
+        "factsWind": "Today's wind and waves: wind speed and wave height (values at the exhibition). Wind bands are 0–1 m / 2–3 m / 4–5 m / 6 m+ (different from the wind bands for similar races). At venues where wave height carries information separate from wind speed (correlation below 0.9 in past races at the venue), races are also grouped by wave height (0–2 cm / 3–5 cm / 6 cm+), falling back to wind only if today's group has fewer than 300 races. At other venues wave height is recorded at almost the same value as wind speed, so races are grouped by wind only",
         "similar": "Similar races",
         "similarLayer": "Conditions always matched: {{cond}}",
         "similarLayerBase": "Boat 1 class, gap between Boat 1 and the top win rate, top-win-rate boat number",

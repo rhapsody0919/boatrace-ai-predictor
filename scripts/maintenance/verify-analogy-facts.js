@@ -39,6 +39,7 @@ import {
   rankBand,
   maedukeBoats,
   slitForms,
+  waveBand,
   windBand,
 } from "../../src/utils/analogyScenario.js";
 import {
@@ -49,6 +50,7 @@ import {
   rankPositions,
   seriesScoreNote,
   todayPosition,
+  windWaveView,
 } from "../../src/utils/analogyFacts.js";
 import { wilsonInterval } from "../../src/utils/wilson.js";
 import {
@@ -508,6 +510,67 @@ check("③の区分", [1, 2, 3, 4, 5, 6, null].map(rankBand), [
 ]);
 check("差がはっきりする", clearDiff([60, 100], [30, 100]), true);
 check("差がはっきりしない", clearDiff([6, 10], [5, 10]), false);
+
+// 今日の風・波の数え方（Q-F3）: 波が別の情報を持つ会場だけ風×波、今日の区分が300件未満なら風だけ
+const pair = (n) =>
+  Object.fromEntries(
+    [1, 2, 3, 4, 5, 6].map((b) => [String(b), { win: [1, n] }]),
+  );
+const va = (useWave, waveN) => ({
+  wind: { "2-3": pair(5000) },
+  wind_wave: { "2-3": { "3-5": pair(waveN) } },
+  wave_mode: { use_wave: useWave, corr: useWave ? 0.52 : 1 },
+});
+const exh = { wind_band: "2-3", wind_speed: 3, wave_height: 4 };
+check("波の区分", [0, 2, 3, 5, 6, null].map(waveBand), [
+  "0-2",
+  "0-2",
+  "3-5",
+  "3-5",
+  "6+",
+  null,
+]);
+check(
+  "風・波: 波が別の情報で300件以上",
+  windWaveView(va(true, 300), exh).mode,
+  "wave",
+);
+check("風・波: 300件以上のときの件数", windWaveView(va(true, 300), exh).n, 300);
+check("風・波: 300件未満は風だけ", windWaveView(va(true, 299), exh), {
+  mode: "waveFew",
+  rows: pair(5000),
+  n: 5000,
+  waveN: 299,
+  wind: "2-3",
+  wave: "3-5",
+});
+check(
+  "風・波: 波＝風の会場は風だけ",
+  windWaveView(va(false, 9999), exh).mode,
+  "wind",
+);
+check(
+  "風・波: 古い集計（wave_mode 無し）は風だけ",
+  windWaveView({ wind: { "2-3": pair(10) } }, exh).mode,
+  "wind",
+);
+check(
+  "風・波: 波＝風の会場は「波高は風速とほぼ同じ」の注記を出す",
+  windWaveView(va(false, 9999), exh).waveVenue,
+  false,
+);
+check(
+  "風・波: 波で分ける会場でも今日の波高が無ければ風だけ・注記は出さない",
+  (({ mode, waveVenue }) => ({ mode, waveVenue }))(
+    windWaveView(va(true, 500), { wind_speed: 3 }),
+  ),
+  { mode: "wind", waveVenue: true },
+);
+check(
+  "風・波: 今日の風が無ければ出さない",
+  windWaveView(va(true, 500), { wave_height: 3 }),
+  null,
+);
 
 if (failures > 0) {
   console.error(`\n❌ ${failures} 件の不一致`);

@@ -348,7 +348,9 @@ def main():
                         if s in ("VC", "NC", "NCR", "VA")})
     for key in fact_keys:
         m = scope_masks(key, races, arrays["cls_name"], combos) & pool
-        f = FA.scope_facts(m, prep, ranks, races["wind_speed"].to_numpy() if key.startswith("VA") else None)
+        va = key.startswith("VA")
+        f = FA.scope_facts(m, prep, ranks, races["wind_speed"].to_numpy() if va else None,
+                           races["wave_height"].to_numpy() if va else None)
         f["key"], f["period"] = key, [POOL_FROM, str(cutoff.date())]
         write_local(out, f"facts/{key.replace(':', '_')}.json", f)
     log("facts", len(fact_keys))

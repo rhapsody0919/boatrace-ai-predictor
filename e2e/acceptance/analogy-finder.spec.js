@@ -1043,6 +1043,21 @@ function toFactsApi(f) {
         }
       }
       if (kind === "VA" && f.windWave) {
+        // 2026-10-05 ユーザー決定 Q-F3: 波高が風速と別の情報を持つ会場は風×波で数える。build* の「風・波に近い
+        // レース」の件数を、風×波の区分（今日は風3m・波2cm → 2-3・0-2）として渡す（300件以上で風×波の見出し）
+        out.wave_mode = { use_wave: true, corr: 0.52, n: 41230 };
+        out.wind_wave = { "2-3": { "0-2": {} } };
+        for (let b = 1; b <= 6; b++) {
+          out.wind_wave["2-3"]["0-2"][b] = {};
+          for (const fin of [1, 2, 3]) {
+            const w = f.windWave[fin][b];
+            // 率はそのまま、件数だけ300件以上にする（3倍）
+            out.wind_wave["2-3"]["0-2"][b][TARGET_OF[fin]] = [
+              w.hits * 3,
+              w.n * 3,
+            ];
+          }
+        }
         out.wind = { "2-3": {} };
         for (let b = 1; b <= 6; b++) {
           out.wind["2-3"][b] = {};

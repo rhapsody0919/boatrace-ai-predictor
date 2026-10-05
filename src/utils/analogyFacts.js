@@ -7,6 +7,7 @@
  * 固定データでの一致は scripts/maintenance/verify-analogy-facts.js が検査する。
  */
 import { wilsonInterval } from "./wilson.js";
+import { waveBand, windBand } from "./analogyScenario.js";
 
 /** 着順（画面の 1・2・3）→ facts のキー */
 export const TARGET_KEY = { 1: "win", 2: "top2", 3: "top3" };
@@ -258,4 +259,33 @@ export function parseScopeKey(key) {
     cls: null,
     round: null,
   };
+}
+
+/** 波でも分けたときに、今日の区分がこの件数未満なら風だけに戻す（Q-F3） */
+export const MIN_WIND_WAVE = 300;
+
+/**
+ * 今日の風・波の欄の数え方（spec A-9、2026-10-05 ユーザー決定 Q-F3）
+ * - "wave": 波高が風速と別の情報を持つ会場（facts の VA の wave_mode.use_wave）で、今日の風×波の区分が300件以上
+ * - "waveFew": 同じ会場だが、今日の風×波の区分が300件未満なので風だけで数える（waveN にその件数）
+ * - "wind": 波高が風速とほぼ同じ値で記録される会場（風だけで数える）。waveVenue は、波でも分ける会場だが今日の波高が
+ *   無い・集計が古いために風だけで数えたとき true（「波高は風速とほぼ同じ」の注記を出さない）
+ * @param {object|null} vaFacts facts の VA の集計（wind・wind_wave・wave_mode）
+ * @param {object|null} exhibition 今日の展示（wind_speed・wave_height）
+ * @returns {{mode: "wave"|"waveFew"|"wind", rows: object, n: number, waveN?: number, waveVenue?: boolean, wind: string, wave: string|null}|null}
+ */
+export function windWaveView(vaFacts, exhibition) {
+  const wind = exhibition?.wind_band ?? windBand(exhibition?.wind_speed);
+  const rows = wind ? vaFacts?.wind?.[wind] : null;
+  if (!rows) return null;
+  const wave = waveBand(exhibition?.wave_height);
+  const n = rows["1"]?.win?.[1] ?? 0;
+  const waveVenue = Boolean(vaFacts.wave_mode?.use_wave);
+  if (!waveVenue || !wave || !vaFacts.wind_wave)
+    return { mode: "wind", rows, n, waveVenue, wind, wave };
+  const cell = vaFacts.wind_wave[wind]?.[wave];
+  const waveN = cell?.["1"]?.win?.[1] ?? 0;
+  if (waveN >= MIN_WIND_WAVE)
+    return { mode: "wave", rows: cell, n: waveN, wind, wave };
+  return { mode: "waveFew", rows, n, waveN, wind, wave };
 }

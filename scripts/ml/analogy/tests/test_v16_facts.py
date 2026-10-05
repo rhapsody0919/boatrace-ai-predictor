@@ -69,3 +69,23 @@ def test_matches_mock_tab1_json():
             for item in exp["typ"][b]:
                 for t, v in exp["typ"][b][item].items():
                     assert got["typ"][b][item][t] == (pytest.approx(v) if v is not None else None), (key, b, item, t)
+
+
+def test_wave_mode_and_wind_wave_counts():
+    """Q-F3: 会場の風速と波高の相関が 0.9 未満なら波でも分ける。風×波の区分ごとに数える"""
+    import numpy as np
+    import v16_facts as FA
+    ws = np.array([1, 1, 3, 3, 5, 7], dtype=float)
+    same = ws.copy()                                   # 波＝風（若松のような会場）
+    indep = np.array([5, 0, 5, 0, 5, 0], dtype=float)  # 波が別の情報
+    m = np.ones(6, bool)
+    assert FA.wave_mode(m, ws, same)["use_wave"] is False
+    assert FA.wave_mode(m, ws, indep)["use_wave"] is True
+    assert FA.wave_mode(m, ws, np.full(6, 3.0))["use_wave"] is False  # 値が一定
+    ranks = np.array([[1, 2, 3]] * 6)
+    f = FA.scope_facts(m, {}, ranks, ws, indep)
+    assert f["wind_wave"]["0-1"]["3-5"]["1"]["win"] == [1, 1]
+    assert f["wind_wave"]["0-1"]["0-2"]["1"]["win"] == [1, 1]
+    assert f["wind_wave"]["6+"]["0-2"]["1"]["win"] == [1, 1]
+    assert f["wind_wave"]["4-5"]["6+"]["1"]["win"] == [0, 0]
+    assert f["wave_mode"]["n"] == 6
