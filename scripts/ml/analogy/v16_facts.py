@@ -71,7 +71,13 @@ def prepare(values: dict[str, np.ndarray]) -> dict[str, tuple[dict, np.ndarray]]
 
 def scope_facts(mask: np.ndarray, prepared: dict, ranks: np.ndarray, wind_speed=None, wave_height=None) -> dict:
     """mask の範囲の facts。prepared は prepare() の戻り値、ranks は (n,3) の1〜3着"""
-    m = np.asarray(mask, dtype=bool)
+    # 範囲のレースだけを取り出してから数える（母集団の全件のマスクで数えると、範囲キーの数×全件の計算になる。T2-6）
+    idx = np.flatnonzero(np.asarray(mask, dtype=bool))
+    prepared = {item: ({k: p[idx] for k, p in pos.items()}, rk[idx]) for item, (pos, rk) in prepared.items()}
+    ranks = np.asarray(ranks)[idx]
+    wind_speed = None if wind_speed is None else np.asarray(wind_speed)[idx]
+    wave_height = None if wave_height is None else np.asarray(wave_height)[idx]
+    m = np.ones(len(idx), dtype=bool)
     fin = finish_masks(ranks)
     out = {"n": int(m.sum()), "usual": {}, "by": {}, "typ": {}}
     for b in range(1, 7):

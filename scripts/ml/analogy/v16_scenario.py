@@ -93,8 +93,23 @@ def prepare(races: pd.DataFrame) -> dict:
     }
 
 
+def _take(d: dict, idx: np.ndarray) -> dict:
+    """prepare() の戻り値を、範囲のレース（idx）だけに絞る（範囲キーごとに全件で数えないため。T2-6）"""
+    out = {}
+    for k, v in d.items():
+        if isinstance(v, dict):
+            out[k] = {kk: vv[idx] for kk, vv in v.items()}
+        elif isinstance(v, pd.DataFrame):
+            out[k] = v.iloc[idx].reset_index(drop=True)
+        else:
+            out[k] = v[idx]
+    return out
+
+
 def scope_cells(mask: np.ndarray, d: dict) -> dict:
-    m = np.asarray(mask, dtype=bool)
+    idx = np.flatnonzero(np.asarray(mask, dtype=bool))
+    d = _take(d, idx)
+    m = np.ones(len(idx), dtype=bool)
     cells = {}
     for e in ENTRY_TYPES:
         em = m & d["entries"][e]
@@ -124,7 +139,10 @@ def hint_matrix(avg_st: np.ndarray) -> dict[str, np.ndarray]:
 def scope_hints(mask: np.ndarray, d: dict, avg_st: dict[str, np.ndarray]) -> dict:
     """手がかりの条件×形の［当てはまる・当てはまらない］。avg_st は {"course": (n,6), "overall": (n,6)}（コース順。
     枠なりのレースだけを数え、平均ST が6艇そろわない行は除く）"""
-    base = np.asarray(mask, dtype=bool) & d["entries"]["waku"]
+    idx = np.flatnonzero(np.asarray(mask, dtype=bool))
+    d = _take(d, idx)
+    avg_st = {k: v[idx] for k, v in avg_st.items()}
+    base = d["entries"]["waku"]
     out = {}
     for version, a in avg_st.items():
         ok = base & ~np.isnan(a).any(axis=1)
@@ -172,7 +190,13 @@ def scope_attack(base: np.ndarray, forms: dict[str, np.ndarray], r1, r2, tech, m
     motor_rank・exh_rank は (n,6) の min 順位（6艇そろわない行は NaN）。st_cent は (n,6) の本番 ST（1/100秒の整数、
     コース順）で、攻める艇が内の艇より 0.05秒以上前に出た割合 att_lead に使う"""
     from v16_defs import ATTACK_BOAT
-    r1, r2 = np.asarray(r1), np.asarray(r2)
+    idx = np.flatnonzero(np.asarray(base, dtype=bool))  # 範囲のレースだけで数える（T2-6）
+    forms = {k: v[idx] for k, v in forms.items()}
+    r1, r2 = np.asarray(r1)[idx], np.asarray(r2)[idx]
+    tech = np.asarray(tech, dtype=object)[idx]
+    motor_rank, exh_rank = motor_rank[idx], exh_rank[idx]
+    st_cent = None if st_cent is None else st_cent[idx]
+    base = np.ones(len(idx), dtype=bool)
     tech = pd.Series(np.asarray(tech, dtype=object)).map({t: k for k, t in enumerate(TECHNIQUES)}) \
         .fillna(-1).to_numpy(dtype=int)
     motok = ~np.isnan(motor_rank).any(axis=1)
