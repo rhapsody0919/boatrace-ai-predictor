@@ -66,7 +66,7 @@ async function main() {
   const predictions = await fetchAll(
     "predictions",
     "race_id, top_pick, top_2nd, feature_contributions",
-    (q) => q.eq("model_id", "unified"),
+    (q) => q.eq("model_id", "unified").order("race_id").order("model_id").order("prediction_id"),
   );
   console.log(`  ${predictions.length}件`);
 
@@ -74,7 +74,7 @@ async function main() {
   const results = await fetchAll(
     "race_results",
     "race_id, rank1, rank2, payout_place_1, payout_place_2",
-    (q) => q.not("rank1", "is", null),
+    (q) => q.not("rank1", "is", null).order("race_id"),
   );
   const resultByRaceId = new Map(results.map((r) => [r.race_id, r]));
   console.log(`  ${results.length}件`);

@@ -8,6 +8,7 @@
 import { Fragment } from "react";
 import { Link } from "react-router-dom";
 import { bestOf } from "../../utils/bestOf";
+import { formatExhibitionSt } from "../../utils/formatters";
 import { isUnusedMotor, motorUsageCount } from "../../utils/motorUsage";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
 import {
@@ -221,9 +222,11 @@ function buildRowDefs({
       boat: r.boat_number,
       value: r.sample_count > 0 ? toNumber(r.avg_deviation) : null,
     })),
+    // 展示でフライング・出遅れした艇（F.01 等）は最良の候補から外す。値は印を外した正の数で、
+    // そのままだと F の艇が一番早く見えて金枠が付いた（BOA-759）
     exSt: (stPredictability ?? []).map((r) => ({
       boat: r.boat_number,
-      value: toNumber(r.exhibition_st),
+      value: r.exhibition_start_flag ? null : toNumber(r.exhibition_st),
     })),
     exhibition: (exhibitionTime ?? []).map((r) => ({
       boat: r.boat_number,
@@ -421,11 +424,18 @@ function buildRowDefs({
       tab: "st",
       best: bestOf(cand.exSt, "min", { digits: 2 }),
       render: (p) => {
-        const rate = toNumber(stByBoat.get(p.number)?.exhibition_st);
-        return rate !== null ? (
-          <span className="drt-value">{rate.toFixed(2)}</span>
+        const row = stByBoat.get(p.number);
+        const shown = formatExhibitionSt(
+          row?.exhibition_st,
+          row?.exhibition_start_flag,
+        );
+        if (shown === null) return ph("stPredictability");
+        return row?.exhibition_start_flag ? (
+          <span className="drt-value" title={t("dataTable.exStFlagTitle")}>
+            {shown}
+          </span>
         ) : (
-          ph("stPredictability")
+          <span className="drt-value">{shown}</span>
         );
       },
     },

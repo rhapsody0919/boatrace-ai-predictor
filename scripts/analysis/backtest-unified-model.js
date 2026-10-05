@@ -77,7 +77,7 @@ async function fetchTargetRaces(from, to) {
       let query = q.not("trifecta_all", "is", null);
       if (from) query = query.gte("race_id", from);
       if (to) query = query.lte("race_id", to);
-      return query;
+      return query.order("race_id").order("captured_at");
     },
   );
   // race_idごとに最新（captured_atが最も新しい）のtrifecta_allのみ使う
@@ -207,7 +207,7 @@ async function main() {
     const rows = await fetchAll(
       "race_results",
       "race_id, rank1, rank2, rank3, payout_trio, is_cancelled, is_no_race",
-      (q) => q.in("race_id", chunk),
+      (q) => q.in("race_id", chunk).order("race_id"),
     );
     resultRows.push(...rows);
   }

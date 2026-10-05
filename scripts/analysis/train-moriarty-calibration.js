@@ -72,18 +72,18 @@ async function fetchTrainingData(fromDate) {
           .in("model_id", BASE_MODELS)
           .not("is_hit_win", "is", null)
           .gte("predicted_at", fromDate)
-          .eq("is_shadow", false),
+          .eq("is_shadow", false).order("race_id").order("model_id").order("prediction_id"),
     ),
     fetchAll(
       "race_entries",
       "race_id, boat_number, ai_score_standard, ai_score_safe_bet, ai_score_upset_focus",
-      (q) => q.gte("race_id", fromDateStr),
+      (q) => q.gte("race_id", fromDateStr).order("race_id").order("boat_number"),
     ),
-    fetchAll("prediction_odds", "*", (q) => q.gte("race_id", fromDateStr)),
+    fetchAll("prediction_odds", "*", (q) => q.gte("race_id", fromDateStr).order("race_id")),
     fetchAll(
       "race_odds",
       "race_id, captured_at, odds_win_1, odds_win_2, odds_win_3, odds_win_4, odds_win_5, odds_win_6",
-      (q) => q.gte("race_id", fromDateStr),
+      (q) => q.gte("race_id", fromDateStr).order("race_id").order("captured_at"),
     ),
   ]);
 

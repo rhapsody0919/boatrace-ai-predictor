@@ -75,9 +75,21 @@ function* datesBetween(from, to) {
   }
 }
 
-const inDay = (date) => (q) => q.gte("race_id", date).lt("race_id", `${date}~`);
+// 主キーで並べる（BOA-753。並び順が無いと、1000行を超える日にページの間で行が重複・欠落する）
+const PER_BOAT_TABLES = new Set([
+  "race_start_timings",
+  "race_entries",
+  "exhibition_data",
+]);
+const inDay = (date, table) => (q) => {
+  const ordered = q
+    .gte("race_id", date)
+    .lt("race_id", `${date}~`)
+    .order("race_id");
+  return PER_BOAT_TABLES.has(table) ? ordered.order("boat_number") : ordered;
+};
 const read = (table, columns, date, client) =>
-  fetchAll(table, columns, inDay(date), { client, throwOnError: true });
+  fetchAll(table, columns, inDay(date, table), { client, throwOnError: true });
 
 /**
  * 1日分の書く行を作る（DBの読み取りだけ）。

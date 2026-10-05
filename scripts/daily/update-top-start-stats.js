@@ -173,7 +173,7 @@ async function main() {
   const startTimings = await fetchAll(
     "race_start_timings",
     "race_id, boat_number, start_timing, is_flying, finish_mark",
-    (q) => q.gte("race_id", ninetyDaysAgo),
+    (q) => q.gte("race_id", ninetyDaysAgo).order("race_id").order("boat_number"),
   );
   console.log(`race_start_timings取得完了: ${startTimings.length}件`);
 
@@ -187,7 +187,7 @@ async function main() {
       .gte("race_id", ninetyDaysAgo)
       .eq("is_cancelled", false)
       .or(NOT_NO_RACE_FILTER) // 不成立は race_status で外す（is_no_race は全行 false。BOA-545）
-      .not("rank1", "is", null),
+      .not("rank1", "is", null).order("race_id"),
   );
   console.log(`race_results取得完了: ${raceResults.length}件`);
 

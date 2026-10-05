@@ -32,7 +32,7 @@ async function main() {
   const drafts = await fetchAll(
     "sns_drafts",
     "id,platform,format,created_at",
-    (q) => q,
+    (q) => q.order("id"),
   );
 
   const legacyRows = drafts.filter((d) =>
