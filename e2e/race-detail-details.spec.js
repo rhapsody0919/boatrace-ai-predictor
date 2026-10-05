@@ -1086,3 +1086,78 @@ test("モーター: コース別成績の見出しと戻るリンクは「コー
     timeout: 30000,
   });
 });
+
+// 固定した列を持つ横スクロールの表の仕上げ（BOA-742・BOA-752）
+test.describe("横スクロールの表の仕上げ", () => {
+  // 「‹」を押すと、端までの残りが少ないときは1回で左端まで戻る。以前は 375px のモーター一覧で
+  // 233→37→0 と2回かかった（PR #1223 ファン評価1周目）
+  test("375px: モーター一覧は右端から「‹」を1回押すと左端まで戻る（BOA-742）", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${RACE}?tab=motor`);
+    await expect(page.locator(".motor-venue-rank-head")).toBeVisible({
+      timeout: 90000,
+    });
+    const hint = page.locator(".mcc-list-hint");
+    const more = hint.locator(":scope > .hscroll-more");
+    while (await more.isVisible()) await more.click();
+    const less = hint.locator(":scope > .hscroll-less");
+    await less.click();
+    await expect(less).toHaveCount(0);
+    await expect
+      .poll(() => hint.locator(".table-scroll").evaluate((el) => el.scrollLeft))
+      .toBe(0);
+  });
+
+  // 固定した列の右の線と「›」「‹」の丸の縁が、ダークで背景に溶けていた（約1.2:1。PR #1223・#1225
+  // ファン評価）。線の色を背景に重ねた色で、背景との差を測る
+  for (const theme of ["light", "dark"]) {
+    test(`${theme}: 固定した列の右の線と「‹」の丸の縁が背景と見分けられる（BOA-742・BOA-752）`, async ({
+      page,
+    }) => {
+      test.slow();
+      await page.setViewportSize({ width: 375, height: 812 });
+      await page.goto(`${RACE}?tab=motor`);
+      await expect(page.locator(".motor-venue-rank-head")).toBeVisible({
+        timeout: 90000,
+      });
+      await page.evaluate(
+        (t) => document.documentElement.setAttribute("data-theme", t),
+        theme,
+      );
+      const hint = page.locator(".mcc-list-hint");
+      await hint.locator(":scope > .hscroll-more").click();
+      await expect(hint.locator(":scope > .hscroll-less")).toBeVisible();
+      const { line, bg, ring } = await hint.evaluate((el) => {
+        const td = el.querySelector("tbody tr td:nth-child(2)");
+        const shadow = getComputedStyle(td).boxShadow;
+        const color = shadow.slice(0, shadow.lastIndexOf(")") + 1);
+        // 「‹」の丸の縁（radial-gradient の色の段）も同じ色で描く
+        const ringImage = getComputedStyle(
+          el.querySelector(":scope > .hscroll-less"),
+        ).backgroundImage;
+        const back = getComputedStyle(td).backgroundColor;
+        // 半透明の線の色を背景に重ねた色（キャンバスで合成する）
+        const cv = document.createElement("canvas");
+        cv.width = 1;
+        cv.height = 1;
+        const ctx = cv.getContext("2d");
+        ctx.fillStyle = back;
+        ctx.fillRect(0, 0, 1, 1);
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, 1, 1);
+        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+        return {
+          line: `rgb(${r}, ${g}, ${b})`,
+          bg: back,
+          ring: ringImage.includes(color),
+        };
+      });
+      expect(ring, "「‹」の丸の縁が、固定した列の右の線と同じ色").toBe(true);
+      // 罫線の色のままだと、ライト約1.4:1・ダーク約1.2:1だった
+      expect(contrast(line, bg), `線 ${line} / 地 ${bg}`).toBeGreaterThanOrEqual(2);
+    });
+  }
+});
