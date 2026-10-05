@@ -866,7 +866,7 @@
         "hexToday": "Boat {{boat}} today (rank among the 6)",
         "hexTodayB": "Boat {{boat}} today",
         "hexTypical": "Dotted line: {{scope}}, average rank when Boat {{boat}} {{finish}}",
-        "hexFoot": "Further out = higher among the 6. Solid line: today's rank. Dotted line: average rank in races where the same boat number finished there",
+        "hexFoot": "Further out = higher among the 6. Solid line: today's rank",
         "bigLabel": "{{scope}}: Boat {{boat}} {{rate}}",
         "bigCount": "{{hits}}/{{n}} races ({{period}})",
         "lede": "For each item, we compare the {{rate}} when the boat was best among the 6 and when it was worst. Items are sorted by how clear the difference is (items overlap, so we cannot tell which one made the difference)",
@@ -883,6 +883,7 @@
         "stripTop": "#1 ({{word}})",
         "stripBottom": "#6 ({{word}})",
         "stripCap": "Numbers above the bars are %, below is the rank among the 6 (left = {{word}}). Dotted line: overall {{usual}}. The outlined bar is today's position",
+        "stripCapNoToday": "Numbers above the bars are %, below is the rank among the 6 (left = {{word}}). Dotted line: overall {{usual}}",
         "where": {
           "best": "the {{word}} of the 6",
           "worst": "the {{word}} of the 6",
@@ -924,17 +925,17 @@
           },
           "recent_win30": {
             "label": "1st-place rate, last 30 races",
-            "short": "Recent 1st rate",
+            "short": "1st rate, last 30",
             "desc": "Share of the racer's last 30 races finished 1st (the racer's record)"
           },
           "motor_2": {
             "label": "Motor top-2 rate",
-            "short": "Motor",
+            "short": "Motor top-2 rate",
             "desc": "Motor = engine, assigned by lottery each meet. The share of races in which this motor has finished in the top 2, a guide to engine strength"
           },
           "boat_2": {
             "label": "Boat top-2 rate",
-            "short": "Boat",
+            "short": "Boat top-2 rate",
             "desc": "Boat = hull (carries the engine), assigned by a separate lottery from the motor. The share of races in which this boat has finished in the top 2"
           },
           "st_mean30": {
@@ -1270,7 +1271,7 @@
         "sliderLabel": "By similarity",
         "fewer": "Fewer",
         "more": "More",
-        "farthest": "Even the least similar ({{n}}th) has {{same}} of {{total}} items the same and {{near}} close",
+        "farthest": "The least similar ({{n}}th) has {{same}} of {{total}} items the same and {{near}} close",
         "heading": "Similar races",
         "ledeTail": ", sorted by how similar the race card is. After the exhibition, exhibition times, weather, wind and waves are also compared",
         "sonarLabel": "{{n}} past races similar to today",
@@ -1517,7 +1518,7 @@
         "hintDown": "{{form}} is actually less likely: {{ph}} ({{pm}} when not matching)",
         "hintCount": "{{n}} races. {{form}} = in the race, {{def}}",
         "hintNone": "Today's order matches none of the conditions",
-        "hintFoot": "Counted in wakunari races in {{scope}} ({{n}}; races with flying or late starts etc. excluded). {{few}}Even when a condition matches, it misses more often than not (a clue, not a deciding factor). Tap to select that shape in ② below",
+        "hintFoot": "Counted in wakunari races in {{scope}} ({{n}}; races with flying or late starts and races without an average ST for all 6 boats are excluded, so the count can differ slightly from \"Any shape\" in ②). {{few}}Even when a condition matches, it misses more often than not (a clue, not a deciding factor). Tap to select that shape in ② below",
         "hintBadge": "Today's avg. ST matches",
         "slitHeading": "How will the start line up? (slit shape)",
         "forms": {

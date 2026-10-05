@@ -266,4 +266,57 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       section.getByText(/参考: 今日の展示の形は(?!出していない)/),
     ).toHaveCount(0);
   });
+
+  test.describe("ファン評価3周目の P3（BOA-778）", () => {
+    test("優勝戦の日の今節の平均着順点のカードは、今日の位置の枠が無いので「枠で囲んだ棒」を言わない", async ({
+      page,
+    }) => {
+      // 例のレース（若松12R）は優勝戦の日
+      await setup(page);
+      await openAiTab(page);
+      const card = sectionOf(page)
+        .getByRole("article")
+        .filter({ hasText: "今節の平均着順点（前日まで）" });
+      await expect(card).toBeVisible();
+      await expect(card).not.toContainText("枠で囲んだ棒が今日の位置");
+      const other = sectionOf(page)
+        .getByRole("article")
+        .filter({ hasText: "全国勝率" })
+        .first();
+      await expect(other).toContainText("枠で囲んだ棒が今日の位置");
+    });
+
+    test("タブ1の脚注は注意を1つずつ行に分け、12px 以上で出す", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openAiTab(page);
+      const list = sectionOf(page).locator(".af-foot-list").first();
+      expect(await list.locator("li").count()).toBeGreaterThanOrEqual(4);
+      const size = await list.evaluate((el) =>
+        parseFloat(getComputedStyle(el).fontSize),
+      );
+      expect(size).toBeGreaterThanOrEqual(12);
+    });
+
+    test("手がかりの件数が②の件数とずれる理由を書く", async ({ page }) => {
+      await setup(page);
+      await openAiTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      await expect(section).toContainText(
+        "平均STが6艇そろわないレースを除くので、②の「どの形でも」と件数が少しずれることがある",
+      );
+    });
+
+    test("ソナーの回る飾りは扇ではなく細い線", async ({ page }) => {
+      await setup(page);
+      await openAiTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      const sweep = section.locator(".af-sweep");
+      await expect(sweep.locator("line")).toHaveCount(1);
+      await expect(sweep.locator("path")).toHaveCount(0);
+    });
+  });
 });

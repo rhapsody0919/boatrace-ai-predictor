@@ -2619,7 +2619,8 @@ test.describe("アナロジー・ファインダー: 類似レース", () => {
     ).toBeVisible();
     await expect(
       panel(section).getByText(
-        /一番遠い10件目でも、\d+項目中\d+項目が同じ・\d+項目が近い/,
+        // 「でも」→「は」（2026-10-06 ユーザー承認、BOA-778 を公開前に直す。spec B-4 を更新）
+        /一番遠い10件目は、\d+項目中\d+項目が同じ・\d+項目が近い/,
       ),
     ).toBeVisible();
     const sonar = panel(section).getByRole("group", {

@@ -145,9 +145,15 @@
 
 .af-foot {
   margin: 0;
-  font-size: var(--font-size-2xs);
+  /* 10px だと 375px で読まれない（BOA-778） */
+  font-size: var(--font-size-xs);
   color: var(--text-secondary);
   line-height: var(--line-height-relaxed);
+}
+.af-foot-list {
+  padding-left: 1.1em;
+  display: grid;
+  gap: 2px;
 }
 
 .af-warn {

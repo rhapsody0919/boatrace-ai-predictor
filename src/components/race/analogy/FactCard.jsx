@@ -191,7 +191,11 @@ export default function FactCard({
         })}
       </div>
       <p className="af-foot">
-        {t(`${k}.stripCap`, { word: word(row.good), usual: fmtPct(usual, 1) })}
+        {/* 今日の位置の枠が無いとき（優勝戦の日の今節の平均着順点・今日の値が無い）は「枠で囲んだ棒…」を言わない（BOA-778） */}
+        {t(todayPos ? `${k}.stripCap` : `${k}.stripCapNoToday`, {
+          word: word(row.good),
+          usual: fmtPct(usual, 1),
+        })}
       </p>
       {!hideLine && (
         <TodaySentence
