@@ -113,3 +113,11 @@ export function scopeName(key, t) {
       })
     : base;
 }
+
+/** 今日の値の表記（承認版モックの fmtV） */
+export function fmtFactValue(key, v) {
+  if (v === null || v === undefined || !Number.isFinite(v)) return "—";
+  if (key === "recent_win30") return `${Math.round(v * 100)}%`;
+  if (key === "motor_2" || key === "boat_2") return `${v.toFixed(1)}%`;
+  return v.toFixed(2);
+}

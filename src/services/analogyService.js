@@ -74,6 +74,9 @@ async function fromSupabase(params) {
     .in("grade", uniq(cands.map((c) => c.grade)))
     .in("round", uniq(cands.map((c) => c.round)));
   const slice = resolveContributionSlice(rows, params);
+  // 出走表時点の集計がまだ無い版は「準備中」（api/analogy/contribution.js と同じ）
+  if (!slice && params.stage === "racecard" && rows.length === 0)
+    return { available: false, stageMissing: true };
   if (!slice)
     throw new Error(
       `版 ${model.model_version} に stage=${params.stage} target=${params.target} の行がありません`,
@@ -111,7 +114,9 @@ export async function getAnalogyContribution(input) {
     result = await fromSupabase(params);
   }
   if (result.available) cache.set(key, result);
-  else unavailableUntil = Date.now() + UNAVAILABLE_TTL_MS;
+  // 出走表時点の集計が無いだけ（stageMissing）は、展示後の集計まで止めない
+  else if (!result.stageMissing)
+    unavailableUntil = Date.now() + UNAVAILABLE_TTL_MS;
   return result;
 }
 
@@ -123,9 +128,12 @@ export async function getAnalogyContribution(input) {
 const V16_TTL_MS = 60 * 1000;
 const v16Cache = new Map();
 
+const V16_MAX_ENTRIES = 12;
+
 async function getV16(path) {
   const hit = v16Cache.get(path);
   if (hit && Date.now() - hit.at < V16_TTL_MS) return hit.body;
+  v16Cache.delete(path);
   const res = await fetch(path);
   if (!res.ok)
     throw new Error(
@@ -137,6 +145,9 @@ async function getV16(path) {
       `アナロジー・ファインダーの API の応答の形が違う（${path.split("?")[0]}）`,
     );
   v16Cache.set(path, { at: Date.now(), body });
+  // 1レース 0.4MB ほどあるので、古いものから捨てる（Map は入れた順）
+  while (v16Cache.size > V16_MAX_ENTRIES)
+    v16Cache.delete(v16Cache.keys().next().value);
   return body;
 }
 

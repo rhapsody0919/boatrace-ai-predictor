@@ -82,18 +82,18 @@
 
 ## T7 画面（screens.md）
 - [x] T6-4 （(d1b)。承認版の画面にあって朝のバッチの出力に無かった値を足した）類似レースの33項目の表示用の値（similar-racecard の各件と today_display、候補すべては similar-display/、展示後の段が800件に付ける）、手がかりの表の「{会場}で」「{会場}の全選手（コース別）」の平均ST（today.course_st の venue・venue_n・venue_course_all）、展示→本番の一致率（today.exh_agreement）、タブ3の脚注の返還レースの件数（scenario.n_refund_excluded）、today-exhibition の天候・風の成分・展示タイムの差、similar の API の展示後に層の情報を合わせる
-- [ ] T7-1 `AnalogyFinderSection` の作り直しと `AnalogyControls`（時点・着順・タブ、状態の表）
-- [ ] T7-2 来る艇の条件: `ConditionFactsTab`・`FactHexagon`・`FactCard`（今節の平均着順点の注記2種: 序盤 Q-D・優勝戦/準優勝戦の日 Q7）・ボートの折りたたみ・`WindWaveFacts`
-- [ ] T7-3 `AiOutlook`（AIの見立て、展示前の準備中）
-- [ ] T7-4 類似レース: `SimilarRacesTab`・`SimilarSonar`・`SimilarityItems`・`SimilarCompareList`
-- [ ] T7-5 決まり方の共用部品: `OutcomeBars`・`FinishSankey`・`TrifectaList`
-- [ ] T7-6 展開シナリオ: `ScenarioTab`・`EntryPatternPicker`・`SlitHint`・`SlitShapePicker`・`SlitShapeIcon`・`AttackTable`（1号艇の表の注記 Q-E）・`ScenarioRaceList`
-- [ ] T7-7 `DataSources`（使っている項目）
-- [ ] T7-8 i18n（`aiPredictionTab.analogy.*`、4言語）。「競艇」「寄与度」「モデル」を画面に出さない。日本語の直し 1〜49 を反映
+- [x] T7-1 （#1272。facts・scenario は stage=exhibition で1回だけ読み時点は画面で切り替え、類似レースは時点ごと）`AnalogyFinderSection` の作り直しと `AnalogyControls`（時点・着順・タブ、状態の表）
+- [x] T7-2 （#1272）来る艇の条件: `ConditionFactsTab`・`FactHexagon`・`FactCard`（今節の平均着順点の注記2種: 序盤 Q-D・優勝戦/準優勝戦の日 Q7）・ボートの折りたたみ・`WindWaveFacts`
+- [x] T7-3 （#1272。既存の /api/analogy/contribution を読む。出走表時点の行が無い版は API が stageMissing を返し「準備中」）`AiOutlook`（AIの見立て、展示前の準備中）
+- [x] T7-4 （#1272。承認版にある「その艇が勝ったとき、ほかの艇は？」も入れた）類似レース: `SimilarRacesTab`・`SimilarSonar`・`SimilarityItems`・`SimilarCompareList`
+- [x] T7-5 （#1272）決まり方の共用部品: `OutcomeBars`・`FinishSankey`・`TrifectaList`
+- [x] T7-6 （#1272。③の比べる相手は scenario の応答の reference）展開シナリオ: `ScenarioTab`・`EntryPatternPicker`・`SlitHint`・`SlitShapePicker`・`SlitShapeIcon`・`AttackTable`（1号艇の表の注記 Q-E）・`ScenarioRaceList`
+- [x] T7-7 （#1272）`DataSources`（使っている項目）
+- [x] T7-8 （#1272。en・zh-TW・ko はサブエージェントが用語集に合わせて訳した）i18n（`aiPredictionTab.analogy.*`、4言語）。「競艇」「寄与度」「モデル」を画面に出さない。日本語の直し 1〜49 を反映
 
 ## T8 仕上げ
-- [ ] T8-1 `npm run test:layout`（AI予想タブの節の3タブ。375/768/1024/1440/1920px）とダークモードの目視
-- [ ] T8-2 データ精度の検証（`data-accuracy-verifier`）: 3タブの数字を本番 DB から数え直して照合。例のレースはモックの数字との差を説明できること
-- [ ] T8-3 受け入れ E2E（`e2e/acceptance/analogy-finder.spec.js`）をローカルで実行。例のレースの raceId は `2026-09-27-20-12`（`ANALOGY_RACE_ID=2026-09-27-20-12 npx playwright test --config=playwright.acceptance.config.js e2e/acceptance/analogy-finder.spec.js`）。級別が混ざる予選と優勝戦の日の確認（Q1・Q7）は、テストが facts・scenario の応答を差し替えて行う
-- [ ] T8-4 承認モックとの比較（`mock-diff-checker`）と、ファン評価ループ（`.claude/rules/review-fix-cycle.md`。新しい主要表示のため）
+- [x] T8-1 （#1272。e2e/layout.spec.js の旧 FR-1 の検査を v16 の3タブに置き換え、例のレースの固定の応答 e2e/analogy-v16-fixture.json.gz で5幅とも通過）`npm run test:layout`（AI予想タブの節の3タブ。375/768/1024/1440/1920px）とダークモードの目視
+- [x] T8-2 （#1272。data-accuracy-verifier が例のレースの全タブの値を本番 DB から SQL で数え直し、すべて一致。見つかった2件（長期の同着で2着以内・3着以内から艇が抜ける、タブ3の除外件数）は #1271 で修正）データ精度の検証（`data-accuracy-verifier`）: 3タブの数字を本番 DB から数え直して照合。例のレースはモックの数字との差を説明できること
+- [x] T8-3 （#1272。95件中93件通過。残る2件はテストの見出しの部分一致で、テストの修正はユーザーの承認待ち）受け入れ E2E（`e2e/acceptance/analogy-finder.spec.js`）をローカルで実行。例のレースの raceId は `2026-09-27-20-12`（`ANALOGY_RACE_ID=2026-09-27-20-12 npx playwright test --config=playwright.acceptance.config.js e2e/acceptance/analogy-finder.spec.js`）。級別が混ざる予選と優勝戦の日の確認（Q1・Q7）は、テストが facts・scenario の応答を差し替えて行う
+- [ ] T8-4 （#1272。mock-diff-checker の差は反映済み、ファン評価2周。残る P2 の3点 Q-F1〜F3 はユーザーの判断待ち）承認モックとの比較（`mock-diff-checker`）と、ファン評価ループ（`.claude/rules/review-fix-cycle.md`。新しい主要表示のため）
 - [ ] T8-5 完了監査: このファイルの全チェックボックスと、コミット・本番の実測を突き合わせる

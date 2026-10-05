@@ -12,14 +12,7 @@
  */
 export function describeAnalogyLayer(conditions, t, { count } = {}) {
   const k = "aiPredictionTab.analogy.layer";
-  const round = conditions?.round
-    ? t(`aiPredictionTab.analogy.rounds.${conditions.round}`)
-    : null;
-  const grade = conditions?.grade_g1plus ? t(`${k}.g1plus`) : null;
-  const kind =
-    round && grade
-      ? t(`${k}.gradeRound`, { grade, round })
-      : (round ?? grade ?? null);
+  const kind = layerKind(conditions, t);
   const races =
     count === undefined || count === null
       ? t(`${k}.races`)
@@ -27,4 +20,19 @@ export function describeAnalogyLayer(conditions, t, { count } = {}) {
   return kind
     ? t(`${k}.withKind`, { kind, races })
     : t(`${k}.plain`, { races });
+}
+
+/**
+ * そろえる条件のうちレースの種類（「G1以上の優勝戦」「優勝戦」「G1以上」）。予選などは null
+ * @param {{round: "yusho"|"junyu"|null, grade_g1plus: boolean}} conditions
+ */
+export function layerKind(conditions, t) {
+  const k = "aiPredictionTab.analogy.layer";
+  const round = conditions?.round
+    ? t(`aiPredictionTab.analogy.rounds.${conditions.round}`)
+    : null;
+  const grade = conditions?.grade_g1plus ? t(`${k}.g1plus`) : null;
+  return round && grade
+    ? t(`${k}.gradeRound`, { grade, round })
+    : (round ?? grade ?? null);
 }
