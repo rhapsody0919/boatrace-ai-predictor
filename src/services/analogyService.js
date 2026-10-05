@@ -19,7 +19,10 @@ const cache = new Map();
 const UNAVAILABLE_TTL_MS = 10 * 60 * 1000;
 let unavailableUntil = 0;
 
-const withStage = (params) => ({ stage: DEFAULT_STAGE, ...params });
+const withStage = (params) => ({
+  ...params,
+  stage: params.stage ?? DEFAULT_STAGE,
+});
 
 const contributionKey = ({ venue, grade, round, target, stage }) =>
   `contribution|${stage}|${venue}|${grade}|${round}|${target}`;

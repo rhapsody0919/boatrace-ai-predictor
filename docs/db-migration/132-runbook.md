@@ -72,6 +72,7 @@ select model_version, stage, count(*) from analogy_contribution_profiles group b
 - 長期分のキャッシュは kb_races だけ v3 になる（名前 `stage` を足したため）。初回は kb_races の長期分（2019-04〜2025-12、約37万行）を
   DB から読み直して `analogy/source/v3/kb_races/` に置く。ほかの表は v2 のキャッシュを読む。前後で Supabase Dashboard の Disk IO を確認する
 - 所要時間の見込み: 前回（約50分）に、出走表時点の3本の学習・seed の再学習・集計の分（数十分）が加わる。timeout は240分
+- テーマのキーを入れ替える初回なので、前の版との比較（drift）は必ず「大きく変わった」になり、Slack に通知が出る（想定どおり。止まらない）
 - 品質ゲート（事前登録5 の判定1〜5）で止まったら何も書かれず、今の版の表示が続く。そのときは Step Summary の理由をオーケストレーターに知らせる
 
 ## 4. 学習後の確認（読み取り）

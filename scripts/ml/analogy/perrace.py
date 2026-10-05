@@ -20,9 +20,13 @@ import pandas as pd
 
 import features as F
 import metrics as M
-from themes import LIVE_FEATURES, THEMES
+from themes import FRAME_FEATURES, LIVE_FEATURES, THEMES
 
 FIXTURE_N = 50
+# per_race_meta.json の themes。推論側の集計（analogyRaceContribution.js）は全列がどれかのテーマに入っていることを
+# 求めるので、AIの見立ての7テーマから外した枠番を、ここでは枠のテーマとして足す
+META_THEMES = THEMES + [{"key": "frame", "name": "枠", "description": "枠番",
+                         "groups": [{"key": "boatNumber", "label": "枠番", "features": FRAME_FEATURES}]}]
 # 事前登録5: 2026-04-01 以降の test は、探索（ablate.py）・FR-2 の事前登録1〜3で見ている。
 # 展示の効果を確認的に読むのは、これより前だけ
 EXPLORED_FROM = pd.Timestamp("2026-04-01")
@@ -52,7 +56,7 @@ def per_race_meta(version: str, win: tuple, racecard: tuple, maps: dict) -> dict
         "categorical_maps": maps,
         # 本体の風向の会場ごとの回転（features.py の wind_basis.json）。推論側の JS が同じ表で直す
         "wind_basis": F.load_wind_basis(),
-        "themes": THEMES,
+        "themes": META_THEMES,
     }
 
 
