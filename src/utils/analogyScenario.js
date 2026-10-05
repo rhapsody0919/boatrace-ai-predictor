@@ -54,8 +54,9 @@ export function slitForms(stByCourse) {
   return {
     flat: max(c) - min(c) <= 6,
     wall: max(inner) - min(inner) <= 2,
-    d2: c[1] - Math.min(c[0], c[2]) >= 5,
-    d3: c[2] - Math.min(c[1], c[3]) >= 5,
+    // 凹み: 両隣より0.05秒以上遅い（2026-10-06 ユーザー決定、BOA-777。Python の v16_defs と同じ）
+    d2: c[1] - Math.max(c[0], c[2]) >= 5,
+    d3: c[2] - Math.max(c[1], c[3]) >= 5,
     kado: min(inner) - c[3] >= 3,
     d1: c[0] - c[1] >= 5,
     dash: sum(inner) - sum(c.slice(3)) >= 15,

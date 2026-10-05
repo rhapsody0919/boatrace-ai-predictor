@@ -7,6 +7,8 @@ import {
   rankBand,
 } from "../../../utils/analogyScenario";
 
+// 凹みの形では「攻める艇が内の艇より前に出た割合」を出さない（両隣より遅い定義なので100%になる。spec C-4、BOA-777）
+const DENT_FORMS = new Set(["d1", "d2", "d3"]);
 const k = "aiPredictionTab.analogy.scenario";
 const BANDS = ["top", "mid", "low"];
 const rate = (o) => (o && o[1] ? o[0] / o[1] : null);
@@ -254,7 +256,7 @@ export default function AttackTable({
             </p>
           )}
           <p className="af-foot">
-            {slit !== "d1" && F.att_lead?.[1]
+            {!DENT_FORMS.has(slit) && F.att_lead?.[1]
               ? t(`${k}.attackLead`, { b: att, p: fmtPct(rate(F.att_lead)) })
               : ""}
             {R && natDiff(R.by_exh, "att_win") !== null

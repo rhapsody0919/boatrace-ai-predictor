@@ -102,6 +102,8 @@ def test_scope_attack_small():
     assert k["by_exh"]["top"]["n"] == 0  # 展示タイムがそろわない
     assert k["att_lead"] == [1, 2]       # 3号艇より 0.05 秒以上前（16−10=6、16−12=4）
     assert "att_lead" not in out["d1"] and out["flat"]["attacker"] is None
+    # 凹みでは出さない（両隣より遅いので、攻める艇が前に出た割合は定義から100%。BOA-777）
+    assert all("att_lead" not in out[f] for f in ("d1", "d2", "d3"))
 
 
 # ---- モックの入力（アーカイブの slitpred・knn/work2）があるときだけ: slit-hint/mark1.py の mark1.json と一致する

@@ -92,8 +92,8 @@ def test_slit_forms_example_race_is_flat_only():
 @pytest.mark.parametrize("st, form", [
     ([0.15, 0.15, 0.16, 0.12, 0.18, 0.18], "kado"),      # min(内3)−4コース = 3
     ([0.20, 0.15, 0.16, 0.15, 0.15, 0.15], "d1"),        # 1−2 = 5
-    ([0.10, 0.15, 0.10, 0.12, 0.12, 0.12], "d2"),        # 2 − min(1,3) = 5
-    ([0.20, 0.10, 0.15, 0.12, 0.12, 0.12], "d3"),        # 3 − min(2,4) = 5
+    ([0.10, 0.15, 0.10, 0.12, 0.12, 0.12], "d2"),        # 2 − max(1,3) = 5
+    ([0.20, 0.10, 0.17, 0.12, 0.12, 0.12], "d3"),        # 3 − max(2,4) = 5
     ([0.20, 0.20, 0.20, 0.15, 0.15, 0.15], "dash"),      # 内3の和 − 外3の和 = 15
     ([0.15, 0.16, 0.17, 0.25, 0.25, 0.25], "wall"),      # 内3の max−min = 2
 ])
@@ -104,6 +104,13 @@ def test_slit_forms_boundaries(st, form):
 def test_slit_forms_boundary_minus_one_is_false():
     assert not V.slit_forms([0.15, 0.15, 0.16, 0.13, 0.18, 0.18])["kado"]   # 差2
     assert not V.slit_forms([0.15, 0.16, 0.18, 0.25, 0.25, 0.25])["wall"]   # 差3
+
+
+def test_slit_forms_dent_needs_both_neighbours():
+    # 凹みは両隣より0.05秒以上遅い（2026-10-06 ユーザー決定、BOA-777）。早い方の隣より遅いだけでは当てはまらない
+    assert not V.slit_forms([0.20, 0.10, 0.15, 0.12, 0.12, 0.12])["d3"]   # 3−2=5 だが 3−4=3
+    assert not V.slit_forms([0.07, 0.01, -0.09, 0.12, 0.12, 0.12])["d2"]  # 例のレースの展示: 2−3=10 だが 2−1=−6
+    assert V.slit_forms([0.07, 0.12, 0.05, 0.12, 0.12, 0.12])["d2"]       # 2−max(1,3)=5
 
 
 def test_slit_forms_round_half_like_mock():

@@ -136,8 +136,9 @@ def slit_forms_matrix(st_by_course) -> dict[str, np.ndarray]:
     forms = {
         "flat": c.max(1) - c.min(1) <= 6,
         "wall": c[:, :3].max(1) - c[:, :3].min(1) <= 2,
-        "d2": c[:, 1] - np.minimum(c[:, 0], c[:, 2]) >= 5,
-        "d3": c[:, 2] - np.minimum(c[:, 1], c[:, 3]) >= 5,
+        # 凹み: 両隣より0.05秒以上遅い（遅い方の隣より遅い。2026-10-06 ユーザー決定、BOA-777。以前は早い方の隣＝min）
+        "d2": c[:, 1] - np.maximum(c[:, 0], c[:, 2]) >= 5,
+        "d3": c[:, 2] - np.maximum(c[:, 1], c[:, 3]) >= 5,
         "kado": c[:, :3].min(1) - c[:, 3] >= 3,
         "d1": c[:, 0] - c[:, 1] >= 5,
         "dash": c[:, :3].sum(1) - c[:, 3:].sum(1) >= 15,

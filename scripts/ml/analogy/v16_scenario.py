@@ -192,7 +192,9 @@ def scope_attack(base: np.ndarray, forms: dict[str, np.ndarray], r1, r2, tech, m
                               for k, v in _bands(motor_rank[:, a - 1]).items()}
             fo["by_exh"] = {k: _attack_metrics(sel & exok & v, r1, r2, tech, a)
                             for k, v in _bands(exh_rank[:, a - 1]).items()}
-            if st_cent is not None and f != "d1":  # イン凹みでは出さない（spec C-4）
+            # 凹み（イン・2コース・カド受け）では出さない（spec C-4）。凹みは「攻める艇の内の艇が両隣より
+            # 0.05秒以上遅い」なので、攻める艇が内の艇より前に出た割合は定義から100%になる（2026-10-06 BOA-777）
+            if st_cent is not None and f not in ("d1", "d2", "d3"):
                 fo["att_lead"] = _x((st_cent[:, a - 2] - st_cent[:, a - 1]) >= 5, sel)
         out[f] = fo
     out["any_form"] = _attack_metrics(base, r1, r2, tech, None)
