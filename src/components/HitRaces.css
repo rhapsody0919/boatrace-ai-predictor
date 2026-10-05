@@ -382,14 +382,18 @@
 }
 
 @media (max-width: 480px) {
+  /* 375px で「全期間（14日間）」だけが2段目に落ち、タブの並びに見えなかった（BOA-754）。
+     最小幅と左右の余白を詰めて1段に収める */
   .period-selector {
-    gap: 0.5rem;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
   }
 
   .period-selector button {
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 0.6rem;
     font-size: 0.85rem;
-    min-width: 90px;
+    min-width: 0;
+    white-space: nowrap;
   }
 
   .venue-stats-section {
