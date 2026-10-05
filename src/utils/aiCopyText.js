@@ -213,7 +213,7 @@ function weatherLine(t, weather) {
  * @param {object|null} context.weather prediction.weather
  * @param {string} lang
  * @param {Date} now
- * @param {boolean} exhibitionPublished 展示タイム・展示STのどれかが出ているか
+ * @param {boolean|null} exhibitionPublished 展示タイム・展示STのどれかが出ているか（取得失敗で不明なら null）
  */
 export function buildPremiseLines(
   t,
@@ -244,7 +244,8 @@ export function buildPremiseLines(
   lines.push(
     `${t("aiCopy.premiseAsOf")}: ${t("aiCopy.premiseAsOfValue", { time: formatJstDateTime(now) })}`,
   );
-  if (!exhibitionPublished)
+  // null（取得失敗で分からない）のときは書かない
+  if (exhibitionPublished === false)
     lines.push(t("aiCopy.premiseExhibitionUnpublished"));
   return lines.map((line) => `- ${line}`);
 }
@@ -271,7 +272,7 @@ export function buildNotes(t, rowKeys) {
  * @param {string} args.prompt 質問文（空なら入れない）
  * @param {string} args.pageUrl そのレース詳細ページの表示言語の URL
  * @param {Date} args.now
- * @param {boolean} args.exhibitionPublished
+ * @param {boolean|null} args.exhibitionPublished
  */
 export function buildAiCopyText({
   t,

@@ -39,7 +39,7 @@ function buildMotorRow(t, players, motorByBoat) {
 
   return {
     key: "motor",
-      label: t("dataTable.rowMotor"),
+    label: t("dataTable.rowMotor"),
     values: values.map((v) => {
       if (allZero || v === null) return DASH;
       return `${v.toFixed(1)}%`;
@@ -251,13 +251,18 @@ function buildRows(t, players, analysis) {
   ];
 }
 
-// 展示タイム・展示STのどれかが出ていれば「展示後」とみなす
+// 展示タイム・展示STのどれかが出ていれば「展示後」とみなす。
+// どちらかの取得に失敗したときは分からないので null（「未反映」の行を出さない。取得失敗を
+// 展示前と言い切らないため）
 function isExhibitionPublished(analysis) {
   const hasValue = (v) => v !== null && v !== undefined;
-  return (
+  const published =
     (analysis.exhibitionTime ?? []).some((r) => hasValue(r.exhibition_time)) ||
-    (analysis.stPredictability ?? []).some((r) => hasValue(r.exhibition_st))
-  );
+    (analysis.stPredictability ?? []).some((r) => hasValue(r.exhibition_st));
+  if (published) return true;
+  if (analysis.failed?.exhibitionTime || analysis.failed?.stPredictability)
+    return null;
+  return false;
 }
 
 export function useAiCopyText({ raceId, prediction, race, venueCode }) {

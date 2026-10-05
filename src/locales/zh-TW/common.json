@@ -1288,9 +1288,9 @@
     "premiseConditions": "水面條件",
     "premiseWind": "風",
     "premiseObservedAt": "{{time}}觀測",
-    "premiseAsOf": "數據時間點",
+    "premiseAsOf": "複製時間",
     "premiseAsOfValue": "{{time}}（日本時間）",
-    "premiseExhibitionUnpublished": "展示：尚未公布（展示前，因此展示ST、展示時間、傾角、零件更換為「—」）",
+    "premiseExhibitionUnpublished": "展示：未反映（展示前，或在開啟此頁面後才公布，因此展示ST、展示時間、傾角、零件更換為「—」）",
     "notesHeading": "項目註記",
     "note": {
       "form": "狀態（勝率Δ）：目前全國勝率與約90天前全國勝率的差。↑為上升，↓為下降",

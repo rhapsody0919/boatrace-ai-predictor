@@ -1288,9 +1288,9 @@
     "premiseConditions": "수면 조건",
     "premiseWind": "바람",
     "premiseObservedAt": "{{time}} 관측",
-    "premiseAsOf": "데이터 시점",
+    "premiseAsOf": "복사한 시각",
     "premiseAsOfValue": "{{time}}(일본 시간)",
-    "premiseExhibitionUnpublished": "전시: 미발표(전시 전이라 전시 ST, 전시 타임, 틸트, 부품 교환은 「—」)",
+    "premiseExhibitionUnpublished": "전시: 미반영(전시 전이거나 이 페이지를 연 뒤에 발표되어 전시 ST, 전시 타임, 틸트, 부품 교환은 「—」)",
     "notesHeading": "항목 주석",
     "note": {
       "form": "컨디션(승률Δ): 현재 전국 승률과 약 90일 전 전국 승률의 차이. ↑는 상승, ↓는 하락",

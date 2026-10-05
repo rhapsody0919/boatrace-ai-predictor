@@ -110,7 +110,8 @@ const build = (lang, overrides = {}) => {
       prompt: t("aiCopy.promptWin"),
       pageUrl: aiCopyPageUrl(RACE_ID, lang),
       now: NOW,
-      exhibitionPublished: overrides.exhibitionPublished ?? false,
+      exhibitionPublished:
+        "exhibitionPublished" in overrides ? overrides.exhibitionPublished : false,
     }),
   };
 };
@@ -220,6 +221,10 @@ for (const lang of LANGS) {
     `[${lang}] 展示後は展示前の断りが無い`,
     !noWeather.includes(a.premiseExhibitionUnpublished),
   );
+
+  // 取得失敗で展示の有無が分からないときは「未反映」と言い切らない
+  const { text: unknownEx } = build(lang, { exhibitionPublished: null });
+  check(`[${lang}] 展示の有無が不明なら未反映の行を出さない`, !unknownEx.includes(a.premiseExhibitionUnpublished));
 
   // 表に無い行の注記は出さない
   const { text: fewRows } = build(lang, {

@@ -1288,9 +1288,9 @@
     "premiseConditions": "水面の条件",
     "premiseWind": "風",
     "premiseObservedAt": "{{time}}観測",
-    "premiseAsOf": "データの時点",
+    "premiseAsOf": "コピーした時刻",
     "premiseAsOfValue": "{{time}}（日本時間）",
-    "premiseExhibitionUnpublished": "展示: 未発表（展示前のため、展示ST・展示タイム・チルト・部品交換は「—」）",
+    "premiseExhibitionUnpublished": "展示: 未反映（展示前、またはこのページを開いた後に発表されたため、展示ST・展示タイム・チルト・部品交換は「—」）",
     "notesHeading": "項目の注記",
     "note": {
       "form": "調子（勝率Δ）: 現在の全国勝率と約90日前の全国勝率の差。↑は上昇、↓は下降",

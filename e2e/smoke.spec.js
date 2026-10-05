@@ -3731,7 +3731,7 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
     // 見出し → レースの前提 → 表 → 注記 → 質問文 → 出典（BOA-770）。
     // 値の未解決を示す undefined/NaN が混入していないことを確認する
     expect(clipboardText).toMatch(/^## .+\n\n- 日付: \d{4}-\d{2}-\d{2}\n- 締切予定: /);
-    expect(clipboardText).toContain("- データの時点: ");
+    expect(clipboardText).toContain("- コピーした時刻: ");
     expect(clipboardText).toContain("| 項目 |");
     expect(clipboardText).toContain("項目の注記:");
     expect(clipboardText).toMatch(

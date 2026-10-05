@@ -1294,9 +1294,9 @@
     "premiseConditions": "Water conditions",
     "premiseWind": "Wind",
     "premiseObservedAt": "observed at {{time}}",
-    "premiseAsOf": "Data as of",
+    "premiseAsOf": "Copied at",
     "premiseAsOfValue": "{{time}} (JST)",
-    "premiseExhibitionUnpublished": "Exhibition: not yet announced (before the exhibition run, so exhibition ST, exhibition time, tilt and parts changed show \"—\")",
+    "premiseExhibitionUnpublished": "Exhibition: not reflected (either before the exhibition run or announced after this page was opened, so exhibition ST, exhibition time, tilt and parts changed show \"—\")",
     "notesHeading": "Notes on the items",
     "note": {
       "form": "Form (win rate Δ): current national win rate minus the national win rate about 90 days ago. ↑ up, ↓ down",
