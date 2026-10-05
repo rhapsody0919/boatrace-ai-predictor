@@ -1,0 +1,416 @@
+{
+ "source": "docs/design/analogy-finder/analysis/t1/t1-1-stage-rule.json の consistency_check_strings（#1134 のブランチ feature/boa-271-fr2-strat、コミット 748bd129304e5bc28f25a1823784d09ef45b2285）からコピー。正はそちら",
+ "note": "JS（raceStageConfig.js）と Python（features.py）が同じ答えになることを tests/test_features.py で固定するための一覧。expected は最終版のルールで NFKC 後に当てた種別キー（名前だけの判定。長期の stage_kind との組み合わせは含まない）",
+ "cases": [
+  {
+   "stage": "B組優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "B組準優勝戦",
+   "expected_category": "semifinal",
+   "boundary_example": false
+  },
+  {
+   "stage": "GP優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "PRGT優勝",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "QC優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "W準優勝戦前",
+   "expected_category": "semifinal",
+   "boundary_example": false
+  },
+  {
+   "stage": "W準優勝戦後",
+   "expected_category": "semifinal",
+   "boundary_example": false
+  },
+  {
+   "stage": "W準優戦前半",
+   "expected_category": "semifinal",
+   "boundary_example": false
+  },
+  {
+   "stage": "W準優戦後半",
+   "expected_category": "semifinal",
+   "boundary_example": false
+  },
+  {
+   "stage": "auじぶん優",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "じぶん銀行優",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "ウインクDR",
+   "expected_category": "dream",
+   "boundary_example": false
+  },
+  {
+   "stage": "オオムラGP",
+   "expected_category": null,
+   "boundary_example": false
+  },
+  {
+   "stage": "ゴールド優勝",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "サントリC優",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "サントリー優",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "シリーズ優勝",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "スピード優勝",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "セミファイナル",
+   "expected_category": "semifinal",
+   "boundary_example": true
+  },
+  {
+   "stage": "ダービー優勝",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "ツッキー優勝",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "ツッキー優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "ツッピー優勝",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "ドリーム戦",
+   "expected_category": "dream",
+   "boundary_example": false
+  },
+  {
+   "stage": "バッチこい優",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "パタち杯優勝",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "ファイナル",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "ファイナル進出戦",
+   "expected_category": null,
+   "boundary_example": true
+  },
+  {
+   "stage": "ファイナル選",
+   "expected_category": null,
+   "boundary_example": false
+  },
+  {
+   "stage": "ペイペイDR",
+   "expected_category": "dream",
+   "boundary_example": false
+  },
+  {
+   "stage": "ホットマン優",
+   "expected_category": "final",
+   "boundary_example": true
+  },
+  {
+   "stage": "一般",
+   "expected_category": "general",
+   "boundary_example": false
+  },
+  {
+   "stage": "一般戦",
+   "expected_category": "general",
+   "boundary_example": false
+  },
+  {
+   "stage": "一般桐生特選",
+   "expected_category": "generalSpecial",
+   "boundary_example": false
+  },
+  {
+   "stage": "予選",
+   "expected_category": "qualifier",
+   "boundary_example": false
+  },
+  {
+   "stage": "予選特別選抜",
+   "expected_category": "qualifierSpecial",
+   "boundary_example": false
+  },
+  {
+   "stage": "予選特選",
+   "expected_category": "qualifierSpecial",
+   "boundary_example": false
+  },
+  {
+   "stage": "住信SBI優",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "個性派王優勝",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "優勝",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "優勝戦B組女",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "優勝戦女子",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "優勝戦男子",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "内山信二優勝",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "団体・優勝",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "団体・優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "夜ダービー優",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "夜王優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "大郷優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "女子優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "女子準優勝戦",
+   "expected_category": "semifinal",
+   "boundary_example": false
+  },
+  {
+   "stage": "安全王優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "決勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "海の安全優勝",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "海属王優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "準々決勝戦",
+   "expected_category": "semifinalQualifier",
+   "boundary_example": true
+  },
+  {
+   "stage": "準優",
+   "expected_category": null,
+   "boundary_example": true
+  },
+  {
+   "stage": "準優勝",
+   "expected_category": null,
+   "boundary_example": false
+  },
+  {
+   "stage": "準優勝戦",
+   "expected_category": "semifinal",
+   "boundary_example": false
+  },
+  {
+   "stage": "準優進出シー",
+   "expected_category": "semifinalQualifier",
+   "boundary_example": false
+  },
+  {
+   "stage": "準優進出チャ",
+   "expected_category": "semifinalQualifier",
+   "boundary_example": false
+  },
+  {
+   "stage": "準優進出戦",
+   "expected_category": "semifinalQualifier",
+   "boundary_example": false
+  },
+  {
+   "stage": "準決勝戦",
+   "expected_category": "semifinal",
+   "boundary_example": true
+  },
+  {
+   "stage": "澤乃井優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "特別選抜A組",
+   "expected_category": "selection",
+   "boundary_example": false
+  },
+  {
+   "stage": "特別選抜戦A",
+   "expected_category": "selection",
+   "boundary_example": false
+  },
+  {
+   "stage": "特別選抜戦Ａ",
+   "expected_category": "selection",
+   "boundary_example": false
+  },
+  {
+   "stage": "特別選抜戦Ａ組",
+   "expected_category": "selection",
+   "boundary_example": false
+  },
+  {
+   "stage": "王将位決定戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "王座決定戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "男子優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "男子準優勝戦",
+   "expected_category": "semifinal",
+   "boundary_example": false
+  },
+  {
+   "stage": "発祥地N選抜",
+   "expected_category": "selection",
+   "boundary_example": false
+  },
+  {
+   "stage": "県内選手権優",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "蛭子優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "記者選抜戦",
+   "expected_category": "selection",
+   "boundary_example": false
+  },
+  {
+   "stage": "賞金女王決定",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "選抜戦Ａ",
+   "expected_category": "selection",
+   "boundary_example": false
+  },
+  {
+   "stage": "関ヶ原決戦",
+   "expected_category": null,
+   "boundary_example": false
+  },
+  {
+   "stage": "Ｓ戦優勝戦",
+   "expected_category": "final",
+   "boundary_example": false
+  },
+  {
+   "stage": "Ｗ準優戦前半",
+   "expected_category": "semifinal",
+   "boundary_example": true
+  }
+ ]
+}
