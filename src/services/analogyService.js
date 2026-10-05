@@ -114,3 +114,50 @@ export async function getAnalogyContribution(input) {
   else unavailableUntil = Date.now() + UNAVAILABLE_TTL_MS;
   return result;
 }
+
+// ---------------------------------------------------------------- v16（BOA-271 T6-3）
+// 来る艇の条件・類似レース・展開シナリオの読み出し（api/analogy/{facts,similar,scenario}/[raceId].js、Edge）。
+// 応答の status（api/_lib/analogyV16.js の resolveStatus）は時刻で変わる（展示の後に exhibition_ready になる）ので、
+// メモリのキャッシュは CDN と同じ 60秒だけ持つ。失敗は残さない（BOA-497）。
+
+const V16_TTL_MS = 60 * 1000;
+const v16Cache = new Map();
+
+async function getV16(path) {
+  const hit = v16Cache.get(path);
+  if (hit && Date.now() - hit.at < V16_TTL_MS) return hit.body;
+  const res = await fetch(path);
+  if (!res.ok)
+    throw new Error(
+      `アナロジー・ファインダーの API が HTTP ${res.status}（${path.split("?")[0]}）`,
+    );
+  const body = await res.json();
+  if (typeof body?.status !== "string")
+    throw new Error(
+      `アナロジー・ファインダーの API の応答の形が違う（${path.split("?")[0]}）`,
+    );
+  v16Cache.set(path, { at: Date.now(), body });
+  return body;
+}
+
+const stageQuery = (stage) => `stage=${encodeURIComponent(stage)}`;
+
+/** タブ1（today・facts・exhibition）。stage は racecard|exhibition */
+export const getAnalogyFacts = (raceId, stage) =>
+  getV16(
+    `/api/analogy/facts/${encodeURIComponent(raceId)}?${stageQuery(stage)}`,
+  );
+
+/** タブ2（似ている順の上位・層・比べる相手） */
+export const getAnalogySimilar = (raceId, stage) =>
+  getV16(
+    `/api/analogy/similar/${encodeURIComponent(raceId)}?${stageQuery(stage)}`,
+  );
+
+/** タブ3（範囲キーの scenario）。scope を省略すると API が既定（VC、300件未満なら NC）を選ぶ */
+export const getAnalogyScenario = (raceId, scope, stage) =>
+  getV16(
+    `/api/analogy/scenario/${encodeURIComponent(raceId)}?${stageQuery(stage)}${
+      scope ? `&scope=${encodeURIComponent(scope)}` : ""
+    }`,
+  );

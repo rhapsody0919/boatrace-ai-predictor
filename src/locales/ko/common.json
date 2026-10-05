@@ -795,7 +795,26 @@
       "listAllBoats": "테마별(전체 보트)",
       "listAllBoatsCompare": "테마별(전체 보트. 번호별 값은 위 표)",
       "magnitudeNote": "비율은 유리하게 작용했는지 불리하게 작용했는지와 관계없는 '영향의 크기'입니다.",
-      "compareCaption": "번호별 영향 비율(%, 열마다 합계 100%). 아래 '전체 보트'는 2~5번을 포함한 6척을 합친 값입니다."
+      "compareCaption": "번호별 영향 비율(%, 열마다 합계 100%). 아래 '전체 보트'는 2~5번을 포함한 6척을 합친 값입니다.",
+      "layer": {
+        "g1plus": "G1 이상",
+        "gradeRound": "{{grade}}의 {{round}}",
+        "races": "1호정의 급별, 1호정과 승률 1위의 차, 승률 1위 정번이 같은 과거 레이스",
+        "racesCount": "1호정의 급별, 1호정과 승률 1위의 차, 승률 1위 정번이 같은 과거 레이스 {{count}}건",
+        "withKind": "오늘과 같은 「{{kind}}」에서, {{races}}",
+        "plain": "오늘과 같이, {{races}}"
+      },
+      "scopeNames": {
+        "allSame": "6정 모두 {{cls}}",
+        "classCount": "{{cls}} {{n}}정",
+        "selected": "({{boat}}호정은 {{cls}})",
+        "combo": "{{where}}, {{combo}}{{selected}}",
+        "national": "전국",
+        "withRound": "{{base}}의 {{round}}",
+        "venueAll": "{{venue}}의 전체 레이스",
+        "venueG1": "{{venue}}의 G1",
+        "nationalAll": "전국의 전체 레이스"
+      }
     }
   },
   "beforeInfo": {

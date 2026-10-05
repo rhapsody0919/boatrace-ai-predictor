@@ -453,7 +453,26 @@
       "listAllBoats": "テーマ別（全艇）",
       "listAllBoatsCompare": "テーマ別（全艇。艇番ごとの値は上の表）",
       "magnitudeNote": "割合は、有利・不利のどちらに働いたかを問わない「効きの大きさ」です。",
-      "compareCaption": "艇番ごとの効きの割合（%。列ごとに合計100%）。下の「全艇」は2〜5号艇も含めた6艇をまとめた値です。"
+      "compareCaption": "艇番ごとの効きの割合（%。列ごとに合計100%）。下の「全艇」は2〜5号艇も含めた6艇をまとめた値です。",
+      "layer": {
+        "g1plus": "G1以上",
+        "gradeRound": "{{grade}}の{{round}}",
+        "races": "1号艇の級別・1号艇と勝率トップの差・勝率トップの艇番がそろう過去レース",
+        "racesCount": "1号艇の級別・1号艇と勝率トップの差・勝率トップの艇番がそろう過去レース{{count}}件",
+        "withKind": "今日と同じ『{{kind}}』で、{{races}}",
+        "plain": "今日と同じく、{{races}}"
+      },
+      "scopeNames": {
+        "allSame": "6艇とも{{cls}}",
+        "classCount": "{{cls}}が{{n}}艇",
+        "selected": "（{{boat}}号艇は{{cls}}）",
+        "combo": "{{where}}・{{combo}}{{selected}}",
+        "national": "全国",
+        "withRound": "{{base}}の{{round}}",
+        "venueAll": "{{venue}}の全レース",
+        "venueG1": "{{venue}}のG1",
+        "nationalAll": "全国の全レース"
+      }
     }
   },
   "beforeInfo": {

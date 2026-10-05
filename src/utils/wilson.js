@@ -50,6 +50,24 @@ export function wilsonLowerBound(successes, n, z = DEFAULT_Z) {
 }
 
 /**
+ * Wilson信頼区間（下限と上限）を返す。アナロジー・ファインダー（BOA-271）の「ぶれ幅」。
+ *
+ * @param {number} successes 成功数（0以上、n以下）
+ * @param {number} n 試行数
+ * @param {number} [z]
+ * @returns {[number, number]|null} [下限, 上限]（0〜1）。n<=0 のときは null
+ */
+export function wilsonInterval(successes, n, z = DEFAULT_Z) {
+  const lo = wilsonLowerBound(successes, n, z);
+  if (lo === null) return null;
+  const p = successes / n;
+  const z2 = z * z;
+  const center = p + z2 / (2 * n);
+  const margin = z * Math.sqrt((p * (1 - p) + z2 / (4 * n)) / n);
+  return [lo, Math.min(1, (center + margin) / (1 + z2 / n))];
+}
+
+/**
  * 比率（0〜1）と試行数からWilson下限を返す。
  *
  * 保存されている値が丸め済みの率（NUMERIC(5,2)）だけで成功数の整数が手元に無い場合に使う。
