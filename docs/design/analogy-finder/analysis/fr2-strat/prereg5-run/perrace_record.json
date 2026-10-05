@@ -1,0 +1,686 @@
+{
+ "model_version": "2026-10-06",
+ "exhibition_effect": {
+  "win": {
+   "all": {
+    "mean": 0.014669508039125133,
+    "ci95": [
+     0.0132254205292368,
+     0.01607293786838347
+    ],
+    "n": 54867,
+    "n_days": 365
+   },
+   "live_complete": {
+    "mean": 0.014659194131872793,
+    "ci95": [
+     0.013220091302088446,
+     0.016069537941002077
+    ],
+    "n": 54534,
+    "n_days": 365
+   },
+   "unexplored": {
+    "mean": 0.017084161839714063,
+    "ci95": [
+     0.014974165881445336,
+     0.01911929689562541
+    ],
+    "n": 25910,
+    "n_days": 177
+   },
+   "unexplored_live_complete": {
+    "mean": 0.01706261839350234,
+    "ci95": [
+     0.01495652341602731,
+     0.01909715637623263
+    ],
+    "n": 25801,
+    "n_days": 177
+   }
+  },
+  "top2": {
+   "all": {
+    "mean": 0.021136256086395612,
+    "ci95": [
+     0.01914569889539408,
+     0.023022234370673703
+    ],
+    "n": 54867,
+    "n_days": 365
+   },
+   "live_complete": {
+    "mean": 0.02126763351181392,
+    "ci95": [
+     0.019287907235729783,
+     0.02318186464333232
+    ],
+    "n": 54534,
+    "n_days": 365
+   },
+   "unexplored": {
+    "mean": 0.023248715126375906,
+    "ci95": [
+     0.02013678741583061,
+     0.026452352469729774
+    ],
+    "n": 25910,
+    "n_days": 177
+   },
+   "unexplored_live_complete": {
+    "mean": 0.023294173568013377,
+    "ci95": [
+     0.020145135073687245,
+     0.026475147732204454
+    ],
+    "n": 25801,
+    "n_days": 177
+   }
+  },
+  "top3": {
+   "all": {
+    "mean": 0.021642650509821712,
+    "ci95": [
+     0.019497311270936363,
+     0.023642789094535932
+    ],
+    "n": 54867,
+    "n_days": 365
+   },
+   "live_complete": {
+    "mean": 0.022168520660997646,
+    "ci95": [
+     0.020048459887998495,
+     0.024193532055096906
+    ],
+    "n": 54534,
+    "n_days": 365
+   },
+   "unexplored": {
+    "mean": 0.02416664178649559,
+    "ci95": [
+     0.021048489453279806,
+     0.027120225279769535
+    ],
+    "n": 25910,
+    "n_days": 177
+   },
+   "unexplored_live_complete": {
+    "mean": 0.024555019883896415,
+    "ci95": [
+     0.021399840217553586,
+     0.027536978769937655
+    ],
+    "n": 25801,
+    "n_days": 177
+   }
+  }
+ },
+ "missing_types": {
+  "win": {
+   "boat_number": {
+    "None": 477
+   },
+   "nat_2": {
+    "None": 218
+   },
+   "recent_win30_diff": {
+    "NaN": 246
+   },
+   "exh_time_diff": {
+    "None": 418
+   },
+   "nat_win_rank": {
+    "None": 75
+   },
+   "cls_ord": {
+    "None": 102
+   },
+   "race_number": {
+    "None": 112
+   },
+   "loc_win_diff": {
+    "None": 164
+   },
+   "nat_win": {
+    "None": 231
+   },
+   "nat_win_diff": {
+    "None": 357
+   },
+   "exh_time_rank": {
+    "None": 62
+   },
+   "b1_cls_ord": {
+    "None": 85
+   },
+   "b1_nat_win": {
+    "None": 360
+   },
+   "venue_code": {
+    "None": 1113
+   },
+   "loc_win_rank": {
+    "None": 38
+   },
+   "round_code": {
+    "None": 58
+   },
+   "grade_code": {
+    "None": 40
+   },
+   "series_day": {
+    "None": 90
+   },
+   "recent_win30_rank": {
+    "NaN": 43
+   },
+   "loc_win": {
+    "None": 109
+   },
+   "st_mean30_diff": {
+    "NaN": 252
+   },
+   "wind_speed": {
+    "None": 101
+   },
+   "motor_2_diff": {
+    "None": 203
+   },
+   "recent_top3_30": {
+    "NaN": 144
+   },
+   "st_mean30_rank": {
+    "NaN": 35
+   },
+   "loc_2": {
+    "None": 187
+   },
+   "wave_height": {
+    "None": 56
+   },
+   "recent_win30": {
+    "NaN": 84
+   },
+   "st_mean30": {
+    "NaN": 153
+   },
+   "age": {
+    "None": 245
+   },
+   "motor_2_rank": {
+    "None": 52
+   },
+   "motor_2": {
+    "None": 153
+   },
+   "branch_code": {
+    "NaN": 762
+   },
+   "is_local": {
+    "NaN": 36
+   },
+   "weight": {
+    "NaN": 128
+   },
+   "is_final_day_num": {
+    "None": 23
+   },
+   "exh_time": {
+    "None": 104
+   },
+   "st_n": {
+    "None": 52
+   },
+   "boat_2_diff": {
+    "None": 104
+   },
+   "boat_2_rank": {
+    "None": 21
+   },
+   "boat_2": {
+    "None": 79
+   },
+   "wind_y": {
+    "None": 68
+   },
+   "wind_x": {
+    "None": 53
+   },
+   "weather_code": {
+    "NaN": 7
+   }
+  },
+  "win_racecard": {
+   "nat_win_diff": {
+    "None": 376
+   },
+   "b1_nat_win": {
+    "None": 387
+   },
+   "nat_2": {
+    "None": 233
+   },
+   "nat_win": {
+    "None": 259
+   },
+   "cls_ord": {
+    "None": 107
+   },
+   "b1_cls_ord": {
+    "None": 90
+   },
+   "nat_win_rank": {
+    "None": 85
+   },
+   "boat_number": {
+    "None": 494
+   },
+   "loc_win_diff": {
+    "None": 182
+   },
+   "recent_win30_rank": {
+    "NaN": 47
+   },
+   "st_mean30_diff": {
+    "NaN": 218
+   },
+   "recent_win30": {
+    "NaN": 116
+   },
+   "race_number": {
+    "None": 116
+   },
+   "recent_win30_diff": {
+    "NaN": 267
+   },
+   "venue_code": {
+    "None": 1305
+   },
+   "series_day": {
+    "None": 104
+   },
+   "grade_code": {
+    "None": 55
+   },
+   "loc_win_rank": {
+    "None": 52
+   },
+   "motor_2": {
+    "None": 169
+   },
+   "loc_win": {
+    "None": 173
+   },
+   "motor_2_diff": {
+    "None": 255
+   },
+   "st_mean30_rank": {
+    "NaN": 47
+   },
+   "loc_2": {
+    "None": 216
+   },
+   "round_code": {
+    "None": 74
+   },
+   "st_mean30": {
+    "NaN": 177
+   },
+   "age": {
+    "None": 294
+   },
+   "recent_top3_30": {
+    "NaN": 181
+   },
+   "motor_2_rank": {
+    "None": 49
+   },
+   "is_local": {
+    "NaN": 49
+   },
+   "branch_code": {
+    "NaN": 855
+   },
+   "weight": {
+    "NaN": 167
+   },
+   "is_final_day_num": {
+    "None": 18
+   },
+   "st_n": {
+    "None": 38
+   },
+   "boat_2_diff": {
+    "None": 106
+   },
+   "boat_2": {
+    "None": 111
+   },
+   "boat_2_rank": {
+    "None": 28
+   }
+  },
+  "top2_racecard": {
+   "nat_win_diff": {
+    "None": 458
+   },
+   "b1_nat_win": {
+    "None": 237
+   },
+   "nat_win": {
+    "None": 289
+   },
+   "cls_ord": {
+    "None": 141
+   },
+   "b1_cls_ord": {
+    "None": 47
+   },
+   "loc_win_rank": {
+    "None": 65
+   },
+   "boat_number": {
+    "None": 545
+   },
+   "nat_win_rank": {
+    "None": 91
+   },
+   "loc_win_diff": {
+    "None": 205
+   },
+   "recent_top3_30": {
+    "NaN": 232
+   },
+   "nat_2": {
+    "None": 239
+   },
+   "recent_win30_diff": {
+    "NaN": 234
+   },
+   "loc_2": {
+    "None": 166
+   },
+   "motor_2_diff": {
+    "None": 263
+   },
+   "venue_code": {
+    "None": 1320
+   },
+   "st_mean30_diff": {
+    "NaN": 254
+   },
+   "series_day": {
+    "None": 124
+   },
+   "loc_win": {
+    "None": 164
+   },
+   "motor_2": {
+    "None": 142
+   },
+   "recent_win30_rank": {
+    "NaN": 50
+   },
+   "recent_win30": {
+    "NaN": 106
+   },
+   "grade_code": {
+    "None": 46
+   },
+   "motor_2_rank": {
+    "None": 47
+   },
+   "is_local": {
+    "NaN": 53
+   },
+   "race_number": {
+    "None": 148
+   },
+   "st_mean30_rank": {
+    "NaN": 46
+   },
+   "round_code": {
+    "None": 62
+   },
+   "st_mean30": {
+    "NaN": 152
+   },
+   "age": {
+    "None": 262
+   },
+   "weight": {
+    "NaN": 186
+   },
+   "is_final_day_num": {
+    "None": 29
+   },
+   "st_n": {
+    "None": 55
+   },
+   "boat_2": {
+    "None": 76
+   },
+   "boat_2_rank": {
+    "None": 38
+   },
+   "branch_code": {
+    "NaN": 820
+   },
+   "boat_2_diff": {
+    "None": 108
+   }
+  },
+  "top3_racecard": {
+   "nat_win_diff": {
+    "None": 641
+   },
+   "recent_top3_30": {
+    "NaN": 370
+   },
+   "b1_nat_win": {
+    "None": 299
+   },
+   "nat_win": {
+    "None": 328
+   },
+   "loc_win": {
+    "None": 222
+   },
+   "loc_win_rank": {
+    "None": 74
+   },
+   "motor_2_diff": {
+    "None": 349
+   },
+   "boat_number": {
+    "None": 563
+   },
+   "nat_win_rank": {
+    "None": 78
+   },
+   "loc_win_diff": {
+    "None": 304
+   },
+   "nat_2": {
+    "None": 450
+   },
+   "cls_ord": {
+    "None": 187
+   },
+   "b1_cls_ord": {
+    "None": 41
+   },
+   "grade_code": {
+    "None": 80
+   },
+   "loc_2": {
+    "None": 187
+   },
+   "recent_win30_diff": {
+    "NaN": 259
+   },
+   "venue_code": {
+    "None": 1703
+   },
+   "race_number": {
+    "None": 190
+   },
+   "st_mean30_diff": {
+    "NaN": 290
+   },
+   "motor_2": {
+    "None": 245
+   },
+   "motor_2_rank": {
+    "None": 55
+   },
+   "is_local": {
+    "NaN": 64
+   },
+   "round_code": {
+    "None": 82
+   },
+   "age": {
+    "None": 343
+   },
+   "series_day": {
+    "None": 136
+   },
+   "st_mean30": {
+    "NaN": 227
+   },
+   "recent_win30": {
+    "NaN": 152
+   },
+   "st_mean30_rank": {
+    "NaN": 31
+   },
+   "recent_win30_rank": {
+    "NaN": 42
+   },
+   "weight": {
+    "NaN": 243
+   },
+   "st_n": {
+    "None": 68
+   },
+   "is_final_day_num": {
+    "None": 40
+   },
+   "boat_2_diff": {
+    "None": 177
+   },
+   "branch_code": {
+    "NaN": 1169
+   },
+   "boat_2": {
+    "None": 180
+   },
+   "boat_2_rank": {
+    "None": 31
+   }
+  }
+ },
+ "fit_nan_rates": {
+  "venue_code": 0,
+  "boat_number": 0,
+  "race_number": 0,
+  "cls_ord": 0,
+  "nat_win": 0,
+  "nat_2": 0,
+  "nat_win_diff": 0,
+  "nat_win_rank": 0,
+  "loc_win": 0,
+  "loc_2": 0,
+  "loc_win_diff": 0,
+  "loc_win_rank": 0,
+  "recent_win30": 0.005082560473532299,
+  "recent_top3_30": 0.005082560473532299,
+  "recent_win30_diff": 0.005082560473532299,
+  "recent_win30_rank": 0.005082560473532299,
+  "b1_cls_ord": 0,
+  "b1_nat_win": 0,
+  "exh_time": 0,
+  "exh_time_diff": 0,
+  "exh_time_rank": 0,
+  "st_mean30": 0.003043578060060852,
+  "st_n": 0,
+  "st_mean30_diff": 0.003043578060060852,
+  "st_mean30_rank": 0.003043578060060852,
+  "motor_2": 0,
+  "motor_2_diff": 0,
+  "motor_2_rank": 0,
+  "boat_2": 0,
+  "boat_2_diff": 0,
+  "boat_2_rank": 0,
+  "weather_code": 0,
+  "wind_x": 0,
+  "wind_y": 0,
+  "wind_speed": 0,
+  "wave_height": 0,
+  "grade_code": 0,
+  "round_code": 0,
+  "series_day": 0,
+  "is_final_day_num": 0,
+  "age": 0,
+  "weight": 0.0013430423082746057,
+  "branch_code": 0.0013430423082746057,
+  "is_local": 0.0013430423082746057
+ },
+ "parity_fixture_races": 50,
+ "definitions": {
+  "calm_rows_wind_direction_blank_speed0": 3276,
+  "unknown_rows_wind_direction_blank_speed_pos": 10280,
+  "branch_map_size": 18,
+  "series_day_db_rows": 47808,
+  "series_day_match_rate": 0.9820532128514057,
+  "is_final_day_match_rate": 1,
+  "series_not_found_rows": 0
+ },
+ "round_v2_changes": {
+  "fit|kb": {
+   "n_races": 341265,
+   "n_changed": 1414,
+   "by_change": {
+    "junyu->other": 1227,
+    "other->yusho": 110,
+    "other->junyu": 77
+   }
+  },
+  "fit|main": {
+   "n_races": 0,
+   "n_changed": 0,
+   "by_change": {}
+  },
+  "temperature|kb": {
+   "n_races": 14125,
+   "n_changed": 18,
+   "by_change": {
+    "junyu->other": 16,
+    "other->yusho": 2
+   }
+  },
+  "temperature|main": {
+   "n_races": 0,
+   "n_changed": 0,
+   "by_change": {}
+  },
+  "test|kb": {
+   "n_races": 7537,
+   "n_changed": 19,
+   "by_change": {
+    "junyu->other": 16,
+    "other->yusho": 3
+   }
+  },
+  "test|main": {
+   "n_races": 47330,
+   "n_changed": 6,
+   "by_change": {
+    "other->yusho": 4,
+    "other->junyu": 2
+   }
+  }
+ }
+}
