@@ -1,6 +1,6 @@
 /**
  * BOA-271 アナロジー・ファインダー: GitHub Actions の workflow_dispatch を Vercel Cron から起動する（学習側 T10-7）。
- * GitHub Actions の schedule は遅れ・欠落が常態なので使わない（ADR-0080）。
+ * GitHub Actions の schedule は遅れ・欠落が常態なので使わない（train-analogy.yml の冒頭と同じ判断）。
  *
  * - train: 週次の学習（train-analogy.yml）。日曜 JST 4:00
  * v16 の朝のバッチ（v16_morning.yml）の起動は、その PR で DISPATCH_WORKFLOWS に足す（2026-10-05 オーケストレーター判断）。
