@@ -241,7 +241,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/racerName.js` | 出走表の選手名（「丹下」「将」の間を全角スペース3つで詰めた表記）を姓と名に分ける。 | splitRacerName |
 | `src/utils/racerStats.js` | 予想バッチが保存する racerStats（predictions.feature_contributions.racerStats）を、 | toWakuRacerStats |
 | `src/utils/sgNowVenues.js` | トップの「SG開催中」帯に出す会場を決める（集客レーン、2026-10-02）。 | getSgNowVenues |
-| `src/utils/share.js` | SNSシェア関数 | shareUrlFor, shareRacePredictionToX, shareHitRaceToX, shareDailyStatsToX, generatePredictionShareText ほか1件 |
+| `src/utils/share.js` | SNSシェア関数 | shareUrlFor, shareRacePredictionToX, shareHitRaceToX, shareDailyStatsToX, generatePredictionShareText ほか2件 |
 | `src/utils/smallSampleRate.js` | 出走数が少ないときの率の出し方（BOA-513、2026-09-29 ファン4人のパネルで決定）。 | formatRateOrCount, powerIndexTone, formatPowerIndex |
 | `src/utils/stConsideration.js` | ST考察（安定率・出遅率・抜出）の算出（phase a FR-1） | deriveRaceStContext, computeStConsideration, computeStHistogram, getStHistory, STABLE_THRESHOLD ほか3件 |
 | `src/utils/stDeviation.js` | 本番STと展示STのズレ（/本番ST − 展示ST/）。どちらかが無い（null・undefined）走は null。 | stDeviation |
@@ -251,6 +251,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/turnPrediction.js` | 決まり手ユーティリティ（フロントエンド用） | pickHitPattern, techniqueDiffers, isAsPredicted, TECHNIQUE_NAMES |
 | `src/utils/turnTimeVenues.js` | オリジナル展示の「まわり足」が会場独自の計測で、他場と値の水準が違う会場（会場コード）。 | hasDistinctTurnTime, DISTINCT_TURN_TIME_VENUE_CODES |
 | `src/utils/venueMotorRanking.js` | 会場のモーターの順位と並べ替え（純関数、BOA-428）。 | rankBy, sortMotorRows, VENUE_SITE_STATS_HIDDEN, MOTOR_SORT_KEYS |
+| `src/utils/venuePlaceRates.js` | 会場特徴カードの「もっと詳しく」（BOA-269）の集計。 | placeRatesByBoat, techniqueBreakdown, TECHNIQUE_ORDER |
 | `src/utils/venueSeriesTitle.js` | 会場ページの title・description に入れる節タイトルを決める（集客レーン Phase3、2026-09-30）。 | getVenueSeriesTitle |
 | `src/utils/venueUtils.js` | — | VENUE_CODE_TO_BLOG_ID, getVenueBlogId, getVenueGuidePath |
 | `src/utils/volatilityHighlights.js` | ホームの「本日のイン崩れ注意度ハイライト」で、「イン崩れ注意（高）」と「本命有利」に出すレースを選ぶ | pickVolatilityHighlights |
@@ -285,4 +286,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 250 ファイル / export 1212 件。
+対象 251 ファイル / export 1216 件。

@@ -114,7 +114,22 @@
       "out_strong": "Outside-lane favoring",
       "balanced": "Balanced"
     },
-    "fetchError": "Could not load this venue's water characteristics."
+    "fetchError": "Could not load this venue's water characteristics.",
+    "details": {
+      "summary": "More details (top-2 / top-3 rates, winning techniques)",
+      "placeRatesTitle": "Finish rates by boat number",
+      "placeRatesNote": "Top-2 rate = finished 1st or 2nd; top-3 rate = finished in the top 3 ({{count}} races)",
+      "boat": "Boat",
+      "winRate": "Win",
+      "top2Rate": "Top 2",
+      "top3Rate": "Top 3",
+      "techniqueTitle": "How each boat won",
+      "techniqueNote": "Breakdown of winning techniques in races each boat number won. Counts in parentheses.",
+      "winCount_one": "{{count}} win",
+      "winCount_other": "{{count}} wins",
+      "smallSampleNote": "Shares for boats with few wins can swing widely.",
+      "outcomeLink": "See this venue's most common results (Analysis tools)"
+    }
   },
   "raceDetailPage": {
     "metaTitle": "{{venue}} Race {{race}} AI data analysis ({{date}}) - Ryujin Radar",
@@ -355,6 +370,23 @@
       "v3": "🏁 Ryujin Radar Prediction [{{date}}{{venue}} R{{raceNo}}]\n\nModel: {{model}}\nTop pick: Boat {{topPick}}\nPicks: {{top3}}\n\nGreat to get predictions this sharp for free ✨\nFingers crossed for today!",
       "v4": "🏁 Ryujin Radar Prediction [{{date}}{{venue}} R{{raceNo}}]\n\nModel: {{model}}\nTop pick: Boat {{topPick}}\nPicks: {{top3}}\n\nJudging by the turn prediction, this pick looks reliable!\nWhat do you think? 🤔",
       "v5": "🏁 Ryujin Radar Prediction [{{date}}{{venue}} R{{raceNo}}]\n\nModel: {{model}}\nTop pick: Boat {{topPick}}\nPicks: {{top3}}\n\nHappy to see the hit rate climbing lately 😊\nGive the AI predictions a look!"
+    },
+    "shareTurnHit": {
+      "headAsPredicted": "🌊 Turn prediction hit! [{{date}}{{venue}} R{{raceNo}}]",
+      "headWinner": "🌊 The winning boat was in the turn prediction [{{date}}{{venue}} R{{raceNo}}]",
+      "winner": "Boat {{boat}} won",
+      "winnerFromCourse": "Boat {{boat}} won from course {{course}}",
+      "prediction": " (AI prediction: {{detail}})",
+      "actual": ", actual: {{technique}}",
+      "asPredicted": "It went as predicted ✅",
+      "closingWinner": "Check the turn prediction on Ryujin Radar",
+      "closing": {
+        "v1": "Turn prediction hit on Ryujin Radar 🎉\nImpressed by the AI's analysis!",
+        "v2": "Turn prediction hit on Ryujin Radar 🎉\nThis accuracy for free is amazing!",
+        "v3": "Turn prediction hit on Ryujin Radar 🎉\nFeeling the power of data analysis!",
+        "v4": "Turn prediction hit on Ryujin Radar 🎉\nThe AI prediction hit again!",
+        "v5": "Turn prediction hit on Ryujin Radar 🎉\nReally happy with the hit rate!"
+      }
     }
   },
   "home": {

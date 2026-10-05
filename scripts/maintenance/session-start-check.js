@@ -3,7 +3,8 @@
  * セッション開始時チェックの統合スクリプト。
  *
  * これまでCLAUDE.mdに散在していた5つの「セッション開始時確認」ルール
- * （Xツイート下書き・X動画・TikTok・選手ニュース・集客調査スキル）と、
+ * （Xツイート下書き・X動画・選手ニュース・集客調査スキル。TikTok は 2026-10-05 にアカウントが
+ * バンされたため外した）と、
  * 新設した2項目（トレーサビリティ索引カバレッジ・品質バックログ）を
  * 1回の実行で集約する。CLAUDE.md側は「このスクリプトを実行し結果を
  * 報告する」の1行に統合する（詳細ロジックの説明はこのファイルのコメント
@@ -12,10 +13,9 @@
  * 各項目の判定ロジック・出典:
  * 1) tweetDrafts   … note-articles/tweet-drafts.md の `- [ ] 投稿済み` 件数
  * 2) xVideo        … data/analysis/x-posts/history.json の本日投稿状況
- * 3) tiktok        … data/analysis/tiktok-posts/history.json の本日投稿状況
  * 4) racerNews     … 要確認リストの pending件数（DBの表 racer_news_pending＋移行期間の
  *                    data/analysis/racer-news-pending-review/pending.json を id で統合。DBが優先）
- * 5) growthSkills  … data/analysis/{x,tiktok,note}-growth/ の最新レポート鮮度
+ * 5) growthSkills  … data/analysis/{x,note}-growth/ の最新レポート鮮度
  * 6) contentIndex  … docs/design/content-ops-flow/spec.md C5
  * 7) qualityBacklog… docs/design/content-ops-flow/spec.md C6
  * 8) recentFlowA   … docs/design/content-ops-flow/spec.md A4（sns-hub型選定ロジックへの素材提示）
@@ -183,14 +183,12 @@ async function latestReportAgeDays(dirRelPath) {
 }
 
 async function checkGrowthSkillsFreshness() {
-  const [xGrowth, tiktokGrowth, noteGrowth] = await Promise.all([
+  const [xGrowth, noteGrowth] = await Promise.all([
     latestReportAgeDays("data/analysis/x-growth"),
-    latestReportAgeDays("data/analysis/tiktok-growth"),
     latestReportAgeDays("data/analysis/note-growth"),
   ]);
   return {
     xGrowth,
-    tiktokGrowth,
     noteGrowth,
   };
 }
@@ -199,7 +197,6 @@ async function main() {
   const [
     tweetDrafts,
     xVideo,
-    tiktok,
     racerNews,
     growthSkills,
     contentIndexCoverage,
@@ -214,7 +211,6 @@ async function main() {
   ] = await Promise.all([
     checkTweetDrafts(),
     checkDailyPostStatus("data/analysis/x-posts/history.json"),
-    checkDailyPostStatus("data/analysis/tiktok-posts/history.json"),
     checkRacerNewsPending(),
     checkGrowthSkillsFreshness(),
     checkContentIndexCoverage(),
@@ -247,7 +243,6 @@ async function main() {
   const result = {
     tweetDrafts,
     xVideo,
-    tiktok,
     racerNews,
     growthSkills,
     contentIndexCoverage: {
