@@ -264,3 +264,14 @@
 - 優勝戦の判定 v2 の分担（オーケストレーター 10/5）: Python は学習側、JS `raceStageConfig.js` は v16 の T1-1。ずれる期間の扱いは tasks T1-1
 - 受け入れ E2E を acceptance-test-writer で追随（047ae24d8、95件。`--list` で構文確認のみ）
 - 次: オーケストレーター経由でユーザーの実装の承認 → /step4（T1-0a から）
+
+## 24. 2026-10-05 実装の承認（§23 の後。次のセッションはここから /step4）
+- ユーザーが /step4 を承認（オーケストレーター経由）。残る判断5点は推奨どおり（spec「決定事項」R1〜R5）
+- 1号艇の格の文言を実装に合わせた（83469927c）。画面の注記「約15%」は表示中の版の集計から出し直す。学習側に、1号艇の行の boat_number の構成比（割合から除く前）を profiles に残すよう依頼済み
+- PR は4本: (a) T1（T1-0a・T1-0b・T1-1 の JS・T1-2・T1-6）(b) T2＋T3（バッチ・130）(c) T4＋T5 (d) T6＋T7＋T8。機能フラグは v16 公開まで残す
+  - (a) の優勝戦 v2 の JS は画面が変わる（本体6レース）。PR に6レースの一覧（race_id・名前・旧→新）を付け、ユーザー確認に回す（オーケストレーター経由）。6レースは `analysis/t1/t1-1-stage-rule.json` の `v2.d`
+  - 今週（週次の使用量が木曜ごろに尽きる見込み）は (a)(b) まで。(c) 以降は来週のリセット後
+- 130 `analogy_v16_snapshots` の SQL は PGlite の検証を付けてからオーケストレーターに送る（ユーザーが SQL Editor で実行）。案（列・RLS）は plan「DB」。番号: 129＝学習側の stage 列、130＝これ。120・127・128 は再利用しない
+- 制約: BOA-271 は代理判定・自動マージなし（マージはしない）。本番 DB への書き込みはしない。git add は対象ファイルを明示、force push はしない。別スコープは Linear に起票して番号をオーケストレーターに送る
+- ブランチの注意: `feature/boa-271-fr2-strat` は別の worktree（exciting-aryabhata-fc27f6）がチェックアウトしている。新しい worktree では origin の最新から別名のブランチを切り、`git push origin HEAD:feature/boa-271-fr2-strat` で進めた（fast-forward）。PR を4本に分けるので、(a) を master 向けの新しいブランチにするか #1134 の上に積むかを最初に決める
+- 次: `/step4 analogy-finder`（tasks.md の T1-0a から）
