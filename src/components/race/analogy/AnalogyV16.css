@@ -5,6 +5,9 @@
  */
 
 .af-v16 {
+  /* 承認版モックと同じく、広い画面でも読みやすい幅（約680px）で中央に置く */
+  max-width: 720px;
+  margin-inline: auto;
   margin-top: var(--spacing-8);
   display: flex;
   flex-direction: column;
@@ -1207,4 +1210,13 @@ button.af-bar {
   .af-pats {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.af-lk .af-bar-v {
+  white-space: normal;
+}
+
+.af-lk .af-bar-v small {
+  display: block;
+  font-size: 10px;
 }
