@@ -3,6 +3,9 @@ import { test, expect } from "../fixtures.js";
 // アナロジー・ファインダー（BOA-271、モック Version 16 準拠）の受け入れE2E。
 // docs/design/analogy-finder/spec.md と screens.md だけから書いた（plan/tasks/src は読んでいない）。
 // spec の Q1〜Q7 は 2026-10-04 にユーザーが推奨の案で決定済み（spec「決定事項」）。その内容で書いている。
+// 2026-10-05 の決定 Q-A〜Q-E（spec 末尾「決定事項（2026-10-05 …）」）に追随した:
+//   Q-D 今節の平均着順点のカードの序盤の注記、Q-E ③の1号艇の表の注記の文言、
+//   Q-A・Q-B AIの見立ての「向きははっきりしない」、Q-C 優勝戦・準優勝戦の判定（画面ではラウンドを facts の応答から作る範囲だけ）。
 //
 // ■ 開くレース
 //   spec の例のレース 2026-09-27 若松12R（6艇ともA1、G1優勝戦）。
@@ -11,6 +14,9 @@ import { test, expect } from "../fixtures.js";
 //   画面は /race/:raceId の「AI予想」タブ（screens「画面の構造と操作要素」URL行）。
 //   Q1（級別が混ざったレース）・Q7（優勝戦でない日）を確かめるテストは、同じレースを開いたまま
 //   facts・scenario の応答だけを「級別が混ざった予選のレース」に差し替えている（mixed: true）。
+//   準優勝戦の日（round: "準優勝戦"）・節の序盤（priorRuns）も同じく facts の応答だけを差し替えている。
+//   優勝戦・準優勝戦の判定（spec 共通の定義 v2、名前のルール）はサーバー側で済ませ、facts の race.round に入る前提。
+//   画面は race.round だけを見る（screens 細部「今日のラウンドは facts の応答から作る」）。
 //   画面が数えるレースの名前・今日のラウンドを facts 以外（ページのレース情報）から作る実装だと、
 //   このテストは仕様と関係なく赤になる。その場合は、級別が混ざった予選のレースの raceId を別に渡す形に書き直す。
 //
@@ -29,7 +35,9 @@ import { test, expect } from "../fixtures.js";
 //                       // reflecting = 展示データは入ったが展示後の段が未保存（「展示の結果を反映しています」）
 //                       // closed = 締切を過ぎても展示後の段が無い（1行を出さない）
 //     stage: "before"|"after",
-//     race: { venue, raceNumber, date, grade, round, classSummary },   // round で優勝戦・準優勝戦の日を判定（Q7）
+//     race: { venue, raceNumber, date, grade, round, classSummary },
+//                       // round: "優勝戦" | "準優勝戦" | それ以外（"予選" など＝どちらでもない）。
+//                       // 優勝戦・準優勝戦の日の判定（Q7・Q-D・NCR を出すか・NCR の名前）はこの値だけで行う
 //     period: { from: "2019-04-01", to: "2026-09-26" },
 //     scopes: [{ key, label, n }],                    // 1号艇を選んだときの数えるレース
 //     scopesByBoat: { [boat]: [{ key: "VC"|"NC"|"NCR"|"VA", label, n }] },
@@ -37,7 +45,11 @@ import { test, expect } from "../fixtures.js";
 //     items: [{ key, label, better: "高い"|"速い"|"早い", worse: "低い"|"遅い", folded?: true }],
 //                       // 展示前は exhibition_time を含めない
 //     today: {
-//       boats: [{ boat, racerClass, values: { [itemKey]: number|null }, ranks: { [itemKey]: { rank, ties }|null } }],
+//       boats: [{ boat, racerClass, values: { [itemKey]: number|null }, ranks: { [itemKey]: { rank, ties }|null },
+//                 priorRuns: number }],
+//                       // priorRuns = その選手の今節の前日までの走数（同じ日の前の走は含めない。screens データ取得）。
+//                       // 序盤の注記（Q-D）は6艇の priorRuns から画面で決める: 最小<3 かつ 最大>=1 で、優勝戦・準優勝戦の日でない
+//                       // 節の初日は6艇とも 0 で、values.series_score は null
 //       wind: { speed, wave } | null,   // 展示前は null
 //       classAllSame: "A1" | null,      // 6艇とも同じ級別のときだけ
 //     },
@@ -47,8 +59,10 @@ import { test, expect } from "../fixtures.js";
 //       items: { [itemKey]: [{ rank: 1..6, hits, n }] },      // 6艇中の順位ごと（同じ値は両端に含めて集計済み）
 //     } } } },          // 今節の平均着順点を出さない範囲（NCR が優勝戦）は、その項目を items に含めない（screens データ取得）
 //     windWave: { [finish]: { [boat]: { hits, n, allHits, allN } } } | null,   // 展示前は null
-//     aiOutlook: { [finish]: { [boat]: [{ theme, share, items: [{ label, share, direction }] }] } } | null,
+//     aiOutlook: { [finish]: { [boat]: [{ theme, share, items: [{ label, share, direction: string|null }] }] } } | null,
 //                       // 展示前の集計が無ければ null
+//                       // direction: null = 向きがはっきりしない（相関が弱い・ブートストラップで同じ向きが8割未満 Q-A・
+//                       //   両端で上がる形 Q-B。判定はサーバー側）。画面は「向きははっきりしない」と出す
 //   }
 //
 //   GET /api/analogy/similar/{raceId}?stage=before|after
@@ -96,6 +110,13 @@ const PERIOD_TEXT = "2019/4/1〜2026/9/26";
 const SERIES_LABEL = "今節の平均着順点（前日まで）"; // Q6
 const Q7_NOTE =
   "優勝戦・準優勝戦の日は、点の順位がほぼ枠の順になるので、今日の一文は出していない";
+// 序盤の注記（spec A-4 Q-D・screens「画面の構造と操作要素」項目ごとのカード）
+const EARLY_NOTE =
+  "節の序盤（前日までの走が少ない艇がいる）は、差が小さめに出やすい";
+// ③の1号艇の表の注記（spec C-4 Q-E・screens ③攻め）
+const BOAT1_EXTIME_NOTE =
+  "1号艇は展示タイムが速く出やすい（同じ選手でも1号艇のときに約0.02秒速い。展示で内を走る分などが考えられる）。展示タイムの順位が上位でも、その分を割り引いて見る";
+const UNCLEAR_DIRECTION = "向きははっきりしない"; // spec FR-E Q-A・Q-B
 
 // ---------- 共通 ----------
 
@@ -280,6 +301,8 @@ const AI_ITEMS = {
       share: 0.21,
       direction: "6艇の中で全国勝率が高いほど見込みが上がる",
     },
+    // Q-A: ブートストラップで同じ向きが8割未満 → 向きははっきりしない
+    { label: "当地勝率", share: 0.06, direction: null },
   ],
   "スタート・展示": [
     {
@@ -301,6 +324,8 @@ const AI_ITEMS = {
       share: 0.05,
       direction: "中堅の年齢で上がりやすい（若いほど・年配ほど、ではない）",
     },
+    // Q-B: 両端で上がる形 → 向きははっきりしない
+    { label: "体重", share: 0.02, direction: null },
   ],
   "会場・レース番号": [
     {
@@ -345,21 +370,35 @@ const MIXED_NC_N = 4200;
 const mixedScopeLabel = (prefix, boat) =>
   `${prefix}・${MIXED_COMBO}（${boat}号艇は${MIXED_CLASSES[boat - 1]}）`;
 
-const scopesFor = (mixed, boat) => {
+const isFinalOrSemi = (round) => round === "優勝戦" || round === "準優勝戦";
+const defaultRound = (mixed) => (mixed ? "予選" : "優勝戦");
+
+const scopesFor = (mixed, boat, round = defaultRound(mixed)) => {
+  const nc = mixed ? mixedScopeLabel("全国", boat) : "全国・6艇ともA1";
+  // NCR は今日が優勝戦・準優勝戦のときだけ（予選の日は出さない）
+  const ncr = isFinalOrSemi(round)
+    ? [{ key: "NCR", label: `${nc}の${round}`, n: SCOPE_N.NCR }]
+    : [];
   if (!mixed) {
     return [
       { key: "VC", label: "若松・6艇ともA1", n: SCOPE_N.VC },
-      { key: "NC", label: "全国・6艇ともA1", n: SCOPE_N.NC },
-      { key: "NCR", label: "全国・6艇ともA1の優勝戦", n: SCOPE_N.NCR },
+      { key: "NC", label: nc, n: SCOPE_N.NC },
+      ...ncr,
       { key: "VA", label: "若松の全レース", n: SCOPE_N.VA },
     ];
   }
-  // 予選の日なので NCR は出さない
   return [
     { key: "VC", label: mixedScopeLabel("若松", boat), n: MIXED_VC_N[boat] },
-    { key: "NC", label: mixedScopeLabel("全国", boat), n: MIXED_NC_N },
+    { key: "NC", label: nc, n: MIXED_NC_N },
+    ...ncr,
     { key: "VA", label: "若松の全レース", n: SCOPE_N.VA },
   ];
+};
+
+// 今節の前日までの走数の既定（どちらも6艇とも3走以上 → 序盤の注記は出ない）
+const DEFAULT_PRIOR_RUNS = {
+  final: [6, 6, 6, 7, 6, 6], // 例のレース（優勝戦＝最終日）
+  mixed: [4, 5, 4, 6, 5, 4], // 予選のレース
 };
 
 function buildFacts({
@@ -367,19 +406,32 @@ function buildFacts({
   status = "ok",
   afterStatus = "ready",
   mixed = false,
+  round = defaultRound(mixed),
+  priorRuns = mixed ? DEFAULT_PRIOR_RUNS.mixed : DEFAULT_PRIOR_RUNS.final,
 }) {
   const before = isBeforeStage(stage) || afterStatus !== "ready";
   const items = ITEMS.filter((it) => !(before && it.key === "exhibition_time"));
   const keys = items.map((it) => it.key);
+  // 節の初日（6艇とも前日までの走が無い）は今日の今節の平均着順点が無い
+  const firstDay = priorRuns.every((r) => r === 0);
+  const todayValues = {
+    ...TODAY_VALUES,
+    ...(firstDay ? { series_score: Array(6).fill(null) } : {}),
+  };
   const counts = {};
-  for (const scope of mixed ? ["VC", "NC", "VA"] : ["VC", "NC", "NCR", "VA"]) {
+  const scopeKeys = isFinalOrSemi(round)
+    ? ["VC", "NC", "NCR", "VA"]
+    : ["VC", "NC", "VA"];
+  for (const scope of scopeKeys) {
     counts[scope] = {};
     for (const f of [1, 2, 3]) {
       counts[scope][f] = {};
       for (let b = 1; b <= 6; b++) {
-        // NCR（優勝戦）は今節の平均着順点を集計に含めない（screens データ取得）
+        // NCR が優勝戦のときは今節の平均着順点を集計に含めない（screens データ取得）。準優勝戦の NCR は含める
         const k =
-          scope === "NCR" ? keys.filter((x) => x !== "series_score") : keys;
+          scope === "NCR" && round === "優勝戦"
+            ? keys.filter((x) => x !== "series_score")
+            : keys;
         const nOverride =
           mixed && scope === "VC"
             ? MIXED_VC_N[b]
@@ -410,13 +462,13 @@ function buildFacts({
       raceNumber: 12,
       date: "2026-09-27",
       grade: mixed ? "一般" : "G1",
-      round: mixed ? "予選" : "優勝戦",
+      round,
       classSummary: mixed ? MIXED_COMBO : "6艇ともA1",
     },
     period: PERIOD,
-    scopes: scopesFor(mixed, 1),
+    scopes: scopesFor(mixed, 1, round),
     scopesByBoat: Object.fromEntries(
-      [1, 2, 3, 4, 5, 6].map((b) => [b, scopesFor(mixed, b)]),
+      [1, 2, 3, 4, 5, 6].map((b) => [b, scopesFor(mixed, b, round)]),
     ),
     items,
     today: {
@@ -424,11 +476,12 @@ function buildFacts({
         boat,
         racerClass: (mixed ? MIXED_CLASSES : ALL_A1_CLASSES)[boat - 1],
         values: Object.fromEntries(
-          keys.map((k) => [k, TODAY_VALUES[k][boat - 1]]),
+          keys.map((k) => [k, todayValues[k][boat - 1]]),
         ),
         ranks: Object.fromEntries(
-          keys.map((k) => [k, rankOf(k, TODAY_VALUES[k], boat - 1)]),
+          keys.map((k) => [k, rankOf(k, todayValues[k], boat - 1)]),
         ),
+        priorRuns: priorRuns[boat - 1],
       })),
       wind: before ? null : { speed: 3, wave: 2 },
       classAllSame: mixed ? null : "A1",
@@ -882,6 +935,8 @@ async function mockApis(page, opts = {}) {
       status: opts.factsStatus ?? "ok",
       afterStatus: opts.afterStatus ?? "ready",
       mixed: opts.mixed ?? false,
+      ...(opts.round ? { round: opts.round } : {}),
+      ...(opts.priorRuns ? { priorRuns: opts.priorRuns } : {}),
     });
     await route.fulfill({
       status: 200,
@@ -1479,6 +1534,7 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
     await expect(c).toContainText("170/240");
     await expect(c).toContainText(Q7_NOTE);
     await expect(c).not.toContainText("今日の1号艇は");
+    await expect(c).not.toContainText(EARLY_NOTE); // 両方は出さない（screens）
     // 範囲を問わない（Q7）
     await scopeBtn(section, "若松の全レース").click();
     await expect(card(section, SERIES_LABEL)).toContainText(Q7_NOTE);
@@ -1498,6 +1554,144 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
       `今日の1号艇は${SERIES_LABEL}が6艇で一番高い（今日8.67、6艇は6.67〜8.67）`,
     );
     await expect(c).not.toContainText(Q7_NOTE);
+  });
+
+  // ---------- 序盤の注記（spec A-4 Q-D、screens 細部の約束） ----------
+
+  test("[spec A-4 Q-D / screens 構造] 予選の日に前日までの走が3走未満の艇がいると、今節の平均着順点のカードにだけ序盤の注記が出る", async ({
+    page,
+  }) => {
+    // 選んでいる1号艇は5走。3号艇だけが2走（選んだ艇でなく、6艇の条件で決まる）
+    await mockApis(page, { mixed: true, priorRuns: [5, 4, 2, 4, 5, 4] });
+    const section = await openSection(page);
+    const c = card(section, SERIES_LABEL);
+    await expect(c).toBeVisible();
+    await expect(c).toContainText(EARLY_NOTE);
+    await expect(c).not.toContainText(Q7_NOTE);
+    // 予選の日なので今日の一文は出す（Q7 の注記と違い、一文は消さない）
+    await expect(c).toContainText(`今日の1号艇は${SERIES_LABEL}が`);
+    await expect(panel(section).getByText(EARLY_NOTE)).toHaveCount(1);
+    await expect(card(section, "全国勝率")).not.toContainText(EARLY_NOTE);
+  });
+
+  test("[screens 細部 Q-D] 序盤の注記は今日のレースの条件なので、艇番・数えるレース・着順を変えても出し方が変わらない", async ({
+    page,
+  }) => {
+    await mockApis(page, { mixed: true, priorRuns: [5, 4, 2, 4, 5, 4] });
+    const section = await openSection(page);
+    await expect(card(section, SERIES_LABEL)).toContainText(EARLY_NOTE);
+    // 2走の艇（3号艇）を選んでも、5走の艇（5号艇）を選んでも同じ
+    await boatGroup(section).getByRole("button", { name: "3" }).click();
+    await expect(
+      panel(section).getByRole("heading", {
+        level: 3,
+        name: "3号艇が1着になったのは、どんなとき？",
+      }),
+    ).toBeVisible();
+    await expect(card(section, SERIES_LABEL)).toContainText(EARLY_NOTE);
+    await boatGroup(section).getByRole("button", { name: "5" }).click();
+    await expect(
+      panel(section).getByRole("heading", {
+        level: 3,
+        name: "5号艇が1着になったのは、どんなとき？",
+      }),
+    ).toBeVisible();
+    await expect(card(section, SERIES_LABEL)).toContainText(EARLY_NOTE);
+    await scopeBtn(section, "若松の全レース").click();
+    await expect(
+      panel(section).getByText("若松の全レースで、5号艇の1着率"),
+    ).toBeVisible();
+    await expect(card(section, SERIES_LABEL)).toContainText(EARLY_NOTE);
+    await finishGroup(section).getByRole("button", { name: "3着以内" }).click();
+    await expect(
+      panel(section).getByText("若松の全レースで、5号艇の3着以内率"),
+    ).toBeVisible();
+    await expect(card(section, SERIES_LABEL)).toContainText(EARLY_NOTE);
+  });
+
+  test("[spec A-4 Q-D] 6艇とも前日までの走が3走以上なら（3走ちょうどを含む）序盤の注記を出さず、艇番・着順を変えても出ない", async ({
+    page,
+  }) => {
+    await mockApis(page, { mixed: true, priorRuns: [3, 4, 3, 5, 3, 4] });
+    const section = await openSection(page);
+    const c = card(section, SERIES_LABEL);
+    await expect(c).toBeVisible();
+    await expect(c).not.toContainText(EARLY_NOTE);
+    await boatGroup(section).getByRole("button", { name: "3" }).click();
+    await finishGroup(section).getByRole("button", { name: "2着以内" }).click();
+    await expect(
+      panel(section).getByRole("heading", {
+        level: 3,
+        name: "3号艇が2着以内に入ったのは、どんなとき？",
+      }),
+    ).toBeVisible();
+    await expect(panel(section).getByText(EARLY_NOTE)).toHaveCount(0);
+  });
+
+  test("[spec A-4 Q-D / screens 細部] 節の初日（6艇とも前日までの走が無い）は序盤の注記を出さない", async ({
+    page,
+  }) => {
+    await mockApis(page, { mixed: true, priorRuns: [0, 0, 0, 0, 0, 0] });
+    const section = await openSection(page);
+    await expect(card(section, "全国勝率")).toBeVisible();
+    await expect(panel(section).getByText(EARLY_NOTE)).toHaveCount(0);
+    // 今日の値が無いので、カードがあっても今日の一文は出さない（spec A-7）
+    const c = card(section, SERIES_LABEL);
+    if ((await c.count()) > 0)
+      await expect(c).not.toContainText(`今日の1号艇は${SERIES_LABEL}`);
+  });
+
+  test("[screens 細部 Q-D] 1艇だけ前日までの走が無くても、ほかの艇に走があれば（初日ではない）序盤の注記を出す", async ({
+    page,
+  }) => {
+    // 最小0（3未満）・最大5（1以上）
+    await mockApis(page, { mixed: true, priorRuns: [0, 3, 4, 3, 5, 4] });
+    const section = await openSection(page);
+    await expect(card(section, SERIES_LABEL)).toContainText(EARLY_NOTE);
+  });
+
+  test("[spec A-4 Q-D・Q7 / screens 細部] 優勝戦の日は前日までの走が3走未満の艇がいても序盤の注記を出さず、Q7の注記だけ。NCR（優勝戦）ではどちらも出ない", async ({
+    page,
+  }) => {
+    await mockApis(page, { priorRuns: [6, 2, 6, 7, 6, 6] });
+    const section = await openSection(page);
+    const c = card(section, SERIES_LABEL);
+    await expect(c).toContainText(Q7_NOTE);
+    await expect(c).not.toContainText(EARLY_NOTE);
+    await expect(panel(section).getByText(EARLY_NOTE)).toHaveCount(0);
+    await scopeBtn(section, "全国・6艇ともA1の優勝戦").click();
+    await expect(
+      panel(section).getByText("全国・6艇ともA1の優勝戦で、1号艇の1着率"),
+    ).toBeVisible();
+    await expect(card(section, "今節の平均着順点")).toHaveCount(0);
+    await expect(panel(section).getByText(EARLY_NOTE)).toHaveCount(0);
+    await expect(panel(section).getByText(Q7_NOTE)).toHaveCount(0);
+  });
+
+  test("[spec A-4 Q7・Q-D / 共通の定義 優勝戦・準優勝戦] 準優勝戦の日はNCRの名前が「…の準優勝戦」で、カードはQ7の注記だけ（序盤の注記は出さない）。NCRでもカードを出す", async ({
+    page,
+  }) => {
+    await mockApis(page, {
+      mixed: true,
+      round: "準優勝戦",
+      priorRuns: [4, 2, 5, 4, 3, 4],
+    });
+    const section = await openSection(page);
+    const ncr = `${mixedScopeLabel("全国", 1)}の準優勝戦`;
+    await expect(scopeGroup(section).getByRole("button")).toHaveCount(4);
+    await expect(scopeBtn(section, ncr)).toBeVisible();
+    const c = card(section, SERIES_LABEL);
+    await expect(c).toContainText(Q7_NOTE);
+    await expect(c).not.toContainText(EARLY_NOTE);
+    await expect(c).not.toContainText("今日の1号艇は");
+    // NCR で今節の平均着順点を出さないのは優勝戦のときだけ（spec A-4）
+    await scopeBtn(section, ncr).click();
+    await expect(
+      panel(section).getByText(`${ncr}で、1号艇の1着率`),
+    ).toBeVisible();
+    await expect(card(section, SERIES_LABEL)).toBeVisible();
+    await expect(card(section, SERIES_LABEL)).toContainText(Q7_NOTE);
+    await expect(card(section, SERIES_LABEL)).not.toContainText(EARLY_NOTE);
   });
 
   test("[spec A-7 説明文] 項目ごとのカードの説明文が出る", async ({ page }) => {
@@ -1648,6 +1842,43 @@ test.describe("アナロジー・ファインダー: 来る艇の条件", () => 
     await expect(
       panel(section).getByText("6艇の中で全国勝率が高いほど見込みが上がる"),
     ).toBeVisible();
+  });
+
+  test("[spec FR-E Q-A・Q-B / screens AIの見立て] 向きが決まらない項目は「向きははっきりしない」と出て、向きの決まる項目には向きの文が出る", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await panel(section)
+      .getByText(
+        "AIの見立て（補助）: ほかの項目をそろえたうえで、どの項目が効くか",
+      )
+      .click();
+    const themeBox = (name) =>
+      panel(section).getByRole("group").filter({ hasText: name }).last();
+    // Q-A: 選手の実力の中で、当地勝率だけが向きははっきりしない
+    await panel(section)
+      .getByText("選手の実力", { exact: true })
+      .first()
+      .click();
+    const skill = themeBox("選手の実力");
+    await expect(skill).toContainText("当地勝率");
+    await expect(skill).toContainText(UNCLEAR_DIRECTION);
+    await expect(skill).toContainText(
+      "6艇の中で全国勝率が高いほど見込みが上がる",
+    );
+    await expect(skill.getByText(UNCLEAR_DIRECTION)).toHaveCount(1);
+    // Q-B: 両端で上がる形も向きははっきりしないにまとめる（体重）
+    await panel(section)
+      .getByText("体重・年齢・地元", { exact: true })
+      .first()
+      .click();
+    const body = themeBox("体重・年齢・地元");
+    await expect(body).toContainText("体重");
+    await expect(body).toContainText(UNCLEAR_DIRECTION);
+    await expect(body).toContainText(
+      "中堅の年齢で上がりやすい（若いほど・年配ほど、ではない）",
+    );
   });
 
   test("[spec FR-E 受入基準] AIの見立ては艇番を変えると割合が変わる", async ({
@@ -2442,6 +2673,31 @@ test.describe("アナロジー・ファインダー: 展開シナリオ", () => 
       .first();
     await expect(enough).toBeVisible();
     await expect(enough).not.toContainText("少ない");
+  });
+
+  test("[spec C-4 Q-E / screens ③攻め] 形を選ぶと1号艇の表の下に展示タイムの注記（2026-10-05 の文言）が出て、旧文言「全国で約半数」は出ない", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await btnStartsWith(section, "2コース凹み").click();
+    await expect(panel(section).getByRole("table").first()).toBeVisible();
+    await expect(panel(section).getByText(BOAT1_EXTIME_NOTE)).toBeVisible();
+    await expect(panel(section).getByText(/全国で約半数/)).toHaveCount(0);
+  });
+
+  test("[screens ③攻め Q-E] 展示前でも1号艇の表の展示タイムの注記を出す", async ({
+    page,
+  }) => {
+    await mockApis(page);
+    const section = await openSection(page);
+    await openTab(section, "展開シナリオ");
+    await beforeBtn(section).click();
+    await expect(beforeBtn(section)).toHaveAttribute("aria-pressed", "true");
+    await btnStartsWith(section, "2コース凹み").click();
+    await expect(panel(section).getByText(BOAT1_EXTIME_NOTE)).toBeVisible();
+    await expect(panel(section).getByText(/全国で約半数/)).toHaveCount(0);
   });
 
   test("[screens データ取得] 進入・形を切り替えても scenario を取り直さない", async ({
