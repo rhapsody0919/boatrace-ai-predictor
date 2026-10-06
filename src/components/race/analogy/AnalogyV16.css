@@ -1301,3 +1301,15 @@ button.af-bar {
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
 }
+
+/* カードの「{n}号艇の今日: 値（6艇中◯位）」 */
+.af-card-today {
+  margin: 4px 0 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}

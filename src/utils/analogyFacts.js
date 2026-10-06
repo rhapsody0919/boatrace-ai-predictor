@@ -80,6 +80,21 @@ export function todayPosition(values, hib, boat) {
   };
 }
 
+/**
+ * 選んだ艇の今日の値と6艇中の順位（カードの「{n}号艇の今日」の行。2026-10-06 ユーザー指摘）。
+ * 同じ値の艇がいれば順位は幅（from〜to）。今日の値が無ければ null
+ * @returns {{value: number, from: number, to: number, same: number}|null}
+ */
+export function todayValueRank(values, hib, boat) {
+  if (!Array.isArray(values) || !isNum(values[boat - 1])) return null;
+  // 表示用の順位（rankPositions はカードの区分用で、同じ値の幅は持たない）。上の艇の数＋1 〜 上の艇の数＋同じ値の艇の数
+  const v = values[boat - 1];
+  const ok = values.filter(isNum);
+  const better = ok.filter((x) => (hib ? x > v : x < v)).length;
+  const same = ok.filter((x) => x === v).length;
+  return { value: v, from: better + 1, to: better + same, same };
+}
+
 /** [当たり, 母数] → 割合（母数0は null） */
 export const rateOf = (pair) => (pair && pair[1] ? pair[0] / pair[1] : null);
 

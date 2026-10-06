@@ -2,7 +2,13 @@ import { useTranslation } from "react-i18next";
 import BoatBadge from "../BoatBadge";
 import { SCOPE_LINE } from "./analogyColors";
 import { fmtCount, fmtFactValue, fmtPct } from "../../../utils/analogyFormat";
-import { rateOf, todayLine, usualOf } from "../../../utils/analogyFacts";
+import {
+  FACT_ITEMS,
+  rateOf,
+  todayLine,
+  todayValueRank,
+  usualOf,
+} from "../../../utils/analogyFacts";
 
 const k = "aiPredictionTab.analogy.facts";
 
@@ -133,6 +139,34 @@ export default function FactCard({
           {row.judge.reversed && t(`${k}.reversed`, { word: word(row.bad) })}
         </span>
       </div>
+      {[boat, compareBoat].filter(Boolean).map((b) => {
+        // 選んだ艇の今日の値と6艇中の順位（棒の強調・今日の一文を出さない日も出す。2026-10-06 ユーザー指摘）
+        const r = todayValueRank(
+          values,
+          FACT_ITEMS.find((it) => it.key === row.key).hib,
+          b,
+        );
+        return (
+          <p key={b} className="af-card-today">
+            <BoatBadge n={b} size="xs" />{" "}
+            {t(`${k}.todayValue`, {
+              boat: b,
+              value: r
+                ? `${fmtFactValue(row.key, r.value)}${t(`${k}.units.${row.key}`, "")}`
+                : "—",
+              rank: !r
+                ? t(`${k}.noToday`)
+                : r.from === r.to
+                  ? t(`${k}.rankOf6`, { n: r.from })
+                  : t(`${k}.rankOf6Tie`, {
+                      from: r.from,
+                      to: r.to,
+                      same: r.same,
+                    }),
+            })}
+          </p>
+        );
+      })}
       <div className="af-pair">
         {[
           [best, row.rates[0], row.good],
