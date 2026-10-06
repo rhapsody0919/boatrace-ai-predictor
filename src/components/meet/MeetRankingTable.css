@@ -155,6 +155,10 @@
   font-weight: var(--font-weight-bold);
 }
 
+.meet-ranking__points {
+  white-space: nowrap;
+}
+
 .meet-ranking__needed {
   color: var(--text-primary);
 }

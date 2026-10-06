@@ -314,9 +314,17 @@ function MeetBody({ page }) {
           shobugake={shobugake}
           classByRacer={classByRacer}
           officialAsOfDay={page.officialAsOfDay ?? null}
+          officialLink={`https://www.boatrace.jp/owpc/pc/race/pointrank?jcd=${String(page.venueCode).padStart(2, "0")}&hd=${getTodayJST().replaceAll("-", "")}`}
+          penaltyByRacer={Object.fromEntries(
+            Object.entries(board?.officialByRacer ?? {})
+              .map(([id, o]) => [id, o?.penalty_points ?? 0])
+              .filter(([, p]) => p > 0 && p !== 99),
+          )}
         />
         )}
-        <p className="meet-page__source">{t("meetPage.source")}</p>
+        <p className="meet-page__source">
+          {t(confirmed ? "meetPage.sourceConfirmed" : "meetPage.source")}
+        </p>
       </div>
       <aside className="meet-page__side">
         <MeetQualifiersSection qualifiers={page.qualifiers} />

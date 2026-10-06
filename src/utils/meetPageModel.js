@@ -332,3 +332,19 @@ export function pickShobugake(
   }
   return picked;
 }
+
+/**
+ * 準優の線が同率で割れているか（ファン評価2周目）。18位が5人並ぶと、線の上は22人に
+ * なり「18人」と書くと数が合わない。同率の人数と、そのうち入れる人数を返す。
+ *
+ * @param {Array<{rank: number|null}>} rows 順位の付いた選手（得点率の降順）
+ * @param {number} slots 準優の枠数
+ * @returns {{rank: number, tied: number, seats: number}|null} 割れていなければ null
+ */
+export function borderTieOf(rows, slots) {
+  const rank = rows?.[slots - 1]?.rank ?? null;
+  if (rank == null) return null;
+  const tied = rows.filter((r) => r.rank === rank).length;
+  const seats = slots - (rank - 1);
+  return tied > seats ? { rank, tied, seats } : null;
+}

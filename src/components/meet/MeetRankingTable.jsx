@@ -5,7 +5,23 @@ import {
   SCORE_POINTS,
   pointsNeededForBorder,
 } from "../race/seriesPoints";
+import { borderTieOf } from "../../utils/meetPageModel";
 import "./MeetRankingTable.css";
+
+// 着順の欄に出る公式の記号（今節タブと同じく公式の表記のまま出す）。記号は訳さず、
+// 意味だけを各言語で出す（en・ko の文言に漢字を入れない決まり、BOA-633）
+const FINISH_MARKS = [
+  ["転", "capsized"],
+  ["落", "fell"],
+  ["沈", "sank"],
+  ["欠", "absent"],
+  ["F", "flying"],
+  ["L", "late"],
+  ["失", "disqualified"],
+  ["妨", "obstruction"],
+  ["エ", "stall"],
+  ["不", "dnf"],
+];
 
 /**
  * 節の全選手の得点率ランキング（BOA-682、screens.md §1）。
@@ -29,6 +45,8 @@ import "./MeetRankingTable.css";
  * @param {Set<number>} props.shobugake 勝負駆けの選手
  * @param {Object<number, string>} props.classByRacer 級別
  * @param {number|null} [props.officialAsOfDay] 予選中に公式の前夜時点の表を出しているとき、その日目
+ * @param {string|null} [props.officialLink] 公式の得点率一覧（当日のリアルタイム）の URL
+ * @param {Object<number, number>} [props.penaltyByRacer] 公式の減点（賞典除外の印の99は除く）
  */
 function MeetRankingTable({
   rows,
@@ -42,10 +60,13 @@ function MeetRankingTable({
   shobugake,
   classByRacer,
   officialAsOfDay = null,
+  officialLink = null,
+  penaltyByRacer = {},
 }) {
   const { t } = useTranslation();
   const [onlyShobugake, setOnlyShobugake] = useState(false);
   const bestRate = rows.length > 0 ? rows[0].rate : null;
+  const tie = borderTieOf(rows, slots);
   const visible =
     showRemaining && onlyShobugake
       ? rows.filter((r) => shobugake.has(r.racerId))
@@ -129,7 +150,34 @@ function MeetRankingTable({
           },
         )}
       </p>
+      {/* 取り込みは 22:00 JST。それまで公式は当日の結果をリアルタイムで出しているので、
+          そちらへの道を置く（ファン評価2周目） */}
+      {officialAsOfDay != null && officialLink && (
+        <p className="meet-ranking__sub">
+          <a href={officialLink} target="_blank" rel="noopener noreferrer">
+            {t("meetPage.officialLiveLink")}
+          </a>
+        </p>
+      )}
       <p className="meet-ranking__sub">{t("meetPage.legendBest")}</p>
+      {/* 着順の欄の記号（転・落・欠・F 等）は公式の表記のまま出す。英語版などで
+          意味が分からないので凡例を付ける（ファン評価1・2周目で再発。原因は記号が
+          今節タブと共通の表示で、節ページ側で説明していなかったこと） */}
+      {[...rows, ...excluded].some((r) =>
+        (r.finishes ?? []).some((f) => typeof f === "string"),
+      ) && (
+        <p className="meet-ranking__sub">
+          {t("meetPage.marksLegendTitle")}{" "}
+          {FINISH_MARKS.map(([mark, key], i) => (
+            <span key={key}>
+              {i > 0 && t("meetTab.listSeparator")}
+              <span translate="no">{mark}</span>
+              {t("meetPage.marksEquals")}
+              {t(`meetPage.markName.${key}`)}
+            </span>
+          ))}
+        </p>
+      )}
       {showRemaining && (
         <>
           <div
@@ -176,6 +224,13 @@ function MeetRankingTable({
             const inside = r.rank <= slots;
             const lineAfter =
               border != null && inside && (!next || next.rank > slots);
+            // 枠の位置が同率で割れているとき（18位が5人等）、線の上の人数は枠より多い。
+            // 「18人」とだけ書くと数が合わないので、同率の人数と入れる人数を書く（2周目）
+            const lineKey = tie
+              ? "meetPage.borderLineTie"
+                : confirmed
+                  ? "meetPage.borderLineFinal"
+                  : "meetPage.borderLinePrelim";
             const needed = showRemaining ? renderNeeded(r) : null;
             return [
               <tr
@@ -191,6 +246,16 @@ function MeetRankingTable({
                   </span>
                   <span className="meet-ranking__line2">
                     {renderFinishes(r.finishes)}
+                    {/* 得点の合計と減点。特別配点（ドリーム戦等）や減点があると、着順から
+                        暗算した得点率と合わない（ファン評価2周目） */}
+                    <span className="meet-ranking__points">
+                      {penaltyByRacer?.[r.racerId] > 0
+                        ? t("meetPage.pointsWithPenalty", {
+                            points: r.points + penaltyByRacer[r.racerId],
+                            penalty: penaltyByRacer[r.racerId],
+                          })
+                        : t("meetPage.points", { points: r.points })}
+                    </span>
                     {needed && (
                       <span className="meet-ranking__needed">{needed}</span>
                     )}
@@ -217,14 +282,7 @@ function MeetRankingTable({
                 >
                   <td colSpan={4}>
                     <span>
-                      {t(
-                        confirmed
-                          ? "meetPage.borderLineFinal"
-                          : "meetPage.borderLinePrelim",
-                        {
-                          slots,
-                        },
-                      )}
+                      {t(lineKey, { slots, ...tie })}
                     </span>
                   </td>
                 </tr>

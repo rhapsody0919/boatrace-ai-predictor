@@ -3237,6 +3237,25 @@
     "legendBest": "金の枠は得点率の1位（同率は全員）",
     "winnerLabel": "優勝",
     "winnerBoat": "（{{boat}}号艇）",
-    "rankingSubOfficialAsOf": "予選の得点率（{{day}}日目終了時点・公式の得点率一覧の値。今日の結果は夜に反映）・全{{count}}人"
+    "rankingSubOfficialAsOf": "予選の得点率（{{day}}日目終了時点・公式の得点率一覧の値。今日の結果は22時ごろ反映）・全{{count}}人",
+    "officialLiveLink": "今日の結果を含む最新の順位は公式の得点率一覧（毎晩22時ごろここに反映）",
+    "borderLineTie": "ここまで準優の目安（{{rank}}位が同率{{tied}}人。入れるのは{{seats}}人）",
+    "points": "{{points}}点",
+    "pointsWithPenalty": "{{points}}点・減点{{penalty}}",
+    "sourceConfirmed": "出典: 得点率・順位はボートレース公式サイトの得点率一覧（予選終了時点、減点込み）。",
+    "marksLegendTitle": "着順の記号:",
+    "marksEquals": "＝",
+    "markName": {
+      "capsized": "転覆",
+      "fell": "落水",
+      "sank": "沈没",
+      "absent": "欠場",
+      "flying": "フライング",
+      "late": "出遅れ",
+      "disqualified": "失格",
+      "obstruction": "妨害失格",
+      "stall": "エンスト",
+      "dnf": "不完走"
+    }
   }
 }

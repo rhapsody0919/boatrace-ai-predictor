@@ -206,4 +206,29 @@ test("予選中は公式の得点率一覧の値を出し、減点（白井）�
   await expect(page.locator(".meet-ranking__sub").first()).toContainText(
     "3日目終了時点・公式の得点率一覧の値",
   );
+  // ファン評価2周目: 得点の合計と減点を添える（着順から暗算した値と合わない理由が分かる）、
+  // 22時の取り込みまでは公式のリアルタイムの一覧へ
+  await expect(shirai.locator(".meet-ranking__points")).toHaveText("42点・減点10");
+  await expect(
+    page.locator('.meet-ranking__sub a[href*="pointrank?jcd=10&hd=20261006"]'),
+  ).toBeVisible();
+});
+
+// ファン評価2周目（PR #1151）
+test("節終了の表は得点の合計・確定の出典を出し、英語版は着順の記号に凡例を付ける", async ({
+  page,
+}) => {
+  await afterTheMeet(page);
+  await page.goto(KOJIMA, { waitUntil: "domcontentloaded" });
+  const first = page.locator("tr.meet-ranking__row").first();
+  await expect(first).toBeVisible({ timeout: 60000 });
+  await expect(first.locator(".meet-ranking__points")).toHaveText("52点");
+  await expect(page.locator(".meet-page__source")).toContainText("予選終了時点、減点込み");
+  await expect(page.locator(".meet-page__source")).not.toContainText("減点は含みません");
+
+  await page.goto(`/en${KOJIMA}`, { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".meet-ranking__sub", { hasText: "Marks in finishes" })).toContainText(
+    "capsized",
+    { timeout: 60000 },
+  );
 });

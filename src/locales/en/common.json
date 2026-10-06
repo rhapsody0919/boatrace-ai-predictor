@@ -3247,6 +3247,25 @@
     "legendBest": "The gold box marks the highest score rate (all tied racers)",
     "winnerLabel": "Winner:",
     "winnerBoat": "(boat {{boat}})",
-    "rankingSubOfficialAsOf": "Qualifying score rate (as of the end of day {{day}}, from the official score-rate list; today's results are added at night) · {{count}} racers"
+    "rankingSubOfficialAsOf": "Qualifying score rate (as of the end of day {{day}}, from the official score-rate list; today's results are added around 22:00 JST) · {{count}} racers",
+    "officialLiveLink": "Latest ranks including today's results: official score-rate list (reflected here around 22:00 JST)",
+    "borderLineTie": "Estimated semi-final line ({{tied}} racers tied at {{rank}}th; {{seats}} spot(s) left)",
+    "points": "{{points}} pts",
+    "pointsWithPenalty": "{{points}} pts, penalty {{penalty}}",
+    "sourceConfirmed": "Source: score rates and ranks come from the official BOAT RACE score-rate list (as of the end of qualifying, penalties included).",
+    "marksLegendTitle": "Marks in finishes:",
+    "marksEquals": " = ",
+    "markName": {
+      "capsized": "capsized",
+      "fell": "fell overboard",
+      "sank": "sank",
+      "absent": "absent",
+      "flying": "flying start",
+      "late": "late start",
+      "disqualified": "disqualified",
+      "obstruction": "disqualified for obstruction",
+      "stall": "engine stall",
+      "dnf": "did not finish"
+    }
   }
 }

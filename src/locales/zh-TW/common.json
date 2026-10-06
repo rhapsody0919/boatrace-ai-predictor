@@ -3237,6 +3237,25 @@
     "legendBest": "金框為得分率第1名（同分者皆標示）",
     "winnerLabel": "優勝",
     "winnerBoat": "（{{boat}}號艇）",
-    "rankingSubOfficialAsOf": "預賽得分率（第{{day}}天結束時、官方得分率一覽的數值。今天的結果於晚間反映）、共{{count}}人"
+    "rankingSubOfficialAsOf": "預賽得分率（第{{day}}天結束時、官方得分率一覽的數值。今天的結果於22時左右反映）、共{{count}}人",
+    "officialLiveLink": "含今天結果的最新名次請見官方得分率一覽（本頁每晚22時左右反映）",
+    "borderLineTie": "以上為準優門檻估計（第{{rank}}名同分{{tied}}人，可晉級{{seats}}人）",
+    "points": "{{points}}分",
+    "pointsWithPenalty": "{{points}}分、扣分{{penalty}}",
+    "sourceConfirmed": "出處：得分率、名次來自BOAT RACE官方網站的得分率一覽（預賽結束時，含扣分）。",
+    "marksLegendTitle": "名次欄的記號：",
+    "marksEquals": "＝",
+    "markName": {
+      "capsized": "翻覆",
+      "fell": "落水",
+      "sank": "沉沒",
+      "absent": "缺賽",
+      "flying": "搶跑",
+      "late": "出發延遲",
+      "disqualified": "失格",
+      "obstruction": "妨礙失格",
+      "stall": "引擎熄火",
+      "dnf": "未完賽"
+    }
   }
 }

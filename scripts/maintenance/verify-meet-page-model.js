@@ -17,6 +17,7 @@ import {
   pickShobugake,
   isOutOfScopeMeetTitle,
   officialAsOfDate,
+  borderTieOf,
 } from "../../src/utils/meetPageModel.js";
 
 const failures = [];
@@ -411,6 +412,25 @@ check(
   pickShobugake(ranking, null, 18, remaining, {}).size,
   0,
 );
+
+// --- borderTieOf（ファン評価2周目: 18位が同率5人で線の上が22人になる） ---
+const ranks = (list) => list.map((rank) => ({ rank }));
+check(
+  "18位が同率5人なら、同率5人・入れるのは1人",
+  borderTieOf(ranks([...Array.from({ length: 17 }, (_, i) => i + 1), 18, 18, 18, 18, 18, 23]), 18),
+  { rank: 18, tied: 5, seats: 1 },
+);
+check(
+  "17位が同率3人（17・18位にまたがる）なら、入れるのは2人",
+  borderTieOf(ranks([...Array.from({ length: 16 }, (_, i) => i + 1), 17, 17, 17, 20]), 18),
+  { rank: 17, tied: 3, seats: 2 },
+);
+check(
+  "線の位置で割れていなければ null",
+  borderTieOf(ranks([...Array.from({ length: 18 }, (_, i) => i + 1), 19]), 18),
+  null,
+);
+check("18人に満たなければ null", borderTieOf(ranks([1, 2, 3]), 18), null);
 
 // --- isOutOfScopeMeetTitle ---
 check(
