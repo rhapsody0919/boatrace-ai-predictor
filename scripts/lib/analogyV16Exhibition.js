@@ -261,6 +261,12 @@ export async function runAnalogyV16Exhibition(ctx) {
     failed: [],
   };
   for (const t of targets) {
+    // 関数の上限の手前（共通ラッパのソフトデッドライン）で止める。残りは次の起動（2分後）が拾う。
+    // 候補が3万件になり1レースの読み込みが大きくなったため（T2-4）
+    if (ctx.shouldStop?.()) {
+      report.stopped = true;
+      break;
+    }
     const rc = rcBy.get(t.race_id);
     const base = {
       race_id: t.race_id,
