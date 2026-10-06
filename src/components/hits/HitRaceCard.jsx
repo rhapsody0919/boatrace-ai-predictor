@@ -1,6 +1,7 @@
 /**
  * HitRaceCard - 展開予測的中レースカードコンポーネント（BOA-174、unified一本化）
  */
+import { useTranslation } from "react-i18next";
 import { SocialShareButtons } from "../SocialShareButtons";
 import { generateTurnHitShareText, shareUrlFor } from "../../utils/share";
 import {
@@ -17,6 +18,8 @@ function HitRaceCard({
   showDate = false,
   onClick,
 }) {
+  // 共有文は locale の文面（panel.shareTurnHit）。/hit-races は ja 専用なので ja になる（BOA-754）
+  const { t } = useTranslation();
   const cardClassName = `race-card ${variant}${onClick ? " clickable" : ""}`;
 
   const handleClick = () => {
@@ -129,17 +132,20 @@ function HitRaceCard({
         <SocialShareButtons
           // 的中したレースの詳細を共有する（以前はトップ固定、BOA-691）
           shareUrl={shareUrlFor(`/race/${hitRace.raceId}`)}
-          title={generateTurnHitShareText({
-            venue: hitRace.venue,
-            raceNo: hitRace.raceNumber,
-            date: hitRace.date,
-            winnerBoat: hitRace.winnerBoat,
-            winnerEntryCourse,
-            technique,
-            actualTechnique,
-            isTopPick: hitRace.isTopPick,
-            probability,
-          })}
+          title={generateTurnHitShareText(
+            {
+              venue: hitRace.venue,
+              raceNo: hitRace.raceNumber,
+              date: hitRace.date,
+              winnerBoat: hitRace.winnerBoat,
+              winnerEntryCourse,
+              technique,
+              actualTechnique,
+              isTopPick: hitRace.isTopPick,
+              probability,
+            },
+            t,
+          )}
           hashtags={["ボートレース", "展開予測", "龍神レーダー"]}
           size={36}
         />

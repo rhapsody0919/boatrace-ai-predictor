@@ -17,3 +17,4 @@ export { default as VenueRankingChart } from "./VenueRankingChart";
 export { default as VenueMotorRanking } from "./VenueMotorRanking";
 export { default as VolatilityAccuracyChart } from "./VolatilityAccuracyChart";
 export { default as VenueGradeMatrix } from "./VenueGradeMatrix";
+export { default as WeatherInEscapeChart } from "./WeatherInEscapeChart";

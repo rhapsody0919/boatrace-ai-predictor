@@ -1,0 +1,32 @@
+{
+ "load_before": [
+  107.53662109375,
+  100.1865234375,
+  132.94140625
+ ],
+ "1R_pred": {
+  "wall_med_ms": 0.56,
+  "cpu_med_ms": 0.46,
+  "cpu_min_ms": 0.25
+ },
+ "1R_contrib": {
+  "wall_med_ms": 99.95,
+  "cpu_med_ms": 21.42,
+  "cpu_min_ms": 19.79
+ },
+ "168R_pred": {
+  "wall_med_ms": 362.08,
+  "cpu_med_ms": 47.67,
+  "cpu_min_ms": 42.97
+ },
+ "168R_contrib": {
+  "wall_med_ms": 33710.04,
+  "cpu_med_ms": 3569.64,
+  "cpu_min_ms": 3559.73
+ },
+ "load_after": [
+  56.92529296875,
+  84.83349609375,
+  122.97607421875
+ ]
+}

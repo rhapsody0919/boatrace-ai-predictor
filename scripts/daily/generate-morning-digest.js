@@ -41,6 +41,7 @@ import {
   VENUE_NAMES,
 } from "../lib/supabaseClient.js";
 import { isDirectRun } from "../lib/isDirectRun.js";
+import { isColumnMissingError, stripColumns } from "../lib/optionalColumns.js";
 import {
   createTopicWithTargets,
   enabledChannelsOf,
@@ -152,7 +153,7 @@ async function fetchEntries(raceIds, { includeAbsent = false } = {}) {
       supabase
         .from("race_entries")
         .select(
-          "race_id, boat_number, racer_id, player_name, grade, motor_2rate, is_absent",
+          "race_id, boat_number, racer_id, player_name, grade, motor_number, motor_2rate, is_absent",
         )
         .in("race_id", chunk)
         .order("race_id", { ascending: true })
@@ -164,6 +165,78 @@ async function fetchEntries(raceIds, { includeAbsent = false } = {}) {
   return all.filter(
     (e) => e.racer_id !== null && (includeAbsent || !e.is_absent),
   );
+}
+
+/**
+ * 会場公式のモーター出走数（venue_motor_stats.race_count）を、対象日以前で最新のスナップショットから引く（BOA-702）。
+ * データ出走表の getVenueMotorStats(venueCode, motorNumber, asOfDate) と同じ条件。
+ * 1件ずつ引くのは、会場によってスナップショットの日がモーターごとにずれうるため（会場単位で最新日を決めると、
+ * その日に載っていないモーターを「分からない」にしてしまう）。対象は1日数十艇。
+ *
+ * 取得に失敗したモーターは Map に入れない（＝分からない。画面は従来どおり 0.0% を出す）。生成自体は止めない
+ * （この列は表示の補助で、他の列の正しさには関わらないため）。失敗数は戻り値で返し、呼び出し側が記録する。
+ *
+ * @param {string} date 対象日（YYYY-MM-DD）
+ * @param {Array<{venue_code: number, motor_number: number}>} targets
+ * @returns {Promise<{counts: Map<string, number|null>, failed: number}>} キーは `${venue_code}|${motor_number}`。
+ *   値が null は「スナップショットはあるが出走数の列が空（その会場のサイトに出走数が無い）」
+ */
+export async function fetchMotorRaceCounts(date, targets) {
+  const keys = [
+    ...new Set(targets.map((t) => `${t.venue_code}|${t.motor_number}`)),
+  ];
+  const counts = new Map();
+  let failed = 0;
+  for (let i = 0; i < keys.length; i += 20) {
+    await Promise.all(
+      keys.slice(i, i + 20).map(async (key) => {
+        const [venueCode, motorNumber] = key.split("|").map(Number);
+        const { data, error } = await supabase
+          .from("venue_motor_stats")
+          .select("race_count")
+          .eq("venue_code", venueCode)
+          .eq("motor_number", motorNumber)
+          .lte("scraped_date", date)
+          .order("scraped_date", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (error) {
+          failed += 1;
+          console.warn(
+            `  ⚠️ venue_motor_stats の取得に失敗（会場${venueCode} モーター${motorNumber}）: ${error.message}`,
+          );
+          return;
+        }
+        if (data) counts.set(key, data.race_count ?? null);
+      }),
+    );
+  }
+  return { counts, failed };
+}
+
+/**
+ * 各行に motor_race_count を付ける（純粋関数）。motor_2rate が NULL の行・モーター番号が分からない行・
+ * スナップショットが無い行は NULL。全行に同じキーを持たせる（バルク INSERT で行ごとにキーの集合を変えない）。
+ *
+ * @param {Array<Object>} rows
+ * @param {Array<{race_id: string, boat_number: number, motor_number: number|null}>} entries
+ * @param {Map<string, number|null>} counts fetchMotorRaceCounts の counts
+ */
+export function attachMotorRaceCounts(rows, entries, counts) {
+  const motorByBoat = new Map(
+    entries.map((e) => [`${e.race_id}|${e.boat_number}`, e.motor_number]),
+  );
+  return rows.map((r) => {
+    const motorNumber =
+      r.race_id && r.boat_number != null
+        ? motorByBoat.get(`${r.race_id}|${r.boat_number}`)
+        : null;
+    const count =
+      r.motor_2rate !== null && motorNumber != null
+        ? counts.get(`${r.venue_code}|${motorNumber}`)
+        : null;
+    return { ...r, motor_race_count: count ?? null };
+  });
 }
 
 async function fetchRacerStats(racerIds) {
@@ -747,6 +820,9 @@ async function buildReturned(date, prevDate, todayRaces) {
 // 書き込み
 // ---------------------------------------------------------------------------
 
+/** マイグレーションの適用前でも書き込みを止めない列（131: motor_race_count） */
+const OPTIONAL_ROW_COLUMNS = ["motor_race_count"];
+
 /**
  * 書き込み順は **rows が先、generated_at の確定が最後**（ADR-0070、レビュー指摘M-8）。
  * morning_digest_rows は morning_digest_days をFK参照するため、
@@ -766,10 +842,21 @@ async function write(date, dayRow, rows) {
     .eq("digest_date", date);
   if (delErr) throw delErr;
 
-  for (let i = 0; i < rows.length; i += 200) {
-    const { error } = await supabase
+  // motor_race_count（マイグレーション131）が未適用の DB では、その列だけを除いて書く（生成は止めない）
+  let payload = rows;
+  for (let i = 0; i < payload.length; i += 200) {
+    let { error } = await supabase
       .from("morning_digest_rows")
-      .insert(rows.slice(i, i + 200));
+      .insert(payload.slice(i, i + 200));
+    if (error && isColumnMissingError(error, OPTIONAL_ROW_COLUMNS)) {
+      console.warn(
+        `  ⚠️ morning_digest_rows に ${OPTIONAL_ROW_COLUMNS.join(", ")} がありません（マイグレーション131が未適用）。この列を除いて書きます`,
+      );
+      payload = stripColumns(payload, OPTIONAL_ROW_COLUMNS);
+      ({ error } = await supabase
+        .from("morning_digest_rows")
+        .insert(payload.slice(i, i + 200)));
+    }
     if (error) throw error;
   }
 
@@ -834,7 +921,11 @@ async function registerSnsTopic({ date, dayRow, rows }) {
   const marker = snsTopicMarker(date);
   const existing = await findTopicByTextMarker(marker);
   if (existing) {
-    return { registered: false, reason: "already-registered", topicId: existing.id };
+    return {
+      registered: false,
+      reason: "already-registered",
+      topicId: existing.id,
+    };
   }
 
   const category = await getActiveTopicCategoryByKey(SNS_TOPIC_CATEGORY_KEY);
@@ -956,11 +1047,41 @@ export async function runMorningDigest({
 
   // rank はセクション内の並び順（1始まり）
   const rankBySection = new Map();
-  const rows = ordered.map((r) => {
+  const ranked = ordered.map((r) => {
     const next = (rankBySection.get(r.section) ?? 0) + 1;
     rankBySection.set(r.section, next);
     return { ...r, digest_date: date, rank: next };
   });
+
+  // 会場公式のモーター出走数（未使用の新モーターの判定、BOA-702）
+  const motorNumberOf = new Map(
+    entries.map((e) => [`${e.race_id}|${e.boat_number}`, e.motor_number]),
+  );
+  const motorTargets = ranked
+    .filter((r) => r.motor_2rate !== null && r.race_id)
+    .map((r) => ({
+      venue_code: r.venue_code,
+      motor_number: motorNumberOf.get(`${r.race_id}|${r.boat_number}`),
+    }))
+    .filter((t) => t.motor_number != null);
+  const motorRaceCounts = await fetchMotorRaceCounts(date, motorTargets);
+  const rows = attachMotorRaceCounts(ranked, entries, motorRaceCounts.counts);
+  const motorRows = rows.filter((r) => r.motor_2rate !== null);
+  const unusedMotorRows = motorRows.filter(
+    (r) => r.motor_2rate === 0 && r.motor_race_count === 0,
+  );
+  console.log(
+    `  モーター出走数: ${motorRows.filter((r) => r.motor_race_count !== null).length}/${motorRows.length} 行で判明、` +
+      `未使用の新モーター（2連率0・出走数0）${unusedMotorRows.length} 行` +
+      (unusedMotorRows.length > 0
+        ? `（${unusedMotorRows.map((r) => `${r.section}:${r.race_id}#${r.boat_number}`).join(", ")}）`
+        : ""),
+  );
+  if (motorRaceCounts.failed > 0) {
+    console.log(
+      `  ⚠️ モーター出走数の取得に ${motorRaceCounts.failed} 件失敗しました（該当行は motor_race_count を NULL で書きます）`,
+    );
+  }
 
   console.log(
     `\n注目 ${featured ? 1 : 0} / 逃げ ${sections.nige.length}（候補${sections.nigeTotal}）` +

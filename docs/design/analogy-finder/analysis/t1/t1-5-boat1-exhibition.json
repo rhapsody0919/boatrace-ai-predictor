@@ -1,0 +1,2084 @@
+{
+ "preregistration": {
+  "file": "docs/design/analogy-finder/analysis/t1/preregistration-t1.md",
+  "section": "T1-5（レビュー表の指摘8・10）",
+  "commit": "238e0bb5a"
+ },
+ "script": "scripts/analysis/analogy-finder-t1/t1_5_boat1_exhibition.py",
+ "definition": {
+  "value": "展示タイムのレース内中心化（平均。参考に中央値）。欠損: 0以下・6.30〜7.50秒の外・欠場。値のある艇が5艇以上のレースだけ",
+  "population_main": "完全レースのうち予選（category_new ∈ qualifier・general、長期で名前が空なら stage_kind ∈ qualifier・other）",
+  "population_ref": "完全レースすべて",
+  "sources": {
+   "kb": "長期 kb_boats.exhibition_time（2019-04-01〜2025-12-02）",
+   "main": "本体 exhibition.exhibition_time（2025-12-03〜2026-09-26）"
+  },
+  "metrics": "delta_raw＝1号艇 − 2〜6号艇、delta_fe＝選手×節の中の差の平均、r＝delta_fe/delta_raw、rank1_share_wilson＝[p, lo, hi]、*_boot95＝日単位ブートストラップ200回 seed 0",
+  "rule": "r ≥ 2/3 かつ delta_fe の幅が0を含まない→位置・測り方 / r ≤ 1/3 か幅が0を含む→選手の違い / その間→両方。長期と本体で違えば本体を採る"
+ },
+ "inputs": {
+  "model-prep/data/fetch_manifest.json": {
+   "sha256_file": "2cb094cee86981b67eced2a489694a2376fdab8ecbb4c091228337acf3de8b38",
+   "version": "2026-10-02",
+   "tables": {
+    "kb_boats": {
+     "rows": 2233656,
+     "sha256": "ac8fd37dda28e41d156ff6a77fd469e366b33218596333b46edf119cf11e9548",
+     "fetchedAt": "2026-10-02T22:28:27.641Z"
+    },
+    "kb_races": {
+     "rows": 372276,
+     "sha256": "71a34c7461e0e5193f73774d1ec6ae5117ac0bfc355bf5ecf186277c0403dd65",
+     "fetchedAt": "2026-10-02T22:29:01.571Z"
+    },
+    "kb_venue_days": {
+     "rows": 31023,
+     "sha256": "8794424cf13adbf64d54567b5c8118cd873e7e69d829465563a836b5058e13bd",
+     "fetchedAt": "2026-10-02T22:29:32.074Z"
+    },
+    "race_series": {
+     "rows": 6448,
+     "sha256": "5a94d0f87ed2af9c3cf289df6ec1282a0e8a29ab71764f776c36ef0b0140dee1",
+     "fetchedAt": "2026-10-02T22:29:34.859Z"
+    },
+    "races": {
+     "rows": 47724,
+     "sha256": "628b5a7e5678db08e8bd6014b2719cf43cfdef66fb38d65a5200fee4aec5ac39",
+     "fetchedAt": "2026-10-02T22:29:38.142Z"
+    },
+    "entries": {
+     "rows": 286344,
+     "sha256": "ec139239b664f388dc65ad38bcfd13a2afa6b6225c042097504bcda28ede165f",
+     "fetchedAt": "2026-10-02T22:30:18.824Z"
+    },
+    "exhibition": {
+     "rows": 281865,
+     "sha256": "82fa697f7a0a6536e5f855ed1a52107de328e3ae18db926e1f46f85e8788a40b",
+     "fetchedAt": "2026-10-02T22:30:38.717Z"
+    },
+    "conditions": {
+     "rows": 47520,
+     "sha256": "597cae7b6251d18f36d145263f0c2404868d4394a489a183c4d6a4607a03b744",
+     "fetchedAt": "2026-10-02T22:30:44.350Z"
+    },
+    "results": {
+     "rows": 47039,
+     "sha256": "73cded5d56ecbaa230d25d24b35243eb84dfb032702333355f94518cffd53f90",
+     "fetchedAt": "2026-10-02T22:30:47.710Z"
+    },
+    "start_timings": {
+     "rows": 281762,
+     "sha256": "6711991e411380dceadffb72b2dda2dc03314561f492c7217a82f081c519f18f",
+     "fetchedAt": "2026-10-02T22:31:07.289Z"
+    }
+   }
+  },
+  "t1/t1_3_races.pkl": {
+   "rows": 408723,
+   "max_date": "2026-09-26",
+   "sha256_file": "d05a457f385cb6a96b51ff15ed7ed6e26f5d0ba865f2741e59adcba3c7d8c5bf",
+   "note": "完全レース（t1_3_refund.py の build_races の pool。6艇・欠場なし・返還艇が3着以内でない・1着1艇・2着3着あり）"
+  },
+  "model-prep/data/kb_boats.csv": {
+   "rows": 2233656,
+   "max_race_id": "2025-12-02-21-12",
+   "sha256_file": "ed32fae55d8e89943a664d96f76539955eb6add41299a8f94f7d83953976f384"
+  },
+  "model-prep/data/exhibition.csv": {
+   "rows": 281865,
+   "max_race_id": "2026-10-02-24-12",
+   "sha256_file": "51c214fbc831e921c132739e9de980928fe4ef0ad6a9a44355e5d7d906c67f6a"
+  },
+  "model-prep/data/entries.csv": {
+   "rows": 286344,
+   "max_race_id": "2026-10-03-23-12",
+   "sha256_file": "83a87e0190be8eb52cae223ae9dc8ce0763e306de04c8c30b8f7129babdec850"
+  },
+  "model-prep/data/races.csv": {
+   "rows": 47724,
+   "max_race_id": "2026-10-03-23-12",
+   "sha256_file": "a0e107f7a426f8c32d96024c0d1b5562adc7920a27be480d286a99ad9e02487e",
+   "max_date": "2026-10-03"
+  },
+  "model-prep/data/results.csv": {
+   "rows": 47039,
+   "max_race_id": "2026-10-02-24-12",
+   "sha256_file": "0fc0e1f54441c3d61921c07eb88f2d41f48c7c4ba8382a9e1120ea2183a4cea3"
+  },
+  "tab1/series_score_rows.pkl": {
+   "rows": 2519928,
+   "sha256_file": "c92192461424575090312dd9f02a3ca3194ed562266f41a61cbb2d6bdd98e49a"
+  },
+  "t1/rounds.csv": {
+   "rows": 420012,
+   "max_race_id": "2026-10-03-23-12",
+   "sha256_file": "e6eee428307c8361205883d4a100cd20d59181431b269efba8c7e94bc9c75ef5"
+  }
+ },
+ "checks": {
+  "missing_rule": {
+   "boats_total": 2452338,
+   "by_src": {
+    "kb": {
+     "boats": 2176578,
+     "null": 0,
+     "le0": 0,
+     "out_of_6.30_7.50": 494,
+     "absent": 0,
+     "valid": 2176084
+    },
+    "main": {
+     "boats": 275760,
+     "null": 335,
+     "le0": 1,
+     "out_of_6.30_7.50": 57,
+     "absent": 0,
+     "valid": 275367
+    }
+   }
+  },
+  "races_ge5_valid": {
+   "kb": {
+    "races": 362763,
+    "races_ge5": 362654,
+    "races_6": 362493
+   },
+   "main": {
+    "races": 45960,
+    "races_ge5": 45944,
+    "races_6": 45594
+   }
+  }
+ },
+ "judgment": {
+  "primary": {
+   "kb": {
+    "r": 1.0073,
+    "delta_fe": -0.01704,
+    "delta_fe_boot95": [
+     -0.01737,
+     -0.01699
+    ],
+    "delta_fe_ci_contains_0": false,
+    "delta_raw": -0.01692,
+    "verdict": "position_or_measurement"
+   },
+   "main": {
+    "r": 0.9956,
+    "delta_fe": -0.0177,
+    "delta_fe_boot95": [
+     -0.01845,
+     -0.01733
+    ],
+    "delta_fe_ci_contains_0": false,
+    "delta_raw": -0.01778,
+    "verdict": "position_or_measurement"
+   }
+  },
+  "kb_main_agree": true,
+  "adopted": "position_or_measurement",
+  "adopted_source": "main",
+  "proposed_note_text": "1号艇は展示タイムが速く出やすい（同じ選手でも1号艇のときに約0.02秒速い）",
+  "reference_all_races": {
+   "kb": {
+    "r": 0.9188,
+    "delta_fe": -0.01834,
+    "delta_fe_boot95": [
+     -0.01869,
+     -0.01839
+    ],
+    "delta_fe_ci_contains_0": false,
+    "delta_raw": -0.01996,
+    "verdict": "position_or_measurement"
+   },
+   "main": {
+    "r": 0.9281,
+    "delta_fe": -0.01893,
+    "delta_fe_boot95": [
+     -0.01953,
+     -0.01874
+    ],
+    "delta_fe_ci_contains_0": false,
+    "delta_raw": -0.0204,
+    "verdict": "position_or_measurement"
+   }
+  },
+  "reference_median_centered": {
+   "kb": {
+    "r": 1.008,
+    "delta_fe": -0.01705,
+    "delta_fe_boot95": [
+     -0.01738,
+     -0.01699
+    ],
+    "delta_fe_ci_contains_0": false,
+    "delta_raw": -0.01692,
+    "verdict": "position_or_measurement"
+   },
+   "main": {
+    "r": 0.9973,
+    "delta_fe": -0.01773,
+    "delta_fe_boot95": [
+     -0.01843,
+     -0.01734
+    ],
+    "delta_fe_ci_contains_0": false,
+    "delta_raw": -0.01777,
+    "verdict": "position_or_measurement"
+   }
+  }
+ },
+ "results": {
+  "kb": {
+   "n_days": 2438,
+   "date_range": [
+    "2019-04-01",
+    "2025-12-02"
+   ],
+   "qualifier": {
+    "mean_centered": {
+     "rows": 1286328,
+     "races": 214408,
+     "rows_without_series_key": 0,
+     "by_boat": {
+      "1": {
+       "n_rows": 214387,
+       "mean_centered": -0.0141,
+       "mean_time_sec": 6.79901,
+       "delta_raw": -0.01692,
+       "delta_raw_boot95": [
+        -0.01718,
+        -0.01664
+       ],
+       "delta_fe": -0.01704,
+       "delta_fe_boot95": [
+        -0.01737,
+        -0.01699
+       ],
+       "n_groups_both": 168545,
+       "r": 1.0073,
+       "r_boot95": [
+        1.00149,
+        1.0266
+       ],
+       "rank1_share_wilson": [
+        0.28496,
+        0.28305,
+        0.28688
+       ],
+       "rank1_n": 61092
+      },
+      "2": {
+       "n_rows": 214389,
+       "mean_centered": -0.00418,
+       "mean_time_sec": 6.80893,
+       "delta_raw": -0.00501,
+       "delta_raw_boot95": [
+        -0.0053,
+        -0.00479
+       ],
+       "delta_fe": -0.00478,
+       "delta_fe_boot95": [
+        -0.00503,
+        -0.00472
+       ],
+       "n_groups_both": 162764,
+       "r": 0.9541,
+       "r_boot95": [
+        0.93213,
+        1.01383
+       ],
+       "rank1_share_wilson": [
+        0.20588,
+        0.20417,
+        0.20759
+       ],
+       "rank1_n": 44138
+      },
+      "3": {
+       "n_rows": 214395,
+       "mean_centered": 0.00188,
+       "mean_time_sec": 6.815,
+       "delta_raw": 0.00226,
+       "delta_raw_boot95": [
+        0.00204,
+        0.0025
+       ],
+       "delta_fe": 0.00265,
+       "delta_fe_boot95": [
+        0.00251,
+        0.00287
+       ],
+       "n_groups_both": 161763,
+       "r": 1.1752,
+       "r_boot95": [
+        1.07263,
+        1.29091
+       ],
+       "rank1_share_wilson": [
+        0.17102,
+        0.16943,
+        0.17262
+       ],
+       "rank1_n": 36665
+      },
+      "4": {
+       "n_rows": 214391,
+       "mean_centered": 0.00369,
+       "mean_time_sec": 6.8168,
+       "delta_raw": 0.00442,
+       "delta_raw_boot95": [
+        0.00422,
+        0.00468
+       ],
+       "delta_fe": 0.00495,
+       "delta_fe_boot95": [
+        0.00483,
+        0.00516
+       ],
+       "n_groups_both": 162683,
+       "r": 1.1186,
+       "r_boot95": [
+        1.08933,
+        1.1789
+       ],
+       "rank1_share_wilson": [
+        0.16433,
+        0.16276,
+        0.1659
+       ],
+       "rank1_n": 35230
+      },
+      "5": {
+       "n_rows": 214394,
+       "mean_centered": 0.00702,
+       "mean_time_sec": 6.82013,
+       "delta_raw": 0.00842,
+       "delta_raw_boot95": [
+        0.00821,
+        0.00862
+       ],
+       "delta_fe": 0.00837,
+       "delta_fe_boot95": [
+        0.0082,
+        0.00851
+       ],
+       "n_groups_both": 162711,
+       "r": 0.994,
+       "r_boot95": [
+        0.97107,
+        1.01767
+       ],
+       "rank1_share_wilson": [
+        0.15198,
+        0.15047,
+        0.15351
+       ],
+       "rank1_n": 32584
+      },
+      "6": {
+       "n_rows": 214372,
+       "mean_centered": 0.00569,
+       "mean_time_sec": 6.81878,
+       "delta_raw": 0.00683,
+       "delta_raw_boot95": [
+        0.00654,
+        0.00705
+       ],
+       "delta_fe": 0.0073,
+       "delta_fe_boot95": [
+        0.00685,
+        0.00725
+       ],
+       "n_groups_both": 155676,
+       "r": 1.0694,
+       "r_boot95": [
+        1.0001,
+        1.06797
+       ],
+       "rank1_share_wilson": [
+        0.16855,
+        0.16697,
+        0.17014
+       ],
+       "rank1_n": 36133
+      }
+     },
+     "near_day_le1_boat1": {
+      "def": "同じ選手×節で、1号艇の走と2〜6号艇の走の組のうち節の日目（series_day）の差が1日以内のものの差を、選手×節ごとに平均し、選手×節で単純平均",
+      "n_pairs": 386677,
+      "n_groups": 157394,
+      "rows_without_series_day": 0,
+      "delta": -0.01738,
+      "delta_boot95": [
+       -0.0177,
+       -0.01722
+      ],
+      "r_vs_delta_raw": 1.0272
+     }
+    },
+    "median_centered": {
+     "rows": 1286328,
+     "races": 214408,
+     "rows_without_series_key": 0,
+     "by_boat": {
+      "1": {
+       "n_rows": 214387,
+       "mean_centered": -0.01413,
+       "mean_time_sec": 6.79901,
+       "delta_raw": -0.01692,
+       "delta_raw_boot95": [
+        -0.01719,
+        -0.01664
+       ],
+       "delta_fe": -0.01705,
+       "delta_fe_boot95": [
+        -0.01738,
+        -0.01699
+       ],
+       "n_groups_both": 168545,
+       "r": 1.008,
+       "r_boot95": [
+        1.00242,
+        1.02786
+       ],
+       "rank1_share_wilson": [
+        0.28496,
+        0.28305,
+        0.28688
+       ],
+       "rank1_n": 61092
+      },
+      "2": {
+       "n_rows": 214389,
+       "mean_centered": -0.00421,
+       "mean_time_sec": 6.80893,
+       "delta_raw": -0.00501,
+       "delta_raw_boot95": [
+        -0.0053,
+        -0.00479
+       ],
+       "delta_fe": -0.00477,
+       "delta_fe_boot95": [
+        -0.00503,
+        -0.00469
+       ],
+       "n_groups_both": 162764,
+       "r": 0.9524,
+       "r_boot95": [
+        0.92739,
+        1.0103
+       ],
+       "rank1_share_wilson": [
+        0.20588,
+        0.20417,
+        0.20759
+       ],
+       "rank1_n": 44138
+      },
+      "3": {
+       "n_rows": 214395,
+       "mean_centered": 0.00185,
+       "mean_time_sec": 6.815,
+       "delta_raw": 0.00226,
+       "delta_raw_boot95": [
+        0.00204,
+        0.0025
+       ],
+       "delta_fe": 0.00264,
+       "delta_fe_boot95": [
+        0.00247,
+        0.00285
+       ],
+       "n_groups_both": 161763,
+       "r": 1.1686,
+       "r_boot95": [
+        1.0661,
+        1.28467
+       ],
+       "rank1_share_wilson": [
+        0.17102,
+        0.16943,
+        0.17262
+       ],
+       "rank1_n": 36665
+      },
+      "4": {
+       "n_rows": 214391,
+       "mean_centered": 0.00365,
+       "mean_time_sec": 6.8168,
+       "delta_raw": 0.00442,
+       "delta_raw_boot95": [
+        0.00422,
+        0.00468
+       ],
+       "delta_fe": 0.00497,
+       "delta_fe_boot95": [
+        0.00487,
+        0.00521
+       ],
+       "n_groups_both": 162683,
+       "r": 1.124,
+       "r_boot95": [
+        1.08683,
+        1.18109
+       ],
+       "rank1_share_wilson": [
+        0.16433,
+        0.16276,
+        0.1659
+       ],
+       "rank1_n": 35230
+      },
+      "5": {
+       "n_rows": 214394,
+       "mean_centered": 0.00699,
+       "mean_time_sec": 6.82013,
+       "delta_raw": 0.00842,
+       "delta_raw_boot95": [
+        0.00821,
+        0.00862
+       ],
+       "delta_fe": 0.00837,
+       "delta_fe_boot95": [
+        0.0082,
+        0.00851
+       ],
+       "n_groups_both": 162711,
+       "r": 0.9941,
+       "r_boot95": [
+        0.97034,
+        1.01709
+       ],
+       "rank1_share_wilson": [
+        0.15198,
+        0.15047,
+        0.15351
+       ],
+       "rank1_n": 32584
+      },
+      "6": {
+       "n_rows": 214372,
+       "mean_centered": 0.00566,
+       "mean_time_sec": 6.81878,
+       "delta_raw": 0.00683,
+       "delta_raw_boot95": [
+        0.00654,
+        0.00705
+       ],
+       "delta_fe": 0.0073,
+       "delta_fe_boot95": [
+        0.00684,
+        0.00722
+       ],
+       "n_groups_both": 155676,
+       "r": 1.0693,
+       "r_boot95": [
+        0.99717,
+        1.06474
+       ],
+       "rank1_share_wilson": [
+        0.16855,
+        0.16697,
+        0.17014
+       ],
+       "rank1_n": 36133
+      }
+     },
+     "near_day_le1_boat1": {
+      "def": "同じ選手×節で、1号艇の走と2〜6号艇の走の組のうち節の日目（series_day）の差が1日以内のものの差を、選手×節ごとに平均し、選手×節で単純平均",
+      "n_pairs": 386677,
+      "n_groups": 157394,
+      "rows_without_series_day": 0,
+      "delta": -0.01737,
+      "delta_boot95": [
+       -0.01771,
+       -0.01721
+      ],
+      "r_vs_delta_raw": 1.0267
+     }
+    }
+   },
+   "all": {
+    "mean_centered": {
+     "rows": 2175763,
+     "races": 362654,
+     "rows_without_series_key": 0,
+     "by_boat": {
+      "1": {
+       "n_rows": 362627,
+       "mean_centered": -0.01664,
+       "mean_time_sec": 6.79711,
+       "delta_raw": -0.01996,
+       "delta_raw_boot95": [
+        -0.02017,
+        -0.01976
+       ],
+       "delta_fe": -0.01834,
+       "delta_fe_boot95": [
+        -0.01869,
+        -0.01839
+       ],
+       "n_groups_both": 229306,
+       "r": 0.9188,
+       "r_boot95": [
+        0.92122,
+        0.93483
+       ],
+       "rank1_share_wilson": [
+        0.30438,
+        0.30288,
+        0.30588
+       ],
+       "rank1_n": 110375
+      },
+      "2": {
+       "n_rows": 362632,
+       "mean_centered": -0.00416,
+       "mean_time_sec": 6.80959,
+       "delta_raw": -0.00499,
+       "delta_raw_boot95": [
+        -0.00521,
+        -0.00482
+       ],
+       "delta_fe": -0.00528,
+       "delta_fe_boot95": [
+        -0.00557,
+        -0.00533
+       ],
+       "n_groups_both": 230710,
+       "r": 1.0575,
+       "r_boot95": [
+        1.05763,
+        1.12693
+       ],
+       "rank1_share_wilson": [
+        0.20309,
+        0.20179,
+        0.20441
+       ],
+       "rank1_n": 73648
+      },
+      "3": {
+       "n_rows": 362635,
+       "mean_centered": 0.002,
+       "mean_time_sec": 6.81575,
+       "delta_raw": 0.0024,
+       "delta_raw_boot95": [
+        0.00224,
+        0.00257
+       ],
+       "delta_fe": 0.00224,
+       "delta_fe_boot95": [
+        0.00212,
+        0.00237
+       ],
+       "n_groups_both": 228053,
+       "r": 0.9354,
+       "r_boot95": [
+        0.88836,
+        0.99022
+       ],
+       "rank1_share_wilson": [
+        0.16882,
+        0.1676,
+        0.17004
+       ],
+       "rank1_n": 61219
+      },
+      "4": {
+       "n_rows": 362633,
+       "mean_centered": 0.0041,
+       "mean_time_sec": 6.81785,
+       "delta_raw": 0.00492,
+       "delta_raw_boot95": [
+        0.00477,
+        0.00511
+       ],
+       "delta_fe": 0.00497,
+       "delta_fe_boot95": [
+        0.00502,
+        0.00527
+       ],
+       "n_groups_both": 232009,
+       "r": 1.0108,
+       "r_boot95": [
+        1.0148,
+        1.07351
+       ],
+       "rank1_share_wilson": [
+        0.16146,
+        0.16026,
+        0.16266
+       ],
+       "rank1_n": 58550
+      },
+      "5": {
+       "n_rows": 362633,
+       "mean_centered": 0.00789,
+       "mean_time_sec": 6.82164,
+       "delta_raw": 0.00947,
+       "delta_raw_boot95": [
+        0.00931,
+        0.00964
+       ],
+       "delta_fe": 0.00872,
+       "delta_fe_boot95": [
+        0.00882,
+        0.00908
+       ],
+       "n_groups_both": 236983,
+       "r": 0.9215,
+       "r_boot95": [
+        0.93036,
+        0.95764
+       ],
+       "rank1_share_wilson": [
+        0.14659,
+        0.14544,
+        0.14774
+       ],
+       "rank1_n": 53157
+      },
+      "6": {
+       "n_rows": 362603,
+       "mean_centered": 0.00681,
+       "mean_time_sec": 6.82054,
+       "delta_raw": 0.00817,
+       "delta_raw_boot95": [
+        0.00797,
+        0.00837
+       ],
+       "delta_fe": 0.00784,
+       "delta_fe_boot95": [
+        0.00772,
+        0.008
+       ],
+       "n_groups_both": 235655,
+       "r": 0.9599,
+       "r_boot95": [
+        0.94179,
+        0.97828
+       ],
+       "rank1_share_wilson": [
+        0.16188,
+        0.16068,
+        0.16308
+       ],
+       "rank1_n": 58698
+      }
+     },
+     "near_day_le1_boat1": {
+      "def": "同じ選手×節で、1号艇の走と2〜6号艇の走の組のうち節の日目（series_day）の差が1日以内のものの差を、選手×節ごとに平均し、選手×節で単純平均",
+      "n_pairs": 1154736,
+      "n_groups": 229254,
+      "rows_without_series_day": 0,
+      "delta": -0.01871,
+      "delta_boot95": [
+       -0.01908,
+       -0.0188
+      ],
+      "r_vs_delta_raw": 0.9374
+     }
+    },
+    "median_centered": {
+     "rows": 2175763,
+     "races": 362654,
+     "rows_without_series_key": 0,
+     "by_boat": {
+      "1": {
+       "n_rows": 362627,
+       "mean_centered": -0.01675,
+       "mean_time_sec": 6.79711,
+       "delta_raw": -0.01996,
+       "delta_raw_boot95": [
+        -0.02017,
+        -0.01976
+       ],
+       "delta_fe": -0.01832,
+       "delta_fe_boot95": [
+        -0.01867,
+        -0.01838
+       ],
+       "n_groups_both": 229306,
+       "r": 0.9176,
+       "r_boot95": [
+        0.92035,
+        0.93407
+       ],
+       "rank1_share_wilson": [
+        0.30438,
+        0.30288,
+        0.30588
+       ],
+       "rank1_n": 110375
+      },
+      "2": {
+       "n_rows": 362632,
+       "mean_centered": -0.00427,
+       "mean_time_sec": 6.80959,
+       "delta_raw": -0.00499,
+       "delta_raw_boot95": [
+        -0.00521,
+        -0.00482
+       ],
+       "delta_fe": -0.00528,
+       "delta_fe_boot95": [
+        -0.00557,
+        -0.00533
+       ],
+       "n_groups_both": 230710,
+       "r": 1.0584,
+       "r_boot95": [
+        1.057,
+        1.12768
+       ],
+       "rank1_share_wilson": [
+        0.20309,
+        0.20179,
+        0.20441
+       ],
+       "rank1_n": 73648
+      },
+      "3": {
+       "n_rows": 362635,
+       "mean_centered": 0.00189,
+       "mean_time_sec": 6.81575,
+       "delta_raw": 0.0024,
+       "delta_raw_boot95": [
+        0.00224,
+        0.00257
+       ],
+       "delta_fe": 0.00225,
+       "delta_fe_boot95": [
+        0.00212,
+        0.00237
+       ],
+       "n_groups_both": 228053,
+       "r": 0.9359,
+       "r_boot95": [
+        0.88719,
+        0.99451
+       ],
+       "rank1_share_wilson": [
+        0.16882,
+        0.1676,
+        0.17004
+       ],
+       "rank1_n": 61219
+      },
+      "4": {
+       "n_rows": 362633,
+       "mean_centered": 0.00399,
+       "mean_time_sec": 6.81785,
+       "delta_raw": 0.00492,
+       "delta_raw_boot95": [
+        0.00476,
+        0.0051
+       ],
+       "delta_fe": 0.00498,
+       "delta_fe_boot95": [
+        0.00503,
+        0.00526
+       ],
+       "n_groups_both": 232009,
+       "r": 1.0121,
+       "r_boot95": [
+        1.0151,
+        1.07512
+       ],
+       "rank1_share_wilson": [
+        0.16146,
+        0.16026,
+        0.16266
+       ],
+       "rank1_n": 58550
+      },
+      "5": {
+       "n_rows": 362633,
+       "mean_centered": 0.00778,
+       "mean_time_sec": 6.82164,
+       "delta_raw": 0.00947,
+       "delta_raw_boot95": [
+        0.00931,
+        0.00964
+       ],
+       "delta_fe": 0.00873,
+       "delta_fe_boot95": [
+        0.00883,
+        0.00908
+       ],
+       "n_groups_both": 236983,
+       "r": 0.9222,
+       "r_boot95": [
+        0.9311,
+        0.95931
+       ],
+       "rank1_share_wilson": [
+        0.14659,
+        0.14544,
+        0.14774
+       ],
+       "rank1_n": 53157
+      },
+      "6": {
+       "n_rows": 362603,
+       "mean_centered": 0.0067,
+       "mean_time_sec": 6.82054,
+       "delta_raw": 0.00817,
+       "delta_raw_boot95": [
+        0.00797,
+        0.00837
+       ],
+       "delta_fe": 0.00785,
+       "delta_fe_boot95": [
+        0.00771,
+        0.00799
+       ],
+       "n_groups_both": 235655,
+       "r": 0.9606,
+       "r_boot95": [
+        0.94204,
+        0.97868
+       ],
+       "rank1_share_wilson": [
+        0.16188,
+        0.16068,
+        0.16308
+       ],
+       "rank1_n": 58698
+      }
+     },
+     "near_day_le1_boat1": {
+      "def": "同じ選手×節で、1号艇の走と2〜6号艇の走の組のうち節の日目（series_day）の差が1日以内のものの差を、選手×節ごとに平均し、選手×節で単純平均",
+      "n_pairs": 1154736,
+      "n_groups": 229254,
+      "rows_without_series_day": 0,
+      "delta": -0.01869,
+      "delta_boot95": [
+       -0.01907,
+       -0.01879
+      ],
+      "r_vs_delta_raw": 0.9363
+     }
+    }
+   },
+   "qualifier_wide_sensitivity": {
+    "mean_centered": {
+     "rows": 1566687,
+     "races": 261135,
+     "rows_without_series_key": 0,
+     "by_boat": {
+      "1": {
+       "n_rows": 261114,
+       "mean_centered": -0.01528,
+       "mean_time_sec": 6.79814,
+       "delta_raw": -0.01834,
+       "delta_raw_boot95": [
+        -0.01862,
+        -0.01811
+       ],
+       "delta_fe": -0.01738,
+       "delta_fe_boot95": [
+        -0.01768,
+        -0.01732
+       ],
+       "n_groups_both": 197489,
+       "r": 0.9477,
+       "r_boot95": [
+        0.94352,
+        0.96396
+       ],
+       "rank1_share_wilson": [
+        0.29433,
+        0.29258,
+        0.29608
+       ],
+       "rank1_n": 76853
+      },
+      "2": {
+       "n_rows": 261116,
+       "mean_centered": -0.00388,
+       "mean_time_sec": 6.80955,
+       "delta_raw": -0.00465,
+       "delta_raw_boot95": [
+        -0.0049,
+        -0.00444
+       ],
+       "delta_fe": -0.00474,
+       "delta_fe_boot95": [
+        -0.005,
+        -0.00474
+       ],
+       "n_groups_both": 190032,
+       "r": 1.0175,
+       "r_boot95": [
+        1.0025,
+        1.08981
+       ],
+       "rank1_share_wilson": [
+        0.2026,
+        0.20107,
+        0.20415
+       ],
+       "rank1_n": 52903
+      },
+      "3": {
+       "n_rows": 261121,
+       "mean_centered": 0.00195,
+       "mean_time_sec": 6.81539,
+       "delta_raw": 0.00234,
+       "delta_raw_boot95": [
+        0.00217,
+        0.00256
+       ],
+       "delta_fe": 0.00265,
+       "delta_fe_boot95": [
+        0.00248,
+        0.00276
+       ],
+       "n_groups_both": 188421,
+       "r": 1.133,
+       "r_boot95": [
+        1.03679,
+        1.19668
+       ],
+       "rank1_share_wilson": [
+        0.17016,
+        0.16873,
+        0.17161
+       ],
+       "rank1_n": 44433
+      },
+      "4": {
+       "n_rows": 261118,
+       "mean_centered": 0.0037,
+       "mean_time_sec": 6.81714,
+       "delta_raw": 0.00445,
+       "delta_raw_boot95": [
+        0.00427,
+        0.00468
+       ],
+       "delta_fe": 0.00496,
+       "delta_fe_boot95": [
+        0.00487,
+        0.00517
+       ],
+       "n_groups_both": 190245,
+       "r": 1.1156,
+       "r_boot95": [
+        1.08382,
+        1.16805
+       ],
+       "rank1_share_wilson": [
+        0.16435,
+        0.16293,
+        0.16578
+       ],
+       "rank1_n": 42915
+      },
+      "5": {
+       "n_rows": 261119,
+       "mean_centered": 0.0074,
+       "mean_time_sec": 6.82084,
+       "delta_raw": 0.00888,
+       "delta_raw_boot95": [
+        0.00868,
+        0.00906
+       ],
+       "delta_fe": 0.0085,
+       "delta_fe_boot95": [
+        0.00832,
+        0.00862
+       ],
+       "n_groups_both": 189953,
+       "r": 0.9569,
+       "r_boot95": [
+        0.93779,
+        0.97304
+       ],
+       "rank1_share_wilson": [
+        0.14955,
+        0.14819,
+        0.15093
+       ],
+       "rank1_n": 39051
+      },
+      "6": {
+       "n_rows": 261099,
+       "mean_centered": 0.0061,
+       "mean_time_sec": 6.81952,
+       "delta_raw": 0.00732,
+       "delta_raw_boot95": [
+        0.00709,
+        0.00755
+       ],
+       "delta_fe": 0.00764,
+       "delta_fe_boot95": [
+        0.00719,
+        0.00753
+       ],
+       "n_groups_both": 183134,
+       "r": 1.0434,
+       "r_boot95": [
+        0.98252,
+        1.03474
+       ],
+       "rank1_share_wilson": [
+        0.16565,
+        0.16423,
+        0.16708
+       ],
+       "rank1_n": 43251
+      }
+     },
+     "near_day_le1_boat1": {
+      "def": "同じ選手×節で、1号艇の走と2〜6号艇の走の組のうち節の日目（series_day）の差が1日以内のものの差を、選手×節ごとに平均し、選手×節で単純平均",
+      "n_pairs": 547482,
+      "n_groups": 194509,
+      "rows_without_series_day": 0,
+      "delta": -0.01762,
+      "delta_boot95": [
+       -0.01793,
+       -0.01744
+      ],
+      "r_vs_delta_raw": 0.961
+     }
+    }
+   }
+  },
+  "main": {
+   "n_days": 298,
+   "date_range": [
+    "2025-12-03",
+    "2026-09-26"
+   ],
+   "qualifier": {
+    "mean_centered": {
+     "rows": 159654,
+     "races": 26637,
+     "rows_without_series_key": 0,
+     "by_boat": {
+      "1": {
+       "n_rows": 26606,
+       "mean_centered": -0.01482,
+       "mean_time_sec": 6.79611,
+       "delta_raw": -0.01778,
+       "delta_raw_boot95": [
+        -0.01851,
+        -0.01696
+       ],
+       "delta_fe": -0.0177,
+       "delta_fe_boot95": [
+        -0.01845,
+        -0.01733
+       ],
+       "n_groups_both": 20987,
+       "r": 0.9956,
+       "r_boot95": [
+        0.96935,
+        1.04648
+       ],
+       "rank1_share_wilson": [
+        0.28283,
+        0.27745,
+        0.28827
+       ],
+       "rank1_n": 7525
+      },
+      "2": {
+       "n_rows": 26606,
+       "mean_centered": -0.00371,
+       "mean_time_sec": 6.80722,
+       "delta_raw": -0.00445,
+       "delta_raw_boot95": [
+        -0.00496,
+        -0.00379
+       ],
+       "delta_fe": -0.00409,
+       "delta_fe_boot95": [
+        -0.0048,
+        -0.00378
+       ],
+       "n_groups_both": 20191,
+       "r": 0.9198,
+       "r_boot95": [
+        0.84712,
+        1.1085
+       ],
+       "rank1_share_wilson": [
+        0.2018,
+        0.19702,
+        0.20666
+       ],
+       "rank1_n": 5369
+      },
+      "3": {
+       "n_rows": 26617,
+       "mean_centered": 0.00219,
+       "mean_time_sec": 6.81309,
+       "delta_raw": 0.00263,
+       "delta_raw_boot95": [
+        0.00197,
+        0.00309
+       ],
+       "delta_fe": 0.00268,
+       "delta_fe_boot95": [
+        0.00205,
+        0.00305
+       ],
+       "n_groups_both": 20018,
+       "r": 1.0179,
+       "r_boot95": [
+        0.77541,
+        1.30106
+       ],
+       "rank1_share_wilson": [
+        0.16719,
+        0.16275,
+        0.17172
+       ],
+       "rank1_n": 4450
+      },
+      "4": {
+       "n_rows": 26618,
+       "mean_centered": 0.00452,
+       "mean_time_sec": 6.8154,
+       "delta_raw": 0.00543,
+       "delta_raw_boot95": [
+        0.00475,
+        0.00605
+       ],
+       "delta_fe": 0.00538,
+       "delta_fe_boot95": [
+        0.00493,
+        0.006
+       ],
+       "n_groups_both": 20091,
+       "r": 0.9916,
+       "r_boot95": [
+        0.9117,
+        1.13239
+       ],
+       "rank1_share_wilson": [
+        0.16211,
+        0.15773,
+        0.16658
+       ],
+       "rank1_n": 4315
+      },
+      "5": {
+       "n_rows": 26604,
+       "mean_centered": 0.00673,
+       "mean_time_sec": 6.8176,
+       "delta_raw": 0.00808,
+       "delta_raw_boot95": [
+        0.00742,
+        0.00872
+       ],
+       "delta_fe": 0.00837,
+       "delta_fe_boot95": [
+        0.00791,
+        0.00891
+       ],
+       "n_groups_both": 20227,
+       "r": 1.0358,
+       "r_boot95": [
+        0.97184,
+        1.12379
+       ],
+       "rank1_share_wilson": [
+        0.15419,
+        0.1499,
+        0.15858
+       ],
+       "rank1_n": 4102
+      },
+      "6": {
+       "n_rows": 26603,
+       "mean_centered": 0.00507,
+       "mean_time_sec": 6.81599,
+       "delta_raw": 0.00609,
+       "delta_raw_boot95": [
+        0.00531,
+        0.007
+       ],
+       "delta_fe": 0.00698,
+       "delta_fe_boot95": [
+        0.0062,
+        0.00733
+       ],
+       "n_groups_both": 19097,
+       "r": 1.1463,
+       "r_boot95": [
+        0.99082,
+        1.25779
+       ],
+       "rank1_share_wilson": [
+        0.17374,
+        0.16923,
+        0.17834
+       ],
+       "rank1_n": 4622
+      }
+     },
+     "near_day_le1_boat1": {
+      "def": "同じ選手×節で、1号艇の走と2〜6号艇の走の組のうち節の日目（series_day）の差が1日以内のものの差を、選手×節ごとに平均し、選手×節で単純平均",
+      "n_pairs": 46962,
+      "n_groups": 19506,
+      "rows_without_series_day": 0,
+      "delta": -0.01806,
+      "delta_boot95": [
+       -0.01897,
+       -0.01758
+      ],
+      "r_vs_delta_raw": 1.0155
+     }
+    },
+    "median_centered": {
+     "rows": 159654,
+     "races": 26637,
+     "rows_without_series_key": 0,
+     "by_boat": {
+      "1": {
+       "n_rows": 26606,
+       "mean_centered": -0.01492,
+       "mean_time_sec": 6.79611,
+       "delta_raw": -0.01777,
+       "delta_raw_boot95": [
+        -0.0185,
+        -0.01695
+       ],
+       "delta_fe": -0.01773,
+       "delta_fe_boot95": [
+        -0.01843,
+        -0.01734
+       ],
+       "n_groups_both": 20987,
+       "r": 0.9973,
+       "r_boot95": [
+        0.96958,
+        1.05084
+       ],
+       "rank1_share_wilson": [
+        0.28283,
+        0.27745,
+        0.28827
+       ],
+       "rank1_n": 7525
+      },
+      "2": {
+       "n_rows": 26606,
+       "mean_centered": -0.00382,
+       "mean_time_sec": 6.80722,
+       "delta_raw": -0.00445,
+       "delta_raw_boot95": [
+        -0.00496,
+        -0.00379
+       ],
+       "delta_fe": -0.00406,
+       "delta_fe_boot95": [
+        -0.00479,
+        -0.00369
+       ],
+       "n_groups_both": 20191,
+       "r": 0.9141,
+       "r_boot95": [
+        0.83821,
+        1.10553
+       ],
+       "rank1_share_wilson": [
+        0.2018,
+        0.19702,
+        0.20666
+       ],
+       "rank1_n": 5369
+      },
+      "3": {
+       "n_rows": 26617,
+       "mean_centered": 0.00208,
+       "mean_time_sec": 6.81309,
+       "delta_raw": 0.00263,
+       "delta_raw_boot95": [
+        0.00196,
+        0.00309
+       ],
+       "delta_fe": 0.00269,
+       "delta_fe_boot95": [
+        0.00203,
+        0.00309
+       ],
+       "n_groups_both": 20018,
+       "r": 1.0227,
+       "r_boot95": [
+        0.77957,
+        1.30833
+       ],
+       "rank1_share_wilson": [
+        0.16719,
+        0.16275,
+        0.17172
+       ],
+       "rank1_n": 4450
+      },
+      "4": {
+       "n_rows": 26618,
+       "mean_centered": 0.00442,
+       "mean_time_sec": 6.8154,
+       "delta_raw": 0.00543,
+       "delta_raw_boot95": [
+        0.00474,
+        0.00606
+       ],
+       "delta_fe": 0.00545,
+       "delta_fe_boot95": [
+        0.00493,
+        0.00607
+       ],
+       "n_groups_both": 20091,
+       "r": 1.0029,
+       "r_boot95": [
+        0.92009,
+        1.1473
+       ],
+       "rank1_share_wilson": [
+        0.16211,
+        0.15773,
+        0.16658
+       ],
+       "rank1_n": 4315
+      },
+      "5": {
+       "n_rows": 26604,
+       "mean_centered": 0.00661,
+       "mean_time_sec": 6.8176,
+       "delta_raw": 0.00807,
+       "delta_raw_boot95": [
+        0.00741,
+        0.00871
+       ],
+       "delta_fe": 0.00839,
+       "delta_fe_boot95": [
+        0.00793,
+        0.00894
+       ],
+       "n_groups_both": 20227,
+       "r": 1.0399,
+       "r_boot95": [
+        0.97153,
+        1.12893
+       ],
+       "rank1_share_wilson": [
+        0.15419,
+        0.1499,
+        0.15858
+       ],
+       "rank1_n": 4102
+      },
+      "6": {
+       "n_rows": 26603,
+       "mean_centered": 0.00496,
+       "mean_time_sec": 6.81599,
+       "delta_raw": 0.00609,
+       "delta_raw_boot95": [
+        0.00532,
+        0.007
+       ],
+       "delta_fe": 0.00693,
+       "delta_fe_boot95": [
+        0.00614,
+        0.00728
+       ],
+       "n_groups_both": 19097,
+       "r": 1.1393,
+       "r_boot95": [
+        0.97815,
+        1.25418
+       ],
+       "rank1_share_wilson": [
+        0.17374,
+        0.16923,
+        0.17834
+       ],
+       "rank1_n": 4622
+      }
+     },
+     "near_day_le1_boat1": {
+      "def": "同じ選手×節で、1号艇の走と2〜6号艇の走の組のうち節の日目（series_day）の差が1日以内のものの差を、選手×節ごとに平均し、選手×節で単純平均",
+      "n_pairs": 46962,
+      "n_groups": 19506,
+      "rows_without_series_day": 0,
+      "delta": -0.01803,
+      "delta_boot95": [
+       -0.01902,
+       -0.0176
+      ],
+      "r_vs_delta_raw": 1.0148
+     }
+    }
+   },
+   "all": {
+    "mean_centered": {
+     "rows": 275314,
+     "races": 45944,
+     "rows_without_series_key": 0,
+     "by_boat": {
+      "1": {
+       "n_rows": 45893,
+       "mean_centered": -0.017,
+       "mean_time_sec": 6.79119,
+       "delta_raw": -0.0204,
+       "delta_raw_boot95": [
+        -0.02104,
+        -0.01978
+       ],
+       "delta_fe": -0.01893,
+       "delta_fe_boot95": [
+        -0.01953,
+        -0.01874
+       ],
+       "n_groups_both": 29045,
+       "r": 0.9281,
+       "r_boot95": [
+        0.91849,
+        0.96039
+       ],
+       "rank1_share_wilson": [
+        0.30042,
+        0.29624,
+        0.30463
+       ],
+       "rank1_n": 13787
+      },
+      "2": {
+       "n_rows": 45873,
+       "mean_centered": -0.00341,
+       "mean_time_sec": 6.80476,
+       "delta_raw": -0.00409,
+       "delta_raw_boot95": [
+        -0.00456,
+        -0.00364
+       ],
+       "delta_fe": -0.00441,
+       "delta_fe_boot95": [
+        -0.00493,
+        -0.0043
+       ],
+       "n_groups_both": 29192,
+       "r": 1.0785,
+       "r_boot95": [
+        1.02847,
+        1.24461
+       ],
+       "rank1_share_wilson": [
+        0.19844,
+        0.19481,
+        0.20211
+       ],
+       "rank1_n": 9103
+      },
+      "3": {
+       "n_rows": 45899,
+       "mean_centered": 0.00249,
+       "mean_time_sec": 6.81067,
+       "delta_raw": 0.00298,
+       "delta_raw_boot95": [
+        0.00252,
+        0.00335
+       ],
+       "delta_fe": 0.00234,
+       "delta_fe_boot95": [
+        0.00205,
+        0.00268
+       ],
+       "n_groups_both": 28919,
+       "r": 0.7851,
+       "r_boot95": [
+        0.6906,
+        0.92807
+       ],
+       "rank1_share_wilson": [
+        0.16517,
+        0.1618,
+        0.16859
+       ],
+       "rank1_n": 7581
+      },
+      "4": {
+       "n_rows": 45904,
+       "mean_centered": 0.00472,
+       "mean_time_sec": 6.81288,
+       "delta_raw": 0.00566,
+       "delta_raw_boot95": [
+        0.00513,
+        0.00617
+       ],
+       "delta_fe": 0.00529,
+       "delta_fe_boot95": [
+        0.00518,
+        0.00584
+       ],
+       "n_groups_both": 29357,
+       "r": 0.9342,
+       "r_boot95": [
+        0.90924,
+        1.05106
+       ],
+       "rank1_share_wilson": [
+        0.15835,
+        0.15504,
+        0.16172
+       ],
+       "rank1_n": 7269
+      },
+      "5": {
+       "n_rows": 45873,
+       "mean_centered": 0.00727,
+       "mean_time_sec": 6.81544,
+       "delta_raw": 0.00872,
+       "delta_raw_boot95": [
+        0.00824,
+        0.00925
+       ],
+       "delta_fe": 0.0083,
+       "delta_fe_boot95": [
+        0.00821,
+        0.00895
+       ],
+       "n_groups_both": 30022,
+       "r": 0.9517,
+       "r_boot95": [
+        0.93978,
+        1.03483
+       ],
+       "rank1_share_wilson": [
+        0.15052,
+        0.14728,
+        0.15383
+       ],
+       "rank1_n": 6905
+      },
+      "6": {
+       "n_rows": 45872,
+       "mean_centered": 0.00594,
+       "mean_time_sec": 6.81414,
+       "delta_raw": 0.00713,
+       "delta_raw_boot95": [
+        0.00651,
+        0.00783
+       ],
+       "delta_fe": 0.00723,
+       "delta_fe_boot95": [
+        0.00693,
+        0.00778
+       ],
+       "n_groups_both": 29811,
+       "r": 1.0141,
+       "r_boot95": [
+        0.95682,
+        1.11619
+       ],
+       "rank1_share_wilson": [
+        0.16847,
+        0.16507,
+        0.17192
+       ],
+       "rank1_n": 7728
+      }
+     },
+     "near_day_le1_boat1": {
+      "def": "同じ選手×節で、1号艇の走と2〜6号艇の走の組のうち節の日目（series_day）の差が1日以内のものの差を、選手×節ごとに平均し、選手×節で単純平均",
+      "n_pairs": 144980,
+      "n_groups": 29037,
+      "rows_without_series_day": 0,
+      "delta": -0.01941,
+      "delta_boot95": [
+       -0.02026,
+       -0.01922
+      ],
+      "r_vs_delta_raw": 0.9514
+     }
+    },
+    "median_centered": {
+     "rows": 275314,
+     "races": 45944,
+     "rows_without_series_key": 0,
+     "by_boat": {
+      "1": {
+       "n_rows": 45893,
+       "mean_centered": -0.01725,
+       "mean_time_sec": 6.79119,
+       "delta_raw": -0.0204,
+       "delta_raw_boot95": [
+        -0.02103,
+        -0.01977
+       ],
+       "delta_fe": -0.01889,
+       "delta_fe_boot95": [
+        -0.01954,
+        -0.01871
+       ],
+       "n_groups_both": 29045,
+       "r": 0.9263,
+       "r_boot95": [
+        0.91873,
+        0.95775
+       ],
+       "rank1_share_wilson": [
+        0.30042,
+        0.29624,
+        0.30463
+       ],
+       "rank1_n": 13787
+      },
+      "2": {
+       "n_rows": 45873,
+       "mean_centered": -0.00366,
+       "mean_time_sec": 6.80476,
+       "delta_raw": -0.00409,
+       "delta_raw_boot95": [
+        -0.00456,
+        -0.00363
+       ],
+       "delta_fe": -0.00438,
+       "delta_fe_boot95": [
+        -0.00492,
+        -0.00424
+       ],
+       "n_groups_both": 29192,
+       "r": 1.0709,
+       "r_boot95": [
+        1.02608,
+        1.24333
+       ],
+       "rank1_share_wilson": [
+        0.19844,
+        0.19481,
+        0.20211
+       ],
+       "rank1_n": 9103
+      },
+      "3": {
+       "n_rows": 45899,
+       "mean_centered": 0.00223,
+       "mean_time_sec": 6.81067,
+       "delta_raw": 0.00298,
+       "delta_raw_boot95": [
+        0.00251,
+        0.00335
+       ],
+       "delta_fe": 0.00237,
+       "delta_fe_boot95": [
+        0.00204,
+        0.00271
+       ],
+       "n_groups_both": 28919,
+       "r": 0.7942,
+       "r_boot95": [
+        0.702,
+        0.9393
+       ],
+       "rank1_share_wilson": [
+        0.16517,
+        0.1618,
+        0.16859
+       ],
+       "rank1_n": 7581
+      },
+      "4": {
+       "n_rows": 45904,
+       "mean_centered": 0.00447,
+       "mean_time_sec": 6.81288,
+       "delta_raw": 0.00566,
+       "delta_raw_boot95": [
+        0.00514,
+        0.00618
+       ],
+       "delta_fe": 0.00538,
+       "delta_fe_boot95": [
+        0.00523,
+        0.00587
+       ],
+       "n_groups_both": 29357,
+       "r": 0.9492,
+       "r_boot95": [
+        0.91793,
+        1.06313
+       ],
+       "rank1_share_wilson": [
+        0.15835,
+        0.15504,
+        0.16172
+       ],
+       "rank1_n": 7269
+      },
+      "5": {
+       "n_rows": 45873,
+       "mean_centered": 0.00701,
+       "mean_time_sec": 6.81544,
+       "delta_raw": 0.00872,
+       "delta_raw_boot95": [
+        0.00823,
+        0.00925
+       ],
+       "delta_fe": 0.00831,
+       "delta_fe_boot95": [
+        0.0082,
+        0.00893
+       ],
+       "n_groups_both": 30022,
+       "r": 0.953,
+       "r_boot95": [
+        0.93955,
+        1.03489
+       ],
+       "rank1_share_wilson": [
+        0.15052,
+        0.14728,
+        0.15383
+       ],
+       "rank1_n": 6905
+      },
+      "6": {
+       "n_rows": 45872,
+       "mean_centered": 0.00569,
+       "mean_time_sec": 6.81414,
+       "delta_raw": 0.00713,
+       "delta_raw_boot95": [
+        0.00652,
+        0.00784
+       ],
+       "delta_fe": 0.00723,
+       "delta_fe_boot95": [
+        0.00691,
+        0.00777
+       ],
+       "n_groups_both": 29811,
+       "r": 1.0139,
+       "r_boot95": [
+        0.95523,
+        1.11613
+       ],
+       "rank1_share_wilson": [
+        0.16847,
+        0.16507,
+        0.17192
+       ],
+       "rank1_n": 7728
+      }
+     },
+     "near_day_le1_boat1": {
+      "def": "同じ選手×節で、1号艇の走と2〜6号艇の走の組のうち節の日目（series_day）の差が1日以内のものの差を、選手×節ごとに平均し、選手×節で単純平均",
+      "n_pairs": 144980,
+      "n_groups": 29037,
+      "rows_without_series_day": 0,
+      "delta": -0.01937,
+      "delta_boot95": [
+       -0.02029,
+       -0.01918
+      ],
+      "r_vs_delta_raw": 0.9497
+     }
+    }
+   },
+   "qualifier_wide_sensitivity": {
+    "mean_centered": {
+     "rows": 197281,
+     "races": 32912,
+     "rows_without_series_key": 0,
+     "by_boat": {
+      "1": {
+       "n_rows": 32879,
+       "mean_centered": -0.01564,
+       "mean_time_sec": 6.792,
+       "delta_raw": -0.01876,
+       "delta_raw_boot95": [
+        -0.0195,
+        -0.01808
+       ],
+       "delta_fe": -0.01787,
+       "delta_fe_boot95": [
+        -0.01845,
+        -0.01753
+       ],
+       "n_groups_both": 24966,
+       "r": 0.9522,
+       "r_boot95": [
+        0.9342,
+        0.99174
+       ],
+       "rank1_share_wilson": [
+        0.29034,
+        0.28546,
+        0.29527
+       ],
+       "rank1_n": 9546
+      },
+      "2": {
+       "n_rows": 32876,
+       "mean_centered": -0.00323,
+       "mean_time_sec": 6.80442,
+       "delta_raw": -0.00387,
+       "delta_raw_boot95": [
+        -0.00445,
+        -0.00334
+       ],
+       "delta_fe": -0.0038,
+       "delta_fe_boot95": [
+        -0.00448,
+        -0.00366
+       ],
+       "n_groups_both": 24045,
+       "r": 0.9801,
+       "r_boot95": [
+        0.91616,
+        1.1941
+       ],
+       "rank1_share_wilson": [
+        0.19869,
+        0.19441,
+        0.20303
+       ],
+       "rank1_n": 6532
+      },
+      "3": {
+       "n_rows": 32889,
+       "mean_centered": 0.00233,
+       "mean_time_sec": 6.80996,
+       "delta_raw": 0.0028,
+       "delta_raw_boot95": [
+        0.00221,
+        0.00321
+       ],
+       "delta_fe": 0.00267,
+       "delta_fe_boot95": [
+        0.00219,
+        0.00302
+       ],
+       "n_groups_both": 23757,
+       "r": 0.9547,
+       "r_boot95": [
+        0.77449,
+        1.17112
+       ],
+       "rank1_share_wilson": [
+        0.16635,
+        0.16236,
+        0.17041
+       ],
+       "rank1_n": 5471
+      },
+      "4": {
+       "n_rows": 32889,
+       "mean_centered": 0.00443,
+       "mean_time_sec": 6.81204,
+       "delta_raw": 0.00532,
+       "delta_raw_boot95": [
+        0.00468,
+        0.00586
+       ],
+       "delta_fe": 0.00528,
+       "delta_fe_boot95": [
+        0.0049,
+        0.00575
+       ],
+       "n_groups_both": 23894,
+       "r": 0.9931,
+       "r_boot95": [
+        0.90099,
+        1.10507
+       ],
+       "rank1_share_wilson": [
+        0.16124,
+        0.1573,
+        0.16525
+       ],
+       "rank1_n": 5303
+      },
+      "5": {
+       "n_rows": 32874,
+       "mean_centered": 0.0069,
+       "mean_time_sec": 6.81451,
+       "delta_raw": 0.00828,
+       "delta_raw_boot95": [
+        0.00769,
+        0.00891
+       ],
+       "delta_fe": 0.00828,
+       "delta_fe_boot95": [
+        0.00796,
+        0.00882
+       ],
+       "n_groups_both": 24013,
+       "r": 1.0002,
+       "r_boot95": [
+        0.95466,
+        1.07357
+       ],
+       "rank1_share_wilson": [
+        0.15277,
+        0.14892,
+        0.15669
+       ],
+       "rank1_n": 5022
+      },
+      "6": {
+       "n_rows": 32874,
+       "mean_centered": 0.0052,
+       "mean_time_sec": 6.81285,
+       "delta_raw": 0.00624,
+       "delta_raw_boot95": [
+        0.00556,
+        0.00701
+       ],
+       "delta_fe": 0.00706,
+       "delta_fe_boot95": [
+        0.00636,
+        0.00741
+       ],
+       "n_groups_both": 23041,
+       "r": 1.1314,
+       "r_boot95": [
+        1.00101,
+        1.25325
+       ],
+       "rank1_share_wilson": [
+        0.17162,
+        0.16759,
+        0.17574
+       ],
+       "rank1_n": 5642
+      }
+     },
+     "near_day_le1_boat1": {
+      "def": "同じ選手×節で、1号艇の走と2〜6号艇の走の組のうち節の日目（series_day）の差が1日以内のものの差を、選手×節ごとに平均し、選手×節で単純平均",
+      "n_pairs": 67730,
+      "n_groups": 24606,
+      "rows_without_series_day": 0,
+      "delta": -0.01832,
+      "delta_boot95": [
+       -0.01908,
+       -0.0179
+      ],
+      "r_vs_delta_raw": 0.9767
+     }
+    }
+   }
+  }
+ },
+ "notes": [
+  "完全レースは t1_3_refund.py が作った t1_3_races.pkl（408,723レース＝prep7 の全国 n_pool と一致）をそのまま使った。期間 2019-04-01〜2026-09-26、長期は〜2025-12-02、本体は 2025-12-03〜",
+  "欠損: exhibition_time が空・0以下・6.30秒未満・7.50秒超、または欠場（長期 finish_raw が空か K*、本体 entries/exhibition の is_absent）。完全レースは欠場なしなので欠場は0件になる",
+  "予選: rounds.csv（T1-1 v2）の category_new が qualifier・general。長期で stage_name が空なら stage_kind が qualifier・other（長期の完全レースに名前が空のものは無く、この枝は0件）。本体で名前が空（204レース、全期間）は種別不明として除く",
+  "名前から種別が決まらないレース（category_new が空。『ランチタイム』『モーニング予』等の独自名の企画レース。長期 stage_kind は other か qualifier）は事前登録の規則どおり主の母集団から除き、含めた版を qualifier_wide_sensitivity として参考に出した（判定には使わない）",
+  "中心化はレースで値のある艇（5艇か6艇）の平均・中央値。展示順位1位は値のある艇の中で、タイムを1/100秒の整数にして最小と同じ艇（min 順位、同タイムは全員1位）。1位の割合の分母は、その艇番に値のあるレース",
+  "Δ_raw＝その艇番の行の平均 − 他の艇番の行の平均（行で重みづけ）。Δ_fe＝選手×節（series_score_rows.pkl の racer_id×series_key）ごとに（その艇番のときの平均 − 他の艇番のときの平均）を取り、両方ある選手×節で単純平均。艇番ごとの値は1号艇と同じ式を k 号艇に当てたもの（k 号艇 vs それ以外）",
+  "ブートストラップ: 長期・本体それぞれで、その出どころの完全レース（5艇以上）の日を np.random.default_rng(0) から200回復元抽出し、日の出現回数を行の重みにして同じ式で数え直した（選手×節の中の平均も重みつき、選手×節は重みが正の側が両方あるものを単純平均）。母集団・中心化・艇番どうしは同じ抽出を使う。幅は2.5/97.5%点",
+  "日目1日以内の比較は series_day（長期 kb_venue_days、本体 conditions）で数え、series_day が空の行（本体の約0.8%）は除いた。1号艇だけ出した。組ごとの重みは両方の行の日の重みの積",
+  "判定は事前登録の規則を機械的に当てた: 主（予選・平均で中心化）の1号艇で r≥2/3 かつ Δ_fe の幅が0を含まない→位置・測り方、r≤1/3 か幅が0を含む→選手の違い、その間→両方。長期と本体で違えば本体を採る",
+  "in-sample の記述（モデルの評価はしない）。限界: 予選に絞っても、選手×節の中で1号艇の日と調子が相関しうる",
+  "展示タイムは小さいほど速い。Δ が負＝1号艇が速い",
+  "ブートストラップの偏り: 日の復元抽出では、選手×節の片側（その艇番の走か他の艇番の走）が抜けて数えられなくなる組が出るため、delta_fe の抽出分布が点推定から少しずれ、点推定が 2.5/97.5% 点の外に出るセルがある（例: 長期・全レース・1号艇 delta_fe −0.01834 に対し幅 [−0.01869, −0.01839]）。ずれは 0.0001 秒未満で、判定（幅が0を含むか）には効かない。幅は事前登録どおり百分位点のまま出した",
+  "展示順位1位の割合は1号艇で約28〜30%（予選・全レースとも）。第11回の『全国で約半数』は slit-hint/mark1.md の展示上位（1〜2位、min 順位）の割合で、この分析の1位の割合とは別の数"
+ ]
+}

@@ -36,7 +36,9 @@ export default function Toast({ message, type = "success", visible }) {
         bottom: "24px",
         left: "50%",
         transform: "translateX(-50%)",
-        zIndex: "var(--z-index-tooltip)",
+        // レース詳細の下部ナビ（RaceBottomNav、z-index 1500）より上に出す。
+        // tooltip（70）のままだと 375px でナビに隠れ、コピーできたか分からなかった（BOA-770）
+        zIndex: 1600,
       }}
     >
       <AnimatePresence>

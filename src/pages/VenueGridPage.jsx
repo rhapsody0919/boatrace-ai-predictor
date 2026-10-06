@@ -216,7 +216,10 @@ function TodayVenueGridPage() {
                   <>
                     {/* SG開催中の会場への導線（集客レーン。SG の日だけ出る） */}
                     <SgNowBanner venuesData={venuesData} />
-                    <TodaysVolatilityHighlights venuesData={venuesData} />
+                    <TodaysVolatilityHighlights
+                      venuesData={venuesData}
+                      nowHHMM={nowHHMM}
+                    />
                   </>
                 )}
                 {/* 本日のデータ一覧（BOA-402）への導線。高さを固定してCLSを出さない。
