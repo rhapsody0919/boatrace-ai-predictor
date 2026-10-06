@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import NoteList from "./NoteList";
 import useAnalogyContribution from "../../../hooks/useAnalogyContribution";
 import { SCOPE_LINE } from "./analogyColors";
 import { fmtDate } from "../../../utils/analogyFormat";
@@ -117,17 +118,23 @@ export default function AiOutlook({ boat, target, stage }) {
             </details>
           ))}
         </div>
-        <p className="af-foot">
-          {t(`${k}.foot`, {
-            period,
-            races: (row.n_races ?? 0).toLocaleString("ja-JP"),
-          })}
-          {boat === 1 &&
-            row.frame_ratio !== null &&
-            row.frame_ratio !== undefined &&
-            t(`${k}.boat1Note`, { pct: Math.round(row.frame_ratio * 100) })}
-        </p>
-        <p className="af-foot">{t(`${k}.foot2`)}</p>
+        <NoteList
+          title={t(`aiPredictionTab.analogy.notes.howToRead`)}
+          texts={[
+            t(`${k}.foot`, {
+              period,
+              races: (row.n_races ?? 0).toLocaleString("ja-JP"),
+            }),
+            boat === 1 &&
+              row.frame_ratio !== null &&
+              row.frame_ratio !== undefined &&
+              t(`${k}.boat1Note`, { pct: Math.round(row.frame_ratio * 100) }),
+          ]}
+        />
+        <NoteList
+          title={t(`aiPredictionTab.analogy.notes.caution`)}
+          texts={[t(`${k}.foot2`)]}
+        />
       </div>
     </details>
   );

@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import NoteList from "./NoteList";
 import BoatBadge from "../BoatBadge";
 import RateBar from "./RateBar";
 import { SCOPE_LINE } from "./analogyColors";
@@ -73,14 +74,17 @@ export default function WindWaveFacts({
           );
         })}
       </div>
-      <p className="af-foot">
-        {t(isWave ? `${k}.footWave` : `${k}.foot`, {
-          venue: venueName,
-          band,
-          finish: t(`aiPredictionTab.analogy.finishWord.${target}`),
-          n: fmtCount(view.n),
-        })}
-      </p>
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.counting`)}
+        texts={[
+          t(isWave ? `${k}.footWave` : `${k}.foot`, {
+            venue: venueName,
+            band,
+            finish: t(`aiPredictionTab.analogy.finishWord.${target}`),
+            n: fmtCount(view.n),
+          }),
+        ]}
+      />
     </div>
   );
 }

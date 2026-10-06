@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import NoteList from "./NoteList";
 import BoatBadge from "../BoatBadge";
 import SimilarSonar from "./SimilarSonar";
 import SimilarityItems from "./SimilarityItems";
@@ -239,10 +240,13 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
         )}
       </div>
       <h3 className="af-h3">{t(`${k}.heading`)}</h3>
-      <p className="af-sub">
-        {describeAnalogyLayer(sim.conditions, t, { count: sim.n_layer })}
-        {t(`${k}.ledeTail`)}
-      </p>
+      <NoteList
+        className="is-lede"
+        title={t(`aiPredictionTab.analogy.notes.ordering`)}
+        texts={[
+          `${describeAnalogyLayer(sim.conditions, t, { count: sim.n_layer })}${t(`${k}.ledeTail`)}`,
+        ]}
+      />
       <SimilarSonar
         neighbors={nb}
         total={all.length}
@@ -255,7 +259,10 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
           r: Number(raceNumber),
         })}
       />
-      <p className="af-foot">{t(`${k}.sonarFoot`)}</p>
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.sonar`)}
+        texts={[t(`${k}.sonarFoot`)]}
+      />
       <SimilarityItems
         neighbors={nb}
         items={items}
@@ -328,7 +335,10 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
       <TechniqueBars counts={ag.tech} n={ag.n} reference={techRef} />
       <OtherBoats neighbors={nb} boat={boat} />
       <h4 className="af-h4">{t("aiPredictionTab.analogy.flow.heading")}</h4>
-      <p className="af-sub">{t("aiPredictionTab.analogy.flow.lede")}</p>
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.howToRead`)}
+        texts={[t("aiPredictionTab.analogy.flow.lede")]}
+      />
       <FinishSankey
         tri={ag.tri}
         first={boat}
@@ -338,7 +348,10 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
       />
       <h4 className="af-h4">{t(`${k}.triHeading`)}</h4>
       <TrifectaList tri={ag.tri} first={boat} not1={not1} />
-      <p className="af-foot">{t(`${k}.foot`)}</p>
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.caution`)}
+        texts={[t(`${k}.foot`)]}
+      />
     </div>
   );
 }
