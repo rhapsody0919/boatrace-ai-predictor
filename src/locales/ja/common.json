@@ -2204,6 +2204,7 @@
     "dataLoadError": "データの取得に失敗しました",
     "boatN": "{{n}}号艇",
     "raceOption": "{{number}}R（{{time}}〜）",
+    "raceOptionPast": "{{date}} {{number}}R",
     "lastUpdated": "（最終更新: {{date}}）",
     "noData": "データなし",
     "notMeasured": "未計測",

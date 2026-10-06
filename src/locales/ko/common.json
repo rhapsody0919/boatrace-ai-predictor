@@ -2204,6 +2204,7 @@
     "dataLoadError": "데이터를 가져오지 못했습니다",
     "boatN": "{{n}}번 보트",
     "raceOption": "{{number}}R ({{time}} JST)",
+    "raceOptionPast": "{{date}} {{number}}R",
     "lastUpdated": "(마지막 업데이트: {{date}})",
     "noData": "데이터 없음",
     "notMeasured": "미측정",

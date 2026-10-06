@@ -2204,6 +2204,7 @@
     "dataLoadError": "數據載入失敗",
     "boatN": "{{n}}號艇",
     "raceOption": "{{number}}R（{{time}} JST）",
+    "raceOptionPast": "{{date}} {{number}}R",
     "lastUpdated": "（最後更新：{{date}}）",
     "noData": "無資料",
     "notMeasured": "未測量",

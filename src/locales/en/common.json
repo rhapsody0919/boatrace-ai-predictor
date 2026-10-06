@@ -2210,6 +2210,7 @@
     "dataLoadError": "Failed to load data",
     "boatN": "Boat {{n}}",
     "raceOption": "Race {{number}} ({{time}} JST)",
+    "raceOptionPast": "{{date}} Race {{number}}",
     "lastUpdated": "(Last updated: {{date}})",
     "noData": "No data",
     "notMeasured": "Not measured",

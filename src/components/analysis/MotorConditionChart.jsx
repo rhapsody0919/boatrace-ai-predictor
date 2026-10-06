@@ -581,14 +581,20 @@ function MotorConditionChart({
               onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
               className="venue-select"
             >
-              {venues.map((v) => (
+              {/* ディープリンク先の会場が「本日開催中」の一覧に無いとき（ランキングの機番・
+                  機力バッジから過去レースへ飛んだとき）も、選択肢に足す。無いとブラウザが
+                  先頭の会場を表示し、別会場の同じ番号のモーターと読み違える（BOA-428 ファン評価） */}
+              {(selectedVenue !== null && !venues.includes(selectedVenue)
+                ? [selectedVenue, ...venues]
+                : venues
+              ).map((v) => (
                 <option key={v} value={v}>
                   {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
                 </option>
               ))}
             </select>
 
-            {races.length > 0 && (
+            {(races.length > 0 || selectedRace !== null) && (
               <>
                 <label htmlFor="motor-race-select">
                   {t("analysis.raceSelectLabel")}
@@ -599,6 +605,20 @@ function MotorConditionChart({
                   onChange={(e) => setSelectedRace(e.target.value)}
                   className="venue-select"
                 >
+                  {/* 選択中のレースが今日の一覧に無い（過去レースへのディープリンク）ときも足す */}
+                  {selectedRace !== null &&
+                    !races.some((r) => r.race_id === selectedRace) && (
+                      <option value={selectedRace}>
+                        {t("analysis.raceOptionPast", {
+                          date: selectedRace
+                            .slice(5, 10)
+                            .replace("-", "/")
+                            .replace(/^0/, "")
+                            .replace(/\/0/, "/"),
+                          number: Number(selectedRace.slice(-2)),
+                        })}
+                      </option>
+                    )}
                   {races.map((r) => (
                     <option key={r.race_id} value={r.race_id}>
                       {t("analysis.raceOption", {
