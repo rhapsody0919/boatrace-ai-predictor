@@ -10,9 +10,9 @@ node scripts/maintenance/session-start-check.js
 
 | 項目 | 何を見るか |
 |---|---|
-| `xVideo` / `tiktok` | 本日の投稿本数が目標に達しているか |
+| `xVideo` | 本日の投稿本数が目標に達しているか（TikTok は 2026-10-05 にアカウントがバンされたため外した） |
 | `racerNews` | 選手ニュースの要確認（自動投入されなかった候補） |
-| `growthSkills` | `/x-growth-report`・`/tiktok-growth-report`・`/note-growth-report` の最新レポートが1週間以上前か |
+| `growthSkills` | `/x-growth-report`・`/note-growth-report` の最新レポートが1週間以上前か |
 | `pendingInsights` | 戦略メモ（`sns_strategy_insights`）の承認待ち |
 | `qualityBacklog` | Linearの `content-quality` ラベルの古いもの2〜3件 |
 | `visualAssetAge` | 90日以上更新されていない視覚素材 |

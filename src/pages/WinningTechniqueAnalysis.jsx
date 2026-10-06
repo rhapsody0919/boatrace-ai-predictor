@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { localizePath, getLanguage } from "../config/languages";
@@ -23,6 +22,8 @@ import {
   VenueRankingChart,
   VenueGradeMatrix,
   VolatilityAccuracyChart,
+  VenueMotorRanking,
+  WeatherInEscapeChart,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
@@ -31,6 +32,7 @@ const TAB_KEYS = [
   "outcome",
   "technique",
   "motor",
+  "motorranking",
   "racer",
   "st",
   "topstart",
@@ -46,6 +48,7 @@ const TAB_KEYS = [
   "venueranking",
   "venuegrade",
   "volatility",
+  "weather",
 ];
 
 // 詳しい解説記事（ja専用ブログのため、非ja言語では該当info-cardごと非表示にする）
@@ -78,9 +81,17 @@ function WinningTechniqueAnalysis() {
   const motorParam = params.get("motor");
   const initialMotorNumber = motorParam ? parseInt(motorParam, 10) : null;
 
-  const [activeTab, setActiveTab] = useState(
-    TAB_KEYS.includes(initialTab) ? initialTab : "technique",
-  );
+  // 表示中のタブは URL（?tab=）から決める。会場モーターランキングの機番リンク
+  // （?tab=motor&...&motor=N、BOA-428）のように、同じページの中のリンクでタブを移れるように。
+  // タブを押したときは tab だけを差し替える（ほかのパラメータ＝ディープリンク先の会場・
+  // レースは、以前の state 管理のときと同じく、切り替えた先のタブにも引き継ぐ）
+  const navigate = useNavigate();
+  const activeTab = TAB_KEYS.includes(initialTab) ? initialTab : "technique";
+  const setActiveTab = (key) => {
+    const next = new URLSearchParams(location.search);
+    next.set("tab", key);
+    navigate({ search: `?${next.toString()}` }, { replace: true });
+  };
 
   const canonicalUrl = `${SITE_URL}${localizePath(PAGE_PATH, i18n.resolvedLanguage)}`;
   const homeUrl = `${SITE_URL}${localizePath("/", i18n.resolvedLanguage)}`;
@@ -178,6 +189,12 @@ function WinningTechniqueAnalysis() {
               initialMotorNumber={initialMotorNumber}
             />
           )}
+          {activeTab === "motorranking" && (
+            <VenueMotorRanking
+              key={initialVenueCode ?? "default"}
+              initialVenueCode={initialVenueCode}
+            />
+          )}
           {activeTab === "racer" && (
             <RacerFormChart
               initialVenueCode={initialVenueCode}
@@ -242,6 +259,9 @@ function WinningTechniqueAnalysis() {
           {activeTab === "venueranking" && <VenueRankingChart />}
           {activeTab === "venuegrade" && <VenueGradeMatrix />}
           {activeTab === "volatility" && <VolatilityAccuracyChart />}
+          {activeTab === "weather" && (
+            <WeatherInEscapeChart initialVenueCode={initialVenueCode} />
+          )}
 
           <section className="info-section">
             {TAB_KEYS.includes(activeTab) &&

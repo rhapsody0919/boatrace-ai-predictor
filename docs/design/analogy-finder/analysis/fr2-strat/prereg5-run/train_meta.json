@@ -1,0 +1,746 @@
+{
+ "model_version": "2026-10-06",
+ "trained_at": "2026-10-05T16:32:44.056614+00:00",
+ "features": [
+  "venue_code",
+  "boat_number",
+  "race_number",
+  "cls_ord",
+  "nat_win",
+  "nat_2",
+  "nat_win_diff",
+  "nat_win_rank",
+  "loc_win",
+  "loc_2",
+  "loc_win_diff",
+  "loc_win_rank",
+  "recent_win30",
+  "recent_top3_30",
+  "recent_win30_diff",
+  "recent_win30_rank",
+  "b1_cls_ord",
+  "b1_nat_win",
+  "exh_time",
+  "exh_time_diff",
+  "exh_time_rank",
+  "st_mean30",
+  "st_n",
+  "st_mean30_diff",
+  "st_mean30_rank",
+  "motor_2",
+  "motor_2_diff",
+  "motor_2_rank",
+  "boat_2",
+  "boat_2_diff",
+  "boat_2_rank",
+  "weather_code",
+  "wind_x",
+  "wind_y",
+  "wind_speed",
+  "wave_height",
+  "grade_code",
+  "round_code",
+  "series_day",
+  "is_final_day_num",
+  "age",
+  "weight",
+  "branch_code",
+  "is_local"
+ ],
+ "themes": [
+  {
+   "key": "racerRecord",
+   "name": "選手の実力",
+   "description": "級別・勝率・当地成績・直近の調子と、1号艇の格",
+   "features": [
+    "cls_ord",
+    "nat_win",
+    "nat_2",
+    "nat_win_diff",
+    "nat_win_rank",
+    "loc_win",
+    "loc_2",
+    "loc_win_diff",
+    "loc_win_rank",
+    "recent_win30",
+    "recent_top3_30",
+    "recent_win30_diff",
+    "recent_win30_rank",
+    "b1_cls_ord",
+    "b1_nat_win"
+   ],
+   "groups": [
+    {
+     "key": "class",
+     "label": "級別"
+    },
+    {
+     "key": "national",
+     "label": "全国勝率・2連率"
+    },
+    {
+     "key": "local",
+     "label": "当地勝率・2連率"
+    },
+    {
+     "key": "recent",
+     "label": "直近30走の成績"
+    },
+    {
+     "key": "boat1",
+     "label": "1号艇の級別・勝率"
+    }
+   ]
+  },
+  {
+   "key": "startExhibition",
+   "name": "スタート・展示",
+   "description": "展示タイムと、過去のスタートタイミング",
+   "features": [
+    "exh_time",
+    "exh_time_diff",
+    "exh_time_rank",
+    "st_mean30",
+    "st_n",
+    "st_mean30_diff",
+    "st_mean30_rank"
+   ],
+   "groups": [
+    {
+     "key": "exhibitionTime",
+     "label": "展示タイム"
+    },
+    {
+     "key": "pastSt",
+     "label": "過去の平均ST"
+    }
+   ]
+  },
+  {
+   "key": "machine",
+   "name": "モーター・ボート",
+   "description": "モーターとボートの2連率",
+   "features": [
+    "motor_2",
+    "motor_2_diff",
+    "motor_2_rank",
+    "boat_2",
+    "boat_2_diff",
+    "boat_2_rank"
+   ],
+   "groups": [
+    {
+     "key": "motor",
+     "label": "モーター2連率"
+    },
+    {
+     "key": "boat",
+     "label": "ボート2連率"
+    }
+   ]
+  },
+  {
+   "key": "racerProfile",
+   "name": "体重・年齢・地元",
+   "description": "体重・年齢・支部（地元かどうか）",
+   "features": [
+    "weight",
+    "age",
+    "branch_code",
+    "is_local"
+   ],
+   "groups": [
+    {
+     "key": "weight",
+     "label": "体重"
+    },
+    {
+     "key": "age",
+     "label": "年齢"
+    },
+    {
+     "key": "branch",
+     "label": "支部・地元"
+    }
+   ]
+  },
+  {
+   "key": "venueRace",
+   "name": "会場・レース番号",
+   "description": "会場とレース番号",
+   "features": [
+    "venue_code",
+    "race_number"
+   ],
+   "groups": [
+    {
+     "key": "venue",
+     "label": "会場"
+    },
+    {
+     "key": "raceNumber",
+     "label": "レース番号"
+    }
+   ]
+  },
+  {
+   "key": "weatherWater",
+   "name": "天候・水面",
+   "description": "天候・風・波",
+   "features": [
+    "weather_code",
+    "wind_x",
+    "wind_y",
+    "wind_speed",
+    "wave_height"
+   ],
+   "groups": [
+    {
+     "key": "weather",
+     "label": "天候"
+    },
+    {
+     "key": "wind",
+     "label": "風向・風速"
+    },
+    {
+     "key": "wave",
+     "label": "波高"
+    }
+   ]
+  },
+  {
+   "key": "raceFormat",
+   "name": "レースの条件",
+   "description": "グレード・ラウンド・節の日目",
+   "features": [
+    "grade_code",
+    "round_code",
+    "series_day",
+    "is_final_day_num"
+   ],
+   "groups": [
+    {
+     "key": "grade",
+     "label": "グレード"
+    },
+    {
+     "key": "round",
+     "label": "ラウンド"
+    },
+    {
+     "key": "seriesDay",
+     "label": "節の日目"
+    }
+   ]
+  }
+ ],
+ "targets": [
+  {
+   "name": "win",
+   "finish_target": 1,
+   "rounds": 250
+  },
+  {
+   "name": "top2",
+   "finish_target": 2,
+   "rounds": 250
+  },
+  {
+   "name": "top3",
+   "finish_target": 3,
+   "rounds": 330
+  }
+ ],
+ "racecard": [
+  {
+   "name": "win_racecard",
+   "finish_target": 1,
+   "rounds": 250,
+   "features": [
+    "venue_code",
+    "boat_number",
+    "race_number",
+    "cls_ord",
+    "nat_win",
+    "nat_2",
+    "nat_win_diff",
+    "nat_win_rank",
+    "loc_win",
+    "loc_2",
+    "loc_win_diff",
+    "loc_win_rank",
+    "recent_win30",
+    "recent_top3_30",
+    "recent_win30_diff",
+    "recent_win30_rank",
+    "b1_cls_ord",
+    "b1_nat_win",
+    "st_mean30",
+    "st_n",
+    "st_mean30_diff",
+    "st_mean30_rank",
+    "motor_2",
+    "motor_2_diff",
+    "motor_2_rank",
+    "boat_2",
+    "boat_2_diff",
+    "boat_2_rank",
+    "grade_code",
+    "round_code",
+    "series_day",
+    "is_final_day_num",
+    "age",
+    "weight",
+    "branch_code",
+    "is_local"
+   ],
+   "seed": 0
+  },
+  {
+   "name": "top2_racecard",
+   "finish_target": 2,
+   "rounds": 250,
+   "features": [
+    "venue_code",
+    "boat_number",
+    "race_number",
+    "cls_ord",
+    "nat_win",
+    "nat_2",
+    "nat_win_diff",
+    "nat_win_rank",
+    "loc_win",
+    "loc_2",
+    "loc_win_diff",
+    "loc_win_rank",
+    "recent_win30",
+    "recent_top3_30",
+    "recent_win30_diff",
+    "recent_win30_rank",
+    "b1_cls_ord",
+    "b1_nat_win",
+    "st_mean30",
+    "st_n",
+    "st_mean30_diff",
+    "st_mean30_rank",
+    "motor_2",
+    "motor_2_diff",
+    "motor_2_rank",
+    "boat_2",
+    "boat_2_diff",
+    "boat_2_rank",
+    "grade_code",
+    "round_code",
+    "series_day",
+    "is_final_day_num",
+    "age",
+    "weight",
+    "branch_code",
+    "is_local"
+   ],
+   "seed": 0
+  },
+  {
+   "name": "top3_racecard",
+   "finish_target": 3,
+   "rounds": 330,
+   "features": [
+    "venue_code",
+    "boat_number",
+    "race_number",
+    "cls_ord",
+    "nat_win",
+    "nat_2",
+    "nat_win_diff",
+    "nat_win_rank",
+    "loc_win",
+    "loc_2",
+    "loc_win_diff",
+    "loc_win_rank",
+    "recent_win30",
+    "recent_top3_30",
+    "recent_win30_diff",
+    "recent_win30_rank",
+    "b1_cls_ord",
+    "b1_nat_win",
+    "st_mean30",
+    "st_n",
+    "st_mean30_diff",
+    "st_mean30_rank",
+    "motor_2",
+    "motor_2_diff",
+    "motor_2_rank",
+    "boat_2",
+    "boat_2_diff",
+    "boat_2_rank",
+    "grade_code",
+    "round_code",
+    "series_day",
+    "is_final_day_num",
+    "age",
+    "weight",
+    "branch_code",
+    "is_local"
+   ],
+   "seed": 0
+  }
+ ],
+ "seed_model_files": [
+  "model_win_seed1.txt",
+  "model_win_seed2.txt",
+  "model_win_seed3.txt",
+  "model_win_seed4.txt",
+  "model_top2_seed1.txt",
+  "model_top2_seed2.txt",
+  "model_top2_seed3.txt",
+  "model_top2_seed4.txt",
+  "model_top3_seed1.txt",
+  "model_top3_seed2.txt",
+  "model_top3_seed3.txt",
+  "model_top3_seed4.txt",
+  "model_win_racecard_seed1.txt",
+  "model_win_racecard_seed2.txt",
+  "model_win_racecard_seed3.txt",
+  "model_win_racecard_seed4.txt",
+  "model_top2_racecard_seed1.txt",
+  "model_top2_racecard_seed2.txt",
+  "model_top2_racecard_seed3.txt",
+  "model_top2_racecard_seed4.txt",
+  "model_top3_racecard_seed1.txt",
+  "model_top3_racecard_seed2.txt",
+  "model_top3_racecard_seed3.txt",
+  "model_top3_racecard_seed4.txt"
+ ],
+ "metrics": {
+  "win": {
+   "temperature": 0.6994882079319743,
+   "logloss_model": 1.190570471505594,
+   "logloss_baseline": 1.3177280939283398,
+   "top1_acc_model": 0.5731131645615761,
+   "paired_logloss_model_minus_baseline": {
+    "mean": -0.1271576224227455,
+    "ci95": [
+     -0.1308485105569658,
+     -0.1235297391490483
+    ],
+    "n": 54867,
+    "n_days": 365
+   }
+  },
+  "top2": {
+   "logloss_per_boat_model": 0.49524134258903446,
+   "logloss_per_boat_baseline": 0.5404298335485433,
+   "paired_race_logloss_model_minus_baseline": {
+    "mean": -0.27113094575705393,
+    "ci95": [
+     -0.2776243108176028,
+     -0.2645009385693727
+    ],
+    "n": 54867,
+    "n_days": 365
+   }
+  },
+  "top3": {
+   "logloss_per_boat_model": 0.5624644160666775,
+   "logloss_per_boat_baseline": 0.6229333334153072,
+   "paired_race_logloss_model_minus_baseline": {
+    "mean": -0.36281350409177865,
+    "ci95": [
+     -0.37077009452301324,
+     -0.35470759459555196
+    ],
+    "n": 54867,
+    "n_days": 365
+   }
+  },
+  "win_racecard": {
+   "temperature": 0.6989203879450268,
+   "logloss_model": 1.2052399795447195,
+   "logloss_baseline": 1.3177280939283398,
+   "top1_acc_model": 0.5694497603295241,
+   "paired_logloss_model_minus_baseline": {
+    "mean": -0.11248811438362037,
+    "ci95": [
+     -0.11613438812279112,
+     -0.10896527430731993
+    ],
+    "n": 54867,
+    "n_days": 365
+   }
+  },
+  "top2_racecard": {
+   "logloss_per_boat_model": 0.49876405193676704,
+   "logloss_per_boat_baseline": 0.5404298335485433,
+   "paired_race_logloss_model_minus_baseline": {
+    "mean": -0.24999468967065838,
+    "ci95": [
+     -0.25650897745680673,
+     -0.24345488608420482
+    ],
+    "n": 54867,
+    "n_days": 365
+   }
+  },
+  "top3_racecard": {
+   "logloss_per_boat_model": 0.5660715244849811,
+   "logloss_per_boat_baseline": 0.6229333334153072,
+   "paired_race_logloss_model_minus_baseline": {
+    "mean": -0.34117085358195687,
+    "ci95": [
+     -0.3492048697188695,
+     -0.3333509698367917
+    ],
+    "n": 54867,
+    "n_days": 365
+   }
+  },
+  "gate": {
+   "passed": true,
+   "reasons": [],
+   "reference": {
+    "version": "2026-10-02",
+    "age_days": 460,
+    "deltas": {
+     "win": -0.0006688684779674325,
+     "top2": -0.0001626500645480755,
+     "top3": -0.00012363652442526352,
+     "win_racecard": null,
+     "top2_racecard": null,
+     "top3_racecard": null
+    }
+   },
+   "warnings": [
+    "参照版 2026-10-02 は学習の終わりから 460 日経っている。183 日を過ぎたので reference.json の更新を検討する",
+    "1着（出走表時点）: 参照版 2026-10-02 にモデルが無いので比較なし。このモデルを含む版を参照版にするときは reference.json を更新する",
+    "2着以内（出走表時点）: 参照版 2026-10-02 にモデルが無いので比較なし。このモデルを含む版を参照版にするときは reference.json を更新する",
+    "3着以内（出走表時点）: 参照版 2026-10-02 にモデルが無いので比較なし。このモデルを含む版を参照版にするときは reference.json を更新する"
+   ],
+   "reference_round_v1": {
+    "version": "2026-10-02",
+    "win": 1.1912367732319684,
+    "top2": 0.49540341880323835,
+    "top3": 0.5625876867704365,
+    "win_racecard": null,
+    "top2_racecard": null,
+    "top3_racecard": null
+   }
+  },
+  "perrace": {
+   "exhibition_effect": {
+    "win": {
+     "all": {
+      "mean": 0.014669508039125133,
+      "ci95": [
+       0.0132254205292368,
+       0.01607293786838347
+      ],
+      "n": 54867,
+      "n_days": 365
+     },
+     "live_complete": {
+      "mean": 0.014659194131872793,
+      "ci95": [
+       0.013220091302088446,
+       0.016069537941002077
+      ],
+      "n": 54534,
+      "n_days": 365
+     },
+     "unexplored": {
+      "mean": 0.017084161839714063,
+      "ci95": [
+       0.014974165881445336,
+       0.01911929689562541
+      ],
+      "n": 25910,
+      "n_days": 177
+     },
+     "unexplored_live_complete": {
+      "mean": 0.01706261839350234,
+      "ci95": [
+       0.01495652341602731,
+       0.01909715637623263
+      ],
+      "n": 25801,
+      "n_days": 177
+     }
+    },
+    "top2": {
+     "all": {
+      "mean": 0.021136256086395612,
+      "ci95": [
+       0.01914569889539408,
+       0.023022234370673703
+      ],
+      "n": 54867,
+      "n_days": 365
+     },
+     "live_complete": {
+      "mean": 0.02126763351181392,
+      "ci95": [
+       0.019287907235729783,
+       0.02318186464333232
+      ],
+      "n": 54534,
+      "n_days": 365
+     },
+     "unexplored": {
+      "mean": 0.023248715126375906,
+      "ci95": [
+       0.02013678741583061,
+       0.026452352469729774
+      ],
+      "n": 25910,
+      "n_days": 177
+     },
+     "unexplored_live_complete": {
+      "mean": 0.023294173568013377,
+      "ci95": [
+       0.020145135073687245,
+       0.026475147732204454
+      ],
+      "n": 25801,
+      "n_days": 177
+     }
+    },
+    "top3": {
+     "all": {
+      "mean": 0.021642650509821712,
+      "ci95": [
+       0.019497311270936363,
+       0.023642789094535932
+      ],
+      "n": 54867,
+      "n_days": 365
+     },
+     "live_complete": {
+      "mean": 0.022168520660997646,
+      "ci95": [
+       0.020048459887998495,
+       0.024193532055096906
+      ],
+      "n": 54534,
+      "n_days": 365
+     },
+     "unexplored": {
+      "mean": 0.02416664178649559,
+      "ci95": [
+       0.021048489453279806,
+       0.027120225279769535
+      ],
+      "n": 25910,
+      "n_days": 177
+     },
+     "unexplored_live_complete": {
+      "mean": 0.024555019883896415,
+      "ci95": [
+       0.021399840217553586,
+       0.027536978769937655
+      ],
+      "n": 25801,
+      "n_days": 177
+     }
+    }
+   },
+   "parity_fixture_races": 50,
+   "record_file": "perrace_record.json",
+   "profiles_record_file": "profiles_record.json"
+  },
+  "seeds": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "n_boot": 100,
+  "train_frac": 1,
+  "provenance": {
+   "code_sha": "1f66608bc274d277395c29e616f862af7ee6cab3",
+   "export": {
+    "exportedAt": "2026-10-05T16:12:44.935Z",
+    "tables": {
+     "kb_boats": {
+      "rows": 2233656,
+      "maxKey": "2025-12-02-21-12",
+      "sha256": "9971e6ab830cd737e2726deab1688126500d705822e3951668522ef17f081e17"
+     },
+     "kb_races": {
+      "rows": 372276,
+      "maxKey": "2025-12-02-21-12",
+      "sha256": "e63b2f5e1a31d48f3ad8b8e13c358bc4d35c11fb09546297efdd998d176839b2"
+     },
+     "kb_venue_days": {
+      "rows": 31023,
+      "maxKey": "2025-12-02-21",
+      "sha256": "97c9fdba3e1cc12e5b7ac5a7f2301196f3962c4fe1887378a55dbd18e1274e71"
+     },
+     "race_series": {
+      "rows": 6448,
+      "maxKey": "24",
+      "sha256": "5a94d0f87ed2af9c3cf289df6ec1282a0e8a29ab71764f776c36ef0b0140dee1"
+     },
+     "races": {
+      "rows": 48048,
+      "maxKey": "2026-10-05-23-12",
+      "sha256": "9a62b7c00e840e37475aa5eac3d4d00c8414ac4abe029cc23a57a57278964299"
+     },
+     "entries": {
+      "rows": 288288,
+      "maxKey": "2026-10-05-23-12",
+      "sha256": "649b1a248f9e32ff8de59ccd83cf260514d1a3a28cc600abe6943c4b9bbc0b97"
+     },
+     "exhibition": {
+      "rows": 284601,
+      "maxKey": "2026-10-05-23-12",
+      "sha256": "7e5941fbabe85c756652efd8884208615842baa3e0c8c59802aacb3976696155"
+     },
+     "conditions": {
+      "rows": 47844,
+      "maxKey": "2026-10-05-23-12",
+      "sha256": "65053a59940182b1a3ff97a9a86d2a0857f98847cf0d3cfa417a00914543d628"
+     },
+     "results": {
+      "rows": 47495,
+      "maxKey": "2026-10-05-23-12",
+      "sha256": "a7aa2d31f55caa3573575a2d5b44b1b5e9981e6f9c45809f748e676f612cb654"
+     },
+     "start_timings": {
+      "rows": 284970,
+      "maxKey": "2026-10-05-23-12",
+      "sha256": "d210519bc725de1474fc8c0757bd69d5a61f609edf0d53dfad1c8e06495673e4"
+     }
+    }
+   },
+   "dataset": {
+    "rows": 2493312,
+    "races": 415552,
+    "races_ok": 410257,
+    "date_range": [
+     "2019-04-01",
+     "2026-10-05"
+    ]
+   }
+  },
+  "periods": {
+   "fit": [
+    "2019-04-01",
+    "2025-07-05"
+   ],
+   "temperature": [
+    "2025-07-06",
+    "2025-10-05"
+   ],
+   "test": [
+    "2025-10-06",
+    "2026-10-05"
+   ]
+  },
+  "n_races": {
+   "fit": 341265,
+   "temperature": 14125,
+   "test": 54867
+  }
+ }
+}

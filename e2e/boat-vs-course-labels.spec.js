@@ -46,19 +46,23 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
     await page.goto("/about", { waitUntil: "domcontentloaded" });
     const texts = await page.evaluate(async () => {
       const { generateTurnHitShareText } = await import("/src/utils/share.js");
+      const { default: i18n } = await import("/src/i18n.js");
+      // /hit-races は ja 専用なので ja の文面で確かめる（BOA-754 で文面を locale に移した）
+      const share = (race) =>
+        generateTurnHitShareText(race, i18n.getFixedT("ja"));
       const base = { venue: "津", raceNo: 6, date: "2026-08-11" };
       return {
-        frontRunner: generateTurnHitShareText({
+        frontRunner: share({
           ...base,
           winnerBoat: 4,
           winnerEntryCourse: 2,
         }),
-        sameCourse: generateTurnHitShareText({
+        sameCourse: share({
           ...base,
           winnerBoat: 1,
           winnerEntryCourse: 1,
         }),
-        unknown: generateTurnHitShareText({
+        unknown: share({
           ...base,
           winnerBoat: 3,
           winnerEntryCourse: null,

@@ -1,0 +1,310 @@
+/* 風とイン逃げ率（BOA-211）。色はトークンだけを使う */
+.wie {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.wie-lead {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0 0 var(--spacing-3) 0;
+  line-height: 1.6;
+}
+
+.wie-grid {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
+@media (min-width: 1024px) {
+  .wie-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.wie-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4) var(--spacing-3);
+  min-width: 0;
+}
+
+.wie-card h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.wie-headline {
+  font-size: var(--font-size-md);
+  line-height: 1.6;
+  margin: 0 0 var(--spacing-3) 0;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-left: 3px solid var(--brand-accent-primary);
+  background: var(--surface-page);
+}
+
+.wie-note {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: var(--spacing-2) 0;
+}
+
+.wie-diagram {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-3);
+}
+
+.wie-diagram svg {
+  flex: none;
+  max-width: 100%;
+  height: auto;
+}
+
+.wie-rows {
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+.wie-row {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) 4.5rem;
+  gap: var(--spacing-2);
+  align-items: center;
+  font-size: var(--font-size-sm);
+}
+
+.wie-row__label {
+  line-height: 1.25;
+}
+
+.wie-row__label small {
+  display: block;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.wie-tier {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 6px;
+  border: 1px solid var(--color-warning-text);
+  border-radius: var(--radius-full);
+  color: var(--color-warning-text);
+  font-size: var(--font-size-2xs);
+  white-space: nowrap;
+}
+
+.wie-track {
+  position: relative;
+  height: 18px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--border-hairline) 70%, transparent);
+}
+
+.wie-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: var(--brand-accent-primary);
+}
+
+.wie-base {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--text-primary);
+}
+
+.wie-row__value {
+  text-align: right;
+  line-height: 1.2;
+}
+
+.wie-row__value strong {
+  font-size: var(--font-size-md);
+}
+
+.wie-row__value small {
+  display: block;
+  font-size: var(--font-size-2xs);
+}
+
+.wie-row__few {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.wie-count {
+  color: var(--text-secondary);
+}
+
+.is-down {
+  color: var(--color-error-text);
+}
+
+.is-up {
+  color: var(--color-success-text);
+}
+
+.wie-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1) var(--spacing-3);
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--spacing-2) 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.wie-legend li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wie-legend .wie-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.wie-tech-row {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  column-gap: var(--spacing-2);
+  row-gap: 2px;
+  align-items: center;
+  font-size: var(--font-size-sm);
+}
+
+.wie-stack {
+  display: flex;
+  height: 16px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.wie-stack .wie-swatch {
+  display: block;
+  height: 100%;
+}
+
+.wie-tech-row__detail {
+  grid-column: 2;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.wie-swatch.is-nige {
+  background: var(--technique-nige);
+}
+.wie-swatch.is-sashi {
+  background: var(--technique-sashi);
+}
+.wie-swatch.is-makuri {
+  background: var(--technique-makuri);
+}
+.wie-swatch.is-makurizashi {
+  background: var(--technique-makurizashi);
+}
+.wie-swatch.is-nuki {
+  background: var(--technique-nuki);
+}
+.wie-swatch.is-megumare {
+  background: var(--technique-megumare);
+}
+
+.wie .venue-select {
+  width: 100%;
+  max-width: 280px;
+  padding: 0.6rem 0.75rem;
+  font-size: var(--font-size-md);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hairline);
+  background-color: var(--surface-page);
+  color: var(--text-primary);
+}
+
+.wie .venue-select:focus-visible {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: 2px;
+}
+
+.wie-seg {
+  display: inline-flex;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--spacing-2);
+}
+
+.wie-seg button {
+  min-height: 44px;
+  padding: 0 var(--spacing-3);
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.wie-seg button[aria-pressed="true"] {
+  background: var(--brand-accent-primary);
+  color: var(--surface-card);
+  font-weight: var(--font-weight-semibold);
+}
+
+.wie-seg button:focus-visible {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: -2px;
+}
+
+.wie-table-wrap {
+  overflow-x: auto;
+}
+
+.wie-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.wie-table th,
+.wie-table td {
+  padding: var(--spacing-1) var(--spacing-1);
+  border-bottom: 1px solid var(--border-hairline);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.wie-table th:nth-child(2),
+.wie-table td:nth-child(2) {
+  text-align: left;
+}
+
+.wie-table th {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+}
+
+.wie-footnotes {
+  margin: var(--spacing-3) 0 0 0;
+  padding-left: 1.2em;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: 1.7;
+}

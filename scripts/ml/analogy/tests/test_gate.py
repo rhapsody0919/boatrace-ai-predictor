@@ -108,7 +108,38 @@ def test_win_missing_from_reference_is_still_an_error():
         T.quality_gate(metrics(), reference=ref)
 
 
-def test_racecard_is_not_in_targets():
-    """TARGETS に入れると profiles の1着の行が二重になる"""
-    assert T.RACECARD[0] not in [n for n, *_ in T.TARGETS]
-    assert len({ft for _, _, ft, _ in T.TARGETS}) == len(T.TARGETS)
+def test_racecard_models_are_separate_from_targets():
+    """出走表時点の3本は TARGETS と別（profiles は段ごとに着順1〜3を1回ずつ作る）"""
+    rc = [n for n, *_ in T.RACECARD]
+    assert rc == ["win_racecard", "top2_racecard", "top3_racecard"]
+    assert not set(rc) & {n for n, *_ in T.TARGETS}
+    assert sorted(ft for _, _, ft, _ in T.RACECARD) == sorted(ft for _, _, ft, _ in T.TARGETS) == [1, 2, 3]
+    # 追記B: 木の数は展示後の同じ着順と同じ
+    assert [r for *_, r in T.RACECARD] == [r for *_, r in T.TARGETS]
+
+
+def test_top_racecard_not_beating_baseline_fails():
+    m = metrics()
+    m["top3_racecard"] = topk(ci_hi=0.002)
+    g = T.quality_gate(m, reference=None)
+    assert not g["passed"] and any("3着以内（出走表時点）" in r for r in g["reasons"])
+
+
+def test_top_racecard_missing_from_reference_is_skipped():
+    m = metrics()
+    m["top2_racecard"] = topk()
+    ref = {"version": "2026-10-02", "win": 1.20, "top2": 0.50, "top3": 0.56}
+    g = T.quality_gate(m, reference=ref)
+    assert g["passed"] and g["reference"]["deltas"]["top2_racecard"] is None
+
+
+def test_reference_age_is_between_training_period_ends():
+    """参照版の古さは学習期間の終わり同士で測る。同じ週に学習した版は0日近くで、警告は出ない
+    （以前は今回の test の最終日までで測り、同じ週の版でも約456日で毎週警告が出ていた）"""
+    import pandas as pd
+    current_fit_end = pd.Timestamp("2025-07-05")
+    assert T.reference_age_days("2025-07-05", current_fit_end) == 0
+    assert T.reference_age_days("2025-07-05", pd.Timestamp("2026-01-10")) == 189
+    ref = {"version": "2026-10-06", "win": 1.200, "top2": 0.50, "top3": 0.56,
+           "age_days": T.reference_age_days("2025-07-05", current_fit_end)}
+    assert T.quality_gate(metrics(), reference=ref)["warnings"] == []

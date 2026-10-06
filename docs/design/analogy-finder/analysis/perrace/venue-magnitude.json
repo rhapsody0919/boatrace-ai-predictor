@@ -1,0 +1,1643 @@
+{
+ "note": "探索的（事前登録なし）。値は中心化 |SHAP| の6艇合計のレース平均（log-odds）。shares は正規化した割合",
+ "population": "test 2026-04-01〜09-30 の完全レース 28185R",
+ "models": "finish_targets.py の exhib_*_s0（縮小学習）",
+ "win": {
+  "all": {
+   "n_races": 28185,
+   "total": 14.584,
+   "abs": {
+    "venueCourse": 5.135,
+    "racerRecord": 5.078,
+    "startExhibition": 2.133,
+    "machine": 1.079,
+    "environment": 0.297,
+    "racerProfile": 0.863
+   },
+   "shares": {
+    "venueCourse": 0.352,
+    "racerRecord": 0.348,
+    "startExhibition": 0.146,
+    "machine": 0.074,
+    "environment": 0.02,
+    "racerProfile": 0.059
+   },
+   "b1_win_rate": 0.548
+  },
+  "venue": {
+   "1": {
+    "n_races": 1226,
+    "total": 14.421,
+    "abs": {
+     "venueCourse": 4.865,
+     "racerRecord": 4.961,
+     "startExhibition": 2.51,
+     "machine": 0.992,
+     "environment": 0.294,
+     "racerProfile": 0.799
+    },
+    "shares": {
+     "venueCourse": 0.337,
+     "racerRecord": 0.344,
+     "startExhibition": 0.174,
+     "machine": 0.069,
+     "environment": 0.02,
+     "racerProfile": 0.055
+    },
+    "b1_win_rate": 0.518
+   },
+   "2": {
+    "n_races": 1056,
+    "total": 14.614,
+    "abs": {
+     "venueCourse": 4.876,
+     "racerRecord": 5.298,
+     "startExhibition": 2.268,
+     "machine": 0.99,
+     "environment": 0.271,
+     "racerProfile": 0.911
+    },
+    "shares": {
+     "venueCourse": 0.334,
+     "racerRecord": 0.363,
+     "startExhibition": 0.155,
+     "machine": 0.068,
+     "environment": 0.019,
+     "racerProfile": 0.062
+    },
+    "b1_win_rate": 0.409
+   },
+   "3": {
+    "n_races": 950,
+    "total": 14.228,
+    "abs": {
+     "venueCourse": 5.108,
+     "racerRecord": 5.023,
+     "startExhibition": 1.872,
+     "machine": 1.133,
+     "environment": 0.327,
+     "racerProfile": 0.765
+    },
+    "shares": {
+     "venueCourse": 0.359,
+     "racerRecord": 0.353,
+     "startExhibition": 0.132,
+     "machine": 0.08,
+     "environment": 0.023,
+     "racerProfile": 0.054
+    },
+    "b1_win_rate": 0.455
+   },
+   "4": {
+    "n_races": 1092,
+    "total": 14.768,
+    "abs": {
+     "venueCourse": 4.989,
+     "racerRecord": 5.349,
+     "startExhibition": 2.266,
+     "machine": 0.999,
+     "environment": 0.301,
+     "racerProfile": 0.863
+    },
+    "shares": {
+     "venueCourse": 0.338,
+     "racerRecord": 0.362,
+     "startExhibition": 0.153,
+     "machine": 0.068,
+     "environment": 0.02,
+     "racerProfile": 0.058
+    },
+    "b1_win_rate": 0.417
+   },
+   "5": {
+    "n_races": 1200,
+    "total": 14.669,
+    "abs": {
+     "venueCourse": 5.224,
+     "racerRecord": 4.725,
+     "startExhibition": 2.193,
+     "machine": 1.284,
+     "environment": 0.271,
+     "racerProfile": 0.972
+    },
+    "shares": {
+     "venueCourse": 0.356,
+     "racerRecord": 0.322,
+     "startExhibition": 0.149,
+     "machine": 0.088,
+     "environment": 0.018,
+     "racerProfile": 0.066
+    },
+    "b1_win_rate": 0.56
+   },
+   "6": {
+    "n_races": 1224,
+    "total": 14.495,
+    "abs": {
+     "venueCourse": 5.008,
+     "racerRecord": 5.016,
+     "startExhibition": 2.064,
+     "machine": 1.202,
+     "environment": 0.308,
+     "racerProfile": 0.897
+    },
+    "shares": {
+     "venueCourse": 0.346,
+     "racerRecord": 0.346,
+     "startExhibition": 0.142,
+     "machine": 0.083,
+     "environment": 0.021,
+     "racerProfile": 0.062
+    },
+    "b1_win_rate": 0.529
+   },
+   "7": {
+    "n_races": 1140,
+    "total": 14.929,
+    "abs": {
+     "venueCourse": 5.09,
+     "racerRecord": 5.446,
+     "startExhibition": 2.301,
+     "machine": 1.058,
+     "environment": 0.28,
+     "racerProfile": 0.753
+    },
+    "shares": {
+     "venueCourse": 0.341,
+     "racerRecord": 0.365,
+     "startExhibition": 0.154,
+     "machine": 0.071,
+     "environment": 0.019,
+     "racerProfile": 0.05
+    },
+    "b1_win_rate": 0.538
+   },
+   "8": {
+    "n_races": 1379,
+    "total": 14.755,
+    "abs": {
+     "venueCourse": 5.189,
+     "racerRecord": 5.442,
+     "startExhibition": 2.016,
+     "machine": 0.952,
+     "environment": 0.292,
+     "racerProfile": 0.863
+    },
+    "shares": {
+     "venueCourse": 0.352,
+     "racerRecord": 0.369,
+     "startExhibition": 0.137,
+     "machine": 0.065,
+     "environment": 0.02,
+     "racerProfile": 0.059
+    },
+    "b1_win_rate": 0.584
+   },
+   "9": {
+    "n_races": 1340,
+    "total": 14.713,
+    "abs": {
+     "venueCourse": 5.125,
+     "racerRecord": 5.093,
+     "startExhibition": 2.1,
+     "machine": 1.152,
+     "environment": 0.312,
+     "racerProfile": 0.93
+    },
+    "shares": {
+     "venueCourse": 0.348,
+     "racerRecord": 0.346,
+     "startExhibition": 0.143,
+     "machine": 0.078,
+     "environment": 0.021,
+     "racerProfile": 0.063
+    },
+    "b1_win_rate": 0.562
+   },
+   "10": {
+    "n_races": 1191,
+    "total": 14.368,
+    "abs": {
+     "venueCourse": 5.103,
+     "racerRecord": 5.023,
+     "startExhibition": 2.244,
+     "machine": 0.895,
+     "environment": 0.313,
+     "racerProfile": 0.791
+    },
+    "shares": {
+     "venueCourse": 0.355,
+     "racerRecord": 0.35,
+     "startExhibition": 0.156,
+     "machine": 0.062,
+     "environment": 0.022,
+     "racerProfile": 0.055
+    },
+    "b1_win_rate": 0.512
+   },
+   "11": {
+    "n_races": 1173,
+    "total": 14.85,
+    "abs": {
+     "venueCourse": 5.084,
+     "racerRecord": 5.028,
+     "startExhibition": 2.323,
+     "machine": 1.177,
+     "environment": 0.298,
+     "racerProfile": 0.941
+    },
+    "shares": {
+     "venueCourse": 0.342,
+     "racerRecord": 0.339,
+     "startExhibition": 0.156,
+     "machine": 0.079,
+     "environment": 0.02,
+     "racerProfile": 0.063
+    },
+    "b1_win_rate": 0.551
+   },
+   "12": {
+    "n_races": 1139,
+    "total": 14.161,
+    "abs": {
+     "venueCourse": 5.06,
+     "racerRecord": 4.975,
+     "startExhibition": 2.001,
+     "machine": 1.06,
+     "environment": 0.279,
+     "racerProfile": 0.786
+    },
+    "shares": {
+     "venueCourse": 0.357,
+     "racerRecord": 0.351,
+     "startExhibition": 0.141,
+     "machine": 0.075,
+     "environment": 0.02,
+     "racerProfile": 0.055
+    },
+    "b1_win_rate": 0.555
+   },
+   "13": {
+    "n_races": 1313,
+    "total": 14.843,
+    "abs": {
+     "venueCourse": 5.154,
+     "racerRecord": 5.114,
+     "startExhibition": 2.11,
+     "machine": 1.241,
+     "environment": 0.319,
+     "racerProfile": 0.905
+    },
+    "shares": {
+     "venueCourse": 0.347,
+     "racerRecord": 0.345,
+     "startExhibition": 0.142,
+     "machine": 0.084,
+     "environment": 0.022,
+     "racerProfile": 0.061
+    },
+    "b1_win_rate": 0.599
+   },
+   "14": {
+    "n_races": 1018,
+    "total": 14.338,
+    "abs": {
+     "venueCourse": 4.955,
+     "racerRecord": 4.992,
+     "startExhibition": 1.926,
+     "machine": 1.144,
+     "environment": 0.295,
+     "racerProfile": 1.026
+    },
+    "shares": {
+     "venueCourse": 0.346,
+     "racerRecord": 0.348,
+     "startExhibition": 0.134,
+     "machine": 0.08,
+     "environment": 0.021,
+     "racerProfile": 0.072
+    },
+    "b1_win_rate": 0.505
+   },
+   "15": {
+    "n_races": 1148,
+    "total": 14.546,
+    "abs": {
+     "venueCourse": 5.116,
+     "racerRecord": 5.09,
+     "startExhibition": 2.193,
+     "machine": 0.915,
+     "environment": 0.285,
+     "racerProfile": 0.948
+    },
+    "shares": {
+     "venueCourse": 0.352,
+     "racerRecord": 0.35,
+     "startExhibition": 0.151,
+     "machine": 0.063,
+     "environment": 0.02,
+     "racerProfile": 0.065
+    },
+    "b1_win_rate": 0.56
+   },
+   "16": {
+    "n_races": 1236,
+    "total": 14.423,
+    "abs": {
+     "venueCourse": 5.287,
+     "racerRecord": 4.862,
+     "startExhibition": 1.993,
+     "machine": 1.124,
+     "environment": 0.288,
+     "racerProfile": 0.868
+    },
+    "shares": {
+     "venueCourse": 0.367,
+     "racerRecord": 0.337,
+     "startExhibition": 0.138,
+     "machine": 0.078,
+     "environment": 0.02,
+     "racerProfile": 0.06
+    },
+    "b1_win_rate": 0.527
+   },
+   "17": {
+    "n_races": 1176,
+    "total": 13.78,
+    "abs": {
+     "venueCourse": 5.051,
+     "racerRecord": 4.685,
+     "startExhibition": 2.047,
+     "machine": 0.913,
+     "environment": 0.275,
+     "racerProfile": 0.809
+    },
+    "shares": {
+     "venueCourse": 0.367,
+     "racerRecord": 0.34,
+     "startExhibition": 0.149,
+     "machine": 0.066,
+     "environment": 0.02,
+     "racerProfile": 0.059
+    },
+    "b1_win_rate": 0.569
+   },
+   "18": {
+    "n_races": 1236,
+    "total": 14.883,
+    "abs": {
+     "venueCourse": 5.586,
+     "racerRecord": 4.957,
+     "startExhibition": 2.09,
+     "machine": 1.181,
+     "environment": 0.269,
+     "racerProfile": 0.8
+    },
+    "shares": {
+     "venueCourse": 0.375,
+     "racerRecord": 0.333,
+     "startExhibition": 0.14,
+     "machine": 0.079,
+     "environment": 0.018,
+     "racerProfile": 0.054
+    },
+    "b1_win_rate": 0.617
+   },
+   "19": {
+    "n_races": 1031,
+    "total": 15.088,
+    "abs": {
+     "venueCourse": 5.304,
+     "racerRecord": 5.387,
+     "startExhibition": 2.039,
+     "machine": 1.204,
+     "environment": 0.292,
+     "racerProfile": 0.863
+    },
+    "shares": {
+     "venueCourse": 0.352,
+     "racerRecord": 0.357,
+     "startExhibition": 0.135,
+     "machine": 0.08,
+     "environment": 0.019,
+     "racerProfile": 0.057
+    },
+    "b1_win_rate": 0.629
+   },
+   "20": {
+    "n_races": 1218,
+    "total": 14.2,
+    "abs": {
+     "venueCourse": 5.012,
+     "racerRecord": 4.891,
+     "startExhibition": 1.984,
+     "machine": 1.143,
+     "environment": 0.356,
+     "racerProfile": 0.812
+    },
+    "shares": {
+     "venueCourse": 0.353,
+     "racerRecord": 0.344,
+     "startExhibition": 0.14,
+     "machine": 0.081,
+     "environment": 0.025,
+     "racerProfile": 0.057
+    },
+    "b1_win_rate": 0.567
+   },
+   "21": {
+    "n_races": 1187,
+    "total": 14.575,
+    "abs": {
+     "venueCourse": 5.043,
+     "racerRecord": 5.063,
+     "startExhibition": 2.232,
+     "machine": 1.047,
+     "environment": 0.287,
+     "racerProfile": 0.904
+    },
+    "shares": {
+     "venueCourse": 0.346,
+     "racerRecord": 0.347,
+     "startExhibition": 0.153,
+     "machine": 0.072,
+     "environment": 0.02,
+     "racerProfile": 0.062
+    },
+    "b1_win_rate": 0.593
+   },
+   "22": {
+    "n_races": 1152,
+    "total": 14.517,
+    "abs": {
+     "venueCourse": 5.409,
+     "racerRecord": 4.927,
+     "startExhibition": 2.076,
+     "machine": 0.999,
+     "environment": 0.304,
+     "racerProfile": 0.803
+    },
+    "shares": {
+     "venueCourse": 0.373,
+     "racerRecord": 0.339,
+     "startExhibition": 0.143,
+     "machine": 0.069,
+     "environment": 0.021,
+     "racerProfile": 0.055
+    },
+    "b1_win_rate": 0.616
+   },
+   "23": {
+    "n_races": 1134,
+    "total": 15.242,
+    "abs": {
+     "venueCourse": 5.029,
+     "racerRecord": 5.547,
+     "startExhibition": 2.366,
+     "machine": 1.09,
+     "environment": 0.319,
+     "racerProfile": 0.891
+    },
+    "shares": {
+     "venueCourse": 0.33,
+     "racerRecord": 0.364,
+     "startExhibition": 0.155,
+     "machine": 0.072,
+     "environment": 0.021,
+     "racerProfile": 0.058
+    },
+    "b1_win_rate": 0.555
+   },
+   "24": {
+    "n_races": 1226,
+    "total": 14.551,
+    "abs": {
+     "venueCourse": 5.498,
+     "racerRecord": 5.02,
+     "startExhibition": 1.95,
+     "machine": 0.996,
+     "environment": 0.283,
+     "racerProfile": 0.804
+    },
+    "shares": {
+     "venueCourse": 0.378,
+     "racerRecord": 0.345,
+     "startExhibition": 0.134,
+     "machine": 0.068,
+     "environment": 0.019,
+     "racerProfile": 0.055
+    },
+    "b1_win_rate": 0.571
+   }
+  },
+  "grade": {
+   "ippan": {
+    "n_races": 23925,
+    "total": 14.723,
+    "abs": {
+     "venueCourse": 5.111,
+     "racerRecord": 5.216,
+     "startExhibition": 2.148,
+     "machine": 1.082,
+     "environment": 0.294,
+     "racerProfile": 0.873
+    },
+    "shares": {
+     "venueCourse": 0.347,
+     "racerRecord": 0.354,
+     "startExhibition": 0.146,
+     "machine": 0.074,
+     "environment": 0.02,
+     "racerProfile": 0.059
+    },
+    "b1_win_rate": 0.545
+   },
+   "G3": {
+    "n_races": 2358,
+    "total": 14.412,
+    "abs": {
+     "venueCourse": 5.149,
+     "racerRecord": 4.893,
+     "startExhibition": 2.086,
+     "machine": 1.081,
+     "environment": 0.328,
+     "racerProfile": 0.875
+    },
+    "shares": {
+     "venueCourse": 0.357,
+     "racerRecord": 0.34,
+     "startExhibition": 0.145,
+     "machine": 0.075,
+     "environment": 0.023,
+     "racerProfile": 0.061
+    },
+    "b1_win_rate": 0.517
+   },
+   "G2": {
+    "n_races": 498,
+    "total": 13.312,
+    "abs": {
+     "venueCourse": 5.375,
+     "racerRecord": 3.863,
+     "startExhibition": 2.109,
+     "machine": 0.936,
+     "environment": 0.283,
+     "racerProfile": 0.745
+    },
+    "shares": {
+     "venueCourse": 0.404,
+     "racerRecord": 0.29,
+     "startExhibition": 0.158,
+     "machine": 0.07,
+     "environment": 0.021,
+     "racerProfile": 0.056
+    },
+    "b1_win_rate": 0.564
+   },
+   "G1": {
+    "n_races": 1116,
+    "total": 12.966,
+    "abs": {
+     "venueCourse": 5.486,
+     "racerRecord": 3.448,
+     "startExhibition": 1.945,
+     "machine": 1.07,
+     "environment": 0.299,
+     "racerProfile": 0.718
+    },
+    "shares": {
+     "venueCourse": 0.423,
+     "racerRecord": 0.266,
+     "startExhibition": 0.15,
+     "machine": 0.083,
+     "environment": 0.023,
+     "racerProfile": 0.055
+    },
+    "b1_win_rate": 0.644
+   },
+   "SG": {
+    "n_races": 288,
+    "total": 12.913,
+    "abs": {
+     "venueCourse": 5.311,
+     "racerRecord": 3.525,
+     "startExhibition": 2.01,
+     "machine": 1.067,
+     "environment": 0.286,
+     "racerProfile": 0.714
+    },
+    "shares": {
+     "venueCourse": 0.411,
+     "racerRecord": 0.273,
+     "startExhibition": 0.156,
+     "machine": 0.083,
+     "environment": 0.022,
+     "racerProfile": 0.055
+    },
+    "b1_win_rate": 0.642
+   }
+  },
+  "round": {
+   "yosen": {
+    "n_races": 13648,
+    "total": 14.726,
+    "abs": {
+     "venueCourse": 5.124,
+     "racerRecord": 5.234,
+     "startExhibition": 2.135,
+     "machine": 1.082,
+     "environment": 0.289,
+     "racerProfile": 0.862
+    },
+    "shares": {
+     "venueCourse": 0.348,
+     "racerRecord": 0.355,
+     "startExhibition": 0.145,
+     "machine": 0.073,
+     "environment": 0.02,
+     "racerProfile": 0.059
+    },
+    "b1_win_rate": 0.478
+   },
+   "junyu": {
+    "n_races": 1182,
+    "total": 13.821,
+    "abs": {
+     "venueCourse": 5.374,
+     "racerRecord": 4.125,
+     "startExhibition": 2.025,
+     "machine": 1.065,
+     "environment": 0.409,
+     "racerProfile": 0.822
+    },
+    "shares": {
+     "venueCourse": 0.389,
+     "racerRecord": 0.298,
+     "startExhibition": 0.147,
+     "machine": 0.077,
+     "environment": 0.03,
+     "racerProfile": 0.059
+    },
+    "b1_win_rate": 0.739
+   },
+   "yusho": {
+    "n_races": 424,
+    "total": 13.626,
+    "abs": {
+     "venueCourse": 5.525,
+     "racerRecord": 3.892,
+     "startExhibition": 1.982,
+     "machine": 1.059,
+     "environment": 0.398,
+     "racerProfile": 0.769
+    },
+    "shares": {
+     "venueCourse": 0.405,
+     "racerRecord": 0.286,
+     "startExhibition": 0.145,
+     "machine": 0.078,
+     "environment": 0.029,
+     "racerProfile": 0.056
+    },
+    "b1_win_rate": 0.665
+   },
+   "other": {
+    "n_races": 12931,
+    "total": 14.536,
+    "abs": {
+     "venueCourse": 5.113,
+     "racerRecord": 5.038,
+     "startExhibition": 2.146,
+     "machine": 1.077,
+     "environment": 0.291,
+     "racerProfile": 0.871
+    },
+    "shares": {
+     "venueCourse": 0.352,
+     "racerRecord": 0.347,
+     "startExhibition": 0.148,
+     "machine": 0.074,
+     "environment": 0.02,
+     "racerProfile": 0.06
+    },
+    "b1_win_rate": 0.6
+   }
+  }
+ },
+ "top3": {
+  "all": {
+   "n_races": 28185,
+   "total": 13.052,
+   "abs": {
+    "venueCourse": 3.806,
+    "racerRecord": 5.596,
+    "startExhibition": 1.712,
+    "machine": 0.96,
+    "environment": 0.255,
+    "racerProfile": 0.723
+   },
+   "shares": {
+    "venueCourse": 0.292,
+    "racerRecord": 0.429,
+    "startExhibition": 0.131,
+    "machine": 0.074,
+    "environment": 0.02,
+    "racerProfile": 0.055
+   },
+   "b1_win_rate": 0.548
+  },
+  "venue": {
+   "1": {
+    "n_races": 1226,
+    "total": 12.574,
+    "abs": {
+     "venueCourse": 3.577,
+     "racerRecord": 5.248,
+     "startExhibition": 1.897,
+     "machine": 0.896,
+     "environment": 0.25,
+     "racerProfile": 0.706
+    },
+    "shares": {
+     "venueCourse": 0.284,
+     "racerRecord": 0.417,
+     "startExhibition": 0.151,
+     "machine": 0.071,
+     "environment": 0.02,
+     "racerProfile": 0.056
+    },
+    "b1_win_rate": 0.518
+   },
+   "2": {
+    "n_races": 1056,
+    "total": 13.168,
+    "abs": {
+     "venueCourse": 3.566,
+     "racerRecord": 5.823,
+     "startExhibition": 1.829,
+     "machine": 0.969,
+     "environment": 0.246,
+     "racerProfile": 0.735
+    },
+    "shares": {
+     "venueCourse": 0.271,
+     "racerRecord": 0.442,
+     "startExhibition": 0.139,
+     "machine": 0.074,
+     "environment": 0.019,
+     "racerProfile": 0.056
+    },
+    "b1_win_rate": 0.409
+   },
+   "3": {
+    "n_races": 950,
+    "total": 12.612,
+    "abs": {
+     "venueCourse": 3.681,
+     "racerRecord": 5.413,
+     "startExhibition": 1.596,
+     "machine": 1.064,
+     "environment": 0.25,
+     "racerProfile": 0.608
+    },
+    "shares": {
+     "venueCourse": 0.292,
+     "racerRecord": 0.429,
+     "startExhibition": 0.127,
+     "machine": 0.084,
+     "environment": 0.02,
+     "racerProfile": 0.048
+    },
+    "b1_win_rate": 0.455
+   },
+   "4": {
+    "n_races": 1092,
+    "total": 13.211,
+    "abs": {
+     "venueCourse": 3.696,
+     "racerRecord": 5.737,
+     "startExhibition": 1.73,
+     "machine": 1.022,
+     "environment": 0.281,
+     "racerProfile": 0.746
+    },
+    "shares": {
+     "venueCourse": 0.28,
+     "racerRecord": 0.434,
+     "startExhibition": 0.131,
+     "machine": 0.077,
+     "environment": 0.021,
+     "racerProfile": 0.056
+    },
+    "b1_win_rate": 0.417
+   },
+   "5": {
+    "n_races": 1200,
+    "total": 13.086,
+    "abs": {
+     "venueCourse": 3.748,
+     "racerRecord": 5.427,
+     "startExhibition": 1.788,
+     "machine": 1.114,
+     "environment": 0.221,
+     "racerProfile": 0.788
+    },
+    "shares": {
+     "venueCourse": 0.286,
+     "racerRecord": 0.415,
+     "startExhibition": 0.137,
+     "machine": 0.085,
+     "environment": 0.017,
+     "racerProfile": 0.06
+    },
+    "b1_win_rate": 0.56
+   },
+   "6": {
+    "n_races": 1224,
+    "total": 12.772,
+    "abs": {
+     "venueCourse": 3.647,
+     "racerRecord": 5.329,
+     "startExhibition": 1.717,
+     "machine": 1.044,
+     "environment": 0.267,
+     "racerProfile": 0.767
+    },
+    "shares": {
+     "venueCourse": 0.286,
+     "racerRecord": 0.417,
+     "startExhibition": 0.134,
+     "machine": 0.082,
+     "environment": 0.021,
+     "racerProfile": 0.06
+    },
+    "b1_win_rate": 0.529
+   },
+   "7": {
+    "n_races": 1140,
+    "total": 13.38,
+    "abs": {
+     "venueCourse": 3.943,
+     "racerRecord": 5.828,
+     "startExhibition": 1.778,
+     "machine": 0.868,
+     "environment": 0.243,
+     "racerProfile": 0.719
+    },
+    "shares": {
+     "venueCourse": 0.295,
+     "racerRecord": 0.436,
+     "startExhibition": 0.133,
+     "machine": 0.065,
+     "environment": 0.018,
+     "racerProfile": 0.054
+    },
+    "b1_win_rate": 0.538
+   },
+   "8": {
+    "n_races": 1379,
+    "total": 13.158,
+    "abs": {
+     "venueCourse": 3.739,
+     "racerRecord": 5.945,
+     "startExhibition": 1.692,
+     "machine": 0.863,
+     "environment": 0.214,
+     "racerProfile": 0.705
+    },
+    "shares": {
+     "venueCourse": 0.284,
+     "racerRecord": 0.452,
+     "startExhibition": 0.129,
+     "machine": 0.066,
+     "environment": 0.016,
+     "racerProfile": 0.054
+    },
+    "b1_win_rate": 0.584
+   },
+   "9": {
+    "n_races": 1340,
+    "total": 12.9,
+    "abs": {
+     "venueCourse": 3.686,
+     "racerRecord": 5.489,
+     "startExhibition": 1.699,
+     "machine": 1.039,
+     "environment": 0.283,
+     "racerProfile": 0.704
+    },
+    "shares": {
+     "venueCourse": 0.286,
+     "racerRecord": 0.426,
+     "startExhibition": 0.132,
+     "machine": 0.081,
+     "environment": 0.022,
+     "racerProfile": 0.055
+    },
+    "b1_win_rate": 0.562
+   },
+   "10": {
+    "n_races": 1191,
+    "total": 13.162,
+    "abs": {
+     "venueCourse": 3.782,
+     "racerRecord": 5.806,
+     "startExhibition": 1.836,
+     "machine": 0.828,
+     "environment": 0.26,
+     "racerProfile": 0.649
+    },
+    "shares": {
+     "venueCourse": 0.287,
+     "racerRecord": 0.441,
+     "startExhibition": 0.139,
+     "machine": 0.063,
+     "environment": 0.02,
+     "racerProfile": 0.049
+    },
+    "b1_win_rate": 0.512
+   },
+   "11": {
+    "n_races": 1173,
+    "total": 13.36,
+    "abs": {
+     "venueCourse": 3.795,
+     "racerRecord": 5.662,
+     "startExhibition": 1.771,
+     "machine": 1.123,
+     "environment": 0.256,
+     "racerProfile": 0.754
+    },
+    "shares": {
+     "venueCourse": 0.284,
+     "racerRecord": 0.424,
+     "startExhibition": 0.133,
+     "machine": 0.084,
+     "environment": 0.019,
+     "racerProfile": 0.056
+    },
+    "b1_win_rate": 0.551
+   },
+   "12": {
+    "n_races": 1139,
+    "total": 12.83,
+    "abs": {
+     "venueCourse": 3.659,
+     "racerRecord": 5.679,
+     "startExhibition": 1.568,
+     "machine": 0.961,
+     "environment": 0.253,
+     "racerProfile": 0.709
+    },
+    "shares": {
+     "venueCourse": 0.285,
+     "racerRecord": 0.443,
+     "startExhibition": 0.122,
+     "machine": 0.075,
+     "environment": 0.02,
+     "racerProfile": 0.055
+    },
+    "b1_win_rate": 0.555
+   },
+   "13": {
+    "n_races": 1313,
+    "total": 13.445,
+    "abs": {
+     "venueCourse": 3.943,
+     "racerRecord": 5.822,
+     "startExhibition": 1.54,
+     "machine": 1.136,
+     "environment": 0.282,
+     "racerProfile": 0.722
+    },
+    "shares": {
+     "venueCourse": 0.293,
+     "racerRecord": 0.433,
+     "startExhibition": 0.115,
+     "machine": 0.084,
+     "environment": 0.021,
+     "racerProfile": 0.054
+    },
+    "b1_win_rate": 0.599
+   },
+   "14": {
+    "n_races": 1018,
+    "total": 12.93,
+    "abs": {
+     "venueCourse": 3.596,
+     "racerRecord": 5.625,
+     "startExhibition": 1.614,
+     "machine": 1.026,
+     "environment": 0.265,
+     "racerProfile": 0.803
+    },
+    "shares": {
+     "venueCourse": 0.278,
+     "racerRecord": 0.435,
+     "startExhibition": 0.125,
+     "machine": 0.079,
+     "environment": 0.021,
+     "racerProfile": 0.062
+    },
+    "b1_win_rate": 0.505
+   },
+   "15": {
+    "n_races": 1148,
+    "total": 12.815,
+    "abs": {
+     "venueCourse": 3.774,
+     "racerRecord": 5.543,
+     "startExhibition": 1.664,
+     "machine": 0.798,
+     "environment": 0.242,
+     "racerProfile": 0.794
+    },
+    "shares": {
+     "venueCourse": 0.295,
+     "racerRecord": 0.433,
+     "startExhibition": 0.13,
+     "machine": 0.062,
+     "environment": 0.019,
+     "racerProfile": 0.062
+    },
+    "b1_win_rate": 0.56
+   },
+   "16": {
+    "n_races": 1236,
+    "total": 12.783,
+    "abs": {
+     "venueCourse": 3.758,
+     "racerRecord": 5.56,
+     "startExhibition": 1.592,
+     "machine": 0.876,
+     "environment": 0.261,
+     "racerProfile": 0.736
+    },
+    "shares": {
+     "venueCourse": 0.294,
+     "racerRecord": 0.435,
+     "startExhibition": 0.125,
+     "machine": 0.069,
+     "environment": 0.02,
+     "racerProfile": 0.058
+    },
+    "b1_win_rate": 0.527
+   },
+   "17": {
+    "n_races": 1176,
+    "total": 12.434,
+    "abs": {
+     "venueCourse": 3.721,
+     "racerRecord": 5.141,
+     "startExhibition": 1.764,
+     "machine": 0.774,
+     "environment": 0.241,
+     "racerProfile": 0.793
+    },
+    "shares": {
+     "venueCourse": 0.299,
+     "racerRecord": 0.413,
+     "startExhibition": 0.142,
+     "machine": 0.062,
+     "environment": 0.019,
+     "racerProfile": 0.064
+    },
+    "b1_win_rate": 0.569
+   },
+   "18": {
+    "n_races": 1236,
+    "total": 13.511,
+    "abs": {
+     "venueCourse": 4.334,
+     "racerRecord": 5.507,
+     "startExhibition": 1.734,
+     "machine": 1.055,
+     "environment": 0.235,
+     "racerProfile": 0.646
+    },
+    "shares": {
+     "venueCourse": 0.321,
+     "racerRecord": 0.408,
+     "startExhibition": 0.128,
+     "machine": 0.078,
+     "environment": 0.017,
+     "racerProfile": 0.048
+    },
+    "b1_win_rate": 0.617
+   },
+   "19": {
+    "n_races": 1031,
+    "total": 13.384,
+    "abs": {
+     "venueCourse": 3.911,
+     "racerRecord": 5.858,
+     "startExhibition": 1.727,
+     "machine": 0.969,
+     "environment": 0.245,
+     "racerProfile": 0.674
+    },
+    "shares": {
+     "venueCourse": 0.292,
+     "racerRecord": 0.438,
+     "startExhibition": 0.129,
+     "machine": 0.072,
+     "environment": 0.018,
+     "racerProfile": 0.05
+    },
+    "b1_win_rate": 0.629
+   },
+   "20": {
+    "n_races": 1218,
+    "total": 13.016,
+    "abs": {
+     "venueCourse": 3.856,
+     "racerRecord": 5.59,
+     "startExhibition": 1.733,
+     "machine": 0.883,
+     "environment": 0.281,
+     "racerProfile": 0.673
+    },
+    "shares": {
+     "venueCourse": 0.296,
+     "racerRecord": 0.429,
+     "startExhibition": 0.133,
+     "machine": 0.068,
+     "environment": 0.022,
+     "racerProfile": 0.052
+    },
+    "b1_win_rate": 0.567
+   },
+   "21": {
+    "n_races": 1187,
+    "total": 12.901,
+    "abs": {
+     "venueCourse": 3.691,
+     "racerRecord": 5.533,
+     "startExhibition": 1.64,
+     "machine": 1.055,
+     "environment": 0.275,
+     "racerProfile": 0.707
+    },
+    "shares": {
+     "venueCourse": 0.286,
+     "racerRecord": 0.429,
+     "startExhibition": 0.127,
+     "machine": 0.082,
+     "environment": 0.021,
+     "racerProfile": 0.055
+    },
+    "b1_win_rate": 0.593
+   },
+   "22": {
+    "n_races": 1152,
+    "total": 13.218,
+    "abs": {
+     "venueCourse": 4.227,
+     "racerRecord": 5.427,
+     "startExhibition": 1.674,
+     "machine": 0.885,
+     "environment": 0.254,
+     "racerProfile": 0.752
+    },
+    "shares": {
+     "venueCourse": 0.32,
+     "racerRecord": 0.411,
+     "startExhibition": 0.127,
+     "machine": 0.067,
+     "environment": 0.019,
+     "racerProfile": 0.057
+    },
+    "b1_win_rate": 0.616
+   },
+   "23": {
+    "n_races": 1134,
+    "total": 13.211,
+    "abs": {
+     "venueCourse": 3.661,
+     "racerRecord": 5.932,
+     "startExhibition": 1.816,
+     "machine": 0.802,
+     "environment": 0.27,
+     "racerProfile": 0.73
+    },
+    "shares": {
+     "venueCourse": 0.277,
+     "racerRecord": 0.449,
+     "startExhibition": 0.137,
+     "machine": 0.061,
+     "environment": 0.02,
+     "racerProfile": 0.055
+    },
+    "b1_win_rate": 0.555
+   },
+   "24": {
+    "n_races": 1226,
+    "total": 13.327,
+    "abs": {
+     "venueCourse": 4.261,
+     "racerRecord": 5.412,
+     "startExhibition": 1.687,
+     "machine": 0.988,
+     "environment": 0.246,
+     "racerProfile": 0.734
+    },
+    "shares": {
+     "venueCourse": 0.32,
+     "racerRecord": 0.406,
+     "startExhibition": 0.127,
+     "machine": 0.074,
+     "environment": 0.018,
+     "racerProfile": 0.055
+    },
+    "b1_win_rate": 0.571
+   }
+  },
+  "grade": {
+   "ippan": {
+    "n_races": 23925,
+    "total": 13.218,
+    "abs": {
+     "venueCourse": 3.78,
+     "racerRecord": 5.774,
+     "startExhibition": 1.723,
+     "machine": 0.963,
+     "environment": 0.252,
+     "racerProfile": 0.726
+    },
+    "shares": {
+     "venueCourse": 0.286,
+     "racerRecord": 0.437,
+     "startExhibition": 0.13,
+     "machine": 0.073,
+     "environment": 0.019,
+     "racerProfile": 0.055
+    },
+    "b1_win_rate": 0.545
+   },
+   "G3": {
+    "n_races": 2358,
+    "total": 12.862,
+    "abs": {
+     "venueCourse": 3.845,
+     "racerRecord": 5.366,
+     "startExhibition": 1.682,
+     "machine": 0.933,
+     "environment": 0.276,
+     "racerProfile": 0.758
+    },
+    "shares": {
+     "venueCourse": 0.299,
+     "racerRecord": 0.417,
+     "startExhibition": 0.131,
+     "machine": 0.073,
+     "environment": 0.021,
+     "racerProfile": 0.059
+    },
+    "b1_win_rate": 0.517
+   },
+   "G2": {
+    "n_races": 498,
+    "total": 11.52,
+    "abs": {
+     "venueCourse": 4.046,
+     "racerRecord": 4.055,
+     "startExhibition": 1.647,
+     "machine": 0.828,
+     "environment": 0.269,
+     "racerProfile": 0.675
+    },
+    "shares": {
+     "venueCourse": 0.351,
+     "racerRecord": 0.352,
+     "startExhibition": 0.143,
+     "machine": 0.072,
+     "environment": 0.023,
+     "racerProfile": 0.059
+    },
+    "b1_win_rate": 0.564
+   },
+   "G1": {
+    "n_races": 1116,
+    "total": 11.118,
+    "abs": {
+     "venueCourse": 4.147,
+     "racerRecord": 3.48,
+     "startExhibition": 1.6,
+     "machine": 0.984,
+     "environment": 0.274,
+     "racerProfile": 0.633
+    },
+    "shares": {
+     "venueCourse": 0.373,
+     "racerRecord": 0.313,
+     "startExhibition": 0.144,
+     "machine": 0.089,
+     "environment": 0.025,
+     "racerProfile": 0.057
+    },
+    "b1_win_rate": 0.644
+   },
+   "SG": {
+    "n_races": 288,
+    "total": 10.993,
+    "abs": {
+     "venueCourse": 3.91,
+     "racerRecord": 3.56,
+     "startExhibition": 1.579,
+     "machine": 1.018,
+     "environment": 0.28,
+     "racerProfile": 0.645
+    },
+    "shares": {
+     "venueCourse": 0.356,
+     "racerRecord": 0.324,
+     "startExhibition": 0.144,
+     "machine": 0.093,
+     "environment": 0.026,
+     "racerProfile": 0.059
+    },
+    "b1_win_rate": 0.642
+   }
+  },
+  "round": {
+   "yosen": {
+    "n_races": 13648,
+    "total": 13.161,
+    "abs": {
+     "venueCourse": 3.779,
+     "racerRecord": 5.726,
+     "startExhibition": 1.723,
+     "machine": 0.97,
+     "environment": 0.239,
+     "racerProfile": 0.722
+    },
+    "shares": {
+     "venueCourse": 0.287,
+     "racerRecord": 0.435,
+     "startExhibition": 0.131,
+     "machine": 0.074,
+     "environment": 0.018,
+     "racerProfile": 0.055
+    },
+    "b1_win_rate": 0.478
+   },
+   "junyu": {
+    "n_races": 1182,
+    "total": 12.139,
+    "abs": {
+     "venueCourse": 4.027,
+     "racerRecord": 4.599,
+     "startExhibition": 1.624,
+     "machine": 0.931,
+     "environment": 0.316,
+     "racerProfile": 0.643
+    },
+    "shares": {
+     "venueCourse": 0.332,
+     "racerRecord": 0.379,
+     "startExhibition": 0.134,
+     "machine": 0.077,
+     "environment": 0.026,
+     "racerProfile": 0.053
+    },
+    "b1_win_rate": 0.739
+   },
+   "yusho": {
+    "n_races": 424,
+    "total": 11.797,
+    "abs": {
+     "venueCourse": 4.132,
+     "racerRecord": 4.198,
+     "startExhibition": 1.569,
+     "machine": 0.946,
+     "environment": 0.327,
+     "racerProfile": 0.625
+    },
+    "shares": {
+     "venueCourse": 0.35,
+     "racerRecord": 0.356,
+     "startExhibition": 0.133,
+     "machine": 0.08,
+     "environment": 0.028,
+     "racerProfile": 0.053
+    },
+    "b1_win_rate": 0.665
+   },
+   "other": {
+    "n_races": 12931,
+    "total": 13.061,
+    "abs": {
+     "venueCourse": 3.803,
+     "racerRecord": 5.596,
+     "startExhibition": 1.712,
+     "machine": 0.952,
+     "environment": 0.264,
+     "racerProfile": 0.735
+    },
+    "shares": {
+     "venueCourse": 0.291,
+     "racerRecord": 0.428,
+     "startExhibition": 0.131,
+     "machine": 0.073,
+     "environment": 0.02,
+     "racerProfile": 0.056
+    },
+    "b1_win_rate": 0.6
+   }
+  }
+ },
+ "win_rate_by_venue_boat": {
+  "1": {
+   "1": 0.518,
+   "2": 0.131,
+   "3": 0.135,
+   "4": 0.102,
+   "5": 0.074,
+   "6": 0.04
+  },
+  "2": {
+   "1": 0.409,
+   "2": 0.186,
+   "3": 0.158,
+   "4": 0.14,
+   "5": 0.073,
+   "6": 0.034
+  },
+  "3": {
+   "1": 0.455,
+   "2": 0.168,
+   "3": 0.152,
+   "4": 0.122,
+   "5": 0.073,
+   "6": 0.031
+  },
+  "4": {
+   "1": 0.417,
+   "2": 0.191,
+   "3": 0.181,
+   "4": 0.103,
+   "5": 0.082,
+   "6": 0.026
+  },
+  "5": {
+   "1": 0.56,
+   "2": 0.13,
+   "3": 0.129,
+   "4": 0.096,
+   "5": 0.053,
+   "6": 0.032
+  },
+  "6": {
+   "1": 0.529,
+   "2": 0.132,
+   "3": 0.126,
+   "4": 0.109,
+   "5": 0.065,
+   "6": 0.041
+  },
+  "7": {
+   "1": 0.538,
+   "2": 0.132,
+   "3": 0.111,
+   "4": 0.104,
+   "5": 0.074,
+   "6": 0.04
+  },
+  "8": {
+   "1": 0.584,
+   "2": 0.134,
+   "3": 0.095,
+   "4": 0.091,
+   "5": 0.06,
+   "6": 0.036
+  },
+  "9": {
+   "1": 0.562,
+   "2": 0.147,
+   "3": 0.116,
+   "4": 0.092,
+   "5": 0.055,
+   "6": 0.028
+  },
+  "10": {
+   "1": 0.512,
+   "2": 0.15,
+   "3": 0.142,
+   "4": 0.097,
+   "5": 0.065,
+   "6": 0.033
+  },
+  "11": {
+   "1": 0.551,
+   "2": 0.13,
+   "3": 0.142,
+   "4": 0.092,
+   "5": 0.066,
+   "6": 0.019
+  },
+  "12": {
+   "1": 0.555,
+   "2": 0.146,
+   "3": 0.123,
+   "4": 0.114,
+   "5": 0.042,
+   "6": 0.02
+  },
+  "13": {
+   "1": 0.599,
+   "2": 0.129,
+   "3": 0.118,
+   "4": 0.088,
+   "5": 0.048,
+   "6": 0.018
+  },
+  "14": {
+   "1": 0.505,
+   "2": 0.14,
+   "3": 0.153,
+   "4": 0.099,
+   "5": 0.076,
+   "6": 0.027
+  },
+  "15": {
+   "1": 0.56,
+   "2": 0.13,
+   "3": 0.13,
+   "4": 0.086,
+   "5": 0.061,
+   "6": 0.033
+  },
+  "16": {
+   "1": 0.527,
+   "2": 0.119,
+   "3": 0.141,
+   "4": 0.115,
+   "5": 0.074,
+   "6": 0.024
+  },
+  "17": {
+   "1": 0.569,
+   "2": 0.121,
+   "3": 0.127,
+   "4": 0.103,
+   "5": 0.058,
+   "6": 0.023
+  },
+  "18": {
+   "1": 0.617,
+   "2": 0.137,
+   "3": 0.108,
+   "4": 0.069,
+   "5": 0.046,
+   "6": 0.024
+  },
+  "19": {
+   "1": 0.629,
+   "2": 0.095,
+   "3": 0.109,
+   "4": 0.088,
+   "5": 0.045,
+   "6": 0.034
+  },
+  "20": {
+   "1": 0.567,
+   "2": 0.144,
+   "3": 0.123,
+   "4": 0.085,
+   "5": 0.046,
+   "6": 0.034
+  },
+  "21": {
+   "1": 0.593,
+   "2": 0.108,
+   "3": 0.111,
+   "4": 0.096,
+   "5": 0.059,
+   "6": 0.033
+  },
+  "22": {
+   "1": 0.616,
+   "2": 0.137,
+   "3": 0.143,
+   "4": 0.056,
+   "5": 0.025,
+   "6": 0.022
+  },
+  "23": {
+   "1": 0.555,
+   "2": 0.148,
+   "3": 0.116,
+   "4": 0.102,
+   "5": 0.052,
+   "6": 0.026
+  },
+  "24": {
+   "1": 0.571,
+   "2": 0.127,
+   "3": 0.124,
+   "4": 0.094,
+   "5": 0.057,
+   "6": 0.027
+  }
+ }
+}
