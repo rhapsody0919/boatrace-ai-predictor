@@ -265,18 +265,23 @@ export default function ConditionFactsTab({ data, stage, target }) {
           ))}
       </div>
       {cls && <p className="af-foot">{t(`${k}.classLine`, { cls })}</p>}
-      <p className="af-foot">
-        {t(`${k}.foot.scope`, {
-          desc: t(`${k}.scopeDesc.${kind}`, {
-            venue: venueLabel(venue, t),
-            boat,
-          }),
-        })}
-        {finalNcr && t(`${k}.foot.finalNcr`)}
-        {t(`${k}.foot.series`)}
-        {t(`${k}.foot.common`)}
-        {exhibitionStage ? t(`${k}.foot.exhPost`) : t(`${k}.foot.exhPre`)}
-      </p>
+      {/* 注意を1段落に詰めず、1つずつ行に分ける（375px で読まれないため。BOA-778） */}
+      <ul className="af-foot af-foot-list">
+        <li>
+          {t(`${k}.foot.scope`, {
+            desc: t(`${k}.scopeDesc.${kind}`, {
+              venue: venueLabel(venue, t),
+              boat,
+            }),
+          })}
+        </li>
+        {finalNcr && <li>{t(`${k}.foot.finalNcr`)}</li>}
+        <li>{t(`${k}.foot.series`)}</li>
+        <li>{t(`${k}.foot.common`)}</li>
+        <li>
+          {exhibitionStage ? t(`${k}.foot.exhPost`) : t(`${k}.foot.exhPre`)}
+        </li>
+      </ul>
       <WindWaveFacts
         exhibition={exhibition}
         vaFacts={keys.VA ? facts[keys.VA] : null}

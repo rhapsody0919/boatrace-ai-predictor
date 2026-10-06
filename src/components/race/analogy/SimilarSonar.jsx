@@ -192,11 +192,16 @@ export default function SimilarSonar({
             </g>
           );
         })}
-        <g className="af-sweep" pointerEvents="none">
-          <path
-            d={`M${CX},${CY}L${CX + R},${CY}A${R},${R} 0 0 1 ${CX + R * Math.cos(0.35)},${CY + R * Math.sin(0.35)}Z`}
-            fill="#c9a227"
-            fillOpacity=".12"
+        {/* 回る線は飾り。1着の扇（押せる）と同じ形・色にすると特定の艇を指しているように見えるので、細い線にする（BOA-778） */}
+        <g className="af-sweep" pointerEvents="none" aria-hidden="true">
+          <line
+            x1={CX}
+            y1={CY}
+            x2={CX + R}
+            y2={CY}
+            stroke={SCOPE_SUBTEXT}
+            strokeOpacity=".35"
+            strokeWidth="1"
           />
         </g>
         <circle
