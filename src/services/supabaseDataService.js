@@ -39,6 +39,7 @@ import {
   pickMeetAnchor,
   buildQualifiers,
   seriesDayByDate,
+  officialAsOfDate,
 } from "../utils/meetPageModel.js";
 import { winnerEntryCourseOf } from "../utils/raceOutcome.js";
 import { competitionRank } from "../utils/competitionRank.js";
@@ -6558,14 +6559,15 @@ export const supabaseDataService = {
    * @param {string} raceId 表示中のレース。節ページ（BOA-682）は、その日の全レースを
    *   済みとして扱う架空ID `{日付}-{会場}-99` を渡すことがある
    * @param {number} venueCode
-   * @param {{prelimDone?: boolean}} [options] `prelimDone: true` なら、種別に関係なく
-   *   公式の得点率一覧（`officialByRacer`）を使う。架空IDには種別が無く、予選最終日の
-   *   夜に公式値が使われないため（節ページの `pickMeetAnchor`、plan §2.4）。
-   *   省略時は従来どおり表示中レースの種別で決める（今節タブ）
+   * @param {{useOfficial?: boolean}} [options] `useOfficial: true` なら、種別に関係なく
+   *   公式の得点率一覧（`officialByRacer`・備考の途中帰郷・賞典除外）を使う。節ページが
+   *   使う（plan §2.4）: 予選後の夜（架空IDには種別が無く公式値が使われない）と、予選中
+   *   （公式の前夜時点の値をそのまま出す。ユーザー決定 2026-10-06、減点・途中帰郷を公式と
+   *   一致させるため）。省略時は従来どおり表示中レースの種別で決める（今節タブ）
    * @returns {Promise<{rows: Array, currentStage: string|null,
    *   meetStart: string, meetEnd: string, semifinalSlots: number|null}>}
    */
-  getMeetScoreboard(raceId, venueCode, { prelimDone } = {}) {
+  getMeetScoreboard(raceId, venueCode, { useOfficial } = {}) {
     const date = (raceId ?? "").slice(0, 10);
     if (!date || venueCode === null || venueCode === undefined) {
       return Promise.resolve(null);
@@ -6584,9 +6586,9 @@ export const supabaseDataService = {
     // v26: 途中帰郷を、前の日まで走っていて表示日に1走も無い選手として全日程で外す。
     //      公式の備考は予選の後だけ使い、その途中帰郷は officialWithdrawn にする（#1149）
     // v28: まだ1走もしていない選手（notYetStartedRacerIds）を足した（BOA-690）
-    // v29: 節ページの prelimDone を足した（BOA-682）。キーを分けないと、今節タブと
+    // v29: 節ページの useOfficial を足した（BOA-682）。キーを分けないと、今節タブと
     //      節ページで公式値の採否が違う結果を取り違える
-    const cacheKey = `meet-scoreboard-v29-${raceId}${prelimDone ? ":pd" : ""}`;
+    const cacheKey = `meet-scoreboard-v29-${raceId}${useOfficial ? ":of" : ""}`;
     return withCache(cacheKey, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
@@ -6865,9 +6867,9 @@ export const supabaseDataService = {
         // 4日目以降なので、予選中は直しようが無い）
         officialByRacer: (() => {
           // 「使ってよいか」の判断は純関数に切り出してある（回帰テスト可能）。
-          // 節ページが予選終了を知っているとき（prelimDone）はそちらに従う
+          // 節ページが公式値を使うと決めたとき（useOfficial）はそちらに従う
           if (
-            prelimDone !== true &&
+            useOfficial !== true &&
             !shouldUseOfficialSeries(
               stageById.get(raceId) ?? null,
               raceId,
@@ -6890,9 +6892,9 @@ export const supabaseDataService = {
           // 公式の行は節に1行で、取得した時点（予選の最終日の夜）の備考が入る。予選中の
           // 日に使うと、まだ走っている選手を「途中帰郷」で外した（児島G1 10/1 9R の
           // 丸野一樹。PR #1149 ファン評価2周目）
-          // 節ページが予選終了を知っているとき（prelimDone、架空IDの基準）もそれに従う
+          // 節ページが公式値を使うと決めたとき（useOfficial）もそれに従う
           const official =
-            prelimDone === true ||
+            useOfficial === true ||
             shouldUseOfficialSeries(
               stageById.get(raceId) ?? null,
               raceId,
@@ -7199,7 +7201,7 @@ export const supabaseDataService = {
         .lte("race_id", `${windowEnd}-zz`)
         .like("race_id", `__________-${vv}-__`);
 
-    const [seriesRes, condRes, racesRes, resultsRes, entriesRes] =
+    const [seriesRes, condRes, racesRes, resultsRes, entriesRes, officialRes] =
       await Promise.all([
         supabase
           .from("race_series")
@@ -7227,6 +7229,14 @@ export const supabaseDataService = {
             .from("race_entries")
             .select("race_id, boat_number, racer_id, player_name"),
         ),
+        // 公式の得点率一覧の取得時刻（予選中は公式の前夜時点の表を出す。plan §2.4）
+        supabase
+          .from("racer_series_points")
+          .select("scraped_at")
+          .eq("venue_code", venueCode)
+          .eq("meet_start_date", startDate)
+          .order("scraped_at", { ascending: false })
+          .limit(1),
       ]);
     const series = seriesRes.data ?? null;
     const windowConditions = condRes.data ?? [];
@@ -7302,6 +7312,11 @@ export const supabaseDataService = {
       return { ...base, board: null, qualifiers: null };
     }
 
+    // 予選中で公式の表があれば、その時点（前夜）の表をそのまま出す（ユーザー決定
+    // 2026-10-06）。自社計算は減点・途中帰郷の備考を持たない（ファン評価1周目 P0・P1）
+    const officialAsOf = ["prelim", "prelimFinalDay"].includes(state)
+      ? officialAsOfDate(officialRes.data?.[0]?.scraped_at ?? null)
+      : null;
     const anchor = pickMeetAnchor({
       today,
       meetDays,
@@ -7309,19 +7324,28 @@ export const supabaseDataService = {
       doneRaceIds,
       venueCode,
       conditions,
+      officialAsOf,
     });
     const board = anchor
       ? await this.getMeetScoreboard(anchor.raceId, venueCode, {
-          prelimDone: anchor.prelimDone,
+          useOfficial: anchor.useOfficial,
         })
       : null;
     // 窓の先頭を初日とみなすので、URL の初日が節の途中だと別の節と食い違う
     if (!board || board.meetStart !== startDate) {
       return { ...base, state: "notFound", board: null, qualifiers: null };
     }
+    // 画面に「◯日目終了時点（公式）」と書くための日目。公式の値で出しているときだけ
+    const officialAsOfDay =
+      officialAsOf && anchor?.useOfficial
+        ? (seriesDayByDate(conditions).get(
+            meetDays.filter((d) => d <= officialAsOf).pop(),
+          )?.seriesDay ?? null)
+        : null;
     return {
       ...base,
       board,
+      officialAsOfDay,
       qualifiers: buildQualifiers(conditions, entries, results),
     };
   },

@@ -165,18 +165,45 @@ export function meetPageState({
 }
 
 /**
+ * 公式の得点率一覧（`racer_series_points`）の取得時刻から、それが何日の終了時点の表かを
+ * 出す（JST の日付）。取得ジョブは 22:00 JST と、補足の 23:30・翌 01:30 JST に走る
+ * （vercel.json）。翌 01:30 の取得は前日の表なので、6時間戻してから日付を取る。
+ *
+ * @param {string|null} scrapedAt ISO 文字列
+ * @returns {string|null} YYYY-MM-DD
+ */
+export function officialAsOfDate(scrapedAt) {
+  if (!scrapedAt) return null;
+  const t = new Date(scrapedAt).getTime();
+  if (Number.isNaN(t)) return null;
+  return new Date(t + (9 - 6) * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+/**
  * `getMeetScoreboard` に渡す基準のレース（plan §2.4）。
  *
- * - 今日が節の日で、まだ済んでいないレースがある → その最初のレース（昼間）。
- *   それより前を済んだ走、以後を今日の残りの走として数える
+ * **予選中で公式の得点率一覧があるとき**（`officialAsOf`。ユーザー決定 2026-10-06）:
+ * 公式の表（前夜の時点）をそのまま出す。自社計算は減点・途中帰郷の備考を持たず、
+ * 三国G1 10/6 に白井英治（公式14位・減点10）を2位と出した（ファン評価1周目 P0）。
+ * - 基準は「表の時点の翌日の最初のレース」。それより前（表の時点まで）を済んだ走、
+ *   以後を残りの走として数える。予選最終日はその日の予選の全レースが「残り」になり、
+ *   公式の得点率早見が朝に出す「◯日目終了時点」と同じ考え方になる
+ * - 翌日の出走表がまだ無ければ、表の時点の日の架空ID `{日付}-{会場}-99`
+ * - 当日の結果は夜の取得まで反映しない（代わりに画面に「◯日目終了時点（公式）」と書く）
+ *
+ * **それ以外**（予選後・公式の表が無い節）:
+ * - 今日が節の日で、まだ済んでいないレースがある → その最初のレース（昼間）
  * - それ以外 → 今日以前で最後の節の日 D の架空ID `{D}-{会場}-99`。D の全レースを
  *   済みとして扱う。実在の「最後のレース」を基準にすると `race_id < 基準` で
  *   そのレースの結果が落ちる
  * - 架空IDのときは種別が無く、予選最終日の夜に公式の得点率一覧が使われない
- *   （`countsForSeriesScore(null, …)` が真）。D が予選最終日以降なら `prelimDone`
+ *   （`countsForSeriesScore(null, …)` が真）。D が予選最終日以降なら `useOfficial`
  *   で公式値を使わせる
  *
- * @returns {{raceId: string, prelimDone: boolean|undefined}|null}
+ * @param {Object} p
+ * @param {string|null} [p.officialAsOf] 公式の表の時点（`officialAsOfDate`）。予選中の
+ *   状態で、公式の表があるときだけ渡す
+ * @returns {{raceId: string, useOfficial: boolean|undefined}|null}
  */
 export function pickMeetAnchor({
   today,
@@ -185,13 +212,29 @@ export function pickMeetAnchor({
   doneRaceIds,
   venueCode,
   conditions,
+  officialAsOf = null,
 }) {
   const vv = String(venueCode).padStart(2, "0");
+  // 表の時点が今日より後（時計を戻して開いたとき等）の表は、まだ存在しないはずの値なので使わない
+  if (officialAsOf && officialAsOf <= today) {
+    // 表の時点が節の日でなければ（取得の日付の推定が外れた等）、節の日の中で直前の日に寄せる
+    const asOf = meetDays.filter((d) => d <= officialAsOf).pop();
+    if (asOf) {
+      const nextDay = meetDays.find((d) => d > asOf && d <= today);
+      const first = nextDay
+        ? [...raceIds].filter((id) => dateOf(id) === nextDay).sort()[0]
+        : null;
+      return {
+        raceId: first ?? `${asOf}-${vv}-99`,
+        useOfficial: true,
+      };
+    }
+  }
   if (meetDays.includes(today)) {
     const next = [...raceIds]
       .filter((id) => dateOf(id) === today && !doneRaceIds.has(id))
       .sort()[0];
-    if (next) return { raceId: next, prelimDone: undefined };
+    if (next) return { raceId: next, useOfficial: undefined };
   }
   const past = meetDays.filter((d) => d <= today);
   if (past.length === 0) return null;
@@ -199,7 +242,7 @@ export function pickMeetAnchor({
   const seriesDay = seriesDayByDate(conditions).get(day)?.seriesDay ?? null;
   return {
     raceId: `${day}-${vv}-99`,
-    prelimDone: seriesDay != null && seriesDay >= PRELIM_FINAL_SERIES_DAY,
+    useOfficial: seriesDay != null && seriesDay >= PRELIM_FINAL_SERIES_DAY,
   };
 }
 

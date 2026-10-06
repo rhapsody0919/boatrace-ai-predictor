@@ -28,6 +28,7 @@ import "./MeetRankingTable.css";
  * @param {Object<number, number>} props.remainingMax 今日の残りの最大点
  * @param {Set<number>} props.shobugake 勝負駆けの選手
  * @param {Object<number, string>} props.classByRacer 級別
+ * @param {number|null} [props.officialAsOfDay] 予選中に公式の前夜時点の表を出しているとき、その日目
  */
 function MeetRankingTable({
   rows,
@@ -40,6 +41,7 @@ function MeetRankingTable({
   remainingMax,
   shobugake,
   classByRacer,
+  officialAsOfDay = null,
 }) {
   const { t } = useTranslation();
   const [onlyShobugake, setOnlyShobugake] = useState(false);
@@ -118,9 +120,12 @@ function MeetRankingTable({
         {t(
           confirmed
             ? "meetPage.rankingSubOfficial"
-            : "meetPage.rankingSubPrelim",
+            : officialAsOfDay != null
+              ? "meetPage.rankingSubOfficialAsOf"
+              : "meetPage.rankingSubPrelim",
           {
             count: rows.length + excluded.length,
+            day: officialAsOfDay,
           },
         )}
       </p>

@@ -167,3 +167,43 @@ test("英語版の勝ち上がりの着順は艇番と紛れない形で、順�
   await expect(finishes.first()).toHaveText(/^Finish \d$/);
   await expect(page.locator(".meet-qualifiers")).not.toContainText("#");
 });
+
+// ファン評価1周目 P0・P1（ユーザー決定 2026-10-06: 予選中は公式の前夜時点の表をそのまま出す）
+test("予選中は公式の得点率一覧の値を出し、減点（白井）と途中帰郷（安河内）が公式と一致する", async ({
+  page,
+}) => {
+  // 三国G1 3日目の夜。公式の表（3日目終了時点）は、白井英治が減点10で 6.40・14位、
+  // 安河内将が途中帰郷（2026-10-06 の公式の得点率一覧）。自社計算は減点・備考を持たない
+  await page.clock.setFixedTime(new Date("2026-10-06T21:00:00+09:00"));
+  const official = [
+    {
+      racer_id: 3897,
+      remarks: null,
+      placements: "２　２２３１",
+      total_points: 42,
+      penalty_points: 10,
+      scraped_at: "2026-10-06T13:00:00+00:00",
+    },
+    {
+      racer_id: 4734,
+      remarks: "途中帰郷",
+      placements: "２５３落",
+      total_points: 16,
+      penalty_points: 0,
+      scraped_at: "2026-10-06T13:00:00+00:00",
+    },
+  ];
+  await page.route(/\/rest\/v1\/racer_series_points/, (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", json: official }),
+  );
+  await page.goto("/venue/10/meet/2026-10-04", { waitUntil: "domcontentloaded" });
+  const shirai = page.locator("tr.meet-ranking__row", { hasText: "白井" });
+  await expect(shirai).toBeVisible({ timeout: 60000 });
+  await expect(shirai.locator(".meet-ranking__c-rate")).toHaveText("6.40");
+  await expect(
+    page.locator("tr.meet-ranking__row.is-excluded", { hasText: "安河内" }),
+  ).toContainText("途中帰郷");
+  await expect(page.locator(".meet-ranking__sub").first()).toContainText(
+    "3日目終了時点・公式の得点率一覧の値",
+  );
+});

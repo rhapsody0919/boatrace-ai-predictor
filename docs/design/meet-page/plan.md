@@ -63,10 +63,12 @@ flowchart TD
 - 夜（架空ID）のとき `prelimDone` = 「`D` の `series_day` ≥ 4」。`getMeetScoreboard` に新しい第3引数 `{ prelimDone }` を足し、`true` なら `officialByRacer` を種別に関係なく採用する（公式の行があれば）。`undefined` のときは今の挙動のまま（今節タブは変わらない）
   - 架空IDだけでは予選最終日の夜に公式値が使われない（`countsForSeriesScore(null, …)` が真になる。design-reviewer 指摘2）。また「最後のレース」を基準にすると `e.race_id < raceId` でそのレースの結果が落ちる。どちらも避ける
   - 予選最終日の夜、公式の得点率一覧（22:00 JST 取得）が入る前は当社計算になる（減点だけズレうる）
-- `getMeetScoreboard` のキャッシュキーに `prelimDone` を含める（`meet-scoreboard-v29-${raceId}${prelimDone ? ":pd" : ""}`）
+- `getMeetScoreboard` のキャッシュキーに `prelimDone` を含める（`meet-scoreboard-v29-${raceId}${useOfficial ? ":of" : ""}`）
 - キャッシュの残留（design-reviewer 指摘3）: 優勝戦前（基準＝最終日12R、当日TTL 30分）と優勝戦後（基準＝`-99`）でキーが分かれるので、最大7日の残留は起きない。勝ち上がりの着順は 2.1 の4（キャッシュしない）から出す
 
 固定するケース（`verify-meet-page-model.js` のフィクスチャ。児島 2026-09-28 の節の種別）: ドリーム戦の日の夜（9/28）、予選中の日の夜（9/30）、予選最終日の昼と夜（10/1）、準優の日の昼と夜（10/2）、節終了後。
+
+**予選中に公式の表があるとき**（ユーザー決定 2026-10-06）: 状態が予選中・予選最終日で、`racer_series_points` の取得時刻から出した表の時点（`officialAsOfDate`、6時間戻して JST の日付）が今日以前なら、基準は「表の時点の翌日の最初のレース」（翌日の出走表が無ければ表の時点の日の架空ID）で、`useOfficial: true`。予選最終日はその日の予選の全レースが残りになる（公式の得点率早見が朝に出す「◯日目終了時点」と同じ）。`getMeetScoreboard` の第3引数は `useOfficial`（キャッシュキーの接尾辞 `:of`）。
 
 ### 2.5 勝ち上がり（`buildQualifiers`、純関数）
 

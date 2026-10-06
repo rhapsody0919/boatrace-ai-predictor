@@ -16,6 +16,7 @@ import {
   buildQualifiers,
   pickShobugake,
   isOutOfScopeMeetTitle,
+  officialAsOfDate,
 } from "../../src/utils/meetPageModel.js";
 
 const failures = [];
@@ -237,32 +238,32 @@ const anchor = (today, done) =>
 check(
   "昼は今日のまだ済んでいない最初のレース",
   anchor("2026-09-30", doneThrough(id("2026-09-30", 6))),
-  { raceId: id("2026-09-30", 7), prelimDone: undefined },
+  { raceId: id("2026-09-30", 7), useOfficial: undefined },
 );
 check(
   "ドリーム戦の日の夜は架空ID -99（12Rの結果を落とさない）・予選は終わっていない",
   anchor("2026-09-28", doneThrough(id("2026-09-28", 12))),
-  { raceId: "2026-09-28-16-99", prelimDone: false },
+  { raceId: "2026-09-28-16-99", useOfficial: false },
 );
 check(
   "予選中の日の夜",
   anchor("2026-09-30", doneThrough(id("2026-09-30", 12))),
-  { raceId: "2026-09-30-16-99", prelimDone: false },
+  { raceId: "2026-09-30-16-99", useOfficial: false },
 );
 check(
   "予選最終日の昼は実在のレース",
   anchor("2026-10-01", doneThrough(id("2026-10-01", 3))),
-  { raceId: id("2026-10-01", 4), prelimDone: undefined },
+  { raceId: id("2026-10-01", 4), useOfficial: undefined },
 );
 check(
   "予選最終日の夜は架空IDで公式値を使う",
   anchor("2026-10-01", doneThrough(id("2026-10-01", 12))),
-  { raceId: "2026-10-01-16-99", prelimDone: true },
+  { raceId: "2026-10-01-16-99", useOfficial: true },
 );
 check(
   "準優の日の夜（12R の series_day が null でも日の値で判定）",
   anchor("2026-10-02", doneThrough(id("2026-10-02", 12))),
-  { raceId: "2026-10-02-16-99", prelimDone: true },
+  { raceId: "2026-10-02-16-99", useOfficial: true },
 );
 check(
   "優勝戦の前は最終日12R、後は架空ID（キャッシュのキーが分かれる）",
@@ -275,9 +276,58 @@ check(
 check(
   "節の後日は最終日の架空ID",
   anchor("2026-10-10", doneThrough(id("2026-10-03", 12))),
-  { raceId: "2026-10-03-16-99", prelimDone: true },
+  { raceId: "2026-10-03-16-99", useOfficial: true },
 );
 check("開幕前は基準なし", anchor("2026-09-27", new Set()), null);
+
+// --- 予選中は公式の表（前夜の時点）を出す（ユーザー決定 2026-10-06、ファン評価1周目 P0・P1） ---
+const anchorOfficial = (today, done, officialAsOf) =>
+  pickMeetAnchor({
+    today,
+    meetDays,
+    raceIds,
+    doneRaceIds: done,
+    venueCode: 16,
+    conditions: window,
+    officialAsOf,
+  });
+check(
+  "公式の表が前夜（2日目）のとき、3日目の昼は3日目の1Rを基準に公式値を使う（当日の結果は混ぜない）",
+  anchorOfficial("2026-09-30", doneThrough(id("2026-09-30", 8)), "2026-09-29"),
+  { raceId: id("2026-09-30", 1), useOfficial: true },
+);
+check(
+  "予選最終日の朝は、その日の1Rを基準にする（その日の予選の全レースが残りになる）",
+  anchorOfficial("2026-10-01", doneThrough(id("2026-09-30", 12)), "2026-09-30"),
+  { raceId: id("2026-10-01", 1), useOfficial: true },
+);
+check(
+  "その日の夜に表が更新され、翌日の出走表がまだ無いときは、その日の架空ID",
+  pickMeetAnchor({
+    today: "2026-09-30",
+    meetDays: meetDays.filter((d) => d <= "2026-09-30"),
+    raceIds: raceIds.filter((r) => r < "2026-10-01"),
+    doneRaceIds: doneThrough(id("2026-09-30", 12)),
+    venueCode: 16,
+    conditions: window,
+    officialAsOf: "2026-09-30",
+  }),
+  { raceId: "2026-09-30-16-99", useOfficial: true },
+);
+check(
+  "表の時点が今日より後なら使わない（自社計算の基準に戻る）",
+  anchorOfficial("2026-09-28", new Set(), "2026-10-01"),
+  { raceId: id("2026-09-28", 1), useOfficial: undefined },
+);
+check(
+  "取得時刻から表の時点の日付を出す（22:00 はその日、翌 01:30 は前日）",
+  [
+    officialAsOfDate("2026-10-05T13:00:39.922+00:00"),
+    officialAsOfDate("2026-10-05T16:30:00Z"),
+    officialAsOfDate(null),
+  ],
+  ["2026-10-05", "2026-10-05", null],
+);
 
 // --- buildQualifiers（10/2 準優の実データ、着順は架空） ---
 const semiEntries = [

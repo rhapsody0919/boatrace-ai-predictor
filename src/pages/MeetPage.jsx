@@ -313,6 +313,7 @@ function MeetBody({ page }) {
           remainingMax={remainingMax}
           shobugake={shobugake}
           classByRacer={classByRacer}
+          officialAsOfDay={page.officialAsOfDay ?? null}
         />
         )}
         <p className="meet-page__source">{t("meetPage.source")}</p>
