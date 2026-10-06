@@ -21,6 +21,7 @@ import { withoutSeriesScoreOnFinal } from "../../api/analogy/facts/[raceId].js";
 import { mergeExhibition } from "../../api/analogy/similar/[raceId].js";
 import { CLEANUP, datesToClean, summarizeDay } from "./verify-analogy-v16.js";
 import {
+  runAnalogyV16Exhibition,
   exhibitionNeighbors,
   selectExhibitionTargets,
   todayExhibition,
@@ -406,6 +407,65 @@ check(
     ),
     ["2026-10-03"],
   );
+}
+
+// ---- 7. 展示後の段は、関数の上限の手前（shouldStop）で止まる -----------------------------
+{
+  process.env.SUPABASE_URL = "https://example.invalid";
+  process.env.SUPABASE_SERVICE_KEY = "test";
+  const calls = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    calls.push(String(url));
+    const u = String(url);
+    const body = u.includes("analogy_v16_snapshots")
+      ? [
+          {
+            race_id: "2026-10-05-20-01",
+            stage: "racecard",
+            status: "ok",
+            run_id: "r",
+            n_layer: 5,
+            pool_cutoff: "2026-10-04",
+          },
+        ]
+      : u.includes("/races?")
+        ? [
+            {
+              race_id: "2026-10-05-20-01",
+              race_date: "2026-10-05",
+              start_time: "23:00:00",
+            },
+          ]
+        : u.includes("exhibition_data")
+          ? [1, 2, 3, 4, 5, 6].map((b) => ({
+              race_id: "2026-10-05-20-01",
+              boat_number: b,
+              exhibition_time: 6.8,
+              is_absent: false,
+            }))
+          : [];
+    return new Response(JSON.stringify(body), { status: 200 });
+  };
+  try {
+    const r = await runAnalogyV16Exhibition({
+      mode: "live",
+      now: () => new Date("2026-10-05T10:00:00+09:00"),
+      shouldStop: () => true,
+    });
+    check(
+      "展示後の段: shouldStop なら1レースも処理せず止まる",
+      [r.report.targets, r.report.written, r.report.stopped],
+      [1, 0, true],
+    );
+    check(
+      "展示後の段: 止まったら Storage を読まない",
+      calls.some((c) => c.includes("/storage/")),
+      false,
+    );
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 }
 
 if (failures > 0) {
