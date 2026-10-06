@@ -212,15 +212,24 @@ def ensure_bucket() -> None:
              {"Content-Type": "application/json"})
 
 
-def upload_dir(local: Path, prefix: str) -> int:
-    """local の下の全ファイルを {prefix}/… に置く。上書きしない（x-upsert: false。同じパスがあれば失敗）"""
-    n = 0
-    for p in sorted(local.rglob("*.gz")):
+UPLOAD_WORKERS = 16
+
+
+def upload_dir(local: Path, prefix: str, workers: int = UPLOAD_WORKERS) -> int:
+    """local の下の全ファイルを {prefix}/… に置く。上書きしない（x-upsert: false。同じパスがあれば失敗）。
+    1日 約2,000ファイルを1件ずつ送ると約18分かかったので並列に送る（T2-6）。1件でも失敗すれば例外にする"""
+    from concurrent.futures import ThreadPoolExecutor
+
+    files = sorted(local.rglob("*.gz"))
+
+    def put(p: Path) -> None:
         rel = p.relative_to(local).as_posix()
         _storage("POST", f"object/{BUCKET}/{prefix}/{rel}", p.read_bytes(),
                  {"Content-Type": "application/gzip", "x-upsert": "false"})
-        n += 1
-    return n
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        list(pool.map(put, files))  # 例外はここで投げ直される
+    return len(files)
 
 
 def write_snapshots(rows: list[dict]) -> None:
@@ -276,6 +285,11 @@ def fetch_today(date: str) -> list[dict]:
     return out
 
 
+def late_for(deadline: datetime | None, now: datetime) -> bool:
+    """snapshot を書く時点で締切を過ぎているか（締切が分からなければ過ぎていないとみなす。--races の手元の実行）"""
+    return deadline is not None and now >= deadline
+
+
 def racecard_hash(arrays: dict, i: int) -> str:
     """出走表の内容のハッシュ（選手の差し替えを見分ける）。6艇の選手番号・級別・勝率・モーター・ボートの2連率"""
     import hashlib
@@ -319,12 +333,14 @@ def main():
     combos = np.array([V.class_combo(list(c)) for c in arrays["cls_name"]], dtype=object)
     pool = (races["race_date"] <= cutoff).to_numpy()
     today = np.where(races["race_date"] == date)[0]
+    deadlines = {}  # race_id → 締切（--upload で今日のレースを選ぶとき。snapshot を締切前だけ書くため）
     if a.races:
         want = {F.rid_to_int(pd.Series([r])).iat[0] for r in a.races.split(",")}
         today = np.array([i for i in today if int(races["race_id"].iat[i]) in want])
     elif a.upload:
         hashes = {F.int_to_rid(int(races["race_id"].iat[i])): racecard_hash(arrays, i) for i in today}
         rows_today = fetch_today(a.date)
+        deadlines = {r["race_id"]: r["deadline"] for r in rows_today}
         no_deadline = [r["race_id"] for r in rows_today if r["deadline"] is None and not r["cancelled"]]
         if no_deadline:
             log("締切時刻（races.start_time）が無いので作らない:", ",".join(no_deadline))
@@ -544,16 +560,19 @@ def main():
     if a.upload:
         ensure_bucket()
         n = upload_dir(out, f"{a.date}/{a.run_id}")
-        snaps = []
+        snaps, late = [], []
         for i in done:
             rid = F.int_to_rid(int(races["race_id"].iat[i]))
+            if late_for(deadlines.get(rid), datetime.now(JST)):
+                late.append(rid)  # 作っている間に締切を過ぎた（plan「締切前だけ書く」）。ファイルは置いたまま
+                continue
             snaps.append({"race_id": rid, "stage": "racecard", "run_id": a.run_id,
                           "computed_at": datetime.now(timezone.utc).isoformat(), "pool_cutoff": str(cutoff.date()),
                           "model_version": a.model_version or None, "n_layer": n_layers[i],
                           "status": "ok" if n_layers[i] > 0 else "empty_layer",
                           "racecard_hash": racecard_hash(arrays, i)})
         write_snapshots(snaps)
-        log("uploaded", n, "files", len(snaps), "snapshots")
+        log("uploaded", n, "files", len(snaps), "snapshots", f"締切を過ぎて書かなかった {len(late)}: {','.join(late)}")
     if failed:
         raise SystemExit(f"today・similar を作れなかったレース {len(failed)} 件: {failed}")
 
