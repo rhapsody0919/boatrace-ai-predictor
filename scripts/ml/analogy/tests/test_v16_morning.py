@@ -62,3 +62,48 @@ def test_top3_boats_keeps_tied_boats():
     import v16_morning as M
     fr = np.array([[6, 4, 2, 1, 2, 5], [1, 2, 3, np.nan, 4, 5], [np.nan] * 6])
     assert M.top3_boats(fr).tolist() == [[4, 3, 5], [1, 2, 3], [0, 0, 0]]
+
+
+def test_upload_dir_sends_every_file_once_in_parallel(tmp_path, monkeypatch):
+    import threading
+
+    for k in ("facts", "similar"):
+        (tmp_path / k).mkdir()
+        for i in range(20):
+            (tmp_path / k / f"{i}.json.gz").write_bytes(b"x")
+    sent, lock = [], threading.Lock()
+
+    def fake(method, path, body=None, headers=None):
+        assert method == "POST" and headers["x-upsert"] == "false"
+        with lock:
+            sent.append(path)
+        return 200, b""
+
+    monkeypatch.setattr(M, "_storage", fake)
+    assert M.upload_dir(tmp_path, "2026-10-06/r1", workers=4) == 40
+    assert sorted(sent) == sorted({f"object/analogy-v16/2026-10-06/r1/{k}/{i}.json.gz"
+                                    for k in ("facts", "similar") for i in range(20)})
+
+
+def test_upload_dir_raises_when_one_fails(tmp_path, monkeypatch):
+    import pytest
+
+    (tmp_path / "a.json.gz").write_bytes(b"x")
+    (tmp_path / "b.json.gz").write_bytes(b"x")
+
+    def fake(method, path, body=None, headers=None):
+        if path.endswith("b.json.gz"):
+            raise RuntimeError("HTTP 409")
+        return 200, b""
+
+    monkeypatch.setattr(M, "_storage", fake)
+    with pytest.raises(RuntimeError, match="409"):
+        M.upload_dir(tmp_path, "p", workers=2)
+
+
+def test_late_for():
+    from datetime import datetime, timedelta
+    now = datetime(2026, 10, 6, 9, 49, tzinfo=M.JST)
+    assert M.late_for(now - timedelta(minutes=1), now)
+    assert not M.late_for(now + timedelta(minutes=1), now)
+    assert not M.late_for(None, now)
