@@ -7,6 +7,8 @@
  *   (c) 出走表が12レースそろわなければ、例外で止める
  *   (d) --apply --cancelled: 書いた後に、全レースへ中止の確定（cancellation_status='confirmed'）を立てる。予想が書かれていれば例外
  *   (e) 引数の検査
+ *   (f) --partial: races が途中で欠けた会場日は、無いレース番号だけを書く（既存のレースは書き込みに渡さない）。
+ *       --partial なしは従来どおり書かない。12レースそろった会場日は --partial でも書かない（BOA-380）
  */
 import {
   backfillMissingVenueDay,
@@ -65,12 +67,14 @@ const writer = (client, { withPredictions = false } = {}) => {
   const calls = [];
   const fn = async (venues) => {
     calls.push(venues.map((v) => v.placeCd));
+    fn.raceNos.push(...venues.map((v) => v.races.map((r) => r.raceNo)));
     for (const v of venues)
       for (const r of v.races) {
         client.db.races.push({
           race_id: raceIdOf(v.placeCd, r.raceNo),
           race_date: DATE,
           venue_code: v.placeCd,
+          race_number: r.raceNo,
           cancellation_status: null,
         });
         if (withPredictions)
@@ -80,6 +84,7 @@ const writer = (client, { withPredictions = false } = {}) => {
       }
   };
   fn.calls = calls;
+  fn.raceNos = [];
   return fn;
 };
 const quiet = () => {};
@@ -198,9 +203,74 @@ const quiet = () => {};
   );
 }
 
+// (f) --partial
+{
+  const existing = (venueCode, nos) =>
+    nos.map((n) => ({
+      race_id: raceIdOf(venueCode, n),
+      race_date: DATE,
+      venue_code: venueCode,
+      race_number: n,
+      cancellation_status: null,
+    }));
+  const seed = () => [
+    ...existing(8, [1, 2, 3, 4, 5, 6, 7, 8]),
+    ...existing(9, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+  ];
+  const client = fakeClient({ races: seed() });
+  const w = writer(client);
+  const res = await backfillMissingVenueDay(
+    {
+      date: DATE,
+      venues: [8, 9],
+      apply: true,
+      cancelled: false,
+      partial: true,
+    },
+    {
+      client,
+      scrapeVenue: async (d, c) => venue(c),
+      writeVenues: w,
+      log: quiet,
+    },
+  );
+  const day8 = client.db.races.filter((r) => r.venue_code === 8);
+  check(
+    "(f) --partial: 常滑は 9〜12R だけを書き、12レースそろう。12レースある津は書かない",
+    show(w.raceNos) === "[[9,10,11,12]]" &&
+      day8.length === 12 &&
+      new Set(day8.map((r) => r.race_id)).size === 12 &&
+      res.written.length === 4 &&
+      res.races === 4 &&
+      res.entries === 24 &&
+      res.skipped.length === 1 &&
+      res.skipped[0].venue === 9,
+    show({ raceNos: w.raceNos, res }),
+  );
+  const client2 = fakeClient({ races: seed() });
+  const w2 = writer(client2);
+  const res2 = await backfillMissingVenueDay(
+    { date: DATE, venues: [8], apply: true, cancelled: false },
+    {
+      client: client2,
+      scrapeVenue: async (d, c) => venue(c),
+      writeVenues: w2,
+      log: quiet,
+    },
+  );
+  check(
+    "(f) --partial なし: 途中で欠けた会場日も書かない（従来の守り）",
+    w2.calls.length === 0 &&
+      res2.skipped.length === 1 &&
+      /--partial/.test(res2.skipped[0].reason),
+    show(res2),
+  );
+}
+
 // (e) 引数
 {
   const ok = parseArgs(["--date=2026-06-03", "--venues=3,7", "--cancelled"]);
+  const partial = parseArgs(["--date=2026-06-03", "--venues=8", "--partial"]);
   let bad = 0;
   for (const argv of [
     ["--venues=3"],
@@ -219,6 +289,8 @@ const quiet = () => {};
       show(ok.venues) === "[3,7]" &&
       ok.cancelled === true &&
       ok.apply === false &&
+      ok.partial === false &&
+      partial.partial === true &&
       bad === 3,
     show(ok),
   );

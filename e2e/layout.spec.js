@@ -1,5 +1,6 @@
 import { test, expect, e2eTodayJST, fetchRecorded } from "./fixtures.js";
 import { contribution } from "./analogy-contribution-fixture.js";
+import { ANALOGY_V16_RACE, routeAnalogyV16 } from "./analogy-v16-fixture.js";
 
 /**
  * 画面幅ごとのレイアウト崩れを機械的に検知する。
@@ -773,41 +774,40 @@ test.describe("レイアウト: 管理画面2つのタブの指定が混ざら�
 });
 
 /**
- * AI予想タブのアナロジー・ファインダー節（BOA-271 FR-1 寄与度）。上の PAGES はレース詳細を既定タブのまま
- * 測るため、節は検査の対象外。寄与度 API だけを固定値に差し替え（本番のテーブルに依存しない）、
- * 艇番比較の表とテーマの内訳を開いた状態で横スクロールとグリッドを見る
+ * AI予想タブのアナロジー・ファインダー節（BOA-271 v16、screens「デザイントークンと CSS」）。上の PAGES はレース詳細を
+ * 既定タブのまま測るため、節は検査の対象外。facts・similar・scenario の API を例のレースの固定の応答に差し替え
+ * （e2e/analogy-v16-fixture.js）、AIの見立ての寄与度 API も固定値にして、3タブそれぞれで折りたたみを開いた状態の
+ * 横スクロールとグリッドを見る（全33項目の表・③の表は 375px で列を詰めて折り返す約束）
  */
-test.describe("レイアウト: AI予想タブのアナロジー・ファインダー節", () => {
-  const RACE = "/race/2026-09-26-08-02";
-
-  test("艇番比較と内訳を開いても横スクロールが出ず、グリッドの幅も無駄にならない", async ({
-    page,
-  }) => {
-    // 公開までは機能フラグで隠している。内部確認の印を立てて測る
-    await page.addInitScript(() =>
-      localStorage.setItem("boatai-user:analogy-finder-preview", "1"),
-    );
+test.describe("レイアウト: AI予想タブのアナロジー・ファインダー節（3タブ）", () => {
+  const openSection = async (page) => {
+    await routeAnalogyV16(page);
     await page.route("**/api/analogy/contribution*", (route) => {
       const u = new URL(route.request().url());
       return route.fulfill({
         json: contribution({
-          venue: Number(u.searchParams.get("venue")),
-          grade: u.searchParams.get("grade"),
-          round: u.searchParams.get("round"),
+          venue: 0,
+          grade: "all",
+          round: "all",
           target: Number(u.searchParams.get("target")),
         }),
       });
     });
-    await gotoAndSettle(page, RACE);
+    await gotoAndSettle(page, `/race/${ANALOGY_V16_RACE}`);
     await page.click('[role="tab"]:has-text("AI予想")');
     const section = page.getByRole("region", {
-      name: "アナロジー・ファインダー",
+      name: /龍神ソナー/,
     });
     await expect(section).toBeVisible({ timeout: 30000 });
-    await section.getByRole("checkbox", { name: "艇番で比較" }).check();
-    await section.getByRole("button", { name: /選手・基礎成績/ }).click();
-    await expect(section.getByRole("table")).toBeVisible();
-
+    return section;
+  };
+  const openAllDetails = (section) =>
+    section.locator("details").evaluateAll((ds) => {
+      ds.forEach((d) => {
+        d.open = true;
+      });
+    });
+  const expectFits = async (page) => {
     const overflow = await page.evaluate(
       () =>
         document.documentElement.scrollWidth -
@@ -815,6 +815,40 @@ test.describe("レイアウト: AI予想タブのアナロジー・ファイン�
     );
     expect(overflow).toBeLessThanOrEqual(OVERFLOW_TOLERANCE_PX);
     expectNoWastedGrids(await inspectGrids(page));
+  };
+
+  test("差がつく材料: 比べる艇と折りたたみを開いても横スクロールが出ない", async ({
+    page,
+  }) => {
+    const section = await openSection(page);
+    await expect(section.getByRole("article").first()).toBeVisible();
+    await openAllDetails(section);
+    await expectFits(page);
+  });
+
+  test("類似レース: 全33項目の表と1件ずつの比較を開いても横スクロールが出ない", async ({
+    page,
+  }) => {
+    const section = await openSection(page);
+    await section.getByRole("tab", { name: "類似レース" }).click();
+    await expect(section.getByRole("slider")).toBeVisible();
+    await openAllDetails(section);
+    await section
+      .getByRole("button", { name: /同じ\d+・近い\d+・違う\d+/ })
+      .first()
+      .click();
+    await expectFits(page);
+  });
+
+  test("展開シナリオ: 形を選んで③の表を出しても横スクロールが出ない", async ({
+    page,
+  }) => {
+    const section = await openSection(page);
+    await section.getByRole("tab", { name: "展開シナリオ" }).click();
+    await section.getByRole("button", { name: /^カド受け凹み/ }).click();
+    await expect(section.getByRole("table").last()).toBeVisible();
+    await openAllDetails(section);
+    await expectFits(page);
   });
 });
 

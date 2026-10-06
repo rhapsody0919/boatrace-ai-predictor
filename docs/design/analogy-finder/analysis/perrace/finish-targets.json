@@ -1,0 +1,2808 @@
+{
+ "note": "探索的分析（事前登録なし）。記述のみで、仮説検定の結論としては使わない",
+ "load_start": [
+  8.98876953125,
+  10.31396484375,
+  9.26806640625
+ ],
+ "threads": 6,
+ "lightgbm": "4.6.0",
+ "data": {
+  "boats_pkl": "/Users/terukina/boatrace-ai-predictor/.claude/worktrees/recursing-poincare-93292f/data/ml/analogy/boats.pkl",
+  "boats_pkl_mtime": "2026-10-01 17:05:59",
+  "rows_complete_races": 2457528,
+  "max_race_date": "2026-10-01",
+  "scale": "縮小学習（ablate.py と同じ）。寄与度は test から等間隔 5000R、e は 1000R、対数損失は test 全レース",
+  "boats_pkl_md5": "ff3292ea95ae0053ad833b2268895187"
+ },
+ "settings": {
+  "params": {
+   "objective": "binary",
+   "learning_rate": 0.08,
+   "num_leaves": 31,
+   "min_data_in_leaf": 500,
+   "feature_fraction": 0.8,
+   "bagging_fraction": 0.8,
+   "bagging_freq": 1,
+   "lambda_l2": 1.0,
+   "verbosity": -1
+  },
+  "rounds": {
+   "win": 250,
+   "top2": 250,
+   "top3": 330
+  },
+  "seed_main": 0,
+  "seed_noise_floor": 1,
+  "stages": {
+   "racecard": 36,
+   "exhib": 44
+  },
+  "live_features": [
+   "exh_time",
+   "exh_time_diff",
+   "exh_time_rank",
+   "weather_code",
+   "wind_x",
+   "wind_y",
+   "wind_speed",
+   "wave_height"
+  ]
+ },
+ "periods": {
+  "fit": [
+   "2025-06-01",
+   "2025-11-02",
+   23403
+  ],
+  "temp": [
+   "2025-11-03",
+   "2025-12-02",
+   3825
+  ],
+  "test": [
+   "2026-04-01",
+   "2026-09-30",
+   28185
+  ]
+ },
+ "temperature_win": {
+  "racecard_s0": 0.745368125682678,
+  "racecard_s1": 0.742283786537669,
+  "exhib_s0": 0.7453869962395406,
+  "exhib_s1": 0.740286943829263
+ },
+ "a": {
+  "prob_sum_per_race": {
+   "racecard_win": {
+    "mean": 0.9779,
+    "sd": 0.1205,
+    "p5": 0.7838,
+    "p95": 1.178,
+    "min": 0.5391,
+    "max": 1.6582,
+    "theory": 1,
+    "mean_abs_dev_from_theory": 0.0951
+   },
+   "racecard_top2": {
+    "mean": 1.9717,
+    "sd": 0.1529,
+    "p5": 1.7295,
+    "p95": 2.2305,
+    "min": 1.364,
+    "max": 2.765,
+    "theory": 2,
+    "mean_abs_dev_from_theory": 0.1241
+   },
+   "racecard_top3": {
+    "mean": 2.9673,
+    "sd": 0.17,
+    "p5": 2.6901,
+    "p95": 3.2463,
+    "min": 2.2489,
+    "max": 3.6945,
+    "theory": 3,
+    "mean_abs_dev_from_theory": 0.137
+   },
+   "exhib_win": {
+    "mean": 0.9762,
+    "sd": 0.1251,
+    "p5": 0.7704,
+    "p95": 1.1851,
+    "min": 0.5061,
+    "max": 1.6265,
+    "theory": 1,
+    "mean_abs_dev_from_theory": 0.0988
+   },
+   "exhib_top2": {
+    "mean": 1.9716,
+    "sd": 0.1573,
+    "p5": 1.7198,
+    "p95": 2.235,
+    "min": 1.3838,
+    "max": 2.7359,
+    "theory": 2,
+    "mean_abs_dev_from_theory": 0.1272
+   },
+   "exhib_top3": {
+    "mean": 2.9615,
+    "sd": 0.1709,
+    "p5": 2.6768,
+    "p95": 3.2386,
+    "min": 2.1341,
+    "max": 3.7486,
+    "theory": 3,
+    "mean_abs_dev_from_theory": 0.1386
+   }
+  },
+  "direct_vs_harville": {
+   "racecard_top2": {
+    "mean_abs_diff_per_boat": 0.0567,
+    "p95_abs_diff_per_boat": 0.1563,
+    "corr": 0.9617,
+    "mean_direct_minus_harville_by_boat_number": [
+     -0.101,
+     0.0443,
+     0.0226,
+     -0.0031,
+     0.0013,
+     0.0076
+    ],
+    "harville_sum_check_max_abs_dev": 0.0
+   },
+   "racecard_top3": {
+    "mean_abs_diff_per_boat": 0.0782,
+    "p95_abs_diff_per_boat": 0.1936,
+    "corr": 0.9393,
+    "mean_direct_minus_harville_by_boat_number": [
+     -0.1196,
+     0.0144,
+     -0.0028,
+     -0.0107,
+     0.0261,
+     0.0599
+    ],
+    "harville_sum_check_max_abs_dev": 0.0
+   },
+   "exhib_top2": {
+    "mean_abs_diff_per_boat": 0.0575,
+    "p95_abs_diff_per_boat": 0.1589,
+    "corr": 0.9612,
+    "mean_direct_minus_harville_by_boat_number": [
+     -0.1009,
+     0.0428,
+     0.0221,
+     -0.0013,
+     0.0003,
+     0.0086
+    ],
+    "harville_sum_check_max_abs_dev": 0.0
+   },
+   "exhib_top3": {
+    "mean_abs_diff_per_boat": 0.0781,
+    "p95_abs_diff_per_boat": 0.1947,
+    "corr": 0.9409,
+    "mean_direct_minus_harville_by_boat_number": [
+     -0.1182,
+     0.0127,
+     -0.0039,
+     -0.0103,
+     0.0235,
+     0.0578
+    ],
+    "harville_sum_check_max_abs_dev": 0.0
+   }
+  },
+  "centered_shap_identity_max_abs_err": {
+   "racecard_win_s0": 2.6645352591003757e-15,
+   "racecard_top2_s0": 2.6645352591003757e-15,
+   "racecard_top3_s0": 2.6645352591003757e-15,
+   "racecard_win_s1": 3.552713678800501e-15,
+   "exhib_win_s0": 2.6645352591003757e-15,
+   "exhib_top2_s0": 2.220446049250313e-15,
+   "exhib_top3_s0": 2.6645352591003757e-15,
+   "exhib_win_s1": 2.6645352591003757e-15
+  },
+  "centered_shap_identity_note": "中心化した SHAP の艇ごとの合計 − (生スコア − レース内の生スコアの平均) の最大絶対誤差。log-odds の空間の差であり、確率の差ではない"
+ },
+ "b": {
+  "n_races": 5000,
+  "sample": "test の完全レースから等間隔",
+  "racecard": {
+   "share_mean": {
+    "win_s0": {
+     "venueCourse": 0.3792,
+     "racerRecord": 0.3803,
+     "startExhibition": 0.0626,
+     "machine": 0.0906,
+     "environment": 0.01,
+     "racerProfile": 0.0773
+    },
+    "win_s1": {
+     "venueCourse": 0.3793,
+     "racerRecord": 0.381,
+     "startExhibition": 0.062,
+     "machine": 0.0905,
+     "environment": 0.0093,
+     "racerProfile": 0.0779
+    },
+    "top2_s0": {
+     "venueCourse": 0.3875,
+     "racerRecord": 0.3925,
+     "startExhibition": 0.0661,
+     "machine": 0.0818,
+     "environment": 0.0089,
+     "racerProfile": 0.0633
+    },
+    "top3_s0": {
+     "venueCourse": 0.319,
+     "racerRecord": 0.4534,
+     "startExhibition": 0.0623,
+     "machine": 0.0845,
+     "environment": 0.0104,
+     "racerProfile": 0.0704
+    }
+   },
+   "top1_rate": {
+    "win_s0": {
+     "venueCourse": 0.5092,
+     "racerRecord": 0.4908,
+     "startExhibition": 0.0,
+     "machine": 0.0,
+     "environment": 0.0,
+     "racerProfile": 0.0
+    },
+    "win_s1": {
+     "venueCourse": 0.5078,
+     "racerRecord": 0.4922,
+     "startExhibition": 0.0,
+     "machine": 0.0,
+     "environment": 0.0,
+     "racerProfile": 0.0
+    },
+    "top2_s0": {
+     "venueCourse": 0.484,
+     "racerRecord": 0.516,
+     "startExhibition": 0.0,
+     "machine": 0.0,
+     "environment": 0.0,
+     "racerProfile": 0.0
+    },
+    "top3_s0": {
+     "venueCourse": 0.1422,
+     "racerRecord": 0.8578,
+     "startExhibition": 0.0,
+     "machine": 0.0,
+     "environment": 0.0,
+     "racerProfile": 0.0
+    }
+   },
+   "win_vs_top2": {
+    "mean_diff_b_minus_a": {
+     "venueCourse": 0.0083,
+     "racerRecord": 0.0121,
+     "startExhibition": 0.0035,
+     "machine": -0.0088,
+     "environment": -0.0011,
+     "racerProfile": -0.014
+    },
+    "mean_abs_diff": {
+     "venueCourse": 0.0172,
+     "racerRecord": 0.0219,
+     "startExhibition": 0.0085,
+     "machine": 0.0143,
+     "environment": 0.0027,
+     "racerProfile": 0.0164
+    },
+    "total_variation_mean": 0.0405,
+    "top1_same_rate": 0.9136,
+    "top2_ordered_same_rate": 0.9136,
+    "spearman_median": 0.9429,
+    "spearman_p10": 0.8286,
+    "top1_swap_rate": 0.0864,
+    "top1_swap_combos": {
+     "venueCourse→racerRecord": 279,
+     "racerRecord→venueCourse": 153
+    }
+   },
+   "win_vs_top3": {
+    "mean_diff_b_minus_a": {
+     "venueCourse": -0.0602,
+     "racerRecord": 0.073,
+     "startExhibition": -0.0003,
+     "machine": -0.0061,
+     "environment": 0.0004,
+     "racerProfile": -0.0069
+    },
+    "mean_abs_diff": {
+     "venueCourse": 0.0602,
+     "racerRecord": 0.0732,
+     "startExhibition": 0.0104,
+     "machine": 0.0139,
+     "environment": 0.0029,
+     "racerProfile": 0.0141
+    },
+    "total_variation_mean": 0.0873,
+    "top1_same_rate": 0.6326,
+    "top2_ordered_same_rate": 0.6326,
+    "spearman_median": 0.9429,
+    "spearman_p10": 0.8286,
+    "top1_swap_rate": 0.3674,
+    "top1_swap_combos": {
+     "venueCourse→racerRecord": 1836,
+     "racerRecord→venueCourse": 1
+    }
+   },
+   "noise_floor_win_s0_vs_win_s1": {
+    "mean_diff_b_minus_a": {
+     "venueCourse": 0.0001,
+     "racerRecord": 0.0007,
+     "startExhibition": -0.0006,
+     "machine": -0.0001,
+     "environment": -0.0007,
+     "racerProfile": 0.0006
+    },
+    "mean_abs_diff": {
+     "venueCourse": 0.0099,
+     "racerRecord": 0.0113,
+     "startExhibition": 0.0064,
+     "machine": 0.008,
+     "environment": 0.0023,
+     "racerProfile": 0.0085
+    },
+    "total_variation_mean": 0.0232,
+    "top1_same_rate": 0.9442,
+    "top2_ordered_same_rate": 0.9442,
+    "spearman_median": 1.0,
+    "spearman_p10": 0.9429,
+    "top1_swap_rate": 0.0558,
+    "top1_swap_combos": {
+     "venueCourse→racerRecord": 143,
+     "racerRecord→venueCourse": 136
+    }
+   },
+   "boat_total_sign_flip": {
+    "win_vs_top2": {
+     "rate_all_boats": 0.0856,
+     "rate_both_abs_ge_0.1": 0.0418,
+     "n_both_abs_ge_0.1": 26647,
+     "a_neg_b_pos_rate": 0.0595,
+     "a_pos_b_neg_rate": 0.0261
+    },
+    "win_vs_top3": {
+     "rate_all_boats": 0.1,
+     "rate_both_abs_ge_0.1": 0.0558,
+     "n_both_abs_ge_0.1": 26445,
+     "a_neg_b_pos_rate": 0.0687,
+     "a_pos_b_neg_rate": 0.0313
+    },
+    "noise_floor_win_s0_vs_s1": {
+     "rate_all_boats": 0.0542,
+     "rate_both_abs_ge_0.1": 0.0153,
+     "n_both_abs_ge_0.1": 26888,
+     "a_neg_b_pos_rate": 0.0272,
+     "a_pos_b_neg_rate": 0.027
+    }
+   },
+   "boat_theme_sign_flip_rate_abs_ge_0.05": {
+    "win_vs_top3": {
+     "venueCourse": 0.0558,
+     "racerRecord": 0.0387,
+     "startExhibition": 0.0327,
+     "machine": 0.0262,
+     "environment": 0.0043,
+     "racerProfile": 0.1232
+    },
+    "noise_floor_win_s0_vs_s1": {
+     "venueCourse": 0.0068,
+     "racerRecord": 0.0095,
+     "startExhibition": 0.0011,
+     "machine": 0.0056,
+     "environment": 0.0056,
+     "racerProfile": 0.0178
+    }
+   }
+  },
+  "exhib": {
+   "share_mean": {
+    "win_s0": {
+     "venueCourse": 0.3564,
+     "racerRecord": 0.343,
+     "startExhibition": 0.1468,
+     "machine": 0.0742,
+     "environment": 0.0205,
+     "racerProfile": 0.0591
+    },
+    "win_s1": {
+     "venueCourse": 0.3532,
+     "racerRecord": 0.3459,
+     "startExhibition": 0.1456,
+     "machine": 0.073,
+     "environment": 0.0213,
+     "racerProfile": 0.0609
+    },
+    "top2_s0": {
+     "venueCourse": 0.3626,
+     "racerRecord": 0.3637,
+     "startExhibition": 0.1371,
+     "machine": 0.0706,
+     "environment": 0.018,
+     "racerProfile": 0.0481
+    },
+    "top3_s0": {
+     "venueCourse": 0.2968,
+     "racerRecord": 0.4215,
+     "startExhibition": 0.1325,
+     "machine": 0.0742,
+     "environment": 0.0197,
+     "racerProfile": 0.0553
+    }
+   },
+   "top1_rate": {
+    "win_s0": {
+     "venueCourse": 0.552,
+     "racerRecord": 0.448,
+     "startExhibition": 0.0,
+     "machine": 0.0,
+     "environment": 0.0,
+     "racerProfile": 0.0
+    },
+    "win_s1": {
+     "venueCourse": 0.5294,
+     "racerRecord": 0.4704,
+     "startExhibition": 0.0002,
+     "machine": 0.0,
+     "environment": 0.0,
+     "racerProfile": 0.0
+    },
+    "top2_s0": {
+     "venueCourse": 0.4924,
+     "racerRecord": 0.5076,
+     "startExhibition": 0.0,
+     "machine": 0.0,
+     "environment": 0.0,
+     "racerProfile": 0.0
+    },
+    "top3_s0": {
+     "venueCourse": 0.1584,
+     "racerRecord": 0.8416,
+     "startExhibition": 0.0,
+     "machine": 0.0,
+     "environment": 0.0,
+     "racerProfile": 0.0
+    }
+   },
+   "win_vs_top2": {
+    "mean_diff_b_minus_a": {
+     "venueCourse": 0.0062,
+     "racerRecord": 0.0207,
+     "startExhibition": -0.0097,
+     "machine": -0.0036,
+     "environment": -0.0025,
+     "racerProfile": -0.011
+    },
+    "mean_abs_diff": {
+     "venueCourse": 0.0162,
+     "racerRecord": 0.025,
+     "startExhibition": 0.0141,
+     "machine": 0.0116,
+     "environment": 0.0041,
+     "racerProfile": 0.0134
+    },
+    "total_variation_mean": 0.0422,
+    "top1_same_rate": 0.8992,
+    "top2_ordered_same_rate": 0.8972,
+    "spearman_median": 1.0,
+    "spearman_p10": 0.9429,
+    "top1_swap_rate": 0.1008,
+    "top1_swap_combos": {
+     "venueCourse→racerRecord": 401,
+     "racerRecord→venueCourse": 103
+    }
+   },
+   "win_vs_top3": {
+    "mean_diff_b_minus_a": {
+     "venueCourse": -0.0596,
+     "racerRecord": 0.0785,
+     "startExhibition": -0.0143,
+     "machine": 0.0,
+     "environment": -0.0008,
+     "racerProfile": -0.0038
+    },
+    "mean_abs_diff": {
+     "venueCourse": 0.0596,
+     "racerRecord": 0.0786,
+     "startExhibition": 0.018,
+     "machine": 0.0115,
+     "environment": 0.0042,
+     "racerProfile": 0.0118
+    },
+    "total_variation_mean": 0.0918,
+    "top1_same_rate": 0.6064,
+    "top2_ordered_same_rate": 0.6046,
+    "spearman_median": 0.9429,
+    "spearman_p10": 0.8857,
+    "top1_swap_rate": 0.3936,
+    "top1_swap_combos": {
+     "venueCourse→racerRecord": 1968
+    }
+   },
+   "noise_floor_win_s0_vs_win_s1": {
+    "mean_diff_b_minus_a": {
+     "venueCourse": -0.0032,
+     "racerRecord": 0.0029,
+     "startExhibition": -0.0011,
+     "machine": -0.0012,
+     "environment": 0.0008,
+     "racerProfile": 0.0018
+    },
+    "mean_abs_diff": {
+     "venueCourse": 0.0093,
+     "racerRecord": 0.0111,
+     "startExhibition": 0.0089,
+     "machine": 0.0071,
+     "environment": 0.0034,
+     "racerProfile": 0.0077
+    },
+    "total_variation_mean": 0.0238,
+    "top1_same_rate": 0.9464,
+    "top2_ordered_same_rate": 0.9442,
+    "spearman_median": 1.0,
+    "spearman_p10": 0.9429,
+    "top1_swap_rate": 0.0536,
+    "top1_swap_combos": {
+     "venueCourse→racerRecord": 190,
+     "racerRecord→venueCourse": 77,
+     "racerRecord→startExhibition": 1
+    }
+   },
+   "boat_total_sign_flip": {
+    "win_vs_top2": {
+     "rate_all_boats": 0.0846,
+     "rate_both_abs_ge_0.1": 0.0417,
+     "n_both_abs_ge_0.1": 26673,
+     "a_neg_b_pos_rate": 0.0581,
+     "a_pos_b_neg_rate": 0.0265
+    },
+    "win_vs_top3": {
+     "rate_all_boats": 0.0994,
+     "rate_both_abs_ge_0.1": 0.0554,
+     "n_both_abs_ge_0.1": 26607,
+     "a_neg_b_pos_rate": 0.0675,
+     "a_pos_b_neg_rate": 0.0319
+    },
+    "noise_floor_win_s0_vs_s1": {
+     "rate_all_boats": 0.0568,
+     "rate_both_abs_ge_0.1": 0.0178,
+     "n_both_abs_ge_0.1": 26962,
+     "a_neg_b_pos_rate": 0.0284,
+     "a_pos_b_neg_rate": 0.0284
+    }
+   },
+   "boat_theme_sign_flip_rate_abs_ge_0.05": {
+    "win_vs_top3": {
+     "venueCourse": 0.0556,
+     "racerRecord": 0.0343,
+     "startExhibition": 0.0269,
+     "machine": 0.0297,
+     "environment": 0.044,
+     "racerProfile": 0.1495
+    },
+    "noise_floor_win_s0_vs_s1": {
+     "venueCourse": 0.0085,
+     "racerRecord": 0.0089,
+     "startExhibition": 0.0058,
+     "machine": 0.0036,
+     "environment": 0.0167,
+     "racerProfile": 0.0254
+    }
+   }
+  },
+  "swap_examples_exhib_win_vs_top3": [
+   {
+    "race_id": 202609151012,
+    "race_date": "2026-09-15",
+    "venue": "10 三国",
+    "race_number": 12,
+    "grade": "ippan",
+    "boats": [
+     {
+      "boat_number": 1,
+      "class": "A1",
+      "nat_win": 6.46,
+      "finish_rank": 1
+     },
+     {
+      "boat_number": 2,
+      "class": "A1",
+      "nat_win": 6.29,
+      "finish_rank": 2
+     },
+     {
+      "boat_number": 3,
+      "class": "B1",
+      "nat_win": 5.23,
+      "finish_rank": 6
+     },
+     {
+      "boat_number": 4,
+      "class": "B1",
+      "nat_win": 4.39,
+      "finish_rank": 4
+     },
+     {
+      "boat_number": 5,
+      "class": "A1",
+      "nat_win": 6.76,
+      "finish_rank": 3
+     },
+     {
+      "boat_number": 6,
+      "class": "A1",
+      "nat_win": 6.42,
+      "finish_rank": 5
+     }
+    ],
+    "win_top3_themes": [
+     [
+      "venueCourse",
+      0.454
+     ],
+     [
+      "racerRecord",
+      0.289
+     ],
+     [
+      "startExhibition",
+      0.115
+     ]
+    ],
+    "top3_top3_themes": [
+     [
+      "racerRecord",
+      0.439
+     ],
+     [
+      "venueCourse",
+      0.309
+     ],
+     [
+      "startExhibition",
+      0.129
+     ]
+    ],
+    "win_boat_total_logodds_diff": [
+     2.908,
+     0.341,
+     -0.453,
+     -1.489,
+     0.17,
+     -1.478
+    ],
+    "top3_boat_total_logodds_diff": [
+     1.832,
+     0.129,
+     -0.685,
+     -1.482,
+     0.187,
+     0.019
+    ],
+    "win_boat_by_theme": {
+     "venueCourse": [
+      2.399,
+      0.044,
+      0.26,
+      -0.201,
+      -0.602,
+      -1.9
+     ],
+     "racerRecord": [
+      0.368,
+      0.079,
+      -0.403,
+      -0.727,
+      0.639,
+      0.045
+     ],
+     "startExhibition": [
+      0.124,
+      0.021,
+      -0.2,
+      -0.291,
+      0.058,
+      0.288
+     ],
+     "machine": [
+      -0.01,
+      0.097,
+      -0.08,
+      -0.081,
+      -0.086,
+      0.159
+     ],
+     "environment": [
+      0.053,
+      0.06,
+      -0.008,
+      -0.05,
+      -0.035,
+      -0.02
+     ],
+     "racerProfile": [
+      -0.027,
+      0.04,
+      -0.021,
+      -0.138,
+      0.195,
+      -0.049
+     ]
+    },
+    "top3_boat_by_theme": {
+     "venueCourse": [
+      1.262,
+      0.183,
+      0.208,
+      -0.153,
+      -0.529,
+      -0.972
+     ],
+     "racerRecord": [
+      0.372,
+      0.037,
+      -0.509,
+      -1.054,
+      0.687,
+      0.467
+     ],
+     "startExhibition": [
+      0.148,
+      0.04,
+      -0.296,
+      -0.243,
+      0.094,
+      0.257
+     ],
+     "machine": [
+      0.055,
+      -0.004,
+      -0.003,
+      -0.083,
+      -0.076,
+      0.11
+     ],
+     "environment": [
+      -0.009,
+      -0.006,
+      -0.0,
+      0.003,
+      -0.024,
+      0.036
+     ],
+     "racerProfile": [
+      0.003,
+      -0.122,
+      -0.086,
+      0.049,
+      0.035,
+      0.122
+     ]
+    },
+    "p_win_softmax": [
+     0.697,
+     0.103,
+     0.057,
+     0.026,
+     0.091,
+     0.027
+    ],
+    "p_top3_direct": [
+     0.85,
+     0.507,
+     0.313,
+     0.171,
+     0.522,
+     0.48
+    ]
+   },
+   {
+    "race_id": 202608121604,
+    "race_date": "2026-08-12",
+    "venue": "16 児島",
+    "race_number": 4,
+    "grade": "ippan",
+    "boats": [
+     {
+      "boat_number": 1,
+      "class": "A2",
+      "nat_win": 5.77,
+      "finish_rank": 4
+     },
+     {
+      "boat_number": 2,
+      "class": "B1",
+      "nat_win": 5.35,
+      "finish_rank": 5
+     },
+     {
+      "boat_number": 3,
+      "class": "B1",
+      "nat_win": 5.41,
+      "finish_rank": 2
+     },
+     {
+      "boat_number": 4,
+      "class": "A2",
+      "nat_win": 5.57,
+      "finish_rank": 1
+     },
+     {
+      "boat_number": 5,
+      "class": "A1",
+      "nat_win": 6.23,
+      "finish_rank": null
+     },
+     {
+      "boat_number": 6,
+      "class": "B1",
+      "nat_win": 2.86,
+      "finish_rank": 3
+     }
+    ],
+    "win_top3_themes": [
+     [
+      "venueCourse",
+      0.44
+     ],
+     [
+      "racerRecord",
+      0.304
+     ],
+     [
+      "startExhibition",
+      0.084
+     ]
+    ],
+    "top3_top3_themes": [
+     [
+      "racerRecord",
+      0.439
+     ],
+     [
+      "venueCourse",
+      0.313
+     ],
+     [
+      "racerProfile",
+      0.086
+     ]
+    ],
+    "win_boat_total_logodds_diff": [
+     2.706,
+     -0.534,
+     -0.235,
+     0.341,
+     -0.274,
+     -2.005
+    ],
+    "top3_boat_total_logodds_diff": [
+     1.688,
+     -0.233,
+     -0.128,
+     0.211,
+     0.13,
+     -1.668
+    ],
+    "win_boat_by_theme": {
+     "venueCourse": [
+      2.407,
+      -0.018,
+      0.076,
+      -0.249,
+      -0.853,
+      -1.362
+     ],
+     "racerRecord": [
+      0.161,
+      -0.168,
+      -0.001,
+      0.199,
+      0.969,
+      -1.16
+     ],
+     "startExhibition": [
+      0.086,
+      0.021,
+      -0.135,
+      0.138,
+      -0.231,
+      0.121
+     ],
+     "machine": [
+      -0.057,
+      -0.26,
+      -0.01,
+      0.224,
+      0.035,
+      0.069
+     ],
+     "environment": [
+      0.038,
+      -0.009,
+      -0.009,
+      -0.017,
+      -0.007,
+      0.003
+     ],
+     "racerProfile": [
+      0.072,
+      -0.1,
+      -0.155,
+      0.045,
+      -0.187,
+      0.325
+     ]
+    },
+    "top3_boat_by_theme": {
+     "venueCourse": [
+      1.466,
+      0.13,
+      0.089,
+      -0.234,
+      -0.631,
+      -0.818
+     ],
+     "racerRecord": [
+      0.224,
+      -0.123,
+      0.012,
+      0.423,
+      0.859,
+      -1.395
+     ],
+     "startExhibition": [
+      0.025,
+      0.005,
+      -0.164,
+      0.028,
+      -0.068,
+      0.174
+     ],
+     "machine": [
+      -0.006,
+      -0.195,
+      0.053,
+      -0.001,
+      0.097,
+      0.053
+     ],
+     "environment": [
+      0.031,
+      -0.004,
+      -0.003,
+      0.015,
+      -0.046,
+      0.006
+     ],
+     "racerProfile": [
+      -0.052,
+      -0.046,
+      -0.115,
+      -0.019,
+      -0.081,
+      0.312
+     ]
+    },
+    "p_win_softmax": [
+     0.662,
+     0.059,
+     0.074,
+     0.114,
+     0.072,
+     0.02
+    ],
+    "p_top3_direct": [
+     0.854,
+     0.462,
+     0.488,
+     0.572,
+     0.552,
+     0.17
+    ]
+   },
+   {
+    "race_id": 202607041203,
+    "race_date": "2026-07-04",
+    "venue": "12 住之江",
+    "race_number": 3,
+    "grade": "ippan",
+    "boats": [
+     {
+      "boat_number": 1,
+      "class": "B1",
+      "nat_win": 5.0,
+      "finish_rank": 1
+     },
+     {
+      "boat_number": 2,
+      "class": "A2",
+      "nat_win": 6.26,
+      "finish_rank": 3
+     },
+     {
+      "boat_number": 3,
+      "class": "A1",
+      "nat_win": 6.88,
+      "finish_rank": 2
+     },
+     {
+      "boat_number": 4,
+      "class": "B1",
+      "nat_win": 3.53,
+      "finish_rank": 5
+     },
+     {
+      "boat_number": 5,
+      "class": "B1",
+      "nat_win": 5.24,
+      "finish_rank": 4
+     },
+     {
+      "boat_number": 6,
+      "class": "B1",
+      "nat_win": 5.13,
+      "finish_rank": 6
+     }
+    ],
+    "win_top3_themes": [
+     [
+      "venueCourse",
+      0.425
+     ],
+     [
+      "racerRecord",
+      0.307
+     ],
+     [
+      "startExhibition",
+      0.107
+     ]
+    ],
+    "top3_top3_themes": [
+     [
+      "racerRecord",
+      0.439
+     ],
+     [
+      "venueCourse",
+      0.305
+     ],
+     [
+      "machine",
+      0.1
+     ]
+    ],
+    "win_boat_total_logodds_diff": [
+     1.976,
+     0.43,
+     0.736,
+     -0.481,
+     -0.359,
+     -2.302
+    ],
+    "top3_boat_total_logodds_diff": [
+     0.963,
+     0.6,
+     0.996,
+     -0.795,
+     -0.377,
+     -1.387
+    ],
+    "win_boat_by_theme": {
+     "venueCourse": [
+      2.131,
+      0.228,
+      -0.005,
+      -0.047,
+      -0.553,
+      -1.754
+     ],
+     "racerRecord": [
+      -0.186,
+      0.49,
+      0.834,
+      -0.779,
+      -0.011,
+      -0.349
+     ],
+     "startExhibition": [
+      0.082,
+      -0.084,
+      -0.082,
+      -0.108,
+      0.429,
+      -0.236
+     ],
+     "machine": [
+      -0.005,
+      -0.203,
+      0.034,
+      0.433,
+      -0.157,
+      -0.102
+     ],
+     "environment": [
+      -0.017,
+      0.036,
+      -0.007,
+      -0.011,
+      0.001,
+      -0.001
+     ],
+     "racerProfile": [
+      -0.028,
+      -0.037,
+      -0.036,
+      0.031,
+      -0.069,
+      0.139
+     ]
+    },
+    "top3_boat_by_theme": {
+     "venueCourse": [
+      1.214,
+      0.296,
+      0.081,
+      -0.155,
+      -0.514,
+      -0.922
+     ],
+     "racerRecord": [
+      -0.144,
+      0.472,
+      0.904,
+      -0.927,
+      0.041,
+      -0.346
+     ],
+     "startExhibition": [
+      0.112,
+      -0.137,
+      -0.092,
+      -0.088,
+      0.344,
+      -0.14
+     ],
+     "machine": [
+      -0.091,
+      -0.096,
+      0.11,
+      0.367,
+      -0.197,
+      -0.092
+     ],
+     "environment": [
+      -0.037,
+      0.029,
+      0.018,
+      -0.015,
+      0.009,
+      -0.004
+     ],
+     "racerProfile": [
+      -0.091,
+      0.036,
+      -0.026,
+      0.024,
+      -0.06,
+      0.116
+     ]
+    },
+    "p_win_softmax": [
+     0.479,
+     0.151,
+     0.19,
+     0.077,
+     0.084,
+     0.02
+    ],
+    "p_top3_direct": [
+     0.7,
+     0.619,
+     0.707,
+     0.287,
+     0.38,
+     0.182
+    ]
+   }
+  ],
+  "swap_examples_note": "値は中心化した SHAP（log-odds、レース内6艇の平均との差）。正＝押し上げ、負＝押し下げ。選び方: 1位のテーマが入れ替わり、両方のモデルで差（マージン）が大きい順、組み合わせが重ならないように"
+ },
+ "c": {
+  "n_races": 28185,
+  "baseline": "metrics.baseline_topk（会場×1号艇級別×艇番の過去率。学習は fit+temp の期間）",
+  "top2": {
+   "baseline": {
+    "logloss_per_boat": 0.54147,
+    "calibration": {
+     "deciles": [
+      {
+       "q": 0,
+       "pred": 0.0938,
+       "actual": 0.0949,
+       "n": 17201
+      },
+      {
+       "q": 1,
+       "pred": 0.14,
+       "actual": 0.1386,
+       "n": 16974
+      },
+      {
+       "q": 2,
+       "pred": 0.1812,
+       "actual": 0.1874,
+       "n": 16637
+      },
+      {
+       "q": 3,
+       "pred": 0.2323,
+       "actual": 0.2246,
+       "n": 17316
+      },
+      {
+       "q": 4,
+       "pred": 0.2821,
+       "actual": 0.2866,
+       "n": 16491
+      },
+      {
+       "q": 5,
+       "pred": 0.3204,
+       "actual": 0.3226,
+       "n": 17173
+      },
+      {
+       "q": 6,
+       "pred": 0.3544,
+       "actual": 0.3506,
+       "n": 16767
+      },
+      {
+       "q": 7,
+       "pred": 0.3956,
+       "actual": 0.3882,
+       "n": 16759
+      },
+      {
+       "q": 8,
+       "pred": 0.5422,
+       "actual": 0.5317,
+       "n": 17148
+      },
+      {
+       "q": 9,
+       "pred": 0.8004,
+       "actual": 0.8178,
+       "n": 16644
+      }
+     ],
+     "max_abs_gap": 0.0174
+    }
+   },
+   "racecard": {
+    "logloss_per_boat_direct": 0.5009,
+    "logloss_per_boat_harville": 0.50966,
+    "paired_race_direct_minus_baseline": {
+     "mean": -0.24343,
+     "ci95": [
+      -0.25403,
+      -0.23347
+     ],
+     "n": 28185,
+     "n_days": 183
+    },
+    "paired_race_harville_minus_baseline": {
+     "mean": -0.19085,
+     "ci95": [
+      -0.20246,
+      -0.17978
+     ],
+     "n": 28185,
+     "n_days": 183
+    },
+    "paired_race_direct_minus_harville": {
+     "mean": -0.05258,
+     "ci95": [
+      -0.05835,
+      -0.04625
+     ],
+     "n": 28185,
+     "n_days": 183
+    },
+    "calibration_direct": {
+     "deciles": [
+      {
+       "q": 0,
+       "pred": 0.0338,
+       "actual": 0.0372,
+       "n": 16911
+      },
+      {
+       "q": 1,
+       "pred": 0.0903,
+       "actual": 0.094,
+       "n": 16911
+      },
+      {
+       "q": 2,
+       "pred": 0.1413,
+       "actual": 0.1448,
+       "n": 16911
+      },
+      {
+       "q": 3,
+       "pred": 0.1912,
+       "actual": 0.1896,
+       "n": 16911
+      },
+      {
+       "q": 4,
+       "pred": 0.2453,
+       "actual": 0.2518,
+       "n": 16911
+      },
+      {
+       "q": 5,
+       "pred": 0.3058,
+       "actual": 0.3152,
+       "n": 16911
+      },
+      {
+       "q": 6,
+       "pred": 0.3773,
+       "actual": 0.3835,
+       "n": 16911
+      },
+      {
+       "q": 7,
+       "pred": 0.4715,
+       "actual": 0.4718,
+       "n": 16911
+      },
+      {
+       "q": 8,
+       "pred": 0.6172,
+       "actual": 0.6181,
+       "n": 16911
+      },
+      {
+       "q": 9,
+       "pred": 0.8125,
+       "actual": 0.8273,
+       "n": 16911
+      }
+     ],
+     "max_abs_gap": 0.0148
+    },
+    "calibration_harville": {
+     "deciles": [
+      {
+       "q": 0,
+       "pred": 0.0401,
+       "actual": 0.0391,
+       "n": 16911
+      },
+      {
+       "q": 1,
+       "pred": 0.088,
+       "actual": 0.0979,
+       "n": 16911
+      },
+      {
+       "q": 2,
+       "pred": 0.1331,
+       "actual": 0.1443,
+       "n": 16911
+      },
+      {
+       "q": 3,
+       "pred": 0.1778,
+       "actual": 0.1993,
+       "n": 16911
+      },
+      {
+       "q": 4,
+       "pred": 0.2256,
+       "actual": 0.2549,
+       "n": 16911
+      },
+      {
+       "q": 5,
+       "pred": 0.2801,
+       "actual": 0.3081,
+       "n": 16911
+      },
+      {
+       "q": 6,
+       "pred": 0.3496,
+       "actual": 0.3735,
+       "n": 16911
+      },
+      {
+       "q": 7,
+       "pred": 0.4571,
+       "actual": 0.4687,
+       "n": 16911
+      },
+      {
+       "q": 8,
+       "pred": 0.6621,
+       "actual": 0.6165,
+       "n": 16911
+      },
+      {
+       "q": 9,
+       "pred": 0.9198,
+       "actual": 0.8308,
+       "n": 16911
+      }
+     ],
+     "max_abs_gap": 0.0889
+    }
+   },
+   "exhib": {
+    "logloss_per_boat_direct": 0.49824,
+    "logloss_per_boat_harville": 0.50576,
+    "paired_race_direct_minus_baseline": {
+     "mean": -0.25935,
+     "ci95": [
+      -0.26967,
+      -0.24927
+     ],
+     "n": 28185,
+     "n_days": 183
+    },
+    "paired_race_harville_minus_baseline": {
+     "mean": -0.21424,
+     "ci95": [
+      -0.22637,
+      -0.20331
+     ],
+     "n": 28185,
+     "n_days": 183
+    },
+    "paired_race_direct_minus_harville": {
+     "mean": -0.0451,
+     "ci95": [
+      -0.05104,
+      -0.03861
+     ],
+     "n": 28185,
+     "n_days": 183
+    },
+    "calibration_direct": {
+     "deciles": [
+      {
+       "q": 0,
+       "pred": 0.0339,
+       "actual": 0.0355,
+       "n": 16911
+      },
+      {
+       "q": 1,
+       "pred": 0.0888,
+       "actual": 0.091,
+       "n": 16911
+      },
+      {
+       "q": 2,
+       "pred": 0.1381,
+       "actual": 0.1394,
+       "n": 16911
+      },
+      {
+       "q": 3,
+       "pred": 0.1884,
+       "actual": 0.1953,
+       "n": 16911
+      },
+      {
+       "q": 4,
+       "pred": 0.2431,
+       "actual": 0.2508,
+       "n": 16911
+      },
+      {
+       "q": 5,
+       "pred": 0.305,
+       "actual": 0.3087,
+       "n": 16911
+      },
+      {
+       "q": 6,
+       "pred": 0.379,
+       "actual": 0.3869,
+       "n": 16911
+      },
+      {
+       "q": 7,
+       "pred": 0.4758,
+       "actual": 0.4704,
+       "n": 16911
+      },
+      {
+       "q": 8,
+       "pred": 0.6215,
+       "actual": 0.6265,
+       "n": 16911
+      },
+      {
+       "q": 9,
+       "pred": 0.8125,
+       "actual": 0.8289,
+       "n": 16911
+      }
+     ],
+     "max_abs_gap": 0.0165
+    },
+    "calibration_harville": {
+     "deciles": [
+      {
+       "q": 0,
+       "pred": 0.0382,
+       "actual": 0.0391,
+       "n": 16911
+      },
+      {
+       "q": 1,
+       "pred": 0.0845,
+       "actual": 0.0925,
+       "n": 16911
+      },
+      {
+       "q": 2,
+       "pred": 0.1293,
+       "actual": 0.1432,
+       "n": 16911
+      },
+      {
+       "q": 3,
+       "pred": 0.1741,
+       "actual": 0.1931,
+       "n": 16911
+      },
+      {
+       "q": 4,
+       "pred": 0.2226,
+       "actual": 0.2495,
+       "n": 16911
+      },
+      {
+       "q": 5,
+       "pred": 0.2801,
+       "actual": 0.3085,
+       "n": 16911
+      },
+      {
+       "q": 6,
+       "pred": 0.3535,
+       "actual": 0.3821,
+       "n": 16911
+      },
+      {
+       "q": 7,
+       "pred": 0.4632,
+       "actual": 0.4711,
+       "n": 16911
+      },
+      {
+       "q": 8,
+       "pred": 0.6672,
+       "actual": 0.6213,
+       "n": 16911
+      },
+      {
+       "q": 9,
+       "pred": 0.9207,
+       "actual": 0.8329,
+       "n": 16911
+      }
+     ],
+     "max_abs_gap": 0.0878
+    }
+   },
+   "paired_race_racecard_minus_exhib_direct": {
+    "mean": 0.01591,
+    "ci95": [
+     0.01274,
+     0.01939
+    ],
+    "n": 28185,
+    "n_days": 183
+   }
+  },
+  "top3": {
+   "baseline": {
+    "logloss_per_boat": 0.62392,
+    "calibration": {
+     "deciles": [
+      {
+       "q": 0,
+       "pred": 0.2358,
+       "actual": 0.2416,
+       "n": 17142
+      },
+      {
+       "q": 1,
+       "pred": 0.3081,
+       "actual": 0.3037,
+       "n": 16766
+      },
+      {
+       "q": 2,
+       "pred": 0.3615,
+       "actual": 0.3624,
+       "n": 16855
+      },
+      {
+       "q": 3,
+       "pred": 0.4263,
+       "actual": 0.4298,
+       "n": 17131
+      },
+      {
+       "q": 4,
+       "pred": 0.4769,
+       "actual": 0.4683,
+       "n": 16673
+      },
+      {
+       "q": 5,
+       "pred": 0.5155,
+       "actual": 0.521,
+       "n": 17110
+      },
+      {
+       "q": 6,
+       "pred": 0.5467,
+       "actual": 0.5477,
+       "n": 16776
+      },
+      {
+       "q": 7,
+       "pred": 0.5797,
+       "actual": 0.5743,
+       "n": 17062
+      },
+      {
+       "q": 8,
+       "pred": 0.6816,
+       "actual": 0.6731,
+       "n": 16747
+      },
+      {
+       "q": 9,
+       "pred": 0.8726,
+       "actual": 0.8824,
+       "n": 16848
+      }
+     ],
+     "max_abs_gap": 0.0098
+    }
+   },
+   "racecard": {
+    "logloss_per_boat_direct": 0.56922,
+    "logloss_per_boat_harville": 0.59369,
+    "paired_race_direct_minus_baseline": {
+     "mean": -0.32816,
+     "ci95": [
+      -0.34113,
+      -0.31581
+     ],
+     "n": 28185,
+     "n_days": 183
+    },
+    "paired_race_harville_minus_baseline": {
+     "mean": -0.18139,
+     "ci95": [
+      -0.19758,
+      -0.16574
+     ],
+     "n": 28185,
+     "n_days": 183
+    },
+    "paired_race_direct_minus_harville": {
+     "mean": -0.14677,
+     "ci95": [
+      -0.15646,
+      -0.13693
+     ],
+     "n": 28185,
+     "n_days": 183
+    },
+    "calibration_direct": {
+     "deciles": [
+      {
+       "q": 0,
+       "pred": 0.0941,
+       "actual": 0.1045,
+       "n": 16911
+      },
+      {
+       "q": 1,
+       "pred": 0.2222,
+       "actual": 0.238,
+       "n": 16911
+      },
+      {
+       "q": 2,
+       "pred": 0.3092,
+       "actual": 0.3197,
+       "n": 16911
+      },
+      {
+       "q": 3,
+       "pred": 0.3834,
+       "actual": 0.3902,
+       "n": 16911
+      },
+      {
+       "q": 4,
+       "pred": 0.4549,
+       "actual": 0.4698,
+       "n": 16911
+      },
+      {
+       "q": 5,
+       "pred": 0.5265,
+       "actual": 0.5273,
+       "n": 16911
+      },
+      {
+       "q": 6,
+       "pred": 0.5994,
+       "actual": 0.5977,
+       "n": 16911
+      },
+      {
+       "q": 7,
+       "pred": 0.68,
+       "actual": 0.6773,
+       "n": 16911
+      },
+      {
+       "q": 8,
+       "pred": 0.7809,
+       "actual": 0.7803,
+       "n": 16911
+      },
+      {
+       "q": 9,
+       "pred": 0.8948,
+       "actual": 0.8953,
+       "n": 16911
+      }
+     ],
+     "max_abs_gap": 0.0158
+    },
+    "calibration_harville": {
+     "deciles": [
+      {
+       "q": 0,
+       "pred": 0.0847,
+       "actual": 0.1175,
+       "n": 16911
+      },
+      {
+       "q": 1,
+       "pred": 0.184,
+       "actual": 0.2407,
+       "n": 16911
+      },
+      {
+       "q": 2,
+       "pred": 0.272,
+       "actual": 0.3176,
+       "n": 16911
+      },
+      {
+       "q": 3,
+       "pred": 0.3527,
+       "actual": 0.3977,
+       "n": 16911
+      },
+      {
+       "q": 4,
+       "pred": 0.4314,
+       "actual": 0.4641,
+       "n": 16911
+      },
+      {
+       "q": 5,
+       "pred": 0.5119,
+       "actual": 0.5278,
+       "n": 16911
+      },
+      {
+       "q": 6,
+       "pred": 0.6008,
+       "actual": 0.5915,
+       "n": 16911
+      },
+      {
+       "q": 7,
+       "pred": 0.7132,
+       "actual": 0.6756,
+       "n": 16911
+      },
+      {
+       "q": 8,
+       "pred": 0.8659,
+       "actual": 0.7714,
+       "n": 16911
+      },
+      {
+       "q": 9,
+       "pred": 0.9834,
+       "actual": 0.8962,
+       "n": 16911
+      }
+     ],
+     "max_abs_gap": 0.0945
+    }
+   },
+   "exhib": {
+    "logloss_per_boat_direct": 0.56568,
+    "logloss_per_boat_harville": 0.5903,
+    "paired_race_direct_minus_baseline": {
+     "mean": -0.34943,
+     "ci95": [
+      -0.36217,
+      -0.33718
+     ],
+     "n": 28185,
+     "n_days": 183
+    },
+    "paired_race_harville_minus_baseline": {
+     "mean": -0.20173,
+     "ci95": [
+      -0.21744,
+      -0.18593
+     ],
+     "n": 28185,
+     "n_days": 183
+    },
+    "paired_race_direct_minus_harville": {
+     "mean": -0.1477,
+     "ci95": [
+      -0.1576,
+      -0.13735
+     ],
+     "n": 28185,
+     "n_days": 183
+    },
+    "calibration_direct": {
+     "deciles": [
+      {
+       "q": 0,
+       "pred": 0.0931,
+       "actual": 0.103,
+       "n": 16911
+      },
+      {
+       "q": 1,
+       "pred": 0.2167,
+       "actual": 0.2304,
+       "n": 16911
+      },
+      {
+       "q": 2,
+       "pred": 0.3034,
+       "actual": 0.3151,
+       "n": 16911
+      },
+      {
+       "q": 3,
+       "pred": 0.379,
+       "actual": 0.39,
+       "n": 16911
+      },
+      {
+       "q": 4,
+       "pred": 0.4512,
+       "actual": 0.4648,
+       "n": 16911
+      },
+      {
+       "q": 5,
+       "pred": 0.5246,
+       "actual": 0.5307,
+       "n": 16911
+      },
+      {
+       "q": 6,
+       "pred": 0.601,
+       "actual": 0.6007,
+       "n": 16911
+      },
+      {
+       "q": 7,
+       "pred": 0.6843,
+       "actual": 0.6802,
+       "n": 16911
+      },
+      {
+       "q": 8,
+       "pred": 0.7852,
+       "actual": 0.7841,
+       "n": 16911
+      },
+      {
+       "q": 9,
+       "pred": 0.8973,
+       "actual": 0.901,
+       "n": 16911
+      }
+     ],
+     "max_abs_gap": 0.0137
+    },
+    "calibration_harville": {
+     "deciles": [
+      {
+       "q": 0,
+       "pred": 0.0814,
+       "actual": 0.1161,
+       "n": 16911
+      },
+      {
+       "q": 1,
+       "pred": 0.1786,
+       "actual": 0.2364,
+       "n": 16911
+      },
+      {
+       "q": 2,
+       "pred": 0.2668,
+       "actual": 0.3129,
+       "n": 16911
+      },
+      {
+       "q": 3,
+       "pred": 0.3483,
+       "actual": 0.3908,
+       "n": 16911
+      },
+      {
+       "q": 4,
+       "pred": 0.4286,
+       "actual": 0.4617,
+       "n": 16911
+      },
+      {
+       "q": 5,
+       "pred": 0.513,
+       "actual": 0.5318,
+       "n": 16911
+      },
+      {
+       "q": 6,
+       "pred": 0.6071,
+       "actual": 0.5941,
+       "n": 16911
+      },
+      {
+       "q": 7,
+       "pred": 0.7212,
+       "actual": 0.6819,
+       "n": 16911
+      },
+      {
+       "q": 8,
+       "pred": 0.871,
+       "actual": 0.7752,
+       "n": 16911
+      },
+      {
+       "q": 9,
+       "pred": 0.9839,
+       "actual": 0.8989,
+       "n": 16911
+      }
+     ],
+     "max_abs_gap": 0.0958
+    }
+   },
+   "paired_race_racecard_minus_exhib_direct": {
+    "mean": 0.02127,
+    "ci95": [
+     0.01776,
+     0.0246
+    ],
+    "n": 28185,
+    "n_days": 183
+   }
+  },
+  "win": {
+   "baseline_logloss": 1.32383,
+   "racecard": {
+    "logloss_softmax_temp": 1.21135,
+    "top1_acc": 0.5674,
+    "paired_model_minus_baseline": {
+     "mean": -0.11248,
+     "ci95": [
+      -0.11787,
+      -0.10716
+     ],
+     "n": 28185,
+     "n_days": 183
+    }
+   },
+   "exhib": {
+    "logloss_softmax_temp": 1.19993,
+    "top1_acc": 0.571,
+    "paired_model_minus_baseline": {
+     "mean": -0.1239,
+     "ci95": [
+      -0.12957,
+      -0.11819
+     ],
+     "n": 28185,
+     "n_days": 183
+    }
+   }
+  },
+  "note": "レース単位の対数損失＝6艇の2値 logloss の和。ペア差の95%CI は日単位のクラスタ・ブートストラップ（metrics.paired_ci、2000回）。Harville は同じ段の win モデル（温度合わせ済みの softmax）から導いた確率"
+ },
+ "d": {
+  "load_before": [
+   23.75830078125,
+   16.998046875,
+   12.27685546875
+  ],
+  "two_models_now": {
+   "1R": {
+    "cpu_ms_med": 17.3,
+    "cpu_ms_min": 16.69,
+    "wall_ms_med": 17.53
+   },
+   "168R": {
+    "cpu_ms_med": 2911.35,
+    "cpu_ms_min": 2884.11,
+    "wall_ms_med": 3326.95
+   },
+   "models": [
+    "racecard_win",
+    "exhib_win"
+   ],
+   "js_estimate_ms": {
+    "1R": 34.6,
+    "168R": 6243.3
+   },
+   "total_trees": 500,
+   "total_text_bytes": 1740948,
+   "total_text_gzip_bytes": 748582
+  },
+  "six_models_planB": {
+   "1R": {
+    "cpu_ms_med": 58.35,
+    "cpu_ms_min": 56.31,
+    "wall_ms_med": 59.09
+   },
+   "168R": {
+    "cpu_ms_med": 9461.99,
+    "cpu_ms_min": 9458.31,
+    "wall_ms_med": 9723.01
+   },
+   "models": [
+    "racecard_win",
+    "racecard_top2",
+    "racecard_top3",
+    "exhib_win",
+    "exhib_top2",
+    "exhib_top3"
+   ],
+   "js_estimate_ms": {
+    "1R": 116.6,
+    "168R": 20291.0
+   },
+   "total_trees": 1660,
+   "total_text_bytes": 5773217,
+   "total_text_gzip_bytes": 2480993
+  },
+  "load_after": [
+   13.80419921875,
+   15.3212890625,
+   11.94482421875
+  ],
+  "js_ratio": {
+   "1R": 1.9981,
+   "168R": 2.1445,
+   "source": "bench.json の JS の CPU 中央値 ÷ timing_cpu.json の Python pred_contrib の CPU 中央値（main_win_F5 1本、高負荷時）"
+  },
+  "model_sizes": {
+   "racecard_win": {
+    "n_trees": 250,
+    "text_bytes": 869514,
+    "text_gzip_bytes": 373692,
+    "n_features": 36
+   },
+   "racecard_top2": {
+    "n_trees": 250,
+    "text_bytes": 868412,
+    "text_gzip_bytes": 373820,
+    "n_features": 36
+   },
+   "racecard_top3": {
+    "n_trees": 330,
+    "text_bytes": 1145751,
+    "text_gzip_bytes": 491961,
+    "n_features": 36
+   },
+   "exhib_win": {
+    "n_trees": 250,
+    "text_bytes": 871434,
+    "text_gzip_bytes": 374890,
+    "n_features": 44
+   },
+   "exhib_top2": {
+    "n_trees": 250,
+    "text_bytes": 870348,
+    "text_gzip_bytes": 374088,
+    "n_features": 44
+   },
+   "exhib_top3": {
+    "n_trees": 330,
+    "text_bytes": 1147758,
+    "text_gzip_bytes": 492542,
+    "n_features": 44
+   }
+  },
+  "storage": {
+   "races_per_day_test": 154.0,
+   "now_1target": {
+    "values_per_race": 72,
+    "rows_per_race_if_row_per_boat": 12,
+    "float32_bytes_per_race": 288,
+    "json_bytes_per_race_4digits": 643,
+    "json_bytes_per_year": 36146877
+   },
+   "planB_3targets": {
+    "values_per_race": 216,
+    "rows_per_race_if_row_per_boat": 36,
+    "float32_bytes_per_race": 864,
+    "json_bytes_per_race_4digits": 1883,
+    "json_bytes_per_year": 105854697
+   }
+  }
+ },
+ "e": {
+  "n_races": 1000,
+  "method": "テーマのアブレーション: P_topk(s) − P_topk(s − φ_テーマ)。s は win の生スコア、P は温度付き softmax→Harville。一次近似: Σ_j ∂P_i/∂s_j × φ_j,テーマ（中心差分 h=1e-4）。シェア＝Σ_艇 |寄与| をテーマ合計で割る",
+  "racecard": {
+   "top2": {
+    "share_mean_ablation": {
+     "venueCourse": 0.5059,
+     "racerRecord": 0.306,
+     "startExhibition": 0.0508,
+     "machine": 0.0726,
+     "environment": 0.0089,
+     "racerProfile": 0.0558
+    },
+    "share_mean_linear": {
+     "venueCourse": 0.4331,
+     "racerRecord": 0.3363,
+     "startExhibition": 0.0615,
+     "machine": 0.0897,
+     "environment": 0.0107,
+     "racerProfile": 0.0686
+    },
+    "share_mean_direct_model": {
+     "venueCourse": 0.3863,
+     "racerRecord": 0.393,
+     "startExhibition": 0.0666,
+     "machine": 0.0827,
+     "environment": 0.0089,
+     "racerProfile": 0.0625
+    },
+    "share_mean_win_model": {
+     "venueCourse": 0.3788,
+     "racerRecord": 0.38,
+     "startExhibition": 0.0637,
+     "machine": 0.0905,
+     "environment": 0.0099,
+     "racerProfile": 0.0771
+    },
+    "ablation_vs_direct": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": 0.1196,
+      "racerRecord": -0.087,
+      "startExhibition": -0.0158,
+      "machine": -0.0101,
+      "environment": -0.0,
+      "racerProfile": -0.0067
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.1225,
+      "racerRecord": 0.0927,
+      "startExhibition": 0.0199,
+      "machine": 0.0215,
+      "environment": 0.0033,
+      "racerProfile": 0.0193
+     },
+     "total_variation_mean": 0.1396,
+     "top1_same_rate": 0.602,
+     "top2_ordered_same_rate": 0.588,
+     "spearman_median": 0.9429,
+     "spearman_p10": 0.7714,
+     "top1_swap_rate": 0.398,
+     "top1_swap_combos": {
+      "racerRecord→venueCourse": 394,
+      "venueCourse→racerRecord": 4
+     }
+    },
+    "ablation_vs_win": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": 0.1271,
+      "racerRecord": -0.0741,
+      "startExhibition": -0.0129,
+      "machine": -0.0179,
+      "environment": -0.0011,
+      "racerProfile": -0.0213
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.1296,
+      "racerRecord": 0.0827,
+      "startExhibition": 0.0165,
+      "machine": 0.0231,
+      "environment": 0.0027,
+      "racerProfile": 0.0247
+     },
+     "total_variation_mean": 0.1397,
+     "top1_same_rate": 0.642,
+     "top2_ordered_same_rate": 0.628,
+     "spearman_median": 0.9429,
+     "spearman_p10": 0.8286,
+     "top1_swap_rate": 0.358,
+     "top1_swap_combos": {
+      "racerRecord→venueCourse": 352,
+      "venueCourse→racerRecord": 6
+     }
+    },
+    "linear_vs_ablation": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": -0.0728,
+      "racerRecord": 0.0304,
+      "startExhibition": 0.0107,
+      "machine": 0.0171,
+      "environment": 0.0019,
+      "racerProfile": 0.0128
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.0867,
+      "racerRecord": 0.0449,
+      "startExhibition": 0.012,
+      "machine": 0.0187,
+      "environment": 0.0021,
+      "racerProfile": 0.0141
+     },
+     "total_variation_mean": 0.0892,
+     "top1_same_rate": 0.794,
+     "top2_ordered_same_rate": 0.791,
+     "spearman_median": 1.0,
+     "spearman_p10": 0.9429,
+     "top1_swap_rate": 0.206,
+     "top1_swap_combos": {
+      "venueCourse→racerRecord": 157,
+      "racerRecord→venueCourse": 47,
+      "venueCourse→racerProfile": 2
+     }
+    },
+    "direct_vs_win": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": 0.0075,
+      "racerRecord": 0.013,
+      "startExhibition": 0.0029,
+      "machine": -0.0077,
+      "environment": -0.0011,
+      "racerProfile": -0.0146
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.0172,
+      "racerRecord": 0.0226,
+      "startExhibition": 0.0085,
+      "machine": 0.0141,
+      "environment": 0.0027,
+      "racerProfile": 0.0168
+     },
+     "total_variation_mean": 0.0409,
+     "top1_same_rate": 0.91,
+     "top2_ordered_same_rate": 0.91,
+     "spearman_median": 0.9429,
+     "spearman_p10": 0.8286,
+     "top1_swap_rate": 0.09,
+     "top1_swap_combos": {
+      "venueCourse→racerRecord": 67,
+      "racerRecord→venueCourse": 23
+     }
+    },
+    "additivity_residual": {
+     "ablation_mean_abs": 0.05346,
+     "linear_mean_abs": 0.10081,
+     "mean_abs_P_minus_uniform": 0.21283,
+     "ablation_relative": 0.25116,
+     "linear_relative": 0.47365
+    }
+   },
+   "top3": {
+    "share_mean_ablation": {
+     "venueCourse": 0.4516,
+     "racerRecord": 0.3387,
+     "startExhibition": 0.0568,
+     "machine": 0.0814,
+     "environment": 0.0084,
+     "racerProfile": 0.0631
+    },
+    "share_mean_linear": {
+     "venueCourse": 0.3809,
+     "racerRecord": 0.3622,
+     "startExhibition": 0.069,
+     "machine": 0.1,
+     "environment": 0.0103,
+     "racerProfile": 0.0776
+    },
+    "share_mean_direct_model": {
+     "venueCourse": 0.3179,
+     "racerRecord": 0.4538,
+     "startExhibition": 0.063,
+     "machine": 0.0851,
+     "environment": 0.0104,
+     "racerProfile": 0.0698
+    },
+    "share_mean_win_model": {
+     "venueCourse": 0.3788,
+     "racerRecord": 0.38,
+     "startExhibition": 0.0637,
+     "machine": 0.0905,
+     "environment": 0.0099,
+     "racerProfile": 0.0771
+    },
+    "ablation_vs_direct": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": 0.1337,
+      "racerRecord": -0.1151,
+      "startExhibition": -0.0062,
+      "machine": -0.0037,
+      "environment": -0.002,
+      "racerProfile": -0.0067
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.1345,
+      "racerRecord": 0.1167,
+      "startExhibition": 0.0181,
+      "machine": 0.0218,
+      "environment": 0.0038,
+      "racerProfile": 0.0227
+     },
+     "total_variation_mean": 0.1588,
+     "top1_same_rate": 0.407,
+     "top2_ordered_same_rate": 0.394,
+     "spearman_median": 0.9429,
+     "spearman_p10": 0.7714,
+     "top1_swap_rate": 0.593,
+     "top1_swap_combos": {
+      "racerRecord→venueCourse": 593
+     }
+    },
+    "ablation_vs_win": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": 0.0728,
+      "racerRecord": -0.0413,
+      "startExhibition": -0.0068,
+      "machine": -0.0091,
+      "environment": -0.0015,
+      "racerProfile": -0.014
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.0792,
+      "racerRecord": 0.0588,
+      "startExhibition": 0.0153,
+      "machine": 0.0202,
+      "environment": 0.0026,
+      "racerProfile": 0.0216
+     },
+     "total_variation_mean": 0.0988,
+     "top1_same_rate": 0.763,
+     "top2_ordered_same_rate": 0.747,
+     "spearman_median": 0.9429,
+     "spearman_p10": 0.8286,
+     "top1_swap_rate": 0.237,
+     "top1_swap_combos": {
+      "racerRecord→venueCourse": 226,
+      "venueCourse→racerRecord": 11
+     }
+    },
+    "linear_vs_ablation": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": -0.0708,
+      "racerRecord": 0.0235,
+      "startExhibition": 0.0121,
+      "machine": 0.0186,
+      "environment": 0.0019,
+      "racerProfile": 0.0145
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.0746,
+      "racerRecord": 0.0359,
+      "startExhibition": 0.0124,
+      "machine": 0.019,
+      "environment": 0.002,
+      "racerProfile": 0.0148
+     },
+     "total_variation_mean": 0.0793,
+     "top1_same_rate": 0.788,
+     "top2_ordered_same_rate": 0.778,
+     "spearman_median": 1.0,
+     "spearman_p10": 0.9429,
+     "top1_swap_rate": 0.212,
+     "top1_swap_combos": {
+      "venueCourse→racerRecord": 191,
+      "racerRecord→venueCourse": 19,
+      "venueCourse→racerProfile": 2
+     }
+    },
+    "direct_vs_win": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": -0.0609,
+      "racerRecord": 0.0738,
+      "startExhibition": -0.0007,
+      "machine": -0.0054,
+      "environment": 0.0005,
+      "racerProfile": -0.0073
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.0609,
+      "racerRecord": 0.0741,
+      "startExhibition": 0.0105,
+      "machine": 0.0139,
+      "environment": 0.0028,
+      "racerProfile": 0.0141
+     },
+     "total_variation_mean": 0.0882,
+     "top1_same_rate": 0.622,
+     "top2_ordered_same_rate": 0.622,
+     "spearman_median": 0.9429,
+     "spearman_p10": 0.8286,
+     "top1_swap_rate": 0.378,
+     "top1_swap_combos": {
+      "venueCourse→racerRecord": 378
+     }
+    },
+    "additivity_residual": {
+     "ablation_mean_abs": 0.05842,
+     "linear_mean_abs": 0.12124,
+     "mean_abs_P_minus_uniform": 0.23893,
+     "ablation_relative": 0.24451,
+     "linear_relative": 0.50744
+    }
+   }
+  },
+  "exhib": {
+   "top2": {
+    "share_mean_ablation": {
+     "venueCourse": 0.4864,
+     "racerRecord": 0.2915,
+     "startExhibition": 0.1088,
+     "machine": 0.0579,
+     "environment": 0.0114,
+     "racerProfile": 0.044
+    },
+    "share_mean_linear": {
+     "venueCourse": 0.4142,
+     "racerRecord": 0.3178,
+     "startExhibition": 0.1303,
+     "machine": 0.0704,
+     "environment": 0.0138,
+     "racerProfile": 0.0534
+    },
+    "share_mean_direct_model": {
+     "venueCourse": 0.3623,
+     "racerRecord": 0.3645,
+     "startExhibition": 0.1356,
+     "machine": 0.0716,
+     "environment": 0.0181,
+     "racerProfile": 0.0479
+    },
+    "share_mean_win_model": {
+     "venueCourse": 0.3572,
+     "racerRecord": 0.3435,
+     "startExhibition": 0.1451,
+     "machine": 0.0747,
+     "environment": 0.0205,
+     "racerProfile": 0.0589
+    },
+    "ablation_vs_direct": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": 0.1242,
+      "racerRecord": -0.073,
+      "startExhibition": -0.0268,
+      "machine": -0.0137,
+      "environment": -0.0067,
+      "racerProfile": -0.0039
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.1274,
+      "racerRecord": 0.0827,
+      "startExhibition": 0.0372,
+      "machine": 0.0217,
+      "environment": 0.0075,
+      "racerProfile": 0.0163
+     },
+     "total_variation_mean": 0.1464,
+     "top1_same_rate": 0.605,
+     "top2_ordered_same_rate": 0.541,
+     "spearman_median": 0.9429,
+     "spearman_p10": 0.8857,
+     "top1_swap_rate": 0.395,
+     "top1_swap_combos": {
+      "racerRecord→venueCourse": 383,
+      "venueCourse→racerRecord": 12
+     }
+    },
+    "ablation_vs_win": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": 0.1292,
+      "racerRecord": -0.052,
+      "startExhibition": -0.0363,
+      "machine": -0.0168,
+      "environment": -0.0091,
+      "racerProfile": -0.015
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.1322,
+      "racerRecord": 0.0689,
+      "startExhibition": 0.0411,
+      "machine": 0.0207,
+      "environment": 0.0093,
+      "racerProfile": 0.0186
+     },
+     "total_variation_mean": 0.1454,
+     "top1_same_rate": 0.664,
+     "top2_ordered_same_rate": 0.602,
+     "spearman_median": 0.9429,
+     "spearman_p10": 0.8857,
+     "top1_swap_rate": 0.336,
+     "top1_swap_combos": {
+      "racerRecord→venueCourse": 317,
+      "venueCourse→racerRecord": 19
+     }
+    },
+    "linear_vs_ablation": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": -0.0722,
+      "racerRecord": 0.0264,
+      "startExhibition": 0.0215,
+      "machine": 0.0125,
+      "environment": 0.0024,
+      "racerProfile": 0.0094
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.087,
+      "racerRecord": 0.0407,
+      "startExhibition": 0.0246,
+      "machine": 0.0139,
+      "environment": 0.0027,
+      "racerProfile": 0.0105
+     },
+     "total_variation_mean": 0.0897,
+     "top1_same_rate": 0.801,
+     "top2_ordered_same_rate": 0.777,
+     "spearman_median": 1.0,
+     "spearman_p10": 0.9429,
+     "top1_swap_rate": 0.199,
+     "top1_swap_combos": {
+      "venueCourse→racerRecord": 144,
+      "racerRecord→venueCourse": 47,
+      "venueCourse→startExhibition": 8
+     }
+    },
+    "direct_vs_win": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": 0.0051,
+      "racerRecord": 0.021,
+      "startExhibition": -0.0095,
+      "machine": -0.0031,
+      "environment": -0.0025,
+      "racerProfile": -0.011
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.0157,
+      "racerRecord": 0.0253,
+      "startExhibition": 0.0141,
+      "machine": 0.0119,
+      "environment": 0.004,
+      "racerProfile": 0.0134
+     },
+     "total_variation_mean": 0.0422,
+     "top1_same_rate": 0.893,
+     "top2_ordered_same_rate": 0.891,
+     "spearman_median": 1.0,
+     "spearman_p10": 0.9429,
+     "top1_swap_rate": 0.107,
+     "top1_swap_combos": {
+      "venueCourse→racerRecord": 90,
+      "racerRecord→venueCourse": 17
+     }
+    },
+    "additivity_residual": {
+     "ablation_mean_abs": 0.05819,
+     "linear_mean_abs": 0.10312,
+     "mean_abs_P_minus_uniform": 0.21644,
+     "ablation_relative": 0.26884,
+     "linear_relative": 0.47644
+    }
+   },
+   "top3": {
+    "share_mean_ablation": {
+     "venueCourse": 0.4329,
+     "racerRecord": 0.323,
+     "startExhibition": 0.1199,
+     "machine": 0.064,
+     "environment": 0.0116,
+     "racerProfile": 0.0487
+    },
+    "share_mean_linear": {
+     "venueCourse": 0.3637,
+     "racerRecord": 0.3429,
+     "startExhibition": 0.1417,
+     "machine": 0.078,
+     "environment": 0.0142,
+     "racerProfile": 0.0594
+    },
+    "share_mean_direct_model": {
+     "venueCourse": 0.2966,
+     "racerRecord": 0.4229,
+     "startExhibition": 0.1311,
+     "machine": 0.0749,
+     "environment": 0.0196,
+     "racerProfile": 0.055
+    },
+    "share_mean_win_model": {
+     "venueCourse": 0.3572,
+     "racerRecord": 0.3435,
+     "startExhibition": 0.1451,
+     "machine": 0.0747,
+     "environment": 0.0205,
+     "racerProfile": 0.0589
+    },
+    "ablation_vs_direct": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": 0.1364,
+      "racerRecord": -0.0999,
+      "startExhibition": -0.0113,
+      "machine": -0.0109,
+      "environment": -0.008,
+      "racerProfile": -0.0063
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.1368,
+      "racerRecord": 0.1026,
+      "startExhibition": 0.0339,
+      "machine": 0.021,
+      "environment": 0.0087,
+      "racerProfile": 0.0194
+     },
+     "total_variation_mean": 0.1612,
+     "top1_same_rate": 0.404,
+     "top2_ordered_same_rate": 0.356,
+     "spearman_median": 0.9429,
+     "spearman_p10": 0.8286,
+     "top1_swap_rate": 0.596,
+     "top1_swap_combos": {
+      "racerRecord→venueCourse": 595,
+      "racerRecord→startExhibition": 1
+     }
+    },
+    "ablation_vs_win": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": 0.0757,
+      "racerRecord": -0.0205,
+      "startExhibition": -0.0253,
+      "machine": -0.0107,
+      "environment": -0.0089,
+      "racerProfile": -0.0103
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.0819,
+      "racerRecord": 0.0509,
+      "startExhibition": 0.0364,
+      "machine": 0.018,
+      "environment": 0.0091,
+      "racerProfile": 0.017
+     },
+     "total_variation_mean": 0.1067,
+     "top1_same_rate": 0.766,
+     "top2_ordered_same_rate": 0.698,
+     "spearman_median": 0.9429,
+     "spearman_p10": 0.8857,
+     "top1_swap_rate": 0.234,
+     "top1_swap_combos": {
+      "racerRecord→venueCourse": 208,
+      "venueCourse→racerRecord": 25,
+      "venueCourse→startExhibition": 1
+     }
+    },
+    "linear_vs_ablation": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": -0.0692,
+      "racerRecord": 0.0199,
+      "startExhibition": 0.0219,
+      "machine": 0.0141,
+      "environment": 0.0026,
+      "racerProfile": 0.0107
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.0735,
+      "racerRecord": 0.0324,
+      "startExhibition": 0.0233,
+      "machine": 0.0145,
+      "environment": 0.0027,
+      "racerProfile": 0.0109
+     },
+     "total_variation_mean": 0.0787,
+     "top1_same_rate": 0.791,
+     "top2_ordered_same_rate": 0.768,
+     "spearman_median": 1.0,
+     "spearman_p10": 0.9429,
+     "top1_swap_rate": 0.209,
+     "top1_swap_combos": {
+      "venueCourse→racerRecord": 183,
+      "racerRecord→venueCourse": 18,
+      "venueCourse→startExhibition": 6,
+      "racerRecord→startExhibition": 2
+     }
+    },
+    "direct_vs_win": {
+     "mean_diff_b_minus_a": {
+      "venueCourse": -0.0606,
+      "racerRecord": 0.0794,
+      "startExhibition": -0.014,
+      "machine": 0.0002,
+      "environment": -0.0009,
+      "racerProfile": -0.004
+     },
+     "mean_abs_diff": {
+      "venueCourse": 0.0606,
+      "racerRecord": 0.0795,
+      "startExhibition": 0.0178,
+      "machine": 0.0116,
+      "environment": 0.004,
+      "racerProfile": 0.0119
+     },
+     "total_variation_mean": 0.0927,
+     "top1_same_rate": 0.587,
+     "top2_ordered_same_rate": 0.585,
+     "spearman_median": 0.9429,
+     "spearman_p10": 0.8857,
+     "top1_swap_rate": 0.413,
+     "top1_swap_combos": {
+      "venueCourse→racerRecord": 413
+     }
+    },
+    "additivity_residual": {
+     "ablation_mean_abs": 0.06351,
+     "linear_mean_abs": 0.12437,
+     "mean_abs_P_minus_uniform": 0.24378,
+     "ablation_relative": 0.26054,
+     "linear_relative": 0.51019
+    }
+   }
+  }
+ },
+ "seconds": 222,
+ "load_end": [
+  13.80419921875,
+  15.3212890625,
+  11.94482421875
+ ],
+ "model_dir": "/private/tmp/claude-501/-Users-terukina-boatrace-ai-predictor--claude-worktrees-sweet-visvesvaraya-004600/d3700345-7d50-4320-aa4e-66c853671ac1/scratchpad/models/"
+}

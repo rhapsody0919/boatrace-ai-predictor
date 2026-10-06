@@ -72,7 +72,12 @@ import {
   parseBoatParam,
 } from "../../utils/raceUrlState";
 import { SocialShareButtons } from "../SocialShareButtons";
-import { generatePredictionShareText, shareUrlFor } from "../../utils/share";
+import {
+  generatePredictionShareText,
+  generateResultShareText,
+  shareUrlFor,
+} from "../../utils/share";
+import { useRaceWinnerCourse } from "../../hooks/useRaceWinnerCourse";
 import { getVenueGuidePath } from "../../utils/venueUtils";
 import { isRaceCancelled } from "../../utils/raceCancellation";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
@@ -156,6 +161,11 @@ function PredictionPanel({
   };
   const handleFocusBoat = (boat) => setRaceParam(RACE_BOAT_PARAM, boat);
   const { toast: aiCopyToast, showToast: showAiCopyToast } = useToast();
+  // 結果確定後の共有文に使う、1着の艇の進入コース（早期 return より前に呼ぶ。フックの順序の規則）
+  const winnerCourse = useRaceWinnerCourse(
+    selectedRace?.id,
+    Boolean(prediction?.result?.finished),
+  );
 
   if (!prediction && !isAnalyzing) return null;
 
@@ -192,6 +202,35 @@ function PredictionPanel({
   // AI用にコピー（BOA-194）はこれから走るレースを外部AIで分析するためのもの。
   // 結果確定済みと中止確定（BOA-424）では出さない
   const showAiCopy = !isFinished && !isCancelled;
+
+  // 共有文（BOA-754）。結果確定後は、発走前の予想の文面（推奨の買い目・「的中率が上がって嬉しい」）を
+  // 共有させない。展開予測の候補のどれかが1着なら的中の文面、どれも1着でなければボタンを出さない
+  const shareTitle = isFinished
+    ? generateResultShareText(
+        {
+          venue: venueName || t("panel.unknownVenue"),
+          raceNo: selectedRace?.raceNumber || "?",
+          date: raceDate,
+          patterns: prediction?.turnPrediction?.patterns,
+          result: prediction?.result,
+          winnerEntryCourse: winnerCourse?.course ?? null,
+        },
+        t,
+      )
+    : generatePredictionShareText(
+        {
+          venue: venueName || t("panel.unknownVenue"),
+          raceNo: selectedRace?.raceNumber || "?",
+          date: raceDate,
+          isCancelled,
+          prediction: {
+            topPick: prediction.topPick?.number,
+            top3: prediction.top3 || [],
+          },
+        },
+        "unified",
+        t,
+      );
 
   // データ出走表・枠番傾向・分析ツール群（レース前の予想材料）を表示するか。
   // 結果/直前情報/モータ情報/AI予想の各タブは、それぞれのタブ内で同種の情報を
@@ -622,34 +661,25 @@ function PredictionPanel({
         />
       )}
 
-      {/* SNSシェアボタン */}
-      <div className="social-share-wrapper">
-        <SocialShareButtons
-          // 今見ているレース（言語・選んだタブ・艇込み）を共有する（BOA-691）
-          shareUrl={shareUrlFor(`${pathname}${search}`)}
-          title={generatePredictionShareText(
-            {
-              venue: venueName || t("panel.unknownVenue"),
-              raceNo: selectedRace?.raceNumber || "?",
-              date: raceDate,
-              isCancelled,
-              prediction: {
-                topPick: prediction.topPick?.number,
-                top3: prediction.top3 || [],
-              },
-            },
-            "unified",
-            t,
-          )}
-          hashtags={
-            // 中止のレースは予想を出さないので「AI予想」のタグを外す
-            isCancelled
-              ? ["ボートレース", "龍神レーダー"]
-              : ["ボートレース", "AI予想", "龍神レーダー"]
-          }
-          size={40}
-        />
-      </div>
+      {/* SNSシェアボタン（結果確定後で、展開予測の候補がどれも1着でなければ出さない。BOA-754） */}
+      {shareTitle && (
+        <div className="social-share-wrapper">
+          <SocialShareButtons
+            // 今見ているレース（言語・選んだタブ・艇込み）を共有する（BOA-691）
+            shareUrl={shareUrlFor(`${pathname}${search}`)}
+            title={shareTitle}
+            hashtags={
+              isFinished
+                ? ["ボートレース", "展開予測", "龍神レーダー"]
+                : // 中止のレースは予想を出さないので「AI予想」のタグを外す
+                  isCancelled
+                  ? ["ボートレース", "龍神レーダー"]
+                  : ["ボートレース", "AI予想", "龍神レーダー"]
+            }
+            size={40}
+          />
+        </div>
+      )}
 
       {/* 会場攻略ガイドリンク */}
       {venueCode && getVenueGuidePath(venueCode) && (

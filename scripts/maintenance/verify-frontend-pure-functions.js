@@ -43,6 +43,7 @@ const TARGETS = {
   turnPrediction: "src/utils/turnPrediction.js",
   volatilityLevel: "src/utils/volatilityLevel.js",
   hscrollHint: "src/utils/horizontalScrollHint.js",
+  volatilityHighlights: "src/utils/volatilityHighlights.js",
 };
 
 const show = (v) => JSON.stringify(v);
@@ -1798,6 +1799,65 @@ function suiteTurnPrediction(m, check) {
 }
 
 // --- volatilityDisplayValue: イン崩れ指数の表示の数値がラベルの境目をまたがない（PR #1186 ファン評価）
+// --- pickVolatilityHighlights（BOA-757）: ホームのイン崩れ注意度ハイライトの選び方。
+// 締切を過ぎたレースが締切前と区別なく並び、これから見るレースを選ぶ導線にならなかった
+function suiteVolatilityHighlights(m, check) {
+  const level = (p) => (p >= 70 ? "high" : p <= 30 ? "low" : "standard");
+  const race = (id, p, closed) => ({ id, percentile: p, level: level(p), closed });
+  const ids = (r) => ({
+    high: r.high.map((x) => x.id),
+    low: r.low.map((x) => x.id),
+    allClosed: r.allClosed,
+  });
+  // 締切済みの a（95）・f（5）は、締切前が1本でもあれば選ばない
+  const races = [
+    race("a", 95, true),
+    race("b", 80, false),
+    race("c", 75, false),
+    race("d", 40, false),
+    race("e", 20, false),
+    race("f", 5, true),
+  ];
+  check(
+    "volatilityHighlights: 締切前が残っていれば、締切前だけから段階ごとに選ぶ",
+    ids(m.pickVolatilityHighlights(races, 5)),
+    { high: ["b", "c"], low: ["e"], allClosed: false },
+  );
+  // PR #1248 ファン評価1周目: 夕方の残り数本で、崩れやすさ28〜33の「標準」が「高」の列に入った
+  check(
+    "volatilityHighlights: 「標準」（31〜69）のレースはどちらの列にも入れない",
+    ids(
+      m.pickVolatilityHighlights(
+        [race("x", 33, false), race("y", 45, false), race("z", 14, false)],
+        5,
+      ),
+    ),
+    { high: [], low: ["z"], allClosed: false },
+  );
+  check(
+    "volatilityHighlights: 締切前が1本だけでも、そのレースを出す",
+    ids(m.pickVolatilityHighlights([race("a", 95, true), race("q", 85, false)], 5)),
+    { high: ["q"], low: [], allClosed: false },
+  );
+  // 締切前が「標準」だけでも、選ぶ対象はあるので節は出す（PR #1248 ファン評価2周目）
+  check(
+    "volatilityHighlights: 締切前が「標準」だけでも poolSize は残り、節を出せる",
+    m.pickVolatilityHighlights([race("a", 95, true), race("s", 45, false)], 5)
+      .poolSize,
+    1,
+  );
+  check(
+    "volatilityHighlights: 全部締切済みなら、締切済みから選び allClosed",
+    ids(
+      m.pickVolatilityHighlights(
+        races.map((r) => ({ ...r, closed: true })),
+        2,
+      ),
+    ),
+    { high: ["a", "b"], low: ["f", "e"], allClosed: true },
+  );
+}
+
 function suiteVolatilityLevel(m, check) {
   const show = (p) => [m.getVolatilityLevel(p), m.volatilityDisplayValue(p)];
   check("volatility: 0.6975 は標準で69（四捨五入の70にしない）", show(0.6975), [
@@ -1837,6 +1897,7 @@ const SUITES = {
   turnPrediction: suiteTurnPrediction,
   volatilityLevel: suiteVolatilityLevel,
   hscrollHint: suiteHscrollHint,
+  volatilityHighlights: suiteVolatilityHighlights,
 };
 
 // ---------------------------------------------------------------------------
@@ -1844,6 +1905,18 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  [
+    "volatilityHighlights",
+    "締切済みのレースも締切前と一緒に選ぶ（BOA-757 の退行）",
+    "const pool = allClosed ? races : open;",
+    "const pool = races;",
+  ],
+  [
+    "volatilityHighlights",
+    "段階を見ずに崩れやすさの順で切る（PR #1248 ファン評価1周目の退行）",
+    '.filter((r) => r.level === "high")',
+    ".filter(() => true)",
+  ],
   [
     "hscrollHint",
     "右端に余白を足さない（PR #1202 ファン評価3周目の退行）",

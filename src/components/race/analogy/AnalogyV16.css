@@ -1,0 +1,1326 @@
+/*
+ * アナロジー・ファインダー v16（BOA-271、承認版モック Version 16）。クラス名は af- 接頭辞。
+ * 色は design-tokens の意味トークン。ソナー・六角形・サンキーの暗い背景は自前の固定背景を持つので、
+ * 生パレット（--ryujin-navy-*・--ryujin-gold-*）を使う（component-reuse.md「Layer 1」）。
+ */
+
+.af-v16 {
+  /* 点線（比べる相手・全体の率）の色。承認版モックの --hit */
+  --af-hit: #0f766e;
+  /* 承認版モックと同じく、広い画面でも読みやすい幅（約680px）で中央に置く */
+  max-width: 720px;
+  margin-inline: auto;
+  margin-top: var(--spacing-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  color: var(--text-primary);
+}
+
+.af-v16 .af-v16-eyebrow {
+  margin: 0;
+  line-height: var(--line-height-snug);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.12em;
+  color: var(--brand-accent-primary);
+}
+
+.af-v16-box {
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2-5);
+  min-width: 0;
+}
+
+.af-v16-line {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* ---- 上部の操作 ---- */
+.af-ctl-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-1-5) var(--spacing-2-5);
+}
+
+.af-lbl {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+}
+
+.af-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1-5);
+  min-width: 0;
+}
+
+.af-seg button,
+.af-btn {
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: var(--surface-page);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-1-5) var(--spacing-3);
+  line-height: var(--line-height-snug);
+  text-align: left;
+}
+
+.af-seg button[aria-pressed="true"] {
+  background: var(--brand-accent-primary);
+  border-color: var(--brand-accent-primary);
+  color: var(--surface-card);
+}
+
+.af-seg button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.af-btn {
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-1) var(--spacing-2-5);
+}
+
+.af-v16 button:focus-visible,
+.af-v16 select:focus-visible,
+.af-v16 summary:focus-visible,
+.af-v16 input:focus-visible {
+  outline: var(--border-width-2) solid var(--brand-accent-primary);
+  outline-offset: 2px;
+}
+
+.af-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-1);
+}
+
+.af-tabs button {
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: var(--surface-page);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-2) var(--spacing-1);
+  cursor: pointer;
+  line-height: var(--line-height-snug);
+}
+
+.af-tabs button[aria-selected="true"] {
+  background: var(--brand-accent-primary);
+  border-color: var(--brand-accent-primary);
+  color: var(--surface-card);
+}
+
+/* ---- 共通の文字 ---- */
+.af-v16 .af-h3 {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-snug);
+}
+
+.af-sub {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.af-foot {
+  margin: 0;
+  /* 10px だと 375px で読まれない（BOA-778） */
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+.af-foot-list {
+  padding-left: 1.1em;
+  display: grid;
+  gap: 2px;
+}
+
+.af-warn {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-warning-text);
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--color-warning);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-1-5) var(--spacing-2-5);
+}
+
+.af-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.af-boat-btn {
+  display: inline-grid;
+  place-items: center;
+  padding: var(--spacing-1) var(--spacing-2);
+}
+
+.af-details > summary {
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+}
+
+.af-details[open] > summary {
+  margin-bottom: var(--spacing-2);
+}
+
+.af-fold {
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  padding: var(--spacing-3) var(--spacing-4);
+}
+
+.af-fold > summary {
+  cursor: pointer;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.af-fold-inner {
+  display: grid;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.af-fold-inner h3 {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.af-fold-inner ul {
+  margin: 0;
+  padding-left: 1.2em;
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+/* ---- 暗い図の枠（六角形・ソナー・サンキー） ---- */
+.af-dark {
+  position: relative;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    var(--ryujin-navy-100) 0%,
+    var(--ryujin-navy-600) 78%
+  );
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-1-5);
+}
+
+.af-dark svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 440px;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.af-legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.af-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.af-legend i {
+  display: inline-block;
+  width: 18px;
+  border-top: 2.5px solid var(--af-line);
+}
+
+.af-legend i.is-dash {
+  border-top-style: dashed;
+}
+
+/* ---- 大きい数字 ---- */
+.af-big {
+  display: grid;
+  gap: var(--spacing-0-5);
+  background: var(--surface-page);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-sm);
+}
+
+.af-big b {
+  font-size: var(--font-size-2xl);
+  color: var(--brand-accent-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.af-big small {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* ---- 項目ごとのカード ---- */
+.af-cards {
+  display: grid;
+  gap: var(--spacing-2-5);
+}
+
+.af-card {
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2-5) var(--spacing-3);
+  display: grid;
+  gap: var(--spacing-1-5);
+  background: var(--surface-card);
+  min-width: 0;
+}
+
+.af-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-0-5) var(--spacing-2);
+}
+
+.af-card-head h4 {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.af-card-judge {
+  margin-left: auto;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+}
+
+.af-card-desc {
+  flex-basis: 100%;
+  order: 3;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.af-card.is-weak .af-pair,
+.af-card.is-weak .af-strip,
+.af-card.is-weak .af-card-judge {
+  opacity: 0.6;
+}
+
+.af-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-2);
+}
+
+.af-pair > div {
+  display: grid;
+  background: var(--surface-page);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-1-5) var(--spacing-2);
+  font-size: var(--font-size-xs);
+}
+
+.af-pair b {
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-snug);
+  font-variant-numeric: tabular-nums;
+}
+
+.af-pair small {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.af-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--spacing-1);
+  height: 112px;
+}
+
+.af-strip-col {
+  display: grid;
+  grid-template-rows: 14px 1fr 28px;
+  text-align: center;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.af-strip-col.is-today {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.af-strip-plot {
+  position: relative;
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+}
+
+.af-strip-bar {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 0;
+  border-radius: 3px 3px 0 0;
+  opacity: 0.75;
+}
+
+.af-strip-col.is-today .af-strip-bar {
+  opacity: 1;
+  outline: var(--border-width-2) solid var(--brand-accent-primary);
+  outline-offset: 1px;
+}
+
+.af-strip-usual {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 2px dotted var(--af-hit);
+}
+
+.af-strip-rank {
+  font-size: 10px;
+  line-height: 1.3;
+  white-space: pre-line;
+}
+
+.af-today {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  background: var(--surface-page);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-1-5) var(--spacing-2);
+  line-height: var(--line-height-relaxed);
+}
+
+/* ---- 横棒（ぶれ幅・点線） ---- */
+.af-bars {
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+.af-bar {
+  display: grid;
+  grid-template-columns: 5.8em minmax(0, 1fr) auto;
+  gap: var(--spacing-2);
+  align-items: center;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+}
+
+button.af-bar {
+  cursor: pointer;
+}
+
+.af-bar-v {
+  text-align: right;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.af-trk {
+  position: relative;
+  display: block;
+  height: 12px;
+  background: var(--surface-page);
+  border-radius: var(--radius-sm);
+}
+
+.af-trk-f {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--brand-accent-primary);
+  border-radius: var(--radius-sm);
+}
+
+.af-bar.is-selected .af-trk-f {
+  background: var(--color-info);
+}
+
+.af-trk-w {
+  position: absolute;
+  top: 50%;
+  height: 2px;
+  background: var(--text-primary);
+  opacity: 0.55;
+  transform: translateY(-50%);
+}
+
+.af-trk-w::before,
+.af-trk-w::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 10px;
+  background: var(--text-primary);
+}
+
+.af-trk-w::before {
+  left: 0;
+}
+
+.af-trk-w::after {
+  right: 0;
+}
+
+.af-trk-nt {
+  position: absolute;
+  top: -3px;
+  width: 0;
+  height: 18px;
+  border-left: 2px dotted var(--af-hit);
+}
+
+.af-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.af-key i {
+  display: inline-block;
+  width: 14px;
+  height: 8px;
+  border-radius: 2px;
+  margin-right: var(--spacing-1);
+  vertical-align: middle;
+}
+
+.af-key i.is-dot {
+  width: 2px;
+  height: 12px;
+  border-left: 2px dotted var(--af-hit);
+  border-radius: 0;
+}
+
+/* ---- AIの見立て ---- */
+.af-ai-themes {
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+.af-ai-theme {
+  border-top: var(--border-width-1) solid var(--border-hairline);
+  padding-top: var(--spacing-1-5);
+}
+
+.af-ai-theme > summary {
+  list-style: none;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 1.2em 8.5em minmax(0, 1fr) 3.5em;
+  gap: var(--spacing-2);
+  align-items: center;
+  font-size: var(--font-size-sm);
+}
+
+.af-ai-theme > summary::-webkit-details-marker {
+  display: none;
+}
+
+.af-ai-items {
+  display: grid;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1-5) 0 var(--spacing-1) 1.6em;
+}
+
+.af-ai-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3.5em;
+  gap: var(--spacing-0-5) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  border-top: var(--border-width-1) dotted var(--border-hairline);
+  padding-top: var(--spacing-1);
+}
+
+.af-ai-item > .af-num {
+  text-align: right;
+}
+
+.af-ai-dir {
+  grid-column: 1 / -1;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+  .af-v16-box {
+    padding: var(--spacing-3);
+  }
+
+  .af-bar {
+    grid-template-columns: 5em minmax(0, 1fr) auto;
+  }
+
+  .af-ai-theme > summary {
+    grid-template-columns: 1.2em 7em minmax(0, 1fr) 3em;
+  }
+}
+
+/* ---- タブ2 類似レース ---- */
+.af-slider {
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2-5) var(--spacing-3);
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+.af-slider input {
+  width: 100%;
+  accent-color: var(--brand-accent-primary);
+}
+
+.af-between {
+  justify-content: space-between;
+}
+
+.af-sv b {
+  font-size: var(--font-size-xl);
+  color: var(--brand-accent-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.af-v16 .af-h4 {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.af-hero {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.af-hero-n {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.af-tip {
+  margin: 0;
+  min-height: 1.6em;
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.af-muted {
+  color: var(--text-secondary);
+}
+
+.af-dark-cap {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--ryujin-gold-300);
+  opacity: 0.75;
+  padding: 2px var(--spacing-2) var(--spacing-1);
+}
+
+.af-dark-flat {
+  background: var(--ryujin-navy-600);
+}
+
+.af-sonar svg {
+  -webkit-touch-callout: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.af-sonar-tip {
+  position: absolute;
+  z-index: 3;
+  width: 220px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-1-5) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+}
+
+.af-bnrow {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.af-tri {
+  display: inline-flex;
+  align-items: center;
+}
+
+.af-tri-sep {
+  margin: 0 1px;
+  color: var(--text-secondary);
+}
+
+.af-lk {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 6.5em;
+  gap: var(--spacing-2);
+  align-items: center;
+  font-size: var(--font-size-xs);
+  padding: 3px 0;
+}
+
+.af-lk small {
+  display: block;
+  color: var(--text-secondary);
+  font-size: var(--font-size-2xs);
+  overflow-wrap: anywhere;
+}
+
+.af-trk-near {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: var(--brand-accent-primary);
+  opacity: 0.35;
+}
+
+.af-tbl {
+  overflow-x: auto;
+}
+
+.af-like-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--font-size-2xs);
+}
+
+.af-like-table th,
+.af-like-table td {
+  padding: 5px 4px;
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+  text-align: left;
+  vertical-align: top;
+}
+
+.af-like-table td:first-child {
+  min-width: 7.5em;
+  overflow-wrap: anywhere;
+}
+
+.af-like-table small {
+  display: block;
+}
+
+.af-nbr {
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+.af-nbr.is-open {
+  background: var(--surface-page);
+}
+
+.af-nbh {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2.2em minmax(0, 1fr) auto;
+  grid-template-areas:
+    "rk nm o"
+    "rk sc o";
+  gap: 0 var(--spacing-2);
+  align-items: center;
+  padding: var(--spacing-1-5) 2px;
+  cursor: pointer;
+}
+
+.af-nb-rk {
+  grid-area: rk;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.af-nb-nm {
+  grid-area: nm;
+  font-size: var(--font-size-xs);
+}
+
+.af-nb-nm small {
+  display: block;
+  color: var(--text-secondary);
+}
+
+.af-nb-sc {
+  grid-area: sc;
+  font-size: var(--font-size-2xs);
+}
+
+.af-nbh .af-bnrow {
+  grid-area: o;
+}
+
+.af-nbd {
+  padding: var(--spacing-1) 0 var(--spacing-2-5) 2.2em;
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+.af-res {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-1-5) var(--spacing-2-5);
+}
+
+.af-res small {
+  display: block;
+  color: var(--text-secondary);
+}
+
+.af-cg {
+  display: grid;
+  gap: 2px;
+}
+
+.af-ci {
+  display: grid;
+  grid-template-columns: 1.4em minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: var(--spacing-1-5);
+  font-size: var(--font-size-xs);
+  align-items: baseline;
+}
+
+.af-mk {
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.af-mk.is-same {
+  color: var(--color-success-text);
+}
+
+.af-mk.is-near {
+  color: var(--color-warning-text);
+}
+
+.af-mk.is-diff {
+  color: var(--color-error-text);
+}
+
+.af-cv {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.af-cv small {
+  display: block;
+  color: var(--text-secondary);
+}
+
+.af-card-note {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-2) var(--spacing-3);
+}
+
+.af-other {
+  display: grid;
+  gap: var(--spacing-1-5);
+}
+
+.af-ind {
+  display: grid;
+  gap: 3px;
+  padding: var(--spacing-1-5) 0;
+  border-top: var(--border-width-1) solid var(--border-hairline);
+  font-size: var(--font-size-xs);
+}
+
+.af-pair-bars {
+  display: grid;
+  gap: 3px;
+}
+
+.af-pr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 6em;
+  gap: var(--spacing-2);
+  align-items: center;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.af-pr > .af-num {
+  text-align: right;
+}
+
+.af-trk-f.is-hit,
+.af-key i.is-hit {
+  background: var(--color-info);
+}
+
+.af-trk-f.is-base,
+.af-key i.is-base {
+  background: var(--color-gray-500);
+}
+
+.af-key i.is-bar {
+  background: var(--brand-accent-primary);
+}
+
+.af-flow {
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+@media (max-width: 480px) {
+  .af-lk {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 5.5em;
+  }
+}
+
+/* ---- タブ3 展開シナリオ ---- */
+.af-stepn {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 50%;
+  background: var(--brand-accent-primary);
+  color: var(--surface-card);
+  font-size: var(--font-size-xs);
+  margin-right: var(--spacing-1-5);
+}
+
+.af-ents {
+  display: grid;
+  gap: var(--spacing-1-5);
+}
+
+.af-ent {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--spacing-2-5);
+  align-items: center;
+  text-align: left;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-2) var(--spacing-2-5);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.af-ent.is-sub {
+  margin-left: var(--spacing-4);
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-1-5) var(--spacing-2-5);
+}
+
+.af-ent[aria-pressed="true"] {
+  border-color: var(--brand-accent-primary);
+  box-shadow: inset 3px 0 0 var(--brand-accent-primary);
+  background: var(--surface-page);
+}
+
+.af-ent-sh {
+  font-weight: var(--font-weight-bold);
+}
+
+.af-ent-b1 {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  min-width: 7.5em;
+  max-width: 10em;
+  text-align: right;
+}
+
+.af-today-badge,
+.af-hintb {
+  display: inline-block;
+  margin-left: var(--spacing-1-5);
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  color: var(--surface-card);
+  background: var(--brand-accent-primary);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  white-space: normal;
+}
+
+.af-hint {
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2-5) var(--spacing-3);
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+.af-hint-h {
+  display: grid;
+  gap: 2px;
+}
+
+.af-hint-pic {
+  max-width: 520px;
+}
+
+.af-hint-pic svg,
+.af-pat svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius-sm);
+}
+
+.af-hint-t,
+.af-mk-t {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.af-hint-t th,
+.af-hint-t td {
+  padding: 3px 2px;
+  font-size: var(--font-size-2xs);
+  text-align: center;
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+  font-variant-numeric: tabular-nums;
+}
+
+.af-hint-t tbody th {
+  text-align: left;
+  max-width: 5.5em;
+  line-height: 1.3;
+  font-weight: var(--font-weight-medium);
+}
+
+.af-hint-t td small {
+  display: block;
+  font-size: 9.5px;
+  color: var(--text-secondary);
+}
+
+.af-hint-t td.is-dim {
+  opacity: 0.5;
+}
+
+.af-fst {
+  color: var(--color-warning-text);
+}
+
+.af-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.af-hintcs {
+  display: grid;
+  gap: var(--spacing-1-5);
+}
+
+.af-hintc {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  padding: var(--spacing-1-5) var(--spacing-2);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.af-hintc[aria-pressed="true"] {
+  border-color: var(--brand-accent-primary);
+  box-shadow: inset 0 0 0 1px var(--brand-accent-primary);
+}
+
+.af-hint-r {
+  color: var(--text-secondary);
+}
+
+.af-hint-r small {
+  display: block;
+  font-size: var(--font-size-2xs);
+}
+
+.af-pats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-2);
+}
+
+.af-pat {
+  display: grid;
+  gap: var(--spacing-1);
+  text-align: left;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  padding: var(--spacing-1-5);
+  font: inherit;
+  font-size: var(--font-size-2xs);
+  cursor: pointer;
+  min-width: 0;
+}
+
+.af-pat.is-any {
+  grid-column: 1 / -1;
+}
+
+.af-pat-k {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.af-pat-fq {
+  color: var(--text-secondary);
+}
+
+.af-pat[aria-pressed="true"] {
+  border: var(--border-width-2) solid var(--brand-accent-primary);
+  padding: calc(var(--spacing-1-5) - 1px);
+  background: var(--surface-page);
+}
+
+.af-mk-t th,
+.af-mk-t td {
+  padding: var(--spacing-1);
+  font-size: var(--font-size-2xs);
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+  text-align: left;
+  vertical-align: top;
+}
+
+.af-mk-t td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.af-mk-t td small,
+.af-mk-t td em {
+  display: block;
+  font-style: normal;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.af-mk-t .af-few {
+  opacity: 0.6;
+}
+
+.af-mk-t tr.af-grp th {
+  color: var(--text-secondary);
+  padding-top: var(--spacing-2);
+}
+
+.af-mk-t tr.is-today {
+  background: var(--surface-page);
+}
+
+.af-mk-t tr.is-today th small {
+  display: inline-block;
+  margin-left: var(--spacing-1);
+  font-size: 10px;
+  color: var(--surface-card);
+  background: var(--brand-accent-primary);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+.af-uc {
+  display: block;
+  font-weight: var(--font-weight-normal);
+  color: var(--color-warning-text);
+}
+
+.af-rlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--spacing-1-5);
+}
+
+.af-rc {
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-1-5) var(--spacing-2);
+  display: grid;
+  gap: 2px;
+  font-size: var(--font-size-xs);
+}
+
+@media (max-width: 360px) {
+  .af-pats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.af-lk .af-bar-v {
+  white-space: normal;
+}
+
+.af-lk .af-bar-v small {
+  display: block;
+  font-size: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .af-v16 {
+    --af-hit: #2dd4bf;
+  }
+}
+
+:root[data-theme="dark"] .af-v16 {
+  --af-hit: #2dd4bf;
+}
+
+.af-card.is-weak .af-card-head h4 {
+  color: var(--text-secondary);
+}
+
+.af-strip-col.is-today .af-strip-rank {
+  color: var(--brand-accent-primary);
+}
+
+.af-strip-rank small {
+  display: block;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .af-sonar .af-sweep {
+    animation: af-sweep 8s linear infinite;
+    transform-origin: 220px 220px;
+  }
+
+  @keyframes af-sweep {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+.af-panel-split {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+@media (max-width: 480px) {
+  .af-pats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* カードの棒の見出し（どの艇の棒か） */
+.af-strip-title {
+  margin: 6px 0 2px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* 類似レースの1件から、そのレースのページへ */
+.af-nb-link {
+  display: inline-block;
+  margin: 4px 0 6px;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+/* 節の副題（見出しの直下1行。2026-10-06 ユーザー決定「龍神ソナー」） */
+.af-v16-subtitle {
+  margin: 0 0 8px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* カードの「{n}号艇の今日: 値（6艇中◯位）」 */
+.af-card-today {
+  margin: 4px 0 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* 説明・注記・脚注の見出し＋箇条書き（NoteList） */
+.af-notes {
+  margin: 6px 0;
+}
+.af-notes-h {
+  margin: 0 0 2px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+}

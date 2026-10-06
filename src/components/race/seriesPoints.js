@@ -26,6 +26,7 @@
  * 持っていないので、走った分から計算した値をそのまま返す。
  */
 import { finishPositionOf } from "./basicInfoStats.js";
+import { getRaceStageKey } from "../../constants/raceStageConfig.js";
 
 /** 予選・一般戦の着順点 */
 export const SCORE_POINTS = { 1: 10, 2: 8, 3: 6, 4: 4, 5: 2, 6: 1 };
@@ -89,6 +90,9 @@ export function classifyStage(stage) {
   if (!s) return "normal";
   // 「準々優勝戦」「準優進出戦」も勝ち上がり戦なので先に落とす
   if (s.includes("準優") || s.includes("優勝戦")) return "excluded";
+  // 「優勝戦」「準優」を含まない優勝戦・準優勝戦（決勝戦・準決勝戦・王将位決定戦・〜優 等）。
+  // バッジと同じ判定 v2（raceStageConfig.js の getRaceStageKey、BOA-271 T1-1）
+  if (getRaceStageKey(stage)) return "excluded";
   // 「ドリーム」と、その略記「DR」（「桐生DR戦女子」「ツッキーDR戦」等）。
   // 「ドラドキ」は桐生のシリーズ名で、DRを含まないので当たらない
   if (s.includes("ドリーム") || s.includes("DR")) return "dream";

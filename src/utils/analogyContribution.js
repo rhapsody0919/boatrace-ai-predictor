@@ -12,6 +12,9 @@ export const RANK_SD_MULTIPLE = 2;
 export const GRADES = ["ippan", "G3", "G2", "G1", "SG"];
 export const ROUNDS = ["yosen", "junyu", "yusho", "other"];
 export const FINISH_TARGETS = [1, 2, 3];
+/** 段（マイグレーション 132）: exhibition＝展示後のモデル、racecard＝出走表時点のモデル（直前情報なし） */
+export const STAGES = ["exhibition", "racecard"];
+export const DEFAULT_STAGE = "exhibition";
 
 const STAGE_CATEGORY_ROUND = {
   qualifier: "yosen",

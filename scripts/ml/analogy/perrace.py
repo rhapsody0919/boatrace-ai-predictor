@@ -1,12 +1,12 @@
-"""BOA-271 レースごとの寄与度（B）の学習側の書き出しと記録
+"""BOA-271 展示後の段の特徴量の一致検査のための書き出しと、事前登録5 の記録
 
-推論側（Vercel の JS）がレースごとに TreeSHAP を計算するために、学習ジョブが版ごとに書き出すもの
-（ADR 案（#1134「レースごとの寄与度」）、plan「学習側の設計」）:
+レースごとの寄与度はやめた（spec Q2）が、展示後の段で analogyRaceFeatures.js の特徴量が features.py と
+一致するかを見るため、win・win_racecard の2本について学習ジョブが版ごとに書き出す:
   - model_win.json・model_win_racecard.json: LightGBM の dump_model() をそのまま（storage.js が gzip して置く）
   - per_race_meta.json: モデルの特徴量の並び・直前情報8列・支部の対応表・テーマ
   - parity_fixture.json: 一致検査の固定データ。test の本体分から 50R、DB の行の形の生の値と、Python の
     特徴量・pred_contrib の組。推論側の treeshap-parity.js が「DB の行 → 特徴量 → SHAP」を通して照合する
-記録（事前登録5、止めない）: 展示の効果、ファンに見える値（テーマのシェア等）、分岐の欠損の向き。
+記録（事前登録5、止めない）: 展示の効果、段ごとの profiles の分布（追記C）、分岐の欠損の向き。
 """
 
 from __future__ import annotations
@@ -20,15 +20,16 @@ import pandas as pd
 
 import features as F
 import metrics as M
-from themes import LIVE_FEATURES, THEMES, theme_features
+from themes import FRAME_FEATURES, LIVE_FEATURES, THEMES
 
 FIXTURE_N = 50
+# per_race_meta.json の themes。推論側の集計（analogyRaceContribution.js）は全列がどれかのテーマに入っていることを
+# 求めるので、AIの見立ての7テーマから外した枠番を、ここでは枠のテーマとして足す
+META_THEMES = THEMES + [{"key": "frame", "name": "枠", "description": "枠番",
+                         "groups": [{"key": "boatNumber", "label": "枠番", "features": FRAME_FEATURES}]}]
 # 事前登録5: 2026-04-01 以降の test は、探索（ablate.py）・FR-2 の事前登録1〜3で見ている。
 # 展示の効果を確認的に読むのは、これより前だけ
 EXPLORED_FROM = pd.Timestamp("2026-04-01")
-RECORD_N_RACES = 2000
-CHIP_GAP = 0.05
-EXHIBITION_GROUP = ["exh_time", "exh_time_diff", "exh_time_rank"]
 
 
 # ---------------------------------------------------------------- 書き出し
@@ -55,7 +56,7 @@ def per_race_meta(version: str, win: tuple, racecard: tuple, maps: dict) -> dict
         "categorical_maps": maps,
         # 本体の風向の会場ごとの回転（features.py の wind_basis.json）。推論側の JS が同じ表で直す
         "wind_basis": F.load_wind_basis(),
-        "themes": THEMES,
+        "themes": META_THEMES,
     }
 
 
@@ -178,68 +179,71 @@ def exhibition_effect(ll_win: np.ndarray, ll_racecard: np.ndarray, test: pd.Data
     return out
 
 
-def centered_theme_shares(contrib: np.ndarray, names: list[str]) -> np.ndarray:
-    """contrib: (6R, 特徴量+1) の pred_contrib。レース内で6艇の平均を引いた |SHAP| をテーマごとに足し、
-    全テーマの合計で割る → (R, テーマ数)。推論側の JS の集計と同じ定義（ADR 案（#1134「レースごとの寄与度」））。"""
-    c = contrib[:, :-1].reshape(-1, 6, len(names))
-    c = np.abs(c - c.mean(axis=1, keepdims=True)).sum(axis=1)
-    idx = {f: i for i, f in enumerate(names)}
-    cols = [[idx[f] for f in theme_features(t) if f in idx] for t in THEMES]
-    th = np.stack([c[:, ix].sum(axis=1) for ix in cols], axis=1)
-    return th / th.sum(axis=1, keepdims=True)
+def _group_shares(row: dict) -> dict:
+    return {g["key"]: g["share"] for items in row["breakdown"].values() for g in items}
 
 
-def _dist(a: np.ndarray) -> dict:
-    return {"mean": float(a.mean()), "p10": float(np.percentile(a, 10)),
-            "p50": float(np.percentile(a, 50)), "p90": float(np.percentile(a, 90))}
+def _renorm(shares: dict, keys: list[str]) -> dict:
+    tot = sum(shares[k] for k in keys)
+    return {k: (shares[k] / tot if tot > 0 else 0.0) for k in keys}
 
 
-def _top2_gap(sh: np.ndarray) -> np.ndarray:
-    s = np.sort(sh, axis=1)
-    return s[:, -1] - s[:, -2]
-
-
-def fan_visible_record(test: pd.DataFrame, win: lgb.Booster, racecard: lgb.Booster,
-                       racecard_reseeds: list[lgb.Booster], n: int = RECORD_N_RACES,
-                       seed: int = 0) -> dict:
-    """事前登録5 の記録2: test の本体分・展示がそろったレースから n レースを無作為に。"""
-    first = test[test["boat_number"] == 1]
-    ok = (first["race_date"] > F.KB_END).to_numpy() & live_complete(test)
-    ids = first["race_id"].to_numpy()[ok]
-    pick = np.sort(np.random.default_rng(seed).choice(ids, min(n, len(ids)), replace=False))
-    s = test[test["race_id"].isin(pick)].sort_values(["race_date", "race_id", "boat_number"])
-
-    def shares(m):
-        return centered_theme_shares(m.predict(s[m.feature_name()].astype("float32"), pred_contrib=True),
-                                     m.feature_name())
-    sw, sr = shares(win), shares(racecard)
-    keys = [t["key"] for t in THEMES]
-    # 展示が押し上げた艇: win の中で、展示タイムのグループの中心化した SHAP の合計が最大の艇
-    cw = win.predict(s[win.feature_name()].astype("float32"), pred_contrib=True)[:, :-1]
-    gi = [win.feature_name().index(f) for f in EXHIBITION_GROUP]
-    g = cw[:, gi].sum(axis=1).reshape(-1, 6)
-    g = g - g.mean(axis=1, keepdims=True)
-    pushed = g.argmax(axis=1)
-    exh_rank1 = s["exh_time_rank"].to_numpy().reshape(-1, 6)[np.arange(len(pushed)), pushed] == 1
-    reseed = []
-    for m in racecard_reseeds:
-        so = shares(m)
-        reseed.append({"mean_abs_diff": float(np.abs(so - sr).mean()),
-                       "top1_changed_rate": float((so.argmax(1) != sr.argmax(1)).mean())})
-    return {
-        "n_races": int(len(sw)), "scale": f"sample{len(sw)}",
-        "shares": {stage: {k: _dist(sh[:, i]) for i, k in enumerate(keys)}
-                   for stage, sh in (("exhibition", sw), ("racecard", sr))},
-        "top1_swap_rate": float((sw.argmax(1) != sr.argmax(1)).mean()),
-        "l1_distance": _dist(np.abs(sw - sr).sum(axis=1)),
-        "chip_emphasis_rate": {"exhibition": float((_top2_gap(sw) >= CHIP_GAP).mean()),
-                               "racecard": float((_top2_gap(sr) >= CHIP_GAP).mean())},
-        "exhibition_pushed_boat": {
-            "boat_number_counts": {int(b) + 1: int(c) for b, c in
-                                   zip(*np.unique(pushed, return_counts=True))},
-            "is_exhibition_rank1_rate": float(exh_rank1.mean())},
-        "racecard_reseed": reseed,
-    }
+def stage_profile_record(profiles: list[dict]) -> dict:
+    """事前登録5 の記録2（追記C）: 段×着順×艇番の全国の7テーマの割合・SD、2段の間の1位の入れ替わりと
+    L1 距離、向きの判定の内訳。2段の比較は、テーマの割合（それぞれの段で和1）のままの値と、2段に共通する
+    グループだけで和を1にし直したグループの割合の値を並べる（出走表時点の段には直前情報のグループが無く、
+    「スタート・展示」も過去の平均ST だけになるため。追記C の補足）。"""
+    nat = {(p["stage"], p["finish_target"], p["boat_number"]): p for p in profiles
+           if (p["venue_code"], p["grade"], p["round"]) == (0, "all", "all") and p["boat_number"] > 0}
+    shares = {f"{s}|{ft}|{b}": {"shares": p["shares"], "share_sd": p["share_sd"]}
+              for (s, ft, b), p in sorted(nat.items())}
+    between = {}
+    for (s, ft, b), post in sorted(nat.items()):
+        pre = nat.get(("racecard", ft, b))
+        if s != "exhibition" or pre is None:
+            continue
+        common = sorted(set(post["shares"]) & set(pre["shares"]))
+        gpost, gpre = _group_shares(post), _group_shares(pre)
+        gcommon = sorted(set(gpost) & set(gpre))
+        npost, npre = _renorm(gpost, gcommon), _renorm(gpre, gcommon)
+        between[f"{ft}|{b}"] = {
+            "top1_exhibition": max(post["shares"], key=post["shares"].get),
+            "top1_racecard": max(pre["shares"], key=pre["shares"].get),
+            "l1_common_themes_raw": float(sum(abs(post["shares"][k] - pre["shares"][k]) for k in common)),
+            "top1_group_common_exhibition": max(npost, key=npost.get),
+            "top1_group_common_racecard": max(npre, key=npre.get),
+            "l1_common_groups_renormalized": float(sum(abs(npost[k] - npre[k]) for k in gcommon)),
+        }
+    for v in between.values():
+        v["top1_swapped"] = v["top1_exhibition"] != v["top1_racecard"]
+        v["top1_group_common_swapped"] = (v["top1_group_common_exhibition"]
+                                          != v["top1_group_common_racecard"])
+    directions = {}
+    for (s, ft, _), p in nat.items():
+        d = directions.setdefault(f"{s}|{ft}", {"higher": 0, "lower": 0, "middle": 0, "none": 0,
+                                                "varies": 0, "unstable_to_none": 0,
+                                                "category_none": 0, "category_some": 0,
+                                                "category_empty": 0})
+        for items in p["breakdown"].values():
+            for g in items:
+                if "direction" not in g:
+                    continue
+                v = g["direction"]
+                if isinstance(v, dict):
+                    # |平均| は大きいが、揺れの確認・±0.005 で1つも残らなかったもの（画面は「—」）
+                    d["category_some" if v["up"] or v["down"] else "category_empty"] += 1
+                elif g.get("direction_basis") and "values" in g["direction_basis"]:
+                    d["category_none"] += 1
+                else:
+                    d[v] += 1
+                    basis = g.get("direction_basis") or {}
+                    if v == "none" and basis.get("overall") not in (None, "none"):
+                        d["unstable_to_none"] += 1
+    return {"national": shares, "between_stages": between,
+            "top1_swapped_count": sum(v["top1_swapped"] for v in between.values()),
+            "top1_group_common_swapped_count": sum(v["top1_group_common_swapped"]
+                                                   for v in between.values()),
+            "directions": dict(sorted(directions.items()))}
 
 
 def missing_types(dump: dict) -> dict:

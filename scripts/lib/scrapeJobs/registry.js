@@ -399,6 +399,27 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
   },
 
+  // BOA-271 アナロジー・ファインダーの週次の学習の起動（workflow_dispatch。scripts/lib/analogyDispatch.js）。
+  // 週1回しか起動しないので、10分ごとの死活を見る continuous ではなく monitor にし、モードのゲートは
+  // api/cron 側で掛ける（modeGated: true。off の間は何もしない）。dispatch の失敗は1回目から通知する
+  // （failureAlertAfter: 1。トークンの期限切れ等は次の起動でも直らないため）
+  analogy_dispatch_train: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+  },
+  // BOA-271 v16 の朝のバッチの起動（analogy-v16-morning.yml。scripts/lib/analogyDispatch.js、T2-5b）。
+  // 1日4回（7:10・7:40 は拾い直しだけ・9:40・13:40）なので、学習の起動と同じく monitor でモードのゲートを api/cron 側で掛ける
+  analogy_dispatch_morning: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+  },
+
   // ↓ N23・N29（tasks.md T4b-20・T4b-21）
   // N23 前検タイム・前検順位・節時点のモーター/ボート2連対率（motor_pretest_stats）。05:20指定（cron: 05:30・06:00・06:30 JST。
   // 指定を cron より10分早くするのは、起動が数秒早まっても、対象日が前日に化けないため）。開催中の会場（races）ごとに
@@ -446,6 +467,15 @@ export const SCRAPE_JOBS = Object.freeze({
     kind: "daily",
     targetTimeJst: "05:30",
     leaseSec: 300,
+    maxDurationSec: 120,
+  },
+  // BOA-271 アナロジー・ファインダー v16 の展示後の段（類似レースの並べ直し。plan「展示後の段」、tasks T4-3）。
+  // 2分ごと（JST 6:00〜23:58）に、6艇の展示タイムがそろった（か欠場が分かった）締切前のレースを最大20件処理する。
+  // 外部サイトへは通信しない。
+  // 実装: scripts/lib/analogyV16Exhibition.js、api/cron/analogy-exhibition.js
+  analogy_v16_exhibition: {
+    kind: "continuous",
+    leaseSec: 120,
     maxDurationSec: 120,
   },
 });

@@ -12,12 +12,17 @@ import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { getRaceId } from "../../utils/raceId";
 import { isRaceCancelled } from "../../utils/raceCancellation";
-import { volatilityDisplayValue } from "../../utils/volatilityLevel";
+import {
+  getVolatilityLevel,
+  volatilityDisplayValue,
+} from "../../utils/volatilityLevel";
+import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
+import { pickVolatilityHighlights } from "../../utils/volatilityHighlights";
 import "./TodaysVolatilityHighlights.css";
 
 const HIGHLIGHT_COUNT = 5;
 
-function flattenRaces(venuesData) {
+function flattenRaces(venuesData, nowHHMM) {
   const races = [];
   for (const venue of venuesData || []) {
     for (const race of venue.races || []) {
@@ -38,34 +43,45 @@ function flattenRaces(venuesData) {
         raceNo: race.raceNo,
         startTime: race.startTime || null,
         percentile: race.volatility.percentile,
-        // turnPrediction は get_today_races RPC（052マイグレーション）が返す場合のみ
-        // 存在する。未適用環境ではundefinedのため、無いものとして扱う
-        turnPrediction: race.turnPrediction || null,
+        // 列に入れるかの段階（レース詳細と同じ基準）
+        level: getVolatilityLevel(race.volatility.percentile),
+        // 締切を過ぎたか（結果が出たレースも含む）。締切前のレースから選ぶために使う（BOA-757）
+        closed:
+          getRaceStatus(
+            { startTime: race.startTime, result: race.result },
+            nowHHMM,
+          ) !== RACE_STATUS.UPCOMING,
+        // 1着の艇番（結果が出ていれば）。締切済みのレースの振り返りに出す
+        rank1: race.result?.rank1 ?? null,
       });
     }
   }
   return races;
 }
 
-function HighlightList({ title, races, t }) {
-  if (races.length === 0) return null;
+// 列が空でも見出しと「該当なし」を出す。列ごと消すと、崩れ注意のレースが無いのか読み込めていないのかが
+// 分からず、1440px では残った列が全幅に伸びた（PR #1248 ファン評価2周目）
+function HighlightList({ title, races, emptyText, t }) {
   return (
     <div className="volatility-highlights__column">
       <h3 className="volatility-highlights__column-title">{title}</h3>
-      <ul className="volatility-highlights__list">
-        {races.map((race) => (
-          <li key={race.raceId}>
-            <RaceLink race={race} t={t} />
-          </li>
-        ))}
-      </ul>
+      {races.length === 0 ? (
+        <p className="volatility-highlights__empty">{emptyText}</p>
+      ) : (
+        <ul className="volatility-highlights__list">
+          {races.map((race) => (
+            <li key={race.raceId}>
+              <RaceLink race={race} t={t} />
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
 
 function RaceLink({ race, t }) {
   const localize = useLocalizedPath();
-  const tp = race.turnPrediction;
   return (
     <Link
       to={localize(`/race/${race.raceId}`)}
@@ -80,6 +96,11 @@ function RaceLink({ race, t }) {
               {race.startTime}
             </span>
           )}
+          {race.closed && (
+            <span className="volatility-highlights__closed">
+              {t("home.volatilityHighlightsClosed")}
+            </span>
+          )}
         </span>
         {/* 「100%」は確率に読まれた。レース詳細の比較バーと同じく「100 / 100」（0〜100 の物差し）で
             出し、値もバーと同じ丸め方にする（2026-10-03 ユーザー判断、BOA-711 U4） */}
@@ -90,29 +111,36 @@ function RaceLink({ race, t }) {
           </span>
         </span>
       </div>
-      {tp && typeof tp.probability === "number" && (
-        <div className="volatility-highlights__turn">
-          {t("home.volatilityHighlightsTurnPrediction", {
-            course: tp.winnerCourse,
-            technique: t(`techniques.${tp.technique}`, tp.technique),
-            probability: Math.round(tp.probability * 100),
-          })}
+      {/* 展開予測（最有力の展開）は出さない。ほぼ全レースが「① 逃げ」で見分けに使えず、同じ会場内の
+          相対値である崩れやすさと並ぶと、「イン崩れ注意（高）」の列で逃げが最有力と言っているように
+          見えた（PR #1248 ファン評価1・2周目、ユーザー判断で外した）。展開は各レースの AI予想タブで見る */}
+      {/* 締切済みのレースは結果も出す（振り返り）。「結果: 3号艇が1着」と結果だと分かる形にする。
+          進入コースはホームのデータ（get_today_races）に無いので出さない */}
+      {race.closed && (
+        <div className="volatility-highlights__result">
+          {race.rank1 != null
+            ? t("home.volatilityHighlightsResult", { boat: race.rank1 })
+            : t("home.volatilityHighlightsResultPending")}
         </div>
       )}
     </Link>
   );
 }
 
-function TodaysVolatilityHighlights({ venuesData }) {
+function TodaysVolatilityHighlights({ venuesData, nowHHMM = null }) {
   const { t } = useTranslation();
 
-  const races = flattenRaces(venuesData);
-  const n = Math.min(HIGHLIGHT_COUNT, Math.floor(races.length / 2));
-  if (n === 0) return null;
-
-  const sorted = [...races].sort((a, b) => b.percentile - a.percentile);
-  const highRaces = sorted.slice(0, n);
-  const lowRaces = sorted.slice(races.length - n).reverse();
+  const {
+    high: highRaces,
+    low: lowRaces,
+    allClosed,
+    poolSize,
+  } = pickVolatilityHighlights(
+    flattenRaces(venuesData, nowHHMM),
+    HIGHLIGHT_COUNT,
+  );
+  if (poolSize === 0) return null;
+  const emptyKey = allClosed ? "Closed" : "Open";
 
   return (
     <section className="volatility-highlights">
@@ -123,16 +151,24 @@ function TodaysVolatilityHighlights({ venuesData }) {
       <p className="volatility-highlights__scale-note">
         {t("home.volatilityHighlightsScaleNote")}
       </p>
+      {/* 締切前のレースが残っていない時間帯（夜）だけ、振り返りとして出していることを書く */}
+      {allClosed && (
+        <p className="volatility-highlights__closed-note">
+          {t("home.volatilityHighlightsClosedNote")}
+        </p>
+      )}
       <div className="volatility-highlights__columns">
         <HighlightList
           // アイコンはレース詳細のイン崩れ注意度カードと同じ 🌪️（2026-10-03 ユーザー判断、BOA-711）
           title={`🌪️ ${t("volatility.levelHigh")}`}
           races={highRaces}
+          emptyText={t(`home.volatilityHighlightsHighEmpty${emptyKey}`)}
           t={t}
         />
         <HighlightList
           title={`🎯 ${t("volatility.levelLow")}`}
           races={lowRaces}
+          emptyText={t(`home.volatilityHighlightsLowEmpty${emptyKey}`)}
           t={t}
         />
       </div>

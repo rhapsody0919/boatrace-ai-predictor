@@ -1,0 +1,218 @@
+/**
+ * アナロジー・ファインダー v16 の類似レース・展開シナリオの集計（BOA-271 spec FR-B・FR-C）。純粋関数。
+ *
+ * 類似レース（タブ2）はスライダーの件数で数え直す（似ている順の上位 n 件）。入力は /api/analogy/similar の
+ * neighbors（scripts/ml/analogy/v16_morning.py の similar-racecard、展示後は scripts/lib/analogyV16Exhibition.js）。
+ * 着順の流れ・よく出た3連単はタブ3（scenario の cells の tri）と同じ形 {"1-2-4": 件数} にして共用する。
+ */
+
+/** スライダーの段（spec B-4） */
+export const SLIDER_STEPS = [
+  10, 20, 30, 50, 75, 100, 150, 200, 300, 400, 600, 800,
+];
+export const DEFAULT_STEP = 400;
+export const MAX_SHOWN = 800;
+/** タブ2で「割合はぶれやすい」を出す件数 */
+export const FEW_SIMILAR = 30;
+export const TECHNIQUES = [
+  "逃げ",
+  "差し",
+  "まくり",
+  "まくり差し",
+  "抜き",
+  "恵まれ",
+];
+
+/**
+ * 段（spec B-4）: 層の件数（表示する件数、800まで）未満の段と、最後に層の件数
+ * @param {number} total 表示できる件数（neighbors の数）
+ */
+export function sliderSteps(total) {
+  if (total >= MAX_SHOWN) return SLIDER_STEPS;
+  return [...SLIDER_STEPS.filter((s) => s < total), total].filter((s) => s > 0);
+}
+
+/** 既定の段の位置: 400（層がそれより少なければ層の件数＝最後の段） */
+export function defaultStepIndex(steps) {
+  const i = steps.indexOf(DEFAULT_STEP);
+  return i >= 0 ? i : steps.length - 1;
+}
+
+/** race_id「2021-10-14-16-12」→ 日付・会場・R（展示後の neighbors は結果から日付・会場・R を省いている） */
+export function normalizeNeighbor(n) {
+  const m = /^(\d{4}-\d{2}-\d{2})-(\d{2})-(\d{2})$/.exec(n.race_id ?? "");
+  return {
+    ...n,
+    date: n.date ?? m?.[1] ?? null,
+    venue_code: n.venue_code ?? (m ? Number(m[2]) : null),
+    race_number: n.race_number ?? (m ? Number(m[3]) : null),
+  };
+}
+
+const validFinish = (f) =>
+  Array.isArray(f) &&
+  f.length >= 3 &&
+  f.slice(0, 3).every((b) => b >= 1 && b <= 6);
+
+/**
+ * 類似レースの決まり方（spec B-8）
+ * @param {object[]} neighbors 似ている順の上位 n 件
+ * @returns {{n:number, win:number[], hit:{1:number[],2:number[],3:number[]}, tech:Record<string,number>, tri:Record<string,number>}}
+ *   n は件数（結果のある件。win・hit・tri の分母）
+ */
+export function aggregateNeighbors(neighbors) {
+  const out = {
+    n: 0,
+    win: [0, 0, 0, 0, 0, 0],
+    hit: {
+      1: [0, 0, 0, 0, 0, 0],
+      2: [0, 0, 0, 0, 0, 0],
+      3: [0, 0, 0, 0, 0, 0],
+    },
+    tech: {},
+    tri: {},
+  };
+  for (const x of neighbors) {
+    if (!validFinish(x.finish)) continue;
+    const f = x.finish.slice(0, 3);
+    out.n += 1;
+    out.win[f[0] - 1] += 1;
+    f.forEach((b, i) => {
+      for (let t = i + 1; t <= 3; t++) out.hit[t][b - 1] += 1;
+    });
+    const tq = x.technique ?? "その他";
+    out.tech[tq] = (out.tech[tq] ?? 0) + 1;
+    const k = f.join("-");
+    out.tri[k] = (out.tri[k] ?? 0) + 1;
+  }
+  return out;
+}
+
+/**
+ * 33項目（spec B-6・B-7。v16_similar.item_levels のキー）。group は「1件ずつ見比べる」の見出し、
+ * exhibition は展示の時点で決まる項目（展示前は出さない）。距離に使うかは inDistance（下）
+ */
+export const SIMILAR_ITEMS = [
+  { key: "venue", group: "race" },
+  { key: "race_number_band", group: "race" },
+  { key: "race_number", group: "race", dup: true },
+  { key: "grade", group: "race" },
+  { key: "grade_bin", group: "race", dup: true },
+  { key: "round", group: "race" },
+  { key: "series_day", group: "race" },
+  { key: "is_final_day", group: "race", noDistance: true },
+  { key: "class_all6", group: "power" },
+  { key: "n_A1", group: "power", dup: true },
+  { key: "b1_class", group: "power" },
+  { key: "win_gap_band", group: "power" },
+  { key: "top_boat", group: "power" },
+  { key: "nat_win_6", group: "power" },
+  { key: "nat_win_rank_4", group: "power" },
+  { key: "b1_nat_win", group: "power" },
+  { key: "loc_win_6", group: "power" },
+  { key: "recent_win30_6", group: "power" },
+  { key: "recent_top3_30_6", group: "power" },
+  { key: "st_mean30_6", group: "start" },
+  { key: "b1_st_rank_band", group: "start" },
+  { key: "motor_2_6", group: "machine" },
+  { key: "b1_motor_rank_band", group: "machine" },
+  { key: "boat_2_6", group: "machine" },
+  { key: "b1_boat_rank_band", group: "machine" },
+  { key: "age_6", group: "profile" },
+  { key: "weight_6", group: "profile" },
+  { key: "n_local", group: "profile" },
+  { key: "weather", group: "water", exhibition: true },
+  { key: "wind_bin", group: "water", exhibition: true },
+  { key: "wind_vector", group: "water", exhibition: true, dup: true },
+  { key: "wave_bin", group: "water", exhibition: true },
+  { key: "exh_time_diff_6", group: "exhibition", exhibition: true },
+];
+export const ITEM_GROUPS = [
+  "race",
+  "power",
+  "start",
+  "machine",
+  "profile",
+  "water",
+  "exhibition",
+];
+
+/** そろえる条件の項目（全件そろうので「何が似ている？」に出さない。spec B-6） */
+export function layerItemKeys(conditions) {
+  return [
+    "b1_class",
+    "win_gap_band",
+    "top_boat",
+    ...(conditions?.round ? ["round"] : []),
+    ...(conditions?.grade_g1plus ? ["grade", "grade_bin"] : []),
+  ];
+}
+
+/** その時点で近さの計算に使う項目か（展示前は展示・天候・水面を使わない。最終日は使わない） */
+export const inDistance = (item, exhibitionStage) =>
+  !item.noDistance && (exhibitionStage || !item.exhibition);
+
+/** その時点で画面に出す項目（展示前は展示の時点で決まる項目を出さない） */
+export const visibleItems = (exhibitionStage) =>
+  SIMILAR_ITEMS.filter((it) => exhibitionStage || !it.exhibition);
+
+/**
+ * 項目ごとの「同じ」「近いも含む」の割合（spec B-6）。値 −1（どちらかが欠損）は数えない
+ * @returns {Record<string, {same:number, near:number, n:number, rate:number|null, nearRate:number|null}>}
+ */
+export function itemRates(neighbors, items) {
+  return Object.fromEntries(
+    items.map((it) => {
+      const v = neighbors
+        .map((x) => x.items?.[it.key])
+        .filter((m) => m === 0 || m === 1 || m === 2);
+      const same = v.filter((m) => m === 2).length;
+      const near = v.filter((m) => m >= 1).length;
+      return [
+        it.key,
+        {
+          same,
+          near,
+          n: v.length,
+          rate: v.length ? same / v.length : null,
+          nearRate: v.length ? near / v.length : null,
+        },
+      ];
+    }),
+  );
+}
+
+/**
+ * 1件の「同じ{a}・近い{b}・違う{c}」（近さに使う項目、重複の項目は除く）
+ * @returns {{same:number, near:number, diff:number, total:number}}
+ */
+export function neighborCounts(neighbor, exhibitionStage) {
+  const out = { same: 0, near: 0, diff: 0, total: 0 };
+  for (const it of SIMILAR_ITEMS) {
+    if (!inDistance(it, exhibitionStage) || it.dup) continue;
+    const m = neighbor.items?.[it.key];
+    if (m !== 0 && m !== 1 && m !== 2) continue;
+    out.total += 1;
+    if (m === 2) out.same += 1;
+    else if (m === 1) out.near += 1;
+    else out.diff += 1;
+  }
+  return out;
+}
+
+/**
+ * 3連単の件数 {"1-2-4": 件数} → 多い順の [[1,2,4], 件数][]（同数は組み合わせの昇順）
+ * @param {Record<string, number>} tri
+ * @param {{first?: number|null, not1?: boolean}} [filter] 1着の艇で絞る・1号艇以外が勝ったレース
+ */
+export function trifectaList(tri, { first = null, not1 = false } = {}) {
+  return Object.entries(tri ?? {})
+    .map(([k, c]) => [k.split("-").map(Number), c])
+    .filter(
+      ([x, c]) => c > 0 && (!first || x[0] === first) && (!not1 || x[0] !== 1),
+    )
+    .sort((a, b) => b[1] - a[1] || a[0].join("").localeCompare(b[0].join("")));
+}
+
+/** よく出た3連単の上位の数（spec B-8「上位3つ」） */
+export const TOP_TRIFECTA = 3;
