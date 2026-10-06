@@ -314,6 +314,7 @@ function MeetBody({ page }) {
           shobugake={shobugake}
           classByRacer={classByRacer}
           officialAsOfDay={page.officialAsOfDay ?? null}
+          officialAsOfIsToday={page.officialAsOfIsToday ?? false}
           officialLink={`https://www.boatrace.jp/owpc/pc/race/pointrank?jcd=${String(page.venueCode).padStart(2, "0")}&hd=${getTodayJST().replaceAll("-", "")}`}
           penaltyByRacer={Object.fromEntries(
             Object.entries(board?.officialByRacer ?? {})

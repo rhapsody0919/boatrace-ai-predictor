@@ -46,6 +46,7 @@ const FINISH_MARKS = [
  * @param {Object<number, string>} props.classByRacer 級別
  * @param {number|null} [props.officialAsOfDay] 予選中に公式の前夜時点の表を出しているとき、その日目
  * @param {string|null} [props.officialLink] 公式の得点率一覧（当日のリアルタイム）の URL
+ * @param {boolean} [props.officialAsOfIsToday] 公式の表が今日の終了時点（夜の取得後）か
  * @param {Object<number, number>} [props.penaltyByRacer] 公式の減点（賞典除外の印の99は除く）
  */
 function MeetRankingTable({
@@ -61,6 +62,7 @@ function MeetRankingTable({
   classByRacer,
   officialAsOfDay = null,
   officialLink = null,
+  officialAsOfIsToday = false,
   penaltyByRacer = {},
 }) {
   const { t } = useTranslation();
@@ -86,13 +88,17 @@ function MeetRankingTable({
       <span className="meet-ranking__finishes-label">
         {t(confirmed ? "meetTab.finishLabelPrelim" : "meetTab.finishLabel")}
       </span>
-      {(finishes ?? []).map((f, i) => (
-        <span key={i} className={f === 1 ? "is-win" : undefined}>
-          {f === FINISH_ABSENT
-            ? t("meetTab.finishAbsent")
-            : (f ?? t("meetTab.finishDq"))}
-        </span>
-      ))}
+      {/* 着順の並びは1つのかたまりで折り返す（英語の長い見出しで最後の1〜2走だけが
+          次の行に落ち、走数を数え違えた。ファン評価3周目） */}
+      <span className="meet-ranking__finishes-list">
+        {(finishes ?? []).map((f, i) => (
+          <span key={i} className={f === 1 ? "is-win" : undefined}>
+            {f === FINISH_ABSENT
+              ? t("meetTab.finishAbsent")
+              : (f ?? t("meetTab.finishDq"))}
+          </span>
+        ))}
+      </span>
     </span>
   );
 
@@ -142,7 +148,9 @@ function MeetRankingTable({
           confirmed
             ? "meetPage.rankingSubOfficial"
             : officialAsOfDay != null
-              ? "meetPage.rankingSubOfficialAsOf"
+              ? officialAsOfIsToday
+                ? "meetPage.rankingSubOfficialAsOfToday"
+                : "meetPage.rankingSubOfficialAsOf"
               : "meetPage.rankingSubPrelim",
           {
             count: rows.length + excluded.length,
@@ -152,7 +160,7 @@ function MeetRankingTable({
       </p>
       {/* 取り込みは 22:00 JST。それまで公式は当日の結果をリアルタイムで出しているので、
           そちらへの道を置く（ファン評価2周目） */}
-      {officialAsOfDay != null && officialLink && (
+      {officialAsOfDay != null && !officialAsOfIsToday && officialLink && (
         <p className="meet-ranking__sub">
           <a href={officialLink} target="_blank" rel="noopener noreferrer">
             {t("meetPage.officialLiveLink")}

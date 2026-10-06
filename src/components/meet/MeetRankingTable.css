@@ -150,6 +150,12 @@
   margin-right: 2px;
 }
 
+.meet-ranking__finishes-list {
+  display: inline-flex;
+  gap: 4px;
+  white-space: nowrap;
+}
+
 .meet-ranking__finishes .is-win {
   color: var(--text-primary);
   font-weight: var(--font-weight-bold);

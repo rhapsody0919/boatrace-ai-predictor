@@ -3256,6 +3256,7 @@
       "obstruction": "妨害失格",
       "stall": "エンスト",
       "dnf": "不完走"
-    }
+    },
+    "rankingSubOfficialAsOfToday": "予選の得点率（{{day}}日目終了時点・公式の得点率一覧の値。今日の結果を反映済み）・全{{count}}人"
   }
 }

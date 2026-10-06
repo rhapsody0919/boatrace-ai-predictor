@@ -7346,6 +7346,11 @@ export const supabaseDataService = {
       ...base,
       board,
       officialAsOfDay,
+      // 表が今日の終了時点（その日の夜の取得後）か。画面の「今日の結果は22時ごろ反映」を
+      // 出し分ける（反映済みなのに「まだ」と読めた。ファン評価3周目）
+      officialAsOfIsToday:
+        officialAsOfDay != null &&
+        meetDays.filter((d) => d <= officialAsOf).pop() === today,
       qualifiers: buildQualifiers(conditions, entries, results),
     };
   },

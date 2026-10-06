@@ -3256,6 +3256,7 @@
       "obstruction": "방해 실격",
       "stall": "엔진 정지",
       "dnf": "미완주"
-    }
+    },
+    "rankingSubOfficialAsOfToday": "예선 득점률({{day}}일째 종료 시점, 공식 득점률 일람의 값. 오늘 결과 반영 완료), 전체 {{count}}명"
   }
 }
