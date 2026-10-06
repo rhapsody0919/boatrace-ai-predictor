@@ -130,6 +130,35 @@
   color: var(--brand-accent-primary);
 }
 
+/* 順位・機番の2列は、横に送っても左に残す（375px で使用者の列まで送ると、どのモーターの
+   行か分からなくなる。ファン評価 1周目）。塗りは表の面の色で、送った列を隠す */
+.vmr-table th:nth-child(-n + 2),
+.vmr-table td:nth-child(-n + 2) {
+  position: sticky;
+  z-index: 1;
+  background: var(--surface-card);
+}
+
+.vmr-table thead th:nth-child(-n + 2) {
+  background: var(--surface-page);
+}
+
+.vmr-table th:nth-child(1),
+.vmr-table td:nth-child(1) {
+  left: 0;
+  /* 2列目の left と同じ幅に固定する（見出しと本文で文字の大きさが違うので em ではなく rem） */
+  box-sizing: border-box;
+  width: 3rem;
+  min-width: 3rem;
+  max-width: 3rem;
+}
+
+.vmr-table th:nth-child(2),
+.vmr-table td:nth-child(2) {
+  left: 3rem;
+  box-shadow: inset -1px 0 0 var(--border-hairline);
+}
+
 .vmr-rank,
 .vmr-no {
   font-weight: var(--font-weight-semibold);

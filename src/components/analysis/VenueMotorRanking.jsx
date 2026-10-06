@@ -10,7 +10,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { STADIUM_NAMES as VENUE_NAMES, ALL_VENUE_CODES } from "../../constants";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
@@ -36,6 +36,15 @@ function VenueMotorRanking({ initialVenueCode = null }) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
   const [venue, setVenue] = useState(initialVenueCode);
+  const location = useLocation();
+  const navigate = useNavigate();
+  // 会場を選び直したら URL の venue_code も替える（共有・再読み込みで同じ会場が開くように）
+  const selectVenue = (code) => {
+    setVenue(code);
+    const next = new URLSearchParams(location.search);
+    next.set("venue_code", String(code));
+    navigate({ search: `?${next.toString()}` }, { replace: true });
+  };
   // 取得結果は会場とセットで持つ（会場を替えた直後に前の会場の表が残らない。
   // 読み込み中は「今の会場の結果がまだ無い」から導く）
   const [loaded, setLoaded] = useState(null);
@@ -146,7 +155,7 @@ function VenueMotorRanking({ initialVenueCode = null }) {
           id="vmr-venue-select"
           className="vmr-venue-select"
           value={venue ?? ""}
-          onChange={(e) => setVenue(parseInt(e.target.value, 10))}
+          onChange={(e) => selectVenue(parseInt(e.target.value, 10))}
         >
           {ALL_VENUE_CODES.map((v) => (
             <option key={v} value={v}>

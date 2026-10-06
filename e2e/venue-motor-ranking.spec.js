@@ -211,4 +211,38 @@ test.describe("会場モーターランキング（BOA-428 子3）", () => {
       .evaluate((e) => e.getBoundingClientRect().right);
     expect(right).toBeLessThanOrEqual(375);
   });
+  test("375px で表を右端まで送っても、順位・機番の列は左に残る（ファン評価 1周目）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await openRanking(page);
+    const scroller = page.locator(".vmr-table-scroll");
+    await scroller.evaluate((el) => {
+      el.scrollLeft = el.scrollWidth;
+    });
+    const { box, no } = await page.evaluate(() => {
+      const b = document
+        .querySelector(".vmr-table-scroll")
+        .getBoundingClientRect();
+      const cell = document
+        .querySelector(".vmr-table tbody tr td.vmr-no")
+        .getBoundingClientRect();
+      return { box: b.left, no: cell };
+    });
+    // 機番のセルが箱の左端付近に残り、表示されている
+    expect(no.left).toBeGreaterThanOrEqual(box - 1);
+    expect(no.left).toBeLessThan(box + 80);
+  });
+
+  test("会場を選び直すと URL の venue_code も替わる（ファン評価 1周目）", async ({
+    page,
+  }) => {
+    await openRanking(page);
+    await page.locator("#vmr-venue-select").selectOption("24");
+    await expect(page).toHaveURL(/venue_code=24/);
+    await expect(page).toHaveURL(/tab=motorranking/);
+    await expect(page.locator(".vmr-table tbody tr").first()).toBeVisible({
+      timeout: 30000,
+    });
+  });
 });
