@@ -475,6 +475,7 @@
       },
       "heading": "龍神ソナー · {{venue}}{{race}}R",
       "subtitle": "今日と条件がそろう過去レースを数えて、映し出す",
+      "notes": {"howToRead": "見方", "counting": "数え方", "caution": "注意", "terms": "用語", "ordering": "並べ方", "sonar": "ソナーの図の見方", "today": "今日の展示との関係", "period": "期間", "attacker": "攻める艇"},
       "stage": {
         "label": "時点",
         "racecard": "展示前（出走表）",

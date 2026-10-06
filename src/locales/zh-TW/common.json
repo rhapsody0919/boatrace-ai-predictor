@@ -817,6 +817,7 @@
       },
       "heading": "龍神聲納 · {{venue}}{{race}}R",
       "subtitle": "統計與今天條件相同的過往賽事",
+      "notes": {"howToRead": "看法", "counting": "計算方式", "caution": "注意", "terms": "用語", "ordering": "排列方式", "sonar": "聲納圖的看法", "today": "與今天展示的關係", "period": "期間", "attacker": "進攻的艇"},
       "stage": {
         "label": "時點",
         "racecard": "展示前（出賽表）",

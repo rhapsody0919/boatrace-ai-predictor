@@ -62,6 +62,7 @@ import {
   fmtRateCount,
   fmtSt3,
   scopeName,
+  splitSentences,
 } from "../../src/utils/analogyFormat.js";
 import { describeAnalogyLayer } from "../../src/utils/analogyLayer.js";
 import {
@@ -620,6 +621,25 @@ check(
   "https://www.boatrace.jp/owpc/pc/race/raceresult?rno=12&jcd=11&hd=20190806",
 );
 check("類似レースのリンク: 形が違えば null", similarRaceLink("x"), null);
+
+// ---- 説明文を1文ずつに分ける（2026-10-06 ユーザー決定の箇条書き） ----
+check(
+  "1文ずつ（括弧の中の「。」では分けない）",
+  splitSentences(
+    "カド＝一番内（助走を長くとる艇。例）。7つの形。絵は例（縮尺は1艇身≒0.13秒）",
+  ),
+  [
+    "カド＝一番内（助走を長くとる艇。例）。",
+    "7つの形。",
+    "絵は例（縮尺は1艇身≒0.13秒）",
+  ],
+);
+check(
+  "英語は「. 」で分け、数字の小数点では分けない",
+  splitSentences("Counted shares. About 0.13 s (e.g. a. b). End"),
+  ["Counted shares.", "About 0.13 s (e.g. a. b).", "End"],
+);
+check("空は空", splitSentences(""), []);
 
 if (failures > 0) {
   console.error(`\n❌ ${failures} 件の不一致`);

@@ -1313,3 +1313,14 @@ button.af-bar {
   gap: 4px;
   flex-wrap: wrap;
 }
+
+/* 説明・注記・脚注の見出し＋箇条書き（NoteList） */
+.af-notes {
+  margin: 6px 0;
+}
+.af-notes-h {
+  margin: 0 0 2px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+}

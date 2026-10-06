@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import NoteList from "./NoteList";
 import BoatBadge from "../BoatBadge";
 import { SCOPE_LINE } from "./analogyColors";
 import { fmtCount, fmtFactValue, fmtPct } from "../../../utils/analogyFormat";
@@ -230,13 +231,16 @@ export default function FactCard({
           );
         })}
       </div>
-      <p className="af-foot">
-        {/* 今日の位置の枠が無いとき（優勝戦の日の今節の平均着順点・今日の値が無い）は「枠で囲んだ棒…」を言わない（BOA-778） */}
-        {t(todayPos ? `${k}.stripCap` : `${k}.stripCapNoToday`, {
-          word: word(row.good),
-          usual: fmtPct(usual, 1),
-        })}
-      </p>
+      {/* 今日の位置の枠が無いとき（優勝戦の日の今節の平均着順点・今日の値が無い）は「枠で囲んだ棒…」を言わない（BOA-778） */}
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.howToRead`)}
+        texts={[
+          t(todayPos ? `${k}.stripCap` : `${k}.stripCapNoToday`, {
+            word: word(row.good),
+            usual: fmtPct(usual, 1),
+          }),
+        ]}
+      />
       {!hideLine && (
         <TodaySentence
           row={row}

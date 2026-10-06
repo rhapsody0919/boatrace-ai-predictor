@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import NoteList from "./NoteList";
 import useAnalogyContribution from "../../../hooks/useAnalogyContribution";
 import {
   ITEM_GROUPS,
@@ -82,15 +83,18 @@ export default function DataSources({ stage, period, conditions }) {
           <li>{t(`${k}.scenarioSlit`)}</li>
           <li>{t(`${k}.scenarioResult`)}</li>
         </ul>
-        <p className="af-foot">
-          {period &&
-            t(`${k}.period`, {
-              from: fmtDate(period[0]),
-              to: fmtDate(period[1]),
-              ai: aiPeriod,
-            })}
-          {t(`${k}.interval`)}
-        </p>
+        <NoteList
+          title={t(`aiPredictionTab.analogy.notes.period`)}
+          texts={[
+            period &&
+              t(`${k}.period`, {
+                from: fmtDate(period[0]),
+                to: fmtDate(period[1]),
+                ai: aiPeriod,
+              }),
+            t(`${k}.interval`),
+          ]}
+        />
       </div>
     </details>
   );

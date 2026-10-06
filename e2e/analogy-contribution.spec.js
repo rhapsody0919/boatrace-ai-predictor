@@ -112,8 +112,7 @@ async function openAiTab(page, n = 1) {
   await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
 }
 
-const sectionOf = (page) =>
-  page.getByRole("region", { name: /龍神ソナー/ });
+const sectionOf = (page) => page.getByRole("region", { name: /龍神ソナー/ });
 
 test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () => {
   test("公開前の既定では節を出さず、v16 の API も寄与度の API も呼ばない", async ({
@@ -288,21 +287,27 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await expect(other).toContainText("枠で囲んだ棒が今日の位置");
     });
 
-    test("タブ1の脚注は注意を1つずつ行に分け、12px 以上で出す", async ({
+    test("説明・注記は話題ごとの見出し＋1文ずつの箇条書きで、12px 以上で出す", async ({
       page,
     }) => {
+      // BOA-778 で脚注を行に分け、2026-10-06 ユーザー決定で全タブを「見出し＋箇条書き」にした
       await setup(page);
       await openAiTab(page);
-      const list = sectionOf(page).locator(".af-foot-list").first();
-      // 節の中身（facts）が届いてから数える（届く前は ul が無く 0 件になる）
-      await expect(list.locator("li").first()).toBeVisible();
+      const counting = sectionOf(page)
+        .locator(".af-notes")
+        .filter({ has: page.locator(".af-notes-h", { hasText: "数え方" }) })
+        .first();
+      await expect(counting.locator("li").first()).toBeVisible();
       await expect
-        .poll(() => list.locator("li").count())
-        .toBeGreaterThanOrEqual(4);
-      const size = await list.evaluate((el) =>
-        parseFloat(getComputedStyle(el).fontSize),
-      );
+        .poll(() => counting.locator("li").count())
+        .toBeGreaterThanOrEqual(2);
+      const size = await counting
+        .locator("ul")
+        .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
       expect(size).toBeGreaterThanOrEqual(12);
+      // 1つの li に2文が入らない（「。」で区切った1文ずつ）
+      for (const li of await counting.locator("li").allInnerTexts())
+        expect((li.match(/。/g) ?? []).length).toBeLessThanOrEqual(1);
     });
 
     test("手がかりの件数が②の件数とずれる理由を書く", async ({ page }) => {

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import NoteList from "./NoteList";
 import { BOAT_COLORS } from "../../../utils/colors";
 import { SCOPE_FLOW, SCOPE_SUBTEXT, SCOPE_TEXT } from "./analogyColors";
 import { fmtCount } from "../../../utils/analogyFormat";
@@ -235,7 +236,7 @@ export default function FinishSankey({ tri, first, onFirst, not1, onNot1 }) {
             ? t(`${k}.firstNote`, { b: first, n: fmtCount(col[0][first]) })
             : t(`${k}.hint`)}
       </p>
-      {!first && <p className="af-foot">{t(`${k}.note`)}</p>}
+      {!first && <NoteList texts={[t(`${k}.note`)]} />}
     </div>
   );
 }

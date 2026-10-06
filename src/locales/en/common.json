@@ -823,6 +823,7 @@
       },
       "heading": "Ryujin Sonar · {{venue}} {{race}}R",
       "subtitle": "Counts past races that match today's conditions",
+      "notes": {"howToRead": "How to read", "counting": "How it's counted", "caution": "Notes", "terms": "Terms", "ordering": "How races are ordered", "sonar": "How to read the sonar chart", "today": "Today's exhibition", "period": "Periods", "attacker": "Attacking boat"},
       "stage": {
         "label": "As of",
         "racecard": "Before exhibition (race card)",

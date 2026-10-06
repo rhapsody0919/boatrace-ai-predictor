@@ -121,3 +121,34 @@ export function fmtFactValue(key, v) {
   if (key === "motor_2" || key === "boat_2") return `${v.toFixed(1)}%`;
   return v.toFixed(2);
 }
+
+/**
+ * 説明文を1文ずつに分ける（説明・注記・脚注を箇条書きにするため。2026-10-06 ユーザー決定）。
+ * 「。」（日本語・中国語）と「. 」（英語・韓国語）の後で分け、括弧（（）・()・「」・『』）の中では分けない。
+ * 文言は変えない（区切りの記号も残す）
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function splitSentences(text) {
+  if (!text) return [];
+  const open = "（(「『";
+  const close = "）)」』";
+  const out = [];
+  let depth = 0;
+  let cur = "";
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    cur += ch;
+    if (open.includes(ch)) depth += 1;
+    else if (close.includes(ch)) depth = Math.max(0, depth - 1);
+    else if (
+      depth === 0 &&
+      (ch === "。" || (ch === "." && text[i + 1] === " "))
+    ) {
+      out.push(cur.trim());
+      cur = "";
+    }
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}

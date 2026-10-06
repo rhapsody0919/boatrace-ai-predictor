@@ -817,6 +817,7 @@
       },
       "heading": "용신 소나 · {{venue}} {{race}}R",
       "subtitle": "오늘과 조건이 같은 과거 레이스를 세어 보여 줍니다",
+      "notes": {"howToRead": "보는 법", "counting": "세는 방법", "caution": "주의", "terms": "용어", "ordering": "정렬 방법", "sonar": "소나 그림 보는 법", "today": "오늘 전시와의 관계", "period": "기간", "attacker": "공격하는 보트"},
       "stage": {
         "label": "시점",
         "racecard": "전시 전(출주표)",
