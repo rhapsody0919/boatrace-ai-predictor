@@ -171,7 +171,8 @@ def f32_list(values) -> list:
 
 
 def gz(obj) -> bytes:
-    return gzip.compress(json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode())
+    # 圧縮レベルは5（既定の9は1日分で約8分かかり、大きさは数%しか変わらない。T2-6）
+    return gzip.compress(json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode(), compresslevel=5)
 
 
 def write_local(out: Path, rel: str, obj) -> None:
@@ -482,7 +483,8 @@ def main():
         write_local(out, f"layer/{rid}.json", {
             "run_id": a.run_id, "race_id": rid, "conditions": cond, "n_total": int(len(lay)),
             "n_returned": int(min(len(lay), MAX_LAYER_ROWS)), "pool_from": POOL_FROM, "pool_cutoff": str(cutoff.date()),
-            "rows": [P.layer_row(r) for _, r in lay.head(MAX_LAYER_ROWS).iterrows()],
+            "rows": [P.layer_row(r | {"race_id": rid_}) for rid_, r in
+                     zip(lay["race_id"].head(MAX_LAYER_ROWS), lay.head(MAX_LAYER_ROWS).to_dict("records"))],
         })
         overall = [None if not np.isfinite(x) else float(x) for x in arrays["st_mean30"][i]]
         tcs = today_course[i]
@@ -506,18 +508,27 @@ def main():
     national_counts = outcome_counts(pool)  # どのレースでも同じなので1回だけ数える
 
     failed = {}
+    # 過去レースの結果を races の並びにそろえて1回だけ作る（候補1万件ごとに pandas の .loc で引くと遅い。T2-6）
+    aligned = prl.reindex(races["race_id"].to_numpy())
+    res_has = aligned["race_date"].notna().to_numpy()
+    res_tech = aligned["winning_technique"].to_numpy(dtype=object)
+    res_pay = aligned["payout_3tan"].to_numpy(dtype=float)
+    res_course = aligned["course_by_boat"].to_numpy(dtype=object)
+    res_st = aligned["st_by_course"].where(aligned["layer_ok"].fillna(False).astype(bool), None).to_numpy(dtype=object)
+    res_date = races["race_date"].astype(str).str[:10].to_numpy()
+    res_rn = races["race_number"].to_numpy()
+    res_grade = races["grade"].to_numpy(dtype=object)
+    res_round = races["round"].to_numpy(dtype=object)
+
     def result_of(j: int) -> dict:
         """過去レースの結果（similar の各件。spec B-7・B-8）"""
-        rid_int = int(races["race_id"].iat[j])
-        out = {"date": str(races["race_date"].iat[j])[:10], "venue_code": int(venue[j]),
-               "race_number": int(races["race_number"].iat[j]), "grade": races["grade"].iat[j],
-               "round": races["round"].iat[j], "finish": [int(x) for x in ranks[j]]}
-        if rid_int in prl.index:
-            r = prl.loc[rid_int]
-            lr = P.layer_row(r) if r["layer_ok"] else {}
-            out |= {"technique": None if pd.isna(r["winning_technique"]) else r["winning_technique"],
-                    "payout_3tan": None if pd.isna(r["payout_3tan"]) else int(r["payout_3tan"]),
-                    "course_by_boat": list(r["course_by_boat"]), "st_by_course": lr.get("st_by_course")}
+        out = {"date": res_date[j], "venue_code": int(venue[j]), "race_number": int(res_rn[j]),
+               "grade": res_grade[j], "round": res_round[j], "finish": [int(x) for x in ranks[j]]}
+        if res_has[j]:
+            st = res_st[j]
+            out |= {"technique": None if pd.isna(res_tech[j]) else res_tech[j],
+                    "payout_3tan": None if np.isnan(res_pay[j]) else int(res_pay[j]),
+                    "course_by_boat": list(res_course[j]), "st_by_course": None if st is None else list(st)}
         return out
 
     for i in today:
