@@ -171,7 +171,8 @@ def f32_list(values) -> list:
 
 
 def gz(obj) -> bytes:
-    return gzip.compress(json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode())
+    # 圧縮レベルは5（既定の9は1日分で約8分かかり、大きさは数%しか変わらない。T2-6）
+    return gzip.compress(json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode(), compresslevel=5)
 
 
 def write_local(out: Path, rel: str, obj) -> None:
@@ -211,15 +212,24 @@ def ensure_bucket() -> None:
              {"Content-Type": "application/json"})
 
 
-def upload_dir(local: Path, prefix: str) -> int:
-    """local の下の全ファイルを {prefix}/… に置く。上書きしない（x-upsert: false。同じパスがあれば失敗）"""
-    n = 0
-    for p in sorted(local.rglob("*.gz")):
+UPLOAD_WORKERS = 16
+
+
+def upload_dir(local: Path, prefix: str, workers: int = UPLOAD_WORKERS) -> int:
+    """local の下の全ファイルを {prefix}/… に置く。上書きしない（x-upsert: false。同じパスがあれば失敗）。
+    1日 約2,000ファイルを1件ずつ送ると約18分かかったので並列に送る（T2-6）。1件でも失敗すれば例外にする"""
+    from concurrent.futures import ThreadPoolExecutor
+
+    files = sorted(local.rglob("*.gz"))
+
+    def put(p: Path) -> None:
         rel = p.relative_to(local).as_posix()
         _storage("POST", f"object/{BUCKET}/{prefix}/{rel}", p.read_bytes(),
                  {"Content-Type": "application/gzip", "x-upsert": "false"})
-        n += 1
-    return n
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        list(pool.map(put, files))  # 例外はここで投げ直される
+    return len(files)
 
 
 def write_snapshots(rows: list[dict]) -> None:
@@ -275,6 +285,11 @@ def fetch_today(date: str) -> list[dict]:
     return out
 
 
+def late_for(deadline: datetime | None, now: datetime) -> bool:
+    """snapshot を書く時点で締切を過ぎているか（締切が分からなければ過ぎていないとみなす。--races の手元の実行）"""
+    return deadline is not None and now >= deadline
+
+
 def racecard_hash(arrays: dict, i: int) -> str:
     """出走表の内容のハッシュ（選手の差し替えを見分ける）。6艇の選手番号・級別・勝率・モーター・ボートの2連率"""
     import hashlib
@@ -318,12 +333,14 @@ def main():
     combos = np.array([V.class_combo(list(c)) for c in arrays["cls_name"]], dtype=object)
     pool = (races["race_date"] <= cutoff).to_numpy()
     today = np.where(races["race_date"] == date)[0]
+    deadlines = {}  # race_id → 締切（--upload で今日のレースを選ぶとき。snapshot を締切前だけ書くため）
     if a.races:
         want = {F.rid_to_int(pd.Series([r])).iat[0] for r in a.races.split(",")}
         today = np.array([i for i in today if int(races["race_id"].iat[i]) in want])
     elif a.upload:
         hashes = {F.int_to_rid(int(races["race_id"].iat[i])): racecard_hash(arrays, i) for i in today}
         rows_today = fetch_today(a.date)
+        deadlines = {r["race_id"]: r["deadline"] for r in rows_today}
         no_deadline = [r["race_id"] for r in rows_today if r["deadline"] is None and not r["cancelled"]]
         if no_deadline:
             log("締切時刻（races.start_time）が無いので作らない:", ",".join(no_deadline))
@@ -482,7 +499,8 @@ def main():
         write_local(out, f"layer/{rid}.json", {
             "run_id": a.run_id, "race_id": rid, "conditions": cond, "n_total": int(len(lay)),
             "n_returned": int(min(len(lay), MAX_LAYER_ROWS)), "pool_from": POOL_FROM, "pool_cutoff": str(cutoff.date()),
-            "rows": [P.layer_row(r) for _, r in lay.head(MAX_LAYER_ROWS).iterrows()],
+            "rows": [P.layer_row(r | {"race_id": rid_}) for rid_, r in
+                     zip(lay["race_id"].head(MAX_LAYER_ROWS), lay.head(MAX_LAYER_ROWS).to_dict("records"))],
         })
         overall = [None if not np.isfinite(x) else float(x) for x in arrays["st_mean30"][i]]
         tcs = today_course[i]
@@ -506,18 +524,27 @@ def main():
     national_counts = outcome_counts(pool)  # どのレースでも同じなので1回だけ数える
 
     failed = {}
+    # 過去レースの結果を races の並びにそろえて1回だけ作る（候補1万件ごとに pandas の .loc で引くと遅い。T2-6）
+    aligned = prl.reindex(races["race_id"].to_numpy())
+    res_has = aligned["race_date"].notna().to_numpy()
+    res_tech = aligned["winning_technique"].to_numpy(dtype=object)
+    res_pay = aligned["payout_3tan"].to_numpy(dtype=float)
+    res_course = aligned["course_by_boat"].to_numpy(dtype=object)
+    res_st = aligned["st_by_course"].where(aligned["layer_ok"].fillna(False).astype(bool), None).to_numpy(dtype=object)
+    res_date = races["race_date"].astype(str).str[:10].to_numpy()
+    res_rn = races["race_number"].to_numpy()
+    res_grade = races["grade"].to_numpy(dtype=object)
+    res_round = races["round"].to_numpy(dtype=object)
+
     def result_of(j: int) -> dict:
         """過去レースの結果（similar の各件。spec B-7・B-8）"""
-        rid_int = int(races["race_id"].iat[j])
-        out = {"date": str(races["race_date"].iat[j])[:10], "venue_code": int(venue[j]),
-               "race_number": int(races["race_number"].iat[j]), "grade": races["grade"].iat[j],
-               "round": races["round"].iat[j], "finish": [int(x) for x in ranks[j]]}
-        if rid_int in prl.index:
-            r = prl.loc[rid_int]
-            lr = P.layer_row(r) if r["layer_ok"] else {}
-            out |= {"technique": None if pd.isna(r["winning_technique"]) else r["winning_technique"],
-                    "payout_3tan": None if pd.isna(r["payout_3tan"]) else int(r["payout_3tan"]),
-                    "course_by_boat": list(r["course_by_boat"]), "st_by_course": lr.get("st_by_course")}
+        out = {"date": res_date[j], "venue_code": int(venue[j]), "race_number": int(res_rn[j]),
+               "grade": res_grade[j], "round": res_round[j], "finish": [int(x) for x in ranks[j]]}
+        if res_has[j]:
+            st = res_st[j]
+            out |= {"technique": None if pd.isna(res_tech[j]) else res_tech[j],
+                    "payout_3tan": None if np.isnan(res_pay[j]) else int(res_pay[j]),
+                    "course_by_boat": list(res_course[j]), "st_by_course": None if st is None else list(st)}
         return out
 
     for i in today:
@@ -533,16 +560,19 @@ def main():
     if a.upload:
         ensure_bucket()
         n = upload_dir(out, f"{a.date}/{a.run_id}")
-        snaps = []
+        snaps, late = [], []
         for i in done:
             rid = F.int_to_rid(int(races["race_id"].iat[i]))
+            if late_for(deadlines.get(rid), datetime.now(JST)):
+                late.append(rid)  # 作っている間に締切を過ぎた（plan「締切前だけ書く」）。ファイルは置いたまま
+                continue
             snaps.append({"race_id": rid, "stage": "racecard", "run_id": a.run_id,
                           "computed_at": datetime.now(timezone.utc).isoformat(), "pool_cutoff": str(cutoff.date()),
                           "model_version": a.model_version or None, "n_layer": n_layers[i],
                           "status": "ok" if n_layers[i] > 0 else "empty_layer",
                           "racecard_hash": racecard_hash(arrays, i)})
         write_snapshots(snaps)
-        log("uploaded", n, "files", len(snaps), "snapshots")
+        log("uploaded", n, "files", len(snaps), "snapshots", f"締切を過ぎて書かなかった {len(late)}: {','.join(late)}")
     if failed:
         raise SystemExit(f"today・similar を作れなかったレース {len(failed)} 件: {failed}")
 

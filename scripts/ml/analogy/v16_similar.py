@@ -287,10 +287,11 @@ DISPLAY_RACE = (("rn", "race_number", 0), ("sday", "series_day", 0), ("final", "
                 ("wave", "wave_height", 0))
 
 
-def _num(v, nd):
-    if v is None or not np.isfinite(v):
-        return None
-    return int(round(float(v))) if nd == 0 else round(float(v), nd)
+def _num_list(values: list, nd: int) -> list:
+    """表示用の数値（欠損は null、nd=0 は整数）。値ごとの関数呼び出しと np.isfinite を避けてまとめて丸める（T2-6）"""
+    if nd == 0:
+        return [None if v != v or v in (np.inf, -np.inf) else int(round(v)) for v in values]
+    return [None if v != v or v in (np.inf, -np.inf) else round(v, nd) for v in values]
 
 
 def display_columns(races: pd.DataFrame, boats: dict[str, np.ndarray], idx: np.ndarray, is_kb: np.ndarray) -> dict:
@@ -298,12 +299,12 @@ def display_columns(races: pd.DataFrame, boats: dict[str, np.ndarray], idx: np.n
     out = {}
     for name, col, nd in DISPLAY_BOAT:
         a = np.asarray(boats[col], dtype=float)[idx]
-        out[name] = [[_num(v, nd) for v in row] for row in a]
+        out[name] = [_num_list(row, nd) for row in a.tolist()]
     for name, col, nd in DISPLAY_RACE:
         v = races[col].to_numpy(dtype=float)[idx]
         if name == "final":
             v = np.where(is_kb[idx], np.nan, v)
-        out[name] = [_num(x, nd) for x in v]
+        out[name] = _num_list(v.tolist(), nd)
     out["grade"] = [None if pd.isna(g) else str(g) for g in races["grade"].to_numpy(dtype=object)[idx]]
     out["round"] = [None if pd.isna(g) else str(g) for g in races["round"].to_numpy(dtype=object)[idx]]
     out["venue"] = [int(v) for v in races["venue_code"].to_numpy()[idx]]
