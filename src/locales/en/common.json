@@ -2411,6 +2411,8 @@
       "sourceVenueSite": "Source: {{venue}} official site motor records (retrieved {{date}})",
       "sourcePretest": "Source: BOATRACE official trial data (only motors used in the latest series)",
       "sortNote": "Tap Motor, Top-2 rate, Wins or Trial to sort (Trial: fastest first). Equal values share the same rank",
+      "sortNotePretest": "Tap Motor, Official top-2 rate or Trial to sort (Trial: fastest first). Equal values share the same rank",
+      "linkNote": "Tap a motor number to open its trend up to just before the last race it ran in the latest series (a different point in time from this list). Motors not used in the latest series cannot be opened",
       "fetchError": "Could not load the motor records",
       "empty": "No motor data for this venue's latest series",
       "raceCount": "{{n}} runs"

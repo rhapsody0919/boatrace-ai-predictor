@@ -275,4 +275,16 @@ test.describe("会場モーターランキング（BOA-428 子3）", () => {
       expect(r.raceCount, `機番 ${r.no} の走数`).toBe(`${byMotor.get(r.no)}走`);
     }
   });
+  test("戸田（優勝が全部「-」）では優勝の見出しで並べ替えられない（ファン評価 2周目）", async ({
+    page,
+  }) => {
+    await openRanking(page, TODA);
+    await expect(page.getByRole("button", { name: /^優勝/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^前検/ })).toBeVisible();
+    await expect(
+      page.getByText(
+        /機番を押すと、そのモーターが直近の節で最後に走ったレース/,
+      ),
+    ).toBeVisible();
+  });
 });

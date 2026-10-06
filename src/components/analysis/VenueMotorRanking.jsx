@@ -223,9 +223,15 @@ function VenueMotorRanking({ initialVenueCode = null }) {
                           : t("analysis.motorRanking.rateHeader"),
                       )}
                       <th>{t("analysis.motorRanking.finalHeader")}</th>
-                      {sortHeader(
-                        "championshipCount",
-                        t("analysis.motorRanking.championshipHeader"),
+                      {/* 会場サイトの値を出さない会場は優勝が全部「-」なので、並べ替えを出さない
+                          （押すと全行の順位が「-」になり、壊れて見える。ファン評価 2周目） */}
+                      {fromPretest ? (
+                        <th>{t("analysis.motorRanking.championshipHeader")}</th>
+                      ) : (
+                        sortHeader(
+                          "championshipCount",
+                          t("analysis.motorRanking.championshipHeader"),
+                        )
                       )}
                       {sortHeader(
                         "pretestTime",
@@ -299,7 +305,13 @@ function VenueMotorRanking({ initialVenueCode = null }) {
           )}
 
           <p className="vmr-note">
-            {t("analysis.motorRanking.sortNote")}
+            {t(
+              fromPretest
+                ? "analysis.motorRanking.sortNotePretest"
+                : "analysis.motorRanking.sortNote",
+            )}
+            <br />
+            {t("analysis.motorRanking.linkNote")}
             <br />
             {t("analysis.motor.motorRiderMixNote")}
           </p>
