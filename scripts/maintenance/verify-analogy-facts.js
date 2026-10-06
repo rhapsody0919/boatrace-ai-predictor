@@ -50,9 +50,11 @@ import {
   rankPositions,
   seriesScoreNote,
   todayPosition,
+  todayValueRank,
   windWaveView,
 } from "../../src/utils/analogyFacts.js";
 import { wilsonInterval } from "../../src/utils/wilson.js";
+import { similarRaceLink } from "../../src/utils/analogySimilarDisplay.js";
 import {
   fmtDate,
   fmtEntry,
@@ -60,6 +62,7 @@ import {
   fmtRateCount,
   fmtSt3,
   scopeName,
+  splitSentences,
 } from "../../src/utils/analogyFormat.js";
 import { describeAnalogyLayer } from "../../src/utils/analogyLayer.js";
 import {
@@ -576,6 +579,67 @@ check(
   windWaveView(va(true, 500), { wave_height: 3 }),
   null,
 );
+
+// ---- カードの今日の値と順位・類似レースのリンク先（2026-10-06 ユーザー指摘） ----
+check("今日の値と順位", todayValueRank([5, 7, 6, 4, 3, 2], true, 3), {
+  value: 6,
+  from: 2,
+  to: 2,
+  same: 1,
+});
+check(
+  "今日の値と順位（同じ値は幅）",
+  todayValueRank([5, 6, 6, 4, 3, 2], true, 3),
+  {
+    value: 6,
+    from: 1,
+    to: 2,
+    same: 2,
+  },
+);
+check(
+  "今日の値と順位（小さいほど良い）",
+  todayValueRank([0.15, 0.12, 0.18, 0.2, 0.1, 0.16], false, 2).from,
+  2,
+);
+check(
+  "今日の値が無ければ null",
+  todayValueRank([5, null, 6, 4, 3, 2], true, 2),
+  null,
+);
+check(
+  "類似レースのリンク: 本体の日付はレースページ",
+  similarRaceLink("2025-12-03-20-01"),
+  {
+    internal: true,
+    href: "/race/2025-12-03-20-01",
+  },
+);
+check(
+  "類似レースのリンク: 古いレースは公式サイト",
+  similarRaceLink("2019-08-06-11-12").href,
+  "https://www.boatrace.jp/owpc/pc/race/raceresult?rno=12&jcd=11&hd=20190806",
+);
+check("類似レースのリンク: 形が違えば null", similarRaceLink("x"), null);
+
+// ---- 説明文を1文ずつに分ける（2026-10-06 ユーザー決定の箇条書き） ----
+check(
+  "1文ずつ（括弧の中の「。」では分けない）",
+  splitSentences(
+    "カド＝一番内（助走を長くとる艇。例）。7つの形。絵は例（縮尺は1艇身≒0.13秒）",
+  ),
+  [
+    "カド＝一番内（助走を長くとる艇。例）。",
+    "7つの形。",
+    "絵は例（縮尺は1艇身≒0.13秒）",
+  ],
+);
+check(
+  "英語は「. 」で分け、数字の小数点では分けない",
+  splitSentences("Counted shares. About 0.13 s (e.g. a. b). End"),
+  ["Counted shares.", "About 0.13 s (e.g. a. b).", "End"],
+);
+check("空は空", splitSentences(""), []);
 
 if (failures > 0) {
   console.error(`\n❌ ${failures} 件の不一致`);

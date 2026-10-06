@@ -683,7 +683,7 @@
     "unavailableTitle": "No AI prediction data",
     "unavailableBody": "This race doesn't have the data needed for an AI prediction.",
     "analogy": {
-      "title": "Analogy Finder",
+      "title": "Ryujin Sonar",
       "views": {
         "contribution": "Contribution"
       },
@@ -821,7 +821,9 @@
         "venueG1": "G1 races at {{venue}}",
         "nationalAll": "All races, all venues"
       },
-      "heading": "Analogy Finder · {{venue}} {{race}}R",
+      "heading": "Ryujin Sonar · {{venue}} {{race}}R",
+      "subtitle": "Counts past races that match today's conditions",
+      "notes": {"howToRead": "How to read", "counting": "How it's counted", "caution": "Notes", "terms": "Terms", "ordering": "How races are ordered", "sonar": "How to read the sonar chart", "today": "Today's exhibition", "period": "Periods", "attacker": "Attacking boat"},
       "stage": {
         "label": "As of",
         "racecard": "Before exhibition (race card)",
@@ -831,12 +833,12 @@
       },
       "tabs": {
         "label": "View",
-        "facts": "Who finishes, and when",
+        "facts": "Key factors",
         "similar": "Similar races",
         "scenario": "Race scenarios"
       },
       "states": {
-        "absent": "A racer withdrew, so the Analogy Finder is not shown for this race",
+        "absent": "A racer withdrew, so Ryujin Sonar is not shown for this race",
         "notSaved": "There is no data to show for this race",
         "error": "Couldn't load this. Please try again later",
         "retry": "Reload",
@@ -879,6 +881,12 @@
         },
         "reversed": "(higher when {{word}})",
         "stripLabel": "{{rate}} by where {{item}} ranks among the 6: {{list}}",
+        "todayValue": "Boat {{boat}} today: {{value}} ({{rank}})",
+        "rankOf6": "rank {{n}} of 6",
+        "rankOf6Tie": "rank {{from}}–{{to}} of 6 ({{same}} boats tied)",
+        "noToday": "no value today",
+        "units": {"series_score": " pts", "exh_time": "s"},
+        "stripTitle": "Boat {{boat}}'s {{rate}} by its rank among the 6 in {{item}}",
         "stripRank": "#{{rank}}",
         "stripTop": "#1 ({{word}})",
         "stripBottom": "#6 ({{word}})",
@@ -1297,7 +1305,9 @@
         "colNear": "Incl. close",
         "colPool": "Share same across all races",
         "notUsed": " (not used for closeness)",
-        "cmpSummary": "Compare one by one (all items next to today)",
+      "openRace": "Open this race →",
+      "openOfficial": "See this race result on the official site (opens in a new tab) ↗",
+      "cmpSummary": "Compare one by one (all items next to today)",
         "cmpLede": "Tap a row to see all items next to today's race. ○ same  △ close  × different",
         "counts": "Same {{same}} / close {{near}} / different {{diff}}",
         "cmpMore": "Show the remaining {{n}}",
@@ -1328,7 +1338,7 @@
         "triHeading": "Common trifectas",
         "triMore": "Show the remaining {{k}} (of {{m}})",
         "none": "0",
-        "otherHint": "Tap a bar above or a sonar sector to see how the other boats did when that boat won",
+        "otherHint": "Tap a bar above or a sector of the sonar chart to see how the other boats did when that boat won",
         "otherTitle": "The {{n}} races Boat {{b}} won: how did the others do?",
         "otherHit": "Boat {{b}} won",
         "otherBase": "Compared with: {{name}} ({{n}})",
@@ -1372,7 +1382,7 @@
       },
       "sources": {
         "summary": "Items used (which numbers these come from)",
-        "facts": "Who finishes, and when",
+        "facts": "Key factors",
         "factsItems": "Items: avg. finish points this meet (to yesterday), national win rate, local win rate, 1st-place rate (last 30 races), motor top-2 rate, boat top-2 rate, avg. ST (last 30 races), exhibition time (after the exhibition only). National win rate, local win rate, motor top-2 rate and boat top-2 rate are race card values; exhibition time is from pre-race info. 1st-place rate (last 30 races), avg. ST (last 30 races) and meet finish points are calculated from the racer's past results (all up to yesterday)",
         "factsFinish": "Finish: 1st, top 2, top 3, counted from past race results",
         "factsWind": "Today's wind and waves: wind speed and wave height (values at the exhibition). Wind bands are 0–1 m / 2–3 m / 4–5 m / 6 m+ (different from the wind bands for similar races). At venues where wave height carries information separate from wind speed (correlation below 0.9 in past races at the venue), races are also grouped by wave height (0–2 cm / 3–5 cm / 6 cm+), falling back to wind only if today's group has fewer than 300 races. At other venues wave height is recorded at almost the same value as wind speed, so races are grouped by wind only",
@@ -1634,7 +1644,7 @@
         "payout": "Trifecta ¥{{yen}}",
         "entryLabel": "Entry {{e}}",
         "slitLabel": "Slit: {{forms}}",
-        "foot": "These are counted shares, not necessarily causes. The slit shape is only known after the race, so treat it as a \"what if\" reference. {{n}} races with refunds (F, L, withdrawal) are excluded, so counts do not match \"Who finishes, and when\" (the excluded count also includes races with no 3rd place or unknown entry courses)",
+        "foot": "These are counted shares, not necessarily causes. The slit shape is only known after the race, so treat it as a \"what if\" reference. {{n}} races with refunds (F, L, withdrawal) are excluded, so counts do not match \"Key factors\" (the excluded count also includes races with no 3rd place or unknown entry courses)",
         "attackerName": "{{boat}} ({{role}}). ",
         "withParen": "{{core}} ({{paren}})",
         "hintPicA1": "In all-A1 races, most boats sit to the right. ",

@@ -12,6 +12,32 @@ const isNum = (v) => typeof v === "number" && Number.isFinite(v);
 const fx = (v, d) => (isNum(v) ? v.toFixed(d) : "—");
 const minus = (s) => s.replace(/(^|[^0-9.])-(?=\d)/g, "$1−");
 
+/**
+ * 龍神レーダーのレースページがある最初の日付。races テーブル（本体）は 2025-12-03 から（2025-12-02 は12レースだけ
+ * 入っている）。それより前は長期データ（kb_archive）だけで、レースページは「予測データはまだありません」になる
+ */
+export const RACE_PAGE_FROM = "2025-12-03";
+
+/**
+ * 類似レースの1件のリンク先（2026-10-06 ユーザー指摘）。レースページがある日付は龍神レーダーの /race/{race_id}、
+ * それより前は公式サイトの結果ページ
+ * @param {string} raceId YYYY-MM-DD-VV-RR
+ * @returns {{internal: boolean, href: string}|null}
+ */
+export function similarRaceLink(raceId) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})-(\d{2})-(\d{2})$/.exec(
+    String(raceId ?? ""),
+  );
+  if (!m) return null;
+  const [, y, mo, d, venue, rn] = m;
+  if (`${y}-${mo}-${d}` >= RACE_PAGE_FROM)
+    return { internal: true, href: `/race/${raceId}` };
+  return {
+    internal: false,
+    href: `https://www.boatrace.jp/owpc/pc/race/raceresult?rno=${Number(rn)}&jcd=${venue}&hd=${y}${mo}${d}`,
+  };
+}
+
 /** 勝率差（1号艇 − 2〜6号艇の最大、小数2桁）と5段階の帯（v16_similar.gap_band と同じ。無ければ null） */
 export function gapOf(nat) {
   if (!Array.isArray(nat) || !isNum(nat[0])) return null;

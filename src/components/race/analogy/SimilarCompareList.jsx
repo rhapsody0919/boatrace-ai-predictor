@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useLocalizedPath } from "../../../hooks/useLocalizedPath";
 import { useTranslation } from "react-i18next";
 import BoatBadge from "../BoatBadge";
 import { fmtDate, fmtEntry, venueLabel } from "../../../utils/analogyFormat";
@@ -7,7 +9,10 @@ import {
   inDistance,
   neighborCounts,
 } from "../../../utils/analogyAggregate";
-import { itemValue } from "../../../utils/analogySimilarDisplay";
+import {
+  itemValue,
+  similarRaceLink,
+} from "../../../utils/analogySimilarDisplay";
 
 const k = "aiPredictionTab.analogy.similar";
 const MARK = { 2: "○", 1: "△", 0: "×" };
@@ -30,8 +35,26 @@ function stOrder(x) {
 
 function Detail({ x, items, exhibitionStage, today, t }) {
   const st = stOrder(x);
+  const localize = useLocalizedPath();
+  const link = similarRaceLink(x.race_id);
   return (
     <div className="af-nbd">
+      {/* そのレースのページへ。龍神レーダーにレースページが無い古いレースは公式サイトの結果ページ（新しいタブ） */}
+      {link?.internal && (
+        <Link className="af-nb-link" to={localize(link.href)}>
+          {t(`${k}.openRace`)}
+        </Link>
+      )}
+      {link && !link.internal && (
+        <a
+          className="af-nb-link"
+          href={link.href}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {t(`${k}.openOfficial`)}
+        </a>
+      )}
       <p className="af-res">
         {t(`${k}.result`)}{" "}
         <span className="af-bnrow">

@@ -793,7 +793,7 @@ test.describe("レイアウト: AI予想タブのアナロジー・ファイン�
     await gotoAndSettle(page, `/race/${ANALOGY_V16_RACE}`);
     await page.click('[role="tab"]:has-text("AI予想")');
     const section = page.getByRole("region", {
-      name: /アナロジー・ファインダー/,
+      name: /龍神ソナー/,
     });
     await expect(section).toBeVisible({ timeout: 30000 });
     return section;
@@ -814,7 +814,7 @@ test.describe("レイアウト: AI予想タブのアナロジー・ファイン�
     expectNoWastedGrids(await inspectGrids(page));
   };
 
-  test("来る艇の条件: 比べる艇と折りたたみを開いても横スクロールが出ない", async ({
+  test("差がつく材料: 比べる艇と折りたたみを開いても横スクロールが出ない", async ({
     page,
   }) => {
     const section = await openSection(page);

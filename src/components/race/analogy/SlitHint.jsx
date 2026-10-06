@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
+import NoteList from "./NoteList";
 import BoatBadge from "../BoatBadge";
 import SlitShapeIcon from "./SlitShapeIcon";
 import {
@@ -90,18 +91,21 @@ export default function SlitHint({
       <div className="af-hint-pic">
         <SlitShapeIcon st={vals} height={132} reference={ref} />
       </div>
-      <p className="af-foot">
-        {version === "course"
-          ? t(`${k}.hintPicCourse`, { venue: vName }) +
-            (allA1 ? t(`${k}.hintPicA1`) : "") +
-            t(`${k}.hintPicTail`)
-          : t(`${k}.hintPicOverall`)}
-        {version === "course" &&
-          filled.length > 0 &&
-          t(`${k}.hintFilled`, {
-            boats: filled.join(t("aiPredictionTab.analogy.listSeparator")),
-          })}
-      </p>
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.howToRead`)}
+        texts={[
+          version === "course"
+            ? t(`${k}.hintPicCourse`, { venue: vName }) +
+              (allA1 ? t(`${k}.hintPicA1`) : "") +
+              t(`${k}.hintPicTail`)
+            : t(`${k}.hintPicOverall`),
+          version === "course" &&
+            filled.length > 0 &&
+            t(`${k}.hintFilled`, {
+              boats: filled.join(t("aiPredictionTab.analogy.listSeparator")),
+            }),
+        ]}
+      />
       <div className="af-tbl">
         <table className="af-hint-t">
           <thead>
@@ -155,14 +159,17 @@ export default function SlitHint({
           </tbody>
         </table>
       </div>
-      <p className="af-foot">
-        {t(`${k}.hintVenueFoot`, { venue: vName })}
-        {fewVenue.length > 0 &&
-          t(`${k}.hintFewVenue`, {
-            boats: fewVenue.join(t("aiPredictionTab.analogy.listSeparator")),
-          })}
-        {exhibitionStage ? t(`${k}.hintExhPost`) : t(`${k}.hintExhPre`)}
-      </p>
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.caution`)}
+        texts={[
+          t(`${k}.hintVenueFoot`, { venue: vName }),
+          fewVenue.length > 0 &&
+            t(`${k}.hintFewVenue`, {
+              boats: fewVenue.join(t("aiPredictionTab.analogy.listSeparator")),
+            }),
+          exhibitionStage ? t(`${k}.hintExhPost`) : t(`${k}.hintExhPre`),
+        ]}
+      />
       <h4 className="af-h4">
         {t(`${k}.hintConds`, { src: t(`${k}.hintSrcs.${version}`) })}
       </h4>
@@ -204,13 +211,16 @@ export default function SlitHint({
           <p className="af-foot">{t(`${k}.hintNone`)}</p>
         )}
       </div>
-      <p className="af-foot">
-        {t(`${k}.hintFoot`, {
-          scope,
-          n: fmtCount(baseN),
-          few: baseN < 3000 ? t(`${k}.hintFew`) : "",
-        })}
-      </p>
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.counting`)}
+        texts={[
+          t(`${k}.hintFoot`, {
+            scope,
+            n: fmtCount(baseN),
+            few: baseN < 3000 ? t(`${k}.hintFew`) : "",
+          }),
+        ]}
+      />
     </div>
   );
 }

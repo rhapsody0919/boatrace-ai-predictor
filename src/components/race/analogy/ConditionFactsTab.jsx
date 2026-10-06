@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import NoteList from "./NoteList";
 import BoatBadge from "../BoatBadge";
 import FactHexagon from "./FactHexagon";
 import FactCard from "./FactCard";
@@ -33,7 +34,7 @@ const k = "aiPredictionTab.analogy.facts";
 const FACT_SCOPES = ["VC", "NC", "NCR", "VA"];
 
 /**
- * 来る艇の条件（タブ1、spec FR-A・FR-E、screens S-1a）
+ * 差がつく材料（タブ1、spec FR-A・FR-E、screens S-1a）
  * @param {{data: object, stage: "racecard"|"exhibition", target: 1|2|3}} props data は facts の応答
  */
 export default function ConditionFactsTab({ data, stage, target }) {
@@ -265,23 +266,27 @@ export default function ConditionFactsTab({ data, stage, target }) {
           ))}
       </div>
       {cls && <p className="af-foot">{t(`${k}.classLine`, { cls })}</p>}
-      {/* 注意を1段落に詰めず、1つずつ行に分ける（375px で読まれないため。BOA-778） */}
-      <ul className="af-foot af-foot-list">
-        <li>
-          {t(`${k}.foot.scope`, {
+      {/* 注意を1段落に詰めず、話題ごとの見出し＋1文ずつの行に分ける（BOA-778、2026-10-06 ユーザー決定） */}
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.counting`)}
+        texts={[
+          t(`${k}.foot.scope`, {
             desc: t(`${k}.scopeDesc.${kind}`, {
               venue: venueLabel(venue, t),
               boat,
             }),
-          })}
-        </li>
-        {finalNcr && <li>{t(`${k}.foot.finalNcr`)}</li>}
-        <li>{t(`${k}.foot.series`)}</li>
-        <li>{t(`${k}.foot.common`)}</li>
-        <li>
-          {exhibitionStage ? t(`${k}.foot.exhPost`) : t(`${k}.foot.exhPre`)}
-        </li>
-      </ul>
+          }),
+          finalNcr && t(`${k}.foot.finalNcr`),
+          t(`${k}.foot.series`),
+        ]}
+      />
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.caution`)}
+        texts={[
+          t(`${k}.foot.common`),
+          exhibitionStage ? t(`${k}.foot.exhPost`) : t(`${k}.foot.exhPre`),
+        ]}
+      />
       <WindWaveFacts
         exhibition={exhibition}
         vaFacts={keys.VA ? facts[keys.VA] : null}

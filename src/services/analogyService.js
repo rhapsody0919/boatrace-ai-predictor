@@ -121,7 +121,7 @@ export async function getAnalogyContribution(input) {
 }
 
 // ---------------------------------------------------------------- v16（BOA-271 T6-3）
-// 来る艇の条件・類似レース・展開シナリオの読み出し（api/analogy/{facts,similar,scenario}/[raceId].js、Edge）。
+// 差がつく材料・類似レース・展開シナリオの読み出し（api/analogy/{facts,similar,scenario}/[raceId].js、Edge）。
 // 応答の status（api/_lib/analogyV16.js の resolveStatus）は時刻で変わる（展示の後に exhibition_ready になる）ので、
 // メモリのキャッシュは CDN と同じ 60秒だけ持つ。失敗は残さない（BOA-497）。
 

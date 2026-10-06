@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import NoteList from "./NoteList";
 import BoatBadge from "../BoatBadge";
 import { fmtCount, fmtPct, fmtRateCount } from "../../../utils/analogyFormat";
 import {
@@ -255,19 +256,21 @@ export default function AttackTable({
               {t(`${k}.attackTech`, { b: att, tech: techText, wins })}
             </p>
           )}
-          <p className="af-foot">
-            {!DENT_FORMS.has(slit) && F.att_lead?.[1]
-              ? t(`${k}.attackLead`, { b: att, p: fmtPct(rate(F.att_lead)) })
-              : ""}
-            {R && natDiff(R.by_exh, "att_win") !== null
-              ? t(`${k}.attackNat`, {
+          <NoteList
+            texts={[
+              !DENT_FORMS.has(slit) &&
+                F.att_lead?.[1] &&
+                t(`${k}.attackLead`, { b: att, p: fmtPct(rate(F.att_lead)) }),
+              R &&
+                natDiff(R.by_exh, "att_win") !== null &&
+                t(`${k}.attackNat`, {
                   b: att,
                   name: refName,
                   e: natDiff(R.by_exh, "att_win"),
                   m: natDiff(R.by_motor, "att_win"),
-                })
-              : ""}
-          </p>
+                }),
+            ]}
+          />
         </>
       ) : (
         <p className="af-sub">{t(`${k}.noAttacker`, { form: formName })}</p>
@@ -296,19 +299,23 @@ export default function AttackTable({
         )}
         refName={refName}
       />
-      <p className="af-foot">{t(`${k}.b1ExhNote`)}</p>
-      <p className="af-foot">
-        {t(`${k}.attackFoot`)}
-        {refName ? t(`${k}.attackRef`, { name: refName }) : ""}
-        {ov
-          ? t(`${k}.overlap`, {
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.counting`)}
+        texts={[
+          t(`${k}.attackFoot`),
+          refName && t(`${k}.attackRef`, { name: refName }),
+          ov &&
+            t(`${k}.overlap`, {
               form: formName,
               p: fmtPct(ov[1]),
               other: t(`${k}.forms.${ov[0]}.name`),
-            })
-          : ""}
-        {t(`${k}.notCause`)}
-      </p>
+            }),
+        ]}
+      />
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.caution`)}
+        texts={[t(`${k}.b1ExhNote`), t(`${k}.notCause`)]}
+      />
     </>
   );
 }

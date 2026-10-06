@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import NoteList from "./NoteList";
 import EntryPatternPicker from "./EntryPatternPicker";
 import SlitHint from "./SlitHint";
 import SlitShapePicker from "./SlitShapePicker";
@@ -283,20 +284,21 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
         onEntry={chooseEntry}
         todayEntry={todayEntry}
       />
-      <p className="af-foot">
-        {exhibitionStage && todayEntry && entryAgree?.[1]
-          ? t(`${k}.entryAgree`, {
-              today: t(`${k}.todayEntry.${todayEntry}`),
-              entry: t(`${k}.entryShort.${todayEntry}`),
-              p: fmtPct(entryAgree[0] / entryAgree[1]),
-              since: fmtDate(String(agreement.period?.[0] ?? "").slice(0, 7)),
-              n: fmtCount(entryAgree[1]),
-            })
-          : exhibitionStage
-            ? ""
-            : t(`${k}.entryPre`)}
-        {t(`${k}.entryFoot`, { name: allOf(scope) })}
-      </p>
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.howToRead`)}
+        texts={[
+          exhibitionStage && todayEntry && entryAgree?.[1]
+            ? t(`${k}.entryAgree`, {
+                today: t(`${k}.todayEntry.${todayEntry}`),
+                entry: t(`${k}.entryShort.${todayEntry}`),
+                p: fmtPct(entryAgree[0] / entryAgree[1]),
+                since: fmtDate(String(agreement.period?.[0] ?? "").slice(0, 7)),
+                n: fmtCount(entryAgree[1]),
+              })
+            : !exhibitionStage && t(`${k}.entryPre`),
+          t(`${k}.entryFoot`, { name: allOf(scope) }),
+        ]}
+      />
       <SlitHint
         courseSt={data.course_st}
         version={version}
@@ -322,17 +324,27 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
         onSlit={pick(setSlit)}
         badges={badges}
       />
-      <p className="af-foot">{t(`${k}.slitFoot1`)}</p>
-      <p className="af-foot">
-        {sl
-          ? t(`${k}.slitDef`, {
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.terms`)}
+        texts={[t(`${k}.slitFoot1`)]}
+      />
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.counting`)}
+        texts={[
+          sl &&
+            t(`${k}.slitDef`, {
               form: formName(slit),
               def: t(`${k}.forms.${slit}.def`),
-            })
-          : ""}
-        {t(`${k}.slitFoot2`)}
-        {formAgree?.hit?.[1] && exhibitionStage
-          ? t(`${k}.slitAgree`, {
+            }),
+          t(`${k}.slitFoot2`),
+        ]}
+      />
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.today`)}
+        texts={[
+          formAgree?.hit?.[1] &&
+            exhibitionStage &&
+            t(`${k}.slitAgree`, {
               form: formName(exhForms[0]),
               p: fmtPct(formAgree.hit[0] / formAgree.hit[1]),
               q: fmtPct(
@@ -342,27 +354,27 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
               ),
               since: fmtDate(String(agreement.period?.[0] ?? "").slice(0, 7)),
               n: fmtCount(agreement.forms_n),
-            })
-          : ""}
-        {exhibitionStage && exhibition?.forms_excluded
-          ? t(`${k}.slitDeepFly`)
-          : exhibitionStage
-            ? t(`${k}.slitToday`, {
-                forms: exhForms.length
-                  ? exhForms
-                      .map(formName)
-                      .join(t("aiPredictionTab.analogy.listSeparator"))
-                  : t(`${k}.noForm`),
-              }) +
-              (flyBoats.length
-                ? t(`${k}.slitFlyShallow`, {
-                    boats: flyBoats.join(
-                      t("aiPredictionTab.analogy.listSeparator"),
-                    ),
-                  })
-                : "")
-            : t(`${k}.slitPre`)}
-      </p>
+            }),
+          exhibitionStage && exhibition?.forms_excluded
+            ? t(`${k}.slitDeepFly`)
+            : exhibitionStage
+              ? t(`${k}.slitToday`, {
+                  forms: exhForms.length
+                    ? exhForms
+                        .map(formName)
+                        .join(t("aiPredictionTab.analogy.listSeparator"))
+                    : t(`${k}.noForm`),
+                }) +
+                (flyBoats.length
+                  ? t(`${k}.slitFlyShallow`, {
+                      boats: flyBoats.join(
+                        t("aiPredictionTab.analogy.listSeparator"),
+                      ),
+                    })
+                  : "")
+              : t(`${k}.slitPre`),
+        ]}
+      />
       <AttackTable
         attack={sc.attack}
         refAttack={data.reference?.attack ?? null}
@@ -381,9 +393,10 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
         {t(`${k}.resultHeading`)}
       </h4>
       {result}
-      <p className="af-foot">
-        {t(`${k}.foot`, { n: fmtCount(sc.n_refund_excluded ?? 0) })}
-      </p>
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.caution`)}
+        texts={[t(`${k}.foot`, { n: fmtCount(sc.n_refund_excluded ?? 0) })]}
+      />
     </div>
   );
 }

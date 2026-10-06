@@ -1,7 +1,15 @@
 import { useTranslation } from "react-i18next";
+import NoteList from "./NoteList";
+import BoatBadge from "../BoatBadge";
 import { SCOPE_LINE } from "./analogyColors";
 import { fmtCount, fmtFactValue, fmtPct } from "../../../utils/analogyFormat";
-import { rateOf, todayLine, usualOf } from "../../../utils/analogyFacts";
+import {
+  FACT_ITEMS,
+  rateOf,
+  todayLine,
+  todayValueRank,
+  usualOf,
+} from "../../../utils/analogyFacts";
 
 const k = "aiPredictionTab.analogy.facts";
 
@@ -132,6 +140,34 @@ export default function FactCard({
           {row.judge.reversed && t(`${k}.reversed`, { word: word(row.bad) })}
         </span>
       </div>
+      {[boat, compareBoat].filter(Boolean).map((b) => {
+        // 選んだ艇の今日の値と6艇中の順位（棒の強調・今日の一文を出さない日も出す。2026-10-06 ユーザー指摘）
+        const r = todayValueRank(
+          values,
+          FACT_ITEMS.find((it) => it.key === row.key).hib,
+          b,
+        );
+        return (
+          <p key={b} className="af-card-today">
+            <BoatBadge n={b} size="xs" />{" "}
+            {t(`${k}.todayValue`, {
+              boat: b,
+              value: r
+                ? `${fmtFactValue(row.key, r.value)}${t(`${k}.units.${row.key}`, "")}`
+                : "—",
+              rank: !r
+                ? t(`${k}.noToday`)
+                : r.from === r.to
+                  ? t(`${k}.rankOf6`, { n: r.from })
+                  : t(`${k}.rankOf6Tie`, {
+                      from: r.from,
+                      to: r.to,
+                      same: r.same,
+                    }),
+            })}
+          </p>
+        );
+      })}
       <div className="af-pair">
         {[
           [best, row.rates[0], row.good],
@@ -146,6 +182,11 @@ export default function FactCard({
           </div>
         ))}
       </div>
+      {/* 棒は6艇ではなく「この艇が6艇中何位だったか」の6区分。どの艇の棒かを上に書く（2026-10-06 ユーザー指摘） */}
+      <p className="af-strip-title">
+        <BoatBadge n={boat} size="xs" />{" "}
+        {t(`${k}.stripTitle`, { boat, item: label, rate: rateName })}
+      </p>
       <div className="af-strip" role="img" aria-label={stripAria}>
         {row.rates.map((p, i) => {
           const on = todayPos === i + 1;
@@ -156,7 +197,7 @@ export default function FactCard({
               title={row.all[i] ? `${row.all[i][0]}/${row.all[i][1]}` : ""}
             >
               <span className="af-num">
-                {p === null ? "—" : Math.round(p * 100)}
+                {p === null ? "—" : `${Math.round(p * 100)}%`}
               </span>
               <span className="af-strip-plot">
                 <span
@@ -190,13 +231,16 @@ export default function FactCard({
           );
         })}
       </div>
-      <p className="af-foot">
-        {/* 今日の位置の枠が無いとき（優勝戦の日の今節の平均着順点・今日の値が無い）は「枠で囲んだ棒…」を言わない（BOA-778） */}
-        {t(todayPos ? `${k}.stripCap` : `${k}.stripCapNoToday`, {
-          word: word(row.good),
-          usual: fmtPct(usual, 1),
-        })}
-      </p>
+      {/* 今日の位置の枠が無いとき（優勝戦の日の今節の平均着順点・今日の値が無い）は「枠で囲んだ棒…」を言わない（BOA-778） */}
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.howToRead`)}
+        texts={[
+          t(todayPos ? `${k}.stripCap` : `${k}.stripCapNoToday`, {
+            word: word(row.good),
+            usual: fmtPct(usual, 1),
+          }),
+        ]}
+      />
       {!hideLine && (
         <TodaySentence
           row={row}
