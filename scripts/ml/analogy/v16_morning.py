@@ -33,7 +33,7 @@ import v16_similar as S
 JST = timezone(timedelta(hours=9))
 WIND_BASIS = F.load_wind_basis()
 POOL_FROM = "2019-04-01"
-MAX_CANDIDATES = 10_000
+MAX_CANDIDATES = 30_000  # 層の中の出走表の距離の上位。展示後の並べ直しの一致率を 99% 以上にする（T2-4、10,000 では層4万件超で 91%）
 MAX_SHOWN = 800
 MAX_LAYER_ROWS = 2_000
 SHAP_SAMPLE = ("2025-01-01", "2025-12-02")
