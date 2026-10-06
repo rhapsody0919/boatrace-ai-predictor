@@ -21,7 +21,12 @@ const readRows = (page) =>
         rank: num(cells[0]),
         no: Number(cells[1]),
         noLinked: tr.querySelector("td.vmr-no a") !== null,
-        rate: num(cells[2]),
+        // 2連率は値ラベルから読む（セルには走数「8走」も並ぶ）
+        rate: num(
+          tr.querySelector(".rate-bar-label")?.textContent.trim() ?? "-",
+        ),
+        raceCount:
+          tr.querySelector(".vmr-race-count")?.textContent.trim() ?? null,
         final: cells[3],
         win: num(cells[4]),
         pretest: num(cells[5]),
@@ -244,5 +249,30 @@ test.describe("会場モーターランキング（BOA-428 子3）", () => {
     await expect(page.locator(".vmr-table tbody tr").first()).toBeVisible({
       timeout: 30000,
     });
+  });
+  test("2連率に会場サイトの出走数（走数）が添えられ、値が会場サイトの race_count と一致する（ファン評価 P1）", async ({
+    page,
+  }) => {
+    // 会場サイトのスナップショット（race_count を含む全モーターのクエリ）の応答を控える
+    const stats = page.waitForResponse(
+      (res) =>
+        res.url().includes("/rest/v1/venue_motor_stats") &&
+        res.url().includes("race_count") &&
+        res.ok(),
+      { timeout: 30000 },
+    );
+    await page.goto("/winning-technique?tab=motorranking&venue_code=15");
+    const byMotor = new Map(
+      (await (await stats).json()).map((r) => [r.motor_number, r.race_count]),
+    );
+    await expect(page.locator(".vmr-table tbody tr").first()).toBeVisible({
+      timeout: 30000,
+    });
+    const rows = await readRows(page);
+    const withRate = rows.filter((r) => r.rate !== null);
+    expect(withRate.length).toBeGreaterThan(0);
+    for (const r of withRate) {
+      expect(r.raceCount, `機番 ${r.no} の走数`).toBe(`${byMotor.get(r.no)}走`);
+    }
   });
 });

@@ -263,6 +263,13 @@ function VenueMotorRanking({ initialVenueCode = null }) {
                               label={formatMotorRate(r.top2Rate)}
                             />
                           )}
+                          {r.top2Rate !== null && r.raceCount !== null && (
+                            <span className="vmr-race-count">
+                              {t("analysis.motorRanking.raceCount", {
+                                n: r.raceCount,
+                              })}
+                            </span>
+                          )}
                         </td>
                         <td>{r.finalCount ?? dash}</td>
                         <td>{r.championshipCount ?? dash}</td>

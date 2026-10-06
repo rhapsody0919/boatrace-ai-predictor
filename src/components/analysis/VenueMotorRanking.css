@@ -168,6 +168,15 @@
   min-width: 96px;
 }
 
+/* 2連率の母数（会場サイトの出走数）。入れ替え直後の数走の値を、上位の値と読み分けるため */
+.vmr-race-count {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  text-align: right;
+}
+
 .vmr-user {
   text-align: left;
 }

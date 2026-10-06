@@ -3401,6 +3401,9 @@ export const supabaseDataService = {
               top2Rate: s?.race_count === 0 ? null : toNumber(s?.top2_rate),
               finalCount: toNumber(s?.final_count),
               championshipCount: toNumber(s?.championship_count),
+              // 会場サイトの出走数。入れ替え直後の数走の値が上位に並ぶので、2連率に添える
+              // （ファン評価 2026-10-06 P1、ユーザー決定: 新しい列は足さない）
+              raceCount: toNumber(s?.race_count),
               ...userOf(motorNumber),
             };
           });
@@ -3428,6 +3431,7 @@ export const supabaseDataService = {
             ),
             finalCount: null,
             championshipCount: null,
+            raceCount: null,
             ...userOf(motorNumber),
           })),
         };

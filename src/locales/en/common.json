@@ -2412,7 +2412,8 @@
       "sourcePretest": "Source: BOATRACE official trial data (only motors used in the latest series)",
       "sortNote": "Tap Motor, Top-2 rate, Wins or Trial to sort (Trial: fastest first). Equal values share the same rank",
       "fetchError": "Could not load the motor records",
-      "empty": "No motor data for this venue's latest series"
+      "empty": "No motor data for this venue's latest series",
+      "raceCount": "{{n}} runs"
     },
     "racerForm": {
       "title": "📈 Racer Form",
