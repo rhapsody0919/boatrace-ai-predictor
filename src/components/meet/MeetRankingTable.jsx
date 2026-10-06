@@ -56,8 +56,13 @@ function MeetRankingTable({
           rate: border.toFixed(2),
         });
 
+  // 着順の数字だけを並べると、選手の番号やモーター番号に見える（ファン評価1周目）。
+  // 今節タブと同じ「着順」の見出しを付ける。予選後は予選の走だけなので「予選の着順」
   const renderFinishes = (finishes) => (
     <span className="meet-ranking__finishes">
+      <span className="meet-ranking__finishes-label">
+        {t(confirmed ? "meetTab.finishLabelPrelim" : "meetTab.finishLabel")}
+      </span>
       {(finishes ?? []).map((f, i) => (
         <span key={i} className={f === 1 ? "is-win" : undefined}>
           {f === FINISH_ABSENT
@@ -119,6 +124,7 @@ function MeetRankingTable({
           },
         )}
       </p>
+      <p className="meet-ranking__sub">{t("meetPage.legendBest")}</p>
       {showRemaining && (
         <>
           <div
@@ -231,18 +237,19 @@ function MeetRankingTable({
                   <span className="meet-ranking__name" translate="no">
                     {r.playerName}
                   </span>
+                  {/* 理由は名前の下の段に出す。得点率の列は狭く、「賞典除外」や英語の
+                      "Prize excluded" が切れていた（ファン評価1周目） */}
                   <span className="meet-ranking__line2">
+                    <span className="meet-ranking__reason">
+                      {t(`meetPage.reason.${r.reason}`)}
+                    </span>
                     {renderFinishes(r.finishes)}
                   </span>
                 </td>
                 <td className="meet-ranking__c-class">
                   {classByRacer?.[r.racerId] ?? ""}
                 </td>
-                <td className="meet-ranking__c-rate">
-                  <span className="meet-ranking__reason">
-                    {t(`meetPage.reason.${r.reason}`)}
-                  </span>
-                </td>
+                <td className="meet-ranking__c-rate">－</td>
               </tr>
             ))}
         </tbody>

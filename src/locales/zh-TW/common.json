@@ -3233,6 +3233,9 @@
     "backToVenue": "前往{{venue}}的比賽一覽",
     "source": "出處：預賽結束後的得分率、名次來自BOAT RACE官方網站的得分率一覽。預賽期間為本站依名次計算的數值（不含扣分）。",
     "noRateYet": "得分率於首日比賽後顯示",
-    "borderPending": "尚有{{count}}名選手未出賽，準優門檻待全員至少出賽一場後顯示"
+    "borderPending": "尚有{{count}}名選手未出賽，準優門檻待全員至少出賽一場後顯示",
+    "legendBest": "金框為得分率第1名（同分者皆標示）",
+    "winnerLabel": "優勝",
+    "winnerBoat": "（{{boat}}號艇）"
   }
 }

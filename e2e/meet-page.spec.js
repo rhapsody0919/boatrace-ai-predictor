@@ -126,3 +126,44 @@ test("初日の途中（まだ1走もしていない選手がいる間）は、�
   await expect(page.locator(".meet-ranking__border")).toHaveCount(0);
   await expect(page.locator("tr.meet-ranking__line")).toHaveCount(0);
 });
+
+// ファン評価1周目の指摘3〜6（PR #1151）
+test("順位外の理由が切れず、着順に見出しが付き、節終了では優勝者を見出しの下に出す", async ({
+  page,
+}) => {
+  await afterTheMeet(page);
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(KOJIMA, { waitUntil: "domcontentloaded" });
+  const excluded = page.locator("tr.meet-ranking__row.is-excluded");
+  await expect(excluded).toHaveCount(6, { timeout: 60000 });
+  // 理由（賞典除外・途中帰郷）がセルからはみ出して切れていない
+  const clipped = await page.$$eval(
+    "tr.meet-ranking__row.is-excluded td",
+    (tds) => tds.filter((td) => td.scrollWidth > td.clientWidth + 1).length,
+  );
+  expect(clipped).toBe(0);
+  await expect(excluded.first()).toContainText(/賞典除外|途中帰郷/);
+  await expect(
+    page.locator("tr.meet-ranking__row").first().locator(".meet-ranking__finishes-label"),
+  ).toHaveText("予選の着順");
+  await expect(page.locator(".meet-page__winner")).toContainText(/優勝.+号艇/);
+});
+
+test("英語版の勝ち上がりの着順は艇番と紛れない形で、順位外の理由が切れない", async ({
+  page,
+}) => {
+  await afterTheMeet(page);
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(`/en${KOJIMA}`, { waitUntil: "domcontentloaded" });
+  await expect(page.locator("tr.meet-ranking__row.is-excluded")).toHaveCount(6, {
+    timeout: 60000,
+  });
+  const clipped = await page.$$eval(
+    "tr.meet-ranking__row.is-excluded td, .meet-ranking__table th",
+    (els) => els.filter((el) => el.scrollWidth > el.clientWidth + 1).length,
+  );
+  expect(clipped).toBe(0);
+  const finishes = page.locator(".meet-qualifiers__finish");
+  await expect(finishes.first()).toHaveText(/^Finish \d$/);
+  await expect(page.locator(".meet-qualifiers")).not.toContainText("#");
+});

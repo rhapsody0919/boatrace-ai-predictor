@@ -3233,7 +3233,7 @@
     "raceSemi": "R{{n}} Semi-final",
     "raceFinal": "R{{n}} Final",
     "toRace": "Race details ›",
-    "finishPlace": "#{{place}}",
+    "finishPlace": "Finish {{place}}",
     "resultPending": "Finishes appear after the race",
     "semifinalsPending": "The semi-final card is announced after qualifying ends",
     "finalsPending": "The final card is announced after the semi-final results",
@@ -3243,6 +3243,9 @@
     "backToVenue": "Races at {{venue}}",
     "source": "Source: after qualifying, score rates and ranks come from the official BOAT RACE score-rate list. During qualifying, this site calculates them from finishes (penalties not included).",
     "noRateYet": "Score rates appear after the first day's races",
-    "borderPending": "{{count}} racer(s) have not raced yet, so the semi-final line appears once everyone has raced at least once"
+    "borderPending": "{{count}} racer(s) have not raced yet, so the semi-final line appears once everyone has raced at least once",
+    "legendBest": "The gold box marks the highest score rate (all tied racers)",
+    "winnerLabel": "Winner:",
+    "winnerBoat": "(boat {{boat}})"
   }
 }

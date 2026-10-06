@@ -72,7 +72,6 @@
 
 .meet-ranking__table th {
   padding: 6px 8px;
-  white-space: nowrap;
   font-size: 0.75rem;
   font-weight: var(--font-weight-medium);
   color: var(--text-secondary);
@@ -147,6 +146,10 @@
   gap: 4px;
 }
 
+.meet-ranking__finishes-label {
+  margin-right: 2px;
+}
+
 .meet-ranking__finishes .is-win {
   color: var(--text-primary);
   font-weight: var(--font-weight-bold);
@@ -193,7 +196,6 @@
 }
 
 .meet-ranking__reason {
-  white-space: nowrap;
   font-size: 0.75rem;
   font-weight: var(--font-weight-bold);
   color: var(--text-secondary);

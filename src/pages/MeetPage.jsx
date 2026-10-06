@@ -167,6 +167,13 @@ function MeetPage() {
           endDate={page?.endDate ?? null}
           seriesDay={page?.seriesDayToday ?? null}
           state={page?.state ?? null}
+          winner={
+            page?.state === "finished"
+              ? (page.qualifiers?.finals?.[0]?.boats ?? []).find(
+                  (b) => b.finish === 1,
+                )
+              : null
+          }
         />
         {body}
       </div>
@@ -183,6 +190,7 @@ function MeetHeader({
   endDate,
   seriesDay,
   state,
+  winner,
 }) {
   const { t } = useTranslation();
   const gradeConfig = grade ? GRADE_CONFIG[grade] : null;
@@ -217,6 +225,15 @@ function MeetHeader({
         )}
       </div>
       <h1>{series ?? t("meetPage.titleFallback", { venue: venueName })}</h1>
+      {/* 節が終わった後に来る人がまず知りたいのは優勝者。勝ち上がり欄は52人の表の
+          後ろ（375px）にあるので、見出しの直下にも出す（ファン評価1周目） */}
+      {winner && (
+        <p className="meet-page__winner">
+          {t("meetPage.winnerLabel")}{" "}
+          <strong translate="no">{winner.playerName}</strong>{" "}
+          {t("meetPage.winnerBoat", { boat: winner.boatNumber })}
+        </p>
+      )}
     </header>
   );
 }

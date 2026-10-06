@@ -24,6 +24,12 @@
   overflow-wrap: anywhere;
 }
 
+.meet-page__winner {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
 .meet-page__meta {
   display: flex;
   flex-wrap: wrap;
