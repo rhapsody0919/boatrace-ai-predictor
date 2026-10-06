@@ -113,7 +113,7 @@ async function openAiTab(page, n = 1) {
 }
 
 const sectionOf = (page) =>
-  page.getByRole("region", { name: /アナロジー・ファインダー/ });
+  page.getByRole("region", { name: /龍神ソナー/ });
 
 test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () => {
   test("公開前の既定では節を出さず、v16 の API も寄与度の API も呼ばない", async ({

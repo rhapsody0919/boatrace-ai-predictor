@@ -1294,3 +1294,10 @@ button.af-bar {
   font-size: var(--font-size-xs);
   font-weight: 700;
 }
+
+/* 節の副題（見出しの直下1行。2026-10-06 ユーザー決定「龍神ソナー」） */
+.af-v16-subtitle {
+  margin: 0 0 8px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}

@@ -677,7 +677,7 @@
     "unavailableTitle": "AI 예상 데이터가 없습니다",
     "unavailableBody": "이 경주는 AI 예상에 필요한 데이터가 아직 준비되지 않았습니다.",
     "analogy": {
-      "title": "아날로지 파인더",
+      "title": "용신 소나",
       "views": {
         "contribution": "기여도"
       },
@@ -815,7 +815,8 @@
         "venueG1": "{{venue}}의 G1",
         "nationalAll": "전국의 전체 레이스"
       },
-      "heading": "아날로지 파인더 · {{venue}} {{race}}R",
+      "heading": "용신 소나 · {{venue}} {{race}}R",
+      "subtitle": "오늘과 조건이 같은 과거 레이스를 세어 보여 줍니다",
       "stage": {
         "label": "시점",
         "racecard": "전시 전(출주표)",
@@ -830,7 +831,7 @@
         "scenario": "전개 시나리오"
       },
       "states": {
-        "absent": "결장이 있어 이 레이스의 아날로지 파인더는 표시하지 않습니다",
+        "absent": "결장이 있어 이 레이스의 용신 소나는 표시하지 않습니다",
         "notSaved": "이 레이스는 표시할 데이터가 없습니다",
         "error": "표시하지 못했습니다. 잠시 후 다시 열어 주세요",
         "retry": "다시 불러오기",
@@ -1324,7 +1325,7 @@
         "triHeading": "자주 나온 삼쌍승",
         "triMore": "나머지 {{k}}가지 보기(전체 {{m}}가지)",
         "none": "0건",
-        "otherHint": "위 막대나 소나의 부채꼴을 누르면, 그 보트가 이겼을 때 다른 보트는 어땠는지 나온다",
+        "otherHint": "위 막대나 소나 그림의 부채꼴을 누르면, 그 보트가 이겼을 때 다른 보트는 어땠는지 나온다",
         "otherTitle": "{{b}}번 보트가 이긴 {{n}}건, 다른 보트는?",
         "otherHit": "{{b}}번 보트가 이김",
         "otherBase": "비교 대상: {{name}}({{n}}건)",

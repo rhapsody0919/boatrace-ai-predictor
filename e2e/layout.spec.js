@@ -793,7 +793,7 @@ test.describe("レイアウト: AI予想タブのアナロジー・ファイン�
     await gotoAndSettle(page, `/race/${ANALOGY_V16_RACE}`);
     await page.click('[role="tab"]:has-text("AI予想")');
     const section = page.getByRole("region", {
-      name: /アナロジー・ファインダー/,
+      name: /龍神ソナー/,
     });
     await expect(section).toBeVisible({ timeout: 30000 });
     return section;

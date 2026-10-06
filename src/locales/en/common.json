@@ -683,7 +683,7 @@
     "unavailableTitle": "No AI prediction data",
     "unavailableBody": "This race doesn't have the data needed for an AI prediction.",
     "analogy": {
-      "title": "Analogy Finder",
+      "title": "Ryujin Sonar",
       "views": {
         "contribution": "Contribution"
       },
@@ -821,7 +821,8 @@
         "venueG1": "G1 races at {{venue}}",
         "nationalAll": "All races, all venues"
       },
-      "heading": "Analogy Finder · {{venue}} {{race}}R",
+      "heading": "Ryujin Sonar · {{venue}} {{race}}R",
+      "subtitle": "Counts past races that match today's conditions",
       "stage": {
         "label": "As of",
         "racecard": "Before exhibition (race card)",
@@ -836,7 +837,7 @@
         "scenario": "Race scenarios"
       },
       "states": {
-        "absent": "A racer withdrew, so the Analogy Finder is not shown for this race",
+        "absent": "A racer withdrew, so Ryujin Sonar is not shown for this race",
         "notSaved": "There is no data to show for this race",
         "error": "Couldn't load this. Please try again later",
         "retry": "Reload",
@@ -1330,7 +1331,7 @@
         "triHeading": "Common trifectas",
         "triMore": "Show the remaining {{k}} (of {{m}})",
         "none": "0",
-        "otherHint": "Tap a bar above or a sonar sector to see how the other boats did when that boat won",
+        "otherHint": "Tap a bar above or a sector of the sonar chart to see how the other boats did when that boat won",
         "otherTitle": "The {{n}} races Boat {{b}} won: how did the others do?",
         "otherHit": "Boat {{b}} won",
         "otherBase": "Compared with: {{name}} ({{n}})",

@@ -1570,7 +1570,7 @@ async function openSection(page) {
     .first()
     .click();
   const section = page.getByRole("region", {
-    name: /アナロジー・ファインダー/,
+    name: /龍神ソナー/,
   });
   await expect(section).toBeVisible();
   return section;
@@ -1614,7 +1614,7 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
     const section = await openSection(page);
     await expect(
       section
-        .getByRole("heading", { name: /アナロジー・ファインダー/ })
+        .getByRole("heading", { name: /龍神ソナー/ })
         .first(),
     ).toContainText(`${VENUE}12R`);
   });
@@ -1673,7 +1673,7 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
     const section = await openSection(page);
     await expect(
       section.getByText(
-        "欠場があったため、このレースのアナロジー・ファインダーは出していません",
+        "欠場があったため、このレースの龍神ソナーは出していません",
       ),
     ).toBeVisible();
     await expect(section.getByRole("tablist")).toHaveCount(0);

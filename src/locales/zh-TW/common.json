@@ -677,7 +677,7 @@
     "unavailableTitle": "尚無AI預測資料",
     "unavailableBody": "這場比賽尚未備齊AI預測所需的資料。",
     "analogy": {
-      "title": "類比搜尋",
+      "title": "龍神聲納",
       "views": {
         "contribution": "貢獻度"
       },
@@ -815,7 +815,8 @@
         "venueG1": "{{venue}}的G1",
         "nationalAll": "全國的全部比賽"
       },
-      "heading": "類比搜尋 · {{venue}}{{race}}R",
+      "heading": "龍神聲納 · {{venue}}{{race}}R",
+      "subtitle": "統計與今天條件相同的過往賽事",
       "stage": {
         "label": "時點",
         "racecard": "展示前（出賽表）",
@@ -830,7 +831,7 @@
         "scenario": "展開情境"
       },
       "states": {
-        "absent": "本場有選手缺席，因此不提供類比搜尋",
+        "absent": "本場有選手缺席，因此不提供龍神聲納",
         "notSaved": "本場比賽沒有可顯示的資料",
         "error": "無法顯示。請稍後再重新開啟",
         "retry": "重新載入",
@@ -1324,7 +1325,7 @@
         "triHeading": "常見的3連單",
         "triMore": "查看其餘{{k}}組（共{{m}}組）",
         "none": "0場",
-        "otherHint": "點選上方長條或雷達的扇形，可查看該艇獲勝時其他艇的表現",
+        "otherHint": "點選上方長條或聲納圖的扇形，可查看該艇獲勝時其他艇的表現",
         "otherTitle": "{{b}}號艇獲勝的{{n}}場中，其他艇呢？",
         "otherHit": "{{b}}號艇獲勝",
         "otherBase": "比較對象：{{name}}（{{n}}場）",

@@ -75,6 +75,7 @@ export default function AnalogyFinderSection({ raceId }) {
       <h2 id={headingId} className="af-v16-eyebrow">
         {heading}
       </h2>
+      <p className="af-v16-subtitle">{t("aiPredictionTab.analogy.subtitle")}</p>
       {body}
     </section>
   );
