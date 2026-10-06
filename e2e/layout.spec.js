@@ -34,6 +34,8 @@ const PAGES = [
   "/about",
   "/accuracy",
   "/winning-technique",
+  // 会場モーターランキング（BOA-428）: 約60行×7列の表。表の中だけ横スクロールさせる
+  "/winning-technique?tab=motorranking&venue_code=16",
   "/races",
   "/hit-races",
   "/blog",
@@ -75,6 +77,7 @@ const READY_SELECTORS = {
   "/": ".venue-grid-card--open, .venue-grid-card--closed",
   "/accuracy": ".turn-accuracy-venue-table",
   "/winning-technique": ".winning-technique-table",
+  "/winning-technique?tab=motorranking&venue_code=16": ".vmr-table",
   "/races": ".dates-list .date-card",
   "/hit-races": ".race-cards-grid",
   "/racers": ".racer-compact-row, .racer-table",

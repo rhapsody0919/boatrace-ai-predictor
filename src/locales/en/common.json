@@ -2223,6 +2223,7 @@
     "dataLoadError": "Failed to load data",
     "boatN": "Boat {{n}}",
     "raceOption": "Race {{number}} ({{time}} JST)",
+    "raceOptionPast": "{{date}} Race {{number}}",
     "lastUpdated": "(Last updated: {{date}})",
     "noData": "No data",
     "notMeasured": "Not measured",
@@ -2411,6 +2412,25 @@
       "drillAsOfRaceNote": "💡 This shows this motor's status up to just before this race (this race and later races are not included).",
       "barScaleNote": "The longest bar is the highest of the six motors. "
     },
+    "motorRanking": {
+      "title": "🏁 Motor Ranking",
+      "description": "Pick a venue to list all of its motors by top-2 rate. Tap a column header to sort by motor number, championships or trial time.",
+      "rankHeader": "Rank",
+      "rateHeader": "Top-2 rate",
+      "officialRateHeader": "Official top-2 rate",
+      "finalHeader": "Finals",
+      "championshipHeader": "Wins",
+      "userHeader": "Current racer",
+      "userHeaderRecent": "Racer in latest series ({{date}})",
+      "sourceVenueSite": "Source: {{venue}} official site motor records (retrieved {{date}})",
+      "sourcePretest": "Source: BOATRACE official trial data (only motors used in the latest series)",
+      "sortNote": "Tap Motor, Top-2 rate, Wins or Trial to sort (Trial: fastest first). Equal values share the same rank",
+      "sortNotePretest": "Tap Motor, Official top-2 rate or Trial to sort (Trial: fastest first). Equal values share the same rank",
+      "linkNote": "Tap a motor number to open its trend up to just before the last race it ran in the latest series (a different point in time from this list). Motors not used in the latest series cannot be opened",
+      "fetchError": "Could not load the motor records",
+      "empty": "No motor data for this venue's latest series",
+      "raceCount": "{{n}} runs"
+    },
     "racerForm": {
       "title": "📈 Racer Form",
       "description": "Select a race being held today to compare each racer's current national win rate with their rate about 90 days ago and see whether their form is rising or falling.",
@@ -2533,6 +2553,7 @@
       "outcome": "📊 Outcome Distribution",
       "technique": "🎯 Winning Technique",
       "motor": "🔧 Motor Condition",
+      "motorranking": "🏁 Motor Ranking",
       "racer": "📈 Racer Form",
       "st": "⏱️ ST Gap",
       "topstart": "🚀 Top Start",
@@ -2562,6 +2583,10 @@
       "motor": {
         "name": "Motor Condition",
         "description": "Analyzes motor top-2/top-3 rates by lane for today's races"
+      },
+      "motorranking": {
+        "name": "Motor Ranking",
+        "description": "All motors at a venue ranked by top-2 rate, finals, championships and trial time"
       },
       "racer": {
         "name": "Racer Form",
@@ -2682,6 +2707,23 @@
           }
         ],
         "articleLinkText": "What is Motor Condition? A new feature showing today's race top-2 rate by lane"
+      },
+      "motorranking": {
+        "title": "About Motor Ranking",
+        "dataView": "This lists every motor at a venue using the motor records (top-2 rate, finals appearances, championships) published on each venue's official site. Trial times and racers come from BOATRACE's official trial data for the latest series. For Toda, Heiwajima, Hamanako and Miyajima, only motors used in the latest series are listed, by BOATRACE's official top-2 rate.",
+        "tips": [
+          {
+            "strong": "Motors with a high top-2 rate",
+            "text": " = motors that often finish in the top two at that venue. Check who is using them this series"
+          },
+          {
+            "strong": "Motors with a fast trial time",
+            "text": " = a guide to this series' speed, measured the day before the series starts"
+          },
+          {
+            "text": "A motor's top-2 rate also reflects the skill of the racers who used it. Tap a motor number to see its trend by series"
+          }
+        ]
       },
       "racer": {
         "title": "About Racer Form",
