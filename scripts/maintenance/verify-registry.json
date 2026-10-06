@@ -515,6 +515,11 @@
       "guards": "並行セッションのオーケストレーションが決めたマージ順（台帳で先行とされたPRが未マージなら gh pr merge を止める。台帳に制約があるのに for ループ・変数・$(...)・xargs 等でPR番号を確定できない場合も止める。guard-pr-merge.js・scripts/lib/mergeOrder.js・merge-order.js）"
     },
     {
+      "script": "verify-edit-on-master-hook.js",
+      "tier": "ci",
+      "guards": "master 上のメイン作業ツリーの直接編集を止めるフック（.claude/hooks/guard-edit-on-master.sh、2026-08-13 の誤削除インシデントの再発防止）。master のメインツリーは拒否、worktree・リポジトリ外・.git 配下・master 以外は素通し、jq が無くても素通し、settings.json の登録"
+    },
+    {
       "script": "verify-orchestrator-hooks.js",
       "tier": "ci",
       "guards": "オーケストレーター（/orchestrate）のセッション記録と compact 後の状態の再注入（.claude/hooks/orchestrator-session.sh）。他のセッションに注入しないこと・jq が無くても素通しすること・settings.json の3経路の登録"
