@@ -1,4 +1,6 @@
 /** 本番接続なし。検査・保存モック・実SQL(PGlite)・公開APIガードを検証する。 */
+import { matchRiskRules } from "../lib/riskRuleMatcher.js";
+import { checkRiskRules } from "../lib/riskRules.js";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
@@ -116,6 +118,68 @@ const riskRules = JSON.parse(
     "utf8",
   ),
 ).rules;
+await check("共通リスク判定は既存3経路の結果・順序・返却形式を維持する", async () => {
+  const approvePath = new URL("api/admin/sns-hub/insights/[id]/approve.js", root);
+  let source = await fs.readFile(approvePath, "utf8");
+  let insight;
+  let updates = 0;
+  globalThis.__riskRuleTest = {
+    get: () => insight,
+    update: (value) => { updates++; return value; },
+  };
+  const helpers = "data:text/javascript," + encodeURIComponent(`
+    export const jsonResponse=(v,status=200)=>new Response(JSON.stringify(v),{status});
+    export const isConfigured=()=>true; export const isValidUuid=()=>true;
+    export const getInsightById=async()=>globalThis.__riskRuleTest.get();
+    export const updateInsight=async(id,v)=>globalThis.__riskRuleTest.update(v);
+    export const requireAdminAuth=async()=>null;
+  `);
+  source = source.replace(/"[^"\n]+_lib\/(snsHubHelpers|adminAuth)\.js"/g, JSON.stringify(helpers))
+    .replace(/"[^"\n]+lib\/riskRuleMatcher\.js"/g, JSON.stringify(new URL("scripts/lib/riskRuleMatcher.js", root).href))
+    .replace(/"[^"\n]+risk-rules\.json"/g, JSON.stringify("data:text/javascript," + encodeURIComponent(`export default ${JSON.stringify({rules: riskRules})}`)));
+  const handler = (await import("data:text/javascript," + encodeURIComponent(source))).default;
+  const cases = [
+    ["競艇", ["banned-term-kyoutei"]],
+    ["本命 VS", []],
+    ["必ず当たる", []],
+    ["稼げる", []],
+    ["ボートレースの観測件数", []],
+    ["穴狙い 本命狙い 儲かる 万舟券 競艇 VS", ["banned-term-kyoutei", "deprecated-model-names", "gambling-incitement"]],
+  ];
+  try {
+    for (const [content, xIds] of cases) {
+      for (const platform of ["x", "youtube", "tiktok", null, undefined, "unknown"]) {
+        // 改修前のNode判定を独立した比較基準として固定する。
+        const expected = riskRules.filter(r => r.platforms === "all" || !platform ||
+          (Array.isArray(r.platforms) && r.platforms.includes(platform)))
+          .flatMap(r => {
+            const matchedPattern = r.patterns.find(p => content.includes(p));
+            return matchedPattern ? [{id:r.id, category:r.category, description:r.description, matchedPattern}] : [];
+          });
+        assert.deepEqual(matchRiskRules(content, platform, riskRules), expected);
+        assert.deepEqual(checkRiskRules(content, platform), expected);
+        if (platform === "x") assert.deepEqual(expected.map(r => r.id), xIds);
+        if (content === "本命 VS" && ["youtube", "tiktok", null, undefined].includes(platform)) {
+          assert.equal(expected[0].matchedPattern, "本命");
+        }
+        insight = {status:"proposed", insight_text:content, platform};
+        const response = await handler(new Request("https://local.invalid/insights/test/approve", {method:"POST"}));
+        assert.equal(response.status, 200);
+        assert.deepEqual((await response.json()).riskWarnings,
+          expected.map(({id, category, matchedPattern}) => ({id, category, matchedPattern})));
+      }
+      const result = await validateBundle(form(await fixture({title:content, script:content, x_text:content})), riskRules);
+      for (const platform of ["x", "youtube"]) {
+        assert.deepEqual(result.riskFlags[platform], checkRiskRules(content, platform));
+      }
+    }
+    assert.equal(updates, cases.length * 6); // 警告があっても承認は継続する。
+    assert.deepEqual(matchRiskRules("VS", "x", []), []);
+  } finally {
+    delete globalThis.__riskRuleTest;
+  }
+});
+
 await check(
   "既存riskルールをチャネル別に照合し、QA自己申告に依存しない",
   async () => {
