@@ -1,21 +1,36 @@
 # 思考アシスト plan（BOA-430）
 
 - 入力: [spec.md](./spec.md)（FR-1〜11・FR-3a、D-1〜D-34）、[screens.md](./screens.md)、承認モック [mock/APPROVED.md](./mock/APPROVED.md)（v7、Artifact Version 10）
-- 種別: UI だけの新規ページ。新しいテーブル・カラム・マイグレーション・バッチは無い（spec「やらないこと」）。本番 DB への書き込みも無い
-- ADR: [0086 データは既存の関数と v16 API を画面で組み合わせる](../../adr/0086-thinking-assist-compose-existing-sources.md)、[0087 類似レースの割合をどこで数えるか](../../adr/0087-thinking-assist-similar-race-counting.md)（提案中。ユーザーの判断が要る、下「未決」P-1）
+- 種別: UI の新規ページ。新しいテーブル・カラム・バッチは無い。新しい読み取り専用の RPC が1つ（P-2、ADR 0088。マイグレーション案を作り、本番への適用はユーザー）
+- ADR: [0086 データは既存の関数と v16 API を画面で組み合わせる](../../adr/0086-thinking-assist-compose-existing-sources.md)、[0087 類似レースは龍神ソナーと同じ上位400件で数える](../../adr/0087-thinking-assist-similar-race-counting.md)・[0088 会場の決まり手を直近1年と90日で並べる RPC](../../adr/0088-venue-winning-technique-counts-by-period.md)（どちらも提案中。下「未決」）
 
 ## 未決（plan で見つかった、ユーザーの判断が要るもの）
 
-### P-1 類似レースの割合をどの件数で数えるか（D-34「層の全件」が多くのレースで今の API では出せない）
-- D-34 で「類似レースの件数は層の全件」に決まった。推奨の根拠は「今日の例（徳山10R、層63件）では v16 の既定 min(400, 層) と同じ値になる」だった
-- plan で本番の API を確かめたところ、層は多くのレースで大きい。2026-10-07 の36レース（24場から各1・6・12R の一部）では、層が2,000件を超えたのが31レース（最大58,312件。1号艇A1・勝率差の段階4・勝率トップ1号艇の層）。2,000件以下は5レース（G1 の3レース 1,246〜1,612件と、準優勝戦 786件・優勝戦 317件）で、800件以下は準優勝戦・優勝戦の2レースだけ
-- 画面で数えられる範囲: similar API の `neighbors` は似ている順の上位800件まで、layer API の `rows` は新しい順の2,000件まで。どちらも、層が大きいと層の全件にならない。層の全件の1着・万舟・3連単を返す API は無い
-- 案は ADR 0087。推奨は **(C) 龍神ソナーと同じ「似ている順の上位 min(400, 層) 件」**。理由: 呼び名「類似レース」と用語の「?」の「龍神ソナーの類似レースと同じ」（D-20）が、そのまま本当になる。新しいバッチが要らない。今日の例（63件）は D-34 と同じ値。層の全件にしたいなら (A) バッチ（BOA-271 のレーン）に層の集計を足す必要がある
-- 推奨の誤りの記録: D-34 の推奨は、層が小さい準優勝戦の例だけで判断していた（作る側の抜け）
+2026-10-07 ユーザーの指示「ファンにとって何が価値が高いかから決める。要るなら API の修正・新規開発もする」で、価値から決め直した。ファン4人（discussion-panel、設計に関わっていないサブエージェント、実装の都合を伏せた）の結論はロールプレイの仮説。
 
-### P-2 徳山の決まり手の期間
-- モックは直近1年（2,196レース）を DB から数えた。既存の関数 `getWinningTechniqueStats` は直近90日だけ返す
-- 推奨: 直近90日に変え、見出しを「直近90日」にする（新しい集計を作らない。既存の会場ページと同じ値になる）。判断が割れる話ではないので、P-1 と一緒に一言確認する
+### P-1 類似レースの割合をどの件数で数えるか（D-34「層の全件」の見直し）→ ADR 0087
+- 経緯: D-34 は、層が63件の例のレースだけを見た推奨で決まった。本番では層が多くのレースで大きい（2026-10-07 の36レース中31で2,000件超、最大58,326件）
+- 価値の結論（ファン）:
+  - 堅い？荒れる？・万舟・よく出た3連単・組ごとの件数・決まり手のすべてを、龍神ソナーと同じ「今日に近い順の上位400件」に統一する
+  - 同じ呼び名で値が違うと迷う。締切前の数字は1種類にしたい。近いレースの方が判断に効く
+  - 層の全件数は、説明の中で母集団の大きさとして書く
+  - よく出た3連単は上位3組に件数を添える
+  - 層が400件以下なら全件を使い、「条件が合う全件」と書く
+- 実現: 今の API のまま（similar の `neighbors` の先頭 min(400, `n_layer`) 件）。万舟を数える関数を1つ足す
+- 層の全件を出す案は ADR 0087 の却下案 (A) に書いた。規模は小さい（朝のバッチの既存関数を1回呼ぶだけ、API の変更なし）が、BOA-271 レーンとの調整が要る。ソナーと値が違うので採らない
+- spec D-34 の「類似レースの件数は層の全件」は、採用されたら書き直す
+
+### P-2 会場の特徴の決まり手の期間 → ADR 0088
+- 価値の結論（ファン）:
+  - 主は直近1年（徳山 2,592件）。四季が1周し、今の水面に近い
+  - 直近90日（612件）を並べる
+  - 差がはっきりした決まり手にだけ「最近↑／↓」を付ける
+  - 季節別・3年・全期間は出さない（差が出ない）
+- 実現:
+  - 新しい読み取り専用の RPC `venue_winning_technique_counts(venue, from, to)`（新しい表と長期の表をつなぐ）
+  - マイグレーション案と `APPLIED.md` を足す。本番への適用はユーザー
+  - 既存の `winning_technique_stats` と毎日のスクリプトは変えない
+- モックの誤りの訂正: 「直近1年 2,196レース」は新しい表（2025-12-03〜）だけを数えていた。正しくは2,592レース
 
 ## 全体の構成
 
@@ -54,12 +69,12 @@ flowchart TD
 | 徳山の全レース（参考の線） | scenario `scope=VA` の同じセル（返還を除く）と、facts `VA` の `usual["1"].win`（返還を含む） | 2種類を「件数が違う理由」に書く（Codex F01） |
 | 形・進入・手がかり・攻める艇 | scenario（NC）`cells.*`・`hints`・`attack` | 1号艇の範囲。既存の `slitForms`・`entryType`・`hintRows` |
 | 風速の区分の艇番別1着 | facts `VA` の `wind[区分]` | 区分は展示後 `exhibition.wind_band`、展示前は出さない。`windWaveView` を使う |
-| 類似レース（件数・1着・決まり手・万舟・3連単） | similar の `neighbors`・`n_layer`・`conditions` | 件数の定義は P-1。`aggregateNeighbors`・`trifectaList` を使い、万舟は `payout_3tan >= 10000` を数える小さな関数を足す（analogyAggregate.js に。v16 の画面には使わない） |
+| 類似レース（件数・1着・決まり手・万舟・3連単） | similar の `neighbors`・`n_layer`・`conditions` | 先頭 min(400, `n_layer`) 件（P-1・ADR 0087）。`aggregateNeighbors`・`trifectaList` を使い、万舟は `payout_3tan >= 10000` を数える小さな関数を足す（analogyAggregate.js に。v16 の画面には使わない） |
 | 展示・展示ST・オリジナル展示・チルト・部品交換 | `getRaceExhibitionTimeBreakdown`・`getRaceStPredictabilityBreakdown`・`getRaceOriginalExhibition`・`getRaceMotorMaintenanceBreakdown` | 展示後だけ。F の展示ST は最良の候補から外す（raceIndicators と同じ） |
 | 前検タイムと順位 | `getMeetScoreboard(raceId, venueCode).pretestByRacer` | 深掘り |
 | 今節の各走（日・R・進入・ST・展示・着・点）、今節より前の5走、その艇番の1着 | `getRacerScopedRaceStats(racerId)`（直近2年）を `buildMeetResults`・`getRecentRaces`（basicInfoStats.js）で絞る | 今節の平均着順点は v16 `today.items.series_score`（前日まで）。表の平均の式は `SCORE_POINTS`（seriesPoints.js）で、v16 の値と一致を確かめる（再現テスト） |
 | 勝ち決まり手（直近90日） | `getRaceTechniqueProfileBreakdown(raceId)` | 深掘り |
-| 会場の特徴（水質・型・決まり手） | `getVenueCharacteristics`・`getWinningTechniqueStats` | 期間は P-2 |
+| 会場の特徴（水質・型・決まり手） | `getVenueCharacteristics`、新しい RPC `venue_winning_technique_counts`（直近1年と直近90日） | P-2・ADR 0088。「最近↑／↓」は2つの割合のぶれ幅が重ならないときだけ |
 | オッズ（3連単120通り・取得時刻） | `getRaceOddsSnapshots`（最新の行）。当日・締切90分前以内は `fetchLiveOdds` を押したときだけ | 自動更新しない（FR-8） |
 
 - 部品交換・欠場など v16 の状態の扱いは v16 と同じ（欠場があれば v16 の部分を出さない。図・買い目は5艇で描く。screens「状態」）
