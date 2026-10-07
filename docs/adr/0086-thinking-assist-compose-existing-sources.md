@@ -9,7 +9,7 @@
 ## 決定
 画面（`useThinkingAssistData`）で既存の関数と v16 API を並列に呼び、純粋関数（`assistModel.js`）で画面のモデルにする。取得は3段に分ける。
 1. 図に要るもの（出走表・オッズ）
-2. 届いたら埋めるもの（v16 facts、その `today.scope_keys` を受けて scenario の NC。similar・scenario の NA と VA・展示・決まり手など）。v16 の API は冷えていると facts だけで約3秒かかり、scenario の NC は facts の応答のキーが要るので、図はこれを待たない（2026-10-07 design-reviewer の実測）
+2. 届いたら埋めるもの（v16 facts、その `today.scope_keys` を受けて scenario の NC（優勝戦・準優勝戦の日は NCR も。spec D-37）。similar・scenario の NA と VA・展示・決まり手など）。v16 の API は冷えていると facts だけで約3秒かかり、scenario の NC は facts の応答のキーが要るので、図はこれを待たない（2026-10-07 design-reviewer の実測）
 3. 深掘りを開いたときに取るもの（選手ごとの直近2年の成績）
 
 ## 却下した選択肢
