@@ -495,6 +495,24 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
       .toBe("ja");
   });
 
+  // BOA-430: 思考アシストは /race 配下（翻訳済み）だが ja 専用。言語付きの URL は ja 版へ移り、公開まで noindex
+  test("思考アシスト（/en/race/{id}/assist）はja版へリダイレクトされ、noindexで開く", async ({
+    page,
+  }) => {
+    await page.goto("/en/race/2026-10-06-18-10/assist");
+    await expect(page).toHaveURL(/\/race\/2026-10-06-18-10\/assist$/);
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.lang))
+      .toBe("ja");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "思考アシスト" }),
+    ).toBeVisible();
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+      "content",
+      /noindex/,
+    );
+  });
+
   test("翻訳済みページ（/en/guide）はリダイレクトされずlang=enで配信される", async ({
     page,
   }) => {

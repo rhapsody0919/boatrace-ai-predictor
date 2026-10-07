@@ -1,0 +1,12 @@
+{
+  "feature": "BOA-430 思考アシスト（公開前。機能フラグ ?assist=1 の後ろ。released はルートを足した日で、公開日ではない。ブログ・SNS の展開は公開の判断の後に tasks T7-3 で足す）",
+  "released": "2026-10-07",
+  "content": {
+    "static_pages": ["/race/:raceId/assist"],
+    "note_articles": [],
+    "blog_posts": [],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}

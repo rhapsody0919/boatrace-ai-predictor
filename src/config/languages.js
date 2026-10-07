@@ -125,8 +125,15 @@ export const TRANSLATED_PATHS = [
   "/winning-technique",
 ];
 
+/**
+ * TRANSLATED_PATHS の配下にあるが ja 専用のパス。思考アシスト（BOA-430）は /race 配下だが ja 専用
+ * （hreflang・言語切り替えに出さず、言語付きの URL は ja 版へ移す）
+ */
+const JA_ONLY_UNDER_TRANSLATED = [/^\/race\/[^/]+\/assist$/];
+
 // pathがTRANSLATED_PATHSに直接該当する（配下丸ごと翻訳済み）かどうか
 function isFullyTranslatedPath(basePath) {
+  if (JA_ONLY_UNDER_TRANSLATED.some((re) => re.test(basePath))) return false;
   return TRANSLATED_PATHS.some(
     (p) => basePath === p || (p !== "/" && basePath.startsWith(`${p}/`)),
   );
