@@ -141,3 +141,7 @@
 - 撮影: mock-tools/shots.mjs は準優勝戦の日に今節の札が出なくなったので、セオリーカードの撮影を `#sum [data-fact="1:st_mean30"]` に変えて使った
 - 次: ユーザーの回答 → v7 の承認 → 承認画像（375px・1440px）を mock/ に保存・APPROVED.md → `/step2`
 - 追加（同日）: ユーザーの指摘「展示の表は既存のテーブルと同じ規則で最良に色を」→ race-detail-ui-unify R1・R3 と `bestOf.js` に合わせて金枠を付けた（spec FR-3a・D-33）。Artifact の Version 10
+
+## 12. 2026-10-07 v7 承認 → `/step2`
+- ユーザー「v7 承認、全部推奨どおり」（オーケストレーター経由）。spec D-34（9点＋持ち越し5点）、D-31〜D-33 を承認に。承認画像と記録は [mock/APPROVED.md](./mock/APPROVED.md)（Version 10、375・1440px、各レンズと深掘り）
+- 次: `/step2 thinking-assist` で plan.md
