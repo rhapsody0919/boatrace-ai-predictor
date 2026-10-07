@@ -11,7 +11,7 @@ SQL138をAPI配備前に適用する。sns_draftsの行ロック下で生の行�
 - external_done: 外部ID/URL・マージSHA・完了時刻の記録済み。再試行はDBへのposted反映だけを行う。
 - done: posted反映済み。同じ送信APIの再試行は保存済みの結果を返す。
 
-動画IDはサムネ処理より先に保存する。サムネ失敗は動画失敗にしない。サムネ結果の記録に失敗しても動画IDと「サムネ未確認」の警告が残る。DB反映はsource_dataの既存値を保持し、動画ID/URLまたはブログSHAを追加する。
+動画IDはサムネ処理より先に保存する。サムネ失敗は動画失敗にしない。サムネ結果の記録に失敗しても動画IDと「サムネ未確認」の警告が残る。DB反映の再試行がサムネ処理より先にdoneへ進んでも、同一tokenのサムネ結果を保存し、反映済みsource_dataを同時に同期する。DB反映はsource_dataの既存値を保持し、動画ID/URLまたはブログSHAを追加する。
 
 外部呼び出し・Ready化・DB記録の失敗は、安全側としてreconcileに残す。再送のための自動解除/API/期限は今回追加しない。既存の別経路が送信中の行を更新する場合もSQLトリガーで止める。通常のpostedのarchive方針は維持する。
 
@@ -23,7 +23,7 @@ SQL138をAPI配備前に適用する。sns_draftsの行ロック下で生の行�
 
 ## 通知
 
-redoのRoutine未設定・HTTP失敗・通信例外をroutine.fired=falseで返し、成功応答のriskWarnings・thumbnailWarningとともに画面の消えない通知に表示する。redoの状態はrevision_requestedのまま。起動の再試行方法は今回追加しない。
+redoのRoutine未設定・HTTP失敗・通信例外をroutine.fired=falseで返し、成功応答のriskWarnings・thumbnailWarningとともに画面の消えない通知に操作ごとに追加する。警告なしの成功や別のエラーでも以前の通知を消さず、利用者が「通知を閉じる」を押すまで保持する。redoの状態はrevision_requestedのまま。起動の再試行方法は今回追加しない。
 
 ## 人による照合（運用判断待ち）
 

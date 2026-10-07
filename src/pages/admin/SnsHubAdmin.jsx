@@ -307,12 +307,12 @@ function SnsHubAdmin() {
     try {
       const result = await actionFn(...args);
       const messages = actionFeedback(result);
-      setActionMessages(messages);
+      setActionMessages(previous => [...previous, ...messages]);
       showToast(messages.length ? "操作結果に警告があります" : "操作を反映しました", messages.length ? "error" : "success");
       await loadDrafts({ silent: true, fetch: reloadScope });
     } catch (err) {
       console.error("アクションエラー:", err);
-      setActionMessages([err.message || "操作に失敗しました"]);
+      setActionMessages(previous => [...previous, err.message || "操作に失敗しました"]);
       await loadDrafts({ silent: true, fetch: reloadScope });
       showToast(err.message || "操作に失敗しました", "error");
     }
@@ -386,7 +386,7 @@ function SnsHubAdmin() {
       }
       await loadDrafts({ silent: true, fetch: { drafts: true } });
     } catch (err) {
-      setActionMessages([err.message || "マージに失敗しました"]);
+      setActionMessages(previous => [...previous, err.message || "マージに失敗しました"]);
       await loadDrafts({ silent: true, fetch: { drafts: true } });
       console.error("ブログPRマージエラー:", err);
       showToast(err.message || "マージに失敗しました", "error");

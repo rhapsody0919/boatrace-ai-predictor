@@ -68,7 +68,12 @@ async function fixture(platform = 'youtube', options = {}) {
         const patch = JSON.parse(init.body);
         const entries = Object.entries(patch);
         const values = entries.map(([, value]) => typeof value === 'object' && value !== null ? JSON.stringify(value) : value);
-        let condition = " AND (external_operation_state IS NULL OR external_operation_state='done')";
+        let condition = '';
+        const externalFilter = u.searchParams.get('or');
+        if (externalFilter) {
+          assert.equal(externalFilter, '(external_operation_state.is.null,external_operation_state.eq.done)');
+          condition += " AND (external_operation_state IS NULL OR external_operation_state='done')";
+        }
         const status = u.searchParams.get('status');
         if (status) condition += ` AND status='${status.slice(3)}'`;
         const result = await db.query(`UPDATE sns_drafts SET ${entries.map(([key], i) => `${key}=$${i+1}`).join(',')}
@@ -81,7 +86,10 @@ async function fixture(platform = 'youtube', options = {}) {
     if (u.hostname === 'mock.invalid' && u.pathname.startsWith('/storage/')) return json([{ path: 'video.mp4', signedURL: '/video' }]);
     if (u.hostname === 'mock.invalid' && u.pathname.endsWith('/video')) return new Response('video');
     if (u.hostname === 'oauth2.googleapis.com') return json({ access_token: 'mock' });
-    if (u.hostname === 'www.googleapis.com' && u.pathname.endsWith('/thumbnails/set')) return json({}, 403);
+    if (u.hostname === 'www.googleapis.com' && u.pathname.endsWith('/thumbnails/set')) {
+      if (options.thumbnailGate) await options.thumbnailGate();
+      return json({}, options.thumbnailSuccess ? 200 : 403);
+    }
     if (u.hostname === 'www.googleapis.com' && u.pathname.endsWith('/videos')) {
       uploads++;
       if (options.uploadTimeout) throw new Error('mock timeout');
@@ -261,3 +269,53 @@ test('依頼1の公開保留列がある場合はフラグ解除だけで送信�
     assert.equal(f.counts().uploads, 0);
   } finally { await f.close(); }
 });
+
+
+test('親画面の成功・例外通知は関数型更新で蓄積し、閉じる操作だけが消去する', async () => {
+  const source = await readFile(new URL('../../src/pages/admin/SnsHubAdmin.jsx', import.meta.url), 'utf8');
+  const updates = [...source.matchAll(/setActionMessages\(([^;]+)\);/g)].map(match => match[1]);
+  assert.equal(updates.length, 3);
+  assert.ok(updates.every(update => update.startsWith('previous => [...previous,')));
+  assert.match(source, /onClick=\{\(\) => setActionMessages\(\[\]\)\}/);
+  // 実画面に接続された各updaterを順に実行し、Reactの連続更新を再現する。
+  let messages = [];
+  for (const result of [{ thumbnailWarning: '権限不足' }, {}, { riskWarnings: [{ id: 'risk' }] }]) {
+    const next = actionFeedback(result);
+    const updater = new Function('messages', `return (${updates[0]})`)(next);
+    messages = updater(messages);
+  }
+  assert.equal(messages.length, 2);
+  const err = { message: '通信失敗' };
+  for (const update of updates.slice(1)) messages = new Function('err', `return (${update})`)(err)(messages);
+  assert.deepEqual(messages.slice(-2), ['通信失敗', '通信失敗']);
+  assert.match(messages[0], /権限不足/);
+});
+
+for (const thumbnailSuccess of [true, false]) {
+  test(`サムネ待機中にDB反映だけ再試行しても結果を保存する（成功=${thumbnailSuccess}）`, async () => {
+    let started, release;
+    const pending = new Promise(resolve => { release = resolve; });
+    const waiting = new Promise(resolve => { started = resolve; });
+    const f = await fixture('youtube', { thumbnail: true, thumbnailSuccess,
+      thumbnailGate: async () => { started(); await pending; } });
+    let first;
+    try {
+      first = youtube(request('publish-youtube'));
+      await waiting;
+      assert.equal((await f.row()).external_operation_state, 'external_done');
+      assert.equal((await youtube(request('publish-youtube'))).status, 200);
+      assert.equal((await f.row()).external_operation_state, 'done');
+      release();
+      assert.equal((await first).status, 200);
+      const row = await f.row();
+      assert.equal(row.external_operation_state, 'done');
+      assert.equal(row.external_operation_result.thumbnailWarning, thumbnailSuccess ? null : row.source_data.youtube_thumbnail_error);
+      if (!thumbnailSuccess) assert.match(row.source_data.youtube_thumbnail_error, /403/);
+      else assert.equal(row.source_data.youtube_thumbnail_error, undefined);
+      const retry = await (await youtube(request('publish-youtube'))).json();
+      assert.equal(retry.thumbnailWarning ?? null, row.external_operation_result.thumbnailWarning);
+      assert.equal(f.counts().uploads, 1);
+      await assert.rejects(f.db.query('SELECT sns_update_external_warning($1,$2,$3)', [id, crypto.randomUUID(), '別操作']));
+    } finally { release(); if (first) await first; await f.close(); }
+  });
+}

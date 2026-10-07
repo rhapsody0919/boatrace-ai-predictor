@@ -86,9 +86,15 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE d public.sns_drafts;
 BEGIN
   UPDATE sns_drafts SET external_operation_result = external_operation_result || jsonb_build_object('thumbnailWarning', p_warning)
-    || jsonb_build_object('source_data', (external_operation_result->'source_data') ||
+    || jsonb_build_object('source_data', (coalesce(external_operation_result->'source_data', '{}'::jsonb) - 'youtube_thumbnail_error') ||
       CASE WHEN p_warning IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('youtube_thumbnail_error',p_warning) END)
-    WHERE id = p_id AND external_operation_token = p_token AND external_operation_state = 'external_done'
+    -- finishが先に完了していても、同じ操作のサムネ結果を保存する。
+    -- doneでは既にコピー済みのsource_dataも同じUPDATEで同期する。
+    , source_data = CASE WHEN external_operation_state = 'done' THEN
+        (coalesce(source_data, '{}'::jsonb) - 'youtube_thumbnail_error') ||
+        CASE WHEN p_warning IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('youtube_thumbnail_error',p_warning) END
+      ELSE source_data END
+    WHERE id = p_id AND external_operation_token = p_token AND external_operation_state IN ('external_done', 'done')
     RETURNING * INTO d;
   IF d.id IS NULL THEN RAISE EXCEPTION 'サムネ結果の記録対象が一致しません'; END IF;
   RETURN to_jsonb(d);
