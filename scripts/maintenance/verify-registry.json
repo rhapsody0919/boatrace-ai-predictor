@@ -828,6 +828,11 @@
       "guards": "オッズの計算 src/utils/oddsMath.js（BOA-430 で RaceOddsListTab から移した formatOdds・compositeOdds・latestSnapshotWith）を手計算の固定値で固定する。思考アシストの買い目でも使うため、オッズ一覧の E2E を通らない値（999.96 の丸め、票なし・欠場の除外、単勝が全艇 null の行）もここで見る。あわせて /race/{id}/assist（末尾スラッシュ付きも）が ja 専用であること"
     },
     {
+      "script": "verify-thinking-assist-model.js",
+      "tier": "ci",
+      "guards": "思考アシスト（BOA-430）の画面のモデル src/utils/assistModel.js。2026-10-06 徳山10R の本番 v16 の値（scripts/lib/__fixtures__/thinking-assist/）で、全国・級の並びが同じの範囲の選び方（準優勝戦は NCR 112件、30件未満・キー無しは NC に戻して矢印なし。spec D-37）、基準つきバーの3段階（D-21）、類似レースの上位400件・件数と万舟の分母（D-35・D-36 (3)）、級の並びの絵（D-31）、最良の金枠の向き・桁・除外（FR-3a）、会場の決まり手の「最近↑／↓」（直近90日 対 前の275日、D-37）、時点（D-36 (1)）"
+    },
+    {
       "script": "verify-volatility-accuracy-heading.js",
       "tier": "ci",
       "guards": "精度ページの「イン崩れ予測の実績」の見出しが、集計（calculate-unified-volatility-accuracy.js）の期間と合っていること（BOA-717）。集計が期間を絞っていない間は、4言語の見出しが「直近N日」を名乗らず、運用開始日（2026-08-11）を書いていること。集計に期間の条件を足すと失敗するので、見出しを合わせ直してから更新する"
