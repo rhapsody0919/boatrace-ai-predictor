@@ -42,3 +42,9 @@ USDの100万分の1単位の整数。上限は最大$10。period_start/endは実
 `node --test scripts/tests/sns-x-send.test.js`（PGlite＋モック、外部通信なし）。品質ゲート台帳は変更禁止なので、新しいverifyスクリプトは作らずnode:testを独立配置。
 
 `npx playwright test --config playwright.x-send.config.js`（専用Vite、envDir=false、publicDir=false、localhost以外を遮断）。本番・秘密ファイルを読む既定E2Eのglobal setupは使わない。画面は375px/light/darkで未接続、停止、予約承認、公開不可、要照合を検査する。実際のX接続・メディア可否・課金・本番適用は未検証。
+
+## 返答03の応答喪失対策（2026-10-07）
+
+承認・取消・停止の操作開始時に親へunknownを通知し、画面も状態未確定と表示する。操作後の状態GETが成功して初めて確定状態へ戻す。POST応答喪失・POST成功後のGET失敗では手動投稿と再承認を閉じたままにする。操作前に開始したpollの応答は世代番号で除外し、操作中はpollを開始しない。失敗後の新しいpollが確定状態を返せばそれを反映する（要照合jobの解除ではない）。
+
+承認対象が画面で見た版かクリック時の最新版か、実adapterのtimeout/SDK retry、総費用、要照合解除・本人認可は未決事項であり、今回独断で設計を追加しない。送信直前のヘッドレス公開確認は依頼5。初期停止・connected=falseを維持する。

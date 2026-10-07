@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { approveXSend, cancelXSend, getXSendStatus, stopXSend } from '../../../services/snsHubService.js';
 
 const LABELS = { queued: '予約・待機中', sending: '送信中', reconcile: '要照合（再送禁止）',
@@ -8,32 +8,48 @@ export default function XSendPanel({ draft, approverId, blocked, onChanged, onSt
   const [status, setStatus] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [unknown, setUnknown] = useState(true);
+  const operation = useRef({ epoch: 0, pending: false });
   const [scheduledAt, setScheduledAt] = useState('');
   useEffect(() => {
     let active = true;
-    const refresh = () => getXSendStatus(draft.id).then(data => {
-      if (active) { setStatus(data); onStateChange?.(data.job?.state || 'none'); }
-    }).catch(() => { if (active) { setError('X送信状態を取得できません'); onStateChange?.('unknown'); } });
+    const refresh = async () => {
+      if (operation.current.pending) return;
+      const epoch = operation.current.epoch;
+      try {
+        const data = await getXSendStatus(draft.id);
+        if (active && epoch === operation.current.epoch) {
+          setStatus(data); setUnknown(false); setError('');
+          onStateChange?.(data.job?.state || 'none');
+        }
+      } catch {
+        if (active && epoch === operation.current.epoch) {
+          setUnknown(true); setError('X送信状態を取得できません'); onStateChange?.('unknown');
+        }
+      }
+    };
     refresh();
     const timer = setInterval(refresh, 10000);
     return () => { active = false; clearInterval(timer); };
   }, [draft.id, draft.status, onStateChange]);
 
   async function act(action) {
+    operation.current = { epoch: operation.current.epoch + 1, pending: true };
+    setUnknown(true); onStateChange?.('unknown');
     setBusy(true); setError('');
     try {
       await action();
       const updated = await getXSendStatus(draft.id);
-      setStatus(updated); onStateChange?.(updated.job?.state || 'none');
+      setStatus(updated); setUnknown(false); onStateChange?.(updated.job?.state || 'none');
       onChanged();
     } catch (e) { setError(e.message); }
-    finally { setBusy(false); }
+    finally { operation.current.pending = false; setBusy(false); }
   }
-  const locked = ['queued', 'sending', 'reconcile', 'posted'].includes(status?.job?.state);
+  const locked = unknown || ['queued', 'sending', 'reconcile', 'posted'].includes(status?.job?.state);
   const canApprove = ['pending_review', 'approved'].includes(draft.status);
   return (
     <section className="draft-background-details" aria-label="X送信">
-      <p>X送信: {LABELS[status?.job?.state] || '未登録'}</p>
+      <p>X送信: {unknown ? '要照合（状態未確定）' : LABELS[status?.job?.state] || '未登録'}</p>
       {!status?.connected && <p>接続準備中。公開・予約送信はまだ利用できません。</p>}
       {status?.control?.paused && <p>送信停止中</p>}
       {status?.control && <p>月額上限 ${(status.control.budget_microusd / 1000000).toFixed(2)} / 予約済み ${(status.control.reserved_microusd / 1000000).toFixed(2)}</p>}
@@ -49,7 +65,7 @@ export default function XSendPanel({ draft, approverId, blocked, onChanged, onSt
       {status?.job?.state === 'queued' && <button className="draft-action-btn revise" disabled={busy}
         onClick={() => act(() => cancelXSend(draft.id))}>X予約・待機を取消</button>}
       <button className="draft-action-btn revise" disabled={busy || !status?.control} onClick={() => act(stopXSend)}>X送信を停止</button>
-      {['sending','reconcile'].includes(status?.job?.state) && <p>手動投稿も照合が済むまで停止してください。</p>}
+      {(unknown || ['sending','reconcile'].includes(status?.job?.state)) && <p>手動投稿も照合が済むまで停止してください。</p>}
       {error && <p role="alert">{error}</p>}
     </section>
   );

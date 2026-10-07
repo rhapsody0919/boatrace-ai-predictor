@@ -46,3 +46,71 @@ for(const theme of ['light','dark']) {
     await page.screenshot({path:`../out/reports/2026-10-07-task-03-qa/${theme}-reconcile.png`});
   });
 }
+
+for (const failure of ['post-response-lost', 'get-after-post-failed']) {
+  test(`${failure}: 操作開始から確定応答まで手動投稿と再承認を閉じる`, async ({ page }) => {
+    status.connected = true; status.control.paused = false;
+    await page.goto('/__x_send_test');
+    await expect(page.getByRole('button', { name: '手動投稿', exact: true })).toBeVisible();
+    let releasePost;
+    const postGate = new Promise(resolve => { releasePost = resolve; });
+    let started;
+    const postStarted = new Promise(resolve => { started = resolve; });
+    let failed = false;
+    await page.route('**/api/**/x-send', async route => {
+      if (route.request().method() === 'POST') {
+        status.job = { state: 'queued' }; started();
+        await postGate;
+        failed = true;
+        if (failure === 'post-response-lost') return route.abort();
+        return route.fulfill({ json: { data: status } });
+      }
+      if (failed) return route.fulfill({ status: 500, json: { error: '状態取得失敗' } });
+      return route.fulfill({ json: { data: status } });
+    });
+    await page.getByRole('button', { name: '承認して公開', exact: true }).click();
+    await postStarted;
+    await expect(page.getByText('X送信: 要照合（状態未確定）')).toBeVisible();
+    await expect(page.getByRole('button', { name: '手動投稿', exact: true })).toHaveCount(0);
+    releasePost();
+    await expect(page.getByRole('alert')).toBeVisible();
+    await expect(page.getByRole('button', { name: '手動投稿', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '承認して公開', exact: true })).toBeDisabled();
+    failed = false;
+    await expect(page.getByText('X送信: 予約・待機中')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('button', { name: '手動投稿', exact: true })).toHaveCount(0);
+  });
+}
+
+test('操作前のpoll応答でunknownを解除しない・取消確定後だけ手動に戻す', async ({ page }) => {
+  status.connected = true; status.control.paused = false; status.job = { state: 'queued' };
+  await page.clock.install();
+  await page.goto('/__x_send_test');
+  await expect(page.getByText('X送信: 予約・待機中')).toBeVisible();
+  let releaseGet, releasePost, started;
+  const getGate = new Promise(resolve => { releaseGet = resolve; });
+  const postGate = new Promise(resolve => { releasePost = resolve; });
+  const getStarted = new Promise(resolve => { started = resolve; });
+  let stale = true;
+  await page.route('**/api/**/x-send', async route => {
+    if (route.request().method() === 'POST') {
+      await postGate;
+      status.job = { state: 'cancelled' };
+      return route.fulfill({ json: { data: status } });
+    }
+    if (stale) {
+      stale = false; started(); await getGate;
+      return route.fulfill({ json: { data: { ...status, job: null } } });
+    }
+    return route.fulfill({ json: { data: status } });
+  });
+  await page.clock.fastForward(10000);
+  await getStarted;
+  await page.getByRole('button', { name: 'X予約・待機を取消', exact: true }).click();
+  releaseGet();
+  await expect(page.getByText('X送信: 要照合（状態未確定）')).toBeVisible();
+  await expect(page.getByRole('button', { name: '手動投稿', exact: true })).toHaveCount(0);
+  releasePost();
+  await expect(page.getByText('X送信: 承認失効・取消済み')).toBeVisible();
+  await expect(page.getByRole('button', { name: '手動投稿', exact: true })).toBeVisible();
+});

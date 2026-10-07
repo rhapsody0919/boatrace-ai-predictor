@@ -10,10 +10,14 @@ server.middlewares.use('/__x_send_test',async (_req,res)=>{
     import '/src/styles/design-tokens.css';
     import '/src/pages/admin/SnsHubAdmin.css';
     const blocked=new URLSearchParams(location.search).has('blocked');
-    createRoot(document.getElementById('root')).render(React.createElement(XSendPanel,{
-      draft:{id:'11111111-1111-1111-1111-111111111111',status:'pending_review'},
-      approverId:'22222222-2222-2222-2222-222222222222',blocked,onChanged:()=>{}
-    }));
+    function Harness() {
+      const [state, setState] = React.useState('unknown');
+      return React.createElement(React.Fragment, null, React.createElement(XSendPanel,{
+      draft:{id:'11111111-1111-1111-1111-111111111111',status:'approved'},
+      approverId:'22222222-2222-2222-2222-222222222222',blocked,onChanged:()=>{},onStateChange:setState
+      }), !['unknown','queued','sending','reconcile','posted'].includes(state) && React.createElement('button', null, '手動投稿'));
+    }
+    createRoot(document.getElementById('root')).render(React.createElement(Harness));
   </script></body></html>`));
 });
 await server.listen();
