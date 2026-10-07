@@ -833,6 +833,11 @@
       "guards": "オッズの計算 src/utils/oddsMath.js（BOA-430 で RaceOddsListTab から移した formatOdds・compositeOdds・latestSnapshotWith）を手計算の固定値で固定する。思考アシストの買い目でも使うため、オッズ一覧の E2E を通らない値（999.96 の丸め、票なし・欠場の除外、単勝が全艇 null の行）もここで見る。あわせて /race/{id}/assist（末尾スラッシュ付きも）が ja 専用であること"
     },
     {
+      "script": "verify-thinking-assist-model.js",
+      "tier": "ci",
+      "guards": "思考アシスト（BOA-430）の画面のモデル src/utils/assistModel.js。2026-10-06 徳山10R の本番 v16 の値（scripts/lib/__fixtures__/thinking-assist/）で、全国・級の並びが同じの範囲の選び方（準優勝戦は NCR 112件、30件未満・キー無しは NC に戻して矢印なし。spec D-37）、基準つきバーの3段階（D-21）、類似レースの上位400件・件数と万舟の分母（D-35・D-36 (3)）、級の並びの絵（D-31）、最良の金枠の向き・桁・除外（FR-3a）、会場の決まり手の「最近↑／↓」（直近90日 対 前の275日、D-37）、時点（D-36 (1)）"
+    },
+    {
       "script": "verify-venue-technique-period.js",
       "tier": "ci",
       "guards": "会場の決まり手の期間の表 venue_technique_period_stats（BOA-430・ADR 0088・マイグレーション 134）。CI では集計の純関数（scripts/lib/venueTechniquePeriod.js）を固定データで確かめる: 期間は集計日の前日まで N 日、長期の表（〜2025-12-02）と新しい表（2025-12-03〜）の境目と 2025-12-02 の重複を数えないこと、総数＝決まり手の件数の合計、90日 ⊂ 365日、除外（中止・不成立・1着なし・決まり手なし）、長期の表が0件なら失敗（新しい表だけを数えた 2,196件の誤りの再発防止）。VERIFY_PRODUCTION=1 のときだけ本番の表を読み、last_updated が2日より古い行・総数の不一致・365日の行が無い会場があれば exit 1。nightly-verify-db.yml が毎晩この形で実行する"
