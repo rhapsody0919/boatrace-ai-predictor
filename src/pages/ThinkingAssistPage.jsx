@@ -3,7 +3,6 @@
  * ja 専用（languages.js の isFullyTranslatedPath の例外）。公開まで noindex（spec D-36 (9)）。
  * 中身は後の PR で足す（docs/design/thinking-assist/tasks.md の PR2 以降）。今は準備中の表示だけ
  */
-import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Header from "../components/Header";
 import { THINKING_ASSIST_PUBLIC } from "../config/featureFlags";
@@ -18,12 +17,10 @@ const COPY = {
 export default function ThinkingAssistPage() {
   const { raceId } = useParams();
   useRobotsMeta(!THINKING_ASSIST_PUBLIC);
-  useEffect(() => {
-    document.title = `${COPY.title}（${raceId}）`;
-  }, [raceId]);
 
   return (
     <>
+      <title>{`${COPY.title}（${raceId}）`}</title>
       <Header />
       <main className="thinking-assist-page">
         <h1 className="thinking-assist-page__title">{COPY.title}</h1>

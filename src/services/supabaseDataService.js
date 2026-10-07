@@ -1936,28 +1936,22 @@ export const supabaseDataService = {
   },
 
   /**
-   * 会場固有の水面特性（水質・イン/アウト傾向のクラスタ分類）を取得する
-   * venuesテーブルはモデル調整（softmax-temperature-calibration）用に
-   * water_type/clusterを保持しているが、フロントエンドでは未使用だった
-   * @param {number} venueCode - 会場コード（1-24）
-   * @returns {Promise<{ waterType: string, cluster: string } | null>}
-   */
-  /**
    * 会場の決まり手の直近90日・365日の件数（BOA-430 思考アシスト、ADR 0088、表 venue_technique_period_stats）。
    * 毎日のスクリプト（update-winning-technique-stats.js）が書く。取得の失敗（表が無い等）は投げる。
    * 0行（書き込み前・書き直しの途中）は空の配列で返し、キャッシュに残さない（次の表示で取り直す）
    * @returns {Promise<Array<{period_days: 90|365, winning_technique: string, race_count: number, total_races: number, period_from: string, period_to: string, last_updated: string}>>}
    */
   getVenueTechniquePeriodStats(venueCode) {
+    const code = Number(venueCode);
     return withCache(
-      `venue-technique-period-${venueCode}`,
+      `venue-technique-period-${code}`,
       async () => {
         const { data } = await supabase
           .from("venue_technique_period_stats")
           .select(
             "period_days, winning_technique, race_count, total_races, period_from, period_to, last_updated",
           )
-          .eq("venue_code", Number(venueCode))
+          .eq("venue_code", code)
           .order("period_days")
           .order("winning_technique");
         return data ?? [];
@@ -1967,6 +1961,13 @@ export const supabaseDataService = {
     );
   },
 
+  /**
+   * 会場固有の水面特性（水質・イン/アウト傾向のクラスタ分類）を取得する
+   * venuesテーブルはモデル調整（softmax-temperature-calibration）用に
+   * water_type/clusterを保持しているが、フロントエンドでは未使用だった
+   * @param {number} venueCode - 会場コード（1-24）
+   * @returns {Promise<{ waterType: string, cluster: string } | null>}
+   */
   getVenueCharacteristics(venueCode) {
     return withCache(`venue-characteristics-${venueCode}`, async () => {
       if (!supabase) {
