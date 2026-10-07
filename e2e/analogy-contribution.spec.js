@@ -4,6 +4,7 @@ import zlib from "zlib";
 import { contribution } from "./analogy-contribution-fixture.js";
 import {
   analogyV16Facts,
+  analogyV16Scenario,
   analogyV16Similar,
   routeAnalogyV16,
 } from "./analogy-v16-fixture.js";
@@ -483,6 +484,38 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       const section = sectionOf(page);
       await section.getByRole("tab", { name: "類似レース" }).click();
       await expect(section).toContainText("（結果が無い1件を除く）");
+    });
+  });
+
+  test.describe("公開前の点検（Codex、2026-10-07）", () => {
+    test("タブ3で既定が全国に替わったときは理由の1行を出し、範囲を選び直したら消す", async ({
+      page,
+    }) => {
+      await setup(page);
+      const fell = analogyV16Scenario();
+      fell.vc_fell_back = 47;
+      const picked = analogyV16Scenario();
+      picked.vc_fell_back = null;
+      await page.route("**/api/analogy/scenario/**", (route) =>
+        route.fulfill({
+          json: new URL(route.request().url()).searchParams.get("scope")
+            ? picked
+            : fell,
+        }),
+      );
+      await openAiTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      const line = section.getByText(
+        /で同じ組み合わせのレースは47件と少ないので、全国で数えています/,
+      );
+      await expect(line).toBeVisible();
+      await section
+        .getByRole("group", { name: "数えるレース" })
+        .getByRole("button")
+        .first()
+        .click();
+      await expect(line).toHaveCount(0);
     });
   });
 });
