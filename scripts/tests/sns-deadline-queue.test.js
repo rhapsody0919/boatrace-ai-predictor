@@ -12,7 +12,8 @@ const store = { async transition(id, action, result={}) { return (await first('S
 const loadMedia = async () => new Uint8Array([1,2,3]);
 before(async () => {
  await db.exec('CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;');
- for (const f of ['035_sns_marketing_hub_schema.sql','042_content_drafts_columns.sql','135_sns_preview_bundle_import.sql','137_sns_x_send.sql','139_sns_deadline_queue.sql']) await db.exec(await readFile(new URL('../../docs/db-migration/'+f,import.meta.url),'utf8'));
+ await db.exec("CREATE TABLE test_clock(value timestamptz); INSERT INTO test_clock VALUES(NULL); CREATE FUNCTION test_now() RETURNS timestamptz LANGUAGE sql AS 'SELECT coalesce(value,now()) FROM test_clock';");
+ for (const f of ['035_sns_marketing_hub_schema.sql','042_content_drafts_columns.sql','135_sns_preview_bundle_import.sql','137_sns_x_send.sql','139_sns_deadline_queue.sql']) await db.exec((await readFile(new URL('../../docs/db-migration/'+f,import.meta.url),'utf8')).replaceAll('now()', 'test_now()'));
  approver=(await first("SELECT id FROM sns_approvers WHERE display_name='本人'")).id;
 });
 after(()=>db.close());
@@ -103,4 +104,40 @@ test('期限切れsweepと再承認後の版破損は外部呼出しゼロ',asyn
  assert.equal((await first('SELECT state FROM sns_x_send_jobs WHERE id=$1',[expired.id])).state,'held');
  const j=await job(),x=createMockXAdapter(); const corrupt={async transition(id,action,result){const value=await store.transition(id,action,result);return action==='claim'?{...value,snapshot_text:'{}'}:value;}};
  await assert.rejects(run(j,x,{store:corrupt}),/hash/);assert.equal(x.calls.length,0);
+});
+
+test('再承認してもheld・failed・cancelledの試行は日次枠から消えない',async()=>{
+ for (const action of ['hold','fail','cancel']) {
+  await enable(); const a=await job(); await store.transition(a.id,'claim');
+  if(action==='cancel') {
+   await store.transition(a.id,'hold');
+   await db.query("UPDATE sns_drafts SET source_data=source_data || '{\"changed\":true}'::jsonb WHERE id=$1",[a.draft_id]);
+  } else await store.transition(a.id,action);
+  const count=Number((await first("SELECT sum(attempts) n FROM sns_x_send_jobs WHERE channel='x'")).n);
+  await enable(count);
+  const d=await first('SELECT * FROM sns_drafts WHERE id=$1',[a.draft_id]);
+  await first('SELECT approve_sns_x_send($1,$2,$3,now()) result',[d.id,approver,await createXSnapshot(d,loadMedia)]);
+  await assert.rejects(store.transition(a.id,'claim'),/日次/);
+  const b=await job(); await assert.rejects(store.transition(b.id,'claim'),/日次/);
+ }
+});
+test('begin_postでも当日の基準・上限を再検査し、日付またぎは保留',async()=>{
+ await enable(); const a=await job(); await store.transition(a.id,'claim');
+ await db.exec("UPDATE sns_x_send_control SET daily_baseline_date=daily_baseline_date-1");
+ await assert.rejects(store.transition(a.id,'begin_post'),/日次/);
+ await enable(1); await db.exec('UPDATE sns_x_send_control SET daily_external_count=1');
+ await assert.rejects(store.transition(a.id,'begin_post'),/日次/);
+ await db.exec("UPDATE test_clock SET value=date_trunc('day',now() AT TIME ZONE 'Asia/Tokyo') AT TIME ZONE 'Asia/Tokyo' + interval '23 hours 59 minutes'");
+ try {
+  await enable();
+  const t=(await first('SELECT test_now() t')).t;
+  const deadline_at=new Date(Date.parse(t)+7200000).toISOString();
+  const b=await job({q:{...queue(),deadline_at,...deadlineSchedule(deadline_at),source_observed_at:new Date(t).toISOString()}});
+  await db.query('UPDATE sns_x_send_jobs SET scheduled_at=test_now() WHERE id=$1',[b.id]);
+  await store.transition(b.id,'claim');
+  await db.exec("UPDATE test_clock SET value=value+interval '2 minutes'");
+  await assert.rejects(store.transition(b.id,'begin_post'),/日次/);
+  await db.exec("UPDATE sns_x_send_control SET daily_baseline_date=(test_now() AT TIME ZONE 'Asia/Tokyo')::date");
+  assert.equal((await store.transition(b.id,'begin_post')).error_code,'daily_claim_date_changed');
+ } finally { await db.exec('UPDATE test_clock SET value=NULL'); }
 });
