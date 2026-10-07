@@ -5,6 +5,8 @@ import { SCOPE_LINE } from "./analogyColors";
 import { fmtCount, fmtFactValue, fmtPct } from "../../../utils/analogyFormat";
 import {
   FACT_ITEMS,
+  MIN_RATE_N,
+  judgeLabelKey,
   rateOf,
   todayLine,
   todayValueRank,
@@ -136,7 +138,7 @@ export default function FactCard({
           {t(`${k}.items.${row.key}.desc`, { venue: venueName })}
         </small>
         <span className="af-card-judge">
-          {t(`${k}.judge.${row.judge.level}`)}
+          {t(`${k}.judge.${judgeLabelKey(row.judge, best, worst)}`)}
           {row.judge.reversed && t(`${k}.reversed`, { word: word(row.bad) })}
         </span>
       </div>
@@ -156,7 +158,7 @@ export default function FactCard({
                 ? `${fmtFactValue(row.key, r.value)}${t(`${k}.units.${row.key}`, "")}`
                 : "—",
               rank: !r
-                ? t(`${k}.noToday`)
+                ? t(`${k}.noToday${row.key === "loc_win" ? "Local" : ""}`)
                 : r.from === r.to
                   ? t(`${k}.rankOf6`, { n: r.from })
                   : t(`${k}.rankOf6Tie`, {
@@ -173,11 +175,15 @@ export default function FactCard({
           [best, row.rates[0], row.good],
           [worst, row.rates[5], row.bad],
         ].map(([pair, p, w]) => (
-          <div key={w}>
+          <div
+            key={w}
+            className={pair && pair[1] < MIN_RATE_N ? "is-few" : undefined}
+          >
             <span>{t(`${k}.best`, { word: word(w) })}</span>
             <b>{fmtPct(p)}</b>
             <small>
               {pair ? `${fmtCount(pair[0])}/${fmtCount(pair[1])}` : "—"}
+              {pair && pair[1] < MIN_RATE_N && ` ${t(`${k}.few`)}`}
             </small>
           </div>
         ))}
@@ -193,7 +199,7 @@ export default function FactCard({
           return (
             <div
               key={i}
-              className={`af-strip-col${on ? " is-today" : ""}`}
+              className={`af-strip-col${on ? " is-today" : ""}${row.all[i] && row.all[i][1] < MIN_RATE_N ? " is-few" : ""}`}
               title={row.all[i] ? `${row.all[i][0]}/${row.all[i][1]}` : ""}
             >
               <span className="af-num">
