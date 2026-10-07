@@ -16,6 +16,10 @@ ALTER TABLE public.sns_x_send_jobs
  ADD COLUMN draft_revision TEXT,
  ADD COLUMN locked_at TIMESTAMPTZ,
  ADD COLUMN attempt_dates DATE[] NOT NULL DEFAULT ARRAY[]::date[],
+ ADD COLUMN attempt_channels TEXT[] NOT NULL DEFAULT ARRAY[]::text[],
+ ADD CONSTRAINT sns_send_attempt_history CHECK(cardinality(attempt_dates)=cardinality(attempt_channels)
+   AND array_position(attempt_dates,NULL) IS NULL AND array_position(attempt_channels,NULL) IS NULL
+   AND attempt_channels <@ ARRAY['x','youtube']::text[]),
  ADD COLUMN lease_until TIMESTAMPTZ,
  ADD COLUMN parent_job_id UUID REFERENCES public.sns_x_send_jobs(id);
 ALTER TABLE public.sns_x_send_control ADD CONSTRAINT sns_queue_timing_order CHECK(schedule_minutes>expiry_minutes);
@@ -140,7 +144,7 @@ BEGIN
       RAISE EXCEPTION '日次全体上限・他経路の本数が未確認です';
     END IF;
     SELECT count(*) INTO day_count FROM public.sns_x_send_jobs jobs,
-      LATERAL unnest(jobs.attempt_dates) attempt(day) WHERE jobs.channel=j.channel
+      LATERAL unnest(jobs.attempt_dates,jobs.attempt_channels) attempt(day,channel) WHERE attempt.channel=j.channel
       AND attempt.day=(now() AT TIME ZONE 'Asia/Tokyo')::date;
     IF day_count+c.daily_external_count >= c.daily_limit + (CASE WHEN p_action='begin_post' THEN 1 ELSE 0 END) THEN
       RAISE EXCEPTION '日次全体上限です';
@@ -154,6 +158,7 @@ BEGIN
   IF p_action='claim' THEN
     IF j.state<>'queued' OR j.scheduled_at>now() THEN RAISE EXCEPTION 'claimできません'; END IF;
     j.attempt_dates:=array_append(j.attempt_dates,(now() AT TIME ZONE 'Asia/Tokyo')::date);
+    j.attempt_channels:=array_append(j.attempt_channels,j.channel);
     j.locked_at:=now(); j.lease_until:=now()+interval '5 minutes';
     IF c.reserved_microusd+c.attempt_ceiling_microusd>c.budget_microusd THEN RAISE EXCEPTION '月額上限です'; END IF;
     UPDATE public.sns_x_send_control SET reserved_microusd=reserved_microusd+attempt_ceiling_microusd WHERE id=true;
@@ -185,7 +190,7 @@ BEGIN
     j.external_post_url:=CASE WHEN j.channel='x' THEN 'https://x.com/i/status/' ELSE 'https://www.youtube.com/watch?v=' END || j.external_post_id;
     j.posted_at:=(p_result->>'posted_at')::timestamptz;
   ELSE RAISE EXCEPTION '不正な操作です'; END IF;
-  UPDATE public.sns_x_send_jobs SET attempt_dates=j.attempt_dates,locked_at=j.locked_at,lease_until=j.lease_until,state=j.state,attempts=j.attempts,reserved_microusd=j.reserved_microusd,
+  UPDATE public.sns_x_send_jobs SET attempt_dates=j.attempt_dates,attempt_channels=j.attempt_channels,locked_at=j.locked_at,lease_until=j.lease_until,state=j.state,attempts=j.attempts,reserved_microusd=j.reserved_microusd,
     budget_period_start=j.budget_period_start,error_code=j.error_code,external_post_id=j.external_post_id,external_post_url=j.external_post_url,
     posted_at=j.posted_at,updated_at=now() WHERE id=j.id RETURNING * INTO j;
   IF p_action='complete' THEN UPDATE public.sns_drafts SET status='posted',posted_at=j.posted_at WHERE id=d.id; END IF;
