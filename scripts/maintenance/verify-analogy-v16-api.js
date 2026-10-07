@@ -79,11 +79,17 @@ const exhRows = [
 ];
 check(
   "展示後の段の対象（締切の早い順）",
-  selectExhibitionTargets(snaps, races, exhRows, [], now),
+  selectExhibitionTargets(snaps, races, exhRows, [], now).map(
+    ({ race_id, absent, deadline }) => ({
+      race_id,
+      absent,
+      deadline: deadline.toISOString(),
+    }),
+  ),
   [
-    { race_id: "f", absent: false },
-    { race_id: "a", absent: false },
-    { race_id: "e", absent: true },
+    { race_id: "f", absent: false, deadline: "2026-10-05T01:10:00.000Z" },
+    { race_id: "a", absent: false, deadline: "2026-10-05T01:40:00.000Z" },
+    { race_id: "e", absent: true, deadline: "2026-10-05T01:50:00.000Z" },
   ],
 );
 check(
@@ -94,7 +100,7 @@ check(
     exh("b", 5),
     [{ race_id: "b", is_absent: true }],
     now,
-  ),
+  ).map(({ race_id, absent }) => ({ race_id, absent })),
   [{ race_id: "b", absent: true }],
 );
 
@@ -329,6 +335,23 @@ check(
   layerStatus({ racecard: rc, exhibition: { status: "absent" } }),
   "absent",
 );
+// 公開前点検 F01: 展示後の段を ok で書いた後や、締切後（展示後の段が書かない）に欠場が分かったレースも absent
+// （spec「時点」Q5。本番の 2026-10-06-02-05 は欠場があるのに exhibition_missing を返していた）
+check(
+  "展示後の段 ok の後に欠場が分かった",
+  st({ racecard: rc, exhibition: { status: "ok" }, absent: true }, false),
+  "absent",
+);
+check(
+  "締切後・展示後の段なしで欠場が分かった",
+  st({ racecard: rc, absent: true }, true),
+  "absent",
+);
+check(
+  "layer: 展示後の段 ok の後に欠場が分かったら absent",
+  layerStatus({ racecard: rc, exhibition: { status: "ok" }, absent: true }),
+  "absent",
+);
 check(
   "キャッシュ: not_saved はしない",
   cacheControl("not_saved", false),
@@ -497,6 +520,59 @@ check(
       "展示後の段: 止まったら Storage を読まない",
       calls.some((c) => c.includes("/storage/")),
       false,
+    );
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+}
+
+// ---- 8. 公開前点検 F02: 締切は snapshot を書く直前に確かめ直す ---------------------------
+{
+  process.env.SUPABASE_URL = "https://example.invalid";
+  process.env.SUPABASE_SERVICE_KEY = "test";
+  const posts = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    const u = String(url);
+    if (init?.method === "POST") posts.push(u);
+    const body = u.includes("analogy_v16_snapshots")
+      ? [
+          {
+            race_id: "2026-10-05-20-01",
+            stage: "racecard",
+            status: "ok",
+            run_id: "r",
+            n_layer: 5,
+            pool_cutoff: "2026-10-04",
+          },
+        ]
+      : u.includes("/races?")
+        ? [
+            {
+              race_id: "2026-10-05-20-01",
+              race_date: "2026-10-05",
+              start_time: "10:00:00",
+            },
+          ]
+        : u.includes("exhibition_data")
+          ? [1, 2, 3, 4, 5, 6].map((b) => ({
+              race_id: "2026-10-05-20-01",
+              boat_number: b,
+              exhibition_time: 6.8,
+              is_absent: b === 6, // 欠場（Storage を読まずに行が決まる経路）
+            }))
+          : [];
+    return new Response(JSON.stringify(body), { status: 200 });
+  };
+  // 起動時は締切（10:00）の前、書く直前は締切の後
+  const times = [new Date("2026-10-05T09:59:30+09:00")];
+  const now = () => times.shift() ?? new Date("2026-10-05T10:00:30+09:00");
+  try {
+    const r = await runAnalogyV16Exhibition({ mode: "live", now });
+    check(
+      "展示後の段: 処理中に締切を越えたら snapshot を書かない",
+      [r.report.targets, r.report.written, r.report.late, posts.length],
+      [1, 0, ["2026-10-05-20-01"], 0],
     );
   } finally {
     globalThis.fetch = realFetch;
