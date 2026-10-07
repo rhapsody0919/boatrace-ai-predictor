@@ -51,6 +51,9 @@ import {
   seriesScoreNote,
   todayPosition,
   todayValueRank,
+  todayValues,
+  judgeLabelKey,
+  noLocalRecord,
   windWaveView,
 } from "../../src/utils/analogyFacts.js";
 import { wilsonInterval } from "../../src/utils/wilson.js";
@@ -640,6 +643,50 @@ check(
   ["Counted shares.", "About 0.13 s (e.g. a. b).", "End"],
 );
 check("空は空", splitSentences(""), []);
+
+// ---- ファン評価4周目（2026-10-07 ユーザー決定） ----
+check("当地勝率 0.00 は記録なし", [0, 0.5, 5.2, null].map(noLocalRecord), [
+  null,
+  0.5,
+  5.2,
+  null,
+]);
+check(
+  "今日の当地勝率の 0.00 は欠け（ほかの項目の 0 はそのまま）",
+  todayValues(
+    {
+      items: {
+        loc_win: { values: [0, 6.1, 0, 5, 4, 3] },
+        recent_win30: { values: [0, 0.1, 0.2, 0.3, 0.4, 0.5] },
+      },
+    },
+    null,
+  ),
+  {
+    loc_win: [null, 6.1, null, 5, 4, 3],
+    recent_win30: [0, 0.1, 0.2, 0.3, 0.4, 0.5],
+  },
+);
+check(
+  "判定: 少ない側が100件未満なら件数が少ない",
+  judgeLabelKey({ level: "unclear" }, [4, 5], [300, 1000]),
+  "unclearFew",
+);
+check(
+  "判定: 少ない側が100件以上ならぶれ幅が重なる",
+  judgeLabelKey({ level: "unclear" }, [766, 1017], [725, 1019]),
+  "unclear",
+);
+check(
+  "判定: 境目の100件は「ぶれ幅が重なる」",
+  judgeLabelKey({ level: "unclear" }, [60, 100], [70, 100]),
+  "unclear",
+);
+check(
+  "判定: 差が大きいはそのまま",
+  judgeLabelKey({ level: "large" }, [4, 5], [1, 5]),
+  "large",
+);
 
 if (failures > 0) {
   console.error(`\n❌ ${failures} 件の不一致`);

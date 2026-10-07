@@ -2,7 +2,11 @@ import { test, expect } from "./fixtures.js";
 import fs from "fs";
 import zlib from "zlib";
 import { contribution } from "./analogy-contribution-fixture.js";
-import { analogyV16Facts, routeAnalogyV16 } from "./analogy-v16-fixture.js";
+import {
+  analogyV16Facts,
+  analogyV16Similar,
+  routeAnalogyV16,
+} from "./analogy-v16-fixture.js";
 
 /**
  * アナロジー・ファインダーの節の smoke（BOA-271 v16）。
@@ -408,6 +412,55 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
         const items = await th.locator(".af-ai-item .af-num").allInnerTexts();
         expect(items.reduce((a, x) => a + parseInt(x, 10), 0)).toBe(total);
       }
+    });
+  });
+
+  test.describe("ファン評価4周目（実データ、2026-10-07 ユーザー決定）", () => {
+    test("当地勝率 0.00 の艇は「当地の記録なし」で、6艇中の順位を付けない", async ({
+      page,
+    }) => {
+      const f = analogyV16Facts();
+      f.today.items.loc_win.values[0] = 0;
+      await setup(page, { facts: f });
+      await openAiTab(page);
+      const card = sectionOf(page)
+        .getByRole("article")
+        .filter({ hasText: "当地勝率" })
+        .first();
+      await expect(card).toContainText("1号艇の今日: —（当地の記録なし）");
+    });
+
+    test("類似レースの全項目表で、展示で決まる項目の「全レースで同じ割合」は出さない", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openAiTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      await section
+        .locator("details")
+        .evaluateAll((ds) => ds.forEach((d) => (d.open = true)));
+      const row = section.locator("table.af-like-table tr", {
+        hasText: "天候",
+      });
+      await expect(row).toHaveCount(1);
+      await expect(row.locator("td").last()).toHaveText("—");
+    });
+
+    test("結果の無い類似レースを決まり方から外したら、その件数を書く", async ({
+      page,
+    }) => {
+      await setup(page);
+      const sim = analogyV16Similar("exhibition");
+      sim.similar.neighbors[0].finish = null;
+      // 後から登録した route が先に効く
+      await page.route("**/api/analogy/similar/**", (route) =>
+        route.fulfill({ json: sim }),
+      );
+      await openAiTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      await expect(section).toContainText("（結果が無い1件を除く）");
     });
   });
 });

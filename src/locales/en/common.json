@@ -886,7 +886,8 @@
         "judge": {
           "large": "Large difference",
           "small": "Small difference",
-          "unclear": "Too few races for a clear difference",
+          "unclear": "No clear difference (ranges overlap)",
+          "unclearFew": "Too few races for a clear difference",
           "none": "Can't compare (no matching races)"
         },
         "reversed": "(higher when {{word}})",
@@ -895,6 +896,8 @@
         "rankOf6": "rank {{n}} of 6",
         "rankOf6Tie": "rank {{from}}–{{to}} of 6 ({{same}} boats tied)",
         "noToday": "no value today",
+        "noTodayLocal": "no local record",
+        "few": " (few)",
         "units": {
           "series_score": " pts",
           "exh_time": "s"
@@ -923,7 +926,7 @@
           "scope": "Races counted: {{desc}}. ",
           "finalNcr": "When limited to Finals, this meet's average finish points are not shown (Final lanes are set by results up to the Semifinal, so the points ranking almost matches the lanes and comparing has no meaning). ",
           "series": "This meet's average finish points include values from early in the meet (1–2 runs) (in past early races many boats share the same value, so differences look smaller). ",
-          "common": "These are counted shares, not necessarily causes. \"Too few races for a clear difference\" means the ranges for best and worst overlap. \"Large difference\" means 5 points or more. Boats with the same value are counted in both best and worst. ",
+          "common": "These are counted shares, not necessarily causes. \"No clear difference\" means the ranges for best and worst overlap (when the smaller side has fewer than 100 races, it reads \"Too few races for a clear difference\"). Rates from fewer than 30 races are shown faded. A local win rate of 0.00 (never raced here) is treated as no record and left out of the ranks. \"Large difference\" means 5 points or more. Boats with the same value are counted in both best and worst. ",
           "exhPre": "Exhibition time is available after the exhibition. ",
           "exhPost": "Exhibition times before November 2025 come from a different source and may be slightly off. "
         },
@@ -1335,6 +1338,7 @@
         "entry": "Entry: {{e}}",
         "resHeading": "How similar races were decided",
         "resSub": "In the {{n}} most similar races",
+        "resExcluded": " ({{k}} races without a result excluded)",
         "winHeading": "Which boat won?",
         "hitHeading": "Which boats finished in the {{finish}}?",
         "keySimilar": "Similar races",

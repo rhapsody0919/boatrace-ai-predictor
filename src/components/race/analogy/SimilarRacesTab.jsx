@@ -289,6 +289,9 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
         </span>
         <span className="af-sub">
           {t(`${k}.resSub`, { n: fmtCount(ag.n) })}
+          {/* 結果の無いレース（返還・不成立など）は決まり方の集計から外すので、スライダーの件数より少ないことがある */}
+          {ag.n < nb.length &&
+            t(`${k}.resExcluded`, { k: fmtCount(nb.length - ag.n) })}
         </span>
       </div>
       <h4 className="af-h4">

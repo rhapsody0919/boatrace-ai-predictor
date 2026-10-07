@@ -139,7 +139,9 @@ export default function SimilarityItems({
                         : fmtPct(r.nearRate)}
                     </td>
                     <td>
-                      {poolRate?.[it.key] === undefined
+                      {/* 展示で決まる項目（天候・風・波・展示タイムの差）の割合は、朝のバッチが展示前に数えるので今日の
+                          値が無く 0 になる。数え直すまでは出さない（ファン評価4周目、2026-10-07） */}
+                      {poolRate?.[it.key] === undefined || it.exhibition
                         ? "—"
                         : fmtPct(poolRate[it.key])}
                     </td>
