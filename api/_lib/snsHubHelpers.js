@@ -131,9 +131,9 @@ export async function getDraftById(id) {
   return rows[0] || null;
 }
 
-export async function updateDraft(id, patch) {
+export async function updateDraft(id, patch, expectedStatus) {
   const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/sns_drafts?id=eq.${id}`,
+    `${SUPABASE_URL}/rest/v1/sns_drafts?id=eq.${id}&or=(external_operation_state.is.null,external_operation_state.eq.done)${expectedStatus ? `&status=eq.${expectedStatus}` : ""}`,
     {
       method: "PATCH",
       headers: {
@@ -149,7 +149,12 @@ export async function updateDraft(id, patch) {
     throw new Error(`sns_drafts更新エラー: ${response.status}`);
   }
   const rows = await response.json();
-  return rows[0] || null;
+  if (!rows[0]) {
+    const error = new Error("下書きが変更されたか、送信中・要照合です");
+    error.status = 409;
+    throw error;
+  }
+  return rows[0];
 }
 
 export async function getInsightById(id) {

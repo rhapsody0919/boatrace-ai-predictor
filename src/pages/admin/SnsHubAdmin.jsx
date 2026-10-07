@@ -41,6 +41,8 @@ import {
   shareVideoFile,
   downloadFileBlob,
 } from "../../utils/webShare";
+import BlogPrReview from "./sns-hub/BlogPrReview";
+import { actionFeedback } from "./sns-hub/actionFeedback";
 import Toast, { useToast } from "../../components/Toast";
 import {
   GLOBAL_RULES,
@@ -182,6 +184,7 @@ const FORMAT_LABELS = {
 };
 
 function SnsHubAdmin() {
+  const [actionMessages, setActionMessages] = useState([]);
   // activeTab: プラットフォーム軸の主タブ（tiktok/x/youtube/note/blog/insights/catalog）
   // activeStatusFilter: プラットフォームタブ内のステータス副フィルタ
   const [activeTab, setActiveTab] = useState("tiktok");
@@ -302,11 +305,15 @@ function SnsHubAdmin() {
   // （却下、恒久ルール化を選んだ修正指摘）を呼ぶ箇所はinsights: trueも指定すること
   async function handleAction(actionFn, args, reloadScope = { drafts: true }) {
     try {
-      await actionFn(...args);
-      showToast("操作を反映しました", "success");
+      const result = await actionFn(...args);
+      const messages = actionFeedback(result);
+      setActionMessages(messages);
+      showToast(messages.length ? "操作結果に警告があります" : "操作を反映しました", messages.length ? "error" : "success");
       await loadDrafts({ silent: true, fetch: reloadScope });
     } catch (err) {
       console.error("アクションエラー:", err);
+      setActionMessages([err.message || "操作に失敗しました"]);
+      await loadDrafts({ silent: true, fetch: reloadScope });
       showToast(err.message || "操作に失敗しました", "error");
     }
   }
@@ -366,9 +373,9 @@ function SnsHubAdmin() {
   // 大幅に長い文言はモバイル幅で画面外にはみ出すリスクがある（コードレビュー
   // で指摘）。PR URL等の詳細は埋め込まず短い確認メッセージのみ表示する
   // （URL自体は下書きプレビューに別途表示済み）
-  async function handleMergeBlogPr(draftId, approverId) {
+  async function handleMergeBlogPr(draftId, approverId, headSha) {
     try {
-      const result = await mergeBlogPr(draftId, approverId);
+      const result = await mergeBlogPr(draftId, approverId, headSha);
       if (result?.merge?.merged) {
         const shaLabel = result.merge.sha
           ? `(${result.merge.sha.slice(0, 7)})`
@@ -379,6 +386,8 @@ function SnsHubAdmin() {
       }
       await loadDrafts({ silent: true, fetch: { drafts: true } });
     } catch (err) {
+      setActionMessages([err.message || "マージに失敗しました"]);
+      await loadDrafts({ silent: true, fetch: { drafts: true } });
       console.error("ブログPRマージエラー:", err);
       showToast(err.message || "マージに失敗しました", "error");
     }
@@ -429,6 +438,10 @@ function SnsHubAdmin() {
       <BundleImportPanel
         onImported={() => loadDrafts({ silent: true, fetch: { drafts: true } })}
       />
+      {actionMessages.length > 0 && <div className="sns-hub-error-state" role="alert">
+        {actionMessages.map((message, index) => <p key={index}>{message}</p>)}
+        <button onClick={() => setActionMessages([])}>通知を閉じる</button>
+      </div>}
 
       <TopicApprovalSection
         topics={topics}
@@ -559,8 +572,8 @@ function SnsHubAdmin() {
                 onApprove={(approverId) =>
                   handleAction(approveDraft, [draft.id, approverId])
                 }
-                onMergeBlogPr={(approverId) =>
-                  handleMergeBlogPr(draft.id, approverId)
+                onMergeBlogPr={(approverId, headSha) =>
+                  handleMergeBlogPr(draft.id, approverId, headSha)
                 }
                 onPublishYoutube={(approverId) =>
                   handleAction(publishYoutube, [draft.id, approverId])
@@ -1282,6 +1295,7 @@ function DraftCard({
   const [selectedApproverId, setSelectedApproverId] = useState(
     approvers[0]?.id || null,
   );
+  const [blogReview, setBlogReview] = useState(null);
   const [openPanel, setOpenPanel] = useState(null); // null | 'feedback'
   const [xSendState, setXSendState] = useState("unknown");
   const [confirmingArchive, setConfirmingArchive] = useState(false);
@@ -1292,7 +1306,7 @@ function DraftCard({
     : draft.format;
 
   // 承認・修正はpending_reviewの下書きにのみ許可される（api/admin/sns-hub側の検証と一致）
-  const canAct = draft.status === "pending_review";
+  const canAct = draft.status === "pending_review" && !draft.external_operation_state;
   // api/_lib/snsBundleValidation.jsのisBundlePublicationBlocked()と同じ判定式。
   // フロントはapi/_libを直接importしないため手書きで複製している。あちらを変えたらここも直すこと
   const publicationBlocked = Boolean(
@@ -1317,6 +1331,15 @@ function DraftCard({
           active={isOpen}
         />
       )}
+      {draft.external_operation_state === "reconcile" && <p role="alert">送信中または要照合です。外部結果の確認が終わるまで再送・修正できません。</p>}
+      {draft.external_operation_state === "external_done" && <div>
+        <p>外部操作は完了済みです。DBへの反映だけを再試行できます。</p>
+        <button className="draft-action-btn" onClick={() => draft.platform === "youtube"
+          ? onPublishYoutube(draft.approver_id || selectedApproverId)
+          : onMergeBlogPr(draft.approver_id || selectedApproverId, draft.external_operation_result?.source_data?.blog_reviewed_head_sha)}>
+          DB反映を再試行
+        </button>
+      </div>}
       {draft.platform === "youtube" && (
         <ThumbnailPreview thumbnailUrl={draft.cover_image_url} />
       )}
@@ -1414,11 +1437,12 @@ function DraftCard({
                   onSelect={setSelectedApproverId}
                 />
 
+                {draft.platform === "blog" && <BlogPrReview draft={draft} review={blogReview} onReview={setBlogReview} />}
                 <div className="draft-actions">
                   {draft.platform === "blog" ? (
                     <BlogApproveAction
-                      disabled={!selectedApproverId || publicationBlocked}
-                      onApprove={() => onMergeBlogPr(selectedApproverId)}
+                      disabled={publicationBlocked || !selectedApproverId || !blogReview?.confirmed || blogReview.prUrl !== draft.pr_url}
+                      onApprove={() => onMergeBlogPr(selectedApproverId, blogReview.headSha)}
                     />
                   ) : draft.platform === "youtube" ? (
                     <YouTubeApproveAction
@@ -1507,7 +1531,7 @@ function DraftCard({
               <TikTokMetricsForm onSubmit={onAddMetric} />
             )}
 
-            {draft.status !== "posted" &&
+            {draft.status !== "posted" && !draft.external_operation_state &&
               (confirmingArchive ? (
                 <div className="draft-hide-confirm">
                   <span>非表示にしますか？</span>
