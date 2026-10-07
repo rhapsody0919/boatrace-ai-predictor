@@ -54,6 +54,8 @@ const PAGES = [
   "/racer/4320",
   // 節ページ（BOA-682）。52行の得点率ランキングと勝ち上がりの2カラム
   "/venue/16/meet/2026-09-28",
+  // 思考アシスト（BOA-430）。案②レーン（艇×横軸）と固定フッター
+  "/race/2026-10-06-18-10/assist",
 ];
 
 /** グリッドの空トラックとみなす最小の余白。gapや端数の誤差を除くための閾値 */
@@ -86,6 +88,7 @@ const READY_SELECTORS = {
   "/race/2026-09-21-02-05": ".rbit-bar-row",
   "/racer/4320": ".racer-stat-cards-grid",
   "/venue/16/meet/2026-09-28": ".meet-ranking__table tbody tr",
+  "/race/2026-10-06-18-10/assist": ".ta-lane",
 };
 
 async function gotoAndSettle(page, path) {

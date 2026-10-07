@@ -504,13 +504,29 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
     await expect
       .poll(() => page.evaluate(() => document.documentElement.lang))
       .toBe("ja");
+    // 見出しは「{会場} {R}R 思考アシスト」（ページ名は視覚的に隠した文字。PR3 で画面を入れた）
     await expect(
-      page.getByRole("heading", { level: 1, name: "思考アシスト" }),
+      page.getByRole("heading", { level: 1, name: /思考アシスト/ }),
     ).toBeVisible();
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
       "content",
       /noindex/,
     );
+  });
+
+  // BOA-430 PR3: 機能フラグが無くても URL 直接で開け、1段目のデータ（出走表）でレースの図が出る（spec FR-1・N-5）
+  test("思考アシストはフラグ無しでも開き、軸レンズのレースの図に1〜6号艇が出る", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-10-06-18-10/assist");
+    await expect(
+      page.getByRole("figure", { name: "レースの図（軸）" }),
+    ).toBeVisible();
+    for (let n = 1; n <= 6; n++)
+      await expect(
+        page.getByRole("button", { name: new RegExp(`^${n}号艇\\s`) }),
+      ).toBeVisible();
+    await expect(page.getByRole("region", { name: "買い目" })).toBeVisible();
   });
 
   test("翻訳済みページ（/en/guide）はリダイレクトされずlang=enで配信される", async ({

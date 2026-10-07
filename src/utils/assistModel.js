@@ -280,3 +280,354 @@ export function stageFromExhibition(exhibition, boats) {
   );
   return boats.every((b) => have.has(b)) ? "post" : "pre";
 }
+
+// ---- レースの図（screens「レンズごとの図 C」、N-2: 最初に見える数字は1艇2個まで）----
+
+export const LENSES = ["axis", "flow", "power", "bet"];
+
+/** 平均ST・展示ST を「.132」の形に（画面の文字）。読み上げ・比べるときは小数のまま */
+export const stText = (v, digits = 3) =>
+  v == null
+    ? "—"
+    : `.${String(Math.round(v * 10 ** digits)).padStart(digits, "0")}`;
+
+/**
+ * 6艇比較・図の数字に使う項目。label は読み上げと比べる図の見出し、short は図の札、
+ * text は画面の文字、aria は読み上げの値（平均ST は 0.132 の形）
+ */
+export const METRICS = {
+  nat_win: {
+    label: "全国勝率",
+    short: "勝率",
+    value: (r) => r.natWin,
+    text: (v) => v.toFixed(2),
+    aria: (v) => v.toFixed(2),
+  },
+  loc_win: {
+    label: "当地勝率",
+    short: "当地",
+    value: (r) => (r.locWin === 0 ? null : r.locWin),
+    text: (v) => v.toFixed(2),
+    aria: (v) => v.toFixed(2),
+  },
+  st_mean30: {
+    label: "平均ST",
+    short: "ST",
+    value: (r) => r.stMean,
+    text: (v) => stText(v),
+    aria: (v) => v.toFixed(3),
+  },
+  motor_2: {
+    label: "モーター2連率",
+    short: "モーター",
+    value: (r) => r.motor2,
+    text: (v) => `${v.toFixed(1)}%`,
+    aria: (v) => v.toFixed(1),
+  },
+  exh_time: {
+    label: "展示タイム",
+    short: "展示",
+    value: (r) => r.exhTime,
+    text: (v) => v.toFixed(2),
+    aria: (v) => v.toFixed(2),
+  },
+  series_score: {
+    label: "今節の平均着順点",
+    short: "今節",
+    value: (r) => r.seriesScore,
+    text: (v) => v.toFixed(2),
+    aria: (v) => v.toFixed(2),
+  },
+};
+
+/** 数字1個（図の札・6艇比較の値）。best は最良の金枠（FR-3a） */
+function numOf(metric, racer, best) {
+  const def = METRICS[metric];
+  const v = def.value(racer);
+  return {
+    metric,
+    label: def.label,
+    short: def.short,
+    text: v == null ? "記録なし" : def.text(v),
+    aria: v == null ? "記録なし" : def.aria(v),
+    best: best.has(racer.boat),
+  };
+}
+
+/** 6艇の値の最良（項目ごと）。優勝戦・準優勝戦の日の今節の点には付けない */
+function bestOfMetric(metric, racers, finalRound) {
+  return bestBoats(
+    metric,
+    racers.map((r) => ({ boat: r.boat, value: METRICS[metric].value(r) })),
+    { finalRound },
+  );
+}
+
+/** 値の幅から図の端を決める（両端に幅の15%の余白。全艇同じ値なら ±1） */
+function span(values) {
+  const vs = values.filter((v) => typeof v === "number");
+  if (!vs.length) return { lo: 0, hi: 1 };
+  const min = Math.min(...vs);
+  const max = Math.max(...vs);
+  const pad = max > min ? (max - min) * 0.15 : 1;
+  return { lo: min - pad, hi: max + pad };
+}
+
+/**
+ * 1着になる組（20通り）の合成オッズ。欠場の艇を含む組・オッズの無い組は数えない（D-38）
+ * @returns {Map<number, number>} 艇番 → 合成オッズ
+ */
+export function firstPlaceComposite(trifecta, absentBoats = []) {
+  const absent = new Set(absentBoats);
+  const inv = new Map();
+  for (const [key, odds] of Object.entries(trifecta ?? {})) {
+    if (odds == null || !(odds > 0)) continue;
+    const boats = key.split("-").map(Number);
+    if (boats.some((b) => absent.has(b))) continue;
+    inv.set(boats[0], (inv.get(boats[0]) ?? 0) + 1 / odds);
+  }
+  return new Map([...inv].map(([b, s]) => [b, 1 / s]));
+}
+
+/**
+ * レンズ（または6艇比較の項目）の図のモデル。純粋関数
+ * @param {{lens: string, stage: "pre"|"post", metric?: string|null, racers: object[], trifecta?: object|null, finalRound?: boolean}} args
+ *   racers は1〜6号艇（欠場を含む）: {boat, natWin, locWin, stMean, stCourse, motor2, seriesScore, exhTime, exhSt, exhFlying, absent}
+ * @returns {{kind: string, title: string, left: string, right: string, good: "left"|"right"|null, lo: number, hi: number, log?: boolean, rows: Array<{boat: number, x: number|null, nums: object[], dotText?: string|null}>}}
+ */
+export function boardModel({
+  lens,
+  stage,
+  metric = null,
+  racers,
+  trifecta = null,
+  finalRound = false,
+}) {
+  const post = stage === "post";
+  const best = (m) => bestOfMetric(m, racers, finalRound);
+
+  if (metric) {
+    const def = METRICS[metric];
+    const b = best(metric);
+    const dir = BEST_RULES[metric].dir;
+    return {
+      kind: "metric",
+      title: `${def.label}を6艇で比べる`,
+      left: "",
+      right: "",
+      good: dir === "min" ? "left" : "right",
+      ...span(racers.map(def.value)),
+      rows: racers.map((r) => ({
+        boat: r.boat,
+        x: def.value(r),
+        nums: [numOf(metric, r, b)],
+      })),
+    };
+  }
+
+  if (lens === "axis") {
+    const bNat = best("nat_win");
+    const bSt = best("st_mean30");
+    const s = span(racers.map((r) => r.natWin));
+    return {
+      kind: "axis",
+      title: "全国勝率",
+      left: s.lo.toFixed(1),
+      right: s.hi.toFixed(1),
+      good: "right",
+      ...s,
+      rows: racers.map((r) => ({
+        boat: r.boat,
+        x: r.natWin,
+        nums: [numOf("nat_win", r, bNat), numOf("st_mean30", r, bSt)],
+      })),
+    };
+  }
+
+  if (lens === "flow") {
+    // 展示後は展示ST（F は最良の候補から外す）、展示前は平均ST（このコース）。左ほど早い
+    const value = (r) => (post ? r.exhSt : r.stCourse);
+    const best2 = bestBoats(
+      post ? "exh_st" : "st_course",
+      racers.map((r) => ({
+        boat: r.boat,
+        value: value(r),
+        flying: r.exhFlying,
+      })),
+    );
+    return {
+      kind: "flow",
+      title: post ? "展示ST（左ほど早い）" : "平均ST・このコース（左ほど早い）",
+      left: ".00",
+      right: ".25",
+      good: "left",
+      lo: 0,
+      hi: 0.25,
+      slit: true,
+      rows: racers.map((r) => {
+        const v = value(r);
+        const text =
+          v == null
+            ? null
+            : `${r.exhFlying && post ? "F" : ""}${stText(v, post ? 2 : 3)}`;
+        return {
+          boat: r.boat,
+          x: v == null ? null : Math.abs(v),
+          nums: [],
+          dotText: text,
+          dotBest: best2.has(r.boat),
+        };
+      }),
+    };
+  }
+
+  if (lens === "power") {
+    const bMotor = best("motor_2");
+    if (post) {
+      const bExh = best("exh_time");
+      const times = racers.map((r) => r.exhTime).filter((v) => v != null);
+      const fastest = times.length ? Math.min(...times) : null;
+      const gaps = racers.map((r) =>
+        r.exhTime == null || fastest == null ? null : r.exhTime - fastest,
+      );
+      const hi = Math.max(0.1, ...gaps.filter((v) => v != null));
+      return {
+        kind: "power",
+        title: "展示タイム（一番速い艇との差、左ほど速い）",
+        left: "+0.00",
+        right: `+${hi.toFixed(2)}`,
+        good: "left",
+        lo: 0,
+        hi,
+        rows: racers.map((r, i) => ({
+          boat: r.boat,
+          x: gaps[i],
+          nums: [numOf("motor_2", r, bMotor), numOf("exh_time", r, bExh)],
+        })),
+      };
+    }
+    const s = span(racers.map((r) => r.motor2));
+    return {
+      kind: "power",
+      title: "モーター2連率（右ほど高い）",
+      left: `${Math.round(s.lo)}%`,
+      right: `${Math.round(s.hi)}%`,
+      good: "right",
+      ...s,
+      rows: racers.map((r) => ({
+        boat: r.boat,
+        x: r.motor2,
+        nums: [numOf("motor_2", r, bMotor)],
+      })),
+    };
+  }
+
+  // 買い目: 1着になる組の合成オッズ（左ほど人気）。オッズが無ければ艇番順に並べるだけ
+  const comp = firstPlaceComposite(
+    trifecta,
+    racers.filter((r) => r.absent).map((r) => r.boat),
+  );
+  if (!comp.size)
+    return {
+      kind: "bet",
+      title: "1着になる組のオッズ（合成）",
+      left: "",
+      right: "",
+      good: null,
+      lo: 0,
+      hi: 1,
+      noOdds: true,
+      rows: racers.map((r) => ({ boat: r.boat, x: null, nums: [] })),
+    };
+  const sorted = [...comp.values()].sort((a, b) => a - b);
+  const hiOdds = Math.max(300, sorted[sorted.length - 1]);
+  return {
+    kind: "bet",
+    title: "1着になる組のオッズ（合成）",
+    left: "人気",
+    right: "人気薄",
+    good: "left",
+    lo: 0,
+    hi: Math.log(hiOdds),
+    log: true,
+    rows: racers.map((r) => {
+      const c = comp.get(r.boat);
+      return {
+        boat: r.boat,
+        x: c == null ? null : Math.log(c),
+        nums:
+          c == null
+            ? []
+            : [
+                {
+                  metric: null,
+                  label: "1着人気",
+                  short: "1着人気",
+                  text: `${1 + sorted.filter((o) => o < c).length}番（${c.toFixed(1)}倍）`,
+                  aria: null,
+                  best: false,
+                },
+              ],
+      };
+    }),
+  };
+}
+
+const numOrNull = (v) => {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+/**
+ * 艇番ごとの値をそろえる（1〜6号艇の順）。出走表は1段目、v16 の today は届いたら埋める（N-5）
+ * @param {{players?: object[], today?: object|null, exhibition?: object[]|null, rates?: object[]|null}} sources
+ *   players: getPredictions の players（aiScore 順。艇番は number）
+ *   today: v16 facts の today（items・course_st）
+ *   exhibition: getRaceExhibitionBasics の行
+ *   rates: getRaceEntryOfficialRatesBreakdown の行（f_count）
+ */
+export function buildRacers({
+  players = [],
+  today = null,
+  exhibition = null,
+  rates = null,
+}) {
+  const byBoat = new Map(players.map((p) => [Number(p.number), p]));
+  const exh = new Map((exhibition ?? []).map((e) => [e.boat, e]));
+  const rate = new Map((rates ?? []).map((r) => [r.boat_number, r]));
+  const item = (key, i) => numOrNull(today?.items?.[key]?.values?.[i]);
+  return [1, 2, 3, 4, 5, 6].map((boat, i) => {
+    const p = byBoat.get(boat) ?? null;
+    const e = exh.get(boat) ?? null;
+    const name = p?.name ?? "";
+    return {
+      boat,
+      name,
+      surname: name.split(/[\s\u3000]+/)[0] ?? "",
+      cls: p?.grade ?? today?.classes?.[i] ?? null,
+      natWin: numOrNull(p?.winRate) ?? item("nat_win", i),
+      locWin: numOrNull(p?.localWinRate) ?? item("loc_win", i),
+      motor2: numOrNull(p?.motor2Rate) ?? item("motor_2", i),
+      stMean: item("st_mean30", i),
+      stCourse: numOrNull(today?.course_st?.course?.[i]),
+      seriesScore: item("series_score", i),
+      exhTime: e?.time ?? null,
+      exhSt: e?.st ?? null,
+      exhFlying: e?.startFlag === "F",
+      fCount: numOrNull(rate.get(boat)?.f_count),
+      absent: e?.absent === true,
+    };
+  });
+}
+
+// ---- 買い目の表記（固定フッター・マークシート）----
+
+/** 1着・2着・3着の候補を「1-23-234」の形に（候補が無い着は「—」） */
+export const betForm = (bets) =>
+  [1, 2, 3]
+    .map((k) => [...bets[k]].sort((a, b) => a - b).join("") || "—")
+    .join("-");
+
+/** 合成オッズの表記（モック v7 と同じ小数2桁、丸める前の理論値） */
+export const compositeText = (v) => (v == null ? null : v.toFixed(2));
