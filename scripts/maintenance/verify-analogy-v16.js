@@ -10,7 +10,8 @@
  * 展示後の段の Cron がまだ一度も書いていないときは、展示後の段の閾値を見ない。
  *
  * --cleanup: Storage の非公開のバケット analogy-v16 の、7日より前の日付の similar/（候補ファイル）と、前日より前の
- *   similar-display/（候補の表示用の値。展示後の段がその日のうちに1回読むだけ）を消す（plan「Storage」）
+ *   similar-display/（候補の表示用の値。展示後の段がその日のうちに1回読むだけ）と pool/（母集団の展示の値。同じ）を消す
+ *   （plan「Storage」）
  * --date YYYY-MM-DD: 数える日（省略時は前日）
  *
  * 使い方: node --env-file=.env.local scripts/maintenance/verify-analogy-v16.js [--date 2026-10-05] [--cleanup]
@@ -29,6 +30,7 @@ export const KEEP_SIMILAR_DAYS = 7;
 export const CLEANUP = [
   ["similar", KEEP_SIMILAR_DAYS],
   ["similar-display", 1],
+  ["pool", 1],
 ];
 
 const argv = process.argv.slice(2);
@@ -172,7 +174,7 @@ async function main() {
   }
   if (argv.includes("--cleanup"))
     console.log(
-      `🧹 similar/（${KEEP_SIMILAR_DAYS}日より前）・similar-display/（前日より前）を ${await cleanup(today)} 件消した`,
+      `🧹 similar/（${KEEP_SIMILAR_DAYS}日より前）・similar-display/・pool/（前日より前）を ${await cleanup(today)} 件消した`,
     );
 }
 

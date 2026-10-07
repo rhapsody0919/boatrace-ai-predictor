@@ -249,10 +249,34 @@ check(
 check(
   "展示後の類似レースに層の情報を合わせる",
   mergeExhibition(
-    { conditions: { round: "yusho" }, n_layer: 15, neighbors: [1] },
+    {
+      conditions: { round: "yusho" },
+      n_layer: 15,
+      pool_rate: { venue: 0.04, weather: 0 },
+      neighbors: [1],
+    },
     { neighbors: [2], exact: true },
   ),
-  { conditions: { round: "yusho" }, n_layer: 15, neighbors: [2], exact: true },
+  {
+    conditions: { round: "yusho" },
+    n_layer: 15,
+    pool_rate: { venue: 0.04, weather: 0 },
+    neighbors: [2],
+    exact: true,
+  },
+);
+// 展示で決まる項目の「全レースで同じ割合」は、展示後の段が今日の展示の値で数え直した値にする
+check(
+  "展示後の pool_rate は展示後の段の値で上書きする",
+  mergeExhibition(
+    { pool_rate: { venue: 0.04, weather: 0, wind_bin: 0 }, neighbors: [1] },
+    {
+      neighbors: [2],
+      exact: true,
+      pool_rate: { weather: 0.61, wind_bin: 0.497 },
+    },
+  ).pool_rate,
+  { venue: 0.04, weather: 0.61, wind_bin: 0.497 },
 );
 check(
   "展示後のファイルが無ければ null",
@@ -406,6 +430,11 @@ check(
       displayKeep,
     ),
     ["2026-10-03"],
+  );
+  check(
+    "pool/（母集団の展示の値）も前日より前を消す",
+    CLEANUP.find(([k]) => k === "pool")?.[1],
+    1,
   );
 }
 

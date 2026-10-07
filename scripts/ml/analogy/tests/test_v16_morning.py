@@ -1,6 +1,7 @@
 """v16 朝のバッチの組み立て（tasks T2-5）"""
 import numpy as np
 import pandas as pd
+import pytest
 
 import v16_morning as M
 
@@ -107,3 +108,22 @@ def test_late_for():
     assert M.late_for(now - timedelta(minutes=1), now)
     assert not M.late_for(now + timedelta(minutes=1), now)
     assert not M.late_for(None, now)
+
+
+def test_pool_exhibition_counts_and_hundredths():
+    """展示後の段が展示で決まる5項目の pool_rate を数えるための母集団の値: 天候・風・波は値の組ごとの件数、
+    展示タイムは 1/100秒の整数。今日のレース（pool の外）は含めない"""
+    races = pd.DataFrame({"weather_code": [1, 1, 2, 1], "wind_x": [0.5, 0.5, 1.0, 0.5], "wind_y": [0.0, 0.0, 1.0, 0.0],
+                          "wind_speed": [2, 2, 3, 2], "wave_height": [1, 1, 3, 1]})
+    exh = np.array([[6.78, 6.8, np.nan, 6.75, 6.7, 6.81]] * 4, dtype=np.float32)
+    pool = np.array([True, True, True, False])
+    p = M.pool_exhibition(races, exh, pool)
+    assert p["n"] == 3 and p["race_cols"] == list(M.EXH_RACE_COLS)
+    assert sorted(p["race_rows"]) == [[1.0, 0.5, 0.0, 2.0, 1.0, 2], [2.0, 1.0, 1.0, 3.0, 3.0, 1]]
+    assert p["exh_time"][:6] == [678, 680, None, 675, 670, 681] and len(p["exh_time"]) == 18
+
+
+def test_pool_exhibition_rejects_non_hundredths():
+    races = pd.DataFrame({k: [0.0] for k in M.EXH_RACE_COLS})
+    with pytest.raises(ValueError):
+        M.pool_exhibition(races, np.array([[6.785, 6.8, 6.7, 6.7, 6.7, 6.7]], dtype=np.float32), np.array([True]))
