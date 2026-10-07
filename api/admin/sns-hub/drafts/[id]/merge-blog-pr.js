@@ -22,6 +22,7 @@ import {
 } from "../../../../_lib/snsHubHelpers.js";
 
 import { requireAdminAuth } from "../../../../_lib/adminAuth.js";
+import { isBundlePublicationBlocked } from "../../../../_lib/snsBundleValidation.js";
 
 export const config = {
   runtime: "edge",
@@ -122,6 +123,12 @@ export default async function handler(req) {
       return jsonResponse(
         { error: "このエンドポイントはplatform='blog'の下書き専用です" },
         400,
+      );
+    }
+    if (isBundlePublicationBlocked(draft)) {
+      return jsonResponse(
+        { error: "公開不可: v0素材の保留はこの操作で解除できません" },
+        409,
       );
     }
     if (draft.status !== "pending_review") {

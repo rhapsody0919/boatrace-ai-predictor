@@ -422,7 +422,9 @@ function SnsHubAdmin() {
   return (
     <div className="sns-hub-admin-page">
       <Header />
-      <BundleImportPanel onImported={() => loadDrafts({ silent: true, fetch: { drafts: true } })} />
+      <BundleImportPanel
+        onImported={() => loadDrafts({ silent: true, fetch: { drafts: true } })}
+      />
 
       <TopicApprovalSection
         topics={topics}
@@ -1279,7 +1281,13 @@ function DraftCard({
 
   // 承認・修正はpending_reviewの下書きにのみ許可される（api/admin/sns-hub側の検証と一致）
   const canAct = draft.status === "pending_review";
-  const publicationBlocked = Boolean(draft.publish_blocked || draft.bundle_import_id || draft.bundle_version_hash);
+  // api/_lib/snsBundleValidation.jsのisBundlePublicationBlocked()と同じ判定式。
+  // フロントはapi/_libを直接importしないため手書きで複製している。あちらを変えたらここも直すこと
+  const publicationBlocked = Boolean(
+    draft.publish_blocked ||
+    draft.bundle_import_id ||
+    draft.bundle_version_hash,
+  );
 
   // 修正指摘パネルを開いている間は、トグルで折りたたんでも
   // パネルをアンマウントしない（コードレビューで指摘: 折りたたむと入力中の
@@ -1315,11 +1323,19 @@ function DraftCard({
       )}
 
       <div className="draft-card-body">
-        {publicationBlocked && <div className="sns-bundle-publication-hold">
-          <strong>公開不可</strong>
-          <p>v0素材の修正はローカルで再生成し、新しい版を取り込んでください。</p>
-          <ul>{(draft.publication_hold_reasons || []).map((reason) => <li key={reason}>{reason}</li>)}</ul>
-        </div>}
+        {publicationBlocked && (
+          <div className="sns-bundle-publication-hold">
+            <strong>公開不可</strong>
+            <p>
+              v0素材の修正はローカルで再生成し、新しい版を取り込んでください。
+            </p>
+            <ul>
+              {(draft.publication_hold_reasons || []).map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="draft-card-badges">
           <span
             className={`draft-badge draft-badge-platform draft-badge-platform-${draft.platform}`}
