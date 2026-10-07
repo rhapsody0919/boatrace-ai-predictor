@@ -127,3 +127,22 @@ def test_pool_exhibition_rejects_non_hundredths():
     races = pd.DataFrame({k: [0.0] for k in M.EXH_RACE_COLS})
     with pytest.raises(ValueError):
         M.pool_exhibition(races, np.array([[6.785, 6.8, 6.7, 6.7, 6.7, 6.7]], dtype=np.float32), np.array([True]))
+
+
+def test_today_payload_loc_win_zero_is_missing():
+    """今日の6艇中の順位も、当地勝率 0.00 の艇を欠けにして付ける（P1-2 案A）"""
+    import v16_facts as FA
+
+    six = lambda xs: np.array([xs], dtype=float)  # noqa: E731
+    arrays = {item: six([5, 4, 3, 2, 1, 0.5]) for item, _ in FA.ITEMS}
+    arrays["loc_win"] = six([6.5, 0.0, 5.0, 0.0, 4.0, 3.0])
+    arrays["series_runs"] = np.array([[0] * 6])
+    arrays["cls_name"] = np.array([["A1"] * 6], dtype=object)
+    races = pd.DataFrame({"race_id": [M.F.rid_to_int(pd.Series(["2026-10-08-14-02"]))[0]], "venue_code": [14],
+                          "grade": ["ippan"], "round": ["yosen"]})
+    st = [0.15] * 6
+    p = M.today_payload(0, races, arrays, {}, {"course_filled": st, "overall": st})
+    loc = p["items"]["loc_win"]
+    assert loc["values"] == [6.5, None, 5.0, None, 4.0, 3.0]
+    assert loc["positions"] == [[1], [], [2], [], [3], [4, 6]]
+    assert p["items"]["nat_win"]["positions"][5] == [6]  # 他の項目は変えない

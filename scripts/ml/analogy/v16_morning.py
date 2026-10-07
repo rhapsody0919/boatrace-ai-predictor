@@ -137,10 +137,11 @@ def build_distance(arrays: dict, races: pd.DataFrame, feats: list[str], weights:
 def today_payload(i: int, races: pd.DataFrame, arrays: dict, keys: dict, course_st: dict) -> dict:
     """today/{race_id}.json（plan「1レースごとに作るもの」）"""
     vals = {}
+    fv = FA.fact_values({item: arrays[item][i] for item, _ in FA.ITEMS if item != "exh_time"})
     for item, hib in FA.ITEMS:
         if item == "exh_time":
             continue
-        v = arrays[item][i]
+        v = fv[item]
         ranks = V.rank_positions(v, hib)
         vals[item] = {"values": [None if not np.isfinite(x) else round(float(x), 4) for x in v],
                       "positions": [sorted(p) for p in ranks]}
@@ -372,7 +373,7 @@ def main():
     log("races", len(races), "pool", int(pool.sum()), "today", len(today))
 
     # 範囲ごと: facts（タブ1）
-    prep = FA.prepare({k: arrays[k] for k in FACT_ITEMS})
+    prep = FA.prepare(FA.fact_values({k: arrays[k] for k in FACT_ITEMS}))
     keys_by_race = {}
     for i in today:
         for b in range(1, 7):
