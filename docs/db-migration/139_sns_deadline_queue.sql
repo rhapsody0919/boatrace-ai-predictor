@@ -15,6 +15,7 @@ ALTER TABLE public.sns_x_send_jobs
  ADD COLUMN expires_at TIMESTAMPTZ,
  ADD COLUMN draft_revision TEXT,
  ADD COLUMN locked_at TIMESTAMPTZ,
+ ADD COLUMN attempt_dates DATE[] NOT NULL DEFAULT ARRAY[]::date[],
  ADD COLUMN lease_until TIMESTAMPTZ,
  ADD COLUMN parent_job_id UUID REFERENCES public.sns_x_send_jobs(id);
 ALTER TABLE public.sns_x_send_control ADD CONSTRAINT sns_queue_timing_order CHECK(schedule_minutes>expiry_minutes);
@@ -133,14 +134,26 @@ BEGIN
       OR d.approver_id IS DISTINCT FROM j.approver_id OR d.approved_at IS DISTINCT FROM j.approved_at THEN
       RAISE EXCEPTION '再承認が必要です'; END IF;
   END IF;
-  IF p_action='claim' THEN
-    IF j.state<>'queued' OR j.scheduled_at>now() THEN RAISE EXCEPTION 'claimできません'; END IF;
+  IF p_action='begin_post' AND j.state<>'sending' THEN RAISE EXCEPTION '送信開始できません'; END IF;
+  IF p_action IN ('claim','begin_post') THEN
     IF c.daily_limit IS NULL OR c.daily_limit<1 OR c.daily_baseline_date IS DISTINCT FROM (now() AT TIME ZONE 'Asia/Tokyo')::date THEN
       RAISE EXCEPTION '日次全体上限・他経路の本数が未確認です';
     END IF;
-    SELECT count(*) INTO day_count FROM public.sns_x_send_jobs WHERE channel=j.channel AND
-      (locked_at AT TIME ZONE 'Asia/Tokyo')::date=(now() AT TIME ZONE 'Asia/Tokyo')::date;
-    IF day_count+c.daily_external_count>=c.daily_limit THEN RAISE EXCEPTION '日次全体上限です'; END IF;
+    SELECT count(*) INTO day_count FROM public.sns_x_send_jobs jobs,
+      LATERAL unnest(jobs.attempt_dates) attempt(day) WHERE jobs.channel=j.channel
+      AND attempt.day=(now() AT TIME ZONE 'Asia/Tokyo')::date;
+    IF day_count+c.daily_external_count >= c.daily_limit + (CASE WHEN p_action='begin_post' THEN 1 ELSE 0 END) THEN
+      RAISE EXCEPTION '日次全体上限です';
+    END IF;
+    -- 日付をまたいだ枠の移動は未承認。外部POST前に保留して再承認を要求する。
+    IF p_action='begin_post' AND (j.locked_at AT TIME ZONE 'Asia/Tokyo')::date IS DISTINCT FROM (now() AT TIME ZONE 'Asia/Tokyo')::date THEN
+      UPDATE public.sns_x_send_jobs SET state='held',error_code='daily_claim_date_changed',updated_at=now() WHERE id=j.id RETURNING * INTO j;
+      RETURN to_jsonb(j);
+    END IF;
+  END IF;
+  IF p_action='claim' THEN
+    IF j.state<>'queued' OR j.scheduled_at>now() THEN RAISE EXCEPTION 'claimできません'; END IF;
+    j.attempt_dates:=array_append(j.attempt_dates,(now() AT TIME ZONE 'Asia/Tokyo')::date);
     j.locked_at:=now(); j.lease_until:=now()+interval '5 minutes';
     IF c.reserved_microusd+c.attempt_ceiling_microusd>c.budget_microusd THEN RAISE EXCEPTION '月額上限です'; END IF;
     UPDATE public.sns_x_send_control SET reserved_microusd=reserved_microusd+attempt_ceiling_microusd WHERE id=true;
@@ -172,7 +185,7 @@ BEGIN
     j.external_post_url:=CASE WHEN j.channel='x' THEN 'https://x.com/i/status/' ELSE 'https://www.youtube.com/watch?v=' END || j.external_post_id;
     j.posted_at:=(p_result->>'posted_at')::timestamptz;
   ELSE RAISE EXCEPTION '不正な操作です'; END IF;
-  UPDATE public.sns_x_send_jobs SET locked_at=j.locked_at,lease_until=j.lease_until,state=j.state,attempts=j.attempts,reserved_microusd=j.reserved_microusd,
+  UPDATE public.sns_x_send_jobs SET attempt_dates=j.attempt_dates,locked_at=j.locked_at,lease_until=j.lease_until,state=j.state,attempts=j.attempts,reserved_microusd=j.reserved_microusd,
     budget_period_start=j.budget_period_start,error_code=j.error_code,external_post_id=j.external_post_id,external_post_url=j.external_post_url,
     posted_at=j.posted_at,updated_at=now() WHERE id=j.id RETURNING * INTO j;
   IF p_action='complete' THEN UPDATE public.sns_drafts SET status='posted',posted_at=j.posted_at WHERE id=d.id; END IF;
