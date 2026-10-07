@@ -29,7 +29,7 @@
 
 1. **生成物は PR に含めない。** `verify-generated-docs-not-in-pr.js`（ci tier）が `git diff --name-only --no-renames origin/master...HEAD` を見て、生成物の変更を含む PR を落とす
 2. **PR で見るのは「抽出ロジックが正しいか」と「生成が成功するか」だけ。** `verify-lib-index.js`・`verify-display-coverage.js` は生成スクリプトを `--dry-run`（生成まで行い書き込まない）で呼ぶ。コミット済みの生成物との比較はやめる。表示カバレッジの例外登録に実在しないテーブルが残っている検査は、ソース側の誤りなので dry-run で引き続き落とす。抽出が壊れて生成物が空になる場合は、生成スクリプトが書き込み前に落とす
-3. **master への push ごとに `.github/workflows/regenerate-generated-docs.yml` が作り直し、差分があればコミットする。** push は `scripts/maintenance/push-with-retry.sh`（BOA-360）で行う。権限は `update-sitemap.yml` と同じくワークフロー単位の `permissions: contents: write`。GITHUB_TOKEN による push は他のワークフローを起動しないので、ループしない。失敗時は Slack に通知する
+3. **master への push ごとに `.github/workflows/regenerate-generated-docs.yml` が作り直し、差分があればコミットする。** push は `scripts/maintenance/push-with-retry.sh`（BOA-360）で行う。権限は `update-sitemap.yml` と同じくワークフロー単位の `permissions: contents: write`。push はアプリ ryujin-bot のトークンで行う（master の ruleset の bypass に GITHUB_TOKEN は入れられないため）。アプリのトークンの push は他のワークフローを起動するので、ボットの push（actor が `ryujin-bot[bot]`、または先端のコミットのメッセージが `[automated]` で終わる）では動かない条件でループを防ぐ（当初は GITHUB_TOKEN で push し、起動しないことでループを防いでいた）。失敗時は Slack に通知する
 4. 生成物の一覧は `scripts/maintenance/generated-docs.js` の `GENERATED_DOCS` 1か所に置き、ワークフローと検査の両方がそこを読む
 
 ### 比較

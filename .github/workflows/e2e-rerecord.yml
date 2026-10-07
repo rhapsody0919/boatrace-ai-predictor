@@ -14,7 +14,9 @@ name: E2E Re-record (録画の自動撮り直し)
 #      - skip が現行の録画より増えていない（発走前のレースが少ない日に撮ると skip が増える）
 #   4. 採用したら GitHub Release に zip で添付し、ポインタ（e2e/recording.json）を master に
 #      直接 push する（push-with-retry.sh。regenerate-generated-docs.yml と同じ流儀）。
-#      GITHUB_TOKEN の push は他のワークフローを起動しない
+#      push はアプリ ryujin-bot のトークンで行う（master の ruleset の bypass のため）。この push で
+#      起動しうるワークフローは、[automated] のコミットでは動かない条件を持つ（regenerate-generated-docs・
+#      quality-gates）か、paths で e2e/recording.json を対象にしていない（post-merge-checks）
 #   5. 古い録画 Release を消す（直近14件を残す）
 #   採用しなかった・失敗したときは Slack に通知する（定期実行は1日1回まで。下記）
 #
@@ -61,6 +63,9 @@ permissions:
 jobs:
   rerecord:
     runs-on: ubuntu-latest
+    # アプリ ryujin-bot の Secrets は environment ryujin-bot（Deployment branches: master だけ）に置く。
+    # 別ブランチの workflow_dispatch や、別ブランチに足したワークフローから bypass 用のトークンを作らせないため
+    environment: ryujin-bot
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
@@ -159,9 +164,21 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           exit 0
 
+      # master への push はアプリ ryujin-bot の名義で行う（master の ruleset の bypass に GITHUB_TOKEN は入れられないため）。
+      # トークンの有効期限は1時間なので、checkout ではなく push の直前に作る
+      - name: Create ryujin-bot token
+        id: app-token
+        if: ${{ github.ref == 'refs/heads/master' && (steps.judge.outputs.adopt == 'true') }}
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.RYUJIN_BOT_APP_ID }}
+          private-key: ${{ secrets.RYUJIN_BOT_PRIVATE_KEY }}
+          permission-contents: write
+
       - name: Release に添付してポインタを更新
         if: steps.judge.outputs.adopt == 'true'
         env:
+          PUSH_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_TOKEN: ${{ github.token }}
           RESULT: ${{ steps.judge.outputs.result }}
         run: |

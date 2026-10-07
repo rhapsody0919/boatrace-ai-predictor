@@ -50,6 +50,9 @@ jobs:
     needs: gate
     if: ${{ !cancelled() && needs.gate.outputs.skip != 'true' }}
     runs-on: ubuntu-latest
+    # アプリ ryujin-bot の Secrets は environment ryujin-bot（Deployment branches: master だけ）に置く。
+    # 別ブランチの workflow_dispatch や、別ブランチに足したワークフローから bypass 用のトークンを作らせないため
+    environment: ryujin-bot
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -69,6 +72,17 @@ jobs:
       # scrape-venue-motor-stats.jsが更新した会場別の成功/失敗履歴
       # （data/analysis/venue-motor-stats-health.json）をコミットする。
       # 構造変化検知（BOA-285、次のステップ）が翌日以降も履歴を参照できるよう永続化する
+      # master への push はアプリ ryujin-bot の名義で行う（master の ruleset の bypass に GITHUB_TOKEN は入れられないため）。
+      # トークンの有効期限は1時間なので、checkout ではなく push の直前に作る
+      - name: Create ryujin-bot token
+        id: app-token
+        if: github.ref == 'refs/heads/master'
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.RYUJIN_BOT_APP_ID }}
+          private-key: ${{ secrets.RYUJIN_BOT_PRIVATE_KEY }}
+          permission-contents: write
+
       - name: Commit health tracking updates if changed
         run: |
           git config --local user.email "action@github.com"
@@ -77,6 +91,8 @@ jobs:
           git diff --staged --quiet || git commit -m "chore: 会場別モーター成績スクレイピングの成否履歴を更新 [automated]"
           # masterの更新と競合しても失敗しないよう rebase+リトライで push する（BOA-360）
           bash scripts/maintenance/push-with-retry.sh
+        env:
+          PUSH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       # 会場公式サイトのHTML構造変化を検知する（BOA-285）。新規HTTPリクエストは
       # 行わず、上記スクレイピングが書き込んだ履歴ファイルを読むだけ
