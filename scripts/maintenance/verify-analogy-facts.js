@@ -26,7 +26,10 @@ import {
 } from "../../src/constants/raceStageConfig.js";
 import { classifyStage } from "../../src/components/race/seriesPoints.js";
 import {
+  EXHIBITION_ITEMS,
   exhibitionItemLevels,
+  exhibitionPoolRate,
+  poolExhDiffs,
   rerankSimilar,
 } from "../../src/utils/analogySimilarRerank.js";
 import {
@@ -51,6 +54,9 @@ import {
   seriesScoreNote,
   todayPosition,
   todayValueRank,
+  todayValues,
+  judgeLabelKey,
+  noLocalRecord,
   windWaveView,
 } from "../../src/utils/analogyFacts.js";
 import { wilsonInterval } from "../../src/utils/wilson.js";
@@ -184,6 +190,50 @@ exhItems.candidates.forEach((c, j) => {
     c.levels,
   );
 });
+
+// 展示で決まる5項目の pool_rate（展示後の段）: 上の400件を母集団にして、Python の判定（levels）で「同じ」の割合と一致する
+{
+  const cols = [
+    "weather_code",
+    "wind_x",
+    "wind_y",
+    "wind_speed",
+    "wave_height",
+  ];
+  const groups = new Map();
+  for (const c of exhItems.candidates) {
+    const key = JSON.stringify(cols.map((k) => c.race[k]));
+    groups.set(key, (groups.get(key) ?? 0) + 1);
+  }
+  const pool = {
+    n: exhItems.candidates.length,
+    race_cols: cols,
+    race_rows: [...groups].map(([k, n]) => [...JSON.parse(k), n]),
+    exh_time: exhItems.candidates.flatMap((c) =>
+      c.exh_time.map((v) => (v === null ? null : Math.round(v * 100))),
+    ),
+  };
+  const got = exhibitionPoolRate(
+    pool,
+    poolExhDiffs(pool.exh_time),
+    exhItems.today,
+  );
+  const want = Object.fromEntries(
+    EXHIBITION_ITEMS.map((k) => [
+      k,
+      exhItems.candidates.filter((c) => c.levels[k] === 2).length / pool.n,
+    ]),
+  );
+  check("展示で決まる5項目の pool_rate（400件の母集団）", got, want);
+  check(
+    "展示で決まる5項目の pool_rate: 今日の値が無ければ0",
+    exhibitionPoolRate(pool, poolExhDiffs(pool.exh_time), {
+      race: {},
+      exh_time: [null, null, null, null, null, null],
+    }),
+    Object.fromEntries(EXHIBITION_ITEMS.map((k) => [k, 0])),
+  );
+}
 
 // ---- 3. 展開シナリオの定義 ------------------------------------------------
 const defs = JSON.parse(
@@ -640,6 +690,50 @@ check(
   ["Counted shares.", "About 0.13 s (e.g. a. b).", "End"],
 );
 check("空は空", splitSentences(""), []);
+
+// ---- ファン評価4周目（2026-10-07 ユーザー決定） ----
+check("当地勝率 0.00 は記録なし", [0, 0.5, 5.2, null].map(noLocalRecord), [
+  null,
+  0.5,
+  5.2,
+  null,
+]);
+check(
+  "今日の当地勝率の 0.00 は欠け（ほかの項目の 0 はそのまま）",
+  todayValues(
+    {
+      items: {
+        loc_win: { values: [0, 6.1, 0, 5, 4, 3] },
+        recent_win30: { values: [0, 0.1, 0.2, 0.3, 0.4, 0.5] },
+      },
+    },
+    null,
+  ),
+  {
+    loc_win: [null, 6.1, null, 5, 4, 3],
+    recent_win30: [0, 0.1, 0.2, 0.3, 0.4, 0.5],
+  },
+);
+check(
+  "判定: 少ない側が100件未満なら件数が少ない",
+  judgeLabelKey({ level: "unclear" }, [4, 5], [300, 1000]),
+  "unclearFew",
+);
+check(
+  "判定: 少ない側が100件以上ならぶれ幅が重なる",
+  judgeLabelKey({ level: "unclear" }, [766, 1017], [725, 1019]),
+  "unclear",
+);
+check(
+  "判定: 境目の100件は「ぶれ幅が重なる」",
+  judgeLabelKey({ level: "unclear" }, [60, 100], [70, 100]),
+  "unclear",
+);
+check(
+  "判定: 差が大きいはそのまま",
+  judgeLabelKey({ level: "large" }, [4, 5], [1, 5]),
+  "large",
+);
 
 if (failures > 0) {
   console.error(`\n❌ ${failures} 件の不一致`);

@@ -21,6 +21,7 @@ import { withoutSeriesScoreOnFinal } from "../../api/analogy/facts/[raceId].js";
 import { mergeExhibition } from "../../api/analogy/similar/[raceId].js";
 import { CLEANUP, datesToClean, summarizeDay } from "./verify-analogy-v16.js";
 import {
+  runAnalogyV16Exhibition,
   exhibitionNeighbors,
   selectExhibitionTargets,
   todayExhibition,
@@ -248,10 +249,40 @@ check(
 check(
   "展示後の類似レースに層の情報を合わせる",
   mergeExhibition(
-    { conditions: { round: "yusho" }, n_layer: 15, neighbors: [1] },
+    {
+      conditions: { round: "yusho" },
+      n_layer: 15,
+      pool_rate: { venue: 0.04, weather: 0 },
+      neighbors: [1],
+    },
     { neighbors: [2], exact: true },
   ),
-  { conditions: { round: "yusho" }, n_layer: 15, neighbors: [2], exact: true },
+  {
+    conditions: { round: "yusho" },
+    n_layer: 15,
+    pool_rate: { venue: 0.04, weather: 0 },
+    neighbors: [2],
+    pool_rate_exhibition: false,
+    exact: true,
+  },
+);
+// 展示で決まる項目の「全レースで同じ割合」は、展示後の段が今日の展示の値で数え直した値にする
+check(
+  "展示後の pool_rate は展示後の段の値で上書きする",
+  mergeExhibition(
+    { pool_rate: { venue: 0.04, weather: 0, wind_bin: 0 }, neighbors: [1] },
+    {
+      neighbors: [2],
+      exact: true,
+      pool_rate: { weather: 0.61, wind_bin: 0.497 },
+    },
+  ),
+  {
+    pool_rate: { venue: 0.04, weather: 0.61, wind_bin: 0.497 },
+    neighbors: [2],
+    pool_rate_exhibition: true,
+    exact: true,
+  },
 );
 check(
   "展示後のファイルが無ければ null",
@@ -406,6 +437,70 @@ check(
     ),
     ["2026-10-03"],
   );
+  check(
+    "pool/（母集団の展示の値）も前日より前を消す",
+    CLEANUP.find(([k]) => k === "pool")?.[1],
+    1,
+  );
+}
+
+// ---- 7. 展示後の段は、関数の上限の手前（shouldStop）で止まる -----------------------------
+{
+  process.env.SUPABASE_URL = "https://example.invalid";
+  process.env.SUPABASE_SERVICE_KEY = "test";
+  const calls = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    calls.push(String(url));
+    const u = String(url);
+    const body = u.includes("analogy_v16_snapshots")
+      ? [
+          {
+            race_id: "2026-10-05-20-01",
+            stage: "racecard",
+            status: "ok",
+            run_id: "r",
+            n_layer: 5,
+            pool_cutoff: "2026-10-04",
+          },
+        ]
+      : u.includes("/races?")
+        ? [
+            {
+              race_id: "2026-10-05-20-01",
+              race_date: "2026-10-05",
+              start_time: "23:00:00",
+            },
+          ]
+        : u.includes("exhibition_data")
+          ? [1, 2, 3, 4, 5, 6].map((b) => ({
+              race_id: "2026-10-05-20-01",
+              boat_number: b,
+              exhibition_time: 6.8,
+              is_absent: false,
+            }))
+          : [];
+    return new Response(JSON.stringify(body), { status: 200 });
+  };
+  try {
+    const r = await runAnalogyV16Exhibition({
+      mode: "live",
+      now: () => new Date("2026-10-05T10:00:00+09:00"),
+      shouldStop: () => true,
+    });
+    check(
+      "展示後の段: shouldStop なら1レースも処理せず止まる",
+      [r.report.targets, r.report.written, r.report.stopped],
+      [1, 0, true],
+    );
+    check(
+      "展示後の段: 止まったら Storage を読まない",
+      calls.some((c) => c.includes("/storage/")),
+      false,
+    );
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 }
 
 if (failures > 0) {

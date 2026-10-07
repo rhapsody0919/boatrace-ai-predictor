@@ -475,7 +475,17 @@
       },
       "heading": "龍神ソナー · {{venue}}{{race}}R",
       "subtitle": "今日と条件がそろう過去レースを数えて、映し出す",
-      "notes": {"howToRead": "見方", "counting": "数え方", "caution": "注意", "terms": "用語", "ordering": "並べ方", "sonar": "ソナーの図の見方", "today": "今日の展示との関係", "period": "期間", "attacker": "攻める艇"},
+      "notes": {
+        "howToRead": "見方",
+        "counting": "数え方",
+        "caution": "注意",
+        "terms": "用語",
+        "ordering": "並べ方",
+        "sonar": "ソナーの図の見方",
+        "today": "今日の展示との関係",
+        "period": "期間",
+        "attacker": "攻める艇"
+      },
       "stage": {
         "label": "時点",
         "racecard": "展示前（出走表）",
@@ -528,7 +538,8 @@
         "judge": {
           "large": "差が大きい",
           "small": "差は小さい",
-          "unclear": "件数が少なく差ははっきりしない",
+          "unclear": "差ははっきりしない（ぶれ幅が重なる）",
+          "unclearFew": "件数が少なく差ははっきりしない",
           "none": "比べられない（当てはまるレースが無い）"
         },
         "reversed": "（一番{{word}}ときのほうが高い）",
@@ -537,7 +548,12 @@
         "rankOf6": "6艇中{{n}}位",
         "rankOf6Tie": "6艇中{{from}}〜{{to}}位（同じ値が{{same}}艇）",
         "noToday": "今日の値なし",
-        "units": {"series_score": "点", "exh_time": "秒"},
+        "noTodayLocal": "当地の記録なし",
+        "few": "（少ない）",
+        "units": {
+          "series_score": "点",
+          "exh_time": "秒"
+        },
         "stripTitle": "{{boat}}号艇が、{{item}}で6艇中何位だったときの{{rate}}",
         "stripRank": "{{rank}}位",
         "stripTop": "1位（{{word}}）",
@@ -562,7 +578,7 @@
           "scope": "数えるレース: {{desc}}。",
           "finalNcr": "優勝戦に絞ったときは、今節の平均着順点を出していない（優勝戦の枠は準優勝戦までの成績で決まるので、点の順位がほぼ枠と同じになり、比べる意味が無い）。",
           "series": "今節の平均着順点は、節の序盤（1〜2走）の値も含めて数えている（過去の序盤のレースでは同じ値が多く、差が小さめに出る）。",
-          "common": "数えた割合で、原因とは限らない。「件数が少なく差ははっきりしない」は、一番良いときと一番悪いときのぶれ幅が重なるもの。「差が大きい」は5ポイント以上。同じ値の艇は、一番良い・一番悪いの両方に含めている。",
+          "common": "数えた割合で、原因とは限らない。「差ははっきりしない」は、一番良いときと一番悪いときのぶれ幅が重なるもの（少ない側が100件未満なら「件数が少なく差ははっきりしない」）。件数が30件未満の率は薄く出している。当地勝率 0.00（当地を走っていない）は記録なしとして順位から外している。「差が大きい」は5ポイント以上。同じ値の艇は、一番良い・一番悪いの両方に含めている。",
           "exhPre": "展示タイムは展示の後に出る。",
           "exhPost": "2025年11月より前の展示タイムは記録元が違うため、少しずれることがある。"
         },
@@ -957,9 +973,9 @@
         "colNear": "近いも含む",
         "colPool": "全レースで同じ割合",
         "notUsed": "（近さの計算には入れていない）",
-      "openRace": "このレースのページを見る →",
-      "openOfficial": "公式サイトでこのレースの結果を見る（新しいタブで開きます）↗",
-      "cmpSummary": "1件ずつ見比べる（今日と全項目を並べる）",
+        "openRace": "このレースのページを見る →",
+        "openOfficial": "公式サイトでこのレースの結果を見る（新しいタブで開きます）↗",
+        "cmpSummary": "1件ずつ見比べる（今日と全項目を並べる）",
         "cmpLede": "行を押すと、今日のレースと全項目を並べる。○ 同じ　△ 近い　× 違う",
         "counts": "同じ{{same}}・近い{{near}}・違う{{diff}}",
         "cmpMore": "残り{{n}}件も見る",
@@ -974,6 +990,7 @@
         "entry": "進入: {{e}}",
         "resHeading": "類似レースの決まり方",
         "resSub": "似ている順の{{n}}件で",
+        "resExcluded": "（結果が無い{{k}}件を除く）",
         "winHeading": "どの艇が勝った？",
         "hitHeading": "どの艇が{{finish}}に入った？",
         "keySimilar": "類似レース",
@@ -1687,6 +1704,29 @@
     "periodCurrentOnly": "（出走表・全国 {{current}}）",
     "periodDiffWithheldNote": "※期が替わって3か月は、出走表の値の大半が前期と同じ期間の成績なので、前期との差は出していません（{{date}}以降のレースで出します）",
     "periodFetchError": "前期成績を取得できませんでした",
+    "accidentBadgeOver": "事故率{{rate}} B2ライン超え",
+    "accidentBadgeNear": "事故率 B2ラインまで あと{{need}}点",
+    "accidentTitle": "今期の事故率（目安・{{from}}〜{{to}}）",
+    "accidentTitleOpen": "今期の事故率（目安・{{from}}〜）",
+    "accidentLineEarly": "出走が少ないうちは1本の事故で大きく動くため、B2ラインまでの残り点は出走{{min}}走から出します",
+    "accidentLegend": "事故率＝今期の事故点÷出走回数（目安）。0.70を超えると次の級別審査でB2級。「あと◯点」は、B2ラインを超えるまでの事故点（予選の得点とは別）。F・出遅れ20点（今期2本目以降のFは30点）、妨害失格15点、失格・欠場10点",
+    "accidentRateLabel": "事故率",
+    "accidentBreakdown": "事故点{{points}}÷出走{{starts}}（{{kinds}}）",
+    "accidentKindCount": "{{kind}}{{n}}",
+    "accidentKindSeparator": "・",
+    "accidentKind": {
+      "F": "F",
+      "L1": "出遅れ",
+      "K1": "欠場",
+      "S1": "失格",
+      "S2": "妨害失格"
+    },
+    "accidentNone": "事故なし",
+    "accidentLineOver": "B2ライン（0.70）超え",
+    "accidentLineNear": "B2ライン（0.70）まで あと{{need}}点",
+    "accidentNoStarts": "今期の出走はまだありません",
+    "accidentNote": "事故点は公式の配点（F・出遅れ20点、妨害失格15点、選手責任の失格・欠場10点。今期2本目以降のFは30点）。不良航法・待機行動違反（2点）は含まないため、公式の値より低いことがあります。0.70を超えると次の級別審査でB2級になります",
+    "accidentFetchError": "今期の事故率を取得できませんでした",
     "meetScoreForecastTitle": "今日の着順で得点率はこう動く",
     "meetScorePrelimOver": "予選の得点率 {{rate}}（{{n}}走・{{source}}・確定）"
   },
@@ -2204,6 +2244,7 @@
     "dataLoadError": "データの取得に失敗しました",
     "boatN": "{{n}}号艇",
     "raceOption": "{{number}}R（{{time}}〜）",
+    "raceOptionPast": "{{date}} {{number}}R",
     "lastUpdated": "（最終更新: {{date}}）",
     "noData": "データなし",
     "notMeasured": "未計測",
@@ -2389,6 +2430,25 @@
       "drillAsOfRaceNote": "💡 このレースの直前までの状況です（このレースと、それより後のレースは含みません）。",
       "barScaleNote": "棒は6基の最大を全長にしています。"
     },
+    "motorRanking": {
+      "title": "🏁 モーターランキング",
+      "description": "会場を選ぶと、その会場の全モーターを2連率の順に並べます。見出しを押すと、機番・優勝回数・前検タイムでも並べ替えられます。",
+      "rankHeader": "順位",
+      "rateHeader": "2連率",
+      "officialRateHeader": "公式2連率",
+      "finalHeader": "優出",
+      "championshipHeader": "優勝",
+      "userHeader": "今節使用者",
+      "userHeaderRecent": "直近の節の使用者（{{date}}）",
+      "sourceVenueSite": "出典: {{venue}} 公式サイトのモーター成績（取得日 {{date}}）",
+      "sourcePretest": "出典: BOATRACE 公式の前検データ（直近の節で使われたモーターのみ）",
+      "sortNote": "機番・2連率・優勝・前検の見出しを押すと並べ替えます（前検は速い順）。同じ値は同じ順位です",
+      "sortNotePretest": "機番・公式2連率・前検の見出しを押すと並べ替えます（前検は速い順）。同じ値は同じ順位です",
+      "linkNote": "機番を押すと、そのモーターが直近の節で最後に走ったレースの直前までの推移を開きます（一覧の値とは時点が違います）。直近の節で使われていないモーターは開けません",
+      "fetchError": "モーター成績を取得できませんでした",
+      "empty": "この会場の直近の節のモーターのデータがありません",
+      "raceCount": "{{n}}走"
+    },
     "racerForm": {
       "title": "📈 選手調子",
       "description": "本日開催中のレースを選ぶと、各選手の現在の全国勝率と約90日前時点の全国勝率を比較し、調子が上昇/下降しているかがわかります。",
@@ -2511,6 +2571,7 @@
       "outcome": "📊 出目分布",
       "technique": "🎯 決まり手",
       "motor": "🔧 モーター調子",
+      "motorranking": "🏁 モーターランキング",
       "racer": "📈 選手調子",
       "st": "⏱️ STのズレ",
       "topstart": "🚀 トップスタート",
@@ -2540,6 +2601,10 @@
       "motor": {
         "name": "モーター調子",
         "description": "本日開催中のレースの枠番別モーター2連率・3連率を分析"
+      },
+      "motorranking": {
+        "name": "モーターランキング",
+        "description": "会場の全モーターを2連率・優出・優勝・前検タイムで並べたランキング"
       },
       "racer": {
         "name": "選手調子",
@@ -2660,6 +2725,23 @@
           }
         ],
         "articleLinkText": "モーター調子とは？本日のレースの枠番別2連率がわかる新機能"
+      },
+      "motorranking": {
+        "title": "モーターランキングについて",
+        "dataView": "各会場の公式サイトが公開しているモーター成績（2連率・優出・優勝）を、会場の全モーターの一覧にしています。前検タイムと使用者は、BOATRACE 公式の直近の節の前検データです。戸田・平和島・浜名湖・宮島は、直近の節で使われたモーターだけを BOATRACE 公式の2連率で並べます。",
+        "tips": [
+          {
+            "strong": "2連率が上位のモーター",
+            "text": " = 会場の中で2着以内に入りやすいモーター。今節の使用者が誰かとあわせて見ると、出走表の判断材料になります"
+          },
+          {
+            "strong": "前検タイムが速いモーター",
+            "text": " = 節の初日の前に計測した、今節の足の目安"
+          },
+          {
+            "text": "モーターの2連率には、乗った選手の実力も混ざります。機番を押すと、そのモーターの節ごとの推移が見られます"
+          }
+        ]
       },
       "racer": {
         "title": "選手調子について",
@@ -3158,5 +3240,92 @@
     "footTiming": "風はレース時点の確定値です。直前情報の気象は前のレースの値のことがあります。",
     "footAdjusted": "季節・時間帯（レース番号）・1コースの選手の級別をそろえて比べても、強風の差はほぼ同じでした（向かい風・強 {{head}}pt、追い風・強 {{tail}}pt）。",
     "footWave": "風の弱いとき（1m以下・横風）に限ると、波が6〜9cmのレースは会場平均より{{diff}}pt（{{countText}}件。該当の多い会場が限られるため参考）。"
+  },
+  "meetPage": {
+    "metaTitle": "{{venue}}競艇 {{series}} 得点率ランキング・準優ボーダー | 龍神レーダー",
+    "metaDescription": "{{venue}}競艇（ボートレース{{venue}}）{{series}}の全選手の得点率ランキングと準優ボーダー、準優勝戦・優勝戦の勝ち上がりメンバーを一覧で。予選最終日は勝負駆けの選手も分かります。",
+    "meetFallback": "{{date}}開幕の節",
+    "titleFallback": "{{venue}}の節",
+    "period": "{{start}}〜{{end}}",
+    "periodFrom": "{{start}}〜",
+    "dayN": "{{n}}日目",
+    "stage": {
+      "preOpen": "開幕前",
+      "prelim": "予選中",
+      "prelimFinalDay": "予選最終日",
+      "prelimDone": "予選終了",
+      "semifinalDay": "準優勝戦の日",
+      "finalDay": "優勝戦の日",
+      "finished": "節終了"
+    },
+    "rankingTitle": "得点率ランキング",
+    "rankingSubPrelim": "予選の得点率（当サイトが着順から計算）・全{{count}}人",
+    "rankingSubOfficial": "予選の得点率（確定・公式の得点率一覧の値）・全{{count}}人",
+    "borderPrelim": "準優の目安 {{slots}}位 {{rate}}",
+    "borderFinal": "準優の枠 {{slots}}位 {{rate}}（確定）",
+    "borderLinePrelim": "ここまで準優の目安（{{slots}}人）",
+    "borderLineFinal": "ここまで準優（{{slots}}人）",
+    "colRank": "順位",
+    "colRacer": "選手",
+    "colClass": "級別",
+    "colRate": "得点率",
+    "filterLabel": "表示する選手",
+    "filterAll": "全員",
+    "filterShobugake": "勝負駆けだけ",
+    "shobugakeNote": "勝負駆け: ボーダーの前後で、今日の着順しだいで準優の当落が入れ替わる選手",
+    "shobugakePending": "勝負駆け（今日の着順しだいで準優の当落が決まる選手）は予選最終日（4日目）に出ます",
+    "remainingOnly": "今日の残り{{runs}}走",
+    "remainingSafe": "今日の残り{{runs}}走・いまは目安の内",
+    "remainingNeeded": "今日の残り{{runs}}走・あと{{points}}点",
+    "remainingNeededPlace": "今日の残り{{runs}}走・あと{{points}}点（{{place}}着以内）",
+    "remainingUnreachable": "今日の残り{{runs}}走・あと{{points}}点（最大{{max}}点で届かない）",
+    "reason": {
+      "withdrawn": "途中帰郷",
+      "awardExcluded": "賞典除外",
+      "flying": "F（賞典除外）",
+      "absent": "欠場",
+      "officialWithdrawn": "途中帰郷"
+    },
+    "qualifiersTitle": "勝ち上がり",
+    "semifinals": "準優勝戦（{{date}}）",
+    "finals": "優勝戦（{{date}}）",
+    "raceSemi": "{{n}}R 準優勝戦",
+    "raceFinal": "{{n}}R 優勝戦",
+    "toRace": "レース詳細 ›",
+    "finishPlace": "{{place}}着",
+    "resultPending": "結果はレース後に着順が入ります",
+    "semifinalsPending": "準優勝戦の番組は予選終了後に発表されます",
+    "finalsPending": "優勝戦の番組は準優勝戦の結果のあとに発表されます",
+    "preOpen": "{{month}}月{{day}}日開幕。得点率は初日のレース後から出ます",
+    "notFound": "この節は見つかりませんでした",
+    "outOfScope": "この開催は節ページの対象外です（SG・G1・G2の予選・準優・優勝戦の節のみ）",
+    "backToVenue": "{{venue}}のレース一覧へ",
+    "source": "出典: 得点率・順位はボートレース公式サイトの得点率一覧（予選中は前夜の時点の表）。公式の表がまだ無い日（初日など）は、当サイトが着順から計算した値です（減点は含みません）。",
+    "noRateYet": "得点率は初日のレース後から出ます",
+    "borderPending": "まだ1走もしていない選手が{{count}}人いるため、準優の目安は全員が1走してから出します",
+    "legendBest": "金の枠は得点率の1位（同率は全員）",
+    "winnerLabel": "優勝",
+    "winnerBoat": "（{{boat}}号艇）",
+    "rankingSubOfficialAsOf": "予選の得点率（{{day}}日目終了時点・公式の得点率一覧の値。今日の結果は22時ごろ反映）・全{{count}}人",
+    "officialLiveLink": "今日の結果を含む最新の順位は公式の得点率一覧（毎晩22時ごろここに反映）",
+    "borderLineTie": "ここまで準優の目安（{{rank}}位が同率{{tied}}人。入れるのは{{seats}}人）",
+    "points": "{{points}}点",
+    "pointsWithPenalty": "{{points}}点・減点{{penalty}}",
+    "sourceConfirmed": "出典: 得点率・順位はボートレース公式サイトの得点率一覧（予選終了時点、減点込み）。",
+    "marksLegendTitle": "着順の記号:",
+    "marksEquals": "＝",
+    "markName": {
+      "capsized": "転覆",
+      "fell": "落水",
+      "sank": "沈没",
+      "absent": "欠場",
+      "flying": "フライング",
+      "late": "出遅れ",
+      "disqualified": "失格",
+      "obstruction": "妨害失格",
+      "stall": "エンスト",
+      "dnf": "不完走"
+    },
+    "rankingSubOfficialAsOfToday": "予選の得点率（{{day}}日目終了時点・公式の得点率一覧の値。今日の結果を反映済み）・全{{count}}人"
   }
 }

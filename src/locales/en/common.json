@@ -823,7 +823,17 @@
       },
       "heading": "Ryujin Sonar · {{venue}} {{race}}R",
       "subtitle": "Counts past races that match today's conditions",
-      "notes": {"howToRead": "How to read", "counting": "How it's counted", "caution": "Notes", "terms": "Terms", "ordering": "How races are ordered", "sonar": "How to read the sonar chart", "today": "Today's exhibition", "period": "Periods", "attacker": "Attacking boat"},
+      "notes": {
+        "howToRead": "How to read",
+        "counting": "How it's counted",
+        "caution": "Notes",
+        "terms": "Terms",
+        "ordering": "How races are ordered",
+        "sonar": "How to read the sonar chart",
+        "today": "Today's exhibition",
+        "period": "Periods",
+        "attacker": "Attacking boat"
+      },
       "stage": {
         "label": "As of",
         "racecard": "Before exhibition (race card)",
@@ -876,7 +886,8 @@
         "judge": {
           "large": "Large difference",
           "small": "Small difference",
-          "unclear": "Too few races for a clear difference",
+          "unclear": "No clear difference (ranges overlap)",
+          "unclearFew": "Too few races for a clear difference",
           "none": "Can't compare (no matching races)"
         },
         "reversed": "(higher when {{word}})",
@@ -885,7 +896,12 @@
         "rankOf6": "rank {{n}} of 6",
         "rankOf6Tie": "rank {{from}}–{{to}} of 6 ({{same}} boats tied)",
         "noToday": "no value today",
-        "units": {"series_score": " pts", "exh_time": "s"},
+        "noTodayLocal": "no local record",
+        "few": " (few)",
+        "units": {
+          "series_score": " pts",
+          "exh_time": "s"
+        },
         "stripTitle": "Boat {{boat}}'s {{rate}} by its rank among the 6 in {{item}}",
         "stripRank": "#{{rank}}",
         "stripTop": "#1 ({{word}})",
@@ -910,7 +926,7 @@
           "scope": "Races counted: {{desc}}. ",
           "finalNcr": "When limited to Finals, this meet's average finish points are not shown (Final lanes are set by results up to the Semifinal, so the points ranking almost matches the lanes and comparing has no meaning). ",
           "series": "This meet's average finish points include values from early in the meet (1–2 runs) (in past early races many boats share the same value, so differences look smaller). ",
-          "common": "These are counted shares, not necessarily causes. \"Too few races for a clear difference\" means the ranges for best and worst overlap. \"Large difference\" means 5 points or more. Boats with the same value are counted in both best and worst. ",
+          "common": "These are counted shares, not necessarily causes. \"No clear difference\" means the ranges for best and worst overlap (when the smaller side has fewer than 100 races, it reads \"Too few races for a clear difference\"). Rates from fewer than 30 races are shown faded. A local win rate of 0.00 (never raced here) is treated as no record and left out of the ranks. \"Large difference\" means 5 points or more. Boats with the same value are counted in both best and worst. ",
           "exhPre": "Exhibition time is available after the exhibition. ",
           "exhPost": "Exhibition times before November 2025 come from a different source and may be slightly off. "
         },
@@ -1305,9 +1321,9 @@
         "colNear": "Incl. close",
         "colPool": "Share same across all races",
         "notUsed": " (not used for closeness)",
-      "openRace": "Open this race →",
-      "openOfficial": "See this race result on the official site (opens in a new tab) ↗",
-      "cmpSummary": "Compare one by one (all items next to today)",
+        "openRace": "Open this race →",
+        "openOfficial": "See this race result on the official site (opens in a new tab) ↗",
+        "cmpSummary": "Compare one by one (all items next to today)",
         "cmpLede": "Tap a row to see all items next to today's race. ○ same  △ close  × different",
         "counts": "Same {{same}} / close {{near}} / different {{diff}}",
         "cmpMore": "Show the remaining {{n}}",
@@ -1322,6 +1338,7 @@
         "entry": "Entry: {{e}}",
         "resHeading": "How similar races were decided",
         "resSub": "In the {{n}} most similar races",
+        "resExcluded": " ({{k}} races without a result excluded)",
         "winHeading": "Which boat won?",
         "hitHeading": "Which boats finished in the {{finish}}?",
         "keySimilar": "Similar races",
@@ -2035,6 +2052,29 @@
     "periodCurrentOnly": "(race card, national {{current}})",
     "periodDiffWithheldNote": "* For the first three months of a new term, the race-card figure still mostly covers the previous term, so the difference is not shown (shown for races from {{date}}).",
     "periodFetchError": "Could not load the previous term record",
+    "accidentBadgeOver": "Accident rate {{rate}}, over B2 line",
+    "accidentBadgeNear": "Accident rate: {{need}} pts to B2 line",
+    "accidentTitle": "Accident rate this term (estimate, {{from}} – {{to}})",
+    "accidentTitleOpen": "Accident rate this term (estimate, from {{from}})",
+    "accidentLineEarly": "With few starts, one accident moves the rate a lot, so the points left to the B2 line are shown from {{min}} starts",
+    "accidentLegend": "Accident rate = accident points this term ÷ starts (estimate). Above 0.70 the racer drops to class B2 at the next class review. \"N pts to B2 line\" counts accident points, not qualifying-series points: F / late start 20 (30 for a second or later F this term), obstruction 15, disqualification or scratch 10.",
+    "accidentRateLabel": "Accident rate",
+    "accidentBreakdown": "{{points}} accident pts ÷ {{starts}} starts ({{kinds}})",
+    "accidentKindCount": "{{kind}} {{n}}",
+    "accidentKindSeparator": ", ",
+    "accidentKind": {
+      "F": "F",
+      "L1": "Late start",
+      "K1": "Scratched",
+      "S1": "Disqualified",
+      "S2": "Obstruction"
+    },
+    "accidentNone": "no accidents",
+    "accidentLineOver": "Over the B2 line (0.70)",
+    "accidentLineNear": "{{need}} pts to the B2 line (0.70)",
+    "accidentNoStarts": "No starts yet this term",
+    "accidentNote": "Accident points follow the official scale (F / late start 20, obstruction 15, disqualification or scratch by the racer's fault 10; 30 for a second or later F this term). Improper-maneuver and waiting-rule violations (2 pts) are not included, so this can be lower than the official figure. Above 0.70, the racer drops to class B2 at the next class review.",
+    "accidentFetchError": "Could not load this term's accident rate",
     "meetScoreForecastTitle": "How today's finish moves the score rate",
     "meetScorePrelimOver": "Qualifying score rate {{rate}} ({{n}} runs, {{source}}, final)"
   },
@@ -2210,6 +2250,7 @@
     "dataLoadError": "Failed to load data",
     "boatN": "Boat {{n}}",
     "raceOption": "Race {{number}} ({{time}} JST)",
+    "raceOptionPast": "{{date}} Race {{number}}",
     "lastUpdated": "(Last updated: {{date}})",
     "noData": "No data",
     "notMeasured": "Not measured",
@@ -2398,6 +2439,25 @@
       "drillAsOfRaceNote": "💡 This shows this motor's status up to just before this race (this race and later races are not included).",
       "barScaleNote": "The longest bar is the highest of the six motors. "
     },
+    "motorRanking": {
+      "title": "🏁 Motor Ranking",
+      "description": "Pick a venue to list all of its motors by top-2 rate. Tap a column header to sort by motor number, championships or trial time.",
+      "rankHeader": "Rank",
+      "rateHeader": "Top-2 rate",
+      "officialRateHeader": "Official top-2 rate",
+      "finalHeader": "Finals",
+      "championshipHeader": "Wins",
+      "userHeader": "Current racer",
+      "userHeaderRecent": "Racer in latest series ({{date}})",
+      "sourceVenueSite": "Source: {{venue}} official site motor records (retrieved {{date}})",
+      "sourcePretest": "Source: BOATRACE official trial data (only motors used in the latest series)",
+      "sortNote": "Tap Motor, Top-2 rate, Wins or Trial to sort (Trial: fastest first). Equal values share the same rank",
+      "sortNotePretest": "Tap Motor, Official top-2 rate or Trial to sort (Trial: fastest first). Equal values share the same rank",
+      "linkNote": "Tap a motor number to open its trend up to just before the last race it ran in the latest series (a different point in time from this list). Motors not used in the latest series cannot be opened",
+      "fetchError": "Could not load the motor records",
+      "empty": "No motor data for this venue's latest series",
+      "raceCount": "{{n}} runs"
+    },
     "racerForm": {
       "title": "📈 Racer Form",
       "description": "Select a race being held today to compare each racer's current national win rate with their rate about 90 days ago and see whether their form is rising or falling.",
@@ -2520,6 +2580,7 @@
       "outcome": "📊 Outcome Distribution",
       "technique": "🎯 Winning Technique",
       "motor": "🔧 Motor Condition",
+      "motorranking": "🏁 Motor Ranking",
       "racer": "📈 Racer Form",
       "st": "⏱️ ST Gap",
       "topstart": "🚀 Top Start",
@@ -2549,6 +2610,10 @@
       "motor": {
         "name": "Motor Condition",
         "description": "Analyzes motor top-2/top-3 rates by lane for today's races"
+      },
+      "motorranking": {
+        "name": "Motor Ranking",
+        "description": "All motors at a venue ranked by top-2 rate, finals, championships and trial time"
       },
       "racer": {
         "name": "Racer Form",
@@ -2669,6 +2734,23 @@
           }
         ],
         "articleLinkText": "What is Motor Condition? A new feature showing today's race top-2 rate by lane"
+      },
+      "motorranking": {
+        "title": "About Motor Ranking",
+        "dataView": "This lists every motor at a venue using the motor records (top-2 rate, finals appearances, championships) published on each venue's official site. Trial times and racers come from BOATRACE's official trial data for the latest series. For Toda, Heiwajima, Hamanako and Miyajima, only motors used in the latest series are listed, by BOATRACE's official top-2 rate.",
+        "tips": [
+          {
+            "strong": "Motors with a high top-2 rate",
+            "text": " = motors that often finish in the top two at that venue. Check who is using them this series"
+          },
+          {
+            "strong": "Motors with a fast trial time",
+            "text": " = a guide to this series' speed, measured the day before the series starts"
+          },
+          {
+            "text": "A motor's top-2 rate also reflects the skill of the racers who used it. Tap a motor number to see its trend by series"
+          }
+        ]
       },
       "racer": {
         "title": "About Racer Form",
@@ -3168,5 +3250,92 @@
     "footTiming": "Wind is the confirmed value at race time. The pre-race weather may still show the previous race's value.",
     "footAdjusted": "Matching season, time of day (race number) and the course-1 racer's class gives nearly the same strong-wind differences (strong headwind {{head}} pt, strong tailwind {{tail}} pt).",
     "footWave": "In light or cross winds (≤1 m), races with 6–9 cm waves were {{diff}} pt vs the venue average ({{countText}} races; few venues have many such races, so treat as reference)."
+  },
+  "meetPage": {
+    "metaTitle": "{{venue}} {{series}} score-rate ranking and semi-final line | Ryujin Radar",
+    "metaDescription": "Score-rate ranking of every racer in {{series}} at {{venue}}, the semi-final line, and who advanced to the semi-finals and final. On the last qualifying day, see which racers are on the bubble.",
+    "meetFallback": "Meet starting {{date}}",
+    "titleFallback": "Meet at {{venue}}",
+    "period": "{{start}}–{{end}}",
+    "periodFrom": "From {{start}}",
+    "dayN": "Day {{n}}",
+    "stage": {
+      "preOpen": "Not started",
+      "prelim": "Qualifying",
+      "prelimFinalDay": "Last qualifying day",
+      "prelimDone": "Qualifying over",
+      "semifinalDay": "Semi-final day",
+      "finalDay": "Final day",
+      "finished": "Meet over"
+    },
+    "rankingTitle": "Score-rate ranking",
+    "rankingSubPrelim": "Qualifying score rate (calculated by this site from finishes) · {{count}} racers",
+    "rankingSubOfficial": "Qualifying score rate (final, from the official score-rate list) · {{count}} racers",
+    "borderPrelim": "Semi-final line (estimate): {{slots}}th {{rate}}",
+    "borderFinal": "Semi-final cut: {{slots}}th {{rate}} (final)",
+    "borderLinePrelim": "Estimated semi-final line ({{slots}} racers)",
+    "borderLineFinal": "Semi-finalists ({{slots}} racers)",
+    "colRank": "Rank",
+    "colRacer": "Racer",
+    "colClass": "Class",
+    "colRate": "Score rate",
+    "filterLabel": "Racers to show",
+    "filterAll": "All",
+    "filterShobugake": "On the bubble",
+    "shobugakeNote": "On the bubble: racers near the line whose semi-final spot depends on today's finishes",
+    "shobugakePending": "Racers on the bubble (whose semi-final spot depends on that day's finishes) appear on the last qualifying day (day 4)",
+    "remainingOnly": "{{runs}} race(s) left today",
+    "remainingSafe": "{{runs}} race(s) left today · inside the line for now",
+    "remainingNeeded": "{{runs}} race(s) left today · needs {{points}} pts",
+    "remainingNeededPlace": "{{runs}} race(s) left today · needs {{points}} pts (top {{place}})",
+    "remainingUnreachable": "{{runs}} race(s) left today · needs {{points}} pts (max {{max}}, out of reach)",
+    "reason": {
+      "withdrawn": "Withdrew",
+      "awardExcluded": "Prize excluded",
+      "flying": "F (prize excluded)",
+      "absent": "Absent",
+      "officialWithdrawn": "Withdrew"
+    },
+    "qualifiersTitle": "Advancement",
+    "semifinals": "Semi-finals ({{date}})",
+    "finals": "Final ({{date}})",
+    "raceSemi": "R{{n}} Semi-final",
+    "raceFinal": "R{{n}} Final",
+    "toRace": "Race details ›",
+    "finishPlace": "Finish {{place}}",
+    "resultPending": "Finishes appear after the race",
+    "semifinalsPending": "The semi-final card is announced after qualifying ends",
+    "finalsPending": "The final card is announced after the semi-final results",
+    "preOpen": "Starts {{month}}/{{day}}. Score rates appear after the first day's races",
+    "notFound": "This meet could not be found",
+    "outOfScope": "This meet is not covered (only SG, G1 and G2 meets with qualifying, semi-finals and a final)",
+    "backToVenue": "Races at {{venue}}",
+    "source": "Source: score rates and ranks come from the official BOAT RACE score-rate list (during qualifying, the list as of the previous night). On days without an official list yet (such as day 1), this site calculates them from finishes (penalties not included).",
+    "noRateYet": "Score rates appear after the first day's races",
+    "borderPending": "{{count}} racer(s) have not raced yet, so the semi-final line appears once everyone has raced at least once",
+    "legendBest": "The gold box marks the highest score rate (all tied racers)",
+    "winnerLabel": "Winner:",
+    "winnerBoat": "(boat {{boat}})",
+    "rankingSubOfficialAsOf": "Qualifying score rate (as of the end of day {{day}}, from the official score-rate list; today's results are added around 22:00 JST) · {{count}} racers",
+    "officialLiveLink": "Latest ranks including today's results: official score-rate list (reflected here around 22:00 JST)",
+    "borderLineTie": "Estimated semi-final line ({{tied}} racers tied at {{rank}}th; {{seats}} spot(s) left)",
+    "points": "{{points}} pts",
+    "pointsWithPenalty": "{{points}} pts, penalty {{penalty}}",
+    "sourceConfirmed": "Source: score rates and ranks come from the official BOAT RACE score-rate list (as of the end of qualifying, penalties included).",
+    "marksLegendTitle": "Marks in finishes:",
+    "marksEquals": " = ",
+    "markName": {
+      "capsized": "capsized",
+      "fell": "fell overboard",
+      "sank": "sank",
+      "absent": "absent",
+      "flying": "flying start",
+      "late": "late start",
+      "disqualified": "disqualified",
+      "obstruction": "disqualified for obstruction",
+      "stall": "engine stall",
+      "dnf": "did not finish"
+    },
+    "rankingSubOfficialAsOfToday": "Qualifying score rate (as of the end of day {{day}}, from the official score-rate list; today's results included) · {{count}} racers"
   }
 }

@@ -25,6 +25,7 @@ const ANALYSIS_TABS = [
   "outcome", // 出目分布
   "technique", // 決まり手
   "motor", // モーター調子
+  "motorranking", // モーターランキング
   "racer", // 選手調子
   "st", // STのズレ
   "topstart", // トップスタート

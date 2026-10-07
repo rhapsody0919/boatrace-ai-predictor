@@ -233,4 +233,62 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
       { timeout: 30000 },
     );
   });
+  // ディープリンク先の会場が「本日開催中」の一覧に無いと、select が先頭の会場（例: 戸田）を表示し、
+  // 別会場の同じ番号のモーターと読み違えた（BOA-428 子3 ファン評価2周目 P1）
+  // 「本日開催中」の会場一覧（races の venue_code だけを引くクエリ）から、指定の会場を外す。
+  // 録画の日にその会場が開催していると、不具合の起きる条件にならないため
+  const excludeFromTodaysVenues = (page, venueCode) =>
+    page.route(/\/rest\/v1\/races\?select=venue_code&/, (route) =>
+      route.fulfill({
+        json: [{ venue_code: venueCode === 2 ? 3 : 2 }],
+      }),
+    );
+
+  const selectedText = (page, id) =>
+    page
+      .locator(`#${id}`)
+      .evaluate((el) => el.options[el.selectedIndex]?.textContent ?? "");
+
+  test("今日開催していない会場へのディープリンクで、会場とレースの選択がその会場・レースを表示する", async ({
+    page,
+  }) => {
+    await excludeFromTodaysVenues(page, 16);
+    await page.goto(`${KOJIMA_7R}&motor=69`);
+    await expect(page.locator("#motor-venue-select")).toBeVisible({
+      timeout: 30000,
+    });
+    await expect
+      .poll(() => selectedText(page, "motor-venue-select"))
+      .toBe("児島");
+    await expect
+      .poll(() => selectedText(page, "motor-race-select"))
+      .toMatch(/7R/);
+  });
+
+  test("選手ページの「今節のモーター状況」から飛んだ先でも、会場の選択がそのレースの会場を表示する", async ({
+    page,
+  }) => {
+    // 機力バッジ（データ出走表）は当日のレースにしか出ず、当日の会場は必ず「本日開催中」に
+    // 入るので、この不具合は起きない。選手ページのカードは選手の直近のレース（今日開催して
+    // いない会場のことがある）へ飛ぶので、こちらで固定する
+    await page.goto("/racer/4586");
+    const link = page
+      .locator('a[href*="/winning-technique"][href*="tab=motor"]')
+      .first();
+    await expect(link).toBeVisible({ timeout: 30000 });
+    const venueCode = Number(
+      new URL(await link.getAttribute("href"), "http://x").searchParams.get(
+        "venue_code",
+      ),
+    );
+    await excludeFromTodaysVenues(page, venueCode);
+    await link.click();
+    await expect(page.locator("#motor-venue-select")).toBeVisible({
+      timeout: 30000,
+    });
+    const value = await page
+      .locator("#motor-venue-select")
+      .evaluate((el) => Number(el.options[el.selectedIndex]?.value));
+    expect(value).toBe(venueCode);
+  });
 });

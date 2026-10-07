@@ -11,6 +11,10 @@
  *   2. 欠番（警告のみ）
  *   3. --base=<ref>（既定はnpm scriptで origin/master）: baseの最大番号を git ls-tree で取得し、
  *      現在のブランチで新規追加されたファイルがbaseの最大番号より後（最大番号+1以降）であることを確認する。
+ *      例外: 台帳（APPLIED.md）で状況が「適用済み」で始まる新規ファイルは、最大番号以下でも通す。
+ *      PR がマージ待ちの間に本番へ先に適用したマイグレーションを、番号を振り直すと本番の記録と食い違うため
+ *      （2026-10-05、126_get_racer_accident_records.sql。PR #1219 のマージ前にユーザーが本番へ適用した）。
+ *      同じ番号の既存ファイルとの重複は、1 の重複の検査がそのまま落とす
  *      git fetch はしない。baseを取得できなければスキップして注意を出す。
  *      baseのコミット日時を表示し、24時間より古ければ fetch を促す警告を出す
  *   4. APPLIED.md（適用状況の台帳）に、新規追加ファイルの行があること（無ければ失敗）。
@@ -173,10 +177,61 @@ function getRefCommitTime(ref) {
   }
 }
 
+/**
+ * 台帳（APPLIED.md）の表から、ファイルの行の「状況」の欄を返す（純関数）。行が無ければ null。
+ * 行の形: `| 126 | 126_xxx.sql | 適用済み（…） | 説明 |`
+ */
+export function ledgerStatusOf(ledger, file) {
+  for (const line of String(ledger ?? "").split("\n")) {
+    const cells = line.split("|").map((c) => c.trim());
+    // ["", 番号, ファイル名, 状況, ...]
+    if (cells.length >= 4 && cells[2] === file) return cells[3];
+  }
+  return null;
+}
+
+/** 状況の欄が本番に適用済みを示すか（「適用済み」で始まる） */
+export function isAppliedStatus(status) {
+  return typeof status === "string" && status.startsWith("適用済み");
+}
+
+/** ledgerStatusOf・isAppliedStatus の自己テスト（壊れたら検査そのものを失敗にする） */
+function selfTest() {
+  const ledger = [
+    "| 番号 | ファイル | 状況 | 内容 |",
+    "|---|---|---|---|",
+    "| 126 | 126_a.sql | 適用済み（2026-10-03 ユーザーが適用） | x |",
+    "| 125 | 125_b.sql | 未適用（コードのマージより先でも後でもよい） | y |",
+    "| 127 | （削除）127_c.sql | 廃止（適用しない） | z |",
+  ].join("\n");
+  const cases = [
+    [isAppliedStatus(ledgerStatusOf(ledger, "126_a.sql")), true],
+    [isAppliedStatus(ledgerStatusOf(ledger, "125_b.sql")), false],
+    [isAppliedStatus(ledgerStatusOf(ledger, "127_c.sql")), false],
+    [ledgerStatusOf(ledger, "999_none.sql"), null],
+  ];
+  return cases.every(([got, want]) => got === want);
+}
+
 async function main() {
   const errors = [];
   const warnings = [];
   const notices = [];
+
+  if (!selfTest()) {
+    errors.push(
+      "検査の自己テスト（ledgerStatusOf・isAppliedStatus）が失敗しました",
+    );
+  }
+  let ledgerText = "";
+  try {
+    ledgerText = await fs.readFile(
+      path.join(MIGRATION_DIR, LEDGER_FILE),
+      "utf8",
+    );
+  } catch {
+    // 台帳が読めない場合は、4 の検査が失敗として報告する。ここでは例外の扱いをしないだけ
+  }
 
   const localFiles = await fs.readdir(MIGRATION_DIR);
   const byId = groupSqlById(localFiles);
@@ -254,6 +309,12 @@ async function main() {
       for (const f of newFiles) {
         const id = SQL_FILE_RE.exec(f)[1];
         if (id <= baseMaxId) {
+          if (isAppliedStatus(ledgerStatusOf(ledgerText, f))) {
+            notices.push(
+              `新規ファイル ${f} の番号 ${id} は ${baseRef} の最大番号 ${baseMaxId} 以下だが、${LEDGER_FILE} で本番に適用済みのため振り直さずに通します`,
+            );
+            continue;
+          }
           errors.push(
             `新規ファイル ${f} の番号 ${id} が ${baseRef} の最大番号 ${baseMaxId} 以下です。${pad3(numericPart(baseMaxId) + 1)} 以降にリネームしてください`,
           );

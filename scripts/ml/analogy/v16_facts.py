@@ -25,6 +25,17 @@ WAVE_BANDS = (("0-2", 0, 2), ("3-5", 3, 5), ("6+", 6, np.inf))
 WAVE_CORR_MAX = 0.9  # 風速と波高の相関がこれ未満の会場だけ、波でも分ける（Q-F3）
 
 
+def fact_values(values: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    """集計と今日の6艇中の順位に使う値。当地勝率 0.00 は当地を走っていない（記録なし）なので欠けにする
+    （2026-10-07 ユーザー決定、4周目 P1-2 案A。母集団の艇の約7.9%）。
+    学習・類似レースの距離は features.py の値のまま（ここだけで欠けにする）"""
+    out = dict(values)
+    if "loc_win" in out:
+        v = np.asarray(out["loc_win"], dtype=float)
+        out["loc_win"] = np.where(v == 0, np.nan, v)
+    return out
+
+
 def finish_masks(ranks: np.ndarray) -> dict[int, dict[str, np.ndarray]]:
     """ranks: (n,3) の1〜3着の艇番 → {艇番: {win/top2/top3: (n,) bool}}"""
     r = np.asarray(ranks, dtype=float)

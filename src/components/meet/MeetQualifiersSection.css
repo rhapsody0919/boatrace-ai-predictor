@@ -1,0 +1,101 @@
+/* 節ページの勝ち上がり（BOA-682） */
+.meet-qualifiers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.meet-qualifiers h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--text-primary);
+}
+
+.meet-qualifiers h3 {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.meet-qualifiers__race {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.meet-qualifiers__race-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: var(--font-weight-bold);
+}
+
+.meet-qualifiers__to-race {
+  font-size: 0.78rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-600);
+}
+
+[data-theme="dark"] .meet-qualifiers__to-race {
+  color: var(--color-primary-400);
+}
+
+.meet-qualifiers__boats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 10px;
+}
+
+.meet-qualifiers__boat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  min-width: 0;
+  font-size: 0.88rem;
+}
+
+/* 名前は途中で割らない。着順（英語の "Finish 1" は長い）は名前の後ろに入らなければ
+   次の行に回す（英語版375pxで「黒野 元／基」と割れた。ファン評価3周目） */
+.meet-qualifiers__boat > span[translate="no"] {
+  white-space: nowrap;
+}
+
+.meet-qualifiers__boat-no {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid var(--border-hairline);
+  font-weight: var(--font-weight-bold);
+  font-size: 0.8rem;
+}
+
+.meet-qualifiers__finish {
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+}
+
+.meet-qualifiers__note,
+.meet-qualifiers__pending {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.meet-qualifiers__pending {
+  padding: 12px;
+  border: 1px dashed var(--border-hairline);
+  border-radius: var(--radius-md);
+}

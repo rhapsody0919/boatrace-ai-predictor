@@ -20,6 +20,12 @@ export const ANALOGY_V16_RACE = "2026-09-27-20-12";
 /** facts の固定の応答（若松は波高が風速とほぼ同じ値の会場。wave_mode.use_wave=false）。差し替えの元に使う */
 export const analogyV16Facts = () => structuredClone(data.facts);
 
+/** similar の固定の応答（stage は racecard か exhibition）。差し替えの元に使う */
+export const analogyV16Similar = (stage) =>
+  structuredClone(
+    data[stage === "exhibition" ? "similar-exhibition" : "similar-racecard"],
+  );
+
 /** facts・similar・scenario の API を固定の応答に差し替え、機能フラグの内部確認の印を立てる */
 export async function routeAnalogyV16(page, { preview = true } = {}) {
   if (preview)

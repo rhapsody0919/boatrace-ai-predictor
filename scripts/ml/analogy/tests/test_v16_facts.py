@@ -89,3 +89,17 @@ def test_wave_mode_and_wind_wave_counts():
     assert f["wind_wave"]["6+"]["0-2"]["1"]["win"] == [1, 1]
     assert f["wind_wave"]["4-5"]["6+"]["1"]["win"] == [0, 0]
     assert f["wave_mode"]["n"] == 6
+
+
+def test_loc_win_zero_is_missing_in_facts():
+    """当地勝率 0.00（当地を走っていない）は欠け: 6艇中の順位に入らず、他の艇の順位も詰めて付く（P1-2 案A）"""
+    loc = np.array([[6.5, 0.0, 5.0, 0.0, 4.0, 3.0]])
+    v = F.fact_values({"loc_win": loc, "nat_win": np.array([[0.0, 6, 5, 4, 3, 2]])})
+    assert np.isnan(v["loc_win"][0, [1, 3]]).all() and v["loc_win"][0, 0] == 6.5
+    assert v["nat_win"][0, 0] == 0.0  # 当地勝率だけ
+    f = F.scope_facts(np.array([True]), F.prepare(v), np.array([[2, 1, 3]]))
+    by = f["by"]
+    assert by["2"]["loc_win"]["6"]["top2"] == [0, 0]   # 0.00 の艇は最下位に入らない
+    assert by["6"]["loc_win"]["6"]["win"] == [0, 1]    # 最下位は 3.00 の6号艇
+    assert by["5"]["loc_win"]["3"]["win"] == [0, 1]    # 4.00 の5号艇は3位（0.00 の2艇を数えない）
+    assert f["typ"]["2"]["loc_win"]["win"] is None

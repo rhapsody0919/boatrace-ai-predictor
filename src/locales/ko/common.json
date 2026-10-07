@@ -817,7 +817,17 @@
       },
       "heading": "용신 소나 · {{venue}} {{race}}R",
       "subtitle": "오늘과 조건이 같은 과거 레이스를 세어 보여 줍니다",
-      "notes": {"howToRead": "보는 법", "counting": "세는 방법", "caution": "주의", "terms": "용어", "ordering": "정렬 방법", "sonar": "소나 그림 보는 법", "today": "오늘 전시와의 관계", "period": "기간", "attacker": "공격하는 보트"},
+      "notes": {
+        "howToRead": "보는 법",
+        "counting": "세는 방법",
+        "caution": "주의",
+        "terms": "용어",
+        "ordering": "정렬 방법",
+        "sonar": "소나 그림 보는 법",
+        "today": "오늘 전시와의 관계",
+        "period": "기간",
+        "attacker": "공격하는 보트"
+      },
       "stage": {
         "label": "시점",
         "racecard": "전시 전(출주표)",
@@ -870,7 +880,8 @@
         "judge": {
           "large": "차이가 큼",
           "small": "차이는 작음",
-          "unclear": "건수가 적어 차이가 뚜렷하지 않음",
+          "unclear": "차이가 뚜렷하지 않음(변동 폭이 겹침)",
+          "unclearFew": "건수가 적어 차이가 뚜렷하지 않음",
           "none": "비교 불가(해당 레이스 없음)"
         },
         "reversed": "(가장 {{word}} 쪽일 때가 더 높음)",
@@ -879,7 +890,12 @@
         "rankOf6": "6척 중 {{n}}위",
         "rankOf6Tie": "6척 중 {{from}}〜{{to}}위(같은 값 {{same}}척)",
         "noToday": "오늘 값 없음",
-        "units": {"series_score": "점", "exh_time": "초"},
+        "noTodayLocal": "당지 기록 없음",
+        "few": "(적음)",
+        "units": {
+          "series_score": "점",
+          "exh_time": "초"
+        },
         "stripTitle": "{{boat}}번 보트가 {{item}}에서 6척 중 몇 위였을 때의 {{rate}}",
         "stripRank": "{{rank}}위",
         "stripTop": "1위({{word}} 쪽)",
@@ -904,7 +920,7 @@
           "scope": "집계 대상 레이스: {{desc}}.",
           "finalNcr": "우승전으로 좁혔을 때는 이번 시리즈 평균 착순점을 표시하지 않는다(우승전의 번호는 준결승전까지의 성적으로 정해지므로 착순점 순위가 번호와 거의 같아져 비교할 의미가 없다).",
           "series": "이번 시리즈 평균 착순점은 시리즈 초반(1~2주)의 값도 포함해 집계했다(과거 초반 레이스는 같은 값이 많아 차이가 작게 나온다).",
-          "common": "집계한 비율이며, 원인이라고 단정할 수 없다. '건수가 적어 차이가 뚜렷하지 않음'은 가장 좋을 때와 가장 나쁠 때의 변동 폭이 겹치는 경우. '차이가 큼'은 5포인트 이상. 같은 값인 보트는 가장 좋음, 가장 나쁨 양쪽에 포함했다.",
+          "common": "집계한 비율이며, 원인이라고 단정할 수 없다. '차이가 뚜렷하지 않음'은 가장 좋을 때와 가장 나쁠 때의 변동 폭이 겹치는 경우(적은 쪽이 100건 미만이면 '건수가 적어 차이가 뚜렷하지 않음'). 30건 미만의 비율은 옅게 표시한다. 당지 승률 0.00(이 경기장에서 달린 적 없음)은 기록 없음으로 보고 순위에서 뺀다. '차이가 큼'은 5포인트 이상. 같은 값인 보트는 가장 좋음, 가장 나쁨 양쪽에 포함했다.",
           "exhPre": "전시 타임은 전시 후에 나온다.",
           "exhPost": "2025년 11월 이전의 전시 타임은 수집처가 달라 약간 차이가 날 수 있다."
         },
@@ -1299,9 +1315,9 @@
         "colNear": "가까움 포함",
         "colPool": "전체 레이스에서 같은 비율",
         "notUsed": "(가까움 계산에는 넣지 않음)",
-      "openRace": "이 레이스 페이지 보기 →",
-      "openOfficial": "공식 사이트에서 이 레이스 결과 보기(새 탭에서 열림) ↗",
-      "cmpSummary": "1건씩 비교(오늘과 전체 항목 나란히 보기)",
+        "openRace": "이 레이스 페이지 보기 →",
+        "openOfficial": "공식 사이트에서 이 레이스 결과 보기(새 탭에서 열림) ↗",
+        "cmpSummary": "1건씩 비교(오늘과 전체 항목 나란히 보기)",
         "cmpLede": "행을 누르면 오늘 레이스와 전체 항목을 나란히 보여 준다. ○ 같음　△ 가까움　× 다름",
         "counts": "같음 {{same}}, 가까움 {{near}}, 다름 {{diff}}",
         "cmpMore": "나머지 {{n}}건도 보기",
@@ -1316,6 +1332,7 @@
         "entry": "진입: {{e}}",
         "resHeading": "유사 레이스의 결과",
         "resSub": "비슷한 순서 {{n}}건 기준",
+        "resExcluded": "(결과가 없는 {{k}}건 제외)",
         "winHeading": "어느 보트가 이겼나?",
         "hitHeading": "어느 보트가 {{finish}}에 들었나?",
         "keySimilar": "유사 레이스",
@@ -2029,6 +2046,29 @@
     "periodCurrentOnly": "(출주표·전국 {{current}})",
     "periodDiffWithheldNote": "※ 기가 바뀐 뒤 3개월 동안은 출주표 수치의 대부분이 전기와 같은 기간의 성적이라 전기 대비 차이를 표시하지 않습니다({{date}} 이후 경주부터 표시).",
     "periodFetchError": "전기 성적을 가져오지 못했습니다",
+    "accidentBadgeOver": "사고율 {{rate}} B2 라인 초과",
+    "accidentBadgeNear": "사고율 B2 라인까지 {{need}}점",
+    "accidentTitle": "이번 기 사고율(참고·{{from}}〜{{to}})",
+    "accidentTitleOpen": "이번 기 사고율(참고·{{from}}〜)",
+    "accidentLineEarly": "출주가 적을 때는 사고 한 번으로 크게 변하므로, B2 라인까지 남은 점수는 출주 {{min}}회부터 표시합니다",
+    "accidentLegend": "사고율＝이번 기 사고점÷출주 수(참고). 0.70을 넘으면 다음 등급 심사에서 B2급. 「◯점」은 B2 라인을 넘기까지의 사고점(예선 득점과는 별개). F·출발 지연 20점(이번 기 2번째 이후의 F는 30점), 방해 실격 15점, 실격·결장 10점",
+    "accidentRateLabel": "사고율",
+    "accidentBreakdown": "사고점 {{points}}÷출주 {{starts}}({{kinds}})",
+    "accidentKindCount": "{{kind}} {{n}}",
+    "accidentKindSeparator": "·",
+    "accidentKind": {
+      "F": "F",
+      "L1": "출발 지연",
+      "K1": "결장",
+      "S1": "실격",
+      "S2": "방해 실격"
+    },
+    "accidentNone": "사고 없음",
+    "accidentLineOver": "B2 라인(0.70) 초과",
+    "accidentLineNear": "B2 라인(0.70)까지 {{need}}점",
+    "accidentNoStarts": "이번 기 출주가 아직 없습니다",
+    "accidentNote": "사고점은 공식 배점(F·출발 지연 20점, 방해 실격 15점, 선수 책임의 실격·결장 10점. 이번 기 2번째 이후의 F는 30점). 불량 항법·대기 행동 위반(2점)은 포함하지 않아 공식 수치보다 낮을 수 있습니다. 0.70을 넘으면 다음 등급 심사에서 B2급이 됩니다",
+    "accidentFetchError": "이번 기 사고율을 가져오지 못했습니다",
     "meetScoreForecastTitle": "오늘 착순에 따른 득점률 변화",
     "meetScorePrelimOver": "예선 득점률 {{rate}}（{{n}}주, {{source}}, 확정）"
   },
@@ -2204,6 +2244,7 @@
     "dataLoadError": "데이터를 가져오지 못했습니다",
     "boatN": "{{n}}번 보트",
     "raceOption": "{{number}}R ({{time}} JST)",
+    "raceOptionPast": "{{date}} {{number}}R",
     "lastUpdated": "(마지막 업데이트: {{date}})",
     "noData": "데이터 없음",
     "notMeasured": "미측정",
@@ -2389,6 +2430,25 @@
       "drillAsOfRaceNote": "💡 이 레이스 직전까지의 상황입니다(이 레이스와 그 이후의 레이스는 포함하지 않습니다).",
       "barScaleNote": "막대는 6대 중 최고값을 전체 길이로 합니다. "
     },
+    "motorRanking": {
+      "title": "🏁 모터 랭킹",
+      "description": "보트레이스장을 고르면 그 보트레이스장의 모든 모터를 2연대율 순으로 보여줍니다. 열 제목을 누르면 모터 번호·우승 횟수·전검 타임으로도 정렬할 수 있습니다.",
+      "rankHeader": "순위",
+      "rateHeader": "2연대율",
+      "officialRateHeader": "공식 2연대율",
+      "finalHeader": "우승전 진출",
+      "championshipHeader": "우승",
+      "userHeader": "이번 시리즈 사용 선수",
+      "userHeaderRecent": "최근 시리즈의 사용 선수({{date}})",
+      "sourceVenueSite": "출처: {{venue}} 공식 사이트의 모터 성적(취득일 {{date}})",
+      "sourcePretest": "출처: BOATRACE 공식 전검 데이터(최근 시리즈에 사용된 모터만)",
+      "sortNote": "모터·2연대율·우승·전검 제목을 누르면 정렬됩니다(전검은 빠른 순). 같은 값은 같은 순위입니다",
+      "sortNotePretest": "모터·공식 2연대율·전검 제목을 누르면 정렬됩니다(전검은 빠른 순). 같은 값은 같은 순위입니다",
+      "linkNote": "모터 번호를 누르면 그 모터가 최근 시리즈에서 마지막으로 달린 레이스 직전까지의 추이를 엽니다(이 목록과는 시점이 다릅니다). 최근 시리즈에 사용되지 않은 모터는 열 수 없습니다",
+      "fetchError": "모터 성적을 가져오지 못했습니다",
+      "empty": "이 보트레이스장의 최근 시리즈 모터 데이터가 없습니다",
+      "raceCount": "{{n}}주"
+    },
     "racerForm": {
       "title": "📈 선수 컨디션",
       "description": "오늘 개최 중인 레이스를 선택하면 각 선수의 현재 전국 승률과 약 90일 전 시점의 전국 승률을 비교하여 컨디션이 상승/하락 중인지 알 수 있습니다.",
@@ -2511,6 +2571,7 @@
       "outcome": "📊 결과 조합 분포",
       "technique": "🎯 결정수",
       "motor": "🔧 모터 컨디션",
+      "motorranking": "🏁 모터 랭킹",
       "racer": "📈 선수 컨디션",
       "st": "⏱️ ST 차이",
       "topstart": "🚀 톱 스타트",
@@ -2540,6 +2601,10 @@
       "motor": {
         "name": "모터 컨디션",
         "description": "오늘 개최 레이스의 번호별 모터 2연대율·3연대율을 분석"
+      },
+      "motorranking": {
+        "name": "모터 랭킹",
+        "description": "보트레이스장의 모든 모터를 2연대율·우승전 진출·우승·전검 타임으로 정렬한 랭킹"
       },
       "racer": {
         "name": "선수 컨디션",
@@ -2660,6 +2725,23 @@
           }
         ],
         "articleLinkText": "모터 컨디션이란? 오늘 레이스의 번호별 2연대율을 알 수 있는 새 기능"
+      },
+      "motorranking": {
+        "title": "모터 랭킹에 대해",
+        "dataView": "각 보트레이스장 공식 사이트가 공개하는 모터 성적(2연대율·우승전 진출 횟수·우승 횟수)을 그 보트레이스장의 전체 모터 목록으로 정리했습니다. 전검 타임과 사용 선수는 BOATRACE 공식의 최근 시리즈 전검 데이터입니다. 도다·헤이와지마·하마나코·미야지마는 최근 시리즈에 사용된 모터만 BOATRACE 공식 2연대율로 정렬합니다.",
+        "tips": [
+          {
+            "strong": "2연대율 상위 모터",
+            "text": " = 그 보트레이스장에서 2착 이내에 들기 쉬운 모터. 이번 시리즈에 누가 사용하는지와 함께 보면 출주표 판단에 도움이 됩니다"
+          },
+          {
+            "strong": "전검 타임이 빠른 모터",
+            "text": " = 시리즈 첫날 전에 측정한 이번 시리즈의 기력 기준"
+          },
+          {
+            "text": "모터의 2연대율에는 탑승한 선수의 실력도 섞여 있습니다. 모터 번호를 누르면 절별 추이를 볼 수 있습니다"
+          }
+        ]
       },
       "racer": {
         "title": "선수 컨디션 소개",
@@ -3158,5 +3240,92 @@
     "footTiming": "바람은 레이스 시점의 확정값입니다. 직전 정보의 기상은 이전 레이스의 값일 수 있습니다.",
     "footAdjusted": "계절, 시간대(레이스 번호), 1코스 선수의 급별을 맞춰 비교해도 강풍의 차이는 거의 같았습니다(강한 맞바람 {{head}}pt, 강한 뒷바람 {{tail}}pt).",
     "footWave": "바람이 약할 때(1m 이하, 옆바람)로 한정하면, 파도 6~9cm 레이스는 경기장 평균보다 {{diff}}pt({{countText}}건. 해당 레이스가 많은 경기장이 적어 참고값)."
+  },
+  "meetPage": {
+    "metaTitle": "{{venue}} {{series}} 득점률 순위, 준결승전 기준 | 용신 레이더",
+    "metaDescription": "{{venue}} 경정장 {{series}} 전체 선수의 득점률 순위와 준결승전 기준, 준결승전, 우승전 진출 선수를 한눈에. 예선 마지막 날에는 승부를 거는 선수도 알 수 있습니다.",
+    "meetFallback": "{{date}} 개막 시리즈",
+    "titleFallback": "{{venue}}의 시리즈",
+    "period": "{{start}}〜{{end}}",
+    "periodFrom": "{{start}}〜",
+    "dayN": "{{n}}일째",
+    "stage": {
+      "preOpen": "개막 전",
+      "prelim": "예선 중",
+      "prelimFinalDay": "예선 마지막 날",
+      "prelimDone": "예선 종료",
+      "semifinalDay": "준결승전 날",
+      "finalDay": "우승전 날",
+      "finished": "시리즈 종료"
+    },
+    "rankingTitle": "득점률 순위",
+    "rankingSubPrelim": "예선 득점률(이 사이트가 착순으로 계산), 전체 {{count}}명",
+    "rankingSubOfficial": "예선 득점률(확정, 공식 득점률 일람의 값), 전체 {{count}}명",
+    "borderPrelim": "준결승전 기준(추정) {{slots}}위 {{rate}}",
+    "borderFinal": "준결승전 진출권 {{slots}}위 {{rate}}(확정)",
+    "borderLinePrelim": "여기까지 준결승전 기준(추정, {{slots}}명)",
+    "borderLineFinal": "여기까지 준결승전 진출({{slots}}명)",
+    "colRank": "순위",
+    "colRacer": "선수",
+    "colClass": "급별",
+    "colRate": "득점률",
+    "filterLabel": "표시할 선수",
+    "filterAll": "전체",
+    "filterShobugake": "승부처만",
+    "shobugakeNote": "승부처: 기준 부근에서 오늘 착순에 따라 준결승전 진출이 바뀌는 선수",
+    "shobugakePending": "승부처 선수(그날 착순으로 준결승전 진출이 정해지는 선수)는 예선 마지막 날(4일째)에 표시됩니다",
+    "remainingOnly": "오늘 남은 {{runs}}경주",
+    "remainingSafe": "오늘 남은 {{runs}}경주, 현재 기준 안",
+    "remainingNeeded": "오늘 남은 {{runs}}경주, {{points}}점 더 필요",
+    "remainingNeededPlace": "오늘 남은 {{runs}}경주, {{points}}점 더 필요({{place}}착 이내)",
+    "remainingUnreachable": "오늘 남은 {{runs}}경주, {{points}}점 더 필요(최대 {{max}}점, 도달 불가)",
+    "reason": {
+      "withdrawn": "중도 귀향",
+      "awardExcluded": "준결승전·우승전 출전 제외",
+      "flying": "F(준결승전·우승전 출전 제외)",
+      "absent": "결장",
+      "officialWithdrawn": "중도 귀향"
+    },
+    "qualifiersTitle": "진출 현황",
+    "semifinals": "준결승전({{date}})",
+    "finals": "우승전({{date}})",
+    "raceSemi": "{{n}}R 준결승전",
+    "raceFinal": "{{n}}R 우승전",
+    "toRace": "경주 상세 ›",
+    "finishPlace": "{{place}}착",
+    "resultPending": "경주 후 착순이 표시됩니다",
+    "semifinalsPending": "준결승전 편성은 예선 종료 후 발표됩니다",
+    "finalsPending": "우승전 편성은 준결승전 결과 후 발표됩니다",
+    "preOpen": "{{month}}월 {{day}}일 개막. 득점률은 첫날 경주 후부터 표시됩니다",
+    "notFound": "이 시리즈를 찾을 수 없습니다",
+    "outOfScope": "이 개최는 시리즈 페이지 대상이 아닙니다(예선, 준결승전, 우승전이 있는 SG, G1, G2만)",
+    "backToVenue": "{{venue}} 경주 일람으로",
+    "source": "출처: 득점률, 순위는 BOAT RACE 공식 사이트의 득점률 일람(예선 중에는 전날 밤 시점의 표). 아직 공식 표가 없는 날(첫날 등)은 이 사이트가 착순으로 계산한 값입니다(감점 미포함).",
+    "noRateYet": "득점률은 첫날 경주 후부터 표시됩니다",
+    "borderPending": "아직 한 번도 출주하지 않은 선수가 {{count}}명 있어, 준결승전 기준은 전원이 1회 이상 출주한 뒤 표시됩니다",
+    "legendBest": "금색 테두리는 득점률 1위(동률은 모두)",
+    "winnerLabel": "우승",
+    "winnerBoat": "({{boat}}번 보트)",
+    "rankingSubOfficialAsOf": "예선 득점률({{day}}일째 종료 시점, 공식 득점률 일람의 값. 오늘 결과는 22시경 반영), 전체 {{count}}명",
+    "officialLiveLink": "오늘 결과를 포함한 최신 순위는 공식 득점률 일람(이 페이지에는 매일 밤 22시경 반영)",
+    "borderLineTie": "여기까지 준결승전 기준(추정, {{rank}}위 동률 {{tied}}명 중 {{seats}}명 진출)",
+    "points": "{{points}}점",
+    "pointsWithPenalty": "{{points}}점, 감점 {{penalty}}",
+    "sourceConfirmed": "출처: 득점률, 순위는 BOAT RACE 공식 사이트의 득점률 일람(예선 종료 시점, 감점 포함).",
+    "marksLegendTitle": "착순 기호:",
+    "marksEquals": " = ",
+    "markName": {
+      "capsized": "전복",
+      "fell": "낙수",
+      "sank": "침몰",
+      "absent": "결장",
+      "flying": "플라잉",
+      "late": "출발 지연",
+      "disqualified": "실격",
+      "obstruction": "방해 실격",
+      "stall": "엔진 정지",
+      "dnf": "미완주"
+    },
+    "rankingSubOfficialAsOfToday": "예선 득점률({{day}}일째 종료 시점, 공식 득점률 일람의 값. 오늘 결과 반영 완료), 전체 {{count}}명"
   }
 }

@@ -2,7 +2,7 @@
  * アナロジー・ファインダー v16 の類似レースを、展示の後に並べ直す（BOA-271 tasks T4-1。plan「展示後の段」）。純粋関数。
  *
  * 朝のバッチ（scripts/ml/analogy/v16_morning.py）が、出走表の時点の距離で選んだ候補（層の中の近い順に最大
- * 10,000件）の候補ファイルを作る。展示後の表し方（knn8）は、出走表の表し方（knn7）に「展示・天候・風・波」の
+ * 30,000件。T2-4）の候補ファイルを作る。展示後の表し方（knn8）は、出走表の表し方（knn7）に「展示・天候・風・波」の
  * 列を足したもので、標準化・カテゴリ・重みは同じなので、
  *   展示後の距離² ＝ 出走表の距離²（d2_racecard、会場のペナルティ前）＋ 足した列の距離² ＋ λ_展示×（会場が違う）
  * になる。足した列は、候補の生の値（exhibition_raw。float32 の最短表記。展示タイムの差と順位は展示タイムから作る）と今日の値を
@@ -142,19 +142,6 @@ export function exhibitionItemLevels(today, cand) {
   );
   const diffs = (exh) =>
     exhibitionBoats(exh.map((v) => (missing(v) ? NaN : f32(v)))).exh_time_diff;
-  const dq = diffs(today.exh_time);
-  const dc = diffs(cand.exh_time);
-  // Python は float32 の配列のまま nanmean し、しきい値も float32 に落として比べる（6要素は順に足すのと同じ）
-  let sum = 0;
-  let n = 0;
-  dc.forEach((v, i) => {
-    const d = f32(Math.abs(f32(v - dq[i])));
-    if (!Number.isNaN(d)) {
-      sum = f32(sum + d);
-      n += 1;
-    }
-  });
-  const m = n ? f32(sum / n) : NaN;
   return {
     weather: level(
       wc === qw,
@@ -170,6 +157,72 @@ export function exhibitionItemLevels(today, cand) {
       band3(cand.race.wave_height, 2, 5),
       band3(today.race.wave_height, 2, 5),
     ),
-    exh_time_diff_6: level(m <= f32(0.03), m <= f32(0.05), Number.isNaN(m)),
+    exh_time_diff_6: exhDiffLevel(diffs(today.exh_time), diffs(cand.exh_time)),
   };
+}
+
+/**
+ * 展示タイムの差（6艇）の「同じ・近い」。dq・dc は exh_time_diff（艇番順、float32、欠損は NaN）。dc は配列か
+ * Float32Array の部分（off から6つ）
+ */
+export function exhDiffLevel(dq, dc, off = 0) {
+  // Python は float32 の配列のまま nanmean し、しきい値も float32 に落として比べる（6要素は順に足すのと同じ）
+  let sum = 0;
+  let n = 0;
+  for (let i = 0; i < 6; i++) {
+    const d = f32(Math.abs(f32(dc[off + i] - dq[i])));
+    if (!Number.isNaN(d)) {
+      sum = f32(sum + d);
+      n += 1;
+    }
+  }
+  const m = n ? f32(sum / n) : NaN;
+  return level(m <= f32(0.03), m <= f32(0.05), Number.isNaN(m));
+}
+
+/**
+ * 母集団の展示タイム（1/100秒の整数、レースごとに艇番順の6つを並べたもの。欠損は null）→ 展示タイムの差
+ * （Float32Array、レース×6）。展示後の段の1回の起動で1回だけ作る
+ */
+export function poolExhDiffs(hundredths) {
+  const n = hundredths.length / 6;
+  const out = new Float32Array(hundredths.length);
+  const row = new Array(6);
+  for (let r = 0; r < n; r++) {
+    for (let b = 0; b < 6; b++) {
+      const h = hundredths[r * 6 + b];
+      row[b] = h === null ? NaN : f32(h / 100);
+    }
+    const mean = meanFloat32(row);
+    for (let b = 0; b < 6; b++) out[r * 6 + b] = f32(row[b] - mean);
+  }
+  return out;
+}
+
+/**
+ * 展示で決まる5項目の「全レースで同じ割合」（pool_rate。朝のバッチの v16_morning が出走表の項目について
+ * (v[pool]==2).mean() で数えるのと同じ定義を、今日の展示の値で数える）。同じ・近いの基準は exhibitionItemLevels
+ * @param {{n:number, race_cols:string[], race_rows:number[][], exh_time:(number|null)[]}} pool 朝のバッチの
+ *   pool/exhibition（race_rows は race_cols の値の組と件数、exh_time は1/100秒の整数）
+ * @param {Float32Array} diffs poolExhDiffs(pool.exh_time)
+ * @param {{race: Record<string, number|null>, exh_time: (number|null)[]}} today
+ * @returns {Record<string, number>}
+ */
+export function exhibitionPoolRate(pool, diffs, today) {
+  const same = Object.fromEntries(EXHIBITION_ITEMS.map((k) => [k, 0]));
+  const nc = pool.race_cols.length;
+  for (const row of pool.race_rows) {
+    const race = Object.fromEntries(pool.race_cols.map((c, j) => [c, row[j]]));
+    const lv = exhibitionItemLevels(today, { race, exh_time: [] });
+    for (const k of ["weather", "wind_bin", "wind_vector", "wave_bin"])
+      if (lv[k] === 2) same[k] += row[nc];
+  }
+  const dq = exhibitionBoats(
+    today.exh_time.map((v) => (missing(v) ? NaN : f32(v))),
+  ).exh_time_diff;
+  for (let off = 0; off < diffs.length; off += 6)
+    if (exhDiffLevel(dq, diffs, off) === 2) same.exh_time_diff_6 += 1;
+  return Object.fromEntries(
+    EXHIBITION_ITEMS.map((k) => [k, pool.n ? same[k] / pool.n : 0]),
+  );
 }

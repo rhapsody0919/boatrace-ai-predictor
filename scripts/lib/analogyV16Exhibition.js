@@ -26,6 +26,8 @@ import {
 import {
   EXHIBITION_ITEMS,
   exhibitionItemLevels,
+  exhibitionPoolRate,
+  poolExhDiffs,
   rerankSimilar,
 } from "../../src/utils/analogySimilarRerank.js";
 
@@ -149,9 +151,28 @@ export function displayRow(columns, c) {
   return Object.fromEntries(Object.entries(columns).map(([k, v]) => [k, v[c]]));
 }
 
-async function buildRace(raceId, racecardSnap, ctx, runId) {
+/**
+ * 朝のバッチの回ごとの母集団の展示の値（pool/exhibition）と展示タイムの差。1回の起動で回ごとに1回だけ読む
+ * （約41万レース。無い回＝このファイルを足す前の回は null で、展示で決まる項目の pool_rate を付けない）
+ */
+function poolLoader() {
+  const cache = new Map();
+  return (raceId, runId) => {
+    if (!cache.has(runId))
+      cache.set(
+        runId,
+        readObject(objectPath(raceId, runId, "pool", "exhibition")).then(
+          (pool) =>
+            pool ? { pool, diffs: poolExhDiffs(pool.exh_time) } : null,
+        ),
+      );
+    return cache.get(runId);
+  };
+}
+
+async function buildRace(raceId, racecardSnap, ctx, runId, loadPool) {
   const rc = racecardSnap;
-  const [file, todayRc, exhRows, conds, display] = await Promise.all([
+  const [file, todayRc, exhRows, conds, display, pool] = await Promise.all([
     readObject(objectPath(raceId, rc.run_id, "similar", raceId)),
     readObject(objectPath(raceId, rc.run_id, "today", raceId)),
     rest(
@@ -162,6 +183,7 @@ async function buildRace(raceId, racecardSnap, ctx, runId) {
     ),
     // 表示用の値（無い回＝この列を足す前の朝のバッチの回は、値なしで並べ直す）
     readObject(objectPath(raceId, rc.run_id, "similar-display", raceId)),
+    loadPool(raceId, rc.run_id),
   ]);
   if (!file || !todayRc)
     throw new Error(
@@ -190,17 +212,17 @@ async function buildRace(raceId, racecardSnap, ctx, runId) {
     },
   };
   const reranked = rerankSimilar(file, today);
+  const todayExh = { race: today.race, exh_time: today.boats.exh_time };
   const similar = {
     race_id: raceId,
     racecard_run_id: rc.run_id,
     n_layer: file.n_layer,
     exact: reranked.exact,
-    neighbors: exhibitionNeighbors(
-      file,
-      reranked,
-      { race: today.race, exh_time: today.boats.exh_time },
-      display,
-    ),
+    // 展示で決まる5項目の「全レースで同じ割合」（出走表の段は今日の値が無いので0になる。API が上書きする）
+    ...(pool
+      ? { pool_rate: exhibitionPoolRate(pool.pool, pool.diffs, todayExh) }
+      : {}),
+    neighbors: exhibitionNeighbors(file, reranked, todayExh, display),
   };
   const exhibition = todayExhibition(exhRows, live, cond);
   if (ctx.mode === "live") {
@@ -260,7 +282,14 @@ export async function runAnalogyV16Exhibition(ctx) {
     written: 0,
     failed: [],
   };
+  const loadPool = poolLoader();
   for (const t of targets) {
+    // 関数の上限の手前（共通ラッパのソフトデッドライン）で止める。残りは次の起動（2分後）が拾う。
+    // 候補が3万件になり1レースの読み込みが大きくなったため（T2-4）
+    if (ctx.shouldStop?.()) {
+      report.stopped = true;
+      break;
+    }
     const rc = rcBy.get(t.race_id);
     const base = {
       race_id: t.race_id,
@@ -277,7 +306,7 @@ export async function runAnalogyV16Exhibition(ctx) {
       else if (rc.status !== "ok")
         row = { ...base, status: "empty_layer", exact: true };
       else {
-        const { exact } = await buildRace(t.race_id, rc, ctx, runId);
+        const { exact } = await buildRace(t.race_id, rc, ctx, runId, loadPool);
         row = { ...base, status: "ok", exact };
       }
       if (ctx.mode === "live") {

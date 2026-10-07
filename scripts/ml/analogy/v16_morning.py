@@ -33,7 +33,7 @@ import v16_similar as S
 JST = timezone(timedelta(hours=9))
 WIND_BASIS = F.load_wind_basis()
 POOL_FROM = "2019-04-01"
-MAX_CANDIDATES = 10_000
+MAX_CANDIDATES = 30_000  # 層の中の出走表の距離の上位。展示後の並べ直しの一致率を 99% 以上にする（T2-4、10,000 では層4万件超で 91%）
 MAX_SHOWN = 800
 MAX_LAYER_ROWS = 2_000
 SHAP_SAMPLE = ("2025-01-01", "2025-12-02")
@@ -137,10 +137,11 @@ def build_distance(arrays: dict, races: pd.DataFrame, feats: list[str], weights:
 def today_payload(i: int, races: pd.DataFrame, arrays: dict, keys: dict, course_st: dict) -> dict:
     """today/{race_id}.json（plan「1レースごとに作るもの」）"""
     vals = {}
+    fv = FA.fact_values({item: arrays[item][i] for item, _ in FA.ITEMS if item != "exh_time"})
     for item, hib in FA.ITEMS:
         if item == "exh_time":
             continue
-        v = arrays[item][i]
+        v = fv[item]
         ranks = V.rank_positions(v, hib)
         vals[item] = {"values": [None if not np.isfinite(x) else round(float(x), 4) for x in v],
                       "positions": [sorted(p) for p in ranks]}
@@ -168,6 +169,24 @@ EXH_BOAT_COLS = ("exh_time",)
 def f32_list(values) -> list:
     """float32 の値を、float32 に戻すと同じ値になる最短の10進表記の数にする（欠損は null）"""
     return [None if not np.isfinite(v) else float(str(np.float32(v))) for v in values]
+
+
+def pool_exhibition(races: pd.DataFrame, exh_time: np.ndarray, pool: np.ndarray) -> dict:
+    """母集団（pool）の展示で決まる値（展示後の段が、展示で決まる5項目の pool_rate を今日の展示の値で数える）。
+    天候・風・波は値の組ごとの件数（組は数百しかない）、展示タイムは 1/100秒の整数（レース×6、欠損は null）。
+    展示タイムは 1/100秒刻みなので整数にしても float32 の値は変わらない（変わる値があれば失敗にする）"""
+    rc = list(EXH_RACE_COLS)
+    vals = races.loc[pool, rc].astype(np.float32)
+    grp = vals.groupby(rc, dropna=False).size().reset_index(name="n")
+    rows = [f32_list(r[:-1]) + [int(r[-1])] for r in grp.to_numpy(dtype=float)]
+    e = np.asarray(exh_time, dtype=np.float32)[pool]
+    ok = np.isfinite(e)
+    h = np.round(e.astype(np.float64) * 100)
+    if not np.array_equal(np.float32(h[ok] / 100), e[ok]):
+        raise ValueError("展示タイムに 1/100秒刻みでない値がある（pool/exhibition を整数で持てない）")
+    flat = np.where(ok, h, np.nan).ravel()
+    return {"n": int(pool.sum()), "race_cols": rc, "race_rows": rows,
+            "exh_time": [None if not np.isfinite(v) else int(v) for v in flat]}
 
 
 def gz(obj) -> bytes:
@@ -354,7 +373,7 @@ def main():
     log("races", len(races), "pool", int(pool.sum()), "today", len(today))
 
     # 範囲ごと: facts（タブ1）
-    prep = FA.prepare({k: arrays[k] for k in FACT_ITEMS})
+    prep = FA.prepare(FA.fact_values({k: arrays[k] for k in FACT_ITEMS}))
     keys_by_race = {}
     for i in today:
         for b in range(1, 7):
@@ -522,6 +541,9 @@ def main():
                 "technique": {str(k): int(v) for k, v in tech.items()}}
 
     national_counts = outcome_counts(pool)  # どのレースでも同じなので1回だけ数える
+
+    # 展示後の段が、展示で決まる5項目の pool_rate を今日の展示の値で数えるための母集団の値（全レースで共通）
+    write_local(out, "pool/exhibition.json", pool_exhibition(races, arrays["exh_time"], pool))
 
     failed = {}
     # 過去レースの結果を races の並びにそろえて1回だけ作る（候補1万件ごとに pandas の .loc で引くと遅い。T2-6）

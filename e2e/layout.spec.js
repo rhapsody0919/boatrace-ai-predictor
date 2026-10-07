@@ -34,6 +34,8 @@ const PAGES = [
   "/about",
   "/accuracy",
   "/winning-technique",
+  // 会場モーターランキング（BOA-428）: 約60行×7列の表。表の中だけ横スクロールさせる
+  "/winning-technique?tab=motorranking&venue_code=16",
   "/races",
   "/hit-races",
   "/blog",
@@ -50,6 +52,8 @@ const PAGES = [
   "/races/2026-08-11",
   "/race/2026-09-21-02-05",
   "/racer/4320",
+  // 節ページ（BOA-682）。52行の得点率ランキングと勝ち上がりの2カラム
+  "/venue/16/meet/2026-09-28",
 ];
 
 /** グリッドの空トラックとみなす最小の余白。gapや端数の誤差を除くための閾値 */
@@ -73,6 +77,7 @@ const READY_SELECTORS = {
   "/": ".venue-grid-card--open, .venue-grid-card--closed",
   "/accuracy": ".turn-accuracy-venue-table",
   "/winning-technique": ".winning-technique-table",
+  "/winning-technique?tab=motorranking&venue_code=16": ".vmr-table",
   "/races": ".dates-list .date-card",
   "/hit-races": ".race-cards-grid",
   "/racers": ".racer-compact-row, .racer-table",
@@ -80,6 +85,7 @@ const READY_SELECTORS = {
   "/races/2026-08-11": ".venue-grid-card--open",
   "/race/2026-09-21-02-05": ".rbit-bar-row",
   "/racer/4320": ".racer-stat-cards-grid",
+  "/venue/16/meet/2026-09-28": ".meet-ranking__table tbody tr",
 };
 
 async function gotoAndSettle(page, path) {
