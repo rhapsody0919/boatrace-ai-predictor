@@ -347,3 +347,13 @@ def test_k_wind_fill_is_main_period_k_directions():
     f = pd.read_csv(F.K_WIND_FILL_FILE, dtype=str)
     assert len(f) > 0 and (f["race_id"].str.slice(0, 10) >= "2025-12-03").all()
     assert f["wind_direction"].isin(F.DIR16 + ["無風"]).all()
+
+
+def test_has_result_excludes_race_status_no_race():
+    """不成立は is_no_race が立たず race_status だけ 'no_race' の行がある（2025-12-22-09-05 等）。v16_pool と同じく除く"""
+    df = pd.DataFrame({"rank1": [1, 1, 1, 1, None], "is_cancelled": [False, False, False, True, False],
+                       "is_no_race": [False, True, False, False, False],
+                       "race_status": ["normal", "normal", "no_race", "normal", "normal"],
+                       "cancellation_status": [None, None, None, None, None]})
+    assert F.has_result(df).tolist() == [True, False, False, False, False]
+    assert F.has_result(df.drop(columns=["race_status"])).tolist() == [True, False, True, False, False]

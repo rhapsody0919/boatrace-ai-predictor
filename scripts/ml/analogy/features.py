@@ -326,8 +326,7 @@ def load_main(src: Path = D) -> pd.DataFrame:
     fr = pd.Series(np.nan, index=df.index)
     for k in range(1, 7):
         fr = fr.where(df[f"rank{k}"] != df["boat_number"], k)
-    has_res = (df["rank1"].notna() & ~_bool(df["is_cancelled"]) & ~_bool(df["is_no_race"])
-               & ~races_cancelled(df))
+    has_res = has_result(df)
     absent = _bool(df["is_absent"]) | _bool(df["exh_absent"])
     bad = set(df.loc[absent | ~has_res, "race_id"])
     out = pd.DataFrame({
@@ -350,6 +349,14 @@ def load_main(src: Path = D) -> pd.DataFrame:
     })
     out["race_ok"] = ~out["race_id"].isin(bad)
     return out
+
+
+def has_result(df: pd.DataFrame) -> pd.Series:
+    """着順があり、返還・不成立・中止でないレース（本体）。不成立は is_no_race が立たず race_status だけが
+    'no_race' の行がある（v16_pool.load_races と同じ判定。spec D-5）"""
+    status = df["race_status"] if "race_status" in df.columns else pd.Series(None, index=df.index)
+    return (df["rank1"].notna() & ~_bool(df["is_cancelled"]) & ~_bool(df["is_no_race"])
+            & status.ne("no_race") & ~races_cancelled(df))
 
 
 def races_cancelled(df: pd.DataFrame) -> pd.Series:
