@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { allocateStakes, popularityRanks } from "../../../utils/oddsMath";
-import { compositeText } from "../../../utils/assistModel";
+import { compositeText, hasPricedTicket } from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 
 const yen = (n) => n.toLocaleString("ja-JP");
@@ -20,7 +20,9 @@ export default function BetSummary({
 }) {
   const budgetId = useId();
   const ranks = popularityRanks(trifecta);
-  const result = tickets.length
+  // オッズの付いた組が無い（発売前）ときは配分を出さない（screens「状態」）
+  const priced = hasPricedTicket(tickets, trifecta);
+  const result = priced
     ? allocateStakes({ tickets, trifecta, budget: Number(budget), mode })
     : null;
   const composite = result && !result.insufficient ? result.composite : null;
@@ -60,6 +62,9 @@ export default function BetSummary({
         </span>
       </div>
       {!tickets.length && <p className="ta-note">{ASSIST_COPY.betEmpty}</p>}
+      {tickets.length > 0 && !priced && (
+        <p className="ta-note">{ASSIST_COPY.oddsNone}</p>
+      )}
       {result?.insufficient && (
         <p className="ta-warn">
           {ASSIST_COPY.minimum(tickets.length, result.minimum)}

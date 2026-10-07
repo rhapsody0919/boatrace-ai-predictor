@@ -26,6 +26,7 @@ import {
   buildRacers,
   classLineup,
   roughCard,
+  roughState,
   sameClassScope,
   similarSummary,
 } from "../utils/assistModel";
@@ -152,14 +153,12 @@ export default function ThinkingAssistPage() {
     [],
   );
 
-  const roughStatus =
-    data.facts.status === "error" ||
-    data.scenario.nc.status === "error" ||
-    data.scenario.na.status === "error"
-      ? "error"
-      : data.facts.status === "ready" && !today
-        ? "empty"
-        : "loading";
+  const roughStatus = roughState({
+    factsStatus: data.facts.status,
+    today,
+    ncStatus: data.scenario.nc.status,
+    naStatus: data.scenario.na.status,
+  });
 
   let body;
   if (data.racecard.status === "loading") {

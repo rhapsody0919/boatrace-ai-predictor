@@ -631,3 +631,20 @@ export const betForm = (bets) =>
 
 /** 合成オッズの表記（モック v7 と同じ小数2桁、丸める前の理論値） */
 export const compositeText = (v) => (v == null ? null : v.toFixed(2));
+
+/**
+ * 堅い？荒れる？の枠を出せないときの状態（値が出せるときは使わない）。
+ * 範囲キー（1号艇の NC・NA）が無いレースは取得しないので「読み込み中」に残さず empty にする
+ * @returns {"error"|"empty"|"loading"}
+ */
+export function roughState({ factsStatus, today, ncStatus, naStatus }) {
+  if (factsStatus === "error" || ncStatus === "error" || naStatus === "error")
+    return "error";
+  if (factsStatus !== "ready") return "loading";
+  const keys = today?.scope_keys?.["1"];
+  return keys?.NC && keys?.NA ? "loading" : "empty";
+}
+
+/** 組んだ買い目にオッズの付いた組が1つでもあるか（無ければ配分を出さず「オッズは発売後に出る」） */
+export const hasPricedTicket = (tickets, trifecta) =>
+  tickets.some((t) => trifecta?.[t] != null && trifecta[t] > 0);

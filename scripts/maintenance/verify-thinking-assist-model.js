@@ -18,8 +18,10 @@ import {
   buildRacers,
   classLineup,
   firstPlaceComposite,
+  hasPricedTicket,
   raceRound,
   roughCard,
+  roughState,
   sameClassLabel,
   sameClassScope,
   similarSummary,
@@ -480,6 +482,41 @@ check(
   betForm({ 1: new Set([1]), 2: new Set([3, 2]), 3: new Set([4, 2, 3]) }) ===
     "1-23-234" &&
     betForm({ 1: new Set(), 2: new Set([2]), 3: new Set() }) === "—-2-—",
+);
+
+// ---- PR #1308 /code-review の再現テスト ----
+check(
+  "堅い？荒れる？: 1号艇の NC・NA の範囲キーが無いレースは「読み込み中」に残さず empty（取得しないので終わらない）",
+  roughState({
+    factsStatus: "ready",
+    today: { scope_keys: { 1: { VA: "VA:18" } } },
+    ncStatus: "idle",
+    naStatus: "idle",
+  }) === "empty" &&
+    roughState({
+      factsStatus: "ready",
+      today: null,
+      ncStatus: "idle",
+      naStatus: "idle",
+    }) === "empty" &&
+    roughState({
+      factsStatus: "ready",
+      today: fx.today,
+      ncStatus: "loading",
+      naStatus: "ready",
+    }) === "loading" &&
+    roughState({
+      factsStatus: "ready",
+      today: fx.today,
+      ncStatus: "error",
+      naStatus: "ready",
+    }) === "error",
+);
+check(
+  "配分: オッズの付いた組が無い（発売前）ときは配分を出さない（「N点には最低0円」を出さない）",
+  hasPricedTicket(["1-2-3"], {}) === false &&
+    hasPricedTicket(["1-2-3"], null) === false &&
+    hasPricedTicket(["1-2-3", "1-2-4"], { "1-2-4": 15.2 }) === true,
 );
 
 if (failures > 0) {
