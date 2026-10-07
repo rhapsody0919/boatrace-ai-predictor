@@ -14,15 +14,17 @@ import {
 } from "../../../src/utils/snsObservations.js";
 export const config = { runtime: "edge" };
 
-// 1000件上限を避け、安定した一意キー順に全ページを読む。
-export async function readObservationPages(table, params) {
+// 読み始めの上限を固定し、一意キーのカーソルで全ページを読む。
+export async function readObservationPages(table, params, cutoff = new Date().toISOString()) {
   const rows = [];
-  for (let offset = 0; ; offset += 500) {
+  let cursor = null;
+  for (;;) {
     const query = new URLSearchParams({
       ...params,
       order: "id.asc",
       limit: "500",
-      offset: String(offset),
+      created_at: `lte.${cutoff}`,
+      ...(cursor === null ? {} : { id: `gt.${cursor}` }),
     });
     const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, {
       headers: {
@@ -36,6 +38,7 @@ export async function readObservationPages(table, params) {
     if (!Array.isArray(page)) throw new Error("観測データの応答が不正です");
     rows.push(...page);
     if (page.length < 500) return rows;
+    cursor = page.at(-1).id;
   }
 }
 
@@ -56,16 +59,17 @@ export default async function handler(req) {
         !OBSERVATION_METRICS.includes(metric)
       )
         return jsonResponse({ error: "観測窓・指標名が不正です" }, 400);
+      const cutoff = new Date().toISOString();
       const [drafts, observations] = await Promise.all([
         readObservationPages("sns_drafts", {
           select: "id,platform,language,format,template_variant_id,posted_at",
-          posted_at: "not.is.null",
-        }),
+          posted_at: `lte.${cutoff}`,
+        }, cutoff),
         readObservationPages("sns_metric_observations", {
           select: "*",
           window: `eq.${window}`,
           metric_name: `eq.${metric}`,
-        }),
+        }, cutoff),
       ]);
       return jsonResponse({ data: { drafts, observations } });
     }

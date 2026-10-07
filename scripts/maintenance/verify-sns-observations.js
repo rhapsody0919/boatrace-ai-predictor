@@ -156,6 +156,33 @@ const failed = await collectDueObservations({
   now: period.period_end,
 });
 assert.equal(failed[0].status, "failed");
+// 起動時刻は窓の終端でも、providerの遅い実測時刻を保持する。
+for (const edit of [
+  { measurement_kind: "snapshot", observed_at: "2026-09-03T12:00:01Z" },
+  { period_start: "2026-09-01T13:00:00Z" },
+  { period_end: "2026-09-03T13:00:00Z" },
+  { data_through: null },
+]) {
+  const input = { ...base, metric_value: 123, ...edit };
+  const output = [];
+  const collected = await collectDueObservations({ drafts: [draft],
+    provider: { collect: async () => [input] },
+    store: { append: async (d, o) => output.push(o) }, now: period.period_end });
+  assert.equal(collected[0].status, "saved");
+  assert.equal(output[0].metric_value, null);
+  assert.equal(output[0].observed_at, new Date(input.observed_at).toISOString());
+  assert.match(output[0].missing_reason, /provider/);
+}
+const invalidPeriod = await collectDueObservations({ drafts: [draft],
+  provider: { collect: async () => [{ ...base, period_start: "invalid" }] },
+  store: { append: async () => assert.fail("不正な期間は保存しない") }, now: period.period_end });
+assert.equal(invalidPeriod[0].status, "failed");
+const validOutput = [];
+await collectDueObservations({ drafts: [draft],
+  provider: { collect: async () => [{ ...base, observed_at: "2026-09-03T12:00:01Z" }] },
+  store: { append: async (d, o) => validOutput.push(o) }, now: period.period_end });
+assert.equal(validOutput[0].metric_value, 0);
+assert.equal(validOutput[0].observed_at, "2026-09-03T12:00:01.000Z");
 const raceUrl = "https://www.boat-ai.jp/race/202609010101";
 assert.throws(() =>
   buildObservationUtm({ raceUrl, draftId: id, variantId: "variant-a" }),
@@ -183,20 +210,28 @@ assert.equal(
 // APIの1000件上限と失敗をモックで再現。ネットワークへ出ない。
 const originalFetch = globalThis.fetch;
 try {
+  const cutoff = "2026-10-07T00:00:00Z";
+  const data = Array.from({ length: 1201 }, (_, i) => ({
+    id: String(i + 1).padStart(6, "0"), created_at: "2026-10-06T00:00:00Z",
+  }));
+  let calls = 0;
   globalThis.fetch = async (url) => {
-    const offset = Number(
-      new URL(url, "https://mock.invalid").searchParams.get("offset"),
-    );
-    return Response.json(
-      Array.from({ length: Math.min(500, 1201 - offset) }, (_, i) => ({
-        id: offset + i,
-      })),
-    );
+    const query = new URL(url, "https://mock.invalid").searchParams;
+    assert.equal(query.has("offset"), false);
+    assert.equal(query.get("created_at"), `lte.${cutoff}`);
+    if (++calls === 2) {
+      // 既読範囲・未読範囲の両方へ追記。今回の集合には含めない。
+      data.push({ id: "000000", created_at: "2026-10-08T00:00:00Z" });
+      data.push({ id: "999999", created_at: "2026-10-08T00:00:00Z" });
+    }
+    const cursor = query.get("id")?.slice(3) ?? "";
+    return Response.json(data.filter(row => row.created_at <= cutoff && row.id > cursor)
+      .sort((a, b) => a.id.localeCompare(b.id)).slice(0, 500));
   };
-  assert.equal(
-    (await readObservationPages("sns_metric_observations", {})).length,
-    1201,
-  );
+  const pages = await readObservationPages("sns_metric_observations", {}, cutoff);
+  assert.equal(pages.length, 1201);
+  assert.equal(new Set(pages.map(row => row.id)).size, 1201);
+  assert.equal(pages.at(-1).id, "001201");
   globalThis.fetch = async () => new Response("", { status: 500 });
   await assert.rejects(readObservationPages("sns_metric_observations", {}));
 } finally {

@@ -36,7 +36,7 @@ export async function collectDueObservations({
         // 全件を検査してから保存する。通信エラーは値を捏造せず結果へ返す。
         const validated = rows.map((row) =>
           validateObservation(
-            { ...row, window, ...period, observed_at: now },
+            normalizeProviderObservation(row, window, period),
             draft,
           ),
         );
@@ -55,11 +55,36 @@ export async function collectDueObservations({
   return results;
 }
 
+// providerの実測メタデータを先に照合し、窓が違う値を欠測へ変換する。
+function normalizeProviderObservation(row, window, period) {
+  // 不正な日時を有効な要求日時で補完しない。
+  observationPeriod(row.period_start, window);
+  observationPeriod(row.period_end, window);
+  const mismatch =
+    Date.parse(row.period_start) !== Date.parse(period.period_start) ||
+    Date.parse(row.period_end) !== Date.parse(period.period_end);
+  const lateSnapshot = row.measurement_kind === "snapshot" &&
+    Date.parse(row.observed_at) !== Date.parse(period.period_end);
+  const incomplete = Date.parse(row.data_through) !== Date.parse(period.period_end);
+  if (mismatch || (row.metric_value !== null && (lateSnapshot || incomplete))) {
+    return {
+      ...row,
+      window,
+      ...period,
+      metric_value: null,
+      missing_reason: `providerの対象窓不一致・遅延: period_start=${row.period_start}, period_end=${row.period_end}, observed_at=${row.observed_at}, data_through=${row.data_through}`,
+      curve: [],
+    };
+  }
+  return { ...row, window };
+}
+
 export const mockObservationProvider = {
-  async collect({ period }) {
+  async collect({ period, observedAt }) {
     return [
       {
         ...period,
+        observed_at: observedAt,
         source: "mock",
         metric_name: "views",
         metric_value: null,
