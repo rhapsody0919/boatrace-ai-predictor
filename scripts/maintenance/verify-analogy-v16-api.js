@@ -261,6 +261,7 @@ check(
     conditions: { round: "yusho" },
     n_layer: 15,
     pool_rate: { venue: 0.04, weather: 0 },
+    pool_rate_exhibition: false,
     neighbors: [2],
     exact: true,
   },
@@ -275,8 +276,13 @@ check(
       exact: true,
       pool_rate: { weather: 0.61, wind_bin: 0.497 },
     },
-  ).pool_rate,
-  { venue: 0.04, weather: 0.61, wind_bin: 0.497 },
+  ),
+  {
+    pool_rate: { venue: 0.04, weather: 0.61, wind_bin: 0.497 },
+    pool_rate_exhibition: true,
+    neighbors: [2],
+    exact: true,
+  },
 );
 check(
   "展示後のファイルが無ければ null",
