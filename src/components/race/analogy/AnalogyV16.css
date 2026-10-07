@@ -1324,3 +1324,10 @@ button.af-bar {
   font-weight: var(--font-weight-bold);
   color: var(--text-secondary);
 }
+
+/* 件数が30件未満の率は薄く出す（2026-10-07 ユーザー決定） */
+.af-pair > div.is-few b,
+.af-strip-col.is-few .af-strip-bar,
+.af-strip-col.is-few .af-num {
+  opacity: 0.45;
+}

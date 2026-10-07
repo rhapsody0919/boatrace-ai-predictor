@@ -427,6 +427,15 @@ export async function scrapeAndUpsertRaces(
   // 実際に書き込んだ（＝変更のあった、または新規の）レース。予測の再計算の対象になる
   const changedRaceIds = new Set();
 
+  // 気象の反映（BOA-358）。展示より先に書く（展示タイムを見て動く読み手が同じ取得回の気象を読めるように。
+  // BOA-271 T4-3）。失敗しても展示の成否・戻り値（予測リフレッシュの起動条件）には影響させない
+  const weather = updateWeather
+    ? await updateRaceConditionsWeather(weatherFetched, date, {
+        startTimeLookup,
+        client,
+      })
+    : null;
+
   // Supabase に upsert
   if (allRows.length > 0) {
     console.log(`\n💾 exhibition_data: ${allRows.length}件書き込み中...`);
@@ -441,15 +450,6 @@ export async function scrapeAndUpsertRaces(
   }
 
   console.log(`📊 展示: 取得${totalFetched}R / データ${allRows.length}件`);
-
-  // 気象の反映（BOA-358）。展示データの保存が済んだ後に行い、失敗しても展示の成否・戻り値
-  // （予測リフレッシュの起動条件）には影響させない
-  const weather = updateWeather
-    ? await updateRaceConditionsWeather(weatherFetched, date, {
-        startTimeLookup,
-        client,
-      })
-    : null;
 
   // 気象も予測の入力（イン崩れ指数の風速・波高）のため、書き込んだレースは再計算の対象に含める
   for (const raceId of weather?.changedRaceIds ?? [])
@@ -626,7 +626,18 @@ export async function runForRaces(
     rowsByRace.set(race.race_id, rows);
   }
 
-  // 4) 書き込み（shadow は書かない）
+  // 4) 気象（live のみ）を展示より先に書く。展示タイムがそろったのを見て動く読み手（アナロジーの展示後の段等）が、
+  //    同じ取得回の気象を読めるようにするため（BOA-271 T4-3。展示の後に書くと、その数秒の間に前の回の気象を読む）。
+  //    失敗しても展示の成否には影響させない（updateRaceConditionsWeather は投げない）
+  const weather =
+    weatherOn && weatherFetched.length > 0
+      ? await updateRaceConditionsWeather(weatherFetched, date, {
+          startTimeLookup: buildStartTimeLookup(fullSchedule),
+          client,
+        })
+      : null;
+
+  // 書き込み（shadow は書かない）
   const allRows = [...rowsByRace.values()].flat();
   const write =
     allRows.length > 0
@@ -681,17 +692,10 @@ export async function runForRaces(
     }
   }
 
-  // 5) 気象（live のみ。展示の保存が済んだ後に行い、失敗しても展示の成否には影響させない）
-  if (weatherOn && weatherFetched.length > 0) {
-    const weather = await updateRaceConditionsWeather(weatherFetched, date, {
-      startTimeLookup: buildStartTimeLookup(fullSchedule),
-      client,
-    });
-    // 気象も予測の入力（イン崩れ指数の風速・波高）のため、書き込んだレースは再計算の対象に含める
-    for (const raceId of weather.changedRaceIds) {
-      const outcome = outcomes.get(raceId);
-      if (outcome) outcomes.set(raceId, { ...outcome, changed: true });
-    }
+  // 5) 気象も予測の入力（イン崩れ指数の風速・波高）のため、書き込んだレースは再計算の対象に含める
+  for (const raceId of weather?.changedRaceIds ?? []) {
+    const outcome = outcomes.get(raceId);
+    if (outcome) outcomes.set(raceId, { ...outcome, changed: true });
   }
 
   return races.map((race) => ({
@@ -753,7 +757,7 @@ export async function updateRaceConditionsWeather(
     };
   } catch (error) {
     console.error(
-      `❌ 気象の更新エラー（展示データは保存済み）: ${error.message}`,
+      `❌ 気象の更新エラー（展示データの保存は続ける）: ${error.message}`,
     );
     return {
       fetched: fetched.length,

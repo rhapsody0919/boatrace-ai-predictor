@@ -126,9 +126,36 @@ export function todayValues(today, exhibition) {
   for (const { key } of FACT_ITEMS) {
     if (key === "exh_time") {
       if (exhibition?.exh_time) out[key] = exhibition.exh_time;
-    } else if (today?.items?.[key]) out[key] = today.items[key].values;
+    } else if (today?.items?.[key])
+      out[key] =
+        key === "loc_win"
+          ? today.items[key].values.map(noLocalRecord)
+          : today.items[key].values;
   }
   return out;
+}
+
+/**
+ * 当地勝率 0.00 は「当地の記録なし」として欠けにする（公式の勝率は1走でもあれば 0 より大きい。2026-10-07 ユーザー
+ * 決定、ファン評価4周目 P1）。朝のバッチ側（過去レースの順位ごとの集計）も同じ扱いにする
+ */
+export const noLocalRecord = (v) => (isNum(v) && v === 0 ? null : v);
+
+/** 判定「差ははっきりしない」を件数の少なさで言い分ける境目（少ない側の件数。2026-10-07 ユーザー決定） */
+export const FEW_FOR_UNCLEAR = 100;
+/** これ未満の件数の率は「少ない」を添えて薄く出す（2026-10-07 ユーザー決定） */
+export const MIN_RATE_N = 30;
+
+/**
+ * 判定のラベルのキー（unclear は、少ない側の件数が100件未満なら unclearFew）
+ * @param {{level: string}} judge judgeGap の結果
+ * @param {[number, number]|null} best 一番良いときの [当たり, 件数]
+ * @param {[number, number]|null} worst 一番悪いときの [当たり, 件数]
+ */
+export function judgeLabelKey(judge, best, worst) {
+  if (judge.level !== "unclear") return judge.level;
+  const n = Math.min(best?.[1] ?? 0, worst?.[1] ?? 0);
+  return n < FEW_FOR_UNCLEAR ? "unclearFew" : "unclear";
 }
 
 /**
