@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
+import MobileApprovalPanel from "./sns-hub/MobileApprovalPanel.jsx";
 import DeadlineQueuePanel from "./sns-hub/DeadlineQueuePanel.jsx";
 import XSendPanel from "./sns-hub/XSendPanel.jsx";
 import BundleImportPanel from "./sns-hub/BundleImportPanel.jsx";
@@ -436,6 +437,7 @@ function SnsHubAdmin() {
   return (
     <div className="sns-hub-admin-page">
       <Header />
+      <MobileApprovalPanel approvers={approvers} />
       <DeadlineQueuePanel />
       <BundleImportPanel
         onImported={() => loadDrafts({ silent: true, fetch: { drafts: true } })}

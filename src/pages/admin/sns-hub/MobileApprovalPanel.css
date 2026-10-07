@@ -1,0 +1,6 @@
+.sns-mobile-approval { padding: var(--spacing-4); color: var(--text-primary); background: var(--surface-card); border-radius: var(--radius-lg); }
+.sns-mobile-race, .sns-mobile-channel { min-width: 0; overflow-wrap: anywhere; }
+.sns-mobile-channel { margin-top: var(--spacing-4); padding-top: var(--spacing-4); border-top: 1px solid var(--border-color); }
+.sns-mobile-approval video { display: block; width: 100%; max-height: 60vh; background: var(--surface-page); }
+.sns-mobile-approval select, .sns-mobile-approval textarea, .sns-mobile-approval button { display: block; box-sizing: border-box; width: 100%; max-width: 100%; min-height: var(--spacing-12); margin-block: var(--spacing-2); font: inherit; color: var(--text-primary); background: var(--surface-page); }
+.sns-mobile-copy { white-space: pre-wrap; }
