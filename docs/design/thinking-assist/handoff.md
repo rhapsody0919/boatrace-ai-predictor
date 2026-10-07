@@ -74,3 +74,10 @@
   - 全国の同じ組み合わせの万舟 713/3,276（scenario の all）
   - その艇番で走ったときの1着（直近2年、race_entries×race_results）。本実装は進入コースで数える
 - 次: v2 のユーザー承認 → 承認画像を mock/ に保存・APPROVED.md → `/step2`
+
+## 6. 2026-10-07 ユーザーのモック v2 への指摘11点 → モック v3
+- 指摘・ファンパネル・調査（質問8・10、要望9）・v3 での対応は [fan-panel-mock-v2.md](./fan-panel-mock-v2.md)。spec「決定事項」D-7〜D-14
+- モック v3: 同じ Artifact の Version 3（https://claude.ai/artifact/PLX5e862Lf9PGHUjFbfzzE ）、写しは [mock-v3/index.html](./mock-v3/index.html)
+- v3 で足した実データ（DB の読み取り）: モーター3連率・ボート2連率（race_entries）、前検タイムと順位（motor_pretest_stats）、6選手の直近90日の勝ち決まり手（race_results×race_entries）、徳山の水質・型（venues）、徳山の直近1年の決まり手（2,196レース）
+- v2 の不具合を1つ直した: セオリーカードの「今日当てはまる」が、条件（6艇で一番）と関係なく出ていた
+- 次: ユーザーが決めること5点（fan-panel-mock-v2.md 末尾）と v3 の承認 → 承認画像を mock/ に保存・APPROVED.md → `/step2`
