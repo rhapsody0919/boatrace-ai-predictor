@@ -24,13 +24,16 @@ export default async function handler(req) {
       const data = await approveMobileReview(row, body, { loadMedia:loadXMedia, approve:xSendStore.mobileApprove });
       return jsonResponse({ data, connected:false });
     }
-    const data = await Promise.all(rows.map(async row => {
+    const data = [];
+    // SQL readの件数上限に加え、hash/署名の同時実行を避ける。
+    for (const row of rows) {
       const review = await prepareMobileReview(row,loadXMedia);
       const paths = [row.draft.video_storage_path, row.draft.cover_image_path].filter(Boolean);
       const urls = await signStoragePaths(paths);
-      return { draft:row.draft, job:row.job, versionHash:review.versionHash, holds:review.holds,
-        videoUrl:urls[row.draft.video_storage_path] || null };
-    }));
+      data.push({ draft:row.draft, job:row.job, versionHash:review.versionHash, holds:review.holds,
+        videoUrl:urls[row.draft.video_storage_path] || null,
+        imageUrl:urls[row.draft.cover_image_path] || null });
+    }
     return jsonResponse({ data, connected:false });
   } catch {
     return jsonResponse({ error:'版・QA・状態が変わりました。再読込して確認してください' }, req.method === 'POST' ? 409 : 503);

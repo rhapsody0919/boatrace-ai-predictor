@@ -24,8 +24,20 @@ async function allRows(path) {
 }
 export const xSendStore = {
   async mobileGroups(date) {
-    const drafts = await allRows('sns_drafts?platform=in.(x,youtube)&language=eq.ja&status=neq.archived&select=content_group_id,source_data&order=id');
-    return [...new Map(drafts.filter(d => d.source_data?.race_id?.slice(0,10) === date).map(d => [d.content_group_id, { id:d.content_group_id, raceId:d.source_data.race_id }])).values()];
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('対象日が不正です');
+    const query = new URLSearchParams({ platform:'in.(x,youtube)', language:'eq.ja', status:'neq.archived',
+      content_group_id:'not.is.null', 'source_data->>race_id':`like.${date}-*`,
+      select:'content_group_id,race_id:source_data->>race_id', order:'id' });
+    const groups = new Map();
+    // 最大2000行＋上限検査1行、最大5要求。上限超過は部分一覧を返さない。
+    for (let offset=0; offset<=2000; offset+=500) {
+      const limit=offset===2000 ? 1 : 500;
+      const page=await db(`sns_drafts?${query}&limit=${limit}&offset=${offset}`);
+      if (offset===2000 && page.length) throw new Error('今日の下書きが取得上限を超えました');
+      for (const d of page) groups.set(d.content_group_id,{id:d.content_group_id,raceId:d.race_id});
+      if (page.length<limit) return [...groups.values()];
+    }
+    return [...groups.values()];
   },
   async mobileRace(id) { return db('rpc/read_sns_mobile_race', { method: 'POST', body: JSON.stringify({ p_group_id: id }) }); },
   async mobileApprove(id, approverId, revision, snapshot, scheduledAt, reviewSeconds) {

@@ -11,10 +11,17 @@ LANGUAGE sql IMMUTABLE SET search_path=public AS $$
  'scheduled',d.scheduled_at)::text,'UTF8')),'hex');
 $$;
 CREATE FUNCTION public.read_sns_mobile_race(p_group_id UUID) RETURNS JSONB
-LANGUAGE sql STABLE SET search_path=public AS $$
- SELECT coalesce(jsonb_agg(jsonb_build_object('draft',to_jsonb(d),'revision',sns_mobile_revision(d),
+LANGUAGE plpgsql STABLE SET search_path=public AS $$
+BEGIN
+ -- 1group最大20件。版計算・媒体読込の前に、21件だけ見て超過を拒否する。
+ IF (SELECT count(*) FROM (SELECT id FROM sns_drafts WHERE content_group_id=p_group_id
+   AND platform IN ('x','youtube') AND language='ja' AND status<>'archived' LIMIT 21) bounded)>20 THEN
+  RAISE EXCEPTION 'レースの下書きが取得上限を超えました';
+ END IF;
+ RETURN (SELECT coalesce(jsonb_agg(jsonb_build_object('draft',to_jsonb(d),'revision',sns_mobile_revision(d),
  'job', (SELECT to_jsonb(j) - 'snapshot_text' - 'snapshot' FROM sns_x_send_jobs j WHERE j.draft_id=d.id)) ORDER BY d.platform,d.id),'[]'::jsonb)
- FROM sns_drafts d WHERE d.content_group_id=p_group_id AND d.platform IN ('x','youtube') AND d.language='ja' AND d.status<>'archived';
+ FROM sns_drafts d WHERE d.content_group_id=p_group_id AND d.platform IN ('x','youtube') AND d.language='ja' AND d.status<>'archived');
+END;
 $$;
 CREATE FUNCTION public.approve_sns_mobile_channel(p_draft_id UUID,p_approver_id UUID,p_revision TEXT,
  p_snapshot JSONB,p_scheduled_at TIMESTAMPTZ,p_review_seconds INTEGER) RETURNS JSONB

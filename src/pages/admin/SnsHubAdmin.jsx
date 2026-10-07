@@ -6,7 +6,7 @@
  * （docs/design/sns-marketing-hub/screens.md参照）。
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import MobileApprovalPanel from "./sns-hub/MobileApprovalPanel.jsx";
 import DeadlineQueuePanel from "./sns-hub/DeadlineQueuePanel.jsx";
@@ -192,6 +192,18 @@ function SnsHubAdmin() {
   const [activeTab, setActiveTab] = useState("tiktok");
   const [activeStatusFilter, setActiveStatusFilter] = useState("review");
   const [drafts, setDrafts] = useState([]);
+  const draftReadEpoch = useRef(0);
+  const mobileOperationRef = useRef({});
+  const [mobileOperations, setMobileOperations] = useState({});
+  const getMobileOperation = useCallback(id => mobileOperationRef.current[id], []);
+  const handleMobileOperation = useCallback((id, pending) => {
+    const previous = mobileOperationRef.current[id];
+    const operation = { epoch: (previous?.epoch || 0) + (pending ? 1 : 0), pending };
+    // 同期的に更新し、render前に届く操作前poll/一覧応答も失効させる。
+    mobileOperationRef.current[id] = operation;
+    if (pending) draftReadEpoch.current++;
+    setMobileOperations(v => ({ ...v, [id]: operation }));
+  }, []);
   const [approvers, setApprovers] = useState([]);
   const [insights, setInsights] = useState([]);
   const [revisions, setRevisions] = useState([]);
@@ -266,9 +278,12 @@ function SnsHubAdmin() {
         setLoading(true);
         setError(null);
       }
+      const readEpoch = fetchScope.drafts ? ++draftReadEpoch.current : null;
       try {
         await Promise.all([
-          fetchScope.drafts ? getDrafts().then(setDrafts) : null,
+          fetchScope.drafts ? getDrafts().then(data => {
+            if (readEpoch === draftReadEpoch.current) setDrafts(data);
+          }) : null,
           fetchScope.approvers ? getApprovers().then(setApprovers) : null,
           fetchScope.insights ? getInsights().then(setInsights) : null,
           fetchScope.revisions ? getRecentRevisions().then(setRevisions) : null,
@@ -437,7 +452,8 @@ function SnsHubAdmin() {
   return (
     <div className="sns-hub-admin-page">
       <Header />
-      <MobileApprovalPanel approvers={approvers} />
+      <MobileApprovalPanel approvers={approvers} onOperationChange={handleMobileOperation}
+        onChanged={() => loadDrafts({ silent: true, fetch: { drafts: true, revisions: true } })} />
       <DeadlineQueuePanel />
       <BundleImportPanel
         onImported={() => loadDrafts({ silent: true, fetch: { drafts: true } })}
@@ -570,9 +586,9 @@ function SnsHubAdmin() {
                 contentType={contentTypeByGroupId[draft.content_group_id]}
                 youtubeUrl={youtubeUrlByGroupId[draft.content_group_id]}
                 approvers={approvers}
-                onXChanged={() =>
-                  loadDrafts({ silent: true, fetch: { drafts: true } })
-                }
+                mobileOperation={mobileOperations[draft.id]}
+                getMobileOperation={getMobileOperation}
+                onXChanged={() => loadDrafts({ silent: true, fetch: { drafts: true } })}
                 onApprove={(approverId) =>
                   handleAction(approveDraft, [draft.id, approverId])
                 }
@@ -1290,6 +1306,8 @@ function DraftCard({
   onMergeBlogPr,
   onPublishYoutube,
   onXChanged,
+  mobileOperation,
+  getMobileOperation,
   onRevise,
   onRequestSpecChange,
   onMarkPosted,
@@ -1301,7 +1319,10 @@ function DraftCard({
   );
   const [blogReview, setBlogReview] = useState(null);
   const [openPanel, setOpenPanel] = useState(null); // null | 'feedback'
-  const [xSendState, setXSendState] = useState("unknown");
+  const [xSendStatus, setXSendStatus] = useState({ state:'unknown', epoch:0 });
+  const mobileEpoch = mobileOperation?.epoch || 0;
+  const xSendState = mobileOperation?.pending || xSendStatus.epoch !== mobileEpoch ? 'unknown' : xSendStatus.state;
+  const handleXStateChange = useCallback(state => setXSendStatus({ state, epoch:mobileEpoch }), [mobileEpoch]);
   const [confirmingArchive, setConfirmingArchive] = useState(false);
   const [expanded, setExpanded] = useState(getDefaultDraftCardExpanded);
 
@@ -1506,13 +1527,9 @@ function DraftCard({
             )}
 
             {draft.platform === "x" && (
-              <XSendPanel
-                draft={draft}
-                approverId={selectedApproverId}
-                blocked={publicationBlocked}
-                onChanged={onXChanged}
-                onStateChange={setXSendState}
-              />
+              <XSendPanel draft={draft} approverId={selectedApproverId} blocked={publicationBlocked}
+                onChanged={onXChanged} onStateChange={handleXStateChange}
+                externalOperation={mobileOperation} getExternalOperation={getMobileOperation} />
             )}
 
             {(draft.platform !== "x" ||
