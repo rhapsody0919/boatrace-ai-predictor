@@ -168,3 +168,25 @@
 - PR0: PR #1301（会場の決まり手の期間の表を毎日書く、nightly に本番検査）。/code-review 6件（4件修正）、Codex ④ 採用2、data-accuracy-verifier 不一致0。段階2でユーザー確認待ち。マージ後に Actions の update-winning-technique-stats の手動実行をユーザーに依頼（オーケストレーター経由）し、読み取りで約290行・徳山の値を確かめる
 - 別スコープ: BOA-794（race_results の「逃げ抜き」1件）
 - 次: PR1（T1-1〜T1-4）
+
+## 15. 引き継ぎ（2026-10-07 夕、会話が目安を大きく超えたので新しいセッションへ）
+### PR の状態
+| PR | ブランチ | 状態 |
+|---|---|---|
+| #1299 T-pre1 | feature/boa-430-migration-134 | マージ済み 0407b1061 |
+| #1301 PR0 | feature/boa-430-pr0-technique-period | マージ済み c904fdee7。ユーザーに Actions「Update Winning Technique Stats」の手動実行を依頼中（オーケストレーター経由）。実行の連絡が来たら、読み取りで約290行・徳山 365日 2,592・逃げ 1,516／90日 612・逃げ 339 前後を確かめてオーケストレーターに報告 |
+| #1305 PR1 | feature/boa-430-pr1-groundwork | /code-review 5件修正済み・PR コメント記載済み。master 取り込み済み（台帳の衝突を解消）。CI（e2e）待ち。緑・CLEAN になったらオーケストレーターに報告（画面の変更は URL 直接の準備中ページだけ） |
+| PR2（未作成） | feature/boa-430-pr2-model（push 済み） | PR1 の上。oddsMath の買い目の計算（T2-3）・assistModel（T2-2 の一部）・verify-odds-math・verify-thinking-assist-model（徳山10R の固定データ scripts/lib/__fixtures__/thinking-assist/）。PR1 マージ後に master を取り込んで PR を出し、/code-review |
+| PR3（作業中） | feature/boa-430-pr3-skeleton（push 済み） | PR2 の上。useThinkingAssistData（T2-1）だけ。useAnalogyV16 の useAnalogyResource を export した |
+
+### PR3 で次にやること
+- 画面の骨格（T3-1〜T3-5）と、使う文言・辞書（T2-5。モック v7 の THEORY・GLOSS に会場名などを差し込む形に）
+- 承認モックの写し: docs/design/thinking-assist/mock-v7/index.html（約1,000行。主な関数: renderBoard・renderSum・renderFoot・renderDeep・openTheory・GUIDE・MAP）。操作できる要素の名前は screens「操作できる要素の名前」（受け入れ E2E がこの名前で選ぶ）
+- players の艇番は `number`（`boatNumber` はボートの番号）。getPredictions の players は aiScore 順なので艇番で並べ直す
+- 欠場（D-38）は直前情報（exhibition_data.is_absent）の取得を足す PR で
+- 既存ファイルに prettier をかけない（無関係な行が大量に書き換わる。新しいファイルだけにかける）
+
+### 注意
+- 他の worktree への書き込みはガードで止まる。PR ごとのブランチはこの worktree で切り替えて作る。受け入れ E2E 等のサブエージェントが worktree の spec を読んでいる間はブランチを切り替えない
+- verify-registry.json は同じ位置に足すと衝突する（PR0・PR1・PR2 で起きた）。衝突は両方の登録を残す
+- Codex の独立レビュー: 各 PR の差分を scratchpad に出して hq（「state.mdと約束の台帳の続行」）に1行で知らせ、結果に「採用 n（新規 m・既知 j）・誤検知 k・判定不能の妥当性」を返す
