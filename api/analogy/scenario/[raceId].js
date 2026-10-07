@@ -20,13 +20,20 @@ export const config = { runtime: "edge" };
 const MIN_VC_RACES = 300;
 const REFERENCE = { VC: "NC", NCR: "NC", VA: "NA", VG: "NA" };
 
-/** 既定の範囲（spec「数えるレース」）: VC。会場で300件未満なら NC。級別が欠けて VC・NC が無ければ VA */
+/**
+ * 既定の範囲（spec「数えるレース」）: VC。会場で300件未満なら NC。級別が欠けて VC・NC が無ければ VA。
+ * vcN は、VC が300件未満で NC に替えたときの VC の件数（画面の「全国で数えています」の1行。それ以外は null）
+ * @returns {Promise<{scope: string, vcN: number|null}>}
+ */
 async function defaultScope(raceId, runId, keys) {
-  if (!keys.VC) return keys.NC ?? keys.VA;
+  if (!keys.VC) return { scope: keys.NC ?? keys.VA, vcN: null };
   const vc = await readObject(
     objectPath(raceId, runId, "scenario", keys.VC.replaceAll(":", "_")),
   );
-  return vc && vc.n >= MIN_VC_RACES ? keys.VC : (keys.NC ?? keys.VC);
+  if (vc && vc.n >= MIN_VC_RACES) return { scope: keys.VC, vcN: null };
+  return keys.NC
+    ? { scope: keys.NC, vcN: vc ? vc.n : null }
+    : { scope: keys.VC, vcN: null };
 }
 
 const SCOPE = /^(VC|NC|NCR|VA|VG|NA)(:[0-9A-Za-z:-]+)?$/;
@@ -40,9 +47,9 @@ export default createHandler(
     );
     if (!today) return {};
     const keys = today.scope_keys["1"];
-    const scope =
-      url.searchParams.get("scope") ||
-      (await defaultScope(raceId, rc.run_id, keys));
+    const picked = url.searchParams.get("scope");
+    const def = picked ? null : await defaultScope(raceId, rc.run_id, keys);
+    const scope = picked || def.scope;
     if (!SCOPE.test(scope) || !Object.values(keys).includes(scope))
       throw new RangeError(
         `scope は今日の1号艇の範囲キー（${Object.values(keys).join("|")}）`,
@@ -72,6 +79,8 @@ export default createHandler(
     return {
       run_id: rc.run_id,
       scope,
+      // 既定で VC から NC に替えたときの VC の件数（範囲を指定した要求には付けない。画面の1行は既定の表示中だけ）
+      vc_fell_back: def?.vcN ?? null,
       scope_keys: keys,
       scenario,
       reference: refFile ? { scope: refKey, attack: refFile.attack } : null,
