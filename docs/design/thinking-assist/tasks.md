@@ -1,13 +1,13 @@
 # 思考アシスト tasks（BOA-430）
 
-- 入力: [spec.md](./spec.md)（FR-1〜11・FR-3a、D-1〜D-35）、[screens.md](./screens.md)、[plan.md](./plan.md)、承認モック [mock/APPROVED.md](./mock/APPROVED.md)（v7。写しは [mock-v7/index.html](./mock-v7/index.html)）
+- 入力: [spec.md](./spec.md)（FR-1〜11・FR-3a、D-1〜D-37）、[screens.md](./screens.md)、[plan.md](./plan.md)、承認モック [mock/APPROVED.md](./mock/APPROVED.md)（v7。写しは [mock-v7/index.html](./mock-v7/index.html)）
 - PR の単位: 下の「PR」ごとに feature ブランチを切り、master 向けに出す。各 PR は `npm run build`・`npm run verify:ci` が緑。画面を変える PR は E2E（smoke・layout）も緑
 - 機能フラグ（`?assist=1`）の後ろで進める。公開（`THINKING_ASSIST_PUBLIC = true`）はこの tasks の範囲外（spec U-4・U-6、公開前にユーザー）
 - 数字の出し方・文言はモック v7 に合わせる。モックと違う形にしたくなったら、実装せずオーケストレーター経由でユーザーに出す
 
 ## 事前（`/step4` の前）
 - [ ] T-pre1 マイグレーション 134 のファイル（`134_venue_technique_period_stats.sql`・`134-runbook.md`・APPLIED.md の行）だけを docs の PR で先に master に入れる（本番は適用済み。番号の衝突を防ぐ。design-reviewer 指摘16）
-- [ ] T-pre2 spec U-17・U-18 のユーザーの回答を spec・screens に反映した後で、受け入れ E2E を書き直させる（acceptance-test-writer に spec・screens のパスだけを渡す）。あわせて固定データ `e2e/thinking-assist-fixture.js` を作る: 徳山10R（2026-10-06）の facts・similar（racecard）・scenario（NC・NCR・NA・VA:18）を本番から取り、「展示後の段が無い」状態も入れる（design-reviewer 指摘7・8）
+- [ ] T-pre2 spec U-17・U-18 のユーザーの回答（D-37）を spec・screens に反映した後で、受け入れ E2E を書き直させる（acceptance-test-writer に spec・screens のパスだけを渡す）。あわせて固定データ `e2e/thinking-assist-fixture.js` を作る: 徳山10R（2026-10-06）の facts・similar（racecard）・scenario（NC・NCR・NA・VA:18）を本番から取り、「展示後の段が無い」状態も入れる（design-reviewer 指摘7・8）
 
 ## PR0 会場の決まり手の期間の表（ADR 0088、マイグレーション 134）
 事前条件: 134 は本番に適用済み（2026-10-07、APPLIED.md）
@@ -43,7 +43,7 @@
 ## PR2 データとモデル（画面はまだ出さない）
 - [ ] T2-1 `src/hooks/useThinkingAssistData.js`: plan「全体の構成」の3段の取得
   - 1段目: `getPredictions` の対象レース（出走表・気象・`raceStage`）・オッズのスナップショット。これで図を描く（N-5）
-  - 1.5段目: v16 facts（出走表の段と展示後の段）。届いたら `today.scope_keys["1"]` の NC（と U-17 の回答によっては NCR）で scenario を取る（API は `scope=NC` を受け付けない）
+  - 1.5段目: v16 facts（出走表の段と展示後の段）。届いたら `today.scope_keys["1"]` の NC で、優勝戦・準優勝戦の日は NCR と NC の両方で scenario を取る（D-37）（API は `scope=NC` を受け付けない）
   - 2段目: similar・scenario（NA・VA）・展示・オリジナル展示・整備・体重・勝ち決まり手・前検・会場の特徴・会場の決まり手の期間
   - 3段目: 深掘りの艇の `getRacerScopedRaceStats`。6艇比較のときは6艇
   - 部分ごとに `{status, data}`。失敗は部分だけ（FR-11）
@@ -56,7 +56,8 @@
   - 類似レースの集計（`neighbors` の先頭 min(400, `n_layer`) 件、`aggregateNeighbors`。万舟は `payout_3tan >= 10000`。D-35・ADR 0087）
   - 優勝戦・準優勝戦の日の今節の点の扱い（F03・D-34）
   - 展示前の文の出し分け（F04）
-  - 会場の決まり手の「最近↑／↓」（ぶれ幅が重ならないときだけ、D-35）
+  - 会場の決まり手の「最近↑／↓」（直近90日 対 365日−90日のぶれ幅が重ならないときだけ。印の行の2つの割合も返す。D-35・D-37）
+  - 優勝戦・準優勝戦の日の範囲の選択（NCR、30件未満・キー無しは NC に戻して矢印なし・「件数少なめ」。D-37）
   - 今節の各走の表（`buildMeetResults`・`SCORE_POINTS`。今日の走は点に入れない、D-29）
 - [ ] T2-3 `oddsMath.js` に足す: 3連単の人気順（120通りの昇順）・点数（同じ艇の重複を除く）・均等／均等払戻の配分（100円単位の切り捨て）・余り・最低額の判定（予算 < 100円×点数なら配分を出さない、F05）・丸めた後の倍率の幅（F06）
 - [ ] T2-4 再現テスト

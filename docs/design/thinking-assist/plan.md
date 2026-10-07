@@ -1,6 +1,6 @@
 # 思考アシスト plan（BOA-430）
 
-- 入力: [spec.md](./spec.md)（FR-1〜11・FR-3a、D-1〜D-36。D-36 は design-reviewer の指摘で作る側が決めたもの）、[screens.md](./screens.md)、承認モック [mock/APPROVED.md](./mock/APPROVED.md)（v7、Artifact Version 10）
+- 入力: [spec.md](./spec.md)（FR-1〜11・FR-3a、D-1〜D-37。D-36 は design-reviewer の指摘で作る側が決めたもの）、[screens.md](./screens.md)、承認モック [mock/APPROVED.md](./mock/APPROVED.md)（v7、Artifact Version 10）
 - 種別: UI の新規ページ。DB は新しい表が1つ（会場の決まり手の期間の集計 venue_technique_period_stats、マイグレーション 134、ADR 0088）と、それを書く毎日のスクリプトの追記。本番への適用はユーザー（`docs/db-migration/134-runbook.md`）。BOA-271 のバッチ・API は変えない
 - ADR: [0086 データは既存の関数と v16 API を画面で組み合わせる](../../adr/0086-thinking-assist-compose-existing-sources.md)、[0087 類似レースは龍神ソナーと同じ上位400件で数える](../../adr/0087-thinking-assist-similar-race-counting.md)・[0088 会場の決まり手を直近1年と90日で並べる RPC](../../adr/0088-venue-winning-technique-counts-by-period.md)（どちらも採用、2026-10-07。下「決定済み」）
 
@@ -24,7 +24,7 @@
 - 価値の結論（ファン）:
   - 主は直近1年（徳山 2,592件）。四季が1周し、今の水面に近い
   - 直近90日（612件）を並べる
-  - 差がはっきりした決まり手にだけ「最近↑／↓」を付ける
+  - 差がはっきりした決まり手にだけ「最近↑／↓」を付ける（比べ方は直近90日 対 それより前の275日。spec D-37）
   - 季節別・3年・全期間は出さない（差が出ない）
 - 2026-10-07 ユーザー「推奨どおり」
 - 実現（採用後に変えた）: 推奨した読み取り専用の RPC は作れない。長期の表 `kb_archive_races` は匿名に読ませておらず、SECURITY DEFINER の関数を匿名に公開するのは規則で禁じている（verify-migration-rls 7）。代わりに次の形にした（ADR 0088）
@@ -66,7 +66,7 @@ flowchart TD
 | 時点（展示前／展示後）と v16 の状態 | v16 facts の `status`（`resolveStatus`） | 展示後の段があれば展示後を既定。文言は v16 screens「状態」にそろえる（FR-11） |
 | 6艇中の今日の順位・今日の値 | facts `today.items{values, positions}` | 差がつく材料の札・盤の印 |
 | 差がつく材料 | facts `facts[範囲]` を `factRows`（analogyFacts.js） | judge は v16 のまま。範囲は `today.scope_keys[艇]` |
-| 全国・級の並びが同じ（件数・1号艇の1着・万舟） | scenario `scope={today.scope_keys["1"].NC}`（API は `scope=NC` を受け付けない。キーは facts の応答から。NC が無いレースは行を出さない。準優勝戦・優勝戦の扱いは spec U-17）の `cells.all.forms.any.{n, b1_win, manshu, payout_known}` | 返還を除く母集団（D-25・U-7。差がつく材料の 3,339件は返還を含むので、件数が違う理由を畳んで書く） |
+| 全国・級の並びが同じ（件数・1号艇の1着・万舟） | scenario `scope={today.scope_keys["1"].NC}`（API は `scope=NC` を受け付けない。キーは facts の応答から。NC が無いレースは行を出さない。準優勝戦・優勝戦の日は `today.scope_keys[艇番].NCR` で取り、30件未満・キー無しは NC に戻して矢印を付けない（spec D-37）。NCR を使うときは NC も取り「予選も含めると」の1行に使う）の `cells.all.forms.any.{n, b1_win, manshu, payout_known}` | 返還を除く母集団（D-25・U-7。差がつく材料の 3,339件は返還を含むので、件数が違う理由を畳んで書く） |
 | 全国の全レース（比べる基準） | scenario `scope=NA` の同じセル | 全レース共通の値。万舟の分母は `payout_known` |
 | 徳山の全レース（参考の線） | scenario `scope=VA` の同じセル（返還を除く）と、facts `VA` の `usual["1"].win`（返還を含む） | 2種類を「件数が違う理由」に書く（Codex F01） |
 | 形・進入・手がかり・攻める艇 | scenario（NC）`cells.*`・`hints`・`attack` | 1号艇の範囲。既存の `slitForms`・`entryType`・`hintRows` |
@@ -76,7 +76,7 @@ flowchart TD
 | 前検タイムと順位 | `getMeetScoreboard(raceId, venueCode).pretestByRacer` | 深掘り |
 | 今節の各走（日・R・進入・ST・展示・着・点）、今節より前の5走、その艇番の1着 | `getRacerScopedRaceStats(racerId)`（直近2年）を `buildMeetResults`・`getRecentRaces`（basicInfoStats.js）で絞る | 今節の平均着順点は v16 `today.items.series_score`（前日まで）。表の平均の式は `SCORE_POINTS`（seriesPoints.js）で、v16 の値と一致を確かめる（再現テスト） |
 | 勝ち決まり手（直近90日） | `getRaceTechniqueProfileBreakdown(raceId)` | 深掘り |
-| 会場の特徴（水質・型・決まり手） | `getVenueCharacteristics`、新しい表 `venue_technique_period_stats`（直近1年と直近90日。新しいサービス関数 `getVenueTechniquePeriodStats(venueCode)`、`withCache`） | P-2・ADR 0088。「最近↑／↓」は2つの割合のぶれ幅が重ならないときだけ |
+| 会場の特徴（水質・型・決まり手） | `getVenueCharacteristics`、新しい表 `venue_technique_period_stats`（直近1年と直近90日。新しいサービス関数 `getVenueTechniquePeriodStats(venueCode)`、`withCache`） | P-2・ADR 0088。「最近↑／↓」は直近90日 対 それより前の275日（365日−90日）のぶれ幅が重ならないときだけ（spec D-37） |
 | オッズ（3連単120通り・取得時刻） | `getRaceOddsSnapshots`（最新の行）。当日・締切90分前以内は `fetchLiveOdds` を押したときだけ | 自動更新しない（FR-8） |
 
 - 部品交換・欠場など v16 の状態の扱いは v16 と同じ（欠場があれば v16 の部分を出さない。図・買い目は5艇で描く。screens「状態」）
@@ -212,10 +212,10 @@ src/components/race/assist/
 | 指摘 | 直したこと |
 |---|---|
 | 1 時点（P1） | 展示後は DB の展示が6艇そろったら選べる。v16 の展示後の段が無いときは、展示の値は出し、v16 の展示後に依存する部分（展示の形・手がかりの今日・類似レースの並べ直し）だけ出さない。風速の区分は DB の風速から `windBand` で出す（spec FR-2・screens「状態」） |
-| 2 準優勝戦・優勝戦の NC（P1） | ユーザーの判断に回した（spec U-17。ファン4人の推奨は同じラウンドに絞り、件数が少なくて戻すときは矢印を付けない） |
+| 2 準優勝戦・優勝戦の NC（P1） | ユーザー決定（spec D-37）: 同じラウンド（NCR）に絞る。30件未満は NC に戻して矢印を付けず「件数少なめ」 |
 | 3 取得の順・N-5 | 1段目は出走表とオッズ。v16 facts は届いてから埋め、scenario の NC は `today.scope_keys` を受けてから取る（上の図）。N-5 は「出走表の図が2秒」 |
 | 4 類似レースの分母 | 表示する件数は `aggregateNeighbors` の n、万舟の分母は払戻のある件（spec D-36 (3)）。verify の固定データに返還・払戻 null の件を入れる |
-| 5 「最近↑／↓」が付かない | ユーザーの判断に回した（spec U-18。ファン4人の推奨は「直近90日 対 それより前の275日」で比べ、印の行に2つの割合を出す）。表に365日と90日があれば、前の275日は引き算で出せる |
+| 5 「最近↑／↓」が付かない | ユーザー決定（spec D-37）: 「直近90日 対 それより前の275日」で比べ、印の行に2つの割合を出す。表に365日と90日があれば、前の275日は引き算で出せる |
 | 6 書き直し漏れ | spec 3行・25行・N-8、この plan の種別とデータの節を直した。tasks に data-accuracy-verifier と鮮度の検査を足した |
 | 7 screens が古い | screens の参照モック・FW-11・類似レースの書き方・状態の表を直し、部品の名前は plan を正とした。受け入れ E2E は直した screens で書き直す（tasks T-pre2） |
 | 8 E2E の固定データ | 徳山10R（2026-10-06）の facts・similar（racecard）・scenario（NC・NCR・NA・VA:18）を本番から取った新しい固定データを作る（tasks T-pre2）。「展示後の段が無い」状態も入れる |
