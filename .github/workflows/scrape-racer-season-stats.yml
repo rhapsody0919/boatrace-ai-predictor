@@ -90,6 +90,9 @@ jobs:
     needs: gate
     if: ${{ !cancelled() && needs.gate.outputs.skip != 'true' }}
     runs-on: ubuntu-latest
+    # アプリ ryujin-bot の Secrets は environment ryujin-bot（Deployment branches: master だけ）に置く。
+    # 別ブランチの workflow_dispatch や、別ブランチに足したワークフローから bypass 用のトークンを作らせないため
+    environment: ryujin-bot
     timeout-minutes: 330 # 全件（最悪4.5時間）＋セットアップ＋レポートのコミットに足りる長さ。GitHub Actionsの上限は360分
     steps:
       - uses: actions/checkout@v4
@@ -149,15 +152,18 @@ jobs:
       # トークンの有効期限は1時間なので、checkout ではなく push の直前に作る
       - name: Create ryujin-bot token
         id: app-token
-        if: ${{ !cancelled() }}
+        if: ${{ github.ref == 'refs/heads/master' && (!cancelled()) }}
         uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.RYUJIN_BOT_APP_ID }}
           private-key: ${{ secrets.RYUJIN_BOT_PRIVATE_KEY }}
           permission-contents: write
 
+      # スクレイピングが失敗した場合も、失敗理由を含むレポートを残す（!cancelled()）。ただしトークンの発行に
+      # 失敗したときは push しない（GITHUB_TOKEN に戻すと ruleset で拒否されるだけ。他の9本と同じ扱い）
       - name: Commit scrape report if changed
-        if: ${{ !cancelled() }} # スクレイピングが失敗した場合も、失敗理由を含むレポートを残す
+        id: push
+        if: ${{ !cancelled() && steps.app-token.outcome == 'success' }}
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -167,3 +173,19 @@ jobs:
           bash scripts/maintenance/push-with-retry.sh
         env:
           PUSH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      # 取得は成功したが、トークンの発行かレポートの push に失敗したとき（上の取得失敗の通知は拾わない）
+      - name: Notify Slack on report push failure
+        if: ${{ always() && (steps.app-token.outcome == 'failure' || steps.push.outcome == 'failure') }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "::warning::SLACK_WEBHOOK_URL が未設定のため通知できません"
+            exit 0
+          fi
+          payload=$(jq -n --arg url "$RUN_URL" '{
+            text: ("選手期別成績の取得レポート（profile-scrape-report.json）を master に push できませんでした（ryujin-bot のトークンの発行か push の失敗）: " + $url)
+          }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"

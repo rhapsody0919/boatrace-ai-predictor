@@ -15,6 +15,8 @@
  *   3. そのワークフローの git commit -m のメッセージは [automated] で終わる（下の 4 の条件が末尾で判定するため）
  *   4. on.push で master を対象にし、paths で絞っていないワークフローの各 job は、
  *      ryujin-bot[bot] と endsWith(head_commit.message, '[automated]') の両方で除外する if を持つ
+ *   5. RYUJIN_BOT_* を使う job は environment: ryujin-bot を持ち、トークンの発行は github.ref が master のときだけ
+ *   6. push のステップが !cancelled()・always() で走るなら、steps.app-token.outcome == 'success' も条件にする
  *
  * 使い方: node scripts/maintenance/verify-bot-push-workflows.js
  */
@@ -152,12 +154,40 @@ export function checkWorkflow(name, yaml) {
         `${name}: app-token のステップが RYUJIN_BOT_APP_ID・RYUJIN_BOT_PRIVATE_KEY を使っていない`,
       );
     }
+    if (tokenStep && !tokenStep.includes("github.ref == 'refs/heads/master'")) {
+      problems.push(
+        `${name}: app-token のステップの if に github.ref == 'refs/heads/master' が無い`,
+      );
+    }
+    for (const s of pushSteps) {
+      const cond = (s.match(/^\s*if:\s*(.*)$/m) || [])[1] || "";
+      // !cancelled()・always() は「先行ステップの失敗」でも走るので、トークンの発行の成功を明示しないと
+      // 空の PUSH_TOKEN で GITHUB_TOKEN に戻ってしまう
+      if (
+        /!cancelled\(\)|always\(\)/.test(cond) &&
+        !cond.includes("steps.app-token.outcome == 'success'")
+      ) {
+        problems.push(
+          `${name}: push のステップの if（${cond}）が、トークンの発行の失敗後も走る（steps.app-token.outcome == 'success' を足す）`,
+        );
+      }
+    }
     for (const m of yaml.matchAll(/git commit -m "([^"]*)"/g)) {
       if (!m[1].endsWith("[automated]")) {
         problems.push(
           `${name}: コミットのメッセージが [automated] で終わらない: ${m[1]}`,
         );
       }
+    }
+  }
+  for (const job of listJobs(yaml)) {
+    if (
+      job.text.includes("secrets.RYUJIN_BOT_") &&
+      !/^ {4}environment:\s*ryujin-bot\s*$/m.test(job.text)
+    ) {
+      problems.push(
+        `${name}: RYUJIN_BOT_* を使う job「${job.name}」に environment: ryujin-bot が無い（master 以外から bypass 用のトークンを作れてしまう）`,
+      );
     }
   }
   if (triggersOnEveryMasterPush(yaml)) {
@@ -184,6 +214,7 @@ function check(label, actual, expected) {
 }
 const TOKEN_STEP = `      - name: Create ryujin-bot token
         id: app-token
+        if: github.ref == 'refs/heads/master'
         uses: actions/create-github-app-token@v3
         with:
           app-id: \${{ secrets.RYUJIN_BOT_APP_ID }}
@@ -194,13 +225,14 @@ const PUSH_STEP = (env, msg = "chore: x [automated]") => `      - name: Push
           git commit -m "${msg}"
           bash scripts/maintenance/push-with-retry.sh
 ${env ? `        env:\n          ${PUSH_TOKEN_ENV}\n` : ""}`;
-const wf = (on, jobIf, steps) => `name: T
+const ENV_LINE = "    environment: ryujin-bot\n";
+const wf = (on, jobIf, steps, envLine = ENV_LINE) => `name: T
 on:
 ${on}
 jobs:
   a:
 ${jobIf}    runs-on: ubuntu-latest
-    steps:
+${envLine}    steps:
       - uses: actions/checkout@v4
 ${steps}`;
 const SCHEDULE = "  schedule:\n    - cron: '0 0 * * *'\n";
@@ -262,6 +294,35 @@ check(
     wf("  pull_request:\n    branches:\n      - master\n", "", ""),
   ),
   false,
+);
+check(
+  "environment: ryujin-bot が無い job を検出",
+  checkWorkflow("t", wf(SCHEDULE, "", TOKEN_STEP + PUSH_STEP(true), "")).length,
+  1,
+);
+check(
+  "トークンの発行が master に限られていないことを検出",
+  checkWorkflow(
+    "t",
+    wf(SCHEDULE, "", TOKEN_STEP.replace(/ {8}if: .*\n/, "") + PUSH_STEP(true)),
+  ).length,
+  1,
+);
+check(
+  "!cancelled() の push がトークンの発行の失敗後も走ることを検出",
+  checkWorkflow(
+    "t",
+    wf(SCHEDULE, "", TOKEN_STEP + PUSH_STEP(true).replace("        run: |", "        if: ${{ !cancelled() }}\n        run: |")),
+  ).length,
+  1,
+);
+check(
+  "!cancelled() でも発行の成功を条件にしていれば問題なし",
+  checkWorkflow(
+    "t",
+    wf(SCHEDULE, "", TOKEN_STEP + PUSH_STEP(true).replace("        run: |", "        if: ${{ !cancelled() && steps.app-token.outcome == 'success' }}\n        run: |")),
+  ),
+  [],
 );
 if (failures.length > 0) {
   console.error("NG: 検査ロジックが期待どおりに動いていません");

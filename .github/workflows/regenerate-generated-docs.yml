@@ -39,6 +39,9 @@ jobs:
       github.actor != 'ryujin-bot[bot]' &&
       !endsWith(github.event.head_commit.message, '[automated]')
     runs-on: ubuntu-latest
+    # アプリ ryujin-bot の Secrets は environment ryujin-bot（Deployment branches: master だけ）に置く。
+    # 別ブランチの workflow_dispatch や、別ブランチに足したワークフローから bypass 用のトークンを作らせないため
+    environment: ryujin-bot
     timeout-minutes: 10
     steps:
       # 起動したコミットではなく、その時点の master の先端から作り直す
@@ -59,6 +62,7 @@ jobs:
       # トークンの有効期限は1時間なので、checkout ではなく push の直前に作る
       - name: Create ryujin-bot token
         id: app-token
+        if: github.ref == 'refs/heads/master'
         uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.RYUJIN_BOT_APP_ID }}

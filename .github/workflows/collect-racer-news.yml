@@ -50,6 +50,9 @@ jobs:
     needs: gate
     if: ${{ !cancelled() && needs.gate.outputs.skip != 'true' }}
     runs-on: ubuntu-latest
+    # アプリ ryujin-bot の Secrets は environment ryujin-bot（Deployment branches: master だけ）に置く。
+    # 別ブランチの workflow_dispatch や、別ブランチに足したワークフローから bypass 用のトークンを作らせないため
+    environment: ryujin-bot
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -68,6 +71,7 @@ jobs:
       # トークンの有効期限は1時間なので、checkout ではなく push の直前に作る
       - name: Create ryujin-bot token
         id: app-token
+        if: github.ref == 'refs/heads/master'
         uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.RYUJIN_BOT_APP_ID }}
