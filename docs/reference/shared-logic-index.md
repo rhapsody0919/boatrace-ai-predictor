@@ -220,7 +220,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/analogyRaceFeatures.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: DB の行からモデルの入力を作る純… | toFloat32, meanFloat32, rankMinAscending, windOffsetFor, windComponents ほか3件 |
 | `src/utils/analogyScenario.js` | アナロジー・ファインダー v16 の展開シナリオの定義（BOA-271。plan「定義」）。純粋関数。 | exhibitionForms, slitForms, maedukeBoats, entryType, waveBand ほか21件 |
 | `src/utils/analogySimilarDisplay.js` | 類似レースの33項目の表示（spec B-6・B-7「今日: …」と1件ずつの値）。純粋関数。 | similarRaceLink, gapOf, b1Rank, topBoat, itemValue ほか2件 |
-| `src/utils/analogySimilarRerank.js` | アナロジー・ファインダー v16 の類似レースを、展示の後に並べ直す（BOA-271 tasks T4-1。plan「展示後の段」）。純粋関数。 | exhibitionVector, exhibitionBoats, candidateValues, rerankSimilar, exhibitionItemLevels ほか1件 |
+| `src/utils/analogySimilarRerank.js` | アナロジー・ファインダー v16 の類似レースを、展示の後に並べ直す（BOA-271 tasks T4-1。plan「展示後の段」）。純粋関数。 | exhibitionVector, exhibitionBoats, candidateValues, rerankSimilar, exhibitionItemLevels ほか4件 |
 | `src/utils/analogyTips.js` | アナロジー・ファインダー v16 の吹き出しの文（spec B-8）。純粋関数 | boatTip |
 | `src/utils/analogyTreeShap.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: LightGBM の | compileModel, predictRaw, contributions |
 | `src/utils/analytics.js` | — | getCookieConsent, setCookieConsent, initAdSense, initTrackingIfConsented, initGA ほか6件 |
@@ -300,4 +300,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 265 ファイル / export 1363 件。
+対象 265 ファイル / export 1366 件。
