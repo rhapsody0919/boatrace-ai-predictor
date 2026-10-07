@@ -6,8 +6,8 @@
 - 数字の出し方・文言はモック v7 に合わせる。モックと違う形にしたくなったら、実装せずオーケストレーター経由でユーザーに出す
 
 ## 事前（`/step4` の前）
-- [ ] T-pre1 マイグレーション 134 のファイル（`134_venue_technique_period_stats.sql`・`134-runbook.md`・APPLIED.md の行）だけを docs の PR で先に master に入れる（本番は適用済み。番号の衝突を防ぐ。design-reviewer 指摘16）
-- [ ] T-pre2 spec U-17・U-18 のユーザーの回答（D-37）を spec・screens に反映した後で、受け入れ E2E を書き直させる（acceptance-test-writer に spec・screens のパスだけを渡す）。あわせて固定データ `e2e/thinking-assist-fixture.js` を作る: 徳山10R（2026-10-06）の facts・similar（racecard）・scenario（NC・NCR・NA・VA:18）を本番から取り、「展示後の段が無い」状態も入れる（design-reviewer 指摘7・8）
+- [x] T-pre1 （PR #1299）マイグレーション 134 のファイル（`134_venue_technique_period_stats.sql`・`134-runbook.md`・APPLIED.md の行）だけを docs の PR で先に master に入れる（本番は適用済み。番号の衝突を防ぐ。design-reviewer 指摘16）
+- [x] T-pre2 （D-37・D-38 と screens「操作できる要素の名前」を書き足し、受け入れ E2E 94件・固定データ e2e/thinking-assist-fixture.js。Codex ③ の F05〜F11 を要件に書き直した）spec U-17・U-18 のユーザーの回答（D-37）を spec・screens に反映した後で、受け入れ E2E を書き直させる（acceptance-test-writer に spec・screens のパスだけを渡す）。あわせて固定データ `e2e/thinking-assist-fixture.js` を作る: 徳山10R（2026-10-06）の facts・similar（racecard）・scenario（NC・NCR・NA・VA:18）を本番から取り、「展示後の段が無い」状態も入れる（design-reviewer 指摘7・8）
 
 ## PR0 会場の決まり手の期間の表（ADR 0088、マイグレーション 134）
 事前条件: 134 は本番に適用済み（2026-10-07、APPLIED.md）
