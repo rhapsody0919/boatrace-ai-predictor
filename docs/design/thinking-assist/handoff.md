@@ -140,3 +140,4 @@
 - モック v7: Artifact の Version 9、写しは [mock-v7/index.html](./mock-v7/index.html)。新しく読んだ実データ: race_conditions（水温 24℃、観測 13:14）、exhibition_data（今節の各走の展示タイム）
 - 撮影: mock-tools/shots.mjs は準優勝戦の日に今節の札が出なくなったので、セオリーカードの撮影を `#sum [data-fact="1:st_mean30"]` に変えて使った
 - 次: ユーザーの回答 → v7 の承認 → 承認画像（375px・1440px）を mock/ に保存・APPROVED.md → `/step2`
+- 追加（同日）: ユーザーの指摘「展示の表は既存のテーブルと同じ規則で最良に色を」→ race-detail-ui-unify R1・R3 と `bestOf.js` に合わせて金枠を付けた（spec FR-3a・D-33）。Artifact の Version 10

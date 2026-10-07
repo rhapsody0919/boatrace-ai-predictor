@@ -12,6 +12,7 @@
   --shadow:0 1px 2px rgba(19,38,58,.08),0 4px 14px rgba(19,38,58,.06);
   --b1:#ffffff; --b1t:#13263a; --b2:#1b1b1b; --b2t:#fff; --b3:#e53935; --b3t:#fff; --b4:#1e88e5; --b4t:#fff; --b5:#fdd835; --b5t:#13263a; --b6:#43a047; --b6t:#fff;
   --b1l:#9aa7b3; --b2l:#1b1b1b;
+  --best-ring:#c9a227; --best-bg:color-mix(in srgb,#e0b84a 22%,transparent); --gold-text:#8a6a00;
   --num:"Barlow Semi Condensed","Zen Kaku Gothic New",system-ui,sans-serif;
   --jp:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
 }
@@ -23,6 +24,7 @@
   --mock:#a99bf0; --mock-soft:#231e3d; --dim:rgba(0,0,0,.6);
   --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
   --b1l:#c9d2da; --b2l:#d9dee3;
+  --best-ring:#e0b84a; --best-bg:color-mix(in srgb,#e0b84a 22%,#160f03); --gold-text:#e6c260;
 }}
 :root[data-theme="dark"]{
   color-scheme:dark;
@@ -32,6 +34,7 @@
   --mock:#a99bf0; --mock-soft:#231e3d; --dim:rgba(0,0,0,.6);
   --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
   --b1l:#c9d2da; --b2l:#d9dee3;
+  --best-ring:#e0b84a; --best-bg:color-mix(in srgb,#e0b84a 22%,#160f03); --gold-text:#e6c260;
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--jp);font-size:14px;line-height:1.55;padding-inline:16px;padding-block:16px 40px}
@@ -172,6 +175,7 @@ button.mk{cursor:pointer}
 .tbl td:first-child{white-space:nowrap}
 .tbl td.r,.tbl th.r{text-align:right}
 .tori{color:var(--warn);font-weight:700}
+.tbl.ex th,.tbl.ex td{padding:5px 3px;white-space:nowrap}
 
 .deep{margin:0 12px 12px;border:2px solid var(--water);border-radius:14px;padding:10px 12px;display:grid;gap:10px;background:var(--water-soft)}
 .deep .dh{display:flex;align-items:center;gap:8px}
@@ -266,6 +270,10 @@ details.fold ul{margin:4px 0 0;padding-left:1.2em;display:grid;gap:3px;color:var
 .rough .cls .cap{color:var(--faint);font-size:10px}
 .foot .tq{min-height:0;width:18px;height:18px;padding:0;border-radius:50%;border:1px solid currentColor;color:inherit;opacity:.8}
 .sum{min-width:0}.sum>.box{min-width:0}
+/* 本実装の .ind-best（src/styles/indicators.css、race-detail-ui-unify R1）と同じ見た目: 金の枠＋薄い塗り＋太字 */
+.ind-best.ind-best.ind-best{box-shadow:inset 0 0 0 1px var(--best-ring),inset 0 0 0 100vmax var(--best-bg);font-weight:700;border-radius:4px}
+/* 着順の色（RaceHistoryTable.css・RecentRunsBar と同じ。1着＝金、5・6着＝赤） */
+.fin1{color:var(--gold-text);font-weight:700}.finbad{color:var(--warn);font-weight:700}
 .disc{font-size:11px;color:var(--faint);padding:8px 14px 12px}
 @media (prefers-reduced-motion:no-preference){.track .dot,.track .bar,.cell .mini i,.hbar .tr i{transition:left .35s ease,width .35s ease}}
 </style>
@@ -323,6 +331,7 @@ details.fold ul{margin:4px 0 0;padding-left:1.2em;display:grid;gap:3px;color:var
     <section>
       <h2>v6 からの変更</h2>
       <ul>
+        <li>（ユーザーの指摘、Version 10）6艇を並べた値に、既存の規則（race-detail-ui-unify R1、本実装は src/utils/bestOf.js）で最良に金枠: 展示の表（展示・一周・まわり足・展示ST は小さいほど良い）、図の数字（勝率・平均ST・モーター・展示）、スタートの図の値、6艇比較、モーター2連率の棒の値。体重・チルトは R3（向きの無い値）で付けない。1走ずつの表と今節の着順の並びは既存の着順の色（1着＝金、5・6着＝赤）。展示ST は既存と同じ2桁に</li>
         <li>「全国・級の並びが同じ」を絵に: 1号艇の枠（固定）＋2〜6号艇を点線で囲んで「入れ替わってもOK」。ヘッダーの枠・軸の要約・深掘り（選んだ艇が固定になる）・用語の「?」に同じ絵。「?」に艇番の順まで同じ場合（119件・1号艇の1着31%）を参考で1行</li>
         <li>文を絵・表・札・折りたたみに置き換えた: ヘッダーの枠を2本の小さいバーに、比べるバーの2行目（ポイント差・件数・ぶれ幅）は押すと開く、「数え方は2つ」は条件の表（✓／—）にして畳む、展示の注記は表の列（チルト）と札に、買い目の注記は「注意 ›」に畳む、ガイドは各段1文、用語の「?」の類似レース・全国の全レース・今節の平均着順点は表か箇条書きに</li>
         <li>消した文: 「選んだ方を次も開く」「並べるだけで掛け合わせない」、差がつく材料の並び順の説明、深掘りの最後の「数字をタップすると…」</li>
@@ -491,15 +500,15 @@ const meetPast = (n) => meetRuns(n).filter(r => r[0]!=="10/6").slice().reverse()
 const meetToday = (n) => meetRuns(n).filter(r => r[0]==="10/6");
 function finishLine(n){
   const byDay = {}; for (const r of meetPast(n)) (byDay[r[0]] ||= []).push(r[6]);
-  const days = Object.entries(byDay).map(([d,fs]) => `${d} ${fs.map(f=>f===1?`<b>${f}</b>`:f).join("・")}`).join("／");
+  const days = Object.entries(byDay).map(([d,fs]) => `${d} ${fs.map(f=>`<span class="${finCls(f)}">${f}</span>`).join("・")}`).join("／");
   const today = meetToday(n).map(r => `<span style="color:var(--faint)">今日 ${r[2]}R ${r[6]}着（点に入れない）</span>`).join(" ");
   return `<span class="num">${days}</span> ${today}`;
 }
 function seriesCheck(n){ const p = meetPast(n), sum = p.reduce((a,r)=>a+PTS[r[6]],0); return {sum, cnt:p.length, avg: sum/p.length}; }
 function runsTable(n){
   const p = meetPast(n).slice().reverse(), t = meetToday(n), c = seriesCheck(n);
-  const row = (r, today) => `<tr ${today?`style="color:var(--faint)"`:""}><td>${today?"今日":r[0]}</td><td class="r num">${r[2]}R</td><td class="r num">${r[4]}</td><td class="r num">${st3(r[5])}</td><td class="r num">${EXH_RUN[n][r[0]+"-"+r[2]]?.toFixed(2)??"—"}</td><td class="r num">${r[6]===1?`<b>${r[6]}</b>`:r[6]}</td><td class="r num">${today?"—":PTS[r[6]]}</td></tr>`;
-  const prior = PRIOR[n].map(r => `<tr><td>${r[0]}</td><td>${VENUE_NAME[r[1]]}</td><td class="r num">${r[2]}R</td><td class="r num">${r[3]??"—"}</td><td class="r num">${st3(r[4])}</td><td class="r num">${r[5]===1?`<b>${r[5]}</b>`:r[5]}</td></tr>`).join("");
+  const row = (r, today) => `<tr ${today?`style="color:var(--faint)"`:""}><td>${today?"今日":r[0]}</td><td class="r num">${r[2]}R</td><td class="r num">${r[4]}</td><td class="r num">${st3(r[5])}</td><td class="r num">${EXH_RUN[n][r[0]+"-"+r[2]]?.toFixed(2)??"—"}</td><td class="r num ${today?"":finCls(r[6])}">${r[6]}</td><td class="r num">${today?"—":PTS[r[6]]}</td></tr>`;
+  const prior = PRIOR[n].map(r => `<tr><td>${r[0]}</td><td>${VENUE_NAME[r[1]]}</td><td class="r num">${r[2]}R</td><td class="r num">${r[3]??"—"}</td><td class="r num">${st3(r[4])}</td><td class="r num ${finCls(r[5])}">${r[5]}</td></tr>`).join("");
   return `<div class="h" style="font-size:12px;color:var(--sub)">今節（徳山）</div>
   <table class="tbl"><thead><tr><th>日</th><th class="r">R</th><th class="r">進入</th><th class="r">ST</th><th class="r">展示</th><th class="r">着</th><th class="r">点</th></tr></thead><tbody>${t.map(r=>row(r,true)).join("")}${p.map(r=>row(r,false)).join("")}
   <tr><td colspan="7" class="num" style="white-space:normal"><b>平均 ${(c.avg).toFixed(2)}＝${c.sum}点÷${c.cnt}走</b>（今日の走は入れない）</td></tr></tbody></table>
@@ -522,6 +531,33 @@ const FIRST_COMP = BOATS.map(b => comp(Object.keys(TRI).filter(k => k[0]===Strin
 const FIRST_POP = FIRST_COMP.map(v => 1 + FIRST_COMP.filter(o => o < v).length);
 
 // ---- 計算
+// src/utils/bestOf.js と同じ（race-detail-ui-unify spec R1）。表示の桁に丸めて比べ、同値の最良は全部、全艇同値・値なしは空
+function bestOf(cands, dir="max", {digits}={}){
+  const round = v => digits===undefined ? v : Number(v.toFixed(digits));
+  const vals = cands.filter(c=>typeof c.value==="number" && !Number.isNaN(c.value)).map(c=>({boat:c.boat,value:round(c.value),hidden:c.hidden}));
+  if (!vals.length) return new Set();
+  const vs = vals.map(c=>c.value), mn=Math.min(...vs), mx=Math.max(...vs);
+  if (mn===mx) return new Set();
+  const t = dir==="min"?mn:mx;
+  return new Set(vals.filter(c=>c.value===t && !c.hidden).map(c=>c.boat));
+}
+const st2 = (v) => v==null ? "—" : "." + String(Math.round(v*100)).padStart(2,"0");
+const finCls = (f) => f===1 ? "fin1" : f>=5 ? "finbad" : "";
+// 6艇を並べた値の最良（R1）。向きと桁は既存の行と同じ（raceIndicators.jsx・RaceMeetTab.jsx）
+const B6 = (f) => BOATS.map(b=>({boat:b.n, value:f(b)}));
+const BEST = {
+  nat_win: bestOf(B6(b=>b.nat),"max",{digits:2}),        // 全国勝率（dataTable winRate）
+  loc_win: bestOf(B6(b=>b.loc),"max",{digits:2}),        // 当地勝率。記録なしは候補から外れる
+  st_mean30: bestOf(B6(b=>b.st),"min",{digits:3}),       // 平均ST（avgSt は3桁）
+  stc: bestOf(B6(b=>b.stc),"min",{digits:3}),            // このコースの平均ST（avgSt と同じ）
+  motor_2: bestOf(B6(b=>b.motor),"max",{digits:1}),      // モーター2連率
+  exh: bestOf(B6(b=>b.exh),"min",{digits:2}),            // 展示タイム
+  lap: bestOf(B6(b=>b.lap),"min",{digits:2}),            // オリジナル展示 一周（ORIGINAL_EXHIBITION_ROW_META は全種別 min）
+  mawari: bestOf(B6(b=>b.mawari),"min",{digits:2}),      // オリジナル展示 まわり足
+  est: bestOf(B6(b=>b.est),"min",{digits:2}),            // 展示ST（F は候補から外す。exSt）
+  series_score: ROUND_FINAL ? new Set() : bestOf(B6(b=>b.series),"max",{digits:2}), // 優勝戦・準優勝戦の日は付けない（Q7）
+};
+const bc = (key, n) => BEST[key]?.has(n) ? " ind-best" : "";
 const pct = (a,b) => b ? (100*a/b) : null;
 const f1 = (v) => v==null ? "—" : v.toFixed(1);
 const f0 = (v) => v==null ? "—" : Math.round(v).toString();
@@ -707,7 +743,7 @@ function model(){
     rows:BOATS.map(b=>({n:b.n, x:b.nat, nums:[["勝率",b.nat.toFixed(2),"nat_win"],["ST",st3(b.st),"st_mean30"]], marks:axisMarks(b)})) };
   if (S.lens==="flow") return {
     title: post ? "展示ST（左ほど早い）" : "平均ST・このコース（左ほど早い）", left:".00", right:".22", lo:0, hi:.22, rev:false, slit:true, good:"left",
-    rows:BOATS.map(b=>({n:b.n, x: post ? b.est : b.stc, nums:[], hideNums:true, tapLabel: post? st3(b.est): st3(b.stc), marks:flowMarks(b)})) };
+    rows:BOATS.map(b=>({n:b.n, x: post ? b.est : b.stc, nums:[], hideNums:true, tapLabel: post? st2(b.est): st3(b.stc), marks:flowMarks(b)})) };
   if (S.lens==="power") return {
     title: post ? "展示タイム（一番速い艇との差、左ほど速い）" : "モーター2連率（右ほど高い）",
     left: post ? "+0.00" : "15%", right: post ? "+0.10" : "45%", good: post ? "left" : "right",
@@ -763,7 +799,7 @@ function renderBoard(){
     h += `<div class="ohead"><span></span><span>選手</span><span>${md.rows[0].nums[0]?.[0]??""}</span><span>${md.rows[0].nums[1]?.[0]??"印"}</span><span></span></div>`;
     for (const r of md.rows){ const b=BOATS[r.n-1];
       const c1 = r.nums[0] ? cellMini(r.nums[0], scale(r.x), r.n) : cellMini(["",r.tapLabel??"",null], scale(r.x), r.n);
-      const c2 = r.nums[1] ? `<button type="button" class="cell" data-metric="${r.nums[1][2]??""}" data-boat="${r.n}"><span class="v num">${esc(r.nums[1][1])}</span></button>` : `<div class="marks">${marksHtml(r.marks)}</div>`;
+      const c2 = r.nums[1] ? `<button type="button" class="cell" data-metric="${r.nums[1][2]??""}" data-boat="${r.n}"><span class="v num${r.nums[1][2]?bc(r.nums[1][2],r.n):""}">${esc(r.nums[1][1])}</span></button>` : `<div class="marks">${marksHtml(r.marks)}</div>`;
       h += `<div class="orow" data-row="${r.n}"><button type="button" class="bbtn" style="border:0;background:transparent;padding:0" data-deep="${r.n}" aria-label="${r.n}号艇の詳しい情報">${badge(r.n)}</button><div class="who"><b>${esc(b.name)}</b><span>${b.cls}${r.nums[1]&&r.marks.length?` ・ ${r.marks.map(m=>esc(m.t)).join(" ")}`:""}</span></div>${c1}${c2}${addBtn(r.n,md)}</div>`;
     }
   } else if (S.v===3){
@@ -785,7 +821,8 @@ function trackHtml(r,md,scale){
   let grid = "";
   if (md.slit) grid = `<span class="slitline" style="left:0"></span>` + [.05,.10,.15,.20].map(v=>`<span class="grid" style="left:${scale(v)}%"></span>`).join("");
   else grid = [25,50,75].map(v=>`<span class="grid" style="left:${v}%"></span>`).join("");
-  const val = (md.slit||r.showVal) ? `<span class="val num" style="left:${x}%">${esc(r.showVal? r.nums[0][1] : (r.tapLabel??""))}</span>` : "";
+  const vkey = md.metric ? S.metric : md.slit ? (S.stage==="post" ? "est" : "stc") : null;
+  const val = (md.slit||r.showVal) ? `<span class="val num${vkey?bc(vkey,r.n):""}" style="left:${x}%">${esc(r.showVal? r.nums[0][1] : (r.tapLabel??""))}</span>` : "";
   const barStyle = md.slit ? `left:0;width:${x}%;background:${col};opacity:.25` : `left:0;width:${x}%;background:${col};opacity:.18`;
   const lbl = "";
   const grad = md.good ? `background:linear-gradient(to ${md.good}, transparent 40%, var(--water-soft));border-radius:6px;` : "";
@@ -793,10 +830,10 @@ function trackHtml(r,md,scale){
 }
 function numsHtml(r){
   if (r.hideNums || r.showVal) return "";
-  return r.nums.map(([k,v,m])=> m ? `<button type="button" class="mk" data-metric="${m}" data-boat="${r.n}">${esc(k)} <b class="num">${esc(v)}</b></button>` : `<span class="mk">${esc(k)} <b class="num">${esc(v)}</b></span>`).join("");
+  return r.nums.map(([k,v,m])=> m ? `<button type="button" class="mk${bc(m,r.n)}" data-metric="${m}" data-boat="${r.n}">${esc(k)} <b class="num">${esc(v)}</b></button>` : `<span class="mk">${esc(k)} <b class="num">${esc(v)}</b></span>`).join("");
 }
 function marksHtml(ms){ return ms.map((m,i)=>`<button type="button" class="mk ${m.cls}" ${m.th?`data-theory="${m.th}"`:""} ${m.fact?`data-fact="${m.fact[0]}:${m.fact[1][0]}"`:""}>${esc(m.t)}</button>`).join(""); }
-function cellMini(nm,x,n){ return `<button type="button" class="cell" data-metric="${nm[2]??""}" data-boat="${n}"><span class="v num">${esc(nm[1])}</span><span class="mini"><i style="width:${x}%;background:${boatCol(n)}"></i></span></button>`; }
+function cellMini(nm,x,n){ return `<button type="button" class="cell" data-metric="${nm[2]??""}" data-boat="${n}"><span class="v num${nm[2]?bc(nm[2],n):""}">${esc(nm[1])}</span><span class="mini"><i style="width:${x}%;background:${boatCol(n)}"></i></span></button>`; }
 function pos3(n){
   return `<div class="pos3" role="group" aria-label="${n}号艇を何着の候補に入れるか" style="margin-top:4px">${[1,2,3].map(k=>`<button type="button" class="${S.bets[k].has(n)?"on":""}" data-ms="${k}:${n}" aria-pressed="${S.bets[k].has(n)}">${k}着</button>`).join("")}</div>`;
 }
@@ -833,12 +870,12 @@ function renderSum(){
   } else if (S.lens==="power"){
     if (post){
       h += `<div class="box" id="g-power-sum"><h3>展示（徳山のオリジナル展示: 一周・まわり足）<button type="button" class="mk th" data-theory="TC-T10">傾向 ›</button></h3>
-      <table class="tbl"><thead><tr><th>艇</th><th class="r">展示</th><th class="r">${term("一周")}</th><th class="r">${term("まわり足")}</th><th class="r">${term("展示ST","ST")}</th><th class="r">体重</th><th class="r">チルト</th></tr></thead><tbody>
-      ${BOATS.map(b=>`<tr><td>${badge(b.n,"s")}</td><td class="r num">${b.exh.toFixed(2)}${b.exh===6.83?" ①":""}</td><td class="r num">${b.lap.toFixed(2)}${b.n===1?" ①":""}</td><td class="r num">${b.mawari.toFixed(2)}${b.n===1?" ①":""}</td><td class="r num">${st3(b.est)}</td><td class="r num">${b.wt.toFixed(1)}${b.wt===51.0?" 軽":""}</td><td class="r num">${b.tilt}</td></tr>`).join("")}
-      </tbody></table><div class="legend"><span>① 6艇で一番速い</span><span>軽 一番軽い</span></div>
+      <table class="tbl ex"><thead><tr><th>艇</th><th class="r">展示</th><th class="r">${term("一周")}</th><th class="r">${term("まわり足")}</th><th class="r">${term("展示ST","ST")}</th><th class="r">体重</th><th class="r">チルト</th></tr></thead><tbody>
+      ${BOATS.map(b=>`<tr><td>${badge(b.n,"s")}</td><td class="r num${bc("exh",b.n)}">${b.exh.toFixed(2)}</td><td class="r num${bc("lap",b.n)}">${b.lap.toFixed(2)}</td><td class="r num${bc("mawari",b.n)}">${b.mawari.toFixed(2)}</td><td class="r num${bc("est",b.n)}">${st2(b.est)}</td><td class="r num">${b.wt.toFixed(1)}${b.wt===51.0?" 軽":""}</td><td class="r num">${b.tilt}</td></tr>`).join("")}
+      </tbody></table><div class="legend"><span><span class="ind-best" style="padding:0 4px">金枠</span> 6艇で一番速い（小さいほど良い）</span><span>体重・チルトは良し悪しを付けない（軽＝一番軽い）</span></div>
       <div class="feat"><button type="button" class="mk th" data-theory="TC-X1">1号艇は展示が速く出やすい ›</button><button type="button" class="mk th" data-theory="TC-T5">チルト 傾向 ›</button><button type="button" class="mk th" data-theory="TC-T6">部品交換 全艇なし ›</button><button type="button" class="mk th" data-theory="TC-T9">体重 傾向 ›</button></div></div>`;
     } else h += `<div class="box" id="g-power-sum"><h3>展示</h3><p class="note">展示タイム・オリジナル展示・チルト・部品交換は展示の後に出る</p></div>`;
-    h += `<div class="box"><h3>モーター2連率（6艇）</h3>${bars6(BOATS.map(b=>b.motor),100,true)}<button type="button" class="chip hit" data-fact="1:motor_2"><span>1号艇は6艇で最下位（${f1(BOATS[0].motor)}%）</span><b>最下位のとき1着 ${f0(pct(205,675))}%（全体 ${f0(pct(FACTS[1].u[0],FACTS[1].u[1]))}%）</b></button></div>`;
+    h += `<div class="box"><h3>モーター2連率（6艇）</h3>${bars6(BOATS.map(b=>b.motor),100,true,BEST.motor_2)}<button type="button" class="chip hit" data-fact="1:motor_2"><span>1号艇は6艇で最下位（${f1(BOATS[0].motor)}%）</span><b>最下位のとき1着 ${f0(pct(205,675))}%（全体 ${f0(pct(FACTS[1].u[0],FACTS[1].u[1]))}%）</b></button></div>`;
   } else {
     h += betSummary(true);
     h += `<div class="box"><h3><span>${term("万舟")}の割合（3連単1万円以上）</span></h3>${baseLegend("徳山の全レース")}${SCOPE_NOTE}${hbB(`全国・級の並びが同じ ${comma(BASE.NC.n)}件`,BASE.NC.manshu,BASE.NC.n,BASE_M,VA_M)}${hbB(`類似レース ${SIM.n}件`,SIM.manshu,SIM.n,BASE_M,VA_M)}</div>`;
@@ -846,9 +883,9 @@ function renderSum(){
   }
   document.getElementById("sum").innerHTML = h;
 }
-function bars6(vals,n,raw=false){
+function bars6(vals,n,raw=false,best=null){
   const mx = Math.max(...vals.map(v=>raw?v:pct(v,n)));
-  return `<div class="bars6" role="img" aria-label="${vals.map((v,i)=>`${i+1}号艇 ${raw?f1(v):f0(pct(v,n))}%`).join("、")}">${vals.map((v,i)=>{const p=raw?v:pct(v,n);return `<div class="c"><span class="p num">${raw?f1(p):f0(p)}%</span><span class="col" style="height:${p/mx*100}%;background:${boatCol(i+1)}"></span>${badge(i+1,"s")}</div>`;}).join("")}</div>`;
+  return `<div class="bars6" role="img" aria-label="${vals.map((v,i)=>`${i+1}号艇 ${raw?f1(v):f0(pct(v,n))}%`).join("、")}">${vals.map((v,i)=>{const p=raw?v:pct(v,n);return `<div class="c"><span class="p num${best?.has(i+1)?" ind-best":""}">${raw?f1(p):f0(p)}%</span><span class="col" style="height:${p/mx*100}%;background:${boatCol(i+1)}"></span>${badge(i+1,"s")}</div>`;}).join("")}</div>`;
 }
 function techBars(t,n){ return `<div class="cmp">${Object.entries(t).map(([k,c])=>`<div class="hbar"><span class="lab">${k} <span class="num">${c}件</span></span><span class="tr"><i style="width:${pct(c,n)}%"></i></span><span class="num" style="text-align:right">${f0(pct(c,n))}%</span></div>`).join("")}</div>`; }
 
@@ -900,7 +937,7 @@ function renderDeep(){
     <dt>${term("モーター2連率")}</dt><dd><button type="button" data-metric="motor_2" data-boat="${b.n}" class="num">${f1(b.motor)}%</button></dd>
     <dt>${term("前検タイム")}</dt><dd class="num">${PRETEST[b.n-1][0].toFixed(2)}（参加艇で${PRETEST[b.n-1][1]}位）</dd>
     <dt>${term("勝ち決まり手")}</dt><dd>${(()=>{const t=WIN_TECH[b.n-1],tot=Object.values(t).reduce((a,c)=>a+c,0);return `<span class="num">1着${tot}回: </span>`+Object.entries(t).map(([k,c])=>`${k}<span class="num">${c}</span>`).join("・");})()}</dd>
-    ${post?`<dt>展示</dt><dd><button type="button" data-metric="exh" data-boat="${b.n}" class="num">${b.exh.toFixed(2)}</button> <span class="scopechip num">展示ST ${st3(b.est)}</span> <span class="scopechip num">チルト ${b.tilt}</span></dd>`:""}
+    ${post?`<dt>展示</dt><dd><button type="button" data-metric="exh" data-boat="${b.n}" class="num">${b.exh.toFixed(2)}</button> <span class="scopechip num">展示ST ${st2(b.est)}</span> <span class="scopechip num">チルト ${b.tilt}</span></dd>`:""}
     ${b.f?`<dt>${term("F")}</dt><dd><button type="button" class="mk f" data-theory="TC-T4">F${b.f}</button></dd>`:""}
   </dl>
   ${S.runsOpen?`<div class="runs">${runsTable(b.n)}</div>`:""}
