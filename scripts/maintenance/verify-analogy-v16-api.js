@@ -16,6 +16,8 @@ import {
   isRaceId,
   resolveStatus,
 } from "../../api/_lib/analogyV16.js";
+import fs from "fs";
+import zlib from "zlib";
 import { layerStatus } from "../../api/analogy/layer/[raceId].js";
 import { withoutSeriesScoreOnFinal } from "../../api/analogy/facts/[raceId].js";
 import { mergeExhibition } from "../../api/analogy/similar/[raceId].js";
@@ -596,6 +598,105 @@ check(
     "展示後の段: 締切と同時刻は書かない（締切前だけ書く）",
     [b.report.written, b.report.late, b.posts.map((p) => p.race_id)],
     [1, ["2026-10-05-20-02"], ["2026-10-05-20-01"]],
+  );
+}
+
+// ---- 9. F02 の通常経路: 並べ直して Storage に書いた後でも、締切を越えていれば snapshot を書かない --------------
+// （候補ファイルは並べ直しの固定データ testdata/v16-rerank.json。Storage の読み書きと DB を作り物で返す）
+{
+  process.env.SUPABASE_URL = "https://example.invalid";
+  process.env.SUPABASE_SERVICE_KEY = "test";
+  const RACE = "2026-10-05-20-01";
+  const fixture = JSON.parse(
+    fs.readFileSync(
+      new URL("../ml/analogy/testdata/v16-rerank.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  const file = {
+    ...fixture.candidates,
+    items_racecard: {},
+    results: fixture.candidates.candidates.map(() => ({})),
+  };
+  const gz = (obj) => zlib.gzipSync(Buffer.from(JSON.stringify(obj)));
+  const runAt = async (times) => {
+    const storageWrites = [];
+    const snapshotPosts = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url, init) => {
+      const u = String(url);
+      const post = init?.method === "POST";
+      if (u.includes("/storage/v1/object/")) {
+        if (post) {
+          storageWrites.push(u.split("/analogy-v16/")[1]);
+          return new Response("{}", { status: 200 });
+        }
+        if (u.includes("/similar/"))
+          return new Response(gz(file), { status: 200 });
+        if (u.includes("/today/"))
+          return new Response(gz({ wind_offset_deg: 0 }), { status: 200 });
+        return new Response("not found", { status: 404 });
+      }
+      if (post) {
+        snapshotPosts.push(JSON.parse(init.body)[0]);
+        return new Response("", { status: 201 });
+      }
+      const body = u.includes("analogy_v16_snapshots")
+        ? [
+            {
+              race_id: RACE,
+              stage: "racecard",
+              status: "ok",
+              run_id: "r",
+              n_layer: fixture.candidates.n_layer,
+              pool_cutoff: "2026-10-04",
+            },
+          ]
+        : u.includes("/races?")
+          ? [{ race_id: RACE, race_date: "2026-10-05", start_time: "10:00:00" }]
+          : u.includes("exhibition_data")
+            ? [1, 2, 3, 4, 5, 6].map((b) => ({
+                race_id: RACE,
+                boat_number: b,
+                exhibition_time: 6.7 + b / 100,
+                exhibition_course: b,
+                start_timing: 0.15,
+                start_flag: null,
+                is_absent: false,
+              }))
+            : [];
+      return new Response(JSON.stringify(body), { status: 200 });
+    };
+    const queue = times.map((t) => new Date(`2026-10-05T${t}+09:00`));
+    try {
+      const r = await runAnalogyV16Exhibition({
+        mode: "live",
+        now: () => queue.shift(),
+      });
+      return { report: r.report, storageWrites, snapshotPosts };
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  };
+  const late = await runAt(["09:59:30", "10:00:30"]);
+  check(
+    "展示後の段（通常経路）: Storage に書いた後に締切を越えたら snapshot を書かない",
+    [
+      late.report.failed,
+      late.report.late,
+      late.storageWrites.map((p) => p.split("/")[2]).sort(),
+      late.snapshotPosts.length,
+    ],
+    [[], [RACE], ["similar-exhibition", "today-exhibition"], 0],
+  );
+  const onTime = await runAt(["09:59:30", "09:59:50"]);
+  check(
+    "展示後の段（通常経路）: 締切前なら snapshot を ok で書く",
+    [
+      onTime.report.failed,
+      onTime.snapshotPosts.map((p) => [p.status, p.computed_at]),
+    ],
+    [[], [["ok", "2026-10-05T00:59:50.000Z"]]],
   );
 }
 
