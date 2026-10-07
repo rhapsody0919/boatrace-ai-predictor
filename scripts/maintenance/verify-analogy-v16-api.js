@@ -527,56 +527,76 @@ check(
 }
 
 // ---- 8. 公開前点検 F02: 締切は snapshot を書く直前に確かめ直す ---------------------------
+// 欠場の経路（Storage を読まずに行が決まる）で動かす。締切の確認は、どの経路でも行を決めた後・書く直前の1か所
 {
   process.env.SUPABASE_URL = "https://example.invalid";
   process.env.SUPABASE_SERVICE_KEY = "test";
-  const posts = [];
-  const realFetch = globalThis.fetch;
-  globalThis.fetch = async (url, init) => {
-    const u = String(url);
-    if (init?.method === "POST") posts.push(u);
-    const body = u.includes("analogy_v16_snapshots")
-      ? [
-          {
-            race_id: "2026-10-05-20-01",
+  const RACES = [
+    ["2026-10-05-20-01", "10:00:00"],
+    ["2026-10-05-20-02", "10:30:00"],
+  ];
+  const runAt = async (times) => {
+    const posts = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url, init) => {
+      const u = String(url);
+      if (init?.method === "POST") posts.push(JSON.parse(init.body)[0]);
+      const body = u.includes("analogy_v16_snapshots")
+        ? RACES.map(([race_id]) => ({
+            race_id,
             stage: "racecard",
             status: "ok",
             run_id: "r",
             n_layer: 5,
             pool_cutoff: "2026-10-04",
-          },
-        ]
-      : u.includes("/races?")
-        ? [
-            {
-              race_id: "2026-10-05-20-01",
+          }))
+        : u.includes("/races?")
+          ? RACES.map(([race_id, start_time]) => ({
+              race_id,
               race_date: "2026-10-05",
-              start_time: "10:00:00",
-            },
-          ]
-        : u.includes("exhibition_data")
-          ? [1, 2, 3, 4, 5, 6].map((b) => ({
-              race_id: "2026-10-05-20-01",
-              boat_number: b,
-              exhibition_time: 6.8,
-              is_absent: b === 6, // 欠場（Storage を読まずに行が決まる経路）
+              start_time,
             }))
-          : [];
-    return new Response(JSON.stringify(body), { status: 200 });
+          : u.includes("exhibition_data")
+            ? RACES.flatMap(([race_id]) =>
+                [1, 2, 3, 4, 5, 6].map((b) => ({
+                  race_id,
+                  boat_number: b,
+                  exhibition_time: 6.8,
+                  is_absent: b === 6,
+                })),
+              )
+            : [];
+      return new Response(JSON.stringify(body), { status: 200 });
+    };
+    const queue = times.map((t) => new Date(`2026-10-05T${t}+09:00`));
+    try {
+      const r = await runAnalogyV16Exhibition({
+        mode: "live",
+        now: () => queue.shift(),
+      });
+      return { report: r.report, posts };
+    } finally {
+      globalThis.fetch = realFetch;
+    }
   };
-  // 起動時は締切（10:00）の前、書く直前は締切の後
-  const times = [new Date("2026-10-05T09:59:30+09:00")];
-  const now = () => times.shift() ?? new Date("2026-10-05T10:00:30+09:00");
-  try {
-    const r = await runAnalogyV16Exhibition({ mode: "live", now });
-    check(
-      "展示後の段: 処理中に締切を越えたら snapshot を書かない",
-      [r.report.targets, r.report.written, r.report.late, posts.length],
-      [1, 0, ["2026-10-05-20-01"], 0],
-    );
-  } finally {
-    globalThis.fetch = realFetch;
-  }
+  // 時計: 起動時、1件目を書く直前、2件目を書く直前
+  const a = await runAt(["09:59:30", "10:00:30", "10:00:40"]);
+  check(
+    "展示後の段: 処理中に締切を越えたレースは書かず、後ろの締切前のレースは書く",
+    [a.report.written, a.report.late, a.posts.map((p) => p.race_id)],
+    [1, ["2026-10-05-20-01"], ["2026-10-05-20-02"]],
+  );
+  check(
+    "展示後の段: computed_at は書く直前の時刻",
+    a.posts[0]?.computed_at,
+    "2026-10-05T01:00:40.000Z",
+  );
+  const b = await runAt(["09:59:30", "09:59:50", "10:30:00"]);
+  check(
+    "展示後の段: 締切と同時刻は書かない（締切前だけ書く）",
+    [b.report.written, b.report.late, b.posts.map((p) => p.race_id)],
+    [1, ["2026-10-05-20-02"], ["2026-10-05-20-01"]],
+  );
 }
 
 if (failures > 0) {
