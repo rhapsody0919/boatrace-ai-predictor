@@ -23,7 +23,7 @@
  * 指摘#3で固定指標(勝率)から選択中指標に連動するよう変更。以前使っていた
  * getRacerVenueStatsは廃止）
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
@@ -47,6 +47,10 @@ import {
 import InlineFetchError from "../InlineFetchError";
 import FlyingBadge from "./FlyingBadge";
 import { bestOf } from "../../utils/bestOf";
+import {
+  ACCIDENT_BADGE_MIN_STARTS,
+  computeAccidentStats,
+} from "../../utils/accidentRate";
 import "./RaceBasicInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
@@ -138,6 +142,10 @@ function RaceBasicInfoTab({
   // （racerIdsKey / raceDate）が変わらず、再取得が起きないまま
   // 枠もエラーも消えて「失敗がデータなしに化ける」状態になる
   const [periodRetryToken, setPeriodRetryToken] = useState(0);
+  // 今期の事故率（目安、BOA-327）の元データ。6人分を1回の RPC で取る。
+  // undefined=未取得、{rows, range}=取得済み、{state:"unavailable"}=126未適用（出さない）、null=取得失敗
+  const [accidentRecords, setAccidentRecords] = useState(undefined);
+  const [accidentRetryToken, setAccidentRetryToken] = useState(0);
 
   const sortedPlayers = [...(players ?? [])].sort(
     (a, b) => a.number - b.number,
@@ -205,6 +213,63 @@ function RaceBasicInfoTab({
       cancelled = true;
     };
   }, [racerIdsKey, raceDate, periodRetryToken]);
+
+  useEffect(() => {
+    const ids = racerIdsKey.split(",").filter(Boolean).map(Number);
+    if (ids.length === 0 || !raceDate) return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getRacerAccidentRecords(ids, raceDate)
+      .then((data) => {
+        if (!cancelled) setAccidentRecords(data);
+      })
+      .catch((err) => {
+        // 126 未適用はサービス層が {state:"unavailable"} で返すので、ここに来るのは通信の失敗。
+        // 「事故が無い」と区別して、開いた欄に再試行つきのエラーを出す
+        console.error("事故率取得エラー:", err?.message ?? String(err));
+        if (!cancelled) setAccidentRecords(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [racerIdsKey, raceDate, accidentRetryToken]);
+  // racerId → computeAccidentStats の結果。取得前・未適用・失敗は空
+  const accidentByRacer = useMemo(() => {
+    const map = new Map();
+    if (!Array.isArray(accidentRecords?.rows)) return map;
+    const byId = new Map(accidentRecords.rows.map((r) => [r.racer_id, r]));
+    for (const p of sortedPlayers) {
+      if (!p.racerId) continue;
+      // 今期まだ1走もしていない選手は RPC の行が無い。出走0として扱う
+      map.set(
+        p.racerId,
+        computeAccidentStats(
+          byId.get(p.racerId) ?? { starts: 0, incidents: [] },
+          accidentRecords.range,
+        ),
+      );
+    }
+    return map;
+    // sortedPlayers は毎回作り直す配列なので、中身の代わりに racerIdsKey で再計算する
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accidentRecords, racerIdsKey]);
+  // 期間の表示（「2026-05-01〜10-02」）。to はレースの前日。同じ年なら月日だけにする
+  const accidentRangeLabel = (() => {
+    const range = accidentRecords?.range;
+    if (!range) return null;
+    const last = new Date(`${range.to}T00:00:00Z`);
+    last.setUTCDate(last.getUTCDate() - 1);
+    const lastStr = last.toISOString().slice(0, 10);
+    // 期の初日のレースは、前日が期の前になる（「2026-05-01〜04-30」と逆になる。ファン評価1周目）
+    if (lastStr < range.from) return { from: range.from, to: null };
+    return {
+      from: range.from,
+      to:
+        lastStr.slice(0, 4) === range.from.slice(0, 4)
+          ? lastStr.slice(5)
+          : lastStr,
+    };
+  })();
 
   const ensureScopedStats = useCallback((racerId) => {
     if (!racerId) return;
@@ -580,10 +645,102 @@ function RaceBasicInfoTab({
                 <span className="rbit-expand-arrow">
                   {expandedBoat === boat ? "▼" : "▶"}
                 </span>
+                {/* 今期の事故率（BOA-327）。B2ラインを超えた選手と、あとF1本（20点）以内で
+                      超える選手にだけ出す（出走30走以上。accidentRate.js）。名前の列に入れると列が広がり、
+                      その行だけ棒の枠が短くなって6艇の長さを比べられなくなるので、2段目に置く */}
+                {(() => {
+                  const acc = accidentByRacer.get(player?.racerId);
+                  if (!acc?.showBadge) return null;
+                  return (
+                    <span
+                      className={`rbit-accident-badge${acc.status === "over" ? " is-over" : ""}`}
+                    >
+                      {acc.status === "over"
+                        ? t("basicInfo.accidentBadgeOver", {
+                            rate: acc.rate.toFixed(2),
+                          })
+                        : t("basicInfo.accidentBadgeNear", {
+                            need: acc.need,
+                          })}
+                    </span>
+                  );
+                })()}
               </button>
 
               {expandedBoat === boat && (
                 <div className="rbit-expanded">
+                  {/* 今期の事故率（目安、BOA-327）。どのサブタブでも見えるよう、タブの上に置く */}
+                  {accidentRecords === null && (
+                    <InlineFetchError
+                      message={t("basicInfo.accidentFetchError")}
+                      onRetry={() => {
+                        setAccidentRecords(undefined);
+                        setAccidentRetryToken((v) => v + 1);
+                      }}
+                    />
+                  )}
+                  {(() => {
+                    const acc = accidentByRacer.get(player?.racerId);
+                    if (!acc || !accidentRangeLabel) return null;
+                    const kinds = ["F", "L1", "K1", "S1", "S2"]
+                      .filter((k) => acc.counts[k] > 0)
+                      .map((k) =>
+                        t("basicInfo.accidentKindCount", {
+                          kind: t(`basicInfo.accidentKind.${k}`),
+                          n: acc.counts[k],
+                        }),
+                      )
+                      .join(t("basicInfo.accidentKindSeparator"));
+                    return (
+                      <div
+                        className={`rbit-accident${acc.settled && acc.status === "over" ? " is-over" : ""}`}
+                      >
+                        <div className="rbit-accident-heading">
+                          {accidentRangeLabel.to
+                            ? t("basicInfo.accidentTitle", accidentRangeLabel)
+                            : t("basicInfo.accidentTitleOpen", {
+                                from: accidentRangeLabel.from,
+                              })}
+                        </div>
+                        {acc.starts === 0 ? (
+                          <p className="rbit-accident-values">
+                            {t("basicInfo.accidentNoStarts")}
+                          </p>
+                        ) : (
+                          <div className="rbit-accident-values">
+                            {/* 数字だけを太字にする（承認済みモックどおり） */}
+                            <span className="rbit-accident-rate">
+                              {t("basicInfo.accidentRateLabel")}{" "}
+                              <span className="rbit-accident-rate-num">
+                                {acc.rate.toFixed(2)}
+                              </span>
+                            </span>
+                            <span className="rbit-accident-breakdown">
+                              {t("basicInfo.accidentBreakdown", {
+                                points: acc.points,
+                                starts: acc.starts,
+                                kinds: kinds || t("basicInfo.accidentNone"),
+                              })}
+                            </span>
+                            <span className="rbit-accident-line">
+                              {!acc.settled
+                                ? t("basicInfo.accidentLineEarly", {
+                                    min: ACCIDENT_BADGE_MIN_STARTS,
+                                  })
+                                : acc.status === "over"
+                                  ? t("basicInfo.accidentLineOver")
+                                  : t("basicInfo.accidentLineNear", {
+                                      need: acc.need,
+                                    })}
+                            </span>
+                          </div>
+                        )}
+                        <p className="rbit-accident-note">
+                          {t("basicInfo.accidentNote")}
+                        </p>
+                      </div>
+                    );
+                  })()}
                   <div className="rbit-expanded-tabs">
                     <button
                       type="button"
@@ -1150,6 +1307,11 @@ function RaceBasicInfoTab({
       {(officialRates ?? []).some(
         (r) => (r.f_count ?? 0) > 0 || (r.l_count ?? 0) > 0,
       ) && <p className="rbit-note">{t("flyingBadge.legend")}</p>}
+      {/* 事故率の目印の凡例（BOA-327）。目印が1つでも出ているときだけ。「あと◯点」を予選の得点と
+          取り違えないよう、何の点数かを書く（ファン評価1周目） */}
+      {[...accidentByRacer.values()].some((a) => a.showBadge) && (
+        <p className="rbit-note">{t("basicInfo.accidentLegend")}</p>
+      )}
     </div>
   );
 }
