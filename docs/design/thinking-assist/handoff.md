@@ -81,3 +81,9 @@
 - v3 で足した実データ（DB の読み取り）: モーター3連率・ボート2連率（race_entries）、前検タイムと順位（motor_pretest_stats）、6選手の直近90日の勝ち決まり手（race_results×race_entries）、徳山の水質・型（venues）、徳山の直近1年の決まり手（2,196レース）
 - v2 の不具合を1つ直した: セオリーカードの「今日当てはまる」が、条件（6艇で一番）と関係なく出ていた
 - 次: ユーザーが決めること5点（fan-panel-mock-v2.md 末尾）と v3 の承認 → 承認画像を mock/ に保存・APPROVED.md → `/step2`
+
+## 7. 2026-10-07 v3 への回答・追加の指摘5点 → モック v4
+- 経緯・ファンパネル・調査（X のタイムラインの埋め込み、既存の分析ツール、比べる基準の値）・比較表は [fan-panel-mock-v3.md](./fan-panel-mock-v3.md)。spec「決定事項」D-15〜D-21、未確定 U-7・U-8
+- モック v4: Artifact の Version 5（v4 の初版の後に、モーター3連率・ボート2連率を消した版）。写しは [mock-v4/index.html](./mock-v4/index.html)
+- Codex のレビュー: hq（セッション「オーケストレーター状況把握」）経由で、Codex の開発の補助レーン（~/ryujin-dev-assist、読み取り専用）に依頼として渡す。渡す: spec・screens（この節のコミット）・request.md・mock-v4/index.html・375px のスクリーンショット。渡さない: handoff・fan-panel-*.md。観点は hq の1〜4（spec と screens の食い違い、未定義・矛盾、思考フレームワークの網羅、BOA-271 との定義のずれ）に「生データ主義の守り」を足した
+- 次: Codex の結果の採否 → ユーザーが決めること7点（fan-panel-mock-v3.md 末尾）と v4 の承認 → 承認画像と APPROVED.md → `/step2`
