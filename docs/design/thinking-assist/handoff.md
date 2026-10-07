@@ -215,3 +215,10 @@
 - PR5: TheorySheet・GlossarySheet・VenueSheet（会場の決まり手の期間の取得は PR3 のフックから外した。VenueSheet と一緒に足す）・GuideOverlay
 - PR6: AssistViewSwitch（RaceDetailPage 側、4言語のキー）
 - 既存ファイルを Edit ツールで直すと PostToolUse の整形フックがファイル全体に prettier をかける（supabaseDataService.js で 563行の差分になった）。既存ファイルは node のスクリプトで差し替える
+
+### 追記（2026-10-08）
+- #1307 PR2 はオーケストレーターがマージ（cef755019、段階0 A）
+- ユーザー決定2点を spec D-39 に記録: 名前は「思考アシスト」で確定（辞書の判断中の注記を外した）／30件未満で全国・級の並びが同じの行の言葉を消しても、類似レースの行の言葉は残す（受け入れ E2E を直して手元で通過）
+- #1308 PR3 は master を取り込んで（#1307 と同じ内容の衝突4ファイルは PR3 側を採った）master へ向け直した。CI はこれから。緑になったら mock-diff-checker・ファン評価ループ（段階0 B の条件）を回す
+- Codex: PR2 は hq の依頼25、PR3 は依頼27。結果はこのセッション（quirky-bell-e025a7）か次のセッションに届く
+- PR4 以降の新しいセッションのチップはオーケストレーターが出す。このセッションはここで止まる
