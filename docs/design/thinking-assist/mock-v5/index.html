@@ -1,0 +1,866 @@
+<title>思考アシスト モック</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap">
+<style>
+:root{
+  --bg:#eef2f4; --card:#ffffff; --ink:#13263a; --sub:#56687a; --faint:#8a98a6; --line:#d6dee5;
+  --water:#0b6e78; --water-soft:#e2f1f2; --water-ink:#0a5a62;
+  --hit:#b8590b; --hit-soft:#fdf0e3; --warn:#b42318; --warn-soft:#fdeceb;
+  --mock:#5b4ab0; --mock-soft:#efecfb;
+  --dim:rgba(10,20,30,.55);
+  --shadow:0 1px 2px rgba(19,38,58,.08),0 4px 14px rgba(19,38,58,.06);
+  --b1:#ffffff; --b1t:#13263a; --b2:#1b1b1b; --b2t:#fff; --b3:#e53935; --b3t:#fff; --b4:#1e88e5; --b4t:#fff; --b5:#fdd835; --b5t:#13263a; --b6:#43a047; --b6t:#fff;
+  --b1l:#9aa7b3; --b2l:#1b1b1b;
+  --num:"Barlow Semi Condensed","Zen Kaku Gothic New",system-ui,sans-serif;
+  --jp:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#0c151d; --card:#14212c; --ink:#e4ecf2; --sub:#a3b2bf; --faint:#71818f; --line:#2a3a48;
+  --water:#3fb7c2; --water-soft:#123038; --water-ink:#7fd3da;
+  --hit:#f0a050; --hit-soft:#3a2614; --warn:#ff7b6e; --warn-soft:#3b1a17;
+  --mock:#a99bf0; --mock-soft:#231e3d; --dim:rgba(0,0,0,.6);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+  --b1l:#c9d2da; --b2l:#d9dee3;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0c151d; --card:#14212c; --ink:#e4ecf2; --sub:#a3b2bf; --faint:#71818f; --line:#2a3a48;
+  --water:#3fb7c2; --water-soft:#123038; --water-ink:#7fd3da;
+  --hit:#f0a050; --hit-soft:#3a2614; --warn:#ff7b6e; --warn-soft:#3b1a17;
+  --mock:#a99bf0; --mock-soft:#231e3d; --dim:rgba(0,0,0,.6);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+  --b1l:#c9d2da; --b2l:#d9dee3;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--jp);font-size:14px;line-height:1.55;padding-inline:16px;padding-block:16px 40px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--water);outline-offset:2px}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.wrap{display:grid;grid-template-columns:minmax(0,430px) minmax(0,1fr);gap:28px;max-width:1200px;margin:0 auto;align-items:start}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}}
+
+/* モック用の枠 */
+.mockbar{background:var(--mock-soft);border:1px dashed var(--mock);border-radius:10px;padding:10px 12px;display:grid;gap:8px;margin-bottom:12px}
+.mockbar h1{font-size:15px;margin:0;color:var(--mock);text-wrap:balance}
+.mockbar .tag{font-size:11px;color:var(--mock);letter-spacing:.08em}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--mock);background:transparent;border-radius:999px;padding:5px 12px;font-size:13px;color:var(--mock)}
+.seg button[aria-pressed="true"]{background:var(--mock);color:#fff}
+
+/* 端末の画面 */
+.phone{background:var(--card);border-radius:18px;box-shadow:var(--shadow);overflow:clip;max-width:430px;width:100%;position:relative}
+.hdr{padding:12px 14px 10px;border-bottom:1px solid var(--line);display:grid;gap:8px}
+.hdr .t1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.hdr .venue{font-size:20px;font-weight:700}
+.pill{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:12px;color:var(--sub);background:transparent}
+.pill.round{border-color:var(--hit);color:var(--hit)}
+.hdr .t2{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--sub)}
+.wx{display:inline-flex;align-items:center;gap:4px;border:0;background:transparent;padding:2px 0;color:var(--sub)}
+.wx svg{width:18px;height:18px}
+.stage{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.stage button{border:0;background:transparent;padding:4px 10px;font-size:12px;color:var(--sub)}
+.stage button[aria-pressed="true"]{background:var(--water);color:#fff}
+.viewsw{display:flex;align-items:center;gap:8px;padding:8px 14px 0;flex-wrap:wrap}
+.rough{display:grid;gap:2px;text-align:left;border:1px solid var(--hit);background:var(--hit-soft);border-radius:10px;padding:8px 10px;min-height:44px}
+.rough b{font-size:14px;color:var(--hit)}
+.rough span{font-size:12px;color:var(--sub)}
+.hint1{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:12px;color:var(--water-ink);padding:4px 2px 0}
+.hint1 button{border:0;background:transparent;color:var(--faint);font-size:12px;padding:0 4px;min-height:24px}
+.lname{font-size:10px;color:var(--faint);line-height:1;margin-top:2px;white-space:nowrap}
+.pos3{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.pos3 button{border:1px solid var(--line);background:transparent;border-radius:6px;min-height:36px;font-size:11px;padding:0 2px}
+.pos3 button.on{background:var(--water);border-color:var(--water);color:#fff}
+.addb .pl{font-size:10px;line-height:1.1;font-family:var(--num)}
+.tq{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1px solid var(--faint);color:var(--faint);background:transparent;font-size:11px;line-height:1;padding:0;margin-left:3px;vertical-align:middle;font-family:var(--num)}
+.tq::before{content:"";position:absolute;inset:-12px}
+.tq{position:relative}
+.mk.th{border-color:var(--water);color:var(--water-ink);background:var(--water-soft)}
+.today.no{border-color:var(--line);background:transparent;color:var(--faint);font-weight:500}
+.goodtag{display:inline-block;border-radius:5px;padding:0 5px;background:var(--water);color:#fff;font-size:10px;margin:0 3px}
+.chip .l2{font-size:12px}
+.chip.off{opacity:.75}
+.feat{display:flex;flex-wrap:wrap;gap:6px}
+.xlink{color:var(--water-ink);font-size:13px}
+.hdr .t3{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--faint);flex-wrap:wrap}
+.linkish{border:0;background:transparent;color:var(--water-ink);text-decoration:underline;text-underline-offset:3px;padding:0;font-size:12px}
+
+.lens{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:8px 10px 6px}
+.lens .row{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:6px}
+.lens .row button{border:1px solid var(--line);background:transparent;border-radius:10px;padding:8px 0;font-weight:700;font-size:14px;min-height:44px}
+.lens .row button[aria-pressed="true"]{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.lens .row .guide{padding:0 10px;font-size:12px;font-weight:500;color:var(--water-ink);border-color:var(--water)}
+.lens .row .guide[aria-pressed="true"]{background:var(--water);color:#fff;border-color:var(--water)}
+.lens .q{font-size:13px;color:var(--sub);padding:6px 2px 0}
+.lens .q b{color:var(--ink)}
+
+.board{padding:10px 12px 4px}
+.axis{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);padding-left:44px;padding-right:34px;margin-bottom:4px}
+.axis .ttl{color:var(--sub);font-weight:500}
+.boatb{width:30px;height:30px;border-radius:7px;display:inline-grid;place-items:center;font-family:var(--num);font-weight:700;font-size:17px;flex:none;border:1px solid transparent}
+.boatb.s{width:22px;height:22px;font-size:13px;border-radius:5px}
+.bb1{background:var(--b1);color:var(--b1t);border-color:var(--b1l)}.bb2{background:var(--b2);color:var(--b2t);border-color:var(--b2l)}.bb3{background:var(--b3);color:var(--b3t)}.bb4{background:var(--b4);color:var(--b4t)}.bb5{background:var(--b5);color:var(--b5t)}.bb6{background:var(--b6);color:var(--b6t)}
+
+/* 案② レーン */
+.lane{display:grid;grid-template-columns:36px minmax(0,1fr) 30px;align-items:center;gap:6px;min-height:46px;border-top:1px solid var(--line)}
+.lane:first-of-type{border-top:0}
+.lane .bbtn{border:0;background:transparent;padding:0;display:grid;place-items:center;min-height:44px}
+.track{position:relative;height:40px;border:0;background:transparent;padding:0;width:100%;text-align:left}
+.track .rail{position:absolute;left:0;right:0;top:50%;height:2px;background:var(--line);transform:translateY(-50%)}
+.track .grid{position:absolute;top:4px;bottom:4px;width:1px;background:var(--line);opacity:.7}
+.track .dot{position:absolute;top:50%;width:16px;height:16px;border-radius:50%;transform:translate(-50%,-50%);border:2px solid var(--card);box-shadow:0 0 0 1px var(--line)}
+.track .bar{position:absolute;top:50%;height:10px;border-radius:5px;transform:translateY(-50%);opacity:.9}
+.track .val{position:absolute;top:2px;font-size:11px;color:var(--sub);transform:translateX(-50%);white-space:nowrap}
+.track .lbl{position:absolute;bottom:0;font-size:11px;white-space:nowrap;transform:translateX(-50%)}
+.slitline{position:absolute;top:0;bottom:0;width:2px;background:var(--water);opacity:.5}
+.addb{border:1px solid var(--line);background:transparent;border-radius:8px;width:30px;height:30px;font-size:16px;color:var(--sub);display:grid;place-items:center;padding:0}
+.addb.on{background:var(--water);border-color:var(--water);color:#fff}
+.marks{display:flex;gap:4px;flex-wrap:wrap}
+.mk{display:inline-flex;align-items:center;gap:3px;border-radius:6px;padding:0 6px;font-size:11px;line-height:18px;border:1px solid var(--line);background:var(--card);color:var(--sub);white-space:nowrap}
+.mk.hit{border-color:var(--hit);color:var(--hit);background:var(--hit-soft);font-weight:700}
+.mk.f{border-color:var(--warn);color:var(--warn)}
+.mk.q{border-style:dashed}
+button.mk{cursor:pointer}
+
+/* 案① 公式の縦並び */
+.orow{display:grid;grid-template-columns:30px minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr) 30px;align-items:center;gap:8px;min-height:52px;border-top:1px solid var(--line)}
+.orow:first-of-type{border-top:0}
+.orow .who{display:grid;line-height:1.25;min-width:0}
+.orow .who b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.orow .who span{font-size:11px;color:var(--faint)}
+.orow .marks{min-width:0}
+.orow .marks .mk{white-space:normal;line-height:1.3;padding:2px 6px}
+.cell{border:0;background:transparent;padding:4px 0;display:grid;gap:3px;text-align:left;min-height:44px;align-content:center}
+.cell .mini{height:6px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
+.cell .mini i{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+.cell .v{font-size:13px}
+.cell .k{font-size:10px;color:var(--faint)}
+.ohead{display:grid;grid-template-columns:30px minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr) 30px;gap:8px;font-size:11px;color:var(--faint);padding-bottom:2px}
+
+/* 案③ カード */
+.bcard{border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:grid;gap:6px;margin-bottom:8px}
+.bcard .top{display:flex;align-items:center;gap:8px}
+.bcard .top .nm{font-weight:700;font-size:14px;flex:1;min-width:0}
+.bcard .top .nm span{font-weight:400;font-size:12px;color:var(--faint);margin-left:6px}
+
+.sum{padding:8px 12px 12px;display:grid;gap:10px}
+.box{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:8px}
+.box h3{margin:0;font-size:13px;color:var(--sub);font-weight:500;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.big{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.big .pct{font-size:28px;font-weight:700;line-height:1}
+.big .cnt{font-size:12px;color:var(--faint)}
+.cmp{display:grid;gap:6px}
+.hbar{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:8px;align-items:center;font-size:12px}
+.hbar .tr{height:10px;background:var(--line);border-radius:5px;position:relative}
+.hbar .tr i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--water)}
+.hbar .tr .ci{position:absolute;top:-3px;bottom:-3px;border-left:1px solid var(--ink);border-right:1px solid var(--ink);opacity:.45}
+.hbar .lab{grid-column:1/-1;color:var(--sub)}
+.note{font-size:12px;color:var(--faint)}
+.bars6{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;align-items:end;height:84px}
+.bars6 .c{display:grid;grid-template-rows:auto 1fr auto;justify-items:center;height:100%;gap:2px}
+.bars6 .c .p{font-size:11px;color:var(--sub)}
+.bars6 .c .col{width:70%;align-self:end;border-radius:4px 4px 0 0;min-height:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:8px;padding:6px 8px;font-size:12px;text-align:left;display:grid;gap:2px;min-height:44px}
+.chip b{font-size:13px}
+.chip.hit{border-color:var(--hit);background:var(--hit-soft)}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th,.tbl td{padding:5px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.tbl th{color:var(--faint);font-weight:500}
+.tbl td:first-child{white-space:nowrap}
+.tbl td.r,.tbl th.r{text-align:right}
+.tori{color:var(--warn);font-weight:700}
+
+.deep{margin:0 12px 12px;border:2px solid var(--water);border-radius:14px;padding:10px 12px;display:grid;gap:10px;background:var(--water-soft)}
+.deep .dh{display:flex;align-items:center;gap:8px}
+.deep .dh h3{margin:0;font-size:15px;flex:1}
+.x{border:1px solid var(--line);background:var(--card);border-radius:8px;min-width:44px;min-height:36px;font-size:13px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--water);background:var(--card);color:var(--water-ink);border-radius:999px;padding:5px 12px;font-size:12px;min-height:34px}
+.tabs button[aria-pressed="true"]{background:var(--water);color:#fff}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
+.kv dt{color:var(--sub)}
+.kv dd{margin:0}
+.kv dd button{border:0;background:transparent;padding:0;color:var(--water-ink);text-decoration:underline dotted;text-underline-offset:3px}
+
+.foot{position:sticky;bottom:0;z-index:6;background:var(--ink);color:var(--card);padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:10px}
+.foot .bt{flex:1;min-width:0;display:grid;line-height:1.3}
+.foot .bt b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.foot .bt span{font-size:12px;opacity:.8}
+.foot button{border:1px solid currentColor;background:transparent;color:inherit;border-radius:10px;padding:8px 12px;min-height:44px}
+
+.sheetbg{position:fixed;inset:0;background:var(--dim);z-index:20;display:grid;align-items:end;justify-items:center}
+.sheet{background:var(--card);width:100%;max-width:430px;border-radius:16px 16px 0 0;padding:14px 14px calc(18px + env(safe-area-inset-bottom,0px));max-height:86vh;overflow:auto;display:grid;gap:12px}
+@media (min-width:901px){.sheetbg{align-items:center}.sheet{border-radius:16px}}
+.sheet h2{margin:0;font-size:16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ms{display:grid;grid-template-columns:44px repeat(6,1fr);gap:6px;align-items:center}
+.ms .h{font-size:12px;color:var(--sub);text-align:center}
+.ms button{min-height:44px;border:1px solid var(--line);background:transparent;border-radius:8px;display:grid;place-items:center;padding:0}
+.ms button.on{outline:3px solid var(--water);outline-offset:-3px}
+.calc{display:grid;gap:8px}
+.calc label{font-size:13px;color:var(--sub)}
+.calc input{font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:9em;background:var(--card);color:var(--ink)}
+
+.tc{display:grid;gap:8px}
+.tc .ttl{font-size:16px;font-weight:700}
+.tc .rowk{display:grid;grid-template-columns:5.5em 1fr;gap:6px;font-size:13px}
+.tc .rowk span{color:var(--faint)}
+.tc .meas{border-top:1px dashed var(--line);padding-top:8px;display:grid;gap:6px}
+.tc .meas .h{font-size:12px;color:var(--sub)}
+.tc .prep{font-size:13px;color:var(--faint);border:1px dashed var(--line);border-radius:8px;padding:8px}
+.tc .today{border:1px solid var(--hit);background:var(--hit-soft);color:var(--hit);border-radius:8px;padding:6px 8px;font-size:12px;font-weight:700}
+
+.gl{outline:3px solid var(--hit)!important;outline-offset:2px;border-radius:10px;position:relative;z-index:15;box-shadow:0 0 0 9999px var(--dim)}
+.guidebox{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:30;width:min(400px,calc(100vw - 32px));background:var(--card);border:2px solid var(--hit);border-radius:14px;padding:12px 14px;display:grid;gap:8px;box-shadow:var(--shadow)}
+.guidebox.at-top{bottom:auto;top:calc(12px + env(safe-area-inset-top,0px))}
+.guidebox .st{font-size:12px;color:var(--hit);font-weight:700}
+.guidebox .msg{font-size:15px;font-weight:700}
+.guidebox .sub{font-size:13px;color:var(--sub)}
+.guidebox .ops{display:flex;gap:8px;justify-content:flex-end}
+.guidebox .ops button{border:1px solid var(--line);background:transparent;border-radius:8px;padding:6px 12px;min-height:40px}
+.guidebox .ops .pri{background:var(--hit);color:#fff;border-color:var(--hit)}
+
+.side{display:grid;gap:16px}
+.side section{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px;display:grid;gap:10px}
+.side h2{margin:0;font-size:16px;text-wrap:balance}
+.side p,.side li{font-size:13px;color:var(--sub);margin:0}
+.side ul{margin:0;padding-left:1.2em;display:grid;gap:4px}
+.mapwrap{overflow-x:auto}
+.map{border-collapse:collapse;font-size:12px;min-width:640px}
+.map th,.map td{border-bottom:1px solid var(--line);padding:6px 6px;text-align:left;vertical-align:top}
+.map th{color:var(--faint);font-weight:500;position:sticky;top:0;background:var(--card)}
+.map td:first-child{white-space:nowrap;font-weight:700}
+.try{border:1px solid var(--water);background:transparent;color:var(--water-ink);border-radius:6px;padding:2px 8px;font-size:12px}
+.disc{font-size:11px;color:var(--faint);padding:8px 14px 12px}
+@media (prefers-reduced-motion:no-preference){.track .dot,.track .bar,.cell .mini i,.hbar .tr i{transition:left .35s ease,width .35s ease}}
+</style>
+
+<div class="wrap">
+  <div>
+    <div class="mockbar">
+      <span class="tag">モック用の操作（本番には出さない）</span>
+      <h1>BOA-430 思考アシスト モック v5</h1>
+      <div class="seg" role="group" aria-label="出走表の形">
+        <button type="button" data-v="2" aria-pressed="true">案② レーン（推奨）</button>
+        <button type="button" data-v="1" aria-pressed="false">案① 公式の縦並び</button>
+        <button type="button" data-v="3" aria-pressed="false">案③ 艇カード</button>
+      </div>
+    </div>
+
+    <div class="phone" id="phone">
+      <div class="viewsw" role="group" aria-label="表示の切り替え"><span class="note">表示</span><span class="stage"><button type="button" aria-pressed="false" data-oldview="1">出走表とタブ</button><button type="button" aria-pressed="true">思考アシスト</button></span><span class="note">選んだ方を次も開く</span></div>
+      <header class="hdr" id="g-hdr">
+        <div class="t1"><button type="button" class="venue" data-venue="1" style="border:0;background:transparent;padding:0;font-weight:700" aria-label="徳山の特徴を見る">徳山 ›</button><span class="venue">10R</span><button type="button" class="pill round" data-theory="TC-T8" aria-label="準優勝戦。セオリーを見る">準優勝戦 ?</button><span class="pill">一般</span><span class="pill num">締切 13:14</span></div>
+        <div class="t2">
+          <span id="wxRow" style="display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap"></span>
+          <button type="button" class="pill" data-theory="TC-T3" aria-label="潮。セオリーを見る">潮 ?</button>
+          <span class="stage" role="group" aria-label="時点"><button type="button" data-stage="pre" aria-pressed="false">展示前</button><button type="button" data-stage="post" aria-pressed="true">展示後</button></span>
+        </div>
+        <button type="button" class="rough" id="g-rough" data-theory="TC-R1"><b>このレースは堅い？荒れる？</b><span>1号艇の1着 <span class="num">33%</span> ↓ 全国の全レース（<span class="num">55%</span>）より低め</span><span>万舟 <span class="num">22%</span> ↑ 全国の全レース（<span class="num">17%</span>）より高め</span><span style="font-size:11px">全国・同じ級の並び（1号艇B1）3,276件で数えた ›</span></button>
+        <div class="t3"><span>オッズは <span class="num">13:14</span> 時点（締切）。締切まで動く</span><button type="button" class="linkish">龍神ソナーでもっと詳しく</button></div>
+      </header>
+
+      <nav class="lens" id="g-lens" aria-label="見方">
+        <div class="row">
+          <button type="button" data-lens="axis" aria-pressed="true">軸</button>
+          <button type="button" data-lens="flow" aria-pressed="false">展開</button>
+          <button type="button" data-lens="power" aria-pressed="false">機力</button>
+          <button type="button" data-lens="bet" aria-pressed="false">買い目</button>
+          <button type="button" class="guide" id="guideBtn" aria-pressed="false">ガイド</button>
+        </div>
+        <div class="q" id="lensQ"></div>
+        <div class="hint1" id="hint1"><span>艇の丸・数字をタップすると詳しく（数字は6艇比較）。「?」は用語の意味、「傾向 ›」は過去レースの傾向</span><button type="button" id="hint1x" aria-label="この案内を閉じる">×</button></div>
+      </nav>
+
+      <div class="board" id="board"></div>
+      <div id="deep"></div>
+      <div class="sum" id="sum"></div>
+      <p class="disc">過去レースの傾向と公式のデータを並べています。結果を保証するものではありません。舟券の購入は20歳以上・自己責任で。</p>
+
+      <div class="foot" id="g-foot">
+        <div class="bt"><b id="betTxt"></b><span id="betSub"></span></div>
+        <button type="button" id="openSheet">買い目を編集</button>
+      </div>
+    </div>
+  </div>
+
+  <aside class="side">
+    <section>
+      <h2>v4 からの変更</h2>
+      <ul>
+        <li>比べる基準の呼び名「全国のいつも」を「全国の全レース」に変えた（ヘッダーの枠・基準つきバー・凡例・用語の「?」・ガイド）。「?」に、会場ごとや選手ごとの平均ではなく1レースずつ数えた割合だと書いた</li>
+      </ul>
+    </section>
+    <section>
+      <h2>v3 からの変更</h2>
+      <ul>
+        <li>「似たレース」→「類似レース」。定義に「全国の過去レース（2019/4/1〜）」を足した</li>
+        <li>万舟・1号艇の1着を「全国の全レース」と比べる。目盛りに基準の太い点線（徳山の全レースは細い点線で参考）。言葉は3段階（高め／低め／差ははっきりしない）で、ぶれ幅が基準と重ならないときだけ高め・低め。倍率と「荒れる」の一言判定は出さない</li>
+        <li>「このレースは堅い？荒れる？」の枠も同じ比べ方の2行に</li>
+        <li>上部に「出走表とタブ／思考アシスト」の切り替え（既存ページとの関係の案2）</li>
+        <li>X 検索のリンクを消した。モーター3連率・ボート2連率を消し、前検タイム・数えた値の札・勝ち決まり手の「案」の札を外した（ユーザー決定）</li>
+      </ul>
+    </section>
+    <section>
+      <h2>v2 からの変更（ユーザーの指摘11点）</h2>
+      <ul>
+        <li>1: 苗字の下に級（B1 など）</li>
+        <li>2・5: 用語の横に「?」（押すと意味）。セオリーの入口は「傾向 ›」の札に変え、「?」は用語の意味だけにした。今節の平均着順点に配点と「高いほど良い」</li>
+        <li>3: 「攻める艇」→「凹んだら攻め手」。2号艇の★に「本番で凹むのは13%」、矢印は点線</li>
+        <li>4: 図の良い方の端に「良い」の札と、良い方へ薄い色。向きは項目の自然な向き（STは左が早い）のまま</li>
+        <li>6: 「今日当てはまる」は6艇で一番（良い・悪い）のときだけ。そうでないときは灰色で「今日は当てはまらない（3番目）」</li>
+        <li>7: 展示の表に体重の列。一番軽い艇に「軽」</li>
+        <li>8: 深掘りに前検タイム（v4 でユーザー決定。3連率・ボート2連率は足さない）</li>
+        <li>9: 深掘りに「数えた値の札」（例: スタートが早い）・勝ち決まり手（v4 でユーザー決定）。X は出さない</li>
+        <li>10: ヘッダーの「徳山 ›」で会場の特徴（水質・1号艇の1着・決まり手）</li>
+        <li>11: 呼び名を「類似レース」「全国・同じ級の並び」「徳山の全レース」に統一し、「?」で定義。万舟の行に件数</li>
+      </ul>
+    </section>
+    <section>
+      <h2>v1 からの変更</h2>
+      <ul>
+        <li>上部に「このレースは堅い？荒れる？」の枠（思考フレームワーク22番目）。ガイド①はここに答える</li>
+        <li>徳山の値と全国の値を並べるところに、数えた範囲が違うことを書いた（ガイド②の「下がる」をやめた）</li>
+        <li>風をタップすると、風速4〜5mの艇番ごとの1着を実測で出す（追い・向かいの区別なしと明記）。向かい風・追い風のカードを同じ画面に並べる</li>
+        <li>買い目: 各艇の印に何着の候補かを出す。買い目レンズは行ごとに「1着・2着・3着」のボタン。各艇に1着人気と過去の1着（件数）、組ごとに類似レースの件数を並べた（掛け合わせない）。万舟の割合を足した。配分の余りを出す</li>
+        <li>案②の行に苗字。展開の要約は「本番で2コース凹みになるのは13%」を先に。★は「平均STの手がかり」と書いた</li>
+        <li>展示前はヘッダーの風・波を出さない。準優勝戦の札・潮・部品交換・体重から、セオリーカードを開ける</li>
+        <li>深掘りの2段目は図の見出しまで送る。ガイドの吹き出しは光らせた場所と重ならない側に出す。1行の使い方の案内（×で閉じる）</li>
+      </ul>
+    </section>
+    <section>
+      <h2>見てほしい点</h2>
+      <ul>
+        <li>出走表の形（上の3案）。どれが「数字が多くて迷う」を一番減らせるか。推奨は案②（行＝1〜6号艇、横軸がレンズで変わる）</li>
+        <li>レンズ（軸・展開・機力・買い目）で同じ図が描き変わること。買い目は下に残り続ける</li>
+        <li>最初に見える数字は1艇2個まで。艇の丸・数字・印をタップすると、図全体がその観点に変わって詳しく出る</li>
+        <li>「?」と「今日当てはまる」の印でセオリーカードが出る。過去レースで数えたものは率と件数、まだ数えていないものは「準備中」</li>
+        <li>「ガイド」で初心者向けに5段で案内する（一本道ではなく、いつでも閉じられる）</li>
+        <li>数字は本日 2026/10/6 徳山10R（準優勝戦）の実データ。龍神ソナーは展示前の段、展示・オッズは締切時点</li>
+      </ul>
+    </section>
+    <section>
+      <h2>思考フレームワークの対応表</h2>
+      <p>22の予想スタイルが、どのレンズ・どのタップで何を見られるか。「試す」でその状態にする。</p>
+      <div class="mapwrap"><table class="map" id="map"><thead><tr><th>スタイル</th><th>レンズ</th><th>タップ</th><th>出るもの</th><th>セオリー</th><th></th></tr></thead><tbody></tbody></table></div>
+    </section>
+  </aside>
+</div>
+
+<div id="layer"></div>
+
+<script>
+(() => {
+"use strict";
+// ---- 実データ（2026-10-06 徳山10R 準優勝戦）
+const BOATS = [
+  {n:1,name:"三馬 崇史",cls:"B1",nat:6.03,loc:3.43,r30:24.1,st:.132,stc:.148,stv:.184,motor3:38.38,boat2:38.31,motor:19.2,f:0,exh:6.84,est:.07,tilt:0.0,wt:52.8,age:26,series:8.57,lap:37.31,mawari:11.49},
+  {n:2,name:"仲道 大輔",cls:"A2",nat:5.99,loc:6.93,r30:16.7,st:.147,stc:.161,stv:.151,motor3:56.0,boat2:41.28,motor:38.0,f:0,exh:6.84,est:.17,tilt:0.0,wt:52.0,age:26,series:7.14,lap:37.94,mawari:11.64},
+  {n:3,name:"西岡 顕心",cls:"A1",nat:7.29,loc:7.57,r30:20.7,st:.147,stc:.142,stv:.164,motor3:42.7,boat2:27.4,motor:25.8,f:1,exh:6.89,est:.06,tilt:0.0,wt:51.0,age:25,series:6.29,lap:38.23,mawari:11.92},
+  {n:4,name:"中村 栄治",cls:"A2",nat:5.01,loc:4.38,r30:16.7,st:.186,stc:.181,stv:.180,motor3:54.92,boat2:29.72,motor:38.5,f:0,exh:6.83,est:.05,tilt:0.0,wt:52.0,age:27,series:6.57,lap:37.93,mawari:11.87},
+  {n:5,name:"濱野 斗馬",cls:"A1",nat:6.16,loc:5.93,r30:30.0,st:.138,stc:.142,stv:.159,motor3:54.21,boat2:28.77,motor:32.7,f:0,exh:6.90,est:.01,tilt:-0.5,wt:52.7,age:26,series:6.29,lap:38.26,mawari:12.02},
+  {n:6,name:"倉富 大誠",cls:"B1",nat:5.33,loc:null,r30:7.1,st:.148,stc:.185,stv:.131,motor3:49.6,boat2:33.49,motor:30.4,f:1,exh:6.89,est:.12,tilt:-0.5,wt:52.0,age:25,series:5.71,lap:37.76,mawari:11.72},
+];
+// 6艇中の今日の順位（v16 facts today.items.positions）
+const POS = {series_score:[1,2,4,3,4,6],loc_win:[5,2,1,4,3,6],nat_win:[3,4,1,6,2,5],st_mean30:[1,4,3,6,2,5],recent_win30:[2,4,3,4,1,6],motor_2:[6,2,5,1,3,4],boat_2:[2,1,6,4,5,3]};
+// 差がつく材料（v16 factRows。1着。[項目, 判定, 一番良いとき[当たり,母数], 一番悪いとき]）
+const FACTS = {
+ 1:{scope:"全国・A1が2艇/A2が2艇/B1が2艇（1号艇はB1）",vc:75,n:3339,u:[1080,3339],rows:[["nat_win","large",[17,19],[382,1375]],["recent_win30","large",[63,103],[365,1344]],["series_score","large",[202,425],[211,834]],["loc_win","large",[26,57],[325,1187]],["st_mean30","large",[123,277],[244,921]],["motor_2","large",[248,658],[205,675]]]},
+ 2:{scope:"徳山・同じ級の並び（2号艇はA2）",vc:451,n:451,u:[42,451],rows:[["series_score","large",[9,53],[2,78]],["nat_win","unclear",[5,15],[2,39]],["st_mean30","unclear",[6,53],[6,83]],["motor_2","unclear",[10,113],[7,92]]]},
+ 3:{scope:"全国・同じ級の並び（3号艇はA1）",vc:258,n:7464,u:[1445,7464],rows:[["nat_win","large",[795,3300],[0,16]],["recent_win30","large",[622,2824],[19,175]],["series_score","large",[412,1648],[82,579]],["st_mean30","large",[506,2148],[80,494]],["motor_2","large",[321,1368],[261,1578]]]},
+ 4:{scope:"全国・同じ級の並び（4号艇はA2）",vc:272,n:7937,u:[658,7937],rows:[["nat_win","large",[55,358],[9,207]],["recent_win30","large",[140,1066],[44,862]],["series_score","large",[137,1113],[67,1184]],["st_mean30","large",[123,1046],[77,1151]],["motor_2","small",[170,1504],[118,1642]]]},
+ 5:{scope:"全国・同じ級の並び（5号艇はA1）",vc:152,n:6341,u:[637,6341],rows:[["series_score","large",[234,1757],[33,660]],["recent_win30","large",[302,2430],[13,214]],["st_mean30","large",[220,1801],[34,491]],["motor_2","unclear",[135,1147],[126,1347]]]},
+ 6:{scope:"徳山・同じ級の並び（6号艇はB1）",vc:528,n:528,u:[4,528],rows:[["series_score","unclear",[1,55],[0,143]],["motor_2","unclear",[2,112],[2,107]]]},
+};
+const ITEM = {nat_win:["全国勝率","高い","低い"],loc_win:["当地勝率","高い","低い"],recent_win30:["直近30走の1着率","高い","低い"],motor_2:["モーター2連率","高い","低い"],boat_2:["ボート2連率","高い","低い"],st_mean30:["平均ST（直近30走）","早い","遅い"],series_score:["今節の平均着順点","高い","低い"]};
+const VA1 = [11008,17552]; // 徳山の全レース 1号艇1着
+const HINT_D2 = {hit:[65,501],miss:[96,1956]}; // 2コース凹みの手がかり（このコースの平均ST）
+const FORMS = { // 全国・同じ組み合わせ・枠なり（scenario NC waku）
+  any:{name:"どの形でも",n:2463,first:[870,615,414,303,190,71]},
+  flat:{name:"横一線",n:400,first:[174,114,60,21,24,7],att:null},
+  wall:{name:"内3艇そろう",n:391,first:[179,98,36,35,35,8],att:null},
+  d2:{name:"2コース凹み",n:161,first:[65,18,36,29,10,3],att:3,tri:[["1-3-4",9],["4-5-3",9],["1-4-2",7]],tech:{逃げ:63,差し:23,まくり:26,まくり差し:38,抜き:11}},
+  d3:{name:"カド受け凹み",n:134,first:[36,33,4,39,17,5],att:4},
+  kado:{name:"カド一撃",n:381,first:[64,74,60,120,49,14],att:4},
+  d1:{name:"イン凹み",n:451,first:[49,189,112,54,35,12],att:2},
+  dash:{name:"ダッシュ勢先行",n:379,first:[58,80,61,95,61,24],att:4},
+};
+const ENTRY = {waku:[2463,870],mae:[691,197],inlost:[122,7],all:[3276,1074]};
+const SIM = {n:63,first:[34,15,5,4,3,2],manshu:11,tech:{逃げ:32,差し:12,まくり:9,抜き:6,まくり差し:3,恵まれ:1},tri:[["1-2-3",7],["1-2-5",6],["1-2-4",4],["2-1-3",4],["1-3-2",3]],
+  triAll:{"1-3-2":3,"2-1-4":3,"1-2-3":7,"2-1-5":2,"1-6-3":2,"1-4-3":3,"2-5-1":2,"2-6-4":1,"1-2-5":6,"2-1-3":4,"1-2-4":4,"2-4-1":2,"3-1-4":3,"3-2-4":1,"2-3-5":1,"5-1-3":1,"4-6-5":1,"3-1-2":1,"4-1-3":1,"1-3-4":3,"1-5-2":2,"1-5-4":1,"5-3-2":1,"1-4-6":1,"6-1-3":1,"1-3-5":1,"4-5-3":1,"1-2-6":1,"5-6-4":1,"6-2-1":1,"4-1-5":1}};
+const NC_MANSHU = [713,3276];
+// 比べる基準（v16 展開シナリオの母集団＝返還のあったレースを除く。2019/4/1〜2026/10/5）
+const BASE = {
+  NA:{n:402576, b1:222398, manshu:68763, manshuN:402572},   // 全国の全レース（比べる基準）
+  VA:{n:17278, b1:10910, manshu:2489},                       // 徳山の全レース
+  NC:{n:3276, b1:1074, manshu:713},                          // 全国・同じ級の並び
+}; // 全国・同じ級の並び（1号艇B1）の全レースで3連単1万円以上
+// 徳山の全レースで風速4〜5mのレース（v16 facts VA の wind「4-5」）と、風を問わない全レース
+const WIND45 = {n:4040,win:[2352,573,474,363,177,101]};
+const VA_WIN = [11008,2394,1680,1368,704,398];
+// 選手の勝ち決まり手（直近90日、2026/7/8〜10/5。RacerTechniqueProfileChart と同じ考え方）
+const WIN_TECH = [{逃げ:7,まくり:3,まくり差し:2,抜き:1},{逃げ:7,差し:5,まくり差し:1,抜き:1,まくり:1},{逃げ:6,まくり:3,差し:2,抜き:2,まくり差し:1},{まくり:4,逃げ:3,まくり差し:2,抜き:2},{逃げ:14,まくり:3,差し:2,まくり差し:1},{逃げ:3,まくり:1,差し:1,恵まれ:1}];
+// 前検タイム（motor_pretest_stats。節の初日の前に測るモーターのタイムと、参加艇の中の順位）
+const PRETEST = [[6.90,9],[6.91,16],[6.95,31],[6.92,22],[7.01,44],[6.95,31]];
+// 徳山の決まり手（直近1年 2025/10/6〜2026/10/5 の 2,196レース）と会場の情報（venues）
+const VENUE_TECH = {逃げ:1283,差し:276,まくり:274,まくり差し:200,抜き:152,恵まれ:11};
+// その艇番で走ったとき（直近2年、各選手）の1着。本実装は進入コース基準（getRacerScopedRaceStats）
+const LANE_WIN = [[17,38],[6,27],[6,37],[4,32],[4,34],[0,24]];
+const TRI = {"1-2-3":6.4,"1-2-4":15.2,"1-2-5":14.8,"1-2-6":54.7,"1-3-2":7.2,"1-3-4":14.6,"1-3-5":10,"1-3-6":47.2,"1-4-2":26.4,"1-4-3":30.9,"1-4-5":51.6,"1-4-6":84.8,"1-5-2":24.1,"1-5-3":24.4,"1-5-4":58.7,"1-5-6":80.6,"1-6-2":186.1,"1-6-3":243.1,"1-6-4":292,"1-6-5":298.6,"2-1-3":37.5,"2-1-4":70.5,"2-1-5":63.3,"2-1-6":216.4,"2-3-1":78.3,"2-3-4":150,"2-3-5":91,"2-3-6":530.6,"2-4-1":194.6,"2-4-3":203.6,"2-4-5":244.3,"2-4-6":501.9,"2-5-1":151,"2-5-3":136.5,"2-5-4":349.1,"2-5-6":559.4,"2-6-1":672.9,"2-6-3":1386,"2-6-4":1055,"2-6-5":998.5,"3-1-2":34.2,"3-1-4":52.7,"3-1-5":34.2,"3-1-6":161.5,"3-2-1":63.1,"3-2-4":158.2,"3-2-5":85.1,"3-2-6":409.1,"3-4-1":152.4,"3-4-2":189.1,"3-4-5":176.5,"3-4-6":400.2,"3-5-1":79.5,"3-5-2":96.7,"3-5-4":189.5,"3-5-6":331.6,"3-6-1":556,"3-6-2":1272,"3-6-4":623.2,"3-6-5":998.5,"4-1-2":133,"4-1-3":197.5,"4-1-5":147.8,"4-1-6":329.3,"4-2-1":219.5,"4-2-3":273.9,"4-2-5":260.1,"4-2-6":425.9,"4-3-1":283.9,"4-3-2":337.6,"4-3-5":385.3,"4-3-6":867.9,"4-5-1":192.2,"4-5-2":226.5,"4-5-3":324.7,"4-5-6":257.9,"4-6-1":693,"4-6-2":649.4,"4-6-3":1146,"4-6-5":539.9,"5-1-2":105.2,"5-1-3":91.5,"5-1-4":176.5,"5-1-6":186.4,"5-2-1":198,"5-2-3":197.5,"5-2-4":368.5,"5-2-6":510.2,"5-3-1":151.7,"5-3-2":204.1,"5-3-4":324.7,"5-3-6":595.2,"5-4-1":281.4,"5-4-2":325.8,"5-4-3":398.5,"5-4-6":351.7,"5-6-1":488.7,"5-6-2":793.7,"5-6-3":892.9,"5-6-4":687.8,"6-1-2":725.5,"6-1-3":1629,"6-1-4":1785,"6-1-5":793.7,"6-2-1":1206,"6-2-3":3095,"6-2-4":1857,"6-2-5":1658,"6-3-1":1497,"6-3-2":2381,"6-3-4":2110,"6-3-5":2265,"6-4-1":1934,"6-4-2":1719,"6-4-3":2579,"6-4-5":1206,"6-5-1":821.8,"6-5-2":1975,"6-5-3":2159,"6-5-4":1160};
+const POP = Object.fromEntries(Object.entries(TRI).sort((a,b)=>a[1]-b[1]).map(([k],i)=>[k,i+1]));
+const comp = (keys) => { const s = keys.reduce((a,k)=>a+(TRI[k]?1/TRI[k]:0),0); return s ? 1/s : null; };
+const FIRST_COMP = BOATS.map(b => comp(Object.keys(TRI).filter(k => k[0]===String(b.n))));
+const FIRST_POP = FIRST_COMP.map(v => 1 + FIRST_COMP.filter(o => o < v).length);
+
+// ---- 計算
+const pct = (a,b) => b ? (100*a/b) : null;
+const f1 = (v) => v==null ? "—" : v.toFixed(1);
+const f0 = (v) => v==null ? "—" : Math.round(v).toString();
+const comma = (n) => n.toLocaleString("ja-JP");
+const st3 = (v) => v==null ? "—" : "." + String(Math.round(v*1000)).padStart(3,"0");
+function wilson(k,n){ if(!n) return [0,0]; const z=1.96,p=k/n,d=1+z*z/n,c=(p+z*z/(2*n))/d,h=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n))/d; return [Math.max(0,c-h)*100,Math.min(1,c+h)*100]; }
+const esc = (s) => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const badge = (n,s="") => `<span class="boatb bb${n} ${s}" aria-hidden="true">${n}</span>`;
+const BOATCOL = ["","#9aa7b3","#1b1b1b","#e53935","#1e88e5","#e0b800","#43a047"];
+function boatCol(n){ if(n===1) return getComputedStyle(document.documentElement).getPropertyValue("--b1l").trim(); if(n===2) return getComputedStyle(document.documentElement).getPropertyValue("--b2l").trim(); return BOATCOL[n]; }
+
+// ---- セオリーカードの辞書（screens.md「セオリーカードの最初の組」）
+const THEORY = {
+  "TC-S3":{title:"2コース凹み",cond:"2コースのスタートが、両隣より0.05秒以上遅れる",likely:"2号艇が凹んだら、すぐ外の3号艇が攻めやすい（「凹んだら攻め手」の印はこの形の話）",meas:()=>formMeas("d2"),today:()=>"今日の平均STの並びがこの形の手がかりに合う（展示でもこの形）"},
+  "TC-H5":{title:"手がかり: 2コースの平均STが遅い",cond:"直近30走の「このコース」の平均STで、2号艇が両隣より0.01秒以上遅い（展示STではない）",likely:"本番のスタートが「2コース凹み」になりやすい",meas:()=>`<div class="h">過去レースの傾向（全国・同じ級の並び・枠なり）</div>${hb("当てはまるとき 本番が2コース凹みに",HINT_D2.hit[0],HINT_D2.hit[1])}${hb("当てはまらないとき",HINT_D2.miss[0],HINT_D2.miss[1])}<p class="note">当てはまっても、2コース凹みにならない方が多い（決め手ではなく手がかり）</p>`,today:()=>"2号艇 .161、両隣 .148・.142"},
+  "TC-E1":{title:"枠なり",cond:"6艇とも艇番どおりのコースに入る",likely:"1号艇がインから。前付けがあると1号艇の1着は下がりやすい",meas:()=>`<div class="h">過去レースの傾向（全国・同じ級の並び ${comma(ENTRY.all[0])}件）</div>${hb("枠なり（出現率）",ENTRY.waku[0],ENTRY.all[0])}${hb("枠なりのときの1号艇の1着",ENTRY.waku[1],ENTRY.waku[0])}${hb("前付けありのときの1号艇の1着",ENTRY.mae[1],ENTRY.mae[0])}`,today:()=>"今日の展示の進入は枠なり"},
+  "TC-V1":{title:"徳山のイン",cond:"徳山の全レース",likely:"1号艇が1着になりやすい会場",meas:()=>`<div class="h">過去レースの傾向（2019/4/1〜）</div>${hb("徳山の全レースで、1号艇の1着",VA1[0],VA1[1])}${hb("全国・同じ級の並び（1号艇B1）で、1号艇の1着",FACTS[1].u[0],FACTS[1].u[1])}<p class="note">2つは数えたレースの範囲が違う。徳山で同じ級の並びのレースは75件と少ないので、全国で数えている</p>`,today:null},
+  "TC-X1":{title:"1号艇の展示タイム",cond:"1号艇の展示タイム",likely:"同じ選手でも1号艇のときに約0.02秒速く出る（展示で内を走る分などが考えられる）。順位が上位でもその分を割り引いて見る",meas:()=>`<div class="h">過去レースの傾向</div><p class="note">同じ選手・同じ節で比べて約0.017秒（龍神ソナーの分析 T1-5）</p>`,today:()=>"今日の1号艇は 6.84（6艇で2番目タイ）"},
+  "TC-W1":{title:"今日の風（4m）",cond:"徳山・風速4〜5mのレース",likely:"艇番ごとの1着の割合が、会場全体と比べてどう違うか",meas:()=>windMeas(),today:()=>"今日は北西4m",also:["TC-T1","TC-T2"]},
+  "TC-T3":{title:"潮（満潮・干潮）",cond:"海水の会場で、満潮か干潮か",likely:"満潮はうねりでイン・差しが残りやすく、干潮はまくりが通りやすいと言われる",meas:null,prepNote:"潮位のデータがまだ無い"},
+  "TC-T6":{title:"部品交換",cond:"モーターの部品を交換した艇",likely:"上積みではなく、不調の手当てのことが多い（良し悪しは付けない）",meas:null},
+  "TC-T9":{title:"体重",cond:"6艇の中で体重が軽い／重い艇",likely:"軽い選手は直線が伸びやすく、重い選手はターンが流れにくいと言われる",meas:null},
+  "TC-R1":{title:"このレースは堅い？荒れる？",cond:"1号艇の1着・万舟の割合・風",likely:"材料を並べる（堅い・荒れるとは決めない）",meas:()=>rough(),today:null},
+  "TC-T1":{title:"向かい風が強い",cond:"向かい風4m以上",likely:"スロー勢が伸びず、ダッシュ勢のまくり・まくり差しが増えやすい",meas:null},
+  "TC-T2":{title:"追い風が強い",cond:"追い風4m以上",likely:"1号艇がターンで流れ、2・3号艇の差しが増えやすい（「追い風はイン有利」と逆向きになることがある）",meas:null},
+  "TC-T4":{title:"F持ち",cond:"F持ちの選手",likely:"スタートを控えやすい。イン側にいると外の攻めが通りやすい",meas:null},
+  "TC-T5":{title:"チルト",cond:"6艇の中でチルトが違う艇",likely:"上げていれば伸び型（まくり一発か大敗か）。下げていれば出足・ターン重視",meas:null},
+  "TC-T7":{title:"スジ",cond:"3コースがまくる／まくり差す",likely:"まくりなら3-4、まくり差しなら3-1が続きやすい",meas:null,related:()=>`関連する実データ: 2コース凹み（攻める艇は3号艇）になったレース${FORMS.d2.n}件では、よく出た3連単は ${FORMS.d2.tri.map(t=>`${t[0]}（${t[1]}件）`).join("・")}`},
+  "TC-T8":{title:"準優勝戦・優勝戦のスタート",cond:"準優勝戦・優勝戦",likely:"Fの罰則が重く、スタートが慎重になりやすい",meas:null},
+  "TC-T10":{title:"展示タイムの差",cond:"展示タイム",likely:"順位だけでなく、一番速い艇との差の大きさを見る",meas:null},
+};
+function factTheory(b,row){
+  const [key,lv,good,bad] = row; const [nm,gw,bw] = ITEM[key];
+  return {title:`${nm}（${b}号艇）`,cond:`${nm}が6艇で一番${gw}／一番${bw}`,likely:`${b}号艇の1着の割合が変わる`,meas:()=>`<div class="h">過去レースの傾向（${esc(FACTS[b].scope)}）</div>${hb(`一番${gw}とき`,good[0],good[1])}${hb(`一番${bw}とき`,bad[0],bad[1])}<p class="note">判定: ${lv==="large"?"差が大きい":lv==="small"?"差は小さい":"件数が少なく差ははっきりしない"}。数えた割合で、原因とは限らない</p>`,today:()=>{const p=POS[key][b-1];return p===1?{hit:true,t:`今日の${b}号艇は6艇で一番${gw}`}:p===6?{hit:true,t:`今日の${b}号艇は6艇で一番${bw}`}:{hit:false,t:`今日の${b}号艇は6艇で${p}番目`};}};
+}
+function formMeas(k){
+  const f = FORMS[k];
+  return `<div class="h">過去レースの傾向（全国・同じ級の並び・枠なり、この形 ${comma(f.n)}件）</div>${hb(`攻める艇（${f.att}号艇）の1着`,f.first[f.att-1],f.n)}${hb("1号艇の1着",f.first[0],f.n)}<p class="note">起きなかった: 攻める艇が1着にならなかったのは ${f1(100-pct(f.first[f.att-1],f.n))}%。スリットの形はレース後に分かるもので「もしこうなったら」の参考</p>`;
+}
+function windMeas(){
+  const rows = [1,2,3,4,5,6].map(b=>{const p=pct(WIND45.win[b-1],WIND45.n), q=pct(VA_WIN[b-1],VA1[1]);return `<tr><td>${badge(b,"s")}</td><td class="r num">${f1(p)}%</td><td class="r num">${f1(q)}%</td><td class="r num">${p-q>=0?"+":""}${f1(p-q)}</td></tr>`;}).join("");
+  return `<div class="h">過去レースの傾向（徳山・風速4〜5mのレース ${comma(WIND45.n)}件）</div><table class="tbl"><thead><tr><th>艇</th><th class="r">風4〜5m</th><th class="r">風を問わず</th><th class="r">差</th></tr></thead><tbody>${rows}</tbody></table><p class="note">追い風と向かい風を区別せずに数えている（効き方が逆なので、混ざった値）。区別できるかは別に調べている</p>`;
+}
+function rough(){
+  return `<div class="h">このレースの材料を「全国の全レース」と比べる（数えた範囲はそれぞれ書いてある）</div>
+  ${baseLegend("徳山の全レース")}
+  <div class="h" style="font-size:12px;color:var(--sub);margin-top:6px">1号艇の1着</div>
+  ${hbB(`全国・同じ級の並び ${comma(BASE.NC.n)}件`,BASE.NC.b1,BASE.NC.n,BASE_B1,VA_B1)}
+  ${hbB(`類似レース ${SIM.n}件`,SIM.first[0],SIM.n,BASE_B1,VA_B1)}
+  <div class="h" style="font-size:12px;color:var(--sub);margin-top:6px">万舟（3連単1万円以上）</div>
+  ${hbB(`全国・同じ級の並び ${comma(BASE.NC.n)}件`,BASE.NC.manshu,BASE.NC.n,BASE_M,VA_M)}
+  ${hbB(`類似レース ${SIM.n}件`,SIM.manshu,SIM.n,BASE_M,VA_M)}
+  <p class="note">参考: 徳山の全レースでは1号艇の1着 ${f1(VA_B1)}%・万舟 ${f1(VA_M)}%（徳山は1号艇が強く、万舟が少なめの会場）。今日の風（4〜5m）の傾向は風のマーク</p>
+  <p class="note">全国の全レースと比べると、1号艇の1着は低め、万舟は高め。ただし徳山は1号艇が強い会場。どちらに見るかは自分で決める</p>`;
+}
+function judge(k,n,base){ const [lo,hi]=wilson(k,n); return lo>base?"up":hi<base?"down":"same"; }
+function hbB(label,k,n,base,ref,refLabel){
+  const p=pct(k,n), [lo,hi]=wilson(k,n), j=judge(k,n,base), d=p-base;
+  const word = j==="up"?"↑ 全国の全レースより高め":j==="down"?"↓ 全国の全レースより低め":"全国の全レースと差ははっきりしない";
+  return `<div class="hbar"><span class="lab">${esc(label)} <b class="num">${f1(p)}%</b> <span class="mk ${j==="same"?"":"th"}" style="margin-left:2px">${word}</span><br><span class="note num">全国の全レース ${f1(base)}%より ${d>=0?"+":""}${f1(d)}ポイント（${comma(k)}/${comma(n)}、ぶれ幅${f0(lo)}〜${f0(hi)}%）</span></span><span class="tr"><i style="width:${p}%"></i><span class="ci" style="left:${lo}%;width:${hi-lo}%"></span><span style="position:absolute;top:-6px;bottom:-6px;left:${base}%;border-left:2px dashed var(--ink)" title="全国の全レース"></span>${ref!=null?`<span style="position:absolute;top:-4px;bottom:-4px;left:${ref}%;border-left:1px dotted var(--faint)"></span>`:""}</span><span class="num" style="text-align:right">${f0(p)}%</span></div>`;
+}
+const BASE_B1 = pct(BASE.NA.b1, BASE.NA.n), BASE_M = pct(BASE.NA.manshu, BASE.NA.manshuN), VA_B1 = pct(BASE.VA.b1, BASE.VA.n), VA_M = pct(BASE.VA.manshu, BASE.VA.n);
+const baseLegend = (refName) => `<p class="note" style="margin:0">太い点線＝${term("全国の全レース")}${refName?`、細い点線＝${esc(refName)}（参考）`:""}</p>`;
+function hb(label,k,n){ const p=pct(k,n), [lo,hi]=wilson(k,n); return `<div class="hbar"><span class="lab">${esc(label)} <span class="num">${f1(p)}%</span> <span class="note num">（${comma(k)}/${comma(n)}、ぶれ幅${f0(lo)}〜${f0(hi)}%）</span></span><span class="tr"><i style="width:${p}%"></i><span class="ci" style="left:${lo}%;width:${hi-lo}%"></span></span><span class="num" style="text-align:right">${f0(p)}%</span></div>`; }
+
+// ---- 用語（「?」で出す。セオリーカードとは別）
+const GLOSS = {
+  "級":"選手の格付け。上から A1・A2・B1・B2。半年ごとに成績で決まる",
+  "F":"フライング（スタートの早すぎ）の回数。持っていると罰則が重くなるので、スタートを控えやすい",
+  "全国勝率":"全国のレースの成績を点にした平均（1着ほど高い）。高いほど強い選手",
+  "当地勝率":"この会場（徳山）での勝率。高いほどこの水面が得意",
+  "直近30走の1着率":"前日までの直近30走で1着だった割合。高いほど最近調子が良い",
+  "平均ST":"スタートタイミング（スタートラインを通った時の、合図からの遅れ）の平均。0に近いほど早い。直近30走",
+  "このコース":"今日と同じコースを走ったときだけの平均ST",
+  "今節の平均着順点":"この節（同じ会場の開催）で前日までに走ったレースの着順を点にした平均。1着10点・2着8点・3着6点・4着4点・5着2点・6着1点（F・L・失格は0点）。高いほど今節の調子が良い。公式の得点率とは別",
+  "モーター2連率":"このモーターが、使われてから2着以内に入った割合。高いほど良いモーターと言われる",
+  "モーター3連率":"このモーターが3着以内に入った割合。2連率と並べると「3着までは来るモーター」かが分かる",
+  "ボート2連率":"ボート（艇体）が2着以内に入った割合。モーターより着順との関係は小さい",
+  "展示":"展示航走（本番前の試走）のタイム。小さいほど速い",
+  "一周":"オリジナル展示の1周のタイム。小さいほど速い。測る項目は会場ごとに違う",
+  "まわり足":"オリジナル展示の、ターンの区間を測ったタイム。小さいほど速い。測る区間は会場ごとに違う",
+  "展示ST":"展示航走のスタートタイミング。0に近いほど早い。本番のスタートとは別",
+  "チルト":"モーターの取り付け角度。上げる（+）と直線が伸び、下げる（−0.5）とターンが安定すると言われる",
+  "部品交換":"モーターの部品を交換したかどうか",
+  "体重":"選手の体重。軽いほど直線で有利と言われる",
+  "類似レース":"全国の過去レース（2019/4/1〜）のうち、今日と、ラウンド（準優勝戦）・1号艇の級（B1）・勝率トップの艇（3号艇）の3つがそろうレース。今日は63件",
+  "全国・同じ級の並び":"全国で、出走6人の級の並び（A1・A2・B1が各2人で、1号艇はB1）が今日と同じだった過去レース",
+  "全国の全レース":"比べる基準。全国24場の全レース（2019/4/1〜、返還のあったレースを除く40万2,576レース）を1レースずつ数えた割合。会場ごとや選手ごとの平均ではない。高め・低めは、このレースの割合のぶれ幅が全国の全レースと重ならないときだけ付ける",
+  "徳山の全レース":"徳山で行われた全レース（級の並びなどは問わない）。2019/4/1から",
+  "万舟":"3連単の払戻が1万円以上になったレース",
+  "合成オッズ":"組んだ買い目のどれが当たっても同じ払戻になるように買ったときの、全体の倍率。1.0未満だと、当たっても賭けた金額を下回る（トリガミ）",
+  "トリガミ":"当たったのに、払戻が賭けた合計を下回ること",
+  "人気":"3連単120通りのオッズが低い順の順番。1番人気が一番売れている",
+  "1着人気":"その艇が1着の組（20通り）をまとめた合成オッズの、6艇の中での順番",
+  "過去の1着":"この艇番・この級で、今日と同じ級の並びのレースで1着になった割合",
+  "均等払戻":"どれが当たっても払戻がほぼ同じになるように、オッズが低い組ほど多く買う配分",
+  "均等":"どの組も同じ金額で買う配分",
+  "金額":"その組に賭ける金額（100円単位）",
+  "払戻":"その組が当たったときに戻る金額",
+  "類似レースの件数":"類似レース63件のうち、その組の着順で決まった回数。オッズと掛け合わせた値は出さない",
+  "凹んだら攻め手":"スタートで2コースが凹んだ（遅れた）ら、すぐ外の3号艇が攻めやすい、という形の印。凹むのは本番で13%なので「もしそうなったら」の話",
+  "差がつく材料":"過去レースで、その項目が6艇で一番良いときと一番悪いときに、1着の割合がどれだけ違ったか。差が大きい項目ほど着順に関係していた",
+  "枠なり":"6艇が艇番どおりのコースに入ること",
+  "前検タイム":"節の初日の前に、モーターの調子を見るために測るタイム。小さいほど速い。順位は、その節に参加する全艇の中での順番",
+  "勝ち決まり手":"この選手が直近90日に1着になったときの決まり手の内訳。どんな勝ち方が多い選手か",
+  "数えた値の札":"成績の値から機械的に付けた札（評判ではない）。札を押すと、何の値から付けたかが出る",
+  "水質":"海水・淡水・汽水。海水は潮の満ち引きで水面が変わり、淡水は体が浮きにくく体重差が効きやすいと言われる",
+};
+const tq = (k) => `<button type="button" class="tq" data-term="${esc(k)}" aria-label="${esc(k)}とは">?</button>`;
+const term = (k, label) => `${esc(label??k)}${tq(k)}`;
+function openVenue(){
+  const n = Object.values(VENUE_TECH).reduce((a,b)=>a+b,0);
+  const top = Object.entries(VENUE_TECH).slice(0,5).map(([k,c])=>`<div class="hbar"><span class="lab">${k} <span class="num">${comma(c)}件</span></span><span class="tr"><i style="width:${pct(c,n)}%"></i></span><span class="num" style="text-align:right">${f0(pct(c,n))}%</span></div>`).join("");
+  openLayer(`<h2>徳山の特徴<button type="button" class="x" data-close>閉じる</button></h2>
+  <div class="kv"><dt>${term("水質")}</dt><dd>海水（潮の満ち引きがある）<button type="button" class="mk th" data-theory="TC-T3">潮の傾向 ›</button></dd><dt>型</dt><dd>イン（1号艇）が強い会場</dd></div>
+  ${hb(`1号艇の1着: 徳山の全レース ${comma(VA1[1])}件（2019/4/1〜）`,VA1[0],VA1[1])}
+  <div class="h" style="font-size:12px;color:var(--sub)">決まり手（直近1年 ${comma(n)}レース）</div><div class="cmp">${top}</div>
+  <p class="note">今日の風の傾向は風のマーク、潮はデータが無く準備中。会場ごとの枠番別の成績・決まり手の全内訳は、会場のレース一覧ページの「会場の特徴」（既存）にある。数えた期間が違う（ここの1号艇の1着は2019年から、決まり手は直近1年）</p>
+  <p><span class="xlink" style="text-decoration:underline">徳山の会場ページで詳しく見る ›</span> <span class="note">（モックではリンク先なし）</span></p>`);
+}
+function featChips(b){
+  const out = [];
+  const p = (k) => POS[k][b.n-1];
+  if (p("st_mean30")===1) out.push(["スタートが早い","平均ST（直近30走）が6艇で一番早い"]);
+  if (p("series_score")===1) out.push(["今節好調","今節の平均着順点が6艇で一番高い"]);
+  if (p("recent_win30")===1) out.push(["最近よく勝つ","直近30走の1着率が6艇で一番高い"]);
+  if (p("nat_win")===1) out.push(["実力上位","全国勝率が6艇で一番高い"]);
+  if (p("loc_win")===1) out.push(["徳山が得意","当地勝率が6艇で一番高い"]);
+  if (b.loc==null) out.push(["徳山は初めて","当地勝率の記録が無い"]);
+  const t = WIN_TECH[b.n-1], tot = Object.values(t).reduce((a,c)=>a+c,0), top = Object.entries(t)[0];
+  if (top[0]!=="逃げ" && tot>=8 && top[1]/tot>=0.3) out.push([`${top[0]}で勝つことが多い`,`直近90日の1着${tot}回のうち${top[0]}が${top[1]}回`]);
+  return out;
+}
+function openTerm(k){ openLayer(`<h2>${esc(k)}<button type="button" class="x" data-close>閉じる</button></h2><p style="margin:0;font-size:15px;line-height:1.7">${esc(GLOSS[k]??"")}</p>`); }
+
+// ---- 状態
+const S = { v:2, lens:"axis", stage:"post", deep:null, metric:null, bets:{1:new Set([1]),2:new Set([2,3]),3:new Set([2,3,4])}, guide:null, budget:1000, mode:"payout" };
+const LENS_Q = {axis:"<b>1号艇は逃げる？</b> 誰が1着候補か",flow:"<b>スタートでどこが出る？</b> 誰が攻めるか",power:"<b>足が良いのは？</b> モーターと展示",bet:"<b>オッズに見合う？</b> 組んだ買い目を確かめる"};
+
+// レンズごとの図のモデル（数字は1艇2個まで）
+function model(){
+  const post = S.stage==="post";
+  const m = S.metric;
+  if (m) return metricModel(m);
+  if (S.lens==="axis") return {
+    title:"全国勝率", left:"4.5", right:"7.5", lo:4.5, hi:7.5, good:"right",
+    rows:BOATS.map(b=>({n:b.n, x:b.nat, nums:[["勝率",b.nat.toFixed(2),"nat_win"],["ST",st3(b.st),"st_mean30"]], marks:axisMarks(b)})) };
+  if (S.lens==="flow") return {
+    title: post ? "展示ST（左ほど早い）" : "平均ST・このコース（左ほど早い）", left:".00", right:".22", lo:0, hi:.22, rev:false, slit:true, good:"left",
+    rows:BOATS.map(b=>({n:b.n, x: post ? b.est : b.stc, nums:[], hideNums:true, tapLabel: post? st3(b.est): st3(b.stc), marks:flowMarks(b)})) };
+  if (S.lens==="power") return {
+    title: post ? "展示タイム（一番速い艇との差、左ほど速い）" : "モーター2連率（右ほど高い）",
+    left: post ? "+0.00" : "15%", right: post ? "+0.10" : "45%", good: post ? "left" : "right",
+    lo: post ? 0 : 15, hi: post ? .10 : 45,
+    rows:BOATS.map(b=>({n:b.n, x: post ? b.exh-6.83 : b.motor, nums: post ? [["モーター",f1(b.motor)+"%","motor_2"],["展示",b.exh.toFixed(2),"exh"]] : [["モーター",f1(b.motor)+"%","motor_2"]], marks:powerMarks(b)})) };
+  return {
+    title:"1着になる組のオッズ（合成）", left:"人気", right:"人気薄", lo:Math.log(1), hi:Math.log(300), log:true, bet:true,
+    rows:BOATS.map((b,i)=>({n:b.n, x:Math.log(FIRST_COMP[i]), nums:[["1着人気",`${FIRST_POP[i]}番（${FIRST_COMP[i].toFixed(1)}倍）`,null],["過去の1着",`${f0(pct(FACTS[b.n].u[0],FACTS[b.n].u[1]))}%（${comma(FACTS[b.n].u[0])}/${comma(FACTS[b.n].u[1])}）`,null]], marks:[], bet:true})) };
+}
+function metricModel(m){
+  const def = {
+    nat_win:{t:"全国勝率",lo:4.5,hi:7.5,g:"right",v:b=>b.nat,f:b=>b.nat.toFixed(2)},
+    st_mean30:{t:"平均ST（直近30走）",lo:.10,hi:.20,g:"left",v:b=>b.st,f:b=>st3(b.st)},
+    motor_2:{t:"モーター2連率",lo:15,hi:45,g:"right",v:b=>b.motor,f:b=>f1(b.motor)+"%"},
+    motor_3:{t:"モーター3連率",lo:30,hi:60,g:"right",v:b=>b.motor3,f:b=>f1(b.motor3)+"%"},
+    exh:{t:"展示タイム",lo:6.80,hi:6.95,g:"left",v:b=>b.exh,f:b=>b.exh.toFixed(2)},
+    loc_win:{t:"当地勝率",lo:0,hi:8,g:"right",v:b=>b.loc??0,f:b=>b.loc==null?"当地初":b.loc.toFixed(2)},
+    series_score:{t:"今節の平均着順点",lo:5,hi:9,g:"right",v:b=>b.series,f:b=>b.series.toFixed(2)},
+  }[m];
+  return {title:def.t+"を6艇で比べる",left:"",right:"",lo:def.lo,hi:def.hi,metric:true,good:def.g,
+    rows:BOATS.map(b=>({n:b.n,x:def.v(b),nums:[[ "",def.f(b),null]],marks:[],showVal:true}))};
+}
+function axisMarks(b){
+  const out=[];
+  if (b.f) out.push({t:`F${b.f}`,cls:"f",th:"TC-T4"});
+  const fr = FACTS[b.n].rows.filter(r=>r[1]==="large");
+  for (const r of fr){ const p=POS[r[0]][b.n-1]; if(p===1||p===6){ const [nm,gw,bw]=ITEM[r[0]]; out.push({t:`${nm.replace("（直近30走）","")}が一番${p===1?gw:bw}`,cls:"hit",fact:[b.n,r]}); break; } }
+  return out;
+}
+function flowMarks(b){
+  const out=[];
+  if (b.n===2) out.push({t:"★2コース凹みの手がかり（本番で凹むのは13%） ›",cls:"hit",th:"TC-H5"});
+  if (b.n===3) out.push({t:"凹んだら攻め手 ›",cls:"",th:"TC-S3"});
+  if (b.f) out.push({t:`F${b.f}`,cls:"f",th:"TC-T4"});
+  return out;
+}
+function powerMarks(b){
+  const out=[];
+  if (S.stage==="post"){
+    if (b.tilt!==0) out.push({t:`チルト${b.tilt}`,cls:"",th:"TC-T5"});
+    if (b.n===1) out.push({t:"展示の偏り ›",cls:"th",th:"TC-X1"});
+  }
+  return out;
+}
+
+// ---- 描画
+function renderBoard(){
+  const md = model();
+  const scale = v => Math.max(0,Math.min(100,(v-md.lo)/(md.hi-md.lo)*100));
+  const gl = md.good==="left" ? `<span class="goodtag">◀ 良い</span>` : "", gr = md.good==="right" ? `<span class="goodtag">良い ▶</span>` : "";
+  let h = `<div class="axis" aria-hidden="true"><span>${gl}${esc(md.left)}</span><span class="ttl">${esc(md.title)}</span><span>${esc(md.right)}${gr}</span></div>`;
+  if (S.v===1){
+    h += `<div class="ohead"><span></span><span>選手</span><span>${md.rows[0].nums[0]?.[0]??""}</span><span>${md.rows[0].nums[1]?.[0]??"印"}</span><span></span></div>`;
+    for (const r of md.rows){ const b=BOATS[r.n-1];
+      const c1 = r.nums[0] ? cellMini(r.nums[0], scale(r.x), r.n) : cellMini(["",r.tapLabel??"",null], scale(r.x), r.n);
+      const c2 = r.nums[1] ? `<button type="button" class="cell" data-metric="${r.nums[1][2]??""}" data-boat="${r.n}"><span class="v num">${esc(r.nums[1][1])}</span></button>` : `<div class="marks">${marksHtml(r.marks)}</div>`;
+      h += `<div class="orow" data-row="${r.n}"><button type="button" class="bbtn" style="border:0;background:transparent;padding:0" data-deep="${r.n}" aria-label="${r.n}号艇の詳しい情報">${badge(r.n)}</button><div class="who"><b>${esc(b.name)}</b><span>${b.cls}${r.nums[1]&&r.marks.length?` ・ ${r.marks.map(m=>esc(m.t)).join(" ")}`:""}</span></div>${c1}${c2}${addBtn(r.n,md)}</div>`;
+    }
+  } else if (S.v===3){
+    for (const r of md.rows){ const b=BOATS[r.n-1];
+      h += `<div class="bcard" data-row="${r.n}"><div class="top"><button type="button" style="border:0;background:transparent;padding:0;min-height:44px" data-deep="${r.n}" aria-label="${r.n}号艇の詳しい情報">${badge(r.n)}</button><span class="nm">${esc(b.name)}<span>${b.cls}</span></span>${addBtn(r.n,md)}</div>${trackHtml(r,md,scale)}<div class="marks">${numsHtml(r)}${marksHtml(r.marks)}</div></div>`;
+    }
+  } else {
+    for (const r of md.rows){
+      h += `<div class="lane" data-row="${r.n}"><button type="button" class="bbtn" data-deep="${r.n}" aria-label="${r.n}号艇 ${esc(BOATS[r.n-1].name)}の詳しい情報" style="display:grid;justify-items:center">${badge(r.n)}<span class="lname">${esc(BOATS[r.n-1].name.split(" ")[0])}</span><span class="lname" style="color:var(--sub);font-weight:700">${BOATS[r.n-1].cls}</span></button><div>${trackHtml(r,md,scale)}<div class="marks">${numsHtml(r)}${marksHtml(r.marks)}</div>${md.bet?pos3(r.n):""}</div>${md.bet?"":addBtn(r.n,md)}</div>`;
+    }
+  }
+  if (md.metric) h += `<p class="note" style="margin:6px 0 0">項目をもう一度タップするか「閉じる」でレンズの図に戻る</p>`;
+  document.getElementById("board").innerHTML = h;
+}
+function trackHtml(r,md,scale){
+  const x = scale(r.x), col = boatCol(r.n);
+  const hl = S.deep && S.deep!==r.n ? "opacity:.35;" : "";
+  let grid = "";
+  if (md.slit) grid = `<span class="slitline" style="left:0"></span>` + [.05,.10,.15,.20].map(v=>`<span class="grid" style="left:${scale(v)}%"></span>`).join("");
+  else grid = [25,50,75].map(v=>`<span class="grid" style="left:${v}%"></span>`).join("");
+  const val = (md.slit||r.showVal) ? `<span class="val num" style="left:${x}%">${esc(r.showVal? r.nums[0][1] : (r.tapLabel??""))}</span>` : "";
+  const barStyle = md.slit ? `left:0;width:${x}%;background:${col};opacity:.25` : `left:0;width:${x}%;background:${col};opacity:.18`;
+  const lbl = (S.lens==="flow" && !S.metric && r.n===3) ? `<span class="lbl" style="left:${Math.min(x+18,90)}%;color:var(--sub);border-bottom:1px dashed var(--sub)">↗ 凹んだら攻め</span>` : "";
+  const grad = md.good ? `background:linear-gradient(to ${md.good}, transparent 40%, var(--water-soft));border-radius:6px;` : "";
+  return `<button type="button" class="track" data-deep="${r.n}" aria-label="${r.n}号艇 ${esc(md.title)}" style="${hl}${grad}"><span class="rail"></span>${grid}<span class="bar" style="${barStyle}"></span><span class="dot" style="left:${x}%;background:${col}"></span>${val}${lbl}</button>`;
+}
+function numsHtml(r){
+  if (r.hideNums || r.showVal) return "";
+  return r.nums.map(([k,v,m])=> m ? `<button type="button" class="mk" data-metric="${m}" data-boat="${r.n}">${esc(k)} <b class="num">${esc(v)}</b></button>` : `<span class="mk">${esc(k)} <b class="num">${esc(v)}</b></span>`).join("");
+}
+function marksHtml(ms){ return ms.map((m,i)=>`<button type="button" class="mk ${m.cls}" ${m.th?`data-theory="${m.th}"`:""} ${m.fact?`data-fact="${m.fact[0]}:${m.fact[1][0]}"`:""}>${esc(m.t)}</button>`).join(""); }
+function cellMini(nm,x,n){ return `<button type="button" class="cell" data-metric="${nm[2]??""}" data-boat="${n}"><span class="v num">${esc(nm[1])}</span><span class="mini"><i style="width:${x}%;background:${boatCol(n)}"></i></span></button>`; }
+function pos3(n){
+  return `<div class="pos3" role="group" aria-label="${n}号艇を何着の候補に入れるか" style="margin-top:4px">${[1,2,3].map(k=>`<button type="button" class="${S.bets[k].has(n)?"on":""}" data-ms="${k}:${n}" aria-pressed="${S.bets[k].has(n)}">${k}着</button>`).join("")}</div>`;
+}
+function addBtn(n,md){
+  const ks = [1,2,3].filter(k=>S.bets[k].has(n));
+  return `<button type="button" class="addb ${ks.length?"on":""}" data-add="${n}" aria-label="${n}号艇: ${ks.length?ks.join("・")+"着の候補。":"候補に入っていない。"}マークシートを開く">${ks.length?`<span class="pl">${ks.join("·")}着</span>`:"+"}</button>`;
+}
+
+function renderSum(){
+  const post = S.stage==="post"; let h="";
+  if (S.lens==="axis"){
+    const f=FACTS[1];
+    h += `<div class="box" id="g-axis-sum"><h3>1号艇が1着になったのは<button type="button" class="mk th" data-theory="TC-V1">傾向 ›</button></h3>
+      <div class="big"><span class="pct num">${f1(pct(f.u[0],f.u[1]))}%</span><span class="cnt num">${comma(f.u[0])}/${comma(f.u[1])}レース（2019/4/1〜10/5）</span></div>
+      ${hb(`全国・同じ級の並び ${comma(f.u[1])}件のうち`,f.u[0],f.u[1])}${hb(`徳山の全レース ${comma(VA1[1])}件のうち`,VA1[0],VA1[1])}<p class="note" style="margin:0">${term("全国・同じ級の並び")} ${term("徳山の全レース")}</p>
+      <p class="note">上と下は数えたレースの範囲が違う。徳山で同じ級の並びのレースは${f.vc}件と少ないので、大きい数字は全国で数えている</p></div>`;
+    const fr = f.rows.filter(r=>r[1]==="large").map(r=>({r,p:POS[r[0]][0]})).sort((a,b)=>((b.p===1||b.p===6)?1:0)-((a.p===1||a.p===6)?1:0)).slice(0,4);
+    const chips = fr.map(({r,p})=>{const [nm,gw,bw]=ITEM[r[0]];const hit=p===1||p===6;const use=p===6?r[3]:r[2];return `<button type="button" class="chip ${hit?"hit":"off"}" data-fact="1:${r[0]}"><b>${esc(nm)}</b>${hit?`<span class="l2">今日は一番${p===1?gw:bw} → そのときの1着 <span class="num">${f1(pct(use[0],use[1]))}%（${comma(use[0])}/${comma(use[1])}）</span></span>`:`<span class="l2">今日は${p}番目（一番でないので当てはまらない）</span>`}</button>`;}).join("");
+    h += `<div class="box"><h3>${term("差がつく材料")}（1号艇・差が大きい項目）</h3><div class="chips">${chips}</div><p class="note">今日の1号艇が6艇で一番（良い・悪い）の項目を先に並べる。艇の丸をタップすると他の艇も見られる</p></div>`;
+  } else if (S.lens==="flow"){
+    const d2=FORMS.d2;
+    h += `<div class="box" id="g-flow-sum"><h3>本番のスタートの形<button type="button" class="mk hit" data-theory="TC-H5">★ 平均STの手がかり ›</button></h3>
+      <div class="big"><span class="cnt">本番で2コース凹みになるのは</span><span class="pct num">${f0(pct(HINT_D2.hit[0],HINT_D2.hit[1]))}%</span><span class="cnt">（手がかりに当てはまらないときは${f0(pct(HINT_D2.miss[0],HINT_D2.miss[1]))}%）</span></div><p class="note" style="margin:0">今日の2号艇の平均ST（直近30走・このコース）が両隣より遅く、手がかりに当てはまる${post?"。展示STでも2コース凹みだった":""}</p>
+      ${hb("当てはまるとき、本番が2コース凹みに",HINT_D2.hit[0],HINT_D2.hit[1])}${hb("当てはまらないとき",HINT_D2.miss[0],HINT_D2.miss[1])}</div>`;
+    h += `<div class="box"><h3>もし2コース凹みになったら<button type="button" class="mk th" data-theory="TC-S3">傾向 ›</button></h3><p class="note">全国・同じ級の並び・枠なりで、本番が2コース凹みだった ${d2.n}件で1着になった艇</p>${bars6(d2.first,d2.n)}
+      <div class="chips"><span class="chip"><span>よく出た3連単</span><b class="num">${d2.tri.map(t=>`${t[0]}（${t[1]}件）`).join("　")}</b></span><button type="button" class="chip" data-theory="TC-T7"><span>スジのセオリー</span><b>3まくり→3-4／まくり差し→3-1</b></button></div></div>`;
+    h += `<div class="box"><h3>進入（${term("枠なり")}）<button type="button" class="mk th" data-theory="TC-E1">傾向 ›</button></h3><p class="note">${post?"今日の展示は6艇とも枠なり。":"展示の後に今日の展示の進入が出る。"}枠なりのとき1号艇の1着は ${f1(pct(ENTRY.waku[1],ENTRY.waku[0]))}%（${comma(ENTRY.waku[1])}/${comma(ENTRY.waku[0])}）</p></div>`;
+    h += `<div class="box"><h3>${term("類似レース")} ${SIM.n}件の決まり手</h3>${techBars(SIM.tech,SIM.n)}<p class="note">類似レース＝準優勝戦・1号艇B1・勝率トップが3号艇の3つがそろう過去レース。1着は1号艇 ${SIM.first[0]}件（${f0(pct(SIM.first[0],SIM.n))}%）</p></div>`;
+  } else if (S.lens==="power"){
+    if (post){
+      h += `<div class="box" id="g-power-sum"><h3>展示（オリジナル展示: 徳山は一周・まわり足）<button type="button" class="mk th" data-theory="TC-T10">傾向 ›</button></h3>
+      <table class="tbl"><thead><tr><th>艇</th><th class="r">${term("展示")}</th><th class="r">${term("一周")}</th><th class="r">${term("まわり足")}</th><th class="r">${term("展示ST")}</th><th class="r">${term("体重")}</th></tr></thead><tbody>
+      ${BOATS.map(b=>`<tr><td>${badge(b.n,"s")}</td><td class="r num">${b.exh.toFixed(2)}${b.exh===6.83?" ①":""}</td><td class="r num">${b.lap.toFixed(2)}${b.n===1?" ①":""}</td><td class="r num">${b.mawari.toFixed(2)}${b.n===1?" ①":""}</td><td class="r num">${st3(b.est)}</td><td class="r num">${b.wt.toFixed(1)}${b.wt===51.0?" 軽":""}</td></tr>`).join("")}
+      </tbody></table><p class="note">①は6艇で一番速い。「軽」は6艇で一番軽い。1号艇は展示タイムが速く出やすい<button type="button" class="mk th" data-theory="TC-X1">傾向 ›</button>。${term("チルト")}は1〜4号艇が0度、5・6号艇が−0.5度<button type="button" class="mk th" data-theory="TC-T5">傾向 ›</button>。${term("部品交換")}は6艇とも無し<button type="button" class="mk th" data-theory="TC-T6">傾向 ›</button>。体重は一番軽い3号艇51.0kg、一番重い1号艇52.8kg<button type="button" class="mk th" data-theory="TC-T9">傾向 ›</button></p></div>`;
+    } else h += `<div class="box" id="g-power-sum"><h3>展示</h3><p class="note">展示タイム・オリジナル展示・チルト・部品交換は展示の後に出る</p></div>`;
+    h += `<div class="box"><h3>モーター2連率（6艇の順位）</h3>${bars6(BOATS.map(b=>b.motor),100,true)}<p class="note">1号艇は6艇で一番低い19.2%。1号艇がモーター一番低いとき、過去の1着は30.4%（205/675、全国・同じ級の並び）</p></div>`;
+  } else {
+    h += betSummary(true);
+    h += `<div class="box"><h3>${term("万舟")}（3連単1万円以上）になった割合: 全国の全レースと比べる</h3>${baseLegend("徳山の全レース")}${hbB(`${"全国・同じ級の並び"} ${comma(BASE.NC.n)}件`,BASE.NC.manshu,BASE.NC.n,BASE_M,VA_M)}${hbB(`類似レース ${SIM.n}件`,SIM.manshu,SIM.n,BASE_M,VA_M)}<p class="note">${term("類似レース")} ${term("全国・同じ級の並び")}。高め・低めは、ぶれ幅が全国の全レースと重ならないときだけ付ける</p></div>`;
+    h += `<div class="box"><h3>${term("類似レース")} ${SIM.n}件でよく出た3連単</h3><table class="tbl"><thead><tr><th>組</th><th class="r">件数</th><th class="r">オッズ</th><th class="r">人気</th></tr></thead><tbody>${SIM.tri.map(([k,c])=>`<tr><td class="num">${k}</td><td class="r num">${c}/${SIM.n}</td><td class="r num">${TRI[k]}</td><td class="r num">${POP[k]}番</td></tr>`).join("")}</tbody></table><p class="note">件数とオッズを並べるだけで、掛け合わせた値は出さない</p></div>`;
+  }
+  document.getElementById("sum").innerHTML = h;
+}
+function bars6(vals,n,raw=false){
+  const mx = Math.max(...vals.map(v=>raw?v:pct(v,n)));
+  return `<div class="bars6" role="img" aria-label="${vals.map((v,i)=>`${i+1}号艇 ${raw?f1(v):f0(pct(v,n))}%`).join("、")}">${vals.map((v,i)=>{const p=raw?v:pct(v,n);return `<div class="c"><span class="p num">${raw?f1(p):f0(p)}%</span><span class="col" style="height:${p/mx*100}%;background:${boatCol(i+1)}"></span>${badge(i+1,"s")}</div>`;}).join("")}</div>`;
+}
+function techBars(t,n){ return `<div class="cmp">${Object.entries(t).map(([k,c])=>`<div class="hbar"><span class="lab">${k} <span class="num">${c}件</span></span><span class="tr"><i style="width:${pct(c,n)}%"></i></span><span class="num" style="text-align:right">${f0(pct(c,n))}%</span></div>`).join("")}</div>`; }
+
+// ---- 買い目
+function combos(){ const out=[]; for(const a of S.bets[1]) for(const b of S.bets[2]) for(const c of S.bets[3]) if(a!==b&&b!==c&&a!==c) out.push(`${a}-${b}-${c}`); return out.sort((x,y)=>TRI[x]-TRI[y]); }
+function betLabel(){ const f=k=>[...S.bets[k]].sort().join(""); return `3連単 ${f(1)||"—"}-${f(2)||"—"}-${f(3)||"—"}`; }
+function stakes(cs){
+  if (!cs.length) return [];
+  if (S.mode==="equal"){ const u=Math.max(100,Math.floor(S.budget/cs.length/100)*100); return cs.map(k=>({k,y:u})); }
+  const inv = cs.map(k=>1/TRI[k]), s = inv.reduce((a,b)=>a+b,0);
+  return cs.map((k,i)=>({k,y:Math.max(100,Math.floor(S.budget*inv[i]/s/100)*100)}));
+}
+function betSummary(inLens){
+  const cs = combos(), c = comp(cs), st = stakes(cs), tot = st.reduce((a,b)=>a+b.y,0);
+  const rows = st.map(({k,y})=>{const pay=Math.floor(y*TRI[k]);const tg=pay<tot;return `<tr><td class="num">${k}</td><td class="r num">${TRI[k]}</td><td class="r num">${POP[k]}番</td><td class="r num">${SIM.triAll[k]||0}/${SIM.n}</td><td class="r num">${comma(y)}</td><td class="r num ${tg?"tori":""}">${comma(pay)}${tg?" トリガミ":""}</td></tr>`;}).join("");
+  return `<div class="box" ${inLens?`id="g-bet-sum"`:""}><h3>組んだ買い目（${cs.length}点）<span>${term("合成オッズ")} <span class="num">${c?c.toFixed(2):"—"}</span></span></h3>
+    ${c!=null&&c<1?`<p class="tori">合成オッズが1.0未満。どれが当たっても予算を下回る</p>`:""}
+    <div class="calc"><label for="${inLens?"budget":"budget-s"}">予算（円）</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input id="${inLens?"budget":"budget-s"}" type="number" inputmode="numeric" min="100" step="100" value="${S.budget}"><span class="stage" role="group" aria-label="配分"><button type="button" data-mode="payout" aria-pressed="${S.mode==="payout"}">均等払戻</button><button type="button" data-mode="equal" aria-pressed="${S.mode==="equal"}">均等</button></span>${tq("均等払戻")}</div></div>
+    <table class="tbl"><thead><tr><th>組</th><th class="r">オッズ</th><th class="r">${term("人気")}</th><th class="r">${term("類似レースの件数","類似レース")}</th><th class="r">${term("金額")}</th><th class="r">${term("払戻")}</th></tr></thead><tbody>${rows||`<tr><td colspan="6" class="note">1着・2着・3着の候補を入れると出る</td></tr>`}</tbody></table>
+    <p class="note">合計 <span class="num">${comma(tot)}</span>円${S.budget-tot>0?`（100円単位にしたため、残り${comma(S.budget-tot)}円）`:""}。100円単位に丸めた後の払戻。列「類似レース」は、類似レース${SIM.n}件のうち、この組の着順で決まった回数（オッズと掛け合わせない）。オッズは13:14時点で締切まで動く。フライング・欠場の返還で配当は変わる</p></div>`;
+}
+function renderFoot(){
+  const cs = combos(), c = comp(cs);
+  document.getElementById("betTxt").textContent = betLabel();
+  document.getElementById("betSub").textContent = `${cs.length}点 ・ 合成オッズ ${c?c.toFixed(2):"—"}（どれが当たっても戻る倍率）`;
+}
+
+// ---- 深掘り
+function renderDeep(){
+  const el = document.getElementById("deep");
+  if (!S.deep){ el.innerHTML=""; return; }
+  const b = BOATS[S.deep-1], post = S.stage==="post";
+  const facts = FACTS[b.n].rows.map(r=>{const [nm,gw,bw]=ITEM[r[0]];const p=POS[r[0]][b.n-1];const hit=p===1||p===6;return `<button type="button" class="chip ${hit&&r[1]==="large"?"hit":"off"}" data-fact="${b.n}:${r[0]}"><b>${esc(nm)}</b><span class="l2">${hit?"今日は一番"+(p===1?gw:bw):"今日は"+p+"番目（当てはまらない）"}</span></button>`;}).join("");
+  el.innerHTML = `<section class="deep" aria-label="${b.n}号艇の詳しい情報"><div class="dh">${badge(b.n)}<h3>${esc(b.name)} <span class="note">${b.cls}${tq("級")}・${b.age}歳・${b.wt}kg${tq("体重")}</span><button type="button" class="mk th" data-theory="TC-T9">体重の傾向 ›</button></h3><button type="button" class="x" id="closeDeep">閉じる</button></div>
+  <div><p class="note" style="margin:0 0 4px">${term("数えた値の札")}</p><div class="feat">${featChips(b).map(([t,why])=>`<button type="button" class="mk th" data-why="${esc(why)}" data-whyt="${esc(t)}">${esc(t)}</button>`).join("")||`<span class="note">6艇で一番の項目は無い</span>`}</div></div>
+  <dl class="kv">
+    <dt>${term("全国勝率")}</dt><dd><button type="button" data-metric="nat_win" data-boat="${b.n}" class="num">${b.nat.toFixed(2)}</button></dd>
+    <dt>${term("当地勝率")}</dt><dd><button type="button" data-metric="loc_win" data-boat="${b.n}" class="num">${b.loc==null?"当地初":b.loc.toFixed(2)}</button></dd>
+    <dt>${term("直近30走の1着率")}</dt><dd class="num">${f1(b.r30)}%</dd>
+    <dt>${b.n}号艇で走ったとき</dt><dd><span class="num">1着 ${LANE_WIN[b.n-1][0]}/${LANE_WIN[b.n-1][1]}</span> <span class="note">直近2年（本実装は進入コースで数える）</span></dd>
+    <dt>${term("平均ST")}</dt><dd><button type="button" data-metric="st_mean30" data-boat="${b.n}" class="num">${st3(b.st)}</button> <span class="note">このコース ${st3(b.stc)}・徳山 ${st3(b.stv)}</span></dd>
+    <dt>${term("今節の平均着順点")}</dt><dd><button type="button" data-metric="series_score" data-boat="${b.n}" class="num">${b.series.toFixed(2)}</button> <span class="num">（6艇で${POS.series_score[b.n-1]===1?"一番高い":POS.series_score[b.n-1]===6?"一番低い":POS.series_score[b.n-1]+"番目"}）</span> <span class="note">前日まで。準優勝戦の日なので得点率・必要得点は出さない（予選は終わっている）</span></dd>
+    <dt>${term("モーター2連率")}</dt><dd><button type="button" data-metric="motor_2" data-boat="${b.n}" class="num">${f1(b.motor)}%</button></dd>
+    <dt>${term("前検タイム")}</dt><dd class="num">${PRETEST[b.n-1][0].toFixed(2)}（参加艇で${PRETEST[b.n-1][1]}位）</dd>
+    <dt>${term("勝ち決まり手")}</dt><dd>${(()=>{const t=WIN_TECH[b.n-1],tot=Object.values(t).reduce((a,c)=>a+c,0);return `<span class="num">1着${tot}回: </span>`+Object.entries(t).map(([k,c])=>`${k}<span class="num">${c}</span>`).join("・");})()}</dd>
+    ${post?`<dt>展示</dt><dd><button type="button" data-metric="exh" data-boat="${b.n}" class="num">${b.exh.toFixed(2)}</button> <span class="note">展示ST ${st3(b.est)}・チルト ${b.tilt}</span></dd>`:""}
+    ${b.f?`<dt>${term("F")}</dt><dd><button type="button" class="mk f" data-theory="TC-T4">F${b.f}</button></dd>`:""}
+  </dl>
+  <div><p class="note" style="margin:0 0 6px">${term("差がつく材料")}（${esc(FACTS[b.n].scope)}、${b.n}号艇の1着）。「今日」は6艇で一番（良い・悪い）のときだけ当てはまる</p><div class="chips">${facts}</div></div>
+  <p class="note">数字をタップすると、上の図が6艇の比較に変わる（2段目）</p></section>`;
+}
+
+// ---- シート（マークシート・セオリーカード）
+function openLayer(html){ document.getElementById("layer").innerHTML = `<div class="sheetbg" id="sheetbg"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
+function closeLayer(){ document.getElementById("layer").innerHTML=""; }
+function renderSheet(){
+  const ms = [1,2,3].map(k=>`<span class="h">${k}着</span>${[1,2,3,4,5,6].map(n=>`<button type="button" class="${S.bets[k].has(n)?"on":""}" data-ms="${k}:${n}" aria-pressed="${S.bets[k].has(n)}" aria-label="${k}着に${n}号艇">${badge(n,"s")}</button>`).join("")}`).join("");
+  openLayer(`<h2>買い目（3連単）<button type="button" class="x" data-close>閉じる</button></h2><div class="ms">${ms}</div>${betSummary(false)}`);
+}
+function openTheory(id, fact){
+  const t = fact ? factTheory(fact[0], FACTS[fact[0]].rows.find(r=>r[0]===fact[1])) : THEORY[id];
+  if (!t) return;
+  const body = (c, first) => {
+    const meas = c.meas ? `<div class="meas">${c.meas()}</div>` : `<div class="prep">過去レースの傾向: 準備中（まだ数えていない）${c.prepNote?`<br>${esc(c.prepNote)}`:""}</div>`;
+    const tv = c.today ? c.today() : null; const today = !tv ? "" : (typeof tv === "object" && !tv.hit) ? `<div class="today no">今日は当てはまらない（${esc(tv.t)}）</div>` : `<div class="today">今日当てはまる（${esc(typeof tv==="object"?tv.t:tv)}）</div>`;
+    const rel = c.related ? `<p class="note" style="border-left:3px solid var(--water);padding-left:8px">${esc(c.related())}</p>` : "";
+    return `<div class="tc" ${first?"":`style="border-top:1px solid var(--line);padding-top:12px"`}>${first?`<h2><span class="ttl">${esc(c.title)}</span><button type="button" class="x" data-close>閉じる</button></h2>`:`<span class="ttl">${esc(c.title)}</span>`}<div class="rowk"><span>条件</span><b>${esc(c.cond)}</b></div><div class="rowk"><span>起きやすいこと</span><span style="color:var(--ink)">${esc(c.likely)}</span></div>${today}${meas}${rel}</div>`;
+  };
+  const extra = (t.also||[]).map(id=>body(THEORY[id],false)).join("");
+  openLayer(`${body(t,true)}${extra?`<p class="note" style="margin:0">同じ条件に関係するセオリー（向きが逆のものも並べる）</p>${extra}`:""}<p class="note">「〜が起きやすい傾向」で、当てはまってもそうならないことがある</p>`);
+}
+
+// ---- ガイド
+const GUIDE = [
+  {lens:"axis",target:"g-rough",st:"①堅い？荒れる？",msg:"このレースは堅い？荒れそう？",sub:"全国の全レースと比べると、このレースの級の並び（1号艇B1）では1号艇の1着は低め（33%）、万舟は高め（22%）。徳山は1号艇が強い会場なのも材料。枠をタップすると材料がまとめて出る",pos:"bottom"},
+  {lens:"axis",target:"g-axis-sum",st:"②1号艇",msg:"1号艇は逃げられそう？",sub:"大きい数字は全国・同じ級の並び（1号艇B1）での1号艇の1着。差がつく材料では、今節の点と平均STが6艇で一番",pos:"top"},
+  {lens:"flow",target:"board",st:"③壁と攻める艇",msg:"スタートでどこが凹み、誰が攻める？",sub:"2号艇の平均STが遅く、2コース凹みの手がかりに当てはまる（本番でそうなるのは13%）。そのときはすぐ外の3号艇が攻める形",pos:"top"},
+  {lens:"power",target:"g-power-sum",st:"④足",msg:"足が良いのは？",sub:"展示・一周・まわり足は1号艇が上位。ただ1号艇は展示が速く出やすいので割り引いて見る",pos:"top"},
+  {lens:"bet",target:"g-foot",st:"⑤買い目",msg:"買い目を組んで、オッズに見合うか確かめよう",sub:"各艇の「1着・2着・3着」を押して入れる。合成オッズが1.0未満ならトリガミ",pos:"top"},
+];
+function renderGuide(){
+  document.querySelectorAll(".gl").forEach(e=>e.classList.remove("gl"));
+  const gb = document.getElementById("guidebox"); if (gb) gb.remove();
+  document.getElementById("guideBtn").setAttribute("aria-pressed", S.guide!==null);
+  // 光らせた場所に固定フッターが重ならないよう、⑤以外の段では隠す
+  document.getElementById("g-foot").style.visibility = (S.guide!==null && GUIDE[S.guide].target!=="g-foot") ? "hidden" : "";
+  if (S.guide===null) return;
+  const g = GUIDE[S.guide];
+  const tgt = document.getElementById(g.target); if (tgt){ tgt.classList.add("gl"); tgt.scrollIntoView({block: g.pos==="top"?"end":"start",behavior:"smooth"}); }
+  const d = document.createElement("div"); d.className="guidebox " + (g.pos==="top"?"at-top":""); d.id="guidebox"; d.setAttribute("role","dialog");
+  d.innerHTML = `<span class="st">ガイド ${S.guide+1}/5 ${esc(g.st)}</span><span class="msg">${esc(g.msg)}</span><span class="sub">${esc(g.sub)}</span><div class="ops"><button type="button" data-g="close">閉じる</button>${S.guide>0?`<button type="button" data-g="prev">戻る</button>`:""}<button type="button" class="pri" data-g="next">${S.guide<4?"次へ":"おわり"}</button></div>`;
+  document.body.appendChild(d);
+}
+
+// ---- 対応表（screens.md）
+const MAP = [
+ ["FW-01 イン信頼型","軸","開くだけ → 1号艇の丸","1号艇の1着率（全国・同じ級の並び／徳山の全レース、範囲の違いを明記）、差がつく材料","TC-V1・差がつく材料",{lens:"axis"}],
+ ["FW-02 イン崩れ","軸 → 展開","1号艇の丸 → 平均ST","1号艇の平均ST（全体・このコース・徳山）、F、凹みの手がかり","TC-T4・TC-H5",{lens:"axis",deep:1}],
+ ["FW-03 壁読み","展開","2号艇の丸 / ★","2号艇のコース別ST・凹みの手がかり（本番でそうなる率）","TC-H5・TC-S3",{lens:"flow",deep:2}],
+ ["FW-04 進入読み","展開","進入の ?","展示の進入・型ごとの1号艇の1着","TC-E1",{lens:"flow",theory:"TC-E1"}],
+ ["FW-05 スリット読み","展開","★ 平均STの手がかり","本番でその形になる率・攻める艇","TC-H5・TC-S3",{lens:"flow",theory:"TC-H5"}],
+ ["FW-06 1マークの展開","展開","開くだけ","形ごとの1着の艇・類似レースの決まり手","TC-S3",{lens:"flow"}],
+ ["FW-07 スジ買い","展開 → 買い目","スジのカード","スジの文と、形のときのよく出た3連単（実データ）","TC-T7",{lens:"flow",theory:"TC-T7"}],
+ ["FW-08 機力重視","機力","開くだけ → モーター","モーター2連率の6艇比較","差がつく材料（モーター）",{lens:"power",metric:"motor_2"}],
+ ["FW-09 展示重視","機力","開くだけ（展示後）","展示タイムの差・一周・まわり足・展示ST","TC-X1・TC-T10",{lens:"power"}],
+ ["FW-10 調整読み","機力","チルト・部品交換・体重の ?","チルト（6艇の値）・部品交換の有無・体重","TC-T5・TC-T6・TC-T9",{lens:"power",theory:"TC-T5"}],
+ ["FW-11 選手買い","どこでも","艇の丸（苗字つき）","級別・勝率・直近の1着率・年齢・体重","差がつく材料",{lens:"axis",deep:3}],
+ ["FW-12 当地・コース巧者","軸","艇の丸 → 当地勝率","当地勝率の6艇比較・その艇番で走ったときの1着（本実装は進入コース）・コース別ST","差がつく材料（当地）",{lens:"axis",deep:2,metric:"loc_win"}],
+ ["FW-13 今節・勝負駆け","軸","艇の丸 → 今節の点","今節の平均着順点の6艇比較。予選中は得点率・必要得点（本実装）、準優・優勝戦の日は出さない","差がつく材料（今節）",{lens:"axis",deep:1,metric:"series_score"}],
+ ["FW-14 水面・気象","（ヘッダー）","風","徳山・風速4〜5mの艇番ごとの1着と、風を問わない値の差（追い・向かいの区別なし）","TC-W1・TC-T1・TC-T2",{theory:"TC-W1"}],
+ ["FW-15 潮読み","（ヘッダー）","潮の ?（海水・汽水の会場）","文だけ（潮位のデータが無い）","TC-T3（準備中）",{theory:"TC-T3"}],
+ ["FW-16 番組・ラウンド","（ヘッダー）・軸","準優勝戦の札","ラウンドのセオリー、数えるレースの名前・件数","TC-T8",{theory:"TC-T8"}],
+ ["FW-17 過去傾向","展開・買い目","開くだけ","類似レースの決まり手・1着の艇・3連単","—",{lens:"flow"}],
+ ["FW-18 穴狙い","機力 → 買い目","開くだけ","万舟の割合（類似レース・全国・同じ級の並び）、外の艇の展示・人気","TC-R1",{lens:"bet"}],
+ ["FW-19 オッズ・妙味","買い目","開くだけ / 買い目を編集","各艇の1着人気と過去の1着（件数）、組ごとのオッズ・人気と類似レースの件数を並べる（掛け合わせない）","—",{lens:"bet"}],
+ ["FW-20 点数・配分","買い目","買い目を編集","点数・合成オッズ・トリガミ・均等/均等払戻・余り","—",{sheet:true}],
+ ["FW-21 初心者","ガイド","ガイド","5段の案内（①で堅い？荒れる？に答える）","各段",{guide:true}],
+ ["FW-22 堅い／荒れる","（ヘッダー）","堅い？荒れる？の枠","1号艇の1着（徳山・全国・同じ級の並び・類似レース・風）と万舟の割合を並べる。決めつけない","TC-R1",{theory:"TC-R1"}],
+ ["範囲外","—","—","追い風・向かい風の区別、地元選手の印（BOA-781 で要調査）、周回展示の足色、3連複・2連単","—",{}],
+];
+function renderMap(){
+  document.querySelector("#map tbody").innerHTML = MAP.map((r,i)=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td>${Object.keys(r[5]).length?`<button type="button" class="try" data-try="${i}">試す</button>`:""}</td></tr>`).join("");
+}
+
+// ---- 全体
+function render(){
+  document.querySelectorAll("[data-lens]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.lens===S.lens));
+  document.querySelectorAll("[data-stage]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.stage===S.stage));
+  document.querySelectorAll("[data-v]").forEach(b=>b.setAttribute("aria-pressed", +b.dataset.v===S.v));
+  document.getElementById("lensQ").innerHTML = LENS_Q[S.lens];
+  document.getElementById("wxRow").innerHTML = S.stage==="post"
+    ? `<button type="button" class="wx" data-theory="TC-W1" aria-label="風 北西 4m。セオリーを見る"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 7 L16 16 M16 16 L16 10.5 M16 16 L10.5 16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg><span>北西 <b class="num">4</b>m ?</span></button><span>波 <b class="num">4</b>cm</span><span>晴 <span class="num">26</span>℃</span>`
+    : `<span>風・波・天候は展示の後に出る</span>`;
+  renderBoard(); renderDeep(); renderSum(); renderFoot();
+  if (S.guide!==null) renderGuide();
+}
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("button"); if (!t) { if (e.target.id==="sheetbg") closeLayer(); return; }
+  const d = t.dataset;
+  if (d.v){ S.v=+d.v; render(); return; }
+  if (d.lens){ S.lens=d.lens; S.metric=null; render(); return; }
+  if (d.stage){ S.stage=d.stage; S.metric=null; render(); return; }
+  if (d.term){ openTerm(d.term); return; }
+  if (d.venue){ openVenue(); return; }
+  if (d.oldview){ openLayer(`<h2>出走表とタブ<button type="button" class="x" data-close>閉じる</button></h2><p style="margin:0">従来のレース詳細（基本情報・AI予想・直前情報などのタブ）に切り替わる。同じレースのまま行き来でき、選んだ方を次も開く（モックでは切り替え先なし）</p>`); return; }
+  if (d.why){ openLayer(`<h2>${esc(d.whyt)}<button type="button" class="x" data-close>閉じる</button></h2><p style="margin:0;font-size:15px">${esc(d.why)}から付けた札。評判や予想ではない</p>`); return; }
+  if (d.theory){ openTheory(d.theory); return; }
+  if (d.fact){ const [b,k]=d.fact.split(":"); openTheory(null,[+b,k]); return; }
+  if (d.metric!==undefined && d.metric){ S.deep=+d.boat||S.deep; S.metric = S.metric===d.metric? null : d.metric; render(); const bd=document.getElementById("board"), lh=document.getElementById("g-lens").offsetHeight; window.scrollTo({top: bd.getBoundingClientRect().top + window.scrollY - lh - 4, behavior:"smooth"}); return; }
+  if (d.deep){ const n=+d.deep; S.deep = S.deep===n? null : n; S.metric=null; render(); return; }
+  if (t.id==="hint1x"){ document.getElementById("hint1").hidden = true; return; }
+  if (t.id==="closeDeep"){ S.deep=null; S.metric=null; render(); return; }
+  if (d.add){ renderSheet(); return; }
+  if (t.id==="openSheet"){ renderSheet(); return; }
+  if (d.ms){ const [k,n]=d.ms.split(":").map(Number); S.bets[k].has(n)?S.bets[k].delete(n):S.bets[k].add(n); const inSheet=!!t.closest(".sheet"); render(); if(inSheet) renderSheet(); return; }
+  if (d.mode){ S.mode=d.mode; render(); if(document.querySelector(".ms")) renderSheet(); return; }
+  if (d.close!==undefined){ closeLayer(); return; }
+  if (t.id==="guideBtn"){ S.guide = S.guide===null?0:null; if(S.guide!==null){S.lens=GUIDE[0].lens;S.deep=null;S.metric=null;} render(); renderGuide(); return; }
+  if (d.g){ if(d.g==="close") S.guide=null; else if(d.g==="prev") S.guide--; else S.guide = S.guide<4? S.guide+1 : null; if(S.guide!==null){S.lens=GUIDE[S.guide].lens;S.deep=null;S.metric=null;} render(); renderGuide(); return; }
+  if (d.try!==undefined){ const o=MAP[+d.try][5]; closeLayer(); S.guide=null; renderGuide(); if(o.lens) S.lens=o.lens; S.deep=o.deep??null; S.metric=o.metric??null; render(); if(o.theory) openTheory(o.theory); if(o.sheet) renderSheet(); if(o.guide){S.guide=0;S.lens="axis";render();renderGuide();} else document.getElementById("phone").scrollIntoView({block:"start",behavior:"smooth"}); return; }
+});
+document.addEventListener("change",(e)=>{ if(e.target.id.startsWith("budget")){ S.budget=Math.max(100,Math.round((+e.target.value||0)/100)*100); const inSheet=!!e.target.closest(".sheet"); render(); if(inSheet) renderSheet(); } });
+document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeLayer(); } });
+renderMap(); render();
+})();
+</script>

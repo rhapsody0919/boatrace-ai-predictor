@@ -87,3 +87,10 @@
 - モック v4: Artifact の Version 5（v4 の初版の後に、モーター3連率・ボート2連率を消した版）。写しは [mock-v4/index.html](./mock-v4/index.html)
 - Codex のレビュー: hq（セッション「オーケストレーター状況把握」）経由で、Codex の開発の補助レーン（~/ryujin-dev-assist、読み取り専用）に依頼として渡す。渡す: spec・screens（この節のコミット）・request.md・mock-v4/index.html・375px のスクリーンショット。渡さない: handoff・fan-panel-*.md。観点は hq の1〜4（spec と screens の食い違い、未定義・矛盾、思考フレームワークの網羅、BOA-271 との定義のずれ）に「生データ主義の守り」を足した
 - 次: Codex の結果の採否 → ユーザーが決めること7点（fan-panel-mock-v3.md 末尾）と v4 の承認 → 承認画像と APPROVED.md → `/step2`
+
+## 8. 2026-10-07 v4 への回答 → モック v5
+- 経緯は [fan-panel-mock-v4.md](./fan-panel-mock-v4.md)。spec「決定事項」D-22〜D-25、未確定 U-9（イン崩れ指数との併存。plan の前に確認）
+- 分析ツール改善のチケット: BOA-790（親）、BOA-791・792・793（子）
+- モック v5: Artifact の Version 6、写しは [mock-v5/index.html](./mock-v5/index.html)。「全国のいつも」→「全国の全レース」
+- Codex のレビューに渡したのは v4 の版（コミット 8499dd9b3、「全国のいつも」のまま）。結果の照合では、呼び名の違いは v5 で変わったものとして読む
+- 次: Codex の結果の採否、X の埋め込みの判断（推奨はやらない）、U-9 → v5 の承認 → 承認画像と APPROVED.md → `/step2`
