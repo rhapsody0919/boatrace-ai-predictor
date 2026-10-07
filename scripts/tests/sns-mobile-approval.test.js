@@ -58,3 +58,11 @@ test('承認後のrisk変更で承認を消しjobを取消、QA変更中の承�
  await db.query("UPDATE sns_drafts SET source_data=jsonb_set(source_data,'{qa,pass}','false') WHERE id=$1",[y.id]);
  await assert.rejects(()=>approve(y.id,approver,yr.revision,yv.snapshot,null,1),/版が変わりました/);
 });
+
+test('F04: 1groupの上限を超えた下書きは媒体取得前のSQL readで拒否する',async()=>{
+ const d=await draft();
+ for(let i=0;i<19;i++) await draft('x',d.content_group_id);
+ assert.equal((await first('SELECT read_sns_mobile_race($1) result',[d.content_group_id])).result.length,20);
+ await draft('x',d.content_group_id);
+ await assert.rejects(()=>row(d),/取得上限/);
+});

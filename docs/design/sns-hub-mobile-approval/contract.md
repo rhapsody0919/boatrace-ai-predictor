@@ -4,9 +4,9 @@
 
 ## read / approve
 
-認証済み `GET /api/admin/sns-hub/mobile-approval` はJST今日の `source_data.race_id`（YYYY-MM-DD-会場-レース）を持つgroupとレース名を返す。作成日をレース日と推測しない。500件ずつ全ページ取得。同じレースの既存content_group_idを使い、複数groupは別版として残す。
+認証済み `GET /api/admin/sns-hub/mobile-approval` はJST今日の `source_data.race_id`（YYYY-MM-DD-会場-レース）を持つgroupとレース名を返す。作成日をレース日と推測しない。DBで対象日と非null groupを絞り、group IDとrace_idだけを500件ずつ取得。最大2000行＋超過検査1行、最大5要求。今日0件なら最初の要求で終了し、過去の根拠JSONは取得しない。超過時は部分一覧を返さず503。同じレースの既存content_group_idを使い、複数groupは別版として残す。
 
-`GET ?group=UUID` は一つのSQL readで日本語X/YouTubeのdraft・source_data（claims/manifest/QA/release）・jobをまとめて取得し、各動画の署名URLと版hash、保留理由を返す。source_dataの保存済み根拠を表示する。公開画面や本番データにこのレーンから接続して検証しない。
+`GET ?group=UUID` は一つのSQL readで日本語X/YouTubeのdraft・source_data（claims/manifest/QA/release）・jobをまとめて取得し、動画/画像の署名URLと版hash、保留理由を返す。最大20下書き。SQLで21件のIDまで数え、超過は媒体hash計算前に拒否。APIは媒体hash/署名を直列で行い、既存の1媒体32MiB上限を維持する。これらは安全側の実装上限であり、正式な運用件数・媒体総量・応答時間の確認はU05としてhq側に残る。source_dataの保存済み根拠を表示する。公開画面や本番データにこのレーンから接続して検証しない。
 
 `POST ?group=UUID` の body はdraftId, approverId, versionHash, reviewSeconds。送信の呼び出しはしない。本人承認の既存RPCを行ロック内で使い、チャネル1件だけqueueへ承認する。scheduled_atは現行draftから取得、未設定なら依頼5の設定を使う。送信開始の許可を与えるUIではない。
 
@@ -20,9 +20,17 @@
 
 SQL140は135/137/139に依存。レビュー時間・承認者・確認版を専用RLSテーブルに保存。修正理由は既存redoDraft API/履歴を再利用し、修正操作は承認hashを送らず承認を付けない。risk単独変更でも承認を無効化するtriggerを追加。既存一般承認UI/APIをこの画面へ統一する変更は今回含めない。
 
+## 2026-10-08 点検修正（依頼6b）
+
+スマホ操作開始時に親の操作epochを同期更新し、既存DraftCardの手動X投稿を閉じる。操作前poll・一覧の遅い応答は捨てる。成功・POST応答喪失・409・後続GET失敗の全経路で親一覧を再取得し、操作終了後の新しいX状態取得でのみunknownを解除する。修正依頼のroutine.fired=falseは保存成功と起動失敗を区別した警告として、後続GETが失敗しても残す。
+
+X添付はsnapshotと同じ動画優先/なければcover画像を表示する。添付が必要な投稿はURL欠落・読込前・読込errorで承認不可。loadeddata/loadで読込済みとなる。版hash/下書きID/URLごとに確認状態を分離し、別版へ流用しない。X本文のみはプレビュー不要。ブラウザの実再生・人の確認時間・配信媒体とhashの同一性はU01/U04のまま。最新139（ccc4a73）を前提とし、140を改番しない。
+
 ## 検証
 
-node --test scripts/tests/sns-mobile-approval.test.js scripts/tests/sns-deadline-queue.test.js scripts/tests/sns-x-send.test.js
+node --test scripts/tests/sns-mobile-approval.test.js scripts/tests/sns-mobile-groups.test.js scripts/tests/sns-mobile-api.test.js scripts/tests/sns-deadline-queue.test.js scripts/tests/sns-x-send.test.js e2e/acceptance/sns-mobile-dom.test.js
+
+JSDOM試験は実コンポーネントの状態遷移を検証するが、375pxの可読性/動画再生の代替ではない。devDependenciesのjsdomが必要。旧実装の反例を再実行する場合: `SNS_MOBILE_TEST_BASELINE=3ed68cb node --test e2e/acceptance/sns-mobile-dom.test.js scripts/tests/sns-mobile-api.test.js`（UI/APIソースだけを指定コミットからbundleし、鍵・envは読まない）。
 
 npx playwright test --config playwright.mobile-approval.config.js
 
