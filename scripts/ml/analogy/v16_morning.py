@@ -171,6 +171,24 @@ def f32_list(values) -> list:
     return [None if not np.isfinite(v) else float(str(np.float32(v))) for v in values]
 
 
+def pool_exhibition(races: pd.DataFrame, exh_time: np.ndarray, pool: np.ndarray) -> dict:
+    """母集団（pool）の展示で決まる値（展示後の段が、展示で決まる5項目の pool_rate を今日の展示の値で数える）。
+    天候・風・波は値の組ごとの件数（組は数百しかない）、展示タイムは 1/100秒の整数（レース×6、欠損は null）。
+    展示タイムは 1/100秒刻みなので整数にしても float32 の値は変わらない（変わる値があれば失敗にする）"""
+    rc = list(EXH_RACE_COLS)
+    vals = races.loc[pool, rc].astype(np.float32)
+    grp = vals.groupby(rc, dropna=False).size().reset_index(name="n")
+    rows = [f32_list(r[:-1]) + [int(r[-1])] for r in grp.to_numpy(dtype=float)]
+    e = np.asarray(exh_time, dtype=np.float32)[pool]
+    ok = np.isfinite(e)
+    h = np.round(e.astype(np.float64) * 100)
+    if not np.array_equal(np.float32(h[ok] / 100), e[ok]):
+        raise ValueError("展示タイムに 1/100秒刻みでない値がある（pool/exhibition を整数で持てない）")
+    flat = np.where(ok, h, np.nan).ravel()
+    return {"n": int(pool.sum()), "race_cols": rc, "race_rows": rows,
+            "exh_time": [None if not np.isfinite(v) else int(v) for v in flat]}
+
+
 def gz(obj) -> bytes:
     # 圧縮レベルは5（既定の9は1日分で約8分かかり、大きさは数%しか変わらない。T2-6）
     return gzip.compress(json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode(), compresslevel=5)
@@ -523,6 +541,9 @@ def main():
                 "technique": {str(k): int(v) for k, v in tech.items()}}
 
     national_counts = outcome_counts(pool)  # どのレースでも同じなので1回だけ数える
+
+    # 展示後の段が、展示で決まる5項目の pool_rate を今日の展示の値で数えるための母集団の値（全レースで共通）
+    write_local(out, "pool/exhibition.json", pool_exhibition(races, arrays["exh_time"], pool))
 
     failed = {}
     # 過去レースの結果を races の並びにそろえて1回だけ作る（候補1万件ごとに pandas の .loc で引くと遅い。T2-6）

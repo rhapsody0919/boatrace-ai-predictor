@@ -20,6 +20,10 @@ export function mergeExhibition(racecard, exhibition) {
   if (!racecard || !exhibition) return null;
   return {
     ...racecard,
+    // 展示で決まる5項目は展示後の段が今日の展示の値で数え直した値（無い回は出走表の段の値のまま）
+    pool_rate: { ...racecard.pool_rate, ...exhibition.pool_rate },
+    // 5項目を数え直したか（画面は true のときだけ5項目の割合を出す。本当に0%の項目と、数え直していない0を分ける）
+    pool_rate_exhibition: Boolean(exhibition.pool_rate),
     neighbors: exhibition.neighbors,
     exact: exhibition.exact,
   };
