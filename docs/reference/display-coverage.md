@@ -22,7 +22,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 「匿名SELECT権限の記述が無い」は、**画面（`src/`）が匿名キーで直接読んでいるのに** `GRANT SELECT … TO anon` もSELECTポリシーもマイグレーションに無いもの。076（BOA-370）が新規テーブルの既定権限を剥奪したため、**076以降に定義されたテーブル**に限って見る。`api/` のEdge Functions経由の読み取りと、RPC経由（`SECURITY DEFINER` がありうる）は対象外。
 
-画面が呼んでいるRPC: `get_admin_rule_performance` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_today_races`
+画面が呼んでいるRPC: `get_admin_rule_performance` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_racer_accident_records` / `get_today_races`
 
 ## 要判断: 画面から読んでいない（例外登録なし）（6件）
 
@@ -85,8 +85,8 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `outcome_distribution` | 表 | 020_outcome_distribution.sql | API・画面が直接 | GRANT（020_outcome_distribution.sql） |  |
 | `poirot_predictions` | 表 | 021_poirot_predictions.sql | 画面が直接 | ポリシー（021_poirot_predictions.sql） |  |
 | `predictions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_admin_rule_performance(API), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
-| `race_conditions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_today_races(API・画面) | ポリシー（076_enable_rls_on_public_tables.sql） |  |
-| `race_entries` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_exhibition_trend(画面), get_race_return_rate(画面), get_race_st_predictability(画面), get_race_technique_profile(画面), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
+| `race_conditions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_racer_accident_records(画面), get_today_races(API・画面) | ポリシー（076_enable_rls_on_public_tables.sql） |  |
+| `race_entries` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_exhibition_trend(画面), get_race_return_rate(画面), get_race_st_predictability(画面), get_race_technique_profile(画面), get_racer_accident_records(画面), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
 | `race_history_cache` | 表 | 020_race_history_cache.sql | API・画面が直接 | GRANT（020_race_history_cache.sql） |  |
 | `race_odds` | 表 | 001_schema.sql | 画面が直接 | ポリシー（076_enable_rls_on_public_tables.sql） |  |
 | `race_odds_final` | 表 | 108_race_odds_final.sql | 画面が直接 | GRANT（108_race_odds_final.sql） |  |
