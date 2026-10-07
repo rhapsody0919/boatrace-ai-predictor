@@ -9,6 +9,7 @@
 import {
   cacheControl,
   deadlineOf,
+  isAbsent,
   json,
   loadRaceState,
   objectPath,
@@ -19,7 +20,7 @@ import {
 export const config = { runtime: "edge" };
 
 export function layerStatus(state) {
-  if (state.exhibition?.status === "absent") return "absent";
+  if (isAbsent(state)) return "absent";
   if (!state.racecard) return "not_saved";
   if (state.racecard.status === "empty_layer") return "empty_layer";
   return "ok";

@@ -29,26 +29,25 @@ export function mergeExhibition(racecard, exhibition) {
   };
 }
 
-export default createHandler(async ({ raceId, stage, state, snapshot }) => {
-  // 層が0件はタブ2だけの状態（plan の status の表）。欠場（absent）は共通の判定のまま
-  if (
-    state.racecard?.status === "empty_layer" &&
-    state.exhibition?.status !== "absent"
-  )
-    return { status: "empty_layer", n_layer: 0 };
-  if (!snapshot || snapshot.status !== "ok")
-    return { n_layer: snapshot?.n_layer ?? null };
-  const racecard = await readObject(
-    objectPath(raceId, state.racecard.run_id, "similar-racecard", raceId),
-  );
-  if (stage !== "exhibition")
-    return { run_id: snapshot.run_id, exact: null, similar: racecard };
-  const exhibition = await readObject(
-    objectPath(raceId, snapshot.run_id, "similar-exhibition", raceId),
-  );
-  return {
-    run_id: snapshot.run_id,
-    exact: snapshot.exact ?? null,
-    similar: mergeExhibition(racecard, exhibition),
-  };
-});
+export default createHandler(
+  async ({ raceId, stage, state, status, snapshot }) => {
+    // 層が0件はタブ2だけの状態（plan の status の表）。欠場（absent）は共通の判定のまま
+    if (state.racecard?.status === "empty_layer" && status !== "absent")
+      return { status: "empty_layer", n_layer: 0 };
+    if (!snapshot || snapshot.status !== "ok")
+      return { n_layer: snapshot?.n_layer ?? null };
+    const racecard = await readObject(
+      objectPath(raceId, state.racecard.run_id, "similar-racecard", raceId),
+    );
+    if (stage !== "exhibition")
+      return { run_id: snapshot.run_id, exact: null, similar: racecard };
+    const exhibition = await readObject(
+      objectPath(raceId, snapshot.run_id, "similar-exhibition", raceId),
+    );
+    return {
+      run_id: snapshot.run_id,
+      exact: snapshot.exact ?? null,
+      similar: mergeExhibition(racecard, exhibition),
+    };
+  },
+);
