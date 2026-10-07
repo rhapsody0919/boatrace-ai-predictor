@@ -1,5 +1,13 @@
-import { supabase } from "../lib/supabaseClient.js";
+import { fetchAll, supabase } from "../lib/supabaseClient.js";
 import { NOT_NO_RACE_FILTER } from "../lib/raceOutcomeFilters.js";
+import {
+  VENUE_CODES,
+  buildPeriodRecords,
+  fromArchiveRow,
+  fromLiveRow,
+  sourceRanges,
+  validateSources,
+} from "../lib/venueTechniquePeriod.js";
 
 const VENUE_NAMES = {
   "01": "桐生",
@@ -177,23 +185,92 @@ async function upsertWinningTechniqueStats(aggregated) {
   return totalInserted;
 }
 
+/**
+ * 会場の決まり手の期間（90日・365日）の表 venue_technique_period_stats を書き直す（BOA-430、ADR 0088）。
+ * 既存の winning_technique_stats の処理と違い、失敗は握りつぶさず投げる（画面が古い値・片方の期間だけを出さないため）
+ */
+async function updateVenueTechniquePeriodStats() {
+  const today = getTodayDateJST();
+  const ranges = sourceRanges(today);
+  console.log("\n=== 会場の決まり手の期間（venue_technique_period_stats） ===");
+
+  const live = ranges.live
+    ? await fetchAll(
+        "race_results",
+        "race_id, race_status, is_cancelled, rank1, winning_technique",
+        (q) =>
+          q
+            .gte("race_id", ranges.live.from)
+            .lt("race_id", `${ranges.live.to}-99`)
+            .order("race_id"),
+      )
+    : [];
+  const archive = ranges.archive
+    ? await fetchAll(
+        "kb_archive_races",
+        "race_id, race_date, venue_code, has_result, technique",
+        (q) =>
+          q
+            .gte("race_date", ranges.archive.from)
+            .lte("race_date", ranges.archive.to)
+            .order("race_id"),
+      )
+    : [];
+  const races = [
+    ...live.map(fromLiveRow),
+    ...archive.map(fromArchiveRow),
+  ].filter(Boolean);
+  const problems = validateSources({
+    today,
+    archiveCount: archive.length,
+    liveCount: live.length,
+  });
+  if (problems.length > 0) throw new Error(problems.join("\n"));
+  console.log(
+    `読み込み: 新しい表 ${live.length}行・長期の表 ${archive.length}行 → 数えるレース ${races.length}件`,
+  );
+
+  const byVenue = buildPeriodRecords(races, today);
+  let written = 0;
+  for (const venue of VENUE_CODES) {
+    const { error: delError } = await supabase
+      .from("venue_technique_period_stats")
+      .delete()
+      .eq("venue_code", venue);
+    if (delError)
+      throw new Error(`会場${venue}の削除に失敗: ${delError.message}`);
+    const records = byVenue[venue];
+    if (records.length === 0) continue;
+    // 90日と365日を1回の書き込みで入れる（片方だけ残るのを防ぐ）
+    const { error: insError } = await supabase
+      .from("venue_technique_period_stats")
+      .insert(records);
+    if (insError)
+      throw new Error(`会場${venue}の書き込みに失敗: ${insError.message}`);
+    written += records.length;
+  }
+  console.log(`書き込み完了: ${written}行`);
+}
+
 async function main() {
   console.log("=== Winning Technique Stats 日次更新 ===");
   console.log("実行日時: " + new Date().toISOString());
 
   const raceResults = await fetchAllRaceResults();
   if (!raceResults || raceResults.length === 0) {
-    console.log("\nデータがないため終了します");
-    return;
+    console.log(
+      "\n直近90日のデータがないため winning_technique_stats は更新しません",
+    );
+  } else {
+    const aggregated = aggregateByVenueAndBoatNumber(raceResults);
+    console.log("\n集計完了: " + Object.keys(aggregated).length + "会場");
+
+    const totalInserted = await upsertWinningTechniqueStats(aggregated);
+    console.log("合計挿入件数: " + totalInserted + "件");
   }
 
-  const aggregated = aggregateByVenueAndBoatNumber(raceResults);
-  console.log("\n集計完了: " + Object.keys(aggregated).length + "会場");
-
-  const totalInserted = await upsertWinningTechniqueStats(aggregated);
-
+  await updateVenueTechniquePeriodStats();
   console.log("\n=== 完了 ===");
-  console.log("合計挿入件数: " + totalInserted + "件");
 }
 
 main().catch((err) => {
