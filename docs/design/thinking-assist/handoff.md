@@ -190,3 +190,28 @@
 - 他の worktree への書き込みはガードで止まる。PR ごとのブランチはこの worktree で切り替えて作る。受け入れ E2E 等のサブエージェントが worktree の spec を読んでいる間はブランチを切り替えない
 - verify-registry.json は同じ位置に足すと衝突する（PR0・PR1・PR2 で起きた）。衝突は両方の登録を残す
 - Codex の独立レビュー: 各 PR の差分を scratchpad に出して hq（「state.mdと約束の台帳の続行」）に1行で知らせ、結果に「採用 n（新規 m・既知 j）・誤検知 k・判定不能の妥当性」を返す
+
+## 16. 2026-10-07 夜 PR2・PR3（セッション quirky-bell-e025a7「BOA-430 思考アシストの PR2 以降を実装する」）
+### PR の状態
+| PR | ブランチ | 状態 |
+|---|---|---|
+| #1307 PR2 | feature/boa-430-pr2-model | master 取り込み済み（oddsMath・verify-odds-math・台帳の衝突は両方を残した）。/code-review 1件（払戻の10円切り捨てが浮動小数で10円落ちる、0.1刻みの574通り）を 460c13afb で修正＋再現テスト。PR コメント記載済み。Codex 材料は hq に送付済み（依頼25）。CI の e2e 待ち |
+| #1308 PR3 | feature/boa-430-pr3-screen | **base は feature/boa-430-pr2-model**（PR2 のマージ後に master へ向け直す。それまで verify・e2e の CI は走らない）。/code-review 2件を 384b2fcba で修正＋再現テスト、PR コメント記載済み。Codex 材料は hq に送付済み |
+| （旧）feature/boa-430-pr3-skeleton | sad-cohen-fd68c6 の worktree | 使わない。中身（T2-1 の WIP）は PR3 に cherry-pick 済み |
+
+### PR3 で入れたもの
+- 画面の骨格: ヘッダー（気象は展示後だけ・時点・オッズ時刻・ソナー導線）、堅い？荒れる？の枠とシート（BaseBar・ScopeTable・ClassLineup）、LensBar、RaceLaneBoard（4レンズ・6艇比較・最良の金枠＋aria-describedby の「（6艇で一番）」・F・欠場）、BetFooter・MarkSheet・BetSummary（配分）
+- データ: `getRaceExhibitionBasics`（exhibition_data を直接。plan の getRaceExhibitionTimeBreakdown は90日平均まで集計する重い RPC のため置き換え）、F 数は getRaceEntryOfficialRatesBreakdown、展示後で v16 の展示後の段が無ければ類似レースは出走表の時点
+- assistModel: boardModel・buildRacers・firstPlaceComposite・betForm・compositeText・roughState・hasPricedTicket。検査は verify-thinking-assist-model（36件）
+- 文言: src/data/thinkingAssistCopy.js（PR3 で使う分だけ。GLOSS・THEORY の辞書は PR5 で足す）
+- 受け入れ E2E と固定データを master 側（PR3）に取り込んだ。テスト側の誤り4点を直した（strict 違反3・フォーメーションの点数1）。PR3 の範囲45件中40件通過
+
+### 判断待ち（オーケストレーター経由でユーザーへ）
+- 受け入れ E2E「NCR が30件未満のとき、シートに『差ははっきりしない』『高め』『低め』が1つも出ない」: D-37 は全国・級の並びが同じの行の言葉を出さないと決めたが、類似レースの行（D-21）まで消すかは未定義。実装は類似レースの行の言葉を残している
+
+### 次（PR4 から）
+- PR4: LensSummary（4レンズの要約）・BoatDeepDive・RunsTable（3段目の getRacerScopedRaceStats）。深掘りの「閉じる」・1走ずつの表・今節より前の5走は受け入れ E2E の「深掘り」で確かめる
+- 注意: 受け入れ E2E の `expectBestMarkNear` は「（6艇で一番）」がページに1つだけを前提にしている。PR4 で機力の展示の表に金枠を出すとき、表の側は「（6艇で一番）」の隠し文字を付けない（色＋凡例で示す）か、テストの前提を見直す
+- PR5: TheorySheet・GlossarySheet・VenueSheet（会場の決まり手の期間の取得は PR3 のフックから外した。VenueSheet と一緒に足す）・GuideOverlay
+- PR6: AssistViewSwitch（RaceDetailPage 側、4言語のキー）
+- 既存ファイルを Edit ツールで直すと PostToolUse の整形フックがファイル全体に prettier をかける（supabaseDataService.js で 563行の差分になった）。既存ファイルは node のスクリプトで差し替える
