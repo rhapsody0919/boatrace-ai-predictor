@@ -1,6 +1,6 @@
 # 思考アシスト plan（BOA-430）
 
-- 入力: [spec.md](./spec.md)（FR-1〜11・FR-3a、D-1〜D-37。D-36 は design-reviewer の指摘で作る側が決めたもの）、[screens.md](./screens.md)、承認モック [mock/APPROVED.md](./mock/APPROVED.md)（v7、Artifact Version 10）
+- 入力: [spec.md](./spec.md)（FR-1〜11・FR-3a、D-1〜D-38。D-36 は design-reviewer の指摘で作る側が決めたもの）、[screens.md](./screens.md)、承認モック [mock/APPROVED.md](./mock/APPROVED.md)（v7、Artifact Version 10）
 - 種別: UI の新規ページ。DB は新しい表が1つ（会場の決まり手の期間の集計 venue_technique_period_stats、マイグレーション 134、ADR 0088）と、それを書く毎日のスクリプトの追記。本番への適用はユーザー（`docs/db-migration/134-runbook.md`）。BOA-271 のバッチ・API は変えない
 - ADR: [0086 データは既存の関数と v16 API を画面で組み合わせる](../../adr/0086-thinking-assist-compose-existing-sources.md)、[0087 類似レースは龍神ソナーと同じ上位400件で数える](../../adr/0087-thinking-assist-similar-race-counting.md)・[0088 会場の決まり手を直近1年と90日で並べる RPC](../../adr/0088-venue-winning-technique-counts-by-period.md)（どちらも採用、2026-10-07。下「決定済み」）
 
@@ -63,15 +63,15 @@ flowchart TD
 |---|---|---|
 | 出走表（級・名前・勝率・当地・F・年齢・体重・モーター2連率） | `getPredictions(date)` の対象レースの players、`getRaceEntryOfficialRatesBreakdown`、`getRaceEntryWeights` | RaceDetailPage と同じ取り方（date はレース ID から） |
 | 気象（風・波・天候・気温・水温・観測時刻） | `getPredictions` の `weather{…, waterTemperature, observedAt}` | 展示前は出さない（FR-2） |
-| 時点（展示前／展示後）と v16 の状態 | v16 facts の `status`（`resolveStatus`） | 展示後の段があれば展示後を既定。文言は v16 screens「状態」にそろえる（FR-11） |
+| 時点（展示前／展示後）と v16 の状態 | 時点は DB の展示（`getRaceExhibitionTimeBreakdown`）が6艇そろったかで決める。v16 facts の `status`（`resolveStatus`）は v16 の部分の出し分けだけに使う | 展示が6艇そろえば展示後を既定（spec D-36 (1)）。v16 の展示後の段が無いときは、展示の値は出し、v16 の展示後に依存する部分だけ出さない。文言は v16 screens「状態」にそろえる（FR-11） |
 | 6艇中の今日の順位・今日の値 | facts `today.items{values, positions}` | 差がつく材料の札・盤の印 |
 | 差がつく材料 | facts `facts[範囲]` を `factRows`（analogyFacts.js） | judge は v16 のまま。範囲は `today.scope_keys[艇]` |
 | 全国・級の並びが同じ（件数・1号艇の1着・万舟） | scenario `scope={today.scope_keys["1"].NC}`（API は `scope=NC` を受け付けない。キーは facts の応答から。NC が無いレースは行を出さない。準優勝戦・優勝戦の日は `today.scope_keys[艇番].NCR` で取り、30件未満・キー無しは NC に戻して矢印を付けない（spec D-37）。NCR を使うときは NC も取り「予選も含めると」の1行に使う）の `cells.all.forms.any.{n, b1_win, manshu, payout_known}` | 返還を除く母集団（D-25・U-7。差がつく材料の 3,339件は返還を含むので、件数が違う理由を畳んで書く） |
 | 全国の全レース（比べる基準） | scenario `scope=NA` の同じセル | 全レース共通の値。万舟の分母は `payout_known` |
 | 徳山の全レース（参考の線） | scenario `scope=VA` の同じセル（返還を除く）と、facts `VA` の `usual["1"].win`（返還を含む） | 2種類を「件数が違う理由」に書く（Codex F01） |
 | 形・進入・手がかり・攻める艇 | scenario（NC）`cells.*`・`hints`・`attack` | 1号艇の範囲。既存の `slitForms`・`entryType`・`hintRows` |
-| 風速の区分の艇番別1着 | facts `VA` の `wind[区分]` | 区分は展示後 `exhibition.wind_band`、展示前は出さない。`windWaveView` を使う |
-| 類似レース（件数・1着・決まり手・万舟・3連単） | similar の `neighbors`・`n_layer`・`conditions` | 先頭 min(400, `n_layer`) 件（P-1・ADR 0087）。`aggregateNeighbors`・`trifectaList` を使い、万舟は `payout_3tan >= 10000` を数える小さな関数を足す（analogyAggregate.js に。v16 の画面には使わない） |
+| 風速の区分の艇番別1着 | facts `VA` の `wind[区分]` | 区分は DB の風速（`getPredictions` の weather）から v16 と同じ境界の `windBand` で出す（v16 の `exhibition.wind_band` には頼らない。spec D-36 (1)）。展示前は出さない。`windWaveView` を使う |
+| 類似レース（件数・1着・決まり手・万舟・3連単） | similar の `neighbors`・`n_layer`・`conditions` | 先頭 min(400, `n_layer`) 件（P-1・ADR 0087）。表示する件数は `aggregateNeighbors` の n（着順が無効の件を除く）、万舟の分母は `payout_3tan` が null でない件（spec D-36 (3)）。`aggregateNeighbors`・`trifectaList` を使い、万舟は `payout_3tan >= 10000` を数える小さな関数を足す（analogyAggregate.js に。v16 の画面には使わない） |
 | 展示・展示ST・オリジナル展示・チルト・部品交換 | `getRaceExhibitionTimeBreakdown`・`getRaceStPredictabilityBreakdown`・`getRaceOriginalExhibition`・`getRaceMotorMaintenanceBreakdown` | 展示後だけ。F の展示ST は最良の候補から外す（raceIndicators と同じ） |
 | 前検タイムと順位 | `getMeetScoreboard(raceId, venueCode).pretestByRacer` | 深掘り |
 | 今節の各走（日・R・進入・ST・展示・着・点）、今節より前の5走、その艇番の1着 | `getRacerScopedRaceStats(racerId)`（直近2年）を `buildMeetResults`・`getRecentRaces`（basicInfoStats.js）で絞る | 今節の平均着順点は v16 `today.items.series_score`（前日まで）。表の平均の式は `SCORE_POINTS`（seriesPoints.js）で、v16 の値と一致を確かめる（再現テスト） |
@@ -79,7 +79,7 @@ flowchart TD
 | 会場の特徴（水質・型・決まり手） | `getVenueCharacteristics`、新しい表 `venue_technique_period_stats`（直近1年と直近90日。新しいサービス関数 `getVenueTechniquePeriodStats(venueCode)`、`withCache`） | P-2・ADR 0088。「最近↑／↓」は直近90日 対 それより前の275日（365日−90日）のぶれ幅が重ならないときだけ（spec D-37） |
 | オッズ（3連単120通り・取得時刻） | `getRaceOddsSnapshots`（最新の行）。当日・締切90分前以内は `fetchLiveOdds` を押したときだけ | 自動更新しない（FR-8） |
 
-- 部品交換・欠場など v16 の状態の扱いは v16 と同じ（欠場があれば v16 の部分を出さない。図・買い目は5艇で描く。screens「状態」）
+- 部品交換・欠場など v16 の状態の扱いは v16 と同じ（欠場があれば v16 の部分を出さない。図・買い目は5艇で描く。screens「状態」）。欠場の艇は印を付けられず（何着の候補のボタンを出さない）、点数・人気順・合成オッズは欠場の艇を含まない組だけで数える（オッズの表に無い組は数えない）。spec D-38
 - 優勝戦・準優勝戦の判定は v16 の `today.round`（`hidesSeriesScoreLine`）
 
 ### データ設計（新しい表: マイグレーション 134、ADR 0088）
@@ -99,8 +99,8 @@ erDiagram
     }
 ```
 
-- 書き手: `scripts/daily/update-winning-technique-stats.js` の後半に、会場ごとの90日・365日の集計を足す（既存の90日×枠番の処理と表は変えない）。365日のうち 2025-12-02 以前は `kb_archive_races`（has_result かつ technique あり）を読む。会場ごとに delete→insert で書き直す（service_role）
-- 読み手: 新しいサービス関数 `getVenueTechniquePeriodStats(venueCode)`（`supabaseDataService.js`、`withCache`）。表が空・未適用のときは空を返し、画面は節を出さない
+- 書き手: `scripts/daily/update-winning-technique-stats.js` の後半に、会場ごとの90日・365日の集計を足す（既存の90日×枠番の処理と表は変えない）。365日のうち 2025-12-02 以前は `kb_archive_races`（has_result かつ technique あり）を読む。会場ごとに delete→insert で書き直す（service_role）。insert は90日と365日を1回の文で入れるので、片方の期間だけが残ることは無い。delete と insert の間に読んだ画面はその会場を空と見て節を出さない（数秒、深夜0:35）。insert が失敗するとその会場は空のまま exit 1 になり、nightly の `verify-venue-technique-period`（VERIFY_PRODUCTION=1）が365日の行の欠けで失敗を Slack に流す。トランザクションにしない理由: PostgREST から複数の文を1つのトランザクションにするには RPC が要り、書き込みの RPC を増やすほどの利点が無い
+- 読み手: 新しいサービス関数 `getVenueTechniquePeriodStats(venueCode)`（`supabaseDataService.js`、`withCache`）。取得の失敗（表が無い 42P01 を含む）は投げ、空（0行）とは分ける。空なら画面は節を出さず、失敗なら「表示できませんでした」（spec D-36 (5)）
 - 本番への適用: ユーザー（[134-runbook.md](../../db-migration/134-runbook.md)）
 
 ## コンポーネントと置き場所
@@ -142,7 +142,7 @@ src/components/race/assist/
 | キー | 中身 | 既定 |
 |---|---|---|
 | lens | axis／flow／power／bet | axis |
-| stage | pre／post | 展示後の段があれば post |
+| stage | pre／post | DB の展示が6艇そろえば post（spec D-36 (1)） |
 | deep | 艇番 or null | null |
 | metric | 6艇比較の項目 or null | null |
 | runsOpen | 1走ずつの表の開閉 | false |
@@ -184,7 +184,7 @@ src/components/race/assist/
 | 5幅の横スクロール | `e2e/layout.spec.js` の `PAGES` に足す |
 | 承認モックとの差 | `mock-diff-checker`（画面の PR で CI が緑になった後） |
 
-- 新しい集計は無いので `data-accuracy-verifier` は対象外（spec N-8）。ただし類似レースの万舟（P-1）と範囲の件数の取り出しは、モックの値（DB から数えた）と API から取った値が一致することを verify で固定する
+- `data-accuracy-verifier` は新しい集計（会場の決まり手の期間の表、PR0）だけが対象（spec N-8・tasks T0-1）。ほかは既存の関数と v16 の API なので対象外。ただし類似レースの万舟（P-1）と範囲の件数の取り出しは、モックの値（DB から数えた）と API から取った値が一致することを verify で固定する
 
 ## i18n
 

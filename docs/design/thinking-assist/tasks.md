@@ -1,6 +1,6 @@
 # 思考アシスト tasks（BOA-430）
 
-- 入力: [spec.md](./spec.md)（FR-1〜11・FR-3a、D-1〜D-37）、[screens.md](./screens.md)、[plan.md](./plan.md)、承認モック [mock/APPROVED.md](./mock/APPROVED.md)（v7。写しは [mock-v7/index.html](./mock-v7/index.html)）
+- 入力: [spec.md](./spec.md)（FR-1〜11・FR-3a、D-1〜D-38）、[screens.md](./screens.md)、[plan.md](./plan.md)、承認モック [mock/APPROVED.md](./mock/APPROVED.md)（v7。写しは [mock-v7/index.html](./mock-v7/index.html)）
 - PR の単位: 下の「PR」ごとに feature ブランチを切り、master 向けに出す。各 PR は `npm run build`・`npm run verify:ci` が緑。画面を変える PR は E2E（smoke・layout）も緑
 - 機能フラグ（`?assist=1`）の後ろで進める。公開（`THINKING_ASSIST_PUBLIC = true`）はこの tasks の範囲外（spec U-4・U-6、公開前にユーザー）
 - 数字の出し方・文言はモック v7 に合わせる。モックと違う形にしたくなったら、実装せずオーケストレーター経由でユーザーに出す
@@ -43,6 +43,7 @@
 ## PR2 データとモデル（画面はまだ出さない）
 - [ ] T2-1 `src/hooks/useThinkingAssistData.js`: plan「全体の構成」の3段の取得
   - 1段目: `getPredictions` の対象レース（出走表・気象・`raceStage`）・オッズのスナップショット。これで図を描く（N-5）
+  - 時点は DB の展示が6艇そろったかで決め、風速の区分は DB の風速から `windBand`。v16 の `status`・`exhibition.wind_band` は v16 の部分の出し分けだけに使う（D-36 (1)）
   - 1.5段目: v16 facts（出走表の段と展示後の段）。届いたら `today.scope_keys["1"]` の NC で、優勝戦・準優勝戦の日は NCR と NC の両方で scenario を取る（D-37）（API は `scope=NC` を受け付けない）
   - 2段目: similar・scenario（NA・VA）・展示・オリジナル展示・整備・体重・勝ち決まり手・前検・会場の特徴・会場の決まり手の期間
   - 3段目: 深掘りの艇の `getRacerScopedRaceStats`。6艇比較のときは6艇
@@ -53,8 +54,8 @@
   - 最良の Set（`bestOf`、spec FR-3a の向きと桁）
   - 級の並び（選んだ艇を固定、D-31）
   - 堅い？荒れる？の3段階（`wilsonInterval`、D-21）
-  - 類似レースの集計（`neighbors` の先頭 min(400, `n_layer`) 件、`aggregateNeighbors`。万舟は `payout_3tan >= 10000`。D-35・ADR 0087）
-  - 優勝戦・準優勝戦の日の今節の点の扱い（F03・D-34）
+  - 類似レースの集計（`neighbors` の先頭 min(400, `n_layer`) 件、`aggregateNeighbors`。万舟は `payout_3tan >= 10000`。D-35・ADR 0087）。表示する件数は `aggregateNeighbors` の n（着順が無効の件を除く）、万舟の分母は `payout_3tan` が null でない件（D-36 (3)）
+  - 優勝戦・準優勝戦の日の今節の点の扱い（F03・D-34）。判定は v16 の `today.round`、無ければ出走表の `raceStage`（D-36 (4)）
   - 展示前の文の出し分け（F04）
   - 会場の決まり手の「最近↑／↓」（直近90日 対 365日−90日のぶれ幅が重ならないときだけ。印の行の2つの割合も返す。D-35・D-37）
   - 優勝戦・準優勝戦の日の範囲の選択（NCR、30件未満・キー無しは NC に戻して矢印なし・「件数少なめ」。D-37）
@@ -64,6 +65,9 @@
   - `scripts/maintenance/verify-odds-math.js`（T1-1・T2-3。手計算の固定の値）
   - `scripts/maintenance/verify-thinking-assist-model.js`（T2-2）
   - どちらも `verify-registry.json` に `ci` で登録する
+  - 類似レースの固定データに、着順が無効の件・払戻 null の件・層 > 400 の件を入れる（D-36 (3)）
+  - 今節より前の5走の固定データに、今節の走・表示中のレースより後の走・艇番と進入コースが違う走を入れる（D-36 (10)(11)）
+  - v16 が無い準優勝戦（`raceStage` だけで判定）の例を入れる（D-36 (4)）
   - 固定データはモックの徳山10R（2026-10-06）の値。v16 の今節の平均着順点 8.57＝60点÷7走、全国・級の並びが同じ 3,276件・1,074・713 との一致を含む
 - [ ] T2-5 `src/data/thinkingAssistCopy.js`（ja 専用の文言・用語の「?」。表・絵で出すもの（類似レース・全国・級の並びが同じ・全国の全レース・今節の平均着順点・平均ST）は構造化データで持つ）と、`src/data/theoryCatalog.js`（セオリーカードの辞書。screens「セオリーカードの最初の組」、TC-T4 は「F持ちの選手」D-34）
 
@@ -91,7 +95,7 @@
   - 展開: 本番のスタートの形・もし2コース凹みになったら・進入・類似レースの決まり手
   - 機力: 展示の表（金枠・凡例・札）・モーター2連率の棒
   - 買い目: `BetSummary`（配分・最下行・注意）・万舟・類似レースでよく出た3連単の上位3組と件数
-- [ ] T4-2 `BoatDeepDive`（数えた値の札・選手の値・平均ST の札・今節の平均着順点と着順の並び・差がつく材料と級の並び）と `RunsTable`（今節の各走: 日・R・進入・ST・展示・着・点、今節より前の5走、着順の色、今節タブへの導線）。3段目の取得は開いたときに
+- [ ] T4-2 `BoatDeepDive`（数えた値の札・選手の値・平均ST の札・今節の平均着順点と着順の並び・差がつく材料と級の並び）と `RunsTable`（「{n}コースで走ったとき」は進入コースで数える（D-36 (11)）。今節より前の5走は、今節の走と表示中のレースより後の走を除いてから5走（D-36 (10)）。今節の各走: 日・R・進入・ST・展示・着・点、今節より前の5走、着順の色、今節タブへの導線）。3段目の取得は開いたときに
 
 ## PR5 シートとガイド
 - [ ] T5-1 `TheorySheet`（条件・起きやすいこと・今日当てはまる／当てはまらない／展示の後に分かる・過去レースの傾向（実測 or 準備中）・判定の札）、`GlossarySheet`（表・絵・箇条書き）、`VenueSheet`（水質・型・1号艇の1着・決まり手の直近1年＋直近90日と「最近↑／↓」・会場ページへ）
@@ -101,7 +105,8 @@
 - [ ] T6-1 `AssistViewSwitch` を思考アシストと `RaceDetailPage`（`page-header` の直後、タブの外）に置く
   - フラグがあるときだけ出す
   - 選んだ方を `boatai-user:race-view` に残す（try/catch）
-  - "assist" ならレース詳細を開いたときに思考アシストへ移る
+  - "assist" ならレース詳細を開いたときに思考アシストへ移る。移すのは ja で、URL に tab・boat のクエリが無いときだけ。`navigate(…, {replace: true})` で履歴を置き換え、RaceDetailPage がデータを取り始める前に判定する（D-36 (6)）
+  - 受け入れ: 保存値 assist で tab・boat 付きの URL を開くとレース詳細のまま／ブラウザの戻るで切り替え前のレース詳細に戻らない（置き換え）／非 ja では移らない
   - RaceDetailPage は翻訳対象なので、切り替えの文言は4言語のキー（`raceDetail.assistSwitch.*`）を同じ PR で足す
   - ほかの言語では切り替えを出さない（思考アシストは ja 専用）
 
