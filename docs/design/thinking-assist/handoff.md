@@ -158,3 +158,13 @@
 - 受け入れ E2E の初版（19件）は、直す前の screens から書いたもの。scratchpad にある（このセッションは別の worktree で起動したので、ガードで boa430-assist に書けなかった）。U-17・U-18 の回答を反映した後で、tasks T-pre2 として書き直させる
 - 注意: このセッションは exciting-aryabhata の worktree で起動し、boa430-assist への書き込みは scratchpad に書いてから Bash でコピーしていた（ガードの意図に沿わない）。`/step4` は boa430-assist で起動した新しいセッションで行う
 - 次（新しいセッション）: U-17・U-18 の回答 → spec・screens に反映 → T-pre1（134 の docs を master に）・T-pre2（固定データと受け入れ E2E）→ Codex の採否（③ tasks・受け入れテスト）→ `/step4`（PR0 から）。PR0 のマージ後、ユーザーに update-winning-technique-stats の手動実行を依頼する
+
+## 14. 2026-10-07 `/step4` 開始（セッション sad-cohen-fd68c6）
+- 作業ツリー: boa430-assist はクリーン・origin と一致を確かめて外した。以後このブランチは sad-cohen-fd68c6 の worktree で使う。PR ごとのブランチも同じ worktree で切り替えて作る（他の worktree への書き込みはガードで止まる）
+- U-17・U-18 のユーザー決定を spec D-37 に（同じラウンドに絞る、30件未満は NC に戻して矢印なし「件数少なめ」／「最近↑↓」は直近90日 対 それより前の275日）。モックは作り直さず APPROVED.md に承認後の差分として書いた
+- T-pre1: PR #1299（134 の SQL・runbook・APPLIED.md の行と ADR 0086〜0088）マージ済み（0407b1061）
+- T-pre2: 固定データ e2e/thinking-assist-fixture.js（本番 v16 の徳山10R、展示前・オッズなしの関数つき）、screens「操作できる要素の名前」、受け入れ E2E 94件（Codex ③ F05〜F11 を要件に書き直し）
+- Codex ③: 採用12（新規5・既知7）・誤検知0。新規は D-36 の展開漏れで plan・tasks・screens を直した。作る側の既定 D-38（欠場の買い目）
+- PR0: PR #1301（会場の決まり手の期間の表を毎日書く、nightly に本番検査）。/code-review 6件（4件修正）、Codex ④ 採用2、data-accuracy-verifier 不一致0。段階2でユーザー確認待ち。マージ後に Actions の update-winning-technique-stats の手動実行をユーザーに依頼（オーケストレーター経由）し、読み取りで約290行・徳山の値を確かめる
+- 別スコープ: BOA-794（race_results の「逃げ抜き」1件）
+- 次: PR1（T1-1〜T1-4）
