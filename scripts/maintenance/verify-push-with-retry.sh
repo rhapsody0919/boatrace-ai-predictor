@@ -124,6 +124,33 @@ setup s10; local_commit
 ( cd "$WORK" && git checkout -q --detach && bash "$SCRIPT" ) >"$D/out" 2>&1; rc=$?
 [ $rc -eq 1 ] && ok "rc=1" || { ng "rc=$rc"; cat "$D/out"; }
 
+echo "== S11: PUSH_TOKEN を渡すと、checkout が保存した Authorization ヘッダを消して PUSH_TOKEN のヘッダだけで fetch・push する"
+setup s11; local_commit
+# actions/checkout@v4 と同じ形で GITHUB_TOKEN のヘッダを .git/config に置く
+git -C "$WORK" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic OLD-GITHUB-TOKEN"
+# git の push・fetch を横取りして、その時点で実際に送られるヘッダの一覧を記録してから本物の git に渡す。
+# git の http 層は http.extraHeader の空の値で一覧をリセットするので、最後の空の値より後ろが実際に送られる
+# （リセットしないと checkout のヘッダと2本送られることを、ローカルの HTTP サーバで確認済み）
+REAL_GIT="$(command -v git)"; mkdir -p "$D/bin"
+cat > "$D/bin/git" <<EOF
+#!/usr/bin/env bash
+case "\$1" in push|fetch) echo "\$1: \$("$REAL_GIT" config --get-all http.https://github.com/.extraheader | awk '/^\$/{s="";next}{s=s \$0 "|"}END{print s}')" >> "$D/headers" ;; esac
+exec "$REAL_GIT" "\$@"
+EOF
+chmod +x "$D/bin/git"
+( cd "$WORK" && PATH="$D/bin:$PATH" PUSH_TOKEN=tok123 bash "$SCRIPT" ) >"$D/out" 2>&1; rc=$?
+want="AUTHORIZATION: basic $(printf 'x-access-token:tok123' | base64)|"
+[ $rc -eq 0 ] && [ "$(remote_has_health)" = '{"v":1}' ] \
+  && [ "$(grep -c "^push: ${want}$" "$D/headers")" = 1 ] && [ "$(grep -c "^fetch: ${want}$" "$D/headers")" = 1 ] \
+  && ! grep -q "OLD-GITHUB-TOKEN" "$D/headers" && ! grep -q "tok123" "$D/out" \
+  && [ "$(git -C "$WORK" config --get-all http.https://github.com/.extraheader)" = "AUTHORIZATION: basic OLD-GITHUB-TOKEN" ] \
+  && ok "rc=0、fetch・push とも PUSH_TOKEN のヘッダだけ、トークンを出力しない、.git/config は不変" || { ng "rc=$rc"; cat "$D/out" "$D/headers"; }
+
+echo "== S12: PUSH_TOKEN 未設定なら警告を出して従来どおり push する"
+setup s12; local_commit
+( cd "$WORK" && bash "$SCRIPT" ) >"$D/out" 2>&1; rc=$?
+[ $rc -eq 0 ] && grep -q "PUSH_TOKEN が未設定" "$D/out" && [ "$(remote_has_health)" = '{"v":1}' ] && ok "rc=0、警告あり" || { ng "rc=$rc"; cat "$D/out"; }
+
 echo
 echo "結果: PASS=$pass FAIL=$fail"
 [ "$fail" -eq 0 ]

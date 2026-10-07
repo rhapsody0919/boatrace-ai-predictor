@@ -33,6 +33,12 @@ concurrency:
 
 jobs:
   verify:
+    # master への自動コミット（アプリ ryujin-bot の push）では動かさない。GITHUB_TOKEN で push していたころは
+    # 起動しなかったものを、push の名義を変えただけで毎回走らせないため。自動コミットが触るのは data/・docs/reference/・
+    # public/sitemap.xml・public/llms.txt・e2e/recording.json で、検査の対象（スクリプト・マイグレーション）を変えない
+    if: >-
+      github.event_name != 'push' || (github.actor != 'ryujin-bot[bot]' &&
+      !contains(github.event.head_commit.message, '[automated]'))
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -64,6 +70,12 @@ jobs:
   # ラウンド区分・集計・品質ゲート）を回す。以前は train-analogy.yml の手動実行時にしか走らなかった
   # （データサイエンス体制のレビュー、2026-10-02）
   ml-tests:
+    # master への自動コミット（アプリ ryujin-bot の push）では動かさない。GITHUB_TOKEN で push していたころは
+    # 起動しなかったものを、push の名義を変えただけで毎回走らせないため。自動コミットが触るのは data/・docs/reference/・
+    # public/sitemap.xml・public/llms.txt・e2e/recording.json で、検査の対象（スクリプト・マイグレーション）を変えない
+    if: >-
+      github.event_name != 'push' || (github.actor != 'ryujin-bot[bot]' &&
+      !contains(github.event.head_commit.message, '[automated]'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

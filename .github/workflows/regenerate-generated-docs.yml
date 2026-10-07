@@ -9,8 +9,12 @@ name: Regenerate Generated Docs
 # 属性（merge=ours 等）では解消できない。そこで生成物はPRに含めず（verify-generated-docs-not-in-pr.js
 # が検査）、マージ後にここで作り直す。
 #
-# このワークフローが作るコミットは GITHUB_TOKEN で push するため、他のワークフロー
-# （このワークフロー自身・Quality Gates）を起動しない。無限ループにはならない。
+# このワークフローが作るコミットはアプリ ryujin-bot のトークンで push する（master の ruleset の
+# bypass に GITHUB_TOKEN は入れられないため）。アプリのトークンの push は、GITHUB_TOKEN と違って
+# 他のワークフロー（このワークフロー自身を含む）を起動する。無限ループにならないよう、ボットの
+# push（actor が ryujin-bot[bot]、または先端のコミットに [automated] を含む）では動かない。
+# ボットの push は生成物の入力（scripts/・src/ 等）を変えないので、作り直しを省いても生成物は古くならない
+# （GITHUB_TOKEN で push していたころも、自動コミットでは起動していなかった）。
 
 on:
   push:
@@ -29,6 +33,10 @@ permissions:
 
 jobs:
   regenerate:
+    # ボットの push では動かない（上記。workflow_dispatch は head_commit が無いので常に動く）
+    if: >-
+      github.actor != 'ryujin-bot[bot]' &&
+      !contains(github.event.head_commit.message, '[automated]')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -46,6 +54,16 @@ jobs:
       - name: Regenerate
         run: node scripts/maintenance/generated-docs.js regenerate
 
+      # master への push はアプリ ryujin-bot の名義で行う（master の ruleset の bypass に GITHUB_TOKEN は入れられないため）。
+      # トークンの有効期限は1時間なので、checkout ではなく push の直前に作る
+      - name: Create ryujin-bot token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.RYUJIN_BOT_APP_ID }}
+          private-key: ${{ secrets.RYUJIN_BOT_PRIVATE_KEY }}
+          permission-contents: write
+
       - name: Commit and push if changed
         run: |
           mapfile -t paths < <(node scripts/maintenance/generated-docs.js paths)
@@ -60,6 +78,8 @@ jobs:
           git commit -m "chore: 機械生成の文書を再生成 [automated]"
           # master の更新と競合しても失敗しないよう rebase+リトライで push する（BOA-360）
           bash scripts/maintenance/push-with-retry.sh
+        env:
+          PUSH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Notify Slack on failure
         if: failure()

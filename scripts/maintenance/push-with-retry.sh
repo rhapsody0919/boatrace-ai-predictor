@@ -18,9 +18,13 @@
 #   2: rebase がコンフリクトした（同じファイルを別の変更が更新している。未マージのパスがある場合のみ）。
 #      自動解決はせず、リトライもせずに失敗させる（どちらの内容が正しいか機械的に決められないため）
 #
-# 環境変数（テスト用途。通常は既定値のままでよい）:
+# 環境変数（PUSH_MAX_ATTEMPTS・PUSH_RETRY_SLEEP_BASE はテスト用途。通常は既定値のままでよい）:
 #   PUSH_MAX_ATTEMPTS      最大試行回数（既定 5）
 #   PUSH_RETRY_SLEEP_BASE  待機秒数の基準（既定 3。n回目の失敗後に n×基準 秒＋0〜基準秒の揺らぎ 待つ）
+#
+#   PUSH_TOKEN             fetch・push に使うトークン（ワークフローではアプリ ryujin-bot のトークンを渡す）。
+#                          master の ruleset の bypass に GITHUB_TOKEN は入れられないため、アプリの名義で push する。
+#                          未設定なら actions/checkout が保存した認証（GITHUB_TOKEN）のまま push する
 #
 # 前提: git の user.name / user.email は呼び出し側で設定済みであること（rebase でコミットを作り直すため）。
 
@@ -28,6 +32,19 @@ set -uo pipefail
 
 MAX_ATTEMPTS="${PUSH_MAX_ATTEMPTS:-5}"
 SLEEP_BASE="${PUSH_RETRY_SLEEP_BASE:-3}"
+
+if [ -n "${PUSH_TOKEN:-}" ]; then
+  # actions/checkout が保存した Authorization ヘッダ（GITHUB_TOKEN）を空の値で消してから、PUSH_TOKEN のヘッダを足す
+  # （http.extraHeader は空の値で一覧がリセットされる）。-c ではなく環境変数で渡すのは、トークンを
+  # コマンドラインに出さないため。このスクリプトの git だけに効き、.git/config は書き換えない
+  auth="$(printf 'x-access-token:%s' "$PUSH_TOKEN" | base64 | tr -d '\n')"
+  echo "::add-mask::${auth}"
+  export GIT_CONFIG_COUNT=2
+  export GIT_CONFIG_KEY_0='http.https://github.com/.extraheader' GIT_CONFIG_VALUE_0=''
+  export GIT_CONFIG_KEY_1='http.https://github.com/.extraheader' GIT_CONFIG_VALUE_1="AUTHORIZATION: basic ${auth}"
+else
+  echo "::warning::PUSH_TOKEN が未設定のため、checkout の認証（GITHUB_TOKEN）で push します。master の ruleset 導入後は拒否されます"
+fi
 
 branch="$(git branch --show-current)"
 if [ -z "$branch" ]; then
