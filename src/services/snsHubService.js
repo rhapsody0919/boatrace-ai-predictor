@@ -265,3 +265,21 @@ export async function updateTopicCategoryChannel(
     body: JSON.stringify({ enabled }),
   });
 }
+
+/** X送信は接続承認までconnected=false。鍵をブラウザへ渡さない。 */
+export async function getXSendStatus(draftId) {
+  const { data } = await request(`/drafts/${draftId}/x-send`);
+  return data;
+}
+export async function approveXSend(draftId, approverId, scheduledAt) {
+  return request(`/drafts/${draftId}/x-send`, {
+    method: 'POST', body: JSON.stringify({ approverId, scheduledAt }),
+  });
+}
+export async function stopXSend() {
+  return request('/x-send-stop', { method: 'POST', body: '{}' });
+}
+
+export async function cancelXSend(draftId) {
+  return request(`/drafts/${draftId}/x-send`, { method: 'POST', body: JSON.stringify({ action: 'cancel' }) });
+}

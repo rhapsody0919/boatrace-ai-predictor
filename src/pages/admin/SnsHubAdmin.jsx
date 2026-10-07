@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
+import XSendPanel from "./sns-hub/XSendPanel.jsx";
 import BundleImportPanel from "./sns-hub/BundleImportPanel.jsx";
 import {
   getDrafts,
@@ -546,6 +547,7 @@ function SnsHubAdmin() {
                 contentType={contentTypeByGroupId[draft.content_group_id]}
                 youtubeUrl={youtubeUrlByGroupId[draft.content_group_id]}
                 approvers={approvers}
+                onXChanged={() => loadDrafts({ silent: true, fetch: { drafts: true } })}
                 onApprove={(approverId) =>
                   handleAction(approveDraft, [draft.id, approverId])
                 }
@@ -1262,6 +1264,7 @@ function DraftCard({
   onApprove,
   onMergeBlogPr,
   onPublishYoutube,
+  onXChanged,
   onRevise,
   onRequestSpecChange,
   onMarkPosted,
@@ -1272,6 +1275,7 @@ function DraftCard({
     approvers[0]?.id || null,
   );
   const [openPanel, setOpenPanel] = useState(null); // null | 'feedback'
+  const [xSendState, setXSendState] = useState('unknown');
   const [confirmingArchive, setConfirmingArchive] = useState(false);
   const [expanded, setExpanded] = useState(getDefaultDraftCardExpanded);
 
@@ -1465,7 +1469,13 @@ function DraftCard({
               </>
             )}
 
-            {(draft.status === "approved" ||
+            {draft.platform === "x" && (
+              <XSendPanel draft={draft} approverId={selectedApproverId} blocked={publicationBlocked}
+                onChanged={onXChanged} onStateChange={setXSendState} />
+            )}
+
+            {(draft.platform !== "x" || !['unknown', 'queued', 'sending', 'reconcile', 'posted'].includes(xSendState)) &&
+              (draft.status === "approved" ||
               draft.status === "ready_to_post") &&
               (draft.platform === "note" ? (
                 <NoteCopyActionLinks
