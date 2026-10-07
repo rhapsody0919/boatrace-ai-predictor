@@ -310,3 +310,10 @@ export async function getMobileApprovalRace(group) { return request(`/mobile-app
 export async function approveMobileChannel(group, body) {
   return request(`/mobile-approval?group=${encodeURIComponent(group)}`, { method:'POST', body:JSON.stringify(body) });
 }
+
+/** 指摘の採用/無視だけを記録。本文修正や承認は行わない。 */
+export function decideMobileFinding(group, body) {
+  return request(`/mobile-approval?group=${encodeURIComponent(group)}`, {
+    method:'POST', body:JSON.stringify({...body,action:'edit-decision'}),
+  });
+}

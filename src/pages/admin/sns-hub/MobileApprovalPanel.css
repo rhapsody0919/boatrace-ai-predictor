@@ -5,3 +5,6 @@
 .sns-mobile-approval img { display: block; max-width: 100%; height: auto; }
 .sns-mobile-approval select, .sns-mobile-approval textarea, .sns-mobile-approval button { display: block; box-sizing: border-box; width: 100%; max-width: 100%; min-height: var(--spacing-12); margin-block: var(--spacing-2); font: inherit; color: var(--text-primary); background: var(--surface-page); }
 .sns-mobile-copy { white-space: pre-wrap; }
+
+.sns-edit-findings { color: var(--text-primary); background: var(--surface-card); overflow-wrap: anywhere; }
+.sns-edit-finding { border-top: 1px solid var(--border-hairline); padding-block: var(--spacing-3); }
