@@ -833,6 +833,11 @@
       "guards": "思考アシスト（BOA-430）の画面のモデル src/utils/assistModel.js。2026-10-06 徳山10R の本番 v16 の値（scripts/lib/__fixtures__/thinking-assist/）で、全国・級の並びが同じの範囲の選び方（準優勝戦は NCR 112件、30件未満・キー無しは NC に戻して矢印なし。spec D-37）、基準つきバーの3段階（D-21）、類似レースの上位400件・件数と万舟の分母（D-35・D-36 (3)）、級の並びの絵（D-31）、最良の金枠の向き・桁・除外（FR-3a）、会場の決まり手の「最近↑／↓」（直近90日 対 前の275日、D-37）、時点（D-36 (1)）"
     },
     {
+      "script": "verify-venue-technique-period.js",
+      "tier": "ci",
+      "guards": "会場の決まり手の期間の表 venue_technique_period_stats（BOA-430・ADR 0088・マイグレーション 134）。CI では集計の純関数（scripts/lib/venueTechniquePeriod.js）を固定データで確かめる: 期間は集計日の前日まで N 日、長期の表（〜2025-12-02）と新しい表（2025-12-03〜）の境目と 2025-12-02 の重複を数えないこと、総数＝決まり手の件数の合計、90日 ⊂ 365日、除外（中止・不成立・1着なし・決まり手なし）、長期の表が0件なら失敗（新しい表だけを数えた 2,196件の誤りの再発防止）。VERIFY_PRODUCTION=1 のときだけ本番の表を読み、last_updated が2日より古い行・総数の不一致・365日の行が無い会場があれば exit 1。nightly-verify-db.yml が毎晩この形で実行する"
+    },
+    {
       "script": "verify-volatility-accuracy-heading.js",
       "tier": "ci",
       "guards": "精度ページの「イン崩れ予測の実績」の見出しが、集計（calculate-unified-volatility-accuracy.js）の期間と合っていること（BOA-717）。集計が期間を絞っていない間は、4言語の見出しが「直近N日」を名乗らず、運用開始日（2026-08-11）を書いていること。集計に期間の条件を足すと失敗するので、見出しを合わせ直してから更新する"
