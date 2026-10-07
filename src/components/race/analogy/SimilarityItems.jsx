@@ -12,7 +12,8 @@ const k = "aiPredictionTab.analogy.similar";
 /**
  * 何が似ている？（spec B-6）と全33項目の表
  * @param {{neighbors: object[], items: object[], exhibitionStage: boolean, conditions: object,
- *   poolRate: Record<string, number>, today: object|null}} props
+ *   poolRate: Record<string, number>, poolRateExhibition: boolean, today: object|null}} props
+ *   poolRateExhibition は、展示後の段が展示で決まる項目の pool_rate を今日の展示の値で数え直したか（#1296）
  */
 export default function SimilarityItems({
   neighbors,
@@ -20,6 +21,7 @@ export default function SimilarityItems({
   exhibitionStage,
   conditions,
   poolRate,
+  poolRateExhibition,
   today,
 }) {
   const { t } = useTranslation();
@@ -140,8 +142,10 @@ export default function SimilarityItems({
                     </td>
                     <td>
                       {/* 展示で決まる項目（天候・風・波・展示タイムの差）の割合は、朝のバッチが展示前に数えるので今日の
-                          値が無く 0 になる。数え直すまでは出さない（ファン評価4周目、2026-10-07） */}
-                      {poolRate?.[it.key] === undefined || it.exhibition
+                          値が無く 0 になる。展示後の段が数え直した応答（pool_rate_exhibition）のときだけ出す
+                          （ファン評価4周目、2026-10-07） */}
+                      {poolRate?.[it.key] === undefined ||
+                      (it.exhibition && !poolRateExhibition)
                         ? "—"
                         : fmtPct(poolRate[it.key])}
                     </td>

@@ -447,6 +447,28 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await expect(row.locator("td").last()).toHaveText("—");
     });
 
+    test("展示後の段が数え直した応答（pool_rate_exhibition）なら、展示の項目の割合も出す", async ({
+      page,
+    }) => {
+      await setup(page);
+      const sim = analogyV16Similar("exhibition");
+      sim.similar.pool_rate = { ...sim.similar.pool_rate, weather: 0.61 };
+      sim.similar.pool_rate_exhibition = true;
+      await page.route("**/api/analogy/similar/**", (route) =>
+        route.fulfill({ json: sim }),
+      );
+      await openAiTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      await section
+        .locator("details")
+        .evaluateAll((ds) => ds.forEach((d) => (d.open = true)));
+      const row = section.locator("table.af-like-table tr", {
+        hasText: "天候",
+      });
+      await expect(row.locator("td").last()).toHaveText("61%");
+    });
+
     test("結果の無い類似レースを決まり方から外したら、その件数を書く", async ({
       page,
     }) => {

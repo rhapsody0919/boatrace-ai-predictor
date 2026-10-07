@@ -269,6 +269,7 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
         exhibitionStage={exhibitionStage}
         conditions={sim.conditions}
         poolRate={sim.pool_rate}
+        poolRateExhibition={sim.pool_rate_exhibition === true}
         today={today}
       />
       <SimilarCompareList
