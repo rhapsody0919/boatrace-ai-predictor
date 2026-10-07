@@ -11,11 +11,11 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 | 区分 | 件数 |
 |---|---|
-| テーブル・ビューの定義 | 84 |
+| テーブル・ビューの定義 | 85 |
 | 読んでいる（テーブルを直接） | 55 |
 | 読んでいる（RPC経由のみ） | 0 |
 | 画面から読んでいない（例外登録あり） | 23 |
-| **画面から読んでいない（例外登録なし＝要判断）** | **6** |
+| **画面から読んでいない（例外登録なし＝要判断）** | **7** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 0 |
 
 「例外登録なし」は、取得したのに表示に繋がっていない候補。表示するか、`scripts/maintenance/display-coverage-exceptions.json` に理由を書いて例外にするかのどちらかを選ぶ。
@@ -24,7 +24,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 画面が呼んでいるRPC: `get_admin_rule_performance` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_racer_accident_records` / `get_today_races`
 
-## 要判断: 画面から読んでいない（例外登録なし）（6件）
+## 要判断: 画面から読んでいない（例外登録なし）（7件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -34,6 +34,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `race_payouts` | 表 | 079_race_payouts.sql | なし | GRANT（109_predictions_rpc_race_status_payouts.sql） |  |
 | `race_special_notes` | 表 | 060_race_special_notes.sql | なし | 記述なし |  |
 | `raw_snapshots` | 表 | 125_raw_snapshots.sql | なし | 記述なし |  |
+| `venue_technique_period_stats` | 表 | 134_venue_technique_period_stats.sql | なし | GRANT（134_venue_technique_period_stats.sql） |  |
 
 ## 画面から読んでいない（例外登録あり）（23件）
 
