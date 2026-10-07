@@ -32,6 +32,7 @@ import Profile from "./pages/Profile";
 import AccuracyHistory from "./pages/AccuracyHistory";
 import WinningTechniqueAnalysis from "./pages/WinningTechniqueAnalysis";
 import MorningDataDigest from "./pages/MorningDataDigest";
+import ThinkingAssistPage from "./pages/ThinkingAssistPage";
 import Holmes from "./pages/Holmes";
 import ContentHub from "./pages/ContentHub";
 import EnglishGuide from "./pages/EnglishGuide";
@@ -189,6 +190,8 @@ function LocalizedRoutes({ lng = "ja" }) {
         element={<MeetPage />}
       />
       <Route path="race/:raceId" element={<RaceDetailPage />} />
+      {/* 思考アシスト（BOA-430）。ja 専用（languages.js の JA_ONLY_UNDER_TRANSLATED）。言語付きの URL は ja 版へ移る */}
+      <Route path="race/:raceId/assist" element={<ThinkingAssistPage />} />
 
       {/* タブページ（SEO対応: 個別URL） */}
       <Route path="hit-races" element={<App tab="hit-races" />} />
