@@ -261,8 +261,8 @@ check(
     conditions: { round: "yusho" },
     n_layer: 15,
     pool_rate: { venue: 0.04, weather: 0 },
-    pool_rate_exhibition: false,
     neighbors: [2],
+    pool_rate_exhibition: false,
     exact: true,
   },
 );
@@ -279,8 +279,8 @@ check(
   ),
   {
     pool_rate: { venue: 0.04, weather: 0.61, wind_bin: 0.497 },
-    pool_rate_exhibition: true,
     neighbors: [2],
+    pool_rate_exhibition: true,
     exact: true,
   },
 );
