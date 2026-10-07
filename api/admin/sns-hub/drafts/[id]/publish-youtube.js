@@ -104,6 +104,9 @@ export default async function handler(req) {
         400,
       );
     }
+    if (draft.source_data?.deadline_queue) {
+      return jsonResponse({ error: '期限付き投稿は待ち行列で個別承認してください。接続準備中です' }, 409);
+    }
     if (isBundlePublicationBlocked(draft)) {
       return jsonResponse({ error: "公開不可: v0素材の保留はこの操作で解除できません" }, 409);
     }

@@ -299,3 +299,8 @@ export async function cancelXSend(draftId) {
     body: JSON.stringify({ action: "cancel" }),
   });
 }
+
+export async function getDeadlineQueue() {
+  const { data } = await request('/deadline-queue');
+  return data || [];
+}
