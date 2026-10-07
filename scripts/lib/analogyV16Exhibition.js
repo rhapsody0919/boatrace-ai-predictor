@@ -67,7 +67,11 @@ export function selectExhibitionTargets(snaps, races, exh, entries, now) {
     })
     .filter((r) => absent.has(r.race_id) || timed.get(r.race_id) === 6)
     .sort((a, b) => (a.start_time < b.start_time ? -1 : 1))
-    .map((r) => ({ race_id: r.race_id, absent: absent.has(r.race_id) }));
+    .map((r) => ({
+      race_id: r.race_id,
+      absent: absent.has(r.race_id),
+      deadline: deadlineOf(r),
+    }));
 }
 
 /**
@@ -281,6 +285,7 @@ export async function runAnalogyV16Exhibition(ctx) {
     targets: targets.length,
     written: 0,
     failed: [],
+    late: [],
   };
   const loadPool = poolLoader();
   for (const t of targets) {
@@ -295,7 +300,6 @@ export async function runAnalogyV16Exhibition(ctx) {
       race_id: t.race_id,
       stage: "exhibition",
       run_id: runId,
-      computed_at: new Date().toISOString(),
       pool_cutoff: rc.pool_cutoff,
       model_version: rc.model_version,
       n_layer: rc.n_layer,
@@ -309,6 +313,14 @@ export async function runAnalogyV16Exhibition(ctx) {
         const { exact } = await buildRace(t.race_id, rc, ctx, runId, loadPool);
         row = { ...base, status: "ok", exact };
       }
+      // 締切は書く直前に確かめ直す（起動時は締切前でも、前のレースの処理やこのレースの読み込みの間に締切を
+      // 越えうる。plan「締切前だけ書く」。朝のバッチの late_for と同じ）。Storage のファイルは置いたまま
+      const at = ctx.now();
+      if (t.deadline.getTime() <= at.getTime()) {
+        report.late.push(t.race_id);
+        continue;
+      }
+      row.computed_at = at.toISOString();
       if (ctx.mode === "live") {
         await rest("analogy_v16_snapshots?on_conflict=race_id,stage", {
           method: "POST",

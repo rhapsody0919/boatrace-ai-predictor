@@ -125,12 +125,18 @@ export function deadlineOf(race) {
 }
 
 /**
+ * 欠場が分かったか（spec「時点」Q5）。展示後の段が absent を書いたレースに加え、展示後の段を ok で書いた後や、
+ * 締切後（展示後の段が書かない）に欠場が分かったレースも含める（6艇の値・類似レースはそのままでは使えない）
+ */
+export const isAbsent = (s) => s.exhibition?.status === "absent" || !!s.absent;
+
+/**
  * 画面の状態（plan「API」の status の表。画面は時刻で判定しない）
- * @param {{racecard: object|null, exhibition: object|null, sixExhibition: boolean}} s
+ * @param {{racecard: object|null, exhibition: object|null, sixExhibition: boolean, absent?: boolean}} s
  * @param {boolean} deadlinePassed
  */
 export function resolveStatus(s, deadlinePassed) {
-  if (s.exhibition?.status === "absent") return "absent";
+  if (isAbsent(s)) return "absent";
   if (!s.racecard) return "not_saved";
   if (s.exhibition) return "exhibition_ready";
   if (deadlinePassed) return "exhibition_missing";

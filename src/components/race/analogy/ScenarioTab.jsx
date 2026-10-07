@@ -14,6 +14,7 @@ import {
   fmtDate,
   fmtPct,
   scopeName,
+  venueLabel,
 } from "../../../utils/analogyFormat";
 import {
   MIN_SCENARIO,
@@ -274,6 +275,15 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
           ))}
         </div>
       </div>
+      {/* 既定で全国に替えたときの理由（spec「数えるレース」。タブ1と同じ1行。範囲を選び直したら API が付けない） */}
+      {data.vc_fell_back !== null && data.vc_fell_back !== undefined && (
+        <p className="af-sub">
+          {t("aiPredictionTab.analogy.facts.fellBack", {
+            venue: venueLabel(Number(String(raceId).split("-")[3]), t),
+            n: fmtCount(data.vc_fell_back),
+          })}
+        </p>
+      )}
       <h4 className="af-h4">
         <span className="af-stepn">1</span>
         {t(`${k}.entryHeading`)}
