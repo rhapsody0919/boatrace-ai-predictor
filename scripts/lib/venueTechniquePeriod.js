@@ -49,7 +49,7 @@ export function sourceRanges(today) {
 /** race_results の行 → { date, venue_code, technique }。数えないレースは null */
 export function fromLiveRow(row) {
   if (
-    row.is_cancelled === true ||
+    row.is_cancelled !== false || // 既存の .eq("is_cancelled", false) と同じく NULL も除く
     row.race_status === "no_race" ||
     row.rank1 === null ||
     row.rank1 === undefined ||
@@ -73,6 +73,20 @@ export function fromArchiveRow(row) {
     date: row.race_date,
     venue_code: Number(row.venue_code),
     technique: row.technique,
+  };
+}
+
+/**
+ * 2つの表の行を数えるレースに変換し、表ごとの件数（除外の後）を返す。validateSources にはこの件数を渡す
+ * @returns {{races: Array<{date: string, venue_code: number, technique: string}>, liveCount: number, archiveCount: number}}
+ */
+export function collectRaces(liveRows, archiveRows) {
+  const live = liveRows.map(fromLiveRow).filter(Boolean);
+  const archive = archiveRows.map(fromArchiveRow).filter(Boolean);
+  return {
+    races: [...live, ...archive],
+    liveCount: live.length,
+    archiveCount: archive.length,
   };
 }
 
@@ -115,7 +129,8 @@ export function buildPeriodRecords(races, today) {
 
 /**
  * 書き込み前の検査。問題があれば理由の配列（空なら問題なし）。
- * 期間に長期の表の日付が入るのに長期の表が0件なら失敗にする（新しい表だけを数えた 2,196件の誤りの再発を防ぐ）
+ * 期間に長期の表の日付が入るのに長期の表が0件なら失敗にする（新しい表だけを数えた 2,196件の誤りの再発を防ぐ）。
+ * 件数は除外の後の「数えるレース」で渡す（行はあるが全部除外される期間を通さないため）
  */
 export function validateSources({ today, archiveCount, liveCount }) {
   const problems = [];

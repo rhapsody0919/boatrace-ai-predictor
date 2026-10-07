@@ -3,8 +3,7 @@ import { NOT_NO_RACE_FILTER } from "../lib/raceOutcomeFilters.js";
 import {
   VENUE_CODES,
   buildPeriodRecords,
-  fromArchiveRow,
-  fromLiveRow,
+  collectRaces,
   sourceRanges,
   validateSources,
 } from "../lib/venueTechniquePeriod.js";
@@ -200,6 +199,10 @@ async function updateVenueTechniquePeriodStats() {
         "race_id, race_status, is_cancelled, rank1, winning_technique",
         (q) =>
           q
+            .eq("is_cancelled", false)
+            .or(NOT_NO_RACE_FILTER)
+            .not("rank1", "is", null)
+            .not("winning_technique", "is", null)
             .gte("race_id", ranges.live.from)
             .lt("race_id", `${ranges.live.to}-99`)
             .order("race_id"),
@@ -211,23 +214,19 @@ async function updateVenueTechniquePeriodStats() {
         "race_id, race_date, venue_code, has_result, technique",
         (q) =>
           q
+            .eq("has_result", true)
+            .not("technique", "is", null)
             .gte("race_date", ranges.archive.from)
             .lte("race_date", ranges.archive.to)
             .order("race_id"),
       )
     : [];
-  const races = [
-    ...live.map(fromLiveRow),
-    ...archive.map(fromArchiveRow),
-  ].filter(Boolean);
-  const problems = validateSources({
-    today,
-    archiveCount: archive.length,
-    liveCount: live.length,
-  });
+  // 除外は読み取りの条件と純関数の両方で行う（純関数が正。条件は読む行を減らすため）
+  const { races, liveCount, archiveCount } = collectRaces(live, archive);
+  const problems = validateSources({ today, archiveCount, liveCount });
   if (problems.length > 0) throw new Error(problems.join("\n"));
   console.log(
-    `読み込み: 新しい表 ${live.length}行・長期の表 ${archive.length}行 → 数えるレース ${races.length}件`,
+    `読み込み: 新しい表 ${live.length}行（数える ${liveCount}件）・長期の表 ${archive.length}行（数える ${archiveCount}件）`,
   );
 
   const byVenue = buildPeriodRecords(races, today);

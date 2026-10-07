@@ -18,6 +18,7 @@ import {
   VENUE_CODES,
   buildPeriodRecords,
   checkStoredRows,
+  collectRaces,
   fromArchiveRow,
   fromLiveRow,
   periodRange,
@@ -89,6 +90,7 @@ function selfTest() {
     fromLiveRow(live("2026-10-01-18-02", { race_status: "no_race" })),
     fromLiveRow(live("2026-10-01-18-03", { rank1: null })),
     fromLiveRow(live("2026-10-01-18-04", { winning_technique: null })),
+    fromLiveRow(live("2026-10-01-18-08", { is_cancelled: null })), // 既存と同じく NULL も除く（/code-review 指摘1）
     fromLiveRow(live("2025-12-02-18-05")), // 境目の日は長期の表で数える
     fromArchiveRow(arch("2025-11-01", 18, { has_result: false })),
     fromArchiveRow(arch("2025-11-01", 18, { technique: null })),
@@ -201,6 +203,25 @@ function selfTest() {
         .length === 0 &&
       validateSources({ today: "2026-12-04", archiveCount: 0, liveCount: 10 })
         .length === 0,
+  );
+
+  // 件数は除外の後で数える（/code-review 指摘2）: 長期の表の行はあるが全部除外される期間を通さない
+  const allExcluded = collectRaces(
+    [live("2026-10-05-18-01")],
+    [
+      arch("2025-11-01", 18, { has_result: false }),
+      arch("2025-11-02", 18, { technique: null }),
+    ],
+  );
+  check(
+    "(a) 長期の表の行が全部除外されたら archiveCount は0で、書き込み前の検査が失敗する",
+    allExcluded.archiveCount === 0 &&
+      allExcluded.liveCount === 1 &&
+      validateSources({ today: "2026-10-06", ...allExcluded }).length === 1,
+    JSON.stringify({
+      archiveCount: allExcluded.archiveCount,
+      liveCount: allExcluded.liveCount,
+    }),
   );
 
   // 保存後の検査
