@@ -47,7 +47,7 @@ await page.waitForTimeout(300);
 await page.screenshot({ path: OUT + "card-prep.png" });
 await page.click("[data-close]");
 await page.click('[data-lens="axis"]');
-await page.click('#sum [data-fact="1:series_score"]');
+await page.click('#sum [data-fact="1:st_mean30"]');
 await page.waitForTimeout(300);
 await page.screenshot({ path: OUT + "card-fact.png" });
 await page.click("[data-close]");
