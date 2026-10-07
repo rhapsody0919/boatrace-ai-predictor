@@ -1,3 +1,4 @@
+import { isBundlePublicationBlocked } from "../../../../_lib/snsBundleValidation.js";
 /**
  * Vercel Edge Function: YouTube下書きの承認→YouTube Data API v3への自動投稿
  * POST /api/admin/sns-hub/drafts/:id/publish-youtube
@@ -101,6 +102,9 @@ export default async function handler(req) {
         { error: "このエンドポイントはplatform='youtube'の下書き専用です" },
         400,
       );
+    }
+    if (isBundlePublicationBlocked(draft)) {
+      return jsonResponse({ error: "公開不可: v0素材の保留はこの操作で解除できません" }, 409);
     }
     if (draft.status !== "pending_review") {
       return jsonResponse(

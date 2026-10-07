@@ -836,6 +836,11 @@
       "script": "verify-analogy-dispatch.js",
       "tier": "ci",
       "guards": "BOA-271 アナロジーの週次の学習の workflow_dispatch（失敗の即時通知・shadow で起動しない・cron の配線）"
+    },
+    {
+      "script": "verify-sns-bundle-import.js",
+      "tier": "ci",
+      "guards": "v0素材の型・容量・ハッシュ・QA保留、保存失敗の再試行、135の一括登録・重複・公開禁止・権限(PGlite)、承認/YouTube公開APIのガード。実サービス接続なし"
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { isBundlePublicationBlocked } from "../../../../_lib/snsBundleValidation.js";
 /**
  * Vercel Edge Function: 下書きへの修正指摘（統合版）
  * POST /api/admin/sns-hub/drafts/:id/redo
@@ -93,6 +94,9 @@ export default async function handler(req) {
     const draft = await getDraftById(id);
     if (!draft) {
       return jsonResponse({ error: "下書きが見つかりません" }, 404);
+    }
+    if (isBundlePublicationBlocked(draft)) {
+      return jsonResponse({ error: "v0素材はローカルで修正して再取り込みしてください" }, 409);
     }
     if (draft.status !== "pending_review") {
       return jsonResponse(

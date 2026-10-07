@@ -1,3 +1,4 @@
+import { isBundlePublicationBlocked } from "../../../../_lib/snsBundleValidation.js";
 /**
  * Vercel Edge Function: 下書きの承認
  * POST /api/admin/sns-hub/drafts/:id/approve
@@ -54,6 +55,9 @@ export default async function handler(req) {
     const draft = await getDraftById(id);
     if (!draft) {
       return jsonResponse({ error: "下書きが見つかりません" }, 404);
+    }
+    if (isBundlePublicationBlocked(draft)) {
+      return jsonResponse({ error: "公開不可: v0素材の保留はこの操作で解除できません" }, 409);
     }
     if (draft.status !== "pending_review") {
       return jsonResponse(
