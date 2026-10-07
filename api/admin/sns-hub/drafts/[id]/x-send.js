@@ -51,12 +51,7 @@ export default async function handler(req) {
       return jsonResponse({ error: "この下書きはX送信を承認できません" }, 409);
     }
     const snapshot = await createXSnapshot(draft, loadXMedia);
-    const data = await xSendStore.approve(
-      id,
-      body.approverId,
-      snapshot,
-      scheduledAt,
-    );
+    const data = await xSendStore.approve(id, body.approverId, snapshot, scheduledAt || new Date().toISOString());
     return jsonResponse({ data, connected: false });
   } catch {
     return jsonResponse(
