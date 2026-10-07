@@ -180,7 +180,9 @@ button.mk{cursor:pointer}
 .tabs{display:flex;gap:6px;flex-wrap:wrap}
 .tabs button{border:1px solid var(--water);background:var(--card);color:var(--water-ink);border-radius:999px;padding:5px 12px;font-size:12px;min-height:34px}
 .tabs button[aria-pressed="true"]{background:var(--water);color:#fff}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
+.kv{display:grid;grid-template-columns:minmax(7.5em,max-content) minmax(0,1fr);gap:4px 12px;font-size:13px}
+.kv dd{min-width:0;overflow-wrap:anywhere}
+.runs{border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--card);overflow-x:auto}
 .kv dt{color:var(--sub)}
 .kv dd{margin:0}
 .kv dd button{border:0;background:transparent;padding:0;color:var(--water-ink);text-decoration:underline dotted;text-underline-offset:3px}
@@ -294,6 +296,8 @@ button.mk{cursor:pointer}
         <li>呼び名「全国・同じ級の並び」→「全国・級の並びが同じ」。今日の並び（1号艇B1、ほかにA1が2人・A2が2人・B1が1人）を具体的に書いた</li>
         <li>類似レースの条件を4つに直した（勝率差の段階が抜けていた）</li>
         <li>軸レンズの要約に、返還を含めて数えるので上の枠と件数が少し違う、と書いた</li>
+        <li>深掘りの「今節の平均着順点」の下に、日ごとの着順の並び（今日の走は灰色で「点に入れない」）と「1走ずつ見る ›」。開くと今節の各走（日・R・進入・ST・着・点）と「平均 8.57＝60点÷7走」、今節より前の5走（日付・場・R・進入・ST・着）</li>
+        <li>直近30走の1着率に件数（7/29走）、平均ST に「直近30走、F除く」。6艇比較で今節の点なら各艇の着順の並び、平均ST なら直近5走の ST を各行に</li>
       </ul>
     </section>
     <section>
@@ -409,6 +413,49 @@ const BASE = {
 // 徳山の全レースで風速4〜5mのレース（v16 facts VA の wind「4-5」）と、風を問わない全レース
 const WIND45 = {n:4040,win:[2352,573,474,363,177,101]};
 const VA_WIN = [11008,2394,1680,1368,704,398];
+// 直近の走（race_entries × race_results × race_start_timings。新しい順。[日付, 会場コード, R, 艇番, 進入コース, ST, 着]）
+const VENUE_NAME = {13:"尼崎",18:"徳山",20:"若松",22:"福岡"};
+const RUNS = {
+ 1:[["10/6",18,3,5,5,.14,3],["10/5",18,10,3,3,.16,1],["10/5",18,2,2,2,.08,1],["10/4",18,11,3,3,.12,2],["10/4",18,1,6,6,.12,3],["10/3",18,6,1,1,.18,1],["10/2",18,10,4,4,.20,2],["10/2",18,2,5,5,.17,2],["9/29",13,10,6,6,.18,4]],
+ 2:[["10/6",18,2,6,6,.07,2],["10/5",18,12,5,5,.05,4],["10/5",18,6,3,3,.21,2],["10/4",18,9,4,4,.13,3],["10/4",18,1,1,1,.11,1],["10/3",18,8,3,3,.11,1],["10/2",18,12,5,6,.05,3],["10/2",18,4,2,2,.17,3],["9/27",20,9,5,5,.17,6]],
+ 3:[["10/6",18,4,2,2,.17,3],["10/5",18,2,1,1,.14,2],["10/4",18,11,6,6,.15,4],["10/4",18,5,3,3,.12,2],["10/3",18,12,1,1,.16,5],["10/3",18,5,5,5,.22,2],["10/2",18,9,2,2,.13,1],["10/2",18,2,4,4,.22,4],["9/27",20,10,3,3,.19,1]],
+ 4:[["10/6",18,6,2,2,.23,3],["10/5",18,12,4,4,.04,5],["10/5",18,8,2,2,.21,1],["10/4",18,4,1,1,.10,4],["10/3",18,9,4,4,.24,4],["10/3",18,2,6,6,.07,2],["10/2",18,9,5,5,.18,2],["10/2",18,5,3,5,.08,1],["9/27",22,7,5,5,.22,6]],
+ 5:[["10/6",18,5,1,1,.10,2],["10/5",18,10,2,2,.12,3],["10/5",18,1,1,1,.15,1],["10/4",18,2,6,6,.16,3],["10/3",18,12,5,5,.21,4],["10/3",18,7,3,3,.08,2],["10/2",18,11,4,4,.15,3],["10/2",18,4,1,1,.15,4],["9/27",20,8,3,3,.14,4]],
+ 6:[["10/6",18,6,1,1,.27,1],["10/5",18,11,5,5,.16,2],["10/5",18,6,6,6,.17,5],["10/4",18,10,2,2,.13,3],["10/4",18,6,1,1,.12,2],["10/3",18,2,5,5,.06,3],["10/2",18,11,2,2,.16,5],["10/2",18,1,3,3,.12,2],["9/21",13,12,5,5,.15,5]],
+};
+const PTS = {1:10,2:8,3:6,4:4,5:2,6:1};
+// 今節より前の5走（新しい順。[日付, 会場コード, R, 進入コース, ST, 着]。進入が取れていない走は null）
+const PRIOR = {
+ 1:[["9/29",13,10,6,.18,4],["9/29",13,2,1,.13,1],["9/28",13,12,5,.14,6],["9/28",13,4,3,.10,2],["9/27",13,3,1,.15,2]],
+ 2:[["9/27",20,9,5,.17,6],["9/26",20,8,2,.11,3],["9/26",20,3,5,.15,2],["9/25",20,7,6,.20,6],["9/24",20,11,5,.15,5]],
+ 3:[["9/27",20,10,3,.19,1],["9/27",20,6,1,.11,1],["9/26",20,9,3,.12,4],["9/25",20,10,1,.12,1],["9/25",20,3,4,.11,1]],
+ 4:[["9/27",22,7,5,.22,6],["9/27",22,2,1,.28,3],["9/26",22,9,5,.31,6],["9/25",22,11,4,.12,4],["9/25",22,7,1,.22,5]],
+ 5:[["9/27",20,8,3,.14,4],["9/26",20,7,3,.11,1],["9/26",20,2,5,.18,5],["9/25",20,6,5,.14,4],["9/24",20,9,3,.11,6]],
+ 6:[["9/21",13,12,5,.15,5],["9/20",13,11,2,.21,2],["9/20",13,2,null,.22,5],["9/19",13,11,4,.16,3],["9/19",13,5,null,.23,2]],
+};
+// 直近30走の1着率の分子・分母（v16 today.items.recent_win30 の値から。モック用）
+const R30N = {1:[7,29],2:[5,30],3:[6,29],4:[5,30],5:[9,30],6:[2,28]};
+const meetRuns = (n) => RUNS[n].filter(r => r[1]===18 && ["10/2","10/3","10/4","10/5","10/6"].includes(r[0]));
+const meetPast = (n) => meetRuns(n).filter(r => r[0]!=="10/6").slice().reverse();
+const meetToday = (n) => meetRuns(n).filter(r => r[0]==="10/6");
+function finishLine(n){
+  const byDay = {}; for (const r of meetPast(n)) (byDay[r[0]] ||= []).push(r[6]);
+  const days = Object.entries(byDay).map(([d,fs]) => `${d} ${fs.map(f=>f===1?`<b>${f}</b>`:f).join("・")}`).join("／");
+  const today = meetToday(n).map(r => `<span style="color:var(--faint)">今日 ${r[2]}R ${r[6]}着（点に入れない）</span>`).join(" ");
+  return `<span class="num">${days}</span> ${today}`;
+}
+function seriesCheck(n){ const p = meetPast(n), sum = p.reduce((a,r)=>a+PTS[r[6]],0); return {sum, cnt:p.length, avg: sum/p.length}; }
+function runsTable(n){
+  const p = meetPast(n).slice().reverse(), t = meetToday(n), c = seriesCheck(n);
+  const row = (r, today) => `<tr ${today?`style="color:var(--faint)"`:""}><td>${today?"今日":r[0]}</td><td class="r num">${r[2]}R</td><td class="r num">${r[4]}</td><td class="r num">${st3(r[5])}</td><td class="r num">${r[6]===1?`<b>${r[6]}</b>`:r[6]}</td><td class="r num">${today?"—":PTS[r[6]]}</td></tr>`;
+  const prior = PRIOR[n].map(r => `<tr><td>${r[0]}</td><td>${VENUE_NAME[r[1]]}</td><td class="r num">${r[2]}R</td><td class="r num">${r[3]??"—"}</td><td class="r num">${st3(r[4])}</td><td class="r num">${r[5]===1?`<b>${r[5]}</b>`:r[5]}</td></tr>`).join("");
+  return `<div class="h" style="font-size:12px;color:var(--sub)">今節（徳山）</div>
+  <table class="tbl"><thead><tr><th>日</th><th class="r">R</th><th class="r">進入</th><th class="r">ST</th><th class="r">着</th><th class="r">点</th></tr></thead><tbody>${t.map(r=>row(r,true)).join("")}${p.map(r=>row(r,false)).join("")}
+  <tr><td colspan="6" class="num" style="white-space:normal"><b>平均 ${(c.avg).toFixed(2)}＝${c.sum}点÷${c.cnt}走</b>（前日まで。今日の走は平均に入れていない）</td></tr></tbody></table>
+  <div class="h" style="font-size:12px;color:var(--sub);margin-top:8px">今節より前の5走</div>
+  <table class="tbl"><thead><tr><th>日付</th><th>場</th><th class="r">R</th><th class="r">進入</th><th class="r">ST</th><th class="r">着</th></tr></thead><tbody>${prior}</tbody></table>
+  <p class="note">得点率・ST の推移は <span class="xlink" style="text-decoration:underline">出走表とタブ › 今節</span>（モックではリンク先なし）。進入「—」は記録が無い走</p>`;
+}
 // 選手の勝ち決まり手（直近90日、2026/7/8〜10/5。RacerTechniqueProfileChart と同じ考え方）
 const WIN_TECH = [{逃げ:7,まくり:3,まくり差し:2,抜き:1},{逃げ:7,差し:5,まくり差し:1,抜き:1,まくり:1},{逃げ:6,まくり:3,差し:2,抜き:2,まくり差し:1},{まくり:4,逃げ:3,まくり差し:2,抜き:2},{逃げ:14,まくり:3,差し:2,まくり差し:1},{逃げ:3,まくり:1,差し:1,恵まれ:1}];
 // 前検タイム（motor_pretest_stats。節の初日の前に測るモーターのタイムと、参加艇の中の順位）
@@ -553,7 +600,7 @@ function featChips(b){
   const out = [];
   const p = (k) => POS[k][b.n-1];
   if (p("st_mean30")===1) out.push(["スタートが早い","平均ST（直近30走）が6艇で一番早い"]);
-  if (p("series_score")===1) out.push(["今節好調","今節の平均着順点が6艇で一番高い"]);
+  if (p("series_score")===1) { const c=seriesCheck(b.n); out.push(["今節好調",`今節の平均着順点（${c.avg.toFixed(2)}＝${c.sum}点÷${c.cnt}走、着順 ${meetPast(b.n).map(r=>r[6]).join("・")}、前日まで）が6艇で一番高い`]); }
   if (p("recent_win30")===1) out.push(["最近よく勝つ","直近30走の1着率が6艇で一番高い"]);
   if (p("nat_win")===1) out.push(["実力上位","全国勝率が6艇で一番高い"]);
   if (p("loc_win")===1) out.push(["徳山が得意","当地勝率が6艇で一番高い"]);
@@ -565,7 +612,7 @@ function featChips(b){
 function openTerm(k){ openLayer(`<h2>${esc(k)}<button type="button" class="x" data-close>閉じる</button></h2><p style="margin:0;font-size:15px;line-height:1.7">${esc(GLOSS[k]??"")}</p>`); }
 
 // ---- 状態
-const S = { v:2, lens:"axis", stage:"post", deep:null, metric:null, bets:{1:new Set([1]),2:new Set([2,3]),3:new Set([2,3,4])}, guide:null, budget:1000, mode:"payout" };
+const S = { runsOpen:false, v:2, lens:"axis", stage:"post", deep:null, metric:null, bets:{1:new Set([1]),2:new Set([2,3]),3:new Set([2,3,4])}, guide:null, budget:1000, mode:"payout" };
 const LENS_Q = {axis:"<b>1号艇は逃げる？</b> 誰が1着候補か",flow:"<b>スタートでどこが出る？</b> 誰が攻めるか",power:"<b>足が良いのは？</b> モーターと展示",bet:"<b>オッズに見合う？</b> 組んだ買い目を確かめる"};
 
 // レンズごとの図のモデル（数字は1艇2個まで）
@@ -599,7 +646,7 @@ function metricModel(m){
     series_score:{t:"今節の平均着順点",lo:5,hi:9,g:"right",v:b=>b.series,f:b=>b.series.toFixed(2)},
   }[m];
   return {title:def.t+"を6艇で比べる",left:"",right:"",lo:def.lo,hi:def.hi,metric:true,good:def.g,
-    rows:BOATS.map(b=>({n:b.n,x:def.v(b),nums:[[ "",def.f(b),null]],marks:[],showVal:true}))};
+    rows:BOATS.map(b=>({n:b.n,x:def.v(b),nums:[[ "",def.f(b),null]],marks: m==="series_score" ? [{t:`今節 ${meetPast(b.n).map(r=>r[6]).join("・")}`,cls:""}] : m==="st_mean30" ? [{t:`直近5走 ${RUNS[b.n].slice(0,5).map(r=>st3(r[5])).join(" ")}`,cls:""}] : [],showVal:true}))};
 }
 function axisMarks(b){
   const out=[];
@@ -751,16 +798,17 @@ function renderDeep(){
   <dl class="kv">
     <dt>${term("全国勝率")}</dt><dd><button type="button" data-metric="nat_win" data-boat="${b.n}" class="num">${b.nat.toFixed(2)}</button></dd>
     <dt>${term("当地勝率")}</dt><dd><button type="button" data-metric="loc_win" data-boat="${b.n}" class="num">${b.loc==null?"当地初":b.loc.toFixed(2)}</button></dd>
-    <dt>${term("直近30走の1着率")}</dt><dd class="num">${f1(b.r30)}%</dd>
+    <dt>${term("直近30走の1着率")}</dt><dd class="num">${f1(b.r30)}%（${R30N[b.n][0]}/${R30N[b.n][1]}走）</dd>
     <dt>${b.n}号艇で走ったとき</dt><dd><span class="num">1着 ${LANE_WIN[b.n-1][0]}/${LANE_WIN[b.n-1][1]}</span> <span class="note">直近2年（本実装は進入コースで数える）</span></dd>
-    <dt>${term("平均ST")}</dt><dd><button type="button" data-metric="st_mean30" data-boat="${b.n}" class="num">${st3(b.st)}</button> <span class="note">このコース ${st3(b.stc)}・徳山 ${st3(b.stv)}</span></dd>
-    <dt>${term("今節の平均着順点")}</dt><dd><button type="button" data-metric="series_score" data-boat="${b.n}" class="num">${b.series.toFixed(2)}</button> <span class="num">（6艇で${POS.series_score[b.n-1]===1?"一番高い":POS.series_score[b.n-1]===6?"一番低い":POS.series_score[b.n-1]+"番目"}）</span> <span class="note">前日まで。準優勝戦の日なので得点率・必要得点は出さない（予選は終わっている）</span></dd>
+    <dt>${term("平均ST")}</dt><dd><button type="button" data-metric="st_mean30" data-boat="${b.n}" class="num">${st3(b.st)}</button> <span class="note">（直近30走、F除く）</span> <span class="note">このコース ${st3(b.stc)}・徳山 ${st3(b.stv)}</span></dd>
+    <dt>${term("今節の平均着順点")}</dt><dd><button type="button" data-metric="series_score" data-boat="${b.n}" class="num">${b.series.toFixed(2)}</button> <span class="num">（6艇で${POS.series_score[b.n-1]===1?"一番高い":POS.series_score[b.n-1]===6?"一番低い":POS.series_score[b.n-1]+"番目"}）</span> <br><span style="font-size:12px">${finishLine(b.n)}</span><br><button type="button" class="linkish" data-runs="${b.n}" aria-expanded="${S.runsOpen?"true":"false"}">${S.runsOpen?"1走ずつの表を閉じる":"1走ずつ見る ›"}</button> <span class="note">前日まで。準優勝戦の日なので得点率・必要得点は出さない（予選は終わっている）</span></dd>
     <dt>${term("モーター2連率")}</dt><dd><button type="button" data-metric="motor_2" data-boat="${b.n}" class="num">${f1(b.motor)}%</button></dd>
     <dt>${term("前検タイム")}</dt><dd class="num">${PRETEST[b.n-1][0].toFixed(2)}（参加艇で${PRETEST[b.n-1][1]}位）</dd>
     <dt>${term("勝ち決まり手")}</dt><dd>${(()=>{const t=WIN_TECH[b.n-1],tot=Object.values(t).reduce((a,c)=>a+c,0);return `<span class="num">1着${tot}回: </span>`+Object.entries(t).map(([k,c])=>`${k}<span class="num">${c}</span>`).join("・");})()}</dd>
     ${post?`<dt>展示</dt><dd><button type="button" data-metric="exh" data-boat="${b.n}" class="num">${b.exh.toFixed(2)}</button> <span class="note">展示ST ${st3(b.est)}・チルト ${b.tilt}</span></dd>`:""}
     ${b.f?`<dt>${term("F")}</dt><dd><button type="button" class="mk f" data-theory="TC-T4">F${b.f}</button></dd>`:""}
   </dl>
+  ${S.runsOpen?`<div class="runs">${runsTable(b.n)}</div>`:""}
   <div><p class="note" style="margin:0 0 6px">${term("差がつく材料")}（${esc(FACTS[b.n].scope)}、${b.n}号艇の1着）。「今日」は6艇で一番（良い・悪い）のときだけ当てはまる</p><div class="chips">${facts}</div></div>
   <p class="note">数字をタップすると、上の図が6艇の比較に変わる（2段目）</p></section>`;
 }
@@ -856,13 +904,14 @@ document.addEventListener("click", (e) => {
   if (d.lens){ S.lens=d.lens; S.metric=null; render(); return; }
   if (d.stage){ S.stage=d.stage; S.metric=null; render(); return; }
   if (d.term){ openTerm(d.term); return; }
+  if (d.runs){ S.runsOpen = !S.runsOpen; renderDeep(); return; }
   if (d.venue){ openVenue(); return; }
   if (d.oldview){ openLayer(`<h2>出走表とタブ<button type="button" class="x" data-close>閉じる</button></h2><p style="margin:0">従来のレース詳細（基本情報・AI予想・直前情報などのタブ）に切り替わる。同じレースのまま行き来でき、選んだ方を次も開く（モックでは切り替え先なし）</p>`); return; }
   if (d.why){ openLayer(`<h2>${esc(d.whyt)}<button type="button" class="x" data-close>閉じる</button></h2><p style="margin:0;font-size:15px">${esc(d.why)}から付けた札。評判や予想ではない</p>`); return; }
   if (d.theory){ openTheory(d.theory); return; }
   if (d.fact){ const [b,k]=d.fact.split(":"); openTheory(null,[+b,k]); return; }
   if (d.metric!==undefined && d.metric){ S.deep=+d.boat||S.deep; S.metric = S.metric===d.metric? null : d.metric; render(); const bd=document.getElementById("board"), lh=document.getElementById("g-lens").offsetHeight; window.scrollTo({top: bd.getBoundingClientRect().top + window.scrollY - lh - 4, behavior:"smooth"}); return; }
-  if (d.deep){ const n=+d.deep; S.deep = S.deep===n? null : n; S.metric=null; render(); return; }
+  if (d.deep){ const n=+d.deep; S.deep = S.deep===n? null : n; S.metric=null; S.runsOpen=false; render(); return; }
   if (t.id==="hint1x"){ document.getElementById("hint1").hidden = true; return; }
   if (t.id==="closeDeep"){ S.deep=null; S.metric=null; render(); return; }
   if (d.add){ renderSheet(); return; }

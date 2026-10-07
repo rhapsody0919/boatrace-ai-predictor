@@ -102,3 +102,4 @@
 - 類似レースの定義を4条件に直した（v3〜v5 のモック・spec は「3つ」で、勝率差の段階が抜けていた）
 - モック v6: Artifact の Version 7、写しは [mock-v6/index.html](./mock-v6/index.html)
 - 次: Codex の結果の採否（渡したのは v4 の版）、X の埋め込みの判断（推奨はやらない）→ v6 の承認 → 承認画像と APPROVED.md → `/step2`
+- 追加（同日）: 直近のレースの情報（1走ずつ）を深掘りに足した（D-29、fan-panel-mock-v5.md §3）。外した理由は無かった（作る側の抜け）。モック v6 は Artifact の Version 8
