@@ -120,6 +120,22 @@ check(
     ep.trigami === false,
   JSON.stringify({ m: ep.multiplier, c: ep.composite }),
 );
+// 4.1×100＝409.99… で払戻が10円落ちないこと（PR #1307 /code-review）。0.1刻みの全オッズ（1.0〜1000.0倍）で確かめる
+const floatMiss = [];
+for (let p = 100; p <= 100000; p += 10) {
+  const r = allocateStakes({
+    tickets: ["1-2-3"],
+    trifecta: { "1-2-3": p / 100 },
+    budget: 100,
+    mode: "equal",
+  });
+  if (r.rows[0].payout !== p) floatMiss.push(p / 100);
+}
+check(
+  "払戻: オッズ4.1の100円は410円（浮動小数の誤差で10円落ちない）",
+  floatMiss.length === 0,
+  JSON.stringify(floatMiss.slice(0, 5)),
+);
 const eq = allocateStakes({
   tickets: tickets3,
   trifecta: odds3,

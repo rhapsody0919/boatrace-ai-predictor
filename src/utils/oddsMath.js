@@ -121,8 +121,10 @@ export function allocateStakes({ tickets, trifecta, budget, mode }) {
   const rows = priced.map((ticket, i) => {
     const stake = stakesInUnits[i] * STAKE_UNIT;
     const odds = trifecta[ticket];
-    // 払戻は100円あたりの払戻（オッズ×100、10円未満切り捨て）× 単位数。公式と同じ切り捨て
-    const payout = Math.floor((odds * STAKE_UNIT) / 10) * 10 * stakesInUnits[i];
+    // 払戻は100円あたりの払戻（オッズ×100、10円未満切り捨て）× 単位数。公式と同じ切り捨て。
+    // 4.1×100＝409.99… のような浮動小数の誤差で10円落ちないよう、先に1円単位へ丸める
+    const payout =
+      Math.floor(Math.round(odds * STAKE_UNIT) / 10) * 10 * stakesInUnits[i];
     return { ticket, odds, stake, payout };
   });
   const total = rows.reduce((s, r) => s + r.stake, 0);
