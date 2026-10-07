@@ -8,9 +8,12 @@
  * 実行: node scripts/maintenance/verify-odds-math.js
  */
 import {
+  allocateStakes,
   compositeOdds,
+  expandTickets,
   formatOdds,
   latestSnapshotWith,
+  popularityRanks,
 } from "../../src/utils/oddsMath.js";
 import { isPathTranslated } from "../../src/config/languages.js";
 
@@ -64,6 +67,119 @@ check(
     ],
     "win",
   )?.id === "y" && latestSnapshotWith([], "trifecta") === null,
+);
+
+// ---- 思考アシストの買い目（T2-3。spec FR-7・FR-8・D-38）----
+check(
+  "expandTickets: 1-34-2345 は6点（同じ艇の重複を除く）",
+  JSON.stringify(expandTickets({ 1: [1], 2: [3, 4], 3: [2, 3, 4, 5] })) ===
+    JSON.stringify(["1-3-2", "1-3-4", "1-3-5", "1-4-2", "1-4-3", "1-4-5"]),
+);
+check(
+  "expandTickets: 欠場の艇（4）を含む組は数えない（D-38）",
+  JSON.stringify(expandTickets({ 1: [1], 2: [3, 4], 3: [2, 3, 4, 5] }, [4])) ===
+    JSON.stringify(["1-3-2", "1-3-5"]),
+);
+check(
+  "expandTickets: 候補が空の着があれば0点",
+  expandTickets({ 1: [1], 2: [2], 3: [] }).length === 0,
+);
+const ranks = popularityRanks({ a: 2, b: 1, c: 2, d: null, e: 5, f: 0 });
+check(
+  "popularityRanks: オッズの昇順、同じオッズは同じ順位で次を飛ばす、オッズの無い組は順位なし",
+  ranks.get("b") === 1 &&
+    ranks.get("a") === 2 &&
+    ranks.get("c") === 2 &&
+    ranks.get("e") === 4 &&
+    !ranks.has("d") &&
+    !ranks.has("f"),
+  JSON.stringify([...ranks]),
+);
+const odds3 = { "1-2-3": 6.4, "1-2-4": 15.2, "1-3-2": 7.2 };
+const tickets3 = ["1-2-3", "1-2-4", "1-3-2"];
+const ep = allocateStakes({
+  tickets: tickets3,
+  trifecta: odds3,
+  budget: 1000,
+  mode: "equalPayout",
+});
+check(
+  "均等払戻: 予算1000円で 400・100・300円（オッズの逆数に比例、100円単位の切り捨て）、残り200円",
+  !ep.insufficient &&
+    ep.rows.map((r) => r.stake).join(",") === "400,100,300" &&
+    ep.total === 800 &&
+    ep.remainder === 200,
+  JSON.stringify(ep.rows),
+);
+check(
+  "均等払戻: 払戻 2,560・1,520・2,160円、倍率の幅 1.9〜3.2倍、合成オッズ 2.77（理論値）",
+  ep.rows.map((r) => r.payout).join(",") === "2560,1520,2160" &&
+    ep.multiplier.min === 1.9 &&
+    ep.multiplier.max === 3.2 &&
+    formatOdds(ep.composite) === "2.8" &&
+    ep.trigami === false,
+  JSON.stringify({ m: ep.multiplier, c: ep.composite }),
+);
+const eq = allocateStakes({
+  tickets: tickets3,
+  trifecta: odds3,
+  budget: 1000,
+  mode: "equal",
+});
+check(
+  "均等: 予算1000円・3点で各300円、残り100円、合計は予算以下",
+  eq.rows.every((r) => r.stake === 300) &&
+    eq.total === 900 &&
+    eq.remainder === 100,
+);
+const few = allocateStakes({
+  tickets: tickets3,
+  trifecta: odds3,
+  budget: 200,
+  mode: "equal",
+});
+check(
+  "予算が 100円×点数 に足りなければ配分を出さない（3点には最低300円。Codex F05）",
+  few.insufficient === true && few.minimum === 300,
+);
+const lowOdds = allocateStakes({
+  tickets: ["1-2-3", "1-3-2"],
+  trifecta: { "1-2-3": 1.5, "1-3-2": 1.8 },
+  budget: 1000,
+  mode: "equalPayout",
+});
+check(
+  "トリガミ: 合成オッズ（理論値）が1.0未満なら trigami",
+  lowOdds.trigami === true && lowOdds.composite < 1,
+  `${lowOdds.composite}`,
+);
+const skewed = allocateStakes({
+  tickets: ["1-2-3", "6-5-4"],
+  trifecta: { "1-2-3": 2.0, "6-5-4": 9999 },
+  budget: 300,
+  mode: "equalPayout",
+});
+check(
+  "均等払戻: 比例で0円になる組にも最低100円を入れ、合計は予算以下",
+  skewed.rows.every((r) => r.stake >= 100) && skewed.total <= 300,
+  JSON.stringify(skewed.rows),
+);
+const missingOdds = allocateStakes({
+  tickets: ["1-2-3", "1-2-4"],
+  trifecta: { "1-2-3": 6.4 },
+  budget: 1000,
+  mode: "equal",
+});
+check(
+  "オッズの無い組は配分から外して missing に返す",
+  missingOdds.rows.length === 1 &&
+    missingOdds.missing.join(",") === "1-2-4" &&
+    allocateStakes({
+      tickets: ["1-2-4"],
+      trifecta: {},
+      budget: 1000,
+      mode: "equal",
+    }).insufficient === true,
 );
 
 // 思考アシストのルートは ja 専用（/race 配下は翻訳済みだが例外）。末尾のスラッシュも同じ（/code-review 指摘）

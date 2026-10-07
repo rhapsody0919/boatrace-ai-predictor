@@ -36,3 +36,108 @@ export function latestSnapshotWith(snapshots, dataKey) {
   }
   return reversed.find((s) => s[dataKey]) ?? null;
 }
+
+// ---- 思考アシストの買い目（BOA-430、spec FR-7・FR-8・D-38）----
+
+/** 3連単の最小の購入単位（円） */
+export const STAKE_UNIT = 100;
+
+/**
+ * 3連単のオッズの表（"1-2-3" → オッズ）から人気順（オッズの昇順、1始まり）を作る。
+ * 同じオッズは同じ順位にし、次の順位は飛ばす（1・2・2・4）。オッズの無い組（票なし・欠場）は順位を付けない
+ * @param {Record<string, number|null>} trifecta
+ * @returns {Map<string, number>}
+ */
+export function popularityRanks(trifecta) {
+  const entries = Object.entries(trifecta ?? {})
+    .filter(([, v]) => v != null && v > 0)
+    .sort((a, b) => a[1] - b[1]);
+  const ranks = new Map();
+  entries.forEach(([key, value], i) => {
+    const prev = entries[i - 1];
+    ranks.set(key, prev && prev[1] === value ? ranks.get(prev[0]) : i + 1);
+  });
+  return ranks;
+}
+
+/**
+ * 1着・2着・3着の候補から3連単の組を作る。同じ艇を2回以上含む組と、欠場の艇を含む組は除く（D-38）
+ * @param {{1: Iterable<number>, 2: Iterable<number>, 3: Iterable<number>}} bets
+ * @param {Iterable<number>} [absentBoats]
+ * @returns {string[]} "a-b-c"（1着→2着→3着の艇番の昇順）
+ */
+export function expandTickets(bets, absentBoats = []) {
+  const absent = new Set(absentBoats);
+  const sorted = (s) => [...new Set(s ?? [])].sort((a, b) => a - b);
+  const tickets = [];
+  for (const a of sorted(bets?.[1]))
+    for (const b of sorted(bets?.[2]))
+      for (const c of sorted(bets?.[3])) {
+        if (a === b || a === c || b === c) continue;
+        if (absent.has(a) || absent.has(b) || absent.has(c)) continue;
+        tickets.push(`${a}-${b}-${c}`);
+      }
+  return tickets;
+}
+
+/**
+ * 配分（FR-8）。予算を100円単位（切り捨て）で各組に配る。
+ *   equal:       各組に同じ額
+ *   equalPayout: どれが当たっても払戻がほぼ同じになるよう、オッズの逆数に比例させる（各組に最低100円）
+ * 予算が 100円×点数 に足りないときは配分を出さない（insufficient）。オッズの無い組は配分から外して missing に返す
+ * @param {{tickets: string[], trifecta: Record<string, number|null>, budget: number, mode: "equal"|"equalPayout"}} args
+ * @returns {{insufficient: true, minimum: number, missing: string[]} | {insufficient: false, rows: Array<{ticket: string, odds: number, stake: number, payout: number}>, total: number, remainder: number, composite: number|null, multiplier: {min: number, max: number}|null, trigami: boolean, missing: string[]}}
+ */
+export function allocateStakes({ tickets, trifecta, budget, mode }) {
+  const priced = tickets.filter(
+    (t) => trifecta?.[t] != null && trifecta[t] > 0,
+  );
+  const missing = tickets.filter((t) => !priced.includes(t));
+  const minimum = STAKE_UNIT * priced.length;
+  if (priced.length === 0 || !(budget >= minimum))
+    return { insufficient: true, minimum, missing };
+
+  const units = Math.floor(budget / STAKE_UNIT);
+  let stakesInUnits;
+  if (mode === "equal") {
+    const each = Math.floor(units / priced.length);
+    stakesInUnits = priced.map(() => each);
+  } else {
+    const inv = priced.map((t) => 1 / trifecta[t]);
+    const sumInv = inv.reduce((s, v) => s + v, 0);
+    stakesInUnits = inv.map((v) =>
+      Math.max(1, Math.floor((units * v) / sumInv)),
+    );
+    // 最低1単位に引き上げた分で予算を超えたら、多い組から1単位ずつ減らす（1単位は残す）
+    let over = stakesInUnits.reduce((s, v) => s + v, 0) - units;
+    while (over > 0) {
+      const i = stakesInUnits.indexOf(Math.max(...stakesInUnits));
+      if (stakesInUnits[i] <= 1) break;
+      stakesInUnits[i] -= 1;
+      over -= 1;
+    }
+  }
+
+  const rows = priced.map((ticket, i) => {
+    const stake = stakesInUnits[i] * STAKE_UNIT;
+    const odds = trifecta[ticket];
+    // 払戻は100円あたりの払戻（オッズ×100、10円未満切り捨て）× 単位数。公式と同じ切り捨て
+    const payout = Math.floor((odds * STAKE_UNIT) / 10) * 10 * stakesInUnits[i];
+    return { ticket, odds, stake, payout };
+  });
+  const total = rows.reduce((s, r) => s + r.stake, 0);
+  const payouts = rows.map((r) => r.payout / total);
+  const composite = compositeOdds(priced.map((t) => trifecta[t]));
+  return {
+    insufficient: false,
+    rows,
+    total,
+    remainder: budget - total,
+    composite,
+    // 丸めた後の倍率（払戻÷合計）の幅（Codex F06）
+    multiplier: { min: Math.min(...payouts), max: Math.max(...payouts) },
+    // 合成オッズ（理論値）が1.0未満ならトリガミ（FR-8）
+    trigami: composite != null && composite < 1,
+    missing,
+  };
+}
