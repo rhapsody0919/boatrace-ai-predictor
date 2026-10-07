@@ -72,3 +72,23 @@ export async function routeThinkingAssistV16(
     return route.fulfill({ json: apply("scenario", body) });
   });
 }
+
+/**
+ * 展示がまだ無い状態（展示前）を作る。DB の展示（RPC get_race_exhibition_trend と、その代わりの exhibition_data）を空にする。
+ * 実装が展示を別の口から読むようになったら、ここも合わせて直す（受け入れ E2E が実装の取り方に依存する唯一の箇所）
+ */
+export async function routeNoExhibition(page) {
+  await page.route("**/rest/v1/rpc/get_race_exhibition_trend*", (route) =>
+    route.fulfill({ json: [] }),
+  );
+  await page.route("**/rest/v1/exhibition_data*", (route) =>
+    route.fulfill({ json: [] }),
+  );
+}
+
+/** オッズがまだ無い状態（発売前）を作る。DB のオッズのスナップショット（race_odds）を空にする */
+export async function routeNoOdds(page) {
+  await page.route("**/rest/v1/race_odds*", (route) =>
+    route.fulfill({ json: [] }),
+  );
+}
