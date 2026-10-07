@@ -44,6 +44,15 @@ export function observationPeriod(postedAt, window) {
 }
 
 export function validateObservation(input, draft) {
+  return validateObservationInput(input, draft, true);
+}
+
+/** provider入力は保存窓への適合以外を先に検査する。保存にはvalidateObservationが必須。 */
+export function validateProviderObservation(input, draft) {
+  validateObservationInput(input, draft, false);
+}
+
+function validateObservationInput(input, draft, requireWindowMatch) {
   if (!input || typeof input !== "object" || Array.isArray(input))
     throw new Error("観測データが不正です");
   if (draft.status !== "posted") throw new Error("投稿済みのみ観測できます");
@@ -61,8 +70,9 @@ export function validateObservation(input, draft) {
   if (
     !timestamp(input.period_start) ||
     !timestamp(input.period_end) ||
-    Date.parse(input.period_start) !== Date.parse(period.period_start) ||
-    Date.parse(input.period_end) !== Date.parse(period.period_end)
+    (requireWindowMatch &&
+      (Date.parse(input.period_start) !== Date.parse(period.period_start) ||
+        Date.parse(input.period_end) !== Date.parse(period.period_end)))
   )
     throw new Error("対象期間は投稿日時から観測窓の終了までです");
   if (
@@ -108,9 +118,10 @@ export function validateObservation(input, draft) {
   const complete =
     input.data_through !== null &&
     Date.parse(input.data_through) === Date.parse(period.period_end);
-  if (input.metric_value !== null && !complete)
+  if (requireWindowMatch && input.metric_value !== null && !complete)
     throw new Error("遅延・期間不一致は欠測として記録してください");
   if (
+    requireWindowMatch &&
     input.measurement_kind === "snapshot" &&
     input.metric_value !== null &&
     Date.parse(input.observed_at) !== Date.parse(period.period_end)

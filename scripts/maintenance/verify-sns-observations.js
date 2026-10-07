@@ -173,10 +173,37 @@ for (const edit of [
   assert.equal(output[0].observed_at, new Date(input.observed_at).toISOString());
   assert.match(output[0].missing_reason, /provider/);
 }
+// 窓不一致・遅延があっても不正入力を成功欠測へ変えない。
+for (const timing of [
+  { period_start: "2026-09-01T13:00:00Z" },
+  { period_end: "2026-09-03T13:00:00Z" },
+  { measurement_kind: "snapshot", observed_at: "2026-09-03T12:00:01Z" },
+  { data_through: null },
+]) {
+  for (const invalid of [
+    { metric_value: -1 },
+    { metric_value: Infinity },
+    { metric_value: "123" },
+    { metric_name: "audienceWatchRatio", curve: [{ elapsed_ratio: 2, value: 0.5 }] },
+    { metric_name: "audienceWatchRatio", curve: [{ elapsed_ratio: 0.5, value: -1 }] },
+    { curve: [{ elapsed_ratio: 0.5, value: 0.5 }] },
+    { missing_reason: "値ありには理由を付けない" },
+    { metric_value: null, missing_reason: null },
+  ]) {
+    let appendCalls = 0;
+    const rejected = await collectDueObservations({ drafts: [draft],
+      provider: { collect: async () => [base, { ...base, ...timing, ...invalid }] },
+      store: { append: async () => { appendCalls++; } }, now: period.period_end });
+    assert.equal(rejected[0].status, "failed");
+    assert.equal(appendCalls, 0);
+  }
+}
+let invalidPeriodAppendCalls = 0;
 const invalidPeriod = await collectDueObservations({ drafts: [draft],
   provider: { collect: async () => [{ ...base, period_start: "invalid" }] },
-  store: { append: async () => assert.fail("不正な期間は保存しない") }, now: period.period_end });
+  store: { append: async () => { invalidPeriodAppendCalls++; } }, now: period.period_end });
 assert.equal(invalidPeriod[0].status, "failed");
+assert.equal(invalidPeriodAppendCalls, 0);
 const validOutput = [];
 await collectDueObservations({ drafts: [draft],
   provider: { collect: async () => [{ ...base, observed_at: "2026-09-03T12:00:01Z" }] },

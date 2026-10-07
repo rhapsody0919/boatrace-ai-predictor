@@ -1,6 +1,7 @@
 import {
   observationPeriod,
   validateObservation,
+  validateProviderObservation,
 } from "../../src/utils/snsObservations.js";
 
 /** 注入インターフェース: provider.collect({draft, window, period, observedAt}) -> 観測配列。
@@ -36,7 +37,7 @@ export async function collectDueObservations({
         // 全件を検査してから保存する。通信エラーは値を捏造せず結果へ返す。
         const validated = rows.map((row) =>
           validateObservation(
-            normalizeProviderObservation(row, window, period),
+            normalizeProviderObservation(row, window, period, draft),
             draft,
           ),
         );
@@ -56,7 +57,9 @@ export async function collectDueObservations({
 }
 
 // providerの実測メタデータを先に照合し、窓が違う値を欠測へ変換する。
-function normalizeProviderObservation(row, window, period) {
+function normalizeProviderObservation(row, window, period, draft) {
+  // 欠測変換で値・曲線・理由等の入力違反を消す前に拒否する。
+  validateProviderObservation({ ...row, window }, draft);
   // 不正な日時を有効な要求日時で補完しない。
   observationPeriod(row.period_start, window);
   observationPeriod(row.period_end, window);
