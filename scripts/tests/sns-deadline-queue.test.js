@@ -141,3 +141,34 @@ test('begin_postでも当日の基準・上限を再検査し、日付またぎ�
   assert.equal((await store.transition(b.id,'begin_post')).error_code,'daily_claim_date_changed');
  } finally { await db.exec('UPDATE test_clock SET value=NULL'); }
 });
+
+test('媒体変更を伴う再承認でも試行時の媒体の日次枠を保持する',async()=>{
+ const original='x',changed='youtube';
+  const baseline={};
+  for (const channel of [original,changed]) baseline[channel]=Number((await first("SELECT sum(attempts) n FROM sns_x_send_jobs WHERE channel=$1",[channel])).n || 0);
+  await enable();
+  const a=await job({platform:original});
+  await store.transition(a.id,'claim');
+  await store.transition(a.id,'hold');
+  const count=Number((await first("SELECT sum(attempts) n FROM sns_x_send_jobs WHERE channel=$1",[original])).n);
+  await enable(count);
+  const d=await first("UPDATE sns_drafts SET platform=$2,video_storage_path=CASE WHEN $2::varchar='youtube' THEN 'demo/a.mp4' ELSE NULL END WHERE id=$1 RETURNING *",[a.draft_id,changed]);
+  const approved=(await first('SELECT approve_sns_x_send($1,$2,$3,now()) result',[d.id,approver,await createXSnapshot(d,loadMedia)])).result;
+  assert.equal(approved.channel,changed);
+  const b=await job({platform:original});
+  await assert.rejects(store.transition(b.id,'claim'),/日次/);
+  // 変更先での試行も成功させ、両媒体の過去枠が次の再承認後も残ることを確認する。
+  await enable();
+  await store.transition(a.id,'claim');
+  await store.transition(a.id,'hold');
+  const back=await first("UPDATE sns_drafts SET platform=$2,video_storage_path=CASE WHEN $2::varchar='youtube' THEN 'demo/a.mp4' ELSE NULL END WHERE id=$1 RETURNING *",[a.draft_id,original]);
+  const restored=(await first('SELECT approve_sns_x_send($1,$2,$3,now()) result',[back.id,approver,await createXSnapshot(back,loadMedia)])).result;
+  assert.deepEqual(restored.attempt_channels,['x','youtube']);
+  assert.equal(restored.attempt_dates.length,2);
+  for (const channel of [original,changed]) {
+   const expected=baseline[channel]+1;
+   await enable(expected);
+   const other=await job({platform:channel});
+   await assert.rejects(store.transition(other.id,'claim'),/日次/);
+  }
+});
