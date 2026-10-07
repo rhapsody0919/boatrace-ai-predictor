@@ -267,10 +267,18 @@ export async function validateBundle(form, riskRules = []) {
         /* 下で拒否 */
       }
       const source = name.split(".")[0];
+      // layerは出走表時点で固定して取得するため、bundle全体がexhibition段で
+      // 組まれてもlayerの実際の取得URLは?stage=racecardのまま
+      // （2026-10-07レビュー対応。固定前はbundle.stageと一致を要求していたため、
+      // 展示後bundleに固定段layerを添えると常に拒否されていた）。
+      const expectedUrlStage =
+        source === "layer" && meta.stage === "racecard (fixed)"
+          ? "racecard"
+          : bundle.stage;
       ensure(
         url?.origin === "https://www.boat-ai.jp" &&
           url.pathname === `/api/analogy/${source}/${bundle.race_id}` &&
-          url.searchParams.get("stage") === bundle.stage &&
+          url.searchParams.get("stage") === expectedUrlStage &&
           Number.isFinite(Date.parse(meta.fetched_at)),
         `${name}: URL・取得時刻が不正です`,
       );

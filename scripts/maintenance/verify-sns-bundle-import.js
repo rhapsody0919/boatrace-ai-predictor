@@ -9,7 +9,10 @@ import {
   readBundleForm,
   sha256,
 } from "../../api/_lib/snsBundleValidation.js";
-import { importValidatedBundle } from "../../api/_lib/snsBundleImport.js";
+import {
+  importValidatedBundle,
+  bundleStore,
+} from "../../api/_lib/snsBundleImport.js";
 
 const root = new URL("../../", import.meta.url);
 const encode = (s) => new TextEncoder().encode(s);
@@ -133,6 +136,52 @@ await check("v0正常・全17添付・UUID型に自動対応しない", async ()
   assert.equal(validated.files.size, 17);
   assert(validated.holds.some((h) => h.includes("v0")));
 });
+await check(
+  "layerの固定段(racecard (fixed))はexhibition段のbundleでも拒否されない(F01対応)",
+  async () => {
+    // layerは出走表時点で固定して取得するため、bundle全体がexhibition段で
+    // 組まれてもlayerの実際の取得URLは?stage=racecardのまま。修正前は
+    // 「URLのstageはbundle.stageと一致」を全sourceに一律で求めていたため、
+    // 展示後bundleに固定段layerを添えると常に拒否されていた。
+    const exhibitionFiles = await fixture({ stage: "exhibition" });
+    for (const source of ["facts", "similar", "scenario"]) {
+      const raw = exhibitionFiles.get(`${source}.json`);
+      exhibitionFiles.set(
+        `${source}.meta.json`,
+        json({
+          url: `https://www.boat-ai.jp/api/analogy/${source}/2026-10-07-11-10?stage=exhibition`,
+          stage: "exhibition",
+          fetched_at: "2026-10-07T05:34:29Z",
+          http_status: 200,
+          sha256: await sha256(raw),
+        }),
+      );
+    }
+    const layerRaw = exhibitionFiles.get("layer.json");
+    exhibitionFiles.set(
+      "layer.meta.json",
+      json({
+        url: "https://www.boat-ai.jp/api/analogy/layer/2026-10-07-11-10?stage=racecard",
+        stage: "racecard (fixed)",
+        fetched_at: "2026-10-07T05:34:29Z",
+        http_status: 200,
+        sha256: await sha256(layerRaw),
+      }),
+    );
+    const integrity = {};
+    for (const [name, bytes] of exhibitionFiles)
+      if (
+        !name.includes(".meta.") &&
+        name !== "qa.json" &&
+        name !== "integrity.json"
+      )
+        integrity[name] = await sha256(bytes);
+    exhibitionFiles.set("integrity.json", json(integrity));
+    // 例外を投げず正常に検証を通ることが期待値（修正前はensureで400拒否されていた）
+    const result = await validateBundle(form(exhibitionFiles));
+    assert.equal(result.bundle.stage, "exhibition");
+  },
+);
 await check(
   "qa/integrity/*.meta.jsonは自己申告のため未検証でも保留理由を増やさない",
   async () => {
@@ -586,6 +635,77 @@ await check(
   },
 );
 await db.close();
+
+await check(
+  "bundleStoreのsaveFile/registerは4xxで再試行を案内しない(F02対応)",
+  async () => {
+    // saveFile・registerの実装(実fetch)を対象にする。dbを使わないテストなので
+    // db.close()後でよい。グローバルfetchを差し替え、元に戻すまでtry/finallyで囲む。
+    const originalFetch = globalThis.fetch;
+    async function withMockedFetch(status, detail, run) {
+      globalThis.fetch = async () => ({
+        ok: false,
+        status,
+        text: async () => detail,
+      });
+      try {
+        return await run();
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    }
+    await withMockedFetch(400, "invalid path", () =>
+      assert.rejects(
+        () =>
+          bundleStore.saveFile("x", {
+            bytes: new Uint8Array(),
+            mime: "application/octet-stream",
+          }),
+        (err) => {
+          assert(err.message.includes("(400)"));
+          assert(err.message.includes("invalid path"));
+          assert(!err.message.includes("再試行できます"));
+          return true;
+        },
+      ),
+    );
+    await withMockedFetch(503, "temporarily unavailable", () =>
+      assert.rejects(
+        () =>
+          bundleStore.saveFile("x", {
+            bytes: new Uint8Array(),
+            mime: "application/octet-stream",
+          }),
+        (err) => {
+          assert(err.message.includes("(503)"));
+          assert(err.message.includes("temporarily unavailable"));
+          assert(err.message.includes("再試行できます"));
+          return true;
+        },
+      ),
+    );
+    await withMockedFetch(400, "bundleの版・groupの対応が不正です", () =>
+      assert.rejects(
+        () => bundleStore.register({}),
+        (err) => {
+          assert(err.message.includes("(400)"));
+          assert(!err.message.includes("再試行できます"));
+          return true;
+        },
+      ),
+    );
+    await withMockedFetch(502, "bad gateway", () =>
+      assert.rejects(
+        () => bundleStore.register({}),
+        (err) => {
+          assert(err.message.includes("(502)"));
+          assert(err.message.includes("再試行できます"));
+          return true;
+        },
+      ),
+    );
+  },
+);
 
 const sample = process.argv.find((a) => a.startsWith("--sample="))?.slice(9);
 if (sample)

@@ -46,8 +46,13 @@ export const bundleStore = {
     );
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
+      // 5xxは一時的な障害の可能性があるため再試行を促す。4xxはパス・権限等の
+      // 構造的な失敗で、同じ添付を再送しても同じ結果になりうるため言わない
+      // （registerと同じ方針。2026-10-07レビュー指摘F02対応）。
+      const retryHint =
+        response.status >= 500 ? "。同じ添付で再試行できます" : "";
       throw new Error(
-        `素材保存に失敗しました (${response.status})${detail ? `: ${detail}` : ""}。同じ添付で再試行できます`,
+        `素材保存に失敗しました (${response.status})${detail ? `: ${detail}` : ""}${retryHint}`,
       );
     }
   },
