@@ -12,7 +12,7 @@
 ## PR0 会場の決まり手の期間の表（ADR 0088、マイグレーション 134）
 事前条件: 134 は本番に適用済み（2026-10-07、APPLIED.md）
 
-- [ ] T0-1 `scripts/daily/update-winning-technique-stats.js` の既存の処理の後に、会場ごとの90日・365日の集計を足す
+- [x] T0-1 （PR #1301 マージ済み c904fdee7。/code-review 6件・Codex ④ 2件・data-accuracy-verifier 不一致0）`scripts/daily/update-winning-technique-stats.js` の既存の処理の後に、会場ごとの90日・365日の集計を足す
   - 365日のうち 2025-12-02 以前は `kb_archive_races`（has_result かつ technique あり）を読む。除外は既存と同じ（中止・不成立・1着なし・決まり手なし）
   - 24会場×2期間を必ず書き直す（その期間にレースが無い会場は行を消す）。90日と365日は会場ごとに1回の書き込みで入れる（片方だけ残るのを防ぐ）
   - 新しい部分の書き込みの失敗は投げて exit 1（既存の書き込み部分は `continue` で握りつぶしているが、新しい部分ではそうしない）
@@ -26,21 +26,22 @@
     - 2025-12-02 の重複を数えない
   - 鮮度の検査: `last_updated` が2日より古い行があれば失敗にする検査を、既存の data-health か verify に足す
   - `data-accuracy-verifier` で実データと照合する（徳山 365日 2,592件・逃げ 1,516、90日 612件・逃げ 339（2026-10-05 時点）、全会場の総数）
-- [ ] T0-2 マージ後に、ワークフローを1回手動で動かすようユーザーに依頼する。約290行と、徳山の365日の逃げ 1,516／2,592・90日の逃げ 339／612（2026-10-05 時点。動かした日で変わるので桁と比率で確かめる）を読み取りで確かめる（APPLIED.md の 134 は適用済みに直してある）
+- [ ] T0-2 （ユーザーに手動実行を依頼済み、オーケストレーター経由）マージ後に、ワークフローを1回手動で動かすようユーザーに依頼する。約290行と、徳山の365日の逃げ 1,516／2,592・90日の逃げ 339／612（2026-10-05 時点。動かした日で変わるので桁と比率で確かめる）を読み取りで確かめる（APPLIED.md の 134 は適用済みに直してある）
 
 ## PR1 下ごしらえ（既存の挙動は変えない）
-- [ ] T1-1 `src/utils/oddsMath.js` を作り、`RaceOddsListTab.jsx` の `compositeOdds`・`formatOdds`・`latestSnapshotWith` を移して export する。`RaceOddsListTab` は import に変えるだけで、計算は変えない（Codex U03）。既存のオッズ一覧タブの E2E が変わらず通ること
-- [ ] T1-2 `src/config/featureFlags.js` の `readPreviewFlag` を、クエリ名とキーを引数で受ける形にまとめる。`THINKING_ASSIST_PUBLIC = false`・`?assist=1`（`boatai-user:thinking-assist-preview`）・`isThinkingAssistEnabled()` を足す。アナロジー・ファインダーの挙動は変えない
-- [ ] T1-3 ルート
+- [x] T1-1 （PR #1305）`src/utils/oddsMath.js` を作り、`RaceOddsListTab.jsx` の `compositeOdds`・`formatOdds`・`latestSnapshotWith` を移して export する。`RaceOddsListTab` は import に変えるだけで、計算は変えない（Codex U03）。既存のオッズ一覧タブの E2E が変わらず通ること
+- [x] T1-2 （PR #1305）`src/config/featureFlags.js` の `readPreviewFlag` を、クエリ名とキーを引数で受ける形にまとめる。`THINKING_ASSIST_PUBLIC = false`・`?assist=1`（`boatai-user:thinking-assist-preview`）・`isThinkingAssistEnabled()` を足す。アナロジー・ファインダーの挙動は変えない
+- [x] T1-3 （PR #1305）ルート
   - `src/config/languages.js` の `isFullyTranslatedPath` に `/race/{id}/assist` の例外を足す（ja 専用。hreflang・言語切り替えに出さない）
   - `src/AppRouter.jsx` の `LocalizedRoutes` に `race/:raceId/assist` を、`/today` と同じく全言語に登録する（言語付きの URL は既存の仕組みで ja へ移る）
   - `pageViewPath` は変えない（/assist は元から別のパスとして数えられる）
   - 公開まで noindex（meta robots）
   - `docs/design/thinking-assist/content-index.json` に保留の印を置く（session-start-check の missingContentIndex を毎回出さないため。中身は T7-3）
   - 画面は「準備中」の空のページでよい（中身は PR2 以降）
-- [ ] T1-4 `getVenueTechniquePeriodStats(venueCode)` を `supabaseDataService.js` に足す（`withCache`）。失敗（表が無い 42P01 を含む）は投げ、空（0行）とは区別する。空の結果はキャッシュに残さない。画面は空なら決まり手の節を出さず、失敗なら「表示できませんでした」
+- [x] T1-4 （PR #1305）`getVenueTechniquePeriodStats(venueCode)` を `supabaseDataService.js` に足す（`withCache`）。失敗（表が無い 42P01 を含む）は投げ、空（0行）とは区別する。空の結果はキャッシュに残さない。画面は空なら決まり手の節を出さず、失敗なら「表示できませんでした」
 
 ## PR2 データとモデル（画面はまだ出さない）
+2026-10-07 分け直し: PR2 は純関数と検査だけ（T2-2 の一部・T2-3・T2-4）。データ取得のフック（T2-1）と文言・辞書（T2-5）は、使う画面と一緒に確かめられるよう PR3 に移す。T2-2 の残り（印、展示前の文の出し分け、今節の各走の表と今節より前の5走）は使う PR4・PR5 で足す
 - [ ] T2-1 `src/hooks/useThinkingAssistData.js`: plan「全体の構成」の3段の取得
   - 1段目: `getPredictions` の対象レース（出走表・気象・`raceStage`）・オッズのスナップショット。これで図を描く（N-5）
   - 時点は DB の展示が6艇そろったかで決め、風速の区分は DB の風速から `windBand`。v16 の `status`・`exhibition.wind_band` は v16 の部分の出し分けだけに使う（D-36 (1)）
