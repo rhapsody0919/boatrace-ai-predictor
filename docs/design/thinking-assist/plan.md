@@ -1,10 +1,10 @@
 # 思考アシスト plan（BOA-430）
 
 - 入力: [spec.md](./spec.md)（FR-1〜11・FR-3a、D-1〜D-34）、[screens.md](./screens.md)、承認モック [mock/APPROVED.md](./mock/APPROVED.md)（v7、Artifact Version 10）
-- 種別: UI の新規ページ。新しいテーブル・カラム・バッチは無い。新しい読み取り専用の RPC が1つ（P-2、ADR 0088。マイグレーション案を作り、本番への適用はユーザー）
-- ADR: [0086 データは既存の関数と v16 API を画面で組み合わせる](../../adr/0086-thinking-assist-compose-existing-sources.md)、[0087 類似レースは龍神ソナーと同じ上位400件で数える](../../adr/0087-thinking-assist-similar-race-counting.md)・[0088 会場の決まり手を直近1年と90日で並べる RPC](../../adr/0088-venue-winning-technique-counts-by-period.md)（どちらも提案中。下「未決」）
+- 種別: UI の新規ページ。DB は新しい表が1つ（会場の決まり手の期間の集計 venue_technique_period_stats、マイグレーション 134、ADR 0088）と、それを書く毎日のスクリプトの追記。本番への適用はユーザー（`docs/db-migration/134-runbook.md`）。BOA-271 のバッチ・API は変えない
+- ADR: [0086 データは既存の関数と v16 API を画面で組み合わせる](../../adr/0086-thinking-assist-compose-existing-sources.md)、[0087 類似レースは龍神ソナーと同じ上位400件で数える](../../adr/0087-thinking-assist-similar-race-counting.md)・[0088 会場の決まり手を直近1年と90日で並べる RPC](../../adr/0088-venue-winning-technique-counts-by-period.md)（どちらも採用、2026-10-07。下「決定済み」）
 
-## 未決（plan で見つかった、ユーザーの判断が要るもの）
+## 決定済み（plan で見つかり、ユーザーが決めたもの。spec D-35）
 
 2026-10-07 ユーザーの指示「ファンにとって何が価値が高いかから決める。要るなら API の修正・新規開発もする」で、価値から決め直した。ファン4人（discussion-panel、設計に関わっていないサブエージェント、実装の都合を伏せた）の結論はロールプレイの仮説。
 
@@ -18,7 +18,7 @@
   - 層が400件以下なら全件を使い、「条件が合う全件」と書く
 - 実現: 今の API のまま（similar の `neighbors` の先頭 min(400, `n_layer`) 件）。万舟を数える関数を1つ足す
 - 層の全件を出す案は ADR 0087 の却下案 (A) に書いた。規模は小さい（朝のバッチの既存関数を1回呼ぶだけ、API の変更なし）が、BOA-271 レーンとの調整が要る。ソナーと値が違うので採らない
-- spec D-34 の「類似レースの件数は層の全件」は、採用されたら書き直す
+- 2026-10-07 ユーザー「推奨どおり」。spec D-35 で D-34 を置き換えた
 
 ### P-2 会場の特徴の決まり手の期間 → ADR 0088
 - 価値の結論（ファン）:
@@ -26,10 +26,12 @@
   - 直近90日（612件）を並べる
   - 差がはっきりした決まり手にだけ「最近↑／↓」を付ける
   - 季節別・3年・全期間は出さない（差が出ない）
-- 実現:
-  - 新しい読み取り専用の RPC `venue_winning_technique_counts(venue, from, to)`（新しい表と長期の表をつなぐ）
-  - マイグレーション案と `APPLIED.md` を足す。本番への適用はユーザー
-  - 既存の `winning_technique_stats` と毎日のスクリプトは変えない
+- 2026-10-07 ユーザー「推奨どおり」
+- 実現（採用後に変えた）: 推奨した読み取り専用の RPC は作れない。長期の表 `kb_archive_races` は匿名に読ませておらず、SECURITY DEFINER の関数を匿名に公開するのは規則で禁じている（verify-migration-rls 7）。代わりに次の形にした（ADR 0088）
+  - 新しい表 `venue_technique_period_stats`（会場×90日・365日×決まり手の件数と総数。マイグレーション 134）
+  - 毎日の `update-winning-technique-stats.js` が、既存の処理の後に書く（service_role、長期の表をつなぐ）
+  - 画面はこの表を読むだけ
+  - 既存の `winning_technique_stats` の行と意味は変えない
 - モックの誤りの訂正: 「直近1年 2,196レース」は新しい表（2025-12-03〜）だけを数えていた。正しくは2,592レース
 
 ## 全体の構成
@@ -74,11 +76,32 @@ flowchart TD
 | 前検タイムと順位 | `getMeetScoreboard(raceId, venueCode).pretestByRacer` | 深掘り |
 | 今節の各走（日・R・進入・ST・展示・着・点）、今節より前の5走、その艇番の1着 | `getRacerScopedRaceStats(racerId)`（直近2年）を `buildMeetResults`・`getRecentRaces`（basicInfoStats.js）で絞る | 今節の平均着順点は v16 `today.items.series_score`（前日まで）。表の平均の式は `SCORE_POINTS`（seriesPoints.js）で、v16 の値と一致を確かめる（再現テスト） |
 | 勝ち決まり手（直近90日） | `getRaceTechniqueProfileBreakdown(raceId)` | 深掘り |
-| 会場の特徴（水質・型・決まり手） | `getVenueCharacteristics`、新しい RPC `venue_winning_technique_counts`（直近1年と直近90日） | P-2・ADR 0088。「最近↑／↓」は2つの割合のぶれ幅が重ならないときだけ |
+| 会場の特徴（水質・型・決まり手） | `getVenueCharacteristics`、新しい表 `venue_technique_period_stats`（直近1年と直近90日。新しいサービス関数 `getVenueTechniquePeriodStats(venueCode)`、`withCache`） | P-2・ADR 0088。「最近↑／↓」は2つの割合のぶれ幅が重ならないときだけ |
 | オッズ（3連単120通り・取得時刻） | `getRaceOddsSnapshots`（最新の行）。当日・締切90分前以内は `fetchLiveOdds` を押したときだけ | 自動更新しない（FR-8） |
 
 - 部品交換・欠場など v16 の状態の扱いは v16 と同じ（欠場があれば v16 の部分を出さない。図・買い目は5艇で描く。screens「状態」）
 - 優勝戦・準優勝戦の判定は v16 の `today.round`（`hidesSeriesScoreLine`）
+
+### データ設計（新しい表: マイグレーション 134、ADR 0088）
+`node scripts/maintenance/generate-er-diagram.js thinking-assist` の出力（DDL から機械生成）。外部キーは無い（会場コードは他の集計表と同じく値だけ持つ）。
+
+```mermaid
+erDiagram
+    venue_technique_period_stats {
+        smallint venue_code PK
+        smallint period_days PK
+        text winning_technique PK
+        integer race_count
+        integer total_races
+        date period_from
+        date period_to
+        date last_updated
+    }
+```
+
+- 書き手: `scripts/daily/update-winning-technique-stats.js` の後半に、会場ごとの90日・365日の集計を足す（既存の90日×枠番の処理と表は変えない）。365日のうち 2025-12-02 以前は `kb_archive_races`（has_result かつ technique あり）を読む。会場ごとに delete→insert で書き直す（service_role）
+- 読み手: 新しいサービス関数 `getVenueTechniquePeriodStats(venueCode)`（`supabaseDataService.js`、`withCache`）。表が空・未適用のときは空を返し、画面は節を出さない
+- 本番への適用: ユーザー（[134-runbook.md](../../db-migration/134-runbook.md)）
 
 ## コンポーネントと置き場所
 
