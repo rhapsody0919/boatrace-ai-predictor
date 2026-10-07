@@ -8,7 +8,8 @@
  *       - 中止・不成立・1着なし・決まり手なしを数えない。想定外の決まり手はそのまま行にする
  *       - 期間に長期の表の日付が入るのに長期の表が0件なら失敗（新しい表だけを数えた 2,196件の誤りの再発防止）
  *   (b) 本番の鮮度: 環境変数 VERIFY_PRODUCTION=1 のときだけ本番の表を読む（読み取りのみ）。last_updated が2日より古い行・
- *       総数の不一致・24会場×2期間の欠けがあれば exit 1。nightly-verify-db.yml が毎晩（JST 3:00）実行し、失敗を Slack に流す
+ *       総数の不一致・決まり手ごとの 90日 > 365日・365日の行が無い会場があれば exit 1（90日の行が無い会場は、休場が続く
+ *       正常な空と区別できないので警告だけ）。nightly-verify-db.yml が毎晩（JST 3:00）実行し、失敗を Slack に流す
  *
  * 実行: node scripts/maintenance/verify-venue-technique-period.js
  *       VERIFY_PRODUCTION=1 node --env-file=.env.local scripts/maintenance/verify-venue-technique-period.js   # 本番も見る
@@ -229,6 +230,7 @@ function selfTest() {
     {
       venue_code: 18,
       period_days: 90,
+      winning_technique: "逃げ",
       race_count: 2,
       total_races: 3,
       last_updated: "2026-10-06",
@@ -236,6 +238,7 @@ function selfTest() {
     {
       venue_code: 18,
       period_days: 90,
+      winning_technique: "差し",
       race_count: 1,
       total_races: 3,
       last_updated: "2026-10-06",
@@ -243,6 +246,7 @@ function selfTest() {
     {
       venue_code: 18,
       period_days: 365,
+      winning_technique: "逃げ",
       race_count: 2,
       total_races: 2,
       last_updated: "2026-10-03",
@@ -250,8 +254,9 @@ function selfTest() {
   ];
   const p = checkStoredRows(stored, "2026-10-06");
   check(
-    "(a) 保存後の検査: 2日より古い行と、90日の総数が365日を超える会場を見つける",
-    p.length === 2 &&
+    "(a) 保存後の検査: 2日より古い行と、90日の総数が365日を超える会場・決まり手（差しは365日に無い）を見つける",
+    p.length === 3 &&
+      p.some((x) => x.includes("18:差し")) &&
       p.some((x) => x.includes("2026-10-04 より古い行が 1件")) &&
       p.some((x) => x.includes("会場18")),
     p.join(" / "),
@@ -270,6 +275,26 @@ function selfTest() {
       ],
       "2026-10-06",
     ).some((x) => x.includes("1:90")),
+  );
+  // 総数は 90日 ≤ 365日 でも、決まり手の間で打ち消し合う逆転を見つける（Codex ④ F01）
+  const swapped = [
+    ["逃げ", 90, 5, 6],
+    ["差し", 90, 1, 6],
+    ["逃げ", 365, 3, 9],
+    ["差し", 365, 6, 9],
+  ].map(([winning_technique, period_days, race_count, total_races]) => ({
+    venue_code: 18,
+    period_days,
+    winning_technique,
+    race_count,
+    total_races,
+    last_updated: "2026-10-06",
+  }));
+  const ps = checkStoredRows(swapped, "2026-10-06");
+  check(
+    "(a) 保存後の検査: 総数は包含でも、決まり手ごとに 90日 > 365日 の行を見つける",
+    ps.length === 1 && ps[0].includes("18:逃げ"),
+    ps.join(" / "),
   );
   return failures;
 }
