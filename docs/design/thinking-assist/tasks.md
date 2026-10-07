@@ -5,31 +5,45 @@
 - 機能フラグ（`?assist=1`）の後ろで進める。公開（`THINKING_ASSIST_PUBLIC = true`）はこの tasks の範囲外（spec U-4・U-6、公開前にユーザー）
 - 数字の出し方・文言はモック v7 に合わせる。モックと違う形にしたくなったら、実装せずオーケストレーター経由でユーザーに出す
 
+## 事前（`/step4` の前）
+- [ ] T-pre1 マイグレーション 134 のファイル（`134_venue_technique_period_stats.sql`・`134-runbook.md`・APPLIED.md の行）だけを docs の PR で先に master に入れる（本番は適用済み。番号の衝突を防ぐ。design-reviewer 指摘16）
+- [ ] T-pre2 spec U-17・U-18 のユーザーの回答を spec・screens に反映した後で、受け入れ E2E を書き直させる（acceptance-test-writer に spec・screens のパスだけを渡す）。あわせて固定データ `e2e/thinking-assist-fixture.js` を作る: 徳山10R（2026-10-06）の facts・similar（racecard）・scenario（NC・NCR・NA・VA:18）を本番から取り、「展示後の段が無い」状態も入れる（design-reviewer 指摘7・8）
+
 ## PR0 会場の決まり手の期間の表（ADR 0088、マイグレーション 134）
-事前条件: ユーザーが 134 を本番に適用済み（[134-runbook.md](../../db-migration/134-runbook.md) の手順1〜3）
+事前条件: 134 は本番に適用済み（2026-10-07、APPLIED.md）
 
 - [ ] T0-1 `scripts/daily/update-winning-technique-stats.js` の既存の処理の後に、会場ごとの90日・365日の集計を足す
   - 365日のうち 2025-12-02 以前は `kb_archive_races`（has_result かつ technique あり）を読む。除外は既存と同じ（中止・不成立・1着なし・決まり手なし）
-  - 会場ごとに delete→insert で書く。書き込みの失敗は握りつぶさず exit 1（既存の BOA-391 と同じ）
+  - 24会場×2期間を必ず書き直す（その期間にレースが無い会場は行を消す）。90日と365日は会場ごとに1回の書き込みで入れる（片方だけ残るのを防ぐ）
+  - 新しい部分の書き込みの失敗は投げて exit 1（既存の書き込み部分は `continue` で握りつぶしているが、新しい部分ではそうしない）
+  - 2025-12-02 は新しい表にも12件（長期の表と重複）あるので、新しい表は 2025-12-03 以降だけを読む
+  - 期間に 2025-12-02 以前が入るのに長期の表が0件なら失敗にする（モックの 2,196件の誤りの再発を防ぐ）
+  - 想定外の決まり手（例: 新しい表の「逃げ抜き」1件）はそのまま行にする。画面で「その他」に寄せる
   - 集計の部分は純粋関数に分け、`scripts/maintenance/verify-venue-technique-period.js`（`verify-registry.json` に `ci`）で固定データを数えて確かめる
     - 長期の表と新しい表の境目
     - 総数＝決まり手の件数の合計
     - 90日 ⊂ 365日
-- [ ] T0-2 マージ後に、ワークフローを1回手動で動かすようユーザーに依頼する。約290行と、徳山の365日の逃げ 1,516／2,592・90日の逃げ 339／612（2026-10-05 時点。動かした日で変わるので桁と比率で確かめる）を読み取りで確かめ、APPLIED.md の 134 を「適用済み」に直す
+    - 2025-12-02 の重複を数えない
+  - 鮮度の検査: `last_updated` が2日より古い行があれば失敗にする検査を、既存の data-health か verify に足す
+  - `data-accuracy-verifier` で実データと照合する（徳山 365日 2,592件・逃げ 1,516、90日 612件・逃げ 339（2026-10-05 時点）、全会場の総数）
+- [ ] T0-2 マージ後に、ワークフローを1回手動で動かすようユーザーに依頼する。約290行と、徳山の365日の逃げ 1,516／2,592・90日の逃げ 339／612（2026-10-05 時点。動かした日で変わるので桁と比率で確かめる）を読み取りで確かめる（APPLIED.md の 134 は適用済みに直してある）
 
 ## PR1 下ごしらえ（既存の挙動は変えない）
 - [ ] T1-1 `src/utils/oddsMath.js` を作り、`RaceOddsListTab.jsx` の `compositeOdds`・`formatOdds`・`latestSnapshotWith` を移して export する。`RaceOddsListTab` は import に変えるだけで、計算は変えない（Codex U03）。既存のオッズ一覧タブの E2E が変わらず通ること
 - [ ] T1-2 `src/config/featureFlags.js` の `readPreviewFlag` を、クエリ名とキーを引数で受ける形にまとめる。`THINKING_ASSIST_PUBLIC = false`・`?assist=1`（`boatai-user:thinking-assist-preview`）・`isThinkingAssistEnabled()` を足す。アナロジー・ファインダーの挙動は変えない
 - [ ] T1-3 ルート
-  - `src/AppRouter.jsx` の `LocalizedRoutes` に `race/:raceId/assist` を、`lng === "ja"` のときだけ足す
-  - `src/config/languages.js` の翻訳済みの判定から `/race/{id}/assist` を外す（ja 専用。hreflang・言語切り替えに出さない）
-  - `raceUrlState.js` の `pageViewPath` に /assist を足す
+  - `src/config/languages.js` の `isFullyTranslatedPath` に `/race/{id}/assist` の例外を足す（ja 専用。hreflang・言語切り替えに出さない）
+  - `src/AppRouter.jsx` の `LocalizedRoutes` に `race/:raceId/assist` を、`/today` と同じく全言語に登録する（言語付きの URL は既存の仕組みで ja へ移る）
+  - `pageViewPath` は変えない（/assist は元から別のパスとして数えられる）
+  - 公開まで noindex（meta robots）
+  - `docs/design/thinking-assist/content-index.json` に保留の印を置く（session-start-check の missingContentIndex を毎回出さないため。中身は T7-3）
   - 画面は「準備中」の空のページでよい（中身は PR2 以降）
-- [ ] T1-4 `getVenueTechniquePeriodStats(venueCode)` を `supabaseDataService.js` に足す（`withCache`）。表が無い・空のときは空を返す（エラーにしない。PR0 の前でも画面が壊れない）
+- [ ] T1-4 `getVenueTechniquePeriodStats(venueCode)` を `supabaseDataService.js` に足す（`withCache`）。失敗（表が無い 42P01 を含む）は投げ、空（0行）とは区別する。空の結果はキャッシュに残さない。画面は空なら決まり手の節を出さず、失敗なら「表示できませんでした」
 
 ## PR2 データとモデル（画面はまだ出さない）
 - [ ] T2-1 `src/hooks/useThinkingAssistData.js`: plan「全体の構成」の3段の取得
-  - 1段目: `getPredictions` の対象レース・v16 facts（最新の段）・scenario（NC）・オッズのスナップショット
+  - 1段目: `getPredictions` の対象レース（出走表・気象・`raceStage`）・オッズのスナップショット。これで図を描く（N-5）
+  - 1.5段目: v16 facts（出走表の段と展示後の段）。届いたら `today.scope_keys["1"]` の NC（と U-17 の回答によっては NCR）で scenario を取る（API は `scope=NC` を受け付けない）
   - 2段目: similar・scenario（NA・VA）・展示・オリジナル展示・整備・体重・勝ち決まり手・前検・会場の特徴・会場の決まり手の期間
   - 3段目: 深掘りの艇の `getRacerScopedRaceStats`。6艇比較のときは6艇
   - 部分ごとに `{status, data}`。失敗は部分だけ（FR-11）

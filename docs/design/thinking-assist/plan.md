@@ -1,6 +1,6 @@
 # 思考アシスト plan（BOA-430）
 
-- 入力: [spec.md](./spec.md)（FR-1〜11・FR-3a、D-1〜D-34）、[screens.md](./screens.md)、承認モック [mock/APPROVED.md](./mock/APPROVED.md)（v7、Artifact Version 10）
+- 入力: [spec.md](./spec.md)（FR-1〜11・FR-3a、D-1〜D-36。D-36 は design-reviewer の指摘で作る側が決めたもの）、[screens.md](./screens.md)、承認モック [mock/APPROVED.md](./mock/APPROVED.md)（v7、Artifact Version 10）
 - 種別: UI の新規ページ。DB は新しい表が1つ（会場の決まり手の期間の集計 venue_technique_period_stats、マイグレーション 134、ADR 0088）と、それを書く毎日のスクリプトの追記。本番への適用はユーザー（`docs/db-migration/134-runbook.md`）。BOA-271 のバッチ・API は変えない
 - ADR: [0086 データは既存の関数と v16 API を画面で組み合わせる](../../adr/0086-thinking-assist-compose-existing-sources.md)、[0087 類似レースは龍神ソナーと同じ上位400件で数える](../../adr/0087-thinking-assist-similar-race-counting.md)・[0088 会場の決まり手を直近1年と90日で並べる RPC](../../adr/0088-venue-winning-technique-counts-by-period.md)（どちらも採用、2026-10-07。下「決定済み」）
 
@@ -39,10 +39,10 @@
 ```mermaid
 flowchart TD
   R["/race/:raceId/assist（ThinkingAssistPage）"] --> H[useThinkingAssistData]
-  H -->|1段目: 図を出すのに要る| A1["getPredictions(date) の対象レース<br/>（出走表・気象・水温・観測時刻）"]
-  H -->|1段目| A2["v16 facts（最新の段）"]
-  H -->|1段目| A3["v16 scenario（scope=NC）"]
+  H -->|1段目: 図を出すのに要る| A1["getPredictions(date) の対象レース<br/>（出走表・気象・水温・観測時刻・raceStage）"]
   H -->|1段目| A4["getRaceOddsSnapshots"]
+  H -->|1.5段目: 届いたら埋める| A2["v16 facts（出走表の段と展示後の段）"]
+  A2 -->|today.scope_keys の NC・NCR を受けて| A3["v16 scenario（NC。準優勝戦・優勝戦は NCR も）"]
   H -->|2段目: 図の後| B1["v16 similar"]
   H -->|2段目| B2["v16 scenario（scope=NA・VA）"]
   H -->|2段目| B3["展示・オリジナル展示・整備・体重<br/>（展示後のときだけ）"]
@@ -57,7 +57,7 @@ flowchart TD
 
 ## データ（使う関数と取り出し方）
 
-すべて既存。新しい集計・API・テーブルは作らない（ADR 0086）。
+新しい集計は会場の決まり手の期間の表だけ（ADR 0088）。ほかは既存の関数と v16 の API（ADR 0086）。
 
 | 画面の値 | 出どころ | 取り出し方・注意 |
 |---|---|---|
@@ -66,7 +66,7 @@ flowchart TD
 | 時点（展示前／展示後）と v16 の状態 | v16 facts の `status`（`resolveStatus`） | 展示後の段があれば展示後を既定。文言は v16 screens「状態」にそろえる（FR-11） |
 | 6艇中の今日の順位・今日の値 | facts `today.items{values, positions}` | 差がつく材料の札・盤の印 |
 | 差がつく材料 | facts `facts[範囲]` を `factRows`（analogyFacts.js） | judge は v16 のまま。範囲は `today.scope_keys[艇]` |
-| 全国・級の並びが同じ（件数・1号艇の1着・万舟） | scenario `scope=NC` の `cells.all.forms.any.{n, b1_win, manshu, payout_known}` | 返還を除く母集団（D-25・U-7。差がつく材料の 3,339件は返還を含むので、件数が違う理由を畳んで書く） |
+| 全国・級の並びが同じ（件数・1号艇の1着・万舟） | scenario `scope={today.scope_keys["1"].NC}`（API は `scope=NC` を受け付けない。キーは facts の応答から。NC が無いレースは行を出さない。準優勝戦・優勝戦の扱いは spec U-17）の `cells.all.forms.any.{n, b1_win, manshu, payout_known}` | 返還を除く母集団（D-25・U-7。差がつく材料の 3,339件は返還を含むので、件数が違う理由を畳んで書く） |
 | 全国の全レース（比べる基準） | scenario `scope=NA` の同じセル | 全レース共通の値。万舟の分母は `payout_known` |
 | 徳山の全レース（参考の線） | scenario `scope=VA` の同じセル（返還を除く）と、facts `VA` の `usual["1"].win`（返還を含む） | 2種類を「件数が違う理由」に書く（Codex F01） |
 | 形・進入・手がかり・攻める艇 | scenario（NC）`cells.*`・`hints`・`attack` | 1号艇の範囲。既存の `slitForms`・`entryType`・`hintRows` |
@@ -160,7 +160,7 @@ src/components/race/assist/
 - 機能フラグ: `featureFlags.js` に `THINKING_ASSIST_PUBLIC = false` と `?assist=1`（`boatai-user:thinking-assist-preview`）を足す。既存の `readPreviewFlag` を、キーとクエリ名を引数で受ける形にまとめて両方で使う（DRY）
 - フラグが無いとき: `/race/{id}/assist` は開ける（URL 直接。spec FR-1）。レース詳細に切り替えを出さない
 - フラグがあるとき: RaceDetailPage の `page-header` の直後（タブの外、`RaceDetailPage.jsx` の header と読み込みの分岐の間）に `AssistViewSwitch`。`boatai-user:race-view` が "assist" なら、レース詳細を開いたときに思考アシストへ移る（D-22「選んだ方を次も開く」）。移るのは同じレース ID のまま
-- `pageViewPath`（`raceUrlState.js`）の RACE_PATH に /assist を足す（GA4 のページ種別を分ける）
+- `pageViewPath` は変えない（`RACE_PATH` は `/race/[^/]+/?$` で、/assist は元から別のパスとして数えられる。design-reviewer 指摘14）
 
 ## 最良の色・着順の色（FR-3a）
 
@@ -206,3 +206,24 @@ src/components/race/assist/
 - 問い合わせの数: 1レースで最大およそ20本（6艇分の選手の成績は深掘りを開いたときだけ）。v16 の API は60秒キャッシュ、Supabase の関数は既存の `boatai:` キャッシュを通る
 - v16 の展示後の段が作られていない日（handoff §4、`exhibition_missing`）: 展示後の値は展示の取得関数から描き、v16 の展示後の部分（展示の形・手がかりの今日）は出さない（FR-11）
 - 1号艇の展示タイムの偏り（約0.02秒）: 展示の最良の金枠は既存と同じ判定で付ける（既存のレース詳細も補正していない）。注記の札は残す
+
+## design-reviewer の指摘で直したこと（2026-10-07、spec D-36）
+
+| 指摘 | 直したこと |
+|---|---|
+| 1 時点（P1） | 展示後は DB の展示が6艇そろったら選べる。v16 の展示後の段が無いときは、展示の値は出し、v16 の展示後に依存する部分（展示の形・手がかりの今日・類似レースの並べ直し）だけ出さない。風速の区分は DB の風速から `windBand` で出す（spec FR-2・screens「状態」） |
+| 2 準優勝戦・優勝戦の NC（P1） | ユーザーの判断に回した（spec U-17。ファン4人の推奨は同じラウンドに絞り、件数が少なくて戻すときは矢印を付けない） |
+| 3 取得の順・N-5 | 1段目は出走表とオッズ。v16 facts は届いてから埋め、scenario の NC は `today.scope_keys` を受けてから取る（上の図）。N-5 は「出走表の図が2秒」 |
+| 4 類似レースの分母 | 表示する件数は `aggregateNeighbors` の n、万舟の分母は払戻のある件（spec D-36 (3)）。verify の固定データに返還・払戻 null の件を入れる |
+| 5 「最近↑／↓」が付かない | ユーザーの判断に回した（spec U-18。ファン4人の推奨は「直近90日 対 それより前の275日」で比べ、印の行に2つの割合を出す）。表に365日と90日があれば、前の275日は引き算で出せる |
+| 6 書き直し漏れ | spec 3行・25行・N-8、この plan の種別とデータの節を直した。tasks に data-accuracy-verifier と鮮度の検査を足した |
+| 7 screens が古い | screens の参照モック・FW-11・類似レースの書き方・状態の表を直し、部品の名前は plan を正とした。受け入れ E2E は直した screens で書き直す（tasks T-pre2） |
+| 8 E2E の固定データ | 徳山10R（2026-10-06）の facts・similar（racecard）・scenario（NC・NCR・NA・VA:18）を本番から取った新しい固定データを作る（tasks T-pre2）。「展示後の段が無い」状態も入れる |
+| 9 v16 が無いときのラウンド | v16 の `today.round`、無ければ `raceStage`（両方あるときは一致を verify） |
+| 10 失敗と空 | 新しい `getVenueTechniquePeriodStats` は失敗（表が無い 42P01 を含む）を投げる。既存の関数で失敗を空で返すもの（getRacerScopedRaceStats・getRaceOddsSnapshots・getVenueCharacteristics）は、画面で「表示できるデータがありません」と書き、「発売後に出る」等と断定しない。空の結果を `withCache` に残さない |
+| 11 切り替えの移動 | 移すのは ja で、tab・boat のクエリが無いときだけ。`navigate(…, {replace: true})`、RaceDetailPage がデータを取る前に判定 |
+| 12 FR-3a の項目 | 今節の平均着順点（max・2桁、優勝戦・準優勝戦は付けない）・前検タイム（min・2桁）・直近30走の1着率（max・1桁）・進入コース別の1着率（max・0桁）を足した。走数が `SMALL_SAMPLE_THRESHOLD` 未満は比べない。当地勝率 0.00 は記録なし |
+| 13 今節より前の5走 | `getRecentRaces` に渡す前に、今節の走（`buildMeetResults` の結果）と表示中のレースより後の走を除く。verify に入れる |
+| 14 ja 専用のルート | `languages.js` の `isFullyTranslatedPath` に `/race/{id}/assist` の例外を足す。ルートは `/today` と同じく全言語に登録し、言語付きの URL は既存の仕組み（AppRouter の ja への置き換え）で ja へ移る。上の「ルート」の `lng === "ja"` の条件は使わない |
+| 15 毎日の書き手 | tasks T0-1 に書いた: 新しい部分の書き込み失敗は投げる、24会場×2期間を必ず書き直す（レースが無い会場は行を消す）、2025-12-02 の重複（新しい表の12件）は新しい表を 2025-12-03 以降に切って除く、想定外の決まり手（「逃げ抜き」1件）はそのまま行にし画面で「その他」に寄せる、長期の表が0件なら失敗にする、90日と365日は会場ごとに1回の書き込み |
+| 16 細部 | 龍神ソナーへのリンクはソナーを表示できる端末だけ。公開まで noindex。類似レースは展示後に並べ直すので、時点で値が変わる（カードの見出しに時点を書く）。content-index は PR1 で `not_applicable: false` の保留の印を置く。ガイド④の展示前は「展示は展示の後に出る。今はモーター2連率を見る」。会場のシートの1号艇の1着は facts VA の `usual["1"].win`。マイグレーション 134 のファイルは docs だけの PR で先に master に入れる。layout の対象は v16 と展示がそろうレース |

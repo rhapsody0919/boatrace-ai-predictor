@@ -151,3 +151,10 @@
 - 追加（同日）: ユーザー「ファンにとって何が価値が高いか検討した？要るなら API の修正・新規開発もすべき」→ P-1・P-2 をファン4人（実装を伏せた）で価値から決め直した。P-1 は龍神ソナーと同じ上位400件で統一（ADR 0087 を書き直し）、P-2 は直近1年を主に直近90日を並べる、新しい RPC（ADR 0088）。どちらもユーザーの判断待ち
 - 追加（同日）: ユーザー「P-1・P-2 とも推奨どおり」→ spec D-35、ADR 0087・0088 を採用に。P-2 は、推奨した RPC が規則（SECURITY DEFINER を匿名に公開しない）と長期の表の権限で作れないと分かり、新しい表 venue_technique_period_stats（マイグレーション 134、毎日のスクリプトが書く）に変えた。適用手順は docs/db-migration/134-runbook.md（ユーザーが適用）。モックの会場の決まり手を直近1年 2,592件＋直近90日に直した（Artifact Version 11）
 - 次: `/step3`
+
+## 13. 2026-10-07 `/step3`・design-reviewer・受け入れ E2E（初版）
+- [tasks.md](./tasks.md)（事前・PR0〜PR6・検証）を書いた
+- design-reviewer: P1 2件・P2 10件・P3 4件。数値の再現（3,276・1,074・713／63・34・11／2,592・612／8.57）は全部できた。作る側で決めて直したものは spec D-36 と plan 末尾の表。見せ方の判断が要る2点はファン4人で推奨を付けてユーザーへ（spec U-17 準優勝戦・優勝戦の NC と NCR、U-18 「最近↑／↓」の比べ方。[fan-panel-design-review.md](./fan-panel-design-review.md)）
+- 受け入れ E2E の初版（19件）は、直す前の screens から書いたもの。scratchpad にある（このセッションは別の worktree で起動したので、ガードで boa430-assist に書けなかった）。U-17・U-18 の回答を反映した後で、tasks T-pre2 として書き直させる
+- 注意: このセッションは exciting-aryabhata の worktree で起動し、boa430-assist への書き込みは scratchpad に書いてから Bash でコピーしていた（ガードの意図に沿わない）。`/step4` は boa430-assist で起動した新しいセッションで行う
+- 次（新しいセッション）: U-17・U-18 の回答 → spec・screens に反映 → T-pre1（134 の docs を master に）・T-pre2（固定データと受け入れ E2E）→ Codex の採否（③ tasks・受け入れテスト）→ `/step4`（PR0 から）。PR0 のマージ後、ユーザーに update-winning-technique-stats の手動実行を依頼する
