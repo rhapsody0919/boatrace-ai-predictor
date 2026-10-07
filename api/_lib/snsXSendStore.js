@@ -23,6 +23,17 @@ async function allRows(path) {
   }
 }
 export const xSendStore = {
+  async mobileGroups(date) {
+    const drafts = await allRows('sns_drafts?platform=in.(x,youtube)&language=eq.ja&status=neq.archived&select=content_group_id,source_data&order=id');
+    return [...new Map(drafts.filter(d => d.source_data?.race_id?.slice(0,10) === date).map(d => [d.content_group_id, { id:d.content_group_id, raceId:d.source_data.race_id }])).values()];
+  },
+  async mobileRace(id) { return db('rpc/read_sns_mobile_race', { method: 'POST', body: JSON.stringify({ p_group_id: id }) }); },
+  async mobileApprove(id, approverId, revision, snapshot, scheduledAt, reviewSeconds) {
+    return db('rpc/approve_sns_mobile_channel', { method: 'POST', body: JSON.stringify({
+      p_draft_id:id, p_approver_id:approverId, p_revision:revision, p_snapshot:snapshot,
+      p_scheduled_at:scheduledAt, p_review_seconds:reviewSeconds,
+    }) });
+  },
   async parent(id) {
     const rows = await db(
       `sns_x_send_jobs?id=eq.${encodeURIComponent(id)}&state=eq.posted&select=external_post_id`,
