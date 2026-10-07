@@ -1,4 +1,5 @@
 /** 本番接続なし。検査・保存モック・実SQL(PGlite)・公開APIガードを検証する。 */
+import { inspectDraft, inspectWithAi, readInspectionSources } from "../../api/_lib/snsEditAssist.js";
 import { matchRiskRules } from "../lib/riskRuleMatcher.js";
 import { checkRiskRules } from "../lib/riskRules.js";
 import assert from "node:assert/strict";
@@ -505,6 +506,22 @@ await check(
     assert(imported.release_evidence.missing_reason);
   },
 );
+await check("固定bundleから登録した下書きで編集指摘を取得し本文・公開保留を維持", async () => {
+  const examples=[];
+  for(const draft of (await db.query('SELECT * FROM sns_drafts')).rows) {
+    const sources=await readInspectionSources(draft,async path=>saved.get(path).bytes);
+    const findings=inspectDraft(draft,riskRules,sources);
+    for(const rule of ['claim-label','claim-count','claim-scope']) assert.ok(findings.some(f=>f.rule===rule));
+    assert.ok(!findings.some(f=>f.rule==='claim-source-unavailable'));
+    examples.push(...findings.map(f=>({platform:draft.platform,...f})));
+    assert.equal(draft.publish_blocked,true);
+    assert.equal(draft.caption_text,draft.platform==='x'?validated.bundle.x_text:validated.bundle.script);
+  }
+  assert.ok(examples.length>=5);
+  if(process.env.SNS_EDIT_EXAMPLES_PATH) await fs.writeFile(process.env.SNS_EDIT_EXAMPLES_PATH,JSON.stringify(examples,null,2));
+  let calls=0;
+  assert.deepEqual(await inspectWithAi({}, {messages:async()=>{calls++;}}),[]);assert.equal(calls,0);
+});
 await check(
   "片側DB失敗は全体rollback、再試行で2件、残存片側も補完",
   async () => {

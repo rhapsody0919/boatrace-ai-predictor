@@ -2,6 +2,8 @@ import { requireAdminAuth } from '../../_lib/adminAuth.js';
 import { isConfigured, isValidUuid, jsonResponse, signStoragePaths } from '../../_lib/snsHubHelpers.js';
 import { xSendStore, loadXMedia } from '../../_lib/snsXSendStore.js';
 import { prepareMobileReview, approveMobileReview } from '../../_lib/snsMobileApproval.js';
+import { saveDraftInspection } from '../../_lib/snsEditAssist.js';
+import riskRules from '../../../sns-video-studio/remotion/risk-rules.json' with { type:'json' };
 export const config = { runtime: 'edge' };
 export default async function handler(req) {
   const denied = await requireAdminAuth(req);
@@ -21,6 +23,14 @@ export default async function handler(req) {
       if (!isValidUuid(body.draftId) || !isValidUuid(body.approverId)) return jsonResponse({ error:'IDが不正です' },400);
       const row = rows.find(r => r.draft.id === body.draftId);
       if (!row) return jsonResponse({ error:'下書きがありません' },404);
+      if (body.action === 'edit-decision') {
+        if (!isValidUuid(body.inspectionId) || typeof body.findingId !== 'string' || body.findingId.length > 200 || !['adopted','ignored'].includes(body.decision)) return jsonResponse({ error:'指摘の判断が不正です' },400);
+        const review = await prepareMobileReview(row,loadXMedia);
+        if (!body.versionHash || body.versionHash !== review.versionHash) return jsonResponse({ error:'確認した版が変わりました' },409);
+        const data = await xSendStore.decideFinding(body,row.revision);
+        return jsonResponse({ data, connected:false });
+      }
+      if (body.action) return jsonResponse({ error:'操作が不正です' },400);
       const data = await approveMobileReview(row, body, { loadMedia:loadXMedia, approve:xSendStore.mobileApprove });
       return jsonResponse({ data, connected:false });
     }
@@ -30,7 +40,10 @@ export default async function handler(req) {
       const review = await prepareMobileReview(row,loadXMedia);
       const paths = [row.draft.video_storage_path, row.draft.cover_image_path].filter(Boolean);
       const urls = await signStoragePaths(paths);
-      data.push({ draft:row.draft, job:row.job, versionHash:review.versionHash, holds:review.holds,
+      let inspection=null, inspectionError=null;
+      try { inspection=await saveDraftInspection(row,riskRules.rules,xSendStore,path=>loadXMedia(path,1024*1024)); }
+      catch { inspectionError='編集指摘の保存に失敗しました。再読込してください。'; }
+      data.push({ inspection, inspectionError, draft:row.draft, job:row.job, versionHash:review.versionHash, holds:review.holds,
         videoUrl:urls[row.draft.video_storage_path] || null,
         imageUrl:urls[row.draft.cover_image_path] || null });
     }

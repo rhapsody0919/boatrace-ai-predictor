@@ -3,9 +3,11 @@ import {
   getMobileApprovalGroups,
   getMobileApprovalRace,
   approveMobileChannel,
+  decideMobileFinding,
   redoDraft,
 } from "../../../services/snsHubService.js";
 import "./MobileApprovalPanel.css";
+import EditAssistFindings from "./EditAssistFindings.jsx";
 const time = (value) =>
   value && Number.isFinite(Date.parse(value))
     ? new Intl.DateTimeFormat("ja-JP", {
@@ -23,6 +25,7 @@ export function MobileRaceReview({
   approvers,
   onApprove,
   onRevision,
+  onDecision,
   busy,
 }) {
   const [approverId, setApproverId] = useState(""),
@@ -131,6 +134,12 @@ export function MobileRaceReview({
             )}
             <p className="sns-mobile-copy">{d.caption_text}</p>
             <p>{d.hashtags?.join(" ")}</p>
+            <EditAssistFindings
+              row={row}
+              approverId={approverId}
+              busy={busy}
+              onDecision={onDecision}
+            />
             <h4>主張と出典</h4>
             {!claims.length && <p>出典欠落</p>}
             {claims.map((c, i) => {
@@ -315,6 +324,29 @@ export default function MobileApprovalPanel({
       setBusy(false);
     }
   }
+  async function decide(row, approverId, findingId, decision) {
+    setBusy(true);
+    setError("");
+    try {
+      await decideMobileFinding(group, {
+        draftId: row.draft.id,
+        approverId,
+        versionHash: row.versionHash,
+        inspectionId: row.inspection.id,
+        findingId,
+        decision,
+      });
+      const result = await getMobileApprovalRace(group);
+      setRows(result.data);
+    } catch {
+      setRows([]);
+      setError(
+        "指摘の反映に失敗しました。レースを選び直して確認してください。",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <section
       className="sns-mobile-approval"
@@ -349,6 +381,7 @@ export default function MobileApprovalPanel({
         rows={rows}
         approvers={approvers}
         busy={busy}
+        onDecision={decide}
         onApprove={(r, a) => act(r, a)}
         onRevision={(r, a, reason) => act(r, a, reason)}
       />
