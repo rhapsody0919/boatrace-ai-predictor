@@ -45,13 +45,13 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          # verify-winning-technique-filled.js は、これが無いと本番を読まない（BOA-749）
+          # verify-winning-technique-filled.js（BOA-749）・verify-venue-technique-period.js（BOA-430）は、これが無いと本番を読まない
           VERIFY_PRODUCTION: '1'
         run: |
           set +e
           OUTPUT=""
           EXIT_CODE=0
-          for script in verify-rpc-output-keys verify-format-column-migration verify-winning-technique-filled verify-analogy-v16; do
+          for script in verify-rpc-output-keys verify-format-column-migration verify-winning-technique-filled verify-venue-technique-period verify-analogy-v16; do
             echo "--- $script"
             # verify-analogy-v16 は Storage の7日より前の候補ファイル（similar/）も消す（BOA-271 T3-3）
             ARGS=""
