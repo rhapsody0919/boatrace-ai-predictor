@@ -426,9 +426,20 @@ test.describe("堅い？荒れる？の枠", () => {
     await expect(
       sheet.getByText("全国・級の並びが同じ 3,276件・件数少なめ").first(),
     ).toBeVisible();
-    await expect(sheet.getByText("差ははっきりしない")).toHaveCount(0);
-    await expect(sheet.getByText("高め")).toHaveCount(0);
-    await expect(sheet.getByText("低め")).toHaveCount(0);
+    // 言葉を出さないのは「全国・級の並びが同じ」の行だけ。類似レースの行は D-21 の3段階のまま残す
+    // （2026-10-08 ユーザー決定。実装時に直した: 元はシート全体に言葉が1つも無いことを前提にしていた）
+    const sameClassBars = sheet.getByRole("button", {
+      name: /^全国・級の並びが同じ 3,276件・件数少なめ/,
+    });
+    await expect(sameClassBars).toHaveCount(2);
+    for (const bar of await sameClassBars.all()) {
+      await expect(bar).not.toContainText("差ははっきりしない");
+      await expect(bar).not.toContainText("高め");
+      await expect(bar).not.toContainText("低め");
+    }
+    await expect(
+      sheet.getByRole("button", { name: /^類似レース/ }).first(),
+    ).toContainText(/差ははっきりしない|高め|低め/);
   });
 
   test("[D-24 / D-32] 比べる基準は「全国の全レース」、数え方の説明は畳んである", async ({
