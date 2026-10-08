@@ -146,8 +146,9 @@ export default function ThinkingAssistPage() {
         racers,
         trifecta,
         finalRound,
+        hasToday: today != null,
       }),
-    [state.lens, state.metric, data.stage, racers, trifecta, finalRound],
+    [state.lens, state.metric, data.stage, racers, trifecta, finalRound, today],
   );
 
   const scope = useMemo(
@@ -323,6 +324,7 @@ export default function ThinkingAssistPage() {
           budget={state.budget}
           mode={state.mode}
           oddsAt={oddsAt}
+          finished={Boolean(race?.result?.finished)}
           onBudget={(budget) => dispatch({ type: "budget", budget })}
           onMode={(mode) => dispatch({ type: "mode", mode })}
         />

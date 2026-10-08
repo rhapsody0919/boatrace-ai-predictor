@@ -230,6 +230,57 @@ test.describe("思考アシスト: 承認モックとの差（mock-diff-checker�
   });
 });
 
+test.describe("思考アシスト: ファン評価 1周目", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("指摘1: 平均ST は期間（直近30走）を名前に書く", async ({ page }) => {
+    await open(page);
+    await expect(
+      page.getByRole("button", {
+        name: "平均ST（直近30走） 0.132、6艇で比べる",
+      }),
+    ).toBeVisible();
+  });
+
+  test("指摘13: 終わったレースのオッズは「締切まで動く」と書かない", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 1, 1).click();
+    await candidate(page, 2, 2).click();
+    await candidate(page, 3, 3).click();
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    await expect(sheet.getByText(/確定オッズではない/)).toBeVisible();
+    await expect(sheet.getByText(/締切まで動く/)).toHaveCount(0);
+  });
+});
+
+test.describe("思考アシスト: v16 の保存が無いレース（ファン評価 1周目 指摘3）", () => {
+  test("平均ST を「記録なし」と書かない（記録が無いのではなく、データが無い）", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page, {
+      overrides: { facts: () => ({ status: "not_saved" }) },
+    });
+    await open(page);
+    await expect(
+      page.getByText(
+        "このレースは、過去レースの傾向を表示できるデータがありません",
+      ),
+    ).toBeVisible();
+    await expect(page.getByRole("figure").getByText("記録なし")).toHaveCount(0);
+    await lensTab(page, "展開").click();
+    await page.getByRole("button", { name: "展示前", exact: true }).click();
+    await expect(page.getByRole("figure").getByText("記録なし")).toHaveCount(0);
+  });
+});
+
 test.describe("思考アシスト: シートのフォーカス（Codex 依頼27 U03）", () => {
   test.beforeEach(async ({ page }) => {
     await routeThinkingAssistV16(page);
@@ -298,6 +349,40 @@ test.describe("思考アシスト: 375px の押せる範囲と固定位置（Cod
     await lensTab(page, "買い目").click();
     misses.push(await hit(".ta-lane:nth-of-type(3) .ta-pos3 button", V));
     expect(misses.filter(Boolean)).toEqual([]);
+  });
+
+  test("指摘7: 展開レンズの展示ST の数字は点に重ならない", async ({ page }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    const overlaps = await page.evaluate(() =>
+      [...document.querySelectorAll(".ta-track")]
+        .map((t) => {
+          const v = t.querySelector(".ta-track-val");
+          const d = t.querySelector(".ta-track-dot");
+          if (!v || !d) return null;
+          return (
+            v.getBoundingClientRect().bottom - d.getBoundingClientRect().top
+          );
+        })
+        .filter((x) => x != null && x > 0.5),
+    );
+    expect(overlaps).toEqual([]);
+  });
+
+  test("指摘8: 固定フッターの買い目は長くても点数まで見える", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "買い目").click();
+    for (const b of [1, 2]) await candidate(page, b, 1).click();
+    for (const b of [1, 2, 3, 4]) await candidate(page, b, 2).click();
+    for (const b of [1, 2, 3, 4, 5, 6]) await candidate(page, b, 3).click();
+    const b = footer(page).locator("b").first();
+    await expect(b).toContainText("点）");
+    const clipped = await b.evaluate(
+      (el) => el.scrollWidth > el.clientWidth + 1,
+    );
+    expect(clipped).toBe(false);
   });
 
   test("F08: 下へスクロールしても、レンズは共通のヘッダーの下に止まり隠れない", async ({

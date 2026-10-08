@@ -20,6 +20,7 @@ export default function BetSummary({
   mode,
   oddsAt,
   oddsNote,
+  finished,
   onBudget,
   onMode,
 }) {
@@ -135,7 +136,13 @@ export default function BetSummary({
           {ASSIST_COPY.compositeNote}）
         </p>
       )}
-      {oddsAt && <p className="ta-note">{ASSIST_COPY.oddsCaution(oddsAt)}</p>}
+      {oddsAt && (
+        <p className="ta-note">
+          {finished
+            ? ASSIST_COPY.oddsCautionFinished(oddsAt)
+            : ASSIST_COPY.oddsCaution(oddsAt)}
+        </p>
+      )}
     </div>
   );
 }

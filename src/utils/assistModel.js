@@ -25,7 +25,8 @@ export const ROUND_LABEL = { junyu: "準優勝戦", yusho: "優勝戦" };
  */
 export function raceRound(today, raceStage) {
   // v16 がラウンドを持つ（yosen・other 等も含む）ときはそれだけで決める。出走表に戻すのは v16 に無いときだけ（Codex 依頼25 F01）
-  if (today?.round) return ROUNDS_FINAL.includes(today.round) ? today.round : null;
+  if (today?.round)
+    return ROUNDS_FINAL.includes(today.round) ? today.round : null;
   const key = getRaceStageKey(raceStage);
   if (key === "semifinal") return "junyu";
   if (key === "final") return "yusho";
@@ -312,7 +313,8 @@ export const METRICS = {
     aria: (v) => v.toFixed(2),
   },
   st_mean30: {
-    label: "平均ST",
+    // 公式の出走表の平均ST（期別）とは期間が違うので、読み上げ・6艇比較の見出しに期間を書く（ファン評価 1周目 指摘1）
+    label: "平均ST（直近30走）",
     short: "ST",
     value: (r) => r.stMean,
     text: (v) => stText(v),
@@ -392,7 +394,9 @@ export function firstPlaceComposite(trifecta, absentBoats = []) {
 
 /**
  * レンズ（または6艇比較の項目）の図のモデル。純粋関数
- * @param {{lens: string, stage: "pre"|"post", metric?: string|null, racers: object[], trifecta?: object|null, finalRound?: boolean}} args
+ * @param {{lens: string, stage: "pre"|"post", metric?: string|null, racers: object[], trifecta?: object|null, finalRound?: boolean, hasToday?: boolean}} args
+ *   hasToday: v16 の today が届いているか。届いていない（読み込み中・保存が無い）ときは v16 の値（平均ST）を
+ *   「記録なし」と書かず出さない（記録が無いのではなく、データが無いだけ。ファン評価 1周目 指摘3）
  *   racers は1〜6号艇（欠場を含む）: {boat, natWin, locWin, stMean, stCourse, motor2, seriesScore, exhTime, exhSt, exhFlying, absent}
  * @returns {{kind: string, title: string, left: string, right: string, good: "left"|"right"|null, lo: number, hi: number, log?: boolean, rows: Array<{boat: number, x: number|null, nums: object[], dotText?: string|null}>}}
  */
@@ -403,6 +407,7 @@ export function boardModel({
   racers,
   trifecta = null,
   finalRound = false,
+  hasToday = true,
 }) {
   const post = stage === "post";
   const best = (m) => bestOfMetric(m, racers, finalRound);
@@ -440,7 +445,9 @@ export function boardModel({
       rows: racers.map((r) => ({
         boat: r.boat,
         x: r.natWin,
-        nums: [numOf("nat_win", r, bNat), numOf("st_mean30", r, bSt)],
+        nums: hasToday
+          ? [numOf("nat_win", r, bNat), numOf("st_mean30", r, bSt)]
+          : [numOf("nat_win", r, bNat)],
       })),
     };
   }
@@ -475,6 +482,8 @@ export function boardModel({
           boat: r.boat,
           x: v == null ? null : Math.abs(v),
           nums: [],
+          // 展示前の値（このコースの平均ST）は v16 から。届いていなければ「記録なし」とも書かない
+          pending: !post && !hasToday,
           dotText: text,
           dotBest: best2.has(r.boat),
         };

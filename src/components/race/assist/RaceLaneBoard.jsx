@@ -41,7 +41,7 @@ function Track({ model, row }) {
     return (
       <div className="ta-track" aria-hidden="true">
         <span className="ta-track-rail" style={{ opacity: 0.4 }} />
-        {model.kind !== "bet" && (
+        {model.kind !== "bet" && !row.pending && (
           <span className="ta-track-empty">{ASSIST_COPY.noRecord}</span>
         )}
       </div>

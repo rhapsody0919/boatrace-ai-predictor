@@ -535,7 +535,7 @@
 
 .ta-track {
   position: relative;
-  height: 32px;
+  height: 40px; /* モック v7 と同じ。点の上に値の文字を置く余白 */
 }
 
 .ta-track-rail {
@@ -589,7 +589,9 @@
 
 .ta-track-val {
   position: absolute;
-  top: 0;
+  /* 点（16px、縦の中央）の上に置き、数字が点に隠れないようにする（ファン評価 1周目 指摘7） */
+  bottom: calc(50% + 8px);
+  line-height: 1.2;
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   transform: translateX(-50%);
@@ -714,11 +716,10 @@
   line-height: 1.3;
 }
 
+/* 買い目が長いと省略で点数が切れるので、折り返して全部出す（ファン評価 1周目 指摘8） */
 .ta-foot-text b {
   font-size: var(--font-size-md);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .ta-foot-text span {

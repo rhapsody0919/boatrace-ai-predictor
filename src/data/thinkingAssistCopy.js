@@ -137,6 +137,9 @@ export const ASSIST_COPY = Object.freeze({
   missingOdds: (n) => `オッズの無い${n}点は配分に入れていない`,
   oddsCaution: (time) =>
     `オッズは${time}時点で締切まで動く。返還があると配当は変わる`,
+  // 終わったレース（振り返り）。取り込んだ最後のオッズで、確定オッズではない（ファン評価 1周目 指摘13）
+  oddsCautionFinished: (time) =>
+    `このレースは終わっています。オッズは${time}時点で、確定オッズではない`,
 
   // v16 の状態（FR-11、v16 screens「状態」にそろえる）
   stateAbsent: "欠場があったため、過去レースの傾向は出していません",
