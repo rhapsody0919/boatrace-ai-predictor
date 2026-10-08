@@ -1,7 +1,4 @@
-import {
-  matchRiskRules,
-  draftRiskFields,
-} from "../../../../../scripts/lib/riskRuleMatcher.js";
+import {matchRiskRules, draftRiskFields} from "../../../../../scripts/lib/riskRuleMatcher.js";
 import riskRules from "../../../../../sns-video-studio/remotion/risk-rules.json";
 import { isBundlePublicationBlocked } from "../../../../_lib/snsBundleValidation.js";
 /**
@@ -62,10 +59,7 @@ export default async function handler(req) {
       return jsonResponse({ error: "下書きが見つかりません" }, 404);
     }
     if (isBundlePublicationBlocked(draft)) {
-      return jsonResponse(
-        { error: "公開不可: v0素材の保留はこの操作で解除できません" },
-        409,
-      );
+      return jsonResponse({ error: "公開不可: v0素材の保留はこの操作で解除できません" }, 409);
     }
     if (draft.status !== "pending_review") {
       return jsonResponse(
@@ -76,30 +70,16 @@ export default async function handler(req) {
       );
     }
 
-    const riskWarnings = matchRiskRules(
-      draftRiskFields(draft),
-      draft.platform,
-      riskRules.rules,
-    );
-    const updated = await updateDraft(
-      id,
-      {
-        status: "approved",
-        approver_id: approverId,
-        approved_at: new Date().toISOString(),
-      },
-      "pending_review",
-    );
+    const riskWarnings = matchRiskRules(draftRiskFields(draft), draft.platform, riskRules.rules);
+    const updated = await updateDraft(id, {
+      status: "approved",
+      approver_id: approverId,
+      approved_at: new Date().toISOString(),
+    }, "pending_review");
 
     return jsonResponse({ data: updated, riskWarnings });
   } catch (error) {
     console.error("SNS Hub approve Edge function error:", error);
-    return jsonResponse(
-      {
-        error:
-          "処理を完了できませんでした。最新の状態を再読み込みして確認してください。",
-      },
-      error.status || 500,
-    );
+    return jsonResponse({ error: error.message }, error.status || 500);
   }
 }

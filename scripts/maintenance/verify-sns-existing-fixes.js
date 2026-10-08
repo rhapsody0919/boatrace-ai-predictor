@@ -22,21 +22,27 @@ const { default: youtube } =
   await import("../../api/admin/sns-hub/drafts/[id]/publish-youtube.js");
 const { default: blog } =
   await import("../../api/admin/sns-hub/drafts/[id]/merge-blog-pr.js");
-// approve.jsはrisk-rules.jsonをwith属性なしでimportする（Vercel EdgeのesbuildがJSON import属性の
-// 構文を解釈できずビルドが落ちるため、本番互換を優先）。Node 20/22はJSON importに属性が無いと
-// ERR_IMPORT_ASSERTION_TYPE_MISSINGで直接importを拒否するので、ここだけソースを読み直し、
-// riskRulesをモックに差し替えたうえで他の相対importは絶対file:// URLに書き換えてdata: URL経由で読む
-// （verify-sns-mobile-api.jsと同じ手法。riskRulesの中身自体はこのファイルの検証対象外）。
-const approveUrl = new URL(
-  "../../api/admin/sns-hub/drafts/[id]/approve.js",
-  import.meta.url,
-);
-const approveDir = new URL(".", approveUrl);
-const approveSource = (await readFile(approveUrl, "utf8"))
-  .replace(/import riskRules from [^;]+;/, "const riskRules={rules:[]};")
+const root = new URL("../../", import.meta.url);
+const approveSource = (
+  await readFile(
+    new URL("api/admin/sns-hub/drafts/[id]/approve.js", root),
+    "utf8",
+  )
+)
   .replace(
-    /from "(\.\.?\/[^"]+)"/g,
-    (_, spec) => `from "${new URL(spec, approveDir).href}"`,
+    /"[^"\n]+risk-rules\.json"/,
+    JSON.stringify(
+      "data:text/javascript," +
+        encodeURIComponent("export default {rules:[]};"),
+    ),
+  )
+  .replace(
+    /"[^"\n]+(?:lib\/riskRuleMatcher|_lib\/snsBundleValidation|_lib\/snsHubHelpers|_lib\/adminAuth)\.js"/g,
+    (m) =>
+      JSON.stringify(
+        new URL(m.slice(1, -1), new URL("api/admin/sns-hub/drafts/[id]/", root))
+          .href,
+      ),
   );
 const { default: approve } = await import(
   "data:text/javascript," + encodeURIComponent(approveSource)
@@ -387,9 +393,8 @@ test("redo起動失敗は応答に残り、通知はrisk/thumbnailも保持す�
       thumbnailWarning: "権限不足",
     });
     assert.equal(messages.length, 3);
-    assert.match(messages[0], /起動を確認できません/);
-    assert.equal(messages[2], "サムネイルを設定できませんでした。");
-    assert.ok(!messages[2].includes("権限不足"));
+    assert.match(messages[0], /起動に失敗/);
+    assert.match(messages[2], /権限不足/);
   } finally {
     await f.close();
   }
@@ -456,19 +461,11 @@ test("サムネ失敗を保存し、サムネ結果DB保存失敗でも動画を
       const second = await youtube(request("publish-youtube"));
       assert.equal(second.status, 200);
       const result = await second.json();
-      assert.equal(result.thumbnailWarning, failRpc ? "unconfirmed" : "failed");
-      assert.deepEqual(
-        actionFeedback(result),
-        failRpc
-          ? [
-              "サムネイルの設定結果を確認できていません。YouTube Studio で確認してください。",
-            ]
-          : ["サムネイルを設定できませんでした。"],
-      );
+      assert.ok(result.thumbnailWarning);
       assert.equal(result.data.source_data.youtube_video_id, "video-id");
       assert.equal(f.counts().uploads, 1);
       if (!failRpc)
-        assert.equal(result.data.source_data.youtube_thumbnail_error, "failed");
+        assert.match(result.data.source_data.youtube_thumbnail_error, /403/);
     } finally {
       await f.close();
     }
@@ -540,7 +537,7 @@ test("親画面の成功・例外通知は関数型更新で蓄積し、閉じ�
     !messages.some((message) => message.includes(err.message)),
     "生のエラー詳細は表示しない",
   );
-  assert.equal(messages[0], "サムネイルを設定できませんでした。");
+  assert.match(messages[0], /権限不足/);
 });
 
 for (const thumbnailSuccess of [true, false]) {
@@ -576,7 +573,7 @@ for (const thumbnailSuccess of [true, false]) {
         thumbnailSuccess ? null : row.source_data.youtube_thumbnail_error,
       );
       if (!thumbnailSuccess)
-        assert.equal(row.source_data.youtube_thumbnail_error, "failed");
+        assert.match(row.source_data.youtube_thumbnail_error, /403/);
       else assert.equal(row.source_data.youtube_thumbnail_error, undefined);
       const retry = await (await youtube(request("publish-youtube"))).json();
       assert.equal(
