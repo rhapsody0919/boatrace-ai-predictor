@@ -124,15 +124,7 @@ node --env-file=.env.local scripts/linear-cli.js create "タイトル" "説明"
 
 ## 開発フロー
 
-### ブランチ戦略（GitHub Flow）
-
-| ブランチ | 用途 | デプロイ先 |
-|---------|------|-----------|
-| `master` | 本番リリース | www.boat-ai.jp |
-| `feature/*` | 機能開発 | Vercel Preview（PR単位で自動生成） |
-
-### デプロイフロー
-`feature/*` → PR作成（Vercel Previewで確認） → レビュー → `master` にマージ（本番デプロイ）
+ブランチ戦略（GitHub Flow）・デプロイフローは [AGENTS.md](../AGENTS.md)「このプロジェクトの運用前提」参照（Claude・Codex共通）。
 
 ### 仕様書駆動開発（SDD、大規模機能向け）
 仕様に曖昧さが残る・設計判断が重要な大規模機能は `/step1-spec` から順に SDD フローを使う（小〜中規模の Linear チケットは従来通り `/implement` で直接実装）。詳細は `docs/operation/sdd-and-codex-review.md` を参照。
@@ -148,19 +140,11 @@ DB設計時のER図生成規律・長時間実装時の再開規律は`.claude/r
 1. `/code-review` でセルフレビューを実行
 2. **新規のデータ集計・分析機能（新しい統計・ランキング・傾向表示等）を含む場合は、データの正確性を複数の視点で検証する**（詳細は `.claude/rules/analysis.md` の「データ精度の検証」を参照）。コードレビューとは別に「集計結果が実データと一致しているか」だけを見る検証を必ず行う。実データの見た目・コードスタイルが正しくても、集計ロジックの誤り（スケール不一致、JOIN漏れ、期間ズレ等）は見た目だけのレビューでは発見できないため、独立した検証ステップとして扱う
 3. 指摘事項を修正してコミット・push（判断が分かれる指摘は修正せず報告に含める）。**修正する指摘は先に実在を検証し、同じPRで再現テストを追加して固定する。同じ指摘が再発したら修正をやめて原因分析する**。新しいページ・分析タブ・主要コンポーネントの追加では、洗い出し（独立サブエージェント・修正禁止）→検証→振り分け→修正→回帰確認の5段階で行う。詳細・例外・終了条件は `.claude/rules/review-fix-cycle.md`（BOA-464）
-4. `npm run build` を実行し、ビルドエラーが無いことを確認する。既存のページ挙動・共通コンポーネント（Header、LanguageSwitcher、`src/components/race/` 等）・ルーティングに影響しうる変更の場合は `npm run test:e2e`（Playwright）も実行し、デグレが無いことを確認する。新しい主要導線を追加した場合はスモークテストにも追記する。E2Eは既定で録画を再生する（本体は GitHub Release、`e2e/recording.json` がポインタ。録画は毎日 `e2e-rerecord.yml` が撮り直す。JST 10:23 / 12:47 / 14:37 / 16:13 の4回。その日に採用済みなら後の回は空振り。JST19時以降の起動では撮らない）。録画に無い `/rest/v1/*`・`/api/*` は本番へ素通しし、PR コメントと step summary に一覧が出る。新しいクエリを足した PR で素通しが出るのは想定どおりで、PR ごとの撮り直しは不要。spec では `@playwright/test` ではなく `e2e/fixtures.js` から `test` を import し、page.route 内で実応答を加工するときは `route.fetch()` ではなく `fetchRecorded(route)` を使う（`route.fetch()` は録画を通らない。ADR-0077）。
+4. ビルド・テストを実行する（コマンド・置き場所・CI連携の詳細は [AGENTS.md](../AGENTS.md)「検証・テスト」参照。Claude・Codex共通の事実はそちらが正本）。新しい主要導線を追加した場合はスモークテストにも追記する
 
-   **CSS・レイアウトを変更した場合は `npm run test:layout`（`e2e/layout.spec.js`）を実行する**。375 / 768 / 1024 / 1440 / 1920px の5軸で、横スクロールの発生と、グリッドの「空トラック」（アイテム数より列数が多い）・「使い残し」（箱の幅に対してトラック合計が足りない）を検知する。既存の `smoke.spec.js` は従来どおり既定ビューポート1軸のみ。2026-09-25まですべてのE2Eが1280px幅でしか走っておらず、トップページのブログ一覧が1440px以上で右側に334〜726pxの空白を作る状態が放置されていた（ADR-0073）。**幅の軸は「ブレークポイントの境界」と「レイアウトが切り替わる帯の中」の両方を通す**。実際に、最初に選んだ3軸（375/1440/1920）が769〜1255pxの帯を飛び越していたため、修正で入れた同種の崩れ（1024pxで右168px）を検知できなかった。
-
-   **`scripts/maintenance/verify-*.js` の検証群は、master向けPRごとに `Quality Gates` ワークフロー（`.github/workflows/quality-gates.yml`）が `npm run verify:ci` でまとめて自動実行する**ため、該当する個別コマンドを手元で1本ずつ実行する必要はない。以前はこの項に7本以上のコマンドを列挙して「CI連携はせず、毎回Claude自身が手元で実行する」としていたが、実際には57本中56本がCI未接続で、マイグレーション番号の重複がmasterに入るまで誰も気づかなかった（ADR-0072、`docs/design/quality-gate-ci/spec.md`）。手元で先に確かめたい場合は `npm run verify:ci`（全件、数分かかる）か、該当する個別の `npm run verify:*` を使う。
-
-   ただし次の3点は機械検出の対象外（実Supabaseへの接続が要る、または判断が要る）なので、引き続き人（Claude自身）が実行・判断する:
-   - 新機能（ユーザー向けの新しいページ・分析タブ・主要機能）を実装した変更では、対応する `docs/design/{slug}/content-index.json` を**作成する**（または `not_applicable: true` で対象外を明記する）。`verify:content-index` が検証するのは既存ファイルの形式だけで、「本来必要なのに存在しない」は検出しない（`.claude/rules/content-ops.md` フローA-2）
-   - `docs/db-migration/` に新規マイグレーションを追加したら、`docs/db-migration/APPLIED.md`（適用状況の台帳）に行を追加する
-   - **RPC（`CREATE OR REPLACE FUNCTION`）を変更するマイグレーションを本番適用したら、`node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js` を実行する**。`CREATE OR REPLACE` は古い定義を土台に書くと、後のマイグレーションが足したキーを黙って消す。E2Eでは検知できない（フォールバック経路が同じキーを返すため画面が壊れない）。BOA-363で数日間の欠落、[BOA-431](https://linear.app/boat-ai/issue/BOA-431)で同型の再発が起きている。`nightly-verify-db.yml`（JST3:00）が毎晩実行して失敗をSlackに流すが、適用直後に手元でも実行する（翌朝まで壊れたままにしないため）。
-     なお**キーの取りこぼし自体は `verify:rpc-key-regression` がPR時にCIで検知する**（SQLファイル同士の比較で完結するため本番接続が要らない。ADR-0074）。手元実行が要るのは「本番の実物がフロントの参照と合っているか」の最終確認で、適用漏れ・手動変更・CIをすり抜けた経路を拾うためのもの
-
-   新しい検証スクリプト（`verify-*.js`）を書いたら、`scripts/maintenance/verify-registry.json` に分類（`ci` / `manual`）と「何を守るか」を登録する。未登録のまま置くとCIが失敗する。
+   次の2点は機械検出の対象外（実Supabaseへの接続が要る、または判断が要る）で、Claude自身が実行・判断する:
+   - **RPC（`CREATE OR REPLACE FUNCTION`）を変更するマイグレーションを本番適用したら、`node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js` を実行する**。`CREATE OR REPLACE` は古い定義を土台に書くと、後のマイグレーションが足したキーを黙って消す。E2Eでは検知できない（フォールバック経路が同じキーを返すため画面が壊れない）。BOA-363で数日間の欠落、[BOA-431](https://linear.app/boat-ai/issue/BOA-431)で同型の再発が起きている。`nightly-verify-db.yml`（JST3:00）が毎晩実行して失敗をSlackに流すが、適用直後に手元でも実行する（翌朝まで壊れたままにしないため）。キーの取りこぼし自体は`verify:rpc-key-regression`がPR時にCIで検知するが（ADR-0074）、手元実行が要るのは「本番の実物がフロントの参照と合っているか」の最終確認
+   - 新しい検証スクリプト（`verify-*.js`）を書いたら、`scripts/maintenance/verify-registry.json` に分類（`ci` / `manual`）と「何を守るか」を登録する。未登録のまま置くとCIが失敗する
 5. `/codex-review`（Codexセカンドオピニオンレビュー）は**2026-07時点で見送り中**。ChatGPT契約のコストに見合わないと判断（詳細は `docs/operation/sdd-and-codex-review.md`）。仕組み自体は用意済みなので、将来必要になったら有効化する
 6. **レビュー結果を PR にコメントで記載する**。内容: 指摘一覧（ファイル・行・内容）、各指摘の対応（修正コミット / スキップ理由）、修正後の検証結果（データ精度検証の結果を含む）
 7. **ユーザーへの完了報告（チャット本文）には以下を必ず全て含める**。PR コメントへのリンクや「詳細は PR 参照」で省略しない：
@@ -192,51 +176,15 @@ DB設計時のER図生成規律・長時間実装時の再開規律は`.claude/r
 新しいページ・機能は着手前に「翻訳対象／ja専用／特定言語専用」のどれかを決める。詳細は `.claude/rules/i18n-new-pages.md`（`src/**` 編集時に自動読み込み）。
 
 ### SEO・集客施策の判断軸: SPAアーキテクチャによるクローラー制約
-boatAIは`vercel.json`で `/((?!api/).*) → /index.html` のみを行う純粋なクライアントサイドSPAで、SSR・プリレンダリングの仕組みが無い。ページ固有のtitle/meta/OGPタグはReactコンポーネントがマウント後にJSで書き換える方式のため、**JavaScriptを実行しないクローラー（Facebook等）にはページ固有の変更が反映されない**（Googlebotや一部のX(Twitter)クローラーはJSレンダリング対応のため反映される）。
+boatAIはSSR・プリレンダリングの無い純粋なクライアントサイドSPAで、JavaScriptを実行しないクローラーにはページ固有のtitle/meta/OGPタグの変更が反映されない。詳細・具体例は[AGENTS.md](../AGENTS.md)「4. 用語・法令・ディスクレーマー」および`docs/reference/seo-architecture-constraints.md`を参照（BOA-161で発覚）。
 
-SEO・集客施策を検討・実装する際は、その施策が「JS実行後にしか反映されない変更かどうか」を必ず確認する。検索順位・インデックス精度に関わる施策はReactでの実装で概ね機能するが、SNSシェア時のリンクプレビュー（OGP/Twitterカード）はVercel Edge Functionでのボット判定＋静的HTML返却、またはSSG化が無ければ機能しない。DevTools/Playwrightでの確認はJS実行後の状態であり、非JS実行クローラーの見え方とは異なる点に注意する。詳細・具体例は`docs/reference/seo-architecture-constraints.md`を参照（BOA-161で発覚）。
-
-### コミットメッセージ
-形式: `<type>: <日本語の説明>`
-
-| type | 用途 |
-|------|------|
-| `feat` | 新機能 |
-| `fix` | バグ修正 |
-| `content` | コンテンツ追加・更新 |
-| `refactor` | リファクタリング |
-| `docs` | ドキュメント |
-| `chore` | 雑務・設定変更 |
-
-### 環境変数
-| 変数 | 用途 |
-|------|------|
-| `SUPABASE_URL` | Supabase接続 |
-| `SUPABASE_SERVICE_KEY` | Supabase管理者操作（`SUPABASE_SERVICE_ROLE_KEY`ではない。2026-09-12訂正、`scripts/lib/supabaseClient.js`が正） |
-| `VITE_SUPABASE_URL` | フロントエンド用Supabase |
-| `VITE_SUPABASE_ANON_KEY` | フロントエンド用Supabaseキー |
-| `VITE_GA_MEASUREMENT_ID` | Google Analytics |
-| `LINEAR_API_KEY` | Linear連携 |
-| `LINEAR_TEAM_ID` | LinearチームID |
-| `SENDGRID_API_KEY` | メール送信 |
-| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Google Sheets連携 |
-| `GOOGLE_PRIVATE_KEY` | Google Sheets認証 |
-| `GITHUB_MERGE_TOKEN` | ブログ記事Draft PRの自動マージ（sns-hub admin、Fine-grained PAT、ADR 0034） |
-| `YOUTUBE_CLIENT_ID` | YouTube Data API v3連携（ADR 0035） |
-| `YOUTUBE_CLIENT_SECRET` | YouTube Data API v3連携（ADR 0035） |
-| `YOUTUBE_REFRESH_TOKEN` | YouTube Data API v3連携、ユーザー自身のOAuth同意で取得（ADR 0035） |
-
-ローカルは `.env.local`、本番は Vercel環境変数で管理。
+### コミットメッセージ・環境変数
+コミットメッセージ規約（`<type>: <日本語の説明>`）は[AGENTS.md](../AGENTS.md)「このプロジェクトの運用前提」参照。環境変数一覧は[docs/setup/env-vars.md](../docs/setup/env-vars.md)参照。
 
 ---
 
 ## よく使うコマンド
 
-E2Eは既定（`npm run test:e2e`）で録画を再生し、時計を録画時刻に固定する（ADR-0077）。録画は GitHub Release から自動で取得する。
-```bash
-npm run test:e2e:record  # E2Eの録画を手元で撮り直す（通常は不要。e2e-rerecord.yml が毎日撮り直して採用する。JST 10:23 / 12:47 / 14:37 / 16:13 の4回。その日に採用済みなら後の回は空振り。JST19時以降の起動では撮らない）
-npm run test:e2e:live    # 本番データ・実時刻でE2E（旧挙動。e2e-live.yml がJST14時に定期実行）
-```
-
 マージ前のチェック（verifyが緑か、`--delete-branch` でworktreeごと消えるデータが無いか）は
 `gh pr merge` を叩いた時点でフックが自動で止める（ADR-0075）。手元で先に確認する必要はない。
+E2Eのコマンド・録画の仕組みは[AGENTS.md](../AGENTS.md)「検証・テスト」参照。
