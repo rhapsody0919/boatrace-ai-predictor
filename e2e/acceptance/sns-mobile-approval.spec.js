@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures.js';
 import { mkdir } from 'node:fs/promises';
 const group='group1';
 const row=platform=>({draft:{id:platform,title:'準優勝戦の展示データを確認',platform,status:'pending_review',caption_text:'12件の展示データで確認した傾向。ボートレースの画面から出典を確認します。',risk_flags:[],source_data:{race_id:'2026-10-07-11-10',stage:'exhibition',bundle:{claims:[{source:'layer',path:['entries','count'],value:12,count:12,scope:'当日の出走選手'}]},source_manifest:[{name:'layer.json',stage:'exhibition',fetched_at:'2026-10-07T01:00:00Z',source_url:'https://example.com/source'}],qa:{pass:false},deadline_queue:{expires_at:'2026-10-07T07:00:00Z'}}},holds:['QA未確認・失敗','正式公開証拠なし'],versionHash:'a'.repeat(64),videoUrl:null,job:null});
@@ -7,7 +7,7 @@ for(const theme of ['light','dark']) test(`375pxの同一画面で本文・根�
   const u=new URL(route.request().url());
   if(u.hostname!=='127.0.0.1')return route.abort();
   if(u.pathname==='/api/admin/sns-hub/mobile-approval')return route.fulfill({json:u.searchParams.has('group')?{data:[row('youtube'),row('x')],connected:false}:{data:[{id:group,raceId:'2026-10-07-11-10'}],connected:false}});
-  return route.continue();
+  return route.fallback();
  });
  await page.goto('/__mobile_test');await page.evaluate(t=>document.documentElement.setAttribute('data-theme',t),theme);
  await page.getByLabel('レース',{exact:true}).selectOption(group);
@@ -30,7 +30,7 @@ async function setup(page, getRow, overrides = () => null) {
   if(u.pathname.endsWith('/x-send')) return route.fulfill({json:{data:{connected:false,job:null,control:{paused:true}}}});
   if(u.pathname==='/api/admin/sns-hub/approvers') return route.fulfill({json:{data:[{id:'owner',display_name:'本人'}]}});
   if(u.pathname.startsWith('/api/')) return route.fulfill({json:{data:[]}});
-  return route.continue();
+  return route.fallback();
  });
 }
 async function selectRace(page) {

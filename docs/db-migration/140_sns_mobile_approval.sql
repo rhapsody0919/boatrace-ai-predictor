@@ -91,3 +91,6 @@ $$;
 
 
 COMMIT;
+
+REVOKE ALL ON FUNCTION public.guard_sns_x_approval() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.guard_sns_x_approval() TO service_role;
