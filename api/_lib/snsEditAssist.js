@@ -49,7 +49,9 @@ export function inspectDraft(draft, rules, sources) {
     }
   }
   // 出典に明示された名前だけを対象とし、自由文から人名を推測しない。
-  const racers=s.racers || raw.racers || [];
+  const racers=[...new Map([s.racers, sources?.racers, bundle.source_data?.racers]
+    .filter(Array.isArray).flat().filter(r=>typeof r?.name==='string' && r.name.trim())
+    .map(r=>[r.name,r])).values()];
   for(const racer of racers) if(typeof racer.name==='string' && racer.name.trim()) for(const [location,text] of fields) {
     for(const m of text.matchAll(new RegExp(racer.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g')))
       if(!/^(選手|さん|氏)/.test(text.slice(m.index+m[0].length))) add('racer-honorific',`${location}:${m.index}`,m[0],'選手名に敬称がありません（編集上の目安）。','「選手」を添えるか、一覧など敬称省略が適切な場所か確認してください。');
