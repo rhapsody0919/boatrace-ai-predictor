@@ -1,5 +1,6 @@
 -- 139最新(F01-R)・140・141の累積上。適用・有効化はオーナーのみ。
 BEGIN;
+ALTER TABLE public.sns_x_send_jobs ADD COLUMN youtube_stage TEXT CHECK(youtube_stage IN ('uploaded','ready','publishing','update_started','private_retained'));
 CREATE TABLE public.sns_youtube_quota_control (
  id BOOLEAN PRIMARY KEY DEFAULT true CHECK(id),
  verified BOOLEAN NOT NULL DEFAULT false,
@@ -16,10 +17,11 @@ CREATE TABLE public.sns_youtube_quota_attempts (
  attempt INTEGER NOT NULL CHECK(attempt>0),
  quota_day DATE NOT NULL,
  upload_reserved INTEGER NOT NULL DEFAULT 1 CHECK(upload_reserved=1),
- general_reserved INTEGER NOT NULL DEFAULT 51 CHECK(general_reserved=51),
+ general_reserved INTEGER NOT NULL DEFAULT 104 CHECK(general_reserved=104),
+ processing_polls INTEGER NOT NULL DEFAULT 0 CHECK(processing_polls BETWEEN 0 AND 3),
  calls TEXT[] NOT NULL DEFAULT ARRAY[]::text[],
  upload_calls_started INTEGER NOT NULL DEFAULT 0 CHECK(upload_calls_started BETWEEN 0 AND 1),
- general_units_started INTEGER NOT NULL DEFAULT 0 CHECK(general_units_started BETWEEN 0 AND 51),
+ general_units_started INTEGER NOT NULL DEFAULT 0 CHECK(general_units_started BETWEEN 0 AND 104),
  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  PRIMARY KEY(job_id,attempt)
 );
@@ -122,6 +124,28 @@ BEGIN
    OR NOT (EXISTS (SELECT 1 FROM public.sns_youtube_quota_attempts WHERE job_id=j.id AND attempt=j.attempts AND 'videos.list'=ANY(calls))
      OR EXISTS (SELECT 1 FROM public.sns_youtube_quota_reads WHERE job_id=j.id AND attempt=j.attempts))
  ) THEN RAISE EXCEPTION '公開結果の確認が必要です'; END IF;
+ IF j.channel='youtube' AND p_action='youtube_retain' THEN
+   IF j.state<>'reconcile' OR j.external_post_id IS NULL OR j.youtube_stage='update_started' THEN RAISE EXCEPTION '非公開残置を確定できません'; END IF;
+   UPDATE public.sns_x_send_jobs SET youtube_stage='private_retained',error_code='youtube_private_retained',updated_at=now() WHERE id=j.id RETURNING * INTO j;
+   RETURN to_jsonb(j);
+ END IF;
+ IF j.channel='youtube' AND p_action IN ('youtube_poll','youtube_ready') THEN
+   IF j.state<>'reconcile' OR j.external_post_id IS NULL OR j.youtube_stage NOT IN ('uploaded','ready') OR j.youtube_stage IS NULL THEN RAISE EXCEPTION '処理確認対象ではありません'; END IF;
+   SELECT * INTO q FROM public.sns_youtube_quota_control WHERE id=true FOR UPDATE;
+   SELECT * INTO a FROM public.sns_youtube_quota_attempts WHERE job_id=j.id AND attempt=j.attempts FOR UPDATE;
+   IF p_action='youtube_ready' THEN
+     IF a.processing_polls<1 THEN RAISE EXCEPTION '処理確認未記録です'; END IF;
+     UPDATE public.sns_x_send_jobs SET youtube_stage='ready',updated_at=now() WHERE id=j.id RETURNING * INTO j;
+     RETURN to_jsonb(j);
+   END IF;
+   IF q.verified IS NOT TRUE OR q.baseline_day IS DISTINCT FROM v_day OR a.quota_day IS DISTINCT FROM v_day OR q.general_limit IS NULL THEN RAISE EXCEPTION 'youtube_quota_unconfirmed'; END IF;
+   SELECT coalesce(sum(general_reserved),0) INTO general_total FROM public.sns_youtube_quota_attempts WHERE quota_day=v_day;
+   general_total:=general_total+(SELECT coalesce(sum(units),0) FROM public.sns_youtube_quota_reads WHERE quota_day=v_day);
+   IF general_total+q.external_general>q.general_limit THEN RAISE EXCEPTION 'youtube_quota_limit'; END IF;
+   IF a.processing_polls>=3 THEN RAISE EXCEPTION 'youtube_poll_limit'; END IF;
+   UPDATE public.sns_youtube_quota_attempts SET processing_polls=processing_polls+1,general_units_started=general_units_started+1 WHERE job_id=j.id AND attempt=j.attempts;
+   RETURN to_jsonb(j);
+ END IF;
  IF j.channel='youtube' AND p_action='youtube_lookup' THEN
    IF j.state<>'reconcile' THEN RAISE EXCEPTION '要照合ではありません'; END IF;
    SELECT * INTO q FROM public.sns_youtube_quota_control WHERE id=true FOR UPDATE;
@@ -132,13 +156,14 @@ BEGIN
    INSERT INTO public.sns_youtube_quota_reads(job_id,attempt,quota_day) VALUES(j.id,j.attempts,v_day);
    RETURN to_jsonb(j);
  END IF;
- IF j.channel='youtube' AND p_action IN ('youtube_call','youtube_uploaded') THEN
+ IF j.channel='youtube' AND p_action IN ('youtube_call','youtube_uploaded','youtube_publish_begin') THEN
    IF j.state<>'reconcile' THEN RAISE EXCEPTION '要照合ではありません'; END IF;
    IF p_action='youtube_uploaded' THEN
+     IF j.youtube_stage IS NOT NULL THEN RAISE EXCEPTION '動画IDは保存済みです'; END IF;
      IF NOT EXISTS (SELECT 1 FROM public.sns_youtube_quota_attempts WHERE job_id=j.id AND attempt=j.attempts AND 'videos.insert'=ANY(calls)) THEN RAISE EXCEPTION 'upload開始未記録です'; END IF;
      IF coalesce(p_result->>'id','') !~ '^[A-Za-z0-9_-]{11}$' OR
        (j.external_post_id IS NOT NULL AND j.external_post_id IS DISTINCT FROM p_result->>'id') THEN RAISE EXCEPTION '動画IDが不正です'; END IF;
-     UPDATE public.sns_x_send_jobs SET external_post_id=p_result->>'id',updated_at=now() WHERE id=j.id RETURNING * INTO j;
+     UPDATE public.sns_x_send_jobs SET external_post_id=p_result->>'id',youtube_stage='uploaded',updated_at=now() WHERE id=j.id RETURNING * INTO j;
      RETURN to_jsonb(j);
    END IF;
    -- 外部呼出し後はheldへ戻さず要照合のまま停止。
@@ -147,7 +172,7 @@ BEGIN
      OR d.status<>'approved' OR d.publish_blocked OR d.bundle_import_id IS NOT NULL
      OR jsonb_array_length(d.publication_hold_reasons)>0 OR d.x_approved_hash IS DISTINCT FROM j.approved_hash
      OR d.approver_id IS DISTINCT FROM j.approver_id OR d.approved_at IS DISTINCT FROM j.approved_at
-     OR j.expires_at IS NULL OR now()>=j.expires_at OR j.lease_until IS NULL OR now()>=j.lease_until
+     OR j.expires_at IS NULL OR now()>=j.expires_at OR (p_action<>'youtube_publish_begin' AND (j.lease_until IS NULL OR now()>=j.lease_until))
      OR j.expires_at IS DISTINCT FROM (j.snapshot->'queue'->>'deadline_at')::timestamptz - make_interval(mins=>c.expiry_minutes)
      OR c.max_source_age_seconds IS NULL OR (j.snapshot->'queue'->>'source_observed_at')::timestamptz IS NULL
      OR (j.snapshot->'queue'->>'source_observed_at')::timestamptz>now()
@@ -167,15 +192,23 @@ BEGIN
      FROM public.sns_youtube_quota_attempts WHERE sns_youtube_quota_attempts.quota_day=v_day;
    general_total:=general_total+(SELECT coalesce(sum(units),0) FROM public.sns_youtube_quota_reads WHERE quota_day=v_day);
    IF upload_total+q.external_uploads>q.upload_limit OR general_total+q.external_general>q.general_limit THEN RAISE EXCEPTION 'youtube_quota_limit'; END IF;
+   IF p_action='youtube_publish_begin' THEN
+     IF j.youtube_stage IS DISTINCT FROM 'ready' OR 'videos.update'=ANY(a.calls) THEN RAISE EXCEPTION '公開段階を開始できません'; END IF;
+     UPDATE public.sns_x_send_jobs SET youtube_stage='publishing',locked_at=now(),lease_until=now()+interval '5 minutes',updated_at=now() WHERE id=j.id RETURNING * INTO j;
+     RETURN to_jsonb(j);
+   END IF;
    method:=p_result->>'method';
-   IF method IS NULL OR method NOT IN ('videos.insert','thumbnails.set','videos.list') OR method=ANY(a.calls)
+   IF method IS NULL OR method NOT IN ('videos.insert','thumbnails.set','videos.update','videos.list') OR method=ANY(a.calls)
      OR (method='videos.insert' AND cardinality(a.calls)<>0)
      OR (method<>'videos.insert' AND (NOT 'videos.insert'=ANY(a.calls) OR j.external_post_id IS NULL))
-     OR (method='thumbnails.set' AND jsonb_array_length(j.snapshot->'media')<>2)
+     OR (method='thumbnails.set' AND (jsonb_array_length(j.snapshot->'media')<>2 OR j.youtube_stage IS DISTINCT FROM 'uploaded'))
+     OR (method='videos.update' AND j.youtube_stage IS DISTINCT FROM 'publishing')
+     OR (method='videos.list' AND j.youtube_stage IS DISTINCT FROM 'update_started')
    THEN RAISE EXCEPTION 'youtube_call_not_planned'; END IF;
    UPDATE public.sns_youtube_quota_attempts SET calls=array_append(calls,method),
      upload_calls_started=upload_calls_started+CASE WHEN method='videos.insert' THEN 1 ELSE 0 END,
-     general_units_started=general_units_started+CASE WHEN method='videos.list' THEN 1 WHEN method='thumbnails.set' THEN 50 ELSE 0 END WHERE job_id=j.id AND attempt=j.attempts;
+     general_units_started=general_units_started+CASE WHEN method='videos.list' THEN 1 WHEN method IN ('thumbnails.set','videos.update') THEN 50 ELSE 0 END WHERE job_id=j.id AND attempt=j.attempts;
+   IF method='videos.update' THEN UPDATE public.sns_x_send_jobs SET youtube_stage='update_started',updated_at=now() WHERE id=j.id RETURNING * INTO j; END IF;
    RETURN to_jsonb(j);
  END IF;
  r:=public.transition_sns_send_139(p_job_id,p_action,p_result);
@@ -185,7 +218,7 @@ BEGIN
    SELECT coalesce(sum(upload_reserved),0),coalesce(sum(general_reserved),0) INTO upload_total,general_total
      FROM public.sns_youtube_quota_attempts WHERE sns_youtube_quota_attempts.quota_day=v_day;
    general_total:=general_total+(SELECT coalesce(sum(units),0) FROM public.sns_youtube_quota_reads WHERE quota_day=v_day);
-   IF upload_total+q.external_uploads+1>q.upload_limit OR general_total+q.external_general+51>q.general_limit THEN RAISE EXCEPTION 'youtube_quota_limit'; END IF;
+   IF upload_total+q.external_uploads+1>q.upload_limit OR general_total+q.external_general+104>q.general_limit THEN RAISE EXCEPTION 'youtube_quota_limit'; END IF;
    INSERT INTO public.sns_youtube_quota_attempts(job_id,attempt,quota_day) VALUES(j.id,(r->>'attempts')::integer,v_day);
  END IF;
  RETURN r;
@@ -194,3 +227,6 @@ $$;
 REVOKE ALL ON FUNCTION public.transition_sns_x_send(UUID,TEXT,JSONB) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.transition_sns_x_send(UUID,TEXT,JSONB) TO service_role;
 COMMIT;
+
+REVOKE ALL ON FUNCTION public.approve_sns_x_send(UUID,UUID,JSONB,TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.approve_sns_x_send(UUID,UUID,JSONB,TIMESTAMPTZ) TO service_role;

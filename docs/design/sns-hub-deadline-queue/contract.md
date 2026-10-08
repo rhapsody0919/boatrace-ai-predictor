@@ -25,7 +25,7 @@
 
 ## 排他・上限・失敗回復
 
-claim/check/begin_postで期限・鮮度・承認版を再検査する。claimはdraft→control→jobのロック、5分のleaseとlocked_at、draft_revisionを保存。期限切れ/未確認はheld（再承認）。lease延長は提供せず、5分を超える処理は停止する。
+claim/check/begin_postで期限・鮮度・承認版を再検査する。claimはdraft→control→jobのロック、5分のleaseとlocked_at、draft_revisionを保存。期限切れ/未確認はheld（再承認）。Xのlease延長は提供しない。YouTube案Bは非公開uploadと公開を分離し、処理完了後の公開段階で新しい5分leaseを一度だけ取得する（142・Shorts contract参照）。
 
 `sweep_sns_deadline_queue` は期限切れqueuedをheld、lease切れsendingをreconcileへ。将来worker開始時にstore.sweepを明示的に呼ぶ契約で、cronは未接続。reconcileを期限切れや通常失敗へ戻さない。HTTP timeout/DB更新応答喪失は既存のbegin_post事前保存によりreconcile維持。lookupが同一投稿を外部確認しconfirmed/id/実公開時刻を返したときだけcomplete、未確認は再送しない。
 
