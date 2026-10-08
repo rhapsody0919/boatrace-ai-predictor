@@ -147,7 +147,9 @@ const valueBtn = (page, label, value) =>
   });
 const backToFigureBtn = (page) =>
   page.getByRole("button", { name: "図を戻す" });
-const closeDeepDiveBtn = (page) => page.getByRole("button", { name: "閉じる" });
+// 名前は screens どおり「閉じる」と完全一致で選ぶ（使い方の1行の「この案内を閉じる」と取り違えない）
+const closeDeepDiveBtn = (page) =>
+  page.getByRole("button", { name: "閉じる", exact: true });
 const perStartTableToggle = (page) =>
   page.getByRole("button", { name: "1走ずつの表" });
 const candidateBtn = (page, boat, pos) =>
@@ -970,6 +972,8 @@ test.describe("展示後だが v16 の展示後の段が無い状態（既定の
     page,
   }) => {
     await openAssist(page);
+    // 類似レースは展開レンズの要約（決まり手）に出る（screens「レンズごとの図 C」展開）
+    await lensTab(page, "展開").click();
     const text = await page.locator("body").innerText();
     expect(text).toContain("出走表の時点");
   });
@@ -978,6 +982,7 @@ test.describe("展示後だが v16 の展示後の段が無い状態（既定の
     page,
   }) => {
     await openAssist(page);
+    await lensTab(page, "展開").click();
     const text = await page.locator("body").innerText();
     expect(text).toContain("類似レース63件（条件が合う全件）");
   });
@@ -1106,7 +1111,8 @@ test.describe("禁止語", () => {
   }) => {
     await openAssist(page);
     await boatRow(page, 1).click();
-    await valueBtn(page, "全国勝率", "6.03").click();
+    // 図の数字と深掘りの数字は同じ名前（screens「図・深掘りの数字」）。どちらを押しても6艇比較になる
+    await valueBtn(page, "全国勝率", "6.03").first().click();
     await expectNoForbiddenTerms(page);
   });
 

@@ -11,7 +11,8 @@ const yen = (n) => n.toLocaleString("ja-JP");
 
 /**
  * 組んだ買い目の配分（FR-8、screens S-1a）: 予算・均等／均等払戻・組ごとのオッズ・人気・金額・払戻、
- * 最下行に合計・残り・丸めた後の倍率の幅。予算が 100円×点数 に足りなければ最低額だけを出す（F05）
+ * 最下行に合計・残り・丸めた後の倍率の幅。予算が 100円×点数 に足りなければ最低額だけを出す（F05）。
+ * 類似レースがあれば組ごとの件数の列「類似」を並べる（FW-19。オッズと掛け合わせない）
  */
 export default function BetSummary({
   tickets,
@@ -23,7 +24,10 @@ export default function BetSummary({
   finished,
   onBudget,
   onMode,
+  similarTri = null,
+  similarN = null,
 }) {
+  const showSimilar = similarTri != null && similarN > 0;
   const budgetId = useId();
   const ranks = popularityRanks(trifecta);
   // オッズの付いた組が無い（発売前）ときは配分を出さない（screens「状態」）
@@ -84,6 +88,7 @@ export default function BetSummary({
               <th scope="col">{ASSIST_COPY.colTicket}</th>
               <th scope="col">{ASSIST_COPY.colOdds}</th>
               <th scope="col">{ASSIST_COPY.colPopularity}</th>
+              {showSimilar && <th scope="col">{ASSIST_COPY.colSimilar}</th>}
               <th scope="col">{ASSIST_COPY.colStake}</th>
               <th scope="col">{ASSIST_COPY.colPayout}</th>
             </tr>
@@ -98,6 +103,11 @@ export default function BetSummary({
                   <td className="ta-num">
                     {ASSIST_COPY.popularity(ranks.get(r.ticket))}
                   </td>
+                  {showSimilar && (
+                    <td className="ta-num">
+                      {similarTri[r.ticket] ?? 0}/{similarN}
+                    </td>
+                  )}
                   <td className="ta-num">{yen(r.stake)}</td>
                   <td className={`ta-num${tg ? " ta-warn" : ""}`}>
                     {yen(r.payout)}
@@ -108,7 +118,7 @@ export default function BetSummary({
             })}
             <tr>
               <td
-                colSpan={5}
+                colSpan={showSimilar ? 6 : 5}
                 className="ta-num"
                 style={{ textAlign: "left", whiteSpace: "normal" }}
               >
@@ -129,6 +139,9 @@ export default function BetSummary({
         <p className="ta-note">
           {ASSIST_COPY.missingOdds(result.missing.length)}
         </p>
+      )}
+      {showSimilar && result && !result.insufficient && (
+        <p className="ta-note">{ASSIST_COPY.similarColNote(similarN)}</p>
       )}
       {composite != null && (
         <p className="ta-note ta-num">

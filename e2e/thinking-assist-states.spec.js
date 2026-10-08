@@ -576,3 +576,56 @@ test.describe("思考アシスト: 375px の押せる範囲と固定位置（Cod
     expect(gap).toBeGreaterThanOrEqual(-1);
   });
 });
+
+/**
+ * PR4（レンズの要約・図の印・深掘り）。値は承認モック v7 と v16 の固定データに一致すること:
+ *   軸の要約は準優勝戦に絞った 65/119（D-37）、展開の手がかりは2コース凹み 13%（65/501）、
+ *   深掘りの今節の平均着順点は v16 と同じ 8.57＝60点÷7走（今日の走は入れない。D-29）
+ */
+test.describe("思考アシスト: レンズの要約と深掘り（PR4）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("軸: 1号艇の1着は準優勝戦に絞った 54.6%（65/119レース）", async ({
+    page,
+  }) => {
+    await open(page);
+    await expect(page.getByText("65/119レース")).toBeVisible();
+    await expect(page.getByText("54.6%").first()).toBeVisible();
+  });
+
+  test("展開: 手がかりの印が2号艇、攻め手が3号艇に付き、点の値を押すと6艇比較になる", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(page.getByText("本番で2コース凹みになるのは")).toBeVisible();
+    await expect(page.getByText("★2コース凹みの手がかり 13%")).toBeVisible();
+    await expect(page.getByText("攻め手", { exact: true })).toBeVisible();
+    await page
+      .getByRole("button", { name: /^展示ST .*、6艇で比べる$/ })
+      .first()
+      .click();
+    await expect(page.getByRole("button", { name: /図を戻す/ })).toBeVisible();
+  });
+
+  test("深掘り: 今節の平均は 8.57＝60点÷7走、今日の走は点に入れない", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const toggle = page.getByRole("button", { name: "1走ずつの表" });
+    await expect(toggle).toBeVisible({ timeout: 30000 });
+    await toggle.click();
+    await expect(page.getByRole("table", { name: /今節の各走/ })).toBeVisible();
+    await expect(page.getByText("平均 8.57＝60点÷7走")).toBeVisible();
+    await expect(
+      page.getByRole("table", { name: /今節より前の5走/ }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "閉じる", exact: true }).click();
+    await expect(
+      page.getByRole("region", { name: "1号艇の詳しい情報" }),
+    ).toHaveCount(0);
+  });
+});

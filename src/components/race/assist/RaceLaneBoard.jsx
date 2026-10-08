@@ -2,6 +2,7 @@ import { useId } from "react";
 import BoatBadge from "../BoatBadge";
 import { BOAT_LINE_COLORS } from "../../../utils/colors";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
+import { METRICS } from "../../../utils/assistModel";
 
 const scale = (model, x) =>
   Math.max(0, Math.min(100, ((x - model.lo) / (model.hi - model.lo)) * 100));
@@ -36,7 +37,7 @@ function NumButton({ num, boat, onMetric }) {
   );
 }
 
-function Track({ model, row }) {
+function Track({ model, row, onMetric }) {
   if (row.x == null)
     return (
       <div className="ta-track" aria-hidden="true">
@@ -48,29 +49,41 @@ function Track({ model, row }) {
     );
   const x = scale(model, row.x);
   const color = BOAT_LINE_COLORS[row.boat];
+  // 端の値（目盛りの外に詰めた値を含む）は文字を内側へ寄せ、右の印や図の外にはみ出させない（ファン評価 3周目 指摘12）
+  const valClass = `ta-track-val ta-num${row.dotBest ? " ind-best" : ""}${x > 85 ? " ta-track-val-end" : x < 15 ? " ta-track-val-start" : ""}`;
+  const def = row.dotMetric ? METRICS[row.dotMetric] : null;
   return (
     <div
       className={`ta-track${model.good ? ` ta-track-good-${model.good}` : ""}`}
-      aria-hidden="true"
     >
-      <span className="ta-track-rail" />
+      <span className="ta-track-rail" aria-hidden="true" />
       <span
         className="ta-track-bar"
+        aria-hidden="true"
         style={{ width: `${x}%`, background: color }}
       />
       <span
         className="ta-track-dot"
+        aria-hidden="true"
         style={{ left: `${x}%`, background: color }}
       />
-      {row.dotText && (
-        <span
-          // 端の値（目盛りの外に詰めた値を含む）は文字を内側へ寄せ、右の印や図の外にはみ出させない（ファン評価 3周目 指摘12）
-          className={`ta-track-val ta-num${row.dotBest ? " ind-best" : ""}${x > 85 ? " ta-track-val-end" : x < 15 ? " ta-track-val-start" : ""}`}
-          style={{ left: `${x}%` }}
-        >
-          {row.dotText}
-        </span>
-      )}
+      {row.dotText &&
+        (def ? (
+          // 点の値は押すと6艇比較（ファン評価で PR4 に回した「スタートの値の数字ボタン」）
+          <button
+            type="button"
+            className={`${valClass} ta-track-val-btn`}
+            style={{ left: `${x}%` }}
+            aria-label={ASSIST_COPY.compareAria(def.label, row.dotAria)}
+            onClick={() => onMetric(row.dotMetric, row.boat)}
+          >
+            {row.dotText}
+          </button>
+        ) : (
+          <span className={valClass} style={{ left: `${x}%` }} aria-hidden="true">
+            {row.dotText}
+          </span>
+        ))}
     </div>
   );
 }
@@ -79,7 +92,8 @@ function Track({ model, row }) {
  * レースの図（FR-3、案②レーン）。行＝1〜6号艇（艇の丸・苗字・級）、横軸はレンズで変わる。
  * 艇の行を押すと深掘り、数字を押すと6艇比較（2段目、「図を戻す」で戻る）。
  * 買い目レンズでは行ごとに「1着・2着・3着」の候補、ほかのレンズでは右端の印からマークシートを開く（screens S-1 C）。
- * 欠場の艇には候補のボタンを出さない（D-38）
+ * 欠場の艇には候補のボタンを出さない（D-38）。
+ * marks はレンズごとの印（良い方の札・凹みの手がかり・攻め手・チルト・交換。assistSummary から作る）
  */
 export default function RaceLaneBoard({
   model,
@@ -93,6 +107,7 @@ export default function RaceLaneBoard({
   onBack,
   onToggleBet,
   onOpenSheet,
+  marks = null,
 }) {
   const bet = model.kind === "bet";
   return (
@@ -135,7 +150,7 @@ export default function RaceLaneBoard({
               <span className="ta-boat-cls">{r.cls ?? ""}</span>
             </button>
             <div>
-              <Track model={model} row={row} />
+              <Track model={model} row={row} onMetric={onMetric} />
               <div className="ta-lane-marks">
                 {row.nums.map((num) => (
                   <NumButton
@@ -150,9 +165,20 @@ export default function RaceLaneBoard({
                     {ASSIST_COPY.absent}
                   </span>
                 )}
-                {!r.absent && r.fCount > 0 && model.kind === "axis" && (
-                  <span className="ta-tag ta-tag-warn">F{r.fCount}</span>
-                )}
+                {!r.absent &&
+                  r.fCount > 0 &&
+                  (model.kind === "axis" || model.kind === "flow") && (
+                    <span className="ta-tag ta-tag-warn">F{r.fCount}</span>
+                  )}
+                {!r.absent &&
+                  (marks?.get(row.boat) ?? []).map((m) => (
+                    <span
+                      key={m.text}
+                      className={`ta-tag${m.hit ? " ta-tag-hit" : ""}`}
+                    >
+                      {m.text}
+                    </span>
+                  ))}
               </div>
               {bet && !r.absent && (
                 <div

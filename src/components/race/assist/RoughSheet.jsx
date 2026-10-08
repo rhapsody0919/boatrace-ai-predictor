@@ -21,6 +21,7 @@ export default function RoughSheet({
   racecardStage,
   lineup,
   classes,
+  similarConditions = null,
   onClose,
 }) {
   const c = scope.cell;
@@ -49,6 +50,7 @@ export default function RoughSheet({
       <ScopeTable
         scope={scope}
         similarN={similar?.n ?? null}
+        similarConditions={similarConditions}
         classes={classes}
         lineup={lineup}
       />

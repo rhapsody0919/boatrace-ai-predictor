@@ -356,6 +356,21 @@ export const METRICS = {
     text: (v) => v.toFixed(2),
     aria: (v) => v.toFixed(2),
   },
+  // 展開レンズの点の値（押すと6艇比較。ファン評価で PR4 に回した「スタートの値の数字ボタン」）
+  st_course: {
+    label: "平均ST（このコース）",
+    short: "ST",
+    value: (r) => r.stCourse,
+    text: (v) => stText(v),
+    aria: (v) => v.toFixed(3),
+  },
+  exh_st: {
+    label: "展示ST",
+    short: "展示ST",
+    value: (r) => r.exhSt,
+    text: (v, r) => `${r?.exhFlying ? "F" : ""}${stText(Math.abs(v), 2)}`,
+    aria: (v, r) => `${r?.exhFlying ? "F" : ""}${Math.abs(v).toFixed(2)}`,
+  },
 };
 
 /** 数字1個（図の札・6艇比較の値）。best は最良の金枠（FR-3a） */
@@ -366,8 +381,8 @@ function numOf(metric, racer, best) {
     metric,
     label: def.label,
     short: def.short,
-    text: v == null ? "記録なし" : def.text(v),
-    aria: v == null ? "記録なし" : def.aria(v),
+    text: v == null ? "記録なし" : def.text(v, racer),
+    aria: v == null ? "記録なし" : def.aria(v, racer),
     best: best.has(racer.boat),
   };
 }
@@ -376,10 +391,16 @@ function numOf(metric, racer, best) {
 function bestOfMetric(metric, racers, finalRound) {
   return bestBoats(
     metric,
-    racers.map((r) => ({ boat: r.boat, value: METRICS[metric].value(r) })),
+    racers.map((r) => ({
+      boat: r.boat,
+      value: METRICS[metric].value(r),
+      flying: r.exhFlying,
+    })),
     { finalRound },
   );
 }
+
+const abs = (v) => (typeof v === "number" ? Math.abs(v) : v);
 
 /** 値の幅から図の端を決める（両端に幅の15%の余白。全艇同じ値なら ±1） */
 function span(values) {
@@ -409,7 +430,8 @@ export function firstPlaceComposite(trifecta, absentBoats = []) {
 
 /**
  * レンズ（または6艇比較の項目）の図のモデル。純粋関数
- * @param {{lens: string, stage: "pre"|"post", metric?: string|null, racers: object[], trifecta?: object|null, finalRound?: boolean, hasToday?: boolean}} args
+ * @param {{lens: string, stage: "pre"|"post", metric?: string|null, racers: object[], trifecta?: object|null, finalRound?: boolean, hasToday?: boolean, pastWin?: Map<number, {k: number, n: number}>|null}} args
+ *   pastWin: 買い目レンズの「過去の1着」（艇ごとの差がつく材料の範囲での1着。assistSummary.b1Usual）
  *   hasToday: v16 の today が届いているか。届いていない（読み込み中・保存が無い）ときは v16 の値（平均ST）を
  *   「記録なし」と書かず出さない（記録が無いのではなく、データが無いだけ。ファン評価 1周目 指摘3）
  *   racers は1〜6号艇（欠場を含む）: {boat, natWin, locWin, stMean, stCourse, motor2, seriesScore, exhTime, exhSt, exhFlying, absent}
@@ -423,6 +445,7 @@ export function boardModel({
   trifecta = null,
   finalRound = false,
   hasToday = true,
+  pastWin = null,
 }) {
   const post = stage === "post";
   const best = (m) => bestOfMetric(m, racers, finalRound);
@@ -437,10 +460,10 @@ export function boardModel({
       left: "",
       right: "",
       good: dir === "min" ? "left" : "right",
-      ...span(racers.map(def.value)),
+      ...span(racers.map((r) => abs(def.value(r)))),
       rows: racers.map((r) => ({
         boat: r.boat,
-        x: def.value(r),
+        x: abs(def.value(r)),
         nums: [numOf(metric, r, b)],
       })),
     };
@@ -501,6 +524,12 @@ export function boardModel({
           pending: !post && !hasToday,
           dotText: text,
           dotBest: best2.has(r.boat),
+          // 点の値は押すと6艇比較（読み上げは「{項目名} {値}、6艇で比べる」）
+          dotMetric: v == null ? null : post ? "exh_st" : "st_course",
+          dotAria:
+            v == null
+              ? null
+              : METRICS[post ? "exh_st" : "st_course"].aria(v, r),
         };
       }),
     };
@@ -562,7 +591,25 @@ export function boardModel({
       lo: 0,
       hi: 1,
       noOdds: true,
-      rows: racers.map((r) => ({ boat: r.boat, x: null, nums: [] })),
+      rows: racers.map((r) => {
+        const past = pastWin?.get(r.boat) ?? null;
+        return {
+          boat: r.boat,
+          x: null,
+          nums: past
+            ? [
+                {
+                  metric: null,
+                  label: "過去の1着",
+                  short: "過去の1着",
+                  text: `${Math.round((past.k / past.n) * 100)}%`,
+                  aria: null,
+                  best: false,
+                },
+              ]
+            : [],
+        };
+      }),
     };
   const sorted = [...comp.values()].sort((a, b) => a - b);
   const hiOdds = Math.max(300, sorted[sorted.length - 1]);
@@ -577,22 +624,29 @@ export function boardModel({
     log: true,
     rows: racers.map((r) => {
       const c = comp.get(r.boat);
+      const past = pastWin?.get(r.boat) ?? null;
       return {
         boat: r.boat,
         x: c == null ? null : Math.log(c),
-        nums:
-          c == null
-            ? []
-            : [
-                {
-                  metric: null,
-                  label: "1着人気",
-                  short: "1着人気",
-                  text: `${1 + sorted.filter((o) => o < c).length}番（${c.toFixed(1)}倍）`,
-                  aria: null,
-                  best: false,
-                },
-              ],
+        nums: [
+          c != null && {
+            metric: null,
+            label: "1着人気",
+            short: "1着人気",
+            text: `${1 + sorted.filter((o) => o < c).length}番（${c.toFixed(1)}倍）`,
+            aria: null,
+            best: false,
+          },
+          // 艇ごとに集めた範囲が違うので6艇で比べない（金枠を付けない。FR-3a「付けない所」）
+          past && {
+            metric: null,
+            label: "過去の1着",
+            short: "過去の1着",
+            text: `${Math.round((past.k / past.n) * 100)}%`,
+            aria: null,
+            best: false,
+          },
+        ].filter(Boolean),
       };
     }),
   };
@@ -640,6 +694,9 @@ export function buildRacers({
       exhTime: e?.time ?? null,
       exhSt: e?.st ?? null,
       exhFlying: e?.startFlag === "F",
+      tilt: e?.tilt ?? null,
+      racerId: p?.racerId ?? null,
+      age: numOrNull(p?.age),
       fCount: numOrNull(rate.get(boat)?.f_count),
       absent: e?.absent === true,
     };
