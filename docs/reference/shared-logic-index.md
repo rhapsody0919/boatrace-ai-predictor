@@ -298,11 +298,11 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, hasRulesForVenue, getRulesForVenue ほか3件 |
 | `src/services/sherlockModel.js` | シャーロック予想 共有モデルロジック（純粋関数のみ） | mean, buildFeatures, softmax, predictConditionalLogit, impliedProbs ほか5件 |
 | `src/services/sherlockService.js` | シャーロック予想 データ取得・推論サービス | getSherlockModelInfo, getSherlockPredictions |
-| `src/services/snsHubService.js` | SNSマーケティングハブ 管理画面用サービス層 | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか27件 |
+| `src/services/snsHubService.js` | SNSマーケティングハブ 管理画面用サービス層 | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか30件 |
 | `src/services/supabaseClient.js` | Supabase クライアント（フロントエンド用） | supabase |
 | `src/services/supabaseDataService.js` | Supabase データサービス | clearCache, aggregateRacerVenueBoatStats, aggregateRacerCrossStats, FETCH_ALL_BY_IN_ORDER, supabaseDataService |
 | `src/services/watsonService.js` | ワトソン予想 データ取得サービス | getWatsonModelInfo, getWatsonPredictions |
 
 ---
 
-対象 270 ファイル / export 1435 件。
+対象 270 ファイル / export 1438 件。
