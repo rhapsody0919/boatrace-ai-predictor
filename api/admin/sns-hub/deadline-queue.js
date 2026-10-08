@@ -1,6 +1,6 @@
-import { requireAdminAuth } from '../../../_lib/adminAuth.js';
-import { isConfigured, jsonResponse } from '../../../_lib/snsHubHelpers.js';
-import { xSendStore } from '../../../_lib/snsXSendStore.js';
+import { requireAdminAuth } from '../../_lib/adminAuth.js';
+import { isConfigured, jsonResponse } from '../../_lib/snsHubHelpers.js';
+import { xSendStore } from '../../_lib/snsXSendStore.js';
 export const config = { runtime: 'edge' };
 export default async function handler(req) {
   const denied = await requireAdminAuth(req);
