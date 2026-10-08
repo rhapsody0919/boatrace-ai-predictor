@@ -41,6 +41,8 @@ Codex（OpenAI、`~/ryujin-codex-dev`）が手元の複製で実装した sns-hu
 
 ## 処理済みの PR とマイグレーション
 
+適用・配備・外部接続の段階ごとの一覧は [sns-hub-rollout-status.md](./sns-hub-rollout-status.md)。
+
 | PR | 内容 | マイグレーション | 状態（2026-10-08） |
 |---|---|---|---|
 | #1302 | ① 展望 bundle の取り込み口 | 135 | マージ済み・135 適用済み。本番で取り込み1件を確認し、テストの下書き2件は archive 済み |
