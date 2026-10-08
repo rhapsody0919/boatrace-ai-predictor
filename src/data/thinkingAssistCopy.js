@@ -12,6 +12,13 @@ export const ASSIST_COPY = Object.freeze({
     "過去レースの傾向と公式のデータを並べています。結果を保証するものではありません。舟券の購入は20歳以上・自己責任で。",
   loading: "読み込み中…",
   fetchFailed: "表示できませんでした。時間をおいて開き直してください",
+  // 一部の取得の失敗（FR-11、screens「取得の失敗」）。その部分に出し、ほかは描く
+  partFailed: (part) =>
+    `${part}は表示できませんでした。時間をおいて開き直してください`,
+  partExhibition: "展示",
+  partRates: "フライング（F）の数",
+  partOdds: "オッズ",
+  partSimilar: "類似レース",
   raceNotFound: "このレースは表示できるデータがありません",
   retry: "もう一度読み込む",
 
@@ -33,11 +40,17 @@ export const ASSIST_COPY = Object.freeze({
   roughManshu: "万舟",
   roughBase: (pct) => `全国${pct}%`,
   roughFew: "件数少なめ",
-  roughCount: (n) => `${n.toLocaleString("ja-JP")}件 ›`,
+  // 優勝戦・準優勝戦に絞った値のときは、数えた範囲が分かるようラウンドを添える（D-37）
+  roughCount: (n, round) =>
+    `${round ? `${round} ` : ""}${n.toLocaleString("ja-JP")}件 ›`,
   verdict: { high: "↑ 高め", low: "↓ 低め", unclear: "差ははっきりしない" },
   verdictArrow: { high: "↑", low: "↓", unclear: "→" },
   roughSheetLead: "全国の全レースと比べる",
   baseLegend: "太い点線＝全国の全レース",
+  baseLegendRef: (venue) =>
+    `太い点線＝全国の全レース、細い点線＝${venue}の全レース（参考）`,
+  venueAll: (venue, b1, manshu) =>
+    `${venue}の全レース: 1号艇の1着 ${b1}%・万舟 ${manshu}%`,
   baseMore: (base, diff, k, n, lo, hi) =>
     `全国の全レース ${base}%より ${diff >= 0 ? "+" : ""}${diff}ポイント（${k}/${n}、ぶれ幅${lo}〜${hi}%）`,
   withoutRound: (pct, n) => `予選も含めると ${pct}%（${n}件）`,
@@ -85,6 +98,9 @@ export const ASSIST_COPY = Object.freeze({
   compareAria: (label, value) => `${label} ${value}、6艇で比べる`,
   backToFigure: "図を戻す",
   absent: "欠場",
+  absentRemoved: (boats, k) =>
+    `${boats.join("・")}号艇の欠場で${k}点を外しました`,
+  cancelled: "このレースは中止です",
   candidateAria: (boat, pos) => `${boat}号艇を${pos}着の候補に`,
   candidateLabel: (pos) => `${pos}着`,
   markAria: (boat, positions) =>

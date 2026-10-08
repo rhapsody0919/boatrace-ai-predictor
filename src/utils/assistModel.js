@@ -24,7 +24,8 @@ export const ROUND_LABEL = { junyu: "準優勝戦", yusho: "優勝戦" };
  * @param {string|null} raceStage getPredictions の raceStage
  */
 export function raceRound(today, raceStage) {
-  if (ROUNDS_FINAL.includes(today?.round)) return today.round;
+  // v16 がラウンドを持つ（yosen・other 等も含む）ときはそれだけで決める。出走表に戻すのは v16 に無いときだけ（Codex 依頼25 F01）
+  if (today?.round) return ROUNDS_FINAL.includes(today.round) ? today.round : null;
   const key = getRaceStageKey(raceStage);
   if (key === "semifinal") return "junyu";
   if (key === "final") return "yusho";

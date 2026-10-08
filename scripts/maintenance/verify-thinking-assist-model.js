@@ -58,6 +58,13 @@ check(
     raceRound(null, "準優進出戦") === null &&
     raceRound({ round: "yosen" }, "一般") === null,
 );
+// v16 がラウンドを持つときは出走表より優先する（予選と言っているのに出走表の準優勝戦へ戻さない。Codex 依頼25 F01）
+check(
+  "raceRound: v16 の round が優勝戦・準優勝戦以外なら、出走表が準優勝戦・優勝戦でも null",
+  raceRound({ round: "yosen" }, "準優勝戦") === null &&
+    raceRound({ round: "other" }, "優勝戦") === null &&
+    raceRound({ round: null }, "優勝戦") === "yusho",
+);
 
 // ---- 全国・級の並びが同じ（D-37）----
 const scope = sameClassScope({ today: fx.today, scenarios: fx.scenario });

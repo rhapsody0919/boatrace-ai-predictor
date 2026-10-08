@@ -13,6 +13,7 @@ export default function MarkSheet({
   onToggle,
   onClose,
   points,
+  removedNote,
   ...summary
 }) {
   return (
@@ -42,6 +43,7 @@ export default function MarkSheet({
         ))}
       </div>
       <p className="ta-sheet-sub ta-num">{points}点</p>
+      {removedNote && <p className="ta-warn">{removedNote}</p>}
       <BetSummary {...summary} />
     </BottomSheet>
   );

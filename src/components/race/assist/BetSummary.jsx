@@ -1,5 +1,9 @@
 import { useId } from "react";
-import { allocateStakes, popularityRanks } from "../../../utils/oddsMath";
+import {
+  STAKE_UNIT,
+  allocateStakes,
+  popularityRanks,
+} from "../../../utils/oddsMath";
 import { compositeText, hasPricedTicket } from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 
@@ -15,6 +19,7 @@ export default function BetSummary({
   budget,
   mode,
   oddsAt,
+  oddsNote,
   onBudget,
   onMode,
 }) {
@@ -62,12 +67,10 @@ export default function BetSummary({
         </span>
       </div>
       {!tickets.length && <p className="ta-note">{ASSIST_COPY.betEmpty}</p>}
-      {tickets.length > 0 && !priced && (
-        <p className="ta-note">{ASSIST_COPY.oddsNone}</p>
-      )}
+      {tickets.length > 0 && !priced && <p className="ta-note">{oddsNote}</p>}
       {result?.insufficient && (
         <p className="ta-warn">
-          {ASSIST_COPY.minimum(tickets.length, result.minimum)}
+          {ASSIST_COPY.minimum(result.minimum / STAKE_UNIT, result.minimum)}
         </p>
       )}
       {composite != null && composite < 1 && (

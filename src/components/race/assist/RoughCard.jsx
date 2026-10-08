@@ -1,5 +1,6 @@
 import { useId } from "react";
 import ClassLineup from "./ClassLineup";
+import { ROUND_LABEL } from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 
 /** 小さいバー1本（値・全国の全レースの線・矢印） */
@@ -49,7 +50,10 @@ export default function RoughCard({ rough, scope, lineup, status, onOpen }) {
             <ClassLineup lineup={lineup} />
             <span className="ta-note ta-num">
               {rough.few && `${ASSIST_COPY.roughFew}・`}
-              {ASSIST_COPY.roughCount(scope.cell.n)}
+              {ASSIST_COPY.roughCount(
+                scope.cell.n,
+                scope.kind === "NCR" ? ROUND_LABEL[scope.round] : null,
+              )}
             </span>
           </span>
         </button>

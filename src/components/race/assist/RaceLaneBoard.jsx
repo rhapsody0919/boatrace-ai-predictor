@@ -83,6 +83,7 @@ function Track({ model, row }) {
 export default function RaceLaneBoard({
   model,
   lensLabel,
+  oddsNote,
   racers,
   deep,
   bets,
@@ -110,7 +111,7 @@ export default function RaceLaneBoard({
           )}
         </span>
       </div>
-      {model.noOdds && <p className="ta-note">{ASSIST_COPY.oddsNone}</p>}
+      {model.noOdds && <p className="ta-note">{oddsNote}</p>}
       {model.rows.map((row) => {
         const r = racers[row.boat - 1];
         const positions = [1, 2, 3].filter((k) => bets[k].has(row.boat));

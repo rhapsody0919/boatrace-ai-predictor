@@ -1,0 +1,262 @@
+import { test, expect, fetchRecorded } from "./fixtures.js";
+import {
+  THINKING_ASSIST_RACE,
+  routeThinkingAssistV16,
+} from "./thinking-assist-fixture.js";
+
+/**
+ * 思考アシスト（BOA-430）の状態の出し分け。PR3 #1308 の Codex 独立レビュー（依頼27）で実在を確かめた指摘の再現テスト。
+ *   F01/F02 一部の取得の失敗を「発売後に出る」「展示前」「段が無い」と取り違えない（FR-11、screens「取得の失敗」）
+ *   F03 DB の展示で分かった欠場でも v16 の部分を出さず、外した組を知らせる（screens「欠場があった」・D-38）
+ *   F04 タップ領域 44px（N-6）、F05 ヘッダーの件数にラウンド（D-37）、F06 会場の全レースの細い点線（FR-2）
+ *   F07 中止のレースの買い目レンズ（D-38）、F08 レンズの固定位置が共通のヘッダーに隠れない（N-1）
+ *   U05 最低額の点数はオッズのある組だけで数える
+ * 例のレースは 2026-10-06 徳山10R（準優勝戦）。出走表・展示・オッズは録画（本番の実データ）、v16 は固定データ
+ */
+
+const RACE_ID = THINKING_ASSIST_RACE;
+const URL_ = `/race/${RACE_ID}/assist`;
+
+const lensTab = (page, name) =>
+  page
+    .getByRole("tablist", { name: "見方" })
+    .getByRole("tab", { name, exact: true });
+const candidate = (page, boat, pos) =>
+  page.getByRole("button", { name: `${boat}号艇を${pos}着の候補に` });
+const footer = (page) => page.getByRole("region", { name: "買い目" });
+const roughBtn = (page) =>
+  page.getByRole("button", { name: "堅い？荒れる？の材料" });
+
+async function open(page) {
+  await page.goto(URL_);
+  await expect(page.getByRole("tablist", { name: "見方" })).toBeVisible({
+    timeout: 20000,
+  });
+}
+
+/** exhibition_data の録画の応答を加工する（欠場など） */
+async function routeExhibition(page, edit, gate = null) {
+  await page.route("**/rest/v1/exhibition_data*", async (route) => {
+    const res = await fetchRecorded(route);
+    const rows = await res.json();
+    if (gate) await gate;
+    await route.fulfill({ response: res, json: edit(rows) });
+  });
+}
+
+test.describe("思考アシスト: 状態の出し分け（Codex 依頼27）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("F01: オッズの取得に失敗したら「発売後に出る」と断定せず、失敗を出す", async ({
+    page,
+  }) => {
+    await page.route("**/rest/v1/race_odds*", (route) =>
+      route.fulfill({ status: 500, json: { message: "boom" } }),
+    );
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await expect(
+      page.getByText("オッズは表示できませんでした", { exact: false }).first(),
+    ).toBeVisible();
+    await expect(page.getByText("オッズは発売後に出る")).toHaveCount(0);
+  });
+
+  test("F02: 展示の取得に失敗したら、展示前として黙らず失敗を出す", async ({
+    page,
+  }) => {
+    await page.route("**/rest/v1/exhibition_data*", (route) =>
+      route.fulfill({ status: 500, json: { message: "boom" } }),
+    );
+    await open(page);
+    await expect(
+      page.getByText("展示は表示できませんでした", { exact: false }),
+    ).toBeVisible();
+  });
+
+  test("F02: 展示後の類似レースの取得に失敗したら、出走表の時点の値に戻さず失敗を出す", async ({
+    page,
+  }) => {
+    await page.route("**/api/analogy/similar/**", (route) => {
+      const stage = new URL(route.request().url()).searchParams.get("stage");
+      if (stage === "exhibition")
+        return route.fulfill({ status: 500, json: { error: "boom" } });
+      return route.fallback();
+    });
+    await open(page);
+    await roughBtn(page).click();
+    const sheet = page.getByRole("dialog");
+    await expect(
+      sheet.getByText("類似レースは表示できませんでした", { exact: false }),
+    ).toBeVisible();
+    await expect(sheet.getByText(/類似レース\d+件/)).toHaveCount(0);
+  });
+
+  test("F03: DB の展示で欠場が分かったら、v16 の状態が欠場でなくても過去レースの傾向を出さない", async ({
+    page,
+  }) => {
+    await routeExhibition(page, (rows) =>
+      rows.map((r) => (r.boat_number === 4 ? { ...r, is_absent: true } : r)),
+    );
+    await open(page);
+    await expect(
+      page.getByText("欠場があったため、過去レースの傾向は出していません"),
+    ).toBeVisible();
+    await expect(roughBtn(page)).toHaveCount(0);
+    await lensTab(page, "買い目").click();
+    await expect(candidate(page, 4, 1)).toHaveCount(0);
+  });
+
+  test("F03: 欠場が分かる前に組んだ組は外し、外したことを1行で知らせる", async ({
+    page,
+  }) => {
+    let release;
+    const gate = new Promise((r) => (release = r));
+    await routeExhibition(
+      page,
+      (rows) =>
+        rows.map((r) => (r.boat_number === 4 ? { ...r, is_absent: true } : r)),
+      gate,
+    );
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 1, 1).click();
+    await candidate(page, 2, 2).click();
+    await candidate(page, 4, 2).click();
+    await candidate(page, 3, 3).click();
+    await expect(footer(page)).toContainText("（2点）");
+    release();
+    await expect(footer(page)).toContainText("4号艇の欠場で1点を外しました");
+    await expect(footer(page)).toContainText("3連単 1-2-3（1点）");
+  });
+
+  test("F05: 準優勝戦に絞った件数は、ヘッダーの枠にもラウンドを添える", async ({
+    page,
+  }) => {
+    await open(page);
+    await expect(roughBtn(page)).toContainText("準優勝戦 112件");
+  });
+
+  test("F06: 堅い？荒れる？の材料に会場の全レースを参考の細い点線で並べる", async ({
+    page,
+  }) => {
+    await open(page);
+    await roughBtn(page).click();
+    const sheet = page.getByRole("dialog");
+    await expect(
+      sheet.getByText("細い点線＝徳山の全レース（参考）", { exact: false }),
+    ).toBeVisible();
+    await expect(
+      sheet.getByText(/徳山の全レース: 1号艇の1着 \d+%・万舟 \d+%/),
+    ).toBeVisible();
+  });
+
+  test("F07: 中止のレースは買い目レンズに中止だけを出す", async ({ page }) => {
+    await page.route("**/api/predictions/**", async (route) => {
+      const res = await fetchRecorded(route);
+      const body = await res.json();
+      for (const r of body.races ?? [])
+        if (r.raceId === RACE_ID) {
+          r.cancellationStatus = "confirmed";
+          r.result = null;
+        }
+      await route.fulfill({ response: res, json: body });
+    });
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await expect(page.getByText("このレースは中止です")).toBeVisible();
+    await expect(candidate(page, 1, 1)).toHaveCount(0);
+    await expect(footer(page)).toHaveCount(0);
+  });
+
+  test("U05: オッズの無い組があるとき、最低額の点数はオッズのある組だけで数える", async ({
+    page,
+  }) => {
+    await page.route("**/rest/v1/race_odds*", async (route) => {
+      const res = await fetchRecorded(route);
+      const rows = await res.json();
+      for (const row of rows)
+        if (row.trifecta_all) delete row.trifecta_all["1-2-4"];
+      await route.fulfill({ response: res, json: rows });
+    });
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 1, 1).click();
+    await candidate(page, 2, 2).click();
+    await candidate(page, 3, 3).click();
+    await candidate(page, 4, 3).click();
+    await page.getByRole("button", { name: "マークシートを開く" }).click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    await sheet.getByRole("spinbutton", { name: "予算" }).fill("50");
+    await expect(sheet.getByText("1点には最低100円")).toBeVisible();
+  });
+});
+
+test.describe("思考アシスト: 375px の押せる範囲と固定位置（Codex 依頼27 F04・F08）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("F04: 小さく見えるボタンも、上下（候補の印は左右も）22px 離れた所で押せる", async ({
+    page,
+  }) => {
+    await open(page);
+    // 押せる範囲: 中心から dx・dy ずらした点の一番上の要素が、そのボタン（か中身）か
+    const hit = (selector, dirs) =>
+      page.evaluate(
+        ({ selector, dirs }) => {
+          const el = document.querySelector(selector);
+          if (!el) return `${selector} が無い`;
+          const r = el.getBoundingClientRect();
+          const cx = r.left + r.width / 2;
+          const cy = r.top + r.height / 2;
+          const miss = dirs.filter(([dx, dy]) => {
+            const t = document.elementFromPoint(cx + dx, cy + dy);
+            return !(t && el.contains(t));
+          });
+          return miss.length ? `${selector} ${JSON.stringify(miss)}` : null;
+        },
+        { selector, dirs },
+      );
+    const V = [
+      [0, -21],
+      [0, 21],
+    ];
+    const HV = [...V, [-21, 0], [21, 0]];
+    const misses = [
+      await hit(".ta-seg button", V),
+      await hit(".ta-lane:nth-of-type(3) .ta-num-btn", V),
+      await hit(".ta-lane:nth-of-type(3) .ta-add", HV),
+    ];
+    await lensTab(page, "買い目").click();
+    misses.push(await hit(".ta-lane:nth-of-type(3) .ta-pos3 button", V));
+    expect(misses.filter(Boolean)).toEqual([]);
+  });
+
+  test("F08: 下へスクロールしても、レンズは共通のヘッダーの下に止まり隠れない", async ({
+    page,
+  }) => {
+    await open(page);
+    // 例のレースはページが短く、レンズが上端に届くまで縮められないので、下に余白を足して伸ばす
+    await page.evaluate(() => {
+      const pad = document.createElement("div");
+      pad.style.height = "2000px";
+      document.querySelector(".ta-page").append(pad);
+    });
+    await page.mouse.wheel(0, 1200);
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(800);
+    const gap = await page.evaluate(() => {
+      const header = document.querySelector(".app-header");
+      const lens = document.querySelector(".ta-lens");
+      return (
+        lens.getBoundingClientRect().top - header.getBoundingClientRect().bottom
+      );
+    });
+    expect(gap).toBeGreaterThanOrEqual(-1);
+  });
+});

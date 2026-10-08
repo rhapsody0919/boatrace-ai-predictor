@@ -102,7 +102,10 @@ export function useThinkingAssistData(
     Boolean(round && keys?.NCR),
   );
   const na = useAnalogyScenario(raceId, keys?.NA, v16Stage, Boolean(keys?.NA));
-  // 類似レース: 展示後で v16 の展示後の段が無い（neighbors が無い）ときは、出走表の時点の値で描く（screens「状態」）
+  // 会場の全レース（堅い？荒れる？の材料の細い点線、参考。FR-2・D-21）
+  const va = useAnalogyScenario(raceId, keys?.VA, v16Stage, Boolean(keys?.VA));
+  // 類似レース: 展示後で v16 の展示後の段が無い（neighbors が無い）ときは、出走表の時点の値で描く（screens「状態」）。
+  // 展示後の段の取得の失敗は「段が無い」と分けて失敗のまま返す（FR-11、Codex 依頼27 F02）
   const similarRacecard = useAnalogySimilar(raceId, "racecard", enabled);
   const similarExhibition = useAnalogySimilar(
     raceId,
@@ -110,9 +113,11 @@ export function useThinkingAssistData(
     enabled && stage === "post",
   );
   const similar =
-    stage === "post" && similarExhibition.data?.similar?.neighbors
+    stage === "post" && similarExhibition.status === "error"
       ? { ...similarExhibition, racecardStage: false }
-      : { ...similarRacecard, racecardStage: stage === "post" };
+      : stage === "post" && similarExhibition.data?.similar?.neighbors
+        ? { ...similarExhibition, racecardStage: false }
+        : { ...similarRacecard, racecardStage: stage === "post" };
 
   // scenario を範囲キー → 応答の形にまとめる（assistModel.sameClassScope が読む形）
   const scenarios = useMemo(() => {
@@ -134,7 +139,7 @@ export function useThinkingAssistData(
     defaultStage,
     round,
     facts,
-    scenario: { nc, ncr, na, byKey: scenarios },
+    scenario: { nc, ncr, na, va, byKey: scenarios },
     similar,
   };
 }

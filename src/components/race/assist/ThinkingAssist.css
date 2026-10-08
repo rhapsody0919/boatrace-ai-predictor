@@ -109,7 +109,15 @@
   display: inline-flex;
   border: 1px solid var(--border-hairline);
   border-radius: var(--radius-md);
-  overflow: hidden;
+}
+
+/* 押せる範囲を外へ広げるため overflow: hidden を使わず、角は端のボタンで丸める */
+.ta-seg button:first-child {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.ta-seg button:last-child {
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
 .ta-seg button {
@@ -382,7 +390,8 @@
 /* ---- レンズ（B） ---- */
 .ta-lens {
   position: sticky;
-  top: 0;
+  /* 共通のヘッダー（sticky・高さが変わる）の下に止める。高さはページが測って渡す（Codex 依頼27 F08） */
+  top: var(--ta-sticky-top, 0px);
   z-index: 5;
   background: var(--surface-card);
   border-bottom: 1px solid var(--border-hairline);
@@ -670,7 +679,7 @@
   background: var(--surface-card);
   color: inherit;
   border-radius: var(--radius-md);
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 var(--spacing-3);
   font: inherit;
   font-size: var(--font-size-sm);
@@ -781,7 +790,7 @@
   color: inherit;
   border-radius: var(--radius-md);
   min-width: 44px;
-  min-height: 36px;
+  min-height: 44px;
   font: inherit;
   font-size: var(--font-size-sm);
   cursor: pointer;
@@ -845,7 +854,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-1);
-  min-height: 36px;
+  min-height: 44px;
 }
 
 .ta-table {
@@ -883,4 +892,33 @@
       left 0.3s ease,
       width 0.3s ease;
   }
+}
+
+/* ---- タップ領域 44px（spec N-6、Codex 依頼27 F04） ----
+   モックの密度を保つため、見た目の大きさは変えず、押せる範囲だけを透明な疑似要素で 44px まで広げる */
+.ta-seg button,
+.ta-scope-toggle,
+.ta-hint button,
+.ta-num-btn,
+.ta-add,
+.ta-pos3 button {
+  position: relative;
+}
+
+.ta-seg button::after,
+.ta-scope-toggle::after,
+.ta-hint button::after,
+.ta-num-btn::after,
+.ta-add::after,
+.ta-pos3 button::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+  /* 後に並ぶ行（position: relative の図の線）より上に置き、下側に広げた範囲が隠れないようにする。
+     固定のレンズ（5）・フッター（6）・シート（1000）より下 */
+  z-index: 1;
 }
