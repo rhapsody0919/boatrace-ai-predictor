@@ -1,4 +1,3 @@
-import { errorMessageOf } from '../../../utils/errorMessage.js';
 import { useEffect, useState } from 'react';
 import { getMobileApprovalGroups, getMobileApprovalRace, approveMobileChannel, redoDraft } from '../../../services/snsHubService.js';
 import './MobileApprovalPanel.css';
@@ -63,7 +62,7 @@ export default function MobileApprovalPanel({ approvers, onOperationChange, onCh
       }
       else await approveMobileChannel(group,{draftId:row.draft.id,approverId,versionHash:row.versionHash,reviewSeconds:Math.min(86400,Math.floor((Date.now()-opened)/1000))});
       setRows([]); const result=await getMobileApprovalRace(group);setRows(result.data);setOpened(Date.now());
-    } catch(e) { setRows([]);setError(`${errorMessageOf(e)}。レースを選び直して確認してください。`); }
+    } catch { setRows([]);setError(`レースの最新状態を取得できませんでした。レースを選び直して確認してください。`); }
     finally {
       // POST応答消失・409・後続GET失敗でも、親一覧と既存カードを再取得する。
       try { await onChanged?.(); }
