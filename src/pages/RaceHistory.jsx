@@ -36,10 +36,11 @@ function RaceHistory() {
           turnHitRate: day.turnHitRate,
         }));
 
-        // 月別にグループ化
+        // 月別にグループ化。キーは並べ替えられる「YYYY-MM」にする（見出しの「2026年10月」を文字列で並べると
+        // 「10月」が「9月」より後ろに来る）
         const grouped = {};
         dates.forEach((dateInfo) => {
-          const { yearMonth } = formatDateObject(dateInfo.date);
+          const yearMonth = dateInfo.date.slice(0, 7);
           if (!grouped[yearMonth]) {
             grouped[yearMonth] = [];
           }
@@ -142,7 +143,9 @@ function RaceHistory() {
                             <span className="expand-icon">
                               {isExpanded ? "▼" : "▶"}
                             </span>
-                            <h2>📅 {yearMonth}</h2>
+                            <h2>
+                              📅 {formatDateObject(dates[0].date).yearMonth}
+                            </h2>
                           </div>
                           <div className="month-summary">
                             {summary.days}日分
