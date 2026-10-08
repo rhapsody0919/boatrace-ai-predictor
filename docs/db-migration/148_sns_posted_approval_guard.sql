@@ -9,7 +9,7 @@ BEGIN
     IS DISTINCT FROM ROW(OLD.title, OLD.caption_text, OLD.hashtags, OLD.video_storage_path, OLD.cover_image_path,
     OLD.platform, OLD.language, OLD.source_data, OLD.publish_blocked, OLD.publication_hold_reasons, OLD.risk_flags);
   SELECT * INTO j FROM public.sns_x_send_jobs WHERE draft_id=OLD.id;
-  IF changed AND (OLD.status='posted' OR j.state='posted') THEN
+  IF changed AND (OLD.posted_at IS NOT NULL OR j.state='posted') THEN
     RAISE EXCEPTION '投稿済みの下書きは本文・媒体・承認対象を変更できません';
   END IF;
   IF (changed OR NEW.status IS DISTINCT FROM OLD.status) AND j.state IN ('sending','reconcile') THEN
