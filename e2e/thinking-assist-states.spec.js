@@ -202,6 +202,34 @@ test.describe("思考アシスト: 状態の出し分け（Codex 依頼27）", (
   });
 });
 
+test.describe("思考アシスト: 承認モックとの差（mock-diff-checker）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("ヘッダーに一般のグレードの札を出す（承認モック v7）", async ({
+    page,
+  }) => {
+    await open(page);
+    await expect(
+      page.locator("header").getByText("一般", { exact: true }),
+    ).toBeVisible();
+  });
+
+  test("図の右端の印は何着の候補をハイフンでつなぐ（「2-3着」）", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 2, 2).click();
+    await candidate(page, 2, 3).click();
+    await lensTab(page, "軸").click();
+    await expect(
+      page.getByRole("button", { name: /^2号艇: 2・3着の候補/ }),
+    ).toHaveText("2-3着");
+  });
+});
+
 test.describe("思考アシスト: シートのフォーカス（Codex 依頼27 U03）", () => {
   test.beforeEach(async ({ page }) => {
     await routeThinkingAssistV16(page);

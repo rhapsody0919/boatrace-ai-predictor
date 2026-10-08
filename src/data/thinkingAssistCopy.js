@@ -24,6 +24,7 @@ export const ASSIST_COPY = Object.freeze({
 
   // ヘッダー（screens S-1 A）
   deadline: (time) => `締切 ${time}`,
+  gradeIppan: "一般",
   stageGroup: "時点",
   stagePre: "展示前",
   stagePost: "展示後",

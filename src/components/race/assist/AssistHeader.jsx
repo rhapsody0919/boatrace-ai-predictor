@@ -22,7 +22,10 @@ export default function AssistHeader({
 }) {
   const w = race?.weather ?? null;
   const post = stage === "post";
-  const grade = GRADE_CONFIG[race?.raceGrade]?.label ?? null;
+  // 一般（ippan）も札を出す（承認モック v7。レース詳細は出さないが、ここは会場・R・ラウンドと並べて読ませる）
+  const grade =
+    GRADE_CONFIG[race?.raceGrade]?.label ??
+    (race?.raceGrade === "ippan" ? ASSIST_COPY.gradeIppan : null);
   const roundLabel = round ? ROUND_LABEL[round] : (race?.raceStage ?? null);
   const observed = formatObservedTime(w?.observedAt);
   return (

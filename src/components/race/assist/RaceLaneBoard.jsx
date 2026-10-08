@@ -180,7 +180,7 @@ export default function RaceLaneBoard({
                 aria-label={ASSIST_COPY.markAria(row.boat, positions)}
                 onClick={onOpenSheet}
               >
-                {positions.length ? `${positions.join("·")}着` : "+"}
+                {positions.length ? `${positions.join("-")}着` : "+"}
               </button>
             ) : (
               <span />
