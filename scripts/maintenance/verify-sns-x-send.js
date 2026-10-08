@@ -66,7 +66,7 @@ async function enable(ceiling = 300000) {
   );
 }
 const run = (j, x, extra = {}) =>
-  runXSendJob(j.id, { store, x, loadMedia, wait, ...extra });
+  runXSendJob(j.id, { store, x, loadMedia, wait, preflight: async () => {}, ...extra });
 
 test("初期停止・未承認・本人以外は送らない", async () => {
   const d = await draft(),
