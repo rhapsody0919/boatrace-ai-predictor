@@ -1321,7 +1321,29 @@
         "hintFew": "件数が少ないので、ぶれ幅は広い。"
       },
       "barLabel": "{{boat}}号艇 {{p}} {{n}}件",
-      "sentenceSep": "。"
+      "sentenceSep": "。",
+      "feedback": {
+        "question": "龍神ソナーは予想の材料になりましたか？",
+        "useful": "なった",
+        "lacking": "物足りない",
+        "usefulAsk": "どこが使えましたか？（任意）",
+        "usefulExample": "例: 同じ進入の件数を見て、2着候補を広げた",
+        "lackingAsk": "何があれば使えましたか？（任意・いくつでも）",
+        "reasons": {
+          "few_races": "件数が少ない",
+          "no_filter": "欲しい条件で絞れない",
+          "hard_to_read": "数字の見方が分かりにくい",
+          "how_to_use": "予想にどう使うか分からない",
+          "other": "その他"
+        },
+        "lackingExample": "例: 風向きと水位もそろえて数えてほしい",
+        "commentLabel": "ひとこと（任意）",
+        "count": "{{n}} / {{max}}",
+        "send": "送る",
+        "thanks": "受け取りました。次の改善に使います",
+        "note": "匿名で送られ、公開されません。読むのは運営だけです",
+        "error": "送れませんでした。時間をおいてもう一度押してください"
+      }
     }
   },
   "beforeInfo": {

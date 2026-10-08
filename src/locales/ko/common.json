@@ -1663,7 +1663,29 @@
         "hintFew": "건수가 적어 변동 폭이 넓다. "
       },
       "barLabel": "{{boat}}번 보트 {{p}} {{n}}건",
-      "sentenceSep": ". "
+      "sentenceSep": ". ",
+      "feedback": {
+        "question": "용신 소나가 예상에 도움이 되었나요?",
+        "useful": "도움이 됐다",
+        "lacking": "아쉽다",
+        "usefulAsk": "어디에 쓰셨나요? (선택)",
+        "usefulExample": "예: 같은 진입의 건수를 보고 2착 후보를 넓혔다",
+        "lackingAsk": "무엇이 있으면 쓸 수 있었을까요? (선택, 복수 가능)",
+        "reasons": {
+          "few_races": "건수가 적다",
+          "no_filter": "원하는 조건으로 좁힐 수 없다",
+          "hard_to_read": "숫자를 읽는 법이 어렵다",
+          "how_to_use": "예상에 어떻게 쓰는지 모르겠다",
+          "other": "기타"
+        },
+        "lackingExample": "예: 풍향과 수위도 맞춰서 세어 주면 좋겠다",
+        "commentLabel": "한마디 (선택)",
+        "count": "{{n}} / {{max}}",
+        "send": "보내기",
+        "thanks": "받았습니다. 다음 개선에 활용하겠습니다",
+        "note": "익명으로 전송되며 공개되지 않습니다. 운영자만 읽습니다",
+        "error": "보내지 못했습니다. 잠시 후 다시 눌러 주세요"
+      }
     }
   },
   "beforeInfo": {

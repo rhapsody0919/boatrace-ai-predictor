@@ -742,6 +742,11 @@
       "guards": "マイグレーション133（BOA-271 v16 の analogy_v16_snapshots）を PGlite に適用し、RLS 有効・anon/authenticated は SELECT のみ・service_role は書ける・主キーの重複は ON CONFLICT DO NOTHING で1行・段ごとの列の約束（CHECK）・races の外部キー・冪等・ロールバックを確かめる"
     },
     {
+      "script": "verify-analogy-feedback-migration.js",
+      "tier": "ci",
+      "guards": "マイグレーション143（龍神ソナーの画面の中の声 analogy_feedback）を PGlite に適用し、RLS 有効・anon は INSERT のみ（SELECT・UPDATE・DELETE 不可）・同じブラウザ×レース×種類は1行・列挙値と一言の長さと理由の置き場所の CHECK・races の外部キー・created_at の上書き・同じブラウザ24時間40行の連投制限・冪等・ロールバックを確かめる"
+    },
+    {
       "script": "verify-analogy-storage.js",
       "tier": "ci",
       "guards": "アナロジー・ファインダーの学習（BOA-271）で、Storage の古い版を消すときに表示中の版を残すこと、表示中の版と同じ名前ではモデルを上書きしないこと、長期データのキャッシュの列名が今のコードと違えば失敗すること（scripts/ml/analogy/storageRules.js）"

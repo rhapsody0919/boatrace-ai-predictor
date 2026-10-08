@@ -1669,7 +1669,29 @@
         "hintFew": "The sample is small, so the range is wide. "
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
-      "sentenceSep": ". "
+      "sentenceSep": ". ",
+      "feedback": {
+        "question": "Did Ryujin Sonar help with your prediction?",
+        "useful": "It helped",
+        "lacking": "Not enough",
+        "usefulAsk": "What did you use it for? (optional)",
+        "usefulExample": "e.g. I checked the count for the same entry pattern and widened my 2nd-place picks",
+        "lackingAsk": "What would have made it useful? (optional, choose any)",
+        "reasons": {
+          "few_races": "Too few races",
+          "no_filter": "Can’t narrow down by the conditions I want",
+          "hard_to_read": "The numbers are hard to read",
+          "how_to_use": "Not sure how to use it for predictions",
+          "other": "Other"
+        },
+        "lackingExample": "e.g. Please also match wind direction and water level",
+        "commentLabel": "Comment (optional)",
+        "count": "{{n}} / {{max}}",
+        "send": "Send",
+        "thanks": "Received. We will use it for the next improvement",
+        "note": "Sent anonymously and never published. Only the site operators read it",
+        "error": "Could not send. Please wait a moment and try again"
+      }
     }
   },
   "beforeInfo": {
