@@ -28,6 +28,11 @@ CREATE FUNCTION public.save_sns_edit_inspection(p_draft_id UUID,p_revision TEXT,
 LANGUAGE plpgsql SET search_path=public AS $$
 DECLARE d public.sns_drafts; inspection UUID;
 BEGIN
+ -- engineは[rules,findings]のhashを含むため、同じ(draft_id,revision,engine)は常に同じ内容。
+ -- 既存行があれば行ロック・INSERT試行自体を省く（画面はpollごとに呼ぶため、変更の無い行を
+ -- 書かない。過去のDisk IO Budget枯渇と同型の負荷を避ける）。
+ SELECT id INTO inspection FROM sns_edit_inspections WHERE draft_id=p_draft_id AND revision=p_revision AND engine=p_engine;
+ IF inspection IS NOT NULL THEN RETURN read_sns_edit_inspection(inspection); END IF;
  SELECT * INTO d FROM sns_drafts WHERE id=p_draft_id FOR UPDATE;
  IF d.id IS NULL OR sns_mobile_revision(d) IS DISTINCT FROM p_revision THEN RAISE EXCEPTION '点検した版が変わりました'; END IF;
  IF jsonb_typeof(p_findings) IS DISTINCT FROM 'array' OR jsonb_array_length(p_findings)>1000 THEN RAISE EXCEPTION '指摘が不正です'; END IF;
