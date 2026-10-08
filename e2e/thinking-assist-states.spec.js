@@ -289,6 +289,15 @@ test.describe("思考アシスト: ファン評価 2周目", () => {
   test("指摘8: 一般戦はラウンドとグレードの「一般」を2つ並べない", async ({
     page,
   }) => {
+    // v16 のラウンドも一般戦に（v16 にラウンドがあればそれで決まるため。依頼25 F01）
+    await routeThinkingAssistV16(page, {
+      overrides: {
+        facts: (body) => ({
+          ...body,
+          today: { ...body.today, round: "other" },
+        }),
+      },
+    });
     await page.route("**/api/predictions/**", async (route) => {
       const res = await fetchRecorded(route);
       const body = await res.json();
