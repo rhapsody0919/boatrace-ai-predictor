@@ -5664,3 +5664,9 @@ test.describe("レース詳細の見出し: グレードとレース種別（BOA
     ).toHaveAttribute("translate", "no");
   });
 });
+
+// BOA-769: 集約ジョブ e2e が落ちることを確かめるための一時テスト（確認後に削除する）
+import { test as __boa769Test, expect as __boa769Expect } from "./fixtures.js";
+__boa769Test("BOA-769 一時: 集約失敗の確認用", () => {
+  __boa769Expect(1).toBe(2);
+});
