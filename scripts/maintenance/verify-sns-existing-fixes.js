@@ -22,8 +22,25 @@ const { default: youtube } =
   await import("../../api/admin/sns-hub/drafts/[id]/publish-youtube.js");
 const { default: blog } =
   await import("../../api/admin/sns-hub/drafts/[id]/merge-blog-pr.js");
-const { default: approve } =
-  await import("../../api/admin/sns-hub/drafts/[id]/approve.js");
+// approve.jsはrisk-rules.jsonをwith属性なしでimportする（Vercel EdgeのesbuildがJSON import属性の
+// 構文を解釈できずビルドが落ちるため、本番互換を優先）。Node 20/22はJSON importに属性が無いと
+// ERR_IMPORT_ASSERTION_TYPE_MISSINGで直接importを拒否するので、ここだけソースを読み直し、
+// riskRulesをモックに差し替えたうえで他の相対importは絶対file:// URLに書き換えてdata: URL経由で読む
+// （verify-sns-mobile-api.jsと同じ手法。riskRulesの中身自体はこのファイルの検証対象外）。
+const approveUrl = new URL(
+  "../../api/admin/sns-hub/drafts/[id]/approve.js",
+  import.meta.url,
+);
+const approveDir = new URL(".", approveUrl);
+const approveSource = (await readFile(approveUrl, "utf8"))
+  .replace(/import riskRules from [^;]+;/, "const riskRules={rules:[]};")
+  .replace(
+    /from "(\.\.?\/[^"]+)"/g,
+    (_, spec) => `from "${new URL(spec, approveDir).href}"`,
+  );
+const { default: approve } = await import(
+  "data:text/javascript," + encodeURIComponent(approveSource)
+);
 const { default: redo } =
   await import("../../api/admin/sns-hub/drafts/[id]/redo.js");
 const { default: preview } =
