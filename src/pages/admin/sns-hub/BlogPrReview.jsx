@@ -1,3 +1,4 @@
+import { errorMessageOf } from '../../../utils/errorMessage.js';
 import { useState } from 'react';
 import { getBlogPrPreview } from '../../../services/snsHubService';
 
@@ -11,7 +12,7 @@ export default function BlogPrReview({ draft, review, onReview }) {
     try {
       const result = await getBlogPrPreview(draft.id);
       onReview({ ...result, prUrl: draft.pr_url, confirmed: false });
-    } catch (err) { setError(err.message); }
+    } catch (err) { setError(errorMessageOf(err)); }
     finally { setLoading(false); }
   }
   const current = review?.prUrl === draft.pr_url ? review : null;

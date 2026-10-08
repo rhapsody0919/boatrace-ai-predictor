@@ -191,7 +191,7 @@ test('claim中は承認・redo・DB直接更新・削除を拒否、RPCは公開
     await assert.rejects(f.db.query("UPDATE sns_drafts SET title='変更'"));
     await assert.rejects(f.db.query('DELETE FROM sns_drafts'));
     await assert.rejects(f.db.query('UPDATE sns_drafts SET external_operation_state=NULL'));
-    await assert.rejects(f.db.query('UPDATE sns_drafts SET external_operation_token=NULL')); 
+    await assert.rejects(f.db.query('UPDATE sns_drafts SET external_operation_token=NULL'));
     for (const role of ['anon','authenticated']) {
       const result = await f.db.query(`SELECT has_function_privilege($1,'sns_claim_external(uuid,jsonb,uuid,uuid)','EXECUTE') AS allowed`, [role]);
       assert.equal(result.rows[0].allowed, false);
