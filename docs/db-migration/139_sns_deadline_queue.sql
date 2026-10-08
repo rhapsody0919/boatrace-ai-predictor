@@ -84,7 +84,8 @@ BEGIN
   ELSE
     IF jsonb_array_length(p_snapshot->'media')<>1 OR p_snapshot->'media'->0->>'path' IS DISTINCT FROM media_path
       OR coalesce(p_snapshot->'media'->0->>'sha256','') !~ '^[a-f0-9]{64}$'
-      OR coalesce((p_snapshot->'media'->0->>'size')::bigint,0) NOT BETWEEN 1 AND 33554432 THEN
+      OR coalesce((p_snapshot->'media'->0->>'size')::bigint,0) NOT BETWEEN 1 AND
+        (CASE WHEN d.platform='youtube' THEN 524288000 ELSE 33554432 END) THEN
       RAISE EXCEPTION '媒体のhash・サイズが不正です';
     END IF;
   END IF;
