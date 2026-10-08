@@ -88,7 +88,16 @@ export default function AnalogyFinderSection({ raceId }) {
   useEffect(() => {
     if (!linkedTab || !factsReady || scrolled.current) return;
     scrolled.current = true;
-    sectionRef.current?.scrollIntoView({ block: "start" });
+    const el = sectionRef.current;
+    if (!el) return;
+    // 上に貼り付くヘッダー（.app-header）の下に見出しが来るよう、その高さだけずらす
+    const header = document.querySelector(".app-header");
+    const top =
+      el.getBoundingClientRect().top +
+      window.scrollY -
+      (header?.getBoundingClientRect().height ?? 0) -
+      8;
+    window.scrollTo({ top: Math.max(0, top) });
   }, [linkedTab, factsReady]);
   const similar = useAnalogySimilar(raceId, stage, Boolean(opened.similar));
   const scenario = useAnalogyScenario(

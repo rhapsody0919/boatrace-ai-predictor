@@ -204,6 +204,14 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
         timeout: 20000,
       });
       await expect(section).toBeInViewport();
+      // 見出しが上に貼り付くヘッダーに隠れない
+      await expect
+        .poll(async () => {
+          const header = await page.locator(".app-header").boundingBox();
+          const heading = await section.locator("h2").first().boundingBox();
+          return heading.y >= header.y + header.height - 1;
+        })
+        .toBe(true);
       // 押しても URL は書き換えない（来たときの sonar=similar が残る）。直接来たときはタブ選択の計測を送らない
       await tabs.nth(2).click();
       await expect(tabs.nth(2)).toHaveAttribute("aria-selected", "true");
