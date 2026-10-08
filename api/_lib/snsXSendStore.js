@@ -14,7 +14,49 @@ async function db(path, options = {}) {
   if (!response.ok) throw new Error("X送信のDB操作に失敗しました");
   return response.json();
 }
+async function allRows(path) {
+  const rows = [];
+  for (let offset = 0; ; offset += 500) {
+    const page = await db(`${path}&limit=500&offset=${offset}`);
+    rows.push(...page);
+    if (page.length < 500) return rows;
+  }
+}
 export const xSendStore = {
+  async parent(id) {
+    const rows = await db(
+      `sns_x_send_jobs?id=eq.${encodeURIComponent(id)}&state=eq.posted&select=external_post_id`,
+    );
+    if (!rows[0]?.external_post_id) throw new Error("親投稿が未確認です");
+    return rows[0];
+  },
+  async sweep() {
+    return db("rpc/sweep_sns_deadline_queue", { method: "POST", body: "{}" });
+  },
+  async queue() {
+    const jobs = await allRows(
+      "sns_x_send_jobs?select=id,draft_id,state,scheduled_at,expires_at,error_code,snapshot&order=id",
+    );
+    const drafts = await allRows(
+      "sns_drafts?platform=in.(x,youtube)&status=neq.archived&select=id,title,platform,status,scheduled_at,source_data&order=id",
+    );
+    return drafts.map((d) => {
+      const j = jobs.find((job) => job.draft_id === d.id),
+        q = j?.snapshot?.queue || d.source_data?.deadline_queue;
+      return {
+        id: j?.id || d.id,
+        draft_id: d.id,
+        title: d.title,
+        channel: d.platform,
+        state: j?.state || d.status,
+        scheduled_at: j?.scheduled_at || d.scheduled_at,
+        expires_at: j?.expires_at || q?.expires_at,
+        deadline_at: q?.deadline_at,
+        youtube_mode: q?.youtube_mode,
+        error_code: j?.error_code,
+      };
+    });
+  },
   async approve(id, approverId, snapshot, scheduledAt) {
     return db("rpc/approve_sns_x_send", {
       method: "POST",
@@ -38,7 +80,7 @@ export const xSendStore = {
   },
   async status(id) {
     const jobs = await db(
-      `sns_x_send_jobs?draft_id=eq.${id}&select=id,state,scheduled_at,attempts,error_code,external_post_url,posted_at`,
+      `sns_x_send_jobs?draft_id=eq.${id}&select=id,state,scheduled_at,expires_at,attempts,error_code,external_post_url,posted_at`,
     );
     const controls = await db(
       "sns_x_send_control?id=eq.true&select=paused,budget_microusd,reserved_microusd",
@@ -57,8 +99,8 @@ export const xSendStore = {
   },
 };
 
-/** サーバー内でのみ利用。Storageパスから読み、外部URLを受け付けない。 */
-export async function loadXMedia(path) {
+/** サーバー内でのみ利用。Storageパスから読み、外部URLを受け付けない。maxBytesは呼び出し側がチャネル（X/YouTube）に応じて指定する。 */
+export async function loadXMedia(path, maxBytes = X_MEDIA_MAX_BYTES) {
   if (
     typeof path !== "string" ||
     path.startsWith("/") ||
@@ -85,8 +127,7 @@ export async function loadXMedia(path) {
       const { done, value } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > X_MEDIA_MAX_BYTES)
-        throw new Error("媒体の容量が上限を超えています");
+      if (size > maxBytes) throw new Error("媒体の容量が上限を超えています");
       chunks.push(value);
     }
   } finally {
