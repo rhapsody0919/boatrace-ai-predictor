@@ -341,7 +341,7 @@ export default function MobileApprovalPanel({
     } catch {
       setRows([]);
       setError(
-        "指摘の反映に失敗しました。レースを選び直して確認してください。",
+        "レースの最新状態を取得できませんでした。レースを選び直して確認してください。",
       );
     } finally {
       setBusy(false);
