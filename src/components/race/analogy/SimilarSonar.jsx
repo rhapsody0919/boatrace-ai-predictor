@@ -383,6 +383,7 @@ export default function SimilarSonar({
                 style={{ cursor: "pointer" }}
                 onClick={(e) => {
                   e.stopPropagation();
+                  setTip(null);
                   onBoat(b);
                 }}
                 data-af-control="similar_boat"

@@ -504,6 +504,17 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
         .getByTestId("analogy-sonar-legend")
         .dispatchEvent("pointerdown", { pointerType: "touch", bubbles: true });
       await expect(tip).toHaveCount(0);
+      // 図の外の艇番で扇を選んだときも閉じる（ファン評価2周目 指摘6）
+      await sonar.dispatchEvent("pointerdown", {
+        pointerType: "touch",
+        clientX: dot.x + dot.width / 2,
+        clientY: dot.y + dot.height / 2,
+        bubbles: true,
+      });
+      await expect(tip).toBeVisible();
+      await sonar.dispatchEvent("pointerup", { pointerType: "touch" });
+      await section.getByTestId("analogy-sonar-boat-3").click();
+      await expect(tip).toHaveCount(0);
     });
 
     test("英語の展開シナリオで、スリット図の凡例の文字が重ならない（ファン評価1周目 指摘3）", async ({
