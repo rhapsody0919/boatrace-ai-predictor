@@ -629,3 +629,44 @@ test.describe("思考アシスト: レンズの要約と深掘り（PR4）", () 
     ).toHaveCount(0);
   });
 });
+
+/** PR4 の /code-review 指摘の再現テスト */
+test.describe("思考アシスト: PR4 の /code-review 指摘", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("指摘1: 選手の登録番号が無い艇の深掘りは「読み込み中」に残らない", async ({
+    page,
+  }) => {
+    await page.route("**/api/predictions/**", async (route) => {
+      const res = await fetchRecorded(route);
+      const body = await res.json();
+      for (const r of body.races ?? [])
+        if (r.raceId === RACE_ID)
+          for (const e of r.entries ?? []) if (e.number === 1) e.racerId = null;
+      await route.fulfill({ response: res, json: body });
+    });
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const region = page.getByRole("region", { name: "1号艇の詳しい情報" });
+    await expect(region).toBeVisible();
+    await expect(
+      region.getByText("表示できるデータがありません").first(),
+    ).toBeVisible();
+    await expect(region.getByText("読み込み中…")).toHaveCount(0);
+  });
+
+  test("指摘2: 欠場があるレースでも、機力レンズのチルトの印は出す（v16 の部分だけ出さない）", async ({
+    page,
+  }) => {
+    await routeExhibition(page, (rows) =>
+      rows.map((r) => (r.boat_number === 4 ? { ...r, is_absent: true } : r)),
+    );
+    await open(page);
+    await lensTab(page, "機力").click();
+    await expect(
+      page.getByText("チルト-0.5", { exact: true }).first(),
+    ).toBeVisible();
+  });
+});

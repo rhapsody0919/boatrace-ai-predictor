@@ -204,8 +204,7 @@ export default function ThinkingAssistPage() {
   // 図の印（screens「レンズごとの図 C」の印）
   const marks = useMemo(() => {
     const out = new Map();
-    const add = (boat, mark) =>
-      out.set(boat, [...(out.get(boat) ?? []), mark]);
+    const add = (boat, mark) => out.set(boat, [...(out.get(boat) ?? []), mark]);
     if (state.lens === "axis")
       boatFacts.forEach((f, i) => {
         const c = boardFactMark(f.chips);
@@ -490,7 +489,8 @@ export default function ThinkingAssistPage() {
             onBack={() => dispatch({ type: "back" })}
             onToggleBet={toggleBet}
             onOpenSheet={() => dispatch({ type: "sheet", sheet: "mark" })}
-            marks={v16Off ? null : marks}
+            // 軸・展開の印は v16 が無ければ材料が空なので出ない。機力のチルト・交換は DB の展示なので欠場でも出す
+            marks={marks}
           />
         )}
         {deepBoat && (
@@ -507,7 +507,12 @@ export default function ThinkingAssistPage() {
             scope={boatFacts[deepBoat - 1].scope}
             chips={boatFacts[deepBoat - 1].chips}
             runs={
-              deepRunsReady ? data.runs : { status: "loading", data: null }
+              racers[deepBoat - 1]?.racerId == null
+                ? // 選手の登録番号が無い艇は走を取れない。読み込み中に残さない
+                  { status: "none", data: null }
+                : deepRunsReady
+                  ? data.runs
+                  : { status: "loading", data: null }
             }
             technique={
               data.technique.status === "ready"

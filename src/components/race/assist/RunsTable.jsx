@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
 import { STADIUM_NAMES } from "../../../constants";
-import { finishClass, finishOf, runPoints } from "../../../utils/assistSummary";
+import {
+  finishClass,
+  finishOf,
+  monthDay as md,
+  runPoints,
+} from "../../../utils/assistSummary";
 import { ASSIST_COPY as C } from "../../../data/thinkingAssistCopy";
 
-const md = (date) => {
-  const [, m, d] = date.split("-");
-  return `${Number(m)}/${Number(d)}`;
-};
 const raceNo = (run) => Number(run.raceId.slice(14, 16));
 const st2 = (run) => {
   const v = run.startTiming ?? run.flyingStartTiming;

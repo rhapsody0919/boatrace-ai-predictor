@@ -28,6 +28,7 @@ import {
   formSummary,
   hintSummary,
   meetRuns,
+  monthDay,
   partsChangedBoats,
   priorRuns,
   tiltOutliers,
@@ -307,6 +308,12 @@ const tech = featChips({
 check(
   "勝ち決まり手: 逃げ以外が1着8回以上の3割以上 → 「まくりで勝つことが多い」",
   tech?.technique === "まくり" && tech.wins === 11 && tech.count === 4,
+);
+
+// /code-review 指摘3: 着順の並びと1走ずつの表で日付の書き方をそろえる（日の0埋めをしない）
+check(
+  "日付は「10/2」（月・日とも0埋めしない）",
+  monthDay("2026-10-02") === "10/2" && monthDay("2026-09-29") === "9/29",
 );
 
 if (failures > 0) {

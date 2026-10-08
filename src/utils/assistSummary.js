@@ -322,6 +322,12 @@ export function meetRuns(records, raceId) {
   };
 }
 
+/** 日付 YYYY-MM-DD → 「10/2」（月・日とも0埋めしない。1走ずつの表と着順の並びで共通） */
+export const monthDay = (date) => {
+  const [, m, d] = String(date).split("-");
+  return `${Number(m)}/${Number(d)}`;
+};
+
 /** 着の色のクラス（既存の RaceHistoryTable と同じ: 1着＝金、5・6着＝赤） */
 export const finishClass = (f) =>
   f === 1 ? " ta-fin-1" : f === 5 || f === 6 ? " ta-fin-bad" : "";

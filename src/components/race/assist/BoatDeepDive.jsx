@@ -15,6 +15,7 @@ import {
   factsScopeLabel,
   featChips,
   finishClass,
+  monthDay,
   finishOf,
   meetRuns,
   priorRuns,
@@ -152,7 +153,7 @@ export default function BoatDeepDive({
         <dd>
           {cw ? (
             <span className="ta-num">{C.courseWin(cw.k, cw.n)}</span>
-          ) : runs.status === "error" ? (
+          ) : runs.status === "error" || runs.status === "none" ? (
             C.noRunsData
           ) : (
             C.loading
@@ -186,7 +187,7 @@ export default function BoatDeepDive({
                 {meet.byDay.map((d, k) => (
                   <span key={d.date}>
                     {k > 0 && "／"}
-                    {d.date.slice(5).replace("-", "/").replace(/^0/, "")}{" "}
+                    {monthDay(d.date)}{" "}
                     {d.finishes.map((f, j) => (
                       <span key={j}>
                         {j > 0 && "・"}
@@ -206,6 +207,8 @@ export default function BoatDeepDive({
               </>
             ) : runs.status === "error" ? (
               C.partFailed(C.captionMeet)
+            ) : runs.status === "none" ? (
+              C.noRunsData
             ) : (
               C.loading
             )}
