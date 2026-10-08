@@ -17,6 +17,7 @@ import {
 } from "../../../../_lib/snsHubHelpers.js";
 
 import { requireAdminAuth } from "../../../../_lib/adminAuth.js";
+import { isBundlePublicationBlocked } from "../../../../_lib/snsBundleValidation.js";
 
 export const config = {
   runtime: "edge",
@@ -50,6 +51,12 @@ export default async function handler(req) {
     const draft = await getDraftById(id);
     if (!draft) {
       return jsonResponse({ error: "下書きが見つかりません" }, 404);
+    }
+    if (isBundlePublicationBlocked(draft)) {
+      return jsonResponse(
+        { error: "公開不可: v0素材の保留はこの操作で解除できません" },
+        409,
+      );
     }
     if (draft.status !== "approved" && draft.status !== "ready_to_post") {
       return jsonResponse(

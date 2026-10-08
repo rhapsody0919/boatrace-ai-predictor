@@ -7,6 +7,13 @@
 
 const BASE_URL = "/api/admin/sns-hub";
 
+/** JSON・media・出典を同じmultipartで渡す。Content-Typeはブラウザに任せる。 */
+export async function importPreviewBundle(files) {
+  const body = new FormData();
+  for (const file of files) body.append("files", file, file.name);
+  return request("/import-bundle", { method: "POST", headers: {}, body });
+}
+
 async function request(path, options = {}) {
   const response = await fetch(`${BASE_URL}${path}`, {
     headers: { "Content-Type": "application/json" },

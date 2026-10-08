@@ -110,7 +110,8 @@
     "linear:update": "node scripts/linear-cli.js update",
     "linear:comment": "node scripts/linear-cli.js comment",
     "linear:list": "node scripts/linear-cli.js list",
-    "linear:get": "node scripts/linear-cli.js get"
+    "linear:get": "node scripts/linear-cli.js get",
+    "verify:sns-bundle-import": "node scripts/maintenance/verify-sns-bundle-import.js"
   },
   "dependencies": {
     "@kirinsaninc/lhats": "^0.1.0",
