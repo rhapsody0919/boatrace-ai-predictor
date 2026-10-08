@@ -5425,6 +5425,42 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定レースの展示の値（BOA-430 思考アシスト）。exhibition_data の行をそのまま艇番順に返す。
+   * 時点（展示が出走する艇の全部にそろったか、spec D-36 (1)）・欠場（D-38）・展示ST（F は start_flag）を見る。
+   * 行が無い（展示前）は空の配列。0行はキャッシュに残さない（展示が出た後も空のまま返さないため）。
+   * 取得の失敗は投げる（supabaseClient.js の .throwOnError() 既定）
+   * @returns {Promise<Array<{boat: number, time: number|null, st: number|null, startFlag: string|null, tilt: number|null, absent: boolean}>>}
+   */
+  getRaceExhibitionBasics(raceId) {
+    return withCache(
+      `race-exhibition-basics-${raceId}`,
+      async () => {
+        if (!supabase) {
+          throw new Error("Supabase client not initialized");
+        }
+        const { data } = await supabase
+          .from("exhibition_data")
+          .select(
+            "boat_number, exhibition_time, start_timing, start_flag, tilt, is_absent",
+          )
+          .eq("race_id", raceId)
+          .order("boat_number");
+        const num = (v) => (v == null || v === "" ? null : Number(v));
+        return (data ?? []).map((r) => ({
+          boat: r.boat_number,
+          time: num(r.exhibition_time),
+          st: num(r.start_timing),
+          startFlag: r.start_flag ?? null,
+          tilt: num(r.tilt),
+          absent: r.is_absent === true,
+        }));
+      },
+      undefined,
+      (rows) => rows.length > 0,
+    );
+  },
+
+  /**
    * 指定選手の展示タイム（周回タイム）の推移を取得する（BOA-164）
    * 同日複数レースは平均してグラフ用に日付単位でまとめる
    */

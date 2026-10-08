@@ -75,6 +75,6 @@ export default async function handler(req) {
     return jsonResponse({ data: updated });
   } catch (error) {
     console.error("SNS Hub mark-posted Edge function error:", error);
-    return jsonResponse({ error: error.message }, 500);
+    return jsonResponse({ error: error.message }, error.status || 500);
   }
 }

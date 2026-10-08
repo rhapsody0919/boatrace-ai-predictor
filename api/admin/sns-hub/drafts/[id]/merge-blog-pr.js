@@ -1,7 +1,7 @@
 /**
  * Vercel Edge Function: ブログ下書きの承認→Draft PR自動マージ
  * POST /api/admin/sns-hub/drafts/:id/merge-blog-pr
- * body: { approverId: string }
+ * body: { approverId: string, headSha: string }
  *
  * platform='blog'の下書き専用。通常のapprove.jsと違い、承認操作自体が
  * GitHub APIでのPRマージまで行う（spec.md FR6、ADR 0034）。
@@ -18,8 +18,10 @@ import {
   isConfigured,
   isValidDraftId,
   getDraftById,
-  updateDraft,
 } from "../../../../_lib/snsHubHelpers.js";
+
+import { claimExternal, recordExternal, finishExternal, completedResponse } from "../../../../_lib/snsExternalOperations.js";
+import { GITHUB_REPO, extractPrNumber, getBlogPr, assertReviewedHead } from "../../../../_lib/snsBlogPr.js";
 
 import { requireAdminAuth } from "../../../../_lib/adminAuth.js";
 import { isBundlePublicationBlocked } from "../../../../_lib/snsBundleValidation.js";
@@ -28,36 +30,13 @@ export const config = {
   runtime: "edge",
 };
 
-const GITHUB_REPO = "rhapsody0919/boatrace-ai-predictor";
-
-function extractPrNumber(prUrl) {
-  const match = prUrl?.match(/\/pull\/(\d+)/);
-  return match ? Number(match[1]) : null;
-}
-
 // ブログ下書きのPRは`docs/operation/sns-pipeline-blog.md`の手順で常に
 // `gh pr create --draft`で作られる（人間承認前にマージされるのを防ぐ意図）。
 // GitHubの通常マージAPI（PUT /pulls/:n/merge）はDraft PRを拒否するため、
 // マージ前にGraphQL `markPullRequestReadyForReview`でReady化する必要がある
 // （REST APIにはDraft→Ready変換の手段が無い）。2026-09-04、この変換が
 // 未実装のままだったため「承認してもPRがマージされない」不具合が発生していた
-async function markPullRequestReadyIfDraft(githubToken, prNumber) {
-  const prResponse = await fetch(
-    `https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}`,
-    {
-      headers: {
-        Authorization: `Bearer ${githubToken}`,
-        Accept: "application/vnd.github+json",
-      },
-    },
-  );
-  if (!prResponse.ok) {
-    const errorBody = await prResponse.text();
-    throw new Error(
-      `GitHub PR情報の取得に失敗しました (${prResponse.status}): ${errorBody}`,
-    );
-  }
-  const pr = await prResponse.json();
+async function markPullRequestReadyIfDraft(githubToken, pr) {
   if (!pr.draft) {
     return;
   }
@@ -109,7 +88,10 @@ export default async function handler(req) {
   } catch {
     return jsonResponse({ error: "リクエストボディが不正です" }, 400);
   }
-  const { approverId } = body;
+  const { approverId, headSha } = body;
+  if (typeof headSha !== "string" || !/^[a-f0-9]{40}$/.test(headSha)) {
+    return jsonResponse({ error: "画面で確認したheadShaは必須です" }, 400);
+  }
   if (!approverId) {
     return jsonResponse({ error: "approverIdは必須です" }, 400);
   }
@@ -131,6 +113,13 @@ export default async function handler(req) {
         409,
       );
     }
+    if (draft.external_operation_state === "external_done") {
+      return jsonResponse(completedResponse(await finishExternal(draft)));
+    }
+    if (draft.external_operation_state === "done") return jsonResponse(completedResponse(draft));
+    if (draft.external_operation_state === "reconcile") {
+      return jsonResponse({ error: "マージ中または要照合です。再実行せずPRを確認してください" }, 409);
+    }
     if (draft.status !== "pending_review") {
       return jsonResponse(
         {
@@ -147,11 +136,11 @@ export default async function handler(req) {
       );
     }
 
-    try {
-      await markPullRequestReadyIfDraft(githubToken, prNumber);
-    } catch (error) {
-      return jsonResponse({ error: error.message }, 502);
-    }
+    const pr = await getBlogPr(githubToken, prNumber);
+    try { assertReviewedHead(pr, headSha); }
+    catch (error) { return jsonResponse({ error: error.message }, 409); }
+    const operationToken = await claimExternal(draft, approverId);
+    await markPullRequestReadyIfDraft(githubToken, pr);
 
     const mergeResponse = await fetch(
       `https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge`,
@@ -162,7 +151,7 @@ export default async function handler(req) {
           Accept: "application/vnd.github+json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ merge_method: "squash" }),
+        body: JSON.stringify({ merge_method: "squash", sha: headSha }),
       },
     );
 
@@ -177,16 +166,17 @@ export default async function handler(req) {
     }
     const mergeResult = await mergeResponse.json();
 
-    const updated = await updateDraft(id, {
-      status: "posted",
-      approver_id: approverId,
-      approved_at: new Date().toISOString(),
-      posted_at: new Date().toISOString(),
+    if (!mergeResult.merged || !mergeResult.sha) {
+      throw new Error("マージ成功を確認できません。再実行せず照合してください");
+    }
+    const recorded = await recordExternal(id, operationToken, {
+      merge: mergeResult, posted_at: new Date().toISOString(),
+      source_data: { blog_merge_sha: mergeResult.sha, blog_reviewed_head_sha: headSha, blog_pr_url: draft.pr_url },
     });
+    return jsonResponse(completedResponse(await finishExternal(recorded)));
 
-    return jsonResponse({ data: updated, merge: mergeResult });
   } catch (error) {
     console.error("SNS Hub merge-blog-pr Edge function error:", error);
-    return jsonResponse({ error: error.message }, 500);
+    return jsonResponse({ error: error.message }, error.status || 500);
   }
 }

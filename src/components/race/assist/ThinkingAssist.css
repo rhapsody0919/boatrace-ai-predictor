@@ -1,0 +1,953 @@
+/*
+ * 思考アシスト（BOA-430）。色・大きさは design-tokens.css のトークンだけで書く（N-7）。
+ * クラスは ta- で始める（Vite が全ページの CSS を1つにまとめるため、他ページと名前を分ける）。
+ * 承認モック: docs/design/thinking-assist/mock-v7/index.html（案②レーン）
+ */
+
+.ta-page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 0 var(--spacing-4);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  min-height: 60vh;
+}
+
+.ta-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.ta-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ta-note {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.ta-status {
+  margin: var(--spacing-3);
+  padding: var(--spacing-3);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* ---- ヘッダー（A） ---- */
+.ta-header {
+  display: grid;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-3) var(--spacing-2);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.ta-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-2);
+}
+
+.ta-header-venue {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+.ta-pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-full);
+  padding: 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.ta-pill-round {
+  border-color: var(--brand-accent-primary);
+  color: var(--brand-accent-primary);
+}
+
+.ta-header-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.ta-header-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.ta-link {
+  color: var(--color-info-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ta-seg {
+  display: inline-flex;
+  /* 展示前・展示後で前の文の長さが変わっても、切り替えの位置を右端に固定する（ファン評価 3周目 指摘10） */
+  margin-left: auto;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+}
+
+/* 押せる範囲を外へ広げるため overflow: hidden を使わず、角は端のボタンで丸める */
+.ta-seg button:first-child {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.ta-seg button:last-child {
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.ta-seg button {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: var(--spacing-1) var(--spacing-3);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  min-height: 32px;
+  cursor: pointer;
+}
+
+.ta-seg button[aria-pressed="true"] {
+  background: var(--color-info-text);
+  color: var(--surface-card);
+}
+
+.ta-seg button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---- 堅い？荒れる？ ---- */
+.ta-rough {
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+.ta-rough-title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+}
+
+.ta-rough-btn {
+  display: grid;
+  gap: var(--spacing-1);
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--brand-accent-primary);
+  background: var(--ind-best-bg);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-2) var(--spacing-2-5);
+  min-height: 44px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ta-rough-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+}
+
+.ta-minibar {
+  display: grid;
+  grid-template-columns: 6.5em minmax(0, 1fr) auto;
+  gap: var(--spacing-1-5);
+  align-items: center;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.ta-minibar-track {
+  position: relative;
+  height: 7px;
+  border-radius: var(--radius-sm);
+  background: var(--border-hairline);
+}
+
+.ta-minibar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--radius-sm);
+  background: var(--brand-accent-primary);
+}
+
+.ta-baseline {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  border-left: 2px dashed var(--text-primary);
+}
+
+.ta-minibar b {
+  color: var(--text-primary);
+}
+
+/* ---- 基準つきバー・普通のバー（BaseBar） ---- */
+.ta-bar {
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+.ta-bar-btn {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3em;
+  gap: var(--spacing-2);
+  align-items: center;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: var(--spacing-1) 0;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ta-bar-label {
+  grid-column: 1 / -1;
+  color: var(--text-secondary);
+}
+
+.ta-bar-track {
+  position: relative;
+  height: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--border-hairline);
+}
+
+.ta-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-info-text);
+}
+
+.ta-bar-ci {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  border-left: 1px solid var(--text-primary);
+  border-right: 1px solid var(--text-primary);
+  opacity: 0.45;
+}
+
+.ta-bar-ref {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  border-left: 1px dotted var(--text-secondary);
+}
+
+.ta-bar-more {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.ta-tag {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--spacing-1-5);
+  font-size: var(--font-size-2xs);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.ta-tag-hit {
+  border-color: var(--brand-accent-primary);
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-tag-warn {
+  border-color: var(--color-error-text);
+  color: var(--color-error-text);
+}
+
+/* ---- 数え方は2つ（ScopeTable） ---- */
+.ta-scope {
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-1-5) var(--spacing-2-5);
+  font-size: var(--font-size-xs);
+  background: var(--surface-page);
+}
+
+.ta-scope-toggle {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  min-height: 28px;
+  font: inherit;
+  color: var(--color-info-text);
+  cursor: pointer;
+}
+
+.ta-scope table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--spacing-1);
+}
+
+.ta-scope th,
+.ta-scope td {
+  padding: var(--spacing-1);
+  border-bottom: 1px solid var(--border-hairline);
+  text-align: left;
+  font-weight: var(--font-weight-normal);
+}
+
+.ta-scope td.ta-c {
+  text-align: center;
+}
+
+.ta-scope ul {
+  margin: var(--spacing-1) 0 0;
+  padding-left: 1.2em;
+  color: var(--text-secondary);
+}
+
+/* ---- 級の並びの絵（ClassLineup） ---- */
+.ta-cls {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: var(--spacing-1);
+}
+
+.ta-cls-one,
+.ta-cls-rest {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+}
+
+.ta-cls-rest {
+  border: 1px dashed var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 2px 3px;
+}
+
+.ta-cls-in {
+  display: flex;
+  gap: 3px;
+}
+
+.ta-cls-cap {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 札は2行（2026-10-08 ユーザー決定で長くなった） */
+.ta-cls-line {
+  display: block;
+}
+
+/* 表の行の横に置く小さい絵（札なし） */
+.ta-cls-small {
+  display: inline-flex;
+  margin-left: var(--spacing-1);
+  vertical-align: middle;
+}
+
+.ta-cls-small .ta-cls-box {
+  width: 20px;
+  height: 16px;
+}
+
+.ta-cls-box {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  border: 1px solid var(--border-hairline);
+}
+
+.ta-cls-fixed {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: 1px;
+}
+
+/* ---- レンズ（B） ---- */
+.ta-lens {
+  position: sticky;
+  /* 共通のヘッダー（sticky・高さが変わる）の下に止める。高さはページが測って渡す（Codex 依頼27 F08） */
+  top: var(--ta-sticky-top, 0px);
+  z-index: 5;
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--border-hairline);
+  padding: var(--spacing-2) var(--spacing-2-5) var(--spacing-1-5);
+}
+
+.ta-lens-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-1-5);
+}
+
+.ta-lens-tabs button {
+  border: 1px solid var(--border-hairline);
+  background: transparent;
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  min-height: 44px;
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.ta-lens-tabs button[aria-selected="true"] {
+  background: var(--text-primary);
+  color: var(--surface-card);
+  border-color: var(--text-primary);
+}
+
+.ta-lens-q {
+  margin: var(--spacing-1-5) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.ta-lens-q b {
+  color: var(--text-primary);
+}
+
+.ta-hint {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-info-text);
+  padding-top: var(--spacing-1);
+}
+
+.ta-hint button {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  min-width: 32px;
+  min-height: 28px;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ---- レースの図（C、案②レーン） ---- */
+.ta-board {
+  margin: 0;
+  padding: var(--spacing-2-5) var(--spacing-3) var(--spacing-1);
+}
+
+.ta-board-axis {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  padding: 0 36px 0 44px;
+  margin-bottom: var(--spacing-1);
+}
+
+.ta-board-title {
+  font-weight: var(--font-weight-medium);
+  text-align: center;
+}
+
+.ta-good {
+  display: inline-block;
+  border-radius: var(--radius-sm);
+  padding: 0 var(--spacing-1);
+  margin: 0 3px;
+  background: var(--color-info-text);
+  color: var(--surface-card);
+}
+
+.ta-lane {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  min-height: 48px;
+  border-top: 1px solid var(--border-hairline);
+}
+
+.ta-lane:first-of-type {
+  border-top: 0;
+}
+
+.ta-lane-faded {
+  opacity: 0.4;
+}
+
+.ta-boat-btn {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  min-height: 48px;
+  border: 0;
+  background: transparent;
+  padding: var(--spacing-1) 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ta-boat-btn[aria-current="true"] {
+  outline: 2px solid var(--color-info-text);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+.ta-boat-name {
+  font-size: var(--font-size-2xs);
+  line-height: 1.1;
+  white-space: nowrap;
+  max-width: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ta-boat-cls {
+  font-size: var(--font-size-2xs);
+  line-height: 1.1;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+}
+
+.ta-track {
+  position: relative;
+  height: 40px; /* モック v7 と同じ。点の上に値の文字を置く余白 */
+}
+
+.ta-track-rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: var(--border-hairline);
+  transform: translateY(-50%);
+}
+
+.ta-track-good-right {
+  background: linear-gradient(
+    to right,
+    transparent 40%,
+    color-mix(in srgb, var(--color-info-text) 12%, transparent)
+  );
+  border-radius: var(--radius-sm);
+}
+
+.ta-track-good-left {
+  background: linear-gradient(
+    to left,
+    transparent 40%,
+    color-mix(in srgb, var(--color-info-text) 12%, transparent)
+  );
+  border-radius: var(--radius-sm);
+}
+
+.ta-track-bar {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 10px;
+  border-radius: var(--radius-sm);
+  transform: translateY(-50%);
+  opacity: 0.22;
+}
+
+.ta-track-dot {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--surface-card);
+  box-shadow: 0 0 0 1px var(--border-hairline);
+}
+
+.ta-track-val {
+  position: absolute;
+  /* 点（16px、縦の中央）の上に置き、数字が点に隠れないようにする（ファン評価 1周目 指摘7） */
+  bottom: calc(50% + 8px);
+  line-height: 1.2;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 0 2px;
+}
+
+.ta-track-val-end {
+  transform: translateX(-100%);
+}
+
+.ta-track-val-start {
+  transform: none;
+}
+
+.ta-track-empty {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.ta-lane-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+}
+
+.ta-num-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  padding: 0 var(--spacing-1-5);
+  min-height: 24px;
+  font: inherit;
+  font-size: var(--font-size-2xs);
+  cursor: pointer;
+}
+
+.ta-num-btn b {
+  color: var(--text-primary);
+}
+
+.ta-add {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--font-size-2xs);
+  line-height: 1.1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.ta-add-on,
+.ta-pos3 button[aria-pressed="true"],
+.ta-ms button[aria-pressed="true"] {
+  background: var(--color-info-text);
+  border-color: var(--color-info-text);
+  color: var(--surface-card);
+}
+
+.ta-pos3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  margin-top: var(--spacing-1);
+}
+
+.ta-pos3 button {
+  border: 1px solid var(--border-hairline);
+  background: transparent;
+  color: inherit;
+  border-radius: var(--radius-sm);
+  min-height: 36px;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.ta-back {
+  margin-top: var(--spacing-1-5);
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-card);
+  color: inherit;
+  border-radius: var(--radius-md);
+  min-height: 44px;
+  padding: 0 var(--spacing-3);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.ta-disclaimer {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-3);
+  margin: 0;
+}
+
+/* ---- 固定フッター（F） ---- */
+.ta-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2-5);
+  background: var(--text-primary);
+  color: var(--surface-card);
+  padding: var(--spacing-2-5) var(--spacing-3)
+    calc(var(--spacing-2-5) + env(safe-area-inset-bottom, 0px));
+}
+
+.ta-foot-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  line-height: 1.3;
+}
+
+/* 買い目が長いと省略で点数が切れるので、折り返して全部出す（ファン評価 1周目 指摘8） */
+.ta-foot-text b {
+  font-size: var(--font-size-md);
+  overflow-wrap: anywhere;
+}
+
+.ta-foot-text span {
+  font-size: var(--font-size-xs);
+  opacity: 0.85;
+}
+
+.ta-foot button {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-2) var(--spacing-3);
+  min-height: 44px;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ---- シート（BottomSheet） ---- */
+.ta-sheet-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  background: color-mix(in srgb, var(--color-gray-900) 55%, transparent);
+}
+
+.ta-sheet {
+  width: 100%;
+  max-width: 480px;
+  max-height: 86vh;
+  overflow: auto;
+  display: grid;
+  gap: var(--spacing-3);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: var(--spacing-3-5) var(--spacing-3-5)
+    calc(var(--spacing-4-5) + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .ta-sheet-bg {
+    align-items: center;
+  }
+
+  .ta-sheet {
+    border-radius: var(--radius-xl);
+  }
+}
+
+.ta-sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.ta-sheet-head h2 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+}
+
+.ta-close {
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-card);
+  color: inherit;
+  border-radius: var(--radius-md);
+  min-width: 44px;
+  min-height: 44px;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.ta-sheet-sub {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* ---- マークシート・配分 ---- */
+.ta-ms {
+  display: grid;
+  grid-template-columns: 2.5em repeat(6, minmax(0, 1fr));
+  gap: var(--spacing-1-5);
+  align-items: center;
+}
+
+.ta-ms-h {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.ta-ms button {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  border: 1px solid var(--border-hairline);
+  background: transparent;
+  border-radius: var(--radius-md);
+  padding: 0;
+  cursor: pointer;
+}
+
+.ta-calc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+}
+
+.ta-calc input {
+  width: 8em;
+  font: inherit;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-1-5) var(--spacing-2);
+  background: var(--surface-card);
+  color: inherit;
+}
+
+.ta-radio {
+  display: inline-flex;
+  gap: var(--spacing-2);
+}
+
+.ta-radio label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-height: 44px;
+}
+
+.ta-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-xs);
+}
+
+.ta-table th,
+.ta-table td {
+  padding: var(--spacing-1) var(--spacing-1);
+  border-bottom: 1px solid var(--border-hairline);
+  text-align: right;
+}
+
+.ta-table th:first-child,
+.ta-table td:first-child {
+  text-align: left;
+}
+
+.ta-table th {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-normal);
+}
+
+.ta-warn {
+  color: var(--color-error-text);
+  font-weight: var(--font-weight-bold);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ta-track-dot,
+  .ta-track-bar {
+    transition:
+      left 0.3s ease,
+      width 0.3s ease;
+  }
+}
+
+/* ---- タップ領域 44px（spec N-6、Codex 依頼27 F04） ----
+   モックの密度を保つため、見た目の大きさは変えず、押せる範囲だけを透明な疑似要素で 44px まで広げる */
+.ta-seg button,
+.ta-scope-toggle,
+.ta-hint button,
+.ta-num-btn,
+.ta-add,
+.ta-pos3 button {
+  position: relative;
+}
+
+.ta-seg button::after,
+.ta-scope-toggle::after,
+.ta-hint button::after,
+.ta-num-btn::after,
+.ta-add::after,
+.ta-pos3 button::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+  /* 後に並ぶ行（position: relative の図の線）より上に置き、下側に広げた範囲が隠れないようにする。
+     固定のレンズ（5）・フッター（6）・シート（1000）より下 */
+  z-index: 1;
+}

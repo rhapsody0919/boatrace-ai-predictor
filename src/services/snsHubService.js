@@ -62,10 +62,14 @@ export async function approveDraft(draftId, approverId) {
 }
 
 /** ブログ下書きを承認し、対応するDraft PRを自動マージする（platform='blog'専用） */
-export async function mergeBlogPr(draftId, approverId) {
+export async function getBlogPrPreview(draftId) {
+  return request(`/drafts/${draftId}/blog-pr-preview`);
+}
+
+export async function mergeBlogPr(draftId, approverId, headSha) {
   return request(`/drafts/${draftId}/merge-blog-pr`, {
     method: "POST",
-    body: JSON.stringify({ approverId }),
+    body: JSON.stringify({ approverId, headSha }),
   });
 }
 

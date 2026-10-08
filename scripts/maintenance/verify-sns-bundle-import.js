@@ -518,9 +518,12 @@ async function mockHandler(path, draft, denied = false) {
     export const requireAdminAuth=async()=>${denied ? "new Response('denied',{status:401})" : "null"};
     export const getYoutubeAccessToken=async()=>{throw new Error('投稿してはいけない')};
     export const uploadYoutubeVideo=getYoutubeAccessToken; export const uploadYoutubeThumbnail=getYoutubeAccessToken;
+    export const externalRpc=async()=>{throw new Error('外部操作してはいけない')};
+    export const claimExternal=externalRpc; export const recordExternal=externalRpc; export const finishExternal=externalRpc;
+    export const completedResponse=()=>{throw new Error('外部操作してはいけない')};
   `);
   source = source.replace(
-    /"[^"\n]+_lib\/(snsHubHelpers|adminAuth|youtubeUpload)\.js"/g,
+    /"[^"\n]+_lib\/(snsHubHelpers|adminAuth|youtubeUpload|snsExternalOperations)\.js"/g,
     JSON.stringify(mock),
   );
   source = source.replace(

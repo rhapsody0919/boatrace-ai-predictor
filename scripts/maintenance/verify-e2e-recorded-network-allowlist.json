@@ -35,6 +35,16 @@
       "file": "e2e/acceptance/sns-x-send.spec.js",
       "code": "return route.continue();",
       "reason": "直前で127.0.0.1以外をabort、/api/*をfulfillで全てモックしている。continueに残るのはテスト用Viteのモジュール配信だけで、外部・本番には出ない"
+    },
+    {
+      "file": "e2e/acceptance/sns-existing-fixes.spec.js",
+      "code": "import { test, expect } from '@playwright/test';",
+      "reason": "録画の再生を使わない専用ハーネス（playwright.existing-fixes.config.js、127.0.0.1のテスト用Vite）で走る。fixtures.jsを使うと録画に無い/api/*が本番へ素通しされうるため、本物のtestを使い、127.0.0.1以外は全てabortする"
+    },
+    {
+      "file": "e2e/acceptance/sns-existing-fixes.spec.js",
+      "code": "if (url.hostname === '127.0.0.1') return route.continue();",
+      "reason": "直前でblog-pr-previewをfulfillでモックし、127.0.0.1以外をabortしている。continueに残るのはテスト用Viteのモジュール配信だけで、外部・本番には出ない"
     }
   ]
 }
