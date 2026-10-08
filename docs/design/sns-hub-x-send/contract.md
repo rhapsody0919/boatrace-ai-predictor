@@ -8,7 +8,7 @@ SQL137は135に依存、136には依存しない。本人の日本語X下書き�
 
 承認APIは媒体をサーバーで読みSHA-256を計算し、本文＋改行＋タグ、原文・タグ・言語・媒体パス、媒体実バイトのhash/サイズ/typeをsnapshotにする。動画があれば動画1本、なければカバー1枚。上限32MiB、MP4/JPEG/PNG。source_data.dataCardUrlによる追加画像がある既存投稿は一部だけ送らず拒否し、手動経路に残す。DBは行ロック下で現行本文/パスとの一致を確認し、snapshotのJSONB文字列表現をSHA-256でhash化する。workerは保存済みsnapshot_textと実バイトを照合する。ストレージの同じパスを上書きしても送信直前に拒否する。媒体差し替え後は再承認が必要。
 
-144適用後、draft.statusまたはjob.stateがpostedなら本文・媒体等の承認対象編集を拒否する。送信済みjobは再承認・再送できない既存契約に合わせ、投稿済み版を上書きせず承認記録を保持する。statusのみの投稿完了記録・アーカイブは従来どおり扱う。
+144適用後、draft.posted_atがある（一度でも投稿された）かjob.stateがpostedなら本文・媒体等の承認対象編集を拒否する。送信済みjobは再承認・再送できない既存契約に合わせ、投稿済み版を上書きせず承認記録を保持する。statusのみの投稿完了記録・アーカイブは従来どおり扱う。
 
 未投稿の本文・タグ・媒体パス・言語・公開保留等の編集はDB triggerで承認hash/承認者/日時を消し、未送信jobを取消、approved/ready_to_postをpending_reviewへ戻す。queuedは取消操作後に手動経路へ戻せる。画面はqueued/sending/reconcileの手動投稿導線を隠す。sending/reconcileは編集・手動投稿済み記録・アーカイブを拒否する。直接Storage上書きはDB triggerで即時検知できず、workerの実バイト照合で停止する。
 

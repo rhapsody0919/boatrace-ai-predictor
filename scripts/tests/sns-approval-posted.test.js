@@ -34,6 +34,16 @@ for (const platform of ['x', 'youtube']) {
       assert.equal(saved.x_approved_hash, draft.x_approved_hash);
       assert.equal(saved.approver_id, draft.approver_id);
       assert.deepEqual(saved.approved_at, draft.approved_at);
+      // jobなしでも投稿履歴はアーカイブ後に失われない。
+      await db.query("UPDATE sns_drafts SET status='archived' WHERE id=$1", [draft.id]);
+      const archived = await first('SELECT * FROM sns_drafts WHERE id=$1', [draft.id]);
+      assert.equal(archived.status, 'archived');
+      assert.deepEqual(archived.posted_at, saved.posted_at);
+      assert.equal(archived.x_approved_hash, saved.x_approved_hash);
+      assert.equal(archived.approver_id, saved.approver_id);
+      assert.deepEqual(archived.approved_at, saved.approved_at);
+      await assert.rejects(db.query("UPDATE sns_drafts SET caption_text='アーカイブ後の編集' WHERE id=$1", [draft.id]), /投稿済み/);
+      assert.deepEqual(await first('SELECT * FROM sns_drafts WHERE id=$1', [draft.id]), archived);
       // 未送信下書きは従来どおり承認失効。
       const pending = await first(`INSERT INTO sns_drafts(content_group_id,format,platform,language,caption_text,status,
         approver_id,approved_at,x_approved_hash) VALUES(gen_random_uuid(),'short',$1,'ja','原文','approved',$2,now(),'hash') RETURNING id`, [platform, approver]);
