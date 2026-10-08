@@ -145,6 +145,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/racesInit/predictCodeCheck.js` | 予測ロジックの変更検知による再生成（WS4b T4b-07-5、plan.md §4.2(d)・設計判断(g)）。 | hashFiles, computePredictCodeHash, checkPredictCodeChange, PREDICT_CODE_HASH_JOB, PREDICT_LOGIC_FILES |
 | `scripts/lib/rawHtmlArchive.js` | 取得した生HTMLの保管（optimal-scraping-design.md §2.2・承認済みQ1）の最小実装。 | rawHtmlPath, archiveRawHtml, RAW_HTML_BUCKET |
 | `scripts/lib/reportComparison.js` | 定点観測レポート（search-console-report.js / i18n-demand-report.js）の | findPreviousReport, findRecentReports, detectTrend, perDay, formatDelta |
+| `scripts/lib/riskRuleMatcher.js` | SNSリスクルールの部分一致判定（Node・Edge共通の純粋関数）。 | matchRiskRules |
 | `scripts/lib/riskRules.js` | SNSマーケティングハブ Phase 2用 risk-rules.json 決定的照合ユーティリティ | checkRiskRules |
 | `scripts/lib/schemaDetect.js` | 「マイグレーションの列・テーブルが、接続先のDBに適用済みか」の判定（共通処理） | createSchemaDetector, DEFAULT_SCHEMA_CACHE_TTL_MS |
 | `scripts/lib/scrapeJobs/circuitBreaker.js` | ホスト単位のサーキットブレーカー（BOA-368、plan.md §2.2・§8、ADR-0067）。 | createCircuitBreaker, BreakerOpenError |
@@ -298,11 +299,11 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, hasRulesForVenue, getRulesForVenue ほか3件 |
 | `src/services/sherlockModel.js` | シャーロック予想 共有モデルロジック（純粋関数のみ） | mean, buildFeatures, softmax, predictConditionalLogit, impliedProbs ほか5件 |
 | `src/services/sherlockService.js` | シャーロック予想 データ取得・推論サービス | getSherlockModelInfo, getSherlockPredictions |
-| `src/services/snsHubService.js` | SNSマーケティングハブ 管理画面用サービス層 | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか27件 |
+| `src/services/snsHubService.js` | SNSマーケティングハブ 管理画面用サービス層 | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか30件 |
 | `src/services/supabaseClient.js` | Supabase クライアント（フロントエンド用） | supabase |
 | `src/services/supabaseDataService.js` | Supabase データサービス | clearCache, aggregateRacerVenueBoatStats, aggregateRacerCrossStats, FETCH_ALL_BY_IN_ORDER, supabaseDataService |
 | `src/services/watsonService.js` | ワトソン予想 データ取得サービス | getWatsonModelInfo, getWatsonPredictions |
 
 ---
 
-対象 270 ファイル / export 1435 件。
+対象 271 ファイル / export 1439 件。

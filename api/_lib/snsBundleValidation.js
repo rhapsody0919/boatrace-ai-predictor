@@ -1,3 +1,5 @@
+import { matchRiskRules } from "../../scripts/lib/riskRuleMatcher.js";
+
 /** v0専用。契約1の正式素材は、公開証拠・QA条件を別依頼で決めるまで受け入れない。 */
 export const BUNDLE_SCHEMA = "ryujin-preview/0";
 export const BUNDLE_LIMITS = {
@@ -353,21 +355,7 @@ export async function validateBundle(form, riskRules = []) {
   for (const platform of ["x", "youtube"]) {
     const content =
       shared + "\n" + (platform === "x" ? bundle.x_text : bundle.script);
-    riskFlags[platform] = riskRules
-      .filter((r) => r.platforms === "all" || r.platforms.includes(platform))
-      .flatMap((r) => {
-        const matchedPattern = r.patterns.find((p) => content.includes(p));
-        return matchedPattern
-          ? [
-              {
-                id: r.id,
-                category: r.category,
-                description: r.description,
-                matchedPattern,
-              },
-            ]
-          : [];
-      });
+    riskFlags[platform] = matchRiskRules(content, platform, riskRules);
   }
   return {
     bundle,

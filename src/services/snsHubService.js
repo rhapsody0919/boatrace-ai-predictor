@@ -304,3 +304,9 @@ export async function getDeadlineQueue() {
   const { data } = await request('/deadline-queue');
   return data || [];
 }
+
+export async function getMobileApprovalGroups() { return request('/mobile-approval'); }
+export async function getMobileApprovalRace(group) { return request(`/mobile-approval?group=${encodeURIComponent(group)}`); }
+export async function approveMobileChannel(group, body) {
+  return request(`/mobile-approval?group=${encodeURIComponent(group)}`, { method:'POST', body:JSON.stringify(body) });
+}

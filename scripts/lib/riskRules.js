@@ -6,6 +6,7 @@
  * insightのproposed→active昇格判定（scripts/maintenance/promote-strategy-insights.js）から利用する。
  */
 
+import { matchRiskRules } from "./riskRuleMatcher.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -36,14 +37,6 @@ function loadRiskRules() {
   return cachedRules;
 }
 
-function ruleAppliesToPlatform(rule, platform) {
-  if (rule.platforms === "all") return true;
-  // platform未指定（insightがscope=null=全プラットフォーム対象）の場合は、
-  // どのプラットフォームで使われるか分からないため保守的に全ルールを適用する
-  if (!platform) return true;
-  return Array.isArray(rule.platforms) && rule.platforms.includes(platform);
-}
-
 /**
  * テキストがrisk-rules.jsonのいずれかのパターンに抵触するか判定する。
  * @param {string} text - 照合対象のテキスト（insight_text等）
@@ -51,19 +44,5 @@ function ruleAppliesToPlatform(rule, platform) {
  * @returns {Array<{id: string, category: string, description: string, matchedPattern: string}>} 抵触したルール一覧（空配列=抵触なし）
  */
 export function checkRiskRules(text, platform) {
-  const rules = loadRiskRules();
-  const violations = [];
-  for (const rule of rules) {
-    if (!ruleAppliesToPlatform(rule, platform)) continue;
-    const matchedPattern = rule.patterns.find((p) => text.includes(p));
-    if (matchedPattern) {
-      violations.push({
-        id: rule.id,
-        category: rule.category,
-        description: rule.description,
-        matchedPattern,
-      });
-    }
-  }
-  return violations;
+  return matchRiskRules(text, platform, loadRiskRules());
 }
