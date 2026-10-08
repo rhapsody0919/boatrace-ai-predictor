@@ -413,7 +413,11 @@ export default function ScenarioTab({
       <AttackTable
         attack={sc.attack}
         refAttack={data.reference?.attack ?? null}
-        refName={data.reference ? scopeName(data.reference.scope, t) : null}
+        refName={
+          data.reference
+            ? scopeName(data.reference.scope, t, { short: true })
+            : null
+        }
         slit={slit}
         waku={waku}
         exhibitionStage={exhibitionStage}
