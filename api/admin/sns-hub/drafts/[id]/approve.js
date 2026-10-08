@@ -72,11 +72,11 @@ export default async function handler(req) {
       status: "approved",
       approver_id: approverId,
       approved_at: new Date().toISOString(),
-    });
+    }, "pending_review");
 
     return jsonResponse({ data: updated });
   } catch (error) {
     console.error("SNS Hub approve Edge function error:", error);
-    return jsonResponse({ error: error.message }, 500);
+    return jsonResponse({ error: error.message }, error.status || 500);
   }
 }
