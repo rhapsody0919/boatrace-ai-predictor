@@ -149,9 +149,7 @@ export default function SlitHint({
           <table className="af-hint-t">
             <thead>
               <tr>
-                <th scope="col">
-                  {t(`${k}.hintRowHead`)}
-                </th>
+                <th scope="col">{t(`${k}.hintRowHead`)}</th>
                 {[1, 2, 3, 4, 5, 6].map((b) => (
                   <th key={b} scope="col">
                     <BoatBadge n={b} size="xs" />
