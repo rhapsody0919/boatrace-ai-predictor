@@ -338,11 +338,17 @@ export default function MobileApprovalPanel({
       });
       const result = await getMobileApprovalRace(group);
       setRows(result.data);
-    } catch {
-      setRows([]);
-      setError(
-        "レースの最新状態を取得できませんでした。レースを選び直して確認してください。",
-      );
+    } catch (e) {
+      // 「本人」以外（例: 自動承認）を選んで判断した場合のAPI固定文言だけを安全に通す。
+      // それ以外は既存どおり汎用文言に倒す（生のエラー文は表示しない）。
+      if (e?.message === "本人の判断が必要です") {
+        setError(e.message);
+      } else {
+        setRows([]);
+        setError(
+          "レースの最新状態を取得できませんでした。レースを選び直して確認してください。",
+        );
+      }
     } finally {
       setBusy(false);
     }

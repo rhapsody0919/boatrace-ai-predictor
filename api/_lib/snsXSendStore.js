@@ -35,17 +35,37 @@ export const xSendStore = {
     });
   },
   async decideFinding(body, revision) {
-    return db("rpc/decide_sns_edit_finding", {
-      method: "POST",
-      body: JSON.stringify({
-        p_draft_id: body.draftId,
-        p_revision: revision,
-        p_inspection_id: body.inspectionId,
-        p_finding_id: body.findingId,
-        p_approver_id: body.approverId,
-        p_decision: body.decision,
-      }),
-    });
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/rpc/decide_sns_edit_finding`,
+      {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_SERVICE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify({
+          p_draft_id: body.draftId,
+          p_revision: revision,
+          p_inspection_id: body.inspectionId,
+          p_finding_id: body.findingId,
+          p_approver_id: body.approverId,
+          p_decision: body.decision,
+        }),
+      },
+    );
+    if (!response.ok) {
+      // decide_sns_edit_findingのRAISE EXCEPTIONは固定の安全な文言のみ（SQLの定数、
+      // 利用者入力は含まない）。承認者が「本人」以外（例: 自動承認）を選んだ場合の
+      // メッセージだけを安全に通す。他は既存どおり汎用文言に倒す。
+      const detail = await response.json().catch(() => null);
+      if (detail?.message === "本人の判断が必要です") {
+        throw new Error(detail.message);
+      }
+      throw new Error("X送信のDB操作に失敗しました");
+    }
+    return response.json();
   },
   async mobileGroups(date) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("対象日が不正です");
