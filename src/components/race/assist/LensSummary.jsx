@@ -239,7 +239,13 @@ function FlowSummary({ m }) {
           {Object.entries(similar.tech)
             .sort((a, b) => b[1] - a[1])
             .map(([t, k]) => (
-              <BaseBar key={t} label={`${t} ${k}件`} k={k} n={similar.n} />
+              <BaseBar
+                key={t}
+                label={`${t} ${k}件`}
+                k={k}
+                n={similar.n}
+                labelRate={false}
+              />
             ))}
           <p className="ta-note ta-num">
             {C.simB1(similar.win[0], p0(similar.win[0], similar.n))}

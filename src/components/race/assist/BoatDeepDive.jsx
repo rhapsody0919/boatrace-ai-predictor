@@ -206,7 +206,7 @@ export default function BoatDeepDive({
                 ))}
               </>
             ) : runs.status === "error" ? (
-              C.partFailed(C.captionMeet)
+              C.partFailed(C.captionMeet(venue))
             ) : runs.status === "none" ? (
               C.noRunsData
             ) : (

@@ -46,7 +46,7 @@ export default function RunsTable({ meet, prior, venue, raceId, boat }) {
     <div className="ta-runs">
       <table className="ta-table ta-table-runs">
         <caption>
-          {C.captionMeet} <span className="ta-note">{C.runsMeet(venue)}</span>
+          {C.captionMeet(venue)}
         </caption>
         <thead>
           <tr>
@@ -61,7 +61,8 @@ export default function RunsTable({ meet, prior, venue, raceId, boat }) {
         </thead>
         <tbody>
           {meet.today.map((r) => row(r, true))}
-          {meet.past.map((r) => row(r, false))}
+          {/* 新しい順（承認モック v7。今節より前の5走と同じ並び） */}
+          {[...meet.past].reverse().map((r) => row(r, false))}
           {meet.avg != null && (
             <tr>
               <td colSpan={7} className="ta-num ta-run-avg">

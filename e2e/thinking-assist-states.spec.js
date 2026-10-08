@@ -41,8 +41,7 @@ async function open(page) {
  */
 async function routeExhibition(page, edit, gate = null) {
   await page.route("**/rest/v1/exhibition_data*", async (route) => {
-    if (!route.request().url().includes("start_flag"))
-      return route.fallback();
+    if (!route.request().url().includes("start_flag")) return route.fallback();
     const res = await fetchRecorded(route);
     const rows = await res.json();
     if (gate) await gate;
@@ -681,5 +680,37 @@ test.describe("思考アシスト: PR4 の /code-review 指摘", () => {
     await expect(
       page.getByText("チルト-0.5", { exact: true }).first(),
     ).toBeVisible();
+  });
+});
+
+/** PR4 の mock-diff-checker の差分（承認モック v7 にそろえた）の再現テスト */
+test.describe("思考アシスト: PR4 の承認モックとの差分", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("今節の各走は新しい順、見出しは1つ（今節の各走（徳山））", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const toggle = page.getByRole("button", { name: "1走ずつの表" });
+    await expect(toggle).toBeVisible({ timeout: 30000 });
+    await toggle.click();
+    const table = page.getByRole("table", { name: "今節の各走（徳山）" });
+    await expect(table).toBeVisible();
+    const days = await table.locator("tbody tr td:first-child").allInnerTexts();
+    const dated = days.filter((d) => /^\d+\/\d+$/.test(d));
+    expect(dated[0]).toBe("10/5");
+    expect(dated[dated.length - 1]).toBe("10/2");
+  });
+
+  test("類似レースの決まり手は割合を1回だけ書く（名前の横に小数の割合を出さない）", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(page.getByText("逃げ 32件", { exact: true })).toBeVisible();
+    await expect(page.getByText("50.8%")).toHaveCount(0);
   });
 });

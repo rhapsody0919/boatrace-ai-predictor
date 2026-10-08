@@ -10,7 +10,8 @@ const comma = (n) => n.toLocaleString("ja-JP");
 /**
  * 基準つきバー（spec D-21）と普通のバー（base を渡さない）。値・ぶれ幅・全国の全レースの太い点線・
  * 参考の細い点線（refRate）・3段階の言葉。件数・ぶれ幅・ポイント差はバーを押すと開く（D-32）。
- * 件数が0なら出さない（Codex U02）。few のときは高め・低めを付けず「件数少なめ」（D-37）
+ * 件数が0なら出さない（Codex U02）。few のときは高め・低めを付けず「件数少なめ」（D-37）。
+ * labelRate=false は名前の横の割合を出さない（右端の割合だけ。決まり手の棒のように同じ割合を2回書かない）
  */
 export default function BaseBar({
   label,
@@ -19,6 +20,7 @@ export default function BaseBar({
   base = null,
   refRate = null,
   few = false,
+  labelRate = true,
 }) {
   const [open, setOpen] = useState(false);
   if (!n) return null;
@@ -35,7 +37,8 @@ export default function BaseBar({
         onClick={() => setOpen((o) => !o)}
       >
         <span className="ta-bar-label">
-          {label} <b className="ta-num">{pct1(rate)}%</b>{" "}
+          {label}{" "}
+          {labelRate && <b className="ta-num">{pct1(rate)}%</b>}{" "}
           {verdict && (
             <span
               className={`ta-tag${verdict === "unclear" ? "" : " ta-tag-hit"}`}
