@@ -14,25 +14,39 @@
 
 本実装は生成関数のみ。設定変更・実リンク確認・サイト分析接続は未実施。
 
-## CSV実装前の判断事項
+## CSVダウンロード（hq返答 2026-10-08）
 
-参照した受け渡し仕様は集客レーンの `out/system/weekly-insight-README.md`（判断17）。依頼の `out/reports/weekly/README.md` は存在せず、週次報告のリンクも実配置と異なったため、実ファイルを確認した。
+管理画面の「指標」タブで公開開始日・終了日（JST、両端を含む）とチャネル（X / YouTube / 両方）を選び、「CSVをダウンロード」を押す。投稿済みの各投稿について48h・7dを出力する。観測窓未終了・未観測の投稿も予定行を出す。制作時間・traffic.csvは出力しない。
 
-CSVの必須列:
-`dataset_kind,platform,external_post_id,content_type_id,content_version,race_id,published_at,window,revision,observed_at,period_start,period_end,data_through,source_timezone,coverage,source_export,traffic_scope,missing_reason`
+認証付き `GET /api/admin/sns-hub/observations?export=csv&start=YYYY-MM-DD&end=YYYY-MM-DD&platform=all`（x/youtubeも可）。UTF-8・CRLF・全セル引用のposts.csv。式として扱われる先頭文字はアポストロフィで保護する。HTMLフォールバック・非成功応答はダウンロードしない。期間指定は公開コホートであり、観測取得日による絞り込みではない。
 
-制作時間の列は追加しない。traffic.csvの週次セッション集計は今回の投稿観測書き出しとは別。
+### 行と来歴
 
-| 項目 | 現在の136 | 週次受け渡し | 対応案（未承認） |
-| --- | --- | --- | --- |
-| 行・revision | 指標×source×definition×measurement_kindごとに採番 | 投稿×窓×revisionの一行。主指標を横持ち | 指標を束ねるexport用revisionの契約を決める。異なる取得時刻・定義の行を黙って束ねない |
-| 日時欠測 | data_through=nullを許す。未観測投稿にはobserved_atもない | 生成器はobserved_at/period_start/period_end/data_throughを無条件に日時解析 | 欠測時の空欄を生成器が受け入れる形をhqで判断。エクスポート日時を観測日時へ代入しない |
-| YouTube主指標 | stayed_to_watch_percentは136の許可指標にない | stayed_to_watch_percent。engagedViews/viewsとは別 | 空欄と「未収集」を渡す。指標追加や率の代用はこの変更で行わない |
-| source_timezone / traffic_scope | 保存契約に専用フィールドがない | 比較層と原本条件 | 原本の確認に基づく保存先・定義を決める。ISO日時から原本タイムゾーンを推定しない |
-| content_version | template_variant_idは型の版。bundle_version_hashは素材の版 | 投稿の固定情報 | どちらをcontent_versionとするか確認する。素材更新と型更新を同一視しない |
+136の生履歴・revisionは変更しない。週次用は**draft_id×windowに1行**。各指標について、取得元・定義をまたぐ全履歴のうち `observed_at` が最新の行を採る（最新が欠測なら旧値に戻さない）。同時刻はrevisionの大きい方、さらにsource・definition・idの辞書順で決める。mockは除外し、読み始めより未来の観測は含めない。
 
-推奨: 欠測日時は空欄を維持し、生成器側の受け入れ契約と横持ちrevisionの契約を先に確定する。生観測履歴を別の長形式CSVにする案は、判断17のposts.csvと互換ではないため、独断で置き換えない。
+- 行の `revision` はその投稿×窓の対象履歴件数+1（未観測予定行は1）。136のrevisionとは別のexport用世代番号。追記専用履歴が同じなら再出力でも同じ番号。行をまとめて一度の取得と扱わない。
+- `aggregation_rule` に選択・束ね方を記載。`<指標>_revision/source/definition/observed_at/data_through/period_start/period_end/measurement_kind/missing_reason/denominator_name/denominator_value` に採用した来歴を残す。
+- Xの `url_link_clicks` は `link_clicks`、`engagedViews` は `engaged_views` として出力。他の136指標も値と来歴を出す。率を派生計算しない。YouTubeの `stayed_to_watch_percent` は空欄＋未収集。
+- 行の `observed_at` は採用指標の最新観測日時。未観測は空欄。`data_through` は採用指標の最小時点、1つでも不明なら空欄。指標の日時は来歴列でそれぞれ保持する。架空日時で補わない。
+- `period_start/end` は公開から指定窓までの要求期間。Xの主指標2つが欠測でなく、各指標の期間・data_throughが要求期間に一致するときだけ `coverage=exact`。その他はmissing。YouTube継続率はmissing。
+- `source_export` はX主指標順（link_clicks, impressions）のsource・definition・measurement_kindをJSON配列で保持。原本名や取得日時は混ぜない。比較層に使うときも来歴列を確認する。
+- `content_type_id` はformat、`variant` はtemplate_variant_id。`content_version` は型の版/素材の版の対応が未確認のため空欄＋理由。`source_timezone`・`traffic_scope` も136に専用フィールドがないため空欄＋理由。日時のオフセットから原本タイムゾーンを推測しない。
+- 外部投稿IDは同じ投稿の両窓の観測履歴に記録されたID、YouTubeでは既存source_data.youtube_video_idも照合する。一致する確認済みIDだけ出力、不明・不一致は空欄＋理由。draft_idを外部IDに代入しない。
 
-期間フィルタの候補は「JSTの公開日（開始・終了日とも指定日を含む）」、チャネルはx/youtube/両方、48h/7dを両方書き出す。公開コホートと観測取得期間を混同しない。仕様確定後、認証付きAPIの全ページ取得、欠測理由、CSV引用符・改行・ゼロ、1000行超、複数指標revision、未観測投稿を検証する。
+集客レーン `out/system/weekly-insight-README.md` の必須18列は保持する。欠測日時の受け入れはhqが集客レーンへ別に依頼する。**現行生成器は欠測observed_at/data_throughで停止する**。外部IDが不明な複数投稿についても、draft_idを用いた未観測行の識別を取り込み側と集客レーンで確認する。生成器修正・実観測の補完はこのパッチの対象外。
 
-CSV画面・API・SQLはまだ追加していない。SQLが必要な場合はhq予約の145を使用するが、本パッチに145は含まない。
+### 取得と検証
+
+投稿と観測を500行ずつidカーソルで全件取得する。観測は投稿へのinner joinで公開期間・チャネル・投稿済みに制限。共通の読み始め時刻をcreated_at/posted_at/observed_atの上限に使う。136の既存取得と同様、トランザクションsnapshotではないため遅いcommit・途中の既存投稿変更/削除の完全固定は保証しない。大規模データのEdge実行時間・実PostgRESTの照合は取り込み側で確認する。
+
+既存CIゲート `scripts/maintenance/verify-sns-observations.js` にCSV・API認証・1201投稿の全件取得・JST境界・ゼロ/欠測・引用符/改行・複数指標revisionの再現検証を追加した。APIをdata URLで読むテストは新importを元ファイル基準の絶対URLへ置換する。
+
+同ゲートの `--ui` オプションで `snsObservationCsvUi.js` を呼び、env読込/外部通信を防いだ専用Viteサーバーで実ブラウザのダウンロード、入力必須、HTML/500応答の拒否、ライト/ダークを検証する。専用経路はappType=customでSPAフォールバックを使わず登録する。UIモードはChromium導入済み環境で取り込み側が実行する。
+
+```sh
+node scripts/maintenance/verify-sns-observations.js
+node scripts/maintenance/verify-sns-observations.js --ui
+npm run verify:ci
+```
+
+新依存・SQLなし。145は未使用。既存ゲートへの追加なのでverify-registry.jsonの新規登録は不要。UIモードを自動ゲートに追加する場合は **verify-registry.jsonへの登録が必要**（取り込み側が担当）。プロフィールの手動設定・公開確認は引き続きオーナーの操作で行う。
