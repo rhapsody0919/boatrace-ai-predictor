@@ -6,6 +6,7 @@ import {
   validateObservation,
   compareObservations,
   buildObservationUtm,
+  buildYoutubeProfileUtm,
 } from "../../src/utils/snsObservations.js";
 import {
   collectDueObservations,
@@ -284,6 +285,28 @@ assert.equal(
   new URL(tracking.url).searchParams.get("utm_campaign"),
   "sonar-preview",
 );
+
+// プロフィールは投稿へ配賦せず、既存クエリ・fragmentを保持する。
+const profileUrl = "https://www.boat-ai.jp/?tab=sonar&utm_source=old#top";
+const profileEvidence = {
+  url: profileUrl, confirmed_by: "owner", reference: "profile-release",
+  confirmed_at: draft.posted_at,
+};
+const profile = buildYoutubeProfileUtm({ destinationUrl: profileUrl, releaseEvidence: profileEvidence });
+const parsedProfile = new URL(profile.url);
+for (const [key, value] of Object.entries({ utm_source: "youtube", utm_medium: "social", utm_campaign: "profile", utm_content: "profile" })) {
+  assert.equal(parsedProfile.searchParams.get(key), value);
+  assert.equal(profile[key], value);
+}
+assert.equal(parsedProfile.searchParams.get("tab"), "sonar");
+assert.equal(parsedProfile.hash, "#top");
+assert.equal(Object.hasOwn(profile, "draft_id"), false);
+assert.throws(() => buildYoutubeProfileUtm({ destinationUrl: profileUrl }));
+assert.throws(() => buildYoutubeProfileUtm({ destinationUrl: profileUrl, releaseEvidence: { ...profileEvidence, url: raceUrl } }));
+assert.throws(() => buildYoutubeProfileUtm({ destinationUrl: profileUrl, releaseEvidence: { ...profileEvidence, confirmed_at: "invalid" } }));
+for (const bad of ["https://example.com/", "http://www.boat-ai.jp/", "https://user:pass@www.boat-ai.jp/"]) {
+  assert.throws(() => buildYoutubeProfileUtm({ destinationUrl: bad, releaseEvidence: { ...profileEvidence, url: bad } }));
+}
 
 // APIの1000件上限と失敗をモックで再現。ネットワークへ出ない。
 const originalFetch = globalThis.fetch;
