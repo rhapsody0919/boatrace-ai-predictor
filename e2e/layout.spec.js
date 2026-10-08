@@ -777,12 +777,12 @@ test.describe("レイアウト: 管理画面2つのタブの指定が混ざら�
 });
 
 /**
- * AI予想タブのアナロジー・ファインダー節（BOA-271 v16、screens「デザイントークンと CSS」）。上の PAGES はレース詳細を
+ * 龍神ソナーのタブ（BOA-271 v16、screens「デザイントークンと CSS」。2026-10-08 に AI予想タブから独立したタブへ）。上の PAGES はレース詳細を
  * 既定タブのまま測るため、節は検査の対象外。facts・similar・scenario の API を例のレースの固定の応答に差し替え
  * （e2e/analogy-v16-fixture.js）、AIの見立ての寄与度 API も固定値にして、3タブそれぞれで折りたたみを開いた状態の
  * 横スクロールとグリッドを見る（全33項目の表・③の表は 375px で列を詰めて折り返す約束）
  */
-test.describe("レイアウト: AI予想タブのアナロジー・ファインダー節（3タブ）", () => {
+test.describe("レイアウト: 龍神ソナーのタブ（3つの内部タブ）", () => {
   const openSection = async (page) => {
     await routeAnalogyV16(page);
     await page.route("**/api/analogy/contribution*", (route) => {
@@ -797,7 +797,7 @@ test.describe("レイアウト: AI予想タブのアナロジー・ファイン�
       });
     });
     await gotoAndSettle(page, `/race/${ANALOGY_V16_RACE}`);
-    await page.click('[role="tab"]:has-text("AI予想")');
+    await page.click('[role="tab"]:has-text("龍神ソナー")');
     const section = page.getByRole("region", {
       name: /龍神ソナー/,
     });
@@ -824,7 +824,7 @@ test.describe("レイアウト: AI予想タブのアナロジー・ファイン�
     page,
   }) => {
     const section = await openSection(page);
-    await expect(section.getByRole("article").first()).toBeVisible();
+    await expect(section.getByTestId("analogy-fact-card").first()).toBeVisible();
     await openAllDetails(section);
     await expectFits(page);
   });

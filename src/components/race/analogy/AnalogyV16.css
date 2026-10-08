@@ -1722,3 +1722,13 @@ button.af-bar {
   top: 3px;
   border-top: 1.5px solid var(--text-secondary);
 }
+
+/* 扇（SVG の path、role="button"）は四角い枠ではなく線で示す。指・マウスで押したときは出さない */
+.af-sonar svg [role="button"]:focus {
+  outline: none;
+}
+
+.af-sonar svg [role="button"]:focus-visible {
+  stroke: #f3ead0;
+  stroke-width: 2.5;
+}

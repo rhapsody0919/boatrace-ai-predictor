@@ -147,7 +147,8 @@ export default function AnalogyFinderSection({ raceId }) {
       send(btn);
     };
     const onClick = (e) => {
-      const btn = e.target.closest?.('button, [role="button"]');
+      // data-af-tap は、button ではないが押せる部品（ソナーの図の外の艇番）
+      const btn = e.target.closest?.('button, [role="button"], [data-af-tap]');
       if (btn) pressed(btn);
     };
     // button でない role="button"（ソナーの扇は SVG）は Enter・Space で click が出ないので、キーで拾う

@@ -178,6 +178,7 @@ export default function SimilarSonar({
   };
   // タップ。点の上なら近い点を並べて扇には渡さない（capture で止める）。点が無ければ扇の操作に任せる
   const onClickCapture = (e) => {
+    if (e.target.closest?.("[data-testid^='analogy-sonar-boat-']")) return;
     if (longPressed.current) {
       longPressed.current = false;
       e.stopPropagation();
@@ -362,8 +363,21 @@ export default function SimilarSonar({
             const a = (ang(b) * Math.PI) / 180;
             const x = CX + (R + 18) * Math.cos(a);
             const y = CY + (R + 18) * Math.sin(a);
+            // 図の外の艇番も押せる（点が密な扇は、扇を押しても点のタップになるため）。
+            // 読み上げ・キーボードは扇の role="button" が受け持つので、ここは指・マウスだけ
             return (
-              <g key={`b${b}`} pointerEvents="none">
+              <g
+                key={`b${b}`}
+                style={{ cursor: "pointer" }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onBoat(b);
+                }}
+                data-af-control="similar_boat"
+                data-af-toggle
+                data-af-tap
+                data-testid={`analogy-sonar-boat-${b}`}
+              >
                 <rect
                   x={x - 11}
                   y={y - 11}
