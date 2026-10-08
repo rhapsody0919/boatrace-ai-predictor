@@ -881,6 +881,11 @@
       "script": "verify-sns-existing-fixes.js",
       "tier": "ci",
       "guards": "依頼4: 既存YouTube公開・ブログPRマージ・通常承認・redoの外部操作排他（claim/reconcile/done）、サムネ失敗の非ブロック化、親画面の通知蓄積、ブログPR head SHA固定（138をPGlite、外部接続なし）"
+    },
+    {
+      "script": "verify-sns-deadline-queue.js",
+      "tier": "ci",
+      "guards": "依頼5: 発走期限つき待ち行列・送信前検査（headless/public_url）・日次枠の再承認後保持・媒体変更後の枠保持・begin_postの日付またぎ保留（139をPGlite、モックadapter、外部接続なし）"
     }
   ]
 }
