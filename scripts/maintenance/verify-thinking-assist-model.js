@@ -13,9 +13,15 @@ import { fileURLToPath } from "node:url";
 import {
   baseVerdict,
   bestBoats,
+  betForm,
+  boardModel,
+  buildRacers,
   classLineup,
+  firstPlaceComposite,
+  hasPricedTicket,
   raceRound,
   roughCard,
+  roughState,
   sameClassLabel,
   sameClassScope,
   similarSummary,
@@ -51,6 +57,13 @@ check(
     raceRound(null, "優勝戦") === "yusho" &&
     raceRound(null, "準優進出戦") === null &&
     raceRound({ round: "yosen" }, "一般") === null,
+);
+// v16 がラウンドを持つときは出走表より優先する（予選と言っているのに出走表の準優勝戦へ戻さない。Codex 依頼25 F01）
+check(
+  "raceRound: v16 の round が優勝戦・準優勝戦以外なら、出走表が準優勝戦・優勝戦でも null",
+  raceRound({ round: "yosen" }, "準優勝戦") === null &&
+    raceRound({ round: "other" }, "優勝戦") === null &&
+    raceRound({ round: null }, "優勝戦") === "yusho",
 );
 
 // ---- 全国・級の並びが同じ（D-37）----
@@ -305,6 +318,212 @@ check(
     stageFromExhibition(exh.slice(0, 5), [1, 2, 3, 4, 5, 6]) === "pre" &&
     stageFromExhibition(exh.slice(0, 5), [1, 2, 3, 4, 5]) === "post" &&
     stageFromExhibition([], []) === "pre",
+);
+
+// ---- レースの図（screens「レンズごとの図 C」、PR3）----
+// 展示は本番 exhibition_data（2026-10-06 徳山10R）の値。5号艇は展示 F（start_flag "F"）
+const exhibitionRows = [
+  { boat: 1, time: 6.84, st: 0.07, startFlag: null, absent: false },
+  { boat: 2, time: 6.84, st: 0.17, startFlag: null, absent: false },
+  { boat: 3, time: 6.89, st: 0.06, startFlag: null, absent: false },
+  { boat: 4, time: 6.83, st: 0.05, startFlag: null, absent: false },
+  { boat: 5, time: 6.9, st: 0.01, startFlag: "F", absent: false },
+  { boat: 6, time: 6.89, st: 0.12, startFlag: null, absent: false },
+];
+// 出走表（getPredictions の players は aiScore 順。艇番は number）
+const players = [3, 1, 5, 2, 4, 6].map((n) => ({
+  number: n,
+  name: [
+    "三馬 崇史",
+    "仲道 大輔",
+    "西岡 顕心",
+    "中村 栄治",
+    "濱野 斗馬",
+    "倉富 大誠",
+  ][n - 1],
+  grade: fx.today.classes[n - 1],
+  winRate: String(fx.today.items.nat_win.values[n - 1]),
+  localWinRate: String(fx.today.items.loc_win.values[n - 1]),
+  motor2Rate: String(fx.today.items.motor_2.values[n - 1]),
+}));
+const racers = buildRacers({
+  players,
+  today: fx.today,
+  exhibition: exhibitionRows,
+  rates: [
+    { boat_number: 3, f_count: 1 },
+    { boat_number: 6, f_count: 1 },
+  ],
+});
+check(
+  "buildRacers: 艇番順に並べ直し、苗字・級・勝率・平均ST（v16）・展示・F を艇ごとにそろえる",
+  racers.map((r) => r.boat).join() === "1,2,3,4,5,6" &&
+    racers[0].surname === "三馬" &&
+    racers[0].cls === "B1" &&
+    racers[2].natWin === 7.29 &&
+    racers[0].stMean === 0.132 &&
+    racers[4].exhFlying === true &&
+    racers[2].fCount === 1 &&
+    racers[0].fCount === null,
+  JSON.stringify(racers[0]),
+);
+const axis = boardModel({
+  lens: "axis",
+  stage: "post",
+  racers,
+  finalRound: true,
+});
+const bestOfNum = (m, i) =>
+  m.rows
+    .filter((r) => r.nums[i]?.best)
+    .map((r) => r.boat)
+    .join();
+check(
+  "軸レンズ: 横軸は全国勝率、数字は勝率と平均ST の2個（N-2）。最良は勝率=3号艇（7.29）、平均ST=1号艇（.132、小さいほど良い）",
+  axis.title === "全国勝率" &&
+    axis.rows.every((r) => r.nums.length === 2) &&
+    bestOfNum(axis, 0) === "3" &&
+    bestOfNum(axis, 1) === "1" &&
+    axis.rows[0].nums[1].text === ".132" &&
+    axis.rows[0].nums[1].aria === "0.132",
+);
+const loc = boardModel({
+  lens: "axis",
+  stage: "post",
+  metric: "loc_win",
+  racers,
+  finalRound: true,
+});
+check(
+  "6艇比較（当地勝率）: 0.00 の6号艇は「記録なし」で点を置かず、最良は3号艇（7.57）",
+  loc.rows[5].x === null &&
+    loc.rows[5].nums[0].text === "記録なし" &&
+    bestOfNum(loc, 0) === "3",
+);
+check(
+  "6艇比較（今節の平均着順点）: 準優勝戦の日は最良を付けない（FR-3a）。予選の日は1号艇（8.57）",
+  bestOfNum(
+    boardModel({
+      lens: "axis",
+      stage: "post",
+      metric: "series_score",
+      racers,
+      finalRound: true,
+    }),
+    0,
+  ) === "" &&
+    bestOfNum(
+      boardModel({
+        lens: "axis",
+        stage: "post",
+        metric: "series_score",
+        racers,
+        finalRound: false,
+      }),
+      0,
+    ) === "1",
+);
+const flow = boardModel({
+  lens: "flow",
+  stage: "post",
+  racers,
+  finalRound: true,
+});
+check(
+  "展開レンズ（展示後）: 展示ST。5号艇の F.01 は最良の候補から外し、最良は4号艇（.05）",
+  flow.rows[4].dotText === "F.01" &&
+    flow.rows
+      .filter((r) => r.dotBest)
+      .map((r) => r.boat)
+      .join() === "4",
+);
+const flowPre = boardModel({
+  lens: "flow",
+  stage: "pre",
+  racers,
+  finalRound: true,
+});
+check(
+  "展開レンズ（展示前）: 平均ST（このコース）。3号艇 .1417 と5号艇 .142 は3桁で同じなので両方が最良",
+  flowPre.rows[2].dotText === ".142" &&
+    flowPre.rows
+      .filter((r) => r.dotBest)
+      .map((r) => r.boat)
+      .join() === "3,5",
+);
+const power = boardModel({
+  lens: "power",
+  stage: "post",
+  racers,
+  finalRound: true,
+});
+check(
+  "機力レンズ（展示後）: 一番速い艇との差。モーター2連率の最良は4号艇（38.5）、展示タイムは4号艇（6.83）",
+  power.rows[3].x === 0 &&
+    bestOfNum(power, 0) === "4" &&
+    bestOfNum(power, 1) === "4",
+);
+check(
+  "機力レンズ（展示前）: 数字はモーター2連率の1個（展示の値を出さない）",
+  boardModel({ lens: "power", stage: "pre", racers }).rows.every(
+    (r) => r.nums.length === 1 && r.nums[0].metric === "motor_2",
+  ),
+);
+const tri = { "1-2-3": 6.4, "1-2-4": 15.2, "2-1-3": 37.5, "4-1-2": 133 };
+const comp = firstPlaceComposite(tri, [4]);
+check(
+  "1着の合成オッズ: 1着が同じ組をまとめ、欠場の艇（4）を含む組は2着・3着でも数えない（D-38）",
+  Math.abs(comp.get(1) - 6.4) < 1e-9 && // 1-2-4 は4号艇を含むので外れる
+    Math.abs(firstPlaceComposite(tri).get(1) - 1 / (1 / 6.4 + 1 / 15.2)) <
+      1e-9 &&
+    Math.abs(comp.get(2) - 37.5) < 1e-9 &&
+    !comp.has(4),
+);
+check(
+  "買い目レンズ: オッズが無ければ図に点を置かない（noOdds、「オッズは締切の約1時間前から出る」）",
+  boardModel({ lens: "bet", stage: "post", racers, trifecta: null }).noOdds ===
+    true,
+);
+check(
+  "買い目の表記: 着ごとの候補を艇番の昇順で「1-23-234」、候補の無い着は「—」",
+  betForm({ 1: new Set([1]), 2: new Set([3, 2]), 3: new Set([4, 2, 3]) }) ===
+    "1-23-234" &&
+    betForm({ 1: new Set(), 2: new Set([2]), 3: new Set() }) === "—-2-—",
+);
+
+// ---- PR #1308 /code-review の再現テスト ----
+check(
+  "堅い？荒れる？: 1号艇の NC・NA の範囲キーが無いレースは「読み込み中」に残さず empty（取得しないので終わらない）",
+  roughState({
+    factsStatus: "ready",
+    today: { scope_keys: { 1: { VA: "VA:18" } } },
+    ncStatus: "idle",
+    naStatus: "idle",
+  }) === "empty" &&
+    roughState({
+      factsStatus: "ready",
+      today: null,
+      ncStatus: "idle",
+      naStatus: "idle",
+    }) === "empty" &&
+    roughState({
+      factsStatus: "ready",
+      today: fx.today,
+      ncStatus: "loading",
+      naStatus: "ready",
+    }) === "loading" &&
+    roughState({
+      factsStatus: "ready",
+      today: fx.today,
+      ncStatus: "error",
+      naStatus: "ready",
+    }) === "error",
+);
+check(
+  "配分: オッズの付いた組が無い（発売前）ときは配分を出さない（「N点には最低0円」を出さない）",
+  hasPricedTicket(["1-2-3"], {}) === false &&
+    hasPricedTicket(["1-2-3"], null) === false &&
+    hasPricedTicket(["1-2-3", "1-2-4"], { "1-2-4": 15.2 }) === true,
 );
 
 if (failures > 0) {

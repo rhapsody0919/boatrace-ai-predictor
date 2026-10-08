@@ -7,12 +7,13 @@ import {
 
 /**
  * アナロジー・ファインダー v16 の取得（BOA-271 T6-3。screens「データ取得」）。
+ * 取得の状態の持ち方は思考アシスト（BOA-430）の取得でも使う（export）。
  * @returns {{status: "idle"|"loading"|"ready"|"error", data: object|null, retry: () => void}}
  *   enabled=false の間は取得しない（タブを開いたときに初めて取得する）。
  *   error は取得の失敗（「データなし」に倒さない。.claude/rules/frontend-data-fetch.md）。
  *   条件を変えた直後の読み込み中も、前の条件の結果を data に返す（表示がガタつかないように）
  */
-function useAnalogyResource(key, fetcher, enabled) {
+export function useAnalogyResource(key, fetcher, enabled) {
   const [fetched, setFetched] = useState(null);
   const [failedKey, setFailedKey] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
