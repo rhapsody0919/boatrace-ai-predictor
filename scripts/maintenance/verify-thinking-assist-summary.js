@@ -310,6 +310,38 @@ check(
   tech?.technique === "まくり" && tech.wins === 11 && tech.count === 4,
 );
 
+// data-accuracy-verifier の指摘: F・失格は0点で走数に入れ、欠場は入れない（v16 の今節の平均着順点と同じ）
+const fRun = {
+  ...run("2026-09-28-14-01", 1, null),
+  flyingStartTiming: 0.02,
+  finishMark: "F",
+};
+const absentRun = {
+  ...run("2026-09-28-14-03", 3, null),
+  absent: true,
+  finishMark: "欠",
+};
+const meetF = meetRuns(
+  [
+    run("2026-09-27-14-02", 2, 1),
+    run("2026-09-27-14-09", 4, 3),
+    fRun,
+    absentRun,
+    run("2026-09-28-14-11", 5, 1),
+  ],
+  "2026-09-29-14-05",
+);
+check(
+  "今節に F（0点・走数に入れる）と欠場（入れない）: 10+6+0+10=26点÷4走",
+  meetF.sum === 26 && meetF.count === 4 && meetF.avg === 6.5,
+  JSON.stringify({ sum: meetF.sum, count: meetF.count }),
+);
+check(
+  "着順の並びには着の無い走の記号（F）を出す",
+  meetF.byDay.map((d) => d.finishes.join("")).join("/") === "13/F欠1",
+  JSON.stringify(meetF.byDay),
+);
+
 // /code-review 指摘3: 着順の並びと1走ずつの表で日付の書き方をそろえる（日の0埋めをしない）
 check(
   "日付は「10/2」（月・日とも0埋めしない）",

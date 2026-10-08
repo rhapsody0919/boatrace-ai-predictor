@@ -292,11 +292,19 @@ export function tiltOutliers(racers) {
 /** 1走の着（1〜6）。着が無い（欠場・失格等）は null */
 export const finishOf = (run) => finishPositionOf(run);
 
+/** 1走の点。着があれば着順点、欠場は null（走数に入れない）、F・L・失格・転覆など走って着の無い走は0点 */
+const pointsOf = (run) => {
+  const f = finishOf(run);
+  if (f != null) return SCORE_POINTS[f];
+  return run.absent ? null : 0;
+};
+
 /**
  * 今節の各走（表示中のレースより前、同じ会場・同じ節）。今日の走は点に入れない（D-29）
  * @param {object[]} records getRacerScopedRaceStats の戻り値
  * @param {string} raceId 表示中のレース
- * @returns {{past: object[], today: object[], sum: number, count: number, avg: number|null, byDay: Array<{date: string, finishes: Array<number|null>}>}}
+ * @returns {{past: object[], today: object[], sum: number, count: number, avg: number|null, byDay: Array<{date: string, finishes: Array<number|string|null>}>}}
+ *   finishes は着（1〜6）か、着の無い走の公式の記号（F・失 等）
  */
 export function meetRuns(records, raceId) {
   const venueCode = Number(raceId.slice(11, 13));
@@ -304,13 +312,16 @@ export function meetRuns(records, raceId) {
   const date = raceId.slice(0, 10);
   const past = runs.filter((r) => r.date !== date);
   const today = runs.filter((r) => r.date === date);
-  const scored = past.filter((r) => SCORE_POINTS[finishOf(r)] != null);
-  const sum = scored.reduce((s, r) => s + SCORE_POINTS[finishOf(r)], 0);
+  // F・L・失格・転覆等は0点で走数に入れ、欠場だけ外す（v16 の今節の平均着順点・seriesPoints の規則3と同じ。
+  // data-accuracy-verifier の指摘: 分母から落とすと平均が v16 の値より高く出る）
+  const scored = past.filter((r) => pointsOf(r) != null);
+  const sum = scored.reduce((s, r) => s + pointsOf(r), 0);
   const byDay = [];
   for (const r of past) {
+    const mark = finishOf(r) ?? r.finishMark ?? null;
     const last = byDay[byDay.length - 1];
-    if (last?.date === r.date) last.finishes.push(finishOf(r));
-    else byDay.push({ date: r.date, finishes: [finishOf(r)] });
+    if (last?.date === r.date) last.finishes.push(mark);
+    else byDay.push({ date: r.date, finishes: [mark] });
   }
   return {
     past,
@@ -332,9 +343,8 @@ export const monthDay = (date) => {
 export const finishClass = (f) =>
   f === 1 ? " ta-fin-1" : f === 5 || f === 6 ? " ta-fin-bad" : "";
 
-/** 今節の走の点（今日の走・着の無い走は null） */
-export const runPoints = (run, today) =>
-  today ? null : (SCORE_POINTS[finishOf(run)] ?? null);
+/** 今節の走の点（今日の走・欠場は null） */
+export const runPoints = (run, today) => (today ? null : pointsOf(run));
 
 /**
  * 今節より前の5走（新しい順）。今節の走と表示中のレースより後の走を除いてから5走（D-36 (10)）
