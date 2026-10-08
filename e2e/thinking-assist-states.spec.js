@@ -34,9 +34,15 @@ async function open(page) {
   });
 }
 
-/** exhibition_data の録画の応答を加工する（欠場など） */
+/**
+ * exhibition_data の録画の応答を加工する（欠場など）。対象は展示の基本（getRaceExhibitionBasics、select に
+ * start_flag を含む。整備の問い合わせの prev_start_timing と取り違えないよう start_timing では見ない）だけ。PR4 で足した整備の問い合わせ（体重・チルト・展示の進入）は録画に無く本番へ素通しなので、
+ * ここで止めるとテストの終わった後に応答が返って落ちる（CI の F03）。そちらは録画の再生へ回す
+ */
 async function routeExhibition(page, edit, gate = null) {
   await page.route("**/rest/v1/exhibition_data*", async (route) => {
+    if (!route.request().url().includes("start_flag"))
+      return route.fallback();
     const res = await fetchRecorded(route);
     const rows = await res.json();
     if (gate) await gate;
@@ -647,7 +653,14 @@ test.describe("思考アシスト: PR4 の /code-review 指摘", () => {
           for (const e of r.entries ?? []) if (e.number === 1) e.racerId = null;
       await route.fulfill({ response: res, json: body });
     });
+    // 出走表は軽量版→完全版の2回取る。完全版が届く前にテストを終えると、取得中の route が閉じたページで落ちる
+    const full = page.waitForResponse(
+      (r) =>
+        r.url().includes("/api/predictions/") && !r.url().includes("light"),
+      { timeout: 60000 },
+    );
     await open(page);
+    await full;
     await page.getByRole("button", { name: /^1号艇\s/ }).click();
     const region = page.getByRole("region", { name: "1号艇の詳しい情報" });
     await expect(region).toBeVisible();
