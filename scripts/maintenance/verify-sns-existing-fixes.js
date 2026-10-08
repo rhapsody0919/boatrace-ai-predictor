@@ -285,9 +285,10 @@ test('親画面の成功・例外通知は関数型更新で蓄積し、閉じ�
     messages = updater(messages);
   }
   assert.equal(messages.length, 2);
-  const err = { message: '通信失敗' };
+  const err = { message: '内部エラー詳細' };
   for (const update of updates.slice(1)) messages = new Function('err', `return (${update})`)(err)(messages);
-  assert.deepEqual(messages.slice(-2), ['通信失敗', '通信失敗']);
+  assert.deepEqual(messages.slice(-2), ['操作に失敗しました。最新状態を確認してください。', 'マージに失敗しました。PRと最新状態を確認してください。']);
+  assert.ok(!messages.some(message => message.includes(err.message)), '生のエラー詳細は表示しない');
   assert.match(messages[0], /権限不足/);
 });
 

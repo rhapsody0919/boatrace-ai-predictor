@@ -312,9 +312,9 @@ function SnsHubAdmin() {
       await loadDrafts({ silent: true, fetch: reloadScope });
     } catch (err) {
       console.error("アクションエラー:", err);
-      setActionMessages(previous => [...previous, err.message || "操作に失敗しました"]);
+      setActionMessages(previous => [...previous, "操作に失敗しました。最新状態を確認してください。"]);
       await loadDrafts({ silent: true, fetch: reloadScope });
-      showToast(err.message || "操作に失敗しました", "error");
+      showToast("操作に失敗しました。最新状態を確認してください。", "error");
     }
   }
 
@@ -386,10 +386,10 @@ function SnsHubAdmin() {
       }
       await loadDrafts({ silent: true, fetch: { drafts: true } });
     } catch (err) {
-      setActionMessages(previous => [...previous, err.message || "マージに失敗しました"]);
+      setActionMessages(previous => [...previous, "マージに失敗しました。PRと最新状態を確認してください。"]);
       await loadDrafts({ silent: true, fetch: { drafts: true } });
       console.error("ブログPRマージエラー:", err);
-      showToast(err.message || "マージに失敗しました", "error");
+      showToast("マージに失敗しました。PRと最新状態を確認してください。", "error");
     }
   }
 
