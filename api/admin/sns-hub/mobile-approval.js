@@ -4,7 +4,8 @@ import { xSendStore, loadXMedia } from '../../_lib/snsXSendStore.js';
 import { prepareMobileReview, approveMobileReview } from '../../_lib/snsMobileApproval.js';
 import { saveDraftInspection } from '../../_lib/snsEditAssist.js';
 import riskRules from '../../../sns-video-studio/remotion/risk-rules.json';
-export const config = { runtime: 'edge' };
+// twitter-text（依存のpunycode）はVercel Edge Functionで未サポートのため、nodejs runtimeを使う。
+export const config = { runtime: 'nodejs' };
 export default async function handler(req) {
   const denied = await requireAdminAuth(req);
   if (denied) return denied;
