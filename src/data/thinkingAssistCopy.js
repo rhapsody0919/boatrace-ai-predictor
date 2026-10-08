@@ -32,7 +32,8 @@ export const ASSIST_COPY = Object.freeze({
   weatherAfterExhibition: "風・波・天候は展示の後に出る",
   observedAt: (time) => `${time}観測`,
   oddsAt: (time) => `オッズ ${time}時点`,
-  oddsNone: "オッズは発売後に出る",
+  // オッズは締切の60分前から取り込む（発売は朝から）。「発売後」と書くと発売中のレースで事実と違う（2026-10-08 ユーザー決定）
+  oddsNone: "オッズは締切の約1時間前から出る",
   sonarLink: "もっと詳しく見る（龍神ソナー）",
 
   // 堅い？荒れる？（FW-22、D-21・D-37）
@@ -61,8 +62,9 @@ export const ASSIST_COPY = Object.freeze({
   similarRacecardStage: "出走表の時点",
   roughNoPick: "どちらに見るかは自分で決める",
 
-  // 数え方は2つ（D-26・D-32）
-  scopeToggle: "数え方は2つ",
+  // 割合の出し方は2つ（D-26・D-32）。「数える」は使わない。レースを絞る話は「集める」、割合の作り方は「出す」
+  // （龍神ソナーと同じ決め方、2026-10-08 ユーザー決定）
+  scopeToggle: "割合の出し方は2つ",
   scopeHead: ["そろえた条件", "全国・級の並びが同じ", "類似レース"],
   scopeRefund: ["返還のあったレース", "除く", "含む"],
   scopeCount: "件数",

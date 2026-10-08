@@ -315,7 +315,7 @@ export const METRICS = {
   st_mean30: {
     // 公式の出走表の平均ST（期別）とは期間が違うので、読み上げ・6艇比較の見出しに期間を書く（ファン評価 1周目 指摘1）
     label: "平均ST（直近30走）",
-    short: "ST",
+    short: "ST(30走)", // 札にも期間を出す（2026-10-08 ユーザー決定、ファン評価 3周目 P1）
     value: (r) => r.stMean,
     text: (v) => stText(v),
     aria: (v) => v.toFixed(3),

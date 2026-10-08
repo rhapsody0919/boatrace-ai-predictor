@@ -480,7 +480,7 @@ check(
     !comp.has(4),
 );
 check(
-  "買い目レンズ: オッズが無ければ図に点を置かない（noOdds、「オッズは発売後に出る」）",
+  "買い目レンズ: オッズが無ければ図に点を置かない（noOdds、「オッズは締切の約1時間前から出る」）",
   boardModel({ lens: "bet", stage: "post", racers, trifecta: null }).noOdds ===
     true,
 );

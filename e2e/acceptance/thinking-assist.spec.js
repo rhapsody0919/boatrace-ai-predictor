@@ -133,7 +133,7 @@ const standBtn = (page) =>
 const standRegion = (page) =>
   page.getByRole("region", { name: "このレースは堅い？荒れる？" });
 const waysToCountToggle = (page) =>
-  page.getByRole("button", { name: "数え方は2つ" });
+  page.getByRole("button", { name: "割合の出し方は2つ" });
 const raceFigure = (page, lens) =>
   page.getByRole("figure", { name: `レースの図（${lens}）` });
 const boatRow = (page, n) =>
@@ -840,7 +840,9 @@ test.describe("オッズ照合と配分（spec FR-8）", () => {
   }) => {
     await openAssist(page, { noOdds: true });
     await lensTab(page, "買い目").click();
-    await expect(page.getByText("オッズは発売後に出る")).toBeVisible();
+    await expect(
+      page.getByText("オッズは締切の約1時間前から出る"),
+    ).toBeVisible();
     const text = await footerRegion(page).innerText();
     expect(text).not.toMatch(/合成\s*[\d.]+/);
   });

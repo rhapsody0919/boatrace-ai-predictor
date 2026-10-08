@@ -374,6 +374,45 @@ test.describe("思考アシスト: ファン評価 3周目", () => {
   });
 });
 
+test.describe("思考アシスト: ユーザー決定（2026-10-08）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("オッズがまだ無いときは「締切の約1時間前から出る」（発売後とは書かない）", async ({
+    page,
+  }) => {
+    await page.route("**/rest/v1/race_odds*", (route) =>
+      route.fulfill({ json: [] }),
+    );
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await expect(
+      page.getByText("オッズは締切の約1時間前から出る").first(),
+    ).toBeVisible();
+    await expect(page.getByText(/発売後/)).toHaveCount(0);
+  });
+
+  test("軸レンズの平均ST の札に期間を出す（「ST(30走)」）", async ({
+    page,
+  }) => {
+    await open(page);
+    await expect(
+      page.getByRole("button", { name: /^平均ST（直近30走） 0\.132/ }),
+    ).toContainText("ST(30走)");
+  });
+
+  test("「数える」を使わず「割合の出し方は2つ」", async ({ page }) => {
+    await open(page);
+    await page.getByRole("button", { name: "堅い？荒れる？の材料" }).click();
+    const sheet = page.getByRole("dialog");
+    await expect(
+      sheet.getByRole("button", { name: "割合の出し方は2つ" }),
+    ).toBeVisible();
+    await expect(page.getByText(/数え/)).toHaveCount(0);
+  });
+});
+
 test.describe("思考アシスト: シートのフォーカス（Codex 依頼27 U03）", () => {
   test.beforeEach(async ({ page }) => {
     await routeThinkingAssistV16(page);
