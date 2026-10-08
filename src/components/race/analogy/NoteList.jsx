@@ -19,3 +19,20 @@ export default function NoteList({ title, texts, className = "" }) {
     </div>
   );
 }
+
+/**
+ * 内部タブの一番下の折りたたみ（「割合の出し方・注意」など）。締切前には読まないが消すと信用の度合いが
+ * 分からなくなる説明を、詳細度を変えずにまとめる（承認モック sonar-tab v3）
+ * @param {{title: string, children: import("react").ReactNode}} props
+ */
+export function NotesFold({ title, children }) {
+  return (
+    <details
+      className="af-details af-notes-fold"
+      data-testid="analogy-notes-fold"
+    >
+      <summary>{title}</summary>
+      <div className="af-notes-fold-body">{children}</div>
+    </details>
+  );
+}

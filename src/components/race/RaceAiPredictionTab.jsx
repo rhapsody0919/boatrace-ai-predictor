@@ -28,8 +28,6 @@ import { getVolatilityLevel } from "../../utils/volatilityLevel";
 import { isJudgeable } from "../../utils/raceOutcome";
 import VolatilityPercentileBar from "./VolatilityPercentileBar";
 import { useRaceWinnerCourse } from "../../hooks/useRaceWinnerCourse";
-import AnalogyFinderSection from "./analogy/AnalogyFinderSection";
-import { isAnalogyFinderEnabled } from "../../config/featureFlags";
 
 function RaceAiPredictionTab({
   prediction,
@@ -37,6 +35,7 @@ function RaceAiPredictionTab({
   venueName,
   raceId,
   isCancelled = false,
+  onOpenSonar = null,
 }) {
   const { t } = useTranslation();
 
@@ -59,9 +58,19 @@ function RaceAiPredictionTab({
         venueName={venueName}
         raceId={raceId}
       />
-      {/* 公開までは機能フラグで隠す（隠している間は描かないので API も呼ばない。src/config/featureFlags.js） */}
-      {isAnalogyFinderEnabled() && (
-        <AnalogyFinderSection key={raceId} raceId={raceId} />
+      {/* 龍神ソナーは独立したタブに移した（2026-10-08）。ここに置いていた頃に見ていた人向けの案内 */}
+      {onOpenSonar && (
+        <button
+          type="button"
+          className="ai-tab-sonar-link"
+          onClick={onOpenSonar}
+          data-testid="ai-tab-sonar-link"
+        >
+          <span>{t("aiPredictionTab.sonarLink")}</span>
+          <span className="ai-tab-sonar-link-go" aria-hidden="true">
+            {t("aiPredictionTab.sonarLinkGo")} ›
+          </span>
+        </button>
       )}
     </>
   );

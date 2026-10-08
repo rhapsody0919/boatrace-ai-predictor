@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import NoteList from "./NoteList";
+import NoteList, { NotesFold } from "./NoteList";
+import ScopeCombo from "./ScopeCombo";
 import EntryPatternPicker from "./EntryPatternPicker";
 import SlitHint from "./SlitHint";
 import SlitShapePicker from "./SlitShapePicker";
@@ -33,7 +34,14 @@ const SCOPES = ["VC", "NC", "NCR", "VA", "VG", "NA"];
  * @param {{data: object, stage: "racecard"|"exhibition", onScope: (key: string) => void, today: object|null,
  *   raceId: string}} props data は scenario の応答、today は facts の today（平均ST・モーター・展示→本番の一致）
  */
-export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
+export default function ScenarioTab({
+  data,
+  stage,
+  onScope,
+  today,
+  raceId,
+  feedback,
+}) {
   const { t } = useTranslation();
   const scopeLbl = useId();
   const [entry, setEntry] = useState("waku");
@@ -52,7 +60,7 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
         {t("aiPredictionTab.analogy.states.notSaved")}
       </p>
     );
-  const scope = scopeName(scopeKey, t);
+  const scope = scopeName(scopeKey, t, { short: true });
   const cells = sc.cells;
   const whole = cells.all.forms.any;
   const c = cells[entry].forms[slit];
@@ -195,7 +203,10 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
             <i className="is-dot" />
             {baseName}
           </span>
-          <span>{t("aiPredictionTab.analogy.facts.legend")}</span>
+          <span>
+            <i className="is-err" />
+            {t("aiPredictionTab.analogy.similar.keyErrShort")}
+          </span>
         </div>
         <h4 className="af-h4">{t(`${k}.firstBoat`)}</h4>
         <BoatBars
@@ -253,7 +264,6 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
 
   return (
     <div className="af-tab-scenario">
-      <h3 className="af-h3">{t(`${k}.heading`)}</h3>
       <p className="af-sub">{t(`${k}.lede`)}</p>
       <div className="af-ctl-row">
         <span className="af-lbl" id={scopeLbl}>
@@ -275,11 +285,12 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
                 setFirst(null);
               }}
             >
-              {scopeName(keys[s], t)}
+              {scopeName(keys[s], t, { short: true })}
             </button>
           ))}
         </div>
       </div>
+      <ScopeCombo scopeKey={scopeKey} />
       {/* 既定で全国に替えたときの理由（spec「数えるレース」。タブ1と同じ1行。範囲を選び直したら API が付けない） */}
       {data.vc_fell_back !== null && data.vc_fell_back !== undefined && (
         <p className="af-sub">
@@ -299,21 +310,27 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
         onEntry={chooseEntry}
         todayEntry={todayEntry}
       />
-      <NoteList
-        title={t(`aiPredictionTab.analogy.notes.howToRead`)}
-        texts={[
-          exhibitionStage && todayEntry && entryAgree?.[1]
-            ? t(`${k}.entryAgree`, {
-                today: t(`${k}.todayEntry.${todayEntry}`),
-                entry: t(`${k}.entryShort.${todayEntry}`),
-                p: fmtPct(entryAgree[0] / entryAgree[1]),
-                since: fmtDate(String(agreement.period?.[0] ?? "").slice(0, 7)),
-                n: fmtCount(entryAgree[1]),
-              })
-            : !exhibitionStage && t(`${k}.entryPre`),
-          t(`${k}.entryFoot`, { name: allOf(scope) }),
-        ]}
-      />
+      {exhibitionStage && todayEntry && entryAgree?.[1] && (
+        <p className="af-sub">
+          {t(`${k}.entryAgree`, {
+            today: t(`${k}.todayEntry.${todayEntry}`),
+            entry: t(`${k}.entryShort.${todayEntry}`),
+            p: fmtPct(entryAgree[0] / entryAgree[1]),
+            since: fmtDate(String(agreement.period?.[0] ?? "").slice(0, 7)),
+            n: fmtCount(entryAgree[1]),
+          })}
+        </p>
+      )}
+      {/* 進入の見方は折りたたみ（承認モック sonar-tab v3） */}
+      <details className="af-details">
+        <summary>{t(`${k}.entryHowTo`)}</summary>
+        <NoteList
+          texts={[
+            !exhibitionStage && t(`${k}.entryPre`),
+            t(`${k}.entryFoot`, { name: allOf(scope) }),
+          ]}
+        />
+      </details>
       <SlitHint
         courseSt={data.course_st}
         version={version}
@@ -339,21 +356,24 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
         onSlit={pick(setSlit)}
         badges={badges}
       />
-      <NoteList
-        title={t(`aiPredictionTab.analogy.notes.terms`)}
-        texts={[t(`${k}.slitFoot1`)]}
-      />
-      <NoteList
-        title={t(`aiPredictionTab.analogy.notes.counting`)}
-        texts={[
-          sl &&
-            t(`${k}.slitDef`, {
-              form: formName(slit),
-              def: t(`${k}.forms.${slit}.def`),
-            }),
-          t(`${k}.slitFoot2`),
-        ]}
-      />
+      <details className="af-details">
+        <summary>{t(`${k}.termsFold`)}</summary>
+        <NoteList
+          title={t(`aiPredictionTab.analogy.notes.terms`)}
+          texts={[t(`${k}.slitFoot1`)]}
+        />
+        <NoteList
+          title={t(`aiPredictionTab.analogy.notes.counting`)}
+          texts={[
+            sl &&
+              t(`${k}.slitDef`, {
+                form: formName(slit),
+                def: t(`${k}.forms.${slit}.def`),
+              }),
+            t(`${k}.slitFoot2`),
+          ]}
+        />
+      </details>
       <NoteList
         title={t(`aiPredictionTab.analogy.notes.today`)}
         texts={[
@@ -408,10 +428,13 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
         {t(`${k}.resultHeading`)}
       </h4>
       {result}
-      <NoteList
-        title={t(`aiPredictionTab.analogy.notes.caution`)}
-        texts={[t(`${k}.foot`, { n: fmtCount(sc.n_refund_excluded ?? 0) })]}
-      />
+      {feedback}
+      <NotesFold title={t("aiPredictionTab.analogy.notes.methodCaution")}>
+        <NoteList
+          title={t(`aiPredictionTab.analogy.notes.caution`)}
+          texts={[t(`${k}.foot`, { n: fmtCount(sc.n_refund_excluded ?? 0) })]}
+        />
+      </NotesFold>
     </div>
   );
 }

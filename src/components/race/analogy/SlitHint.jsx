@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import NoteList from "./NoteList";
+import NoteList, { NotesFold } from "./NoteList";
 import BoatBadge from "../BoatBadge";
 import SlitShapeIcon from "./SlitShapeIcon";
 import {
@@ -94,87 +94,14 @@ export default function SlitHint({
       </div>
       <p className="af-foot">{t(`${k}.hintSrcFoot`)}</p>
       <div className="af-hint-pic">
-        <SlitShapeIcon st={vals} height={132} reference={ref} />
+        <SlitShapeIcon
+          st={vals}
+          height={150}
+          reference={ref}
+          refLabel={t(`${k}.hintRefShort`, { venue: vName })}
+        />
       </div>
-      <NoteList
-        title={t(`aiPredictionTab.analogy.notes.howToRead`)}
-        texts={[
-          version === "course"
-            ? t(`${k}.hintPicCourse`, { venue: vName }) +
-              (allA1 ? t(`${k}.hintPicA1`) : "") +
-              t(`${k}.hintPicTail`)
-            : t(`${k}.hintPicOverall`),
-          version === "course" &&
-            filled.length > 0 &&
-            t(`${k}.hintFilled`, {
-              boats: filled.join(t("aiPredictionTab.analogy.listSeparator")),
-            }),
-        ]}
-      />
-      <div className="af-tbl">
-        <table className="af-hint-t">
-          <thead>
-            <tr>
-              <th scope="col">
-                <span className="af-sr">{t(`${k}.hintRowHead`)}</span>
-              </th>
-              {[1, 2, 3, 4, 5, 6].map((b) => (
-                <th key={b} scope="col">
-                  <BoatBadge n={b} size="xs" />
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {tr(
-              t(`${k}.hintSrcs.course`),
-              (courseSt.course_filled ?? []).map(fmtSt3),
-            )}
-            {tr(
-              t(`${k}.hintSrcs.overall`),
-              (courseSt.overall ?? []).map(fmtSt3),
-            )}
-            {tr(
-              t(`${k}.hintVenue`, { venue: vName }),
-              (courseSt.venue ?? []).map((v, i) => (
-                <>
-                  {fmtSt3(v)}
-                  <small>
-                    {courseSt.venue_n?.[i] !== undefined
-                      ? t(`${k}.runs`, { n: courseSt.venue_n[i] })
-                      : ""}
-                  </small>
-                </>
-              )),
-              (courseSt.venue_n ?? []).map((n) => n < 10),
-            )}
-            {tr(
-              t(`${k}.hintVenueAll`, { venue: vName }),
-              (courseSt.venue_course_all?.mean ?? []).map(fmtSt3),
-            )}
-            {exhByBoat &&
-              tr(
-                t(`${k}.hintExh`),
-                exhByBoat.map((v) => (
-                  <span className={v !== null && v < 0 ? "af-fst" : undefined}>
-                    {fmtExhSt(v)}
-                  </span>
-                )),
-              )}
-          </tbody>
-        </table>
-      </div>
-      <NoteList
-        title={t(`aiPredictionTab.analogy.notes.caution`)}
-        texts={[
-          t(`${k}.hintVenueFoot`, { venue: vName }),
-          fewVenue.length > 0 &&
-            t(`${k}.hintFewVenue`, {
-              boats: fewVenue.join(t("aiPredictionTab.analogy.listSeparator")),
-            }),
-          exhibitionStage ? t(`${k}.hintExhPost`) : t(`${k}.hintExhPre`),
-        ]}
-      />
+      {/* 結論（当てはまる条件）は図の直下。見方・表・割合の出し方は折りたたみ（承認モック sonar-tab v3） */}
       <h4 className="af-h4">
         {t(`${k}.hintConds`, { src: t(`${k}.hintSrcs.${version}`) })}
       </h4>
@@ -216,16 +143,104 @@ export default function SlitHint({
           <p className="af-foot">{t(`${k}.hintNone`)}</p>
         )}
       </div>
-      <NoteList
-        title={t(`aiPredictionTab.analogy.notes.counting`)}
-        texts={[
-          t(`${k}.hintFoot`, {
-            scope,
-            n: fmtCount(baseN),
-            few: baseN < 3000 ? t(`${k}.hintFew`) : "",
-          }),
-        ]}
-      />
+      <details className="af-details">
+        <summary>{t(`${k}.hintTable`)}</summary>
+        <div className="af-tbl">
+          <table className="af-hint-t">
+            <thead>
+              <tr>
+                <th scope="col">
+                  {t(`${k}.hintRowHead`)}
+                </th>
+                {[1, 2, 3, 4, 5, 6].map((b) => (
+                  <th key={b} scope="col">
+                    <BoatBadge n={b} size="xs" />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tr(
+                t(`${k}.hintSrcs.course`),
+                (courseSt.course_filled ?? []).map(fmtSt3),
+              )}
+              {tr(
+                t(`${k}.hintSrcs.overall`),
+                (courseSt.overall ?? []).map(fmtSt3),
+              )}
+              {tr(
+                t(`${k}.hintVenue`, { venue: vName }),
+                (courseSt.venue ?? []).map((v, i) => (
+                  <>
+                    {fmtSt3(v)}
+                    <small>
+                      {courseSt.venue_n?.[i] !== undefined
+                        ? t(`${k}.runs`, { n: courseSt.venue_n[i] })
+                        : ""}
+                    </small>
+                  </>
+                )),
+                (courseSt.venue_n ?? []).map((n) => n < 10),
+              )}
+              {tr(
+                t(`${k}.hintVenueAll`, { venue: vName }),
+                (courseSt.venue_course_all?.mean ?? []).map(fmtSt3),
+              )}
+              {exhByBoat &&
+                tr(
+                  t(`${k}.hintExh`),
+                  exhByBoat.map((v) => (
+                    <span
+                      className={v !== null && v < 0 ? "af-fst" : undefined}
+                    >
+                      {fmtExhSt(v)}
+                    </span>
+                  )),
+                )}
+            </tbody>
+          </table>
+        </div>
+      </details>
+      <NotesFold title={t("aiPredictionTab.analogy.notes.methodCaution")}>
+        <NoteList
+          title={t(`aiPredictionTab.analogy.notes.howToRead`)}
+          texts={[
+            version === "course"
+              ? t(`${k}.hintPicCourse`, { venue: vName }) +
+                (allA1 ? t(`${k}.hintPicA1`) : "") +
+                t(`${k}.hintPicTail`)
+              : t(`${k}.hintPicOverall`),
+            version === "course" &&
+              filled.length > 0 &&
+              t(`${k}.hintFilled`, {
+                boats: filled.join(t("aiPredictionTab.analogy.listSeparator")),
+              }),
+          ]}
+        />
+        <NoteList
+          title={t(`aiPredictionTab.analogy.notes.caution`)}
+          texts={[
+            t(`${k}.hintVenueFoot`, { venue: vName }),
+            fewVenue.length > 0 &&
+              t(`${k}.hintFewVenue`, {
+                boats: fewVenue.join(
+                  t("aiPredictionTab.analogy.listSeparator"),
+                ),
+              }),
+            exhibitionStage ? t(`${k}.hintExhPost`) : t(`${k}.hintExhPre`),
+          ]}
+        />
+        <NoteList
+          title={t(`aiPredictionTab.analogy.notes.counting`)}
+          texts={[
+            t(`${k}.hintFoot`, {
+              scope,
+              n: fmtCount(baseN),
+              few: baseN < 3000 ? t(`${k}.hintFew`) : "",
+            }),
+          ]}
+        />
+      </NotesFold>
     </div>
   );
 }

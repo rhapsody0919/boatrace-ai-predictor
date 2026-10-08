@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import NoteList from "./NoteList";
+import NoteList, { NotesFold } from "./NoteList";
+import ScopeCombo from "./ScopeCombo";
 import BoatBadge from "../BoatBadge";
 import FactHexagon from "./FactHexagon";
 import FactCard from "./FactCard";
@@ -37,7 +38,7 @@ const FACT_SCOPES = ["VC", "NC", "NCR", "VA"];
  * 差がつく材料（タブ1、spec FR-A・FR-E、screens S-1a）
  * @param {{data: object, stage: "racecard"|"exhibition", target: 1|2|3}} props data は facts の応答
  */
-export default function ConditionFactsTab({ data, stage, target }) {
+export default function ConditionFactsTab({ data, stage, target, feedback }) {
   const { t } = useTranslation();
   const [boat, setBoat] = useState(1);
   const [compareOpen, setCompareOpen] = useState(false);
@@ -65,7 +66,7 @@ export default function ConditionFactsTab({ data, stage, target }) {
   );
   const vs = (key) => values[key] ?? null;
   const cmp = compareOpen && compareBoat !== boat ? compareBoat : null;
-  const scope = scopeName(scopeKey, t);
+  const scope = scopeName(scopeKey, t, { short: true });
   const venue = today.venue_code;
 
   const selectBoat = (b) => {
@@ -119,6 +120,7 @@ export default function ConditionFactsTab({ data, stage, target }) {
       }
       hideLine={row.key === "series_score" && hideSeriesLine}
       note={row.key === "series_score" ? note : null}
+      scope={scope}
     />
   );
   const kind = scopeKind(scopeKey);
@@ -196,11 +198,12 @@ export default function ConditionFactsTab({ data, stage, target }) {
               aria-pressed={keys[s] === scopeKey}
               onClick={() => setPickedKind(s)}
             >
-              {scopeName(keys[s], t)}
+              {scopeName(keys[s], t, { short: true })}
             </button>
           ))}
         </div>
       </div>
+      <ScopeCombo scopeKey={scopeKey} />
       {showFellBack && (
         <p className="af-sub">
           {t(`${k}.fellBack`, {
@@ -245,8 +248,8 @@ export default function ConditionFactsTab({ data, stage, target }) {
             finish: t(`aiPredictionTab.analogy.finishWord.${target}`),
           })}
         </span>
+        <span>{t(`${k}.hexFoot`)}</span>
       </div>
-      <p className="af-foot">{t(`${k}.hexFoot`)}</p>
       {usual && (
         <div className="af-big">
           <span>{t(`${k}.bigLabel`, { scope, boat, rate: rateName })}</span>
@@ -263,7 +266,24 @@ export default function ConditionFactsTab({ data, stage, target }) {
           </small>
         </div>
       )}
-      <p className="af-sub">{t(`${k}.lede`, { rate: rateName })}</p>
+      <h4 className="af-h4">{t(`${k}.orderHeading`)}</h4>
+      {/* 棒の見方はカードごとに繰り返さず、ここに凡例で1回だけ出す（承認モック sonar-tab v3） */}
+      <div className="af-legend af-card-legend">
+        <span>
+          <i className="af-sw-bar" style={{ background: SCOPE_LINE[boat] }} />
+          {t(`${k}.legendBar`, { rate: rateName })}
+        </span>
+        <span>
+          <i className="af-sw-today" />
+          {t(`${k}.legendToday`)}
+        </span>
+        {usual && (
+          <span>
+            <i className="af-sw-usual" />
+            {t(`${k}.legendUsual`, { scope, usual: fmtPct(rateOf(usual), 1) })}
+          </span>
+        )}
+      </div>
       <div className="af-cards">
         {rows.filter((r) => r.key !== "boat_2").map(card)}
         {rows
@@ -277,27 +297,6 @@ export default function ConditionFactsTab({ data, stage, target }) {
           ))}
       </div>
       {cls && <p className="af-foot">{t(`${k}.classLine`, { cls })}</p>}
-      {/* 注意を1段落に詰めず、話題ごとの見出し＋1文ずつの行に分ける（BOA-778、2026-10-06 ユーザー決定） */}
-      <NoteList
-        title={t(`aiPredictionTab.analogy.notes.counting`)}
-        texts={[
-          t(`${k}.foot.scope`, {
-            desc: t(`${k}.scopeDesc.${kind}`, {
-              venue: venueLabel(venue, t),
-              boat,
-            }),
-          }),
-          finalNcr && t(`${k}.foot.finalNcr`),
-          t(`${k}.foot.series`),
-        ]}
-      />
-      <NoteList
-        title={t(`aiPredictionTab.analogy.notes.caution`)}
-        texts={[
-          t(`${k}.foot.common`),
-          exhibitionStage ? t(`${k}.foot.exhPost`) : t(`${k}.foot.exhPre`),
-        ]}
-      />
       <WindWaveFacts
         exhibition={exhibition}
         vaFacts={keys.VA ? facts[keys.VA] : null}
@@ -305,6 +304,31 @@ export default function ConditionFactsTab({ data, stage, target }) {
         target={target}
         exhibitionStage={exhibitionStage}
       />
+      {feedback}
+      {/* 割合の出し方・注意は一番下の折りたたみ1つにまとめる（承認モック sonar-tab v3。中身は1文ずつの箇条書きのまま） */}
+      <NotesFold title={t("aiPredictionTab.analogy.notes.methodCaution")}>
+        <NoteList
+          title={t(`aiPredictionTab.analogy.notes.counting`)}
+          texts={[
+            t(`${k}.foot.scope`, {
+              desc: t(`${k}.scopeDesc.${kind}`, {
+                venue: venueLabel(venue, t),
+                boat,
+              }),
+            }),
+            finalNcr && t(`${k}.foot.finalNcr`),
+            t(`${k}.foot.series`),
+          ]}
+        />
+        <NoteList
+          title={t(`aiPredictionTab.analogy.notes.caution`)}
+          texts={[
+            t(`${k}.foot.common`),
+            t(`${k}.foot.overlap`),
+            exhibitionStage ? t(`${k}.foot.exhPost`) : t(`${k}.foot.exhPre`),
+          ]}
+        />
+      </NotesFold>
       <AiOutlook boat={boat} target={target} stage={stage} />
     </div>
   );

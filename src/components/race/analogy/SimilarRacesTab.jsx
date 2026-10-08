@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import NoteList from "./NoteList";
+import NoteList, { NotesFold } from "./NoteList";
 import BoatBadge from "../BoatBadge";
 import SimilarSonar from "./SimilarSonar";
 import SimilarityItems from "./SimilarityItems";
@@ -25,6 +25,75 @@ import { wilsonInterval } from "../../../utils/wilson";
 
 const k = "aiPredictionTab.analogy.similar";
 const TARGET = { 1: "winner", 2: "top2", 3: "top3" };
+
+/** ソナーの図の見方を絵の凡例で（承認モック sonar-tab v3。以前は3行の箇条書き） */
+function SonarLegend() {
+  const { t } = useTranslation();
+  const icon = (d) => (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      {d}
+    </svg>
+  );
+  return (
+    <div
+      className="af-legend af-sonar-legend"
+      data-testid="analogy-sonar-legend"
+    >
+      <span>
+        {icon(
+          <>
+            <circle cx="9" cy="9" r="7" fill="none" stroke="#c9a227" />
+            <circle cx="9" cy="9" r="2.5" fill="#c9a227" />
+          </>,
+        )}
+        {t(`${k}.legendCenter`)}
+      </span>
+      <span>
+        {icon(
+          <path
+            d="M9,9 L9,1 A8,8 0 0 1 16,5 Z"
+            fill="#c9a227"
+            fillOpacity=".5"
+          />,
+        )}
+        {t(`${k}.legendSector`)}
+      </span>
+      <span>
+        {icon(
+          <>
+            <circle
+              cx="9"
+              cy="9"
+              r="7.5"
+              fill="none"
+              stroke="#c9a227"
+              strokeDasharray="2 2"
+            />
+            <circle cx="9" cy="9" r="1.8" fill="#c9a227" />
+          </>,
+        )}
+        {t(`${k}.legendTap`)}
+      </span>
+      <span>
+        {icon(
+          <>
+            <rect
+              x="2"
+              y="2"
+              width="14"
+              height="9"
+              rx="2"
+              fill="none"
+              stroke="#c9a227"
+            />
+            <circle cx="9" cy="15" r="2" fill="#c9a227" />
+          </>,
+        )}
+        {t(`${k}.legendHold`)}
+      </span>
+    </div>
+  );
+}
 
 /** その艇が勝ったとき、ほかの艇は？（承認版モックの renderOther） */
 function OtherBoats({ neighbors, boat }) {
@@ -127,7 +196,13 @@ function OtherBoats({ neighbors, boat }) {
  * @param {{data: object, stage: "racecard"|"exhibition", target: 1|2|3, exhibition: object|null}} props
  *   data は similar の応答、exhibition は facts の今日の展示（展示後の「今日: …」の値）
  */
-export default function SimilarRacesTab({ data, stage, target, exhibition }) {
+export default function SimilarRacesTab({
+  data,
+  stage,
+  target,
+  exhibition,
+  feedback,
+}) {
   const { t } = useTranslation();
   const [stepIdx, setStepIdx] = useState(null);
   const [boat, setBoat] = useState(null);
@@ -229,6 +304,7 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
           <span className="af-foot">{t(`${k}.fewer`)}</span>
           <span className="af-foot">{t(`${k}.more`)}</span>
         </div>
+        <p className="af-foot">{t(`${k}.sliderZoom`)}</p>
         {farC && (
           <p className="af-foot">
             {t(`${k}.farthest`, {
@@ -241,16 +317,21 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
         )}
       </div>
       <h3 className="af-h3">{t(`${k}.heading`)}</h3>
-      <NoteList
-        className="is-lede"
-        title={t(`aiPredictionTab.analogy.notes.ordering`)}
-        texts={[
-          `${describeAnalogyLayer(sim.conditions, t, { count: sim.n_layer })}${t(`${k}.ledeTail`)}`,
-        ]}
-      />
+      {/* 並べ方は1行に縮め、全文は折りたたみに（承認モック sonar-tab v3） */}
+      <p className="af-sub">
+        {t(`${k}.ledeShort`, { n: fmtCount(sim.n_layer ?? all.length) })}
+      </p>
+      <details className="af-details">
+        <summary>{t(`${k}.ledeFull`)}</summary>
+        <NoteList
+          className="is-lede"
+          texts={[
+            `${describeAnalogyLayer(sim.conditions, t, { count: sim.n_layer })}${t(`${k}.ledeTail`)}`,
+          ]}
+        />
+      </details>
       <SimilarSonar
         neighbors={nb}
-        total={all.length}
         selectedBoat={boat}
         onBoat={selectBoat}
         picked={open}
@@ -260,10 +341,8 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
           r: Number(raceNumber),
         })}
       />
-      <NoteList
-        title={t(`aiPredictionTab.analogy.notes.sonar`)}
-        texts={[t(`${k}.sonarFoot`)]}
-      />
+      {/* 図の見方は文ではなく絵の凡例で（承認モック sonar-tab v3） */}
+      <SonarLegend />
       <SimilarityItems
         neighbors={nb}
         items={items}
@@ -314,7 +393,10 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
             {t(`${k}.keyCompare`, { name: cmpName, n: fmtCount(cmp.n) })}
           </span>
         )}
-        <span>{t(`${k}.keyBars`)}</span>
+        <span>
+          <i className="is-err" />
+          {t(`${k}.keyErr`)}
+        </span>
       </div>
       <BoatBars
         counts={ag.hit[target]}
@@ -340,10 +422,6 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
       <TechniqueBars counts={ag.tech} n={ag.n} reference={techRef} />
       <OtherBoats neighbors={nb} boat={boat} />
       <h4 className="af-h4">{t("aiPredictionTab.analogy.flow.heading")}</h4>
-      <NoteList
-        title={t(`aiPredictionTab.analogy.notes.howToRead`)}
-        texts={[t("aiPredictionTab.analogy.flow.lede")]}
-      />
       <FinishSankey
         tri={ag.tri}
         first={boat}
@@ -353,10 +431,13 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
       />
       <h4 className="af-h4">{t(`${k}.triHeading`)}</h4>
       <TrifectaList tri={ag.tri} first={boat} not1={not1} />
-      <NoteList
-        title={t(`aiPredictionTab.analogy.notes.caution`)}
-        texts={[t(`${k}.foot`)]}
-      />
+      {feedback}
+      <NotesFold title={t("aiPredictionTab.analogy.notes.methodCaution")}>
+        <NoteList
+          title={t(`aiPredictionTab.analogy.notes.caution`)}
+          texts={[t(`${k}.foot`)]}
+        />
+      </NotesFold>
     </div>
   );
 }
