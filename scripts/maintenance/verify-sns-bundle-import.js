@@ -148,7 +148,15 @@ await check("共通リスク判定は既存3経路の結果・順序・返却形
     ...["当たり", "的中", "的中率を公開", "選手の稼ぎ頭", "賞金を稼ぎ出した選手", "副業の経験", "収益を集計", "利益の推移"].map(text => [text, []]),
     ["必ず当たるとは限らない", ["guaranteed-hit"]], // 否定・引用でも部分一致の警告。
     ["稼げるという表現を避ける", ["gambling-incitement"]],
-    ["賞金を稼ぐ選手", ["gambling-incitement"]], // 通常の選手紹介でも一致する限界。
+    ...["賞金を稼ぐ選手", "賞金を稼いだ選手", "賞金を 稼ぐ 選手"].map(text => [text, []]),
+    ...["百発百中", "外れない", "必ず当てる", "絶対に外さない", "絶対外さない", "必ず当てます", "確実に当てる", "必ず外さない", "外れません", "外すことはない", "必ず 当たる", "１００％当たる", "１００%的中", "百発 百中"].map(text => [text, ["guaranteed-hit"]]),
+    ["賞金を稼ぐ選手。あなたも稼ぐ", ["gambling-incitement"]],
+    ["賞金を稼いだ選手。必勝", ["guaranteed-hit"]],
+    ["賞金を稼ぐ方法", ["gambling-incitement"]],
+    ["賞金を稼げる選手", ["gambling-incitement"]],
+    ["必ず当てるとは限らない", ["guaranteed-hit"]],
+    ["『外れない』という表現", ["guaranteed-hit"]],
+    ["ＶＳ", []],
     ["稼ぐ 必勝", ["gambling-incitement", "guaranteed-hit"]],
     ["ボートレースの観測件数", []],
     ["穴狙い 本命狙い 儲かる 万舟券 競艇 VS", ["banned-term-kyoutei", "deprecated-model-names", "gambling-incitement"]],
@@ -156,11 +164,13 @@ await check("共通リスク判定は既存3経路の結果・順序・返却形
   try {
     for (const [content, xIds] of cases) {
       for (const platform of ["x", "youtube", "tiktok", null, undefined, "unknown"]) {
-        // 改修前のNode判定を独立した比較基準として固定する。
+        // 固定期待IDと、全経路の順序・最初の一致を検査する。
         const expected = riskRules.filter(r => r.platforms === "all" || !platform ||
           (Array.isArray(r.platforms) && r.platforms.includes(platform)))
           .flatMap(r => {
-            const matchedPattern = r.patterns.find(p => content.includes(p));
+            const normalized = content.replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/\s/gu, "");
+            const target = r.id === "gambling-incitement" ? normalized.replace(/賞金を稼(?:ぐ|いだ)選手/gu, "賞金の選手") : normalized;
+            const matchedPattern = r.patterns.find(p => target.includes(p));
             return matchedPattern ? [{id:r.id, category:r.category, description:r.description, matchedPattern}] : [];
           });
         assert.deepEqual(matchRiskRules(content, platform, riskRules), expected);
@@ -180,6 +190,7 @@ await check("共通リスク判定は既存3経路の結果・順序・返却形
         assert.deepEqual(result.riskFlags[platform], checkRiskRules(content, platform));
       }
     }
+    console.table(cases.map(([text, expected]) => ({text, expected:expected.join(",") || "なし", actual:checkRiskRules(text,"x").map(r=>r.id).join(",") || "なし"})));
     assert.equal(updates, cases.length * 6); // 警告があっても承認は継続する。
     assert.deepEqual(matchRiskRules("VS", "x", []), []);
   } finally {
