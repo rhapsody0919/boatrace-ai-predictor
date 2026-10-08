@@ -49,6 +49,7 @@ before(async () => {
     "135_sns_preview_bundle_import.sql",
     "137_sns_x_send.sql",
     "139_sns_deadline_queue.sql",
+    "142_sns_shorts_send.sql",
   ])
     await db.exec(
       (
@@ -93,6 +94,9 @@ async function job({
   ).result;
 }
 async function enable(limit = 1000) {
+  await db.exec(
+    "UPDATE sns_youtube_quota_control SET verified=true,baseline_day=(now() AT TIME ZONE 'America/Los_Angeles')::date,upload_limit=100,general_limit=10000",
+  );
   await db.exec(
     `UPDATE sns_x_send_control SET paused=false,timing_approved=true,daily_limit=${limit},daily_baseline_date=(now() AT TIME ZONE 'Asia/Tokyo')::date,daily_external_count=0,max_source_age_seconds=3600,period_start=date_trunc('month',now()),period_end=date_trunc('month',now())+interval '1 month',attempt_ceiling_microusd=1,reserved_microusd=0`,
   );
@@ -348,11 +352,7 @@ test("YouTube予約は時刻待ち、due時に再検査して公開、署名URL�
     "UPDATE sns_x_send_jobs SET scheduled_at=now()+interval '10 minutes' WHERE id=$1",
     [j.id],
   );
-  const youtube = createMockYoutubeAdapter();
-  youtube.publish = async (payload) => {
-    youtube.calls.push(payload);
-    return { id: "scheduled01", posted_at: new Date().toISOString() };
-  };
+  const youtube = createMockYoutubeAdapter({ videoId: "scheduled01" });
   await assert.rejects(
     runYoutubeQueueJob(j.id, {
       store,
@@ -381,10 +381,10 @@ test("YouTube予約は時刻待ち、due時に再検査して公開、署名URL�
     ).state,
     "posted",
   );
-  assert.equal(checked, 1);
-  assert.equal(youtube.calls[0].privacyStatus, "public");
-  assert.equal(youtube.calls[0].publishAt, null);
-  assert.equal(youtube.calls[0].snapshot.media[0].path, "demo/a.mp4");
+  assert.equal(checked, 3);
+  assert.equal(youtube.calls[0].payload.privacyStatus, "public");
+  assert.equal(youtube.calls[0].payload.publishAt, null);
+  assert.equal(youtube.calls[0].payload.snapshot.media[0].path, "demo/a.mp4");
 });
 test("期限切れsweepと再承認後の版破損は外部呼出しゼロ", async () => {
   await enable();

@@ -1,3 +1,4 @@
+import { runYoutubeQueueJob, createMockYoutubeAdapter } from '../../api/_lib/snsDeadlineQueue.js';
 /** 本番接続なし。検査・保存モック・実SQL(PGlite)・公開APIガードを検証する。 */
 import { inspectDraft, inspectWithAi, readInspectionSources, saveDraftInspection } from "../../api/_lib/snsEditAssist.js";
 import { matchRiskRules } from "../lib/riskRuleMatcher.js";
@@ -839,6 +840,26 @@ await check(
     );
   },
 );
+
+await check("Shorts公開未確認は要照合、呼出し前のクォータ記録と候補ID保存", async () => {
+  const mediaBytes = new Uint8Array([1]);
+  const snapshot_text = JSON.stringify({ source:{video_storage_path:'a.mp4'}, media:[{path:'a.mp4',type:'video/mp4',size:1,sha256:await sha256(mediaBytes)}], queue: { youtube_mode: 'scheduled' } });
+  let state = 'queued';
+  const actions = [];
+  const store = { async transition(id, action, result) {
+    actions.push({ action, result });
+    if (action === 'claim') state = 'sending';
+    if (action === 'begin_post') state = 'reconcile';
+    if (action === 'complete') state = 'posted';
+    return { id, state, channel: 'youtube', snapshot_text, approved_hash: await sha256(encode(snapshot_text)) };
+  } };
+  await assert.rejects(runYoutubeQueueJob('mock', { store, youtube: createMockYoutubeAdapter({privacyStatus:'private'}),
+    preflight: async () => {}, loadMedia: async () => mediaBytes }), /unconfirmed/);
+  assert.equal(state, 'reconcile');
+  assert.deepEqual(actions.filter(a => a.action === 'youtube_call').map(a => a.result.method), ['videos.insert', 'videos.list']);
+  assert.equal(actions.find(a => a.action === 'youtube_uploaded').result.id, 'abcdefghijk');
+  assert(!actions.some(a => a.action === 'complete'));
+});
 
 const sample = process.argv.find((a) => a.startsWith("--sample="))?.slice(9);
 if (sample)

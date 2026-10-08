@@ -63,7 +63,8 @@ export async function reconcileSendJob(job, { store, lookup }) {
 /** 既存YouTube uploadの非公開adapterを差し込む契約だけ。実API・cronは提供しない。
  * 予約はローカルjobのscheduled_at待ち。時刻到達後、再検査して即時公開する。
  * YouTube publishAtによる外部の自動公開は最終検査を保証できないため今回提供しない。
- * publish({snapshot,media,privacyStatus,publishAt})は媒体uploadを含み自動retry禁止。
+ * publish({snapshot,media,privacyStatus,publishAt,beforeCall,uploaded})は媒体uploadを含み自動retry禁止。
+ * 142のクォータ予約・呼出し前記録・公開確認契約はsns-hub-shorts-send/contract.md参照。
  */
 export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMedia }) {
   if (!youtube || !preflight) throw new Error('YouTube adapterは未接続です');
@@ -75,6 +76,13 @@ export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMe
     const { sha256 } = await import('./snsXSend.js');
     if (await sha256(new TextEncoder().encode(job.snapshot_text)) !== job.approved_hash) throw new Error('承認版が違います');
     const snapshot = JSON.parse(job.snapshot_text);
+    const cover = snapshot.source?.cover_image_path;
+    if (!snapshot.source?.video_storage_path || !Array.isArray(snapshot.media) ||
+      snapshot.media.length !== (cover ? 2 : 1) || snapshot.media[0].type !== 'video/mp4' ||
+      snapshot.media[0].path !== snapshot.source.video_storage_path ||
+      (cover && (snapshot.media[1].path !== cover || !['image/jpeg','image/png'].includes(snapshot.media[1].type)))) {
+      throw new Error('動画・カバーの再承認が必要です');
+    }
     if (!['scheduled','immediate'].includes(snapshot.queue?.youtube_mode)) throw new Error('公開方法が未指定です');
     const verifiedMedia = [];
     for (const media of snapshot.media) {
@@ -87,14 +95,51 @@ export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMe
     const beginning = await store.transition(id, 'begin_post');
     if (beginning.state !== 'reconcile') return beginning;
     started = true;
-    const result = await youtube.publish({ snapshot, media: verifiedMedia, privacyStatus: 'public', publishAt: null });
+    // 実adapterは未提供。各Data API呼出しの直前に必ず台帳へ記録する契約。
+    const beforeCall = async method => {
+      await preflight(job);
+      await store.transition(id, 'youtube_call', { method });
+    };
+    const uploaded = async videoId => store.transition(id, 'youtube_uploaded', { id: videoId });
+    const result = await youtube.publish({ snapshot, media: verifiedMedia, privacyStatus: 'public', publishAt: null, beforeCall, uploaded });
+    if (result?.confirmed !== true || result.privacyStatus !== 'public' ||
+      !/^[A-Za-z0-9_-]{11}$/.test(result.id || '') || !Number.isFinite(Date.parse(result.posted_at))) {
+      throw new Error('youtube_publication_unconfirmed');
+    }
     return await store.transition(id, 'complete', result);
   } catch (error) {
     if (!started) { try { await store.transition(id, 'hold', { reason: 'youtube_preflight_failed' }); } catch { /* reconcileを戻さない */ } }
     throw error;
   }
 }
-export function createMockYoutubeAdapter() {
+export function createMockYoutubeAdapter({ privacyStatus = 'public', failAt, afterUpload,
+  videoId = 'abcdefghijk', postedAt = new Date().toISOString() } = {}) {
   const calls = [];
-  return { calls, async publish(payload) { calls.push(payload); return { id: 'abcdefghijk', posted_at: new Date().toISOString() }; } };
+  return { calls, async publish(payload) {
+    const call = async (method, stage) => {
+      await payload.beforeCall(method);
+      calls.push({ method, payload });
+      if (failAt === stage) throw new Error('mock_failure');
+    };
+    // inline案のモック。公開指定はvideos.insertのmetadataに含める。
+    await call('videos.insert', 'upload');
+    await payload.uploaded(videoId);
+    if (afterUpload) await afterUpload();
+    if (payload.media.length > 1) await call('thumbnails.set', 'thumbnail');
+    await call('videos.list', 'confirm');
+    return { id: videoId, posted_at: postedAt, confirmed: true, privacyStatus };
+  } };
+}
+
+/** 送信停止・期限・leaseと独立した読取照合。lookupは単一videos.listのみ、再送禁止。
+ * 同一チャンネル/承認版の投稿と実公開時刻を確認できない場合はconfirmed=false。
+ * ID不明で一覧探索が必要なケースはこの契約で推測せずオーナー確認へ残す。
+ */
+export async function reconcileYoutubeJob(job, { store, lookup }) {
+  if (job.channel !== 'youtube' || job.state !== 'reconcile' || !lookup) throw new Error('照合対象ではありません');
+  await store.transition(job.id, 'youtube_lookup');
+  const result = await lookup(job);
+  if (result?.confirmed !== true || result.privacyStatus !== 'public' ||
+    !/^[A-Za-z0-9_-]{11}$/.test(result.id || '') || !Number.isFinite(Date.parse(result.posted_at))) return job;
+  return store.transition(job.id, 'complete', result);
 }
