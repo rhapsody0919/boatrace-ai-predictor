@@ -606,8 +606,12 @@ test.describe("思考アシスト: レンズの要約と深掘り（PR4）", () 
     await open(page);
     await lensTab(page, "展開").click();
     await expect(page.getByText("本番で2コース凹みになるのは")).toBeVisible();
-    await expect(page.getByText("★2コース凹みの手がかり 13%")).toBeVisible();
-    await expect(page.getByText("攻め手", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("★平均STの手がかり（2コース凹み）13%"),
+    ).toBeVisible();
+    await expect(
+      page.getByText("2コース凹みなら攻め手", { exact: true }),
+    ).toBeVisible();
     await page
       .getByRole("button", { name: /^展示ST .*、6艇で比べる$/ })
       .first()
@@ -712,5 +716,101 @@ test.describe("思考アシスト: PR4 の承認モックとの差分", () => {
     await lensTab(page, "展開").click();
     await expect(page.getByText("逃げ 32件", { exact: true })).toBeVisible();
     await expect(page.getByText("50.8%")).toHaveCount(0);
+  });
+});
+
+/** PR4 のファン評価 1周目の指摘（P1・P2）の再現テスト */
+test.describe("思考アシスト: PR4 のファン評価 1周目", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  const openDeep = async (page, boat) => {
+    await page
+      .getByRole("button", { name: new RegExp(`^${boat}号艇\\s`) })
+      .click();
+    return page.getByRole("region", { name: `${boat}号艇の詳しい情報` });
+  };
+
+  test("指摘1: 展開の進入の割合に、集めた範囲（準優勝戦の日は予選も含む）と件数を書く", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByText(/^全国・級の並びが同じ（予選も含む） 2,463件$/),
+    ).toBeVisible();
+  });
+
+  test("指摘2: 勝ち決まり手に期間（直近90日）を書く", async ({ page }) => {
+    await open(page);
+    const region = await openDeep(page, 1);
+    await expect(region.getByText("直近90日", { exact: true })).toBeVisible({
+      timeout: 30000,
+    });
+  });
+
+  test("指摘3: 会場に絞った艇（2号艇）の説明文は「徳山・級の並びが同じ」", async ({
+    page,
+  }) => {
+    await open(page);
+    const region = await openDeep(page, 2);
+    await expect(
+      region.getByText(/^徳山・級の並びが同じ: 2号艇は A2/),
+    ).toBeVisible();
+  });
+
+  test("指摘4: v16 の展示後の段が無いときは、展示タイムの札を「—」で出さない", async ({
+    page,
+  }) => {
+    await open(page);
+    const region = await openDeep(page, 1);
+    await expect(
+      region.getByText("全国勝率", { exact: true }).first(),
+    ).toBeVisible();
+    await expect(
+      region.locator(".ta-chip").getByText("展示タイム"),
+    ).toHaveCount(0);
+  });
+
+  test("指摘5: v16 の保存が無いレースは、今節の平均を走から出し、平均ST を「記録なし」と書かない", async ({
+    page,
+  }) => {
+    await page.route("**/api/analogy/facts/**", (route) =>
+      route.fulfill({
+        json: { status: "not_saved", today: null, facts: null },
+      }),
+    );
+    await open(page);
+    const region = await openDeep(page, 1);
+    await expect(region.getByText("8.57", { exact: true })).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(region.getByText("記録なし")).toHaveCount(0);
+  });
+
+  test("指摘6: 押せない「過去の1着」はボタンの見た目（指の形）にしない", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "買い目").click();
+    const past = page.getByText(/^過去の1着/).first();
+    await expect(past).toBeVisible();
+    expect(await past.evaluate((el) => getComputedStyle(el).cursor)).not.toBe(
+      "pointer",
+    );
+  });
+
+  test("指摘7: 展示ST の F（5号艇 F.01）は .00 より左の端に置く", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    const left = await page.evaluate(
+      () =>
+        document.querySelectorAll(".ta-lane")[4].querySelector(".ta-track-dot")
+          ?.style.left,
+    );
+    expect(left).toBe("0%");
   });
 });

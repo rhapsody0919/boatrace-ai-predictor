@@ -13,7 +13,8 @@ function NumButton({ num, boat, onMetric }) {
   const descId = useId();
   if (!num.metric)
     return (
-      <span className="ta-num-btn">
+      // 押せない値（1着人気・過去の1着）はボタンの見た目にしない（ファン評価 PR4 1周目 指摘6）
+      <span className="ta-num-static">
         {num.short} <b className="ta-num">{num.text}</b>
       </span>
     );
@@ -80,7 +81,11 @@ function Track({ model, row, onMetric }) {
             {row.dotText}
           </button>
         ) : (
-          <span className={valClass} style={{ left: `${x}%` }} aria-hidden="true">
+          <span
+            className={valClass}
+            style={{ left: `${x}%` }}
+            aria-hidden="true"
+          >
             {row.dotText}
           </span>
         ))}

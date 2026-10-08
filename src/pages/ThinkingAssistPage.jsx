@@ -179,7 +179,8 @@ export default function ThinkingAssistPage() {
             today,
             exhibition: v16Exhibition,
             boat,
-            post,
+            // 展示タイムの札は v16 の展示後の段の値があるときだけ（無いと全艇「—」になる。ファン評価 PR4 1周目 指摘4）
+            post: post && Array.isArray(v16Exhibition?.exh_time),
             finalRound,
           }),
         };
@@ -229,7 +230,11 @@ export default function ThinkingAssistPage() {
           hit: true,
         });
       const attacker = ATTACK_BOAT[top.form];
-      if (attacker) add(attacker, { text: ASSIST_COPY.attackMark, hit: false });
+      if (attacker)
+        add(attacker, {
+          text: ASSIST_COPY.attackMark(ASSIST_COPY.formNames[top.form]),
+          hit: false,
+        });
     }
     if (state.lens === "power" && post) {
       for (const [boat, tilt] of tiltOutliers(racers))
@@ -376,6 +381,7 @@ export default function ThinkingAssistPage() {
       similar,
       racecardStage: data.similar.racecardStage,
       reflecting: v16Status === "exhibition_reflecting",
+      round: data.round,
     },
     power: {
       post,

@@ -45,9 +45,7 @@ export default function RunsTable({ meet, prior, venue, raceId, boat }) {
   return (
     <div className="ta-runs">
       <table className="ta-table ta-table-runs">
-        <caption>
-          {C.captionMeet(venue)}
-        </caption>
+        <caption>{C.captionMeet(venue)}</caption>
         <thead>
           <tr>
             <th scope="col">{C.colDay}</th>

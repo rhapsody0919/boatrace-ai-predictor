@@ -1254,3 +1254,21 @@
   display: grid;
   gap: var(--spacing-1-5);
 }
+
+/* 押せない値・印（ボタンと見分ける。枠を付けず、指の形にしない。ファン評価 PR4 1周目 指摘6） */
+.ta-num-static {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 var(--spacing-1);
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.ta-num-static b {
+  color: var(--text-primary);
+}
+
+.ta-lane-marks .ta-tag {
+  cursor: default;
+}

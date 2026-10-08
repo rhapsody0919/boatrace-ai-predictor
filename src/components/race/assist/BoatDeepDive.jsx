@@ -162,7 +162,12 @@ export default function BoatDeepDive({
         </dd>
         <dt>{C.kvSt}</dt>
         <dd>
-          <Val metric="st_mean30" racer={racer} onMetric={onMetric} />{" "}
+          {today ? (
+            <Val metric="st_mean30" racer={racer} onMetric={onMetric} />
+          ) : (
+            // v16 の保存が無いレースは、記録が無いのではなくデータが無い（ファン評価 PR4 1周目 指摘5）
+            C.noRunsData
+          )}{" "}
           {cst?.course?.[i] != null && (
             <span className="ta-scopechip ta-num">
               {C.stCourseChip(stText(cst.course[i]))}
@@ -176,7 +181,12 @@ export default function BoatDeepDive({
         </dd>
         <dt>{C.factNames.series_score}</dt>
         <dd>
-          <Val metric="series_score" racer={racer} onMetric={onMetric} />
+          {racer.seriesScore == null && meet?.avg != null ? (
+            // v16 の値が無いレース（保存なし等）は、今節の走から同じ定義で出す（F・失格は0点。ファン評価 PR4 1周目 指摘5）
+            <span className="ta-num">{meet.avg.toFixed(2)}</span>
+          ) : (
+            <Val metric="series_score" racer={racer} onMetric={onMetric} />
+          )}
           {!finalRound && seriesPos && (
             <span className="ta-num"> （{C.seriesRank(seriesPos)}）</span>
           )}{" "}
@@ -249,7 +259,8 @@ export default function BoatDeepDive({
                   technique.techniques
                     .map((t) => `${t.technique}${t.count}`)
                     .join("・")
-                : C.techNone}
+                : C.techNone}{" "}
+              <span className="ta-scopechip">{C.techPeriod}</span>
             </dd>
           </>
         )}
@@ -298,7 +309,12 @@ export default function BoatDeepDive({
           <ClassLineup lineup={classLineup(today?.classes, boat)} />
           {counts && (
             <p className="ta-note">
-              {C.classNote(boat, today.classes[i], counts)}
+              {C.classNote(
+                boat,
+                today.classes[i],
+                counts,
+                factsScopeLabel(scope, venue),
+              )}
             </p>
           )}
           <span className="ta-scopechip ta-num">

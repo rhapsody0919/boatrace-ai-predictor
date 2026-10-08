@@ -37,8 +37,7 @@ export default function BaseBar({
         onClick={() => setOpen((o) => !o)}
       >
         <span className="ta-bar-label">
-          {label}{" "}
-          {labelRate && <b className="ta-num">{pct1(rate)}%</b>}{" "}
+          {label} {labelRate && <b className="ta-num">{pct1(rate)}%</b>}{" "}
           {verdict && (
             <span
               className={`ta-tag${verdict === "unclear" ? "" : " ta-tag-hit"}`}

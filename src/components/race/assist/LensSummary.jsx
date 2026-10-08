@@ -143,6 +143,7 @@ function FlowSummary({ m }) {
     similar,
     racecardStage,
     reflecting,
+    round,
   } = m;
   const hs = scenario ? hintSummary(scenario, today) : null;
   const top = hs?.top ?? null;
@@ -193,7 +194,7 @@ function FlowSummary({ m }) {
           <h3>{C.flowIfHeading(formName)}</h3>
           <div className="ta-legend">
             <span className="ta-scopechip ta-num">
-              {C.flowFormScope("全国・級の並びが同じ", form.n)}
+              {C.flowFormScope(C.flowScopeLabel(Boolean(round)), form.n)}
             </span>
             <span>{C.flowFirstBoat}</span>
           </div>
@@ -221,6 +222,12 @@ function FlowSummary({ m }) {
             <>
               <div className="ta-chk">
                 <span>✓ {C.entryToday(C.entryNames[entry.type])}</span>
+              </div>
+              {/* 集めた範囲と件数を書く（上の枠の準優勝戦の値と比べられるように。ファン評価 PR4 1周目 指摘1） */}
+              <div className="ta-legend">
+                <span className="ta-scopechip ta-num">
+                  {C.scopeChip(C.flowScopeLabel(Boolean(round)), entry.n)}
+                </span>
               </div>
               <BaseBar
                 label={C.entryB1(C.entryNames[entry.group])}

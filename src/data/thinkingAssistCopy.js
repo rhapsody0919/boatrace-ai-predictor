@@ -81,8 +81,9 @@ export const ASSIST_COPY = Object.freeze({
   classAria: (boat, cls, counts) =>
     `${boat}号艇は枠も級（${cls}）も同じ、ほかの5艇は${counts}で級の艇数だけ同じ、どの枠かは問わない`,
   // 呼び名の近くに今日の値で例と注記を出す（名前は変えない。2026-10-08 ユーザー決定）
-  classNote: (boat, cls, counts) =>
-    `全国・級の並びが同じ: ${boat}号艇は ${cls}、ほかの5艇は ${counts}（どの枠にいたかは問わない）`,
+  // label は集めた範囲の呼び名（深掘りで会場に絞った艇は「{会場}・級の並びが同じ」。ファン評価 PR4 1周目 指摘3）
+  classNote: (boat, cls, counts, label = "全国・級の並びが同じ") =>
+    `${label}: ${boat}号艇は ${cls}、ほかの5艇は ${counts}（どの枠にいたかは問わない）`,
   scopeRowRest: (counts) => `2〜6号艇の級（${counts}、どの枠かは問わない）`,
 
   // レンズ（FR-4）
@@ -171,8 +172,7 @@ export const ASSIST_COPY = Object.freeze({
     slow: "遅い",
   }),
   // 図の「良い方の札」（名前の期間は札では省く。読み上げ・要約は factNames）
-  factMark: (name, word) =>
-    `${name.replace("（直近30走）", "")}が一番${word}`,
+  factMark: (name, word) => `${name.replace("（直近30走）", "")}が一番${word}`,
   factsHeading: (boat) => `差がつく材料（${boat}号艇）`,
   factsLegend: "▲＝6艇で一番のとき",
   factHit: (word, p, base) => `▲一番${word} → 1着 ${p}%（全体 ${base}%）`,
@@ -226,8 +226,13 @@ export const ASSIST_COPY = Object.freeze({
     mae: "前付けあり（1号艇イン）",
     inlost: "1号艇がインを取られた",
   }),
-  hintMark: (form, p) => `★${form}の手がかり ${p}%`,
-  attackMark: "攻め手",
+  // 図は展示ST でも、手がかりは平均ST から出していると札に書く（screens「★平均STの手がかり（{形}）」。ファン評価 PR4 1周目 指摘8）
+  hintMark: (form, p) => `★平均STの手がかり（${form}）${p}%`,
+  // 何の形のときの攻め手かを書く（同 指摘9）
+  attackMark: (form) => `${form}なら攻め手`,
+  // 優勝戦・準優勝戦の日でも、展開はラウンドを問わずに集める（形・進入の件数が要るため）。そうと分かる呼び名にする
+  flowScopeLabel: (final) =>
+    final ? "全国・級の並びが同じ（予選も含む）" : "全国・級の並びが同じ",
   flowShapeHeading: "本番のスタートの形",
   flowShapeLead: (form) => `本番で${form}になるのは`,
   flowShapeMiss: (p) => `（当てはまらないときは${p}%）`,
@@ -319,13 +324,19 @@ export const ASSIST_COPY = Object.freeze({
   stCourseChip: (v) => `このコース ${v}`,
   stVenueChip: (venue, v) => `${venue} ${v}`,
   seriesRank: (rank) =>
-    rank === 1 ? "6艇で一番高い" : rank === 6 ? "6艇で一番低い" : `6艇で${rank}番目`,
+    rank === 1
+      ? "6艇で一番高い"
+      : rank === 6
+        ? "6艇で一番低い"
+        : `6艇で${rank}番目`,
   beforeToday: "前日まで",
   todayRun: (r, f) => `今日 ${r}R ${f ?? "—"}着（点に入れない）`,
   runsToggle: "1走ずつの表",
   pretest: (t, rank) => `${t}${rank ? `（参加艇で${rank}位）` : ""}`,
   techLine: (wins) => `1着${wins}回: `,
   techNone: "直近90日の1着なし",
+  // 期間を書く（コースの1着「直近2年」と並ぶので、何の期間か分からないと矛盾して見える。同 指摘2）
+  techPeriod: "直近90日",
   exhStChip: (v) => `展示ST ${v}`,
   tiltChip: (v) => `チルト ${v}`,
   captionMeet: (venue) => `今節の各走（${venue}）`,

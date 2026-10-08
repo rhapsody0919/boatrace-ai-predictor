@@ -369,6 +369,13 @@ export const METRICS = {
     short: "展示ST",
     value: (r) => r.exhSt,
     text: (v, r) => `${r?.exhFlying ? "F" : ""}${stText(Math.abs(v), 2)}`,
+    // 図の位置: F はスタートラインより前なので .00 より左（負）に置く（ファン評価 PR4 1周目 指摘7）
+    plot: (r) =>
+      r.exhSt == null
+        ? null
+        : r.exhFlying
+          ? -Math.abs(r.exhSt)
+          : Math.abs(r.exhSt),
     aria: (v, r) => `${r?.exhFlying ? "F" : ""}${Math.abs(v).toFixed(2)}`,
   },
 };
@@ -452,6 +459,7 @@ export function boardModel({
 
   if (metric) {
     const def = METRICS[metric];
+    const plotOf = (r) => (def.plot ? def.plot(r) : abs(def.value(r)));
     const b = best(metric);
     const dir = BEST_RULES[metric].dir;
     return {
@@ -460,10 +468,10 @@ export function boardModel({
       left: "",
       right: "",
       good: dir === "min" ? "left" : "right",
-      ...span(racers.map((r) => abs(def.value(r)))),
+      ...span(racers.map(plotOf)),
       rows: racers.map((r) => ({
         boat: r.boat,
-        x: abs(def.value(r)),
+        x: plotOf(r),
         nums: [numOf(metric, r, b)],
       })),
     };
@@ -518,7 +526,9 @@ export function boardModel({
             : `${r.exhFlying && post ? "F" : ""}${stText(v, post ? 2 : 3)}`;
         return {
           boat: r.boat,
-          x: v == null ? null : Math.abs(v),
+          // F は .00 より左（目盛りの端に寄せる）。平均ST（展示前）は F が無い
+          x:
+            v == null ? null : post && r.exhFlying ? -Math.abs(v) : Math.abs(v),
           nums: [],
           // 展示前の値（このコースの平均ST）は v16 から。届いていなければ「記録なし」とも書かない
           pending: !post && !hasToday,
