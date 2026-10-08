@@ -19,6 +19,7 @@ import {
   getInsightById,
   updateInsight,
 } from "../../../../_lib/snsHubHelpers.js";
+import { matchRiskRules } from "../../../../../scripts/lib/riskRuleMatcher.js";
 import riskRules from "../../../../../sns-video-studio/remotion/risk-rules.json";
 
 import { requireAdminAuth } from "../../../../_lib/adminAuth.js";
@@ -26,22 +27,6 @@ import { requireAdminAuth } from "../../../../_lib/adminAuth.js";
 export const config = {
   runtime: "edge",
 };
-
-function checkRiskRules(text, platform) {
-  const violations = [];
-  for (const rule of riskRules.rules) {
-    const appliesToPlatform =
-      rule.platforms === "all" ||
-      !platform ||
-      rule.platforms.includes(platform);
-    if (!appliesToPlatform) continue;
-    const matchedPattern = rule.patterns.find((p) => text.includes(p));
-    if (matchedPattern) {
-      violations.push({ id: rule.id, category: rule.category, matchedPattern });
-    }
-  }
-  return violations;
-}
 
 export default async function handler(req) {
   // middleware はエンコードしたパスで迂回できるため、関数側でも必ず認証する（api/_lib/adminAuth.js）
@@ -74,7 +59,11 @@ export default async function handler(req) {
       );
     }
 
-    const violations = checkRiskRules(insight.insight_text, insight.platform);
+    const violations = matchRiskRules(
+      insight.insight_text,
+      insight.platform,
+      riskRules.rules,
+    ).map(({ id, category, matchedPattern }) => ({ id, category, matchedPattern }));
 
     const updated = await updateInsight(id, {
       status: "active",
