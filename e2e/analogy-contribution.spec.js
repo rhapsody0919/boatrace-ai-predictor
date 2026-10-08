@@ -171,6 +171,65 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
         ]).not.toContain(k);
   });
 
+  // 投稿などから龍神ソナーの内部のタブへ直接来られる URL（2026-10-08 D3）。?tab=aiPrediction と組み合わせ、
+  // 4言語の URL で同じに効く。読むだけで、押しても URL は書き換えない。節の id は固定（#ryujin-sonar）
+  for (const [lang, prefix] of [
+    ["ja", ""],
+    ["en", "/en"],
+    ["zh-TW", "/zh-TW"],
+    ["ko", "/ko"],
+  ])
+    test(`?tab=aiPrediction&sonar=similar で類似レースのタブを開いて節まで移動する（${lang}）`, async ({
+      page,
+    }) => {
+      await page.addInitScript((code) => {
+        window.__events = [];
+        window.gtag = (...args) => window.__events.push(args);
+        localStorage.setItem("boatai-language", code);
+      }, lang);
+      await setup(page, { preview: false });
+      const raceId = `${DATE}-09-01`;
+      await page.goto(
+        `${prefix}/race/${raceId}?tab=aiPrediction&sonar=similar`,
+      );
+      const section = page.locator("#ryujin-sonar");
+      await expect(section.getByRole("tablist")).toBeVisible({
+        timeout: 20000,
+      });
+      const tabs = section.getByRole("tab");
+      await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+      await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "false");
+      // 類似レースは開いたときに初めて読むので、直接来たときも読む
+      await expect(section.locator("#af-sim-slider")).toBeVisible({
+        timeout: 20000,
+      });
+      await expect(section).toBeInViewport();
+      // 押しても URL は書き換えない（来たときの sonar=similar が残る）。直接来たときはタブ選択の計測を送らない
+      await tabs.nth(2).click();
+      await expect(tabs.nth(2)).toHaveAttribute("aria-selected", "true");
+      expect(new URL(page.url()).searchParams.get("sonar")).toBe("similar");
+      expect(new URL(page.url()).searchParams.get("tab")).toBe("aiPrediction");
+      const tabEvents = await page.evaluate(() =>
+        window.__events
+          .filter((e) => e[0] === "event" && e[1] === "analogy_tab_select")
+          .map((e) => e[2].analogy_tab),
+      );
+      expect(tabEvents).toEqual(["scenario"]);
+    });
+
+  test("?sonar= の値が3タブのどれでもなければ、いつも通り差がつく材料で開く", async ({
+    page,
+  }) => {
+    await setup(page, { preview: false });
+    await page.goto(`/race/${DATE}-09-01?tab=aiPrediction&sonar=odds`);
+    const section = page.locator("#ryujin-sonar");
+    await expect(section.getByRole("tab").first()).toHaveAttribute(
+      "aria-selected",
+      "true",
+      { timeout: 20000 },
+    );
+  });
+
   test("?analogy=1 を付けて開くと内部確認として節を出し、端末に覚える", async ({
     page,
   }) => {

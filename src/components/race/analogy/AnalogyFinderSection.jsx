@@ -7,9 +7,13 @@
  * facts・scenario は展示後の値（exhibition）も一緒に返すので stage=exhibition で1回だけ読み、時点の切り替えは
  * 画面で行う。類似レースは時点ごとに並びが違うので時点ごとに読む。タブ2・3は開いたときに初めて読む。
  * 選んだタブ・艇番・時点・着順は URL にも localStorage にも残さない（spec「やらないこと」）。
+ * ただし投稿などから内部のタブへ直接来られるよう、?sonar=facts|similar|scenario を開いたときに1回だけ読み、
+ * そのタブで開いて節まで移動する（読むだけで、押しても URL は書き換えない。2026-10-08 D3）。節の id は固定の
+ * SONAR_SECTION_ID（#ryujin-sonar で節を指せる）。
  */
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import AnalogyControls from "./AnalogyControls";
 import ConditionFactsTab from "./ConditionFactsTab";
 import SimilarRacesTab from "./SimilarRacesTab";
@@ -25,6 +29,8 @@ import { trackEvent } from "../../../utils/analytics";
 import "./AnalogyV16.css";
 
 const TABS = ["facts", "similar", "scenario"];
+const SONAR_SECTION_ID = "ryujin-sonar";
+const SONAR_TAB_PARAM = "sonar";
 
 /** 時点の切り替えの下の1行（screens「状態」） */
 const STAGE_NOTE = {
@@ -50,8 +56,15 @@ export default function AnalogyFinderSection({ raceId }) {
   const tabsId = useId();
   const [stageChoice, setStageChoice] = useState(null);
   const [target, setTarget] = useState(1);
-  const [tab, setTab] = useState("facts");
-  const [opened, setOpened] = useState({ facts: true });
+  const [searchParams] = useSearchParams();
+  const linkedTab = TABS.includes(searchParams.get(SONAR_TAB_PARAM))
+    ? searchParams.get(SONAR_TAB_PARAM)
+    : null;
+  const [tab, setTab] = useState(linkedTab ?? "facts");
+  const [opened, setOpened] = useState({
+    facts: true,
+    ...(linkedTab && { [linkedTab]: true }),
+  });
   const [scenarioScope, setScenarioScope] = useState(null);
 
   const facts = useAnalogyFacts(raceId, "exhibition");
@@ -69,6 +82,14 @@ export default function AnalogyFinderSection({ raceId }) {
       analogy_stage: stage,
     });
   }, [factsReady, raceId, stage]);
+  // ?sonar= で来たときは、中身が出てから1回だけ節まで移動する（先に移動すると読み込みで位置がずれる）
+  const sectionRef = useRef(null);
+  const scrolled = useRef(false);
+  useEffect(() => {
+    if (!linkedTab || !factsReady || scrolled.current) return;
+    scrolled.current = true;
+    sectionRef.current?.scrollIntoView({ block: "start" });
+  }, [linkedTab, factsReady]);
   const similar = useAnalogySimilar(raceId, stage, Boolean(opened.similar));
   const scenario = useAnalogyScenario(
     raceId,
@@ -83,7 +104,12 @@ export default function AnalogyFinderSection({ raceId }) {
     race: Number(raceNumber),
   });
   const wrap = (body) => (
-    <section className="af-v16" aria-labelledby={headingId}>
+    <section
+      id={SONAR_SECTION_ID}
+      ref={sectionRef}
+      className="af-v16"
+      aria-labelledby={headingId}
+    >
       <h2 id={headingId} className="af-v16-eyebrow">
         {heading}
       </h2>
