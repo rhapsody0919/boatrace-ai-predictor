@@ -10,7 +10,7 @@
  * 隠している間は節を描かないので、寄与度の API も呼ばない（DB への問い合わせは無い）。
  * キーは boatai-user: 接頭辞（キャッシュの全削除で消えないユーザー保存の名前空間）。
  */
-export const ANALOGY_FINDER_PUBLIC = false;
+export const ANALOGY_FINDER_PUBLIC = true;
 export const ANALOGY_FINDER_PREVIEW_KEY = "boatai-user:analogy-finder-preview";
 
 export const THINKING_ASSIST_PUBLIC = false;
@@ -35,10 +35,9 @@ function readPreviewFlag(queryName, storageKey) {
 }
 
 export function isAnalogyFinderEnabled() {
-  return (
-    ANALOGY_FINDER_PUBLIC ||
-    readPreviewFlag("analogy", ANALOGY_FINDER_PREVIEW_KEY)
-  );
+  // 公開後も ?analogy=1/0 の印は読んで覚える（フラグを戻したとき、すぐ内部確認に切り替えられるように）
+  const preview = readPreviewFlag("analogy", ANALOGY_FINDER_PREVIEW_KEY);
+  return ANALOGY_FINDER_PUBLIC || preview;
 }
 
 export function isThinkingAssistEnabled() {

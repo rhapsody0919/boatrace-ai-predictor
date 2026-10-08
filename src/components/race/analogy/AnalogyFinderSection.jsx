@@ -8,7 +8,7 @@
  * 画面で行う。類似レースは時点ごとに並びが違うので時点ごとに読む。タブ2・3は開いたときに初めて読む。
  * 選んだタブ・艇番・時点・着順は URL にも localStorage にも残さない（spec「やらないこと」）。
  */
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import AnalogyControls from "./AnalogyControls";
 import ConditionFactsTab from "./ConditionFactsTab";
@@ -21,6 +21,7 @@ import {
   useAnalogySimilar,
 } from "../../../hooks/useAnalogyV16";
 import { venueLabel } from "../../../utils/analogyFormat";
+import { trackEvent } from "../../../utils/analytics";
 import "./AnalogyV16.css";
 
 const TABS = ["facts", "similar", "scenario"];
@@ -57,6 +58,17 @@ export default function AnalogyFinderSection({ raceId }) {
   const status = facts.data?.status ?? null;
   const exhibitionReady = status === "exhibition_ready";
   const stage = exhibitionReady ? (stageChoice ?? "exhibition") : "racecard";
+  // 節の中身（facts）が出たら、レースごとに1回だけ「表示した」を送る（公開時の最小限の計測）
+  const viewedRace = useRef(null);
+  const factsReady = Boolean(facts.data?.today);
+  useEffect(() => {
+    if (!factsReady || viewedRace.current === raceId) return;
+    viewedRace.current = raceId;
+    trackEvent("analogy_section_view", {
+      race_id: raceId,
+      analogy_stage: stage,
+    });
+  }, [factsReady, raceId, stage]);
   const similar = useAnalogySimilar(raceId, stage, Boolean(opened.similar));
   const scenario = useAnalogyScenario(
     raceId,
@@ -99,6 +111,9 @@ export default function AnalogyFinderSection({ raceId }) {
   const selectTab = (next) => {
     setTab(next);
     setOpened((o) => ({ ...o, [next]: true }));
+    // 公開時の最小限の計測（2026-10-08 ユーザー決定）。パラメータ名は GA4 の予約語（source・medium・campaign・
+    // content・id 等）を避ける（ga4_unassigned の件）
+    trackEvent("analogy_tab_select", { race_id: raceId, analogy_tab: next });
   };
   const tabId = (name) => `${tabsId}-${name}`;
   let panel;

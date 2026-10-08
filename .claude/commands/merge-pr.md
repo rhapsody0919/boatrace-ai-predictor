@@ -19,10 +19,14 @@ gh pr view {pr} --json number,state,mergeable,mergeStateStatus
 ```
 `mergeable`が`MERGEABLE`でない、または`mergeStateStatus`が`CLEAN`/`UNSTABLE`以外（`DIRTY`＝コンフリクト等）の場合は、その場でユーザーに状況を報告して停止する（推測でマージを強行しない）。`UNSTABLE`は多くの場合CI項目の一部が本PRと無関係な理由でpending/failureなだけなので、該当チェックの内容を確認した上で進めてよいか一言添える。
 
+master の ruleset（承認1件必須）を入れた後は、承認の無いPRは`BLOCKED`になる。`gh pr view {pr} --json reviewDecision` が`REVIEW_REQUIRED`で、`mergeable`が`MERGEABLE`、`gh pr checks {pr}` が全部緑なら、承認待ちだけが理由なので進めてよい（それ以外の理由の`BLOCKED`は停止する）。
+
 ### 2. マージ実行
 ```bash
-gh pr merge {pr} --squash
+gh pr merge {pr} --squash --admin
 ```
+
+`--admin` は管理者の bypass で、ruleset の承認必須を越えてマージする（オーナーの権限で動く Claude だけが使える）。失敗しているチェックも素通りするので、手順1でCIが全部緑であることを確かめてから実行する。
 
 続けて、メインの作業ツリーの master を取り込む（SessionStartフックと同じ判定。master・追跡ファイル無変更・独自コミット無しのときだけ fast-forward し、それ以外は警告だけ出す）。
 ```bash

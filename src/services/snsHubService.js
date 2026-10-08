@@ -266,6 +266,14 @@ export async function updateTopicCategoryChannel(
   });
 }
 
+/** 観測窓つき指標。旧手動指標から期間を推測しない。 */
+export async function getMetricObservations(window, metric) {
+  const { data } = await request(
+    `/observations?window=${encodeURIComponent(window)}&metric=${encodeURIComponent(metric)}`,
+  );
+  return data;
+}
+
 /** X送信は接続承認までconnected=false。鍵をブラウザへ渡さない。 */
 export async function getXSendStatus(draftId) {
   const { data } = await request(`/drafts/${draftId}/x-send`);

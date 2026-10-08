@@ -987,7 +987,7 @@
           "slow": "slowest"
         },
         "wind": {
-          "heading": "In races close to today's wind and waves (wind {{wind}}m, waves {{wave}}cm)",
+          "heading": "In races close to today's wind and waves (wind {{wind}}m, waves {{wave}}cm) (as of the exhibition)",
           "sub": "Matching the scope leaves too few races here, so this section alone counts all races at {{venue}}. The comparison (dotted line) is also all races at {{venue}}",
           "row": "{{rate}} (any wind: {{all}})",
           "foot": "Share of races at {{venue}} with wind {{band}} in which each boat number {{finish}} ({{n}} races). Dotted line: all races at {{venue}}. Wind is split by speed only (tailwind and headwind are not distinguished). Past wind and waves are as recorded at the start; today's are as of the exhibition",
@@ -998,7 +998,7 @@
             "4-5": "4–5m",
             "6+": "6m or more"
           },
-          "headingWind": "Races with wind close to today's ({{wind}} m) (today's waves {{wave}} cm)",
+          "headingWind": "Races with wind close to today's ({{wind}} m) (today's waves {{wave}} cm; both as of the exhibition)",
           "windOnly": "At this venue, wave height is recorded at almost the same value as wind speed, so races are grouped by wind",
           "waveFew": "Splitting by waves leaves only {{n}} races, so races are grouped by wind only",
           "bandsWave": "wind {{wind}}, waves {{wave}}",
