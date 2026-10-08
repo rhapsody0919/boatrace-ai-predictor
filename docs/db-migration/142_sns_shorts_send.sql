@@ -76,7 +76,8 @@ BEGIN
   ELSE
     IF jsonb_array_length(p_snapshot->'media')<>(CASE WHEN d.platform='youtube' AND d.cover_image_path IS NOT NULL THEN 2 ELSE 1 END) OR p_snapshot->'media'->0->>'path' IS DISTINCT FROM media_path
       OR coalesce(p_snapshot->'media'->0->>'sha256','') !~ '^[a-f0-9]{64}$'
-      OR coalesce((p_snapshot->'media'->0->>'size')::bigint,0) NOT BETWEEN 1 AND 33554432 THEN
+      OR coalesce((p_snapshot->'media'->0->>'size')::bigint,0) NOT BETWEEN 1 AND
+        (CASE WHEN d.platform='youtube' THEN 524288000 ELSE 33554432 END) THEN
       RAISE EXCEPTION '媒体のhash・サイズが不正です';
     END IF;
   END IF;
@@ -96,7 +97,8 @@ BEGIN
       scheduled_at=EXCLUDED.scheduled_at,error_code=NULL,updated_at=now() RETURNING * INTO j;
   UPDATE public.sns_x_send_jobs SET channel=d.platform, draft_revision=h,
     expires_at=(p_snapshot->'queue'->>'expires_at')::timestamptz,
-    parent_job_id=(p_snapshot->'queue'->>'parent_job_id')::uuid, locked_at=NULL, lease_until=NULL
+    parent_job_id=(p_snapshot->'queue'->>'parent_job_id')::uuid, locked_at=NULL, lease_until=NULL,
+    youtube_stage=NULL, external_post_id=NULL
     WHERE id=j.id RETURNING * INTO j;
   UPDATE public.sns_drafts SET status='approved',approver_id=p_approver_id,approved_at=j.approved_at,
     x_approved_hash=h,scheduled_at=j.scheduled_at WHERE id=d.id;
