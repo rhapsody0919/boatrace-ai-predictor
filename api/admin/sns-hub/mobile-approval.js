@@ -1,7 +1,7 @@
-import { requireAdminAuth } from '../../../_lib/adminAuth.js';
-import { isConfigured, isValidUuid, jsonResponse, signStoragePaths } from '../../../_lib/snsHubHelpers.js';
-import { xSendStore, loadXMedia } from '../../../_lib/snsXSendStore.js';
-import { prepareMobileReview, approveMobileReview } from '../../../_lib/snsMobileApproval.js';
+import { requireAdminAuth } from '../../_lib/adminAuth.js';
+import { isConfigured, isValidUuid, jsonResponse, signStoragePaths } from '../../_lib/snsHubHelpers.js';
+import { xSendStore, loadXMedia } from '../../_lib/snsXSendStore.js';
+import { prepareMobileReview, approveMobileReview } from '../../_lib/snsMobileApproval.js';
 export const config = { runtime: 'edge' };
 export default async function handler(req) {
   const denied = await requireAdminAuth(req);
