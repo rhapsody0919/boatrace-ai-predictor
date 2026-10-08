@@ -54,6 +54,7 @@ export function createMockHeadless({ visibleSelectors = [], finalUrl, fail = fal
 
 /** 外部照合は照合済みIDと実公開時刻がある場合だけcompleteへ。未確認ならreconcile維持。 */
 export async function reconcileSendJob(job, { store, lookup }) {
+  if (job.channel === 'youtube') return reconcileYoutubeJob(job, { store, lookup });
   if (job.state !== 'reconcile' || !lookup) throw new Error('照合対象ではありません');
   const result = await lookup(job);
   if (!result?.confirmed || !result.id || !result.posted_at) return job;
@@ -63,14 +64,14 @@ export async function reconcileSendJob(job, { store, lookup }) {
 /** 既存YouTube uploadの非公開adapterを差し込む契約だけ。実API・cronは提供しない。
  * 予約はローカルjobのscheduled_at待ち。時刻到達後、再検査して即時公開する。
  * YouTube publishAtによる外部の自動公開は最終検査を保証できないため今回提供しない。
- * publish({snapshot,media,privacyStatus,publishAt,beforeCall,uploaded})は媒体uploadを含み自動retry禁止。
+ * uploadはprivateのみ。processingとmakePublicは別段階。全て自動retry禁止。
  * 142のクォータ予約・呼出し前記録・公開確認契約はsns-hub-shorts-send/contract.md参照。
  */
 export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMedia }) {
   if (!youtube || !preflight) throw new Error('YouTube adapterは未接続です');
   const job = await store.transition(id, 'claim');
   if (job.state !== 'sending') return job;
-  let started = false;
+  let started = false, uploadedKnown = false, publicationPhaseStarted = false;
   try {
     if (job.channel !== 'youtube') throw new Error('チャネルが違います');
     const { sha256 } = await import('./snsXSend.js');
@@ -100,34 +101,78 @@ export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMe
       await preflight(job);
       await store.transition(id, 'youtube_call', { method });
     };
-    const uploaded = async videoId => store.transition(id, 'youtube_uploaded', { id: videoId });
-    const result = await youtube.publish({ snapshot, media: verifiedMedia, privacyStatus: 'public', publishAt: null, beforeCall, uploaded });
-    if (result?.confirmed !== true || result.privacyStatus !== 'public' ||
-      !/^[A-Za-z0-9_-]{11}$/.test(result.id || '') || !Number.isFinite(Date.parse(result.posted_at))) {
-      throw new Error('youtube_publication_unconfirmed');
-    }
-    return await store.transition(id, 'complete', result);
+    const uploaded = async videoId => {
+      const saved = await store.transition(id, 'youtube_uploaded', { id: videoId });
+      uploadedKnown = true;
+      return saved;
+    };
+    const uploadedJob = await youtube.upload({ snapshot, media: verifiedMedia, privacyStatus: 'private', publishAt: null, beforeCall, uploaded });
+    publicationPhaseStarted = true;
+    return await runYoutubePublishJob(uploadedJob, { store, youtube, preflight });
   } catch (error) {
+    if (started && uploadedKnown && !publicationPhaseStarted) { try { await store.transition(id, 'youtube_retain'); } catch { /* update開始後は残置扱いに戻さない */ } }
     if (!started) { try { await store.transition(id, 'hold', { reason: 'youtube_preflight_failed' }); } catch { /* reconcileを戻さない */ } }
     throw error;
   }
 }
+/** 処理pollは1回/呼出し、試行全体で最大3回。自動タイマー・再uploadなし。 */
+export async function runYoutubePublishJob(job, { store, youtube, preflight }) {
+  let publishStarted = false, retainPrivate = true;
+  try {
+    await store.transition(job.id, 'youtube_poll');
+    const processing = await youtube.processing(job);
+    if (processing?.confirmed !== true || processing.id !== job.external_post_id || processing.privacyStatus !== 'private') {
+      retainPrivate = false;
+      throw new Error('youtube_processing_unconfirmed');
+    }
+    if (processing.processingStatus === 'processing') return job;
+    if (processing.processingStatus !== 'succeeded') throw new Error('youtube_processing_failed');
+    job = await store.transition(job.id, 'youtube_ready');
+    await preflight(job);
+    job = await store.transition(job.id, 'youtube_publish_begin');
+    const beforeCall = async method => {
+      await preflight(job);
+      await store.transition(job.id, 'youtube_call', { method });
+      if (method === 'videos.update') publishStarted = true;
+    };
+    const result = await youtube.makePublic({ job, privacyStatus: 'public', publishAt: null, beforeCall });
+    if (result?.confirmed !== true || result.privacyStatus !== 'public' || result.id !== job.external_post_id ||
+      !Number.isFinite(Date.parse(result.posted_at))) throw new Error('youtube_publication_unconfirmed');
+    return await store.transition(job.id, 'complete', result);
+  } catch (error) {
+    // update開始後は公開済みかもしれない。非公開と決めつけず読取照合に残す。
+    if (!publishStarted && retainPrivate) {
+      try { await store.transition(job.id, 'youtube_retain'); } catch { /* DB不明なら要照合を維持 */ }
+    }
+    throw error;
+  }
+}
 export function createMockYoutubeAdapter({ privacyStatus = 'public', failAt, afterUpload,
-  videoId = 'abcdefghijk', postedAt = new Date().toISOString() } = {}) {
+  processingStatus = 'succeeded', videoId = 'abcdefghijk', postedAt = new Date().toISOString() } = {}) {
   const calls = [];
-  return { calls, async publish(payload) {
+  return { calls, async upload(payload) {
     const call = async (method, stage) => {
       await payload.beforeCall(method);
       calls.push({ method, payload });
       if (failAt === stage) throw new Error('mock_failure');
     };
-    // inline案のモック。公開指定はvideos.insertのmetadataに含める。
     await call('videos.insert', 'upload');
-    await payload.uploaded(videoId);
+    const job = await payload.uploaded(videoId);
     if (afterUpload) await afterUpload();
     if (payload.media.length > 1) await call('thumbnails.set', 'thumbnail');
-    await call('videos.list', 'confirm');
-    return { id: videoId, posted_at: postedAt, confirmed: true, privacyStatus };
+    return job;
+  }, async processing(job) {
+    calls.push({method:'videos.list:processing',payload:job});
+    if (failAt === 'processing') throw new Error('mock_failure');
+    return {confirmed:true,id:videoId,privacyStatus:'private',processingStatus};
+  }, async makePublic(payload) {
+    await payload.beforeCall('videos.update');
+    calls.push({method:'videos.update',payload});
+    if (failAt === 'update') throw new Error('mock_failure');
+    await payload.beforeCall('videos.list');
+    calls.push({method:'videos.list',payload});
+    if (failAt === 'confirm') throw new Error('mock_failure');
+    return { id:videoId, posted_at:postedAt, confirmed:true, privacyStatus };
   } };
 }
 

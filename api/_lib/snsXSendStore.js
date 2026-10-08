@@ -134,7 +134,7 @@ export const xSendStore = {
   },
   async queue() {
     const jobs = await allRows(
-      "sns_x_send_jobs?select=id,draft_id,state,scheduled_at,expires_at,error_code,snapshot&order=id",
+      "sns_x_send_jobs?select=id,draft_id,state,scheduled_at,expires_at,error_code,youtube_stage,external_post_id,snapshot&order=id",
     );
     const drafts = await allRows(
       "sns_drafts?platform=in.(x,youtube)&status=neq.archived&select=id,title,platform,status,scheduled_at,source_data&order=id",
@@ -152,6 +152,8 @@ export const xSendStore = {
         expires_at: j?.expires_at || q?.expires_at,
         deadline_at: q?.deadline_at,
         youtube_mode: q?.youtube_mode,
+        youtube_stage: j?.youtube_stage,
+        external_post_id: j?.external_post_id,
         error_code: j?.error_code,
       };
     });
