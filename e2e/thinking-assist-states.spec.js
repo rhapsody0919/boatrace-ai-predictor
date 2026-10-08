@@ -163,7 +163,14 @@ test.describe("思考アシスト: 状態の出し分け（Codex 依頼27）", (
         }
       await route.fulfill({ response: res, json: body });
     });
+    // 出走表は軽量版→完全版の2回取る。完全版が届く前にテストを終えると、取得中の route が閉じたページで落ちる
+    const full = page.waitForResponse(
+      (r) =>
+        r.url().includes("/api/predictions/") && !r.url().includes("light"),
+      { timeout: 60000 },
+    );
     await open(page);
+    await full;
     await lensTab(page, "買い目").click();
     await expect(page.getByText("このレースは中止です")).toBeVisible();
     await expect(candidate(page, 1, 1)).toHaveCount(0);
@@ -186,10 +193,39 @@ test.describe("思考アシスト: 状態の出し分け（Codex 依頼27）", (
     await candidate(page, 2, 2).click();
     await candidate(page, 3, 3).click();
     await candidate(page, 4, 3).click();
-    await page.getByRole("button", { name: "マークシートを開く" }).click();
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
     const sheet = page.getByRole("dialog", { name: "マークシート" });
     await sheet.getByRole("spinbutton", { name: "予算" }).fill("50");
     await expect(sheet.getByText("1点には最低100円")).toBeVisible();
+  });
+});
+
+test.describe("思考アシスト: シートのフォーカス（Codex 依頼27 U03）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("U03: シートを開いている間は、Tab・Shift+Tab で背後の共通ヘッダーへ抜けない", async ({
+    page,
+  }) => {
+    await open(page);
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const inSheet = () =>
+      page.evaluate(() =>
+        Boolean(document.activeElement?.closest('[role="dialog"]')),
+      );
+    for (let i = 0; i < 30; i++) {
+      await page.keyboard.press("Tab");
+      expect(await inSheet(), `Tab ${i + 1}回目`).toBe(true);
+    }
+    for (let i = 0; i < 30; i++) {
+      await page.keyboard.press("Shift+Tab");
+      expect(await inSheet(), `Shift+Tab ${i + 1}回目`).toBe(true);
+    }
   });
 });
 
