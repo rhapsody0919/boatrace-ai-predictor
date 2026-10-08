@@ -120,16 +120,55 @@ async function openAiTab(page, n = 1) {
 const sectionOf = (page) => page.getByRole("region", { name: /龍神ソナー/ });
 
 test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () => {
-  test("公開前の既定では節を出さず、v16 の API も寄与度の API も呼ばない", async ({
+  test("公開後（ANALOGY_FINDER_PUBLIC=true）は、内部確認の印が無くても節を出す", async ({
     page,
   }) => {
+    // 2026-10-08 ユーザー決定で公開。戻すときは featureFlags.js の ANALOGY_FINDER_PUBLIC を false にする
     const calls = await setup(page, { preview: false });
     await openAiTab(page);
-    await expect(page.locator(".prediction-result")).toBeVisible();
-    await page.waitForLoadState("networkidle").catch(() => {});
-    await expect(sectionOf(page)).toHaveCount(0);
-    expect(calls.facts).toBe(0);
-    expect(calls.contribution).toHaveLength(0);
+    await expect(sectionOf(page)).toBeVisible();
+    await expect.poll(() => calls.facts).toBeGreaterThan(0);
+  });
+
+  test("節の表示（レースごとに1回）とタブの切り替えを計測する（GA4 の予約語を使わない）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await setup(page);
+    await openAiTab(page);
+    const section = sectionOf(page);
+    await expect(section.getByRole("tablist")).toBeVisible();
+    await section.getByRole("tab", { name: "類似レース" }).click();
+    await section.getByRole("tab", { name: "展開シナリオ" }).click();
+    const events = await page.evaluate(() =>
+      window.__events.filter(
+        (e) => e[0] === "event" && String(e[1]).startsWith("analogy_"),
+      ),
+    );
+    const views = events.filter((e) => e[1] === "analogy_section_view");
+    expect(views).toHaveLength(1);
+    expect(Object.keys(views[0][2]).sort()).toEqual([
+      "analogy_stage",
+      "race_id",
+    ]);
+    expect(
+      events
+        .filter((e) => e[1] === "analogy_tab_select")
+        .map((e) => e[2].analogy_tab),
+    ).toEqual(["similar", "scenario"]);
+    for (const e of events)
+      for (const k of Object.keys(e[2]))
+        expect([
+          "source",
+          "medium",
+          "campaign",
+          "term",
+          "content",
+          "id",
+        ]).not.toContain(k);
   });
 
   test("?analogy=1 を付けて開くと内部確認として節を出し、端末に覚える", async ({
@@ -212,7 +251,9 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await openAiTab(page);
       const w = windSection(page);
       await expect(
-        w.getByText("今日の風（1m）に近いレースでは（今日の波1cm）"),
+        w.getByText(
+          "今日の風（1m）に近いレースでは（今日の波1cm。風・波は展示の時点）",
+        ),
       ).toBeVisible();
       await expect(
         w.getByText(
@@ -246,7 +287,9 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await openAiTab(page);
       const w = windSection(page);
       await expect(
-        w.getByText("今日の風（1m）に近いレースでは（今日の波1cm）"),
+        w.getByText(
+          "今日の風（1m）に近いレースでは（今日の波1cm。風・波は展示の時点）",
+        ),
       ).toBeVisible();
       await expect(
         w.getByText("波で分けると299件と少ないので、風だけで数えています"),
