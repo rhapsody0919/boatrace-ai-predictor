@@ -1,5 +1,5 @@
 import {matchRiskRules, draftRiskFields} from "../../../../../scripts/lib/riskRuleMatcher.js";
-import riskRules from "../../../../../sns-video-studio/remotion/risk-rules.json";
+import riskRules from "../../../../../sns-video-studio/remotion/risk-rules.json" with { type: 'json' };
 import { isBundlePublicationBlocked } from "../../../../_lib/snsBundleValidation.js";
 /**
  * Vercel Edge Function: 下書きの承認
