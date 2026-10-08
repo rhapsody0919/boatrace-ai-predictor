@@ -28,7 +28,7 @@ inspectWithAi(draft,{enabled=false,model,messages}) はAnthropic Messages形式�
 
 ## ローカル検証
 
-node --test scripts/tests/sns-edit-assist.test.js scripts/tests/sns-mobile-approval.test.js scripts/tests/sns-deadline-queue.test.js scripts/tests/sns-x-send.test.js
+node scripts/maintenance/verify-sns-edit-assist.js scripts/maintenance/verify-sns-mobile-approval.js scripts/maintenance/verify-sns-deadline-queue.js scripts/maintenance/verify-sns-x-send.js
 
 node scripts/maintenance/verify-sns-bundle-import.js
 
