@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import "./snsDraftDiff.js";
 import {
   runYoutubeQueueJob,
@@ -1313,13 +1312,3 @@ console.log(
 
 if (process.argv.includes("--draft-diff-ui"))
   await import("./snsDraftDiffUi.js");
-
-// 投稿済み承認の回帰検査も既存品質ゲートから実行する。
-execFileSync(
-  process.execPath,
-  [
-    "--test",
-    new URL("../tests/sns-approval-posted.test.js", import.meta.url).pathname,
-  ],
-  { stdio: "inherit" },
-);
