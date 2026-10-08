@@ -28,9 +28,9 @@ X添付はsnapshotと同じ動画優先/なければcover画像を表示する�
 
 ## 検証
 
-node --test scripts/tests/sns-mobile-approval.test.js scripts/tests/sns-mobile-groups.test.js scripts/tests/sns-mobile-api.test.js scripts/tests/sns-deadline-queue.test.js scripts/tests/sns-x-send.test.js e2e/acceptance/sns-mobile-dom.test.js
+node scripts/maintenance/verify-sns-mobile-approval.js scripts/maintenance/verify-sns-mobile-groups.js scripts/maintenance/verify-sns-mobile-api.js scripts/maintenance/verify-sns-deadline-queue.js scripts/maintenance/verify-sns-x-send.js scripts/maintenance/verify-sns-mobile-dom.js
 
-JSDOM試験は実コンポーネントの状態遷移を検証するが、375pxの可読性/動画再生の代替ではない。devDependenciesのjsdomが必要。旧実装の反例を再実行する場合: `SNS_MOBILE_TEST_BASELINE=3ed68cb node --test e2e/acceptance/sns-mobile-dom.test.js scripts/tests/sns-mobile-api.test.js`（UI/APIソースだけを指定コミットからbundleし、鍵・envは読まない）。
+JSDOM試験は実コンポーネントの状態遷移を検証するが、375pxの可読性/動画再生の代替ではない。devDependenciesのjsdomが必要。旧実装の反例を再実行する場合: `SNS_MOBILE_TEST_BASELINE=3ed68cb node --test scripts/maintenance/verify-sns-mobile-dom.js scripts/maintenance/verify-sns-mobile-api.js`（UI/APIソースだけを指定コミットからbundleし、鍵・envは読まない）。
 
 npx playwright test --config playwright.mobile-approval.config.js
 
