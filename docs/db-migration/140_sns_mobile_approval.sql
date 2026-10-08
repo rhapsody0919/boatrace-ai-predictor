@@ -57,8 +57,12 @@ CREATE TABLE public.sns_mobile_reviews (
 ALTER TABLE public.sns_mobile_reviews ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.sns_mobile_reviews FROM PUBLIC,anon,authenticated;
 GRANT ALL ON TABLE public.sns_mobile_reviews TO service_role;
-REVOKE ALL ON FUNCTION public.sns_mobile_revision(public.sns_drafts),public.read_sns_mobile_race(UUID),public.approve_sns_mobile_channel(UUID,UUID,TEXT,JSONB,TIMESTAMPTZ,INTEGER) FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.sns_mobile_revision(public.sns_drafts),public.read_sns_mobile_race(UUID),public.approve_sns_mobile_channel(UUID,UUID,TEXT,JSONB,TIMESTAMPTZ,INTEGER) TO service_role;
+REVOKE ALL ON FUNCTION public.sns_mobile_revision(public.sns_drafts) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.read_sns_mobile_race(UUID) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.approve_sns_mobile_channel(UUID,UUID,TEXT,JSONB,TIMESTAMPTZ,INTEGER) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.sns_mobile_revision(public.sns_drafts) TO service_role;
+GRANT EXECUTE ON FUNCTION public.read_sns_mobile_race(UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION public.approve_sns_mobile_channel(UUID,UUID,TEXT,JSONB,TIMESTAMPTZ,INTEGER) TO service_role;
 CREATE OR REPLACE FUNCTION public.guard_sns_x_approval() RETURNS TRIGGER LANGUAGE plpgsql SET search_path=public AS $$
 DECLARE j public.sns_x_send_jobs; changed BOOLEAN;
 BEGIN
