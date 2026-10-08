@@ -851,12 +851,12 @@ await check("Shorts公開未確認は要照合、呼出し前のクォータ記�
     if (action === 'claim') state = 'sending';
     if (action === 'begin_post') state = 'reconcile';
     if (action === 'complete') state = 'posted';
-    return { id, state, channel: 'youtube', snapshot_text, approved_hash: await sha256(encode(snapshot_text)) };
+    return { id, external_post_id:'abcdefghijk', state, channel: 'youtube', snapshot_text, approved_hash: await sha256(encode(snapshot_text)) };
   } };
   await assert.rejects(runYoutubeQueueJob('mock', { store, youtube: createMockYoutubeAdapter({privacyStatus:'private'}),
     preflight: async () => {}, loadMedia: async () => mediaBytes }), /unconfirmed/);
   assert.equal(state, 'reconcile');
-  assert.deepEqual(actions.filter(a => a.action === 'youtube_call').map(a => a.result.method), ['videos.insert', 'videos.list']);
+  assert.deepEqual(actions.filter(a => a.action === 'youtube_call').map(a => a.result.method), ['videos.insert', 'videos.update', 'videos.list']);
   assert.equal(actions.find(a => a.action === 'youtube_uploaded').result.id, 'abcdefghijk');
   assert(!actions.some(a => a.action === 'complete'));
 });

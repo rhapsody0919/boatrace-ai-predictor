@@ -381,10 +381,54 @@ test("YouTube予約は時刻待ち、due時に再検査して公開、署名URL�
     ).state,
     "posted",
   );
-  assert.equal(checked, 3);
-  assert.equal(youtube.calls[0].payload.privacyStatus, "public");
+  assert.equal(checked, 5);
+  assert.equal(youtube.calls[0].payload.privacyStatus, "private");
   assert.equal(youtube.calls[0].payload.publishAt, null);
   assert.equal(youtube.calls[0].payload.snapshot.media[0].path, "demo/a.mp4");
+});
+
+test("非公開残置の候補IDと手動削除の案内を期限一覧で表示", async () => {
+  const { transform } = await import("esbuild");
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const React = await import("react");
+  let source = await readFile(
+    new URL(
+      "../../src/pages/admin/sns-hub/DeadlineQueuePanel.jsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  source = source
+    .replace(
+      /import \{ useEffect, useState \} from 'react';/,
+      `import React, {useEffect,useState} from '${new URL("../../node_modules/react/index.js", import.meta.url).href}';`,
+    )
+    .replace(
+      /import \{ getDeadlineQueue \} from [^;]+;/,
+      "const getDeadlineQueue=async()=>[];",
+    );
+  const code = (await transform(source, { loader: "jsx", format: "esm" })).code;
+  const { DeadlineQueueList } = await import(
+    "data:text/javascript," + encodeURIComponent(code)
+  );
+  const html = renderToStaticMarkup(
+    React.createElement(DeadlineQueueList, {
+      now: Date.now(),
+      rows: [
+        {
+          id: "j",
+          channel: "youtube",
+          state: "reconcile",
+          youtube_stage: "private_retained",
+          external_post_id: "abcdefghijk",
+        },
+      ],
+    }),
+  );
+  assert.match(html, /abcdefghijk/);
+  assert.match(html, /非公開のまま残置/);
+  assert.match(html, /削除はオーナー操作/);
+  assert.match(html, /要照合/);
 });
 test("期限切れsweepと再承認後の版破損は外部呼出しゼロ", async () => {
   await enable();

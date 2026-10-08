@@ -16,6 +16,7 @@ export function DeadlineQueueList({ rows, now }) {
       <p>{row.title || row.draft_id} / {row.channel === 'youtube' ? 'YouTube' : 'X'} / {row.youtube_mode === 'scheduled' ? '予約公開' : '即時公開'}</p>
       <p>{['queued','held','pending_review','approved'].includes(row.state) && Date.parse(row.expires_at) <= now ? '失効（送信不可）' : labels[row.state] || row.state}</p>
       <p>投稿予定: {format(row.scheduled_at)} / 送信期限: {format(row.expires_at)} / 公式締切: {format(row.deadline_at)}</p>
+      {row.channel === 'youtube' && row.external_post_id && <p>動画ID: {row.external_post_id} / {row.youtube_stage === 'private_retained' ? '非公開のまま残置（削除はオーナー操作）' : '公開状態は照合で確認'}</p>}
       {row.error_code && <p>保留・失敗理由: {row.error_code}</p>}
     </li>)}</ul>
   </section>;
