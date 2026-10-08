@@ -104,12 +104,26 @@ export default function AnalogyFinderSection({ raceId }) {
         analogy_control: group.getAttribute("data-af-control"),
       });
     };
-    // React の onClick より先に走る（capture）ので、aria-pressed は押す前の値
-    const onClick = (e) => {
-      const btn = e.target.closest?.('button, [role="button"]');
-      if (!btn || btn.disabled || btn.getAttribute("aria-pressed") === "true")
+    // React の onClick より先に走る（capture）ので、aria-pressed は押す前の値。
+    // 押し直しで選択を外す部品（data-af-toggle、ソナーの扇）は押し直しも数える
+    const pressed = (btn) => {
+      if (btn.disabled) return;
+      if (
+        btn.getAttribute("aria-pressed") === "true" &&
+        !btn.closest("[data-af-toggle]")
+      )
         return;
       send(btn);
+    };
+    const onClick = (e) => {
+      const btn = e.target.closest?.('button, [role="button"]');
+      if (btn) pressed(btn);
+    };
+    // button でない role="button"（ソナーの扇は SVG）は Enter・Space で click が出ないので、キーで拾う
+    const onKeyDown = (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const btn = e.target.closest?.('[role="button"]');
+      if (btn && btn.tagName !== "BUTTON") pressed(btn);
     };
     // スライダー・選択肢は値が決まったとき（ネイティブの change）だけ
     const onChange = (e) => {
@@ -117,7 +131,9 @@ export default function AnalogyFinderSection({ raceId }) {
     };
     el.addEventListener("click", onClick, true);
     el.addEventListener("change", onChange, true);
+    el.addEventListener("keydown", onKeyDown, true);
     return () => {
+      el.removeEventListener("keydown", onKeyDown, true);
       el.removeEventListener("click", onClick, true);
       el.removeEventListener("change", onChange, true);
     };

@@ -259,6 +259,62 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
     expect(await returns()).toHaveLength(1);
   });
 
+  test("見てから30分以内に開いたタブは同じ来訪として再訪を送らない（レビュー指摘）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+      localStorage.setItem(
+        "boatai-user:analogy-last-seen",
+        String(Date.now() - 5 * 60 * 1000),
+      );
+    });
+    await setup(page);
+    await page.goto(`/race/${DATE}-09-01`);
+    await expect(page.getByText("テスト選手1").first()).toBeVisible({
+      timeout: 20000,
+    });
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => window.__events.filter((e) => e[1] === "page_view").length,
+        ),
+      )
+      .toBeGreaterThan(0);
+    expect(
+      await page.evaluate(() =>
+        window.__events.filter((e) => e[1] === "analogy_return_visit"),
+      ),
+    ).toHaveLength(0);
+  });
+
+  test("ソナーの扇は選択を外す押し直しとキーボードの操作も条件変更に数える（レビュー指摘）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await setup(page);
+    await openAiTab(page);
+    const section = sectionOf(page);
+    await section.getByRole("tab", { name: "類似レース" }).click();
+    const sector = section.getByRole("button", {
+      name: /^1号艇が勝ったレース/,
+    });
+    await sector.click(); // 選ぶ
+    await sector.click(); // 外す（押し直し）
+    await sector.focus();
+    await page.keyboard.press("Enter"); // キーボードで選ぶ
+    const controls = await page.evaluate(() =>
+      window.__events
+        .filter((e) => e[1] === "analogy_control_change")
+        .map((e) => e[2].analogy_control),
+    );
+    expect(controls).toEqual(["similar_boat", "similar_boat", "similar_boat"]);
+  });
+
   test("?tab=aiPrediction のリンクで開いたら race_tab_initial を1回送る。素の URL では送らない", async ({
     page,
   }) => {

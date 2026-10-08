@@ -99,6 +99,9 @@ const ANALOGY_LAST_SEEN_KEY = "boatai-user:analogy-last-seen";
 const ANALOGY_RETURN_SENT_KEY = "boatai-user:analogy-return-sent";
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const ANALOGY_RETURN_DAYS = 7;
+// 見てから30分（GA4 のセッションの区切りと同じ）以内は同じ来訪とみなす。
+// 見た直後に別のレースを新しいタブで開いただけで「再訪」にしない
+const ANALOGY_SAME_VISIT_MS = 30 * 60 * 1000;
 
 export const markAnalogySeen = (now = Date.now()) => {
   try {
@@ -109,11 +112,12 @@ export const markAnalogySeen = (now = Date.now()) => {
 };
 
 /**
- * 前回ソナーを見てから何日目の来訪か。7日以内でなければ null。
+ * 前回ソナーを見てから何日目の来訪か。30分以内（同じ来訪）・7日より後なら null。
  * 純関数にしてテストで境界を固定する
  */
 export const analogyReturnDays = (lastSeen, now) => {
-  if (!Number.isFinite(lastSeen) || lastSeen > now) return null;
+  if (!Number.isFinite(lastSeen) || now - lastSeen < ANALOGY_SAME_VISIT_MS)
+    return null;
   const days = Math.floor((now - lastSeen) / DAY_MS);
   return days <= ANALOGY_RETURN_DAYS ? days : null;
 };

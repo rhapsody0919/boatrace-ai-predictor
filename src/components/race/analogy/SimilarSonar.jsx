@@ -90,6 +90,7 @@ export default function SimilarSonar({
               })}
               aria-pressed={selectedBoat === b}
               data-af-control="similar_boat"
+              data-af-toggle
               style={{ cursor: "pointer" }}
               onClick={() => onBoat(b)}
               onKeyDown={(e) =>
