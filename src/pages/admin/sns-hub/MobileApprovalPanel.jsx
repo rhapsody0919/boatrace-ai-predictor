@@ -342,7 +342,7 @@ export default function MobileApprovalPanel({
       // 「本人」以外（例: 自動承認）を選んで判断した場合のAPI固定文言だけを安全に通す。
       // それ以外は既存どおり汎用文言に倒す（生のエラー文は表示しない）。
       if (e?.message === "本人の判断が必要です") {
-        setError(e.message);
+        setError("本人の判断が必要です");
       } else {
         setRows([]);
         setError(
