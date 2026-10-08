@@ -8,6 +8,14 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 
 - レビューは Claude のセルフレビュー（`/code-review`）→ あなた（Codex）のセカンドオピニオン、の二段階。**あなたがレビューする PR は、必ず人手の最終承認を経てからマージされる**（Codex を回さない軽微な PR にはオーケストレーターの自己マージ経路があるが、それは本レビューの対象外）。承認前後のフローそのものへの異議は本レビューの対象外
 - コミット規約: `<type>: <日本語の説明>`（例: `feat: 韓国語対応`）。Claude Code のセッションで作業しているため、コミット末尾・PR 本文に `Co-Authored-By: Claude` 等の署名が付くのは**規約違反ではない**（意図的な運用）。この署名の有無を finding にしてはならない
+- ブランチ戦略（GitHub Flow）:
+
+  | ブランチ | 用途 | デプロイ先 |
+  |---------|------|-----------|
+  | `master` | 本番リリース | www.boat-ai.jp |
+  | `feature/*` / `codex/*` 等 | 機能開発 | Vercel Preview（PR単位で自動生成） |
+
+  デプロイフロー: 作業ブランチ → PR作成（Vercel Previewで確認） → レビュー → `master` にマージ（本番デプロイ）
 
 ## 実装者としての規約（Codex がコードを変更するとき）
 
@@ -48,6 +56,11 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 - 変更には再現テストまたは検証を付ける。置き場所は内容で選ぶ: UI挙動は `e2e/`（Playwright）、レイアウトは `e2e/layout.spec.js`、パーサー・集計・スクリプトは `scripts/maintenance/verify-*.js`（新規に書いたら `scripts/maintenance/verify-registry.json` にも登録する。未登録だと `npm run verify:ci` が失敗する）
 - PR 作成前に手元で `npm run build` を通す（ビルドエラーが無いことを確認する）
 - 既存のページ挙動・共通コンポーネント・ルーティングに影響しうる変更では `npm run test:e2e` も実行し、デグレが無いことを確認する
+- CSS・レイアウトを変更した場合は `npm run test:layout`（375/768/1024/1440/1920px の5軸）も実行し、横スクロール・グリッドの崩れが無いことを確認する
+- `scripts/maintenance/verify-*.js` の検証群は、master向けPRごとに Quality Gates ワークフローが `npm run verify:ci` でまとめて自動実行するため、個別コマンドを手元で1本ずつ実行する必要はない（手元で先に確かめたい場合は `npm run verify:ci` か該当する個別の `npm run verify:*`）
+- `CREATE OR REPLACE FUNCTION` で既存 RPC のキーを削除していないかは `npm run verify:rpc-key-regression`（SQLファイル同士の比較、本番接続不要）がPR時にCIで検知する。あなたは本番Supabaseに接続できないため、本番の実物との最終照合（`verify-rpc-output-keys.js`、本番接続が要る）はユーザー・Claude側が本番適用後に行う
+- 新しいページ・分析タブ・主要機能を実装した場合は、対応する `docs/design/{slug}/content-index.json` を作成する（または `not_applicable: true` で対象外を明記する）。`docs/db-migration/` に新規マイグレーションを追加した場合は `docs/db-migration/APPLIED.md`（適用状況の台帳）に行を追加する（適用自体はユーザーが行うが、台帳への追記はマイグレーションファイルと同じPRに含める）
+- `npm run test:e2e` は既定で録画を再生し、時計を録画時刻に固定する。録画に無い `/rest/v1/*`・`/api/*` は本番へ素通しし、PRコメントとstep summaryに一覧が出る（新しいクエリを足したPRで素通しが出るのは想定どおりで、撮り直しは不要）。録画の撮り直し（`npm run test:e2e:record`）は通常不要（`e2e-rerecord.yml` が毎日自動で行う）
 
 ### 前提にしないこと
 - Claude 側の会話記録・申し送り・メモリ（`~/.claude/projects/` 配下等）は渡されていない前提で作業する。チケット本文・リポジトリ内のドキュメント（`docs/`）・コード以外の情報を前提にしない
@@ -94,6 +107,7 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
   - **例外（暫定措置）**: 画面に描画されないメタ情報（`<title>`・`meta description`・`meta keywords`・OGP/Twitter カード）と、SNS 投稿のハッシュタグ（`#競艇` 等）は使用可。これらに「競艇」が入っていることを P1 で指摘しない。ページ本文・見出し・UI表示テキスト、投稿の本文・ナレーションでの使用だけを P1 にする
 - 投票は日本国内在住・20歳以上のみ可能。新規の英語・多言語コンテンツ（特にガイド系ページ）にこの制約の記載が欠けていないか
 - AI予測は結果を保証しない旨のディスクレーマーが、予測を表示する新規UIで欠落していないか
+- boatAIはSSR・プリレンダリングの無い純粋なクライアントサイドSPA。ページ固有のtitle/meta/OGPタグはマウント後にJSで書き換える方式のため、JavaScriptを実行しないクローラー（Facebook等）にはページ固有の変更が反映されない。SNSシェア時のリンクプレビュー（OGP/Twitterカード）関連の実装・レビューでは `docs/reference/seo-architecture-constraints.md` を参照する
 
 ### 5. コンポーネント・デザイン規約（P2）
 
