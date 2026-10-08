@@ -871,6 +871,11 @@
       "script": "verify-sns-observations.js",
       "tier": "ci",
       "guards": "依頼2: 観測窓・欠測null・最新revision・型比較の母数・収集モック・公開確認UTM・ページング・SQL履歴/RLS（PGlite、外部接続なし）"
+    },
+    {
+      "script": "verify-sns-x-send.js",
+      "tier": "ci",
+      "guards": "依頼3: X送信の承認版hash・編集時の承認失効・同時claim・$10予算予約・停止・要照合（外部成功後のDB失敗やPOST応答喪失で再送しない）・RLS/権限（135+137をPGlite、モックadapter、外部接続なし）"
     }
   ]
 }

@@ -25,6 +25,16 @@
       "file": "e2e/fixtures.js",
       "code": "response = await recordThrough(request, () => route.fetch());",
       "reason": "record モードで context.route から本番の実応答を取って録画に書き出す fixtures.js 自身の実装"
+    },
+    {
+      "file": "e2e/acceptance/sns-x-send.spec.js",
+      "code": "import { test, expect } from \"@playwright/test\";",
+      "reason": "録画の再生を使わない専用ハーネス（playwright.x-send.config.js、127.0.0.1のテスト用Vite）で走る。fixtures.jsを使うと録画に無い/api/*が本番へ素通しされうるため、本物のtestを使い、127.0.0.1以外は全てabortする"
+    },
+    {
+      "file": "e2e/acceptance/sns-x-send.spec.js",
+      "code": "return route.continue();",
+      "reason": "直前で127.0.0.1以外をabort、/api/*をfulfillで全てモックしている。continueに残るのはテスト用Viteのモジュール配信だけで、外部・本番には出ない"
     }
   ]
 }
