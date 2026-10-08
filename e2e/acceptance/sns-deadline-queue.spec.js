@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures.js';
 for (const theme of ['light','dark']) test(`${theme}: 375px・端末が米国時間でもJST期限順、失効・承認待ち・失敗`,async({page})=>{
  await page.route('**/*',route=>{
   const url=new URL(route.request().url()); if(url.hostname!=='127.0.0.1') return route.abort();
@@ -7,7 +7,7 @@ for (const theme of ['light','dark']) test(`${theme}: 375px・端末が米国時
    {id:'expired',title:'期限を過ぎた投稿',channel:'x',state:'queued',expires_at:'2000-10-07T04:00:00Z'},
    {id:'failed',title:'動画失敗',channel:'youtube',youtube_mode:'scheduled',state:'failed',expires_at:'2099-10-07T02:00:00Z',error_code:'upload_failed'},
   ]}});
-  return route.continue();
+  return route.fallback();
  });
  await page.goto('/__queue_test'); await page.evaluate(t=>document.documentElement.setAttribute('data-theme',t),theme);
  await expect(page.getByRole('heading',{name:'投稿待ち行列（JST）'})).toBeVisible();

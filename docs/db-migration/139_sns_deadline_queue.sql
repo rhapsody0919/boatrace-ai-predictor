@@ -209,3 +209,10 @@ $$;
 REVOKE ALL ON FUNCTION public.sweep_sns_deadline_queue() FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.sweep_sns_deadline_queue() TO service_role;
 COMMIT;
+
+REVOKE ALL ON FUNCTION public.guard_sns_x_approval() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.guard_sns_x_approval() TO service_role;
+REVOKE ALL ON FUNCTION public.approve_sns_x_send(UUID,UUID,JSONB,TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.approve_sns_x_send(UUID,UUID,JSONB,TIMESTAMPTZ) TO service_role;
+REVOKE ALL ON FUNCTION public.transition_sns_x_send(UUID,TEXT,JSONB) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.transition_sns_x_send(UUID,TEXT,JSONB) TO service_role;
