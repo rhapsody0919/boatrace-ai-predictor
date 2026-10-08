@@ -23,6 +23,29 @@ async function allRows(path) {
   }
 }
 export const xSendStore = {
+  async mobileGroups(date) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('対象日が不正です');
+    const query = new URLSearchParams({ platform:'in.(x,youtube)', language:'eq.ja', status:'neq.archived',
+      content_group_id:'not.is.null', 'source_data->>race_id':`like.${date}-*`,
+      select:'content_group_id,race_id:source_data->>race_id', order:'id' });
+    const groups = new Map();
+    // 最大2000行＋上限検査1行、最大5要求。上限超過は部分一覧を返さない。
+    for (let offset=0; offset<=2000; offset+=500) {
+      const limit=offset===2000 ? 1 : 500;
+      const page=await db(`sns_drafts?${query}&limit=${limit}&offset=${offset}`);
+      if (offset===2000 && page.length) throw new Error('今日の下書きが取得上限を超えました');
+      for (const d of page) groups.set(d.content_group_id,{id:d.content_group_id,raceId:d.race_id});
+      if (page.length<limit) return [...groups.values()];
+    }
+    return [...groups.values()];
+  },
+  async mobileRace(id) { return db('rpc/read_sns_mobile_race', { method: 'POST', body: JSON.stringify({ p_group_id: id }) }); },
+  async mobileApprove(id, approverId, revision, snapshot, scheduledAt, reviewSeconds) {
+    return db('rpc/approve_sns_mobile_channel', { method: 'POST', body: JSON.stringify({
+      p_draft_id:id, p_approver_id:approverId, p_revision:revision, p_snapshot:snapshot,
+      p_scheduled_at:scheduledAt, p_review_seconds:reviewSeconds,
+    }) });
+  },
   async parent(id) {
     const rows = await db(
       `sns_x_send_jobs?id=eq.${encodeURIComponent(id)}&state=eq.posted&select=external_post_id`,
