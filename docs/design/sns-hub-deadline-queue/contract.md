@@ -46,3 +46,7 @@ claim/check/begin_postで期限・鮮度・承認版を再検査する。claim�
 `node scripts/maintenance/verify-sns-deadline-queue.js scripts/maintenance/verify-sns-x-send.js` はPGlite＋モックだけ。品質ゲート台帳にはverify-registry.jsonで登録済み。
 
 `npx playwright test --config playwright.deadline-queue.config.js` と既存playwright.x-send.config.jsはenvDir=false/publicDir=false、localhost以外を遮断。新一覧は375px/light/dark、端末America/Los_AngelesでもJSTを表示するテスト。Chromium起動がmacOS sandboxで拒否された場合は合格とせず未検証で報告する。
+
+## 依頼10（142）の追加契約
+
+YouTube媒体はvideo＋任意coverの実hash照合に拡張。runYoutubeQueueJobのadapterにはbeforeCall/ uploadedコールバックが追加され、公開確認・PTクォータ・期限後の照合を142で扱う。詳細とオーナー判断の停止点は[Shorts送信契約](../sns-hub-shorts-send/contract.md)を参照。既存YouTube専用のモックadapter実装はこの新契約へ更新する。139の試行時媒体計数は変更しない。
