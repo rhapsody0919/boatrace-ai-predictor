@@ -59,6 +59,7 @@ import {
   getDefaultDraftCardExpanded,
 } from "./sns-hub/utils";
 import "./SnsHubAdmin.css";
+import MetricsTab from "./sns-hub/MetricsTab.jsx";
 import { errorMessageOf } from "../../utils/errorMessage.js";
 
 const PLATFORM_UPLOAD_URLS = {
@@ -155,6 +156,7 @@ const STATUS_FILTERS = [
 // 前提となる設定であり、コンテンツレビュー用のプラットフォームタブとは
 // 性質が異なるため、5プラットフォームタブと並べると発見しづらいという指摘）
 const NON_PLATFORM_TABS = [
+  { id: "metrics", label: "48h/7d観測" },
   { id: "insights", label: "戦略メモ" },
   { id: "catalog", label: "フォーマットカタログ" },
 ];
@@ -407,7 +409,8 @@ function SnsHubAdmin() {
 
   const isInsightsTab = activeTab === "insights";
   const isCatalogTab = activeTab === "catalog";
-  const isPlatformTab = !isInsightsTab && !isCatalogTab;
+  const isMetricsTab = activeTab === "metrics";
+  const isPlatformTab = !isInsightsTab && !isCatalogTab && !isMetricsTab;
   const activeStatusDef = STATUS_FILTERS.find(
     (f) => f.id === activeStatusFilter,
   );
@@ -483,7 +486,8 @@ function SnsHubAdmin() {
                 className={`sns-hub-tab-btn ${activeTab === tab.id ? "active" : ""}`}
                 onClick={() => setActiveTab(tab.id)}
               >
-                {tab.label} ({count})
+                {tab.label}
+                {tab.id !== "metrics" && ` (${count})`}
               </button>
             );
           })}
@@ -514,7 +518,9 @@ function SnsHubAdmin() {
       )}
 
       <div className="sns-hub-tab-content">
-        {isCatalogTab ? (
+        {isMetricsTab ? (
+          <MetricsTab />
+        ) : isCatalogTab ? (
           <CatalogTab templateVariants={templateVariants} />
         ) : isInsightsTab ? (
           <InsightTab

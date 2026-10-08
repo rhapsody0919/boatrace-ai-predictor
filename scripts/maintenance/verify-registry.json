@@ -866,6 +866,11 @@
       "script": "verify-sns-bundle-import.js",
       "tier": "ci",
       "guards": "v0素材の型・容量・ハッシュ・QA保留、保存失敗の再試行、135の一括登録・重複・公開禁止・権限(PGlite)、承認/YouTube公開APIのガード。実サービス接続なし"
+    },
+    {
+      "script": "verify-sns-observations.js",
+      "tier": "ci",
+      "guards": "依頼2: 観測窓・欠測null・最新revision・型比較の母数・収集モック・公開確認UTM・ページング・SQL履歴/RLS（PGlite、外部接続なし）"
     }
   ]
 }
