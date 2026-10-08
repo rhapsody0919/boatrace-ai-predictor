@@ -674,7 +674,7 @@ async function mockHandler(path, draft, denied = false, allowUpdate = false, rul
     JSON.stringify(storageMock),
   );
   source = source.replace(
-    /"[^"\n]+risk-rules\.json"/g,
+    /"[^"\n]+risk-rules\.json"(\s+with\s*\{[^}]*\})?/g,
     JSON.stringify(
       "data:text/javascript," +
         encodeURIComponent(
