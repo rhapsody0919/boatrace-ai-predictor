@@ -111,6 +111,8 @@ CREATE TRIGGER analogy_feedback_guard
 ALTER TABLE public.analogy_feedback ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON public.analogy_feedback FROM anon, authenticated;
+-- grant-exempt: 画面の中の声は匿名の閲覧者が送るので、anon に INSERT だけを渡す（SELECT・UPDATE・DELETE は渡さない）。
+--   悪用は CHECK（列挙値・200文字）・UNIQUE・トリガーの連投制限で抑える（2026-10-08 ユーザー承認）
 GRANT INSERT ON public.analogy_feedback TO anon, authenticated;
 
 DROP POLICY IF EXISTS analogy_feedback_insert ON public.analogy_feedback;
