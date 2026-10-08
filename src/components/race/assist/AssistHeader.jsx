@@ -38,7 +38,10 @@ export default function AssistHeader({
         {roundLabel && (
           <span className="ta-pill ta-pill-round">{roundLabel}</span>
         )}
-        {grade && <span className="ta-pill">{grade}</span>}
+        {/* 一般戦はラウンドも「一般」になるので、同じ語を2つ並べない（ファン評価 2周目 指摘8） */}
+        {grade && grade !== roundLabel && (
+          <span className="ta-pill">{grade}</span>
+        )}
         {race?.startTime && (
           <span className="ta-pill ta-num">
             {ASSIST_COPY.deadline(race.startTime)}

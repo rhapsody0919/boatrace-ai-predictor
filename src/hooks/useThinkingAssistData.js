@@ -34,15 +34,17 @@ export function useThinkingAssistData(
     () => races.find((r) => r.raceId === raceId) ?? null,
     [races, raceId],
   );
-  // 出走表: 取得の失敗と「その日のデータに無い」を分ける
+  // 出走表: 取得の失敗と「その日のデータに無い」を分ける。
+  // 形の正しくない raceId（13R・会場99 等）は日付が無く取得が始まらないので、読み込み中に残さず「無い」にする
   const racecard = {
-    status: race
-      ? "ready"
-      : loading
-        ? "loading"
-        : error === FETCH_FAILED_ERROR
-          ? "error"
-          : "ready",
+    status:
+      race || !enabled
+        ? "ready"
+        : loading
+          ? "loading"
+          : error === FETCH_FAILED_ERROR
+            ? "error"
+            : "ready",
     data: race,
   };
 

@@ -281,6 +281,43 @@ test.describe("思考アシスト: v16 の保存が無いレース（ファン�
   });
 });
 
+test.describe("思考アシスト: ファン評価 2周目", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("指摘8: 一般戦はラウンドとグレードの「一般」を2つ並べない", async ({
+    page,
+  }) => {
+    await page.route("**/api/predictions/**", async (route) => {
+      const res = await fetchRecorded(route);
+      const body = await res.json();
+      for (const r of body.races ?? [])
+        if (r.raceId === RACE_ID) r.raceStage = "一般";
+      await route.fulfill({ response: res, json: body });
+    });
+    const full = page.waitForResponse(
+      (r) =>
+        r.url().includes("/api/predictions/") && !r.url().includes("light"),
+      { timeout: 60000 },
+    );
+    await open(page);
+    await full;
+    await expect(
+      page.locator(".ta-header").getByText("一般", { exact: true }),
+    ).toHaveCount(1);
+  });
+
+  test("P3: 形の正しくない raceId（13R）は読み込み中に残さず「表示できるデータがありません」", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-10-06-18-13/assist");
+    await expect(
+      page.getByText("このレースは表示できるデータがありません"),
+    ).toBeVisible({ timeout: 15000 });
+  });
+});
+
 test.describe("思考アシスト: シートのフォーカス（Codex 依頼27 U03）", () => {
   test.beforeEach(async ({ page }) => {
     await routeThinkingAssistV16(page);
