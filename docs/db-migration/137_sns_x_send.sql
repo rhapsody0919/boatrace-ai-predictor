@@ -164,8 +164,10 @@ BEGIN
   RETURN to_jsonb(j);
 END;
 $$;
-REVOKE ALL ON FUNCTION public.guard_sns_x_approval(), public.approve_sns_x_send(UUID,UUID,JSONB,TIMESTAMPTZ),
-  public.transition_sns_x_send(UUID,TEXT,JSONB) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.approve_sns_x_send(UUID,UUID,JSONB,TIMESTAMPTZ),
-  public.transition_sns_x_send(UUID,TEXT,JSONB) TO service_role;
+-- 1関数1文で書く（verify-migration-rls.js は1文につき先頭の関数名だけを読むため）
+REVOKE ALL ON FUNCTION public.guard_sns_x_approval() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.approve_sns_x_send(UUID,UUID,JSONB,TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.transition_sns_x_send(UUID,TEXT,JSONB) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.approve_sns_x_send(UUID,UUID,JSONB,TIMESTAMPTZ) TO service_role;
+GRANT EXECUTE ON FUNCTION public.transition_sns_x_send(UUID,TEXT,JSONB) TO service_role;
 COMMIT;
