@@ -43,6 +43,6 @@ function loadRiskRules() {
  * @param {string} [platform] - 'x' | 'tiktok' | 'youtube' 等。省略時は全ルールを保守的に適用
  * @returns {Array<{id: string, category: string, description: string, matchedPattern: string}>} 抵触したルール一覧（空配列=抵触なし）
  */
-export function checkRiskRules(text, platform) {
-  return matchRiskRules(text, platform, loadRiskRules());
+export function checkRiskRules(text, platform, field = 'body', rules = loadRiskRules()) {
+  return matchRiskRules(text, platform, rules, field);
 }

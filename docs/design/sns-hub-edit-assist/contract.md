@@ -4,7 +4,7 @@
 
 ## 機械点検
 
-`inspectDraft` は依頼7bの共通matcherと現行risk-rules.jsonを使う。本文・タイトル・scene内の文字を媒体別に照合し、hashtagsを禁止用語の点検対象にしない。長い文は80文字を目安に助言。Xは既存twitter-textで本文とタグの加重文字数280を点検する。
+`inspectDraft` は依頼7bの共通matcherと現行risk-rules.jsonを使う。本文・タイトル・scene内の文字を媒体別に照合し、hashtagsも同じmatcherで点検する。タグ欄に関するオーナー承認例外はrisk-rules.jsonの設定で判定し、独自に全タグを除外しない。長い文は80文字を目安に助言。Xは既存twitter-textで本文とタグの加重文字数280を点検する。
 
 YYYY-MM-DDとHH:mmの候補を点検し、暦上の不正な日付/時刻・桁/区切りの不統一を指摘する。日本語の日付表記や相対日付の意味は判定しない。
 
@@ -35,3 +35,15 @@ node scripts/maintenance/verify-sns-bundle-import.js
 node node_modules/@playwright/test/cli.js test --config playwright.edit-assist.config.js
 
 375pxの明暗モック、外部通信遮断、envDir=false/publicDir=false。画面検証の結果・実行制約は報告に記載する。SQL適用・本番接続は行わない。
+
+## 2026-10-08 オーナー承認のハッシュタグ例外
+
+risk-rules.jsonのbanned-term-kyoutei.hashtag_exception.enabledだけで許可を解除できる。オーナー判断日と解除条件「GA4の直近28日のアクティブユーザー1000」を設定に記載する。GA4取得・自動判定は実装しない。到達時にはオーナーがenabled=falseへ変更して再配備する。Nodeのキャッシュはプロセス再起動で更新する。
+
+許可するのはX/YouTubeのhashtagsの1要素が設定valueに完全一致する場合と、YouTube説明欄の末尾ハッシュタグ群のうち完全一致するタグだけ。裸語、別タグ、途中のタグ、X本文、タイトル、ナレーション、scene文字は警告のまま。未知媒体・文脈未指定は保守的に本文扱い。検査前の空白除去で例外タグを作らない。
+
+Node checkRiskRules（明示fieldまたは欄の配列）、承認API（draftRiskFields）、bundle（bundleRiskFields）、編集補助は同一matcherと設定を使う。従来の戦略メモ承認APIの自由文は本文扱いを維持する。下書きapproveの応答にriskWarningsを追加するが、既存の承認条件と公開保留は変更しない。既に保存されたrisk_flagsを自動で消さない。
+
+v0 bundleのscriptはナレーション、x_textは本文として保持する。追加の任意点検欄x_hashtags / youtube_tags（各30要素以下・1要素200文字以内）とyoutube_description（20000文字以内）をJSONに指定できる。未指定は従来どおり。これらはbundle.jsonと保存bundle内の**点検材料**で、投稿メタデータへ自動変換・送信しない。本文やscriptをタグ欄へ移して動画内警告を消さない。通常下書きでは既存hashtagsとYouTube caption_text（説明）を点検する。v0由来caption_textはscriptなので本文として扱う。
+
+検証比較表は依頼10b報告とtask-10b-qa/verify-risk.txt。enabled=true/false両方でNode・下書き承認API・v0 bundle・編集補助の結果を確認する。v0はX/YouTubeのみで、他媒体の保守的判定はNode/API/編集補助で確認する。

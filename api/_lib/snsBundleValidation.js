@@ -1,4 +1,4 @@
-import { matchRiskRules } from "../../scripts/lib/riskRuleMatcher.js";
+import { matchRiskRules, bundleRiskFields } from "../../scripts/lib/riskRuleMatcher.js";
 
 /** v0専用。契約1の正式素材は、公開証拠・QA条件を別依頼で決めるまで受け入れない。 */
 export const BUNDLE_SCHEMA = "ryujin-preview/0";
@@ -349,14 +349,11 @@ export async function validateBundle(form, riskRules = []) {
     ),
   );
   const riskFlags = {};
-  const shared = [bundle.title, ...bundle.scenes.flatMap((s) => s.lines)].join(
-    "\n",
-  );
-  for (const platform of ["x", "youtube"]) {
-    const content =
-      shared + "\n" + (platform === "x" ? bundle.x_text : bundle.script);
-    riskFlags[platform] = matchRiskRules(content, platform, riskRules);
+  for (const name of ['x_hashtags','youtube_tags']) {
+    ensure(bundle[name] === undefined || (Array.isArray(bundle[name]) && bundle[name].length <= 30 && bundle[name].every(tag => text(tag,200))), `${name}: タグ欄が不正です`);
   }
+  ensure(bundle.youtube_description === undefined || text(bundle.youtube_description,20000), 'youtube_description: 説明欄が不正です');
+  for (const platform of ['x','youtube']) riskFlags[platform] = matchRiskRules(bundleRiskFields(bundle,platform), platform, riskRules);
   return {
     bundle,
     qa,

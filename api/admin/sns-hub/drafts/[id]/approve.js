@@ -1,3 +1,5 @@
+import {matchRiskRules, draftRiskFields} from "../../../../../scripts/lib/riskRuleMatcher.js";
+import riskRules from "../../../../../sns-video-studio/remotion/risk-rules.json";
 import { isBundlePublicationBlocked } from "../../../../_lib/snsBundleValidation.js";
 /**
  * Vercel Edge Function: 下書きの承認
@@ -68,13 +70,14 @@ export default async function handler(req) {
       );
     }
 
+    const riskWarnings = matchRiskRules(draftRiskFields(draft), draft.platform, riskRules.rules);
     const updated = await updateDraft(id, {
       status: "approved",
       approver_id: approverId,
       approved_at: new Date().toISOString(),
     }, "pending_review");
 
-    return jsonResponse({ data: updated });
+    return jsonResponse({ data: updated, riskWarnings });
   } catch (error) {
     console.error("SNS Hub approve Edge function error:", error);
     return jsonResponse({ error: error.message }, error.status || 500);
