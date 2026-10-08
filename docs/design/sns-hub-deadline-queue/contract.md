@@ -43,6 +43,6 @@ claim/check/begin_postで期限・鮮度・承認版を再検査する。claim�
 
 ## ローカル検証
 
-`node --test scripts/tests/sns-deadline-queue.test.js scripts/tests/sns-x-send.test.js` はPGlite＋モックだけ。品質ゲート台帳は変更しない。
+`node scripts/maintenance/verify-sns-deadline-queue.js scripts/maintenance/verify-sns-x-send.js` はPGlite＋モックだけ。品質ゲート台帳にはverify-registry.jsonで登録済み。
 
 `npx playwright test --config playwright.deadline-queue.config.js` と既存playwright.x-send.config.jsはenvDir=false/publicDir=false、localhost以外を遮断。新一覧は375px/light/dark、端末America/Los_AngelesでもJSTを表示するテスト。Chromium起動がmacOS sandboxで拒否された場合は合格とせず未検証で報告する。
