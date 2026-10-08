@@ -76,6 +76,7 @@ export const trackPageView = (pathWithSearch) => {
   const pathname = pathWithSearch.split("?")[0];
   if (isExcludedFromPageView(pathname)) return;
 
+  if (lastPageLocation === null) trackAnalogyReturnVisit();
   const pageLocation = `${window.location.origin}${pathWithSearch}`;
   window.gtag("event", "page_view", {
     page_location: pageLocation,
@@ -89,6 +90,48 @@ export const trackPageView = (pathWithSearch) => {
 export const trackEvent = (eventName, eventParams = {}) => {
   if (window.gtag) {
     window.gtag("event", eventName, eventParams);
+  }
+};
+
+// 龍神ソナー（BOA-271）を最後に画面で見た時刻。ソナーを見た人の7日以内の再訪を数えるのに使う。
+// キャッシュ全削除（boatai: 接頭辞を消す）で消えないよう boatai-user: にする
+const ANALOGY_LAST_SEEN_KEY = "boatai-user:analogy-last-seen";
+const ANALOGY_RETURN_SENT_KEY = "boatai-user:analogy-return-sent";
+const DAY_MS = 24 * 60 * 60 * 1000;
+export const ANALOGY_RETURN_DAYS = 7;
+
+export const markAnalogySeen = (now = Date.now()) => {
+  try {
+    localStorage.setItem(ANALOGY_LAST_SEEN_KEY, String(now));
+  } catch {
+    // 保存できない環境（プライベートブラウズ等）では再訪を数えないだけ
+  }
+};
+
+/**
+ * 前回ソナーを見てから何日目の来訪か。7日以内でなければ null。
+ * 純関数にしてテストで境界を固定する
+ */
+export const analogyReturnDays = (lastSeen, now) => {
+  if (!Number.isFinite(lastSeen) || lastSeen > now) return null;
+  const days = Math.floor((now - lastSeen) / DAY_MS);
+  return days <= ANALOGY_RETURN_DAYS ? days : null;
+};
+
+// ページを開いた最初の page_view で、前回ソナーを見たのが7日以内なら1回送る。
+// 同じタブの再読み込みでは送らない（sessionStorage）。新しいタブは新しい来訪として数える
+const trackAnalogyReturnVisit = () => {
+  try {
+    if (sessionStorage.getItem(ANALOGY_RETURN_SENT_KEY)) return;
+    sessionStorage.setItem(ANALOGY_RETURN_SENT_KEY, "1");
+    const days = analogyReturnDays(
+      Number(localStorage.getItem(ANALOGY_LAST_SEEN_KEY)),
+      Date.now(),
+    );
+    if (days !== null)
+      trackEvent("analogy_return_visit", { analogy_days_since: days });
+  } catch {
+    // ストレージが使えない環境では送らない
   }
 };
 

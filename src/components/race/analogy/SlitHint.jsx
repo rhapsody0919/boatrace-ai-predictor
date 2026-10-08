@@ -74,7 +74,12 @@ export default function SlitHint({
         <span className="af-lbl" id={lbl}>
           {t(`${k}.hintSrc`)}
         </span>
-        <div className="af-seg" role="group" aria-labelledby={lbl}>
+        <div
+          className="af-seg"
+          role="group"
+          aria-labelledby={lbl}
+          data-af-control="slit_version"
+        >
           {["course", "overall"].map((v) => (
             <button
               key={v}
@@ -173,7 +178,7 @@ export default function SlitHint({
       <h4 className="af-h4">
         {t(`${k}.hintConds`, { src: t(`${k}.hintSrcs.${version}`) })}
       </h4>
-      <div className="af-hintcs">
+      <div className="af-hintcs" data-af-control="slit_form">
         {rows.length ? (
           rows.map((r) => (
             <button

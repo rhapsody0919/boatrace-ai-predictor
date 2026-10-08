@@ -89,6 +89,7 @@ export default function SimilarSonar({
                 n: fmtCount(counts[b - 1]),
               })}
               aria-pressed={selectedBoat === b}
+              data-af-control="similar_boat"
               style={{ cursor: "pointer" }}
               onClick={() => onBoat(b)}
               onKeyDown={(e) =>

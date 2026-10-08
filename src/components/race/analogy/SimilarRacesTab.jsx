@@ -211,6 +211,7 @@ export default function SimilarRacesTab({ data, stage, target, exhibition }) {
         </div>
         <input
           id="af-sim-slider"
+          data-af-control="similar_range"
           type="range"
           min={0}
           max={steps.length - 1}
