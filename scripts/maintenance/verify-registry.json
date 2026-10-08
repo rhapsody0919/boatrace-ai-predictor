@@ -15,6 +15,11 @@
       "guards": "選手の今期の事故率（BOA-327、src/utils/accidentRate.js）。公式の配点・優勝戦のF/L30点・2025-05以降の2本目以降のF加点・小数第2位切り捨て（40÷57は0.70で超えでない）・あと何点・目印の条件（事故点1点以上かつあと20点以内、行は出走30走以上）。マイグレーション126の RPC を PGlite で実行し、出走回数の数え方（S0・L0・K0・00を除く）・期間・匿名のEXECUTEを確かめる"
     },
     {
+      "script": "verify-adsense-anno-skip.js",
+      "tier": "ci",
+      "guards": "index.html の <body> に google-anno-skip クラスが付いていること（BOA-786）。外すと AdSense の自動広告が本文の語句を「競艇AI予想」等のリンク（広告インテント: ad intent links・アンカー・チップ）に変える。画面内に「競艇」を出さない規則と、AI予想と誤解させない方針に反し、管理画面では止められなかった"
+    },
+    {
       "script": "verify-actual-course-kfile-parser.js",
       "tier": "ci",
       "guards": "Kファイル方式の進入コースパーサー（scripts/lib/kfileParser.js、BOA-257）"

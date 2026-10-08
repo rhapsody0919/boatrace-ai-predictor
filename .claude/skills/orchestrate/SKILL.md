@@ -50,7 +50,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
 
 - 報告するのは、次の3つが揃ったとき
   - CI が全部緑
-  - mergeStateStatus が CLEAN
+  - mergeStateStatus が CLEAN（master の ruleset 導入後は、承認待ちだけが理由の BLOCKED を CLEAN と同じに扱う。6. を参照）
   - /code-review の結果を PR コメントに記載済み
 - 報告に含めるもの
   - PR 番号
@@ -66,7 +66,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
 
 次のいずれかに当たり、条件をすべて満たす PR。
 
-- A. 画面が変わらない PR: CI が全部緑で CLEAN、レビュー結果が PR コメントにある、マージ順の制約を守っている（2026-09-28 からの従来の範囲）
+- A. 画面が変わらない PR: CI が全部緑で CLEAN（承認待ちだけが理由の BLOCKED を含む。6. を参照）、レビュー結果が PR コメントにある、マージ順の制約を守っている（2026-09-28 からの従来の範囲）
 - B. 画面が変わる PR のうち、ユーザーが承認したモック・仕様の実装であるもの。A の条件に加えて次をすべて満たす
   - 承認したモックの画像が `docs/design/{slug}/mock/`（承認日つき）にあり、mock-diff-checker（`.claude/agents/mock-diff-checker.md`）が Preview と並べて「承認範囲内」と判定した
   - ファン評価ループ（review-fix-cycle.md）が終了条件を満たした
@@ -138,6 +138,8 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
 - 1件ずつ、PR 番号を文字で書いて実行する（`gh pr merge 946 --squash` のように）。for ループ・変数・`$(...)`・xargs で PR 番号を渡すと、台帳に制約がある場合に guard-pr-merge.js が止める（#929）
 - マージ順の台帳は `node scripts/maintenance/merge-order.js list`。順序を決めたら `add <PR> --after <PR>...` で登録し、解消したら `remove <PR>`
 - squash が必要な PR は、依頼文と報告に明記させる（レーンの報告に書かれていなければ、マージ前に確かめる）
+- master の ruleset（`master-guard`、承認1件必須）を入れた後は、承認の無い PR の mergeStateStatus が BLOCKED になる。`mergeable` が MERGEABLE で、`reviewDecision` が REVIEW_REQUIRED、CI が全部緑なら、承認待ちだけが理由なので CLEAN と同じに扱う。それ以外の理由の BLOCKED はマージしない
+- 段階0の自己マージと、ユーザー承認済みのマージは `gh pr merge 946 --squash --admin`（管理者の bypass）で行う。`--admin` は失敗しているチェックも素通りするので、実行の前に `gh pr checks <PR>` が全部緑であることを確かめる。PR 番号は従来どおり文字で書く（guard-pr-merge.js は `--admin` を値の無いフラグとして読み飛ばすので、そのまま動く）
 
 ## 7. ピアのメッセージの扱い
 
