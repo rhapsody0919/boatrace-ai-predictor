@@ -53,7 +53,7 @@ jobs:
             args: e2e/layout.spec.js e2e/race-detail-details.spec.js
           - shard: 3
             args: --grep-invert "(^|[ /])(smoke|race-odds-live|layout|race-detail-details)\.spec\.js( |$)"
-    name: e2e-shard (${{ matrix.shard }}/3)
+    name: e2e-shard (${{ matrix.shard }}/${{ strategy.job-total }})
     steps:
       - name: Checkout
         uses: actions/checkout@v4

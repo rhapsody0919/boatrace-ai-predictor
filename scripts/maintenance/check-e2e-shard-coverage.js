@@ -47,8 +47,19 @@ function readReport(file) {
 function main() {
   const [listFile = "e2e-list.json", resultFile = "e2e-results.json"] =
     process.argv.slice(2);
-  const listed = flattenTests(readReport(listFile));
-  const ran = flattenTests(readReport(resultFile));
+  // readReport は読めない・壊れている場合に例外を投げる。ここで捕まえずに
+  // 投げっぱなしだと、CIログがNode.jsの生スタックトレースになる（実測:
+  // 最初のCI実行で --list のJSON出力がdotenvバナーで壊れたとき、まさに
+  // これが起きた）。姉妹スクリプト check-e2e-skips.js と同じく
+  // 「NG: ...」の一文に揃える
+  let listed, ran;
+  try {
+    listed = flattenTests(readReport(listFile));
+    ran = flattenTests(readReport(resultFile));
+  } catch (error) {
+    console.error(`NG: ${error.message}`);
+    process.exit(1);
+  }
   if (listed.length === 0) {
     console.error(`NG: ${listFile} にテストが1件もありません`);
     process.exit(1);
