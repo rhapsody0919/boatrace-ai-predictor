@@ -189,6 +189,6 @@
 | 136 | 136_sns_metric_observations.sql | 適用済み（2026-10-08 ユーザーが適用。オーケストレーターが読み取りで確認: sns_metric_observations・sns_post_tracking が存在、anon は両表とも拒否） | 依頼2: 48h/7d観測履歴・追記RPC・UTM保存先。135は依頼1予約。外部収集とUTM投稿適用は未接続 手順・確認・戻し方は docs/db-migration/136-runbook.md |
 | 137 | 137_sns_x_send.sql | 適用済み（2026-10-08 ユーザーが適用。オーケストレーターが読み取りで確認: sns_x_send_control・sns_x_send_jobs が存在、anon は両表とも拒否、sns_x_send_control は paused=true・請求期間未設定、sns_drafts.x_approved_hash 列あり） | 個別承認後X送信の承認版hash・job・再承認ガード・要照合・月額予算予約。135が前提、136とは独立。実adapterは未接続、初期送信停止（paused=true）。実接続はオーナー判断を確認 手順・確認・戻し方は docs/db-migration/137-runbook.md |
 | 138 | 138_sns_external_operations.sql | 適用済み（2026-10-08 ユーザーが適用。オーケストレーターが読み取りで確認: sns_drafts に external_operation_state・external_operation_token・external_operation_result の3列あり、追加した4関数（sns_claim_external・sns_record_external・sns_finish_external・sns_update_external_warning）は匿名の鍵から42501で拒否） | 依頼4: 既存YouTube/ブログ排他・外部結果記録 |
-| 139 | 139_sns_deadline_queue.sql | 未適用 | 依頼5: 発走期限つき待ち行列・送信前検査・日次枠。035/042/135/137が前提、138とは独立。オーナー適用待ち |
+| 139 | 139_sns_deadline_queue.sql | 適用済み（2026-10-08 ユーザーが適用。オーケストレーターが読み取りで確認: sns_x_send_control.timing_approved=false・paused=true、sns_x_send_jobs.channel あり、3関数は匿名の鍵から42501で拒否） | 依頼5: 発走期限つき待ち行列・送信前検査・日次枠。035/042/135/137が前提、138とは独立 |
 | 140 | 140_sns_mobile_approval.sql | 未適用 | 依頼6: レース単位スマホ確認・版固定の個別承認・媒体hash。135/137が前提。オーナー適用待ち |
 | （番号なし） | add-defense-distribution.sql | 適用済み | 列 racer_aggregated_stats.defense_distribution・course_race_counts が存在 |
