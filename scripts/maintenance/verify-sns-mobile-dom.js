@@ -10,7 +10,7 @@ import { JSDOM } from "jsdom";
 import React, { act } from "react";
 import { MemoryRouter } from "react-router-dom";
 
-let createRoot, Admin, Panel, RaceReview, root, container, dom;
+let createRoot, Admin, Panel, RaceReview, XSendPanel, root, container, dom;
 const originalFetch = globalThis.fetch,
   originalInterval = globalThis.setInterval,
   originalClear = globalThis.clearInterval;
@@ -37,7 +37,7 @@ before(async () => {
   const baseline = process.env.SNS_MOBILE_TEST_BASELINE;
   await build({
     stdin: {
-      contents: `export {default as Admin} from './src/pages/admin/SnsHubAdmin.jsx'; export {default as Panel, MobileRaceReview as RaceReview} from './src/pages/admin/sns-hub/MobileApprovalPanel.jsx';`,
+      contents: `export {default as Admin} from './src/pages/admin/SnsHubAdmin.jsx'; export {default as Panel, MobileRaceReview as RaceReview} from './src/pages/admin/sns-hub/MobileApprovalPanel.jsx'; export {default as XSendPanel} from './src/pages/admin/sns-hub/XSendPanel.jsx';`,
       resolveDir: process.cwd(),
       loader: "js",
     },
@@ -75,7 +75,9 @@ before(async () => {
         ]
       : [],
   });
-  ({ Admin, Panel, RaceReview } = await import(pathToFileURL(bundle)));
+  ({ Admin, Panel, RaceReview, XSendPanel } = await import(
+    pathToFileURL(bundle)
+  ));
   globalThis.setInterval = (fn) => {
     timers.add(fn);
     return fn;
@@ -457,4 +459,48 @@ test("修正理由はチャネルごとに分離し、一方への入力が他�
   await flush();
   assert.equal(xInput.value, "Xだけの修正理由");
   assert.equal(ytInput.value, "", "X側の入力がYouTube側に混入しない");
+});
+test("MobileApprovalPanel側の操作が割り込んでも、X送信の親一覧更新(onChanged)は必ず呼ばれる", async () => {
+  let changedCalls = 0;
+  let epoch = 0;
+  globalThis.fetch = async (url, options = {}) => {
+    const u = new URL(url, "http://localhost");
+    if (
+      u.pathname.endsWith("/x-send") &&
+      (!options.method || options.method === "GET")
+    ) {
+      return Response.json({
+        data: {
+          connected: true,
+          job: null,
+          control: { paused: false, budget_microusd: 0, reserved_microusd: 0 },
+        },
+      });
+    }
+    if (u.pathname.endsWith("/x-send") && options.method === "POST") {
+      // 承認のPOSTが完了する間に、MobileApprovalPanel側の操作でepochが進んだ状態を模す。
+      epoch = 1;
+      return Response.json({ data: { state: "queued" } });
+    }
+    throw new Error(`未知のリクエスト: ${u.pathname}`);
+  };
+  const draft = { id: "draft-x", platform: "x", status: "pending_review" };
+  await mount(
+    React.createElement(XSendPanel, {
+      draft,
+      approverId: "owner",
+      onChanged: () => {
+        changedCalls++;
+      },
+      onStateChange: () => {},
+      externalOperation: { epoch: 0, pending: false },
+      getExternalOperation: () => ({ epoch, pending: false }),
+    }),
+  );
+  await click(button("承認して公開"));
+  assert.equal(
+    changedCalls,
+    1,
+    "epochが割り込んで変わっていても親の一覧更新は呼ばれる",
+  );
 });

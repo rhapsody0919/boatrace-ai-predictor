@@ -2,13 +2,16 @@
 BEGIN;
 CREATE FUNCTION public.sns_mobile_revision(d public.sns_drafts) RETURNS TEXT
 LANGUAGE sql IMMUTABLE SET search_path=public AS $$
+ -- scheduled_atはtimestamptzのため、jsonbに直接入れるとテキスト変換時に
+ -- 接続のTimeZone設定に依存する（同じ値でも接続ごとに文字列表現が変わる）。
+ -- TimeZone非依存のUTC epoch秒に変換してからハッシュに含める。
  SELECT encode(sha256(convert_to(jsonb_build_object(
  'id',d.id,'group',d.content_group_id,'platform',d.platform,'language',d.language,
  'title',d.title,'caption',d.caption_text,'hashtags',d.hashtags,
  'video',d.video_storage_path,'cover',d.cover_image_path,'source',d.source_data,
  'risk',d.risk_flags,'blocked',d.publish_blocked,'holds',d.publication_hold_reasons,
  'bundle',d.bundle_import_id,'bundle_version',d.bundle_version_hash,'status',d.status,
- 'scheduled',d.scheduled_at)::text,'UTF8')),'hex');
+ 'scheduled',extract(epoch from d.scheduled_at))::text,'UTF8')),'hex');
 $$;
 CREATE FUNCTION public.read_sns_mobile_race(p_group_id UUID) RETURNS JSONB
 LANGUAGE plpgsql STABLE SET search_path=public AS $$
