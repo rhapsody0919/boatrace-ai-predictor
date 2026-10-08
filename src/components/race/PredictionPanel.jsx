@@ -416,6 +416,7 @@ function PredictionPanel({
           initialTabId={resolveInitialRaceTab(
             searchParams.get(RACE_TAB_PARAM),
             searchParams.get(RACE_SONAR_PARAM),
+            isAnalogyFinderEnabled(),
           )}
           requestedTab={tabRequest}
           onActiveTabChange={(tabId) => {

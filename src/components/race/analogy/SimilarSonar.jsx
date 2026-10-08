@@ -52,17 +52,27 @@ export default function SimilarSonar({
   const timer = useRef(null);
   const start = useRef(null);
   const longPressed = useRef(false);
+  // 最後に押した指・マウスの種類。click の pointerType はブラウザによって無い（Safari）ので pointerdown で覚える
+  const lastPointer = useRef("mouse");
   const n = neighbors.length;
   const tip = tipState?.n === n ? tipState : null;
   const picks = picksState?.n === n ? picksState : null;
   useEffect(() => () => clearTimeout(timer.current), []);
-  // 画面を送ったら吹き出しを閉じる
+  // 画面を送るか、図の外をタップしたら吹き出しを閉じる（図の中のタップは onClickCapture が閉じる）
+  const tipOpen = Boolean(tip);
   useEffect(() => {
-    if (!tip) return;
+    if (!tipOpen) return;
     const close = () => setTip(null);
+    const outside = (e) => {
+      if (!svgRef.current?.contains(e.target)) setTip(null);
+    };
     window.addEventListener("scroll", close, { passive: true });
-    return () => window.removeEventListener("scroll", close);
-  }, [tip]);
+    document.addEventListener("pointerdown", outside);
+    return () => {
+      window.removeEventListener("scroll", close);
+      document.removeEventListener("pointerdown", outside);
+    };
+  }, [tipOpen]);
 
   // 外周＝今の件数（拡大・縮小）。100件未満は等間隔、それ以上は対数で中心付近を広げる
   const lin = n < 100;
@@ -141,6 +151,7 @@ export default function SimilarSonar({
   };
 
   const onPointerDown = (e) => {
+    lastPointer.current = e.pointerType || "mouse";
     longPressed.current = false;
     start.current = { x: e.clientX, y: e.clientY };
     clearTimeout(timer.current);
@@ -184,7 +195,7 @@ export default function SimilarSonar({
       e.stopPropagation();
       return;
     }
-    if (tip && e.nativeEvent.pointerType !== "mouse") {
+    if (tip && lastPointer.current !== "mouse") {
       setTip(null);
       e.stopPropagation();
       return;

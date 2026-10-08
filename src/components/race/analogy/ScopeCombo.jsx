@@ -9,13 +9,16 @@ const k = "aiPredictionTab.analogy.facts";
  * 「同じ級別の組み合わせ」が何をそろえているかの絵と1文（承認モック sonar-tab v3、2026-10-08 ユーザー決定）。
  * 範囲キーがそろえているのは、6艇の級別ごとの艇数（艇番は問わない）と、選んだ艇の級別だけ
  * （scripts/ml/analogy/v16_defs.py の class_combo・scope_keys）。どの枠に誰がいたかまでは合わせていないので、
- * 選んだ艇の枠だけ級別を描き、ほかの5枠は「問わない」と描く。全レース（VA）は級別をそろえていないので1文だけ
+ * 選んだ艇の枠だけ級別を描き、ほかの5枠は「問わない」と描く。会場の全レース（VA）は級別をそろえていないので1文だけ、
+ * G1（VG）・全国の全レース（NA）は何も出さない
  * @param {{scopeKey: string}} props
  */
 export default function ScopeCombo({ scopeKey }) {
   const { t } = useTranslation();
   const kind = scopeKind(scopeKey);
   const s = parseScopeKey(scopeKey);
+  // 全レース系のうち説明文があるのは会場の全レース（VA）だけ。G1（VG）・全国の全レース（NA）は札の名前で足りる
+  if (kind === "VG" || kind === "NA") return null;
   if (kind !== "VC" && kind !== "NC" && kind !== "NCR")
     return (
       <p className="af-sub">

@@ -59,7 +59,7 @@ function useTodayValue(row, values) {
     const s = fmtFactValue(row.key, v);
     return s === "—" || s.endsWith("%") ? s : `${s}${unit}`;
   };
-  return (b) => {
+  const of = (b) => {
     const r = todayValueRank(values, hib, b);
     const rank = !r
       ? t(`${k}.noToday${row.key === "loc_win" ? "Local" : ""}`)
@@ -71,15 +71,9 @@ function useTodayValue(row, values) {
       : r.from === r.to
         ? t(`${k}.stripRank`, { rank: r.from })
         : t(`${k}.stripRankTie`, { from: r.from, to: r.to });
-    return {
-      r,
-      rank,
-      rankShort,
-      value: r ? withUnit(r.value) : "—",
-      withUnit,
-      unit,
-    };
+    return { r, rank, rankShort, value: r ? withUnit(r.value) : "—" };
   };
+  return { of, withUnit, unit, hib };
 }
 
 /**
@@ -115,8 +109,7 @@ export default function FactCard({
   const max =
     Math.max(...row.rates.filter((p) => p !== null), usual ?? 0, 0.01) * 1.12;
   const label = t(`${k}.items.${row.key}.label`);
-  const todayOf = useTodayValue(row, values);
-  const hib = FACT_ITEMS.find((it) => it.key === row.key).hib;
+  const { of: todayOf, withUnit, unit, hib } = useTodayValue(row, values);
   const stripAria = t(`${k}.stripLabel`, {
     item: label,
     rate: rateName,
@@ -169,7 +162,7 @@ export default function FactCard({
   const pos = values ? todayPosition(values, hib, boat) : null;
   const range =
     pos && Number.isFinite(pos.min) && Number.isFinite(pos.max)
-      ? fmtRange(me.withUnit(pos.min), me.withUnit(pos.max), me.unit)
+      ? fmtRange(withUnit(pos.min), withUnit(pos.max), unit)
       : null;
 
   return (

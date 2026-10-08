@@ -26,10 +26,12 @@ export function parseSonarParam(raw) {
 /**
  * 開いたときのタブ。龍神ソナーは AI予想タブの中から独立したタブに移った（2026-10-08）。
  * 移る前に投稿したリンク `?tab=aiPrediction&sonar=…` はソナーを見に来た人なので、ソナーのタブで開く。
- * `sonar=` の無い `?tab=aiPrediction` は AI予想のまま
+ * `sonar=` の無い `?tab=aiPrediction` は AI予想のまま。ソナーのタブを出していないとき（sonarEnabled=false）も AI予想
  */
-export function resolveInitialRaceTab(tab, sonar) {
-  if (tab === "aiPrediction" && parseSonarParam(sonar)) return SONAR_RACE_TAB;
+export function resolveInitialRaceTab(tab, sonar, sonarEnabled = true) {
+  // ソナーのタブを出していない（機能フラグを戻した）ときは、移す前と同じく AI予想で開く
+  if (sonarEnabled && tab === "aiPrediction" && parseSonarParam(sonar))
+    return SONAR_RACE_TAB;
   return tab;
 }
 

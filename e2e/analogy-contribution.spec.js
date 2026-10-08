@@ -428,6 +428,84 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       expect(views).toBe(1);
     });
 
+    test("展開シナリオで全国の全レース・G1 を選んでも、範囲の説明に i18n のキーを出さない（code-review 指摘）", async ({
+      page,
+    }) => {
+      await setup(page);
+      const base = analogyV16Scenario();
+      await page.route("**/api/analogy/scenario/**", (route) => {
+        const scope = new URL(route.request().url()).searchParams.get("scope");
+        return route.fulfill({
+          json: { ...base, scope: scope ?? base.scope, vc_fell_back: null },
+        });
+      });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      const group = section.getByRole("group", { name: "集めたレース" });
+      for (const name of [/全国の全レース/, /G1/]) {
+        await group.getByRole("button", { name }).click();
+        await expect(group.getByRole("button", { name })).toHaveAttribute(
+          "aria-pressed",
+          "true",
+        );
+        await expect(section).not.toContainText("aiPredictionTab.");
+        await expect(section.getByTestId("analogy-scope-combo")).toHaveCount(0);
+      }
+    });
+
+    test("艇を替えると、カードの開閉を「差が大きい」だけ開くに合わせ直す（code-review 指摘）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      // ボート2連率は畳んだ「着順との関係が小さい項目」の中なので外す
+      const cards = section.locator(
+        ".af-cards > [data-testid='analogy-fact-card']",
+      );
+      await expect(cards.first()).toBeVisible();
+      // 開閉を手で全部逆にしてから艇を替える
+      for (const c of await cards.all()) await c.locator("summary").click();
+      await section.locator(".af-boat-btn").nth(1).click();
+      await expect(section.locator(".af-boat-btn").nth(1)).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      for (const c of await cards.all()) {
+        const large =
+          (await c.locator(".af-card-judge").innerText()).trim() ===
+          "差が大きい";
+        expect(await c.evaluate((el) => el.open)).toBe(large);
+      }
+    });
+
+    test("長押しの吹き出しは図の外をタップすると閉じる（code-review 指摘）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      const sonar = section.getByTestId("analogy-sonar");
+      const first = sonar.locator("circle[aria-label]").first();
+      await first.evaluate((el) => el.scrollIntoView({ block: "center" }));
+      const dot = await first.boundingBox();
+      await sonar.dispatchEvent("pointerdown", {
+        pointerType: "touch",
+        clientX: dot.x + dot.width / 2,
+        clientY: dot.y + dot.height / 2,
+        bubbles: true,
+      });
+      const tip = section.getByTestId("analogy-sonar-tip");
+      await expect(tip).toBeVisible();
+      await sonar.dispatchEvent("pointerup", { pointerType: "touch" });
+      await section
+        .getByTestId("analogy-sonar-legend")
+        .dispatchEvent("pointerdown", { pointerType: "touch", bubbles: true });
+      await expect(tip).toHaveCount(0);
+    });
+
     test("ソナーの点はタップで近い点を最大5件並べ、長押しで吹き出しを出す。点の操作も条件変更に数える", async ({
       page,
     }) => {

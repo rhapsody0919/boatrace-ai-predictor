@@ -107,7 +107,8 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
   const rateName = t(`aiPredictionTab.analogy.rateName.${target}`);
   const card = (row) => (
     <FactCard
-      key={row.key}
+      // 艇・着順・範囲が変わったら作り直す（開閉の初期値「差が大きいだけ開く」を判定に合わせ直す）
+      key={`${row.key}:${boat}:${target}:${scopeKey}`}
       venueName={venueLabel(venue, t)}
       row={row}
       boat={boat}
