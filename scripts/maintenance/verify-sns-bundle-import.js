@@ -57,6 +57,9 @@ async function fixture(change = {}) {
     })),
     claims: [{ source: "facts", path: ["count"], value: 30 }],
     source_data: {},
+    video: {width:1080,height:1920,duration_seconds:18,fps:30,has_audio:true},
+    video_probe: {tool:"ffprobe",width:1080,height:1920,duration_seconds:18,fps:30,has_audio:true,
+      sha256:await sha256(new Uint8Array([0,0,0,20,102,116,121,112,105,115,111,109]))},
     ...change,
   };
   const files = new Map([
@@ -121,6 +124,56 @@ async function refreshHash(files, name) {
   integrity[name] = await sha256(files.get(name));
   files.set("integrity.json", json(integrity));
 }
+await check("会場18の戸田誤表記・原文レース違いは拒否せず警告を保存", async () => {
+  const files = await fixture({race_id:"2026-10-07-18-10", venueName:"戸田", script:"戸田の10R", source_data:{venueCode:18}});
+  files.set("facts.json", json({today:{race_id:"2026-10-07-18-09",venue_code:18}, similar:[{race_id:"2026-10-06-02-01"}]}));
+  const meta = JSON.parse(new TextDecoder().decode(files.get("facts.meta.json")));
+  meta.sha256 = await sha256(files.get("facts.json"));
+  files.set("facts.meta.json", json(meta));
+  await refreshHash(files, "facts.json");
+  const result = await validateBundle(form(files));
+  assert(result.riskFlags.x.some(w => w.id === "bundle-venue-mismatch"));
+  assert(result.riskFlags.youtube.some(w => w.id === "bundle-body-venue-2"));
+  assert(result.riskFlags.x.some(w => w.id === "bundle-race-mismatch"));
+  assert(!result.riskFlags.x.some(w => w.matchedPattern.includes("similar")));
+  let saved;
+  await importValidatedBundle(result, {saveFile:async()=>{}, register:async payload => {saved=payload;}});
+  assert.deepEqual(saved.p_risk_flags, result.riskFlags);
+  assert(saved.p_hold_reasons.some(h => h.includes("QA保留")));
+});
+await check("source_dataのコード・scope不一致と唐津の名称境界", async () => {
+  const bad = await validateBundle(form(await fixture({source_data:{race_code:"2026-10-07-11-09",venueCode:18,scope_key:"VC:18:test"}})));
+  assert(bad.riskFlags.x.some(w => w.id === "bundle-race-mismatch"));
+  assert(bad.riskFlags.x.some(w => w.matchedPattern === "source_data.venueCode"));
+  assert(bad.riskFlags.x.some(w => w.matchedPattern === "source_data.scope_key"));
+  const good = await validateBundle(form(await fixture({race_id:"2026-10-07-23-10",title:"唐津の展望"})));
+  assert(!good.riskFlags.x.some(w => w.id.startsWith("bundle-body-venue")));
+});
+await check("動画の宣言・scene合計・実hashの不一致と不足は警告のみ", async () => {
+  const mp4 = (await fixture()).get("draft.mp4");
+  const video = {width:1080,height:1920,duration_seconds:18,fps:30,has_audio:true};
+  const video_probe = {...video,tool:"ffprobe",sha256:await sha256(mp4)};
+  const ok = await validateBundle(form(await fixture({video,video_probe})));
+  assert(!ok.riskFlags.x.some(w => w.id.startsWith("bundle-video")));
+  const bad = await validateBundle(form(await fixture({video:{...video,width:720,has_audio:false}, video_probe:{...video_probe,duration_seconds:19,sha256:"0".repeat(64)}})));
+  for (const id of ["bundle-video-mismatch","bundle-video-scenes-mismatch","bundle-video-hash-mismatch"])
+    assert(bad.riskFlags.youtube.some(w => w.id === id), id);
+  const missing = await validateBundle(form(await fixture({video_probe:{}})));
+  assert(missing.riskFlags.x.some(w => w.id === "bundle-video-probe-missing"));
+});
+await check("正準表を副作用なしで共有し、類似レースの識別子は照合しない", async () => {
+  const {VENUE_NAMES} = await import("../lib/venueNames.js");
+  assert.equal(Object.keys(VENUE_NAMES).length,24);
+  assert.equal(VENUE_NAMES[18],"徳山");
+  const files = await fixture({venue_name:"びわこ",source_data:{race_code:"2026-10-07-11-10",venue_code:11}});
+  files.set("similar.json", json({neighbors:[{race_id:"2026-10-06-18-01",venue_code:18}]}));
+  const meta = JSON.parse(new TextDecoder().decode(files.get("similar.meta.json")));
+  meta.sha256=await sha256(files.get("similar.json"));
+  files.set("similar.meta.json",json(meta));
+  await refreshHash(files,"similar.json");
+  const result=await validateBundle(form(files));
+  assert(!result.riskFlags.x.some(w => /bundle-(race|venue|body)/.test(w.id)));
+});
 const files = await fixture();
 const validated = await validateBundle(form(files));
 const riskRules = JSON.parse(

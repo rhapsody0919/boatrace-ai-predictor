@@ -1,3 +1,4 @@
+import { VENUE_NAMES } from "../../scripts/lib/venueNames.js";
 import { matchRiskRules, bundleRiskFields } from "../../scripts/lib/riskRuleMatcher.js";
 
 /** v0専用。契約1の正式素材は、公開証拠・QA条件を別依頼で決めるまで受け入れない。 */
@@ -353,7 +354,14 @@ export async function validateBundle(form, riskRules = []) {
     ensure(bundle[name] === undefined || (Array.isArray(bundle[name]) && bundle[name].length <= 30 && bundle[name].every(tag => text(tag,200))), `${name}: タグ欄が不正です`);
   }
   ensure(bundle.youtube_description === undefined || text(bundle.youtube_description,20000), 'youtube_description: 説明欄が不正です');
-  for (const platform of ['x','youtube']) riskFlags[platform] = matchRiskRules(bundleRiskFields(bundle,platform), platform, riskRules);
+  const warnings = bundleConsistencyWarnings(bundle, parsed, files);
+  holds.push(...warnings.map(w => w.description));
+  for (const platform of ['x', 'youtube']) {
+    riskFlags[platform] = [
+      ...matchRiskRules(bundleRiskFields(bundle, platform), platform, riskRules),
+      ...warnings,
+    ];
+  }
   return {
     bundle,
     qa,
@@ -373,4 +381,80 @@ export function isBundlePublicationBlocked(draft) {
     draft.bundle_import_id ||
     draft.bundle_version_hash,
   );
+}
+
+/** 追加照合は警告のみ。類似レース配列の別会場・別race_idは対象にしない。 */
+function bundleConsistencyWarnings(bundle, parsed, files) {
+  const warnings = [];
+  const warn = (id, description, matchedPattern) => warnings.push({
+    id, category: "bundle-consistency", description, matchedPattern,
+  });
+  const venue = Number(bundle.race_id.slice(11, 13));
+  const raceNumber = Number(bundle.race_id.slice(14, 16));
+  const checkIdentity = (value, location) => {
+    if (!record(value)) return;
+    for (const key of ["race_id", "raceId", "race_code", "raceCode"]) {
+      if (value[key] !== undefined && value[key] !== bundle.race_id)
+        warn("bundle-race-mismatch", "レース識別子が一致しません（QA保留）", `${location}.${key}`);
+    }
+    for (const key of ["venue_code", "venueCode"]) {
+      if (value[key] !== undefined && Number(value[key]) !== venue)
+        warn("bundle-venue-mismatch", "会場コードが一致しません（QA保留）", `${location}.${key}`);
+    }
+    for (const key of ["race_number", "raceNumber"]) {
+      if (value[key] !== undefined && Number(value[key]) !== raceNumber)
+        warn("bundle-race-mismatch", "レース番号が一致しません（QA保留）", `${location}.${key}`);
+    }
+    for (const key of ["venue_name", "venueName"]) {
+      if (value[key] !== undefined && value[key] !== VENUE_NAMES[venue])
+        warn("bundle-venue-mismatch", "会場表示名が正準表と一致しません（QA保留）", `${location}.${key}`);
+    }
+  };
+  checkIdentity(bundle, "bundle");
+  checkIdentity(bundle.source_data, "source_data");
+  const scope = bundle.source_data.scope_key;
+  if (typeof scope === "string" && /^(VC|VA):/.test(scope) && Number(scope.split(":")[1]) !== venue)
+    warn("bundle-venue-mismatch", "出典範囲の会場コードが一致しません（QA保留）", "source_data.scope_key");
+  for (const source of SOURCES) {
+    const raw = parsed.get(`${source}.json`);
+    checkIdentity(raw, source);
+    for (const key of ["today", "target", "race"])
+      checkIdentity(raw?.[key], `${source}.${key}`);
+  }
+  // 共通matcherの正規化と欄分離を使う。比較・引用も警告とし、人が判断する。
+  const venueRules = Object.entries(VENUE_NAMES).filter(([code]) => Number(code) !== venue)
+    .map(([code, name]) => ({ id: `bundle-body-venue-${code}`, category: "bundle-consistency",
+      description: "本文に対象外の会場名があります（比較・引用を含めQA確認）",
+      platforms: "all", patterns: [name] }));
+  const fields = [...bundleRiskFields(bundle, "x"), ...bundleRiskFields(bundle, "youtube")]
+    .filter(field => field.field !== "hashtags")
+    .map(field => ({...field, text: VENUE_NAMES[venue].length > 1
+      ? (field.text || "").replaceAll(VENUE_NAMES[venue], "") : field.text}));
+  warnings.push(...matchRiskRules(fields, undefined, venueRules));
+  const measured = bundle.video_probe;
+  const declared = bundle.video;
+  const validVideo = value => record(value) &&
+    ["width", "height"].every(key => Number.isInteger(value[key]) && value[key] > 0) &&
+    ["duration_seconds", "fps"].every(key => Number.isFinite(value[key]) && value[key] > 0) &&
+    typeof value.has_audio === "boolean";
+  if (!validVideo(measured) || !SHA.test(measured?.sha256) || measured?.tool !== "ffprobe") {
+    warn("bundle-video-probe-missing", "動画のffprobe計測値が不足または不正です（QA保留）", "video_probe");
+  } else {
+    if (!validVideo(declared)) {
+      warn("bundle-video-declaration-missing", "動画の宣言値が不足または不正です（QA保留）", "video");
+    } else {
+      for (const key of ["width", "height", "duration_seconds", "fps", "has_audio"]) {
+        const tolerance = key === "duration_seconds" ? Math.max(0.05, 1 / measured.fps) : key === "fps" ? 0.01 : 0;
+        const matches = typeof measured[key] === "number"
+          ? Math.abs(measured[key] - declared[key]) <= tolerance
+          : measured[key] === declared[key];
+        if (!matches) warn("bundle-video-mismatch", "動画の宣言値と計測値が一致しません（QA保留）", `video.${key}`);
+      }
+    }
+    if (Math.abs(bundle.scenes.reduce((sum, scene) => sum + scene.seconds, 0) - measured.duration_seconds) > Math.max(0.05, 1 / measured.fps))
+      warn("bundle-video-scenes-mismatch", "sceneの合計秒数と動画尺が一致しません（QA保留）", "scenes.seconds");
+    if (!files.has("draft.mp4") || files.get("draft.mp4").hash !== measured.sha256)
+      warn("bundle-video-hash-mismatch", "計測対象と添付動画のハッシュが一致しません（QA保留）", "video_probe.sha256");
+  }
+  return warnings;
 }
