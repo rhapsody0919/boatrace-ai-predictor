@@ -268,10 +268,15 @@ export async function updateTopicCategoryChannel(
 
 /** 観測窓つき指標。旧手動指標から期間を推測しない。 */
 export async function getMetricObservations(window, metric) {
-  const { data } = await request(`/observations?window=${encodeURIComponent(window)}&metric=${encodeURIComponent(metric)}`);
+  const { data } = await request(
+    `/observations?window=${encodeURIComponent(window)}&metric=${encodeURIComponent(metric)}`,
+  );
   return data;
 }
 
 export async function appendMetricObservation(observation) {
-  return request('/observations', { method: 'POST', body: JSON.stringify(observation) });
+  return request("/observations", {
+    method: "POST",
+    body: JSON.stringify(observation),
+  });
 }

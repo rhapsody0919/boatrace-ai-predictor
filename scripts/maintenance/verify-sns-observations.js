@@ -165,12 +165,18 @@ for (const edit of [
 ]) {
   const input = { ...base, metric_value: 123, ...edit };
   const output = [];
-  const collected = await collectDueObservations({ drafts: [draft],
+  const collected = await collectDueObservations({
+    drafts: [draft],
     provider: { collect: async () => [input] },
-    store: { append: async (d, o) => output.push(o) }, now: period.period_end });
+    store: { append: async (d, o) => output.push(o) },
+    now: period.period_end,
+  });
   assert.equal(collected[0].status, "saved");
   assert.equal(output[0].metric_value, null);
-  assert.equal(output[0].observed_at, new Date(input.observed_at).toISOString());
+  assert.equal(
+    output[0].observed_at,
+    new Date(input.observed_at).toISOString(),
+  );
   assert.match(output[0].missing_reason, /provider/);
 }
 // 窓不一致・遅延があっても不正入力を成功欠測へ変えない。
@@ -184,30 +190,57 @@ for (const timing of [
     { metric_value: -1 },
     { metric_value: Infinity },
     { metric_value: "123" },
-    { metric_name: "audienceWatchRatio", curve: [{ elapsed_ratio: 2, value: 0.5 }] },
-    { metric_name: "audienceWatchRatio", curve: [{ elapsed_ratio: 0.5, value: -1 }] },
+    {
+      metric_name: "audienceWatchRatio",
+      curve: [{ elapsed_ratio: 2, value: 0.5 }],
+    },
+    {
+      metric_name: "audienceWatchRatio",
+      curve: [{ elapsed_ratio: 0.5, value: -1 }],
+    },
     { curve: [{ elapsed_ratio: 0.5, value: 0.5 }] },
     { missing_reason: "値ありには理由を付けない" },
     { metric_value: null, missing_reason: null },
   ]) {
     let appendCalls = 0;
-    const rejected = await collectDueObservations({ drafts: [draft],
-      provider: { collect: async () => [base, { ...base, ...timing, ...invalid }] },
-      store: { append: async () => { appendCalls++; } }, now: period.period_end });
+    const rejected = await collectDueObservations({
+      drafts: [draft],
+      provider: {
+        collect: async () => [base, { ...base, ...timing, ...invalid }],
+      },
+      store: {
+        append: async () => {
+          appendCalls++;
+        },
+      },
+      now: period.period_end,
+    });
     assert.equal(rejected[0].status, "failed");
     assert.equal(appendCalls, 0);
   }
 }
 let invalidPeriodAppendCalls = 0;
-const invalidPeriod = await collectDueObservations({ drafts: [draft],
+const invalidPeriod = await collectDueObservations({
+  drafts: [draft],
   provider: { collect: async () => [{ ...base, period_start: "invalid" }] },
-  store: { append: async () => { invalidPeriodAppendCalls++; } }, now: period.period_end });
+  store: {
+    append: async () => {
+      invalidPeriodAppendCalls++;
+    },
+  },
+  now: period.period_end,
+});
 assert.equal(invalidPeriod[0].status, "failed");
 assert.equal(invalidPeriodAppendCalls, 0);
 const validOutput = [];
-await collectDueObservations({ drafts: [draft],
-  provider: { collect: async () => [{ ...base, observed_at: "2026-09-03T12:00:01Z" }] },
-  store: { append: async (d, o) => validOutput.push(o) }, now: period.period_end });
+await collectDueObservations({
+  drafts: [draft],
+  provider: {
+    collect: async () => [{ ...base, observed_at: "2026-09-03T12:00:01Z" }],
+  },
+  store: { append: async (d, o) => validOutput.push(o) },
+  now: period.period_end,
+});
 assert.equal(validOutput[0].metric_value, 0);
 assert.equal(validOutput[0].observed_at, "2026-09-03T12:00:01.000Z");
 const raceUrl = "https://www.boat-ai.jp/race/202609010101";
@@ -239,7 +272,8 @@ const originalFetch = globalThis.fetch;
 try {
   const cutoff = "2026-10-07T00:00:00Z";
   const data = Array.from({ length: 1201 }, (_, i) => ({
-    id: String(i + 1).padStart(6, "0"), created_at: "2026-10-06T00:00:00Z",
+    id: String(i + 1).padStart(6, "0"),
+    created_at: "2026-10-06T00:00:00Z",
   }));
   let calls = 0;
   globalThis.fetch = async (url) => {
@@ -252,12 +286,20 @@ try {
       data.push({ id: "999999", created_at: "2026-10-08T00:00:00Z" });
     }
     const cursor = query.get("id")?.slice(3) ?? "";
-    return Response.json(data.filter(row => row.created_at <= cutoff && row.id > cursor)
-      .sort((a, b) => a.id.localeCompare(b.id)).slice(0, 500));
+    return Response.json(
+      data
+        .filter((row) => row.created_at <= cutoff && row.id > cursor)
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .slice(0, 500),
+    );
   };
-  const pages = await readObservationPages("sns_metric_observations", {}, cutoff);
+  const pages = await readObservationPages(
+    "sns_metric_observations",
+    {},
+    cutoff,
+  );
   assert.equal(pages.length, 1201);
-  assert.equal(new Set(pages.map(row => row.id)).size, 1201);
+  assert.equal(new Set(pages.map((row) => row.id)).size, 1201);
   assert.equal(pages.at(-1).id, "001201");
   globalThis.fetch = async () => new Response("", { status: 500 });
   await assert.rejects(readObservationPages("sns_metric_observations", {}));

@@ -15,7 +15,11 @@ import {
 export const config = { runtime: "edge" };
 
 // 読み始めの上限を固定し、一意キーのカーソルで全ページを読む。
-export async function readObservationPages(table, params, cutoff = new Date().toISOString()) {
+export async function readObservationPages(
+  table,
+  params,
+  cutoff = new Date().toISOString(),
+) {
   const rows = [];
   let cursor = null;
   for (;;) {
@@ -61,15 +65,23 @@ export default async function handler(req) {
         return jsonResponse({ error: "観測窓・指標名が不正です" }, 400);
       const cutoff = new Date().toISOString();
       const [drafts, observations] = await Promise.all([
-        readObservationPages("sns_drafts", {
-          select: "id,platform,language,format,template_variant_id,posted_at",
-          posted_at: `lte.${cutoff}`,
-        }, cutoff),
-        readObservationPages("sns_metric_observations", {
-          select: "*",
-          window: `eq.${window}`,
-          metric_name: `eq.${metric}`,
-        }, cutoff),
+        readObservationPages(
+          "sns_drafts",
+          {
+            select: "id,platform,language,format,template_variant_id,posted_at",
+            posted_at: `lte.${cutoff}`,
+          },
+          cutoff,
+        ),
+        readObservationPages(
+          "sns_metric_observations",
+          {
+            select: "*",
+            window: `eq.${window}`,
+            metric_name: `eq.${metric}`,
+          },
+          cutoff,
+        ),
       ]);
       return jsonResponse({ data: { drafts, observations } });
     }

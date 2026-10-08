@@ -66,9 +66,11 @@ function normalizeProviderObservation(row, window, period, draft) {
   const mismatch =
     Date.parse(row.period_start) !== Date.parse(period.period_start) ||
     Date.parse(row.period_end) !== Date.parse(period.period_end);
-  const lateSnapshot = row.measurement_kind === "snapshot" &&
+  const lateSnapshot =
+    row.measurement_kind === "snapshot" &&
     Date.parse(row.observed_at) !== Date.parse(period.period_end);
-  const incomplete = Date.parse(row.data_through) !== Date.parse(period.period_end);
+  const incomplete =
+    Date.parse(row.data_through) !== Date.parse(period.period_end);
   if (mismatch || (row.metric_value !== null && (lateSnapshot || incomplete))) {
     return {
       ...row,

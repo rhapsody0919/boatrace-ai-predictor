@@ -486,7 +486,8 @@ function SnsHubAdmin() {
                 className={`sns-hub-tab-btn ${activeTab === tab.id ? "active" : ""}`}
                 onClick={() => setActiveTab(tab.id)}
               >
-                {tab.label}{tab.id !== "metrics" && ` (${count})`}
+                {tab.label}
+                {tab.id !== "metrics" && ` (${count})`}
               </button>
             );
           })}
