@@ -20,7 +20,7 @@ Codex（OpenAI、`~/ryujin-codex-dev`）が手元の複製で実装した sns-hu
 1. `git fetch origin master` → パッチ1件につき `feature/sns-hub-*` を `origin/master` から切る
 2. パッチ冒頭の `From <commit>` が、報告に書かれたコミットと一致するか確かめる
 3. `git am --3way <パッチ>`。衝突は手で直す。**正規表現の一括置換で衝突マーカーを消さない**（#1302 で台帳の行を1行巻き込んで消した）。直したら `git diff origin/master -- <ファイル>` で、追加した行だけになっているか確かめる
-4. `npm run verify:ci` を**全件**回す（下の「毎回引っかかる点」）。`npm run build`、変更ファイルの eslint
+4. 手元では**変更に関係する `npm run verify:*`（個別）と `verify-relative-imports` だけ**を回す（下の「毎回引っかかる点」）。`npm run build`、変更ファイルの eslint。全件の verify・E2Eは手元で回さず、PRのCI（Quality Gates・e2eの3シャード）の結果で確かめる（2026-10-08、Macの負荷が複数セッションの同時全件実行で高騰したため全件実行の運用を変更。.claude/CLAUDE.mdの既定と同じ扱い）
 5. Codex が「ブラウザが起動できず未検証」と書いた UI テストは、手元で実際に走らせる（#1316 では7件とも、テスト用の仕組みの不具合で落ちる状態だった）
 6. Codex は品質ゲート台帳の変更を禁止されているので、テストが CI から呼ばれない場所に置かれていることがある。`scripts/maintenance/verify-*.js` に移し、`scripts/maintenance/verify-registry.json` に登録する
 7. 本番 DB の変更があれば、`docs/db-migration/{番号}-runbook.md` を作る。SQL 本体はファイルから機械的に写し、`diff` で一致を確かめる。冒頭に既存の表・トリガーへの影響、マージとの順序を書く（例: `135-runbook.md`・`136-runbook.md`・`137-runbook.md`）。`APPLIED.md` の行から runbook を参照する
