@@ -1,5 +1,7 @@
 /** SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。 */
 export const OBSERVATION_WINDOWS = { "48h": 48, "7d": 168 };
+// 型比較の対象は運用中のチャネルだけ（hq判断 2026-10-08）。TikTok・blog・noteは「未収集」としても出さない
+export const OBSERVED_PLATFORMS = ["x", "youtube"];
 export const OBSERVATION_SOURCES = [
   "manual",
   "csv",
@@ -232,6 +234,7 @@ export function compareObservations(
   const groups = new Map();
   for (const draft of drafts) {
     if (
+      !OBSERVED_PLATFORMS.includes(draft.platform) ||
       !draft.posted_at ||
       Date.parse(observationPeriod(draft.posted_at, window).period_end) > now
     )

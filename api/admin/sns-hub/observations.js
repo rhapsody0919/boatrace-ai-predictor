@@ -11,6 +11,7 @@ import {
   validateObservation,
   OBSERVATION_WINDOWS,
   OBSERVATION_METRICS,
+  OBSERVED_PLATFORMS,
 } from "../../../src/utils/snsObservations.js";
 export const config = { runtime: "edge" };
 
@@ -70,6 +71,7 @@ export default async function handler(req) {
           {
             select: "id,platform,language,format,template_variant_id,posted_at",
             posted_at: `lte.${cutoff}`,
+            platform: `in.(${OBSERVED_PLATFORMS.join(",")})`,
           },
           cutoff,
         ),

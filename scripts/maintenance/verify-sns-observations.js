@@ -107,6 +107,24 @@ assert.equal(
   }).length,
   0,
 );
+// 運用していないチャネル（TikTok・blog・note）は「未収集」の組としても出さない（hq判断 2026-10-08）
+for (const platform of ["tiktok", "blog", "note"])
+  assert.equal(
+    compareObservations([{ ...draft, platform }], [], {
+      window: "48h",
+      metric: "views",
+      now: Date.parse(period.period_end) + 1,
+    }).length,
+    0,
+  );
+assert.equal(
+  compareObservations([{ ...draft, platform: "x" }], [], {
+    window: "48h",
+    metric: "views",
+    now: Date.parse(period.period_end) + 1,
+  }).length,
+  1,
+);
 assert.throws(() =>
   validateObservation({ ...base, denominator_value: 10 }, draft),
 );
