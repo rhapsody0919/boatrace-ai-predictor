@@ -1395,7 +1395,7 @@
         },
         "allShownAfterFew": "。已列出所有條件相同的過去比賽",
         "sliderZoom": "拖動時下方的圖會放大、縮小（外圈＝目前的場數）",
-        "ledeShort": "從與今天條件相同的過去比賽{{n}}場中，依出賽表相似度由高到低排列",
+        "ledeShort": "從1號艇級別等3項條件相同的過去比賽{{n}}場中，依出賽表相似度由高到低排列",
         "ledeFull": "排列方式（全文）",
         "picksLede": "這附近的相似比賽 {{n}}場（依相似度）",
         "picksEmpty": "點選圖上的點，附近最多5場相似比賽會顯示在這裡",
@@ -1405,7 +1405,9 @@
         "legendTap": "點選：在下方列出附近5場",
         "legendHold": "長按：在原處顯示該場（電腦請將滑鼠移到上方）",
         "keyErr": "場數少時的波動範圍（點選長條）",
-        "keyErrShort": "場數少時的波動範圍"
+        "keyErrShort": "場數少時的波動範圍",
+        "outerIs": "外圈＝第{{n}}",
+        "ledeShortKind": "與今天相同的「{{kind}}」中，從1號艇級別等3項條件相同的過去比賽{{n}}場，依出賽表相似度由高到低排列"
       },
       "sources": {
         "summary": "使用的項目（由哪些數字算出）",
@@ -1606,7 +1608,7 @@
         "slitDeepFly": "參考：未顯示今天展示的隊形（展示中有艇深度起步犯規（F.06以上）或起步延遲，無法作為正式賽起步的參考）",
         "slitPre": "展示後會以今天展示的起跑線隊形作為參考顯示",
         "noForm": "不符合任何隊形",
-        "attackHeading": "進攻成功了嗎？（進攻艇與1號艇的名次）",
+        "attackHeading": "進攻成功了嗎？",
         "attackWakuOnly": "僅收集依艇號進場的情況（在①選擇「依艇號進場」或「不限進場」即會顯示）",
         "attackGuide": "在②選擇起跑線隊形後，會顯示該隊形時進攻艇是否拿下勝利，或1號艇是否逃走成功",
         "attackNoRecord": "沒有誰先通過第一轉彎標的紀錄，因此以名次與獲勝方式判斷",
@@ -1652,7 +1654,7 @@
         "attackRef": "因場數少，以小字並列{{name}}相同區段的比率。",
         "overlap": "隊形會重疊（{{form}}中有{{p}}也符合{{other}}）。",
         "notCause": "這是過去的比例，不一定是原因",
-        "resultHeading": "②的隊形時，結果如何？（未依③的排名區分）",
+        "resultHeading": "②的隊形時，結果如何？",
         "coreEntryForm": "{{entry}}起跑線為{{form}}的比賽",
         "coreEntry": "{{entry}}的比賽",
         "coreForm": "起跑線為{{form}}的比賽",
@@ -1684,7 +1686,8 @@
         "hintTable": "看數字（平均ST表）",
         "hintRefShort": "{{venue}}全體選手的平均",
         "slitRefLegend": "虛線＝{{name}}",
-        "slitFaster": "較快 →"
+        "slitFaster": "較快 →",
+        "resultNotSplit": "④的結果未依③進攻艇的排名區分。"
       },
       "barLabel": "{{boat}}號艇 {{p}} {{n}}場",
       "feedback": {

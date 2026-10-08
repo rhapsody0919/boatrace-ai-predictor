@@ -432,7 +432,10 @@ export default function ScenarioTab({
       <NotesFold title={t("aiPredictionTab.analogy.notes.methodCaution")}>
         <NoteList
           title={t(`aiPredictionTab.analogy.notes.caution`)}
-          texts={[t(`${k}.foot`, { n: fmtCount(sc.n_refund_excluded ?? 0) })]}
+          texts={[
+            t(`${k}.foot`, { n: fmtCount(sc.n_refund_excluded ?? 0) }),
+            t(`${k}.resultNotSplit`),
+          ]}
         />
       </NotesFold>
     </div>

@@ -30,7 +30,7 @@ const LABEL_ANGLE = (-60 * Math.PI) / 180;
  * - 点が無い所をタップすると、今までどおり扇（その艇が勝ったレースで絞る）
  * 点は小さいままにし、当たり判定だけ指の大きさにする（2026-10-08 ユーザー指摘「押しづらい・長押ししづらい」）
  * @param {{neighbors: object[], selectedBoat: number|null, onBoat: (b:number)=>void,
- *   picked: string|null, onPick: (raceId: string)=>void, todayLabel: string}} props
+ *   picked: string|null, onPick: (raceId: string)=>void, todayLabel: string, legend?: import("react").ReactNode}} props
  */
 export default function SimilarSonar({
   neighbors,
@@ -39,6 +39,7 @@ export default function SimilarSonar({
   picked,
   onPick,
   todayLabel,
+  legend = null,
 }) {
   const { t } = useTranslation();
   const k = "aiPredictionTab.analogy.similar";
@@ -450,6 +451,8 @@ export default function SimilarSonar({
           <span>{t(`${k}.shown`, { n: fmtCount(n) })}</span>
         </div>
       </div>
+      {/* 図の見方は文ではなく絵の凡例で、図の真下に（承認モック sonar-tab v3） */}
+      {legend}
       <div className="af-sonar-picks" aria-live="polite">
         {picks ? (
           <>

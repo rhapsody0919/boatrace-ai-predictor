@@ -284,6 +284,7 @@ export default function SimilarRacesTab({
             <b>{t("aiPredictionTab.analogy.count", { n: fmtCount(N) })}</b>
           </span>
         </div>
+        <p className="af-foot">{t(`${k}.outerIs`, { n: fmtCount(N) })}</p>
         <input
           id="af-sim-slider"
           data-af-control="similar_range"
@@ -319,7 +320,12 @@ export default function SimilarRacesTab({
       <h3 className="af-h3">{t(`${k}.heading`)}</h3>
       {/* 並べ方は1行に縮め、全文は折りたたみに（承認モック sonar-tab v3） */}
       <p className="af-sub">
-        {t(`${k}.ledeShort`, { n: fmtCount(sim.n_layer ?? all.length) })}
+        {layerKind(sim.conditions, t)
+          ? t(`${k}.ledeShortKind`, {
+              kind: layerKind(sim.conditions, t),
+              n: fmtCount(sim.n_layer ?? all.length),
+            })
+          : t(`${k}.ledeShort`, { n: fmtCount(sim.n_layer ?? all.length) })}
       </p>
       <details className="af-details">
         <summary>{t(`${k}.ledeFull`)}</summary>
@@ -340,9 +346,8 @@ export default function SimilarRacesTab({
           venue: venueLabel(Number(venueCode), t),
           r: Number(raceNumber),
         })}
+        legend={<SonarLegend />}
       />
-      {/* 図の見方は文ではなく絵の凡例で（承認モック sonar-tab v3） */}
-      <SonarLegend />
       <SimilarityItems
         neighbors={nb}
         items={items}

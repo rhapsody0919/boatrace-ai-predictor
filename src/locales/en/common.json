@@ -1401,7 +1401,7 @@
         },
         "allShownAfterFew": ". Showing every past race that matches the conditions",
         "sliderZoom": "Moving it zooms the chart below (the outer ring = current count)",
-        "ledeShort": "Sorted by race-card similarity, from {{n}} past races that match today's conditions",
+        "ledeShort": "Sorted by race-card similarity, from {{n}} past races matching 3 conditions such as Boat 1's class",
         "ledeFull": "How they are sorted (full text)",
         "picksLede": "{{n}} similar races around here (by similarity)",
         "picksEmpty": "Tap a dot to list up to 5 nearby similar races here",
@@ -1411,7 +1411,9 @@
         "legendTap": "Tap: list 5 nearby below",
         "legendHold": "Press and hold: that one race in place (hover on PC)",
         "keyErr": "Range when races are few (tap a bar)",
-        "keyErrShort": "Range when races are few"
+        "keyErrShort": "Range when races are few",
+        "outerIs": "Outer ring = #{{n}}",
+        "ledeShortKind": "Same \"{{kind}}\" as today: sorted by race-card similarity, from {{n}} past races matching 3 conditions such as Boat 1's class"
       },
       "sources": {
         "summary": "Items used (which numbers these come from)",
@@ -1612,7 +1614,7 @@
         "slitDeepFly": "For reference: today's exhibition shape is not shown (a boat had a deep early start (F.06 or more) or a late start in the exhibition, which says little about the race start)",
         "slitPre": "After the exhibition, today's exhibition slit shape is shown for reference",
         "noForm": "Matches no shape",
-        "attackHeading": "Did the attack work? (attacking boat and Boat 1's finish)",
+        "attackHeading": "Did the attack work?",
         "attackWakuOnly": "Only wakunari entries are gathered (shown when \"Wakunari\" or \"Any entry\" is selected in ①)",
         "attackGuide": "Select a slit shape in ② to see whether the attacking boat won or Boat 1 escaped with that shape",
         "attackNoRecord": "There is no record of who turned the 1st mark first, so this uses finishes and winning techniques",
@@ -1658,7 +1660,7 @@
         "attackRef": "Few races, so the rate for the same band in {{name}} is shown small alongside.",
         "overlap": "Shapes overlap ({{p}} of {{form}} also matches {{other}}).",
         "notCause": "These are past shares, not necessarily causes",
-        "resultHeading": "With the shape in ②, how was it decided? (not split by the ranks in ③)",
+        "resultHeading": "With the shape in ②, how was it decided?",
         "coreEntryForm": "Races where {{entry}} the slit was {{form}}",
         "coreEntry": "Races where {{entry}}",
         "coreForm": "Races where the slit was {{form}}",
@@ -1690,7 +1692,8 @@
         "hintTable": "See the numbers (average ST table)",
         "hintRefShort": "{{venue}} avg.",
         "slitRefLegend": "Dotted = {{name}}",
-        "slitFaster": "Faster →"
+        "slitFaster": "Faster →",
+        "resultNotSplit": "The results in ④ are not split by the attacking boat's rank in ③."
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
       "feedback": {
