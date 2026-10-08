@@ -31,6 +31,9 @@ import "./AnalogyV16.css";
 const TABS = ["facts", "similar", "scenario"];
 const SONAR_SECTION_ID = "ryujin-sonar";
 const SONAR_TAB_PARAM = "sonar";
+// ?sonar= を使い終えたレース。AI予想タブは切り替えで外れて作り直されるので、ほかのタブから戻るたびに
+// 同じ URL の ?sonar= でタブを選び直して節まで飛ばないよう、ページを開いている間はレースごとに1回だけ効かせる
+const linkUsedRaces = new Set();
 
 /** 時点の切り替えの下の1行（screens「状態」） */
 const STAGE_NOTE = {
@@ -57,9 +60,13 @@ export default function AnalogyFinderSection({ raceId }) {
   const [stageChoice, setStageChoice] = useState(null);
   const [target, setTarget] = useState(1);
   const [searchParams] = useSearchParams();
-  const linkedTab = TABS.includes(searchParams.get(SONAR_TAB_PARAM))
-    ? searchParams.get(SONAR_TAB_PARAM)
-    : null;
+  // 1回目の描画で決める（使い終えた印は移動の後に付けるので、描画のたびに読み直すと途中で null に変わる）
+  const [linkedTab] = useState(() =>
+    TABS.includes(searchParams.get(SONAR_TAB_PARAM)) &&
+    !linkUsedRaces.has(raceId)
+      ? searchParams.get(SONAR_TAB_PARAM)
+      : null,
+  );
   const [tab, setTab] = useState(linkedTab ?? "facts");
   const [opened, setOpened] = useState({
     facts: true,
@@ -88,6 +95,7 @@ export default function AnalogyFinderSection({ raceId }) {
   useEffect(() => {
     if (!linkedTab || !factsReady || scrolled.current) return;
     scrolled.current = true;
+    linkUsedRaces.add(raceId);
     const el = sectionRef.current;
     if (!el) return;
     // 上に貼り付くヘッダー（.app-header）の下に見出しが来るよう、その高さだけずらす
@@ -98,7 +106,7 @@ export default function AnalogyFinderSection({ raceId }) {
       (header?.getBoundingClientRect().height ?? 0) -
       8;
     window.scrollTo({ top: Math.max(0, top) });
-  }, [linkedTab, factsReady]);
+  }, [linkedTab, factsReady, raceId]);
   const similar = useAnalogySimilar(raceId, stage, Boolean(opened.similar));
   const scenario = useAnalogyScenario(
     raceId,

@@ -225,6 +225,29 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       expect(tabEvents).toEqual(["scenario"]);
     });
 
+  test("?sonar= で来たあと、ほかのタブから AI予想に戻ると、いつも通り差がつく材料で開き、節へは飛ばない", async ({
+    page,
+  }) => {
+    await setup(page, { preview: false });
+    await page.goto(`/race/${DATE}-09-01?tab=aiPrediction&sonar=similar`);
+    const section = page.locator("#ryujin-sonar");
+    await expect(section.getByRole("tab").nth(1)).toHaveAttribute(
+      "aria-selected",
+      "true",
+      { timeout: 20000 },
+    );
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
+    await expect(section.getByRole("tab").first()).toHaveAttribute(
+      "aria-selected",
+      "true",
+      { timeout: 20000 },
+    );
+    await expect(section.getByRole("tablist")).toBeVisible();
+    expect(await page.evaluate(() => window.scrollY)).toBeLessThan(50);
+  });
+
   test("?sonar= の値が3タブのどれでもなければ、いつも通り差がつく材料で開く", async ({
     page,
   }) => {
