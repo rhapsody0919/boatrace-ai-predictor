@@ -11,6 +11,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import AnalogyControls from "./AnalogyControls";
+import AnalogyFeedback from "./AnalogyFeedback";
 import ConditionFactsTab from "./ConditionFactsTab";
 import SimilarRacesTab from "./SimilarRacesTab";
 import ScenarioTab from "./ScenarioTab";
@@ -265,6 +266,10 @@ export default function AnalogyFinderSection({ raceId }) {
         period={anyPeriod}
         conditions={similar.data?.similar?.conditions ?? null}
       />
+      {/* 画面の中の声（反応の計測）。節の中身が出たときだけ、一番下に置く */}
+      {factsReady && (
+        <AnalogyFeedback raceId={raceId} stage={stage} tab={tab} />
+      )}
     </>,
   );
 }

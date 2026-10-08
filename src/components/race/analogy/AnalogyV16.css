@@ -1331,3 +1331,106 @@ button.af-bar {
 .af-strip-col.is-few .af-num {
   opacity: 0.45;
 }
+
+/* ---- 画面の中の声（反応の計測、モック承認 2026-10-08） ---- */
+.af-fb-q {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+/* 承認版モック: 選んだボタンは塗らずに枠と文字を金にする（2つを同じ強さに見せる） */
+.af-fb .af-seg button[aria-pressed="true"] {
+  background: color-mix(
+    in srgb,
+    var(--brand-accent-primary) 10%,
+    var(--surface-card)
+  );
+  border-color: var(--brand-accent-primary);
+  color: var(--brand-accent-primary);
+}
+
+.af-fb-reasons {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1-5);
+  min-width: 0;
+}
+
+.af-fb-sub {
+  padding: 0;
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.af-fb-chk {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+}
+
+.af-fb-text {
+  font: inherit;
+  font-size: var(--font-size-sm);
+  width: 100%;
+  min-height: 4.5rem;
+  box-sizing: border-box;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-2);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  resize: vertical;
+}
+
+.af-fb-text:focus-visible {
+  outline: var(--border-width-2) solid var(--brand-accent-primary);
+  outline-offset: 2px;
+}
+
+.af-fb-count {
+  margin: calc(-1 * var(--spacing-1-5)) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.af-fb-send {
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+  background: var(--brand-accent-primary);
+  color: var(--surface-card);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-1-5) var(--spacing-4);
+}
+
+.af-fb-send:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.af-fb-note,
+.af-fb-error {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.af-fb-error {
+  color: var(--color-error-text);
+}
+
+.af-fb-thanks {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-success-text);
+}

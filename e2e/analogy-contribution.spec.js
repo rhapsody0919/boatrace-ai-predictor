@@ -339,6 +339,164 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
     expect(await initials()).toEqual([]);
   });
 
+  test.describe("画面の中の声（モック承認 2026-10-08、マイグレーション143）", () => {
+    async function routeFeedback(page, { status = 201, body = "" } = {}) {
+      const posts = [];
+      await page.route("**/rest/v1/analogy_feedback*", (route) => {
+        posts.push(route.request().postDataJSON());
+        return route.fulfill({ status, body });
+      });
+      return posts;
+    }
+    const feedbackOf = (page) => page.getByTestId("analogy-feedback");
+
+    test("1段目で vote、2段目の「送る」で detail を保存し、お礼に替わる。再訪してもお礼だけ", async ({
+      page,
+    }) => {
+      test.setTimeout(120000);
+      await page.addInitScript(() => {
+        window.__events = [];
+        window.gtag = (...args) => window.__events.push(args);
+      });
+      await setup(page);
+      const posts = await routeFeedback(page);
+      await openAiTab(page);
+      const fb = feedbackOf(page);
+      await expect(
+        fb.getByText("龍神ソナーは予想の材料になりましたか？"),
+      ).toBeVisible();
+      await expect(
+        fb.getByText("匿名で送られ、公開されません。読むのは運営だけです"),
+      ).toBeVisible();
+      await fb.getByRole("button", { name: "物足りない" }).click();
+      await expect.poll(() => posts.length).toBe(1);
+      const [vote] = posts;
+      expect(vote).toMatchObject({
+        kind: "vote",
+        race_id: `${DATE}-09-01`,
+        verdict: "lacking",
+        reasons: null,
+        comment: null,
+        analogy_tab: "facts",
+        lang: "ja",
+      });
+      expect(vote.client_key).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      );
+      await fb.getByLabel("件数が少ない").check();
+      await fb.getByLabel("その他").check();
+      await fb
+        .getByRole("textbox")
+        .fill("  風向きと水位もそろえて数えてほしい  ");
+      await expect(fb.getByText("21 / 200")).toBeVisible();
+      await fb.getByRole("button", { name: "送る" }).click();
+      await expect(
+        fb.getByText("受け取りました。次の改善に使います"),
+      ).toBeVisible();
+      expect(posts).toHaveLength(2);
+      expect(posts[1]).toMatchObject({
+        kind: "detail",
+        verdict: "lacking",
+        reasons: ["few_races", "other"],
+        comment: "風向きと水位もそろえて数えてほしい",
+        client_key: vote.client_key,
+      });
+      const names = await page.evaluate(() =>
+        window.__events
+          .filter((e) => String(e[1]).startsWith("analogy_feedback_"))
+          .map((e) => [e[1], Object.keys(e[2]).sort().join(",")]),
+      );
+      // 「見えた」は IntersectionObserver なので、押す前後どちらに来るかは決まらない
+      expect(names.sort()).toEqual([
+        ["analogy_feedback_send", "analogy_verdict,race_id"],
+        ["analogy_feedback_view", "race_id"],
+        ["analogy_feedback_vote", "analogy_verdict,race_id"],
+      ]);
+
+      await openAiTab(page); // 開き直す（localStorage は残る）
+      await expect(
+        feedbackOf(page).getByText("受け取りました。次の改善に使います"),
+      ).toBeVisible();
+      await expect(
+        feedbackOf(page).getByRole("button", { name: "なった" }),
+      ).toHaveCount(0);
+    });
+
+    test("「なった」を選び直しても vote は1回だけ。detail は送った時点の評価で、一言が空なら NULL", async ({
+      page,
+    }) => {
+      await setup(page);
+      const posts = await routeFeedback(page);
+      await openAiTab(page);
+      const fb = feedbackOf(page);
+      await fb.getByRole("button", { name: "物足りない" }).click();
+      await fb.getByRole("button", { name: "なった" }).click();
+      await expect(fb.getByText("どこが使えましたか？（任意）")).toBeVisible();
+      await expect(fb.getByRole("checkbox")).toHaveCount(0);
+      await fb.getByRole("button", { name: "送る" }).click();
+      await expect(
+        fb.getByText("受け取りました。次の改善に使います"),
+      ).toBeVisible();
+      expect(posts.map((p) => [p.kind, p.verdict])).toEqual([
+        ["vote", "lacking"],
+        ["detail", "useful"],
+      ]);
+      expect(posts[1]).toMatchObject({ reasons: null, comment: null });
+    });
+
+    test("同じブラウザの2行目（UNIQUE 違反 23505）は受け取り済みとして扱う", async ({
+      page,
+    }) => {
+      await setup(page);
+      await routeFeedback(page, {
+        status: 409,
+        body: JSON.stringify({
+          code: "23505",
+          message: "duplicate key value violates unique constraint",
+        }),
+      });
+      await openAiTab(page);
+      const fb = feedbackOf(page);
+      await fb.getByRole("button", { name: "なった" }).click();
+      await fb.getByRole("button", { name: "送る" }).click();
+      await expect(
+        fb.getByText("受け取りました。次の改善に使います"),
+      ).toBeVisible();
+    });
+
+    test("送れなかったら理由を出し、お礼に替えない（握りつぶさない）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await routeFeedback(page, {
+        status: 500,
+        body: JSON.stringify({ code: "P0001", message: "too many" }),
+      });
+      await openAiTab(page);
+      const fb = feedbackOf(page);
+      await fb.getByRole("button", { name: "なった" }).click();
+      await expect(
+        fb.getByText("送れませんでした。時間をおいてもう一度押してください"),
+      ).toBeVisible();
+      await fb.getByRole("button", { name: "送る" }).click();
+      await expect(
+        fb.getByText("送れませんでした。時間をおいてもう一度押してください"),
+      ).toBeVisible();
+      await expect(
+        fb.getByText("受け取りました。次の改善に使います"),
+      ).toHaveCount(0);
+    });
+
+    test("保存の無いレースでは出さない", async ({ page }) => {
+      await setup(page, {
+        facts: { race_id: `${DATE}-09-01`, status: "not_saved" },
+      });
+      await openAiTab(page);
+      await expect(sectionOf(page)).toBeVisible();
+      await expect(feedbackOf(page)).toHaveCount(0);
+    });
+  });
+
   test("?analogy=1 を付けて開くと内部確認として節を出し、端末に覚える", async ({
     page,
   }) => {

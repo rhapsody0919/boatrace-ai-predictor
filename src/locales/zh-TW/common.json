@@ -1663,7 +1663,29 @@
         "hintFew": "件數較少，波動範圍較大。"
       },
       "barLabel": "{{boat}}號艇 {{p}} {{n}}場",
-      "sentenceSep": "。"
+      "sentenceSep": "。",
+      "feedback": {
+        "question": "龍神聲納對你的預測有幫助嗎？",
+        "useful": "有幫助",
+        "lacking": "還不夠",
+        "usefulAsk": "哪裡派上了用場？（選填）",
+        "usefulExample": "例：看了相同進場的件數，擴大了第2名的候選",
+        "lackingAsk": "有什麼的話就能派上用場？（選填・可複選）",
+        "reasons": {
+          "few_races": "件數太少",
+          "no_filter": "無法用想要的條件篩選",
+          "hard_to_read": "數字不容易看懂",
+          "how_to_use": "不知道怎麼用在預測上",
+          "other": "其他"
+        },
+        "lackingExample": "例：希望也對齊風向和水位來統計",
+        "commentLabel": "留言（選填）",
+        "count": "{{n}} / {{max}}",
+        "send": "送出",
+        "thanks": "已收到。會用於下一次的改善",
+        "note": "以匿名方式送出，不會公開。只有營運人員會閱讀",
+        "error": "無法送出。請稍候再試一次"
+      }
     }
   },
   "beforeInfo": {
