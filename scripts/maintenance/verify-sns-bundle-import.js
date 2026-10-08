@@ -636,7 +636,7 @@ await check(
 );
 
 // API本体を読み、依存境界だけモックに差し替える。鍵・本番接続は不要。
-async function mockHandler(path, draft, denied = false) {
+async function mockHandler(path, draft, denied = false, allowUpdate = false, rules = riskRules) {
   let source = await fs.readFile(new URL(path, root), "utf8");
   const mock =
     "data:text/javascript," +
@@ -644,7 +644,7 @@ async function mockHandler(path, draft, denied = false) {
     export const jsonResponse=(body,status=200)=>new Response(JSON.stringify(body),{status});
     export const isConfigured=()=>true; export const isValidDraftId=()=>true;
     export const getDraftById=async()=>(${JSON.stringify(draft)});
-    export const updateDraft=async()=>{throw new Error('更新してはいけない')};
+    export const updateDraft=async()=>{${allowUpdate ? 'return {};' : "throw new Error('更新してはいけない');"}};
     export const signStoragePath=async()=>{throw new Error('署名してはいけない')};
     export const requireAdminAuth=async()=>${denied ? "new Response('denied',{status:401})" : "null"};
     export const getYoutubeAccessToken=async()=>{throw new Error('投稿してはいけない')};
@@ -661,6 +661,8 @@ async function mockHandler(path, draft, denied = false) {
     /"[^"\n]+_lib\/snsBundleValidation\.js"/g,
     JSON.stringify(new URL("api/_lib/snsBundleValidation.js", root).href),
   );
+  source = source.replace(/"[^"\n]+lib\/riskRuleMatcher\.js"/g,
+    JSON.stringify(new URL("scripts/lib/riskRuleMatcher.js", root).href));
   const storageMock =
     "data:text/javascript," +
     encodeURIComponent(`
@@ -676,13 +678,63 @@ async function mockHandler(path, draft, denied = false) {
     JSON.stringify(
       "data:text/javascript," +
         encodeURIComponent(
-          `export default ${JSON.stringify({ rules: riskRules })}`,
+          `export default ${JSON.stringify({ rules })}`,
         ),
     ),
   );
   return (await import("data:text/javascript," + encodeURIComponent(source)))
     .default;
 }
+await check("ハッシュタグ例外はNode・承認API・bundle・編集補助で一致しenabled一つで解除", async () => {
+  const cases = [
+    ['Xタグ','x','hashtags','#競艇',false],
+    ['X本文','x','body','確認 #競艇',true],
+    ['X別タグ','x','hashtags','#競艇場',true],
+    ['タグ裸語','x','hashtags','競艇',true],
+    ['タグ内文','x','hashtags','説明 #競艇',true],
+    ['YouTubeタグ','youtube','hashtags','#競艇',false],
+    ['YouTube末尾','youtube','description','件数を確認\n#競艇 #Shorts',false],
+    ['YouTube本文残存','youtube','description','競艇の件数\n#競艇',true],
+    ['YouTube途中','youtube','description','#競艇 の件数',true],
+    ['YouTube別タグ','youtube','description','件数\n#競艇場',true],
+    ['ナレーション','youtube','script','確認\n#競艇',true],
+    ['動画内文字','youtube','scene','#競艇',true],
+    ['タイトル','youtube','title','#競艇',true],
+    ['他媒体タグ','tiktok','hashtags','#競艇',true],
+  ];
+  const rows=[];
+  for (const enabled of [true,false]) {
+    const rules=structuredClone(riskRules);
+    rules.find(r=>r.id==='banned-term-kyoutei').hashtag_exception.enabled=enabled;
+    for (const [name,platform,field,content,warn] of cases) {
+      const expected=warn || !enabled;
+      const nodeField=['title','script','scene'].includes(field) ? 'body' : field;
+      const node=checkRiskRules(content,platform,nodeField,rules).some(r=>r.id==='banned-term-kyoutei');
+      const draft={platform,status:'pending_review',title:'件数',caption_text:'確認'};
+      const bundle={};
+      if(field==='hashtags') {draft.hashtags=[content]; bundle[platform==='x'?'x_hashtags':'youtube_tags']=[content];}
+      if(field==='body') {draft.caption_text=content; bundle.x_text=content;}
+      if(field==='description') {draft.caption_text=content; bundle.youtube_description=content;}
+      if(field==='title') {draft.title=content; bundle.title=content;}
+      if(field==='script') {draft.caption_text=content; draft.source_data={bundle:{script:content}}; bundle.script=content;}
+      if(field==='scene') {bundle.scenes=Array.from({length:3},()=>({seconds:6,tab:'観測',component:'件数',lines:[content]}));draft.source_data={bundle:{scenes:bundle.scenes}};}
+      const handler=await mockHandler('api/admin/sns-hub/drafts/[id]/approve.js',draft,false,true,rules);
+      const response=await handler(new Request('https://local.invalid/drafts/test/approve',{method:'POST',body:JSON.stringify({approverId:'mock'})}));
+      assert.equal(response.status,200);
+      const api=(await response.json()).riskWarnings.some(r=>r.id==='banned-term-kyoutei');
+      const edit=inspectDraft(draft,rules).some(r=>r.rule==='banned-term-kyoutei');
+      // v0 bundleはX/YouTubeのみ。他媒体は汎用matcherの保守的判定を確認する。
+      const result=await validateBundle(form(await fixture(bundle)),rules);
+      const bundleHit=platform==='tiktok' ? null : result.riskFlags[platform].some(r=>r.id==='banned-term-kyoutei');
+      assert.equal(node,expected,name); assert.equal(api,expected,name); assert.equal(edit,expected,name);
+      if(bundleHit!==null) assert.equal(bundleHit,expected,name);
+      rows.push({enabled,name,expected:expected?'警告':'許可',Node:node,API:api,bundle:bundleHit,edit});
+    }
+  }
+  console.table(rows);
+  // optional欄も型検査し、ナレーションとタグ欄を混同しない。
+  await assert.rejects(validateBundle(form(await fixture({x_hashtags:'invalid'})),riskRules),/タグ欄/);
+});
 await check("承認APIとYouTube公開APIは副作用前に409・認証なし401", async () => {
   for (const name of ["approve", "publish-youtube"]) {
     const path = `api/admin/sns-hub/drafts/[id]/${name}.js`;
