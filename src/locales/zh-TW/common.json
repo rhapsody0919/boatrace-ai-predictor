@@ -1009,7 +1009,8 @@
         "comboSentence": "與今天相同，6艇中{{combo}}，且{{boat}}號艇為{{cls}}的過去比賽{{round}}。{{boat}}號艇以外的5艇在哪個艇號不限",
         "comboUniform": "與今天相同，{{combo}}的過去比賽{{round}}",
         "comboRound": "（僅限{{round}}）",
-        "stripRankTie": "第{{from}}〜{{to}}位"
+        "stripRankTie": "第{{from}}〜{{to}}位",
+        "rangeSep": "〜"
       },
       "outlook": {
         "summary": "AI的判讀（輔助）：在其他項目相同的前提下，哪些項目有影響",

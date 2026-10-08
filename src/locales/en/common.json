@@ -1015,7 +1015,8 @@
         "comboSentence": "Past races where, as today, the 6 boats were {{combo}}, and Boat {{boat}} was {{cls}}{{round}}. Which lanes the other 5 boats were in does not matter",
         "comboUniform": "Past races where, as today, {{combo}}{{round}}",
         "comboRound": " ({{round}} only)",
-        "stripRankTie": "#{{from}}–{{to}}"
+        "stripRankTie": "#{{from}}–{{to}}",
+        "rangeSep": "–"
       },
       "outlook": {
         "summary": "AI view (supplementary): with other items held equal, which items matter",
@@ -1601,7 +1602,7 @@
         "shareCount": "{{p}} ({{n}})",
         "slitAria": "Order at the slit (side view; numbers are courses)",
         "slitLine": "Slit",
-        "slitScale": "1 boat length (about 0.13s)",
+        "slitScale": "1 length ≈ 0.13s",
         "slitFoot1": "Kado = the innermost of the dash boats (boats taking a long run-up). The 7 shapes are defined using the kado in a wakunari entry (course 4). The boat beside the kado = one course inside it (course 3 when wakunari). The drawing is an example side view (numbers are courses, the line on the right is the slit; scale: 1 boat length ≈ 0.13s)",
         "slitDef": "{{form}}: {{def}}. ",
         "slitFoot2": "A race can match two or more shapes (totals can exceed 100%). Shares are within the selected entry. The slit shape cannot be picked from today's exhibition. ",
@@ -1687,7 +1688,7 @@
         "entryHowTo": "How to read the entry",
         "termsFold": "Terms · how shares are calculated",
         "hintTable": "See the numbers (average ST table)",
-        "hintRefShort": "average of all racers at {{venue}}",
+        "hintRefShort": "{{venue}} avg.",
         "slitRefLegend": "Dotted = {{name}}",
         "slitFaster": "Faster →"
       },

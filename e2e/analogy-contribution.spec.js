@@ -506,6 +506,37 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await expect(tip).toHaveCount(0);
     });
 
+    test("英語の展開シナリオで、スリット図の凡例の文字が重ならない（ファン評価1周目 指摘3）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await page.addInitScript(() =>
+        localStorage.setItem("boatai-language", "en"),
+      );
+      await page.setViewportSize({ width: 375, height: 900 });
+      await page.goto(`/en/race/${DATE}-09-01?tab=sonar&sonar=scenario`);
+      const svg = page.locator(".af-hint-pic svg");
+      await expect(svg).toBeVisible({ timeout: 20000 });
+      const overlaps = await svg.evaluate((el) => {
+        const boxes = [...el.querySelectorAll("text")]
+          .map((t) => ({ s: t.textContent, r: t.getBoundingClientRect() }))
+          .filter((b) => /Dotted|Faster|length|Slit/.test(b.s));
+        const hit = (a, b) =>
+          a.left < b.right &&
+          b.left < a.right &&
+          a.top < b.bottom &&
+          b.top < a.bottom;
+        const out = [];
+        for (let i = 0; i < boxes.length; i++)
+          for (let j = i + 1; j < boxes.length; j++)
+            if (hit(boxes[i].r, boxes[j].r))
+              out.push(`${boxes[i].s} / ${boxes[j].s}`);
+        return { n: boxes.length, out };
+      });
+      expect(overlaps.n).toBe(4);
+      expect(overlaps.out).toEqual([]);
+    });
+
     test("ソナーの点はタップで近い点を最大5件並べ、長押しで吹き出しを出す。点の操作も条件変更に数える", async ({
       page,
     }) => {

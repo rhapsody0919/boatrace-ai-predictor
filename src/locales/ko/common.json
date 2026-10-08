@@ -1009,7 +1009,8 @@
         "comboSentence": "오늘과 마찬가지로 6척 중 {{combo}}이고, {{boat}}번 보트가 {{cls}}인 과거 레이스{{round}}. {{boat}}번 보트 외 5척이 어느 번호에 있었는지는 묻지 않는다",
         "comboUniform": "오늘과 마찬가지로 {{combo}}인 과거 레이스{{round}}",
         "comboRound": "({{round}}만)",
-        "stripRankTie": "{{from}}~{{to}}위"
+        "stripRankTie": "{{from}}~{{to}}위",
+        "rangeSep": "~"
       },
       "outlook": {
         "summary": "AI의 판단(보조): 다른 항목을 맞춘 상태에서 어떤 항목이 작용하는가",
@@ -1681,7 +1682,7 @@
         "entryHowTo": "진입 보는 법",
         "termsFold": "용어, 비율 산출 방법",
         "hintTable": "숫자로 보기(평균 ST 표)",
-        "hintRefShort": "{{venue}} 전체 선수의 평균",
+        "hintRefShort": "{{venue}} 선수 평균",
         "slitRefLegend": "점선 = {{name}}",
         "slitFaster": "빠름 →"
       },

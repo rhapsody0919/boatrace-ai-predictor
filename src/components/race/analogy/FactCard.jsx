@@ -16,11 +16,11 @@ import {
 
 const k = "aiPredictionTab.analogy.facts";
 
-/** 「6.67〜8.67点」「23〜50%」（単位は後ろにだけ付ける） */
-function fmtRange(a, b, unit) {
+/** 「6.67〜8.67点」「23〜50%」（単位は後ろにだけ付ける。区切りは言語ごと: 英語は「–」） */
+function fmtRange(a, b, unit, sep) {
   const strip = (s, u) => (u && s.endsWith(u) ? s.slice(0, -u.length) : s);
-  if (a.endsWith("%") && b.endsWith("%")) return `${a.slice(0, -1)}〜${b}`;
-  return `${strip(a, unit)}〜${b}`;
+  if (a.endsWith("%") && b.endsWith("%")) return `${a.slice(0, -1)}${sep}${b}`;
+  return `${strip(a, unit)}${sep}${b}`;
 }
 
 /**
@@ -162,7 +162,7 @@ export default function FactCard({
   const pos = values ? todayPosition(values, hib, boat) : null;
   const range =
     pos && Number.isFinite(pos.min) && Number.isFinite(pos.max)
-      ? fmtRange(withUnit(pos.min), withUnit(pos.max), unit)
+      ? fmtRange(withUnit(pos.min), withUnit(pos.max), unit, t(`${k}.rangeSep`))
       : null;
 
   return (

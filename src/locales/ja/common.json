@@ -667,7 +667,8 @@
         "comboSentence": "今日と同じく、6艇のうち{{combo}}で、{{boat}}号艇が{{cls}}の過去レース{{round}}。{{boat}}号艇以外の5艇がどの枠にいたかは問わない",
         "comboUniform": "今日と同じく、{{combo}}の過去レース{{round}}",
         "comboRound": "（{{round}}だけ）",
-        "stripRankTie": "{{from}}〜{{to}}位"
+        "stripRankTie": "{{from}}〜{{to}}位",
+        "rangeSep": "〜"
       },
       "outlook": {
         "summary": "AIの見立て（補助）: ほかの項目をそろえたうえで、どの項目が効くか",
