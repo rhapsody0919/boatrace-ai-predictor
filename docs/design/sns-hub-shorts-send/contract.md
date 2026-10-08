@@ -32,7 +32,7 @@ reconcileYoutubeJob(job,{store,lookup})は公開停止/期限/leaseとは独立�
 
 ## 検証
 
-node --test --test-concurrency=1 scripts/tests/sns-shorts-send.test.js scripts/tests/sns-deadline-queue.test.js scripts/tests/sns-x-send.test.js scripts/tests/sns-mobile-approval.test.js scripts/tests/sns-mobile-api.test.js scripts/tests/sns-mobile-groups.test.js scripts/tests/sns-edit-assist.test.js
+node --test --test-concurrency=1 scripts/maintenance/verify-sns-shorts-send.js scripts/maintenance/verify-sns-deadline-queue.js scripts/maintenance/verify-sns-x-send.js scripts/maintenance/verify-sns-mobile-approval.js scripts/maintenance/verify-sns-mobile-api.js scripts/maintenance/verify-sns-mobile-groups.js scripts/maintenance/verify-sns-edit-assist.js
 
 node scripts/maintenance/verify-sns-bundle-import.js
 
