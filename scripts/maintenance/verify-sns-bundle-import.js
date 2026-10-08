@@ -1,5 +1,5 @@
 /** 本番接続なし。検査・保存モック・実SQL(PGlite)・公開APIガードを検証する。 */
-import { inspectDraft, inspectWithAi, readInspectionSources } from "../../api/_lib/snsEditAssist.js";
+import { inspectDraft, inspectWithAi, readInspectionSources, saveDraftInspection } from "../../api/_lib/snsEditAssist.js";
 import { matchRiskRules } from "../lib/riskRuleMatcher.js";
 import { checkRiskRules } from "../lib/riskRules.js";
 import assert from "node:assert/strict";
@@ -506,6 +506,28 @@ await check(
     assert(imported.release_evidence.missing_reason);
   },
 );
+await check("API経路の敬称・数値を固定期待と比較する", async () => {
+  const bytes=json({count:30});
+  const cases=[
+    ["田中太郎の展示を確認",30,["racer-honorific"]],
+    ["田中太郎選手の展示を確認",30,[]],
+    ["件数：99",30,["claim-text-mismatch"]],
+    ["件数：30",31,["claim-source-mismatch","claim-text-mismatch"]],
+    ["件数：30",30,[]],
+  ];
+  const comparison=[];
+  for(const [caption_text,value,expected] of cases) {
+    const draft={id:"synthetic",platform:"x",caption_text,source_data:{
+      bundle:{claims:[{source:"facts",path:["count"],label:"件数",value,count:30,scope:"当日"}],source_data:{racers:[{name:"田中太郎"}]}},
+      source_manifest:[{name:"facts.json",storage_path:"local/facts.json",sha256:await sha256(bytes)}]}};
+    const store={saveInspection:async(id,revision,engine,findings)=>({findings})};
+    const result=await saveDraftInspection({draft,revision:"r"},riskRules,store,async path=>{assert.equal(path,"local/facts.json");return bytes;});
+    assert.deepEqual(result.findings.map(f=>f.rule),expected);
+    assert.equal(draft.caption_text,caption_text);
+    comparison.push({text:caption_text,claim:value,expected:expected.join(",") || "なし",actual:result.findings.map(f=>f.rule).join(",") || "なし"});
+  }
+  console.table(comparison);
+});
 await check("固定bundleから登録した下書きで編集指摘を取得し本文・公開保留を維持", async () => {
   const examples=[];
   for(const draft of (await db.query('SELECT * FROM sns_drafts')).rows) {

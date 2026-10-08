@@ -82,3 +82,21 @@ test('管理APIは指摘を保存し、保存障害を表示し、判断の認�
   state.denied=new Response('denied',{status:401});assert.equal((await get()).status,401);assert.equal((await post(body)).status,401);
   delete globalThis.__editApiTest;
 });
+
+ test('F01: 実APIの原文読込経路でもbundle名簿の敬称を点検する', async () => {
+  const { saveDraftInspection }=await import('../../api/_lib/snsEditAssist.js');
+  const { sha256 }=await import('../../api/_lib/snsXSend.js');
+  const bytes=new TextEncoder().encode('{"count":30}');
+  const draft={id:'draft',platform:'x',caption_text:'田中太郎の展示を確認',source_data:{
+    bundle:{claims:[{source:'facts',path:['count'],value:30,label:'件数',count:30,scope:'当日'}],source_data:{racers:[{name:'田中太郎'}]}},
+    source_manifest:[{name:'facts.json',storage_path:'local/facts.json',sha256:await sha256(bytes)}]}};
+  const store={saveInspection:async(id,revision,engine,findings)=>({findings})};
+  const {findings}=await saveDraftInspection({draft,revision:'r'},[],store,async path=>{assert.equal(path,'local/facts.json');return bytes;});
+  assert.deepEqual(findings.map(f=>f.rule),['racer-honorific']);
+  assert.equal(findings[0].location,'caption_text:0');
+  assert.equal(draft.caption_text,'田中太郎の展示を確認');
+ });
+ test('名簿は全参照先を合併し同名の指摘を重複させない', () => {
+  const draft={platform:'x',caption_text:'田中太郎と佐藤次郎と山田三郎',source_data:{racers:[{name:'田中太郎'}],bundle:{source_data:{racers:[{name:'田中太郎'},{name:'佐藤次郎'}]}}}};
+  assert.deepEqual(inspectDraft(draft,[],{racers:[{name:'山田三郎'}]}).map(f=>f.content),['田中太郎','山田三郎','佐藤次郎']);
+ });

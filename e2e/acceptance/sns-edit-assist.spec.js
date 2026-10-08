@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures.js';
 import { mkdir } from 'node:fs/promises';
 for(const theme of ['light','dark']) test(`375px 編集指摘の判断・承認継続 (${theme})`,async({page})=>{
  let decision=null,approved=false;
@@ -14,7 +14,7 @@ for(const theme of ['light','dark']) test(`375px 編集指摘の判断・承認�
     }
     return route.fulfill({json:{data:u.searchParams.has('group')?[row()]:[{id:'group',raceId:'2026-10-08-11-10'}]}});
   }
-  return route.continue();
+  return route.fallback();
  });
  await page.goto('/__mobile_test');await page.evaluate(t=>document.documentElement.setAttribute('data-theme',t),theme);
  await page.getByLabel('レース',{exact:true}).selectOption('group');
