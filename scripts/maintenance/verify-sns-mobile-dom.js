@@ -20,6 +20,10 @@ const timers = new Set();
 const timeouts = new Set(),
   gates = [];
 const bundle = `${process.cwd()}/node_modules/.cache/sns-mobile-dom-${process.pid}.mjs`;
+const originalNavigatorDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "navigator",
+);
 before(async () => {
   dom = new JSDOM("<!doctype html><html><body></body></html>", {
     url: "http://localhost/",
@@ -31,6 +35,15 @@ before(async () => {
   });
   globalThis.window = dom.window;
   globalThis.document = dom.window.document;
+  // Node 22+はグローバルnavigatorを持つが、Node 20には無い（CIはNode 20）。
+  // react-dom/clientがモジュール読込時に裸のnavigator識別子を参照するため、
+  // JSDOMのnavigatorを明示的に割り当てないとReferenceErrorになる。Node 22+の
+  // navigatorはgetter専用プロパティのため、単純代入ではなくdefinePropertyで上書きする。
+  Object.defineProperty(globalThis, "navigator", {
+    value: dom.window.navigator,
+    configurable: true,
+    writable: true,
+  });
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   ({ createRoot } = await import("react-dom/client"));
   await mkdir(new URL(".", pathToFileURL(bundle)), { recursive: true });
@@ -112,6 +125,11 @@ after(async () => {
   delete globalThis.IS_REACT_ACT_ENVIRONMENT;
   delete globalThis.window;
   delete globalThis.document;
+  if (originalNavigatorDescriptor) {
+    Object.defineProperty(globalThis, "navigator", originalNavigatorDescriptor);
+  } else {
+    delete globalThis.navigator;
+  }
   dom.window.close();
   await rm(bundle, { force: true });
 });
