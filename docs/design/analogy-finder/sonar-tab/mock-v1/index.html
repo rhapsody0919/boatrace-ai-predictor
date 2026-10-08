@@ -1,0 +1,497 @@
+<title>龍神ソナー 別タブ化モック</title>
+<style>
+:root{
+  --page:#f7f3ea; --card:#fbf9f3; --line:#ddd4bf; --ink:#0f172a; --sub:#475569;
+  --gold:#6b500f; --gold-fill:#e9d89f; --gold-soft:#f1e7c6; --hit:#0f766e;
+  --navy:#0d1b2e; --navy2:#142842; --scope-sub:#e8d089; --scope-text:#f3ead0;
+  --warn:#9a5b00; --chip:#efe6cf; --frame:#e7e1d3;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#0d1b2e; --card:#142842; --line:#24344d; --ink:#f8fafc; --sub:#cbd5e1;
+    --gold:#c9a227; --gold-fill:#5c4a17; --gold-soft:#2a3346; --hit:#2dd4bf; --warn:#f0b04a; --chip:#1d2f4a; --frame:#091424;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#0d1b2e; --card:#142842; --line:#24344d; --ink:#f8fafc; --sub:#cbd5e1;
+  --gold:#c9a227; --gold-fill:#5c4a17; --gold-soft:#2a3346; --hit:#2dd4bf; --warn:#f0b04a; --chip:#1d2f4a; --frame:#091424;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+body{background:var(--frame);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;font-size:14px;line-height:1.6;padding-inline:16px;padding-block:20px 60px}
+.doc{max-width:1100px;margin-inline:auto;display:flex;flex-direction:column;gap:18px}
+.doc h1{font-size:22px;margin:0;text-wrap:balance}
+.doc h2{font-size:17px;margin:8px 0 0;text-wrap:balance}
+.doc p{margin:0}
+.lead{color:var(--sub);max-width:70ch}
+.req{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.req div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px}
+.req b{display:block;color:var(--gold);font-size:12px;letter-spacing:.06em}
+.switch{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.switch button{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:8px;padding:6px 14px;cursor:pointer}
+.switch button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:var(--card)}
+.stage-wrap{overflow-x:auto}
+.device{background:var(--page);border:1px solid var(--line);border-radius:18px;margin-inline:auto;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.08)}
+.device.w375{width:375px;max-width:100%}
+.scaler{transform-origin:top left}
+table.t{border-collapse:collapse;width:100%;font-size:13px;background:var(--card)}
+table.t th,table.t td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+table.t th{background:var(--gold-soft);font-size:12px}
+.tw{overflow-x:auto}
+.ask{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.ask ol{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.muted{color:var(--sub);font-size:12px}
+
+/* ===== 画面（アプリ内） ===== */
+.app{font-size:14px;color:var(--ink)}
+.app .rh{padding:14px 16px 6px}
+.app .rh .ttl{font-size:20px;font-weight:800}
+.app .rh .meta{font-size:12px;color:var(--sub)}
+.rtabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);padding:0 8px;scrollbar-width:none;position:relative}
+.rtabs button{font:inherit;font-size:13px;white-space:nowrap;background:none;border:0;color:var(--sub);padding:10px 10px;border-bottom:2px solid transparent;cursor:pointer}
+.rtabs button.on{color:var(--ink);font-weight:800;border-bottom-color:var(--gold)}
+.rtabs button.new{position:relative}
+.rtabs button.new::after{content:"新";position:absolute;top:2px;right:0;font-size:9px;background:var(--gold);color:var(--card);border-radius:4px;padding:0 3px;line-height:1.4}
+.sv{max-width:720px;margin-inline:auto;padding:10px 12px 24px;display:flex;flex-direction:column;gap:10px}
+.sv .subt{font-size:13px;color:var(--sub);margin:0}
+.itabs{position:sticky;top:0;z-index:3;background:var(--page);padding-block:6px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.itabs button{font:inherit;font-size:13px;font-weight:700;border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:8px;padding:8px 4px;cursor:pointer}
+.itabs button[aria-selected="true"]{background:var(--gold);border-color:var(--gold);color:var(--card)}
+.ctl{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.ctl .lbl{font-size:11px;font-weight:700;color:var(--sub)}
+.seg{display:inline-flex;gap:4px}
+.seg button{font:inherit;font-size:12px;font-weight:700;border:1px solid var(--line);background:var(--page);color:var(--sub);border-radius:6px;padding:3px 9px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:var(--card)}
+.stagechip{font-size:11px;color:var(--sub);background:var(--chip);border-radius:999px;padding:2px 9px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.h3{font-size:15px;font-weight:800;margin:0}
+.h4{font-size:13px;font-weight:800;margin:0}
+.small{font-size:12px;color:var(--sub)}
+.boats{display:flex;gap:5px}
+.bb{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:5px;font-size:12px;font-weight:800;border:1px solid #94a3b8;flex:none}
+.bb.s{width:17px;height:17px;font-size:10px;border-radius:4px}
+.b1{background:#fff;color:#000}.b2{background:#000;color:#fff}.b3{background:#e53935;color:#fff}.b4{background:#1e88e5;color:#fff}.b5{background:#fdd835;color:#000}.b6{background:#43a047;color:#fff}
+.boats button{padding:0;border:0;background:none;cursor:pointer;border-radius:50%}
+.boats .bb{width:30px;height:30px;border-radius:50%}
+.boats button[aria-pressed="true"] .bb{outline:2px solid var(--gold);outline-offset:2px}
+.scope{display:flex;flex-wrap:wrap;gap:5px}
+.scope button{font:inherit;font-size:12px;font-weight:700;border:1px solid var(--line);background:var(--page);color:var(--sub);border-radius:999px;padding:4px 10px;cursor:pointer}
+.scope button[aria-pressed="true"]{background:var(--gold);color:var(--card);border-color:var(--gold)}
+.big{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.big .num{font-size:30px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1.1}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--sub);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw-bar{display:inline-block;width:14px;height:12px;background:var(--gold-fill);border-radius:2px}
+.sw-today{display:inline-block;width:14px;height:12px;background:var(--gold-fill);border:2px solid var(--gold);border-radius:2px}
+.sw-dot{display:inline-block;width:18px;border-top:2px dotted var(--hit)}
+.sw-err{display:inline-block;width:18px;height:8px;border-left:2px solid var(--sub);border-right:2px solid var(--sub);position:relative}
+.sw-err::after{content:"";position:absolute;left:0;right:0;top:3px;border-top:2px solid var(--sub)}
+.tag{font-size:11px;font-weight:700;border-radius:5px;padding:1px 6px;white-space:nowrap}
+.tag.big{background:var(--gold);color:var(--card)}
+.tag.weak{background:var(--chip);color:var(--sub)}
+.q{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--sub);font-size:10px;color:var(--sub);cursor:pointer;background:none;padding:0;font-weight:700}
+.card{border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.card>summary{list-style:none;cursor:pointer;padding:9px 10px;display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center}
+.card>summary::-webkit-details-marker{display:none}
+.card .nm{font-weight:800;font-size:13px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.card .rk{font-size:12px;color:var(--sub);grid-column:1/3;display:flex;gap:10px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.card .rk b{color:var(--ink)}
+.card .chev{color:var(--gold);font-size:12px}
+.card[open] .chev{transform:rotate(180deg)}
+.card[open] .rk{display:none}
+.card .inner{padding:0 10px 10px;display:flex;flex-direction:column;gap:8px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.two div{background:var(--page);border-radius:8px;padding:6px 8px;font-size:12px;color:var(--sub)}
+.two b{display:block;font-size:20px;color:var(--ink);font-variant-numeric:tabular-nums}
+.bars{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;align-items:end;height:118px;position:relative;padding-top:16px}
+.bars .col{display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end;font-size:11px;color:var(--sub);font-variant-numeric:tabular-nums}
+.bars .bar{width:100%;background:var(--gold-fill);border-radius:3px 3px 0 0}
+.bars .col.td .bar{border:2px solid var(--gold)}
+.bars .col.td{color:var(--gold);font-weight:800}
+.bars .avg{position:absolute;left:0;right:0;border-top:2px dotted var(--hit)}
+.bars-x{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;font-size:11px;color:var(--sub);text-align:center}
+.bars-x .td{color:var(--gold);font-weight:800}
+.under{font-size:12px;color:var(--gold);font-weight:700;font-variant-numeric:tabular-nums}
+details.fold{border-top:1px solid var(--line);padding-top:6px}
+details.fold>summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--gold)}
+details.fold ul{margin:6px 0 0;padding-left:18px;font-size:12px;color:var(--sub);display:flex;flex-direction:column;gap:3px}
+.voice{border:1px dashed var(--gold);border-radius:10px;padding:10px;background:var(--gold-soft);display:flex;flex-direction:column;gap:6px}
+.voice .row{display:flex;gap:6px;flex-wrap:wrap}
+.voice button{font:inherit;font-size:13px;font-weight:700;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 14px;cursor:pointer}
+.mocknote{font-size:11px;color:var(--warn);font-weight:700}
+.scopebox{background:var(--navy);border-radius:12px;padding:8px;color:var(--scope-text);position:relative}
+.scopebox svg{display:block;width:100%;height:auto;touch-action:manipulation}
+.scopecap{display:flex;justify-content:space-between;font-size:11px;color:var(--scope-sub);padding:0 4px}
+.picked{display:flex;flex-direction:column;gap:4px}
+.pk{display:grid;grid-template-columns:auto 1fr auto;gap:2px 8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px}
+.pk.on{border-color:var(--gold);box-shadow:inset 3px 0 0 var(--gold)}
+.pk .r{font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums}
+.pk .fin{display:flex;gap:2px;align-items:center}
+.pk button{font:inherit;font-size:11px;font-weight:700;border:1px solid var(--gold);color:var(--gold);background:none;border-radius:6px;padding:2px 7px;cursor:pointer;white-space:nowrap}
+.pk .d{grid-column:2/3;color:var(--sub);font-size:11px}
+.hint{font-size:12px;color:var(--sub);display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.hint svg{flex:none}
+.hb{display:grid;grid-template-columns:62px 1fr 74px;gap:6px;align-items:center;font-size:12px;font-variant-numeric:tabular-nums}
+.hb .tr{height:12px;background:var(--gold-soft);border-radius:6px;position:relative}
+.hb .fl{position:absolute;left:0;top:0;bottom:0;background:var(--gold);border-radius:6px}
+.hb .dt{position:absolute;top:-3px;bottom:-3px;border-left:2px dotted var(--hit)}
+.hb .er{position:absolute;top:2px;height:8px;border-left:2px solid var(--sub);border-right:2px solid var(--sub)}
+.hb .er::after{content:"";position:absolute;left:0;right:0;top:3px;border-top:1.5px solid var(--sub)}
+.hb .v{text-align:right}
+.ph{border:1px dashed var(--line);border-radius:10px;padding:14px;text-align:center;font-size:12px;color:var(--sub);background:var(--page)}
+.opt{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--card);font-size:13px;cursor:pointer;text-align:left;font:inherit;color:var(--ink)}
+.opt[aria-pressed="true"]{border-color:var(--gold);box-shadow:inset 3px 0 0 var(--gold)}
+.opt .p{font-weight:800;font-variant-numeric:tabular-nums}
+.opt .s{font-size:11px;color:var(--sub)}
+.step{display:flex;gap:6px;align-items:center}
+.step i{font-style:normal;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--gold);color:var(--card);font-size:12px;font-weight:800}
+.verdict{background:var(--gold-soft);border-left:4px solid var(--gold);border-radius:6px;padding:8px 10px;font-size:13px}
+.verdict b{color:var(--gold)}
+.shapes{display:flex;flex-direction:column;gap:6px}
+.shape{display:grid;grid-template-columns:132px 1fr;gap:8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:var(--card);cursor:pointer;font:inherit;color:var(--ink);text-align:left}
+.shape[aria-pressed="true"]{border-color:var(--gold);box-shadow:inset 3px 0 0 var(--gold)}
+.shape .nm{font-weight:800;font-size:13px}
+.shape .s{font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums}
+.chg{outline:2px solid #d9480f;outline-offset:3px;border-radius:6px}
+.chglbl{font-size:10px;font-weight:800;color:#fff;background:#d9480f;border-radius:4px;padding:0 5px;margin-left:4px;vertical-align:1px}
+.showchg .chg{outline:2px solid #d9480f}
+.hidechg .chg{outline:none}
+.hidechg .chglbl{display:none}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="doc">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <p class="muted">BOA-271 龍神ソナー ・ 公開後の修正4点 ・ モック v1（2026-10-08）</p>
+    <h1>龍神ソナーを「基本情報」と「AI予想」の間のタブにする</h1>
+    <p class="lead">数字・件数・ぶれ幅・注意書きは今の画面から1つも減らしていない。置き場所と形（絵・凡例・表・折りたたみ）を変えて、締切前に読む所だけを上に残した。数字は桐生10R（10/8、展示前・1号艇・1着）の本番の値。ソナーの点・類似レースの日付などは例。</p>
+  </header>
+
+  <div class="req">
+    <div><b>依頼1 点が押しづらい</b>長押しをやめ、タップで固定表示。当たり判定は指の大きさ（半径20px）。範囲内の近い点を最大5件、図の下に並べる</div>
+    <div><b>依頼2 文字が多い</b>カード6枚の「見方」は凡例の絵に1回。まとめの文は数字に分解して棒の下へ。カードは1行に畳む。スリット図は絵に描き込む</div>
+    <div><b>依頼3 別タブ</b>基本情報 ／ <u>龍神ソナー</u> ／ AI予想。中の3つの切り替えは上に固定</div>
+    <div><b>依頼4 禁止語</b>「ふつう」「全体の」「似ている」をなくした。比べる相手は「桐生・同じ級別の組み合わせの全レース」のように書く</div>
+  </div>
+
+  <div class="switch" role="group" aria-label="表示幅">
+    <button type="button" id="w375" aria-pressed="true">スマホ 375px</button>
+    <button type="button" id="w1440" aria-pressed="false">パソコン 1440px</button>
+    <span class="muted" style="margin-left:8px">オレンジの枠＝今の画面から変えた所</span>
+    <button type="button" id="chgToggle" aria-pressed="true" style="margin-left:auto">変更箇所の枠を表示</button>
+  </div>
+
+  <div class="stage-wrap"><div id="stage"></div></div>
+
+  <h2>AI予想タブの一番下（ソナーを外した後）</h2>
+  <div class="device w375" style="padding:12px">
+    <div class="box" style="flex-direction:row;align-items:center;justify-content:space-between;gap:10px">
+      <span style="font-size:13px">類似レース・展開シナリオは<b>龍神ソナー</b>のタブへ</span>
+      <span style="color:var(--gold);font-weight:800;white-space:nowrap">開く ›</span>
+    </div>
+  </div>
+
+  <h2>URL・計測の合わせ方</h2>
+  <div class="tw"><table class="t">
+    <tr><th>来た URL</th><th>開くタブ</th></tr>
+    <tr><td><code>?tab=sonar</code></td><td>龍神ソナー（差がつく材料）</td></tr>
+    <tr><td><code>?tab=sonar&amp;sonar=similar</code></td><td>龍神ソナー（類似レース）。#1324 の <code>?sonar=</code> を引き継ぐ</td></tr>
+    <tr><td><code>?tab=aiPrediction&amp;sonar=…</code></td><td>龍神ソナーへ送る（公開後に投稿したリンクの形）</td></tr>
+    <tr><td><code>?tab=aiPrediction</code></td><td>AI予想のまま。集客の投稿のリンク先は今後 <code>?tab=sonar</code> に変える</td></tr>
+  </table></div>
+  <div class="tw"><table class="t">
+    <tr><th>イベント</th><th>別タブ化で変わること</th><th>扱い</th></tr>
+    <tr><td>race_tab_select / race_tab_initial</td><td><code>tab_id=sonar</code> が「ソナーを開いた」になる</td><td>ファネルの入口の段を「AI予想タブ」から「ソナーのタブ」に差し替える</td></tr>
+    <tr><td>analogy_section_view</td><td>「AI予想タブの下に描画」から「ソナーのタブで描画」に変わる</td><td>切り替え日を events.md に書き、前後の数を比べない。タブを開き直すたびの再送をやめ、レースごとに1回にそろえる</td></tr>
+    <tr><td>analogy_section_visible</td><td>タブを開くとほぼ必ず画面に入るので、section_view とほぼ同じ数になる</td><td>再訪の時刻記録のために残す。ファネルの段からは外す</td></tr>
+    <tr><td>analogy_tab_select</td><td>変わらない（中の3つの切り替え）</td><td>名前・パラメータはそのまま。夕方の点検の値は前後で比べられる</td></tr>
+    <tr><td>analogy_control_change</td><td>点の操作が変わる</td><td><code>analogy_control</code> に <code>similar_point</code>（点のタップ）を足す</td></tr>
+    <tr><td>analogy_feedback_*（#1322）</td><td>置き場所だけ変わる</td><td>そのまま</td></tr>
+  </table></div>
+
+  <div class="ask">
+    <b>決めてほしいこと（推奨は太字）</b>
+    <ol>
+      <li>タブ名: <b>龍神ソナー</b> ／ ソナー</li>
+      <li>差がつく材料のカード: <b>「差が大きい」だけ開き、ほかは1行に畳む</b> ／ 全部開く</li>
+      <li>並べ方の言い方: <b>今日に近い順</b> ／ 類似度の高い順</li>
+      <li>点のタップ: <b>近い点を最大5件、図の下に並べる</b> ／ 一番近い1件だけ</li>
+      <li><code>?tab=aiPrediction&amp;sonar=…</code> で来た人: <b>ソナーのタブへ送る</b> ／ AI予想のまま</li>
+      <li>AI予想タブの一番下の案内1行: <b>置く</b> ／ 置かない</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+(function(){
+const BOAT=[null,"b1","b2","b3","b4","b5","b6"];
+const FLOW={1:"#e5e1d6",2:"#8b95a5",3:"#ef5350",4:"#42a5f5",5:"#f0c419",6:"#4caf50"};
+const bb=(n,s)=>`<span class="bb ${s?'s ':''}${BOAT[n]}">${n}</span>`;
+const C=(html,label)=>`<div class="chg">${label?`<span class="chglbl">${label}</span>`:''}${html}</div>`;
+
+const FACTS=[
+ {nm:"今節の平均着順点（前日まで）",tag:"big",tagT:"差が大きい",today:"5.00点",rank:4,range:"1.00〜10.00",hi:["高い",40,"29/72"],lo:["低い",20,"54/271"],bars:[40,39,33,29,36,20],ends:["高い","低い"],cnt:"44/152件・22〜37%",open:true,desc:"この節の前日までのレースの着順を、1着10点・2着8点・3着6点・4着4点・5着2点・6着1点で平均した値（F・L・失格は0点）。公式の得点率と違い、準優勝戦も含める。節の初日は値が無い",extra:"節の序盤（前日までの走が少ない艇がいる）は、差が小さめに出やすい"},
+ {nm:"平均ST（直近30走）",tag:"big",tagT:"差が大きい",today:"0.14",rank:2,range:"0.11〜0.16",hi:["早い",41,"48/117"],lo:["遅い",24,"74/312"],bars:[41,41,31,30,31,24],ends:["早い","遅い"],cnt:"66/161件・34〜49%",open:true,desc:"その選手の直近30走のスタートタイミングの平均（小さいほど早い）"},
+ {nm:"全国勝率",tag:"weak",tagT:"件数が少なく差ははっきりしない",today:"5.57",rank:3,range:"4.49〜6.82",hi:["高い",43,"3/7（少ない）"],lo:["低い",24,"94/394"],bars:[43,42,43,38,27,24],ends:["高い","低い"],cnt:"53/123件・35〜52%",desc:"全国のレースでの勝率（出走表の値。選手の成績）"},
+ {nm:"直近30走の1着率",tag:"weak",tagT:"件数が少なく差ははっきりしない",today:"30%",rank:2,range:"10〜47%",hi:["高い",39,"17/44"],lo:["低い",23,"104/443"],bars:[39,47,32,36,26,23],ends:["高い","低い"],cnt:"52/111件・38〜56%",desc:"その選手の直近30走で1着だった割合（選手の成績）"},
+ {nm:"モーター2連率",tag:"weak",tagT:"差ははっきりしない（ぶれ幅が重なる）",today:"44.4%",rank:1,range:"28.6〜44.4%",hi:["高い",40,"106/265"],lo:["低い",29,"81/279"],bars:[40,34,24,26,31,29],ends:["高い","低い"],cnt:"106/265件・34〜46%",desc:"モーター＝エンジン。節ごとに抽選で割り当てられる。そのモーターがこれまで2着以内に入った割合で、エンジンの力の目安"},
+ {nm:"当地勝率",tag:"weak",tagT:"件数が少なく差ははっきりしない",today:"4.11",rank:6,range:"4.11〜5.67",hi:["高い",39,"9/23（少ない）"],lo:["低い",30,"102/345"],bars:[39,44,37,31,27,30],ends:["高い","低い"],cnt:"102/345件・25〜35%",desc:"この会場（桐生）での勝率（出走表の値。選手の成績）"},
+];
+
+function hexSvg(){
+  const L=["全国勝率","当地勝率","直近30走1着率","モーター2連率","ボート2連率","平均ST","今節の着順点"].slice(0,7);
+  const labels=[["全国勝率","3位"],["当地勝率","6位"],["直近30走1着率","2位"],["モーター2連率","1位"],["ボート2連率","2位"],["平均ST","2位"],["今節の着順点","4位"]];
+  const n=7,cx=170,cy=140,R=88;
+  const pt=(i,f)=>{const a=-Math.PI/2+i*2*Math.PI/n;return[cx+R*f*Math.cos(a),cy+R*f*Math.sin(a)]};
+  const today=[3,6,2,1,2,2,4].map(r=>(7-r)/6);
+  const avg=[.62,.55,.64,.6,.5,.66,.6];
+  let s=`<svg viewBox="0 0 340 290" role="img" aria-label="今日の1号艇の6艇中の順位と、1着になったときの平均の順位">`;
+  for(const f of [1/3,2/3,1]) s+=`<polygon points="${[...Array(n)].map((_,i)=>pt(i,f).join(",")).join(" ")}" fill="none" stroke="rgba(201,162,39,.35)"/>`;
+  for(let i=0;i<n;i++){const[x,y]=pt(i,1);s+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(201,162,39,.25)"/>`;}
+  s+=`<polygon points="${avg.map((f,i)=>pt(i,f).join(",")).join(" ")}" fill="none" stroke="#cbd5e1" stroke-dasharray="4 4" stroke-width="1.5"/>`;
+  s+=`<polygon points="${today.map((f,i)=>pt(i,f).join(",")).join(" ")}" fill="rgba(232,208,137,.25)" stroke="#e8d089" stroke-width="2"/>`;
+  labels.forEach(([a,b],i)=>{const[x,y]=pt(i,1.28);s+=`<text x="${x}" y="${y}" text-anchor="middle" font-size="11" fill="#f3ead0">${a}<tspan x="${x}" dy="1.2em" fill="#e8d089">6艇中${b}</tspan></text>`});
+  return s+`</svg>`;
+}
+
+function factCard(f){
+  const max=50;
+  const bars=f.bars.map((p,i)=>`<div class="col ${i+1===f.rank?'td':''}"><span>${p}%</span><div class="bar" style="height:${p/max*80}px"></div></div>`).join("");
+  const x=f.bars.map((_,i)=>`<span class="${i+1===f.rank?'td':''}">${i+1}位${i===0?`<br>(${f.ends[0]})`:i===5?`<br>(${f.ends[1]})`:''}</span>`).join("");
+  const under=`<div class="under">▲ 今日の${f.rank}位: ${f.bars[f.rank-1]}%（${f.cnt.replace("件・","件、ぶれ幅")}）</div>`;
+  return `<details class="card" ${f.open?'open':''}>
+   <summary><span class="nm">${f.nm} <button type="button" class="q" aria-label="${f.nm}とは" data-desc="${f.desc}">?</button> <span class="tag ${f.tag}">${f.tagT}</span></span><span class="chev">▼</span>
+    <span class="rk"><span>今日 <b>${f.rank}位</b>（${f.today}）</span><span>${f.ends[0]}とき <b>${f.hi[1]}%</b></span><span>${f.ends[1]}とき <b>${f.lo[1]}%</b></span></span></summary>
+   <div class="inner">
+     <div class="desc small" hidden></div>
+     <div class="small">1号艇の今日: <b style="color:var(--ink)">${f.today}（6艇中${f.rank}位）</b>、6艇は ${f.range}</div>
+     <div class="two"><div>6艇で一番${f.hi[0]}とき<b>${f.hi[1]}%</b>${f.hi[2]}</div><div>6艇で一番${f.lo[0]}とき<b>${f.lo[1]}%</b>${f.lo[2]}</div></div>
+     <div class="h4" style="font-weight:700;font-size:12px;color:var(--sub)">6艇中の順位ごとの1着率</div>
+     <div class="bars">${bars}<div class="avg" style="bottom:${31/max*80}px"></div></div>
+     <div class="bars-x">${x}</div>
+     ${under}
+     ${f.extra?`<div class="small">${f.extra}</div>`:''}
+   </div></details>`;
+}
+
+function voice(){return C(`<div class="voice"><b style="font-size:13px">龍神ソナーは予想の材料になりましたか？</b><div class="row"><button type="button">なった</button><button type="button">物足りない</button></div><span class="small">押すと一言（任意）と理由の選択肢が出る。#1322 の部品をそのまま使う</span></div>`,"#1322 の置き場所")}
+
+function factsTab(){
+  return `
+  <div class="box">
+    <div class="h3">1号艇が1着になったのは、どんなとき？</div>
+    <div class="boats" role="group" aria-label="艇番">${[1,2,3,4,5,6].map(n=>`<button type="button" aria-pressed="${n===1}">${bb(n)}</button>`).join("")}</div>
+    ${C(`<div class="lbl small" style="font-weight:700">数えるレース</div>
+    <div class="scope"><button type="button" aria-pressed="true">桐生・同じ級別の組み合わせ</button><button type="button" aria-pressed="false">全国・同じ級別の組み合わせ</button><button type="button" aria-pressed="false">桐生の全レース</button></div>
+    <div class="small">同じ級別の組み合わせ＝A1が1艇・A2が2艇・B1が3艇（1号艇はB1）</div>`,"札を短く、正式な条件は1回")}
+    <div class="big"><span class="num">31.0%</span><span class="small">1号艇の1着率 ・ 401/1,295レース（2019/4/1〜2026/10/7）</span></div>
+    <div class="scopebox">${hexSvg()}</div>
+    ${C(`<div class="legend"><span><svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#e8d089" stroke-width="2"/></svg>今日の1号艇の順位</span><span><svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3"/></svg>1着になったときの平均の順位</span><span>外側ほど6艇の中で上位</span></div>`,"説明文→凡例")}
+  </div>
+  <div class="box">
+    ${C(`<div class="h3">差がはっきりしている順</div>
+    <div class="legend"><span><i class="sw-bar"></i>順位ごとの1着率</span><span><i class="sw-today"></i>今日の順位</span><span><i class="sw-dot"></i>桐生・同じ級別の組み合わせの全レース 31.0%</span></div>`,"見方3行×6 → 凡例1回")}
+    ${C(FACTS.map(factCard).join(""),"カードは1行に畳む・まとめの文は数字に分解")}
+    <div class="card" style="padding:9px 10px;color:var(--sub);font-size:13px">ボート2連率 <span class="tag weak">着順との関係が小さい</span></div>
+  </div>
+  ${voice()}
+  ${C(`<details class="fold"><summary>数え方・注意</summary><ul>
+    <li>数えるレース: 桐生で、級別の組み合わせと1号艇の級別が今日と同じレース</li>
+    <li>今節の平均着順点は、節の序盤（1〜2走）の値も含めて数えている（過去の序盤のレースでは同じ値が多く、差が小さめに出る）</li>
+    <li>「差ははっきりしない」は、一番良いときと一番悪いときのぶれ幅が重なるもの（少ない側が100件未満なら「件数が少なく差ははっきりしない」）</li>
+    <li>「差が大きい」は5ポイント以上</li><li>件数が30件未満の率は薄く出している</li>
+    <li>当地勝率 0.00（当地を走っていない）は記録なしとして順位から外している</li>
+    <li>同じ値の艇は、一番良い・一番悪いの両方に含めている</li>
+    <li>項目どうしは重なっていて、どれが効いたかまでは分けられない</li>
+    <li>展示タイム・今日の風・波は展示の後に出る</li></ul></details>`,"9行→折りたたみ")}
+  <details class="fold"><summary>AIの見立て（補助）: ほかの項目をそろえたうえで、どの項目が効くか</summary><p class="small" style="margin-top:6px">今のまま</p></details>`;
+}
+
+/* ---- sonar ---- */
+function rand(seed){let s=seed;return()=>{s=(s*16807)%2147483647;return(s-1)/2147483646}}
+function sonarData(){
+  const r=rand(42); const counts={1:181,2:122,3:50,4:32,5:8,6:7};
+  const boats=[];for(const b in counts)for(let i=0;i<counts[b];i++)boats.push(+b);
+  for(let i=boats.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[boats[i],boats[j]]=[boats[j],boats[i]];}
+  // 1号艇を内側に寄せる（今の図と同じ傾向）
+  boats.sort((a,b)=>(a===1?0:1)-(b===1?0:1)+ (r()-.5)*1.6);
+  const venues=["桐生","戸田","江戸川","平和島","多摩川","浜名湖","蒲郡","常滑","津","三国","びわこ","住之江","尼崎","鳴門","丸亀","児島","宮島","徳山","下関","若松","芦屋","福岡","唐津","大村"];
+  const tech={1:"逃げ",2:"差し",3:"まくり",4:"まくり差し",5:"まくり",6:"抜き"};
+  return boats.map((b,i)=>{
+    const rank=i+1; const others=[1,2,3,4,5,6].filter(x=>x!==b); const s2=others[Math.floor(r()*5)]; const o2=others.filter(x=>x!==s2); const s3=o2[Math.floor(r()*4)];
+    const d=new Date(2019,3,1+Math.floor(r()*2740));
+    return {rank,b,fin:[b,s2,s3],date:`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`,venue:venues[Math.floor(r()*24)],rn:1+Math.floor(r()*12),tech:tech[b],pay:Math.round((b===1?800+r()*3000:3000+r()*40000)/10)*10,frac:((rank*0.6180339)%1)*0.84+0.08};
+  });
+}
+const SD=sonarData();
+function sonarSvg(){
+  const CX=200,CY=200,R=170; const rOf=k=>R*Math.log(1+k)/Math.log(1+800);
+  const ang=b=>-90+(b-1)*60;
+  let s=`<svg viewBox="0 0 400 400" class="sonar" role="img" aria-label="類似レース400件。中心に近いほど今日に近い">`;
+  for(let b=1;b<=6;b++){const a1=(ang(b)-30)*Math.PI/180,a2=(ang(b)+30)*Math.PI/180;s+=`<path d="M${CX},${CY} L${CX+R*Math.cos(a1)},${CY+R*Math.sin(a1)} A${R},${R} 0 0 1 ${CX+R*Math.cos(a2)},${CY+R*Math.sin(a2)} Z" fill="${FLOW[b]}" fill-opacity=".07" stroke="rgba(201,162,39,.25)"/>`;}
+  for(const k of [10,100,800]){s+=`<circle cx="${CX}" cy="${CY}" r="${rOf(k)}" fill="none" stroke="#c9a227" stroke-opacity="${k<=400?.45:.18}" ${k>400?'stroke-dasharray="3 4"':''}/>`;}
+  SD.forEach(p=>{const a=(ang(p.b)-30+60*p.frac)*Math.PI/180;const rr=rOf(p.rank);p.x=CX+rr*Math.cos(a);p.y=CY+rr*Math.sin(a);
+    s+=`<circle class="pt" data-i="${p.rank-1}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.6" fill="${FLOW[p.b]}" stroke="#0d1b2e" stroke-width=".6"/>`;});
+  // 輪の目安は扇の境目（1号艇と2号艇の間・右上）の外側に出す
+  for(const k of [10,100,800]){const a=(-60)*Math.PI/180;const rr=rOf(k);s+=`<text x="${CX+rr*Math.cos(a)+4}" y="${CY+rr*Math.sin(a)-3}" font-size="11" fill="#e8d089" paint-order="stroke" stroke="#0d1b2e" stroke-width="3">${k}番目</text>`;}
+  for(let b=1;b<=6;b++){const a=ang(b)*Math.PI/180;const x=CX+(R+16)*Math.cos(a),y=CY+(R+16)*Math.sin(a);s+=`<rect x="${x-10}" y="${y-10}" width="20" height="20" rx="4" fill="${["","#fff","#000","#e53935","#1e88e5","#fdd835","#43a047"][b]}" stroke="#94a3b8"/><text x="${x}" y="${y+4.5}" text-anchor="middle" font-size="12" font-weight="700" fill="${[1,5].includes(b)?'#000':'#fff'}">${b}</text>`;}
+  s+=`<circle class="hitring" cx="-99" cy="-99" r="0" fill="rgba(232,208,137,.12)" stroke="#e8d089" stroke-dasharray="3 3"/>`;
+  s+=`<circle cx="${CX}" cy="${CY}" r="5" fill="#e8d089"/></svg>`;
+  return s;
+}
+function similarTab(){
+  return `
+  <div class="box">
+    ${C(`<div style="display:flex;justify-content:space-between;align-items:baseline"><span class="h4">今日に近い順に</span><span style="font-size:22px;font-weight:800;color:var(--gold)">400件</span></div>`,"似ている→今日に近い")}
+    <input type="range" min="20" max="800" value="400" aria-label="件数" style="width:100%;accent-color:#6b500f">
+    <div class="small">400件目でも、24項目中10項目が同じ・7項目が近い</div>
+    ${C(`<div class="small">1号艇の級別など3つの条件がそろう過去レース9,905件から、出走表が今日に近い順</div>
+    <details class="fold" style="border:0;padding:0"><summary style="font-size:12px">並べ方の全文</summary><ul><li>今日と同じく、1号艇の級別・1号艇と勝率トップの差・勝率トップの艇番がそろう過去レース9,905件を、出走表が今日に近い順に並べた</li><li>展示後は展示タイム・天候・風・波も見ている</li></ul></details>`,"2行→1行＋折りたたみ")}
+  </div>
+  <div class="box">
+    <div class="h3">類似レース</div>
+    <div class="scopebox"><div class="sonarwrap">${sonarSvg()}</div><div class="scopecap"><span>今日: 桐生10R</span><span>表示中: 400件</span></div></div>
+    ${C(`<div class="hint">
+      <span><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="none" stroke="#c9a227"/><circle cx="9" cy="9" r="2.5" fill="#c9a227"/></svg>中心ほど今日に近い</span>
+      <span><svg width="18" height="18" viewBox="0 0 18 18"><path d="M9,9 L9,1 A8,8 0 0 1 16,5 Z" fill="#c9a227" fill-opacity=".5"/></svg>扇＝1着の艇</span>
+      <span><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.5" fill="none" stroke="#c9a227" stroke-dasharray="2 2"/><circle cx="9" cy="9" r="1.8" fill="#c9a227"/></svg>点をタップ（近くの点もまとめて出る）</span></div>`,"見方3行→絵の凡例")}
+    ${C(`<div class="picked" aria-live="polite"><div class="small pkempty">点をタップすると、その近くの類似レースが最大5件ここに出る</div></div>`,"長押し→タップで固定・近い5件")}
+    <span class="mocknote">モックの点・日付・会場・配当は例（本番は類似レースの実データ）</span>
+    <details class="fold"><summary>今日と同じだった項目（項目ごとの割合）</summary><p class="small" style="margin-top:6px">中身は今のまま（名前だけ変える）</p></details>
+    <details class="fold"><summary>1件ずつ見比べる（今日と全項目を並べる）</summary><p class="small" style="margin-top:6px">中身は今のまま。上の「一覧で見比べる」で該当行が開く</p></details>
+  </div>
+  <div class="box">
+    <div class="h3">類似レースの決まり方 <span style="color:var(--gold)">400件</span></div>
+    <div class="h4">どの艇が勝った？</div>
+    ${C(`<div class="legend"><span><i class="sw-bar" style="background:var(--gold)"></i>類似レース</span><span><i class="sw-dot"></i>条件がそろった過去レース全部 9,905件</span><span><i class="sw-err"></i>件数が少ないときのぶれ幅</span></div>`,"凡例の文→絵")}
+    ${[[1,45,181,40],[2,31,122,28],[3,13,50,12],[4,8,32,9],[5,2,8,5],[6,2,7,6]].map(([b,p,n,d])=>`<div class="hb"><span>${bb(b,1)} ${b}号艇</span><span class="tr"><span class="fl" style="width:${p}%"></span><span class="dt" style="left:${d}%"></span><span class="er" style="left:${p-5}%;width:10%"></span></span><span class="v">${p}% <span class="small">${n}件</span></span></div>`).join("")}
+    <div class="h4" style="margin-top:6px">どう決まった？</div>
+    ${[["逃げ",46,182],["差し",23,90],["まくり",16,65],["まくり差し",9,36],["抜き",6,22],["恵まれ",1,5]].map(([t,p,n])=>`<div class="hb"><span>${t}</span><span class="tr"><span class="fl" style="width:${p}%"></span></span><span class="v">${p}% <span class="small">${n}件</span></span></div>`).join("")}
+    <div class="small" style="background:var(--page);border-radius:8px;padding:6px 8px">上の棒か図の扇を押すと、その艇が勝ったとき、ほかの艇はどうだったかが出る</div>
+    <div class="h4" style="margin-top:6px">着順の流れ</div>
+    ${C(`<div class="small">1着 → 2着 → 3着。帯の太さが件数、帯をタップで件数</div>`,"見方7行→1行")}
+    <div class="ph">着順の流れの図（今のまま）</div>
+    <details class="fold"><summary>着順の流れの見方</summary><ul><li>少ない流れも薄く全部描いている</li><li>2着→3着の帯は、1着の艇を問わずに数えている</li><li>1着の四角をタップすると、その艇が勝ったレースだけで1→2→3の流れを描き直す</li></ul></details>
+    <div class="h4" style="margin-top:6px">よく出た3連単</div>
+    ${[[[1,2,3],11.3,45],[[2,1,3],7.0,28],[[1,2,4],5.0,20]].map(([f,p,n])=>`<div class="hb" style="grid-template-columns:70px 1fr 84px"><span>${f.map(x=>bb(x,1)).join("")}</span><span class="tr"><span class="fl" style="width:${p*8}%"></span></span><span class="v">${p}% <span class="small">${n}件</span></span></div>`).join("")}
+    <details class="fold"><summary>残り79通りを見る（全82通り）</summary></details>
+  </div>
+  ${voice()}
+  ${C(`<details class="fold"><summary>数え方・注意</summary><ul><li>数えた割合で、原因とは限らない</li><li>類似レースでも、同じ結果になるとは限らない</li><li>AIが重く見る項目で類似レースを選んでいるので、AIの見立てと同じ向きになりやすい（別々の裏付けにはならない）</li></ul></details>`,"似ているからといって→類似レースでも")}`;
+}
+
+function slitSvg(sts,opt){
+  const W=330,H=opt&&opt.mini?78:170,top=opt&&opt.mini?6:22,rowH=(H-top-(opt&&opt.mini?4:30))/6;
+  const xOf=st=>W-40-(st-0.10)*900; // 早いほど右
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="スリットの並び"><rect width="${W}" height="${H}" rx="8" fill="#123153"/>`;
+  s+=`<line x1="${W-34}" y1="4" x2="${W-34}" y2="${H-(opt&&opt.mini?4:26)}" stroke="#f59e0b" stroke-width="2"/>`;
+  if(opt&&opt.avg) s+=`<line x1="${xOf(.166)}" y1="4" x2="${xOf(.166)}" y2="${H-26}" stroke="#cbd5e1" stroke-dasharray="3 3"/><text x="${xOf(.166)-4}" y="14" font-size="10" fill="#cbd5e1" text-anchor="end">点線＝桐生の全選手の平均</text>`;
+  sts.forEach((st,i)=>{const y=top+i*rowH+rowH/2;const x=xOf(st);const c=["#fff","#000","#e53935","#1e88e5","#fdd835","#43a047"][i];
+    s+=`<rect x="${x-30}" y="${y-rowH*0.32}" width="30" height="${rowH*0.64}" rx="${rowH*0.3}" fill="#e5e7eb"/><rect x="${x-12}" y="${y-rowH*0.28}" width="9" height="${rowH*0.56}" rx="2" fill="${c}" stroke="#94a3b8" stroke-width=".5"/><text x="${x-34}" y="${y+3.5}" font-size="${opt&&opt.mini?8:10}" fill="#f3ead0" text-anchor="end">${i+1}</text>`;
+    if(opt&&opt.tags&&opt.tags[i]) s+=`<text x="${x+4}" y="${y+3.5}" font-size="9" font-weight="700" fill="#fbbf24">${opt.tags[i]}</text>`;});
+  if(opt&&opt.ruler){s+=`<line x1="14" y1="${H-12}" x2="${14+117}" y2="${H-12}" stroke="#f3ead0"/><text x="${14+120}" y="${H-8}" font-size="10" fill="#f3ead0">1艇身（約0.13秒）</text>`;}
+  if(opt&&opt.arrow){s+=`<text x="${W-38}" y="${H-8}" font-size="10" fill="#fbbf24" text-anchor="end">早い →</text>`;}
+  return s+`</svg>`;
+}
+function scenarioTab(){
+  const shapes=[["横一線",[.15,.15,.15,.15,.15,.15],"15%（128件）","45%"],["内3艇そろう",[.14,.14,.14,.19,.2,.21],"16%（143件）","35%"],["2コース凹み",[.14,.2,.14,.14,.15,.15],"4%（38件）","37%"],["カド受け凹み",[.14,.14,.2,.13,.15,.15],"6%（56件）","25%"],["カド一撃",[.17,.17,.17,.11,.15,.16],"21%（180件）","18%"],["イン凹み",[.2,.15,.15,.15,.15,.15],"16%（139件）","12%"],["ダッシュ勢先行",[.18,.18,.18,.13,.12,.12],"19%（166件）","20%"]];
+  return `
+  <p class="subt">「もし進入がこうなって、スタートがこう並んだら」を、過去レースで数える。上から順に選ぶと、下の結果が変わる</p>
+  <div class="box">
+    <div class="scope"><button type="button" aria-pressed="true">桐生・同じ級別の組み合わせ</button><button type="button" aria-pressed="false">全国・同じ級別の組み合わせ</button><button type="button" aria-pressed="false">桐生の全レース</button><button type="button" aria-pressed="false">全国の全レース</button></div>
+    <div class="step"><i>1</i><span class="h4">進入はどうなる？</span></div>
+    ${[["どの進入でも","100%","31%"],["枠なり","69%","33%"],["前付けあり（1号艇イン）","26%","31%"],["1号艇がインを取られた","4%","5%"]].map(([a,b,c],i)=>`<button type="button" class="opt" aria-pressed="${i===1}"><span>${a}${i===2?' <span class="q" aria-label="前付けとは">?</span>':''}</span><span class="p">${b}</span><span class="s">1号艇の1着率 ${c}</span></button>`).join("")}
+    ${C(`<details class="fold"><summary>進入の見方</summary><ul><li>展示の後は、今日の展示の進入に当てはまる型に印が付く</li><li>割合は、桐生・同じ級別の組み合わせの全レースの中での割合</li><li>前付け＝艇番より内のコースに入った艇</li><li>スロー・ダッシュの別は記録が無いので分けていない</li></ul></details>`,"見方4行→折りたたみ")}
+  </div>
+  <div class="box">
+    <div class="h3">今日のスタートの手がかり</div>
+    <div class="small">平均STの並び（予想ではなく過去の記録）。枠なりになった場合の手がかり</div>
+    <div class="ctl" style="padding:6px 8px"><span class="lbl">使う平均ST</span><span class="seg"><button type="button" aria-pressed="true">このコース</button><button type="button" aria-pressed="false">全体</button></span></div>
+    ${C(`<div class="small">このコース＝今日のコースに入ったときだけの平均。<b style="color:var(--ink)">コースの差が入らないので比べやすい</b></div>`,"ふつうはこちら→理由")}
+    ${C(slitSvg([.169,.169,.160,.160,.179,.156],{avg:1,ruler:1,arrow:1}),"見方4行→図に描き込む")}
+    ${C(`<div class="verdict"><b>横一線の手がかり</b>: 6艇の平均STの差が .03以内 → 過去、横一線になったのは <b>20%</b>（当てはまらないとき14%、45件）</div>`,"結論の札を図の直下へ")}
+    ${C(`<details class="fold"><summary>数字で見る（平均STの表）</summary><div class="tw" style="margin-top:6px"><table class="t" style="font-size:11px"><tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr><tr><td>このコース</td><td>.169</td><td>.169</td><td>.160</td><td>.160</td><td>.179</td><td>.156</td></tr><tr><td>全体</td><td>.138</td><td>.108</td><td>.153</td><td>.152</td><td>.156</td><td>.145</td></tr><tr><td>桐生で</td><td>.221<br>11走</td><td>.152<br>25走</td><td>.194<br>30走</td><td>.182<br>30走</td><td>.189<br>30走</td><td>.179<br>30走</td></tr><tr><td>桐生の全選手（コース別）</td><td>.163</td><td>.172</td><td>.164</td><td>.162</td><td>.161</td><td>.178</td></tr></table></div></details>
+    <details class="fold"><summary>数え方・注意</summary><ul><li>各選手が、今日のコースで枠なりだったときの直近30走の平均ST（期間はおよそ半年〜1年）</li><li>点線は、桐生でそのコースを走った全選手の平均（級別を問わない）。見るのは艇どうしの差</li><li>桐生での平均STは参考（直近30走まで）。展示STは展示の後に出る</li><li>桐生・同じ級別の組み合わせの枠なりのレース（876件。F・出遅れのあったレースと、平均STが6艇そろわないレースを除くので、②の「どの形でも」と件数が少しずれることがある）で数えた</li><li>件数が少ないので、ぶれ幅は広い。当てはまっても外れる方が多い（決め手ではなく手がかり）</li></ul></details>`,"表・数え方→折りたたみ")}
+  </div>
+  <div class="box">
+    <div class="step"><i>2</i><span class="h4">スタートはどう並ぶ？（スリットの形）</span></div>
+    <button type="button" class="opt" aria-pressed="true"><span>どの形でも</span><span class="p">878件</span><span class="s">1号艇の1着率 33%</span></button>
+    ${C(`<div class="shapes">${shapes.map(([n,st,p,w],i)=>`<button type="button" class="shape" aria-pressed="false"><span>${slitSvg(st,{mini:1,tags:(n==="カド一撃"||n==="カド受け凹み")?{2:"カド受け",3:"カド"}:null})}</span><span><span class="nm">${n}</span><br><span class="s">${p}<br>1号艇の1着率 ${w}</span></span></button>`).join("")}</div>`,"絵の高さ6割・名前と割合を横に・カドは絵に札")}
+    <details class="fold"><summary>用語・数え方</summary><ul><li>カド＝ダッシュ勢（助走を長くとる艇）の一番内。カド受け＝その1つ内（枠なりなら3コース）</li><li>7つの形は、枠なりのときのカド（4コース）を基準に決めている</li><li>絵は横から見た並びの例（数字はコース、右の線がスリット。縮尺は1艇身≒0.13秒）</li><li>1つのレースが2つ以上の形に当てはまることがある（足すと100%を超える）</li><li>割合は、選んだ進入の中での割合。スリットの形は、今日の展示からは選べない</li><li>展示の後に、今日の展示のスリットの形を参考に出す</li></ul></details>
+  </div>
+  <div class="box">
+    <div class="step"><i>3</i><span class="h4">攻めは決まった？</span></div><div class="small">②でスリットの形を選ぶと、攻める艇が勝ちきったか、1号艇が逃げたかが出る</div>
+    <div class="step" style="margin-top:6px"><i>4</i><span class="h4">②の形のとき、どう決まった？ <span style="color:var(--gold)">878件</span></span></div>
+    <div class="ph">1着の艇・3着以内・決まり手・万舟・着順の流れ・よく出た3連単（部品は類似レースと同じ。凡例を絵にする変更も同じ）</div>
+  </div>
+  ${voice()}
+  <details class="fold"><summary>数え方・注意</summary><ul><li>数えた割合で、原因とは限らない</li><li>スリットの形はレース後に分かるもので、「もしこうなったら」の参考</li><li>返還（F・L・欠場）があったレース25件を除くので、「差がつく材料」の件数とは合わない</li></ul></details>`;
+}
+
+function screen(){
+  return `<div class="app">
+   <div class="rh"><div class="meta">第8回日本一しょうゆ杯 ・ 予選特別戦 ・ 2日目</div><div class="ttl">桐生 10R <span class="meta">締切 19:48</span></div></div>
+   ${C(`<div class="rtabs" role="tablist"><button type="button">基本情報</button><button type="button" class="on new">龍神ソナー</button><button type="button">AI予想</button><button type="button">今節</button><button type="button">直前情報</button><button type="button">枠別情報</button><button type="button">モータ情報</button><button type="button">オッズ一覧</button></div>`,"新しいタブ")}
+   <div class="sv">
+     ${C(`<p class="subt">今日と条件がそろう過去レースを数えて、映し出す</p>`,"見出しを消し副題だけ")}
+     ${C(`<div class="itabs" role="tablist"><button type="button" role="tab" data-t="facts" aria-selected="true">差がつく材料</button><button type="button" role="tab" data-t="similar" aria-selected="false">類似レース</button><button type="button" role="tab" data-t="scenario" aria-selected="false">展開シナリオ</button></div>`,"一番上に・下に送っても固定")}
+     ${C(`<div class="ctl"><span class="lbl">着順</span><span class="seg ord"><button type="button" aria-pressed="true">1着</button><button type="button" aria-pressed="false">2着以内</button><button type="button" aria-pressed="false">3着以内</button></span><span class="stagechip">展示前（出走表）・展示後に切り替えられます</span></div>`,"時点と着順を1つの箱")}
+     <div class="panel"></div>
+   </div></div>`;
+}
+
+function wire(root){
+  const panel=root.querySelector(".panel");
+  const ord=root.querySelector(".ord");
+  const render=t=>{
+    panel.innerHTML=t==="facts"?factsTab():t==="similar"?similarTab():scenarioTab();
+    ord.parentElement.querySelector(".lbl").style.display=ord.style.display=t==="scenario"?"none":"";
+    panel.style.display="flex";panel.style.flexDirection="column";panel.style.gap="10px";
+    if(t==="similar") wireSonar(panel);
+    panel.querySelectorAll(".q[data-desc]").forEach(q=>q.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();const d=q.closest(".card").querySelector(".desc");q.closest(".card").open=true;d.hidden=!d.hidden;d.textContent=q.dataset.desc;}));
+  };
+  root.querySelectorAll(".itabs button").forEach(b=>b.addEventListener("click",()=>{root.querySelectorAll(".itabs button").forEach(x=>x.setAttribute("aria-selected",x===b));render(b.dataset.t)}));
+  root.addEventListener("click",e=>{const b=e.target.closest(".seg button,.scope button,.boats button,.opt,.shape");if(!b)return;const g=b.parentElement;if(b.classList.contains("opt")||b.classList.contains("shape")){b.parentElement.querySelectorAll(":scope>.opt,:scope>.shape").forEach(x=>x.setAttribute("aria-pressed",x===b));return}g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b))});
+  render("facts");
+}
+function wireSonar(panel){
+  const svg=panel.querySelector("svg.sonar"); const list=panel.querySelector(".picked"); const ring=svg.querySelector(".hitring");
+  let sel=null;
+  const draw=(hits,x,y,scale)=>{
+    svg.querySelectorAll(".pt.hl").forEach(c=>{c.classList.remove("hl");c.setAttribute("r","2.6");c.setAttribute("stroke","#0d1b2e");c.setAttribute("stroke-width",".6")});
+    if(!hits.length){list.innerHTML=`<div class="small">近くに点がありません。点の近くをタップしてください</div>`;ring.setAttribute("r",0);return}
+    ring.setAttribute("cx",x);ring.setAttribute("cy",y);ring.setAttribute("r",20*scale);
+    sel=hits[0].rank;
+    hits.forEach((p,i)=>{const c=svg.querySelector(`.pt[data-i="${p.rank-1}"]`);c.classList.add("hl");c.setAttribute("r",i===0?6:4.5);c.setAttribute("stroke","#fff");c.setAttribute("stroke-width",i===0?2.5:1.5);c.parentNode.appendChild(c)});
+    list.innerHTML=(hits.length>1?`<div class="small">この辺りの類似レース ${hits.length}件（今日に近い順）</div>`:"")+hits.sort((a,b)=>a.rank-b.rank).map(p=>`<div class="pk ${p.rank===sel?'on':''}"><span class="r">${p.rank}番目</span><span>${p.date} ${p.venue}${p.rn}R</span><button type="button">一覧で見比べる</button><span class="d"><span class="fin" style="display:inline-flex">${p.fin.map(f=>bb(f,1)).join("")}</span> ${p.tech} ・ 3連単 ${p.pay.toLocaleString("ja-JP")}円</span></div>`).join("");
+  };
+  svg.addEventListener("click",e=>{
+    const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const m=svg.getScreenCTM();if(!m)return;const loc=pt.matrixTransform(m.inverse());
+    const scale=400/svg.getBoundingClientRect().width; // 画面の1pxあたりのSVG単位
+    const fs=window.__frameScale||1; const rad=20*scale*fs;
+    const hits=SD.map(p=>({p,d:Math.hypot(p.x-loc.x,p.y-loc.y)})).filter(o=>o.d<=rad).sort((a,b)=>a.d-b.d).slice(0,5).map(o=>o.p);
+    draw(hits,loc.x,loc.y,scale*fs);
+  });
+}
+
+const stage=document.getElementById("stage");
+function mount(w){
+  window.__frameScale=1;
+  stage.innerHTML="";
+  if(w===375){const d=document.createElement("div");d.className="device w375";d.innerHTML=screen();stage.appendChild(d);wire(d);}
+  else{
+    const outer=document.createElement("div");const d=document.createElement("div");d.className="device";d.style.width="1440px";d.innerHTML=screen();
+    const sc=document.createElement("div");sc.className="scaler";sc.appendChild(d);outer.appendChild(sc);stage.appendChild(outer);wire(d);
+    const fit=()=>{const avail=stage.parentElement.clientWidth;const s=Math.min(1,avail/1442);window.__frameScale=s;sc.style.transform=`scale(${s})`;outer.style.height=(d.offsetHeight*s)+"px";};
+    fit();new ResizeObserver(fit).observe(d);window.addEventListener("resize",fit);
+  }
+}
+const b375=document.getElementById("w375"),b1440=document.getElementById("w1440");
+b375.onclick=()=>{b375.setAttribute("aria-pressed","true");b1440.setAttribute("aria-pressed","false");mount(375)};
+b1440.onclick=()=>{b1440.setAttribute("aria-pressed","true");b375.setAttribute("aria-pressed","false");mount(1440)};
+const ct=document.getElementById("chgToggle");ct.onclick=()=>{const on=ct.getAttribute("aria-pressed")!=="true";ct.setAttribute("aria-pressed",on);document.body.classList.toggle("hidechg",!on)};
+mount(375);
+})();
+</script>
