@@ -402,14 +402,47 @@ test.describe("思考アシスト: ユーザー決定（2026-10-08）", () => {
     ).toContainText("ST(30走)");
   });
 
-  test("「数える」を使わず「割合の出し方は2つ」", async ({ page }) => {
+  test("「数える」を使わず「集めたレースは2通り」", async ({ page }) => {
     await open(page);
     await page.getByRole("button", { name: "堅い？荒れる？の材料" }).click();
     const sheet = page.getByRole("dialog");
     await expect(
-      sheet.getByRole("button", { name: "割合の出し方は2つ" }),
+      sheet.getByRole("button", { name: "集めたレースは2通り" }),
     ).toBeVisible();
     await expect(page.getByText(/数え/)).toHaveCount(0);
+  });
+
+  test("級の並びの呼び名の近くに今日の値の例と注記（単位つき、枠は問わない）", async ({
+    page,
+  }) => {
+    const note =
+      "全国・級の並びが同じ: 1号艇は B1、ほかの5艇は A1 が2艇・A2 が2艇・B1 が1艇（どの枠にいたかは問わない）";
+    await open(page);
+    await expect(
+      page
+        .getByRole("region", { name: "このレースは堅い？荒れる？" })
+        .getByText(note),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "堅い？荒れる？の材料" }).click();
+    const sheet = page.getByRole("dialog");
+    await expect(sheet.getByText(note)).toBeVisible();
+    await expect(page.getByText(/固定|入れ替わってもOK/)).toHaveCount(0);
+  });
+
+  test("集めたレースの表の「2〜6号艇の級」の行に、級の並びの絵を小さく置く", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: "堅い？荒れる？の材料" }).click();
+    const sheet = page.getByRole("dialog");
+    await sheet.getByRole("button", { name: "集めたレースは2通り" }).click();
+    const row = sheet.getByRole("row", { name: /2〜6号艇の級/ });
+    await expect(row).toContainText(
+      "2〜6号艇の級（A1 が2艇・A2 が2艇・B1 が1艇、どの枠かは問わない）",
+    );
+    await expect(
+      row.getByRole("img", { name: /1号艇は枠も級（B1）も同じ/ }),
+    ).toBeVisible();
   });
 });
 
@@ -457,6 +490,8 @@ test.describe("思考アシスト: 375px の押せる範囲と固定位置（Cod
         ({ selector, dirs }) => {
           const el = document.querySelector(selector);
           if (!el) return `${selector} が無い`;
+          // 固定のレンズ・フッターの下に入ると、その上の点は押せない（フッターが上に来る）ので、画面の中央に送ってから測る
+          el.scrollIntoView({ block: "center" });
           const r = el.getBoundingClientRect();
           const cx = r.left + r.width / 2;
           const cy = r.top + r.height / 2;

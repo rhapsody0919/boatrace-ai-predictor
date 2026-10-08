@@ -133,7 +133,7 @@ const standBtn = (page) =>
 const standRegion = (page) =>
   page.getByRole("region", { name: "このレースは堅い？荒れる？" });
 const waysToCountToggle = (page) =>
-  page.getByRole("button", { name: "割合の出し方は2つ" });
+  page.getByRole("button", { name: "集めたレースは2通り" });
 const raceFigure = (page, lens) =>
   page.getByRole("figure", { name: `レースの図（${lens}）` });
 const boatRow = (page, n) =>
@@ -351,8 +351,8 @@ test.describe("ヘッダー", () => {
 
   test("[spec FR-2] オッズの取得時刻が時刻つきで出る", async ({ page }) => {
     await openAssist(page);
-    const text = await page.locator("body").innerText();
-    expect(text).toMatch(
+    // オッズは図より後に届く（N-5）ので、出るまで待つ（実装時に直した: 元は1回だけ読んでいて、遅い環境で落ちた）
+    await expect(page.locator("body")).toContainText(
       /オッズ.{0,6}\d{1,2}:\d{2}時点|\d{1,2}:\d{2}時点のオッズ/,
     );
   });
@@ -460,14 +460,16 @@ test.describe("堅い？荒れる？の枠", () => {
     );
   });
 
-  test("[D-31] 級の並びの絵: 選んだ艇（1号艇）に「1号艇 固定」、残り5艇は「入れ替わってもOK」", async ({
+  test("[D-31 / 2026-10-08 ユーザー決定] 級の並びの絵: 選んだ艇（1号艇）に「1号艇 枠も級も同じ」、残り5艇は「級の艇数だけ同じ・どの枠かは問わない」", async ({
     page,
   }) => {
     await openAssist(page);
     await standBtn(page).click();
     const sheet = page.getByRole("dialog");
-    await expect(sheet.getByText("1号艇 固定")).toBeVisible();
-    await expect(sheet.getByText("入れ替わってもOK")).toBeVisible();
+    await expect(sheet.getByText("1号艇 枠も級も同じ").first()).toBeVisible();
+    await expect(
+      sheet.getByText("級の艇数だけ同じ・どの枠かは問わない").first(),
+    ).toBeVisible();
   });
 
   test("[spec FW-21 / screens S-1c] ガイド①はこの枠を光らせる", async ({

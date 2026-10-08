@@ -2,7 +2,7 @@ import BottomSheet from "./BottomSheet";
 import BaseBar from "./BaseBar";
 import ScopeTable from "./ScopeTable";
 import ClassLineup from "./ClassLineup";
-import { sameClassLabel } from "../../../utils/assistModel";
+import { restClassCounts, sameClassLabel } from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 
 /**
@@ -41,10 +41,16 @@ export default function RoughSheet({
         {venue ? ASSIST_COPY.baseLegendRef(venue) : ASSIST_COPY.baseLegend}
       </p>
       <ClassLineup lineup={lineup} />
+      {restClassCounts(classes) && (
+        <p className="ta-note">
+          {ASSIST_COPY.classNote(1, classes[0], restClassCounts(classes))}
+        </p>
+      )}
       <ScopeTable
         scope={scope}
         similarN={similar?.n ?? null}
         classes={classes}
+        lineup={lineup}
       />
       <h3 className="ta-sheet-sub">{ASSIST_COPY.roughB1}</h3>
       <BaseBar

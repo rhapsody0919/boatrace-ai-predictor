@@ -62,9 +62,9 @@ export const ASSIST_COPY = Object.freeze({
   similarRacecardStage: "出走表の時点",
   roughNoPick: "どちらに見るかは自分で決める",
 
-  // 割合の出し方は2つ（D-26・D-32）。「数える」は使わない。レースを絞る話は「集める」、割合の作り方は「出す」
-  // （龍神ソナーと同じ決め方、2026-10-08 ユーザー決定）
-  scopeToggle: "割合の出し方は2つ",
+  // 集めたレースは2通り（D-26・D-32）。「数える」は使わない。レースを絞る話は「集める」、割合の作り方は「出す」
+  // （龍神ソナーと同じ決め方、2026-10-08 ユーザー決定、spec D-41）
+  scopeToggle: "集めたレースは2通り",
   scopeHead: ["そろえた条件", "全国・級の並びが同じ", "類似レース"],
   scopeRefund: ["返還のあったレース", "除く", "含む"],
   scopeCount: "件数",
@@ -73,11 +73,16 @@ export const ASSIST_COPY = Object.freeze({
     "類似レースは条件が多いぶん少なく、ぶれ幅が広い",
   ],
 
-  // 級の並びの絵（D-31）
-  classFixed: (boat) => `${boat}号艇 固定`,
-  classRest: "入れ替わってもOK",
-  classAria: (boat, cls, rest) =>
-    `${boat}号艇は${cls}で固定、残り5艇は${rest.join("・")}で並びは問わない`,
+  // 級の並びの絵（D-31）。「固定」は舟券の「1着固定」と読まれるので使わない（2026-10-08 ユーザー決定）
+  // 札は2行で組む（[1行目, 2行目]。読み上げ・検索では間に空白か「・」が入る）
+  classFixed: (boat) => [`${boat}号艇`, "枠も級も同じ"],
+  classRest: ["級の艇数だけ同じ", "どの枠かは問わない"],
+  classAria: (boat, cls, counts) =>
+    `${boat}号艇は枠も級（${cls}）も同じ、ほかの5艇は${counts}で級の艇数だけ同じ、どの枠かは問わない`,
+  // 呼び名の近くに今日の値で例と注記を出す（名前は変えない。2026-10-08 ユーザー決定）
+  classNote: (boat, cls, counts) =>
+    `全国・級の並びが同じ: ${boat}号艇は ${cls}、ほかの5艇は ${counts}（どの枠にいたかは問わない）`,
+  scopeRowRest: (counts) => `2〜6号艇の級（${counts}、どの枠かは問わない）`,
 
   // レンズ（FR-4）
   lensList: "見方",

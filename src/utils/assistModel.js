@@ -163,6 +163,21 @@ export function similarSummary(similar) {
  * @param {string[]} classes 1〜6号艇の級別（v16 today.classes）
  * @param {number} fixedBoat
  */
+/**
+ * 固定する艇以外の5艇の級を艇数で書く（例「A1 が2艇・A2 が2艇・B1 が1艇」）。単位を必ず付ける（2026-10-08 ユーザー決定）
+ * @returns {string|null} 級が欠けていれば null
+ */
+export function restClassCounts(classes, fixedBoat = 1) {
+  if (!Array.isArray(classes) || classes.length !== 6) return null;
+  const rest = classes.filter((_, i) => i + 1 !== fixedBoat);
+  if (rest.some((c) => !c)) return null;
+  return ["A1", "A2", "B1", "B2"]
+    .map((c) => [c, rest.filter((x) => x === c).length])
+    .filter(([, n]) => n > 0)
+    .map(([c, n]) => `${c} が${n}艇`)
+    .join("・");
+}
+
 export function classLineup(classes, fixedBoat = 1) {
   if (!Array.isArray(classes)) return null;
   return classes.map((cls, i) => ({

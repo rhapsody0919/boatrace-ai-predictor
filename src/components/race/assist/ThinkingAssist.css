@@ -369,8 +369,26 @@
 .ta-cls-cap {
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
+  line-height: 1.2;
+  text-align: center;
   white-space: nowrap;
-  line-height: 1.1;
+}
+
+/* 札は2行（2026-10-08 ユーザー決定で長くなった） */
+.ta-cls-line {
+  display: block;
+}
+
+/* 表の行の横に置く小さい絵（札なし） */
+.ta-cls-small {
+  display: inline-flex;
+  margin-left: var(--spacing-1);
+  vertical-align: middle;
+}
+
+.ta-cls-small .ta-cls-box {
+  width: 20px;
+  height: 16px;
 }
 
 .ta-cls-box {

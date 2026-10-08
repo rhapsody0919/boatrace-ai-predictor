@@ -1,6 +1,6 @@
 import { useId } from "react";
 import ClassLineup from "./ClassLineup";
-import { ROUND_LABEL } from "../../../utils/assistModel";
+import { ROUND_LABEL, restClassCounts } from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 
 /** 小さいバー1本（値・全国の全レースの線・矢印） */
@@ -28,16 +28,25 @@ function MiniBar({ label, row }) {
 /**
  * 「このレースは堅い？荒れる？」の枠（FW-22、screens S-1 A）。2本の小さいバー（1号艇の1着・万舟）と
  * 級の並びの絵＋件数。押すと材料のシート（TC-R1）
- * @param {{rough: object|null, scope: object|null, lineup: object[]|null, status: string, onOpen: () => void}} props
+ * 枠の下に、呼び名「全国・級の並びが同じ」の今日の値の例と注記（2026-10-08 ユーザー決定）
+ * @param {{rough: object|null, scope: object|null, lineup: object[]|null, classes: string[]|null, status: string, onOpen: () => void}} props
  */
-export default function RoughCard({ rough, scope, lineup, status, onOpen }) {
+export default function RoughCard({
+  rough,
+  scope,
+  lineup,
+  classes,
+  status,
+  onOpen,
+}) {
+  const counts = restClassCounts(classes);
   const titleId = useId();
   return (
     <section className="ta-rough" aria-labelledby={titleId}>
       <h2 className="ta-rough-title" id={titleId}>
         {ASSIST_COPY.roughTitle}
       </h2>
-      {rough ? (
+      {rough && (
         <button
           type="button"
           className="ta-rough-btn"
@@ -57,7 +66,13 @@ export default function RoughCard({ rough, scope, lineup, status, onOpen }) {
             </span>
           </span>
         </button>
-      ) : (
+      )}
+      {rough && counts && (
+        <p className="ta-note">
+          {ASSIST_COPY.classNote(1, classes[0], counts)}
+        </p>
+      )}
+      {!rough && (
         <p className="ta-note">
           {status === "error"
             ? ASSIST_COPY.fetchFailed

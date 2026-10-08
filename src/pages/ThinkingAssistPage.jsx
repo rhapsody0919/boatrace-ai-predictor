@@ -261,6 +261,7 @@ export default function ThinkingAssistPage() {
               rough={rough}
               scope={scope}
               lineup={lineup}
+              classes={today?.classes ?? null}
               status={roughStatus}
               onOpen={() => dispatch({ type: "sheet", sheet: "rough" })}
             />
