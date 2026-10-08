@@ -21,7 +21,7 @@ import {
   useAnalogySimilar,
 } from "../../../hooks/useAnalogyV16";
 import { venueLabel } from "../../../utils/analogyFormat";
-import { trackEvent } from "../../../utils/analytics";
+import { markAnalogySeen, trackEvent } from "../../../utils/analytics";
 import "./AnalogyV16.css";
 
 const TABS = ["facts", "similar", "scenario"];
@@ -69,6 +69,75 @@ export default function AnalogyFinderSection({ raceId }) {
       analogy_stage: stage,
     });
   }, [factsReady, raceId, stage]);
+  // 節が画面に入ったら、レースごとに1回「見た」を送る。section_view は描画した時点で、
+  // 予想ブロックの下にある節が画面に入ったかは分からないため（反応の計測、2026-10-08）
+  const sectionRef = useRef(null);
+  const visibleRace = useRef(null);
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!factsReady || !el || visibleRace.current === raceId) return;
+    if (typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver((entries) => {
+      if (!entries.some((e) => e.isIntersecting)) return;
+      io.disconnect();
+      visibleRace.current = raceId;
+      markAnalogySeen();
+      trackEvent("analogy_section_visible", {
+        race_id: raceId,
+        analogy_stage: stage,
+      });
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [factsReady, raceId, stage]);
+  // 条件の変更（時点・着順・艇・範囲など）を、data-af-control を付けた操作から拾う。
+  // 各部品に計測を書かず、節で1か所にまとめる。押し直し（すでに選択中）は数えない
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const send = (target) => {
+      const group = target.closest?.("[data-af-control]");
+      if (!group || !el.contains(group)) return;
+      trackEvent("analogy_control_change", {
+        race_id: raceId,
+        analogy_tab: tab,
+        analogy_control: group.getAttribute("data-af-control"),
+      });
+    };
+    // React の onClick より先に走る（capture）ので、aria-pressed は押す前の値。
+    // 押し直しで選択を外す部品（data-af-toggle、ソナーの扇）は押し直しも数える
+    const pressed = (btn) => {
+      if (btn.disabled) return;
+      if (
+        btn.getAttribute("aria-pressed") === "true" &&
+        !btn.closest("[data-af-toggle]")
+      )
+        return;
+      send(btn);
+    };
+    const onClick = (e) => {
+      const btn = e.target.closest?.('button, [role="button"]');
+      if (btn) pressed(btn);
+    };
+    // button でない role="button"（ソナーの扇は SVG）は Enter・Space で click が出ないので、キーで拾う
+    const onKeyDown = (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const btn = e.target.closest?.('[role="button"]');
+      if (btn && btn.tagName !== "BUTTON") pressed(btn);
+    };
+    // スライダー・選択肢は値が決まったとき（ネイティブの change）だけ
+    const onChange = (e) => {
+      if (e.target.matches?.("input, select")) send(e.target);
+    };
+    el.addEventListener("click", onClick, true);
+    el.addEventListener("change", onChange, true);
+    el.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      el.removeEventListener("keydown", onKeyDown, true);
+      el.removeEventListener("click", onClick, true);
+      el.removeEventListener("change", onChange, true);
+    };
+  }, [raceId, tab]);
   const similar = useAnalogySimilar(raceId, stage, Boolean(opened.similar));
   const scenario = useAnalogyScenario(
     raceId,
@@ -83,7 +152,7 @@ export default function AnalogyFinderSection({ raceId }) {
     race: Number(raceNumber),
   });
   const wrap = (body) => (
-    <section className="af-v16" aria-labelledby={headingId}>
+    <section className="af-v16" aria-labelledby={headingId} ref={sectionRef}>
       <h2 id={headingId} className="af-v16-eyebrow">
         {heading}
       </h2>

@@ -137,7 +137,12 @@ export default function ConditionFactsTab({ data, stage, target }) {
         <span className="af-lbl" id="af-boat-label">
           {t(`${k}.boatLabel`)}
         </span>
-        <div className="af-seg" role="group" aria-labelledby="af-boat-label">
+        <div
+          className="af-seg"
+          role="group"
+          aria-labelledby="af-boat-label"
+          data-af-control="facts_boat"
+        >
           {[1, 2, 3, 4, 5, 6].map((b) => (
             <button
               key={b}
@@ -160,6 +165,7 @@ export default function ConditionFactsTab({ data, stage, target }) {
         <label className="af-ctl-row af-lbl">
           {t(`${k}.compareSelect`)}
           <select
+            data-af-control="facts_compare"
             value={compareBoat}
             onChange={(e) => setCompareBoat(Number(e.target.value))}
           >
@@ -177,7 +183,12 @@ export default function ConditionFactsTab({ data, stage, target }) {
         <span className="af-lbl" id="af-fscope-label">
           {t(`${k}.scopeLabel`)}
         </span>
-        <div className="af-seg" role="group" aria-labelledby="af-fscope-label">
+        <div
+          className="af-seg"
+          role="group"
+          aria-labelledby="af-fscope-label"
+          data-af-control="facts_scope"
+        >
           {kinds.map((s) => (
             <button
               key={s}

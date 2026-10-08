@@ -18,7 +18,7 @@ export default function SlitShapePicker({ forms, slit, onSlit, badges }) {
   const { t } = useTranslation();
   const inEntry = forms.any.n;
   return (
-    <div className="af-pats">
+    <div className="af-pats" data-af-control="slit_shape">
       {["any", ...SLIT_FORMS].map((f) => {
         const x = forms[f];
         const badge = badges[f];

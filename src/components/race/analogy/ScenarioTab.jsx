@@ -259,7 +259,12 @@ export default function ScenarioTab({ data, stage, onScope, today, raceId }) {
         <span className="af-lbl" id={scopeLbl}>
           {t("aiPredictionTab.analogy.facts.scopeLabel")}
         </span>
-        <div className="af-seg" role="group" aria-labelledby={scopeLbl}>
+        <div
+          className="af-seg"
+          role="group"
+          aria-labelledby={scopeLbl}
+          data-af-control="scenario_scope"
+        >
           {SCOPES.filter((s) => keys[s]).map((s) => (
             <button
               key={s}

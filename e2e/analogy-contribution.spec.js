@@ -171,6 +171,174 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
         ]).not.toContain(k);
   });
 
+  test("節が画面に入ったら1回、条件を変えたら操作の名前で計測する（選択中の押し直しは数えない）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await setup(page);
+    await openAiTab(page);
+    const section = sectionOf(page);
+    await expect(section.getByRole("tablist")).toBeVisible();
+    await section.scrollIntoViewIfNeeded();
+    const named = (name) =>
+      page.evaluate(
+        (n) => window.__events.filter((e) => e[0] === "event" && e[1] === n),
+        name,
+      );
+    await expect
+      .poll(async () => (await named("analogy_section_visible")).length)
+      .toBe(1);
+    const [visible] = await named("analogy_section_visible");
+    expect(Object.keys(visible[2]).sort()).toEqual([
+      "analogy_stage",
+      "race_id",
+    ]);
+    // 見た時刻を覚える（7日以内の再訪を数えるため）
+    expect(
+      Number(
+        await page.evaluate(() =>
+          localStorage.getItem("boatai-user:analogy-last-seen"),
+        ),
+      ),
+    ).toBeGreaterThan(0);
+
+    const target = section.getByRole("group").filter({ hasText: "2着以内" });
+    await target.getByRole("button", { name: "1着", exact: true }).click(); // 選択中の押し直し
+    await target.getByRole("button", { name: "2着以内", exact: true }).click();
+    await section.getByRole("tab", { name: "類似レース" }).click(); // タブは analogy_tab_select だけ
+    const changes = await named("analogy_control_change");
+    expect(changes.map((e) => e[2])).toEqual([
+      {
+        race_id: `${DATE}-09-01`,
+        analogy_tab: "facts",
+        analogy_control: "target",
+      },
+    ]);
+    // 画面に入ったのは1回だけ（タブを切り替えても増えない）
+    expect(await named("analogy_section_visible")).toHaveLength(1);
+  });
+
+  test("前回ソナーを見て7日以内なら、開いた最初に再訪を1回送る（再読み込みでは送らない）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = JSON.parse(sessionStorage.getItem("__ev") ?? "[]");
+      window.gtag = (...args) => {
+        window.__events.push(args);
+        sessionStorage.setItem("__ev", JSON.stringify(window.__events));
+      };
+      if (!sessionStorage.getItem("__seeded")) {
+        sessionStorage.setItem("__seeded", "1");
+        localStorage.setItem(
+          "boatai-user:analogy-last-seen",
+          String(Date.now() - 3 * 24 * 60 * 60 * 1000 - 60 * 1000),
+        );
+      }
+    });
+    await setup(page);
+    await page.goto(`/race/${DATE}-09-01`);
+    await expect(page.getByText("テスト選手1").first()).toBeVisible({
+      timeout: 20000,
+    });
+    const returns = () =>
+      page.evaluate(() =>
+        window.__events.filter(
+          (e) => e[0] === "event" && e[1] === "analogy_return_visit",
+        ),
+      );
+    await expect.poll(async () => (await returns()).length).toBe(1);
+    expect((await returns())[0][2]).toEqual({ analogy_days_since: 3 });
+    await page.reload();
+    await expect(page.getByText("テスト選手1").first()).toBeVisible({
+      timeout: 20000,
+    });
+    await page.waitForTimeout(1500); // page_view の確定待ち（PAGE_VIEW_SETTLE_MS）
+    expect(await returns()).toHaveLength(1);
+  });
+
+  test("見てから30分以内に開いたタブは同じ来訪として再訪を送らない（レビュー指摘）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+      localStorage.setItem(
+        "boatai-user:analogy-last-seen",
+        String(Date.now() - 5 * 60 * 1000),
+      );
+    });
+    await setup(page);
+    await page.goto(`/race/${DATE}-09-01`);
+    await expect(page.getByText("テスト選手1").first()).toBeVisible({
+      timeout: 20000,
+    });
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => window.__events.filter((e) => e[1] === "page_view").length,
+        ),
+      )
+      .toBeGreaterThan(0);
+    expect(
+      await page.evaluate(() =>
+        window.__events.filter((e) => e[1] === "analogy_return_visit"),
+      ),
+    ).toHaveLength(0);
+  });
+
+  test("ソナーの扇は選択を外す押し直しとキーボードの操作も条件変更に数える（レビュー指摘）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await setup(page);
+    await openAiTab(page);
+    const section = sectionOf(page);
+    await section.getByRole("tab", { name: "類似レース" }).click();
+    const sector = section.getByRole("button", {
+      name: /^1号艇が勝ったレース/,
+    });
+    await sector.click(); // 選ぶ
+    await sector.click(); // 外す（押し直し）
+    await sector.focus();
+    await page.keyboard.press("Enter"); // キーボードで選ぶ
+    const controls = await page.evaluate(() =>
+      window.__events
+        .filter((e) => e[1] === "analogy_control_change")
+        .map((e) => e[2].analogy_control),
+    );
+    expect(controls).toEqual(["similar_boat", "similar_boat", "similar_boat"]);
+  });
+
+  test("?tab=aiPrediction のリンクで開いたら race_tab_initial を1回送る。素の URL では送らない", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await setup(page);
+    const initials = () =>
+      page.evaluate(() =>
+        window.__events
+          .filter((e) => e[0] === "event" && e[1] === "race_tab_initial")
+          .map((e) => e[2]),
+      );
+    await page.goto(`/race/${DATE}-09-01?tab=aiPrediction`);
+    await expect(sectionOf(page)).toBeVisible({ timeout: 20000 });
+    expect(await initials()).toEqual([{ tab_id: "aiPrediction" }]);
+    await page.goto(`/race/${DATE}-09-02`);
+    await expect(page.getByText("テスト選手1").first()).toBeVisible({
+      timeout: 20000,
+    });
+    expect(await initials()).toEqual([]);
+  });
+
   test("?analogy=1 を付けて開くと内部確認として節を出し、端末に覚える", async ({
     page,
   }) => {

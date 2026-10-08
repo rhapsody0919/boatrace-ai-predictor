@@ -52,7 +52,7 @@ export default function EntryPatternPicker({
     );
   };
   return (
-    <div className="af-ents">
+    <div className="af-ents" data-af-control="entry_pattern">
       {ENTRY_TYPES.flatMap((e) =>
         e === "mae" && openMae
           ? [row(e), ...MAE_SUB.map((s) => row(s, true))]

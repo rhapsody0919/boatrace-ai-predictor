@@ -42,6 +42,18 @@ function RaceTabs({ tabs, defaultTabId, initialTabId, onActiveTabChange }) {
       ? initialTabId
       : (defaultTabId ?? tabs[0]?.id),
   );
+  // ?tab= のリンクでタブを開いたことを、マウント時に1回残す（龍神ソナーの反応の計測、2026-10-08）。
+  // race_tab_select は「押した」だけを数えるので、SNS 等から AI予想タブへ直行した人が数えられない。
+  // アプリ内のレースへのリンクは ?tab= を付けないので、これは共有リンク・外部からの来訪と再読み込み
+  // 開発時の StrictMode は effect を2回走らせるので ref で1回に絞る
+  const initialSent = useRef(false);
+  useEffect(() => {
+    if (initialSent.current) return;
+    initialSent.current = true;
+    if (tabs.some((tab) => tab.id === initialTabId))
+      trackEvent("race_tab_initial", { tab_id: initialTabId });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // レース遷移・結果確定でdefaultTabIdが変わった時だけ選択をリセットする
   // （タブを自分でクリックした後、無関係な再レンダーで勝手に戻らないようにする）
   const prevDefaultRef = useRef(defaultTabId);

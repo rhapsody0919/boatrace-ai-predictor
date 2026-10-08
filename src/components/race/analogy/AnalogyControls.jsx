@@ -40,7 +40,12 @@ export default function AnalogyControls({
         <span className="af-lbl" id={stageLabel}>
           {t(`${k}.stage.label`)}
         </span>
-        <div className="af-seg" role="group" aria-labelledby={stageLabel}>
+        <div
+          className="af-seg"
+          role="group"
+          aria-labelledby={stageLabel}
+          data-af-control="stage"
+        >
           <button
             type="button"
             aria-pressed={stage === "racecard"}
@@ -64,7 +69,12 @@ export default function AnalogyControls({
           <span className="af-lbl" id={targetLabel}>
             {t(`${k}.targetsLabel`)}
           </span>
-          <div className="af-seg" role="group" aria-labelledby={targetLabel}>
+          <div
+            className="af-seg"
+            role="group"
+            aria-labelledby={targetLabel}
+            data-af-control="target"
+          >
             {[1, 2, 3].map((n) => (
               <button
                 key={n}
