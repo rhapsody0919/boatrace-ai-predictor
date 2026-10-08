@@ -327,6 +327,53 @@ test.describe("思考アシスト: ファン評価 2周目", () => {
   });
 });
 
+test.describe("思考アシスト: ファン評価 3周目", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("指摘10: 展示前・展示後を切り替えても、切り替えのボタンの位置が動かない", async ({
+    page,
+  }) => {
+    await open(page);
+    const pos = () =>
+      page
+        .getByRole("group", { name: "時点" })
+        .evaluate((el) => Math.round(el.getBoundingClientRect().right));
+    const post = await pos();
+    await page.getByRole("button", { name: "展示前", exact: true }).click();
+    expect(await pos()).toBe(post);
+  });
+
+  test("指摘11: 表示できないレースからレース一覧へ戻れる", async ({ page }) => {
+    await page.goto("/race/2026-10-06-18-13/assist");
+    await expect(
+      page.getByRole("main").getByRole("link", { name: "レース一覧へ戻る" }),
+    ).toHaveAttribute("href", "/");
+  });
+
+  test("指摘12: 目盛りの外の値の数字は図の右端からはみ出さない", async ({
+    page,
+  }) => {
+    await routeExhibition(page, (rows) =>
+      rows.map((r) => (r.boat_number === 4 ? { ...r, start_timing: 0.32 } : r)),
+    );
+    await open(page);
+    await lensTab(page, "展開").click();
+    const over = await page.evaluate(() =>
+      [...document.querySelectorAll(".ta-track")]
+        .map((t) => {
+          const v = t.querySelector(".ta-track-val");
+          return v
+            ? v.getBoundingClientRect().right - t.getBoundingClientRect().right
+            : 0;
+        })
+        .filter((d) => d > 0.5),
+    );
+    expect(over).toEqual([]);
+  });
+});
+
 test.describe("思考アシスト: シートのフォーカス（Codex 依頼27 U03）", () => {
   test.beforeEach(async ({ page }) => {
     await routeThinkingAssistV16(page);

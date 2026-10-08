@@ -20,6 +20,7 @@ export const ASSIST_COPY = Object.freeze({
   partOdds: "オッズ",
   partSimilar: "類似レース",
   raceNotFound: "このレースは表示できるデータがありません",
+  backToRaces: "レース一覧へ戻る",
   retry: "もう一度読み込む",
 
   // ヘッダー（screens S-1 A）

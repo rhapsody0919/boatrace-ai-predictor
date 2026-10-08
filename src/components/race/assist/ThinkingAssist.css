@@ -107,6 +107,8 @@
 
 .ta-seg {
   display: inline-flex;
+  /* 展示前・展示後で前の文の長さが変わっても、切り替えの位置を右端に固定する（ファン評価 3周目 指摘10） */
+  margin-left: auto;
   border: 1px solid var(--border-hairline);
   border-radius: var(--radius-md);
 }
@@ -597,6 +599,14 @@
   transform: translateX(-50%);
   white-space: nowrap;
   padding: 0 2px;
+}
+
+.ta-track-val-end {
+  transform: translateX(-100%);
+}
+
+.ta-track-val-start {
+  transform: none;
 }
 
 .ta-track-empty {

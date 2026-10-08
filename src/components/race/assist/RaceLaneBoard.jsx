@@ -64,7 +64,8 @@ function Track({ model, row }) {
       />
       {row.dotText && (
         <span
-          className={`ta-track-val ta-num${row.dotBest ? " ind-best" : ""}`}
+          // 端の値（目盛りの外に詰めた値を含む）は文字を内側へ寄せ、右の印や図の外にはみ出させない（ファン評価 3周目 指摘12）
+          className={`ta-track-val ta-num${row.dotBest ? " ind-best" : ""}${x > 85 ? " ta-track-val-end" : x < 15 ? " ta-track-val-start" : ""}`}
           style={{ left: `${x}%` }}
         >
           {row.dotText}

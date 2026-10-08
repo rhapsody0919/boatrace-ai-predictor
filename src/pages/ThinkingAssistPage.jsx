@@ -5,7 +5,7 @@
  * 深掘り・セオリーカード・用語・会場の特徴・ガイド・上部の切り替えは後の PR（tasks PR4〜PR6）
  */
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import Header from "../components/Header";
 import AssistHeader from "../components/race/assist/AssistHeader";
 import RoughCard from "../components/race/assist/RoughCard";
@@ -223,7 +223,15 @@ export default function ThinkingAssistPage() {
   } else if (data.racecard.status === "error") {
     body = <p className="ta-status">{ASSIST_COPY.fetchFailed}</p>;
   } else if (!race) {
-    body = <p className="ta-status">{ASSIST_COPY.raceNotFound}</p>;
+    // 次に行ける所を1つ置く（ファン評価 3周目 指摘11）
+    body = (
+      <div className="ta-status">
+        <p>{ASSIST_COPY.raceNotFound}</p>
+        <Link className="ta-link" to="/">
+          {ASSIST_COPY.backToRaces}
+        </Link>
+      </div>
+    );
   } else {
     body = (
       <>
