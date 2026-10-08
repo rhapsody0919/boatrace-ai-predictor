@@ -92,6 +92,9 @@ for (const failure of ["post-response-lost", "get-after-post-failed"]) {
   }) => {
     status.connected = true;
     status.control.paused = false;
+    // パネルは10秒ごとに状態を取り直す。回復の確認を実時間の待ちに頼ると、
+    // 負荷の高いマシンで間に合わず落ちる（2026-10-08、負荷平均500超で再現）ので仮想の時計で進める
+    await page.clock.install();
     await page.goto("/__x_send_test");
     await expect(
       page.getByRole("button", { name: "手動投稿", exact: true }),
@@ -135,9 +138,8 @@ for (const failure of ["post-response-lost", "get-after-post-failed"]) {
       page.getByRole("button", { name: "承認して公開", exact: true }),
     ).toBeDisabled();
     failed = false;
-    await expect(page.getByText("X送信: 予約・待機中")).toBeVisible({
-      timeout: 15000,
-    });
+    await page.clock.runFor(10_000);
+    await expect(page.getByText("X送信: 予約・待機中")).toBeVisible();
     await expect(
       page.getByRole("button", { name: "手動投稿", exact: true }),
     ).toHaveCount(0);
