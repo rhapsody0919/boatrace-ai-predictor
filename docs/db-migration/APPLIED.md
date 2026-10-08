@@ -193,4 +193,5 @@
 | 140 | 140_sns_mobile_approval.sql | 未適用 | 依頼6: レース単位スマホ確認・版固定の個別承認・媒体hash。135/137が前提。オーナー適用待ち |
 | 141 | 141_sns_edit_assist.sql | 未適用 | 依頼7: 下書きの編集点検（読みやすさ・数値出典・敬称）・採用/無視履歴。135/140が前提。オーナー適用待ち |
 | 142 | 142_sns_shorts_send.sql | 未適用 | 依頼9・10: YouTube Shorts期限つき送信（案B＝private insert→公開段階update）・クォータ台帳・SNSハッシュタグ「#競艇」暫定例外（GA4月間ユーザー1000人まで）。135/137/139が前提。オーナー適用待ち |
+| 144 | 144_sns_posted_approval_guard.sql | 未適用 | 依頼11: 投稿済み（draft.posted_atが非NULL、またはjob.state='posted'）の下書きは本文・媒体等の承認対象編集を拒否し承認記録を保護。jobの無い投稿済み下書き（アーカイブ後も含む）も対象。140のguard_sns_x_approvalをCREATE OR REPLACEで置換（140の既存チェックは維持）。142までが前提。オーナー適用待ち |
 | （番号なし） | add-defense-distribution.sql | 適用済み | 列 racer_aggregated_stats.defense_distribution・course_race_counts が存在 |

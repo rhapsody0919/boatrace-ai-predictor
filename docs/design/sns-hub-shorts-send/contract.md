@@ -4,7 +4,7 @@
 
 139（F01-Rの試行時媒体計数）・140・141を維持し、142を上に適用する。実adapter・worker/cron接続・鍵・OAuth・アップロードは提供しない。既存queue/mobile APIのconnected=falseと初期停止は維持する。旧publish-youtubeは期限付き素材を拒否するまま。既存youtubeUpload.jsのOAuth・multipart upload・thumbnail helperは将来adapterが利用できるが、このレーンからは呼ばない。
 
-スマホのversionHashは既存SQL revision＋server snapshotのhash。同じサーバー関数createXSnapshotを使い、YouTubeのみvideoと任意coverの両方を実バイトhash/size/typeで含める。SQLの承認版・媒体パス検査も2件までへ拡張する。本文/タイトル/タグ/媒体/根拠の編集は既存triggerにより承認失効。同じStorageパスの上書きは送信時に拒否する。142以前のcoverを含まないsnapshotは再承認が必要。Xの媒体選択は変更しない。上限は従来の各32MiB（動画＋cover最大64MiB）、SQL/API応答時間・実動画対応は接続前に確認する。
+スマホのversionHashは既存SQL revision＋server snapshotのhash。同じサーバー関数createXSnapshotを使い、YouTubeのみvideoと任意coverの両方を実バイトhash/size/typeで含める。SQLの承認版・媒体パス検査も2件までへ拡張する。未投稿の本文/タイトル/タグ/媒体/根拠の編集は既存triggerにより承認失効。144適用後は、draft.posted_atがある（一度でも投稿された）かjob.stateがpostedなら承認対象の編集を拒否し、承認者・承認日時・承認hashと送信済みjobを保持する。同じStorageパスの上書きは送信時に拒否する。142以前のcoverを含まないsnapshotは再承認が必要。Xの媒体選択は変更しない。上限は従来の各32MiB（動画＋cover最大64MiB）、SQL/API応答時間・実動画対応は接続前に確認する。
 
 ## 実行契約
 

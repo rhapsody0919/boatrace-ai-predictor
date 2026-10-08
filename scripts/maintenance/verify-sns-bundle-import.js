@@ -933,3 +933,4 @@ if (sample)
 console.log(
   `${count} checks passed (PGliteの同時リクエストは同一接続内で直列化。本番並行接続は未検証)`,
 );
+
