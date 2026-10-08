@@ -886,6 +886,26 @@
       "script": "verify-sns-deadline-queue.js",
       "tier": "ci",
       "guards": "依頼5: 発走期限つき待ち行列・送信前検査（headless/public_url）・日次枠の再承認後保持・媒体変更後の枠保持・begin_postの日付またぎ保留（139をPGlite、モックadapter、外部接続なし）"
+    },
+    {
+      "script": "verify-sns-mobile-approval.js",
+      "tier": "ci",
+      "guards": "依頼6: レース単位スマホ確認・版固定の個別承認・媒体hash（140をPGlite、外部接続なし）"
+    },
+    {
+      "script": "verify-sns-mobile-api.js",
+      "tier": "ci",
+      "guards": "依頼6: mobile-approval APIの媒体hash取得が直列（並行上限1）であることと、X動画・画像の署名プレビュー返却"
+    },
+    {
+      "script": "verify-sns-mobile-groups.js",
+      "tier": "ci",
+      "guards": "依頼6: 当日レース単位のグループ化・ページング・対象日検証（xSendStore.mobileRace、DBクエリの限定）"
+    },
+    {
+      "script": "verify-sns-mobile-dom.js",
+      "tier": "ci",
+      "guards": "依頼6: JSDOM上でMobileApprovalPanel/SnsHubAdminの状態連携を検証（Chromium起動不可環境向け、レイアウト・動画再生は対象外）"
     }
   ]
 }
