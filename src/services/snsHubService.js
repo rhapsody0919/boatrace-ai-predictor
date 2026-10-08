@@ -273,10 +273,3 @@ export async function getMetricObservations(window, metric) {
   );
   return data;
 }
-
-export async function appendMetricObservation(observation) {
-  return request("/observations", {
-    method: "POST",
-    body: JSON.stringify(observation),
-  });
-}

@@ -2,6 +2,12 @@
 
 マイグレーション136（観測履歴 `sns_metric_observations`、UTM の保存先 `sns_post_tracking`、追記 RPC `append_sns_metric_observation`）の本番適用の手順。新しい表と関数を作るだけで、既存の表・行・画面の動きは変えない（`sns_drafts` には列もトリガーも足さない）。135 には依存しない。
 
+## 既存の表・トリガーへの影響
+- `sns_drafts`: 列・トリガー・行は変えない。新しい2表が `sns_drafts(id)` を外部キーで参照する（ON DELETE の指定なし）。**観測や UTM の行がある下書きは `DELETE` できなくなる**（ふだんは非表示＝archive で消さないので運用上は影響なし。SQL Editor で直接消すときは先に新しい表の行を消す）
+- `sns_draft_metrics`（既存の手動指標）: 触らない。古い手動指標は観測窓が分からないため、新しい表へは移さない（型比較のタブにも出ない）
+- `sns_template_variants`: `sns_post_tracking` が参照するだけ
+- 135 のトリガー（`guard_sns_preview_bundle_draft`）とは無関係（`sns_drafts` を UPDATE しないため）
+
 ## 順序
 1. ユーザー: SQL Editor で下の SQL を上から順に実行する（手順1 → 手順2 → 手順3）
 2. Claude: 手順3の SELECT を読み取りで確認し、APPLIED.md の 136 を「適用済み」に直す

@@ -6,6 +6,14 @@ import {
 } from "../../../utils/snsObservations.js";
 import "./MetricsTab.css";
 
+// 縦軸の最大値は曲線ごとに1回だけ求める（点ごとに求めると点数の2乗になる）
+function curvePolyline(points) {
+  const max = Math.max(1, ...points.map((p) => p.value));
+  return points
+    .map((p) => `${10 + p.elapsed_ratio * 280},${110 - (p.value / max) * 100}`)
+    .join(" ");
+}
+
 export default function MetricsTab() {
   const [window, setWindow] = useState("48h");
   const [metric, setMetric] = useState("views");
@@ -126,12 +134,7 @@ export default function MetricsTab() {
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
-                      points={curve.points
-                        .map(
-                          (point) =>
-                            `${10 + point.elapsed_ratio * 280},${110 - (point.value / Math.max(1, ...curve.points.map((p) => p.value))) * 100}`,
-                        )
-                        .join(" ")}
+                      points={curvePolyline(curve.points)}
                     />
                   </svg>
                   <ul>

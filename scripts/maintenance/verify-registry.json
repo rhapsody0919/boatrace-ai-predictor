@@ -181,7 +181,9 @@
     {
       "script": "verify-migration-numbers.js",
       "tier": "ci",
-      "args": ["--base=origin/master"],
+      "args": [
+        "--base=origin/master"
+      ],
       "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
       "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
     },
@@ -580,7 +582,9 @@
     {
       "script": "verify-generated-docs-not-in-pr.js",
       "tier": "ci",
-      "args": ["--base=origin/master"],
+      "args": [
+        "--base=origin/master"
+      ],
       "guards": "PRが機械生成の文書（generated-docs.js の一覧）を変更していないこと。含めると並行PRが同じファイルでコンフリクトする（ADR-0078）"
     },
     {
