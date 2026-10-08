@@ -191,4 +191,5 @@
 | 138 | 138_sns_external_operations.sql | 未適用 | 依頼4: 既存YouTube/ブログ排他・外部結果記録。オーナー適用待ち |
 | 139 | 139_sns_deadline_queue.sql | 未適用 | 依頼5: 発走期限つき待ち行列・送信前検査・日次枠。035/042/135/137が前提、138とは独立。オーナー適用待ち |
 | 140 | 140_sns_mobile_approval.sql | 未適用 | 依頼6: レース単位スマホ確認・版固定の個別承認・媒体hash。135/137が前提。オーナー適用待ち |
+| 141 | 141_sns_edit_assist.sql | 未適用 | 依頼7: 下書きの編集点検（読みやすさ・数値出典・敬称）・採用/無視履歴。135/140が前提。オーナー適用待ち |
 | （番号なし） | add-defense-distribution.sql | 適用済み | 列 racer_aggregated_stats.defense_distribution・course_race_counts が存在 |
