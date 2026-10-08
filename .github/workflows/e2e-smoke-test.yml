@@ -181,8 +181,13 @@ jobs:
       # 分け方（e2e-shard の matrix）が全テストを1回ずつ走らせたか
       - name: Check shard coverage
         if: always()
+        # --list は Vite の env読み込み（dotenv）がバナーを標準出力に出すため、
+        # `> e2e-list.json` だと先頭行が混ざってJSONとして壊れる（実測）。
+        # merge-reports と同じ PLAYWRIGHT_JSON_OUTPUT_NAME でレポーターに直接書かせる
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-list.json
         run: |
-          npx playwright test --list --reporter=json > e2e-list.json
+          npx playwright test --list --reporter=json
           node scripts/maintenance/check-e2e-shard-coverage.js e2e-list.json e2e-results.json
 
       - name: Fail if any shard failed
