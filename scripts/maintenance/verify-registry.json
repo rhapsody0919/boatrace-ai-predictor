@@ -911,6 +911,11 @@
       "script": "verify-sns-edit-assist.js",
       "tier": "ci",
       "guards": "依頼7: 読みやすさ・加重文字数・日付時刻・数値出典・敬称の場所付き指摘、AI差し込み口は既定無効、正常文は誤検知しない（141は別途PGliteで検証）"
+    },
+    {
+      "script": "verify-sns-shorts-send.js",
+      "tier": "ci",
+      "guards": "依頼9・10: YouTube Shorts案B（private insert→処理確認→public update→実公開確認）・PT/JST日跨ぎの日次枠・upload lease失効時の非公開残置・処理pollの上限3回・update応答喪失時の要照合（142をPGlite、モックadapter、外部接続なし）"
     }
   ]
 }
