@@ -19,7 +19,7 @@ Codex パッチ由来の sns-hub 改修が、どこまで本番で動いてい�
 | 142 | YouTube Shorts の期限つき送信（案B）・「#競艇」ハッシュタグ例外 | 未作成 | — | — | 未接続 |
 | 143 | （sns-hub ではない。龍神ソナーの反応計測 `analogy_feedback` が使う） | — | — | — | — |
 | 144 | 投稿済み下書きの承認記録の保護 | 未作成 | — | — | — |
-| （未定） | YouTube プロフィールの UTM・観測の CSV 書き出し（Codex 依頼13、`rebased/08-utm-profile-csv/`、05 の上） | 未作成 | — | 番号は hq に確認 | — |
+| 145 | YouTube プロフィールの UTM・観測の CSV 書き出し（Codex 依頼13、`rebased/08-utm-profile-csv/`、05 の上） | 未作成 | — | 145（hq 予約済み） | — |
 
 - 138〜144 のパッチは Codex のチェーン（#1302・#1316 の Codex 版を前半に含む累積）で作られていた。マージ済みの修正を巻き戻さないよう、hq が最新 master 基準で「新しい部分だけ」を作り直し中（Codex 依頼12、`~/ryujin-codex-dev/out/patches/rebased/` に 01〜07 の順）。届いた順に取り込む
 - 番号は hq が予約・管理する。新しい番号は hq に確かめてから使う
