@@ -29,8 +29,31 @@ permissions:
   pull-requests: write
 
 jobs:
-  e2e:
+  # 3台に分けて並行に走らせる（BOA-769）。律速は1台の CPU（4 vCPU を vite dev と Chromium が
+  # 取り合う。PR #1263 で workers を 4 に増やしても縮まなかった）なので、台数を増やす。
+  #
+  # 分け方は spec 単位。Playwright の --shard は件数で均等に割るが、venue-guide-data.spec.js の
+  # 792件はブラウザを使わず一瞬で終わるため、件数で割ると所要が 2338秒/201秒/1226秒 に偏る
+  # （2026-10-08 の CI 2回の実測から試算）。実測の所要がほぼ3等分になるように組んである:
+  #   1: smoke.spec.js（1088秒）＋ race-odds-live.spec.js（224秒）
+  #   2: layout.spec.js の5幅（1083秒）＋ race-detail-details.spec.js（200秒）
+  #   3: それ以外すべて（約1300秒）。新しい spec は自動でここに入る
+  # 組の中では --fully-parallel でテスト単位に workers（既定2）へ割り振る（#1263 で順序依存が無いことを確認済み）。
+  # 全テストがちょうど1回ずつ走ったかは、集約ジョブで check-e2e-shard-coverage.js が確かめる。
+  e2e-shard:
     runs-on: ubuntu-latest
+    strategy:
+      # 1組が落ちても他の組は最後まで走らせ、失敗を一度に全部見せる
+      fail-fast: false
+      matrix:
+        include:
+          - shard: 1
+            args: e2e/smoke.spec.js e2e/race-odds-live.spec.js
+          - shard: 2
+            args: e2e/layout.spec.js e2e/race-detail-details.spec.js
+          - shard: 3
+            args: --grep-invert "(^|[ /])(smoke|race-odds-live|layout|race-detail-details)\.spec\.js( |$)"
+    name: e2e-shard (${{ matrix.shard }}/${{ strategy.job-total }})
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,13 +77,91 @@ jobs:
           path: node_modules/.cache/boatai-e2e-recording
           key: e2e-recording-${{ hashFiles('e2e/recording.json') }}
 
-      # 録画に無い通信は本番へ素通しするので、本番の読み取り用キー（anon）を渡す
+      # 録画に無い通信は本番へ素通しするので、本番の読み取り用キー（anon）を渡す。
+      # レポートは blob で出し、集約ジョブ（e2e）が merge-reports で1つの JSON にまとめる
       - name: Run E2E smoke tests (録画の再生)
         env:
           CI: true
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: npm run test:e2e
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-${{ matrix.shard }}.zip
+        run: npx playwright test --fully-parallel --reporter=list,blob ${{ matrix.args }}
+
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-blob-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 1
+
+      # 素通しの記録（e2e/fixtures.js が test-results/.e2e-passthrough/ に書く）。隠しディレクトリなので明示する
+      - name: Upload passthrough log
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-passthrough-${{ matrix.shard }}
+          path: test-results/.e2e-passthrough/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 1
+
+      - name: Upload Playwright trace on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
+
+  # 集約ジョブ。名前は e2e のまま変えない（scripts/maintenance/guard-pr-merge.js と
+  # .claude/skills/orchestrate/scripts/patrol.sh が check 名 "e2e" で判定している）。
+  # 素通しの一覧と skip の検査は、ここで全組分をまとめて1回だけ出す
+  e2e:
+    needs: e2e-shard
+    # 組が落ちても集約して失敗を報告する。新しい push で止められた実行（cancelled）では走らせない
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download blob reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: e2e-blob-*
+          path: all-blob-reports
+          merge-multiple: true
+
+      # 素通しの記録はワーカーの pid 名で書かれ、組をまたぐと同名になりうるので、組の名前を前に付けて並べる
+      - name: Download passthrough logs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: e2e-passthrough-*
+          path: passthrough-by-shard
+
+      - name: Collect passthrough logs
+        run: |
+          mkdir -p test-results/.e2e-passthrough
+          for f in passthrough-by-shard/*/*.jsonl; do
+            [ -e "$f" ] || continue
+            cp "$f" "test-results/.e2e-passthrough/$(basename "$(dirname "$f")")-$(basename "$f")"
+          done
+
+      # merge-reports はテストが落ちていても終了コード0を返す。合否は最後の手順で組の結果から決める
+      - name: Merge reports
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-results.json
+        run: npx playwright merge-reports --reporter=dot,json all-blob-reports
 
       # テストが落ちても素通しの状況は見たいので always() で動かす
       - name: Report passthrough requests (録画に無く本番へ素通しした通信)
@@ -77,10 +178,22 @@ jobs:
         if: always()
         run: node scripts/maintenance/check-e2e-skips.js
 
-      - name: Upload Playwright trace on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-traces
-          path: test-results/
-          retention-days: 7
+      # 分け方（e2e-shard の matrix）が全テストを1回ずつ走らせたか
+      - name: Check shard coverage
+        if: always()
+        # --list は Vite の env読み込み（dotenv）がバナーを標準出力に出すため、
+        # `> e2e-list.json` だと先頭行が混ざってJSONとして壊れる（実測）。
+        # merge-reports と同じ PLAYWRIGHT_JSON_OUTPUT_NAME でレポーターに直接書かせる
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-list.json
+        run: |
+          npx playwright test --list --reporter=json
+          node scripts/maintenance/check-e2e-shard-coverage.js e2e-list.json e2e-results.json
+
+      - name: Fail if any shard failed
+        if: always()
+        run: |
+          if [ "${{ needs.e2e-shard.result }}" != "success" ]; then
+            echo "e2e-shard の結果: ${{ needs.e2e-shard.result }}（どの組が落ちたかは e2e-shard の各ジョブを参照）"
+            exit 1
+          fi
