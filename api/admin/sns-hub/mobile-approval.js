@@ -3,7 +3,7 @@ import { isConfigured, isValidUuid, jsonResponse, signStoragePaths } from '../..
 import { xSendStore, loadXMedia } from '../../_lib/snsXSendStore.js';
 import { prepareMobileReview, approveMobileReview } from '../../_lib/snsMobileApproval.js';
 import { saveDraftInspection } from '../../_lib/snsEditAssist.js';
-import riskRules from '../../../sns-video-studio/remotion/risk-rules.json' with { type:'json' };
+import riskRules from '../../../sns-video-studio/remotion/risk-rules.json';
 export const config = { runtime: 'edge' };
 export default async function handler(req) {
   const denied = await requireAdminAuth(req);
