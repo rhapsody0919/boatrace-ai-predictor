@@ -265,7 +265,8 @@ export const ASSIST_COPY = Object.freeze({
   powerLegendNone: "体重・チルトは良し悪しを付けない（軽＝一番軽い）",
   partsNone: "部品交換 全艇なし",
   partsBoats: (boats) => `部品交換 ${boats.join("・")}号艇`,
-  powerPre: "展示タイム・オリジナル展示・チルト・部品交換は展示の後に出る",
+  // 展示前は展示の値の名前（チルト・部品交換）も出さない（screens「状態」展示前）
+  powerPre: "展示タイム・オリジナル展示などの展示の値は、展示の後に出る",
   motorHeading: "モーター2連率（6艇）",
   motorChip: (boat, top, v) =>
     `${boat}号艇は6艇で${top ? "一番高い" : "最下位"}（${v}%）`,

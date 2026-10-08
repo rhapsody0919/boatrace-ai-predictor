@@ -962,9 +962,15 @@
   text-decoration: underline dotted;
   text-underline-offset: 2px;
   cursor: pointer;
-  /* 押せる範囲を上下に広げる（文字の見た目の位置は変えない） */
-  padding: 6px 4px;
-  margin-bottom: -6px;
+  /* 見た目の箱は数字の span と同じにする（点・図の端との重なりの検査 指摘7・12 がこの箱を見る） */
+  padding: 0 2px;
+}
+
+/* 押せる範囲は見えない層で上下左右に広げる（N-6） */
+.ta-track-val-btn::after {
+  content: "";
+  position: absolute;
+  inset: -10px -6px;
 }
 
 /* ---- レンズの要約（LensSummary） ---- */

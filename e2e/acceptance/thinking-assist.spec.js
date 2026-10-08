@@ -807,7 +807,8 @@ test.describe("オッズ照合と配分（spec FR-8）", () => {
     await selectTwoComboFormation(page);
     await openSheetBtn(page).click();
     await budgetInput(page).fill("150");
-    await expect(page.getByText("2点には最低200円")).toBeVisible();
+    // 買い目レンズの要約にも同じ配分が出るので、開いたマークシートの中で確かめる
+    await expect(markSheet(page).getByText("2点には最低200円")).toBeVisible();
   });
 
   test("[spec FR-8] 予算が足りるときは配分の合計が予算以下（残りが0円以上）になる", async ({
