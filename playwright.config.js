@@ -117,7 +117,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run dev -- --port ${port} --strictPort`,
+    // E2E_SERVER=preview は vite build 済みの dist を vite preview で配る（BOA-769 B の実験。
+    // dev はリクエストのたびに変換するので CI の CPU を食う）。build は呼び出し側で先に済ませる
+    command:
+      process.env.E2E_SERVER === "preview"
+        ? `npx vite preview --port ${port} --strictPort`
+        : `npm run dev -- --port ${port} --strictPort`,
     env: replayServerEnv(),
     url: `http://localhost:${port}`,
     // PW_PORTを明示指定した場合のみ既存サーバーの再利用を許可する

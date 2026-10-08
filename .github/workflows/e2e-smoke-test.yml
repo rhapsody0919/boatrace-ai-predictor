@@ -77,6 +77,13 @@ jobs:
           path: node_modules/.cache/boatai-e2e-recording
           key: e2e-recording-${{ hashFiles('e2e/recording.json') }}
 
+      # BOA-769 B の実験: dev ではなく build 済みの dist を preview で配る。
+      # Vite は環境変数を build 時に埋め込むので、Supabase のオリジンは録画時のものに揃える
+      - name: Build (vite build)
+        env:
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: VITE_SUPABASE_URL="$(node -p 'require("./e2e/recording.json").supabaseOrigin')" npx vite build
+
       # 録画に無い通信は本番へ素通しするので、本番の読み取り用キー（anon）を渡す。
       # レポートは blob で出し、集約ジョブ（e2e）が merge-reports で1つの JSON にまとめる
       - name: Run E2E smoke tests (録画の再生)
@@ -85,6 +92,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           PLAYWRIGHT_BLOB_OUTPUT_NAME: report-${{ matrix.shard }}.zip
+          E2E_SERVER: preview
         run: npx playwright test --fully-parallel --reporter=list,blob ${{ matrix.args }}
 
       - name: Upload blob report
