@@ -1149,3 +1149,38 @@ test.describe("思考アシスト: ガイドと Cookie の同意バナー（PR5 
     await expect(page.getByText("1号艇は逃げられそう？")).toBeVisible();
   });
 });
+
+test.describe("思考アシスト: BOA-808（PR4 のファン評価2周目の P2）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("1: 図の値を押すと6艇比較になり、深掘りは開かず図の見出しが画面に残る", async ({
+    page,
+  }) => {
+    await open(page);
+    await page
+      .getByRole("button", { name: "平均ST（直近30走） 0.132、6艇で比べる" })
+      .click();
+    await expect(page.getByRole("button", { name: /図を戻す/ })).toBeVisible();
+    await expect(page.locator(".ta-deep")).toHaveCount(0);
+    await expect(page.locator(".ta-board-title")).toBeInViewport();
+  });
+
+  test("1: 深掘りの中の値を押すと、深掘りは開いたまま図の見出しまで戻る", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const deep = page.locator(".ta-deep");
+    await expect(deep).toBeVisible();
+    await deep
+      .getByRole("button", { name: /、6艇で比べる$/ })
+      .first()
+      .click();
+    await expect(page.getByRole("button", { name: /図を戻す/ })).toBeVisible();
+    await expect(deep).toBeVisible();
+    await expect(page.locator(".ta-board-title")).toBeInViewport();
+  });
+});

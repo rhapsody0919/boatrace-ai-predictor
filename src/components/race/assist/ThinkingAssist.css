@@ -475,6 +475,8 @@
 .ta-board {
   margin: 0;
   padding: var(--spacing-2-5) var(--spacing-3) var(--spacing-1);
+  /* 6艇比較に変わったときに送る位置。固定のレンズの下に見出しが隠れないようにする（.ta-deep と同じ） */
+  scroll-margin-top: calc(var(--ta-sticky-top, 0px) + 130px);
 }
 
 .ta-board-axis {
