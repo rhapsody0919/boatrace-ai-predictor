@@ -36,8 +36,12 @@ export default function SlitShapeIcon({
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
-      role="img"
-      aria-label={t("aiPredictionTab.analogy.scenario.slitAria")}
+      // 小さな絵（②のボタンの中）は形の名前の文字と同じことを示す飾りなので、読み上げない
+      role={compact ? undefined : "img"}
+      aria-hidden={compact ? "true" : undefined}
+      aria-label={
+        compact ? undefined : t("aiPredictionTab.analogy.scenario.slitAria")
+      }
     >
       <defs>
         <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">

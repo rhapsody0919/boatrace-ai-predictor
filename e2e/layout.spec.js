@@ -857,7 +857,12 @@ test.describe("レイアウト: 龍神ソナーのタブ（3つの内部タブ�
     const section = await openSection(page);
     await section.getByRole("tab", { name: "展開シナリオ" }).click();
     await section.getByRole("button", { name: /^カド受け凹み/ }).click();
+    // ③の区分の表は「区分で見る」に畳んである（承認モック mock-scenario-v1）。開いた状態で測る
+    await openAllDetails(section);
     await expect(section.getByRole("table").last()).toBeVisible();
+    await expectFits(page);
+    // ②を開き直した状態（手がかりの箱・格子）も測る
+    await section.getByRole("button", { name: /変える/ }).click();
     await openAllDetails(section);
     await expectFits(page);
   });

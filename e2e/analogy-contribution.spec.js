@@ -1096,36 +1096,41 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await openSonarTab(page);
       const section = sectionOf(page);
       await section.getByRole("tab", { name: "展開シナリオ" }).click();
-      await expect(section).toContainText("6艇を足しても100%にならない");
-      await expect(section).toContainText("25%（50/200）");
-      await expect(section).toContainText("50%（100/200）");
+      await expect(section).toContainText("足しても100%にならない");
+      // 4号艇の棒の左に級・件数の札（承認モック mock-scenario-v1）。率はその艇の件数で出す
+      const bar4 = section
+        .locator(".af-bar")
+        .filter({ hasText: "A1 200件" })
+        .first();
+      await expect(bar4).toContainText("25%");
+      await expect(bar4).toContainText("50件");
       expect(urls.length).toBeGreaterThan(0);
       expect(
         urls.every((u) => new URL(u).searchParams.get("boats") === "1"),
       ).toBe(true);
-      // 流れ図・3連単は1号艇の範囲のままなので、その旨を書く（レビュー指摘）
-      await expect(section).toContainText(
-        "着順の流れと3連単は、1号艇の級別をそろえたレース",
-      );
+      // 流れ図・3連単は1号艇の範囲のまま。どの数字がどのレースからかは一番下の表に書く
+      await expect(section).toContainText("どの数字がどのレースからか");
       await section
         .getByRole("button", { name: /^カド一撃/ })
         .first()
         .click();
-      await expect(section).toContainText("77/154レース");
-      await expect(section).toContainText("すぐ外の5号艇の1着 11%");
-      await expect(section).toContainText(
-        "4号艇の級別を今日とそろえたレース（154件）",
+      const box = section.getByTestId("analogy-attack-box").first();
+      await expect(box.locator(".af-scope-tag")).toHaveText(
+        /^4\s*A1 のレース 154件$/,
       );
+      await expect(box).toContainText("4号艇が1着");
+      await expect(box).toContainText("50%");
+      await expect(box).toContainText("すぐ外の5号艇が1着");
+      await expect(box).toContainText("11%");
     });
 
-    test("6艇とも同じ級で攻める艇の範囲が1号艇と同じレースなら、③の「範囲が違う」注記を出さない（BOA-806 レビュー指摘）", async ({
+    test("③の箱の札は、攻める艇の範囲があればその艇、無ければ1号艇の範囲を示す（BOA-806、承認モック mock-scenario-v1）", async ({
       page,
     }) => {
       await setup(page);
       const base = analogyV16Scenario();
       const kado = base.scenario.attack.kado;
-      // 若松・6艇ともA1: 4号艇の範囲は1号艇の範囲と同じレース（件数も同じ）
-      const boats = {
+      let boats = {
         2: null,
         3: null,
         4: {
@@ -1146,10 +1151,19 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
         .getByRole("button", { name: /^カド一撃/ })
         .first()
         .click();
-      await expect(section.getByText("攻める艇:")).toBeVisible();
-      await expect(section).not.toContainText(
-        "4号艇の級別を今日とそろえたレース",
-      );
+      // ②は選んだら1行に畳み、③の頭に文脈の札
+      await expect(section.getByTestId("analogy-slit-chosen")).toBeVisible();
+      await expect(
+        section.getByRole("button", { name: /枠なり × カド一撃/ }),
+      ).toBeVisible();
+      const tags = section
+        .getByTestId("analogy-attack-box")
+        .locator(".af-scope-tag");
+      await expect(tags.nth(0)).toHaveText(/^4\s*A1 のレース/);
+      await expect(tags.nth(1)).toHaveText(/^1\s*A1 のレース/);
+      // 「変える」で②を開き直せる
+      await section.getByRole("button", { name: /変える/ }).click();
+      await expect(section.locator("#af-pat-kado")).toBeVisible();
     });
 
     test("七角形の表で見た3号艇の展示タイムは、3号艇を一番上で選んだときと同じ数字（2026-10-09 ユーザー指摘）", async ({
