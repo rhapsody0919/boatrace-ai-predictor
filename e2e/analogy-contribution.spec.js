@@ -1346,6 +1346,44 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       }
     });
 
+    test("1着の1号艇と「1号艇以外が勝ったレース」は両立しないので、片方を選ぶともう片方が外れる（ユーザー指摘 2026-10-10）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      for (const tab of ["展開シナリオ", "類似レース"]) {
+        await section.getByRole("tab", { name: tab }).click();
+        const panel = section.getByRole("tabpanel");
+        const box1 = panel.getByRole("button", {
+          name: /^1着 1号艇 [\d,]+件$/,
+        });
+        const not1 = panel.getByRole("button", {
+          name: "1号艇以外が勝ったレース",
+        });
+        // 1号艇で絞った後に「1号艇以外」を押すと、1号艇の絞りが外れて流れと3連単が出る（以前は0件で何も出なかった）
+        await box1.click();
+        await expect(box1).toHaveAttribute("aria-pressed", "true");
+        await not1.click();
+        await expect(not1).toHaveAttribute("aria-pressed", "true");
+        await expect(
+          panel.locator(".af-flow path[role='button']").first(),
+        ).toBeAttached();
+        await expect(panel.locator(".af-tri").first()).toBeVisible();
+        await expect(panel.locator(".af-tri").first()).not.toContainText(/^1-/);
+        if (tab === "類似レース") {
+          // 「1号艇以外」のまま、上の「どの艇が勝った？」の棒で1号艇を選ぶと「1号艇以外」が外れる
+          await panel
+            .getByRole("button", { name: /^1号艇 [\d.]+% [\d,]+件$/ })
+            .first()
+            .click();
+          await expect(not1).toHaveAttribute("aria-pressed", "false");
+          await expect(box1).toHaveAttribute("aria-pressed", "true");
+        }
+        await panel.getByRole("button", { name: "すべて" }).click();
+      }
+    });
+
     test("七角形の表で見た3号艇の展示タイムは、3号艇を一番上で選んだときと同じ数字（2026-10-09 ユーザー指摘）", async ({
       page,
     }) => {

@@ -261,7 +261,12 @@ export default function SimilarRacesTab({
           : []),
       ])
     : null;
-  const selectBoat = (b) => setBoat(boat === b ? null : b);
+  const selectBoat = (b) => {
+    const next = boat === b ? null : b;
+    setBoat(next);
+    // 1号艇を選んだら「1号艇以外が勝ったレース」を外す（両立しないので0件になっていた。ユーザー指摘 2026-10-10）
+    if (next === 1 && not1) setNot1(false);
+  };
   const pick = (id) => {
     setOpen(id);
     setCmpExpanded(true);

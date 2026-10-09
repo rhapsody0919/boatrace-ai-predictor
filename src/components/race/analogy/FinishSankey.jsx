@@ -39,6 +39,12 @@ export default function FinishSankey({
   // 押したときの絞り込みと今の絞り込みが違えば、選んでいないことにする
   const picked =
     band && band.first === first && band.not1 === not1 ? band : null;
+  // 1着の四角で1号艇を選んだら「1号艇以外」を外す（両立しないので）
+  const pickFirst = (b) => {
+    const next = first === b ? null : b;
+    onFirst(next);
+    if (next === 1 && not1) onNot1(false);
+  };
   const k = "aiPredictionTab.analogy.flow";
   const rows = trifectaList(tri, { first, not1 });
   const tot = rows.reduce((s, [, c]) => s + c, 0);
@@ -128,6 +134,8 @@ export default function FinishSankey({
             aria-pressed={not1 === v}
             onClick={() => {
               onNot1(v);
+              // 「1号艇以外」と1着の1号艇は両立しない（0件になって何も出なかった。ユーザー指摘 2026-10-10）
+              if (v && first === 1) onFirst(null);
               setSel(null);
             }}
           >
@@ -167,13 +175,13 @@ export default function FinishSankey({
                       aria-pressed={on}
                       style={{ cursor: "pointer" }}
                       onClick={() => {
-                        onFirst(first === b ? null : b);
+                        pickFirst(b);
                         setSel(null);
                       }}
                       onKeyDown={(e) => {
                         if (e.key !== "Enter" && e.key !== " ") return;
                         e.preventDefault();
-                        onFirst(first === b ? null : b);
+                        pickFirst(b);
                       }}
                     >
                       {rect}
