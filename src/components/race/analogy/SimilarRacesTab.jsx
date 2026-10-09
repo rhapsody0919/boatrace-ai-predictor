@@ -241,7 +241,11 @@ export default function SimilarRacesTab({
     cmp?.name === "grade"
       ? t(`${k}.cmpGrade`, { kind: cmpKind ?? "" })
       : cmp?.name === "round"
-        ? t(`${k}.cmpRound`)
+        ? t(`${k}.cmpRound`, {
+            round: sim.conditions?.round
+              ? t(`aiPredictionTab.analogy.rounds.${sim.conditions.round}`)
+              : "",
+          })
         : t(`${k}.cmpSame`);
   const cmpRate = (arr, b) => (cmp?.n ? arr[b - 1] / cmp.n : null);
   const tk = TARGET[target];

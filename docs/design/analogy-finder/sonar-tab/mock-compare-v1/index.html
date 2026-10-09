@@ -1,0 +1,162 @@
+<title>龍神ソナー 6艇を並べる</title>
+<style>
+:root{--page:#f7f3ea;--card:#fbf9f3;--line:#ddd4bf;--ink:#0f172a;--sub:#475569;--gold:#6b500f;--gold-soft:#f1e7c6;--up:#0f766e;--down:#b42318;--frame:#e7e1d3;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--page:#0d1b2e;--card:#142842;--line:#24344d;--ink:#f8fafc;--sub:#cbd5e1;--gold:#c9a227;--gold-soft:#2a3346;--up:#2dd4bf;--down:#f87171;--frame:#091424;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#0d1b2e;--card:#142842;--line:#24344d;--ink:#f8fafc;--sub:#cbd5e1;--gold:#c9a227;--gold-soft:#2a3346;--up:#2dd4bf;--down:#f87171;--frame:#091424;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--frame);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;font-size:14px;line-height:1.6;padding-inline:16px;padding-block:20px 60px}
+.doc{max-width:980px;margin-inline:auto;display:flex;flex-direction:column;gap:18px}
+h1{font-size:21px;margin:0;text-wrap:balance}
+h2{font-size:16px;margin:8px 0 0}
+p{margin:0}
+.lead{color:var(--sub);max-width:70ch}
+.cols{display:grid;grid-template-columns:375px minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.device{width:375px;max-width:100%;background:var(--page);border:1px solid var(--line);border-radius:18px;overflow:hidden;padding:14px 12px 20px;display:flex;flex-direction:column;gap:16px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.h3{font-size:15px;font-weight:800;margin:0}
+.small{font-size:12px;color:var(--sub)}
+.boats{display:flex;gap:6px}
+.bb{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:800;border:1px solid #94a3b8;flex:none}
+.b1{background:#fff;color:#000}.b2{background:#000;color:#fff}.b3{background:#e53935;color:#fff}.b4{background:#1e88e5;color:#fff}.b5{background:#fdd835;color:#000}.b6{background:#43a047;color:#fff}
+.boats button{padding:0;border:0;background:none;cursor:pointer;border-radius:50%}
+.boats .bb{width:32px;height:32px;border-radius:50%;font-size:13px}
+.boats button[aria-pressed="true"] .bb{outline:2px solid var(--gold);outline-offset:2px}
+.seg{display:inline-flex;gap:4px;flex-wrap:wrap}
+.seg button{font:inherit;font-size:12px;font-weight:700;border:1px solid var(--line);background:var(--page);color:var(--sub);border-radius:6px;padding:4px 9px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:var(--card)}
+.tw{overflow-x:auto;margin-inline:-4px;padding-inline:4px}
+table.cmp{border-collapse:separate;border-spacing:0;font-size:12px;font-variant-numeric:tabular-nums;min-width:100%}
+table.cmp th,table.cmp td{padding:6px 5px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle;white-space:nowrap}
+table.cmp thead th{font-size:11px;color:var(--sub);font-weight:700;line-height:1.3;white-space:normal;min-width:58px}
+table.cmp tbody th{text-align:left;position:sticky;left:0;background:var(--card);z-index:1;min-width:92px}
+.rowhead{display:flex;flex-direction:column;gap:1px}
+.rowhead .top{display:flex;align-items:center;gap:5px;font-weight:800}
+.rowhead .n{font-size:10.5px;color:var(--sub);font-weight:400}
+tr.main th,tr.main td{background:var(--gold-soft)}
+tr.main th{box-shadow:inset 3px 0 0 var(--gold)}
+tr.few td,tr.few th .top{opacity:.55}
+td button{font:inherit;width:100%;border:0;background:none;color:inherit;cursor:pointer;padding:0;display:flex;flex-direction:column;align-items:center;gap:1px;border-radius:6px}
+td button:focus-visible,td button.sel{outline:2px solid var(--gold);outline-offset:1px}
+.rk{font-size:10.5px;color:var(--sub)}
+.v{font-weight:800;font-size:13px}
+.v.up{color:var(--up)}.v.down{color:var(--down)}
+.v.weak{color:var(--sub);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--sub)}
+.legend b.up{color:var(--up)}.legend b.down{color:var(--down)}
+.detail{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.bars{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;align-items:end;height:96px;position:relative}
+.bars .c{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:11px;color:var(--sub);font-variant-numeric:tabular-nums;gap:2px}
+.bars .bar{width:70%;background:#e9d89f;border-radius:3px 3px 0 0}
+.bars .c.t .bar{outline:2px solid var(--gold)}
+.bars .c.t{color:var(--gold);font-weight:800}
+.bars .avg{position:absolute;left:0;right:0;border-top:2px dotted var(--up)}
+.xs{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;font-size:10.5px;color:var(--sub);text-align:center}
+.notes{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.notes ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.ask ol{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.mocknote{font-size:11px;color:#9a5b00;font-weight:700}
+</style>
+<div class="doc">
+  <header style="display:flex;flex-direction:column;gap:6px">
+    <p class="small">BOA-271 龍神ソナー ・ 差がつく材料の「比べる艇」の作り直し ・ モック v1</p>
+    <h1>6艇を並べる（全艇比較）</h1>
+    <p class="lead">「▶ もう1艇と比べる」を、6艇を1つの表に並べる形に置き換える案。数字は多摩川12R（10/8・準優勝戦・展示後・1着）の本番の値。各艇とも、一番上でその艇を選んだときと同じ集め方（その艇の級別がそろうレース）で出すので、同じ艇・同じ項目はどこで見ても同じ数字になる。</p>
+  </header>
+  <div class="cols">
+    <div class="device" id="dev">
+      <div class="box">
+        <div class="h3">1着になったのは、どんなとき？</div>
+        <div class="small">主役の艇（下の表で太枠になる）</div>
+        <div class="boats" id="boats"></div>
+      </div>
+      <div class="box">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">
+          <div class="h3">6艇を並べる</div>
+          <span class="seg" id="colmode"><button type="button" data-v="top" aria-pressed="true">主役の上位4項目</button><button type="button" data-v="all" aria-pressed="false">全項目</button></span>
+        </div>
+        <p class="small">各艇とも、その艇の級別がそろう過去レース（全国・同じ級別の組み合わせ）で数えた1着率。セルは、今日の順位のときの1着率</p>
+        <div class="legend"><span>セル: 上＝今日の順位、下＝そのときの1着率</span><span><b class="up">緑</b>＝その艇の全レースより高い</span><span><b class="down">赤</b>＝低い</span><span>薄い＝件数が少ない</span></div>
+        <span class="seg" id="cellmode"><button type="button" data-v="pct" aria-pressed="true">%で見る</button><button type="button" data-v="diff" aria-pressed="false">差（ポイント）で見る</button></span>
+        <div class="tw"><table class="cmp" id="tbl"></table></div>
+        <div class="detail" id="detail"><p class="small">セルを押すと、その艇・その項目の棒（6艇中の順位ごとの1着率）がここに出る</p></div>
+      </div>
+      <span class="mocknote">モック: 項目カード（今の棒・件数・ぶれ幅）は表の下に今のまま続く。六角形の2本目の線は出さない</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="notes">
+        <b>ファンにとっての価値（ファン4人のパネル）</b>
+        <ul>
+          <li>締切前に知りたいのは「どの艇が、今日の材料でいつもより来そうか」。2艇だけ比べるより、6艇を1つの表で見比べたい</li>
+          <li>今の「比べる艇」は灰色の小さな1行で、1号艇の大きな数字と取り違えやすい</li>
+          <li>比べる艇の数字が、その艇を一番上で選んだときと違う（集め方が違う）のは誤解のもと。艇ごとに、その艇を選んだときと同じ集め方でそろえる</li>
+        </ul>
+      </div>
+      <div class="notes">
+        <b>決めてほしいこと（推奨を先に）</b>
+        <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px">
+          <li>列: <b>主役の艇の上位4項目</b>（横に送らず375pxに収まる）／全項目（横に送る）</li>
+          <li>セル: <b>今日の順位と、そのときの1着率（%）</b>／その艇の全レースとの差（ポイント）</li>
+          <li>六角形の2本目の線（比べる艇）: <b>やめる</b>（比べる艇には「1着になったときの平均」の点線が無く、読めない）</li>
+        </ol>
+        <p class="small">「同じ枠に同じ級」で集めるべきかの統計の検証は別で行う。結果で集め方が変わったら、この表の集め方の1行も合わせる</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const D = {"race":"多摩川12R 準優勝戦","classes":["A1","A1","A2","A1","A2","A1"],"boats":[{"boat":1,"cls":"A1","scope":"NC:4-2-0-0:1A1","n":3458,"usual":[2442,3458],"items":[{"key":"nat_win","level":"large","spread":15.7,"best":[1012,1375],"worst":[44,76],"all":[[1012,1375],[614,847],[406,603],[243,377],[125,182],[44,76]],"todayBucket":4,"todayRank":[4,4],"todayValue":6.29,"todayHit":[243,377]},{"key":"exh_time","level":"large","spread":12.9,"best":[891,1171],"worst":[196,310],"all":[[891,1171],[542,752],[389,575],[299,437],[193,314],[196,310]],"todayBucket":1,"todayRank":[1,1],"todayValue":6.559999942779541,"todayHit":[891,1171]},{"key":"series_score","level":"large","spread":12.7,"best":[1097,1455],"worst":[160,255],"all":[[1097,1455],[321,454],[235,353],[195,270],[111,185],[160,255]],"todayBucket":1,"todayRank":[1,1],"todayValue":9.1429,"todayHit":[1097,1455]},{"key":"recent_win30","level":"large","spread":11.2,"best":[885,1180],"worst":[178,279],"all":[[885,1180],[514,736],[405,565],[286,436],[229,332],[178,279]],"todayBucket":3,"todayRank":[3,3],"todayValue":0.3448,"todayHit":[405,565]},{"key":"loc_win","level":"large","spread":10.2,"best":[852,1143],"worst":[139,216],"all":[[852,1143],[560,779],[420,611],[259,401],[169,244],[139,216]],"todayBucket":2,"todayRank":[2,2],"todayValue":6.6,"todayHit":[560,779]},{"key":"st_mean30","level":"some","spread":9.7,"best":[622,843],"worst":[207,323],"all":[[622,843],[505,698],[454,639],[334,486],[322,471],[207,323]],"todayBucket":2,"todayRank":[2,3],"todayValue":0.126,"todayHit":[505,698]},{"key":"motor_2","level":"some","spread":9.5,"best":[552,725],"worst":[446,669],"all":[[552,725],[446,616],[376,528],[375,544],[352,514],[446,669]],"todayBucket":4,"todayRank":[4,4],"todayValue":31.4,"todayHit":[375,544]}]},{"boat":2,"cls":"A1","scope":"NC:4-2-0-0:2A1","n":2867,"usual":[330,2867],"items":[{"key":"exh_time","level":"large","spread":11.4,"best":[100,550],"worst":[29,425],"all":[[100,550],[87,581],[48,530],[46,474],[27,430],[29,425]],"todayBucket":2,"todayRank":[2,2],"todayValue":6.650000095367432,"todayHit":[87,581]},{"key":"motor_2","level":"some","spread":5.6,"best":[82,547],"worst":[51,542],"all":[[82,547],[55,478],[69,495],[41,468],[47,456],[51,542]],"todayBucket":1,"todayRank":[1,1],"todayValue":40.8,"todayHit":[82,547]},{"key":"series_score","level":"unclear","spread":5.4,"best":[61,467],"worst":[17,221],"all":[[61,467],[98,872],[52,424],[33,283],[17,199],[17,221]],"todayBucket":2,"todayRank":[2,2],"todayValue":8.2857,"todayHit":[98,872]},{"key":"nat_win","level":"unclear","spread":4.3,"best":[85,645],"worst":[13,147],"all":[[85,645],[98,683],[58,606],[53,517],[23,272],[13,147]],"todayBucket":5,"todayRank":[5,5],"todayValue":5.88,"todayHit":[23,272]},{"key":"recent_win30","level":"unclear","spread":2.2,"best":[85,686],"worst":[32,314],"all":[[85,686],[69,642],[63,541],[50,432],[41,347],[32,314]],"todayBucket":2,"todayRank":[2,2],"todayValue":0.3667,"todayHit":[69,642]},{"key":"st_mean30","level":"unclear","spread":-0.7,"best":[74,576],"worst":[49,361],"all":[[74,576],[63,589],[52,460],[43,460],[49,422],[49,361]],"todayBucket":2,"todayRank":[2,3],"todayValue":0.126,"todayHit":[63,589]},{"key":"loc_win","level":"unclear","spread":-0.3,"best":[77,629],"worst":[32,255],"all":[[77,629],[82,609],[70,562],[39,434],[34,322],[32,255]],"todayBucket":null,"todayRank":null,"todayValue":null,"todayHit":null}]},{"boat":3,"cls":"A2","scope":"NC:4-2-0-0:3A2","n":1334,"usual":[102,1334],"items":[{"key":"series_score","level":"large","spread":10.3,"best":[19,136],"worst":[7,192],"all":[[19,136],[13,192],[23,288],[16,182],[7,169],[7,192]],"todayBucket":3,"todayRank":[3,3],"todayValue":6.7143,"todayHit":[23,288]},{"key":"exh_time","level":"some","spread":6.9,"best":[27,239],"worst":[13,293],"all":[[27,239],[22,199],[17,226],[12,237],[14,220],[13,293]],"todayBucket":4,"todayRank":[4,5],"todayValue":6.679999828338623,"todayHit":[12,237]},{"key":"nat_win","level":"unclear","spread":7.7,"best":[4,30],"worst":[30,537],"all":[[4,30],[5,55],[20,112],[12,203],[32,405],[30,537]],"todayBucket":1,"todayRank":[1,1],"todayValue":7.19,"todayHit":[4,30]},{"key":"loc_win","level":"unclear","spread":6.4,"best":[8,62],"worst":[27,413],"all":[[8,62],[4,112],[11,160],[23,265],[30,343],[27,413]],"todayBucket":6,"todayRank":[4,4],"todayValue":5.55,"todayHit":[27,413]},{"key":"recent_win30","level":"unclear","spread":5,"best":[12,124],"worst":[19,403],"all":[[12,124],[18,165],[16,201],[22,236],[17,283],[19,403]],"todayBucket":4,"todayRank":[4,4],"todayValue":0.3,"todayHit":[22,236]},{"key":"st_mean30","level":"unclear","spread":4.3,"best":[10,105],"worst":[16,308],"all":[[10,105],[13,165],[22,220],[20,256],[21,283],[16,308]],"todayBucket":1,"todayRank":[1,1],"todayValue":0.1063,"todayHit":[10,105]},{"key":"motor_2","level":"unclear","spread":-0.9,"best":[19,267],"worst":[19,238],"all":[[19,267],[21,244],[15,220],[19,205],[15,225],[19,238]],"todayBucket":2,"todayRank":[2,2],"todayValue":36.3,"todayHit":[21,244]}]},{"boat":4,"cls":"A1","scope":"NC:4-2-0-0:4A1","n":2747,"usual":[215,2747],"items":[{"key":"exh_time","level":"some","spread":8.9,"best":[63,450],"worst":[29,568],"all":[[63,450],[36,455],[40,471],[34,485],[22,462],[29,568]],"todayBucket":3,"todayRank":[3,3],"todayValue":6.659999847412109,"todayHit":[40,471]},{"key":"nat_win","level":"unclear","spread":4.9,"best":[59,546],"worst":[8,135],"all":[[59,546],[55,658],[48,585],[33,520],[12,308],[8,135]],"todayBucket":2,"todayRank":[2,2],"todayValue":6.92,"todayHit":[55,658]},{"key":"st_mean30","level":"unclear","spread":4.3,"best":[59,527],"worst":[27,391],"all":[[59,527],[44,469],[38,473],[22,467],[25,424],[27,391]],"todayBucket":4,"todayRank":[4,4],"todayValue":0.1377,"todayHit":[22,467]},{"key":"motor_2","level":"unclear","spread":3.8,"best":[46,489],"worst":[32,574],"all":[[46,489],[34,445],[41,459],[35,451],[29,461],[32,574]],"todayBucket":6,"todayRank":[6,6],"todayValue":28.4,"todayHit":[32,574]},{"key":"loc_win","level":"unclear","spread":-1,"best":[51,553],"worst":[26,254],"all":[[51,553],[48,604],[38,484],[33,442],[19,344],[26,254]],"todayBucket":1,"todayRank":[1,1],"todayValue":7.3,"todayHit":[51,553]},{"key":"recent_win30","level":"unclear","spread":0.9,"best":[37,527],"worst":[24,393],"all":[[37,527],[48,550],[49,519],[40,504],[24,355],[24,393]],"todayBucket":1,"todayRank":[1,1],"todayValue":0.4333,"todayHit":[37,527]},{"key":"series_score","level":"unclear","spread":0.2,"best":[30,349],"worst":[27,320],"all":[[30,349],[28,343],[30,412],[40,590],[33,357],[27,320]],"todayBucket":5,"todayRank":[5,5],"todayValue":5.8571,"todayHit":[33,357]}]},{"boat":5,"cls":"A2","scope":"NC:4-2-0-0:5A2","n":1710,"usual":[45,1710],"items":[{"key":"loc_win","level":"some","spread":6.9,"best":[9,96],"worst":[14,557],"all":[[9,96],[6,129],[6,201],[3,331],[7,442],[14,557]],"todayBucket":3,"todayRank":[3,3],"todayValue":6.5,"todayHit":[6,201]},{"key":"nat_win","level":"unclear","spread":6.6,"best":[4,44],"worst":[17,691],"all":[[4,44],[6,69],[7,141],[2,230],[9,543],[17,691]],"todayBucket":6,"todayRank":[6,6],"todayValue":5.56,"todayHit":[17,691]},{"key":"series_score","level":"unclear","spread":3.7,"best":[5,116],"worst":[2,319],"all":[[5,116],[3,148],[9,202],[8,303],[8,428],[2,319]],"todayBucket":6,"todayRank":[6,6],"todayValue":5.6667,"todayHit":[2,319]},{"key":"exh_time","level":"unclear","spread":2.7,"best":[10,223],"worst":[8,449],"all":[[10,223],[10,231],[12,282],[1,291],[5,333],[8,449]],"todayBucket":6,"todayRank":[6,6],"todayValue":6.820000171661377,"todayHit":[8,449]},{"key":"st_mean30","level":"unclear","spread":1.4,"best":[7,185],"worst":[10,427],"all":[[7,185],[8,203],[8,253],[8,293],[4,352],[10,427]],"todayBucket":6,"todayRank":[6,6],"todayValue":0.1697,"todayHit":[10,427]},{"key":"recent_win30","level":"unclear","spread":0.3,"best":[3,132],"worst":[11,549],"all":[[3,132],[7,178],[7,265],[8,311],[12,392],[11,549]],"todayBucket":6,"todayRank":[6,6],"todayValue":0.1333,"todayHit":[11,549]},{"key":"motor_2","level":"unclear","spread":0.1,"best":[9,345],"worst":[9,358],"all":[[9,345],[8,269],[7,281],[7,277],[7,262],[9,358]],"todayBucket":3,"todayRank":[3,3],"todayValue":34.1,"todayHit":[7,281]}]},{"boat":6,"cls":"A1","scope":"NC:4-2-0-0:6A1","n":2004,"usual":[44,2004],"items":[{"key":"st_mean30","level":"unclear","spread":2.2,"best":[12,370],"worst":[3,302],"all":[[12,370],[9,359],[5,324],[4,340],[11,310],[3,302]],"todayBucket":5,"todayRank":[5,5],"todayValue":0.1457,"todayHit":[11,310]},{"key":"series_score","level":"unclear","spread":1.6,"best":[8,274],"worst":[8,612],"all":[[8,274],[10,211],[5,188],[4,214],[4,295],[8,612]],"todayBucket":4,"todayRank":[4,4],"todayValue":6.2857,"todayHit":[4,214]},{"key":"exh_time","level":"unclear","spread":0.3,"best":[8,337],"worst":[10,491],"all":[[8,337],[7,296],[8,325],[6,337],[7,320],[10,491]],"todayBucket":4,"todayRank":[4,5],"todayValue":6.679999828338623,"todayHit":[6,337]},{"key":"recent_win30","level":"unclear","spread":0.2,"best":[7,388],"worst":[6,372],"all":[[7,388],[10,354],[8,357],[13,333],[3,281],[6,372]],"todayBucket":5,"todayRank":[5,5],"todayValue":0.2069,"todayHit":[3,281]},{"key":"motor_2","level":"unclear","spread":-0.1,"best":[9,366],"worst":[11,424],"all":[[9,366],[8,306],[7,335],[8,330],[2,328],[11,424]],"todayBucket":5,"todayRank":[5,5],"todayValue":29.4,"todayHit":[2,328]},{"key":"loc_win","level":"unclear","spread":0.1,"best":[10,374],"worst":[6,236],"all":[[10,374],[11,345],[5,394],[9,361],[6,266],[6,236]],"todayBucket":null,"todayRank":null,"todayValue":null,"todayHit":null},{"key":"nat_win","level":"unclear","spread":0,"best":[9,352],"worst":[4,157],"all":[[9,352],[11,404],[10,417],[7,446],[3,234],[4,157]],"todayBucket":3,"todayRank":[3,3],"todayValue":6.64,"todayHit":[10,417]}]}]};
+const NAMES={nat_win:"全国勝率",loc_win:"当地勝率",recent_win30:"直近30走1着率",motor_2:"モーター2連率",st_mean30:"平均ST",exh_time:"展示タイム",series_score:"今節の着順点"};
+const LV={large:"差が大きい",some:"差がある",small:"差は小さい",unclear:"はっきりしない",none:"—"};
+let main=1, colmode="top", cellmode="pct", sel=null;
+const bb=(n)=>`<span class="bb b${n}">${n}</span>`;
+const pct=(p)=>p==null?"—":`${Math.round(p*100)}%`;
+const rate=(pair)=>pair&&pair[1]?pair[0]/pair[1]:null;
+function cols(){ const m=D.boats.find(b=>b.boat===main); return colmode==="top"? m.items.slice(0,4).map(i=>i.key) : Object.keys(NAMES); }
+function render(){
+  document.getElementById("boats").innerHTML=[1,2,3,4,5,6].map(n=>`<button type="button" aria-pressed="${n===main}" data-b="${n}">${bb(n)}</button>`).join("");
+  const cs=cols();
+  let h=`<thead><tr><th style="text-align:left">艇（1着率）</th>${cs.map(k=>`<th>${NAMES[k]}</th>`).join("")}</tr></thead><tbody>`;
+  for(const b of D.boats){
+    const u=rate(b.usual); const few=b.usual[0]<30;
+    h+=`<tr class="${b.boat===main?"main":""} ${few?"few":""}"><th><div class="rowhead"><span class="top">${bb(b.boat)} ${b.cls} <span>${pct(u)}</span></span><span class="n">${b.n.toLocaleString()}レース</span></div></th>`;
+    for(const k of cs){
+      const it=b.items.find(i=>i.key===k);
+      if(!it||!it.todayHit){h+=`<td><span class="rk">—</span></td>`;continue;}
+      const r=rate(it.todayHit); const dpt=Math.round((r-u)*100);
+      const smallN=it.todayHit[1]<30;
+      const cls=smallN?"weak":dpt>=3?"up":dpt<=-3?"down":"weak";
+      const rk=it.todayRank?(it.todayRank[0]===it.todayRank[1]?`${it.todayRank[0]}位`:`${it.todayRank[0]}〜${it.todayRank[1]}位`):"—";
+      const val=cellmode==="pct"?pct(r):(dpt>0?"+":"")+dpt;
+      const isSel=sel&&sel.b===b.boat&&sel.k===k;
+      h+=`<td><button type="button" class="${isSel?"sel":""}" data-b="${b.boat}" data-k="${k}"><span class="rk">今日${rk}</span><span class="v ${cls}">${val}</span></button></td>`;
+    }
+    h+=`</tr>`;
+  }
+  document.getElementById("tbl").innerHTML=h+"</tbody>";
+  document.querySelectorAll("#colmode button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===colmode));
+  document.querySelectorAll("#cellmode button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===cellmode));
+  renderDetail();
+}
+function renderDetail(){
+  const el=document.getElementById("detail");
+  if(!sel){el.innerHTML=`<p class="small">セルを押すと、その艇・その項目の棒（6艇中の順位ごとの1着率）がここに出る</p>`;return;}
+  const b=D.boats.find(x=>x.boat===sel.b), it=b.items.find(i=>i.key===sel.k), u=rate(b.usual);
+  const t=it.todayBucket;
+  const rates=it.all.map(rate);
+  const max=Math.max(...rates.filter(x=>x!=null),u)*1.15;
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${bb(b.boat)}<b>${NAMES[it.key]}</b><span class="small">${LV[it.level]}</span></div>
+  <p class="small">${b.boat}号艇の級別がそろう過去レース ${b.n.toLocaleString()}件。点線＝その全レースの1着率 ${pct(u)}</p>
+  <div class="bars">${rates.map((r,i)=>`<div class="c ${i+1===t?"t":""}"><span>${pct(r)}</span><div class="bar" style="height:${((r??0)/max)*70}px"></div></div>`).join("")}<div class="avg" style="bottom:${(u/max)*70+16}px"></div></div>
+  <div class="xs">${[1,2,3,4,5,6].map(i=>`<span>${i}位</span>`).join("")}</div>
+  ${it.todayHit?`<p class="small" style="color:var(--gold);font-weight:700">▲ 今日の${t}位: ${pct(rate(it.todayHit))}（${it.todayHit[0]}/${it.todayHit[1]}件）</p>`:""}
+`;
+}
+document.getElementById("dev").addEventListener("click",e=>{
+  const bt=e.target.closest("#boats button"); if(bt){main=+bt.dataset.b; sel=null; render(); return;}
+  const c=e.target.closest("td button"); if(c){sel={b:+c.dataset.b,k:c.dataset.k}; render(); return;}
+  const cm=e.target.closest("#colmode button"); if(cm){colmode=cm.dataset.v; render(); return;}
+  const vm=e.target.closest("#cellmode button"); if(vm){cellmode=vm.dataset.v; render();}
+});
+render();
+</script>

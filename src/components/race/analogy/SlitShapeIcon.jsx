@@ -28,7 +28,9 @@ export default function SlitShapeIcon({
     (v) => v !== null && v !== undefined,
   );
   const mn = ok.length ? Math.min(...ok) : 0;
-  const xOf = (v) => lineX - ((v - mn) / SPB) * L;
+  // 手がかりの図（refLabel あり）は平均STを相対で並べたもの。一番早い艇もスリット線の手前で止める（線を越えると
+  // フライングに見える。ファン評価 BOA-805）。7つの形の絵（refLabel なし）は承認どおりのまま
+  const xOf = (v) => lineX - (refLabel ? 6 : 0) - ((v - mn) / SPB) * L;
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}

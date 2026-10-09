@@ -27,8 +27,13 @@ export const FACT_ITEMS = [
   { key: "series_score", hib: true, good: "high", bad: "low" },
 ];
 
-/** 判定（spec A-7）: 差がこれ以上なら「差が大きい」 */
-export const LARGE_GAP = 0.05;
+/** 判定（spec A-7）: 差がこれ以上なら「差が大きい」（2026-10-09 ユーザー決定 BOA-805 で 5→10ポイント） */
+export const LARGE_GAP = 0.1;
+/** 判定: 差がこれ以上（LARGE_GAP 未満）なら「差がある」（BOA-805） */
+export const SOME_GAP = 0.05;
+const GAP_EPS = 1e-9;
+/** 差がつく材料で最初から開くカードの数（差がはっきりしている順で「差が大きい」の上位。BOA-805） */
+export const OPEN_LARGE_CARDS = 2;
 /** 既定の範囲が全国になる VC の件数（spec「数えるレース」） */
 export const MIN_VC_RACES = 300;
 export const ROUNDS_FINAL = ["yusho", "junyu"];
@@ -99,8 +104,9 @@ export function todayValueRank(values, hib, boat) {
 export const rateOf = (pair) => (pair && pair[1] ? pair[0] / pair[1] : null);
 
 /**
- * 判定の3段階（spec A-7）
- * @returns {{level:"large"|"small"|"unclear"|"none", diff:number, reversed:boolean}}
+ * 判定（spec A-7、BOA-805 で4段階）: ぶれ幅が重なる → unclear、重ならず差が10ポイント以上 → large、
+ * 5〜10ポイント → some、5ポイント未満 → small
+ * @returns {{level:"large"|"some"|"small"|"unclear"|"none", diff:number, reversed:boolean}}
  */
 export function judgeGap(best, worst) {
   if (!best || !worst || !best[1] || !worst[1])
@@ -110,10 +116,31 @@ export function judgeGap(best, worst) {
   const diff = best[0] / best[1] - worst[0] / worst[1];
   if (bl <= wh && wl <= bh) return { level: "unclear", diff, reversed: false };
   return {
-    level: Math.abs(diff) >= LARGE_GAP ? "large" : "small",
+    // 境目ちょうど（例 60%−50%）が浮動小数の誤差で下の段にならないよう、小さな許容を入れる
+    level:
+      Math.abs(diff) >= LARGE_GAP - GAP_EPS
+        ? "large"
+        : Math.abs(diff) >= SOME_GAP - GAP_EPS
+          ? "some"
+          : "small",
     diff,
     reversed: diff < 0,
   };
+}
+
+/**
+ * 展示の形と本番の形の関係の言い分け（BOA-805、2026-10-09 ユーザー決定）。展示で同じ形だったときの割合（hit）と、
+ * 展示が別の形だったときの割合（miss）を、差がつく材料と同じ Wilson のぶれ幅で比べる。
+ * 重なる → "same"、hit が上 → "up"、hit が下 → "down"。件数が無ければ null
+ * @param {[number, number]|null} hit [本番も同じ形, 展示で同じ形だった件数]
+ * @param {[number, number]|null} miss [本番でその形, 展示が別の形だった件数]
+ */
+export function agreementVerdict(hit, miss) {
+  if (!hit?.[1] || !miss?.[1]) return null;
+  const [hl, hh] = wilsonInterval(hit[0], hit[1]);
+  const [ml, mh] = wilsonInterval(miss[0], miss[1]);
+  if (hl <= mh && ml <= hh) return "same";
+  return hit[0] / hit[1] > miss[0] / miss[1] ? "up" : "down";
 }
 
 /**
@@ -154,6 +181,8 @@ export const MIN_RATE_N = 30;
  */
 export function judgeLabelKey(judge, best, worst) {
   if (judge.level !== "unclear") return judge.level;
+  // 差が5ポイント未満なら「差は0ポイントあるが…」とは書かず「ほとんど無い」（BOA-805、データ精度の検証の指摘）
+  if (Math.abs(judge.diff ?? 0) < SOME_GAP - GAP_EPS) return "unclearTiny";
   const n = Math.min(best?.[1] ?? 0, worst?.[1] ?? 0);
   return n < FEW_FOR_UNCLEAR ? "unclearFew" : "unclear";
 }
@@ -192,7 +221,32 @@ export function factRows(scopeFacts, boat, target, exhibitionStage) {
 }
 
 const clearRank = (r) =>
-  r.judge.level === "large" || r.judge.level === "small" ? 0 : 1;
+  ["large", "some", "small"].includes(r.judge.level) ? 0 : 1;
+
+/**
+ * 最初から開くカード（BOA-805）: 並べた順（差がはっきりしている順）で「差が大きい」の上位 OPEN_LARGE_CARDS 枚
+ * @param {object[]} rows factRows の結果
+ * @returns {Set<string>} 開く項目の key
+ */
+export function openCardKeys(rows) {
+  return new Set(
+    rows
+      .filter((r) => r.judge.level === "large")
+      .slice(0, OPEN_LARGE_CARDS)
+      .map((r) => r.key),
+  );
+}
+
+/**
+ * 判定の札に添える値（BOA-805 の D）: はっきりしないカードにも差の大きさと件数を書く。
+ * pt は一番良い・悪いときの差（ポイント、四捨五入）、n は少ない側の件数
+ */
+export function judgeLabelParams(row) {
+  return {
+    pt: Math.round(Math.abs(row.spread ?? 0) * 100),
+    n: Math.min(row.all?.[0]?.[1] ?? 0, row.all?.[5]?.[1] ?? 0),
+  };
+}
 
 /** 範囲全体のその艇の率（大きい数字・棒の点線） */
 export function usualOf(scopeFacts, boat, target) {

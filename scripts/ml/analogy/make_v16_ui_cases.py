@@ -15,7 +15,8 @@ import numpy as np
 from v16_defs import rank_positions
 
 Z = 1.96
-LARGE_GAP = 0.05
+LARGE_GAP = 0.10  # 2026-10-09 ユーザー決定（BOA-805）: 10ポイント以上で「差が大きい」
+SOME_GAP = 0.05  # 5〜10ポイントは「差がある」
 
 
 def wilson(x: int, n: int) -> list[float]:
@@ -27,12 +28,15 @@ def wilson(x: int, n: int) -> list[float]:
 
 
 def judge(best: list[int], worst: list[int]) -> str:
-    """spec A-7: ぶれ幅が重なる → unclear、重ならず差が5ポイント以上 → large、未満 → small"""
+    """spec A-7（BOA-805 で4段階）: ぶれ幅が重なる → unclear、重ならず差が10ポイント以上 → large、
+    5〜10ポイント → some、5ポイント未満 → small"""
     bl, bh = wilson(*best)
     wl, wh = wilson(*worst)
     if bl <= wh and wl <= bh:
         return "unclear"
-    return "large" if abs(best[0] / best[1] - worst[0] / worst[1]) >= LARGE_GAP else "small"
+    gap = abs(best[0] / best[1] - worst[0] / worst[1])
+    eps = 1e-9  # 境目ちょうどが浮動小数の誤差で下の段にならないよう（JS の GAP_EPS と同じ）
+    return "large" if gap >= LARGE_GAP - eps else "some" if gap >= SOME_GAP - eps else "small"
 
 
 def main():

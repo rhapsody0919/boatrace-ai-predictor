@@ -886,9 +886,11 @@
         "judge": {
           "large": "Large difference",
           "small": "Small difference",
-          "unclear": "No clear difference (ranges overlap)",
-          "unclearFew": "Too few races for a clear difference",
-          "none": "Can't compare (no matching races)"
+          "unclear": "{{pt}}-point gap, but the ranges overlap",
+          "unclearFew": "{{pt}}-point gap, but few races ({{n}})",
+          "none": "Can't compare (no matching races)",
+          "some": "Some difference",
+          "unclearTiny": "Almost no gap (ranges overlap)"
         },
         "reversed": "(higher when {{word}})",
         "stripLabel": "{{rate}} by where {{item}} ranks among the 6: {{list}}",
@@ -916,7 +918,7 @@
           "scope": "Races gathered: {{desc}}. ",
           "finalNcr": "When limited to Finals, this meet's average finish points are not shown (Final lanes are set by results up to the Semifinal, so the points ranking almost matches the lanes and comparing has no meaning). ",
           "series": "This meet's average finish points include values from early in the meet (1–2 runs) (in past early races many boats share the same value, so differences look smaller). ",
-          "common": "These are past shares, not necessarily causes. \"No clear difference\" means the ranges for best and worst overlap (when the smaller side has fewer than 100 races, it reads \"Too few races for a clear difference\"). Rates from fewer than 30 races are shown faded. A local win rate of 0.00 (never raced here) is treated as no record and left out of the ranks. \"Large difference\" means 5 points or more. Boats with the same value are counted in both best and worst. ",
+          "common": "These are past shares, not necessarily causes. \"Large difference\" means the ranges for best and worst do not overlap and the gap is 10 points or more. \"Some difference\" means 5–10 points. When the ranges overlap, only the gap is shown, with the race count added if the smaller side has fewer than 100 races. Only the top 2 cards with a large difference, in order of clarity, start open. Rates from fewer than 30 races are shown faded. A local win rate of 0.00 (never raced here) is treated as no record and left out of the ranks. Boats with the same value are counted in both best and worst. ",
           "exhPre": "Exhibition time is available after the exhibition. ",
           "exhPost": "Exhibition times before November 2025 come from a different source and may be slightly off. ",
           "overlap": "Items are sorted by how clear the difference is. Items overlap, so we cannot tell which one made the difference. "
@@ -1349,10 +1351,10 @@
         "keySimilar": "Similar races",
         "keyCompare": "Dotted line: {{name}} ({{n}})",
         "cmpGrade": "{{kind}} of any grade (other conditions the same)",
-        "cmpRound": "Any round (other conditions the same)",
+        "cmpRound": "Including races other than {{round}} (other conditions the same)",
         "cmpSame": "All past races matching the conditions",
         "tip": "Boat {{boat}}: {{hits}} of {{n}} ({{pct}}, range {{lo}}–{{hi}}%)",
-        "tipNational": "All venues {{p}}",
+        "tipNational": "All races nationwide {{p}}",
         "few": "With {{n}} races, the shares can swing a lot (wide range)",
         "allShown": "Showing all past races that match the conditions",
         "techHeading": "How was it won?",
@@ -1608,7 +1610,7 @@
         "slitFoot1": "Kado = the innermost of the dash boats (boats taking a long run-up). The 7 shapes are defined using the kado in a wakunari entry (course 4). The boat beside the kado = one course inside it (course 3 when wakunari). The drawing is an example side view (numbers are courses, the line on the right is the slit; scale: 1 boat length ≈ 0.13s)",
         "slitDef": "{{form}}: {{def}}. ",
         "slitFoot2": "A race can match two or more shapes (totals can exceed 100%). Shares are within the selected entry. The slit shape cannot be picked from today's exhibition. ",
-        "slitAgree": "When the exhibition showed {{form}}, the race also showed {{form}} {{p}} of the time. Even with a different exhibition shape, {{q}} of races showed {{form}}. The exhibition shape is only a small hint ({{n}} races since {{since}}).",
+        "slitAgree": "When the exhibition showed {{form}}, the race also showed {{form}} {{p}} of the time. Even with a different exhibition shape, {{q}} of races showed {{form}}. {{verdict}} ({{n}} races since {{since}}).",
         "slitToday": "For reference: today's exhibition shape is {{forms}}",
         "slitFlyShallow": " (Boat {{boats}} jumped the start in the exhibition. Up to F.05 is treated as .00 when judging the shape)",
         "slitDeepFly": "For reference: today's exhibition shape is not shown (a boat had a deep early start (F.06 or more) or a late start in the exhibition, which says little about the race start)",
@@ -1693,7 +1695,14 @@
         "hintRefShort": "{{venue}} avg.",
         "slitRefLegend": "Dotted = {{name}}",
         "slitFaster": "Faster →",
-        "resultNotSplit": "The results in ④ are not split by the attacking boat's rank in ③."
+        "resultNotSplit": "The results in ④ are not split by the attacking boat's rank in ③.",
+        "fellBack": "Only {{n}} races at {{venue}} (excluding refunds) have the same combination, so these figures gather races from all venues",
+        "shareOfNoRefund": "{{p}} of {{of}} (excluding refunds)",
+        "agreeVerdict": {
+          "up": "The race tends to repeat the exhibition shape (a small hint)",
+          "same": "The exhibition shape has little to do with the race shape",
+          "down": "The race is, if anything, less likely to repeat the exhibition shape"
+        }
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
       "feedback": {

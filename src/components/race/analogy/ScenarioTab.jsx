@@ -23,7 +23,7 @@ import {
   hintRows,
   minRanks,
 } from "../../../utils/analogyScenario";
-import { scopeKind } from "../../../utils/analogyFacts";
+import { agreementVerdict, scopeKind } from "../../../utils/analogyFacts";
 import { wilsonInterval } from "../../../utils/wilson";
 
 const k = "aiPredictionTab.analogy.scenario";
@@ -138,7 +138,8 @@ export default function ScenarioTab({
       : []),
     ...(E || sl
       ? [
-          t(`${k}.shareOf`, {
+          // 展開シナリオは返還（F・L・欠場）のレースを除いて数えるので、差がつく材料の件数と合わない。ここで明記する
+          t(`${k}.shareOfNoRefund`, {
             of: allOf(scope),
             p: fmtPct(whole.n ? c.n / whole.n : null),
           }),
@@ -294,7 +295,7 @@ export default function ScenarioTab({
       {/* 既定で全国に替えたときの理由（spec「数えるレース」。タブ1と同じ1行。範囲を選び直したら API が付けない） */}
       {data.vc_fell_back !== null && data.vc_fell_back !== undefined && (
         <p className="af-sub">
-          {t("aiPredictionTab.analogy.facts.fellBack", {
+          {t(`${k}.fellBack`, {
             venue: venueLabel(Number(String(raceId).split("-")[3]), t),
             n: fmtCount(data.vc_fell_back),
           })}
@@ -380,6 +381,13 @@ export default function ScenarioTab({
           formAgree?.hit?.[1] &&
             exhibitionStage &&
             t(`${k}.slitAgree`, {
+              // 締めの一文は数字で言い分ける（BOA-805。以前は数字によらず「少し参考になる程度」だった）。
+              // 展示が別の形だった件数が0なら比べられないので、締めの一文だけ省く
+              verdict: agreementVerdict(formAgree.hit, formAgree.miss)
+                ? t(
+                    `${k}.agreeVerdict.${agreementVerdict(formAgree.hit, formAgree.miss)}`,
+                  )
+                : "",
               form: formName(exhForms[0]),
               p: fmtPct(formAgree.hit[0] / formAgree.hit[1]),
               q: fmtPct(

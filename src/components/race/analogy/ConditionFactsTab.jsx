@@ -13,6 +13,7 @@ import {
   defaultScope,
   factRows,
   hidesSeriesScoreLine,
+  openCardKeys,
   parseScopeKey,
   rateOf,
   scopeKind,
@@ -105,10 +106,11 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
   const hideSeriesLine = hidesSeriesScoreLine(today);
   const cls = uniformClass(today);
   const rateName = t(`aiPredictionTab.analogy.rateName.${target}`);
+  const openKeys = openCardKeys(rows.filter((r) => r.key !== "boat_2"));
   const card = (row) => (
     <FactCard
-      // 艇・着順・範囲が変わったら作り直す（開閉の初期値「差が大きいだけ開く」を判定に合わせ直す）
-      key={`${row.key}:${boat}:${target}:${scopeKey}`}
+      // 艇・着順・範囲・時点が変わったら作り直す（開閉の初期値「差が大きいの上位2枚」を判定に合わせ直す。時点で展示タイムのカードが増減する）
+      key={`${row.key}:${boat}:${target}:${scopeKey}:${stage}`}
       venueName={venueLabel(venue, t)}
       row={row}
       boat={boat}
@@ -122,6 +124,7 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
       hideLine={row.key === "series_score" && hideSeriesLine}
       note={row.key === "series_score" ? note : null}
       scope={scope}
+      initiallyOpen={openKeys.has(row.key)}
     />
   );
   const kind = scopeKind(scopeKey);
