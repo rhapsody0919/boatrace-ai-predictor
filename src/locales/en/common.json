@@ -1704,12 +1704,12 @@
           "tblAtt": "Boat {{b}} won ({{cls}} races)",
           "tblB1": "Boat 1 Nige ({{cls}} races)",
           "sameRacesNige": "Boat 1 Nige in the same {{n}} races: {{p}}. The race count differs from the table below, so the value differs slightly",
-          "footStAll": "Based only on races with avg. ST for all 6, so counts may be slightly lower than in ④",
           "footTie": "Tied boats take the higher rank",
           "tblAttAll": "Boat {{b}} won",
           "tblB1All": "Boat 1 Nige",
           "legendNoRef": "Small numbers = races in the band. few = under 50 races (swings easily)",
-          "foldPreviewNoRef": "Exhibition time / motor × top-middle-bottom"
+          "foldPreviewNoRef": "Exhibition time / motor × top-middle-bottom",
+          "countDiff": "③ uses only races with avg. ST for all 6, so Boat 1's box has {{n}} races (② and ④: {{m}})"
         },
         "entryFew": "{{n}} —",
         "entryColType": "Entry",
@@ -1750,11 +1750,10 @@
         "slitHeadingShort": "How will the start line up?",
         "slitAgreeHit": "Exhibition {{form}} → race also",
         "slitAgreeMiss": "Exhibition other shape → race {{form}}",
-        "slitTodayTag": "Today's exhibition shape is tagged \"Today's exhibition\" in ②.",
         "termsPreview": "Kado, kado-uke, reading the pictures, the 7 shape definitions",
         "termKado": "Kado = the innermost dash boat (long run-up). The 7 shapes are based on the kado in wakunari (course 4). Kado-uke = the one inside it (course 3 in wakunari)",
         "termPic": "Pictures are side-view examples (numbers are courses, the right line is the slit; 1 boat length ≈ 0.13s)",
-        "termOverlap": "One race can match two or more shapes (shares add up to more than 100%)",
+        "termOverlap": "One race can match two or more shapes, and some races match none (the 7 shares do not add up to 100%)",
         "termShare": "Shares are within the selected entry. Slit shapes cannot be chosen from today's exhibition",
         "resultHeadingShort": "How was it decided?",
         "scopeMapHeading": "Which races each number comes from",
@@ -1769,7 +1768,9 @@
           "rest": "④ Techniques, manshu, flow, trifectas"
         },
         "techHeadingShort": "Winning technique",
-        "notesHintHeading": "Start clues"
+        "notesHintHeading": "Start clues",
+        "slitTodayTagOne": "Today's exhibition matches {{forms}} (tagged \"Today's exhibition\" in ②).",
+        "slitTodayTagMany": "Today's exhibition matches {{count}} shapes: {{forms}} (shapes can overlap; tagged \"Today's exhibition\" in ②)."
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
       "feedback": {

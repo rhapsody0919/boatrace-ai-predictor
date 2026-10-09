@@ -1220,6 +1220,40 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await expect(fold).not.toContainText("┊＝");
     });
 
+    test("③の件数が②④より少ない理由を箱のすぐ上に出し、展示が2つの形に当たるときは形ごとに一致を出す（ファン評価 P2）", async ({
+      page,
+    }) => {
+      await setup(page);
+      const base = analogyV16Scenario();
+      // 今日の展示はカド受け凹みとイン凹みの2つに当たる
+      const json = {
+        ...base,
+        exhibition: {
+          ...base.exhibition,
+          forms: ["d3", "d1"],
+          forms_excluded: false,
+        },
+      };
+      await page.route("**/api/analogy/scenario/**", (route) =>
+        route.fulfill({ json }),
+      );
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      await expect(section).toContainText(
+        "今日の展示はカド受け凹み・イン凹みの2つの形に当たる",
+      );
+      await expect(section).toContainText("展示がカド受け凹み → 本番も");
+      await expect(section).toContainText("展示がイン凹み → 本番も");
+      await expect(section.locator("#af-pat-d3 .af-today-badge")).toBeVisible();
+      await expect(section.locator("#af-pat-d1 .af-today-badge")).toBeVisible();
+      // ③の1号艇の箱は平均STが6艇そろうレースだけ（111件）、②④は112件。理由を箱のすぐ上に
+      await section.locator("#af-pat-kado").click();
+      await expect(section.locator("#af-scn-s3")).toContainText(
+        "1号艇の箱は111件（②④は112件）",
+      );
+    });
+
     test("七角形の表で見た3号艇の展示タイムは、3号艇を一番上で選んだときと同じ数字（2026-10-09 ユーザー指摘）", async ({
       page,
     }) => {
