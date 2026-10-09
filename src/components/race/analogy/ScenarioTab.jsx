@@ -92,28 +92,30 @@ export default function ScenarioTab({
     setSlit("any");
     setFirst(null);
   };
-  // ②の見出しへ戻す（畳む・開くで画面の位置が跳ばないように。③が②のすぐ下に来る）
-  const toSlit = () =>
-    requestAnimationFrame(() =>
+  // ②の見出しへ戻し、押したボタンが消えても次に押す所へフォーカスを移す（畳む・開くで画面の位置が跳ばないように。
+  // ③が②のすぐ下に来る。レビュー指摘: 押したボタンごと消えてフォーカスが失われていた）
+  const toSlit = (focusId) =>
+    requestAnimationFrame(() => {
       document
         .getElementById("af-scn-s2")
-        ?.scrollIntoView({ block: "start", behavior: "smooth" }),
-    );
+        ?.scrollIntoView({ block: "start", behavior: "smooth" });
+      document.getElementById(focusId)?.focus({ preventScroll: true });
+    });
   const chooseForm = (f) => {
     setSlit(f);
     setFirst(null);
     setSlitOpen(false);
-    toSlit();
+    // 「どの形でも」は畳まないので、画面を動かさない
+    if (f !== "any") toSlit("af-slit-change");
   };
   const openSlit = () => {
     setSlitOpen(true);
-    toSlit();
+    toSlit(`af-pat-${slit}`);
   };
   const agreement = today?.exh_agreement ?? null;
   const todayEntry = exhibition?.entry_type ?? null;
   const entryAgree = todayEntry ? agreement?.entry?.[todayEntry] : null;
   const exhForms = exhibition?.forms ?? [];
-  const formAgree = exhForms.length ? agreement?.forms?.[exhForms[0]] : null;
   const flyBoats = exhibition?.course_by_boat
     ? exhibition.course_by_boat
         .map((cr, i) =>
@@ -449,42 +451,56 @@ export default function ScenarioTab({
                 <h4 className="af-h4">
                   {t(`aiPredictionTab.analogy.notes.today`)}
                 </h4>
-                {formAgree?.hit?.[1] ? (
-                  <>
-                    {bar2(
-                      t(`${k}.slitAgreeHit`, { form: formName(exhForms[0]) }),
-                      formAgree.hit[0] / formAgree.hit[1],
-                    )}
-                    {formAgree.miss?.[1]
-                      ? bar2(
-                          t(`${k}.slitAgreeMiss`, {
-                            form: formName(exhForms[0]),
-                          }),
-                          formAgree.miss[0] / formAgree.miss[1],
-                        )
-                      : null}
-                    <p className="af-foot">
-                      {agreementVerdict(formAgree.hit, formAgree.miss) && (
-                        <span className="af-info-tag">
-                          {t(
-                            `${k}.agreeVerdict.${agreementVerdict(formAgree.hit, formAgree.miss)}`,
-                          )}
-                        </span>
-                      )}{" "}
-                      {t(`${k}.agreeSource`, {
-                        since: fmtDate(
-                          String(agreement.period?.[0] ?? "").slice(0, 7),
-                        ),
-                        n: fmtCount(agreement.forms_n),
-                      })}
-                    </p>
-                  </>
-                ) : null}
+                {/* 展示が2つ以上の形に当たるときは、形ごとに展示→本番の一致を出す（ファン評価: 先頭の形しか出ていなかった） */}
+                {exhForms.map((f) => {
+                  const ag = agreement?.forms?.[f];
+                  if (!ag?.hit?.[1]) return null;
+                  const verdict = agreementVerdict(ag.hit, ag.miss);
+                  return (
+                    <div key={f} className="af-scn-blk">
+                      {bar2(
+                        t(`${k}.slitAgreeHit`, { form: formName(f) }),
+                        ag.hit[0] / ag.hit[1],
+                      )}
+                      {ag.miss?.[1]
+                        ? bar2(
+                            t(`${k}.slitAgreeMiss`, { form: formName(f) }),
+                            ag.miss[0] / ag.miss[1],
+                          )
+                        : null}
+                      {verdict && (
+                        <p className="af-foot">
+                          <span className="af-info-tag">
+                            {t(`${k}.agreeVerdict.${verdict}`)}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+                {exhForms.some((f) => agreement?.forms?.[f]?.hit?.[1]) && (
+                  <p className="af-foot">
+                    {t(`${k}.agreeSource`, {
+                      since: fmtDate(
+                        String(agreement.period?.[0] ?? "").slice(0, 7),
+                      ),
+                      n: fmtCount(agreement.forms_n),
+                    })}
+                  </p>
+                )}
                 <p className="af-foot">
                   {exhibition?.forms_excluded
                     ? t(`${k}.slitDeepFly`)
                     : exhForms.length
-                      ? t(`${k}.slitTodayTag`) +
+                      ? t(
+                          `${k}.${exhForms.length > 1 ? "slitTodayTagMany" : "slitTodayTagOne"}`,
+                          {
+                            forms: exhForms
+                              .map(formName)
+                              .join(t("aiPredictionTab.analogy.listSeparator")),
+                            count: exhForms.length,
+                          },
+                        ) +
                         (flyBoats.length
                           ? t(`${k}.slitFlyShallow`, {
                               boats: flyBoats.join(
@@ -548,6 +564,7 @@ export default function ScenarioTab({
           classes={cls}
           boats={data.boats ?? null}
           classScope={classScope}
+          scenarioN={c.n}
         />
       </section>
       <section className="af-scn-sec" id="af-scn-s4">

@@ -171,6 +171,24 @@ test("英語版の勝ち上がりの着順は艇番と紛れない形で、順�
 // ファン評価1周目 P0・P1（ユーザー決定 2026-10-06: 予選中は公式の前夜時点の表をそのまま出す）
 // 白井英治は公式で減点10・6.40、安河内将は途中帰郷（2026-10-06 の公式の得点率一覧）
 const MIKUNI = "/venue/10/meet/2026-10-04";
+
+// 節の段階は「今日」と結果の有無（済んだレース）で決まる。結果は録画の撮り直し・本番の進みで増えるので、
+// 「今日」より後のレースの結果を除き、その日の時点に固定する（BOA-810: 節が終わった後の録画で、
+// 予選中のはずの日が「予選確定」になり、公式の表ではなく自社計算の値が出て落ちた）
+async function resultsUpTo(page, lastDay) {
+  await page.route(/\/rest\/v1\/race_results/, async (route) => {
+    const response = await fetchRecorded(route);
+    const body = await response.json().catch(() => null);
+    const kept = Array.isArray(body)
+      ? body.filter((r) => String(r.race_id).slice(0, 10) <= lastDay)
+      : body;
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json: kept,
+    });
+  });
+}
 function officialRows(scrapedAt) {
   return [
     {
@@ -197,6 +215,7 @@ test("予選中は公式の得点率一覧の値を出し、減点（白井）�
 }) => {
   // 3日目の夕方。公式の表は前夜（2日目の 22:00 取得）の時点
   await page.clock.setFixedTime(new Date("2026-10-06T18:00:00+09:00"));
+  await resultsUpTo(page, "2026-10-06");
   await page.route(/\/rest\/v1\/racer_series_points/, (route) =>
     route.fulfill({
       status: 200,
@@ -226,6 +245,7 @@ test("夜に今日の終了時点の表が入った後は「今日の結果を�
 }) => {
   // ファン評価3周目: 反映後も「22時ごろ反映」と出て、まだ入っていないと読めた
   await page.clock.setFixedTime(new Date("2026-10-06T22:30:00+09:00"));
+  await resultsUpTo(page, "2026-10-06");
   await page.route(/\/rest\/v1\/racer_series_points/, (route) =>
     route.fulfill({
       status: 200,

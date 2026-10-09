@@ -1220,6 +1220,82 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await expect(fold).not.toContainText("┊＝");
     });
 
+    test("③の件数が②④より少ない理由を箱のすぐ上に出し、展示が2つの形に当たるときは形ごとに一致を出す（ファン評価 P2）", async ({
+      page,
+    }) => {
+      await setup(page);
+      const base = analogyV16Scenario();
+      // 今日の展示はカド受け凹みとイン凹みの2つに当たる
+      const json = {
+        ...base,
+        exhibition: {
+          ...base.exhibition,
+          forms: ["d3", "d1"],
+          forms_excluded: false,
+        },
+      };
+      await page.route("**/api/analogy/scenario/**", (route) =>
+        route.fulfill({ json }),
+      );
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      await expect(section).toContainText(
+        "今日の展示はカド受け凹み・イン凹みの2つの形に当たる",
+      );
+      await expect(section).toContainText("展示がカド受け凹み → 本番も");
+      await expect(section).toContainText("展示がイン凹み → 本番も");
+      await expect(section.locator("#af-pat-d3 .af-today-badge")).toBeVisible();
+      await expect(section.locator("#af-pat-d1 .af-today-badge")).toBeVisible();
+      // ③の1号艇の箱は平均STが6艇そろうレースだけ（111件）、②④は112件。理由を箱のすぐ上に
+      await section.locator("#af-pat-kado").click();
+      await expect(section.locator("#af-scn-s3")).toContainText(
+        "1号艇の箱は111件（②④は112件）",
+      );
+    });
+
+    test("展開シナリオの P3（2026-10-09 レビュー）: 畳む・開く後のフォーカス、空の区切り線・決まり手の見出し、①の列の読み上げ", async ({
+      page,
+    }) => {
+      // モーターの値が無く（順位が分からない）、展示前なら、③に今日の区分の行は無い
+      const facts = analogyV16Facts();
+      facts.today.items.motor_2.values = [null, null, null, null, null, null];
+      await setup(page, { facts });
+      const base = analogyV16Scenario();
+      const kado = structuredClone(base.scenario.attack.kado);
+      // 勝ちはあるが、まくり・まくり差し・差しは0（すべて抜き・恵まれ）
+      for (const n of ["makuri", "makurizashi", "sashi"])
+        kado.all[`att_${n}_of_win`] = [0, kado.all.att_win[0]];
+      const json = {
+        ...base,
+        scenario: {
+          ...base.scenario,
+          attack: { ...base.scenario.attack, kado },
+        },
+      };
+      await page.route("**/api/analogy/scenario/**", (route) =>
+        route.fulfill({ json }),
+      );
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      // ①の行は読み上げで列の名前が付く
+      await expect(
+        section.getByRole("button", { name: /^枠なり.*割合.*①の1着率/ }),
+      ).toBeVisible();
+      await section.getByRole("button", { name: "展示前（出走表）" }).click();
+      await section.locator("#af-pat-kado").click();
+      // 押したボタンが消えても、フォーカスは「変える」に移る
+      await expect(section.locator("#af-slit-change")).toBeFocused();
+      const s3 = section.locator("#af-scn-s3");
+      await expect(s3.getByTestId("analogy-attack-box").first()).toBeVisible();
+      await expect(s3.locator(".af-atk-sep")).toHaveCount(0);
+      await expect(s3).not.toContainText("回の決まり手");
+      // 「変える」で開くと、選んでいた形にフォーカス
+      await section.locator("#af-slit-change").click();
+      await expect(section.locator("#af-pat-kado")).toBeFocused();
+    });
+
     test("七角形の表で見た3号艇の展示タイムは、3号艇を一番上で選んだときと同じ数字（2026-10-09 ユーザー指摘）", async ({
       page,
     }) => {
