@@ -42,20 +42,22 @@ async function defaultScope(raceId, runId, keys) {
 const SCOPE = /^(VC|NC|NCR|VA|VG|NA)(:[0-9A-Za-z:-]+)?$/;
 const BOAT_KINDS = new Set(["VC", "NC", "NCR"]);
 
-/** 2〜6号艇の scenario-boat と、③の比べる相手（VC・NCR は NC）の attack */
-async function boatScopes(raceId, runId, allKeys, kind) {
+/**
+ * 2〜6号艇の scenario-boat と、③の比べる相手（VC・NCR は NC）の attack。read は範囲キー → ファイル（無ければ null）。
+ * kind は1号艇の確定した範囲の種類（VC から NC に替えたときは NC）。VA・VG・NA は級によらないので null
+ * （scripts/maintenance/verify-analogy-v16-api.js が固定する）
+ * @param {(key: string) => Promise<object|null>} read
+ * @param {Record<string, Record<string, string>>} allKeys today の scope_keys（艇番 → 範囲キー）
+ * @param {string} kind
+ */
+export async function boatScopes(read, allKeys, kind) {
   if (!BOAT_KINDS.has(kind)) return null;
-  const read = (key) =>
-    key
-      ? readObject(
-          objectPath(raceId, runId, "scenario-boat", key.replaceAll(":", "_")),
-        )
-      : null;
+  const get = (key) => (key ? read(key) : null);
   const entries = await Promise.all(
     [2, 3, 4, 5, 6].map(async (b) => {
-      const keys = allKeys[String(b)] ?? {};
+      const keys = allKeys?.[String(b)] ?? {};
       const refKey = keys[REFERENCE[kind]] ?? null;
-      const [data, ref] = await Promise.all([read(keys[kind]), read(refKey)]);
+      const [data, ref] = await Promise.all([get(keys[kind]), get(refKey)]);
       return [
         String(b),
         data
@@ -104,7 +106,19 @@ export default createHandler(
           )
         : null,
       wantBoats
-        ? boatScopes(raceId, rc.run_id, today.scope_keys, scope.split(":")[0])
+        ? boatScopes(
+            (key) =>
+              readObject(
+                objectPath(
+                  raceId,
+                  rc.run_id,
+                  "scenario-boat",
+                  key.replaceAll(":", "_"),
+                ),
+              ),
+            today.scope_keys,
+            scope.split(":")[0],
+          )
         : null,
     ]);
     const exhibition =

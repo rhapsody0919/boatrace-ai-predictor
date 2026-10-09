@@ -189,3 +189,12 @@ def test_exh_form_st_flying():
     assert np.isnan(got[1]).all()
     assert np.isnan(got[2][1]) and got[2][0] == 0.10
 
+
+
+def test_scope_boat_reads_the_boat_from_each_key_form():
+    """艇ごとの範囲（BOA-806）の艇番は、scope_keys の VC・NC・NCR の形から取る"""
+    import v16_defs as V
+    keys = V.scope_keys(20, ["A1", "A2", "A2", "B1", "A2", "B1"], 4, "yusho", "G1")
+    assert {k: V.scope_boat(v) for k, v in keys.items()} == {
+        "VC": 4, "NC": 4, "NCR": 4, "VA": None, "VG": None, "NA": None}
+    assert keys["VC"] == "VC:20:1-3-2-0:4B1"

@@ -1704,7 +1704,8 @@
           "up": "The race tends to repeat the exhibition shape (a small hint)",
           "same": "The exhibition shape has little to do with the race shape",
           "down": "The race is, if anything, less likely to repeat the exhibition shape"
-        }
+        },
+        "flowScopeNote": "The finishing-order flow and trifectas come from races where Boat 1's class matched ({{n}} races), so the counts differ from Boats 2–6 in the bars above."
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
       "feedback": {

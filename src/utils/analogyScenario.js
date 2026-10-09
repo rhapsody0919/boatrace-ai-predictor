@@ -174,7 +174,8 @@ export const SMALL_ATTACK = 50;
 
 /**
  * ④の艇ごとの [件数, 1着, 2着, 3着]（BOA-806）。2〜6号艇は「構成＋その艇の級」の範囲（API の boats）の値、
- * 無ければ（VA・VG・NA、または BOA-806 より前の版）1号艇の範囲の cells の値
+ * 無ければ（VA・VG・NA、または BOA-806 より前の版）1号艇の範囲の cells の値。朝のバッチは艇ごとのファイルに
+ * 進入の型×形の全セルを書くので、ファイルはあるのにセルだけ無いことは起きない前提
  * @param {object} cells scenario.cells
  * @param {object|null|undefined} boats API の boats（{"2": {data: {cells}}|null, ...}）
  * @returns {number[][]} 6艇分

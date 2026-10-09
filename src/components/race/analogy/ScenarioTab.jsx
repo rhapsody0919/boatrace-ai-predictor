@@ -259,6 +259,12 @@ export default function ScenarioTab({
           </small>
         </div>
         <h4 className="af-h4">{t("aiPredictionTab.analogy.flow.heading")}</h4>
+        {/* 流れ図・3連単は艇ごとに分けられない（1レースの1〜3着の組）ので、1号艇の範囲のまま。棒と件数が違う理由を書く */}
+        {perBoat && (
+          <p className="af-foot">
+            {t(`${k}.flowScopeNote`, { n: fmtCount(c.n) })}
+          </p>
+        )}
         <FinishSankey
           tri={c.tri}
           first={first}

@@ -439,7 +439,7 @@ def main():
     tb = time.time()
     for key in boat_keys:
         m = scope_masks(key, t3r, arrays["cls_name"][t3i], combos[t3i])
-        s = SC.boat_scope(m, d, int(key.split(":")[3 if key.startswith("VC") else 2][0]), attack(m))
+        s = SC.boat_scope(m, d, V.scope_boat(key), attack(m))
         s["key"], s["period"] = key, [POOL_FROM, str(cutoff.date())]
         write_local(out, f"scenario-boat/{key.replace(':', '_')}.json", s)
     log("scenario-boat", len(boat_keys), f"{time.time() - tb:.1f}s")

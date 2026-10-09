@@ -10,6 +10,7 @@
  * 4. 画面の状態（resolveStatus）と layer の状態（layerStatus）、キャッシュ（cacheControl）
  * 5. NCR が優勝戦のときは facts から今節の平均着順点を外す（withoutSeriesScoreOnFinal、spec A-4）
  * 6. 夜の確認（verify-analogy-v16.js）の数え方と、similar/ を消す日付の選び方
+ * 7. 展開シナリオの艇ごとの範囲（boatScopes、BOA-806）: 種類は1号艇の確定した範囲に追従、VA・VG・NA は null、ファイルの無い艇は null
  */
 import {
   cacheControl,
@@ -21,6 +22,7 @@ import zlib from "zlib";
 import { layerStatus } from "../../api/analogy/layer/[raceId].js";
 import { withoutSeriesScoreOnFinal } from "../../api/analogy/facts/[raceId].js";
 import { mergeExhibition } from "../../api/analogy/similar/[raceId].js";
+import { boatScopes } from "../../api/analogy/scenario/[raceId].js";
 import { CLEANUP, datesToClean, summarizeDay } from "./verify-analogy-v16.js";
 import {
   runAnalogyV16Exhibition,
@@ -697,6 +699,68 @@ check(
       onTime.snapshotPosts.map((p) => [p.status, p.computed_at]),
     ],
     [[], [["ok", "2026-10-05T00:59:50.000Z"]]],
+  );
+}
+
+// ---- 7. 展開シナリオの艇ごとの範囲（BOA-806） ------------------------------------
+{
+  const keysOf = (b, cls) => ({
+    VC: `VC:20:1-3-2-0:${b}${cls}`,
+    NC: `NC:1-3-2-0:${b}${cls}`,
+    VA: "VA:20",
+    NA: "NA",
+  });
+  const allKeys = {
+    1: keysOf(1, "A1"),
+    2: keysOf(2, "A2"),
+    3: keysOf(3, "A2"),
+    4: keysOf(4, "B1"),
+    5: keysOf(5, "A2"),
+    6: keysOf(6, "B1"),
+  };
+  const files = new Map(
+    [2, 3, 4, 5, 6].flatMap((b) =>
+      ["VC", "NC"].map((k) => [
+        allKeys[b][k],
+        { boat: b, kind: k, attack: { kado: k } },
+      ]),
+    ),
+  );
+  files.delete(allKeys[6].VC); // 6号艇の VC だけ作れなかった
+  const read = async (key) => files.get(key) ?? null;
+  const vc = await boatScopes(read, allKeys, "VC");
+  check(
+    "艇ごとの範囲: VC なら各艇の VC と、比べる相手は NC",
+    [2, 3, 4, 5].map((b) => [
+      vc[b].scope,
+      vc[b].data.kind,
+      vc[b].reference.scope,
+      vc[b].reference.attack,
+    ]),
+    [2, 3, 4, 5].map((b) => [
+      allKeys[b].VC,
+      "VC",
+      allKeys[b].NC,
+      { kado: "NC" },
+    ]),
+  );
+  check("艇ごとの範囲: ファイルの無い艇は null", vc["6"], null);
+  const nc = await boatScopes(read, allKeys, "NC");
+  check(
+    "艇ごとの範囲: 1号艇が NC（VC から替えた）なら全艇 NC、比べる相手は無し",
+    [2, 3, 4, 5, 6].map((b) => [nc[b].scope, nc[b].reference]),
+    [2, 3, 4, 5, 6].map((b) => [allKeys[b].NC, null]),
+  );
+  for (const kind of ["VA", "VG", "NA"])
+    check(
+      `艇ごとの範囲: ${kind} は級によらないので null`,
+      await boatScopes(read, allKeys, kind),
+      null,
+    );
+  check(
+    "艇ごとの範囲: scope_keys に艇が無くても落ちない",
+    await boatScopes(read, { 1: allKeys[1] }, "VC"),
+    { 2: null, 3: null, 4: null, 5: null, 6: null },
   );
 }
 

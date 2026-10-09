@@ -149,7 +149,10 @@ export default function AttackTable({
     ? (own.reference?.attack?.[slit] ?? null)
     : R;
   const all = A.all;
-  const outer = att && att < 6 ? boats?.[att + 1]?.data?.winner?.[slit] : null;
+  // すぐ外の艇の1着は、攻める艇の値をその艇の範囲で出しているときだけ、外の艇の範囲の値にする（片方だけ
+  // 別の範囲にしない）
+  const outer =
+    A !== F && att < 6 ? boats?.[att + 1]?.data?.winner?.[slit] : null;
   const outerRate = outer
     ? rate(outer)
     : all.n
@@ -284,7 +287,9 @@ export default function AttackTable({
                   e: natDiff(AR.by_exh, "att_win"),
                   m: natDiff(AR.by_motor, "att_win"),
                 }),
+              // 6艇とも同じ級だと範囲が1号艇と同じレースになるので、件数が違うときだけ書く
               A !== F &&
+                all.n !== F.all.n &&
                 t(`${k}.attackBoatScope`, {
                   b: att,
                   n: fmtCount(all.n),
