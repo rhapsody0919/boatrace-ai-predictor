@@ -41,7 +41,7 @@ before(async () => {
     "137_sns_x_send.sql",
     "139_sns_deadline_queue.sql",
     "140_sns_mobile_approval.sql",
-    "141_sns_edit_assist.sql",
+    "145_sns_edit_assist.sql",
   ]) {
     await db.exec(
       (
@@ -57,7 +57,7 @@ before(async () => {
       (
         await readFile(
           new URL(
-            "../../docs/db-migration/142_sns_shorts_send.sql",
+            "../../docs/db-migration/146_sns_shorts_send.sql",
             import.meta.url,
           ),
           "utf8",

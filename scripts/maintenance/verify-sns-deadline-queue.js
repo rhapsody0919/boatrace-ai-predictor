@@ -49,7 +49,7 @@ before(async () => {
     "135_sns_preview_bundle_import.sql",
     "137_sns_x_send.sql",
     "139_sns_deadline_queue.sql",
-    "142_sns_shorts_send.sql",
+    "146_sns_shorts_send.sql",
   ])
     await db.exec(
       (

@@ -2,9 +2,9 @@
 
 ## 接続と承認
 
-139（F01-Rの試行時媒体計数）・140・141を維持し、142を上に適用する。実adapter・worker/cron接続・鍵・OAuth・アップロードは提供しない。既存queue/mobile APIのconnected=falseと初期停止は維持する。旧publish-youtubeは期限付き素材を拒否するまま。既存youtubeUpload.jsのOAuth・multipart upload・thumbnail helperは将来adapterが利用できるが、このレーンからは呼ばない。
+139（F01-Rの試行時媒体計数）・140・141を維持し、146を上に適用する。実adapter・worker/cron接続・鍵・OAuth・アップロードは提供しない。既存queue/mobile APIのconnected=falseと初期停止は維持する。旧publish-youtubeは期限付き素材を拒否するまま。既存youtubeUpload.jsのOAuth・multipart upload・thumbnail helperは将来adapterが利用できるが、このレーンからは呼ばない。
 
-スマホのversionHashは既存SQL revision＋server snapshotのhash。同じサーバー関数createXSnapshotを使い、YouTubeのみvideoと任意coverの両方を実バイトhash/size/typeで含める。SQLの承認版・媒体パス検査も2件までへ拡張する。本文/タイトル/タグ/媒体/根拠の編集は既存triggerにより承認失効。同じStorageパスの上書きは送信時に拒否する。142以前のcoverを含まないsnapshotは再承認が必要。Xの媒体選択は変更しない。上限は従来の各32MiB（動画＋cover最大64MiB）、SQL/API応答時間・実動画対応は接続前に確認する。
+スマホのversionHashは既存SQL revision＋server snapshotのhash。同じサーバー関数createXSnapshotを使い、YouTubeのみvideoと任意coverの両方を実バイトhash/size/typeで含める。SQLの承認版・媒体パス検査も2件までへ拡張する。本文/タイトル/タグ/媒体/根拠の編集は既存triggerにより承認失効。同じStorageパスの上書きは送信時に拒否する。146以前のcoverを含まないsnapshotは再承認が必要。Xの媒体選択は変更しない。上限は従来の各32MiB（動画＋cover最大64MiB）、SQL/API応答時間・実動画対応は接続前に確認する。
 
 ## 実行契約
 
@@ -18,7 +18,7 @@ runYoutubePublishJobは別段階。1回の呼出しでyoutube_pollを先に記�
 
 ## クォータ
 
-142は1プロジェクト用のsns_youtube_quota_control（既定verified=false、上限/基準日未設定）、追記試行台帳sns_youtube_quota_attempts、照合読取台帳sns_youtube_quota_readsを用意する。全てRLS有効、service_roleのみ。既存transition RPC名/戻り値を維持して最新139の内部実装を再利用する。内部関数transition_sns_send_139は直接実行権を剥奪する。
+146は1プロジェクト用のsns_youtube_quota_control（既定verified=false、上限/基準日未設定）、追記試行台帳sns_youtube_quota_attempts、照合読取台帳sns_youtube_quota_readsを用意する。全てRLS有効、service_roleのみ。既存transition RPC名/戻り値を維持して最新139の内部実装を再利用する。内部関数transition_sns_send_139は直接実行権を剥奪する。
 
 quota_dayはAmerica/Los_Angelesの暦日（DST対応）。JSTの日次投稿枠と混ぜない。claim時にupload専用1回＋一般104 units（任意thumbnail 50＋公開update 50＋処理poll最大3＋公開確認list 1）を原子的に予約する。カバーなしでも104を予約する保守的上界。失敗/保留/取消/再承認でも返金しない。calls、upload_calls_started、general_units_startedは外部呼出し直前に追記する。応答喪失で実消費不明でも消費扱いで保守的に数える。予約と開始記録は実Google請求・クォータ残高の測定値ではない。
 
