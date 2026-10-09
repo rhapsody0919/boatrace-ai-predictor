@@ -1,0 +1,164 @@
+<title>思考アシスト 上部の切り替え</title>
+<style>
+:root{
+  --bg:#f6f3ea;--card:#fffdf7;--ink:#1f1d17;--sub:#5f5a4c;--line:#d9d2bf;
+  --gold:#8a6a12;--gold-bg:#f3ead2;--water:#0a6dbc;--water-ink:#0a5fa3;--stage:#c2410c;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#16150f;--card:#201e17;--ink:#f1ede2;--sub:#b9b2a0;--line:#3d3a2f;
+  --gold:#e0b84a;--gold-bg:#3a3220;--water:#5fa8e8;--water-ink:#8cc2f0;--stage:#f08a4b;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16150f;--card:#201e17;--ink:#f1ede2;--sub:#b9b2a0;--line:#3d3a2f;
+  --gold:#e0b84a;--gold-bg:#3a3220;--water:#5fa8e8;--water-ink:#8cc2f0;--stage:#f08a4b;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;padding-inline:16px;padding-block:20px;line-height:1.6}
+h1.pg{font-size:18px;margin:0 0 4px}
+.lead{margin:0 0 16px;color:var(--sub);font-size:13.6px;max-width:40em}
+.wrap{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.col{display:grid;gap:8px;width:375px;max-width:100%}
+.col>h2{font-size:14px;margin:0;color:var(--sub)}
+.phone{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--card);min-height:640px}
+.apphdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line)}
+.apphdr b{color:var(--gold);font-size:17px}
+.apphdr span{font-size:13px;color:var(--water-ink)}
+.crumb{font-size:12px;color:var(--gold);padding:12px 14px 0}
+.kicker{font-size:13px;color:var(--sub);padding:6px 14px 0}
+.rd-h1{font-size:20px;font-weight:700;margin:0;padding:2px 14px 0;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.chip{font-size:12px;border-radius:999px;padding:0 8px;border:1px solid var(--line)}
+.chip.stage{background:var(--stage);color:#fff;border-color:var(--stage)}
+.back{display:block;padding:10px 14px 0;color:var(--water);font-size:15px;text-decoration:none}
+.sec{padding:20px 14px 0;color:var(--sub);font-size:13px}
+.sec .big{font-size:22px;font-weight:800;color:var(--ink)}
+.tabs{display:flex;gap:16px;padding:16px 14px 0;font-size:13px;color:var(--sub);border-bottom:1px solid var(--line);overflow:hidden}
+.tabs span:last-child{color:var(--ink);border-bottom:2px solid var(--gold);padding-bottom:6px}
+
+/* 切り替え: ページ単位なので、ページ内の切り替え（展示前/後・レンズの塗り）より一段軽い下線タブ型 */
+.sw{display:grid;gap:4px;padding:8px 16px 0;border-bottom:1px solid var(--line)}
+.seg{display:grid;grid-template-columns:1fr 1fr}
+.seg button{min-height:44px;border:0;border-bottom:3px solid transparent;background:transparent;color:var(--sub);font:inherit;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
+.seg button[aria-pressed="true"]{color:var(--ink);font-weight:700;border-bottom-color:var(--water)}
+.seg button:focus-visible{outline:3px solid var(--water);outline-offset:-3px}
+.new{font-size:12px;font-weight:700;color:var(--gold);border:1px solid var(--gold);border-radius:4px;padding:0 4px;line-height:1.4}
+.sw-note{margin:0 0 8px;font-size:12px;color:var(--sub);text-align:right}
+.stagerow{display:flex;justify-content:space-between;align-items:center;padding:8px 16px 0;font-size:13px;color:var(--sub)}
+.stg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.stg span{padding:6px 10px}
+.stg span.on{background:var(--water);color:#fff}
+.as-h1{font-size:20.8px;font-weight:700;padding:12px 14px 0;margin:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.as-h1 u{text-underline-offset:4px}
+.pill{font-size:12px;border:1px solid var(--gold);color:var(--gold);border-radius:999px;padding:0 8px}
+.rough{margin:12px 14px 0;padding:12px;border:1px solid var(--gold);border-radius:12px;background:var(--gold-bg);font-size:13px}
+.lens{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:6px;padding:12px 14px 0}
+.lens span{min-height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;font-weight:700;font-size:14px}
+.lens span.on{background:var(--ink);color:var(--card)}
+.lens span.g{color:var(--water-ink);border-color:var(--water);padding:0 10px;font-weight:500}
+.dim{opacity:.55;padding:12px 14px;font-size:12px;color:var(--sub)}
+
+.panel{display:grid;gap:12px;max-width:520px;font-size:13.6px}
+.panel h2{font-size:15px;margin:0}
+.panel table{border-collapse:collapse;width:100%;font-size:13px}
+.panel th,.panel td{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left;vertical-align:top}
+.panel th{color:var(--sub);font-weight:500}
+.scroll{overflow-x:auto}
+.state{font-size:12px;color:var(--sub)}
+.state b{color:var(--ink)}
+.reset{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:8px;min-height:36px;padding:0 10px;font:inherit;font-size:12px;cursor:pointer}
+ul{margin:0;padding-left:1.2em}
+</style>
+
+<h1 class="pg">思考アシスト 上部の切り替え（PR6）</h1>
+<p class="lead">レース詳細と思考アシストの同じ位置（サイトのヘッダーの直下）に置く切り替え。押すと同じレースのまま、もう一方の画面に移る。選んだ方は次にレースを開いたときも使う（この端末だけ）。ファンパネルと UI/UX デザイナー役のレビューを当てた後の版。</p>
+
+<div class="wrap">
+  <div class="col">
+    <h2 id="title-a">レース詳細 /race/2026-10-06-18-10</h2>
+    <div class="phone" id="phone-a" aria-labelledby="title-a">
+      <div class="apphdr"><b>龍神レーダー</b><span>分析</span></div>
+      <div class="sw" data-sw></div>
+      <div class="crumb">ホーム › 過去の予想 › 2026年10月6日(火) › 徳山 › 10R</div>
+      <div class="kicker">スカパー!・JLC杯徳山ルーキーシリーズ第18戦</div>
+      <p class="rd-h1">徳山 10R <span class="chip stage">準優勝戦</span><span class="chip">5日目</span> (2026年10月6日(火))</p>
+      <a class="back" href="#" onclick="return false">← レース一覧に戻る</a>
+      <div class="sec"><div class="big">データ分析結果 - 徳山 10R</div></div>
+      <div class="tabs"><span>基本情報</span><span>枠別情報</span><span>オッズ一覧</span><span>結果</span></div>
+      <p class="dim">（この下は今のタブの中身）</p>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2 id="title-b">思考アシスト /race/2026-10-06-18-10/assist</h2>
+    <div class="phone" id="phone-b" aria-labelledby="title-b">
+      <div class="apphdr"><b>龍神レーダー</b><span>分析</span></div>
+      <div class="sw" data-sw></div>
+      <p class="as-h1"><u>徳山 ›</u> 10R <span class="pill">準優勝戦</span><span class="chip">一般</span><span class="chip">締切 13:14</span></p>
+      <div class="stagerow"><span>風 北西 4m　波 4cm　晴</span><span class="stg"><span>展示前</span><span class="on">展示後</span></span></div>
+      <div class="rough"><b>このレースは堅い？荒れる？</b><br>1号艇の1着 58% → 全国55%　万舟 21% → 全国17%</div>
+      <div class="lens"><span class="on">軸</span><span>展開</span><span>機力</span><span>買い目</span><span class="g">ガイド</span></div>
+      <p class="dim">（この下は今の思考アシストの中身）</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="state" id="state"></div>
+    <div><button type="button" class="reset" id="reset">保存した表示を消す（初めて開いた状態）</button></div>
+
+    <h2>決めること（推奨）</h2>
+    <table>
+      <thead><tr><th>項目</th><th>推奨</th><th>理由</th></tr></thead>
+      <tbody>
+        <tr><td>置き場所</td><td>2つの画面ともサイトのヘッダーの直下（レース詳細ではパンくずの上）</td><td>同じ位置にそろう（見出しの下だと、日付で2行になるレース詳細と 150px ほどずれる）。最初の画面に必ず入る</td></tr>
+        <tr><td>見た目</td><td>下線のタブ型（選んだ方に ✓・太字・青い下線）</td><td>ページの切り替えなので、ページ内の切り替え（展示前/後・レンズの塗り）より軽く。色だけに頼らない</td></tr>
+        <tr><td>文言</td><td>出走表とタブ ／ 思考アシスト（見た目の「表示」は省き、読み上げの名前だけ）</td><td>「出走表とタブ」は PR4 の「得点率・ST の推移（出走表とタブ › 今節）」と同じ呼び名。デザイナー役は「タブ」を中身の名前（例「出走表・データ」）にする案も出した。変えるなら PR4 の呼び名も一緒に直す</td></tr>
+        <tr><td>説明の1行</td><td>出走表とタブを開いている間だけ「見る順にデータとセオリーを並べた画面」（18字）</td><td>初めての人が「思考アシスト」を知らない（ファン2人）。1行に収めてタブを押し下げない</td></tr>
+        <tr><td>「新」の札</td><td>押していない側の「思考アシスト」にだけ付ける（公開から30日）</td><td>見つけてもらう合図。押した後は消す</td></tr>
+        <tr><td>押す範囲</td><td>2つのボタンとも高さ 44px、横は半分ずつ</td><td>指1本で外さない</td></tr>
+      </tbody>
+    </table>
+
+    <h2>4言語の文言（キー raceDetail.assistSwitch.*）</h2>
+    <p class="state">切り替えは ja だけで出す（思考アシストは ja 専用）。レース詳細は4言語に訳すページなので、キーは4言語で足す。</p>
+    <div class="scroll"><table>
+      <thead><tr><th>キー</th><th>ja</th><th>en</th><th>zh-TW</th><th>ko</th></tr></thead>
+      <tbody>
+        <tr><td>label</td><td>表示</td><td>View</td><td>顯示</td><td>보기</td></tr>
+        <tr><td>raceCard</td><td>出走表とタブ</td><td>Race card &amp; tabs</td><td>出走表與分頁</td><td>출주표와 탭</td></tr>
+        <tr><td>assist</td><td>思考アシスト</td><td>Thinking Assist</td><td>思考輔助</td><td>사고 어시스트</td></tr>
+        <tr><td>new</td><td>新</td><td>New</td><td>新</td><td>신규</td></tr>
+        <tr><td>note</td><td>思考アシスト＝見る順に、過去レースの傾向とセオリーを並べた画面</td><td>Thinking Assist shows past-race trends and theories in the order to check them</td><td>思考輔助：依查看順序列出過往賽事趨勢與理論</td><td>사고 어시스트: 확인할 순서대로 과거 레이스 경향과 이론을 정리한 화면</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>動き</h2>
+    <ul>
+      <li>押すと同じレースのもう一方へ移る。履歴は置き換え（戻るで切り替え前の画面に戻らない）</li>
+      <li>「思考アシスト」を選んだ端末では、次にレース詳細を開くと思考アシストへ移る。URL にタブ・艇の指定があるとき、ja 以外のときは移らない</li>
+      <li>既定は「出走表とタブ」</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const KEY="boatai-user:race-view";
+const read=()=>{try{return localStorage.getItem(KEY)}catch{return null}};
+const write=(v)=>{try{v?localStorage.setItem(KEY,v):localStorage.removeItem(KEY)}catch{}};
+let view=read()==="assist"?"assist":"race";
+function swHtml(cur){
+  // 「新」は押していない側にだけ（押した側の上に載せない）。説明は出走表とタブを開いている間だけ1行
+  const btn=(v,label)=>`<button type="button" data-v="${v}" aria-pressed="${cur===v}">${cur===v?'<span aria-hidden="true">✓</span>':""}${label}${v==="assist"&&cur!=="assist"?'<span class="new">新</span>':""}</button>`;
+  const note=cur==="race"?`<p class="sw-note">見る順にデータとセオリーを並べた画面</p>`:"";
+  return `<div class="seg" role="group" aria-label="表示">${btn("race","出走表とタブ")}${btn("assist","思考アシスト")}</div>${note}`;
+}
+function render(){
+  const [a,b]=document.querySelectorAll("[data-sw]");
+  a.innerHTML=swHtml("race"); b.innerHTML=swHtml("assist");
+  document.getElementById("phone-a").style.outline=view==="race"?"3px solid var(--water)":"none";
+  document.getElementById("phone-b").style.outline=view==="assist"?"3px solid var(--water)":"none";
+  const saved=read();
+  document.getElementById("state").innerHTML=`今の画面: <b>${view==="race"?"レース詳細（出走表とタブ）":"思考アシスト"}</b>（青い枠）　保存: <b>${saved==="assist"?"思考アシスト":saved==="race"?"出走表とタブ":"なし（既定は出走表とタブ）"}</b>`;
+}
+document.addEventListener("click",(e)=>{
+  const b=e.target.closest("[data-v]"); if(b){view=b.dataset.v;write(view);render();return;}
+  if(e.target.id==="reset"){write(null);view="race";render();}
+});
+render();
+</script>
