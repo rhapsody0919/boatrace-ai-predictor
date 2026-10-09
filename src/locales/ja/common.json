@@ -130,6 +130,13 @@
     }
   },
   "raceDetailPage": {
+    "assistSwitch": {
+      "label": "表示",
+      "raceCard": "出走表とタブ",
+      "assist": "思考アシスト",
+      "new": "新",
+      "note": "見る順にデータとセオリーを並べた画面"
+    },
     "metaTitle": "{{venue}}競艇 {{race}}R AI予想・展開予測（{{date}}）- 龍神レーダー",
     "metaDescription": "{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rの出走表データ・AI予想・1マークの展開予測・イン崩れ指数を無料で確認できます。",
     "backToList": "← レース一覧に戻る",

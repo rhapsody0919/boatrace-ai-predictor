@@ -1060,6 +1060,79 @@ test.describe("思考アシスト: PR5 のシート・ガイド（デザイナ�
   });
 });
 
+test.describe("思考アシスト: 上部の切り替え（PR6、承認モック pr6-switch）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page, { preview: true });
+  });
+  const group = (page) => page.getByRole("group", { name: "表示" });
+
+  test("レース詳細ではサイトのヘッダーの直下・パンくずの上に出し、説明の1行と「新」の札を出す", async ({
+    page,
+  }) => {
+    await page.goto(`/race/${RACE_ID}`);
+    await expect(group(page)).toBeVisible();
+    const [swTop, crumbTop] = await Promise.all([
+      group(page).evaluate((el) => el.getBoundingClientRect().top),
+      page
+        .getByRole("navigation", { name: /パンくず|breadcrumb/i })
+        .first()
+        .evaluate((el) => el.getBoundingClientRect().top),
+    ]);
+    expect(swTop).toBeLessThan(crumbTop);
+    await expect(
+      page.getByText("見る順にデータとセオリーを並べた画面"),
+    ).toBeVisible();
+    await expect(group(page).getByText("新", { exact: true })).toBeVisible();
+  });
+
+  test("思考アシストでは同じ位置に出し、説明の1行と「新」の札は出さない", async ({
+    page,
+  }) => {
+    await open(page);
+    await expect(group(page)).toBeVisible();
+    await expect(
+      group(page).getByRole("button", { name: /思考アシスト/ }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      page.getByText("見る順にデータとセオリーを並べた画面"),
+    ).toHaveCount(0);
+    await expect(group(page).getByText("新", { exact: true })).toHaveCount(0);
+  });
+
+  test("一度選んだ端末では「新」の札を出さない。履歴は置き換え（戻るで切り替え前に戻らない）", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.goto(`/race/${RACE_ID}`);
+    await group(page)
+      .getByRole("button", { name: /思考アシスト/ })
+      .click();
+    await expect(page).toHaveURL(/\/assist$/);
+    await page.goBack();
+    await expect(page).not.toHaveURL(new RegExp(`/race/${RACE_ID}$`));
+    await page.evaluate(() =>
+      localStorage.setItem("boatai-user:race-view", "race"),
+    );
+    await page.goto(`/race/${RACE_ID}`);
+    await expect(group(page)).toBeVisible();
+    await expect(group(page).getByText("新", { exact: true })).toHaveCount(0);
+  });
+
+  test("375px で横にはみ出さず、ボタンは高さ44px以上", async ({ page }) => {
+    await page.goto(`/race/${RACE_ID}`);
+    await expect(group(page)).toBeVisible();
+    const sizes = await group(page)
+      .getByRole("button")
+      .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
+    expect(Math.min(...sizes)).toBeGreaterThanOrEqual(44);
+    const over = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    );
+    expect(over).toBeLessThanOrEqual(0);
+  });
+});
+
 test.describe("思考アシスト: ガイドと Cookie の同意バナー（PR5 マージ後の本番確認）", () => {
   test.use({ viewport: { width: 375, height: 812 }, cookieConsent: null });
   test.beforeEach(async ({ page }) => {
