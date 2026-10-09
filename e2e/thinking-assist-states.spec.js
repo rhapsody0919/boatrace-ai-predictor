@@ -1196,6 +1196,13 @@ test.describe("思考アシスト: BOA-809（PR5 のレビューの P3）", () =
     }) => {
       await page.setViewportSize({ width, height: 900 });
       await open(page);
+      // 風と潮の「傾向 ›」が並んでから測る（届く前は行が折り返さない）
+      await expect(
+        page.getByRole("button", { name: /^今日の風.*の過去レースの傾向$/ }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "潮の傾向の過去レースの傾向" }),
+      ).toBeVisible();
       const over = await page.evaluate(() => {
         const hits = [...document.querySelectorAll(".ta-header button")].map(
           (el) => {
