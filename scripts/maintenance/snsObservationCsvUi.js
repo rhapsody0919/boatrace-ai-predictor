@@ -84,7 +84,12 @@ export async function verifyObservationCsvUi(csv) {
       assert.equal(calls, 0);
       await page.getByLabel("公開開始日").fill("2026-09-01");
       await page.getByLabel("公開終了日").fill("2026-09-07");
-      await page.getByLabel("チャネル", { exact: true }).selectOption("x");
+      // getByLabel はlabelが包むselectのoption文字列までtextContentに含めて比較するため、
+      // 「チャネル」とのexact一致が常に失敗する（label.textContent==="チャネル X・YouTubeXYouTube"）。
+      // role+nameで対象のselect自体のaccessible nameを見る。
+      await page
+        .getByRole("combobox", { name: "チャネル", exact: true })
+        .selectOption("x");
       const pending = page.waitForEvent("download");
       await page.getByRole("button", { name: "CSVをダウンロード" }).click();
       const download = await pending;
