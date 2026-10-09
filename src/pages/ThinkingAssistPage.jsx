@@ -2,7 +2,7 @@
  * 思考アシスト（BOA-430）。1レースの予想を、レースの図と4つの見方（軸・展開・機力・買い目）で組み立てるページ。
  * ja 専用（languages.js の isFullyTranslatedPath の例外）。公開まで noindex（spec D-36 (9)）。
  * 状態は useReducer 1つで、URL・localStorage に残さない（plan「状態」）。
- * 深掘り・セオリーカード・用語・会場の特徴・ガイド・上部の切り替えは後の PR（tasks PR4〜PR6）
+ * レンズの要約・図の印・深掘りは PR4。セオリーカード・用語・会場の特徴・ガイド・上部の切り替えは後の PR（tasks PR5・PR6）
  */
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -14,6 +14,8 @@ import LensBar from "../components/race/assist/LensBar";
 import RaceLaneBoard from "../components/race/assist/RaceLaneBoard";
 import BetFooter from "../components/race/assist/BetFooter";
 import MarkSheet from "../components/race/assist/MarkSheet";
+import LensSummary from "../components/race/assist/LensSummary";
+import BoatDeepDive from "../components/race/assist/BoatDeepDive";
 import {
   THINKING_ASSIST_PUBLIC,
   isAnalogyFinderEnabled,
@@ -30,7 +32,23 @@ import {
   sameClassScope,
   similarSummary,
 } from "../utils/assistModel";
-import { compositeOdds, expandTickets } from "../utils/oddsMath";
+import {
+  HINT_BOAT,
+  b1Usual,
+  boardFactMark,
+  factChips,
+  factsScope,
+  factsScopeLabel,
+  hintSummary,
+  partsChangedBoats,
+  tiltOutliers,
+} from "../utils/assistSummary";
+import { ATTACK_BOAT } from "../utils/analogyScenario";
+import {
+  compositeOdds,
+  expandTickets,
+  popularityRanks,
+} from "../utils/oddsMath";
 import { formatObservedTime } from "../components/race/weatherInfo";
 import { isRaceCancelled } from "../utils/raceCancellation";
 import { ASSIST_COPY } from "../data/thinkingAssistCopy";
@@ -82,6 +100,8 @@ function reducer(state, action) {
       };
     case "back":
       return { ...state, metric: null };
+    case "closeDeep":
+      return { ...state, deep: null, metric: null };
     case "toggleBet": {
       const next = new Set(state.bets[action.pos]);
       if (next.has(action.boat)) next.delete(action.boat);
@@ -114,7 +134,10 @@ export default function ThinkingAssistPage() {
   const { raceId } = useParams();
   useRobotsMeta(!THINKING_ASSIST_PUBLIC);
   const [state, dispatch] = useReducer(reducer, initialState);
-  const data = useThinkingAssistData(raceId, { stage: state.stage });
+  const data = useThinkingAssistData(raceId, {
+    stage: state.stage,
+    deep: state.deep,
+  });
   const race = data.racecard.data;
   const today = data.facts.data?.today ?? null;
   const v16Status = data.facts.data?.status ?? null;
@@ -125,6 +148,14 @@ export default function ThinkingAssistPage() {
   const headerHeight = useAppHeaderHeight();
   const finalRound = Boolean(data.round);
   const trifecta = data.odds.data?.trifecta ?? null;
+  const post = data.stage === "post";
+  const factsAll = v16Off ? null : (data.facts.data?.facts ?? null);
+  const v16Exhibition = data.facts.data?.exhibition ?? null;
+  const ncScenario = v16Off ? null : (data.scenario.nc.data?.scenario ?? null);
+  const maintenanceRows =
+    post && data.maintenance.status === "ready"
+      ? (data.maintenance.data?.rows ?? null)
+      : null;
 
   const racers = useMemo(
     () =>
@@ -137,6 +168,84 @@ export default function ThinkingAssistPage() {
     [race, today, data.exhibition.data, data.rates.data],
   );
 
+  // 艇ごとの差がつく材料（範囲は v16 の既定、優勝戦・準優勝戦の日は同じラウンド。D-37）
+  const boatFacts = useMemo(
+    () =>
+      [1, 2, 3, 4, 5, 6].map((boat) => {
+        const scope = factsScope(factsAll, today, boat, data.round);
+        return {
+          scope,
+          chips: factChips({
+            scope,
+            today,
+            exhibition: v16Exhibition,
+            boat,
+            // 展示タイムの札は v16 の展示後の段の値があるときだけ（無いと全艇「—」になる。ファン評価 PR4 1周目 指摘4）
+            post: post && Array.isArray(v16Exhibition?.exh_time),
+            finalRound,
+          }),
+        };
+      }),
+    [factsAll, today, data.round, v16Exhibition, post, finalRound],
+  );
+  // 買い目レンズの「過去の1着」（艇ごとの範囲。6艇で比べない）
+  const pastWin = useMemo(
+    () =>
+      new Map(
+        boatFacts
+          .map((f, i) => [i + 1, b1Usual(f.scope, i + 1)])
+          .filter(([, u]) => u),
+      ),
+    [boatFacts],
+  );
+  const hints = useMemo(
+    () => (ncScenario ? hintSummary(ncScenario, today) : null),
+    [ncScenario, today],
+  );
+
+  // 図の印（screens「レンズごとの図 C」の印）
+  const marks = useMemo(() => {
+    const out = new Map();
+    const add = (boat, mark) => out.set(boat, [...(out.get(boat) ?? []), mark]);
+    if (state.lens === "axis")
+      boatFacts.forEach((f, i) => {
+        const c = boardFactMark(f.chips);
+        if (c)
+          add(i + 1, {
+            text: ASSIST_COPY.factMark(
+              ASSIST_COPY.factNames[c.key],
+              ASSIST_COPY.factWords[c.good],
+            ),
+            hit: true,
+          });
+      });
+    if (state.lens === "flow" && hints?.top) {
+      const top = hints.top;
+      const boat = HINT_BOAT[top.id];
+      if (boat)
+        add(boat, {
+          text: ASSIST_COPY.hintMark(
+            ASSIST_COPY.formNames[top.form],
+            Math.round((top.hit[0] / top.hit[1]) * 100),
+          ),
+          hit: true,
+        });
+      const attacker = ATTACK_BOAT[top.form];
+      if (attacker)
+        add(attacker, {
+          text: ASSIST_COPY.attackMark(ASSIST_COPY.formNames[top.form]),
+          hit: false,
+        });
+    }
+    if (state.lens === "power" && post) {
+      for (const [boat, tilt] of tiltOutliers(racers))
+        add(boat, { text: ASSIST_COPY.tiltMark(tilt), hit: false });
+      for (const boat of partsChangedBoats(maintenanceRows))
+        add(boat, { text: ASSIST_COPY.partsMark, hit: false });
+    }
+    return out;
+  }, [state.lens, boatFacts, hints, post, racers, maintenanceRows]);
+
   const model = useMemo(
     () =>
       boardModel({
@@ -147,8 +256,18 @@ export default function ThinkingAssistPage() {
         trifecta,
         finalRound,
         hasToday: today != null,
+        pastWin,
       }),
-    [state.lens, state.metric, data.stage, racers, trifecta, finalRound, today],
+    [
+      state.lens,
+      state.metric,
+      data.stage,
+      racers,
+      trifecta,
+      finalRound,
+      today,
+      pastWin,
+    ],
   );
 
   const scope = useMemo(
@@ -217,6 +336,96 @@ export default function ThinkingAssistPage() {
     naStatus: data.scenario.na.status,
   });
 
+  const venueName = race?.venue ?? null;
+  const courseByBoat = maintenanceRows
+    ? [1, 2, 3, 4, 5, 6].map(
+        (b) =>
+          maintenanceRows.find((r) => r.boat_number === b)?.exhibition_course ??
+          null,
+      )
+    : null;
+  const vaKey = today?.scope_keys?.["1"]?.VA;
+  const motorFact = boatFacts[0].chips.find(
+    (c) => c.key === "motor_2" && c.hit && c.level === "large",
+  );
+  const b1u = b1Usual(boatFacts[0].scope);
+  const betSummary = {
+    tickets,
+    trifecta: trifecta ?? {},
+    budget: state.budget,
+    mode: state.mode,
+    oddsAt,
+    oddsNote,
+    finished: Boolean(race?.result?.finished),
+    onBudget: (budget) => dispatch({ type: "budget", budget }),
+    onMode: (mode) => dispatch({ type: "mode", mode }),
+  };
+  const summary = {
+    axis: factsAll
+      ? {
+          scope: boatFacts[0].scope,
+          chips: boatFacts[0].chips,
+          venue: venueName,
+          headerScope: scope,
+          vaFacts: vaKey ? factsAll[vaKey] : null,
+          vaCell: venueAll,
+          classes: today?.classes ?? null,
+          round: data.round,
+        }
+      : null,
+    flow: {
+      scenario: ncScenario,
+      today,
+      post,
+      v16Exhibition,
+      courseByBoat,
+      similar,
+      racecardStage: data.similar.racecardStage,
+      reflecting: v16Status === "exhibition_reflecting",
+      round: data.round,
+    },
+    power: {
+      post,
+      racers,
+      maintenance: maintenanceRows,
+      original:
+        data.original.data?.state === "published" ? data.original.data : null,
+      venue: venueName,
+      motorChip:
+        motorFact && b1u && racers[0].motor2 != null
+          ? {
+              top: motorFact.bucket === 1,
+              value: racers[0].motor2,
+              rate: Math.round(motorFact.rate * 100),
+              base: Math.round((b1u.k / b1u.n) * 100),
+              // どのレースから出した割合か（271 の指摘の型）
+              scope: ASSIST_COPY.scopeChip(
+                factsScopeLabel(boatFacts[0].scope, venueName),
+                boatFacts[0].scope.n,
+              ),
+            }
+          : null,
+    },
+    bet: {
+      bet: {
+        points: tickets.length,
+        summary: betSummary,
+        ranks: popularityRanks(trifecta ?? {}),
+      },
+      scope,
+      national,
+      similar,
+      sim: data.similar.data?.similar ?? null,
+      venueAll,
+      venue: venueName,
+      classes: today?.classes ?? null,
+    },
+  };
+  const deepBoat = state.deep;
+  const deepRunsReady =
+    data.runs.racerId != null &&
+    data.runs.racerId === racers[(deepBoat ?? 1) - 1]?.racerId;
+
   let body;
   if (data.racecard.status === "loading") {
     body = <p className="ta-status">{ASSIST_COPY.loading}</p>;
@@ -245,6 +454,9 @@ export default function ThinkingAssistPage() {
           oddsAt={oddsAt}
           showSonar={isAnalogyFinderEnabled()}
         >
+          {post && v16Status === "exhibition_reflecting" && (
+            <p className="ta-note">{ASSIST_COPY.stateReflecting}</p>
+          )}
           {partNotes.map((part) => (
             <p key={part} className="ta-note">
               {ASSIST_COPY.partFailed(part)}
@@ -289,6 +501,63 @@ export default function ThinkingAssistPage() {
             onBack={() => dispatch({ type: "back" })}
             onToggleBet={toggleBet}
             onOpenSheet={() => dispatch({ type: "sheet", sheet: "mark" })}
+            // 軸・展開の印は v16 が無ければ材料が空なので出ない。機力のチルト・交換は DB の展示なので欠場でも出す
+            marks={marks}
+          />
+        )}
+        {deepBoat && (
+          <BoatDeepDive
+            key={deepBoat}
+            boat={deepBoat}
+            racer={racers[deepBoat - 1]}
+            venue={venueName}
+            raceId={raceId}
+            today={v16Off ? null : today}
+            post={post}
+            finalRound={finalRound}
+            round={data.round}
+            scope={boatFacts[deepBoat - 1].scope}
+            chips={boatFacts[deepBoat - 1].chips}
+            runs={
+              racers[deepBoat - 1]?.racerId == null
+                ? // 選手の登録番号が無い艇は走を取れない。読み込み中に残さない
+                  { status: "none", data: null }
+                : deepRunsReady
+                  ? data.runs
+                  : { status: "loading", data: null }
+            }
+            technique={
+              data.technique.status === "ready"
+                ? ((data.technique.data ?? []).find(
+                    (r) => r.boat_number === deepBoat,
+                  ) ?? null)
+                : null
+            }
+            pretest={
+              data.motor.status === "ready"
+                ? ((data.motor.data?.rows ?? []).find(
+                    (r) => r.boat_number === deepBoat,
+                  ) ?? null)
+                : null
+            }
+            weight={
+              (maintenanceRows ?? []).find((r) => r.boat_number === deepBoat)
+                ?.today_weight ?? null
+            }
+            course={courseByBoat?.[deepBoat - 1] ?? deepBoat}
+            onMetric={(metric, boat) =>
+              dispatch({ type: "metric", metric, boat })
+            }
+            onClose={() => dispatch({ type: "closeDeep" })}
+          />
+        )}
+        {!(cancelled && state.lens === "bet") && (
+          <LensSummary
+            lens={state.lens}
+            axis={summary.axis}
+            flow={summary.flow}
+            power={summary.power}
+            bet={summary.bet}
           />
         )}
         <p className="ta-disclaimer">{ASSIST_COPY.disclaimer}</p>
@@ -336,6 +605,8 @@ export default function ThinkingAssistPage() {
           finished={Boolean(race?.result?.finished)}
           onBudget={(budget) => dispatch({ type: "budget", budget })}
           onMode={(mode) => dispatch({ type: "mode", mode })}
+          similarTri={similar?.tri ?? null}
+          similarN={similar?.n ?? null}
         />
       )}
       {state.sheet === "rough" && scope && national && (
@@ -347,6 +618,7 @@ export default function ThinkingAssistPage() {
           venueAll={venueAll}
           venueName={race?.venue ?? null}
           racecardStage={data.similar.racecardStage}
+          similarConditions={data.similar.data?.similar?.conditions ?? null}
           lineup={lineup}
           classes={today?.classes ?? null}
           onClose={closeSheet}

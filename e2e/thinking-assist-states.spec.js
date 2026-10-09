@@ -34,9 +34,14 @@ async function open(page) {
   });
 }
 
-/** exhibition_data の録画の応答を加工する（欠場など） */
+/**
+ * exhibition_data の録画の応答を加工する（欠場など）。対象は展示の基本（getRaceExhibitionBasics、select に
+ * start_flag を含む。整備の問い合わせの prev_start_timing と取り違えないよう start_timing では見ない）だけ。PR4 で足した整備の問い合わせ（体重・チルト・展示の進入）は録画に無く本番へ素通しなので、
+ * ここで止めるとテストの終わった後に応答が返って落ちる（CI の F03）。そちらは録画の再生へ回す
+ */
 async function routeExhibition(page, edit, gate = null) {
   await page.route("**/rest/v1/exhibition_data*", async (route) => {
+    if (!route.request().url().includes("start_flag")) return route.fallback();
     const res = await fetchRecorded(route);
     const rows = await res.json();
     if (gate) await gate;
@@ -574,5 +579,370 @@ test.describe("思考アシスト: 375px の押せる範囲と固定位置（Cod
       );
     });
     expect(gap).toBeGreaterThanOrEqual(-1);
+  });
+});
+
+/**
+ * PR4（レンズの要約・図の印・深掘り）。値は承認モック v7 と v16 の固定データに一致すること:
+ *   軸の要約は準優勝戦に絞った 65/119（D-37）、展開の手がかりは2コース凹み 13%（65/501）、
+ *   深掘りの今節の平均着順点は v16 と同じ 8.57＝60点÷7走（今日の走は入れない。D-29）
+ */
+test.describe("思考アシスト: レンズの要約と深掘り（PR4）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("軸: 1号艇の1着は準優勝戦に絞った 54.6%（65/119レース）", async ({
+    page,
+  }) => {
+    await open(page);
+    await expect(page.getByText("65/119レース")).toBeVisible();
+    await expect(page.getByText("54.6%").first()).toBeVisible();
+  });
+
+  test("展開: 手がかりの印が2号艇、攻め手が3号艇に付き、点の値を押すと6艇比較になる", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(page.getByText("本番で2コース凹みになるのは")).toBeVisible();
+    await expect(
+      page.getByText("★平均STの手がかり（2コース凹み）13%"),
+    ).toBeVisible();
+    await expect(
+      page.getByText("2コース凹みなら攻め手", { exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: /^展示ST .*、6艇で比べる$/ })
+      .first()
+      .click();
+    await expect(page.getByRole("button", { name: /図を戻す/ })).toBeVisible();
+  });
+
+  test("深掘り: 今節の平均は 8.57＝60点÷7走、今日の走は点に入れない", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const toggle = page.getByRole("button", { name: "1走ずつの表" });
+    await expect(toggle).toBeVisible({ timeout: 30000 });
+    await toggle.click();
+    await expect(page.getByRole("table", { name: /今節の各走/ })).toBeVisible();
+    await expect(page.getByText("平均 8.57＝60点÷7走")).toBeVisible();
+    await expect(
+      page.getByRole("table", { name: /今節より前の5走/ }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "閉じる", exact: true }).click();
+    await expect(
+      page.getByRole("region", { name: "1号艇の詳しい情報" }),
+    ).toHaveCount(0);
+  });
+});
+
+/** PR4 の /code-review 指摘の再現テスト */
+test.describe("思考アシスト: PR4 の /code-review 指摘", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("指摘1: 選手の登録番号が無い艇の深掘りは「読み込み中」に残らない", async ({
+    page,
+  }) => {
+    await page.route("**/api/predictions/**", async (route) => {
+      const res = await fetchRecorded(route);
+      const body = await res.json();
+      for (const r of body.races ?? [])
+        if (r.raceId === RACE_ID)
+          for (const e of r.entries ?? []) if (e.number === 1) e.racerId = null;
+      await route.fulfill({ response: res, json: body });
+    });
+    // 出走表は軽量版→完全版の2回取る。完全版が届く前にテストを終えると、取得中の route が閉じたページで落ちる
+    const full = page.waitForResponse(
+      (r) =>
+        r.url().includes("/api/predictions/") && !r.url().includes("light"),
+      { timeout: 60000 },
+    );
+    await open(page);
+    await full;
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const region = page.getByRole("region", { name: "1号艇の詳しい情報" });
+    await expect(region).toBeVisible();
+    await expect(
+      region.getByText("表示できるデータがありません").first(),
+    ).toBeVisible();
+    await expect(region.getByText("読み込み中…")).toHaveCount(0);
+  });
+
+  test("指摘2: 欠場があるレースでも、機力レンズのチルトの印は出す（v16 の部分だけ出さない）", async ({
+    page,
+  }) => {
+    await routeExhibition(page, (rows) =>
+      rows.map((r) => (r.boat_number === 4 ? { ...r, is_absent: true } : r)),
+    );
+    await open(page);
+    await lensTab(page, "機力").click();
+    await expect(
+      page.getByText("チルト-0.5", { exact: true }).first(),
+    ).toBeVisible();
+  });
+});
+
+/** PR4 の mock-diff-checker の差分（承認モック v7 にそろえた）の再現テスト */
+test.describe("思考アシスト: PR4 の承認モックとの差分", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("今節の各走は新しい順、見出しは1つ（今節の各走（徳山））", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const toggle = page.getByRole("button", { name: "1走ずつの表" });
+    await expect(toggle).toBeVisible({ timeout: 30000 });
+    await toggle.click();
+    const table = page.getByRole("table", { name: "今節の各走（徳山）" });
+    await expect(table).toBeVisible();
+    const days = await table.locator("tbody tr td:first-child").allInnerTexts();
+    const dated = days.filter((d) => /^\d+\/\d+$/.test(d));
+    expect(dated[0]).toBe("10/5");
+    expect(dated[dated.length - 1]).toBe("10/2");
+  });
+
+  test("類似レースの決まり手は割合を1回だけ書く（名前の横に小数の割合を出さない）", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(page.getByText("逃げ 32件", { exact: true })).toBeVisible();
+    await expect(page.getByText("50.8%")).toHaveCount(0);
+  });
+});
+
+/** PR4 のファン評価 1周目の指摘（P1・P2）の再現テスト */
+test.describe("思考アシスト: PR4 のファン評価 1周目", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  const openDeep = async (page, boat) => {
+    await page
+      .getByRole("button", { name: new RegExp(`^${boat}号艇\\s`) })
+      .click();
+    return page.getByRole("region", { name: `${boat}号艇の詳しい情報` });
+  };
+
+  test("指摘1: 展開の進入の割合に、集めた範囲（準優勝戦の日は予選も含む）と件数を書く", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByText(/^全国・級の並びが同じ（予選も含む） 2,463件$/),
+    ).toBeVisible();
+  });
+
+  test("指摘2: 勝ち決まり手に期間（直近90日）を書く", async ({ page }) => {
+    await open(page);
+    const region = await openDeep(page, 1);
+    await expect(region.getByText("直近90日", { exact: true })).toBeVisible({
+      timeout: 30000,
+    });
+  });
+
+  test("指摘3: 会場に絞った艇（2号艇）の説明文は「徳山・級の並びが同じ」", async ({
+    page,
+  }) => {
+    await open(page);
+    const region = await openDeep(page, 2);
+    // 説明文は「全部の材料」の中（2026-10-09 ユーザー決定 A）
+    await region.getByRole("button", { name: /^全部の材料（2号艇）/ }).click();
+    await expect(
+      region.getByText(/^徳山・級の並びが同じ: 2号艇は A2/),
+    ).toBeVisible();
+  });
+
+  test("指摘4: v16 の展示後の段が無いときは、展示タイムの札を「—」で出さない", async ({
+    page,
+  }) => {
+    await open(page);
+    const region = await openDeep(page, 1);
+    await expect(
+      region.getByText("全国勝率", { exact: true }).first(),
+    ).toBeVisible();
+    await expect(
+      region.locator(".ta-chip").getByText("展示タイム"),
+    ).toHaveCount(0);
+  });
+
+  test("指摘5: v16 の保存が無いレースは、今節の平均を走から出し、平均ST を「記録なし」と書かない", async ({
+    page,
+  }) => {
+    await page.route("**/api/analogy/facts/**", (route) =>
+      route.fulfill({
+        json: { status: "not_saved", today: null, facts: null },
+      }),
+    );
+    await open(page);
+    const region = await openDeep(page, 1);
+    await expect(region.getByText("8.57", { exact: true })).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(region.getByText("記録なし")).toHaveCount(0);
+  });
+
+  test("指摘6: 押せない「過去の1着」はボタンの見た目（指の形）にしない", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "買い目").click();
+    const past = page.getByText(/^過去の1着/).first();
+    await expect(past).toBeVisible();
+    expect(await past.evaluate((el) => getComputedStyle(el).cursor)).not.toBe(
+      "pointer",
+    );
+  });
+
+  test("指摘7: 展示ST の F（5号艇 F.01）は .00 より左の端に置く", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    const left = await page.evaluate(
+      () =>
+        document.querySelectorAll(".ta-lane")[4].querySelector(".ta-track-dot")
+          ?.style.left,
+    );
+    expect(left).toBe("0%");
+  });
+});
+
+/** PR4 の 271 の指摘の型の点検と UI/UX デザイナーのレビューの再現テスト */
+test.describe("思考アシスト: PR4 のデザイナーのレビューと 271 の指摘の型", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("P1-1: 375px で艇の丸を押すと、深掘りの上端が画面の中に入る", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const region = page.getByRole("region", { name: "1号艇の詳しい情報" });
+    await expect
+      .poll(async () => (await region.boundingBox())?.y ?? 9999)
+      .toBeLessThan(700);
+  });
+
+  test("P1-2・単位: 手がかりの割合に範囲と件数、コースの1着に「走」", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByText(/^全国・級の並びが同じ（予選も含む） 2,457件$/),
+    ).toBeVisible();
+    await lensTab(page, "軸").click();
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    await expect(page.getByText("1着 17/38走")).toBeVisible({ timeout: 30000 });
+  });
+
+  test("P1-3: 上の枠と数字が違う理由（返還を含むか）を畳まずに出す", async ({
+    page,
+  }) => {
+    await open(page);
+    await expect(
+      page.getByText(/ここは返還のあったレースも含める（119件・54\.6%）/),
+    ).toBeVisible();
+  });
+
+  test("P2-8: 機力の要約の最初に結論の1行", async ({ page }) => {
+    await open(page);
+    await lensTab(page, "機力").click();
+    await expect(
+      page.getByText(
+        "展示タイムは4号艇が一番速い（6.83）・モーター2連率は4号艇が一番高い（38.5%）",
+      ),
+    ).toBeVisible();
+  });
+
+  test("P2-5: 深掘りの値・札・1走ずつの表のボタンは 44px 以上押せる", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const toggle = page.getByRole("button", { name: "1走ずつの表" });
+    await expect(toggle).toBeVisible({ timeout: 30000 });
+    const sizes = await page.evaluate(() =>
+      [".ta-kv-btn", ".ta-linkish", ".ta-feat-item .ta-tag"].map((sel) => {
+        const el = document.querySelector(sel);
+        const a = getComputedStyle(el, "::after");
+        return [sel, parseFloat(a.width), parseFloat(a.height)];
+      }),
+    );
+    for (const [sel, w, h] of sizes) {
+      expect(w, sel).toBeGreaterThanOrEqual(44);
+      expect(h, sel).toBeGreaterThanOrEqual(44);
+    }
+  });
+});
+
+/** 2026-10-09 ユーザー決定 A（深掘りの並び）・B（同じ数字を1回だけ）の再現テスト */
+test.describe("思考アシスト: ユーザー決定 A・B（2026-10-09）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("A: 深掘りの先頭に▲の付いた材料が最大3件、値の一覧はその下、残りは「全部の材料」で開く", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const region = page.getByRole("region", { name: "1号艇の詳しい情報" });
+    const head = region.getByRole("heading", { name: "差がつく材料（1号艇）" });
+    await expect(head).toBeVisible();
+    const top = region.locator(".ta-deep-facts").first().locator(".ta-chip");
+    const n = await top.count();
+    expect(n).toBeGreaterThan(0);
+    expect(n).toBeLessThanOrEqual(3);
+    await expect(top.filter({ hasText: "▲" })).toHaveCount(n);
+    // 先頭の材料は値の一覧（dl）より前（開くと下へ送るので座標ではなく DOM の順で比べる）
+    const before = await region.evaluate((el) => {
+      const h = el.querySelector("h4");
+      const dl = el.querySelector("dl");
+      return Boolean(
+        h.compareDocumentPosition(dl) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    });
+    expect(before).toBe(true);
+    const all = region.getByRole("button", { name: /^全部の材料（1号艇）/ });
+    await expect(all).toHaveAttribute("aria-expanded", "false");
+    await all.click();
+    await expect(all).toHaveAttribute("aria-expanded", "true");
+    await expect(region.locator(".ta-chip").nth(n)).toBeVisible();
+  });
+
+  test("B: 軸の大きい数字（54.6%）は1回だけ、件数の札を横に、比べる相手は会場の全レースの棒", async ({
+    page,
+  }) => {
+    await open(page);
+    const sum = page.locator(".ta-sum");
+    await expect(sum.getByText("54.6%", { exact: true })).toHaveCount(1);
+    await expect(
+      sum
+        .getByText("全国・級の並びが同じ準優勝戦 119件", { exact: true })
+        .first(),
+    ).toBeVisible();
+    await expect(sum.getByText(/^徳山の全レース 17,552件/)).toBeVisible();
+  });
+
+  test("B: 展開の「当てはまるとき」の棒は出さず、比べる相手（当てはまらないとき）の棒だけ", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(page.getByText(/当てはまるとき、本番が/)).toHaveCount(0);
+    await expect(page.getByText(/^当てはまらないとき/)).toBeVisible();
   });
 });

@@ -523,6 +523,7 @@
   justify-items: center;
   gap: 1px;
   min-height: 48px;
+  min-width: 44px;
   border: 0;
   background: transparent;
   padding: var(--spacing-1) 0;
@@ -930,7 +931,10 @@
 .ta-hint button,
 .ta-num-btn,
 .ta-add,
-.ta-pos3 button {
+.ta-pos3 button,
+.ta-kv-btn,
+.ta-linkish,
+.ta-feat-item .ta-tag {
   position: relative;
 }
 
@@ -939,7 +943,10 @@
 .ta-hint button::after,
 .ta-num-btn::after,
 .ta-add::after,
-.ta-pos3 button::after {
+.ta-pos3 button::after,
+.ta-kv-btn::after,
+.ta-linkish::after,
+.ta-feat-item .ta-tag::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -950,4 +957,364 @@
   /* 後に並ぶ行（position: relative の図の線）より上に置き、下側に広げた範囲が隠れないようにする。
      固定のレンズ（5）・フッター（6）・シート（1000）より下 */
   z-index: 1;
+}
+
+/* ---- 図の点の値のボタン（展開レンズ。押すと6艇比較） ---- */
+.ta-track-val-btn {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-2xs);
+  color: var(--color-info-text);
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  /* 見た目の箱は数字の span と同じにする（点・図の端との重なりの検査 指摘7・12 がこの箱を見る） */
+  padding: 0 2px;
+}
+
+/* 押せる範囲は見えない層で上下左右に広げる（N-6） */
+.ta-track-val-btn::after {
+  content: "";
+  position: absolute;
+  inset: -14px;
+}
+
+/* ---- レンズの要約（LensSummary） ----
+   余白・見出しは龍神ソナーで決めた値にそろえる（docs/design/analogy-finder/sonar-tab/uiux-review-spacing.md、
+   PR4 の UI/UX デザイナーのレビュー）: 図との区切り 24px＋線、カード間 12px、要素間 12px、h3 17.6px 太字 */
+.ta-sum {
+  display: grid;
+  gap: var(--spacing-3);
+  margin: var(--spacing-4) var(--spacing-3) 0;
+  padding: var(--spacing-6) 0 var(--spacing-3);
+  border-top: 1px solid var(--border-hairline);
+}
+
+.ta-box {
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-3);
+  display: grid;
+  gap: var(--spacing-3);
+  min-width: 0;
+}
+
+.ta-box h3 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-sum .ta-note,
+.ta-deep .ta-note {
+  font-size: var(--font-size-sm);
+  line-height: 1.625;
+}
+
+@media (min-width: 768px) {
+  .ta-box,
+  .ta-deep {
+    padding: var(--spacing-4);
+  }
+}
+
+.ta-big {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.ta-big-pct {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+}
+
+.ta-big-cnt {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.ta-fold {
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+.ta-list {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+.ta-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-2-5);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.ta-scopechip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-full);
+  padding: 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  background: var(--surface-card);
+}
+
+.ta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.ta-chip {
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-1-5) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ta-chip b {
+  font-size: var(--font-size-sm);
+}
+
+/* 押せない札。押せる金枠（.ind-best）と見分けるため、枠ではなく左の帯で示す（デザイナーのレビュー P2-6） */
+.ta-chip-hit {
+  border-left: 4px solid var(--brand-accent-primary);
+  background: color-mix(in srgb, var(--brand-accent-primary) 8%, transparent);
+}
+
+.ta-chip-off {
+  color: var(--text-secondary);
+}
+
+.ta-chk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1-5);
+}
+
+.ta-chk span {
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-full);
+  padding: 1px var(--spacing-2);
+  background: color-mix(in srgb, var(--color-info-text) 12%, transparent);
+  color: var(--color-info-text);
+}
+
+.ta-bars6 {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--spacing-1-5);
+  align-items: end;
+  height: 92px;
+}
+
+.ta-bars6-col {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  height: 100%;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ta-bars6-val {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  padding: 0 2px;
+}
+
+.ta-bars6-bar {
+  width: 70%;
+  align-self: end;
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
+}
+
+.ta-scroll {
+  overflow-x: auto;
+}
+
+.ta-table-ex th,
+.ta-table-ex td {
+  white-space: nowrap;
+}
+
+/* ---- 深掘り（BoatDeepDive・RunsTable） ---- */
+.ta-deep {
+  margin: var(--spacing-4) var(--spacing-3) var(--spacing-3);
+  border: 2px solid var(--color-info-text);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-3);
+  display: grid;
+  gap: var(--spacing-3);
+  /* 開いたときに送る位置。固定のレンズの下に見出しが隠れないようにする（デザイナーのレビュー P1-1） */
+  scroll-margin-top: calc(var(--ta-sticky-top, 0px) + 130px);
+  background: color-mix(in srgb, var(--color-info-text) 6%, var(--surface-card));
+  min-width: 0;
+}
+
+.ta-deep-head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.ta-deep-head h3 {
+  margin: 0;
+  flex: 1;
+  font-size: var(--font-size-md);
+  min-width: 0;
+}
+
+.ta-feat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1-5);
+}
+
+.ta-feat-item {
+  display: inline-grid;
+  gap: 2px;
+}
+
+.ta-feat-item .ta-tag {
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  min-height: 32px;
+  cursor: pointer;
+}
+
+.ta-kv {
+  display: grid;
+  grid-template-columns: minmax(7em, max-content) minmax(0, 1fr);
+  gap: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+.ta-kv dt {
+  color: var(--text-secondary);
+}
+
+.ta-kv dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ta-kv-btn,
+.ta-linkish {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: var(--color-info-text);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  min-height: 32px;
+}
+
+.ta-linkish {
+  font-size: var(--font-size-xs);
+  text-decoration: underline;
+}
+
+.ta-finline {
+  font-size: var(--font-size-xs);
+}
+
+.ta-run-today {
+  color: var(--text-secondary);
+}
+
+.ta-fin-1 {
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-fin-bad {
+  color: var(--color-error-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-runs {
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-3);
+  background: var(--surface-card);
+  overflow-x: auto;
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+.ta-table-runs caption {
+  text-align: left;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  padding-bottom: var(--spacing-1);
+}
+
+.ta-table-runs td.ta-run-avg {
+  text-align: left;
+  white-space: normal;
+}
+
+.ta-deep-facts {
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+.ta-deep-facts h4 {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+/* 押すと件数が開く棒の手がかり（デザイナーのレビュー P2-6） */
+.ta-bar-more-mark {
+  color: var(--color-info-text);
+  margin-left: 2px;
+}
+
+/* 押せない値・印（ボタンと見分ける。枠を付けず、指の形にしない。ファン評価 PR4 1周目 指摘6） */
+.ta-num-static {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.ta-num-static b {
+  color: var(--text-primary);
+}
+
+.ta-lane-marks .ta-tag {
+  cursor: default;
+}
+
+/* 機力の要約の結論の1行（デザイナーのレビュー P2-8） */
+.ta-power-answer {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
 }

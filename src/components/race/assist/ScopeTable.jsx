@@ -11,10 +11,17 @@ const no = "—";
  * 列＝全国・級の並びが同じ／類似レース。優勝戦・準優勝戦の日はラウンドの行が両方 ✓ になり、
  * NCR を使っているときは「予選も含めると」の1行を足す（D-37）
  * 「2〜6号艇の級」の行の横に級の並びの絵を小さく置く（2026-10-08 ユーザー決定）
- * @param {{scope: object|null, similarN: number|null, classes: string[]|null, lineup: object[]|null}} props
+ * G1・SG の日は類似レースだけグレード（G1以上）もそろえる（D-20。similar の conditions.grade_g1plus）
+ * @param {{scope: object|null, similarN: number|null, similarConditions?: {grade_g1plus?: boolean}|null, classes: string[]|null, lineup: object[]|null}} props
  *   scope は assistModel.sameClassScope の戻り値
  */
-export default function ScopeTable({ scope, similarN, classes, lineup }) {
+export default function ScopeTable({
+  scope,
+  similarN,
+  similarConditions = null,
+  classes,
+  lineup,
+}) {
   const [open, setOpen] = useState(false);
   const round = scope?.round ?? null;
   const ncr = scope?.kind === "NCR";
@@ -23,6 +30,7 @@ export default function ScopeTable({ scope, similarN, classes, lineup }) {
     [`1号艇の級（${classes?.[0] ?? "—"}）`, ok, ok],
     [ASSIST_COPY.scopeRowRest(counts ?? "—"), ok, no, true],
     round ? [`ラウンド（${ROUND_LABEL[round]}）`, ncr ? ok : no, ok] : null,
+    similarConditions?.grade_g1plus ? [ASSIST_COPY.scopeGrade, no, ok] : null,
     ["勝率トップの艇・勝率差の段階", no, ok],
   ].filter(Boolean);
   return (
