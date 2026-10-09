@@ -130,6 +130,13 @@
     }
   },
   "raceDetailPage": {
+    "assistSwitch": {
+      "label": "보기",
+      "raceCard": "출주표와 탭",
+      "assist": "사고 어시스트",
+      "new": "신규",
+      "note": "확인할 순서대로 데이터와 이론을 정리한 화면"
+    },
     "metaTitle": "{{venue}} {{race}}R AI 데이터 분석 ({{date}}) - 용신 레이더",
     "metaDescription": "{{date}} {{venue}} {{race}}R의 출주표 데이터, AI 데이터 분석, 전개 예측을 무료로 확인할 수 있습니다.",
     "backToList": "← 경주 일람으로",

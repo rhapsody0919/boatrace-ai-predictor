@@ -7,6 +7,7 @@
  *
  * 実行: node scripts/maintenance/verify-thinking-assist-model.js
  */
+import { shouldOpenAssist, showNewBadge } from "../../src/utils/raceView.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -525,6 +526,40 @@ check(
     hasPricedTicket(["1-2-3"], null) === false &&
     hasPricedTicket(["1-2-3", "1-2-4"], { "1-2-4": 15.2 }) === true,
 );
+
+// ---- 上部の切り替え（PR6、D-22・D-36 (6)）----
+{
+  const base = { saved: "assist", search: "", lang: "ja", enabled: true };
+  check(
+    "思考アシストを選んだ ja の端末は、tab・boat の指定が無いときだけ思考アシストへ移る",
+    shouldOpenAssist(base) === true &&
+      shouldOpenAssist({ ...base, search: "?tab=analogy" }) === false &&
+      shouldOpenAssist({ ...base, search: "?boat=1" }) === false &&
+      shouldOpenAssist({ ...base, lang: "en" }) === false &&
+      shouldOpenAssist({ ...base, enabled: false }) === false &&
+      shouldOpenAssist({ ...base, saved: "race" }) === false &&
+      shouldOpenAssist({ ...base, saved: null }) === false,
+  );
+  check(
+    "「新」の札: まだ選んでいない端末で、公開前は出し、公開から30日だけ出す",
+    showNewBadge({ saved: null, today: "2026-10-09", publishedOn: null }) &&
+      !showNewBadge({
+        saved: "race",
+        today: "2026-10-09",
+        publishedOn: null,
+      }) &&
+      showNewBadge({
+        saved: null,
+        today: "2026-11-08",
+        publishedOn: "2026-10-10",
+      }) &&
+      !showNewBadge({
+        saved: null,
+        today: "2026-11-09",
+        publishedOn: "2026-10-10",
+      }),
+  );
+}
 
 if (failures > 0) {
   console.error(`\n${failures}件の失敗`);

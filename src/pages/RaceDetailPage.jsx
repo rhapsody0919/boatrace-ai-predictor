@@ -5,9 +5,22 @@
  * 内包するRaceTabsを含む、BOA-305〜312）を流用する。
  */
 import { useState, useEffect, useMemo } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import {
+  useParams,
+  Link,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
+import AssistViewSwitch from "../components/race/assist/AssistViewSwitch";
+import { isThinkingAssistEnabled } from "../config/featureFlags";
+import {
+  hasViewQuery,
+  readRaceView,
+  shouldOpenAssist,
+} from "../utils/raceView";
 import Breadcrumb from "../components/Breadcrumb";
 import LoadingScreen from "../components/LoadingScreen";
 import {
@@ -132,7 +145,7 @@ function buildPrediction(racePrediction, notFoundMessage) {
   };
 }
 
-function RaceDetailPage() {
+function RaceDetailPage({ showViewSwitch = false }) {
   const { raceId } = useParams();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -316,6 +329,8 @@ function RaceDetailPage() {
       />
       <link rel="canonical" href={`https://www.boat-ai.jp/race/${raceId}`} />
       <Header />
+      {/* 上部の切り替え（BOA-430 PR6、D-22）。サイトのヘッダーの直下、パンくずの上（承認モック pr6-switch） */}
+      {showViewSwitch && <AssistViewSwitch current="race" raceId={raceId} />}
 
       <div className="race-detail-page-v2">
         <Breadcrumb items={breadcrumbItems} />
@@ -446,4 +461,23 @@ function RaceDetailPage() {
   );
 }
 
-export default RaceDetailPage;
+/**
+ * レース詳細の入口（BOA-430 PR6、D-22・D-36 (6)）。思考アシストを選んだ端末では、ja で URL に tab・boat の指定が
+ * 無いとき、データを取り始める前に思考アシストへ置き換えで移る。切り替えはフラグがあり ja で、tab・boat の指定が無いときだけ出す
+ */
+function RaceDetailRoute() {
+  const { raceId } = useParams();
+  const { i18n } = useTranslation();
+  const { search } = useLocation();
+  const enabled = isThinkingAssistEnabled();
+  const lang = i18n.resolvedLanguage;
+  if (shouldOpenAssist({ saved: readRaceView(), search, lang, enabled }))
+    return <Navigate to={`/race/${raceId}/assist`} replace />;
+  return (
+    <RaceDetailPage
+      showViewSwitch={enabled && lang === "ja" && !hasViewQuery(search)}
+    />
+  );
+}
+
+export default RaceDetailRoute;

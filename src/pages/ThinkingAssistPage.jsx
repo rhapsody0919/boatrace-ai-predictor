@@ -2,7 +2,7 @@
  * 思考アシスト（BOA-430）。1レースの予想を、レースの図と4つの見方（軸・展開・機力・買い目）で組み立てるページ。
  * ja 専用（languages.js の isFullyTranslatedPath の例外）。公開まで noindex（spec D-36 (9)）。
  * 状態は useReducer 1つで、URL・localStorage に残さない（plan「状態」）。
- * レンズの要約・図の印・深掘りは PR4。セオリーカード・用語・会場の特徴・ガイドは PR5。上部の切り替えは PR6
+ * レンズの要約・図の印・深掘りは PR4。セオリーカード・用語・会場の特徴・ガイドは PR5。上部の切り替え（AssistViewSwitch）は PR6
  */
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -24,7 +24,9 @@ import { AssistSheetContext } from "../components/race/assist/assistSheetContext
 import {
   THINKING_ASSIST_PUBLIC,
   isAnalogyFinderEnabled,
+  isThinkingAssistEnabled,
 } from "../config/featureFlags";
+import AssistViewSwitch from "../components/race/assist/AssistViewSwitch";
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
 import { useThinkingAssistData } from "../hooks/useThinkingAssistData";
 import {
@@ -156,6 +158,7 @@ export default function ThinkingAssistPage() {
   const { raceId } = useParams();
   useRobotsMeta(!THINKING_ASSIST_PUBLIC);
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [showViewSwitch] = useState(isThinkingAssistEnabled);
   const data = useThinkingAssistData(raceId, {
     stage: state.stage,
     deep: state.deep,
@@ -682,6 +685,8 @@ export default function ThinkingAssistPage() {
     <AssistSheetContext.Provider value={sheetApi}>
       <title>{`${ASSIST_COPY.title}（${raceId}）`}</title>
       <Header />
+      {/* 上部の切り替え（PR6、D-22）。フラグがあるときだけ。レース詳細と同じ位置（サイトのヘッダーの直下） */}
+      {showViewSwitch && <AssistViewSwitch current="assist" raceId={raceId} />}
       <main
         className="ta-page"
         style={{ "--ta-sticky-top": `${headerHeight}px` }}

@@ -132,6 +132,13 @@
     }
   },
   "raceDetailPage": {
+    "assistSwitch": {
+      "label": "View",
+      "raceCard": "Race card & tabs",
+      "assist": "Thinking Assist",
+      "new": "New",
+      "note": "Data and theories in the order to check them"
+    },
     "metaTitle": "{{venue}} Race {{race}} AI data analysis ({{date}}) - Ryujin Radar",
     "metaDescription": "Free race data table, AI data analysis and first-turn prediction for {{venue}} Race {{race}} on {{date}}.",
     "backToList": "← Back to race list",
