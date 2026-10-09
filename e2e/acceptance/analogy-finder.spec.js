@@ -2339,8 +2339,8 @@ test.describe("アナロジー・ファインダー: 差がつく材料", () => 
     const section = await openSection(page);
     await expect(panel(section).getByText("もう1艇と比べる")).toHaveCount(0);
     await expect(
-      panel(section).getByRole("button", { name: "6艇を重ねる" }),
-    ).toHaveAttribute("aria-pressed", "true");
+      panel(section).getByRole("button", { name: "主役＋2艇" }),
+    ).toHaveCount(0);
     await expect(
       panel(section).getByRole("button", { name: /項目中 \d+ 項目で2位以内/ }),
     ).toHaveCount(6);

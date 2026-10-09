@@ -1855,15 +1855,7 @@ button.af-bar {
   stroke-width: 2;
 }
 
-.af-hep-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-1-5);
-}
-
-.af-hep-chips button,
-.af-hep-legend button,
-.af-hep-dash {
+.af-hep-legend button {
   font: inherit;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
@@ -1873,25 +1865,10 @@ button.af-bar {
   cursor: pointer;
 }
 
-.af-hep-chips button {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-1);
-  min-height: 36px;
-  padding: var(--spacing-1) var(--spacing-2);
-}
-
-.af-hep-chips button[aria-pressed="true"],
-.af-hep-legend button[aria-pressed="true"],
-.af-hep-dash[aria-pressed="true"] {
+.af-hep-legend button[aria-pressed="true"] {
   border-color: var(--brand-accent-primary);
   color: var(--text-primary);
   font-weight: var(--font-weight-bold);
-}
-
-.af-hep-chips button:disabled {
-  cursor: default;
-  opacity: 0.45;
 }
 
 .af-hep-legend {
@@ -1899,8 +1876,7 @@ button.af-bar {
   gap: var(--spacing-1);
 }
 
-.af-hep-legend button,
-.af-hep-row {
+.af-hep-legend button {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
@@ -1931,10 +1907,6 @@ button.af-bar {
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   white-space: nowrap;
-}
-
-.af-hep-dash {
-  padding: var(--spacing-0-5, 2px) var(--spacing-2);
 }
 
 .af-hep-typ {

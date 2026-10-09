@@ -238,20 +238,50 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
           .filter((e) => e[0] === "event" && e[1] === "analogy_control_change")
           .map((e) => e[2].analogy_control),
       );
-    await section.getByRole("button", { name: /1号艇（A1）/ }).click(); // 主役の押し直し（変化なし）
-    await section.getByRole("button", { name: /4号艇（A1）/ }).click();
-    await section.getByRole("button", { name: /4号艇（A1）/ }).click(); // 主役に戻す（変化あり）
+    await section.getByRole("button", { name: /1号艇（A1）/ }).click(); // 主役だけが太いときの押し直し（変化なし）
+    await section.getByRole("button", { name: /4号艇（A1）/ }).click(); // 2艇目を太く
+    await section.getByRole("button", { name: /4号艇（A1）/ }).click(); // 太い艇を外す（変化あり）
     const item = section.getByRole("button", { name: /全国勝率の6艇の表/ });
     await item.focus();
     await page.keyboard.press("Enter"); // SVG の項目名もキーで開ける
     await expect(section.getByTestId("analogy-radar-table")).toBeVisible();
-    await section.getByRole("button", { name: "主役＋2艇" }).click();
     expect(await controls()).toEqual([
       "facts_radar_boat",
       "facts_radar_boat",
       "facts_radar_item",
-      "facts_radar_view",
     ]);
+  });
+
+  test("七角形は凡例で2艇まで太くして比べ、3艇目で先に押した艇が戻り、太い艇を押し直すと外れる（2026-10-09 ユーザー決定）", async ({
+    page,
+  }) => {
+    await setup(page);
+    await openSonarTab(page);
+    const section = sectionOf(page);
+    const legend = (b) =>
+      section.getByRole("button", {
+        name: new RegExp(`^${b}\\s*${b}号艇（A1）`),
+      });
+    const pressed = async () => {
+      const out = [];
+      for (const b of [1, 2, 3, 4, 5, 6])
+        if ((await legend(b).getAttribute("aria-pressed")) === "true")
+          out.push(b);
+      return out;
+    };
+    await expect(
+      section.getByRole("button", { name: "主役＋2艇" }),
+    ).toHaveCount(0);
+    expect(await pressed()).toEqual([1]); // 最初は主役
+    await legend(4).click();
+    expect(await pressed()).toEqual([1, 4]); // 主役と2艇目
+    await legend(6).click();
+    expect(await pressed()).toEqual([4, 6]); // 3艇目で先に押した主役が戻る
+    await expect(section.locator(".af-hep-typ")).toContainText("6号艇"); // 点線は最後に押した艇
+    await legend(4).click();
+    expect(await pressed()).toEqual([6]); // 太い艇を押し直すと外れる
+    await legend(6).click();
+    expect(await pressed()).toEqual([1]); // 0艇になったら主役に戻る
   });
 
   test("前回ソナーを見て7日以内なら、開いた最初に再訪を1回送る（再読み込みでは送らない）", async ({

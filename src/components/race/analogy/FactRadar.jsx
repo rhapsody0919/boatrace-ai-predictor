@@ -20,16 +20,8 @@ const R = 88;
 const CX = W / 2;
 const CY = R * 1.38 + 24;
 const H = CY + R * 1.38 + 24;
-// 主役＋2艇で、主役が1号艇以外なら1号艇、1号艇なら集めたレース全体の率が次に高い艇を最初に重ねる（モック v2）
-const defaultOverlay = (boats, main) =>
-  main !== 1
-    ? [1]
-    : [
-        [...boats]
-          .filter((b) => b.boat !== 1)
-          .sort((a, b) => (rateOf(b.usual) ?? -1) - (rateOf(a.usual) ?? -1))[0]
-          .boat,
-      ];
+// 太くできる艇の数（2艇を真正面から比べる。3艇目を押すと先に押した艇が戻る。2026-10-09 ユーザー決定）
+const MAX_PICKS = 2;
 
 function angle(i, n) {
   return -Math.PI / 2 + (2 * Math.PI * i) / n;
@@ -44,10 +36,8 @@ const fr = (rank) => (7 - rank) / 6;
 function RadarSvg({
   boats,
   items,
-  shown,
-  thick,
+  picks,
   dashBoat,
-  all6,
   axisSel,
   onAxis,
   label,
@@ -56,9 +46,8 @@ function RadarSvg({
   const { t } = useTranslation();
   const n = items.length;
   const ring = (f) => items.map((_, i) => pt(i, n, f).join(",")).join(" ");
-  const order = [...shown.filter((b) => b !== thick), thick].filter((b) =>
-    shown.includes(b),
-  );
+  // 太くする艇を最後に描く（上に重なる）。2艇なら後に押した艇が一番上
+  const order = [...BOATS.filter((b) => !picks.includes(b)), ...picks];
   const dash = boats[dashBoat - 1].typical;
   return (
     // role="img" の子は読み上げで飾り扱いになり、項目名のボタンが消えるので group にする（ソナーと同じ）
@@ -85,14 +74,14 @@ function RadarSvg({
         );
       })}
       {order.map((b) => {
-        const on = b === thick;
+        const on = picks.includes(b);
         // 今日の値が無い項目（当地の記録なし等）は中心に落とさず、その項目を飛ばして結ぶ
         const ps = boats[b - 1].cells
           .map((c, i) => (c.bucket ? pt(i, n, fr(c.bucket)) : null))
           .filter(Boolean);
         const pts = ps.map((p) => p.join(",")).join(" ");
-        const w = on ? 3.2 : all6 ? 1.6 : 2.4;
-        const op = on ? 1 : all6 ? 0.5 : 0.9;
+        const w = on ? 3.2 : 1.6;
+        const op = on ? 1 : 0.5;
         return (
           <g key={b} data-boat={b}>
             {b === 2 && (
@@ -147,9 +136,9 @@ function RadarSvg({
         const anchor = mid ? "middle" : dx > 0 ? "start" : "end";
         const rx = mid ? x - 50 : dx > 0 ? x : x - 100;
         const sel = axisSel === it.key;
-        const tops = all6
-          ? BOATS.filter((b) => boats[b - 1].cells[i].rank?.from === 1)
-          : [];
+        const tops = BOATS.filter(
+          (b) => boats[b - 1].cells[i].rank?.from === 1,
+        );
         const [tx, ty] = pt(i, n, 1);
         const { name, sub } = label(i);
         const act = () => onAxis(it.key);
@@ -236,7 +225,9 @@ function RadarSvg({
 
 /**
  * 差がつく材料の七角形（項目の数で角の数が変わる。承認モック mock-compare-v3、2026-10-09）。
- * 「6艇を重ねる」（最初）と「主役＋2艇」を切り替える。主役＝一番上で選んだ艇。項目の名前を押すと6艇の表。
+ * 6艇を重ね、太く塗る艇は最初は主役（一番上で選んだ艇）。凡例の艇を押すと太くなり、2艇まで太くして真正面から比べる
+ * （3艇目を押すと先に押した艇が戻る。太い艇をもう一度押すと外れ、0艇になったら主役に戻る。2026-10-09 ユーザー決定で
+ * 「主役＋2艇」の切り替えを置き換え）。点線は最後に押した艇の1本。項目の名前を押すと6艇の表。
  * 6艇の値はどれも radarBoats（その艇を一番上で選んだときと同じ集めたレース）から出す
  * @param {{boats: ReturnType<import("../../../utils/analogyFacts").radarBoats>, items: {key:string}[], main: number,
  *   target: 1|2|3, cardKeys: Set<string>, collect: string, onCard: (key: string) => void}} props cardKeys は主役の
@@ -252,14 +243,15 @@ export default function FactRadar({
   onCard,
 }) {
   const { t } = useTranslation();
-  const [view, setView] = useState("all6");
-  const [focus, setFocus] = useState(null);
-  const [overlay, setOverlay] = useState(() => defaultOverlay(boats, main));
-  const [dashOwner, setDashOwner] = useState(null);
+  const [picks, setPicks] = useState([main]);
   const [axisSel, setAxisSel] = useState(null);
-  const all6 = view === "all6";
-  const lead = all6 ? (focus ?? main) : (dashOwner ?? main);
-  const shown = all6 ? BOATS : [main, ...overlay];
+  const lead = picks[picks.length - 1];
+  const press = (b) =>
+    setPicks((ps) => {
+      if (!ps.includes(b)) return [...ps, b].slice(-MAX_PICKS);
+      const rest = ps.filter((x) => x !== b);
+      return rest.length ? rest : [main];
+    });
   const finish = t(`aiPredictionTab.analogy.finishWord.${target}`);
   const rateName = t(`aiPredictionTab.analogy.rateName.${target}`);
   const rankText = (r) =>
@@ -316,140 +308,49 @@ export default function FactRadar({
 
   return (
     <div className="af-hep">
-      <div
-        className="af-seg"
-        role="group"
-        aria-label={t(`${k}.radar.view`)}
-        data-af-control="facts_radar_view"
-      >
-        {["all6", "over"].map((v) => (
-          <button
-            key={v}
-            type="button"
-            aria-pressed={view === v}
-            onClick={() => {
-              setView(v);
-              setFocus(null);
-              setDashOwner(null);
-            }}
-          >
-            {t(`${k}.radar.${v}`)}
-          </button>
-        ))}
-      </div>
-      {!all6 && (
-        <div className="af-ctl-row">
-          <span className="af-lbl">{t(`${k}.radar.overlay`)}</span>
-          <div
-            className="af-hep-chips"
-            data-af-control="facts_radar_overlay"
-            data-af-toggle=""
-          >
-            {BOATS.filter((b) => b !== main).map((b) => {
-              const on = overlay.includes(b);
-              return (
-                <button
-                  key={b}
-                  type="button"
-                  aria-pressed={on}
-                  disabled={!on && overlay.length >= 2}
-                  onClick={() => {
-                    const next = on
-                      ? overlay.filter((x) => x !== b)
-                      : [...overlay, b].slice(0, 2);
-                    setOverlay(next);
-                    if (dashOwner !== null && !next.includes(dashOwner))
-                      setDashOwner(null);
-                  }}
-                >
-                  <BoatBadge n={b} size="xs" />{" "}
-                  {t("aiPredictionTab.analogy.boat", { n: b })}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
       <div className="af-dark">
         <RadarSvg
           boats={boats}
           items={items}
-          shown={shown}
-          thick={all6 ? lead : main}
+          picks={picks}
           dashBoat={lead}
-          all6={all6}
           axisSel={axisSel}
           onAxis={(key) => setAxisSel((s) => (s === key ? null : key))}
           label={label}
           ariaLabel={ariaLabel}
         />
       </div>
-      {all6 ? (
-        <>
-          <p className="af-foot">{t(`${k}.radar.hint`)}</p>
-          <div className="af-hep-legend" data-af-control="facts_radar_boat">
-            {BOATS.map((b) => {
-              const x = boats[b - 1];
-              return (
-                <button
-                  key={b}
-                  type="button"
-                  aria-pressed={b === lead}
-                  // 太くしている主役以外の艇を押し直すと主役に戻る（状態が変わる）ので、押し直しも数える
-                  data-af-toggle={b !== main ? "" : undefined}
-                  onClick={() => setFocus(b === main || b === focus ? null : b)}
-                >
-                  {swatch(b)}
-                  <BoatBadge n={b} size="xs" />
-                  <span>
-                    {t(`${k}.radar.boat`, { boat: b, cls: x.cls ?? "—" })}
-                    {b === main && (
-                      <small className="af-hep-main">
-                        {t(`${k}.radar.main`)}
-                      </small>
-                    )}
-                  </span>
-                  <span className="af-hep-cnt">
-                    {t(`${k}.radar.top2`, { n: items.length, k: x.top2 })}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </>
-      ) : (
-        <div className="af-hep-legend is-over">
-          {shown.map((b) => {
-            const x = boats[b - 1];
-            return (
-              <div key={b} className="af-hep-row">
-                {swatch(b)}
-                <BoatBadge n={b} size="xs" />
-                <span>
-                  {t(`${k}.radar.boat`, { boat: b, cls: x.cls ?? "—" })}
-                </span>
-                <span className="af-hep-cnt">
-                  {t(`${k}.radar.usual`, {
-                    rate: rateName,
-                    p: fmtPct(rateOf(x.usual), 1),
-                    n: fmtCount(x.usual?.[1] ?? null),
-                  })}
-                </span>
-                <button
-                  type="button"
-                  className="af-hep-dash"
-                  aria-pressed={lead === b}
-                  aria-label={t(`${k}.radar.dashAria`, { boat: b })}
-                  data-af-control="facts_radar_dash"
-                  onClick={() => setDashOwner(b === main ? null : b)}
-                >
-                  {t(`${k}.radar.dash`)}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <p className="af-foot">{t(`${k}.radar.hint`)}</p>
+      <div className="af-hep-legend" data-af-control="facts_radar_boat">
+        {BOATS.map((b) => {
+          const x = boats[b - 1];
+          const on = picks.includes(b);
+          return (
+            <button
+              key={b}
+              type="button"
+              aria-pressed={on}
+              // 太い艇を押し直すと外れる（状態が変わる）ので数える。主役だけが太いときの主役の押し直しは変わらないので数えない
+              data-af-toggle={
+                on && picks.length === 1 && b === main ? undefined : ""
+              }
+              onClick={() => press(b)}
+            >
+              {swatch(b)}
+              <BoatBadge n={b} size="xs" />
+              <span>
+                {t(`${k}.radar.boat`, { boat: b, cls: x.cls ?? "—" })}
+                {b === main && (
+                  <small className="af-hep-main">{t(`${k}.radar.main`)}</small>
+                )}
+              </span>
+              <span className="af-hep-cnt">
+                {t(`${k}.radar.top2`, { n: items.length, k: x.top2 })}
+              </span>
+            </button>
+          );
+        })}
+      </div>
       <p className="af-foot">{collect}</p>
       <p className="af-foot af-hep-typ">
         <i className="is-dash" aria-hidden="true" />
@@ -492,7 +393,9 @@ export default function FactRadar({
                     <tr
                       key={x.boat}
                       data-boat={x.boat}
-                      className={x.boat === lead ? "is-today" : undefined}
+                      className={
+                        picks.includes(x.boat) ? "is-today" : undefined
+                      }
                     >
                       <th scope="row">
                         <BoatBadge n={x.boat} size="xs" />

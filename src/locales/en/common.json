@@ -1013,17 +1013,11 @@
         "stripRankTie": "#{{from}}–{{to}}",
         "rangeSep": "–",
         "radar": {
-          "view": "How to compare",
-          "all6": "All 6 boats",
-          "over": "Main + 2 boats",
-          "overlay": "Boats to overlay (up to 2)",
-          "hint": "Tap a boat to make its line bold (tap again to go back to the main boat). The dot at each corner is the boat ranked top on that item today",
+          "hint": "Tap a boat to make its line bold. You can bold up to 2 boats to compare them (a 3rd tap drops the earlier one; tap a bold boat again to remove it). The dot at each corner is the boat ranked top on that item today",
           "boat": "Boat {{boat}} ({{cls}})",
           "main": "Main",
           "top2": "Top 2 in {{k}} of {{n}} items",
-          "dash": "Dotted",
           "typical": "Dotted = Boat {{boat}}'s average rank when it {{finish}}",
-          "usual": "All races {{rate}} {{p}} / {{n}} races",
           "axisSub": "Boat {{boat}} {{rank}}",
           "axisAria": "Show the table of the 6 boats for {{item}}",
           "axisHint": "Tap an item name (▼) to see each boat's rank today and the {{rate}} at that rank here",
@@ -1035,7 +1029,6 @@
           "colAll": "All races",
           "tableFoot": "Green = 3+ points above that boat's all races, red = below.",
           "toCard": "See Boat {{boat}}'s bars",
-          "dashAria": "Show Boat {{boat}}'s dotted line",
           "collect": "Collected races: for each boat, races with that boat's class matching ({{scope}}).",
           "collectAll": "Collected races: for each boat, {{scope}}."
         }
