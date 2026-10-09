@@ -33,6 +33,8 @@ import {
   priorRuns,
   tiltOutliers,
 } from "../../src/utils/assistSummary.js";
+import { guideSteps, theoryCard } from "../../src/utils/assistTheory.js";
+import { GLOSSARY } from "../../src/data/thinkingAssistCopy.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fx = JSON.parse(
@@ -346,6 +348,157 @@ check(
 check(
   "日付は「10/2」（月・日とも0埋めしない）",
   monthDay("2026-10-02") === "10/2" && monthDay("2026-09-29") === "9/29",
+);
+
+// ---- セオリーカード（FR-6、PR5）。承認モック v7 の数字と一致すること ----
+const theoryFacts = [1, 2, 3, 4, 5, 6].map((boat) => {
+  const scope = factsScope(facts, today, boat, "junyu");
+  return {
+    scope,
+    chips: factChips({ scope, today, boat, post: false, finalRound: true }),
+  };
+});
+const tctx = {
+  post: false,
+  venue: "徳山",
+  round: "junyu",
+  roundLabel: "準優勝戦",
+  scenario: nc,
+  today,
+  v16Exhibition: null,
+  courseByBoat: null,
+  boatFacts: theoryFacts,
+  racers: [],
+  vaFacts: facts["VA:18"],
+  wind: { speed: 4, dir: "北西", wave: 4 },
+  partsBoats: null,
+  b1Exh: null,
+  scopeLabelOf: (sc) => sc.kind,
+};
+const cS = theoryCard("TC-S:d2", tctx);
+check(
+  "TC-S 2コース凹み: 枠なり161件・攻める艇（3号艇）の1着 36/161・1号艇の1着 65/161、今日は「手がかりあり 13%」で当てはまるとは書かない",
+  cS.meas.bars[0].k === 36 &&
+    cS.meas.bars[0].n === 161 &&
+    cS.meas.bars[1].k === 65 &&
+    cS.meas.tag === "攻める艇が1着にならなかった 78%" &&
+    // 形は本番の結果なので「今日当てはまる」にしない（ファン評価 PR5 1周目 指摘2）
+    cS.today.state === "pending" &&
+    cS.today.text.includes("13%"),
+  JSON.stringify(cS.meas),
+);
+const cH = theoryCard("TC-H:d2_slow01", tctx);
+check(
+  "TC-H 2コースの平均STが遅い: 当てはまるとき 65/501・当てはまらないとき 96/1,956、決め手ではないの注記",
+  cH.meas.bars[0].k === 65 &&
+    cH.meas.bars[0].n === 501 &&
+    cH.meas.bars[1].k === 96 &&
+    cH.meas.bars[1].n === 1956 &&
+    cH.meas.notes.some((n) => n.includes("決め手ではなく手がかり")),
+  JSON.stringify(cH.meas),
+);
+check(
+  "TC-H は今日の平均ST（このコース）の値を添える（2号艇 .16、ファン評価 PR5 1周目 指摘7）",
+  cH.today.text.includes("2号艇 .16") && cH.today.text.includes("3号艇 .14"),
+  cH.today.text,
+);
+const cE = theoryCard("TC-E:waku", tctx);
+check(
+  "TC-E 枠なり: 展示前は「進入は展示の後に分かる」、出現 2,463/3,276・1号艇の1着 870/2,463",
+  cE.today.state === "pending" &&
+    cE.today.text === "進入は展示の後に分かる" &&
+    cE.meas.bars[0].k === 2463 &&
+    cE.meas.bars[0].n === 3276 &&
+    cE.meas.bars[1].k === 870,
+  JSON.stringify(cE),
+);
+const cF = theoryCard("TC-F:1:motor_2", tctx);
+check(
+  "TC-F 1号艇のモーター2連率: 今日は一番低い、一番高いとき 19/40・一番低いとき 15/26、差ははっきりしない",
+  cF.today.text === "今日の1号艇は6艇で一番低い" &&
+    cF.meas.bars[0].k === 19 &&
+    cF.meas.bars[1].k === 15 &&
+    cF.meas.bars[1].n === 26 &&
+    cF.meas.tag === "件数が少なく差ははっきりしない",
+  JSON.stringify(cF.meas),
+);
+const cV = theoryCard("TC-V1", tctx);
+check(
+  "TC-V1 徳山の全レース 11,008/17,552 と NCR 65/119 を並べ、範囲が違うと書く",
+  cV.meas.bars[0].k === 11008 &&
+    cV.meas.bars[0].n === 17552 &&
+    cV.meas.bars[1].k === 65 &&
+    cV.meas.notes[0].includes("範囲が違う"),
+);
+const cWpre = theoryCard("TC-W1", tctx);
+const cWpost = theoryCard("TC-W1", { ...tctx, post: true });
+check(
+  "TC-W1 展示前は「風は展示の後に分かる」で数値を出さない。展示後は風速4〜5m 4,040件・1号艇 2,352件、TC-T1・T2 を並べる",
+  cWpre.today.state === "pending" &&
+    cWpre.meas === null &&
+    cWpost.meas.scope === "徳山・風速4〜5m 4,040件" &&
+    Math.abs(cWpost.meas.table[0].p - (2352 / 4040) * 100) < 1e-9 &&
+    cWpost.also.map((c) => c.id).join() === "TC-T1,TC-T2",
+  JSON.stringify(cWpost.meas?.scope),
+);
+const cT6 = theoryCard("TC-T6", tctx);
+check(
+  "文だけのカード（TC-T6 部品交換）は過去レースの傾向を出さない（準備中）",
+  cT6.meas === null,
+);
+const cT7 = theoryCard("TC-T7", tctx);
+check(
+  "TC-T7 スジは、今日の手がかりの形（2コース凹み161件）のよく出た3連単を関連の実データとして添える",
+  cT7.related?.includes("161件") && cT7.related.includes("1-3-4（9件）"),
+  cT7.related,
+);
+// 用語の辞書・カードの文に禁止語が無い（D-41・D-42・N-7）
+const BANNED = /数え|集計|算出|対象|似た|似てい|ふつう|いつも|競艇|鉄板|大本線/;
+const theoryTexts = [
+  "TC-S:flat",
+  "TC-S:wall",
+  "TC-S:d2",
+  "TC-S:d3",
+  "TC-S:kado",
+  "TC-S:d1",
+  "TC-S:dash",
+  "TC-H:d2_slow01",
+  "TC-E:waku",
+  "TC-E:mae",
+  "TC-E:inlost",
+  "TC-F:1:motor_2",
+  "TC-V1",
+  "TC-T1",
+  "TC-T2",
+  "TC-T3",
+  "TC-T4",
+  "TC-T5",
+  "TC-T6",
+  "TC-T7",
+  "TC-T8",
+  "TC-T9",
+  "TC-T10",
+  "TC-X1",
+].map((id) => JSON.stringify(theoryCard(id, { ...tctx, post: true })));
+const bannedHits = [
+  JSON.stringify(GLOSSARY),
+  JSON.stringify(cWpost),
+  ...theoryTexts,
+]
+  .map((t) => t.match(BANNED)?.[0])
+  .filter(Boolean);
+check(
+  "セオリーカード・用語の文に禁止語が無い",
+  bannedHits.length === 0,
+  bannedHits.join(","),
+);
+const steps = guideSteps({ post: false, rough: null, hintTop: hs.top });
+check(
+  "ガイドは5段（軸・軸・展開・機力・買い目）、各段の1文は40字以内、展示前の④は展示の値を出さない",
+  steps.map((x) => x.lens).join() === "axis,axis,flow,power,bet" &&
+    steps.every((x) => x.sub.length <= 40 && x.q.length <= 40) &&
+    !steps[3].sub.includes("金枠"),
+  JSON.stringify(steps.map((x) => x.sub)),
 );
 
 if (failures > 0) {

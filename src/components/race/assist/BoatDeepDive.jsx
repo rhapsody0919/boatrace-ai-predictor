@@ -22,6 +22,15 @@ import {
   priorRuns,
 } from "../../../utils/assistSummary";
 import { ASSIST_COPY as C } from "../../../data/thinkingAssistCopy";
+import { TermButton, TheoryButton } from "./SheetButtons";
+
+/** 用語の「?」つきの見出し（dt） */
+const Dt = ({ term, children }) => (
+  <dt>
+    {children ?? term}
+    <TermButton term={term} />
+  </dt>
+);
 
 /** 深掘りの先頭に出す▲の付いた材料の数（ユーザー決定 A） */
 const TOP_FACTS = 3;
@@ -143,6 +152,15 @@ export default function BoatDeepDive({
           <span className="ta-note ta-num">
             {C.deepMeta(racer.cls, racer.age, weight)}
           </span>
+          <TermButton term="級" />
+          <TheoryButton
+            id="TC-T9"
+            name={C.powerTheory.weight}
+            boat={boat}
+            className="ta-tag"
+          >
+            {C.powerTheory.weight} {C.trend}
+          </TheoryButton>
         </h3>
         <button type="button" className="ta-close" onClick={onClose}>
           {C.close}
@@ -155,7 +173,8 @@ export default function BoatDeepDive({
             <span className="ta-scopechip ta-num">{scopeLabel}</span>
             <span>{C.factsLegend}</span>
           </div>
-          <FactChips chips={topChips} base={base} round={round} />
+          <FactChips chips={topChips} base={base} round={round} boat={boat} />
+          <p className="ta-note">{C.factsNotCause}</p>
         </div>
       )}
       {feats.length > 0 && (
@@ -163,20 +182,21 @@ export default function BoatDeepDive({
           {feats.map((f) => (
             <Feat key={f.id} chip={f} venue={venue} />
           ))}
+          <TermButton term={C.featTitle} />
         </div>
       )}
       <dl className="ta-kv">
-        <dt>{C.factNames.nat_win}</dt>
+        <Dt term={C.factNames.nat_win} />
         <dd>
           <Val metric="nat_win" racer={racer} onMetric={onMetric} />
         </dd>
-        <dt>{C.factNames.loc_win}</dt>
+        <Dt term={C.factNames.loc_win} />
         <dd>
           <Val metric="loc_win" racer={racer} onMetric={onMetric} />
         </dd>
         {recent != null && (
           <>
-            <dt>{C.factNames.recent_win30}</dt>
+            <Dt term={C.factNames.recent_win30} />
             <dd className="ta-num">{(recent * 100).toFixed(1)}%</dd>
           </>
         )}
@@ -191,7 +211,7 @@ export default function BoatDeepDive({
           )}{" "}
           <span className="ta-scopechip">{C.courseNote}</span>
         </dd>
-        <dt>{C.kvSt}</dt>
+        <Dt term={C.kvSt} />
         <dd>
           {today ? (
             <Val metric="st_mean30" racer={racer} onMetric={onMetric} />
@@ -210,7 +230,7 @@ export default function BoatDeepDive({
             </span>
           )}
         </dd>
-        <dt>{C.factNames.series_score}</dt>
+        <Dt term={C.factNames.series_score} />
         <dd>
           {racer.seriesScore == null && meet?.avg != null ? (
             // v16 の値が無いレース（保存なし等）は、今節の走から同じ定義で出す（F・失格は0点。ファン評価 PR4 1周目 指摘5）
@@ -266,13 +286,13 @@ export default function BoatDeepDive({
             </button>
           )}
         </dd>
-        <dt>{C.factNames.motor_2}</dt>
+        <Dt term={C.factNames.motor_2} />
         <dd>
           <Val metric="motor_2" racer={racer} onMetric={onMetric} />
         </dd>
         {pretest?.pretest_time != null && (
           <>
-            <dt>{C.kvPretest}</dt>
+            <Dt term={C.kvPretest} />
             <dd className="ta-num">
               {C.pretest(
                 Number(pretest.pretest_time).toFixed(2),
@@ -283,7 +303,7 @@ export default function BoatDeepDive({
         )}
         {technique && (
           <>
-            <dt>{C.kvTech}</dt>
+            <Dt term={C.kvTech} />
             <dd className="ta-num">
               {techTotal > 0
                 ? C.techLine(techTotal) +
@@ -315,9 +335,16 @@ export default function BoatDeepDive({
         )}
         {racer.fCount > 0 && (
           <>
-            <dt>F</dt>
+            <Dt term="F" />
             <dd>
-              <span className="ta-tag ta-tag-warn">F{racer.fCount}</span>
+              <TheoryButton
+                id="TC-T4"
+                name={C.markName(`F${racer.fCount}`, boat)}
+                boat={boat}
+                className="ta-tag ta-tag-warn"
+              >
+                F{racer.fCount} ›
+              </TheoryButton>
             </dd>
           </>
         )}
@@ -350,7 +377,7 @@ export default function BoatDeepDive({
               <span className="ta-scopechip ta-num">{scopeLabel}</span>
               <span>{C.factsLegend}</span>
             </div>
-            <FactChips chips={chips} base={base} round={round} />
+            <FactChips chips={chips} base={base} round={round} boat={boat} />
             <p className="ta-note">{C.factsNotCause}</p>
           </div>
         </Fold>

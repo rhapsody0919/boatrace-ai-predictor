@@ -4,6 +4,7 @@
  *   1.5段目: v16 facts。届いたら today.scope_keys の NC・NCR（優勝戦・準優勝戦の日）・NA で scenario を取る
  *   2段目: similar・展示の整備（体重・チルト・部品交換・展示の進入）・オリジナル展示（展示後だけ）
  *   3段目: 深掘りの艇の走（getRacerScopedRaceStats）・6艇の勝ち決まり手・前検タイム（深掘りを開いたときだけ）
+ *   会場: 水質・型（ヘッダーの潮の「傾向 ›」に使うので最初に）、決まり手の期間（会場の特徴のシートを開いたときだけ）
  * 部分ごとに {status: "idle"|"loading"|"ready"|"error", data, retry}。失敗は部分だけ（FR-11）。
  * 取得の失敗を「データなし」に倒さない（.claude/rules/frontend-data-fetch.md）
  */
@@ -22,11 +23,11 @@ import { parseRaceId } from "../utils/raceId";
 
 /**
  * @param {string} raceId
- * @param {{stage?: "pre"|"post"|null, deep?: number|null}} [options] 時点（null なら展示から決める既定。D-36 (1)）と深掘りの艇
+ * @param {{stage?: "pre"|"post"|null, deep?: number|null, venueOpen?: boolean}} [options] 時点（null なら展示から決める既定。D-36 (1)）・深掘りの艇・会場の特徴のシートを開いたか
  */
 export function useThinkingAssistData(
   raceId,
-  { stage: chosenStage = null, deep = null } = {},
+  { stage: chosenStage = null, deep = null, venueOpen = false } = {},
 ) {
   const parsed = parseRaceId(raceId);
   const enabled = Boolean(parsed);
@@ -59,6 +60,18 @@ export function useThinkingAssistData(
         : null;
     },
     enabled,
+  );
+
+  // 既存の getVenueCharacteristics は無いときに null を返す（失敗は投げる）。画面は「無い」を断定しない（D-36 (5)）
+  const venueInfo = useAnalogyResource(
+    `assist-venue|${parsed?.venueCode}`,
+    () => supabaseDataService.getVenueCharacteristics(parsed.venueCode),
+    enabled,
+  );
+  const venueTech = useAnalogyResource(
+    `assist-venue-tech|${parsed?.venueCode}`,
+    () => supabaseDataService.getVenueTechniquePeriodStats(parsed.venueCode),
+    enabled && venueOpen,
   );
 
   const exhibition = useAnalogyResource(
@@ -188,5 +201,7 @@ export function useThinkingAssistData(
     runs: { ...runs, racerId: deepRacerId },
     technique,
     motor,
+    venueInfo,
+    venueTech,
   };
 }

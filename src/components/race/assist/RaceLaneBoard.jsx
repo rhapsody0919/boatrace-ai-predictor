@@ -3,6 +3,7 @@ import BoatBadge from "../BoatBadge";
 import { BOAT_LINE_COLORS } from "../../../utils/colors";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 import { METRICS } from "../../../utils/assistModel";
+import { TheoryButton } from "./SheetButtons";
 
 const scale = (model, x) =>
   Math.max(0, Math.min(100, ((x - model.lo) / (model.hi - model.lo)) * 100));
@@ -98,7 +99,8 @@ function Track({ model, row, onMetric }) {
  * 艇の行を押すと深掘り、数字を押すと6艇比較（2段目、「図を戻す」で戻る）。
  * 買い目レンズでは行ごとに「1着・2着・3着」の候補、ほかのレンズでは右端の印からマークシートを開く（screens S-1 C）。
  * 欠場の艇には候補のボタンを出さない（D-38）。
- * marks はレンズごとの印（良い方の札・凹みの手がかり・攻め手・チルト・交換。assistSummary から作る）
+ * marks はレンズごとの印（良い方の札・凹みの手がかり・攻め手・展示の偏り・チルト・交換。assistSummary から作る）。
+ * 印と F は押すとセオリーカード（ファン評価 PR4 で2回出た「押せない」の解消）
  */
 export default function RaceLaneBoard({
   model,
@@ -116,7 +118,11 @@ export default function RaceLaneBoard({
 }) {
   const bet = model.kind === "bet";
   return (
-    <figure className="ta-board" aria-label={ASSIST_COPY.figure(lensLabel)}>
+    <figure
+      className="ta-board"
+      aria-label={ASSIST_COPY.figure(lensLabel)}
+      data-guide="board"
+    >
       <div className="ta-board-axis" aria-hidden="true">
         <span>
           {model.good === "left" && (
@@ -174,16 +180,28 @@ export default function RaceLaneBoard({
                 {!r.absent &&
                   r.fCount > 0 &&
                   (model.kind === "axis" || model.kind === "flow") && (
-                    <span className="ta-tag ta-tag-warn">F{r.fCount}</span>
+                    <TheoryButton
+                      id="TC-T4"
+                      name={ASSIST_COPY.markName(`F${r.fCount}`, row.boat)}
+                      boat={row.boat}
+                      className="ta-th-lane"
+                    >
+                      <span className="ta-tag ta-tag-warn">F{r.fCount} ›</span>
+                    </TheoryButton>
                   )}
                 {!r.absent &&
                   (marks?.get(row.boat) ?? []).map((m) => (
-                    <span
+                    <TheoryButton
                       key={m.text}
-                      className={`ta-tag${m.hit ? " ta-tag-hit" : ""}`}
+                      id={m.theory}
+                      name={ASSIST_COPY.markName(m.text, row.boat)}
+                      boat={row.boat}
+                      className="ta-th-lane"
                     >
-                      {m.text}
-                    </span>
+                      <span className={`ta-tag${m.hit ? " ta-tag-hit" : ""}`}>
+                        {m.text} ›
+                      </span>
+                    </TheoryButton>
                   ))}
               </div>
               {bet && !r.absent && (

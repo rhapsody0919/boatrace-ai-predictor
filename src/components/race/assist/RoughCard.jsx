@@ -42,7 +42,7 @@ export default function RoughCard({
   const counts = restClassCounts(classes);
   const titleId = useId();
   return (
-    <section className="ta-rough" aria-labelledby={titleId}>
+    <section className="ta-rough" aria-labelledby={titleId} data-guide="rough">
       <h2 className="ta-rough-title" id={titleId}>
         {ASSIST_COPY.roughTitle}
       </h2>
@@ -55,6 +55,8 @@ export default function RoughCard({
         >
           <MiniBar label={ASSIST_COPY.roughB1} row={rough.b1} />
           <MiniBar label={ASSIST_COPY.roughManshu} row={rough.manshu} />
+          {/* 矢印を単独で読めるようにする（BOA-808 の4） */}
+          <span className="ta-note">{ASSIST_COPY.roughLegend}</span>
           <span className="ta-rough-foot">
             <ClassLineup lineup={lineup} />
             <span className="ta-note ta-num">
