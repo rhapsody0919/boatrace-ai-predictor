@@ -22,7 +22,8 @@ import {
   hintSummary,
   partsChangedBoats,
 } from "../../../utils/assistSummary";
-import { ASSIST_COPY as C } from "../../../data/thinkingAssistCopy";
+import { ASSIST_COPY as C, GLOSSARY } from "../../../data/thinkingAssistCopy";
+import { TermButton, TheoryButton } from "./SheetButtons";
 
 const pct = (k, n) => (n ? (k / n) * 100 : 0);
 const p0 = (k, n) => Math.round(pct(k, n));
@@ -35,8 +36,17 @@ const st2 = (v, fly) =>
     : `${fly ? "F" : ""}.${String(Math.round(Math.abs(v) * 100)).padStart(2, "0")}`;
 
 function AxisSummary({ m }) {
-  const { scope, chips, venue, headerScope, vaFacts, vaCell, classes, round } =
-    m;
+  const {
+    scope,
+    chips,
+    venue,
+    headerScope,
+    vaFacts,
+    vaCell,
+    classes,
+    round,
+    post,
+  } = m;
   const u = b1Usual(scope);
   if (!u) return null;
   const va = vaFacts ? b1Usual({ facts: vaFacts }) : null;
@@ -45,8 +55,13 @@ function AxisSummary({ m }) {
   const hc = headerScope?.cell;
   return (
     <>
-      <section className="ta-box">
-        <h3>{C.axisHeading(1)}</h3>
+      <section className="ta-box" data-guide="axis">
+        <h3 className="ta-h3-row">
+          {C.axisHeading(1)}
+          {venue && (
+            <TheoryButton id="TC-V1" name={C.theoryVenueTitle(venue)} />
+          )}
+        </h3>
         {/* 大きい数字の横に件数の札。同じ範囲の棒は出さず、比べる相手（会場の全レース）の棒だけ（2026-10-09 ユーザー決定 B） */}
         <div className="ta-big">
           <span className="ta-big-pct ta-num">{p1(u.k, u.n)}%</span>
@@ -55,7 +70,10 @@ function AxisSummary({ m }) {
         </div>
         <ClassLineup lineup={classLineup(classes, 1)} />
         {counts && (
-          <p className="ta-note">{C.classNote(1, classes[0], counts)}</p>
+          <p className="ta-note">
+            {C.classNote(1, classes[0], counts)}
+            <TermButton term="全国・級の並びが同じ" />
+          </p>
         )}
         {va && venue && (
           <BaseBar label={C.venueAllN(venue, va.n)} k={va.k} n={va.n} />
@@ -93,7 +111,10 @@ function AxisSummary({ m }) {
       </section>
       {chips.length > 0 && (
         <section className="ta-box">
-          <h3>{C.factsHeading(1)}</h3>
+          <h3 className="ta-h3-row">
+            {C.factsHeading(1)}
+            <TermButton term="差がつく材料" />
+          </h3>
           <div className="ta-legend">
             <span className="ta-scopechip ta-num">
               {C.scopeChip(label, scope.n)}
@@ -105,12 +126,14 @@ function AxisSummary({ m }) {
               chips={axisFactChips(chips)}
               base={p0(u.k, u.n)}
               round={round}
+              boat={1}
             />
           ) : (
             // 件数の少ない範囲（準優勝戦だけ等）では差の大きい材料が無いことがある。空の枠にしない
             <p className="ta-note">{C.factsNoneLarge}</p>
           )}
           <p className="ta-note">{C.factsNotCause}</p>
+          {!post && <p className="ta-note">{C.factsPreExhibition}</p>}
         </section>
       )}
     </>
@@ -143,7 +166,18 @@ function FlowSummary({ m }) {
     <>
       {hs && (
         <section className="ta-box">
-          <h3>{C.flowShapeHeading}</h3>
+          <h3 className="ta-h3-row">
+            {C.flowShapeHeading}
+            {top && (
+              <TheoryButton
+                id={`TC-H:${top.id}`}
+                name={C.theoryHintTitle(formName)}
+                className="ta-th-hit"
+              >
+                {C.theoryHintButton}
+              </TheoryButton>
+            )}
+          </h3>
           {top ? (
             <>
               <div className="ta-big">
@@ -179,7 +213,10 @@ function FlowSummary({ m }) {
       )}
       {form && (
         <section className="ta-box">
-          <h3>{C.flowIfHeading(formName)}</h3>
+          <h3 className="ta-h3-row">
+            {C.flowIfHeading(formName)}
+            <TheoryButton id={`TC-S:${form.form}`} name={formName} />
+          </h3>
           <div className="ta-legend">
             <span className="ta-scopechip ta-num">
               {C.flowFormScope(C.flowScopeLabel(Boolean(round)), form.n)}
@@ -201,15 +238,32 @@ function FlowSummary({ m }) {
               )}
             </>
           )}
+          {form.attacker === 3 && (
+            <TheoryButton id="TC-T7" name={C.sujiChip[0]} className="ta-chip">
+              <span>{C.sujiChip[0]} ›</span>
+              <b>{C.sujiChip[1]}</b>
+            </TheoryButton>
+          )}
         </section>
       )}
       {(entry || !post) && (
         <section className="ta-box">
-          <h3>{C.entryHeading}</h3>
+          <h3 className="ta-h3-row">
+            {C.entryHeading}
+            <TheoryButton
+              id={`TC-E:${entry?.group ?? "waku"}`}
+              name={
+                C.entryNames[
+                  entry?.group === "mae" ? "maeOther" : (entry?.group ?? "waku")
+                ]
+              }
+            />
+          </h3>
           {entry ? (
             <>
               <div className="ta-chk">
                 <span>✓ {C.entryToday(C.entryNames[entry.type])}</span>
+                {entry.type === "waku" && <TermButton term="枠なり" />}
               </div>
               {/* 集めた範囲と件数を書く（上の枠の準優勝戦の値と比べられるように。ファン評価 PR4 1周目 指摘1） */}
               <div className="ta-legend">
@@ -230,7 +284,10 @@ function FlowSummary({ m }) {
       )}
       {similar && similar.n > 0 && (
         <section className="ta-box">
-          <h3>{C.simTechHeading(simLabel)}</h3>
+          <h3 className="ta-h3-row">
+            {C.simTechHeading(simLabel)}
+            <TermButton term="類似レース" />
+          </h3>
           {Object.entries(similar.tech)
             .sort((a, b) => b[1] - a[1])
             .map(([t, k]) => (
@@ -276,10 +333,13 @@ function PowerSummary({ m }) {
   return (
     <>
       {conclusion && <p className="ta-power-answer">{conclusion}</p>}
-      <section className="ta-box">
+      <section className="ta-box" data-guide="power">
         {table ? (
           <>
-            <h3>{C.powerExhHeading(venue ?? "", table.kinds)}</h3>
+            <h3 className="ta-h3-row">
+              {C.powerExhHeading(venue ?? "", table.kinds)}
+              <TheoryButton id="TC-T10" name={C.theoryExhGap} />
+            </h3>
             <div className="ta-scroll">
               <table className="ta-table ta-table-ex">
                 <thead>
@@ -289,9 +349,13 @@ function PowerSummary({ m }) {
                     {table.kinds.map((k) => (
                       <th key={k} scope="col">
                         {k}
+                        {GLOSSARY[k] && <TermButton term={k} />}
                       </th>
                     ))}
-                    <th scope="col">{C.colExhSt}</th>
+                    <th scope="col">
+                      {C.colExhSt}
+                      <TermButton term="展示ST" />
+                    </th>
                     <th scope="col">{C.colWeight}</th>
                     <th scope="col">{C.colTilt}</th>
                   </tr>
@@ -340,11 +404,38 @@ function PowerSummary({ m }) {
               <span>{C.powerLegendBest}</span>
               <span>{C.powerLegendNone}</span>
             </div>
-            {parts && (
-              <p className="ta-note">
-                {parts.length ? C.partsBoats(parts) : C.partsNone}
-              </p>
-            )}
+            <div className="ta-feat">
+              <TheoryButton
+                id="TC-X1"
+                name={C.powerTheory.x1}
+                className="ta-tag"
+              >
+                {C.powerTheory.x1} ›
+              </TheoryButton>
+              <TheoryButton
+                id="TC-T5"
+                name={C.powerTheory.tilt}
+                className="ta-tag"
+              >
+                {C.powerTheory.tilt} {C.trend}
+              </TheoryButton>
+              {parts && (
+                <TheoryButton
+                  id="TC-T6"
+                  name={C.partsTheory}
+                  className="ta-tag"
+                >
+                  {parts.length ? C.partsBoats(parts) : C.partsNone} ›
+                </TheoryButton>
+              )}
+              <TheoryButton
+                id="TC-T9"
+                name={C.powerTheory.weight}
+                className="ta-tag"
+              >
+                {C.powerTheory.weight} {C.trend}
+              </TheoryButton>
+            </div>
           </>
         ) : (
           <>
@@ -391,7 +482,10 @@ function BetLensSummary({ m }) {
   return (
     <>
       <section className="ta-box">
-        <h3>{C.betBoxHeading(bet.points)}</h3>
+        <h3 className="ta-h3-row">
+          {C.betBoxHeading(bet.points)}
+          <TermButton term="合成オッズ" />
+        </h3>
         <BetSummary
           {...bet.summary}
           similarTri={similar?.tri ?? null}
@@ -400,7 +494,10 @@ function BetLensSummary({ m }) {
       </section>
       {scope && baseM != null && (
         <section className="ta-box">
-          <h3>{C.manshuHeading}</h3>
+          <h3 className="ta-h3-row">
+            {C.manshuHeading}
+            <TermButton term="万舟" />
+          </h3>
           <p className="ta-note">
             {refM != null ? C.baseLegendRef(venue) : C.baseLegend}
           </p>
@@ -432,7 +529,10 @@ function BetLensSummary({ m }) {
       )}
       {similar && similar.topTrifecta.length > 0 && (
         <section className="ta-box">
-          <h3>{C.simTopHeading(simLabel)}</h3>
+          <h3 className="ta-h3-row">
+            {C.simTopHeading(simLabel)}
+            <TermButton term="類似レース" />
+          </h3>
           <table className="ta-table">
             <thead>
               <tr>

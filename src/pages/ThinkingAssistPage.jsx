@@ -2,7 +2,7 @@
  * 思考アシスト（BOA-430）。1レースの予想を、レースの図と4つの見方（軸・展開・機力・買い目）で組み立てるページ。
  * ja 専用（languages.js の isFullyTranslatedPath の例外）。公開まで noindex（spec D-36 (9)）。
  * 状態は useReducer 1つで、URL・localStorage に残さない（plan「状態」）。
- * レンズの要約・図の印・深掘りは PR4。セオリーカード・用語・会場の特徴・ガイド・上部の切り替えは後の PR（tasks PR5・PR6）
+ * レンズの要約・図の印・深掘りは PR4。セオリーカード・用語・会場の特徴・ガイドは PR5。上部の切り替えは PR6
  */
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -16,6 +16,11 @@ import BetFooter from "../components/race/assist/BetFooter";
 import MarkSheet from "../components/race/assist/MarkSheet";
 import LensSummary from "../components/race/assist/LensSummary";
 import BoatDeepDive from "../components/race/assist/BoatDeepDive";
+import TheorySheet from "../components/race/assist/TheorySheet";
+import GlossarySheet from "../components/race/assist/GlossarySheet";
+import VenueSheet from "../components/race/assist/VenueSheet";
+import GuideOverlay from "../components/race/assist/GuideOverlay";
+import { AssistSheetContext } from "../components/race/assist/assistSheetContext";
 import {
   THINKING_ASSIST_PUBLIC,
   isAnalogyFinderEnabled,
@@ -23,10 +28,12 @@ import {
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
 import { useThinkingAssistData } from "../hooks/useThinkingAssistData";
 import {
+  ROUND_LABEL,
   anyCell,
   boardModel,
   buildRacers,
   classLineup,
+  restClassCounts,
   roughCard,
   roughState,
   sameClassScope,
@@ -44,6 +51,7 @@ import {
   tiltOutliers,
 } from "../utils/assistSummary";
 import { ATTACK_BOAT } from "../utils/analogyScenario";
+import { guideSteps, theoryCard } from "../utils/assistTheory";
 import {
   compositeOdds,
   expandTickets,
@@ -62,7 +70,9 @@ const initialState = {
   bets: { 1: new Set(), 2: new Set(), 3: new Set() },
   budget: "1000",
   mode: "equalPayout",
-  sheet: null, // "mark" | "rough"
+  // "mark" | "rough" | "venue" | {type: "theory", id, boat} | {type: "term", term}
+  sheet: null,
+  guide: null, // ガイドの段（0〜4）。null は閉じている
 };
 
 /**
@@ -114,6 +124,17 @@ function reducer(state, action) {
       return { ...state, mode: action.mode };
     case "sheet":
       return { ...state, sheet: action.sheet };
+    case "guide":
+      // ガイドの段に合わせてレンズを切り替え、深掘りを閉じる。閉じても買い目・レンズは残す（FR-10）
+      return action.step == null
+        ? { ...state, guide: null }
+        : {
+            ...state,
+            guide: action.step,
+            lens: action.lens,
+            deep: null,
+            metric: null,
+          };
     default:
       throw new Error(`思考アシスト: 知らない操作 ${action.type}`);
   }
@@ -137,6 +158,7 @@ export default function ThinkingAssistPage() {
   const data = useThinkingAssistData(raceId, {
     stage: state.stage,
     deep: state.deep,
+    venueOpen: state.sheet === "venue",
   });
   const race = data.racecard.data;
   const today = data.facts.data?.today ?? null;
@@ -217,6 +239,7 @@ export default function ThinkingAssistPage() {
               ASSIST_COPY.factWords[c.good],
             ),
             hit: true,
+            theory: `TC-F:${i + 1}:${c.key}`,
           });
       });
     if (state.lens === "flow" && hints?.top) {
@@ -229,19 +252,32 @@ export default function ThinkingAssistPage() {
             Math.round((top.hit[0] / top.hit[1]) * 100),
           ),
           hit: true,
+          theory: `TC-H:${top.id}`,
         });
       const attacker = ATTACK_BOAT[top.form];
       if (attacker)
         add(attacker, {
           text: ASSIST_COPY.attackMark(ASSIST_COPY.formNames[top.form]),
           hit: false,
+          theory: `TC-S:${top.form}`,
         });
     }
     if (state.lens === "power" && post) {
+      // 1号艇の展示タイムの偏り（TC-X1）。展示の値があるときだけ
+      if (racers[0]?.exhTime != null)
+        add(1, { text: ASSIST_COPY.exhBiasMark, hit: false, theory: "TC-X1" });
       for (const [boat, tilt] of tiltOutliers(racers))
-        add(boat, { text: ASSIST_COPY.tiltMark(tilt), hit: false });
+        add(boat, {
+          text: ASSIST_COPY.tiltMark(tilt),
+          hit: false,
+          theory: "TC-T5",
+        });
       for (const boat of partsChangedBoats(maintenanceRows))
-        add(boat, { text: ASSIST_COPY.partsMark, hit: false });
+        add(boat, {
+          text: ASSIST_COPY.partsMark,
+          hit: false,
+          theory: "TC-T6",
+        });
     }
     return out;
   }, [state.lens, boatFacts, hints, post, racers, maintenanceRows]);
@@ -371,6 +407,7 @@ export default function ThinkingAssistPage() {
           vaCell: venueAll,
           classes: today?.classes ?? null,
           round: data.round,
+          post,
         }
       : null,
     flow: {
@@ -426,6 +463,63 @@ export default function ThinkingAssistPage() {
     data.runs.racerId != null &&
     data.runs.racerId === racers[(deepBoat ?? 1) - 1]?.racerId;
 
+  // セオリーカードの材料（utils/assistTheory.theoryCard）
+  const exhRank = (() => {
+    const t = racers[0]?.exhTime;
+    if (t == null) return null;
+    return 1 + racers.filter((r) => r.exhTime != null && r.exhTime < t).length;
+  })();
+  const theoryCtx = {
+    post,
+    venue: venueName,
+    round: data.round,
+    roundLabel: data.round ? ROUND_LABEL[data.round] : null,
+    scenario: ncScenario,
+    today: v16Off ? null : today,
+    v16Exhibition,
+    courseByBoat,
+    boatFacts,
+    racers,
+    vaFacts: vaKey && factsAll ? factsAll[vaKey] : null,
+    wind: {
+      speed: race?.weather?.windSpeed ?? null,
+      dir: race?.weather?.windDirection ?? null,
+      wave: race?.weather?.waveHeight ?? null,
+    },
+    partsBoats: maintenanceRows ? partsChangedBoats(maintenanceRows) : null,
+    b1Exh:
+      exhRank != null
+        ? { text: racers[0].exhTime.toFixed(2), rank: exhRank }
+        : null,
+    scopeLabelOf: (sc) => factsScopeLabel(sc, venueName),
+  };
+  const sheetCard =
+    state.sheet?.type === "theory"
+      ? theoryCard(state.sheet.id, { ...theoryCtx, boat: state.sheet.boat })
+      : null;
+  const steps = guideSteps({ post, rough, hintTop: hints?.top ?? null });
+  const sheetApi = useMemo(
+    () => ({
+      openTerm: (term) =>
+        dispatch({ type: "sheet", sheet: { type: "term", term } }),
+      openTheory: (id, boat = null) =>
+        dispatch({ type: "sheet", sheet: { type: "theory", id, boat } }),
+    }),
+    [],
+  );
+  const onGuideStep = useCallback(
+    (step) =>
+      dispatch({
+        type: "guide",
+        step,
+        lens: step == null ? null : steps[step].lens,
+      }),
+    // steps のレンズは段ごとに固定（中身の文だけがレースで変わる）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+  const restCounts = restClassCounts(today?.classes, 1);
+
   let body;
   if (data.racecard.status === "loading") {
     body = <p className="ta-status">{ASSIST_COPY.loading}</p>;
@@ -453,6 +547,8 @@ export default function ThinkingAssistPage() {
           onStage={(stage) => dispatch({ type: "stage", stage })}
           oddsAt={oddsAt}
           showSonar={isAnalogyFinderEnabled()}
+          waterType={data.venueInfo.data?.waterType ?? null}
+          onVenue={() => dispatch({ type: "sheet", sheet: "venue" })}
         >
           {post && v16Status === "exhibition_reflecting" && (
             <p className="ta-note">{ASSIST_COPY.stateReflecting}</p>
@@ -482,6 +578,8 @@ export default function ThinkingAssistPage() {
         <LensBar
           lens={state.lens}
           onLens={(lens) => dispatch({ type: "lens", lens })}
+          guideOn={state.guide !== null}
+          onGuide={() => onGuideStep(state.guide === null ? 0 : null)}
         />
         {cancelled && state.lens === "bet" ? (
           // 中止のレースは買い目レンズにこの1行だけ（D-38）
@@ -569,6 +667,9 @@ export default function ThinkingAssistPage() {
             oddsNote={oddsNote}
             removedNote={removedNote}
             onOpen={() => dispatch({ type: "sheet", sheet: "mark" })}
+            hidden={
+              state.guide !== null && steps[state.guide].target !== "foot"
+            }
           />
         )}
       </>
@@ -577,7 +678,7 @@ export default function ThinkingAssistPage() {
 
   const sheetOpen = state.sheet !== null;
   return (
-    <>
+    <AssistSheetContext.Provider value={sheetApi}>
       <title>{`${ASSIST_COPY.title}（${raceId}）`}</title>
       <Header />
       <main
@@ -624,6 +725,35 @@ export default function ThinkingAssistPage() {
           onClose={closeSheet}
         />
       )}
-    </>
+      {sheetCard && <TheorySheet card={sheetCard} onClose={closeSheet} />}
+      {state.sheet?.type === "term" && (
+        <GlossarySheet
+          term={state.sheet.term}
+          lineup={lineup}
+          classNote={
+            restCounts && today?.classes
+              ? ASSIST_COPY.classNote(1, today.classes[0], restCounts)
+              : null
+          }
+          finalRound={finalRound}
+          onClose={closeSheet}
+        />
+      )}
+      {state.sheet === "venue" && venueName && data.parsed && (
+        <VenueSheet
+          venue={venueName}
+          venueCode={data.parsed.venueCode}
+          info={data.venueInfo}
+          tech={data.venueTech}
+          vaB1={
+            theoryCtx.vaFacts ? b1Usual({ facts: theoryCtx.vaFacts }) : null
+          }
+          onClose={closeSheet}
+        />
+      )}
+      {state.guide !== null && race && !sheetOpen && (
+        <GuideOverlay steps={steps} index={state.guide} onStep={onGuideStep} />
+      )}
+    </AssistSheetContext.Provider>
   );
 }

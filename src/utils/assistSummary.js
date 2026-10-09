@@ -75,7 +75,7 @@ export const factsScopeLabel = (scope, venue) =>
  * 差がつく材料の行（1着）。today の6艇の値で、その艇の今日の位置（1＝一番良い、6＝一番悪い）を付ける。
  * 優勝戦・準優勝戦の日の今節の平均着順点は「今日」に使わない（off。FR-5・v16 Q7）
  * @param {{scope: ReturnType<typeof factsScope>, today: object|null, exhibition?: object|null, boat: number, post: boolean, finalRound: boolean}} args
- * @returns {Array<{key: string, good: string, bad: string, level: string, bucket: number|null, off: boolean, hit: boolean, pair: [number, number]|null, rate: number|null}>}
+ * @returns {Array<{key: string, good: string, bad: string, level: string, bucket: number|null, off: boolean, hit: boolean, pair: [number, number]|null, rate: number|null, best: [number, number]|null, worst: [number, number]|null}>}
  */
 export function factChips({
   scope,
@@ -105,6 +105,9 @@ export function factChips({
       hit,
       pair: hit ? pair : null,
       rate: hit ? rateOf(pair) : null,
+      // セオリーカード（TC-F）の「一番良いとき／一番悪いとき」の棒
+      best: r.all[0],
+      worst: r.all[5],
     };
   });
 }

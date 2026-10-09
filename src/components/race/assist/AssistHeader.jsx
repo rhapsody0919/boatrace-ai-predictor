@@ -3,11 +3,12 @@ import { GRADE_CONFIG } from "../../../constants/gradeConfig";
 import { formatObservedTime } from "../weatherInfo";
 import { ROUND_LABEL } from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
+import { TheoryButton } from "./SheetButtons";
 
 /**
  * ヘッダー（spec FR-2、screens S-1 A）: 会場・R・ラウンド・グレード・締切、気象（展示後だけ）・時点の切り替え、
  * 堅い？荒れる？の枠（children）、オッズの取得時刻、龍神ソナーへの導線（ソナーを表示できる端末だけ、D-36 (8)）。
- * 会場の特徴のシート・「傾向 ›」は後の PR（tasks PR5）
+ * 会場名を押すと会場の特徴のシート。ラウンド・風・潮（海水・汽水の会場だけ）の「傾向 ›」はセオリーカード（D-15。Codex F09）
  */
 export default function AssistHeader({
   race,
@@ -18,6 +19,8 @@ export default function AssistHeader({
   onStage,
   oddsAt,
   showSonar,
+  waterType = null,
+  onVenue,
   children,
 }) {
   const w = race?.weather ?? null;
@@ -32,11 +35,28 @@ export default function AssistHeader({
     <header className="ta-header">
       <div className="ta-header-row">
         <h1 className="ta-header-venue">
-          {race?.venue ?? ""} {race?.raceNumber ? `${race.raceNumber}R` : ""}
+          {race?.venue ? (
+            <button
+              type="button"
+              className="ta-venue-btn"
+              aria-label={ASSIST_COPY.venueAria(race.venue)}
+              onClick={onVenue}
+            >
+              {race.venue} ›
+            </button>
+          ) : null}{" "}
+          {race?.raceNumber ? `${race.raceNumber}R` : ""}
           <span className="ta-sr"> {ASSIST_COPY.title}</span>
         </h1>
         {roundLabel && (
           <span className="ta-pill ta-pill-round">{roundLabel}</span>
+        )}
+        {/* 優勝戦・準優勝戦のスタートのセオリー（TC-T8）。予選・一般の日は出さない */}
+        {round && (
+          <TheoryButton
+            id="TC-T8"
+            name={ASSIST_COPY.roundTheory(ROUND_LABEL[round])}
+          />
         )}
         {/* 一般戦はラウンドも「一般」になるので、同じ語を2つ並べない（ファン評価 2周目 指摘8） */}
         {grade && grade !== roundLabel && (
@@ -56,7 +76,11 @@ export default function AssistHeader({
                 風 {w.windDirection ?? ""}{" "}
                 {w.windSpeed != null && (
                   <b className="ta-num">{w.windSpeed}m</b>
-                )}
+                )}{" "}
+                <TheoryButton
+                  id="TC-W1"
+                  name={ASSIST_COPY.theoryWindTitle(w.windSpeed)}
+                />
               </span>
             )}
             {w.waveHeight != null && (
@@ -85,6 +109,12 @@ export default function AssistHeader({
           </>
         ) : (
           <span>{ASSIST_COPY.weatherAfterExhibition}</span>
+        )}
+        {(waterType === "sea" || waterType === "brackish") && (
+          <span>
+            {ASSIST_COPY.tide}{" "}
+            <TheoryButton id="TC-T3" name={ASSIST_COPY.venueTide} />
+          </span>
         )}
         <span
           className="ta-seg"

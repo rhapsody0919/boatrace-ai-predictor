@@ -1165,7 +1165,11 @@
   gap: var(--spacing-3);
   /* 開いたときに送る位置。固定のレンズの下に見出しが隠れないようにする（デザイナーのレビュー P1-1） */
   scroll-margin-top: calc(var(--ta-sticky-top, 0px) + 130px);
-  background: color-mix(in srgb, var(--color-info-text) 6%, var(--surface-card));
+  background: color-mix(
+    in srgb,
+    var(--color-info-text) 6%,
+    var(--surface-card)
+  );
   min-width: 0;
 }
 
@@ -1317,4 +1321,343 @@
   margin: 0;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
+}
+
+/* ---- 用語の「?」・「傾向 ›」（PR5、spec D-8・D-15）。押せる範囲は 44px（N-6） ---- */
+.ta-tq {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: var(--spacing-1);
+  border: 1px solid var(--color-info-text);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-info-text);
+  font: inherit;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  vertical-align: middle;
+  cursor: pointer;
+  padding: 0;
+}
+
+.ta-th {
+  position: relative;
+  border: 0;
+  background: transparent;
+  padding: 0 var(--spacing-1);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-info-text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* 札・チップの形の入口は、元の見た目（.ta-tag・.ta-chip）を保つ */
+.ta-th.ta-tag,
+.ta-th.ta-chip {
+  padding: 0 var(--spacing-1-5);
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.ta-th.ta-tag-hit {
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-th.ta-tag-warn {
+  color: var(--color-error-text);
+}
+
+.ta-th.ta-chip {
+  padding: var(--spacing-1-5) var(--spacing-2);
+  color: var(--text-primary);
+  white-space: normal;
+}
+
+.ta-th.ta-chip-off {
+  color: var(--text-secondary);
+}
+
+.ta-th-hit {
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-chip-level {
+  font-size: var(--font-size-2xs);
+  color: var(--color-info-text);
+}
+
+.ta-tq::after,
+.ta-th::after,
+.ta-venue-btn::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+/* 見出しの横に入口を置く行 */
+.ta-h3-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-2);
+}
+
+.ta-venue-btn {
+  position: relative;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+/* ---- レンズの行とガイドの切り替え ---- */
+.ta-lens-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--spacing-1-5);
+}
+
+.ta-guide-btn {
+  border: 1px solid var(--color-info-text);
+  background: transparent;
+  color: var(--color-info-text);
+  border-radius: var(--radius-md);
+  min-height: 44px;
+  padding: 0 var(--spacing-2-5);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.ta-guide-btn[aria-pressed="true"] {
+  background: var(--color-info-text);
+  color: var(--surface-card);
+}
+
+/* ---- ガイド（GuideOverlay、FR-10） ---- */
+.ta-guide {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--spacing-4) + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 900;
+  width: min(400px, calc(100vw - 32px));
+  display: grid;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-3-5);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border: 2px solid var(--brand-accent-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.ta-guide-top {
+  bottom: auto;
+  top: calc(var(--spacing-3) + env(safe-area-inset-top, 0px));
+}
+
+.ta-guide-step {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+}
+
+.ta-guide-q {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-guide-sub {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.ta-guide-ops {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+}
+
+.ta-guide-ops button {
+  border: 1px solid var(--border-hairline);
+  background: transparent;
+  color: inherit;
+  border-radius: var(--radius-md);
+  min-height: 44px;
+  min-width: 64px;
+  padding: 0 var(--spacing-3);
+  font: inherit;
+  cursor: pointer;
+}
+
+.ta-guide-ops .ta-guide-next {
+  background: var(--brand-accent-primary);
+  border-color: var(--brand-accent-primary);
+  color: var(--surface-card);
+  font-weight: var(--font-weight-bold);
+}
+
+/* 光らせる場所（外枠だけ。中の配置は変えない） */
+.ta-guide-lit {
+  outline: 3px solid var(--brand-accent-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-lg);
+}
+
+/* ---- セオリーカード（TheorySheet、FR-6） ---- */
+.ta-th-rows {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--spacing-2) var(--spacing-3);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.625;
+}
+
+.ta-th-rows dt {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  padding-top: 2px;
+}
+
+.ta-th-rows dd {
+  margin: 0;
+}
+
+.ta-th-today {
+  margin: 0;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-hairline);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.ta-th-today-hit {
+  border-color: var(--brand-accent-primary);
+  border-left-width: 4px;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-th-meas {
+  display: grid;
+  gap: var(--spacing-3);
+}
+
+.ta-th-meas h3,
+.ta-th-also h3,
+.ta-venue-tech h3 {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-th-prep {
+  margin: 0;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-page);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.ta-th-related {
+  margin: 0;
+  padding-left: var(--spacing-2);
+  border-left: 3px solid var(--color-info-text);
+  font-size: var(--font-size-sm);
+}
+
+.ta-th-also {
+  display: grid;
+  gap: var(--spacing-3);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--border-hairline);
+}
+
+/* ---- 用語のシート（GlossarySheet） ---- */
+.ta-gl {
+  display: grid;
+  gap: var(--spacing-3);
+  font-size: var(--font-size-sm);
+  line-height: 1.625;
+}
+
+.ta-gl-lead {
+  margin: 0;
+}
+
+.ta-gl-st {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--spacing-1-5);
+  align-items: center;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.ta-gl-st-bar {
+  height: 6px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    to right,
+    var(--color-info-text),
+    var(--border-hairline)
+  );
+}
+
+.ta-gl-st-dir {
+  text-align: center;
+}
+
+/* ---- 会場の特徴（VenueSheet） ---- */
+.ta-venue-tech {
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+.ta-venue-tech-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+  gap: var(--spacing-2);
+  align-items: center;
+  font-size: var(--font-size-sm);
+}
+
+.ta-venue-tech-label .ta-tag {
+  white-space: normal;
+}
+
+.ta-venue-tech-bars {
+  display: grid;
+  gap: 3px;
+}
+
+.ta-venue-tech-90 {
+  height: 6px;
+  opacity: 0.5;
+}
+
+.ta-venue-tech-pct {
+  text-align: right;
 }

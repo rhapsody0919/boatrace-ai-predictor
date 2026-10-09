@@ -100,7 +100,8 @@ export const ASSIST_COPY = Object.freeze({
       sub: "組んだ買い目を確かめる",
     },
   }),
-  hint: "艇・数字をタップ→詳しく",
+  // 説明の種類の案内（screens「説明の種類」）
+  hint: "艇・数字をタップ→詳しく ／ ? 用語 ／ 傾向 › 過去",
   hintClose: "この案内を閉じる",
 
   // レースの図（FR-3）
@@ -176,8 +177,18 @@ export const ASSIST_COPY = Object.freeze({
   // 図の「良い方の札」（名前の期間は札では省く。読み上げ・要約は factNames）
   factMark: (name, word) => `${name.replace("（直近30走）", "")}が一番${word}`,
   factsHeading: (boat) => `差がつく材料（${boat}号艇）`,
-  factsLegend: "▲＝6艇で一番のとき",
-  factHit: (word, p, base) => `▲一番${word} → 1着 ${p}%（全体 ${base}%）`,
+  // ▲は一番上にも一番下にも付く（BOA-808 の4）
+  factsLegend: "▲＝今日6艇で一番上か一番下",
+  // 件数を添える（どれだけのレースから出した割合か。BOA-808 の3）
+  factHit: (word, p, n, base) =>
+    `▲一番${word} → 1着 ${p}%・${n.toLocaleString("ja-JP")}件（全体 ${base}%）`,
+  // 差の大きさ（v16 の judgeGap の level）。軸の要約の「差がはっきり大きい材料は無い」と同じ判定
+  factLevel: Object.freeze({
+    large: "差が大きい",
+    some: "差がある",
+    small: "差は小さい",
+    unclear: "件数が少なく差ははっきりしない",
+  }),
   factRank: (n) => `${n}番目`,
   factFinalOff: (round) => `${round}の日は使わない`,
   factsNotCause: "過去の割合で、原因とは限らない",
@@ -377,4 +388,259 @@ export const ASSIST_COPY = Object.freeze({
   stateAbsent: "欠場があったため、過去レースの傾向は出していません",
   stateNotSaved: "このレースは、過去レースの傾向を表示できるデータがありません",
   stateReflecting: "展示の結果を反映しています",
+
+  // ---- 用語の「?」と「傾向 ›」（spec D-8・D-15、screens「説明の種類」） ----
+  termAria: (term) => `${term}とは`,
+  theoryAria: (name) => `${name}の過去レースの傾向`,
+  trend: "傾向 ›",
+  roughLegend: "↑↓＝全国の全レースより高め・低め　→＝はっきりしない",
+  factsPreExhibition: "展示タイムの材料は展示の後に分かる",
+
+  // ---- セオリーカード（FR-6、screens S-1b） ----
+  theoryCond: "条件",
+  theoryLikely: "起きやすいこと",
+  theoryPast: "過去レースの傾向",
+  theoryPrep: "過去レースの傾向: 準備中（まだ集めていない）",
+  theoryTodayHit: (t) => `今日当てはまる（${t}）`,
+  theoryTodayMiss: (t) => `今日は当てはまらない（${t}）`,
+  theoryTodayPending: (t) => `今日: ${t}`,
+  theoryAlso: "同じ条件に関係するセオリー（向きが逆のものも並べる）",
+  theoryFoot: "「〜が起きやすい傾向」で、当てはまってもそうならないことがある",
+  theorySince: "全国の過去レース（2019/4/1〜）",
+  theoryNotHappened: (p) => `起きなかった ${p}%`,
+  theoryAttackWin: (boat) => `攻める艇（${boat}号艇）の1着`,
+  theoryB1Win: "1号艇の1着",
+  theoryFormAfter: "スリットの形はレースの後に分かる（もしこうなったら）",
+  theoryTodayFormHint: "平均STの並びが手がかりに合う",
+  theoryTodayFormExhibition: "展示がこの形",
+  theoryTodayFormBoth: "平均STの並びが手がかりに合う・展示もこの形",
+  theoryPendingForm: "展示の形は展示の後に分かる",
+  theoryPendingEntry: "進入は展示の後に分かる",
+  theoryMissForm: "今日の展示はこの形ではない",
+  theoryHintTitle: (form) => `平均STの手がかり（${form}）`,
+  theoryHintLikely: (form) => `本番のスタートが「${form}」になりやすい`,
+  theoryHintHit: (form) => `当てはまるとき、本番が${form}に`,
+  theoryHintNotDecisive: (form) =>
+    `当てはまっても、${form}にならない方が多い（決め手ではなく手がかり）`,
+  theoryTodayHint: "平均STの並びが条件に合う",
+  theoryMissHint: "平均STの並びは条件に合わない",
+  theoryEntryShare: (name) => `${name}になったレース`,
+  theoryFactTitle: (name, boat) => `${boat}号艇の${name}`,
+  theoryFactCond: (name, good, bad) => `${name}が6艇で一番${good}／一番${bad}`,
+  theoryFactLikely: (boat) => `${boat}号艇の1着の割合が変わる`,
+  theoryFactWhen: (word) => `一番${word}とき`,
+  theoryFactToday: (boat, pos) => `今日の${boat}号艇は6艇で${pos}`,
+  theoryFactFinalOff:
+    "優勝戦・準優勝戦の日は、点の順位がほぼ枠の順になるので「今日」は出さない",
+  theoryVenueTitle: (venue) => `${venue}のイン`,
+  theoryVenueCond: (venue) => `${venue}の全レース`,
+  theoryVenueLikely: "1号艇の1着の割合は会場ごとに違う",
+  theoryVenueAll: (venue, n) =>
+    `${venue}の全レース ${n.toLocaleString("ja-JP")}件で、1号艇の1着`,
+  theoryVenueNote:
+    "範囲が違う2つ。並べて見るだけで、上がる・下がるとは読まない",
+  theoryWindTitle: (speed) =>
+    speed != null ? `今日の風（${speed}m）` : "今日の風",
+  theoryWindCond: (venue, band) => `${venue}・風速${band}のレース`,
+  theoryWindLikely: "艇番ごとの1着の割合が、風を問わないときとどう違うか",
+  theoryWindScope: (venue, band) => `${venue}・風速${band}`,
+  theoryWindToday: (dir, speed) => `今日は${dir}${speed}m`,
+  theoryPendingWind: "風は展示の後に分かる",
+  theoryWindMixed: "追い風・向かい風が混ざった値（区別していない）",
+  theoryWindCols: ["艇", "この風", "風を問わず", "差"],
+  theoryTodayBoat: (boat, t) => `${boat}号艇は${t}`,
+  theoryTodayRound: (round) => `今日は${round}`,
+  theoryTodayX1: (v, rank) => `今日の1号艇は ${v}（6艇で${rank}番目）`,
+  theoryPendingExhibition: "展示の後に分かる",
+  theorySujiRelated: (form, att, n, list) =>
+    `関連する実データ: ${form}（攻める艇は${att}号艇）になったレース${n.toLocaleString("ja-JP")}件では、よく出た3連単は ${list}`,
+  // 図の印・機力の札の名前（押すとセオリーカード）
+  exhBiasMark: "展示の偏り",
+  sujiChip: ["スジのセオリー", "3まくり→3-4／まくり差し→3-1"],
+  powerTheory: Object.freeze({
+    x1: "1号艇は展示が速く出やすい",
+    tilt: "チルト",
+    weight: "体重",
+  }),
+  roundTheory: (round) => `${round}のスタート`,
+  theoryHintButton: "★ 手がかり ›",
+  theoryExhGap: "展示タイムの差",
+  partsTheory: "部品交換",
+
+  // ---- 会場の特徴（D-14・D-18・D-35・D-37） ----
+  venueTitle: (venue) => `${venue}の特徴`,
+  venueAria: (venue) => `${venue}の特徴`,
+  waterType: Object.freeze({ fresh: "淡水", brackish: "汽水", sea: "海水" }),
+  waterTide: "（潮の満ち引きがある）",
+  cluster: Object.freeze({
+    in_strong: "イン（1号艇）が強い会場",
+    out_strong: "外の艇が届きやすい会場",
+    balanced: "イン・外の差が中くらいの会場",
+  }),
+  venueType: "型",
+  venueWater: "水質",
+  venueB1: (venue, n) =>
+    `1号艇の1着: ${venue}の全レース ${n.toLocaleString("ja-JP")}件（2019/4/1〜）`,
+  venueTechHeading: (n, n90) =>
+    `決まり手（直近1年 ${n.toLocaleString("ja-JP")}件。薄い帯は直近90日 ${n90.toLocaleString("ja-JP")}件）`,
+  venueTrend: (t, mark, p90, prev) =>
+    `${t} 最近${mark === "up" ? "↑" : "↓"} 90日${p90}%／前${prev}%`,
+  venueNote:
+    "集めた期間が違う（1号艇の1着は2019年から、決まり手は直近1年）。最近↑↓は直近90日とそれより前の275日の割合がはっきり離れたときだけ",
+  tide: "潮",
+  stScaleDir: "◀ 早い　　　遅い ▶",
+  venueTide: "潮の傾向",
+  venueTech: "決まり手",
+  venueLink: (venue) => `${venue}の会場ページで詳しく見る ›`,
+
+  // ---- ガイド（FR-10、screens S-1c）。各段1文（40字以内） ----
+  guideRegion: "ガイド",
+  guideStep: (i, step) => `ガイド ${i}/5 ${step}`,
+  guideNext: "次へ",
+  guidePrev: "戻る",
+  guideDone: "おわり",
+  guide: Object.freeze([
+    { step: "①堅い？荒れる？", q: "このレースは堅い？荒れそう？" },
+    { step: "②1号艇", q: "1号艇は逃げられそう？" },
+    { step: "③壁と攻める艇", q: "スタートでどこが凹み、誰が攻める？" },
+    { step: "④足", q: "足が良いのは？" },
+    { step: "⑤買い目", q: "買い目を組んで、オッズに見合うか確かめよう" },
+  ]),
+  guideVerdictWord: Object.freeze({
+    high: "高め",
+    low: "低め",
+    unclear: "はっきりしない",
+  }),
+  guideRoughSub: (b1, m) =>
+    `1号艇の1着は${b1}・万舟は${m}。枠を押すと材料が出る`,
+  guideRoughSubNone: "1号艇の1着と万舟の割合を、全国の全レースと比べる",
+  guideAxisSub: "大きい数字が1号艇の1着率。▲は今日6艇で一番上か一番下",
+  guideFlowSub: (form, p, att) =>
+    att
+      ? `${form}の手がかりあり（本番${p}%）。なれば${att}号艇が攻める`
+      : `${form}の手がかりあり（本番${p}%）`,
+  guideFlowSubNone: "当てはまる手がかりは無い。図はスタートの早さ",
+  guidePowerSubPost: "金枠が6艇で一番速い。1号艇は展示が速く出やすい",
+  guidePowerSubPre: "展示は展示の後に出る。今はモーター2連率を見る",
+  guideBetSub: "1着・2着・3着を押して組む。合成オッズ1.0未満はトリガミ",
+});
+
+/**
+ * 用語の「?」（D-8・D-15・D-32）。長い説明は箇条書き・表・絵にする。
+ * lead＝1行目、items＝箇条書き、points＝今節の平均着順点の配点の表、classes＝級の並びの絵、stScale＝平均ST の目盛り
+ */
+export const GLOSSARY = Object.freeze({
+  級: { lead: "選手の格付け。上から A1・A2・B1・B2。半年ごとに成績で決まる" },
+  F: {
+    lead: "フライング（スタートの早すぎ）の回数",
+    items: ["持っていると罰則が重くなるので、スタートを控えやすい"],
+  },
+  全国勝率: {
+    lead: "全国のレースの成績を点にした平均（1着ほど高い）。高いほど強い選手",
+  },
+  当地勝率: { lead: "この会場での勝率。高いほどこの水面が得意" },
+  直近30走の1着率: {
+    lead: "前日までの直近30走で1着だった割合。高いほど最近調子が良い",
+  },
+  平均ST: {
+    lead: "スタートタイミング（合図からスタートラインを通るまでの遅れ）の平均。直近30走、Fを除く",
+    items: [
+      "「このコース」は今日と同じコースを走ったときだけの平均",
+      "0に近いほど早い",
+    ],
+    stScale: true,
+  },
+  今節の平均着順点: {
+    lead: "この節で前日までに走ったレースの着順を点にした平均。高いほど調子が良い（公式の得点率とは別）",
+    points: true,
+  },
+  モーター2連率: {
+    lead: "このモーターが、使われてから2着以内に入った割合。高いほど良いモーターと言われる",
+  },
+  前検タイム: {
+    lead: "節の初日の前に、モーターの調子を見るために測るタイム。小さいほど速い",
+    items: ["順位は、その節に参加する全艇の中での順番"],
+  },
+  勝ち決まり手: {
+    lead: "この選手が直近90日に1着になったときの決まり手の内訳。どんな勝ち方が多い選手か",
+  },
+  成績から付けた札: {
+    lead: "成績の値から機械的に付けた札（評判ではない）",
+    items: ["札を押すと、何の値から付けたかが出る"],
+  },
+  展示: { lead: "展示航走（本番前の試走）のタイム。小さいほど速い" },
+  一周: {
+    lead: "オリジナル展示の1周のタイム。小さいほど速い",
+    items: ["測る項目は会場ごとに違う"],
+  },
+  まわり足: {
+    lead: "オリジナル展示の、ターンの区間を測ったタイム。小さいほど速い",
+    items: ["測る区間は会場ごとに違う"],
+  },
+  直線: {
+    lead: "オリジナル展示の、直線の区間を測ったタイム。小さいほど速い",
+    items: ["測る区間は会場ごとに違う"],
+  },
+  展示ST: {
+    lead: "展示航走のスタートタイミング。0に近いほど早い",
+    items: ["本番のスタートとは別"],
+  },
+  類似レース: {
+    lead: "全国の過去レース（2019/4/1〜）のうち、次がそろうレース。龍神ソナーの「類似レース」と同じ",
+    items: [
+      "1号艇の級",
+      "勝率トップの艇",
+      "1号艇と勝率トップの全国勝率の差の段階",
+      "ラウンド（優勝戦・準優勝戦の日だけ）・グレード（G1・SG の日だけ）",
+      "級の並びは問わない。返還のあったレースも含める",
+    ],
+  },
+  "全国・級の並びが同じ": {
+    lead: "全国の過去レース（2019/4/1〜）で、6艇の級の艇数と1号艇の級が今日と同じレース",
+    items: ["艇番の並び（2〜6号艇の枠）・ラウンド・勝率は問わない"],
+    classes: true,
+  },
+  全国の全レース: {
+    lead: "比べる基準",
+    items: [
+      "全国24場の全レース（2019/4/1〜、返還を除く）",
+      "1レースを1件として出した割合。会場ごとや選手ごとの平均ではない",
+      "高め・低めは、ぶれ幅が全国の全レースと重ならないときだけ付ける",
+    ],
+  },
+  万舟: { lead: "3連単の払戻が1万円以上になったレース" },
+  合成オッズ: {
+    lead: "組んだ買い目のどれが当たっても同じ払戻になるように買ったときの、全体の倍率（理論値）",
+    items: [
+      "100円単位に丸めると組ごとに少しずれる",
+      "1.0未満だと、当たっても賭けた金額を下回る（トリガミ）",
+    ],
+  },
+  トリガミ: { lead: "当たったのに、払戻が賭けた合計を下回ること" },
+  人気: {
+    lead: "3連単120通りのオッズが低い順の順番。1番人気が一番売れている",
+  },
+  過去の1着: {
+    lead: "この艇番・この級で、差がつく材料と同じ集めたレースで1着になった割合",
+  },
+  均等払戻: {
+    lead: "どれが当たっても払戻がほぼ同じになるように、オッズが低い組ほど多く買う配分",
+    items: ["「均等」はどの組も同じ金額で買う配分"],
+  },
+  差がつく材料: {
+    lead: "過去レースで、その項目が6艇で一番良いときと一番悪いときに、1着の割合がどれだけ違ったか",
+    items: [
+      "差が大きい項目ほど着順に関係していた",
+      "▲は今日その艇が6艇で一番上か一番下",
+      "過去の割合で、原因とは限らない",
+    ],
+  },
+  枠なり: { lead: "6艇が艇番どおりのコースに入ること" },
+  水質: {
+    lead: "海水・淡水・汽水",
+    items: [
+      "海水・汽水は潮の満ち引きで水面が変わる",
+      "淡水は体が浮きにくく、体重差が効きやすいと言われる",
+    ],
+  },
 });
