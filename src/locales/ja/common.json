@@ -1001,10 +1001,10 @@
         "keySimilar": "類似レース",
         "keyCompare": "点線: {{name}}{{n}}件",
         "cmpGrade": "グレードを問わない{{kind}}（ほかの条件は同じ）",
-        "cmpRound": "ラウンドを問わない（ほかの条件は同じ）",
+        "cmpRound": "{{round}}以外も含めた（ほかの条件は同じ）",
         "cmpSame": "条件がそろった過去レース全体",
         "tip": "{{boat}}号艇: {{n}}件中{{hits}}件（{{pct}}、ぶれ幅{{lo}}〜{{hi}}%）",
-        "tipNational": "全国{{p}}",
+        "tipNational": "全国の全レース{{p}}",
         "few": "{{n}}件だと割合はぶれやすい（ぶれ幅が広い）",
         "allShown": "条件がそろった過去レースの全件を出している",
         "techHeading": "どう決まった？",
@@ -1345,7 +1345,9 @@
         "hintRefShort": "{{venue}}の全選手の平均",
         "slitRefLegend": "点線＝{{name}}",
         "slitFaster": "早い →",
-        "resultNotSplit": "④の結果は、③の攻める艇の順位では分けていない。"
+        "resultNotSplit": "④の結果は、③の攻める艇の順位では分けていない。",
+        "fellBack": "{{venue}}で同じ組み合わせのレース（返還を除く）は{{n}}件と少ないので、全国から集めています",
+        "shareOfNoRefund": "{{of}}（返還を除く）の{{p}}"
       },
       "barLabel": "{{boat}}号艇 {{p}} {{n}}件",
       "feedback": {

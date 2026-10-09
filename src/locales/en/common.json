@@ -1349,10 +1349,10 @@
         "keySimilar": "Similar races",
         "keyCompare": "Dotted line: {{name}} ({{n}})",
         "cmpGrade": "{{kind}} of any grade (other conditions the same)",
-        "cmpRound": "Any round (other conditions the same)",
+        "cmpRound": "Including races other than {{round}} (other conditions the same)",
         "cmpSame": "All past races matching the conditions",
         "tip": "Boat {{boat}}: {{hits}} of {{n}} ({{pct}}, range {{lo}}–{{hi}}%)",
-        "tipNational": "All venues {{p}}",
+        "tipNational": "All races nationwide {{p}}",
         "few": "With {{n}} races, the shares can swing a lot (wide range)",
         "allShown": "Showing all past races that match the conditions",
         "techHeading": "How was it won?",
@@ -1693,7 +1693,9 @@
         "hintRefShort": "{{venue}} avg.",
         "slitRefLegend": "Dotted = {{name}}",
         "slitFaster": "Faster →",
-        "resultNotSplit": "The results in ④ are not split by the attacking boat's rank in ③."
+        "resultNotSplit": "The results in ④ are not split by the attacking boat's rank in ③.",
+        "fellBack": "Only {{n}} races at {{venue}} (excluding refunds) have the same combination, so these figures gather races from all venues",
+        "shareOfNoRefund": "{{p}} of {{of}} (excluding refunds)"
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
       "feedback": {

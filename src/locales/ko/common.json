@@ -1343,10 +1343,10 @@
         "keySimilar": "유사 레이스",
         "keyCompare": "점선: {{name}} {{n}}건",
         "cmpGrade": "등급 무관 {{kind}}(다른 조건은 동일)",
-        "cmpRound": "라운드 무관(다른 조건은 동일)",
+        "cmpRound": "{{round}} 외도 포함(다른 조건은 동일)",
         "cmpSame": "조건이 같은 과거 레이스 전체",
         "tip": "{{boat}}번 보트: {{n}}건 중 {{hits}}건({{pct}}, 변동 폭 {{lo}}~{{hi}}%)",
-        "tipNational": "전국 {{p}}",
+        "tipNational": "전국 전체 레이스 {{p}}",
         "few": "{{n}}건이면 비율이 흔들리기 쉬움(변동 폭이 넓음)",
         "allShown": "조건이 같은 과거 레이스 전체를 표시하고 있음",
         "techHeading": "어떻게 결정됐나?",
@@ -1687,7 +1687,9 @@
         "hintRefShort": "{{venue}} 선수 평균",
         "slitRefLegend": "점선 = {{name}}",
         "slitFaster": "빠름 →",
-        "resultNotSplit": "④의 결과는 ③의 공격하는 보트 순위로는 나누지 않았다."
+        "resultNotSplit": "④의 결과는 ③의 공격하는 보트 순위로는 나누지 않았다.",
+        "fellBack": "{{venue}}에서 같은 조합의 레이스(반환 제외)는 {{n}}건으로 적어서 전국에서 모았습니다",
+        "shareOfNoRefund": "{{of}}(반환 제외)의 {{p}}"
       },
       "barLabel": "{{boat}}번 보트 {{p}} {{n}}건",
       "feedback": {

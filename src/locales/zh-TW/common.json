@@ -1343,10 +1343,10 @@
         "keySimilar": "相似比賽",
         "keyCompare": "虛線：{{name}}{{n}}場",
         "cmpGrade": "不限等級的{{kind}}（其他條件相同）",
-        "cmpRound": "不限階段（其他條件相同）",
+        "cmpRound": "也包含{{round}}以外（其他條件相同）",
         "cmpSame": "條件一致的全部過去比賽",
         "tip": "{{boat}}號艇：{{n}}場中{{hits}}場（{{pct}}，波動範圍{{lo}}〜{{hi}}%）",
-        "tipNational": "全國{{p}}",
+        "tipNational": "全國全部比賽{{p}}",
         "few": "{{n}}場時比例容易波動（波動範圍較大）",
         "allShown": "已列出條件一致的全部過去比賽",
         "techHeading": "怎麼決勝的？",
@@ -1687,7 +1687,9 @@
         "hintRefShort": "{{venue}}全體選手的平均",
         "slitRefLegend": "虛線＝{{name}}",
         "slitFaster": "較快 →",
-        "resultNotSplit": "④的結果未依③進攻艇的排名區分。"
+        "resultNotSplit": "④的結果未依③進攻艇的排名區分。",
+        "fellBack": "{{venue}}相同組合的比賽（不含退款）只有{{n}}場，因此改從全國收集",
+        "shareOfNoRefund": "{{of}}（不含退款）的{{p}}"
       },
       "barLabel": "{{boat}}號艇 {{p}} {{n}}場",
       "feedback": {
