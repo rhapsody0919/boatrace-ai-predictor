@@ -279,6 +279,26 @@ export default function SimilarRacesTab({
 
   return (
     <div className="af-tab-similar">
+      <h3 className="af-h3">{t(`${k}.heading`)}</h3>
+      {/* 並べ方は1行に縮め、全文は折りたたみに（承認モック sonar-tab v3） */}
+      <p className="af-sub">
+        {layerKind(sim.conditions, t)
+          ? t(`${k}.ledeShortKind`, {
+              kind: layerKind(sim.conditions, t),
+              n: fmtCount(sim.n_layer ?? all.length),
+            })
+          : t(`${k}.ledeShort`, { n: fmtCount(sim.n_layer ?? all.length) })}
+      </p>
+      <details className="af-details">
+        <summary>{t(`${k}.ledeFull`)}</summary>
+        <NoteList
+          className="is-lede"
+          texts={[
+            `${describeAnalogyLayer(sim.conditions, t, { count: sim.n_layer })}${t(`${k}.ledeTail`)}`,
+          ]}
+        />
+      </details>
+      {/* 件数のスライダーは見出し・並べ方の説明の後（UI/UX レビュー: 操作がどのまとまりのものか分かるように） */}
       <div className="af-slider">
         <div className="af-ctl-row af-between">
           <label className="af-lbl" htmlFor="af-sim-slider">
@@ -321,25 +341,6 @@ export default function SimilarRacesTab({
           </p>
         )}
       </div>
-      <h3 className="af-h3">{t(`${k}.heading`)}</h3>
-      {/* 並べ方は1行に縮め、全文は折りたたみに（承認モック sonar-tab v3） */}
-      <p className="af-sub">
-        {layerKind(sim.conditions, t)
-          ? t(`${k}.ledeShortKind`, {
-              kind: layerKind(sim.conditions, t),
-              n: fmtCount(sim.n_layer ?? all.length),
-            })
-          : t(`${k}.ledeShort`, { n: fmtCount(sim.n_layer ?? all.length) })}
-      </p>
-      <details className="af-details">
-        <summary>{t(`${k}.ledeFull`)}</summary>
-        <NoteList
-          className="is-lede"
-          texts={[
-            `${describeAnalogyLayer(sim.conditions, t, { count: sim.n_layer })}${t(`${k}.ledeTail`)}`,
-          ]}
-        />
-      </details>
       <SimilarSonar
         neighbors={nb}
         selectedBoat={boat}
