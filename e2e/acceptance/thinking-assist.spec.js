@@ -315,11 +315,13 @@ test.describe("龍神ソナーへの導線", () => {
     await expect(page).not.toHaveURL(/\/assist/);
   });
 
-  test("[D-36 (8)] ソナーを表示できない端末では導線を出さない", async ({
+  // 龍神ソナーは公開済み（ANALOGY_FINDER_PUBLIC=true）。D-36 (8) の「非公開の間は表示できる端末だけ」は終わったので、
+  // 内部確認の印が無い端末でも導線を出す（2026-10-09 オーケストレーター判断）
+  test("[D-36 (8)] ソナーの公開後は、内部確認の印が無い端末でも導線を出す", async ({
     page,
   }) => {
     await openAssist(page); // analogy-finder-preview の印を立てない
-    await expect(sonarLink(page)).toHaveCount(0);
+    await expect(sonarLink(page)).toBeVisible();
   });
 });
 
