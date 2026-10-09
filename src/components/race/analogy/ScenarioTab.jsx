@@ -92,22 +92,25 @@ export default function ScenarioTab({
     setSlit("any");
     setFirst(null);
   };
-  // ②の見出しへ戻す（畳む・開くで画面の位置が跳ばないように。③が②のすぐ下に来る）
-  const toSlit = () =>
-    requestAnimationFrame(() =>
+  // ②の見出しへ戻し、押したボタンが消えても次に押す所へフォーカスを移す（畳む・開くで画面の位置が跳ばないように。
+  // ③が②のすぐ下に来る。レビュー指摘: 押したボタンごと消えてフォーカスが失われていた）
+  const toSlit = (focusId) =>
+    requestAnimationFrame(() => {
       document
         .getElementById("af-scn-s2")
-        ?.scrollIntoView({ block: "start", behavior: "smooth" }),
-    );
+        ?.scrollIntoView({ block: "start", behavior: "smooth" });
+      document.getElementById(focusId)?.focus({ preventScroll: true });
+    });
   const chooseForm = (f) => {
     setSlit(f);
     setFirst(null);
     setSlitOpen(false);
-    toSlit();
+    // 「どの形でも」は畳まないので、画面を動かさない
+    if (f !== "any") toSlit("af-slit-change");
   };
   const openSlit = () => {
     setSlitOpen(true);
-    toSlit();
+    toSlit(`af-pat-${slit}`);
   };
   const agreement = today?.exh_agreement ?? null;
   const todayEntry = exhibition?.entry_type ?? null;

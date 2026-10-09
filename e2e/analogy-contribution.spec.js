@@ -1254,6 +1254,48 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       );
     });
 
+    test("展開シナリオの P3（2026-10-09 レビュー）: 畳む・開く後のフォーカス、空の区切り線・決まり手の見出し、①の列の読み上げ", async ({
+      page,
+    }) => {
+      // モーターの値が無く（順位が分からない）、展示前なら、③に今日の区分の行は無い
+      const facts = analogyV16Facts();
+      facts.today.items.motor_2.values = [null, null, null, null, null, null];
+      await setup(page, { facts });
+      const base = analogyV16Scenario();
+      const kado = structuredClone(base.scenario.attack.kado);
+      // 勝ちはあるが、まくり・まくり差し・差しは0（すべて抜き・恵まれ）
+      for (const n of ["makuri", "makurizashi", "sashi"])
+        kado.all[`att_${n}_of_win`] = [0, kado.all.att_win[0]];
+      const json = {
+        ...base,
+        scenario: {
+          ...base.scenario,
+          attack: { ...base.scenario.attack, kado },
+        },
+      };
+      await page.route("**/api/analogy/scenario/**", (route) =>
+        route.fulfill({ json }),
+      );
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      // ①の行は読み上げで列の名前が付く
+      await expect(
+        section.getByRole("button", { name: /^枠なり.*割合.*①の1着率/ }),
+      ).toBeVisible();
+      await section.getByRole("button", { name: "展示前（出走表）" }).click();
+      await section.locator("#af-pat-kado").click();
+      // 押したボタンが消えても、フォーカスは「変える」に移る
+      await expect(section.locator("#af-slit-change")).toBeFocused();
+      const s3 = section.locator("#af-scn-s3");
+      await expect(s3.getByTestId("analogy-attack-box").first()).toBeVisible();
+      await expect(s3.locator(".af-atk-sep")).toHaveCount(0);
+      await expect(s3).not.toContainText("回の決まり手");
+      // 「変える」で開くと、選んでいた形にフォーカス
+      await section.locator("#af-slit-change").click();
+      await expect(section.locator("#af-pat-kado")).toBeFocused();
+    });
+
     test("七角形の表で見た3号艇の展示タイムは、3号艇を一番上で選んだときと同じ数字（2026-10-09 ユーザー指摘）", async ({
       page,
     }) => {
