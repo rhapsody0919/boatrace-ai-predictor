@@ -1467,7 +1467,10 @@
 .ta-guide {
   position: fixed;
   left: 50%;
-  bottom: calc(var(--spacing-4) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(
+    var(--ta-guide-bottom, 0px) + var(--spacing-4) +
+      env(safe-area-inset-bottom, 0px)
+  );
   transform: translateX(-50%);
   z-index: 900;
   width: min(400px, calc(100vw - 32px));
