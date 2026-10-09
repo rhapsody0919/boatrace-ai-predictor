@@ -188,8 +188,13 @@ export default function ScenarioTab({
     </span>
   );
   // 棒の左の札: 級・件数（艇ごとの範囲が無い・級をそろえない範囲は、1号艇の範囲の件数）
+  // その艇の級でそろえた値が無い艇（朝のバッチの前の版など）は、1号艇の範囲の値に戻るので、その艇の級を書かない
+  // （レビュー指摘: 札と中身が食い違っていた）
+  const ownScope = [1, 2, 3, 4, 5, 6].map(
+    (b) => b === 1 || Boolean(data.boats?.[b]?.data?.cells?.[entry]?.[slit]),
+  );
   const boatTags = cur.map((r, i) =>
-    classScope
+    classScope && ownScope[i]
       ? t(`${k}.boatTag`, { cls: cls[i] ?? "—", n: fmtCount(r[0]) })
       : t(`${k}.boatTagAll`, { n: fmtCount(r[0]) }),
   );
@@ -276,7 +281,7 @@ export default function ScenarioTab({
           />
         </div>
         <div className="af-scn-blk">
-          <h4 className="af-h4">{t(`${k}.techHeading`)}</h4>
+          <h4 className="af-h4">{t(`${k}.techHeadingShort`)}</h4>
           <TechniqueBars
             counts={c.technique}
             n={c.n}
@@ -355,7 +360,7 @@ export default function ScenarioTab({
           ))}
         </div>
       </div>
-      <ScopeCombo scopeKey={scopeKey} />
+      <ScopeCombo scopeKey={scopeKey} chips />
       {/* 既定で全国に替えたときの理由（spec「数えるレース」。タブ1と同じ1行。範囲を選び直したら API が付けない） */}
       {data.vc_fell_back !== null && data.vc_fell_back !== undefined && (
         <p className="af-sub">
@@ -542,6 +547,7 @@ export default function ScenarioTab({
           motorRank={motorRank}
           classes={cls}
           boats={data.boats ?? null}
+          classScope={classScope}
         />
       </section>
       <section className="af-scn-sec" id="af-scn-s4">
@@ -553,33 +559,38 @@ export default function ScenarioTab({
       </section>
       {feedback}
       <NotesFold title={t("aiPredictionTab.analogy.notes.methodCaution")}>
-        <h4 className="af-h4">{t(`${k}.scopeMapHeading`)}</h4>
-        <div className="af-tbl">
-          <table className="af-mk-t af-scope-map">
-            <thead>
-              <tr>
-                <th scope="col">{t(`${k}.scopeMapPart`)}</th>
-                <th scope="col">{t(`${k}.scopeMapB1`)}</th>
-                <th scope="col">{t(`${k}.scopeMapOwn`)}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                ["attOwn", false],
-                ["attB1", true],
-                ["barB1", true],
-                ["barOwn", false],
-                ["rest", true],
-              ].map(([id, b1]) => (
-                <tr key={id}>
-                  <th scope="row">{t(`${k}.scopeMap.${id}`)}</th>
-                  <td>{b1 ? "○" : ""}</td>
-                  <td>{b1 ? "" : "○"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* 級をそろえない範囲（会場の全レース等）では、どの数字も同じ集めたレースなので対応の表を出さない */}
+        {classScope && (
+          <>
+            <h4 className="af-h4">{t(`${k}.scopeMapHeading`)}</h4>
+            <div className="af-tbl">
+              <table className="af-mk-t af-scope-map">
+                <thead>
+                  <tr>
+                    <th scope="col">{t(`${k}.scopeMapPart`)}</th>
+                    <th scope="col">{t(`${k}.scopeMapB1`)}</th>
+                    <th scope="col">{t(`${k}.scopeMapOwn`)}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["attOwn", false],
+                    ["attB1", true],
+                    ["barB1", true],
+                    ["barOwn", false],
+                    ["rest", true],
+                  ].map(([id, b1]) => (
+                    <tr key={id}>
+                      <th scope="row">{t(`${k}.scopeMap.${id}`)}</th>
+                      <td>{b1 ? "○" : ""}</td>
+                      <td>{b1 ? "" : "○"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
         <NoteList
           title={t(`aiPredictionTab.analogy.notes.caution`)}
           texts={[
@@ -587,6 +598,7 @@ export default function ScenarioTab({
             t(`${k}.resultNotSplit`),
           ]}
         />
+        <h4 className="af-h4">{t(`${k}.notesHintHeading`)}</h4>
         <SlitHintNotes
           courseSt={data.course_st}
           version={version}

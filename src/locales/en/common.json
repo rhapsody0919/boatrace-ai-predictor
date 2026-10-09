@@ -1031,7 +1031,10 @@
           "toCard": "See Boat {{boat}}'s bars",
           "collect": "Collected races: for each boat, races with that boat's class matching ({{scope}}).",
           "collectAll": "Collected races: for each boat, {{scope}}."
-        }
+        },
+        "comboChip": "{{cls}}×{{n}}",
+        "comboShort": "Same combination as today, Boat {{boat}} is {{cls}}{{round}}",
+        "comboFreeShort": "Lanes other than Boat {{boat}} do not matter"
       },
       "outlook": {
         "summary": "AI view (supplementary): with other items held equal, which items matter",
@@ -1477,7 +1480,7 @@
         "ledeShort": "1st → 2nd → 3rd. Band width = number of races; tap a band for the count",
         "howTo": "How to read the finish flow",
         "drawAll": "Rare flows are drawn faintly too",
-        "howToPreview": "Filter by winner, faded bands, 2nd→3rd bands"
+        "howToPreview": "Faded bands, 2nd→3rd bands, filter by winner"
       },
       "listComma": ", ",
       "scenario": {
@@ -1563,7 +1566,7 @@
           "flat03": "Spread of avg. ST across the 6 (latest − earliest) is within 0.03s"
         },
         "hintNone": "Today's order matches none of the conditions",
-        "hintFoot": "Based on wakunari races in {{scope}} ({{n}}; races with flying or late starts and races without an average ST for all 6 boats are excluded, so the count can differ slightly from \"Any shape\" in ②). {{few}}Even when a condition matches, it misses more often than not (a clue, not a deciding factor). Tap to select that shape in ② below",
+        "hintFoot": "Based on wakunari races in {{scope}} ({{n}}; races with flying or late starts and races without an average ST for all 6 boats are excluded, so the count can differ slightly from \"Any shape\" in ②). {{few}}Even when a condition matches, it misses more often than not (a clue, not a deciding factor).",
         "hintBadge": "Today's avg. ST matches",
         "forms": {
           "any": {
@@ -1702,7 +1705,11 @@
           "tblB1": "Boat 1 Nige ({{cls}} races)",
           "sameRacesNige": "Boat 1 Nige in the same {{n}} races: {{p}}. The race count differs from the table below, so the value differs slightly",
           "footStAll": "Based only on races with avg. ST for all 6, so counts may be slightly lower than in ④",
-          "footTie": "Tied boats take the higher rank"
+          "footTie": "Tied boats take the higher rank",
+          "tblAttAll": "Boat {{b}} won",
+          "tblB1All": "Boat 1 Nige",
+          "legendNoRef": "Small numbers = races in the band. few = under 50 races (swings easily)",
+          "foldPreviewNoRef": "Exhibition time / motor × top-middle-bottom"
         },
         "entryFew": "{{n}} —",
         "entryColType": "Entry",
@@ -1760,7 +1767,9 @@
           "barB1": "④ Win / top 3 (Boat 1)",
           "barOwn": "④ Win / top 3 (Boats 2–6)",
           "rest": "④ Techniques, manshu, flow, trifectas"
-        }
+        },
+        "techHeadingShort": "Winning technique",
+        "notesHintHeading": "Start clues"
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
       "feedback": {

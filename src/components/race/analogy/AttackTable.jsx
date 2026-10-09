@@ -47,8 +47,15 @@ function AnswerBar({ label, pair, color, main = false }) {
 }
 
 /** 範囲の札（どのレースから出した数字か: 艇番・級・件数） */
-function ScopeTag({ boat, cls, n }) {
+function ScopeTag({ boat, cls, n, classScope = true }) {
   const { t } = useTranslation();
+  // 級をそろえない範囲（会場の全レース等）は級を書かない（レビュー指摘）
+  if (!classScope)
+    return (
+      <span className="af-scope-tag">
+        {t(`${k}.scopeTagAll`, { n: fmtCount(n) })}
+      </span>
+    );
   return (
     <span className="af-scope-tag">
       <BoatBadge n={boat} size="xs" />
@@ -149,7 +156,7 @@ function BandTable({ title, who, rows, keyName }) {
  * あればその値、無ければ1号艇の範囲の値。区分の表は「区分で見る」に畳み、今日の区分の2行だけ常に出す
  * @param {{attack: object|null, refAttack: object|null, refName: string|null, slit: string, waku: boolean,
  *   exhibitionStage: boolean, exhRank: (number|null)[]|null, motorRank: (number|null)[], classes: (string|null)[],
- *   boats?: object|null}} props
+ *   boats?: object|null, classScope?: boolean}} props classScope は級をそろえる範囲（VC・NC・NCR）か
  */
 export default function AttackTable({
   attack,
@@ -162,6 +169,7 @@ export default function AttackTable({
   motorRank,
   classes,
   boats = null,
+  classScope = true,
 }) {
   const { t } = useTranslation();
   const [tip, setTip] = useState({});
@@ -222,7 +230,7 @@ export default function AttackTable({
             {iBtn("att", t(`${k}.atk.attackerAria`))}
           </p>
           {tip.att && (
-            <p className="af-tip">
+            <p className="af-scn-tip">
               {t(`${k}.attackerNote`)}
               {t("aiPredictionTab.analogy.listComma")}
               {t(`${k}.attackNoRecord`)}
@@ -233,6 +241,7 @@ export default function AttackTable({
               boat={scopeBoat}
               cls={classes?.[scopeBoat - 1]}
               n={all.n}
+              classScope={classScope}
             />
             <AnswerBar
               label={t(`${k}.atk.attWin`, { b: att })}
@@ -275,7 +284,9 @@ export default function AttackTable({
             />
             {wins > 0 && (
               <>
-                <p className="af-foot">{t(`${k}.atk.wins`, { n: wins })}</p>
+                <p className="af-foot">
+                  {t(`${k}.atk.wins`, { n: fmtCount(wins) })}
+                </p>
                 <div className="af-atk-stack" aria-hidden="true">
                   {techs.map((n) => (
                     <span
@@ -316,7 +327,12 @@ export default function AttackTable({
         </p>
       )}
       <div className="af-atk-box" data-testid="analogy-attack-box">
-        <ScopeTag boat={1} cls={classes?.[0]} n={F.all.n} />
+        <ScopeTag
+          boat={1}
+          cls={classes?.[0]}
+          n={F.all.n}
+          classScope={classScope}
+        />
         <AnswerBar
           label={t(`${k}.atk.b1Nige`)}
           pair={F.all.b1_nige}
@@ -340,11 +356,6 @@ export default function AttackTable({
               what={t(`${k}.atk.nigeShort`)}
               refName={t(`${k}.atk.refShort`)}
             />
-            <p className="af-foot af-atk-inote">
-              {iBtn("b1exh", t(`${k}.atk.b1ExhAria`))}
-              {t(`${k}.atk.b1ExhShort`)}
-            </p>
-            {tip.b1exh && <p className="af-tip">{t(`${k}.b1ExhNote`)}</p>}
           </>
         )}
         <TodayRow
@@ -356,20 +367,35 @@ export default function AttackTable({
           what={t(`${k}.atk.nigeShort`)}
           refName={t(`${k}.atk.refShort`)}
         />
+        {/* 1号艇の展示タイムの割り引きは展示前も出す（spec C-4 Q-E。レビュー指摘: 展示前に消えていた） */}
+        <p className="af-foot af-atk-inote">
+          {iBtn("b1exh", t(`${k}.atk.b1ExhAria`))}
+          {t(`${k}.atk.b1ExhShort`)}
+        </p>
+        {tip.b1exh && <p className="af-scn-tip">{t(`${k}.b1ExhNote`)}</p>}
       </div>
       <ScenarioFold
         title={t(`${k}.atk.foldTitle`)}
-        preview={t(`${k}.atk.foldPreview`)}
+        preview={
+          refName ? t(`${k}.atk.foldPreview`) : t(`${k}.atk.foldPreviewNoRef`)
+        }
       >
         <p className="af-foot">
-          {t(`${k}.atk.legend`, { name: refName ?? "—" })}
+          {/* 比べる相手（全国）が無い範囲では ┊ の説明を出さない（ファン評価: 「┊＝—の率」と欠けて出た） */}
+          {refName
+            ? t(`${k}.atk.legend`, { name: refName })
+            : t(`${k}.atk.legendNoRef`)}
         </p>
         {att && (
           <BandTable
-            title={t(`${k}.atk.tblAtt`, {
-              b: att,
-              cls: classes?.[scopeBoat - 1] ?? "—",
-            })}
+            title={
+              classScope
+                ? t(`${k}.atk.tblAtt`, {
+                    b: att,
+                    cls: classes?.[scopeBoat - 1] ?? "—",
+                  })
+                : t(`${k}.atk.tblAttAll`, { b: att })
+            }
             who={boatName(att)}
             keyName="att_win"
             rows={[
@@ -389,7 +415,11 @@ export default function AttackTable({
           </p>
         )}
         <BandTable
-          title={t(`${k}.atk.tblB1`, { cls: classes?.[0] ?? "—" })}
+          title={
+            classScope
+              ? t(`${k}.atk.tblB1`, { cls: classes?.[0] ?? "—" })
+              : t(`${k}.atk.tblB1All`)
+          }
           who={boatName(1)}
           keyName="b1_nige"
           rows={[

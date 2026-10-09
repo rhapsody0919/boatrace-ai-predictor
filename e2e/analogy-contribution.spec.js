@@ -1166,6 +1166,60 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await expect(section.locator("#af-pat-kado")).toBeVisible();
     });
 
+    test("展開シナリオの作り直しのレビュー指摘（2026-10-09）: 札と中身・級をそろえない範囲・展示前の注記・類似レースの線", async ({
+      page,
+    }) => {
+      // 3号艇だけ B1 にし、艇ごとの範囲（boats）は無い日（朝のバッチの前の版）にする
+      const facts = analogyV16Facts();
+      facts.today.classes = ["A1", "A1", "B1", "A1", "A1", "A1"];
+      await setup(page, { facts });
+      const base = analogyV16Scenario();
+      let scope = null;
+      await page.route("**/api/analogy/scenario/**", (route) => {
+        const json = { ...base, boats: null };
+        // 若松の全レースのとき、比べる相手（全国の全レース）は固定データに無いので null
+        if (scope) Object.assign(json, { scope, reference: null });
+        return route.fulfill({ json });
+      });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      // 類似レースの .af-tip（件数の案内）に、展開シナリオの (i) の線が付かない
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      const tip = section.locator(".af-tab-similar .af-tip").first();
+      await expect(tip).toBeAttached();
+      expect(
+        await tip.evaluate((el) => getComputedStyle(el).borderLeftWidth),
+      ).toBe("0px");
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      // 3号艇はその艇の範囲の値が無いので、札に級を書かない（中身は1号艇の範囲の値）
+      const tags = section.locator("#af-scn-s4 .af-bar-tag");
+      await expect(tags.nth(0)).toHaveText(/^A1 [\d,]+件$/);
+      await expect(tags.nth(2)).toHaveText(/^[\d,]+件$/);
+      // 展示前でも③の1号艇の箱に展示タイムの割り引きの注記を出す
+      await section.getByRole("button", { name: "展示前（出走表）" }).click();
+      await section.locator("#af-pat-kado").click();
+      const boxes = section.getByTestId("analogy-attack-box");
+      await expect(boxes.last()).toContainText(
+        "1号艇は展示タイムが速く出やすい",
+      );
+      // 級をそろえない範囲（若松の全レース）では札に級を書かず、対応の表も出さない
+      scope = "VA:20";
+      await section
+        .getByRole("group", { name: "集めたレース" })
+        .getByRole("button", { name: /若松の全レース/ })
+        .click();
+      await section.locator("#af-pat-kado").click();
+      await expect(boxes.last().locator(".af-scope-tag")).toHaveText(
+        /^集めたレース [\d,]+件$/,
+      );
+      await expect(section).not.toContainText("どの数字がどのレースからか");
+      // 比べる相手が無いときは、区分の表の凡例に ┊ の説明を出さない（ファン評価: 「┊＝—の率」と欠けて出た）
+      const fold = section.locator(".af-scn-fold", { hasText: "区分で見る" });
+      await fold.locator("summary").click();
+      await expect(fold).toContainText("小さい数字＝その区分の件数。少＝");
+      await expect(fold).not.toContainText("┊＝");
+    });
+
     test("七角形の表で見た3号艇の展示タイムは、3号艇を一番上で選んだときと同じ数字（2026-10-09 ユーザー指摘）", async ({
       page,
     }) => {

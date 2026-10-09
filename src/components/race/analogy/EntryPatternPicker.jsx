@@ -7,6 +7,7 @@ import {
 } from "../../../utils/analogyScenario";
 
 const k = "aiPredictionTab.analogy.scenario";
+const ENTRY_ORDER = ["waku", ...ENTRY_TYPES.filter((e) => e !== "waku")];
 
 /**
  * ①進入はどうなる？（spec C-1、承認モック mock-scenario-v1）。型ごとに出現率（棒）と1号艇の1着率（30件未満は
@@ -67,7 +68,8 @@ export default function EntryPatternPicker({
         <span>{t(`${k}.entryColShare`)}</span>
         <span>{t(`${k}.entryColB1`)}</span>
       </div>
-      {ENTRY_TYPES.flatMap((e) =>
+      {/* 枠なりを先頭に（承認モック mock-scenario-v1。多くのレースが枠なり） */}
+      {ENTRY_ORDER.flatMap((e) =>
         e === "mae" && openMae
           ? [row(e), ...MAE_SUB.map((s) => row(s, true))]
           : [row(e)],

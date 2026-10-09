@@ -2272,7 +2272,8 @@ button.af-bar {
   font-weight: var(--font-weight-bold);
 }
 
-.af-tip {
+/* (i) で開く説明（類似レースの .af-tip とは別。2026-10-09 レビュー指摘: 同じ名前で類似レースに線が出た） */
+.af-scn-tip {
   margin: 0;
   padding-left: var(--spacing-2);
   border-left: 3px solid var(--border-hairline);
@@ -2382,8 +2383,15 @@ button.af-bar {
   white-space: nowrap;
 }
 
+/* 札（艇番・級・件数）は折り返さない（ファン評価: 4桁の件数で A2 の行だけ2行になった） */
 .af-tab-scenario .af-bar {
-  grid-template-columns: 7.2em minmax(0, 1fr) auto;
+  grid-template-columns: 9.5em minmax(0, 1fr) auto;
+}
+
+.af-tab-scenario .af-bar > span:first-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .af-tab-scenario .af-ent-sh {
@@ -2404,4 +2412,12 @@ button.af-bar {
   color: var(--color-success-dark);
   background: none;
   border: var(--border-width-1) solid currentColor;
+}
+
+.af-combo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  margin: 0;
 }

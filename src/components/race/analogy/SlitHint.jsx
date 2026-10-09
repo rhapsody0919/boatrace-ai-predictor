@@ -110,7 +110,7 @@ export default function SlitHint({
       {/* 選んでいる方の説明だけ1行。もう一方は (i)（UI/UX レビュー） */}
       <p className="af-foot">{t(`${k}.hintSrcDef.${version}`)}</p>
       {tip && (
-        <p className="af-tip">
+        <p className="af-scn-tip">
           {t(`${k}.hintSrcDef.${version === "course" ? "overall" : "course"}`)}
         </p>
       )}
