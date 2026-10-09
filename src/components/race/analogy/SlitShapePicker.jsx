@@ -99,8 +99,8 @@ export function SlitChosen({ forms, slit, onChange }) {
       </span>
       <button
         type="button"
+        id="af-slit-change"
         className="af-btn af-pat-change"
-        aria-expanded="false"
         onClick={onChange}
       >
         {t(`${k}.slitChange`)}

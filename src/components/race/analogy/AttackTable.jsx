@@ -15,6 +15,11 @@ const DENT_FORMS = new Set(["d1", "d2", "d3"]);
 const k = "aiPredictionTab.analogy.scenario";
 const BANDS = ["top", "mid", "low"];
 const rate = (o) => (o && o[1] ? o[0] / o[1] : null);
+// 今日の区分の行が出るか（順位が分からない・区分の値が無いときは出ない。区切り線だけ残さないため。レビュー指摘）
+const hasToday = (rank, by) => {
+  const band = rank ? rankBand(rank) : null;
+  return Boolean(band && by?.[band]);
+};
 const TECH_COLOR = {
   makuri: "#42a5f5",
   makurizashi: "#7e57c2",
@@ -263,7 +268,10 @@ export default function AttackTable({
                 color={SCOPE_LINE[att + 1]}
               />
             )}
-            <p className="af-atk-sep">{t(`${k}.atk.todayOf`, { b: att })}</p>
+            {(hasToday(exhOk && exhRank[att - 1], A.by_exh) ||
+              hasToday(motorRank[att - 1], A.by_motor)) && (
+              <p className="af-atk-sep">{t(`${k}.atk.todayOf`, { b: att })}</p>
+            )}
             {exhOk && (
               <TodayRow
                 label={t(`${k}.atk.exh`)}
@@ -284,7 +292,8 @@ export default function AttackTable({
               what={t(`${k}.atk.attWinShort`, { b: att })}
               refName={t(`${k}.atk.refShort`)}
             />
-            {wins > 0 && (
+            {/* 勝ちがすべて抜き・恵まれのときは、帯も見出しも出さない（レビュー指摘） */}
+            {techs.length > 0 && (
               <>
                 <p className="af-foot">
                   {t(`${k}.atk.wins`, { n: fmtCount(wins) })}
@@ -355,7 +364,10 @@ export default function AttackTable({
           pair={F.all.b1_top2}
           color={SCOPE_LINE[1]}
         />
-        <p className="af-atk-sep">{t(`${k}.atk.todayOf`, { b: 1 })}</p>
+        {(hasToday(exhOk && exhRank[0], F.b1_by_exh) ||
+          hasToday(motorRank[0], F.b1_by_motor)) && (
+          <p className="af-atk-sep">{t(`${k}.atk.todayOf`, { b: 1 })}</p>
+        )}
         {exhOk && (
           <>
             <TodayRow

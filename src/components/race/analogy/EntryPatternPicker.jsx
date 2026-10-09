@@ -44,6 +44,8 @@ export default function EntryPatternPicker({
           )}
         </span>
         <span className="af-num af-ent-sh">
+          {/* 列の見出しは見た目だけ（aria-hidden）なので、読み上げ用に各セルにも付ける（レビュー指摘） */}
+          <span className="af-sr-only">{t(`${k}.entryColShare`)}</span>
           <i
             className="af-ent-bar"
             style={{ width: `${Math.max(2, (share ?? 0) * 44)}px` }}
@@ -52,6 +54,7 @@ export default function EntryPatternPicker({
           {fmtPct(share)}
         </span>
         <span className="af-ent-b1 af-num">
+          <span className="af-sr-only">{t(`${k}.entryColB1`)}</span>
           {x.n >= MIN_SCENARIO ? (
             fmtPct(x.b1_win / x.n)
           ) : (
