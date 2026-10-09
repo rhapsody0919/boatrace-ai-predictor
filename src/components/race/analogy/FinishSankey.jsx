@@ -107,6 +107,8 @@ export default function FinishSankey({ tri, first, onFirst, not1, onNot1 }) {
   });
   return (
     <div className="af-flow">
+      {/* 見方は1行だけ上に、残りは下の折りたたみ（承認モック sonar-tab v3） */}
+      <p className="af-sub">{t(`${k}.ledeShort`)}</p>
       <div className="af-seg" role="group" aria-label={t(`${k}.filter`)}>
         {[
           [false, "all"],
@@ -236,7 +238,10 @@ export default function FinishSankey({ tri, first, onFirst, not1, onNot1 }) {
             ? t(`${k}.firstNote`, { b: first, n: fmtCount(col[0][first]) })
             : t(`${k}.hint`)}
       </p>
-      {!first && <NoteList texts={[t(`${k}.note`)]} />}
+      <details className="af-details">
+        <summary>{t(`${k}.howTo`)}</summary>
+        <NoteList texts={[t(`${k}.drawAll`), t(`${k}.note`)]} />
+      </details>
     </div>
   );
 }

@@ -47,3 +47,15 @@
 2026-10-08 時点で GA4 に登録済みのカスタム定義は `app_language`（ユーザー範囲）だけ。イベントのパラメータは登録しないと、Data API でも画面でも内訳が出ない。登録前の過去分には遡らない。
 
 イベント範囲で登録するもの: `tab_id`・`analogy_stage`・`analogy_tab`・`analogy_control`・`analogy_days_since`（画面の中の声を入れたら `analogy_verdict` も）。`race_id` は値の種類が多く (other) に潰れるので登録しない。
+
+## 画面の中の声（マイグレーション143、モック承認 2026-10-08）
+
+保存先は `analogy_feedback`（`docs/db-migration/143_analogy_feedback.sql`）。1回の回答は最大2行で、1段目を押した時点の `vote` と、「送る」の時点の `detail`。選び直した場合は `detail` の verdict が正。読むのは service_role（hq のまとめ）だけ。自由記述は原文保存・期限なし（2026-10-08 ユーザー決定）。まとめで引用するときはメール・電話番号らしい文字列を伏せる。
+
+| イベント | パラメータ | いつ送るか |
+|---|---|---|
+| `analogy_feedback_view` | race_id | 質問が画面に入ったら1回（押下率の分母） |
+| `analogy_feedback_vote` | race_id, analogy_verdict | 1段目を押したとき（選び直しも毎回） |
+| `analogy_feedback_send` | race_id, analogy_verdict | 2段目の「送る」が保存できたとき |
+
+押下率の注意: GA4 のイベントは Cookie 同意済みの人だけ、DB の行は同意に関係なく保存される。押下率は GA4 の view と vote（同じ母集団）で出し、DB の件数とは混ぜない。

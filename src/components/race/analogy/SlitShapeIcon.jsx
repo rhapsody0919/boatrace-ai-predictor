@@ -4,16 +4,22 @@ import { BOAT_COLORS } from "../../../utils/colors";
 
 /**
  * スリット通過の並び（横から見た図、1艇身≒0.13秒の実縮尺。BOA-635 の SlitScene と同じ描き方。BOA-635 と共用できる形）
- * @param {{st: (number|null)[], height?: number, reference?: (number|null)[]|null}} props
- *   st・reference はコース順の ST（秒）。reference は点線（会場のそのコースの全選手の平均）
+ * @param {{st: (number|null)[], height?: number, reference?: (number|null)[]|null, refLabel?: string|null}} props
+ *   st・reference はコース順の ST（秒）。reference は点線（会場のそのコースの全選手の平均）。
+ *   refLabel を渡すと、図の上に点線の意味と「早い →」を描き込む（今日のスタートの手がかり。承認モック sonar-tab v3）
  */
-export default function SlitShapeIcon({ st, height = 110, reference = null }) {
+export default function SlitShapeIcon({
+  st,
+  height = 110,
+  reference = null,
+  refLabel = null,
+}) {
   const { t } = useTranslation();
   const gid = useId().replace(/:/g, "");
   const n = st.length;
   const W = 260;
   const H = height;
-  const top = 4;
+  const top = refLabel ? 18 : 4;
   const lane = (H - top - 14) / n;
   const L = 64;
   const lineX = W - 14;
@@ -123,6 +129,34 @@ export default function SlitShapeIcon({ st, height = 110, reference = null }) {
           />
         );
       })}
+      {refLabel && (
+        <g pointerEvents="none">
+          <line
+            x1="8"
+            y1="7"
+            x2="8"
+            y2="15"
+            stroke="#e8d089"
+            strokeWidth="1.8"
+            strokeDasharray="3 2"
+          />
+          <text x="13" y="14" fontSize="11" fill="#e8d089">
+            {t("aiPredictionTab.analogy.scenario.slitRefLegend", {
+              name: refLabel,
+            })}
+          </text>
+          <text
+            x={lineX - 4}
+            y="14"
+            fontSize="11"
+            fontWeight="700"
+            textAnchor="end"
+            fill="#ffd2b0"
+          >
+            {t("aiPredictionTab.analogy.scenario.slitFaster")}
+          </text>
+        </g>
+      )}
       <g>
         <line
           x1="12"

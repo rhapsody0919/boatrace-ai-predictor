@@ -2,24 +2,12 @@ import { useId } from "react";
 import { useTranslation } from "react-i18next";
 
 /**
- * 上部の操作（screens S-1 2）: 時点・着順・タブ。着順は展開シナリオのタブでは出さない
+ * 上部の操作（承認モック sonar-tab v3）。内部タブ（差がつく材料／類似レース／展開シナリオ）は一番上に置いて
+ * 下に送っても固定し、着順と時点はその下の1つの小さな箱にまとめる。
+ * 時点は展示前は押せる先が1つしかないので、ボタンではなく1行の札にする（展示後はボタン2つ）
  */
-export default function AnalogyControls({
-  stage,
-  exhibitionReady,
-  stageNote,
-  onStage,
-  target,
-  onTarget,
-  showTarget,
-  tabs,
-  tab,
-  onTab,
-  tabId,
-}) {
+export function AnalogyTabs({ tabs, tab, onTab, tabId }) {
   const { t } = useTranslation();
-  const stageLabel = useId();
-  const targetLabel = useId();
   const k = "aiPredictionTab.analogy";
   const onTabKey = (e) => {
     const i = tabs.indexOf(tab);
@@ -35,35 +23,45 @@ export default function AnalogyControls({
     document.getElementById(tabId(next))?.focus();
   };
   return (
-    <>
-      <div className="af-ctl-row">
-        <span className="af-lbl" id={stageLabel}>
-          {t(`${k}.stage.label`)}
-        </span>
-        <div
-          className="af-seg"
-          role="group"
-          aria-labelledby={stageLabel}
-          data-af-control="stage"
+    <div
+      className="af-tabs"
+      role="tablist"
+      aria-label={t(`${k}.tabs.label`)}
+      onKeyDown={onTabKey}
+    >
+      {tabs.map((name) => (
+        <button
+          key={name}
+          id={tabId(name)}
+          type="button"
+          role="tab"
+          aria-selected={tab === name}
+          aria-controls={`${tabId(name)}-panel`}
+          tabIndex={tab === name ? 0 : -1}
+          onClick={() => onTab(name)}
         >
-          <button
-            type="button"
-            aria-pressed={stage === "racecard"}
-            onClick={() => onStage("racecard")}
-          >
-            {t(`${k}.stage.racecard`)}
-          </button>
-          <button
-            type="button"
-            aria-pressed={stage === "exhibition"}
-            disabled={!exhibitionReady}
-            onClick={() => onStage("exhibition")}
-          >
-            {t(`${k}.stage.exhibition`)}
-          </button>
-        </div>
-      </div>
-      {stageNote && <p className="af-foot">{stageNote}</p>}
+          {t(`${k}.tabs.${name}`)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export default function AnalogyControls({
+  stage,
+  exhibitionReady,
+  stageChipKey,
+  onStage,
+  target,
+  onTarget,
+  showTarget,
+}) {
+  const { t } = useTranslation();
+  const stageLabel = useId();
+  const targetLabel = useId();
+  const k = "aiPredictionTab.analogy";
+  return (
+    <div className="af-ctl-box">
       {showTarget && (
         <div className="af-ctl-row">
           <span className="af-lbl" id={targetLabel}>
@@ -88,27 +86,38 @@ export default function AnalogyControls({
           </div>
         </div>
       )}
-      <div
-        className="af-tabs"
-        role="tablist"
-        aria-label={t(`${k}.tabs.label`)}
-        onKeyDown={onTabKey}
-      >
-        {tabs.map((name) => (
-          <button
-            key={name}
-            id={tabId(name)}
-            type="button"
-            role="tab"
-            aria-selected={tab === name}
-            aria-controls={`${tabId(name)}-panel`}
-            tabIndex={tab === name ? 0 : -1}
-            onClick={() => onTab(name)}
+      {exhibitionReady ? (
+        <div className="af-ctl-row">
+          <span className="af-lbl" id={stageLabel}>
+            {t(`${k}.stage.label`)}
+          </span>
+          <div
+            className="af-seg"
+            role="group"
+            aria-labelledby={stageLabel}
+            data-af-control="stage"
           >
-            {t(`${k}.tabs.${name}`)}
-          </button>
-        ))}
-      </div>
-    </>
+            <button
+              type="button"
+              aria-pressed={stage === "racecard"}
+              onClick={() => onStage("racecard")}
+            >
+              {t(`${k}.stage.racecard`)}
+            </button>
+            <button
+              type="button"
+              aria-pressed={stage === "exhibition"}
+              onClick={() => onStage("exhibition")}
+            >
+              {t(`${k}.stage.exhibition`)}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="af-stage-chip" data-testid="analogy-stage-chip">
+          {t(`${k}.stage.${stageChipKey}`)}
+        </p>
+      )}
+    </div>
   );
 }

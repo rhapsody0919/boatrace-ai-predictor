@@ -725,6 +725,11 @@
       "guards": "アナロジー・ファインダー v16（BOA-271）の定義の固定データ。優勝戦・準優勝戦の判定 v2 が固定の82件（scripts/ml/analogy/testdata/stage-rule-v2-cases.json）と一致し、サイトのバッジ（getRaceStageKey）と今節の得点の除外（seriesPoints.js の classifyStage）が同じ判定に従うこと。展示後の類似レースの並べ直し（src/utils/analogySimilarRerank.js）が Python の展示後の厳密な並び（testdata/v16-rerank.json）と順位で完全に一致すること"
     },
     {
+      "script": "verify-sonar-tab.js",
+      "tier": "ci",
+      "guards": "龍神ソナーの別タブ化（BOA-271、承認モック sonar-tab v3）。移す前の投稿のリンク ?tab=aiPrediction&sonar=… がソナーのタブで開き、sonar 無し・不正な値・機能フラグを戻したときは AI予想のままであること。GA4 の page_view の URL から ?sonar= を除くこと。ソナーの輪が外周より内側で、ラベルが重ならない間隔（24以上）で3本までであること"
+    },
+    {
       "script": "verify-analogy-v16.js",
       "tier": "manual",
       "guards": "アナロジー・ファインダー v16（BOA-271）の前日の出力: 出走表の段が締切前にそろった割合（99%）、6艇の展示タイムがそろったレースの展示後の段が締切前にそろった割合（95%）。--cleanup で Storage の7日より前の similar/ を消す",
@@ -740,6 +745,11 @@
       "script": "verify-analogy-v16-snapshots-migration.js",
       "tier": "ci",
       "guards": "マイグレーション133（BOA-271 v16 の analogy_v16_snapshots）を PGlite に適用し、RLS 有効・anon/authenticated は SELECT のみ・service_role は書ける・主キーの重複は ON CONFLICT DO NOTHING で1行・段ごとの列の約束（CHECK）・races の外部キー・冪等・ロールバックを確かめる"
+    },
+    {
+      "script": "verify-analogy-feedback-migration.js",
+      "tier": "ci",
+      "guards": "マイグレーション143（龍神ソナーの画面の中の声 analogy_feedback）を PGlite に適用し、RLS 有効・anon は INSERT のみ（SELECT・UPDATE・DELETE 不可）・同じブラウザ×レース×種類は1行・列挙値と一言の長さと理由の置き場所の CHECK・races の外部キー・created_at の上書き・同じブラウザ24時間40行の連投制限・冪等・ロールバックを確かめる"
     },
     {
       "script": "verify-analogy-storage.js",

@@ -109,12 +109,13 @@ async function setup(page, { preview = true, facts = null } = {}) {
   return calls;
 }
 
-async function openAiTab(page, n = 1) {
+// 龍神ソナーは基本情報と AI予想の間の独立タブ（2026-10-08、承認モック sonar-tab v3）
+async function openSonarTab(page, n = 1) {
   await page.goto(`/race/${DATE}-09-${String(n).padStart(2, "0")}`);
   await expect(page.getByText("テスト選手1").first()).toBeVisible({
     timeout: 20000,
   });
-  await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
+  await page.locator(".race-tabs-btn", { hasText: "龍神ソナー" }).click();
 }
 
 const sectionOf = (page) => page.getByRole("region", { name: /龍神ソナー/ });
@@ -125,7 +126,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
   }) => {
     // 2026-10-08 ユーザー決定で公開。戻すときは featureFlags.js の ANALOGY_FINDER_PUBLIC を false にする
     const calls = await setup(page, { preview: false });
-    await openAiTab(page);
+    await openSonarTab(page);
     await expect(sectionOf(page)).toBeVisible();
     await expect.poll(() => calls.facts).toBeGreaterThan(0);
   });
@@ -138,7 +139,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       window.gtag = (...args) => window.__events.push(args);
     });
     await setup(page);
-    await openAiTab(page);
+    await openSonarTab(page);
     const section = sectionOf(page);
     await expect(section.getByRole("tablist")).toBeVisible();
     await section.getByRole("tab", { name: "類似レース" }).click();
@@ -179,7 +180,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       window.gtag = (...args) => window.__events.push(args);
     });
     await setup(page);
-    await openAiTab(page);
+    await openSonarTab(page);
     const section = sectionOf(page);
     await expect(section.getByRole("tablist")).toBeVisible();
     await section.scrollIntoViewIfNeeded();
@@ -297,14 +298,18 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       window.gtag = (...args) => window.__events.push(args);
     });
     await setup(page);
-    await openAiTab(page);
+    await openSonarTab(page);
     const section = sectionOf(page);
     await section.getByRole("tab", { name: "類似レース" }).click();
     const sector = section.getByRole("button", {
       name: /^1号艇が勝ったレース/,
     });
-    await sector.click(); // 選ぶ
-    await sector.click(); // 外す（押し直し）
+    // 点が密な扇の真ん中は点のタップになる（近い点を並べる）ので、図の外の艇番を押す（承認モック sonar-tab v3）
+    const badge = section.getByTestId("analogy-sonar-boat-1");
+    await badge.click(); // 選ぶ
+    await expect(sector).toHaveAttribute("aria-pressed", "true");
+    await badge.click(); // 外す（押し直し）
+    await expect(sector).toHaveAttribute("aria-pressed", "false");
     await sector.focus();
     await page.keyboard.press("Enter"); // キーボードで選ぶ
     const controls = await page.evaluate(() =>
@@ -315,7 +320,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
     expect(controls).toEqual(["similar_boat", "similar_boat", "similar_boat"]);
   });
 
-  test("?tab=aiPrediction のリンクで開いたら race_tab_initial を1回送る。素の URL では送らない", async ({
+  test("?tab=sonar のリンクで開いたら race_tab_initial を1回送る。素の URL では送らない", async ({
     page,
   }) => {
     await page.addInitScript(() => {
@@ -329,9 +334,9 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
           .filter((e) => e[0] === "event" && e[1] === "race_tab_initial")
           .map((e) => e[2]),
       );
-    await page.goto(`/race/${DATE}-09-01?tab=aiPrediction`);
+    await page.goto(`/race/${DATE}-09-01?tab=sonar`);
     await expect(sectionOf(page)).toBeVisible({ timeout: 20000 });
-    expect(await initials()).toEqual([{ tab_id: "aiPrediction" }]);
+    expect(await initials()).toEqual([{ tab_id: "sonar" }]);
     await page.goto(`/race/${DATE}-09-02`);
     await expect(page.getByText("テスト選手1").first()).toBeVisible({
       timeout: 20000,
@@ -339,12 +344,420 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
     expect(await initials()).toEqual([]);
   });
 
+  test.describe("別タブ化（2026-10-08、承認モック sonar-tab v3）", () => {
+    test("タブは基本情報と AI予想の間。AI予想タブにはソナーを描かず、一番下の案内1行でソナーのタブへ移る", async ({
+      page,
+    }) => {
+      await page.addInitScript(() => {
+        window.__events = [];
+        window.gtag = (...args) => window.__events.push(args);
+      });
+      await setup(page);
+      await page.goto(`/race/${DATE}-09-01?tab=aiPrediction`);
+      const link = page.getByTestId("ai-tab-sonar-link");
+      await expect(link).toBeVisible({ timeout: 20000 });
+      const tabs = await page.locator(".race-tabs-btn").allInnerTexts();
+      expect(tabs.slice(0, 3)).toEqual(["基本情報", "龍神ソナー", "AI予想"]);
+      await expect(sectionOf(page)).toHaveCount(0);
+      await link.click();
+      await expect(sectionOf(page)).toBeVisible();
+      await expect(
+        page.locator(".race-tabs-btn", { hasText: "龍神ソナー" }),
+      ).toHaveAttribute("aria-selected", "true");
+      await expect(page).toHaveURL(/[?&]tab=sonar(&|$)/);
+      const selects = await page.evaluate(() =>
+        window.__events
+          .filter((e) => e[0] === "event" && e[1] === "race_tab_select")
+          .map((e) => e[2].tab_id),
+      );
+      expect(selects).toEqual(["sonar"]);
+    });
+
+    test("移す前の投稿のリンク ?tab=aiPrediction&sonar=similar は、ソナーのタブの類似レースで開く", async ({
+      page,
+    }) => {
+      await setup(page);
+      await page.goto(`/race/${DATE}-09-01?tab=aiPrediction&sonar=similar`);
+      const section = sectionOf(page);
+      await expect(section).toBeVisible({ timeout: 20000 });
+      await expect(
+        section.getByRole("tab", { name: "類似レース" }),
+      ).toHaveAttribute("aria-selected", "true");
+      await expect(page).toHaveURL(/[?&]tab=sonar(&|$)/);
+    });
+
+    test("?sonar= は1回だけ効く。ほかのタブから戻ると内部タブは選び直さない。不正な値は差がつく材料", async ({
+      page,
+    }) => {
+      await setup(page);
+      await page.goto(`/race/${DATE}-09-01?tab=sonar&sonar=scenario`);
+      const section = sectionOf(page);
+      await expect(
+        section.getByRole("tab", { name: "展開シナリオ" }),
+      ).toHaveAttribute("aria-selected", "true");
+      await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+      await page.locator(".race-tabs-btn", { hasText: "龍神ソナー" }).click();
+      await expect(
+        section.getByRole("tab", { name: "差がつく材料" }),
+      ).toHaveAttribute("aria-selected", "true");
+      await page.goto(`/race/${DATE}-09-02?tab=sonar&sonar=odds`);
+      await expect(
+        sectionOf(page).getByRole("tab", { name: "差がつく材料" }),
+      ).toHaveAttribute("aria-selected", "true");
+    });
+
+    test("節の表示はタブを開き直しても同じレースでは1回だけ送る", async ({
+      page,
+    }) => {
+      await page.addInitScript(() => {
+        window.__events = [];
+        window.gtag = (...args) => window.__events.push(args);
+      });
+      await setup(page);
+      await openSonarTab(page);
+      await expect(sectionOf(page).getByRole("tablist")).toBeVisible();
+      await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+      await page.locator(".race-tabs-btn", { hasText: "龍神ソナー" }).click();
+      await expect(sectionOf(page).getByRole("tablist")).toBeVisible();
+      const views = await page.evaluate(
+        () =>
+          window.__events.filter(
+            (e) => e[0] === "event" && e[1] === "analogy_section_view",
+          ).length,
+      );
+      expect(views).toBe(1);
+    });
+
+    test("展開シナリオで全国の全レース・G1 を選んでも、範囲の説明に i18n のキーを出さない（code-review 指摘）", async ({
+      page,
+    }) => {
+      await setup(page);
+      const base = analogyV16Scenario();
+      await page.route("**/api/analogy/scenario/**", (route) => {
+        const scope = new URL(route.request().url()).searchParams.get("scope");
+        return route.fulfill({
+          json: { ...base, scope: scope ?? base.scope, vc_fell_back: null },
+        });
+      });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      const group = section.getByRole("group", { name: "集めたレース" });
+      for (const name of [/全国の全レース/, /G1/]) {
+        await group.getByRole("button", { name }).click();
+        await expect(group.getByRole("button", { name })).toHaveAttribute(
+          "aria-pressed",
+          "true",
+        );
+        await expect(section).not.toContainText("aiPredictionTab.");
+        await expect(section.getByTestId("analogy-scope-combo")).toHaveCount(0);
+      }
+    });
+
+    test("艇を替えると、カードの開閉を「差が大きい」だけ開くに合わせ直す（code-review 指摘）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      // ボート2連率は畳んだ「着順との関係が小さい項目」の中なので外す
+      const cards = section.locator(
+        ".af-cards > [data-testid='analogy-fact-card']",
+      );
+      await expect(cards.first()).toBeVisible();
+      // 開閉を手で全部逆にしてから艇を替える
+      for (const c of await cards.all()) await c.locator("summary").click();
+      await section.locator(".af-boat-btn").nth(1).click();
+      await expect(section.locator(".af-boat-btn").nth(1)).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      for (const c of await cards.all()) {
+        const large =
+          (await c.locator(".af-card-judge").innerText()).trim() ===
+          "差が大きい";
+        expect(await c.evaluate((el) => el.open)).toBe(large);
+      }
+    });
+
+    test("長押しの吹き出しは図の外をタップすると閉じる（code-review 指摘）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      const sonar = section.getByTestId("analogy-sonar");
+      const first = sonar.locator("circle[aria-label]").first();
+      await first.evaluate((el) => el.scrollIntoView({ block: "center" }));
+      const dot = await first.boundingBox();
+      await sonar.dispatchEvent("pointerdown", {
+        pointerType: "touch",
+        clientX: dot.x + dot.width / 2,
+        clientY: dot.y + dot.height / 2,
+        bubbles: true,
+      });
+      const tip = section.getByTestId("analogy-sonar-tip");
+      await expect(tip).toBeVisible();
+      await sonar.dispatchEvent("pointerup", { pointerType: "touch" });
+      await section
+        .getByTestId("analogy-sonar-legend")
+        .dispatchEvent("pointerdown", { pointerType: "touch", bubbles: true });
+      await expect(tip).toHaveCount(0);
+      // 図の外の艇番で扇を選んだときも閉じる（ファン評価2周目 指摘6）
+      await sonar.dispatchEvent("pointerdown", {
+        pointerType: "touch",
+        clientX: dot.x + dot.width / 2,
+        clientY: dot.y + dot.height / 2,
+        bubbles: true,
+      });
+      await expect(tip).toBeVisible();
+      await sonar.dispatchEvent("pointerup", { pointerType: "touch" });
+      await section.getByTestId("analogy-sonar-boat-3").click();
+      await expect(tip).toHaveCount(0);
+    });
+
+    test("英語の展開シナリオで、スリット図の凡例の文字が重ならない（ファン評価1周目 指摘3）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await page.addInitScript(() =>
+        localStorage.setItem("boatai-language", "en"),
+      );
+      await page.setViewportSize({ width: 375, height: 900 });
+      await page.goto(`/en/race/${DATE}-09-01?tab=sonar&sonar=scenario`);
+      const svg = page.locator(".af-hint-pic svg");
+      await expect(svg).toBeVisible({ timeout: 20000 });
+      const overlaps = await svg.evaluate((el) => {
+        const boxes = [...el.querySelectorAll("text")]
+          .map((t) => ({ s: t.textContent, r: t.getBoundingClientRect() }))
+          .filter((b) => /Dotted|Faster|length|Slit/.test(b.s));
+        const hit = (a, b) =>
+          a.left < b.right &&
+          b.left < a.right &&
+          a.top < b.bottom &&
+          b.top < a.bottom;
+        const out = [];
+        for (let i = 0; i < boxes.length; i++)
+          for (let j = i + 1; j < boxes.length; j++)
+            if (hit(boxes[i].r, boxes[j].r))
+              out.push(`${boxes[i].s} / ${boxes[j].s}`);
+        return { n: boxes.length, out };
+      });
+      expect(overlaps.n).toBe(4);
+      expect(overlaps.out).toEqual([]);
+    });
+
+    test("ソナーの点はタップで近い点を最大5件並べ、長押しで吹き出しを出す。点の操作も条件変更に数える", async ({
+      page,
+    }) => {
+      await page.addInitScript(() => {
+        window.__events = [];
+        window.gtag = (...args) => window.__events.push(args);
+      });
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      const sonar = section.getByTestId("analogy-sonar");
+      await expect(sonar).toBeVisible();
+      // 点の1つの上（点は小さいままで、当たり判定だけ指の大きさ）
+      const first = sonar.locator("circle[aria-label]").first();
+      // 上に固定した内部タブ・ヘッダーの下に隠れないよう、点を画面の真ん中へ
+      await first.evaluate((el) => el.scrollIntoView({ block: "center" }));
+      const dot = await first.boundingBox();
+      const at = { x: dot.x + dot.width / 2, y: dot.y + dot.height / 2 };
+      await page.mouse.click(at.x, at.y);
+      const picks = section.getByTestId("analogy-sonar-pick");
+      await expect(picks.first()).toBeVisible();
+      expect(await picks.count()).toBeLessThanOrEqual(5);
+      // マウスを重ねて出た吹き出しを消してから、長押し（指）。0.4秒で吹き出し
+      await page.mouse.move(0, 0);
+      await expect(section.getByTestId("analogy-sonar-tip")).toHaveCount(0);
+      await sonar.dispatchEvent("pointerdown", {
+        pointerType: "touch",
+        clientX: at.x,
+        clientY: at.y,
+        bubbles: true,
+      });
+      await expect(section.getByTestId("analogy-sonar-tip")).toBeVisible();
+      await sonar.dispatchEvent("pointerup", { pointerType: "touch" });
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            window.__events
+              .filter((e) => e[1] === "analogy_control_change")
+              .map((e) => e[2].analogy_control),
+          ),
+        )
+        .toEqual(["similar_point", "similar_point_hold"]);
+    });
+  });
+
+  test.describe("画面の中の声（モック承認 2026-10-08、マイグレーション143）", () => {
+    async function routeFeedback(page, { status = 201, body = "" } = {}) {
+      const posts = [];
+      await page.route("**/rest/v1/analogy_feedback*", (route) => {
+        posts.push(route.request().postDataJSON());
+        return route.fulfill({ status, body });
+      });
+      return posts;
+    }
+    const feedbackOf = (page) => page.getByTestId("analogy-feedback");
+
+    test("1段目で vote、2段目の「送る」で detail を保存し、お礼に替わる。再訪してもお礼だけ", async ({
+      page,
+    }) => {
+      test.setTimeout(120000);
+      await page.addInitScript(() => {
+        window.__events = [];
+        window.gtag = (...args) => window.__events.push(args);
+      });
+      await setup(page);
+      const posts = await routeFeedback(page);
+      await openSonarTab(page);
+      const fb = feedbackOf(page);
+      await expect(
+        fb.getByText("龍神ソナーは予想の材料になりましたか？"),
+      ).toBeVisible();
+      await expect(
+        fb.getByText("匿名で送られ、公開されません。読むのは運営だけです"),
+      ).toBeVisible();
+      await fb.getByRole("button", { name: "物足りない" }).click();
+      await expect.poll(() => posts.length).toBe(1);
+      const [vote] = posts;
+      expect(vote).toMatchObject({
+        kind: "vote",
+        race_id: `${DATE}-09-01`,
+        verdict: "lacking",
+        reasons: null,
+        comment: null,
+        analogy_tab: "facts",
+        lang: "ja",
+      });
+      expect(vote.client_key).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      );
+      await fb.getByLabel("件数が少ない").check();
+      await fb.getByLabel("その他").check();
+      await fb
+        .getByRole("textbox")
+        .fill("  風向きと水位もそろえて数えてほしい  ");
+      await expect(fb.getByText("21 / 200")).toBeVisible();
+      await fb.getByRole("button", { name: "送る" }).click();
+      await expect(
+        fb.getByText("受け取りました。次の改善に使います"),
+      ).toBeVisible();
+      expect(posts).toHaveLength(2);
+      expect(posts[1]).toMatchObject({
+        kind: "detail",
+        verdict: "lacking",
+        reasons: ["few_races", "other"],
+        comment: "風向きと水位もそろえて数えてほしい",
+        client_key: vote.client_key,
+      });
+      const names = await page.evaluate(() =>
+        window.__events
+          .filter((e) => String(e[1]).startsWith("analogy_feedback_"))
+          .map((e) => [e[1], Object.keys(e[2]).sort().join(",")]),
+      );
+      // 「見えた」は IntersectionObserver なので、押す前後どちらに来るかは決まらない
+      expect(names.sort()).toEqual([
+        ["analogy_feedback_send", "analogy_verdict,race_id"],
+        ["analogy_feedback_view", "race_id"],
+        ["analogy_feedback_vote", "analogy_verdict,race_id"],
+      ]);
+
+      await openSonarTab(page); // 開き直す（localStorage は残る）
+      await expect(
+        feedbackOf(page).getByText("受け取りました。次の改善に使います"),
+      ).toBeVisible();
+      await expect(
+        feedbackOf(page).getByRole("button", { name: "なった" }),
+      ).toHaveCount(0);
+    });
+
+    test("「なった」を選び直しても vote は1回だけ。detail は送った時点の評価で、一言が空なら NULL", async ({
+      page,
+    }) => {
+      await setup(page);
+      const posts = await routeFeedback(page);
+      await openSonarTab(page);
+      const fb = feedbackOf(page);
+      await fb.getByRole("button", { name: "物足りない" }).click();
+      await fb.getByRole("button", { name: "なった" }).click();
+      await expect(fb.getByText("どこが使えましたか？（任意）")).toBeVisible();
+      await expect(fb.getByRole("checkbox")).toHaveCount(0);
+      await fb.getByRole("button", { name: "送る" }).click();
+      await expect(
+        fb.getByText("受け取りました。次の改善に使います"),
+      ).toBeVisible();
+      expect(posts.map((p) => [p.kind, p.verdict])).toEqual([
+        ["vote", "lacking"],
+        ["detail", "useful"],
+      ]);
+      expect(posts[1]).toMatchObject({ reasons: null, comment: null });
+    });
+
+    test("同じブラウザの2行目（UNIQUE 違反 23505）は受け取り済みとして扱う", async ({
+      page,
+    }) => {
+      await setup(page);
+      await routeFeedback(page, {
+        status: 409,
+        body: JSON.stringify({
+          code: "23505",
+          message: "duplicate key value violates unique constraint",
+        }),
+      });
+      await openSonarTab(page);
+      const fb = feedbackOf(page);
+      await fb.getByRole("button", { name: "なった" }).click();
+      await fb.getByRole("button", { name: "送る" }).click();
+      await expect(
+        fb.getByText("受け取りました。次の改善に使います"),
+      ).toBeVisible();
+    });
+
+    test("送れなかったら理由を出し、お礼に替えない（握りつぶさない）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await routeFeedback(page, {
+        status: 500,
+        body: JSON.stringify({ code: "P0001", message: "too many" }),
+      });
+      await openSonarTab(page);
+      const fb = feedbackOf(page);
+      await fb.getByRole("button", { name: "なった" }).click();
+      await expect(
+        fb.getByText("送れませんでした。時間をおいてもう一度押してください"),
+      ).toBeVisible();
+      await fb.getByRole("button", { name: "送る" }).click();
+      await expect(
+        fb.getByText("送れませんでした。時間をおいてもう一度押してください"),
+      ).toBeVisible();
+      await expect(
+        fb.getByText("受け取りました。次の改善に使います"),
+      ).toHaveCount(0);
+    });
+
+    test("保存の無いレースでは出さない", async ({ page }) => {
+      await setup(page, {
+        facts: { race_id: `${DATE}-09-01`, status: "not_saved" },
+      });
+      await openSonarTab(page);
+      await expect(sectionOf(page)).toBeVisible();
+      await expect(feedbackOf(page)).toHaveCount(0);
+    });
+  });
+
   test("?analogy=1 を付けて開くと内部確認として節を出し、端末に覚える", async ({
     page,
   }) => {
     await setup(page, { preview: false });
     await page.goto(`/race/${DATE}-09-01?analogy=1`);
-    await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
+    await page.locator(".race-tabs-btn", { hasText: "龍神ソナー" }).click();
     await expect(sectionOf(page)).toBeVisible();
     await expect(sectionOf(page).getByRole("tablist")).toBeVisible();
     expect(
@@ -356,13 +769,13 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
 
   test("予想が無いレースでも節を出す", async ({ page }) => {
     await setup(page);
-    await openAiTab(page, 2);
+    await openSonarTab(page, 2);
     await expect(sectionOf(page)).toBeVisible();
   });
 
   test("保存の無いレースは節の中を1行だけにする", async ({ page }) => {
     await setup(page, { facts: { status: "not_saved" } });
-    await openAiTab(page);
+    await openSonarTab(page);
     const section = sectionOf(page);
     await expect(
       section.getByText("このレースは、表示できるデータがありません"),
@@ -374,7 +787,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
     page,
   }) => {
     const calls = await setup(page);
-    await openAiTab(page);
+    await openSonarTab(page);
     const section = sectionOf(page);
     await section
       .getByText(
@@ -416,7 +829,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       page,
     }) => {
       await setup(page);
-      await openAiTab(page);
+      await openSonarTab(page);
       const w = windSection(page);
       await expect(
         w.getByText(
@@ -425,7 +838,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       ).toBeVisible();
       await expect(
         w.getByText(
-          "この会場の波高は風速とほぼ同じ値で記録されるので、風で数えている",
+          "この会場の波高は風速とほぼ同じ値で記録されるので、風で分けている",
         ),
       ).toBeVisible();
       await expect(w).toContainText("若松で風0〜1mだったレースで");
@@ -435,7 +848,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       page,
     }) => {
       await setup(page, { facts: withWave(300) });
-      await openAiTab(page);
+      await openSonarTab(page);
       const w = windSection(page);
       await expect(
         w.getByText("今日の風・波（風1m・波1cm）に近いレースでは"),
@@ -444,7 +857,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
         "若松で風0〜1m・波0〜2cmだったレースで、各艇番が1着になった割合（300レース）",
       );
       await expect(
-        w.getByText(/風で数えている|風だけで数えています/),
+        w.getByText(/風で分けている|風だけで分けています/),
       ).toHaveCount(0);
     });
 
@@ -452,7 +865,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       page,
     }) => {
       await setup(page, { facts: withWave(299) });
-      await openAiTab(page);
+      await openSonarTab(page);
       const w = windSection(page);
       await expect(
         w.getByText(
@@ -460,7 +873,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
         ),
       ).toBeVisible();
       await expect(
-        w.getByText("波で分けると299件と少ないので、風だけで数えています"),
+        w.getByText("波で分けると299件と少ないので、風だけで分けています"),
       ).toBeVisible();
       await expect(w).toContainText("若松で風0〜1mだったレースで");
     });
@@ -471,7 +884,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
   }) => {
     // 例のレース（若松12R）は展示で3号艇が F.09
     await setup(page);
-    await openAiTab(page);
+    await openSonarTab(page);
     const section = sectionOf(page);
     await section.getByRole("tab", { name: "展開シナリオ" }).click();
     await expect(
@@ -485,22 +898,26 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
   });
 
   test.describe("ファン評価3周目の P3（BOA-778）", () => {
-    test("優勝戦の日の今節の平均着順点のカードは、今日の位置の枠が無いので「枠で囲んだ棒」を言わない", async ({
+    test("優勝戦の日の今節の平均着順点のカードは、今日の位置の枠と件数の行を出さない", async ({
       page,
     }) => {
-      // 例のレース（若松12R）は優勝戦の日
+      // 例のレース（若松12R）は優勝戦の日。「枠で囲んだ棒…」の見方は凡例に1回だけになった（承認モック sonar-tab v3）
       await setup(page);
-      await openAiTab(page);
-      const card = sectionOf(page)
-        .getByRole("article")
-        .filter({ hasText: "今節の平均着順点（前日まで）" });
+      await openSonarTab(page);
+      const cards = sectionOf(page).getByTestId("analogy-fact-card");
+      const card = cards.filter({ hasText: "今節の平均着順点（前日まで）" });
       await expect(card).toBeVisible();
-      await expect(card).not.toContainText("枠で囲んだ棒が今日の位置");
-      const other = sectionOf(page)
-        .getByRole("article")
-        .filter({ hasText: "全国勝率" })
-        .first();
-      await expect(other).toContainText("枠で囲んだ棒が今日の位置");
+      if ((await card.getAttribute("open")) === null)
+        await card.locator("summary").click();
+      await expect(card).toHaveAttribute("open", "");
+      await expect(card.locator(".af-strip-col.is-today")).toHaveCount(0);
+      await expect(card.getByTestId("analogy-today-hit")).toHaveCount(0);
+      const other = cards.filter({ hasText: "全国勝率" }).first();
+      if ((await other.getAttribute("open")) === null)
+        await other.locator("summary").click();
+      await expect(other.locator(".af-strip-col.is-today")).toHaveCount(1);
+      await expect(other.getByTestId("analogy-today-hit")).toBeVisible();
+      await expect(sectionOf(page)).toContainText("今日の順位");
     });
 
     test("説明・注記は話題ごとの見出し＋1文ずつの箇条書きで、12px 以上で出す", async ({
@@ -508,10 +925,18 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
     }) => {
       // BOA-778 で脚注を行に分け、2026-10-06 ユーザー決定で全タブを「見出し＋箇条書き」にした
       await setup(page);
-      await openAiTab(page);
+      await openSonarTab(page);
+      // 割合の出し方・注意は一番下の折りたたみ（承認モック sonar-tab v3）
+      await sectionOf(page)
+        .getByTestId("analogy-notes-fold")
+        .first()
+        .locator("summary")
+        .click();
       const counting = sectionOf(page)
         .locator(".af-notes")
-        .filter({ has: page.locator(".af-notes-h", { hasText: "数え方" }) })
+        .filter({
+          has: page.locator(".af-notes-h", { hasText: "割合の出し方" }),
+        })
         .first();
       await expect(counting.locator("li").first()).toBeVisible();
       await expect
@@ -528,7 +953,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
 
     test("手がかりの件数が②の件数とずれる理由を書く", async ({ page }) => {
       await setup(page);
-      await openAiTab(page);
+      await openSonarTab(page);
       const section = sectionOf(page);
       await section.getByRole("tab", { name: "展開シナリオ" }).click();
       await expect(section).toContainText(
@@ -538,7 +963,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
 
     test("ソナーの回る飾りは扇ではなく細い線", async ({ page }) => {
       await setup(page);
-      await openAiTab(page);
+      await openSonarTab(page);
       const section = sectionOf(page);
       await section.getByRole("tab", { name: "類似レース" }).click();
       const sweep = section.locator(".af-sweep");
@@ -563,7 +988,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
           json: outlook[st === "racecard" ? "racecard" : "exhibition"],
         });
       });
-      await openAiTab(page);
+      await openSonarTab(page);
       const section = sectionOf(page);
       if (stage === "racecard")
         await section.getByRole("button", { name: "展示前（出走表）" }).click();
@@ -634,11 +1059,13 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       const f = analogyV16Facts();
       f.today.items.loc_win.values[0] = 0;
       await setup(page, { facts: f });
-      await openAiTab(page);
+      await openSonarTab(page);
       const card = sectionOf(page)
-        .getByRole("article")
+        .getByTestId("analogy-fact-card")
         .filter({ hasText: "当地勝率" })
         .first();
+      if ((await card.getAttribute("open")) === null)
+        await card.locator("summary").click();
       await expect(card).toContainText("1号艇の今日: —（当地の記録なし）");
     });
 
@@ -646,7 +1073,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       page,
     }) => {
       await setup(page);
-      await openAiTab(page);
+      await openSonarTab(page);
       const section = sectionOf(page);
       await section.getByRole("tab", { name: "類似レース" }).click();
       await section
@@ -669,7 +1096,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await page.route("**/api/analogy/similar/**", (route) =>
         route.fulfill({ json: sim }),
       );
-      await openAiTab(page);
+      await openSonarTab(page);
       const section = sectionOf(page);
       await section.getByRole("tab", { name: "類似レース" }).click();
       await section
@@ -691,7 +1118,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await page.route("**/api/analogy/similar/**", (route) =>
         route.fulfill({ json: sim }),
       );
-      await openAiTab(page);
+      await openSonarTab(page);
       const section = sectionOf(page);
       await section.getByRole("tab", { name: "類似レース" }).click();
       await expect(section).toContainText("（結果が無い1件を除く）");
@@ -714,15 +1141,15 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
             : fell,
         }),
       );
-      await openAiTab(page);
+      await openSonarTab(page);
       const section = sectionOf(page);
       await section.getByRole("tab", { name: "展開シナリオ" }).click();
       const line = section.getByText(
-        /で同じ組み合わせのレースは47件と少ないので、全国で数えています/,
+        /で同じ組み合わせのレースは47件と少ないので、全国から集めています/,
       );
       await expect(line).toBeVisible();
       await section
-        .getByRole("group", { name: "数えるレース" })
+        .getByRole("group", { name: "集めたレース" })
         .getByRole("button")
         .first()
         .click();

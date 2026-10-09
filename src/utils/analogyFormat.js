@@ -93,8 +93,9 @@ export function comboLabel(combo, t) {
 /**
  * 範囲キー → 画面の名前（spec「数えるレース」の表）
  * 例「若松・6艇ともA1」「全国・A1が2艇・A2が1艇・B1が3艇（1号艇はA1）の優勝戦」「若松の全レース」
+ * short: true なら級別の組み合わせを「同じ級別の組み合わせ」と書く（例「桐生・同じ級別の組み合わせ」）
  */
-export function scopeName(key, t) {
+export function scopeName(key, t, { short = false } = {}) {
   const s = parseScopeKey(key);
   const k = "aiPredictionTab.analogy.scopeNames";
   if (s.kind === "VA")
@@ -103,9 +104,13 @@ export function scopeName(key, t) {
     return t(`${k}.venueG1`, { venue: venueLabel(s.venue, t) });
   if (s.kind === "NA") return t(`${k}.nationalAll`);
   const c = comboLabel(s.combo, t);
-  const sel = c.uniform ? "" : t(`${k}.selected`, { boat: s.boat, cls: s.cls });
   const where = s.kind === "VC" ? venueLabel(s.venue, t) : t(`${k}.national`);
-  const base = t(`${k}.combo`, { where, combo: c.text, selected: sel });
+  // 短い表記（範囲の札・凡例・大きい数字の見出し）は「同じ級別の組み合わせ」とだけ書き、中身は札の下の
+  // 絵と1文で示す（承認モック sonar-tab v3）。6艇とも同じ級別のときは元から短いのでそのまま
+  const sel =
+    c.uniform || short ? "" : t(`${k}.selected`, { boat: s.boat, cls: s.cls });
+  const combo = short && !c.uniform ? t(`${k}.sameCombo`) : c.text;
+  const base = t(`${k}.combo`, { where, combo, selected: sel });
   return s.kind === "NCR"
     ? t(`${k}.withRound`, {
         base,

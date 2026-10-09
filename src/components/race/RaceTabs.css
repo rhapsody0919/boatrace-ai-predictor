@@ -113,3 +113,34 @@
   font-size: var(--font-size-sm);
   margin-top: var(--spacing-2);
 }
+
+/* AI予想タブの一番下の「龍神ソナーのタブへ」（2026-10-08、ソナーを別タブにした後の案内） */
+.ai-tab-sonar-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  width: 100%;
+  max-width: 720px;
+  margin: var(--spacing-6) auto 0;
+  padding: var(--spacing-3) var(--spacing-4);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+}
+
+.ai-tab-sonar-link-go {
+  flex: none;
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+}
+
+.ai-tab-sonar-link:focus-visible {
+  outline: var(--border-width-2) solid var(--brand-accent-primary);
+  outline-offset: 2px;
+}

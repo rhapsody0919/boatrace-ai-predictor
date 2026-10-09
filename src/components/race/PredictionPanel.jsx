@@ -69,8 +69,13 @@ import { useRaceData } from "../../hooks/useRaceData";
 import {
   RACE_TAB_PARAM,
   RACE_BOAT_PARAM,
+  RACE_SONAR_PARAM,
+  SONAR_RACE_TAB,
   parseBoatParam,
+  resolveInitialRaceTab,
 } from "../../utils/raceUrlState";
+import { isAnalogyFinderEnabled } from "../../config/featureFlags";
+import AnalogyFinderSection from "./analogy/AnalogyFinderSection";
 import { SocialShareButtons } from "../SocialShareButtons";
 import {
   generatePredictionShareText,
@@ -160,6 +165,9 @@ function PredictionPanel({
     setSearchParams(params, { replace: true });
   };
   const handleFocusBoat = (boat) => setRaceParam(RACE_BOAT_PARAM, boat);
+  // ほかのタブの中からタブを切り替える依頼（AI予想タブの「龍神ソナーのタブへ」）。
+  // RaceTabs は選択を自分で持つので、seq を増やして同じタブへの依頼も届くようにする
+  const [tabRequest, setTabRequest] = useState(null);
   const { toast: aiCopyToast, showToast: showAiCopyToast } = useToast();
   // 結果確定後の共有文に使う、1着の艇の進入コース（早期 return より前に呼ぶ。フックの順序の規則）
   const winnerCourse = useRaceWinnerCourse(
@@ -245,6 +253,7 @@ function PredictionPanel({
     activeMainTab !== "motor" &&
     activeMainTab !== "waku" &&
     activeMainTab !== "aiPrediction" &&
+    activeMainTab !== SONAR_RACE_TAB &&
     activeMainTab !== "oddsList" &&
     // 今節タブも同じ扱い（2026-09-27ユーザー指摘）。6艇の得点率・着順・前検と
     // 選んだ1艇の走りを出しており、下にデータ出走表・枠番傾向が続くと
@@ -404,7 +413,12 @@ function PredictionPanel({
         <RaceTabs
           key={analysisRaceId}
           defaultTabId={defaultMainTab}
-          initialTabId={searchParams.get(RACE_TAB_PARAM)}
+          initialTabId={resolveInitialRaceTab(
+            searchParams.get(RACE_TAB_PARAM),
+            searchParams.get(RACE_SONAR_PARAM),
+            isAnalogyFinderEnabled(),
+          )}
+          requestedTab={tabRequest}
           onActiveTabChange={(tabId) => {
             setActiveMainTab(tabId);
             // 既定のタブではクエリを付けない（素の /race/:raceId を保つ）
@@ -427,6 +441,23 @@ function PredictionPanel({
                 />
               ),
             },
+            // 龍神ソナー（BOA-271）。AI予想タブの下から独立したタブにした（2026-10-08 ユーザー決定、
+            // 承認モック docs/design/analogy-finder/mock/APPROVED.md）。位置は基本情報と AI予想の間。
+            // 公開は機能フラグで切り替える（隠している間はタブごと出さないので API も呼ばない）
+            ...(isAnalogyFinderEnabled()
+              ? [
+                  {
+                    id: SONAR_RACE_TAB,
+                    label: t("raceTabs.sonar"),
+                    content: (
+                      <AnalogyFinderSection
+                        key={analysisRaceId}
+                        raceId={analysisRaceId}
+                      />
+                    ),
+                  },
+                ]
+              : []),
             {
               // 日和には無い龍神レーダー独自の差別化要素。6艇横断で読むものでも
               // あるため前半に置く
@@ -450,6 +481,15 @@ function PredictionPanel({
                     null
                   }
                   isCancelled={isCancelled}
+                  onOpenSonar={
+                    isAnalogyFinderEnabled()
+                      ? () =>
+                          setTabRequest((r) => ({
+                            id: SONAR_RACE_TAB,
+                            seq: (r?.seq ?? 0) + 1,
+                          }))
+                      : null
+                  }
                 />
               ),
             },

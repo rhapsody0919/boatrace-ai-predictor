@@ -2522,7 +2522,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     for (const lang of ["en", "zh-TW"]) {
       await page.goto(`/${lang}/race/2026-09-26-13-04`);
-      await page.locator(".race-tabs-btn").nth(2).click();
+      await page.locator(".race-tabs-btn").nth(3).click(); // 今節（基本情報・龍神ソナー・AI予想・今節）
       const table = page.locator(".rmt-compare");
       await table.waitFor({ timeout: 30000 });
       const over = await table.evaluate((t) => {
@@ -3764,7 +3764,9 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
     );
     // 見出し → レースの前提 → 表 → 注記 → 質問文 → 出典（BOA-770）。
     // 値の未解決を示す undefined/NaN が混入していないことを確認する
-    expect(clipboardText).toMatch(/^## .+\n\n- 日付: \d{4}-\d{2}-\d{2}\n- 締切予定: /);
+    expect(clipboardText).toMatch(
+      /^## .+\n\n- 日付: \d{4}-\d{2}-\d{2}\n- 締切予定: /,
+    );
     expect(clipboardText).toContain("- コピーした時刻: ");
     expect(clipboardText).toContain("| 項目 |");
     expect(clipboardText).toContain("項目の注記:");
@@ -3788,7 +3790,10 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
     await expect(toast).toHaveText("コピーしました");
     const onTop = await toast.evaluate((el) => {
       const r = el.getBoundingClientRect();
-      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      const hit = document.elementFromPoint(
+        r.left + r.width / 2,
+        r.top + r.height / 2,
+      );
       return el.contains(hit);
     });
     expect(onTop).toBe(true);

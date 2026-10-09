@@ -1,16 +1,22 @@
 /**
- * アナロジー・ファインダー節（BOA-271 v16、承認版モック Version 16。screens S-1）。
- * レース詳細の AI予想タブの既存ブロックの下に置く（RaceAiPredictionTab の PredictionBlocks の外）。
+ * 龍神ソナー（BOA-271 v16、承認版モック Version 16。screens S-1）。
+ * レース詳細の独立したタブ「龍神ソナー」の中身（基本情報と AI予想の間。2026-10-08 に AI予想タブの下から移した。
+ * 承認モック docs/design/analogy-finder/mock/APPROVED.md の「龍神ソナーの別タブ化」）。
  *
- * 上部の操作（時点・着順・タブ）と3タブ（差がつく材料・類似レース・展開シナリオ）、下部の「使っている項目」。
+ * 上から副題、内部タブ（差がつく材料・類似レース・展開シナリオ。下に送っても固定）、着順と時点の箱、中身、
+ * 一番下に「使っている項目」。画面の中の声は各内部タブの中身の終わり（折りたたみより上）に置く。
  * 節全体の状態（欠場・保存なし）は facts の応答の status で決める（画面は時刻で判定しない。plan「API」）。
  * facts・scenario は展示後の値（exhibition）も一緒に返すので stage=exhibition で1回だけ読み、時点の切り替えは
  * 画面で行う。類似レースは時点ごとに並びが違うので時点ごとに読む。タブ2・3は開いたときに初めて読む。
  * 選んだタブ・艇番・時点・着順は URL にも localStorage にも残さない（spec「やらないこと」）。
+ * ただし投稿などから内部タブへ直接来られるよう、?sonar=facts|similar|scenario を開いたときに1回だけ読む
+ * （読むだけで、押しても URL は書き換えない。2026-10-08 D3）。
  */
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import AnalogyControls from "./AnalogyControls";
+import { useSearchParams } from "react-router-dom";
+import AnalogyControls, { AnalogyTabs } from "./AnalogyControls";
+import AnalogyFeedback from "./AnalogyFeedback";
 import ConditionFactsTab from "./ConditionFactsTab";
 import SimilarRacesTab from "./SimilarRacesTab";
 import ScenarioTab from "./ScenarioTab";
@@ -22,14 +28,27 @@ import {
 } from "../../../hooks/useAnalogyV16";
 import { venueLabel } from "../../../utils/analogyFormat";
 import { markAnalogySeen, trackEvent } from "../../../utils/analytics";
+import {
+  RACE_SONAR_PARAM,
+  SONAR_TAB_IDS,
+  parseSonarParam,
+} from "../../../utils/raceUrlState";
 import "./AnalogyV16.css";
 
-const TABS = ["facts", "similar", "scenario"];
+const TABS = SONAR_TAB_IDS;
+const SONAR_SECTION_ID = "ryujin-sonar";
 
-/** 時点の切り替えの下の1行（screens「状態」） */
-const STAGE_NOTE = {
-  before_exhibition: "noteBefore",
-  exhibition_reflecting: "noteReflecting",
+// レースごとに1回だけにするための記録。RaceTabs は選んでいないタブの中身を外して作り直すので、
+// コンポーネントの ref ではほかのタブから戻るたびに送り直してしまう（別タブにした 2026-10-08 から）
+const viewedRaces = new Set();
+const visibleRaces = new Set();
+// ?sonar= を使い終えたレース。ほかのタブから戻るたびに内部タブを選び直さないため
+const linkUsedRaces = new Set();
+
+/** 展示前の時点の札（screens「状態」）。展示後はボタン2つにする */
+const STAGE_CHIP = {
+  before_exhibition: "chipBefore",
+  exhibition_reflecting: "chipReflecting",
 };
 
 function TabError({ onRetry }) {
@@ -50,8 +69,21 @@ export default function AnalogyFinderSection({ raceId }) {
   const tabsId = useId();
   const [stageChoice, setStageChoice] = useState(null);
   const [target, setTarget] = useState(1);
-  const [tab, setTab] = useState("facts");
-  const [opened, setOpened] = useState({ facts: true });
+  const [searchParams] = useSearchParams();
+  // 1回目の描画で決める（使い終えた印は描画の後に付ける）
+  const [linkedTab] = useState(() =>
+    linkUsedRaces.has(raceId)
+      ? null
+      : parseSonarParam(searchParams.get(RACE_SONAR_PARAM)),
+  );
+  useEffect(() => {
+    if (linkedTab) linkUsedRaces.add(raceId);
+  }, [linkedTab, raceId]);
+  const [tab, setTab] = useState(linkedTab ?? "facts");
+  const [opened, setOpened] = useState({
+    facts: true,
+    ...(linkedTab && { [linkedTab]: true }),
+  });
   const [scenarioScope, setScenarioScope] = useState(null);
 
   const facts = useAnalogyFacts(raceId, "exhibition");
@@ -59,28 +91,27 @@ export default function AnalogyFinderSection({ raceId }) {
   const exhibitionReady = status === "exhibition_ready";
   const stage = exhibitionReady ? (stageChoice ?? "exhibition") : "racecard";
   // 節の中身（facts）が出たら、レースごとに1回だけ「表示した」を送る（公開時の最小限の計測）
-  const viewedRace = useRef(null);
   const factsReady = Boolean(facts.data?.today);
   useEffect(() => {
-    if (!factsReady || viewedRace.current === raceId) return;
-    viewedRace.current = raceId;
+    if (!factsReady || viewedRaces.has(raceId)) return;
+    viewedRaces.add(raceId);
     trackEvent("analogy_section_view", {
       race_id: raceId,
       analogy_stage: stage,
     });
   }, [factsReady, raceId, stage]);
-  // 節が画面に入ったら、レースごとに1回「見た」を送る。section_view は描画した時点で、
-  // 予想ブロックの下にある節が画面に入ったかは分からないため（反応の計測、2026-10-08）
+  // 節が画面に入ったら、レースごとに1回「見た」を送る（反応の計測、2026-10-08）。別タブにしてからは
+  // タブを開くとほぼ必ず画面に入るので section_view とほぼ同じ数になる。7日以内の再訪を数えるための
+  // 「最後に見た時刻」の記録に使う（docs/design/analogy-reaction-measurement/events.md）
   const sectionRef = useRef(null);
-  const visibleRace = useRef(null);
   useEffect(() => {
     const el = sectionRef.current;
-    if (!factsReady || !el || visibleRace.current === raceId) return;
+    if (!factsReady || !el || visibleRaces.has(raceId)) return;
     if (typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver((entries) => {
       if (!entries.some((e) => e.isIntersecting)) return;
       io.disconnect();
-      visibleRace.current = raceId;
+      visibleRaces.add(raceId);
       markAnalogySeen();
       trackEvent("analogy_section_visible", {
         race_id: raceId,
@@ -116,7 +147,8 @@ export default function AnalogyFinderSection({ raceId }) {
       send(btn);
     };
     const onClick = (e) => {
-      const btn = e.target.closest?.('button, [role="button"]');
+      // data-af-tap は、button ではないが押せる部品（ソナーの図の外の艇番）
+      const btn = e.target.closest?.('button, [role="button"], [data-af-tap]');
       if (btn) pressed(btn);
     };
     // button でない role="button"（ソナーの扇は SVG）は Enter・Space で click が出ないので、キーで拾う
@@ -129,15 +161,41 @@ export default function AnalogyFinderSection({ raceId }) {
     const onChange = (e) => {
       if (e.target.matches?.("input, select")) send(e.target);
     };
+    // button でない操作（ソナーの点のタップ・長押し）は、部品が af-control のイベントで知らせる
+    const onCustom = (e) => {
+      if (typeof e.detail !== "string") return;
+      trackEvent("analogy_control_change", {
+        race_id: raceId,
+        analogy_tab: tab,
+        analogy_control: e.detail,
+      });
+    };
     el.addEventListener("click", onClick, true);
     el.addEventListener("change", onChange, true);
     el.addEventListener("keydown", onKeyDown, true);
+    el.addEventListener("af-control", onCustom);
     return () => {
+      el.removeEventListener("af-control", onCustom);
       el.removeEventListener("keydown", onKeyDown, true);
       el.removeEventListener("click", onClick, true);
       el.removeEventListener("change", onChange, true);
     };
   }, [raceId, tab]);
+  // 内部タブを下に送っても固定する位置。上に貼り付くヘッダー（.app-header）は縮むので高さを測り続ける
+  useEffect(() => {
+    const el = sectionRef.current;
+    const header = document.querySelector(".app-header");
+    if (!el || !header || typeof ResizeObserver === "undefined") return;
+    const set = () =>
+      el.style.setProperty(
+        "--af-sticky-top",
+        `${header.getBoundingClientRect().height}px`,
+      );
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(header);
+    return () => ro.disconnect();
+  }, [factsReady]);
   const similar = useAnalogySimilar(raceId, stage, Boolean(opened.similar));
   const scenario = useAnalogyScenario(
     raceId,
@@ -152,8 +210,14 @@ export default function AnalogyFinderSection({ raceId }) {
     race: Number(raceNumber),
   });
   const wrap = (body) => (
-    <section className="af-v16" aria-labelledby={headingId} ref={sectionRef}>
-      <h2 id={headingId} className="af-v16-eyebrow">
+    <section
+      className="af-v16"
+      id={SONAR_SECTION_ID}
+      aria-labelledby={headingId}
+      ref={sectionRef}
+    >
+      {/* 見出しはタブ名とページ上部のレース名で足りるので画面には出さない（承認モック v3）。読み上げ用に残す */}
+      <h2 id={headingId} className="af-sr-only">
         {heading}
       </h2>
       <p className="af-v16-subtitle">{t("aiPredictionTab.analogy.subtitle")}</p>
@@ -185,13 +249,23 @@ export default function AnalogyFinderSection({ raceId }) {
     trackEvent("analogy_tab_select", { race_id: raceId, analogy_tab: next });
   };
   const tabId = (name) => `${tabsId}-${name}`;
+  // 画面の中の声（反応の計測）。各内部タブの中身の終わり、「割合の出し方・注意」などの折りたたみより上に置く
+  // （承認モック v3。一番下だと差がつく材料では約4,900px 先になり届かなかった）
+  const feedback = factsReady ? (
+    <AnalogyFeedback raceId={raceId} stage={stage} tab={tab} />
+  ) : null;
   let panel;
   if (tab === "facts")
     panel =
       facts.status === "error" ? (
         <TabError onRetry={facts.retry} />
       ) : facts.data?.today ? (
-        <ConditionFactsTab data={facts.data} stage={stage} target={target} />
+        <ConditionFactsTab
+          data={facts.data}
+          stage={stage}
+          target={target}
+          feedback={feedback}
+        />
       ) : (
         <p className="af-v16-line">
           {t("aiPredictionTab.analogy.states.notSaved")}
@@ -207,6 +281,7 @@ export default function AnalogyFinderSection({ raceId }) {
           stage={stage}
           target={target}
           exhibition={facts.data?.exhibition ?? null}
+          feedback={feedback}
         />
       ) : (
         <p className="af-v16-line">
@@ -224,6 +299,7 @@ export default function AnalogyFinderSection({ raceId }) {
           onScope={setScenarioScope}
           today={facts.data?.today ?? null}
           raceId={raceId}
+          feedback={feedback}
         />
       ) : (
         <p className="af-v16-line">
@@ -231,27 +307,21 @@ export default function AnalogyFinderSection({ raceId }) {
         </p>
       );
 
-  const noteKey = !exhibitionReady ? STAGE_NOTE[status] : null;
   const anyPeriod = Object.values(facts.data?.facts ?? {})[0]?.period ?? null;
   return wrap(
     <>
-      <div className="af-v16-box">
-        <AnalogyControls
-          stage={stage}
-          exhibitionReady={exhibitionReady}
-          stageNote={
-            noteKey ? t(`aiPredictionTab.analogy.stage.${noteKey}`) : null
-          }
-          onStage={setStageChoice}
-          target={target}
-          onTarget={setTarget}
-          showTarget={tab !== "scenario"}
-          tabs={TABS}
-          tab={tab}
-          onTab={selectTab}
-          tabId={tabId}
-        />
+      <div className="af-tabs-sticky">
+        <AnalogyTabs tabs={TABS} tab={tab} onTab={selectTab} tabId={tabId} />
       </div>
+      <AnalogyControls
+        stage={stage}
+        exhibitionReady={exhibitionReady}
+        stageChipKey={STAGE_CHIP[status] ?? "chipBefore"}
+        onStage={setStageChoice}
+        target={target}
+        onTarget={setTarget}
+        showTarget={tab !== "scenario"}
+      />
       <div
         className="af-v16-box"
         role="tabpanel"

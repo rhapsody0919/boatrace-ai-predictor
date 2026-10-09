@@ -12,6 +12,28 @@
 
 export const RACE_TAB_PARAM = "tab";
 export const RACE_BOAT_PARAM = "boat";
+// 龍神ソナーの中の切り替え（差がつく材料／類似レース／展開シナリオ）。投稿などから直接開くためのもので、
+// 読むだけで書き戻さない（2026-10-08 D3）
+export const RACE_SONAR_PARAM = "sonar";
+export const SONAR_TAB_IDS = ["facts", "similar", "scenario"];
+export const SONAR_RACE_TAB = "sonar";
+
+/** `?sonar=` を内部タブの id に直す。それ以外は null */
+export function parseSonarParam(raw) {
+  return SONAR_TAB_IDS.includes(raw) ? raw : null;
+}
+
+/**
+ * 開いたときのタブ。龍神ソナーは AI予想タブの中から独立したタブに移った（2026-10-08）。
+ * 移る前に投稿したリンク `?tab=aiPrediction&sonar=…` はソナーを見に来た人なので、ソナーのタブで開く。
+ * `sonar=` の無い `?tab=aiPrediction` は AI予想のまま。ソナーのタブを出していないとき（sonarEnabled=false）も AI予想
+ */
+export function resolveInitialRaceTab(tab, sonar, sonarEnabled = true) {
+  // ソナーのタブを出していない（機能フラグを戻した）ときは、移す前と同じく AI予想で開く
+  if (sonarEnabled && tab === "aiPrediction" && parseSonarParam(sonar))
+    return SONAR_RACE_TAB;
+  return tab;
+}
 
 const RACE_PATH = /^(\/[a-z]{2}(-[A-Za-z]{2})?)?\/race\/[^/]+\/?$/;
 
@@ -22,7 +44,7 @@ export function parseBoatParam(raw) {
 }
 
 /**
- * GA4 の page_view で使う URL（パス＋クエリ）。レース詳細ではタブ・艇のクエリを除く。
+ * GA4 の page_view で使う URL（パス＋クエリ）。レース詳細ではタブ・艇・ソナーの中の切り替えのクエリを除く。
  * ほかのページはそのまま（/winning-technique?tab= はタブごとに数えたいので除かない）
  */
 export function pageViewPath(pathname, search) {
@@ -30,6 +52,7 @@ export function pageViewPath(pathname, search) {
   const params = new URLSearchParams(search);
   params.delete(RACE_TAB_PARAM);
   params.delete(RACE_BOAT_PARAM);
+  params.delete(RACE_SONAR_PARAM);
   const rest = params.toString();
   return rest ? `${pathname}?${rest}` : pathname;
 }

@@ -60,9 +60,7 @@ test("Ｗ優勝戦で分けたときは「同じ優勝戦をめざす」人数�
   await expect(page.locator(".rmt-sub").first()).toContainText(
     "同じ優勝戦をめざすのは24人（順位の対象は19人。下に名前を出した5人を除く）",
   );
-  await expect(page.locator(".rmt-sub").first()).not.toContainText(
-    "節の出場",
-  );
+  await expect(page.locator(".rmt-sub").first()).not.toContainText("節の出場");
 });
 
 test("除いた人数を足すと出場人数になり、表に無い印の凡例は出さない", async ({
@@ -78,9 +76,7 @@ test("除いた人数を足すと出場人数になり、表に無い印の凡�
   await expect(list).toContainText("順位の対象外：");
   await expect(list.locator("[translate=no]")).not.toHaveCount(0);
   await expect(list).not.toContainText("ほか");
-  await expect(page.locator(".rmt-card").first()).not.toContainText(
-    "3走未満",
-  );
+  await expect(page.locator(".rmt-card").first()).not.toContainText("3走未満");
 });
 
 test("375pxで、今節初戦の行があっても列見出し「前検」がカードからはみ出さない", async ({
@@ -94,7 +90,9 @@ test("375pxで、今節初戦の行があっても列見出し「前検」がカ
     const last = ths[ths.length - 1];
     const range = document.createRange();
     range.selectNodeContents(last);
-    return range.getBoundingClientRect().right - card.getBoundingClientRect().right;
+    return (
+      range.getBoundingClientRect().right - card.getBoundingClientRect().right
+    );
   });
   expect(overflow).toBeLessThanOrEqual(0);
 });
@@ -105,7 +103,7 @@ for (const path of ["/race/2026-09-25-01-07", "/en/race/2026-09-25-01-07"]) {
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto(path);
-    await page.locator(".race-tabs-btn").nth(2).click();
+    await page.locator(".race-tabs-btn").nth(3).click(); // 今節（基本情報・龍神ソナー・AI予想・今節）
     await expect(page.locator(".rmt-compare tbody tr")).toHaveCount(6, {
       timeout: 30000,
     });
@@ -139,7 +137,9 @@ test("まだ全員が1走していない間は準優の目安を伏せ、人数�
   // 目安の文は人数の行と別の段落（BOA-714）
   const sub = page.locator(".rmt-sub").first();
   const border = page.locator(".rmt-border-note");
-  await expect(border).toContainText("準優の目安は、出場選手が全員1走してから出します。");
+  await expect(border).toContainText(
+    "準優の目安は、出場選手が全員1走してから出します。",
+  );
   await expect(border).not.toContainText("準優の目安は18位");
   await expect(sub).toContainText("まだ走っていない21人を除く");
   await expect(page.locator(".rmt-needed")).toHaveCount(0);
@@ -233,10 +233,12 @@ test("対象外の一覧は理由を先に表のセルと同じ書き方で出�
   await expect(page.locator(".rmt-table-notes")).toContainText("金の枠");
 });
 
-test("英語の対象外の一覧で、見出しと理由のコロンが二重にならない", async ({ page }) => {
+test("英語の対象外の一覧で、見出しと理由のコロンが二重にならない", async ({
+  page,
+}) => {
   // 理由を前に出したら「Not ranked: Withdrew: …」とコロンが続いた（BOA-714 セルフレビュー）
   await page.goto("/en/race/2026-09-25-01-07");
-  await page.locator(".race-tabs-btn").nth(2).click();
+  await page.locator(".race-tabs-btn").nth(3).click(); // 今節（基本情報・龍神ソナー・AI予想・今節）
   const list = page.locator(".rmt-excluded-list");
   await expect(list).toContainText(
     "Not ranked: Excluded from prizes (F this series) – 大澤普司; Withdrew – ",
@@ -272,7 +274,9 @@ test("⚠の説明は表のすぐ下に出し、金枠の凡例と印の説明�
     ),
   );
   expect(hintTop).toBeLessThan(borderTop);
-  await expect(page.locator(".rmt-table-notes")).not.toContainText("⚠ は3走未満");
+  await expect(page.locator(".rmt-table-notes")).not.toContainText(
+    "⚠ は3走未満",
+  );
 });
 
 test("和文の注記で句点の後に半角スペースを入れない（英語は入れる）", async ({
@@ -284,19 +288,24 @@ test("和文の注記で句点の後に半角スペースを入れない（英�
   expect(ja).toContain("。青い点線より上が");
   expect(ja).not.toMatch(/。 /);
   await page.goto("/en/race/2026-09-23-09-12");
-  await page.locator(".race-tabs-btn").nth(2).click();
-  const en = await page.locator(".rmt-border-note").innerText({ timeout: 30000 });
+  await page.locator(".race-tabs-btn").nth(3).click(); // 今節（基本情報・龍神ソナー・AI予想・今節）
+  const en = await page
+    .locator(".rmt-border-note")
+    .innerText({ timeout: 30000 });
   expect(en).toMatch(/\)\. \S/);
 });
 
 test("韓国語の⚠の説明は走数と分かる書き方にする", async ({ page }) => {
   // 「3주 미만」が「3週間未満」と読めた。表のすぐ下に出すようにしたので目立つ（BOA-738 ファン評価1周目）
   await page.goto("/ko/race/2026-09-23-09-12");
-  await page.locator(".race-tabs-btn").nth(2).click();
+  await page.locator(".race-tabs-btn").nth(3).click(); // 今節（基本情報・龍神ソナー・AI予想・今節）
   const hint = page.locator(".rmt-hint").nth(1);
-  await expect(hint).toHaveText("⚠는 출주 3회 미만입니다(득점률이 아직 불안정).", {
-    timeout: 30000,
-  });
+  await expect(hint).toHaveText(
+    "⚠는 출주 3회 미만입니다(득점률이 아직 불안정).",
+    {
+      timeout: 30000,
+    },
+  );
 });
 
 test("表に⚠が無いときは、金枠の凡例で⚠に触れない", async ({ page }) => {
@@ -313,7 +322,9 @@ test("表に⚠が無いときは、金枠の凡例で⚠に触れない", async
   );
   // ⚠の艇でも前検には金枠が付く。凡例が列を書かないと「⚠の艇には付かない」と読め、
   // 前検の金枠と食い違って見えた（BOA-738 ファン評価2周目）
-  await expect(page.locator(".rmt-compare .rmt-pretest.ind-best").first()).toBeVisible();
+  await expect(
+    page.locator(".rmt-compare .rmt-pretest.ind-best").first(),
+  ).toBeVisible();
 });
 
 test("表の6艇に準優の目安内がいないときは、点線の説明でなく「いません」と書く", async ({
@@ -332,11 +343,15 @@ test("表の6艇に準優の目安内がいないときは、点線の説明で�
   await expect(page.locator(".rmt-border-note")).toContainText("点線より上が");
 });
 
-test("得点率早見の得点率にも、走数が少ないときは⚠を付ける", async ({ page }) => {
+test("得点率早見の得点率にも、走数が少ないときは⚠を付ける", async ({
+  page,
+}) => {
   // 津 9/23 12R（予選中、6艇とも3走未満）。比較表には⚠があるのに、早見の得点率には無く、
   // 目安に届いて青い得点率が当てになる値に見えた（BOA-757）
   await openMeetTab(page, "2026-09-23-09-12");
-  await expect(page.locator(".rmt-forecast-table td.rmt-rate .rmt-warn")).toHaveCount(6);
+  await expect(
+    page.locator(".rmt-forecast-table td.rmt-rate .rmt-warn"),
+  ).toHaveCount(6);
 });
 
 test("推移の ST/展示 の選択中の枠と、選んだ艇の ST の線に金を使わない", async ({

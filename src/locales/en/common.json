@@ -625,7 +625,8 @@
     "meet": "This Series",
     "beforeInfo": "Just Before",
     "oddsList": "Odds List",
-    "result": "Result"
+    "result": "Result",
+    "sonar": "Ryujin Sonar"
   },
   "wakuInfo": {
     "note": "Pick a racer to compare their record in the expected course in this race across periods and conditions. Tap the period name on the left to see the last 10 finishes from that course. Use the fold below the table to compare all six courses. Figures count only races before this one (the last 3 months and last month are counted back from this race's date).",
@@ -819,27 +820,27 @@
         "withRound": "{{base}}, {{round}}",
         "venueAll": "All races at {{venue}}",
         "venueG1": "G1 races at {{venue}}",
-        "nationalAll": "All races, all venues"
+        "nationalAll": "All races, all venues",
+        "sameCombo": "same class mix"
       },
       "heading": "Ryujin Sonar · {{venue}} {{race}}R",
-      "subtitle": "Counts past races that match today's conditions",
+      "subtitle": "Gathers past races that match today's conditions",
       "notes": {
         "howToRead": "How to read",
-        "counting": "How it's counted",
+        "counting": "How shares are calculated",
         "caution": "Notes",
         "terms": "Terms",
-        "ordering": "How races are ordered",
-        "sonar": "How to read the sonar chart",
         "today": "Today's exhibition",
         "period": "Periods",
-        "attacker": "Attacking boat"
+        "attacker": "Attacking boat",
+        "methodCaution": "How shares are calculated · notes"
       },
       "stage": {
         "label": "As of",
         "racecard": "Before exhibition (race card)",
         "exhibition": "After exhibition (incl. pre-race info)",
-        "noteBefore": "Available after the exhibition",
-        "noteReflecting": "Reflects the exhibition results"
+        "chipBefore": "Before exhibition (race card) · switchable after the exhibition",
+        "chipReflecting": "Before exhibition (race card) · exhibition results being reflected"
       },
       "tabs": {
         "label": "View",
@@ -870,18 +871,17 @@
         "boatLabel": "Boat #",
         "compare": "Compare with another boat",
         "compareSelect": "Boat to compare",
-        "scopeLabel": "Races counted",
-        "fellBack": "Only {{n}} races at {{venue}} have the same combination, so these figures use all venues",
+        "scopeLabel": "Races gathered",
+        "fellBack": "Only {{n}} races at {{venue}} have the same combination, so these figures gather races from all venues",
         "hexLabel": "Boat {{boat}} today, rank among the 6: {{list}}",
         "hexRank": "{{rank}} of 6",
         "hexNone": "Today —",
         "hexToday": "Boat {{boat}} today (rank among the 6)",
         "hexTodayB": "Boat {{boat}} today",
-        "hexTypical": "Dotted line: {{scope}}, average rank when Boat {{boat}} {{finish}}",
-        "hexFoot": "Further out = higher among the 6. Solid line: today's rank",
+        "hexTypical": "Average rank when Boat {{boat}} {{finish}}",
+        "hexFoot": "Further out = higher among the 6",
         "bigLabel": "{{scope}}: Boat {{boat}} {{rate}}",
         "bigCount": "{{hits}}/{{n}} races ({{period}})",
-        "lede": "For each item, we compare the {{rate}} when the boat was best among the 6 and when it was worst. Items are sorted by how clear the difference is (items overlap, so we cannot tell which one made the difference)",
         "best": "When {{word}} of the 6",
         "judge": {
           "large": "Large difference",
@@ -900,35 +900,26 @@
         "few": " (few)",
         "units": {
           "series_score": " pts",
-          "exh_time": "s"
+          "exh_time": "s",
+          "st_mean30": "s"
         },
-        "stripTitle": "Boat {{boat}}'s {{rate}} by its rank among the 6 in {{item}}",
         "stripRank": "#{{rank}}",
         "stripTop": "#1 ({{word}})",
         "stripBottom": "#6 ({{word}})",
-        "stripCap": "Numbers above the bars are %, below is the rank among the 6 (left = {{word}}). Dotted line: overall {{usual}}. The outlined bar is today's position",
-        "stripCapNoToday": "Numbers above the bars are %, below is the rank among the 6 (left = {{word}}). Dotted line: overall {{usual}}",
-        "where": {
-          "best": "the {{word}} of the 6",
-          "worst": "the {{word}} of the 6",
-          "middle": "#{{rank}} counting from the {{word}}"
-        },
-        "sameValue": "{{n}} boats share this value",
-        "todayRange": "Today {{value}}, the six range {{range}}",
-        "todayLine": "Today, Boat {{boat}}'s {{item}} is {{where}}{{inner}}. In past races under the same condition, Boat {{boat}}'s rate ({{finish}}) was {{rate}} ({{hits}}/{{n}}, range {{lo}}–{{hi}}%)",
-        "compareLine": "Boat {{boat}}: when {{good}} {{best}} / when {{bad}} {{worst}} (Boat {{boat}}'s overall {{rate}}: {{usual}})",
+        "compareLine": "Boat {{boat}}: when {{good}} {{best}} / when {{bad}} {{worst}} (all races in {{scope}}: {{usual}})",
         "noteEarly": "Early in a meet (some boats have few runs before today), differences tend to look smaller",
-        "noteFinal": "On Final and Semifinal days, the points ranking almost matches the lane order, so today's sentence is not shown",
+        "noteFinal": "On Final and Semifinal days, the points ranking almost matches the lane order, so today's position in the bars and its count are not shown (the rank among the 6 above is for reference)",
         "boatFold": "Boat top-2 rate (little link to finishing position)",
         "boatFoldNote": "(For reference: all venues, all six A1) The gap between highest and lowest boat top-2 rate is 0–3 points for top 2 and top 3, smaller than for motors (4–8 points). Not worth worrying about much",
         "classLine": "Class: all six are {{cls}} today, so there is no difference",
         "foot": {
-          "scope": "Races counted: {{desc}}. ",
+          "scope": "Races gathered: {{desc}}. ",
           "finalNcr": "When limited to Finals, this meet's average finish points are not shown (Final lanes are set by results up to the Semifinal, so the points ranking almost matches the lanes and comparing has no meaning). ",
           "series": "This meet's average finish points include values from early in the meet (1–2 runs) (in past early races many boats share the same value, so differences look smaller). ",
-          "common": "These are counted shares, not necessarily causes. \"No clear difference\" means the ranges for best and worst overlap (when the smaller side has fewer than 100 races, it reads \"Too few races for a clear difference\"). Rates from fewer than 30 races are shown faded. A local win rate of 0.00 (never raced here) is treated as no record and left out of the ranks. \"Large difference\" means 5 points or more. Boats with the same value are counted in both best and worst. ",
+          "common": "These are past shares, not necessarily causes. \"No clear difference\" means the ranges for best and worst overlap (when the smaller side has fewer than 100 races, it reads \"Too few races for a clear difference\"). Rates from fewer than 30 races are shown faded. A local win rate of 0.00 (never raced here) is treated as no record and left out of the ranks. \"Large difference\" means 5 points or more. Boats with the same value are counted in both best and worst. ",
           "exhPre": "Exhibition time is available after the exhibition. ",
-          "exhPost": "Exhibition times before November 2025 come from a different source and may be slightly off. "
+          "exhPost": "Exhibition times before November 2025 come from a different source and may be slightly off. ",
+          "overlap": "Items are sorted by how clear the difference is. Items overlap, so we cannot tell which one made the difference. "
         },
         "scopeDesc": {
           "VC": "races at {{venue}} with the same class combination and the same class for Boat {{boat}} as today",
@@ -988,7 +979,7 @@
         },
         "wind": {
           "heading": "In races close to today's wind and waves (wind {{wind}}m, waves {{wave}}cm) (as of the exhibition)",
-          "sub": "Matching the scope leaves too few races here, so this section alone counts all races at {{venue}}. The comparison (dotted line) is also all races at {{venue}}",
+          "sub": "Matching the scope leaves too few races here, so this section alone uses all races at {{venue}}. The comparison (dotted line) is also all races at {{venue}}",
           "row": "{{rate}} (any wind: {{all}})",
           "foot": "Share of races at {{venue}} with wind {{band}} in which each boat number {{finish}} ({{n}} races). Dotted line: all races at {{venue}}. Wind is split by speed only (tailwind and headwind are not distinguished). Past wind and waves are as recorded at the start; today's are as of the exhibition",
           "pre": "Today's wind and waves are available after the exhibition",
@@ -1009,8 +1000,23 @@
           },
           "footWave": "Share of races at {{venue}} with {{band}} in which each boat {{finish}} ({{n}} races). The dotted line is all races at {{venue}}. Wind is grouped by speed only (tailwind and headwind are not separated). Past wind and waves are recorded at the start; today's values are from the exhibition"
         },
-        "legend": "Line on a bar = likely range when there are few races (the value usually falls within it)",
-        "paren": " ({{inner}})"
+        "orderHeading": "Sorted by how clear the difference is",
+        "legendBar": "{{rate}} by rank",
+        "legendToday": "Today's rank",
+        "legendUsual": "All races in {{scope}}: {{usual}}",
+        "whatIs": "What is {{item}}?",
+        "briefToday": "Today {{rank}} ({{value}})",
+        "briefBest": "When {{word}}",
+        "todayRangeOf6": "The 6 boats: {{range}}",
+        "pairCount": "{{hits}}/{{n}} races",
+        "stripTitleShort": "{{rate}} by rank among the 6",
+        "todayHit": "▲ Today's rank {{rank}}: {{rate}} ({{hits}}/{{n}} races, range {{lo}}–{{hi}}%)",
+        "comboFree": "Any",
+        "comboSentence": "Past races where, as today, the 6 boats were {{combo}}, and Boat {{boat}} was {{cls}}{{round}}. Which lanes the other 5 boats were in does not matter",
+        "comboUniform": "Past races where, as today, {{combo}}{{round}}",
+        "comboRound": " ({{round}} only)",
+        "stripRankTie": "#{{from}}–{{to}}",
+        "rangeSep": "–"
       },
       "outlook": {
         "summary": "AI view (supplementary): with other items held equal, which items matter",
@@ -1024,7 +1030,7 @@
         "preparing": "The AI view before the exhibition is not ready yet. Switch to after the exhibition to see it",
         "foot": "Shares split the combined size of positive and negative effects ({{period}}, {{races}} races at all venues). Open a row to see each item's share and its direction.  Item shares split each theme by their ratio within that theme.",
         "boat1Note": "For Boat 1, the part where lane advantage and racer class mix (about {{pct}}%) is assigned to the lane, so racer ability shows up smaller. ",
-        "foot2": "The counted figures above mix in everything, such as racer strength. The AI separates these, so the direction can be reversed (e.g. class, motor). This is not a claim of cause. A larger share means the item moves this boat number's result more, not that having it wins races. ",
+        "foot2": "The past shares above mix in everything, such as racer strength. The AI separates these, so the direction can be reversed (e.g. class, motor). This is not a claim of cause. A larger share means the item moves this boat number's result more, not that having it wins races. ",
         "windNote": " (tailwind and headwind are not distinguished)",
         "themes": {
           "racerRecord": "Racer ability",
@@ -1298,16 +1304,15 @@
         "farthest": "The least similar ({{n}}th) has {{same}} of {{total}} items the same and {{near}} close",
         "heading": "Similar races",
         "ledeTail": ", sorted by how similar the race card is. After the exhibition, exhibition times, weather, wind and waves are also compared",
-        "sonarLabel": "{{n}} past races similar to today",
+        "sonarLabel": "{{n}} similar past races",
         "point": "{{date}} {{venue}} {{r}}R, winner Boat {{b}}",
         "sector": "Races won by Boat {{b}}: {{n}}",
         "ring": "#{{n}}",
-        "tipRank": "#{{n}} most similar",
+        "tipRank": "#{{n}} by similarity",
         "payout": "Trifecta ¥{{yen}}",
         "todayLabel": "Today: {{venue}} {{r}}R",
         "shown": "Showing: {{n}}",
-        "sonarFoot": "The closer a dot is to the center, the closer that race card's numbers are to today's (placed by similarity rank; rings mark the rank). Sectors show the winning boat. Long-press a dot (hover with a mouse) for race info, tap to compare that race with today",
-        "likeSummary": "What is similar? (share matching today, by item)",
+        "likeSummary": "Items that matched today (share by item)",
         "likeLede": "Of the {{n}} races, the share that matched today (what counts as a match is in the full item table below)",
         "likeFixed": "Items fixed by the conditions match in every race, so they are not shown",
         "likeNone": "No item matches in half or more of the races",
@@ -1337,13 +1342,12 @@
         "stOrder": "ST order (from Boat 1): {{order}}",
         "entry": "Entry: {{e}}",
         "resHeading": "How similar races were decided",
-        "resSub": "In the {{n}} most similar races",
+        "resSub": "In the top {{n}} by similarity",
         "resExcluded": " ({{k}} races without a result excluded)",
         "winHeading": "Which boat won?",
         "hitHeading": "Which boats finished in the {{finish}}?",
         "keySimilar": "Similar races",
         "keyCompare": "Dotted line: {{name}} ({{n}})",
-        "keyBars": "Line on a bar = likely range when there are few races (the value usually falls within it). Tap a bar",
         "cmpGrade": "{{kind}} of any grade (other conditions the same)",
         "cmpRound": "Any round (other conditions the same)",
         "cmpSame": "All past races matching the conditions",
@@ -1369,7 +1373,7 @@
           "md": "Boat {{b}} moved inside its lane (maezuke)"
         },
         "emptyLayer": "No past races match today's conditions",
-        "foot": "These are counted shares, not necessarily causes. Similar races do not always end the same way. Similar races are chosen using the items the AI weighs most, so they tend to point the same way as the AI view (they are not independent support).",
+        "foot": "These are past shares, not necessarily causes. Similar races do not always end the same way. Similar races are chosen using the items the AI weighs most, so they tend to point the same way as the AI view (they are not independent support).",
         "values": {
           "rnBand": "{{band}} ({{rn}}R)",
           "bands": {
@@ -1395,13 +1399,27 @@
             "typhoon": "Typhoon"
           }
         },
-        "allShownAfterFew": ". Showing every past race that matches the conditions"
+        "allShownAfterFew": ". Showing every past race that matches the conditions",
+        "sliderZoom": "Moving it zooms the chart below",
+        "ledeShort": "Sorted by race-card similarity, from {{n}} past races matching 3 conditions such as Boat 1's class",
+        "ledeFull": "How they are sorted (full text)",
+        "picksLede": "{{n}} similar races around here (by similarity)",
+        "picksEmpty": "Tap a dot to list up to 5 nearby similar races here",
+        "pickCompare": "Compare in list",
+        "legendCenter": "Closer to center = more similar",
+        "legendSector": "Sector = winning boat",
+        "legendTap": "Tap: list 5 nearby below",
+        "legendHold": "Press and hold: that race's details in place (hover on PC)",
+        "keyErr": "Range when races are few (tap a bar)",
+        "keyErrShort": "Range when races are few",
+        "outerIs": "Outer ring = #{{n}}",
+        "ledeShortKind": "Same \"{{kind}}\" as today: sorted by race-card similarity, from {{n}} past races matching 3 conditions such as Boat 1's class"
       },
       "sources": {
         "summary": "Items used (which numbers these come from)",
         "facts": "Key factors",
         "factsItems": "Items: avg. finish points this meet (to yesterday), national win rate, local win rate, 1st-place rate (last 30 races), motor top-2 rate, boat top-2 rate, avg. ST (last 30 races), exhibition time (after the exhibition only). National win rate, local win rate, motor top-2 rate and boat top-2 rate are race card values; exhibition time is from pre-race info. 1st-place rate (last 30 races), avg. ST (last 30 races) and meet finish points are calculated from the racer's past results (all up to yesterday)",
-        "factsFinish": "Finish: 1st, top 2, top 3, counted from past race results",
+        "factsFinish": "Finish: 1st, top 2, top 3, from past race results",
         "factsWind": "Today's wind and waves: wind speed and wave height (values at the exhibition). Wind bands are 0–1 m / 2–3 m / 4–5 m / 6 m+ (different from the wind bands for similar races). At venues where wave height carries information separate from wind speed (correlation below 0.9 in past races at the venue), races are also grouped by wave height (0–2 cm / 3–5 cm / 6 cm+), falling back to wind only if today's group has fewer than 300 races. At other venues wave height is recorded at almost the same value as wind speed, so races are grouped by wind only",
         "similar": "Similar races",
         "similarLayer": "Conditions always matched: {{cond}}",
@@ -1414,7 +1432,7 @@
         "scenarioEntry": "Entry: the actual entry courses in past races (which boat took which course)",
         "scenarioSlit": "Slit shape: judged from the actual start timings in past races, lined up by course",
         "scenarioResult": "Result: boats finishing 1st to 3rd, winning technique, trifecta payout",
-        "period": "Counted figures cover {{from}}–{{to}}. The AI view was built from data for {{ai}}.",
+        "period": "Past shares come from races {{from}}–{{to}}. The AI view was built from data for {{ai}}.",
         "interval": "Ranges assume each race is independent. Similar races cluster in the same venue and meet, so the real range is somewhat wider"
       },
       "count": "{{n}}",
@@ -1429,7 +1447,6 @@
       },
       "flow": {
         "heading": "Finish flow",
-        "lede": "1st → 2nd → 3rd. Band width = number of races. Rare flows are drawn faintly too. Tap a band",
         "filter": "Races to show",
         "all": "All",
         "not1": "Races not won by Boat 1",
@@ -1440,12 +1457,15 @@
         "hint": "Tap a band to see the count",
         "selected": "{{label}} (of {{total}})",
         "firstNote": "Drawn from 1st → 2nd → 3rd using only the {{n}} races Boat {{b}} won",
-        "note": "2nd → 3rd bands are counted regardless of the winner. Tap a 1st-place box to redraw the 1 → 2 → 3 flow using only races that boat won"
+        "note": "2nd → 3rd bands are drawn regardless of the winner. Tap a 1st-place box to redraw the 1 → 2 → 3 flow using only races that boat won",
+        "ledeShort": "1st → 2nd → 3rd. Band width = number of races; tap a band for the count",
+        "howTo": "How to read the finish flow",
+        "drawAll": "Rare flows are drawn faintly too"
       },
       "listComma": ", ",
       "scenario": {
         "heading": "Race scenarios",
-        "lede": "Counts past races for \"what if the entry went like this and the start lined up like that\". Choose from the top down and the results below change",
+        "lede": "Checks past races for \"what if the entry went like this and the start lined up like that\". Choose from the top down and the results below change",
         "entryHeading": "How will the entry go?",
         "entry": {
           "all": "Any entry",
@@ -1517,11 +1537,11 @@
           "course": "This course",
           "overall": "Overall"
         },
-        "hintSrcFoot": "This course = average only when in today's course (usually use this). Overall = average across all courses (mixes in different start positions)",
+        "hintSrcFoot": "This course = average only when in today's course. Course differences are left out, so it is easier to compare. Overall = average across all courses (mixes in different start positions)",
         "hintPicCourse": "Each racer's average ST over the last 30 races when entering today's course in wakunari (roughly the last 6–12 months). The dotted line is the average of all racers who ran that course at {{venue}} (any class). Right of the dotted line = earlier than that average. ",
         "hintPicOverall": "Each racer's avg. ST over the last 30 races (any course). Course differences in starts are mixed in, so no dotted line is shown. Look at the gaps between boats.",
         "hintFilled": "Boat {{boats}} has fewer than 5 runs in this course, so the overall avg. ST is used. ",
-        "hintRowHead": "Avg. ST",
+        "hintRowHead": "Avg. ST (s)",
         "hintVenue": "At {{venue}}",
         "hintVenueAll": "All racers at {{venue}} (by course)",
         "hintExh": "Today's exhibition",
@@ -1533,19 +1553,19 @@
         "hintConds": "Matching conditions (judged by {{src}} avg. ST)",
         "hints": {
           "kado4": "Course 4 (kado) avg. ST is earlier than all of courses 1–3",
-          "kado4_02": "Course 4 (kado) avg. ST is .02 or more earlier than all of courses 1–3",
-          "in_slow02": "Course 1 avg. ST is .02 or more later than course 2",
+          "kado4_02": "Course 4 (kado) avg. ST is 0.02s or more earlier than all of courses 1–3",
+          "in_slow02": "Course 1 avg. ST is 0.02s or more later than course 2",
           "in_fastest": "Course 1 avg. ST is the earliest of the 6",
-          "d2_slow01": "Course 2 avg. ST is .01 or more later than both courses 1 and 3",
-          "d3_slow01": "Course 3 avg. ST is .01 or more later than both courses 2 and 4",
-          "dash03": "Sum of avg. ST for courses 4–6 is .03 or more earlier than the sum for courses 1–3",
-          "flat03": "Spread of avg. ST across the 6 (latest − earliest) is within .03"
+          "d2_slow01": "Course 2 avg. ST is 0.01s or more later than both courses 1 and 3",
+          "d3_slow01": "Course 3 avg. ST is 0.01s or more later than both courses 2 and 4",
+          "dash03": "Sum of avg. ST for courses 4–6 is 0.03s or more earlier than the sum for courses 1–3",
+          "flat03": "Spread of avg. ST across the 6 (latest − earliest) is within 0.03s"
         },
         "hintUp": "In the past, {{form}} happened {{ph}} of the time ({{pm}} when not matching)",
         "hintDown": "{{form}} is actually less likely: {{ph}} ({{pm}} when not matching)",
         "hintCount": "{{n}} races. {{form}} = in the race, {{def}}",
         "hintNone": "Today's order matches none of the conditions",
-        "hintFoot": "Counted in wakunari races in {{scope}} ({{n}}; races with flying or late starts and races without an average ST for all 6 boats are excluded, so the count can differ slightly from \"Any shape\" in ②). {{few}}Even when a condition matches, it misses more often than not (a clue, not a deciding factor). Tap to select that shape in ② below",
+        "hintFoot": "Based on wakunari races in {{scope}} ({{n}}; races with flying or late starts and races without an average ST for all 6 boats are excluded, so the count can differ slightly from \"Any shape\" in ②). {{few}}Even when a condition matches, it misses more often than not (a clue, not a deciding factor). Tap to select that shape in ② below",
         "hintBadge": "Today's avg. ST matches",
         "slitHeading": "How will the start line up? (slit shape)",
         "forms": {
@@ -1584,7 +1604,7 @@
         "shareCount": "{{p}} ({{n}})",
         "slitAria": "Order at the slit (side view; numbers are courses)",
         "slitLine": "Slit",
-        "slitScale": "1 boat length (about 0.13s)",
+        "slitScale": "1 length ≈ 0.13s",
         "slitFoot1": "Kado = the innermost of the dash boats (boats taking a long run-up). The 7 shapes are defined using the kado in a wakunari entry (course 4). The boat beside the kado = one course inside it (course 3 when wakunari). The drawing is an example side view (numbers are courses, the line on the right is the slit; scale: 1 boat length ≈ 0.13s)",
         "slitDef": "{{form}}: {{def}}. ",
         "slitFoot2": "A race can match two or more shapes (totals can exceed 100%). Shares are within the selected entry. The slit shape cannot be picked from today's exhibition. ",
@@ -1594,8 +1614,8 @@
         "slitDeepFly": "For reference: today's exhibition shape is not shown (a boat had a deep early start (F.06 or more) or a late start in the exhibition, which says little about the race start)",
         "slitPre": "After the exhibition, today's exhibition slit shape is shown for reference",
         "noForm": "Matches no shape",
-        "attackHeading": "Did the attack work? (attacking boat and Boat 1's finish)",
-        "attackWakuOnly": "Counted only for wakunari entries (shown when \"Wakunari\" or \"Any entry\" is selected in ①)",
+        "attackHeading": "Did the attack work?",
+        "attackWakuOnly": "Only wakunari entries are gathered (shown when \"Wakunari\" or \"Any entry\" is selected in ①)",
         "attackGuide": "Select a slit shape in ② to see whether the attacking boat won or Boat 1 escaped with that shape",
         "attackNoRecord": "There is no record of who turned the 1st mark first, so this uses finishes and winning techniques",
         "attacker": "Attacking boat:",
@@ -1636,11 +1656,11 @@
         "b1Big": "With {{form}} (wakunari in {{scope}}), Boat 1 won by Nige",
         "b1BigSub": "{{hits}}/{{n}} races. Top 2 {{top2}}",
         "b1ExhNote": "Boat 1 tends to post fast exhibition times (the same racer is about 0.02s faster as Boat 1, possibly from running inside in the exhibition). Discount a high exhibition-time rank accordingly",
-        "attackFoot": "Bands with fewer than 50 races are shown faded (they swing easily). Counted only in races with avg. ST for all 6, so counts may be slightly lower than in ④. Tied boats take the higher rank.",
+        "attackFoot": "Bands with fewer than 50 races are shown faded (they swing easily). Based only on races with avg. ST for all 6, so counts may be slightly lower than in ④. Tied boats take the higher rank.",
         "attackRef": "Few races, so the rate for the same band in {{name}} is shown small alongside.",
         "overlap": "Shapes overlap ({{p}} of {{form}} also matches {{other}}).",
-        "notCause": "These are counted shares, not necessarily causes",
-        "resultHeading": "With the shape in ②, how was it decided? (not split by the ranks in ③)",
+        "notCause": "These are past shares, not necessarily causes",
+        "resultHeading": "With the shape in ②, how was it decided?",
         "coreEntryForm": "Races where {{entry}} the slit was {{form}}",
         "coreEntry": "Races where {{entry}}",
         "coreForm": "Races where the slit was {{form}}",
@@ -1661,16 +1681,46 @@
         "payout": "Trifecta ¥{{yen}}",
         "entryLabel": "Entry {{e}}",
         "slitLabel": "Slit: {{forms}}",
-        "foot": "These are counted shares, not necessarily causes. The slit shape is only known after the race, so treat it as a \"what if\" reference. {{n}} races with refunds (F, L, withdrawal) are excluded, so counts do not match \"Key factors\" (the excluded count also includes races with no 3rd place or unknown entry courses)",
+        "foot": "These are past shares, not necessarily causes. The slit shape is only known after the race, so treat it as a \"what if\" reference. {{n}} races with refunds (F, L, withdrawal) are excluded, so counts do not match \"Key factors\" (the excluded count also includes races with no 3rd place or unknown entry courses)",
         "attackerName": "{{boat}} ({{role}}). ",
         "withParen": "{{core}} ({{paren}})",
         "hintPicA1": "In all-A1 races, most boats sit to the right. ",
         "hintPicTail": "What matters is the gap between boats.",
-        "hintFew": "The sample is small, so the range is wide. "
+        "hintFew": "The sample is small, so the range is wide. ",
+        "entryHowTo": "How to read the entry",
+        "termsFold": "Terms · how shares are calculated",
+        "hintTable": "See the numbers (average ST table)",
+        "hintRefShort": "{{venue}} avg.",
+        "slitRefLegend": "Dotted = {{name}}",
+        "slitFaster": "Faster →",
+        "resultNotSplit": "The results in ④ are not split by the attacking boat's rank in ③."
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
-      "sentenceSep": ". "
-    }
+      "feedback": {
+        "question": "Did Ryujin Sonar help with your prediction?",
+        "useful": "It helped",
+        "lacking": "Not enough",
+        "usefulAsk": "What did you use it for? (optional)",
+        "usefulExample": "e.g. I checked the count for the same entry pattern and widened my 2nd-place picks",
+        "lackingAsk": "What would have made it useful? (optional, choose any)",
+        "reasons": {
+          "few_races": "Too few races",
+          "no_filter": "Can’t narrow down by the conditions I want",
+          "hard_to_read": "The numbers are hard to read",
+          "how_to_use": "Not sure how to use it for predictions",
+          "other": "Other"
+        },
+        "lackingExample": "e.g. Please also match wind direction and water level",
+        "commentLabel": "Comment (optional)",
+        "count": "{{n}} / {{max}}",
+        "send": "Send",
+        "thanks": "Received. We will use it for the next improvement",
+        "note": "Sent anonymously and never published. Only the site operators read it",
+        "error": "Could not send. Please wait a moment and try again"
+      }
+    },
+    "sonarLink": "Similar races and race scenarios are in the Ryujin Sonar tab",
+    "sonarLinkGo": "Open"
   },
   "beforeInfo": {
     "subtitle": "Same-day information updated as the race approaches. Some items aren't finalized until 30/15/10 minutes before the start",
