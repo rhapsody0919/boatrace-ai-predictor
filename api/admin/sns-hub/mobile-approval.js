@@ -58,7 +58,7 @@ export default async function handler(req) {
           return jsonResponse({ data, connected: false });
         } catch (e) {
           if (e.message === "本人の判断が必要です")
-            return jsonResponse({ error: e.message }, 403);
+            return jsonResponse({ error: "本人の判断が必要です" }, 403);
           throw e;
         }
       }
