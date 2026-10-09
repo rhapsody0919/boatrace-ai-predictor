@@ -258,6 +258,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/raceStatus.js` | レース単位の状態（締切前/締切後・結果反映待ち/結果確定）を判定する。 | getRaceStatus, RACE_STATUS |
 | `src/utils/raceTimeOfDay.js` | 1Rの発走時刻から開催時間帯（モーニング/デイ/サマータイム/ナイター/ミッドナイト）を | getTimeOfDay, getVenueTimeOfDay, TIME_OF_DAY |
 | `src/utils/raceUrlState.js` | レース詳細の「どのタブ・どの艇を見ているか」を URL のクエリに載せる（BOA-493）。 | parseSonarParam, resolveInitialRaceTab, parseBoatParam, pageViewPath, RACE_TAB_PARAM ほか4件 |
+| `src/utils/raceView.js` | レース詳細と思考アシストの上部の切り替え（BOA-430 PR6、spec D-22・D-36 (6)）。 | readRaceView, writeRaceView, shouldOpenAssist, hasViewQuery, showNewBadge ほか2件 |
 | `src/utils/racerConditionStats.js` | — | tallyWinPlaceShow, aggregateRacerConditionStats, STRONG_WIND_MS, RACER_CONDITION_MIN_RUNS |
 | `src/utils/racerIndexPolicy.js` | 選手ページ（/racer/:racerId）を検索エンジンにインデックスさせるかの判定（集客レーン、2026-10-02）。 | isRacerIndexable, RACER_INDEX_GRADES, RACER_INDEX_ACTIVE_DAYS |
 | `src/utils/racerName.js` | 出走表の選手名（「丹下」「将」の間を全角スペース3つで詰めた表記）を姓と名に分ける。 | splitRacerName |
@@ -310,4 +311,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 275 ファイル / export 1481 件。
+対象 276 ファイル / export 1488 件。
