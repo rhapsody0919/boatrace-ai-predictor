@@ -755,6 +755,8 @@ test.describe("思考アシスト: PR4 のファン評価 1周目", () => {
   }) => {
     await open(page);
     const region = await openDeep(page, 2);
+    // 説明文は「全部の材料」の中（2026-10-09 ユーザー決定 A）
+    await region.getByRole("button", { name: /^全部の材料（2号艇）/ }).click();
     await expect(
       region.getByText(/^徳山・級の並びが同じ: 2号艇は A2/),
     ).toBeVisible();
@@ -883,5 +885,64 @@ test.describe("思考アシスト: PR4 のデザイナーのレビューと 271 
       expect(w, sel).toBeGreaterThanOrEqual(44);
       expect(h, sel).toBeGreaterThanOrEqual(44);
     }
+  });
+});
+
+/** 2026-10-09 ユーザー決定 A（深掘りの並び）・B（同じ数字を1回だけ）の再現テスト */
+test.describe("思考アシスト: ユーザー決定 A・B（2026-10-09）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("A: 深掘りの先頭に▲の付いた材料が最大3件、値の一覧はその下、残りは「全部の材料」で開く", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const region = page.getByRole("region", { name: "1号艇の詳しい情報" });
+    const head = region.getByRole("heading", { name: "差がつく材料（1号艇）" });
+    await expect(head).toBeVisible();
+    const top = region.locator(".ta-deep-facts").first().locator(".ta-chip");
+    const n = await top.count();
+    expect(n).toBeGreaterThan(0);
+    expect(n).toBeLessThanOrEqual(3);
+    await expect(top.filter({ hasText: "▲" })).toHaveCount(n);
+    // 先頭の材料は値の一覧（dl）より前（開くと下へ送るので座標ではなく DOM の順で比べる）
+    const before = await region.evaluate((el) => {
+      const h = el.querySelector("h4");
+      const dl = el.querySelector("dl");
+      return Boolean(
+        h.compareDocumentPosition(dl) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    });
+    expect(before).toBe(true);
+    const all = region.getByRole("button", { name: /^全部の材料（1号艇）/ });
+    await expect(all).toHaveAttribute("aria-expanded", "false");
+    await all.click();
+    await expect(all).toHaveAttribute("aria-expanded", "true");
+    await expect(region.locator(".ta-chip").nth(n)).toBeVisible();
+  });
+
+  test("B: 軸の大きい数字（54.6%）は1回だけ、件数の札を横に、比べる相手は会場の全レースの棒", async ({
+    page,
+  }) => {
+    await open(page);
+    const sum = page.locator(".ta-sum");
+    await expect(sum.getByText("54.6%", { exact: true })).toHaveCount(1);
+    await expect(
+      sum
+        .getByText("全国・級の並びが同じ準優勝戦 119件", { exact: true })
+        .first(),
+    ).toBeVisible();
+    await expect(sum.getByText(/^徳山の全レース 17,552件/)).toBeVisible();
+  });
+
+  test("B: 展開の「当てはまるとき」の棒は出さず、比べる相手（当てはまらないとき）の棒だけ", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(page.getByText(/当てはまるとき、本番が/)).toHaveCount(0);
+    await expect(page.getByText(/^当てはまらないとき/)).toBeVisible();
   });
 });

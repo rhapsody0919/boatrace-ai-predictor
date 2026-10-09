@@ -1,9 +1,9 @@
-import { useState } from "react";
 import BaseBar from "./BaseBar";
 import Bars6 from "./Bars6";
 import BetSummary from "./BetSummary";
 import ClassLineup from "./ClassLineup";
 import FactChips from "./FactChips";
+import Fold from "./Fold";
 import ScopeTable from "./ScopeTable";
 import BoatBadge from "../BoatBadge";
 import {
@@ -34,24 +34,6 @@ const st2 = (v, fly) =>
     ? "—"
     : `${fly ? "F" : ""}.${String(Math.round(Math.abs(v) * 100)).padStart(2, "0")}`;
 
-/** 畳んだ説明（押すと開く） */
-function Fold({ title, children }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="ta-fold">
-      <button
-        type="button"
-        className="ta-scope-toggle"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
-        {title} ›
-      </button>
-      {open && children}
-    </div>
-  );
-}
-
 function AxisSummary({ m }) {
   const { scope, chips, venue, headerScope, vaFacts, vaCell, classes, round } =
     m;
@@ -65,15 +47,16 @@ function AxisSummary({ m }) {
     <>
       <section className="ta-box">
         <h3>{C.axisHeading(1)}</h3>
+        {/* 大きい数字の横に件数の札。同じ範囲の棒は出さず、比べる相手（会場の全レース）の棒だけ（2026-10-09 ユーザー決定 B） */}
         <div className="ta-big">
           <span className="ta-big-pct ta-num">{p1(u.k, u.n)}%</span>
           <span className="ta-big-cnt ta-num">{C.races(u.k, u.n)}</span>
+          <span className="ta-scopechip ta-num">{C.scopeChip(label, u.n)}</span>
         </div>
         <ClassLineup lineup={classLineup(classes, 1)} />
         {counts && (
           <p className="ta-note">{C.classNote(1, classes[0], counts)}</p>
         )}
-        <BaseBar label={C.scopeChip(label, u.n)} k={u.k} n={u.n} />
         {va && venue && (
           <BaseBar label={C.venueAllN(venue, va.n)} k={va.k} n={va.n} />
         )}
@@ -172,16 +155,6 @@ function FlowSummary({ m }) {
                   {C.flowShapeMiss(p0(top.miss[0], top.miss[1]))}
                 </span>
               </div>
-              <div className="ta-chk">
-                <span>✓ {C.hintConds[top.id]}</span>
-                {exhForm && <span>✓ {C.flowExhForm(formName)}</span>}
-              </div>
-              <BaseBar
-                label={C.flowHitBar(formName)}
-                k={top.hit[0]}
-                n={top.hit[1]}
-              />
-              <BaseBar label={C.flowMissBar} k={top.miss[0]} n={top.miss[1]} />
               <div className="ta-legend">
                 <span className="ta-scopechip ta-num">
                   {C.scopeChip(
@@ -190,6 +163,12 @@ function FlowSummary({ m }) {
                   )}
                 </span>
               </div>
+              <div className="ta-chk">
+                <span>✓ {C.hintConds[top.id]}</span>
+                {exhForm && <span>✓ {C.flowExhForm(formName)}</span>}
+              </div>
+              {/* 大きい数字と同じ「当てはまるとき」の棒は出さず、比べる相手（当てはまらないとき）の棒だけ（ユーザー決定 B） */}
+              <BaseBar label={C.flowMissBar} k={top.miss[0]} n={top.miss[1]} />
               <p className="ta-note">{C.flowHintSource}</p>
             </>
           ) : (

@@ -3,6 +3,7 @@ import BoatBadge from "../BoatBadge";
 import ClassLineup from "./ClassLineup";
 import RunsTable from "./RunsTable";
 import FactChips from "./FactChips";
+import Fold from "./Fold";
 import {
   METRICS,
   classLineup,
@@ -21,6 +22,9 @@ import {
   priorRuns,
 } from "../../../utils/assistSummary";
 import { ASSIST_COPY as C } from "../../../data/thinkingAssistCopy";
+
+/** 深掘りの先頭に出す▲の付いた材料の数（ユーザー決定 A） */
+const TOP_FACTS = 3;
 
 /** 値のボタン（押すと6艇比較）。深掘りの1艇の値には金枠を付けない（FR-3a「付けない所」） */
 function Val({ metric, racer, onMetric }) {
@@ -123,6 +127,12 @@ export default function BoatDeepDive({
   const counts = restClassCounts(today?.classes, boat);
   const u = b1Usual(scope, boat);
   const techTotal = technique?.win_count ?? 0;
+  // 先頭に出す結論: ▲（今日6艇で一番・一番下）の付いた材料を最大3件（2026-10-09 ユーザー決定 A）
+  const topChips = chips.filter((c) => c.hit).slice(0, TOP_FACTS);
+  const base = u ? Math.round((u.k / u.n) * 100) : 0;
+  const scopeLabel = scope
+    ? C.scopeChip(factsScopeLabel(scope, venue), scope.n)
+    : null;
 
   return (
     <section ref={ref} className="ta-deep" aria-label={C.deepRegion(boat)}>
@@ -138,6 +148,16 @@ export default function BoatDeepDive({
           {C.close}
         </button>
       </div>
+      {scope && topChips.length > 0 && (
+        <div className="ta-deep-facts">
+          <h4>{C.factsHeading(boat)}</h4>
+          <div className="ta-legend">
+            <span className="ta-scopechip ta-num">{scopeLabel}</span>
+            <span>{C.factsLegend}</span>
+          </div>
+          <FactChips chips={topChips} base={base} round={round} />
+        </div>
+      )}
       {feats.length > 0 && (
         <div className="ta-feat" aria-label={C.featTitle} role="group">
           {feats.map((f) => (
@@ -312,32 +332,28 @@ export default function BoatDeepDive({
         />
       )}
       {scope && chips.length > 0 && (
-        <div className="ta-deep-facts">
-          <h4>{C.factsHeading(boat)}</h4>
-          <div className="ta-legend">
-            <span>{C.factsLegend}</span>
+        // 残りの材料（全部）は畳む（ユーザー決定 A）
+        <Fold title={C.factsAll(boat)}>
+          <div className="ta-deep-facts">
+            <ClassLineup lineup={classLineup(today?.classes, boat)} />
+            {counts && (
+              <p className="ta-note">
+                {C.classNote(
+                  boat,
+                  today.classes[i],
+                  counts,
+                  factsScopeLabel(scope, venue),
+                )}
+              </p>
+            )}
+            <div className="ta-legend">
+              <span className="ta-scopechip ta-num">{scopeLabel}</span>
+              <span>{C.factsLegend}</span>
+            </div>
+            <FactChips chips={chips} base={base} round={round} />
+            <p className="ta-note">{C.factsNotCause}</p>
           </div>
-          <ClassLineup lineup={classLineup(today?.classes, boat)} />
-          {counts && (
-            <p className="ta-note">
-              {C.classNote(
-                boat,
-                today.classes[i],
-                counts,
-                factsScopeLabel(scope, venue),
-              )}
-            </p>
-          )}
-          <span className="ta-scopechip ta-num">
-            {C.scopeChip(factsScopeLabel(scope, venue), scope.n)}
-          </span>
-          <FactChips
-            chips={chips}
-            base={u ? Math.round((u.k / u.n) * 100) : 0}
-            round={round}
-          />
-          <p className="ta-note">{C.factsNotCause}</p>
-        </div>
+        </Fold>
       )}
     </section>
   );

@@ -181,6 +181,8 @@ export const ASSIST_COPY = Object.freeze({
   factRank: (n) => `${n}番目`,
   factFinalOff: (round) => `${round}の日は使わない`,
   factsNotCause: "過去の割合で、原因とは限らない",
+  // 深掘りの残りの材料を畳んだ見出し（2026-10-09 ユーザー決定 A）
+  factsAll: (boat) => `全部の材料（${boat}号艇）`,
   factsNoneLarge:
     "この範囲では、1着の割合の差がはっきり大きい材料は無い（艇の丸を押すと全部の材料が出る）",
   scopeVenue: (venue) => `${venue}・級の並びが同じ`,
@@ -241,7 +243,6 @@ export const ASSIST_COPY = Object.freeze({
   flowShapeHeading: "本番のスタートの形",
   flowShapeLead: (form) => `本番で${form}になるのは`,
   flowShapeMiss: (p) => `（当てはまらないときは${p}%）`,
-  flowHitBar: (form) => `当てはまるとき、本番が${form}に`,
   flowMissBar: "当てはまらないとき",
   flowHintSource: "平均ST（このコース、直近30走）の並び。展示STではない",
   flowExhForm: (form) => `展示も${form}`,
