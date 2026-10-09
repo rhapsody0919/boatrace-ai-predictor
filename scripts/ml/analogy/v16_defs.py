@@ -50,6 +50,17 @@ def scope_keys(venue: int, classes, boat: int, round_: str | None, grade: str | 
     return out
 
 
+
+def scope_boat(key: str) -> int | None:
+    """級をそろえる範囲キー（VC・NC・NCR）の選んだ艇の艇番。VA・VG・NA は None。
+    VC:会場:構成:{艇番}{級}、NC:構成:{艇番}{級}、NCR:構成:{艇番}{級}:節（scope_keys と同じ形）"""
+    parts = key.split(":")
+    if parts[0] == "VC":
+        return int(parts[3][0])
+    if parts[0] in ("NC", "NCR"):
+        return int(parts[2][0])
+    return None
+
 def default_scope(n_vc: int) -> str:
     return "VC" if n_vc >= MIN_VC_RACES else "NC"
 

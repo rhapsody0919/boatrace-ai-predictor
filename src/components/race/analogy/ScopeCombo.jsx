@@ -4,6 +4,7 @@ import { comboLabel, venueLabel } from "../../../utils/analogyFormat";
 import { parseScopeKey, scopeKind } from "../../../utils/analogyFacts";
 
 const k = "aiPredictionTab.analogy.facts";
+const CLASSES = ["A1", "A2", "B1", "B2"];
 
 /**
  * 「同じ級別の組み合わせ」が何をそろえているかの絵と1文（承認モック sonar-tab v3、2026-10-08 ユーザー決定）。
@@ -11,9 +12,10 @@ const k = "aiPredictionTab.analogy.facts";
  * （scripts/ml/analogy/v16_defs.py の class_combo・scope_keys）。どの枠に誰がいたかまでは合わせていないので、
  * 選んだ艇の枠だけ級別を描き、ほかの5枠は「問わない」と描く。会場の全レース（VA）は級別をそろえていないので1文だけ、
  * G1（VG）・全国の全レース（NA）は何も出さない
- * @param {{scopeKey: string}} props
+ * chips が true のとき（展開シナリオ、承認モック mock-scenario-v1）は、1文の代わりに級別ごとの艇数の札と短い1行
+ * @param {{scopeKey: string, chips?: boolean}} props
  */
-export default function ScopeCombo({ scopeKey }) {
+export default function ScopeCombo({ scopeKey, chips = false }) {
   const { t } = useTranslation();
   const kind = scopeKind(scopeKey);
   const s = parseScopeKey(scopeKey);
@@ -49,16 +51,36 @@ export default function ScopeCombo({ scopeKey }) {
           ))}
         </div>
       )}
-      <p className="af-combo-text">
-        {c.uniform
-          ? t(`${k}.comboUniform`, { combo: c.text, round })
-          : t(`${k}.comboSentence`, {
-              combo: c.text,
-              boat: s.boat,
-              cls: s.cls,
-              round,
-            })}
-      </p>
+      {chips && !c.uniform ? (
+        <>
+          <p className="af-combo-text">
+            {t(`${k}.comboFreeShort`, { boat: s.boat })}
+          </p>
+          <p className="af-combo-chips">
+            {CLASSES.map((cl, i) =>
+              s.combo[i] ? (
+                <span key={cl} className="af-info-tag">
+                  {t(`${k}.comboChip`, { cls: cl, n: s.combo[i] })}
+                </span>
+              ) : null,
+            )}
+            <span className="af-foot">
+              {t(`${k}.comboShort`, { boat: s.boat, cls: s.cls, round })}
+            </span>
+          </p>
+        </>
+      ) : (
+        <p className="af-combo-text">
+          {c.uniform
+            ? t(`${k}.comboUniform`, { combo: c.text, round })
+            : t(`${k}.comboSentence`, {
+                combo: c.text,
+                boat: s.boat,
+                cls: s.cls,
+                round,
+              })}
+        </p>
+      )}
     </div>
   );
 }

@@ -101,6 +101,20 @@ write("facts", { ...base, today, facts, exhibition });
 const racecard = read("similar-racecard", raceId);
 write("similar-racecard", { ...base, exact: null, similar: racecard });
 write("similar-exhibition", { ...base, exact: simEx.exact, similar: mergeExhibition(racecard, simEx) });
+// api/analogy/scenario の boats=1 と同じ組み立て（BOA-806）。種類は1号艇の範囲と同じ、VA・VG・NA は null
+function boatScopes(kind) {
+  if (!["VC", "NC", "NCR"].includes(kind)) return null;
+  const read2 = (key) => (key ? read("scenario-boat", key) : null);
+  return Object.fromEntries(
+    [2, 3, 4, 5, 6].map((b) => {
+      const keys = today.scope_keys[String(b)] ?? {};
+      const data = read2(keys[kind]);
+      const rk = keys[{ VC: "NC", NCR: "NC" }[kind]];
+      const rf = read2(rk);
+      return [String(b), data ? { scope: keys[kind], data, reference: rf ? { scope: rk, attack: rf.attack } : null } : null];
+    }),
+  );
+}
 for (const scope of Object.values(today.scope_keys["1"])) {
   const scenario = read("scenario", scope);
   if (!scenario) continue;
@@ -118,6 +132,7 @@ for (const scope of Object.values(today.scope_keys["1"])) {
     hints: today.hints,
     course_st: today.course_st,
     exhibition,
+    boats: boatScopes(scope.split(":")[0]),
   });
 }
 console.log(`✅ ${out}（範囲 ${keys.length}・展示後の800件のうち厳密=${simEx.exact}）`);

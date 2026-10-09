@@ -106,6 +106,29 @@ def test_scope_attack_small():
     assert all("att_lead" not in out[f] for f in ("d1", "d2", "d3"))
 
 
+
+def test_boat_scope_counts_only_the_masked_races_for_the_boat():
+    """艇ごとの範囲（BOA-806）: マスクのレースだけで、その艇の1〜3着と、攻める艇の形の③の表・外の艇の1着を持つ"""
+    flat = [0.15, 0.16, 0.15, 0.17, 0.16, 0.15]
+    kado = [0.15, 0.15, 0.16, 0.12, 0.18, 0.18]
+    rs = races([(WAKU, kado, (4, 1, 5), "まくり", 900), (WAKU, kado, (5, 4, 1), "まくり差し", 3000),
+                (WAKU, flat, (1, 4, 2), "逃げ", 300), (WAKU, kado, (4, 2, 3), "まくり", 1200)])
+    d = SC.prepare(rs)
+    m = np.array([True, True, True, False])  # 4レース目は範囲の外（4号艇の級が今日と違う）
+    nan = np.full((4, 6), np.nan)
+    attack = SC.scope_attack(m & d["entries"]["waku"], d["forms"], d["ranks"][:, 0], d["ranks"][:, 1], d["tech"],
+                             nan, nan, np.full((4, 6), 15))
+    out = SC.boat_scope(m, d, 4, attack)
+    assert out["boat"] == 4 and out["n"] == 3
+    assert out["cells"]["all"]["any"] == [3, 1, 2, 0]   # 件数, 1着, 2着, 3着
+    assert out["cells"]["waku"]["kado"] == [2, 1, 1, 0]
+    assert out["cells"]["waku"]["d1"] == [0, 0, 0, 0]
+    assert set(out["attack"]) == {"kado", "d3", "dash"}  # 4号艇が攻める艇の形だけ
+    assert out["attack"]["kado"]["all"]["att_win"] == [1, 2]
+    assert out["winner"]["kado"] == [1, 2] and out["winner"]["flat"] == [1, 3]  # 形は重なる（カドの2件も平ら）
+    assert SC.boat_scope(m, d, 5, attack)["winner"]["kado"] == [1, 2]  # 攻める4号艇のすぐ外
+
+
 # ---- モックの入力（アーカイブの slitpred・knn/work2）があるときだけ: slit-hint/mark1.py の mark1.json と一致する
 MOCK = Path(os.environ["ANALOGY_MOCK_DIR"]) if os.environ.get("ANALOGY_MOCK_DIR") else None
 

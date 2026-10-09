@@ -62,7 +62,14 @@ export async function routeThinkingAssistV16(
     });
   });
   await page.route("**/api/analogy/scenario/**", (route) => {
-    const scope = new URL(route.request().url()).searchParams.get("scope");
+    const params = new URL(route.request().url()).searchParams;
+    const scope = params.get("scope");
+    // 思考アシストは2〜6号艇の範囲（boats=1、龍神ソナーの③④用。BOA-806）を取らない。取ったら落とす
+    if (params.has("boats"))
+      return route.fulfill({
+        status: 400,
+        json: { error: "思考アシストは boats を取らない" },
+      });
     const body = data.scenario[scope ?? data.facts.today.scope_keys["1"].NC];
     if (!body)
       return route.fulfill({

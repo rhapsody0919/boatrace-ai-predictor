@@ -415,19 +415,34 @@ def main():
                         V.min_rank(arrays["exh_time"][t3i], False))
     st6 = SC.matrix(pr.loc[t3["race_id"].to_numpy(), "st_by_course"])
     base3 = ~np.isnan(st6).any(1) & ~np.isnan(A).any(1)
+    st_cent = V.st_cent(np.nan_to_num(st6))
+    attack = lambda m: SC.scope_attack(m & d["entries"]["waku"] & base3, d["forms"], d["ranks"][:, 0],  # noqa: E731
+                                       d["ranks"][:, 1], d["tech"], motor_rank, exh_rank, st_cent)
+    t3r = t3.reset_index(drop=True)
     scn_keys = sorted({k for ks in keys_by_race.values() for k in ks[1].values()})
     for key in scn_keys:
-        m = scope_masks(key, t3.reset_index(drop=True), arrays["cls_name"][t3i], combos[t3i])
+        m = scope_masks(key, t3r, arrays["cls_name"][t3i], combos[t3i])
         s = SC.scope_cells(m, d)
         s["hints"] = SC.scope_hints(m, d, {"course": C, "overall": A})
-        s["attack"] = SC.scope_attack(m & d["entries"]["waku"] & base3, d["forms"], d["ranks"][:, 0],
-                                      d["ranks"][:, 1], d["tech"], motor_rank, exh_rank, V.st_cent(np.nan_to_num(st6)))
+        s["attack"] = attack(m)
         # 脚注「返還（F・L・欠場）があったレースなど{n}件を除く」（spec C-5）: タブ1・2の母集団との差（返還のほか、
         # 3着が無い・実進入が分からないレースも除く。どちらの件数とも合うように差で持つ）
         s["n_refund_excluded"] = int((scope_masks(key, races, arrays["cls_name"], combos) & pool).sum()) - s["n"]
         s["key"], s["period"] = key, [POOL_FROM, str(cutoff.date())]
         write_local(out, f"scenario/{key.replace(':', '_')}.json", s)
     log("scenario", len(scn_keys))
+
+    # 艇ごと: scenario-boat（タブ3の③④で2〜6号艇の率を「構成＋その艇の級」で出す。BOA-806）。級をそろえる範囲
+    # （VC・NC・NCR）だけ。VA・VG・NA は級によらないので1号艇の範囲の値のまま
+    boat_keys = sorted({k for ks in keys_by_race.values() for b in range(2, 7) for s, k in ks[b].items()
+                        if s in ("VC", "NC", "NCR")})
+    tb = time.time()
+    for key in boat_keys:
+        m = scope_masks(key, t3r, arrays["cls_name"][t3i], combos[t3i])
+        s = SC.boat_scope(m, d, V.scope_boat(key), attack(m))
+        s["key"], s["period"] = key, [POOL_FROM, str(cutoff.date())]
+        write_local(out, f"scenario-boat/{key.replace(':', '_')}.json", s)
+    log("scenario-boat", len(boat_keys), f"{time.time() - tb:.1f}s")
 
     # 今日のレースの「このコース」の平均ST（前日まで。コース＝艇番、5走未満は全体で埋める）
     tt = pd.DataFrame({"racer_id": arrays["racer_id"][today].ravel(),

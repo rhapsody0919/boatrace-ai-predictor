@@ -1,15 +1,17 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import NoteList, { NotesFold } from "./NoteList";
+import ScenarioFold from "./ScenarioFold";
 import ScopeCombo from "./ScopeCombo";
 import EntryPatternPicker from "./EntryPatternPicker";
-import SlitHint from "./SlitHint";
-import SlitShapePicker from "./SlitShapePicker";
+import SlitHint, { SlitHintNotes } from "./SlitHint";
+import SlitShapePicker, { SlitChosen } from "./SlitShapePicker";
 import AttackTable from "./AttackTable";
 import ScenarioRaceList from "./ScenarioRaceList";
 import FinishSankey from "./FinishSankey";
 import TrifectaList from "./TrifectaList";
 import { BoatBars, TechniqueBars } from "./OutcomeBars";
+import BoatBadge from "../BoatBadge";
 import {
   fmtCount,
   fmtDate,
@@ -19,6 +21,8 @@ import {
 } from "../../../utils/analogyFormat";
 import {
   MIN_SCENARIO,
+  boatCells,
+  boatCountsDiffer,
   hintBadgeByForm,
   hintRows,
   minRanks,
@@ -49,6 +53,8 @@ export default function ScenarioTab({
   const [version, setVersion] = useState("course");
   const [first, setFirst] = useState(null);
   const [not1, setNot1] = useState(false);
+  // ②は形を選んだら1行に畳む（承認モック mock-scenario-v1）。「変える」・③の文脈の札で開く
+  const [slitOpen, setSlitOpen] = useState(false);
   const exhibitionStage = stage === "exhibition";
   const exhibition = exhibitionStage ? data.exhibition : null;
   const keys = data.scope_keys ?? {};
@@ -86,14 +92,22 @@ export default function ScenarioTab({
     setSlit("any");
     setFirst(null);
   };
+  // ②の見出しへ戻す（畳む・開くで画面の位置が跳ばないように。③が②のすぐ下に来る）
+  const toSlit = () =>
+    requestAnimationFrame(() =>
+      document
+        .getElementById("af-scn-s2")
+        ?.scrollIntoView({ block: "start", behavior: "smooth" }),
+    );
   const chooseForm = (f) => {
     setSlit(f);
     setFirst(null);
-    requestAnimationFrame(() =>
-      document
-        .getElementById(`af-pat-${f}`)
-        ?.scrollIntoView({ block: "center", behavior: "smooth" }),
-    );
+    setSlitOpen(false);
+    toSlit();
+  };
+  const openSlit = () => {
+    setSlitOpen(true);
+    toSlit();
   };
   const agreement = today?.exh_agreement ?? null;
   const todayEntry = exhibition?.entry_type ?? null;
@@ -146,31 +160,62 @@ export default function ScenarioTab({
         ]
       : []),
   ];
-  const heroT = parens.length
-    ? t(`${k}.withParen`, {
-        core,
-        paren: parens.join(t("aiPredictionTab.analogy.listComma")),
-      })
-    : core;
   const head = E || sl ? t(`${k}.headIn`, { scope, core }) : core;
   const baseName =
     sl && E
       ? t(`${k}.entryWhole`, { entry: t(`${k}.entryShort.${E}`) })
       : allOf(scope);
   const share = (x, n) => (n ? x / n : null);
-  const hit3 = (b, cell) =>
-    cell.first_boat[b - 1] + cell.second_boat[b - 1] + cell.third_boat[b - 1];
+  // 2〜6号艇はその艇の級をそろえた範囲の値（BOA-806）。比べる点線も同じ艇の範囲の「形を問わない」値
+  const cur = boatCells(cells, data.boats, entry, slit);
+  const ref =
+    slit !== "any"
+      ? boatCells(cells, data.boats, entry, "any")
+      : boatCells(cells, data.boats, "all", "any");
+  const perBoat = boatCountsDiffer(cur);
+  const boatN = perBoat ? cur.map((r) => r[0]) : c.n;
+  const top3 = (r) => r[1] + r[2] + r[3];
+
+  const cls = today?.classes ?? [];
+  // ④の範囲の札（どのレースから出した数字か）。級をそろえない範囲（VA・VG・NA）は件数だけ
+  const classScope = !["VA", "VG", "NA"].includes(scopeKind(scopeKey));
+  const scopeTag = (b, n) => (
+    <span className="af-scope-tag">
+      {classScope && <BoatBadge n={b} size="xs" />}
+      {classScope
+        ? t(`${k}.atk.scopeTag`, { cls: cls[b - 1] ?? "—", n: fmtCount(n) })
+        : t(`${k}.scopeTagAll`, { n: fmtCount(n) })}
+    </span>
+  );
+  // 棒の左の札: 級・件数（艇ごとの範囲が無い・級をそろえない範囲は、1号艇の範囲の件数）
+  // その艇の級でそろえた値が無い艇（朝のバッチの前の版など）は、1号艇の範囲の値に戻るので、その艇の級を書かない
+  // （レビュー指摘: 札と中身が食い違っていた）
+  const ownScope = [1, 2, 3, 4, 5, 6].map(
+    (b) => b === 1 || Boolean(data.boats?.[b]?.data?.cells?.[entry]?.[slit]),
+  );
+  const boatTags = cur.map((r, i) =>
+    classScope && ownScope[i]
+      ? t(`${k}.boatTag`, { cls: cls[i] ?? "—", n: fmtCount(r[0]) })
+      : t(`${k}.boatTagAll`, { n: fmtCount(r[0]) }),
+  );
+  const bar2 = (label, p) => (
+    <div className="af-hint-bar af-num">
+      <span>{label}</span>
+      <span className="af-atk-trk">
+        <i style={{ width: `${(p ?? 0) * 100}%` }} />
+      </span>
+      <b>{fmtPct(p)}</b>
+    </div>
+  );
 
   let result;
   if (!c.n) result = <p className="af-warn">{t(`${k}.none`, { head })}</p>;
   else if (c.n < MIN_SCENARIO)
     result = (
       <>
-        <div className="af-hero">
-          <span className="af-hero-n">
-            {t("aiPredictionTab.analogy.count", { n: fmtCount(c.n) })}
-          </span>
-          <span className="af-sub">{t(`${k}.fewList`, { head })}</span>
+        <div className="af-scn-tagrow">
+          {scopeTag(1, c.n)}
+          <span className="af-foot">{t(`${k}.fewList`, { head })}</span>
         </div>
         <p className="af-sub">
           {t(`${k}.fewSummary`, {
@@ -189,11 +234,13 @@ export default function ScenarioTab({
   else
     result = (
       <>
-        <div className="af-hero">
-          <span className="af-hero-n">
-            {t("aiPredictionTab.analogy.count", { n: fmtCount(c.n) })}
-          </span>
-          <span className="af-sub">{heroT}</span>
+        <div className="af-scn-tagrow">
+          {scopeTag(1, c.n)}
+          {parens.length > 0 && (
+            <span className="af-foot">
+              {parens.join(t("aiPredictionTab.analogy.listComma"))}
+            </span>
+          )}
         </div>
         <div className="af-key">
           <span>
@@ -208,70 +255,92 @@ export default function ScenarioTab({
             <i className="is-err" />
             {t("aiPredictionTab.analogy.similar.keyErrShort")}
           </span>
+          <span>{t(`${k}.keyThin`, { n: MIN_SCENARIO })}</span>
         </div>
-        <h4 className="af-h4">{t(`${k}.firstBoat`)}</h4>
-        <BoatBars
-          counts={c.first_boat}
-          n={c.n}
-          reference={base.first_boat.map((v) => share(v, base.n))}
-          colored
-        />
-        <h4 className="af-h4">{t(`${k}.top3Boat`)}</h4>
-        <BoatBars
-          counts={[1, 2, 3, 4, 5, 6].map((b) => hit3(b, c))}
-          n={c.n}
-          reference={[1, 2, 3, 4, 5, 6].map((b) =>
-            share(hit3(b, base), base.n),
-          )}
-          colored
-        />
-        <h4 className="af-h4">{t(`${k}.techHeading`)}</h4>
-        <TechniqueBars
-          counts={c.technique}
-          n={c.n}
-          reference={Object.fromEntries(
-            Object.entries(base.technique).map(([kk, v]) => [
-              kk,
-              share(v, base.n),
-            ]),
-          )}
-        />
-        <div className="af-big">
-          <span>{t(`${k}.manshu`)}</span>
-          <b>{fmtPct(share(c.manshu, c.payout_known))}</b>
-          <small>
-            {t(`${k}.manshuSub`, {
+        <div className="af-scn-blk">
+          <h4 className="af-h4">{t(`${k}.firstBoat`)}</h4>
+          {perBoat && <p className="af-foot">{t(`${k}.boatScopeLine`)}</p>}
+          <BoatBars
+            counts={cur.map((r) => r[1])}
+            n={boatN}
+            reference={ref.map((r) => share(r[1], r[0]))}
+            fewBelow={MIN_SCENARIO}
+            tags={boatTags}
+            colored
+          />
+        </div>
+        <div className="af-scn-blk">
+          <h4 className="af-h4">{t(`${k}.top3Boat`)}</h4>
+          <BoatBars
+            counts={cur.map(top3)}
+            n={boatN}
+            reference={ref.map((r) => share(top3(r), r[0]))}
+            fewBelow={MIN_SCENARIO}
+            tags={boatTags}
+            colored
+          />
+        </div>
+        <div className="af-scn-blk">
+          <h4 className="af-h4">{t(`${k}.techHeadingShort`)}</h4>
+          <TechniqueBars
+            counts={c.technique}
+            n={c.n}
+            reference={Object.fromEntries(
+              Object.entries(base.technique).map(([kk, v]) => [
+                kk,
+                share(v, base.n),
+              ]),
+            )}
+          />
+        </div>
+        <div className="af-scn-blk">
+          <h4 className="af-h4">{t(`${k}.manshu`)}</h4>
+          {bar2(t(`${k}.keyScenario`), share(c.manshu, c.payout_known))}
+          {bar2(baseName, share(base.manshu, base.payout_known))}
+          <p className="af-foot">
+            {t(`${k}.manshuCount`, {
               hits: fmtCount(c.manshu),
               n: fmtCount(c.payout_known),
-              base: baseName,
-              p: fmtPct(share(base.manshu, base.payout_known)),
             })}
-          </small>
+          </p>
         </div>
-        <h4 className="af-h4">{t("aiPredictionTab.analogy.flow.heading")}</h4>
-        <FinishSankey
-          tri={c.tri}
-          first={first}
-          onFirst={setFirst}
-          not1={not1}
-          onNot1={setNot1}
-        />
-        <h4 className="af-h4">
-          {t("aiPredictionTab.analogy.similar.triHeading")}
-        </h4>
-        <TrifectaList tri={c.tri} first={first} not1={not1} />
+        <div className="af-scn-blk">
+          <h4 className="af-h4">{t("aiPredictionTab.analogy.flow.heading")}</h4>
+          <FinishSankey
+            tri={c.tri}
+            first={first}
+            onFirst={setFirst}
+            not1={not1}
+            onNot1={setNot1}
+            scenario
+          />
+        </div>
+        <div className="af-scn-blk">
+          <h4 className="af-h4">
+            {t("aiPredictionTab.analogy.similar.triHeading")}
+          </h4>
+          <TrifectaList tri={c.tri} first={first} not1={not1} scenario />
+        </div>
       </>
     );
 
+  const slitCollapsed = slit !== "any" && !slitOpen;
+  const ctx = [
+    E ? t(`${k}.entryShort.${E}`) : t(`${k}.entry.all`),
+    slit !== "any" ? formName(slit) : null,
+  ]
+    .filter(Boolean)
+    .join(" × ");
+
   return (
     <div className="af-tab-scenario">
-      <p className="af-sub">{t(`${k}.lede`)}</p>
+      <p className="af-sub">{t(`${k}.ledeShort`)}</p>
       <div className="af-ctl-row">
         <span className="af-lbl" id={scopeLbl}>
           {t("aiPredictionTab.analogy.facts.scopeLabel")}
         </span>
         <div
-          className="af-seg"
+          className="af-seg af-seg-44"
           role="group"
           aria-labelledby={scopeLbl}
           data-af-control="scenario_scope"
@@ -291,7 +360,7 @@ export default function ScenarioTab({
           ))}
         </div>
       </div>
-      <ScopeCombo scopeKey={scopeKey} />
+      <ScopeCombo scopeKey={scopeKey} chips />
       {/* 既定で全国に替えたときの理由（spec「数えるレース」。タブ1と同じ1行。範囲を選び直したら API が付けない） */}
       {data.vc_fell_back !== null && data.vc_fell_back !== undefined && (
         <p className="af-sub">
@@ -301,154 +370,243 @@ export default function ScenarioTab({
           })}
         </p>
       )}
-      <h4 className="af-h4">
-        <span className="af-stepn">1</span>
-        {t(`${k}.entryHeading`)}
-      </h4>
-      <EntryPatternPicker
-        cells={cells}
-        entry={entry}
-        onEntry={chooseEntry}
-        todayEntry={todayEntry}
-      />
-      {exhibitionStage && todayEntry && entryAgree?.[1] && (
-        <p className="af-sub">
-          {t(`${k}.entryAgree`, {
-            today: t(`${k}.todayEntry.${todayEntry}`),
-            entry: t(`${k}.entryShort.${todayEntry}`),
-            p: fmtPct(entryAgree[0] / entryAgree[1]),
-            since: fmtDate(String(agreement.period?.[0] ?? "").slice(0, 7)),
-            n: fmtCount(entryAgree[1]),
-          })}
-        </p>
-      )}
-      {/* 進入の見方は折りたたみ（承認モック sonar-tab v3） */}
-      <details className="af-details">
-        <summary>{t(`${k}.entryHowTo`)}</summary>
-        <NoteList
-          texts={[
-            !exhibitionStage && t(`${k}.entryPre`),
-            t(`${k}.entryFoot`, { name: allOf(scope) }),
-          ]}
+      <section className="af-scn-sec" id="af-scn-s1">
+        <h3 className="af-h3 af-scn-h">
+          <span className="af-stepn">1</span>
+          {t(`${k}.entryHeading`)}
+        </h3>
+        <EntryPatternPicker
+          cells={cells}
+          entry={entry}
+          onEntry={chooseEntry}
+          todayEntry={todayEntry}
         />
-      </details>
-      <SlitHint
-        courseSt={data.course_st}
-        version={version}
-        onVersion={pick(setVersion)}
-        rows={rows}
-        exhibition={exhibition}
-        exhibitionStage={exhibitionStage}
-        venue={Number(String(raceId).split("-")[3])}
-        scope={scope}
-        selectedForm={slit}
-        onForm={chooseForm}
-        waku={waku}
-        baseN={baseN}
-        allA1={(today?.classes ?? []).every((c) => c === "A1")}
-      />
-      <h4 className="af-h4">
-        <span className="af-stepn">2</span>
-        {t(`${k}.slitHeading`)}
-      </h4>
-      <SlitShapePicker
-        forms={cells[entry].forms}
-        slit={slit}
-        onSlit={pick(setSlit)}
-        badges={badges}
-      />
-      {/* 今日の展示との関係は②の中身なので、用語の折りたたみより上に置く（UI/UX レビュー） */}
-      <NoteList
-        title={t(`aiPredictionTab.analogy.notes.today`)}
-        texts={[
-          formAgree?.hit?.[1] &&
-            exhibitionStage &&
-            t(`${k}.slitAgree`, {
-              // 締めの一文は数字で言い分ける（BOA-805。以前は数字によらず「少し参考になる程度」だった）。
-              // 展示が別の形だった件数が0なら比べられないので、締めの一文だけ省く
-              verdict: agreementVerdict(formAgree.hit, formAgree.miss)
-                ? t(
-                    `${k}.agreeVerdict.${agreementVerdict(formAgree.hit, formAgree.miss)}`,
-                  )
-                : "",
-              form: formName(exhForms[0]),
-              p: fmtPct(formAgree.hit[0] / formAgree.hit[1]),
-              q: fmtPct(
-                formAgree.miss[1]
-                  ? formAgree.miss[0] / formAgree.miss[1]
-                  : null,
-              ),
-              since: fmtDate(String(agreement.period?.[0] ?? "").slice(0, 7)),
-              n: fmtCount(agreement.forms_n),
-            }),
-          exhibitionStage && exhibition?.forms_excluded
-            ? t(`${k}.slitDeepFly`)
-            : exhibitionStage
-              ? t(`${k}.slitToday`, {
-                  forms: exhForms.length
-                    ? exhForms
-                        .map(formName)
-                        .join(t("aiPredictionTab.analogy.listSeparator"))
-                    : t(`${k}.noForm`),
-                }) +
-                (flyBoats.length
-                  ? t(`${k}.slitFlyShallow`, {
-                      boats: flyBoats.join(
-                        t("aiPredictionTab.analogy.listSeparator"),
-                      ),
-                    })
-                  : "")
-              : t(`${k}.slitPre`),
-        ]}
-      />
-      <details className="af-details">
-        <summary>{t(`${k}.termsFold`)}</summary>
-        <NoteList
-          title={t(`aiPredictionTab.analogy.notes.terms`)}
-          texts={[t(`${k}.slitFoot1`)]}
-        />
-        <NoteList
-          title={t(`aiPredictionTab.analogy.notes.counting`)}
-          texts={[
-            sl &&
-              t(`${k}.slitDef`, {
-                form: formName(slit),
-                def: t(`${k}.forms.${slit}.def`),
+        {exhibitionStage && todayEntry && entryAgree?.[1] && (
+          <div className="af-scn-blk">
+            {bar2(
+              t(`${k}.entryAgreeBar`, {
+                entry: t(`${k}.entryShort.${todayEntry}`),
               }),
-            t(`${k}.slitFoot2`),
-          ]}
+              entryAgree[0] / entryAgree[1],
+            )}
+            <p className="af-foot">
+              {t(`${k}.agreeSource`, {
+                since: fmtDate(String(agreement.period?.[0] ?? "").slice(0, 7)),
+                n: fmtCount(entryAgree[1]),
+              })}
+            </p>
+          </div>
+        )}
+        <ScenarioFold
+          title={t(`${k}.entryHowTo`)}
+          preview={t(`${k}.entryHowToPreview`)}
+        >
+          <ul className="af-notes-ul">
+            <li>{t(`${k}.entryFootShare`, { name: allOf(scope) })}</li>
+            <li>{t(`${k}.entryFootMae`)}</li>
+            <li>{t(`${k}.entryFootDash`)}</li>
+            <li>{t(`${k}.entryFootFew`, { n: MIN_SCENARIO })}</li>
+            {!exhibitionStage && <li>{t(`${k}.entryPre`)}</li>}
+          </ul>
+        </ScenarioFold>
+      </section>
+      <section className="af-scn-sec" id="af-scn-s2">
+        <h3 className="af-h3 af-scn-h">
+          <span className="af-stepn">2</span>
+          {t(`${k}.slitHeadingShort`)}
+        </h3>
+        {slitCollapsed ? (
+          <SlitChosen
+            forms={cells[entry].forms}
+            slit={slit}
+            onChange={openSlit}
+          />
+        ) : (
+          <>
+            <SlitHint
+              courseSt={data.course_st}
+              version={version}
+              onVersion={pick(setVersion)}
+              rows={rows}
+              exhibition={exhibition}
+              exhibitionStage={exhibitionStage}
+              venue={Number(String(raceId).split("-")[3])}
+              selectedForm={slit}
+              onForm={chooseForm}
+              waku={waku}
+            />
+            <SlitShapePicker
+              forms={cells[entry].forms}
+              slit={slit}
+              onSlit={chooseForm}
+              badges={badges}
+              todayForms={
+                exhibitionStage && !exhibition?.forms_excluded ? exhForms : []
+              }
+            />
+            {exhibitionStage && (
+              <div className="af-scn-blk">
+                <h4 className="af-h4">
+                  {t(`aiPredictionTab.analogy.notes.today`)}
+                </h4>
+                {formAgree?.hit?.[1] ? (
+                  <>
+                    {bar2(
+                      t(`${k}.slitAgreeHit`, { form: formName(exhForms[0]) }),
+                      formAgree.hit[0] / formAgree.hit[1],
+                    )}
+                    {formAgree.miss?.[1]
+                      ? bar2(
+                          t(`${k}.slitAgreeMiss`, {
+                            form: formName(exhForms[0]),
+                          }),
+                          formAgree.miss[0] / formAgree.miss[1],
+                        )
+                      : null}
+                    <p className="af-foot">
+                      {agreementVerdict(formAgree.hit, formAgree.miss) && (
+                        <span className="af-info-tag">
+                          {t(
+                            `${k}.agreeVerdict.${agreementVerdict(formAgree.hit, formAgree.miss)}`,
+                          )}
+                        </span>
+                      )}{" "}
+                      {t(`${k}.agreeSource`, {
+                        since: fmtDate(
+                          String(agreement.period?.[0] ?? "").slice(0, 7),
+                        ),
+                        n: fmtCount(agreement.forms_n),
+                      })}
+                    </p>
+                  </>
+                ) : null}
+                <p className="af-foot">
+                  {exhibition?.forms_excluded
+                    ? t(`${k}.slitDeepFly`)
+                    : exhForms.length
+                      ? t(`${k}.slitTodayTag`) +
+                        (flyBoats.length
+                          ? t(`${k}.slitFlyShallow`, {
+                              boats: flyBoats.join(
+                                t("aiPredictionTab.analogy.listSeparator"),
+                              ),
+                            })
+                          : "")
+                      : t(`${k}.slitToday`, { forms: t(`${k}.noForm`) })}
+                </p>
+              </div>
+            )}
+            {!exhibitionStage && <p className="af-foot">{t(`${k}.slitPre`)}</p>}
+            <ScenarioFold
+              title={t(`${k}.termsFold`)}
+              preview={t(`${k}.termsPreview`)}
+            >
+              <ul className="af-notes-ul">
+                <li>{t(`${k}.termKado`)}</li>
+                <li>{t(`${k}.termPic`)}</li>
+                {["flat", "wall", "d2", "d3", "kado", "d1", "dash"].map((f) => (
+                  <li key={f}>
+                    {t(`${k}.slitDef`, {
+                      form: formName(f),
+                      def: t(`${k}.forms.${f}.def`),
+                    })}
+                  </li>
+                ))}
+                <li>{t(`${k}.termOverlap`)}</li>
+                <li>{t(`${k}.termShare`)}</li>
+              </ul>
+            </ScenarioFold>
+          </>
+        )}
+      </section>
+      <section className="af-scn-sec" id="af-scn-s3">
+        <h3 className="af-h3 af-scn-h">
+          <span className="af-stepn">3</span>
+          {t(`${k}.attackHeading`)}
+        </h3>
+        {slit !== "any" && (
+          <div className="af-scn-tagrow">
+            <button type="button" className="af-ctx-tag" onClick={openSlit}>
+              {ctx} ✎
+            </button>
+            <span className="af-info-tag">{scope}</span>
+          </div>
+        )}
+        <AttackTable
+          attack={sc.attack}
+          refAttack={data.reference?.attack ?? null}
+          refName={
+            data.reference
+              ? scopeName(data.reference.scope, t, { short: true })
+              : null
+          }
+          slit={slit}
+          waku={waku}
+          exhibitionStage={exhibitionStage}
+          exhRank={exhibition?.exh_time_rank ?? null}
+          motorRank={motorRank}
+          classes={cls}
+          boats={data.boats ?? null}
+          classScope={classScope}
         />
-      </details>
-      <AttackTable
-        attack={sc.attack}
-        refAttack={data.reference?.attack ?? null}
-        refName={
-          data.reference
-            ? scopeName(data.reference.scope, t, { short: true })
-            : null
-        }
-        slit={slit}
-        waku={waku}
-        exhibitionStage={exhibitionStage}
-        exhRank={exhibition?.exh_time_rank ?? null}
-        exhTime={exhibition?.exh_time ?? null}
-        motor={motor}
-        motorRank={motorRank}
-        scope={scope}
-      />
-      <h4 className="af-h4">
-        <span className="af-stepn">4</span>
-        {t(`${k}.resultHeading`)}
-      </h4>
-      {result}
+      </section>
+      <section className="af-scn-sec" id="af-scn-s4">
+        <h3 className="af-h3 af-scn-h">
+          <span className="af-stepn">4</span>
+          {t(`${k}.resultHeadingShort`)}
+        </h3>
+        {result}
+      </section>
       {feedback}
       <NotesFold title={t("aiPredictionTab.analogy.notes.methodCaution")}>
+        {/* 級をそろえない範囲（会場の全レース等）では、どの数字も同じ集めたレースなので対応の表を出さない */}
+        {classScope && (
+          <>
+            <h4 className="af-h4">{t(`${k}.scopeMapHeading`)}</h4>
+            <div className="af-tbl">
+              <table className="af-mk-t af-scope-map">
+                <thead>
+                  <tr>
+                    <th scope="col">{t(`${k}.scopeMapPart`)}</th>
+                    <th scope="col">{t(`${k}.scopeMapB1`)}</th>
+                    <th scope="col">{t(`${k}.scopeMapOwn`)}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["attOwn", false],
+                    ["attB1", true],
+                    ["barB1", true],
+                    ["barOwn", false],
+                    ["rest", true],
+                  ].map(([id, b1]) => (
+                    <tr key={id}>
+                      <th scope="row">{t(`${k}.scopeMap.${id}`)}</th>
+                      <td>{b1 ? "○" : ""}</td>
+                      <td>{b1 ? "" : "○"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
         <NoteList
           title={t(`aiPredictionTab.analogy.notes.caution`)}
           texts={[
             t(`${k}.foot`, { n: fmtCount(sc.n_refund_excluded ?? 0) }),
             t(`${k}.resultNotSplit`),
           ]}
+        />
+        <h4 className="af-h4">{t(`${k}.notesHintHeading`)}</h4>
+        <SlitHintNotes
+          courseSt={data.course_st}
+          version={version}
+          exhibitionStage={exhibitionStage}
+          venue={Number(String(raceId).split("-")[3])}
+          scope={scope}
+          baseN={baseN}
+          allA1={(today?.classes ?? []).every((x) => x === "A1")}
         />
       </NotesFold>
     </div>

@@ -5,7 +5,7 @@ import { fmtCount, fmtPct } from "../../../utils/analogyFormat";
 /**
  * 割合の横棒（ぶれ幅の横線・比べる相手の点線つき。承認版モックの wbar）。onClick があればボタン
  * @param {{label: React.ReactNode, hits: number, n: number, reference?: number|null, color?: string,
- *   value?: React.ReactNode, selected?: boolean, onClick?: () => void, ariaLabel?: string}} props
+ *   value?: React.ReactNode, selected?: boolean, onClick?: () => void, ariaLabel?: string, few?: boolean}} props few は件数が少ない棒を薄く出す
  */
 export default function RateBar({
   label,
@@ -17,6 +17,7 @@ export default function RateBar({
   selected = false,
   onClick,
   ariaLabel,
+  few = false,
 }) {
   const { t } = useTranslation();
   const p = n ? hits / n : 0;
@@ -60,7 +61,7 @@ export default function RateBar({
   return onClick ? (
     <button
       type="button"
-      className={`af-bar${selected ? " is-selected" : ""}`}
+      className={`af-bar${selected ? " is-selected" : ""}${few ? " is-few" : ""}`}
       aria-label={ariaLabel}
       aria-pressed={selected}
       onClick={onClick}
@@ -68,6 +69,6 @@ export default function RateBar({
       {body}
     </button>
   ) : (
-    <div className="af-bar">{body}</div>
+    <div className={`af-bar${few ? " is-few" : ""}`}>{body}</div>
   );
 }

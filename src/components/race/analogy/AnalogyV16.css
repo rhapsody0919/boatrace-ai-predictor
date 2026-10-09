@@ -1834,6 +1834,11 @@ button.af-bar {
   padding-top: var(--spacing-6);
 }
 
+/* 件数が少ない艇の棒（タブ3で艇ごとに級別をそろえたとき。BOA-806） */
+.af-bar.is-few .af-trk-f {
+  opacity: 0.4;
+}
+
 /* ---- 差がつく材料の七角形（6艇を重ねる・主役＋2艇。承認モック mock-compare-v3） ---- */
 .af-hep {
   display: flex;
@@ -1948,4 +1953,471 @@ button.af-bar {
   color: var(--brand-accent-primary);
   text-decoration: underline;
   cursor: pointer;
+}
+
+/* ---- 展開シナリオ（承認モック mock-scenario-v1、2026-10-09）: 段は h3＋丸数字、押す所は 44px 以上 ---- */
+.af-tab-scenario .af-scn-sec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  padding-top: var(--spacing-6);
+  border-top: var(--border-width-1) solid var(--border-hairline);
+  scroll-margin-top: calc(var(--af-sticky-top, 0px) + 56px);
+}
+
+.af-tab-scenario .af-scn-h {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: 1.2rem;
+}
+
+.af-tab-scenario .af-scn-h .af-stepn {
+  width: 24px;
+  height: 24px;
+  font-size: var(--font-size-sm);
+}
+
+.af-scn-blk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.af-scn-tagrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.af-scope-tag,
+.af-info-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: 1px var(--spacing-1-5);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.af-scope-tag {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.af-ctx-tag {
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  min-height: 44px;
+  padding: 0 var(--spacing-3);
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.af-seg-44 button,
+.af-tab-scenario .af-seg button {
+  min-height: 44px;
+}
+
+.af-scn-fold {
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+}
+
+.af-scn-fold > summary {
+  list-style: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.af-scn-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.af-scn-fold > summary::after {
+  content: "▾";
+  color: var(--text-secondary);
+}
+
+.af-scn-fold[open] > summary::after {
+  content: "▴";
+}
+
+.af-scn-fold > summary small {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
+.af-scn-fold-in {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: 0 var(--spacing-3) var(--spacing-3);
+}
+
+.af-notes-ul {
+  margin: 0;
+  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+/* ① */
+.af-ent-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px 64px;
+  padding: 0 var(--spacing-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.af-ent-head span:nth-child(n + 2) {
+  text-align: right;
+}
+
+.af-tab-scenario .af-ent {
+  grid-template-columns: minmax(0, 1fr) 92px 64px;
+  min-height: 48px;
+}
+
+.af-ent-bar {
+  display: inline-block;
+  height: 8px;
+  margin-right: var(--spacing-1-5);
+  border-radius: 4px;
+  background: var(--brand-accent-primary);
+  vertical-align: middle;
+}
+
+/* 棒（③の箱・①②の一致・万舟） */
+.af-hint-bar,
+.af-atk-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(64px, 40%) 52px;
+  gap: var(--spacing-2);
+  align-items: center;
+  min-height: 28px;
+  font-size: var(--font-size-xs);
+}
+
+.af-hint-bar b,
+.af-atk-v {
+  text-align: right;
+  font-weight: var(--font-weight-bold);
+}
+
+.af-atk-trk {
+  position: relative;
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--surface-page);
+  overflow: hidden;
+}
+
+.af-atk-trk i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 6px;
+  background: var(--brand-accent-primary);
+}
+
+.af-atk-row .af-atk-lb {
+  font-size: var(--font-size-sm);
+}
+
+.af-atk-row.is-main .af-atk-lb {
+  font-weight: var(--font-weight-bold);
+}
+
+.af-atk-row.is-main .af-atk-v {
+  font-size: 1.25rem;
+}
+
+/* ③ */
+.af-atk-who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+}
+
+.af-atk-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--surface-card);
+}
+
+.af-atk-box .af-scope-tag {
+  align-self: flex-start;
+}
+
+.af-atk-sep {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.af-atk-sep::before,
+.af-atk-sep::after {
+  content: "";
+  flex: 1;
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+.af-atk-today {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--spacing-1-5);
+  font-size: var(--font-size-xs);
+}
+
+.af-atk-today b {
+  font-size: var(--font-size-md);
+}
+
+.af-atk-today small,
+.af-atk-nat {
+  color: var(--text-secondary);
+}
+
+.af-atk-few {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  border: var(--border-width-1) dotted var(--text-secondary);
+  border-radius: 4px;
+  padding: 0 3px;
+}
+
+.af-atk-uc {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: 4px;
+  padding: 0 var(--spacing-1);
+}
+
+.af-atk-stack {
+  display: flex;
+  height: 14px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.af-atk-tt {
+  display: block;
+  margin-bottom: var(--spacing-1);
+  font-size: var(--font-size-sm);
+}
+
+.af-atk-inote {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.af-ibtn {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px -6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.af-ibtn span {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: var(--border-width-1) solid currentColor;
+  border-radius: 50%;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+/* (i) で開く説明（類似レースの .af-tip とは別。2026-10-09 レビュー指摘: 同じ名前で類似レースに線が出た） */
+.af-scn-tip {
+  margin: 0;
+  padding-left: var(--spacing-2);
+  border-left: 3px solid var(--border-hairline);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+/* ② */
+.af-hint {
+  padding: var(--spacing-3);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg, 12px);
+}
+
+.af-hint-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1-5);
+}
+
+.af-tab-scenario .af-hintc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  cursor: default;
+}
+
+.af-go {
+  align-self: flex-end;
+  min-height: 44px;
+  padding: 0 var(--spacing-3);
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--brand-accent-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.af-pat-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.af-tab-scenario .af-pat {
+  min-height: 48px;
+  font-size: var(--font-size-xs);
+}
+
+.af-pat-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+}
+
+.af-pat-chosen {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: 56px;
+  padding: var(--spacing-1-5) var(--spacing-2-5, 10px);
+  border: var(--border-width-2) solid var(--brand-accent-primary);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+}
+
+.af-pat-chosen-ico {
+  width: 64px;
+  flex: none;
+}
+
+.af-pat-chosen-ico svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.af-pat-chosen-t {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.af-pat-chosen-t b {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.af-pat-change {
+  min-height: 44px;
+}
+
+/* ④ */
+.af-bar-tag {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* 札（艇番・級・件数）は折り返さない（ファン評価: 4桁の件数で A2 の行だけ2行になった） */
+.af-tab-scenario .af-bar {
+  grid-template-columns: 9.5em minmax(0, 1fr) auto;
+}
+
+.af-tab-scenario .af-bar > span:first-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.af-tab-scenario .af-ent-sh {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.af-tab-scenario .af-ent-b1 {
+  min-width: 0;
+  max-width: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+/* 「今日」の札は金色（選択中の色）と分ける（UI/UX レビュー: 金色が使われすぎて選択の合図が埋もれる） */
+.af-tab-scenario .af-today-badge {
+  color: var(--color-success-dark);
+  background: none;
+  border: var(--border-width-1) solid currentColor;
+}
+
+.af-combo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  margin: 0;
 }
