@@ -1517,9 +1517,15 @@
 }
 
 /* 光らせる場所（外枠だけ。中の配置は変えない） */
+.ta-page [data-guide] {
+  /* 送った先が固定のヘッダー・レンズの下に隠れないように */
+  scroll-margin-top: calc(var(--ta-sticky-top, 0px) + var(--spacing-3));
+  scroll-margin-bottom: var(--spacing-3);
+}
+
 .ta-guide-lit {
   outline: 3px solid var(--brand-accent-primary);
-  outline-offset: 2px;
+  outline-offset: -3px;
   border-radius: var(--radius-lg);
 }
 
@@ -1566,7 +1572,7 @@
 
 .ta-th-meas h3,
 .ta-th-also h3,
-.ta-venue-tech h3 {
+.ta-venue-tech-h {
   margin: 0;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);

@@ -510,7 +510,8 @@ test.describe("会場の特徴シートの決まり手", () => {
     await venueBtn(page).click();
     const sheet = page.getByRole("dialog", { name: `${VENUE}の特徴` });
     await expect(sheet.getByText("変化なし")).toHaveCount(0);
-    await expect(sheet.getByText(/逃げ.*最近[↑↓]/)).toHaveCount(0);
+    // 行の先頭が「逃げ」の要素だけを見る（決まり手の行を並べた箱や注記の「↑↓」に当たらないように。BOA-430 PR5）
+    await expect(sheet.getByText(/^逃げ.*最近[↑↓]/)).toHaveCount(0);
   });
 });
 
@@ -653,6 +654,9 @@ test.describe("セオリーカードと用語のシート", () => {
     page,
   }) => {
     await openAssist(page);
+    // 今節の平均着順点の「?」は深掘りの項目名の横（screens 対応表 FW-13「艇の丸 → 今節の点」）。BOA-430 PR5 で、
+    // 開いた直後の画面にあるという前提を、深掘りを開いてから押す形に直した
+    await boatRow(page, 1).click();
     await termBtn(page, "今節の平均着順点").click();
     const dialog = page.getByRole("dialog", { name: "今節の平均着順点" });
     await expect(dialog).toBeVisible();

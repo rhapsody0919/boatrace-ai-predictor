@@ -11,7 +11,9 @@ const p0 = (v) => Math.round(v * 100);
 function Techniques({ trend }) {
   return (
     <div className="ta-venue-tech">
-      <h3>{C.venueTechHeading(trend.total365, trend.total90)}</h3>
+      <h3 className="ta-venue-tech-h">
+        {C.venueTechHeading(trend.total365, trend.total90)}
+      </h3>
       {trend.rows.map((r) => (
         <div key={r.technique} className="ta-venue-tech-row">
           <span className="ta-venue-tech-label">

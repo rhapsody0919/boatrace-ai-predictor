@@ -182,7 +182,7 @@ export default function RaceLaneBoard({
                   (model.kind === "axis" || model.kind === "flow") && (
                     <TheoryButton
                       id="TC-T4"
-                      name={`${row.boat}号艇 F${r.fCount}`}
+                      name={ASSIST_COPY.markName(`F${r.fCount}`, row.boat)}
                       boat={row.boat}
                       className="ta-tag ta-tag-warn"
                     >
@@ -194,7 +194,7 @@ export default function RaceLaneBoard({
                     <TheoryButton
                       key={m.text}
                       id={m.theory}
-                      name={`${row.boat}号艇 ${m.text}`}
+                      name={ASSIST_COPY.markName(m.text, row.boat)}
                       boat={row.boat}
                       className={`ta-tag${m.hit ? " ta-tag-hit" : ""}`}
                     >

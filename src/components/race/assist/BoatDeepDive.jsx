@@ -339,7 +339,7 @@ export default function BoatDeepDive({
             <dd>
               <TheoryButton
                 id="TC-T4"
-                name={`${boat}号艇 F${racer.fCount}`}
+                name={C.markName(`F${racer.fCount}`, boat)}
                 boat={boat}
                 className="ta-tag ta-tag-warn"
               >

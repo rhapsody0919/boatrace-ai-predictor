@@ -610,7 +610,10 @@ test.describe("思考アシスト: レンズの要約と深掘り（PR4）", () 
       page.getByText("★平均STの手がかり（2コース凹み）13%"),
     ).toBeVisible();
     await expect(
-      page.getByText("2コース凹みなら攻め手", { exact: true }),
+      // PR5 で印は押せるボタン（セオリーカード）にした。名前は「{印}（{n}号艇）の過去レースの傾向」
+      page.getByRole("button", {
+        name: "2コース凹みなら攻め手（3号艇）の過去レースの傾向",
+      }),
     ).toBeVisible();
     await page
       .getByRole("button", { name: /^展示ST .*、6艇で比べる$/ })
@@ -682,7 +685,11 @@ test.describe("思考アシスト: PR4 の /code-review 指摘", () => {
     await open(page);
     await lensTab(page, "機力").click();
     await expect(
-      page.getByText("チルト-0.5", { exact: true }).first(),
+      page
+        .getByRole("button", {
+          name: /^チルト-0\.5（\d号艇）の過去レースの傾向$/,
+        })
+        .first(),
     ).toBeVisible();
   });
 });
@@ -768,7 +775,8 @@ test.describe("思考アシスト: PR4 のファン評価 1周目", () => {
     await open(page);
     const region = await openDeep(page, 1);
     await expect(
-      region.getByText("全国勝率", { exact: true }).first(),
+      // 項目名の横に用語の「?」（PR5）が付くので、項目名（dt）を役割で探す
+      region.getByRole("term").filter({ hasText: "全国勝率" }).first(),
     ).toBeVisible();
     await expect(
       region.locator(".ta-chip").getByText("展示タイム"),

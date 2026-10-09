@@ -456,6 +456,8 @@ export const ASSIST_COPY = Object.freeze({
     `関連する実データ: ${form}（攻める艇は${att}号艇）になったレース${n.toLocaleString("ja-JP")}件では、よく出た3連単は ${list}`,
   // 図の印・機力の札の名前（押すとセオリーカード）
   exhBiasMark: "展示の偏り",
+  // 印の名前は「{印}（{n}号艇）」。「{n}号艇 」で始めない（艇の行のボタン「{n}号艇 {苗字}」と読み分ける）
+  markName: (text, boat) => `${text}（${boat}号艇）`,
   sujiChip: ["スジのセオリー", "3まくり→3-4／まくり差し→3-1"],
   powerTheory: Object.freeze({
     x1: "1号艇は展示が速く出やすい",
@@ -511,8 +513,11 @@ export const ASSIST_COPY = Object.freeze({
     low: "低め",
     unclear: "はっきりしない",
   }),
+  // 同じ語を2回並べない（両方はっきりしないときは1つにまとめる）
   guideRoughSub: (b1, m) =>
-    `1号艇の1着は${b1}・万舟は${m}。枠を押すと材料が出る`,
+    b1 === m && b1 === "はっきりしない"
+      ? "1号艇の1着・万舟とも全国との差ははっきりしない。枠を押すと材料"
+      : `1号艇の1着は${b1}・万舟は${m}。枠を押すと材料が出る`,
   guideRoughSubNone: "1号艇の1着と万舟の割合を、全国の全レースと比べる",
   guideAxisSub: "大きい数字が1号艇の1着率。▲は今日6艇で一番上か一番下",
   guideFlowSub: (form, p, att) =>
