@@ -19,6 +19,7 @@
  */
 import fs from "fs";
 import path from "path";
+import zlib from "zlib";
 import { fileURLToPath } from "url";
 import {
   getRaceStageCategory,
@@ -46,8 +47,12 @@ import {
   windBand,
 } from "../../src/utils/analogyScenario.js";
 import {
+  FACT_ITEMS,
+  boatScopeKey,
   defaultScope,
   factRows,
+  radarBoats,
+  todayLine,
   judgeGap,
   parseScopeKey,
   rankPositions,
@@ -85,6 +90,7 @@ import {
 } from "../../src/utils/analogyAggregate.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT_E2E = path.join(__dirname, "../../e2e");
 const CASES = path.join(
   __dirname,
   "../ml/analogy/testdata/stage-rule-v2-cases.json",
@@ -814,6 +820,74 @@ check(
   judgeLabelKey({ level: "large" }, [4, 5], [1, 5]),
   "large",
 );
+
+// ---- 七角形・項目の表の6艇の値は、その艇を一番上で選んだときと同じ（2026-10-09 ユーザー指摘）
+// e2e の固定データ（若松12R・6艇ともA1）で、3号艇の集めたレースの展示タイムだけ値を変え、1号艇の集めたレースの
+// 3号艇の列と違う数字にする（以前の「比べる艇」は1号艇の集めたレースで数字を出していたので、ここで食い違った）
+{
+  const fx = JSON.parse(
+    zlib.gunzipSync(
+      fs.readFileSync(path.join(ROOT_E2E, "analogy-v16-fixture.json.gz")),
+    ),
+  ).facts;
+  const k3 = fx.today.scope_keys["3"].VC;
+  for (const r of ["1", "2", "3", "4", "5", "6"])
+    fx.facts[k3].by["3"].exh_time[r].win = [1, 50];
+  const values = todayValues(fx.today, fx.exhibition);
+  const items = FACT_ITEMS.filter((it) => it.key !== "boat_2");
+  const countOf = (key) => fx.facts[key]?.n ?? null;
+  let n = 0;
+  for (const picked of [null, "VC", "NC", "VA"])
+    for (const target of [1, 2, 3]) {
+      const radar = radarBoats(
+        fx.today,
+        fx.facts,
+        values,
+        items,
+        target,
+        picked,
+      );
+      for (const b of [1, 2, 3, 4, 5, 6]) {
+        // 一番上で b を選んだとき（ConditionFactsTab と同じ: boatScopeKey → factRows → カードの今日の行）
+        const { key } = boatScopeKey(
+          fx.today.scope_keys[String(b)],
+          countOf,
+          picked,
+        );
+        const sf = fx.facts[key];
+        const rows = factRows(sf, b, target, true);
+        items.forEach((it, i) => {
+          const row = rows.find((r) => r.key === it.key);
+          const line = row
+            ? todayLine(row, values[it.key], b, sf, target)
+            : null;
+          check(
+            `七角形の表＝一番上で選んだとき: ${b}号艇 ${it.key} target=${target} picked=${picked}`,
+            radar[b - 1].cells[i].hit ?? null,
+            line?.hit ?? null,
+          );
+          n += 1;
+        });
+      }
+    }
+  // 食い違いを作れているか（1号艇の集めたレースの3号艇の列とは違う数字になる）
+  const k1 = fx.today.scope_keys["1"].VC;
+  const b3 = todayPosition(values.exh_time, false, 3).bucket;
+  check(
+    "検査の前提: 1号艇の集めたレースの3号艇の展示タイムは、3号艇の集めたレースと違う",
+    JSON.stringify(fx.facts[k1].by["3"].exh_time[String(b3)].win) !==
+      JSON.stringify(fx.facts[k3].by["3"].exh_time[String(b3)].win),
+    true,
+  );
+  check(
+    "七角形の表: 3号艇の展示タイムは3号艇の集めたレースの値",
+    radarBoats(fx.today, fx.facts, values, items, 1, null)[2].cells[
+      items.findIndex((it) => it.key === "exh_time")
+    ].hit,
+    [1, 50],
+  );
+  console.log(`七角形の表と一番上で選んだときの一致: ${n} 件`);
+}
 
 if (failures > 0) {
   console.error(`\n❌ ${failures} 件の不一致`);

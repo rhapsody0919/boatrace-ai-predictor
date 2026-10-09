@@ -1,26 +1,26 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import NoteList, { NotesFold } from "./NoteList";
 import ScopeCombo from "./ScopeCombo";
 import BoatBadge from "../BoatBadge";
-import FactHexagon from "./FactHexagon";
+import FactRadar from "./FactRadar";
 import FactCard from "./FactCard";
 import WindWaveFacts from "./WindWaveFacts";
 import AiOutlook from "./AiOutlook";
-import { SCOPE_DASH, SCOPE_LINE } from "./analogyColors";
+import { SCOPE_LINE } from "./analogyColors";
 import {
   FACT_ITEMS,
-  defaultScope,
+  boatScopeKey,
   factRows,
   hidesSeriesScoreLine,
   openCardKeys,
   parseScopeKey,
+  radarBoats,
   rateOf,
   scopeKind,
   seriesScoreNote,
   todayPosition,
   todayValues,
-  typicalRanks,
   uniformClass,
   usualOf,
 } from "../../../utils/analogyFacts";
@@ -42,8 +42,7 @@ const FACT_SCOPES = ["VC", "NC", "NCR", "VA"];
 export default function ConditionFactsTab({ data, stage, target, feedback }) {
   const { t } = useTranslation();
   const [boat, setBoat] = useState(1);
-  const [compareOpen, setCompareOpen] = useState(false);
-  const [compareBoat, setCompareBoat] = useState(2);
+  const cardsRef = useRef(null);
   // 手で選んだ範囲の種類（VC・NC・NCR・VA）。選んでいなければ既定（screens「細部の約束」）
   const [pickedKind, setPickedKind] = useState(null);
 
@@ -52,8 +51,8 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
   const keys = today.scope_keys[String(boat)] ?? {};
   const kinds = FACT_SCOPES.filter((s) => keys[s] && facts[keys[s]]);
   const countOf = (key) => facts[key]?.n ?? null;
-  const def = defaultScope(keys, countOf);
-  const scopeKey = pickedKind && keys[pickedKind] ? keys[pickedKind] : def.key;
+  // 七角形・項目の表の6艇も同じ関数で集めたレースを決める（どこで見ても同じ艇・同じ項目は同じ数字。2026-10-09）
+  const { key: scopeKey, def } = boatScopeKey(keys, countOf, pickedKind);
   const scopeFacts = facts[scopeKey];
   const showFellBack = !pickedKind && def.fellBack;
   const values = todayValues(today, exhibition);
@@ -66,14 +65,9 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
       !(finalDay && it.key === "series_score"),
   );
   const vs = (key) => values[key] ?? null;
-  const cmp = compareOpen && compareBoat !== boat ? compareBoat : null;
   const scope = scopeName(scopeKey, t, { short: true });
   const venue = today.venue_code;
 
-  const selectBoat = (b) => {
-    setBoat(b);
-    if (compareBoat === b) setCompareBoat(b === 6 ? 5 : b + 1);
-  };
   const rankOf = (key, b) => {
     const v = vs(key);
     return v
@@ -81,22 +75,22 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
           ?.bucket ?? null)
       : null;
   };
-  const axes = items.map((it) => {
-    const r = rankOf(it.key, boat);
-    return {
-      label: t(`${k}.items.${it.key}.short`),
-      sub: r ? t(`${k}.hexRank`, { rank: r }) : t(`${k}.hexNone`),
-    };
-  });
-  const hexAria = t(`${k}.hexLabel`, {
-    boat,
-    list: items
-      .map((it) => {
-        const r = rankOf(it.key, boat);
-        return `${t(`${k}.items.${it.key}.label`)} ${r ? t(`${k}.hexRank`, { rank: r }) : t(`${k}.hexNone`)}`;
-      })
-      .join(t("aiPredictionTab.analogy.listSeparator")),
-  });
+  // 七角形の軸（ボート2連率は着順との関係が小さい項目なので入れない。承認モック mock-compare-v3）
+  const radarItems = items.filter((it) => it.key !== "boat_2");
+  const radar = radarBoats(
+    today,
+    facts,
+    values,
+    radarItems,
+    target,
+    pickedKind,
+  );
+  const openCard = (key) => {
+    const el = cardsRef.current?.querySelector(`[data-key="${key}"]`);
+    if (!el) return;
+    el.open = true;
+    el.scrollIntoView({ block: "start", behavior: "smooth" });
+  };
 
   const usual = usualOf(scopeFacts, boat, target);
   const rows = scopeFacts
@@ -114,7 +108,6 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
       venueName={venueLabel(venue, t)}
       row={row}
       boat={boat}
-      compareBoat={cmp}
       scopeFacts={scopeFacts}
       values={vs(row.key)}
       target={target}
@@ -123,7 +116,6 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
       }
       hideLine={row.key === "series_score" && hideSeriesLine}
       note={row.key === "series_score" ? note : null}
-      scope={scope}
       initiallyOpen={openKeys.has(row.key)}
     />
   );
@@ -155,36 +147,13 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
               type="button"
               className="af-boat-btn"
               aria-pressed={boat === b}
-              onClick={() => selectBoat(b)}
+              onClick={() => setBoat(b)}
             >
               <BoatBadge n={b} />
             </button>
           ))}
         </div>
       </div>
-      <details
-        className="af-details"
-        open={compareOpen}
-        onToggle={(e) => setCompareOpen(e.currentTarget.open)}
-      >
-        <summary>{t(`${k}.compare`)}</summary>
-        <label className="af-ctl-row af-lbl">
-          {t(`${k}.compareSelect`)}
-          <select
-            data-af-control="facts_compare"
-            value={compareBoat}
-            onChange={(e) => setCompareBoat(Number(e.target.value))}
-          >
-            {[1, 2, 3, 4, 5, 6]
-              .filter((b) => b !== boat)
-              .map((b) => (
-                <option key={b} value={b}>
-                  {t("aiPredictionTab.analogy.boat", { n: b })}
-                </option>
-              ))}
-          </select>
-        </label>
-      </details>
       <div className="af-ctl-row">
         <span className="af-lbl" id="af-fscope-label">
           {t(`${k}.scopeLabel`)}
@@ -216,44 +185,15 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
           })}
         </p>
       )}
-      <div className="af-dark">
-        <FactHexagon
-          axes={axes}
-          ariaLabel={hexAria}
-          series={[
-            {
-              values: typicalRanks(scopeFacts, boat, target, items),
-              boat,
-              dash: true,
-            },
-            { values: items.map((it) => rankOf(it.key, boat)), boat },
-            ...(cmp
-              ? [{ values: items.map((it) => rankOf(it.key, cmp)), boat: cmp }]
-              : []),
-          ]}
-        />
-      </div>
-      <div className="af-legend">
-        <span style={{ "--af-line": SCOPE_LINE[boat] }}>
-          <i />
-          {t(`${k}.hexToday`, { boat })}
-        </span>
-        {cmp && (
-          <span style={{ "--af-line": SCOPE_LINE[cmp] }}>
-            <i />
-            {t(`${k}.hexTodayB`, { boat: cmp })}
-          </span>
-        )}
-        <span style={{ "--af-line": SCOPE_DASH }}>
-          <i className="is-dash" />
-          {t(`${k}.hexTypical`, {
-            scope,
-            boat,
-            finish: t(`aiPredictionTab.analogy.finishWord.${target}`),
-          })}
-        </span>
-        <span>{t(`${k}.hexFoot`)}</span>
-      </div>
+      <FactRadar
+        // 主役・着順・時点・範囲が変わったら、重ねる艇・太くする艇・開いた表を選び直す
+        key={`${boat}:${target}:${stage}:${pickedKind ?? ""}`}
+        boats={radar}
+        items={radarItems}
+        main={boat}
+        target={target}
+        onCard={openCard}
+      />
       {usual && (
         <div className="af-big">
           <span>{t(`${k}.bigLabel`, { scope, boat, rate: rateName })}</span>
@@ -288,7 +228,7 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
           </span>
         )}
       </div>
-      <div className="af-cards">
+      <div className="af-cards" ref={cardsRef}>
         {rows.filter((r) => r.key !== "boat_2").map(card)}
         {rows
           .filter((r) => r.key === "boat_2")

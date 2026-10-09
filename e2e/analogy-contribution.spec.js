@@ -987,6 +987,41 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
         expect((li.match(/。/g) ?? []).length).toBeLessThanOrEqual(1);
     });
 
+    test("七角形の表で見た3号艇の展示タイムは、3号艇を一番上で選んだときと同じ数字（2026-10-09 ユーザー指摘）", async ({
+      page,
+    }) => {
+      // 3号艇の集めたレースだけ値を変え、1号艇の集めたレースの3号艇の列と違う数字にする
+      // （以前の「比べる艇」は1号艇の集めたレースで出していたので、ここで食い違った）
+      const facts = analogyV16Facts();
+      const k3 = facts.today.scope_keys["3"].VC;
+      for (const r of ["1", "2", "3", "4", "5", "6"])
+        facts.facts[k3].by["3"].exh_time[r].win = [1, 50];
+      await setup(page, { facts });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      const exhCard = section.locator(
+        ".af-cards > [data-testid='analogy-fact-card'][data-key='exh_time']",
+      );
+      // 一番上で3号艇を選んだときのカードの今日の行
+      await section.locator(".af-boat-btn").nth(2).click();
+      if (!(await exhCard.evaluate((e) => e.open)))
+        await exhCard.locator("summary").click();
+      const top = await exhCard.getByTestId("analogy-today-hit").innerText();
+      expect(top).toContain("2%（1/50件");
+      // 1号艇を一番上にして、七角形の展示タイムを押した表の3号艇の行
+      await section.locator(".af-boat-btn").nth(0).click();
+      await section
+        .getByRole("button", { name: /展示タイムの6艇の表/ })
+        .click();
+      const at = section
+        .getByTestId("analogy-radar-table")
+        .locator("tr[data-boat='3'] [data-testid='analogy-radar-at']");
+      await expect(at).toHaveText("2% 1/50件");
+      // 凡例で3号艇を押して太くしても、同じ表の数字は変わらない
+      await section.getByRole("button", { name: /3号艇（A1）/ }).click();
+      await expect(at).toHaveText("2% 1/50件");
+    });
+
     test("手がかりの件数が②の件数とずれる理由を書く", async ({ page }) => {
       await setup(page);
       await openSonarTab(page);

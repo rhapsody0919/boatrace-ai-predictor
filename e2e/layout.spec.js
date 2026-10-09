@@ -823,12 +823,18 @@ test.describe("レイアウト: 龍神ソナーのタブ（3つの内部タブ�
     expectNoWastedGrids(await inspectGrids(page));
   };
 
-  test("差がつく材料: 比べる艇と折りたたみを開いても横スクロールが出ない", async ({
+  test("差がつく材料: 七角形の項目の表・主役＋2艇と折りたたみを開いても横スクロールが出ない", async ({
     page,
   }) => {
     const section = await openSection(page);
-    await expect(section.getByTestId("analogy-fact-card").first()).toBeVisible();
+    await expect(
+      section.getByTestId("analogy-fact-card").first(),
+    ).toBeVisible();
+    await section.getByRole("button", { name: /全国勝率の6艇の表/ }).click();
+    await expect(section.getByTestId("analogy-radar-table")).toBeVisible();
     await openAllDetails(section);
+    await expectFits(page);
+    await section.getByRole("button", { name: "主役＋2艇" }).click();
     await expectFits(page);
   });
 
