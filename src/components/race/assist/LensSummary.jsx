@@ -349,13 +349,9 @@ function PowerSummary({ m }) {
                     {table.kinds.map((k) => (
                       <th key={k} scope="col">
                         {k}
-                        {GLOSSARY[k] && <TermButton term={k} />}
                       </th>
                     ))}
-                    <th scope="col">
-                      {C.colExhSt}
-                      <TermButton term="展示ST" />
-                    </th>
+                    <th scope="col">{C.colExhSt}</th>
                     <th scope="col">{C.colWeight}</th>
                     <th scope="col">{C.colTilt}</th>
                   </tr>
@@ -404,6 +400,17 @@ function PowerSummary({ m }) {
               <span>{C.powerLegendBest}</span>
               <span>{C.powerLegendNone}</span>
             </div>
+            {/* 用語の「?」は表の見出しに入れると 375px で表がはみ出すので、表の下に並べる（ファン評価 PR5 1周目 指摘4） */}
+            <p className="ta-note">
+              {[...table.kinds.filter((k) => GLOSSARY[k]), "展示ST"].map(
+                (k) => (
+                  <span key={k} className="ta-term-item">
+                    {k}
+                    <TermButton term={k} />
+                  </span>
+                ),
+              )}
+            </p>
             <div className="ta-feat">
               <TheoryButton
                 id="TC-X1"

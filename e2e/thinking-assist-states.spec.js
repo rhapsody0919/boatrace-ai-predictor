@@ -954,3 +954,108 @@ test.describe("思考アシスト: ユーザー決定 A・B（2026-10-09）", ()
     await expect(page.getByText(/^当てはまらないとき/)).toBeVisible();
   });
 });
+
+test.describe("思考アシスト: PR5 のシート・ガイド（デザイナーのレビュー）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page, { preview: true });
+  });
+
+  /** その要素の真ん中を押したときに、その要素（か中の要素）に当たるか */
+  // 固定のレンズ・フッターに隠れないよう画面の中央へ送ってから測る。外れたときは何に当たったかを返す
+  const hitsItself = (loc) =>
+    loc.evaluate((el) => {
+      el.scrollIntoView({ block: "center" });
+      const r = el.getBoundingClientRect();
+      const top = document.elementFromPoint(
+        r.left + r.width / 2,
+        r.top + r.height / 2,
+      );
+      return el === top || el.contains(top)
+        ? true
+        : `${el.getAttribute("aria-label")} → ${top?.className} ${top?.getAttribute?.("aria-label") ?? top?.textContent?.slice(0, 30)}`;
+    });
+
+  test("P1-1: ガイドの上の吹き出しはサイトのヘッダーの下に出る", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: "ガイド", exact: true }).click();
+    await page.getByRole("button", { name: "次へ" }).click();
+    const q = page.getByText("1号艇は逃げられそう？");
+    await expect(q).toBeVisible();
+    expect(await hitsItself(q)).toBe(true);
+  });
+
+  test("P1-2: 展開の図の印の押せる範囲が、隣の艇の ST の数字を覆わない", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByText("★平均STの手がかり（2コース凹み）13%"),
+    ).toBeVisible();
+    const values = page.getByRole("button", {
+      name: /^展示ST .*、6艇で比べる$/,
+    });
+    const n = await values.count();
+    expect(n).toBeGreaterThan(0);
+    for (let i = 0; i < n; i++)
+      expect(await hitsItself(values.nth(i))).toBe(true);
+  });
+
+  test("P2-3: セオリーカードを開く札は札の枠を保つ", async ({ page }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const chip = page
+      .getByRole("button", { name: "1号艇のモーター2連率の過去レースの傾向" })
+      .first();
+    await expect(chip).toBeVisible();
+    const border = await chip.evaluate(
+      (el) => getComputedStyle(el).borderTopWidth,
+    );
+    expect(border).not.toBe("0px");
+  });
+
+  test("P2-4: 機力の表の下の札は、押すとその札自身に当たる（下の札の範囲に取られない）", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "機力").click();
+    const x1 = page.getByRole("button", {
+      name: "1号艇は展示が速く出やすいの過去レースの傾向",
+    });
+    await expect(x1).toBeVisible();
+    await x1.scrollIntoViewIfNeeded();
+    expect(await hitsItself(x1)).toBe(true);
+  });
+
+  test("ファン評価 指摘1: 会場の型は cluster ではなく、1号艇の1着を全国の全レースと比べて書く", async ({
+    page,
+  }) => {
+    await page.route("**/rest/v1/venue_technique_period_stats*", (route) =>
+      route.fulfill({ json: [] }),
+    );
+    await open(page);
+    await page.getByRole("button", { name: "徳山の特徴" }).click();
+    const sheet = page.getByRole("dialog", { name: "徳山の特徴" });
+    await expect(
+      sheet.getByText(/全国の全レースより1着が(高め|低め)|差ははっきりしない/),
+    ).toBeVisible();
+    await expect(sheet.getByText("イン（1号艇）が強い会場")).toHaveCount(0);
+  });
+
+  test("ファン評価 指摘4: 375px で機力の展示の表がはみ出さない", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "機力").click();
+    const scroll = page.locator(".ta-table-ex").locator("xpath=..");
+    await expect(scroll).toBeVisible();
+    const [sw, cw] = await scroll.evaluate((el) => [
+      el.scrollWidth,
+      el.clientWidth,
+    ]);
+    expect(sw).toBeLessThanOrEqual(cw);
+  });
+});

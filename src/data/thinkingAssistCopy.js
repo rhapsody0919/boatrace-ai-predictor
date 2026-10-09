@@ -180,8 +180,10 @@ export const ASSIST_COPY = Object.freeze({
   // ▲は一番上にも一番下にも付く（BOA-808 の4）
   factsLegend: "▲＝今日6艇で一番上か一番下",
   // 件数を添える（どれだけのレースから出した割合か。BOA-808 の3）
+  // 「→」はヘッダーで「はっきりしない」の印に使うので、ここでは使わない（ファン評価 PR5 1周目 指摘5）
   factHit: (word, p, n, base) =>
-    `▲一番${word} → 1着 ${p}%・${n.toLocaleString("ja-JP")}件（全体 ${base}%）`,
+    `▲一番${word}のとき 1着 ${p}%・${n.toLocaleString("ja-JP")}件（全体 ${base}%）`,
+  factNoToday: "今日の値なし",
   // 差の大きさ（v16 の judgeGap の level）。軸の要約の「差がはっきり大きい材料は無い」と同じ判定
   factLevel: Object.freeze({
     large: "差が大きい",
@@ -407,13 +409,14 @@ export const ASSIST_COPY = Object.freeze({
   theoryAlso: "同じ条件に関係するセオリー（向きが逆のものも並べる）",
   theoryFoot: "「〜が起きやすい傾向」で、当てはまってもそうならないことがある",
   theorySince: "全国の過去レース（2019/4/1〜）",
-  theoryNotHappened: (p) => `起きなかった ${p}%`,
+  theoryNotHappened: (p) => `攻める艇が1着にならなかった ${p}%`,
   theoryAttackWin: (boat) => `攻める艇（${boat}号艇）の1着`,
   theoryB1Win: "1号艇の1着",
   theoryFormAfter: "スリットの形はレースの後に分かる（もしこうなったら）",
-  theoryTodayFormHint: "平均STの並びが手がかりに合う",
-  theoryTodayFormExhibition: "展示がこの形",
-  theoryTodayFormBoth: "平均STの並びが手がかりに合う・展示もこの形",
+  // スリットの形は本番の結果なので「今日当てはまる」とは書かない（ファン評価 PR5 1周目 指摘2）
+  theoryTodayFormHint: (p) =>
+    `平均STの手がかりあり。本番でこの形になったのは${p}%（形はレースの後に分かる）`,
+  theoryTodayFormExhibition: "展示がこの形（本番の形はレースの後に分かる）",
   theoryPendingForm: "展示の形は展示の後に分かる",
   theoryPendingEntry: "進入は展示の後に分かる",
   theoryMissForm: "今日の展示はこの形ではない",
@@ -422,7 +425,7 @@ export const ASSIST_COPY = Object.freeze({
   theoryHintHit: (form) => `当てはまるとき、本番が${form}に`,
   theoryHintNotDecisive: (form) =>
     `当てはまっても、${form}にならない方が多い（決め手ではなく手がかり）`,
-  theoryTodayHint: "平均STの並びが条件に合う",
+  theoryTodayHint: (vals) => `平均STの並びが条件に合う（このコース: ${vals}）`,
   theoryMissHint: "平均STの並びは条件に合わない",
   theoryEntryShare: (name) => `${name}になったレース`,
   theoryFactTitle: (name, boat) => `${boat}号艇の${name}`,
@@ -446,8 +449,12 @@ export const ASSIST_COPY = Object.freeze({
   theoryWindScope: (venue, band) => `${venue}・風速${band}`,
   theoryWindToday: (dir, speed) => `今日は${dir}${speed}m`,
   theoryPendingWind: "風は展示の後に分かる",
-  theoryWindMixed: "追い風・向かい風が混ざった値（区別していない）",
-  theoryWindCols: ["艇", "この風", "風を問わず", "差"],
+  theoryWindMixed:
+    "追い風・向かい風が混ざった値（区別していない）。今日の風が追い風か向かい風かはまだ出していない",
+  theoryWindCols: ["艇", "この風", "風を問わず", "差(pt)"],
+  // 棒の中の線（ファン評価 PR5 1周目 指摘12）
+  theoryBarLegend: "棒の2本の縦線の間＝ぶれ幅（件数が少ないほど広い）",
+  tidePrep: "潮位は準備中",
   theoryTodayBoat: (boat, t) => `${boat}号艇は${t}`,
   theoryTodayRound: (round) => `今日は${round}`,
   theoryTodayX1: (v, rank) => `今日の1号艇は ${v}（6艇で${rank}番目）`,
@@ -474,17 +481,20 @@ export const ASSIST_COPY = Object.freeze({
   venueAria: (venue) => `${venue}の特徴`,
   waterType: Object.freeze({ fresh: "淡水", brackish: "汽水", sea: "海水" }),
   waterTide: "（潮の満ち引きがある）",
-  cluster: Object.freeze({
-    in_strong: "イン（1号艇）が強い会場",
-    out_strong: "外の艇が届きやすい会場",
-    balanced: "イン・外の差が中くらいの会場",
-  }),
-  venueType: "型",
+  // 型は venues の cluster（モデル調整用の分類）ではなく、この会場の1号艇の1着を全国の全レースと比べて書く
+  // （桐生 51% が「イン強い」と出た。ファン評価 PR5 1周目 指摘1）
+  venueType: "イン（1号艇）",
+  venueTypeWord: (verdict, p, base) =>
+    verdict === "high"
+      ? `全国の全レースより1着が高め（${p}%・全国${base}%）`
+      : verdict === "low"
+        ? `全国の全レースより1着が低め（${p}%・全国${base}%）`
+        : `全国の全レースと差ははっきりしない（${p}%・全国${base}%）`,
   venueWater: "水質",
   venueB1: (venue, n) =>
     `1号艇の1着: ${venue}の全レース ${n.toLocaleString("ja-JP")}件（2019/4/1〜）`,
-  venueTechHeading: (n, n90) =>
-    `決まり手（直近1年 ${n.toLocaleString("ja-JP")}件。薄い帯は直近90日 ${n90.toLocaleString("ja-JP")}件）`,
+  venueTechCount: (n, n90) =>
+    `直近1年 ${n.toLocaleString("ja-JP")}件。薄い帯は直近90日 ${n90.toLocaleString("ja-JP")}件`,
   venueTrend: (t, mark, p90, prev) =>
     `${t} 最近${mark === "up" ? "↑" : "↓"} 90日${p90}%／前${prev}%`,
   venueNote:

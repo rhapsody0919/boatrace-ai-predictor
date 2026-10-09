@@ -30,6 +30,7 @@ import { useThinkingAssistData } from "../hooks/useThinkingAssistData";
 import {
   ROUND_LABEL,
   anyCell,
+  baseVerdict,
   boardModel,
   buildRacers,
   classLineup,
@@ -748,11 +749,25 @@ export default function ThinkingAssistPage() {
           vaB1={
             theoryCtx.vaFacts ? b1Usual({ facts: theoryCtx.vaFacts }) : null
           }
+          typeVerdict={
+            venueAll?.n && national?.n
+              ? baseVerdict(
+                  venueAll.b1_win,
+                  venueAll.n,
+                  national.b1_win / national.n,
+                )
+              : null
+          }
           onClose={closeSheet}
         />
       )}
       {state.guide !== null && race && !sheetOpen && (
-        <GuideOverlay steps={steps} index={state.guide} onStep={onGuideStep} />
+        <GuideOverlay
+          steps={steps}
+          index={state.guide}
+          onStep={onGuideStep}
+          topOffset={headerHeight}
+        />
       )}
     </AssistSheetContext.Provider>
   );

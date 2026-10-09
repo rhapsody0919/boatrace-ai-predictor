@@ -184,9 +184,9 @@ export default function RaceLaneBoard({
                       id="TC-T4"
                       name={ASSIST_COPY.markName(`F${r.fCount}`, row.boat)}
                       boat={row.boat}
-                      className="ta-tag ta-tag-warn"
+                      className="ta-th-lane"
                     >
-                      F{r.fCount} ›
+                      <span className="ta-tag ta-tag-warn">F{r.fCount} ›</span>
                     </TheoryButton>
                   )}
                 {!r.absent &&
@@ -196,9 +196,11 @@ export default function RaceLaneBoard({
                       id={m.theory}
                       name={ASSIST_COPY.markName(m.text, row.boat)}
                       boat={row.boat}
-                      className={`ta-tag${m.hit ? " ta-tag-hit" : ""}`}
+                      className="ta-th-lane"
                     >
-                      {m.text} ›
+                      <span className={`ta-tag${m.hit ? " ta-tag-hit" : ""}`}>
+                        {m.text} ›
+                      </span>
                     </TheoryButton>
                   ))}
               </div>

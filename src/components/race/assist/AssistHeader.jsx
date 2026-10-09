@@ -113,6 +113,7 @@ export default function AssistHeader({
         {(waterType === "sea" || waterType === "brackish") && (
           <span>
             {ASSIST_COPY.tide}{" "}
+            <span className="ta-note">{ASSIST_COPY.tidePrep}</span>{" "}
             <TheoryButton id="TC-T3" name={ASSIST_COPY.venueTide} />
           </span>
         )}

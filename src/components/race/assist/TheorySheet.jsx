@@ -1,9 +1,15 @@
 import BaseBar from "./BaseBar";
 import BottomSheet from "./BottomSheet";
+import Fold from "./Fold";
 import BoatBadge from "../BoatBadge";
 import { ASSIST_COPY as C } from "../../../data/thinkingAssistCopy";
 
 const f1 = (v) => (v == null ? "—" : v.toFixed(1));
+/** 差（ポイント）。丸めて0になるときは「±0.0」（「-0.0」を出さない。ファン評価 PR5 1周目 指摘14） */
+const diffText = (d) => {
+  const t = Math.abs(d).toFixed(1);
+  return t === "0.0" ? "±0.0" : `${d > 0 ? "+" : "−"}${t}`;
+};
 
 /** 今日（当てはまる／当てはまらない／展示の後に分かる）。色だけに頼らず文で書き分ける */
 function Today({ today }) {
@@ -47,6 +53,7 @@ function Measured({ card }) {
           {m.tag && <span className="ta-tag">{m.tag}</span>}
         </div>
       )}
+      {m.bars.length > 0 && <p className="ta-note">{C.theoryBarLegend}</p>}
       {m.bars.map((b) => (
         <BaseBar key={b.label} label={b.label} k={b.k} n={b.n} />
       ))}
@@ -73,7 +80,7 @@ function Measured({ card }) {
                   <td className="ta-num">
                     {r.p == null || r.base == null
                       ? "—"
-                      : `${r.p - r.base >= 0 ? "+" : ""}${f1(r.p - r.base)}`}
+                      : diffText(r.p - r.base)}
                   </td>
                 </tr>
               ))}
@@ -118,15 +125,15 @@ export default function TheorySheet({ card, onClose }) {
     <BottomSheet title={card.title} onClose={onClose}>
       <CardBody card={card} />
       {card.also?.length > 0 && (
-        <>
-          <p className="ta-note">{C.theoryAlso}</p>
+        // 区切り線の下に見出し、カードは畳んで条件だけ見せる（デザイナーのレビュー P2-7・P2-8）
+        <section className="ta-th-also" aria-label={C.theoryAlso}>
+          <h3>{C.theoryAlso}</h3>
           {card.also.map((c) => (
-            <section key={c.id} className="ta-th-also" aria-label={c.title}>
-              <h3>{c.title}</h3>
+            <Fold key={c.id} title={`${c.title}（${c.cond}）`}>
               <CardBody card={c} />
-            </section>
+            </Fold>
           ))}
-        </>
+        </section>
       )}
       <p className="ta-note">{C.theoryFoot}</p>
     </BottomSheet>

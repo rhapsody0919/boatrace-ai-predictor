@@ -821,6 +821,7 @@
   border-radius: var(--radius-md);
   min-width: 44px;
   min-height: 44px;
+  padding: 0 var(--spacing-2);
   font: inherit;
   font-size: var(--font-size-sm);
   cursor: pointer;
@@ -1329,15 +1330,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   margin-left: var(--spacing-1);
   border: 1px solid var(--color-info-text);
   border-radius: var(--radius-full);
   background: transparent;
   color: var(--color-info-text);
   font: inherit;
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   line-height: 1;
   vertical-align: middle;
@@ -1347,23 +1348,34 @@
 
 .ta-th {
   position: relative;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* 文字だけの入口（「傾向 ›」）。札・チップの形の入口は .ta-tag・.ta-chip の枠と背景をそのまま使う
+   （ここで枠・背景を消さない。デザイナーのレビュー P2-3） */
+.ta-th:not(.ta-tag):not(.ta-chip) {
   border: 0;
   background: transparent;
   padding: 0 var(--spacing-1);
-  font: inherit;
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-normal);
   color: var(--color-info-text);
-  cursor: pointer;
   white-space: nowrap;
 }
 
-/* 札・チップの形の入口は、元の見た目（.ta-tag・.ta-chip）を保つ */
 .ta-th.ta-tag,
 .ta-th.ta-chip {
-  padding: 0 var(--spacing-1-5);
   color: var(--text-secondary);
   text-align: left;
+}
+
+.ta-th.ta-tag,
+.ta-th.ta-chip:not(.ta-chip-hit) {
+  background: transparent;
+}
+
+.ta-th.ta-tag {
+  font-size: var(--font-size-xs);
 }
 
 .ta-th.ta-tag-hit {
@@ -1376,7 +1388,6 @@
 }
 
 .ta-th.ta-chip {
-  padding: var(--spacing-1-5) var(--spacing-2);
   color: var(--text-primary);
   white-space: normal;
 }
@@ -1391,7 +1402,7 @@
 }
 
 .ta-chip-level {
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   color: var(--color-info-text);
 }
 
@@ -1472,7 +1483,8 @@
 
 .ta-guide-top {
   bottom: auto;
-  top: calc(var(--spacing-3) + env(safe-area-inset-top, 0px));
+  /* サイトのヘッダー（sticky、z-index 1000）の下に出す（デザイナーのレビュー P1-1）。高さはページから渡す */
+  top: calc(var(--ta-guide-top, 0px) + var(--spacing-3));
 }
 
 .ta-guide-step {
@@ -1594,11 +1606,25 @@
   font-size: var(--font-size-sm);
 }
 
+/* 同時に当てはまるセオリーは大セクションの区切り（24px＋線＋24px。余白の決まり） */
 .ta-th-also {
   display: grid;
   gap: var(--spacing-3);
-  padding-top: var(--spacing-3);
+  margin-top: var(--spacing-3);
+  padding-top: var(--spacing-6);
   border-top: 1px solid var(--border-hairline);
+}
+
+.ta-th-also h3 {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+@media (min-width: 768px) {
+  .ta-sheet {
+    padding: var(--spacing-4) var(--spacing-4) var(--spacing-5);
+  }
 }
 
 /* ---- 用語のシート（GlossarySheet） ---- */
@@ -1666,4 +1692,35 @@
 
 .ta-venue-tech-pct {
   text-align: right;
+}
+
+/* 札を並べた行は、押せる範囲（44px）が上下の札と重ならないよう行の間を空ける（デザイナーのレビュー P2-4） */
+.ta-feat {
+  row-gap: var(--spacing-7);
+}
+
+/* 図の印: 押せる範囲を ::after で上下に広げると隣の艇の数字を覆うので、行の高さで 44px を取る（同 P1-2） */
+.ta-th-lane {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ta-th-lane::after {
+  height: 100%;
+}
+
+.ta-venue-tech-n {
+  margin: 0;
+}
+
+.ta-term-item {
+  margin-right: var(--spacing-3);
+  white-space: nowrap;
 }

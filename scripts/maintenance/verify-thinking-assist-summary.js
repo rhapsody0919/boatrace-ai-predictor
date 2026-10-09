@@ -377,12 +377,14 @@ const tctx = {
 };
 const cS = theoryCard("TC-S:d2", tctx);
 check(
-  "TC-S 2コース凹み: 枠なり161件・攻める艇（3号艇）の1着 36/161・1号艇の1着 65/161・起きなかった78%",
+  "TC-S 2コース凹み: 枠なり161件・攻める艇（3号艇）の1着 36/161・1号艇の1着 65/161、今日は「手がかりあり 13%」で当てはまるとは書かない",
   cS.meas.bars[0].k === 36 &&
     cS.meas.bars[0].n === 161 &&
     cS.meas.bars[1].k === 65 &&
-    cS.meas.tag === "起きなかった 78%" &&
-    cS.today.state === "hit",
+    cS.meas.tag === "攻める艇が1着にならなかった 78%" &&
+    // 形は本番の結果なので「今日当てはまる」にしない（ファン評価 PR5 1周目 指摘2）
+    cS.today.state === "pending" &&
+    cS.today.text.includes("13%"),
   JSON.stringify(cS.meas),
 );
 const cH = theoryCard("TC-H:d2_slow01", tctx);
@@ -394,6 +396,11 @@ check(
     cH.meas.bars[1].n === 1956 &&
     cH.meas.notes.some((n) => n.includes("決め手ではなく手がかり")),
   JSON.stringify(cH.meas),
+);
+check(
+  "TC-H は今日の平均ST（このコース）の値を添える（2号艇 .16、ファン評価 PR5 1周目 指摘7）",
+  cH.today.text.includes("2号艇 .16") && cH.today.text.includes("3号艇 .14"),
+  cH.today.text,
 );
 const cE = theoryCard("TC-E:waku", tctx);
 check(

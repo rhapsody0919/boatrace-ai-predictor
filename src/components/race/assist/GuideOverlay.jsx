@@ -6,9 +6,10 @@ import { ASSIST_COPY as C } from "../../../data/thinkingAssistCopy";
  * ガイド（FR-10、screens S-1c）。5段で、各段は光らせる場所（data-guide の名前）・問い・1文。
  * 吹き出しは光らせた場所と重ならない側（上か下）に固定で出し、光らせた場所をその反対側へ送る。
  * レンズの切り替え・フッターを隠すのはページ側（閉じても買い目・レンズは残す）
- * @param {{steps: ReturnType<import("../../../utils/assistTheory").guideSteps>, index: number, onStep: (i: number|null) => void}} props
+ * topOffset はサイトのヘッダーの高さ（上に出す吹き出しをその下に置く）
+ * @param {{steps: ReturnType<import("../../../utils/assistTheory").guideSteps>, index: number, onStep: (i: number|null) => void, topOffset?: number}} props
  */
-export default function GuideOverlay({ steps, index, onStep }) {
+export default function GuideOverlay({ steps, index, onStep, topOffset = 0 }) {
   const step = steps[index];
   const boxRef = useRef(null);
 
@@ -40,6 +41,7 @@ export default function GuideOverlay({ steps, index, onStep }) {
     <div
       ref={boxRef}
       className={`ta-guide${step.at === "top" ? " ta-guide-top" : ""}`}
+      style={{ "--ta-guide-top": `${topOffset}px` }}
       role="dialog"
       aria-label={C.guideRegion}
       tabIndex={-1}

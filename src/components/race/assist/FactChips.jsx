@@ -27,7 +27,7 @@ export default function FactChips({ chips, base, round, boat }) {
                   ? C.factFinalOff(ROUND_LABEL[round] ?? "")
                   : c.bucket
                     ? C.factRank(c.bucket)
-                    : "—"}
+                    : C.factNoToday}
             </span>
             {C.factLevel[c.level] && (
               <span className="ta-chip-level">{C.factLevel[c.level]} ›</span>

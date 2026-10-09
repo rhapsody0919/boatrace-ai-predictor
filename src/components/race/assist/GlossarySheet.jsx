@@ -67,9 +67,10 @@ export default function GlossarySheet({
     <BottomSheet title={term} onClose={onClose}>
       {g ? (
         <div className="ta-gl">
+          {/* 定義 → 絵 → 注記の順（デザイナーのレビュー P2-7） */}
+          <p className="ta-gl-lead">{g.lead}</p>
           {g.classes && lineup && <ClassLineup lineup={lineup} />}
           {g.classes && classNote && <p className="ta-note">{classNote}</p>}
-          <p className="ta-gl-lead">{g.lead}</p>
           {g.stScale && <StScale />}
           {g.points && <PointsTable />}
           {g.points && finalRound && (

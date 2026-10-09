@@ -11,9 +11,11 @@ const p0 = (v) => Math.round(v * 100);
 function Techniques({ trend }) {
   return (
     <div className="ta-venue-tech">
-      <h3 className="ta-venue-tech-h">
-        {C.venueTechHeading(trend.total365, trend.total90)}
-      </h3>
+      {/* 件数は見出しの下の補足に（見出しを1行に。デザイナーのレビュー P3-9） */}
+      <h3 className="ta-venue-tech-h">{C.venueTech}</h3>
+      <p className="ta-note ta-num ta-venue-tech-n">
+        {C.venueTechCount(trend.total365, trend.total90)}
+      </p>
       {trend.rows.map((r) => (
         <div key={r.technique} className="ta-venue-tech-row">
           <span className="ta-venue-tech-label">
@@ -55,9 +57,9 @@ function Techniques({ trend }) {
 
 /**
  * 会場の特徴のシート（D-14・D-18・D-35・D-37）。ヘッダーの会場名から開く。
- * 水質・型（venues の water_type・cluster）、1号艇の1着（v16 facts の VA）、決まり手（直近1年＋直近90日と「最近↑／↓」）、
+ * 水質（venues の water_type）・型（この会場の1号艇の1着を全国の全レースと比べる）、1号艇の1着（v16 facts の VA）、決まり手（直近1年＋直近90日と「最近↑／↓」）、
  * 潮の傾向（海水・汽水だけ）、会場ページへのリンク。取得の失敗と空を分ける（D-36 (5)）
- * @param {{venue: string, venueCode: number, info: {status: string, data: {waterType: string, cluster: string}|null},
+ * @param {{venue: string, venueCode: number, info: {status: string, data: {waterType: string}|null}, typeVerdict: ReturnType<import("../../../utils/assistModel").baseVerdict>|null,
  *   tech: {status: string, data: object[]|null}, vaB1: {k: number, n: number}|null, onClose: () => void}} props
  */
 export default function VenueSheet({
@@ -66,10 +68,10 @@ export default function VenueSheet({
   info,
   tech,
   vaB1,
+  typeVerdict,
   onClose,
 }) {
   const water = info.data?.waterType ?? null;
-  const cluster = info.data?.cluster ?? null;
   const trend =
     tech.status === "ready" ? venueTechniqueTrend(tech.data ?? []) : null;
   const tidal = water === "sea" || water === "brackish";
@@ -78,7 +80,7 @@ export default function VenueSheet({
       {info.status === "error" ? (
         <p className="ta-note">{C.partFailed(C.venueWater)}</p>
       ) : (
-        (water || cluster) && (
+        (water || typeVerdict) && (
           <dl className="ta-kv">
             {water && (
               <>
@@ -97,10 +99,16 @@ export default function VenueSheet({
                 </dd>
               </>
             )}
-            {cluster && C.cluster[cluster] && (
+            {typeVerdict && (
               <>
                 <dt>{C.venueType}</dt>
-                <dd>{C.cluster[cluster]}</dd>
+                <dd className="ta-num">
+                  {C.venueTypeWord(
+                    typeVerdict.verdict,
+                    Math.round(typeVerdict.rate * 100),
+                    Math.round(typeVerdict.base * 100),
+                  )}
+                </dd>
               </>
             )}
           </dl>

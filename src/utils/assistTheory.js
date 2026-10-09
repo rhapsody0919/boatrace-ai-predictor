@@ -24,6 +24,17 @@ export const windBandLabel = (band) =>
       ? `${band.replace("-", "〜")}m`
       : "";
 
+/** 今日の6艇の平均ST（このコース、直近30走）。手がかりが何の値から出たかを見せる（ファン評価 PR5 1周目 指摘7） */
+const courseStText = (today) =>
+  (today?.course_st?.course ?? [])
+    .map((v, i) =>
+      v == null
+        ? null
+        : `${i + 1}号艇 .${String(Math.round(v * 100)).padStart(2, "0")}`,
+    )
+    .filter(Boolean)
+    .join("・");
+
 const hit = (text) => ({ state: "hit", text });
 const miss = (text) => ({ state: "miss", text });
 const pending = (text) => ({ state: "pending", text });
@@ -55,14 +66,16 @@ function formCard(form, ctx) {
   const f = formSummary(ctx.scenario, form);
   const att = ATTACK_BOAT[form] ?? null;
   const hs = ctx.scenario ? hintSummary(ctx.scenario, ctx.today) : null;
-  const hintHit = (hs?.rows ?? []).some(
-    (r) => r.kind === "up" && r.form === form,
-  );
+  const hintRow = (hs?.rows ?? [])
+    .filter((r) => r.kind === "up" && r.form === form)
+    .sort((a, b) => b.ph - a.ph)[0];
   const exhForms = ctx.v16Exhibition?.forms;
+  // 形は本番の結果なので、手がかり・展示が合っても「今日当てはまる」とは書かない（ファン評価 PR5 1周目 指摘2）
   let today = null;
-  if (ctx.post && Array.isArray(exhForms) && exhForms.includes(form))
-    today = hit(hintHit ? C.theoryTodayFormBoth : C.theoryTodayFormExhibition);
-  else if (hintHit) today = hit(C.theoryTodayFormHint);
+  if (hintRow)
+    today = pending(C.theoryTodayFormHint(pct(hintRow.hit[0], hintRow.hit[1])));
+  else if (ctx.post && Array.isArray(exhForms) && exhForms.includes(form))
+    today = pending(C.theoryTodayFormExhibition);
   else if (!ctx.post) today = pending(C.theoryPendingForm);
   else if (Array.isArray(exhForms)) today = miss(C.theoryMissForm);
   let meas = null;
@@ -108,7 +121,7 @@ function hintCard(hintId, ctx) {
     likely: C.theoryHintLikely(formName),
     today: ctx.today
       ? applies
-        ? hit(C.theoryTodayHint)
+        ? hit(C.theoryTodayHint(courseStText(ctx.today)))
         : miss(C.theoryMissHint)
       : null,
     meas:
@@ -180,6 +193,7 @@ function factCard(boat, key, ctx) {
   const bad = C.factWords[chip.bad];
   let today = null;
   if (chip.off) today = null;
+  else if (!chip.bucket) today = miss(C.factNoToday);
   else if (chip.bucket === 1)
     today = hit(C.theoryFactToday(boat, `一番${good}`));
   else if (chip.bucket === 6)
