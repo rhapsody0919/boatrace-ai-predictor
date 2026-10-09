@@ -84,7 +84,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-2) var(--spacing-3);
+  /* 行の間は「傾向 ›」の押せる範囲（44px）が上下の行で重ならない幅（BOA-809） */
+  gap: var(--spacing-5) var(--spacing-3);
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
 }
@@ -1546,6 +1547,11 @@
   border-radius: var(--radius-lg);
 }
 
+/* 堅い？荒れる？の枠は内側の余白が無く、内側に引くと見出しの字にかかる。外側に引く（BOA-809） */
+.ta-rough.ta-guide-lit {
+  outline-offset: var(--spacing-1);
+}
+
 /* ---- セオリーカード（TheorySheet、FR-6） ---- */
 .ta-th-rows {
   display: grid;
@@ -1556,10 +1562,9 @@
   line-height: 1.625;
 }
 
+/* 項目名の大きさは会場の特徴のシート（.ta-kv）と同じ本文の大きさ（BOA-809） */
 .ta-th-rows dt {
   color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  padding-top: 2px;
 }
 
 .ta-th-rows dd {
