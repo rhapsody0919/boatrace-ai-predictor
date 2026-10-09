@@ -485,6 +485,19 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       expect(
         await cards.evaluateAll((els) => els.filter((e) => e.open).length),
       ).toBeLessThanOrEqual(2);
+      // 時点を切り替えて展示タイムのカードが増減しても、開くのは2枚まで（code-review 指摘、BOA-805）
+      const stageBtn = section.getByRole("button", {
+        name: "展示前（出走表）",
+      });
+      if (await stageBtn.count()) {
+        await stageBtn.click();
+        await section
+          .getByRole("button", { name: "展示後（直前情報も）" })
+          .click();
+        expect(
+          await cards.evaluateAll((els) => els.filter((e) => e.open).length),
+        ).toBeLessThanOrEqual(2);
+      }
     });
 
     test("はっきりしないカードの札に、差のポイントと件数を書く（BOA-805）", async ({
@@ -499,7 +512,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       expect(judges.length).toBeGreaterThan(0);
       for (const j of judges)
         expect(j.trim()).toMatch(
-          /^(差が大きい|差がある|差は小さい|差は\d+ポイントあるが、(ぶれ幅が重なる|件数が少ない（[\d,]+件）)|比べられない（当てはまるレースが無い）)/,
+          /^(差が大きい|差がある|差は小さい|差はほとんど無い（ぶれ幅が重なる）|差は\d+ポイントあるが、(ぶれ幅が重なる|件数が少ない（[\d,]+件）)|比べられない（当てはまるレースが無い）)/,
         );
     });
 

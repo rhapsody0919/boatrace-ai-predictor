@@ -889,7 +889,8 @@
           "unclear": "{{pt}}-point gap, but the ranges overlap",
           "unclearFew": "{{pt}}-point gap, but few races ({{n}})",
           "none": "Can't compare (no matching races)",
-          "some": "Some difference"
+          "some": "Some difference",
+          "unclearTiny": "Almost no gap (ranges overlap)"
         },
         "reversed": "(higher when {{word}})",
         "stripLabel": "{{rate}} by where {{item}} ranks among the 6: {{list}}",

@@ -883,7 +883,8 @@
           "unclear": "差距{{pt}}個百分點，但波動範圍重疊",
           "unclearFew": "差距{{pt}}個百分點，但件數少（{{n}}場）",
           "none": "無法比較（沒有符合的比賽）",
-          "some": "有差距"
+          "some": "有差距",
+          "unclearTiny": "幾乎沒有差距（波動範圍重疊）"
         },
         "reversed": "（反而是最{{word}}時較高）",
         "stripLabel": "依{{item}}在6艇中排名區分的{{rate}}：{{list}}",

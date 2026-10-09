@@ -181,6 +181,8 @@ export const MIN_RATE_N = 30;
  */
 export function judgeLabelKey(judge, best, worst) {
   if (judge.level !== "unclear") return judge.level;
+  // 差が5ポイント未満なら「差は0ポイントあるが…」とは書かず「ほとんど無い」（BOA-805、データ精度の検証の指摘）
+  if (Math.abs(judge.diff ?? 0) < SOME_GAP - GAP_EPS) return "unclearTiny";
   const n = Math.min(best?.[1] ?? 0, worst?.[1] ?? 0);
   return n < FEW_FOR_UNCLEAR ? "unclearFew" : "unclear";
 }

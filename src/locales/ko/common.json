@@ -883,7 +883,8 @@
           "unclear": "차이는 {{pt}}포인트지만 변동 폭이 겹침",
           "unclearFew": "차이는 {{pt}}포인트지만 건수가 적음({{n}}건)",
           "none": "비교 불가(해당 레이스 없음)",
-          "some": "차이가 있음"
+          "some": "차이가 있음",
+          "unclearTiny": "차이가 거의 없음(변동 폭이 겹침)"
         },
         "reversed": "(가장 {{word}} 쪽일 때가 더 높음)",
         "stripLabel": "{{item}}의 6척 중 순위별 {{rate}}: {{list}}",

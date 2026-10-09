@@ -379,13 +379,15 @@ export default function ScenarioTab({
         title={t(`aiPredictionTab.analogy.notes.today`)}
         texts={[
           formAgree?.hit?.[1] &&
-            formAgree?.miss?.[1] &&
             exhibitionStage &&
             t(`${k}.slitAgree`, {
-              // 締めの一文は数字で言い分ける（BOA-805。以前は数字によらず「少し参考になる程度」だった）
-              verdict: t(
-                `${k}.agreeVerdict.${agreementVerdict(formAgree.hit, formAgree.miss)}`,
-              ),
+              // 締めの一文は数字で言い分ける（BOA-805。以前は数字によらず「少し参考になる程度」だった）。
+              // 展示が別の形だった件数が0なら比べられないので、締めの一文だけ省く
+              verdict: agreementVerdict(formAgree.hit, formAgree.miss)
+                ? t(
+                    `${k}.agreeVerdict.${agreementVerdict(formAgree.hit, formAgree.miss)}`,
+                  )
+                : "",
               form: formName(exhForms[0]),
               p: fmtPct(formAgree.hit[0] / formAgree.hit[1]),
               q: fmtPct(

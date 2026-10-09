@@ -790,18 +790,23 @@ check(
   },
 );
 check(
+  "判定: ぶれ幅が重なり差が5ポイント未満なら「ほとんど無い」",
+  judgeLabelKey({ level: "unclear", diff: -0.0027 }, [510, 705], [516, 744]),
+  "unclearTiny",
+);
+check(
   "判定: 少ない側が100件未満なら件数が少ない",
-  judgeLabelKey({ level: "unclear" }, [4, 5], [300, 1000]),
+  judgeLabelKey({ level: "unclear", diff: 0.5 }, [4, 5], [300, 1000]),
   "unclearFew",
 );
 check(
   "判定: 少ない側が100件以上ならぶれ幅が重なる",
-  judgeLabelKey({ level: "unclear" }, [766, 1017], [725, 1019]),
+  judgeLabelKey({ level: "unclear", diff: 0.06 }, [766, 1017], [725, 1019]),
   "unclear",
 );
 check(
   "判定: 境目の100件は「ぶれ幅が重なる」",
-  judgeLabelKey({ level: "unclear" }, [60, 100], [70, 100]),
+  judgeLabelKey({ level: "unclear", diff: -0.1 }, [60, 100], [70, 100]),
   "unclear",
 );
 check(
