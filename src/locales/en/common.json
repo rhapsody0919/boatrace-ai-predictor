@@ -1696,6 +1696,8 @@
         "slitRefLegend": "Dotted = {{name}}",
         "slitFaster": "Faster →",
         "resultNotSplit": "The results in ④ are not split by the attacking boat's rank in ③.",
+        "boatScopeNote": "Rates for Boats 2–6 come from races where that boat's class matched today's (e.g. if today's Boat 4 is A1, races where Boat 4 was A1). Each boat has a different race count, so the 6 boats do not add up to 100%. (x/y) is that boat's hits/races.",
+        "attackBoatScope": "Boat {{b}}'s table and the figures above (including Boat 1 Nige in the same races) come from races where Boat {{b}}'s class matched today's ({{n}} races). Boat 1's table below comes from races where Boat 1's class matched, so its Nige rate differs slightly.",
         "fellBack": "Only {{n}} races at {{venue}} (excluding refunds) have the same combination, so these figures gather races from all venues",
         "shareOfNoRefund": "{{p}} of {{of}} (excluding refunds)",
         "agreeVerdict": {

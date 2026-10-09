@@ -987,6 +987,70 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
         expect((li.match(/。/g) ?? []).length).toBeLessThanOrEqual(1);
     });
 
+    test("2〜6号艇の率は、その艇の級をそろえた範囲の件数で出し、6艇を足しても100%にならないと書く（BOA-806）", async ({
+      page,
+    }) => {
+      await setup(page);
+      const base = analogyV16Scenario();
+      const urls = [];
+      // 4号艇は級をそろえた範囲で件数200（1着50・2着30・3着20）、5号艇は③のすぐ外の艇の1着だけ持つ
+      const four = Object.fromEntries(
+        Object.entries(base.scenario.cells).map(([e, { forms }]) => [
+          e,
+          Object.fromEntries(
+            Object.keys(forms).map((f) => [f, [200, 50, 30, 20]]),
+          ),
+        ]),
+      );
+      const kado = base.scenario.attack.kado;
+      const boats = {
+        2: null,
+        3: null,
+        4: {
+          scope: "VC:20:6-0-0-0:4A1",
+          data: {
+            cells: four,
+            attack: {
+              kado: {
+                ...kado,
+                all: { ...kado.all, n: 154, att_win: [77, 154] },
+              },
+            },
+            winner: {},
+          },
+          reference: null,
+        },
+        5: {
+          scope: "VC:20:6-0-0-0:5A1",
+          data: { cells: {}, attack: {}, winner: { kado: [11, 100] } },
+          reference: null,
+        },
+        6: null,
+      };
+      await page.route("**/api/analogy/scenario/**", (route) => {
+        urls.push(route.request().url());
+        return route.fulfill({ json: { ...base, boats } });
+      });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      await expect(section).toContainText("6艇を足しても100%にならない");
+      await expect(section).toContainText("25%（50/200）");
+      await expect(section).toContainText("50%（100/200）");
+      expect(
+        urls.every((u) => new URL(u).searchParams.get("boats") === "1"),
+      ).toBe(true);
+      await section
+        .getByRole("button", { name: /^カド一撃/ })
+        .first()
+        .click();
+      await expect(section).toContainText("77/154レース");
+      await expect(section).toContainText("すぐ外の5号艇の1着 11%");
+      await expect(section).toContainText(
+        "4号艇の級別を今日とそろえたレース（154件）",
+      );
+    });
+
     test("手がかりの件数が②の件数とずれる理由を書く", async ({ page }) => {
       await setup(page);
       await openSonarTab(page);

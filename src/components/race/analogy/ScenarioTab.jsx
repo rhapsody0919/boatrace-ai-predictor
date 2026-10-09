@@ -19,6 +19,8 @@ import {
 } from "../../../utils/analogyFormat";
 import {
   MIN_SCENARIO,
+  boatCells,
+  boatCountsDiffer,
   hintBadgeByForm,
   hintRows,
   minRanks,
@@ -158,8 +160,15 @@ export default function ScenarioTab({
       ? t(`${k}.entryWhole`, { entry: t(`${k}.entryShort.${E}`) })
       : allOf(scope);
   const share = (x, n) => (n ? x / n : null);
-  const hit3 = (b, cell) =>
-    cell.first_boat[b - 1] + cell.second_boat[b - 1] + cell.third_boat[b - 1];
+  // 2〜6号艇はその艇の級をそろえた範囲の値（BOA-806）。比べる点線も同じ艇の範囲の「形を問わない」値
+  const cur = boatCells(cells, data.boats, entry, slit);
+  const ref =
+    slit !== "any"
+      ? boatCells(cells, data.boats, entry, "any")
+      : boatCells(cells, data.boats, "all", "any");
+  const perBoat = boatCountsDiffer(cur);
+  const boatN = perBoat ? cur.map((r) => r[0]) : c.n;
+  const top3 = (r) => r[1] + r[2] + r[3];
 
   let result;
   if (!c.n) result = <p className="af-warn">{t(`${k}.none`, { head })}</p>;
@@ -210,19 +219,20 @@ export default function ScenarioTab({
           </span>
         </div>
         <h4 className="af-h4">{t(`${k}.firstBoat`)}</h4>
+        {perBoat && <p className="af-foot">{t(`${k}.boatScopeNote`)}</p>}
         <BoatBars
-          counts={c.first_boat}
-          n={c.n}
-          reference={base.first_boat.map((v) => share(v, base.n))}
+          counts={cur.map((r) => r[1])}
+          n={boatN}
+          reference={ref.map((r) => share(r[1], r[0]))}
+          fewBelow={MIN_SCENARIO}
           colored
         />
         <h4 className="af-h4">{t(`${k}.top3Boat`)}</h4>
         <BoatBars
-          counts={[1, 2, 3, 4, 5, 6].map((b) => hit3(b, c))}
-          n={c.n}
-          reference={[1, 2, 3, 4, 5, 6].map((b) =>
-            share(hit3(b, base), base.n),
-          )}
+          counts={cur.map(top3)}
+          n={boatN}
+          reference={ref.map((r) => share(top3(r), r[0]))}
+          fewBelow={MIN_SCENARIO}
           colored
         />
         <h4 className="af-h4">{t(`${k}.techHeading`)}</h4>
@@ -422,6 +432,7 @@ export default function ScenarioTab({
       <AttackTable
         attack={sc.attack}
         refAttack={data.reference?.attack ?? null}
+        boats={data.boats ?? null}
         refName={
           data.reference
             ? scopeName(data.reference.scope, t, { short: true })

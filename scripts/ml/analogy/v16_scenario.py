@@ -225,6 +225,26 @@ def scope_attack(base: np.ndarray, forms: dict[str, np.ndarray], r1, r2, tech, m
     return out
 
 
+# ---------------------------------------------------------------- 艇ごとの範囲（BOA-806）
+def boat_scope(mask: np.ndarray, d: dict, boat: int, attack: dict) -> dict:
+    """「構成＋その艇の級」の範囲（mask）での、その艇だけの値（④の1着・3着以内、③の攻める艇の表）。
+    1号艇の範囲の scenario は「構成＋1号艇の級」なので、2〜6号艇の率はその艇の級が今日と違うレースを混ぜる。
+    cells は進入の型×形ごとの [件数, その艇の1着, 2着, 3着]。attack は scope_attack(範囲∧③の母集団) の戻り値で、
+    その艇が攻める艇の形だけ残す。winner は形ごとの [その艇の1着, ③の母集団の件数]（攻める艇の外の艇の1着の率）"""
+    idx = np.flatnonzero(np.asarray(mask, dtype=bool))
+    d = _take(d, idx)
+    hit = [d["ranks"][:, k] == boat for k in range(3)]
+    cells = {}
+    for e in ENTRY_TYPES:
+        cells[e] = {}
+        for f in FORMS:
+            m = d["entries"][e] & d["forms"][f]
+            cells[e][f] = [int(m.sum())] + [int((m & h).sum()) for h in hit]
+    return {"boat": boat, "n": len(idx), "cells": cells,
+            "attack": {f: attack[f] for f in SLIT_FORMS if attack[f]["attacker"] == boat},
+            "winner": {f: [attack[f]["all"]["winner"][boat - 1], attack[f]["all"]["n"]] for f in SLIT_FORMS}}
+
+
 # ---------------------------------------------------------------- 展示→本番の一致（spec C-1・C-3 の注記）
 def exhibition_agreement(races: pd.DataFrame, exh: pd.DataFrame) -> dict:
     """races（v16_pool.load_races の行。tab3_ok のレースを渡す）と exh（v16_pool.load_exhibition_layout）から、全国の

@@ -65,9 +65,15 @@ export const useAnalogySimilar = (raceId, stage, enabled = true) =>
     enabled,
   );
 
-export const useAnalogyScenario = (raceId, scope, stage, enabled = true) =>
+export const useAnalogyScenario = (
+  raceId,
+  scope,
+  stage,
+  enabled = true,
+  boats = false,
+) =>
   useAnalogyResource(
-    `scenario|${raceId}|${scope ?? ""}|${stage}`,
-    () => getAnalogyScenario(raceId, scope, stage),
+    `scenario|${raceId}|${scope ?? ""}|${stage}|${boats ? "boats" : ""}`,
+    () => getAnalogyScenario(raceId, scope, stage, boats),
     enabled,
   );

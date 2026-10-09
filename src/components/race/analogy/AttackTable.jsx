@@ -100,7 +100,9 @@ function BandTable({ who, keys, heads, sections, refName }) {
  * ③攻めは決まった？（spec C-4）。形を選ぶまでは案内の1行。選ぶと攻める艇の表と1号艇の表
  * @param {{attack: object|null, refAttack: object|null, refName: string|null, slit: string, waku: boolean,
  *   exhibitionStage: boolean, exhRank: (number|null)[]|null, exhTime: (number|null)[]|null,
- *   motor: (number|null)[], motorRank: (number|null)[], scope: string}} props
+ *   motor: (number|null)[], motorRank: (number|null)[], scope: string, boats?: object|null}} props
+ *   boats は API の boats（2〜6号艇の「構成＋その艇の級」の範囲。BOA-806）。あれば攻める艇の表・すぐ外の艇の1着は
+ *   その艇の範囲の値、1号艇の表は1号艇の範囲の値
  */
 export default function AttackTable({
   attack,
@@ -114,6 +116,7 @@ export default function AttackTable({
   motor,
   motorRank,
   scope,
+  boats = null,
 }) {
   const { t } = useTranslation();
   const head = (
@@ -139,7 +142,19 @@ export default function AttackTable({
   const F = attack[slit];
   const R = refAttack?.[slit] ?? null;
   const att = F.attacker;
-  const all = F.all;
+  // 攻める艇の値（BOA-806）: その艇の級をそろえた範囲があればそちら。無ければ1号艇の範囲の値
+  const own = att ? boats?.[att] : null;
+  const A = own?.data?.attack?.[slit] ?? F;
+  const AR = own?.data?.attack?.[slit]
+    ? (own.reference?.attack?.[slit] ?? null)
+    : R;
+  const all = A.all;
+  const outer = att && att < 6 ? boats?.[att + 1]?.data?.winner?.[slit] : null;
+  const outerRate = outer
+    ? rate(outer)
+    : all.n
+      ? all.winner[att] / all.n
+      : null;
   const formName = t(`${k}.forms.${slit}.name`);
   const exhOk = exhibitionStage && Array.isArray(exhRank);
   const range = (vals, d, unit = "") => {
@@ -234,7 +249,7 @@ export default function AttackTable({
               {att < 6 &&
                 t(`${k}.attackOuter`, {
                   b: att + 1,
-                  p: fmtPct(all.n ? all.winner[att] / all.n : null),
+                  p: fmtPct(outerRate),
                 })}
             </small>
           </div>
@@ -244,10 +259,10 @@ export default function AttackTable({
             heads={[t(`${k}.colAttWin`, { b: att }), t(`${k}.colNige`)]}
             sections={sections(
               att,
-              F.by_exh,
-              F.by_motor,
-              R?.by_exh,
-              R?.by_motor,
+              A.by_exh,
+              A.by_motor,
+              AR?.by_exh,
+              AR?.by_motor,
             )}
             refName={refName}
           />
@@ -259,15 +274,20 @@ export default function AttackTable({
           <NoteList
             texts={[
               !DENT_FORMS.has(slit) &&
-                F.att_lead?.[1] &&
-                t(`${k}.attackLead`, { b: att, p: fmtPct(rate(F.att_lead)) }),
-              R &&
-                natDiff(R.by_exh, "att_win") !== null &&
+                A.att_lead?.[1] &&
+                t(`${k}.attackLead`, { b: att, p: fmtPct(rate(A.att_lead)) }),
+              AR &&
+                natDiff(AR.by_exh, "att_win") !== null &&
                 t(`${k}.attackNat`, {
                   b: att,
                   name: refName,
-                  e: natDiff(R.by_exh, "att_win"),
-                  m: natDiff(R.by_motor, "att_win"),
+                  e: natDiff(AR.by_exh, "att_win"),
+                  m: natDiff(AR.by_motor, "att_win"),
+                }),
+              A !== F &&
+                t(`${k}.attackBoatScope`, {
+                  b: att,
+                  n: fmtCount(all.n),
                 }),
             ]}
           />
@@ -277,12 +297,12 @@ export default function AttackTable({
       )}
       <div className="af-big">
         <span>{t(`${k}.b1Big`, { form: formName, scope })}</span>
-        <b>{fmtPct(rate(all.b1_nige))}</b>
+        <b>{fmtPct(rate(F.all.b1_nige))}</b>
         <small>
           {t(`${k}.b1BigSub`, {
-            hits: fmtCount(all.b1_nige[0]),
-            n: fmtCount(all.b1_nige[1]),
-            top2: fmtPct(rate(all.b1_top2)),
+            hits: fmtCount(F.all.b1_nige[0]),
+            n: fmtCount(F.all.b1_nige[1]),
+            top2: fmtPct(rate(F.all.b1_top2)),
           })}
         </small>
       </div>

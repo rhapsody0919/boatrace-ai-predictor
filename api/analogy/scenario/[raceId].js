@@ -8,6 +8,9 @@
  * reference: ③の比べる相手（spec C-4「全国・同じ組み合わせの同じ区分の率」）の範囲の③の表（attack だけ）。
  *   VC・NCR は NC、VA・VG は NA。NC・NA は無し（形の切り替えで取り直さないよう、同じ応答に入れる）
  * 300件はタブ3の母集団（返還・進入不明を除く）で数える
+ * boats=1: 2〜6号艇の「構成＋その艇の級」の範囲の値（scenario-boat、BOA-806）を boats に入れる。範囲の種類（VC・NC・NCR）は
+ *   1号艇の範囲と同じにする（VC から NC に替えたときは全艇 NC）。VA・VG・NA は級によらないので null。
+ *   ファイルの無い艇（BOA-806 より前の朝のバッチの版）は null（画面は1号艇の範囲の値を出す）
  */
 import {
   createHandler,
@@ -37,6 +40,36 @@ async function defaultScope(raceId, runId, keys) {
 }
 
 const SCOPE = /^(VC|NC|NCR|VA|VG|NA)(:[0-9A-Za-z:-]+)?$/;
+const BOAT_KINDS = new Set(["VC", "NC", "NCR"]);
+
+/** 2〜6号艇の scenario-boat と、③の比べる相手（VC・NCR は NC）の attack */
+async function boatScopes(raceId, runId, allKeys, kind) {
+  if (!BOAT_KINDS.has(kind)) return null;
+  const read = (key) =>
+    key
+      ? readObject(
+          objectPath(raceId, runId, "scenario-boat", key.replaceAll(":", "_")),
+        )
+      : null;
+  const entries = await Promise.all(
+    [2, 3, 4, 5, 6].map(async (b) => {
+      const keys = allKeys[String(b)] ?? {};
+      const refKey = keys[REFERENCE[kind]] ?? null;
+      const [data, ref] = await Promise.all([read(keys[kind]), read(refKey)]);
+      return [
+        String(b),
+        data
+          ? {
+              scope: keys[kind],
+              data,
+              reference: ref ? { scope: refKey, attack: ref.attack } : null,
+            }
+          : null,
+      ];
+    }),
+  );
+  return Object.fromEntries(entries);
+}
 
 export default createHandler(
   async ({ raceId, stage, url, state, snapshot }) => {
@@ -55,7 +88,8 @@ export default createHandler(
         `scope は今日の1号艇の範囲キー（${Object.values(keys).join("|")}）`,
       );
     const refKey = keys[REFERENCE[scope.split(":")[0]]] ?? null;
-    const [scenario, refFile] = await Promise.all([
+    const wantBoats = url.searchParams.get("boats") === "1";
+    const [scenario, refFile, boats] = await Promise.all([
       readObject(
         objectPath(raceId, rc.run_id, "scenario", scope.replaceAll(":", "_")),
       ),
@@ -68,6 +102,9 @@ export default createHandler(
               refKey.replaceAll(":", "_"),
             ),
           )
+        : null,
+      wantBoats
+        ? boatScopes(raceId, rc.run_id, today.scope_keys, scope.split(":")[0])
         : null,
     ]);
     const exhibition =
@@ -84,6 +121,7 @@ export default createHandler(
       scope_keys: keys,
       scenario,
       reference: refFile ? { scope: refKey, attack: refFile.attack } : null,
+      ...(wantBoats ? { boats } : {}),
       hints: today.hints,
       course_st: today.course_st,
       exhibition,

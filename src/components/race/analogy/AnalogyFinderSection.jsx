@@ -202,6 +202,7 @@ export default function AnalogyFinderSection({ raceId }) {
     scenarioScope,
     "exhibition",
     Boolean(opened.scenario),
+    true, // 2〜6号艇の級をそろえた範囲も取る（③④。BOA-806）
   );
 
   const [, , , venueCode, raceNumber] = String(raceId).split("-");

@@ -173,6 +173,29 @@ export const MIN_SCENARIO = 30;
 export const SMALL_ATTACK = 50;
 
 /**
+ * ④の艇ごとの [件数, 1着, 2着, 3着]（BOA-806）。2〜6号艇は「構成＋その艇の級」の範囲（API の boats）の値、
+ * 無ければ（VA・VG・NA、または BOA-806 より前の版）1号艇の範囲の cells の値
+ * @param {object} cells scenario.cells
+ * @param {object|null|undefined} boats API の boats（{"2": {data: {cells}}|null, ...}）
+ * @returns {number[][]} 6艇分
+ */
+export function boatCells(cells, boats, entry, form) {
+  const c = cells[entry].forms[form];
+  return [1, 2, 3, 4, 5, 6].map(
+    (b) =>
+      (b > 1 && boats?.[b]?.data?.cells?.[entry]?.[form]) || [
+        c.n,
+        c.first_boat[b - 1],
+        c.second_boat[b - 1],
+        c.third_boat[b - 1],
+      ],
+  );
+}
+
+/** 艇ごとの件数が1艇でも違うか（違うときだけ、艇ごとの件数と「6艇を足しても100%にならない」を出す） */
+export const boatCountsDiffer = (rows) => rows.some((r) => r[0] !== rows[0][0]);
+
+/**
  * 今日の当てはまる手がかりの行（spec C-2）。率は②の数えるレース（scenario.hints）で数える。
  * kind: "up"（札を付ける。当てはまった30件以上・率が高い・ぶれ幅が重ならない）／"down"（むしろなりにくい）／
  * "unclear"（札なしで率だけ）
