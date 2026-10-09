@@ -1,6 +1,7 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import NoteList, { NotesFold } from "./NoteList";
+import NoteList from "./NoteList";
+import ScenarioFold from "./ScenarioFold";
 import BoatBadge from "../BoatBadge";
 import SlitShapeIcon from "./SlitShapeIcon";
 import {
@@ -14,10 +15,12 @@ import {
 const k = "aiPredictionTab.analogy.scenario";
 
 /**
- * 今日のスタートの手がかり（spec C-2）。①が枠なり（かどの進入でも）のときの手がかり。枠なり以外を選ぶと注意を出す
+ * 今日のスタートの手がかり（spec C-2、承認モック mock-scenario-v1）。①が枠なり（かどの進入でも）のときの手がかり。
+ * 枠なり以外を選ぶと注意を出す。当てはまる条件は棒2本と「②で…を選ぶ」のボタン。見方・注意・割合の出し方は
+ * 一番下の折りたたみ（SlitHintNotes）に出す
  * @param {{courseSt: object, version: "course"|"overall", onVersion: (v: string) => void, rows: object[],
- *   exhibition: object|null, exhibitionStage: boolean, venue: number, scope: string, selectedForm: string,
- *   onForm: (f: string) => void, waku: boolean, baseN: number}} props
+ *   exhibition: object|null, exhibitionStage: boolean, venue: number, selectedForm: string,
+ *   onForm: (f: string) => void, waku: boolean}} props
  */
 export default function SlitHint({
   courseSt,
@@ -27,15 +30,13 @@ export default function SlitHint({
   exhibition,
   exhibitionStage,
   venue,
-  scope,
   selectedForm,
   onForm,
   waku,
-  baseN,
-  allA1 = false,
 }) {
   const { t } = useTranslation();
   const lbl = useId();
+  const [tip, setTip] = useState(false);
   const vals = version === "course" ? courseSt.course_filled : courseSt.overall;
   const ref =
     version === "course" ? (courseSt.venue_course_all?.mean ?? null) : null;
@@ -46,12 +47,6 @@ export default function SlitHint({
           c ? exhibition.st_by_course[c - 1] : null,
         )
       : null;
-  const fewVenue = (courseSt.venue_n ?? [])
-    .map((n, i) => (n !== null && n < 10 ? i + 1 : null))
-    .filter(Boolean);
-  const filled = (courseSt.course_n ?? [])
-    .map((n, i) => (n < 5 ? i + 1 : null))
-    .filter(Boolean);
   const tr = (label, cells, dim) => (
     <tr>
       <th scope="row">{label}</th>
@@ -67,9 +62,20 @@ export default function SlitHint({
     <div className="af-hint">
       <div className="af-hint-h">
         <h4 className="af-h4">{t(`${k}.hintHeading`)}</h4>
-        <span className="af-sub">{t(`${k}.hintSub`)}</span>
+        <span className="af-hint-tags">
+          <span className="af-info-tag">{t(`${k}.hintTagPast`)}</span>
+          <span className="af-info-tag">{t(`${k}.hintTagWaku`)}</span>
+        </span>
       </div>
       {!waku && <p className="af-warn">{t(`${k}.hintOther`)}</p>}
+      <div className="af-hint-pic">
+        <SlitShapeIcon
+          st={vals}
+          height={150}
+          reference={ref}
+          refLabel={t(`${k}.hintRefShort`, { venue: vName })}
+        />
+      </div>
       <div className="af-ctl-row">
         <span className="af-lbl" id={lbl}>
           {t(`${k}.hintSrc`)}
@@ -91,16 +97,23 @@ export default function SlitHint({
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          className="af-ibtn"
+          aria-expanded={tip}
+          aria-label={t(`${k}.hintSrcAria`)}
+          onClick={() => setTip((v) => !v)}
+        >
+          <span aria-hidden="true">i</span>
+        </button>
       </div>
-      <p className="af-foot">{t(`${k}.hintSrcFoot`)}</p>
-      <div className="af-hint-pic">
-        <SlitShapeIcon
-          st={vals}
-          height={150}
-          reference={ref}
-          refLabel={t(`${k}.hintRefShort`, { venue: vName })}
-        />
-      </div>
+      {/* 選んでいる方の説明だけ1行。もう一方は (i)（UI/UX レビュー） */}
+      <p className="af-foot">{t(`${k}.hintSrcDef.${version}`)}</p>
+      {tip && (
+        <p className="af-tip">
+          {t(`${k}.hintSrcDef.${version === "course" ? "overall" : "course"}`)}
+        </p>
+      )}
       {/* 結論（当てはまる条件）は図の直下。見方・表・割合の出し方は折りたたみ（承認モック sonar-tab v3） */}
       <h4 className="af-h4">
         {t(`${k}.hintConds`, { src: t(`${k}.hintSrcs.${version}`) })}
@@ -108,43 +121,46 @@ export default function SlitHint({
       <div className="af-hintcs" data-af-control="slit_form">
         {rows.length ? (
           rows.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              className="af-hintc"
-              aria-pressed={selectedForm === r.form}
-              onClick={() => onForm(r.form)}
-            >
-              <span>{t(`${k}.hints.${r.id}`)}</span>
-              <span className="af-hint-r">
-                {" → "}
-                {r.kind === "down"
-                  ? t(`${k}.hintDown`, {
-                      form: formName(r.form),
-                      ph: fmtPct(r.ph),
-                      pm: fmtPct(r.pm),
-                    })
-                  : t(`${k}.hintUp`, {
-                      form: formName(r.form),
-                      ph: fmtPct(r.ph),
-                      pm: fmtPct(r.pm),
-                    })}
-                <small>
-                  {t(`${k}.hintCount`, {
-                    n: fmtCount(r.hit[1]),
-                    form: formName(r.form),
-                    def: t(`${k}.forms.${r.form}.def`),
-                  })}
-                </small>
-              </span>
-            </button>
+            <div key={r.id} className="af-hintc">
+              <b>{t(`${k}.hints.${r.id}`)}</b>
+              {r.kind === "down" && (
+                <span className="af-info-tag">{t(`${k}.hintDownTag`)}</span>
+              )}
+              {[
+                [t(`${k}.hintHit`, { form: formName(r.form) }), r.ph],
+                [t(`${k}.hintMiss`), r.pm],
+              ].map(([label, p]) => (
+                <div key={label} className="af-hint-bar af-num">
+                  <span>{label}</span>
+                  <span className="af-atk-trk">
+                    <i
+                      style={{ width: `${Math.min(1, (p ?? 0) * 3) * 100}%` }}
+                    />
+                  </span>
+                  <b>{fmtPct(p)}</b>
+                </div>
+              ))}
+              <p className="af-foot">
+                {t(`${k}.hintCountShort`, { n: fmtCount(r.hit[1]) })}
+              </p>
+              <button
+                type="button"
+                className="af-go"
+                aria-pressed={selectedForm === r.form}
+                onClick={() => onForm(r.form)}
+              >
+                {t(`${k}.hintGo`, { form: formName(r.form) })}
+              </button>
+            </div>
           ))
         ) : (
           <p className="af-foot">{t(`${k}.hintNone`)}</p>
         )}
       </div>
-      <details className="af-details">
-        <summary>{t(`${k}.hintTable`)}</summary>
+      <ScenarioFold
+        title={t(`${k}.hintTable`)}
+        preview={t(`${k}.hintTablePreview`)}
+      >
         <div className="af-tbl">
           <table className="af-hint-t">
             <thead>
@@ -198,47 +214,70 @@ export default function SlitHint({
             </tbody>
           </table>
         </div>
-      </details>
-      <NotesFold title={t("aiPredictionTab.analogy.notes.methodCaution")}>
-        <NoteList
-          title={t(`aiPredictionTab.analogy.notes.howToRead`)}
-          texts={[
-            version === "course"
-              ? t(`${k}.hintPicCourse`, { venue: vName }) +
-                (allA1 ? t(`${k}.hintPicA1`) : "") +
-                t(`${k}.hintPicTail`)
-              : t(`${k}.hintPicOverall`),
-            version === "course" &&
-              filled.length > 0 &&
-              t(`${k}.hintFilled`, {
-                boats: filled.join(t("aiPredictionTab.analogy.listSeparator")),
-              }),
-          ]}
-        />
-        <NoteList
-          title={t(`aiPredictionTab.analogy.notes.caution`)}
-          texts={[
-            t(`${k}.hintVenueFoot`, { venue: vName }),
-            fewVenue.length > 0 &&
-              t(`${k}.hintFewVenue`, {
-                boats: fewVenue.join(
-                  t("aiPredictionTab.analogy.listSeparator"),
-                ),
-              }),
-            exhibitionStage ? t(`${k}.hintExhPost`) : t(`${k}.hintExhPre`),
-          ]}
-        />
-        <NoteList
-          title={t(`aiPredictionTab.analogy.notes.counting`)}
-          texts={[
-            t(`${k}.hintFoot`, {
-              scope,
-              n: fmtCount(baseN),
-              few: baseN < 3000 ? t(`${k}.hintFew`) : "",
-            }),
-          ]}
-        />
-      </NotesFold>
+      </ScenarioFold>
     </div>
+  );
+}
+
+/**
+ * 手がかりの見方・注意・割合の出し方（一番下の「割合の出し方・注意」の折りたたみの中。同じ名前の折りたたみが
+ * 2つあったのを1つにまとめた。承認モック mock-scenario-v1）
+ */
+export function SlitHintNotes({
+  courseSt,
+  version,
+  exhibitionStage,
+  venue,
+  scope,
+  baseN,
+  allA1 = false,
+}) {
+  const { t } = useTranslation();
+  const vName = venueLabel(venue, t);
+  const fewVenue = (courseSt.venue_n ?? [])
+    .map((n, i) => (n !== null && n < 10 ? i + 1 : null))
+    .filter(Boolean);
+  const filled = (courseSt.course_n ?? [])
+    .map((n, i) => (n < 5 ? i + 1 : null))
+    .filter(Boolean);
+  return (
+    <>
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.howToRead`)}
+        texts={[
+          version === "course"
+            ? t(`${k}.hintPicCourse`, { venue: vName }) +
+              (allA1 ? t(`${k}.hintPicA1`) : "") +
+              t(`${k}.hintPicTail`)
+            : t(`${k}.hintPicOverall`),
+          version === "course" &&
+            filled.length > 0 &&
+            t(`${k}.hintFilled`, {
+              boats: filled.join(t("aiPredictionTab.analogy.listSeparator")),
+            }),
+        ]}
+      />
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.caution`)}
+        texts={[
+          t(`${k}.hintVenueFoot`, { venue: vName }),
+          fewVenue.length > 0 &&
+            t(`${k}.hintFewVenue`, {
+              boats: fewVenue.join(t("aiPredictionTab.analogy.listSeparator")),
+            }),
+          exhibitionStage ? t(`${k}.hintExhPost`) : t(`${k}.hintExhPre`),
+        ]}
+      />
+      <NoteList
+        title={t(`aiPredictionTab.analogy.notes.counting`)}
+        texts={[
+          t(`${k}.hintFoot`, {
+            scope,
+            n: fmtCount(baseN),
+            few: baseN < 3000 ? t(`${k}.hintFew`) : "",
+          }),
+        ]}
+      />
+    </>
   );
 }

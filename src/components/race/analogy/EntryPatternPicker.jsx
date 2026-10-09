@@ -9,7 +9,8 @@ import {
 const k = "aiPredictionTab.analogy.scenario";
 
 /**
- * ①進入はどうなる？（spec C-1）。型ごとに出現率と1号艇の1着率（30件未満は率を出さない）。展示後は今日の展示の型に印
+ * ①進入はどうなる？（spec C-1、承認モック mock-scenario-v1）。型ごとに出現率（棒）と1号艇の1着率（30件未満は
+ * 率を出さず件数と「—」）。列の見出しは上に1回だけ。展示後は今日の展示の型に札
  * @param {{cells: object, entry: string, onEntry: (e: string) => void, todayEntry: string|null}} props
  */
 export default function EntryPatternPicker({
@@ -23,6 +24,7 @@ export default function EntryPatternPicker({
   const openMae = entry === "mae" || MAE_SUB.includes(entry);
   const row = (e, sub = false) => {
     const x = cells[e].forms.any;
+    const share = total ? x.n / total : null;
     const today =
       todayEntry &&
       (e === todayEntry || (e === "mae" && MAE_SUB.includes(todayEntry)));
@@ -41,18 +43,30 @@ export default function EntryPatternPicker({
           )}
         </span>
         <span className="af-num af-ent-sh">
-          {fmtPct(total ? x.n / total : null)}
+          <i
+            className="af-ent-bar"
+            style={{ width: `${Math.max(2, (share ?? 0) * 44)}px` }}
+            aria-hidden="true"
+          />
+          {fmtPct(share)}
         </span>
-        <span className="af-ent-b1">
-          {x.n >= MIN_SCENARIO
-            ? t(`${k}.b1Win`, { p: fmtPct(x.b1_win / x.n) })
-            : t(`${k}.fewRate`, { n: fmtCount(x.n) })}
+        <span className="af-ent-b1 af-num">
+          {x.n >= MIN_SCENARIO ? (
+            fmtPct(x.b1_win / x.n)
+          ) : (
+            <small>{t(`${k}.entryFew`, { n: fmtCount(x.n) })}</small>
+          )}
         </span>
       </button>
     );
   };
   return (
     <div className="af-ents" data-af-control="entry_pattern">
+      <div className="af-ent-head" aria-hidden="true">
+        <span>{t(`${k}.entryColType`)}</span>
+        <span>{t(`${k}.entryColShare`)}</span>
+        <span>{t(`${k}.entryColB1`)}</span>
+      </div>
       {ENTRY_TYPES.flatMap((e) =>
         e === "mae" && openMae
           ? [row(e), ...MAE_SUB.map((s) => row(s, true))]

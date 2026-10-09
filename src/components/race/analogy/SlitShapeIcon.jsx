@@ -4,7 +4,8 @@ import { BOAT_COLORS } from "../../../utils/colors";
 
 /**
  * スリット通過の並び（横から見た図、1艇身≒0.13秒の実縮尺。BOA-635 の SlitScene と同じ描き方。BOA-635 と共用できる形）
- * @param {{st: (number|null)[], height?: number, reference?: (number|null)[]|null, refLabel?: string|null}} props
+ * @param {{st: (number|null)[], height?: number, reference?: (number|null)[]|null, refLabel?: string|null,
+ *   compact?: boolean}} props compact は②の格子の小さな絵（「スリット」「1艇身」の文字は格子の上の凡例に1回だけ）
  *   st・reference はコース順の ST（秒）。reference は点線（会場のそのコースの全選手の平均）。
  *   refLabel を渡すと、図の上に点線の意味と「早い →」を描き込む（今日のスタートの手がかり。承認モック sonar-tab v3）
  */
@@ -13,6 +14,7 @@ export default function SlitShapeIcon({
   height = 110,
   reference = null,
   refLabel = null,
+  compact = false,
 }) {
   const { t } = useTranslation();
   const gid = useId().replace(/:/g, "");
@@ -61,15 +63,17 @@ export default function SlitShapeIcon({
         stroke="#ff8a3d"
         strokeWidth="1.8"
       />
-      <text
-        x={lineX - 4}
-        y={H - 4}
-        fontSize="12"
-        textAnchor="end"
-        fill="#ffd2b0"
-      >
-        {t("aiPredictionTab.analogy.scenario.slitLine")}
-      </text>
+      {!compact && (
+        <text
+          x={lineX - 4}
+          y={H - 4}
+          fontSize="12"
+          textAnchor="end"
+          fill="#ffd2b0"
+        >
+          {t("aiPredictionTab.analogy.scenario.slitLine")}
+        </text>
+      )}
       {st.map((v, i) => {
         if (v === null || v === undefined) return null;
         const x = xOf(v);
@@ -159,21 +163,29 @@ export default function SlitShapeIcon({
           </text>
         </g>
       )}
-      <g>
-        <line
-          x1="12"
-          y1={H - 6}
-          x2={12 + L}
-          y2={H - 6}
-          stroke="#e8f1ff"
-          strokeWidth="1.2"
-        />
-        <line x1="12" y1={H - 9} x2="12" y2={H - 3} stroke="#e8f1ff" />
-        <line x1={12 + L} y1={H - 9} x2={12 + L} y2={H - 3} stroke="#e8f1ff" />
-        <text x={16 + L} y={H - 3} fontSize="12" fill="#e8f1ff">
-          {t("aiPredictionTab.analogy.scenario.slitScale")}
-        </text>
-      </g>
+      {!compact && (
+        <g>
+          <line
+            x1="12"
+            y1={H - 6}
+            x2={12 + L}
+            y2={H - 6}
+            stroke="#e8f1ff"
+            strokeWidth="1.2"
+          />
+          <line x1="12" y1={H - 9} x2="12" y2={H - 3} stroke="#e8f1ff" />
+          <line
+            x1={12 + L}
+            y1={H - 9}
+            x2={12 + L}
+            y2={H - 3}
+            stroke="#e8f1ff"
+          />
+          <text x={16 + L} y={H - 3} fontSize="12" fill="#e8f1ff">
+            {t("aiPredictionTab.analogy.scenario.slitScale")}
+          </text>
+        </g>
+      )}
     </svg>
   );
 }

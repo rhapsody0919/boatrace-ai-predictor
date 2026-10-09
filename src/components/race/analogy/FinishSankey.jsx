@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import ScenarioFold from "./ScenarioFold";
 import NoteList from "./NoteList";
 import { BOAT_COLORS } from "../../../utils/colors";
 import { SCOPE_FLOW, SCOPE_SUBTEXT, SCOPE_TEXT } from "./analogyColors";
@@ -19,8 +20,17 @@ const GAP = 8;
  * 「すべて／1号艇以外が勝ったレース」（not1）も親が持つ（よく出た3連単を同じ条件で絞るため）
  * @param {{tri: Record<string, number>, first: number|null, onFirst: (b: number|null) => void, not1: boolean,
  *   onNot1: (v: boolean) => void}} props
+ * scenario が true のとき（展開シナリオ、承認モック mock-scenario-v1）は、押すと件数の案内を上の1回だけにし、
+ * 見方は44pxの折りたたみにする
  */
-export default function FinishSankey({ tri, first, onFirst, not1, onNot1 }) {
+export default function FinishSankey({
+  tri,
+  first,
+  onFirst,
+  not1,
+  onNot1,
+  scenario = false,
+}) {
   const { t } = useTranslation();
   const [picked, setSel] = useState(null);
   const k = "aiPredictionTab.analogy.flow";
@@ -228,20 +238,28 @@ export default function FinishSankey({ tri, first, onFirst, not1, onNot1 }) {
           ))}
         </svg>
       </div>
-      <p className="af-sub">
-        {sel
-          ? t(`${k}.selected`, {
-              label: name(sel.p, sel.a, sel.b, sel.c),
-              total: fmtCount(tot),
-            })
-          : first
-            ? t(`${k}.firstNote`, { b: first, n: fmtCount(col[0][first]) })
-            : t(`${k}.hint`)}
-      </p>
-      <details className="af-details">
-        <summary>{t(`${k}.howTo`)}</summary>
-        <NoteList texts={[t(`${k}.drawAll`), t(`${k}.note`)]} />
-      </details>
+      {(!scenario || sel || first) && (
+        <p className="af-sub">
+          {sel
+            ? t(`${k}.selected`, {
+                label: name(sel.p, sel.a, sel.b, sel.c),
+                total: fmtCount(tot),
+              })
+            : first
+              ? t(`${k}.firstNote`, { b: first, n: fmtCount(col[0][first]) })
+              : t(`${k}.hint`)}
+        </p>
+      )}
+      {scenario ? (
+        <ScenarioFold title={t(`${k}.howTo`)} preview={t(`${k}.howToPreview`)}>
+          <NoteList texts={[t(`${k}.drawAll`), t(`${k}.note`)]} />
+        </ScenarioFold>
+      ) : (
+        <details className="af-details">
+          <summary>{t(`${k}.howTo`)}</summary>
+          <NoteList texts={[t(`${k}.drawAll`), t(`${k}.note`)]} />
+        </details>
+      )}
     </div>
   );
 }

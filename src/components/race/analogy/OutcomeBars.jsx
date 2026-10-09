@@ -7,9 +7,10 @@ import { fmtCount, fmtPct, fmtRateCount } from "../../../utils/analogyFormat";
 /**
  * 艇番ごとの割合の棒（どの艇が勝った？・3着以内に入った艇。タブ2・タブ3で共用）。
  * n が配列なら艇ごとの件数（タブ3で艇ごとに級別をそろえたとき。BOA-806）で、棒の右に当たり/件数を出し、
- * fewBelow 件未満の艇は薄く出す
+ * fewBelow 件未満の艇は薄く出す。tags があれば艇番の右に「級・件数」の札（展開シナリオ④、承認モック
+ * mock-scenario-v1。艇ごとに件数が違うことを、文章を読まなくても分かるように）
  * @param {{counts: number[], n: number|number[], reference?: (number|null)[]|null, selected?: number|null,
- *   onSelect?: (boat: number) => void, colored?: boolean, fewBelow?: number}} props
+ *   onSelect?: (boat: number) => void, colored?: boolean, fewBelow?: number, tags?: string[]|null}} props
  */
 export function BoatBars({
   counts,
@@ -19,6 +20,7 @@ export function BoatBars({
   onSelect,
   colored = false,
   fewBelow = 0,
+  tags = null,
 }) {
   const { t } = useTranslation();
   const perBoat = Array.isArray(n);
@@ -33,14 +35,18 @@ export function BoatBars({
             label={
               <>
                 <BoatBadge n={b} size="sm" />{" "}
-                {t("aiPredictionTab.analogy.boat", { n: b })}
+                {tags ? (
+                  <span className="af-bar-tag">{tags[b - 1]}</span>
+                ) : (
+                  t("aiPredictionTab.analogy.boat", { n: b })
+                )}
               </>
             }
             hits={hits}
             n={nb}
             reference={reference?.[b - 1] ?? null}
             color={colored ? SCOPE_LINE[b] : undefined}
-            value={perBoat ? fmtRateCount([hits, nb]) : undefined}
+            value={perBoat && !tags ? fmtRateCount([hits, nb]) : undefined}
             few={perBoat && nb < fewBelow}
             selected={selected === b}
             onClick={onSelect ? () => onSelect(b) : undefined}
