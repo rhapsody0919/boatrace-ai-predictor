@@ -11,20 +11,20 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 | 区分 | 件数 |
 |---|---|
-| テーブル・ビューの定義 | 92 |
+| テーブル・ビューの定義 | 94 |
 | 読んでいる（テーブルを直接） | 57 |
-| 読んでいる（RPC経由のみ） | 2 |
+| 読んでいる（RPC経由のみ） | 3 |
 | 画面から読んでいない（例外登録あり） | 23 |
-| **画面から読んでいない（例外登録なし＝要判断）** | **10** |
+| **画面から読んでいない（例外登録なし＝要判断）** | **11** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 1 |
 
 「例外登録なし」は、取得したのに表示に繋がっていない候補。表示するか、`scripts/maintenance/display-coverage-exceptions.json` に理由を書いて例外にするかのどちらかを選ぶ。
 
 「匿名SELECT権限の記述が無い」は、**画面（`src/`）が匿名キーで直接読んでいるのに** `GRANT SELECT … TO anon` もSELECTポリシーもマイグレーションに無いもの。076（BOA-370）が新規テーブルの既定権限を剥奪したため、**076以降に定義されたテーブル**に限って見る。`api/` のEdge Functions経由の読み取りと、RPC経由（`SECURITY DEFINER` がありうる）は対象外。
 
-画面が呼んでいるRPC: `append_sns_metric_observation` / `get_admin_rule_performance` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_racer_accident_records` / `get_today_races` / `import_sns_preview_bundle`
+画面が呼んでいるRPC: `append_sns_metric_observation` / `decide_sns_edit_finding` / `get_admin_rule_performance` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_racer_accident_records` / `get_today_races` / `import_sns_preview_bundle`
 
-## 要判断: 画面から読んでいない（例外登録なし）（10件）
+## 要判断: 画面から読んでいない（例外登録なし）（11件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -34,6 +34,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `race_payouts` | 表 | 079_race_payouts.sql | なし | GRANT（109_predictions_rpc_race_status_payouts.sql） |  |
 | `race_special_notes` | 表 | 060_race_special_notes.sql | なし | 記述なし |  |
 | `raw_snapshots` | 表 | 125_raw_snapshots.sql | なし | 記述なし |  |
+| `sns_edit_decisions` | 表 | 145_sns_edit_assist.sql | なし | 記述なし |  |
 | `sns_mobile_reviews` | 表 | 140_sns_mobile_approval.sql | なし | 記述なし |  |
 | `sns_post_tracking` | 表 | 136_sns_metric_observations.sql | なし | 記述なし |  |
 | `sns_x_send_control` | 表 | 137_sns_x_send.sql | なし | 記述なし |  |
@@ -67,7 +68,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `venue_course_technique_baseline` | 表 | 098_morning_data_digest.sql | なし | GRANT（098_morning_data_digest.sql） | 会場×グレード×実進入コースの決まり手ベースライン（098）。上と同じく集計の中間テーブル |
 | `venue_entry_course_stats` | 表 | 064_venue_entry_course_stats.sql | なし | 記述なし | 「表示には使わず、自前計算の全国値の検証にのみ使う」とユーザー判断済み（BOA-293、orchestration.md）。読み手が無いことは既知 |
 
-## 画面から読んでいる（59件）
+## 画面から読んでいる（60件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -108,11 +109,12 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `racer_series_points` | 表 | 064_racer_series_points.sql | 画面が直接 | ポリシー（076_enable_rls_on_public_tables.sql） |  |
 | `races` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
 | `rule_applications` | 表 | 008_venue_rules.sql | 画面が直接 | 記述なし |  |
-| `sns_approvers` | 表 | 035_sns_marketing_hub_schema.sql | APIが直接 | 記述なし |  |
+| `sns_approvers` | 表 | 035_sns_marketing_hub_schema.sql | APIが直接 / RPC経由: decide_sns_edit_finding(API) | 記述なし |  |
 | `sns_bundle_imports` | 表 | 135_sns_preview_bundle_import.sql | RPC経由: import_sns_preview_bundle(API) | 記述なし |  |
 | `sns_content_types` | 表 | 043_sns_topic_gate_schema.sql | APIが直接 | 記述なし |  |
 | `sns_draft_metrics` | 表 | 035_sns_marketing_hub_schema.sql | APIが直接 | 記述なし |  |
-| `sns_drafts` | 表 | 035_sns_marketing_hub_schema.sql | APIが直接 / RPC経由: append_sns_metric_observation(API), import_sns_preview_bundle(API) | 記述なし |  |
+| `sns_drafts` | 表 | 035_sns_marketing_hub_schema.sql | APIが直接 / RPC経由: append_sns_metric_observation(API), decide_sns_edit_finding(API), import_sns_preview_bundle(API) | 記述なし |  |
+| `sns_edit_inspections` | 表 | 145_sns_edit_assist.sql | RPC経由: decide_sns_edit_finding(API) | 記述なし |  |
 | `sns_metric_observations` | 表 | 136_sns_metric_observations.sql | RPC経由: append_sns_metric_observation(API) | 記述なし |  |
 | `sns_strategy_insights` | 表 | 039_sns_strategy_insights.sql | APIが直接 | 記述なし |  |
 | `sns_template_variants` | 表 | 035_sns_marketing_hub_schema.sql | APIが直接 | 記述なし |  |
