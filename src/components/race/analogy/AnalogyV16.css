@@ -2421,3 +2421,27 @@ button.af-bar {
   gap: var(--spacing-1-5);
   margin: 0;
 }
+
+/* 着順の流れの帯の内訳（BOA-816） */
+.af-tri-band {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.af-tri-band-h {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.af-tri-band-sw {
+  display: inline-block;
+  width: 22px;
+  height: 10px;
+  flex: none;
+  border-radius: 3px;
+}

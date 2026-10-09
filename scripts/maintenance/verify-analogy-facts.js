@@ -81,7 +81,9 @@ import {
 import { describeAnalogyLayer } from "../../src/utils/analogyLayer.js";
 import {
   aggregateNeighbors,
+  bandBreakdown,
   defaultStepIndex,
+  flowLinks,
   itemRates,
   neighborCounts,
   normalizeNeighbor,
@@ -917,6 +919,50 @@ check(
     );
   }
   console.log(`七角形の表と一番上で選んだときの一致: ${n} 件`);
+}
+
+// ---- 着順の流れの帯の内訳（BOA-816）: 帯の件数＝その帯に入る3連単の件数の合計 ----
+{
+  const fx = JSON.parse(
+    zlib.gunzipSync(
+      fs.readFileSync(path.join(ROOT_E2E, "analogy-v16-fixture.json.gz")),
+    ),
+  ).scenario.scenario;
+  let n = 0;
+  for (const { forms } of Object.values(fx.cells))
+    for (const cell of Object.values(forms))
+      for (const [first, not1] of [
+        [null, false],
+        [null, true],
+        [1, false],
+        [4, false],
+      ])
+        for (const [p, a, b, c] of flowLinks(cell.tri, { first, not1 })) {
+          const bd = bandBreakdown(
+            cell.tri,
+            { p, a, b, first, not1 },
+            { first, not1 },
+          );
+          check(
+            `帯の内訳の合計＝帯の件数: ${p}:${a}-${b} first=${first} not1=${not1}`,
+            bd?.total ?? null,
+            c,
+          );
+          n += 1;
+        }
+  // 押したときと絞り込みが変わったら外れる（ファンパネル: 1着を変えたら帯の選択は外す）
+  const any = fx.cells.all.forms.any;
+  const [p0, a0, b0] = flowLinks(any.tri)[0];
+  check(
+    "帯の内訳: 1着の絞り込みが変わったら null",
+    bandBreakdown(
+      any.tri,
+      { p: p0, a: a0, b: b0, first: null, not1: false },
+      { first: a0, not1: false },
+    ),
+    null,
+  );
+  console.log(`帯の内訳の合計＝帯の件数: ${n} 件`);
 }
 
 if (failures > 0) {

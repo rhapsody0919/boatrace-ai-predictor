@@ -1481,7 +1481,10 @@
         "ledeShort": "第1名 → 第2名 → 第3名。帶狀粗細代表場數，點選帶狀可看場數",
         "howTo": "名次流向的看法",
         "drawAll": "少見的流向也以淡色全部畫出",
-        "howToPreview": "淡色帶、第2名→第3名的帶、依第1名篩選"
+        "howToPreview": "淡色帶、第2名→第3名的帶、依第1名篩選",
+        "breakdown": "第{{from}}名{{a}}號艇→第{{to}}名{{b}}號艇的{{n}}場明細",
+        "breakdownBack": "再點一次帶即可返回",
+        "bandShare": "（帶中的{{p}}）"
       },
       "listComma": "、",
       "scenario": {

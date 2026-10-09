@@ -1296,6 +1296,56 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await expect(section.locator("#af-pat-kado")).toBeFocused();
     });
 
+    test("着順の流れの帯を押すと、よく出た3連単がその帯の内訳に絞られ、合計が帯の件数と一致する（BOA-816）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      const sums = async (scope) => {
+        const vals = await scope
+          .getByTestId("analogy-band-breakdown")
+          .locator(".af-bar-v")
+          .allInnerTexts();
+        return vals.reduce(
+          (a, v) => a + Number(v.match(/([\d,]+)件/)[1].replace(/,/g, "")),
+          0,
+        );
+      };
+      for (const tab of ["展開シナリオ", "類似レース"]) {
+        await section.getByRole("tab", { name: tab }).click();
+        const panel = section.getByRole("tabpanel");
+        // 1着→2着の帯のうち一番上（1着1号艇→2着◯号艇）を押す
+        const link = panel
+          .getByRole("button", { name: /^1着 1号艇→2着 \d号艇 [\d,]+件$/ })
+          .first();
+        const label = await link.getAttribute("aria-label");
+        const n = Number(label.match(/([\d,]+)件$/)[1].replace(/,/g, ""));
+        const to = label.match(/2着 (\d)号艇/)[1];
+        // 帯は曲線で、外接矩形の中心が別の帯に重なることがあるので、キーボードで押す（帯は Enter で押せる部品）
+        const press = async () => {
+          await link.focus();
+          await page.keyboard.press("Enter");
+        };
+        await press();
+        const bd = panel.getByTestId("analogy-band-breakdown");
+        await expect(bd).toContainText(
+          `1着1号艇→2着${to}号艇の${n.toLocaleString("ja-JP")}件の内訳`,
+        );
+        expect(await sums(panel)).toBe(n);
+        // もう一度押すと戻る
+        await press();
+        await expect(bd).toHaveCount(0);
+        // 帯を押した後に1着の四角で絞ると、帯の選択は外れる
+        await press();
+        await expect(bd).toBeVisible();
+        await panel
+          .getByRole("button", { name: /^1着 1号艇 [\d,]+件$/ })
+          .click();
+        await expect(bd).toHaveCount(0);
+      }
+    });
+
     test("七角形の表で見た3号艇の展示タイムは、3号艇を一番上で選んだときと同じ数字（2026-10-09 ユーザー指摘）", async ({
       page,
     }) => {

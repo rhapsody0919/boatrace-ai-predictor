@@ -1,11 +1,10 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import ScenarioFold from "./ScenarioFold";
 import NoteList from "./NoteList";
 import { BOAT_COLORS } from "../../../utils/colors";
 import { SCOPE_FLOW, SCOPE_SUBTEXT, SCOPE_TEXT } from "./analogyColors";
 import { fmtCount } from "../../../utils/analogyFormat";
-import { trifectaList } from "../../../utils/analogyAggregate";
+import { flowLinks, trifectaList } from "../../../utils/analogyAggregate";
 
 const X = [44, 188, 332];
 const W = 22;
@@ -20,6 +19,8 @@ const GAP = 8;
  * 「すべて／1号艇以外が勝ったレース」（not1）も親が持つ（よく出た3連単を同じ条件で絞るため）
  * @param {{tri: Record<string, number>, first: number|null, onFirst: (b: number|null) => void, not1: boolean,
  *   onNot1: (v: boolean) => void}} props
+ * 帯の選択（band・onBand）も親が持つ。帯を押すと、よく出た3連単がその帯の内訳に絞られる（BOA-816、ユーザー
+ * 決定の案1。帯は押したときの first・not1 を持ち、それらが変わったら外れる）
  * scenario が true のとき（展開シナリオ、承認モック mock-scenario-v1）は、押すと件数の案内を上の1回だけにし、
  * 見方は44pxの折りたたみにする
  */
@@ -29,10 +30,15 @@ export default function FinishSankey({
   onFirst,
   not1,
   onNot1,
+  band = null,
+  onBand,
   scenario = false,
 }) {
   const { t } = useTranslation();
-  const [picked, setSel] = useState(null);
+  const setSel = (b) => onBand(b ? { ...b, first, not1 } : null);
+  // 押したときの絞り込みと今の絞り込みが違えば、選んでいないことにする
+  const picked =
+    band && band.first === first && band.not1 === not1 ? band : null;
   const k = "aiPredictionTab.analogy.flow";
   const rows = trifectaList(tri, { first, not1 });
   const tot = rows.reduce((s, [, c]) => s + c, 0);
@@ -59,16 +65,8 @@ export default function FinishSankey({
   const inY = pos.map((o) =>
     Object.fromEntries(Object.entries(o).map(([b, v]) => [b, v.y])),
   );
-  const links = [0, 1].flatMap((p) => {
-    const m = {};
-    rows.forEach(([x, c]) => {
-      const key = `${x[p]}-${x[p + 1]}`;
-      m[key] = (m[key] ?? 0) + c;
-    });
-    return Object.entries(m)
-      .map(([key, c]) => [p, ...key.split("-").map(Number), c])
-      .sort((u, v) => u[0] - v[0] || u[1] - v[1] || u[2] - v[2]);
-  });
+  // 帯の件数は、3連単の一覧と同じ関数から数える（帯の件数＝内訳の合計。BOA-816）
+  const links = flowLinks(tri, { first, not1 });
   // 選んだ帯が、条件を変えた後の流れに無ければ選んでいないことにする（全部の帯が薄くなるのを防ぐ）
   const hit = picked
     ? links.find(
@@ -94,7 +92,7 @@ export default function FinishSankey({
         ? 0.12
         : 0.25 + 0.6 * Math.min(1, c / (tot * 0.08 || 1));
     const label = name(p, a, b, c);
-    const toggle = () => setSel(isSel ? null : { p, a, b, c });
+    const toggle = () => setSel(isSel ? null : { p, a, b });
     return (
       <path
         key={`${p}-${a}-${b}`}

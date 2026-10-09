@@ -214,5 +214,40 @@ export function trifectaList(tri, { first = null, not1 = false } = {}) {
     .sort((a, b) => b[1] - a[1] || a[0].join("").localeCompare(b[0].join("")));
 }
 
+/**
+ * 着順の流れの帯（BOA-816）。p=0 は1着→2着、p=1 は2着→3着の帯で、件数はもう一方の着順を問わない合計。
+ * 3連単の一覧と同じ tri・同じ絞り込み（trifectaList）から数えるので、帯の件数＝その帯に入る3連単の件数の合計
+ * @returns {[number, number, number, number][]} [p, 前の着の艇, 後の着の艇, 件数]（p・艇番の順）
+ */
+export function flowLinks(tri, opts = {}) {
+  const rows = trifectaList(tri, opts);
+  return [0, 1].flatMap((p) => {
+    const m = new Map();
+    rows.forEach(([x, c]) => {
+      const key = `${x[p]}-${x[p + 1]}`;
+      m.set(key, (m.get(key) ?? 0) + c);
+    });
+    return [...m.entries()]
+      .map(([key, c]) => [p, ...key.split("-").map(Number), c])
+      .sort((u, v) => u[1] - v[1] || u[2] - v[2]);
+  });
+}
+
+/**
+ * 押した帯の内訳（BOA-816、ユーザー決定の案1）。帯に入る3連単を件数の多い順に全部。帯は押したときの絞り込み
+ * （first・not1）を持ち、絞り込みが変わったら選んでいないことにする（ファンパネル: 1着を変えたら帯の選択は外す）。
+ * 帯がその絞り込みの流れに無ければ null
+ * @param {{p:number, a:number, b:number, first:number|null, not1:boolean}|null} band
+ * @returns {{rows: [number[], number][], total: number}|null}
+ */
+export function bandBreakdown(tri, band, { first = null, not1 = false } = {}) {
+  if (!band || band.first !== first || band.not1 !== not1) return null;
+  const rows = trifectaList(tri, { first, not1 }).filter(
+    ([x]) => x[band.p] === band.a && x[band.p + 1] === band.b,
+  );
+  if (!rows.length) return null;
+  return { rows, total: rows.reduce((s, [, c]) => s + c, 0) };
+}
+
 /** よく出た3連単の上位の数（spec B-8「上位3つ」） */
 export const TOP_TRIFECTA = 3;
