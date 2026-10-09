@@ -1,4 +1,3 @@
-import { errorMessageOf } from "../../../utils/errorMessage.js";
 import { useEffect, useRef, useState } from "react";
 import {
   approveXSend,
@@ -109,8 +108,10 @@ export default function XSendPanel({
         setConfirmedExternalEpoch(mobileEpoch);
       }
       onChanged();
-    } catch (e) {
-      setError(errorMessageOf(e));
+    } catch {
+      setError(
+        "操作結果を確認できませんでした。再実行せず送信状態を確認してください。",
+      );
     } finally {
       operation.current.pending = false;
       setBusy(false);

@@ -370,8 +370,9 @@ test("redo起動失敗は応答に残り、通知はrisk/thumbnailも保持す�
       thumbnailWarning: "権限不足",
     });
     assert.equal(messages.length, 3);
-    assert.match(messages[0], /起動に失敗/);
-    assert.match(messages[2], /権限不足/);
+    assert.match(messages[0], /起動を確認できません/);
+    assert.equal(messages[2], "サムネイルを設定できませんでした。");
+    assert.ok(!messages[2].includes("権限不足"));
   } finally {
     await f.close();
   }
@@ -438,11 +439,19 @@ test("サムネ失敗を保存し、サムネ結果DB保存失敗でも動画を
       const second = await youtube(request("publish-youtube"));
       assert.equal(second.status, 200);
       const result = await second.json();
-      assert.ok(result.thumbnailWarning);
+      assert.equal(result.thumbnailWarning, failRpc ? "unconfirmed" : "failed");
+      assert.deepEqual(
+        actionFeedback(result),
+        failRpc
+          ? [
+              "サムネイルの設定結果を確認できていません。YouTube Studio で確認してください。",
+            ]
+          : ["サムネイルを設定できませんでした。"],
+      );
       assert.equal(result.data.source_data.youtube_video_id, "video-id");
       assert.equal(f.counts().uploads, 1);
       if (!failRpc)
-        assert.match(result.data.source_data.youtube_thumbnail_error, /403/);
+        assert.equal(result.data.source_data.youtube_thumbnail_error, "failed");
     } finally {
       await f.close();
     }
@@ -514,7 +523,7 @@ test("親画面の成功・例外通知は関数型更新で蓄積し、閉じ�
     !messages.some((message) => message.includes(err.message)),
     "生のエラー詳細は表示しない",
   );
-  assert.match(messages[0], /権限不足/);
+  assert.equal(messages[0], "サムネイルを設定できませんでした。");
 });
 
 for (const thumbnailSuccess of [true, false]) {
@@ -550,7 +559,7 @@ for (const thumbnailSuccess of [true, false]) {
         thumbnailSuccess ? null : row.source_data.youtube_thumbnail_error,
       );
       if (!thumbnailSuccess)
-        assert.match(row.source_data.youtube_thumbnail_error, /403/);
+        assert.equal(row.source_data.youtube_thumbnail_error, "failed");
       else assert.equal(row.source_data.youtube_thumbnail_error, undefined);
       const retry = await (await youtube(request("publish-youtube"))).json();
       assert.equal(
