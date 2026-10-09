@@ -77,18 +77,19 @@ function AxisSummary({ m }) {
         {va && venue && (
           <BaseBar label={C.venueAllN(venue, va.n)} k={va.k} n={va.n} />
         )}
+        {/* 上の枠と数字が違う理由は畳まずに出す（同じ「1号艇の1着」が 58% と 54.6% に見える。デザイナーのレビュー P1-3） */}
+        {hc && headerScope.kind === scope.kind && (
+          <p className="ta-note ta-num">
+            {C.whyRefund(
+              comma(u.n),
+              p1(u.k, u.n),
+              comma(hc.n),
+              p1(hc.b1_win, hc.n),
+            )}
+          </p>
+        )}
         <Fold title={C.whyToggle}>
           <ul className="ta-list">
-            {hc && headerScope.kind === scope.kind && (
-              <li className="ta-num">
-                {C.whyRefund(
-                  comma(u.n),
-                  p1(u.k, u.n),
-                  comma(hc.n),
-                  p1(hc.b1_win, hc.n),
-                )}
-              </li>
-            )}
             {scope.kind === "VC" && venue && <li>{C.whyVenueScope(venue)}</li>}
             {va && vaCell?.n > 0 && venue && (
               <li className="ta-num">
@@ -282,8 +283,20 @@ function PowerSummary({ m }) {
     "motor_2",
     racers.map((r) => ({ boat: r.boat, value: r.motor2 })),
   );
+  const winner = (set, valueOf) =>
+    set.size
+      ? {
+          boats: [...set].sort((x, y) => x - y),
+          value: valueOf(racers[[...set][0] - 1]),
+        }
+      : null;
+  const conclusion = C.powerConclusion(
+    table ? winner(table.best.exh, (r) => f2(r.exhTime)) : null,
+    winner(motorBest, (r) => r.motor2.toFixed(1)),
+  );
   return (
     <>
+      {conclusion && <p className="ta-power-answer">{conclusion}</p>}
       <section className="ta-box">
         {table ? (
           <>

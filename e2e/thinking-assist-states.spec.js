@@ -814,3 +814,74 @@ test.describe("思考アシスト: PR4 のファン評価 1周目", () => {
     expect(left).toBe("0%");
   });
 });
+
+/** PR4 の 271 の指摘の型の点検と UI/UX デザイナーのレビューの再現テスト */
+test.describe("思考アシスト: PR4 のデザイナーのレビューと 271 の指摘の型", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("P1-1: 375px で艇の丸を押すと、深掘りの上端が画面の中に入る", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const region = page.getByRole("region", { name: "1号艇の詳しい情報" });
+    await expect
+      .poll(async () => (await region.boundingBox())?.y ?? 9999)
+      .toBeLessThan(700);
+  });
+
+  test("P1-2・単位: 手がかりの割合に範囲と件数、コースの1着に「走」", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByText(/^全国・級の並びが同じ（予選も含む） 2,457件$/),
+    ).toBeVisible();
+    await lensTab(page, "軸").click();
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    await expect(page.getByText("1着 17/38走")).toBeVisible({ timeout: 30000 });
+  });
+
+  test("P1-3: 上の枠と数字が違う理由（返還を含むか）を畳まずに出す", async ({
+    page,
+  }) => {
+    await open(page);
+    await expect(
+      page.getByText(/ここは返還のあったレースも含める（119件・54\.6%）/),
+    ).toBeVisible();
+  });
+
+  test("P2-8: 機力の要約の最初に結論の1行", async ({ page }) => {
+    await open(page);
+    await lensTab(page, "機力").click();
+    await expect(
+      page.getByText(
+        "展示タイムは4号艇が一番速い（6.83）・モーター2連率は4号艇が一番高い（38.5%）",
+      ),
+    ).toBeVisible();
+  });
+
+  test("P2-5: 深掘りの値・札・1走ずつの表のボタンは 44px 以上押せる", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const toggle = page.getByRole("button", { name: "1走ずつの表" });
+    await expect(toggle).toBeVisible({ timeout: 30000 });
+    const sizes = await page.evaluate(() =>
+      [".ta-kv-btn", ".ta-linkish", ".ta-feat-item .ta-tag"].map((sel) => {
+        const el = document.querySelector(sel);
+        const a = getComputedStyle(el, "::after");
+        return [sel, parseFloat(a.width), parseFloat(a.height)];
+      }),
+    );
+    for (const [sel, w, h] of sizes) {
+      expect(w, sel).toBeGreaterThanOrEqual(44);
+      expect(h, sel).toBeGreaterThanOrEqual(44);
+    }
+  });
+});

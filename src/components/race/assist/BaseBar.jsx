@@ -65,6 +65,10 @@ export default function BaseBar({
         </span>
         <span className="ta-num" style={{ textAlign: "right" }}>
           {pct0(rate)}%
+          {/* 押すと件数とぶれ幅が開くことの手がかり（PR4 の UI/UX デザイナーのレビュー P2-6） */}
+          <span className="ta-bar-more-mark" aria-hidden="true">
+            {open ? "▾" : "›"}
+          </span>
         </span>
       </button>
       {open && (

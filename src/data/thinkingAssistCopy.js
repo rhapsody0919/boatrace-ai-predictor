@@ -59,7 +59,9 @@ export const ASSIST_COPY = Object.freeze({
   withoutRound: (pct, n) => `予選も含めると ${pct}%（${n}件）`,
   similarLabel: (n, all) =>
     all ? `類似レース${n}件（条件が合う全件）` : `今日に近い類似レース${n}件`,
-  similarRacecardStage: "出走表の時点",
+  // 主語を付ける（何が出走表の時点か。PR4 の UI/UX デザイナーのレビュー P2-7）
+  similarRacecardStage:
+    "類似レースは出走表の時点の値で集めた（展示後の値はまだ無い）",
   roughNoPick: "どちらに見るかは自分で決める",
 
   // 集めたレースは2通り（D-26・D-32）。「数える」は使わない。レースを絞る話は「集める」、割合の作り方は「出す」
@@ -274,6 +276,16 @@ export const ASSIST_COPY = Object.freeze({
   partsNone: "部品交換 全艇なし",
   partsBoats: (boats) => `部品交換 ${boats.join("・")}号艇`,
   // 展示前は展示の値の名前（チルト・部品交換）も出さない（screens「状態」展示前）
+  // 機力の要約の結論（問い「足が良いのは？」への答えを先に。デザイナーのレビュー P2-8）
+  powerConclusion: (exh, motor) =>
+    [
+      exh &&
+        `展示タイムは${exh.boats.join("・")}号艇が一番速い（${exh.value}）`,
+      motor &&
+        `モーター2連率は${motor.boats.join("・")}号艇が一番高い（${motor.value}%）`,
+    ]
+      .filter(Boolean)
+      .join("・"),
   powerPre: "展示タイム・オリジナル展示などの展示の値は、展示の後に出る",
   motorHeading: "モーター2連率（6艇）",
   motorChip: (boat, top, v) =>

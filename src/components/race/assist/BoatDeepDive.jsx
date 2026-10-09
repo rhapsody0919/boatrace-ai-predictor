@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import BoatBadge from "../BoatBadge";
 import ClassLineup from "./ClassLineup";
 import RunsTable from "./RunsTable";
@@ -98,6 +98,17 @@ export default function BoatDeepDive({
   onClose,
 }) {
   const [runsOpen, setRunsOpen] = useState(false);
+  // 開いたら深掘りの上端まで送る。図の下に開くので、送らないと押した結果が画面の外になる（デザイナーのレビュー P1-1）
+  const ref = useRef(null);
+  useEffect(() => {
+    const reduce = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    )?.matches;
+    ref.current?.scrollIntoView?.({
+      block: "start",
+      behavior: reduce ? "auto" : "smooth",
+    });
+  }, [boat]);
   const i = boat - 1;
   const feats = featChips({ boat, today, finalRound, technique });
   const recent = today?.items?.recent_win30?.values?.[i];
@@ -114,7 +125,7 @@ export default function BoatDeepDive({
   const techTotal = technique?.win_count ?? 0;
 
   return (
-    <section className="ta-deep" aria-label={C.deepRegion(boat)}>
+    <section ref={ref} className="ta-deep" aria-label={C.deepRegion(boat)}>
       <div className="ta-deep-head">
         <BoatBadge n={boat} />
         <h3>
@@ -302,8 +313,8 @@ export default function BoatDeepDive({
       )}
       {scope && chips.length > 0 && (
         <div className="ta-deep-facts">
+          <h4>{C.factsHeading(boat)}</h4>
           <div className="ta-legend">
-            <b>{C.factsHeading(boat)}</b>
             <span>{C.factsLegend}</span>
           </div>
           <ClassLineup lineup={classLineup(today?.classes, boat)} />
