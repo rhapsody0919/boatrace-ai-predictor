@@ -1132,3 +1132,20 @@ test.describe("思考アシスト: 上部の切り替え（PR6、承認モック
     expect(over).toBeLessThanOrEqual(0);
   });
 });
+
+test.describe("思考アシスト: ガイドと Cookie の同意バナー（PR5 マージ後の本番確認）", () => {
+  test.use({ viewport: { width: 375, height: 812 }, cookieConsent: null });
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page, { preview: true });
+  });
+
+  test("同意バナーが出ている間も、ガイド①の「次へ」を押せる", async ({
+    page,
+  }) => {
+    await open(page);
+    await expect(page.locator(".cookie-consent")).toBeVisible();
+    await page.getByRole("button", { name: "ガイド", exact: true }).click();
+    await page.getByRole("button", { name: "次へ" }).click({ timeout: 5000 });
+    await expect(page.getByText("1号艇は逃げられそう？")).toBeVisible();
+  });
+});
