@@ -239,7 +239,8 @@ function RadarSvg({
  * 「6艇を重ねる」（最初）と「主役＋2艇」を切り替える。主役＝一番上で選んだ艇。項目の名前を押すと6艇の表。
  * 6艇の値はどれも radarBoats（その艇を一番上で選んだときと同じ集めたレース）から出す
  * @param {{boats: ReturnType<import("../../../utils/analogyFacts").radarBoats>, items: {key:string}[], main: number,
- *   target: 1|2|3, cardKeys: Set<string>, onCard: (key: string) => void}} props cardKeys は主役のカードがある項目
+ *   target: 1|2|3, cardKeys: Set<string>, collect: string, onCard: (key: string) => void}} props cardKeys は主役の
+ *   カードがある項目、collect は集め方の1行
  */
 export default function FactRadar({
   boats,
@@ -247,6 +248,7 @@ export default function FactRadar({
   main,
   target,
   cardKeys,
+  collect,
   onCard,
 }) {
   const { t } = useTranslation();
@@ -448,6 +450,7 @@ export default function FactRadar({
           })}
         </div>
       )}
+      <p className="af-foot">{collect}</p>
       <p className="af-foot af-hep-typ">
         <i className="is-dash" aria-hidden="true" />
         {t(`${k}.radar.typical`, { boat: lead, finish })}

@@ -868,7 +868,7 @@
       "boat": "Boat {{n}}",
       "facts": {
         "heading": "When Boat {{boat}} {{finish}}, what did the race look like?",
-        "boatLabel": "Boat #",
+        "boatLabel": "Main boat",
         "scopeLabel": "Races gathered",
         "fellBack": "Only {{n}} races at {{venue}} have the same combination, so these figures gather races from all venues",
         "hexLabel": "Boat {{boat}} today, rank among the 6: {{list}}",
@@ -1023,11 +1023,11 @@
           "top2": "Top 2 in {{k}} of {{n}} items",
           "dash": "Dotted",
           "typical": "Dotted = Boat {{boat}}'s average rank when it {{finish}}",
-          "usual": "{{rate}} {{p}} / {{n}} races",
+          "usual": "All races {{rate}} {{p}} / {{n}} races",
           "axisSub": "Boat {{boat}} {{rank}}",
           "axisAria": "Show the table of the 6 boats for {{item}}",
           "axisHint": "Tap an item name (▼) to see each boat's rank today and the {{rate}} at that rank here",
-          "tableNote": "For each boat: the {{rate}} at today's rank, and the {{rate}} over all of that boat's collected races. The collected races are the same as when you pick that boat at the top",
+          "tableNote": "For each boat: the {{rate}} at today's rank, and that boat's {{rate}} over all races",
           "colBoat": "Boat",
           "colValue": "Today",
           "colRank": "Rank",
@@ -1035,7 +1035,9 @@
           "colAll": "All races",
           "tableFoot": "Green = 3+ points above that boat's all races, red = below.",
           "toCard": "See Boat {{boat}}'s bars",
-          "dashAria": "Show Boat {{boat}}'s dotted line"
+          "dashAria": "Show Boat {{boat}}'s dotted line",
+          "collect": "Collected races: for each boat, races with that boat's class matching ({{scope}}).",
+          "collectAll": "Collected races: for each boat, {{scope}}."
         }
       },
       "outlook": {

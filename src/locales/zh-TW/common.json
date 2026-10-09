@@ -862,7 +862,7 @@
       "boat": "{{n}}號艇",
       "facts": {
         "heading": "{{boat}}號艇在什麼情況下{{finish}}？",
-        "boatLabel": "艇號",
+        "boatLabel": "主角艇",
         "scopeLabel": "收集的比賽",
         "fellBack": "{{venue}}相同組合的比賽只有{{n}}場，因此改從全國收集",
         "hexLabel": "今天{{boat}}號艇在6艇中的排名：{{list}}",
@@ -1017,11 +1017,11 @@
           "top2": "{{n}}項中有{{k}}項在前2名",
           "dash": "虛線",
           "typical": "虛線＝{{boat}}號艇{{finish}}時的平均排名",
-          "usual": "{{rate}} {{p}}，{{n}}場",
+          "usual": "全部比賽的{{rate}} {{p}}，{{n}}場",
           "axisSub": "{{boat}}號艇 {{rank}}",
           "axisAria": "顯示{{item}}的6艇表格",
           "axisHint": "點選項目名稱（▼），這裡會顯示該項目6艇今天的排名，以及該排名時的{{rate}}",
-          "tableNote": "6艇各自在今天排名時的{{rate}}，以及該艇收集比賽整體的{{rate}}。收集的比賽與在最上方選該艇時相同",
+          "tableNote": "6艇各自在今天排名時的{{rate}}，以及該艇全部比賽的{{rate}}",
           "colBoat": "艇",
           "colValue": "今天的值",
           "colRank": "排名",
@@ -1029,7 +1029,9 @@
           "colAll": "全部比賽",
           "tableFoot": "綠＝比該艇全部比賽高3個百分點以上，紅＝低。",
           "toCard": "查看{{boat}}號艇的長條",
-          "dashAria": "虛線改為{{boat}}號艇"
+          "dashAria": "虛線改為{{boat}}號艇",
+          "collect": "收集方式：各艇皆為該艇級別相同的比賽（{{scope}}）。",
+          "collectAll": "收集方式：各艇皆為{{scope}}。"
         }
       },
       "outlook": {

@@ -193,6 +193,11 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
         main={boat}
         target={target}
         cardKeys={new Set(rows.map((r) => r.key))}
+        collect={
+          ["VA", "VG", "NA"].includes(kind)
+            ? t(`${k}.radar.collectAll`, { scope })
+            : t(`${k}.radar.collect`, { scope })
+        }
         onCard={openCard}
       />
       {usual && (
