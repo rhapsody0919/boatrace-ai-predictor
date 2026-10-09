@@ -872,7 +872,6 @@
         "scopeLabel": "Races gathered",
         "fellBack": "Only {{n}} races at {{venue}} have the same combination, so these figures gather races from all venues",
         "hexLabel": "Boat {{boat}} today, rank among the 6: {{list}}",
-        "hexRank": "{{rank}} of 6",
         "hexNone": "Today —",
         "hexFoot": "Further out = higher among the 6",
         "bigLabel": "{{scope}}: Boat {{boat}} {{rate}}",
@@ -1035,7 +1034,8 @@
           "colAt": "At that rank",
           "colAll": "All races",
           "tableFoot": "Green = 3+ points above that boat's all races, red = below.",
-          "toCard": "See the bars"
+          "toCard": "See Boat {{boat}}'s bars",
+          "dashAria": "Show Boat {{boat}}'s dotted line"
         }
       },
       "outlook": {

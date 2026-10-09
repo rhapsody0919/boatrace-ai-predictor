@@ -524,7 +524,6 @@
         "scopeLabel": "集めたレース",
         "fellBack": "{{venue}}で同じ組み合わせのレースは{{n}}件と少ないので、全国から集めています",
         "hexLabel": "今日の{{boat}}号艇の6艇中の順位: {{list}}",
-        "hexRank": "6艇中{{rank}}位",
         "hexNone": "今日—",
         "hexFoot": "外側ほど6艇の中で上位",
         "bigLabel": "{{scope}}で、{{boat}}号艇の{{rate}}",
@@ -687,7 +686,8 @@
           "colAt": "その順位のとき",
           "colAll": "全レース",
           "tableFoot": "緑＝その艇の全レースより3ポイント以上高い、赤＝低い。",
-          "toCard": "棒を見る"
+          "toCard": "{{boat}}号艇の棒を見る",
+          "dashAria": "点線を{{boat}}号艇にする"
         }
       },
       "outlook": {

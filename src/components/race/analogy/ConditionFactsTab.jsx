@@ -192,6 +192,7 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
         items={radarItems}
         main={boat}
         target={target}
+        cardKeys={new Set(rows.map((r) => r.key))}
         onCard={openCard}
       />
       {usual && (

@@ -222,6 +222,38 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
     expect(await named("analogy_section_visible")).toHaveLength(1);
   });
 
+  test("七角形の操作は操作の名前で数え、主役を押し直して何も変わらないときは数えない（レビュー指摘）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await setup(page);
+    await openSonarTab(page);
+    const section = sectionOf(page);
+    const controls = () =>
+      page.evaluate(() =>
+        window.__events
+          .filter((e) => e[0] === "event" && e[1] === "analogy_control_change")
+          .map((e) => e[2].analogy_control),
+      );
+    await section.getByRole("button", { name: /1号艇（A1）/ }).click(); // 主役の押し直し（変化なし）
+    await section.getByRole("button", { name: /4号艇（A1）/ }).click();
+    await section.getByRole("button", { name: /4号艇（A1）/ }).click(); // 主役に戻す（変化あり）
+    const item = section.getByRole("button", { name: /全国勝率の6艇の表/ });
+    await item.focus();
+    await page.keyboard.press("Enter"); // SVG の項目名もキーで開ける
+    await expect(section.getByTestId("analogy-radar-table")).toBeVisible();
+    await section.getByRole("button", { name: "主役＋2艇" }).click();
+    expect(await controls()).toEqual([
+      "facts_radar_boat",
+      "facts_radar_boat",
+      "facts_radar_item",
+      "facts_radar_view",
+    ]);
+  });
+
   test("前回ソナーを見て7日以内なら、開いた最初に再訪を1回送る（再読み込みでは送らない）", async ({
     page,
   }) => {
@@ -1020,6 +1052,14 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       // 凡例で3号艇を押して太くしても、同じ表の数字は変わらない
       await section.getByRole("button", { name: /3号艇（A1）/ }).click();
       await expect(at).toHaveText("2% 1/50件");
+      // 「全レース」の率は、上の大きい数字（主役＝1号艇）と同じ桁（レビュー指摘: 表だけ整数だった）
+      const big = await section.locator(".af-big b").first().innerText();
+      await expect(
+        section
+          .getByTestId("analogy-radar-table")
+          .locator("tr[data-boat='1'] td")
+          .last(),
+      ).toHaveText(big);
     });
 
     test("手がかりの件数が②の件数とずれる理由を書く", async ({ page }) => {

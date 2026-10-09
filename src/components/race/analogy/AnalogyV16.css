@@ -1835,29 +1835,35 @@ button.af-bar {
 }
 
 /* ---- 差がつく材料の七角形（6艇を重ねる・主役＋2艇。承認モック mock-compare-v3） ---- */
-.af-radar {
+.af-hep {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
 }
 
-.af-radar-axis {
+.af-hep-axis {
   cursor: pointer;
 }
 
-.af-radar-axis:focus-visible {
-  outline: var(--border-width-2) solid var(--brand-accent-primary);
+.af-hep-axis:focus {
+  outline: none;
 }
 
-.af-radar-chips {
+/* Safari は SVG の子要素に outline を描かないので、押せる範囲の四角の線で示す（ソナーの扇と同じ） */
+.af-hep-axis:focus-visible rect {
+  stroke: var(--brand-accent-primary);
+  stroke-width: 2;
+}
+
+.af-hep-chips {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-1-5);
 }
 
-.af-radar-chips button,
-.af-radar-legend button,
-.af-radar-dash {
+.af-hep-chips button,
+.af-hep-legend button,
+.af-hep-dash {
   font: inherit;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
@@ -1867,7 +1873,7 @@ button.af-bar {
   cursor: pointer;
 }
 
-.af-radar-chips button {
+.af-hep-chips button {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-1);
@@ -1875,26 +1881,26 @@ button.af-bar {
   padding: var(--spacing-1) var(--spacing-2);
 }
 
-.af-radar-chips button[aria-pressed="true"],
-.af-radar-legend button[aria-pressed="true"],
-.af-radar-dash[aria-pressed="true"] {
+.af-hep-chips button[aria-pressed="true"],
+.af-hep-legend button[aria-pressed="true"],
+.af-hep-dash[aria-pressed="true"] {
   border-color: var(--brand-accent-primary);
   color: var(--text-primary);
   font-weight: var(--font-weight-bold);
 }
 
-.af-radar-chips button:disabled {
+.af-hep-chips button:disabled {
   cursor: default;
   opacity: 0.45;
 }
 
-.af-radar-legend {
+.af-hep-legend {
   display: grid;
   gap: var(--spacing-1);
 }
 
-.af-radar-legend button,
-.af-radar-row {
+.af-hep-legend button,
+.af-hep-row {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
@@ -1904,47 +1910,47 @@ button.af-bar {
   font-size: var(--font-size-sm);
 }
 
-.af-radar-legend button[aria-pressed="true"] {
+.af-hep-legend button[aria-pressed="true"] {
   background: var(--surface-card);
 }
 
-.af-radar-sw {
+.af-hep-sw {
   width: 22px;
   height: 8px;
   flex: none;
 }
 
-.af-radar-main {
+.af-hep-main {
   margin-left: var(--spacing-1);
   color: var(--brand-accent-primary);
   font-weight: var(--font-weight-bold);
 }
 
-.af-radar-cnt {
+.af-hep-cnt {
   margin-left: auto;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   white-space: nowrap;
 }
 
-.af-radar-dash {
+.af-hep-dash {
   padding: var(--spacing-0-5, 2px) var(--spacing-2);
 }
 
-.af-radar-typ {
+.af-hep-typ {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
 }
 
-.af-radar-typ i.is-dash {
+.af-hep-typ i.is-dash {
   display: inline-block;
   width: 22px;
   flex: none;
   border-top: 2px dashed var(--text-secondary);
 }
 
-.af-radar-table {
+.af-hep-table {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2);
@@ -1952,12 +1958,12 @@ button.af-bar {
   border-top: var(--border-width-1) solid var(--border-hairline);
 }
 
-.af-radar-table td.is-up {
+.af-hep-table td.is-up {
   color: var(--color-success-dark);
   font-weight: var(--font-weight-bold);
 }
 
-.af-radar-table td.is-down {
+.af-hep-table td.is-down {
   color: var(--color-error-dark);
   font-weight: var(--font-weight-bold);
 }

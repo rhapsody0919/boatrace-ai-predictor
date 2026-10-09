@@ -61,7 +61,8 @@ function RadarSvg({
   );
   const dash = boats[dashBoat - 1].typical;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={ariaLabel}>
+    // role="img" の子は読み上げで飾り扱いになり、項目名のボタンが消えるので group にする（ソナーと同じ）
+    <svg viewBox={`0 0 ${W} ${H}`} role="group" aria-label={ariaLabel}>
       {[1, 2, 3, 4, 5, 6].map((r) => (
         <polygon
           key={r}
@@ -190,7 +191,7 @@ function RadarSvg({
               aria-label={t(`${k}.radar.axisAria`, { item: name })}
               data-af-control="facts_radar_item"
               data-af-toggle=""
-              className="af-radar-axis"
+              className="af-hep-axis"
               onClick={act}
               onKeyDown={(e) => {
                 if (e.key !== "Enter" && e.key !== " ") return;
@@ -238,9 +239,16 @@ function RadarSvg({
  * 「6艇を重ねる」（最初）と「主役＋2艇」を切り替える。主役＝一番上で選んだ艇。項目の名前を押すと6艇の表。
  * 6艇の値はどれも radarBoats（その艇を一番上で選んだときと同じ集めたレース）から出す
  * @param {{boats: ReturnType<import("../../../utils/analogyFacts").radarBoats>, items: {key:string}[], main: number,
- *   target: 1|2|3, onCard: (key: string) => void}} props
+ *   target: 1|2|3, cardKeys: Set<string>, onCard: (key: string) => void}} props cardKeys は主役のカードがある項目
  */
-export default function FactRadar({ boats, items, main, target, onCard }) {
+export default function FactRadar({
+  boats,
+  items,
+  main,
+  target,
+  cardKeys,
+  onCard,
+}) {
   const { t } = useTranslation();
   const [view, setView] = useState("all6");
   const [focus, setFocus] = useState(null);
@@ -289,7 +297,7 @@ export default function FactRadar({ boats, items, main, target, onCard }) {
     return s === "—" || s.endsWith("%") ? s : `${s}${unit(key)}`;
   };
   const swatch = (b) => (
-    <svg className="af-radar-sw" viewBox="0 0 22 8" aria-hidden="true">
+    <svg className="af-hep-sw" viewBox="0 0 22 8" aria-hidden="true">
       {b === 2 && (
         <line x1="0" y1="4" x2="22" y2="4" stroke="#94a3b8" strokeWidth="5" />
       )}
@@ -305,7 +313,7 @@ export default function FactRadar({ boats, items, main, target, onCard }) {
   );
 
   return (
-    <div className="af-radar">
+    <div className="af-hep">
       <div
         className="af-seg"
         role="group"
@@ -331,7 +339,7 @@ export default function FactRadar({ boats, items, main, target, onCard }) {
         <div className="af-ctl-row">
           <span className="af-lbl">{t(`${k}.radar.overlay`)}</span>
           <div
-            className="af-radar-chips"
+            className="af-hep-chips"
             data-af-control="facts_radar_overlay"
             data-af-toggle=""
           >
@@ -377,11 +385,7 @@ export default function FactRadar({ boats, items, main, target, onCard }) {
       {all6 ? (
         <>
           <p className="af-foot">{t(`${k}.radar.hint`)}</p>
-          <div
-            className="af-radar-legend"
-            data-af-control="facts_radar_boat"
-            data-af-toggle=""
-          >
+          <div className="af-hep-legend" data-af-control="facts_radar_boat">
             {BOATS.map((b) => {
               const x = boats[b - 1];
               return (
@@ -389,6 +393,8 @@ export default function FactRadar({ boats, items, main, target, onCard }) {
                   key={b}
                   type="button"
                   aria-pressed={b === lead}
+                  // 太くしている主役以外の艇を押し直すと主役に戻る（状態が変わる）ので、押し直しも数える
+                  data-af-toggle={b !== main ? "" : undefined}
                   onClick={() => setFocus(b === main || b === focus ? null : b)}
                 >
                   {swatch(b)}
@@ -396,12 +402,12 @@ export default function FactRadar({ boats, items, main, target, onCard }) {
                   <span>
                     {t(`${k}.radar.boat`, { boat: b, cls: x.cls ?? "—" })}
                     {b === main && (
-                      <small className="af-radar-main">
+                      <small className="af-hep-main">
                         {t(`${k}.radar.main`)}
                       </small>
                     )}
                   </span>
-                  <span className="af-radar-cnt">
+                  <span className="af-hep-cnt">
                     {t(`${k}.radar.top2`, { n: items.length, k: x.top2 })}
                   </span>
                 </button>
@@ -410,27 +416,28 @@ export default function FactRadar({ boats, items, main, target, onCard }) {
           </div>
         </>
       ) : (
-        <div className="af-radar-legend is-over">
+        <div className="af-hep-legend is-over">
           {shown.map((b) => {
             const x = boats[b - 1];
             return (
-              <div key={b} className="af-radar-row">
+              <div key={b} className="af-hep-row">
                 {swatch(b)}
                 <BoatBadge n={b} size="xs" />
                 <span>
                   {t(`${k}.radar.boat`, { boat: b, cls: x.cls ?? "—" })}
                 </span>
-                <span className="af-radar-cnt">
+                <span className="af-hep-cnt">
                   {t(`${k}.radar.usual`, {
                     rate: rateName,
-                    p: fmtPct(rateOf(x.usual)),
+                    p: fmtPct(rateOf(x.usual), 1),
                     n: fmtCount(x.usual?.[1] ?? null),
                   })}
                 </span>
                 <button
                   type="button"
-                  className="af-radar-dash"
+                  className="af-hep-dash"
                   aria-pressed={lead === b}
+                  aria-label={t(`${k}.radar.dashAria`, { boat: b })}
                   data-af-control="facts_radar_dash"
                   onClick={() => setDashOwner(b === main ? null : b)}
                 >
@@ -441,7 +448,7 @@ export default function FactRadar({ boats, items, main, target, onCard }) {
           })}
         </div>
       )}
-      <p className="af-foot af-radar-typ">
+      <p className="af-foot af-hep-typ">
         <i className="is-dash" aria-hidden="true" />
         {t(`${k}.radar.typical`, { boat: lead, finish })}
         {t("aiPredictionTab.analogy.listComma")}
@@ -452,7 +459,7 @@ export default function FactRadar({ boats, items, main, target, onCard }) {
           {t(`${k}.radar.axisHint`, { rate: rateName })}
         </p>
       ) : (
-        <div className="af-radar-table" data-testid="analogy-radar-table">
+        <div className="af-hep-table" data-testid="analogy-radar-table">
           <b>{itemName(axisSel)}</b>
           <p className="af-foot">
             {t(`${k}.radar.tableNote`, { rate: rateName })}
@@ -473,8 +480,11 @@ export default function FactRadar({ boats, items, main, target, onCard }) {
                   const c = x.cells[ix];
                   const r = rateOf(c.hit);
                   const u = rateOf(x.usual);
+                  // 緑・赤は表示した値（その順位のときは整数、全レースは小数1桁）の差で決める
                   const d =
-                    r !== null && u !== null ? Math.round((r - u) * 100) : null;
+                    r !== null && u !== null
+                      ? Math.round(r * 100) - Math.round(u * 1000) / 10
+                      : null;
                   return (
                     <tr
                       key={x.boat}
@@ -509,7 +519,7 @@ export default function FactRadar({ boats, items, main, target, onCard }) {
                           </small>
                         )}
                       </td>
-                      <td>{fmtPct(u)}</td>
+                      <td>{fmtPct(u, 1)}</td>
                     </tr>
                   );
                 })}
@@ -517,14 +527,19 @@ export default function FactRadar({ boats, items, main, target, onCard }) {
             </table>
           </div>
           <p className="af-foot">
-            {t(`${k}.radar.tableFoot`)}{" "}
-            <button
-              type="button"
-              className="af-link"
-              onClick={() => onCard(axisSel)}
-            >
-              {t(`${k}.radar.toCard`)}
-            </button>
+            {t(`${k}.radar.tableFoot`)}
+            {cardKeys.has(axisSel) && (
+              <>
+                {" "}
+                <button
+                  type="button"
+                  className="af-link"
+                  onClick={() => onCard(axisSel)}
+                >
+                  {t(`${k}.radar.toCard`, { boat: main })}
+                </button>
+              </>
+            )}
           </p>
         </div>
       )}

@@ -866,7 +866,6 @@
         "scopeLabel": "모은 레이스",
         "fellBack": "{{venue}}에서 같은 조합의 레이스는 {{n}}건으로 적어서 전국에서 모았습니다",
         "hexLabel": "오늘 {{boat}}번 보트의 6척 중 순위: {{list}}",
-        "hexRank": "6척 중 {{rank}}위",
         "hexNone": "오늘 —",
         "hexFoot": "바깥쪽일수록 6척 중 상위",
         "bigLabel": "{{scope}}에서 {{boat}}번 보트의 {{rate}}",
@@ -1017,7 +1016,7 @@
           "main": "주역",
           "top2": "{{n}}개 항목 중 {{k}}개에서 2위 이내",
           "dash": "점선",
-          "typical": "점선＝{{boat}}번 보트가 {{finish}} 때의 평균 순위",
+          "typical": "점선＝{{boat}}번 보트가 {{finish}} 레이스의 평균 순위",
           "usual": "{{rate}} {{p}}, {{n}}건",
           "axisSub": "{{boat}}번 보트 {{rank}}",
           "axisAria": "{{item}}의 6척 표 보기",
@@ -1029,7 +1028,8 @@
           "colAt": "그 순위일 때",
           "colAll": "전체 레이스",
           "tableFoot": "초록＝그 보트의 전체 레이스보다 3포인트 이상 높음, 빨강＝낮음.",
-          "toCard": "막대 보기"
+          "toCard": "{{boat}}번 보트의 막대 보기",
+          "dashAria": "점선을 {{boat}}번 보트로"
         }
       },
       "outlook": {

@@ -331,12 +331,15 @@ export function defaultScope(keys, countOf) {
  * （同じ艇・同じ項目なら、どこで見ても同じ数字にする。2026-10-09 ユーザー指摘）
  * @param {Record<string,string>} keys その艇の範囲キー
  * @param {(key:string)=>number|null} countOf 範囲の件数
- * @param {string|null} picked 手で選んだ範囲の種類（VC・NC・NCR・VA）。選んでいなければ null
+ * @param {string|null} picked 手で選んだ範囲の種類（VC・NC・NCR・VA）。選んでいなければ null。
+ *   その艇の集計が無ければ既定に戻す
  * @returns {{key:string, def:{key:string, fellBack:boolean, vcCount:number|null}}}
  */
 export function boatScopeKey(keys, countOf, picked) {
   const def = defaultScope(keys, countOf);
-  return { key: picked && keys?.[picked] ? keys[picked] : def.key, def };
+  // 手で選んだ範囲でも、その艇の集計が応答に無ければ（朝のバッチで作れなかった）既定に戻す
+  const ok = picked && keys?.[picked] && countOf(keys[picked]) !== null;
+  return { key: ok ? keys[picked] : def.key, def };
 }
 
 /**
@@ -362,11 +365,13 @@ export function radarBoats(today, facts, values, items, target, picked) {
     const cells = items.map((it) => {
       const v = values?.[it.key] ?? null;
       const pos = v ? todayPosition(v, it.hib, b) : null;
-      const hit = pos
-        ? (sf?.by?.[String(b)]?.[it.key]?.[String(pos.bucket)]?.[
+      const pair = pos
+        ? sf?.by?.[String(b)]?.[it.key]?.[String(pos.bucket)]?.[
             TARGET_KEY[target]
-          ] ?? null)
+          ]
         : null;
+      // 件数0の区分は無しにする（カードの今日の行 todayLine と同じ）
+      const hit = pair && pair[1] ? pair : null;
       return {
         key: it.key,
         bucket: pos?.bucket ?? null,

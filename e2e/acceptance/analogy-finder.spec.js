@@ -1997,7 +1997,7 @@ test.describe("アナロジー・ファインダー: 差がつく材料", () => 
   }) => {
     await mockApis(page);
     const section = await openSection(page);
-    const hex = panel(section).getByRole("img", { name: /6艇中/ }).first();
+    const hex = panel(section).getByRole("group", { name: /6艇中/ }).first();
     await expect(hex).toHaveAttribute("aria-label", /全国勝率\s*6艇中1位/);
     await expect(hex).toHaveAttribute("aria-label", /展示タイム/);
   });
@@ -2371,7 +2371,7 @@ test.describe("アナロジー・ファインダー: 差がつく材料", () => 
     await expect(beforeBtn(section)).toHaveAttribute("aria-pressed", "true");
     await expect(card(section, "展示タイム")).toHaveCount(0);
     await expect(
-      panel(section).getByRole("img", { name: /6艇中/ }).first(),
+      panel(section).getByRole("group", { name: /6艇中/ }).first(),
     ).not.toHaveAttribute("aria-label", /展示タイム/);
     await expect(
       panel(section).getByText("今日の風・波は、展示の後に出る"),

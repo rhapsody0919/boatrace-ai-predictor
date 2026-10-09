@@ -837,7 +837,7 @@ check(
   const items = FACT_ITEMS.filter((it) => it.key !== "boat_2");
   const countOf = (key) => fx.facts[key]?.n ?? null;
   let n = 0;
-  for (const picked of [null, "VC", "NC", "VA"])
+  for (const picked of [null, "VC", "NC", "NCR", "VA"])
     for (const target of [1, 2, 3]) {
       const radar = radarBoats(
         fx.today,
@@ -886,6 +886,36 @@ check(
     ].hit,
     [1, 50],
   );
+  // 件数0の区分は、カードの今日の行と同じく「無し」（レビュー指摘: 表だけ「— 0/0件」になっていた）
+  {
+    const fz = structuredClone(fx);
+    const b5 = todayPosition(values.exh_time, false, 5).bucket;
+    fz.facts[fz.today.scope_keys["5"].VC].by["5"].exh_time[String(b5)].win = [
+      0, 0,
+    ];
+    const ie = items.findIndex((it) => it.key === "exh_time");
+    check(
+      "七角形の表: 件数0の区分は無し",
+      radarBoats(fz.today, fz.facts, values, items, 1, null)[4].cells[ie].hit,
+      null,
+    );
+  }
+  // 手で選んだ範囲の集計がその艇だけ無いときは、既定に戻す（レビュー指摘: 表の行が全部「—」になっていた）
+  {
+    const keys4 = fx.today.scope_keys["4"];
+    const missing = (key) =>
+      key === keys4.NC ? null : (fx.facts[key]?.n ?? null);
+    check(
+      "範囲: 手で選んだ範囲の集計が無い艇は既定に戻す",
+      boatScopeKey(keys4, missing, "NC").key,
+      defaultScope(keys4, missing).key,
+    );
+    check(
+      "範囲: 手で選んだ範囲の集計があればそれを使う",
+      boatScopeKey(keys4, countOf, "NC").key,
+      keys4.NC,
+    );
+  }
   console.log(`七角形の表と一番上で選んだときの一致: ${n} 件`);
 }
 
