@@ -222,6 +222,68 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
     expect(await named("analogy_section_visible")).toHaveLength(1);
   });
 
+  test("七角形の操作は操作の名前で数え、主役を押し直して何も変わらないときは数えない（レビュー指摘）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await setup(page);
+    await openSonarTab(page);
+    const section = sectionOf(page);
+    const controls = () =>
+      page.evaluate(() =>
+        window.__events
+          .filter((e) => e[0] === "event" && e[1] === "analogy_control_change")
+          .map((e) => e[2].analogy_control),
+      );
+    await section.getByRole("button", { name: /1号艇（A1）/ }).click(); // 主役だけが太いときの押し直し（変化なし）
+    await section.getByRole("button", { name: /4号艇（A1）/ }).click(); // 2艇目を太く
+    await section.getByRole("button", { name: /4号艇（A1）/ }).click(); // 太い艇を外す（変化あり）
+    const item = section.getByRole("button", { name: /全国勝率の6艇の表/ });
+    await item.focus();
+    await page.keyboard.press("Enter"); // SVG の項目名もキーで開ける
+    await expect(section.getByTestId("analogy-radar-table")).toBeVisible();
+    expect(await controls()).toEqual([
+      "facts_radar_boat",
+      "facts_radar_boat",
+      "facts_radar_item",
+    ]);
+  });
+
+  test("七角形は凡例で2艇まで太くして比べ、3艇目で先に押した艇が戻り、太い艇を押し直すと外れる（2026-10-09 ユーザー決定）", async ({
+    page,
+  }) => {
+    await setup(page);
+    await openSonarTab(page);
+    const section = sectionOf(page);
+    const legend = (b) =>
+      section.getByRole("button", {
+        name: new RegExp(`^${b}\\s*${b}号艇（A1）`),
+      });
+    const pressed = async () => {
+      const out = [];
+      for (const b of [1, 2, 3, 4, 5, 6])
+        if ((await legend(b).getAttribute("aria-pressed")) === "true")
+          out.push(b);
+      return out;
+    };
+    await expect(
+      section.getByRole("button", { name: "主役＋2艇" }),
+    ).toHaveCount(0);
+    expect(await pressed()).toEqual([1]); // 最初は主役
+    await legend(4).click();
+    expect(await pressed()).toEqual([1, 4]); // 主役と2艇目
+    await legend(6).click();
+    expect(await pressed()).toEqual([4, 6]); // 3艇目で先に押した主役が戻る
+    await expect(section.locator(".af-hep-typ")).toContainText("6号艇"); // 点線は最後に押した艇
+    await legend(4).click();
+    expect(await pressed()).toEqual([6]); // 太い艇を押し直すと外れる
+    await legend(6).click();
+    expect(await pressed()).toEqual([1]); // 0艇になったら主役に戻る
+  });
+
   test("前回ソナーを見て7日以内なら、開いた最初に再訪を1回送る（再読み込みでは送らない）", async ({
     page,
   }) => {
@@ -1088,6 +1150,49 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await expect(section).not.toContainText(
         "4号艇の級別を今日とそろえたレース",
       );
+    });
+
+    test("七角形の表で見た3号艇の展示タイムは、3号艇を一番上で選んだときと同じ数字（2026-10-09 ユーザー指摘）", async ({
+      page,
+    }) => {
+      // 3号艇の集めたレースだけ値を変え、1号艇の集めたレースの3号艇の列と違う数字にする
+      // （以前の「比べる艇」は1号艇の集めたレースで出していたので、ここで食い違った）
+      const facts = analogyV16Facts();
+      const k3 = facts.today.scope_keys["3"].VC;
+      for (const r of ["1", "2", "3", "4", "5", "6"])
+        facts.facts[k3].by["3"].exh_time[r].win = [1, 50];
+      await setup(page, { facts });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      const exhCard = section.locator(
+        ".af-cards > [data-testid='analogy-fact-card'][data-key='exh_time']",
+      );
+      // 一番上で3号艇を選んだときのカードの今日の行
+      await section.locator(".af-boat-btn").nth(2).click();
+      if (!(await exhCard.evaluate((e) => e.open)))
+        await exhCard.locator("summary").click();
+      const top = await exhCard.getByTestId("analogy-today-hit").innerText();
+      expect(top).toContain("2%（1/50件");
+      // 1号艇を一番上にして、七角形の展示タイムを押した表の3号艇の行
+      await section.locator(".af-boat-btn").nth(0).click();
+      await section
+        .getByRole("button", { name: /展示タイムの6艇の表/ })
+        .click();
+      const at = section
+        .getByTestId("analogy-radar-table")
+        .locator("tr[data-boat='3'] [data-testid='analogy-radar-at']");
+      await expect(at).toHaveText("2% 1/50件");
+      // 凡例で3号艇を押して太くしても、同じ表の数字は変わらない
+      await section.getByRole("button", { name: /3号艇（A1）/ }).click();
+      await expect(at).toHaveText("2% 1/50件");
+      // 「全レース」の率は、上の大きい数字（主役＝1号艇）と同じ桁（レビュー指摘: 表だけ整数だった）
+      const big = await section.locator(".af-big b").first().innerText();
+      await expect(
+        section
+          .getByTestId("analogy-radar-table")
+          .locator("tr[data-boat='1'] td")
+          .last(),
+      ).toHaveText(big);
     });
 
     test("手がかりの件数が②の件数とずれる理由を書く", async ({ page }) => {

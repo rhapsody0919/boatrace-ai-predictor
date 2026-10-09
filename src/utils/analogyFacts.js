@@ -327,6 +327,71 @@ export function defaultScope(keys, countOf) {
 }
 
 /**
+ * その艇の集めたレース。一番上でその艇を選んだときと、七角形・項目の表で6艇を並べたときの両方がこれを使う
+ * （同じ艇・同じ項目なら、どこで見ても同じ数字にする。2026-10-09 ユーザー指摘）
+ * @param {Record<string,string>} keys その艇の範囲キー
+ * @param {(key:string)=>number|null} countOf 範囲の件数
+ * @param {string|null} picked 手で選んだ範囲の種類（VC・NC・NCR・VA）。選んでいなければ null。
+ *   その艇の集計が無ければ既定に戻す
+ * @returns {{key:string, def:{key:string, fellBack:boolean, vcCount:number|null}}}
+ */
+export function boatScopeKey(keys, countOf, picked) {
+  const def = defaultScope(keys, countOf);
+  // 手で選んだ範囲でも、その艇の集計が応答に無ければ（朝のバッチで作れなかった）既定に戻す
+  const ok = picked && keys?.[picked] && countOf(keys[picked]) !== null;
+  return { key: ok ? keys[picked] : def.key, def };
+}
+
+/**
+ * 七角形と項目の表の値（承認モック sonar-tab mock-compare-v3）。6艇それぞれ、その艇を一番上で選んだときと
+ * 同じ集めたレース（boatScopeKey）で出す。cells は items の順で、今日の順位の区分（bucket、線を描く順位）・
+ * 表示の順位（同じ値は幅）・その区分のときの [当たり, 件数]
+ * @param {object} today facts の応答の today
+ * @param {Record<string,object>} facts facts の応答の facts（範囲キー → 集計）
+ * @param {Record<string,(number|null)[]>} values todayValues の戻り値
+ * @param {{key:string, hib:boolean}[]} items 軸の項目
+ * @param {1|2|3} target 着順
+ * @param {string|null} picked 手で選んだ範囲の種類
+ */
+export function radarBoats(today, facts, values, items, target, picked) {
+  const countOf = (key) => facts?.[key]?.n ?? null;
+  return [1, 2, 3, 4, 5, 6].map((b) => {
+    const { key } = boatScopeKey(
+      today?.scope_keys?.[String(b)] ?? {},
+      countOf,
+      picked,
+    );
+    const sf = facts?.[key] ?? null;
+    const cells = items.map((it) => {
+      const v = values?.[it.key] ?? null;
+      const pos = v ? todayPosition(v, it.hib, b) : null;
+      const pair = pos
+        ? sf?.by?.[String(b)]?.[it.key]?.[String(pos.bucket)]?.[
+            TARGET_KEY[target]
+          ]
+        : null;
+      // 件数0の区分は無しにする（カードの今日の行 todayLine と同じ）
+      const hit = pair && pair[1] ? pair : null;
+      return {
+        key: it.key,
+        bucket: pos?.bucket ?? null,
+        rank: v ? todayValueRank(v, it.hib, b) : null,
+        hit,
+      };
+    });
+    return {
+      boat: b,
+      cls: today?.classes?.[b - 1] ?? null,
+      scopeKey: key,
+      cells,
+      typical: typicalRanks(sf, b, target, items),
+      usual: usualOf(sf, b, target),
+      top2: cells.filter((c) => c.rank && c.rank.from <= 2).length,
+    };
+  });
+}
+
+/**
  * 範囲キーを、画面の名前の部品にする（文は analogyFormat.js の scopeName が i18n で組み立てる）
  * @returns {{kind:string, venue:number|null, combo:number[]|null, boat:number|null, cls:string|null, round:string|null}}
  */

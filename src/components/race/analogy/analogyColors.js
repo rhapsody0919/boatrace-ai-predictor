@@ -26,3 +26,21 @@ export const SCOPE_TEXT = "#f3ead0";
 export const SCOPE_SUBTEXT = "#e8d089";
 export const SCOPE_GRID = "rgba(201,162,39,";
 export const SCOPE_DASH = "#cbd5e1";
+/** 七角形の6艇の線（承認モック mock-compare-v3）。枠の色のまま（1号艇は白、2号艇は黒に白の縁取り） */
+export const RADAR_LINE = {
+  1: "#f8fafc",
+  2: "#111111",
+  3: "#ef5350",
+  4: "#42a5f5",
+  5: "#f0c419",
+  6: "#4caf50",
+};
+/** 七角形の頂点の艇番の文字色（枠の色の上） */
+export const RADAR_TEXT = {
+  1: "#0d1b2e",
+  2: "#ffffff",
+  3: "#ffffff",
+  4: "#ffffff",
+  5: "#0d1b2e",
+  6: "#ffffff",
+};

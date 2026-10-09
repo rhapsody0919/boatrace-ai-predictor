@@ -1613,9 +1613,7 @@ test.describe("アナロジー・ファインダー: 節と共通の操作", () 
     await mockApis(page);
     const section = await openSection(page);
     await expect(
-      section
-        .getByRole("heading", { name: /龍神ソナー/ })
-        .first(),
+      section.getByRole("heading", { name: /龍神ソナー/ }).first(),
     ).toContainText(`${VENUE}12R`);
   });
 
@@ -1999,7 +1997,7 @@ test.describe("アナロジー・ファインダー: 差がつく材料", () => 
   }) => {
     await mockApis(page);
     const section = await openSection(page);
-    const hex = panel(section).getByRole("img", { name: /6艇中/ }).first();
+    const hex = panel(section).getByRole("group", { name: /6艇中/ }).first();
     await expect(hex).toHaveAttribute("aria-label", /全国勝率\s*6艇中1位/);
     await expect(hex).toHaveAttribute("aria-label", /展示タイム/);
   });
@@ -2332,25 +2330,20 @@ test.describe("アナロジー・ファインダー: 差がつく材料", () => 
     ).toBeVisible();
   });
 
-  test("[spec A-2 / screens 構造] もう1艇と比べる: 選択肢は自分以外の「N号艇」5つ、開くと次の艇番が選ばれ比べる艇の1行が出る", async ({
+  // 2026-10-09 ユーザー承認（モック mock-compare-v3、docs/design/analogy-finder/mock/APPROVED.md）で「もう1艇と比べる」を
+  // 七角形の6艇重ねに置き換えた。比べる艇の値は、その艇を一番上で選んだときと同じ集めたレースで出す
+  test("[spec A-2 / 2026-10-09 承認] 比べる艇は七角形の6艇重ねで、「もう1艇と比べる」は無い", async ({
     page,
   }) => {
     await mockApis(page);
     const section = await openSection(page);
-    await panel(section).getByText("もう1艇と比べる").click();
-    const select = panel(section).getByLabel("比べる艇");
-    await expect(select).toBeVisible();
-    const options = (await select.getByRole("option").allInnerTexts()).map(
-      (o) => o.trim(),
-    );
-    expect(options).toEqual(["2号艇", "3号艇", "4号艇", "5号艇", "6号艇"]);
-    await expect(card(section, "全国勝率")).toContainText(
-      /2号艇の場合: 一番高いとき(\d+%|—)／一番低いとき(\d+%|—)（2号艇の全体の1着率\d+%）/,
-    );
-    await select.selectOption({ label: "4号艇" });
-    await expect(card(section, "全国勝率")).toContainText(
-      /4号艇の場合: 一番高いとき(\d+%|—)／一番低いとき(\d+%|—)（4号艇の全体の1着率\d+%）/,
-    );
+    await expect(panel(section).getByText("もう1艇と比べる")).toHaveCount(0);
+    await expect(
+      panel(section).getByRole("button", { name: "主役＋2艇" }),
+    ).toHaveCount(0);
+    await expect(
+      panel(section).getByRole("button", { name: /項目中 \d+ 項目で2位以内/ }),
+    ).toHaveCount(6);
   });
 
   test("[spec A-9] 展示後は今日の風・波の見出しと艇番ごとの「（風を問わず{z}%）」が出る", async ({
@@ -2378,7 +2371,7 @@ test.describe("アナロジー・ファインダー: 差がつく材料", () => 
     await expect(beforeBtn(section)).toHaveAttribute("aria-pressed", "true");
     await expect(card(section, "展示タイム")).toHaveCount(0);
     await expect(
-      panel(section).getByRole("img", { name: /6艇中/ }).first(),
+      panel(section).getByRole("group", { name: /6艇中/ }).first(),
     ).not.toHaveAttribute("aria-label", /展示タイム/);
     await expect(
       panel(section).getByText("今日の風・波は、展示の後に出る"),

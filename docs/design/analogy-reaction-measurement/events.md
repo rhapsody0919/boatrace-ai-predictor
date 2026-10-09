@@ -26,7 +26,8 @@
 | stage | 時点（出走表・展示） | 上部 |
 | target | 着順（1着・2着以内・3着以内） | 上部 |
 | facts_boat | 艇 | 条件別の事実 |
-| facts_compare | 比べる艇 | 条件別の事実 |
+| facts_radar_boat | 七角形の凡例で太くする艇（2艇まで。2026-10-09 に facts_compare（もう1艇と比べる）を置き換え。太い艇を押し直して外すのも数える） | 条件別の事実 |
+| facts_radar_item | 七角形の項目名（6艇の表を開く・閉じる。Enter・Space も数える） | 条件別の事実 |
 | facts_scope | 範囲（当地・全国 等） | 条件別の事実 |
 | similar_range | 似ている範囲のスライダー | 類似レース |
 | similar_boat | ソナーの扇（艇） | 類似レース |
