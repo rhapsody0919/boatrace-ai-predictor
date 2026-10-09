@@ -11,12 +11,12 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 | 区分 | 件数 |
 |---|---|
-| テーブル・ビューの定義 | 91 |
-| 読んでいる（テーブルを直接） | 56 |
+| テーブル・ビューの定義 | 92 |
+| 読んでいる（テーブルを直接） | 57 |
 | 読んでいる（RPC経由のみ） | 2 |
 | 画面から読んでいない（例外登録あり） | 23 |
 | **画面から読んでいない（例外登録なし＝要判断）** | **10** |
-| 画面から読んでいるが匿名SELECT権限の記述が無い | 0 |
+| 画面から読んでいるが匿名SELECT権限の記述が無い | 1 |
 
 「例外登録なし」は、取得したのに表示に繋がっていない候補。表示するか、`scripts/maintenance/display-coverage-exceptions.json` に理由を書いて例外にするかのどちらかを選ぶ。
 
@@ -67,12 +67,13 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `venue_course_technique_baseline` | 表 | 098_morning_data_digest.sql | なし | GRANT（098_morning_data_digest.sql） | 会場×グレード×実進入コースの決まり手ベースライン（098）。上と同じく集計の中間テーブル |
 | `venue_entry_course_stats` | 表 | 064_venue_entry_course_stats.sql | なし | 記述なし | 「表示には使わず、自前計算の全国値の検証にのみ使う」とユーザー判断済み（BOA-293、orchestration.md）。読み手が無いことは既知 |
 
-## 画面から読んでいる（58件）
+## 画面から読んでいる（59件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
 | `accuracy_cache` | 表 | 013_accuracy_cache_table.sql | API・画面が直接 | GRANT（013_accuracy_cache_table.sql） |  |
 | `analogy_contribution_profiles` | 表 | 118_analogy_contribution_tables.sql | 画面が直接 | GRANT（118_analogy_contribution_tables.sql） |  |
+| `analogy_feedback` | 表 | 143_analogy_feedback.sql | 画面が直接 | 記述なし | 画面が匿名キーで直接読むが GRANT SELECT … TO anon もSELECTポリシーも無い（076以降は明示が必要） |
 | `analogy_models` | 表 | 118_analogy_contribution_tables.sql | 画面が直接 | GRANT（118_analogy_contribution_tables.sql） |  |
 | `bet_recommendations` | 表 | 001_schema.sql | 画面が直接 | ポリシー（001_schema.sql） |  |
 | `exhibition_data` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_exhibition_trend(画面), get_race_st_predictability(画面) | ポリシー（076_enable_rls_on_public_tables.sql） |  |
