@@ -359,7 +359,7 @@
 
 .af-card-chev::after {
   content: "▼";
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--brand-accent-primary);
 }
 
@@ -415,7 +415,7 @@
   background: none;
   color: var(--text-secondary);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   cursor: pointer;
 }
@@ -533,7 +533,7 @@
 }
 
 .af-strip-rank {
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   line-height: 1.3;
   white-space: pre-line;
 }
@@ -783,7 +783,7 @@ button.af-bar {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--spacing-2);
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   letter-spacing: 0.06em;
   color: var(--ryujin-gold-300);
   opacity: 0.75;
@@ -1116,7 +1116,7 @@ button.af-bar {
 .af-hintb {
   display: inline-block;
   margin-left: var(--spacing-1-5);
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   color: var(--surface-card);
   background: var(--brand-accent-primary);
@@ -1286,7 +1286,7 @@ button.af-bar {
 .af-mk-t td em {
   display: block;
   font-style: normal;
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   color: var(--text-secondary);
 }
 
@@ -1306,7 +1306,7 @@ button.af-bar {
 .af-mk-t tr.is-today th small {
   display: inline-block;
   margin-left: var(--spacing-1);
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   color: var(--surface-card);
   background: var(--brand-accent-primary);
   border-radius: 3px;
@@ -1348,7 +1348,7 @@ button.af-bar {
 
 .af-lk .af-bar-v small {
   display: block;
-  font-size: 10px;
+  font-size: var(--font-size-xs);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1558,11 +1558,6 @@ button.af-bar {
 }
 
 /* ---- 別タブ化で足したもの（承認モック sonar-tab v3） ---- */
-.af-v16 .af-h4 {
-  margin: var(--spacing-1) 0 0;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-}
 
 /* カードの棒の見方（節で1回だけ）。棒・今日の枠・点線の見本 */
 .af-card-legend {
@@ -1731,4 +1726,110 @@ button.af-bar {
 .af-sonar svg [role="button"]:focus-visible {
   stroke: #f3ead0;
   stroke-width: 2.5;
+}
+
+/* ---- 余白と見出しの決まり（2026-10-09 UI/UX レビュー docs/design/analogy-finder/sonar-tab/uiux-review-spacing.md、
+   ユーザー決定「この方向で直す」）。要素ごとの margin ではなく、タブの中身を縦の並び（gap）にして間隔を決める ---- */
+.af-v16 {
+  gap: var(--spacing-4);
+  /* 龍神ソナーの中では、10.4px の小さい文字も 12px にそろえる（凡例・注記の最小 12px） */
+  --font-size-2xs: var(--font-size-xs);
+}
+
+/* タブの中身の外枠は外し、カードを1段目の箱にする */
+.af-v16 .af-v16-box[role="tabpanel"] {
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.af-tab-facts,
+.af-tab-similar,
+.af-tab-scenario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-width: 0;
+}
+
+/* 見出しは2段: 大セクション（h3、展開シナリオの①〜④）17.6px、その中の小見出し（h4）15.2px */
+.af-v16 .af-h3,
+.af-v16 .af-h4:has(> .af-stepn) {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-snug);
+}
+
+.af-v16 .af-h4 {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-snug);
+}
+
+/* 大セクションの区切り: 線＋上下 24px（gap 12px と合わせる） */
+.af-tab-facts > .af-h3:not(:first-child),
+.af-tab-similar > .af-h3:not(:first-child),
+.af-tab-scenario > .af-h4:has(> .af-stepn),
+.af-tab-scenario > .af-hint {
+  margin-top: var(--spacing-3);
+  padding-top: var(--spacing-6);
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+/* 見出しの直後の説明は 4px（gap 12px から詰める） */
+.af-v16 .af-h3 + .af-sub,
+.af-v16 .af-h4 + .af-sub,
+.af-v16 .af-h4 + .af-foot,
+.af-v16 .af-h3 + .af-foot {
+  margin-top: calc(var(--spacing-1) - var(--spacing-3));
+}
+
+/* 説明文は 13.6px・行間 1.625。広い画面では1行が長くなりすぎないように */
+.af-v16 .af-sub,
+.af-v16 .af-combo-text,
+.af-v16 .af-card-desc {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  max-width: 40em;
+}
+
+.af-v16 .af-foot {
+  line-height: var(--line-height-relaxed);
+  max-width: 40em;
+}
+
+/* 図とその凡例は 8px */
+.af-v16 .af-dark + .af-legend,
+.af-v16 .af-sonar + .af-legend {
+  margin-top: calc(var(--spacing-2) - var(--spacing-3));
+}
+
+.af-cards {
+  gap: var(--spacing-3);
+}
+
+@media (min-width: 768px) {
+  .af-card-sum {
+    padding: var(--spacing-3) var(--spacing-4);
+  }
+  .af-card-body {
+    padding: 0 var(--spacing-4) var(--spacing-4);
+  }
+}
+
+/* 注記群（画面の中の声・割合の出し方・注意）の前は線＋24px。声は箱ではなく区切りで示す */
+.af-v16 .af-fb {
+  margin-top: var(--spacing-3);
+  padding: var(--spacing-6) 0 0;
+  background: none;
+  border: 0;
+  border-top: var(--border-width-1) solid var(--border-hairline);
+  border-radius: 0;
+}
+
+.af-v16 .af-notes-fold {
+  margin-top: var(--spacing-3);
+  padding-top: var(--spacing-6);
 }

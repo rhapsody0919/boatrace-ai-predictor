@@ -357,24 +357,7 @@ export default function ScenarioTab({
         onSlit={pick(setSlit)}
         badges={badges}
       />
-      <details className="af-details">
-        <summary>{t(`${k}.termsFold`)}</summary>
-        <NoteList
-          title={t(`aiPredictionTab.analogy.notes.terms`)}
-          texts={[t(`${k}.slitFoot1`)]}
-        />
-        <NoteList
-          title={t(`aiPredictionTab.analogy.notes.counting`)}
-          texts={[
-            sl &&
-              t(`${k}.slitDef`, {
-                form: formName(slit),
-                def: t(`${k}.forms.${slit}.def`),
-              }),
-            t(`${k}.slitFoot2`),
-          ]}
-        />
-      </details>
+      {/* 今日の展示との関係は②の中身なので、用語の折りたたみより上に置く（UI/UX レビュー） */}
       <NoteList
         title={t(`aiPredictionTab.analogy.notes.today`)}
         texts={[
@@ -418,6 +401,24 @@ export default function ScenarioTab({
               : t(`${k}.slitPre`),
         ]}
       />
+      <details className="af-details">
+        <summary>{t(`${k}.termsFold`)}</summary>
+        <NoteList
+          title={t(`aiPredictionTab.analogy.notes.terms`)}
+          texts={[t(`${k}.slitFoot1`)]}
+        />
+        <NoteList
+          title={t(`aiPredictionTab.analogy.notes.counting`)}
+          texts={[
+            sl &&
+              t(`${k}.slitDef`, {
+                form: formName(slit),
+                def: t(`${k}.forms.${slit}.def`),
+              }),
+            t(`${k}.slitFoot2`),
+          ]}
+        />
+      </details>
       <AttackTable
         attack={sc.attack}
         refAttack={data.reference?.attack ?? null}
