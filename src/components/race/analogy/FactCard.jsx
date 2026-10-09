@@ -7,6 +7,7 @@ import {
   FACT_ITEMS,
   MIN_RATE_N,
   judgeLabelKey,
+  judgeLabelParams,
   rateOf,
   todayLine,
   todayPosition,
@@ -96,10 +97,12 @@ export default function FactCard({
   hideLine,
   note,
   scope,
+  initiallyOpen = false,
 }) {
   const { t } = useTranslation();
   const judgeKey = judgeLabelKey(row.judge, row.all[0], row.all[5]);
-  const [open, setOpen] = useState(judgeKey === "large");
+  // 最初から開くのは、差がはっきりしている順で「差が大きい」の上位2枚だけ（BOA-805。親が決めて渡す）
+  const [open, setOpen] = useState(initiallyOpen);
   const [showDesc, setShowDesc] = useState(false);
   const word = (w) => t(`${k}.words.${w}`);
   const rateName = t(`aiPredictionTab.analogy.rateName.${target}`);
@@ -191,7 +194,7 @@ export default function FactCard({
             ?
           </button>
           <span className="af-card-judge">
-            {t(`${k}.judge.${judgeKey}`)}
+            {t(`${k}.judge.${judgeKey}`, judgeLabelParams(row))}
             {row.judge.reversed && t(`${k}.reversed`, { word: word(row.bad) })}
           </span>
         </span>

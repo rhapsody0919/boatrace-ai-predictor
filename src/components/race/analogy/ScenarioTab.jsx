@@ -23,7 +23,7 @@ import {
   hintRows,
   minRanks,
 } from "../../../utils/analogyScenario";
-import { scopeKind } from "../../../utils/analogyFacts";
+import { agreementVerdict, scopeKind } from "../../../utils/analogyFacts";
 import { wilsonInterval } from "../../../utils/wilson";
 
 const k = "aiPredictionTab.analogy.scenario";
@@ -379,8 +379,13 @@ export default function ScenarioTab({
         title={t(`aiPredictionTab.analogy.notes.today`)}
         texts={[
           formAgree?.hit?.[1] &&
+            formAgree?.miss?.[1] &&
             exhibitionStage &&
             t(`${k}.slitAgree`, {
+              // 締めの一文は数字で言い分ける（BOA-805。以前は数字によらず「少し参考になる程度」だった）
+              verdict: t(
+                `${k}.agreeVerdict.${agreementVerdict(formAgree.hit, formAgree.miss)}`,
+              ),
               form: formName(exhForms[0]),
               p: fmtPct(formAgree.hit[0] / formAgree.hit[1]),
               q: fmtPct(

@@ -56,6 +56,9 @@ import {
   todayValueRank,
   todayValues,
   judgeLabelKey,
+  judgeLabelParams,
+  openCardKeys,
+  agreementVerdict,
   noLocalRecord,
   windWaveView,
 } from "../../src/utils/analogyFacts.js";
@@ -277,6 +280,78 @@ for (const c of ui.judge)
   check(`判定 ${c.best}/${c.worst}`, judgeGap(c.best, c.worst).level, c.level);
 check("判定（件数0）", judgeGap([0, 0], [1, 2]).level, "none");
 check("判定（逆向き）", judgeGap([10, 100], [60, 100]).reversed, true);
+// BOA-805（2026-10-09 ユーザー決定）: 10ポイント以上で「差が大きい」、5〜10ポイントは「差がある」。件数の判定は今のまま
+check(
+  "判定: 差10ポイントちょうどは差が大きい",
+  judgeGap([3000, 5000], [2500, 5000]).level,
+  "large",
+);
+check(
+  "判定: 差9ポイントは差がある",
+  judgeGap([2950, 5000], [2500, 5000]).level,
+  "some",
+);
+check(
+  "判定: 差5ポイントちょうどは差がある",
+  judgeGap([2750, 5000], [2500, 5000]).level,
+  "some",
+);
+check(
+  "判定: 差4ポイントは差は小さい",
+  judgeGap([2700, 5000], [2500, 5000]).level,
+  "small",
+);
+check(
+  "判定: 差40ポイントでもぶれ幅が重なればはっきりしない",
+  judgeGap([3, 4], [1, 3]).level,
+  "unclear",
+);
+// 札に添える値（D）: 差のポイントと少ない側の件数
+check(
+  "札の値: 差と少ない側の件数",
+  judgeLabelParams({
+    spread: -0.404,
+    all: [[29, 72], null, null, null, null, [54, 271]],
+  }),
+  { pt: 40, n: 72 },
+);
+// 最初から開くのは、並べた順で「差が大きい」の上位2枚だけ
+const lv = (key, level) => ({ key, judge: { level } });
+check(
+  "開くカード: 差が大きいの上位2枚",
+  [
+    ...openCardKeys([
+      lv("a", "large"),
+      lv("b", "some"),
+      lv("c", "large"),
+      lv("d", "large"),
+      lv("e", "unclear"),
+    ]),
+  ],
+  ["a", "c"],
+);
+check(
+  "開くカード: 差が大きいが無ければ0枚",
+  [...openCardKeys([lv("a", "some"), lv("b", "unclear")])],
+  [],
+);
+// 展示の形と本番の形（同じ Wilson のぶれ幅で言い分ける）
+check(
+  "展示の形: 同じ形のほうがはっきり高い",
+  agreementVerdict([300, 1000], [150, 1000]),
+  "up",
+);
+check(
+  "展示の形: 多摩川12R の例（12% と 15%、件数が少なくぶれ幅が重なる）",
+  agreementVerdict([6, 50], [150, 1000]),
+  "same",
+);
+check(
+  "展示の形: 同じ形のほうがはっきり低い",
+  agreementVerdict([100, 1000], [200, 1000]),
+  "down",
+);
+check("展示の形: 件数0は出さない", agreementVerdict([0, 0], [1, 10]), null);
 
 // 例のレースの今日の順位（Python の today_payload と同じ）
 const example = JSON.parse(

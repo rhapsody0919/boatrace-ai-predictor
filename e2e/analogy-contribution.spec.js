@@ -454,7 +454,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       }
     });
 
-    test("艇を替えると、カードの開閉を「差が大きい」だけ開くに合わせ直す（code-review 指摘）", async ({
+    test("艇を替えると、カードの開閉を「差が大きい」の上位2枚だけ開くに合わせ直す（code-review 指摘、BOA-805）", async ({
       page,
     }) => {
       await setup(page);
@@ -472,12 +472,35 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
         "aria-pressed",
         "true",
       );
+      // 並び順（差がはっきりしている順）で「差が大きい」の先頭2枚だけが開く
+      let largeSeen = 0;
       for (const c of await cards.all()) {
         const large =
           (await c.locator(".af-card-judge").innerText()).trim() ===
           "差が大きい";
-        expect(await c.evaluate((el) => el.open)).toBe(large);
+        const want = large && largeSeen < 2;
+        if (large) largeSeen += 1;
+        expect(await c.evaluate((el) => el.open)).toBe(want);
       }
+      expect(
+        await cards.evaluateAll((els) => els.filter((e) => e.open).length),
+      ).toBeLessThanOrEqual(2);
+    });
+
+    test("はっきりしないカードの札に、差のポイントと件数を書く（BOA-805）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      // ボート2連率は畳んだ折りたたみの中なので外す
+      const judges = await sectionOf(page)
+        .locator(".af-cards > [data-testid='analogy-fact-card'] .af-card-judge")
+        .allInnerTexts();
+      expect(judges.length).toBeGreaterThan(0);
+      for (const j of judges)
+        expect(j.trim()).toMatch(
+          /^(差が大きい|差がある|差は小さい|差は\d+ポイントあるが、(ぶれ幅が重なる|件数が少ない（[\d,]+件）)|比べられない（当てはまるレースが無い）)/,
+        );
     });
 
     test("長押しの吹き出しは図の外をタップすると閉じる（code-review 指摘）", async ({
@@ -1145,7 +1168,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       const section = sectionOf(page);
       await section.getByRole("tab", { name: "展開シナリオ" }).click();
       const line = section.getByText(
-        /で同じ組み合わせのレースは47件と少ないので、全国から集めています/,
+        /で同じ組み合わせのレース（返還を除く）は47件と少ないので、全国から集めています/,
       );
       await expect(line).toBeVisible();
       await section
