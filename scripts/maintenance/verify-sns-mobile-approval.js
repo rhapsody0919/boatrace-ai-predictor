@@ -54,7 +54,7 @@ before(async () => {
     "137_sns_x_send.sql",
     "139_sns_deadline_queue.sql",
     "140_sns_mobile_approval.sql",
-    "141_sns_edit_assist.sql",
+    "145_sns_edit_assist.sql",
   ])
     await db.exec(
       await readFile(

@@ -14,7 +14,7 @@ bundle.claimsは保存された原文JSONをmanifest.storage_pathから読み、
 
 ## 保存・判断
 
-SQL141は140のsns_mobile_revisionに依存。GETのレース読込で点検を保存する。キーはdraft_id/SQL revision/engineで、engineはdeterministic-v1とルール・指摘結果のSHA256。同じ結果の再読込は冪等。原文の一時的な取得障害が回復すると別点検になり、古い未照合結果を上書きしない。版と原文manifestは保存時の行ロックで比較する。
+SQL145は140のsns_mobile_revisionに依存。GETのレース読込で点検を保存する。キーはdraft_id/SQL revision/engineで、engineはdeterministic-v1とルール・指摘結果のSHA256。同じ結果の再読込は冪等。原文の一時的な取得障害が回復すると別点検になり、古い未照合結果を上書きしない。版と原文manifestは保存時の行ロックで比較する。
 
 POST mobile-approval?group=UUID にaction=edit-decision、draftId、approverId、versionHash、inspectionId、findingId、decision（adopted/ignored）を送る。API管理認証と実媒体を含む版hash比較、SQL行ロック下でrevision・inspectionのdraft/版・指摘ID・本人を確認する。一般ロールにテーブル/RPCを公開しない。
 
