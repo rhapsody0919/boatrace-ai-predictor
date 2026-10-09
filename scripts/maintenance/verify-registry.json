@@ -916,6 +916,11 @@
       "script": "verify-sns-mobile-dom.js",
       "tier": "ci",
       "guards": "依頼6: JSDOM上でMobileApprovalPanel/SnsHubAdminの状態連携を検証（Chromium起動不可環境向け、レイアウト・動画再生は対象外）"
+    },
+    {
+      "script": "verify-sns-edit-assist.js",
+      "tier": "ci",
+      "guards": "依頼7: 読みやすさ・加重文字数・日付時刻・数値出典・敬称の場所付き指摘、AI差し込み口は既定無効、正常文は誤検知しない（141は別途PGliteで検証）"
     }
   ]
 }

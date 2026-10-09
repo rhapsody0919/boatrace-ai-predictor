@@ -7,6 +7,7 @@ import {
   prepareMobileReview,
   approveMobileReview,
 } from "../../api/_lib/snsMobileApproval.js";
+import { inspectDraft } from "../../api/_lib/snsEditAssist.js";
 const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
 let approver;
@@ -53,6 +54,7 @@ before(async () => {
     "137_sns_x_send.sql",
     "139_sns_deadline_queue.sql",
     "140_sns_mobile_approval.sql",
+    "145_sns_edit_assist.sql",
   ])
     await db.exec(
       await readFile(
@@ -263,4 +265,148 @@ test("版hash（sns_mobile_revision）は接続のTimeZone設定に依存しな�
   ).h;
   await db.exec("RESET TimeZone");
   assert.equal(jst, pst, "TimeZoneが違う接続でも同じ下書きは同じ版hashになる");
+});
+
+test("編集指摘の冪等保存・採用/無視の追記履歴は本文と承認版を変えない", async () => {
+  const d = await draft(),
+    r = await row(d),
+    v = await prepareMobileReview(r, media);
+  const findings = inspectDraft(d, []);
+  assert.ok(findings.length > 0);
+  const save = async () =>
+    (
+      await first("SELECT save_sns_edit_inspection($1,$2,$3,$4) result", [
+        d.id,
+        r.revision,
+        "test-v1",
+        findings,
+      ])
+    ).result;
+  const i = await save();
+  assert.equal((await save()).id, i.id);
+  const decide = async (decision) =>
+    (
+      await first("SELECT decide_sns_edit_finding($1,$2,$3,$4,$5,$6) result", [
+        d.id,
+        r.revision,
+        i.id,
+        findings[0].id,
+        approver,
+        decision,
+      ])
+    ).result;
+  assert.equal((await decide("adopted")).decisions[findings[0].id], "adopted");
+  assert.equal((await decide("ignored")).decisions[findings[0].id], "ignored");
+  assert.equal(
+    (
+      await first(
+        "SELECT count(*) n FROM sns_edit_decisions WHERE inspection_id=$1",
+        [i.id],
+      )
+    ).n,
+    2,
+  );
+  assert.equal((await row(d)).revision, r.revision);
+  await approveMobileReview(
+    await row(d),
+    { approverId: approver, versionHash: v.versionHash, reviewSeconds: 1 },
+    { loadMedia: media, approve },
+  );
+  assert.equal(
+    (await first("SELECT status FROM sns_drafts WHERE id=$1", [d.id])).status,
+    "approved",
+  );
+});
+test("他版・別下書き・存在しない指摘・本人以外の判断と一般ロールを拒否", async () => {
+  const d = await draft(),
+    r = await row(d),
+    findings = inspectDraft(d, []);
+  const i = (
+    await first("SELECT save_sns_edit_inspection($1,$2,$3,$4) result", [
+      d.id,
+      r.revision,
+      "test-v1",
+      findings,
+    ])
+  ).result;
+  const other = await draft(),
+    guest = await first(
+      "INSERT INTO sns_approvers(display_name) VALUES('点検係') RETURNING id",
+    );
+  const args = [d.id, r.revision, i.id, findings[0].id, approver, "ignored"];
+  for (const [index, value] of [
+    [0, other.id],
+    [1, "old"],
+    [3, "missing"],
+    [4, guest.id],
+    [5, "invalid"],
+  ]) {
+    const a = [...args];
+    a[index] = value;
+    await assert.rejects(() =>
+      first("SELECT decide_sns_edit_finding($1,$2,$3,$4,$5,$6)", a),
+    );
+  }
+  // 「本人」以外（自動承認等）を選んだ場合は、APIがこの固定文言だけを安全に
+  // クライアントへ通す契約になっている（他の拒否理由は汎用文言に倒す）。
+  const guestArgs = [...args];
+  guestArgs[4] = guest.id;
+  await assert.rejects(
+    () => first("SELECT decide_sns_edit_finding($1,$2,$3,$4,$5,$6)", guestArgs),
+    /本人の判断が必要です/,
+  );
+  await db.query("UPDATE sns_drafts SET caption_text='変更' WHERE id=$1", [
+    d.id,
+  ]);
+  // 既に(draft,revision,engine)が存在する場合は、下書きの現在値を再検証しない
+  // （冪等再保存の仕様。別テスト「同じ(draft,revision,engine)への再保存は…」参照）。
+  // decide側（指摘の採用/無視、消費を伴う操作）は引き続き拒否することを以下で確認する。
+  assert.equal(
+    (
+      await first("SELECT save_sns_edit_inspection($1,$2,$3,$4) result", [
+        d.id,
+        r.revision,
+        "test-v1",
+        findings,
+      ])
+    ).result.id,
+    i.id,
+  );
+  await assert.rejects(
+    () => first("SELECT decide_sns_edit_finding($1,$2,$3,$4,$5,$6)", args),
+    /版が変わりました/,
+  );
+  await db.exec("SET ROLE authenticated");
+  await assert.rejects(() => db.query("SELECT * FROM sns_edit_inspections"));
+  await assert.rejects(() => db.query("SELECT * FROM sns_edit_decisions"));
+  await assert.rejects(() =>
+    db.query("SELECT read_sns_edit_inspection($1)", [i.id]),
+  );
+  await assert.rejects(() =>
+    db.query("SELECT decide_sns_edit_finding($1,$2,$3,$4,$5,$6)", args),
+  );
+  await db.exec("RESET ROLE");
+});
+
+test("同じ(draft,revision,engine)への再保存は、下書きが別の値に変わっていても下書きを再検証しない", async () => {
+  const d = await draft(),
+    r = await row(d),
+    findings = inspectDraft(d, []);
+  const save = (revision) =>
+    first("SELECT save_sns_edit_inspection($1,$2,$3,$4) result", [
+      d.id,
+      revision,
+      "test-v1-skip-rewrite",
+      findings,
+    ]).then((row) => row.result);
+  const i = await save(r.revision);
+  // GETのたびに同じ版hashで呼ばれても、既存行を見つけたら下書きの行ロック・再検証を
+  // 経由しない（過去のDisk IO Budget枯渇と同型の負荷を避ける）。本文を変えて実際の
+  // 版hashをr.revisionから変化させた後でも、古いrevisionでの再保存は下書きの現在値を
+  // 見ずに既存行をそのまま返すことを確認する。
+  await db.query("UPDATE sns_drafts SET caption_text='別の本文' WHERE id=$1", [
+    d.id,
+  ]);
+  assert.notEqual((await row(d)).revision, r.revision);
+  assert.equal((await save(r.revision)).id, i.id);
 });
