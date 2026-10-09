@@ -23,28 +23,104 @@ async function allRows(path) {
   }
 }
 export const xSendStore = {
+  async saveInspection(draftId, revision, engine, findings) {
+    return db("rpc/save_sns_edit_inspection", {
+      method: "POST",
+      body: JSON.stringify({
+        p_draft_id: draftId,
+        p_revision: revision,
+        p_engine: engine,
+        p_findings: findings,
+      }),
+    });
+  },
+  async decideFinding(body, revision) {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/rpc/decide_sns_edit_finding`,
+      {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_SERVICE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify({
+          p_draft_id: body.draftId,
+          p_revision: revision,
+          p_inspection_id: body.inspectionId,
+          p_finding_id: body.findingId,
+          p_approver_id: body.approverId,
+          p_decision: body.decision,
+        }),
+      },
+    );
+    if (!response.ok) {
+      // decide_sns_edit_findingのRAISE EXCEPTIONは固定の安全な文言のみ（SQLの定数、
+      // 利用者入力は含まない）。承認者が「本人」以外（例: 自動承認）を選んだ場合の
+      // メッセージだけを安全に通す。他は既存どおり汎用文言に倒す。
+      const detail = await response.json().catch(() => null);
+      if (detail?.message === "本人の判断が必要です") {
+        throw new Error(detail.message);
+      }
+      throw new Error("X送信のDB操作に失敗しました");
+    }
+    return response.json();
+  },
   async mobileGroups(date) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('対象日が不正です');
-    const query = new URLSearchParams({ platform:'in.(x,youtube)', language:'eq.ja', status:'neq.archived',
-      content_group_id:'not.is.null', 'source_data->>race_id':`like.${date}-*`,
-      select:'content_group_id,race_id:source_data->>race_id', order:'id' });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("対象日が不正です");
+    const query = new URLSearchParams({
+      platform: "in.(x,youtube)",
+      language: "eq.ja",
+      status: "neq.archived",
+      content_group_id: "not.is.null",
+      "source_data->>race_id": `like.${date}-*`,
+      select: "content_group_id,race_id:source_data->>race_id",
+      order: "id",
+    });
     const groups = new Map();
     // 最大2000行＋上限検査1行、最大5要求。上限超過は部分一覧を返さない。
-    for (let offset=0; offset<=2000; offset+=500) {
-      const limit=offset===2000 ? 1 : 500;
-      const page=await db(`sns_drafts?${query}&limit=${limit}&offset=${offset}`);
-      if (offset===2000 && page.length) throw new Error('今日の下書きが取得上限を超えました');
-      for (const d of page) groups.set(d.content_group_id,{id:d.content_group_id,raceId:d.race_id});
-      if (page.length<limit) return [...groups.values()];
+    for (let offset = 0; offset <= 2000; offset += 500) {
+      const limit = offset === 2000 ? 1 : 500;
+      const page = await db(
+        `sns_drafts?${query}&limit=${limit}&offset=${offset}`,
+      );
+      if (offset === 2000 && page.length)
+        throw new Error("今日の下書きが取得上限を超えました");
+      for (const d of page)
+        groups.set(d.content_group_id, {
+          id: d.content_group_id,
+          raceId: d.race_id,
+        });
+      if (page.length < limit) return [...groups.values()];
     }
     return [...groups.values()];
   },
-  async mobileRace(id) { return db('rpc/read_sns_mobile_race', { method: 'POST', body: JSON.stringify({ p_group_id: id }) }); },
-  async mobileApprove(id, approverId, revision, snapshot, scheduledAt, reviewSeconds) {
-    return db('rpc/approve_sns_mobile_channel', { method: 'POST', body: JSON.stringify({
-      p_draft_id:id, p_approver_id:approverId, p_revision:revision, p_snapshot:snapshot,
-      p_scheduled_at:scheduledAt, p_review_seconds:reviewSeconds,
-    }) });
+  async mobileRace(id) {
+    return db("rpc/read_sns_mobile_race", {
+      method: "POST",
+      body: JSON.stringify({ p_group_id: id }),
+    });
+  },
+  async mobileApprove(
+    id,
+    approverId,
+    revision,
+    snapshot,
+    scheduledAt,
+    reviewSeconds,
+  ) {
+    return db("rpc/approve_sns_mobile_channel", {
+      method: "POST",
+      body: JSON.stringify({
+        p_draft_id: id,
+        p_approver_id: approverId,
+        p_revision: revision,
+        p_snapshot: snapshot,
+        p_scheduled_at: scheduledAt,
+        p_review_seconds: reviewSeconds,
+      }),
+    });
   },
   async parent(id) {
     const rows = await db(
