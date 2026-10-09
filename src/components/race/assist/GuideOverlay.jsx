@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ASSIST_COPY as C } from "../../../data/thinkingAssistCopy";
 
@@ -9,8 +9,28 @@ import { ASSIST_COPY as C } from "../../../data/thinkingAssistCopy";
  * topOffset はサイトのヘッダーの高さ（上に出す吹き出しをその下に置く）
  * @param {{steps: ReturnType<import("../../../utils/assistTheory").guideSteps>, index: number, onStep: (i: number|null) => void, topOffset?: number}} props
  */
+/**
+ * 画面の下に固定で出るサイト共通の Cookie の同意バナーの高さ。下に出す吹き出しをその上に置く
+ * （バナーは z-index 9999 で吹き出しを覆い、ガイド①の「次へ」が押せなかった。PR5 マージ後の本番確認で発覚）。
+ * 同意するとバナーは消え、ResizeObserver が 0 を返す
+ */
+function useCookieBannerHeight() {
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    const el = document.querySelector(".cookie-consent");
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(() =>
+      setHeight(el.isConnected ? el.offsetHeight : 0),
+    );
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return height;
+}
+
 export default function GuideOverlay({ steps, index, onStep, topOffset = 0 }) {
   const step = steps[index];
+  const bannerHeight = useCookieBannerHeight();
   const boxRef = useRef(null);
 
   useEffect(() => {
@@ -41,7 +61,10 @@ export default function GuideOverlay({ steps, index, onStep, topOffset = 0 }) {
     <div
       ref={boxRef}
       className={`ta-guide${step.at === "top" ? " ta-guide-top" : ""}`}
-      style={{ "--ta-guide-top": `${topOffset}px` }}
+      style={{
+        "--ta-guide-top": `${topOffset}px`,
+        "--ta-guide-bottom": `${bannerHeight}px`,
+      }}
       role="dialog"
       aria-label={C.guideRegion}
       tabIndex={-1}
