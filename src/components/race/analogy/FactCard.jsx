@@ -28,17 +28,12 @@ function fmtRange(a, b, unit, sep) {
  * 今日の棒の下の1行（承認モック sonar-tab v3）。以前の「今日の一文」を、棒・札・今日の値と重ならない
  * 部分（件数とぶれ幅）だけに分けて、今日の棒の下に置く。今日の値が無い・件数0は null
  */
-function TodayHit({ row, values, boat, scopeFacts, target, withBadge }) {
+function TodayHit({ row, values, boat, scopeFacts, target }) {
   const { t } = useTranslation();
   const line = todayLine(row, values, boat, scopeFacts, target);
   if (!line) return null;
   return (
     <p className="af-today-hit" data-testid="analogy-today-hit">
-      {withBadge && (
-        <>
-          <BoatBadge n={boat} size="xs" />{" "}
-        </>
-      )}
       {t(`${k}.todayHit`, {
         rank: line.bucket,
         rate: fmtPct(line.rate),
@@ -82,21 +77,21 @@ function useTodayValue(row, values) {
  * 一番良い/悪いときの率）、開くと今日の値と6艇の範囲・一番良い/悪いときの率と件数・6つの順位の棒・今日の棒の
  * 件数とぶれ幅。「差が大きい」のカードだけ最初から開く（2026-10-08 ユーザー決定）。
  * 棒の見方は節の上に凡例で1回だけ出す（カードごとに繰り返さない）
- * @param {{row: object, boat: number, compareBoat: number|null, scopeFacts: object, values: (number|null)[]|null,
- *   target: 1|2|3, todayPos: number|null, hideLine: boolean, note: string|null, scope: string}} props
+ * 6艇の見比べは上の七角形と項目の表で行う（以前のカードの中の「比べる艇」の行は、選んだ艇の集めたレースで
+ * 出していて、その艇を一番上で選んだときと数字が違ったので消した。2026-10-09 ユーザー指摘）
+ * @param {{row: object, boat: number, scopeFacts: object, values: (number|null)[]|null,
+ *   target: 1|2|3, todayPos: number|null, hideLine: boolean, note: string|null}} props
  */
 export default function FactCard({
   venueName,
   row,
   boat,
-  compareBoat,
   scopeFacts,
   values,
   target,
   todayPos,
   hideLine,
   note,
-  scope,
   initiallyOpen = false,
 }) {
   const { t } = useTranslation();
@@ -129,38 +124,6 @@ export default function FactCard({
         })
       : "—";
 
-  let compare = null;
-  if (compareBoat) {
-    const by = scopeFacts?.by?.[String(compareBoat)]?.[row.key];
-    const tk = { 1: "win", 2: "top2", 3: "top3" }[target];
-    const cb = rateOf(by?.["1"]?.[tk]);
-    const cw = rateOf(by?.["6"]?.[tk]);
-    compare = (
-      <>
-        <p className="af-sub">
-          {t(`${k}.compareLine`, {
-            boat: compareBoat,
-            good: word(row.good),
-            bad: word(row.bad),
-            best: fmtPct(cb),
-            worst: fmtPct(cw),
-            scope,
-            usual: fmtPct(rateOf(usualOf(scopeFacts, compareBoat, target))),
-          })}
-        </p>
-        {!hideLine && (
-          <TodayHit
-            row={row}
-            values={values}
-            boat={compareBoat}
-            scopeFacts={scopeFacts}
-            target={target}
-            withBadge
-          />
-        )}
-      </>
-    );
-  }
   // 6艇の今日の値の範囲（「6艇は1.00〜10.00点」）
   const pos = values ? todayPosition(values, hib, boat) : null;
   const range =
@@ -174,6 +137,7 @@ export default function FactCard({
       open={open}
       onToggle={(e) => setOpen(e.currentTarget.open)}
       data-testid="analogy-fact-card"
+      data-key={row.key}
     >
       <summary className="af-card-sum">
         <span className="af-card-head">
@@ -222,27 +186,22 @@ export default function FactCard({
             {t(`${k}.items.${row.key}.desc`, { venue: venueName })}
           </p>
         )}
-        {[boat, compareBoat].filter(Boolean).map((b) => {
-          // 選んだ艇の今日の値と6艇中の順位（棒の強調を出さない日も出す。2026-10-06 ユーザー指摘）
-          const v = todayOf(b);
-          return (
-            <div key={b}>
-              <p className="af-card-today">
-                <BoatBadge n={b} size="xs" />{" "}
-                {t(`${k}.todayValue`, {
-                  boat: b,
-                  value: v.value,
-                  rank: v.rank,
-                })}
-              </p>
-              {b === boat && range && (
-                <p className="af-card-range">
-                  {t(`${k}.todayRangeOf6`, { range })}
-                </p>
-              )}
-            </div>
-          );
-        })}
+        {/* 選んだ艇の今日の値と6艇中の順位（棒の強調を出さない日も出す。2026-10-06 ユーザー指摘） */}
+        <div>
+          <p className="af-card-today">
+            <BoatBadge n={boat} size="xs" />{" "}
+            {t(`${k}.todayValue`, {
+              boat,
+              value: me.value,
+              rank: me.rank,
+            })}
+          </p>
+          {range && (
+            <p className="af-card-range">
+              {t(`${k}.todayRangeOf6`, { range })}
+            </p>
+          )}
+        </div>
         <div className="af-pair">
           {[
             [best, row.rates[0], row.good],
@@ -324,7 +283,6 @@ export default function FactCard({
             {t(`${k}.${note === "final" ? "noteFinal" : "noteEarly"}`)}
           </p>
         )}
-        {compare}
       </div>
     </details>
   );

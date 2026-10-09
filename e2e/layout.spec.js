@@ -823,11 +823,16 @@ test.describe("レイアウト: 龍神ソナーのタブ（3つの内部タブ�
     expectNoWastedGrids(await inspectGrids(page));
   };
 
-  test("差がつく材料: 比べる艇と折りたたみを開いても横スクロールが出ない", async ({
+  test("差がつく材料: 七角形の項目の表・2艇を太くした状態と折りたたみを開いても横スクロールが出ない", async ({
     page,
   }) => {
     const section = await openSection(page);
-    await expect(section.getByTestId("analogy-fact-card").first()).toBeVisible();
+    await expect(
+      section.getByTestId("analogy-fact-card").first(),
+    ).toBeVisible();
+    await section.getByRole("button", { name: /全国勝率の6艇の表/ }).click();
+    await expect(section.getByTestId("analogy-radar-table")).toBeVisible();
+    await section.getByRole("button", { name: /4号艇（/ }).click(); // 2艇を太く
     await openAllDetails(section);
     await expectFits(page);
   });
