@@ -1698,12 +1698,12 @@
           "tblAtt": "{{b}}號艇第1名（{{cls}} 的比賽）",
           "tblB1": "1號艇逃走（{{cls}} 的比賽）",
           "sameRacesNige": "同{{n}}場中1號艇逃走：{{p}}。與下表場數不同，數值也略有不同",
-          "footStAll": "僅以6艇平均ST皆齊全的比賽算出，因此場數可能略少於④",
           "footTie": "同值的艇以較前的排名計",
           "tblAttAll": "{{b}}號艇第1名",
           "tblB1All": "1號艇逃走",
           "legendNoRef": "小字＝該區段的場數。少＝未滿50場（容易波動）",
-          "foldPreviewNoRef": "展示時間、馬達×前中後段"
+          "foldPreviewNoRef": "展示時間、馬達×前中後段",
+          "countDiff": "③僅用6艇平均ST齊全的比賽，因此1號艇的框為{{n}}場（②④為{{m}}場）"
         },
         "entryFew": "{{n}}場 —",
         "entryColType": "進場",
@@ -1744,11 +1744,10 @@
         "slitHeadingShort": "起跑會如何排列？",
         "slitAgreeHit": "展示為{{form}} → 正式也是",
         "slitAgreeMiss": "展示為其他形 → 正式為{{form}}",
-        "slitTodayTag": "今天展示的形，在②的圖上加了「今天的展示」標籤。",
         "termsPreview": "Kado、Kado-uke、圖的看法、7種形的定義",
         "termKado": "Kado＝衝刺組（助跑較長的艇）最內側。7種形以照枠進場時的Kado（4號水道）為基準。Kado-uke＝其內側1艇（照枠時為3號水道）",
         "termPic": "圖為側面看的排列範例（數字為水道，右側線為起跑線。比例尺1艇身≒0.13秒）",
-        "termOverlap": "1場比賽可能符合2種以上的形（相加超過100%）",
+        "termOverlap": "1場比賽可能符合2種以上的形，也有不符合任何形的比賽（7個比例相加不會是100%）",
         "termShare": "比例為所選進場中的比例。起跑線的形無法從今天的展示選擇",
         "resultHeadingShort": "結果如何決定？",
         "scopeMapHeading": "各數字取自哪些比賽",
@@ -1763,7 +1762,9 @@
           "rest": "④ 決勝方式、萬舟、名次流向、三連單"
         },
         "techHeadingShort": "決勝方式",
-        "notesHintHeading": "起跑線索"
+        "notesHintHeading": "起跑線索",
+        "slitTodayTagOne": "今天的展示符合{{forms}}（②的圖上有「今天的展示」標籤）。",
+        "slitTodayTagMany": "今天的展示符合{{forms}}共{{count}}種形（形可能重疊。②的圖上有「今天的展示」標籤）。"
       },
       "barLabel": "{{boat}}號艇 {{p}} {{n}}場",
       "feedback": {

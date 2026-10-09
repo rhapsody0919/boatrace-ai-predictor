@@ -156,7 +156,8 @@ function BandTable({ title, who, rows, keyName }) {
  * あればその値、無ければ1号艇の範囲の値。区分の表は「区分で見る」に畳み、今日の区分の2行だけ常に出す
  * @param {{attack: object|null, refAttack: object|null, refName: string|null, slit: string, waku: boolean,
  *   exhibitionStage: boolean, exhRank: (number|null)[]|null, motorRank: (number|null)[], classes: (string|null)[],
- *   boats?: object|null, classScope?: boolean}} props classScope は級をそろえる範囲（VC・NC・NCR）か
+ *   boats?: object|null, classScope?: boolean, scenarioN?: number|null}} props scenarioN は②④の件数（③の1号艇の箱と
+ *   比べ、少ない理由をすぐ近くに出す） classScope は級をそろえる範囲（VC・NC・NCR）か
  */
 export default function AttackTable({
   attack,
@@ -170,6 +171,7 @@ export default function AttackTable({
   classes,
   boats = null,
   classScope = true,
+  scenarioN = null,
 }) {
   const { t } = useTranslation();
   const [tip, setTip] = useState({});
@@ -326,6 +328,15 @@ export default function AttackTable({
           {t(`${k}.noAttacker`, { form: t(`${k}.forms.${slit}.name`) })}
         </p>
       )}
+      {/* ③は平均STが6艇そろうレースだけから出すので、②④より件数が少ない。理由を箱のすぐ上に（ファン評価: 畳んだ中にしか無かった） */}
+      {scenarioN !== null && F.all.n < scenarioN && (
+        <p className="af-foot">
+          {t(`${k}.atk.countDiff`, {
+            n: fmtCount(F.all.n),
+            m: fmtCount(scenarioN),
+          })}
+        </p>
+      )}
       <div className="af-atk-box" data-testid="analogy-attack-box">
         <ScopeTag
           boat={1}
@@ -440,7 +451,6 @@ export default function AttackTable({
           ]}
         />
         <ul className="af-notes-ul">
-          <li>{t(`${k}.atk.footStAll`)}</li>
           <li>{t(`${k}.atk.footTie`)}</li>
           {ov && (
             <li>
