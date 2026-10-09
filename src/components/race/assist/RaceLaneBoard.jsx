@@ -133,6 +133,7 @@ export default function RaceLaneBoard({
         </span>
       </div>
       {model.noOdds && <p className="ta-note">{oddsNote}</p>}
+      {bet && <p className="ta-note">{ASSIST_COPY.pastWinNote}</p>}
       {model.rows.map((row) => {
         const r = racers[row.boat - 1];
         const positions = [1, 2, 3].filter((k) => bets[k].has(row.boat));

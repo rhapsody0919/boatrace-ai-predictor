@@ -38,6 +38,7 @@ import {
   boardFactMark,
   factChips,
   factsScope,
+  factsScopeLabel,
   hintSummary,
   partsChangedBoats,
   tiltOutliers,
@@ -397,6 +398,11 @@ export default function ThinkingAssistPage() {
               value: racers[0].motor2,
               rate: Math.round(motorFact.rate * 100),
               base: Math.round((b1u.k / b1u.n) * 100),
+              // どのレースから出した割合か（271 の指摘の型）
+              scope: ASSIST_COPY.scopeChip(
+                factsScopeLabel(boatFacts[0].scope, venueName),
+                boatFacts[0].scope.n,
+              ),
             }
           : null,
     },

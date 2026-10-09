@@ -181,6 +181,14 @@ function FlowSummary({ m }) {
                 n={top.hit[1]}
               />
               <BaseBar label={C.flowMissBar} k={top.miss[0]} n={top.miss[1]} />
+              <div className="ta-legend">
+                <span className="ta-scopechip ta-num">
+                  {C.scopeChip(
+                    C.flowScopeLabel(Boolean(round)),
+                    top.hit[1] + top.miss[1],
+                  )}
+                </span>
+              </div>
               <p className="ta-note">{C.flowHintSource}</p>
             </>
           ) : (
@@ -369,6 +377,7 @@ function PowerSummary({ m }) {
             <b className="ta-num">
               {C.motorChipRate(motorChip.top, motorChip.rate, motorChip.base)}
             </b>
+            <span className="ta-scopechip ta-num">{motorChip.scope}</span>
           </div>
         )}
       </section>

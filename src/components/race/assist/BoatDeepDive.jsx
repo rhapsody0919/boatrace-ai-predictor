@@ -257,7 +257,7 @@ export default function BoatDeepDive({
               {techTotal > 0
                 ? C.techLine(techTotal) +
                   technique.techniques
-                    .map((t) => `${t.technique}${t.count}`)
+                    .map((t) => C.techItem(t.technique, t.count))
                     .join("・")
                 : C.techNone}{" "}
               <span className="ta-scopechip">{C.techPeriod}</span>

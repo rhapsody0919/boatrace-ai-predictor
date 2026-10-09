@@ -230,6 +230,9 @@ export const ASSIST_COPY = Object.freeze({
   hintMark: (form, p) => `★平均STの手がかり（${form}）${p}%`,
   // 何の形のときの攻め手かを書く（同 指摘9）
   attackMark: (form) => `${form}なら攻め手`,
+  // 買い目の図の「過去の1着」がどの範囲の値か（艇ごとに違う。271 の指摘の型「どのレースから出した数字か」）
+  pastWinNote:
+    "過去の1着＝その艇の差がつく材料と同じ集めたレースでの1着の割合（艇ごとに範囲が違う。範囲と件数は艇の丸から）",
   // 優勝戦・準優勝戦の日でも、展開はラウンドを問わずに集める（形・進入の件数が要るため）。そうと分かる呼び名にする
   flowScopeLabel: (final) =>
     final ? "全国・級の並びが同じ（予選も含む）" : "全国・級の並びが同じ",
@@ -263,7 +266,7 @@ export const ASSIST_COPY = Object.freeze({
   colBoat: "艇",
   colExh: "展示",
   colExhSt: "ST",
-  colWeight: "体重",
+  colWeight: "体重(kg)",
   colTilt: "チルト",
   weightLight: "軽",
   powerLegendBest: "金枠＝6艇で一番速い（小さいほど良い）",
@@ -319,7 +322,7 @@ export const ASSIST_COPY = Object.freeze({
   kvPretest: "前検タイム",
   kvTech: "勝ち決まり手",
   kvCourse: (c) => `${c}コースで走ったとき`,
-  courseWin: (k, n) => `1着 ${k}/${n}`,
+  courseWin: (k, n) => `1着 ${k}/${n}走`,
   courseNote: "進入コース・直近2年",
   stCourseChip: (v) => `このコース ${v}`,
   stVenueChip: (venue, v) => `${venue} ${v}`,
@@ -334,6 +337,7 @@ export const ASSIST_COPY = Object.freeze({
   runsToggle: "1走ずつの表",
   pretest: (t, rank) => `${t}${rank ? `（参加艇で${rank}位）` : ""}`,
   techLine: (wins) => `1着${wins}回: `,
+  techItem: (t, k) => `${t}${k}回`,
   techNone: "直近90日の1着なし",
   // 期間を書く（コースの1着「直近2年」と並ぶので、何の期間か分からないと矛盾して見える。同 指摘2）
   techPeriod: "直近90日",
