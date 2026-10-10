@@ -22,6 +22,7 @@ import {
   priorRuns,
 } from "../../../utils/assistSummary";
 import { ASSIST_COPY as C } from "../../../data/thinkingAssistCopy";
+import { FACT_ITEMS } from "../../../utils/analogyFacts";
 import { TermButton, TheoryButton } from "./SheetButtons";
 
 /** 用語の「?」つきの見出し（dt） */
@@ -34,6 +35,8 @@ const Dt = ({ term, children }) => (
 
 /** 深掘りの先頭に出す▲の付いた材料の数（ユーザー決定 A） */
 const TOP_FACTS = 3;
+/** 全部の材料の並び（項目の決まった順。龍神ソナーの差がつく材料と同じ項目の順。BOA-804） */
+const FACT_ORDER = FACT_ITEMS.map((it) => it.key);
 
 /** 値のボタン（押すと6艇比較）。深掘りの1艇の値には金枠を付けない（FR-3a「付けない所」） */
 function Val({ metric, racer, onMetric }) {
@@ -251,6 +254,12 @@ export default function BoatDeepDive({
             <span className="ta-num"> （{C.seriesRank(seriesPos)}）</span>
           )}{" "}
           <span className="ta-scopechip">{C.beforeToday}</span>
+          {meet?.count > 0 && (
+            // 何を平均したかの一言（BOA-804）。優勝戦の日は準優勝戦の着順も入る
+            <p className="ta-note ta-num">
+              {C.seriesAvgNote(meet.count, meet.sum, round === "yusho")}
+            </p>
+          )}
           <div className="ta-finline ta-num">
             {meet ? (
               <>
@@ -386,7 +395,16 @@ export default function BoatDeepDive({
               <span className="ta-scopechip ta-num">{scopeLabel}</span>
               <span>{C.factsLegend}</span>
             </div>
-            <FactChips chips={chips} base={base} round={round} boat={boat} />
+            {/* 全部の材料は、どの艇でも同じ並び（項目の決まった順）。艇を切り替えて比べやすくする（BOA-804）。
+                先頭の▲の材料は差の大きい順のまま（ユーザー決定 A） */}
+            <FactChips
+              chips={[...chips].sort(
+                (a, b) => FACT_ORDER.indexOf(a.key) - FACT_ORDER.indexOf(b.key),
+              )}
+              base={base}
+              round={round}
+              boat={boat}
+            />
             <p className="ta-note">{C.factsNotCause}</p>
           </div>
         </Fold>

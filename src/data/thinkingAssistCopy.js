@@ -400,6 +400,8 @@ export const ASSIST_COPY = Object.freeze({
         ? "6艇で一番低い"
         : `6艇で${rank}番目`,
   beforeToday: "前日まで",
+  seriesAvgNote: (n, sum, final) =>
+    `前日までの今節 ${n}走の平均（${sum}点÷${n}走。F・失格は0点）${final ? "。準優勝戦の着順も入る" : ""}`,
   todayRun: (r, f) => `今日 ${r}R ${f ?? "—"}着（点に入れない）`,
   runsToggle: "1走ずつの表",
   pretest: (t, rank) => `${t}${rank ? `（参加艇で${rank}位）` : ""}`,
