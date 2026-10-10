@@ -1539,7 +1539,7 @@
         "entryPre": "전시 후에는 오늘 전시 진입에 해당하는 유형에 표시가 붙는다.",
         "allOf": "{{name}}의 전체 레이스",
         "hintHeading": "오늘 스타트의 단서",
-        "hintOther": "정번대로 이외를 선택했다. 이 단서는 정번대로일 때의 것이므로 그대로 적용되지 않는다(②의 표시도 뺐다)",
+        "hintOther": "정번대로 이외를 선택했다. 이 단서는 정번대로일 때의 것이므로 그대로 적용되지 않는다(STEP2의 표시도 뺐다)",
         "hintSrc": "사용할 평균 ST",
         "hintSrcs": {
           "course": "이 코스",
@@ -1569,7 +1569,7 @@
           "flat03": "6척의 평균 ST 차(가장 늦음 − 가장 빠름)가 0.03초 이내"
         },
         "hintNone": "오늘의 배열은 어떤 조건에도 해당하지 않음",
-        "hintFoot": "{{scope}}의 정번대로 진입한 레이스({{n}}건, F·출발 지연이 있었던 레이스와 6척의 평균 ST가 모두 있지 않은 레이스는 제외하므로 ②의 '어느 형태든'과 건수가 조금 다를 수 있다)로 산출했다. {{few}}해당해도 빗나가는 경우가 더 많다(결정타가 아니라 단서).",
+        "hintFoot": "{{scope}}의 정번대로 진입한 레이스({{n}}건, F·출발 지연이 있었던 레이스와 6척의 평균 ST가 모두 있지 않은 레이스는 제외하므로 STEP2의 '어느 형태든'과 건수가 조금 다를 수 있다)로 산출했다. {{few}}해당해도 빗나가는 경우가 더 많다(결정타가 아니라 단서).",
         "hintBadge": "오늘의 평균 ST가 해당",
         "forms": {
           "any": {
@@ -1614,8 +1614,8 @@
         "slitPre": "전시 후에 오늘 전시의 슬릿 형태를 참고로 표시한다",
         "noForm": "어떤 형태에도 해당하지 않음",
         "attackHeading": "공격은 통했나?",
-        "attackWakuOnly": "진입이 정번대로일 때만 모았다(①에서 '정번대로'나 '모든 진입'을 고르면 나온다)",
-        "attackGuide": "②에서 슬릿 형태를 고르면, 그 형태일 때 공격하는 보트가 이겼는지, 1번 보트가 인빠지기로 이겼는지가 나온다",
+        "attackWakuOnly": "진입이 정번대로일 때만 모았다(STEP1에서 '정번대로'나 '모든 진입'을 고르면 나온다)",
+        "attackGuide": "STEP2에서 슬릿 형태를 고르면, 그 형태일 때 공격하는 보트가 이겼는지, 1번 보트가 인빠지기로 이겼는지가 나온다",
         "attackNoRecord": "1턴 마크에서 누가 먼저 돌았는지 기록이 없으므로 착순과 결정수로 본다",
         "attacker": "공격하는 보트:",
         "attackerNote": "이 형태일 때 바깥 보트 중 1착이 가장 많은 보트(반드시 공격한다는 뜻은 아님)",
@@ -1665,7 +1665,7 @@
         "hintRefShort": "{{venue}} 선수 평균",
         "slitRefLegend": "점선 = {{name}}",
         "slitFaster": "빠름 →",
-        "resultNotSplit": "④의 결과는 ③의 공격하는 보트 순위로는 나누지 않았다.",
+        "resultNotSplit": "STEP4의 결과는 STEP3의 공격하는 보트 순위로는 나누지 않았다.",
         "fellBack": "{{venue}}에서 같은 조합의 레이스(반환 제외)는 {{n}}건으로 적어서 전국에서 모았습니다",
         "shareOfNoRefund": "{{of}}(반환 제외)의 {{p}}",
         "agreeVerdict": {
@@ -1676,7 +1676,7 @@
         "atk": {
           "fewTitle": "50건 미만(흔들리기 쉬움)",
           "few": "소",
-          "scopeTag": "{{cls}} 레이스 {{n}}건",
+          "scopeTag": "{{b}}번 보트, {{cls}} 레이스 {{n}}건",
           "todayRow": "{{label}} {{rank}}위({{band}}) → {{what}}",
           "band": {
             "top": "상위",
@@ -1712,12 +1712,12 @@
           "tblB1All": "1번 보트 인빠지기",
           "legendNoRef": "작은 숫자＝그 구분의 건수. 소＝50건 미만(흔들리기 쉬움)",
           "foldPreviewNoRef": "전시 타임, 모터 × 상중하",
-          "countDiff": "③은 평균 ST가 6척 모두 있는 레이스만으로 산출해서 1번 보트 상자는 {{n}}건(②④는 {{m}}건)"
+          "countDiff": "STEP3은 평균 ST가 6척 모두 있는 레이스만으로 산출해서 1번 보트 상자는 {{n}}건(STEP2, 4는 {{m}}건)"
         },
         "entryFew": "{{n}}건 —",
         "entryColType": "진입",
         "entryColShare": "비율",
-        "entryColB1": "①의 1착률",
+        "entryColB1": "1번 보트의 1착률",
         "hintTagPast": "과거 기록(예상 아님)",
         "hintTagWaku": "와쿠나리일 때",
         "hintSrcAria": "이 코스와 전체의 차이",
@@ -1726,16 +1726,15 @@
           "overall": "전체＝코스를 가리지 않는 평균(스타트 위치의 차이가 섞인다)"
         },
         "hintDownTag": "오히려 잘 안 된다",
-        "hintGo": "{{form}} 모양으로 ③④ 보기 ›",
+        "hintGo": "{{form}} 모양으로 STEP3, 4 보기 ›",
         "hintTablePreview": "이 코스, 전체, 경기장, 오늘 전시의 평균 ST",
         "slitNoRate": "—",
-        "slitStatAny": "{{n}}건, ① {{b1}}",
-        "slitStat": "{{p}}, {{n}}건, ① {{b1}}",
-        "slitB1Legend": "①＝1번 보트의 1착률",
+        "slitStatAny": "{{n}}건, 1번 보트 1착 {{b1}}",
+        "slitStat": "{{p}}, {{n}}건, 1번 보트 1착 {{b1}}",
         "slitChange": "바꾸기 ▾",
         "scopeTagAll": "모은 레이스 {{n}}건",
-        "boatTag": "{{cls}} {{n}}건",
-        "boatTagAll": "{{n}}건",
+        "boatTag": "{{b}}번 보트 {{cls}} {{n}}건",
+        "boatTagAll": "{{b}}번 보트 {{n}}건",
         "keyThin": "옅은 막대＝{{n}}건 미만",
         "boatScopeLine": "각 보트는 자기 급별의 레이스(왼쪽 표)에서 산출한 비율. 더해도 100%가 되지 않는다",
         "manshuCount": "{{hits}}/{{n}}레이스",
@@ -1761,16 +1760,16 @@
         "scopeMapB1": "1번 보트 급별을 맞춤",
         "scopeMapOwn": "그 보트 급별을 맞춤",
         "scopeMap": {
-          "attOwn": "③ 공격하는 보트의 상자와 표",
-          "attB1": "③ 1번 보트의 상자와 표",
-          "barB1": "④ 1착, 3착 이내(1번 보트)",
-          "barOwn": "④ 1착, 3착 이내(2~6번 보트)",
-          "rest": "④ 결정 수, 만주, 착순 흐름, 3연단"
+          "attOwn": "STEP3 공격하는 보트의 상자와 표",
+          "attB1": "STEP3 1번 보트의 상자와 표",
+          "barB1": "STEP4 1착, 3착 이내(1번 보트)",
+          "barOwn": "STEP4 1착, 3착 이내(2~6번 보트)",
+          "rest": "STEP4 결정 수, 만주, 착순 흐름, 3연단"
         },
         "techHeadingShort": "결정 수",
         "notesHintHeading": "스타트 단서",
-        "slitTodayTagOne": "오늘의 전시는 {{forms}}에 해당한다(②의 그림에 \"오늘의 전시\" 표).",
-        "slitTodayTagMany": "오늘의 전시는 {{forms}}의 {{count}}가지 형태에 해당한다(형태는 겹칠 수 있다. ②의 그림에 \"오늘의 전시\" 표).",
+        "slitTodayTagOne": "오늘의 전시는 {{forms}}에 해당한다(STEP2의 그림에 \"오늘의 전시\" 표).",
+        "slitTodayTagMany": "오늘의 전시는 {{forms}}의 {{count}}가지 형태에 해당한다(형태는 겹칠 수 있다. STEP2의 그림에 \"오늘의 전시\" 표).",
         "hintCondsNote": "비율은 과거 틀대로 진입한 레이스에서 슬릿이 그 모양이 된 비율. 해당해도 빗나가는 쪽이 많다(결정타가 아니라 단서)",
         "hintTodayOk": "✓ 오늘 해당",
         "hintTodayLead": "오늘",
@@ -1805,7 +1804,8 @@
         "hintAll": "전체(어떤 조건이든) {{p}}",
         "hintMapFirst": " {{n}}번 보트={{n}}코스",
         "hintMapRest": "={{n}}코스",
-        "hintTodayCourse": "{{n}}코스"
+        "hintTodayCourse": "{{n}}코스",
+        "stepLabel": "STEP{{n}}"
       },
       "barLabel": "{{boat}}번 보트 {{p}} {{n}}건",
       "feedback": {

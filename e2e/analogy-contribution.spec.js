@@ -1116,7 +1116,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
         .click();
       const box = section.getByTestId("analogy-attack-box").first();
       await expect(box.locator(".af-scope-tag")).toHaveText(
-        /^4\s*A1 のレース 154件$/,
+        /^4\s*4号艇・A1 のレース 154件$/,
       );
       await expect(box).toContainText("4号艇が1着");
       await expect(box).toContainText("50%");
@@ -1159,8 +1159,8 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       const tags = section
         .getByTestId("analogy-attack-box")
         .locator(".af-scope-tag");
-      await expect(tags.nth(0)).toHaveText(/^4\s*A1 のレース/);
-      await expect(tags.nth(1)).toHaveText(/^1\s*A1 のレース/);
+      await expect(tags.nth(0)).toHaveText(/^4\s*4号艇・A1 のレース/);
+      await expect(tags.nth(1)).toHaveText(/^1\s*1号艇・A1 のレース/);
       // 「変える」で②を開き直せる
       await section.getByRole("button", { name: /変える/ }).click();
       await expect(section.locator("#af-pat-kado")).toBeVisible();
@@ -1193,8 +1193,8 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await section.getByRole("tab", { name: "展開シナリオ" }).click();
       // 3号艇はその艇の範囲の値が無いので、札に級を書かない（中身は1号艇の範囲の値）
       const tags = section.locator("#af-scn-s4 .af-bar-tag");
-      await expect(tags.nth(0)).toHaveText(/^A1 [\d,]+件$/);
-      await expect(tags.nth(2)).toHaveText(/^[\d,]+件$/);
+      await expect(tags.nth(0)).toHaveText(/^1号艇 A1 [\d,]+件$/);
+      await expect(tags.nth(2)).toHaveText(/^3号艇 [\d,]+件$/);
       // 展示前でも③の1号艇の箱に展示タイムの割り引きの注記を出す
       await section.getByRole("button", { name: "展示前（出走表）" }).click();
       await section.locator("#af-pat-kado").click();
@@ -1250,7 +1250,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       // ③の1号艇の箱は平均STが6艇そろうレースだけ（111件）、②④は112件。理由を箱のすぐ上に
       await section.locator("#af-pat-kado").click();
       await expect(section.locator("#af-scn-s3")).toContainText(
-        "1号艇の箱は111件（②④は112件）",
+        "1号艇の箱は111件（STEP2・4は112件）",
       );
     });
 
@@ -1299,7 +1299,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       expect(Math.round(await pct(".af-hintc-trk s"))).toBe(12);
       // ボタンはその形を②で選ぶ
       await card
-        .getByRole("button", { name: "カド一撃の形で③④を見る ›" })
+        .getByRole("button", { name: "カド一撃の形でSTEP3・4を見る ›" })
         .click();
       await expect(section.locator("#af-scn-s3")).toContainText("カド一撃");
     });
@@ -1349,6 +1349,33 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       expect(await bestIn(section, "全体")).toEqual([4]);
     });
 
+    test("展開シナリオの段の番号は四角の STEP 札で、画面に丸数字（①〜④）を出さない（2026-10-10 ユーザー承認）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      await expect(section.locator(".af-scn-h .af-stepn")).toHaveText([
+        "STEP1",
+        "STEP2",
+        "STEP3",
+        "STEP4",
+      ]);
+      const radius = await section
+        .locator(".af-scn-h .af-stepn")
+        .first()
+        .evaluate((el) => getComputedStyle(el).borderRadius);
+      expect(radius).not.toBe("50%");
+      await section.locator("#af-pat-kado").click();
+      await section
+        .locator("details")
+        .evaluateAll((ds) => ds.forEach((d) => (d.open = true)));
+      expect(await section.innerText()).not.toMatch(/[①②③④]/);
+      // 差し込み漏れ（{{b}} がそのまま出る）が無い（丸数字の置き換えで札に号艇を足したときに出た）
+      expect(await section.innerText()).not.toMatch(/\{\{/);
+    });
+
     test("展開シナリオの P3（2026-10-09 レビュー）: 畳む・開く後のフォーカス、空の区切り線・決まり手の見出し、①の列の読み上げ", async ({
       page,
     }) => {
@@ -1376,7 +1403,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await section.getByRole("tab", { name: "展開シナリオ" }).click();
       // ①の行は読み上げで列の名前が付く
       await expect(
-        section.getByRole("button", { name: /^枠なり.*割合.*①の1着率/ }),
+        section.getByRole("button", { name: /^枠なり.*割合.*1号艇の1着率/ }),
       ).toBeVisible();
       await section.getByRole("button", { name: "展示前（出走表）" }).click();
       await section.locator("#af-pat-kado").click();
@@ -1547,7 +1574,7 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       const section = sectionOf(page);
       await section.getByRole("tab", { name: "展開シナリオ" }).click();
       await expect(section).toContainText(
-        "平均STが6艇そろわないレースを除くので、②の「どの形でも」と件数が少しずれることがある",
+        "平均STが6艇そろわないレースを除くので、STEP2の「どの形でも」と件数が少しずれることがある",
       );
     });
 

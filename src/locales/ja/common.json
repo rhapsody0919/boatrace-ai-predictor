@@ -1197,7 +1197,7 @@
         "entryPre": "展示の後は、今日の展示の進入に当てはまる型に印が付く。",
         "allOf": "{{name}}の全レース",
         "hintHeading": "今日のスタートの手がかり",
-        "hintOther": "枠なり以外を選んでいる。この手がかりは枠なりのときのものなので、そのまま当てはまらない（②の札も外している）",
+        "hintOther": "枠なり以外を選んでいる。この手がかりは枠なりのときのものなので、そのまま当てはまらない（STEP2の札も外している）",
         "hintSrc": "使う平均ST",
         "hintSrcs": {
           "course": "このコース",
@@ -1227,7 +1227,7 @@
           "flat03": "6艇の平均STの差（最も遅い−最も早い）が0.03秒以内"
         },
         "hintNone": "今日の並びは、どの条件にも当てはまらない",
-        "hintFoot": "{{scope}}の枠なりのレース（{{n}}件。F・出遅れのあったレースと、平均STが6艇そろわないレースを除くので、②の「どの形でも」と件数が少しずれることがある）から出している。{{few}}当てはまっても外れる方が多い（決め手ではなく手がかり）。",
+        "hintFoot": "{{scope}}の枠なりのレース（{{n}}件。F・出遅れのあったレースと、平均STが6艇そろわないレースを除くので、STEP2の「どの形でも」と件数が少しずれることがある）から出している。{{few}}当てはまっても外れる方が多い（決め手ではなく手がかり）。",
         "hintBadge": "今日の平均STが当てはまる",
         "forms": {
           "any": {
@@ -1272,8 +1272,8 @@
         "slitPre": "展示の後に、今日の展示のスリットの形を参考に出す",
         "noForm": "どの形にも当てはまらない",
         "attackHeading": "攻めは決まった？",
-        "attackWakuOnly": "進入が枠なりのときだけを集めている（①で「枠なり」か「どの進入でも」を選ぶと出る）",
-        "attackGuide": "②でスリットの形を選ぶと、その形のときに攻める艇が勝ちきったか、1号艇が逃げたかが出る",
+        "attackWakuOnly": "進入が枠なりのときだけを集めている（STEP1で「枠なり」か「どの進入でも」を選ぶと出る）",
+        "attackGuide": "STEP2でスリットの形を選ぶと、その形のときに攻める艇が勝ちきったか、1号艇が逃げたかが出る",
         "attackNoRecord": "1マークで誰が先に回ったかの記録は無いので、着順と決まり手で見ている",
         "attacker": "攻める艇:",
         "attackerNote": "この形のとき、外の艇で一番1着が多い艇（必ず攻めるという意味ではない）",
@@ -1323,7 +1323,7 @@
         "hintRefShort": "{{venue}}の全選手の平均",
         "slitRefLegend": "点線＝{{name}}",
         "slitFaster": "早い →",
-        "resultNotSplit": "④の結果は、③の攻める艇の順位では分けていない。",
+        "resultNotSplit": "STEP4の結果は、STEP3の攻める艇の順位では分けていない。",
         "fellBack": "{{venue}}で同じ組み合わせのレース（返還を除く）は{{n}}件と少ないので、全国から集めています",
         "shareOfNoRefund": "{{of}}（返還を除く）の{{p}}",
         "agreeVerdict": {
@@ -1334,7 +1334,7 @@
         "atk": {
           "fewTitle": "50件未満（ぶれやすい）",
           "few": "少",
-          "scopeTag": "{{cls}} のレース {{n}}件",
+          "scopeTag": "{{b}}号艇・{{cls}} のレース {{n}}件",
           "todayRow": "{{label}} {{rank}}位（{{band}}）→ {{what}}",
           "band": {
             "top": "上位",
@@ -1370,12 +1370,12 @@
           "tblB1All": "1号艇の逃げ",
           "legendNoRef": "小さい数字＝その区分の件数。少＝50件未満（ぶれやすい）",
           "foldPreviewNoRef": "展示タイム・モーター×上中下",
-          "countDiff": "③は平均STが6艇そろうレースだけから出すので、1号艇の箱は{{n}}件（②④は{{m}}件）"
+          "countDiff": "STEP3は平均STが6艇そろうレースだけから出すので、1号艇の箱は{{n}}件（STEP2・4は{{m}}件）"
         },
         "entryFew": "{{n}}件 —",
         "entryColType": "進入",
         "entryColShare": "割合",
-        "entryColB1": "①の1着率",
+        "entryColB1": "1号艇の1着率",
         "hintTagPast": "過去の記録（予想ではない）",
         "hintTagWaku": "枠なりの場合",
         "hintSrcAria": "このコースと全体の違い",
@@ -1384,16 +1384,15 @@
           "overall": "全体＝コースを問わない平均（スタートの位置の違いがまざる）"
         },
         "hintDownTag": "むしろなりにくい",
-        "hintGo": "{{form}}の形で③④を見る ›",
+        "hintGo": "{{form}}の形でSTEP3・4を見る ›",
         "hintTablePreview": "このコース・全体・会場・今日の展示の平均ST",
         "slitNoRate": "—",
-        "slitStatAny": "{{n}}件 ・ ① {{b1}}",
-        "slitStat": "{{p}}・{{n}}件 ・ ① {{b1}}",
-        "slitB1Legend": "①＝1号艇の1着率",
+        "slitStatAny": "{{n}}件 ・ 1号艇1着 {{b1}}",
+        "slitStat": "{{p}}・{{n}}件 ・ 1号艇1着 {{b1}}",
         "slitChange": "変える ▾",
         "scopeTagAll": "集めたレース {{n}}件",
-        "boatTag": "{{cls}} {{n}}件",
-        "boatTagAll": "{{n}}件",
+        "boatTag": "{{b}}号艇 {{cls}} {{n}}件",
+        "boatTagAll": "{{b}}号艇 {{n}}件",
         "keyThin": "薄い棒＝{{n}}件未満",
         "boatScopeLine": "各艇、自分の級のレース（左の札）から出した率。足しても100%にならない",
         "manshuCount": "{{hits}}/{{n}}レース",
@@ -1419,16 +1418,16 @@
         "scopeMapB1": "1号艇の級でそろえた",
         "scopeMapOwn": "その艇の級でそろえた",
         "scopeMap": {
-          "attOwn": "③ 攻める艇の箱・表",
-          "attB1": "③ 1号艇の箱・表",
-          "barB1": "④ 1着・3着以内（1号艇）",
-          "barOwn": "④ 1着・3着以内（2〜6号艇）",
-          "rest": "④ 決まり手・万舟・着順の流れ・3連単"
+          "attOwn": "STEP3 攻める艇の箱・表",
+          "attB1": "STEP3 1号艇の箱・表",
+          "barB1": "STEP4 1着・3着以内（1号艇）",
+          "barOwn": "STEP4 1着・3着以内（2〜6号艇）",
+          "rest": "STEP4 決まり手・万舟・着順の流れ・3連単"
         },
         "techHeadingShort": "決まり手",
         "notesHintHeading": "手がかり",
-        "slitTodayTagOne": "今日の展示は{{forms}}に当たる（②の絵に「今日の展示」の札）。",
-        "slitTodayTagMany": "今日の展示は{{forms}}の{{count}}つの形に当たる（形は重なることがある。②の絵に「今日の展示」の札）。",
+        "slitTodayTagOne": "今日の展示は{{forms}}に当たる（STEP2の絵に「今日の展示」の札）。",
+        "slitTodayTagMany": "今日の展示は{{forms}}の{{count}}つの形に当たる（形は重なることがある。STEP2の絵に「今日の展示」の札）。",
         "hintCondsNote": "割合は、過去の枠なりのレースでスリットがその形になった割合。当てはまっても外れる方が多い（決め手ではなく手がかり）",
         "hintTodayOk": "✓ 今日あてはまる",
         "hintTodayLead": "今日",
@@ -1463,7 +1462,8 @@
         "hintAll": "全体（どの条件でも） {{p}}",
         "hintMapFirst": " {{n}}号艇＝{{n}}コース",
         "hintMapRest": "＝{{n}}コース",
-        "hintTodayCourse": "{{n}}コース"
+        "hintTodayCourse": "{{n}}コース",
+        "stepLabel": "STEP{{n}}"
       },
       "barLabel": "{{boat}}号艇 {{p}} {{n}}件",
       "feedback": {

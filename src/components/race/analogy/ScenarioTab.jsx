@@ -188,7 +188,7 @@ export default function ScenarioTab({
     <span className="af-scope-tag">
       {classScope && <BoatBadge n={b} size="xs" />}
       {classScope
-        ? t(`${k}.atk.scopeTag`, { cls: cls[b - 1] ?? "—", n: fmtCount(n) })
+        ? t(`${k}.atk.scopeTag`, { b, cls: cls[b - 1] ?? "—", n: fmtCount(n) })
         : t(`${k}.scopeTagAll`, { n: fmtCount(n) })}
     </span>
   );
@@ -200,8 +200,8 @@ export default function ScenarioTab({
   );
   const boatTags = cur.map((r, i) =>
     classScope && ownScope[i]
-      ? t(`${k}.boatTag`, { cls: cls[i] ?? "—", n: fmtCount(r[0]) })
-      : t(`${k}.boatTagAll`, { n: fmtCount(r[0]) }),
+      ? t(`${k}.boatTag`, { b: i + 1, cls: cls[i] ?? "—", n: fmtCount(r[0]) })
+      : t(`${k}.boatTagAll`, { b: i + 1, n: fmtCount(r[0]) }),
   );
   const bar2 = (label, p) => (
     <div className="af-hint-bar af-num">
@@ -398,7 +398,7 @@ export default function ScenarioTab({
       )}
       <section className="af-scn-sec" id="af-scn-s1">
         <h3 className="af-h3 af-scn-h">
-          <span className="af-stepn">1</span>
+          <span className="af-stepn">{t(`${k}.stepLabel`, { n: 1 })}</span>
           {t(`${k}.entryHeading`)}
         </h3>
         <EntryPatternPicker
@@ -438,7 +438,7 @@ export default function ScenarioTab({
       </section>
       <section className="af-scn-sec" id="af-scn-s2">
         <h3 className="af-h3 af-scn-h">
-          <span className="af-stepn">2</span>
+          <span className="af-stepn">{t(`${k}.stepLabel`, { n: 2 })}</span>
           {t(`${k}.slitHeadingShort`)}
         </h3>
         {slitCollapsed ? (
@@ -561,7 +561,7 @@ export default function ScenarioTab({
       </section>
       <section className="af-scn-sec" id="af-scn-s3">
         <h3 className="af-h3 af-scn-h">
-          <span className="af-stepn">3</span>
+          <span className="af-stepn">{t(`${k}.stepLabel`, { n: 3 })}</span>
           {t(`${k}.attackHeading`)}
         </h3>
         {slit !== "any" && (
@@ -593,7 +593,7 @@ export default function ScenarioTab({
       </section>
       <section className="af-scn-sec" id="af-scn-s4">
         <h3 className="af-h3 af-scn-h">
-          <span className="af-stepn">4</span>
+          <span className="af-stepn">{t(`${k}.stepLabel`, { n: 4 })}</span>
           {t(`${k}.resultHeadingShort`)}
         </h3>
         {result}
