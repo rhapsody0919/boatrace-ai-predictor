@@ -1,5 +1,5 @@
 import { isBundlePublicationBlocked } from './snsBundleValidation.js';
-import { createXSnapshot, sha256 } from './snsXSend.js';
+import { createXSnapshot, mobileVersion } from './snsXSend.js';
 
 /** 不足情報を合格と推測しない。v0の恒久保留は維持する。 */
 export function mobileHolds(d) {
@@ -19,9 +19,7 @@ export function mobileHolds(d) {
   else if (Date.parse(s.deadline_queue.expires_at) <= Date.now() || !Number.isFinite(Date.parse(s.deadline_queue.expires_at))) holds.push('期限失効');
   return [...new Set(holds)];
 }
-export async function mobileVersion(revision, snapshot) {
-  return sha256(new TextEncoder().encode(JSON.stringify([revision, snapshot])));
-}
+export { mobileVersion } from './snsXSend.js';
 export async function prepareMobileReview(row, loadMedia) {
   const holds = mobileHolds(row.draft);
   let snapshot = null, versionHash = null;

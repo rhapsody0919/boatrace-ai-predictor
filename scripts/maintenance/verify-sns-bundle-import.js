@@ -1,6 +1,15 @@
-import { runYoutubeQueueJob, createMockYoutubeAdapter } from '../../api/_lib/snsDeadlineQueue.js';
+import "./snsDraftDiff.js";
+import {
+  runYoutubeQueueJob,
+  createMockYoutubeAdapter,
+} from "../../api/_lib/snsDeadlineQueue.js";
 /** 本番接続なし。検査・保存モック・実SQL(PGlite)・公開APIガードを検証する。 */
-import { inspectDraft, inspectWithAi, readInspectionSources, saveDraftInspection } from "../../api/_lib/snsEditAssist.js";
+import {
+  inspectDraft,
+  inspectWithAi,
+  readInspectionSources,
+  saveDraftInspection,
+} from "../../api/_lib/snsEditAssist.js";
 import { matchRiskRules } from "../lib/riskRuleMatcher.js";
 import { checkRiskRules } from "../lib/riskRules.js";
 import assert from "node:assert/strict";
@@ -120,94 +129,261 @@ const riskRules = JSON.parse(
     "utf8",
   ),
 ).rules;
-await check("共通リスク判定は既存3経路の結果・順序・返却形式を維持する", async () => {
-  const approvePath = new URL("api/admin/sns-hub/insights/[id]/approve.js", root);
-  let source = await fs.readFile(approvePath, "utf8");
-  let insight;
-  let updates = 0;
-  globalThis.__riskRuleTest = {
-    get: () => insight,
-    update: (value) => { updates++; return value; },
-  };
-  const helpers = "data:text/javascript," + encodeURIComponent(`
+await check(
+  "共通リスク判定は既存3経路の結果・順序・返却形式を維持する",
+  async () => {
+    const approvePath = new URL(
+      "api/admin/sns-hub/insights/[id]/approve.js",
+      root,
+    );
+    let source = await fs.readFile(approvePath, "utf8");
+    let insight;
+    let updates = 0;
+    globalThis.__riskRuleTest = {
+      get: () => insight,
+      update: (value) => {
+        updates++;
+        return value;
+      },
+    };
+    const helpers =
+      "data:text/javascript," +
+      encodeURIComponent(`
     export const jsonResponse=(v,status=200)=>new Response(JSON.stringify(v),{status});
     export const isConfigured=()=>true; export const isValidUuid=()=>true;
     export const getInsightById=async()=>globalThis.__riskRuleTest.get();
     export const updateInsight=async(id,v)=>globalThis.__riskRuleTest.update(v);
     export const requireAdminAuth=async()=>null;
   `);
-  source = source.replace(/"[^"\n]+_lib\/(snsHubHelpers|adminAuth)\.js"/g, JSON.stringify(helpers))
-    .replace(/"[^"\n]+lib\/riskRuleMatcher\.js"/g, JSON.stringify(new URL("scripts/lib/riskRuleMatcher.js", root).href))
-    .replace(/"[^"\n]+risk-rules\.json"/g, JSON.stringify("data:text/javascript," + encodeURIComponent(`export default ${JSON.stringify({rules: riskRules})}`)));
-  const handler = (await import("data:text/javascript," + encodeURIComponent(source))).default;
-  const cases = [
-    ["競艇", ["banned-term-kyoutei"]],
-    ["本命 VS", []],
-    ["必ず当たる", ["guaranteed-hit"]],
-    ["稼げる", ["gambling-incitement"]],
-    ...["必ず当たります", "必ず的中する", "必ず勝つ", "絶対当たる", "絶対に当たる", "絶対的中", "絶対に的中する", "絶対勝つ", "絶対に勝つ", "確実に当たる", "確実に的中する", "確実に勝つ", "100%当たる", "100％当たる", "100%的中", "100％的中", "的中を保証", "的中保証", "必勝パターン"].map(text => [text, ["guaranteed-hit"]]),
-    ...["稼ぐ", "稼いで", "稼いだ", "稼ごう", "副業になる", "副業にできる", "副業にする", "副収入", "収益を保証", "利益を保証"].map(text => [text, ["gambling-incitement"]]),
-    ...["当たり", "的中", "的中率を公開", "選手の稼ぎ頭", "賞金を稼ぎ出した選手", "副業の経験", "収益を集計", "利益の推移"].map(text => [text, []]),
-    ["必ず当たるとは限らない", ["guaranteed-hit"]], // 否定・引用でも部分一致の警告。
-    ["稼げるという表現を避ける", ["gambling-incitement"]],
-    ...["賞金を稼ぐ選手", "賞金を稼いだ選手", "賞金を 稼ぐ 選手", "あなたも賞金を稼ぐ選手になれる", "賞金を稼ぐ選手を目指そう"].map(text => [text, ["gambling-incitement"]]),
-    ...["百発百中", "外れない", "必ず当てる", "絶対に外さない", "絶対外さない", "必ず当てます", "確実に当てる", "必ず外さない", "外れません", "外すことはない", "必ず 当たる", "１００％当たる", "１００%的中", "百発 百中"].map(text => [text, ["guaranteed-hit"]]),
-    ["賞金を稼ぐ選手。あなたも稼ぐ", ["gambling-incitement"]],
-    ["賞金を稼いだ選手。必勝", ["gambling-incitement", "guaranteed-hit"]],
-    ["賞金を稼ぐ方法", ["gambling-incitement"]],
-    ["賞金を稼げる選手", ["gambling-incitement"]],
-    ["必ず当てるとは限らない", ["guaranteed-hit"]],
-    ["『外れない』という表現", ["guaranteed-hit"]],
-    ["競\n艇", []],
-    ["競\r\n艇", []],
-    ["必ず\n当たる", []],
-    ["必ず\t当たる", []],
-    ["必ず　当たる", ["guaranteed-hit"]],
-    ["ＶＳ", []],
-    ["稼ぐ 必勝", ["gambling-incitement", "guaranteed-hit"]],
-    ["ボートレースの観測件数", []],
-    ["穴狙い 本命狙い 儲かる 万舟券 競艇 VS", ["banned-term-kyoutei", "deprecated-model-names", "gambling-incitement"]],
-  ];
-  try {
-    for (const [content, xIds] of cases) {
-      for (const platform of ["x", "youtube", "tiktok", null, undefined, "unknown"]) {
-        // 固定期待IDと、全経路の順序・最初の一致を検査する。
-        const expected = riskRules.filter(r => r.platforms === "all" || !platform ||
-          (Array.isArray(r.platforms) && r.platforms.includes(platform)))
-          .flatMap(r => {
-            const normalized = content.replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/[ \u3000]/gu, "");
-            const matchedPattern = r.patterns.find(p => normalized.includes(p));
-            return matchedPattern ? [{id:r.id, category:r.category, description:r.description, matchedPattern}] : [];
-          });
-        assert.deepEqual(matchRiskRules(content, platform, riskRules), expected);
-        assert.deepEqual(checkRiskRules(content, platform), expected);
-        if (platform === "x") assert.deepEqual(expected.map(r => r.id), xIds);
-        if (content === "本命 VS" && ["youtube", "tiktok", null, undefined].includes(platform)) {
-          assert.equal(expected[0].matchedPattern, "本命");
+    source = source
+      .replace(
+        /"[^"\n]+_lib\/(snsHubHelpers|adminAuth)\.js"/g,
+        JSON.stringify(helpers),
+      )
+      .replace(
+        /"[^"\n]+lib\/riskRuleMatcher\.js"/g,
+        JSON.stringify(new URL("scripts/lib/riskRuleMatcher.js", root).href),
+      )
+      .replace(
+        /"[^"\n]+risk-rules\.json"/g,
+        JSON.stringify(
+          "data:text/javascript," +
+            encodeURIComponent(
+              `export default ${JSON.stringify({ rules: riskRules })}`,
+            ),
+        ),
+      );
+    const handler = (
+      await import("data:text/javascript," + encodeURIComponent(source))
+    ).default;
+    const cases = [
+      ["競艇", ["banned-term-kyoutei"]],
+      ["本命 VS", []],
+      ["必ず当たる", ["guaranteed-hit"]],
+      ["稼げる", ["gambling-incitement"]],
+      ...[
+        "必ず当たります",
+        "必ず的中する",
+        "必ず勝つ",
+        "絶対当たる",
+        "絶対に当たる",
+        "絶対的中",
+        "絶対に的中する",
+        "絶対勝つ",
+        "絶対に勝つ",
+        "確実に当たる",
+        "確実に的中する",
+        "確実に勝つ",
+        "100%当たる",
+        "100％当たる",
+        "100%的中",
+        "100％的中",
+        "的中を保証",
+        "的中保証",
+        "必勝パターン",
+      ].map((text) => [text, ["guaranteed-hit"]]),
+      ...[
+        "稼ぐ",
+        "稼いで",
+        "稼いだ",
+        "稼ごう",
+        "副業になる",
+        "副業にできる",
+        "副業にする",
+        "副収入",
+        "収益を保証",
+        "利益を保証",
+      ].map((text) => [text, ["gambling-incitement"]]),
+      ...[
+        "当たり",
+        "的中",
+        "的中率を公開",
+        "選手の稼ぎ頭",
+        "賞金を稼ぎ出した選手",
+        "副業の経験",
+        "収益を集計",
+        "利益の推移",
+      ].map((text) => [text, []]),
+      ["必ず当たるとは限らない", ["guaranteed-hit"]], // 否定・引用でも部分一致の警告。
+      ["稼げるという表現を避ける", ["gambling-incitement"]],
+      ...[
+        "賞金を稼ぐ選手",
+        "賞金を稼いだ選手",
+        "賞金を 稼ぐ 選手",
+        "あなたも賞金を稼ぐ選手になれる",
+        "賞金を稼ぐ選手を目指そう",
+      ].map((text) => [text, ["gambling-incitement"]]),
+      ...[
+        "百発百中",
+        "外れない",
+        "必ず当てる",
+        "絶対に外さない",
+        "絶対外さない",
+        "必ず当てます",
+        "確実に当てる",
+        "必ず外さない",
+        "外れません",
+        "外すことはない",
+        "必ず 当たる",
+        "１００％当たる",
+        "１００%的中",
+        "百発 百中",
+      ].map((text) => [text, ["guaranteed-hit"]]),
+      ["賞金を稼ぐ選手。あなたも稼ぐ", ["gambling-incitement"]],
+      ["賞金を稼いだ選手。必勝", ["gambling-incitement", "guaranteed-hit"]],
+      ["賞金を稼ぐ方法", ["gambling-incitement"]],
+      ["賞金を稼げる選手", ["gambling-incitement"]],
+      ["必ず当てるとは限らない", ["guaranteed-hit"]],
+      ["『外れない』という表現", ["guaranteed-hit"]],
+      ["競\n艇", []],
+      ["競\r\n艇", []],
+      ["必ず\n当たる", []],
+      ["必ず\t当たる", []],
+      ["必ず　当たる", ["guaranteed-hit"]],
+      ["ＶＳ", []],
+      ["稼ぐ 必勝", ["gambling-incitement", "guaranteed-hit"]],
+      ["ボートレースの観測件数", []],
+      [
+        "穴狙い 本命狙い 儲かる 万舟券 競艇 VS",
+        [
+          "banned-term-kyoutei",
+          "deprecated-model-names",
+          "gambling-incitement",
+        ],
+      ],
+    ];
+    try {
+      for (const [content, xIds] of cases) {
+        for (const platform of [
+          "x",
+          "youtube",
+          "tiktok",
+          null,
+          undefined,
+          "unknown",
+        ]) {
+          // 固定期待IDと、全経路の順序・最初の一致を検査する。
+          const expected = riskRules
+            .filter(
+              (r) =>
+                r.platforms === "all" ||
+                !platform ||
+                (Array.isArray(r.platforms) && r.platforms.includes(platform)),
+            )
+            .flatMap((r) => {
+              const normalized = content
+                .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) =>
+                  String.fromCharCode(c.charCodeAt(0) - 0xfee0),
+                )
+                .replace(/[ \u3000]/gu, "");
+              const matchedPattern = r.patterns.find((p) =>
+                normalized.includes(p),
+              );
+              return matchedPattern
+                ? [
+                    {
+                      id: r.id,
+                      category: r.category,
+                      description: r.description,
+                      matchedPattern,
+                    },
+                  ]
+                : [];
+            });
+          assert.deepEqual(
+            matchRiskRules(content, platform, riskRules),
+            expected,
+          );
+          assert.deepEqual(checkRiskRules(content, platform), expected);
+          if (platform === "x")
+            assert.deepEqual(
+              expected.map((r) => r.id),
+              xIds,
+            );
+          if (
+            content === "本命 VS" &&
+            ["youtube", "tiktok", null, undefined].includes(platform)
+          ) {
+            assert.equal(expected[0].matchedPattern, "本命");
+          }
+          insight = { status: "proposed", insight_text: content, platform };
+          const response = await handler(
+            new Request("https://local.invalid/insights/test/approve", {
+              method: "POST",
+            }),
+          );
+          assert.equal(response.status, 200);
+          assert.deepEqual(
+            (await response.json()).riskWarnings,
+            expected.map(({ id, category, matchedPattern }) => ({
+              id,
+              category,
+              matchedPattern,
+            })),
+          );
         }
-        insight = {status:"proposed", insight_text:content, platform};
-        const response = await handler(new Request("https://local.invalid/insights/test/approve", {method:"POST"}));
-        assert.equal(response.status, 200);
-        assert.deepEqual((await response.json()).riskWarnings,
-          expected.map(({id, category, matchedPattern}) => ({id, category, matchedPattern})));
+        const result = await validateBundle(
+          form(
+            await fixture({ title: content, script: content, x_text: content }),
+          ),
+          riskRules,
+        );
+        for (const platform of ["x", "youtube"]) {
+          assert.deepEqual(
+            result.riskFlags[platform],
+            checkRiskRules(content, platform),
+          );
+        }
       }
-      const result = await validateBundle(form(await fixture({title:content, script:content, x_text:content})), riskRules);
-      for (const platform of ["x", "youtube"]) {
-        assert.deepEqual(result.riskFlags[platform], checkRiskRules(content, platform));
+      console.table(
+        cases.map(([text, expected]) => ({
+          text,
+          expected: expected.join(",") || "なし",
+          actual:
+            checkRiskRules(text, "x")
+              .map((r) => r.id)
+              .join(",") || "なし",
+        })),
+      );
+      // bundle の別欄をつなぐ改行を越えて登録語を作らない。
+      for (const [title, script, x_text] of [
+        ["競", "艇", "艇"],
+        ["必ず", "当たる", "当たる"],
+      ]) {
+        const result = await validateBundle(
+          form(await fixture({ title, script, x_text })),
+          riskRules,
+        );
+        for (const platform of ["x", "youtube"])
+          assert.deepEqual(result.riskFlags[platform], []);
       }
+      assert.equal(updates, cases.length * 6); // 警告があっても承認は継続する。
+      assert.deepEqual(matchRiskRules("VS", "x", []), []);
+    } finally {
+      delete globalThis.__riskRuleTest;
     }
-    console.table(cases.map(([text, expected]) => ({text, expected:expected.join(",") || "なし", actual:checkRiskRules(text,"x").map(r=>r.id).join(",") || "なし"})));
-    // bundle の別欄をつなぐ改行を越えて登録語を作らない。
-    for (const [title, script, x_text] of [["競", "艇", "艇"], ["必ず", "当たる", "当たる"]]) {
-      const result = await validateBundle(form(await fixture({title, script, x_text})), riskRules);
-      for (const platform of ["x", "youtube"]) assert.deepEqual(result.riskFlags[platform], []);
-    }
-    assert.equal(updates, cases.length * 6); // 警告があっても承認は継続する。
-    assert.deepEqual(matchRiskRules("VS", "x", []), []);
-  } finally {
-    delete globalThis.__riskRuleTest;
-  }
-});
+  },
+);
 
 await check(
   "既存riskルールをチャネル別に照合し、QA自己申告に依存しない",
@@ -508,43 +684,114 @@ await check(
   },
 );
 await check("API経路の敬称・数値を固定期待と比較する", async () => {
-  const bytes=json({count:30});
-  const cases=[
-    ["田中太郎の展示を確認",30,["racer-honorific"]],
-    ["田中太郎選手の展示を確認",30,[]],
-    ["件数：99",30,["claim-text-mismatch"]],
-    ["件数：30",31,["claim-source-mismatch","claim-text-mismatch"]],
-    ["件数：30",30,[]],
+  const bytes = json({ count: 30 });
+  const cases = [
+    ["田中太郎の展示を確認", 30, ["racer-honorific"]],
+    ["田中太郎選手の展示を確認", 30, []],
+    ["件数：99", 30, ["claim-text-mismatch"]],
+    ["件数：30", 31, ["claim-source-mismatch", "claim-text-mismatch"]],
+    ["件数：30", 30, []],
   ];
-  const comparison=[];
-  for(const [caption_text,value,expected] of cases) {
-    const draft={id:"synthetic",platform:"x",caption_text,source_data:{
-      bundle:{claims:[{source:"facts",path:["count"],label:"件数",value,count:30,scope:"当日"}],source_data:{racers:[{name:"田中太郎"}]}},
-      source_manifest:[{name:"facts.json",storage_path:"local/facts.json",sha256:await sha256(bytes)}]}};
-    const store={saveInspection:async(id,revision,engine,findings)=>({findings})};
-    const result=await saveDraftInspection({draft,revision:"r"},riskRules,store,async path=>{assert.equal(path,"local/facts.json");return bytes;});
-    assert.deepEqual(result.findings.map(f=>f.rule),expected);
-    assert.equal(draft.caption_text,caption_text);
-    comparison.push({text:caption_text,claim:value,expected:expected.join(",") || "なし",actual:result.findings.map(f=>f.rule).join(",") || "なし"});
+  const comparison = [];
+  for (const [caption_text, value, expected] of cases) {
+    const draft = {
+      id: "synthetic",
+      platform: "x",
+      caption_text,
+      source_data: {
+        bundle: {
+          claims: [
+            {
+              source: "facts",
+              path: ["count"],
+              label: "件数",
+              value,
+              count: 30,
+              scope: "当日",
+            },
+          ],
+          source_data: { racers: [{ name: "田中太郎" }] },
+        },
+        source_manifest: [
+          {
+            name: "facts.json",
+            storage_path: "local/facts.json",
+            sha256: await sha256(bytes),
+          },
+        ],
+      },
+    };
+    const store = {
+      saveInspection: async (id, revision, engine, findings) => ({ findings }),
+    };
+    const result = await saveDraftInspection(
+      { draft, revision: "r" },
+      riskRules,
+      store,
+      async (path) => {
+        assert.equal(path, "local/facts.json");
+        return bytes;
+      },
+    );
+    assert.deepEqual(
+      result.findings.map((f) => f.rule),
+      expected,
+    );
+    assert.equal(draft.caption_text, caption_text);
+    comparison.push({
+      text: caption_text,
+      claim: value,
+      expected: expected.join(",") || "なし",
+      actual: result.findings.map((f) => f.rule).join(",") || "なし",
+    });
   }
   console.table(comparison);
 });
-await check("固定bundleから登録した下書きで編集指摘を取得し本文・公開保留を維持", async () => {
-  const examples=[];
-  for(const draft of (await db.query('SELECT * FROM sns_drafts')).rows) {
-    const sources=await readInspectionSources(draft,async path=>saved.get(path).bytes);
-    const findings=inspectDraft(draft,riskRules,sources);
-    for(const rule of ['claim-label','claim-count','claim-scope']) assert.ok(findings.some(f=>f.rule===rule));
-    assert.ok(!findings.some(f=>f.rule==='claim-source-unavailable'));
-    examples.push(...findings.map(f=>({platform:draft.platform,...f})));
-    assert.equal(draft.publish_blocked,true);
-    assert.equal(draft.caption_text,draft.platform==='x'?validated.bundle.x_text:validated.bundle.script);
-  }
-  assert.ok(examples.length>=5);
-  if(process.env.SNS_EDIT_EXAMPLES_PATH) await fs.writeFile(process.env.SNS_EDIT_EXAMPLES_PATH,JSON.stringify(examples,null,2));
-  let calls=0;
-  assert.deepEqual(await inspectWithAi({}, {messages:async()=>{calls++;}}),[]);assert.equal(calls,0);
-});
+await check(
+  "固定bundleから登録した下書きで編集指摘を取得し本文・公開保留を維持",
+  async () => {
+    const examples = [];
+    for (const draft of (await db.query("SELECT * FROM sns_drafts")).rows) {
+      const sources = await readInspectionSources(
+        draft,
+        async (path) => saved.get(path).bytes,
+      );
+      const findings = inspectDraft(draft, riskRules, sources);
+      for (const rule of ["claim-label", "claim-count", "claim-scope"])
+        assert.ok(findings.some((f) => f.rule === rule));
+      assert.ok(!findings.some((f) => f.rule === "claim-source-unavailable"));
+      examples.push(
+        ...findings.map((f) => ({ platform: draft.platform, ...f })),
+      );
+      assert.equal(draft.publish_blocked, true);
+      assert.equal(
+        draft.caption_text,
+        draft.platform === "x"
+          ? validated.bundle.x_text
+          : validated.bundle.script,
+      );
+    }
+    assert.ok(examples.length >= 5);
+    if (process.env.SNS_EDIT_EXAMPLES_PATH)
+      await fs.writeFile(
+        process.env.SNS_EDIT_EXAMPLES_PATH,
+        JSON.stringify(examples, null, 2),
+      );
+    let calls = 0;
+    assert.deepEqual(
+      await inspectWithAi(
+        {},
+        {
+          messages: async () => {
+            calls++;
+          },
+        },
+      ),
+      [],
+    );
+    assert.equal(calls, 0);
+  },
+);
 await check(
   "片側DB失敗は全体rollback、再試行で2件、残存片側も補完",
   async () => {
@@ -636,7 +883,13 @@ await check(
 );
 
 // API本体を読み、依存境界だけモックに差し替える。鍵・本番接続は不要。
-async function mockHandler(path, draft, denied = false, allowUpdate = false, rules = riskRules) {
+async function mockHandler(
+  path,
+  draft,
+  denied = false,
+  allowUpdate = false,
+  rules = riskRules,
+) {
   let source = await fs.readFile(new URL(path, root), "utf8");
   const mock =
     "data:text/javascript," +
@@ -644,7 +897,7 @@ async function mockHandler(path, draft, denied = false, allowUpdate = false, rul
     export const jsonResponse=(body,status=200)=>new Response(JSON.stringify(body),{status});
     export const isConfigured=()=>true; export const isValidDraftId=()=>true;
     export const getDraftById=async()=>(${JSON.stringify(draft)});
-    export const updateDraft=async()=>{${allowUpdate ? 'return {};' : "throw new Error('更新してはいけない');"}};
+    export const updateDraft=async()=>{${allowUpdate ? "return {};" : "throw new Error('更新してはいけない');"}};
     export const signStoragePath=async()=>{throw new Error('署名してはいけない')};
     export const requireAdminAuth=async()=>${denied ? "new Response('denied',{status:401})" : "null"};
     export const getYoutubeAccessToken=async()=>{throw new Error('投稿してはいけない')};
@@ -661,8 +914,10 @@ async function mockHandler(path, draft, denied = false, allowUpdate = false, rul
     /"[^"\n]+_lib\/snsBundleValidation\.js"/g,
     JSON.stringify(new URL("api/_lib/snsBundleValidation.js", root).href),
   );
-  source = source.replace(/"[^"\n]+lib\/riskRuleMatcher\.js"/g,
-    JSON.stringify(new URL("scripts/lib/riskRuleMatcher.js", root).href));
+  source = source.replace(
+    /"[^"\n]+lib\/riskRuleMatcher\.js"/g,
+    JSON.stringify(new URL("scripts/lib/riskRuleMatcher.js", root).href),
+  );
   const storageMock =
     "data:text/javascript," +
     encodeURIComponent(`
@@ -677,64 +932,139 @@ async function mockHandler(path, draft, denied = false, allowUpdate = false, rul
     /"[^"\n]+risk-rules\.json"(\s+with\s*\{[^}]*\})?/g,
     JSON.stringify(
       "data:text/javascript," +
-        encodeURIComponent(
-          `export default ${JSON.stringify({ rules })}`,
-        ),
+        encodeURIComponent(`export default ${JSON.stringify({ rules })}`),
     ),
   );
   return (await import("data:text/javascript," + encodeURIComponent(source)))
     .default;
 }
-await check("ハッシュタグ例外はNode・承認API・bundle・編集補助で一致しenabled一つで解除", async () => {
-  const cases = [
-    ['Xタグ','x','hashtags','#競艇',false],
-    ['X本文','x','body','確認 #競艇',true],
-    ['X別タグ','x','hashtags','#競艇場',true],
-    ['タグ裸語','x','hashtags','競艇',true],
-    ['タグ内文','x','hashtags','説明 #競艇',true],
-    ['YouTubeタグ','youtube','hashtags','#競艇',false],
-    ['YouTube末尾','youtube','description','件数を確認\n#競艇 #Shorts',false],
-    ['YouTube本文残存','youtube','description','競艇の件数\n#競艇',true],
-    ['YouTube途中','youtube','description','#競艇 の件数',true],
-    ['YouTube別タグ','youtube','description','件数\n#競艇場',true],
-    ['ナレーション','youtube','script','確認\n#競艇',true],
-    ['動画内文字','youtube','scene','#競艇',true],
-    ['タイトル','youtube','title','#競艇',true],
-    ['他媒体タグ','tiktok','hashtags','#競艇',true],
-  ];
-  const rows=[];
-  for (const enabled of [true,false]) {
-    const rules=structuredClone(riskRules);
-    rules.find(r=>r.id==='banned-term-kyoutei').hashtag_exception.enabled=enabled;
-    for (const [name,platform,field,content,warn] of cases) {
-      const expected=warn || !enabled;
-      const nodeField=['title','script','scene'].includes(field) ? 'body' : field;
-      const node=checkRiskRules(content,platform,nodeField,rules).some(r=>r.id==='banned-term-kyoutei');
-      const draft={platform,status:'pending_review',title:'件数',caption_text:'確認'};
-      const bundle={};
-      if(field==='hashtags') {draft.hashtags=[content]; bundle[platform==='x'?'x_hashtags':'youtube_tags']=[content];}
-      if(field==='body') {draft.caption_text=content; bundle.x_text=content;}
-      if(field==='description') {draft.caption_text=content; bundle.youtube_description=content;}
-      if(field==='title') {draft.title=content; bundle.title=content;}
-      if(field==='script') {draft.caption_text=content; draft.source_data={bundle:{script:content}}; bundle.script=content;}
-      if(field==='scene') {bundle.scenes=Array.from({length:3},()=>({seconds:6,tab:'観測',component:'件数',lines:[content]}));draft.source_data={bundle:{scenes:bundle.scenes}};}
-      const handler=await mockHandler('api/admin/sns-hub/drafts/[id]/approve.js',draft,false,true,rules);
-      const response=await handler(new Request('https://local.invalid/drafts/test/approve',{method:'POST',body:JSON.stringify({approverId:'mock'})}));
-      assert.equal(response.status,200);
-      const api=(await response.json()).riskWarnings.some(r=>r.id==='banned-term-kyoutei');
-      const edit=inspectDraft(draft,rules).some(r=>r.rule==='banned-term-kyoutei');
-      // v0 bundleはX/YouTubeのみ。他媒体は汎用matcherの保守的判定を確認する。
-      const result=await validateBundle(form(await fixture(bundle)),rules);
-      const bundleHit=platform==='tiktok' ? null : result.riskFlags[platform].some(r=>r.id==='banned-term-kyoutei');
-      assert.equal(node,expected,name); assert.equal(api,expected,name); assert.equal(edit,expected,name);
-      if(bundleHit!==null) assert.equal(bundleHit,expected,name);
-      rows.push({enabled,name,expected:expected?'警告':'許可',Node:node,API:api,bundle:bundleHit,edit});
+await check(
+  "ハッシュタグ例外はNode・承認API・bundle・編集補助で一致しenabled一つで解除",
+  async () => {
+    const cases = [
+      ["Xタグ", "x", "hashtags", "#競艇", false],
+      ["X本文", "x", "body", "確認 #競艇", true],
+      ["X別タグ", "x", "hashtags", "#競艇場", true],
+      ["タグ裸語", "x", "hashtags", "競艇", true],
+      ["タグ内文", "x", "hashtags", "説明 #競艇", true],
+      ["YouTubeタグ", "youtube", "hashtags", "#競艇", false],
+      [
+        "YouTube末尾",
+        "youtube",
+        "description",
+        "件数を確認\n#競艇 #Shorts",
+        false,
+      ],
+      ["YouTube本文残存", "youtube", "description", "競艇の件数\n#競艇", true],
+      ["YouTube途中", "youtube", "description", "#競艇 の件数", true],
+      ["YouTube別タグ", "youtube", "description", "件数\n#競艇場", true],
+      ["ナレーション", "youtube", "script", "確認\n#競艇", true],
+      ["動画内文字", "youtube", "scene", "#競艇", true],
+      ["タイトル", "youtube", "title", "#競艇", true],
+      ["他媒体タグ", "tiktok", "hashtags", "#競艇", true],
+    ];
+    const rows = [];
+    for (const enabled of [true, false]) {
+      const rules = structuredClone(riskRules);
+      rules.find(
+        (r) => r.id === "banned-term-kyoutei",
+      ).hashtag_exception.enabled = enabled;
+      for (const [name, platform, field, content, warn] of cases) {
+        const expected = warn || !enabled;
+        const nodeField = ["title", "script", "scene"].includes(field)
+          ? "body"
+          : field;
+        const node = checkRiskRules(content, platform, nodeField, rules).some(
+          (r) => r.id === "banned-term-kyoutei",
+        );
+        const draft = {
+          platform,
+          status: "pending_review",
+          title: "件数",
+          caption_text: "確認",
+        };
+        const bundle = {};
+        if (field === "hashtags") {
+          draft.hashtags = [content];
+          bundle[platform === "x" ? "x_hashtags" : "youtube_tags"] = [content];
+        }
+        if (field === "body") {
+          draft.caption_text = content;
+          bundle.x_text = content;
+        }
+        if (field === "description") {
+          draft.caption_text = content;
+          bundle.youtube_description = content;
+        }
+        if (field === "title") {
+          draft.title = content;
+          bundle.title = content;
+        }
+        if (field === "script") {
+          draft.caption_text = content;
+          draft.source_data = { bundle: { script: content } };
+          bundle.script = content;
+        }
+        if (field === "scene") {
+          bundle.scenes = Array.from({ length: 3 }, () => ({
+            seconds: 6,
+            tab: "観測",
+            component: "件数",
+            lines: [content],
+          }));
+          draft.source_data = { bundle: { scenes: bundle.scenes } };
+        }
+        const handler = await mockHandler(
+          "api/admin/sns-hub/drafts/[id]/approve.js",
+          draft,
+          false,
+          true,
+          rules,
+        );
+        const response = await handler(
+          new Request("https://local.invalid/drafts/test/approve", {
+            method: "POST",
+            body: JSON.stringify({ approverId: "mock" }),
+          }),
+        );
+        assert.equal(response.status, 200);
+        const api = (await response.json()).riskWarnings.some(
+          (r) => r.id === "banned-term-kyoutei",
+        );
+        const edit = inspectDraft(draft, rules).some(
+          (r) => r.rule === "banned-term-kyoutei",
+        );
+        // v0 bundleはX/YouTubeのみ。他媒体は汎用matcherの保守的判定を確認する。
+        const result = await validateBundle(form(await fixture(bundle)), rules);
+        const bundleHit =
+          platform === "tiktok"
+            ? null
+            : result.riskFlags[platform].some(
+                (r) => r.id === "banned-term-kyoutei",
+              );
+        assert.equal(node, expected, name);
+        assert.equal(api, expected, name);
+        assert.equal(edit, expected, name);
+        if (bundleHit !== null) assert.equal(bundleHit, expected, name);
+        rows.push({
+          enabled,
+          name,
+          expected: expected ? "警告" : "許可",
+          Node: node,
+          API: api,
+          bundle: bundleHit,
+          edit,
+        });
+      }
     }
-  }
-  console.table(rows);
-  // optional欄も型検査し、ナレーションとタグ欄を混同しない。
-  await assert.rejects(validateBundle(form(await fixture({x_hashtags:'invalid'})),riskRules),/タグ欄/);
-});
+    console.table(rows);
+    // optional欄も型検査し、ナレーションとタグ欄を混同しない。
+    await assert.rejects(
+      validateBundle(form(await fixture({ x_hashtags: "invalid" })), riskRules),
+      /タグ欄/,
+    );
+  },
+);
 await check("承認APIとYouTube公開APIは副作用前に409・認証なし401", async () => {
   for (const name of ["approve", "publish-youtube"]) {
     const path = `api/admin/sns-hub/drafts/[id]/${name}.js`;
@@ -893,25 +1223,63 @@ await check(
   },
 );
 
-await check("Shorts公開未確認は要照合、呼出し前のクォータ記録と候補ID保存", async () => {
-  const mediaBytes = new Uint8Array([1]);
-  const snapshot_text = JSON.stringify({ source:{video_storage_path:'a.mp4'}, media:[{path:'a.mp4',type:'video/mp4',size:1,sha256:await sha256(mediaBytes)}], queue: { youtube_mode: 'scheduled' } });
-  let state = 'queued';
-  const actions = [];
-  const store = { async transition(id, action, result) {
-    actions.push({ action, result });
-    if (action === 'claim') state = 'sending';
-    if (action === 'begin_post') state = 'reconcile';
-    if (action === 'complete') state = 'posted';
-    return { id, external_post_id:'abcdefghijk', state, channel: 'youtube', snapshot_text, approved_hash: await sha256(encode(snapshot_text)) };
-  } };
-  await assert.rejects(runYoutubeQueueJob('mock', { store, youtube: createMockYoutubeAdapter({privacyStatus:'private'}),
-    preflight: async () => {}, loadMedia: async () => mediaBytes }), /unconfirmed/);
-  assert.equal(state, 'reconcile');
-  assert.deepEqual(actions.filter(a => a.action === 'youtube_call').map(a => a.result.method), ['videos.insert', 'videos.update', 'videos.list']);
-  assert.equal(actions.find(a => a.action === 'youtube_uploaded').result.id, 'abcdefghijk');
-  assert(!actions.some(a => a.action === 'complete'));
-});
+await check(
+  "Shorts公開未確認は要照合、呼出し前のクォータ記録と候補ID保存",
+  async () => {
+    const mediaBytes = new Uint8Array([1]);
+    const snapshot_text = JSON.stringify({
+      source: { video_storage_path: "a.mp4" },
+      media: [
+        {
+          path: "a.mp4",
+          type: "video/mp4",
+          size: 1,
+          sha256: await sha256(mediaBytes),
+        },
+      ],
+      queue: { youtube_mode: "scheduled" },
+    });
+    let state = "queued";
+    const actions = [];
+    const store = {
+      async transition(id, action, result) {
+        actions.push({ action, result });
+        if (action === "claim") state = "sending";
+        if (action === "begin_post") state = "reconcile";
+        if (action === "complete") state = "posted";
+        return {
+          id,
+          external_post_id: "abcdefghijk",
+          state,
+          channel: "youtube",
+          snapshot_text,
+          approved_hash: await sha256(encode(snapshot_text)),
+        };
+      },
+    };
+    await assert.rejects(
+      runYoutubeQueueJob("mock", {
+        store,
+        youtube: createMockYoutubeAdapter({ privacyStatus: "private" }),
+        preflight: async () => {},
+        loadMedia: async () => mediaBytes,
+      }),
+      /unconfirmed/,
+    );
+    assert.equal(state, "reconcile");
+    assert.deepEqual(
+      actions
+        .filter((a) => a.action === "youtube_call")
+        .map((a) => a.result.method),
+      ["videos.insert", "videos.update", "videos.list"],
+    );
+    assert.equal(
+      actions.find((a) => a.action === "youtube_uploaded").result.id,
+      "abcdefghijk",
+    );
+    assert(!actions.some((a) => a.action === "complete"));
+  },
+);
 
 const sample = process.argv.find((a) => a.startsWith("--sample="))?.slice(9);
 if (sample)
@@ -933,3 +1301,6 @@ if (sample)
 console.log(
   `${count} checks passed (PGliteの同時リクエストは同一接続内で直列化。本番並行接続は未検証)`,
 );
+
+if (process.argv.includes("--draft-diff-ui"))
+  await import("./snsDraftDiffUi.js");

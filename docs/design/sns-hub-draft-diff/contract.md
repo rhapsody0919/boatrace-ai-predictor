@@ -1,0 +1,31 @@
+# 下書きの版の差分（依頼15）
+
+既存DraftCard詳細とMobileRaceReviewにDraftDiffPanelを共通利用する。インライン表示、標準select、追加/削除の符号と下線/取り消し線、意味トークンで375pxに折り返す。承認・修正・公開保留・送信の条件は変更しない。
+
+## 版と保存
+
+SQL147。既存parent_draft_idと140のsns_mobile_revisionに乗せる。新しい版ID・採番・版テーブルは作らない。sns_draftsのdiff_current / diff_previous / diff_approvedは差分用の補助情報だけ。diff_currentは最後に差分APIで取得した内容、diff_previousはその直前に取得した異なる内容、diff_approvedは承認時の内容を保持する。個人別の閲覧記録ではなく管理画面全体で最後に取得した版。同じ内容の再読込で基準を動かさない。
+
+直前の版は同じ下書きのdiff_previousを優先し、未記録ならparent_draft_idの旧下書き。最後に承認された版は自身のdiff_approvedを優先し、無ければ親から最も近い記録。親は同じgroup/platform/languageを必須とし、cycleまたは100段以上は取得失敗。140/141の判断履歴や確認版のhashは変更しない。
+
+認証済みGET /api/admin/sns-hub/draft-diff?id=UUIDでSQL read → 実媒体SHA256計算 → SQL save。SQL saveは行ロック下で140のrevisionと内容を再照合。差分の現在内容が画面の本文と異なれば再読込を促し、別版の差分を混ぜない。画面の取得失敗には固定文言と再取得ボタン。管理認証をDB操作前に確認。一般ロールには既存RLSとRPC REVOKEで非公開。
+
+138のexternal_operation_stateがreconcile/external_doneの場合、行の保護を維持し、現在内容の表示だけ行い補助保存しない。GETに補助情報の保存が伴う。表示で自動的に「人が見た」と認定するものではない。承認時間や承認者は140の既存記録のまま。last displayedはAPI取得時点を指し、個人別既読機能は追加しない。
+
+承認時は既存のapproved_at更新をtriggerで観測し、承認時の本文等を保存。媒体hashは承認時に再照合されたsns_x_send_jobs.snapshotだけから取得する（hash/approved_atが新しい承認と一致することが必要）。通常承認で送信snapshotが無い場合や送信対象でない添付はhash未確認。表示時の古いhashを承認時hashとして流用しない。承認失効でこの補助記録を消さない。SQL147適用前の承認済み行に、現在内容を過去の承認内容と推測して補完しない。保存された承認版なしと明示する。
+
+## 内容と媒体
+
+タイトル、caption_text（通常YouTubeでは説明文）、hashtags、bundle.youtube_description / scriptを文字単位で比較。Unicodeコードポイント単位、LCSの積が100万以上では共通前後と変更範囲の削除/追加で表示し、二乗メモリを制限。source_dataは両版をJSON Pointerでたどり、数値の変更・追加・削除だけを表示。文字列の数値変換、単位換算、配列要素の意味推測はしない。
+
+動画、cover画像、追加dataCardPathをそれぞれ実バイトからhash。既存loadXMediaのパス検査・32MiB上限を再利用し、直列で処理。画面からの差分API要求も共通サービスで直列化する。旧媒体は再ダウンロードしてhashを捏造しない。旧版に保存hashが無い場合は未確認。hashが変われば同じパスでも「差し替え」、同じhashでパスだけ違う場合は同一ファイル。新規/削除は別表示。静的public画像はStorage取得できないためhash未確認。同じパスへの上書きとDB保存の原子性はStorage/DBをまたいで保証できない（既存140と同じ制約）。過去媒体そのものの保存・配信は追加しない。
+
+## 検証
+
+既存CIゲートverify-sns-bundle-import.jsからsnsDraftDiff.jsを実行する（新ゲート台帳不要）。SQL147の実PGlite、回帰、実hash、Edgeブラウザbundleを検証。新APIのruntime=edge。Node組込みやJSON import属性や新依存なし。
+
+`node scripts/maintenance/verify-sns-bundle-import.js --draft-diff-ui` は専用Vite/Playwright UI検証。envDir:false/publicDir:false/configFile:false/appType:custom、外部通信遮断、/__draft_diff_testをlisten前に登録。Chromiumが起動できない場合は未実行と記載し、375pxの実可読性・明暗確認は取り込み側で行う。
+
+## 依頼15b: 承認画面の確認版照合
+
+MobileRaceReviewは140で取得したversionHashをDraftDiffPanelへ渡し、GETにversionHashを付ける。差分APIは140と同じmobileVersion(revision, createXSnapshot)を取得時点の実媒体から計算し、一致しなければ409 / draft_version_changedで保存も差分表示も行わない。画面は「最新の版に更新されています。再読み込みしてください」の固定文言を表示する。hash取得失敗も空の要求hashで拒否する。照合と差分captureの媒体取得はリクエスト内で同じバイトを共有する。本文が同じでも確認hashが変われば再取得する。通常の下書き詳細には140の確認版が無いため、versionHashなしの従来の内容照合を維持する。Storage取得後の上書きとの原子性は引き続き保証しない。SQL・承認条件は変更しない。

@@ -1,3 +1,4 @@
+import DraftDiffPanel from './sns-hub/DraftDiffPanel.jsx';
 /**
  * SnsHubAdmin - SNSマーケティングハブ管理画面
  * URL: /admin/sns-hub （middleware.jsでBasic認証保護）
@@ -1442,6 +1443,8 @@ function DraftCard({
                 ))}
               </div>
             )}
+
+            <DraftDiffPanel draft={draft} />
 
             {draft.background_text && (
               <details className="draft-background-details">
