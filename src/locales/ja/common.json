@@ -268,7 +268,6 @@
     "popularityFromFinalOddsNote": "※ 単勝・複勝の人気は締切時オッズ（公式）から算出（複勝は上限の低い順、同じオッズは幅で表示）。他の券種は公式の発表。",
     "fastestStartTag": "最速",
     "courseNoData": "※このレースの進入コースは、当サイトではまだ取得できていません",
-    "courseOrderLabel": "進入",
     "entryCourseLabel": "{{course}}コース",
     "missingRanksNote": "※このレースは4着以下の着順データが未取得のため、一部の着順を表示していません",
     "cancelledTitle": "このレースは中止となりました",
@@ -333,7 +332,21 @@
     "payoutNoAmountNote": "「—」は、公式の払戻に金額の記載がない組番です",
     "payoutSpecial": "特払",
     "volatilityOutcomeNotJudgeable": "判定対象外（不成立）",
-    "stLegend": "右の矢印はスタートタイミング（ST）。黄色い線がスタートラインで、線に近いほど早いスタート。線を越えた赤い矢印はフライング"
+    "stLegend": "右の数字はスタートタイミング（ST）。スタートの並びは上の絵で見る。F はフライング",
+    "startFormation": {
+      "title": "スタート隊形（コース順）",
+      "caption": "スリット（スタートライン）を通ったときの並び。上が1コース、線に近いほど早いスタート",
+      "aria": "スタート隊形。上から1コースの順。右のスリット線に近いほど早いスタート",
+      "slit": "スリット",
+      "flyingSide": "F →",
+      "slower": "← 遅い",
+      "course": "{{course}}コース",
+      "mae": "前付け",
+      "late": "L 出遅れ（ST なし）",
+      "absent": "{{boat}}号艇は欠場",
+      "absentLabel": "欠場",
+      "scale": "1艇身（約0.13秒）"
+    }
   },
   "raceTabs": {
     "basic": "基本情報",

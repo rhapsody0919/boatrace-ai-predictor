@@ -270,7 +270,6 @@
     "popularityFromFinalOddsNote": "※ Win and place favorites are calculated from the official final odds (place: by upper bound; ties shown as a range). Other bet types show the official favorites.",
     "fastestStartTag": "Fastest",
     "courseNoData": "※We have not collected the approach course for this race yet.",
-    "courseOrderLabel": "Approach",
     "entryCourseLabel": "Course {{course}}",
     "missingRanksNote": "* Finishing positions from 4th down have not been collected for this race, so some placings are not shown",
     "cancelledTitle": "This race was cancelled",
@@ -338,7 +337,21 @@
     "payoutNoAmountNote": "\"—\" marks a combination with no amount listed in the official payouts",
     "payoutSpecial": "Special payout",
     "volatilityOutcomeNotJudgeable": "Not judged (void race)",
-    "stLegend": "The arrows on the right show start timing (ST). The yellow line is the start line; the closer to it, the faster the start. A red arrow past the line is a false start"
+    "stLegend": "The numbers on the right are start timings (ST). See the picture above for how the boats lined up at the start. F means a false start",
+    "startFormation": {
+      "title": "Start formation (by course)",
+      "caption": "How the boats crossed the slit (start line). Course 1 is at the top; the closer to the line, the faster the start",
+      "aria": "Start formation, course 1 at the top. The closer to the slit line on the right, the faster the start",
+      "slit": "Slit",
+      "flyingSide": "F →",
+      "slower": "← Slower",
+      "course": "Course {{course}}",
+      "mae": "Maezuke",
+      "late": "L late start (no ST)",
+      "absent": "Boat {{boat}} scratched",
+      "absentLabel": "Scratched",
+      "scale": "1 boat length (≈0.13 s)"
+    }
   },
   "raceHistoryTable": {
     "date": "Date",

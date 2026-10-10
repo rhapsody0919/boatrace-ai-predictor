@@ -122,10 +122,13 @@ for (const f of [
       !/<Legend \/>/.test(read(f)),
   );
 }
+// 結果タブの ST の矢印は、スタート隊形の絵（BOA-811、暗い水面）に置き換えた。2号艇（黒）が溶けないよう、
+// F 以外の艇には白い輪郭を付ける（E2E は race-result-display-fixes.spec.js の「輪郭」）
 check(
-  "結果タブ: 2号艇（黒）の ST の矢印に明るい輪郭",
-  read("src/components/race/RaceResult.jsx").includes('" is-black"') &&
-    /\.rr-st-dot\.is-black \{[^}]*drop-shadow/.test(read("src/App.css")),
+  "結果タブ: スタート隊形の絵で、2号艇（黒）の艇に明るい輪郭",
+  /stroke=\{r\.flying \? "#ff6b6b" : "#ffffff"\}/.test(
+    read("src/components/race/RaceStartFormation.jsx"),
+  ),
 );
 const mood = read("src/components/race/RaceMoodEffect.jsx");
 const scales = [...mood.matchAll(/maxScale: ([\d.]+)/g)].map((m) =>

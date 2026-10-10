@@ -268,7 +268,6 @@
     "popularityFromFinalOddsNote": "※ 단승·복승의 인기는 마감 시 오즈(공식)로 산출(복승은 상한이 낮은 순, 같은 오즈는 범위로 표시). 다른 권종은 공식 발표.",
     "fastestStartTag": "최속",
     "courseNoData": "※이 경주의 진입 코스는 아직 본 사이트에서 수집하지 못했습니다",
-    "courseOrderLabel": "진입",
     "entryCourseLabel": "{{course}}코스",
     "missingRanksNote": "※이 레이스는 4착 이하의 착순 데이터가 수집되지 않아 일부 착순을 표시하지 않습니다",
     "cancelledTitle": "이 레이스는 중지되었습니다",
@@ -333,7 +332,21 @@
     "payoutNoAmountNote": "「—」는 공식 배당금에 금액이 기재되어 있지 않은 조합입니다",
     "payoutSpecial": "특별 지급",
     "volatilityOutcomeNotJudgeable": "판정 대상 외(불성립)",
-    "stLegend": "오른쪽 화살표는 스타트 타이밍(ST). 노란 선이 스타트 라인이며, 선에 가까울수록 빠른 스타트. 선을 넘은 빨간 화살표는 플라잉"
+    "stLegend": "오른쪽 숫자는 스타트 타이밍(ST). 스타트 대형은 위의 그림에서 확인. F는 플라잉",
+    "startFormation": {
+      "title": "스타트 대형(코스 순)",
+      "caption": "슬릿(스타트 라인)을 통과할 때의 대형. 위가 1코스, 선에 가까울수록 빠른 스타트",
+      "aria": "스타트 대형. 위에서부터 1코스 순. 오른쪽 슬릿 선에 가까울수록 빠른 스타트",
+      "slit": "슬릿",
+      "flyingSide": "F →",
+      "slower": "← 느림",
+      "course": "{{course}}코스",
+      "mae": "마에즈케",
+      "late": "L 출발 지연(ST 없음)",
+      "absent": "{{boat}}번 보트 결장",
+      "absentLabel": "결장",
+      "scale": "1정신(약 0.13초)"
+    }
   },
   "raceHistoryTable": {
     "date": "날짜",

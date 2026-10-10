@@ -10,8 +10,7 @@ import { test, expect } from "./fixtures.js";
 const entries = [1, 2, 3, 4, 5, 6].map((i) => ({
   number: i,
   // 公式の元データと同じく、姓と名の間を全角スペースで詰めた名前（BOA-559）
-  name:
-    i === 1 ? "丹下　　　将" : i === 2 ? "土屋　実沙希" : `テスト選手${i}`,
+  name: i === 1 ? "丹下　　　将" : i === 2 ? "土屋　実沙希" : `テスト選手${i}`,
   grade: "B1",
   age: 30,
   winRate: 5.0,
@@ -61,7 +60,31 @@ const st = (boat, startTiming, finishMark, finishRank) => ({
   is_late_start: false,
   finish_mark: finishMark,
   finish_rank: finishRank,
+  // 進入（枠なり）。結果タブのスタート隊形の絵はコース順に並べる（BOA-811）
+  entry_course: boat,
 });
+
+// スタート隊形の絵（BOA-811）の艇ごとの位置。SVG の座標（幅351）で測るので画面の幅によらない。
+// tip は艇の舳先（右端）、slit はスリット線の x
+async function formationTips(page) {
+  const fig = page.locator(".rr-formation-svg");
+  await expect(fig).toBeVisible({ timeout: 20000 });
+  return fig.evaluate((svg) => {
+    const slit = Number(svg.querySelector(".rr-fm-slit").getAttribute("x1"));
+    const out = { slit };
+    for (const g of svg.querySelectorAll("g[data-boat]")) {
+      const hull = g.querySelector(".rr-fm-hull");
+      if (!hull) continue;
+      const b = hull.getBBox();
+      out[g.dataset.boat] = {
+        tip: b.x + b.width,
+        text: g.querySelector(".rr-fm-st")?.textContent ?? "",
+        stroke: hull.getAttribute("stroke"),
+      };
+    }
+    return out;
+  });
+}
 
 async function openResult(page, { race, startTimings }) {
   await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
@@ -82,7 +105,6 @@ async function openResult(page, { race, startTimings }) {
   return table;
 }
 
-
 // 浜名湖 2026-09-14 6R（不成立。1・2・3・5・6号艇がF、4号艇は0.02）
 const HAMANAKO = {
   date: "2026-09-14",
@@ -100,32 +122,23 @@ const HAMANAKO_ST = [
   st(6, 0.01, "F", null),
 ];
 
-test("フライング艇の矢印はスタートラインより先に、遅れていない艇はラインの手前に描く", async ({
+test("フライング艇はスタート隊形の絵でスリット線より先に、遅れていない艇は線の手前に描く（BOA-559 を BOA-811 の絵に移した）", async ({
   page,
 }) => {
-  await page.emulateMedia({ reducedMotion: "reduce" });
   const table = await openResult(page, {
     race: HAMANAKO,
     startTimings: HAMANAKO_ST,
   });
   await expect(table.locator(".rr-row")).toHaveCount(6);
-  const dots = await table.locator(".rr-row").evaluateAll((rows) =>
-    rows.map((row) => {
-      const boat = row.querySelector(".rr-boat-chip")?.textContent.trim();
-      const dot = row.querySelector(".rr-st-dot");
-      return { boat, left: parseFloat(dot?.style.left ?? "NaN") };
-    }),
-  );
-  // スタートラインの位置（RaceResult.jsx の START_ANIM.LINE_PERCENT）。F 側の幅を取るため
-  // 84% から 72% に下げた（BOA-586）
-  const LINE = 72;
-  for (const d of dots) {
-    if (d.boat === "4") expect(d.left, d.boat).toBeLessThan(LINE);
-    else expect(d.left, d.boat).toBeGreaterThan(LINE);
-  }
-  // F0.11（1号艇）は F0.01（6号艇）より先
-  const left = (b) => dots.find((d) => d.boat === b).left;
-  expect(left("1")).toBeGreaterThan(left("6"));
+  const f = await formationTips(page);
+  for (const b of ["1", "2", "3", "5", "6"])
+    expect(f[b].tip, b).toBeGreaterThan(f.slit);
+  expect(f["4"].tip).toBeLessThan(f.slit);
+  // F.11（1号艇）は F.01（6号艇）より先
+  expect(f["1"].tip).toBeGreaterThan(f["6"].tip);
+  // 大きな F でも絵の右端（351）からはみ出さない
+  for (const b of ["1", "2", "3", "5", "6"])
+    expect(f[b].tip).toBeLessThanOrEqual(351);
 });
 
 test("375px: 全角スペースで詰めた選手名は空白を1つにまとめ、名前と級別が切れずに見える", async ({
@@ -144,18 +157,15 @@ test("375px: 全角スペースで詰めた選手名は空白を1つにまとめ
   // 5文字の名前（「土屋 実沙希」）も級別まで切れない（級別は名前の下の行。ファン評価1周目）
   const names = table.locator(".rr-name-text");
   const clipped = await names.evaluateAll((els) =>
-    els
-      .filter((e) => e.scrollWidth > e.clientWidth)
-      .map((e) => e.textContent),
+    els.filter((e) => e.scrollWidth > e.clientWidth).map((e) => e.textContent),
   );
   expect(clipped).toEqual([]);
   await expect(table).toContainText("土屋 実沙希");
 });
 
-test("STが0.15より遅い艇も、遅いほどラインから離れて描く（0.16と0.27が重ならない）", async ({
+test("STが0.15より遅い艇も、遅いほどスリット線から離れて描く（0.16と0.27が重ならない。BOA-811 の絵）", async ({
   page,
 }) => {
-  await page.emulateMedia({ reducedMotion: "reduce" });
   const table = await openResult(page, {
     race: {
       date: "2026-09-29",
@@ -174,15 +184,11 @@ test("STが0.15より遅い艇も、遅いほどラインから離れて描く�
     ],
   });
   await expect(table.locator(".rr-row")).toHaveCount(6);
-  const left = await table.locator(".rr-row").evaluateAll((rows) =>
-    Object.fromEntries(
-      rows.map((row) => [
-        row.querySelector(".rr-boat-chip")?.textContent.trim(),
-        parseFloat(row.querySelector(".rr-st-dot")?.style.left ?? "NaN"),
-      ]),
-    ),
+  const f = await formationTips(page);
+  const left = Object.fromEntries(
+    ["1", "2", "3", "5", "6"].map((b) => [b, f[b].tip]),
   );
-  // 遅いほど左（ラインから離れる）: 0.12 > 0.16 > 0.18 > 0.20 > 0.27
+  // 遅いほど左（線から離れる）: 0.12 > 0.16 > 0.18 > 0.20 > 0.27
   expect(left["3"]).toBeGreaterThan(left["2"]);
   expect(left["2"]).toBeGreaterThan(left["1"]);
   expect(left["1"]).toBeGreaterThan(left["5"]);
@@ -198,8 +204,9 @@ for (const width of [768, 1024, 1440]) {
     await expect(page.locator(".rcdt-table").first()).toBeVisible({
       timeout: 30000,
     });
-    const overflow = await page.$$eval(".rcdt-table-wrapper", (ws) =>
-      ws.filter((w) => w.scrollWidth > w.clientWidth + 1).length,
+    const overflow = await page.$$eval(
+      ".rcdt-table-wrapper",
+      (ws) => ws.filter((w) => w.scrollWidth > w.clientWidth + 1).length,
     );
     expect(overflow).toBe(0);
 
@@ -230,60 +237,32 @@ for (const width of [768, 1024, 1440]) {
   });
 }
 
-test("1号艇（白）のST矢印に輪郭が付き、形が切り取られない", async ({ page }) => {
-  // 戸田 2026-09-19 9R: 1着が1号艇（ST 0.01）で、1着行のクリーム地に白い矢印が乗る
-  await page.goto("/race/2026-09-19-02-09");
-  await page.locator(".race-tabs-btn", { hasText: "結果" }).click();
-  const white = page.locator(".rr-st-dot.is-white");
-  await expect(white.first()).toBeAttached({ timeout: 30000 });
-  const style = await white
-    .first()
-    .evaluate((el) => ({
-      filter: getComputedStyle(el).filter,
-      clip: getComputedStyle(el).clipPath,
-      shapeClip: getComputedStyle(el.querySelector(".rr-st-dot-shape"))
-        .clipPath,
-    }));
-  // 輪郭（drop-shadow）は親、形（clip-path）は子。親に clip-path があると輪郭ごと切れる
-  expect(style.filter).toContain("drop-shadow");
-  expect(style.clip).toBe("none");
-  expect(style.shapeClip).toContain("polygon");
-});
-
-test("正常なST0.01の矢印の舳先はスタートラインを越えず、フライングの矢印だけが越える", async ({
+test("スタート隊形の絵の艇には輪郭を付け、2号艇（黒）も暗い水面で見える（BOA-711 を BOA-811 の絵に移した）", async ({
   page,
 }) => {
-  // 戸田 2026-09-19 9R: 1号艇 .01（正常・1着）、2号艇 .02、3〜6号艇はF。
-  // 矢印の中心を位置に合わせていたため、0.01の舳先がラインを4px越えてフライングに見えた（ファン評価3周目）
-  await page.emulateMedia({ reducedMotion: "reduce" });
+  // 戸田 2026-09-19 9R
   await page.goto("/race/2026-09-19-02-09");
   await page.locator(".race-tabs-btn", { hasText: "結果" }).click();
-  const rows = page.locator(".rr-row");
-  await expect(rows.first().locator(".rr-st-dot")).toBeAttached({
-    timeout: 30000,
-  });
-  const boxes = await rows.evaluateAll((els) =>
-    els
-      .filter((row) => row.querySelector(".rr-st-dot"))
-      .map((row) => {
-        const dot = row.querySelector(".rr-st-dot").getBoundingClientRect();
-        const line = row.querySelector(".rr-st-line").getBoundingClientRect();
-        return {
-          value: row.querySelector(".rr-st-value").textContent.trim(),
-          tip: dot.right,
-          lineLeft: line.left,
-          lineRight: line.right,
-        };
-      }),
-  );
-  expect(boxes.length).toBe(6);
-  for (const b of boxes) {
-    if (b.value.startsWith("F"))
-      expect(b.tip, b.value).toBeGreaterThan(b.lineRight);
-    else expect(b.tip, b.value).toBeLessThanOrEqual(b.lineLeft + 0.5);
+  const f = await formationTips(page);
+  expect(f["2"].stroke).toBe("#ffffff");
+  expect(f["1"].stroke).toBe("#ffffff");
+});
+
+test("正常なST0.01の艇の舳先はスリット線を越えず、フライングの艇だけが越える（BOA-811 の絵）", async ({
+  page,
+}) => {
+  // 戸田 2026-09-19 9R: 1号艇 .01（正常・1着）、2号艇 .02、3〜6号艇はF
+  await page.goto("/race/2026-09-19-02-09");
+  await page.locator(".race-tabs-btn", { hasText: "結果" }).click();
+  const f = await formationTips(page);
+  const boats = Object.keys(f).filter((k) => k !== "slit");
+  expect(boats.length).toBe(6);
+  for (const b of boats) {
+    if (f[b].text.startsWith("F")) expect(f[b].tip, b).toBeGreaterThan(f.slit);
+    else expect(f[b].tip, b).toBeLessThanOrEqual(f.slit);
   }
-  // 読み方の凡例が出る
-  await expect(page.locator(".rr-st-legend")).toContainText("スタートライン");
+  // 表の下の読み方（矢印は外し、並びは上の絵で見る）
+  await expect(page.locator(".rr-st-legend")).toContainText("上の絵");
 });
 
 // 姓と名は常に別の行にする。inline-block だと、日本語は1文字ごとに折り返せるため名の塊が前の行の余りに
@@ -315,3 +294,75 @@ for (const width of [375, 1440]) {
     expect(parts.map((p) => p.lines)).toEqual([1, 1]);
   });
 }
+
+test.describe("結果タブのスタート隊形の絵（BOA-811）", () => {
+  const svgRows = (page) =>
+    page.locator(".rr-formation-svg").evaluate((svg) =>
+      [...svg.querySelectorAll("g[data-boat]")].map((g) => ({
+        boat: g.dataset.boat,
+        course: g.dataset.course ?? null,
+        mae: g.dataset.mae === "true",
+        absent: g.dataset.absent === "true",
+        text: g.textContent,
+      })),
+    );
+
+  test("欠場は一番下に薄く残し、欠場で繰り上がった艇は前付けにしない（江戸川 2026-09-26 11R）", async ({
+    page,
+  }) => {
+    const row = (b, c, t, mark, rank) => ({
+      ...st(b, t, mark, rank),
+      entry_course: c,
+    });
+    await openResult(page, {
+      race: {
+        date: "2026-09-26",
+        venueCode: 3,
+        venue: "江戸川",
+        raceNumber: 11,
+        result: { rank1: 1, rank2: 3, rank3: 2, rank4: 4, rank5: 6 },
+      },
+      startTimings: [
+        row(1, 1, 0.2, "1", 1),
+        row(2, 2, 0.25, "3", 3),
+        row(3, 3, 0.21, "2", 2),
+        row(4, 4, 0.28, "4", 4),
+        row(6, 5, 0.26, "5", 5),
+        row(5, null, null, "欠", null),
+      ],
+    });
+    const rows = await svgRows(page);
+    expect(rows.map((r) => r.boat)).toEqual(["1", "2", "3", "4", "6", "5"]);
+    expect(rows[5].absent).toBe(true);
+    expect(rows[5].text).toContain("5号艇は欠場");
+    expect(rows.some((r) => r.mae)).toBe(false);
+  });
+
+  test("出遅れは ST なしで行に残し、最速は F・出遅れを除いた一番早い艇（若松 2026-09-27 10R）", async ({
+    page,
+  }) => {
+    await openResult(page, {
+      race: {
+        date: "2026-09-27",
+        venueCode: 20,
+        venue: "若松",
+        raceNumber: 10,
+        result: { rank1: 3, rank2: 1, rank3: 5, rank4: 2, rank5: 6 },
+      },
+      startTimings: [
+        st(1, 0.23, "2", 2),
+        st(2, 0.17, "4", 4),
+        st(3, 0.19, "1", 1),
+        { ...st(4, null, "L", null), is_late_start: true },
+        st(5, 0.27, "3", 3),
+        st(6, 0.21, "5", 5),
+      ],
+    });
+    const rows = await svgRows(page);
+    expect(rows.map((r) => r.boat)).toEqual(["1", "2", "3", "4", "5", "6"]);
+    expect(rows[3].text).toContain("L 出遅れ（ST なし）");
+    expect(rows[1].text).toContain("0.17 最速");
+    // 結果の表の ST の列は数字だけ（矢印は外した）
+    await expect(page.locator(".rr-st-track")).toHaveCount(0);
+  });
+});

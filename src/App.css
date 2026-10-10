@@ -726,21 +726,6 @@ input:focus-visible,
   color: var(--text-primary);
 }
 
-/* BOA-625: 表の上の進入順（公式のスタート情報の並び） */
-.rr-course-order {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-1);
-  margin-bottom: var(--spacing-2);
-}
-
-.rr-course-order-label {
-  margin-right: var(--spacing-1);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-secondary);
-}
-
 .rr-row.is-unranked .rr-pos {
   color: var(--text-primary);
 }
@@ -822,133 +807,13 @@ input:focus-visible,
   text-align: right;
 }
 
-/* ===== スタート情報: 全艇アニメーション（実ST比例の距離×実ST比例の到達時間） =====
-   反時計回り（左→右）のためスタートラインはトラック右寄り（72%、参考位置として表示）。
-   各艇は号砲(t=0)から自艇の静止位置（実STに応じた距離感）まで動き、そこで静止する。
-   到達までの時間もSTに比例させ、STが小さい艇（早いスタート）ほど短時間で、STが大きい艇
-   ほど長い時間をかけて到達する。見た目の動きの速さ自体が実際のスタートの速さを表す。
-   キーフレームはSTの値・レース内最遅STから動的に決まるためCSSの@keyframesでは表現できず、
-   RaceResult.jsxのStartTimingTrackがWeb Animations API（element.animate()）で生成する */
+/* 結果の表の ST の列は数字と「最速」だけ。スタートの並びは表の上のスタート隊形の絵（BOA-811） */
 .rr-st-cell {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 0.12rem;
-}
-
-/* 矢印は先端（舳先）を位置に合わせ、本体は左へ伸びる。遅いスタート（ST0.23以上）だと本体が
-   トラックの左端から外に出て、帯から浮いて見えた（#1071 ファン評価2周目）。灰色の帯
-   （::before）を矢印の幅（--rr-st-arrow-w）だけ左に伸ばし、トラック本体はその分だけ右に寄せる。
-   位置（%）の基準になるトラック本体の幅は変えない */
-.rr-st-track {
-  --rr-st-arrow-w: 16px;
-  position: relative;
-  width: calc(100% - var(--rr-st-arrow-w) - 2px);
-  height: 14px;
-  overflow: visible;
-}
-
-.rr-st-track::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 0;
-  /* 2px は、ST0.30 以上で頭打ちになった矢印の先端（トラックの2%）との余裕 */
-  left: calc(-1 * var(--rr-st-arrow-w) - 2px);
-  background: rgba(128, 128, 128, 0.08);
-  border-radius: var(--radius-sm);
-}
-
-/* 横の位置（left）は RaceResult.jsx の START_ANIM.LINE_PERCENT から置く */
-.rr-st-line {
-  position: absolute;
-  top: -3px;
-  bottom: -3px;
-  width: 2px;
-  background: var(--ryujin-gold-500);
-}
-
-/* 号砲の光。全艇共通でt=0に一度だけ光る */
-.rr-st-line::after {
-  content: "";
-  position: absolute;
-  inset: -4px -6px;
-  border-radius: var(--radius-sm);
-  background: var(--ryujin-gold-500);
-  opacity: 0;
-  animation: rr-flash 7s ease-out infinite;
-}
-
-@keyframes rr-flash {
-  0% {
-    opacity: 0.9;
-    transform: scaleX(2.2);
-  }
-  7% {
-    opacity: 0;
-    transform: scaleX(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scaleX(1);
-  }
-}
-
-/* 船シルエット（進行方向=右に舳先を向けた矢尻型）。色は艇番の公式配色をJSから指定する */
-.rr-st-dot {
-  position: absolute;
-  top: 50%;
-  width: var(--rr-st-arrow-w);
-  height: 9px;
-  /* 舳先（右端）を位置に合わせる。中心を合わせると、ST0.01の正常な艇でも舳先が
-     スタートラインを8px越え、フライングに見えた（BOA-559 ファン評価3周目） */
-  transform: translate(-100%, -50%);
-}
-
-.rr-st-dot-shape {
-  display: block;
-  width: 100%;
-  height: 100%;
-  clip-path: polygon(100% 50%, 62% 0%, 0% 18%, 0% 82%, 62% 100%);
-}
-
-/* 1号艇（白）は明るい地に溶けるので、形に沿った濃い輪郭を付ける */
-.rr-st-dot.is-black {
-  /* 2号艇の黒い矢印はダークの紺の帯に溶けるので、明るい輪郭を付ける（BOA-711） */
-  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.85));
-}
-
-.rr-st-dot.is-white {
-  /* 0.6px では1着行のベージュ地で輪郭が弱かった（BOA-586） */
-  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.95))
-    drop-shadow(0 0 1px rgba(0, 0, 0, 0.95));
-}
-
-.rr-st-streak {
-  position: absolute;
-  top: 50%;
-  height: 4px;
-  border-radius: var(--radius-sm);
-  transform: translateY(-50%);
-}
-
-.rr-st-impact {
-  position: absolute;
-  top: 50%;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  border-width: 2px;
-  border-style: solid;
-  transform: translate(-50%, -50%);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rr-st-line::after {
-    animation: none;
-  }
 }
 
 .rr-st-value {
@@ -970,6 +835,90 @@ input:focus-visible,
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   text-align: right;
+}
+
+/* スタート隊形（コース順）の絵（BOA-811、承認モック docs/design/race-result-start-formation/mock）。
+   水面と艇・文字の色は龍神ソナーのスリットの形の絵と同じ固定の色（ダークモードでも変えない） */
+.rr-formation {
+  display: grid;
+  gap: var(--spacing-1);
+  margin-bottom: var(--spacing-3);
+}
+
+.rr-formation-title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rr-formation .rr-formation-caption {
+  margin: 0;
+  text-align: left;
+}
+
+.rr-formation-svg {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+}
+
+.rr-formation-svg text {
+  font-family: inherit;
+}
+
+.rr-formation-svg .rr-fm-faint {
+  fill: #ffffff;
+  fill-opacity: 0.75;
+  font-size: 10px;
+}
+
+.rr-formation-svg .rr-fm-label {
+  fill: #ffffff;
+  font-size: 12px;
+}
+
+.rr-formation-svg .rr-fm-dim {
+  fill-opacity: 0.55;
+}
+
+.rr-formation-svg .rr-fm-badge {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rr-formation-svg .rr-fm-mae {
+  fill: #13263a;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.rr-formation-svg .rr-fm-st {
+  fill: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rr-formation-svg .rr-fm-flying {
+  fill: #ff8a80;
+}
+
+.rr-formation-svg .rr-fm-late {
+  fill: #ffd27a;
+  font-size: 12px;
+}
+
+.rr-formation-svg .rr-fm-scale line {
+  stroke: #ffffff;
+  stroke-opacity: 0.7;
+}
+
+.rr-formation-svg .rr-fm-scale text {
+  fill: #ffffff;
+  fill-opacity: 0.8;
+  font-size: 10px;
 }
 
 /* BOA-238: 払戻金セクション */
@@ -1826,14 +1775,4 @@ input:focus-visible,
   background: var(--color-gray-50);
 }
 
-/* スマホでは矢印を一回り小さくし、帯を左に伸ばす分（上の --rr-st-arrow-w）を減らす。
-   トラックが約86pxしかなく、16px伸ばすと位置の差がつく幅が減りすぎる（#1071 ファン評価2周目） */
-@media (max-width: 480px) {
-  .rr-st-track {
-    --rr-st-arrow-w: 12px;
-  }
 
-  .rr-st-dot {
-    height: 7px;
-  }
-}
