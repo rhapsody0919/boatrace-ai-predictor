@@ -28,8 +28,8 @@
     {
       "id": "gambling-connotation-words",
       "category": "platform-policy",
-      "platforms": ["tiktok", "youtube"],
-      "description": "予想・賭け事を直接連想させる言葉・構図。TikTokの実際のコミュニティガイドライン違反インシデント（対決煽り型`RivalryCM.jsx`削除、2026-08-26）に基づく。Xでは同種の実例が無いため対象外とする。YouTube Shortsもアルゴリズム型の自動モデレーションが厳格な傾向があるため、実運用開始（Phase 3）までは念のため同じ扱いに含める",
+      "platforms": ["tiktok"],
+      "description": "予想・賭け事を直接連想させる言葉・構図。TikTokの実際のコミュニティガイドライン違反インシデント（対決煽り型`RivalryCM.jsx`削除、2026-08-26）に基づく。Xでは同種の実例が無いため対象外とする。2026-10-10 ユーザー判断でYouTubeはXと同じルールに（対象外）",
       "patterns": ["本命", "対決", "VS", "vs"],
       "source": "docs/operation/tiktok-posting-operations.md E節"
     },
