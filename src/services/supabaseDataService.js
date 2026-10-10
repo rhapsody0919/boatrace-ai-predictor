@@ -5697,18 +5697,30 @@ export const supabaseDataService = {
 
   /**
    * 指定レースの6艇の「平均ST（前期・公式）」（BOA-815）。公式の出走表と同じ期（officialPeriodOf）の
-   * racer_period_stats.avg_st（2桁）を返す。その期の行が無い選手（新人など）は返さない。
-   * 別の期の値で埋めると公式の出走表と食い違うため、埋めずに「—」にする
+   * racer_period_stats.avg_st（2桁）を返す。期は節の初日（race_series）で決める。公式は節の途中で
+   * 期を替えないため（6/27〜7/1 の節の 7/1 は旧期）。節が取れなければレース日で決める。
+   * その期の行が無い選手（新人など）は返さない。別の期の値で埋めると公式の出走表と食い違うため、
+   * 埋めずに「—」にする
    * @param {string} raceId
    * @returns {Promise<{period: {periodYear: number, periodNo: number, calcFrom: string, calcTo: string}|null,
    *   rows: Array<{boatNumber: number, avgSt: number}>}>}
    */
   getRaceOfficialAvgSt(raceId) {
-    return withCache(`race-official-avg-st-v1-${raceId}`, async () => {
+    return withCache(`race-official-avg-st-v2-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
-      const period = officialPeriodOf(raceId?.slice(0, 10));
-      if (!period) return { period: null, rows: [] };
+      const raceDate = raceId?.slice(0, 10);
+      const venueCode = Number(raceId?.slice(11, 13));
       // クエリの失敗は .throwOnError() で例外になる（BOA-507）。useRaceAnalysisData が取得失敗として出す
+      const { data: series } = await supabase
+        .from("race_series")
+        .select("start_date")
+        .eq("venue_code", venueCode)
+        .lte("start_date", raceDate)
+        .gte("end_date", raceDate)
+        .order("start_date", { ascending: false })
+        .limit(1);
+      const period = officialPeriodOf(series?.[0]?.start_date ?? raceDate);
+      if (!period) return { period: null, rows: [] };
       const { data: entries } = await supabase
         .from("race_entries")
         .select("boat_number, racer_id")

@@ -656,17 +656,19 @@ export function periodsEndedBefore(raceDate, count = 1) {
 }
 
 /**
- * 公式の出走表がそのレース日に出している期（勝率・平均STの期）を返す（純関数、BOA-815）。
+ * 公式の出走表が出している期（勝率・平均STの期）を返す（純関数、BOA-815）。
  *   1〜6月  → (Y,1) = (Y-1)-05-01 〜 (Y-1)-10-31
  *   7〜12月 → (Y,2) = (Y-1)-11-01 〜     Y-04-30
+ * **渡す日付は節の初日**（無ければレース日）。公式は節の途中で期を替えない。6/27〜7/1 の節の
+ * 7/1 は旧期 (Y,1) の値を出す（戸田 2026-07-01 8R で照合。レース日で決めると6艇中4艇が食い違った）。
  * `periodsEndedBefore`（直前に終わった期）とは5〜6月と11〜12月で違う。公式の出走表と
- * 2025-12〜2026-10 の5レース×6艇で照合した（docs/design/avg-st-definition/mock/APPROVED.md）
+ * 2025-12〜2026-10 の照合結果は docs/design/avg-st-definition/mock/APPROVED.md
  *
- * @param {string} raceDate `YYYY-MM-DD`
+ * @param {string} seriesStartDate 節の初日 `YYYY-MM-DD`（取れなければレース日）
  * @returns {{periodYear: number, periodNo: number, calcFrom: string, calcTo: string}|null}
  */
-export function officialPeriodOf(raceDate) {
-  const [y, m] = (raceDate ?? "").split("-").map(Number);
+export function officialPeriodOf(seriesStartDate) {
+  const [y, m] = (seriesStartDate ?? "").split("-").map(Number);
   if (!y || !m) return null;
   const periodNo = m >= 7 ? 2 : 1;
   return {

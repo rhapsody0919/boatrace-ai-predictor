@@ -11,9 +11,12 @@
  *   - avg_st / st_stddev: F 以外で、ST が記録されている走（L・欠場は ST が NULL のため入らない）
  *   - avg_st_last_30: 新しい順に30回の出走（total_races と同じ数え方）の窓をとり、その中の F・L 以外で
  *     ST が記録されている走の平均。窓の中に3走以上あるときだけ値を出す。龍神ソナー・思考アシストの
- *     「平均ST（直近30走）」（v16 の st_mean30、scripts/ml/analogy/features.py の add_history）と同じ窓
- *     （BOA-815、docs/design/avg-st-definition/mock/APPROVED.md）。v16 は前日までの走、こちらは集計時点
- *     までの走を使う（選手ページはレースに紐づかないため）
+ *     「平均ST（直近30走）」（v16 の st_mean30、scripts/ml/analogy/features.py の add_history）にそろえた窓
+ *     （BOA-815、docs/design/avg-st-definition/mock/APPROVED.md）。厳密には同じでない点が2つある:
+ *     ① v16 は race_entries の全行（中止・欠場 K0 も窓の1枠、S0 の ST は平均に入る）、こちらは
+ *     countsAsStart の行だけ。② v16 は前日まで、こちらは集計時点まで（選手ページはレースに紐づかないため）。
+ *     2026-10-10 の72人で前日までの値を比べると、差は中央値 0.0003・90%点 0.0027・最大 0.0103
+ *     （最大は中止3走を含む選手）
  *
  * F の start_timing は正の値（F.03 なら 0.03）で保存されているため、そのまま平均に入れると
  * 平均STが実際より早く見える。選手ページの他の ST 表示（BOA-576）と同じく F を除く。

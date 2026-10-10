@@ -9,6 +9,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { getRaceSt30 } from "../../services/analogyService";
+import InlineFetchError from "../InlineFetchError";
 import { formatExhibitionSt } from "../../utils/formatters";
 import "./MotorConditionChart.css";
 import "./RaceCardDataTable.css";
@@ -70,6 +71,8 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
   const [entries, setEntries] = useState([]);
   const [racerStats, setRacerStats] = useState(null);
   const [avgSt, setAvgSt] = useState({ official: new Map(), st30: new Map() });
+  const [st30Failed, setSt30Failed] = useState(false);
+  const [st30Retry, setSt30Retry] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -133,11 +136,17 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
         setLoading(true);
         setError(null);
         // 平均ST はデータ出走表と同じ2列（前期・公式／直近30走、BOA-815）
+        // 30走は v16 の API から取る。その失敗で表全体を消さず、列の下に取得失敗を出す
+        setSt30Failed(false);
         const [entryRows, stats, official, st30] = await Promise.all([
           supabaseDataService.getRaceEntriesDetail(selectedRace),
           supabaseDataService.getRaceRacerStats(selectedRace),
           supabaseDataService.getRaceOfficialAvgSt(selectedRace),
-          getRaceSt30(selectedRace),
+          getRaceSt30(selectedRace).catch((err) => {
+            console.error("平均ST(30走)の取得に失敗:", err?.message ?? err);
+            setSt30Failed(true);
+            return [];
+          }),
         ]);
         setEntries(entryRows ?? []);
         setRacerStats(stats);
@@ -153,7 +162,7 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
       }
     };
     loadData();
-  }, [selectedRace]);
+  }, [selectedRace, st30Retry]);
 
   const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
 
@@ -337,6 +346,9 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
             </tbody>
           </table>
         </div>
+      )}
+      {!loading && !error && st30Failed && (
+        <InlineFetchError onRetry={() => setSt30Retry((n) => n + 1)} />
       )}
 
       <p className="table-note">{t("analysis.raceCard.note")}</p>

@@ -980,6 +980,13 @@ function suiteBasicInfoStats(m, check) {
     ["2026-1/2026-2", "2026-2/2027-1"],
   );
   check(
+    "officialPeriodOf: 節の初日で決める（6/27〜7/1 の節の 7/1 は旧期。戸田 2026-07-01 8R で公式と照合）",
+    [m.officialPeriodOf("2026-06-27"), m.officialPeriodOf("2025-12-28")].map(
+      (p) => `${p.periodYear}-${p.periodNo}`,
+    ),
+    ["2026-1", "2025-2"],
+  );
+  check(
     "officialPeriodOf: 日付が無い・壊れていれば null",
     [m.officialPeriodOf(""), m.officialPeriodOf(null)],
     [null, null],

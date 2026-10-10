@@ -74,4 +74,28 @@ test.describe("データ出走表の平均ST（BOA-815）", () => {
       );
     });
   }
+
+  // 公式は節の途中で期を替えない。戸田 6/27〜7/1 の節の 7/1 は旧期（2026前期）の値。
+  // レース日で期を決めていたときは 0.15/0.16/0.19/0.17/0.16 を出し、6艇中4艇が食い違った（データ精度の検証で発見）
+  test("節の途中で期が替わるレースは、節の初日の期の値を出す（戸田 2026-07-01 8R）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await page.goto("/race/2026-07-01-02-08");
+    await page
+      .locator(".race-tabs-btn", { hasText: "基本情報" })
+      .first()
+      .click();
+    const table = page.locator(".drt-table").first();
+    await expect(table).toBeVisible({ timeout: 30000 });
+    const official = table
+      .locator("tbody tr")
+      .filter({ hasText: "前期・公式" })
+      .first();
+    // 公式の出走表は 0.16/0.17/0.19/0.15/0.15/-（6号艇は新人で前期の記録が無い）
+    await expect(official.locator("td.drt-cell")).toHaveText(
+      ["0.16", "0.17", "0.19", "0.15", "0.15", "—"],
+      { timeout: 30000 },
+    );
+  });
 });
