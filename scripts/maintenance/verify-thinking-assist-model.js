@@ -431,8 +431,10 @@ const flow = boardModel({
   finalRound: true,
 });
 check(
-  "展開レンズ（展示後）: 展示ST。5号艇の F.01 は最良の候補から外し、最良は4号艇（.05）",
-  flow.rows[4].dotText === "F.01" &&
+  "展開レンズ（展示後）: 展示ST。5号艇の F は「F .01（フライング）」と書いて最良の候補から外し、最良は4号艇（.05）（BOA-801 2）",
+  flow.rows[4].dotText === "F .01（フライング）" &&
+    flow.rows[4].flying === true &&
+    flow.rows[3].flying === false &&
     flow.rows
       .filter((r) => r.dotBest)
       .map((r) => r.boat)

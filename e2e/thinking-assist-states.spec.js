@@ -1435,3 +1435,42 @@ test.describe("思考アシスト: 平均ST の期間と「このコース」（
     ).toBeVisible();
   });
 });
+
+test.describe("思考アシスト: BOA-801（見せ方の残り）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("2: 展示ST の F は赤い枠の印と「F .01（フライング）」", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    const lane5 = page.locator(".ta-lane").nth(4);
+    await expect(lane5.locator(".ta-track-dot-f")).toHaveCount(1);
+    await expect(lane5.getByText("F .01（フライング）")).toBeVisible();
+    await expect(page.locator(".ta-track-dot-f")).toHaveCount(1);
+  });
+
+  test("4: 堅い？荒れる？の材料にぶれ幅の凡例と全国の値", async ({ page }) => {
+    await open(page);
+    await page.getByRole("button", { name: "堅い？荒れる？の材料" }).click();
+    const sheet = page.getByRole("dialog");
+    await expect(
+      sheet.getByText(/棒の2本の縦線の間＝ぶれ幅（件数が少ないほど広い）/),
+    ).toBeVisible();
+    await expect(sheet.getByText("（全国 55%）").first()).toBeVisible();
+    await expect(sheet.getByText("（全国 17%）").first()).toBeVisible();
+  });
+
+  test("9: 図の札は「モーター2連率」", async ({ page }) => {
+    await open(page);
+    await lensTab(page, "機力").click();
+    await expect(
+      page
+        .locator(".ta-board")
+        .getByText(/^モーター2連率 \d+\.\d%$/)
+        .first(),
+    ).toBeVisible();
+  });
+});

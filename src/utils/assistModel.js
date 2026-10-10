@@ -337,7 +337,7 @@ export const METRICS = {
   },
   motor_2: {
     label: "モーター2連率",
-    short: "モーター",
+    short: "モーター2連率", // 「モーター」だけだと何の値か分からない（BOA-801 9）
     value: (r) => r.motor2,
     text: (v) => `${v.toFixed(1)}%`,
     aria: (v) => v.toFixed(1),
@@ -535,10 +535,14 @@ export function boardModel({
       slit: true,
       rows: racers.map((r) => {
         const v = value(r);
+        const flying = post && r.exhFlying;
+        // F は良いスタートと読まれないよう「F .01（フライング）」と書き、点は左端の外に赤い枠で出す（BOA-801 2）
         const text =
           v == null
             ? null
-            : `${r.exhFlying && post ? "F" : ""}${stText(v, post ? 2 : 3)}`;
+            : flying
+              ? `F ${stText(Math.abs(v), 2)}（フライング）`
+              : stText(v, post ? 2 : 3);
         return {
           boat: r.boat,
           // F は .00 より左（目盛りの端に寄せる）。平均ST（展示前）は F が無い
@@ -549,6 +553,7 @@ export function boardModel({
           pending: !post && !hasToday,
           dotText: text,
           dotBest: best2.has(r.boat),
+          flying,
           // 点の値は押すと6艇比較（読み上げは「{項目名} {値}、6艇で比べる」）
           dotMetric: v == null ? null : key,
           dotAria: v == null ? null : METRICS[key].aria(v, r),
