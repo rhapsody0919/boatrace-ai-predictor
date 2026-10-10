@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { trackEvent } from "../../../utils/analytics";
 import { getTodayJST } from "../../../utils/dateUtils";
 import {
   readRaceView,
@@ -26,6 +27,8 @@ export default function AssistViewSwitch({ current, raceId }) {
   const go = (view) => {
     writeRaceView(view);
     if (view === current) return;
+    // どちらへ移ったか（docs/design/thinking-assist/events.md）。押し直しは送らない
+    trackEvent("assist_view_switch", { race_id: raceId, assist_view: view });
     navigate(view === "assist" ? `/race/${raceId}/assist` : `/race/${raceId}`, {
       replace: true,
     });
