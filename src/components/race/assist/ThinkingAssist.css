@@ -1763,3 +1763,55 @@
   margin-right: var(--spacing-3);
   white-space: nowrap;
 }
+
+/*
+ * PC 表示（BOA-801 5・BOA-820 の思考アシストの分）。1024px 以上だけ変える。375〜1023px は囲みが無いのと同じ
+ * （display: contents）で今の1列のまま。龍神ソナーの PC 表示（BOA-813、sonar-tab/mock-pc-v1）と同じ決まり:
+ * - 列は最大 1200px、左端はレース詳細のタブの列（ページの左の余白 24px）にそろえる（今は 480px で中央）
+ * - ヘッダー・レンズは横幅いっぱい（堅い？荒れる？の枠は図と同じ 480px）。その下で図（最大 480px）を左、押して変わる結果
+ *   （深掘り・レンズの要約）を右。図が画面の高さに収まるときだけ、レンズの下に止める
+ */
+.ta-split,
+.ta-split-fig,
+.ta-split-side {
+  display: contents;
+}
+
+@media (min-width: 1024px) {
+  .ta-page {
+    max-width: 1200px;
+    margin: 0 var(--spacing-6);
+  }
+
+  .ta-split {
+    display: grid;
+    grid-template-columns: minmax(0, 480px) minmax(0, 1fr);
+    gap: 0 var(--spacing-6);
+    align-items: start;
+  }
+
+  .ta-split-fig,
+  .ta-split-side {
+    display: block;
+    min-width: 0;
+  }
+
+  .ta-split-side > .ta-deep:first-child {
+    margin-top: var(--spacing-3);
+  }
+
+  /* 堅い？荒れる？の枠は左の列（図）と同じ幅。横幅いっぱいだと棒が伸びて58%と55%の差が読みにくい
+     （2026-10-10 ユーザー決定、ファンパネル） */
+  .ta-rough {
+    max-width: 480px;
+  }
+
+}
+
+@media (min-width: 1024px) and (min-height: 800px) {
+  .ta-split-fig {
+    position: sticky;
+    /* 共通のヘッダーとレンズの下に止める */
+    top: calc(var(--ta-sticky-top, 0px) + 120px);
+  }
+}

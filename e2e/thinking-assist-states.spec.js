@@ -1475,6 +1475,50 @@ test.describe("思考アシスト: BOA-801（見せ方の残り）", () => {
   });
 });
 
+test.describe("思考アシスト: PC 表示（BOA-801 5、龍神ソナーと同じ決まり）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("1440px: 最大 1200px・左端 24px、図は左（480px）、深掘りは右に並ぶ。堅い？荒れる？は 480px", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page);
+    const box = (sel) => page.locator(sel).first().boundingBox();
+    const main = await box(".ta-page");
+    expect(Math.round(main.x)).toBe(24);
+    expect(Math.round(main.width)).toBe(1200);
+    const rough = await box(".ta-rough");
+    expect(rough.width).toBeLessThanOrEqual(480);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    await expect(page.locator(".ta-deep")).toBeVisible();
+    const fig = await box(".ta-split-fig");
+    const side = await box(".ta-split-side");
+    expect(fig.width).toBeLessThanOrEqual(480);
+    // 横に並ぶ（右の列は図の右）
+    expect(side.x).toBeGreaterThan(fig.x + fig.width);
+    const over = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    );
+    expect(over).toBeLessThanOrEqual(0);
+  });
+
+  test("375px は今のまま1列（図の下に深掘り）", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    await expect(page.locator(".ta-deep")).toBeVisible();
+    // 深掘りはなめらかに送るので縦の座標ではなく、同じ1列（左端がそろう・横に並ばない）で見る
+    const board = await page.locator(".ta-board").boundingBox();
+    const deep = await page.locator(".ta-deep").boundingBox();
+    expect(deep.x).toBeLessThan(board.x + board.width / 2);
+    expect(deep.width).toBeGreaterThan(300);
+    const main = await page.locator(".ta-page").boundingBox();
+    expect(Math.round(main.width)).toBe(375);
+  });
+});
+
 test.describe("思考アシスト: 棒は「長いほど良い」図だけ（BOA-801 3）", () => {
   test.beforeEach(async ({ page }) => {
     await routeThinkingAssistV16(page);
