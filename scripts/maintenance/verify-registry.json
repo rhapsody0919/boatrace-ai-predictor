@@ -929,6 +929,11 @@
       "guards": "画面の風向を本当の方位に直す表（BOA-819、src/utils/windDirection.js）。24場の角度が龍神ソナーのモデルの表（scripts/ml/analogy/wind_basis.json の offsets_deg）と同じ・引く向き（徳山の DB「北西」は北、公式の直前情報の図と同じ）・無風はそのまま・会場が分からなければ出さない"
     },
     {
+      "script": "verify-race-start-formation.js",
+      "tier": "ci",
+      "guards": "レース結果のスタート隊形の並び（BOA-811、src/components/race/startFormation.js）。進入コースの順・前付けは枠なりより内側に入った艇だけ（欠場で繰り上がった艇は付けない）・欠場は一番下に残す・最速は F を除いて2艇以上のとき・出遅れは ST なし・ST は結果の表と同じ形（0.15、F.04）。例は本番の戸田 9/11 3R・江戸川 9/26 11R・津 9/25 6R・若松 9/27 10R"
+    },
+    {
       "script": "verify-sns-edit-assist.js",
       "tier": "ci",
       "guards": "依頼7: 読みやすさ・加重文字数・日付時刻・数値出典・敬称の場所付き指摘、AI差し込み口は既定無効、正常文は誤検知しない（141は別途PGliteで検証）"

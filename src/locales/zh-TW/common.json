@@ -260,7 +260,6 @@
     "popularityFromFinalOddsNote": "※ 單勝、複勝的人氣依截止時賠率（官方）計算（複勝依上限由低至高，相同賠率以範圍表示）。其他投注方式為官方公布。",
     "fastestStartTag": "最快",
     "courseNoData": "※本站尚未取得本場的進入航線",
-    "courseOrderLabel": "進入",
     "entryCourseLabel": "{{course}}道",
     "missingRanksNote": "※本場比賽第4名以後的名次資料尚未取得，因此部分名次未顯示",
     "cancelledTitle": "本場比賽已中止",
@@ -325,7 +324,21 @@
     "payoutNoAmountNote": "「—」表示官方派彩資料中沒有記載金額的組合",
     "payoutSpecial": "特別派彩",
     "volatilityOutcomeNotJudgeable": "不列入判定（比賽不成立）",
-    "stLegend": "右側箭頭為起跑時機（ST）。黃線為起跑線，越接近越早起跑。越過起跑線的紅色箭頭為起步犯規"
+    "stLegend": "右側數字為起跑時機（ST）。起跑隊形請看上方的圖。F 為起步犯規",
+    "startFormation": {
+      "title": "起跑隊形（依航道）",
+      "caption": "通過起跑線（スリット）時的排列。最上方為1道，越接近線起跑越早",
+      "aria": "起跑隊形。由上而下為1道起。越接近右側起跑線起跑越早",
+      "slit": "起跑線",
+      "flyingSide": "F →",
+      "slower": "← 較慢",
+      "course": "{{course}}道",
+      "mae": "搶內道",
+      "late": "L 出發延遲（無 ST）",
+      "absent": "{{boat}}號艇缺賽",
+      "absentLabel": "缺賽",
+      "scale": "1艇身（約0.13秒）"
+    }
   },
   "raceHistoryTable": {
     "date": "日期",
