@@ -629,6 +629,23 @@ check(
   JSON.stringify(steps.map((x) => x.sub)),
 );
 
+// 札の言い方: 形容詞に「の」を挟まない（「一番高いのとき」ではなく「一番高いとき」。2026-10-11 ユーザー指摘）
+{
+  const words = Object.values(ASSIST_COPY.factWords);
+  const texts = [
+    ...words.map((w) => ASSIST_COPY.factHit(w, 77, 1793, 72)),
+    ASSIST_COPY.motorChipRate(true, 60, 55),
+    ASSIST_COPY.motorChipRate(false, 40, 55),
+  ];
+  check(
+    "札: 「一番高いとき」「最下位のとき」の形（「〜いのとき」にしない）",
+    texts.every((t) => !/いのとき/.test(t)) &&
+      texts[0] === "▲一番高いとき 1着 77%・1,793件（全体 72%）" &&
+      texts.at(-1).startsWith("最下位のとき1着"),
+    JSON.stringify(texts),
+  );
+}
+
 if (failures > 0) {
   console.error(`\n${failures}件の失敗`);
   process.exit(1);

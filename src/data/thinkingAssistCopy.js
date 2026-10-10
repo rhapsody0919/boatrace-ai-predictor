@@ -195,7 +195,7 @@ export const ASSIST_COPY = Object.freeze({
   // 件数を添える（どれだけのレースから出した割合か。BOA-808 の3）
   // 「→」はヘッダーで「はっきりしない」の印に使うので、ここでは使わない（ファン評価 PR5 1周目 指摘5）
   factHit: (word, p, n, base) =>
-    `▲一番${word}のとき 1着 ${p}%・${n.toLocaleString("ja-JP")}件（全体 ${base}%）`,
+    `▲一番${word}とき 1着 ${p}%・${n.toLocaleString("ja-JP")}件（全体 ${base}%）`,
   factNoToday: "今日の値なし",
   // 差の大きさ（v16 の judgeGap の level）。軸の要約の「差がはっきり大きい材料は無い」と同じ判定
   factLevel: Object.freeze({
@@ -343,7 +343,7 @@ export const ASSIST_COPY = Object.freeze({
   motorChip: (boat, top, v) =>
     `${boat}号艇は6艇で${top ? "一番高い" : "最下位"}（${v}%）`,
   motorChipRate: (top, p, base) =>
-    `${top ? "一番高い" : "最下位"}のとき1着 ${p}%（全体 ${base}%）`,
+    `${top ? "一番高いとき" : "最下位のとき"}1着 ${p}%（全体 ${base}%）`,
   tiltMark: (v) => `チルト${v > 0 ? "+" : ""}${v}`,
   partsMark: "交換",
 
