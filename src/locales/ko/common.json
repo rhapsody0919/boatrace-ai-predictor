@@ -2246,7 +2246,7 @@
     "title": "데이터 출주표",
     "subtitle": "출주 6명의 분석 데이터를 한눈에 비교. 행 라벨을 탭하면 상세 분석 페이지로 이동합니다",
     "rowWinRate": "급별/승률",
-    "rowMotor": "모터 2연대율",
+    "rowMotor": "모터 2연대율(최근 90일)",
     "rowForm": "컨디션（승률Δ）",
     "rowSt": "ST 안정도",
     "rowExhibition": "전시 타임",

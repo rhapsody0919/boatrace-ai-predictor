@@ -67,3 +67,21 @@ test.describe("基本情報タブの期間（BOA-775）", () => {
     ).toHaveText("今期");
   });
 });
+
+// BOA-802 の3: データ出走表のモーター2連率は当サイトの過去90日の値なので、見出しに期間を書く
+// （龍神ソナー側は「モーター2連率（公式・節の時点）」）。平均ST の名前に期間を付けたのと同じ考え方
+test("1440px: データ出走表のモーターの行の見出しは「モーター2連率（過去90日）」", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(RACE);
+  await page
+    .locator(".race-tabs-btn", { hasText: "基本情報" })
+    .first()
+    .click();
+  await expect(
+    page.locator(".drt-table .drt-label-full", {
+      hasText: "モーター2連率（過去90日）",
+    }),
+  ).toBeVisible({ timeout: 30000 });
+});

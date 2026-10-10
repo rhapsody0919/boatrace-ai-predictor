@@ -2252,7 +2252,7 @@
     "title": "Data Race Card",
     "subtitle": "Compare analytics for all six racers at a glance. Tap a row label for the full analysis",
     "rowWinRate": "Class / Win rate",
-    "rowMotor": "Motor top-2 rate",
+    "rowMotor": "Motor top-2 rate (last 90 days)",
     "rowForm": "Form (Δ win rate)",
     "rowSt": "ST stability",
     "rowExhibition": "Exhibition time",

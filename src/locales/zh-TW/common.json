@@ -2246,7 +2246,7 @@
     "title": "數據出賽表",
     "subtitle": "一覽比較6位選手的分析數據。點擊列標籤可前往詳細分析頁面",
     "rowWinRate": "級別/勝率",
-    "rowMotor": "馬達2連率",
+    "rowMotor": "馬達2連率（過去90天）",
     "rowForm": "狀態（勝率Δ）",
     "rowSt": "ST穩定度",
     "rowExhibition": "展示時間",
