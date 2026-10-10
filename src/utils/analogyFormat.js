@@ -157,3 +157,33 @@ export function splitSentences(text) {
   if (cur.trim()) out.push(cur.trim());
   return out;
 }
+
+/**
+ * 「6艇中5位」。記録の無い艇（当地勝率 0.00 など）がいるときは「記録のある5艇中5位（一番低い）」（BOA-802、
+ * 2026-10-10 ユーザー決定）。七角形の点の位置・棒の枠は区分（一番低い＝6）のままなので、一番下には言葉を添える
+ */
+export function factRankText(t, r, bad) {
+  if (r.of >= 6)
+    return r.from === r.to
+      ? t(`aiPredictionTab.analogy.facts.rankOf6`, { n: r.from })
+      : t(`aiPredictionTab.analogy.facts.rankOf6Tie`, {
+          from: r.from,
+          to: r.to,
+          same: r.same,
+        });
+  const base =
+    r.from === r.to
+      ? t(`aiPredictionTab.analogy.facts.rankOfRec`, { k: r.of, n: r.from })
+      : t(`aiPredictionTab.analogy.facts.rankOfRecTie`, {
+          k: r.of,
+          from: r.from,
+          to: r.to,
+          same: r.same,
+        });
+  return r.to === r.of && r.of > 1
+    ? base +
+        t(`aiPredictionTab.analogy.facts.rankLast`, {
+          w: t(`aiPredictionTab.analogy.facts.words.${bad}`),
+        })
+    : base;
+}
