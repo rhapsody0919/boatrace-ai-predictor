@@ -444,6 +444,8 @@ def main():
         s = SC.boat_scope(m, d, V.scope_boat(key), attack(m))
         s["key"], s["period"] = key, [POOL_FROM, str(cutoff.date())]
         write_local(out, f"scenario-boat/{key.replace(':', '_')}.json", s)
+        # 2〜6号艇の1着の棒を押したときの元のレースの一覧。棒と同じ「構成＋その艇の級」の範囲（BOA-833）
+        write_local(out, f"scenario-boat-races/{key.replace(':', '_')}.json", SC.scope_races(m, d))
     log("scenario-boat", len(boat_keys), f"{time.time() - tb:.1f}s")
 
     # 今日のレースの「このコース」の平均ST（前日まで。コース＝艇番、5走未満は全体で埋める）
