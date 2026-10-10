@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   getAnalogyFacts,
   getAnalogyScenario,
+  getAnalogyScenarioRaces,
   getAnalogySimilar,
 } from "../services/analogyService";
 
@@ -76,4 +77,12 @@ export const useAnalogyScenario = (
     `scenario|${raceId}|${scope ?? ""}|${stage}|${boats ? "boats" : ""}`,
     () => getAnalogyScenario(raceId, scope, stage, boats),
     enabled,
+  );
+
+/** STEP4 の件数を押したときだけ、範囲の元のレースの一覧を読む（BOA-823） */
+export const useAnalogyScenarioRaces = (raceId, scope, stage, enabled) =>
+  useAnalogyResource(
+    `scenario-races|${raceId}|${scope ?? ""}|${stage}`,
+    () => getAnalogyScenarioRaces(raceId, scope, stage),
+    enabled && Boolean(scope),
   );

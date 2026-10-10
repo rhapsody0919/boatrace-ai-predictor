@@ -1830,7 +1830,29 @@
         "hintMapFirst": " {{n}}번 보트={{n}}코스",
         "hintMapRest": "={{n}}코스",
         "hintTodayCourse": "{{n}}코스",
-        "stepLabel": "STEP{{n}}"
+        "stepLabel": "STEP{{n}}",
+        "races": {
+          "title": {
+            "first": "{{b}}번 보트가 1착인 레이스",
+            "tech": "결정 수가 {{tech}}인 레이스",
+            "manshu": "만주(3연단 1만 엔 이상) 레이스",
+            "tri": "{{combo}} 레이스",
+            "band": "{{from}}착 {{a}}번 보트→{{to}}착 {{b}}번 보트 레이스"
+          },
+          "count": "{{m}}건 중 최근 {{k}}건",
+          "capped": "전체 {{n}}건 중 최근 {{kept}}건에서 뽑았다",
+          "otherScope": "이 목록은 1번 보트의 급별로 모은 레이스에서 뽑았다(막대의 건수와 모은 방법이 다르다)",
+          "more": "더 보기({{n}}건까지)",
+          "close": "목록 닫기",
+          "loading": "불러오는 중",
+          "error": "목록을 불러오지 못했다.",
+          "retry": "다시 불러오기",
+          "notReady": "이 목록은 다음 아침 배치부터 나온다",
+          "none": "최근 {{kept}}건 중에는 이 레이스가 없다",
+          "raceNo": "{{n}}R",
+          "techPay": "{{tech}}, {{yen}}엔",
+          "bandLink": "이 띠의 레이스 보기 ›"
+        }
       },
       "barLabel": "{{boat}}번 보트 {{p}} {{n}}건",
       "feedback": {

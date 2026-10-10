@@ -1349,6 +1349,112 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       expect(await bestIn(section, "全体")).toEqual([4]);
     });
 
+    test("STEP4 の件数の札を押すと、図の下に元のレースの一覧が開き、行がそのレースの結果へのリンクになる（BOA-823）", async ({
+      page,
+    }) => {
+      await setup(page);
+      // 範囲の元のレースの一覧（scope_races の形）。2号艇が1着は 10/09・10/06、1-3-2 は 10/08、万舟は 10/07
+      const races = {
+        n: 4000,
+        kept: 3000,
+        entry_bits: [
+          "waku",
+          "inlost",
+          "mae",
+          "mae6",
+          "mae5",
+          "mae56",
+          "maeOther",
+        ],
+        form_bits: ["flat", "wall", "d2", "d3", "kado", "d1", "dash"],
+        rows: [
+          ["2026-10-09-02-09", 1, 0b10011, "214", "差し", 1980],
+          ["2026-10-08-01-04", 1, 0b1, "132", "逃げ", 1240],
+          ["2026-10-07-12-07", 1, 0b10000, "415", "まくり", 15600],
+          ["2026-10-06-04-03", 1, 0, "213", "差し", 1120],
+          ["2026-10-05-04-03", 4, 0, "216", "差し", 3000],
+          ...Array.from({ length: 8 }, (_, i) => [
+            `2026-09-${String(20 - i).padStart(2, "0")}-05-01`,
+            1,
+            0,
+            "123",
+            "逃げ",
+            500,
+          ]),
+        ],
+      };
+      let racesCalls = 0;
+      await page.route("**/api/analogy/scenario/**", (route) => {
+        if (new URL(route.request().url()).searchParams.get("races") !== "1")
+          return route.fallback();
+        racesCalls += 1;
+        return route.fulfill({
+          json: { status: "ok", run_id: "x", scope: "NC:x", races },
+        });
+      });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      expect(racesCalls).toBe(0); // 押すまで読まない
+      const s4 = section.locator("#af-scn-s4");
+      // 1着の棒（2号艇）。件数は札「◯件 ›」
+      const bar2 = s4
+        .locator("button.af-bar")
+        .filter({ hasText: "2号艇" })
+        .first();
+      await expect(bar2.locator(".af-cnt-chip")).toHaveText(/^[\d,]+件 ›$/);
+      await bar2.click();
+      const panel = s4.getByTestId("analogy-race-panel");
+      await expect(panel).toHaveCount(1);
+      await expect(panel).toContainText("2号艇が1着のレース");
+      // 進入は枠なり（既定）なので、前付けの 10/05 は入らない
+      await expect(panel).toContainText("2件のうち直近2件");
+      await expect(panel).toContainText(
+        "全4,000件のうち、直近3,000件の中から出している",
+      );
+      const rows = panel.locator(".af-rl-row");
+      await expect(rows).toHaveCount(2);
+      await expect(rows.first()).toHaveAttribute(
+        "href",
+        "/race/2026-10-09-02-09",
+      );
+      await expect(rows.first()).toContainText("差し・1,980円");
+      // 3連単の行（一番上）を押すと、1着の一覧は閉じて3連単の一覧が開く（同時に1つ）
+      const triRow = s4.locator("button.af-bar:has(.af-tri)").first();
+      const combo = (await triRow.locator(".af-tri").innerText()).replace(
+        /\s/g,
+        "",
+      );
+      await triRow.click();
+      await expect(s4.getByTestId("analogy-race-panel")).toHaveCount(1);
+      await expect(s4.getByTestId("analogy-race-panel")).toContainText(
+        `${combo} のレース`,
+      );
+      // 万舟
+      await s4
+        .getByRole("button", { name: /^[\d,]+件 ›$/ })
+        .last()
+        .click();
+      await expect(s4.getByTestId("analogy-race-panel")).toContainText(
+        "万舟（3連単1万円以上）のレース",
+      );
+      await expect(s4.locator(".af-rl-row")).toHaveCount(1);
+      // ✕ で閉じる
+      await s4.getByRole("button", { name: "一覧を閉じる" }).click();
+      await expect(s4.getByTestId("analogy-race-panel")).toHaveCount(0);
+      // もっと見る（5件 → 最大20件）: 逃げ（9件）
+      await s4
+        .locator("button.af-bar")
+        .filter({ hasText: /^逃げ/ })
+        .first()
+        .click();
+      const p2 = s4.getByTestId("analogy-race-panel");
+      await expect(p2.locator(".af-rl-row")).toHaveCount(5);
+      await p2.getByRole("button", { name: /^もっと見る/ }).click();
+      await expect(p2.locator(".af-rl-row")).toHaveCount(9);
+      expect(racesCalls).toBe(1); // 一度読めば押し直しても読み直さない
+    });
+
     test("展開シナリオの段の番号は四角の STEP 札で、画面に丸数字（①〜④）を出さない（2026-10-10 ユーザー承認）", async ({
       page,
     }) => {
@@ -1471,7 +1577,8 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
         const after = await Promise.all(
           (await bd.locator(".af-bar").all()).map(rowText),
         );
-        for (const r of after) expect(r.v).toMatch(/^[\d.]+% [\d,]+件$/);
+        // 展開シナリオは件数が押せる札（「75件 ›」、BOA-823）
+        for (const r of after) expect(r.v).toMatch(/^[\d.]+% [\d,]+件( ›)?$/);
         if (inBand)
           expect(after.find((r) => r.combo === inBand.combo)).toEqual(inBand);
         // もう一度押すと戻る

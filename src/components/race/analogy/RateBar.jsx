@@ -18,6 +18,7 @@ export default function RateBar({
   onClick,
   ariaLabel,
   few = false,
+  countChip = false,
 }) {
   const { t } = useTranslation();
   const p = n ? hits / n : 0;
@@ -50,9 +51,16 @@ export default function RateBar({
         {value ?? (
           <>
             {fmtPct(n ? p : null)}{" "}
-            <small>
-              {t("aiPredictionTab.analogy.count", { n: fmtCount(hits) })}
-            </small>
+            {countChip ? (
+              // 件数の札「168件 ›」: 押すとその件数の元のレースが図の下に開く（BOA-823）
+              <span className="af-cnt-chip">
+                {t("aiPredictionTab.analogy.count", { n: fmtCount(hits) })} ›
+              </span>
+            ) : (
+              <small>
+                {t("aiPredictionTab.analogy.count", { n: fmtCount(hits) })}
+              </small>
+            )}
           </>
         )}
       </span>

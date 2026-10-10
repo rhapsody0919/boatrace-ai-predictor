@@ -9,10 +9,10 @@ import {
 } from "../../../utils/analogyAggregate";
 import { SCOPE_FLOW } from "./analogyColors";
 
-function Row({ combo, count, total, max }) {
+function Row({ combo, count, total, max, onPick, picked = false }) {
   const { t } = useTranslation();
-  return (
-    <div className="af-bar">
+  const body = (
+    <>
       <span className="af-tri">
         {combo.map((b, i) => (
           <span key={i}>
@@ -29,18 +29,41 @@ function Row({ combo, count, total, max }) {
       </span>
       <span className="af-bar-v">
         {fmtPct(count / total, 1)}{" "}
-        <small>
-          {t("aiPredictionTab.analogy.count", { n: fmtCount(count) })}
-        </small>
+        {onPick ? (
+          // 件数の札: 押すとこの出目の元のレースが下に開く（BOA-823）
+          <span className="af-cnt-chip">
+            {t("aiPredictionTab.analogy.count", { n: fmtCount(count) })} ›
+          </span>
+        ) : (
+          <small>
+            {t("aiPredictionTab.analogy.count", { n: fmtCount(count) })}
+          </small>
+        )}
       </span>
-    </div>
+    </>
+  );
+  return onPick ? (
+    <button
+      type="button"
+      className={`af-bar${picked ? " is-selected" : ""}`}
+      aria-pressed={picked}
+      data-af-control="scenario_races_tri"
+      onClick={() => onPick(combo)}
+    >
+      {body}
+    </button>
+  ) : (
+    <div className="af-bar">{body}</div>
   );
 }
 
 /**
  * よく出た3連単（上位3つ＋残りは畳む。spec B-8・C-5）
- * @param {{tri: Record<string, number>, first?: number|null, not1?: boolean, band?: object|null}} props
- *   band は着順の流れで押した帯（bandBreakdown）。押していればその帯の内訳だけを出す
+ * @param {{tri: Record<string, number>, first?: number|null, not1?: boolean, band?: object|null,
+ *   onPick?: (combo: number[]) => void, picked?: string|null, onBandRaces?: () => void, bandPicked?: boolean}} props
+ *   band は着順の流れで押した帯（bandBreakdown）。押していればその帯の内訳だけを出す。
+ *   onPick があれば行の件数を札にして押せる（押すとその出目の元のレース。BOA-823）。onBandRaces があれば、
+ *   帯の内訳の一番下に「この帯のレースを見る」
  */
 export default function TrifectaList({
   tri,
@@ -48,6 +71,10 @@ export default function TrifectaList({
   not1 = false,
   band = null,
   scenario = false,
+  onPick,
+  picked = null,
+  onBandRaces,
+  bandPicked = false,
 }) {
   const { t } = useTranslation();
   // 着順の流れの帯を押していれば、その帯に入る3連単だけを全部（BOA-816、ユーザー決定の案1）
@@ -86,9 +113,22 @@ export default function TrifectaList({
               count={c}
               total={total}
               max={max}
+              onPick={onPick}
+              picked={picked === combo.join("-")}
             />
           ))}
         </div>
+        {onBandRaces && (
+          <button
+            type="button"
+            className="af-rl-band"
+            aria-pressed={bandPicked}
+            data-af-control="scenario_races_band"
+            onClick={onBandRaces}
+          >
+            {t("aiPredictionTab.analogy.scenario.races.bandLink")}
+          </button>
+        )}
       </div>
     );
   }
@@ -104,6 +144,8 @@ export default function TrifectaList({
       count={c}
       total={total}
       max={max}
+      onPick={onPick}
+      picked={picked === combo.join("-")}
     />
   );
   return (
