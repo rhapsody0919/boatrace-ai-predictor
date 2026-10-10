@@ -2473,6 +2473,11 @@ button.af-bar {
     align-items: start;
   }
 
+  /* ① 進入の表は名前と数字が離れすぎないよう、今の幅（720px）のまま */
+  .af-ents {
+    max-width: 720px;
+  }
+
   /* ② 手がかり: 絵は今の大きさのまま左、当てはまる条件を右 */
   .af-hint .af-split {
     grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
