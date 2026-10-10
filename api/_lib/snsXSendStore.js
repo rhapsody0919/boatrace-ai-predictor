@@ -134,27 +134,47 @@ export const xSendStore = {
   },
   async queue() {
     const jobs = await allRows(
-      "sns_x_send_jobs?select=id,draft_id,state,scheduled_at,expires_at,error_code,snapshot&order=id",
+      "sns_x_send_jobs?select=id,draft_id,state,scheduled_at,expires_at,error_code,posted_at,snapshot&order=id",
     );
     const drafts = await allRows(
-      "sns_drafts?platform=in.(x,youtube)&status=neq.archived&select=id,title,platform,status,scheduled_at,source_data&order=id",
+      "sns_drafts?platform=in.(x,youtube)&select=id,title,platform,format,status,scheduled_at,posted_at,source_data&order=id",
     );
-    return drafts.map((d) => {
-      const j = jobs.find((job) => job.draft_id === d.id),
-        q = j?.snapshot?.queue || d.source_data?.deadline_queue;
-      return {
-        id: j?.id || d.id,
-        draft_id: d.id,
-        title: d.title,
-        channel: d.platform,
-        state: j?.state || d.status,
-        scheduled_at: j?.scheduled_at || d.scheduled_at,
-        expires_at: j?.expires_at || q?.expires_at,
-        deadline_at: q?.deadline_at,
-        youtube_mode: q?.youtube_mode,
-        error_code: j?.error_code,
-      };
-    });
+    const jobsByDraft = new Map(jobs.map((job) => [job.draft_id, job]));
+    const observations = await allRows(
+      "sns_metric_observations?select=id,draft_id,window,source,metric_name,metric_value,missing_reason,observed_at,data_through,period_end,definition&source=neq.mock&order=id",
+    );
+    const byDraft = new Map();
+    for (const observation of observations) {
+      if (!byDraft.has(observation.draft_id))
+        byDraft.set(observation.draft_id, []);
+      byDraft.get(observation.draft_id).push(observation);
+    }
+    return drafts
+      .filter(
+        (d) =>
+          d.status !== "archived" || jobsByDraft.get(d.id)?.state === "posted",
+      )
+      .map((d) => {
+        const j = jobsByDraft.get(d.id),
+          q = j?.snapshot?.queue || d.source_data?.deadline_queue;
+        return {
+          id: j?.id || d.id,
+          draft_id: d.id,
+          title: d.title,
+          channel: d.platform,
+          format: d.format,
+          race_id: d.source_data?.race_id,
+          grade: d.source_data?.grade,
+          state: j?.state || d.status,
+          posted_at: j?.posted_at || d.posted_at,
+          observations: byDraft.get(d.id) || [],
+          scheduled_at: j?.scheduled_at || d.scheduled_at,
+          expires_at: j?.expires_at || q?.expires_at,
+          deadline_at: q?.deadline_at,
+          youtube_mode: q?.youtube_mode,
+          error_code: j?.error_code,
+        };
+      });
   },
   async approve(id, approverId, snapshot, scheduledAt) {
     return db("rpc/approve_sns_x_send", {
