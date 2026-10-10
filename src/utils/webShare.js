@@ -52,11 +52,23 @@ export async function shareVideoFile(file, title = "") {
  * ダウンロードをトリガーすることでこれを回避する。
  * @param {string} fileUrl
  * @param {string} [fileName]
+ * @param {string|null} [expectedContentType] CSV等で要求するMIME（任意）
  */
-export async function downloadFileBlob(fileUrl, fileName = "download") {
+export async function downloadFileBlob(
+  fileUrl,
+  fileName = "download",
+  expectedContentType = null,
+) {
   const response = await fetch(fileUrl);
   if (!response.ok) {
     throw new Error(`ファイルの取得に失敗しました: ${response.status}`);
+  }
+  if (
+    expectedContentType &&
+    response.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !==
+      expectedContentType
+  ) {
+    throw new Error("ファイルの形式が不正です");
   }
   const blob = await response.blob();
   const objectUrl = URL.createObjectURL(blob);

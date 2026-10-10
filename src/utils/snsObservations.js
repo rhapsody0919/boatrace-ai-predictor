@@ -361,3 +361,25 @@ export function buildObservationUtm({
     utm_content: `${draftId}/${variantId}`,
   };
 }
+
+/** YouTubeプロフィール共通リンク。公開確認後に手動設定用URLを生成する。 */
+export function buildYoutubeProfileUtm({ destinationUrl, releaseEvidence }) {
+  if (
+    !releaseEvidence?.confirmed_by ||
+    !releaseEvidence?.reference ||
+    !timestamp(releaseEvidence?.confirmed_at) ||
+    releaseEvidence.url !== destinationUrl
+  ) throw new Error("正式公開URLの確認が必要です");
+  const url = new URL(destinationUrl);
+  if (url.origin !== "https://www.boat-ai.jp" || url.username || url.password)
+    throw new Error("公開URLが不正です");
+  const params = {
+    utm_source: "youtube",
+    utm_medium: "social",
+    utm_campaign: "profile",
+    utm_content: "profile",
+  };
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  return { url: url.toString(), tracking_url: url.toString(), destination_url: destinationUrl,
+    release_evidence: releaseEvidence, ...params };
+}

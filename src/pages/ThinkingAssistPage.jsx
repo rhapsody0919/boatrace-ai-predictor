@@ -106,9 +106,9 @@ function reducer(state, action) {
         metric: null,
       };
     case "metric":
+      // 値を押したら図を6艇比較に変えるだけ。深掘りは開かない（開くと深掘りへ送られて比べた図が見えない。BOA-808 1）
       return {
         ...state,
-        deep: action.boat ?? state.deep,
         metric: state.metric === action.metric ? null : action.metric,
       };
     case "back":
@@ -441,7 +441,12 @@ export default function ThinkingAssistPage() {
               base: Math.round((b1u.k / b1u.n) * 100),
               // どのレースから出した割合か（271 の指摘の型）
               scope: ASSIST_COPY.scopeChip(
-                factsScopeLabel(boatFacts[0].scope, venueName),
+                factsScopeLabel(
+                  boatFacts[0].scope,
+                  venueName,
+                  1,
+                  today?.classes?.[0],
+                ),
                 boatFacts[0].scope.n,
               ),
             }
@@ -452,6 +457,8 @@ export default function ThinkingAssistPage() {
         points: tickets.length,
         summary: betSummary,
         ranks: popularityRanks(trifecta ?? {}),
+        oddsAt,
+        finished: Boolean(race?.result?.finished),
       },
       scope,
       national,
@@ -495,7 +502,8 @@ export default function ThinkingAssistPage() {
       exhRank != null
         ? { text: racers[0].exhTime.toFixed(2), rank: exhRank }
         : null,
-    scopeLabelOf: (sc) => factsScopeLabel(sc, venueName),
+    scopeLabelOf: (sc, boat) =>
+      factsScopeLabel(sc, venueName, boat, today?.classes?.[boat - 1]),
   };
   const sheetCard =
     state.sheet?.type === "theory"

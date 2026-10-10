@@ -745,7 +745,9 @@ test.describe("思考アシスト: PR4 のファン評価 1周目", () => {
     await open(page);
     await lensTab(page, "展開").click();
     await expect(
-      page.getByText(/^全国・級の並びが同じ（予選も含む） 2,463件$/),
+      page.getByText(
+        /^全国・級の並びが同じ（予選も含む） 2,463件・進入が分かったレース$/,
+      ),
     ).toBeVisible();
   });
 
@@ -849,7 +851,9 @@ test.describe("思考アシスト: PR4 のデザイナーのレビューと 271 
     await open(page);
     await lensTab(page, "展開").click();
     await expect(
-      page.getByText(/^全国・級の並びが同じ（予選も含む） 2,457件$/),
+      page.getByText(
+        /^全国・級の並びが同じ（予選も含む） 2,457件・平均STがそろったレース$/,
+      ),
     ).toBeVisible();
     await lensTab(page, "軸").click();
     await page.getByRole("button", { name: /^1号艇\s/ }).click();
@@ -870,7 +874,8 @@ test.describe("思考アシスト: PR4 のデザイナーのレビューと 271 
     await lensTab(page, "機力").click();
     await expect(
       page.getByText(
-        "展示タイムは4号艇が一番速い（6.83）・モーター2連率は4号艇が一番高い（38.5%）",
+        // BOA-808 2 でオリジナル展示の一番も結論に入れた
+        "展示タイム・モーター2連率は4号艇（6.83秒・38.5%）、一周・まわり足は1号艇（37.31秒・11.49秒）が一番",
       ),
     ).toBeVisible();
   });
@@ -939,7 +944,9 @@ test.describe("思考アシスト: ユーザー決定 A・B（2026-10-09）", ()
     await expect(sum.getByText("54.6%", { exact: true })).toHaveCount(1);
     await expect(
       sum
-        .getByText("全国・級の並びが同じ準優勝戦 119件", { exact: true })
+        .getByText("全国・級の並びが同じ準優勝戦（1号艇がB1） 119件", {
+          exact: true,
+        })
         .first(),
     ).toBeVisible();
     await expect(sum.getByText(/^徳山の全レース 17,552件/)).toBeVisible();
@@ -1147,5 +1154,185 @@ test.describe("思考アシスト: ガイドと Cookie の同意バナー（PR5 
     await page.getByRole("button", { name: "ガイド", exact: true }).click();
     await page.getByRole("button", { name: "次へ" }).click({ timeout: 5000 });
     await expect(page.getByText("1号艇は逃げられそう？")).toBeVisible();
+  });
+});
+
+test.describe("思考アシスト: BOA-808（PR4 のファン評価2周目の P2）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("1: 図の値を押すと6艇比較になり、深掘りは開かず図の見出しが画面に残る", async ({
+    page,
+  }) => {
+    await open(page);
+    await page
+      .getByRole("button", { name: "平均ST（直近30走） 0.132、6艇で比べる" })
+      .click();
+    await expect(page.getByRole("button", { name: /図を戻す/ })).toBeVisible();
+    await expect(page.locator(".ta-deep")).toHaveCount(0);
+    await expect(page.locator(".ta-board-title")).toBeInViewport();
+  });
+
+  test("1: 深掘りの中の値を押すと、深掘りは開いたまま図の見出しまで戻る", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const deep = page.locator(".ta-deep");
+    await expect(deep).toBeVisible();
+    await deep
+      .getByRole("button", { name: /、6艇で比べる$/ })
+      .first()
+      .click();
+    await expect(page.getByRole("button", { name: /図を戻す/ })).toBeVisible();
+    await expect(deep).toBeVisible();
+    await expect(page.locator(".ta-board-title")).toBeInViewport();
+  });
+});
+
+test.describe("思考アシスト: BOA-809（PR5 のレビューの P3）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  for (const width of [375, 768, 1440]) {
+    test(`ヘッダーの押せる範囲（44px）が重ならない（${width}px）`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await open(page);
+      // 風と潮の「傾向 ›」が並んでから測る（届く前は行が折り返さない）
+      await expect(
+        page.getByRole("button", { name: /^今日の風.*の過去レースの傾向$/ }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "潮の傾向の過去レースの傾向" }),
+      ).toBeVisible();
+      const over = await page.evaluate(() => {
+        const hits = [...document.querySelectorAll(".ta-header button")].map(
+          (el) => {
+            const b = el.getBoundingClientRect();
+            const w = Math.max(b.width, 44);
+            const h = Math.max(b.height, 44);
+            const cx = b.x + b.width / 2;
+            const cy = b.y + b.height / 2;
+            return {
+              name: el.getAttribute("aria-label") || el.textContent,
+              x1: cx - w / 2,
+              x2: cx + w / 2,
+              y1: cy - h / 2,
+              y2: cy + h / 2,
+            };
+          },
+        );
+        const out = [];
+        hits.forEach((a, i) =>
+          hits.slice(i + 1).forEach((b) => {
+            const ox = Math.min(a.x2, b.x2) - Math.max(a.x1, b.x1);
+            const oy = Math.min(a.y2, b.y2) - Math.max(a.y1, b.y1);
+            if (ox > 0.5 && oy > 0.5) out.push(`${a.name} × ${b.name}`);
+          }),
+        );
+        return out;
+      });
+      expect(over).toEqual([]);
+    });
+  }
+
+  test("ガイド①の光らせた枠は、堅い？荒れる？の見出しの字にかからない", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: "ガイド", exact: true }).click();
+    const lit = page.locator(".ta-rough.ta-guide-lit");
+    await expect(lit).toBeVisible();
+    const gap = await lit.evaluate((el) => {
+      const s = getComputedStyle(el);
+      const inner = parseFloat(s.paddingLeft) + parseFloat(s.outlineOffset);
+      return inner - parseFloat(s.outlineWidth);
+    });
+    // 枠の内側の端が見出しの左端（余白0）より外にある
+    expect(gap).toBeGreaterThanOrEqual(0);
+  });
+});
+
+test.describe("思考アシスト: BOA-808（言葉と出し分け）", () => {
+  test("2: 機力の結論にオリジナル展示の一番も入る", async ({ page }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "機力").click();
+    await expect(
+      page.getByText(
+        "展示タイム・モーター2連率は4号艇（6.83秒・38.5%）、一周・まわり足は1号艇（37.31秒・11.49秒）が一番",
+      ),
+    ).toBeVisible();
+  });
+
+  test("6: 進入の過去レースの傾向が無いとき、0件の札と棒を出さない", async ({
+    page,
+  }) => {
+    // v16 の保存が無いレースと同じく、進入の型ごとの値が無い
+    await routeThinkingAssistV16(page, {
+      overrides: {
+        scenario: (body) => ({
+          ...body,
+          scenario: { ...body.scenario, cells: {} },
+        }),
+      },
+    });
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(page.getByText(/^✓ 今日の展示は/)).toBeVisible();
+    await expect(
+      page.getByText("このレースは過去レースの傾向がまだ無い"),
+    ).toBeVisible();
+    await expect(page.getByText(/ 0件$/)).toHaveCount(0);
+  });
+
+  test("P3: 類似レースでよく出た3連単のオッズ・人気の時点を書く（終わったレースは「今日」と書かない）", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await expect(
+      page.getByText(
+        /^件数は類似レース\d+件のうち。オッズ・人気はこのレースの\d{1,2}:\d{2}時点で、確定オッズではない$/,
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: /^\d+(\.\d+)?倍$/ }).first(),
+    ).toBeVisible();
+  });
+});
+
+test.describe("思考アシスト: BOA-808・809（2026-10-10 ユーザー決定）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("808 5: 買い目の横軸に「良い」の札を出さない（人気／人気薄だけ）", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "買い目").click();
+    const axis = page.locator(".ta-board-axis");
+    await expect(axis).toContainText("人気薄");
+    await expect(axis.locator(".ta-good")).toHaveCount(0);
+  });
+
+  test("809: 艇ごとに件数が違う範囲の札に、その艇の艇番と級を書く", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^3号艇\s/ }).click();
+    await expect(
+      page
+        .locator(".ta-deep")
+        .getByText(/^全国・級の並びが同じ.*（3号艇がA1） [\d,]+件$/)
+        .first(),
+    ).toBeVisible({ timeout: 30000 });
   });
 });

@@ -213,7 +213,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/accidentRate.js` | — | currentPeriodRange, computeAccidentStats, ACCIDENT_RATE_LINE, ACCIDENT_NEAR_POINTS, ACCIDENT_BADGE_MIN_STARTS |
 | `src/utils/aiCopyPrompts.js` | race-ai-copy機能の分析依頼プロンプト種別定義 | getAiCopyPromptOptions, getAiCopyPromptText, getAiCopyPromptLabel, AI_COPY_PROMPT_TYPES |
 | `src/utils/aiCopyText.js` | 「AI用にコピー」（BOA-194）の文面を組み立てる純関数（BOA-770）。 | formatJstDateTime, toMarkdownTable, buildTurnPredictionSection, buildPremiseLines, buildNotes ほか3件 |
-| `src/utils/analogyAggregate.js` | アナロジー・ファインダー v16 の類似レース・展開シナリオの集計（BOA-271 spec FR-B・FR-C）。純粋関数。 | sliderSteps, defaultStepIndex, normalizeNeighbor, aggregateNeighbors, layerItemKeys ほか13件 |
+| `src/utils/analogyAggregate.js` | アナロジー・ファインダー v16 の類似レース・展開シナリオの集計（BOA-271 spec FR-B・FR-C）。純粋関数。 | sliderSteps, defaultStepIndex, normalizeNeighbor, aggregateNeighbors, layerItemKeys ほか17件 |
 | `src/utils/analogyContribution.js` | アナロジー・ファインダーの寄与度（BOA-271 FR-1）の純粋関数。 | roundFromStageCategory, sliceCandidates, resolveContributionSlice, themeEntries, roundToTotal ほか7件 |
 | `src/utils/analogyFacts.js` | アナロジー・ファインダー v16「差がつく材料」（タブ1、BOA-271 spec FR-A）の純粋関数。 | rankPositions, todayPosition, todayValueRank, judgeGap, agreementVerdict ほか29件 |
 | `src/utils/analogyFormat.js` | アナロジー・ファインダー v16 の表記（BOA-271 screens「純粋関数」）。 | fmtEntry, comboLabel, scopeName, fmtFactValue, splitSentences ほか7件 |
@@ -229,7 +229,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/analogyTreeShap.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: LightGBM の | compileModel, predictRaw, contributions |
 | `src/utils/analytics.js` | — | getCookieConsent, setCookieConsent, initAdSense, initTrackingIfConsented, initGA ほか9件 |
 | `src/utils/assistModel.js` | 思考アシスト（BOA-430）の画面のモデル。純粋関数だけ（取得・描画はしない）。 | raceRound, sameClassScope, sameClassLabel, baseVerdict, roughCard ほか22件 |
-| `src/utils/assistSummary.js` | 思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル。純粋関数だけ（取得・描画はしない）。 | factsScope, factChips, b1Usual, hintSummary, formSummary ほか17件 |
+| `src/utils/assistSummary.js` | 思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル。純粋関数だけ（取得・描画はしない）。 | factsScope, factChips, b1Usual, hintSummary, formSummary ほか18件 |
 | `src/utils/assistTheory.js` | 思考アシスト（BOA-430）のセオリーカードとガイドのモデル。純粋関数だけ（取得・描画はしない）。 | theoryCard, guideSteps, windBandLabel |
 | `src/utils/bestOf.js` | 6艇を並べた値の中で、レース内の最良の艇番を返す（docs/design/race-detail-ui-unify spec R1）。 | bestOf |
 | `src/utils/blogFaqSchema.js` | — | extractFaqItems, buildFaqPageSchema |
@@ -266,7 +266,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/sgNowVenues.js` | トップの「SG開催中」帯に出す会場を決める（集客レーン、2026-10-02）。 | getSgNowVenues |
 | `src/utils/share.js` | SNSシェア関数 | shareUrlFor, shareRacePredictionToX, shareHitRaceToX, shareDailyStatsToX, generatePredictionShareText ほか2件 |
 | `src/utils/smallSampleRate.js` | 出走数が少ないときの率の出し方（BOA-513、2026-09-29 ファン4人のパネルで決定）。 | formatRateOrCount, powerIndexTone, formatPowerIndex |
-| `src/utils/snsObservations.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。 | observationPeriod, validateObservation, validateProviderObservation, compareObservations, buildObservationUtm ほか4件 |
+| `src/utils/snsObservationCsv.js` | — | csvPublicationRange, buildObservationCsvRows, serializeObservationCsv, CSV_COLUMNS |
+| `src/utils/snsObservations.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。 | observationPeriod, validateObservation, validateProviderObservation, compareObservations, buildObservationUtm ほか5件 |
 | `src/utils/stConsideration.js` | ST考察（安定率・出遅率・抜出）の算出（phase a FR-1） | deriveRaceStContext, computeStConsideration, computeStHistogram, getStHistory, STABLE_THRESHOLD ほか3件 |
 | `src/utils/stDeviation.js` | 本番STと展示STのズレ（/本番ST − 展示ST/）。どちらかが無い（null・undefined）走は null。 | stDeviation |
 | `src/utils/techniqueColors.js` | 決まり手の色（グラフの棒・帯・凡例の点）。色そのものは design-tokens.css の | techniqueColor |
@@ -304,11 +305,11 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, hasRulesForVenue, getRulesForVenue ほか3件 |
 | `src/services/sherlockModel.js` | シャーロック予想 共有モデルロジック（純粋関数のみ） | mean, buildFeatures, softmax, predictConditionalLogit, impliedProbs ほか5件 |
 | `src/services/sherlockService.js` | シャーロック予想 データ取得・推論サービス | getSherlockModelInfo, getSherlockPredictions |
-| `src/services/snsHubService.js` | SNSマーケティングハブ 管理画面用サービス層 | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか31件 |
+| `src/services/snsHubService.js` | — | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか32件 |
 | `src/services/supabaseClient.js` | Supabase クライアント（フロントエンド用） | supabase |
 | `src/services/supabaseDataService.js` | Supabase データサービス | clearCache, aggregateRacerVenueBoatStats, aggregateRacerCrossStats, FETCH_ALL_BY_IN_ORDER, supabaseDataService |
 | `src/services/watsonService.js` | ワトソン予想 データ取得サービス | getWatsonModelInfo, getWatsonPredictions |
 
 ---
 
-対象 276 ファイル / export 1488 件。
+対象 277 ファイル / export 1499 件。
