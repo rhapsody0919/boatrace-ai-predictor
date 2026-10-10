@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import BoatBadge from "../BoatBadge";
 import { BOAT_LINE_COLORS } from "../../../utils/colors";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
@@ -52,22 +52,26 @@ function Track({ model, row, onMetric }) {
   const x = scale(model, row.x);
   const color = BOAT_LINE_COLORS[row.boat];
   // 端の値（目盛りの外に詰めた値を含む）は文字を内側へ寄せ、右の印や図の外にはみ出させない（ファン評価 3周目 指摘12）
-  const valClass = `ta-track-val ta-num${row.dotBest ? " ind-best" : ""}${x > 85 ? " ta-track-val-end" : x < 15 ? " ta-track-val-start" : ""}`;
+  const valClass = `ta-track-val ta-num${row.dotBest ? " ind-best" : ""}${row.flying ? " ta-track-val-f" : ""}${x > 85 ? " ta-track-val-end" : x < 15 ? " ta-track-val-start" : ""}`;
   const def = row.dotMetric ? METRICS[row.dotMetric] : null;
   return (
     <div
       className={`ta-track${model.good ? ` ta-track-good-${model.good}` : ""}`}
     >
       <span className="ta-track-rail" aria-hidden="true" />
+      {/* 棒（長さ）は「長いほど良い」図だけ（軸の全国勝率など、良いが右）。左ほど良い図（展開の ST・機力の
+          展示タイムの差）と買い目（オッズ）は点だけにし、長さに意味を持たせない（BOA-801 3、2026-10-10 ユーザー決定） */}
+      {model.good === "right" && (
+        <span
+          className="ta-track-bar"
+          aria-hidden="true"
+          style={{ width: `${x}%`, background: color }}
+        />
+      )}
       <span
-        className="ta-track-bar"
+        className={`ta-track-dot${row.flying ? " ta-track-dot-f" : ""}`}
         aria-hidden="true"
-        style={{ width: `${x}%`, background: color }}
-      />
-      <span
-        className="ta-track-dot"
-        aria-hidden="true"
-        style={{ left: `${x}%`, background: color }}
+        style={{ left: `${x}%`, background: row.flying ? undefined : color }}
       />
       {row.dotText &&
         (def ? (
@@ -97,7 +101,8 @@ function Track({ model, row, onMetric }) {
 /**
  * レースの図（FR-3、案②レーン）。行＝1〜6号艇（艇の丸・苗字・級）、横軸はレンズで変わる。
  * 艇の行を押すと深掘り、数字を押すと6艇比較（2段目、「図を戻す」で戻る）。
- * 買い目レンズでは行ごとに「1着・2着・3着」の候補、ほかのレンズでは右端の印からマークシートを開く（screens S-1 C）。
+ * 買い目レンズでは行ごとに「1着・2着・3着」の候補。ほかのレンズでは右端の「+」でその行に同じ候補のボタンを出す
+ * （開くのは1行だけ。spec D-43・BOA-801 7。マークシートは固定の買い目から開く）。
  * 欠場の艇には候補のボタンを出さない（D-38）。
  * marks はレンズごとの印（良い方の札・凹みの手がかり・攻め手・展示の偏り・チルト・交換。assistSummary から作る）。
  * 印と F は押すとセオリーカード（ファン評価 PR4 で2回出た「押せない」の解消）
@@ -113,11 +118,14 @@ export default function RaceLaneBoard({
   onMetric,
   onBack,
   onToggleBet,
-  onOpenSheet,
   onBasis = null,
   marks = null,
 }) {
   const bet = model.kind === "bet";
+  // 「+」で候補のボタンを開いている行（開くのは1行だけ。レンズが替わったら閉じる。BOA-801 7）
+  // レンズの種類と組で持ち、レンズが替わったら開いていないのと同じにする（effect で閉じない）
+  const [pick, setPick] = useState(null);
+  const pickRow = pick?.kind === model.kind ? pick.boat : null;
   // 6艇比較に変わったら図の見出しまで送る。深掘りの中の値を押したときは図が画面の上に外れているため（screens「2段目は図の見出しまで送る」、BOA-808 1）
   const ref = useRef(null);
   const compare = model.kind === "metric" ? model.title : null;
@@ -244,7 +252,7 @@ export default function RaceLaneBoard({
                     </TheoryButton>
                   ))}
               </div>
-              {bet && !r.absent && (
+              {(bet || pickRow === row.boat) && !r.absent && (
                 <div
                   className="ta-pos3"
                   role="group"
@@ -269,7 +277,14 @@ export default function RaceLaneBoard({
                 type="button"
                 className={`ta-add${positions.length ? " ta-add-on" : ""}`}
                 aria-label={ASSIST_COPY.markAria(row.boat, positions)}
-                onClick={onOpenSheet}
+                aria-expanded={pickRow === row.boat}
+                onClick={() =>
+                  setPick(
+                    pickRow === row.boat
+                      ? null
+                      : { kind: model.kind, boat: row.boat },
+                  )
+                }
               >
                 {positions.length ? `${positions.join("-")}着` : "+"}
               </button>

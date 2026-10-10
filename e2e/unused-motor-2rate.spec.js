@@ -63,7 +63,8 @@ test("未使用の新モーターは「—」と注記、使用済みで2着以�
   const table = page.locator(".drt-table").first();
   await expect(table).toBeVisible({ timeout: 30000 });
   const motorRow = table.locator("tbody tr").filter({
-    has: page.locator(".drt-label-full", { hasText: /^モーター2連率$/ }),
+    // 見出しは「モーター2連率（過去90日）」（BOA-802 の3）
+    has: page.locator(".drt-label-full", { hasText: /^モーター2連率（過去90日）$/ }),
   });
   await expect(motorRow).toBeVisible({ timeout: 30000 });
   // 注記

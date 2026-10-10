@@ -1155,6 +1155,18 @@ test.describe("思考アシスト: ガイドと Cookie の同意バナー（PR5 
     await page.getByRole("button", { name: "次へ" }).click({ timeout: 5000 });
     await expect(page.getByText("1号艇は逃げられそう？")).toBeVisible();
   });
+  test("同意バナーが出ている間も、固定フッターの「マークシートを開く」を押せる", async ({
+    page,
+  }) => {
+    await open(page);
+    await expect(page.locator(".cookie-consent")).toBeVisible();
+    await page
+      .getByRole("button", { name: "マークシートを開く" })
+      .click({ timeout: 5000 });
+    await expect(
+      page.getByRole("dialog", { name: "マークシート" }),
+    ).toBeVisible();
+  });
 });
 
 test.describe("思考アシスト: BOA-808（PR4 のファン評価2周目の P2）", () => {
@@ -1433,5 +1445,221 @@ test.describe("思考アシスト: 平均ST の期間と「このコース」（
         "このレースは平均ST（直近30走）を出せない（前日までの値がまだ無い）",
       ),
     ).toBeVisible();
+  });
+});
+
+test.describe("思考アシスト: BOA-801（見せ方の残り）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("2: 展示ST の F は赤い枠の印と「F .01（フライング）」", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    const lane5 = page.locator(".ta-lane").nth(4);
+    await expect(lane5.locator(".ta-track-dot-f")).toHaveCount(1);
+    await expect(lane5.getByText("F .01（フライング）")).toBeVisible();
+    await expect(page.locator(".ta-track-dot-f")).toHaveCount(1);
+  });
+
+  test("4: 堅い？荒れる？の材料にぶれ幅の凡例と全国の値", async ({ page }) => {
+    await open(page);
+    await page.getByRole("button", { name: "堅い？荒れる？の材料" }).click();
+    const sheet = page.getByRole("dialog");
+    await expect(
+      sheet.getByText(/棒の2本の縦線の間＝ぶれ幅（件数が少ないほど広い）/),
+    ).toBeVisible();
+    await expect(sheet.getByText("（全国 55%）").first()).toBeVisible();
+    await expect(sheet.getByText("（全国 17%）").first()).toBeVisible();
+  });
+
+  test("9: 図の札は「モーター2連率」", async ({ page }) => {
+    await open(page);
+    await lensTab(page, "機力").click();
+    await expect(
+      page
+        .locator(".ta-board")
+        .getByText(/^モーター2連率 \d+\.\d%$/)
+        .first(),
+    ).toBeVisible();
+  });
+});
+
+test.describe("思考アシスト: PC 表示（BOA-801 5、龍神ソナーと同じ決まり）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("1440px: 最大 1200px・左端 24px、図は左（480px）、深掘りは右に並ぶ。堅い？荒れる？は 480px", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page);
+    const box = (sel) => page.locator(sel).first().boundingBox();
+    const main = await box(".ta-page");
+    expect(Math.round(main.x)).toBe(24);
+    expect(Math.round(main.width)).toBe(1200);
+    const rough = await box(".ta-rough");
+    expect(rough.width).toBeLessThanOrEqual(480);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    await expect(page.locator(".ta-deep")).toBeVisible();
+    const fig = await box(".ta-split-fig");
+    const side = await box(".ta-split-side");
+    expect(fig.width).toBeLessThanOrEqual(480);
+    // 横に並ぶ（右の列は図の右）
+    expect(side.x).toBeGreaterThan(fig.x + fig.width);
+    const over = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    );
+    expect(over).toBeLessThanOrEqual(0);
+  });
+
+  test("375px は今のまま1列（図の下に深掘り）", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    await expect(page.locator(".ta-deep")).toBeVisible();
+    // 深掘りはなめらかに送るので縦の座標ではなく、同じ1列（左端がそろう・横に並ばない）で見る
+    const board = await page.locator(".ta-board").boundingBox();
+    const deep = await page.locator(".ta-deep").boundingBox();
+    expect(deep.x).toBeLessThan(board.x + board.width / 2);
+    expect(deep.width).toBeGreaterThan(300);
+    const main = await page.locator(".ta-page").boundingBox();
+    expect(Math.round(main.width)).toBe(375);
+  });
+});
+
+test.describe("思考アシスト: 棒は「長いほど良い」図だけ（BOA-801 3）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("軸（全国勝率）は棒、展開・機力・買い目は点だけ", async ({ page }) => {
+    await open(page);
+    const bars = () => page.locator(".ta-board .ta-track-bar");
+    await expect(bars()).toHaveCount(6);
+    for (const lens of ["展開", "機力", "買い目"]) {
+      await lensTab(page, lens).click();
+      await expect(
+        page.locator(".ta-board .ta-track-dot").first(),
+      ).toBeVisible();
+      await expect(bars()).toHaveCount(0);
+    }
+  });
+});
+
+test.describe("思考アシスト: 均等払戻の余り（BOA-801 6、spec FR-8・D-43）", () => {
+  test("切り捨てた余りを払戻の少ない組に足し、そう1行で書く", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 1, 1).click();
+    for (const b of [2, 3, 4]) await candidate(page, b, 2).click();
+    for (const b of [2, 3, 4]) await candidate(page, b, 3).click();
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    await expect(sheet.getByText("余りは払戻の少ない組に足した")).toBeVisible();
+    await expect(sheet.getByText(/・残り0円・/)).toBeVisible();
+  });
+});
+
+test.describe("思考アシスト: 図の右端の「+」（BOA-801 7、spec D-43）", () => {
+  test("「+」を押すとその行に1着・2着・3着の候補、開くのは1行だけ。選ぶと固定の買い目に入る", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    const plus = (boat) =>
+      page.getByRole("button", {
+        name: new RegExp(`^${boat}号艇: .*候補を選ぶ$`),
+      });
+    await plus(1).click();
+    await expect(plus(1)).toHaveAttribute("aria-expanded", "true");
+    await expect(candidate(page, 1, 1)).toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: "マークシート" }),
+    ).toHaveCount(0);
+    await plus(2).click();
+    await expect(candidate(page, 1, 1)).toHaveCount(0);
+    await candidate(page, 2, 1).click();
+    await expect(footer(page)).toContainText("2-—-—");
+    await expect(plus(2)).toHaveText("1着");
+  });
+});
+
+test.describe("思考アシスト: GA4 のイベント（公開後のフォロー、docs/design/thinking-assist/events.md）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+  test("切り替え・レンズ・深掘り・6艇比較・シート・ガイドを送り、押し直しは送らない", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await routeThinkingAssistV16(page, { preview: true });
+    const sent = () =>
+      page.evaluate(() =>
+        window.__events
+          .filter((e) => e[0] === "event" && String(e[1]).startsWith("assist_"))
+          .map((e) => [e[1], e[2]]),
+      );
+    await page.goto(`/race/${RACE_ID}`);
+    await page
+      .getByRole("group", { name: "表示" })
+      .getByRole("button", { name: /思考アシスト/ })
+      .click();
+    await expect(page.getByRole("tablist", { name: "見方" })).toBeVisible({
+      timeout: 20000,
+    });
+    await lensTab(page, "展開").click();
+    await lensTab(page, "展開").click();
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    await page
+      .getByRole("button", { name: /、6艇で比べる$/ })
+      .first()
+      .click();
+    await expect(page.getByRole("button", { name: /図を戻す/ })).toBeVisible();
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    await expect(sheet).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(sheet).toHaveCount(0);
+    await page.getByRole("button", { name: "ガイド", exact: true }).click();
+    await page.getByRole("button", { name: "次へ" }).click();
+    await expect
+      .poll(async () => (await sent()).length, { timeout: 5000 })
+      .toBe(7);
+    const events = await sent();
+    expect(events.map(([name]) => name)).toEqual([
+      "assist_view_switch",
+      "assist_lens_select",
+      "assist_deep_open",
+      "assist_metric_compare",
+      "assist_sheet_open",
+      "assist_guide_step",
+      "assist_guide_step",
+    ]);
+    expect(events[0][1]).toEqual({ race_id: RACE_ID, assist_view: "assist" });
+    expect(events[1][1]).toEqual({ race_id: RACE_ID, assist_lens: "flow" });
+    expect(events[2][1]).toEqual({
+      race_id: RACE_ID,
+      assist_boat: 1,
+      assist_lens: "flow",
+    });
+    expect(Object.keys(events[3][1]).sort()).toEqual([
+      "assist_lens",
+      "assist_metric",
+      "race_id",
+    ]);
+    expect(events[4][1]).toEqual({ race_id: RACE_ID, assist_sheet: "mark" });
+    expect(events.slice(5).map(([, p]) => p.assist_guide_step)).toEqual([1, 2]);
   });
 });

@@ -8,6 +8,7 @@
  * 実行: node scripts/maintenance/verify-thinking-assist-model.js
  */
 import { shouldOpenAssist, showNewBadge } from "../../src/utils/raceView.js";
+import { assistEventOf } from "../../src/utils/assistEvents.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -431,8 +432,10 @@ const flow = boardModel({
   finalRound: true,
 });
 check(
-  "展開レンズ（展示後）: 展示ST。5号艇の F.01 は最良の候補から外し、最良は4号艇（.05）",
-  flow.rows[4].dotText === "F.01" &&
+  "展開レンズ（展示後）: 展示ST。5号艇の F は「F .01（フライング）」と書いて最良の候補から外し、最良は4号艇（.05）（BOA-801 2）",
+  flow.rows[4].dotText === "F .01（フライング）" &&
+    flow.rows[4].flying === true &&
+    flow.rows[3].flying === false &&
     flow.rows
       .filter((r) => r.dotBest)
       .map((r) => r.boat)
@@ -632,6 +635,59 @@ check(
         today: "2026-11-09",
         publishedOn: "2026-10-10",
       }),
+  );
+}
+
+// GA4 のイベント（docs/design/thinking-assist/events.md）。状態が変わらない押し直しは送らない
+{
+  const st = { lens: "axis", deep: null, metric: null };
+  const ev = (state, action) => assistEventOf(state, action);
+  const RESERVED = ["source", "medium", "campaign", "term", "content", "id"];
+  const all = [
+    ev(st, { type: "lens", lens: "flow" }),
+    ev(st, { type: "deep", boat: 3 }),
+    ev(st, { type: "metric", metric: "st_course", boat: 1 }),
+    ev(st, { type: "guide", step: 0, lens: "axis" }),
+    ev(st, { type: "sheet", sheet: "mark" }),
+    ev(st, { type: "sheet", sheet: { type: "theory", id: "TC-T1", boat: 1 } }),
+  ];
+  check(
+    "イベント: レンズ・深掘り・6艇比較・ガイド・シートの名前とパラメータ",
+    JSON.stringify(all) ===
+      JSON.stringify([
+        { name: "assist_lens_select", params: { assist_lens: "flow" } },
+        {
+          name: "assist_deep_open",
+          params: { assist_boat: 3, assist_lens: "axis" },
+        },
+        {
+          name: "assist_metric_compare",
+          params: { assist_metric: "st_course", assist_lens: "axis" },
+        },
+        { name: "assist_guide_step", params: { assist_guide_step: 1 } },
+        { name: "assist_sheet_open", params: { assist_sheet: "mark" } },
+        { name: "assist_sheet_open", params: { assist_sheet: "theory" } },
+      ]),
+    JSON.stringify(all),
+  );
+  check(
+    "イベント: 押し直し（同じレンズ・開いている艇・比較中の項目）、ガイド・シートを閉じる、その他の操作は送らない",
+    [
+      ev(st, { type: "lens", lens: "axis" }),
+      ev({ ...st, deep: 3 }, { type: "deep", boat: 3 }),
+      ev(
+        { ...st, metric: "st_course" },
+        { type: "metric", metric: "st_course" },
+      ),
+      ev(st, { type: "guide", step: null, lens: null }),
+      ev(st, { type: "sheet", sheet: null }),
+      ev(st, { type: "toggleBet", pos: 1, boat: 1 }),
+      ev(st, { type: "closeDeep" }),
+    ].every((e) => e === null),
+  );
+  check(
+    "イベント: パラメータ名に GA4 の予約語を使わない",
+    all.every((e) => Object.keys(e.params).every((k) => !RESERVED.includes(k))),
   );
 }
 

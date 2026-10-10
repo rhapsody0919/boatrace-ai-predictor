@@ -6,13 +6,15 @@
  * 「AI予想」タブ（RaceAiPredictionTab.jsx）へ移設した。結果タブは着順・配当・決まり手の
  * みのシンプルな内容に絞る方針（BOA-305〜312フィードバック#7の延長）
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { translateTechnique } from "./raceIndicators";
 import { BOAT_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { parseRaceId } from "../../utils/raceId";
 import VenueDaySummaryCard from "./VenueDaySummaryCard";
+import RaceStartFormation from "./RaceStartFormation";
+import { startFormationRows } from "./startFormation";
 import InlineFetchError from "../InlineFetchError";
 import {
   FINISH_MARKS,
@@ -26,50 +28,6 @@ import {
   isPayoutAmountCountable,
   normalizeFinishMark,
 } from "../../utils/raceOutcome";
-
-// スタートのダイナミック演出（全艇が号砲と同時に走り出し、実ST比例の位置×時間で到達）の調整定数。
-// 到達位置は0〜0.30秒（フライングは0〜0.15秒）の固定レンジで正規化する（レースが違っても位置の見た目の意味を揃えるため）。
-// 到達までの時間はこのレース内の最遅STを基準（6秒）に相対比例させる（このレースだけの相対値）。
-// 周期7秒: 最遅艇が6秒で到達し、そこから1秒静止してループする
-const START_ANIM = {
-  CYCLE_MS: 7000,
-  MAX_ARRIVAL_MS: 6000,
-  // スタートラインの位置。F側に幅を取るため84%から72%に下げた。84%だとF側が14%しか無く、
-  // 375pxで F0.01 と F0.11 の差が約8pxしか無かった（BOA-586）。CSS の線もこの値で置く
-  LINE_PERCENT: 72,
-  POSITION_RANGE_PERCENT: 70,
-  // 遅い側は0.30まで位置で差をつける（0.15で頭打ちにすると、0.16と0.27が同じ位置に重なっていた。
-  // 平均STは0.15前後で、普通のレースでも半分近くの艇が左端に重なる。BOA-559 ファン評価1周目）
-  POSITION_MAX_SECONDS: 0.3,
-  // フライングは0.15までで位置の差をつける（F0.15で98%）
-  FLYING_MAX_SECONDS: 0.15,
-  OVERSHOOT_RATIO: 0.72,
-  STREAK_FADE_IN_RATIO: 0.26,
-  IMPACT_FLASH_DELTA: 0.001,
-  IMPACT_EXPAND_DELTA: 0.0703,
-  // フライング艇はスタートライン（72%）より先、F0.15 で98%まで（BOA-559・586）。
-  // F0.01 でも線から離して置く（FLYING_OFFSET_PERCENT）。距離に比例させるだけだと F0.01 の
-  // 先端は線から1.7%（375pxで約1.5px）しか離れず、矢印が線に重なって見えた（#1071 ファン評価1周目）
-  FLYING_OFFSET_PERCENT: 5,
-  FLYING_RANGE_PERCENT: 21,
-  // フライング艇は号砲の時点で既にラインを越えているため、最も早く到達させる（周期に対する割合）
-  FLYING_ARRIVAL_FRACTION: 0.04,
-};
-
-// フライング艇（F）の ST は「号砲より何秒早くラインを越えたか」。遅れた艇と同じ式で置くと、ラインの
-// 手前（遅いスタート）に描かれてしまう（浜名湖 9/14 6R の F0.11 が最も遅い艇に見えた。BOA-559）。
-// F はラインより先に置く
-function getFinalPositionPercent(startTiming, isFlying = false) {
-  const max = isFlying
-    ? START_ANIM.FLYING_MAX_SECONDS
-    : START_ANIM.POSITION_MAX_SECONDS;
-  const ratio = Math.min(Math.max(startTiming, 0), max) / max;
-  return isFlying
-    ? START_ANIM.LINE_PERCENT +
-        START_ANIM.FLYING_OFFSET_PERCENT +
-        ratio * START_ANIM.FLYING_RANGE_PERCENT
-    : START_ANIM.LINE_PERCENT - ratio * START_ANIM.POSITION_RANGE_PERCENT;
-}
 
 // 選手名は公式の元データで姓と名の間を全角スペースで詰めてある（「丹下」「将」の間に全角スペース3つ）。そのまま出すと
 // 375pxで姓だけに切れ、級別も見えなくなるため、空白を1つにまとめる（BOA-559）
@@ -85,162 +43,6 @@ function BoatChip({ number }) {
       style={{ background: color.bg, color: color.text }}
     >
       {number}
-    </span>
-  );
-}
-
-// 船シルエット（矢尻型、進行方向=右に舳先）のマーカー。号砲(t=0)から自艇の静止位置まで
-// 動き、到達タイミングもSTに比例させる。CSSの@keyframesはオフセット・値の両方に変数を
-// 使えないため、実測ST値から動的にキーフレームを生成するWeb Animations APIを使う
-function StartTimingTrack({
-  boatNumber,
-  startTiming,
-  isFlying,
-  maxStartTiming,
-  reducedMotion,
-}) {
-  const dotRef = useRef(null);
-  const streakRef = useRef(null);
-  const impactRef = useRef(null);
-  const color = BOAT_COLORS[boatNumber] || BOAT_COLORS[1];
-  const markerColor = isFlying ? "var(--color-error-text)" : color.bg;
-  const finalPosition = getFinalPositionPercent(startTiming, isFlying);
-  // 到達オフセットは周期(7秒)全体に対する割合。最遅艇でもMAX_ARRIVAL_MS(6秒)/CYCLE_MS(7秒)を
-  // 超えないため、この後の号砲フラッシュ・衝撃波の追加オフセットが必ず1未満に収まる
-  const arrivalFraction = isFlying
-    ? START_ANIM.FLYING_ARRIVAL_FRACTION
-    : maxStartTiming > 0
-      ? Math.min(startTiming / maxStartTiming, 1) *
-        (START_ANIM.MAX_ARRIVAL_MS / START_ANIM.CYCLE_MS)
-      : 0;
-
-  useEffect(() => {
-    if (reducedMotion) return undefined;
-    const dot = dotRef.current;
-    const streak = streakRef.current;
-    const impact = impactRef.current;
-    if (!dot || !streak || !impact) return undefined;
-
-    const overshoot = arrivalFraction * START_ANIM.OVERSHOOT_RATIO;
-    const fadeIn = arrivalFraction * START_ANIM.STREAK_FADE_IN_RATIO;
-    const flash = Math.min(
-      arrivalFraction + START_ANIM.IMPACT_FLASH_DELTA,
-      0.999,
-    );
-    const expand = Math.min(
-      arrivalFraction + START_ANIM.IMPACT_EXPAND_DELTA,
-      1,
-    );
-    const baseOptions = {
-      duration: START_ANIM.CYCLE_MS,
-      iterations: Infinity,
-    };
-
-    const animations = [
-      dot.animate(
-        [
-          {
-            offset: 0,
-            left: "0%",
-            transform: "translate(-100%, -50%) scale(0.7)",
-          },
-          {
-            offset: overshoot,
-            left: `${finalPosition}%`,
-            transform: "translate(-100%, -50%) scale(1.35)",
-          },
-          {
-            offset: arrivalFraction,
-            left: `${finalPosition}%`,
-            transform: "translate(-100%, -50%) scale(1)",
-          },
-          {
-            offset: 1,
-            left: `${finalPosition}%`,
-            transform: "translate(-100%, -50%) scale(1)",
-          },
-        ],
-        { ...baseOptions, easing: "cubic-bezier(0.15, 0.85, 0.25, 1)" },
-      ),
-      streak.animate(
-        [
-          { offset: 0, width: "0%", opacity: 0 },
-          { offset: fadeIn, opacity: 1 },
-          { offset: arrivalFraction, width: `${finalPosition}%`, opacity: 0 },
-          { offset: 1, width: `${finalPosition}%`, opacity: 0 },
-        ],
-        { ...baseOptions, easing: "cubic-bezier(0.15, 0.85, 0.25, 1)" },
-      ),
-      impact.animate(
-        [
-          {
-            offset: 0,
-            opacity: 0,
-            transform: "translate(-50%, -50%) scale(1)",
-          },
-          {
-            offset: arrivalFraction,
-            opacity: 0,
-            transform: "translate(-50%, -50%) scale(1)",
-          },
-          {
-            offset: flash,
-            opacity: 0.9,
-            transform: "translate(-50%, -50%) scale(1)",
-          },
-          {
-            offset: expand,
-            opacity: 0,
-            transform: "translate(-50%, -50%) scale(6)",
-          },
-          {
-            offset: 1,
-            opacity: 0,
-            transform: "translate(-50%, -50%) scale(6)",
-          },
-        ],
-        { ...baseOptions, easing: "ease-out" },
-      ),
-    ];
-
-    return () => animations.forEach((animation) => animation.cancel());
-  }, [arrivalFraction, finalPosition, reducedMotion]);
-
-  return (
-    <span className="rr-st-track">
-      <span
-        className="rr-st-line"
-        style={{ left: `${START_ANIM.LINE_PERCENT}%` }}
-      />
-      <span
-        ref={streakRef}
-        className="rr-st-streak"
-        style={{
-          left: 0,
-          width: reducedMotion ? `${finalPosition}%` : 0,
-          opacity: 0,
-          background: markerColor,
-        }}
-      />
-      <span
-        ref={dotRef}
-        className={`rr-st-dot${boatNumber === 1 && !isFlying ? " is-white" : ""}${boatNumber === 2 && !isFlying ? " is-black" : ""}`}
-        style={{ left: reducedMotion ? `${finalPosition}%` : "0%" }}
-      >
-        {/* 形（clip-path）は子に持たせる。親に付けた輪郭（drop-shadow）が
-            clip-path で切り取られないようにするため（1号艇の白が1着行の
-            クリーム地・トラックに埋もれていた。BOA-559 ファン評価2周目） */}
-        <span className="rr-st-dot-shape" style={{ background: markerColor }} />
-      </span>
-      <span
-        ref={impactRef}
-        className="rr-st-impact"
-        style={{
-          left: `${finalPosition}%`,
-          borderColor: markerColor,
-          opacity: 0,
-        }}
-      />
     </span>
   );
 }
@@ -619,12 +421,6 @@ function RaceResult({ prediction, raceId }) {
     raceId: null,
     data: null,
   });
-  const reducedMotion = useMemo(
-    () =>
-      typeof window !== "undefined" &&
-      Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches),
-    [],
-  );
 
   const result = prediction?.result;
   const finished = Boolean(result?.finished);
@@ -728,12 +524,10 @@ function RaceResult({ prediction, raceId }) {
     .filter((st) => st.entryCourse != null)
     .sort((a, b) => a.entryCourse - b.entryCourse)
     .map((st) => st.boatNumber);
-  // フライングは異常値のため「最速」判定・到達タイミングの基準（最遅ST）からは除外する
-  // （update-top-start-stats.jsと同じ扱い。BOA-559）
+  // フライングは異常値のため「最速」判定からは除外する（update-top-start-stats.jsと同じ扱い。BOA-559）
   const nonFlyingStartTimings = validStartTimings.filter((st) => !st.isFlying);
-  const maxStartTiming = nonFlyingStartTimings.length
-    ? Math.max(...nonFlyingStartTimings.map((st) => st.startTiming))
-    : 0;
+  // スタート隊形（コース順）の行（BOA-811）。進入が1艇も分からないレースは null（絵を出さない）
+  const formationRows = startFormationRows(startTimings);
   // 「最速」は比べる相手がいるときだけ付ける。不成立レースで F 以外が1艇だけのとき、
   // その1艇に「最速」が付いていた（BOA-586）
   const fastestStartTiming =
@@ -800,15 +594,10 @@ function RaceResult({ prediction, raceId }) {
         </p>
       )}
 
-      {!isLoadingStartTimings && courseOrder.length > 0 && (
-        <div className="rr-course-order">
-          <span className="rr-course-order-label">
-            {t("result.courseOrderLabel")}
-          </span>
-          {courseOrder.map((boat) => (
-            <BoatChip key={boat} number={boat} />
-          ))}
-        </div>
+      {!isLoadingStartTimings && formationRows && (
+        // スタート隊形（コース順）の絵。結果の表の上（BOA-811、承認モック
+        // docs/design/race-result-start-formation/mock）。進入の並びもこの絵で見る（前の「進入」の1行は外した）
+        <RaceStartFormation rows={formationRows} />
       )}
       {isLoadingStartTimings ? (
         <div className="rr-table-skeleton" aria-busy="true">
@@ -876,13 +665,7 @@ function RaceResult({ prediction, raceId }) {
                 <span className="rr-st-cell">
                   {st && st.startTiming != null ? (
                     <>
-                      <StartTimingTrack
-                        boatNumber={boat}
-                        startTiming={st.startTiming}
-                        isFlying={st.isFlying}
-                        maxStartTiming={maxStartTiming}
-                        reducedMotion={reducedMotion}
-                      />
+                      {/* ST の矢印は外し、数字と「最速」だけ。並びは上のスタート隊形の絵で見る（BOA-811） */}
                       <span className="rr-st-value num">
                         {/* フライングは公式と同じ「F.01」。選手ページ・直近10走とそろえる（BOA-583） */}
                         {st.isFlying

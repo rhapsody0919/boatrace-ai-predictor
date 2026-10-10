@@ -1,5 +1,5 @@
 {
-  "feature": "BOA-430 思考アシスト（公開前。機能フラグ ?assist=1 の後ろ。released はルートを足した日で、公開日ではない。PR6 でレース詳細の上部に切り替えを足した（フラグがあるときだけ出す）。ブログ・SNS の展開は公開の判断の後に足す）",
+  "feature": "BOA-430 思考アシスト（2026-10-10 公開。released はルートを足した日。公開日は src/utils/raceView.js の THINKING_ASSIST_PUBLISHED_ON。レース詳細の上部に切り替えがある。ブログ・SNS の展開はこれから足す）",
   "released": "2026-10-07",
   "content": {
     "static_pages": [

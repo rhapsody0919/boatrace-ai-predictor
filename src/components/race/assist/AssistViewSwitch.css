@@ -62,3 +62,16 @@
   color: var(--text-secondary);
   text-align: right;
 }
+
+/* PC（1024px 以上）は左寄せにし、レース詳細の本文・思考アシストの PC 表示の左端（24px）にそろえる
+   （BOA-801 5、龍神ソナーの PC 表示と同じ決まり。2026-10-10 ユーザー決定） */
+@media (min-width: 1024px) {
+  .assist-view-switch {
+    padding-inline: var(--spacing-6);
+  }
+
+  .assist-view-switch__seg,
+  .assist-view-switch__note {
+    margin-inline: 0;
+  }
+}

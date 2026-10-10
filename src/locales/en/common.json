@@ -67,6 +67,14 @@
     "nuki": "Nuki (Overtake)",
     "megumare": "Megumare (Lucky win)"
   },
+  "techniquesShort": {
+    "nige": "Escape",
+    "sashi": "Inside pass",
+    "makuri": "Outside sweep",
+    "makurizashi": "Sweep & pass",
+    "nuki": "Overtake",
+    "megumare": "Lucky win"
+  },
   "venueSelector": {
     "label": "Select venue:",
     "raceCount": "{{count}} races",
@@ -262,7 +270,6 @@
     "popularityFromFinalOddsNote": "※ Win and place favorites are calculated from the official final odds (place: by upper bound; ties shown as a range). Other bet types show the official favorites.",
     "fastestStartTag": "Fastest",
     "courseNoData": "※We have not collected the approach course for this race yet.",
-    "courseOrderLabel": "Approach",
     "entryCourseLabel": "Course {{course}}",
     "missingRanksNote": "* Finishing positions from 4th down have not been collected for this race, so some placings are not shown",
     "cancelledTitle": "This race was cancelled",
@@ -330,7 +337,21 @@
     "payoutNoAmountNote": "\"—\" marks a combination with no amount listed in the official payouts",
     "payoutSpecial": "Special payout",
     "volatilityOutcomeNotJudgeable": "Not judged (void race)",
-    "stLegend": "The arrows on the right show start timing (ST). The yellow line is the start line; the closer to it, the faster the start. A red arrow past the line is a false start"
+    "stLegend": "The numbers on the right are start timings (ST). See the picture above for how the boats lined up at the start. F means a false start",
+    "startFormation": {
+      "title": "Start formation (by course)",
+      "caption": "How the boats crossed the slit (start line). Course 1 is at the top; the closer to the line, the faster the start",
+      "aria": "Start formation, course 1 at the top. The closer to the slit line on the right, the faster the start",
+      "slit": "Slit",
+      "flyingSide": "F →",
+      "slower": "← Slower",
+      "course": "Course {{course}}",
+      "mae": "Maezuke",
+      "late": "L late start (no ST)",
+      "absent": "Boat {{boat}} scratched",
+      "absentLabel": "Scratched",
+      "scale": "1 boat length (≈0.13 s)"
+    }
   },
   "raceHistoryTable": {
     "date": "Date",
@@ -2164,12 +2185,12 @@
     },
     "presetLabel": "{{scope}} {{grade}}",
     "periods": {
-      "current": "Current term",
+      "official": "Official",
+      "term": "Current term",
       "last3m": "Last 3 months",
       "last1m": "Last month"
     },
     "periodSummary": "▸ Filter by period",
-    "periodCaveat": "* When combined with a grade filter, \"Current term\" is not the official term division: it covers every period we have data for (since Dec 2025, up to the past two years)",
     "winRateSwitchCaveat": "* With a grade or period filter, this shows the 1st-place rate (% of races won under those conditions), not the official win-rate points",
     "relativeBarNote": "* Bar length compares only these 6 boats. Even a small gap can make a big difference in length, so check the numbers for the actual gap",
     "sampleCount": "(n={{n}})",
@@ -2270,13 +2291,15 @@
     "accidentNote": "Accident points follow the official scale (F / late start 20, obstruction 15, disqualification or scratch by the racer's fault 10; 30 for a second or later F this term). Improper-maneuver and waiting-rule violations (2 pts) are not included, so this can be lower than the official figure. Above 0.70, the racer drops to class B2 at the next class review.",
     "accidentFetchError": "Could not load this term's accident rate",
     "meetScoreForecastTitle": "How today's finish moves the score rate",
-    "meetScorePrelimOver": "Qualifying score rate {{rate}} ({{n}} runs, {{source}}, final)"
+    "meetScorePrelimOver": "Qualifying score rate {{rate}} ({{n}} runs, {{source}}, final)",
+    "periodCurrentNote": "Current term is calculated from the races recorded on this site since {{from}} (win rate = 1st-place rate)",
+    "periodOfficialNoLocalSt": "The official Avg ST is national only (there is no official local value)"
   },
   "dataTable": {
     "title": "Data Race Card",
     "subtitle": "Compare analytics for all six racers at a glance. Tap a row label for the full analysis",
     "rowWinRate": "Class / Win rate",
-    "rowMotor": "Motor top-2 rate",
+    "rowMotor": "Motor top-2 rate (last 90 days)",
     "rowForm": "Form (Δ win rate)",
     "rowSt": "ST stability",
     "rowExhibition": "Exhibition time",
@@ -2310,7 +2333,7 @@
     "rowReturnRate": "Win return rate",
     "noWins": "No wins",
     "winCount": "{{n}}W",
-    "note": "Analytics cover the last 90 days (return rate: 180 days); Avg ST uses the period in its row name. Highlights mark the best value in this race. For reference only — results are not guaranteed",
+    "note": "Win rate, local and top-2 rate are the official race card values. Avg ST, motor top-2 rate and lane win rate use the period in their row names; other analytics cover the last 90 days (return rate: 180 days). Highlights mark the best value in this race. For reference only — results are not guaranteed",
     "guideLink": "Read the full guide to the Data Race Card",
     "rowLocalWinRate": "Local win rate",
     "rowTwoRate": "National top-2 rate",
@@ -2320,7 +2343,7 @@
     "rowAvgSt30": "Avg ST (last 30)",
     "rowExSt": "Exhibition ST",
     "exStFlagTitle": "F = false start, L = late start in the start exhibition (official notation). Excluded from the best-value comparison",
-    "rowCourseRate": "Lane win rate",
+    "rowCourseRate": "Lane win rate (last year)",
     "loading": "Loading analytics…",
     "motorResetNote": "New motors",
     "motorUnusedNote": "New motor, no record",
@@ -2396,7 +2419,7 @@
       "exhibition": "Today's exhibition time (seconds). Values in parentheses are the past-90-day average shown because today's exhibition has not run yet",
       "exhibitionCourse": "Course taken in the start exhibition (official pre-race info). Parentheses mean the boat moved inside or outside its boat number. The actual race entry can differ",
       "partsChanged": "Parts or propeller replaced for this race. Does not indicate whether the change is good or bad",
-      "courseRate": "1st-place rate in races from the same boat number (wins/starts, all data stored on this site)",
+      "courseRate": "1st-place rate in races from the same boat number over the last year (wins/starts)",
       "technique": "The racer's most common winning move (wins over the past 90 days in parentheses), counted regardless of boat number",
       "returnRate": "The racer's actual win-bet figure from this boat number over the past 180 days. Reference only, not a guarantee of any result",
       "dash": "\"—\": no data, or not available yet"
@@ -3366,7 +3389,7 @@
     "oriHalfLap": "Seconds taken for half a lap (1st mark to 2nd mark) in the exhibition run. Smaller is better",
     "oriTurn": "Seconds taken through the turn in the exhibition run. Smaller means a sharper turn, making it easier to get ahead with Sashi (Inside pass) or Makuri-zashi (Sweep & pass)",
     "oriStraight": "Seconds on the straight section of the exhibition run. Smaller means better straight-line speed, helping Makuri (Outside sweep) and late charges",
-    "courseRate": "Past win rate from this boat number (lane)",
+    "courseRate": "Win rate (1st-place rate) from this boat number (lane) over the last year",
     "tilt": "The motor's angle (tilt) setting, chosen by the racer for the exhibition. A higher or lower value does not by itself mean a good or poor run",
     "adjustmentWeight": "Ballast added to the boat to offset the racer's body weight. A higher or lower value does not by itself mean a good or poor run",
     "todayWeight": "The racer's weight measured on race day. A higher or lower value does not by itself mean a good or poor run",
@@ -3401,7 +3424,8 @@
     "stBreakout": "The number of times the racer started at least 0.07 seconds ahead of every boat on an inner course. Shows whether they can attack the inside from an outer course. This happens less often the further out the course (0.2–0.4 times per 30 races from courses 5 and 6), and as a percentage it would mostly read 0.0%, so we show a count. \"Average\" is the break rate of racers on the same course and class multiplied by this racer's number of races (how many times an average racer would do it in as many races). Not shown for course 1, which has no boat inside it. Flying starts are excluded. This is our own aggregation and will not match similarly named stats on other sites",
     "stLate": "The share of starts 0.1 seconds or more behind the fastest starter in that race. Because this tends to rise on outer courses, the gap from the average for the same course and class is shown too. Flying starts are excluded. This is our own aggregation and will not match similarly named stats on other sites",
     "flyingCount": "Class is the value on this race's program. F is the number of flying starts this term (gold = 1, red = 2) and resets to 0 on May 1 and November 1. A \"this meet\" tag means the racer had a flying start between the first day of this meet and yesterday: they still run the rest of the meet but cannot enter this meet's semifinal or final (excluded from prizes; today's F is not counted). L is the number of late starts, which is different from \"Slow\" below. Consistent and Slow exclude races with a flying start",
-    "nigeSimulation": "Using only races where the course 1 boat won by Nige (Escape), the share of each course that finished 2nd. This is aggregated from this venue's actual results, not a prediction"
+    "nigeSimulation": "Using only races where the course 1 boat won by Nige (Escape), the share of each course that finished 2nd. This is aggregated from this venue's actual results, not a prediction",
+    "basicInfoOfficial": "\"Official\" shows the win rate, top-2 rate, top-3 rate and Avg ST from the official race card (record from {{from}} to {{to}}, the official term record for the same term as the win rate). It cannot be filtered by grade, so choosing a grade switches to \"Current term\""
   },
   "weatherInEscape": {
     "loading": "Loading…",

@@ -104,18 +104,20 @@ const ep = allocateStakes({
   mode: "equalPayout",
 });
 check(
-  "均等払戻: 予算1000円で 400・100・300円（オッズの逆数に比例、100円単位の切り捨て）、残り200円",
+  "均等払戻: 予算1000円で 400・200・400円（逆数に比例・100円単位で切り捨て、余り200円は払戻の少ない組から足す。spec FR-8・D-43）、残り0円・最低払戻 1,520円→2,560円",
   !ep.insufficient &&
-    ep.rows.map((r) => r.stake).join(",") === "400,100,300" &&
-    ep.total === 800 &&
-    ep.remainder === 200,
+    ep.rows.map((r) => r.stake).join(",") === "400,200,400" &&
+    ep.total === 1000 &&
+    ep.remainder === 0 &&
+    ep.topped === true &&
+    Math.min(...ep.rows.map((r) => r.payout)) === 2560,
   JSON.stringify(ep.rows),
 );
 check(
-  "均等払戻: 払戻 2,560・1,520・2,160円、倍率の幅 1.9〜3.2倍、合成オッズ 2.77（理論値）",
-  ep.rows.map((r) => r.payout).join(",") === "2560,1520,2160" &&
-    ep.multiplier.min === 1.9 &&
-    ep.multiplier.max === 3.2 &&
+  "均等払戻: 払戻 2,560・3,040・2,880円、倍率の幅 2.56〜3.04倍（余りを足した後）、合成オッズ 2.77（理論値）",
+  ep.rows.map((r) => r.payout).join(",") === "2560,3040,2880" &&
+    ep.multiplier.min === 2.56 &&
+    ep.multiplier.max === 3.04 &&
     formatOdds(ep.composite) === "2.8" &&
     ep.trigami === false,
   JSON.stringify({ m: ep.multiplier, c: ep.composite }),
@@ -179,6 +181,46 @@ check(
   "均等払戻: 比例で0円になる組にも最低100円を入れ、合計は予算以下",
   skewed.rows.every((r) => r.stake >= 100) && skewed.total <= 300,
   JSON.stringify(skewed.rows),
+);
+// 余りの足し方（D-43）: どの予算・オッズでも予算を超えず、余りは100円未満、最低払戻は足す前より下がらない
+const badTop = [];
+let seed = 7;
+const rnd = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
+for (let n = 0; n < 300; n++) {
+  const k = 1 + Math.floor(rnd() * 6);
+  const ts = Array.from({ length: k }, (_, i) => `t${i}`);
+  const od = Object.fromEntries(
+    ts.map((t) => [t, Math.round((1.2 + rnd() * 80) * 10) / 10]),
+  );
+  const budget = 100 * (k + Math.floor(rnd() * 40));
+  const r = allocateStakes({
+    tickets: ts,
+    trifecta: od,
+    budget,
+    mode: "equalPayout",
+  });
+  if (r.insufficient) continue;
+  if (
+    r.total > budget ||
+    r.remainder >= 100 ||
+    r.rows.some((x) => x.stake < 100)
+  )
+    badTop.push({ od, budget, rows: r.rows });
+}
+check(
+  "均等払戻: 300通りで予算を超えない・残りは100円未満・各組100円以上",
+  badTop.length === 0,
+  JSON.stringify(badTop.slice(0, 2)),
+);
+const eqNoTop = allocateStakes({
+  tickets: tickets3,
+  trifecta: odds3,
+  budget: 1000,
+  mode: "equal",
+});
+check(
+  "均等（同じ額）は余りを足さない（残り100円のまま、topped なし）",
+  eqNoTop.remainder === 100 && eqNoTop.topped === false,
 );
 const missingOdds = allocateStakes({
   tickets: ["1-2-3", "1-2-4"],

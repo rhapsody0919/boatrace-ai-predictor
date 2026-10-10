@@ -4,7 +4,14 @@
  * 状態は useReducer 1つで、URL・localStorage に残さない（plan「状態」）。
  * レンズの要約・図の印・深掘りは PR4。セオリーカード・用語・会場の特徴・ガイドは PR5。上部の切り替え（AssistViewSwitch）は PR6
  */
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { Link, useParams } from "react-router-dom";
 import Header from "../components/Header";
 import AssistHeader from "../components/race/assist/AssistHeader";
@@ -55,6 +62,8 @@ import {
 } from "../utils/assistSummary";
 import { ATTACK_BOAT } from "../utils/analogyScenario";
 import { guideSteps, theoryCard } from "../utils/assistTheory";
+import { assistEventOf } from "../utils/assistEvents";
+import { trackEvent } from "../utils/analytics";
 import {
   compositeOdds,
   expandTickets,
@@ -163,6 +172,20 @@ export default function ThinkingAssistPage() {
   const { raceId } = useParams();
   useRobotsMeta(!THINKING_ASSIST_PUBLIC);
   const [state, dispatch] = useReducer(reducer, initialState);
+  // 操作を GA4 に送ってから状態を変える。送るかどうかは押す前の状態で決める（docs/design/thinking-assist/events.md）。
+  // シート・ガイドの memo の中からも呼ぶので、状態は描画のたびに ref へ移して act 自体は作り直さない
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  });
+  const act = useCallback(
+    (action) => {
+      const ev = assistEventOf(stateRef.current, action);
+      if (ev) trackEvent(ev.name, { race_id: raceId, ...ev.params });
+      dispatch(action);
+    },
+    [raceId],
+  );
   const [showViewSwitch] = useState(isThinkingAssistEnabled);
   const data = useThinkingAssistData(raceId, {
     stage: state.stage,
@@ -530,23 +553,22 @@ export default function ThinkingAssistPage() {
   const steps = guideSteps({ post, rough, hintTop: hints?.top ?? null });
   const sheetApi = useMemo(
     () => ({
-      openTerm: (term) =>
-        dispatch({ type: "sheet", sheet: { type: "term", term } }),
+      openTerm: (term) => act({ type: "sheet", sheet: { type: "term", term } }),
       openTheory: (id, boat = null) =>
-        dispatch({ type: "sheet", sheet: { type: "theory", id, boat } }),
+        act({ type: "sheet", sheet: { type: "theory", id, boat } }),
     }),
-    [],
+    [act],
   );
   const onGuideStep = useCallback(
     (step) =>
-      dispatch({
+      act({
         type: "guide",
         step,
         lens: step == null ? null : steps[step].lens,
       }),
     // steps のレンズは段ごとに固定（中身の文だけがレースで変わる）
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [act],
   );
   const restCounts = restClassCounts(today?.classes, 1);
 
@@ -579,7 +601,7 @@ export default function ThinkingAssistPage() {
           oddsAt={oddsAt}
           showSonar={isAnalogyFinderEnabled()}
           waterType={data.venueInfo.data?.waterType ?? null}
-          onVenue={() => dispatch({ type: "sheet", sheet: "venue" })}
+          onVenue={() => act({ type: "sheet", sheet: "venue" })}
         >
           {post && v16Status === "exhibition_reflecting" && (
             <p className="ta-note">{ASSIST_COPY.stateReflecting}</p>
@@ -602,94 +624,102 @@ export default function ThinkingAssistPage() {
               lineup={lineup}
               classes={today?.classes ?? null}
               status={roughStatus}
-              onOpen={() => dispatch({ type: "sheet", sheet: "rough" })}
+              onOpen={() => act({ type: "sheet", sheet: "rough" })}
             />
           )}
         </AssistHeader>
         <LensBar
           lens={state.lens}
-          onLens={(lens) => dispatch({ type: "lens", lens })}
+          onLens={(lens) => act({ type: "lens", lens })}
           guideOn={state.guide !== null}
           onGuide={() => onGuideStep(state.guide === null ? 0 : null)}
         />
-        {cancelled && state.lens === "bet" ? (
-          // 中止のレースは買い目レンズにこの1行だけ（D-38）
-          <p className="ta-status">{ASSIST_COPY.cancelled}</p>
-        ) : (
-          <RaceLaneBoard
-            model={model}
-            lensLabel={ASSIST_COPY.lenses[state.lens].label}
-            racers={racers}
-            deep={state.deep}
-            bets={bets}
-            oddsNote={oddsNote}
-            onDeep={(boat) => dispatch({ type: "deep", boat })}
-            onMetric={(metric, boat) =>
-              dispatch({ type: "metric", metric, boat })
-            }
-            onBack={() => dispatch({ type: "back" })}
-            onBasis={(basis) => dispatch({ type: "stBasis", basis })}
-            onToggleBet={toggleBet}
-            onOpenSheet={() => dispatch({ type: "sheet", sheet: "mark" })}
-            // 軸・展開の印は v16 が無ければ材料が空なので出ない。機力のチルト・交換は DB の展示なので欠場でも出す
-            marks={marks}
-          />
-        )}
-        {deepBoat && (
-          <BoatDeepDive
-            key={deepBoat}
-            boat={deepBoat}
-            racer={racers[deepBoat - 1]}
-            venue={venueName}
-            raceId={raceId}
-            today={v16Off ? null : today}
-            post={post}
-            finalRound={finalRound}
-            round={data.round}
-            scope={boatFacts[deepBoat - 1].scope}
-            chips={boatFacts[deepBoat - 1].chips}
-            runs={
-              racers[deepBoat - 1]?.racerId == null
-                ? // 選手の登録番号が無い艇は走を取れない。読み込み中に残さない
-                  { status: "none", data: null }
-                : deepRunsReady
-                  ? data.runs
-                  : { status: "loading", data: null }
-            }
-            technique={
-              data.technique.status === "ready"
-                ? ((data.technique.data ?? []).find(
+        {/* PC（1024px 以上）は図を左・押して変わる結果を右に（BOA-801 5・BOA-820、龍神ソナーの PC 表示 BOA-813 と同じ決まり）。
+            狭い画面では囲みが無いのと同じ（display: contents） */}
+        <div className="ta-split">
+          <div className="ta-split-fig">
+            {cancelled && state.lens === "bet" ? (
+              // 中止のレースは買い目レンズにこの1行だけ（D-38）
+              <p className="ta-status">{ASSIST_COPY.cancelled}</p>
+            ) : (
+              <RaceLaneBoard
+                model={model}
+                lensLabel={ASSIST_COPY.lenses[state.lens].label}
+                racers={racers}
+                deep={state.deep}
+                bets={bets}
+                oddsNote={oddsNote}
+                onDeep={(boat) => act({ type: "deep", boat })}
+                onMetric={(metric, boat) =>
+                  act({ type: "metric", metric, boat })
+                }
+                onBack={() => dispatch({ type: "back" })}
+                onBasis={(basis) => dispatch({ type: "stBasis", basis })}
+                onToggleBet={toggleBet}
+                // 軸・展開の印は v16 が無ければ材料が空なので出ない。機力のチルト・交換は DB の展示なので欠場でも出す
+                marks={marks}
+              />
+            )}
+          </div>
+          <div className="ta-split-side">
+            {deepBoat && (
+              <BoatDeepDive
+                key={deepBoat}
+                boat={deepBoat}
+                racer={racers[deepBoat - 1]}
+                venue={venueName}
+                raceId={raceId}
+                today={v16Off ? null : today}
+                post={post}
+                finalRound={finalRound}
+                round={data.round}
+                scope={boatFacts[deepBoat - 1].scope}
+                chips={boatFacts[deepBoat - 1].chips}
+                runs={
+                  racers[deepBoat - 1]?.racerId == null
+                    ? // 選手の登録番号が無い艇は走を取れない。読み込み中に残さない
+                      { status: "none", data: null }
+                    : deepRunsReady
+                      ? data.runs
+                      : { status: "loading", data: null }
+                }
+                technique={
+                  data.technique.status === "ready"
+                    ? ((data.technique.data ?? []).find(
+                        (r) => r.boat_number === deepBoat,
+                      ) ?? null)
+                    : null
+                }
+                pretest={
+                  data.motor.status === "ready"
+                    ? ((data.motor.data?.rows ?? []).find(
+                        (r) => r.boat_number === deepBoat,
+                      ) ?? null)
+                    : null
+                }
+                weight={
+                  (maintenanceRows ?? []).find(
                     (r) => r.boat_number === deepBoat,
-                  ) ?? null)
-                : null
-            }
-            pretest={
-              data.motor.status === "ready"
-                ? ((data.motor.data?.rows ?? []).find(
-                    (r) => r.boat_number === deepBoat,
-                  ) ?? null)
-                : null
-            }
-            weight={
-              (maintenanceRows ?? []).find((r) => r.boat_number === deepBoat)
-                ?.today_weight ?? null
-            }
-            course={courseByBoat?.[deepBoat - 1] ?? deepBoat}
-            onMetric={(metric, boat) =>
-              dispatch({ type: "metric", metric, boat })
-            }
-            onClose={() => dispatch({ type: "closeDeep" })}
-          />
-        )}
-        {!(cancelled && state.lens === "bet") && (
-          <LensSummary
-            lens={state.lens}
-            axis={summary.axis}
-            flow={summary.flow}
-            power={summary.power}
-            bet={summary.bet}
-          />
-        )}
+                  )?.today_weight ?? null
+                }
+                course={courseByBoat?.[deepBoat - 1] ?? deepBoat}
+                onMetric={(metric, boat) =>
+                  act({ type: "metric", metric, boat })
+                }
+                onClose={() => dispatch({ type: "closeDeep" })}
+              />
+            )}
+            {!(cancelled && state.lens === "bet") && (
+              <LensSummary
+                lens={state.lens}
+                axis={summary.axis}
+                flow={summary.flow}
+                power={summary.power}
+                bet={summary.bet}
+              />
+            )}
+          </div>
+        </div>
         <p className="ta-disclaimer">{ASSIST_COPY.disclaimer}</p>
         {!cancelled && (
           <BetFooter
@@ -698,7 +728,7 @@ export default function ThinkingAssistPage() {
             composite={composite}
             oddsNote={oddsNote}
             removedNote={removedNote}
-            onOpen={() => dispatch({ type: "sheet", sheet: "mark" })}
+            onOpen={() => act({ type: "sheet", sheet: "mark" })}
             hidden={
               state.guide !== null && steps[state.guide].target !== "foot"
             }

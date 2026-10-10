@@ -1323,7 +1323,7 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
     return [];
   };
 
-  test("AI予想の振り返り: 決まり手と確率が近く、ページの中央に置く", async ({
+  test("AI予想の振り返り: 決まり手と確率が近く、左端はタブの列にそろえる（BOA-820）", async ({
     page,
   }, testInfo) => {
     const widths = widthsFor(testInfo);
@@ -1343,17 +1343,19 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
         const box = el.closest(".race-tabs-panel").getBoundingClientRect();
         return {
           gap: r(".turn-pattern-prob").left - r(".turn-pattern-technique").left,
-          tabCenter: (tab.left + tab.right) / 2,
-          boxCenter: (box.left + box.right) / 2,
+          tabLeft: tab.left,
+          boxLeft: box.left,
         };
       });
       expect(
         m.gap,
         `${width}px: 決まり手の左端から確率の左端まで`,
       ).toBeLessThanOrEqual(700);
+      // 以前はページの中央に置いていたが、タブを切り替えるたびに左端が飛ぶので、タブの列にそろえる
+      // （BOA-820、2026-10-10 ユーザー決定）
       expect(
-        Math.abs(m.tabCenter - m.boxCenter),
-        `${width}px: 振り返りの中心`,
+        Math.abs(m.tabLeft - m.boxLeft),
+        `${width}px: 振り返りの左端`,
       ).toBeLessThanOrEqual(1);
     }
   });

@@ -83,7 +83,8 @@ export function expandTickets(bets, absentBoats = []) {
 /**
  * 配分（FR-8）。予算を100円単位（切り捨て）で各組に配る。
  *   equal:       各組に同じ額
- *   equalPayout: どれが当たっても払戻がほぼ同じになるよう、オッズの逆数に比例させる（各組に最低100円）
+ *   equalPayout: どれが当たっても払戻がほぼ同じになるよう、オッズの逆数に比例させる（各組に最低100円）。
+ *                切り捨てた後の余りは、払戻が一番少ない組から100円ずつ足す（予算は超えない。spec FR-8・D-43、BOA-801 6）
  * 予算が 100円×点数 に足りないときは配分を出さない（insufficient）。オッズの無い組は配分から外して missing に返す
  * @param {{tickets: string[], trifecta: Record<string, number|null>, budget: number, mode: "equal"|"equalPayout"}} args
  * @returns {{insufficient: true, minimum: number, missing: string[]} | {insufficient: false, rows: Array<{ticket: string, odds: number, stake: number, payout: number}>, total: number, remainder: number, composite: number|null, multiplier: {min: number, max: number}|null, trigami: boolean, missing: string[]}}
@@ -99,6 +100,8 @@ export function allocateStakes({ tickets, trifecta, budget, mode }) {
 
   const units = Math.floor(budget / STAKE_UNIT);
   let stakesInUnits;
+  // 均等払戻で余りを足したか（配分の下に1行で知らせる）
+  let topped = false;
   if (mode === "equal") {
     const each = Math.floor(units / priced.length);
     stakesInUnits = priced.map(() => each);
@@ -115,6 +118,21 @@ export function allocateStakes({ tickets, trifecta, budget, mode }) {
       if (stakesInUnits[i] <= 1) break;
       stakesInUnits[i] -= 1;
       over -= 1;
+    }
+    // 余りは払戻（オッズ×単位数）が一番少ない組に1単位ずつ足す。同じなら先の組（D-43）
+    let left = units - stakesInUnits.reduce((s, v) => s + v, 0);
+    while (left > 0) {
+      let i = 0;
+      priced.forEach((t, j) => {
+        if (
+          trifecta[t] * stakesInUnits[j] <
+          trifecta[priced[i]] * stakesInUnits[i]
+        )
+          i = j;
+      });
+      stakesInUnits[i] += 1;
+      topped = true;
+      left -= 1;
     }
   }
 
@@ -141,5 +159,6 @@ export function allocateStakes({ tickets, trifecta, budget, mode }) {
     // 合成オッズ（理論値）が1.0未満ならトリガミ（FR-8）
     trigami: composite != null && composite < 1,
     missing,
+    topped,
   };
 }

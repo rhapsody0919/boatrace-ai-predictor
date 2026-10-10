@@ -6,7 +6,7 @@
 export const RACE_VIEW_KEY = "boatai-user:race-view";
 
 /** 思考アシストの公開日（YYYY-MM-DD）。「新」の札はこの日から30日だけ出す。公開前（null）は出す */
-export const THINKING_ASSIST_PUBLISHED_ON = null;
+export const THINKING_ASSIST_PUBLISHED_ON = "2026-10-10";
 const NEW_DAYS = 30;
 
 /** @returns {"race"|"assist"|null} */
@@ -55,5 +55,6 @@ export function showNewBadge({
   if (saved) return false;
   if (!publishedOn) return true;
   const days = (Date.parse(today) - Date.parse(publishedOn)) / 86400000;
-  return days >= 0 && days < NEW_DAYS;
+  // 公開日より前の日付（録画の日付で動く E2E 等）も「新」として扱う
+  return days < NEW_DAYS;
 }

@@ -495,8 +495,8 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
       .toBe("ja");
   });
 
-  // BOA-430: 思考アシストは /race 配下（翻訳済み）だが ja 専用。言語付きの URL は ja 版へ移り、公開まで noindex
-  test("思考アシスト（/en/race/{id}/assist）はja版へリダイレクトされ、noindexで開く", async ({
+  // BOA-430: 思考アシストは /race 配下（翻訳済み）だが ja 専用。言語付きの URL は ja 版へ移る。2026-10-10 に公開したので noindex は付けない
+  test("思考アシスト（/en/race/{id}/assist）はja版へリダイレクトされ、公開後は noindex を付けない", async ({
     page,
   }) => {
     await page.goto("/en/race/2026-10-06-18-10/assist");
@@ -508,10 +508,9 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: /思考アシスト/ }),
     ).toBeVisible();
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
-      "content",
-      /noindex/,
-    );
+    await expect(
+      page.locator('meta[name="robots"][content*="noindex"]'),
+    ).toHaveCount(0);
   });
 
   // BOA-430 PR3: 機能フラグが無くても URL 直接で開け、1段目のデータ（出走表）でレースの図が出る（spec FR-1・N-5）
@@ -2460,21 +2459,25 @@ test.describe("レースページ再設計（BOA-168）", () => {
     expect(wrap[0]).toBeLessThanOrEqual(wrap[1]);
   });
 
-  test("結果タブに進入コースを出し、古い「精度確認中」の注記を出さない（BOA-625）", async ({
+  test("結果タブに進入コースを出し、古い「精度確認中」の注記を出さない（BOA-625・BOA-811）", async ({
     page,
   }) => {
     // 2026-09-30 児島7R: 公式のスタート情報は 1-2-3-6-4-5。6号艇（峰竜太）は4コース
     await page.goto("/race/2026-09-30-16-07");
-    const order = page.locator(".rr-course-order");
-    await expect(order).toBeVisible({ timeout: 30000 });
-    await expect(order.locator(".rr-boat-chip")).toHaveText([
-      "1",
-      "2",
-      "3",
-      "6",
-      "4",
-      "5",
-    ]);
+    const fig = page.locator(".rr-formation-svg");
+    await expect(fig).toBeVisible({ timeout: 30000 });
+    // スタート隊形の絵はコース順（上が1コース）。進入の並びの1行はこの絵に置き換えた（BOA-811）
+    const order = () =>
+      fig.evaluate((svg) =>
+        [...svg.querySelectorAll("g[data-course]")].map((g) => g.dataset.boat),
+      );
+    expect(await order()).toEqual(["1", "2", "3", "6", "4", "5"]);
+    // 前付けは枠なりより内側に入った6号艇だけ（押し出された4・5号艇には付けない）
+    expect(
+      await fig.evaluate((svg) =>
+        [...svg.querySelectorAll("g[data-mae]")].map((g) => g.dataset.boat),
+      ),
+    ).toEqual(["6"]);
     const mine = page.locator(".rr-row", {
       has: page.locator(".rr-boat-chip", { hasText: /^6$/ }),
     });
@@ -2490,16 +2493,8 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 本番STの進入が無いレース（2026-09-14 徳山7R）は、Kファイルの進入で埋める（枠なり）。
     // 以前は「データがありません」と出していたが、公式には進入が出ている（ファン評価1周目）
     await page.goto("/race/2026-09-14-18-07");
-    const order2 = page.locator(".rr-course-order");
-    await expect(order2).toBeVisible({ timeout: 30000 });
-    await expect(order2.locator(".rr-boat-chip")).toHaveText([
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-    ]);
+    await expect(fig).toBeVisible({ timeout: 30000 });
+    expect(await order()).toEqual(["1", "2", "3", "4", "5", "6"]);
   });
 
   test("過去のレースの基本情報のバーは、そのレースより前の走で、期間もレースの日から数える（BOA-605）", async ({

@@ -50,6 +50,7 @@ export const ASSIST_COPY = Object.freeze({
   verdictArrow: { high: "↑", low: "↓", unclear: "→" },
   roughSheetLead: "全国の全レースと比べる",
   baseLegend: "太い点線＝全国の全レース",
+  baseInline: (p) => `（全国 ${p}%）`,
   baseLegendRef: (venue) =>
     `太い点線＝全国の全レース、細い点線＝${venue}の全レース（参考）`,
   venueAll: (venue, b1, manshu) =>
@@ -117,10 +118,11 @@ export const ASSIST_COPY = Object.freeze({
   cancelled: "このレースは中止です",
   candidateAria: (boat, pos) => `${boat}号艇を${pos}着の候補に`,
   candidateLabel: (pos) => `${pos}着`,
+  // 図の右端の「+」。押すとその行に1着・2着・3着の候補のボタンを出す（BOA-801 7、spec D-43）
   markAria: (boat, positions) =>
     positions.length
-      ? `${boat}号艇: ${positions.join("・")}着の候補。マークシートを開く`
-      : `${boat}号艇: 候補に入っていない。マークシートを開く`,
+      ? `${boat}号艇: ${positions.join("・")}着の候補。候補を選ぶ`
+      : `${boat}号艇: 候補に入っていない。候補を選ぶ`,
 
   // 買い目（FR-7・FR-8）
   betRegion: "買い目",
@@ -157,6 +159,8 @@ export const ASSIST_COPY = Object.freeze({
   totalLine: (total, remainder, lo, hi) =>
     `合計 ${total.toLocaleString("ja-JP")}円・残り${remainder.toLocaleString("ja-JP")}円・当たったときの倍率 ${lo}〜${hi}倍`,
   missingOdds: (n) => `オッズの無い${n}点は配分に入れていない`,
+  // 均等払戻で切り捨てた余りを足したとき（spec FR-8・D-43）
+  toppedNote: "余りは払戻の少ない組に足した",
   oddsCaution: (time) =>
     `オッズは${time}時点で締切まで動く。返還があると配当は変わる`,
   // 終わったレース（振り返り）。取り込んだ最後のオッズで、確定オッズではない（ファン評価 1周目 指摘13）

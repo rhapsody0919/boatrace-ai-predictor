@@ -318,9 +318,16 @@ await check(
             );
           if (
             content === "本命 VS" &&
-            ["youtube", "tiktok", null, undefined].includes(platform)
+            ["tiktok", null, undefined].includes(platform)
           ) {
             assert.equal(expected[0].matchedPattern, "本命");
+          }
+          // 2026-10-10 ユーザー判断: YouTubeはXと同じくgambling-connotation-words対象外。
+          if (content === "本命 VS" && ["x", "youtube"].includes(platform)) {
+            assert.deepEqual(
+              expected.map((r) => r.id),
+              [],
+            );
           }
           insight = { status: "proposed", insight_text: content, platform };
           const response = await handler(
