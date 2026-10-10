@@ -1518,3 +1518,65 @@ test.describe("思考アシスト: PC 表示（BOA-801 5、龍神ソナーと同
     expect(Math.round(main.width)).toBe(375);
   });
 });
+
+test.describe("思考アシスト: 棒は「長いほど良い」図だけ（BOA-801 3）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("軸（全国勝率）は棒、展開・機力・買い目は点だけ", async ({ page }) => {
+    await open(page);
+    const bars = () => page.locator(".ta-board .ta-track-bar");
+    await expect(bars()).toHaveCount(6);
+    for (const lens of ["展開", "機力", "買い目"]) {
+      await lensTab(page, lens).click();
+      await expect(
+        page.locator(".ta-board .ta-track-dot").first(),
+      ).toBeVisible();
+      await expect(bars()).toHaveCount(0);
+    }
+  });
+});
+
+test.describe("思考アシスト: 均等払戻の余り（BOA-801 6、spec FR-8・D-43）", () => {
+  test("切り捨てた余りを払戻の少ない組に足し、そう1行で書く", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 1, 1).click();
+    for (const b of [2, 3, 4]) await candidate(page, b, 2).click();
+    for (const b of [2, 3, 4]) await candidate(page, b, 3).click();
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    await expect(sheet.getByText("余りは払戻の少ない組に足した")).toBeVisible();
+    await expect(sheet.getByText(/・残り0円・/)).toBeVisible();
+  });
+});
+
+test.describe("思考アシスト: 図の右端の「+」（BOA-801 7、spec D-43）", () => {
+  test("「+」を押すとその行に1着・2着・3着の候補、開くのは1行だけ。選ぶと固定の買い目に入る", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    const plus = (boat) =>
+      page.getByRole("button", {
+        name: new RegExp(`^${boat}号艇: .*候補を選ぶ$`),
+      });
+    await plus(1).click();
+    await expect(plus(1)).toHaveAttribute("aria-expanded", "true");
+    await expect(candidate(page, 1, 1)).toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: "マークシート" }),
+    ).toHaveCount(0);
+    await plus(2).click();
+    await expect(candidate(page, 1, 1)).toHaveCount(0);
+    await candidate(page, 2, 1).click();
+    await expect(footer(page)).toContainText("2-—-—");
+    await expect(plus(2)).toHaveText("1着");
+  });
+});
