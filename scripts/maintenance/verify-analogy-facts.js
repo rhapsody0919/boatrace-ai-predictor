@@ -91,6 +91,7 @@ import {
   normalizeNeighbor,
   sliderSteps,
   trifectaList,
+  raceListRows,
 } from "../../src/utils/analogyAggregate.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -1082,6 +1083,54 @@ check(
       ]),
     ).exh,
     [2, 3],
+  );
+}
+
+// ---- STEP4 の件数から元のレースの一覧（BOA-823）。画面の絞りと押した物を重ねる ----------------
+{
+  const races = {
+    entry_bits: ["waku", "inlost", "mae", "mae6", "mae5", "mae56", "maeOther"],
+    form_bits: ["flat", "wall", "d2", "d3", "kado", "d1", "dash"],
+    rows: [
+      ["2026-10-09-01-01", 0b1, 0b10011, "213", "差し", 1980],
+      ["2026-10-08-02-01", 0b1, 0b10000, "132", "逃げ", 1240],
+      ["2026-10-07-03-01", 0b100, 0b1, "415", "まくり", 15600],
+      ["2026-10-06-04-01", 0b1, 0b0, "246", null, null],
+    ],
+  };
+  const ids = (o) => raceListRows(races, o).map((r) => r.race_id.slice(5, 10));
+  check("一覧: 1着の艇", ids({ pick: { kind: "first", boat: 2 } }), [
+    "10-09",
+    "10-06",
+  ]);
+  check(
+    "一覧: 進入（枠なり）と形（カド一撃）で絞る",
+    ids({ entry: "waku", form: "kado", pick: { kind: "first", boat: 2 } }),
+    ["10-09"],
+  );
+  check("一覧: 3連単", ids({ pick: { kind: "tri", combo: [1, 3, 2] } }), [
+    "10-08",
+  ]);
+  check(
+    "一覧: 帯（2着→3着）",
+    ids({ pick: { kind: "band", p: 1, a: 1, b: 5 } }),
+    ["10-07"],
+  );
+  check("一覧: 万舟", ids({ pick: { kind: "manshu" } }), ["10-07"]);
+  check(
+    "一覧: 決まり手の記録なしは「その他」",
+    ids({ pick: { kind: "tech", tech: "その他" } }),
+    ["10-06"],
+  );
+  check(
+    "一覧: 1号艇以外",
+    ids({ not1: true, pick: { kind: "tech", tech: "差し" } }),
+    ["10-09"],
+  );
+  check(
+    "一覧: 形の名前",
+    raceListRows(races, { pick: { kind: "first", boat: 2 } })[0].forms,
+    ["flat", "wall", "kado"],
   );
 }
 

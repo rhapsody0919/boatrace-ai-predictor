@@ -11,6 +11,8 @@
  * boats=1: 2〜6号艇の「構成＋その艇の級」の範囲の値（scenario-boat、BOA-806）を boats に入れる。範囲の種類（VC・NC・NCR）は
  *   1号艇の範囲と同じにする（VC から NC に替えたときは全艇 NC）。VA・VG・NA は級によらないので null。
  *   ファイルの無い艇（BOA-806 より前の朝のバッチの版）は null（画面は1号艇の範囲の値を出す）
+ * races=1: STEP4 の件数を押したときの元のレースの一覧（scenario-races、BOA-823）だけを返す（{run_id, scope, races}）。
+ *   押したときだけ読むので、ふだんの応答には入れない。BOA-823 より前の朝のバッチの版は races が null
  */
 import {
   createHandler,
@@ -89,6 +91,19 @@ export default createHandler(
       throw new RangeError(
         `scope は今日の1号艇の範囲キー（${Object.values(keys).join("|")}）`,
       );
+    if (url.searchParams.get("races") === "1")
+      return {
+        run_id: rc.run_id,
+        scope,
+        races: await readObject(
+          objectPath(
+            raceId,
+            rc.run_id,
+            "scenario-races",
+            scope.replaceAll(":", "_"),
+          ),
+        ),
+      };
     const refKey = keys[REFERENCE[scope.split(":")[0]]] ?? null;
     const wantBoats = url.searchParams.get("boats") === "1";
     const [scenario, refFile, boats] = await Promise.all([

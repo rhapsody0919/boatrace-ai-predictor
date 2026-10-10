@@ -298,3 +298,63 @@ export function hintTableBest(courseSt, exhByBoat) {
       : new Set(),
   };
 }
+
+/** 3連単の払戻がこれ以上なら万舟（scripts/ml/analogy/v16_scenario.py の MANSHU と同じ） */
+export const MANSHU_YEN = 10000;
+/** STEP4 の一覧で最初に出す件数と、「もっと見る」で出す上限（BOA-823、承認モック mock-scenario-race-links-v2） */
+export const RACE_LIST_FIRST = 5;
+export const RACE_LIST_MORE = 20;
+
+/**
+ * STEP4 の件数を押したときの元のレースの一覧（BOA-823）。入力は /api/analogy/scenario?races=1 の races
+ * （scripts/ml/analogy/v16_scenario.py の scope_races。新しい順、範囲ごとに直近3,000件まで）。
+ * 画面と同じ絞り（STEP1 の進入・STEP2 の形・1着の艇・「1号艇以外」）に、押した物（pick）を重ねる。
+ * pick: {kind:"first", boat} 1着の艇 ／ {kind:"tech", tech} 決まり手（記録なしは「その他」）／ {kind:"manshu"} 万舟 ／
+ *   {kind:"tri", combo:[1,3,2]} 3連単 ／ {kind:"band", p, a, b} 着順の流れの帯（p=0 は1着→2着、1 は2着→3着）
+ * @returns {{race_id: string, finish: number[], tech: string|null, payout: number|null, entry: number, forms: string[]}[]}
+ */
+export function raceListRows(
+  races,
+  { entry = "all", form = "any", first = null, not1 = false, pick },
+) {
+  if (!races?.rows) return [];
+  const eBit = races.entry_bits.indexOf(entry);
+  const fBit = races.form_bits.indexOf(form);
+  const hit = (fin, tech, pay) => {
+    switch (pick?.kind) {
+      case "first":
+        return fin[0] === pick.boat;
+      case "tech":
+        return (TECHNIQUES.includes(tech) ? tech : "その他") === pick.tech;
+      case "manshu":
+        return pay !== null && pay >= MANSHU_YEN;
+      case "tri":
+        return pick.combo.every((b, i) => fin[i] === b);
+      case "band":
+        return fin[pick.p] === pick.a && fin[pick.p + 1] === pick.b;
+      default:
+        return true;
+    }
+  };
+  return races.rows
+    .map(([race_id, e, f, fin, tech, payout]) => ({
+      race_id,
+      entry: e,
+      formBits: f,
+      finish: String(fin).split("").map(Number),
+      tech,
+      payout,
+    }))
+    .filter(
+      (r) =>
+        (entry === "all" || (eBit >= 0 && (r.entry >> eBit) & 1)) &&
+        (form === "any" || (fBit >= 0 && (r.formBits >> fBit) & 1)) &&
+        (!first || r.finish[0] === first) &&
+        (!not1 || r.finish[0] !== 1) &&
+        hit(r.finish, r.tech, r.payout),
+    )
+    .map(({ formBits, ...r }) => ({
+      ...r,
+      forms: races.form_bits.filter((_, i) => (formBits >> i) & 1),
+    }));
+}
