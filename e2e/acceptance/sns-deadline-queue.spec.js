@@ -17,3 +17,19 @@ for (const theme of ['light','dark']) test(`${theme}: 375px・端末が米国時
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=375)).toBe(true);
  await page.screenshot({path:`../out/reports/queue-${theme}.png`,fullPage:true});
 });
+
+for (const theme of ['light','dark']) test(`${theme}: 非公開残置の動画ID・要照合と手動削除案内`,async({page})=>{
+ await page.route('**/*',route=>{
+  const url=new URL(route.request().url()); if(url.hostname!=='127.0.0.1')return route.abort();
+  if(url.pathname==='/api/admin/sns-hub/deadline-queue')return route.fulfill({json:{data:[{
+   id:'retained',title:'公開しなかった動画',channel:'youtube',state:'reconcile',youtube_stage:'private_retained',external_post_id:'abcdefghijk',error_code:'youtube_private_retained',
+  }]}});
+  return route.fallback();
+ });
+ await page.goto('/__queue_test');await page.evaluate(t=>document.documentElement.setAttribute('data-theme',t),theme);
+ await expect(page.getByRole('listitem')).toContainText('要照合（再送禁止）');
+ await expect(page.getByRole('listitem')).toContainText('abcdefghijk');
+ await expect(page.getByText(/非公開のまま残置（削除はオーナー操作）/)).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=375)).toBe(true);
+ await page.screenshot({path:`../out/reports/task-10b-qa/retained-${theme}.png`,fullPage:true});
+});

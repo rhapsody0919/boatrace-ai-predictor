@@ -20,11 +20,13 @@ export async function createXSnapshot(draft, loadMedia) {
   const text = buildPostText(draft);
   if (!text.trim() && !path) throw new Error("内容が空です");
   const media = [];
-  if (path) {
-    const maxBytes =
-      draft.platform === "youtube"
-        ? YOUTUBE_MEDIA_MAX_BYTES
-        : X_MEDIA_MAX_BYTES;
+  const maxBytes =
+    draft.platform === "youtube" ? YOUTUBE_MEDIA_MAX_BYTES : X_MEDIA_MAX_BYTES;
+  const paths =
+    draft.platform === "youtube"
+      ? [path, draft.cover_image_path].filter(Boolean)
+      : [path].filter(Boolean);
+  for (const path of paths) {
     const bytes = await loadMedia(path, maxBytes);
     if (!bytes.byteLength || bytes.byteLength > maxBytes)
       throw new Error("媒体の容量が不正です");
