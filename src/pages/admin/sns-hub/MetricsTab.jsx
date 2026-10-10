@@ -5,6 +5,7 @@ import {
   OBSERVATION_METRICS,
 } from "../../../utils/snsObservations.js";
 import "./MetricsTab.css";
+import ObservationCsvPanel from "./ObservationCsvPanel.jsx";
 
 // 縦軸の最大値は曲線ごとに1回だけ求める（点ごとに求めると点数の2乗になる）
 function curvePolyline(points) {
@@ -51,6 +52,7 @@ export default function MetricsTab() {
   return (
     <section className="sns-observation-panel">
       <h2>観測窓別の型比較</h2>
+      <ObservationCsvPanel />
       <p>
         同じチャネル・言語・型の版・尺・取得元・定義で比較します。10本未満は暫定です。欠測は0にしません。
       </p>

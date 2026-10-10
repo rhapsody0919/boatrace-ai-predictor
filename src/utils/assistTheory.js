@@ -220,7 +220,7 @@ function factCard(boat, key, ctx) {
     today,
     meas: bars.length
       ? {
-          scope: C.scopeChip(ctx.scopeLabelOf(f.scope), f.scope.n),
+          scope: C.scopeChip(ctx.scopeLabelOf(f.scope, boat), f.scope.n),
           bars,
           notes: [C.factsNotCause, ...(chip.off ? [C.theoryFactFinalOff] : [])],
           tag: C.factLevel[chip.level] ?? null,
@@ -238,7 +238,7 @@ function venueCard(ctx) {
   const bars = [
     va?.[1] && { label: C.theoryVenueAll(venue, va[1]), k: va[0], n: va[1] },
     u?.[1] && {
-      label: C.scopeChip(ctx.scopeLabelOf(axis), u[1]),
+      label: C.scopeChip(ctx.scopeLabelOf(axis, 1), u[1]),
       k: u[0],
       n: u[1],
     },
