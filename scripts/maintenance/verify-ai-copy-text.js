@@ -105,6 +105,8 @@ const build = (lang, overrides = {}) => {
         seriesDayLabel: t("raceDetailPage.seriesDayNth", { day: 3 }),
         raceStage: null,
         weather: WEATHER,
+        // 徳山。DB の「北西」は本当の方位では北（BOA-819）
+        venueCode: 18,
         ...overrides.context,
       },
       players,
@@ -114,7 +116,9 @@ const build = (lang, overrides = {}) => {
       pageUrl: aiCopyPageUrl(RACE_ID, lang),
       now: NOW,
       exhibitionPublished:
-        "exhibitionPublished" in overrides ? overrides.exhibitionPublished : false,
+        "exhibitionPublished" in overrides
+          ? overrides.exhibitionPublished
+          : false,
     }),
   };
 };
@@ -140,10 +144,7 @@ for (const lang of LANGS) {
     last.includes(dict.nav.logoText) && last.endsWith(url),
     last,
   );
-  check(
-    `[${lang}] 出典は1回だけ`,
-    text.split(dict.nav.logoText).length === 2,
-  );
+  check(`[${lang}] 出典は1回だけ`, text.split(dict.nav.logoText).length === 2);
 
   // 前提の行が見出しの直後にある
   check(`[${lang}] 1行目が見出し`, lines[0].startsWith("## "), lines[0]);
@@ -164,6 +165,11 @@ for (const lang of LANGS) {
     text.includes("3.0m") && text.includes("3cm") && text.includes("14:52"),
   );
   check(
+    `[${lang}] 風向は会場ごとに本当の方位に直す（徳山の DB「北西」→ 北。BOA-819）`,
+    text.includes(`${dict.beforeInfo.windDirection.n} 3.0m`) &&
+      !text.includes(`${dict.beforeInfo.windDirection.nw} 3.0m`),
+  );
+  check(
     `[${lang}] データの時点（JST）`,
     text.includes(`- ${a.premiseAsOf}: `) && text.includes("2026-10-05 14:58"),
   );
@@ -173,18 +179,43 @@ for (const lang of LANGS) {
   );
 
   // 注記（行名は表の行と同じ文字列。訳語のずれで注記を引けなくならないように）
-  for (const key of ["winRate", "motor", "form", "avgSt", "st", "exSt", "exhibition", "exhibitionCourse", "partsChanged", "courseRate", "technique", "returnRate"]) {
-    check(`[${lang}] 注記 ${key}（表の行名つき）`, text.includes(`\n- ${key}: ${a.note[key]}`));
+  for (const key of [
+    "winRate",
+    "motor",
+    "form",
+    "avgSt",
+    "st",
+    "exSt",
+    "exhibition",
+    "exhibitionCourse",
+    "partsChanged",
+    "courseRate",
+    "technique",
+    "returnRate",
+  ]) {
+    check(
+      `[${lang}] 注記 ${key}（表の行名つき）`,
+      text.includes(`\n- ${key}: ${a.note[key]}`),
+    );
   }
   check(`[${lang}] 「—」の注記`, text.includes(`- ${a.note.dash}`));
   // 総合力順位は画面に無く、1着候補と食い違って読めるので入れない
   check(`[${lang}] 総合力順位を入れない`, !text.includes(" > "));
-  check(`[${lang}] 2着・3着の列の説明`, text.includes(a.turnPredictionCandidateNote));
+  check(
+    `[${lang}] 2着・3着の列の説明`,
+    text.includes(a.turnPredictionCandidateNote),
+  );
   // 表の後ろに注記、注記の後ろに展開予測
   const tableEnd = text.lastIndexOf("| returnRate |");
   // 種別はページの見出しと同じく分類名で出す（会場独自の名前「東尋坊ドリーム」→「ドリーム戦」）
-  const { text: dream } = build(lang, { context: { raceStage: "東尋坊ドリーム" } });
-  check(`[${lang}] 種別は分類名`, dream.includes(` / ${lookup(dict, "raceStage.dream")}\n`), dream.split("\n")[4]);
+  const { text: dream } = build(lang, {
+    context: { raceStage: "東尋坊ドリーム" },
+  });
+  check(
+    `[${lang}] 種別は分類名`,
+    dream.includes(` / ${lookup(dict, "raceStage.dream")}\n`),
+    dream.split("\n")[4],
+  );
   const notesAt = text.indexOf(a.notesHeading);
   const turnAt = text.indexOf(a.turnPredictionHeading);
   check(
@@ -224,7 +255,10 @@ for (const lang of LANGS) {
 
   // 取得失敗で展示の有無が分からないときは「未反映」と言い切らない
   const { text: unknownEx } = build(lang, { exhibitionPublished: null });
-  check(`[${lang}] 展示の有無が不明なら未反映の行を出さない`, !unknownEx.includes(a.premiseExhibitionUnpublished));
+  check(
+    `[${lang}] 展示の有無が不明なら未反映の行を出さない`,
+    !unknownEx.includes(a.premiseExhibitionUnpublished),
+  );
 
   // 表に無い行の注記は出さない
   const { text: fewRows } = build(lang, {
