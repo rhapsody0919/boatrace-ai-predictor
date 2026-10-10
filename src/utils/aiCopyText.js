@@ -159,11 +159,13 @@ export function buildTurnPredictionSection(t, players, turnPrediction) {
 const isNum = (v) => typeof v === "number" && Number.isFinite(v);
 
 /** 天候・風・波・気温・水温の1行。取れない項目は「未取得」と書く（公式は発表済みでも、このレースの値をまだ取得していないことがあるため「未発表」とは書かない） */
-function weatherLine(t, weather) {
+function weatherLine(t, weather, venueCode) {
   const unpublished = t("aiCopy.unpublished");
   const w = weather ?? {};
   const wind = [
-    w.windDirection ? translateWindDirection(t, w.windDirection) : null,
+    w.windDirection
+      ? translateWindDirection(t, w.windDirection, venueCode)
+      : null,
     isNum(w.windSpeed) ? `${w.windSpeed.toFixed(1)}m` : null,
   ]
     .filter(Boolean)
@@ -205,15 +207,12 @@ function weatherLine(t, weather) {
  * @param {string|null} context.seriesTitle 節のタイトル（公式表記）
  * @param {string|null} context.seriesDayLabel 「3日目」等（画面の見出しと同じもの）
  * @param {string|null} context.raceStage race_conditions.race_stage（公式表記）
+ * @param {number|null} context.venueCode 会場コード（風向を本当の方位に直す。BOA-819）
  * @param {object|null} context.weather prediction.weather
  * @param {Date} now
  * @param {boolean|null} exhibitionPublished 展示タイム・展示STのどれかが出ているか（取得失敗で不明なら null）
  */
-export function buildPremiseLines(
-  t,
-  context,
-  { now, exhibitionPublished },
-) {
+export function buildPremiseLines(t, context, { now, exhibitionPublished }) {
   const unpublished = t("aiCopy.unpublished");
   const grade = context.raceGrade
     ? (GRADE_LABELS[context.raceGrade] ?? t("aiCopy.gradeIppan"))
@@ -237,7 +236,7 @@ export function buildPremiseLines(
   if (meet.length > 0)
     lines.push(`${t("aiCopy.premiseMeet")}: ${meet.join(" / ")}`);
   lines.push(
-    `${t("aiCopy.premiseConditions")}: ${weatherLine(t, context.weather)}`,
+    `${t("aiCopy.premiseConditions")}: ${weatherLine(t, context.weather, context.venueCode)}`,
   );
   lines.push(
     `${t("aiCopy.premiseAsOf")}: ${t("aiCopy.premiseAsOfValue", { time: formatJstDateTime(now) })}`,
@@ -294,9 +293,7 @@ export function buildAiCopyText({
   if (players.length === 0) return "";
   return [
     `## ${heading}`,
-    buildPremiseLines(t, context, { now, exhibitionPublished }).join(
-      "\n",
-    ),
+    buildPremiseLines(t, context, { now, exhibitionPublished }).join("\n"),
     toMarkdownTable(t, players, rows),
     buildNotes(t, rows),
     buildTurnPredictionSection(t, players, turnPrediction),

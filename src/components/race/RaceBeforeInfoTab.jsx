@@ -741,7 +741,7 @@ function RaceBeforeInfoTab({
               ? `${weather.windSpeed.toFixed(1)}m`
               : null,
             weather.windDirection
-              ? translateWindDirection(t, weather.windDirection)
+              ? translateWindDirection(t, weather.windDirection, venueCode)
               : null,
           ]
             .filter(Boolean)

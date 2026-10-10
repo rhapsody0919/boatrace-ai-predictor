@@ -226,8 +226,12 @@ function buildRows(t, players, analysis, flying, raceId) {
         const row = maintenanceByBoat.get(p.number);
         if (!row) return DASH;
         const items = [
-          ...(row.parts_changed ?? []).map((part) => translatePartName(t, part)),
-          ...(row.propeller_change ? [t("analysis.motor.propellerChanged")] : []),
+          ...(row.parts_changed ?? []).map((part) =>
+            translatePartName(t, part),
+          ),
+          ...(row.propeller_change
+            ? [t("analysis.motor.propellerChanged")]
+            : []),
         ];
         return items.length > 0 ? items.join(t("listSeparator")) : DASH;
       }),
@@ -321,7 +325,9 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
   // 表と展開予測の両方で同じ名前にするため、ここで1回だけ整える
   const players = [...(prediction?.allPlayers ?? [])]
     .sort((a, b) => a.number - b.number)
-    .map((p) => (p.name ? { ...p, name: splitRacerName(p.name).join(" ") } : p));
+    .map((p) =>
+      p.name ? { ...p, name: splitRacerName(p.name).join(" ") } : p,
+    );
 
   const buildText = (promptType) => {
     if (players.length === 0) return "";
@@ -347,6 +353,7 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
         seriesDayLabel: race?.seriesDayLabel ?? null,
         raceStage: prediction?.raceStage ?? raw.raceStage ?? null,
         weather: prediction?.weather ?? raw.weather ?? null,
+        venueCode: venueCode ?? null,
       },
       players,
       rows: buildRows(

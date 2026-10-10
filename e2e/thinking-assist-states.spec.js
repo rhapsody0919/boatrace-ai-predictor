@@ -1250,3 +1250,15 @@ test.describe("思考アシスト: BOA-809（PR5 のレビューの P3）", () =
     expect(gap).toBeGreaterThanOrEqual(0);
   });
 });
+
+test.describe("思考アシスト: 風向を本当の方位で出す（BOA-819）", () => {
+  test("徳山10R の DB「北西」は、公式の直前情報の図と同じ「北」と出す", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    const header = page.locator(".ta-header");
+    await expect(header.getByText(/^風 北 /)).toBeVisible();
+    await expect(header.getByText(/^風 北西/)).toHaveCount(0);
+  });
+});
