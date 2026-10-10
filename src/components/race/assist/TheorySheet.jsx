@@ -129,7 +129,10 @@ export default function TheorySheet({ card, onClose }) {
         <section className="ta-th-also" aria-label={C.theoryAlso}>
           <h3>{C.theoryAlso}</h3>
           {card.also.map((c) => (
-            <Fold key={c.id} title={`${c.title}（${c.cond}）`}>
+            <Fold
+              key={c.id}
+              title={`${c.title}（${c.cond}）${c.today?.state === "hit" ? `・${C.theoryTodayHere}` : ""}`}
+            >
               <CardBody card={c} />
             </Fold>
           ))}

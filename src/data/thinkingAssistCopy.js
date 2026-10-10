@@ -472,10 +472,20 @@ export const ASSIST_COPY = Object.freeze({
   theoryWindCond: (venue, band) => `${venue}・風速${band}のレース`,
   theoryWindLikely: "艇番ごとの1着の割合が、風を問わないときとどう違うか",
   theoryWindScope: (venue, band) => `${venue}・風速${band}`,
-  theoryWindToday: (dir, speed) => `今日は${dir}${speed}m`,
+  // 今日の風の向き（ホームストレッチに対して。BOA-809）
+  windRelation: Object.freeze({
+    tail: "追い風",
+    head: "向かい風",
+    cross: "横風",
+  }),
+  theoryWindToday: (dir, speed, rel = null) =>
+    `今日は${dir}${speed}m${rel ? `・${rel}` : ""}`,
+  // 当てはまる・当てはまらないは札（今日当てはまる／当てはまらない）が言うので、文は今日の風だけ
+  theoryWindTodayRel: (rel, speed) => `今日は${rel ?? ""}${speed}m`,
+  theoryTodayHere: "今日はこちら",
   theoryPendingWind: "風は展示の後に分かる",
-  theoryWindMixed:
-    "追い風・向かい風が混ざった値（区別していない）。今日の風が追い風か向かい風かはまだ出していない",
+  // 表は風速の区分だけ（向きを区別しない）。今日の向きは「今日当てはまる」の行に書く（BOA-809）
+  theoryWindMixed: "表は追い風・向かい風が混ざった値",
   theoryWindCols: ["艇", "この風", "風を問わず", "差(pt)"],
   // 棒の中の線（ファン評価 PR5 1周目 指摘12）
   theoryBarLegend: "棒の2本の縦線の間＝ぶれ幅（件数が少ないほど広い）",

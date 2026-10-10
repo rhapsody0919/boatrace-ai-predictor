@@ -76,3 +76,27 @@ export function trueWindDirection(label, venueCode) {
   const deg = (((i * 22.5 - offset) % 360) + 360) % 360;
   return WIND_DIRECTIONS[deg / 22.5];
 }
+
+/**
+ * ホームストレッチ（スタート → 1マーク）に対する今日の風（BOA-809、2026-10-10 ユーザー決定）。
+ * 公式の直前情報の水面の図はスタンドが下・1マークが右（公式の用語集「スタンドから水面を見たとき右手に見えるブイ」）で、
+ * 風向アイコンの矢印は風が吹いていく向き（徳山 2026-10-06 10R の is-wind15 は左上向きで、K ファイルでは北の風）。
+ * DB の風向はこのアイコンの番号なので、矢印が右向き（「東」＝5番）が追い風で、会場によらない。
+ * 区分は BOA-211（scripts/analysis/analyze-weather-in-escape.js の windBin）と同じ: 追い風から ±45° 以内は追い風、
+ * 135° 以上は向かい風、ほかは横風。風速1m以下・無風は区分しない
+ * @param {string|null|undefined} label DB の風向（アイコンの番号の名前）
+ * @param {number|string|null|undefined} venueCode 会場が分からなければ null
+ * @param {number|null|undefined} speed 風速（m）
+ * @returns {"tail"|"head"|"cross"|null}
+ */
+export function windRelation(label, venueCode, speed) {
+  if (speed == null || !(speed > 1)) return null;
+  if (VENUE_WIND_OFFSET_DEG[Number(venueCode)] == null) return null;
+  const i = WIND_DIRECTIONS.indexOf(label);
+  if (i < 0) return null;
+  const deg = (i - 4) * 22.5;
+  const phi = Math.abs(deg > 180 ? deg - 360 : deg);
+  if (phi <= 45) return "tail";
+  if (phi >= 135) return "head";
+  return "cross";
+}
