@@ -84,6 +84,7 @@ import {
   bandBreakdown,
   defaultStepIndex,
   flowLinks,
+  hintTableBest,
   itemRates,
   neighborCounts,
   normalizeNeighbor,
@@ -963,6 +964,68 @@ check(
     null,
   );
   console.log(`帯の内訳の合計＝帯の件数: ${n} 件`);
+}
+
+// ---- 平均STの表の金枠（BOA-814）。出走表と同じ決まり ----------------------
+{
+  const st = (filled, n, extra = {}) => ({
+    course_filled: filled,
+    course_n: n,
+    overall: [0.16, 0.16, 0.16, 0.16, 0.16, 0.16],
+    venue: [],
+    venue_n: [],
+    ...extra,
+  });
+  const sets = (b) =>
+    Object.fromEntries(Object.entries(b).map(([k, v]) => [k, [...v].sort()]));
+  const base = [0.15, 0.12, 0.14, 0.13, 0.16, 0.17];
+  check(
+    "平均STの表: 一番小さい値に金枠",
+    sets(hintTableBest(st(base, [20, 20, 20, 20, 20, 20]), null)),
+    { course: [2], overall: [], venue: [], exh: [] },
+  );
+  check(
+    "平均STの表: 走数が6走未満の値は一番でも付けず、次の艇に繰り下げない",
+    sets(hintTableBest(st(base, [20, 5, 20, 20, 20, 20]), null)).course,
+    [],
+  );
+  check(
+    "平均STの表: 3桁で同じ値なら両方に付ける",
+    sets(
+      hintTableBest(
+        st([0.1504, 0.1496, 0.16, 0.17, 0.18, 0.19], [9, 9, 9, 9, 9, 9]),
+        null,
+      ),
+    ).course,
+    [1, 2],
+  );
+  check(
+    "平均STの表: 会場の値は薄く出している（10走未満）ものに付けない",
+    sets(
+      hintTableBest(
+        st(base, [20, 20, 20, 20, 20, 20], {
+          venue: [0.11, 0.14, 0.15, 0.16, 0.17, 0.18],
+          venue_n: [9, 30, 30, 30, 30, 30],
+        }),
+        null,
+      ),
+    ).venue,
+    [],
+  );
+  check(
+    "平均STの表: 展示STは F を外し、2桁で比べる",
+    sets(
+      hintTableBest(st(base, [20, 20, 20, 20, 20, 20]), [
+        -0.02,
+        0.051,
+        0.049,
+        0.1,
+        0.12,
+        null,
+      ]),
+    ).exh,
+    [2, 3],
+  );
 }
 
 if (failures > 0) {

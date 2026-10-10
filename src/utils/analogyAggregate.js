@@ -6,6 +6,9 @@
  * 着順の流れ・よく出た3連単はタブ3（scenario の cells の tri）と同じ形 {"1-2-4": 件数} にして共用する。
  */
 
+import { bestOf } from "./bestOf.js";
+import { SMALL_SAMPLE_THRESHOLD } from "../components/race/basicInfoStats.js";
+
 /** スライダーの段（spec B-4） */
 export const SLIDER_STEPS = [
   10, 20, 30, 50, 75, 100, 150, 200, 300, 400, 600, 800,
@@ -251,3 +254,47 @@ export function bandBreakdown(tri, band, { first = null, not1 = false } = {}) {
 
 /** よく出た3連単の上位の数（spec B-8「上位3つ」） */
 export const TOP_TRIFECTA = 3;
+
+/** 平均STの表で、会場の値を薄く出す走数（これ未満は薄く、金枠も付けない） */
+export const VENUE_FEW_RUNS = 10;
+
+/**
+ * 展開シナリオの「数字で見る（平均STの表）」の金枠（BOA-814）。出走表と同じ決まり（bestOf）で行ごとに6艇を比べる。
+ * 平均STは小さいほど良く、表示と同じ3桁で比べる。展示STは2桁で比べ、F は候補から外す（思考アシストの展示STと同じ）。
+ * 当てにならない値は比べるが金枠を付けず、次の艇にも繰り下げない:
+ * - このコース: 走数が SMALL_SAMPLE_THRESHOLD 未満（全体で埋めた値を含む）
+ * - 会場: 薄く出している値（VENUE_FEW_RUNS 未満）
+ * 会場の全選手の行はコースごとの基準で艇の比較ではないので付けない
+ * @param {{course_filled?: (number|null)[], course_n?: number[], overall?: (number|null)[], venue?: (number|null)[], venue_n?: number[]}} courseSt
+ * @param {(number|null)[]|null} exhByBoat 艇ごとの今日の展示ST（F は負）。展示前は null
+ * @returns {{course: Set<number>, overall: Set<number>, venue: Set<number>, exh: Set<number>}}
+ */
+export function hintTableBest(courseSt, exhByBoat) {
+  const row = (vals, hidden, digits = 3) =>
+    bestOf(
+      (vals ?? []).map((value, i) => ({
+        boat: i + 1,
+        value,
+        hidden: hidden ? hidden(i) : false,
+      })),
+      "min",
+      { digits },
+    );
+  const cn = courseSt?.course_n;
+  const vn = courseSt?.venue_n;
+  return {
+    course: row(
+      courseSt?.course_filled,
+      cn && ((i) => cn[i] < SMALL_SAMPLE_THRESHOLD),
+    ),
+    overall: row(courseSt?.overall),
+    venue: row(courseSt?.venue, vn && ((i) => vn[i] < VENUE_FEW_RUNS)),
+    exh: exhByBoat
+      ? row(
+          exhByBoat.map((v) => (typeof v === "number" && v < 0 ? null : v)),
+          null,
+          2,
+        )
+      : new Set(),
+  };
+}

@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import BoatBadge from "../BoatBadge";
 import { BOAT_LINE_COLORS } from "../../../utils/colors";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
@@ -117,8 +117,22 @@ export default function RaceLaneBoard({
   marks = null,
 }) {
   const bet = model.kind === "bet";
+  // 6艇比較に変わったら図の見出しまで送る。深掘りの中の値を押したときは図が画面の上に外れているため（screens「2段目は図の見出しまで送る」、BOA-808 1）
+  const ref = useRef(null);
+  const compare = model.kind === "metric" ? model.title : null;
+  useEffect(() => {
+    if (!compare) return;
+    const reduce = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    )?.matches;
+    ref.current?.scrollIntoView?.({
+      block: "start",
+      behavior: reduce ? "auto" : "smooth",
+    });
+  }, [compare]);
   return (
     <figure
+      ref={ref}
       className="ta-board"
       aria-label={ASSIST_COPY.figure(lensLabel)}
       data-guide="board"
