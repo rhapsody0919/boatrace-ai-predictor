@@ -2458,8 +2458,10 @@ button.af-bar {
 
 .af-hintc-ico {
   display: inline-block;
-  width: 64px;
+  width: 88px;
   flex: none;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
 .af-hintc-ico svg {

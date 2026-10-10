@@ -320,7 +320,7 @@ function HintCard({ form, rows, vals, selected, onForm }) {
     <div className="af-hintc" data-testid="analogy-hint-card">
       <div className="af-hintc-h">
         <span className="af-hintc-ico" aria-hidden="true">
-          <SlitShapeIcon st={SLIT_EXAMPLE[form]} height={40} compact />
+          <SlitShapeIcon st={SLIT_EXAMPLE[form]} height={110} compact />
         </span>
         <b className="af-hintc-name">{name}</b>
         <span className="af-hintc-ok">{t(`${k}.hintTodayOk`)}</span>
