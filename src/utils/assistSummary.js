@@ -65,11 +65,17 @@ export function factsScope(facts, today, boat, round) {
   };
 }
 
-/** 範囲の呼び名（VC は「{会場}・級の並びが同じ」、NC・NCR は「全国・級の並びが同じ（準優勝戦）」） */
-export const factsScopeLabel = (scope, venue) =>
-  scope.kind === "VC"
-    ? `${venue ?? ""}・級の並びが同じ`
-    : sameClassLabel({ kind: scope.kind, round: scope.round });
+/**
+ * 範囲の呼び名（VC は「{会場}・級の並びが同じ」、NC・NCR は「全国・級の並びが同じ（準優勝戦）」）。
+ * 艇を渡すと「（{n}号艇が{級}）」を添える。範囲は選んだ艇の艇番と級をそろえるので、同じ呼び名でも艇ごとに件数が違う
+ * （spec D-41 (4)。BOA-809、2026-10-10 ユーザー決定）
+ */
+export const factsScopeLabel = (scope, venue, boat = null, cls = null) =>
+  `${
+    scope.kind === "VC"
+      ? `${venue ?? ""}・級の並びが同じ`
+      : sameClassLabel({ kind: scope.kind, round: scope.round })
+  }${boat && cls ? `（${boat}号艇が${cls}）` : ""}`;
 
 /**
  * 差がつく材料の行（1着）。today の6艇の値で、その艇の今日の位置（1＝一番良い、6＝一番悪い）を付ける。
@@ -209,6 +215,34 @@ const num = (v) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 };
+
+/**
+ * 機力の結論に出す「項目ごとの一番」。順は展示タイム → オリジナル展示（種目の順）→ モーター2連率で固定。
+ * 展示タイムだけで結論を決めない（BOA-808 2: 徳山の一周・まわり足は1号艇が一番なのに出なかった）
+ * @param {{table: ReturnType<typeof exhibitionTable>|null, motor: {best: Set<number>, valueOf: (boat: number) => number|null}}} args
+ * @returns {Array<{label: string, boats: number[], text: string}>} text は単位つきの値（同着は先頭の艇の値）
+ */
+export function powerWinners({ table, motor }) {
+  const sorted = (set) => [...set].sort((a, b) => a - b);
+  const rowOf = (boat) => table.rows.find((r) => r.boat === boat);
+  const items = [];
+  const push = (label, set, valueOf, fmt) => {
+    if (!set?.size) return;
+    const boats = sorted(set);
+    const v = valueOf(boats[0]);
+    if (v == null) return;
+    items.push({ label, boats, text: fmt(v) });
+  };
+  const sec = (v) => `${v.toFixed(2)}秒`;
+  if (table) {
+    push("展示タイム", table.best.exh, (b) => rowOf(b)?.exh ?? null, sec);
+    table.kinds.forEach((k, i) =>
+      push(k, table.best.ox[i], (b) => rowOf(b)?.ox[i] ?? null, sec),
+    );
+  }
+  push("モーター2連率", motor.best, motor.valueOf, (v) => `${v.toFixed(1)}%`);
+  return items;
+}
 
 /**
  * 展示の表（展示・オリジナル展示・展示ST・体重・チルト）。最良は展示・オリジナル展示・展示ST（F は除く）だけ。

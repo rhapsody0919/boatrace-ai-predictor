@@ -628,7 +628,8 @@ export function boardModel({
     title: "1着になる組のオッズ（合成）",
     left: "人気",
     right: "人気薄",
-    good: "left",
+    // オッズは良し悪しでなく市場の見立て。「良い」の札は付けない（BOA-808 5、2026-10-10 ユーザー決定）
+    good: null,
     lo: 0,
     hi: Math.log(hiOdds),
     log: true,
