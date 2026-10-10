@@ -370,6 +370,11 @@
       "guards": "選手の平均ST・直近30走・ST標準偏差（scripts/lib/racerStStats.js、BOA-581）: 1000行上限での取りこぼし・Fの除外・直近30走の並び・取得エラーの例外化"
     },
     {
+      "script": "verify-volatility-st-reason.js",
+      "tier": "ci",
+      "guards": "イン崩れ指数の理由文の1号艇の平均ST（scripts/lib/volatilityFactors.js の boat1StReason、BOA-818）: 値（当サイトに蓄積した全期間）を「今節」と書かない。予想バッチが同じ関数を使う"
+    },
+    {
       "script": "verify-race-series-final-title.js",
       "tier": "ci",
       "guards": "race_conditions の race_title・is_final_day を race_series から埋める候補（BOA-695、backfill-race-series-meta.js final-title）。既存値を上書きしない、最終日は race_date = end_date、節の外・重なり・races に無い行は書かない、全行が同じ3列を持つこと"
