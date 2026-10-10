@@ -1488,7 +1488,29 @@
         "hintMapFirst": " {{n}}号艇＝{{n}}コース",
         "hintMapRest": "＝{{n}}コース",
         "hintTodayCourse": "{{n}}コース",
-        "stepLabel": "STEP{{n}}"
+        "stepLabel": "STEP{{n}}",
+        "races": {
+          "title": {
+            "first": "{{b}}号艇が1着のレース",
+            "tech": "決まり手が{{tech}}のレース",
+            "manshu": "万舟（3連単1万円以上）のレース",
+            "tri": "{{combo}} のレース",
+            "band": "{{from}}着{{a}}号艇→{{to}}着{{b}}号艇のレース"
+          },
+          "count": "{{m}}件のうち直近{{k}}件",
+          "capped": "全{{n}}件のうち、直近{{kept}}件の中から出している",
+          "otherScope": "一覧は1号艇の級でそろえたレースから出している（棒の件数とは集め方が違う）",
+          "more": "もっと見る（{{n}}件まで）",
+          "close": "一覧を閉じる",
+          "loading": "読み込み中",
+          "error": "一覧を読み込めなかった。",
+          "retry": "もう一度読む",
+          "notReady": "この一覧は次の朝のバッチから出る",
+          "none": "直近{{kept}}件の中には、このレースは無い",
+          "raceNo": "{{n}}R",
+          "techPay": "{{tech}}・{{yen}}円",
+          "bandLink": "この帯のレースを見る ›"
+        }
       },
       "barLabel": "{{boat}}号艇 {{p}} {{n}}件",
       "feedback": {

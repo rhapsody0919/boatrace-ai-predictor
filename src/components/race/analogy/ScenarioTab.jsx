@@ -8,6 +8,8 @@ import SlitHint, { SlitHintNotes } from "./SlitHint";
 import SlitShapePicker, { SlitChosen } from "./SlitShapePicker";
 import AttackTable from "./AttackTable";
 import ScenarioRaceList from "./ScenarioRaceList";
+import ScenarioRacePanel from "./ScenarioRacePanel";
+import { useAnalogyScenarioRaces } from "../../../hooks/useAnalogyV16";
 import FinishSankey from "./FinishSankey";
 import AnalogySplit from "./AnalogySplit";
 import TrifectaList from "./TrifectaList";
@@ -56,6 +58,30 @@ export default function ScenarioTab({
   const [not1, setNot1] = useState(false);
   // 着順の流れで押した帯（よく出た3連単をその帯の内訳に絞る。BOA-816）
   const [band, setBand] = useState(null);
+  // STEP4 の件数を押したときの元のレースの一覧（BOA-823、承認モック mock-scenario-race-links-v2）。押した物と、
+  // 押したときの絞り（範囲・進入・形・1着・1号艇以外・帯）。絞りが変わったら閉じる（同時に開くのは1つ）
+  const [picked, setPicked] = useState(null);
+  const pickKey = [
+    data.scope,
+    entry,
+    slit,
+    first,
+    not1,
+    band ? `${band.p}${band.a}${band.b}` : "",
+  ].join("|");
+  const racePick = picked?.key === pickKey ? picked.pick : null;
+  const togglePick = (p) =>
+    setPicked((cur) =>
+      cur?.key === pickKey && JSON.stringify(cur.pick) === JSON.stringify(p)
+        ? null
+        : { key: pickKey, pick: p },
+    );
+  const racesRes = useAnalogyScenarioRaces(
+    raceId,
+    data.scope,
+    stage,
+    Boolean(racePick),
+  );
   // ②は形を選んだら1行に畳む（承認モック mock-scenario-v1）。「変える」・③の文脈の札で開く
   const [slitOpen, setSlitOpen] = useState(false);
   const exhibitionStage = stage === "exhibition";
@@ -135,6 +161,45 @@ export default function ScenarioTab({
   const E = entry !== "all" ? entry : null;
   const sl = slit !== "any";
   const formName = (f) => t(`${k}.forms.${f}.name`);
+  const racePanel = (group) => {
+    if (racePick?.group !== group) return null;
+    const rk = `${k}.races.title`;
+    const title =
+      racePick.kind === "first"
+        ? t(`${rk}.first`, { b: racePick.boat })
+        : racePick.kind === "tech"
+          ? t(`${rk}.tech`, {
+              tech: t(
+                `aiPredictionTab.analogy.techniques.${racePick.tech}`,
+                racePick.tech,
+              ),
+            })
+          : racePick.kind === "manshu"
+            ? t(`${rk}.manshu`)
+            : racePick.kind === "tri"
+              ? t(`${rk}.tri`, { combo: racePick.combo.join("-") })
+              : t(`${rk}.band`, {
+                  from: racePick.p + 1,
+                  a: racePick.a,
+                  to: racePick.p + 2,
+                  b: racePick.b,
+                });
+    return (
+      <ScenarioRacePanel
+        key={JSON.stringify(racePick)}
+        res={racesRes}
+        pick={racePick}
+        filter={{ entry, form: slit, first, not1 }}
+        title={title}
+        cond={[t(`${k}.entry.${entry}`), formName(slit)].join(
+          t("aiPredictionTab.analogy.listSeparator"),
+        )}
+        // 2〜6号艇の1着の棒はその艇の級でそろえた件数（BOA-806）。一覧は1号艇の範囲から出すので断る
+        otherScope={racePick.kind === "first" && racePick.boat > 1 && perBoat}
+        onClose={() => setPicked(null)}
+      />
+    );
+  };
   const core = E
     ? sl
       ? t(`${k}.coreEntryForm`, {
@@ -274,7 +339,13 @@ export default function ScenarioTab({
               fewBelow={MIN_SCENARIO}
               tags={boatTags}
               colored
+              countChip
+              selected={racePick?.kind === "first" ? racePick.boat : null}
+              onSelect={(b) =>
+                togglePick({ group: "first", kind: "first", boat: b })
+              }
             />
+            {racePanel("first")}
           </div>
           <div className="af-scn-blk">
             <h4 className="af-h4">{t(`${k}.top3Boat`)}</h4>
@@ -300,7 +371,12 @@ export default function ScenarioTab({
                   share(v, base.n),
                 ]),
               )}
+              selected={racePick?.kind === "tech" ? racePick.tech : null}
+              onSelect={(tech) =>
+                togglePick({ group: "tech", kind: "tech", tech })
+              }
             />
+            {racePanel("tech")}
           </div>
           <div className="af-scn-blk">
             <h4 className="af-h4">{t(`${k}.manshu`)}</h4>
@@ -312,6 +388,19 @@ export default function ScenarioTab({
                 n: fmtCount(c.payout_known),
               })}
             </p>
+            {c.manshu > 0 && (
+              <button
+                type="button"
+                className="af-cnt-chip af-cnt-btn"
+                aria-pressed={racePick?.kind === "manshu"}
+                data-af-control="scenario_races_manshu"
+                onClick={() => togglePick({ group: "manshu", kind: "manshu" })}
+              >
+                {t("aiPredictionTab.analogy.count", { n: fmtCount(c.manshu) })}{" "}
+                ›
+              </button>
+            )}
+            {racePanel("manshu")}
           </div>
         </div>
         {/* PC では着順の流れを左、よく出た3連単を右に（BOA-813） */}
@@ -344,7 +433,27 @@ export default function ScenarioTab({
               not1={not1}
               band={band}
               scenario
+              picked={
+                racePick?.kind === "tri" ? racePick.combo.join("-") : null
+              }
+              onPick={(combo) =>
+                togglePick({ group: "tri", kind: "tri", combo })
+              }
+              bandPicked={racePick?.kind === "band"}
+              onBandRaces={
+                band
+                  ? () =>
+                      togglePick({
+                        group: "tri",
+                        kind: "band",
+                        p: band.p,
+                        a: band.a,
+                        b: band.b,
+                      })
+                  : undefined
+              }
             />
+            {racePanel("tri")}
           </div>
         </AnalogySplit>
       </>
