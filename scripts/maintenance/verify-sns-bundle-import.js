@@ -1,5 +1,4 @@
 /** 本番接続なし。検査・保存モック・実SQL(PGlite)・公開APIガードを検証する。 */
-import { execFileSync } from "node:child_process";
 import "./snsRawErrors.js";
 import {
   inspectDraft,
@@ -1104,11 +1103,4 @@ if (sample)
   );
 console.log(
   `${count} checks passed (PGliteの同時リクエストは同一接続内で直列化。本番並行接続は未検証)`,
-);
-
-// 全月カレンダーの純粋集計・読み取り回帰も既存ゲートから実行する。
-execFileSync(
-  process.execPath,
-  [new URL("./verify-sns-month-calendar.js", import.meta.url).pathname],
-  { stdio: "inherit" },
 );

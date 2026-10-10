@@ -927,6 +927,11 @@
       "script": "verify-sns-edit-assist.js",
       "tier": "ci",
       "guards": "依頼7: 読みやすさ・加重文字数・日付時刻・数値出典・敬称の場所付き指摘、AI差し込み口は既定無効、正常文は誤検知しない（141は別途PGliteで検証）"
+    },
+    {
+      "script": "verify-sns-month-calendar.js",
+      "tier": "ci",
+      "guards": "依頼16: 全月カレンダーのJST日付計算・状態分類・型/会場フィルタ・日付不明記録の全期間計上・観測履歴抽出（1001行ページング）、queue()のposted_at/format/race_id/grade/observations拡張（モックDB取得、外部接続なし）"
     }
   ]
 }
