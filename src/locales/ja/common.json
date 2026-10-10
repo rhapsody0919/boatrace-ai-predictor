@@ -67,6 +67,14 @@
     "nuki": "抜き",
     "megumare": "恵まれ"
   },
+  "techniquesShort": {
+    "nige": "逃げ",
+    "sashi": "差し",
+    "makuri": "まくり",
+    "makurizashi": "まくり差し",
+    "nuki": "抜き",
+    "megumare": "恵まれ"
+  },
   "venueSelector": {
     "label": "レース場を選択:",
     "raceCount": "{{count}}レース"

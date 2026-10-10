@@ -26,6 +26,14 @@ export const translateTechnique = (t, name) => {
   return key ? t(`techniques.${key}`, name) : name;
 };
 
+// スマホ幅のデータ出走表の決まり手のマスに出す短い訳語（BOA-821）。英語は英語の部分、繁体字は漢字だけで、
+// 括弧の補足（「Nige (Escape)」「外攻（Makuri）」）を外す。補足の単語が折れず列を押し広げ、表が枠からはみ出していた。
+// 日本語・韓国語は今の訳語と同じ。未知の値はそのまま返す
+export const translateTechniqueShort = (t, name) => {
+  const key = TECHNIQUE_KEY_BY_NAME[name];
+  return key ? t(`techniquesShort.${key}`, translateTechnique(t, name)) : name;
+};
+
 // 部品交換の部品名（公式表記・日本語）→ partsNames.* のキー（BOA-669）
 const PART_KEY_BY_NAME = {
   リング: "ring",
@@ -740,7 +748,12 @@ function buildRowDefs({
         const top = row.techniques[0];
         return (
           <span className="drt-value drt-technique">
-            {localizedTechnique(top.technique)}
+            <span className="drt-tech-full">
+              {localizedTechnique(top.technique)}
+            </span>
+            <span className="drt-tech-short">
+              {translateTechniqueShort(t, top.technique)}
+            </span>
             <span className="drt-sub">
               {t("dataTable.winCount", { n: row.win_count })}
             </span>
