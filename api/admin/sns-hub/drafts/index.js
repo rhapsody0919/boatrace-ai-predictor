@@ -101,7 +101,7 @@ export default async function handler(req) {
     const enriched = drafts.map((d) => {
       const dataCardPath = d.source_data?.dataCardPath;
       return {
-        ...d,
+        ...Object.fromEntries(Object.entries(d).filter(([key])=>!['diff_current','diff_previous','diff_approved'].includes(key))),
         video_url: d.video_storage_path
           ? signedUrlMap[d.video_storage_path] || null
           : null,

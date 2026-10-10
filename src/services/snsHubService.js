@@ -30,9 +30,11 @@ async function request(path, options = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(
+    const error = new Error(
       body.error || `リクエストに失敗しました (${response.status})`,
     );
+    error.code = body.code;
+    throw error;
   }
   return body;
 }
@@ -301,19 +303,40 @@ export async function cancelXSend(draftId) {
 }
 
 export async function getDeadlineQueue() {
-  const { data } = await request('/deadline-queue');
+  const { data } = await request("/deadline-queue");
   return data || [];
 }
 
-export async function getMobileApprovalGroups() { return request('/mobile-approval'); }
-export async function getMobileApprovalRace(group) { return request(`/mobile-approval?group=${encodeURIComponent(group)}`); }
+export async function getMobileApprovalGroups() {
+  return request("/mobile-approval");
+}
+export async function getMobileApprovalRace(group) {
+  return request(`/mobile-approval?group=${encodeURIComponent(group)}`);
+}
 export async function approveMobileChannel(group, body) {
-  return request(`/mobile-approval?group=${encodeURIComponent(group)}`, { method:'POST', body:JSON.stringify(body) });
+  return request(`/mobile-approval?group=${encodeURIComponent(group)}`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 
 /** 指摘の採用/無視だけを記録。本文修正や承認は行わない。 */
 export function decideMobileFinding(group, body) {
   return request(`/mobile-approval?group=${encodeURIComponent(group)}`, {
-    method:'POST', body:JSON.stringify({...body,action:'edit-decision'}),
+    method: "POST",
+    body: JSON.stringify({ ...body, action: "edit-decision" }),
   });
+}
+
+// 一画面で複数の下書きが開いても、媒体hash用の要求を同時に積まない。
+let draftDiffQueue = Promise.resolve();
+export function getDraftDiff(id, versionHash) {
+  const query = new URLSearchParams({ id });
+  if (versionHash !== undefined) query.set("versionHash", versionHash || "");
+  const result = draftDiffQueue.then(() => request(`/draft-diff?${query}`));
+  draftDiffQueue = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
 }
