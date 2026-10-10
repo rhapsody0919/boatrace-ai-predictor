@@ -265,6 +265,25 @@ thead tr:last-child:not(:first-child) .drt-label-th {
   font-size: var(--font-size-xs);
 }
 
+/* 決まり手の訳語は、スマホ幅だけ括弧の補足を外した短い訳語にする（BOA-821）。
+   補足の単語（「(Escape)」「（Makuri）」）が折れず、英語・繁体字の表が 320px・375px で枠からはみ出していた */
+.drt-tech-short {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .drt-tech-full {
+    display: none;
+  }
+
+  /* 英語の「Outside sweep」の「Outside」が 320px の列（約43px）に1px入りきらないので、
+     最小の11pxにする（2026-10-10 E2E の録画データで実測） */
+  .drt-tech-short {
+    display: inline;
+    font-size: 11px;
+  }
+}
+
 /* 部品交換・プロペラ交換バッジ（BOA-304、直前情報タブ用） */
 /* 部品名（「シャフト」等）は語の途中で折らない。折り返しは「・」の後だけ */
 .drt-part {

@@ -67,6 +67,14 @@
     "nuki": "超越（Nuki）",
     "megumare": "幸運勝出（Megumare）"
   },
+  "techniquesShort": {
+    "nige": "逃走",
+    "sashi": "切入",
+    "makuri": "外攻",
+    "makurizashi": "外攻切入",
+    "nuki": "超越",
+    "megumare": "幸運勝出"
+  },
   "venueSelector": {
     "label": "選擇賽場：",
     "raceCount": "{{count}} 場比賽"
