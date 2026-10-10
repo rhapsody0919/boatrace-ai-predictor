@@ -1341,6 +1341,113 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await expect(section.locator("#af-pat-kado")).toBeFocused();
     });
 
+    test("着順の流れの帯を押すと、よく出た3連単がその帯の内訳に絞られ、合計が帯の件数と一致する（BOA-816）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      const sums = async (scope) => {
+        const vals = await scope
+          .getByTestId("analogy-band-breakdown")
+          .locator(".af-bar-v")
+          .allInnerTexts();
+        return vals.reduce(
+          (a, v) => a + Number(v.match(/([\d,]+)件/)[1].replace(/,/g, "")),
+          0,
+        );
+      };
+      for (const tab of ["展開シナリオ", "類似レース"]) {
+        await section.getByRole("tab", { name: tab }).click();
+        const panel = section.getByRole("tabpanel");
+        // 1着→2着の帯のうち一番上（1着1号艇→2着◯号艇）を押す
+        const link = panel
+          .getByRole("button", { name: /^1着 1号艇→2着 \d号艇 [\d,]+件$/ })
+          .first();
+        const label = await link.getAttribute("aria-label");
+        const n = Number(label.match(/([\d,]+)件$/)[1].replace(/,/g, ""));
+        const to = label.match(/2着 (\d)号艇/)[1];
+        // 帯は曲線で、外接矩形の中心が別の帯に重なることがあるので、キーボードで押す（帯は Enter で押せる部品）
+        const press = async () => {
+          await link.focus();
+          await page.keyboard.press("Enter");
+        };
+        // 押す前の一覧で、この帯に入る3連単の行（例「1-2-3 9.9% 365件」）を覚えておく
+        const rowText = (bar) =>
+          bar.evaluate((el) => ({
+            combo: el.querySelector(".af-tri").innerText.replace(/\s/g, ""),
+            v: el.querySelector(".af-bar-v").innerText.replace(/\s+/g, " "),
+          }));
+        const before = await Promise.all(
+          (await panel.locator(".af-bar:has(.af-tri)").all()).map(rowText),
+        );
+        const inBand = before.find((r) => r.combo.startsWith(`1-${to}-`));
+        await press();
+        const bd = panel.getByTestId("analogy-band-breakdown");
+        await expect(bd).toContainText(
+          new RegExp(
+            `1着1号艇→2着${to}号艇の${n.toLocaleString("ja-JP")}件の内訳（全体の\\d+%）`,
+          ),
+        );
+        expect(await sums(panel)).toBe(n);
+        // 内訳の行は押す前と同じ書き方・同じ数字（全体の割合と件数。案C、2026-10-10 ユーザー決定）
+        const after = await Promise.all(
+          (await bd.locator(".af-bar").all()).map(rowText),
+        );
+        for (const r of after) expect(r.v).toMatch(/^[\d.]+% [\d,]+件$/);
+        if (inBand)
+          expect(after.find((r) => r.combo === inBand.combo)).toEqual(inBand);
+        // もう一度押すと戻る
+        await press();
+        await expect(bd).toHaveCount(0);
+        // 帯を押した後に1着の四角で絞ると、帯の選択は外れる
+        await press();
+        await expect(bd).toBeVisible();
+        await panel
+          .getByRole("button", { name: /^1着 1号艇 [\d,]+件$/ })
+          .click();
+        await expect(bd).toHaveCount(0);
+      }
+    });
+
+    test("1着の1号艇と「1号艇以外が勝ったレース」は両立しないので、片方を選ぶともう片方が外れる（ユーザー指摘 2026-10-10）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      for (const tab of ["展開シナリオ", "類似レース"]) {
+        await section.getByRole("tab", { name: tab }).click();
+        const panel = section.getByRole("tabpanel");
+        const box1 = panel.getByRole("button", {
+          name: /^1着 1号艇 [\d,]+件$/,
+        });
+        const not1 = panel.getByRole("button", {
+          name: "1号艇以外が勝ったレース",
+        });
+        // 1号艇で絞った後に「1号艇以外」を押すと、1号艇の絞りが外れて流れと3連単が出る（以前は0件で何も出なかった）
+        await box1.click();
+        await expect(box1).toHaveAttribute("aria-pressed", "true");
+        await not1.click();
+        await expect(not1).toHaveAttribute("aria-pressed", "true");
+        await expect(
+          panel.locator(".af-flow path[role='button']").first(),
+        ).toBeAttached();
+        await expect(panel.locator(".af-tri").first()).toBeVisible();
+        await expect(panel.locator(".af-tri").first()).not.toContainText(/^1-/);
+        if (tab === "類似レース") {
+          // 「1号艇以外」のまま、上の「どの艇が勝った？」の棒で1号艇を選ぶと「1号艇以外」が外れる
+          await panel
+            .getByRole("button", { name: /^1号艇 [\d.]+% [\d,]+件$/ })
+            .first()
+            .click();
+          await expect(not1).toHaveAttribute("aria-pressed", "false");
+          await expect(box1).toHaveAttribute("aria-pressed", "true");
+        }
+        await panel.getByRole("button", { name: "すべて" }).click();
+      }
+    });
+
     test("七角形の表で見た3号艇の展示タイムは、3号艇を一番上で選んだときと同じ数字（2026-10-09 ユーザー指摘）", async ({
       page,
     }) => {
