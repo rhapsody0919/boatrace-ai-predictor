@@ -1435,3 +1435,22 @@ test.describe("思考アシスト: 平均ST の期間と「このコース」（
     ).toBeVisible();
   });
 });
+
+test.describe("思考アシスト: 棒は「長いほど良い」図だけ（BOA-801 3）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("軸（全国勝率）は棒、展開・機力・買い目は点だけ", async ({ page }) => {
+    await open(page);
+    const bars = () => page.locator(".ta-board .ta-track-bar");
+    await expect(bars()).toHaveCount(6);
+    for (const lens of ["展開", "機力", "買い目"]) {
+      await lensTab(page, lens).click();
+      await expect(
+        page.locator(".ta-board .ta-track-dot").first(),
+      ).toBeVisible();
+      await expect(bars()).toHaveCount(0);
+    }
+  });
+});

@@ -59,11 +59,15 @@ function Track({ model, row, onMetric }) {
       className={`ta-track${model.good ? ` ta-track-good-${model.good}` : ""}`}
     >
       <span className="ta-track-rail" aria-hidden="true" />
-      <span
-        className="ta-track-bar"
-        aria-hidden="true"
-        style={{ width: `${x}%`, background: color }}
-      />
+      {/* 棒（長さ）は「長いほど良い」図だけ（軸の全国勝率など、良いが右）。左ほど良い図（展開の ST・機力の
+          展示タイムの差）と買い目（オッズ）は点だけにし、長さに意味を持たせない（BOA-801 3、2026-10-10 ユーザー決定） */}
+      {model.good === "right" && (
+        <span
+          className="ta-track-bar"
+          aria-hidden="true"
+          style={{ width: `${x}%`, background: color }}
+        />
+      )}
       <span
         className="ta-track-dot"
         aria-hidden="true"
