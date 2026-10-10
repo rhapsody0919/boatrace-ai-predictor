@@ -1373,3 +1373,65 @@ test.describe("思考アシスト: 風のカードの追い風・向かい風（
     ).toBeVisible();
   });
 });
+
+test.describe("思考アシスト: 平均ST の期間と「このコース」（BOA-815）", () => {
+  test("展開レンズ（展示前）は「このコース｜直近30走」を切り替え、横軸の名前と点の値が替わる", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await page.getByRole("button", { name: "展示前", exact: true }).click();
+    await lensTab(page, "展開").click();
+    const group = page.getByRole("group", { name: "使う平均ST" });
+    await expect(
+      group.getByRole("button", { name: "このコース" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      page.getByText("平均ST（このコース・直近30走） 左ほど早い"),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "平均ST（このコース・直近30走） 0.148、6艇で比べる",
+      }),
+    ).toBeVisible();
+    await group.getByRole("button", { name: "直近30走" }).click();
+    await expect(page.getByText("平均ST（直近30走） 左ほど早い")).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "平均ST（直近30走） 0.132、6艇で比べる",
+      }),
+    ).toBeVisible();
+    // 展示の後は横軸が展示ST になり、切り替えは出さない
+    await page.getByRole("button", { name: "展示後", exact: true }).click();
+    await expect(page.getByRole("group", { name: "使う平均ST" })).toHaveCount(
+      0,
+    );
+  });
+
+  test("深掘りの平均ST は期間つきの名前、このコースは走数つき", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const deep = page.locator(".ta-deep");
+    await expect(
+      deep.getByText("平均ST（直近30走）", { exact: true }),
+    ).toBeVisible();
+    await expect(deep.getByText("このコース .148（30走）")).toBeVisible();
+  });
+
+  test("808 6: v16 の保存が無いレースは、軸レンズに平均ST を出せない理由を書く", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page, {
+      overrides: { facts: () => ({ status: "not_saved" }) },
+    });
+    await open(page);
+    await expect(
+      page.getByText(
+        "このレースは平均ST（直近30走）を出せない（前日までの値がまだ無い）",
+      ),
+    ).toBeVisible();
+  });
+});

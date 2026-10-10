@@ -214,7 +214,8 @@ export default function BoatDeepDive({
           )}{" "}
           <span className="ta-scopechip">{C.courseNote}</span>
         </dd>
-        <Dt term={C.kvSt} />
+        {/* 名前に期間を付ける（BOA-815 方針1）。「?」の用語は「平均ST」のまま */}
+        <Dt term={C.kvSt}>{C.kvStLabel}</Dt>
         <dd>
           {today ? (
             <Val metric="st_mean30" racer={racer} onMetric={onMetric} />
@@ -222,9 +223,14 @@ export default function BoatDeepDive({
             // v16 の保存が無いレースは、記録が無いのではなくデータが無い（ファン評価 PR4 1周目 指摘5）
             C.noRunsData
           )}{" "}
-          {cst?.course?.[i] != null && (
+          {racer.stCourse != null && (
+            // 図・6艇比較と同じ補った値（course_filled）と走数（BOA-815 方針4）
             <span className="ta-scopechip ta-num">
-              {C.stCourseChip(stText(cst.course[i]))}
+              {C.stCourseChip(
+                stText(racer.stCourse),
+                racer.stCourseN,
+                racer.stCourseFilled,
+              )}
             </span>
           )}{" "}
           {cst?.venue?.[i] != null && venue && (
