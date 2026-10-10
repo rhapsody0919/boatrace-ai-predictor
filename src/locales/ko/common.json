@@ -1482,9 +1482,8 @@
         "howTo": "착순 흐름 보는 법",
         "drawAll": "적은 흐름도 연하게 모두 그렸다",
         "howToPreview": "옅은 띠, 2착→3착 띠, 1착으로 좁히기",
-        "breakdown": "{{from}}착 {{a}}번 보트→{{to}}착 {{b}}번 보트 {{n}}건의 내역",
-        "breakdownBack": "띠를 한 번 더 누르면 돌아간다",
-        "bandShare": "(띠 안의 {{p}})"
+        "breakdown": "{{from}}착 {{a}}번 보트→{{to}}착 {{b}}번 보트 {{n}}건의 내역(전체의 {{p}})",
+        "breakdownBack": "띠를 한 번 더 누르면 돌아간다"
       },
       "listComma": ", ",
       "scenario": {

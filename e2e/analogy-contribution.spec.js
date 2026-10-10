@@ -1327,12 +1327,31 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
           await link.focus();
           await page.keyboard.press("Enter");
         };
+        // 押す前の一覧で、この帯に入る3連単の行（例「1-2-3 9.9% 365件」）を覚えておく
+        const rowText = (bar) =>
+          bar.evaluate((el) => ({
+            combo: el.querySelector(".af-tri").innerText.replace(/\s/g, ""),
+            v: el.querySelector(".af-bar-v").innerText.replace(/\s+/g, " "),
+          }));
+        const before = await Promise.all(
+          (await panel.locator(".af-bar:has(.af-tri)").all()).map(rowText),
+        );
+        const inBand = before.find((r) => r.combo.startsWith(`1-${to}-`));
         await press();
         const bd = panel.getByTestId("analogy-band-breakdown");
         await expect(bd).toContainText(
-          `1着1号艇→2着${to}号艇の${n.toLocaleString("ja-JP")}件の内訳`,
+          new RegExp(
+            `1着1号艇→2着${to}号艇の${n.toLocaleString("ja-JP")}件の内訳（全体の\\d+%）`,
+          ),
         );
         expect(await sums(panel)).toBe(n);
+        // 内訳の行は押す前と同じ書き方・同じ数字（全体の割合と件数。案C、2026-10-10 ユーザー決定）
+        const after = await Promise.all(
+          (await bd.locator(".af-bar").all()).map(rowText),
+        );
+        for (const r of after) expect(r.v).toMatch(/^[\d.]+% [\d,]+件$/);
+        if (inBand)
+          expect(after.find((r) => r.combo === inBand.combo)).toEqual(inBand);
         // もう一度押すと戻る
         await press();
         await expect(bd).toHaveCount(0);

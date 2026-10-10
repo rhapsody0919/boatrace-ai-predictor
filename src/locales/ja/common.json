@@ -1140,9 +1140,8 @@
         "howTo": "着順の流れの見方",
         "drawAll": "少ない流れも薄く全部描いている",
         "howToPreview": "薄い帯・2着→3着の帯・1着で絞る",
-        "breakdown": "{{from}}着{{a}}号艇→{{to}}着{{b}}号艇の{{n}}件の内訳",
-        "breakdownBack": "帯をもう一度押すと戻る",
-        "bandShare": "（帯の中の{{p}}）"
+        "breakdown": "{{from}}着{{a}}号艇→{{to}}着{{b}}号艇の{{n}}件の内訳（全体の{{p}}）",
+        "breakdownBack": "帯をもう一度押すと戻る"
       },
       "listComma": "、",
       "scenario": {

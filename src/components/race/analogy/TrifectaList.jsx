@@ -9,7 +9,7 @@ import {
 } from "../../../utils/analogyAggregate";
 import { SCOPE_FLOW } from "./analogyColors";
 
-function Row({ combo, count, total, max, countFirst = false }) {
+function Row({ combo, count, total, max }) {
   const { t } = useTranslation();
   return (
     <div className="af-bar">
@@ -27,24 +27,12 @@ function Row({ combo, count, total, max, countFirst = false }) {
           style={{ width: `${(count / max) * 100}%` }}
         />
       </span>
-      {countFirst ? (
-        // 帯の内訳は件数を主に、割合は帯の中の割合（ファンパネル: 全体の％と混ぜない・件数で信じすぎを防ぐ）
-        <span className="af-bar-v">
-          {t("aiPredictionTab.analogy.count", { n: fmtCount(count) })}{" "}
-          <small>
-            {t("aiPredictionTab.analogy.flow.bandShare", {
-              p: fmtPct(count / total),
-            })}
-          </small>
-        </span>
-      ) : (
-        <span className="af-bar-v">
-          {fmtPct(count / total, 1)}{" "}
-          <small>
-            {t("aiPredictionTab.analogy.count", { n: fmtCount(count) })}
-          </small>
-        </span>
-      )}
+      <span className="af-bar-v">
+        {fmtPct(count / total, 1)}{" "}
+        <small>
+          {t("aiPredictionTab.analogy.count", { n: fmtCount(count) })}
+        </small>
+      </span>
     </div>
   );
 }
@@ -64,7 +52,11 @@ export default function TrifectaList({
   const { t } = useTranslation();
   // 着順の流れの帯を押していれば、その帯に入る3連単だけを全部（BOA-816、ユーザー決定の案1）
   const bd = bandBreakdown(tri, band, { first, not1 });
+  const all = trifectaList(tri, { first, not1 });
+  const total = all.reduce((s, [, c]) => s + c, 0);
   if (bd) {
+    // 各行は帯を押す前の一覧と同じ「全体の割合・件数」。帯の中の大きさは棒の長さで見せ、
+    // 帯が全体のどれくらいかは見出しに1回だけ（2026-10-10 ファンパネル案C、ユーザー決定）
     const max = bd.rows[0][1];
     return (
       <div className="af-tri-band" data-testid="analogy-band-breakdown">
@@ -80,6 +72,7 @@ export default function TrifectaList({
             to: band.p + 2,
             b: band.b,
             n: fmtCount(bd.total),
+            p: fmtPct(bd.total / total),
           })}
         </p>
         <p className="af-foot">
@@ -91,17 +84,14 @@ export default function TrifectaList({
               key={combo.join("-")}
               combo={combo}
               count={c}
-              total={bd.total}
+              total={total}
               max={max}
-              countFirst
             />
           ))}
         </div>
       </div>
     );
   }
-  const all = trifectaList(tri, { first, not1 });
-  const total = all.reduce((s, [, c]) => s + c, 0);
   if (!all.length)
     return (
       <p className="af-foot">{t("aiPredictionTab.analogy.similar.none")}</p>
