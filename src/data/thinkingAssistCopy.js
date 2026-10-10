@@ -204,6 +204,13 @@ export const ASSIST_COPY = Object.freeze({
     "この範囲では、1着の割合の差がはっきり大きい材料は無い（艇の丸を押すと全部の材料が出る）",
   scopeVenue: (venue) => `${venue}・級の並びが同じ`,
   scopeChip: (label, n) => `${label} ${n.toLocaleString("ja-JP")}件`,
+  // 同じ呼び名で件数が違う札に、違う理由を短く添える（BOA-809、2026-10-10 ユーザー決定）
+  scopeChipWhy: (label, n, why) =>
+    `${label} ${n.toLocaleString("ja-JP")}件・${why}`,
+  scopeWhy: Object.freeze({
+    hint: "平均STがそろったレース",
+    entry: "進入が分かったレース",
+  }),
   axisHeading: (boat) => `${boat}号艇が1着になったのは`,
   races: (k, n) =>
     `${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}レース`,

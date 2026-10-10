@@ -65,11 +65,17 @@ export function factsScope(facts, today, boat, round) {
   };
 }
 
-/** 範囲の呼び名（VC は「{会場}・級の並びが同じ」、NC・NCR は「全国・級の並びが同じ（準優勝戦）」） */
-export const factsScopeLabel = (scope, venue) =>
-  scope.kind === "VC"
-    ? `${venue ?? ""}・級の並びが同じ`
-    : sameClassLabel({ kind: scope.kind, round: scope.round });
+/**
+ * 範囲の呼び名（VC は「{会場}・級の並びが同じ」、NC・NCR は「全国・級の並びが同じ（準優勝戦）」）。
+ * 艇を渡すと「（{n}号艇が{級}）」を添える。範囲は選んだ艇の艇番と級をそろえるので、同じ呼び名でも艇ごとに件数が違う
+ * （spec D-41 (4)。BOA-809、2026-10-10 ユーザー決定）
+ */
+export const factsScopeLabel = (scope, venue, boat = null, cls = null) =>
+  `${
+    scope.kind === "VC"
+      ? `${venue ?? ""}・級の並びが同じ`
+      : sameClassLabel({ kind: scope.kind, round: scope.round })
+  }${boat && cls ? `（${boat}号艇が${cls}）` : ""}`;
 
 /**
  * 差がつく材料の行（1着）。today の6艇の値で、その艇の今日の位置（1＝一番良い、6＝一番悪い）を付ける。

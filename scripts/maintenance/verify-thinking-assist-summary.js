@@ -22,6 +22,7 @@ import {
   courseWins,
   entrySummary,
   exhibitionTable,
+  factsScopeLabel,
   factChips,
   factsScope,
   featChips,
@@ -498,6 +499,23 @@ check(
   cT7.related?.includes("161件") && cT7.related.includes("1-3-4（9件）"),
   cT7.related,
 );
+// 同じ呼び名で件数が違う札（BOA-809）: 艇ごとの範囲に艇番と級、展開の2つに理由
+check(
+  "範囲の札: 艇を渡すと「（{n}号艇が{級}）」、渡さなければ今の呼び名",
+  factsScopeLabel({ kind: "NCR", round: "junyu" }, "徳山", 3, "A1") ===
+    "全国・級の並びが同じ準優勝戦（3号艇がA1）" &&
+    factsScopeLabel({ kind: "VC" }, "徳山") === "徳山・級の並びが同じ",
+  factsScopeLabel({ kind: "NCR", round: "junyu" }, "徳山", 3, "A1"),
+);
+check(
+  "展開の札: 件数の後ろに違う理由",
+  ASSIST_COPY.scopeChipWhy(
+    "全国・級の並びが同じ（予選も含む）",
+    2457,
+    ASSIST_COPY.scopeWhy.hint,
+  ) === "全国・級の並びが同じ（予選も含む） 2,457件・平均STがそろったレース",
+);
+
 // 用語の辞書・カードの文に禁止語が無い（D-41・D-42・N-7）
 const BANNED = /数え|集計|算出|対象|似た|似てい|ふつう|いつも|競艇|鉄板|大本線/;
 const theoryTexts = [
@@ -532,6 +550,7 @@ const bannedHits = [
   conclusion,
   ASSIST_COPY.simTopNote(63, "13:14"),
   ASSIST_COPY.entryNoPast,
+  JSON.stringify(ASSIST_COPY.scopeWhy),
   ...theoryTexts,
 ]
   .map((t) => t.match(BANNED)?.[0])

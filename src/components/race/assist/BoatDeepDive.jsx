@@ -140,7 +140,10 @@ export default function BoatDeepDive({
   const topChips = chips.filter((c) => c.hit).slice(0, TOP_FACTS);
   const base = u ? Math.round((u.k / u.n) * 100) : 0;
   const scopeLabel = scope
-    ? C.scopeChip(factsScopeLabel(scope, venue), scope.n)
+    ? C.scopeChip(
+        factsScopeLabel(scope, venue, boat, today?.classes?.[i]),
+        scope.n,
+      )
     : null;
 
   return (

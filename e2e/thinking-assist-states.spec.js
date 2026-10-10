@@ -745,7 +745,9 @@ test.describe("思考アシスト: PR4 のファン評価 1周目", () => {
     await open(page);
     await lensTab(page, "展開").click();
     await expect(
-      page.getByText(/^全国・級の並びが同じ（予選も含む） 2,463件$/),
+      page.getByText(
+        /^全国・級の並びが同じ（予選も含む） 2,463件・進入が分かったレース$/,
+      ),
     ).toBeVisible();
   });
 
@@ -849,7 +851,9 @@ test.describe("思考アシスト: PR4 のデザイナーのレビューと 271 
     await open(page);
     await lensTab(page, "展開").click();
     await expect(
-      page.getByText(/^全国・級の並びが同じ（予選も含む） 2,457件$/),
+      page.getByText(
+        /^全国・級の並びが同じ（予選も含む） 2,457件・平均STがそろったレース$/,
+      ),
     ).toBeVisible();
     await lensTab(page, "軸").click();
     await page.getByRole("button", { name: /^1号艇\s/ }).click();
@@ -870,7 +874,8 @@ test.describe("思考アシスト: PR4 のデザイナーのレビューと 271 
     await lensTab(page, "機力").click();
     await expect(
       page.getByText(
-        "展示タイムは4号艇が一番速い（6.83）・モーター2連率は4号艇が一番高い（38.5%）",
+        // BOA-808 2 でオリジナル展示の一番も結論に入れた
+        "展示タイム・モーター2連率は4号艇（6.83秒・38.5%）、一周・まわり足は1号艇（37.31秒・11.49秒）が一番",
       ),
     ).toBeVisible();
   });
@@ -939,7 +944,9 @@ test.describe("思考アシスト: ユーザー決定 A・B（2026-10-09）", ()
     await expect(sum.getByText("54.6%", { exact: true })).toHaveCount(1);
     await expect(
       sum
-        .getByText("全国・級の並びが同じ準優勝戦 119件", { exact: true })
+        .getByText("全国・級の並びが同じ準優勝戦（1号艇がB1） 119件", {
+          exact: true,
+        })
         .first(),
     ).toBeVisible();
     await expect(sum.getByText(/^徳山の全レース 17,552件/)).toBeVisible();
@@ -1190,8 +1197,41 @@ test.describe("思考アシスト: BOA-808（言葉と出し分け）", () => {
     await open(page);
     await lensTab(page, "買い目").click();
     await expect(
-      page.getByText(/^件数は類似レース\d+件のうち。オッズ・人気は今日の\d{1,2}:\d{2}時点$/),
+      page.getByText(
+        /^件数は類似レース\d+件のうち。オッズ・人気は今日の\d{1,2}:\d{2}時点$/,
+      ),
     ).toBeVisible();
-    await expect(page.getByRole("cell", { name: /^\d+(\.\d+)?倍$/ }).first()).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: /^\d+(\.\d+)?倍$/ }).first(),
+    ).toBeVisible();
+  });
+});
+
+test.describe("思考アシスト: BOA-808・809（2026-10-10 ユーザー決定）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("808 5: 買い目の横軸に「良い」の札を出さない（人気／人気薄だけ）", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "買い目").click();
+    const axis = page.locator(".ta-board-axis");
+    await expect(axis).toContainText("人気薄");
+    await expect(axis.locator(".ta-good")).toHaveCount(0);
+  });
+
+  test("809: 艇ごとに件数が違う範囲の札に、その艇の艇番と級を書く", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^3号艇\s/ }).click();
+    await expect(
+      page
+        .locator(".ta-deep")
+        .getByText(/^全国・級の並びが同じ.*（3号艇がA1） [\d,]+件$/)
+        .first(),
+    ).toBeVisible({ timeout: 30000 });
   });
 });

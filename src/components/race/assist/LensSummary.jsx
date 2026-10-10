@@ -51,7 +51,7 @@ function AxisSummary({ m }) {
   const u = b1Usual(scope);
   if (!u) return null;
   const va = vaFacts ? b1Usual({ facts: vaFacts }) : null;
-  const label = factsScopeLabel(scope, venue);
+  const label = factsScopeLabel(scope, venue, 1, classes?.[0]);
   const counts = restClassCounts(classes, 1);
   const hc = headerScope?.cell;
   return (
@@ -192,9 +192,11 @@ function FlowSummary({ m }) {
               </div>
               <div className="ta-legend">
                 <span className="ta-scopechip ta-num">
-                  {C.scopeChip(
+                  {/* 進入の札と件数が違う理由を添える（BOA-808 P3・BOA-809） */}
+                  {C.scopeChipWhy(
                     C.flowScopeLabel(Boolean(round)),
                     top.hit[1] + top.miss[1],
+                    C.scopeWhy.hint,
                   )}
                 </span>
               </div>
@@ -271,7 +273,11 @@ function FlowSummary({ m }) {
                   {/* 集めた範囲と件数を書く（上の枠の準優勝戦の値と比べられるように。ファン評価 PR4 1周目 指摘1） */}
                   <div className="ta-legend">
                     <span className="ta-scopechip ta-num">
-                      {C.scopeChip(C.flowScopeLabel(Boolean(round)), entry.n)}
+                      {C.scopeChipWhy(
+                        C.flowScopeLabel(Boolean(round)),
+                        entry.n,
+                        C.scopeWhy.entry,
+                      )}
                     </span>
                   </div>
                   <BaseBar
