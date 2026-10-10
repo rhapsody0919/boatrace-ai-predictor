@@ -1795,15 +1795,6 @@
     max-width: 480px;
   }
 
-  /* 上部の切り替えもレース詳細の本文の左端（24px）にそろえる。レース詳細でも同じ部品 */
-  .assist-view-switch {
-    padding-inline: var(--spacing-6);
-  }
-
-  .assist-view-switch__seg,
-  .assist-view-switch__note {
-    margin-inline: 0;
-  }
 }
 
 @media (min-width: 1024px) and (min-height: 800px) {
