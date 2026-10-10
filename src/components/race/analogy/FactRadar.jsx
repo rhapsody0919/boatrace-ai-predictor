@@ -10,8 +10,13 @@ import {
   SCOPE_SUBTEXT,
   SCOPE_TEXT,
 } from "./analogyColors";
-import { fmtCount, fmtFactValue, fmtPct } from "../../../utils/analogyFormat";
-import { rateOf } from "../../../utils/analogyFacts";
+import {
+  factRankText,
+  fmtCount,
+  fmtFactValue,
+  fmtPct,
+} from "../../../utils/analogyFormat";
+import { FACT_ITEMS, rateOf } from "../../../utils/analogyFacts";
 
 const k = "aiPredictionTab.analogy.facts";
 const BOATS = [1, 2, 3, 4, 5, 6];
@@ -279,18 +284,17 @@ export default function FactRadar({
     }),
   });
   // 読み上げは「6艇中N位」（図の中の短い「N位」ではなく。同じ値は幅）
-  const ariaRank = (r) =>
-    !r
-      ? t(`${k}.hexNone`)
-      : r.from === r.to
-        ? t(`${k}.rankOf6`, { n: r.from })
-        : t(`${k}.rankOf6Tie`, { from: r.from, to: r.to, same: r.same });
+  const ariaRank = (r, it) =>
+    !r ? t(`${k}.hexNone`) : factRankText(t, r, it.bad);
   const ariaLabel = t(`${k}.hexLabel`, {
     boat: lead,
     list: items
       .map(
         (it, i) =>
-          `${t(`${k}.items.${it.key}.label`)} ${ariaRank(boats[lead - 1].cells[i].rank)}`,
+          `${t(`${k}.items.${it.key}.label`)} ${ariaRank(
+            boats[lead - 1].cells[i].rank,
+            FACT_ITEMS.find((x) => x.key === it.key),
+          )}`,
       )
       .join(t("aiPredictionTab.analogy.listSeparator")),
   });

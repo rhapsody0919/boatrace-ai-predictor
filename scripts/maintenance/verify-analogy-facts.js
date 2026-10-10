@@ -476,7 +476,8 @@ check(
   ["exh_time", "nat_win", "motor_2", "loc_win"],
 );
 
-// 今節の平均着順点の注記（R1: 最小3未満かつ最大1以上。優勝戦・準優勝戦の日は final だけ）
+// 今節の平均着順点の注記（R1: 最小3未満かつ最大1以上。優勝戦・準優勝戦の日は final だけ。
+// 初日（6艇とも0走）は first: カードと七角形の軸を出さず1行で断る。BOA-802 2026-10-10 ユーザー決定）
 check(
   "注記: 序盤",
   seriesScoreNote({
@@ -491,7 +492,7 @@ check(
     round: "yosen",
     series_runs_before_today: [0, 0, 0, 0, 0, 0],
   }),
-  null,
+  "first",
 );
 check(
   "注記: 走数が足りる",
@@ -777,7 +778,14 @@ check("今日の値と順位", todayValueRank([5, 7, 6, 4, 3, 2], true, 3), {
   from: 2,
   to: 2,
   same: 1,
+  of: 6,
 });
+// 記録の無い艇（当地勝率 0.00 は欠け）がいるときは、記録のある艇の中の順位（「記録のある5艇中5位」。BOA-802）
+check(
+  "今日の値と順位（記録の無い艇がいる）",
+  todayValueRank([4.11, 5.2, null, 6.0, 5.5, 4.8], true, 1),
+  { value: 4.11, from: 5, to: 5, same: 1, of: 5 },
+);
 check(
   "今日の値と順位（同じ値は幅）",
   todayValueRank([5, 6, 6, 4, 3, 2], true, 3),
@@ -786,6 +794,7 @@ check(
     from: 1,
     to: 2,
     same: 2,
+    of: 6,
   },
 );
 check(

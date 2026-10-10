@@ -946,7 +946,7 @@
             "desc": "Share of the racer's last 30 races finished 1st (the racer's record)"
           },
           "motor_2": {
-            "label": "Motor top-2 rate",
+            "label": "Motor top-2 rate (official, as of this series)",
             "short": "Motor top-2 rate",
             "desc": "Motor = engine, assigned by lottery each meet. The share of races in which this motor has finished in the top 2, a guide to engine strength"
           },
@@ -1041,7 +1041,11 @@
         },
         "comboChip": "{{cls}}×{{n}}",
         "comboShort": "Same combination as today, Boat {{boat}} is {{cls}}{{round}}",
-        "comboFreeShort": "Lanes other than Boat {{boat}} do not matter"
+        "comboFreeShort": "Lanes other than Boat {{boat}} do not matter",
+        "rankOfRec": "rank {{n}} of {{k}} with a record",
+        "rankOfRecTie": "rank {{from}}–{{to}} of {{k}} with a record ({{same}} boats tied)",
+        "rankLast": " ({{w}})",
+        "firstDayNote": "On the first day there are no finishing points from earlier days, so the series average finishing points are not shown"
       },
       "outlook": {
         "summary": "AI view (supplementary): with other items held equal, which items matter",

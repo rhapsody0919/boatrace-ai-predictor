@@ -940,7 +940,7 @@
             "desc": "該選手近30場中獲得第1名的比例（選手成績）"
           },
           "motor_2": {
-            "label": "馬達2連率",
+            "label": "馬達2連率（官方，本節時點）",
             "short": "馬達2連率",
             "desc": "馬達＝引擎。每節以抽籤分配。該馬達至今進入前2名的比例，可作為引擎實力的參考"
           },
@@ -1035,7 +1035,11 @@
         },
         "comboChip": "{{cls}}×{{n}}",
         "comboShort": "與今天相同的組合，{{boat}}號艇為{{cls}}{{round}}",
-        "comboFreeShort": "{{boat}}號艇以外不限枠位"
+        "comboFreeShort": "{{boat}}號艇以外不限枠位",
+        "rankOfRec": "有紀錄的{{k}}艇中第{{n}}名",
+        "rankOfRecTie": "有紀錄的{{k}}艇中第{{from}}〜{{to}}名（{{same}}艇同值）",
+        "rankLast": "（最{{w}}）",
+        "firstDayNote": "首日沒有前一天以前的著順點，因此不顯示本節的平均著順點"
       },
       "outlook": {
         "summary": "AI的判讀（輔助）：在其他項目相同的前提下，哪些項目有影響",

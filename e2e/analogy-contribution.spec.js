@@ -1659,6 +1659,58 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await expect(card).toContainText("1号艇の今日: —（当地の記録なし）");
     });
 
+    test("記録の無い艇がいるときは「記録のある5艇中5位（一番低い）」と書き、七角形の読み上げも同じ順位（BOA-802）", async ({
+      page,
+    }) => {
+      const f = analogyV16Facts();
+      // 3号艇は当地の記録なし（0.00）。1号艇は記録のある5艇の中で一番低い
+      f.today.items.loc_win.values[2] = 0;
+      f.today.items.loc_win.values[0] = 5.0;
+      await setup(page, { facts: f });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      const card = section
+        .getByTestId("analogy-fact-card")
+        .filter({ hasText: "当地勝率" })
+        .first();
+      if ((await card.getAttribute("open")) === null)
+        await card.locator("summary").click();
+      await expect(card).toContainText("記録のある5艇中5位（一番低い）");
+      await expect(card).not.toContainText("6艇中5位");
+      await expect(section.locator(".af-hep svg[role=group]")).toHaveAttribute(
+        "aria-label",
+        /当地勝率 記録のある5艇中5位（一番低い）/,
+      );
+    });
+
+    test("節の初日は今節の平均着順点のカードと七角形の軸を出さず、1行で断る（BOA-802）", async ({
+      page,
+    }) => {
+      const f = analogyV16Facts();
+      f.today.round = "yosen";
+      f.today.series_runs_before_today = [0, 0, 0, 0, 0, 0];
+      await setup(page, { facts: f });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await expect(section.getByTestId("analogy-first-day")).toHaveText(
+        "初日は前日までの着順点が無いので、今節の平均着順点は出していない",
+      );
+      await expect(
+        section
+          .getByTestId("analogy-fact-card")
+          .filter({ hasText: "今節の平均着順点" }),
+      ).toHaveCount(0);
+      await expect(
+        section.locator(".af-hep svg[role=group]"),
+      ).not.toHaveAttribute("aria-label", /今節/);
+      // 初日でない日は今まで通り（モーター2連率の呼び名に期間が付く）
+      await expect(
+        section
+          .getByTestId("analogy-fact-card")
+          .filter({ hasText: "モーター2連率（公式・節の時点）" }),
+      ).toHaveCount(1);
+    });
+
     test("類似レースの全項目表で、展示で決まる項目の「全レースで同じ割合」は出さない", async ({
       page,
     }) => {

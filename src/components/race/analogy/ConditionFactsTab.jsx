@@ -59,10 +59,13 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
   // 優勝戦・準優勝戦の日は、今節の平均着順点の順位がほぼ枠の順になるので、六角形の軸とカードの今日の枠を
   // 出さない（率と注記は出す。2026-10-05 ユーザー決定 Q-F1、spec A-4 Q7 の延長）
   const finalDay = hidesSeriesScoreLine(today);
+  // 節の初日は今節の平均着順点を今日に当てはめられないので、七角形の軸もカードも出さず1行で断る（BOA-802）
+  const note = seriesScoreNote(today);
+  const firstDay = note === "first";
   const items = FACT_ITEMS.filter(
     (it) =>
       (exhibitionStage || it.key !== "exh_time") &&
-      !(finalDay && it.key === "series_score"),
+      !((finalDay || firstDay) && it.key === "series_score"),
   );
   const vs = (key) => values[key] ?? null;
   const scope = scopeName(scopeKey, t, { short: true });
@@ -94,9 +97,10 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
 
   const usual = usualOf(scopeFacts, boat, target);
   const rows = scopeFacts
-    ? factRows(scopeFacts, boat, target, exhibitionStage)
+    ? factRows(scopeFacts, boat, target, exhibitionStage).filter(
+        (r) => !(firstDay && r.key === "series_score"),
+      )
     : [];
-  const note = seriesScoreNote(today);
   const hideSeriesLine = hidesSeriesScoreLine(today);
   const cls = uniformClass(today);
   const rateName = t(`aiPredictionTab.analogy.rateName.${target}`);
@@ -238,6 +242,11 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
             </span>
           )}
         </div>
+        {firstDay && (
+          <p className="af-foot" data-testid="analogy-first-day">
+            {t(`${k}.firstDayNote`)}
+          </p>
+        )}
         <div className="af-cards" ref={cardsRef}>
           {rows.filter((r) => r.key !== "boat_2").map(card)}
           {rows
