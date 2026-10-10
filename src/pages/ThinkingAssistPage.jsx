@@ -490,7 +490,7 @@ export default function ThinkingAssistPage() {
       speed: race?.weather?.windSpeed ?? null,
       dir: trueWindDirection(
         race?.weather?.windDirection,
-        data.parsed.venueCode,
+        data.parsed?.venueCode,
       ),
       rel: windRelation(
         race?.weather?.windDirection,
@@ -553,7 +553,7 @@ export default function ThinkingAssistPage() {
       <>
         <AssistHeader
           race={race}
-          venueCode={data.parsed.venueCode}
+          venueCode={data.parsed?.venueCode}
           raceId={raceId}
           round={data.round}
           stage={data.stage}
