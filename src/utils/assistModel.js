@@ -358,7 +358,8 @@ export const METRICS = {
   },
   // 展開レンズの点の値（押すと6艇比較。ファン評価で PR4 に回した「スタートの値の数字ボタン」）
   st_course: {
-    label: "平均ST（このコース）",
+    // 名前に期間を付ける（BOA-815 方針1）。値は v16 の course_filled（5走未満は直近30走で補った値。判定と同じ）
+    label: "平均ST（このコース・直近30走）",
     short: "ST",
     value: (r) => r.stCourse,
     text: (v) => stText(v),
@@ -439,6 +440,8 @@ export function firstPlaceComposite(trifecta, absentBoats = []) {
  * レンズ（または6艇比較の項目）の図のモデル。純粋関数
  * @param {{lens: string, stage: "pre"|"post", metric?: string|null, racers: object[], trifecta?: object|null, finalRound?: boolean, hasToday?: boolean, pastWin?: Map<number, {k: number, n: number}>|null}} args
  *   pastWin: 買い目レンズの「過去の1着」（艇ごとの差がつく材料の範囲での1着。assistSummary.b1Usual）
+ *   stBasis: 展開レンズの展示前の平均ST（"course"＝このコース・直近30走、"overall"＝直近30走。BOA-815 案A）
+ *   stMissing: v16 の保存が無いと分かった（"not_saved"）。軸レンズに平均ST を出せない理由を書く
  *   hasToday: v16 の today が届いているか。届いていない（読み込み中・保存が無い）ときは v16 の値（平均ST）を
  *   「記録なし」と書かず出さない（記録が無いのではなく、データが無いだけ。ファン評価 1周目 指摘3）
  *   racers は1〜6号艇（欠場を含む）: {boat, natWin, locWin, stMean, stCourse, motor2, seriesScore, exhTime, exhSt, exhFlying, absent}
@@ -453,6 +456,8 @@ export function boardModel({
   finalRound = false,
   hasToday = true,
   pastWin = null,
+  stBasis = "course",
+  stMissing = false,
 }) {
   const post = stage === "post";
   const best = (m) => bestOfMetric(m, racers, finalRound);
@@ -484,6 +489,9 @@ export function boardModel({
     return {
       kind: "axis",
       title: "全国勝率",
+      // v16 の保存が無いと分かったレースは平均ST（直近30走）を出せない。黙って消さず理由を書く（BOA-808 6）。
+      // 正本は v16 の st_mean30（BOA-815）なので、別の出どころの値では埋めない。読み込み中は書かない
+      noSt: stMissing,
       left: s.lo.toFixed(1),
       right: s.hi.toFixed(1),
       good: "right",
@@ -499,19 +507,26 @@ export function boardModel({
   }
 
   if (lens === "flow") {
-    // 展示後は展示ST（F は最良の候補から外す）、展示前は平均ST（このコース）。左ほど早い
-    const value = (r) => (post ? r.exhSt : r.stCourse);
+    // 展示後は展示ST（F は最良の候補から外す）、展示前は平均ST。左ほど早い。
+    // 展示前の平均ST は「このコース｜直近30走」を切り替える（BOA-815 案A。龍神ソナーと同じ操作）
+    const overall = !post && stBasis === "overall";
+    const key = post ? "exh_st" : overall ? "st_mean30" : "st_course";
+    const value = (r) => (post ? r.exhSt : overall ? r.stMean : r.stCourse);
     const best2 = bestBoats(
-      post ? "exh_st" : "st_course",
+      key,
       racers.map((r) => ({
         boat: r.boat,
         value: value(r),
         flying: r.exhFlying,
+        // このコースの走が少ない艇（補った値を含む）は金枠を付けない（龍神ソナーの平均STの表と同じ）
+        runs: key === "st_course" ? r.stCourseN : null,
       })),
     );
     return {
       kind: "flow",
-      title: post ? "展示ST（左ほど早い）" : "平均ST・このコース（左ほど早い）",
+      title: post ? "展示ST（左ほど早い）" : `${METRICS[key].label} 左ほど早い`,
+      // 切り替えは展示前だけ（展示の後は横軸が展示ST になる）
+      basis: post ? null : overall ? "overall" : "course",
       left: ".00",
       right: ".25",
       good: "left",
@@ -535,11 +550,10 @@ export function boardModel({
           dotText: text,
           dotBest: best2.has(r.boat),
           // 点の値は押すと6艇比較（読み上げは「{項目名} {値}、6艇で比べる」）
-          dotMetric: v == null ? null : post ? "exh_st" : "st_course",
-          dotAria:
-            v == null
-              ? null
-              : METRICS[post ? "exh_st" : "st_course"].aria(v, r),
+          dotMetric: v == null ? null : key,
+          dotAria: v == null ? null : METRICS[key].aria(v, r),
+          // このコースの走が5走未満で直近30走で補った艇（BOA-815 方針4）
+          filled: key === "st_course" && v != null && r.stCourseFilled,
         };
       }),
     };
@@ -669,6 +683,17 @@ const numOrNull = (v) => {
   return Number.isFinite(n) ? n : null;
 };
 
+/** v16 の fill_course_st と同じ境目（scripts/ml/analogy/v16_defs.py の MIN_COURSE_RUNS） */
+export const MIN_COURSE_RUNS = 5;
+
+/** このコースの走が5走未満で、直近30走で補った値か（v16 の course_n で判定） */
+export function courseFilled(courseSt, i) {
+  const n = courseSt?.course_n?.[i];
+  return (
+    courseSt?.course_filled?.[i] != null && (n == null || n < MIN_COURSE_RUNS)
+  );
+}
+
 /**
  * 艇番ごとの値をそろえる（1〜6号艇の順）。出走表は1段目、v16 の today は届いたら埋める（N-5）
  * @param {{players?: object[], today?: object|null, exhibition?: object[]|null, rates?: object[]|null}} sources
@@ -700,7 +725,12 @@ export function buildRacers({
       locWin: numOrNull(p?.localWinRate) ?? item("loc_win", i),
       motor2: numOrNull(p?.motor2Rate) ?? item("motor_2", i),
       stMean: item("st_mean30", i),
-      stCourse: numOrNull(today?.course_st?.course?.[i]),
+      // このコースの平均ST は判定（v16 の手がかり）と同じ補った値（course_filled）。古い保存は course のまま
+      stCourse: numOrNull(
+        (today?.course_st?.course_filled ?? today?.course_st?.course)?.[i],
+      ),
+      stCourseN: numOrNull(today?.course_st?.course_n?.[i]),
+      stCourseFilled: courseFilled(today?.course_st, i),
       seriesScore: item("series_score", i),
       exhTime: e?.time ?? null,
       exhSt: e?.st ?? null,

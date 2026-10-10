@@ -273,7 +273,16 @@ export const ASSIST_COPY = Object.freeze({
   flowShapeLead: (form) => `本番で${form}になるのは`,
   flowShapeMiss: (p) => `（当てはまらないときは${p}%）`,
   flowMissBar: "当てはまらないとき",
-  flowHintSource: "平均ST（このコース、直近30走）の並び。展示STではない",
+  flowHintSource: "平均ST（このコース・直近30走）の並び。展示STではない",
+  // 展開レンズの展示前の横軸の切り替え（BOA-815 案A。龍神ソナーと同じ「このコース｜直近30走」）
+  stBasisGroup: "使う平均ST",
+  stBasis: Object.freeze({ course: "このコース", overall: "直近30走" }),
+  stFilled: "全体で補った",
+  flowCourseNote:
+    "枠なりのレースでこの枠を走った直近30走の平均（F・Lを除く、前日まで）。この枠の走が5走未満の艇は、直近30走（どの枠でも）で補って「全体で補った」と出す",
+  // v16 の保存が無いレース（808-6）。正本は v16 の値なので、別の値で埋めずに理由を書く
+  stNoData:
+    "このレースは平均ST（直近30走）を出せない（前日までの値がまだ無い）",
   flowExhForm: (form) => `展示も${form}`,
   flowNoHint: "平均STの並びに、当てはまる手がかりは無い",
   flowIfHeading: (form) => `もし${form}になったら`,
@@ -375,7 +384,10 @@ export const ASSIST_COPY = Object.freeze({
   kvCourse: (c) => `${c}コースで走ったとき`,
   courseWin: (k, n) => `1着 ${k}/${n}走`,
   courseNote: "進入コース・直近2年",
-  stCourseChip: (v) => `このコース ${v}`,
+  // 走数を出す。5走未満は直近30走で補った値（BOA-815 方針4）
+  stCourseChip: (v, n, filled) =>
+    filled ? `このコース ${v}（全体で補った）` : `このコース ${v}（${n}走）`,
+  kvStLabel: "平均ST（直近30走）",
   stVenueChip: (venue, v) => `${venue} ${v}`,
   seriesRank: (rank) =>
     rank === 1
@@ -450,7 +462,8 @@ export const ASSIST_COPY = Object.freeze({
   theoryHintHit: (form) => `当てはまるとき、本番が${form}に`,
   theoryHintNotDecisive: (form) =>
     `当てはまっても、${form}にならない方が多い（決め手ではなく手がかり）`,
-  theoryTodayHint: (vals) => `平均STの並びが条件に合う（このコース: ${vals}）`,
+  theoryTodayHint: (vals) =>
+    `平均STの並びが条件に合う（このコース・直近30走: ${vals}）`,
   theoryMissHint: "平均STの並びは条件に合わない",
   theoryEntryShare: (name) => `${name}になったレース`,
   theoryFactTitle: (name, boat) => `${boat}号艇の${name}`,

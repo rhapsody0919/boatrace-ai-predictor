@@ -7,6 +7,7 @@
 import { HINT_FORM, ATTACK_BOAT, windBand } from "./analogyScenario.js";
 import { usualOf, windWaveView } from "./analogyFacts.js";
 import { entrySummary, formSummary, hintSummary } from "./assistSummary.js";
+import { courseFilled, stText } from "./assistModel.js";
 import {
   ENTRY_THEORY,
   FORM_THEORY,
@@ -24,13 +25,16 @@ export const windBandLabel = (band) =>
       ? `${band.replace("-", "〜")}m`
       : "";
 
-/** 今日の6艇の平均ST（このコース、直近30走）。手がかりが何の値から出たかを見せる（ファン評価 PR5 1周目 指摘7） */
+/**
+ * 今日の6艇の平均ST（このコース・直近30走）。手がかりが何の値から出たかを見せる（ファン評価 PR5 1周目 指摘7）。
+ * 判定（v16 の手がかり）と同じ補った値（course_filled）を3桁で出し、補った艇はそう書く（BOA-815 方針4）
+ */
 const courseStText = (today) =>
-  (today?.course_st?.course ?? [])
+  (today?.course_st?.course_filled ?? today?.course_st?.course ?? [])
     .map((v, i) =>
       v == null
         ? null
-        : `${i + 1}号艇 .${String(Math.round(v * 100)).padStart(2, "0")}`,
+        : `${i + 1}号艇 ${stText(v)}${courseFilled(today?.course_st, i) ? `（${C.stFilled}）` : ""}`,
     )
     .filter(Boolean)
     .join("・");

@@ -940,7 +940,7 @@
             "desc": "該選手近30場中獲得第1名的比例（選手成績）"
           },
           "motor_2": {
-            "label": "馬達2連率",
+            "label": "馬達2連率（官方，本節時點）",
             "short": "馬達2連率",
             "desc": "馬達＝引擎。每節以抽籤分配。該馬達至今進入前2名的比例，可作為引擎實力的參考"
           },
@@ -1035,7 +1035,11 @@
         },
         "comboChip": "{{cls}}×{{n}}",
         "comboShort": "與今天相同的組合，{{boat}}號艇為{{cls}}{{round}}",
-        "comboFreeShort": "{{boat}}號艇以外不限枠位"
+        "comboFreeShort": "{{boat}}號艇以外不限枠位",
+        "rankOfRec": "有紀錄的{{k}}艇中第{{n}}名",
+        "rankOfRecTie": "有紀錄的{{k}}艇中第{{from}}〜{{to}}名（{{same}}艇同值）",
+        "rankLast": "（最{{w}}）",
+        "firstDayNote": "首日沒有前一天以前的著順點，因此不顯示本節的平均著順點"
       },
       "outlook": {
         "summary": "AI的判讀（輔助）：在其他項目相同的前提下，哪些項目有影響",
@@ -1539,7 +1543,7 @@
         "entryPre": "展示後，符合今天展示進場的類型會加上標記。",
         "allOf": "{{name}}的全部比賽",
         "hintHeading": "今天起跑的線索",
-        "hintOther": "目前選擇的不是依艇號進場。此線索適用於依艇號進場時，因此無法直接套用（②的標籤也已移除）",
+        "hintOther": "目前選擇的不是依艇號進場。此線索適用於依艇號進場時，因此無法直接套用（STEP2的標籤也已移除）",
         "hintSrc": "使用的平均ST",
         "hintSrcs": {
           "course": "此航道",
@@ -1569,7 +1573,7 @@
           "flat03": "6艇平均ST的差距（最慢−最快）在0.03秒以內"
         },
         "hintNone": "今天的排列不符合任何條件",
-        "hintFoot": "依{{scope}}的依艇號進場比賽（{{n}}場，已排除有起步犯規、出發延遲的比賽，以及6艇平均ST不齊的比賽，因此與②「任何隊形」的場數可能略有差異）算出。{{few}}即使符合，落空的情況仍較多（是線索而非決定因素）。",
+        "hintFoot": "依{{scope}}的依艇號進場比賽（{{n}}場，已排除有起步犯規、出發延遲的比賽，以及6艇平均ST不齊的比賽，因此與STEP2「任何隊形」的場數可能略有差異）算出。{{few}}即使符合，落空的情況仍較多（是線索而非決定因素）。",
         "hintBadge": "符合今天的平均ST",
         "forms": {
           "any": {
@@ -1614,8 +1618,8 @@
         "slitPre": "展示後會以今天展示的起跑線隊形作為參考顯示",
         "noForm": "不符合任何隊形",
         "attackHeading": "進攻成功了嗎？",
-        "attackWakuOnly": "僅收集依艇號進場的情況（在①選擇「依艇號進場」或「不限進場」即會顯示）",
-        "attackGuide": "在②選擇起跑線隊形後，會顯示該隊形時進攻艇是否拿下勝利，或1號艇是否逃走成功",
+        "attackWakuOnly": "僅收集依艇號進場的情況（在STEP1選擇「依艇號進場」或「不限進場」即會顯示）",
+        "attackGuide": "在STEP2選擇起跑線隊形後，會顯示該隊形時進攻艇是否拿下勝利，或1號艇是否逃走成功",
         "attackNoRecord": "沒有誰先通過第一轉彎標的紀錄，因此以名次與獲勝方式判斷",
         "attacker": "進攻艇：",
         "attackerNote": "此隊形時，外側艇中獲得第1名最多的艇（不代表一定會進攻）",
@@ -1665,7 +1669,7 @@
         "hintRefShort": "{{venue}}全體選手的平均",
         "slitRefLegend": "虛線＝{{name}}",
         "slitFaster": "較快 →",
-        "resultNotSplit": "④的結果未依③進攻艇的排名區分。",
+        "resultNotSplit": "STEP4的結果未依STEP3進攻艇的排名區分。",
         "fellBack": "{{venue}}相同組合的比賽（不含退款）只有{{n}}場，因此改從全國收集",
         "shareOfNoRefund": "{{of}}（不含退款）的{{p}}",
         "agreeVerdict": {
@@ -1676,7 +1680,7 @@
         "atk": {
           "fewTitle": "未滿50場（容易波動）",
           "few": "少",
-          "scopeTag": "{{cls}} 的比賽 {{n}}場",
+          "scopeTag": "{{b}}號艇，{{cls}} 的比賽 {{n}}場",
           "todayRow": "{{label}} 第{{rank}}位（{{band}}）→ {{what}}",
           "band": {
             "top": "前段",
@@ -1712,12 +1716,12 @@
           "tblB1All": "1號艇逃走",
           "legendNoRef": "小字＝該區段的場數。少＝未滿50場（容易波動）",
           "foldPreviewNoRef": "展示時間、馬達×前中後段",
-          "countDiff": "③僅用6艇平均ST齊全的比賽，因此1號艇的框為{{n}}場（②④為{{m}}場）"
+          "countDiff": "STEP3僅用6艇平均ST齊全的比賽，因此1號艇的框為{{n}}場（STEP2、4為{{m}}場）"
         },
         "entryFew": "{{n}}場 —",
         "entryColType": "進場",
         "entryColShare": "比例",
-        "entryColB1": "①的勝率",
+        "entryColB1": "1號艇的勝率",
         "hintTagPast": "過去紀錄（非預測）",
         "hintTagWaku": "照枠進場時",
         "hintSrcAria": "此水道與整體的差異",
@@ -1726,16 +1730,15 @@
           "overall": "整體＝不分水道的平均（混有起跑位置的差異）"
         },
         "hintDownTag": "反而不易出現",
-        "hintGo": "以{{form}}的形狀看③④ ›",
+        "hintGo": "以{{form}}的形狀看STEP3、4 ›",
         "hintTablePreview": "此水道、整體、場地、今天展示的平均ST",
         "slitNoRate": "—",
-        "slitStatAny": "{{n}}場，① {{b1}}",
-        "slitStat": "{{p}}，{{n}}場，① {{b1}}",
-        "slitB1Legend": "①＝1號艇的勝率",
+        "slitStatAny": "{{n}}場，1號艇勝率 {{b1}}",
+        "slitStat": "{{p}}，{{n}}場，1號艇勝率 {{b1}}",
         "slitChange": "更改 ▾",
         "scopeTagAll": "收集的比賽 {{n}}場",
-        "boatTag": "{{cls}} {{n}}場",
-        "boatTagAll": "{{n}}場",
+        "boatTag": "{{b}}號艇 {{cls}} {{n}}場",
+        "boatTagAll": "{{b}}號艇 {{n}}場",
         "keyThin": "淡色長條＝未滿{{n}}場",
         "boatScopeLine": "各艇取自本身級別的比賽（左側標籤）。相加不會是100%",
         "manshuCount": "{{hits}}/{{n}}場",
@@ -1761,16 +1764,16 @@
         "scopeMapB1": "1號艇級別相同",
         "scopeMapOwn": "該艇級別相同",
         "scopeMap": {
-          "attOwn": "③ 進攻艇的框與表",
-          "attB1": "③ 1號艇的框與表",
-          "barB1": "④ 第1名、前3名（1號艇）",
-          "barOwn": "④ 第1名、前3名（2〜6號艇）",
-          "rest": "④ 決勝方式、萬舟、名次流向、三連單"
+          "attOwn": "STEP3 進攻艇的框與表",
+          "attB1": "STEP3 1號艇的框與表",
+          "barB1": "STEP4 第1名、前3名（1號艇）",
+          "barOwn": "STEP4 第1名、前3名（2〜6號艇）",
+          "rest": "STEP4 決勝方式、萬舟、名次流向、三連單"
         },
         "techHeadingShort": "決勝方式",
         "notesHintHeading": "起跑線索",
-        "slitTodayTagOne": "今天的展示符合{{forms}}（②的圖上有「今天的展示」標籤）。",
-        "slitTodayTagMany": "今天的展示符合{{forms}}共{{count}}種形（形可能重疊。②的圖上有「今天的展示」標籤）。",
+        "slitTodayTagOne": "今天的展示符合{{forms}}（STEP2的圖上有「今天的展示」標籤）。",
+        "slitTodayTagMany": "今天的展示符合{{forms}}共{{count}}種形（形可能重疊。STEP2的圖上有「今天的展示」標籤）。",
         "hintCondsNote": "比例是過去依枠位進入的比賽中，起跑線呈現該形狀的比例。即使符合，落空的情況較多（是線索而非決定因素）",
         "hintTodayOk": "✓ 今天符合",
         "hintTodayLead": "今天",
@@ -1805,7 +1808,8 @@
         "hintAll": "全部（不論條件） {{p}}",
         "hintMapFirst": " {{n}}號艇＝{{n}}道",
         "hintMapRest": "＝{{n}}道",
-        "hintTodayCourse": "{{n}}道"
+        "hintTodayCourse": "{{n}}道",
+        "stepLabel": "STEP{{n}}"
       },
       "barLabel": "{{boat}}號艇 {{p}} {{n}}場",
       "feedback": {
@@ -2278,11 +2282,14 @@
     "rowReturnRate": "獨贏回收率",
     "noWins": "無勝場",
     "winCount": "{{n}}勝",
-    "note": "分析數據為過去90天（回收率為180天）的實績統計。醒目標示為本場最佳值。僅供參考，不保證結果",
+    "note": "分析數據為過去90天（回收率為180天）的實績統計。平均ST為列名所示的期間。醒目標示為本場最佳值。僅供參考，不保證結果",
     "guideLink": "詳細了解數據出賽表的使用方式",
     "rowLocalWinRate": "當地勝率",
     "rowTwoRate": "全國2連率",
     "rowAvgSt": "平均ST",
+    "rowAvgStOfficialNote": "官方",
+    "rowAvgStOfficial": "平均ST（官方）",
+    "rowAvgSt30": "平均ST(30場)",
     "rowExSt": "展示ST",
     "exStFlagTitle": "F＝起步展示時起步犯規，L＝起步展示時起步延遲（官方標示）。不列入最佳值的比較",
     "rowCourseRate": "艇號勝率",
@@ -2354,7 +2361,8 @@
       "winRate": "F1、F2為出賽表上本期的偷跑次數，附「(本節)」表示其中有在本節前一天以前發生的（不得參加本節準決賽、決賽）。L1為本期起跑延遲次數",
       "motor": "本站統計此馬達過去90天（僅限換裝後）的2連率。與官方出賽表的賽程時點2連率數值不同",
       "form": "目前全國勝率與約90天前全國勝率的差。↑為上升，↓為下降",
-      "avgSt": "正式比賽起跑時機的平均（秒，本站累積的全部期間）。越小代表起跑越快",
+      "avgSt": "與官方出賽表相同的平均ST（秒，與勝率同一期的官方期別成績，小數2位）。越小代表起跑越快",
+      "avgSt30": "到前一天為止近30場正式比賽ST的平均（秒，不含F、L。與龍神聲納、思考輔助相同的值）。越小代表起跑越快",
       "st": "過去90天展示ST與正式ST差距的平均（秒）。±後的數字越小，代表越能照展示起跑",
       "exSt": "當天起跑展示的時機。F.01 等為起跑展示中的偷跑，L 為起跑延遲（官方標記）",
       "exhibition": "當天的展示時間（秒）。括號內的值是當天展示前，改以顯示的過去90天平均展示時間",
@@ -2382,6 +2390,7 @@
       "motor": "馬達",
       "form": "狀態",
       "avgSt": "平均ST",
+      "avgSt30": "ST(30場)",
       "st": "ST穩定",
       "exSt": "展示ST",
       "exhibition": "展示T",
@@ -3316,7 +3325,9 @@
     "localWinRate": "該選手在本賽場的勝率。可用來判斷是否為其擅長的賽場",
     "motor": "使用這具馬達時拿下第1名或第2名的比例。數值越高，代表馬達狀態越好",
     "form": "近期勝率與平時勝率的差值，表示狀態是上升還是下滑",
-    "avgSt": "起跑時機的平均值。數值越小代表起跑越快",
+    "avgSt": "與官方出賽表相同的平均ST（與勝率同一期的官方期別成績）。數值越小代表起跑越快",
+    "avgStOfficialPeriod": "與官方出賽表相同的平均ST（{{from}}〜{{to}} 的成績。與勝率同一期的官方期別成績）。數值越小代表起跑越快",
+    "avgSt30": "到前一天為止近30場的平均ST（不含F、L）。與龍神聲納、思考輔助相同的值。數值越小代表起跑越快",
     "st": "起跑時機的穩定程度。數值越小代表每次都能穩定起跑",
     "exSt": "賽前展示航行時的起跑時機",
     "exhibition": "賽前展示航行的時間。數值越小代表機力越好",

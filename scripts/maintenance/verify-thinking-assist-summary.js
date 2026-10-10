@@ -452,8 +452,10 @@ check(
   JSON.stringify(cH.meas),
 );
 check(
-  "TC-H は今日の平均ST（このコース）の値を添える（2号艇 .16、ファン評価 PR5 1周目 指摘7）",
-  cH.today.text.includes("2号艇 .16") && cH.today.text.includes("3号艇 .14"),
+  "TC-H は今日の平均ST（このコース・直近30走）の値を判定と同じ補った値の3桁で添える（2号艇 .161、ファン評価 PR5 1周目 指摘7・BOA-815）",
+  cH.today.text.includes("このコース・直近30走") &&
+    cH.today.text.includes("2号艇 .161") &&
+    cH.today.text.includes("3号艇 .142"),
   cH.today.text,
 );
 const cE = theoryCard("TC-E:waku", tctx);
@@ -596,6 +598,10 @@ const bannedHits = [
   ASSIST_COPY.simTopNote(63, "13:14"),
   ASSIST_COPY.entryNoPast,
   JSON.stringify(ASSIST_COPY.scopeWhy),
+  ASSIST_COPY.flowCourseNote,
+  ASSIST_COPY.stNoData,
+  ASSIST_COPY.stCourseChip(".148", 30, false),
+  ASSIST_COPY.stCourseChip(".147", 3, true),
   ...theoryTexts,
 ]
   .map((t) => t.match(BANNED)?.[0])

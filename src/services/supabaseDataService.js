@@ -29,6 +29,7 @@ import { isFinalStage } from "../constants/raceStageConfig";
 import {
   finishPositionOf,
   periodsEndedBefore,
+  officialPeriodOf,
   RECENT_PERIOD_COUNT,
 } from "../components/race/basicInfoStats.js";
 import { tallyWinPlaceShow } from "../utils/racerConditionStats.js";
@@ -4048,6 +4049,36 @@ export const supabaseDataService = {
   },
 
   /**
+   * 選手ページの「平均ST（公式）」（BOA-815）。公式の出走表がその日に出している期（officialPeriodOf）の
+   * racer_period_stats.avg_st（2桁）。選手ページは節に紐づかないので、期は日付だけで決める
+   * （節の途中で期が替わる数日だけ、出走表の値と1期ずれることがある）。行が無い選手（新人など）は null
+   * @param {number|string} racerId
+   * @param {string} date `YYYY-MM-DD`（JST の今日）
+   * @returns {Promise<{period: {periodYear: number, periodNo: number, calcFrom: string, calcTo: string}|null, avgSt: number|null}>}
+   */
+  getRacerOfficialAvgSt(racerId, date) {
+    const period = officialPeriodOf(date);
+    if (!period || !racerId) return Promise.resolve({ period, avgSt: null });
+    return withCache(
+      `racer-official-avg-st-v1-${racerId}-${period.periodYear}-${period.periodNo}`,
+      async () => {
+        if (!supabase) throw new Error("Supabase client not initialized");
+        const { data } = await supabase
+          .from("racer_period_stats")
+          .select("avg_st")
+          .eq("racer_id", racerId)
+          .eq("period_year", period.periodYear)
+          .eq("period_no", period.periodNo)
+          .maybeSingle();
+        return {
+          period,
+          avgSt: data?.avg_st != null ? Number(data.avg_st) : null,
+        };
+      },
+    );
+  },
+
+  /**
    * 選手検索UI向けに全選手の軽量一覧を取得する。
    * 対象約1,627件・数十KB程度のため都度クエリではなく一括取得し長期キャッシュする
    * （選手数の変動は月数件程度、egress削減のため24時間キャッシュ）。
@@ -5691,6 +5722,61 @@ export const supabaseDataService = {
         .limit(1);
 
       return toWakuRacerStats(data?.[0]?.feature_contributions?.racerStats);
+    });
+  },
+
+  /**
+   * 指定レースの6艇の「平均ST（公式）」（BOA-815）。公式の出走表と同じ期（officialPeriodOf）の
+   * racer_period_stats.avg_st（2桁）を返す。期は節の初日（race_series）で決める。公式は節の途中で
+   * 期を替えないため（6/27〜7/1 の節の 7/1 は旧期）。節が取れなければレース日で決める。
+   * その期の行が無い選手（新人など）は返さない。別の期の値で埋めると公式の出走表と食い違うため、
+   * 埋めずに「—」にする
+   * @param {string} raceId
+   * @returns {Promise<{period: {periodYear: number, periodNo: number, calcFrom: string, calcTo: string}|null,
+   *   rows: Array<{boatNumber: number, avgSt: number}>}>}
+   */
+  getRaceOfficialAvgSt(raceId) {
+    return withCache(`race-official-avg-st-v2-${raceId}`, async () => {
+      if (!supabase) throw new Error("Supabase client not initialized");
+      const raceDate = raceId?.slice(0, 10);
+      const venueCode = Number(raceId?.slice(11, 13));
+      // クエリの失敗は .throwOnError() で例外になる（BOA-507）。useRaceAnalysisData が取得失敗として出す
+      const { data: series } = await supabase
+        .from("race_series")
+        .select("start_date")
+        .eq("venue_code", venueCode)
+        .lte("start_date", raceDate)
+        .gte("end_date", raceDate)
+        .order("start_date", { ascending: false })
+        .limit(1);
+      const period = officialPeriodOf(series?.[0]?.start_date ?? raceDate);
+      if (!period) return { period: null, rows: [] };
+      const { data: entries } = await supabase
+        .from("race_entries")
+        .select("boat_number, racer_id")
+        .eq("race_id", raceId);
+      const ids = (entries ?? []).map((e) => e.racer_id).filter(Boolean);
+      if (ids.length === 0) return { period, rows: [] };
+      const { data } = await supabase
+        .from("racer_period_stats")
+        .select("racer_id, avg_st")
+        .eq("period_year", period.periodYear)
+        .eq("period_no", period.periodNo)
+        .in("racer_id", ids);
+      const byRacer = new Map(
+        (data ?? [])
+          .filter((r) => r.avg_st != null)
+          .map((r) => [r.racer_id, Number(r.avg_st)]),
+      );
+      return {
+        period,
+        rows: (entries ?? [])
+          .filter((e) => byRacer.has(e.racer_id))
+          .map((e) => ({
+            boatNumber: e.boat_number,
+            avgSt: byRacer.get(e.racer_id),
+          })),
+      };
     });
   },
 

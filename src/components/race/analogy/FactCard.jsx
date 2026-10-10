@@ -2,7 +2,12 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import BoatBadge from "../BoatBadge";
 import { SCOPE_LINE } from "./analogyColors";
-import { fmtCount, fmtFactValue, fmtPct } from "../../../utils/analogyFormat";
+import {
+  factRankText,
+  fmtCount,
+  fmtFactValue,
+  fmtPct,
+} from "../../../utils/analogyFormat";
 import {
   FACT_ITEMS,
   MIN_RATE_N,
@@ -50,7 +55,8 @@ function TodayHit({ row, values, boat, scopeFacts, target }) {
 function useTodayValue(row, values) {
   const { t } = useTranslation();
   const unit = t(`${k}.units.${row.key}`, "");
-  const hib = FACT_ITEMS.find((it) => it.key === row.key).hib;
+  const item = FACT_ITEMS.find((it) => it.key === row.key);
+  const hib = item.hib;
   const withUnit = (v) => {
     const s = fmtFactValue(row.key, v);
     return s === "—" || s.endsWith("%") ? s : `${s}${unit}`;
@@ -59,9 +65,7 @@ function useTodayValue(row, values) {
     const r = todayValueRank(values, hib, b);
     const rank = !r
       ? t(`${k}.noToday${row.key === "loc_win" ? "Local" : ""}`)
-      : r.from === r.to
-        ? t(`${k}.rankOf6`, { n: r.from })
-        : t(`${k}.rankOf6Tie`, { from: r.from, to: r.to, same: r.same });
+      : factRankText(t, r, item.bad);
     const rankShort = !r
       ? "—"
       : r.from === r.to

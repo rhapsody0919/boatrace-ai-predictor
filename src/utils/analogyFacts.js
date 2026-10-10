@@ -92,12 +92,13 @@ export function todayPosition(values, hib, boat) {
  */
 export function todayValueRank(values, hib, boat) {
   if (!Array.isArray(values) || !isNum(values[boat - 1])) return null;
-  // 表示用の順位（rankPositions はカードの区分用で、同じ値の幅は持たない）。上の艇の数＋1 〜 上の艇の数＋同じ値の艇の数
+  // 表示用の順位（rankPositions はカードの区分用で、同じ値の幅は持たない）。上の艇の数＋1 〜 上の艇の数＋同じ値の艇の数。
+  // of は値のある艇の数（当地勝率 0.00 など記録の無い艇がいると 6 未満。「記録のある5艇中5位」と書く。BOA-802）
   const v = values[boat - 1];
   const ok = values.filter(isNum);
   const better = ok.filter((x) => (hib ? x > v : x < v)).length;
   const same = ok.filter((x) => x === v).length;
-  return { value: v, from: better + 1, to: better + same, same };
+  return { value: v, from: better + 1, to: better + same, same, of: ok.length };
 }
 
 /** [当たり, 母数] → 割合（母数0は null） */
@@ -280,6 +281,9 @@ export function typicalRanks(scopeFacts, boat, target, items) {
 export function seriesScoreNote(today) {
   if (ROUNDS_FINAL.includes(today?.round)) return "final";
   const runs = today?.series_runs_before_today;
+  // 節の初日（6艇とも前日までの走が無い）は今節の平均着順点を今日に当てはめられない（BOA-802、2026-10-10 ユーザー決定）
+  if (Array.isArray(runs) && runs.length === 6 && Math.max(...runs) === 0)
+    return "first";
   if (
     Array.isArray(runs) &&
     runs.length === 6 &&

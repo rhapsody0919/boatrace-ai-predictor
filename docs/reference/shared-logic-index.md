@@ -138,7 +138,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/racerProfileSync.js` | — | parseArgs, fetchHtmlWithRetry, parseProfileHtml, getProfileUrl, toSeasonStatsRow ほか16件 |
 | `scripts/lib/racerProfilesJob.js` | 選手プロフィール・期別成績（B6、racer_profiles）の共通ラッパ向けハンドラー（tasks.md T4b-16-1）。 | resolveChunkSize, runRacerProfilesJob, RACER_PROFILES_CHUNK, RACER_PROFILES_CONCURRENCY |
 | `scripts/lib/racerSeasonStats.js` | — | getSeasonStatsUrl, isRacerPageNotFound, derivePeriodLabel, parseSeasonStatsHtml, scrapeSeasonStats ほか2件 |
-| `scripts/lib/racerStStats.js` | 選手のST統計（racer_aggregated_stats の avg_st / avg_st_last_30 / st_stddev / | countsAsStart, computeRacerStStats, fetchRacerEntries, fetchStartTimingsForEntries, RECENT_ST_WINDOW |
+| `scripts/lib/racerStStats.js` | 選手のST統計（racer_aggregated_stats の avg_st / avg_st_last_30 / st_stddev / | countsAsStart, computeRacerStStats, fetchRacerEntries, fetchStartTimingsForEntries, RECENT_ST_WINDOW ほか1件 |
 | `scripts/lib/racesInit/digest.js` | 朝の初期化（races-init）の shadow で記録する、レースごとのダイジェスト（純粋関数。DB・取得先に接続しない）。 | raceIdOf, digestScrapedRace, digestScrapedVenue, digestDbRace, compareRaceDigests |
 | `scripts/lib/racesInit/ghaSkip.js` | GitHub Actions 側の朝の初期化（morning-init.js）を止める変数 SKIP_MORNING_INIT_ON_GHA の判定（純粋関数）… | decideMorningInitOnGha, FALLBACK_FROM_JST_HOUR |
 | `scripts/lib/racesInit/job.js` | 朝の初期化（A8、races・race_entries・predictions の初期化）の共通ラッパ向けハンドラー（tasks.md T4b-07-4、 | backoffMinutes, resolveVenuesLimit, isBreakerOpenError, defaultCheckNoProgram, runRacesInitJob ほか3件 |
@@ -216,7 +216,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/analogyAggregate.js` | アナロジー・ファインダー v16 の類似レース・展開シナリオの集計（BOA-271 spec FR-B・FR-C）。純粋関数。 | sliderSteps, defaultStepIndex, normalizeNeighbor, aggregateNeighbors, layerItemKeys ほか17件 |
 | `src/utils/analogyContribution.js` | アナロジー・ファインダーの寄与度（BOA-271 FR-1）の純粋関数。 | roundFromStageCategory, sliceCandidates, resolveContributionSlice, themeEntries, roundToTotal ほか7件 |
 | `src/utils/analogyFacts.js` | アナロジー・ファインダー v16「差がつく材料」（タブ1、BOA-271 spec FR-A）の純粋関数。 | rankPositions, todayPosition, todayValueRank, judgeGap, agreementVerdict ほか29件 |
-| `src/utils/analogyFormat.js` | アナロジー・ファインダー v16 の表記（BOA-271 screens「純粋関数」）。 | fmtEntry, comboLabel, scopeName, fmtFactValue, splitSentences ほか7件 |
+| `src/utils/analogyFormat.js` | アナロジー・ファインダー v16 の表記（BOA-271 screens「純粋関数」）。 | fmtEntry, comboLabel, scopeName, fmtFactValue, splitSentences ほか8件 |
 | `src/utils/analogyLayer.js` | 類似レースの層（そろえる条件）の説明文（BOA-271 spec B-3 の前半。plan「層の説明文の共用の関数」）。 | describeAnalogyLayer, layerKind |
 | `src/utils/analogyOutlook.js` | アナロジー・ファインダー v16 の AIの見立て（spec FR-E）の表記。純粋関数。 | to100, directionText |
 | `src/utils/analogyRaceContribution.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: 6艇の TreeSHAP をテーマ… | aggregateRaceContribution, boatMostRaisedBy |
@@ -228,7 +228,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/analogyTips.js` | アナロジー・ファインダー v16 の吹き出しの文（spec B-8）。純粋関数 | boatTip |
 | `src/utils/analogyTreeShap.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: LightGBM の | compileModel, predictRaw, contributions |
 | `src/utils/analytics.js` | — | getCookieConsent, setCookieConsent, initAdSense, initTrackingIfConsented, initGA ほか9件 |
-| `src/utils/assistModel.js` | 思考アシスト（BOA-430）の画面のモデル。純粋関数だけ（取得・描画はしない）。 | raceRound, sameClassScope, sameClassLabel, baseVerdict, roughCard ほか22件 |
+| `src/utils/assistModel.js` | 思考アシスト（BOA-430）の画面のモデル。純粋関数だけ（取得・描画はしない）。 | raceRound, sameClassScope, sameClassLabel, baseVerdict, roughCard ほか24件 |
 | `src/utils/assistSummary.js` | 思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル。純粋関数だけ（取得・描画はしない）。 | factsScope, factChips, b1Usual, hintSummary, formSummary ほか18件 |
 | `src/utils/assistTheory.js` | 思考アシスト（BOA-430）のセオリーカードとガイドのモデル。純粋関数だけ（取得・描画はしない）。 | theoryCard, guideSteps, windBandLabel |
 | `src/utils/bestOf.js` | 6艇を並べた値の中で、レース内の最良の艇番を返す（docs/design/race-detail-ui-unify spec R1）。 | bestOf |
@@ -297,7 +297,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/adminRulePerformance.js` | 管理画面（/admin/rules）の運用成績（全体・ルール別・週別）の取得と整形（BOA-567） | shapeRulePerformance, fetchRulePerformance, RULE_PERFORMANCE_START_DATE |
 | `src/services/adminRuleService.js` | 管理者向けルール分析サービス | getRuleApplicationHistory |
 | `src/services/analogyFeedback.js` | 龍神ソナー（BOA-271）の「画面の中の声」を analogy_feedback に送る（docs/db-migration/143_analogy_feed… | sendAnalogyFeedback |
-| `src/services/analogyService.js` | アナロジー・ファインダー（BOA-271）のデータ取得。 | getAnalogyContribution, getAnalogyFacts, getAnalogySimilar, getAnalogyScenario |
+| `src/services/analogyService.js` | アナロジー・ファインダー（BOA-271）のデータ取得。 | getAnalogyContribution, getRaceSt30, getAnalogyFacts, getAnalogySimilar, getAnalogyScenario |
 | `src/services/dataService.js` | データ取得サービス | dataService |
 | `src/services/liveOddsService.js` | オッズのライブ取得（BOA-487）。/api/odds/live を呼ぶ。 | fetchLiveOdds, LIVE_PAGE_OF_BET_TYPE, LiveOddsError |
 | `src/services/moriartyService.js` | — | getMoriartyStats, getMoriartyRecommendations, getMoriartyROIHistory, getMoriartyVenueBreakdown, getMoriartyCalibrationData |
@@ -314,4 +314,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 279 ファイル / export 1513 件。
+対象 279 ファイル / export 1518 件。
