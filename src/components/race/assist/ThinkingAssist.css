@@ -1778,9 +1778,12 @@
 }
 
 @media (min-width: 1024px) {
+  /* レース詳細と同じく、最大1600のページの中に置く（BOA-820）。以前は左の余白 24px 固定で、1920px で
+     左端が x=24 になり、レース詳細のタブの列（x=184）とずれていた */
   .ta-page {
     max-width: 1200px;
-    margin: 0 var(--spacing-6);
+    margin: 0 var(--spacing-6) 0
+      max(var(--spacing-6), calc((100% - 1600px) / 2 + var(--spacing-6)));
   }
 
   .ta-split {

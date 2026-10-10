@@ -3,7 +3,7 @@
  *
  * アナロジー・ファインダー（BOA-271）の寄与度の節は、master に入れたうえで公開までは隠す
  * （2026-10-02 ユーザー判断）。公開するときは ANALOGY_FINDER_PUBLIC を true にするだけでよい。
- * 思考アシスト（BOA-430）のページも同じ仕組みで、公開までは THINKING_ASSIST_PUBLIC = false。
+ * 思考アシスト（BOA-430）のページも同じ仕組み。2026-10-10 に公開した（THINKING_ASSIST_PUBLIC = true）。
  * 隠している間も、本番で内部確認できるように次のどちらかで表示できる:
  *   - URL にクエリ（?analogy=1 ／ ?assist=1）を付けて開く（端末に覚える。=0 で忘れる）
  *   - localStorage のキー（*_PREVIEW_KEY）を "1" にする
@@ -13,7 +13,7 @@
 export const ANALOGY_FINDER_PUBLIC = true;
 export const ANALOGY_FINDER_PREVIEW_KEY = "boatai-user:analogy-finder-preview";
 
-export const THINKING_ASSIST_PUBLIC = false;
+export const THINKING_ASSIST_PUBLIC = true;
 export const THINKING_ASSIST_PREVIEW_KEY =
   "boatai-user:thinking-assist-preview";
 

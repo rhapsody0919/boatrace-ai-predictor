@@ -198,21 +198,22 @@ async function expectNoForbiddenTerms(page) {
 // ======================================================================
 
 test.describe("入口・上部の切り替え", () => {
-  test("[spec FR-1] フラグが無い状態でレース詳細に上部の切り替えが出ない", async ({
+  // 2026-10-10 に公開した（THINKING_ASSIST_PUBLIC = true）。公開前の「印が無ければ出ない」を、公開後の「印が無くても出る」に直した
+  test("[spec FR-1 / D-22 公開後] 内部確認の印が無くてもレース詳細に上部の切り替えが出る", async ({
     page,
   }) => {
     await routeThinkingAssistV16(page, { preview: false });
     await page.goto(RACE_URL);
-    await expect(displayGroup(page)).toHaveCount(0);
+    await expect(displayGroup(page)).toBeVisible();
   });
 
-  test("[spec FR-1 / 状態表] フラグが無くても /race/:raceId/assist を直接開くと表示される", async ({
+  test("[spec FR-1 / 状態表 公開後] 内部確認の印が無くても /race/:raceId/assist を直接開くと表示され、切り替えも出る", async ({
     page,
   }) => {
     await routeThinkingAssistV16(page, { preview: false });
     await page.goto(ASSIST_URL);
     await expect(lensTablist(page)).toBeVisible();
-    await expect(displayGroup(page)).toHaveCount(0);
+    await expect(displayGroup(page)).toBeVisible();
   });
 
   test("[spec FR-1 / D-22] フラグあり・ja・tab/boat指定なしでレース詳細に上部の切り替えが出る", async ({
