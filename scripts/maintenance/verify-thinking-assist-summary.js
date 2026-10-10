@@ -638,10 +638,11 @@ check(
     ASSIST_COPY.motorChipRate(false, 40, 55),
   ];
   check(
-    "札: 「一番高いとき」「最下位のとき」の形（「〜いのとき」にしない）",
+    "札: 「6艇で一番高いとき 1着」の形（「〜いのとき」にしない。誰の中で一番かを書く）",
     texts.every((t) => !/いのとき/.test(t)) &&
-      texts[0] === "▲一番高いとき 1着 77%・1,793件（全体 72%）" &&
-      texts.at(-1).startsWith("最下位のとき1着"),
+      texts[0] === "▲6艇で一番高いとき 1着 77%・1,793件（全体 72%）" &&
+      texts.at(-2).startsWith("一番高いとき 1着") &&
+      texts.at(-1).startsWith("一番低いとき 1着"),
     JSON.stringify(texts),
   );
 }
