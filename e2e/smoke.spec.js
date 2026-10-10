@@ -495,8 +495,8 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
       .toBe("ja");
   });
 
-  // BOA-430: 思考アシストは /race 配下（翻訳済み）だが ja 専用。言語付きの URL は ja 版へ移り、公開まで noindex
-  test("思考アシスト（/en/race/{id}/assist）はja版へリダイレクトされ、noindexで開く", async ({
+  // BOA-430: 思考アシストは /race 配下（翻訳済み）だが ja 専用。言語付きの URL は ja 版へ移る。2026-10-10 に公開したので noindex は付けない
+  test("思考アシスト（/en/race/{id}/assist）はja版へリダイレクトされ、公開後は noindex を付けない", async ({
     page,
   }) => {
     await page.goto("/en/race/2026-10-06-18-10/assist");
@@ -508,10 +508,9 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: /思考アシスト/ }),
     ).toBeVisible();
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
-      "content",
-      /noindex/,
-    );
+    await expect(
+      page.locator('meta[name="robots"][content*="noindex"]'),
+    ).toHaveCount(0);
   });
 
   // BOA-430 PR3: 機能フラグが無くても URL 直接で開け、1段目のデータ（出走表）でレースの図が出る（spec FR-1・N-5）
