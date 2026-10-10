@@ -298,7 +298,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/adminRulePerformance.js` | 管理画面（/admin/rules）の運用成績（全体・ルール別・週別）の取得と整形（BOA-567） | shapeRulePerformance, fetchRulePerformance, RULE_PERFORMANCE_START_DATE |
 | `src/services/adminRuleService.js` | 管理者向けルール分析サービス | getRuleApplicationHistory |
 | `src/services/analogyFeedback.js` | 龍神ソナー（BOA-271）の「画面の中の声」を analogy_feedback に送る（docs/db-migration/143_analogy_feed… | sendAnalogyFeedback |
-| `src/services/analogyService.js` | アナロジー・ファインダー（BOA-271）のデータ取得。 | getAnalogyContribution, getRaceSt30, getAnalogyFacts, getAnalogySimilar, getAnalogyScenario |
+| `src/services/analogyService.js` | アナロジー・ファインダー（BOA-271）のデータ取得。 | getAnalogyContribution, getRaceSt30, getAnalogyFacts, getAnalogySimilar, getAnalogyScenarioRaces ほか1件 |
 | `src/services/dataService.js` | データ取得サービス | dataService |
 | `src/services/liveOddsService.js` | オッズのライブ取得（BOA-487）。/api/odds/live を呼ぶ。 | fetchLiveOdds, LIVE_PAGE_OF_BET_TYPE, LiveOddsError |
 | `src/services/moriartyService.js` | — | getMoriartyStats, getMoriartyRecommendations, getMoriartyROIHistory, getMoriartyVenueBreakdown, getMoriartyCalibrationData |
@@ -315,4 +315,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 280 ファイル / export 1523 件。
+対象 280 ファイル / export 1524 件。
