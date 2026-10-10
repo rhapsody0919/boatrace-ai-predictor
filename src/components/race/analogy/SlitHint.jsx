@@ -13,6 +13,7 @@ import {
   venueLabel,
 } from "../../../utils/analogyFormat";
 import { VENUE_FEW_RUNS, hintTableBest } from "../../../utils/analogyAggregate";
+import { SLIT_EXAMPLE, hintToday } from "../../../utils/analogyScenario";
 
 const k = "aiPredictionTab.analogy.scenario";
 
@@ -68,7 +69,13 @@ export default function SlitHint({
       ))}
     </tr>
   );
-  const formName = (f) => t(`${k}.forms.${f}.name`);
+  // 同じ形の条件は1枚にまとめ、段階ごとの棒にする（カド一撃: 1〜3コースより早い／0.02秒以上早い。承認モック）
+  const groups = rows.reduce((gs, r) => {
+    const g = gs.find((x) => x.form === r.form);
+    if (g) g.rows.push(r);
+    else gs.push({ form: r.form, rows: [r] });
+    return gs;
+  }, []);
   return (
     <div className="af-hint">
       <div className="af-hint-h">
@@ -78,6 +85,15 @@ export default function SlitHint({
           <span className="af-info-tag">{t(`${k}.hintTagWaku`)}</span>
         </span>
       </div>
+      {/* 丸の数字が号艇かコースか分かるよう、対応を1回だけ（枠なりなので号艇＝コース。BOA-814 ユーザー指摘・案B） */}
+      <p className="af-hint-map" data-testid="analogy-hint-map">
+        {[1, 2, 3, 4, 5, 6].map((n) => (
+          <span key={n}>
+            <BoatBadge n={n} size="xs" />
+            {t(n === 1 ? `${k}.hintMapFirst` : `${k}.hintMapRest`, { n })}
+          </span>
+        ))}
+      </p>
       {!waku && <p className="af-warn">{t(`${k}.hintOther`)}</p>}
       {/* PC では手がかりの絵（と切り替え）を左、当てはまる条件を右に（BOA-813） */}
       <AnalogySplit
@@ -134,44 +150,25 @@ export default function SlitHint({
           </>
         }
       >
-        {/* 結論（当てはまる条件）は図の直下。見方・表・割合の出し方は折りたたみ（承認モック sonar-tab v3） */}
+        {/* 結論（当てはまる条件）は図の直下。今日の値・形の絵・全体の点線で見せる（BOA-814、承認モック mock-hint-cards-v1）。
+          見方・表・割合の出し方は折りたたみ */}
         <h4 className="af-h4">
           {t(`${k}.hintConds`, { src: t(`${k}.hintSrcs.${version}`) })}
         </h4>
+        {groups.length > 0 && (
+          <p className="af-foot">{t(`${k}.hintCondsNote`)}</p>
+        )}
         <div className="af-hintcs" data-af-control="slit_form">
-          {rows.length ? (
-            rows.map((r) => (
-              <div key={r.id} className="af-hintc">
-                <b>{t(`${k}.hints.${r.id}`)}</b>
-                {r.kind === "down" && (
-                  <span className="af-info-tag">{t(`${k}.hintDownTag`)}</span>
-                )}
-                {[
-                  [t(`${k}.hintHit`, { form: formName(r.form) }), r.ph],
-                  [t(`${k}.hintMiss`), r.pm],
-                ].map(([label, p]) => (
-                  <div key={label} className="af-hint-bar af-num">
-                    <span>{label}</span>
-                    <span className="af-atk-trk">
-                      <i
-                        style={{ width: `${Math.min(1, (p ?? 0) * 3) * 100}%` }}
-                      />
-                    </span>
-                    <b>{fmtPct(p)}</b>
-                  </div>
-                ))}
-                <p className="af-foot">
-                  {t(`${k}.hintCountShort`, { n: fmtCount(r.hit[1]) })}
-                </p>
-                <button
-                  type="button"
-                  className="af-go"
-                  aria-pressed={selectedForm === r.form}
-                  onClick={() => onForm(r.form)}
-                >
-                  {t(`${k}.hintGo`, { form: formName(r.form) })}
-                </button>
-              </div>
+          {groups.length ? (
+            groups.map(({ form, rows: rs }) => (
+              <HintCard
+                key={form}
+                form={form}
+                rows={rs}
+                vals={vals}
+                selected={selectedForm === form}
+                onForm={onForm}
+              />
             ))
           ) : (
             <p className="af-foot">{t(`${k}.hintNone`)}</p>
@@ -307,5 +304,104 @@ export function SlitHintNotes({
         ]}
       />
     </>
+  );
+}
+
+/** 今日の値の1つ（艇の丸と「4コース」と平均ST。和なら「4〜6コースの和」。丸だけでは号艇かコースか分からないため。案B） */
+function TodaySide({ side }) {
+  const { t } = useTranslation();
+  const v = <b className="af-num">{fmtSt3(side.v / 1000)}</b>;
+  if (!side.sum)
+    return (
+      <>
+        <BoatBadge n={side.boats[0]} size="xs" />
+        {t(`${k}.hintTodayCourse`, { n: side.boats[0] })} {v}
+      </>
+    );
+  return (
+    <>
+      {t(`${k}.hintTodaySum`, {
+        from: side.boats[0],
+        to: side.boats[side.boats.length - 1],
+      })}{" "}
+      {v}
+    </>
+  );
+}
+
+/**
+ * 当てはまる条件のカード1枚（形ごと。BOA-814、承認モック mock-hint-cards-v1）。形の小さな絵と名前、「✓ 今日あてはまる」、
+ * 今日の値と差、段階ごとの棒（0〜100%、全体の割合を点線）、③④へ進むボタン
+ * @param {{form: string, rows: object[], vals: (number|null)[], selected: boolean, onForm: (f: string) => void}} props
+ */
+function HintCard({ form, rows, vals, selected, onForm }) {
+  const { t } = useTranslation();
+  const name = t(`${k}.forms.${form}.name`);
+  const today = hintToday(rows[0].id, vals);
+  const all = rows[0].pall;
+  return (
+    <div className="af-hintc" data-testid="analogy-hint-card">
+      <div className="af-hintc-h">
+        <span className="af-hintc-ico" aria-hidden="true">
+          <SlitShapeIcon st={SLIT_EXAMPLE[form]} height={110} compact />
+        </span>
+        <b className="af-hintc-name">{name}</b>
+        <span className="af-hintc-ok">{t(`${k}.hintTodayOk`)}</span>
+      </div>
+      {today && (
+        <p className="af-hintc-today">
+          {t(`${k}.hintTodayLead`)}{" "}
+          {today.dir === "spread" && <>{t(`${k}.hintTodaySpreadPre`)} </>}
+          <TodaySide side={today.a} /> {t(`${k}.hintTodayMid.${rows[0].id}`)}{" "}
+          <TodaySide side={today.b} />{" "}
+          <b>
+            {t(`${k}.hintTodayDiff.${today.dir}`, {
+              d: (today.diff / 1000).toFixed(3),
+            })}
+          </b>
+        </p>
+      )}
+      {rows.map((r) => (
+        <div key={r.id} className="af-hintc-row">
+          <div className="af-hintc-lb">
+            <span title={t(`${k}.hints.${r.id}`)}>
+              {t(`${k}.hintStage.${r.id}`)}
+            </span>
+            {r.kind === "down" && (
+              <span className="af-info-tag">{t(`${k}.hintDownTag`)}</span>
+            )}
+            <b className="af-num">
+              {fmtPct(r.ph)}{" "}
+              <small>
+                {t(`${k}.hintFrac`, {
+                  x: fmtCount(r.hit[0]),
+                  n: fmtCount(r.hit[1]),
+                })}
+              </small>
+            </b>
+          </div>
+          <span className="af-hintc-trk">
+            <i style={{ width: `${(r.ph ?? 0) * 100}%` }} />
+            {all !== null && (
+              <s style={{ left: `${all * 100}%` }} aria-hidden="true" />
+            )}
+          </span>
+        </div>
+      ))}
+      {all !== null && (
+        <p className="af-hintc-all">
+          <i aria-hidden="true" />
+          {t(`${k}.hintAll`, { p: fmtPct(all) })}
+        </p>
+      )}
+      <button
+        type="button"
+        className="af-go"
+        aria-pressed={selected}
+        onClick={() => onForm(form)}
+      >
+        {t(`${k}.hintGo`, { form: name })}
+      </button>
+    </div>
   );
 }

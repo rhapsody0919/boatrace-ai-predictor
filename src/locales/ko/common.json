@@ -1557,7 +1557,7 @@
         "hintFewVenue": "{{boats}}번 보트는 이 경주장 출주 수가 적어 흔들리기 쉽다.",
         "hintExhPost": "전시 ST는 참고이며, 본경주 ST와의 관계는 약하다(보트별 상관 0.08. 평균 ST는 0.28). F.09 = 전시에서 스타트 라인을 0.09초 빨리 넘었음(전시라서 벌칙은 없음).",
         "hintExhPre": "전시 ST는 전시 후에 나온다.",
-        "hintConds": "해당하는 조건({{src}} 평균 ST로 판정)",
+        "hintConds": "오늘의 배열이 해당하는 조건({{src}} 평균 ST)",
         "hints": {
           "kado4": "4코스(카도)의 평균 ST가 1~3코스 어느 보트보다 빠름",
           "kado4_02": "4코스(카도)의 평균 ST가 1~3코스 어느 보트보다 0.02초 이상 빠름",
@@ -1726,10 +1726,7 @@
           "overall": "전체＝코스를 가리지 않는 평균(스타트 위치의 차이가 섞인다)"
         },
         "hintDownTag": "오히려 잘 안 된다",
-        "hintHit": "해당할 때의 {{form}}",
-        "hintMiss": "해당하지 않을 때",
-        "hintCountShort": "{{n}}건. 해당해도 빗나가는 쪽이 많다(결정타가 아니라 단서)",
-        "hintGo": "②에서 {{form}} 선택 ›",
+        "hintGo": "{{form}} 모양으로 ③④ 보기 ›",
         "hintTablePreview": "이 코스, 전체, 경기장, 오늘 전시의 평균 ST",
         "slitNoRate": "—",
         "slitStatAny": "{{n}}건, ① {{b1}}",
@@ -1773,7 +1770,42 @@
         "techHeadingShort": "결정 수",
         "notesHintHeading": "스타트 단서",
         "slitTodayTagOne": "오늘의 전시는 {{forms}}에 해당한다(②의 그림에 \"오늘의 전시\" 표).",
-        "slitTodayTagMany": "오늘의 전시는 {{forms}}의 {{count}}가지 형태에 해당한다(형태는 겹칠 수 있다. ②의 그림에 \"오늘의 전시\" 표)."
+        "slitTodayTagMany": "오늘의 전시는 {{forms}}의 {{count}}가지 형태에 해당한다(형태는 겹칠 수 있다. ②의 그림에 \"오늘의 전시\" 표).",
+        "hintCondsNote": "비율은 과거 틀대로 진입한 레이스에서 슬릿이 그 모양이 된 비율. 해당해도 빗나가는 쪽이 많다(결정타가 아니라 단서)",
+        "hintTodayOk": "✓ 오늘 해당",
+        "hintTodayLead": "오늘",
+        "hintTodaySum": "{{from}}~{{to}}코스의 합",
+        "hintTodaySpreadPre": "가장 늦음",
+        "hintTodayMid": {
+          "kado4": "가 1~3코스에서 가장 빠른",
+          "kado4_02": "가 1~3코스에서 가장 빠른",
+          "in_slow02": "가",
+          "in_fastest": "가 2~6코스에서 가장 빠른",
+          "d2_slow01": "가 1, 3코스 중 늦은 쪽",
+          "d3_slow01": "가 2, 4코스 중 늦은 쪽",
+          "dash03": "가",
+          "flat03": "와 가장 빠름"
+        },
+        "hintTodayDiff": {
+          "fast": "보다 {{d}}초 빠르다",
+          "slow": "보다 {{d}}초 늦다",
+          "spread": "의 차는 {{d}}초"
+        },
+        "hintStage": {
+          "kado4": "1~3코스보다 빠름",
+          "kado4_02": "0.02초 이상 빠름",
+          "in_slow02": "2코스보다 0.02초 이상 늦음",
+          "in_fastest": "6척 중 가장 빠름",
+          "d2_slow01": "1, 3코스보다 0.01초 이상 늦음",
+          "d3_slow01": "2, 4코스보다 0.01초 이상 늦음",
+          "dash03": "0.03초 이상 빠름",
+          "flat03": "차가 0.03초 이내"
+        },
+        "hintFrac": "{{x}}/{{n}}건",
+        "hintAll": "전체(어떤 조건이든) {{p}}",
+        "hintMapFirst": " {{n}}번 보트={{n}}코스",
+        "hintMapRest": "={{n}}코스",
+        "hintTodayCourse": "{{n}}코스"
       },
       "barLabel": "{{boat}}번 보트 {{p}} {{n}}건",
       "feedback": {

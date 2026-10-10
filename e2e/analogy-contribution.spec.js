@@ -1254,6 +1254,56 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       );
     });
 
+    test("当てはまる条件は今日の値と差・形の名前・0〜100% の棒と全体の点線で見せ、当てはまらない時の行は出さない（BOA-814、承認モック mock-hint-cards-v1）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      // 固定データ: このコースの平均ST ①.150 ②.150 ③.133 ④.127 で、当てはまるのはカド一撃（kado4）だけ
+      await expect(section).toContainText(
+        "今日の並びが当てはまる条件（このコースの平均ST）",
+      );
+      const cards = section.getByTestId("analogy-hint-card");
+      await expect(cards).toHaveCount(1);
+      const card = cards.first();
+      await expect(card).toContainText("カド一撃");
+      await expect(card).toContainText("✓ 今日あてはまる");
+      await expect(card.locator(".af-hintc-today")).toHaveText(
+        /今日\s*4\s*4コース\s*\.127\s*が、1〜3コースで一番早い\s*3\s*3コース\s*\.133\s*より 0\.006秒早い/,
+      );
+      // 当てはまる時 38/205件＝19%。全体（どの条件でも）＝(38+73)/(205+693)＝12%
+      await expect(card).toContainText("1〜3コースより早い");
+      // 丸の数字が号艇かコースか分かるよう、②の上に対応を1回（枠なりなので号艇＝コース。ユーザー指摘・案B）
+      const map = section.getByTestId("analogy-hint-map");
+      await expect(map).toContainText("1号艇＝1コース");
+      await expect(map).toContainText("＝6コース");
+      await expect(card).not.toContainText(/[①②③④⑤⑥]〜/);
+      await expect(card).toContainText("19% 38/205件");
+      await expect(card).toContainText("全体（どの条件でも） 12%");
+      await expect(section).not.toContainText("当てはまらない時");
+      const pct = (sel) =>
+        card
+          .locator(sel)
+          .evaluate(
+            (el) =>
+              (parseFloat(
+                getComputedStyle(el)[el.tagName === "S" ? "left" : "width"],
+              ) /
+                el.parentElement.getBoundingClientRect().width) *
+              100,
+          );
+      // 棒は 0〜100% の目盛り（以前は 33% で満杯）。点線は全体の割合の位置
+      expect(Math.round(await pct(".af-hintc-trk i"))).toBe(19);
+      expect(Math.round(await pct(".af-hintc-trk s"))).toBe(12);
+      // ボタンはその形を②で選ぶ
+      await card
+        .getByRole("button", { name: "カド一撃の形で③④を見る ›" })
+        .click();
+      await expect(section.locator("#af-scn-s3")).toContainText("カド一撃");
+    });
+
     test("平均STの表は行ごとに一番良い値に金枠。走数が少ない値は一番でも付けず、次の艇にも繰り下げない（BOA-814）", async ({
       page,
     }) => {

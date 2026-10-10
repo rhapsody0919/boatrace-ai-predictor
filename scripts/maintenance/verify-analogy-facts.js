@@ -39,6 +39,7 @@ import {
   hintBadgeByForm,
   hintConditions,
   hintRows,
+  hintToday,
   minRanks,
   rankBand,
   maedukeBoats,
@@ -264,6 +265,53 @@ for (const c of defs.wind_bands)
   check(`風速区分 ${c.wind_speed}`, windBand(c.wind_speed), c.band);
 for (const c of defs.hints)
   check(`手がかり ${c.avg_st.join(",")}`, hintConditions(c.avg_st), c.conds);
+// 当てはまる条件のカードの「今日」の行（BOA-814）: 出す差は判定に使った差と同じ。当てはまる条件ごとに、差がしきい値を満たす
+{
+  const ok = {
+    kado4: (d) => d > 0,
+    kado4_02: (d) => d >= 20,
+    in_slow02: (d) => d >= 20,
+    in_fastest: (d) => d > 0,
+    d2_slow01: (d) => d >= 10,
+    d3_slow01: (d) => d >= 10,
+    dash03: (d) => d >= 30,
+    flat03: (d) => d <= 30,
+  };
+  let n = 0;
+  for (const c of defs.hints)
+    for (const [id, hit] of Object.entries(c.conds)) {
+      const tl = hintToday(id, c.avg_st);
+      if (!tl) continue;
+      n += 1;
+      check(
+        `今日の行の差と判定 ${id} ${c.avg_st.join(",")}`,
+        ok[id](tl.diff),
+        hit,
+      );
+    }
+  check("今日の行を確かめた件数", n > 0, true);
+  // 津4R 2026-10-10 のこのコースの平均ST（④.093 が ①〜③で一番早い ①.130 より 0.037秒早い）
+  check(
+    "今日の行 津4R",
+    hintToday("kado4", [0.13, 0.159, 0.144, 0.093, 0.138, 0.152]),
+    {
+      a: { boats: [4], sum: false, v: 93 },
+      b: { boats: [1], sum: false, v: 130 },
+      dir: "fast",
+      diff: 37,
+    },
+  );
+  check(
+    "今日の行 ダッシュ勢先行は和",
+    hintToday("dash03", [0.13, 0.159, 0.144, 0.093, 0.138, 0.152]).diff,
+    50,
+  );
+  check(
+    "今日の行 欠けがあれば出さない",
+    hintToday("kado4", [0.13, null, 0.1, 0.1, 0.1, 0.1]),
+    null,
+  );
+}
 
 // ---- 4. 画面の純粋関数 ------------------------------------------------------
 const ui = JSON.parse(
@@ -625,6 +673,15 @@ check(
     ["kado4", "up"],
     ["in_slow02", "up"],
     ["flat03", "unclear"],
+  ],
+);
+check(
+  "全体の割合（当てはまる＋当てはまらない）",
+  rows.map((r) => Number(r.pall.toFixed(4))),
+  [
+    Number((111 / 898).toFixed(4)),
+    Number((93 / 898).toFixed(4)),
+    Number((103 / 920).toFixed(4)),
   ],
 );
 check("札は形ごとに1つ", Object.keys(hintBadgeByForm(rows)), ["kado", "d1"]);

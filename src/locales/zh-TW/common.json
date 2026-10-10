@@ -1557,7 +1557,7 @@
         "hintFewVenue": "{{boats}}號艇在此賽場的出賽場數少，容易波動。",
         "hintExhPost": "展示ST僅供參考，與正式賽ST的關聯較弱（各艇的相關係數0.08，平均ST為0.28）。F.09＝展示時提早0.09秒越過起跑線（因為是展示，不會受罰）。",
         "hintExhPre": "展示ST於展示後公布。",
-        "hintConds": "符合的條件（以{{src}}的平均ST判定）",
+        "hintConds": "今天的排列符合的條件（{{src}}的平均ST）",
         "hints": {
           "kado4": "4道（角位）的平均ST比1〜3道任一艇都早",
           "kado4_02": "4道（角位）的平均ST比1〜3道任一艇都早0.02秒以上",
@@ -1726,10 +1726,7 @@
           "overall": "整體＝不分水道的平均（混有起跑位置的差異）"
         },
         "hintDownTag": "反而不易出現",
-        "hintHit": "符合時的{{form}}",
-        "hintMiss": "不符合時",
-        "hintCountShort": "{{n}}場。即使符合，落空的情況較多（是線索而非決定因素）",
-        "hintGo": "在②選{{form}} ›",
+        "hintGo": "以{{form}}的形狀看③④ ›",
         "hintTablePreview": "此水道、整體、場地、今天展示的平均ST",
         "slitNoRate": "—",
         "slitStatAny": "{{n}}場，① {{b1}}",
@@ -1773,7 +1770,42 @@
         "techHeadingShort": "決勝方式",
         "notesHintHeading": "起跑線索",
         "slitTodayTagOne": "今天的展示符合{{forms}}（②的圖上有「今天的展示」標籤）。",
-        "slitTodayTagMany": "今天的展示符合{{forms}}共{{count}}種形（形可能重疊。②的圖上有「今天的展示」標籤）。"
+        "slitTodayTagMany": "今天的展示符合{{forms}}共{{count}}種形（形可能重疊。②的圖上有「今天的展示」標籤）。",
+        "hintCondsNote": "比例是過去依枠位進入的比賽中，起跑線呈現該形狀的比例。即使符合，落空的情況較多（是線索而非決定因素）",
+        "hintTodayOk": "✓ 今天符合",
+        "hintTodayLead": "今天",
+        "hintTodaySum": "{{from}}〜{{to}}道的總和",
+        "hintTodaySpreadPre": "最慢",
+        "hintTodayMid": {
+          "kado4": "比1〜3道最快的",
+          "kado4_02": "比1〜3道最快的",
+          "in_slow02": "比",
+          "in_fastest": "比2〜6道最快的",
+          "d2_slow01": "比1道、3道較慢的",
+          "d3_slow01": "比2道、4道較慢的",
+          "dash03": "比",
+          "flat03": "與最快"
+        },
+        "hintTodayDiff": {
+          "fast": "早 {{d}}秒",
+          "slow": "晚 {{d}}秒",
+          "spread": "相差 {{d}}秒"
+        },
+        "hintStage": {
+          "kado4": "比1〜3道早",
+          "kado4_02": "早0.02秒以上",
+          "in_slow02": "比2道晚0.02秒以上",
+          "in_fastest": "6艇中最早",
+          "d2_slow01": "比1道、3道晚0.01秒以上",
+          "d3_slow01": "比2道、4道晚0.01秒以上",
+          "dash03": "早0.03秒以上",
+          "flat03": "差距在0.03秒以內"
+        },
+        "hintFrac": "{{x}}/{{n}}場",
+        "hintAll": "全部（不論條件） {{p}}",
+        "hintMapFirst": " {{n}}號艇＝{{n}}道",
+        "hintMapRest": "＝{{n}}道",
+        "hintTodayCourse": "{{n}}道"
       },
       "barLabel": "{{boat}}號艇 {{p}} {{n}}場",
       "feedback": {

@@ -913,7 +913,7 @@ test.describe("レイアウト: 龍神ソナーのタブ（3つの内部タブ�
     ).toBe(wide);
     // 展開シナリオ: ③攻める艇｜1号艇、④1着｜3着以内
     await section.getByRole("tab", { name: "展開シナリオ" }).click();
-    await section.getByRole("button", { name: /^カド一撃/ }).click();
+    await section.locator("#af-pat-kado").click();
     const boxes = section.getByTestId("analogy-attack-box");
     expect(await sideBySide(boxes.first(), boxes.last())).toBe(wide);
     const blks = section

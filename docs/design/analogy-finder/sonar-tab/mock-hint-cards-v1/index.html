@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>当てはまる条件の見せ方</title>
+<style>
+:root{--page:#f6f2e9;--card:#fbf9f3;--line:#ddd4bf;--trk:#e7dfcc;--ink:#0f172a;--sub:#475569;--gold:#6b4f10;--goldbg:#6b4f10;--goldink:#fff;--bar:#c9a227;--ok:#166534;--okbg:#dcfce7;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--page:#0b1626;--card:#132640;--line:#2b3d58;--trk:#24364f;--ink:#f1f5f9;--sub:#cbd5e1;--gold:#d4ae3a;--goldbg:#d4ae3a;--goldink:#1a1404;--bar:#d4ae3a;--ok:#86efac;--okbg:#14532d;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#0b1626;--card:#132640;--line:#2b3d58;--trk:#24364f;--ink:#f1f5f9;--sub:#cbd5e1;--gold:#d4ae3a;--goldbg:#d4ae3a;--goldink:#1a1404;--bar:#d4ae3a;--ok:#86efac;--okbg:#14532d;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;line-height:1.6;font-size:13.6px}
+.doc{max-width:860px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:14px}
+h1{font-size:20px;margin:0}
+.sub{color:var(--sub);font-size:13px;margin:0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:20px;align-items:start}
+.phone{width:100%;max-width:375px;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--page)}
+.tag{font-size:12px;font-weight:700;color:var(--gold);margin:0 0 6px}
+h4{font-size:14px;margin:4px 0 4px}
+.foot{font-size:12px;color:var(--sub);margin:2px 0 8px}
+.c{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:10px;margin-bottom:10px}
+.c b.t{display:block;font-size:13px;line-height:1.45}
+.old .bar{display:grid;grid-template-columns:118px minmax(0,1fr) 40px;gap:6px;align-items:center;font-size:12.5px;margin:6px 0}
+.old .trk{height:10px;border-radius:5px;background:var(--card)}
+.old .trk i{display:block;height:100%;background:var(--bar);border-radius:5px}
+.go{display:block;width:100%;text-align:right;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--gold);font:inherit;font-weight:700;font-size:13px;padding:8px 10px;margin-top:8px;min-height:44px}
+.ok{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--ok);background:var(--okbg);border-radius:999px;padding:1px 8px}
+.hd{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.hd .nm{font-weight:800;font-size:14px}
+.hd .ok{margin-left:auto}
+.today{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12.5px;background:var(--page);border-radius:8px;padding:6px 8px;margin:4px 0 8px;font-variant-numeric:tabular-nums}
+.today .d{font-weight:800}
+.boat{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;font-size:11px;font-weight:800;border:1px solid #94a3b8;flex:none}
+.b1{background:#fff;color:#000}.b2{background:#000;color:#fff}.b3{background:#e53935;color:#fff}.b4{background:#1e88e5;color:#fff}.b5{background:#fdd835;color:#000}.b6{background:#43a047;color:#fff}
+.nb .row{margin:6px 0}
+.nb .lb{display:flex;justify-content:space-between;font-size:12.5px;font-variant-numeric:tabular-nums}
+.nb .lb b{font-size:14px}
+.nb .lb small{color:var(--sub);font-weight:400;font-size:11.5px}
+.nb .trk{position:relative;height:12px;border-radius:6px;background:var(--trk);margin-top:2px}
+.nb .trk i{position:absolute;inset:0 auto 0 0;background:var(--bar);border-radius:6px}
+.nb .trk s{position:absolute;top:-3px;bottom:-3px;border-left:2px dashed var(--ink);opacity:.7}
+.leg{font-size:11.5px;color:var(--sub);display:flex;align-items:center;gap:6px;margin-top:2px}
+.leg i{display:inline-block;width:0;height:12px;border-left:2px dashed var(--ink);opacity:.7}
+.ico{display:inline-block;vertical-align:middle}
+.notes{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:12px 14px;font-size:13px}
+.notes ul{margin:4px 0 0;padding-left:18px}
+.len{font-size:12px;color:var(--sub);margin:4px 0 0}
+</style>
+</head>
+<body>
+<div class="doc">
+  <p class="sub">BOA-814 の1 ・ 龍神ソナー 展開シナリオ ②「スタートはどう並ぶ？」 ・ 375px ・ 数字は本番 津4R（10/10、このコースの平均ST、集めたレース3,666件）</p>
+  <h1>「当てはまる条件」を、今日の値と形の絵で見せる</h1>
+  <div class="cols">
+    <div>
+      <p class="tag">今</p>
+      <div class="phone old" id="old"></div>
+      <p class="len">カード4枚・約960px</p>
+    </div>
+    <div>
+      <p class="tag">案（推奨）</p>
+      <div class="phone nb" id="new"></div>
+      <p class="len">カード3枚・約640px</p>
+    </div>
+  </div>
+  <div class="notes">
+    <b>案で変えること</b>
+    <ul>
+      <li>見出しを「今日の並びが当てはまる条件」に。各カードに「✓ 今日あてはまる」と、今日の値（色の丸と数字、差の秒数）</li>
+      <li>割合の横に形の小さな絵と名前（勝率と混ざらないように）。棒は0〜100%、下地を見える色に、全体の割合を点線で</li>
+      <li>「当てはまらない時」の行は消す。点線の全体（形の札と同じ12%）と比べる</li>
+      <li>カド一撃の2枚は1枚にまとめ、段階ごとの棒（①〜③より早い 19%／0.02秒以上早い 24%）</li>
+      <li>ボタンは「カド一撃の形で③④を見る ›」。「当てはまっても外れる方が多い」は見出しの下に1回だけ</li>
+    </ul>
+    <p class="len">変えないこと: 上のスリットの絵、「このコース／全体」の切り替え、下の形の札、条件の判定のしかた</p>
+  </div>
+</div>
+<script>
+const B=(n)=>`<span class="boat b${n}">${n}</span>`;
+const icon=(lead)=>`<svg class="ico" width="34" height="22" viewBox="0 0 34 22" aria-hidden="true"><line x1="30" y1="0" x2="30" y2="22" stroke="#94a3b8" stroke-dasharray="2 2"/>${[0,1,2,3,4,5].map(i=>`<rect x="${lead.includes(i+1)?14:6}" y="${1+i*3.5}" width="${lead.includes(i+1)?14:12}" height="2.6" rx="1" fill="${["#cbd5e1","#111","#e53935","#1e88e5","#fdd835","#43a047"][i]}"/>`).join("")}</svg>`;
+const oldCards=[
+ ["4コース（カド）の平均STが、1〜3コースのどれよりも早い","カド一撃",19,11,"711"],
+ ["4コース（カド）の平均STが、1〜3コースのどれよりも0.02秒以上早い","カド一撃",24,12,"189"],
+ ["2コースの平均STが、1・3コースのどちらよりも0.01秒以上遅い","2コース凹み",11,6,"1,201"],
+ ["4〜6コースの平均STの和が、1〜3コースの和より0.03秒以上早い","ダッシュ勢先行",18,10,"367"]];
+document.getElementById("old").innerHTML=`<h4>当てはまる条件（このコースの平均STで判定）</h4>`+oldCards.map(([t,f,h,m,n])=>`<div class="c"><b class="t">${t}</b><div class="bar"><span>当てはまる時の${f}</span><span class="trk"><i style="width:${Math.min(1,h/100*3)*100}%"></i></span><b>${h}%</b></div><div class="bar"><span>当てはまらない時</span><span class="trk"><i style="width:${Math.min(1,m/100*3)*100}%"></i></span><b>${m}%</b></div><p class="foot">${n}件。当てはまっても外れる方が多い（決め手ではなく手がかり）</p><button class="go" type="button">②で${f}を選ぶ ›</button></div>`).join("");
+const row=(label,p,x,n,all)=>`<div class="row"><div class="lb"><span>${label}</span><b>${p}% <small>${x}/${n}件</small></b></div><div class="trk"><i style="width:${p}%"></i><s style="left:${all}%"></s></div></div>`;
+const newCards=[
+ {f:"カド一撃",lead:[4],today:`${B(4)}<span class="d">.093</span> が、①〜③で一番早い ${B(1)}<span class="d">.130</span> より <b>0.037秒早い</b>`,rows:[["①〜③より早い",19,134,711],["0.02秒以上早い",24,45,189]],all:12},
+ {f:"2コース凹み",lead:[1,3,4,5,6],today:`${B(2)}<span class="d">.159</span> が、①③の遅い方 ${B(3)}<span class="d">.144</span> より <b>0.015秒遅い</b>`,rows:[["①③より0.01秒以上遅い",11,133,"1,201"]],all:8},
+ {f:"ダッシュ勢先行",lead:[4,5,6],today:`${B(4)}〜${B(6)}の和 <span class="d">.383</span> が、${B(1)}〜${B(3)}の和 <span class="d">.433</span> より <b>0.050秒早い</b>`,rows:[["0.03秒以上早い",18,66,367]],all:11}];
+document.getElementById("new").innerHTML=`<h4>今日の並びが当てはまる条件（このコースの平均ST）</h4><p class="foot">割合は、過去の枠なりのレースでスリットがその形になった割合。当てはまっても外れる方が多い（決め手ではなく手がかり）</p>`+newCards.map(c=>`<div class="c"><div class="hd">${icon(c.lead)}<span class="nm">${c.f}</span><span class="ok">✓ 今日あてはまる</span></div><div class="today">今日 ${c.today}</div>${c.rows.map(([l,p,x,n])=>row(l,p,x,n,c.all)).join("")}<div class="leg"><i></i>全体（どの条件でも）${c.all}%</div><button class="go" type="button">${c.f}の形で③④を見る ›</button></div>`).join("");
+</script>
+</body>
+</html>
