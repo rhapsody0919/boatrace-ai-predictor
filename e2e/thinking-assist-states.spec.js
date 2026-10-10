@@ -1473,3 +1473,27 @@ test.describe("思考アシスト: 均等払戻の余り（BOA-801 6、spec FR-8
     await expect(sheet.getByText(/・残り0円・/)).toBeVisible();
   });
 });
+
+test.describe("思考アシスト: 図の右端の「+」（BOA-801 7、spec D-43）", () => {
+  test("「+」を押すとその行に1着・2着・3着の候補、開くのは1行だけ。選ぶと固定の買い目に入る", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    const plus = (boat) =>
+      page.getByRole("button", {
+        name: new RegExp(`^${boat}号艇: .*候補を選ぶ$`),
+      });
+    await plus(1).click();
+    await expect(plus(1)).toHaveAttribute("aria-expanded", "true");
+    await expect(candidate(page, 1, 1)).toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: "マークシート" }),
+    ).toHaveCount(0);
+    await plus(2).click();
+    await expect(candidate(page, 1, 1)).toHaveCount(0);
+    await candidate(page, 2, 1).click();
+    await expect(footer(page)).toContainText("2-—-—");
+    await expect(plus(2)).toHaveText("1着");
+  });
+});

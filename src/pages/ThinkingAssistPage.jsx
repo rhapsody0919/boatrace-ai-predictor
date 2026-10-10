@@ -630,7 +630,6 @@ export default function ThinkingAssistPage() {
             onBack={() => dispatch({ type: "back" })}
             onBasis={(basis) => dispatch({ type: "stBasis", basis })}
             onToggleBet={toggleBet}
-            onOpenSheet={() => dispatch({ type: "sheet", sheet: "mark" })}
             // 軸・展開の印は v16 が無ければ材料が空なので出ない。機力のチルト・交換は DB の展示なので欠場でも出す
             marks={marks}
           />

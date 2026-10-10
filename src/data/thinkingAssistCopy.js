@@ -117,10 +117,11 @@ export const ASSIST_COPY = Object.freeze({
   cancelled: "このレースは中止です",
   candidateAria: (boat, pos) => `${boat}号艇を${pos}着の候補に`,
   candidateLabel: (pos) => `${pos}着`,
+  // 図の右端の「+」。押すとその行に1着・2着・3着の候補のボタンを出す（BOA-801 7、spec D-43）
   markAria: (boat, positions) =>
     positions.length
-      ? `${boat}号艇: ${positions.join("・")}着の候補。マークシートを開く`
-      : `${boat}号艇: 候補に入っていない。マークシートを開く`,
+      ? `${boat}号艇: ${positions.join("・")}着の候補。候補を選ぶ`
+      : `${boat}号艇: 候補に入っていない。候補を選ぶ`,
 
   // 買い目（FR-7・FR-8）
   betRegion: "買い目",
