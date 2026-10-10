@@ -92,7 +92,7 @@ function Feat({ chip, venue }) {
  * @param {{boat: number, racer: object, venue: string, raceId: string, today: object|null, post: boolean,
  *   finalRound: boolean, round: string|null, scope: object|null, chips: object[], runs: {status: string, data: object[]|null},
  *   technique: object|null, pretest: object|null, weight: number|null, course: number,
- *   onMetric: (metric: string, boat: number) => void, onClose: () => void}} props
+ *   onMetric: (metric: string, boat: number) => void, onClose: () => void, openAll?: boolean}} props
  */
 export default function BoatDeepDive({
   boat,
@@ -112,19 +112,22 @@ export default function BoatDeepDive({
   course,
   onMetric,
   onClose,
+  openAll = false,
 }) {
   const [runsOpen, setRunsOpen] = useState(false);
   // 開いたら深掘りの上端まで送る。図の下に開くので、送らないと押した結果が画面の外になる（デザイナーのレビュー P1-1）
+  // 軸の要約の入口から▲の無い日に開いたときは、開いた「全部の材料」まで送る（2026-10-11 ユーザー決定 案D）
   const ref = useRef(null);
+  const allRef = useRef(null);
   useEffect(() => {
     const reduce = window.matchMedia?.(
       "(prefers-reduced-motion: reduce)",
     )?.matches;
-    ref.current?.scrollIntoView?.({
+    ((openAll && allRef.current) || ref.current)?.scrollIntoView?.({
       block: "start",
       behavior: reduce ? "auto" : "smooth",
     });
-  }, [boat]);
+  }, [boat, openAll]);
   const i = boat - 1;
   const feats = featChips({ boat, today, finalRound, technique });
   const recent = today?.items?.recent_win30?.values?.[i];
@@ -174,7 +177,11 @@ export default function BoatDeepDive({
       </div>
       {scope && topChips.length > 0 && (
         <div className="ta-deep-facts">
-          <h4>{C.factsHeading(boat)}</h4>
+          {/* 用語の「?」は軸の要約の箱から移した（案D） */}
+          <div className="ta-h3-row">
+            <h4>{C.factsHeading(boat)}</h4>
+            <TermButton term="差がつく材料" />
+          </div>
           <div className="ta-legend">
             <span className="ta-scopechip ta-num">{scopeLabel}</span>
             <span>{C.factsLegend}</span>
@@ -378,7 +385,7 @@ export default function BoatDeepDive({
       )}
       {scope && chips.length > 0 && (
         // 残りの材料（全部）は畳む（ユーザー決定 A）
-        <Fold title={C.factsAll(boat)}>
+        <Fold title={C.factsAll(boat)} defaultOpen={openAll} ref={allRef}>
           <div className="ta-deep-facts">
             <ClassLineup lineup={classLineup(today?.classes, boat)} />
             {counts && (
@@ -406,6 +413,8 @@ export default function BoatDeepDive({
               boat={boat}
             />
             <p className="ta-note">{C.factsNotCause}</p>
+            {/* 軸の要約の箱から移した注記（案D） */}
+            {!post && <p className="ta-note">{C.factsPreExhibition}</p>}
           </div>
         </Fold>
       )}

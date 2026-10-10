@@ -118,12 +118,20 @@ export function factChips({
   });
 }
 
-/** 軸の要約の札: 差が大きい項目だけ、今日当てはまる（一番良い・悪い）ものを先に、上位4つ（承認モック v7） */
-export const axisFactChips = (chips) =>
-  chips
-    .filter((c) => c.level === "large")
-    .sort((a, b) => Number(b.hit) - Number(a.hit))
-    .slice(0, 4);
+/**
+ * 軸の要約の「差がつく材料」の入口1行（2026-10-11 ユーザー決定 案D。要約の箱は深掘りと重なるので外した）。
+ * ▲（今日6艇で一番上か一番下）の付いた材料の数と、深掘りの先頭と同じ順で項目を2つまで。材料が無い（範囲が無い）ときは null
+ * @returns {null | {hits: number, keys: string[], rest: number}}
+ */
+export function factsEntry(chips) {
+  if (!chips?.length) return null;
+  const hits = chips.filter((c) => c.hit);
+  return {
+    hits: hits.length,
+    keys: hits.slice(0, 2).map((c) => c.key),
+    rest: Math.max(0, hits.length - 2),
+  };
+}
 
 /**
  * 図の「良い方の札」: 差が大きい項目のうち、今日その艇が6艇で一番良いもの（screens「レンズごとの図 C」軸）。

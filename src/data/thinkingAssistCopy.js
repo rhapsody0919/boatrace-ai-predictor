@@ -209,8 +209,11 @@ export const ASSIST_COPY = Object.freeze({
   factsNotCause: "過去の割合で、原因とは限らない",
   // 深掘りの残りの材料を畳んだ見出し（2026-10-09 ユーザー決定 A）
   factsAll: (boat) => `全部の材料（${boat}号艇）`,
-  factsNoneLarge:
-    "この範囲では、1着の割合の差がはっきり大きい材料は無い（艇の丸を押すと全部の材料が出る）",
+  // 軸の要約の入口1行（2026-10-11 ユーザー決定 案D）。押すと深掘りが開く
+  factsEntry: (boat, n) => `${boat}号艇の差がつく材料 ▲${n}件`,
+  factsEntryNames: (names, rest) =>
+    `${names.join("・")}${rest > 0 ? ` ほか${rest}件` : ""}`,
+  factsEntryNone: (boat) => `${boat}号艇の全部の材料（今日は▲なし）`,
   scopeVenue: (venue) => `${venue}・級の並びが同じ`,
   scopeChip: (label, n) => `${label} ${n.toLocaleString("ja-JP")}件`,
   // 同じ呼び名で件数が違う札に、違う理由を短く添える（BOA-809、2026-10-10 ユーザー決定）

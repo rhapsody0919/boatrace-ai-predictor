@@ -16,7 +16,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 import {
-  axisFactChips,
+  factsEntry,
   b1Usual,
   boardFactMark,
   courseWins,
@@ -110,13 +110,33 @@ check(
   motor?.bucket === 6 && motor.pair[0] === 205 && motor.pair[1] === 675,
   JSON.stringify(motor),
 );
-const axisChips = axisFactChips(chipsNc);
-check(
-  "軸の要約の札: 差が大きい項目だけ・今日当てはまるものが先・4つまで",
-  axisChips.length <= 4 &&
-    axisChips.every((c) => c.level === "large") &&
-    axisChips[0].hit,
-);
+// 軸の要約の入口1行（2026-10-11 ユーザー決定 案D）: ▲の数と、深掘りの先頭と同じ順の項目2つまで
+{
+  const e = factsEntry(chipsNc);
+  const hits = chipsNc.filter((c) => c.hit);
+  check(
+    "入口1行: ▲の数・先頭2項目（深掘りの先頭と同じ順）・残りの件数",
+    e.hits === hits.length &&
+      JSON.stringify(e.keys) ===
+        JSON.stringify(hits.slice(0, 2).map((c) => c.key)) &&
+      e.rest === Math.max(0, hits.length - 2),
+    JSON.stringify(e),
+  );
+  check(
+    "入口1行: ▲が無い日は hits 0、材料が無い（範囲が無い）ときは出さない",
+    factsEntry(chipsNc.map((c) => ({ ...c, hit: false }))).hits === 0 &&
+      factsEntry([]) === null &&
+      factsEntry(null) === null,
+  );
+  check(
+    "入口1行の文: ▲あり・項目名と「ほか{n}件」・▲なし",
+    ASSIST_COPY.factsEntry(1, 3) === "1号艇の差がつく材料 ▲3件" &&
+      ASSIST_COPY.factsEntryNames(["当地勝率", "平均ST（直近30走）"], 1) ===
+        "当地勝率・平均ST（直近30走） ほか1件" &&
+      ASSIST_COPY.factsEntryNames(["当地勝率"], 0) === "当地勝率" &&
+      ASSIST_COPY.factsEntryNone(1) === "1号艇の全部の材料（今日は▲なし）",
+  );
+}
 check(
   "図の良い方の札: 一番良い（bucket 1）だけ。1号艇は平均ST",
   boardFactMark(chipsNc)?.key === "st_mean30",

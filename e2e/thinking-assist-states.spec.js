@@ -1630,3 +1630,63 @@ test.describe("思考アシスト: BOA-804（PR4 のファン評価の P3）", (
     expect(three).toEqual(one);
   });
 });
+
+test.describe("思考アシスト: 差がつく材料の入口1行（2026-10-11 ユーザー決定 案D）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+  const entry = (page) =>
+    page.getByRole("button", { name: /^1号艇の(差がつく材料 ▲|全部の材料)/ });
+
+  test("軸の要約に差がつく材料の箱を出さず、入口1行（▲の数・項目名）から1号艇の深掘りを開く。押し直しても閉じない", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    const sum = page.locator(".ta-sum");
+    await expect(
+      sum.getByRole("heading", { name: /^差がつく材料（1号艇）/ }),
+    ).toHaveCount(0);
+    const btn = entry(page);
+    await expect(btn).toHaveText(
+      /^1号艇の差がつく材料 ▲3件当地勝率・平均ST（直近30走） ほか1件/,
+    );
+    const h = await btn.evaluate((el) => el.getBoundingClientRect().height);
+    expect(h).toBeGreaterThanOrEqual(44);
+    await btn.click();
+    const region = page.getByRole("region", { name: "1号艇の詳しい情報" });
+    const head = region.getByRole("heading", { name: "差がつく材料（1号艇）" });
+    await expect(head).toBeVisible();
+    await expect(head).toBeInViewport();
+    await expect(
+      region.getByRole("button", { name: "差がつく材料とは" }),
+    ).toHaveCount(1);
+    await btn.click();
+    await expect(region).toBeVisible();
+    await expect(
+      region.getByRole("button", { name: /^全部の材料（1号艇）/ }),
+    ).toHaveAttribute("aria-expanded", "false");
+  });
+
+  test("▲が無い日は「全部の材料（今日は▲なし）」で、押すと深掘りの全部の材料を開いた状態で出す", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page, {
+      overrides: {
+        facts: (body) => {
+          for (const it of Object.values(body.today.items)) it.values[0] = null;
+          return body;
+        },
+      },
+    });
+    await open(page);
+    const btn = entry(page);
+    await expect(btn).toHaveText(/^1号艇の全部の材料（今日は▲なし）/);
+    await btn.click();
+    const region = page.getByRole("region", { name: "1号艇の詳しい情報" });
+    const all = region.getByRole("button", { name: /^全部の材料（1号艇）/ });
+    await expect(all).toHaveAttribute("aria-expanded", "true");
+    await expect(all).toBeInViewport();
+    await expect(
+      region.getByRole("heading", { name: "差がつく材料（1号艇）" }),
+    ).toHaveCount(0);
+  });
+});

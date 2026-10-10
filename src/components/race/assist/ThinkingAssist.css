@@ -1805,7 +1805,6 @@
   .ta-rough {
     max-width: 480px;
   }
-
 }
 
 @media (min-width: 1024px) and (min-height: 800px) {
@@ -1814,4 +1813,30 @@
     /* 共通のヘッダーとレンズの下に止める */
     top: calc(var(--ta-sticky-top, 0px) + 120px);
   }
+}
+
+/* 軸の要約の「差がつく材料」の入口1行（2026-10-11 ユーザー決定 案D）。行全体を押せる、高さ44px以上 */
+.ta-facts-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.ta-facts-entry-names {
+  display: block;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
 }
