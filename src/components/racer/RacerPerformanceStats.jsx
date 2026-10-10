@@ -131,6 +131,9 @@ const VC_RACE_PAGE_SIZE = 10;
  * 表示する（BOA-159フィードバック対応、venueStats由来の実績会場のみに絞ると
  * 実績の薄い会場を選べなくなるバグがあったため）
  */
+// 「2025-11-01」→「2025/11/1」（平均ST（公式）の期間の表記、BOA-815）
+const slashDate = (ymd) => ymd.split("-").map(Number).join("/");
+
 export default function RacerPerformanceStats({
   racerId,
   stats,
@@ -341,6 +344,7 @@ export default function RacerPerformanceStats({
     exhibitionTimeTrend,
     boatReturnRate,
     venueStats,
+    officialAvgSt,
   } = stats ?? {};
 
   // vcDataの有無で表示ソースを切り替える。決まり手・推移・レース一覧は常時
@@ -583,27 +587,36 @@ export default function RacerPerformanceStats({
           </div>
         )}
 
-        {aggregatedStats?.avg_st != null && (
+        {(officialAvgSt?.avgSt != null ||
+          aggregatedStats?.avg_st_last_30 != null) && (
           <div className="racer-stat-card">
-            {/* このカードは日次集計（全会場・全条件）の値で、上の絞り込みには連動しない。
-                連動すると「桐生での平均ST」と読まれていた（BOA-583）。絞り込み後の平均STは下の表 */}
-            <h3>平均ST（全会場・全条件）</h3>
+            {/* 全会場・全条件の値で、上の絞り込みには連動しない（連動すると「桐生での平均ST」と
+                読まれていた、BOA-583）。絞り込み後の平均STは下の表。
+                データ出走表と同じ二本立て（BOA-815）: 主は公式の出走表と同じ値（2桁）、注記に直近30走 */}
+            <h3>平均ST（公式）</h3>
             <div className="racer-stat-value-row">
               <span className="racer-stat-value">
-                {Number(aggregatedStats.avg_st).toFixed(3)}
+                {officialAvgSt?.avgSt != null
+                  ? officialAvgSt.avgSt.toFixed(2)
+                  : "—"}
               </span>
-              {aggregatedStats.flying_rate > 0 && (
+              {aggregatedStats?.flying_rate > 0 && (
                 <span className="racer-stat-sub">
                   F率 {(aggregatedStats.flying_rate * 100).toFixed(1)}%
                 </span>
               )}
             </div>
             <p className="racer-stat-note">
-              直近30走平均:{" "}
-              {aggregatedStats.avg_st_last_30 != null
+              {officialAvgSt?.period
+                ? `${slashDate(officialAvgSt.period.calcFrom)}〜${slashDate(officialAvgSt.period.calcTo)} の成績（勝率と同じ期の公式の期別成績）・全会場`
+                : "公式の期別成績・全会場"}
+            </p>
+            <p className="racer-stat-note">
+              直近30走:{" "}
+              {aggregatedStats?.avg_st_last_30 != null
                 ? Number(aggregatedStats.avg_st_last_30).toFixed(3)
-                : "-"}
-              （全{aggregatedStats.total_races}走）
+                : "—"}
+              （F・Lを除く。龍神ソナー・思考アシストと同じ考え方）
             </p>
           </div>
         )}
