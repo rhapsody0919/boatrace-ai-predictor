@@ -1149,3 +1149,104 @@ test.describe("思考アシスト: ガイドと Cookie の同意バナー（PR5 
     await expect(page.getByText("1号艇は逃げられそう？")).toBeVisible();
   });
 });
+
+test.describe("思考アシスト: BOA-808（PR4 のファン評価2周目の P2）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("1: 図の値を押すと6艇比較になり、深掘りは開かず図の見出しが画面に残る", async ({
+    page,
+  }) => {
+    await open(page);
+    await page
+      .getByRole("button", { name: "平均ST（直近30走） 0.132、6艇で比べる" })
+      .click();
+    await expect(page.getByRole("button", { name: /図を戻す/ })).toBeVisible();
+    await expect(page.locator(".ta-deep")).toHaveCount(0);
+    await expect(page.locator(".ta-board-title")).toBeInViewport();
+  });
+
+  test("1: 深掘りの中の値を押すと、深掘りは開いたまま図の見出しまで戻る", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    const deep = page.locator(".ta-deep");
+    await expect(deep).toBeVisible();
+    await deep
+      .getByRole("button", { name: /、6艇で比べる$/ })
+      .first()
+      .click();
+    await expect(page.getByRole("button", { name: /図を戻す/ })).toBeVisible();
+    await expect(deep).toBeVisible();
+    await expect(page.locator(".ta-board-title")).toBeInViewport();
+  });
+});
+
+test.describe("思考アシスト: BOA-809（PR5 のレビューの P3）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  for (const width of [375, 768, 1440]) {
+    test(`ヘッダーの押せる範囲（44px）が重ならない（${width}px）`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await open(page);
+      // 風と潮の「傾向 ›」が並んでから測る（届く前は行が折り返さない）
+      await expect(
+        page.getByRole("button", { name: /^今日の風.*の過去レースの傾向$/ }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "潮の傾向の過去レースの傾向" }),
+      ).toBeVisible();
+      const over = await page.evaluate(() => {
+        const hits = [...document.querySelectorAll(".ta-header button")].map(
+          (el) => {
+            const b = el.getBoundingClientRect();
+            const w = Math.max(b.width, 44);
+            const h = Math.max(b.height, 44);
+            const cx = b.x + b.width / 2;
+            const cy = b.y + b.height / 2;
+            return {
+              name: el.getAttribute("aria-label") || el.textContent,
+              x1: cx - w / 2,
+              x2: cx + w / 2,
+              y1: cy - h / 2,
+              y2: cy + h / 2,
+            };
+          },
+        );
+        const out = [];
+        hits.forEach((a, i) =>
+          hits.slice(i + 1).forEach((b) => {
+            const ox = Math.min(a.x2, b.x2) - Math.max(a.x1, b.x1);
+            const oy = Math.min(a.y2, b.y2) - Math.max(a.y1, b.y1);
+            if (ox > 0.5 && oy > 0.5) out.push(`${a.name} × ${b.name}`);
+          }),
+        );
+        return out;
+      });
+      expect(over).toEqual([]);
+    });
+  }
+
+  test("ガイド①の光らせた枠は、堅い？荒れる？の見出しの字にかからない", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: "ガイド", exact: true }).click();
+    const lit = page.locator(".ta-rough.ta-guide-lit");
+    await expect(lit).toBeVisible();
+    const gap = await lit.evaluate((el) => {
+      const s = getComputedStyle(el);
+      const inner = parseFloat(s.paddingLeft) + parseFloat(s.outlineOffset);
+      return inner - parseFloat(s.outlineWidth);
+    });
+    // 枠の内側の端が見出しの左端（余白0）より外にある
+    expect(gap).toBeGreaterThanOrEqual(0);
+  });
+});
