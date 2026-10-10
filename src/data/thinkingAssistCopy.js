@@ -50,6 +50,7 @@ export const ASSIST_COPY = Object.freeze({
   verdictArrow: { high: "↑", low: "↓", unclear: "→" },
   roughSheetLead: "全国の全レースと比べる",
   baseLegend: "太い点線＝全国の全レース",
+  baseInline: (p) => `（全国 ${p}%）`,
   baseLegendRef: (venue) =>
     `太い点線＝全国の全レース、細い点線＝${venue}の全レース（参考）`,
   venueAll: (venue, b1, manshu) =>

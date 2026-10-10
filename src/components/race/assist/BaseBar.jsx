@@ -12,6 +12,7 @@ const comma = (n) => n.toLocaleString("ja-JP");
  * 参考の細い点線（refRate）・3段階の言葉。件数・ぶれ幅・ポイント差はバーを押すと開く（D-32）。
  * 件数が0なら出さない（Codex U02）。few のときは高め・低めを付けず「件数少なめ」（D-37）。
  * labelRate=false は名前の横の割合を出さない（右端の割合だけ。決まり手の棒のように同じ割合を2回書かない）
+ * showBase=true は名前の横の割合に基準の値を添える（「58.0%（全国 55%）」。堅い？荒れる？の材料のシート、BOA-801 4）
  */
 export default function BaseBar({
   label,
@@ -21,6 +22,7 @@ export default function BaseBar({
   refRate = null,
   few = false,
   labelRate = true,
+  showBase = false,
 }) {
   const [open, setOpen] = useState(false);
   if (!n) return null;
@@ -37,7 +39,10 @@ export default function BaseBar({
         onClick={() => setOpen((o) => !o)}
       >
         <span className="ta-bar-label">
-          {label} {labelRate && <b className="ta-num">{pct1(rate)}%</b>}{" "}
+          {label} {labelRate && <b className="ta-num">{pct1(rate)}%</b>}
+          {showBase && base != null && (
+            <span className="ta-num">{ASSIST_COPY.baseInline(pct0(base))}</span>
+          )}{" "}
           {verdict && (
             <span
               className={`ta-tag${verdict === "unclear" ? "" : " ta-tag-hit"}`}

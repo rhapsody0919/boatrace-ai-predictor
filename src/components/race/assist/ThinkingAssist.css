@@ -629,6 +629,17 @@
   box-shadow: 0 0 0 1px var(--border-hairline);
 }
 
+/* フライングの艇: 左端（.00 より前）に赤い枠の印。良いスタート（左）の並びに見せない（BOA-801 2） */
+.ta-track-dot.ta-track-dot-f {
+  background: var(--surface-card);
+  border: 3px solid var(--color-error-text);
+}
+
+.ta-track-val.ta-track-val-f {
+  color: var(--color-error-text);
+  font-weight: var(--font-weight-bold);
+}
+
 .ta-track-val {
   position: absolute;
   /* 点（16px、縦の中央）の上に置き、数字が点に隠れないようにする（ファン評価 1周目 指摘7） */
