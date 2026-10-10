@@ -1,5 +1,6 @@
 import { betForm, compositeText } from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
+import { useCookieBannerHeight } from "../../../hooks/useCookieBannerHeight";
 
 /**
  * 固定フッター（FR-7、screens S-1 F）。買い目の要約・点数・合成オッズ（理論値）。押すとマークシート
@@ -15,13 +16,18 @@ export default function BetFooter({
   onOpen,
   hidden = false,
 }) {
+  // 未同意の利用者では、サイト共通の Cookie の同意バナーがフッターを覆うのでその上に出す
+  const bannerHeight = useCookieBannerHeight();
   const c = compositeText(composite);
   return (
     <section
       className="ta-foot"
       aria-label={ASSIST_COPY.betRegion}
       data-guide="foot"
-      style={hidden ? { visibility: "hidden" } : undefined}
+      style={{
+        bottom: bannerHeight,
+        ...(hidden ? { visibility: "hidden" } : null),
+      }}
     >
       <div className="ta-foot-text">
         <b className="ta-num">{ASSIST_COPY.betLabel(betForm(bets), points)}</b>
