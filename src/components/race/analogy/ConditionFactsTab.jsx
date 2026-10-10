@@ -186,8 +186,9 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
         </p>
       )}
       <FactRadar
-        // 主役・着順・時点・範囲が変わったら、重ねる艇・太くする艇・開いた表を選び直す
-        key={`${boat}:${target}:${stage}:${pickedKind ?? ""}`}
+        // 主役・着順・時点・範囲が変わったら、重ねる艇・太くする艇・開いた表を選び直す。key で作り直すと
+        // 右の列に入れた差のカード（children）まで作り直され、開いた「ボート」の折りたたみが閉じるので resetKey で（BOA-813）
+        resetKey={`${boat}:${target}:${stage}:${pickedKind ?? ""}`}
         boats={radar}
         items={radarItems}
         main={boat}
@@ -199,53 +200,57 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
             : t(`${k}.radar.collect`, { scope })
         }
         onCard={openCard}
-      />
-      {usual && (
-        <div className="af-big">
-          <span>{t(`${k}.bigLabel`, { scope, boat, rate: rateName })}</span>
-          <b>{fmtPct(rateOf(usual), 1)}</b>
-          <small>
-            {t(`${k}.bigCount`, {
-              hits: fmtCount(usual[0]),
-              n: fmtCount(usual[1]),
-              period: t("aiPredictionTab.analogy.period", {
-                from: fmtDate(scopeFacts.period?.[0]),
-                to: fmtDate(scopeFacts.period?.[1]),
-              }),
-            })}
-          </small>
-        </div>
-      )}
-      <h4 className="af-h4">{t(`${k}.orderHeading`)}</h4>
-      {/* 棒の見方はカードごとに繰り返さず、ここに凡例で1回だけ出す（承認モック sonar-tab v3） */}
-      <div className="af-legend af-card-legend">
-        <span>
-          <i className="af-sw-bar" style={{ background: SCOPE_LINE[boat] }} />
-          {t(`${k}.legendBar`, { rate: rateName })}
-        </span>
-        <span>
-          <i className="af-sw-today" />
-          {t(`${k}.legendToday`)}
-        </span>
+      >
         {usual && (
-          <span>
-            <i className="af-sw-usual" />
-            {t(`${k}.legendUsual`, { scope, usual: fmtPct(rateOf(usual), 1) })}
-          </span>
+          <div className="af-big">
+            <span>{t(`${k}.bigLabel`, { scope, boat, rate: rateName })}</span>
+            <b>{fmtPct(rateOf(usual), 1)}</b>
+            <small>
+              {t(`${k}.bigCount`, {
+                hits: fmtCount(usual[0]),
+                n: fmtCount(usual[1]),
+                period: t("aiPredictionTab.analogy.period", {
+                  from: fmtDate(scopeFacts.period?.[0]),
+                  to: fmtDate(scopeFacts.period?.[1]),
+                }),
+              })}
+            </small>
+          </div>
         )}
-      </div>
-      <div className="af-cards" ref={cardsRef}>
-        {rows.filter((r) => r.key !== "boat_2").map(card)}
-        {rows
-          .filter((r) => r.key === "boat_2")
-          .map((r) => (
-            <details key="boat" className="af-details">
-              <summary>{t(`${k}.boatFold`)}</summary>
-              <p className="af-sub">{t(`${k}.boatFoldNote`)}</p>
-              {card(r)}
-            </details>
-          ))}
-      </div>
+        <h4 className="af-h4">{t(`${k}.orderHeading`)}</h4>
+        {/* 棒の見方はカードごとに繰り返さず、ここに凡例で1回だけ出す（承認モック sonar-tab v3） */}
+        <div className="af-legend af-card-legend">
+          <span>
+            <i className="af-sw-bar" style={{ background: SCOPE_LINE[boat] }} />
+            {t(`${k}.legendBar`, { rate: rateName })}
+          </span>
+          <span>
+            <i className="af-sw-today" />
+            {t(`${k}.legendToday`)}
+          </span>
+          {usual && (
+            <span>
+              <i className="af-sw-usual" />
+              {t(`${k}.legendUsual`, {
+                scope,
+                usual: fmtPct(rateOf(usual), 1),
+              })}
+            </span>
+          )}
+        </div>
+        <div className="af-cards" ref={cardsRef}>
+          {rows.filter((r) => r.key !== "boat_2").map(card)}
+          {rows
+            .filter((r) => r.key === "boat_2")
+            .map((r) => (
+              <details key="boat" className="af-details">
+                <summary>{t(`${k}.boatFold`)}</summary>
+                <p className="af-sub">{t(`${k}.boatFoldNote`)}</p>
+                {card(r)}
+              </details>
+            ))}
+        </div>
+      </FactRadar>
       {cls && <p className="af-foot">{t(`${k}.classLine`, { cls })}</p>}
       <WindWaveFacts
         exhibition={exhibition}

@@ -37,9 +37,9 @@ export default function MetricsTab() {
             }),
           });
       })
-      .catch((error) => {
+      .catch(() => {
         if (active)
-          setState({ loading: false, error: error.message, groups: [] });
+          setState({ loading: false, error: "観測データを取得できませんでした。画面を再読み込みしてください。", groups: [] });
       });
     return () => {
       active = false;

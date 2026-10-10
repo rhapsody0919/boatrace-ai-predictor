@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { importPreviewBundle } from "../../../services/snsHubService.js";
-import { errorMessageOf } from "../../../utils/errorMessage.js";
 import "./BundleImportPanel.css";
 
 export default function BundleImportPanel({ onImported }) {
@@ -18,8 +17,8 @@ export default function BundleImportPanel({ onImported }) {
       const { data } = await importPreviewBundle(files);
       setResult(data);
       await onImported();
-    } catch (err) {
-      setError(errorMessageOf(err));
+    } catch {
+      setError("取り込み結果を確認できませんでした。素材ファイルと登録済みの下書きを確認してください。");
     } finally {
       setBusy(false);
     }

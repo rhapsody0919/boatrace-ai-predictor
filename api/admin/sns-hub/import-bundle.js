@@ -16,6 +16,7 @@ export default async function handler(req) {
     const data = await importValidatedBundle(validated, bundleStore);
     return jsonResponse({ data });
   } catch (error) {
-    return jsonResponse({ error: error.message }, error instanceof BundleValidationError ? error.status : 500);
+    console.error("SNS Hub bundle import error:", error);
+    return jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, error instanceof BundleValidationError ? error.status : 500);
   }
 }

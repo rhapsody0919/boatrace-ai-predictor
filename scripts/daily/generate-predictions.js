@@ -17,6 +17,7 @@ import {
 } from "../lib/unchangedRows.js";
 import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
 import { predictFirstMark } from "../lib/turnPrediction.js";
+import { boat1StReason } from "../lib/volatilityFactors.js";
 import {
   COURSE_DEFAULT_DISTRIBUTION,
   COURSE_DEFAULT_DEFENSE,
@@ -149,22 +150,13 @@ function calculateVolatilityScore(
     factors.push({ value: norm, weight: W.winRate, reason });
   }
 
-  // B. 1号艇の今節avgST — 遅いほどイン崩れしやすい
+  // B. 1号艇の平均ST（当サイトに蓄積した全期間） — 遅いほどイン崩れしやすい
   // 観測レンジ: 0.07〜0.34。予測力 26.7pt差
   const boat1ST =
     racerStatsList?.find((s) => s.boatNumber === 1)?.avgST ?? null;
   if (boat1ST != null) {
     const norm = Math.min(1, Math.max(0, (boat1ST - 0.07) / (0.34 - 0.07)));
-    let reason;
-    if (boat1ST >= 0.22)
-      reason = `1号艇の今節STが非常に遅い（平均${boat1ST.toFixed(3)}秒）→ 出遅れリスク大`;
-    else if (boat1ST >= 0.18)
-      reason = `1号艇の今節STが遅い（平均${boat1ST.toFixed(3)}秒）→ イン崩れリスク`;
-    else if (boat1ST <= 0.1)
-      reason = `1号艇の今節STが非常に速い（平均${boat1ST.toFixed(3)}秒）→ 逃げ鉄板`;
-    else if (boat1ST <= 0.14)
-      reason = `1号艇の今節STが速い（平均${boat1ST.toFixed(3)}秒）→ スタート安定`;
-    else reason = `1号艇の今節STは標準（平均${boat1ST.toFixed(3)}秒）`;
+    const reason = boat1StReason(boat1ST);
     factors.push({ value: norm, weight: W.avgST, reason });
   }
 

@@ -111,6 +111,6 @@ export default async function handler(req) {
     return jsonResponse({ data: rows[0] });
   } catch (error) {
     console.error("SNS Hub metrics Edge function error:", error);
-    return jsonResponse({ error: error.message }, 500);
+    return jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, 500);
   }
 }

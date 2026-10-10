@@ -201,7 +201,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/venueMotorStatsJob.js` | 会場別モーター成績（B3、venue_motor_stats）の共通ラッパ向けハンドラー（tasks.md T4b-14-1）。 | runVenueMotorStatsJob, VENUE_MOTOR_STATS_CONCURRENCY |
 | `scripts/lib/venueParameters.js` | 会場別パラメータ | getVolatilityThreshold, getVenueType, VENUE_1COURSE_WIN_RATE, VENUE_1COURSE_AVG, VENUE_VOLATILITY_THRESHOLD ほか2件 |
 | `scripts/lib/venueTechniquePeriod.js` | 会場の決まり手を期間（直近90日・直近365日）ごとに数える（BOA-430 思考アシスト、ADR 0088、マイグレーション 134）。 | addDays, periodRange, sourceRanges, fromLiveRow, fromArchiveRow ほか8件 |
-| `scripts/lib/volatilityFactors.js` | イン崩れ因子（複合スコア・会場内パーセンタイル変換） | calculateVolatilityComposite, toVolatilityPercentile |
+| `scripts/lib/volatilityFactors.js` | イン崩れ因子（複合スコア・会場内パーセンタイル変換） | boat1StReason, calculateVolatilityComposite, toVolatilityPercentile |
 | `scripts/lib/winningTechniques.js` | 決まり手ユーティリティ | toTechniqueKey, getDefaultDistribution, TECHNIQUES, TECHNIQUE_NAMES, COURSE_DEFAULT_DISTRIBUTION ほか1件 |
 
 ## src/utils — 画面の純粋なユーティリティ
@@ -266,6 +266,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/sgNowVenues.js` | トップの「SG開催中」帯に出す会場を決める（集客レーン、2026-10-02）。 | getSgNowVenues |
 | `src/utils/share.js` | SNSシェア関数 | shareUrlFor, shareRacePredictionToX, shareHitRaceToX, shareDailyStatsToX, generatePredictionShareText ほか2件 |
 | `src/utils/smallSampleRate.js` | 出走数が少ないときの率の出し方（BOA-513、2026-09-29 ファン4人のパネルで決定）。 | formatRateOrCount, powerIndexTone, formatPowerIndex |
+| `src/utils/snsMonthCalendar.js` | — | calendarDay, calendarState, calendarRowDay, calendarVenue, calendarMonth ほか3件 |
 | `src/utils/snsObservationCsv.js` | — | csvPublicationRange, buildObservationCsvRows, serializeObservationCsv, CSV_COLUMNS |
 | `src/utils/snsObservations.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。 | observationPeriod, validateObservation, validateProviderObservation, compareObservations, buildObservationUtm ほか5件 |
 | `src/utils/stConsideration.js` | ST考察（安定率・出遅率・抜出）の算出（phase a FR-1） | deriveRaceStContext, computeStConsideration, computeStHistogram, getStHistory, STABLE_THRESHOLD ほか3件 |
@@ -283,6 +284,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/volatilityLevel.js` | getVolatilityLevel - イン崩れ指数（percentile）からレベルを判定する共通ヘルパー | getVolatilityLevel, volatilityDisplayValue |
 | `src/utils/webShare.js` | Web Share API 対応判定ヘルパー | canShareVideo, shareVideoFile, downloadFileBlob |
 | `src/utils/wilson.js` | wilson - 二項比率のWilson信頼区間（純関数） | wilsonLowerBound, wilsonInterval, wilsonLowerBoundFromRate, isSmallSample |
+| `src/utils/windDirection.js` | 風向の表示（BOA-819）。 | trueWindDirection, windRelation, WIND_DIRECTIONS, VENUE_WIND_OFFSET_DEG |
 
 ## src/services — 画面のデータ取得
 
@@ -312,4 +314,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 277 ファイル / export 1499 件。
+対象 279 ファイル / export 1512 件。

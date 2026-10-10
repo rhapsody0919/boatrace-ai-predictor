@@ -1336,3 +1336,40 @@ test.describe("思考アシスト: BOA-808・809（2026-10-10 ユーザー決定
     ).toBeVisible({ timeout: 30000 });
   });
 });
+
+test.describe("思考アシスト: 風向を本当の方位で出す（BOA-819）", () => {
+  test("徳山10R の DB「北西」は、公式の直前情報の図と同じ「北」と出す", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    const header = page.locator(".ta-header");
+    await expect(header.getByText(/^風 北 /)).toBeVisible();
+    await expect(header.getByText(/^風 北西/)).toHaveCount(0);
+  });
+});
+
+test.describe("思考アシスト: 風のカードの追い風・向かい風（BOA-809）", () => {
+  test("徳山10R（北4m）は向かい風。向かい風が強いのカードに「今日はこちら」", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await page
+      .getByRole("button", { name: /^今日の風.*の過去レースの傾向$/ })
+      .click();
+    const sheet = page.getByRole("dialog");
+    await expect(sheet.getByText("今日は北4m・向かい風")).toBeVisible();
+    await expect(
+      sheet.getByRole("button", {
+        name: /^向かい風が強い（向かい風4m以上）・今日はこちら/,
+      }),
+    ).toBeVisible();
+    await expect(
+      sheet.getByRole("button", { name: /^追い風が強い（追い風4m以上） ›$/ }),
+    ).toBeVisible();
+    await expect(
+      sheet.getByText("表は追い風・向かい風が混ざった値"),
+    ).toBeVisible();
+  });
+});

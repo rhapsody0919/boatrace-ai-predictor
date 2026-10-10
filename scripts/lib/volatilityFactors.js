@@ -48,6 +48,24 @@ function calculateStdDev(values) {
  *   省略時は VENUE_1COURSE_WIN_RATE（静的定数）にフォールバックする
  * @returns {{ composite: number, reasons: string[], boat1AvgST: number|null }}
  */
+/**
+ * イン崩れ指数の理由文のうち、1号艇の平均STの1行（BOA-818）。
+ * 値は racer_aggregated_stats.avg_st（当サイトに蓄積した全期間、F 除外）なので、その期間どおりに書く。
+ * 以前は「今節ST」と書いていたが、今節の走ではなかった。値の期間を直近30走に替えるのは
+ * イン崩れ指数の作り直しでまとめて行う（2026-10-10 オーケストレーター判断）
+ * @param {number} boat1ST
+ * @returns {string}
+ */
+export function boat1StReason(boat1ST) {
+  const v = `${boat1ST.toFixed(3)}秒`;
+  const label = "1号艇の平均ST（当サイトに蓄積した全期間）";
+  if (boat1ST >= 0.22) return `${label}が非常に遅い（${v}）→ 出遅れリスク大`;
+  if (boat1ST >= 0.18) return `${label}が遅い（${v}）→ イン崩れリスク`;
+  if (boat1ST <= 0.1) return `${label}が非常に速い（${v}）→ 逃げ鉄板`;
+  if (boat1ST <= 0.14) return `${label}が速い（${v}）→ スタート安定`;
+  return `${label}は標準（${v}）`;
+}
+
 export function calculateVolatilityComposite(
   racers,
   placeCd,
@@ -94,21 +112,12 @@ export function calculateVolatilityComposite(
     factors.push({ value: norm, weight: W.winRate, reason });
   }
 
-  // B. 1号艇の今節avgST — 遅いほどイン崩れしやすい
+  // B. 1号艇の平均ST（当サイトに蓄積した全期間）— 遅いほどイン崩れしやすい
   const boat1ST =
     racerStatsList?.find((s) => s.boatNumber === 1)?.avgST ?? null;
   if (boat1ST != null) {
     const norm = Math.min(1, Math.max(0, (boat1ST - 0.07) / (0.34 - 0.07)));
-    let reason;
-    if (boat1ST >= 0.22)
-      reason = `1号艇の今節STが非常に遅い（平均${boat1ST.toFixed(3)}秒）→ 出遅れリスク大`;
-    else if (boat1ST >= 0.18)
-      reason = `1号艇の今節STが遅い（平均${boat1ST.toFixed(3)}秒）→ イン崩れリスク`;
-    else if (boat1ST <= 0.1)
-      reason = `1号艇の今節STが非常に速い（平均${boat1ST.toFixed(3)}秒）→ 逃げ鉄板`;
-    else if (boat1ST <= 0.14)
-      reason = `1号艇の今節STが速い（平均${boat1ST.toFixed(3)}秒）→ スタート安定`;
-    else reason = `1号艇の今節STは標準（平均${boat1ST.toFixed(3)}秒）`;
+    const reason = boat1StReason(boat1ST);
     factors.push({ value: norm, weight: W.avgST, reason });
   }
 

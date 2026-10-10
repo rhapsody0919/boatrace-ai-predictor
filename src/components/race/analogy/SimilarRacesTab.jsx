@@ -6,6 +6,7 @@ import SimilarSonar from "./SimilarSonar";
 import SimilarityItems from "./SimilarityItems";
 import SimilarCompareList from "./SimilarCompareList";
 import FinishSankey from "./FinishSankey";
+import AnalogySplit from "./AnalogySplit";
 import TrifectaList from "./TrifectaList";
 import { BoatBars, TechniqueBars } from "./OutcomeBars";
 import { boatTip } from "../../../utils/analogyTips";
@@ -306,48 +307,6 @@ export default function SimilarRacesTab({
         />
       </details>
       {/* 件数のスライダーは見出し・並べ方の説明の後（UI/UX レビュー: 操作がどのまとまりのものか分かるように） */}
-      <div className="af-slider">
-        <div className="af-ctl-row af-between">
-          <label className="af-lbl" htmlFor="af-sim-slider">
-            {t(`${k}.sliderLabel`)}
-          </label>
-          <span className="af-sv">
-            <b>{t("aiPredictionTab.analogy.count", { n: fmtCount(N) })}</b>
-          </span>
-        </div>
-        <p className="af-foot">{t(`${k}.outerIs`, { n: fmtCount(N) })}</p>
-        <input
-          id="af-sim-slider"
-          data-af-control="similar_range"
-          type="range"
-          min={0}
-          max={steps.length - 1}
-          step={1}
-          value={idx}
-          aria-valuetext={t("aiPredictionTab.analogy.count", {
-            n: fmtCount(N),
-          })}
-          onChange={(e) => {
-            setStepIdx(Number(e.target.value));
-            setBoat(null);
-          }}
-        />
-        <div className="af-ctl-row af-between">
-          <span className="af-foot">{t(`${k}.fewer`)}</span>
-          <span className="af-foot">{t(`${k}.more`)}</span>
-        </div>
-        <p className="af-foot">{t(`${k}.sliderZoom`)}</p>
-        {farC && (
-          <p className="af-foot">
-            {t(`${k}.farthest`, {
-              n: N,
-              total: farC.total,
-              same: farC.same,
-              near: farC.near,
-            })}
-          </p>
-        )}
-      </div>
       <SimilarSonar
         neighbors={nb}
         selectedBoat={boat}
@@ -359,97 +318,156 @@ export default function SimilarRacesTab({
           r: Number(raceNumber),
         })}
         legend={<SonarLegend />}
-      />
-      <SimilarityItems
-        neighbors={nb}
-        items={items}
-        exhibitionStage={exhibitionStage}
-        conditions={sim.conditions}
-        poolRate={sim.pool_rate}
-        poolRateExhibition={sim.pool_rate_exhibition === true}
-        today={today}
-      />
-      <SimilarCompareList
-        neighbors={nb}
-        items={items}
-        exhibitionStage={exhibitionStage}
-        today={today}
-        open={open}
-        onOpen={setOpen}
-        expanded={cmpExpanded}
-        onExpanded={setCmpExpanded}
-      />
+        figTop={
+          <>
+            <div className="af-slider">
+              <div className="af-ctl-row af-between">
+                <label className="af-lbl" htmlFor="af-sim-slider">
+                  {t(`${k}.sliderLabel`)}
+                </label>
+                <span className="af-sv">
+                  <b>
+                    {t("aiPredictionTab.analogy.count", { n: fmtCount(N) })}
+                  </b>
+                </span>
+              </div>
+              <p className="af-foot">{t(`${k}.outerIs`, { n: fmtCount(N) })}</p>
+              <input
+                id="af-sim-slider"
+                data-af-control="similar_range"
+                type="range"
+                min={0}
+                max={steps.length - 1}
+                step={1}
+                value={idx}
+                aria-valuetext={t("aiPredictionTab.analogy.count", {
+                  n: fmtCount(N),
+                })}
+                onChange={(e) => {
+                  setStepIdx(Number(e.target.value));
+                  setBoat(null);
+                }}
+              />
+              <div className="af-ctl-row af-between">
+                <span className="af-foot">{t(`${k}.fewer`)}</span>
+                <span className="af-foot">{t(`${k}.more`)}</span>
+              </div>
+              <p className="af-foot">{t(`${k}.sliderZoom`)}</p>
+              {farC && (
+                <p className="af-foot">
+                  {t(`${k}.farthest`, {
+                    n: N,
+                    total: farC.total,
+                    same: farC.same,
+                    near: farC.near,
+                  })}
+                </p>
+              )}
+            </div>
+          </>
+        }
+      >
+        <SimilarityItems
+          neighbors={nb}
+          items={items}
+          exhibitionStage={exhibitionStage}
+          conditions={sim.conditions}
+          poolRate={sim.pool_rate}
+          poolRateExhibition={sim.pool_rate_exhibition === true}
+          today={today}
+        />
+        <SimilarCompareList
+          neighbors={nb}
+          items={items}
+          exhibitionStage={exhibitionStage}
+          today={today}
+          open={open}
+          onOpen={setOpen}
+          expanded={cmpExpanded}
+          onExpanded={setCmpExpanded}
+        />
 
-      <h3 className="af-h3">{t(`${k}.resHeading`)}</h3>
-      <div className="af-hero">
-        <span className="af-hero-n">
-          {t("aiPredictionTab.analogy.count", { n: fmtCount(ag.n) })}
-        </span>
-        <span className="af-sub">
-          {t(`${k}.resSub`, { n: fmtCount(ag.n) })}
-          {/* 結果の無いレース（返還・不成立など）は決まり方の集計から外すので、スライダーの件数より少ないことがある */}
-          {ag.n < nb.length &&
-            t(`${k}.resExcluded`, { k: fmtCount(nb.length - ag.n) })}
-        </span>
-      </div>
-      <h4 className="af-h4">
-        {target === 1
-          ? t(`${k}.winHeading`)
-          : t(`${k}.hitHeading`, {
-              finish: t(`aiPredictionTab.analogy.targets.${target}`),
-            })}
-      </h4>
-      <div className="af-key">
-        <span>
-          <i className="is-bar" />
-          {t(`${k}.keySimilar`)}
-        </span>
-        {cmp?.n > 0 && (
-          <span>
-            <i className="is-dot" />
-            {t(`${k}.keyCompare`, { name: cmpName, n: fmtCount(cmp.n) })}
+        <h3 className="af-h3">{t(`${k}.resHeading`)}</h3>
+        <div className="af-hero">
+          <span className="af-hero-n">
+            {t("aiPredictionTab.analogy.count", { n: fmtCount(ag.n) })}
           </span>
-        )}
-        <span>
-          <i className="is-err" />
-          {t(`${k}.keyErr`)}
-        </span>
-      </div>
-      <BoatBars
-        counts={ag.hit[target]}
-        n={ag.n}
-        reference={[1, 2, 3, 4, 5, 6].map((b) =>
-          cmp?.[tk] ? cmpRate(cmp[tk], b) : null,
-        )}
-        selected={boat}
-        onSelect={selectBoat}
-      />
-      <p className="af-tip" role="status">
-        {tip ?? ""}
-      </p>
-      {N < FEW_SIMILAR ? (
-        <p className="af-warn">
-          {t(`${k}.few`, { n: fmtCount(N) })}
-          {allShown ? t(`${k}.allShownAfterFew`) : ""}
+          <span className="af-sub">
+            {t(`${k}.resSub`, { n: fmtCount(ag.n) })}
+            {/* 結果の無いレース（返還・不成立など）は決まり方の集計から外すので、スライダーの件数より少ないことがある */}
+            {ag.n < nb.length &&
+              t(`${k}.resExcluded`, { k: fmtCount(nb.length - ag.n) })}
+          </span>
+        </div>
+        <h4 className="af-h4">
+          {target === 1
+            ? t(`${k}.winHeading`)
+            : t(`${k}.hitHeading`, {
+                finish: t(`aiPredictionTab.analogy.targets.${target}`),
+              })}
+        </h4>
+        <div className="af-key">
+          <span>
+            <i className="is-bar" />
+            {t(`${k}.keySimilar`)}
+          </span>
+          {cmp?.n > 0 && (
+            <span>
+              <i className="is-dot" />
+              {t(`${k}.keyCompare`, { name: cmpName, n: fmtCount(cmp.n) })}
+            </span>
+          )}
+          <span>
+            <i className="is-err" />
+            {t(`${k}.keyErr`)}
+          </span>
+        </div>
+        <BoatBars
+          counts={ag.hit[target]}
+          n={ag.n}
+          reference={[1, 2, 3, 4, 5, 6].map((b) =>
+            cmp?.[tk] ? cmpRate(cmp[tk], b) : null,
+          )}
+          selected={boat}
+          onSelect={selectBoat}
+        />
+        <p className="af-tip" role="status">
+          {tip ?? ""}
         </p>
-      ) : allShown ? (
-        <p className="af-foot">{t(`${k}.allShown`)}</p>
-      ) : null}
-      <h4 className="af-h4">{t(`${k}.techHeading`)}</h4>
-      <TechniqueBars counts={ag.tech} n={ag.n} reference={techRef} />
-      <OtherBoats neighbors={nb} boat={boat} />
-      <h4 className="af-h4">{t("aiPredictionTab.analogy.flow.heading")}</h4>
-      <FinishSankey
-        tri={ag.tri}
-        first={boat}
-        onFirst={setBoat}
-        not1={not1}
-        onNot1={setNot1}
-        band={band}
-        onBand={setBand}
-      />
-      <h4 className="af-h4">{t(`${k}.triHeading`)}</h4>
-      <TrifectaList tri={ag.tri} first={boat} not1={not1} band={band} />
+        {N < FEW_SIMILAR ? (
+          <p className="af-warn">
+            {t(`${k}.few`, { n: fmtCount(N) })}
+            {allShown ? t(`${k}.allShownAfterFew`) : ""}
+          </p>
+        ) : allShown ? (
+          <p className="af-foot">{t(`${k}.allShown`)}</p>
+        ) : null}
+        <h4 className="af-h4">{t(`${k}.techHeading`)}</h4>
+        <TechniqueBars counts={ag.tech} n={ag.n} reference={techRef} />
+        <OtherBoats neighbors={nb} boat={boat} />
+      </SimilarSonar>
+      {/* PC では着順の流れを左、よく出た3連単を右に（BOA-813） */}
+      <AnalogySplit
+        fig={
+          <>
+            <h4 className="af-h4">
+              {t("aiPredictionTab.analogy.flow.heading")}
+            </h4>
+            <FinishSankey
+              tri={ag.tri}
+              first={boat}
+              onFirst={setBoat}
+              not1={not1}
+              onNot1={setNot1}
+              band={band}
+              onBand={setBand}
+            />
+          </>
+        }
+      >
+        <h4 className="af-h4">{t(`${k}.triHeading`)}</h4>
+        <TrifectaList tri={ag.tri} first={boat} not1={not1} band={band} />
+      </AnalogySplit>
       {feedback}
       <NotesFold title={t("aiPredictionTab.analogy.notes.methodCaution")}>
         <NoteList

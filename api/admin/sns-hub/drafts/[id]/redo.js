@@ -158,6 +158,6 @@ export default async function handler(req) {
     return jsonResponse({ data: updated, routine: routineResult });
   } catch (error) {
     console.error("SNS Hub redo Edge function error:", error);
-    return jsonResponse({ error: error.message }, error.status || 500);
+    return jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, error.status || 500);
   }
 }

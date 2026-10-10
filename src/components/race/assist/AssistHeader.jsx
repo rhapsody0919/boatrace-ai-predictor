@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { GRADE_CONFIG } from "../../../constants/gradeConfig";
 import { formatObservedTime } from "../weatherInfo";
+import { trueWindDirection } from "../../../utils/windDirection.js";
 import { ROUND_LABEL } from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 import { TheoryButton } from "./SheetButtons";
@@ -12,6 +13,7 @@ import { TheoryButton } from "./SheetButtons";
  */
 export default function AssistHeader({
   race,
+  venueCode = null,
   raceId,
   round,
   stage,
@@ -24,6 +26,8 @@ export default function AssistHeader({
   children,
 }) {
   const w = race?.weather ?? null;
+  // DB の風向はアイコンの番号のままなので、会場ごとに本当の方位に直す（BOA-819）
+  const windDir = trueWindDirection(w?.windDirection, venueCode);
   const post = stage === "post";
   // 一般（ippan）も札を出す（承認モック v7。レース詳細は出さないが、ここは会場・R・ラウンドと並べて読ませる）
   const grade =
@@ -71,9 +75,9 @@ export default function AssistHeader({
       <div className="ta-header-sub">
         {post && w ? (
           <>
-            {(w.windDirection || w.windSpeed != null) && (
+            {(windDir || w.windSpeed != null) && (
               <span>
-                風 {w.windDirection ?? ""}{" "}
+                風 {windDir ?? ""}{" "}
                 {w.windSpeed != null && (
                   <b className="ta-num">{w.windSpeed}m</b>
                 )}{" "}

@@ -181,9 +181,7 @@
     {
       "script": "verify-migration-numbers.js",
       "tier": "ci",
-      "args": [
-        "--base=origin/master"
-      ],
+      "args": ["--base=origin/master"],
       "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
       "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
     },
@@ -370,6 +368,11 @@
       "script": "verify-racer-st-stats.js",
       "tier": "ci",
       "guards": "選手の平均ST・直近30走・ST標準偏差（scripts/lib/racerStStats.js、BOA-581）: 1000行上限での取りこぼし・Fの除外・直近30走の並び・取得エラーの例外化"
+    },
+    {
+      "script": "verify-volatility-st-reason.js",
+      "tier": "ci",
+      "guards": "イン崩れ指数の理由文の1号艇の平均ST（scripts/lib/volatilityFactors.js の boat1StReason、BOA-818）: 値（当サイトに蓄積した全期間）を「今節」と書かない。予想バッチが同じ関数を使う"
     },
     {
       "script": "verify-race-series-final-title.js",
@@ -582,9 +585,7 @@
     {
       "script": "verify-generated-docs-not-in-pr.js",
       "tier": "ci",
-      "args": [
-        "--base=origin/master"
-      ],
+      "args": ["--base=origin/master"],
       "guards": "PRが機械生成の文書（generated-docs.js の一覧）を変更していないこと。含めると並行PRが同じファイルでコンフリクトする（ADR-0078）"
     },
     {
@@ -923,9 +924,19 @@
       "guards": "依頼6: JSDOM上でMobileApprovalPanel/SnsHubAdminの状態連携を検証（Chromium起動不可環境向け、レイアウト・動画再生は対象外）"
     },
     {
+      "script": "verify-wind-direction-display.js",
+      "tier": "ci",
+      "guards": "画面の風向を本当の方位に直す表（BOA-819、src/utils/windDirection.js）。24場の角度が龍神ソナーのモデルの表（scripts/ml/analogy/wind_basis.json の offsets_deg）と同じ・引く向き（徳山の DB「北西」は北、公式の直前情報の図と同じ）・無風はそのまま・会場が分からなければ出さない"
+    },
+    {
       "script": "verify-sns-edit-assist.js",
       "tier": "ci",
       "guards": "依頼7: 読みやすさ・加重文字数・日付時刻・数値出典・敬称の場所付き指摘、AI差し込み口は既定無効、正常文は誤検知しない（141は別途PGliteで検証）"
+    },
+    {
+      "script": "verify-sns-month-calendar.js",
+      "tier": "ci",
+      "guards": "依頼16: 全月カレンダーのJST日付計算・状態分類・型/会場フィルタ・日付不明記録の全期間計上・観測履歴抽出（1001行ページング）、queue()のposted_at/format/race_id/grade/observations拡張（モックDB取得、外部接続なし）"
     }
   ]
 }

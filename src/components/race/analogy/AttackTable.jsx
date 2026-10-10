@@ -226,176 +226,185 @@ export default function AttackTable({
     : null;
   return (
     <>
-      {att ? (
-        <>
-          <p className="af-atk-who">
-            {t(`${k}.attacker`)} <BoatBadge n={att} size="sm" />{" "}
-            {t(`${k}.attackerName`, {
-              boat: boatName(att),
-              role: t(`${k}.role.${slit}`),
-            })}
-            {iBtn("att", t(`${k}.atk.attackerAria`))}
-          </p>
-          {tip.att && (
-            <p className="af-scn-tip">
-              {t(`${k}.attackerNote`)}
-              {t("aiPredictionTab.analogy.listComma")}
-              {t(`${k}.attackNoRecord`)}
+      {/* PC では攻める艇の箱｜1号艇の箱を左右に（BOA-813） */}
+      <div className="af-pair">
+        <div className="af-pair-col">
+          {att ? (
+            <>
+              <p className="af-atk-who">
+                {t(`${k}.attacker`)} <BoatBadge n={att} size="sm" />{" "}
+                {t(`${k}.attackerName`, {
+                  boat: boatName(att),
+                  role: t(`${k}.role.${slit}`),
+                })}
+                {iBtn("att", t(`${k}.atk.attackerAria`))}
+              </p>
+              {tip.att && (
+                <p className="af-scn-tip">
+                  {t(`${k}.attackerNote`)}
+                  {t("aiPredictionTab.analogy.listComma")}
+                  {t(`${k}.attackNoRecord`)}
+                </p>
+              )}
+              <div className="af-atk-box" data-testid="analogy-attack-box">
+                <ScopeTag
+                  boat={scopeBoat}
+                  cls={classes?.[scopeBoat - 1]}
+                  n={all.n}
+                  classScope={classScope}
+                />
+                <AnswerBar
+                  label={t(`${k}.atk.attWin`, { b: att })}
+                  pair={all.att_win}
+                  color={SCOPE_LINE[att]}
+                  main
+                />
+                <AnswerBar
+                  label={t(`${k}.atk.attTop2`, { b: att })}
+                  pair={all.att_top2}
+                  color={SCOPE_LINE[att]}
+                />
+                {outerPair && (
+                  <AnswerBar
+                    label={t(`${k}.atk.outerWin`, { b: att + 1 })}
+                    pair={outerPair}
+                    color={SCOPE_LINE[att + 1]}
+                  />
+                )}
+                {(hasToday(exhOk && exhRank[att - 1], A.by_exh) ||
+                  hasToday(motorRank[att - 1], A.by_motor)) && (
+                  <p className="af-atk-sep">
+                    {t(`${k}.atk.todayOf`, { b: att })}
+                  </p>
+                )}
+                {exhOk && (
+                  <TodayRow
+                    label={t(`${k}.atk.exh`)}
+                    rank={exhRank[att - 1]}
+                    by={A.by_exh}
+                    refBy={AR?.by_exh}
+                    keyName="att_win"
+                    what={t(`${k}.atk.attWinShort`, { b: att })}
+                    refName={t(`${k}.atk.refShort`)}
+                  />
+                )}
+                <TodayRow
+                  label={t(`${k}.atk.motor`)}
+                  rank={motorRank[att - 1]}
+                  by={A.by_motor}
+                  refBy={AR?.by_motor}
+                  keyName="att_win"
+                  what={t(`${k}.atk.attWinShort`, { b: att })}
+                  refName={t(`${k}.atk.refShort`)}
+                />
+                {/* 勝ちがすべて抜き・恵まれのときは、帯も見出しも出さない（レビュー指摘） */}
+                {techs.length > 0 && (
+                  <>
+                    <p className="af-foot">
+                      {t(`${k}.atk.wins`, { n: fmtCount(wins) })}
+                    </p>
+                    <div className="af-atk-stack" aria-hidden="true">
+                      {techs.map((n) => (
+                        <span
+                          key={n}
+                          style={{
+                            flex: all[`att_${n}_of_win`][0],
+                            background: TECH_COLOR[n],
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <p className="af-foot">
+                      {techs
+                        .map(
+                          (n) =>
+                            `${t(`${k}.tech.${n}`)} ${
+                              wins >= 30
+                                ? fmtPct(rate(all[`att_${n}_of_win`]))
+                                : all[`att_${n}_of_win`][0]
+                            }`,
+                        )
+                        .join(t("aiPredictionTab.analogy.listSeparator"))}
+                    </p>
+                  </>
+                )}
+                {!DENT_FORMS.has(slit) && A.att_lead?.[1] ? (
+                  <AnswerBar
+                    label={t(`${k}.atk.lead`, { b: att })}
+                    pair={A.att_lead}
+                    color="#94a3b8"
+                  />
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <p className="af-sub">
+              {t(`${k}.noAttacker`, { form: t(`${k}.forms.${slit}.name`) })}
+            </p>
+          )}
+        </div>
+        <div className="af-pair-col">
+          {/* ③は平均STが6艇そろうレースだけから出すので、②④より件数が少ない。理由を箱のすぐ上に（ファン評価: 畳んだ中にしか無かった） */}
+          {scenarioN !== null && F.all.n < scenarioN && (
+            <p className="af-foot">
+              {t(`${k}.atk.countDiff`, {
+                n: fmtCount(F.all.n),
+                m: fmtCount(scenarioN),
+              })}
             </p>
           )}
           <div className="af-atk-box" data-testid="analogy-attack-box">
             <ScopeTag
-              boat={scopeBoat}
-              cls={classes?.[scopeBoat - 1]}
-              n={all.n}
+              boat={1}
+              cls={classes?.[0]}
+              n={F.all.n}
               classScope={classScope}
             />
             <AnswerBar
-              label={t(`${k}.atk.attWin`, { b: att })}
-              pair={all.att_win}
-              color={SCOPE_LINE[att]}
+              label={t(`${k}.atk.b1Nige`)}
+              pair={F.all.b1_nige}
+              color={SCOPE_LINE[1]}
               main
             />
             <AnswerBar
-              label={t(`${k}.atk.attTop2`, { b: att })}
-              pair={all.att_top2}
-              color={SCOPE_LINE[att]}
+              label={t(`${k}.atk.b1Top2`)}
+              pair={F.all.b1_top2}
+              color={SCOPE_LINE[1]}
             />
-            {outerPair && (
-              <AnswerBar
-                label={t(`${k}.atk.outerWin`, { b: att + 1 })}
-                pair={outerPair}
-                color={SCOPE_LINE[att + 1]}
-              />
-            )}
-            {(hasToday(exhOk && exhRank[att - 1], A.by_exh) ||
-              hasToday(motorRank[att - 1], A.by_motor)) && (
-              <p className="af-atk-sep">{t(`${k}.atk.todayOf`, { b: att })}</p>
+            {(hasToday(exhOk && exhRank[0], F.b1_by_exh) ||
+              hasToday(motorRank[0], F.b1_by_motor)) && (
+              <p className="af-atk-sep">{t(`${k}.atk.todayOf`, { b: 1 })}</p>
             )}
             {exhOk && (
-              <TodayRow
-                label={t(`${k}.atk.exh`)}
-                rank={exhRank[att - 1]}
-                by={A.by_exh}
-                refBy={AR?.by_exh}
-                keyName="att_win"
-                what={t(`${k}.atk.attWinShort`, { b: att })}
-                refName={t(`${k}.atk.refShort`)}
-              />
+              <>
+                <TodayRow
+                  label={t(`${k}.atk.exh`)}
+                  rank={exhRank[0]}
+                  by={F.b1_by_exh}
+                  refBy={R?.b1_by_exh}
+                  keyName="b1_nige"
+                  what={t(`${k}.atk.nigeShort`)}
+                  refName={t(`${k}.atk.refShort`)}
+                />
+              </>
             )}
             <TodayRow
               label={t(`${k}.atk.motor`)}
-              rank={motorRank[att - 1]}
-              by={A.by_motor}
-              refBy={AR?.by_motor}
-              keyName="att_win"
-              what={t(`${k}.atk.attWinShort`, { b: att })}
-              refName={t(`${k}.atk.refShort`)}
-            />
-            {/* 勝ちがすべて抜き・恵まれのときは、帯も見出しも出さない（レビュー指摘） */}
-            {techs.length > 0 && (
-              <>
-                <p className="af-foot">
-                  {t(`${k}.atk.wins`, { n: fmtCount(wins) })}
-                </p>
-                <div className="af-atk-stack" aria-hidden="true">
-                  {techs.map((n) => (
-                    <span
-                      key={n}
-                      style={{
-                        flex: all[`att_${n}_of_win`][0],
-                        background: TECH_COLOR[n],
-                      }}
-                    />
-                  ))}
-                </div>
-                <p className="af-foot">
-                  {techs
-                    .map(
-                      (n) =>
-                        `${t(`${k}.tech.${n}`)} ${
-                          wins >= 30
-                            ? fmtPct(rate(all[`att_${n}_of_win`]))
-                            : all[`att_${n}_of_win`][0]
-                        }`,
-                    )
-                    .join(t("aiPredictionTab.analogy.listSeparator"))}
-                </p>
-              </>
-            )}
-            {!DENT_FORMS.has(slit) && A.att_lead?.[1] ? (
-              <AnswerBar
-                label={t(`${k}.atk.lead`, { b: att })}
-                pair={A.att_lead}
-                color="#94a3b8"
-              />
-            ) : null}
-          </div>
-        </>
-      ) : (
-        <p className="af-sub">
-          {t(`${k}.noAttacker`, { form: t(`${k}.forms.${slit}.name`) })}
-        </p>
-      )}
-      {/* ③は平均STが6艇そろうレースだけから出すので、②④より件数が少ない。理由を箱のすぐ上に（ファン評価: 畳んだ中にしか無かった） */}
-      {scenarioN !== null && F.all.n < scenarioN && (
-        <p className="af-foot">
-          {t(`${k}.atk.countDiff`, {
-            n: fmtCount(F.all.n),
-            m: fmtCount(scenarioN),
-          })}
-        </p>
-      )}
-      <div className="af-atk-box" data-testid="analogy-attack-box">
-        <ScopeTag
-          boat={1}
-          cls={classes?.[0]}
-          n={F.all.n}
-          classScope={classScope}
-        />
-        <AnswerBar
-          label={t(`${k}.atk.b1Nige`)}
-          pair={F.all.b1_nige}
-          color={SCOPE_LINE[1]}
-          main
-        />
-        <AnswerBar
-          label={t(`${k}.atk.b1Top2`)}
-          pair={F.all.b1_top2}
-          color={SCOPE_LINE[1]}
-        />
-        {(hasToday(exhOk && exhRank[0], F.b1_by_exh) ||
-          hasToday(motorRank[0], F.b1_by_motor)) && (
-          <p className="af-atk-sep">{t(`${k}.atk.todayOf`, { b: 1 })}</p>
-        )}
-        {exhOk && (
-          <>
-            <TodayRow
-              label={t(`${k}.atk.exh`)}
-              rank={exhRank[0]}
-              by={F.b1_by_exh}
-              refBy={R?.b1_by_exh}
+              rank={motorRank[0]}
+              by={F.b1_by_motor}
+              refBy={R?.b1_by_motor}
               keyName="b1_nige"
               what={t(`${k}.atk.nigeShort`)}
               refName={t(`${k}.atk.refShort`)}
             />
-          </>
-        )}
-        <TodayRow
-          label={t(`${k}.atk.motor`)}
-          rank={motorRank[0]}
-          by={F.b1_by_motor}
-          refBy={R?.b1_by_motor}
-          keyName="b1_nige"
-          what={t(`${k}.atk.nigeShort`)}
-          refName={t(`${k}.atk.refShort`)}
-        />
-        {/* 1号艇の展示タイムの割り引きは展示前も出す（spec C-4 Q-E。レビュー指摘: 展示前に消えていた） */}
-        <p className="af-foot af-atk-inote">
-          {iBtn("b1exh", t(`${k}.atk.b1ExhAria`))}
-          {t(`${k}.atk.b1ExhShort`)}
-        </p>
-        {tip.b1exh && <p className="af-scn-tip">{t(`${k}.b1ExhNote`)}</p>}
+            {/* 1号艇の展示タイムの割り引きは展示前も出す（spec C-4 Q-E。レビュー指摘: 展示前に消えていた） */}
+            <p className="af-foot af-atk-inote">
+              {iBtn("b1exh", t(`${k}.atk.b1ExhAria`))}
+              {t(`${k}.atk.b1ExhShort`)}
+            </p>
+            {tip.b1exh && <p className="af-scn-tip">{t(`${k}.b1ExhNote`)}</p>}
+          </div>
+        </div>
       </div>
       <ScenarioFold
         title={t(`${k}.atk.foldTitle`)}
