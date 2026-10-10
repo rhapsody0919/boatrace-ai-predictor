@@ -429,7 +429,7 @@ function bundleConsistencyWarnings(bundle, parsed, files) {
   const fields = [...bundleRiskFields(bundle, "x"), ...bundleRiskFields(bundle, "youtube")]
     .filter(field => field.field !== "hashtags")
     .map(field => ({...field, text: VENUE_NAMES[venue].length > 1
-      ? (field.text || "").replaceAll(VENUE_NAMES[venue], "") : field.text}));
+      ? (field.text || "").replace(/[ \u3000]/gu, "").replaceAll(VENUE_NAMES[venue], "") : field.text}));
   warnings.push(...matchRiskRules(fields, undefined, venueRules));
   const measured = bundle.video_probe;
   const declared = bundle.video;

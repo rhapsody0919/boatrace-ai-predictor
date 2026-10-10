@@ -149,6 +149,18 @@ await check("source_dataのコード・scope不一致と唐津の名称境界", 
   const good = await validateBundle(form(await fixture({race_id:"2026-10-07-23-10",title:"唐津の展望"})));
   assert(!good.riskFlags.x.some(w => w.id.startsWith("bundle-body-venue")));
 });
+for (const title of ["唐 津の展望", "唐　津の展望"]) {
+  await check(`対象会場の空白入り表記「${title}」は津の警告を付けない`, async () => {
+    const result = await validateBundle(form(await fixture({race_id:"2026-10-07-23-10",title})));
+    for (const platform of ["x", "youtube"]) {
+      assert(!result.riskFlags[platform].some(w => w.id === "bundle-body-venue-9"));
+    }
+    const other = await validateBundle(form(await fixture({race_id:"2026-10-07-23-10",title:`${title}と津の比較`})));
+    for (const platform of ["x", "youtube"]) {
+      assert(other.riskFlags[platform].some(w => w.id === "bundle-body-venue-9"));
+    }
+  });
+}
 await check("動画の宣言・scene合計・実hashの不一致と不足は警告のみ", async () => {
   const mp4 = (await fixture()).get("draft.mp4");
   const video = {width:1080,height:1920,duration_seconds:18,fps:30,has_audio:true};
