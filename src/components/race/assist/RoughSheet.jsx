@@ -40,6 +40,8 @@ export default function RoughSheet({
       <p className="ta-sheet-sub">{ASSIST_COPY.roughSheetLead}</p>
       <p className="ta-note">
         {venue ? ASSIST_COPY.baseLegendRef(venue) : ASSIST_COPY.baseLegend}
+        {/* 棒の中の2本の細い縦線（ぶれ幅）の説明（BOA-801 4。セオリーカードと同じ文） */}
+        、{ASSIST_COPY.theoryBarLegend}
       </p>
       <ClassLineup lineup={lineup} />
       {restClassCounts(classes) && (
@@ -61,6 +63,7 @@ export default function RoughSheet({
         n={c.n}
         base={baseB1}
         refRate={refB1}
+        showBase
         few={scope.few}
       />
       {similar && (
@@ -70,6 +73,7 @@ export default function RoughSheet({
           n={similar.n}
           base={baseB1}
           refRate={refB1}
+          showBase
         />
       )}
       {similarFailed && (
@@ -86,6 +90,7 @@ export default function RoughSheet({
         n={c.payout_known}
         base={baseM}
         refRate={refM}
+        showBase
         few={scope.few}
       />
       {similar && (
@@ -95,6 +100,7 @@ export default function RoughSheet({
           n={similar.manshu.n}
           base={baseM}
           refRate={refM}
+          showBase
         />
       )}
       {similar && racecardStage && (

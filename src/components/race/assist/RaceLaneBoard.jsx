@@ -52,7 +52,7 @@ function Track({ model, row, onMetric }) {
   const x = scale(model, row.x);
   const color = BOAT_LINE_COLORS[row.boat];
   // 端の値（目盛りの外に詰めた値を含む）は文字を内側へ寄せ、右の印や図の外にはみ出させない（ファン評価 3周目 指摘12）
-  const valClass = `ta-track-val ta-num${row.dotBest ? " ind-best" : ""}${x > 85 ? " ta-track-val-end" : x < 15 ? " ta-track-val-start" : ""}`;
+  const valClass = `ta-track-val ta-num${row.dotBest ? " ind-best" : ""}${row.flying ? " ta-track-val-f" : ""}${x > 85 ? " ta-track-val-end" : x < 15 ? " ta-track-val-start" : ""}`;
   const def = row.dotMetric ? METRICS[row.dotMetric] : null;
   return (
     <div
@@ -69,9 +69,9 @@ function Track({ model, row, onMetric }) {
         />
       )}
       <span
-        className="ta-track-dot"
+        className={`ta-track-dot${row.flying ? " ta-track-dot-f" : ""}`}
         aria-hidden="true"
-        style={{ left: `${x}%`, background: color }}
+        style={{ left: `${x}%`, background: row.flying ? undefined : color }}
       />
       {row.dotText &&
         (def ? (
