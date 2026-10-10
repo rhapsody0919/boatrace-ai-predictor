@@ -266,6 +266,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/sgNowVenues.js` | トップの「SG開催中」帯に出す会場を決める（集客レーン、2026-10-02）。 | getSgNowVenues |
 | `src/utils/share.js` | SNSシェア関数 | shareUrlFor, shareRacePredictionToX, shareHitRaceToX, shareDailyStatsToX, generatePredictionShareText ほか2件 |
 | `src/utils/smallSampleRate.js` | 出走数が少ないときの率の出し方（BOA-513、2026-09-29 ファン4人のパネルで決定）。 | formatRateOrCount, powerIndexTone, formatPowerIndex |
+| `src/utils/snsMonthCalendar.js` | — | calendarDay, calendarState, calendarRowDay, calendarVenue, calendarMonth ほか3件 |
 | `src/utils/snsObservationCsv.js` | — | csvPublicationRange, buildObservationCsvRows, serializeObservationCsv, CSV_COLUMNS |
 | `src/utils/snsObservations.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。 | observationPeriod, validateObservation, validateProviderObservation, compareObservations, buildObservationUtm ほか5件 |
 | `src/utils/stConsideration.js` | ST考察（安定率・出遅率・抜出）の算出（phase a FR-1） | deriveRaceStContext, computeStConsideration, computeStHistogram, getStHistory, STABLE_THRESHOLD ほか3件 |
@@ -313,4 +314,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 278 ファイル / export 1502 件。
+対象 279 ファイル / export 1510 件。
