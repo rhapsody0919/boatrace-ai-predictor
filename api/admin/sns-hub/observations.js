@@ -13,6 +13,11 @@ import {
   OBSERVATION_METRICS,
   OBSERVED_PLATFORMS,
 } from "../../../src/utils/snsObservations.js";
+import {
+  csvPublicationRange,
+  buildObservationCsvRows,
+  serializeObservationCsv,
+} from "../../../src/utils/snsObservationCsv.js";
 export const config = { runtime: "edge" };
 
 // 読み始めの上限を固定し、一意キーのカーソルで全ページを読む。
@@ -47,6 +52,55 @@ export async function readObservationPages(
   }
 }
 
+/** 既存カーソル読み取りと同じ締切。SQL・生履歴を変更しない。 */
+export async function readObservationCsv(
+  start,
+  end,
+  platform,
+  cutoff = new Date().toISOString(),
+) {
+  const range = csvPublicationRange(start, end, platform);
+  const [drafts, observations] = await Promise.all([
+    readObservationPages(
+      "sns_drafts",
+      {
+        select:
+          "id,status,platform,format,template_variant_id,posted_at,source_data",
+        status: "eq.posted",
+        platform:
+          platform === "all"
+            ? `in.(${OBSERVED_PLATFORMS.join(",")})`
+            : `eq.${platform}`,
+        and: `(posted_at.gte.${range.start},posted_at.lt.${range.end},posted_at.lte.${cutoff})`,
+      },
+      cutoff,
+    ),
+    readObservationPages(
+      "sns_metric_observations",
+      {
+        select: "*,sns_drafts!inner(id)",
+        source: "neq.mock",
+        observed_at: `lte.${cutoff}`,
+        "sns_drafts.status": "eq.posted",
+        "sns_drafts.platform":
+          platform === "all"
+            ? `in.(${OBSERVED_PLATFORMS.join(",")})`
+            : `eq.${platform}`,
+        "sns_drafts.and": `(posted_at.gte.${range.start},posted_at.lt.${range.end},posted_at.lte.${cutoff})`,
+      },
+      cutoff,
+    ),
+  ]);
+  return serializeObservationCsv(
+    buildObservationCsvRows(drafts, observations, {
+      start,
+      end,
+      platform,
+      now: Date.parse(cutoff),
+    }),
+  );
+}
+
 export default async function handler(req) {
   const denied = await requireAdminAuth(req);
   if (denied) return denied;
@@ -57,6 +111,24 @@ export default async function handler(req) {
   try {
     if (req.method === "GET") {
       const url = new URL(req.url);
+      if (url.searchParams.get("export") === "csv") {
+        const start = url.searchParams.get("start");
+        const end = url.searchParams.get("end");
+        const platform = url.searchParams.get("platform") || "all";
+        try {
+          csvPublicationRange(start, end, platform);
+        } catch {
+          return jsonResponse({ error: "公開日・チャネルが不正です" }, 400);
+        }
+        const csv = await readObservationCsv(start, end, platform);
+        return new Response(csv, {
+          headers: {
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": `attachment; filename="posts-${start}-${end}-${platform}.csv"`,
+            "Cache-Control": "no-store",
+          },
+        });
+      }
       const window = url.searchParams.get("window") || "48h";
       const metric = url.searchParams.get("metric") || "views";
       if (
@@ -127,6 +199,7 @@ export default async function handler(req) {
     if (!response.ok) throw new Error(`観測追記エラー: ${response.status}`);
     return jsonResponse({ data: await response.json() }, 201);
   } catch (error) {
-    return jsonResponse({ error: error.message }, 500);
+    console.error("SNS観測取得・保存失敗", error.message);
+    return jsonResponse({ error: "観測データの処理に失敗しました" }, 500);
   }
 }
