@@ -1254,6 +1254,51 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       );
     });
 
+    test("平均STの表は行ごとに一番良い値に金枠。走数が少ない値は一番でも付けず、次の艇にも繰り下げない（BOA-814）", async ({
+      page,
+    }) => {
+      await setup(page);
+      const base = analogyV16Scenario();
+      let courseSt = base.course_st;
+      await page.route("**/api/analogy/scenario/**", (route) =>
+        route.fulfill({ json: { ...base, course_st: courseSt } }),
+      );
+      const bestIn = (section, row, exact = true) =>
+        section
+          .locator(".af-hint-t tbody tr")
+          .filter({ has: page.getByRole("rowheader", { name: row, exact }) })
+          .locator("td")
+          .evaluateAll((tds) =>
+            tds.flatMap((td, i) =>
+              td.classList.contains("ind-best") ? [i + 1] : [],
+            ),
+          );
+      const open = async () => {
+        await openSonarTab(page);
+        const section = sectionOf(page);
+        await section.getByRole("tab", { name: "展開シナリオ" }).click();
+        await section.getByText("数字で見る（平均STの表）").click();
+        return section;
+      };
+      // 固定データ: このコース・全体は4号艇（.127・.109）、会場は5号艇（.120）が一番早い
+      let section = await open();
+      expect(await bestIn(section, "このコース")).toEqual([4]);
+      expect(await bestIn(section, "全体")).toEqual([4]);
+      expect(await bestIn(section, "津で")).toEqual([5]);
+
+      // 4号艇のこのコースが2走、5号艇の会場が3走なら、その行は誰にも付けない（2号艇 .122 に繰り下げない）
+      courseSt = {
+        ...base.course_st,
+        course_n: [30, 30, 30, 2, 30, 29],
+        venue_n: [29, 30, 30, 30, 3, 30],
+      };
+      await page.reload();
+      section = await open();
+      expect(await bestIn(section, "このコース")).toEqual([]);
+      expect(await bestIn(section, "津で")).toEqual([]);
+      expect(await bestIn(section, "全体")).toEqual([4]);
+    });
+
     test("展開シナリオの P3（2026-10-09 レビュー）: 畳む・開く後のフォーカス、空の区切り線・決まり手の見出し、①の列の読み上げ", async ({
       page,
     }) => {

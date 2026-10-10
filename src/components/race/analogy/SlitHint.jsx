@@ -11,6 +11,7 @@ import {
   fmtSt3,
   venueLabel,
 } from "../../../utils/analogyFormat";
+import { VENUE_FEW_RUNS, hintTableBest } from "../../../utils/analogyAggregate";
 
 const k = "aiPredictionTab.analogy.scenario";
 
@@ -47,11 +48,20 @@ export default function SlitHint({
           c ? exhibition.st_by_course[c - 1] : null,
         )
       : null;
-  const tr = (label, cells, dim) => (
+  // 行ごとの6艇で一番良い値に金枠（出走表と同じ決まり、BOA-814）
+  const best = hintTableBest(courseSt, exhByBoat);
+  const tr = (label, cells, dim, bestSet) => (
     <tr>
       <th scope="row">{label}</th>
       {cells.map((c, i) => (
-        <td key={i} className={dim?.[i] ? "is-dim" : undefined}>
+        <td
+          key={i}
+          className={
+            [dim?.[i] && "is-dim", bestSet?.has(i + 1) && "ind-best"]
+              .filter(Boolean)
+              .join(" ") || undefined
+          }
+        >
           {c}
         </td>
       ))}
@@ -177,10 +187,14 @@ export default function SlitHint({
               {tr(
                 t(`${k}.hintSrcs.course`),
                 (courseSt.course_filled ?? []).map(fmtSt3),
+                null,
+                best.course,
               )}
               {tr(
                 t(`${k}.hintSrcs.overall`),
                 (courseSt.overall ?? []).map(fmtSt3),
+                null,
+                best.overall,
               )}
               {tr(
                 t(`${k}.hintVenue`, { venue: vName }),
@@ -194,7 +208,8 @@ export default function SlitHint({
                     </small>
                   </>
                 )),
-                (courseSt.venue_n ?? []).map((n) => n < 10),
+                (courseSt.venue_n ?? []).map((n) => n < VENUE_FEW_RUNS),
+                best.venue,
               )}
               {tr(
                 t(`${k}.hintVenueAll`, { venue: vName }),
@@ -210,6 +225,8 @@ export default function SlitHint({
                       {fmtExhSt(v)}
                     </span>
                   )),
+                  null,
+                  best.exh,
                 )}
             </tbody>
           </table>
@@ -235,7 +252,7 @@ export function SlitHintNotes({
   const { t } = useTranslation();
   const vName = venueLabel(venue, t);
   const fewVenue = (courseSt.venue_n ?? [])
-    .map((n, i) => (n !== null && n < 10 ? i + 1 : null))
+    .map((n, i) => (n !== null && n < VENUE_FEW_RUNS ? i + 1 : null))
     .filter(Boolean);
   const filled = (courseSt.course_n ?? [])
     .map((n, i) => (n < 5 ? i + 1 : null))
