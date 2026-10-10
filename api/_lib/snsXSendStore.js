@@ -23,6 +23,22 @@ async function allRows(path) {
   }
 }
 export const xSendStore = {
+  async readDraftDiff(id) {
+    return db("rpc/read_sns_draft_diff", {
+      method: "POST",
+      body: JSON.stringify({ p_id: id }),
+    });
+  },
+  async saveDraftDiff(id, revision, snapshot) {
+    return db("rpc/save_sns_draft_diff", {
+      method: "POST",
+      body: JSON.stringify({
+        p_id: id,
+        p_revision: revision,
+        p_snapshot: snapshot,
+      }),
+    });
+  },
   async saveInspection(draftId, revision, engine, findings) {
     return db("rpc/save_sns_edit_inspection", {
       method: "POST",
