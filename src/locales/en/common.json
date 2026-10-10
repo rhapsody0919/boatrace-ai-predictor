@@ -1487,7 +1487,9 @@
         "ledeShort": "1st → 2nd → 3rd. Band width = number of races; select a band for the count",
         "howTo": "How to read the finish flow",
         "drawAll": "Rare flows are drawn faintly too",
-        "howToPreview": "Faded bands, 2nd→3rd bands, filter by winner"
+        "howToPreview": "Faded bands, 2nd→3rd bands, filter by winner",
+        "breakdown": "Breakdown of the {{n}} races ({{p}} of all): Finish {{from}} Boat {{a}} → Finish {{to}} Boat {{b}}",
+        "breakdownBack": "Tap the band again to go back"
       },
       "listComma": ", ",
       "scenario": {

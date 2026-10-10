@@ -209,6 +209,8 @@ export default function SimilarRacesTab({
   const [boat, setBoat] = useState(null);
   const [open, setOpen] = useState(null);
   const [not1, setNot1] = useState(false);
+  // 着順の流れで押した帯（よく出た3連単をその帯の内訳に絞る。BOA-816）
+  const [band, setBand] = useState(null);
   const [cmpExpanded, setCmpExpanded] = useState(false);
   const exhibitionStage = stage === "exhibition";
 
@@ -260,7 +262,12 @@ export default function SimilarRacesTab({
           : []),
       ])
     : null;
-  const selectBoat = (b) => setBoat(boat === b ? null : b);
+  const selectBoat = (b) => {
+    const next = boat === b ? null : b;
+    setBoat(next);
+    // 1号艇を選んだら「1号艇以外が勝ったレース」を外す（両立しないので0件になっていた。ユーザー指摘 2026-10-10）
+    if (next === 1 && not1) setNot1(false);
+  };
   const pick = (id) => {
     setOpen(id);
     setCmpExpanded(true);
@@ -452,12 +459,14 @@ export default function SimilarRacesTab({
               onFirst={setBoat}
               not1={not1}
               onNot1={setNot1}
+              band={band}
+              onBand={setBand}
             />
           </>
         }
       >
         <h4 className="af-h4">{t(`${k}.triHeading`)}</h4>
-        <TrifectaList tri={ag.tri} first={boat} not1={not1} />
+        <TrifectaList tri={ag.tri} first={boat} not1={not1} band={band} />
       </AnalogySplit>
       {feedback}
       <NotesFold title={t("aiPredictionTab.analogy.notes.methodCaution")}>
