@@ -1055,12 +1055,16 @@ button.af-bar {
 }
 
 /* ---- タブ3 展開シナリオ ---- */
+/* 段の番号は四角の「STEP1」の札（艇の色の丸と形で見分ける。2026-10-10 ユーザー承認 mock-circled-numbers-v1） */
 .af-stepn {
   display: inline-grid;
   place-items: center;
-  width: 1.5em;
   height: 1.5em;
-  border-radius: 50%;
+  padding: 0 0.5em;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
   background: var(--brand-accent-primary);
   color: var(--surface-card);
   font-size: var(--font-size-xs);
@@ -1973,7 +1977,6 @@ button.af-bar {
 }
 
 .af-tab-scenario .af-scn-h .af-stepn {
-  width: 24px;
   height: 24px;
   font-size: var(--font-size-sm);
 }

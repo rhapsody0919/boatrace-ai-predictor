@@ -47,7 +47,6 @@ export default function SlitShapePicker({
       <p className="af-pat-legend">
         <span>┃ {t(`${k}.slitLine`)}</span>
         <span>├┤ {t(`${k}.slitScale`)}</span>
-        <span>{t(`${k}.slitB1Legend`)}</span>
       </p>
       <div className="af-pats" data-af-control="slit_shape">
         {["any", ...SLIT_FORMS].map((f) => (
