@@ -55,5 +55,6 @@ export function showNewBadge({
   if (saved) return false;
   if (!publishedOn) return true;
   const days = (Date.parse(today) - Date.parse(publishedOn)) / 86400000;
-  return days >= 0 && days < NEW_DAYS;
+  // 公開日より前の日付（録画の日付で動く E2E 等）も「新」として扱う
+  return days < NEW_DAYS;
 }
