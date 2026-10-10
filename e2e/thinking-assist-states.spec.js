@@ -1155,6 +1155,18 @@ test.describe("思考アシスト: ガイドと Cookie の同意バナー（PR5 
     await page.getByRole("button", { name: "次へ" }).click({ timeout: 5000 });
     await expect(page.getByText("1号艇は逃げられそう？")).toBeVisible();
   });
+  test("同意バナーが出ている間も、固定フッターの「マークシートを開く」を押せる", async ({
+    page,
+  }) => {
+    await open(page);
+    await expect(page.locator(".cookie-consent")).toBeVisible();
+    await page
+      .getByRole("button", { name: "マークシートを開く" })
+      .click({ timeout: 5000 });
+    await expect(
+      page.getByRole("dialog", { name: "マークシート" }),
+    ).toBeVisible();
+  });
 });
 
 test.describe("思考アシスト: BOA-808（PR4 のファン評価2周目の P2）", () => {
