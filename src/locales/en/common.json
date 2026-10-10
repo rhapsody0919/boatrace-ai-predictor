@@ -2142,12 +2142,12 @@
     },
     "presetLabel": "{{scope}} {{grade}}",
     "periods": {
-      "current": "Current term",
+      "official": "Official",
+      "term": "Current term",
       "last3m": "Last 3 months",
       "last1m": "Last month"
     },
     "periodSummary": "▸ Filter by period",
-    "periodCaveat": "* When combined with a grade filter, \"Current term\" is not the official term division: it covers every period we have data for (since Dec 2025, up to the past two years)",
     "winRateSwitchCaveat": "* With a grade or period filter, this shows the 1st-place rate (% of races won under those conditions), not the official win-rate points",
     "relativeBarNote": "* Bar length compares only these 6 boats. Even a small gap can make a big difference in length, so check the numbers for the actual gap",
     "sampleCount": "(n={{n}})",
@@ -2248,13 +2248,15 @@
     "accidentNote": "Accident points follow the official scale (F / late start 20, obstruction 15, disqualification or scratch by the racer's fault 10; 30 for a second or later F this term). Improper-maneuver and waiting-rule violations (2 pts) are not included, so this can be lower than the official figure. Above 0.70, the racer drops to class B2 at the next class review.",
     "accidentFetchError": "Could not load this term's accident rate",
     "meetScoreForecastTitle": "How today's finish moves the score rate",
-    "meetScorePrelimOver": "Qualifying score rate {{rate}} ({{n}} runs, {{source}}, final)"
+    "meetScorePrelimOver": "Qualifying score rate {{rate}} ({{n}} runs, {{source}}, final)",
+    "periodCurrentNote": "Current term is calculated from the races recorded on this site since {{from}} (win rate = 1st-place rate)",
+    "periodOfficialNoLocalSt": "The official Avg ST is national only (there is no official local value)"
   },
   "dataTable": {
     "title": "Data Race Card",
     "subtitle": "Compare analytics for all six racers at a glance. Tap a row label for the full analysis",
     "rowWinRate": "Class / Win rate",
-    "rowMotor": "Motor top-2 rate",
+    "rowMotor": "Motor top-2 rate (last 90 days)",
     "rowForm": "Form (Δ win rate)",
     "rowSt": "ST stability",
     "rowExhibition": "Exhibition time",
@@ -3379,7 +3381,8 @@
     "stBreakout": "The number of times the racer started at least 0.07 seconds ahead of every boat on an inner course. Shows whether they can attack the inside from an outer course. This happens less often the further out the course (0.2–0.4 times per 30 races from courses 5 and 6), and as a percentage it would mostly read 0.0%, so we show a count. \"Average\" is the break rate of racers on the same course and class multiplied by this racer's number of races (how many times an average racer would do it in as many races). Not shown for course 1, which has no boat inside it. Flying starts are excluded. This is our own aggregation and will not match similarly named stats on other sites",
     "stLate": "The share of starts 0.1 seconds or more behind the fastest starter in that race. Because this tends to rise on outer courses, the gap from the average for the same course and class is shown too. Flying starts are excluded. This is our own aggregation and will not match similarly named stats on other sites",
     "flyingCount": "Class is the value on this race's program. F is the number of flying starts this term (gold = 1, red = 2) and resets to 0 on May 1 and November 1. A \"this meet\" tag means the racer had a flying start between the first day of this meet and yesterday: they still run the rest of the meet but cannot enter this meet's semifinal or final (excluded from prizes; today's F is not counted). L is the number of late starts, which is different from \"Slow\" below. Consistent and Slow exclude races with a flying start",
-    "nigeSimulation": "Using only races where the course 1 boat won by Nige (Escape), the share of each course that finished 2nd. This is aggregated from this venue's actual results, not a prediction"
+    "nigeSimulation": "Using only races where the course 1 boat won by Nige (Escape), the share of each course that finished 2nd. This is aggregated from this venue's actual results, not a prediction",
+    "basicInfoOfficial": "\"Official\" shows the win rate, top-2 rate, top-3 rate and Avg ST from the official race card (record from {{from}} to {{to}}, the official term record for the same term as the win rate). It cannot be filtered by grade, so choosing a grade switches to \"Current term\""
   },
   "weatherInEscape": {
     "loading": "Loading…",
