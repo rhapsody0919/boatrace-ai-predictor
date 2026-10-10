@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import BoatBadge from "../BoatBadge";
+import AnalogySplit from "./AnalogySplit";
 import { BOAT_COLORS } from "../../../utils/colors";
 import { SCOPE_FLOW, SCOPE_SUBTEXT } from "./analogyColors";
 import { fmtDate, fmtCount, venueLabel } from "../../../utils/analogyFormat";
@@ -40,6 +41,8 @@ export default function SimilarSonar({
   onPick,
   todayLabel,
   legend = null,
+  figTop = null,
+  children = null,
 }) {
   const { t } = useTranslation();
   const k = "aiPredictionTab.analogy.similar";
@@ -242,218 +245,225 @@ export default function SimilarSonar({
     </>
   );
 
+  // PC ではスライダー（figTop）とソナーを左に止め、点の近くの類似レースと結果（children）を右に（BOA-813）
   return (
-    <>
-      <div className="af-dark af-sonar" ref={box}>
-        <svg
-          ref={svgRef}
-          viewBox="0 0 440 440"
-          role="group"
-          aria-label={t(`${k}.sonarLabel`, { n: fmtCount(n) })}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={cancelPress}
-          onPointerCancel={cancelPress}
-          onPointerLeave={(e) => {
-            cancelPress();
-            if (e.pointerType === "mouse") setTip(null);
-          }}
-          onContextMenu={(e) => e.preventDefault()}
-          onClickCapture={onClickCapture}
-          data-testid="analogy-sonar"
-        >
-          {[1, 2, 3, 4, 5, 6].map((b) => {
-            const a0 = ((ang(b) - 30) * Math.PI) / 180;
-            const a1 = ((ang(b) + 30) * Math.PI) / 180;
-            return (
-              <path
-                key={`s${b}`}
-                d={`M${CX},${CY}L${CX + R * Math.cos(a0)},${CY + R * Math.sin(a0)}A${R},${R} 0 0 1 ${CX + R * Math.cos(a1)},${CY + R * Math.sin(a1)}Z`}
-                fill={SCOPE_FLOW[b]}
-                fillOpacity={selectedBoat === b ? 0.16 : 0.05}
-                stroke="#0d1b2e"
-                role="button"
-                tabIndex={0}
-                aria-label={t(`${k}.sector`, {
-                  b,
-                  n: fmtCount(counts[b - 1]),
-                })}
-                aria-pressed={selectedBoat === b}
-                data-af-control="similar_boat"
-                data-af-toggle
-                style={{ cursor: "pointer" }}
-                onClick={() => onBoat(b)}
-                onKeyDown={(e) =>
-                  (e.key === "Enter" || e.key === " ") &&
-                  (e.preventDefault(), onBoat(b))
-                }
-              />
-            );
-          })}
-          {rings.map((r) => (
-            <circle
-              key={`r${r}`}
-              cx={CX}
-              cy={CY}
-              r={rOf(r)}
-              fill="none"
-              stroke="#c9a227"
-              strokeOpacity="0.45"
-              pointerEvents="none"
-            />
-          ))}
-          <circle
-            cx={CX}
-            cy={CY}
-            r={rOf(n)}
-            fill="none"
-            stroke="#c9a227"
-            strokeOpacity="0.7"
-            pointerEvents="none"
-          />
-          {pts.map(({ x, b, cx, cy }) => {
-            const hl = picked === x.race_id || first === x.race_id;
-            const sub = !hl && pickedIds.has(x.race_id);
-            return (
-              <circle
-                key={x.race_id}
-                cx={cx.toFixed(1)}
-                cy={cy.toFixed(1)}
-                r={hl ? 6 : sub ? 4.6 : dotR}
-                fill={SCOPE_FLOW[b]}
-                stroke={hl || sub ? "#fff" : "#0d1b2e"}
-                strokeWidth={hl ? 2.5 : sub ? 1.5 : 0.8}
-                pointerEvents="none"
-                aria-label={pointLabel(x)}
-              />
-            );
-          })}
-          {picks && (
-            <circle
-              cx={picks.x}
-              cy={picks.y}
-              r={picks.r}
-              fill="rgba(232,208,137,.12)"
-              stroke={SCOPE_SUBTEXT}
-              strokeDasharray="3 3"
-              pointerEvents="none"
-            />
-          )}
-          {press && (
-            <circle
-              className="af-sonar-press"
-              cx={press.x}
-              cy={press.y}
-              r={press.r}
-              fill="none"
-              stroke="#f3ead0"
-              strokeWidth="3"
-              pathLength="100"
-              strokeDasharray="100"
-              strokeDashoffset="100"
-              pointerEvents="none"
-            />
-          )}
-          {/* 輪の目安。1号艇と2号艇の扇の境目の線上に、縁取りを付けて置く（点の上でも読める） */}
-          {[...rings, n].map((r) => (
-            <text
-              key={`l${r}`}
-              x={CX + rOf(r) * Math.cos(LABEL_ANGLE) + 4}
-              y={CY + rOf(r) * Math.sin(LABEL_ANGLE) - 3}
-              fill={r === n ? "#f3ead0" : SCOPE_SUBTEXT}
-              fontSize="14"
-              fontWeight={r === n ? 700 : 400}
-              paintOrder="stroke"
-              stroke="#0d1b2e"
-              strokeWidth="3.5"
-              pointerEvents="none"
+    <AnalogySplit
+      fig={
+        <>
+          {figTop}
+          <div className="af-dark af-sonar" ref={box}>
+            <svg
+              ref={svgRef}
+              viewBox="0 0 440 440"
+              role="group"
+              aria-label={t(`${k}.sonarLabel`, { n: fmtCount(n) })}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={cancelPress}
+              onPointerCancel={cancelPress}
+              onPointerLeave={(e) => {
+                cancelPress();
+                if (e.pointerType === "mouse") setTip(null);
+              }}
+              onContextMenu={(e) => e.preventDefault()}
+              onClickCapture={onClickCapture}
+              data-testid="analogy-sonar"
             >
-              {t(`${k}.ring`, { n: fmtCount(r) })}
-            </text>
-          ))}
-          {[1, 2, 3, 4, 5, 6].map((b) => {
-            const a = (ang(b) * Math.PI) / 180;
-            const x = CX + (R + 18) * Math.cos(a);
-            const y = CY + (R + 18) * Math.sin(a);
-            // 図の外の艇番も押せる（点が密な扇は、扇を押しても点のタップになるため）。
-            // 読み上げ・キーボードは扇の role="button" が受け持つので、ここは指・マウスだけ
-            return (
-              <g
-                key={`b${b}`}
-                style={{ cursor: "pointer" }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setTip(null);
-                  onBoat(b);
-                }}
-                data-af-control="similar_boat"
-                data-af-toggle
-                data-af-tap
-                data-testid={`analogy-sonar-boat-${b}`}
-              >
-                <rect
-                  x={x - 11}
-                  y={y - 11}
-                  width="22"
-                  height="22"
-                  rx="4"
-                  fill={BOAT_COLORS[b].bg}
-                  stroke="#94a3b8"
+              {[1, 2, 3, 4, 5, 6].map((b) => {
+                const a0 = ((ang(b) - 30) * Math.PI) / 180;
+                const a1 = ((ang(b) + 30) * Math.PI) / 180;
+                return (
+                  <path
+                    key={`s${b}`}
+                    d={`M${CX},${CY}L${CX + R * Math.cos(a0)},${CY + R * Math.sin(a0)}A${R},${R} 0 0 1 ${CX + R * Math.cos(a1)},${CY + R * Math.sin(a1)}Z`}
+                    fill={SCOPE_FLOW[b]}
+                    fillOpacity={selectedBoat === b ? 0.16 : 0.05}
+                    stroke="#0d1b2e"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t(`${k}.sector`, {
+                      b,
+                      n: fmtCount(counts[b - 1]),
+                    })}
+                    aria-pressed={selectedBoat === b}
+                    data-af-control="similar_boat"
+                    data-af-toggle
+                    style={{ cursor: "pointer" }}
+                    onClick={() => onBoat(b)}
+                    onKeyDown={(e) =>
+                      (e.key === "Enter" || e.key === " ") &&
+                      (e.preventDefault(), onBoat(b))
+                    }
+                  />
+                );
+              })}
+              {rings.map((r) => (
+                <circle
+                  key={`r${r}`}
+                  cx={CX}
+                  cy={CY}
+                  r={rOf(r)}
+                  fill="none"
+                  stroke="#c9a227"
+                  strokeOpacity="0.45"
+                  pointerEvents="none"
                 />
+              ))}
+              <circle
+                cx={CX}
+                cy={CY}
+                r={rOf(n)}
+                fill="none"
+                stroke="#c9a227"
+                strokeOpacity="0.7"
+                pointerEvents="none"
+              />
+              {pts.map(({ x, b, cx, cy }) => {
+                const hl = picked === x.race_id || first === x.race_id;
+                const sub = !hl && pickedIds.has(x.race_id);
+                return (
+                  <circle
+                    key={x.race_id}
+                    cx={cx.toFixed(1)}
+                    cy={cy.toFixed(1)}
+                    r={hl ? 6 : sub ? 4.6 : dotR}
+                    fill={SCOPE_FLOW[b]}
+                    stroke={hl || sub ? "#fff" : "#0d1b2e"}
+                    strokeWidth={hl ? 2.5 : sub ? 1.5 : 0.8}
+                    pointerEvents="none"
+                    aria-label={pointLabel(x)}
+                  />
+                );
+              })}
+              {picks && (
+                <circle
+                  cx={picks.x}
+                  cy={picks.y}
+                  r={picks.r}
+                  fill="rgba(232,208,137,.12)"
+                  stroke={SCOPE_SUBTEXT}
+                  strokeDasharray="3 3"
+                  pointerEvents="none"
+                />
+              )}
+              {press && (
+                <circle
+                  className="af-sonar-press"
+                  cx={press.x}
+                  cy={press.y}
+                  r={press.r}
+                  fill="none"
+                  stroke="#f3ead0"
+                  strokeWidth="3"
+                  pathLength="100"
+                  strokeDasharray="100"
+                  strokeDashoffset="100"
+                  pointerEvents="none"
+                />
+              )}
+              {/* 輪の目安。1号艇と2号艇の扇の境目の線上に、縁取りを付けて置く（点の上でも読める） */}
+              {[...rings, n].map((r) => (
                 <text
-                  x={x}
-                  y={y + 5}
-                  textAnchor="middle"
-                  fontSize="13"
-                  fontWeight="700"
-                  fill={BOAT_COLORS[b].text}
+                  key={`l${r}`}
+                  x={CX + rOf(r) * Math.cos(LABEL_ANGLE) + 4}
+                  y={CY + rOf(r) * Math.sin(LABEL_ANGLE) - 3}
+                  fill={r === n ? "#f3ead0" : SCOPE_SUBTEXT}
+                  fontSize="14"
+                  fontWeight={r === n ? 700 : 400}
+                  paintOrder="stroke"
+                  stroke="#0d1b2e"
+                  strokeWidth="3.5"
+                  pointerEvents="none"
                 >
-                  {b}
+                  {t(`${k}.ring`, { n: fmtCount(r) })}
                 </text>
+              ))}
+              {[1, 2, 3, 4, 5, 6].map((b) => {
+                const a = (ang(b) * Math.PI) / 180;
+                const x = CX + (R + 18) * Math.cos(a);
+                const y = CY + (R + 18) * Math.sin(a);
+                // 図の外の艇番も押せる（点が密な扇は、扇を押しても点のタップになるため）。
+                // 読み上げ・キーボードは扇の role="button" が受け持つので、ここは指・マウスだけ
+                return (
+                  <g
+                    key={`b${b}`}
+                    style={{ cursor: "pointer" }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTip(null);
+                      onBoat(b);
+                    }}
+                    data-af-control="similar_boat"
+                    data-af-toggle
+                    data-af-tap
+                    data-testid={`analogy-sonar-boat-${b}`}
+                  >
+                    <rect
+                      x={x - 11}
+                      y={y - 11}
+                      width="22"
+                      height="22"
+                      rx="4"
+                      fill={BOAT_COLORS[b].bg}
+                      stroke="#94a3b8"
+                    />
+                    <text
+                      x={x}
+                      y={y + 5}
+                      textAnchor="middle"
+                      fontSize="13"
+                      fontWeight="700"
+                      fill={BOAT_COLORS[b].text}
+                    >
+                      {b}
+                    </text>
+                  </g>
+                );
+              })}
+              {/* 回る線は飾り。1着の扇（押せる）と同じ形・色にすると特定の艇を指しているように見えるので、細い線にする（BOA-778） */}
+              <g className="af-sweep" pointerEvents="none" aria-hidden="true">
+                <line
+                  x1={CX}
+                  y1={CY}
+                  x2={CX + R}
+                  y2={CY}
+                  stroke={SCOPE_SUBTEXT}
+                  strokeOpacity=".35"
+                  strokeWidth="1"
+                />
               </g>
-            );
-          })}
-          {/* 回る線は飾り。1着の扇（押せる）と同じ形・色にすると特定の艇を指しているように見えるので、細い線にする（BOA-778） */}
-          <g className="af-sweep" pointerEvents="none" aria-hidden="true">
-            <line
-              x1={CX}
-              y1={CY}
-              x2={CX + R}
-              y2={CY}
-              stroke={SCOPE_SUBTEXT}
-              strokeOpacity=".35"
-              strokeWidth="1"
-            />
-          </g>
-          <circle
-            cx={CX}
-            cy={CY}
-            r="6"
-            fill={SCOPE_SUBTEXT}
-            pointerEvents="none"
-          />
-        </svg>
-        {tip && (
-          <div
-            className="af-sonar-tip"
-            role="status"
-            style={{ left: tip.left, top: tip.top }}
-            data-testid="analogy-sonar-tip"
-          >
-            <b>{t(`${k}.tipRank`, { n: tip.p.rank })}</b>
-            <br />
-            {raceInfo(tip.p.x)}
-            <br />
-            {result(tip.p.x)}
+              <circle
+                cx={CX}
+                cy={CY}
+                r="6"
+                fill={SCOPE_SUBTEXT}
+                pointerEvents="none"
+              />
+            </svg>
+            {tip && (
+              <div
+                className="af-sonar-tip"
+                role="status"
+                style={{ left: tip.left, top: tip.top }}
+                data-testid="analogy-sonar-tip"
+              >
+                <b>{t(`${k}.tipRank`, { n: tip.p.rank })}</b>
+                <br />
+                {raceInfo(tip.p.x)}
+                <br />
+                {result(tip.p.x)}
+              </div>
+            )}
+            <div className="af-dark-cap">
+              <span>{todayLabel}</span>
+              <span>{t(`${k}.shown`, { n: fmtCount(n) })}</span>
+            </div>
           </div>
-        )}
-        <div className="af-dark-cap">
-          <span>{todayLabel}</span>
-          <span>{t(`${k}.shown`, { n: fmtCount(n) })}</span>
-        </div>
-      </div>
-      {/* 図の見方は文ではなく絵の凡例で、図の真下に（承認モック sonar-tab v3） */}
-      {legend}
+          {/* 図の見方は文ではなく絵の凡例で、図の真下に（承認モック sonar-tab v3） */}
+          {legend}
+        </>
+      }
+    >
       <div className="af-sonar-picks" aria-live="polite">
         {picks ? (
           <>
@@ -490,6 +500,7 @@ export default function SimilarSonar({
           <p className="af-sub">{t(`${k}.picksEmpty`)}</p>
         )}
       </div>
-    </>
+      {children}
+    </AnalogySplit>
   );
 }

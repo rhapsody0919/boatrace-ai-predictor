@@ -181,9 +181,7 @@
     {
       "script": "verify-migration-numbers.js",
       "tier": "ci",
-      "args": [
-        "--base=origin/master"
-      ],
+      "args": ["--base=origin/master"],
       "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
       "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
     },
@@ -582,9 +580,7 @@
     {
       "script": "verify-generated-docs-not-in-pr.js",
       "tier": "ci",
-      "args": [
-        "--base=origin/master"
-      ],
+      "args": ["--base=origin/master"],
       "guards": "PRが機械生成の文書（generated-docs.js の一覧）を変更していないこと。含めると並行PRが同じファイルでコンフリクトする（ADR-0078）"
     },
     {
@@ -921,6 +917,11 @@
       "script": "verify-sns-mobile-dom.js",
       "tier": "ci",
       "guards": "依頼6: JSDOM上でMobileApprovalPanel/SnsHubAdminの状態連携を検証（Chromium起動不可環境向け、レイアウト・動画再生は対象外）"
+    },
+    {
+      "script": "verify-wind-direction-display.js",
+      "tier": "ci",
+      "guards": "画面の風向を本当の方位に直す表（BOA-819、src/utils/windDirection.js）。24場の角度が龍神ソナーのモデルの表（scripts/ml/analogy/wind_basis.json の offsets_deg）と同じ・引く向き（徳山の DB「北西」は北、公式の直前情報の図と同じ）・無風はそのまま・会場が分からなければ出さない"
     },
     {
       "script": "verify-sns-edit-assist.js",

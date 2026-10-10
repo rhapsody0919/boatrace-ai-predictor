@@ -1370,18 +1370,22 @@ function suiteWeatherInfo(m, check) {
   );
   const t = (key, fallback) => `${key}|${fallback}`;
   check(
-    "translateWeather / translateWindDirection: 既知は i18n キー、未知はそのまま返す",
+    "translateWeather / translateWindDirection: 既知は i18n キー、未知はそのまま返す。風向は会場ごとに本当の方位に直す（BOA-819: 徳山の「北西」は北、多摩川は回転0）、会場が分からなければ出さない",
     [
       m.translateWeather(t, "晴"),
       m.translateWeather(t, "霧"),
-      m.translateWindDirection(t, "北北東"),
-      m.translateWindDirection(t, "無風"),
+      m.translateWindDirection(t, "北北東", 5),
+      m.translateWindDirection(t, "北西", 18),
+      m.translateWindDirection(t, "無風", 18),
+      m.translateWindDirection(t, "北西", null),
     ],
     [
       "beforeInfo.weather.sunny|晴",
       "霧",
       "beforeInfo.windDirection.nne|北北東",
+      "beforeInfo.windDirection.n|北",
       "無風",
+      null,
     ],
   );
 }
@@ -1803,7 +1807,12 @@ function suiteTurnPrediction(m, check) {
 // 締切を過ぎたレースが締切前と区別なく並び、これから見るレースを選ぶ導線にならなかった
 function suiteVolatilityHighlights(m, check) {
   const level = (p) => (p >= 70 ? "high" : p <= 30 ? "low" : "standard");
-  const race = (id, p, closed) => ({ id, percentile: p, level: level(p), closed });
+  const race = (id, p, closed) => ({
+    id,
+    percentile: p,
+    level: level(p),
+    closed,
+  });
   const ids = (r) => ({
     high: r.high.map((x) => x.id),
     low: r.low.map((x) => x.id),
@@ -1836,7 +1845,12 @@ function suiteVolatilityHighlights(m, check) {
   );
   check(
     "volatilityHighlights: 締切前が1本だけでも、そのレースを出す",
-    ids(m.pickVolatilityHighlights([race("a", 95, true), race("q", 85, false)], 5)),
+    ids(
+      m.pickVolatilityHighlights(
+        [race("a", 95, true), race("q", 85, false)],
+        5,
+      ),
+    ),
     { high: ["q"], low: [], allClosed: false },
   );
   // 締切前が「標準」だけでも、選ぶ対象はあるので節は出す（PR #1248 ファン評価2周目）
@@ -1864,7 +1878,10 @@ function suiteVolatilityLevel(m, check) {
     "standard",
     69,
   ]);
-  check("volatility: 0.7037 はイン崩れ注意（高）で70", show(0.7037), ["high", 70]);
+  check("volatility: 0.7037 はイン崩れ注意（高）で70", show(0.7037), [
+    "high",
+    70,
+  ]);
   check("volatility: 0.3 は本命有利で30", show(0.3), ["low", 30]);
   check("volatility: 0.3004 は標準で31（四捨五入の30にしない）", show(0.3004), [
     "standard",

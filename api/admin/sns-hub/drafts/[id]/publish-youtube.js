@@ -176,7 +176,7 @@ export default async function handler(req) {
     const recorded = await recordExternal(id, operationToken, {
       youtubeUrl, posted_at: new Date().toISOString(),
       source_data: { youtube_video_id: youtubeVideoId, youtube_url: youtubeUrl },
-      thumbnailWarning: draft.cover_image_path ? "サムネイル設定結果は未確認です" : null,
+      thumbnailWarning: draft.cover_image_path ? "unconfirmed" : null,
     });
 
     // サムネイル設定は動画本体のアップロードとは独立した成否として扱う。
@@ -201,7 +201,7 @@ export default async function handler(req) {
         await uploadThumbnail(accessToken, youtubeVideoId, thumbBlob);
       } catch (error) {
         console.error("SNS Hub publish-youtube thumbnail error:", error);
-        thumbnailError = error.message;
+        thumbnailError = "failed";
       }
     }
 
@@ -215,6 +215,6 @@ export default async function handler(req) {
 
   } catch (error) {
     console.error("SNS Hub publish-youtube Edge function error:", error);
-    return jsonResponse({ error: error.message }, error.status || 500);
+    return jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, error.status || 500);
   }
 }

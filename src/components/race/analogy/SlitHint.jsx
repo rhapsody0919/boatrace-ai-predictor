@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import NoteList from "./NoteList";
 import ScenarioFold from "./ScenarioFold";
+import AnalogySplit from "./AnalogySplit";
 import BoatBadge from "../BoatBadge";
 import SlitShapeIcon from "./SlitShapeIcon";
 import {
@@ -85,76 +86,86 @@ export default function SlitHint({
         </span>
       </div>
       {!waku && <p className="af-warn">{t(`${k}.hintOther`)}</p>}
-      <div className="af-hint-pic">
-        <SlitShapeIcon
-          st={vals}
-          height={150}
-          reference={ref}
-          refLabel={t(`${k}.hintRefShort`, { venue: vName })}
-        />
-      </div>
-      <div className="af-ctl-row">
-        <span className="af-lbl" id={lbl}>
-          {t(`${k}.hintSrc`)}
-        </span>
-        <div
-          className="af-seg"
-          role="group"
-          aria-labelledby={lbl}
-          data-af-control="slit_version"
-        >
-          {["course", "overall"].map((v) => (
-            <button
-              key={v}
-              type="button"
-              aria-pressed={version === v}
-              onClick={() => onVersion(v)}
-            >
-              {t(`${k}.hintSrcs.${v}`)}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          className="af-ibtn"
-          aria-expanded={tip}
-          aria-label={t(`${k}.hintSrcAria`)}
-          onClick={() => setTip((v) => !v)}
-        >
-          <span aria-hidden="true">i</span>
-        </button>
-      </div>
-      {/* 選んでいる方の説明だけ1行。もう一方は (i)（UI/UX レビュー） */}
-      <p className="af-foot">{t(`${k}.hintSrcDef.${version}`)}</p>
-      {tip && (
-        <p className="af-scn-tip">
-          {t(`${k}.hintSrcDef.${version === "course" ? "overall" : "course"}`)}
-        </p>
-      )}
-      {/* 結論（当てはまる条件）は図の直下。今日の値・形の絵・全体の点線で見せる（BOA-814、承認モック mock-hint-cards-v1）。
+      {/* PC では手がかりの絵（と切り替え）を左、当てはまる条件を右に（BOA-813） */}
+      <AnalogySplit
+        fig={
+          <>
+            <div className="af-hint-pic">
+              <SlitShapeIcon
+                st={vals}
+                height={150}
+                reference={ref}
+                refLabel={t(`${k}.hintRefShort`, { venue: vName })}
+              />
+            </div>
+            <div className="af-ctl-row">
+              <span className="af-lbl" id={lbl}>
+                {t(`${k}.hintSrc`)}
+              </span>
+              <div
+                className="af-seg"
+                role="group"
+                aria-labelledby={lbl}
+                data-af-control="slit_version"
+              >
+                {["course", "overall"].map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-pressed={version === v}
+                    onClick={() => onVersion(v)}
+                  >
+                    {t(`${k}.hintSrcs.${v}`)}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="af-ibtn"
+                aria-expanded={tip}
+                aria-label={t(`${k}.hintSrcAria`)}
+                onClick={() => setTip((v) => !v)}
+              >
+                <span aria-hidden="true">i</span>
+              </button>
+            </div>
+            {/* 選んでいる方の説明だけ1行。もう一方は (i)（UI/UX レビュー） */}
+            <p className="af-foot">{t(`${k}.hintSrcDef.${version}`)}</p>
+            {tip && (
+              <p className="af-scn-tip">
+                {t(
+                  `${k}.hintSrcDef.${version === "course" ? "overall" : "course"}`,
+                )}
+              </p>
+            )}
+          </>
+        }
+      >
+        {/* 結論（当てはまる条件）は図の直下。今日の値・形の絵・全体の点線で見せる（BOA-814、承認モック mock-hint-cards-v1）。
           見方・表・割合の出し方は折りたたみ */}
-      <h4 className="af-h4">
-        {t(`${k}.hintConds`, { src: t(`${k}.hintSrcs.${version}`) })}
-      </h4>
-      {groups.length > 0 && (
-        <p className="af-foot">{t(`${k}.hintCondsNote`)}</p>
-      )}
-      <div className="af-hintcs" data-af-control="slit_form">
-        {groups.length ? (
-          groups.map(({ form, rows: rs }) => (
-            <HintCard
-              key={form}
-              form={form}
-              rows={rs}
-              vals={vals}
-              selected={selectedForm === form}
-              onForm={onForm}
-            />
-          ))
-        ) : (
-          <p className="af-foot">{t(`${k}.hintNone`)}</p>
+        <h4 className="af-h4">
+          {t(`${k}.hintConds`, { src: t(`${k}.hintSrcs.${version}`) })}
+        </h4>
+        {groups.length > 0 && (
+          <p className="af-foot">{t(`${k}.hintCondsNote`)}</p>
         )}
-      </div>
+        <div className="af-hintcs" data-af-control="slit_form">
+          {groups.length ? (
+            groups.map(({ form, rows: rs }) => (
+              <HintCard
+                key={form}
+                form={form}
+                rows={rs}
+                vals={vals}
+                selected={selectedForm === form}
+                onForm={onForm}
+              />
+            ))
+          ) : (
+            <p className="af-foot">{t(`${k}.hintNone`)}</p>
+          )}
+        </div>
+      </AnalogySplit>
       <ScenarioFold
         title={t(`${k}.hintTable`)}
         preview={t(`${k}.hintTablePreview`)}

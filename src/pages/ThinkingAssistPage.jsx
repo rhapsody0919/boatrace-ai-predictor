@@ -63,6 +63,7 @@ import {
 import { formatObservedTime } from "../components/race/weatherInfo";
 import { isRaceCancelled } from "../utils/raceCancellation";
 import { ASSIST_COPY } from "../data/thinkingAssistCopy";
+import { trueWindDirection } from "../utils/windDirection.js";
 import "../components/race/assist/ThinkingAssist.css";
 
 const initialState = {
@@ -494,7 +495,10 @@ export default function ThinkingAssistPage() {
     vaFacts: vaKey && factsAll ? factsAll[vaKey] : null,
     wind: {
       speed: race?.weather?.windSpeed ?? null,
-      dir: race?.weather?.windDirection ?? null,
+      dir: trueWindDirection(
+        race?.weather?.windDirection,
+        data.parsed?.venueCode,
+      ),
       wave: race?.weather?.waveHeight ?? null,
     },
     partsBoats: maintenanceRows ? partsChangedBoats(maintenanceRows) : null,
@@ -552,6 +556,7 @@ export default function ThinkingAssistPage() {
       <>
         <AssistHeader
           race={race}
+          venueCode={data.parsed?.venueCode}
           raceId={raceId}
           round={data.round}
           stage={data.stage}

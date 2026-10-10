@@ -17,10 +17,15 @@ export async function importPreviewBundle(files) {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
+  let response;
+  try {
+    response = await fetch(`${BASE_URL}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      ...options,
+    });
+  } catch {
+    throw new Error("通信結果を確認できませんでした。再実行する前に最新の状態を確認してください。");
+  }
 
   let body;
   try {
@@ -33,7 +38,7 @@ async function request(path, options = {}) {
 
   if (!response.ok) {
     throw new Error(
-      body.error || `リクエストに失敗しました (${response.status})`,
+      "処理を完了できませんでした。最新の状態を再読み込みして確認してください。",
     );
   }
   return body;
