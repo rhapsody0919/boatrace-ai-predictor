@@ -18,6 +18,8 @@ FORMS = ("any",) + SLIT_FORMS
 TECHNIQUES = ("逃げ", "差し", "まくり", "まくり差し", "抜き", "恵まれ", "その他")
 MANSHU = 10000
 MAX_ROWS = 30
+# STEP4 の件数を押したときに出す元のレースの一覧（BOA-823）。範囲ごとに直近のこの件数まで（全国の全レースは40万件あるため）
+RACE_LIST_MAX = 3000
 # 手がかりの条件ごとに見る形（slit-hint/hint2.py。条件はその形の手がかり）
 HINT_FORM = {"kado4": "kado", "kado4_02": "kado", "in_slow02": "d1", "in_fastest": "d1",
              "d2_slow01": "d2", "d3_slow01": "d3", "dash03": "dash", "flat03": "flat"}
@@ -115,6 +117,23 @@ def scope_cells(mask: np.ndarray, d: dict) -> dict:
         em = m & d["entries"][e]
         cells[e] = {"forms": {f: _cell(em & d["forms"][f], d, e) for f in FORMS}}
     return {"n": int(m.sum()), "cells": cells}
+
+
+def scope_races(mask: np.ndarray, d: dict) -> dict:
+    """範囲の元のレースの一覧（BOA-823、承認モック mock-scenario-race-links-v2）。日付の新しい順に RACE_LIST_MAX 件まで。
+    1行: [race_id, 進入の型のビット（entry_bits の順）, スリットの形のビット（form_bits の順）, 1〜3着（"123"）, 決まり手, 3連単の払戻]。
+    画面は②で選んだ進入・形と、押した棒・行（1着の艇・決まり手・万舟・3連単・帯）でこの一覧を絞る。d は prepare() の戻り値"""
+    idx = np.flatnonzero(np.asarray(mask, dtype=bool))
+    rows = d["rows"]
+    order = np.lexsort((rows["race_id"].to_numpy()[idx], rows["date"].to_numpy()[idx]))[::-1][:RACE_LIST_MAX]
+    sel = idx[order]
+    entry_bits, form_bits = list(ENTRY_TYPES[1:]), list(SLIT_FORMS)
+    ent = sum(d["entries"][e][sel].astype(np.int64) << i for i, e in enumerate(entry_bits))
+    frm = sum(d["forms"][f][sel].astype(np.int64) << i for i, f in enumerate(form_bits))
+    r = rows.iloc[sel]
+    return {"n": int(len(idx)), "kept": int(len(sel)), "entry_bits": entry_bits, "form_bits": form_bits,
+            "rows": [[rid, int(e), int(f), fin.replace("-", ""), tech, pay] for rid, e, f, fin, tech, pay
+                     in zip(r["race_id"], ent, frm, r["finish_1_2_3"], r["technique"], r["payout_3tan"])]}
 
 
 def hint_matrix(avg_st: np.ndarray) -> dict[str, np.ndarray]:

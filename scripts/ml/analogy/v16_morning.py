@@ -430,6 +430,8 @@ def main():
         s["n_refund_excluded"] = int((scope_masks(key, races, arrays["cls_name"], combos) & pool).sum()) - s["n"]
         s["key"], s["period"] = key, [POOL_FROM, str(cutoff.date())]
         write_local(out, f"scenario/{key.replace(':', '_')}.json", s)
+        # STEP4 の件数を押したときの元のレースの一覧（BOA-823）。押したときだけ読む別のファイル
+        write_local(out, f"scenario-races/{key.replace(':', '_')}.json", SC.scope_races(m, d))
     log("scenario", len(scn_keys))
 
     # 艇ごと: scenario-boat（タブ3の③④で2〜6号艇の率を「構成＋その艇の級」で出す。BOA-806）。級をそろえる範囲

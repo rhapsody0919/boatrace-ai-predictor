@@ -64,6 +64,32 @@ def test_scope_cells_no_rows_when_30_or_more():
     assert "races" not in SC.scope_cells(np.ones(30, bool), d)["cells"]["all"]["forms"]["any"]
 
 
+def test_scope_races_newest_first_with_bits():
+    """STEP4 の件数を押したときの元のレースの一覧（BOA-823）: 新しい順・範囲だけ・進入と形のビット"""
+    flat = [0.15, 0.16, 0.15, 0.17, 0.16, 0.15]
+    kado = [0.15, 0.15, 0.16, 0.12, 0.18, 0.18]
+    d = SC.prepare(races([
+        (WAKU, flat, (1, 2, 3), "逃げ", 1230),
+        (WAKU, kado, (4, 1, 5), "まくり", 15600),
+        ([1, 3, 4, 5, 6, 2], flat, (1, 6, 2), None, None),
+    ]))
+    out = SC.scope_races(np.array([True, True, False]), d)
+    assert out["n"] == 2 and out["kept"] == 2
+    assert [r[0] for r in out["rows"]] == ["2026-09-02-20-12", "2026-09-01-20-12"]  # 新しい順、範囲外は入らない
+    rid, ent, frm, fin, tech, pay = out["rows"][0]
+    assert (fin, tech, pay) == ("415", "まくり", 15600)
+    assert {e for i, e in enumerate(out["entry_bits"]) if ent >> i & 1} == {"waku"}
+    assert {f for i, f in enumerate(out["form_bits"]) if frm >> i & 1} == {"flat", "wall", "kado"}
+
+
+def test_scope_races_keeps_newest_up_to_max(monkeypatch):
+    monkeypatch.setattr(SC, "RACE_LIST_MAX", 2)
+    d = SC.prepare(races([(WAKU, [0.15] * 6, (1, 2, 3), "逃げ", 500)] * 3))
+    out = SC.scope_races(np.ones(3, bool), d)
+    assert out["n"] == 3 and out["kept"] == 2
+    assert [r[0] for r in out["rows"]] == ["2026-09-03-20-12", "2026-09-02-20-12"]
+
+
 def test_scope_hints_counts_waku_only():
     kado = [0.15, 0.15, 0.16, 0.12, 0.18, 0.18]
     flat = [0.15, 0.16, 0.15, 0.17, 0.16, 0.15]
