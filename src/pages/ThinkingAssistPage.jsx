@@ -106,9 +106,9 @@ function reducer(state, action) {
         metric: null,
       };
     case "metric":
+      // 値を押したら図を6艇比較に変えるだけ。深掘りは開かない（開くと深掘りへ送られて比べた図が見えない。BOA-808 1）
       return {
         ...state,
-        deep: action.boat ?? state.deep,
         metric: state.metric === action.metric ? null : action.metric,
       };
     case "back":
