@@ -75,9 +75,16 @@ test.describe("データ出走表の平均ST（BOA-815）", () => {
         );
       expect(plain).toEqual([]);
 
+      // 枠番勝率は直近1年（BOA-824）。PC 幅の見出しに期間を書く
+      if (width === 1440) {
+        await expect(
+          table.locator(".drt-label-full", { hasText: "枠番勝率（直近1年）" }),
+        ).toBeVisible();
+      }
+
       // 表の下の注記は、平均ST が行の名前の期間だと書く（「過去90日間」に含めない）
       await expect(page.locator(".drt-note").first()).toContainText(
-        "平均STは行の名前の期間です",
+        "平均ST・モーター2連率・枠番勝率は行の名前の期間",
       );
     });
   }

@@ -10,6 +10,7 @@
  * 3. 書き込みは upsertChangedRows（変わった行だけ）。以前は1日2回、全行を無条件に UPDATE していた
  * 4. aggregate-stats.yml は cron-job.org の workflow_dispatch だけで起動する（schedule を残すと
  *    3〜4時間遅れて同じ集計がもう一度走る）
+ * 5. 枠番別の出走数（course_race_counts）は直近1年（BOA-824）。以前は全期間で、画面の注記と食い違っていた
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -58,6 +59,13 @@ check(
 check(
   "aggregate-stats.yml に schedule が無い（cron-job.org の dispatch だけで起動）",
   !/^\s*schedule:/m.test(workflow) && /workflow_dispatch:/.test(workflow),
+);
+check(
+  "枠番別の出走数（course_race_counts）は直近365日で数える（データ出走表の「枠番勝率（直近1年）」、BOA-824）",
+  /const COURSE_RACE_COUNTS_WINDOW_DAYS = 365;/.test(script) &&
+    /async function calculateCourseRaceCounts[\s\S]*?getDateDaysAgo\(COURSE_RACE_COUNTS_WINDOW_DAYS\)[\s\S]*?fetchFilteredEntries\(racerId, venueCode, since\)/.test(
+      script,
+    ),
 );
 
 if (failures.length > 0) {
