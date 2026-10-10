@@ -645,7 +645,7 @@ test.describe("レース詳細の表示の細部", () => {
     }
   });
 
-  test("1440px: 枠別情報の注記と選手チップの段は、下のカードと右端がそろう（BOA-703）", async ({
+  test("1440px: 枠別情報の選手チップの段は下のカードと右端がそろい、注記はカードより右へ出ない（BOA-703・BOA-820）", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -653,13 +653,16 @@ test.describe("レース詳細の表示の細部", () => {
     // カードの幅は中の表が出てから決まる（表が出る前は注記と同じ幅で、比べても意味が無い）
     const card = page.locator(".rwit-card:has(.rwit-today-table)").first();
     await expect(card).toBeVisible({ timeout: 30000 });
-    const rights = await page.evaluate(() =>
+    const [note, chips, cardRight] = await page.evaluate(() =>
       [".rwit-note", ".rwit-chip-row", ".rwit-card:has(.rwit-today-table)"].map(
         (sel) =>
           Math.round(document.querySelector(sel).getBoundingClientRect().right),
       ),
     );
-    expect(Math.max(...rights) - Math.min(...rights)).toBeLessThanOrEqual(1);
+    // 選手チップの段はカードと右端がそろう。注記（説明文）はカードより右へ出ない。
+    // 説明文の行は最大720にした（BOA-820、2026-10-10 ユーザー決定）ので、カードの右端までは伸ばさない
+    expect(Math.abs(chips - cardRight)).toBeLessThanOrEqual(1);
+    expect(note).toBeLessThanOrEqual(cardRight + 1);
   });
 
   // 固定した列の右端と、その右で最初に見える列の左端の差（切れて隠れている幅）
