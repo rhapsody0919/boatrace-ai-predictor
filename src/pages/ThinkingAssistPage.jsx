@@ -494,7 +494,7 @@ export default function ThinkingAssistPage() {
       ),
       rel: windRelation(
         race?.weather?.windDirection,
-        data.parsed.venueCode,
+        data.parsed?.venueCode,
         race?.weather?.windSpeed,
       ),
       wave: race?.weather?.waveHeight ?? null,
