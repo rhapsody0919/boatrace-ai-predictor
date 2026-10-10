@@ -866,6 +866,56 @@ test.describe("レイアウト: 龍神ソナーのタブ（3つの内部タブ�
     await openAllDetails(section);
     await expectFits(page);
   });
+
+  test("PC（1024px 以上）では列の左端がタブの列にそろい、図と押して変わる結果が横に並ぶ。狭い画面では縦並びのまま（BOA-813）", async ({
+    page,
+  }) => {
+    const section = await openSection(page);
+    const wide = page.viewportSize().width >= 1024;
+    // 図（左）と結果（右）の位置。PC では右の列の左端が図の右端より右、狭い画面では結果が図の下
+    const sideBySide = (fig, side) =>
+      Promise.all([fig.boundingBox(), side.boundingBox()]).then(
+        ([a, b]) => b.x >= a.x + a.width - 1 && b.y < a.y + a.height,
+      );
+    const tabsLeft = await page
+      .locator('[role="tab"]:has-text("龍神ソナー")')
+      .evaluate((el) => el.parentElement.getBoundingClientRect().left);
+    // 節（.af-v16）そのものの左端
+    const colLeft = await section.evaluate(
+      (el) => el.getBoundingClientRect().left,
+    );
+    if (wide) expect(Math.abs(colLeft - tabsLeft)).toBeLessThanOrEqual(24);
+
+    // 差がつく材料: 七角形｜艇の行
+    await expect(
+      section.getByTestId("analogy-fact-card").first(),
+    ).toBeVisible();
+    expect(
+      await sideBySide(
+        section.locator(".af-hep .af-dark"),
+        section.locator(".af-hep-legend"),
+      ),
+    ).toBe(wide);
+    // 類似レース: ソナー｜点の近くの類似レース
+    await section.getByRole("tab", { name: "類似レース" }).click();
+    expect(
+      await sideBySide(
+        section.locator(".af-sonar"),
+        section.locator(".af-sonar-picks"),
+      ),
+    ).toBe(wide);
+    // 展開シナリオ: ③攻める艇｜1号艇、④1着｜3着以内
+    await section.getByRole("tab", { name: "展開シナリオ" }).click();
+    await section.getByRole("button", { name: /^カド一撃/ }).click();
+    const boxes = section.getByTestId("analogy-attack-box");
+    expect(await sideBySide(boxes.first(), boxes.last())).toBe(wide);
+    const blks = section
+      .locator("#af-scn-s4 .af-pair")
+      .first()
+      .locator(".af-scn-blk");
+    expect(await sideBySide(blks.first(), blks.last())).toBe(wide);
+    await expectFits(page);
+  });
 });
 
 // 会場のレース一覧カード（BOA-558 の6・BOA-586）。2026-09-24 桐生は準優勝戦（バッジ3つ）を含む
