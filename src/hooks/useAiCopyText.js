@@ -63,6 +63,12 @@ function buildRows(t, players, analysis, flying, raceId) {
     (analysis.racerStats ?? []).map((s) => [s.boatNumber, s]),
   );
   const meetPrevByBoat = byBoat(analysis.meetPrevRun);
+  const officialStByBoat = new Map(
+    (analysis.officialAvgSt?.rows ?? []).map((r) => [r.boatNumber, r.avgSt]),
+  );
+  const st30ByBoat = new Map(
+    (analysis.st30 ?? []).map((r) => [r.boatNumber, r.st30]),
+  );
 
   return [
     {
@@ -118,12 +124,20 @@ function buildRows(t, players, analysis, flying, raceId) {
         return `${sign}${Math.abs(row.delta).toFixed(2)}`;
       }),
     },
+    // データ出走表と同じ2行（raceIndicators.jsx、BOA-815）: 公式は2桁、30走は3桁
     {
       key: "avgSt",
-      label: t("dataTable.rowAvgSt"),
+      label: t("dataTable.rowAvgStOfficial"),
       values: players.map((p) => {
-        // データ出走表と同じ小数3桁（raceIndicators.jsx の平均ST行）
-        const v = toNumber(statsByBoat.get(p.number)?.avgST);
+        const v = toNumber(officialStByBoat.get(p.number));
+        return v !== null ? v.toFixed(2) : DASH;
+      }),
+    },
+    {
+      key: "avgSt30",
+      label: t("dataTable.rowAvgSt30"),
+      values: players.map((p) => {
+        const v = toNumber(st30ByBoat.get(p.number));
         return v !== null ? v.toFixed(3) : DASH;
       }),
     },

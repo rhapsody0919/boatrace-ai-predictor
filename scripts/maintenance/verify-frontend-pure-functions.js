@@ -943,6 +943,55 @@ function suiteBasicInfoStats(m, check) {
     [[], []],
   );
 
+  // --- officialPeriodOf（BOA-815）: 公式の出走表の平均ST・勝率の期。公式の出走表と本番DBで照合した
+  //     5レースの日付（各6艇が一致）と、periodsEndedBefore と食い違う5〜6月・11〜12月
+  check(
+    "officialPeriodOf: 1〜6月は (Y,1)、7〜12月は (Y,2)（公式の出走表と照合した日付）",
+    ["2025-12-20", "2026-05-20", "2026-06-20", "2026-07-03", "2026-10-09"].map(
+      (d) => {
+        const p = m.officialPeriodOf(d);
+        return `${p.periodYear}-${p.periodNo}`;
+      },
+    ),
+    ["2025-2", "2026-1", "2026-1", "2026-2", "2026-2"],
+  );
+  check(
+    "officialPeriodOf: 期の境目（6/30・7/1・12/31・1/1）と成績の期間",
+    [
+      m.officialPeriodOf("2026-06-30"),
+      m.officialPeriodOf("2026-07-01"),
+      m.officialPeriodOf("2026-12-31"),
+      m.officialPeriodOf("2027-01-01"),
+    ],
+    [
+      { periodYear: 2026, periodNo: 1, calcFrom: "2025-05-01", calcTo: "2025-10-31" },
+      { periodYear: 2026, periodNo: 2, calcFrom: "2025-11-01", calcTo: "2026-04-30" },
+      { periodYear: 2026, periodNo: 2, calcFrom: "2025-11-01", calcTo: "2026-04-30" },
+      { periodYear: 2027, periodNo: 1, calcFrom: "2026-05-01", calcTo: "2026-10-31" },
+    ],
+  );
+  check(
+    "officialPeriodOf: 直前に終わった期（periodsEndedBefore）と5〜6月・11〜12月で食い違う",
+    ["2026-05-20", "2026-11-20"].map((d) => {
+      const o = m.officialPeriodOf(d);
+      const [e] = m.periodsEndedBefore(d, 1);
+      return `${o.periodYear}-${o.periodNo}/${e.periodYear}-${e.periodNo}`;
+    }),
+    ["2026-1/2026-2", "2026-2/2027-1"],
+  );
+  check(
+    "officialPeriodOf: 節の初日で決める（6/27〜7/1 の節の 7/1 は旧期。戸田 2026-07-01 8R で公式と照合）",
+    [m.officialPeriodOf("2026-06-27"), m.officialPeriodOf("2025-12-28")].map(
+      (p) => `${p.periodYear}-${p.periodNo}`,
+    ),
+    ["2026-1", "2025-2"],
+  );
+  check(
+    "officialPeriodOf: 日付が無い・壊れていれば null",
+    [m.officialPeriodOf(""), m.officialPeriodOf(null)],
+    [null, null],
+  );
+
   // --- pickPeriodStats
   const RD = "2026-09-29"; // 前期 = (2026,2)、直近2年 = (2025,1)〜(2026,2)
   const ok = (rows) => ({ rows, latestImported: true });
