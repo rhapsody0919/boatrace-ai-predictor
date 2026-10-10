@@ -529,6 +529,53 @@ check(
     boardModel({ lens: "axis", stage: "pre", racers, hasToday: false }).noSt ===
       false,
 );
+// 6艇比較の目盛りと縮尺（BOA-804）: 目盛りを消さず、ST は展開レンズと同じ .00〜.25、勝率は軸レンズと同じ
+const cmpSt = boardModel({
+  lens: "axis",
+  stage: "pre",
+  racers,
+  metric: "st_mean30",
+});
+const cmpNat = boardModel({
+  lens: "axis",
+  stage: "pre",
+  racers,
+  metric: "nat_win",
+});
+check(
+  "6艇比較: 平均ST は目盛り .00〜.25（展開レンズと同じ縮尺）、全国勝率は軸レンズと同じ目盛り",
+  cmpSt.left === ".00" &&
+    cmpSt.right === ".25" &&
+    cmpSt.lo === 0 &&
+    cmpSt.hi === 0.25 &&
+    cmpNat.left === axis.left &&
+    cmpNat.right === axis.right &&
+    cmpNat.lo === axis.lo &&
+    cmpNat.hi === axis.hi,
+  JSON.stringify([
+    cmpSt.left,
+    cmpSt.right,
+    cmpNat.left,
+    cmpNat.right,
+    axis.left,
+    axis.right,
+  ]),
+);
+check(
+  "6艇比較: どの項目も目盛りの文字が空でない",
+  [
+    "nat_win",
+    "loc_win",
+    "st_mean30",
+    "motor_2",
+    "exh_time",
+    "st_course",
+    "exh_st",
+  ].every((m) => {
+    const c = boardModel({ lens: "axis", stage: "post", racers, metric: m });
+    return c.left !== "" && c.right !== "";
+  }),
+);
 const power = boardModel({
   lens: "power",
   stage: "post",
@@ -684,6 +731,16 @@ check(
       ev(st, { type: "toggleBet", pos: 1, boat: 1 }),
       ev(st, { type: "closeDeep" }),
     ].every((e) => e === null),
+  );
+  check(
+    "イベント: 軸の要約の入口1行（openFacts）から開いたときも assist_deep_open。開いている艇では送らない",
+    JSON.stringify(ev(st, { type: "openFacts", boat: 1, all: false })) ===
+      JSON.stringify({
+        name: "assist_deep_open",
+        params: { assist_boat: 1, assist_lens: "axis" },
+      }) &&
+      ev({ ...st, deep: 1 }, { type: "openFacts", boat: 1, all: true }) ===
+        null,
   );
   check(
     "イベント: パラメータ名に GA4 の予約語を使わない",

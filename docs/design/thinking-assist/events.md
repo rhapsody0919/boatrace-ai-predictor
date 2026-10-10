@@ -10,7 +10,7 @@
 |---|---|---|
 | `assist_view_switch` | race_id, assist_view | 上部の切り替えで、もう一方へ移ったとき（レース詳細・思考アシストの両方）。選択中の方の押し直しは送らない |
 | `assist_lens_select` | race_id, assist_lens | レンズを押して変えたとき。選択中のレンズの押し直しは送らない。ガイドの段で変わったときは送らない（`assist_guide_step` で分かる） |
-| `assist_deep_open` | race_id, assist_boat, assist_lens | 図の艇を押して深掘りを開いたとき・別の艇に替えたとき。開いている艇の押し直し（閉じる）は送らない |
+| `assist_deep_open` | race_id, assist_boat, assist_lens | 図の艇を押して深掘りを開いたとき・別の艇に替えたとき、軸の要約の入口1行（「1号艇の差がつく材料 ›」）から開いたとき。開いている艇の押し直しは送らない |
 | `assist_metric_compare` | race_id, assist_metric, assist_lens | 値を押して6艇比較にしたとき（図の中・深掘りの中の両方）。比較中の項目の押し直し（戻す）は送らない |
 | `assist_sheet_open` | race_id, assist_sheet | シートを開いたとき |
 | `assist_guide_step` | race_id, assist_guide_step | ガイドの段を出したとき（「ガイド」で1段目、「次へ」「戻る」のたび）。閉じたときは送らない |

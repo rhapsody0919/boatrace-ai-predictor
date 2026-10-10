@@ -16,7 +16,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 import {
-  axisFactChips,
+  factsEntry,
   b1Usual,
   boardFactMark,
   courseWins,
@@ -110,13 +110,33 @@ check(
   motor?.bucket === 6 && motor.pair[0] === 205 && motor.pair[1] === 675,
   JSON.stringify(motor),
 );
-const axisChips = axisFactChips(chipsNc);
-check(
-  "軸の要約の札: 差が大きい項目だけ・今日当てはまるものが先・4つまで",
-  axisChips.length <= 4 &&
-    axisChips.every((c) => c.level === "large") &&
-    axisChips[0].hit,
-);
+// 軸の要約の入口1行（2026-10-11 ユーザー決定 案D）: ▲の数と、深掘りの先頭と同じ順の項目2つまで
+{
+  const e = factsEntry(chipsNc);
+  const hits = chipsNc.filter((c) => c.hit);
+  check(
+    "入口1行: ▲の数・先頭2項目（深掘りの先頭と同じ順）・残りの件数",
+    e.hits === hits.length &&
+      JSON.stringify(e.keys) ===
+        JSON.stringify(hits.slice(0, 2).map((c) => c.key)) &&
+      e.rest === Math.max(0, hits.length - 2),
+    JSON.stringify(e),
+  );
+  check(
+    "入口1行: ▲が無い日は hits 0、材料が無い（範囲が無い）ときは出さない",
+    factsEntry(chipsNc.map((c) => ({ ...c, hit: false }))).hits === 0 &&
+      factsEntry([]) === null &&
+      factsEntry(null) === null,
+  );
+  check(
+    "入口1行の文: ▲あり・項目名と「ほか{n}件」・▲なし",
+    ASSIST_COPY.factsEntry(1, 3) === "1号艇の差がつく材料 ▲3件" &&
+      ASSIST_COPY.factsEntryNames(["当地勝率", "平均ST（直近30走）"], 1) ===
+        "当地勝率・平均ST（直近30走） ほか1件" &&
+      ASSIST_COPY.factsEntryNames(["当地勝率"], 0) === "当地勝率" &&
+      ASSIST_COPY.factsEntryNone(1) === "1号艇の全部の材料（今日は▲なし）",
+  );
+}
 check(
   "図の良い方の札: 一番良い（bucket 1）だけ。1号艇は平均ST",
   boardFactMark(chipsNc)?.key === "st_mean30",
@@ -562,6 +582,14 @@ check(
   ) === "全国・級の並びが同じ（予選も含む） 2,457件・平均STがそろったレース",
 );
 
+// 今節の平均着順点の一言（BOA-804）: 何を平均したか。優勝戦の日は準優勝戦の着順も入る
+check(
+  "今節の平均着順点の一言: 予選の日と優勝戦の日",
+  ASSIST_COPY.seriesAvgNote(7, 60, false) ===
+    "前日までの今節 7走の平均（60点÷7走。F・失格は0点）" &&
+    ASSIST_COPY.seriesAvgNote(8, 64, true).endsWith("。準優勝戦の着順も入る"),
+);
+
 // 用語の辞書・カードの文に禁止語が無い（D-41・D-42・N-7）
 const BANNED = /数え|集計|算出|対象|似た|似てい|ふつう|いつも|競艇|鉄板|大本線/;
 const theoryTexts = [
@@ -597,6 +625,7 @@ const bannedHits = [
   conclusion,
   ASSIST_COPY.simTopNote(63, "13:14"),
   ASSIST_COPY.entryNoPast,
+  ASSIST_COPY.seriesAvgNote(8, 64, true),
   JSON.stringify(ASSIST_COPY.scopeWhy),
   ASSIST_COPY.flowCourseNote,
   ASSIST_COPY.stNoData,
@@ -619,6 +648,24 @@ check(
     !steps[3].sub.includes("金枠"),
   JSON.stringify(steps.map((x) => x.sub)),
 );
+
+// 札の言い方: 形容詞に「の」を挟まない（「一番高いのとき」ではなく「一番高いとき」。2026-10-11 ユーザー指摘）
+{
+  const words = Object.values(ASSIST_COPY.factWords);
+  const texts = [
+    ...words.map((w) => ASSIST_COPY.factHit(w, 77, 1793, 72)),
+    ASSIST_COPY.motorChipRate(true, 60, 55),
+    ASSIST_COPY.motorChipRate(false, 40, 55),
+  ];
+  check(
+    "札: 「6艇で一番高いとき 1着」の形（「〜いのとき」にしない。誰の中で一番かを書く）",
+    texts.every((t) => !/いのとき/.test(t)) &&
+      texts[0] === "▲6艇で一番高いとき 1着 77%・1,793件（全体 72%）" &&
+      texts.at(-2).startsWith("一番高いとき 1着") &&
+      texts.at(-1).startsWith("一番低いとき 1着"),
+    JSON.stringify(texts),
+  );
+}
 
 if (failures > 0) {
   console.error(`\n${failures}件の失敗`);

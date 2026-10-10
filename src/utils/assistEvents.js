@@ -5,6 +5,7 @@
  * - 状態が変わらない操作（選択中のレンズの押し直し、開いている艇の押し直し＝閉じる、比較中の項目の押し直し）は送らない
  * - ガイドは段を出したとき（1段目＝1）。閉じたときは送らない
  * - シートは開いたとき。種類は mark・rough・venue・term・theory
+ * - 軸の要約の入口1行（openFacts、2026-10-11 案D）から深掘りを開いたときも assist_deep_open。開いている艇の押し直しは送らない
  * @param {{lens: string, deep: number|null, metric: string|null}} state 押す前の状態
  * @param {{type: string, [key: string]: unknown}} action
  * @returns {{name: string, params: Record<string, string|number>} | null}
@@ -19,6 +20,7 @@ export function assistEventOf(state, action) {
             params: { assist_lens: action.lens },
           };
     case "deep":
+    case "openFacts":
       return action.boat === state.deep
         ? null
         : {
