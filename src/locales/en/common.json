@@ -67,6 +67,14 @@
     "nuki": "Nuki (Overtake)",
     "megumare": "Megumare (Lucky win)"
   },
+  "techniquesShort": {
+    "nige": "Escape",
+    "sashi": "Inside pass",
+    "makuri": "Outside sweep",
+    "makurizashi": "Sweep & pass",
+    "nuki": "Overtake",
+    "megumare": "Lucky win"
+  },
   "venueSelector": {
     "label": "Select venue:",
     "raceCount": "{{count}} races",

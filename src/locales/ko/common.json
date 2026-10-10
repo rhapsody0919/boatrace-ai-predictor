@@ -67,6 +67,14 @@
     "nuki": "추월 (Nuki)",
     "megumare": "어부지리 (Megumare)"
   },
+  "techniquesShort": {
+    "nige": "인빠지기 (Nige)",
+    "sashi": "찌르기 (Sashi)",
+    "makuri": "휘감기 (Makuri)",
+    "makurizashi": "휘감아찌르기 (Makuri-zashi)",
+    "nuki": "추월 (Nuki)",
+    "megumare": "어부지리 (Megumare)"
+  },
   "venueSelector": {
     "label": "경정장 선택:",
     "raceCount": "{{count}}개 경주"
