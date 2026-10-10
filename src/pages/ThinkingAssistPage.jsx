@@ -71,6 +71,8 @@ const initialState = {
   stage: null, // null＝DB の展示から決める既定（spec D-36 (1)）
   deep: null,
   metric: null,
+  // 展開レンズの展示前の平均ST（BOA-815 案A）
+  stBasis: "course",
   bets: { 1: new Set(), 2: new Set(), 3: new Set() },
   budget: "1000",
   mode: "equalPayout",
@@ -114,6 +116,8 @@ function reducer(state, action) {
       };
     case "back":
       return { ...state, metric: null };
+    case "stBasis":
+      return { ...state, stBasis: action.basis, metric: null };
     case "closeDeep":
       return { ...state, deep: null, metric: null };
     case "toggleBet": {
@@ -298,6 +302,8 @@ export default function ThinkingAssistPage() {
         finalRound,
         hasToday: today != null,
         pastWin,
+        stBasis: state.stBasis,
+        stMissing: data.facts.status === "ready" && v16Status === "not_saved",
       }),
     [
       state.lens,
@@ -308,6 +314,9 @@ export default function ThinkingAssistPage() {
       finalRound,
       today,
       pastWin,
+      state.stBasis,
+      data.facts.status,
+      v16Status,
     ],
   );
 
@@ -619,6 +628,7 @@ export default function ThinkingAssistPage() {
               dispatch({ type: "metric", metric, boat })
             }
             onBack={() => dispatch({ type: "back" })}
+            onBasis={(basis) => dispatch({ type: "stBasis", basis })}
             onToggleBet={toggleBet}
             onOpenSheet={() => dispatch({ type: "sheet", sheet: "mark" })}
             // 軸・展開の印は v16 が無ければ材料が空なので出ない。機力のチルト・交換は DB の展示なので欠場でも出す

@@ -480,6 +480,21 @@
   scroll-margin-top: calc(var(--ta-sticky-top, 0px) + 130px);
 }
 
+/* 展開レンズの展示前の平均ST の切り替え（BOA-815 案A）。押せる範囲は .ta-seg と同じ */
+.ta-basis {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-2);
+}
+
+.ta-basis .ta-seg {
+  margin-left: 0;
+}
+
 .ta-board-axis {
   display: flex;
   justify-content: space-between;
@@ -493,6 +508,9 @@
 .ta-board-title {
   font-weight: var(--font-weight-medium);
   text-align: center;
+  /* 空白の所で折り返す（「左ほど早い」を語の途中で切らない。BOA-815）。収まらないときだけ途中で折る */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .ta-good {

@@ -114,6 +114,7 @@ export default function RaceLaneBoard({
   onBack,
   onToggleBet,
   onOpenSheet,
+  onBasis = null,
   marks = null,
 }) {
   const bet = model.kind === "bet";
@@ -137,6 +138,28 @@ export default function RaceLaneBoard({
       aria-label={ASSIST_COPY.figure(lensLabel)}
       data-guide="board"
     >
+      {model.basis && onBasis && (
+        // 展示前の平均ST の切り替え（BOA-815 案A）。展示の後は横軸が展示ST になるので出さない
+        <div className="ta-basis">
+          <span>{ASSIST_COPY.stBasisGroup}</span>
+          <span
+            className="ta-seg"
+            role="group"
+            aria-label={ASSIST_COPY.stBasisGroup}
+          >
+            {["course", "overall"].map((b) => (
+              <button
+                key={b}
+                type="button"
+                aria-pressed={model.basis === b}
+                onClick={() => onBasis(b)}
+              >
+                {ASSIST_COPY.stBasis[b]}
+              </button>
+            ))}
+          </span>
+        </div>
+      )}
       <div className="ta-board-axis" aria-hidden="true">
         <span>
           {model.good === "left" && (
@@ -190,6 +213,9 @@ export default function RaceLaneBoard({
                   <span className="ta-tag ta-tag-warn">
                     {ASSIST_COPY.absent}
                   </span>
+                )}
+                {row.filled && (
+                  <span className="ta-tag">{ASSIST_COPY.stFilled}</span>
                 )}
                 {!r.absent &&
                   r.fCount > 0 &&
@@ -253,6 +279,10 @@ export default function RaceLaneBoard({
           </div>
         );
       })}
+      {model.basis === "course" && (
+        <p className="ta-note">{ASSIST_COPY.flowCourseNote}</p>
+      )}
+      {model.noSt && <p className="ta-note">{ASSIST_COPY.stNoData}</p>}
       {model.kind === "metric" && (
         <button type="button" className="ta-back" onClick={onBack}>
           × {ASSIST_COPY.backToFigure}

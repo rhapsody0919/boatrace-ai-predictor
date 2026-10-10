@@ -445,12 +445,86 @@ const flowPre = boardModel({
   finalRound: true,
 });
 check(
-  "展開レンズ（展示前）: 平均ST（このコース）。3号艇 .1417 と5号艇 .142 は3桁で同じなので両方が最良",
+  "展開レンズ（展示前）: 平均ST（このコース・直近30走）。3号艇 .1417 と5号艇 .142 は3桁で同じなので両方が最良",
   flowPre.rows[2].dotText === ".142" &&
     flowPre.rows
       .filter((r) => r.dotBest)
       .map((r) => r.boat)
       .join() === "3,5",
+);
+// 平均ST の定義（BOA-815）: このコースは判定と同じ補った値（course_filled）・走数、5走未満は「全体で補った」
+check(
+  "展開レンズ（展示前）: 横軸の名前に期間、切り替えは「このコース」。course_n・course_filled の無い古い保存は course をそのまま使い、補った印を付けない",
+  flowPre.title === "平均ST（このコース・直近30走） 左ほど早い" &&
+    flowPre.basis === "course" &&
+    flowPre.rows.every((r) => r.filled === false) &&
+    racers[0].stCourse === 0.148 &&
+    racers[0].stCourseN === null,
+  flowPre.title,
+);
+const filledToday = {
+  ...fx.today,
+  course_st: {
+    ...fx.today.course_st,
+    // 2号艇はこのコースの走が3走（生の値 .120）。v16 は直近30走 .147 で補う
+    course: [0.148, 0.12, 0.1417, 0.181, 0.142, 0.185],
+    course_n: [30, 3, 30, 30, 5, 30],
+    course_filled: [0.148, 0.1473, 0.1417, 0.181, 0.142, 0.185],
+  },
+};
+const racersFilled = buildRacers({
+  players,
+  today: filledToday,
+  exhibition: exhibitionRows,
+});
+const flowFilled = boardModel({
+  lens: "flow",
+  stage: "pre",
+  racers: racersFilled,
+});
+check(
+  "このコース: 5走未満は補った値（生の .120 ではなく .147）で「全体で補った」。5走は補わない。走数が少ない艇（6走未満）は金枠を付けない",
+  racersFilled[1].stCourse === 0.1473 &&
+    flowFilled.rows[1].dotText === ".147" &&
+    flowFilled.rows[1].filled === true &&
+    flowFilled.rows[4].filled === false &&
+    flowFilled.rows
+      .filter((r) => r.dotBest)
+      .map((r) => r.boat)
+      .join() === "3",
+  JSON.stringify(flowFilled.rows.map((r) => [r.dotText, r.filled, r.dotBest])),
+);
+const flowOverall = boardModel({
+  lens: "flow",
+  stage: "pre",
+  racers,
+  stBasis: "overall",
+});
+check(
+  "切り替えで直近30走: 横軸は平均ST（直近30走）、点は st_mean30（1号艇 .132）、補った印は付けない",
+  flowOverall.title === "平均ST（直近30走） 左ほど早い" &&
+    flowOverall.basis === "overall" &&
+    flowOverall.rows[0].dotText === ".132" &&
+    flowOverall.rows[0].dotMetric === "st_mean30" &&
+    flowOverall.rows.every((r) => !r.filled),
+  flowOverall.title,
+);
+check(
+  "展示の後は横軸が展示ST で、切り替えを出さない",
+  boardModel({ lens: "flow", stage: "post", racers, stBasis: "overall" })
+    .basis === null,
+);
+check(
+  "v16 の保存が無いと分かったレースだけ、軸レンズに平均ST を出せない理由（読み込み中は出さない。BOA-808 6）",
+  boardModel({
+    lens: "axis",
+    stage: "pre",
+    racers,
+    hasToday: false,
+    stMissing: true,
+  }).noSt === true &&
+    boardModel({ lens: "axis", stage: "pre", racers, hasToday: false }).noSt ===
+      false,
 );
 const power = boardModel({
   lens: "power",
