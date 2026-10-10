@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>④から過去レースへ v2</title>
+<style>
+:root{--page:#f6f2e9;--card:#fbf9f3;--line:#ddd4bf;--trk:#e7dfcc;--ink:#0f172a;--sub:#475569;--gold:#6b4f10;--bar:#c9a227;--hl:#c9a22722;--teal:#0f766e;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--page:#0b1626;--card:#132640;--line:#2b3d58;--trk:#24364f;--ink:#f1f5f9;--sub:#cbd5e1;--gold:#d4ae3a;--bar:#d4ae3a;--hl:#d4ae3a22;--teal:#5eead4;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#0b1626;--card:#132640;--line:#2b3d58;--trk:#24364f;--ink:#f1f5f9;--sub:#cbd5e1;--gold:#d4ae3a;--bar:#d4ae3a;--hl:#d4ae3a22;--teal:#5eead4;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;line-height:1.6;font-size:13.6px}
+.doc{max-width:1000px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:14px}
+h1{font-size:20px;margin:0}
+.sub{color:var(--sub);font-size:13px;margin:0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:20px;align-items:start}
+.phone{max-width:375px;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--page);display:flex;flex-direction:column;gap:6px}
+.tag{font-size:12.5px;font-weight:800;color:var(--gold);margin:0 0 6px}
+h4{font-size:14px;margin:6px 0 2px}
+.boat{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;font-size:11px;font-weight:800;border:1px solid #94a3b8;flex:none}
+.sq{border-radius:4px}
+.b1{background:#fff;color:#000}.b2{background:#000;color:#fff}.b3{background:#e53935;color:#fff}.b4{background:#1e88e5;color:#fff}.b5{background:#fdd835;color:#000}.b6{background:#43a047;color:#fff}
+.bar{display:grid;grid-template-columns:96px minmax(0,1fr) 92px;gap:6px;align-items:center;font-size:12px;min-height:44px;border-radius:6px;padding:0 4px;font-variant-numeric:tabular-nums;cursor:pointer}
+.bar.on{background:var(--hl);outline:2px solid var(--bar)}
+.bar .lb{display:flex;flex-direction:column;line-height:1.2}
+.bar .lb small{font-size:10.5px;color:var(--sub)}
+.bar .lb span{display:flex;align-items:center;gap:4px}
+.trk{position:relative;height:10px;border-radius:5px;background:var(--trk)}.trk i{position:absolute;inset:0 auto 0 0;background:var(--bar);border-radius:5px}
+.trk s{position:absolute;top:-4px;bottom:-4px;border-left:2px dotted var(--teal)}
+.v{text-align:right;display:flex;flex-direction:column;align-items:flex-end;line-height:1.2}
+.chip{display:inline-block;margin-top:2px;border:1px solid var(--gold);color:var(--gold);border-radius:999px;padding:0 7px;font-size:11px;font-weight:700}
+.list{border:1px solid var(--bar);border-radius:10px;background:var(--card);padding:8px 10px;display:flex;flex-direction:column;gap:0;margin-top:6px}
+.lh{display:flex;align-items:center;gap:6px;font-size:12.5px;padding-bottom:4px}
+.lh b{font-size:13px}
+.lh .x{margin-left:auto;width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px}
+.lsub{font-size:11.5px;color:var(--sub);margin:0 0 4px}
+.rc{display:grid;grid-template-columns:minmax(0,1fr) 16px;align-items:center;border-top:1px solid var(--line);min-height:52px;padding:4px 0;text-decoration:none;color:inherit;font-variant-numeric:tabular-nums}
+.rc .l1{display:flex;align-items:center;gap:4px;font-weight:700;font-size:12.5px}
+.rc .l2{font-size:12px;color:var(--sub);white-space:nowrap}
+.rc .go{color:var(--gold);font-weight:800;font-size:16px}
+.more{min-height:44px;display:grid;place-items:center;border-top:1px solid var(--line);color:var(--gold);font-weight:700;font-size:12.5px}
+.ex{font-size:10px;color:var(--sub);border:1px dashed var(--line);border-radius:4px;padding:0 3px;font-weight:400}
+.tri{display:grid;grid-template-columns:78px minmax(0,1fr) 92px;gap:6px;align-items:center;font-size:12px;min-height:44px;border-radius:6px;padding:0 4px;cursor:pointer}
+.tri.on{background:var(--hl);outline:2px solid var(--bar)}
+.tc{display:flex;gap:2px;align-items:center}
+.notes{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:12px 14px;font-size:13px}
+.notes ul{margin:4px 0 0;padding-left:18px}
+</style>
+</head>
+<body>
+<div class="doc">
+  <p class="sub">BOA-823 v2（UI/UX デザイナー役のレビューを反映）・ 展開シナリオ STEP4「結果はどう決まった？」・ 375px ・ 左の「1着になった艇」の件数は本番 津4R（10/10、全国・同じ級別の組み合わせ）。右の3連単の件数と、一覧の1件ずつは<b>見た目の例</b></p>
+  <h1>STEP4 の件数を押すと、元になった過去レースが図の下に開く</h1>
+  <div class="cols">
+    <div>
+      <p class="tag">1着の棒（2号艇）を押したとき</p>
+      <div class="phone">
+        <h4>1着になった艇</h4>
+        <div class="bar"><span class="lb"><span><span class="boat b1">1</span>1号艇</span><small>A1 3,672件</small></span><span class="trk"><i style="width:73%"></i><s style="left:71%"></s></span><span class="v">73%<span class="chip">2,667件 ›</span></span></div>
+        <div class="bar on"><span class="lb"><span><span class="boat b2">2</span>2号艇</span><small>A2 2,352件</small></span><span class="trk"><i style="width:7%"></i><s style="left:9%"></s></span><span class="v">7%<span class="chip">168件 ›</span></span></div>
+        <div class="bar"><span class="lb"><span><span class="boat b3">3</span>3号艇</span><small>A2 2,360件</small></span><span class="trk"><i style="width:6%"></i><s style="left:8%"></s></span><span class="v">6%<span class="chip">150件 ›</span></span></div>
+        <div class="bar"><span class="lb"><span><span class="boat b4">4</span>4号艇</span><small>A2 2,389件</small></span><span class="trk"><i style="width:6%"></i><s style="left:7%"></s></span><span class="v">6%<span class="chip">132件 ›</span></span></div>
+        <div class="bar"><span class="lb"><span><span class="boat b5">5</span>5号艇</span><small>A1 1,863件</small></span><span class="trk"><i style="width:6%"></i><s style="left:5%"></s></span><span class="v">6%<span class="chip">109件 ›</span></span></div>
+        <div class="bar"><span class="lb"><span><span class="boat b6">6</span>6号艇</span><small>A1 1,566件</small></span><span class="trk"><i style="width:2%"></i><s style="left:2%"></s></span><span class="v">2%<span class="chip">26件 ›</span></span></div>
+        <div class="list">
+          <div class="lh"><span class="boat b2">2</span><b>2号艇が1着のレース</b><span class="x">✕</span></div>
+          <p class="lsub">168件のうち直近5件 ・ 枠なり・どの形でも</p>
+          <a class="rc" href="#"><span><span class="l1">10/06 戸田 9R <span class="boat sq b2">2</span>-<span class="boat sq b1">1</span>-<span class="boat sq b4">4</span> <span class="ex">例</span></span><span class="l2">差し・1,980円</span></span><span class="go">›</span></a>
+          <a class="rc" href="#"><span><span class="l1">10/02 平和島 7R <span class="boat sq b2">2</span>-<span class="boat sq b3">3</span>-<span class="boat sq b1">1</span> <span class="ex">例</span></span><span class="l2">まくり・5,420円</span></span><span class="go">›</span></a>
+          <a class="rc" href="#"><span><span class="l1">9/29 浜名湖 3R <span class="boat sq b2">2</span>-<span class="boat sq b1">1</span>-<span class="boat sq b3">3</span> <span class="ex">例</span></span><span class="l2">差し・1,120円</span></span><span class="go">›</span></a>
+          <span class="more">もっと見る（20件まで）</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="tag">着順の流れの帯（1着1→2着3）を選んだ状態で、3連単の行（1-3-2）を押したとき</p>
+      <div class="phone">
+        <h4>よく出た3連単</h4>
+        <p class="lsub" style="font-weight:700;color:var(--ink)">1着1号艇→2着3号艇の N件の内訳（全体の◯%）</p>
+        <div class="tri on"><span class="tc"><span class="boat sq b1">1</span>-<span class="boat sq b3">3</span>-<span class="boat sq b2">2</span></span><span class="trk"><i style="width:100%"></i></span><span class="v">7.4%<span class="chip">273件 ›</span></span></div>
+        <div class="tri"><span class="tc"><span class="boat sq b1">1</span>-<span class="boat sq b3">3</span>-<span class="boat sq b4">4</span></span><span class="trk"><i style="width:78%"></i></span><span class="v">5.8%<span class="chip">213件 ›</span></span></div>
+        <div class="tri"><span class="tc"><span class="boat sq b1">1</span>-<span class="boat sq b3">3</span>-<span class="boat sq b5">5</span></span><span class="trk"><i style="width:60%"></i></span><span class="v">4.5%<span class="chip">165件 ›</span></span></div>
+        <div class="list">
+          <div class="lh"><b>帯「1着1→2着3」の中の 1-3-2 のレース</b><span class="x">✕</span></div>
+          <p class="lsub">273件のうち直近5件</p>
+          <a class="rc" href="#"><span><span class="l1">10/08 桐生 4R <span class="boat sq b1">1</span>-<span class="boat sq b3">3</span>-<span class="boat sq b2">2</span> <span class="ex">例</span></span><span class="l2">逃げ・1,240円</span></span><span class="go">›</span></a>
+          <span class="more">もっと見る（20件まで）</span>
+        </div>
+        <p class="lsub">帯を選んでいるときは、絞られた3連単の一番下に「この帯のレースを見る ›」を1つ</p>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <b>推奨: 件数の札「168件 ›」を押すと、図の下に元のレースの一覧が開く（どこを押しても同じ形）</b>
+    <ul>
+      <li>押す所: 1着の棒・決まり手の棒・万舟・よく出た3連単の行・着順の流れの帯（3連単の一番下に1つ）。行全体が押せる（高さ 44px）</li>
+      <li>一覧は押した行のあいだではなく、その図（6行など）の下にまとめて開く。6艇の見比べを崩さない。押した行は金枠で残り、一覧の見出しに押した物と ✕</li>
+      <li>1件は2段で、行全体がそのレースの結果へのリンク: 「10/06 戸田 9R 2-1-4」「差し・1,980円」。選んでいる進入・形は見出しの下に1回だけ</li>
+      <li>直近5件、「もっと見る」で20件まで。全国の全レースなど件数の多い範囲は、見出しの下に「直近3,000件の中から出している」を1行</li>
+      <li>棒は今の本番と同じ（級別の札と分母・全体の点線・ぶれ幅）。件数の列が札になるだけ</li>
+      <li>PC（2カラム）では右の列で開き、左の図は見えたまま</li>
+      <li>3着以内の棒は押す所に入れない（ファンパネルで挙がらず、1着と同じレースが多く重なるため）</li>
+    </ul>
+    <p style="margin:6px 0 0;font-size:12px;color:var(--sub)">データ: 今の保存は件数の集計だけ（30件未満のセルだけ一覧あり、リンクなし）。範囲ごとに直近3,000件の短い一覧を別ファイルにし、押したときだけ読む（1範囲 約130KB・gzip 約35KB。朝のバッチ +30〜60秒の見込み）</p>
+  </div>
+</div>
+</body>
+</html>
