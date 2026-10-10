@@ -1,0 +1,10 @@
+.sns-month-calendar { color: var(--text-primary); margin-block: var(--spacing-4); }
+.sns-month-calendar-filters { display: flex; flex-wrap: wrap; gap: var(--spacing-2); }
+.sns-month-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--spacing-1); }
+.sns-month-calendar-grid button { min-width: 0; padding: var(--spacing-1); background: var(--surface-card); color: var(--text-primary); border: 1px solid var(--border-hairline); border-radius: var(--radius-sm); cursor: pointer; }
+.sns-month-calendar-grid button[aria-pressed="true"] { outline: 2px solid var(--color-primary-500); }
+.sns-month-calendar-grid button span { display: block; overflow-wrap: anywhere; font-size: var(--font-size-xs); }
+.sns-month-calendar-weekday { text-align: center; }
+.sns-month-calendar-x { color: var(--text-primary); font-weight: bold; }
+.sns-month-calendar-youtube { color: var(--color-error-text); font-weight: bold; }
+.sns-month-calendar-summary p { margin-block: var(--spacing-1); overflow-wrap: anywhere; }
