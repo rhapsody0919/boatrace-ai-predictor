@@ -285,7 +285,13 @@ function windCard(ctx) {
     likely: C.theoryWindLikely,
     today: ctx.post
       ? speed != null
-        ? hit(C.theoryWindToday(ctx.wind?.dir ?? "", speed))
+        ? hit(
+            C.theoryWindToday(
+              ctx.wind?.dir ?? "",
+              speed,
+              C.windRelation[ctx.wind?.rel] ?? null,
+            ),
+          )
         : null
       : pending(C.theoryPendingWind),
     meas: table
@@ -319,6 +325,20 @@ function textCard(id, ctx) {
     today = ctx.partsBoats.length
       ? hit(C.partsBoats(ctx.partsBoats))
       : miss(C.partsNone);
+  // 向かい風・追い風が強い（4m以上）: 今日の向きが合うときだけ当てはまる（BOA-809）
+  if (
+    (id === "TC-T1" || id === "TC-T2") &&
+    ctx.post &&
+    ctx.wind?.speed != null
+  ) {
+    const want = id === "TC-T1" ? "head" : "tail";
+    const speed = ctx.wind.speed;
+    const rel = C.windRelation[ctx.wind.rel] ?? null;
+    today =
+      ctx.wind.rel === want && speed >= 4
+        ? hit(C.theoryWindTodayRel(rel, speed))
+        : miss(C.theoryWindTodayRel(rel, speed));
+  }
   if (id === "TC-T8" && ctx.roundLabel)
     today = hit(C.theoryTodayRound(ctx.roundLabel));
   if (id === "TC-X1")

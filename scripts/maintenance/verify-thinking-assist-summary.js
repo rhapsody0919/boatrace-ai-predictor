@@ -34,6 +34,10 @@ import {
   tiltOutliers,
 } from "../../src/utils/assistSummary.js";
 import { guideSteps, theoryCard } from "../../src/utils/assistTheory.js";
+import {
+  trueWindDirection,
+  windRelation,
+} from "../../src/utils/windDirection.js";
 import { GLOSSARY } from "../../src/data/thinkingAssistCopy.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -441,6 +445,43 @@ check(
     cWpost.also.map((c) => c.id).join() === "TC-T1,TC-T2",
   JSON.stringify(cWpost.meas?.scope),
 );
+// 今日の追い風・向かい風（BOA-809）。徳山10R は DB「北西」4m（本当の方位は北）、ホームに対して向かい風
+const windTok = {
+  speed: 4,
+  dir: trueWindDirection("北西", 18),
+  rel: windRelation("北西", 18, 4),
+  wave: 4,
+};
+const cWrel = theoryCard("TC-W1", { ...tctx, post: true, wind: windTok });
+check(
+  "TC-W1 の今日の行に本当の方位と向き（今日は北4m・向かい風）。向かい風のカードだけ当てはまる",
+  cWrel.today.text === "今日は北4m・向かい風" &&
+    cWrel.also[0].today.state === "hit" &&
+    cWrel.also[0].today.text === "今日は向かい風4m" &&
+    cWrel.also[1].today.state === "miss" &&
+    cWrel.meas.notes[0] === "表は追い風・向かい風が混ざった値",
+  JSON.stringify([cWrel.today, cWrel.also.map((c) => c.today)]),
+);
+check(
+  "向きの区分: アイコンの「東」（右向き＝1マークへ）は追い風、「西」は向かい風、「北」は横風。1m以下・会場不明は出さない",
+  windRelation("東", 1, 3) === "tail" &&
+    windRelation("南東", 24, 3) === "tail" &&
+    windRelation("西", 1, 3) === "head" &&
+    windRelation("北西", 18, 3) === "head" &&
+    windRelation("北", 5, 3) === "cross" &&
+    windRelation("東", 1, 1) === null &&
+    windRelation("東", 99, 3) === null &&
+    windRelation("無風", 1, 0) === null,
+);
+const cT1weak = theoryCard("TC-T1", {
+  ...tctx,
+  post: true,
+  wind: { ...windTok, speed: 3, rel: windRelation("北西", 18, 3) },
+});
+check(
+  "向かい風でも4m未満なら「向かい風が強い」は当てはまらない",
+  cT1weak.today.state === "miss" && cT1weak.today.text === "今日は向かい風3m",
+);
 const cT6 = theoryCard("TC-T6", tctx);
 check(
   "文だけのカード（TC-T6 部品交換）は過去レースの傾向を出さない（準備中）",
@@ -483,6 +524,7 @@ const theoryTexts = [
 const bannedHits = [
   JSON.stringify(GLOSSARY),
   JSON.stringify(cWpost),
+  JSON.stringify(cWrel),
   ...theoryTexts,
 ]
   .map((t) => t.match(BANNED)?.[0])

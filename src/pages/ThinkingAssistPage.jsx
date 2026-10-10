@@ -63,7 +63,7 @@ import {
 import { formatObservedTime } from "../components/race/weatherInfo";
 import { isRaceCancelled } from "../utils/raceCancellation";
 import { ASSIST_COPY } from "../data/thinkingAssistCopy";
-import { trueWindDirection } from "../utils/windDirection.js";
+import { trueWindDirection, windRelation } from "../utils/windDirection.js";
 import "../components/race/assist/ThinkingAssist.css";
 
 const initialState = {
@@ -491,6 +491,11 @@ export default function ThinkingAssistPage() {
       dir: trueWindDirection(
         race?.weather?.windDirection,
         data.parsed.venueCode,
+      ),
+      rel: windRelation(
+        race?.weather?.windDirection,
+        data.parsed.venueCode,
+        race?.weather?.windSpeed,
       ),
       wave: race?.weather?.waveHeight ?? null,
     },
