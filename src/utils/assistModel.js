@@ -314,6 +314,7 @@ export const stText = (v, digits = 3) =>
  */
 export const METRICS = {
   nat_win: {
+    tick: (v) => v.toFixed(1), // 6艇比較の目盛り（BOA-804）
     label: "全国勝率",
     short: "勝率",
     value: (r) => r.natWin,
@@ -321,6 +322,7 @@ export const METRICS = {
     aria: (v) => v.toFixed(2),
   },
   loc_win: {
+    tick: (v) => v.toFixed(1), // 6艇比較の目盛り（BOA-804）
     label: "当地勝率",
     short: "当地",
     value: (r) => (r.locWin === 0 ? null : r.locWin),
@@ -336,6 +338,7 @@ export const METRICS = {
     aria: (v) => v.toFixed(3),
   },
   motor_2: {
+    tick: (v) => `${Math.round(v)}%`, // 6艇比較の目盛り（BOA-804）
     label: "モーター2連率",
     short: "モーター2連率", // 「モーター」だけだと何の値か分からない（BOA-801 9）
     value: (r) => r.motor2,
@@ -350,6 +353,7 @@ export const METRICS = {
     aria: (v) => v.toFixed(2),
   },
   series_score: {
+    tick: (v) => v.toFixed(1), // 6艇比較の目盛り（BOA-804）
     label: "今節の平均着順点",
     short: "今節",
     value: (r) => r.seriesScore,
@@ -410,6 +414,9 @@ function bestOfMetric(metric, racers, finalRound) {
 
 const abs = (v) => (typeof v === "number" ? Math.abs(v) : v);
 
+/** 平均ST・展示ST の項目。6艇比較でも展開レンズと同じ .00〜.25 の縮尺にする（BOA-804） */
+const ST_METRICS = new Set(["st_mean30", "st_course", "exh_st"]);
+
 /** 値の幅から図の端を決める（両端に幅の15%の余白。全艇同じ値なら ±1） */
 function span(values) {
   const vs = values.filter((v) => typeof v === "number");
@@ -467,13 +474,18 @@ export function boardModel({
     const plotOf = (r) => (def.plot ? def.plot(r) : abs(def.value(r)));
     const b = best(metric);
     const dir = BEST_RULES[metric].dir;
+    // 目盛りを出し、縮尺は元の図とそろえる（BOA-804）。ST は展開レンズと同じ .00〜.25、
+    // ほかは値の幅（軸・機力のレンズと同じ span）で、両端の値を目盛りに書く
+    const st = ST_METRICS.has(metric);
+    const s = st ? { lo: 0, hi: 0.25 } : span(racers.map(plotOf));
     return {
       kind: "metric",
       title: `${def.label}を6艇で比べる`,
-      left: "",
-      right: "",
+      left: st ? ".00" : (def.tick ?? def.text)(s.lo),
+      right: st ? ".25" : (def.tick ?? def.text)(s.hi),
       good: dir === "min" ? "left" : "right",
-      ...span(racers.map(plotOf)),
+      ...s,
+      slit: st,
       rows: racers.map((r) => ({
         boat: r.boat,
         x: plotOf(r),
