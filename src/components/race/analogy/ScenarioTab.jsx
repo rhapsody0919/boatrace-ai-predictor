@@ -259,52 +259,57 @@ export default function ScenarioTab({
           </span>
           <span>{t(`${k}.keyThin`, { n: MIN_SCENARIO })}</span>
         </div>
-        <div className="af-scn-blk">
-          <h4 className="af-h4">{t(`${k}.firstBoat`)}</h4>
-          {perBoat && <p className="af-foot">{t(`${k}.boatScopeLine`)}</p>}
-          <BoatBars
-            counts={cur.map((r) => r[1])}
-            n={boatN}
-            reference={ref.map((r) => share(r[1], r[0]))}
-            fewBelow={MIN_SCENARIO}
-            tags={boatTags}
-            colored
-          />
+        {/* PC では1着｜3着以内、決まり手｜万舟を左右に（BOA-813） */}
+        <div className="af-pair">
+          <div className="af-scn-blk">
+            <h4 className="af-h4">{t(`${k}.firstBoat`)}</h4>
+            {perBoat && <p className="af-foot">{t(`${k}.boatScopeLine`)}</p>}
+            <BoatBars
+              counts={cur.map((r) => r[1])}
+              n={boatN}
+              reference={ref.map((r) => share(r[1], r[0]))}
+              fewBelow={MIN_SCENARIO}
+              tags={boatTags}
+              colored
+            />
+          </div>
+          <div className="af-scn-blk">
+            <h4 className="af-h4">{t(`${k}.top3Boat`)}</h4>
+            <BoatBars
+              counts={cur.map(top3)}
+              n={boatN}
+              reference={ref.map((r) => share(top3(r), r[0]))}
+              fewBelow={MIN_SCENARIO}
+              tags={boatTags}
+              colored
+            />
+          </div>
         </div>
-        <div className="af-scn-blk">
-          <h4 className="af-h4">{t(`${k}.top3Boat`)}</h4>
-          <BoatBars
-            counts={cur.map(top3)}
-            n={boatN}
-            reference={ref.map((r) => share(top3(r), r[0]))}
-            fewBelow={MIN_SCENARIO}
-            tags={boatTags}
-            colored
-          />
-        </div>
-        <div className="af-scn-blk">
-          <h4 className="af-h4">{t(`${k}.techHeadingShort`)}</h4>
-          <TechniqueBars
-            counts={c.technique}
-            n={c.n}
-            reference={Object.fromEntries(
-              Object.entries(base.technique).map(([kk, v]) => [
-                kk,
-                share(v, base.n),
-              ]),
-            )}
-          />
-        </div>
-        <div className="af-scn-blk">
-          <h4 className="af-h4">{t(`${k}.manshu`)}</h4>
-          {bar2(t(`${k}.keyScenario`), share(c.manshu, c.payout_known))}
-          {bar2(baseName, share(base.manshu, base.payout_known))}
-          <p className="af-foot">
-            {t(`${k}.manshuCount`, {
-              hits: fmtCount(c.manshu),
-              n: fmtCount(c.payout_known),
-            })}
-          </p>
+        <div className="af-pair">
+          <div className="af-scn-blk">
+            <h4 className="af-h4">{t(`${k}.techHeadingShort`)}</h4>
+            <TechniqueBars
+              counts={c.technique}
+              n={c.n}
+              reference={Object.fromEntries(
+                Object.entries(base.technique).map(([kk, v]) => [
+                  kk,
+                  share(v, base.n),
+                ]),
+              )}
+            />
+          </div>
+          <div className="af-scn-blk">
+            <h4 className="af-h4">{t(`${k}.manshu`)}</h4>
+            {bar2(t(`${k}.keyScenario`), share(c.manshu, c.payout_known))}
+            {bar2(baseName, share(base.manshu, base.payout_known))}
+            <p className="af-foot">
+              {t(`${k}.manshuCount`, {
+                hits: fmtCount(c.manshu),
+                n: fmtCount(c.payout_known),
+              })}
+            </p>
+          </div>
         </div>
         <div className="af-scn-blk">
           <h4 className="af-h4">{t("aiPredictionTab.analogy.flow.heading")}</h4>
