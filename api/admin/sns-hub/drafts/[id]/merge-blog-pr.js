@@ -138,7 +138,7 @@ export default async function handler(req) {
 
     const pr = await getBlogPr(githubToken, prNumber);
     try { assertReviewedHead(pr, headSha); }
-    catch (error) { return jsonResponse({ error: error.message }, 409); }
+    catch (error) { console.error("SNS Hub reviewed head error:", error); return jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, 409); }
     const operationToken = await claimExternal(draft, approverId);
     await markPullRequestReadyIfDraft(githubToken, pr);
 
@@ -157,9 +157,10 @@ export default async function handler(req) {
 
     if (!mergeResponse.ok) {
       const errorBody = await mergeResponse.text();
+      console.error("SNS Hub merge response error:", mergeResponse.status, errorBody);
       return jsonResponse(
         {
-          error: `GitHub PRマージに失敗しました (${mergeResponse.status}): ${errorBody}`,
+          error: "PRのマージを確認できませんでした。再実行せずPRと投稿状態を確認してください。",
         },
         502,
       );
@@ -177,6 +178,6 @@ export default async function handler(req) {
 
   } catch (error) {
     console.error("SNS Hub merge-blog-pr Edge function error:", error);
-    return jsonResponse({ error: error.message }, error.status || 500);
+    return jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, error.status || 500);
   }
 }
