@@ -159,6 +159,22 @@ export const getAnalogyFacts = (raceId, stage) =>
     `/api/analogy/facts/${encodeURIComponent(raceId)}?${stageQuery(stage)}`,
   );
 
+/**
+ * データ出走表の「平均ST(30走)」（BOA-815）。v16 の出走表時点の today.items.st_mean30
+ * （前日までの30回の出走の窓。F・L は平均から外す。3走以上で値）。思考アシストの「ST(30走)」と同じ値。
+ * v16 の保存が無いレース（not_saved 等）は空配列
+ * @param {string} raceId
+ * @returns {Promise<Array<{boatNumber: number, st30: number}>>}
+ */
+export async function getRaceSt30(raceId) {
+  const body = await getAnalogyFacts(raceId, "racecard");
+  const values = body?.today?.items?.st_mean30?.values;
+  if (!Array.isArray(values)) return [];
+  return values
+    .map((v, i) => ({ boatNumber: i + 1, st30: v }))
+    .filter((r) => typeof r.st30 === "number" && Number.isFinite(r.st30));
+}
+
 /** タブ2（似ている順の上位・層・比べる相手） */
 export const getAnalogySimilar = (raceId, stage) =>
   getV16(

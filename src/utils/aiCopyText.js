@@ -26,6 +26,7 @@ export const AI_COPY_NOTE_KEYS = [
   "motor",
   "form",
   "avgSt",
+  "avgSt30",
   "st",
   "exSt",
   "exhibition",

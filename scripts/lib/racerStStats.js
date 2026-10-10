@@ -9,7 +9,11 @@
  *     成績コードが NULL の行（K の同期の前の直近の分）は、着欄で判定し、欠場（finish_mark='欠'）だけを除く
  *   - flying_rate: F の走 ÷ total_races（分母は上と同じ）
  *   - avg_st / st_stddev: F 以外で、ST が記録されている走（L・欠場は ST が NULL のため入らない）
- *   - avg_st_last_30: 上と同じ走のうち、新しい順に30走（F 以外の直近30走）
+ *   - avg_st_last_30: 新しい順に30回の出走（total_races と同じ数え方）の窓をとり、その中の F・L 以外で
+ *     ST が記録されている走の平均。窓の中に3走以上あるときだけ値を出す。龍神ソナー・思考アシストの
+ *     「平均ST（直近30走）」（v16 の st_mean30、scripts/ml/analogy/features.py の add_history）と同じ窓
+ *     （BOA-815、docs/design/avg-st-definition/mock/APPROVED.md）。v16 は前日までの走、こちらは集計時点
+ *     までの走を使う（選手ページはレースに紐づかないため）
  *
  * F の start_timing は正の値（F.03 なら 0.03）で保存されているため、そのまま平均に入れると
  * 平均STが実際より早く見える。選手ページの他の ST 表示（BOA-576）と同じく F を除く。
@@ -17,6 +21,8 @@
 import { fetchAll } from "./supabaseClient.js";
 
 export const RECENT_ST_WINDOW = 30;
+// 直近30走の窓の中に、この数以上の有効な ST があるときだけ平均を出す（v16 の min_periods=3）
+export const RECENT_ST_MIN_RUNS = 3;
 
 /** 公式の出走回数に数える成績コード（K ファイルの着欄） */
 const OFFICIAL_START_CODE_RE = /^(0[1-6]|F|L1|K1|S1|S2)$/;
@@ -55,7 +61,7 @@ const round = (value, digits) => Number(value.toFixed(digits));
  * 入力の並び順には依存しない（race_id 降順・boat_number 降順に並べ直す）。
  *
  * @param {Array<{race_id: string, boat_number: number}>} entries - 対象選手の出走
- * @param {Array<{race_id: string, boat_number: number, start_timing: number|string|null, is_flying: boolean|null, finish_mark?: string|null, official_finish_code?: string|null}>} timings
+ * @param {Array<{race_id: string, boat_number: number, start_timing: number|string|null, is_flying: boolean|null, is_late_start?: boolean|null, finish_mark?: string|null, official_finish_code?: string|null}>} timings
  * @returns {{avg_st: number|null, avg_st_last_30: number|null, st_stddev: number|null, flying_rate: number, total_races: number}|null}
  */
 export function computeRacerStStats(entries, timings) {
@@ -75,13 +81,22 @@ export function computeRacerStStats(entries, timings) {
   const stValues = racerTimings
     .filter((t) => t.is_flying !== true && t.start_timing != null)
     .map((t) => Number(t.start_timing));
-  const stLast30 = stValues.slice(0, RECENT_ST_WINDOW);
+  const stLast30 = racerTimings
+    .slice(0, RECENT_ST_WINDOW)
+    .filter(
+      (t) =>
+        t.is_flying !== true &&
+        t.is_late_start !== true &&
+        t.start_timing != null,
+    )
+    .map((t) => Number(t.start_timing));
   const flyingCount = racerTimings.filter((t) => t.is_flying === true).length;
   const totalRaces = racerTimings.length;
 
   return {
     avg_st: stValues.length > 0 ? round(mean(stValues), 3) : null,
-    avg_st_last_30: stLast30.length > 0 ? round(mean(stLast30), 3) : null,
+    avg_st_last_30:
+      stLast30.length >= RECENT_ST_MIN_RUNS ? round(mean(stLast30), 3) : null,
     st_stddev:
       stValues.length >= 2 ? round(populationStdDev(stValues), 3) : null,
     flying_rate: round(flyingCount / totalRaces, 4),
@@ -133,7 +148,7 @@ export async function fetchStartTimingsForEntries(client, entries) {
     const rows = await withRetry("race_start_timings取得エラー", () =>
       fetchAll(
         "race_start_timings",
-        "race_id, boat_number, start_timing, is_flying, finish_mark, official_finish_code",
+        "race_id, boat_number, start_timing, is_flying, is_late_start, finish_mark, official_finish_code",
         (q) =>
           q
             .in("race_id", chunk)

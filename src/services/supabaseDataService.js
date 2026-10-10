@@ -29,6 +29,7 @@ import { isFinalStage } from "../constants/raceStageConfig";
 import {
   finishPositionOf,
   periodsEndedBefore,
+  officialPeriodOf,
   RECENT_PERIOD_COUNT,
 } from "../components/race/basicInfoStats.js";
 import { tallyWinPlaceShow } from "../utils/racerConditionStats.js";
@@ -5691,6 +5692,49 @@ export const supabaseDataService = {
         .limit(1);
 
       return toWakuRacerStats(data?.[0]?.feature_contributions?.racerStats);
+    });
+  },
+
+  /**
+   * 指定レースの6艇の「平均ST（前期・公式）」（BOA-815）。公式の出走表と同じ期（officialPeriodOf）の
+   * racer_period_stats.avg_st（2桁）を返す。その期の行が無い選手（新人など）は返さない。
+   * 別の期の値で埋めると公式の出走表と食い違うため、埋めずに「—」にする
+   * @param {string} raceId
+   * @returns {Promise<{period: {periodYear: number, periodNo: number, calcFrom: string, calcTo: string}|null,
+   *   rows: Array<{boatNumber: number, avgSt: number}>}>}
+   */
+  getRaceOfficialAvgSt(raceId) {
+    return withCache(`race-official-avg-st-v1-${raceId}`, async () => {
+      if (!supabase) throw new Error("Supabase client not initialized");
+      const period = officialPeriodOf(raceId?.slice(0, 10));
+      if (!period) return { period: null, rows: [] };
+      // クエリの失敗は .throwOnError() で例外になる（BOA-507）。useRaceAnalysisData が取得失敗として出す
+      const { data: entries } = await supabase
+        .from("race_entries")
+        .select("boat_number, racer_id")
+        .eq("race_id", raceId);
+      const ids = (entries ?? []).map((e) => e.racer_id).filter(Boolean);
+      if (ids.length === 0) return { period, rows: [] };
+      const { data } = await supabase
+        .from("racer_period_stats")
+        .select("racer_id, avg_st")
+        .eq("period_year", period.periodYear)
+        .eq("period_no", period.periodNo)
+        .in("racer_id", ids);
+      const byRacer = new Map(
+        (data ?? [])
+          .filter((r) => r.avg_st != null)
+          .map((r) => [r.racer_id, Number(r.avg_st)]),
+      );
+      return {
+        period,
+        rows: (entries ?? [])
+          .filter((e) => byRacer.has(e.racer_id))
+          .map((e) => ({
+            boatNumber: e.boat_number,
+            avgSt: byRacer.get(e.racer_id),
+          })),
+      };
     });
   },
 

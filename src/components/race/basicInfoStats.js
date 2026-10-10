@@ -656,6 +656,28 @@ export function periodsEndedBefore(raceDate, count = 1) {
 }
 
 /**
+ * 公式の出走表がそのレース日に出している期（勝率・平均STの期）を返す（純関数、BOA-815）。
+ *   1〜6月  → (Y,1) = (Y-1)-05-01 〜 (Y-1)-10-31
+ *   7〜12月 → (Y,2) = (Y-1)-11-01 〜     Y-04-30
+ * `periodsEndedBefore`（直前に終わった期）とは5〜6月と11〜12月で違う。公式の出走表と
+ * 2025-12〜2026-10 の5レース×6艇で照合した（docs/design/avg-st-definition/mock/APPROVED.md）
+ *
+ * @param {string} raceDate `YYYY-MM-DD`
+ * @returns {{periodYear: number, periodNo: number, calcFrom: string, calcTo: string}|null}
+ */
+export function officialPeriodOf(raceDate) {
+  const [y, m] = (raceDate ?? "").split("-").map(Number);
+  if (!y || !m) return null;
+  const periodNo = m >= 7 ? 2 : 1;
+  return {
+    periodYear: y,
+    periodNo,
+    calcFrom: periodNo === 1 ? `${y - 1}-05-01` : `${y - 1}-11-01`,
+    calcTo: periodNo === 1 ? `${y - 1}-10-31` : `${y}-04-30`,
+  };
+}
+
+/**
  * 「前期」（`racer_period_stats`）の1選手分を表示用に整える（純関数）。
  *
  * **指標の列に混ぜない**。`win_rate` は公式勝率（点、実測1.07〜8.24）で、

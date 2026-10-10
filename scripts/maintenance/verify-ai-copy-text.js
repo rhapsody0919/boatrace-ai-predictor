@@ -57,6 +57,7 @@ const ROWS = [
   row("motor", "motor"),
   row("form", "form"),
   row("avgSt", "avgSt"),
+  row("avgSt30", "avgSt30"),
   row("st", "st"),
   row("exSt", "exSt"),
   row("exhibition", "exhibition"),
@@ -173,7 +174,7 @@ for (const lang of LANGS) {
   );
 
   // 注記（行名は表の行と同じ文字列。訳語のずれで注記を引けなくならないように）
-  for (const key of ["winRate", "motor", "form", "avgSt", "st", "exSt", "exhibition", "exhibitionCourse", "partsChanged", "courseRate", "technique", "returnRate"]) {
+  for (const key of ["winRate", "motor", "form", "avgSt", "avgSt30", "st", "exSt", "exhibition", "exhibitionCourse", "partsChanged", "courseRate", "technique", "returnRate"]) {
     check(`[${lang}] 注記 ${key}（表の行名つき）`, text.includes(`\n- ${key}: ${a.note[key]}`));
   }
   check(`[${lang}] 「—」の注記`, text.includes(`- ${a.note.dash}`));

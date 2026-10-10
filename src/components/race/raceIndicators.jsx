@@ -168,6 +168,8 @@ function buildRowDefs({
     returnRate,
     racerStats,
     meetPrevRun,
+    officialAvgSt,
+    st30,
   } = analysis;
 
   const motorByBoat = byBoat(motor);
@@ -179,6 +181,11 @@ function buildRowDefs({
   const rateByBoat = byBoat(returnRate);
   const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
   const meetPrevByBoat = byBoat(meetPrevRun);
+  // 平均ST の2行（BOA-815）。前期・公式は公式の出走表と同じ期、30走は v16 の st_mean30
+  const officialStByBoat = new Map(
+    (officialAvgSt?.rows ?? []).map((r) => [r.boatNumber, r.avgSt]),
+  );
+  const st30ByBoat = new Map((st30 ?? []).map((r) => [r.boatNumber, r.st30]));
 
   // ソース別プレースホルダ: ロード中はスケルトン、取得済みでデータ無しは「—」
   const ph = (source) =>
@@ -214,9 +221,13 @@ function buildRowDefs({
         value: toNumber(row?.motor_2rate ?? p.motor2Rate),
       };
     }),
-    avgSt: (racerStats ?? []).map((s) => ({
-      boat: s.boatNumber,
-      value: toNumber(s.avgST),
+    avgSt: players.map((p) => ({
+      boat: p.number,
+      value: toNumber(officialStByBoat.get(p.number)),
+    })),
+    avgSt30: players.map((p) => ({
+      boat: p.number,
+      value: toNumber(st30ByBoat.get(p.number)),
     })),
     st: (stPredictability ?? []).map((r) => ({
       boat: r.boat_number,
@@ -384,20 +395,37 @@ function buildRowDefs({
         );
       },
     },
+    // 平均ST は期間を名前に付けて2行で出す（BOA-815、2026-10-10 ユーザー承認）。
+    // 1行目は公式の出走表と同じ値（2桁、公式が2桁のため）。最良は表示桁で比べるので同じ値が並ぶことがある。
+    // 2026-10-02 に3桁にした理由（2桁だと最良が5艇同時に光る）は、3桁の2行目で補う
     {
       key: "avgSt",
       label: t("dataTable.rowAvgSt"),
       shortLabel: t("review.cols.avgSt"),
+      note: t("dataTable.rowAvgStOfficialNote"),
       tab: "racecard",
-      // 平均STは小数3桁で出す。2桁だと 0.127〜0.134 が全部「0.13」になり、表示桁で比べる
-      // 最良（R1）が5艇同時に光った（2026-10-02 児島12R。ユーザー承認で3桁に）
-      best: bestOf(cand.avgSt, "min", { digits: 3 }),
+      best: bestOf(cand.avgSt, "min", { digits: 2 }),
       render: (p) => {
-        const rate = toNumber(statsByBoat.get(p.number)?.avgST);
+        const rate = toNumber(officialStByBoat.get(p.number));
+        return rate !== null ? (
+          <span className="drt-value">{rate.toFixed(2)}</span>
+        ) : (
+          ph("officialAvgSt")
+        );
+      },
+    },
+    {
+      key: "avgSt30",
+      label: t("dataTable.rowAvgSt30"),
+      shortLabel: t("review.cols.avgSt30"),
+      tab: "racecard",
+      best: bestOf(cand.avgSt30, "min", { digits: 3 }),
+      render: (p) => {
+        const rate = toNumber(st30ByBoat.get(p.number));
         return rate !== null ? (
           <span className="drt-value">{rate.toFixed(3)}</span>
         ) : (
-          ph("racerStats")
+          ph("st30")
         );
       },
     },
