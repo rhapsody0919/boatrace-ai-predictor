@@ -43,7 +43,9 @@ import {
   SMALL_SAMPLE_THRESHOLD,
   WAVE_EXCLUDED_VENUE_CODES,
   recordsBeforeRace,
+  currentTermStart,
 } from "./basicInfoStats";
+import TermHintButton from "./TermHintButton";
 import InlineFetchError from "../InlineFetchError";
 import FlyingBadge from "./FlyingBadge";
 import { bestOf } from "../../utils/bestOf";
@@ -73,7 +75,9 @@ const GRADES = ["all", "ippan", "sgg1"];
 // 欲しくなったら条件別タブ側を多軸化するのが筋。1の重複が言えるのは既定状態
 // （全国・全レース）についてで、当地やSG・G1を選ぶと条件別タブ側は絞らない
 // 集計のままなので数字は一致しない
-const PERIODS = ["current", "last3m", "last1m"];
+const PERIODS = ["official", "term", "last3m", "last1m"];
+// 「2026-05-01」→「2026/5/1」（期間の表記、BOA-775）
+const slashDate = (ymd) => ymd.split("-").map(Number).join("/");
 const PRESETS = [
   { scope: "local", grade: "ippan" },
   { scope: "local", grade: "sgg1" },
@@ -112,8 +116,18 @@ function RaceBasicInfoTab({
   const localize = useLocalizedPath();
   const [metric, setMetric] = useState("winRate");
   const [scope, setScope] = useState("national");
-  const [grade, setGrade] = useState("all");
-  const [period, setPeriod] = useState("current");
+  const [grade, setGradeState] = useState("all");
+  // 初期は「公式」（公式の出走表と同じ値、BOA-775）。公式の値はグレードで絞れないので、
+  // グレードを選ぶと今期（term）に、公式に戻すとグレードを全レースに戻す（チップの表示と中身を食い違わせない）
+  const [period, setPeriodState] = useState("official");
+  const setGrade = (g) => {
+    setGradeState(g);
+    if (g !== "all" && period === "official") setPeriodState("term");
+  };
+  const setPeriod = (p) => {
+    setPeriodState(p);
+    if (p === "official") setGradeState("all");
+  };
   // 展開中の艇はタブをまたいで共有する（BOA-492）。null は「誰も展開していない」で、
   // 従来のタブ内stateと同じ初期値。枠別・今節タブで艇を選んでからこのタブへ来ると、
   // その艇が展開済みで開く
@@ -133,6 +147,9 @@ function RaceBasicInfoTab({
   const setExpandedView = (view) =>
     setExpandedViewState({ boat: expandedBoat, view });
   const [officialRates, setOfficialRates] = useState(null);
+  // 平均ST（公式）。undefined=取得中、null=取得失敗、{period, rows}=取得済み
+  const [officialAvgSt, setOfficialAvgSt] = useState(undefined);
+  const [officialAvgStRetry, setOfficialAvgStRetry] = useState(0);
   const [scopedStatsByRacer, setScopedStatsByRacer] = useState({});
   // 「前期」（racer_period_stats、phase a FR-4c）。6人分を1クエリで取る。
   // undefined=未取得、配列=取得済み、それ以外（{state:"forbidden"}）＝095未適用
@@ -171,6 +188,24 @@ function RaceBasicInfoTab({
     };
   }, [raceId]);
 
+  useEffect(() => {
+    if (!raceId) return undefined;
+    let cancelled = false;
+    setOfficialAvgSt(undefined);
+    supabaseDataService
+      .getRaceOfficialAvgSt(raceId)
+      .then((data) => {
+        if (!cancelled) setOfficialAvgSt(data);
+      })
+      .catch((err) => {
+        console.error("平均ST（公式）取得エラー:", err?.message ?? String(err));
+        if (!cancelled) setOfficialAvgSt(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [raceId, officialAvgStRetry]);
+
   // 「前期」は条件別タブを開いたときだけ要る値だが、6人分まとめて1クエリで済み
   // （racer_period_stats を period_year/period_no で絞って .in() する）、
   // タブを開くたびに待たせない方が読み手の体験が良いのでレース単位で先に取る。
@@ -190,6 +225,8 @@ function RaceBasicInfoTab({
   const periodAnchor = raceId
     ? new Date(`${raceId.slice(0, 10)}T12:00:00+09:00`)
     : new Date();
+  // 「今期」の初日（BOA-775）。表示中のレースの日付で決める
+  const currentTermFrom = currentTermStart(raceDate);
   useEffect(() => {
     const ids = racerIdsKey.split(",").filter(Boolean).map(Number);
     if (ids.length === 0 || !raceDate) return undefined;
@@ -295,10 +332,9 @@ function RaceBasicInfoTab({
     });
   }, []);
 
-  // 平均STには公式集計値の相当品が無いため、常に自社集計（getRacerScopedRaceStats）
-  // を使う。勝率/2連対率/3連対率はグレード・期間を絞り込んだ場合のみ自社集計に切り替わる
-  const needsOwnAggregation =
-    metric === "avgSt" || grade !== "all" || period !== "current";
+  // 「公式」（全レース）のときだけ公式の値（勝率/2連対率/3連対率は出走表、平均STは期別成績）を出し、
+  // それ以外（今期・直近・グレードで絞る）は当サイトの走（getRacerScopedRaceStats）から計算する（BOA-775）
+  const needsOwnAggregation = period !== "official" || grade !== "all";
 
   // 自社集計が必要になった瞬間、6選手分の履歴データをまとめて取得する
   useEffect(() => {
@@ -328,6 +364,20 @@ function RaceBasicInfoTab({
 
   // 表示用の1艇分の値を計算する（value/n/isSmallSample/loading）
   const valueFor = (p) => {
+    if (!needsOwnAggregation && metric === "avgSt") {
+      // 公式の平均STは全国の値だけ（当地の公式の平均STは無い）
+      const v =
+        scope === "local"
+          ? null
+          : ((officialAvgSt?.rows ?? []).find((r) => r.boatNumber === p.number)
+              ?.avgSt ?? null);
+      return {
+        value: v,
+        n: null,
+        isSmallSample: false,
+        loading: officialAvgSt === undefined,
+      };
+    }
     if (!needsOwnAggregation) {
       const row = officialRowFor(p.number);
       if (!row)
@@ -552,9 +602,33 @@ function RaceBasicInfoTab({
               {t(`basicInfo.periods.${p}`)}
             </button>
           ))}
+          {/* 「公式」の期間は「?」に出す（公式の出走表と同じ期。BOA-775） */}
+          {officialAvgSt?.period && (
+            <TermHintButton
+              termKey="basicInfoOfficial"
+              values={{
+                from: slashDate(officialAvgSt.period.calcFrom),
+                to: slashDate(officialAvgSt.period.calcTo),
+              }}
+            />
+          )}
         </div>
-        {grade !== "all" && period === "current" && (
-          <p className="rbit-period-caveat">{t("basicInfo.periodCaveat")}</p>
+        {period === "official" && metric === "avgSt" && scope === "local" && (
+          <p className="rbit-period-caveat">
+            {t("basicInfo.periodOfficialNoLocalSt")}
+          </p>
+        )}
+        {period === "term" && currentTermFrom && (
+          <p className="rbit-period-caveat">
+            {t("basicInfo.periodCurrentNote", {
+              from: slashDate(currentTermFrom),
+            })}
+          </p>
+        )}
+        {officialAvgSt === null && period === "official" && metric === "avgSt" && (
+          <InlineFetchError
+            onRetry={() => setOfficialAvgStRetry((n) => n + 1)}
+          />
         )}
       </details>
 

@@ -992,6 +992,31 @@ function suiteBasicInfoStats(m, check) {
     [null, null],
   );
 
+  // --- currentTermStart・filterRecords の term（BOA-775）: 基本情報タブの「今期」は本当の今期
+  check(
+    "currentTermStart: 5/1〜10/31 は5/1、11/1〜4/30 は11/1（年をまたぐ）",
+    ["2026-05-01", "2026-10-31", "2026-11-01", "2027-04-30", "2027-01-15"].map(
+      m.currentTermStart,
+    ),
+    ["2026-05-01", "2026-05-01", "2026-11-01", "2026-11-01", "2026-11-01"],
+  );
+  {
+    const recs = ["2026-04-30", "2026-05-01", "2026-09-30"].map((date) => ({
+      date,
+      venueCode: 1,
+      raceGrade: "ippan",
+    }));
+    const now = new Date("2026-10-09T12:00:00+09:00");
+    check(
+      "filterRecords: term は今期（5/1 以降）だけ、current は全期間のまま（条件別の表が使う）",
+      [
+        m.filterRecords(recs, { venueCode: 1, scope: "national", grade: "all", period: "term", now }).map((r) => r.date),
+        m.filterRecords(recs, { venueCode: 1, scope: "national", grade: "all", period: "current", now }).length,
+      ],
+      [["2026-05-01", "2026-09-30"], 3],
+    );
+  }
+
   // --- pickPeriodStats
   const RD = "2026-09-29"; // 前期 = (2026,2)、直近2年 = (2025,1)〜(2026,2)
   const ok = (rows) => ({ rows, latestImported: true });

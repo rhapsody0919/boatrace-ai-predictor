@@ -38,7 +38,9 @@ import { getDaysAgoJST } from "../../utils/dateUtils.js";
 export const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
 export const SCOPES = ["local", "national"];
 export const GRADES = ["all", "ippan", "sgg1"];
-export const PERIODS = ["current", "last3m", "last1m"];
+// 画面のチップ（BOA-775）。official: 公式の出走表と同じ値（当サイトの走からは出さない）、
+// term: 本当の今期（5/1・11/1 以降）。"current"（全期間）は画面のチップには出さず、条件別の表など内部で使う
+export const PERIODS = ["official", "term", "last3m", "last1m"];
 
 // 小標本フラグの閾値（BOA-306本文の「n<6等の小標本」表記に合わせる）
 export const SMALL_SAMPLE_THRESHOLD = 6;
@@ -57,8 +59,25 @@ function matchesGrade(record, grade) {
 // 境界は JST の日付で切る（BOA-469）。以前はローカル時刻で setDate したあと
 // toISOString()（UTC）で日付を取り出しており、JST 0〜9時は境界が1日古くなって
 // 31日前・91日前の走が混ざっていた
+/**
+ * 今期（公式の成績の期間）の初日（純関数、BOA-775）。5/1〜10/31 と 11/1〜4/30 で区切る。
+ * @param {string} date `YYYY-MM-DD`
+ * @returns {string|null}
+ */
+export function currentTermStart(date) {
+  const [y, m] = (date ?? "").split("-").map(Number);
+  if (!y || !m) return null;
+  if (m >= 11) return `${y}-11-01`;
+  if (m >= 5) return `${y}-05-01`;
+  return `${y - 1}-11-01`;
+}
+
 function matchesPeriod(record, period, now) {
+  // term は本当の今期（5/1・11/1 以降）。以前のチップ「今期」は "current"（全期間、2025-12 以降）で、
+  // 名前と中身が食い違っていた（BOA-775）。"current" は条件別の表など内部の全期間の集計のために残す
   if (period === "current") return true;
+  if (period === "term")
+    return record.date >= currentTermStart(getDaysAgoJST(0, now));
   if (period === "last3m" || period === "last1m") {
     const days = period === "last3m" ? 90 : 30;
     const cutoffStr = getDaysAgoJST(days, now);
