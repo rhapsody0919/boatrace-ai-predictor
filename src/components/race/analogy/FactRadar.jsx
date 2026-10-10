@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import BoatBadge from "../BoatBadge";
+import AnalogySplit from "./AnalogySplit";
 import {
   RADAR_LINE,
   RADAR_TEXT,
@@ -241,10 +242,19 @@ export default function FactRadar({
   cardKeys,
   collect,
   onCard,
+  resetKey,
+  children = null,
 }) {
   const { t } = useTranslation();
   const [picks, setPicks] = useState([main]);
   const [axisSel, setAxisSel] = useState(null);
+  // resetKey（主役・着順・時点・範囲）が変わったら選び直す（描画中に state を合わせる React の決まった形）
+  const [seenKey, setSeenKey] = useState(resetKey);
+  if (seenKey !== resetKey) {
+    setSeenKey(resetKey);
+    setPicks([main]);
+    setAxisSel(null);
+  }
   const lead = picks[picks.length - 1];
   const press = (b) =>
     setPicks((ps) => {
@@ -308,147 +318,158 @@ export default function FactRadar({
 
   return (
     <div className="af-hep">
-      <div className="af-dark">
-        <RadarSvg
-          boats={boats}
-          items={items}
-          picks={picks}
-          dashBoat={lead}
-          axisSel={axisSel}
-          onAxis={(key) => setAxisSel((s) => (s === key ? null : key))}
-          label={label}
-          ariaLabel={ariaLabel}
-        />
-      </div>
-      <p className="af-foot">{t(`${k}.radar.hint`)}</p>
-      <div className="af-hep-legend" data-af-control="facts_radar_boat">
-        {BOATS.map((b) => {
-          const x = boats[b - 1];
-          const on = picks.includes(b);
-          return (
-            <button
-              key={b}
-              type="button"
-              aria-pressed={on}
-              // 太い艇を押し直すと外れる（状態が変わる）ので数える。主役だけが太いときの主役の押し直しは変わらないので数えない
-              data-af-toggle={
-                on && picks.length === 1 && b === main ? undefined : ""
-              }
-              onClick={() => press(b)}
-            >
-              {swatch(b)}
-              <BoatBadge n={b} size="xs" />
-              <span>
-                {t(`${k}.radar.boat`, { boat: b, cls: x.cls ?? "—" })}
-                {b === main && (
-                  <small className="af-hep-main">{t(`${k}.radar.main`)}</small>
-                )}
-              </span>
-              <span className="af-hep-cnt">
-                {t(`${k}.radar.top2`, { n: items.length, k: x.top2 })}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-      <p className="af-foot">{collect}</p>
-      <p className="af-foot af-hep-typ">
-        <i className="is-dash" aria-hidden="true" />
-        {t(`${k}.radar.typical`, { boat: lead, finish })}
-        {t("aiPredictionTab.analogy.listComma")}
-        {t(`${k}.hexFoot`)}
-      </p>
-      {ix < 0 ? (
-        <p className="af-foot">
-          {t(`${k}.radar.axisHint`, { rate: rateName })}
-        </p>
-      ) : (
-        <div className="af-hep-table" data-testid="analogy-radar-table">
-          <b>{itemName(axisSel)}</b>
-          <p className="af-foot">
-            {t(`${k}.radar.tableNote`, { rate: rateName })}
-          </p>
-          <div className="af-tbl">
-            <table className="af-mk-t">
-              <thead>
-                <tr>
-                  <th scope="col">{t(`${k}.radar.colBoat`)}</th>
-                  <th scope="col">{t(`${k}.radar.colValue`)}</th>
-                  <th scope="col">{t(`${k}.radar.colRank`)}</th>
-                  <th scope="col">{t(`${k}.radar.colAt`)}</th>
-                  <th scope="col">{t(`${k}.radar.colAll`)}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {boats.map((x) => {
-                  const c = x.cells[ix];
-                  const r = rateOf(c.hit);
-                  const u = rateOf(x.usual);
-                  // 緑・赤は表示した値（その順位のときは整数、全レースは小数1桁）の差で決める
-                  const d =
-                    r !== null && u !== null
-                      ? Math.round(r * 100) - Math.round(u * 1000) / 10
-                      : null;
-                  return (
-                    <tr
-                      key={x.boat}
-                      data-boat={x.boat}
-                      className={
-                        picks.includes(x.boat) ? "is-today" : undefined
-                      }
-                    >
-                      <th scope="row">
-                        <BoatBadge n={x.boat} size="xs" />
-                      </th>
-                      <td>{c.rank ? withUnit(c.key, c.rank.value) : "—"}</td>
-                      <td>{rankText(c.rank)}</td>
-                      <td
-                        className={
-                          d === null
-                            ? undefined
-                            : d >= 3
-                              ? "is-up"
-                              : d <= -3
-                                ? "is-down"
-                                : undefined
-                        }
-                        data-testid="analogy-radar-at"
-                      >
-                        {fmtPct(r)}
-                        {c.hit && (
-                          <small>
-                            {" "}
-                            {t(`${k}.pairCount`, {
-                              hits: fmtCount(c.hit[0]),
-                              n: fmtCount(c.hit[1]),
-                            })}
-                          </small>
-                        )}
-                      </td>
-                      <td>{fmtPct(u, 1)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <p className="af-foot">
-            {t(`${k}.radar.tableFoot`)}
-            {cardKeys.has(axisSel) && (
-              <>
-                {" "}
-                <button
-                  type="button"
-                  className="af-link"
-                  onClick={() => onCard(axisSel)}
-                >
-                  {t(`${k}.radar.toCard`, { boat: main })}
-                </button>
-              </>
-            )}
-          </p>
+      {/* PC では七角形を左に止め、艇の行・項目の表・差のカード（children）を右に（BOA-813） */}
+      <AnalogySplit
+        fig={
+          <>
+            <div className="af-dark">
+              <RadarSvg
+                boats={boats}
+                items={items}
+                picks={picks}
+                dashBoat={lead}
+                axisSel={axisSel}
+                onAxis={(key) => setAxisSel((s) => (s === key ? null : key))}
+                label={label}
+                ariaLabel={ariaLabel}
+              />
+            </div>
+            <p className="af-foot">{t(`${k}.radar.hint`)}</p>
+          </>
+        }
+      >
+        <div className="af-hep-legend" data-af-control="facts_radar_boat">
+          {BOATS.map((b) => {
+            const x = boats[b - 1];
+            const on = picks.includes(b);
+            return (
+              <button
+                key={b}
+                type="button"
+                aria-pressed={on}
+                // 太い艇を押し直すと外れる（状態が変わる）ので数える。主役だけが太いときの主役の押し直しは変わらないので数えない
+                data-af-toggle={
+                  on && picks.length === 1 && b === main ? undefined : ""
+                }
+                onClick={() => press(b)}
+              >
+                {swatch(b)}
+                <BoatBadge n={b} size="xs" />
+                <span>
+                  {t(`${k}.radar.boat`, { boat: b, cls: x.cls ?? "—" })}
+                  {b === main && (
+                    <small className="af-hep-main">
+                      {t(`${k}.radar.main`)}
+                    </small>
+                  )}
+                </span>
+                <span className="af-hep-cnt">
+                  {t(`${k}.radar.top2`, { n: items.length, k: x.top2 })}
+                </span>
+              </button>
+            );
+          })}
         </div>
-      )}
+        <p className="af-foot">{collect}</p>
+        <p className="af-foot af-hep-typ">
+          <i className="is-dash" aria-hidden="true" />
+          {t(`${k}.radar.typical`, { boat: lead, finish })}
+          {t("aiPredictionTab.analogy.listComma")}
+          {t(`${k}.hexFoot`)}
+        </p>
+        {ix < 0 ? (
+          <p className="af-foot">
+            {t(`${k}.radar.axisHint`, { rate: rateName })}
+          </p>
+        ) : (
+          <div className="af-hep-table" data-testid="analogy-radar-table">
+            <b>{itemName(axisSel)}</b>
+            <p className="af-foot">
+              {t(`${k}.radar.tableNote`, { rate: rateName })}
+            </p>
+            <div className="af-tbl">
+              <table className="af-mk-t">
+                <thead>
+                  <tr>
+                    <th scope="col">{t(`${k}.radar.colBoat`)}</th>
+                    <th scope="col">{t(`${k}.radar.colValue`)}</th>
+                    <th scope="col">{t(`${k}.radar.colRank`)}</th>
+                    <th scope="col">{t(`${k}.radar.colAt`)}</th>
+                    <th scope="col">{t(`${k}.radar.colAll`)}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {boats.map((x) => {
+                    const c = x.cells[ix];
+                    const r = rateOf(c.hit);
+                    const u = rateOf(x.usual);
+                    // 緑・赤は表示した値（その順位のときは整数、全レースは小数1桁）の差で決める
+                    const d =
+                      r !== null && u !== null
+                        ? Math.round(r * 100) - Math.round(u * 1000) / 10
+                        : null;
+                    return (
+                      <tr
+                        key={x.boat}
+                        data-boat={x.boat}
+                        className={
+                          picks.includes(x.boat) ? "is-today" : undefined
+                        }
+                      >
+                        <th scope="row">
+                          <BoatBadge n={x.boat} size="xs" />
+                        </th>
+                        <td>{c.rank ? withUnit(c.key, c.rank.value) : "—"}</td>
+                        <td>{rankText(c.rank)}</td>
+                        <td
+                          className={
+                            d === null
+                              ? undefined
+                              : d >= 3
+                                ? "is-up"
+                                : d <= -3
+                                  ? "is-down"
+                                  : undefined
+                          }
+                          data-testid="analogy-radar-at"
+                        >
+                          {fmtPct(r)}
+                          {c.hit && (
+                            <small>
+                              {" "}
+                              {t(`${k}.pairCount`, {
+                                hits: fmtCount(c.hit[0]),
+                                n: fmtCount(c.hit[1]),
+                              })}
+                            </small>
+                          )}
+                        </td>
+                        <td>{fmtPct(u, 1)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="af-foot">
+              {t(`${k}.radar.tableFoot`)}
+              {cardKeys.has(axisSel) && (
+                <>
+                  {" "}
+                  <button
+                    type="button"
+                    className="af-link"
+                    onClick={() => onCard(axisSel)}
+                  >
+                    {t(`${k}.radar.toCard`, { boat: main })}
+                  </button>
+                </>
+              )}
+            </p>
+          </div>
+        )}
+        {children}
+      </AnalogySplit>
     </div>
   );
 }

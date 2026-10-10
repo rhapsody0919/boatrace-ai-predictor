@@ -2445,3 +2445,79 @@ button.af-bar {
   flex: none;
   border-radius: 3px;
 }
+
+/*
+ * PC 表示（BOA-813、承認モック sonar-tab/mock-pc-v1）。1024px 以上だけ変える。375〜1023px は囲みが無いのと同じ
+ * （display: contents）で今の縦並びのまま。
+ * - 列は最大 1200px、左端はタブの列にそろえる（今は 720px で中央）
+ * - .af-split: 図（最大 440px）を左、押して変わる結果を右。図が画面の高さに収まるときだけ上に止める
+ * - .af-pair: 比べる2つ（③攻める艇｜1号艇、④1着｜3着以内・決まり手｜万舟）を左右に。子が1つの部品で
+ *   ないときは .af-pair-col で包む（狭い画面では包みが無いのと同じ）
+ */
+.af-split,
+.af-split-fig,
+.af-split-side,
+.af-pair,
+.af-pair-col {
+  display: contents;
+}
+
+.af-split-side > .af-h3:not(:first-child) {
+  margin-top: var(--spacing-3);
+  padding-top: var(--spacing-6);
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+@media (min-width: 1024px) {
+  .af-v16 {
+    max-width: 1200px;
+    margin-inline: 0;
+  }
+
+  .af-split {
+    display: grid;
+    grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+    gap: var(--spacing-3) var(--spacing-6);
+    align-items: start;
+  }
+
+  .af-split-fig,
+  .af-split-side,
+  .af-pair-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+    min-width: 0;
+  }
+
+  .af-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-3) var(--spacing-6);
+    align-items: start;
+  }
+
+  /* ① 進入の表は名前と数字が離れすぎないよう、今の幅（720px）のまま */
+  .af-ents {
+    max-width: 720px;
+  }
+
+  /* ② 手がかり: 絵は今の大きさのまま左、当てはまる条件を右 */
+  .af-hint .af-split {
+    grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
+  }
+}
+
+/* 図が画面の高さに収まるときだけ止める（ノート PC で図が画面を占めないように。ファンパネル） */
+@media (min-width: 1024px) and (min-height: 800px) {
+  .af-split-fig {
+    position: sticky;
+    top: calc(var(--af-sticky-top, 0px) + 64px);
+  }
+}
+
+@media (min-width: 1280px) {
+  .af-pats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
