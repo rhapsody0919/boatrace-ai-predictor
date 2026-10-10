@@ -562,6 +562,14 @@ check(
   ) === "全国・級の並びが同じ（予選も含む） 2,457件・平均STがそろったレース",
 );
 
+// 今節の平均着順点の一言（BOA-804）: 何を平均したか。優勝戦の日は準優勝戦の着順も入る
+check(
+  "今節の平均着順点の一言: 予選の日と優勝戦の日",
+  ASSIST_COPY.seriesAvgNote(7, 60, false) ===
+    "前日までの今節 7走の平均（60点÷7走。F・失格は0点）" &&
+    ASSIST_COPY.seriesAvgNote(8, 64, true).endsWith("。準優勝戦の着順も入る"),
+);
+
 // 用語の辞書・カードの文に禁止語が無い（D-41・D-42・N-7）
 const BANNED = /数え|集計|算出|対象|似た|似てい|ふつう|いつも|競艇|鉄板|大本線/;
 const theoryTexts = [
@@ -597,6 +605,7 @@ const bannedHits = [
   conclusion,
   ASSIST_COPY.simTopNote(63, "13:14"),
   ASSIST_COPY.entryNoPast,
+  ASSIST_COPY.seriesAvgNote(8, 64, true),
   JSON.stringify(ASSIST_COPY.scopeWhy),
   ASSIST_COPY.flowCourseNote,
   ASSIST_COPY.stNoData,

@@ -1592,3 +1592,41 @@ test.describe("思考アシスト: 図の右端の「+」（BOA-801 7、spec D-4
     await expect(plus(2)).toHaveText("1着");
   });
 });
+
+test.describe("思考アシスト: BOA-804（PR4 のファン評価の P3）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("② 今節の平均着順点に、何を平均したかの一言（7走・60点÷7走）", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    await expect(
+      page
+        .locator(".ta-deep")
+        .getByText("前日までの今節 7走の平均（60点÷7走。F・失格は0点）"),
+    ).toBeVisible({ timeout: 30000 });
+  });
+
+  test("③ 全部の材料は、どの艇でも同じ並び", async ({ page }) => {
+    await open(page);
+    const order = async (boat) => {
+      await page
+        .getByRole("button", { name: new RegExp(`^${boat}号艇\\s`) })
+        .click();
+      await page.getByRole("button", { name: /^全部の材料/ }).click();
+      const names = await page
+        .locator(".ta-deep .ta-fold")
+        .last()
+        .locator(".ta-chip-name, .ta-chip strong, .ta-chip b")
+        .allTextContents();
+      return names.map((s) => s.trim()).filter(Boolean);
+    };
+    const one = await order(1);
+    const three = await order(3);
+    expect(one.length).toBeGreaterThan(3);
+    expect(three).toEqual(one);
+  });
+});
