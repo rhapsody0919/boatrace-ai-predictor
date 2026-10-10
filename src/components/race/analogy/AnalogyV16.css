@@ -2783,6 +2783,11 @@ button.af-bar {
   font-weight: var(--font-weight-bold);
 }
 
+/* 日付は行の文字と同じ大きさ（.af-num の大きい数字にしない） */
+.af-rl-l1 .af-num {
+  font-size: inherit;
+}
+
 .af-rl-l2 {
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
