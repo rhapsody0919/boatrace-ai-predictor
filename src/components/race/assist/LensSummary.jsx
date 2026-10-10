@@ -554,7 +554,7 @@ function BetLensSummary({ m }) {
           </h3>
           {/* 件数は過去、オッズ・人気は今日の値（BOA-808 P3） */}
           <p className="ta-note ta-num">
-            {C.simTopNote(similar.n, bet.oddsAt)}
+            {C.simTopNote(similar.n, bet.oddsAt, bet.finished)}
           </p>
           <table className="ta-table">
             <thead>

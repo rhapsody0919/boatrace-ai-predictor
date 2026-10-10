@@ -144,9 +144,14 @@ export const ASSIST_COPY = Object.freeze({
   colPayout: "払戻",
   popularity: (n) => `${n}番`,
   oddsTimes: (v) => `${v}倍`,
-  // 類似レースでよく出た3連単の表の上の1行（BOA-808 P3）。オッズの時刻が無ければ「今日の値」とだけ書く
-  simTopNote: (n, time) =>
-    `件数は類似レース${n.toLocaleString("ja-JP")}件のうち。オッズ・人気は今日${time ? `の${time}時点` : "の値"}`,
+  // 類似レースでよく出た3連単の表の上の1行（BOA-808 P3）。オッズの時刻が無ければ「今日の値」とだけ書く。
+  // 終わったレースは「今日」と書かない（配分の注記 oddsCautionFinished と同じく確定オッズではないと書く）
+  simTopNote: (n, time, finished = false) =>
+    `件数は類似レース${n.toLocaleString("ja-JP")}件のうち。${
+      finished
+        ? `オッズ・人気はこのレースの${time ? `${time}時点` : "取り込んだ最後の値"}で、確定オッズではない`
+        : `オッズ・人気は今日${time ? `の${time}時点` : "の値"}`
+    }`,
   trigami: "トリガミ",
   trigamiLine: "合成オッズが1.0未満。どれが当たっても予算を下回る",
   totalLine: (total, remainder, lo, hi) =>

@@ -458,6 +458,7 @@ export default function ThinkingAssistPage() {
         summary: betSummary,
         ranks: popularityRanks(trifecta ?? {}),
         oddsAt,
+        finished: Boolean(race?.result?.finished),
       },
       scope,
       national,

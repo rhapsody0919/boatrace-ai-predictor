@@ -1190,7 +1190,7 @@ test.describe("思考アシスト: BOA-808（言葉と出し分け）", () => {
     await expect(page.getByText(/ 0件$/)).toHaveCount(0);
   });
 
-  test("P3: 類似レースでよく出た3連単のオッズ・人気は今日の時刻の値と書く", async ({
+  test("P3: 類似レースでよく出た3連単のオッズ・人気の時点を書く（終わったレースは「今日」と書かない）", async ({
     page,
   }) => {
     await routeThinkingAssistV16(page);
@@ -1198,7 +1198,7 @@ test.describe("思考アシスト: BOA-808（言葉と出し分け）", () => {
     await lensTab(page, "買い目").click();
     await expect(
       page.getByText(
-        /^件数は類似レース\d+件のうち。オッズ・人気は今日の\d{1,2}:\d{2}時点$/,
+        /^件数は類似レース\d+件のうち。オッズ・人気はこのレースの\d{1,2}:\d{2}時点で、確定オッズではない$/,
       ),
     ).toBeVisible();
     await expect(
