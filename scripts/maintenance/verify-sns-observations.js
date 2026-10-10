@@ -491,6 +491,26 @@ const boundary = [
   "2026-09-01T15:00:00Z",
 ].map((posted_at, i) => ({ ...exportDraft, id: `edge-${i}`, posted_at }));
 assert.equal(buildObservationCsvRows(boundary, [], options).length, 4);
+// posted_atがDate.parseには通るが厳密なISO形式でない行は、CSV全体を失敗させず1行だけ除く。
+{
+  const malformed = {
+    ...exportDraft,
+    id: "malformed-posted-at",
+    posted_at: "2026-09-01 10:00:00+09:00",
+  };
+  assert.ok(Number.isFinite(Date.parse(malformed.posted_at)));
+  const originalError = console.error;
+  const logs = [];
+  console.error = (...args) => logs.push(args);
+  let rows;
+  try {
+    rows = buildObservationCsvRows([malformed, boundary[2]], [], options);
+  } finally {
+    console.error = originalError;
+  }
+  assert.equal(rows.length, 2, "正常な行は除外されず残る");
+  assert.ok(logs.length > 0, "除外した行をログに残す");
+}
 for (const args of [
   ["2026-02-30", "2026-03-01"],
   ["2026-09-02", "2026-09-01"],
@@ -754,6 +774,7 @@ console.log(
 );
 
 if (process.argv.includes("--ui")) {
-  const { verifyObservationCsvUi } = await import("./snsObservationCsvUi.js");
+  const { verifyObservationCsvUi } =
+    await import("./sns-observation-csv-ui.js");
   await verifyObservationCsvUi(csv);
 }
