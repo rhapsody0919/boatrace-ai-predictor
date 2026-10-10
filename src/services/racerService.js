@@ -10,6 +10,7 @@ import { supabase } from "./supabaseClient";
 import { supabaseDataService } from "./supabaseDataService";
 import { parseRaceId } from "../utils/raceId";
 import { groupIntoCurrentMeet } from "../utils/meetGrouping";
+import { getTodayJST } from "../utils/dateUtils";
 
 async function getRacerProfile(racerId) {
   if (!supabase) return null;
@@ -200,7 +201,7 @@ export async function getRacerCurrentMotorStatus(racerId) {
 /**
  * 選手個別ページの成績・調子セクション用データを取得する
  * @param {number|string} racerId
- * @returns {Promise<{ formSummary: object|null, formTrend: object|null, techniqueProfile: object|null, aggregatedStats: object|null, exhibitionTimeTrend: object|null, boatReturnRate: object[], venueStats: object[] }>}
+ * @returns {Promise<{ formSummary: object|null, formTrend: object|null, techniqueProfile: object|null, aggregatedStats: object|null, exhibitionTimeTrend: object|null, boatReturnRate: object[], venueStats: object[], officialAvgSt: {period: object|null, avgSt: number|null} }>}
  */
 export async function getRacerStats(racerId) {
   const [
@@ -211,6 +212,7 @@ export async function getRacerStats(racerId) {
     exhibitionTimeTrend,
     boatReturnRate,
     venueStats,
+    officialAvgSt,
   ] = await Promise.all([
     supabaseDataService.getRacerFormSummary(racerId),
     supabaseDataService.getRacerFormTrend(racerId),
@@ -219,6 +221,8 @@ export async function getRacerStats(racerId) {
     supabaseDataService.getExhibitionTimeTrend(racerId),
     supabaseDataService.getRacerBoatReturnRate(racerId),
     supabaseDataService.getRacerVenueStats(racerId),
+    // 平均ST（公式）: 今日の公式の出走表と同じ期の値（BOA-815）
+    supabaseDataService.getRacerOfficialAvgSt(racerId, getTodayJST()),
   ]);
   return {
     formSummary,
@@ -228,5 +232,6 @@ export async function getRacerStats(racerId) {
     exhibitionTimeTrend,
     boatReturnRate,
     venueStats,
+    officialAvgSt,
   };
 }

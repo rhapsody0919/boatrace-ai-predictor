@@ -64,7 +64,11 @@ function ScopeTag({ boat, cls, n, classScope = true }) {
   return (
     <span className="af-scope-tag">
       <BoatBadge n={boat} size="xs" />
-      {t(`${k}.atk.scopeTag`, { cls: cls ?? "—", n: fmtCount(n) })}
+      {t(`${k}.atk.scopeTag`, {
+        b: boat,
+        cls: cls ?? "—",
+        n: fmtCount(n),
+      })}
     </span>
   );
 }

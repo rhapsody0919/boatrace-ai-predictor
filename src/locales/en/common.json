@@ -1549,7 +1549,7 @@
         "entryPre": "After the exhibition, the pattern matching today's exhibition entry is marked. ",
         "allOf": "all races in {{name}}",
         "hintHeading": "Clues to today's start",
-        "hintOther": "A non-wakunari entry is selected. These clues are for wakunari, so they do not apply directly (the tags in ② are also removed)",
+        "hintOther": "A non-wakunari entry is selected. These clues are for wakunari, so they do not apply directly (the tags in STEP 2 are also removed)",
         "hintSrc": "Avg. ST used",
         "hintSrcs": {
           "course": "This course",
@@ -1579,7 +1579,7 @@
           "flat03": "Spread of avg. ST across the 6 (latest − earliest) is within 0.03s"
         },
         "hintNone": "Today's order matches none of the conditions",
-        "hintFoot": "Based on wakunari races in {{scope}} ({{n}}; races with flying or late starts and races without an average ST for all 6 boats are excluded, so the count can differ slightly from \"Any shape\" in ②). {{few}}Even when a condition matches, it misses more often than not (a clue, not a deciding factor).",
+        "hintFoot": "Based on wakunari races in {{scope}} ({{n}}; races with flying or late starts and races without an average ST for all 6 boats are excluded, so the count can differ slightly from \"Any shape\" in STEP 2). {{few}}Even when a condition matches, it misses more often than not (a clue, not a deciding factor).",
         "hintBadge": "Today's avg. ST matches",
         "forms": {
           "any": {
@@ -1624,8 +1624,8 @@
         "slitPre": "After the exhibition, today's exhibition slit shape is shown for reference",
         "noForm": "Matches no shape",
         "attackHeading": "Did the attack work?",
-        "attackWakuOnly": "Only wakunari entries are gathered (shown when \"Wakunari\" or \"Any entry\" is selected in ①)",
-        "attackGuide": "Select a slit shape in ② to see whether the attacking boat won or Boat 1 escaped with that shape",
+        "attackWakuOnly": "Only wakunari entries are gathered (shown when \"Wakunari\" or \"Any entry\" is selected in STEP 1)",
+        "attackGuide": "Select a slit shape in STEP 2 to see whether the attacking boat won or Boat 1 escaped with that shape",
         "attackNoRecord": "There is no record of who turned the 1st mark first, so this uses finishes and winning techniques",
         "attacker": "Attacking boat:",
         "attackerNote": "The outer boat with the most wins in this shape (not that it always attacks)",
@@ -1675,7 +1675,7 @@
         "hintRefShort": "{{venue}} avg.",
         "slitRefLegend": "Dotted = {{name}}",
         "slitFaster": "Faster →",
-        "resultNotSplit": "The results in ④ are not split by the attacking boat's rank in ③.",
+        "resultNotSplit": "The results in STEP 4 are not split by the attacking boat's rank in STEP 3.",
         "fellBack": "Only {{n}} races at {{venue}} (excluding refunds) have the same combination, so these figures gather races from all venues",
         "shareOfNoRefund": "{{p}} of {{of}} (excluding refunds)",
         "agreeVerdict": {
@@ -1686,7 +1686,7 @@
         "atk": {
           "fewTitle": "Fewer than 50 races (swings easily)",
           "few": "few",
-          "scopeTag": "{{cls}} races {{n}}",
+          "scopeTag": "Boat {{b}}, {{cls}} races {{n}}",
           "todayRow": "{{label}} #{{rank}} ({{band}}) → {{what}}",
           "band": {
             "top": "top",
@@ -1722,7 +1722,7 @@
           "tblB1All": "Boat 1 Nige",
           "legendNoRef": "Small numbers = races in the band. few = under 50 races (swings easily)",
           "foldPreviewNoRef": "Exhibition time / motor × top-middle-bottom",
-          "countDiff": "③ uses only races with avg. ST for all 6, so Boat 1's box has {{n}} races (② and ④: {{m}})"
+          "countDiff": "STEP 3 uses only races with avg. ST for all 6, so Boat 1's box has {{n}} races (STEP 2 and STEP 4: {{m}})"
         },
         "entryFew": "{{n}} —",
         "entryColType": "Entry",
@@ -1736,16 +1736,15 @@
           "overall": "Overall = average regardless of course (mixes starting positions)"
         },
         "hintDownTag": "rather less likely",
-        "hintGo": "See ③④ for the {{form}} shape ›",
+        "hintGo": "See STEP 3 and 4 for the {{form}} shape ›",
         "hintTablePreview": "Avg. ST by this course, overall, venue and today's exhibition",
         "slitNoRate": "—",
-        "slitStatAny": "{{n}} · ① {{b1}}",
-        "slitStat": "{{p}} · {{n}} · ① {{b1}}",
-        "slitB1Legend": "① = Boat 1 win rate",
+        "slitStatAny": "{{n}} · Boat 1 wins {{b1}}",
+        "slitStat": "{{p}} · {{n}} · Boat 1 wins {{b1}}",
         "slitChange": "Change ▾",
         "scopeTagAll": "Collected races {{n}}",
-        "boatTag": "{{cls}} {{n}}",
-        "boatTagAll": "{{n}}",
+        "boatTag": "Boat {{b}} {{cls}} {{n}}",
+        "boatTagAll": "Boat {{b}} {{n}}",
         "keyThin": "Faded bar = under {{n}} races",
         "boatScopeLine": "Each boat's rate comes from races with its own class (tag on the left). They do not add up to 100%",
         "manshuCount": "{{hits}}/{{n}} races",
@@ -1771,16 +1770,16 @@
         "scopeMapB1": "Boat 1's class matched",
         "scopeMapOwn": "That boat's class matched",
         "scopeMap": {
-          "attOwn": "③ Attacking boat's box and table",
-          "attB1": "③ Boat 1's box and table",
-          "barB1": "④ Win / top 3 (Boat 1)",
-          "barOwn": "④ Win / top 3 (Boats 2–6)",
-          "rest": "④ Techniques, manshu, flow, trifectas"
+          "attOwn": "STEP 3 Attacking boat's box and table",
+          "attB1": "STEP 3 Boat 1's box and table",
+          "barB1": "STEP 4 Win / top 3 (Boat 1)",
+          "barOwn": "STEP 4 Win / top 3 (Boats 2–6)",
+          "rest": "STEP 4 Techniques, manshu, flow, trifectas"
         },
         "techHeadingShort": "Winning technique",
         "notesHintHeading": "Start clues",
-        "slitTodayTagOne": "Today's exhibition matches {{forms}} (tagged \"Today's exhibition\" in ②).",
-        "slitTodayTagMany": "Today's exhibition matches {{count}} shapes: {{forms}} (shapes can overlap; tagged \"Today's exhibition\" in ②).",
+        "slitTodayTagOne": "Today's exhibition matches {{forms}} (tagged \"Today's exhibition\" in STEP 2).",
+        "slitTodayTagMany": "Today's exhibition matches {{count}} shapes: {{forms}} (shapes can overlap; tagged \"Today's exhibition\" in STEP 2).",
         "hintCondsNote": "The rate is how often the slit took that shape in past races entered in lane order. Even when it matches, misses are more common (a clue, not a decider)",
         "hintTodayOk": "✓ Matches today",
         "hintTodayLead": "Today",
@@ -1815,7 +1814,8 @@
         "hintAll": "All races (any condition) {{p}}",
         "hintMapFirst": " Boat {{n}} = Course {{n}}",
         "hintMapRest": "= Course {{n}}",
-        "hintTodayCourse": "Course {{n}}"
+        "hintTodayCourse": "Course {{n}}",
+        "stepLabel": "STEP {{n}}"
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
       "feedback": {
