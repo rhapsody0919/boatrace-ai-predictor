@@ -6,6 +6,7 @@ import SimilarSonar from "./SimilarSonar";
 import SimilarityItems from "./SimilarityItems";
 import SimilarCompareList from "./SimilarCompareList";
 import FinishSankey from "./FinishSankey";
+import AnalogySplit from "./AnalogySplit";
 import TrifectaList from "./TrifectaList";
 import { BoatBars, TechniqueBars } from "./OutcomeBars";
 import { boatTip } from "../../../utils/analogyTips";
@@ -438,16 +439,26 @@ export default function SimilarRacesTab({
         <TechniqueBars counts={ag.tech} n={ag.n} reference={techRef} />
         <OtherBoats neighbors={nb} boat={boat} />
       </SimilarSonar>
-      <h4 className="af-h4">{t("aiPredictionTab.analogy.flow.heading")}</h4>
-      <FinishSankey
-        tri={ag.tri}
-        first={boat}
-        onFirst={setBoat}
-        not1={not1}
-        onNot1={setNot1}
-      />
-      <h4 className="af-h4">{t(`${k}.triHeading`)}</h4>
-      <TrifectaList tri={ag.tri} first={boat} not1={not1} />
+      {/* PC では着順の流れを左、よく出た3連単を右に（BOA-813） */}
+      <AnalogySplit
+        fig={
+          <>
+            <h4 className="af-h4">
+              {t("aiPredictionTab.analogy.flow.heading")}
+            </h4>
+            <FinishSankey
+              tri={ag.tri}
+              first={boat}
+              onFirst={setBoat}
+              not1={not1}
+              onNot1={setNot1}
+            />
+          </>
+        }
+      >
+        <h4 className="af-h4">{t(`${k}.triHeading`)}</h4>
+        <TrifectaList tri={ag.tri} first={boat} not1={not1} />
+      </AnalogySplit>
       {feedback}
       <NotesFold title={t("aiPredictionTab.analogy.notes.methodCaution")}>
         <NoteList

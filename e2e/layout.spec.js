@@ -904,6 +904,13 @@ test.describe("レイアウト: 龍神ソナーのタブ（3つの内部タブ�
         section.locator(".af-sonar-picks"),
       ),
     ).toBe(wide);
+    // 着順の流れ｜よく出た3連単
+    expect(
+      await sideBySide(
+        section.locator(".af-flow").first(),
+        section.locator(".af-bar:has(.af-tri)").first(),
+      ),
+    ).toBe(wide);
     // 展開シナリオ: ③攻める艇｜1号艇、④1着｜3着以内
     await section.getByRole("tab", { name: "展開シナリオ" }).click();
     await section.getByRole("button", { name: /^カド一撃/ }).click();

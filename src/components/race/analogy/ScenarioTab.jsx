@@ -9,6 +9,7 @@ import SlitShapePicker, { SlitChosen } from "./SlitShapePicker";
 import AttackTable from "./AttackTable";
 import ScenarioRaceList from "./ScenarioRaceList";
 import FinishSankey from "./FinishSankey";
+import AnalogySplit from "./AnalogySplit";
 import TrifectaList from "./TrifectaList";
 import { BoatBars, TechniqueBars } from "./OutcomeBars";
 import BoatBadge from "../BoatBadge";
@@ -311,23 +312,31 @@ export default function ScenarioTab({
             </p>
           </div>
         </div>
-        <div className="af-scn-blk">
-          <h4 className="af-h4">{t("aiPredictionTab.analogy.flow.heading")}</h4>
-          <FinishSankey
-            tri={c.tri}
-            first={first}
-            onFirst={setFirst}
-            not1={not1}
-            onNot1={setNot1}
-            scenario
-          />
-        </div>
-        <div className="af-scn-blk">
-          <h4 className="af-h4">
-            {t("aiPredictionTab.analogy.similar.triHeading")}
-          </h4>
-          <TrifectaList tri={c.tri} first={first} not1={not1} scenario />
-        </div>
+        {/* PC では着順の流れを左、よく出た3連単を右に（BOA-813） */}
+        <AnalogySplit
+          fig={
+            <div className="af-scn-blk">
+              <h4 className="af-h4">
+                {t("aiPredictionTab.analogy.flow.heading")}
+              </h4>
+              <FinishSankey
+                tri={c.tri}
+                first={first}
+                onFirst={setFirst}
+                not1={not1}
+                onNot1={setNot1}
+                scenario
+              />
+            </div>
+          }
+        >
+          <div className="af-scn-blk">
+            <h4 className="af-h4">
+              {t("aiPredictionTab.analogy.similar.triHeading")}
+            </h4>
+            <TrifectaList tri={c.tri} first={first} not1={not1} scenario />
+          </div>
+        </AnalogySplit>
       </>
     );
 
