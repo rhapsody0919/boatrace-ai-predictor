@@ -124,7 +124,7 @@ function buildRows(t, players, analysis, flying, raceId) {
         return `${sign}${Math.abs(row.delta).toFixed(2)}`;
       }),
     },
-    // データ出走表と同じ2行（raceIndicators.jsx、BOA-815）: 前期・公式は2桁、30走は3桁
+    // データ出走表と同じ2行（raceIndicators.jsx、BOA-815）: 公式は2桁、30走は3桁
     {
       key: "avgSt",
       label: t("dataTable.rowAvgStOfficial"),

@@ -5696,7 +5696,7 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定レースの6艇の「平均ST（前期・公式）」（BOA-815）。公式の出走表と同じ期（officialPeriodOf）の
+   * 指定レースの6艇の「平均ST（公式）」（BOA-815）。公式の出走表と同じ期（officialPeriodOf）の
    * racer_period_stats.avg_st（2桁）を返す。期は節の初日（race_series）で決める。公式は節の途中で
    * 期を替えないため（6/27〜7/1 の節の 7/1 は旧期）。節が取れなければレース日で決める。
    * その期の行が無い選手（新人など）は返さない。別の期の値で埋めると公式の出走表と食い違うため、

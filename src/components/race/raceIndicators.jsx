@@ -147,6 +147,9 @@ function buildOriginalExhibitionRows(t, originalExhibition) {
  * @param {Object} analysis - useRaceAnalysisDataの戻り値
  * @param {Object} pending - ソース別ロード中フラグ（useRaceAnalysisDataのpending）
  */
+// 「2025-11-01」→「2025/11/1」（平均ST（公式）の期間の表記、BOA-815）
+const slashDate = (ymd) => ymd.split("-").map(Number).join("/");
+
 function buildRowDefs({
   t,
   players,
@@ -181,11 +184,12 @@ function buildRowDefs({
   const rateByBoat = byBoat(returnRate);
   const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
   const meetPrevByBoat = byBoat(meetPrevRun);
-  // 平均ST の2行（BOA-815）。前期・公式は公式の出走表と同じ期、30走は v16 の st_mean30
+  // 平均ST の2行（BOA-815）。公式は公式の出走表と同じ期、30走は v16 の st_mean30
   const officialStByBoat = new Map(
     (officialAvgSt?.rows ?? []).map((r) => [r.boatNumber, r.avgSt]),
   );
   const st30ByBoat = new Map((st30 ?? []).map((r) => [r.boatNumber, r.st30]));
+  const officialPeriod = officialAvgSt?.period ?? null;
 
   // ソース別プレースホルダ: ロード中はスケルトン、取得済みでデータ無しは「—」
   const ph = (source) =>
@@ -395,7 +399,7 @@ function buildRowDefs({
         );
       },
     },
-    // 平均ST は期間を名前に付けて2行で出す（BOA-815、2026-10-10 ユーザー承認）。
+    // 平均ST は2行で出す（BOA-815、2026-10-10 ユーザー承認）。
     // 1行目は公式の出走表と同じ値（2桁、公式が2桁のため）。最良は表示桁で比べるので同じ値が並ぶことがある。
     // 2026-10-02 に3桁にした理由（2桁だと最良が5艇同時に光る）は、3桁の2行目で補う
     {
@@ -403,6 +407,16 @@ function buildRowDefs({
       label: t("dataTable.rowAvgSt"),
       shortLabel: t("review.cols.avgSt"),
       note: t("dataTable.rowAvgStOfficialNote"),
+      // 期間は名前に入れず「?」に出す（「前期」と書くと5〜6月・11〜12月に意味がずれる。2026-10-10 ユーザー判断）
+      ...(officialPeriod
+        ? {
+            hintKey: "avgStOfficialPeriod",
+            hintValues: {
+              from: slashDate(officialPeriod.calcFrom),
+              to: slashDate(officialPeriod.calcTo),
+            },
+          }
+        : {}),
       tab: "racecard",
       best: bestOf(cand.avgSt, "min", { digits: 2 }),
       render: (p) => {

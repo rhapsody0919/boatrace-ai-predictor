@@ -135,7 +135,7 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
       try {
         setLoading(true);
         setError(null);
-        // 平均ST はデータ出走表と同じ2列（前期・公式／直近30走、BOA-815）
+        // 平均ST はデータ出走表と同じ2列（公式／直近30走、BOA-815）
         // 30走は v16 の API から取る。その失敗で表全体を消さず、列の下に取得失敗を出す
         setSt30Failed(false);
         const [entryRows, stats, official, st30] = await Promise.all([

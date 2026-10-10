@@ -150,7 +150,10 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
                       <span className="drt-label-short">{row.shortLabel}</span>
                     </>
                   )}
-                  <TermHintButton termKey={row.key} />
+                  <TermHintButton
+                    termKey={row.hintKey ?? row.key}
+                    values={row.hintValues}
+                  />
                   {row.note && (
                     <span className="drt-label-note">{row.note}</span>
                   )}
