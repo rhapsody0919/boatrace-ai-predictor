@@ -1592,3 +1592,74 @@ test.describe("思考アシスト: 図の右端の「+」（BOA-801 7、spec D-4
     await expect(plus(2)).toHaveText("1着");
   });
 });
+
+test.describe("思考アシスト: GA4 のイベント（公開後のフォロー、docs/design/thinking-assist/events.md）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+  test("切り替え・レンズ・深掘り・6艇比較・シート・ガイドを送り、押し直しは送らない", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await routeThinkingAssistV16(page, { preview: true });
+    const sent = () =>
+      page.evaluate(() =>
+        window.__events
+          .filter((e) => e[0] === "event" && String(e[1]).startsWith("assist_"))
+          .map((e) => [e[1], e[2]]),
+      );
+    await page.goto(`/race/${RACE_ID}`);
+    await page
+      .getByRole("group", { name: "表示" })
+      .getByRole("button", { name: /思考アシスト/ })
+      .click();
+    await expect(page.getByRole("tablist", { name: "見方" })).toBeVisible({
+      timeout: 20000,
+    });
+    await lensTab(page, "展開").click();
+    await lensTab(page, "展開").click();
+    await page.getByRole("button", { name: /^1号艇\s/ }).click();
+    await page
+      .getByRole("button", { name: /、6艇で比べる$/ })
+      .first()
+      .click();
+    await expect(page.getByRole("button", { name: /図を戻す/ })).toBeVisible();
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    await expect(sheet).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(sheet).toHaveCount(0);
+    await page.getByRole("button", { name: "ガイド", exact: true }).click();
+    await page.getByRole("button", { name: "次へ" }).click();
+    await expect
+      .poll(async () => (await sent()).length, { timeout: 5000 })
+      .toBe(7);
+    const events = await sent();
+    expect(events.map(([name]) => name)).toEqual([
+      "assist_view_switch",
+      "assist_lens_select",
+      "assist_deep_open",
+      "assist_metric_compare",
+      "assist_sheet_open",
+      "assist_guide_step",
+      "assist_guide_step",
+    ]);
+    expect(events[0][1]).toEqual({ race_id: RACE_ID, assist_view: "assist" });
+    expect(events[1][1]).toEqual({ race_id: RACE_ID, assist_lens: "flow" });
+    expect(events[2][1]).toEqual({
+      race_id: RACE_ID,
+      assist_boat: 1,
+      assist_lens: "flow",
+    });
+    expect(Object.keys(events[3][1]).sort()).toEqual([
+      "assist_lens",
+      "assist_metric",
+      "race_id",
+    ]);
+    expect(events[4][1]).toEqual({ race_id: RACE_ID, assist_sheet: "mark" });
+    expect(events.slice(5).map(([, p]) => p.assist_guide_step)).toEqual([1, 2]);
+  });
+});
