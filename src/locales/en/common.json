@@ -1815,7 +1815,29 @@
         "hintMapFirst": " Boat {{n}} = Course {{n}}",
         "hintMapRest": "= Course {{n}}",
         "hintTodayCourse": "Course {{n}}",
-        "stepLabel": "STEP {{n}}"
+        "stepLabel": "STEP {{n}}",
+        "races": {
+          "title": {
+            "first": "Races won by Boat {{b}}",
+            "tech": "Races decided by {{tech}}",
+            "manshu": "Manshu races (trifecta ¥10,000+)",
+            "tri": "Races finishing {{combo}}",
+            "band": "Races: Finish {{from}} Boat {{a}} → Finish {{to}} Boat {{b}}"
+          },
+          "count": "latest {{k}} of {{m}}",
+          "capped": "Taken from the latest {{kept}} of all {{n}} races",
+          "otherScope": "This list uses races matched by Boat 1's class (gathered differently from the bar count)",
+          "more": "Show more (up to {{n}})",
+          "close": "Close the list",
+          "loading": "Loading",
+          "error": "Could not load the list.",
+          "retry": "Try again",
+          "notReady": "This list starts with the next morning batch",
+          "none": "No such race among the latest {{kept}}",
+          "raceNo": "R{{n}}",
+          "techPay": "{{tech}} · ¥{{yen}}",
+          "bandLink": "See the races in this band ›"
+        }
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
       "feedback": {

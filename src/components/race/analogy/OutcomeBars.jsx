@@ -21,6 +21,7 @@ export function BoatBars({
   colored = false,
   fewBelow = 0,
   tags = null,
+  countChip = false,
 }) {
   const { t } = useTranslation();
   const perBoat = Array.isArray(n);
@@ -48,6 +49,7 @@ export function BoatBars({
             color={colored ? SCOPE_LINE[b] : undefined}
             value={perBoat && !tags ? fmtRateCount([hits, nb]) : undefined}
             few={perBoat && nb < fewBelow}
+            countChip={countChip}
             selected={selected === b}
             onClick={onSelect ? () => onSelect(b) : undefined}
             ariaLabel={
@@ -67,7 +69,13 @@ export function BoatBars({
 }
 
 /** 決まり手の棒（0件の決まり手は、その他だけ出さない） */
-export function TechniqueBars({ counts, n, reference = null }) {
+export function TechniqueBars({
+  counts,
+  n,
+  reference = null,
+  selected = null,
+  onSelect,
+}) {
   const { t } = useTranslation();
   const TECH = ["逃げ", "差し", "まくり", "まくり差し", "抜き", "恵まれ"];
   return (
@@ -79,6 +87,9 @@ export function TechniqueBars({ counts, n, reference = null }) {
           hits={counts?.[k] ?? 0}
           n={n}
           reference={reference?.[k] ?? null}
+          countChip={Boolean(onSelect)}
+          selected={selected === k}
+          onClick={onSelect ? () => onSelect(k) : undefined}
         />
       ))}
     </div>

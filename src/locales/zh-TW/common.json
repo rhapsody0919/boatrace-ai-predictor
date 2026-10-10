@@ -1809,7 +1809,29 @@
         "hintMapFirst": " {{n}}號艇＝{{n}}道",
         "hintMapRest": "＝{{n}}道",
         "hintTodayCourse": "{{n}}道",
-        "stepLabel": "STEP{{n}}"
+        "stepLabel": "STEP{{n}}",
+        "races": {
+          "title": {
+            "first": "{{b}}號艇獲勝的比賽",
+            "tech": "決勝方式為{{tech}}的比賽",
+            "manshu": "萬舟（三連單1萬日圓以上）的比賽",
+            "tri": "{{combo}} 的比賽",
+            "band": "第{{from}}名{{a}}號艇→第{{to}}名{{b}}號艇的比賽"
+          },
+          "count": "{{m}}場中最近的{{k}}場",
+          "capped": "從全部{{n}}場中最近的{{kept}}場取出",
+          "otherScope": "此清單取自依1號艇級別收集的比賽（與長條的場數收集方式不同）",
+          "more": "顯示更多（最多{{n}}場）",
+          "close": "關閉清單",
+          "loading": "讀取中",
+          "error": "無法讀取清單。",
+          "retry": "重新讀取",
+          "notReady": "此清單從下一次早上的批次開始提供",
+          "none": "最近的{{kept}}場中沒有這樣的比賽",
+          "raceNo": "{{n}}R",
+          "techPay": "{{tech}}，{{yen}}日圓",
+          "bandLink": "查看此帶的比賽 ›"
+        }
       },
       "barLabel": "{{boat}}號艇 {{p}} {{n}}場",
       "feedback": {
