@@ -76,6 +76,6 @@ export default async function handler(req) {
     return jsonResponse({ data: target, routine: routineResult });
   } catch (error) {
     console.error("SNS Hub topic target fire Edge function error:", error);
-    return jsonResponse({ error: error.message }, 500);
+    return jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, 500);
   }
 }

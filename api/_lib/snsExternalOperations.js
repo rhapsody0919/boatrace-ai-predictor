@@ -41,6 +41,6 @@ export function completedResponse(draft) {
     data: draft,
     ...(result.youtubeUrl && { youtubeUrl: result.youtubeUrl }),
     ...(result.merge && { merge: result.merge }),
-    ...(result.thumbnailWarning && { thumbnailWarning: result.thumbnailWarning }),
+    ...(result.thumbnailWarning && { thumbnailWarning: ["unconfirmed", "サムネイル設定結果は未確認です"].includes(result.thumbnailWarning) ? "unconfirmed" : "failed" }),
   };
 }

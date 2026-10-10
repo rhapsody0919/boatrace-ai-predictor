@@ -18,5 +18,5 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ headSha: pr.head.sha,
       previewUrl: `https://github.com/${GITHUB_REPO}/tree/${pr.head.sha}`,
     }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
-  } catch (error) { return jsonResponse({ error: error.message }, 502); }
+  } catch (error) { console.error("SNS Hub blog preview error:", error); return jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, 502); }
 }

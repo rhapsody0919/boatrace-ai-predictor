@@ -179,7 +179,8 @@ export default async function handler(req) {
       if (observation.source === "mock")
         throw new Error("モックは本番の保存対象外です");
     } catch (error) {
-      return jsonResponse({ error: error.message }, 400);
+      console.error("SNS観測入力検査失敗", error);
+      return jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, 400);
     }
     const response = await fetch(
       `${SUPABASE_URL}/rest/v1/rpc/append_sns_metric_observation`,
