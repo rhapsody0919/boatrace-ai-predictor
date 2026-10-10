@@ -102,10 +102,38 @@
 @media (min-width: 1025px) {
   /* 発走前の AI予想（.prediction-result）も同じ 720px に。展開予測の決まり手と確率が
      1440px で約1130px 離れていた（race-detail-ui-unify FR-6、BOA-619 の残り） */
+  /* 左端はタブの列にそろえる（BOA-820）。以前は中央寄せで、1440px で左端が x=360、1920px で x=600 に飛び、
+     タブを切り替えるたびに目が左右に動いた。タブの幅の決まり: 全幅（6艇を列に並べる表）／最大1200（図とリスト）／
+     720（文章と1行1項目）の3段で、どの段も左端はタブの列 */
   .race-detail-page-v2 .race-ai-prediction-tab,
   .race-detail-page-v2 .prediction-result {
     max-width: 720px;
-    margin-inline: auto;
+    margin-inline: 0;
+  }
+
+  /* 中の見出し・説明・判定の行も左そろえ（中央そろえのままだと左寄せの箱の中で浮く） */
+  .race-detail-page-v2
+    :is(.race-ai-prediction-tab, .prediction-result)
+    :is(h3, h4, h5, h6, p, .turn-pattern-summary) {
+    text-align: left;
+  }
+
+  .race-detail-page-v2 .ai-tab-sonar-link {
+    margin-inline: 0;
+  }
+
+  /* 共有ボタン（全タブ共通）もタブの列の左端に */
+  .race-detail-page-v2 .social-share-wrapper {
+    text-align: left;
+  }
+
+  .race-detail-page-v2 .social-share-buttons {
+    justify-content: flex-start;
+  }
+
+  /* タブの説明文・注意書きの行は最大 720（BOA-820）。1200 いっぱいだと1行約75字になり読みにくい */
+  .race-detail-page-v2 .race-tabs-panel p {
+    max-width: 720px;
   }
 
   .race-detail-page-v2 .rr-payout-table {
