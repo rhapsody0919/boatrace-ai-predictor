@@ -150,6 +150,56 @@ export function hintConditions(avgStByCourse) {
   };
 }
 
+/**
+ * 当てはまる条件のカードの「今日」の行（BOA-814、承認モック mock-hint-cards-v1）。条件が比べる2つと差（1/1000秒）。
+ * hintConditions と同じく 1/1000秒に丸めてから比べるので、差は判定と同じ値になる
+ * - a: 条件の主語（kado4 なら4コース、dash03 なら4〜6コースの和）、b: 比べる相手
+ * - dir: "fast"（a が b より早い）／"slow"（a が b より遅い）／"spread"（一番遅いと一番早いの差。flat03）
+ * @param {string} id HINTS の1つ
+ * @param {(number|null)[]} avgStByCourse コース順の平均ST（秒）
+ * @returns {null | {a: {boats: number[], sum: boolean, v: number}, b: {boats: number[], sum: boolean, v: number},
+ *   diff: number, dir: "fast"|"slow"|"spread"}} v と diff は 1/1000秒の整数。欠けがあれば null
+ */
+export function hintToday(id, avgStByCourse) {
+  if (avgStByCourse?.length !== 6 || avgStByCourse.some(isMissing)) return null;
+  const c = avgStByCourse.map((v) => roundHalfUp(v * 1000));
+  const one = (i) => ({ boats: [i + 1], sum: false, v: c[i] });
+  const pick = (idx, better) =>
+    one(idx.reduce((m, i) => (better(c[i], c[m]) ? i : m), idx[0]));
+  const fastest = (idx) => pick(idx, (x, y) => x < y);
+  const slowest = (idx) => pick(idx, (x, y) => x > y);
+  const sumOf = (idx) => ({
+    boats: idx.map((i) => i + 1),
+    sum: true,
+    v: idx.reduce((t, i) => t + c[i], 0),
+  });
+  const pair = (a, b, dir) => ({
+    a,
+    b,
+    dir,
+    diff: dir === "fast" ? b.v - a.v : a.v - b.v,
+  });
+  switch (id) {
+    case "kado4":
+    case "kado4_02":
+      return pair(one(3), fastest([0, 1, 2]), "fast");
+    case "in_slow02":
+      return pair(one(0), one(1), "slow");
+    case "in_fastest":
+      return pair(one(0), fastest([1, 2, 3, 4, 5]), "fast");
+    case "d2_slow01":
+      return pair(one(1), slowest([0, 2]), "slow");
+    case "d3_slow01":
+      return pair(one(2), slowest([1, 3]), "slow");
+    case "dash03":
+      return pair(sumOf([3, 4, 5]), sumOf([0, 1, 2]), "fast");
+    case "flat03":
+      return pair(slowest([0, 1, 2, 3, 4, 5]), fastest([0, 1, 2, 3, 4, 5]), "spread");
+    default:
+      return null;
+  }
+}
+
 // ---------------------------------------------------------------- 画面（タブ3）の判定
 
 /** 手がかりの条件ごとに見る形（Python の v16_scenario.HINT_FORM） */
@@ -213,6 +263,9 @@ export function hintRows(scenarioHints, todayHits, version, interval) {
     const miss = c?.miss ?? [0, 0];
     const ph = hit[1] ? hit[0] / hit[1] : null;
     const pm = miss[1] ? miss[0] / miss[1] : null;
+    // どの条件でもの割合（当てはまる＋当てはまらない。カードの点線。BOA-814）
+    const pall =
+      hit[1] + miss[1] ? (hit[0] + miss[0]) / (hit[1] + miss[1]) : null;
     let kind = "unclear";
     if (ph !== null && pm !== null && hit[1] >= MIN_SCENARIO) {
       const [hl, hh] = interval(hit[0], hit[1]);
@@ -220,7 +273,7 @@ export function hintRows(scenarioHints, todayHits, version, interval) {
       const apart = hl > mh || ml > hh;
       if (apart) kind = ph > pm ? "up" : "down";
     }
-    return { id, form, hit, miss, ph, pm, kind };
+    return { id, form, hit, miss, ph, pm, pall, kind };
   });
 }
 

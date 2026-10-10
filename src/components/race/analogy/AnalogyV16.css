@@ -2445,3 +2445,119 @@ button.af-bar {
   flex: none;
   border-radius: 3px;
 }
+
+/*
+ * 当てはまる条件のカード（BOA-814、承認モック mock-hint-cards-v1）。形の絵と名前・「✓ 今日あてはまる」・今日の値・
+ * 段階ごとの棒（0〜100%、下地が見える色、全体の割合を点線）
+ */
+.af-hintc-h {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.af-hintc-ico {
+  display: inline-block;
+  width: 64px;
+  flex: none;
+}
+
+.af-hintc-ico svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.af-hintc-name {
+  font-size: var(--font-size-sm);
+}
+
+.af-hintc-ok {
+  margin-left: auto;
+  padding: 1px var(--spacing-2);
+  border-radius: 999px;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+.af-hintc-today {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--spacing-1);
+  margin: 0;
+  padding: var(--spacing-1-5) var(--spacing-2);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+}
+
+.af-hintc-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.af-hintc-lb {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-xs);
+}
+
+.af-hintc-lb > b {
+  margin-left: auto;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.af-hintc-lb small {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
+.af-hintc-trk {
+  position: relative;
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--border-hairline);
+}
+
+.af-hintc-trk i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 6px;
+  background: var(--brand-accent-primary);
+}
+
+.af-hintc-trk s,
+.af-hintc-all i {
+  border-left: 2px dashed var(--text-primary);
+  opacity: 0.7;
+}
+
+.af-hintc-trk s {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+}
+
+.af-hintc-all {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  margin: 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.af-hintc-all i {
+  display: inline-block;
+  height: 12px;
+}

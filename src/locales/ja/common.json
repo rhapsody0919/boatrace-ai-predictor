@@ -1215,7 +1215,7 @@
         "hintFewVenue": "{{boats}}号艇はこの会場の走数が少なく、ぶれやすい。",
         "hintExhPost": "展示STは参考で、本番のSTとの関係は弱い（艇ごとの相関 0.08。平均STは 0.28）。F.09＝展示でスタートラインを0.09秒早く越えた（展示なので罰則は無い）。",
         "hintExhPre": "展示STは展示の後に出る。",
-        "hintConds": "当てはまる条件（{{src}}の平均STで判定）",
+        "hintConds": "今日の並びが当てはまる条件（{{src}}の平均ST）",
         "hints": {
           "kado4": "4コース（カド）の平均STが、1〜3コースのどれよりも早い",
           "kado4_02": "4コース（カド）の平均STが、1〜3コースのどれよりも0.02秒以上早い",
@@ -1384,10 +1384,7 @@
           "overall": "全体＝コースを問わない平均（スタートの位置の違いがまざる）"
         },
         "hintDownTag": "むしろなりにくい",
-        "hintHit": "当てはまる時の{{form}}",
-        "hintMiss": "当てはまらない時",
-        "hintCountShort": "{{n}}件。当てはまっても外れる方が多い（決め手ではなく手がかり）",
-        "hintGo": "②で{{form}}を選ぶ ›",
+        "hintGo": "{{form}}の形で③④を見る ›",
         "hintTablePreview": "このコース・全体・会場・今日の展示の平均ST",
         "slitNoRate": "—",
         "slitStatAny": "{{n}}件 ・ ① {{b1}}",
@@ -1431,7 +1428,39 @@
         "techHeadingShort": "決まり手",
         "notesHintHeading": "手がかり",
         "slitTodayTagOne": "今日の展示は{{forms}}に当たる（②の絵に「今日の展示」の札）。",
-        "slitTodayTagMany": "今日の展示は{{forms}}の{{count}}つの形に当たる（形は重なることがある。②の絵に「今日の展示」の札）。"
+        "slitTodayTagMany": "今日の展示は{{forms}}の{{count}}つの形に当たる（形は重なることがある。②の絵に「今日の展示」の札）。",
+        "hintCondsNote": "割合は、過去の枠なりのレースでスリットがその形になった割合。当てはまっても外れる方が多い（決め手ではなく手がかり）",
+        "hintTodayOk": "✓ 今日あてはまる",
+        "hintTodayLead": "今日",
+        "hintTodaySum": "の和",
+        "hintTodaySpreadPre": "一番遅い",
+        "hintTodayMid": {
+          "kado4": "が、①〜③で一番早い",
+          "kado4_02": "が、①〜③で一番早い",
+          "in_slow02": "が、",
+          "in_fastest": "が、②〜⑥で一番早い",
+          "d2_slow01": "が、①③の遅い方",
+          "d3_slow01": "が、②④の遅い方",
+          "dash03": "が、",
+          "flat03": "と一番早い"
+        },
+        "hintTodayDiff": {
+          "fast": "より {{d}}秒早い",
+          "slow": "より {{d}}秒遅い",
+          "spread": "の差は {{d}}秒"
+        },
+        "hintStage": {
+          "kado4": "①〜③より早い",
+          "kado4_02": "0.02秒以上早い",
+          "in_slow02": "②より0.02秒以上遅い",
+          "in_fastest": "6艇で一番早い",
+          "d2_slow01": "①③より0.01秒以上遅い",
+          "d3_slow01": "②④より0.01秒以上遅い",
+          "dash03": "0.03秒以上早い",
+          "flat03": "差が0.03秒以内"
+        },
+        "hintFrac": "{{x}}/{{n}}件",
+        "hintAll": "全体（どの条件でも） {{p}}"
       },
       "barLabel": "{{boat}}号艇 {{p}} {{n}}件",
       "feedback": {

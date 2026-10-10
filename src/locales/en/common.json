@@ -1563,7 +1563,7 @@
         "hintFewVenue": "Boat {{boats}} has few runs at this venue, so values can swing. ",
         "hintExhPost": "Exhibition ST is for reference; its link to the race ST is weak (per-boat correlation 0.08, vs. 0.28 for avg. ST). F.09 = crossed the start line 0.09s early in the exhibition (no penalty in the exhibition).",
         "hintExhPre": "Exhibition ST is available after the exhibition.",
-        "hintConds": "Matching conditions (judged by {{src}} avg. ST)",
+        "hintConds": "Conditions today's line-up matches ({{src}} avg. ST)",
         "hints": {
           "kado4": "Course 4 (kado) avg. ST is earlier than all of courses 1–3",
           "kado4_02": "Course 4 (kado) avg. ST is 0.02s or more earlier than all of courses 1–3",
@@ -1732,10 +1732,7 @@
           "overall": "Overall = average regardless of course (mixes starting positions)"
         },
         "hintDownTag": "rather less likely",
-        "hintHit": "{{form}} when it matches",
-        "hintMiss": "When it does not",
-        "hintCountShort": "{{n}} races. Even when it matches, misses are more common (a clue, not a decider)",
-        "hintGo": "Select {{form}} in ② ›",
+        "hintGo": "See ③④ for the {{form}} shape ›",
         "hintTablePreview": "Avg. ST by this course, overall, venue and today's exhibition",
         "slitNoRate": "—",
         "slitStatAny": "{{n}} · ① {{b1}}",
@@ -1779,7 +1776,39 @@
         "techHeadingShort": "Winning technique",
         "notesHintHeading": "Start clues",
         "slitTodayTagOne": "Today's exhibition matches {{forms}} (tagged \"Today's exhibition\" in ②).",
-        "slitTodayTagMany": "Today's exhibition matches {{count}} shapes: {{forms}} (shapes can overlap; tagged \"Today's exhibition\" in ②)."
+        "slitTodayTagMany": "Today's exhibition matches {{count}} shapes: {{forms}} (shapes can overlap; tagged \"Today's exhibition\" in ②).",
+        "hintCondsNote": "The rate is how often the slit took that shape in past races entered in lane order. Even when it matches, misses are more common (a clue, not a decider)",
+        "hintTodayOk": "✓ Matches today",
+        "hintTodayLead": "Today",
+        "hintTodaySum": " (sum)",
+        "hintTodaySpreadPre": "Latest",
+        "hintTodayMid": {
+          "kado4": "vs the earliest of 1–3:",
+          "kado4_02": "vs the earliest of 1–3:",
+          "in_slow02": "vs",
+          "in_fastest": "vs the earliest of 2–6:",
+          "d2_slow01": "vs the later of 1 and 3:",
+          "d3_slow01": "vs the later of 2 and 4:",
+          "dash03": "vs",
+          "flat03": "vs earliest"
+        },
+        "hintTodayDiff": {
+          "fast": "→ {{d}}s earlier",
+          "slow": "→ {{d}}s later",
+          "spread": "→ spread {{d}}s"
+        },
+        "hintStage": {
+          "kado4": "Earlier than 1–3",
+          "kado4_02": "0.02s or more earlier",
+          "in_slow02": "0.02s or more later than 2",
+          "in_fastest": "Earliest of the 6",
+          "d2_slow01": "0.01s or more later than 1 and 3",
+          "d3_slow01": "0.01s or more later than 2 and 4",
+          "dash03": "0.03s or more earlier",
+          "flat03": "Spread within 0.03s"
+        },
+        "hintFrac": "{{x}}/{{n}} races",
+        "hintAll": "All races (any condition) {{p}}"
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
       "feedback": {
