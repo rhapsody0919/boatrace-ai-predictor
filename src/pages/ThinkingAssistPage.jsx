@@ -452,6 +452,7 @@ export default function ThinkingAssistPage() {
         points: tickets.length,
         summary: betSummary,
         ranks: popularityRanks(trifecta ?? {}),
+        oddsAt,
       },
       scope,
       national,

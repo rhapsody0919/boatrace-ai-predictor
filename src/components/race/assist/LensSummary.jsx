@@ -16,6 +16,7 @@ import {
   axisFactChips,
   b1Usual,
   entrySummary,
+  powerWinners,
   exhibitionTable,
   factsScopeLabel,
   formSummary,
@@ -265,17 +266,24 @@ function FlowSummary({ m }) {
                 <span>✓ {C.entryToday(C.entryNames[entry.type])}</span>
                 {entry.type === "waku" && <TermButton term="枠なり" />}
               </div>
-              {/* 集めた範囲と件数を書く（上の枠の準優勝戦の値と比べられるように。ファン評価 PR4 1周目 指摘1） */}
-              <div className="ta-legend">
-                <span className="ta-scopechip ta-num">
-                  {C.scopeChip(C.flowScopeLabel(Boolean(round)), entry.n)}
-                </span>
-              </div>
-              <BaseBar
-                label={C.entryB1(C.entryNames[entry.group])}
-                k={entry.k}
-                n={entry.n}
-              />
+              {entry.n > 0 ? (
+                <>
+                  {/* 集めた範囲と件数を書く（上の枠の準優勝戦の値と比べられるように。ファン評価 PR4 1周目 指摘1） */}
+                  <div className="ta-legend">
+                    <span className="ta-scopechip ta-num">
+                      {C.scopeChip(C.flowScopeLabel(Boolean(round)), entry.n)}
+                    </span>
+                  </div>
+                  <BaseBar
+                    label={C.entryB1(C.entryNames[entry.group])}
+                    k={entry.k}
+                    n={entry.n}
+                  />
+                </>
+              ) : (
+                // v16 の保存が無いと0件。0% の棒は「1号艇が1着になっていない」と読めるので出さない（BOA-808 6）
+                <p className="ta-note">{C.entryNoPast}</p>
+              )}
             </>
           ) : (
             <p className="ta-note">{C.entryPre}</p>
@@ -319,16 +327,14 @@ function PowerSummary({ m }) {
     "motor_2",
     racers.map((r) => ({ boat: r.boat, value: r.motor2 })),
   );
-  const winner = (set, valueOf) =>
-    set.size
-      ? {
-          boats: [...set].sort((x, y) => x - y),
-          value: valueOf(racers[[...set][0] - 1]),
-        }
-      : null;
   const conclusion = C.powerConclusion(
-    table ? winner(table.best.exh, (r) => f2(r.exhTime)) : null,
-    winner(motorBest, (r) => r.motor2.toFixed(1)),
+    powerWinners({
+      table,
+      motor: {
+        best: motorBest,
+        valueOf: (boat) => racers[boat - 1]?.motor2 ?? null,
+      },
+    }),
   );
   return (
     <>
@@ -540,6 +546,10 @@ function BetLensSummary({ m }) {
             {C.simTopHeading(simLabel)}
             <TermButton term="類似レース" />
           </h3>
+          {/* 件数は過去、オッズ・人気は今日の値（BOA-808 P3） */}
+          <p className="ta-note ta-num">
+            {C.simTopNote(similar.n, bet.oddsAt)}
+          </p>
           <table className="ta-table">
             <thead>
               <tr>
@@ -560,7 +570,9 @@ function BetLensSummary({ m }) {
                     <td className="ta-num">
                       {k}/{similar.n}
                     </td>
-                    <td className="ta-num">{odds ?? "—"}</td>
+                    <td className="ta-num">
+                      {odds == null ? "—" : C.oddsTimes(odds)}
+                    </td>
                     <td className="ta-num">
                       {rank ? C.popularity(rank) : "—"}
                     </td>

@@ -211,6 +211,34 @@ const num = (v) => {
 };
 
 /**
+ * 機力の結論に出す「項目ごとの一番」。順は展示タイム → オリジナル展示（種目の順）→ モーター2連率で固定。
+ * 展示タイムだけで結論を決めない（BOA-808 2: 徳山の一周・まわり足は1号艇が一番なのに出なかった）
+ * @param {{table: ReturnType<typeof exhibitionTable>|null, motor: {best: Set<number>, valueOf: (boat: number) => number|null}}} args
+ * @returns {Array<{label: string, boats: number[], text: string}>} text は単位つきの値（同着は先頭の艇の値）
+ */
+export function powerWinners({ table, motor }) {
+  const sorted = (set) => [...set].sort((a, b) => a - b);
+  const rowOf = (boat) => table.rows.find((r) => r.boat === boat);
+  const items = [];
+  const push = (label, set, valueOf, fmt) => {
+    if (!set?.size) return;
+    const boats = sorted(set);
+    const v = valueOf(boats[0]);
+    if (v == null) return;
+    items.push({ label, boats, text: fmt(v) });
+  };
+  const sec = (v) => `${v.toFixed(2)}秒`;
+  if (table) {
+    push("展示タイム", table.best.exh, (b) => rowOf(b)?.exh ?? null, sec);
+    table.kinds.forEach((k, i) =>
+      push(k, table.best.ox[i], (b) => rowOf(b)?.ox[i] ?? null, sec),
+    );
+  }
+  push("モーター2連率", motor.best, motor.valueOf, (v) => `${v.toFixed(1)}%`);
+  return items;
+}
+
+/**
  * 展示の表（展示・オリジナル展示・展示ST・体重・チルト）。最良は展示・オリジナル展示・展示ST（F は除く）だけ。
  * 体重・チルトは向きが無いので付けない（D-33）。体重の一番軽い艇に light
  * @param {{racers: object[], maintenance: object[]|null, original: {kinds: string[], byBoat: object}|null}} args

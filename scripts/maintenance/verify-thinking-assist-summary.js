@@ -30,11 +30,12 @@ import {
   meetRuns,
   monthDay,
   partsChangedBoats,
+  powerWinners,
   priorRuns,
   tiltOutliers,
 } from "../../src/utils/assistSummary.js";
 import { guideSteps, theoryCard } from "../../src/utils/assistTheory.js";
-import { GLOSSARY } from "../../src/data/thinkingAssistCopy.js";
+import { ASSIST_COPY, GLOSSARY } from "../../src/data/thinkingAssistCopy.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fx = JSON.parse(
@@ -190,6 +191,51 @@ check(
       .filter((r) => r.light)
       .map((r) => r.boat)
       .join() === "3",
+);
+// 機力の結論は展示タイムだけで決めない（BOA-808 2）。徳山10R: 展示タイム・モーター2連率は4号艇、一周・まわり足は1号艇
+const motorBest = new Set([4]);
+const motor2 = [19.2, 38.0, 25.8, 38.5, 32.7, 30.4];
+// オリジナル展示は徳山10R の本番の値（6艇）
+const lap = [37.31, 37.94, 38.23, 37.93, 38.26, 37.76];
+const turn = [11.49, 11.64, 11.92, 11.87, 12.02, 11.72];
+const tblFull = exhibitionTable({
+  racers,
+  maintenance: null,
+  original: {
+    kinds: ["一周", "まわり足"],
+    byBoat: Object.fromEntries(
+      racers.map((r, i) => [r.boat, { 一周: lap[i], まわり足: turn[i] }]),
+    ),
+  },
+});
+const conclusion = ASSIST_COPY.powerConclusion(
+  powerWinners({
+    table: tblFull,
+    motor: { best: motorBest, valueOf: (b) => motor2[b - 1] },
+  }),
+);
+check(
+  "機力の結論: オリジナル展示の一番（1号艇）も入り、一番の艇が同じ項目はまとまる",
+  conclusion ===
+    "展示タイム・モーター2連率は4号艇（6.83秒・38.5%）、一周・まわり足は1号艇（37.31秒・11.49秒）が一番",
+  conclusion,
+);
+const conclusionPre = ASSIST_COPY.powerConclusion(
+  powerWinners({
+    table: null,
+    motor: { best: motorBest, valueOf: (b) => motor2[b - 1] },
+  }),
+);
+check(
+  "機力の結論: 展示前はモーター2連率だけ",
+  conclusionPre === "モーター2連率は4号艇（38.5%）が一番",
+  conclusionPre,
+);
+check(
+  "類似レースの3連単の表の注記: 件数は過去、オッズ・人気は今日の時刻（BOA-808 P3）",
+  ASSIST_COPY.simTopNote(63, "13:14") ===
+    "件数は類似レース63件のうち。オッズ・人気は今日の13:14時点" &&
+    ASSIST_COPY.oddsTimes(6.4) === "6.4倍",
 );
 check(
   "チルト: 一番多い値（0）と違う艇だけ（5・6号艇の -0.5）",
@@ -483,6 +529,9 @@ const theoryTexts = [
 const bannedHits = [
   JSON.stringify(GLOSSARY),
   JSON.stringify(cWpost),
+  conclusion,
+  ASSIST_COPY.simTopNote(63, "13:14"),
+  ASSIST_COPY.entryNoPast,
   ...theoryTexts,
 ]
   .map((t) => t.match(BANNED)?.[0])

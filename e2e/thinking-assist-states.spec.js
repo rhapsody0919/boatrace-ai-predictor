@@ -1149,3 +1149,49 @@ test.describe("思考アシスト: ガイドと Cookie の同意バナー（PR5 
     await expect(page.getByText("1号艇は逃げられそう？")).toBeVisible();
   });
 });
+
+test.describe("思考アシスト: BOA-808（言葉と出し分け）", () => {
+  test("2: 機力の結論にオリジナル展示の一番も入る", async ({ page }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "機力").click();
+    await expect(
+      page.getByText(
+        "展示タイム・モーター2連率は4号艇（6.83秒・38.5%）、一周・まわり足は1号艇（37.31秒・11.49秒）が一番",
+      ),
+    ).toBeVisible();
+  });
+
+  test("6: 進入の過去レースの傾向が無いとき、0件の札と棒を出さない", async ({
+    page,
+  }) => {
+    // v16 の保存が無いレースと同じく、進入の型ごとの値が無い
+    await routeThinkingAssistV16(page, {
+      overrides: {
+        scenario: (body) => ({
+          ...body,
+          scenario: { ...body.scenario, cells: {} },
+        }),
+      },
+    });
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(page.getByText(/^✓ 今日の展示は/)).toBeVisible();
+    await expect(
+      page.getByText("このレースは過去レースの傾向がまだ無い"),
+    ).toBeVisible();
+    await expect(page.getByText(/ 0件$/)).toHaveCount(0);
+  });
+
+  test("P3: 類似レースでよく出た3連単のオッズ・人気は今日の時刻の値と書く", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await expect(
+      page.getByText(/^件数は類似レース\d+件のうち。オッズ・人気は今日の\d{1,2}:\d{2}時点$/),
+    ).toBeVisible();
+    await expect(page.getByRole("cell", { name: /^\d+(\.\d+)?倍$/ }).first()).toBeVisible();
+  });
+});
