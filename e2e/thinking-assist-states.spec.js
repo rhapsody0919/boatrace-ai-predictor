@@ -1454,3 +1454,22 @@ test.describe("思考アシスト: 棒は「長いほど良い」図だけ（BOA
     }
   });
 });
+
+test.describe("思考アシスト: 均等払戻の余り（BOA-801 6、spec FR-8・D-43）", () => {
+  test("切り捨てた余りを払戻の少ない組に足し、そう1行で書く", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 1, 1).click();
+    for (const b of [2, 3, 4]) await candidate(page, b, 2).click();
+    for (const b of [2, 3, 4]) await candidate(page, b, 3).click();
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    await expect(sheet.getByText("余りは払戻の少ない組に足した")).toBeVisible();
+    await expect(sheet.getByText(/・残り0円・/)).toBeVisible();
+  });
+});

@@ -157,6 +157,8 @@ export const ASSIST_COPY = Object.freeze({
   totalLine: (total, remainder, lo, hi) =>
     `合計 ${total.toLocaleString("ja-JP")}円・残り${remainder.toLocaleString("ja-JP")}円・当たったときの倍率 ${lo}〜${hi}倍`,
   missingOdds: (n) => `オッズの無い${n}点は配分に入れていない`,
+  // 均等払戻で切り捨てた余りを足したとき（spec FR-8・D-43）
+  toppedNote: "余りは払戻の少ない組に足した",
   oddsCaution: (time) =>
     `オッズは${time}時点で締切まで動く。返還があると配当は変わる`,
   // 終わったレース（振り返り）。取り込んだ最後のオッズで、確定オッズではない（ファン評価 1周目 指摘13）
