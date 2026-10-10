@@ -53,6 +53,8 @@ export default function ScenarioTab({
   const [version, setVersion] = useState("course");
   const [first, setFirst] = useState(null);
   const [not1, setNot1] = useState(false);
+  // 着順の流れで押した帯（よく出た3連単をその帯の内訳に絞る。BOA-816）
+  const [band, setBand] = useState(null);
   // ②は形を選んだら1行に畳む（承認モック mock-scenario-v1）。「変える」・③の文脈の札で開く
   const [slitOpen, setSlitOpen] = useState(false);
   const exhibitionStage = stage === "exhibition";
@@ -314,6 +316,8 @@ export default function ScenarioTab({
             onFirst={setFirst}
             not1={not1}
             onNot1={setNot1}
+            band={band}
+            onBand={setBand}
             scenario
           />
         </div>
@@ -321,7 +325,13 @@ export default function ScenarioTab({
           <h4 className="af-h4">
             {t("aiPredictionTab.analogy.similar.triHeading")}
           </h4>
-          <TrifectaList tri={c.tri} first={first} not1={not1} scenario />
+          <TrifectaList
+            tri={c.tri}
+            first={first}
+            not1={not1}
+            band={band}
+            scenario
+          />
         </div>
       </>
     );

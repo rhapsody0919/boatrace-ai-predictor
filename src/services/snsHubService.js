@@ -1,3 +1,5 @@
+import { downloadFileBlob } from "../utils/webShare.js";
+import { csvPublicationRange } from "../utils/snsObservationCsv.js";
 /**
  * SNSマーケティングハブ 管理画面用サービス層
  *
@@ -316,4 +318,15 @@ export function decideMobileFinding(group, body) {
   return request(`/mobile-approval?group=${encodeURIComponent(group)}`, {
     method:'POST', body:JSON.stringify({...body,action:'edit-decision'}),
   });
+}
+
+/** SPAフォールバックのHTMLをCSVとして保存しない。 */
+export async function downloadObservationCsv({ start, end, platform }) {
+  csvPublicationRange(start, end, platform);
+  const query = new URLSearchParams({ export: "csv", start, end, platform });
+  return downloadFileBlob(
+    `${BASE_URL}/observations?${query}`,
+    `posts-${start}-${end}-${platform}.csv`,
+    "text/csv",
+  );
 }

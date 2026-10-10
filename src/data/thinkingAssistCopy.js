@@ -143,6 +143,15 @@ export const ASSIST_COPY = Object.freeze({
   colStake: "金額",
   colPayout: "払戻",
   popularity: (n) => `${n}番`,
+  oddsTimes: (v) => `${v}倍`,
+  // 類似レースでよく出た3連単の表の上の1行（BOA-808 P3）。オッズの時刻が無ければ「今日の値」とだけ書く。
+  // 終わったレースは「今日」と書かない（配分の注記 oddsCautionFinished と同じく確定オッズではないと書く）
+  simTopNote: (n, time, finished = false) =>
+    `件数は類似レース${n.toLocaleString("ja-JP")}件のうち。${
+      finished
+        ? `オッズ・人気はこのレースの${time ? `${time}時点` : "取り込んだ最後の値"}で、確定オッズではない`
+        : `オッズ・人気は今日${time ? `の${time}時点` : "の値"}`
+    }`,
   trigami: "トリガミ",
   trigamiLine: "合成オッズが1.0未満。どれが当たっても予算を下回る",
   totalLine: (total, remainder, lo, hi) =>
@@ -200,6 +209,13 @@ export const ASSIST_COPY = Object.freeze({
     "この範囲では、1着の割合の差がはっきり大きい材料は無い（艇の丸を押すと全部の材料が出る）",
   scopeVenue: (venue) => `${venue}・級の並びが同じ`,
   scopeChip: (label, n) => `${label} ${n.toLocaleString("ja-JP")}件`,
+  // 同じ呼び名で件数が違う札に、違う理由を短く添える（BOA-809、2026-10-10 ユーザー決定）
+  scopeChipWhy: (label, n, why) =>
+    `${label} ${n.toLocaleString("ja-JP")}件・${why}`,
+  scopeWhy: Object.freeze({
+    hint: "平均STがそろったレース",
+    entry: "進入が分かったレース",
+  }),
   axisHeading: (boat) => `${boat}号艇が1着になったのは`,
   races: (k, n) =>
     `${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}レース`,
@@ -270,6 +286,7 @@ export const ASSIST_COPY = Object.freeze({
   entryToday: (type) => `今日の展示は${type}`,
   entryB1: (type) => `${type}のとき、1号艇の1着`,
   entryPre: "展示の後に今日の進入が出る",
+  entryNoPast: "このレースは過去レースの傾向がまだ無い",
   simTechHeading: (label) => `${label}の決まり手`,
   simB1: (k, p) => `1着は1号艇 ${k}件（${p}%）`,
   trifectaCount: (combo, k) => `${combo}（${k}件）`,
@@ -291,15 +308,23 @@ export const ASSIST_COPY = Object.freeze({
   partsBoats: (boats) => `部品交換 ${boats.join("・")}号艇`,
   // 展示前は展示の値の名前（チルト・部品交換）も出さない（screens「状態」展示前）
   // 機力の要約の結論（問い「足が良いのは？」への答えを先に。デザイナーのレビュー P2-8）
-  powerConclusion: (exh, motor) =>
-    [
-      exh &&
-        `展示タイムは${exh.boats.join("・")}号艇が一番速い（${exh.value}）`,
-      motor &&
-        `モーター2連率は${motor.boats.join("・")}号艇が一番高い（${motor.value}%）`,
-    ]
-      .filter(Boolean)
-      .join("・"),
+  // 一番の艇が同じ項目は1つにまとめる（BOA-808 2）。例: 「展示タイム・モーター2連率は4号艇（6.83秒・38.5%）、一周・まわり足は1号艇（37.31秒・11.49秒）が一番」
+  powerConclusion: (items) => {
+    const groups = [];
+    for (const it of items) {
+      const key = it.boats.join("・");
+      const g = groups.find((x) => x.key === key);
+      if (g) g.items.push(it);
+      else groups.push({ key, items: [it] });
+    }
+    if (!groups.length) return "";
+    return `${groups
+      .map(
+        (g) =>
+          `${g.items.map((it) => it.label).join("・")}は${g.key}号艇（${g.items.map((it) => it.text).join("・")}）`,
+      )
+      .join("、")}が一番`;
+  },
   powerPre: "展示タイム・オリジナル展示などの展示の値は、展示の後に出る",
   motorHeading: "モーター2連率（6艇）",
   motorChip: (boat, top, v) =>
