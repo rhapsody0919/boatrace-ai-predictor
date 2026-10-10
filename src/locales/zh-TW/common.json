@@ -1774,7 +1774,7 @@
         "hintCondsNote": "比例是過去依枠位進入的比賽中，起跑線呈現該形狀的比例。即使符合，落空的情況較多（是線索而非決定因素）",
         "hintTodayOk": "✓ 今天符合",
         "hintTodayLead": "今天",
-        "hintTodaySum": "的總和",
+        "hintTodaySum": "{{from}}〜{{to}}道的總和",
         "hintTodaySpreadPre": "最慢",
         "hintTodayMid": {
           "kado4": "比1〜3道最快的",
@@ -1802,7 +1802,10 @@
           "flat03": "差距在0.03秒以內"
         },
         "hintFrac": "{{x}}/{{n}}場",
-        "hintAll": "全部（不論條件） {{p}}"
+        "hintAll": "全部（不論條件） {{p}}",
+        "hintMapFirst": " {{n}}號艇＝{{n}}道",
+        "hintMapRest": "＝{{n}}道",
+        "hintTodayCourse": "{{n}}道"
       },
       "barLabel": "{{boat}}號艇 {{p}} {{n}}場",
       "feedback": {

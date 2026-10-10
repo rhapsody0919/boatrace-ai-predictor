@@ -1780,15 +1780,15 @@
         "hintCondsNote": "The rate is how often the slit took that shape in past races entered in lane order. Even when it matches, misses are more common (a clue, not a decider)",
         "hintTodayOk": "✓ Matches today",
         "hintTodayLead": "Today",
-        "hintTodaySum": " (sum)",
+        "hintTodaySum": "Courses {{from}}–{{to}} (sum)",
         "hintTodaySpreadPre": "Latest",
         "hintTodayMid": {
-          "kado4": "vs the earliest of 1–3:",
-          "kado4_02": "vs the earliest of 1–3:",
+          "kado4": "vs the earliest of courses 1–3:",
+          "kado4_02": "vs the earliest of courses 1–3:",
           "in_slow02": "vs",
-          "in_fastest": "vs the earliest of 2–6:",
-          "d2_slow01": "vs the later of 1 and 3:",
-          "d3_slow01": "vs the later of 2 and 4:",
+          "in_fastest": "vs the earliest of courses 2–6:",
+          "d2_slow01": "vs the later of courses 1 and 3:",
+          "d3_slow01": "vs the later of courses 2 and 4:",
           "dash03": "vs",
           "flat03": "vs earliest"
         },
@@ -1798,17 +1798,20 @@
           "spread": "→ spread {{d}}s"
         },
         "hintStage": {
-          "kado4": "Earlier than 1–3",
+          "kado4": "Earlier than courses 1–3",
           "kado4_02": "0.02s or more earlier",
-          "in_slow02": "0.02s or more later than 2",
+          "in_slow02": "0.02s or more later than course 2",
           "in_fastest": "Earliest of the 6",
-          "d2_slow01": "0.01s or more later than 1 and 3",
-          "d3_slow01": "0.01s or more later than 2 and 4",
+          "d2_slow01": "0.01s or more later than courses 1 and 3",
+          "d3_slow01": "0.01s or more later than courses 2 and 4",
           "dash03": "0.03s or more earlier",
           "flat03": "Spread within 0.03s"
         },
         "hintFrac": "{{x}}/{{n}} races",
-        "hintAll": "All races (any condition) {{p}}"
+        "hintAll": "All races (any condition) {{p}}",
+        "hintMapFirst": " Boat {{n}} = Course {{n}}",
+        "hintMapRest": "= Course {{n}}",
+        "hintTodayCourse": "Course {{n}}"
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
       "feedback": {

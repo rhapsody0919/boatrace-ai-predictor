@@ -2639,3 +2639,21 @@ button.af-bar {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* 号艇とコースの対応（枠なりの場合。BOA-814 案B） */
+.af-hint-map {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--spacing-2);
+  margin: 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.af-hint-map > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}

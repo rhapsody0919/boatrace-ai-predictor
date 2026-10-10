@@ -1271,10 +1271,15 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       await expect(card).toContainText("カド一撃");
       await expect(card).toContainText("✓ 今日あてはまる");
       await expect(card.locator(".af-hintc-today")).toHaveText(
-        /今日\s*4\s*\.127\s*が、①〜③で一番早い\s*3\s*\.133\s*より 0\.006秒早い/,
+        /今日\s*4\s*4コース\s*\.127\s*が、1〜3コースで一番早い\s*3\s*3コース\s*\.133\s*より 0\.006秒早い/,
       );
       // 当てはまる時 38/205件＝19%。全体（どの条件でも）＝(38+73)/(205+693)＝12%
-      await expect(card).toContainText("①〜③より早い");
+      await expect(card).toContainText("1〜3コースより早い");
+      // 丸の数字が号艇かコースか分かるよう、②の上に対応を1回（枠なりなので号艇＝コース。ユーザー指摘・案B）
+      const map = section.getByTestId("analogy-hint-map");
+      await expect(map).toContainText("1号艇＝1コース");
+      await expect(map).toContainText("＝6コース");
+      await expect(card).not.toContainText(/[①②③④⑤⑥]〜/);
       await expect(card).toContainText("19% 38/205件");
       await expect(card).toContainText("全体（どの条件でも） 12%");
       await expect(section).not.toContainText("当てはまらない時");

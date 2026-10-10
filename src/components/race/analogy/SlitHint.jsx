@@ -69,7 +69,7 @@ export default function SlitHint({
       ))}
     </tr>
   );
-  // 同じ形の条件は1枚にまとめ、段階ごとの棒にする（カド一撃: ①〜③より早い／0.02秒以上早い。承認モック）
+  // 同じ形の条件は1枚にまとめ、段階ごとの棒にする（カド一撃: 1〜3コースより早い／0.02秒以上早い。承認モック）
   const groups = rows.reduce((gs, r) => {
     const g = gs.find((x) => x.form === r.form);
     if (g) g.rows.push(r);
@@ -85,6 +85,15 @@ export default function SlitHint({
           <span className="af-info-tag">{t(`${k}.hintTagWaku`)}</span>
         </span>
       </div>
+      {/* 丸の数字が号艇かコースか分かるよう、対応を1回だけ（枠なりなので号艇＝コース。BOA-814 ユーザー指摘・案B） */}
+      <p className="af-hint-map" data-testid="analogy-hint-map">
+        {[1, 2, 3, 4, 5, 6].map((n) => (
+          <span key={n}>
+            <BoatBadge n={n} size="xs" />
+            {t(n === 1 ? `${k}.hintMapFirst` : `${k}.hintMapRest`, { n })}
+          </span>
+        ))}
+      </p>
       {!waku && <p className="af-warn">{t(`${k}.hintOther`)}</p>}
       {/* PC では手がかりの絵（と切り替え）を左、当てはまる条件を右に（BOA-813） */}
       <AnalogySplit
@@ -298,21 +307,24 @@ export function SlitHintNotes({
   );
 }
 
-/** 今日の値の1つ（艇番の丸と平均ST。和なら「④〜⑥の和」） */
+/** 今日の値の1つ（艇の丸と「4コース」と平均ST。和なら「4〜6コースの和」。丸だけでは号艇かコースか分からないため。案B） */
 function TodaySide({ side }) {
   const { t } = useTranslation();
   const v = <b className="af-num">{fmtSt3(side.v / 1000)}</b>;
   if (!side.sum)
     return (
       <>
-        <BoatBadge n={side.boats[0]} size="xs" /> {v}
+        <BoatBadge n={side.boats[0]} size="xs" />
+        {t(`${k}.hintTodayCourse`, { n: side.boats[0] })} {v}
       </>
     );
   return (
     <>
-      <BoatBadge n={side.boats[0]} size="xs" />〜
-      <BoatBadge n={side.boats[side.boats.length - 1]} size="xs" />
-      {t(`${k}.hintTodaySum`)} {v}
+      {t(`${k}.hintTodaySum`, {
+        from: side.boats[0],
+        to: side.boats[side.boats.length - 1],
+      })}{" "}
+      {v}
     </>
   );
 }

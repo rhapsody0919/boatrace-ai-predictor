@@ -1774,7 +1774,7 @@
         "hintCondsNote": "비율은 과거 틀대로 진입한 레이스에서 슬릿이 그 모양이 된 비율. 해당해도 빗나가는 쪽이 많다(결정타가 아니라 단서)",
         "hintTodayOk": "✓ 오늘 해당",
         "hintTodayLead": "오늘",
-        "hintTodaySum": "의 합",
+        "hintTodaySum": "{{from}}~{{to}}코스의 합",
         "hintTodaySpreadPre": "가장 늦음",
         "hintTodayMid": {
           "kado4": "가 1~3코스에서 가장 빠른",
@@ -1802,7 +1802,10 @@
           "flat03": "차가 0.03초 이내"
         },
         "hintFrac": "{{x}}/{{n}}건",
-        "hintAll": "전체(어떤 조건이든) {{p}}"
+        "hintAll": "전체(어떤 조건이든) {{p}}",
+        "hintMapFirst": " {{n}}번 보트={{n}}코스",
+        "hintMapRest": "={{n}}코스",
+        "hintTodayCourse": "{{n}}코스"
       },
       "barLabel": "{{boat}}번 보트 {{p}} {{n}}건",
       "feedback": {
