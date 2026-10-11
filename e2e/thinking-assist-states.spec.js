@@ -2083,13 +2083,12 @@ test.describe("思考アシスト: 相手レンズ（spec D-46、2026-10-12 ユ�
 
 /** 展開レンズの作り直し PR-1（spec D-47 (1)〜(3)、承認モック v2 docs/design/thinking-assist/flow-v2/mock） */
 test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、承認モック v2）", () => {
-  test.beforeEach(async ({ page }) => {
-    await routeThinkingAssistV16(page);
-  });
+  // 固定の応答を差し替えるテストがあるので、各テストで routeThinkingAssistV16 を呼ぶ（unrouteAll は使わない決まり）
 
   test("展示後も図の横軸は平均ST（このコース）で、各艇に展示{r}位（6.84・6.84・6.89・6.83・6.90・6.89 → 2,2,4,1,6,4）", async ({
     page,
   }) => {
+    await routeThinkingAssistV16(page);
     await open(page);
     await lensTab(page, "展開").click();
     const board = page.getByRole("figure", { name: /展開/ });
@@ -2117,6 +2116,7 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
   test("結論は図の上に置き、形の見立て（13%・65/501）と今日の展示1行（攻める3号艇は展示4位 → 25%・13/53）", async ({
     page,
   }) => {
+    await routeThinkingAssistV16(page);
     await open(page);
     await lensTab(page, "展開").click();
     const concl = page.locator(".ta-flow-concl");
@@ -2135,7 +2135,6 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
   test("今日の区分が30件未満なら割合を出さず「…のときは4件だけ」で文を終える（wording-editor 指摘）", async ({
     page,
   }) => {
-    await page.unrouteAll({ behavior: "ignoreErrors" });
     await routeThinkingAssistV16(page, {
       overrides: {
         scenario: (body) => {
@@ -2155,6 +2154,7 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
   });
 
   test("展示前は今日の展示の1行と展示{r}位を出さない", async ({ page }) => {
+    await routeThinkingAssistV16(page);
     await open(page);
     await page.getByRole("button", { name: "展示前", exact: true }).click();
     await lensTab(page, "展開").click();
