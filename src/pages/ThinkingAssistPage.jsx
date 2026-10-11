@@ -79,6 +79,10 @@ const initialState = {
   lens: "axis",
   stage: null, // null＝DB の展示から決める既定（spec D-36 (1)）
   deep: null,
+  // 軸の要約の入口から開いたとき、深掘りの「全部の材料」を開いて渡す（▲が無い日。2026-10-11 ユーザー決定 案D）
+  deepAll: false,
+  // 入口から開くたびに深掘りを作り直して、開いている艇でも材料の位置まで送る
+  deepNonce: 0,
   metric: null,
   // 展開レンズの展示前の平均ST（BOA-815 案A）
   stBasis: "course",
@@ -115,6 +119,16 @@ function reducer(state, action) {
       return {
         ...state,
         deep: state.deep === action.boat ? null : action.boat,
+        deepAll: false,
+        metric: null,
+      };
+    case "openFacts":
+      // 軸の要約の入口1行。押し直しでも閉じない（艇の丸と違い、いつも開く）
+      return {
+        ...state,
+        deep: action.boat,
+        deepAll: action.all,
+        deepNonce: state.deepNonce + 1,
         metric: null,
       };
     case "metric":
@@ -443,8 +457,7 @@ export default function ThinkingAssistPage() {
           vaFacts: vaKey ? factsAll[vaKey] : null,
           vaCell: venueAll,
           classes: today?.classes ?? null,
-          round: data.round,
-          post,
+          onFacts: (all) => act({ type: "openFacts", boat: 1, all }),
         }
       : null,
     flow: {
@@ -664,7 +677,7 @@ export default function ThinkingAssistPage() {
           <div className="ta-split-side">
             {deepBoat && (
               <BoatDeepDive
-                key={deepBoat}
+                key={`${deepBoat}:${state.deepNonce}`}
                 boat={deepBoat}
                 racer={racers[deepBoat - 1]}
                 venue={venueName}
@@ -706,6 +719,7 @@ export default function ThinkingAssistPage() {
                 onMetric={(metric, boat) =>
                   act({ type: "metric", metric, boat })
                 }
+                openAll={state.deepAll}
                 onClose={() => dispatch({ type: "closeDeep" })}
               />
             )}

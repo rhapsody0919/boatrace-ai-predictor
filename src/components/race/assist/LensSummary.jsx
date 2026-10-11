@@ -2,7 +2,6 @@ import BaseBar from "./BaseBar";
 import Bars6 from "./Bars6";
 import BetSummary from "./BetSummary";
 import ClassLineup from "./ClassLineup";
-import FactChips from "./FactChips";
 import Fold from "./Fold";
 import ScopeTable from "./ScopeTable";
 import BoatBadge from "../BoatBadge";
@@ -13,11 +12,11 @@ import {
   sameClassLabel,
 } from "../../../utils/assistModel";
 import {
-  axisFactChips,
   b1Usual,
   entrySummary,
   powerWinners,
   exhibitionTable,
+  factsEntry,
   factsScopeLabel,
   formSummary,
   hintSummary,
@@ -45,10 +44,10 @@ function AxisSummary({ m }) {
     vaFacts,
     vaCell,
     classes,
-    round,
-    post,
+    onFacts,
   } = m;
   const u = b1Usual(scope);
+  const entry = factsEntry(chips);
   if (!u) return null;
   const va = vaFacts ? b1Usual({ facts: vaFacts }) : null;
   const label = factsScopeLabel(scope, venue, 1, classes?.[0]);
@@ -109,34 +108,33 @@ function AxisSummary({ m }) {
             )}
           </ul>
         </Fold>
-      </section>
-      {chips.length > 0 && (
-        <section className="ta-box">
-          <h3 className="ta-h3-row">
-            {C.factsHeading(1)}
-            <TermButton term="差がつく材料" />
-          </h3>
-          <div className="ta-legend">
-            <span className="ta-scopechip ta-num">
-              {C.scopeChip(label, scope.n)}
+        {entry && (
+          // 差がつく材料は深掘り（1号艇）の1か所に出し、ここは入口1行だけ（2026-10-11 ユーザー決定 案D）。
+          // ▲が無い日は深掘りの「全部の材料」を開いて渡す
+          <button
+            type="button"
+            className="ta-facts-entry"
+            onClick={() => onFacts(entry.hits === 0)}
+          >
+            <span>
+              <b>
+                {entry.hits > 0
+                  ? C.factsEntry(1, entry.hits)
+                  : C.factsEntryNone(1)}
+              </b>
+              {entry.hits > 0 && (
+                <span className="ta-facts-entry-names">
+                  {C.factsEntryNames(
+                    entry.keys.map((k) => C.factNames[k]),
+                    entry.rest,
+                  )}
+                </span>
+              )}
             </span>
-            <span>{C.factsLegend}</span>
-          </div>
-          {axisFactChips(chips).length > 0 ? (
-            <FactChips
-              chips={axisFactChips(chips)}
-              base={p0(u.k, u.n)}
-              round={round}
-              boat={1}
-            />
-          ) : (
-            // 件数の少ない範囲（準優勝戦だけ等）では差の大きい材料が無いことがある。空の枠にしない
-            <p className="ta-note">{C.factsNoneLarge}</p>
-          )}
-          <p className="ta-note">{C.factsNotCause}</p>
-          {!post && <p className="ta-note">{C.factsPreExhibition}</p>}
-        </section>
-      )}
+            <span aria-hidden="true">›</span>
+          </button>
+        )}
+      </section>
     </>
   );
 }
