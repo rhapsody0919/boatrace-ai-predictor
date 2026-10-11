@@ -7,6 +7,8 @@
  *   （ja の t は escapeValue: false なので、エスケープはここで必ず行う）
  * - 材料が取れない・形が違う: 503・Retry-After: 300・no-store。正しく取れて0件のときだけ「開催なし」の HTML（ADR 0069）
  * - 会場コードはパスの末尾の 1〜24（0埋めなし）だけ。それ以外は 404。クエリ文字列は見ない
+ *   middleware の rewrite から呼ばれると req.url は元の /venue/{code} のまま届く（Preview で確認）ので、
+ *   /api/bot-page/venue/{code} と /venue/{code} の両方を受ける
  *
  * 検証: scripts/maintenance/verify-bot-page-function.js
  */
@@ -47,7 +49,7 @@ export const ROBOTS =
 export const MATERIAL_TTL_MS = 60_000;
 const FETCH_TIMEOUT_MS = 8_000;
 
-const VENUE_PATH = /^\/api\/bot-page\/venue\/([^/]+)$/;
+const VENUE_PATH = /^(?:\/api\/bot-page)?\/venue\/([^/]+)$/;
 const VENUE_CODE = /^(?:[1-9]|1\d|2[0-4])$/;
 
 /** 材料（/api/races/today）が取れない */

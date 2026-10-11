@@ -382,6 +382,11 @@ for (const url of [
   "/api/bot-page/venue/",
   "/api/bot-page/venue/1/x",
   "/api/bot-page/venue/%31",
+  // middleware の rewrite 経由では req.url が元のパスのまま届く。0埋め・範囲外・接頭辞付きは 404
+  "/venue/01",
+  "/venue/25",
+  "/en/venue/1",
+  "/x/venue/1",
 ]) {
   const { res, fetchCalls } = await call("venue", url);
   check(`${url}: 404`, res.statusCode, 404);
@@ -391,6 +396,21 @@ for (const url of [
 for (const code of [9, 10, 24]) {
   const { res } = await call("venue", `/api/bot-page/venue/${code}`);
   check(`/api/bot-page/venue/${code}: 200`, res.statusCode, 200);
+}
+// middleware の rewrite 経由（req.url が /venue/{code} のまま）でも同じ会場の HTML になる
+for (const code of [1, 24]) {
+  const viaRewrite = await call("venue", `/venue/${code}?x=1`);
+  const direct = await call("venue", `/api/bot-page/venue/${code}`);
+  check(
+    `/venue/${code}?x=1（rewrite 経由）: 200`,
+    viaRewrite.res.statusCode,
+    200,
+  );
+  check(
+    `/venue/${code}（rewrite 経由）: 直接呼んだときと同じ HTML`,
+    viaRewrite.res.body === direct.res.body,
+    true,
+  );
 }
 {
   const { res, fetchCalls } = await call("top", "/api/bot-page/top", {
