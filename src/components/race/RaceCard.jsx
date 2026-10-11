@@ -3,7 +3,11 @@
  */
 
 import { useTranslation } from "react-i18next";
-import { GRADE_CONFIG } from "../../constants/gradeConfig";
+import {
+  gradeConfigOf,
+  raceNumberLabel,
+  deadlineValueText,
+} from "../../utils/raceListDisplay";
 import { getRaceStageBadge } from "../../constants/raceStageConfig";
 import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
 import { isRaceCancelled } from "../../utils/raceCancellation";
@@ -55,7 +59,7 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
     ? `🌪️ ${t("volatility.levelHigh")}`
     : `🎯 ${t("volatility.levelLow")}`;
 
-  const gradeConfig = GRADE_CONFIG[racePrediction?.raceGrade];
+  const gradeConfig = gradeConfigOf(racePrediction?.raceGrade);
   const stageConfig = getRaceStageBadge(racePrediction?.raceStage);
 
   // 的中判定（unifiedモデル: 展開予測的中のみ。複勝予想は表示しない方針
@@ -160,15 +164,14 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
           )}
         </div>
         {/* R番号はバッジの外に置く。狭いカードでバッジを2段目に送っても、会場名と同じ段に残す */}
-        <span className="race-number">{race.raceNumber}R</span>
+        <span className="race-number">{raceNumberLabel(race.raceNumber)}</span>
       </div>
       {race.startTime && (
         <div className="race-info">
           <div className="info-item">
             <span className="label">{t("home.deadline")}</span>
             <span className="value">
-              {race.startTime}
-              {t("home.jstNote")}
+              {deadlineValueText(t, race.startTime)}
             </span>
           </div>
           {deadlineStatus && deadlineStatus !== DEADLINE_STATUS.CLOSED && (

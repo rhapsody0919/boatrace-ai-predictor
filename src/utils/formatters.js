@@ -3,7 +3,8 @@
  * 日付、パーセント、金額等のフォーマット処理を一元管理
  */
 
-import { WEEKDAYS } from "../constants";
+// Node（ボット向け HTML の関数、ADR 0089）からも import するため拡張子付きで書く
+import { WEEKDAYS } from "../constants/index.js";
 
 /**
  * パーセント表示
@@ -64,10 +65,11 @@ export const formatDateLocalized = (dateStr, lang) => {
  * @returns {string} M/D(曜日) 形式
  */
 export const formatDateShort = (dateStr) => {
-  const date = new Date(dateStr + "T00:00:00+09:00");
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const weekday = WEEKDAYS[date.getDay()];
+  // 文字列の年月日をそのまま使い、実行環境のタイムゾーンに左右されないようにする。
+  // ローカル時刻の getDate() だと、JST より西（UTC のサーバー・海外のブラウザ）で前日になる（ADR 0089）
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const weekday =
+    WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
   return `${month}/${day}(${weekday})`;
 };
 
