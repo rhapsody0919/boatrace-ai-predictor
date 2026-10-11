@@ -3,6 +3,9 @@ import { test, expect } from "./fixtures.js";
 // SEO 点検 F1・F4（2026-10-11）。4言語で出すページの canonical が日本語の URL に固定され、
 // hreflang・sitemap（各言語の URL を載せている）と食い違っていた。表示中の言語の URL にそろえる。
 // 思考アシスト・選手一覧には description・canonical が無かった
+// 会場ページは初回の読み込みが重く、60秒の既定では goto が間に合わないことがある（手元で3件）
+test.describe.configure({ timeout: 120000 });
+
 const SITE = "https://www.boat-ai.jp";
 const RACE = "2026-10-09-20-09";
 
@@ -26,7 +29,7 @@ for (const { path, expected } of LOCALIZED) {
   test(`${path}: canonical は表示中の言語の URL で、hreflang の自分の行と一致する`, async ({
     page,
   }) => {
-    await page.goto(path);
+    await page.goto(path, { waitUntil: "domcontentloaded" });
     await expect(page.locator('link[rel="canonical"]')).toHaveCount(1, {
       timeout: 30000,
     });
@@ -42,7 +45,7 @@ for (const { path, expected } of LOCALIZED) {
 test("思考アシスト: description に日付・R番号があり、canonical は自分自身", async ({
   page,
 }) => {
-  await page.goto(`/race/${RACE}/assist`);
+  await page.goto(`/race/${RACE}/assist`, { waitUntil: "domcontentloaded" });
   await expect(page.locator('link[rel="canonical"]')).toHaveCount(1, {
     timeout: 30000,
   });
@@ -57,7 +60,7 @@ test("思考アシスト: description に日付・R番号があり、canonical �
 });
 
 test("選手一覧: canonical は /racers", async ({ page }) => {
-  await page.goto("/racers");
+  await page.goto("/racers", { waitUntil: "domcontentloaded" });
   await expect(page.locator('link[rel="canonical"]')).toHaveCount(1, {
     timeout: 30000,
   });
