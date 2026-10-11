@@ -104,6 +104,12 @@ export const ASSIST_COPY = Object.freeze({
     axis: { label: "軸", q: "1号艇は逃げる？", sub: "誰が1着候補か" },
     flow: { label: "展開", q: "スタートでどこが出る？", sub: "誰が攻めるか" },
     power: { label: "機力", q: "足が良いのは？", sub: "モーターと展示" },
+    // 流しの相手（2026-10-12 ユーザー承認 v4、spec D-46）。軸（1着）とは別の問いなので別のレンズ
+    place: {
+      label: "相手",
+      q: "2着・3着に残るのは？",
+      sub: "流しの相手を選ぶ",
+    },
     bet: {
       label: "買い目",
       q: "オッズに見合う？",
@@ -241,7 +247,16 @@ export const ASSIST_COPY = Object.freeze({
   targets: TARGET_LABEL,
   targetGroup: "何着までで見るか（軸・買い目で共通）",
   // 1号艇が1着のとき、2着・3着に来たのは（BOA-831 案1b、spec D-44 (3)）
-  followHeading: (boat) => `${boat}号艇が1着のとき、2着・3着に来たのは`,
+  // 1号艇を軸にしたときだけの表と分かる見出し（v4。ほかの艇が1着のときは BOA-845）
+  followHeading: (boat) => `${boat}号艇を軸にしたときの2着・3着`,
+  followOnly: (boat) =>
+    `${boat}号艇が1着のときだけ（ほかの艇が1着のときはまだ出ない）`,
+  // 相手レンズの図（D-46）。●2着以内・○3着以内を同じ行に置く。値は艇ごとの範囲（深掘り・買い目と同じ）
+  placeTitle: "●2着以内・○3着以内（右ほど高い）",
+  placeNote: "艇ごとに、その艇の深掘りと同じレースでの割合",
+  placeTop2: "2着以内",
+  placeTop3: "3着以内",
+  placeFew: (n) => `${n.toLocaleString("ja-JP")}件（少ない）`,
   followScope: (label, boat, n) =>
     `${label} ${boat}号艇が1着の${n.toLocaleString("ja-JP")}件`,
   followBoatCol: "艇",
@@ -610,7 +625,7 @@ export const ASSIST_COPY = Object.freeze({
 
   // ---- ガイド（FR-10、screens S-1c）。各段1文（40字以内） ----
   guideRegion: "ガイド",
-  guideStep: (i, step) => `ガイド ${i}/5 ${step}`,
+  guideStep: (i, n, step) => `ガイド ${i}/${n} ${step}`,
   guideNext: "次へ",
   guidePrev: "戻る",
   guideDone: "おわり",
@@ -619,7 +634,9 @@ export const ASSIST_COPY = Object.freeze({
     { step: "②1号艇", q: "1号艇は逃げられそう？" },
     { step: "③壁と攻める艇", q: "スタートでどこが凹み、誰が攻める？" },
     { step: "④足", q: "足が良いのは？" },
-    { step: "⑤買い目", q: "買い目を組んで、オッズに見合うか確かめよう" },
+    // ⑤相手（spec D-46。ガイドは6段）
+    { step: "⑤相手", q: "2着・3着に残るのは誰？" },
+    { step: "⑥買い目", q: "買い目を組んで、オッズに見合うか確かめよう" },
   ]),
   guideVerdictWord: Object.freeze({
     high: "高め",
@@ -640,6 +657,7 @@ export const ASSIST_COPY = Object.freeze({
   guideFlowSubNone: "当てはまる手がかりは無い。図はスタートの早さ",
   guidePowerSubPost: "金枠が6艇で一番速い。1号艇は展示が速く出やすい",
   guidePowerSubPre: "展示は展示の後に出る。今はモーター2連率を見る",
+  guidePlaceSub: "●が2着以内・○が3着以内。行の＋で相手を候補に",
   guideBetSub: "1着・2着・3着を押して組む。合成オッズ1.0未満はトリガミ",
 });
 

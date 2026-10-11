@@ -305,6 +305,22 @@ function ThinkingAssistBody() {
       ),
     [boatFacts, state.target],
   );
+  // 相手レンズの各艇の2着以内・3着以内（艇ごとの範囲。軸・買い目の切り替えに関わらない。spec D-46）
+  const placeRates = useMemo(
+    () =>
+      new Map(
+        winFacts
+          .map((f, i) => [
+            i + 1,
+            {
+              t2: b1Usual(f.scope, i + 1, 2),
+              t3: b1Usual(f.scope, i + 1, 3),
+            },
+          ])
+          .filter(([, p]) => p.t2 || p.t3),
+      ),
+    [winFacts],
+  );
   const hints = useMemo(
     () => (ncScenario ? hintSummary(ncScenario, today) : null),
     [ncScenario, today],
@@ -378,6 +394,7 @@ function ThinkingAssistBody() {
         finalRound,
         hasToday: today != null,
         pastWin,
+        placeRates,
         target: state.target,
         stBasis: state.stBasis,
         stMissing: data.facts.status === "ready" && v16Status === "not_saved",
@@ -391,6 +408,7 @@ function ThinkingAssistBody() {
       finalRound,
       today,
       pastWin,
+      placeRates,
       state.target,
       state.stBasis,
       data.facts.status,
@@ -544,6 +562,22 @@ function ThinkingAssistBody() {
             }
           : null,
     },
+    place:
+      factsAll && winFacts[0].scope
+        ? {
+            follow: v16Off
+              ? null
+              : winFollowers(data.scenario.axis?.data?.scenario ?? null),
+            label: factsScopeLabel(
+              winFacts[0].scope,
+              venueName,
+              1,
+              today?.classes?.[0],
+            ),
+            axisK: b1u?.k ?? 0,
+            axisN: b1u?.n ?? 0,
+          }
+        : null,
     bet: {
       bet: {
         points: tickets.length,
@@ -780,6 +814,7 @@ function ThinkingAssistBody() {
                 axis={summary.axis}
                 flow={summary.flow}
                 power={summary.power}
+                place={summary.place}
                 bet={summary.bet}
               />
             )}

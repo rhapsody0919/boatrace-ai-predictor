@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { ASSIST_COPY as C } from "../../../data/thinkingAssistCopy";
 
 /**
- * ガイド（FR-10、screens S-1c）。5段で、各段は光らせる場所（data-guide の名前）・問い・1文。
+ * ガイド（FR-10、screens S-1c）。6段（spec D-46 で相手を足した）で、各段は光らせる場所（data-guide の名前）・問い・1文。
  * 吹き出しは光らせた場所と重ならない側（上か下）に固定で出し、光らせた場所をその反対側へ送る。
  * レンズの切り替え・フッターを隠すのはページ側（閉じても買い目・レンズは残す）
  * topOffset はサイトのヘッダーの高さ（上に出す吹き出しをその下に置く）
@@ -51,7 +51,9 @@ export default function GuideOverlay({ steps, index, onStep, topOffset = 0 }) {
       aria-label={C.guideRegion}
       tabIndex={-1}
     >
-      <span className="ta-guide-step">{C.guideStep(index + 1, step.step)}</span>
+      <span className="ta-guide-step">
+        {C.guideStep(index + 1, steps.length, step.step)}
+      </span>
       <span className="ta-guide-q">{step.q}</span>
       <span className="ta-guide-sub">{step.sub}</span>
       <div className="ta-guide-ops">
