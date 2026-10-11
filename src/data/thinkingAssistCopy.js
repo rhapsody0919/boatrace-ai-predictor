@@ -360,6 +360,7 @@ export const ASSIST_COPY = Object.freeze({
     makuri: "まくり",
     makurizashi: "まくり差し",
     sashi: "差し",
+    other: "ほか",
   }),
   flowTechVal: (p, k) => `${p}%（${k}件）`,
   flowExactaOf: (form) => `${form}のときによく出た2連単`,
