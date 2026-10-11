@@ -192,6 +192,15 @@ export default function RaceLaneBoard({
           </span>
         </div>
       )}
+      {model.exhCompare && (
+        <button
+          type="button"
+          className="ta-exh-open"
+          onClick={() => onMetric("exh_st", null)}
+        >
+          {ASSIST_COPY.exhStOpen} ›
+        </button>
+      )}
       {/* 着順の切り替えと注記はオッズの見出しより上に置く。見出しと点の間に挟むと、点の位置まで着順で変わったように見える
           （BOA-831 ファン評価 1周目 指摘4） */}
       {bet && onTarget && <TargetSwitch target={target} onTarget={onTarget} />}

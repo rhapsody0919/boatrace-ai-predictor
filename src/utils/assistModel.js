@@ -578,6 +578,10 @@ export function boardModel({
       kind: "flow",
       title: `${METRICS[key].label} 左ほど早い`,
       basis: overall ? "overall" : "course",
+      // v16 の保存が無いレースは平均ST の点が出ない。黙って空の図にせず理由を書く（ファン評価 1周目 指摘3）
+      noSt: stMissing,
+      // 展示後は展示ST の6艇比較への入口を図の上に置く（点の値が無い艇・レースでも入れる。同 指摘3・4）
+      exhCompare: post && racers.some((r) => r.exhSt != null),
       left: ".00",
       right: ".25",
       good: "left",

@@ -566,6 +566,7 @@ function ThinkingAssistBody() {
       racers,
       venue: venueName,
       onPower: () => act({ type: "lens", lens: "power" }),
+      basis: state.stBasis,
     },
     power: {
       post,
