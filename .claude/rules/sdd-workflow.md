@@ -15,6 +15,9 @@ paths: ["docs/design/**"]
 - `npm run verify:er-diagram`（`scripts/maintenance/verify-plan-erd.js`）が、新規テーブル・新規リレーションを導入するDDLを持つのにER図が無いplan.mdを横断検知する。**PR時にQuality Gates CI（`npm run verify:ci`）が自動実行する**（ADR-0072）。手元で先に確かめたい場合は `npm run verify:er-diagram`
 - DB全体の俯瞰図は個別機能単位ではなく`docs/reference/database-design.md`の「テーブル関係図」を参照（`mcp__supabase__list_tables`で本番稼働中スキーマから機械生成、2026-09-15作成）。生きたスキーマから生成する方式を採用しているのは、DDL履歴の積み上げではDROP TABLE・RENAME等を正しく追えないため
 
+## UI/UX に要る統計検証は spec・モックの前に行う（2026-10-12〜）
+`/step1-spec`（UI 機能は `/step1-screens` とモックの前）で、画面に出す材料ごとに `data-scientist` で効き目・母数・言える範囲を確かめ、結果を spec.md に「統計検証」の節として書く（材料・指標・件数・区間・言えること・言えないこと・根拠のファイルか SQL）。判定できない材料は、出す・出さない・待つをユーザーに決めてもらい、その決定も書く。`design-reviewer` はこの節の有無と、画面の数字・注記が節と食い違わないかを見る。プロジェクト CLAUDE.md「実装前の要件確認」の同じ決まりの手順版。
+
 ## データ取得を含む機能は「完了の定義」を必ず適用する（2026-09-19〜）
 外部サイトを取得してDBに書き込む機能のSDDでは、`/step3`で作るtasks.mdに`.claude/rules/data-acquisition.md`「完了の定義」（件数・タイミング・継続監視）の3行テンプレートを各データ項目に含める。plan.mdの実行基盤は同ファイル・[ADR-0066](../../docs/adr/0066-scraping-execution-consolidation-to-vercel.md)（Vercel Functions + Vercel Cron）に従う。コードのマージではなく本番DBの実測で完了を判定する。
 
