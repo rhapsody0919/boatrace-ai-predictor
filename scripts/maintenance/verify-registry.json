@@ -490,6 +490,11 @@
       "guards": "会場別モーター成績パーサー（BOA-264）"
     },
     {
+      "script": "verify-bot-page-model.js",
+      "tier": "ci",
+      "guards": "ボット向け HTML（ADR 0089）のモデル src/utils/botPageModel.js。import の経路にブラウザ専用の依存（supabaseClient・import.meta.env・localStorage 等）が無く Node から読めること、本番の /api/races/today のフィクスチャから人の画面と同じ文字（会場名・節の名前・レース番号・締切時刻・グレード・中止・見出し・title・description・canonical）で組めること、UTC で動かしても日付が前日にずれないこと、0件と壊れた入力を区別すること（壊れた入力で開催なしにしない。ADR 0069）、選手名・オッズ・着順・荒れ度等を入れないこと、人の画面が同じ関数（transformTodayRaces・pageMeta・raceListDisplay）を使い続けていること"
+    },
+    {
       "script": "verify-venue-series-title.js",
       "tier": "ci",
       "guards": "会場ページの title に節タイトルを入れる判定（SG・G1のみ、先頭レースの値、NFKC）。崩れると一般戦の title が長くなるか、SG開催週の検索需要を取り逃す"
