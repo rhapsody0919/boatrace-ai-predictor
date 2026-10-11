@@ -2163,3 +2163,131 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
     await expect(page.locator(".ta-tag-exh")).toHaveCount(0);
   });
 });
+
+/** 展開レンズの作り直し PR-2（spec D-47 (4)〜(7)、承認モック v2） */
+test.describe("思考アシスト: 展開レンズの中身（spec D-47 PR-2、承認モック v2）", () => {
+  test("もし2コース凹み: 決まり手の内訳 → 1着の艇 → 2連単。3連単は買い目レンズへ", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByText("攻める3号艇が1着の36件の決まり手"),
+    ).toBeVisible();
+    const tech = page.locator(".ta-tech-row");
+    await expect(tech).toHaveText([
+      /^まくり.*42%（15件）$/,
+      /^まくり差し.*47%（17件）$/,
+      /^差し.*6%（2件）$/,
+    ]);
+    await expect(
+      page.getByText(/^2コース凹みのときによく出た2連単: 1-3/),
+    ).toBeVisible();
+    await expect(page.getByText(/^よく出た3連単:/)).toHaveCount(0);
+    await expect(page.getByText("よく出た3連単は買い目レンズ")).toBeVisible();
+  });
+
+  test("今日の展示を入れると: 区分ごとの割合、今日の区分に札、全国の値と3〜4位の注記", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByText("攻める3号艇（展示4位）: 展示タイムの順位ごとの1着"),
+    ).toBeVisible();
+    const today = page.locator(".ta-band-today");
+    await expect(today).toHaveCount(2);
+    await expect(today.first()).toContainText("3〜4位");
+    await expect(today.first()).toContainText("25% (13/53)");
+    await expect(today.nth(1)).toContainText("1〜2位");
+    await expect(today.nth(1)).toContainText("42% (33/78)");
+    await expect(
+      page.getByText(
+        "全国では 1〜2位 24%・3〜4位 18%・5〜6位 13%（順位が上ほど多い）。3〜4位はほかの順位との差が出にくい",
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByText("全国では 1〜2位 59%・3〜4位 51%・5〜6位 46%（順位が上ほど多い）"),
+    ).toBeVisible();
+  });
+
+  test("展示前の今日の展示を入れるとは「展示の後に分かる」", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await page.getByRole("button", { name: "展示前", exact: true }).click();
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByText(
+        "展示の後に分かる（攻める艇・1号艇の展示タイムの順位ごとの割合）",
+      ),
+    ).toBeVisible();
+    await expect(page.locator(".ta-band-row")).toHaveCount(0);
+  });
+
+  test("進入: 展示が全艇枠なりなら全国の 93%（3,602/3,862）", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByText(
+        "全国で、展示が全艇枠なりのとき本番も全艇枠なりは 93%（3,602/3,862）",
+      ),
+    ).toBeVisible();
+  });
+
+  test("オリジナル展示: 一周・まわり足の「6艇で一番」と効き目だけ（直線は出さない）。「秒数は機力レンズ」で機力へ", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByRole("heading", { name: "オリジナル展示（徳山: 一周・まわり足）" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("1号艇: 一周・まわり足とも6艇で一番"),
+    ).toBeVisible();
+    await expect(page.locator(".ta-org-best", { hasText: "直線" })).toHaveCount(0);
+    await page.getByRole("button", { name: /^秒数は機力レンズ/ }).click();
+    await expect(lensTab(page, "機力")).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("形が2つ当てはまるとき（カド一撃・2コース凹み）は選べ、選んだ形で「もし」と今日の展示が変わる", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page, {
+      overrides: {
+        facts: (body) => {
+          body.today.hints.course.kado4 = true;
+          return body;
+        },
+      },
+    });
+    await open(page);
+    await lensTab(page, "展開").click();
+    const pick = page.getByRole("group", { name: "本番のスタートの形を選ぶ" });
+    const kado = pick.getByRole("button", { name: /^カド一撃/ });
+    const d2 = pick.getByRole("button", { name: /^2コース凹み/ });
+    await expect(kado).toHaveAttribute("aria-pressed", "true");
+    await expect(kado).toContainText("25%（158/634）");
+    await expect(page.getByText("もしカド一撃になったら")).toBeVisible();
+    await expect(page.locator(".ta-flow-today")).toHaveText(
+      "今日の展示: 攻める4号艇は展示1位（1〜2位）→ カド一撃のとき1着 38%（56/146）",
+    );
+    await d2.click();
+    await expect(d2).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText("もし2コース凹みになったら")).toBeVisible();
+    await expect(
+      page.getByText(/^★平均STの手がかり（2コース凹み） ›$/),
+    ).toBeVisible();
+    await expect(page.locator(".ta-flow-today")).toContainText(
+      "攻める3号艇は展示4位",
+    );
+  });
+});

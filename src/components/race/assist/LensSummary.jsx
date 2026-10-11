@@ -14,17 +14,20 @@ import {
 import {
   axisWhyKinds,
   b1Usual,
+  attackTech,
+  descending,
   entrySummary,
+  exhBands,
   exhToday,
+  originalBest,
   powerWinners,
   exhibitionTable,
   factsEntry,
   factsScopeLabel,
   formSummary,
-  hintSummary,
   partsChangedBoats,
 } from "../../../utils/assistSummary";
-import { entryType } from "../../../utils/analogyScenario";
+import { MIN_SCENARIO, entryType } from "../../../utils/analogyScenario";
 import { ASSIST_COPY as C, GLOSSARY } from "../../../data/thinkingAssistCopy";
 import { TermButton, TheoryButton } from "./SheetButtons";
 import WinFollowers, { ComboList } from "./WinFollowers";
@@ -163,17 +166,17 @@ function AxisSummary({ m }) {
 export function FlowConclusion({ m }) {
   const {
     scenario,
-    today,
     post,
     v16Exhibition,
     courseByBoat,
     reflecting,
     round,
     exhRanks,
+    hint: top,
+    forms = [],
+    onForm,
   } = m;
-  const hs = scenario ? hintSummary(scenario, today) : null;
-  if (!hs) return null;
-  const top = hs.top;
+  if (!scenario) return null;
   const formName = top ? C.formNames[top.form] : null;
   const exhForm =
     post && top && v16Exhibition?.forms?.includes?.(top.form) ? true : false;
@@ -199,14 +202,42 @@ export function FlowConclusion({ m }) {
       </h3>
       {top ? (
         <>
-          <div className="ta-big">
-            <b>{formName}</b>
-            <span className="ta-big-cnt">{C.flowShapeRow}</span>
-            <span className="ta-big-pct ta-num">{hitP}%</span>
-            <span className="ta-big-cnt ta-num">
-              （{comma(top.hit[0])}/{comma(top.hit[1])}）
-            </span>
-          </div>
+          {forms.length > 1 ? (
+            // 形が2つ以上当てはまるときは同じ形式で並べ、選んだ形で下の「もし」「今日の展示」が変わる（承認モック v2 ④）
+            <div
+              className="ta-form-pick"
+              role="group"
+              aria-label={C.flowFormPick}
+            >
+              {forms.map((f) => (
+                <button
+                  key={f.form}
+                  type="button"
+                  className="ta-form-opt"
+                  aria-pressed={f.form === top.form}
+                  onClick={() => f.form !== top.form && onForm(f.form)}
+                >
+                  <b>{C.formNames[f.form]}</b>
+                  <span className="ta-big-cnt">{C.flowShapeRow}</span>
+                  <span className="ta-big-pct ta-num">
+                    {p0(f.hit[0], f.hit[1])}%
+                  </span>
+                  <span className="ta-big-cnt ta-num">
+                    （{comma(f.hit[0])}/{comma(f.hit[1])}）
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="ta-big">
+              <b>{formName}</b>
+              <span className="ta-big-cnt">{C.flowShapeRow}</span>
+              <span className="ta-big-pct ta-num">{hitP}%</span>
+              <span className="ta-big-cnt ta-num">
+                （{comma(top.hit[0])}/{comma(top.hit[1])}）
+              </span>
+            </div>
+          )}
           <div className="ta-legend">
             <span className="ta-scopechip ta-num">
               {/* 進入の札と件数が違う理由を添える（BOA-808 P3・BOA-809） */}
@@ -247,13 +278,117 @@ export function FlowConclusion({ m }) {
   );
 }
 
+/** 区分ごとの1行（今日の区分は札「今日」と塗り。30件未満は棒を出さず件数だけ） */
+function BandRows({ side }) {
+  return (
+    <div className="ta-band">
+      {side.rows.map((r) => {
+        const today = r.band === side.today;
+        return (
+          <div
+            key={r.band}
+            className={`ta-band-row ta-num${today ? " ta-band-today" : ""}`}
+          >
+            <span className="ta-band-tag" aria-hidden={!today}>
+              {today ? C.exhTodayTag : ""}
+            </span>
+            <span>{C.exhBand[r.band]}</span>
+            {r.n < MIN_SCENARIO ? (
+              <span className="ta-band-few">{C.exhFew(r.n)}</span>
+            ) : (
+              <>
+                <span className="ta-tech-trk" aria-hidden="true">
+                  <i style={{ width: `${pct(r.k, r.n)}%` }} />
+                </span>
+                <span className="ta-nowrap">
+                  {p0(r.k, r.n)}% <small>({r.k}/{r.n})</small>
+                </span>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const natPcts = (nat) => nat.map((v) => Math.round(v * 100));
+
+/**
+ * 今日の展示を入れると（spec D-47 (5)、承認モック v2）。攻める艇の1着と1号艇の逃げを展示タイムの順位の区分ごとに、
+ * 範囲の件数つきで。全国の値を1行添える（範囲の区分の差は件数が少なく分かれにくいので、全国の差を主な根拠にする）。展示前は「展示の後に分かる」
+ */
+function ExhBandsBox({ post, bands, formLabel }) {
+  if (!post)
+    return (
+      <section className="ta-box">
+        <h3>{C.exhHeading}</h3>
+        <p className="ta-note">{C.exhPending}</p>
+      </section>
+    );
+  if (!bands) return null;
+  const { att, b1 } = bands;
+  const natLine = (side, mid) =>
+    side.nat && side.nat.every((v) => v != null) ? (
+      <p className="ta-note ta-num ta-band-nat">
+        {C.exhNat(natPcts(side.nat))}
+        {descending(side.nat) && C.exhNatDesc}
+        {mid && side.today === "mid" && C.exhNatMid}
+      </p>
+    ) : null;
+  return (
+    <section className="ta-box">
+      <h3>{C.exhHeading}</h3>
+      <div className="ta-legend">
+        <span className="ta-scopechip ta-num">{formLabel}</span>
+      </div>
+      {att && (
+        <>
+          <p className="ta-note">
+            <b>{C.exhAttTitle(att.boat, att.rank)}</b>
+          </p>
+          <BandRows side={att} />
+          {natLine(att, true)}
+        </>
+      )}
+      <p className="ta-note">
+        <b>{C.exhB1Title(b1.rank)}</b>
+      </p>
+      <BandRows side={b1} />
+      {natLine(b1, false)}
+      <p className="ta-note">{C.exhB1Note}</p>
+    </section>
+  );
+}
+
 function FlowSummary({ m }) {
-  const { scenario, today, post, courseByBoat, similar, racecardStage, round } =
-    m;
-  const top = scenario ? hintSummary(scenario, today).top : null;
+  const {
+    scenario,
+    national,
+    post,
+    courseByBoat,
+    similar,
+    racecardStage,
+    round,
+    exhRanks,
+    hint: top,
+    original,
+    racers,
+    venue,
+    onPower,
+  } = m;
   const formName = top ? C.formNames[top.form] : null;
   const form = top ? formSummary(scenario, top.form) : null;
+  const tech = top ? attackTech(scenario, top.form) : null;
+  const bands =
+    top && post ? exhBands(scenario, national, top.form, exhRanks) : null;
+  const scopeText = form
+    ? C.flowFormScope(C.flowScopeLabel(Boolean(round)), form.n)
+    : null;
   const entry = post ? entrySummary(scenario, courseByBoat) : null;
+  const best = post ? originalBest(original, racers) : [];
+  const bothBest =
+    best.length === 2 && best[0].boats.join() === best[1].boats.join();
   const simLabel = similar
     ? C.similarLabel(similar.n, similar.allInLayer)
     : null;
@@ -267,23 +402,38 @@ function FlowSummary({ m }) {
           </h3>
           <div className="ta-legend">
             <span className="ta-scopechip ta-num">
-              {C.flowFormScope(C.flowScopeLabel(Boolean(round)), form.n)}
+              {scopeText}
             </span>
-            <span>{C.flowFirstBoat}</span>
           </div>
           {form.few ? (
             <p className="ta-note">{C.flowFew}</p>
           ) : (
             <>
+              {tech && (
+                // 攻める艇が1着のときの決まり手（spec D-47 (4)）。1着の艇の前に置く
+                <div className="ta-tech">
+                  <p className="ta-note">
+                    {C.flowTechHeading(tech.att, tech.w)}
+                  </p>
+                  {tech.rows.map(([t, k]) => (
+                    <div key={t} className="ta-tech-row ta-num">
+                      <span>{C.flowTechNames[t]}</span>
+                      <span className="ta-tech-trk" aria-hidden="true">
+                        <i style={{ width: `${pct(k, tech.w)}%` }} />
+                      </span>
+                      <span className="ta-nowrap">
+                        {C.flowTechVal(p0(k, tech.w), k)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="ta-note">{C.flowFirstBoat}</p>
               <Bars6 values={form.first.map((k) => k / form.n)} />
               {form.topExacta.length > 0 && (
                 <p className="ta-note ta-num">
-                  {C.flowTopExacta}: <ComboList rows={form.topExacta} />
-                </p>
-              )}
-              {form.topTrifecta.length > 0 && (
-                <p className="ta-note ta-num">
-                  {C.flowTopTrifecta}: <ComboList rows={form.topTrifecta} />
+                  {C.flowExactaOf(formName)}:{" "}
+                  <ComboList rows={form.topExacta} />
                 </p>
               )}
             </>
@@ -294,8 +444,11 @@ function FlowSummary({ m }) {
               <b>{C.sujiChip[1]}</b>
             </TheoryButton>
           )}
+          {/* 3連単は展開から外し、買い目レンズへ（spec D-47 (4)） */}
+          <p className="ta-note">{C.flowTrifectaToBet}</p>
         </section>
       )}
+      {form && <ExhBandsBox post={post} bands={bands} formLabel={scopeText} />}
       {(entry || !post) && (
         <section className="ta-box">
           <h3 className="ta-h3-row">
@@ -315,6 +468,14 @@ function FlowSummary({ m }) {
                 <span>✓ {C.entryToday(C.entryNames[entry.type])}</span>
                 {entry.type === "waku" && <TermButton term="枠なり" />}
               </div>
+              {entry.type === "waku" && (
+                // 展示の進入が本番も続くか（全国の値。範囲ごとは件数が足りない。spec D-47 (6)）
+                <p className="ta-note ta-num">
+                  {C.entryNatWaku}{" "}
+                  <b>{p0(C.entryNatWakuK, C.entryNatWakuN)}%</b>（
+                  {comma(C.entryNatWakuK)}/{comma(C.entryNatWakuN)}）
+                </p>
+              )}
               {entry.n > 0 ? (
                 <>
                   {/* 集めた範囲と件数を書く（上の枠の準優勝戦の値と比べられるように。ファン評価 PR4 1周目 指摘1） */}
@@ -341,6 +502,41 @@ function FlowSummary({ m }) {
           ) : (
             <p className="ta-note">{C.entryPre}</p>
           )}
+        </section>
+      )}
+      {best.length > 0 && (
+        // オリジナル展示（spec D-47 (7)）: 一周・まわり足の「6艇で一番」と全体の効き目だけ。直線・秒数・形ごとは出さない
+        <section className="ta-box">
+          <h3>
+            {C.orgHeading(
+              venue,
+              best.map((b) => b.kind),
+            )}
+          </h3>
+          {bothBest ? (
+            <p className="ta-org-best">
+              {best[0].boats.map((b) => (
+                <BoatBadge key={b} n={b} size="sm" />
+              ))}{" "}
+              {C.orgBothBest(best[0].boats)}
+            </p>
+          ) : (
+            best.map((b) => (
+              <p key={b.kind} className="ta-org-best">
+                {b.boats.map((n) => (
+                  <BoatBadge key={n} n={n} size="sm" />
+                ))}{" "}
+                {C.orgBest(b.kind, b.boats)}
+              </p>
+            ))
+          )}
+          <p className="ta-note ta-num">{C.orgEffect}</p>
+          <p className="ta-note">
+            {C.orgVenueNote}
+            <button type="button" className="ta-link-btn" onClick={onPower}>
+              {C.orgToPower} ›
+            </button>
+          </p>
         </section>
       )}
       {similar && similar.n > 0 && (

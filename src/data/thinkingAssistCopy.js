@@ -347,6 +347,47 @@ export const ASSIST_COPY = Object.freeze({
     `今日の展示: 攻める${att}号艇は展示${rank}位（${band}）→ ${form}のとき`,
   flowTodayWin: "1着",
   flowTodayFew: (n) => `は${n}件だけ（少ないので割合は出さない）`,
+  // 形が2つ以上当てはまるときの選択（承認モック v2 ④）
+  flowFormPick: "本番のスタートの形を選ぶ",
+  // もし{形}になったら（spec D-47 (4)）
+  flowTechHeading: (att, w) => `攻める${att}号艇が1着の${w}件の決まり手`,
+  flowTechNames: Object.freeze({
+    makuri: "まくり",
+    makurizashi: "まくり差し",
+    sashi: "差し",
+  }),
+  flowTechVal: (p, k) => `${p}%（${k}件）`,
+  flowExactaOf: (form) => `${form}のときによく出た2連単`,
+  flowTrifectaToBet: "よく出た3連単は買い目レンズ",
+  // 今日の展示を入れると（spec D-47 (5)）
+  exhHeading: "今日の展示を入れると",
+  exhPending: "展示の後に分かる（攻める艇・1号艇の展示タイムの順位ごとの割合）",
+  exhAttTitle: (att, rank) =>
+    `攻める${att}号艇${rank ? `（展示${rank}位）` : ""}: 展示タイムの順位ごとの1着`,
+  exhB1Title: (rank) =>
+    `1号艇${rank ? `（展示${rank}位）` : ""}: 展示タイムの順位ごとの逃げ`,
+  exhTodayTag: "今日",
+  exhFew: (n) => `${n}件だけ（少ないので割合は出さない）`,
+  exhNat: (ps) =>
+    `全国では 1〜2位 ${ps[0]}%・3〜4位 ${ps[1]}%・5〜6位 ${ps[2]}%`,
+  exhNatDesc: "（順位が上ほど多い）",
+  exhNatMid: "。3〜4位はほかの順位との差が出にくい",
+  exhB1Note:
+    "1号艇は展示が速く出やすい（同じ選手でも約0.02秒）。その分を差し引いても、順位ごとの差はほとんど変わらない。過去の割合で、原因とは限らない",
+  // 進入（spec D-47 (6)）。全国の値（本番 DB 2026-04-10〜10-10。展開レンズの統計検証、spec「統計検証」の節）
+  entryNatWaku: "全国で、展示が全艇枠なりのとき本番も全艇枠なりは",
+  entryNatWakuK: 3602,
+  entryNatWakuN: 3862,
+  // オリジナル展示（spec D-47 (7)）。直線・秒数・形ごとは出さない。効き目は 2,844R の検証（spec「統計検証」の節）
+  orgHeading: (venue, kinds) =>
+    `オリジナル展示（${venue ? `${venue}: ` : ""}${kinds.join("・")}）`,
+  orgBothBest: (boats) =>
+    `${boats.join("・")}号艇: 一周・まわり足とも6艇で一番`,
+  orgBest: (kind, boats) => `${kind}: ${boats.join("・")}号艇が6艇で一番`,
+  orgEffect:
+    "一周・まわり足が6艇で一番の艇は1着が多い（2〜6コースの1着: 一周1位 16%・ほか 8%、まわり足1位 13%・ほか 8%。展示タイムの順位をそろえても残る差。1コースでも同じ向き）",
+  orgVenueNote: "会場ごとに測る区間が違うので、この会場の中での順位で見る。",
+  orgToPower: "秒数は機力レンズ",
   flowMissBar: "当てはまらないとき",
   flowHintSource: "平均ST（このコース・直近30走）の並び。展示STではない",
   // 展開レンズの展示前の横軸の切り替え（BOA-815 案A。龍神ソナーと同じ「このコース｜直近30走」）

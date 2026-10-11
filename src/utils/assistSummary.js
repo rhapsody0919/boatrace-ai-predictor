@@ -16,6 +16,7 @@ import {
   ATTACK_BOAT,
   MIN_SCENARIO,
   entryType,
+  hintBadgeByForm,
   hintRows,
   rankBand,
 } from "./analogyScenario.js";
@@ -193,6 +194,108 @@ export function hintSummary(scenario, today) {
   );
   const up = rows.filter((r) => r.kind === "up").sort((a, b) => b.ph - a.ph);
   return { rows, top: up[0] ?? null };
+}
+
+/**
+ * 今日当てはまる「なりやすい」形（形ごとに当てはまったときの率が一番高い手がかり）。率の高い順（先頭が hintSummary の top）。
+ * 2つ以上なら図の上の結論で選べる（承認モック v2 ④、spec D-47 (3)）
+ * @returns {Array<object>} hintRows の行
+ */
+export const hintForms = (scenario, today) =>
+  scenario
+    ? Object.values(hintBadgeByForm(hintSummary(scenario, today).rows)).sort(
+        (a, b) => b.ph - a.ph,
+      )
+    : [];
+
+/**
+ * もし{形}になったら の決まり手の内訳（spec D-47 (4)）。攻める艇が1着のレースの決まり手（まくり・まくり差し・差しの順。0件は外す）
+ * 範囲は形の見立てと同じ scenario の attack（枠なりのレース）
+ * @returns {null | {att: number, w: number, rows: Array<[string, number]>}}
+ */
+export function attackTech(scenario, form) {
+  const a = scenario?.attack?.[form];
+  const w = a?.all?.att_win?.[0] ?? 0;
+  if (!a?.attacker || !w) return null;
+  return {
+    att: a.attacker,
+    w,
+    rows: ["makuri", "makurizashi", "sashi"]
+      .map((t) => [t, a.all[`att_${t}_of_win`]?.[0] ?? 0])
+      .filter(([, k]) => k > 0),
+  };
+}
+
+const BANDS = ["top", "mid", "low"];
+const rateOfPair = (p) => (p?.[1] ? p[0] / p[1] : null);
+
+/**
+ * 今日の展示を入れると（spec D-47 (5)）: 攻める艇の1着・1号艇の逃げを、その艇の展示タイムの順位の区分（1〜2位・3〜4位・5〜6位）ごとに。
+ * 範囲は形の見立てと同じ scenario、nat は全国（NA）の同じ形の値。today は今日の区分（6艇の展示タイムがそろわなければ null。exhToday と同じ）
+ * @param {object|null} scenario
+ * @param {object|null} national 全国（NA）の scenario
+ * @param {string} form
+ * @param {(number|null)[]|null} exhRanks
+ * @returns {null | {n: number, att: object|null, b1: object}} 各艇: {boat, rank, today, rows: [{band, k, n}], nat: (number|null)[]|null}
+ */
+export function exhBands(scenario, national, form, exhRanks) {
+  const a = scenario?.attack?.[form];
+  if (!a?.by_exh) return null;
+  const na = national?.attack?.[form] ?? null;
+  const ok =
+    exhRanks?.length === 6 && exhRanks.every((r) => r != null) ? exhRanks : null;
+  const side = (by, natBy, key, boat) => {
+    const rank = ok ? ok[boat - 1] : null;
+    return {
+      boat,
+      rank,
+      today: rankBand(rank),
+      rows: BANDS.map((band) => ({
+        band,
+        k: by?.[band]?.[key]?.[0] ?? 0,
+        n: by?.[band]?.[key]?.[1] ?? 0,
+      })),
+      nat: natBy ? BANDS.map((b) => rateOfPair(natBy[b]?.[key])) : null,
+    };
+  };
+  return {
+    n: a.all?.n ?? 0,
+    att: a.attacker ? side(a.by_exh, na?.by_exh, "att_win", a.attacker) : null,
+    b1: side(a.b1_by_exh, na?.b1_by_exh, "b1_nige", 1),
+  };
+}
+
+/** 全国の値が上位 > 中位 > 下位の順に並ぶか（「順位が上ほど多い」と書いてよいか） */
+export const descending = (vals) =>
+  Array.isArray(vals) &&
+  vals.every((v) => v != null) &&
+  vals[0] > vals[1] &&
+  vals[1] > vals[2];
+
+/**
+ * オリジナル展示の「6艇で一番」（spec D-47 (7)）。一周（周回）・まわり足だけ（直線は効かないので出さない。秒数は機力レンズ）
+ * @param {{kinds: string[], byBoat: object}|null} original
+ * @param {object[]} racers
+ * @returns {Array<{kind: string, boats: number[]}>}
+ */
+export function originalBest(original, racers) {
+  return (original?.kinds ?? [])
+    .filter((k) => k === "一周" || k === "まわり足")
+    .map((kind) => ({
+      kind,
+      boats: [
+        ...bestBoats(
+          OX_RULE[kind],
+          racers
+            .filter((r) => !r.absent)
+            .map((r) => ({
+              boat: r.boat,
+              value: num(original?.byBoat?.[r.boat]?.[kind]),
+            })),
+        ),
+      ].sort((x, y) => x - y),
+    }))
+    .filter((b) => b.boats.length > 0);
 }
 
 /**

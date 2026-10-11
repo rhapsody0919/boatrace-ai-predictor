@@ -14,6 +14,7 @@
 | `assist_metric_compare` | race_id, assist_metric, assist_lens | 値を押して6艇比較にしたとき（図の中・深掘りの中の両方）。比較中の項目の押し直し（戻す）は送らない |
 | `assist_sheet_open` | race_id, assist_sheet | シートを開いたとき |
 | `assist_target` | race_id, assist_target, assist_lens | 買い目レンズの着順の切り替え（BOA-831。spec D-46 で軸から外し買い目だけ）を押して変えたとき。選択中の着順の押し直しは送らない |
+| `assist_flow_form` | race_id, assist_form | 展開レンズで、図の上の結論のスリットの形を選び替えたとき（形が2つ以上当てはまるレースだけ。spec D-47、承認モック v2 ④）。選んでいる形の押し直しは送らない |
 | `assist_guide_step` | race_id, assist_guide_step | ガイドの段を出したとき（「ガイド」で1段目、「次へ」「戻る」のたび）。閉じたときは送らない |
 
 パラメータの値:
@@ -24,10 +25,11 @@
 | assist_entry | `top`（上部の切り替え）/ `tab_row`（タブ列のすぐ上の1行、BOA-832）/ `copy_toast`（AI用にコピーした直後のトースト、BOA-832） |
 | assist_lens | `axis`（軸）/ `flow`（展開）/ `power`（機力）/ `place`（相手、spec D-46）/ `bet`（買い目）。`assist_deep_open`・`assist_metric_compare` では押したときのレンズ |
 | assist_boat | 1〜6 |
-| assist_metric | `nat_win` 全国勝率 / `loc_win` 当地勝率 / `st_mean30` 平均ST（直近30走） / `st_course` 平均ST（このコース） / `motor_2` モーター2連率 / `exh_time` 展示タイム / `exh_st` 展示ST / `series_score` 今節の平均着順点 |
+| assist_metric | `nat_win` 全国勝率 / `loc_win` 当地勝率 / `st_mean30` 平均ST（直近30走） / `st_course` 平均ST（このコース） / `motor_2` モーター2連率 / `exh_time` 展示タイム / `exh_st` 展示ST（展開レンズの展示後の点の値から。spec D-47 で図から移した） / `series_score` 今節の平均着順点 |
 | assist_sheet | `mark` マークシート / `rough` 堅い？荒れる？の材料 / `venue` 会場の特徴 / `theory` セオリーカード / `term` 用語 |
 | assist_target | `1`（1着）/ `2`（2着以内）/ `3`（3着以内） |
 | assist_guide_step | 1〜（段の番号） |
+| assist_form | `flat` 横一線 / `wall` 内3艇そろう / `d2` 2コース凹み / `d3` カド受け凹み / `kado` カド一撃 / `d1` イン凹み / `dash` ダッシュ勢先行 |
 
 ## 約束
 
@@ -51,3 +53,4 @@
 | アシストのシート | イベント | 思考アシストで開いたシート（mark・rough・venue・theory・term） | `assist_sheet` |
 | アシストの着順 | イベント | 思考アシストの買い目で選んだ着順（1=1着 / 2=2着以内 / 3=3着以内） | `assist_target` |
 | アシストのガイドの段 | イベント | 思考アシストのガイドで出した段（1〜） | `assist_guide_step` |
+| アシストのスリットの形 | イベント | 思考アシストの展開レンズで選んだスリットの形（d2・kado 等） | `assist_form` |

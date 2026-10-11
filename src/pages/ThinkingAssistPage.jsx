@@ -61,6 +61,7 @@ import {
   factChips,
   factsScope,
   factsScopeLabel,
+  hintForms,
   hintSummary,
   partsChangedBoats,
   tiltOutliers,
@@ -91,8 +92,10 @@ const initialState = {
   // 入口から開くたびに深掘りを作り直して、開いている艇でも材料の位置まで送る
   deepNonce: 0,
   metric: null,
-  // 展開レンズの展示前の平均ST（BOA-815 案A）
+  // 展開レンズの平均ST（BOA-815 案A。展示後も、spec D-47 (1)）
   stBasis: "course",
+  // 展開レンズで選んだスリットの形（形が2つ以上当てはまるとき。null＝率が一番高い形。承認モック v2 ④）
+  flowForm: null,
   // 買い目の着順（1＝1着・2＝2着以内・3＝3着以内。BOA-831、spec D-44・D-46）。ページ内だけ
   target: 1,
   bets: { 1: new Set(), 2: new Set(), 3: new Set() },
@@ -152,6 +155,8 @@ function reducer(state, action) {
       return { ...state, metric: null };
     case "stBasis":
       return { ...state, stBasis: action.basis, metric: null };
+    case "flowForm":
+      return { ...state, flowForm: action.form };
     case "closeDeep":
       return { ...state, deep: null, metric: null };
     case "toggleBet": {
@@ -323,6 +328,13 @@ function ThinkingAssistBody() {
     () => (ncScenario ? hintSummary(ncScenario, today) : null),
     [ncScenario, today],
   );
+  // 今日当てはまる形（率の高い順）と選んでいる形（承認モック v2 ④）。選んだ形が無くなったら先頭
+  const flowForms = useMemo(
+    () => hintForms(ncScenario, today),
+    [ncScenario, today],
+  );
+  const flowHint =
+    flowForms.find((f) => f.form === state.flowForm) ?? flowForms[0] ?? null;
 
   // 図の印（screens「レンズごとの図 C」の印）
   const marks = useMemo(() => {
@@ -341,8 +353,8 @@ function ThinkingAssistBody() {
             theory: `TC-F:${i + 1}:${c.key}`,
           });
       });
-    if (state.lens === "flow" && hints?.top) {
-      const top = hints.top;
+    if (state.lens === "flow" && flowHint) {
+      const top = flowHint;
       const boat = HINT_BOAT[top.id];
       if (boat)
         add(boat, {
@@ -376,7 +388,7 @@ function ThinkingAssistBody() {
         });
     }
     return out;
-  }, [state.lens, boatFacts, hints, post, racers, maintenanceRows]);
+  }, [state.lens, boatFacts, flowHint, post, racers, maintenanceRows]);
 
   const model = useMemo(
     () =>
@@ -525,6 +537,15 @@ function ThinkingAssistBody() {
       reflecting: v16Status === "exhibition_reflecting",
       round: data.round,
       exhRanks: post ? exhRanks(racers) : null,
+      hint: flowHint,
+      forms: flowForms,
+      onForm: (form) => act({ type: "flowForm", form }),
+      national: v16Off ? null : (data.scenario.na.data?.scenario ?? null),
+      original:
+        data.original.data?.state === "published" ? data.original.data : null,
+      racers,
+      venue: venueName,
+      onPower: () => act({ type: "lens", lens: "power" }),
     },
     power: {
       post,

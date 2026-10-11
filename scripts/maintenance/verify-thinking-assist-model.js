@@ -785,6 +785,19 @@ check(
   );
 }
 
+// ---- 展開レンズの形の選択（spec D-47、承認モック v2 ④）----
+{
+  const st = { lens: "flow", deep: null, metric: null, flowForm: "kado" };
+  check(
+    "イベント: 形の選び替えは assist_flow_form。選んでいる形の押し直しは送らない",
+    JSON.stringify(assistEventOf(st, { type: "flowForm", form: "d2" })) ===
+      JSON.stringify({
+        name: "assist_flow_form",
+        params: { assist_form: "d2" },
+      }) && assistEventOf(st, { type: "flowForm", form: "kado" }) === null,
+  );
+}
+
 // ---- 軸・買い目で共通の着順（BOA-831、spec D-44）----
 {
   const st = { lens: "axis", deep: null, metric: null, target: 1 };
