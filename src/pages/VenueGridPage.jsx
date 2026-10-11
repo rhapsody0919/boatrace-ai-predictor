@@ -29,7 +29,8 @@ import {
 } from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { useNowHHMM } from "../hooks/useNowHHMM";
-import { getLanguage, localizePath } from "../config/languages";
+import { getLanguage } from "../config/languages";
+import { getTopPageMeta } from "../utils/pageMeta";
 import { getFeaturedPosts, getLatestPosts } from "../data/blogPosts";
 import { formatDate } from "../utils/formatters";
 import { getTodayJST } from "../utils/dateUtils";
@@ -163,19 +164,18 @@ function TodayVenueGridPage() {
     handleRefresh,
   } = useTodayVenues();
   const nextOpenDates = useNextOpenDates();
+  // title・description・canonical はボット向け HTML（ADR 0089）と同じ関数で組む
+  const meta = getTopPageMeta(t, i18n.resolvedLanguage);
 
   return (
     <div className="app">
-      <title>{t("meta.title")}</title>
-      <meta name="description" content={t("meta.description")} />
+      <title>{meta.title}</title>
+      <meta name="description" content={meta.description} />
       <meta
         property="og:locale"
         content={getLanguage(i18n.resolvedLanguage).ogLocale}
       />
-      <link
-        rel="canonical"
-        href={`https://www.boat-ai.jp${localizePath("/", i18n.resolvedLanguage)}`}
-      />
+      <link rel="canonical" href={meta.canonical} />
       <Header />
 
       <div className="container">

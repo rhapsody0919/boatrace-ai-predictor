@@ -28,7 +28,8 @@ import { useNowHHMM } from "../hooks/useNowHHMM";
 import { getNowHHMMJST, getTodayJST } from "../utils/dateUtils";
 import { getRaceStatus, RACE_STATUS } from "../utils/raceStatus";
 import { formatDate } from "../utils/formatters";
-import { getVenueSeriesTitle } from "../utils/venueSeriesTitle";
+import { getTodayVenuePageMeta } from "../utils/pageMeta";
+import { venueNameOf } from "../utils/raceListDisplay";
 import "./VenueRaceListPage.css";
 
 // 着いた1画面目に見せる次のレースのカードの高さ（見出し・締切・状態が読める程度）
@@ -92,7 +93,7 @@ function holdScrollPosition(getTarget, observed) {
 
 function VenueRaceListPage() {
   const { date: dateParam, venueCode: venueCodeParam } = useParams();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const localize = useLocalizedPath();
 
   const isToday = !dateParam;
@@ -210,7 +211,7 @@ function VenueRaceListPage() {
     return <Navigate to={isToday ? "/" : `/races/${date}`} replace />;
   }
 
-  const venueName = t(`venues.${venueCode}`);
+  const venueName = venueNameOf(t, venueCode);
   const venueRaces = allRaces
     .filter((r) => r.venueCode === venueCode)
     .sort((a, b) => a.raceNumber - b.raceNumber)
@@ -264,35 +265,24 @@ function VenueRaceListPage() {
         { name: venueName, url: `/races/${date}/${venueCode}` },
       ];
 
-  // 本日の会場ページは4言語で出すので、canonical も表示中の言語の URL にする（hreflang・sitemap と合わせる）。
-  // 過去日付は ja 専用
-  const canonicalPath = isToday
-    ? localize(`/venue/${venueCode}`)
-    : `/races/${date}/${venueCode}`;
-
   // /races/:date/:venueCode（過去日付）はja専用パス（TRANSLATED_PATHS未登録）のため、
   // 「本日」を前提にしたi18nの見出しをそのまま使い回さず日付入りの日本語文言にする
   // （VenueGridPageのPastVenueGridPageと同じ方針。BOA-XXX的発見: 過去日付ページでも
   // 「本日のレース一覧」というタイトルになっていた実装漏れの修正）
+  // 本日分は、ボット向け HTML（ADR 0089）と同じ関数で title・description・canonical を組む。
   // SG・G1 開催中は節タイトルを title・description に入れる（ja は「{会場}競艇のAI予想 {節タイトル}」。他言語は従来の文言に節タイトルを括弧書きで添える）
-  const seriesTitle = getVenueSeriesTitle(venueRaces.map((r) => r.rawData));
-  const todayMetaParams = { venue: venueName, series: seriesTitle };
-  const metaTitle = isToday
-    ? t(
-        seriesTitle
-          ? "venueRaceList.metaTitleSeries"
-          : "venueRaceList.metaTitle",
-        todayMetaParams,
+  const pageMeta = isToday
+    ? getTodayVenuePageMeta(
+        t,
+        venueCode,
+        venueRaces.map((r) => r.rawData),
+        i18n.resolvedLanguage,
       )
-    : `${venueName} ${formatDate(date)}のレース一覧・AIデータ分析 - 龍神レーダー`;
-  const metaDescription = isToday
-    ? t(
-        seriesTitle
-          ? "venueRaceList.metaDescriptionSeries"
-          : "venueRaceList.metaDescription",
-        todayMetaParams,
-      )
-    : `${venueName}ボートレース場の${formatDate(date)}の全レース一覧。各レースのAIデータ分析・結果を確認できます。`;
+    : {
+        title: `${venueName} ${formatDate(date)}のレース一覧・AIデータ分析 - 龍神レーダー`,
+        description: `${venueName}ボートレース場の${formatDate(date)}の全レース一覧。各レースのAIデータ分析・結果を確認できます。`,
+        canonical: `https://www.boat-ai.jp/races/${date}/${venueCode}`,
+      };
   const noRacesMessage = isToday
     ? t("home.noRacesToday")
     : "このレース場のデータはありません";
@@ -320,9 +310,9 @@ function VenueRaceListPage() {
 
   return (
     <>
-      <title>{metaTitle}</title>
-      <meta name="description" content={metaDescription} />
-      <link rel="canonical" href={`https://www.boat-ai.jp${canonicalPath}`} />
+      <title>{pageMeta.title}</title>
+      <meta name="description" content={pageMeta.description} />
+      <link rel="canonical" href={pageMeta.canonical} />
       <Header />
 
       <div className="venue-race-list-page">

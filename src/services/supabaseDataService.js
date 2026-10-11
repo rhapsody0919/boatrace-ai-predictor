@@ -79,6 +79,8 @@ import {
   pickLatestPretestByRacer,
   shiftDate,
 } from "../utils/pretestRows";
+// get_today_races の整形は、ボット向け HTML の関数（ADR 0089）と共有するため純粋なモジュールに置く
+import { transformTodayRaces } from "../utils/todayRaces.js";
 
 // 100円単位で賭けた場合の回収率(%)を返す（払戻合計 / (件数*100) * 100）。
 // getRacerBoatReturnRate/getRaceRacerBoatReturnRate/aggregateRacerVenueBoatStats
@@ -1007,33 +1009,6 @@ function buildRaceResult(r) {
  * Edge APIレスポンスをフロント期待形式に変換
  * Edge API(RPC)とSupabase直接クエリの構造差異を吸収する
  */
-/**
- * get_today_races（RPC。Edge API /api/races/today はこの結果をそのまま返す）の出力を、画面の形に整える。
- * Edge API の経路と、Edge API が失敗したときに RPC を直接呼ぶ経路の両方が使う（BOA-668）
- */
-function transformTodayRaces(data, venueWinRateMap = {}) {
-  return {
-    success: true,
-    data: data.data.map((venue) => ({
-      placeCd: venue.place_cd || venue.placeCd,
-      placeName:
-        venue.place_name ||
-        venue.placeName ||
-        VENUE_NAMES[venue.place_cd || venue.placeCd],
-      races: (venue.races || []).map((race) => ({
-        ...race,
-        volatility: race.volatility
-          ? {
-              ...race.volatility,
-              venueWinRate: venueWinRateMap[race.placeCd] ?? null,
-            }
-          : null,
-      })),
-    })),
-    scrapedAt: data.scrapedAt || new Date().toISOString(),
-  };
-}
-
 function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
   const transformedRaces = (edgeData.races || []).map((race) => {
     const entries = race.entries || [];
