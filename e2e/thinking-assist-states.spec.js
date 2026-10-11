@@ -1088,7 +1088,8 @@ test.describe("思考アシスト: 上部の切り替え（PR6、承認モック
     ]);
     expect(swTop).toBeLessThan(crumbTop);
     await expect(
-      page.getByText("見る順にデータとセオリーを並べた画面"),
+      // 補足の文言は BOA-832 で変えた
+      page.getByText("迷わず読める順に、データとセオリーを並べました"),
     ).toBeVisible();
     await expect(group(page).getByText("新", { exact: true })).toBeVisible();
   });
@@ -1102,7 +1103,8 @@ test.describe("思考アシスト: 上部の切り替え（PR6、承認モック
       group(page).getByRole("button", { name: /思考アシスト/ }),
     ).toHaveAttribute("aria-pressed", "true");
     await expect(
-      page.getByText("見る順にデータとセオリーを並べた画面"),
+      // 補足の文言は BOA-832 で変えた
+      page.getByText("迷わず読める順に、データとセオリーを並べました"),
     ).toHaveCount(0);
     await expect(group(page).getByText("新", { exact: true })).toHaveCount(0);
   });
@@ -1647,7 +1649,12 @@ test.describe("思考アシスト: GA4 のイベント（公開後のフォロ�
       "assist_guide_step",
       "assist_guide_step",
     ]);
-    expect(events[0][1]).toEqual({ race_id: RACE_ID, assist_view: "assist" });
+    expect(events[0][1]).toEqual({
+      race_id: RACE_ID,
+      assist_view: "assist",
+      // どの入口から移ったか（BOA-832）。上部の切り替えは top
+      assist_entry: "top",
+    });
     expect(events[1][1]).toEqual({ race_id: RACE_ID, assist_lens: "flow" });
     expect(events[2][1]).toEqual({
       race_id: RACE_ID,

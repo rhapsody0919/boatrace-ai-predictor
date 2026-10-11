@@ -9,7 +9,8 @@
  * まだ一度も snapshot が無い（公開前・朝のバッチの起動前）ときは「未稼働」として通す（毎晩の誤報を出さない）。
  * 展示後の段の Cron がまだ一度も書いていないときは、展示後の段の閾値を見ない。
  *
- * --cleanup: Storage の非公開のバケット analogy-v16 の、7日より前の日付の similar/（候補ファイル）と、前日より前の
+ * --cleanup: Storage の非公開のバケット analogy-v16 の、7日より前の日付の similar/（候補ファイル）・scenario-races/・
+ *   scenario-boat-races/（STEP4 の元のレースの一覧、BOA-823・833）と、前日より前の
  *   similar-display/（候補の表示用の値。展示後の段がその日のうちに1回読むだけ）と pool/（母集団の展示の値。同じ）を消す
  *   （plan「Storage」）
  * --date YYYY-MM-DD: 数える日（省略時は前日）
@@ -26,12 +27,18 @@ import {
 export const RACECARD_MIN = 0.99;
 export const EXHIBITION_MIN = 0.95;
 export const KEEP_SIMILAR_DAYS = 7;
+/** STEP4 の元のレースの一覧（BOA-823・833）を残す日数。見るのは今日のレースなので、古い日の一覧は消す */
+export const KEEP_RACE_LIST_DAYS = 7;
 /** 消すフォルダと残す日数 */
 export const CLEANUP = [
   ["similar", KEEP_SIMILAR_DAYS],
   ["similar-display", 1],
   ["pool", 1],
+  ["scenario-races", KEEP_RACE_LIST_DAYS],
+  ["scenario-boat-races", KEEP_RACE_LIST_DAYS],
 ];
+/** 1回の削除の要求に入れるパスの数（scenario-boat-races は1日 1,000個を超える） */
+const DELETE_CHUNK = 500;
 
 const argv = process.argv.slice(2);
 const argOf = (name) => {
@@ -113,7 +120,8 @@ async function cleanup(today) {
         const paths = files
           .filter((f) => f.id !== null)
           .map((f) => `${date}/${run.name}/${kind}/${f.name}`);
-        await deleteObjects(paths);
+        for (let i = 0; i < paths.length; i += DELETE_CHUNK)
+          await deleteObjects(paths.slice(i, i + DELETE_CHUNK));
         n += paths.length;
       }
     }
@@ -174,7 +182,7 @@ async function main() {
   }
   if (argv.includes("--cleanup"))
     console.log(
-      `🧹 similar/（${KEEP_SIMILAR_DAYS}日より前）・similar-display/・pool/（前日より前）を ${await cleanup(today)} 件消した`,
+      `🧹 similar/・scenario-races/・scenario-boat-races/（${KEEP_SIMILAR_DAYS}日より前）・similar-display/・pool/（前日より前）を ${await cleanup(today)} 件消した`,
     );
 }
 
