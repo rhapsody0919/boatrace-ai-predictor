@@ -165,7 +165,7 @@ check("桐生: 開催ありなので emptyText は null", kiryu.emptyText, null)
 check(
   "桐生: title（一般戦は節タイトルなし）",
   kiryu.meta.title,
-  "桐生競艇のAI予想｜本日の全レース - 龍神レーダー",
+  ja.venueRaceList.metaTitle.replace("{{venue}}", "桐生"),
 );
 check(
   "桐生: canonical",
@@ -249,7 +249,9 @@ check(
   check(
     "G1: title に節タイトル",
     model.meta.title,
-    "江戸川競艇のAI予想 オールレディース 江戸川女王決定戦KIRINCUP｜本日の全レース - 龍神レーダー",
+    ja.venueRaceList.metaTitleSeries
+      .replace("{{venue}}", "江戸川")
+      .replace("{{series}}", "オールレディース 江戸川女王決定戦KIRINCUP"),
   );
   check("G1: カードのグレード", model.races[0].gradeLabel, "G1");
 }
