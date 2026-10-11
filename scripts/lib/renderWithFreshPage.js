@@ -43,13 +43,17 @@ export function createPageOpener(launch) {
  *
  * 2026-10-11 の本番ビルドで、ページが1つ落ちた（"Target page, context or browser has been
  * closed"）あと、同じページを使い続けた後続の3記事がすべて失敗し、AI クローラーには
- * 中身の無い画面が返っていた。失敗のたびにページを作り直すことで、落ちたページを引きずらない。
+ * 中身の無い画面が返っていた。失敗のたびに新しいページで描き直し、落ちたページを引きずらない。
+ *
+ * ページは途中で閉じない（最後にブラウザごと閉じる）。単一プロセスの Chromium では、ページを閉じた
+ * だけでブラウザごと落ちることがあり、失敗が毎回、ワーカーが仕事を終えてページを閉じ始めるリストの
+ * 最後に集まっていた（2026-10-11 の本番・Preview のビルドログ）。
  *
  * @template T
  * @param {T[]} items
  * @param {{
  *   concurrency: number,
- *   openPage: () => Promise<{ isClosed: () => boolean, close: () => Promise<void> }>,
+ *   openPage: () => Promise<unknown>,
  *   render: (page: unknown, item: T) => Promise<void>,
  *   retries?: number,
  * }} options
@@ -63,36 +67,28 @@ export async function renderWithFreshPage(
   const succeeded = [];
   const failed = [];
 
-  const closePage = async (page) => {
-    if (!page.isClosed()) await page.close();
-  };
-
   async function worker() {
     let page = await openPage();
-    try {
-      while (index < items.length) {
-        const item = items[index];
-        index += 1;
-        let lastError = null;
-        for (let attempt = 0; attempt <= retries; attempt += 1) {
-          try {
-            await render(page, item);
-            lastError = null;
-            break;
-          } catch (err) {
-            lastError = err;
-            await closePage(page);
-            page = await openPage();
-          }
-        }
-        if (lastError) {
-          failed.push({ item, error: lastError.message });
-        } else {
-          succeeded.push(item);
+    while (index < items.length) {
+      const item = items[index];
+      index += 1;
+      let lastError = null;
+      for (let attempt = 0; attempt <= retries; attempt += 1) {
+        try {
+          await render(page, item);
+          lastError = null;
+          break;
+        } catch (err) {
+          lastError = err;
+          // 失敗したページは閉じずに置いておく（関数の説明の「ページは途中で閉じない」）
+          page = await openPage();
         }
       }
-    } finally {
-      await closePage(page);
+      if (lastError) {
+        failed.push({ item, error: lastError.message });
+      } else {
+        succeeded.push(item);
+      }
     }
   }
 

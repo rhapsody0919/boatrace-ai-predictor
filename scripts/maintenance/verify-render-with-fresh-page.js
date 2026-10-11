@@ -200,6 +200,36 @@ function makeSingleProcessLauncher({ crashOn = new Set() } = {}) {
   );
 }
 
+// 単一プロセスの Chromium: ページを閉じるとブラウザごと落ちる。途中でページを閉じると、
+// 同時に描いていた記事が巻き添えで落ちる（失敗がリストの最後に集まった原因）
+{
+  const l = makeSingleProcessLauncher();
+  let closes = 0;
+  const opener = createPageOpener(async () => {
+    const b = await l.launch();
+    const newPage = b.newPage;
+    b.newPage = async () => {
+      const p = await newPage();
+      p.close = async () => {
+        closes += 1;
+        await b.close(); // 閉じるとブラウザごと落ちる
+      };
+      return p;
+    };
+    return b;
+  });
+  const r = await renderWithFreshPage(ids, {
+    concurrency: 4,
+    openPage: opener.openPage,
+    render,
+  });
+  check(
+    "描いている途中でページを閉じない（閉じるとブラウザごと落ちる Chromium でも12件すべて描ける）",
+    r.failed.length === 0 && closes === 0 && l.launches() === 1,
+    `failed=${JSON.stringify(r.failed)} closes=${closes} launches=${l.launches()}`,
+  );
+}
+
 if (failures > 0) {
   console.error(`\n❌ ${failures}件の検証に失敗`);
   process.exit(1);
