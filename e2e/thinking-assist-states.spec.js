@@ -2095,7 +2095,8 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
     await expect(
       board.getByText("平均ST（このコース・直近30走） 左ほど早い"),
     ).toBeVisible();
-    await expect(board.getByText(/^展示ST/)).toHaveCount(0);
+    // 図の見出し（横軸）は平均ST。展示ST は入口のボタン（ファン評価 1周目 指摘3・4）から開く6艇比較だけ
+    await expect(board.locator(".ta-board-title")).not.toContainText("展示ST");
     const ranks = await page
       .locator(".ta-lane")
       .evaluateAll((lanes) =>
@@ -2103,13 +2104,14 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
           (l) => l.querySelector(".ta-tag-exh")?.textContent ?? null,
         ),
       );
+    // 展示ST の順位と読まれないよう「展示タイム」と書く（ファン評価 1周目 指摘1）
     expect(ranks).toEqual([
-      "展示2位",
-      "展示2位",
-      "展示4位",
-      "展示1位",
-      "展示6位",
-      "展示4位",
+      "展示タイム2位",
+      "展示タイム2位",
+      "展示タイム4位",
+      "展示タイム1位",
+      "展示タイム6位",
+      "展示タイム4位",
     ]);
   });
 
@@ -2124,7 +2126,7 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
     await expect(concl.getByText("（65/501）")).toBeVisible();
     await expect(
       concl.getByText(
-        "今日の展示: 攻める3号艇は展示4位（3〜4位）→ 2コース凹みのとき1着 25%（13/53）",
+        "今日の展示: 攻め手の3号艇は展示タイム4位 → 2コース凹みで攻め手が展示タイム3〜4位のとき1着 25%（13/53）",
       ),
     ).toBeVisible();
     const conclBox = await concl.boundingBox();
@@ -2149,7 +2151,7 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
     await expect(
       page.locator(".ta-flow-today"),
     ).toHaveText(
-      "今日の展示: 攻める3号艇は展示4位（3〜4位）→ 2コース凹みのときは4件だけ（少ないので割合は出さない）",
+      "今日の展示: 攻め手の3号艇は展示タイム4位 → 2コース凹みで攻め手が展示タイム3〜4位のときは4件だけ（少ないので割合は出さない）",
     );
   });
 
@@ -2161,5 +2163,52 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
     await expect(page.getByText("本番でこの形になるのは")).toBeVisible();
     await expect(page.getByText(/^今日の展示:/)).toHaveCount(0);
     await expect(page.locator(".ta-tag-exh")).toHaveCount(0);
+  });
+});
+
+/** 展開レンズ PR-1 のファン評価 1周目（spec D-47） */
+test.describe("思考アシスト: 展開レンズ PR-1 のファン評価 1周目", () => {
+  test("指摘3・4: 展示後は図の上の「展示STを6艇で比べる」から展示ST の6艇比較に入れる", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "展開").click();
+    await page.getByRole("button", { name: "展示STを6艇で比べる ›" }).click();
+    await expect(
+      page.getByText("展示ST（本番のスタートとは別）を6艇で比べる"),
+    ).toBeVisible();
+  });
+
+  test("指摘3: v16 の保存が無いレースは、展開の図にも平均ST を出せない理由を書き、展示ST へは入れる", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page, {
+      overrides: { facts: () => ({ status: "not_saved" }) },
+    });
+    await open(page);
+    await lensTab(page, "展開").click();
+    const board = page.locator(".ta-board");
+    await expect(board).toContainText("平均ST（直近30走）を出せない");
+    await expect(
+      page.getByRole("button", { name: "展示STを6艇で比べる ›" }),
+    ).toBeVisible();
+  });
+
+  test("指摘2: 直近30走に切り替えたら、手がかりは「このコース」で見ていると書く", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "展開").click();
+    const note = page.getByText(
+      "手がかりは平均ST（このコース）で見ている。図は直近30走",
+    );
+    await expect(note).toHaveCount(0);
+    await page
+      .getByRole("group", { name: "使う平均ST" })
+      .getByRole("button", { name: "直近30走" })
+      .click();
+    await expect(note).toBeVisible();
   });
 });

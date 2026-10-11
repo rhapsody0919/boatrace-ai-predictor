@@ -170,6 +170,7 @@ export function FlowConclusion({ m }) {
     reflecting,
     round,
     exhRanks,
+    basis,
   } = m;
   const hs = scenario ? hintSummary(scenario, today) : null;
   if (!hs) return null;
@@ -226,6 +227,7 @@ export function FlowConclusion({ m }) {
           <p className="ta-note ta-num">
             {C.flowShapeBase(p0(top.miss[0], top.miss[1]), hitP)}
           </p>
+          {basis === "overall" && <p className="ta-note">{C.flowHintBasis}</p>}
         </>
       ) : (
         <p className="ta-note">{C.flowNoHint}</p>

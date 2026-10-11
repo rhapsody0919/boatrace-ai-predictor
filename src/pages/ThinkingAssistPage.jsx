@@ -525,6 +525,7 @@ function ThinkingAssistBody() {
       reflecting: v16Status === "exhibition_reflecting",
       round: data.round,
       exhRanks: post ? exhRanks(racers) : null,
+      basis: state.stBasis,
     },
     power: {
       post,
