@@ -198,13 +198,17 @@ export function hintSummary(scenario, today) {
 /**
  * 図の上の「今日の展示」1行（spec D-47 (3)）。攻める艇の展示タイムの順位（6艇の順位、同タイムは同じ順位）の区分で、
  * その形のときの攻める艇の1着。範囲は形の見立てと同じ scenario の attack（枠なりのレース）。
- * 区分の件数が30件未満なら割合を出さない（few。承認モック v2 の決まり）
+ * 区分の件数が30件未満なら割合を出さない（few。承認モック v2 の決まり）。展示タイムが1艇でも無ければ null
  * @param {object|null} scenario
  * @param {string} form スリットの形
  * @param {(number|null)[]|null} exhRanks 艇番順の展示タイムの順位
  * @returns {null | {att: number, rank: number, band: "top"|"mid"|"low", k: number, n: number, few: boolean}}
  */
 export function exhToday(scenario, form, exhRanks) {
+  // 区分の表（v16 の by_exh）は6艇の展示タイムがそろったレースだけで作る。欠けた日は5艇の順位になり母集団がずれるので出さない
+  // （data-accuracy-verifier の指摘。10月の 1,692R 中 14R）
+  if (!exhRanks || exhRanks.length !== 6 || exhRanks.some((r) => r == null))
+    return null;
   const a = scenario?.attack?.[form];
   const att = a?.attacker ?? null;
   const rank = att ? (exhRanks?.[att - 1] ?? null) : null;

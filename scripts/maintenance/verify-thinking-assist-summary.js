@@ -192,8 +192,9 @@ check(
   exhToday(ncFew, "d2", [2, 2, 4, 1, 6, 4])?.few === true,
 );
 check(
-  "今日の展示: 攻める艇の展示タイムの順位が無ければ・形の攻めの集計が無ければ null",
+  "今日の展示: 展示タイムが1艇でも無ければ（区分の表は6艇そろったレースだけ）・形の攻めの集計が無ければ null",
   exhToday(nc, "d2", [2, 2, null, 1, 6, 4]) === null &&
+    exhToday(nc, "d2", [2, null, 3, 1, 5, 3]) === null &&
     exhToday(nc, "d2", null) === null &&
     exhToday(nc, "flat", [2, 2, 4, 1, 6, 4]) === null,
 );
