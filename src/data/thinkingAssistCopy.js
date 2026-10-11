@@ -245,7 +245,8 @@ export const ASSIST_COPY = Object.freeze({
       : `${boat}号艇が${TARGET_LABEL[target]}に来たのは`,
   // 軸・買い目の着順の切り替え（BOA-831、spec D-44）。言葉は龍神ソナーと同じ
   targets: TARGET_LABEL,
-  targetGroup: "何着までで見るか（軸・買い目で共通）",
+  // 買い目だけの切り替え（軸は1着だけ、2着以内・3着以内は相手レンズ。spec D-46）
+  targetGroup: "何着までで見るか",
   // 1号艇が1着のとき、2着・3着に来たのは（BOA-831 案1b、spec D-44 (3)）
   // 1号艇を軸にしたときだけの表と分かる見出し（v4。ほかの艇が1着のときは BOA-845）
   followHeading: (boat) => `${boat}号艇を軸にしたときの2着・3着`,
@@ -271,11 +272,6 @@ export const ASSIST_COPY = Object.freeze({
     `返還のあったレースは除く（同じ範囲で1号艇が1着になった${axisK.toLocaleString("ja-JP")}件のうち${k.toLocaleString("ja-JP")}件）`,
   followRefund: (k, axisK) =>
     `返還のあったレースは除く（上の${axisK.toLocaleString("ja-JP")}件のうち${k.toLocaleString("ja-JP")}件）`,
-  axisSub: Object.freeze({
-    1: "誰が1着候補か",
-    2: "2着までに残るか",
-    3: "3着までに残るか",
-  }),
   races: (k, n) =>
     `${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}レース`,
   venueAllN: (venue, n) => `${venue}の全レース ${n.toLocaleString("ja-JP")}件`,

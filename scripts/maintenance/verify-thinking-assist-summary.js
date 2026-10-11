@@ -725,7 +725,6 @@ check(
       ASSIST_COPY.factsEntry(1, 3) === "1号艇の差がつく材料 ▲3件" &&
       ASSIST_COPY.axisHeading(1, 3) === "1号艇が3着以内に来たのは" &&
       ASSIST_COPY.axisHeading(1) === "1号艇が1着になったのは" &&
-      ASSIST_COPY.axisSub[2] === "2着までに残るか" &&
       ASSIST_COPY.theoryFactLikely(1, 2) === "1号艇の2着以内の割合が変わる",
   );
   check(
