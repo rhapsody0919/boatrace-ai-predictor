@@ -90,7 +90,7 @@ const initialState = {
   metric: null,
   // 展開レンズの展示前の平均ST（BOA-815 案A）
   stBasis: "course",
-  // 軸・買い目で共通の着順（1＝1着・2＝2着以内・3＝3着以内。BOA-831、spec D-44）。ページ内だけ
+  // 買い目の着順（1＝1着・2＝2着以内・3＝3着以内。BOA-831、spec D-44・D-46）。ページ内だけ
   target: 1,
   bets: { 1: new Set(), 2: new Set(), 3: new Set() },
   budget: "1000",
