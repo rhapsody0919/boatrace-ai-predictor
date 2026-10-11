@@ -85,7 +85,8 @@ export default function WinFollowers({ f, any, axis, venue, onAxis, auto, raceId
   return (
     <section className="ta-box">
       <AxisPicker axis={axis} onAxis={onAxis} />
-      <h3 className="ta-follow-h">
+      {/* 見出しの丸は艇番の数字なので、読み上げは「{X}号艇を軸にしたときの2着」の1つにまとめる */}
+      <h3 className="ta-follow-h" aria-label={C.followHeading(axis)}>
         <BoatBadge n={axis} size="sm" />
         {C.followHeading(axis).replace(/^\d+/, "")}
       </h3>
