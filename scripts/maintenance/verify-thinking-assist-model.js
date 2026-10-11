@@ -470,6 +470,8 @@ check(
   exhCmp.title === "展示ST（本番のスタートとは別）を6艇で比べる" &&
     exhCmp.back === "平均ST（このコース・直近30走）に戻す" &&
     exhCmp.rows[4].x < 0 &&
+    exhCmp.rows[4].flying === true &&
+    exhCmp.rows.filter((r) => r.flying).length === 1 &&
     exhCmp.rows
       .filter((r) => r.nums[0].best)
       .map((r) => r.boat)

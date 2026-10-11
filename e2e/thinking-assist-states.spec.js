@@ -850,6 +850,10 @@ test.describe("思考アシスト: PR4 のファン評価 1周目", () => {
           ?.style.left,
     );
     expect(left).toBe("0%");
+    // F は赤い枠の点（BOA-801 2。/code-review 指摘: 6艇比較へ移ったときに外れていた）
+    await expect(
+      page.locator(".ta-lane").nth(4).locator(".ta-track-dot-f"),
+    ).toHaveCount(1);
   });
 });
 

@@ -528,6 +528,8 @@ export function boardModel({
         boat: r.boat,
         x: plotOf(r),
         nums: [numOf(metric, r, b)],
+        // 展示ST の F は良いスタートと読まれないよう、点を赤い枠で出す（BOA-801 2。展示ST は展開の図からここへ移った、spec D-47 (1)）
+        flying: metric === "exh_st" && Boolean(r.exhFlying),
       })),
     };
   }
