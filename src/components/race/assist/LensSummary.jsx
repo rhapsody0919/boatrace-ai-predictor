@@ -25,7 +25,6 @@ import {
 } from "../../../utils/assistSummary";
 import { ASSIST_COPY as C, GLOSSARY } from "../../../data/thinkingAssistCopy";
 import { TermButton, TheoryButton } from "./SheetButtons";
-import TargetSwitch from "./TargetSwitch";
 import WinFollowers, { ComboList } from "./WinFollowers";
 
 const pct = (k, n) => (n ? (k / n) * 100 : 0);
@@ -48,23 +47,17 @@ function AxisSummary({ m }) {
     vaCell,
     classes,
     onFacts,
-    target = 1,
-    onTarget,
-    follow = null,
   } = m;
-  const u = b1Usual(scope, 1, target);
-  // 案1b の「同じレース」の比べる相手は1着の件数（切り替えに関わらず）
-  const u1 = b1Usual(scope, 1, 1);
+  // 軸は1着だけ（2着以内・3着以内は相手レンズ。spec D-46）
+  const u = b1Usual(scope, 1);
   const entry = factsEntry(chips);
   if (!u) return null;
-  const va = vaFacts ? b1Usual({ facts: vaFacts }, 1, target) : null;
-  // 上の枠（堅い？荒れる？）は1着だけなので、件数の違いの説明は1着を選んだときだけ（BOA-831）
-  const win = target === 1;
+  const va = vaFacts ? b1Usual({ facts: vaFacts }) : null;
   const why = axisWhyKinds({
     kind: scope.kind,
     fellBack: scope.fellBack,
     venue,
-    win,
+    win: true,
     venueRefund: Boolean(va && vaCell?.n > 0),
   });
   const label = factsScopeLabel(scope, venue, 1, classes?.[0]);
@@ -73,10 +66,8 @@ function AxisSummary({ m }) {
   return (
     <>
       <section className="ta-box" data-guide="axis">
-        {/* 軸・買い目で共通の着順の切り替え。押して変わる大きい数字の直上に置く（BOA-831、デザイナー役 P2-2） */}
-        {onTarget && <TargetSwitch target={target} onTarget={onTarget} />}
         <h3 className="ta-h3-row">
-          {C.axisHeading(1, target)}
+          {C.axisHeading(1)}
           {venue && (
             <TheoryButton id="TC-V1" name={C.theoryVenueTitle(venue)} />
           )}
@@ -98,7 +89,7 @@ function AxisSummary({ m }) {
           <BaseBar label={C.venueAllN(venue, va.n)} k={va.k} n={va.n} />
         )}
         {/* 上の枠と数字が違う理由は畳まずに出す（同じ「1号艇の1着」が 58% と 54.6% に見える。デザイナーのレビュー P1-3） */}
-        {win && hc && headerScope.kind === scope.kind && (
+        {hc && headerScope.kind === scope.kind && (
           <p className="ta-note ta-num">
             {C.whyRefund(
               comma(u.n),
@@ -142,7 +133,7 @@ function AxisSummary({ m }) {
             <span>
               <b>
                 {entry.hits > 0
-                  ? C.factsEntry(1, entry.hits, target)
+                  ? C.factsEntry(1, entry.hits)
                   : C.factsEntryNone(1)}
               </b>
               {entry.hits > 0 && (
@@ -158,16 +149,6 @@ function AxisSummary({ m }) {
           </button>
         )}
       </section>
-      {/* 軸の着順の切り替えでは変わらない（「1号艇が1着のとき」が前提。D-44 (3)） */}
-      {follow && (
-        <WinFollowers
-          f={follow}
-          label={label}
-          axisK={u1.k}
-          axisN={u1.n}
-          target={target}
-        />
-      )}
     </>
   );
 }

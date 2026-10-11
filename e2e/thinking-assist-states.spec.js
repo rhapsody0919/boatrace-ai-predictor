@@ -1780,12 +1780,11 @@ test.describe("思考アシスト: GA4 のイベント（公開後のフォロ�
   });
 });
 
-test.describe("思考アシスト: 軸・買い目で共通の着順（BOA-831、spec D-44）", () => {
+test.describe("思考アシスト: 着順の切り替えは買い目だけ、軸は1着だけ（spec D-44・D-46）", () => {
   test.use({ viewport: { width: 375, height: 812 } });
-  const seg = (page) =>
-    page.getByRole("group", { name: "何着までで見るか（軸・買い目で共通）" });
+  const seg = (page) => page.getByRole("group", { name: "何着までで見るか" });
 
-  test("軸で2着以内を選ぶと問い・大きい数字・入口1行・深掘りの札が2着以内になり、買い目にも引き継がれる", async ({
+  test("軸には着順の切り替えも「1号艇を軸にしたときの2着・3着」も無い。買い目で2着以内を選ぶと過去の2着以内になり、軸・深掘りは1着のまま", async ({
     page,
   }) => {
     await page.addInitScript(() => {
@@ -1798,32 +1797,19 @@ test.describe("思考アシスト: 軸・買い目で共通の着順（BOA-831�
     await expect(
       sum.getByRole("heading", { name: /^1号艇が1着になったのは/ }),
     ).toBeVisible();
+    await expect(sum.locator(".ta-big-pct")).toHaveText("54.6%");
+    await expect(seg(page)).toHaveCount(0);
+    await expect(sum).not.toContainText("1号艇を軸にしたときの2着・3着");
+    await expect(page.locator(".ta-lens-q")).toContainText("誰が1着候補か");
+
+    await lensTab(page, "買い目").click();
     const two = seg(page).getByRole("button", { name: "2着以内" });
     const h = await two.evaluate((el) => el.getBoundingClientRect().height);
     expect(h).toBeGreaterThanOrEqual(44);
     await two.click();
-    await expect(two).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator(".ta-lens-q")).toContainText("2着までに残るか");
-    await expect(
-      sum.getByRole("heading", { name: /^1号艇が2着以内に来たのは/ }),
-    ).toBeVisible();
-    await expect(sum.locator(".ta-big-pct")).toHaveText("69.7%");
-    await expect(sum.locator(".ta-big-cnt")).toHaveText("83/119レース");
-    const entry = page.getByRole("button", {
-      name: /^1号艇の差がつく材料 ▲3件（2着以内）/,
-    });
-    await entry.click();
-    const region = page.getByRole("region", { name: "1号艇の詳しい情報" });
-    await expect(region).toContainText(
-      "▲6艇で一番早いとき 2着以内 77%・22件（全体 69.7%）",
-    );
-
-    await lensTab(page, "買い目").click();
-    await expect(
-      seg(page).getByRole("button", { name: "2着以内" }),
-    ).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByText(/^過去の2着以内＝/)).toBeVisible();
-    // 切り替えはオッズの見出しより上（見出しと点の間に挟まない。ファン評価 1周目 指摘4）
+    await expect(page.locator(".ta-board")).toContainText("70%（83/119）");
+    // 切り替えはオッズの見出しより上（ファン評価 1周目 指摘4）
     const segY = await seg(page).evaluate(
       (el) => el.getBoundingClientRect().top,
     );
@@ -1831,16 +1817,16 @@ test.describe("思考アシスト: 軸・買い目で共通の着順（BOA-831�
       .locator(".ta-board-title")
       .evaluate((el) => el.getBoundingClientRect().top);
     expect(segY).toBeLessThan(titleY);
-    await expect(page.getByText("過去の2着以内").first()).toBeVisible();
-    await expect(page.locator(".ta-board")).toContainText("70%（83/119）");
 
-    // 買い目で3着以内に変えると軸も3着以内（共通）
-    await seg(page).getByRole("button", { name: "3着以内" }).click();
+    // 軸に戻っても1着のまま。深掘りの札も1着
     await lensTab(page, "軸").click();
+    await expect(sum.locator(".ta-big-pct")).toHaveText("54.6%");
+    await page
+      .getByRole("button", { name: /^1号艇の差がつく材料 ▲3件/ })
+      .click();
     await expect(
-      sum.getByRole("heading", { name: /^1号艇が3着以内に来たのは/ }),
-    ).toBeVisible();
-    await expect(sum.locator(".ta-big-pct")).toHaveText("79.0%");
+      page.getByRole("region", { name: "1号艇の詳しい情報" }),
+    ).toContainText("▲6艇で一番早いとき 1着 59%・22件（全体 54.6%）");
 
     const events = await page.evaluate(() =>
       window.__events.filter(
@@ -1848,25 +1834,23 @@ test.describe("思考アシスト: 軸・買い目で共通の着順（BOA-831�
       ),
     );
     expect(events.map((e) => [e[2].assist_target, e[2].assist_lens])).toEqual([
-      [2, "axis"],
-      [3, "bet"],
+      [2, "bet"],
     ]);
   });
 });
 
-test.describe("思考アシスト: 1号艇が1着のときの2着・3着と、よく出た2連単（BOA-831、spec D-44 (3)(4)）", () => {
+test.describe("思考アシスト: 1号艇を軸にしたときの2着・3着（相手レンズ）と、よく出た2連単（spec D-44 (4)・D-46）", () => {
   test.use({ viewport: { width: 375, height: 812 } });
 
-  test("軸に2〜6号艇の2着・3着の表（準優勝戦の範囲・65件）があり、着順の切り替えでは変わらない。展開の形によく出た2連単", async ({
+  test("相手レンズに2〜6号艇の2着・3着の表（準優勝戦の範囲・65件）。展開の形によく出た2連単", async ({
     page,
   }) => {
     await routeThinkingAssistV16(page);
     await open(page);
+    await lensTab(page, "相手").click();
     const sum = page.locator(".ta-sum");
     const box = sum.locator("section", {
-      has: page.getByRole("heading", {
-        name: "1号艇を軸にしたときの2着・3着",
-      }),
+      has: page.getByRole("heading", { name: "1号艇を軸にしたときの2着・3着" }),
     });
     await expect(box).toBeVisible();
     await expect(box).toContainText(
@@ -1876,17 +1860,9 @@ test.describe("思考アシスト: 1号艇が1着のときの2着・3着と、�
     await expect(row(2)).toContainText("38%");
     await expect(row(2)).toContainText("22%");
     await expect(row(4)).toContainText("31%");
-    await expect(box).toContainText("65件は上の 65/119 の65と同じレース");
-    await page
-      .getByRole("group", { name: "何着までで見るか（軸・買い目で共通）" })
-      .getByRole("button", { name: "3着以内" })
-      .click();
-    await expect(row(2)).toContainText("38%");
-    // 上の大きい数字が 94/119 のときは「上の 65/119」を指さない（ファン評価 1周目 指摘2）
     await expect(box).toContainText(
       "65件は、同じ範囲で1号艇が1着になった 65/119レースと同じ",
     );
-    await expect(box).not.toContainText("上の 65/119");
 
     await lensTab(page, "展開").click();
     await expect(sum).toContainText(
@@ -1929,11 +1905,11 @@ test.describe("思考アシスト: 買い目を同じタブの中に残す（202
   }) => {
     await open(page);
     await markSheet(page);
+    await lensTab(page, "買い目").click();
     await page
-      .getByRole("group", { name: "何着までで見るか（軸・買い目で共通）" })
+      .getByRole("group", { name: "何着までで見るか" })
       .getByRole("button", { name: "3着以内" })
       .click();
-    await lensTab(page, "買い目").click();
     await page
       .getByRole("link", { name: /龍神ソナー/ })
       .first()
@@ -1950,7 +1926,7 @@ test.describe("思考アシスト: 買い目を同じタブの中に残す（202
     );
     await expect(
       page
-        .getByRole("group", { name: "何着までで見るか（軸・買い目で共通）" })
+        .getByRole("group", { name: "何着までで見るか" })
         .getByRole("button", { name: "3着以内" }),
     ).toHaveAttribute("aria-pressed", "true");
     await page

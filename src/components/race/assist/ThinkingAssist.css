@@ -1848,7 +1848,7 @@
   color: var(--text-secondary);
 }
 
-/* ---- 軸・買い目で共通の着順の切り替え（BOA-831、spec D-44。承認モック v2） ---- */
+/* ---- 買い目の着順の切り替え（BOA-831、spec D-44・D-46） ---- */
 .ta-target {
   display: grid;
   gap: var(--spacing-1);

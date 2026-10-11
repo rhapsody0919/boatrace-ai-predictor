@@ -6,13 +6,7 @@ import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
  * レンズ（FR-4、screens S-1 B）。上に固定の4つのタブ・1行の問い・閉じられる使い方の1行。
  * 右端に「ガイド」の切り替え（FR-10。開いている間 aria-pressed）
  */
-export default function LensBar({
-  lens,
-  onLens,
-  guideOn,
-  onGuide,
-  target = 1,
-}) {
+export default function LensBar({ lens, onLens, guideOn, onGuide }) {
   const [hint, setHint] = useState(true);
   const cur = ASSIST_COPY.lenses[lens];
   return (
@@ -45,9 +39,7 @@ export default function LensBar({
         </button>
       </div>
       <p className="ta-lens-q">
-        <b>{cur.q}</b>{" "}
-        {/* 軸の問いは着順の切り替えに合わせる（BOA-831、デザイナー役 P2-1） */}
-        {lens === "axis" ? ASSIST_COPY.axisSub[target] : cur.sub}
+        <b>{cur.q}</b> {cur.sub}
       </p>
       {hint && (
         <div className="ta-hint">

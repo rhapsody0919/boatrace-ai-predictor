@@ -90,7 +90,7 @@ const initialState = {
   metric: null,
   // 展開レンズの展示前の平均ST（BOA-815 案A）
   stBasis: "course",
-  // 軸・買い目で共通の着順（1＝1着・2＝2着以内・3＝3着以内。BOA-831、spec D-44）。ページ内だけ
+  // 買い目の着順（1＝1着・2＝2着以内・3＝3着以内。BOA-831、spec D-44・D-46）。ページ内だけ
   target: 1,
   bets: { 1: new Set(), 2: new Set(), 3: new Set() },
   budget: "1000",
@@ -268,10 +268,10 @@ function ThinkingAssistBody() {
     [race, today, data.exhibition.data, data.rates.data],
   );
 
-  // 艇ごとの差がつく材料（範囲は v16 の既定、優勝戦・準優勝戦の日は同じラウンド。D-37）。
-  // target は軸・買い目で共通の着順（D-44）。機力レンズのモーターの札は1着のまま（切り替えは軸・買い目だけ）
-  const factsOf = useCallback(
-    (target) =>
+  // 艇ごとの差がつく材料（範囲は v16 の既定、優勝戦・準優勝戦の日は同じラウンド。D-37）。1着だけ
+  // （軸は1着の問い。2着以内・3着以内は相手レンズ、買い目の「過去の〇〇」は pastWin。spec D-46）
+  const winFacts = useMemo(
+    () =>
       [1, 2, 3, 4, 5, 6].map((boat) => {
         const scope = factsScope(factsAll, today, boat, data.round);
         return {
@@ -284,18 +284,13 @@ function ThinkingAssistBody() {
             // 展示タイムの札は v16 の展示後の段の値があるときだけ（無いと全艇「—」になる。ファン評価 PR4 1周目 指摘4）
             post: post && Array.isArray(v16Exhibition?.exh_time),
             finalRound,
-            target,
           }),
         };
       }),
     [factsAll, today, data.round, v16Exhibition, post, finalRound],
   );
-  const winFacts = useMemo(() => factsOf(1), [factsOf]);
-  const boatFacts = useMemo(
-    () => (state.target === 1 ? winFacts : factsOf(state.target)),
-    [factsOf, winFacts, state.target],
-  );
-  // 買い目レンズの「過去の1着」（艇ごとの範囲。6艇で比べない）
+  const boatFacts = winFacts;
+  // 買い目レンズの「過去の{着順}」（艇ごとの範囲。6艇で比べない。着順の切り替えは買い目だけ）
   const pastWin = useMemo(
     () =>
       new Map(
@@ -517,11 +512,6 @@ function ThinkingAssistBody() {
           vaCell: venueAll,
           classes: today?.classes ?? null,
           onFacts: (all) => act({ type: "openFacts", boat: 1, all }),
-          target: state.target,
-          onTarget,
-          follow: v16Off
-            ? null
-            : winFollowers(data.scenario.axis?.data?.scenario ?? null),
         }
       : null,
     flow: {
@@ -616,7 +606,6 @@ function ThinkingAssistBody() {
     v16Exhibition,
     courseByBoat,
     boatFacts,
-    target: state.target,
     racers,
     vaFacts: vaKey && factsAll ? factsAll[vaKey] : null,
     wind: {
@@ -726,7 +715,6 @@ function ThinkingAssistBody() {
           lens={state.lens}
           onLens={(lens) => act({ type: "lens", lens })}
           guideOn={state.guide !== null}
-          target={state.target}
           onGuide={() => onGuideStep(state.guide === null ? 0 : null)}
         />
         {/* PC（1024px 以上）は図を左・押して変わる結果を右に（BOA-801 5・BOA-820、龍神ソナーの PC 表示 BOA-813 と同じ決まり）。
@@ -772,7 +760,6 @@ function ThinkingAssistBody() {
                 round={data.round}
                 scope={boatFacts[deepBoat - 1].scope}
                 chips={boatFacts[deepBoat - 1].chips}
-                target={state.target}
                 runs={
                   racers[deepBoat - 1]?.racerId == null
                     ? // 選手の登録番号が無い艇は走を取れない。読み込み中に残さない

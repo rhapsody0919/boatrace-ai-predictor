@@ -450,7 +450,7 @@ export function firstPlaceComposite(trifecta, absentBoats = []) {
  * @param {{lens: string, stage: "pre"|"post", metric?: string|null, racers: object[], trifecta?: object|null, finalRound?: boolean, hasToday?: boolean, pastWin?: Map<number, {k: number, n: number}>|null}} args
  *   pastWin: 買い目レンズの「過去の{着順}」（艇ごとの差がつく材料の範囲での target の着順。assistSummary.b1Usual）
  *   placeRates: 相手レンズの各艇の2着以内・3着以内（Map<艇, {t2: {k, n}, t3: {k, n}}>。艇ごとの範囲、spec D-46）
- *   target: 軸・買い目で共通の着順（1＝1着・2＝2着以内・3＝3着以内。spec D-44）。1以外では人気の札を「人気（1着）」にして薄くする
+ *   target: 買い目の着順（1＝1着・2＝2着以内・3＝3着以内。spec D-44・D-46 で買い目だけ）。1以外では人気の札を「人気（1着）」にして薄くする
  *   stBasis: 展開レンズの展示前の平均ST（"course"＝このコース・直近30走、"overall"＝直近30走。BOA-815 案A）
  *   stMissing: v16 の保存が無いと分かった（"not_saved"）。軸レンズに平均ST を出せない理由を書く
  *   hasToday: v16 の today が届いているか。届いていない（読み込み中・保存が無い）ときは v16 の値（平均ST）を

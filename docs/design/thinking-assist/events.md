@@ -13,7 +13,7 @@
 | `assist_deep_open` | race_id, assist_boat, assist_lens | 図の艇を押して深掘りを開いたとき・別の艇に替えたとき、軸の要約の入口1行（「1号艇の差がつく材料 ›」）から開いたとき。開いている艇の押し直しは送らない |
 | `assist_metric_compare` | race_id, assist_metric, assist_lens | 値を押して6艇比較にしたとき（図の中・深掘りの中の両方）。比較中の項目の押し直し（戻す）は送らない |
 | `assist_sheet_open` | race_id, assist_sheet | シートを開いたとき |
-| `assist_target` | race_id, assist_target, assist_lens | 軸・買い目で共通の着順の切り替え（BOA-831）を押して変えたとき。選択中の着順の押し直しは送らない |
+| `assist_target` | race_id, assist_target, assist_lens | 買い目レンズの着順の切り替え（BOA-831。spec D-46 で軸から外し買い目だけ）を押して変えたとき。選択中の着順の押し直しは送らない |
 | `assist_guide_step` | race_id, assist_guide_step | ガイドの段を出したとき（「ガイド」で1段目、「次へ」「戻る」のたび）。閉じたときは送らない |
 
 パラメータの値:
@@ -49,5 +49,5 @@
 | アシストの艇 | イベント | 思考アシストで深掘りを開いた艇番（1〜6） | `assist_boat` |
 | アシストの比較項目 | イベント | 思考アシストで6艇比較にした項目（nat_win・st_mean30 等） | `assist_metric` |
 | アシストのシート | イベント | 思考アシストで開いたシート（mark・rough・venue・theory・term） | `assist_sheet` |
-| アシストの着順 | イベント | 思考アシストの軸・買い目で選んだ着順（1=1着 / 2=2着以内 / 3=3着以内） | `assist_target` |
+| アシストの着順 | イベント | 思考アシストの買い目で選んだ着順（1=1着 / 2=2着以内 / 3=3着以内） | `assist_target` |
 | アシストのガイドの段 | イベント | 思考アシストのガイドで出した段（1〜） | `assist_guide_step` |
