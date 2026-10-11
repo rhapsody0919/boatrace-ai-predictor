@@ -171,6 +171,10 @@ export default function RaceLaneBoard({
           </span>
         </div>
       )}
+      {/* 着順の切り替えと注記はオッズの見出しより上に置く。見出しと点の間に挟むと、点の位置まで着順で変わったように見える
+          （BOA-831 ファン評価 1周目 指摘4） */}
+      {bet && onTarget && <TargetSwitch target={target} onTarget={onTarget} />}
+      {bet && <p className="ta-note">{ASSIST_COPY.pastWinNote(target)}</p>}
       <div className="ta-board-axis" aria-hidden="true">
         <span>
           {model.good === "left" && (
@@ -187,8 +191,6 @@ export default function RaceLaneBoard({
         </span>
       </div>
       {model.noOdds && <p className="ta-note">{oddsNote}</p>}
-      {bet && onTarget && <TargetSwitch target={target} onTarget={onTarget} />}
-      {bet && <p className="ta-note">{ASSIST_COPY.pastWinNote(target)}</p>}
       {model.rows.map((row) => {
         const r = racers[row.boat - 1];
         const positions = [1, 2, 3].filter((k) => bets[k].has(row.boat));
