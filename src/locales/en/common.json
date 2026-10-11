@@ -2372,6 +2372,8 @@
     "bannerLabel": "Copy for AI",
     "bannerCatchphrase": "Ask your AI!",
     "toastSuccess": "Copied",
+    "toastAssist": "Check the factors before pasting → Thinking Assist",
+    "toastClose": "Close",
     "toastError": "Copy failed",
     "promptSelectorWin": "Win",
     "promptSelectorTrifecta": "Trifecta",

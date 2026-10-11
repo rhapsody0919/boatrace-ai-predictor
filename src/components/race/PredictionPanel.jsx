@@ -63,7 +63,12 @@
  * 冒頭コメント参照）。選手名表示のためplayersを渡す
  */
 import { useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useRaceData } from "../../hooks/useRaceData";
 import {
@@ -74,7 +79,10 @@ import {
   parseBoatParam,
   resolveInitialRaceTab,
 } from "../../utils/raceUrlState";
-import { isAnalogyFinderEnabled } from "../../config/featureFlags";
+import {
+  isAnalogyFinderEnabled,
+  isThinkingAssistEnabled,
+} from "../../config/featureFlags";
 import AnalogyFinderSection from "./analogy/AnalogyFinderSection";
 import { SocialShareButtons } from "../SocialShareButtons";
 import {
@@ -99,6 +107,7 @@ import MotorConditionChart from "../analysis/MotorConditionChart";
 import AiCopyBanner from "./AiCopyBanner";
 import AiCopyButton from "./AiCopyButton";
 import Toast, { useToast } from "../Toast";
+import { trackEvent } from "../../utils/analytics";
 import RaceTabs from "./RaceTabs";
 import RaceBasicInfoTab from "./RaceBasicInfoTab";
 import RaceWakuInfoTab from "./RaceWakuInfoTab";
@@ -118,7 +127,8 @@ function PredictionPanel({
   date,
   status,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   // フックはearly returnより前で無条件に呼ぶ必要があるため、selectedRace未確定時は空オブジェクトを渡す
   const { venueCode, venueName } = useRaceData(selectedRace || {});
   const analysisRaceId = selectedRace ? getRaceId(selectedRace) : null;
@@ -168,7 +178,43 @@ function PredictionPanel({
   // ほかのタブの中からタブを切り替える依頼（AI予想タブの「龍神ソナーのタブへ」）。
   // RaceTabs は選択を自分で持つので、seq を増やして同じタブへの依頼も届くようにする
   const [tabRequest, setTabRequest] = useState(null);
-  const { toast: aiCopyToast, showToast: showAiCopyToast } = useToast();
+  const {
+    toast: aiCopyToast,
+    showToast: showAiCopyToast,
+    hide: hideAiCopyToast,
+    hold: holdAiCopyToast,
+    release: releaseAiCopyToast,
+  } = useToast();
+  // AI用にコピーした直後のトーストに、思考アシストへの1行を足す（BOA-832、2026-10-11 ユーザー選択）。
+  // 6秒出し、マウスを重ねている間・フォーカスがある間は消さない。ja・フラグありのとき。
+  // 移っても表示の選択は残さない（上部の切り替えとは違う）。履歴に積むので戻るでレース詳細へ
+  const handleAiCopy = (message, type) => {
+    const raceIdForAssist = analysisRaceId;
+    if (
+      type !== "success" ||
+      !raceIdForAssist ||
+      !isThinkingAssistEnabled() ||
+      i18n.resolvedLanguage !== "ja"
+    ) {
+      showAiCopyToast(message, type);
+      return;
+    }
+    showAiCopyToast(message, type, {
+      duration: 6000,
+      action: {
+        label: t("aiCopy.toastAssist"),
+        onClick: () => {
+          hideAiCopyToast();
+          trackEvent("assist_view_switch", {
+            race_id: raceIdForAssist,
+            assist_view: "assist",
+            assist_entry: "copy_toast",
+          });
+          navigate(`/race/${raceIdForAssist}/assist`);
+        },
+      },
+    });
+  };
   // 結果確定後の共有文に使う、1着の艇の進入コース（早期 return より前に呼ぶ。フックの順序の規則）
   const winnerCourse = useRaceWinnerCourse(
     selectedRace?.id,
@@ -389,7 +435,7 @@ function PredictionPanel({
           venueCode={venueCode}
           promptType={aiCopyPromptType}
           onPromptTypeChange={setAiCopyPromptType}
-          onCopy={showAiCopyToast}
+          onCopy={handleAiCopy}
         />
       )}
 
@@ -690,7 +736,7 @@ function PredictionPanel({
           race={selectedRace}
           venueCode={venueCode}
           promptType={aiCopyPromptType}
-          onCopy={showAiCopyToast}
+          onCopy={handleAiCopy}
         />
       )}
       {showAiCopy && (
@@ -698,6 +744,11 @@ function PredictionPanel({
           message={aiCopyToast.message}
           type={aiCopyToast.type}
           visible={aiCopyToast.visible}
+          action={aiCopyToast.action}
+          onClose={hideAiCopyToast}
+          onHold={holdAiCopyToast}
+          onRelease={releaseAiCopyToast}
+          closeLabel={t("aiCopy.toastClose")}
         />
       )}
 

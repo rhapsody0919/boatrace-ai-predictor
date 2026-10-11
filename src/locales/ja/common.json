@@ -2366,6 +2366,8 @@
     "bannerLabel": "AI用にコピー",
     "bannerCatchphrase": "あなたのAIに聞ける！",
     "toastSuccess": "コピーしました",
+    "toastAssist": "貼る前に材料を確かめる → 思考アシスト",
+    "toastClose": "閉じる",
     "toastError": "コピーに失敗しました",
     "promptSelectorWin": "単勝",
     "promptSelectorTrifecta": "3連単",
