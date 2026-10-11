@@ -173,7 +173,15 @@ input:focus-visible,
   box-shadow: none;
 }
 
-.race-list-section .race-card--deadline-passed .predict-btn:hover {
+.race-list-section .race-card--deadline-passed /* リンク（a）で描くとき、ボタンと同じ見た目にする（SEO 点検 F3） */
+a.predict-btn {
+  display: block;
+  box-sizing: border-box;
+  text-align: center;
+  text-decoration: none;
+}
+
+.predict-btn:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
