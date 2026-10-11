@@ -400,8 +400,16 @@ test("非公開残置の候補IDと手動削除の案内を期限一覧で表示
   );
   source = source
     .replace(
-      /import \{ useEffect, useState \} from 'react';/,
-      `import React, {useEffect,useState} from '${new URL("../../node_modules/react/index.js", import.meta.url).href}';`,
+      /import \{ useEffect, useRef, useState \} from "react";/,
+      `import React, {useEffect,useRef,useState} from '${new URL("../../node_modules/react/index.js", import.meta.url).href}';`,
+    )
+    .replace(
+      /import MonthCalendar from ["'][^"'\n]+["'];/,
+      "const MonthCalendar=()=>null;",
+    )
+    .replace(
+      /import \{[\s\S]*?\} from ["'][^"'\n]*snsMonthCalendar\.js["'];/,
+      "const calendarMonth=()=>[],calendarRowDay=()=>null,calendarObservations=()=>[];",
     )
     .replace(
       /import \{ getDeadlineQueue \} from [^;]+;/,
