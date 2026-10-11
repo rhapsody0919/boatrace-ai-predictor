@@ -2,7 +2,7 @@
 import json, os
 from pathlib import Path
 import numpy as np, pandas as pd
-HERE = Path(__file__).parent; R1 = HERE.parent / "ds-round1"
+HERE = Path(__file__).parent; R1 = HERE.parent / "round1"
 os.chdir(R1)
 exec(open("analyze.py").read().split("out = {}")[0].replace("S = Path(__file__).parent", "S = R1"))  # R（第1回の候補量）と関数
 os.chdir(HERE)

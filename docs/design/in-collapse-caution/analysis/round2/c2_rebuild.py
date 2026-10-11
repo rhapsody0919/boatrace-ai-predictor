@@ -1,5 +1,5 @@
 """BOA-822 第2回: C2（類似レース上位400件の1号艇の非1着率、展示前）を v16 の朝のバッチと同じ作り方で過去のレースに作る。
-読み取りのみ。入力: ds-round1/boats.pkl（features.build の行）、model/model_win.txt（版 2026-10-06）。
+読み取りのみ。入力: round1/boats.pkl（リポジトリには入れていない。round1 の build.py で作る）（features.build の行）、model/model_win.txt（版 2026-10-06）。
 使い方: python c2_rebuild.py repro   # 2026-10-06〜10-10 を日ごとの標準化・λ で（snapshot と照合）
         python c2_rebuild.py sample  # 2025-06-01〜2026-10-10 の日別抽出＋09-22〜10-10 全件。標準化・λ は月初の前日まで
 """
@@ -11,7 +11,7 @@ sys.path.insert(0, A)
 import features as F
 import v16_similar as S
 import v16_morning as M
-HERE = Path(__file__).parent; R1 = HERE.parent / "ds-round1"
+HERE = Path(__file__).parent; R1 = HERE.parent / "round1"
 t0 = time.time(); log = lambda *x: print(f"[{time.time()-t0:6.0f}s]", *x, flush=True)
 mode = sys.argv[1]
 

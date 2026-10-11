@@ -55,3 +55,12 @@
 | 会場の1号艇の強さ | 指数の会場因子 | 思考アシストの `VenueSheet`・`assistTheory.js:236` |
 
 ソナー・思考アシストは turnPrediction・イン崩れ指数を参照していない。思考アシストは ja のみ、AI予想タブは4言語。
+
+## 追記（セカンドオピニオン指摘8・9）
+
+- ブログ: `public/blog` で展開予測に触れる記事は ja 41本（4言語で65ファイル）、`/hit-races`・`/accuracy` へのリンクは55ファイル。自然検索の記事1位 rough-race-signals（イン崩れ指数）・2位 first-mark-prediction-guide（展開予測）、`/about`（「展開予測的中率約79%」About.jsx:242,312）
+- 動画: `sns-video-studio/remotion/src/` の13作品（AboutHeroCM・AccuracyProofCM・AnswerCheckHookCM・LivePredictionCM 系・MorningDigestCM・CampaignEntryCard など）
+- `public/llms.txt` の記事の説明文
+- URL: `/accuracy`・`/hit-races`・`/accuracy/history` は sitemap に載り、`/hit-races` は Header のナビにある。`/accuracy` はほぼ全部が展開予測とイン崩れの実績
+- 検証スクリプト: verify-prediction-hit-judgement・verify-hit-verification-guidance・verify-race-outcome・verify-ai-copy-text（verify-registry.json）、`is_hit_turn` を書く scrape-results.js・backfill-is-hit-turn.js
+- 統合モデルの2着3着: 3連単参考の表示は 2026-08-14 に廃止済み（PredictionPanel.jsx:8-9）。画面に出る統合モデルの出力は本命（出現パターンが使う）と `/accuracy/history`。残す理由は spec で利用先を列挙して決める
