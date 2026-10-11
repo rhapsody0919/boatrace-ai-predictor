@@ -2132,6 +2132,28 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
     expect(conclBox.y + conclBox.height).toBeLessThanOrEqual(boardBox.y + 1);
   });
 
+  test("今日の区分が30件未満なら割合を出さず「…のときは4件だけ」で文を終える（wording-editor 指摘）", async ({
+    page,
+  }) => {
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+    await routeThinkingAssistV16(page, {
+      overrides: {
+        scenario: (body) => {
+          const mid = body.scenario?.attack?.d2?.by_exh?.mid;
+          if (mid) mid.att_win = [1, 4];
+          return body;
+        },
+      },
+    });
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(
+      page.locator(".ta-flow-today"),
+    ).toHaveText(
+      "今日の展示: 攻める3号艇は展示4位（3〜4位）→ 2コース凹みのときは4件だけ（少ないので割合は出さない）",
+    );
+  });
+
   test("展示前は今日の展示の1行と展示{r}位を出さない", async ({ page }) => {
     await open(page);
     await page.getByRole("button", { name: "展示前", exact: true }).click();

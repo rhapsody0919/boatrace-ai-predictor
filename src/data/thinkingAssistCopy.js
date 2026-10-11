@@ -342,9 +342,11 @@ export const ASSIST_COPY = Object.freeze({
   flowShapeBase: (miss, hit) =>
     `平均STの手がかりが当てはまらないときは ${miss}%。なりやすい形でも、${100 - hit}%のレースはこの形にならない`,
   exhBand: Object.freeze({ top: "1〜2位", mid: "3〜4位", low: "5〜6位" }),
+  // 文末は件数で分ける（30件未満は「…のときは4件だけ」。wording-editor の指摘: 「1着」の後に件数の注記を続けると文がつながらない）
   flowToday: (att, rank, band, form) =>
-    `今日の展示: 攻める${att}号艇は展示${rank}位（${band}）→ ${form}のとき1着`,
-  flowTodayFew: (n) => `この区分は${n}件だけ（少ないので割合は出さない）`,
+    `今日の展示: 攻める${att}号艇は展示${rank}位（${band}）→ ${form}のとき`,
+  flowTodayWin: "1着",
+  flowTodayFew: (n) => `は${n}件だけ（少ないので割合は出さない）`,
   flowMissBar: "当てはまらないとき",
   flowHintSource: "平均ST（このコース・直近30走）の並び。展示STではない",
   // 展開レンズの展示前の横軸の切り替え（BOA-815 案A。龍神ソナーと同じ「このコース｜直近30走」）

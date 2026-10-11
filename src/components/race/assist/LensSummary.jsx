@@ -232,12 +232,12 @@ export function FlowConclusion({ m }) {
       )}
       {ex && (
         <p className="ta-flow-today ta-num">
-          {C.flowToday(ex.att, ex.rank, C.exhBand[ex.band], formName)}{" "}
+          {C.flowToday(ex.att, ex.rank, C.exhBand[ex.band], formName)}
           {ex.few ? (
             C.flowTodayFew(ex.n)
           ) : (
             <>
-              <b>{p0(ex.k, ex.n)}%</b>（{ex.k}/{ex.n}）
+              {C.flowTodayWin} <b>{p0(ex.k, ex.n)}%</b>（{ex.k}/{ex.n}）
             </>
           )}
         </p>
