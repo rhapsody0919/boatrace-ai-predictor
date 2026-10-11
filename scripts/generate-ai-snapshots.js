@@ -15,6 +15,7 @@ import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { blogPosts } from "../src/data/blogPosts.js";
+import { renderWithFreshPage } from "./lib/renderWithFreshPage.js";
 import {
   MORNING_DIGEST_DISCLAIMER,
   MORNING_DIGEST_GLOSSARY,
@@ -157,38 +158,26 @@ async function generateBlogSnapshots(browser, baseUrl) {
   const outDir = path.join(SNAPSHOT_DIR, "blog");
   mkdirSync(outDir, { recursive: true });
 
-  let index = 0;
-  let succeeded = 0;
-  const failed = [];
-
-  async function worker() {
-    const page = await browser.newPage();
-    try {
-      while (index < blogPosts.length) {
-        const post = blogPosts[index];
-        index += 1;
-        try {
-          await page.goto(`${baseUrl}/blog/${post.id}`, {
-            waitUntil: "networkidle",
-            timeout: 15000,
-          });
-          await page.waitForSelector(".blog-post-content", { timeout: 10000 });
-          const html = dedupeDefaultTitle(await page.content());
-          writeFileSync(path.join(outDir, `${post.id}.html`), html, "utf-8");
-          succeeded += 1;
-        } catch (err) {
-          failed.push({ id: post.id, error: err.message });
-        }
-      }
-    } finally {
-      await page.close();
-    }
-  }
-
-  await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
+  const { succeeded, failed: failedItems } = await renderWithFreshPage(
+    blogPosts,
+    {
+      concurrency: CONCURRENCY,
+      openPage: () => browser.newPage(),
+      render: async (page, post) => {
+        await page.goto(`${baseUrl}/blog/${post.id}`, {
+          waitUntil: "networkidle",
+          timeout: 15000,
+        });
+        await page.waitForSelector(".blog-post-content", { timeout: 10000 });
+        const html = dedupeDefaultTitle(await page.content());
+        writeFileSync(path.join(outDir, `${post.id}.html`), html, "utf-8");
+      },
+    },
+  );
+  const failed = failedItems.map(({ item, error }) => ({ id: item.id, error }));
 
   console.log(
-    `✓ ブログ記事スナップショット: ${succeeded}/${blogPosts.length}件`,
+    `✓ ブログ記事スナップショット: ${succeeded.length}/${blogPosts.length}件`,
   );
   if (failed.length > 0) {
     console.error(
