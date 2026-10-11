@@ -217,13 +217,12 @@ export function attackTech(scenario, form) {
   const a = scenario?.attack?.[form];
   const w = a?.all?.att_win?.[0] ?? 0;
   if (!a?.attacker || !w) return null;
-  return {
-    att: a.attacker,
-    w,
-    rows: ["makuri", "makurizashi", "sashi"]
-      .map((t) => [t, a.all[`att_${t}_of_win`]?.[0] ?? 0])
-      .filter(([, k]) => k > 0),
-  };
+  const rows = ["makuri", "makurizashi", "sashi"]
+    .map((t) => [t, a.all[`att_${t}_of_win`]?.[0] ?? 0])
+    .filter(([, k]) => k > 0);
+  // 抜き・恵まれ等は「ほか」にまとめ、行の合計を1着の件数にそろえる（data-accuracy-verifier の指摘: 36件の内訳が95%で終わる）
+  const other = w - rows.reduce((s, [, k]) => s + k, 0);
+  return { att: a.attacker, w, rows: other > 0 ? [...rows, ["other", other]] : rows };
 }
 
 const BANDS = ["top", "mid", "low"];

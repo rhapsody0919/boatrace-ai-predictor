@@ -190,7 +190,7 @@ check(
 );
 const tech2 = attackTech(nc, "d2");
 check(
-  "もし2コース凹み: 攻める3号艇が1着の36件の決まり手 まくり15・まくり差し17・差し2",
+  "もし2コース凹み: 攻める3号艇が1着の36件の決まり手 まくり15・まくり差し17・差し2・ほか2（抜き。合計が36にそろう）",
   tech2?.att === 3 &&
     tech2.w === 36 &&
     JSON.stringify(tech2.rows) ===
@@ -198,6 +198,7 @@ check(
         ["makuri", 15],
         ["makurizashi", 17],
         ["sashi", 2],
+        ["other", 2],
       ]),
   JSON.stringify(tech2),
 );
