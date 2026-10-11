@@ -13,11 +13,15 @@ import { test, expect } from "./fixtures.js";
 
 const PAST_CLOCK = new Date("2026-10-12T09:00:00+09:00");
 
+// 録画に無いレースで、機力指数の計算が6艇×2回分の問い合わせを本番へ素通しする。
+// 本番の応答が遅いと既定の60秒を超えることがある（手元の実測で1件あたり最大約70秒）
+test.describe.configure({ timeout: 150000 });
+
 async function openMotorTab(page, raceId) {
   await page.goto(`/race/${raceId}`);
   await page.locator(".race-tabs-btn", { hasText: "モータ情報" }).click();
   const table = page.locator(".mcc-list-table").first();
-  await expect(table).toBeVisible({ timeout: 30000 });
+  await expect(table).toBeVisible({ timeout: 90000 });
   return table;
 }
 
