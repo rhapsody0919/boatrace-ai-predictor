@@ -2658,7 +2658,7 @@
       "freshZeroRuns": "0%({{n}}회)",
       "freshOwnMark": "※",
       "freshOwnExplain": "공식 2연대율이 아직 나오지 않은 모터입니다. 이 레이스 이전, 이 경정장에서의 출주({{n}}회)로 낸 2연대율입니다",
-      "freshOwnExplainBoat": "{{boat}}호정: {{explain}}",
+      "freshOwnExplainBoat": "{{boat}}번 보트: {{explain}}",
       "freshOwnHint": "「※」를 누르면 그 숫자의 출처가 나옵니다.",
       "freshPriorRuns": "이전 절까지의 출주({{n}}회)로 나온 숫자",
       "freshFirstMeetBanner": "{{venue}}는 {{month}}월 {{day}}일에 모터가 새로 바뀌었습니다. 공식 2연대율은 다음 절부터 들어갑니다. 그때까지는 용신 레이더가 이 경정장에서의 출주로 낸 숫자를 보여 줍니다",
