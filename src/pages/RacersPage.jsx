@@ -210,6 +210,7 @@ export default function RacersPage() {
         name="description"
         content="支部・身長・体重・級別・登録期・出身地で絞り込み、勝率などでソートできる選手一覧。"
       />
+      <link rel="canonical" href="https://www.boat-ai.jp/racers" />
 
       <Header />
 

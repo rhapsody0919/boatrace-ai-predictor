@@ -11,6 +11,12 @@ const TARGET_LABEL = Object.freeze({ 1: "1着", 2: "2着以内", 3: "3着以内"
 
 export const ASSIST_COPY = Object.freeze({
   title: "思考アシスト",
+  // 検索結果の説明文（SEO 点検 F4）。会場は読み込み前は出さない
+  metaDescription: ({ date, venue, raceNo }) => {
+    const [y, m, d] = date.split("-").map(Number);
+    const race = `${venue ?? ""}${raceNo}R`;
+    return `${y}年${m}月${d}日 ${race}を、条件・軸・展開・機力の順に確かめる思考アシスト。公式のデータと過去レースの傾向を並べ、自分で予想を組み立てます。`;
+  },
   disclaimer:
     "過去レースの傾向と公式のデータを並べています。結果を保証するものではありません。舟券の購入は20歳以上・自己責任で。",
   loading: "読み込み中…",

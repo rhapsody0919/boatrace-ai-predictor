@@ -72,6 +72,7 @@ import {
 import { formatObservedTime } from "../components/race/weatherInfo";
 import { isRaceCancelled } from "../utils/raceCancellation";
 import { ASSIST_COPY } from "../data/thinkingAssistCopy";
+import { parseRaceId } from "../utils/raceId";
 import { trueWindDirection, windRelation } from "../utils/windDirection.js";
 import "../components/race/assist/ThinkingAssist.css";
 
@@ -188,6 +189,7 @@ const withoutBoats = (bets, boats) =>
 
 export default function ThinkingAssistPage() {
   const { raceId } = useParams();
+  const parsedRaceId = parseRaceId(raceId);
   useRobotsMeta(!THINKING_ASSIST_PUBLIC);
   const [state, dispatch] = useReducer(reducer, initialState);
   // 操作を GA4 に送ってから状態を変える。送るかどうかは押す前の状態で決める（docs/design/thinking-assist/events.md）。
@@ -780,6 +782,21 @@ export default function ThinkingAssistPage() {
   return (
     <AssistSheetContext.Provider value={sheetApi}>
       <title>{`${ASSIST_COPY.title}（${raceId}）`}</title>
+      {parsedRaceId && (
+        <meta
+          name="description"
+          content={ASSIST_COPY.metaDescription({
+            date: parsedRaceId.date,
+            venue: venueName,
+            raceNo: parsedRaceId.raceNo,
+          })}
+        />
+      )}
+      {/* ja 専用のページ。canonical は自分自身（レース詳細とは別の画面） */}
+      <link
+        rel="canonical"
+        href={`https://www.boat-ai.jp/race/${raceId}/assist`}
+      />
       <Header />
       {/* 上部の切り替え（PR6、D-22）。フラグがあるときだけ。レース詳細と同じ位置（サイトのヘッダーの直下） */}
       {showViewSwitch && <AssistViewSwitch current="assist" raceId={raceId} />}
