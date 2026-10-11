@@ -365,6 +365,11 @@
       "guards": "選手プロフィール・期別成績ジョブ（scripts/lib/racerProfileSync.js）"
     },
     {
+      "script": "verify-race-entry-rate-precision.js",
+      "tier": "ci",
+      "guards": "朝の初期化が race_entries に書く2連率・3連率を公式と同じ小数2桁で持つ（generate-predictions の processRacersWithScoreFn、BOA-829）。0 は null にしない"
+    },
+    {
       "script": "verify-racer-st-stats.js",
       "tier": "ci",
       "guards": "選手の平均ST・直近30走・ST標準偏差（scripts/lib/racerStStats.js、BOA-581）: 1000行上限での取りこぼし・Fの除外・直近30走の並び・取得エラーの例外化"
