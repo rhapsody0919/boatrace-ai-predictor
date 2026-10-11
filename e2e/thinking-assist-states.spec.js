@@ -1815,7 +1815,7 @@ test.describe("思考アシスト: 軸・買い目で共通の着順（BOA-831�
     await entry.click();
     const region = page.getByRole("region", { name: "1号艇の詳しい情報" });
     await expect(region).toContainText(
-      "▲6艇で一番早いとき 2着以内 77%・22件（全体 70%）",
+      "▲6艇で一番早いとき 2着以内 77%・22件（全体 69.7%）",
     );
 
     await lensTab(page, "買い目").click();
@@ -1823,6 +1823,14 @@ test.describe("思考アシスト: 軸・買い目で共通の着順（BOA-831�
       seg(page).getByRole("button", { name: "2着以内" }),
     ).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByText(/^過去の2着以内＝/)).toBeVisible();
+    // 切り替えはオッズの見出しより上（見出しと点の間に挟まない。ファン評価 1周目 指摘4）
+    const segY = await seg(page).evaluate(
+      (el) => el.getBoundingClientRect().top,
+    );
+    const titleY = await page
+      .locator(".ta-board-title")
+      .evaluate((el) => el.getBoundingClientRect().top);
+    expect(segY).toBeLessThan(titleY);
     await expect(page.getByText("過去の2着以内").first()).toBeVisible();
     await expect(page.locator(".ta-board")).toContainText("70%（83/119）");
 
