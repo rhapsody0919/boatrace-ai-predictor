@@ -421,9 +421,16 @@ export function guideSteps({ post, rough, hintTop }) {
       at: "top",
     },
     {
+      lens: "place",
+      target: "board",
+      ...C.guide[4],
+      sub: C.guidePlaceSub,
+      at: "top",
+    },
+    {
       lens: "bet",
       target: "foot",
-      ...C.guide[4],
+      ...C.guide[5],
       sub: C.guideBetSub,
       at: "top",
     },

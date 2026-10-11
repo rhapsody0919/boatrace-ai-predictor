@@ -859,6 +859,42 @@ check(
   );
 }
 
+// ---- 相手レンズ（spec D-46、2026-10-12 ユーザー承認 v4）----
+{
+  const placeRates = new Map([
+    [1, { t2: { k: 83, n: 119 }, t3: { k: 94, n: 119 } }],
+    [3, { t2: { k: 252, n: 641 }, t3: { k: 417, n: 641 } }],
+    [5, { t2: { k: 5, n: 12 }, t3: { k: 8, n: 12 } }],
+  ]);
+  const m = boardModel({ lens: "place", stage: "post", racers, placeRates });
+  const r1 = m.rows[0];
+  const r3 = m.rows[2];
+  const r5 = m.rows[4];
+  check(
+    "相手レンズ: 横軸は割合 0〜100%、●2着以内（x）と○3着以内（x2）、数字は1艇2個（2着以内・3着以内）、金枠なし",
+    m.kind === "place" &&
+      m.lo === 0 &&
+      m.hi === 1 &&
+      Math.abs(r1.x - 83 / 119) < 1e-9 &&
+      Math.abs(r1.x2 - 94 / 119) < 1e-9 &&
+      r1.nums.length === 2 &&
+      r1.nums[0].label === "2着以内" &&
+      r1.nums[0].text === "70%" &&
+      r1.nums[1].text === "79%" &&
+      r3.nums[1].text === "65%" &&
+      m.rows.every((r) => r.nums.every((n) => !n.best)),
+    JSON.stringify([r1, r3]),
+  );
+  check(
+    "相手レンズ: 30件未満の艇は点を置かず、割合でなく件数だけ（件数の分布の検証で出るのは0.2%）",
+    r5.x == null &&
+      r5.x2 == null &&
+      r5.nums[0].text === "12件（少ない）" &&
+      m.rows[1].nums.length === 0,
+    JSON.stringify(r5),
+  );
+}
+
 if (failures > 0) {
   console.error(`\n${failures}件の失敗`);
   process.exit(1);
