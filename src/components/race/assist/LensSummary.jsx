@@ -328,12 +328,13 @@ function ExhBandsBox({ post, bands, formLabel }) {
     );
   if (!bands) return null;
   const { att, b1 } = bands;
-  const natLine = (side, mid) =>
+  // att は攻める艇の1着の行（「順位が上ほど1着が多い」「3〜4位は差が出にくい」を付ける）。1号艇の逃げの行は値だけ
+  const natLine = (side, att) =>
     side.nat && side.nat.every((v) => v != null) ? (
       <p className="ta-note ta-num ta-band-nat">
         {C.exhNat(natPcts(side.nat))}
-        {descending(side.nat) && C.exhNatDesc}
-        {mid && side.today === "mid" && C.exhNatMid}
+        {att && descending(side.nat) && C.exhNatDesc}
+        {att && side.today === "mid" && C.exhNatMid}
       </p>
     ) : null;
   return (

@@ -2205,11 +2205,14 @@ test.describe("思考アシスト: 展開レンズの中身（spec D-47 PR-2、�
     await expect(today.nth(1)).toContainText("42% (33/78)");
     await expect(
       page.getByText(
-        "全国では 1〜2位 24%・3〜4位 18%・5〜6位 13%（順位が上ほど多い）。3〜4位はほかの順位との差が出にくい",
+        "全国では 1〜2位 24%・3〜4位 18%・5〜6位 13%（順位が上ほど1着が多い）。3〜4位はほかの順位との差が出にくい",
       ),
     ).toBeVisible();
     await expect(
-      page.getByText("全国では 1〜2位 59%・3〜4位 51%・5〜6位 46%（順位が上ほど多い）"),
+      // 1号艇の逃げの行には「順位が上ほど1着が多い」を付けない（承認モック v2、wording-editor 指摘）
+      page.getByText("全国では 1〜2位 59%・3〜4位 51%・5〜6位 46%", {
+        exact: true,
+      }),
     ).toBeVisible();
   });
 
