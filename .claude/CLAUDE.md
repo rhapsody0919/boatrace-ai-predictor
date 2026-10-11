@@ -43,6 +43,14 @@
 | `boatrace-fan-reviewer` | 変更画面をファン視点の固定7観点でPreview URL上から評価（P0〜P3） | 「ファン評価あり」の作業で、CI緑の後に周ごと新規起動（`.claude/rules/review-fix-cycle.md`） |
 | `mock-diff-checker` | 承認済みモックと Preview の実画面を比べ、承認範囲の内外の差分を列挙する | UI PR を段階0で自己マージする前（`.claude/skills/orchestrate/SKILL.md` §4） |
 | `user-proxy-reviewer` | ユーザーの過去の判断（memory・CLAUDE.md・rules）から、提案が通るかを判定する | 段階1の代理判定（同 §4） |
+| `data-scientist` | 指標の効き目・言える範囲（相関・1着率の差・母集団） | 仕様・SNS 台本・施策でデータの観点が要るとき |
+| `visual-designer` | 画面（UI/UX）と SNS 動画の見た目・動き | モック・Preview・動画ができた後、図と動きを決めるとき |
+| `official-data-spec` | 公式データの定義・桁・切り替わる時点と、サイトの値との照合 | 公式の値と一致させる画面・バッチを作る・直すとき |
+| `measurement-planner` | 仕様の段階の計測設計（イベント・GA4 登録）と公開後の読み方 | spec を書くとき、公開後に反応を読むとき |
+| `wording-editor` | 禁止語・用語の対訳・誇大や射幸心・SNS の表現 | 文を書いた後、ユーザーに見せる前（ブログの公開前6観点は `content-qa`） |
+| `system-architect` | ADR との整合、本番 DB の変更手順と壊れ方 | plan.md を書くとき、マイグレーション・RPC・本番データを変えるとき |
+
+上の6つ（`data-scientist` 以下）は知見ノート `docs/knowledge/<名前>.md` を最初に読み、答えの最後に「知見ノートに足す行」を出す。呼んだ側がノートに書き写す（1行1知見、出典つき、鍵・個人情報は書かない）。ファンの知見は `docs/knowledge/sns-fan.md` を `discussion-panel` が読む。
 
 いずれも読み取り専用（`acceptance-test-writer` のみ `e2e/acceptance/` に書く）で、修正は親セッションが行う。定義に無い一回限りの調査は、従来通りAgent toolへ直接プロンプトを渡す。
 
