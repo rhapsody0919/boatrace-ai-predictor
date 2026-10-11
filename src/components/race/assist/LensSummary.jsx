@@ -12,6 +12,7 @@ import {
   sameClassLabel,
 } from "../../../utils/assistModel";
 import {
+  axisWhyKinds,
   b1Usual,
   entrySummary,
   powerWinners,
@@ -55,6 +56,13 @@ function AxisSummary({ m }) {
   const va = vaFacts ? b1Usual({ facts: vaFacts }, 1, target) : null;
   // 上の枠（堅い？荒れる？）は1着だけなので、件数の違いの説明は1着を選んだときだけ（BOA-831）
   const win = target === 1;
+  const why = axisWhyKinds({
+    kind: scope.kind,
+    fellBack: scope.fellBack,
+    venue,
+    win,
+    venueRefund: Boolean(va && vaCell?.n > 0),
+  });
   const label = factsScopeLabel(scope, venue, 1, classes?.[0]);
   const counts = restClassCounts(classes, 1);
   const hc = headerScope?.cell;
@@ -96,25 +104,29 @@ function AxisSummary({ m }) {
             )}
           </p>
         )}
-        <Fold title={C.whyToggle}>
-          <ul className="ta-list">
-            {scope.kind === "VC" && venue && <li>{C.whyVenueScope(venue)}</li>}
-            {win && va && vaCell?.n > 0 && venue && (
-              <li className="ta-num">
-                {C.whyVenueRefund(
-                  venue,
-                  comma(va.n),
-                  p1(va.k, va.n),
-                  comma(vaCell.n),
-                  p1(vaCell.b1_win, vaCell.n),
-                )}
-              </li>
-            )}
-            {scope.fellBack && venue && (
-              <li className="ta-num">{C.whyFellBack(venue, scope.vcCount)}</li>
-            )}
-          </ul>
-        </Fold>
+        {why.length > 0 && (
+          <Fold title={C.whyToggle}>
+            <ul className="ta-list">
+              {why.includes("venueScope") && <li>{C.whyVenueScope(venue)}</li>}
+              {why.includes("venueRefund") && (
+                <li className="ta-num">
+                  {C.whyVenueRefund(
+                    venue,
+                    comma(va.n),
+                    p1(va.k, va.n),
+                    comma(vaCell.n),
+                    p1(vaCell.b1_win, vaCell.n),
+                  )}
+                </li>
+              )}
+              {why.includes("fellBack") && (
+                <li className="ta-num">
+                  {C.whyFellBack(venue, scope.vcCount)}
+                </li>
+              )}
+            </ul>
+          </Fold>
+        )}
         {entry && (
           // 差がつく材料は深掘り（1号艇）の1か所に出し、ここは入口1行だけ（2026-10-11 ユーザー決定 案D）。
           // ▲が無い日は深掘りの「全部の材料」を開いて渡す

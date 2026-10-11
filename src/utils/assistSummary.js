@@ -136,6 +136,21 @@ export function factsEntry(chips) {
 }
 
 /**
+ * 軸の要約の「件数が上の枠と違う理由」に出す項目（BOA-831）。会場の返還の項目は上の枠と同じ1着のときだけ。
+ * 空なら折りたたみごと出さない（2着以内・3着以内で中身の無い折りたたみが出ないように）
+ * @param {{kind: string, fellBack: boolean, venue: string|null, win: boolean, venueRefund: boolean}} args
+ * @returns {Array<"venueScope"|"venueRefund"|"fellBack">}
+ */
+export function axisWhyKinds({ kind, fellBack, venue, win, venueRefund }) {
+  if (!venue) return [];
+  return [
+    kind === "VC" && "venueScope",
+    win && venueRefund && "venueRefund",
+    fellBack && "fellBack",
+  ].filter(Boolean);
+}
+
+/**
  * 図の「良い方の札」: 差が大きい項目のうち、今日その艇が6艇で一番良いもの（screens「レンズごとの図 C」軸）。
  * 一番悪い側は図に出さない（深掘り・要約で出す）
  */

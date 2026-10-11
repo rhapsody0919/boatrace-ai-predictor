@@ -25,6 +25,7 @@ import {
   factsScopeLabel,
   factChips,
   factsScope,
+  axisWhyKinds,
   featChips,
   formSummary,
   hintSummary,
@@ -721,6 +722,36 @@ check(
       ASSIST_COPY.axisHeading(1) === "1号艇が1着になったのは" &&
       ASSIST_COPY.axisSub[2] === "2着までに残るか" &&
       ASSIST_COPY.theoryFactLikely(1, 2) === "1号艇の2着以内の割合が変わる",
+  );
+  check(
+    "着順: 件数が違う理由は、2着以内・3着以内で会場の返還の項目を外し、空なら折りたたみを出さない（/code-review の指摘）",
+    JSON.stringify(
+      axisWhyKinds({
+        kind: "NC",
+        fellBack: false,
+        venue: "徳山",
+        win: false,
+        venueRefund: true,
+      }),
+    ) === "[]" &&
+      JSON.stringify(
+        axisWhyKinds({
+          kind: "NC",
+          fellBack: false,
+          venue: "徳山",
+          win: true,
+          venueRefund: true,
+        }),
+      ) === '["venueRefund"]' &&
+      JSON.stringify(
+        axisWhyKinds({
+          kind: "NCR",
+          fellBack: true,
+          venue: "徳山",
+          win: false,
+          venueRefund: true,
+        }),
+      ) === '["fellBack"]',
   );
 }
 
