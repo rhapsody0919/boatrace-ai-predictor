@@ -469,6 +469,13 @@ check(
     CLEANUP.find(([k]) => k === "pool")?.[1],
     1,
   );
+  check(
+    "STEP4 の元のレースの一覧（scenario-races・scenario-boat-races）は7日より前を消す（BOA-833）",
+    ["scenario-races", "scenario-boat-races"].map(
+      (k) => CLEANUP.find(([x]) => x === k)?.[1],
+    ),
+    [7, 7],
+  );
 }
 
 // ---- 7. 展示後の段は、関数の上限の手前（shouldStop）で止まる -----------------------------

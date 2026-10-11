@@ -12,7 +12,9 @@
  *   1号艇の範囲と同じにする（VC から NC に替えたときは全艇 NC）。VA・VG・NA は級によらないので null。
  *   ファイルの無い艇（BOA-806 より前の朝のバッチの版）は null（画面は1号艇の範囲の値を出す）
  * races=1: STEP4 の件数を押したときの元のレースの一覧（scenario-races、BOA-823）だけを返す（{run_id, scope, races}）。
- *   押したときだけ読むので、ふだんの応答には入れない。BOA-823 より前の朝のバッチの版は races が null
+ *   押したときだけ読むので、ふだんの応答には入れない。BOA-823 より前の朝のバッチの版は races が null。
+ *   boat=2〜6 を足すと、その艇の「構成＋その艇の級」の範囲（scenario-boat と同じ範囲）の一覧（scenario-boat-races、BOA-833）。
+ *   範囲の種類は1号艇の範囲と同じ（VC・NC・NCR）。VA・VG・NA やその艇の範囲が無いときは races が null（画面は1号艇の範囲の一覧に戻す）
  */
 import {
   createHandler,
@@ -91,7 +93,31 @@ export default createHandler(
       throw new RangeError(
         `scope は今日の1号艇の範囲キー（${Object.values(keys).join("|")}）`,
       );
-    if (url.searchParams.get("races") === "1")
+    if (url.searchParams.get("races") === "1") {
+      const boat = Number(url.searchParams.get("boat") ?? 1);
+      if (!Number.isInteger(boat) || boat < 1 || boat > 6)
+        throw new RangeError("boat は 1〜6");
+      const kind = scope.split(":")[0];
+      const boatKey =
+        boat > 1 && BOAT_KINDS.has(kind)
+          ? (today.scope_keys?.[String(boat)]?.[kind] ?? null)
+          : null;
+      if (boat > 1)
+        return {
+          run_id: rc.run_id,
+          scope: boatKey,
+          boat,
+          races: boatKey
+            ? await readObject(
+                objectPath(
+                  raceId,
+                  rc.run_id,
+                  "scenario-boat-races",
+                  boatKey.replaceAll(":", "_"),
+                ),
+              )
+            : null,
+        };
       return {
         run_id: rc.run_id,
         scope,
@@ -104,6 +130,7 @@ export default createHandler(
           ),
         ),
       };
+    }
     const refKey = keys[REFERENCE[scope.split(":")[0]]] ?? null;
     const wantBoats = url.searchParams.get("boats") === "1";
     const [scenario, refFile, boats] = await Promise.all([
