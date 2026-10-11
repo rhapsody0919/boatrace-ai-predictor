@@ -369,7 +369,8 @@ test.describe("カードを動かさない・スクロールしない場合", ()
     await page
       .locator(".race-card")
       .first()
-      .getByRole("button", { name: /詳細を見る/ })
+      // 「詳細を見る」はレース詳細の URL を持つリンク（SEO 点検 F3）
+      .getByRole("link", { name: /詳細を見る/ })
       .click();
     await expect(page).toHaveURL(/\/race\//);
     await page.goBack();

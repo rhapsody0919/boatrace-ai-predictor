@@ -7,7 +7,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   useParams,
   Link,
-  useNavigate,
   Navigate,
   useLocation,
   useNavigationType,
@@ -94,7 +93,6 @@ function holdScrollPosition(getTarget, observed) {
 function VenueRaceListPage() {
   const { date: dateParam, venueCode: venueCodeParam } = useParams();
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const localize = useLocalizedPath();
 
   const isToday = !dateParam;
@@ -418,7 +416,7 @@ function VenueRaceListPage() {
                     key={race.id}
                     race={race}
                     nowHHMM={nowHHMM}
-                    onAnalyzeRace={(r) => navigate(localize(`/race/${r.id}`))}
+                    raceHref={localize(`/race/${race.id}`)}
                   />,
                 ])}
               </div>
