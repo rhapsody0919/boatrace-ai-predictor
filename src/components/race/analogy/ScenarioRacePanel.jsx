@@ -26,6 +26,7 @@ export default function ScenarioRacePanel({
   title,
   cond,
   otherScope = false,
+  expired = false,
   onClose,
 }) {
   const { t } = useTranslation();
@@ -46,7 +47,10 @@ export default function ScenarioRacePanel({
   else if (res.status !== "ready")
     body = <p className="af-foot">{t(`${k}.loading`)}</p>;
   // 朝のバッチがこの一覧を作る前の版（BOA-823 より前）
-  else if (!races) body = <p className="af-foot">{t(`${k}.notReady`)}</p>;
+  else if (!races)
+    body = (
+      <p className="af-foot">{t(`${k}.${expired ? "expired" : "notReady"}`)}</p>
+    );
   else if (!rows.length)
     body = (
       <p className="af-foot">

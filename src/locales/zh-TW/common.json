@@ -1851,7 +1851,8 @@
           "none": "最近的{{kept}}場中沒有這樣的比賽",
           "raceNo": "{{n}}R",
           "techPay": "{{tech}}，{{yen}}日圓",
-          "bandLink": "查看此帶的比賽 ›"
+          "bandLink": "查看此帶的比賽 ›",
+          "expired": "這一天的清單已不保留（清單只保留7天）"
         }
       },
       "barLabel": "{{boat}}號艇 {{p}} {{n}}場",
