@@ -166,6 +166,9 @@ async function generateBlogSnapshots(openPage, baseUrl) {
     {
       concurrency: CONCURRENCY,
       openPage,
+      // 単一プロセスの Chromium では、別の記事でブラウザが落ちると同時に開いていたページも巻き添えになる。
+      // 2026-10-11 の Preview で、再試行1回では巻き添えの記事が1件残った（120/121）ので2回にする
+      retries: 2,
       render: async (page, post) => {
         await page.goto(`${baseUrl}/blog/${post.id}`, {
           waitUntil: "networkidle",
