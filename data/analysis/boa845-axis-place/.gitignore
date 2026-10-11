@@ -1,0 +1,2 @@
+# 中間データ（pool.pkl 約25MB・today.json・*.pkl）は build_pool.py / fetch_today.mjs で作り直せるので置かない
+work/
