@@ -187,7 +187,7 @@ function entryCard(group, ctx) {
   };
 }
 
-/** 差がつく材料（TC-F1〜F8）。その艇の材料の範囲で、一番良いとき／一番悪いときの1着 */
+/** 差がつく材料（TC-F1〜F8）。その艇の材料の範囲で、一番良いとき／一番悪いときの割合（着順は軸・買い目の切り替え。D-44） */
 function factCard(boat, key, ctx) {
   const f = ctx.boatFacts?.[boat - 1];
   const chip = f?.chips?.find((c) => c.key === key);
@@ -220,7 +220,7 @@ function factCard(boat, key, ctx) {
     id: `TC-F:${boat}:${key}`,
     title: C.theoryFactTitle(name, boat),
     cond: C.theoryFactCond(name, good, bad),
-    likely: C.theoryFactLikely(boat),
+    likely: C.theoryFactLikely(boat, ctx.target ?? 1),
     today,
     meas: bars.length
       ? {

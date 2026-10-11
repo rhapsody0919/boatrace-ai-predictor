@@ -6,7 +6,8 @@
  * - ガイドは段を出したとき（1段目＝1）。閉じたときは送らない
  * - シートは開いたとき。種類は mark・rough・venue・term・theory
  * - 軸の要約の入口1行（openFacts、2026-10-11 案D）から深掘りを開いたときも assist_deep_open。開いている艇の押し直しは送らない
- * @param {{lens: string, deep: number|null, metric: string|null}} state 押す前の状態
+ * - 軸・買い目で共通の着順の切り替え（BOA-831）は assist_target。選択中の着順の押し直しは送らない。押したレンズも送る
+ * @param {{lens: string, deep: number|null, metric: string|null, target?: number}} state 押す前の状態
  * @param {{type: string, [key: string]: unknown}} action
  * @returns {{name: string, params: Record<string, string|number>} | null}
  */
@@ -33,6 +34,13 @@ export function assistEventOf(state, action) {
         : {
             name: "assist_metric_compare",
             params: { assist_metric: action.metric, assist_lens: state.lens },
+          };
+    case "target":
+      return action.target === (state.target ?? 1)
+        ? null
+        : {
+            name: "assist_target",
+            params: { assist_target: action.target, assist_lens: state.lens },
           };
     case "guide":
       return action.step == null

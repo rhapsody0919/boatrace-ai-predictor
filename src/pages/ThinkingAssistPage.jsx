@@ -86,6 +86,8 @@ const initialState = {
   metric: null,
   // 展開レンズの展示前の平均ST（BOA-815 案A）
   stBasis: "course",
+  // 軸・買い目で共通の着順（1＝1着・2＝2着以内・3＝3着以内。BOA-831、spec D-44）。ページ内だけ
+  target: 1,
   bets: { 1: new Set(), 2: new Set(), 3: new Set() },
   budget: "1000",
   mode: "equalPayout",
@@ -115,6 +117,8 @@ function reducer(state, action) {
       return { ...state, lens: action.lens, metric: null };
     case "stage":
       return { ...state, stage: action.stage, metric: null };
+    case "target":
+      return { ...state, target: action.target };
     case "deep":
       return {
         ...state,
@@ -200,6 +204,10 @@ export default function ThinkingAssistPage() {
     },
     [raceId],
   );
+  const onTarget = useCallback(
+    (target) => act({ type: "target", target }),
+    [act],
+  );
   const [showViewSwitch] = useState(isThinkingAssistEnabled);
   const data = useThinkingAssistData(raceId, {
     stage: state.stage,
@@ -236,9 +244,10 @@ export default function ThinkingAssistPage() {
     [race, today, data.exhibition.data, data.rates.data],
   );
 
-  // 艇ごとの差がつく材料（範囲は v16 の既定、優勝戦・準優勝戦の日は同じラウンド。D-37）
-  const boatFacts = useMemo(
-    () =>
+  // 艇ごとの差がつく材料（範囲は v16 の既定、優勝戦・準優勝戦の日は同じラウンド。D-37）。
+  // target は軸・買い目で共通の着順（D-44）。機力レンズのモーターの札は1着のまま（切り替えは軸・買い目だけ）
+  const factsOf = useCallback(
+    (target) =>
       [1, 2, 3, 4, 5, 6].map((boat) => {
         const scope = factsScope(factsAll, today, boat, data.round);
         return {
@@ -251,20 +260,26 @@ export default function ThinkingAssistPage() {
             // 展示タイムの札は v16 の展示後の段の値があるときだけ（無いと全艇「—」になる。ファン評価 PR4 1周目 指摘4）
             post: post && Array.isArray(v16Exhibition?.exh_time),
             finalRound,
+            target,
           }),
         };
       }),
     [factsAll, today, data.round, v16Exhibition, post, finalRound],
+  );
+  const winFacts = useMemo(() => factsOf(1), [factsOf]);
+  const boatFacts = useMemo(
+    () => (state.target === 1 ? winFacts : factsOf(state.target)),
+    [factsOf, winFacts, state.target],
   );
   // 買い目レンズの「過去の1着」（艇ごとの範囲。6艇で比べない）
   const pastWin = useMemo(
     () =>
       new Map(
         boatFacts
-          .map((f, i) => [i + 1, b1Usual(f.scope, i + 1)])
+          .map((f, i) => [i + 1, b1Usual(f.scope, i + 1, state.target)])
           .filter(([, u]) => u),
       ),
-    [boatFacts],
+    [boatFacts, state.target],
   );
   const hints = useMemo(
     () => (ncScenario ? hintSummary(ncScenario, today) : null),
@@ -339,6 +354,7 @@ export default function ThinkingAssistPage() {
         finalRound,
         hasToday: today != null,
         pastWin,
+        target: state.target,
         stBasis: state.stBasis,
         stMissing: data.facts.status === "ready" && v16Status === "not_saved",
       }),
@@ -351,6 +367,7 @@ export default function ThinkingAssistPage() {
       finalRound,
       today,
       pastWin,
+      state.target,
       state.stBasis,
       data.facts.status,
       v16Status,
@@ -432,10 +449,10 @@ export default function ThinkingAssistPage() {
       )
     : null;
   const vaKey = today?.scope_keys?.["1"]?.VA;
-  const motorFact = boatFacts[0].chips.find(
+  const motorFact = winFacts[0].chips.find(
     (c) => c.key === "motor_2" && c.hit && c.level === "large",
   );
-  const b1u = b1Usual(boatFacts[0].scope);
+  const b1u = b1Usual(winFacts[0].scope);
   const betSummary = {
     tickets,
     trifecta: trifecta ?? {},
@@ -458,6 +475,8 @@ export default function ThinkingAssistPage() {
           vaCell: venueAll,
           classes: today?.classes ?? null,
           onFacts: (all) => act({ type: "openFacts", boat: 1, all }),
+          target: state.target,
+          onTarget,
         }
       : null,
     flow: {
@@ -488,12 +507,12 @@ export default function ThinkingAssistPage() {
               // どのレースから出した割合か（271 の指摘の型）
               scope: ASSIST_COPY.scopeChip(
                 factsScopeLabel(
-                  boatFacts[0].scope,
+                  winFacts[0].scope,
                   venueName,
                   1,
                   today?.classes?.[0],
                 ),
-                boatFacts[0].scope.n,
+                winFacts[0].scope.n,
               ),
             }
           : null,
@@ -536,6 +555,7 @@ export default function ThinkingAssistPage() {
     v16Exhibition,
     courseByBoat,
     boatFacts,
+    target: state.target,
     racers,
     vaFacts: vaKey && factsAll ? factsAll[vaKey] : null,
     wind: {
@@ -645,6 +665,7 @@ export default function ThinkingAssistPage() {
           lens={state.lens}
           onLens={(lens) => act({ type: "lens", lens })}
           guideOn={state.guide !== null}
+          target={state.target}
           onGuide={() => onGuideStep(state.guide === null ? 0 : null)}
         />
         {/* PC（1024px 以上）は図を左・押して変わる結果を右に（BOA-801 5・BOA-820、龍神ソナーの PC 表示 BOA-813 と同じ決まり）。
@@ -671,6 +692,8 @@ export default function ThinkingAssistPage() {
                 onToggleBet={toggleBet}
                 // 軸・展開の印は v16 が無ければ材料が空なので出ない。機力のチルト・交換は DB の展示なので欠場でも出す
                 marks={marks}
+                target={state.target}
+                onTarget={onTarget}
               />
             )}
           </div>
@@ -688,6 +711,7 @@ export default function ThinkingAssistPage() {
                 round={data.round}
                 scope={boatFacts[deepBoat - 1].scope}
                 chips={boatFacts[deepBoat - 1].chips}
+                target={state.target}
                 runs={
                   racers[deepBoat - 1]?.racerId == null
                     ? // 選手の登録番号が無い艇は走を取れない。読み込み中に残さない

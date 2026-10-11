@@ -25,6 +25,7 @@ import {
   factsScopeLabel,
   factChips,
   factsScope,
+  axisWhyKinds,
   featChips,
   formSummary,
   hintSummary,
@@ -664,6 +665,93 @@ check(
       texts.at(-2).startsWith("一番高いとき 1着") &&
       texts.at(-1).startsWith("一番低いとき 1着"),
     JSON.stringify(texts),
+  );
+}
+
+// ---- 軸・買い目で共通の着順（BOA-831、spec D-44）----
+{
+  const u2 = b1Usual(s1, 1, 2);
+  const u3 = b1Usual(s1, 1, 3);
+  check(
+    "着順: 1号艇の2着以内 83/119・3着以内 94/119（v16 facts の top2・top3、承認モック v2 の値）",
+    u2?.k === 83 && u2?.n === 119 && u3?.k === 94 && u3?.n === 119,
+    JSON.stringify({ u2, u3 }),
+  );
+  const at = (target) =>
+    factChips({
+      scope: s1,
+      today,
+      boat: 1,
+      post: false,
+      finalRound: true,
+      target,
+    });
+  const pick = (chips) =>
+    Object.fromEntries(chips.filter((c) => c.hit).map((c) => [c.key, c.pair]));
+  const w1 = pick(at(1));
+  const w2 = pick(at(2));
+  const w3 = pick(at(3));
+  check(
+    "着順: ▲の付く材料は着順で変わらない（今日の6艇の中の位置で決まる）",
+    JSON.stringify(Object.keys(w1).sort()) ===
+      JSON.stringify(Object.keys(w2).sort()) &&
+      JSON.stringify(Object.keys(w2).sort()) ===
+        JSON.stringify(Object.keys(w3).sort()),
+    JSON.stringify({ w1, w2, w3 }),
+  );
+  check(
+    "着順: 割合は選んだ着順の値（平均ST 13/22→17/22→18/22、モーター2連率 15/26→20/26→22/26）",
+    JSON.stringify(w1.st_mean30) === "[13,22]" &&
+      JSON.stringify(w2.st_mean30) === "[17,22]" &&
+      JSON.stringify(w3.st_mean30) === "[18,22]" &&
+      JSON.stringify(w1.motor_2) === "[15,26]" &&
+      JSON.stringify(w2.motor_2) === "[20,26]" &&
+      JSON.stringify(w3.motor_2) === "[22,26]",
+    JSON.stringify({ w1, w2, w3 }),
+  );
+  check(
+    "着順の言葉: 札・入口1行・見出し・問い・セオリーカードが選んだ着順を書く",
+    ASSIST_COPY.factHit("早い", 77, 22, "69.7", 2) ===
+      "▲6艇で一番早いとき 2着以内 77%・22件（全体 69.7%）" &&
+      ASSIST_COPY.factHit("早い", 59, 22, "54.6") ===
+        "▲6艇で一番早いとき 1着 59%・22件（全体 54.6%）" &&
+      ASSIST_COPY.factsEntry(1, 3, 2) ===
+        "1号艇の差がつく材料 ▲3件（2着以内）" &&
+      ASSIST_COPY.factsEntry(1, 3) === "1号艇の差がつく材料 ▲3件" &&
+      ASSIST_COPY.axisHeading(1, 3) === "1号艇が3着以内に来たのは" &&
+      ASSIST_COPY.axisHeading(1) === "1号艇が1着になったのは" &&
+      ASSIST_COPY.axisSub[2] === "2着までに残るか" &&
+      ASSIST_COPY.theoryFactLikely(1, 2) === "1号艇の2着以内の割合が変わる",
+  );
+  check(
+    "着順: 件数が違う理由は、2着以内・3着以内で会場の返還の項目を外し、空なら折りたたみを出さない（/code-review の指摘）",
+    JSON.stringify(
+      axisWhyKinds({
+        kind: "NC",
+        fellBack: false,
+        venue: "徳山",
+        win: false,
+        venueRefund: true,
+      }),
+    ) === "[]" &&
+      JSON.stringify(
+        axisWhyKinds({
+          kind: "NC",
+          fellBack: false,
+          venue: "徳山",
+          win: true,
+          venueRefund: true,
+        }),
+      ) === '["venueRefund"]' &&
+      JSON.stringify(
+        axisWhyKinds({
+          kind: "NCR",
+          fellBack: true,
+          venue: "徳山",
+          win: false,
+          venueRefund: true,
+        }),
+      ) === '["fellBack"]',
   );
 }
 

@@ -12,6 +12,7 @@ import { ROUNDS_FINAL } from "./analogyFacts.js";
 import { bestOf } from "./bestOf.js";
 import { wilsonInterval } from "./wilson.js";
 import { getRaceStageKey } from "../constants/raceStageConfig.js";
+import { ASSIST_COPY } from "../data/thinkingAssistCopy.js";
 import { SMALL_SAMPLE_THRESHOLD } from "../components/race/basicInfoStats.js";
 
 // ---- 優勝戦・準優勝戦（D-36 (4)・D-37）----
@@ -446,7 +447,8 @@ export function firstPlaceComposite(trifecta, absentBoats = []) {
 /**
  * レンズ（または6艇比較の項目）の図のモデル。純粋関数
  * @param {{lens: string, stage: "pre"|"post", metric?: string|null, racers: object[], trifecta?: object|null, finalRound?: boolean, hasToday?: boolean, pastWin?: Map<number, {k: number, n: number}>|null}} args
- *   pastWin: 買い目レンズの「過去の1着」（艇ごとの差がつく材料の範囲での1着。assistSummary.b1Usual）
+ *   pastWin: 買い目レンズの「過去の{着順}」（艇ごとの差がつく材料の範囲での target の着順。assistSummary.b1Usual）
+ *   target: 軸・買い目で共通の着順（1＝1着・2＝2着以内・3＝3着以内。spec D-44）。1以外では人気の札を「人気（1着）」にして薄くする
  *   stBasis: 展開レンズの展示前の平均ST（"course"＝このコース・直近30走、"overall"＝直近30走。BOA-815 案A）
  *   stMissing: v16 の保存が無いと分かった（"not_saved"）。軸レンズに平均ST を出せない理由を書く
  *   hasToday: v16 の today が届いているか。届いていない（読み込み中・保存が無い）ときは v16 の値（平均ST）を
@@ -463,9 +465,19 @@ export function boardModel({
   finalRound = false,
   hasToday = true,
   pastWin = null,
+  target = 1,
   stBasis = "course",
   stMissing = false,
 }) {
+  // 過去の{着順}（件数は割合の括弧。BOA-831 承認モック v2）
+  const pastNum = (past) => ({
+    metric: null,
+    label: ASSIST_COPY.pastLabel(target),
+    short: ASSIST_COPY.pastLabel(target),
+    text: ASSIST_COPY.pastText(past.k, past.n),
+    aria: null,
+    best: false,
+  });
   const post = stage === "post";
   const best = (m) => bestOfMetric(m, racers, finalRound);
 
@@ -637,18 +649,7 @@ export function boardModel({
         return {
           boat: r.boat,
           x: null,
-          nums: past
-            ? [
-                {
-                  metric: null,
-                  label: "過去の1着",
-                  short: "過去の1着",
-                  text: `${Math.round((past.k / past.n) * 100)}%`,
-                  aria: null,
-                  best: false,
-                },
-              ]
-            : [],
+          nums: past ? [pastNum(past)] : [],
         };
       }),
     };
@@ -673,21 +674,15 @@ export function boardModel({
         nums: [
           c != null && {
             metric: null,
-            label: "1着人気",
-            short: "1着人気",
+            label: ASSIST_COPY.popLabel(target),
+            short: ASSIST_COPY.popLabel(target),
             text: `${1 + sorted.filter((o) => o < c).length}番（${c.toFixed(1)}倍）`,
             aria: null,
             best: false,
+            muted: target !== 1,
           },
           // 艇ごとに集めた範囲が違うので6艇で比べない（金枠を付けない。FR-3a「付けない所」）
-          past && {
-            metric: null,
-            label: "過去の1着",
-            short: "過去の1着",
-            text: `${Math.round((past.k / past.n) * 100)}%`,
-            aria: null,
-            best: false,
-          },
+          past && pastNum(past),
         ].filter(Boolean),
       };
     }),

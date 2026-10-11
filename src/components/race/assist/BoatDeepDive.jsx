@@ -113,6 +113,7 @@ export default function BoatDeepDive({
   onMetric,
   onClose,
   openAll = false,
+  target = 1,
 }) {
   const [runsOpen, setRunsOpen] = useState(false);
   // 開いたら深掘りの上端まで送る。図の下に開くので、送らないと押した結果が画面の外になる（デザイナーのレビュー P1-1）
@@ -140,11 +141,12 @@ export default function BoatDeepDive({
     : [];
   const cw = ready ? courseWins(runs.data, raceId, course) : null;
   const counts = restClassCounts(today?.classes, boat);
-  const u = b1Usual(scope, boat);
+  const u = b1Usual(scope, boat, target);
   const techTotal = technique?.win_count ?? 0;
   // 先頭に出す結論: ▲（今日6艇で一番・一番下）の付いた材料を最大3件（2026-10-09 ユーザー決定 A）
   const topChips = chips.filter((c) => c.hit).slice(0, TOP_FACTS);
-  const base = u ? Math.round((u.k / u.n) * 100) : 0;
+  // 軸の大きい数字と同じ小数1桁（69.7% と 70% が別の値に見えないように。BOA-831 ファン評価 1周目 指摘1、承認モック v2）
+  const base = u ? ((u.k / u.n) * 100).toFixed(1) : "0.0";
   const scopeLabel = scope
     ? C.scopeChip(
         factsScopeLabel(scope, venue, boat, today?.classes?.[i]),
@@ -186,7 +188,13 @@ export default function BoatDeepDive({
             <span className="ta-scopechip ta-num">{scopeLabel}</span>
             <span>{C.factsLegend}</span>
           </div>
-          <FactChips chips={topChips} base={base} round={round} boat={boat} />
+          <FactChips
+            chips={topChips}
+            base={base}
+            round={round}
+            boat={boat}
+            target={target}
+          />
           <p className="ta-note">{C.factsNotCause}</p>
         </div>
       )}
@@ -411,6 +419,7 @@ export default function BoatDeepDive({
               base={base}
               round={round}
               boat={boat}
+              target={target}
             />
             <p className="ta-note">{C.factsNotCause}</p>
             {/* 軸の要約の箱から移した注記（案D） */}

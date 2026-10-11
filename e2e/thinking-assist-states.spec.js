@@ -1779,3 +1779,77 @@ test.describe("思考アシスト: GA4 のイベント（公開後のフォロ�
     expect(events.slice(5).map(([, p]) => p.assist_guide_step)).toEqual([1, 2]);
   });
 });
+
+test.describe("思考アシスト: 軸・買い目で共通の着順（BOA-831、spec D-44）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+  const seg = (page) =>
+    page.getByRole("group", { name: "何着までで見るか（軸・買い目で共通）" });
+
+  test("軸で2着以内を選ぶと問い・大きい数字・入口1行・深掘りの札が2着以内になり、買い目にも引き継がれる", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await routeThinkingAssistV16(page);
+    await open(page);
+    const sum = page.locator(".ta-sum");
+    await expect(
+      sum.getByRole("heading", { name: /^1号艇が1着になったのは/ }),
+    ).toBeVisible();
+    const two = seg(page).getByRole("button", { name: "2着以内" });
+    const h = await two.evaluate((el) => el.getBoundingClientRect().height);
+    expect(h).toBeGreaterThanOrEqual(44);
+    await two.click();
+    await expect(two).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(".ta-lens-q")).toContainText("2着までに残るか");
+    await expect(
+      sum.getByRole("heading", { name: /^1号艇が2着以内に来たのは/ }),
+    ).toBeVisible();
+    await expect(sum.locator(".ta-big-pct")).toHaveText("69.7%");
+    await expect(sum.locator(".ta-big-cnt")).toHaveText("83/119レース");
+    const entry = page.getByRole("button", {
+      name: /^1号艇の差がつく材料 ▲3件（2着以内）/,
+    });
+    await entry.click();
+    const region = page.getByRole("region", { name: "1号艇の詳しい情報" });
+    await expect(region).toContainText(
+      "▲6艇で一番早いとき 2着以内 77%・22件（全体 69.7%）",
+    );
+
+    await lensTab(page, "買い目").click();
+    await expect(
+      seg(page).getByRole("button", { name: "2着以内" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText(/^過去の2着以内＝/)).toBeVisible();
+    // 切り替えはオッズの見出しより上（見出しと点の間に挟まない。ファン評価 1周目 指摘4）
+    const segY = await seg(page).evaluate(
+      (el) => el.getBoundingClientRect().top,
+    );
+    const titleY = await page
+      .locator(".ta-board-title")
+      .evaluate((el) => el.getBoundingClientRect().top);
+    expect(segY).toBeLessThan(titleY);
+    await expect(page.getByText("過去の2着以内").first()).toBeVisible();
+    await expect(page.locator(".ta-board")).toContainText("70%（83/119）");
+
+    // 買い目で3着以内に変えると軸も3着以内（共通）
+    await seg(page).getByRole("button", { name: "3着以内" }).click();
+    await lensTab(page, "軸").click();
+    await expect(
+      sum.getByRole("heading", { name: /^1号艇が3着以内に来たのは/ }),
+    ).toBeVisible();
+    await expect(sum.locator(".ta-big-pct")).toHaveText("79.0%");
+
+    const events = await page.evaluate(() =>
+      window.__events.filter(
+        (e) => e[0] === "event" && e[1] === "assist_target",
+      ),
+    );
+    expect(events.map((e) => [e[2].assist_target, e[2].assist_lens])).toEqual([
+      [2, "axis"],
+      [3, "bet"],
+    ]);
+  });
+});

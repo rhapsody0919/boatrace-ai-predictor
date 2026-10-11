@@ -4,6 +4,7 @@ import { BOAT_LINE_COLORS } from "../../../utils/colors";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 import { METRICS } from "../../../utils/assistModel";
 import { TheoryButton } from "./SheetButtons";
+import TargetSwitch from "./TargetSwitch";
 
 const scale = (model, x) =>
   Math.max(0, Math.min(100, ((x - model.lo) / (model.hi - model.lo)) * 100));
@@ -15,7 +16,7 @@ function NumButton({ num, boat, onMetric }) {
   if (!num.metric)
     return (
       // 押せない値（1着人気・過去の1着）はボタンの見た目にしない（ファン評価 PR4 1周目 指摘6）
-      <span className="ta-num-static">
+      <span className={`ta-num-static${num.muted ? " ta-num-muted" : ""}`}>
         {num.short} <b className="ta-num">{num.text}</b>
       </span>
     );
@@ -120,6 +121,8 @@ export default function RaceLaneBoard({
   onToggleBet,
   onBasis = null,
   marks = null,
+  target = 1,
+  onTarget = null,
 }) {
   const bet = model.kind === "bet";
   // 「+」で候補のボタンを開いている行（開くのは1行だけ。レンズが替わったら閉じる。BOA-801 7）
@@ -168,6 +171,10 @@ export default function RaceLaneBoard({
           </span>
         </div>
       )}
+      {/* 着順の切り替えと注記はオッズの見出しより上に置く。見出しと点の間に挟むと、点の位置まで着順で変わったように見える
+          （BOA-831 ファン評価 1周目 指摘4） */}
+      {bet && onTarget && <TargetSwitch target={target} onTarget={onTarget} />}
+      {bet && <p className="ta-note">{ASSIST_COPY.pastWinNote(target)}</p>}
       <div className="ta-board-axis" aria-hidden="true">
         <span>
           {model.good === "left" && (
@@ -184,7 +191,6 @@ export default function RaceLaneBoard({
         </span>
       </div>
       {model.noOdds && <p className="ta-note">{oddsNote}</p>}
-      {bet && <p className="ta-note">{ASSIST_COPY.pastWinNote}</p>}
       {model.rows.map((row) => {
         const r = racers[row.boat - 1];
         const positions = [1, 2, 3].filter((k) => bets[k].has(row.boat));
