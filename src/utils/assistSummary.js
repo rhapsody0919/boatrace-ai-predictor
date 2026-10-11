@@ -78,9 +78,10 @@ export const factsScopeLabel = (scope, venue, boat = null, cls = null) =>
   }${boat && cls ? `（${boat}号艇が${cls}）` : ""}`;
 
 /**
- * 差がつく材料の行（1着）。today の6艇の値で、その艇の今日の位置（1＝一番良い、6＝一番悪い）を付ける。
+ * 差がつく材料の行。today の6艇の値で、その艇の今日の位置（1＝一番良い、6＝一番悪い）を付ける。
+ * target は着順（1＝1着・2＝2着以内・3＝3着以内。軸・買い目の切り替え、spec D-44）。今日の位置は着順で変わらない
  * 優勝戦・準優勝戦の日の今節の平均着順点は「今日」に使わない（off。FR-5・v16 Q7）
- * @param {{scope: ReturnType<typeof factsScope>, today: object|null, exhibition?: object|null, boat: number, post: boolean, finalRound: boolean}} args
+ * @param {{scope: ReturnType<typeof factsScope>, today: object|null, exhibition?: object|null, boat: number, post: boolean, finalRound: boolean, target?: 1|2|3}} args
  * @returns {Array<{key: string, good: string, bad: string, level: string, bucket: number|null, off: boolean, hit: boolean, pair: [number, number]|null, rate: number|null, best: [number, number]|null, worst: [number, number]|null}>}
  */
 export function factChips({
@@ -90,10 +91,11 @@ export function factChips({
   boat,
   post,
   finalRound,
+  target = 1,
 }) {
   if (!scope) return [];
   const values = todayValues(today, exhibition);
-  return factRows(scope.facts, boat, 1, post).map((r) => {
+  return factRows(scope.facts, boat, target, post).map((r) => {
     const off = r.key === "series_score" && finalRound;
     const pos = values[r.key]
       ? todayPosition(values[r.key], r.hib, boat)
@@ -141,11 +143,11 @@ export const boardFactMark = (chips) =>
   chips.find((c) => c.level === "large" && c.bucket === 1 && !c.off) ?? null;
 
 /**
- * 軸の要約の大きい数字: その範囲での1号艇の1着（返還のあったレースを含む。facts の usual）
+ * 軸の要約の大きい数字: その範囲でのその艇の1着・2着以内・3着以内（target。返還のあったレースを含む。facts の usual）
  * @returns {null | {k: number, n: number}}
  */
-export function b1Usual(scope, boat = 1) {
-  const pair = scope ? usualOf(scope.facts, boat, 1) : null;
+export function b1Usual(scope, boat = 1, target = 1) {
+  const pair = scope ? usualOf(scope.facts, boat, target) : null;
   return pair && pair[1] ? { k: pair[0], n: pair[1] } : null;
 }
 

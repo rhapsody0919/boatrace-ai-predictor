@@ -3,10 +3,10 @@ import { ASSIST_COPY as C } from "../../../data/thinkingAssistCopy";
 import { TheoryButton } from "./SheetButtons";
 
 /**
- * 差がつく材料の札（1着。▲＝今日6艇で一番上か一番下）。押すとセオリーカード（TC-F）で、
+ * 差がつく材料の札（target の着順。▲＝今日6艇で一番上か一番下）。押すとセオリーカード（TC-F）で、
  * 一番良いとき・一番悪いときの割合と件数が出る。札には件数と差の大きさを添える（BOA-808 の3）
  */
-export default function FactChips({ chips, base, round, boat }) {
+export default function FactChips({ chips, base, round, boat, target = 1 }) {
   return (
     <div className="ta-chips">
       {chips.map((c) => {
@@ -22,7 +22,13 @@ export default function FactChips({ chips, base, round, boat }) {
             <b>{C.factNames[c.key]}</b>
             <span className="ta-num">
               {c.hit
-                ? C.factHit(word, Math.round(c.rate * 100), c.pair[1], base)
+                ? C.factHit(
+                    word,
+                    Math.round(c.rate * 100),
+                    c.pair[1],
+                    base,
+                    target,
+                  )
                 : c.off
                   ? C.factFinalOff(ROUND_LABEL[round] ?? "")
                   : c.bucket

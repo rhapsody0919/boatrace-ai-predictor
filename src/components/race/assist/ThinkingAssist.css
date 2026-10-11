@@ -1843,3 +1843,56 @@
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
 }
+
+/* ---- 軸・買い目で共通の着順の切り替え（BOA-831、spec D-44。承認モック v2） ---- */
+.ta-target {
+  display: grid;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.ta-target-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.ta-target-seg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--text-primary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.ta-target-seg button {
+  min-height: 44px;
+  border: 0;
+  border-left: 1px solid var(--text-primary);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.ta-target-seg button:first-child {
+  border-left: 0;
+}
+
+.ta-target-seg button[aria-pressed="true"] {
+  background: var(--text-primary);
+  color: var(--surface-card);
+}
+
+.ta-target-seg button:focus-visible {
+  outline: 3px solid var(--color-info-text);
+  outline-offset: -3px;
+}
+
+/* 1着以外を選んだときの「人気（1着）」。着順の違う数字を取り違えないよう主従を分ける（デザイナー役 P2-5） */
+.ta-num-muted,
+.ta-num-muted b {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-normal);
+}

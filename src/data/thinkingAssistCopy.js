@@ -6,6 +6,9 @@
  * 使わない語: 「似たレース」「いつも」「競艇」「鉄板」「大本線」（spec 位置づけ・N-7、受け入れ E2E の禁止語）
  */
 
+// 着順の言葉（龍神ソナーの aiPredictionTab.analogy.targets と同じ）
+const TARGET_LABEL = Object.freeze({ 1: "1着", 2: "2着以内", 3: "3着以内" });
+
 export const ASSIST_COPY = Object.freeze({
   title: "思考アシスト",
   disclaimer:
@@ -194,8 +197,8 @@ export const ASSIST_COPY = Object.freeze({
   factsLegend: "▲＝今日6艇で一番上か一番下",
   // 件数を添える（どれだけのレースから出した割合か。BOA-808 の3）
   // 「→」はヘッダーで「はっきりしない」の印に使うので、ここでは使わない（ファン評価 PR5 1周目 指摘5）
-  factHit: (word, p, n, base) =>
-    `▲6艇で一番${word}とき 1着 ${p}%・${n.toLocaleString("ja-JP")}件（全体 ${base}%）`,
+  factHit: (word, p, n, base, target = 1) =>
+    `▲6艇で一番${word}とき ${TARGET_LABEL[target]} ${p}%・${n.toLocaleString("ja-JP")}件（全体 ${base}%）`,
   factNoToday: "今日の値なし",
   // 差の大きさ（v16 の judgeGap の level）。軸の要約の「差がはっきり大きい材料は無い」と同じ判定
   factLevel: Object.freeze({
@@ -210,7 +213,8 @@ export const ASSIST_COPY = Object.freeze({
   // 深掘りの残りの材料を畳んだ見出し（2026-10-09 ユーザー決定 A）
   factsAll: (boat) => `全部の材料（${boat}号艇）`,
   // 軸の要約の入口1行（2026-10-11 ユーザー決定 案D）。押すと深掘りが開く
-  factsEntry: (boat, n) => `${boat}号艇の差がつく材料 ▲${n}件`,
+  factsEntry: (boat, n, target = 1) =>
+    `${boat}号艇の差がつく材料 ▲${n}件${target === 1 ? "" : `（${TARGET_LABEL[target]}）`}`,
   factsEntryNames: (names, rest) =>
     `${names.join("・")}${rest > 0 ? ` ほか${rest}件` : ""}`,
   factsEntryNone: (boat) => `${boat}号艇の全部の材料（今日は▲なし）`,
@@ -223,7 +227,18 @@ export const ASSIST_COPY = Object.freeze({
     hint: "平均STがそろったレース",
     entry: "進入が分かったレース",
   }),
-  axisHeading: (boat) => `${boat}号艇が1着になったのは`,
+  axisHeading: (boat, target = 1) =>
+    target === 1
+      ? `${boat}号艇が1着になったのは`
+      : `${boat}号艇が${TARGET_LABEL[target]}に来たのは`,
+  // 軸・買い目の着順の切り替え（BOA-831、spec D-44）。言葉は龍神ソナーと同じ
+  targets: TARGET_LABEL,
+  targetGroup: "何着までで見るか（軸・買い目で共通）",
+  axisSub: Object.freeze({
+    1: "誰が1着候補か",
+    2: "2着までに残るか",
+    3: "3着までに残るか",
+  }),
   races: (k, n) =>
     `${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}レース`,
   venueAllN: (venue, n) => `${venue}の全レース ${n.toLocaleString("ja-JP")}件`,
@@ -271,8 +286,14 @@ export const ASSIST_COPY = Object.freeze({
   // 何の形のときの攻め手かを書く（同 指摘9）
   attackMark: (form) => `${form}なら攻め手`,
   // 買い目の図の「過去の1着」がどの範囲の値か（艇ごとに違う。271 の指摘の型「どのレースから出した数字か」）
-  pastWinNote:
-    "過去の1着＝その艇の差がつく材料と同じ集めたレースでの1着の割合（艇ごとに範囲が違う。範囲と件数は艇の丸から）",
+  // 承認モック v2 の1文（BOA-831、デザイナー役 P2-4）。件数は各艇の割合の括弧に出す
+  pastWinNote: (target = 1) =>
+    `過去の${TARGET_LABEL[target]}＝艇ごとに、その艇の深掘りと同じレースでの割合`,
+  pastLabel: (target = 1) => `過去の${TARGET_LABEL[target]}`,
+  pastText: (k, n) =>
+    `${Math.round((k / n) * 100)}%（${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}）`,
+  // 1着以外を選んだときの人気の札（人気は1着になる組のオッズのまま。D-44 (2)）
+  popLabel: (target = 1) => (target === 1 ? "1着人気" : "人気（1着）"),
   // 優勝戦・準優勝戦の日でも、展開はラウンドを問わずに集める（形・進入の件数が要るため）。そうと分かる呼び名にする
   flowScopeLabel: (final) =>
     final ? "全国・級の並びが同じ（予選も含む）" : "全国・級の並びが同じ",
@@ -477,7 +498,8 @@ export const ASSIST_COPY = Object.freeze({
   theoryEntryShare: (name) => `${name}になったレース`,
   theoryFactTitle: (name, boat) => `${boat}号艇の${name}`,
   theoryFactCond: (name, good, bad) => `${name}が6艇で一番${good}／一番${bad}`,
-  theoryFactLikely: (boat) => `${boat}号艇の1着の割合が変わる`,
+  theoryFactLikely: (boat, target = 1) =>
+    `${boat}号艇の${TARGET_LABEL[target]}の割合が変わる`,
   theoryFactWhen: (word) => `一番${word}とき`,
   theoryFactToday: (boat, pos) => `今日の${boat}号艇は6艇で${pos}`,
   theoryFactFinalOff:

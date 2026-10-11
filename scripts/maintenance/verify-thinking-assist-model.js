@@ -748,6 +748,63 @@ check(
   );
 }
 
+// ---- 軸・買い目で共通の着順（BOA-831、spec D-44）----
+{
+  const st = { lens: "axis", deep: null, metric: null, target: 1 };
+  check(
+    "イベント: 着順の切り替えは assist_target（押したレンズも）。選択中の着順の押し直しは送らない",
+    JSON.stringify(assistEventOf(st, { type: "target", target: 2 })) ===
+      JSON.stringify({
+        name: "assist_target",
+        params: { assist_target: 2, assist_lens: "axis" },
+      }) &&
+      assistEventOf(st, { type: "target", target: 1 }) === null &&
+      assistEventOf(
+        { ...st, target: 3, lens: "bet" },
+        { type: "target", target: 3 },
+      ) === null,
+  );
+  const tri = { "1-2-3": 6.4, "2-1-3": 37.5 };
+  const pastWin = new Map([[1, { k: 83, n: 119 }]]);
+  const row = (target) =>
+    boardModel({
+      lens: "bet",
+      stage: "post",
+      racers,
+      trifecta: tri,
+      pastWin,
+      target,
+    }).rows[0].nums;
+  const r1 = row(1);
+  const r2 = row(2);
+  check(
+    "買い目: 2着以内を選ぶと「人気（1着）」を薄く、「過去の2着以内 70%（83/119）」。1着では「1着人気」「過去の1着」",
+    r2[0].label === "人気（1着）" &&
+      r2[0].muted === true &&
+      r2[1].label === "過去の2着以内" &&
+      r2[1].text === "70%（83/119）" &&
+      r1[0].label === "1着人気" &&
+      r1[0].muted === false &&
+      r1[1].label === "過去の1着",
+    JSON.stringify({ r1, r2 }),
+  );
+  const noOdds = boardModel({
+    lens: "bet",
+    stage: "post",
+    racers,
+    trifecta: null,
+    pastWin,
+    target: 3,
+  }).rows[0].nums;
+  check(
+    "買い目: オッズが無いときも過去の{着順}と件数を出す",
+    noOdds.length === 1 &&
+      noOdds[0].label === "過去の3着以内" &&
+      noOdds[0].text === "70%（83/119）",
+    JSON.stringify(noOdds),
+  );
+}
+
 if (failures > 0) {
   console.error(`\n${failures}件の失敗`);
   process.exit(1);
