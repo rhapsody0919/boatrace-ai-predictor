@@ -121,10 +121,13 @@ ADR 0032 は、AI クローラー向けの中身を「ビルド時に作る静�
    - headers の照合が rewrite の前と後のどちらのパスで行われるかは、文書で決まらない
    - Preview で bingbot の UA で2回続けて取り、`x-vercel-cache` が MISS→HIT になるかを見る
    - MISS が続くなら、vercel.json の no-store の規則に UA の除外（`missing`）を足し、UA の一覧が `aiCrawlerBots.js` と一致することを verify で固定する
+   - 結果（#1409 の Preview、2026-10-12）: 配線だけでは MISS が続いた（応答に `CDN-Cache-Control: no-store`。headers は rewrite 前のパスで照合される）。no-store の規則を分け、/ と /venue/1〜24 だけ `missing` で配る UA を除外したところ MISS→HIT になった。UA の一覧の一致は `verify-middleware-routing.js` で固定した
 2. **キャッシュの取り違え**
    - キャッシュのキーに UA は入らない
    - ボットで /venue/1 を取った直後に、人の UA で同じ URL を取り、SPA の外枠が返ることを確かめる
    - ボット向け HTML が人に返ったら公開しない。その場合は `Vary: User-Agent` を付けて確かめ直す
+   - 結果（#1409 の Preview、2026-10-12）: ボットの直後に人・Googlebot の UA で / と /venue/1・9・12 を取り、すべて SPA の外枠が返った（人が先でも同じ）。`Vary: User-Agent` は付けていない
+   - 付記: rewrite 先の関数には、req.url が元のパス（/venue/1）のまま届く。関数は /venue/{code} も受ける
 3. **人の会場ページに出る項目が、すべて `/api/races/today` から取れるか**: 人の会場ページは `/api/predictions/{date}` を使っている。PR1 で突き合わせる
 4. 実際のボットの来訪数と、どの地域から来るか
    - 実装の前に、Vercel の画面で今のスナップショット（/blog/*・/today）への UA 別の取得数を1日分見る
