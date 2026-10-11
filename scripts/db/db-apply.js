@@ -167,7 +167,7 @@ function apply(migrationPath, expectedSha256) {
   }
   writeGithubFile(
     "GITHUB_STEP_SUMMARY",
-    `## 適用済み: \`${migrationPath}\`\n\nsha256 \`${sha256}\`。台帳（APPLIED.md）を更新する PR は次の job が作る。` +
+    `## 適用済み: \`${migrationPath}\`\n\nsha256 \`${sha256}\`。台帳（APPLIED.md）は次の job（record）が master に直接コミットする。` +
       "その job が失敗しても、DB には適用済み（この job を再実行しない）。\n",
   );
 }

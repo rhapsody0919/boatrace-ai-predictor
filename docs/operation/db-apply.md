@@ -21,15 +21,14 @@ flowchart TD
   E -->|sha256 不一致・再検査で不正| X2[失敗<br/>DB には触らない]
   E --> F[psql で1つのトランザクションとして実行]
   F -->|途中で失敗| R[全体がロールバック<br/>台帳は更新しない]
-  F -->|成功| G[record<br/>APPLIED.md を適用済みにする PR を作る]
-  G --> H[人がその PR をマージ]
+  F -->|成功| G[record<br/>APPLIED.md を適用済みにして<br/>master に直接コミット]
 ```
 
 | job | 何をするか | secret | 書き込み権限 |
 |---|---|---|---|
 | inspect | master からの起動か確認、パスの検証、HEAD に通常ファイルとしてあるか確認、SQL の検査、job summary の出力 | 読まない | なし |
 | apply | 承認を待つ。承認後、同じコミットを取り出し sha256 を再照合・再検査してから psql で実行 | `SUPABASE_DB_URL`（この job だけ） | なし |
-| record | 最新の master に対して APPLIED.md を更新するブランチを作り、PR を開く | 読まない | contents・pull-requests |
+| record | 最新の master の APPLIED.md を更新し、アプリ ryujin-bot の名義で master に直接コミットする（`[automated]`、`push-with-retry.sh`） | DB の secret は読まない（Environment `ryujin-bot` の App の鍵だけ） | GITHUB_TOKEN にはなし（App トークンの contents だけ） |
 
 ### 承認の前に止めるもの（inspect）
 
@@ -85,14 +84,14 @@ flowchart TD
 | Required reviewers | 自分（rhapsody0919） | 適用の前に必ず本人が承認する |
 | Prevent self-review | **OFF** | 起動するのも承認するのも本人1人のため。ON だと自分で起動した run を自分で承認できない |
 | Wait timer | 0（設定しない） | |
-| Allow administrators to bypass | OFF のまま（任意） | |
+| Allow administrators to bypass | **OFF** | ON だと admin（本人のアカウント。Claude の `gh` も同じアカウント）が承認なしで適用できる |
 | Deployment branches and tags | **Selected branches and tags** で `master` だけ | master 以外から起動した run はこの Environment を使えない（ワークフロー側でも master 以外は落とす） |
 | Environment secrets | `SUPABASE_DB_URL` = 手順1の接続文字列 | 承認後の job だけが読める。リポジトリの secret には置かない |
 
-### 3. Actions に PR を作らせる許可（GitHub）
+### 3. 変えない設定（GitHub）
 
-Settings > Actions > General > Workflow permissions で **Allow GitHub Actions to create and approve pull requests** にチェックを入れる。
-入れないと、適用は成功しても record job（台帳の PR を作る）が失敗する（その場合の対処は「失敗したとき」）。
+- Settings > Actions > General > Workflow permissions の **Allow GitHub Actions to create and approve pull requests** は **OFF のまま**にする。record は PR を作らず、アプリ ryujin-bot の名義で master に直接コミットするので要らない。ON にすると pull_request のワークフローが bot として PR を承認でき、master の「承認1件」の要件が実質なくなる
+- Environment `ryujin-bot`（`RYUJIN_BOT_APP_ID`・`RYUJIN_BOT_PRIVATE_KEY`）は他の自動コミットと共用で、既にある。足すものは無い
 
 ## 毎回の手順
 
@@ -109,9 +108,8 @@ Settings > Actions > General > Workflow permissions で **Allow GitHub Actions t
    - 「台帳では既に適用済み」の注意が出ていれば、再適用してよいかを確かめる
 4. 問題なければ **Review deployments** > `production-db` にチェック > **Approve and deploy**。やめるなら **Reject**
    - 承認すると、起動した時点のコミットのファイルが適用される。承認待ちのまま古くなった run（その後に同じファイルを直した等）は承認せず Reject し、起動し直す
-5. apply が成功すると、record が `db-apply/<ファイル名>-<run番号>-<試行回数>` ブランチで APPLIED.md の PR を作る
-   - GITHUB_TOKEN が作った PR には他のワークフロー（Quality Gates）が自動では走らない。PR を一度閉じて開き直すと走る
-   - 中身（適用状況の列）を確認してマージする。「確認した根拠」の列を書き足すならこの PR に足す
+5. apply が成功すると、record が APPLIED.md の行を「適用済み（日付・run URL・sha256）」にして master に直接コミットする（人の操作は要らない）
+   - 「確認した根拠」の列を書き足すなら、別の PR で足す
 6. ファイル冒頭の「適用後の確認」を実行する。RPC を変えたなら `node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js` も実行する（CLAUDE.md の自動レビュー4）
 
 ## 失敗したとき
@@ -121,12 +119,12 @@ Settings > Actions > General > Workflow permissions で **Allow GitHub Actions t
 | inspect | 触っていない | 変わらない | summary の理由を直したマイグレーションを master にマージし、新しく起動する |
 | apply の sha256 照合・再検査 | 触っていない | 変わらない | 起こらない想定（同じコミットを取り出している）。起きたら run を残して調べる |
 | apply の psql | **全体がロールバック済み**（1つのトランザクション） | 変わらない（record は動かない） | ログの `psql:<file>:<行>: ERROR:` を見てマイグレーションを直し、master にマージして新しく起動する。`lock_timeout` 切れなら時間を置いて **Re-run jobs** でもよい（再承認が要る） |
-| record | **適用済み** | 変わらない | **apply を再実行しない**。record だけを **Re-run failed jobs** で再実行する（失敗した job だけが動き、apply は再実行されない。ブランチ名に試行回数が入るので1回目に push したブランチとぶつからない。残った1回目のブランチは消す）。それでも無理なら APPLIED.md を手で直す PR を出す |
+| record | **適用済み** | 変わらない | **apply を再実行しない**。record だけを **Re-run failed jobs** で再実行する（失敗した job だけが動き、apply は再実行されない）。それでも無理なら APPLIED.md を手で直す PR を出す |
 
 - **Re-run all jobs** は apply も含めてやり直す（承認がもう一度要る）。適用済みのものを再適用しないよう、record の失敗では使わない
 - 同時に2本は走らない（`concurrency: db-apply`。2本目は1本目が終わるまで待つ）。待てるのは1本だけで、3本目を起動すると待っている2本目は取り消される。承認待ちの run も枠を占めるので、使わない run は Reject する
 - 成功したが内容が誤っていた場合に自動で戻す手段は無い。戻す SQL を書いて同じ手順で適用する。最終手段は Supabase のバックアップからの復元（プランで有無・保持期間が違う。Dashboard > Database > Backups で確認する）
-- 台帳（APPLIED.md）は record の PR をマージするまで「適用済み」にならない。その間に同じファイルを起動しても「既に適用済み」の注意は出ない。record の PR は早めにマージする
+- 台帳（APPLIED.md）は record のコミットが master に入るまで「適用済み」にならない。record が失敗したまま同じファイルを起動しても「既に適用済み」の注意は出ないので、record の失敗は先に片付ける（DB 側での二重適用の防止は BOA-842）
 
 ## Claude（AI）は起動・承認しない
 

@@ -10,7 +10,8 @@
  *   5. 冒頭コメントの確認 SQL の抽出
  *   6. 台帳（APPLIED.md）の更新（既存の行・行が無い場合）
  *   7. docs/db-migration/ の実ファイルの判定（CONCURRENTLY を含む 050・055 以外は通る）
- *   8. ワークフローの配線（secret は apply だけ、${{ inputs.* }} を run に直接書かない、書き込み権限は record だけ、
+ *   8. ワークフローの配線（DB の secret は apply だけ、${{ inputs.* }} を run に直接書かない、GITHUB_TOKEN に書き込み権限を渡さない、
+ *      record は ryujin-bot の App トークンで master に直接コミットする、
  *      Environment production-db を使うのは db-apply.yml だけ）
  *   9. 承認画面（job summary）を SQL の書き手が操作できない（表のセル・見出しのエスケープ、見えない制御文字の拒否、
  *      長い行の注意、本文を切り詰めない）
@@ -423,26 +424,44 @@ check(
     /^permissions:\n {2}contents: read\s*$/m.test(yml),
   );
   check(
-    "secret を読むのは apply だけ",
+    "DB の secret を読むのは apply だけ・inspect は secret を読まない",
     !/secrets\./.test(body("inspect")) &&
-      !/secrets\./.test(body("record")) &&
+      !/SUPABASE_DB_URL/.test(body("record")) &&
       /secrets\.SUPABASE_DB_URL/.test(body("apply")),
+  );
+  check(
+    "record が読む secret は ryujin-bot の App の鍵だけ",
+    eq(
+      [...body("record").matchAll(/secrets\.([A-Z_]+)/g)].map((m) => m[1]).sort(),
+      ["RYUJIN_BOT_APP_ID", "RYUJIN_BOT_PRIVATE_KEY"],
+    ),
   );
   check(
     "apply は environment: production-db",
     /^ {4}environment: production-db\s*$/m.test(body("apply")),
   );
+  check("inspect は environment なし", !/environment:/.test(body("inspect")));
   check(
-    "inspect・record は environment なし",
-    !/environment:/.test(body("inspect")) &&
-      !/environment:/.test(body("record")),
+    "record は environment: ryujin-bot（App の鍵は master だけが使える）",
+    /^ {4}environment: ryujin-bot\s*$/m.test(body("record")),
+  );
+  // 「Allow GitHub Actions to create and approve pull requests」を ON にさせない（ON にすると pull_request の
+  // ワークフローが bot として PR を承認でき、master の承認1件の要件が実質なくなる）
+  check(
+    "GITHUB_TOKEN に書き込み権限を渡さない・PR を作らない",
+    !/: write/.test(yml.replace(/permission-contents: write/g, "")) &&
+      !/gh pr create/.test(yml),
   );
   check(
-    "書き込み権限は record だけ",
-    !/: write/.test(body("inspect")) &&
-      !/: write/.test(body("apply")) &&
-      /contents: write/.test(body("record")) &&
-      /pull-requests: write/.test(body("record")),
+    "record は App トークンで push-with-retry.sh を使い、checkout に資格情報を残さない",
+    /permission-contents: write/.test(body("record")) &&
+      /PUSH_TOKEN: \$\{\{ steps\.app-token\.outputs\.token \}\}/.test(body("record")) &&
+      /bash scripts\/maintenance\/push-with-retry\.sh/.test(body("record")) &&
+      /persist-credentials: false/.test(body("record")),
+  );
+  check(
+    "record のコミットは [automated]（Quality Gates・再生成ワークフローを再起動させない）",
+    /git commit -m "[^"]*\[automated\]"/.test(body("record")),
   );
   const runLines = [];
   let inRun = false;
@@ -484,10 +503,6 @@ check(
   check(
     "master 以外からの起動を落とす",
     /refs\/heads\/master/.test(body("inspect")),
-  );
-  check(
-    "record のブランチ名に試行回数を入れる（record だけの再実行で push がぶつからない）",
-    /branch="db-apply\/[^"]*\$\{GITHUB_RUN_ATTEMPT\}"/.test(body("record")),
   );
   check(
     "apply は承認前の sha256 を受け取る",

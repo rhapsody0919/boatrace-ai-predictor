@@ -5,7 +5,7 @@ name: DB Apply (production)
 #   inspect  承認の前。secret を読まない。パスの検証・sha256・触るテーブル・確認 SQL・本文を job summary に出し、
 #            トランザクションに包めない文・psql のメタコマンドがあればここで落とす
 #   apply    Environment production-db（required reviewer の承認が要る）。sha256 を再照合してから psql で適用する
-#   record   適用の後。APPLIED.md を「適用済み」にするブランチを作り PR を開く（マージは人が行う）
+#   record   適用の後。APPLIED.md の行を「適用済み」にして master に直接コミットする（アプリ ryujin-bot の名義）
 #
 # 起動・承認はユーザー本人が Actions 画面で行う。Claude からの起動・承認はフック（.claude/hooks/guard-deploy-approval.sh）で止めている。
 # データの一括投入（数万行の upsert スクリプト）は対象外。必要になったら別のワークフローにする。
@@ -89,37 +89,42 @@ jobs:
     needs: [inspect, apply]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions:
-      contents: write
-      pull-requests: write
+    # 台帳の更新は master へ直接コミットする（他の自動コミットと同じく、アプリ ryujin-bot の名義で ruleset を bypass する）。
+    # GITHUB_TOKEN には書き込み権限を渡さない。「Allow GitHub Actions to create and approve pull requests」も要らない
+    # （ON にすると pull_request のワークフローが bot として PR を承認でき、master の承認1件の要件が実質なくなるため）。
+    # アプリ ryujin-bot の Secrets は environment ryujin-bot（Deployment branches: master だけ）に置く
+    environment: ryujin-bot
     steps:
       # 台帳は最新の master に足す（承認を待つ間に master が進んでいても衝突しないように）
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: master
+          persist-credentials: false
 
-      - name: APPLIED.md を更新して PR を作る
+      - name: APPLIED.md を更新する
         env:
           MIGRATION: ${{ inputs.migration }}
           SHA256: ${{ needs.inspect.outputs.sha256 }}
-          GH_TOKEN: ${{ github.token }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/db/db-apply.js mark-applied "$MIGRATION" "$SHA256"
+
+      # トークンの有効期限は1時間なので push の直前に作る
+      - name: Create ryujin-bot token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.RYUJIN_BOT_APP_ID }}
+          private-key: ${{ secrets.RYUJIN_BOT_PRIVATE_KEY }}
+          permission-contents: write
+
+      - name: master にコミットする
+        env:
+          MIGRATION: ${{ inputs.migration }}
+          PUSH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          node scripts/db/db-apply.js mark-applied "$MIGRATION" "$SHA256"
           file=$(basename "$MIGRATION")
-          # record だけを再実行したとき（PR の作成で落ちた等）に、1回目に push したブランチと名前がぶつからないよう試行回数も入れる
-          branch="db-apply/${file%.sql}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -c "$branch"
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/db-migration/APPLIED.md
-          git commit -m "docs: ${file} を本番に適用済みとして台帳に記録する [db-apply]"
-          git push origin "$branch"
-          body=$(printf '%s\n\n%s\n%s\n\n%s\n' \
-            "db-apply ワークフローで \`${MIGRATION}\` を本番 DB に適用した。台帳（docs/db-migration/APPLIED.md）の行を「適用済み」にする。" \
-            "- run: ${RUN_URL}" \
-            "- sha256: \`${SHA256}\`" \
-            "GITHUB_TOKEN が作った PR では他のワークフロー（Quality Gates）が自動では走らない。走らせるには PR を閉じて開き直す。")
-          gh pr create --base master --head "$branch" \
-            --title "docs: ${file} を本番に適用済みとして台帳に記録する" \
-            --body "$body"
+          git commit -m "docs: ${file} を本番に適用済みとして台帳に記録する [automated]"
+          # master の更新と競合しても失敗しないよう rebase+リトライで push する（BOA-360）
+          bash scripts/maintenance/push-with-retry.sh
