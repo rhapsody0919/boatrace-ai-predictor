@@ -1,7 +1,8 @@
 /**
  * 思考アシスト（BOA-430）。1レースの予想を、レースの図と4つの見方（軸・展開・機力・買い目）で組み立てるページ。
  * ja 専用（languages.js の isFullyTranslatedPath の例外）。公開まで noindex（spec D-36 (9)）。
- * 状態は useReducer 1つで、URL・localStorage に残さない（plan「状態」）。
+ * 状態は useReducer 1つで、URL・localStorage に残さない（plan「状態」）。買い目・予算・配分の方式・着順・レンズだけは
+ * 同じタブの中でレースごとに sessionStorage に残し、ソナー等へ移ってから戻る・再読み込みで消えないようにする（utils/assistSession.js）。
  * レンズの要約・図の印・深掘りは PR4。セオリーカード・用語・会場の特徴・ガイドは PR5。上部の切り替え（AssistViewSwitch）は PR6
  */
 import {
@@ -74,6 +75,7 @@ import { formatObservedTime } from "../components/race/weatherInfo";
 import { isRaceCancelled } from "../utils/raceCancellation";
 import { ASSIST_COPY } from "../data/thinkingAssistCopy";
 import { trueWindDirection, windRelation } from "../utils/windDirection.js";
+import { loadAssistSession, saveAssistSession } from "../utils/assistSession";
 import "../components/race/assist/ThinkingAssist.css";
 
 const initialState = {
@@ -187,10 +189,29 @@ const withoutBoats = (bets, boats) =>
       )
     : bets;
 
+/**
+ * レースが替わったら状態を作り直す（別のレースの買い目を持ち越さない）。同じレースに戻ったら sessionStorage から戻す
+ */
 export default function ThinkingAssistPage() {
   const { raceId } = useParams();
+  return <ThinkingAssistBody key={raceId} />;
+}
+
+const initState = (raceId) => ({
+  ...initialState,
+  ...(loadAssistSession(raceId) ?? {}),
+});
+
+function ThinkingAssistBody() {
+  const { raceId } = useParams();
   useRobotsMeta(!THINKING_ASSIST_PUBLIC);
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, raceId, initState);
+  // 買い目・予算・配分の方式・着順・レンズを同じタブの中に残す（2026-10-11 ユーザーの不具合報告）
+  useEffect(() => {
+    saveAssistSession(raceId, state);
+    // 残す項目が変わったときだけ書く（深掘り・シートの開閉では書かない）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [raceId, state.bets, state.budget, state.mode, state.target, state.lens]);
   // 操作を GA4 に送ってから状態を変える。送るかどうかは押す前の状態で決める（docs/design/thinking-assist/events.md）。
   // シート・ガイドの memo の中からも呼ぶので、状態は描画のたびに ref へ移して act 自体は作り直さない
   const stateRef = useRef(state);

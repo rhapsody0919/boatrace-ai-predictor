@@ -1894,3 +1894,100 @@ test.describe("思考アシスト: 1号艇が1着のときの2着・3着と、�
     );
   });
 });
+
+test.describe("思考アシスト: 買い目を同じタブの中に残す（2026-10-11 ユーザーの不具合報告）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+  // 出走表とタブ・龍神ソナーの画面を挟むので、ほかの思考アシストのテストより重い（単独で約60秒）
+  test.setTimeout(150000);
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  async function markSheet(page) {
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    for (const [boat, pos] of [
+      [1, 1],
+      [2, 2],
+      [3, 2],
+      [2, 3],
+      [3, 3],
+      [4, 3],
+    ])
+      await sheet
+        .getByRole("button", { name: `${boat}号艇を${pos}着の候補に` })
+        .click();
+    await sheet.getByRole("spinbutton", { name: "予算" }).fill("2000");
+    await page.getByRole("button", { name: "閉じる", exact: true }).click();
+    await expect(footer(page)).toContainText("1-23-234（4点）");
+  }
+
+  test("マークシートの印・予算・着順・レンズは、龍神ソナーへ移ってブラウザで戻っても残る", async ({
+    page,
+  }) => {
+    await open(page);
+    await markSheet(page);
+    await page
+      .getByRole("group", { name: "何着までで見るか（軸・買い目で共通）" })
+      .getByRole("button", { name: "3着以内" })
+      .click();
+    await lensTab(page, "買い目").click();
+    await page
+      .getByRole("link", { name: /龍神ソナー/ })
+      .first()
+      .click();
+    await expect(page).toHaveURL(
+      new RegExp(`/race/${RACE_ID}\\?tab=aiPrediction`),
+    );
+    await page.goBack();
+    await expect(page).toHaveURL(/\/assist$/);
+    await expect(footer(page)).toContainText("1-23-234（4点）");
+    await expect(lensTab(page, "買い目")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(
+      page
+        .getByRole("group", { name: "何着までで見るか（軸・買い目で共通）" })
+        .getByRole("button", { name: "3着以内" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    await expect(
+      page
+        .getByRole("dialog", { name: "マークシート" })
+        .getByRole("spinbutton", { name: "予算" }),
+    ).toHaveValue("2000");
+  });
+
+  test("上部の切り替えで出走表とタブへ移って戻る・再読み込みでも残る。保存はレースごとのキー", async ({
+    page,
+  }) => {
+    await open(page);
+    await markSheet(page);
+    await page
+      .getByRole("group", { name: "表示" })
+      .getByRole("button", { name: "出走表とタブ" })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/race/${RACE_ID}$`));
+    await page
+      .getByRole("group", { name: "表示" })
+      .getByRole("button", { name: /思考アシスト/ })
+      .click();
+    await expect(page).toHaveURL(/\/assist$/);
+    await expect(footer(page)).toContainText("1-23-234（4点）");
+    await page.reload();
+    await expect(footer(page)).toContainText("1-23-234（4点）", {
+      timeout: 20000,
+    });
+    const keys = await page.evaluate(() =>
+      Object.keys(sessionStorage).filter((k) =>
+        k.startsWith("boatai-user:assist:"),
+      ),
+    );
+    expect(keys).toEqual([`boatai-user:assist:${RACE_ID}`]);
+  });
+});

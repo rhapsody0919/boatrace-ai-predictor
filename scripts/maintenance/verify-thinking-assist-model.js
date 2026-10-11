@@ -9,6 +9,11 @@
  */
 import { shouldOpenAssist, showNewBadge } from "../../src/utils/raceView.js";
 import { assistEventOf } from "../../src/utils/assistEvents.js";
+import {
+  ASSIST_SESSION_PREFIX,
+  parseAssistSession,
+  serializeAssistSession,
+} from "../../src/utils/assistSession.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -802,6 +807,55 @@ check(
       noOdds[0].label === "過去の3着以内" &&
       noOdds[0].text === "70%（83/119）",
     JSON.stringify(noOdds),
+  );
+}
+
+// ---- 買い目を同じタブの中に残す（2026-10-11 ユーザーの不具合報告）----
+{
+  const st = {
+    bets: { 1: new Set([1]), 2: new Set([2, 3]), 3: new Set([2, 3, 4]) },
+    budget: "2000",
+    mode: "equal",
+    target: 3,
+    lens: "bet",
+    deep: 2,
+    sheet: "mark",
+  };
+  const back = parseAssistSession(serializeAssistSession(st));
+  check(
+    "保存: 買い目・予算・配分の方式・着順・レンズを戻し、深掘り・シートは残さない",
+    JSON.stringify([...back.bets[1]]) === "[1]" &&
+      JSON.stringify([...back.bets[3]]) === "[2,3,4]" &&
+      back.budget === "2000" &&
+      back.mode === "equal" &&
+      back.target === 3 &&
+      back.lens === "bet" &&
+      !("deep" in back) &&
+      !("sheet" in back),
+    JSON.stringify(back),
+  );
+  check(
+    "保存: 壊れた値・形の違う値は捨てる（ページを落とさない）",
+    parseAssistSession("{") === null &&
+      parseAssistSession(null) === null &&
+      parseAssistSession('{"x":1}') === null &&
+      (() => {
+        const v = parseAssistSession(
+          '{"bets":{"1":[1,9,"2",1],"2":[],"3":[]},"budget":"abc","mode":"kelly","target":5,"lens":"zzz"}',
+        );
+        return (
+          JSON.stringify([...v.bets[1]]) === "[1]" &&
+          !("budget" in v) &&
+          !("mode" in v) &&
+          !("target" in v) &&
+          !("lens" in v)
+        );
+      })(),
+  );
+  check(
+    "保存: キーは boatai-user: 接頭辞（キャッシュの全削除 boatai:* で消えない）",
+    ASSIST_SESSION_PREFIX === "boatai-user:assist:" &&
+      !ASSIST_SESSION_PREFIX.startsWith("boatai:"),
   );
 }
 
