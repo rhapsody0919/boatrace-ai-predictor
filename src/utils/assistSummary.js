@@ -239,6 +239,14 @@ export function winFollowers(scenario, boat = 1) {
 }
 
 /**
+ * 案1b の件数と軸の大きい数字（1着、返還を含む）の関係。同じなら same、少ないなら返還を除いた分で refund、
+ * 多いとき（別の応答で時刻がずれた等）は書かない（null。BOA-831 /code-review の指摘）
+ * @returns {"same"|"refund"|null}
+ */
+export const followNoteKind = (n, axisK) =>
+  n === axisK ? "same" : n < axisK ? "refund" : null;
+
+/**
  * スリットの形のときの1着の艇とよく出た3連単（枠なり。承認モック v7 の「もし2コース凹みになったら」）
  * よく出た2連単（上位5つ）は BOA-831 案2（spec D-44 (4)）
  * @returns {null | {form: string, n: number, first: number[], topExacta: Array<[number[], number]>, topTrifecta: Array<[number[], number]>, attacker: number|null, few: boolean}}

@@ -28,6 +28,7 @@ import {
   axisWhyKinds,
   exactaList,
   winFollowers,
+  followNoteKind,
   featChips,
   formSummary,
   hintSummary,
@@ -808,6 +809,12 @@ check(
         "65件は上の 65/119 の65と同じレース" &&
       ASSIST_COPY.followRefund(60, 65) ===
         "返還のあったレースは除く（上の65件のうち60件）",
+  );
+  check(
+    "案1b: 件数の注記は同じなら same、少ないなら refund、多いときは出さない（/code-review の指摘）",
+    followNoteKind(65, 65) === "same" &&
+      followNoteKind(60, 65) === "refund" &&
+      followNoteKind(66, 65) === null,
   );
 }
 

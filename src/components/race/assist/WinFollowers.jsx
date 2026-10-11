@@ -1,5 +1,6 @@
 import BoatBadge from "../BoatBadge";
 import { ASSIST_COPY as C } from "../../../data/thinkingAssistCopy";
+import { followNoteKind } from "../../../utils/assistSummary";
 
 const pct = (k, n) => Math.round((k / n) * 100);
 
@@ -11,6 +12,7 @@ const pct = (k, n) => Math.round((k / n) * 100);
  *   axisK・axisN は軸の大きい数字（返還のあったレースを含む）。件数が同じなら「同じレース」と書く
  */
 export default function WinFollowers({ f, label, axisK, axisN }) {
+  const note = followNoteKind(f.n, axisK);
   const val = (k) => (f.few ? C.followCount(k) : `${pct(k, f.n)}%`);
   return (
     <section className="ta-box">
@@ -64,11 +66,12 @@ export default function WinFollowers({ f, label, axisK, axisN }) {
             .join("　")}
         </p>
       )}
-      <p className="ta-note ta-num">
-        {f.n === axisK
-          ? C.followSame(axisK, axisN)
-          : C.followRefund(f.n, axisK)}
-      </p>
+      {note === "same" && (
+        <p className="ta-note ta-num">{C.followSame(axisK, axisN)}</p>
+      )}
+      {note === "refund" && (
+        <p className="ta-note ta-num">{C.followRefund(f.n, axisK)}</p>
+      )}
     </section>
   );
 }
