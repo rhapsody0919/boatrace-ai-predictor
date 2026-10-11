@@ -4,6 +4,16 @@ import { followNoteKind } from "../../../utils/assistSummary";
 
 const pct = (k, n) => Math.round((k / n) * 100);
 
+/** よく出た組の並び。組と件数は改行で分けない（ファン評価 1周目 指摘6） */
+export function ComboList({ rows }) {
+  return rows.map(([x, k], i) => (
+    <span key={x.join("-")}>
+      {i > 0 && "　"}
+      <span className="ta-nowrap">{C.trifectaCount(x.join("-"), k)}</span>
+    </span>
+  ));
+}
+
 /**
  * 「1号艇が1着のとき、2着・3着に来たのは」（BOA-831 案1b、spec D-44 (3)。承認モック v2）。
  * 2〜6号艇 × 2着・3着の割合を1つの表に並べる（中に切り替えは置かない。軸の着順の切り替えと見分けがつかなくなるため）。
@@ -11,7 +21,9 @@ const pct = (k, n) => Math.round((k / n) * 100);
  * @param {{f: ReturnType<typeof import("../../../utils/assistSummary").winFollowers>, label: string, axisK: number, axisN: number}} props
  *   axisK・axisN は軸の大きい数字（返還のあったレースを含む）。件数が同じなら「同じレース」と書く
  */
-export default function WinFollowers({ f, label, axisK, axisN }) {
+export default function WinFollowers({ f, label, axisK, axisN, target = 1 }) {
+  // 上の大きい数字が1着のときだけ「上の 65/119」を指す
+  const win = target === 1;
   const note = followNoteKind(f.n, axisK);
   const val = (k) => (f.few ? C.followCount(k) : `${pct(k, f.n)}%`);
   return (
@@ -60,17 +72,18 @@ export default function WinFollowers({ f, label, axisK, axisN }) {
       </table>
       {f.topTrifecta.length > 0 && (
         <p className="ta-note ta-num">
-          {C.flowTopTrifecta}:{" "}
-          {f.topTrifecta
-            .map(([x, k]) => C.trifectaCount(x.join("-"), k))
-            .join("　")}
+          {C.flowTopTrifecta}: <ComboList rows={f.topTrifecta} />
         </p>
       )}
       {note === "same" && (
-        <p className="ta-note ta-num">{C.followSame(axisK, axisN)}</p>
+        <p className="ta-note ta-num">
+          {win ? C.followSame(axisK, axisN) : C.followSameAlone(axisK, axisN)}
+        </p>
       )}
       {note === "refund" && (
-        <p className="ta-note ta-num">{C.followRefund(f.n, axisK)}</p>
+        <p className="ta-note ta-num">
+          {win ? C.followRefund(f.n, axisK) : C.followRefundAlone(f.n, axisK)}
+        </p>
       )}
     </section>
   );

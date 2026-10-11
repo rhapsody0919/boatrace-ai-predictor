@@ -1882,6 +1882,11 @@ test.describe("思考アシスト: 1号艇が1着のときの2着・3着と、�
       .getByRole("button", { name: "3着以内" })
       .click();
     await expect(row(2)).toContainText("38%");
+    // 上の大きい数字が 94/119 のときは「上の 65/119」を指さない（ファン評価 1周目 指摘2）
+    await expect(box).toContainText(
+      "65件は、同じ範囲で1号艇が1着になった 65/119レースと同じ",
+    );
+    await expect(box).not.toContainText("上の 65/119");
 
     await lensTab(page, "展開").click();
     await expect(sum).toContainText(

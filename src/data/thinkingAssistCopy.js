@@ -243,6 +243,11 @@ export const ASSIST_COPY = Object.freeze({
   followCount: (k) => `${k.toLocaleString("ja-JP")}件`,
   followSame: (k, n) =>
     `${k.toLocaleString("ja-JP")}件は上の ${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")} の${k.toLocaleString("ja-JP")}と同じレース`,
+  // 2着以内・3着以内を選んでいるときは上に 65/119 が無いので、上を指さない書き方（ファン評価 1周目 指摘2）
+  followSameAlone: (k, n) =>
+    `${k.toLocaleString("ja-JP")}件は、同じ範囲で1号艇が1着になった ${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}レースと同じ`,
+  followRefundAlone: (k, axisK) =>
+    `返還のあったレースは除く（同じ範囲で1号艇が1着になった${axisK.toLocaleString("ja-JP")}件のうち${k.toLocaleString("ja-JP")}件）`,
   followRefund: (k, axisK) =>
     `返還のあったレースは除く（上の${axisK.toLocaleString("ja-JP")}件のうち${k.toLocaleString("ja-JP")}件）`,
   axisSub: Object.freeze({

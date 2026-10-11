@@ -808,7 +808,11 @@ check(
       ASSIST_COPY.followSame(65, 119) ===
         "65件は上の 65/119 の65と同じレース" &&
       ASSIST_COPY.followRefund(60, 65) ===
-        "返還のあったレースは除く（上の65件のうち60件）",
+        "返還のあったレースは除く（上の65件のうち60件）" &&
+      ASSIST_COPY.followSameAlone(65, 119) ===
+        "65件は、同じ範囲で1号艇が1着になった 65/119レースと同じ" &&
+      ASSIST_COPY.followRefundAlone(60, 65) ===
+        "返還のあったレースは除く（同じ範囲で1号艇が1着になった65件のうち60件）",
   );
   check(
     "案1b: 件数の注記は同じなら same、少ないなら refund、多いときは出さない（/code-review の指摘）",

@@ -1946,3 +1946,8 @@
   border-radius: 4px;
   background: var(--color-info-text);
 }
+
+/* よく出た組の「1-3（24件）」を途中で改行しない（BOA-831 ファン評価 1周目 指摘6） */
+.ta-nowrap {
+  white-space: nowrap;
+}
