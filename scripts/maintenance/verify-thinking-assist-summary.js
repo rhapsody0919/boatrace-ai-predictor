@@ -16,7 +16,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 import {
-  axisFactChips,
+  factsEntry,
   b1Usual,
   boardFactMark,
   courseWins,
@@ -25,6 +25,10 @@ import {
   factsScopeLabel,
   factChips,
   factsScope,
+  axisWhyKinds,
+  exactaList,
+  winFollowers,
+  followNoteKind,
   featChips,
   formSummary,
   hintSummary,
@@ -110,13 +114,33 @@ check(
   motor?.bucket === 6 && motor.pair[0] === 205 && motor.pair[1] === 675,
   JSON.stringify(motor),
 );
-const axisChips = axisFactChips(chipsNc);
-check(
-  "軸の要約の札: 差が大きい項目だけ・今日当てはまるものが先・4つまで",
-  axisChips.length <= 4 &&
-    axisChips.every((c) => c.level === "large") &&
-    axisChips[0].hit,
-);
+// 軸の要約の入口1行（2026-10-11 ユーザー決定 案D）: ▲の数と、深掘りの先頭と同じ順の項目2つまで
+{
+  const e = factsEntry(chipsNc);
+  const hits = chipsNc.filter((c) => c.hit);
+  check(
+    "入口1行: ▲の数・先頭2項目（深掘りの先頭と同じ順）・残りの件数",
+    e.hits === hits.length &&
+      JSON.stringify(e.keys) ===
+        JSON.stringify(hits.slice(0, 2).map((c) => c.key)) &&
+      e.rest === Math.max(0, hits.length - 2),
+    JSON.stringify(e),
+  );
+  check(
+    "入口1行: ▲が無い日は hits 0、材料が無い（範囲が無い）ときは出さない",
+    factsEntry(chipsNc.map((c) => ({ ...c, hit: false }))).hits === 0 &&
+      factsEntry([]) === null &&
+      factsEntry(null) === null,
+  );
+  check(
+    "入口1行の文: ▲あり・項目名と「ほか{n}件」・▲なし",
+    ASSIST_COPY.factsEntry(1, 3) === "1号艇の差がつく材料 ▲3件" &&
+      ASSIST_COPY.factsEntryNames(["当地勝率", "平均ST（直近30走）"], 1) ===
+        "当地勝率・平均ST（直近30走） ほか1件" &&
+      ASSIST_COPY.factsEntryNames(["当地勝率"], 0) === "当地勝率" &&
+      ASSIST_COPY.factsEntryNone(1) === "1号艇の全部の材料（今日は▲なし）",
+  );
+}
 check(
   "図の良い方の札: 一番良い（bucket 1）だけ。1号艇は平均ST",
   boardFactMark(chipsNc)?.key === "st_mean30",
@@ -562,6 +586,14 @@ check(
   ) === "全国・級の並びが同じ（予選も含む） 2,457件・平均STがそろったレース",
 );
 
+// 今節の平均着順点の一言（BOA-804）: 何を平均したか。優勝戦の日は準優勝戦の着順も入る
+check(
+  "今節の平均着順点の一言: 予選の日と優勝戦の日",
+  ASSIST_COPY.seriesAvgNote(7, 60, false) ===
+    "前日までの今節 7走の平均（60点÷7走。F・失格は0点）" &&
+    ASSIST_COPY.seriesAvgNote(8, 64, true).endsWith("。準優勝戦の着順も入る"),
+);
+
 // 用語の辞書・カードの文に禁止語が無い（D-41・D-42・N-7）
 const BANNED = /数え|集計|算出|対象|似た|似てい|ふつう|いつも|競艇|鉄板|大本線/;
 const theoryTexts = [
@@ -597,6 +629,7 @@ const bannedHits = [
   conclusion,
   ASSIST_COPY.simTopNote(63, "13:14"),
   ASSIST_COPY.entryNoPast,
+  ASSIST_COPY.seriesAvgNote(8, 64, true),
   JSON.stringify(ASSIST_COPY.scopeWhy),
   ASSIST_COPY.flowCourseNote,
   ASSIST_COPY.stNoData,
@@ -613,12 +646,182 @@ check(
 );
 const steps = guideSteps({ post: false, rough: null, hintTop: hs.top });
 check(
-  "ガイドは5段（軸・軸・展開・機力・買い目）、各段の1文は40字以内、展示前の④は展示の値を出さない",
-  steps.map((x) => x.lens).join() === "axis,axis,flow,power,bet" &&
+  "ガイドは6段（軸・軸・展開・機力・相手・買い目。spec D-46）、各段の1文は40字以内、展示前の④は展示の値を出さない",
+  steps.map((x) => x.lens).join() === "axis,axis,flow,power,place,bet" &&
+    ASSIST_COPY.guideStep(5, steps.length, steps[4].step) ===
+      "ガイド 5/6 ⑤相手" &&
     steps.every((x) => x.sub.length <= 40 && x.q.length <= 40) &&
     !steps[3].sub.includes("金枠"),
   JSON.stringify(steps.map((x) => x.sub)),
 );
+
+// 札の言い方: 形容詞に「の」を挟まない（「一番高いのとき」ではなく「一番高いとき」。2026-10-11 ユーザー指摘）
+{
+  const words = Object.values(ASSIST_COPY.factWords);
+  const texts = [
+    ...words.map((w) => ASSIST_COPY.factHit(w, 77, 1793, 72)),
+    ASSIST_COPY.motorChipRate(true, 60, 55),
+    ASSIST_COPY.motorChipRate(false, 40, 55),
+  ];
+  check(
+    "札: 「6艇で一番高いとき 1着」の形（「〜いのとき」にしない。誰の中で一番かを書く）",
+    texts.every((t) => !/いのとき/.test(t)) &&
+      texts[0] === "▲6艇で一番高いとき 1着 77%・1,793件（全体 72%）" &&
+      texts.at(-2).startsWith("一番高いとき 1着") &&
+      texts.at(-1).startsWith("一番低いとき 1着"),
+    JSON.stringify(texts),
+  );
+}
+
+// ---- 軸・買い目で共通の着順（BOA-831、spec D-44）----
+{
+  const u2 = b1Usual(s1, 1, 2);
+  const u3 = b1Usual(s1, 1, 3);
+  check(
+    "着順: 1号艇の2着以内 83/119・3着以内 94/119（v16 facts の top2・top3、承認モック v2 の値）",
+    u2?.k === 83 && u2?.n === 119 && u3?.k === 94 && u3?.n === 119,
+    JSON.stringify({ u2, u3 }),
+  );
+  const at = (target) =>
+    factChips({
+      scope: s1,
+      today,
+      boat: 1,
+      post: false,
+      finalRound: true,
+      target,
+    });
+  const pick = (chips) =>
+    Object.fromEntries(chips.filter((c) => c.hit).map((c) => [c.key, c.pair]));
+  const w1 = pick(at(1));
+  const w2 = pick(at(2));
+  const w3 = pick(at(3));
+  check(
+    "着順: ▲の付く材料は着順で変わらない（今日の6艇の中の位置で決まる）",
+    JSON.stringify(Object.keys(w1).sort()) ===
+      JSON.stringify(Object.keys(w2).sort()) &&
+      JSON.stringify(Object.keys(w2).sort()) ===
+        JSON.stringify(Object.keys(w3).sort()),
+    JSON.stringify({ w1, w2, w3 }),
+  );
+  check(
+    "着順: 割合は選んだ着順の値（平均ST 13/22→17/22→18/22、モーター2連率 15/26→20/26→22/26）",
+    JSON.stringify(w1.st_mean30) === "[13,22]" &&
+      JSON.stringify(w2.st_mean30) === "[17,22]" &&
+      JSON.stringify(w3.st_mean30) === "[18,22]" &&
+      JSON.stringify(w1.motor_2) === "[15,26]" &&
+      JSON.stringify(w2.motor_2) === "[20,26]" &&
+      JSON.stringify(w3.motor_2) === "[22,26]",
+    JSON.stringify({ w1, w2, w3 }),
+  );
+  check(
+    "着順の言葉: 札・入口1行・見出し・問い・セオリーカードが選んだ着順を書く",
+    ASSIST_COPY.factHit("早い", 77, 22, "69.7", 2) ===
+      "▲6艇で一番早いとき 2着以内 77%・22件（全体 69.7%）" &&
+      ASSIST_COPY.factHit("早い", 59, 22, "54.6") ===
+        "▲6艇で一番早いとき 1着 59%・22件（全体 54.6%）" &&
+      ASSIST_COPY.factsEntry(1, 3, 2) ===
+        "1号艇の差がつく材料 ▲3件（2着以内）" &&
+      ASSIST_COPY.factsEntry(1, 3) === "1号艇の差がつく材料 ▲3件" &&
+      ASSIST_COPY.axisHeading(1, 3) === "1号艇が3着以内に来たのは" &&
+      ASSIST_COPY.axisHeading(1) === "1号艇が1着になったのは" &&
+      ASSIST_COPY.theoryFactLikely(1, 2) === "1号艇の2着以内の割合が変わる",
+  );
+  check(
+    "着順: 件数が違う理由は、2着以内・3着以内で会場の返還の項目を外し、空なら折りたたみを出さない（/code-review の指摘）",
+    JSON.stringify(
+      axisWhyKinds({
+        kind: "NC",
+        fellBack: false,
+        venue: "徳山",
+        win: false,
+        venueRefund: true,
+      }),
+    ) === "[]" &&
+      JSON.stringify(
+        axisWhyKinds({
+          kind: "NC",
+          fellBack: false,
+          venue: "徳山",
+          win: true,
+          venueRefund: true,
+        }),
+      ) === '["venueRefund"]' &&
+      JSON.stringify(
+        axisWhyKinds({
+          kind: "NCR",
+          fellBack: true,
+          venue: "徳山",
+          win: false,
+          venueRefund: true,
+        }),
+      ) === '["fellBack"]',
+  );
+}
+
+// ---- 1号艇が1着のときの2着・3着（案1b）・よく出た2連単（案2）（BOA-831、spec D-44 (3)(4)）----
+{
+  const ncrSc = fx.scenario["NCR:2-2-2-0:1B1:junyu"].scenario;
+  const f = winFollowers(ncrSc);
+  check(
+    "案1b: 準優勝戦の範囲で1号艇が1着の65件、2着 2〜6号艇 25・18・11・7・4件、3着 14・16・20・9・6件（承認モック v2 の値）",
+    f?.n === 65 &&
+      JSON.stringify(f.second) === "[0,25,18,11,7,4]" &&
+      JSON.stringify(f.third) === "[0,14,16,20,9,6]" &&
+      f.few === false,
+    JSON.stringify(f),
+  );
+  check(
+    "案1b: 2着・3着の件数の合計は1号艇が1着の件数と一致（1号艇自身は0）",
+    f.second.reduce((a, b) => a + b, 0) === f.n &&
+      f.third.reduce((a, b) => a + b, 0) === f.n &&
+      f.second[0] === 0,
+  );
+  check(
+    "案1b: 1号艇が1着の組が無ければ null、30件未満は few（割合を出さない）",
+    winFollowers({
+      cells: { all: { forms: { any: { tri: { "2-1-3": 5 } } } } },
+    }) === null &&
+      winFollowers({
+        cells: { all: { forms: { any: { tri: { "1-2-3": 5 } } } } },
+      })?.few === true,
+  );
+  const ex = formSummary(nc, "d2")?.topExacta;
+  check(
+    "案2: 2コース凹みのよく出た2連単 1-3（24件）・1-4（17件）・1-2（14件）・3-1（13件）・3-4（12件）",
+    JSON.stringify(ex) ===
+      "[[[1,3],24],[[1,4],17],[[1,2],14],[[3,1],13],[[3,4],12]]",
+    JSON.stringify(ex),
+  );
+  check(
+    "2連単: 3連単を1着-2着でまとめ、同数は組み合わせの昇順",
+    JSON.stringify(
+      exactaList({ "1-2-3": 2, "1-2-4": 1, "2-1-3": 3, "1-3-2": 3 }),
+    ) === "[[[1,2],3],[[1,3],3],[[2,1],3]]",
+  );
+  check(
+    "案1b の言葉: 札・同じレース・返還",
+    ASSIST_COPY.followScope(
+      "全国・級の並びが同じ準優勝戦（1号艇がB1）",
+      1,
+      65,
+    ) === "全国・級の並びが同じ準優勝戦（1号艇がB1） 1号艇が1着の65件" &&
+      ASSIST_COPY.followSame(65, 119) ===
+        "65件は上の 65/119 の65と同じレース" &&
+      ASSIST_COPY.followRefund(60, 65) ===
+        "返還のあったレースは除く（上の65件のうち60件）" &&
+      ASSIST_COPY.followSameAlone(65, 119) ===
+        "65件は、同じ範囲で1号艇が1着になった 65/119レースと同じ" &&
+      ASSIST_COPY.followRefundAlone(60, 65) ===
+        "返還のあったレースは除く（同じ範囲で1号艇が1着になった65件のうち60件）",
+  );
+  check(
+    "案1b: 件数の注記は同じなら same、少ないなら refund、多いときは出さない（/code-review の指摘）",
+    followNoteKind(65, 65) === "same" &&
+      followNoteKind(60, 65) === "refund" &&
+      followNoteKind(66, 65) === null,
+  );
+}
 
 if (failures > 0) {
   console.error(`\n${failures}件の失敗`);

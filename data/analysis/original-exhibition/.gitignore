@@ -1,0 +1,2 @@
+# 中間データ（raw.json 約12MB・boats.pkl・boats_f.pkl）は fetch.mjs / build.py で作り直せるので置かない
+work/

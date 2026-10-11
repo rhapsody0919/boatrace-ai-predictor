@@ -78,9 +78,10 @@ export const factsScopeLabel = (scope, venue, boat = null, cls = null) =>
   }${boat && cls ? `（${boat}号艇が${cls}）` : ""}`;
 
 /**
- * 差がつく材料の行（1着）。today の6艇の値で、その艇の今日の位置（1＝一番良い、6＝一番悪い）を付ける。
+ * 差がつく材料の行。today の6艇の値で、その艇の今日の位置（1＝一番良い、6＝一番悪い）を付ける。
+ * target は着順（1＝1着・2＝2着以内・3＝3着以内。軸・買い目の切り替え、spec D-44）。今日の位置は着順で変わらない
  * 優勝戦・準優勝戦の日の今節の平均着順点は「今日」に使わない（off。FR-5・v16 Q7）
- * @param {{scope: ReturnType<typeof factsScope>, today: object|null, exhibition?: object|null, boat: number, post: boolean, finalRound: boolean}} args
+ * @param {{scope: ReturnType<typeof factsScope>, today: object|null, exhibition?: object|null, boat: number, post: boolean, finalRound: boolean, target?: 1|2|3}} args
  * @returns {Array<{key: string, good: string, bad: string, level: string, bucket: number|null, off: boolean, hit: boolean, pair: [number, number]|null, rate: number|null, best: [number, number]|null, worst: [number, number]|null}>}
  */
 export function factChips({
@@ -90,10 +91,11 @@ export function factChips({
   boat,
   post,
   finalRound,
+  target = 1,
 }) {
   if (!scope) return [];
   const values = todayValues(today, exhibition);
-  return factRows(scope.facts, boat, 1, post).map((r) => {
+  return factRows(scope.facts, boat, target, post).map((r) => {
     const off = r.key === "series_score" && finalRound;
     const pos = values[r.key]
       ? todayPosition(values[r.key], r.hib, boat)
@@ -118,12 +120,35 @@ export function factChips({
   });
 }
 
-/** 軸の要約の札: 差が大きい項目だけ、今日当てはまる（一番良い・悪い）ものを先に、上位4つ（承認モック v7） */
-export const axisFactChips = (chips) =>
-  chips
-    .filter((c) => c.level === "large")
-    .sort((a, b) => Number(b.hit) - Number(a.hit))
-    .slice(0, 4);
+/**
+ * 軸の要約の「差がつく材料」の入口1行（2026-10-11 ユーザー決定 案D。要約の箱は深掘りと重なるので外した）。
+ * ▲（今日6艇で一番上か一番下）の付いた材料の数と、深掘りの先頭と同じ順で項目を2つまで。材料が無い（範囲が無い）ときは null
+ * @returns {null | {hits: number, keys: string[], rest: number}}
+ */
+export function factsEntry(chips) {
+  if (!chips?.length) return null;
+  const hits = chips.filter((c) => c.hit);
+  return {
+    hits: hits.length,
+    keys: hits.slice(0, 2).map((c) => c.key),
+    rest: Math.max(0, hits.length - 2),
+  };
+}
+
+/**
+ * 軸の要約の「件数が上の枠と違う理由」に出す項目（BOA-831）。会場の返還の項目は上の枠と同じ1着のときだけ。
+ * 空なら折りたたみごと出さない（2着以内・3着以内で中身の無い折りたたみが出ないように）
+ * @param {{kind: string, fellBack: boolean, venue: string|null, win: boolean, venueRefund: boolean}} args
+ * @returns {Array<"venueScope"|"venueRefund"|"fellBack">}
+ */
+export function axisWhyKinds({ kind, fellBack, venue, win, venueRefund }) {
+  if (!venue) return [];
+  return [
+    kind === "VC" && "venueScope",
+    win && venueRefund && "venueRefund",
+    fellBack && "fellBack",
+  ].filter(Boolean);
+}
 
 /**
  * 図の「良い方の札」: 差が大きい項目のうち、今日その艇が6艇で一番良いもの（screens「レンズごとの図 C」軸）。
@@ -133,11 +158,11 @@ export const boardFactMark = (chips) =>
   chips.find((c) => c.level === "large" && c.bucket === 1 && !c.off) ?? null;
 
 /**
- * 軸の要約の大きい数字: その範囲での1号艇の1着（返還のあったレースを含む。facts の usual）
+ * 軸の要約の大きい数字: その範囲でのその艇の1着・2着以内・3着以内（target。返還のあったレースを含む。facts の usual）
  * @returns {null | {k: number, n: number}}
  */
-export function b1Usual(scope, boat = 1) {
-  const pair = scope ? usualOf(scope.facts, boat, 1) : null;
+export function b1Usual(scope, boat = 1, target = 1) {
+  const pair = scope ? usualOf(scope.facts, boat, target) : null;
   return pair && pair[1] ? { k: pair[0], n: pair[1] } : null;
 }
 
@@ -170,8 +195,61 @@ export function hintSummary(scenario, today) {
 }
 
 /**
+ * 3連単の件数 → よく出た2連単（1着-2着）の多い順。同数は組み合わせの昇順（trifectaList と同じ）
+ * @param {Record<string, number>} tri
+ * @returns {Array<[number[], number]>}
+ */
+export function exactaList(tri) {
+  const sum = new Map();
+  for (const [x, c] of trifectaList(tri)) {
+    const key = `${x[0]}-${x[1]}`;
+    sum.set(key, (sum.get(key) ?? 0) + c);
+  }
+  return [...sum]
+    .map(([k, c]) => [k.split("-").map(Number), c])
+    .sort((a, b) => b[1] - a[1] || a[0].join("").localeCompare(b[0].join("")));
+}
+
+/**
+ * 1号艇が1着のとき、2着・3着に来た艇（BOA-831 案1b、spec D-44 (3)）。範囲は軸の大きい数字と同じ範囲キーの scenario。
+ * 全体のセル（cells.all.forms.any）の3連単から、1着が boat の組だけで数える（返還のあったレースは scenario 側で除かれている）
+ * @param {object|null} scenario scenario の応答の scenario
+ * @returns {null | {n: number, second: number[], third: number[], topTrifecta: Array<[number[], number]>, few: boolean}}
+ *   second・third は1〜6号艇の件数（boat 自身は0）
+ */
+export function winFollowers(scenario, boat = 1) {
+  const rows = trifectaList(scenario?.cells?.all?.forms?.any?.tri, {
+    first: boat,
+  });
+  const n = rows.reduce((a, [, c]) => a + c, 0);
+  if (!n) return null;
+  const second = [0, 0, 0, 0, 0, 0];
+  const third = [0, 0, 0, 0, 0, 0];
+  for (const [x, c] of rows) {
+    second[x[1] - 1] += c;
+    third[x[2] - 1] += c;
+  }
+  return {
+    n,
+    second,
+    third,
+    topTrifecta: rows.slice(0, 3),
+    few: n < MIN_SCENARIO,
+  };
+}
+
+/**
+ * 案1b の件数と軸の大きい数字（1着、返還を含む）の関係。同じなら same、少ないなら返還を除いた分で refund、
+ * 多いとき（別の応答で時刻がずれた等）は書かない（null。BOA-831 /code-review の指摘）
+ * @returns {"same"|"refund"|null}
+ */
+export const followNoteKind = (n, axisK) =>
+  n === axisK ? "same" : n < axisK ? "refund" : null;
+
+/**
  * スリットの形のときの1着の艇とよく出た3連単（枠なり。承認モック v7 の「もし2コース凹みになったら」）
- * @returns {null | {form: string, n: number, first: number[], topTrifecta: Array<[number[], number]>, attacker: number|null, few: boolean}}
+ * よく出た2連単（上位5つ）は BOA-831 案2（spec D-44 (4)）
+ * @returns {null | {form: string, n: number, first: number[], topExacta: Array<[number[], number]>, topTrifecta: Array<[number[], number]>, attacker: number|null, few: boolean}}
  */
 export function formSummary(scenario, form) {
   const cell = scenario?.cells?.waku?.forms?.[form];
@@ -180,6 +258,7 @@ export function formSummary(scenario, form) {
     form,
     n: cell.n,
     first: cell.first_boat,
+    topExacta: exactaList(cell.tri).slice(0, 5),
     topTrifecta: trifectaList(cell.tri).slice(0, 3),
     attacker: ATTACK_BOAT[form] ?? null,
     few: cell.n < MIN_SCENARIO,

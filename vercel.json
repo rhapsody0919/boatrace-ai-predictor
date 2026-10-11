@@ -225,6 +225,10 @@
     },
     "api/odds/live.js": {
       "regions": ["syd1"]
+    },
+    "api/bot-page/**/*.js": {
+      "regions": ["syd1"],
+      "includeFiles": "src/locales/ja/common.json"
     }
   },
   "redirects": [

@@ -2,7 +2,6 @@ import BaseBar from "./BaseBar";
 import Bars6 from "./Bars6";
 import BetSummary from "./BetSummary";
 import ClassLineup from "./ClassLineup";
-import FactChips from "./FactChips";
 import Fold from "./Fold";
 import ScopeTable from "./ScopeTable";
 import BoatBadge from "../BoatBadge";
@@ -13,11 +12,12 @@ import {
   sameClassLabel,
 } from "../../../utils/assistModel";
 import {
-  axisFactChips,
+  axisWhyKinds,
   b1Usual,
   entrySummary,
   powerWinners,
   exhibitionTable,
+  factsEntry,
   factsScopeLabel,
   formSummary,
   hintSummary,
@@ -25,6 +25,7 @@ import {
 } from "../../../utils/assistSummary";
 import { ASSIST_COPY as C, GLOSSARY } from "../../../data/thinkingAssistCopy";
 import { TermButton, TheoryButton } from "./SheetButtons";
+import WinFollowers, { ComboList } from "./WinFollowers";
 
 const pct = (k, n) => (n ? (k / n) * 100 : 0);
 const p0 = (k, n) => Math.round(pct(k, n));
@@ -45,12 +46,20 @@ function AxisSummary({ m }) {
     vaFacts,
     vaCell,
     classes,
-    round,
-    post,
+    onFacts,
   } = m;
-  const u = b1Usual(scope);
+  // 軸は1着だけ（2着以内・3着以内は相手レンズ。spec D-46）
+  const u = b1Usual(scope, 1);
+  const entry = factsEntry(chips);
   if (!u) return null;
   const va = vaFacts ? b1Usual({ facts: vaFacts }) : null;
+  const why = axisWhyKinds({
+    kind: scope.kind,
+    fellBack: scope.fellBack,
+    venue,
+    win: true,
+    venueRefund: Boolean(va && vaCell?.n > 0),
+  });
   const label = factsScopeLabel(scope, venue, 1, classes?.[0]);
   const counts = restClassCounts(classes, 1);
   const hc = headerScope?.cell;
@@ -90,53 +99,56 @@ function AxisSummary({ m }) {
             )}
           </p>
         )}
-        <Fold title={C.whyToggle}>
-          <ul className="ta-list">
-            {scope.kind === "VC" && venue && <li>{C.whyVenueScope(venue)}</li>}
-            {va && vaCell?.n > 0 && venue && (
-              <li className="ta-num">
-                {C.whyVenueRefund(
-                  venue,
-                  comma(va.n),
-                  p1(va.k, va.n),
-                  comma(vaCell.n),
-                  p1(vaCell.b1_win, vaCell.n),
-                )}
-              </li>
-            )}
-            {scope.fellBack && venue && (
-              <li className="ta-num">{C.whyFellBack(venue, scope.vcCount)}</li>
-            )}
-          </ul>
-        </Fold>
-      </section>
-      {chips.length > 0 && (
-        <section className="ta-box">
-          <h3 className="ta-h3-row">
-            {C.factsHeading(1)}
-            <TermButton term="差がつく材料" />
-          </h3>
-          <div className="ta-legend">
-            <span className="ta-scopechip ta-num">
-              {C.scopeChip(label, scope.n)}
+        {why.length > 0 && (
+          <Fold title={C.whyToggle}>
+            <ul className="ta-list">
+              {why.includes("venueScope") && <li>{C.whyVenueScope(venue)}</li>}
+              {why.includes("venueRefund") && (
+                <li className="ta-num">
+                  {C.whyVenueRefund(
+                    venue,
+                    comma(va.n),
+                    p1(va.k, va.n),
+                    comma(vaCell.n),
+                    p1(vaCell.b1_win, vaCell.n),
+                  )}
+                </li>
+              )}
+              {why.includes("fellBack") && (
+                <li className="ta-num">
+                  {C.whyFellBack(venue, scope.vcCount)}
+                </li>
+              )}
+            </ul>
+          </Fold>
+        )}
+        {entry && (
+          // 差がつく材料は深掘り（1号艇）の1か所に出し、ここは入口1行だけ（2026-10-11 ユーザー決定 案D）。
+          // ▲が無い日は深掘りの「全部の材料」を開いて渡す
+          <button
+            type="button"
+            className="ta-facts-entry"
+            onClick={() => onFacts(entry.hits === 0)}
+          >
+            <span>
+              <b>
+                {entry.hits > 0
+                  ? C.factsEntry(1, entry.hits)
+                  : C.factsEntryNone(1)}
+              </b>
+              {entry.hits > 0 && (
+                <span className="ta-facts-entry-names">
+                  {C.factsEntryNames(
+                    entry.keys.map((k) => C.factNames[k]),
+                    entry.rest,
+                  )}
+                </span>
+              )}
             </span>
-            <span>{C.factsLegend}</span>
-          </div>
-          {axisFactChips(chips).length > 0 ? (
-            <FactChips
-              chips={axisFactChips(chips)}
-              base={p0(u.k, u.n)}
-              round={round}
-              boat={1}
-            />
-          ) : (
-            // 件数の少ない範囲（準優勝戦だけ等）では差の大きい材料が無いことがある。空の枠にしない
-            <p className="ta-note">{C.factsNoneLarge}</p>
-          )}
-          <p className="ta-note">{C.factsNotCause}</p>
-          {!post && <p className="ta-note">{C.factsPreExhibition}</p>}
-        </section>
-      )}
+            <span aria-hidden="true">›</span>
+          </button>
+        )}
+      </section>
     </>
   );
 }
@@ -231,12 +243,14 @@ function FlowSummary({ m }) {
           ) : (
             <>
               <Bars6 values={form.first.map((k) => k / form.n)} />
+              {form.topExacta.length > 0 && (
+                <p className="ta-note ta-num">
+                  {C.flowTopExacta}: <ComboList rows={form.topExacta} />
+                </p>
+              )}
               {form.topTrifecta.length > 0 && (
                 <p className="ta-note ta-num">
-                  {C.flowTopTrifecta}:{" "}
-                  {form.topTrifecta
-                    .map(([x, k]) => C.trifectaCount(x.join("-"), k))
-                    .join("　")}
+                  {C.flowTopTrifecta}: <ComboList rows={form.topTrifecta} />
                 </p>
               )}
             </>
@@ -596,14 +610,24 @@ function BetLensSummary({ m }) {
 /**
  * レンズの要約（FR-4、screens S-1 D）。レースの全体に関わる値をレンズごとに並べる（承認モック v7 の renderSum）。
  * 6艇の値の最良は金枠だけで示す（隠し文字は図の数字の側だけ）
- * @param {{lens: string, axis: object|null, flow: object, power: object, bet: object}} props 各レンズの材料
+ * @param {{lens: string, axis: object|null, flow: object, power: object, place: object|null, bet: object}} props 各レンズの材料
  */
-export default function LensSummary({ lens, axis, flow, power, bet }) {
+export default function LensSummary({ lens, axis, flow, power, place, bet }) {
   return (
     <div className="ta-sum">
       {lens === "axis" && axis && <AxisSummary m={axis} />}
       {lens === "flow" && <FlowSummary m={flow} />}
       {lens === "power" && <PowerSummary m={power} />}
+      {lens === "place" && place?.follow && (
+        // 相手レンズ（spec D-46）: 1号艇を軸にしたときの2着・3着
+        <WinFollowers
+          f={place.follow}
+          label={place.label}
+          axisK={place.axisK}
+          axisN={place.axisN}
+          above={false}
+        />
+      )}
       {lens === "bet" && <BetLensSummary m={bet} />}
     </div>
   );

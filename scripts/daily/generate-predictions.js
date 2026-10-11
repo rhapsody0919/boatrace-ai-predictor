@@ -397,7 +397,12 @@ function calculateUpsetFocusScore(
 }
 
 // 選手データを処理（特定のスコア計算関数を使用）
-function processRacersWithScoreFn(racers, scoreFn, turnResult, exhibitionData) {
+export function processRacersWithScoreFn(
+  racers,
+  scoreFn,
+  turnResult,
+  exhibitionData,
+) {
   if (!racers || racers.length === 0) {
     console.warn("⚠️  選手データが空です");
     return [];
@@ -425,16 +430,19 @@ function processRacersWithScoreFn(racers, scoreFn, turnResult, exhibitionData) {
       age: racer.age,
       winRate: racer.globalWinRate.toFixed(3),
       localWinRate: racer.localWinRate.toFixed(3),
-      global2Rate: racer.global2Rate?.toFixed(1) || null,
-      local2Rate: racer.local2Rate?.toFixed(1) || null,
-      global3Rate: racer.global3Rate?.toFixed(1) || null,
-      local3Rate: racer.local3Rate?.toFixed(1) || null,
+      // 2連率・3連率は公式の出走表と同じ小数2桁で持つ（BOA-829）。以前は小数1桁に丸めており、朝の初期化から
+      // 発走60分前の取得で上書きされるまで、race_entries に丸めた値（公式 33.05 → 33.0）が入っていた。
+      // 龍神ソナー・思考アシストの朝の計算（出走表の時点）も丸めた値を読んでいた。表示の桁は画面側が決める
+      global2Rate: racer.global2Rate?.toFixed(2) || null,
+      local2Rate: racer.local2Rate?.toFixed(2) || null,
+      global3Rate: racer.global3Rate?.toFixed(2) || null,
+      local3Rate: racer.local3Rate?.toFixed(2) || null,
       motorNumber: racer.motorNumber,
-      motor2Rate: racer.motor2Rate.toFixed(1),
-      motor3Rate: racer.motor3Rate?.toFixed(1) || null,
+      motor2Rate: racer.motor2Rate.toFixed(2),
+      motor3Rate: racer.motor3Rate?.toFixed(2) || null,
       boatNumber: racer.boatNumber,
-      boat2Rate: racer.boat2Rate.toFixed(1),
-      boat3Rate: racer.boat3Rate?.toFixed(1) || null,
+      boat2Rate: racer.boat2Rate.toFixed(2),
+      boat3Rate: racer.boat3Rate?.toFixed(2) || null,
       // F数・L数（BOA-590。朝の初期化の出走表から。無ければ undefined のまま＝書かない）
       fCount: racer.fCount,
       lCount: racer.lCount,
@@ -472,7 +480,7 @@ function generateTopPickReasoning(topPickPlayer, players, modelType) {
     }
     if (motor2Rate >= 35) {
       strengths.push(
-        `モーター2連率${topPickPlayer.motor2Rate}%の${motor2Rate >= 40 ? "好" : "安定"}機材`,
+        `モーター2連率${motor2Rate.toFixed(1)}%の${motor2Rate >= 40 ? "好" : "安定"}機材`,
       );
     }
 
@@ -510,7 +518,7 @@ function generateTopPickReasoning(topPickPlayer, players, modelType) {
     const strengths = [];
     if (number >= 4 && motor2Rate >= 38) {
       strengths.push(
-        `${number}号艇ながらモーター2連率${topPickPlayer.motor2Rate}%の好機材`,
+        `${number}号艇ながらモーター2連率${motor2Rate.toFixed(1)}%の好機材`,
       );
     }
     if (localWinRate >= 5.5) {
@@ -538,7 +546,7 @@ function generateStatisticalInsights(players) {
   const goodMotors = players.filter((p) => parseFloat(p.motor2Rate) > 40);
   if (goodMotors.length > 0) {
     const motorList = goodMotors
-      .map((p) => `${p.number}号艇（${p.motor2Rate}%）`)
+      .map((p) => `${p.number}号艇（${parseFloat(p.motor2Rate).toFixed(1)}%）`)
       .join("、");
     insights.push(`好モーター: ${motorList}`);
   }

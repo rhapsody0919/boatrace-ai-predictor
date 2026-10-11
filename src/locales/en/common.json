@@ -145,7 +145,10 @@
       "raceCard": "Race card & tabs",
       "assist": "Thinking Assist",
       "new": "New",
-      "note": "Data and theories in the order to check them"
+      "note": "Data and theories laid out in an order you can read without getting lost"
+    },
+    "assistEntry": {
+      "lead": "To check the factors in order"
     },
     "metaTitle": "{{venue}} Race {{race}} AI data analysis ({{date}}) - Ryujin Radar",
     "metaDescription": "Free race data table, AI data analysis and first-turn prediction for {{venue}} Race {{race}} on {{date}}.",
@@ -429,9 +432,22 @@
     "aiIntro": {
       "title": "Ryujin Radar's AI Boat Race Predictions",
       "lead": "Ryujin Radar is a data analysis site where AI predicts every race held at all 24 boat race venues in Japan, every day. It is completely free, with no sign-up required.",
-      "method": "From each racer's win rate, average start timing and results by course, motor performance, and wind and wave data, we publish a first-turn development forecast and an \"inside upset index\" that shows how likely boat 1 is to lose, for every race.",
+      "method": "For every race we lay out each racer's win rate, average start timing and results by course, motor performance, and wind and wave data. You can also check, from actual past results, how races under matching conditions were decided.",
       "accuracyLink": "See the results page (by venue, in Japanese) →",
-      "hitRacesLink": "See races where the forecast was correct (in Japanese) →"
+      "hitRacesLink": "See races where the forecast was correct (in Japanese) →",
+      "checkTitle": "Once you open a race, check it with these",
+      "sonarWhere": "The \"Ryujin Sonar\" tab on the race page",
+      "sonarQ1": "How were past races with this line-up decided?",
+      "sonarQ2": "If boat 1 can't escape, which boats tend to come in?",
+      "assistWhere": "The \"Thinking Assist\" switch at the top of the race page",
+      "assistQ1": "Is the winner solid, or is it wide open?",
+      "assistQ2": "Which boat to build around, and how to narrow the rest",
+      "step1": "Pick a venue racing today from the list above",
+      "step2": "Press \"{{button}}\" on a race",
+      "step3": "Open the \"Ryujin Sonar\" tab, or switch to \"Thinking Assist\" at the top",
+      "step3SonarOnly": "Open the \"Ryujin Sonar\" tab",
+      "venuesLink": "Pick a venue racing today ↑",
+      "disclaimer": "Both lay out past races and official data. They do not guarantee any result."
     },
     "freeAccessNoticeStrong": "100% Free, No Sign-up",
     "freeAccessNoticeRest": "— use every feature right now, no bank account or membership required",
@@ -2373,6 +2389,8 @@
     "bannerLabel": "Copy for AI",
     "bannerCatchphrase": "Ask your AI!",
     "toastSuccess": "Copied",
+    "toastAssist": "Check the factors before pasting → Thinking Assist",
+    "toastClose": "Close",
     "toastError": "Copy failed",
     "promptSelectorWin": "Win",
     "promptSelectorTrifecta": "Trifecta",
@@ -2643,8 +2661,6 @@
       "venueRankBadgeTied": "#{{rank}} (tied) of {{total}} motors ({{value}}%)",
       "sampleCount": "(n={{n}})",
       "firstUseBadge": "First use",
-      "officialPendingBadge": "Not yet tallied",
-      "officialPendingNote": " \"Not yet tallied\" means this motor is in the first meet it has been used in, so its official cumulative Top-2 rate is not available yet (it stays 0.0 until that meet ends).",
       "venueStatsFailedCell": "Failed to load",
       "venueStatsFailedNote": "Could not load the venue's official motor stats (1st-place rate, Finals, Championships). Reload the page to retry the cells marked \"Failed to load\".",
       "wakuStatsHeading": "Results by lane",
@@ -2660,7 +2676,17 @@
       "racerWakuNote": "💡 Counts only races since the current motor went into service where this motor was used in this lane. Values in orange come from fewer than {{n}} starts and are for reference only.",
       "drillPreGeneration": "Motor #{{n}} in this race is from before the motor changeover and is a different motor from the current #{{n}}, so its trend, power index and usage history are not shown.",
       "drillAsOfRaceNote": "💡 This shows this motor's status up to just before this race (this race and later races are not included).",
-      "barScaleNote": "The longest bar is the highest of the six motors. "
+      "barScaleNote": "The longest bar is the highest of the six motors. ",
+      "freshNotRun": "No starts yet",
+      "freshZeroRuns": "0% ({{n}} starts)",
+      "freshOwnMark": "*",
+      "freshOwnExplain": "The official top-2 rate for this motor is not out yet. This top-2 rate comes from its starts at this venue before this race ({{n}} starts)",
+      "freshOwnExplainBoat": "Boat {{boat}}: {{explain}}",
+      "freshOwnHint": "Tap \"*\" to see where that number comes from.",
+      "freshPriorRuns": "From starts up to the previous series ({{n}} starts)",
+      "freshFirstMeetBanner": "{{venue}} switched to new motors on {{month}}/{{day}}. Official top-2 rates start from the next series. Until then, Ryujin Radar shows numbers worked out from the motors' starts at this venue",
+      "officialModeSourceNoteFresh": "※ For past races, \"Top-2 rate\", \"Top-3 rate\" and \"Trial\" are the BOAT RACE official website values as of the race card. For motors whose official value is 0, the \"Top-2 rate\" and \"Top-3 rate\", and the \"Power index\", are worked out by Ryujin Radar from the motor's starts at this venue before this race.",
+      "freshRate2Header": "Top-2 (series start)"
     },
     "motorRanking": {
       "title": "🏁 Motor Ranking",

@@ -22,6 +22,7 @@ import {
   priorRuns,
 } from "../../../utils/assistSummary";
 import { ASSIST_COPY as C } from "../../../data/thinkingAssistCopy";
+import { FACT_ITEMS } from "../../../utils/analogyFacts";
 import { TermButton, TheoryButton } from "./SheetButtons";
 
 /** 用語の「?」つきの見出し（dt） */
@@ -34,6 +35,8 @@ const Dt = ({ term, children }) => (
 
 /** 深掘りの先頭に出す▲の付いた材料の数（ユーザー決定 A） */
 const TOP_FACTS = 3;
+/** 全部の材料の並び（項目の決まった順。龍神ソナーの差がつく材料と同じ項目の順。BOA-804） */
+const FACT_ORDER = FACT_ITEMS.map((it) => it.key);
 
 /** 値のボタン（押すと6艇比較）。深掘りの1艇の値には金枠を付けない（FR-3a「付けない所」） */
 function Val({ metric, racer, onMetric }) {
@@ -89,7 +92,7 @@ function Feat({ chip, venue }) {
  * @param {{boat: number, racer: object, venue: string, raceId: string, today: object|null, post: boolean,
  *   finalRound: boolean, round: string|null, scope: object|null, chips: object[], runs: {status: string, data: object[]|null},
  *   technique: object|null, pretest: object|null, weight: number|null, course: number,
- *   onMetric: (metric: string, boat: number) => void, onClose: () => void}} props
+ *   onMetric: (metric: string, boat: number) => void, onClose: () => void, openAll?: boolean}} props
  */
 export default function BoatDeepDive({
   boat,
@@ -109,19 +112,23 @@ export default function BoatDeepDive({
   course,
   onMetric,
   onClose,
+  openAll = false,
+  target = 1,
 }) {
   const [runsOpen, setRunsOpen] = useState(false);
   // 開いたら深掘りの上端まで送る。図の下に開くので、送らないと押した結果が画面の外になる（デザイナーのレビュー P1-1）
+  // 軸の要約の入口から▲の無い日に開いたときは、開いた「全部の材料」まで送る（2026-10-11 ユーザー決定 案D）
   const ref = useRef(null);
+  const allRef = useRef(null);
   useEffect(() => {
     const reduce = window.matchMedia?.(
       "(prefers-reduced-motion: reduce)",
     )?.matches;
-    ref.current?.scrollIntoView?.({
+    ((openAll && allRef.current) || ref.current)?.scrollIntoView?.({
       block: "start",
       behavior: reduce ? "auto" : "smooth",
     });
-  }, [boat]);
+  }, [boat, openAll]);
   const i = boat - 1;
   const feats = featChips({ boat, today, finalRound, technique });
   const recent = today?.items?.recent_win30?.values?.[i];
@@ -134,11 +141,12 @@ export default function BoatDeepDive({
     : [];
   const cw = ready ? courseWins(runs.data, raceId, course) : null;
   const counts = restClassCounts(today?.classes, boat);
-  const u = b1Usual(scope, boat);
+  const u = b1Usual(scope, boat, target);
   const techTotal = technique?.win_count ?? 0;
   // 先頭に出す結論: ▲（今日6艇で一番・一番下）の付いた材料を最大3件（2026-10-09 ユーザー決定 A）
   const topChips = chips.filter((c) => c.hit).slice(0, TOP_FACTS);
-  const base = u ? Math.round((u.k / u.n) * 100) : 0;
+  // 軸の大きい数字と同じ小数1桁（69.7% と 70% が別の値に見えないように。BOA-831 ファン評価 1周目 指摘1、承認モック v2）
+  const base = u ? ((u.k / u.n) * 100).toFixed(1) : "0.0";
   const scopeLabel = scope
     ? C.scopeChip(
         factsScopeLabel(scope, venue, boat, today?.classes?.[i]),
@@ -171,12 +179,22 @@ export default function BoatDeepDive({
       </div>
       {scope && topChips.length > 0 && (
         <div className="ta-deep-facts">
-          <h4>{C.factsHeading(boat)}</h4>
+          {/* 用語の「?」は軸の要約の箱から移した（案D） */}
+          <div className="ta-h3-row">
+            <h4>{C.factsHeading(boat)}</h4>
+            <TermButton term="差がつく材料" />
+          </div>
           <div className="ta-legend">
             <span className="ta-scopechip ta-num">{scopeLabel}</span>
             <span>{C.factsLegend}</span>
           </div>
-          <FactChips chips={topChips} base={base} round={round} boat={boat} />
+          <FactChips
+            chips={topChips}
+            base={base}
+            round={round}
+            boat={boat}
+            target={target}
+          />
           <p className="ta-note">{C.factsNotCause}</p>
         </div>
       )}
@@ -251,6 +269,12 @@ export default function BoatDeepDive({
             <span className="ta-num"> （{C.seriesRank(seriesPos)}）</span>
           )}{" "}
           <span className="ta-scopechip">{C.beforeToday}</span>
+          {meet?.count > 0 && (
+            // 何を平均したかの一言（BOA-804）。優勝戦の日は準優勝戦の着順も入る
+            <p className="ta-note ta-num">
+              {C.seriesAvgNote(meet.count, meet.sum, round === "yusho")}
+            </p>
+          )}
           <div className="ta-finline ta-num">
             {meet ? (
               <>
@@ -369,7 +393,7 @@ export default function BoatDeepDive({
       )}
       {scope && chips.length > 0 && (
         // 残りの材料（全部）は畳む（ユーザー決定 A）
-        <Fold title={C.factsAll(boat)}>
+        <Fold title={C.factsAll(boat)} defaultOpen={openAll} ref={allRef}>
           <div className="ta-deep-facts">
             <ClassLineup lineup={classLineup(today?.classes, boat)} />
             {counts && (
@@ -386,8 +410,20 @@ export default function BoatDeepDive({
               <span className="ta-scopechip ta-num">{scopeLabel}</span>
               <span>{C.factsLegend}</span>
             </div>
-            <FactChips chips={chips} base={base} round={round} boat={boat} />
+            {/* 全部の材料は、どの艇でも同じ並び（項目の決まった順）。艇を切り替えて比べやすくする（BOA-804）。
+                先頭の▲の材料は差の大きい順のまま（ユーザー決定 A） */}
+            <FactChips
+              chips={[...chips].sort(
+                (a, b) => FACT_ORDER.indexOf(a.key) - FACT_ORDER.indexOf(b.key),
+              )}
+              base={base}
+              round={round}
+              boat={boat}
+              target={target}
+            />
             <p className="ta-note">{C.factsNotCause}</p>
+            {/* 軸の要約の箱から移した注記（案D） */}
+            {!post && <p className="ta-note">{C.factsPreExhibition}</p>}
           </div>
         </Fold>
       )}

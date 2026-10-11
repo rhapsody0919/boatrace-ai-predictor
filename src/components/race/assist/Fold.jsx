@@ -1,10 +1,10 @@
 import { useState } from "react";
 
-/** 畳んだ説明（押すと開く） */
-export default function Fold({ title, children }) {
-  const [open, setOpen] = useState(false);
+/** 畳んだ説明（押すと開く）。defaultOpen は開いた状態で出すとき（軸の要約の入口から深掘りへ渡すとき） */
+export default function Fold({ title, children, defaultOpen = false, ref }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="ta-fold">
+    <div className="ta-fold" ref={ref}>
       <button
         type="button"
         className="ta-scope-toggle"

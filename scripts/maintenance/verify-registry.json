@@ -104,6 +104,11 @@
       "guards": "data-health-report.js の存在充足率の分母の定義（BOA-381）"
     },
     {
+      "script": "verify-db-apply.js",
+      "tier": "ci",
+      "guards": "本番 DB 適用ワークフロー（.github/workflows/db-apply.yml、scripts/lib/dbApplySql.js）。パスの検証（ディレクトリの外・大文字・別拡張子を通さない）、文の分割（文字列・$$・コメントの中の ; を区切りにしない）、拒否する SQL（先頭 BEGIN・末尾 COMMIT 以外のトランザクション制御、CONCURRENTLY・VACUUM・ALTER SYSTEM・psql のメタコマンド 等）、触るテーブルの抽出、台帳の更新、実ファイルで拒否されるのが 050・055 だけであること、ワークフローの配線（secret は承認後の job だけ、run に ${{ }} を直接書かない、書き込み権限は台帳の job だけ）"
+    },
+    {
       "script": "verify-deploy-hook-policy.js",
       "tier": "ci",
       "guards": "Deploy Hookを叩く条件の判定（scripts/lib/deployHookPolicy.js、BOA-361）"
@@ -248,6 +253,11 @@
       "guards": "機力指数・2連率推移・部品交換・使用履歴の期間を現行モーター世代で切り詰めること、過去レースのモータ情報一覧表を再計算せず出走表時点の公式値にすること（BOA-329）"
     },
     {
+      "script": "verify-motor-fresh-rate.js",
+      "tier": "ci",
+      "guards": "新しいモーターの最初の開催で、モータ情報の一覧が全艇0.0%にならない決まり（公式が0の艇だけ自前の値、まだ走っていません／0%（N走）／※、最初の節の帯、前の節までの走数）（BOA-830）"
+    },
+    {
       "script": "verify-motor-tab-readability.js",
       "tier": "ci",
       "guards": "モータ情報タブ・選手ページのモーター状況の読み違いを防ぐ見せ方（横スクロールの目印、見出しの(%)、出典注記の列、推移グラフの軸名と見出し、使用履歴グラフの向き、公式値の更新遅れの注記、同日2走のレース番号）（BOA-513）"
@@ -365,6 +375,11 @@
       "guards": "選手プロフィール・期別成績ジョブ（scripts/lib/racerProfileSync.js）"
     },
     {
+      "script": "verify-race-entry-rate-precision.js",
+      "tier": "ci",
+      "guards": "朝の初期化が race_entries に書く2連率・3連率を公式と同じ小数2桁で持つ（generate-predictions の processRacersWithScoreFn、BOA-829）。0 は null にしない"
+    },
+    {
       "script": "verify-racer-st-stats.js",
       "tier": "ci",
       "guards": "選手の平均ST・直近30走・ST標準偏差（scripts/lib/racerStStats.js、BOA-581）: 1000行上限での取りこぼし・Fの除外・直近30走の並び・取得エラーの例外化"
@@ -465,6 +480,11 @@
       "guards": "「変更の無い行は書かない」比較ロジック（scripts/lib/unchangedRows.js、BOA-349）と、バルクupsertのpayload列そろえ（キーの集合が違う行を混ぜると、持たない行にNULLが書かれる。2026-09-27にrace_entriesのbranch・hometownを1,729行消した）"
     },
     {
+      "script": "verify-render-with-fresh-page.js",
+      "tier": "ci",
+      "guards": "ブログのスナップショット生成で、ページが1つ落ちても後続の記事を取りこぼさないこと（scripts/lib/renderWithFreshPage.js）。2026-10-11 の本番ビルドで、落ちたページを使い続けた後続の3記事が失敗し、AI クローラーに中身の無い画面が返っていた"
+    },
+    {
       "script": "verify-venue-entry-course-stats-parser.js",
       "tier": "ci",
       "guards": "進入コース別選手成績パーサー（BOA-293）"
@@ -478,6 +498,16 @@
       "script": "verify-venue-motor-stats-parsers.js",
       "tier": "ci",
       "guards": "会場別モーター成績パーサー（BOA-264）"
+    },
+    {
+      "script": "verify-bot-page-model.js",
+      "tier": "ci",
+      "guards": "ボット向け HTML（ADR 0089）のモデル src/utils/botPageModel.js。import の経路にブラウザ専用の依存（supabaseClient・import.meta.env・localStorage 等）が無く Node から読めること、本番の /api/races/today のフィクスチャから人の画面と同じ文字（会場名・節の名前・レース番号・締切時刻・グレード・中止・見出し・title・description・canonical）で組めること、UTC で動かしても日付が前日にずれないこと、0件と壊れた入力を区別すること（壊れた入力で開催なしにしない。ADR 0069）、選手名・オッズ・着順・荒れ度等を入れないこと、人の画面が同じ関数（transformTodayRaces・pageMeta・raceListDisplay）を使い続けていること"
+    },
+    {
+      "script": "verify-bot-page-function.js",
+      "tier": "ci",
+      "guards": "ボット向け HTML の関数（ADR 0089。api/bot-page/top.js・api/bot-page/venue/[code].js、中身は api/_lib/botPage.js）。材料の取得と時計を差し替えてハンドラを呼び、成功時の 200・Content-Type・Cache-Control（s-maxage=300・stale-if-error=3600）、title・description・canonical・robots が人のページと同じ値、選手名・オッズ等が入らないこと、材料が取れない・壊れたら 503・Retry-After・no-store で「開催なし」にしないこと、0件だけ「開催なし」の 200、会場コードは 1〜24（0埋めなし）だけで他は 404、値のエスケープ、材料の60秒の使い回し（61秒後に取り直す・同時の呼び出しは1回の取得）、vercel.json で syd1・edge でないこと"
     },
     {
       "script": "verify-venue-series-title.js",

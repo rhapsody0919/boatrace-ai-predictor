@@ -6,8 +6,17 @@
  * 使わない語: 「似たレース」「いつも」「競艇」「鉄板」「大本線」（spec 位置づけ・N-7、受け入れ E2E の禁止語）
  */
 
+// 着順の言葉（龍神ソナーの aiPredictionTab.analogy.targets と同じ）
+const TARGET_LABEL = Object.freeze({ 1: "1着", 2: "2着以内", 3: "3着以内" });
+
 export const ASSIST_COPY = Object.freeze({
   title: "思考アシスト",
+  // 検索結果の説明文（SEO 点検 F4）。会場は読み込み前は出さない
+  metaDescription: ({ date, venue, raceNo }) => {
+    const [y, m, d] = date.split("-").map(Number);
+    const race = `${venue ?? ""}${raceNo}R`;
+    return `${y}年${m}月${d}日 ${race}を、条件・軸・展開・機力の順に確かめる思考アシスト。公式のデータと過去レースの傾向を並べ、自分で予想を組み立てます。`;
+  },
   disclaimer:
     "過去レースの傾向と公式のデータを並べています。結果を保証するものではありません。舟券の購入は20歳以上・自己責任で。",
   loading: "読み込み中…",
@@ -95,6 +104,12 @@ export const ASSIST_COPY = Object.freeze({
     axis: { label: "軸", q: "1号艇は逃げる？", sub: "誰が1着候補か" },
     flow: { label: "展開", q: "スタートでどこが出る？", sub: "誰が攻めるか" },
     power: { label: "機力", q: "足が良いのは？", sub: "モーターと展示" },
+    // 流しの相手（2026-10-12 ユーザー承認 v4、spec D-46）。軸（1着）とは別の問いなので別のレンズ
+    place: {
+      label: "相手",
+      q: "2着・3着に残るのは？",
+      sub: "流しの相手を選ぶ",
+    },
     bet: {
       label: "買い目",
       q: "オッズに見合う？",
@@ -194,8 +209,8 @@ export const ASSIST_COPY = Object.freeze({
   factsLegend: "▲＝今日6艇で一番上か一番下",
   // 件数を添える（どれだけのレースから出した割合か。BOA-808 の3）
   // 「→」はヘッダーで「はっきりしない」の印に使うので、ここでは使わない（ファン評価 PR5 1周目 指摘5）
-  factHit: (word, p, n, base) =>
-    `▲一番${word}のとき 1着 ${p}%・${n.toLocaleString("ja-JP")}件（全体 ${base}%）`,
+  factHit: (word, p, n, base, target = 1) =>
+    `▲6艇で一番${word}とき ${TARGET_LABEL[target]} ${p}%・${n.toLocaleString("ja-JP")}件（全体 ${base}%）`,
   factNoToday: "今日の値なし",
   // 差の大きさ（v16 の judgeGap の level）。軸の要約の「差がはっきり大きい材料は無い」と同じ判定
   factLevel: Object.freeze({
@@ -209,8 +224,12 @@ export const ASSIST_COPY = Object.freeze({
   factsNotCause: "過去の割合で、原因とは限らない",
   // 深掘りの残りの材料を畳んだ見出し（2026-10-09 ユーザー決定 A）
   factsAll: (boat) => `全部の材料（${boat}号艇）`,
-  factsNoneLarge:
-    "この範囲では、1着の割合の差がはっきり大きい材料は無い（艇の丸を押すと全部の材料が出る）",
+  // 軸の要約の入口1行（2026-10-11 ユーザー決定 案D）。押すと深掘りが開く
+  factsEntry: (boat, n, target = 1) =>
+    `${boat}号艇の差がつく材料 ▲${n}件${target === 1 ? "" : `（${TARGET_LABEL[target]}）`}`,
+  factsEntryNames: (names, rest) =>
+    `${names.join("・")}${rest > 0 ? ` ほか${rest}件` : ""}`,
+  factsEntryNone: (boat) => `${boat}号艇の全部の材料（今日は▲なし）`,
   scopeVenue: (venue) => `${venue}・級の並びが同じ`,
   scopeChip: (label, n) => `${label} ${n.toLocaleString("ja-JP")}件`,
   // 同じ呼び名で件数が違う札に、違う理由を短く添える（BOA-809、2026-10-10 ユーザー決定）
@@ -220,7 +239,39 @@ export const ASSIST_COPY = Object.freeze({
     hint: "平均STがそろったレース",
     entry: "進入が分かったレース",
   }),
-  axisHeading: (boat) => `${boat}号艇が1着になったのは`,
+  axisHeading: (boat, target = 1) =>
+    target === 1
+      ? `${boat}号艇が1着になったのは`
+      : `${boat}号艇が${TARGET_LABEL[target]}に来たのは`,
+  // 軸・買い目の着順の切り替え（BOA-831、spec D-44）。言葉は龍神ソナーと同じ
+  targets: TARGET_LABEL,
+  // 買い目だけの切り替え（軸は1着だけ、2着以内・3着以内は相手レンズ。spec D-46）
+  targetGroup: "何着までで見るか",
+  // 1号艇が1着のとき、2着・3着に来たのは（BOA-831 案1b、spec D-44 (3)）
+  // 1号艇を軸にしたときだけの表と分かる見出し（v4。ほかの艇が1着のときは BOA-845）
+  followHeading: (boat) => `${boat}号艇を軸にしたときの2着・3着`,
+  followOnly: (boat) =>
+    `${boat}号艇が1着のときだけ（ほかの艇が1着のときはまだ出ない）`,
+  // 相手レンズの図（D-46）。●2着以内・○3着以内を同じ行に置く。値は艇ごとの範囲（深掘り・買い目と同じ）
+  placeTitle: "●2着以内・○3着以内（右ほど高い）",
+  placeNote: "艇ごとに、その艇の深掘りと同じレースでの割合",
+  placeTop2: "2着以内",
+  placeTop3: "3着以内",
+  placeFew: (n) => `${n.toLocaleString("ja-JP")}件（少ない）`,
+  followScope: (label, boat, n) =>
+    `${label} ${boat}号艇が1着の${n.toLocaleString("ja-JP")}件`,
+  followBoatCol: "艇",
+  followPos: (k) => `${k}着`,
+  followCount: (k) => `${k.toLocaleString("ja-JP")}件`,
+  followSame: (k, n) =>
+    `${k.toLocaleString("ja-JP")}件は上の ${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")} の${k.toLocaleString("ja-JP")}と同じレース`,
+  // 2着以内・3着以内を選んでいるときは上に 65/119 が無いので、上を指さない書き方（ファン評価 1周目 指摘2）
+  followSameAlone: (k, n) =>
+    `${k.toLocaleString("ja-JP")}件は、同じ範囲で1号艇が1着になった ${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}レースと同じ`,
+  followRefundAlone: (k, axisK) =>
+    `返還のあったレースは除く（同じ範囲で1号艇が1着になった${axisK.toLocaleString("ja-JP")}件のうち${k.toLocaleString("ja-JP")}件）`,
+  followRefund: (k, axisK) =>
+    `返還のあったレースは除く（上の${axisK.toLocaleString("ja-JP")}件のうち${k.toLocaleString("ja-JP")}件）`,
   races: (k, n) =>
     `${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}レース`,
   venueAllN: (venue, n) => `${venue}の全レース ${n.toLocaleString("ja-JP")}件`,
@@ -268,8 +319,14 @@ export const ASSIST_COPY = Object.freeze({
   // 何の形のときの攻め手かを書く（同 指摘9）
   attackMark: (form) => `${form}なら攻め手`,
   // 買い目の図の「過去の1着」がどの範囲の値か（艇ごとに違う。271 の指摘の型「どのレースから出した数字か」）
-  pastWinNote:
-    "過去の1着＝その艇の差がつく材料と同じ集めたレースでの1着の割合（艇ごとに範囲が違う。範囲と件数は艇の丸から）",
+  // 承認モック v2 の1文（BOA-831、デザイナー役 P2-4）。件数は各艇の割合の括弧に出す
+  pastWinNote: (target = 1) =>
+    `過去の${TARGET_LABEL[target]}＝艇ごとに、その艇の深掘りと同じレースでの割合`,
+  pastLabel: (target = 1) => `過去の${TARGET_LABEL[target]}`,
+  pastText: (k, n) =>
+    `${Math.round((k / n) * 100)}%（${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}）`,
+  // 1着以外を選んだときの人気の札（人気は1着になる組のオッズのまま。D-44 (2)）
+  popLabel: (target = 1) => (target === 1 ? "1着人気" : "人気（1着）"),
   // 優勝戦・準優勝戦の日でも、展開はラウンドを問わずに集める（形・進入の件数が要るため）。そうと分かる呼び名にする
   flowScopeLabel: (final) =>
     final ? "全国・級の並びが同じ（予選も含む）" : "全国・級の並びが同じ",
@@ -294,6 +351,8 @@ export const ASSIST_COPY = Object.freeze({
     `${label}・枠なり ${n.toLocaleString("ja-JP")}件`,
   flowFirstBoat: "1着の艇",
   flowTopTrifecta: "よく出た3連単",
+  // もし{形}になったら の1着-2着の組（BOA-831 案2、spec D-44 (4)）
+  flowTopExacta: "よく出た2連単",
   flowFew: "件数が少ないので割合は出していない",
   entryHeading: "進入",
   entryToday: (type) => `今日の展示は${type}`,
@@ -343,7 +402,7 @@ export const ASSIST_COPY = Object.freeze({
   motorChip: (boat, top, v) =>
     `${boat}号艇は6艇で${top ? "一番高い" : "最下位"}（${v}%）`,
   motorChipRate: (top, p, base) =>
-    `${top ? "一番高い" : "最下位"}のとき1着 ${p}%（全体 ${base}%）`,
+    `${top ? "一番高い" : "一番低い"}とき 1着 ${p}%（全体 ${base}%）`,
   tiltMark: (v) => `チルト${v > 0 ? "+" : ""}${v}`,
   partsMark: "交換",
 
@@ -400,6 +459,8 @@ export const ASSIST_COPY = Object.freeze({
         ? "6艇で一番低い"
         : `6艇で${rank}番目`,
   beforeToday: "前日まで",
+  seriesAvgNote: (n, sum, final) =>
+    `前日までの今節 ${n}走の平均（${sum}点÷${n}走。F・失格は0点）${final ? "。準優勝戦の着順も入る" : ""}`,
   todayRun: (r, f) => `今日 ${r}R ${f ?? "—"}着（点に入れない）`,
   runsToggle: "1走ずつの表",
   pretest: (t, rank) => `${t}${rank ? `（参加艇で${rank}位）` : ""}`,
@@ -472,7 +533,8 @@ export const ASSIST_COPY = Object.freeze({
   theoryEntryShare: (name) => `${name}になったレース`,
   theoryFactTitle: (name, boat) => `${boat}号艇の${name}`,
   theoryFactCond: (name, good, bad) => `${name}が6艇で一番${good}／一番${bad}`,
-  theoryFactLikely: (boat) => `${boat}号艇の1着の割合が変わる`,
+  theoryFactLikely: (boat, target = 1) =>
+    `${boat}号艇の${TARGET_LABEL[target]}の割合が変わる`,
   theoryFactWhen: (word) => `一番${word}とき`,
   theoryFactToday: (boat, pos) => `今日の${boat}号艇は6艇で${pos}`,
   theoryFactFinalOff:
@@ -559,7 +621,7 @@ export const ASSIST_COPY = Object.freeze({
 
   // ---- ガイド（FR-10、screens S-1c）。各段1文（40字以内） ----
   guideRegion: "ガイド",
-  guideStep: (i, step) => `ガイド ${i}/5 ${step}`,
+  guideStep: (i, n, step) => `ガイド ${i}/${n} ${step}`,
   guideNext: "次へ",
   guidePrev: "戻る",
   guideDone: "おわり",
@@ -568,7 +630,9 @@ export const ASSIST_COPY = Object.freeze({
     { step: "②1号艇", q: "1号艇は逃げられそう？" },
     { step: "③壁と攻める艇", q: "スタートでどこが凹み、誰が攻める？" },
     { step: "④足", q: "足が良いのは？" },
-    { step: "⑤買い目", q: "買い目を組んで、オッズに見合うか確かめよう" },
+    // ⑤相手（spec D-46。ガイドは6段）
+    { step: "⑤相手", q: "2着・3着に残るのは誰？" },
+    { step: "⑥買い目", q: "買い目を組んで、オッズに見合うか確かめよう" },
   ]),
   guideVerdictWord: Object.freeze({
     high: "高め",
@@ -589,6 +653,7 @@ export const ASSIST_COPY = Object.freeze({
   guideFlowSubNone: "当てはまる手がかりは無い。図はスタートの早さ",
   guidePowerSubPost: "金枠が6艇で一番速い。1号艇は展示が速く出やすい",
   guidePowerSubPre: "展示は展示の後に出る。今はモーター2連率を見る",
+  guidePlaceSub: "●が2着以内・○が3着以内。行の＋で相手を候補に",
   guideBetSub: "1着・2着・3着を押して組む。合成オッズ1.0未満はトリガミ",
 });
 

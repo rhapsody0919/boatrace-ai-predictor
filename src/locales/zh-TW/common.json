@@ -143,7 +143,10 @@
       "raceCard": "出走表與分頁",
       "assist": "思考輔助",
       "new": "新",
-      "note": "依查看順序排列數據與理論的畫面"
+      "note": "依照不會迷路的閱讀順序，排列數據與理論"
+    },
+    "assistEntry": {
+      "lead": "想依序查看資料的話"
     },
     "metaTitle": "{{venue}} 第{{race}}場 AI數據分析（{{date}}）- 龍神雷達",
     "metaDescription": "免費查看{{date}}{{venue}}第{{race}}場的出賽表資料、AI數據分析與展開預測。",
@@ -424,9 +427,22 @@
     "aiIntro": {
       "title": "龍神雷達的賽艇AI預測",
       "lead": "龍神雷達是由AI每天預測日本全國24座賽艇場所有比賽的數據分析網站。完全免費，無需註冊。",
-      "method": "我們根據選手的勝率、平均起跑時機、各水道成績、馬達成績以及風浪數據，為每場比賽提供第一彎道的展開預測，以及顯示1號艇是否容易落敗的「內道崩潰指數」。",
+      "method": "我們為每場比賽列出選手的勝率、平均起跑時機、各水道成績、馬達成績以及風浪數據。也可以從過去的實際比賽結果，確認條件相同的比賽是如何決出勝負的。",
       "accuracyLink": "查看成績（各賽場明細，日文頁面）→",
-      "hitRacesLink": "查看展開預測命中的比賽一覽（日文頁面）→"
+      "hitRacesLink": "查看展開預測命中的比賽一覽（日文頁面）→",
+      "checkTitle": "打開比賽後，用這兩項來確認",
+      "sonarWhere": "比賽頁面的「龍神聲納」分頁",
+      "sonarQ1": "這個陣容的比賽，過去是如何決出勝負的",
+      "sonarQ2": "1號艇逃不掉時，哪艘艇容易衝上來",
+      "assistWhere": "比賽頁面上方的切換「思考輔助」",
+      "assistQ1": "第1名是穩的，還是難以確定",
+      "assistQ2": "以哪艘艇為主軸，對手如何縮小範圍",
+      "step1": "從上方列表選擇今天開賽的賽場",
+      "step2": "按下比賽的「{{button}}」",
+      "step3": "打開「龍神聲納」分頁，或切換到上方的「思考輔助」",
+      "step3SonarOnly": "打開「龍神聲納」分頁",
+      "venuesLink": "從今天開賽的賽場選擇 ↑",
+      "disclaimer": "兩者都是列出過去的比賽與官方數據，並不保證任何結果。"
     },
     "freeAccessNoticeStrong": "完全免費、無需註冊",
     "freeAccessNoticeRest": "— 無需開戶或加入會員，現在就能使用所有功能",
@@ -2367,6 +2383,8 @@
     "bannerLabel": "複製給AI使用",
     "bannerCatchphrase": "讓你的AI也能分析！",
     "toastSuccess": "已複製",
+    "toastAssist": "貼上前先確認資料 → 思考輔助",
+    "toastClose": "關閉",
     "toastError": "複製失敗",
     "promptSelectorWin": "單勝",
     "promptSelectorTrifecta": "3連單",
@@ -2634,8 +2652,6 @@
       "venueRankBadgeTied": "第{{rank}}名並列／共{{total}}台（{{value}}%）",
       "sampleCount": "(n={{n}})",
       "firstUseBadge": "首次使用",
-      "officialPendingBadge": "尚未統計",
-      "officialPendingNote": "「尚未統計」表示此馬達正處於首次被使用的節次中，官方2連率累計尚未產生（該節結束前維持0.0）。",
       "venueStatsFailedCell": "載入失敗",
       "venueStatsFailedNote": "無法取得賽場官方網站的馬達成績（第1名率、優出數、優勝數）。標示「載入失敗」的欄位，重新整理頁面後會重新取得。",
       "wakuStatsHeading": "各水道成績",
@@ -2651,7 +2667,17 @@
       "racerWakuNote": "💡 僅統計現役馬達開始使用後，此馬達在該水道被使用的比賽。橘色數值少於{{n}}場，僅供參考。",
       "drillPreGeneration": "此比賽的{{n}}號馬達是更換前的馬達，與目前的{{n}}號為不同的馬達，因此不顯示走勢、機力指數與使用履歷。",
       "drillAsOfRaceNote": "💡 這是此比賽之前的狀況（不含此比賽及之後的比賽）。",
-      "barScaleNote": "橫條以6台中的最高值為全長。"
+      "barScaleNote": "橫條以6台中的最高值為全長。",
+      "freshNotRun": "尚未出賽",
+      "freshZeroRuns": "0%（{{n}}場）",
+      "freshOwnMark": "※",
+      "freshOwnExplain": "這顆馬達的官方2連率尚未公布。這是依本場比賽之前、在此場地的出賽（{{n}}場）得出的2連率",
+      "freshOwnExplainBoat": "{{boat}}號艇：{{explain}}",
+      "freshOwnHint": "按下「※」即可看到該數字的來源。",
+      "freshPriorRuns": "依上一節為止的出賽（{{n}}場）得出的數字",
+      "freshFirstMeetBanner": "{{venue}}於{{month}}月{{day}}日更換了新馬達。官方2連率從下一節開始提供。在那之前，龍神雷達會顯示依此場地出賽得出的數字",
+      "officialModeSourceNoteFresh": "※ 過去的比賽中，「2連率」「3連率」「前檢」為出走表當時 BOAT RACE 官方網站的數值。但官方數值為0的馬達的「2連率」「3連率」，以及「機力指數」，是龍神雷達依本場比賽之前、在此場地的出賽得出的數值。",
+      "freshRate2Header": "2連率（節次開始時）"
     },
     "motorRanking": {
       "title": "🏁 馬達排行榜",

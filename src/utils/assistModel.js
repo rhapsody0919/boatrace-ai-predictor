@@ -12,6 +12,7 @@ import { ROUNDS_FINAL } from "./analogyFacts.js";
 import { bestOf } from "./bestOf.js";
 import { wilsonInterval } from "./wilson.js";
 import { getRaceStageKey } from "../constants/raceStageConfig.js";
+import { ASSIST_COPY } from "../data/thinkingAssistCopy.js";
 import { SMALL_SAMPLE_THRESHOLD } from "../components/race/basicInfoStats.js";
 
 // ---- 優勝戦・準優勝戦（D-36 (4)・D-37）----
@@ -300,7 +301,8 @@ export function stageFromExhibition(exhibition, boats) {
 
 // ---- レースの図（screens「レンズごとの図 C」、N-2: 最初に見える数字は1艇2個まで）----
 
-export const LENSES = ["axis", "flow", "power", "bet"];
+// 相手（place）は機力と買い目の間（2026-10-12 ユーザー決定「買い目の隣」、spec D-46）
+export const LENSES = ["axis", "flow", "power", "place", "bet"];
 
 /** 平均ST・展示ST を「.132」の形に（画面の文字）。読み上げ・比べるときは小数のまま */
 export const stText = (v, digits = 3) =>
@@ -314,6 +316,7 @@ export const stText = (v, digits = 3) =>
  */
 export const METRICS = {
   nat_win: {
+    tick: (v) => v.toFixed(1), // 6艇比較の目盛り（BOA-804）
     label: "全国勝率",
     short: "勝率",
     value: (r) => r.natWin,
@@ -321,6 +324,7 @@ export const METRICS = {
     aria: (v) => v.toFixed(2),
   },
   loc_win: {
+    tick: (v) => v.toFixed(1), // 6艇比較の目盛り（BOA-804）
     label: "当地勝率",
     short: "当地",
     value: (r) => (r.locWin === 0 ? null : r.locWin),
@@ -336,6 +340,7 @@ export const METRICS = {
     aria: (v) => v.toFixed(3),
   },
   motor_2: {
+    tick: (v) => `${Math.round(v)}%`, // 6艇比較の目盛り（BOA-804）
     label: "モーター2連率",
     short: "モーター2連率", // 「モーター」だけだと何の値か分からない（BOA-801 9）
     value: (r) => r.motor2,
@@ -350,6 +355,7 @@ export const METRICS = {
     aria: (v) => v.toFixed(2),
   },
   series_score: {
+    tick: (v) => v.toFixed(1), // 6艇比較の目盛り（BOA-804）
     label: "今節の平均着順点",
     short: "今節",
     value: (r) => r.seriesScore,
@@ -410,6 +416,9 @@ function bestOfMetric(metric, racers, finalRound) {
 
 const abs = (v) => (typeof v === "number" ? Math.abs(v) : v);
 
+/** 平均ST・展示ST の項目。6艇比較でも展開レンズと同じ .00〜.25 の縮尺にする（BOA-804） */
+const ST_METRICS = new Set(["st_mean30", "st_course", "exh_st"]);
+
 /** 値の幅から図の端を決める（両端に幅の15%の余白。全艇同じ値なら ±1） */
 function span(values) {
   const vs = values.filter((v) => typeof v === "number");
@@ -439,7 +448,9 @@ export function firstPlaceComposite(trifecta, absentBoats = []) {
 /**
  * レンズ（または6艇比較の項目）の図のモデル。純粋関数
  * @param {{lens: string, stage: "pre"|"post", metric?: string|null, racers: object[], trifecta?: object|null, finalRound?: boolean, hasToday?: boolean, pastWin?: Map<number, {k: number, n: number}>|null}} args
- *   pastWin: 買い目レンズの「過去の1着」（艇ごとの差がつく材料の範囲での1着。assistSummary.b1Usual）
+ *   pastWin: 買い目レンズの「過去の{着順}」（艇ごとの差がつく材料の範囲での target の着順。assistSummary.b1Usual）
+ *   placeRates: 相手レンズの各艇の2着以内・3着以内（Map<艇, {t2: {k, n}, t3: {k, n}}>。艇ごとの範囲、spec D-46）
+ *   target: 買い目の着順（1＝1着・2＝2着以内・3＝3着以内。spec D-44・D-46 で買い目だけ）。1以外では人気の札を「人気（1着）」にして薄くする
  *   stBasis: 展開レンズの展示前の平均ST（"course"＝このコース・直近30走、"overall"＝直近30走。BOA-815 案A）
  *   stMissing: v16 の保存が無いと分かった（"not_saved"）。軸レンズに平均ST を出せない理由を書く
  *   hasToday: v16 の today が届いているか。届いていない（読み込み中・保存が無い）ときは v16 の値（平均ST）を
@@ -456,9 +467,20 @@ export function boardModel({
   finalRound = false,
   hasToday = true,
   pastWin = null,
+  placeRates = null,
+  target = 1,
   stBasis = "course",
   stMissing = false,
 }) {
+  // 過去の{着順}（件数は割合の括弧。BOA-831 承認モック v2）
+  const pastNum = (past) => ({
+    metric: null,
+    label: ASSIST_COPY.pastLabel(target),
+    short: ASSIST_COPY.pastLabel(target),
+    text: ASSIST_COPY.pastText(past.k, past.n),
+    aria: null,
+    best: false,
+  });
   const post = stage === "post";
   const best = (m) => bestOfMetric(m, racers, finalRound);
 
@@ -467,13 +489,18 @@ export function boardModel({
     const plotOf = (r) => (def.plot ? def.plot(r) : abs(def.value(r)));
     const b = best(metric);
     const dir = BEST_RULES[metric].dir;
+    // 目盛りを出し、縮尺は元の図とそろえる（BOA-804）。ST は展開レンズと同じ .00〜.25、
+    // ほかは値の幅（軸・機力のレンズと同じ span）で、両端の値を目盛りに書く
+    const st = ST_METRICS.has(metric);
+    const s = st ? { lo: 0, hi: 0.25 } : span(racers.map(plotOf));
     return {
       kind: "metric",
       title: `${def.label}を6艇で比べる`,
-      left: "",
-      right: "",
+      left: st ? ".00" : (def.tick ?? def.text)(s.lo),
+      right: st ? ".25" : (def.tick ?? def.text)(s.hi),
       good: dir === "min" ? "left" : "right",
-      ...span(racers.map(plotOf)),
+      ...s,
+      slit: st,
       rows: racers.map((r) => ({
         boat: r.boat,
         x: plotOf(r),
@@ -564,6 +591,56 @@ export function boardModel({
     };
   }
 
+  if (lens === "place") {
+    // 相手（spec D-46）: 横軸は割合 0〜100%。●2着以内（x）と○3着以内（x2）を同じ行に置く。
+    // 値は艇ごとの範囲（深掘り・買い目と同じ）。艇ごとに範囲が違うので6艇で比べる金枠は付けない。
+    // 30件未満は割合を出さず件数だけ（2026-10-12 統計検証: 艇の範囲の30件未満は0.2%）
+    const rate = (pair) => (pair && pair.n >= 30 ? pair.k / pair.n : null);
+    const text = (pair) =>
+      !pair
+        ? "—"
+        : pair.n < 30
+          ? ASSIST_COPY.placeFew(pair.n)
+          : `${Math.round((pair.k / pair.n) * 100)}%`;
+    return {
+      kind: "place",
+      title: ASSIST_COPY.placeTitle,
+      left: "0%",
+      right: "100%",
+      good: null,
+      lo: 0,
+      hi: 1,
+      rows: racers.map((r) => {
+        const p = placeRates?.get(r.boat) ?? null;
+        return {
+          boat: r.boat,
+          x: rate(p?.t2),
+          x2: rate(p?.t3),
+          nums: p
+            ? [
+                {
+                  metric: null,
+                  label: ASSIST_COPY.placeTop2,
+                  short: ASSIST_COPY.placeTop2,
+                  text: text(p.t2),
+                  aria: null,
+                  best: false,
+                },
+                {
+                  metric: null,
+                  label: ASSIST_COPY.placeTop3,
+                  short: ASSIST_COPY.placeTop3,
+                  text: text(p.t3),
+                  aria: null,
+                  best: false,
+                },
+              ]
+            : [],
+        };
+      }),
+    };
+  }
+
   if (lens === "power") {
     const bMotor = best("motor_2");
     if (post) {
@@ -625,18 +702,7 @@ export function boardModel({
         return {
           boat: r.boat,
           x: null,
-          nums: past
-            ? [
-                {
-                  metric: null,
-                  label: "過去の1着",
-                  short: "過去の1着",
-                  text: `${Math.round((past.k / past.n) * 100)}%`,
-                  aria: null,
-                  best: false,
-                },
-              ]
-            : [],
+          nums: past ? [pastNum(past)] : [],
         };
       }),
     };
@@ -661,21 +727,15 @@ export function boardModel({
         nums: [
           c != null && {
             metric: null,
-            label: "1着人気",
-            short: "1着人気",
+            label: ASSIST_COPY.popLabel(target),
+            short: ASSIST_COPY.popLabel(target),
             text: `${1 + sorted.filter((o) => o < c).length}番（${c.toFixed(1)}倍）`,
             aria: null,
             best: false,
+            muted: target !== 1,
           },
           // 艇ごとに集めた範囲が違うので6艇で比べない（金枠を付けない。FR-3a「付けない所」）
-          past && {
-            metric: null,
-            label: "過去の1着",
-            short: "過去の1着",
-            text: `${Math.round((past.k / past.n) * 100)}%`,
-            aria: null,
-            best: false,
-          },
+          past && pastNum(past),
         ].filter(Boolean),
       };
     }),

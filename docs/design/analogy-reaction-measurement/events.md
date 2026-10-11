@@ -10,14 +10,16 @@
 |---|---|---|---|
 | 着地 | `session_start`（GA4 自動） | — | — |
 | レース詳細 | `page_view` | page_location | ページごと（BOA-531）。`?tab=`・`?boat=` は除いた URL で数える |
-| AI予想タブ（押した） | `race_tab_select` | tab_id, from_tab_id, tab_count | タブを押したとき（BOA-454） |
-| AI予想タブ（リンクで開いた） | `race_tab_initial` | tab_id | `?tab=` のリンクでタブを開いて、マウントしたとき1回。アプリ内のレースへのリンクは `?tab=` を付けないので、共有リンク・外部からの来訪と再読み込み |
+| ソナーのタブ（押した） | `race_tab_select` | tab_id（ソナーは `sonar`）, from_tab_id, tab_count | タブを押したとき（BOA-454）。AI予想タブの下の案内から移ったときも同じイベント |
+| ソナーのタブ（リンクで開いた） | `race_tab_initial` | tab_id（`?tab=sonar` と旧形式 `?tab=aiPrediction&sonar=…` はどちらも `sonar`） | `?tab=` のリンクでタブを開いて、マウントしたとき1回。アプリ内のレースへのリンクは `?tab=` を付けないので、共有リンク・外部からの来訪と再読み込み |
 | ソナー描画 | `analogy_section_view` | race_id, analogy_stage | 節の中身（facts）が出たらレースごとに1回（#1312） |
 | ソナーが画面に入った | `analogy_section_visible` | race_id, analogy_stage | 節が画面に入ったらレースごとに1回。最後に見た時刻を localStorage `boatai-user:analogy-last-seen` に残す |
 | タブ切り替え | `analogy_tab_select` | race_id, analogy_tab | 節の中のタブを押したとき（#1312） |
 | 条件変更 | `analogy_control_change` | race_id, analogy_tab, analogy_control | 下の操作のどれかを変えたとき。選択中のものの押し直しは数えない（押し直しで選択を外す部品は `data-af-toggle` を付けて数える）。SVG の role="button" はキーボードの Enter・Space も数える。スライダー・選択肢は値が決まったとき（change）だけ |
 | 2ページ目 | `page_view` | — | ファネル探索（Data API なら runFunnelReport）で `analogy_section_visible` → `page_view` |
 | 7日以内の再訪 | `analogy_return_visit` | analogy_days_since（0〜7） | ページを開いた最初の page_view で、前回ソナーが画面に入ってから30分より後・7日以内なら1回（30分以内は同じ来訪とみなす。見た直後に別レースを新しいタブで開いただけで再訪にしない）。同じタブの再読み込みでは送らない（sessionStorage）。新しいタブは新しい来訪として数える |
+
+**切り替え日**: 龍神ソナーは 2026-10-09 09:17（#1333）に AI予想タブの中から別のタブに移った。それより前の「開いた」は AI予想タブ（tab_id=aiPrediction）の意味なので、この日をまたいで「開いた」・`analogy_section_view` の件数を比べない（方針は `docs/design/analogy-finder/sonar-tab/tab-and-events.md`）。保存の無いレースではタブを開いても `analogy_section_view` は送られないので、「開いた」は tab_id=sonar で見る（C3 の棚卸し、2026-10-11）。
 
 `analogy_control` の値（部品に `data-af-control` で付ける。足すときはここにも足す）:
 

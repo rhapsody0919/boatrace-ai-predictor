@@ -1,0 +1,225 @@
+<title>相手レンズ案</title>
+<style>
+:root{
+  --bg:#f6f4ee; --card:#fffdf8; --ink:#1d1f24; --sub:#5d6068; --line:#dcd7cb;
+  --acc:#1f5fa8; --acc-soft:#e6eef8; --rail:#e2dccd; --new:#b2361f; --new-soft:#fbe9e4;
+  --b1:#ffffff; --b1t:#1d1f24; --b2:#1d1f24; --b3:#d93a2b; --b4:#2a74d0; --b5:#e9c21b; --b5t:#1d1f24; --b6:#3f9a46;
+  --a1:#d93a2b; --a2:#2a74d0; --cb1:#3f9a46;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#16181c; --card:#1f2228; --ink:#eceae4; --sub:#b3b5bb; --line:#373b43;
+    --acc:#8db8f0; --acc-soft:#22324a; --rail:#353a42; --new:#f08a73; --new-soft:#3d2620;
+    --b1:#eceae4; --b1t:#16181c; --b2:#55595f;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#16181c; --card:#1f2228; --ink:#eceae4; --sub:#b3b5bb; --line:#373b43;
+  --acc:#8db8f0; --acc-soft:#22324a; --rail:#353a42; --new:#f08a73; --new-soft:#3d2620;
+  --b1:#eceae4; --b1t:#16181c; --b2:#55595f;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;line-height:1.6;padding-inline:16px;padding-block:24px 48px;font-size:16px}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:36px}
+h1{font-size:1.5rem;margin:0;text-wrap:balance} h2{font-size:1.2rem;margin:0;text-wrap:balance}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;color:var(--sub);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:10px}
+.card p,.card ol,.card ul{margin:0} .card ol,.card ul{padding-left:1.3em;display:grid;gap:6px}
+.fixed{border:2px solid var(--ink);border-radius:12px;padding:12px 16px;background:var(--card);font-weight:700}
+.frames{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.side{display:grid;gap:10px;max-width:72ch} .side p,.side ul{margin:0} .side ul{padding-left:1.2em;display:grid;gap:4px}
+.tag{display:inline-block;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--acc-soft);color:var(--acc)}
+.phone{width:100%;max-width:375px;background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:12px;display:grid;gap:10px}
+.phone.w320{max-width:320px}
+.pc{width:100%;max-width:1000px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px}
+.split{display:grid;grid-template-columns:minmax(0,480px) minmax(0,1fr);gap:20px;align-items:start}
+.flabel{font-size:.75rem;color:var(--sub);margin:0 0 6px;font-weight:700;max-width:375px}
+/* 本番の LensBar と同じ字の大きさ（16px 太字・gap 6px） */
+.lensrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}
+.lens{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.lens span{min-height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;font-weight:700;font-size:16px;white-space:nowrap}
+.lens span.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.lens span.new{outline:2px dashed var(--new);outline-offset:2px}
+.guide{min-height:44px;display:grid;place-items:center;border:1px solid var(--acc);color:var(--acc);border-radius:8px;padding:0 10px;font-weight:700;font-size:16px}
+.w320 .lensrow{grid-template-columns:1fr}
+.qrow{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.q{font-size:.85rem;color:var(--sub);margin:0} .q b{color:var(--ink)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:10px;min-width:0}
+.box h3{font-size:1.05rem;margin:0}
+.small{font-size:.8rem;color:var(--sub);margin:0}
+.chip{display:inline-block;font-size:.75rem;border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.newmark{outline:2px dashed var(--new);outline-offset:4px;border-radius:10px}
+.badge{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;color:#fff;border:1px solid transparent;flex:none}
+.c1{background:var(--b1);color:var(--b1t);border-color:var(--b1t)} .c2{background:var(--b2)} .c3{background:var(--b3)} .c4{background:var(--b4)} .c5{background:var(--b5);color:var(--b5t)} .c6{background:var(--b6)}
+/* レースの図（RaceLaneBoard と同じ形: 左に艇・中央に横軸の点・右に＋） */
+.axis{display:grid;grid-template-columns:52px minmax(0,1fr) 44px;font-size:.72rem;color:var(--sub)}
+.axis .scale{display:flex;justify-content:space-between}
+.legend{display:flex;gap:14px;font-size:.78rem;color:var(--sub);align-items:center;flex-wrap:wrap}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle;margin-right:4px}
+.dot.f{background:var(--ink)} .dot.o{background:var(--card);border:2px solid var(--ink)}
+.lane{display:grid;grid-template-columns:52px minmax(0,1fr) 44px;align-items:center;gap:0;padding:6px 0;border-top:1px solid var(--line)}
+.lane:first-of-type{border-top:0}
+.lane.open{background:var(--acc-soft);border-radius:8px}
+.who{display:grid;justify-items:center;font-size:.72rem;line-height:1.2}
+.who b{font-weight:700;font-size:.78rem}
+.trk{position:relative;height:26px}
+.trk .rail{position:absolute;left:0;right:0;top:12px;height:3px;background:var(--rail);border-radius:2px}
+.trk .seg{position:absolute;top:12px;height:3px;background:var(--ink)}
+.trk .p2,.trk .p3{position:absolute;top:6px;width:14px;height:14px;border-radius:50%;margin-left:-7px}
+.trk .p2{background:var(--ink)} .trk .p3{background:var(--card);border:2px solid var(--ink)}
+.vals{grid-column:2;display:flex;gap:12px;font-size:.8rem;color:var(--sub);margin-top:2px}
+.vals b{color:var(--ink)}
+.plus{width:44px;height:44px;border:1px solid var(--line);border-radius:8px;display:grid;place-items:center;font-size:1.2rem;color:var(--sub);grid-row:span 2}
+.f2{display:grid;grid-template-columns:28px 1fr 1fr;gap:10px;align-items:center;font-size:.85rem}
+.f2 .h{font-size:.72rem;color:var(--sub);font-weight:700}
+.mini{display:grid;grid-template-columns:1fr 2.6em;gap:6px;align-items:center;text-align:right}
+.mini .tr{height:8px;background:var(--rail);border-radius:4px;overflow:hidden} .mini .fl{height:100%;background:var(--acc)}
+.foot{background:var(--ink);color:var(--card);border-radius:10px;padding:10px 12px;font-weight:700;font-size:.95rem}
+.qs{display:grid;gap:12px} .qs > div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:8px} .qs b{display:block}
+.opts{display:flex;flex-wrap:wrap;gap:10px}
+.opt{border:1px solid var(--line);border-radius:10px;padding:8px;display:grid;gap:6px;background:var(--bg);font-size:.8rem}
+.opt .lens span{font-size:13px;min-height:32px}
+.steps{display:flex;flex-wrap:wrap;gap:4px}
+.steps span{border:1px solid var(--line);border-radius:999px;padding:2px 8px;font-size:.75rem;background:var(--card)}
+table.cmp{border-collapse:collapse;font-size:.85rem;min-width:640px}
+table.cmp th,table.cmp td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+table.cmp th{font-size:.75rem;color:var(--sub)} .scroll{overflow-x:auto}
+@media (max-width:860px){.split{grid-template-columns:minmax(0,1fr)}}
+/* 狭い画面では本番と同じく「ガイド」をタブの列から外す（360px 以下の決まり。モックの枠は余白のぶん狭い） */
+@media (max-width:440px){.phone .lensrow{grid-template-columns:1fr}.phone .lensrow .guide{display:none}}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:10px;max-width:820px">
+    <span class="eyebrow">思考アシスト／流しの相手を軸と分ける モック v4（例: 2026-10-06 徳山10R 準優勝戦・本番の値）</span>
+    <h1>流しの相手は「相手」のレンズで、6艇の2着以内と3着以内を同時に見る</h1>
+    <p>ユーザーの回答「やはり軸タブとは別で分けた方が良い」を受けた案。ファンパネルと UI/UX デザイナー役のレビューを反映した。赤い点線が足す・変わる場所。</p>
+  </header>
+
+  <div class="fixed">固定: 軸レンズは「1号艇が1着になったのは」だけに戻す（着順の切り替えを外す）。変わる: 新しい「相手」のレンズで6艇の2着以内（●）と3着以内（○）を同時に出す。買い目の切り替えは買い目だけのものになる。</div>
+
+  <section class="card">
+    <span class="eyebrow">ファンにとっての価値</span>
+    <ol>
+      <li>軸（1着は誰か）と相手（2着・3着に残るのは誰か）は別の問い。場所を分けると「3号艇を選んだのに1号艇の数字が出る」が起きない。</li>
+      <li>相手のレンズは他のレンズと同じレースの図で、横軸を割合にする。1艇の行に2着以内と3着以内が並ぶので、切り替えずに「2着までなら残るが3着だと…」が一目で分かる。行の「+」でその場で相手を候補に入れられる。</li>
+      <li>値は艇ごとの範囲で、深掘り・買い目と同じ（3号艇の3着以内はどこでも 65%）。</li>
+    </ol>
+  </section>
+
+  <section style="display:grid;gap:12px">
+    <div><span class="tag">推奨</span> <b>相手レンズ（タブの順は決めること1。絵は「軸｜展開｜機力｜相手｜買い目」）</b></div>
+    <div class="frames">
+      <div>
+        <p class="flabel">375px・3号艇の丸を押して深掘りを開いた状態</p>
+        <div class="phone">
+          <div class="lensrow"><div class="lens"><span>軸</span><span>展開</span><span>機力</span><span class="on new">相手</span><span>買い目</span></div><span class="guide">ガイド</span></div>
+          <p class="q"><b>2着・3着に残るのは？</b> 流しの相手を選ぶ</p>
+          <div class="box newmark" style="padding:10px">
+            <div class="legend"><span><i class="dot f"></i>2着以内</span><span><i class="dot o"></i>3着以内</span><span>艇ごとに、その艇の深掘りと同じレースでの割合</span></div>
+            <div class="axis"><span></span><span class="scale"><span>0%</span><span>50%</span><span>100%</span></span><span></span></div>
+            <div id="board375"></div>
+          </div>
+          <div class="box" style="border-color:var(--acc)"><b>3号艇 西岡 A1</b><span class="small">（深掘り。今のまま）</span></div>
+          <div class="box newmark">
+            <h3>1号艇を軸にしたときの2着・3着</h3>
+            <p class="small">1号艇が1着のときだけ（ほかの艇を軸にした分は準備中）</p>
+            <span class="chip num">全国・級の並びが同じ準優勝戦（1号艇がB1） 1号艇が1着の65件</span>
+            <div class="f2 num" id="f2a"></div>
+          </div>
+          <div class="foot num">3連単 —-—-—（0点）</div>
+        </div>
+      </div>
+      <div>
+        <p class="flabel">320px（「ガイド」を2行目の右端へ移す）</p>
+        <div class="phone w320">
+          <div class="lensrow"><div class="lens"><span>軸</span><span>展開</span><span>機力</span><span class="on">相手</span><span>買い目</span></div></div>
+          <div class="qrow"><p class="q"><b>2着・3着に残るのは？</b></p><span class="guide newmark">ガイド</span></div>
+          <div class="box" style="padding:10px">
+            <div class="legend"><span><i class="dot f"></i>2着以内</span><span><i class="dot o"></i>3着以内</span></div>
+            <div id="board320"></div>
+          </div>
+        </div>
+        <p class="small" style="max-width:320px;margin-top:6px">タブ1つの幅は約55px（44px 以上）。「買い目」も1行</p>
+      </div>
+      <div>
+        <p class="flabel">軸レンズ・375px（戻した姿）</p>
+        <div class="phone">
+          <div class="lensrow"><div class="lens"><span class="on">軸</span><span>展開</span><span>機力</span><span>相手</span><span>買い目</span></div><span class="guide">ガイド</span></div>
+          <p class="q"><b>1号艇は逃げる？</b> 誰が1着候補か</p>
+          <div class="box">
+            <h3>1号艇が1着になったのは</h3>
+            <div style="display:flex;gap:8px;align-items:baseline"><span style="font-size:2rem;font-weight:700;line-height:1" class="num">54.6%</span><span class="small num">65/119レース</span></div>
+            <span class="chip num">全国・級の並びが同じ準優勝戦（1号艇がB1） 119件</span>
+            <p class="small">（級の並び・徳山の全レースの棒・件数が違う理由・差がつく材料の入口は今のまま。着順の切り替えと「1号艇が1着のとき」の表は相手へ移る）</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:12px">
+    <p class="flabel" style="max-width:none">1440px（左に図・右に押した結果。他のレンズと同じ並び、左端はタブの列にそろえる）</p>
+    <div class="pc">
+      <div class="lensrow" style="max-width:720px"><div class="lens"><span>軸</span><span>展開</span><span>機力</span><span class="on">相手</span><span>買い目</span></div><span class="guide">ガイド</span></div>
+      <div class="split">
+        <div class="box" style="padding:10px">
+          <div class="legend"><span><i class="dot f"></i>2着以内</span><span><i class="dot o"></i>3着以内</span><span>艇ごとに、その艇の深掘りと同じレースでの割合</span></div>
+          <div class="axis"><span></span><span class="scale"><span>0%</span><span>50%</span><span>100%</span></span><span></span></div>
+          <div id="board1440"></div>
+        </div>
+        <div style="display:grid;gap:12px">
+          <div class="box" style="border-color:var(--acc)"><b>3号艇 西岡 A1</b><span class="small">（深掘り。今のまま）</span></div>
+          <div class="box">
+            <h3>1号艇を軸にしたときの2着・3着</h3>
+            <span class="chip num">全国・級の並びが同じ準優勝戦（1号艇がB1） 1号艇が1着の65件</span>
+            <div class="f2 num" id="f2b"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="side" style="max-width:none">
+    <span class="eyebrow">決まりと規模</span>
+    <ul>
+      <li>相手レンズの図は、他のレンズと同じレースの図（艇の行・横軸の点・「+」で候補・艇を押すと深掘り）。横軸は割合 0〜100%、●が2着以内・○が3着以内。数字は1艇2個（N-2 の範囲）</li>
+      <li>切り替えは置かない。買い目レンズの「1着／2着以内／3着以内」は買い目だけのものにする（共有しない。選べる数が違う切り替えを共有すると、知らないうちに状態が変わるため）</li>
+      <li>軸レンズは1着だけに戻す。「1号艇が1着のとき、2着・3着」の表は相手レンズへ移し、見出しを「1号艇を軸にしたときの2着・3着」にする。ほかの艇を軸にした分は BOA-845</li>
+      <li>360px 以下では「ガイド」をタブの列から外し、問いの行の右端へ。タブは1行で折らない</li>
+      <li>ファンパネル: 4人とも相手を別にする案。案Y（買い目レンズの先頭に置く）は、オッズの図が2画面目へ押し出され、買い目の「過去の〇〇」と同じ情報が2回出るので採らない</li>
+      <li>規模: PR 2本（相手レンズを足す／軸から切り替えと表を外す）。API の変更なし。spec D-46・FR-4・FR-9（FW-01・07・18）・ガイドを更新</li>
+    </ul>
+  </section>
+
+  <section class="side" style="max-width:none">
+    <span class="eyebrow">決めること（3つ）</span>
+    <div class="qs">
+      <div><b>1. 相手のタブの位置</b>
+        <div class="opts">
+          <div class="opt"><span>推奨: 買い目の隣（考える順。展開・機力を見てから相手、そのまま買い目）</span><div class="lens"><span>軸</span><span>展開</span><span>機力</span><span class="on">相手</span><span>買い目</span></div></div>
+          <div class="opt"><span>別案: 軸の隣（流しを組む順。軸→相手）</span><div class="lens"><span>軸</span><span class="on">相手</span><span>展開</span><span>機力</span><span>買い目</span></div></div>
+        </div></div>
+      <div><b>2. ガイドの段</b>
+        <div class="opts">
+          <div class="opt"><span>推奨: 6段にする（相手の段を足す。spec D-4 の「5段」を改める）</span><div class="steps"><span>①堅い？荒れる？</span><span>②1号艇</span><span>③壁と攻める艇</span><span>④足</span><span>⑤相手</span><span>⑥買い目</span></div></div>
+          <div class="opt"><span>別案: 5段のまま（⑤を相手にし、買い目は⑤の説明の1文で案内）</span><div class="steps"><span>①</span><span>②</span><span>③</span><span>④</span><span>⑤相手→買い目</span></div></div>
+        </div></div>
+      <div><b>3. この形（相手レンズ、軸は1着だけ）で進めてよいか</b>推奨: 進める。並び順は図が艇番の順なので艇番順になる（前回の「先述の通り」は「軸と分ける」の意味と受け取った）。</div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var B=[['三馬','B1'],['仲道','A2'],['西岡','A1'],['中村','A2'],['濱野','A1'],['倉富','B1']];
+  var T2=[83/119,161/451,252/641,186/812,60/264,19/528], T3=[94/119,256/451,417/641,366/812,116/264,74/528];
+  function board(id,open){var h='';B.forEach(function(b,i){var a=T2[i]*100,c=T3[i]*100;h+='<div class="lane'+(i+1===open?' open':'')+'"><span class="who"><span class="badge c'+(i+1)+'">'+(i+1)+'</span><b>'+b[0]+'</b>'+b[1]+'</span><div class="trk"><span class="rail"></span><span class="seg" style="left:'+a.toFixed(1)+'%;width:'+(c-a).toFixed(1)+'%"></span><span class="p2" style="left:'+a.toFixed(1)+'%"></span><span class="p3" style="left:'+c.toFixed(1)+'%"></span></div><span class="plus">+</span><div class="vals num"><span>2着以内 <b>'+Math.round(a)+'%</b></span><span>3着以内 <b>'+Math.round(c)+'%</b></span></div></div>'});document.getElementById(id).innerHTML=h}
+  board('board375',3); board('board320',0); board('board1440',3);
+  var S2=[25,18,11,7,4],S3=[14,16,20,9,6];
+  ['f2a','f2b'].forEach(function(id){var h='<span></span><span class="h">2着</span><span class="h">3着</span>';for(var b=2;b<=6;b++){var x=100*S2[b-2]/65,y=100*S3[b-2]/65;h+='<span class="badge c'+b+'">'+b+'</span><span class="mini"><span class="tr"><span class="fl" style="display:block;width:'+x.toFixed(1)+'%"></span></span>'+Math.round(x)+'%</span><span class="mini"><span class="tr"><span class="fl" style="display:block;width:'+y.toFixed(1)+'%"></span></span>'+Math.round(y)+'%</span>'}document.getElementById(id).innerHTML=h});
+})();
+</script>

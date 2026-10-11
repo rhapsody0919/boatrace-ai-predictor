@@ -1,0 +1,383 @@
+<title>2着・3着の見方</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#f6f4ee; --card:#fffdf8; --ink:#1d1f24; --sub:#5d6068; --line:#dcd7cb;
+  --acc:#1f5fa8; --acc-soft:#e6eef8; --gold:#8a6a12; --gold-soft:#f6edd2;
+  --bar:#2a62b0; --bar-bg:#e2dccd; --new:#b2361f; --new-soft:#fbe9e4;
+  --b1:#ffffff; --b1t:#1d1f24; --b2:#1d1f24; --b3:#d93a2b; --b4:#2a74d0; --b5:#e9c21b; --b5t:#1d1f24; --b6:#3f9a46;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#16181c; --card:#1f2228; --ink:#eceae4; --sub:#a6a8ae; --line:#373b43;
+    --acc:#8db8f0; --acc-soft:#22324a; --gold:#e3c26a; --gold-soft:#3a3220;
+    --bar:#6ea2e8; --bar-bg:#353a42; --new:#f08a73; --new-soft:#3d2620;
+    --b1:#eceae4; --b1t:#16181c; --b2:#55595f;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#16181c; --card:#1f2228; --ink:#eceae4; --sub:#a6a8ae; --line:#373b43;
+  --acc:#8db8f0; --acc-soft:#22324a; --gold:#e3c26a; --gold-soft:#3a3220;
+  --bar:#6ea2e8; --bar-bg:#353a42; --new:#f08a73; --new-soft:#3d2620;
+  --b1:#eceae4; --b1t:#16181c; --b2:#55595f;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif;line-height:1.6;padding-inline:16px;padding-block:24px 48px}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:40px}
+h1{font-size:1.6rem;margin:0;text-wrap:balance}
+h2{font-size:1.25rem;margin:0;text-wrap:balance}
+.num{font-variant-numeric:tabular-nums}
+.lead{display:grid;gap:12px;max-width:760px}
+.lead p{margin:0}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;color:var(--sub);font-weight:700}
+.concl{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:10px}
+.concl ol{margin:0;padding-left:1.3em;display:grid;gap:6px}
+.plan{display:grid;grid-template-columns:375px minmax(0,1fr);gap:32px;align-items:start}
+@media (max-width:860px){.plan{grid-template-columns:minmax(0,1fr)}}
+.side{display:grid;gap:12px;max-width:62ch}
+.side p,.side ul{margin:0}
+.side ul{padding-left:1.2em;display:grid;gap:4px}
+.tag{display:inline-block;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--new-soft);color:var(--new)}
+.tag.rec{background:var(--acc-soft);color:var(--acc)}
+.tag.skip{background:var(--bar-bg);color:var(--sub)}
+.meta{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.875rem}
+.meta dt{color:var(--sub)} .meta dd{margin:0}
+
+/* phone */
+.phone{width:100%;max-width:375px;background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:12px;display:grid;gap:12px;box-shadow:0 1px 0 var(--line)}
+.lens{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.lens span{min-height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;font-weight:700;font-size:.9rem}
+.lens span.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.q{font-size:.85rem;color:var(--sub);margin:0} .q b{color:var(--ink)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:10px;min-width:0}
+.box h3{font-size:1.05rem;margin:0}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--ink);border-radius:8px;overflow:hidden}
+.seg button{min-height:44px;font:inherit;font-weight:700;font-size:.9rem;background:transparent;color:var(--ink);border:0;border-left:1px solid var(--ink);cursor:pointer}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--card)}
+.seg button:focus-visible,.ms button:focus-visible,.short button:focus-visible{outline:3px solid var(--acc);outline-offset:-3px}
+.seglbl{font-size:.75rem;color:var(--sub);margin:0 0 4px}
+.big{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px}
+.big .p{font-size:2rem;font-weight:700;line-height:1}
+.small{font-size:.75rem;color:var(--sub)}
+.chip{display:inline-block;font-size:.75rem;border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.entry{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--bg)}
+.entry b{display:block}
+.entry small{color:var(--sub)}
+.hit{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:grid;gap:2px;font-size:.85rem}
+.hit .nm{font-weight:700}
+.hit .lv{font-size:.72rem;color:var(--sub)}
+.newmark{outline:2px dashed var(--new);outline-offset:3px;border-radius:10px}
+.bars{display:grid;gap:6px}
+.brow{display:grid;grid-template-columns:28px 1fr 3.6em;gap:8px;align-items:center;font-size:.85rem}
+.track{height:10px;background:var(--bar-bg);border-radius:5px;overflow:hidden}
+.fill{height:100%;background:var(--bar);border-radius:5px}
+.badge{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.8rem;color:#fff;border:1px solid transparent}
+.c1{background:var(--b1);color:var(--b1t);border-color:var(--b1t)} .c2{background:var(--b2)} .c3{background:var(--b3)} .c4{background:var(--b4)} .c5{background:var(--b5);color:var(--b5t)} .c6{background:var(--b6)}
+.cols{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;align-items:end;text-align:center;font-size:.72rem}
+.col{display:grid;gap:3px;justify-items:center}
+.col .v{height:64px;width:70%;display:flex;align-items:flex-end}
+.col .v i{display:block;width:100%;border-radius:3px 3px 0 0}
+.rowlbl{font-size:.75rem;font-weight:700;margin:0}
+.betrow{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:.85rem}
+.betrow:first-of-type{border-top:0}
+.betrow .t{display:flex;flex-wrap:wrap;gap:4px 14px}
+.pos3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;grid-column:2}
+.pos3 span{min-height:36px;border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;font-size:.8rem}
+.pos3 span.on{background:var(--acc);color:var(--card);border-color:var(--acc)}
+.ms{display:grid;grid-template-columns:2.6em repeat(6,minmax(0,1fr));gap:6px;align-items:center}
+.ms .h{font-size:.72rem;color:var(--sub);text-align:center}
+.ms button{min-height:44px;border:1px solid var(--line);border-radius:8px;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0}
+.ms button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc)}
+.short{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.short button{min-height:44px;font:inherit;font-weight:700;font-size:.85rem;border:1px solid var(--ink);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer;padding:4px 8px;line-height:1.3}
+.short button small{display:block;font-weight:400;font-size:.7rem;color:var(--sub)}
+.foot{background:var(--ink);color:var(--card);border-radius:10px;padding:10px 12px;font-weight:700;font-size:.95rem}
+.foot small{display:block;font-weight:400;font-size:.75rem;opacity:.8}
+.note{font-size:.75rem;color:var(--sub);margin:0}
+table.cmp{border-collapse:collapse;font-size:.85rem;min-width:640px}
+table.cmp th,table.cmp td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+table.cmp th{font-size:.75rem;color:var(--sub)}
+.scroll{overflow-x:auto}
+.qs{display:grid;gap:10px}
+.qs div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.qs b{display:block}
+.tbl1b{display:grid;gap:6px;font-size:.85rem}
+.tbl1b .r{display:grid;grid-template-columns:28px 1fr 1fr;gap:10px;align-items:center}
+.tbl1b .h{font-size:.72rem;color:var(--sub);font-weight:700}
+.tbl1b .cell{display:grid;grid-template-columns:1fr 2.6em;gap:6px;align-items:center;text-align:right}
+.short button:disabled{opacity:.45;cursor:not-allowed}
+</style>
+
+<div class="wrap">
+  <header class="lead">
+    <span class="eyebrow">BOA-831 思考アシスト／モック v2（例: 2026-10-06 徳山10R 準優勝戦・本番の値）</span>
+    <h1>2着・3着の見方を、今のレンズの中に足す</h1>
+    <p>タブは増やさない。軸・展開・買い目の3つのレンズとマークシートに、流し・ボックスで考える人のための材料を足す案。赤い点線の枠が今回足す場所。</p>
+  </header>
+
+  <section class="concl">
+    <span class="eyebrow">ファンにとっての価値</span>
+    <ol>
+      <li>「1号艇は逃げる」と決めた人が次に悩むのは「2着・3着は誰か」。今の画面は1着の割合しか出さないので、ここで手が止まる（spec FW-01「逃げるなら2・3着を絞る」の材料が無い）。</li>
+      <li>ボックス派・流し派は「どの艇が3着以内に残りやすいか」を見たい。1着の割合だけだと、外の艇が全部「低い」に見えて差が読めない（1着: 5号艇3.4%・6号艇0.8% → 3着以内: 43.9%・14.0%）。</li>
+      <li>買い目を組む手間。ボックス・流しを1マスずつ押すのは、5艇ボックス（60点）で15回のタップ。</li>
+    </ol>
+  </section>
+
+  <!-- 案1 -->
+  <section class="plan" id="p1">
+    <div class="phone" aria-label="案1 軸レンズの画面">
+      <div class="lens"><span class="on">軸</span><span>展開</span><span>機力</span><span>買い目</span></div>
+      <p class="q" id="axQ"><b>1号艇は逃げる？</b> 2着までに残るか</p>
+      <div class="box">
+        <div class="newmark">
+          <p class="seglbl">何着までで見るか（軸・買い目で共通）</p>
+          <div class="seg" role="group" aria-label="着順">
+            <button type="button" data-t="1" aria-pressed="false">1着</button>
+            <button type="button" data-t="2" aria-pressed="true">2着以内</button>
+            <button type="button" data-t="3" aria-pressed="false">3着以内</button>
+          </div>
+        </div>
+        <h3 id="axH">1号艇が2着以内に来たのは</h3>
+        <div class="big"><span class="p num" id="axP">69.7%</span><span class="small num" id="axK">83/119レース</span></div>
+        <span class="chip num">全国・級の並びが同じ準優勝戦（1号艇がB1） 119件</span>
+        <p class="small">（級の並びの絵・徳山の全レースの棒・件数が違う理由は今のまま。棒も選んだ着順の値にする）</p>
+        <div class="entry"><span><b id="axE">1号艇の差がつく材料 ▲3件</b><small>当地勝率・平均ST（直近30走） ほか1件</small></span><span aria-hidden="true">›</span></div>
+      </div>
+      <div class="box">
+        <h3>差がつく材料（1号艇）<span class="small">　深掘り</span></h3>
+        <p class="note">▲＝今日6艇で一番上か一番下</p>
+        <div class="hit"><span class="nm">平均ST（直近30走）</span><span class="num" id="h1">▲6艇で一番早いとき 2着以内 77%・22件（全体 69.7%）</span><span class="lv">件数が少なく差ははっきりしない</span></div>
+        <div class="hit"><span class="nm">モーター2連率</span><span class="num" id="h2">▲6艇で一番低いとき 2着以内 77%・26件（全体 69.7%）</span><span class="lv">件数が少なく差ははっきりしない</span></div>
+        <div class="hit"><span class="nm">当地勝率</span><span class="num" id="h3">▲6艇で一番低いとき 2着以内 56%・34件（全体 69.7%）</span><span class="lv">件数が少なく差ははっきりしない</span></div>
+      </div>
+    </div>
+    <div class="side">
+      <div><span class="tag rec">推奨</span> <span class="tag">案1</span></div>
+      <h2>軸に「1着／2着以内／3着以内」の切り替え</h2>
+      <p>大きい数字・入口1行・深掘りの▲の札が、選んだ着順に合わせて変わる。龍神ソナーと同じ3段・同じ言葉。左の切り替えは押せる（例のレースの本番の値）。</p>
+      <ul>
+        <li>▲が付く材料は今日の6艇の中の位置で決まるので、着順を変えても同じ材料に付く。変わるのは割合と並び順</li>
+        <li>札の形は #1380 と同じ「▲6艇で一番〇〇とき 2着以内 …」</li>
+        <li>上の問いの行も着順に合わせて変える（1着「誰が1着候補か」、2着以内「2着までに残るか」、3着以内「3着までに残るか」）</li><li>切り替えはページ内だけで持つ（URL に残さない）。買い目レンズと共有し、どちらにも「軸・買い目で共通」と書く。もう一方のレンズの見出しにも選んだ着順が必ず出る</li>
+      </ul>
+      <dl class="meta"><dt>データ</dt><dd>v16 facts の top2・top3（取得済み。API の変更なし）</dd><dt>規模</dt><dd>PR 1本（小）。GA4 に assist_target を足す</dd></dl>
+    </div>
+  </section>
+
+  <!-- 案1b -->
+  <section class="plan" id="p1b">
+    <div class="phone" aria-label="案1b 1号艇が1着のときの2着・3着">
+      <div class="lens"><span class="on">軸</span><span>展開</span><span>機力</span><span>買い目</span></div>
+      <div class="box newmark">
+        <h3>1号艇が1着のとき、2着・3着に来たのは</h3>
+        <span class="chip num">全国・級の並びが同じ準優勝戦（1号艇がB1） 1号艇が1着の65件</span>
+        <div class="tbl1b num" id="tbl1b"></div>
+        <p class="small num">よく出た3連単: 1-2-3（9件） 1-2-4（9件） 1-3-4（9件）</p>
+        <p class="note">65件は上の 65/119 の65と同じレース</p>
+      </div>
+    </div>
+    <div class="side">
+      <div><span class="tag rec">推奨</span> <span class="tag">新しい案</span></div>
+      <h2>軸に「1号艇が1着のとき、2着・3着に来たのは」の箱</h2>
+      <p>FW-01「逃げるなら2・3着を絞る」にそのまま答える箱。範囲は軸の大きい数字と同じ（準優勝戦）で、1号艇が1着の65件は上の 65/119 の65と同じレース。</p>
+      <ul>
+        <li>例のレース: 2着は2号艇38%・3号艇28%で、この2艇で66%。3着は4号艇31%が一番</li>
+        <li>2着と3着を1つの表に並べる（中の切り替えは作らない。軸の着順の切り替えと見分けがつかなくなるため）。1艇に数字は2つ（2着・3着の%）、件数は札の65件</li>
+        <li>この箱は軸の着順の切り替えで変わらない（「1号艇が1着のとき」が前提）。切り替えより下、差がつく材料の入口の後に置く</li>
+        <li>件数が少ない範囲（65件）なので、20件未満の範囲では「件数が少ない」を札に足す</li>
+      </ul>
+      <dl class="meta"><dt>データ</dt><dd>scenario の tri。軸の範囲キー（例 NCR）で scenario をもう1回取る（API は scope 引数で受け付ける。本番で確認）</dd><dt>規模</dt><dd>案2と同じ PR に入れる（中）</dd></dl>
+    </div>
+  </section>
+
+  <!-- 案2 -->
+  <section class="plan" id="p2">
+    <div class="phone" aria-label="案2 展開レンズ">
+      <div class="lens"><span>軸</span><span class="on">展開</span><span>機力</span><span>買い目</span></div>
+      <div class="box">
+        <h3>もし2コース凹みになったら</h3>
+        <span class="chip num">全国・級の並びが同じ（予選も含む）・枠なり 161件</span>
+        <p class="rowlbl">1着の艇</p>
+        <div class="cols num" id="cols1"></div>
+        <p class="small num newmark" style="padding:4px 6px">よく出た2連単: 1-3（24件） 1-4（17件） 1-2（14件） 3-1（13件） 3-4（12件）</p>
+        <p class="small num">よく出た3連単: 1-3-4（9件） 4-5-3（9件） 1-4-2（7件）</p>
+        <div class="entry"><span><b>スジのセオリー ›</b><small>3まくりなら3-4／まくり差しなら3-1</small></span></div>
+      </div>
+    </div>
+    <div class="side">
+      <div><span class="tag rec">推奨</span> <span class="tag">案2</span></div>
+      <h2>展開の「もし{形}になったら」に、よく出た2連単を1行</h2>
+      <p>1着の棒の下、よく出た3連単の上に1行。スジ買い（FW-07）の「攻めた艇の次に誰が来たか」を、1着と2着の組のまま見せる。</p>
+      <ul>
+        <li>例のレース: 2コース凹みのとき 1-3（24件）・1-4（17件）・3-1（13件）・3-4（12件）</li>
+        <li>v1 の「2着の艇」の棒はやめた。1着を問わない2着の割合なので、スジ（誰が1着のときに誰が2着か）は読めない（デザイナー役の指摘）</li>
+      </ul>
+      <dl class="meta"><dt>データ</dt><dd>scenario の forms.{形}.tri（取得済み）</dd><dt>規模</dt><dd>案1b と同じ PR（中）</dd></dl>
+    </div>
+  </section>
+
+  <!-- 案3 -->
+  <section class="plan" id="p3">
+    <div class="phone" aria-label="案3 買い目レンズ">
+      <div class="lens"><span>軸</span><span>展開</span><span>機力</span><span class="on">買い目</span></div>
+      <div class="box">
+        <div class="newmark">
+          <p class="seglbl">何着までで見るか（軸・買い目で共通）</p>
+          <div class="seg" role="group" aria-label="過去の割合の着順" id="seg3">
+            <button type="button" data-t="1" aria-pressed="false">1着</button>
+            <button type="button" data-t="2" aria-pressed="false">2着以内</button>
+            <button type="button" data-t="3" aria-pressed="true">3着以内</button>
+          </div>
+        </div>
+        <p class="note" id="note3">過去の3着以内＝艇ごとに、その艇の深掘りと同じレースでの割合</p>
+        <div id="rows3"></div>
+      </div>
+    </div>
+    <div class="side">
+      <div><span class="tag rec">推奨</span> <span class="tag">案3</span></div>
+      <h2>買い目の「過去の1着」を、選んだ着順に</h2>
+      <p>チケットの元の案は「2着・3着のボタンを押したら自動で変わる」。押した結果で表示が勝手に変わるのは FR-7「見えない動きにしない」とぶつかるので、軸と同じ切り替えを置き、軸で選んだ着順をそのまま引き継ぐ形にした。</p>
+      <ul>
+        <li>1行に出す数字は今と同じ2つ（人気・過去の〇〇）。件数は割合の括弧に入れる（70%（83/119））</li><li>1着以外を選んだときは人気側を「人気（1着）」と書いて薄くし、着順の違う2つの数字を取り違えないようにする</li>
+        <li>1着人気（オッズ）は着順を変えても1着のまま。オッズの2着・3着人気は作らない</li>
+        <li>例のレース: 3着以内にすると 2号艇57%・3号艇65% と 4号艇45%・5号艇44% の差が見える（1着では 9%・9%・6%・3%）</li>
+      </ul>
+      <dl class="meta"><dt>データ</dt><dd>案1と同じ</dd><dt>規模</dt><dd>案1と同じ PR（小）</dd></dl>
+    </div>
+  </section>
+
+  <!-- 案4 -->
+  <section class="plan" id="p4">
+    <div class="phone" aria-label="案4 マークシート">
+      <div class="box">
+        <h3>マークシート</h3>
+        <div class="ms" id="ms"></div>
+        <div class="short newmark">
+          <button type="button" id="bBox">1着の艇でボックス<small id="bBoxP"></small></button>
+          <button type="button" id="bFlow">2・3着に全部入れる<small id="bFlowP"></small></button>
+        </div>
+        <p class="note" id="undoRow">押した後もマスは1つずつ外せる。3連単のまま</p>
+        <div class="foot num" id="foot">3連単 1-2345-2345（12点）<small>合成オッズ（オッズがあるとき）</small></div>
+      </div>
+    </div>
+    <div class="side">
+      <div><span class="tag">案4</span> <span class="tag skip">推奨は後回し</span></div>
+      <h2>マークシートに「ボックス」「流し」の近道</h2>
+      <p>押せる。「1着の艇でボックス」は1着の段に入れた艇（3艇以上）を2・3着の段にもそろえる。3艇未満のときは押せず、理由を1行で出す。「2・3着に全部入れる」は1着以外の艇を2・3着に入れる（1着が2艇以上なら1着の艇どうしも入る）。押した直後に「元に戻す」を出す。</p>
+      <ul>
+        <li>3連複・2連単は作らない（範囲外のまま）</li>
+        <li>後回しの理由: 判断の材料ではなく入力の手間の話。案1〜3で「誰を残すか」が決まった後に、使われ方（GA4 の assist_* の点数）を見てから決めても遅くない</li>
+      </ul>
+      <dl class="meta"><dt>データ</dt><dd>不要</dd><dt>規模</dt><dd>PR 1本（小）</dd></dl>
+    </div>
+  </section>
+
+  <section class="side" style="max-width:none">
+    <span class="eyebrow">案と規模</span>
+    <div class="scroll">
+      <table class="cmp">
+        <thead><tr><th>案</th><th>どこ</th><th>答える問い</th><th>データ</th><th>PR</th><th>推奨</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>軸</td><td>1号艇は2着・3着までなら残るか（FW-01・FW-02）</td><td>facts top2・top3</td><td rowspan="2">PR-A（小）</td><td>入れる</td></tr>
+          <tr><td>3</td><td>買い目</td><td>どの艇が3着以内に残りやすいか（ボックス・流し）</td><td>facts top2・top3</td><td>入れる</td></tr>
+          <tr><td>1b</td><td>軸</td><td>逃げたら2着・3着は誰か（FW-01）</td><td>scenario tri</td><td rowspan="2">PR-B（中）</td><td>入れる</td></tr>
+          <tr><td>2</td><td>展開</td><td>この形なら誰-誰で決まったか（FW-07）</td><td>scenario tri</td><td>入れる</td></tr>
+          <tr><td>4</td><td>マークシート</td><td>ボックス・流しを早く組む</td><td>不要</td><td>PR-C（小）</td><td>後回し</td></tr>
+          <tr><td>―</td><td>深掘り</td><td>公式の選手2連率を出すか（D-34 で「足さない」）</td><td>―</td><td>―</td><td>見送りのまま</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">DB の変更なし。spec に D-xx を追記し、FR-9 対応表の FW-01・07・18 を更新する。龍神ソナーの切り替え部品（AnalogyControls）は触らず、思考アシストの中に同じ見た目・同じ言葉で作る。</p>
+  </section>
+
+  <section class="side" style="max-width:none">
+    <span class="eyebrow">決めること（3つ）</span>
+    <div class="qs">
+      <div><b>1. 着順の切り替えを軸と買い目で共有するか</b>推奨: 共有。どちらの切り替えにも「軸・買い目で共通」と書き、見出しに選んだ着順を必ず出す。別々にすると、軸で2着以内を見てから買い目に移ったときに1着へ戻って見える。</div>
+      <div><b>2. 案1b（1号艇が1着のときの2着・3着）を軸に足すか</b>推奨: 軸に足す（範囲は軸の大きい数字と同じ）。チケットの案には無かったが、FW-01 の「2・3着を絞る」に一番まっすぐ答える。デザイナー役は展開レンズへ移す案を出した（範囲の違う数字が並ぶため）。範囲を軸と揃えたので軸に残す。</div>
+      <div><b>3. 案4（ボックス・流しの近道）を今回やるか</b>推奨: 後回し（起票して PR-A・B の後に判断）。ファンパネルは割れた（今すぐ欲しい2人、後回しでよい1人）。</div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var U={1:[65,119],2:[83,119],3:[94,119]};
+  var H={1:[[13,22],[15,26],[14,34]],2:[[17,22],[20,26],[19,34]],3:[[18,22],[22,26],[21,34]]};
+  var W=['早い','低い','低い'];
+  var ORDER={1:[0,1,2],2:[0,1,2],3:[1,2,0]};
+  var NM=['平均ST（直近30走）','モーター2連率','当地勝率'];
+  var TL={1:'1着',2:'2着以内',3:'3着以内'};
+  var pct=function(a){return Math.round(100*a[0]/a[1])};
+  var p1=function(a){return (100*a[0]/a[1]).toFixed(1)};
+  var PAST={1:[54.6,9.3,9.4,5.5,3.4,0.8],2:[69.7,35.7,39.3,22.9,22.7,3.6],3:[79.0,56.8,65.1,45.1,43.9,14.0]};
+  var KN={1:['65/119','42/451','60/641','45/812','9/264','4/528'],2:['83/119','161/451','252/641','186/812','60/264','19/528'],3:['94/119','256/451','417/641','366/812','116/264','74/528']};
+  var POP=[[1,'1.2倍'],[3,'7.5倍'],[2,'5.7倍'],[5,'14.4倍'],[4,'12.4倍'],[6,'74.2倍']];
+  var shared=2;
+  function setSeg(seg,v,attr){seg.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset[attr]===String(v)))})}
+  function renderAxis(t){
+    var u=U[t];
+    document.getElementById('axH').textContent='1号艇が'+TL[t]+(t===1?'になったのは':'に来たのは');
+    document.getElementById('axP').textContent=p1(u)+'%';
+    document.getElementById('axK').textContent=u[0]+'/'+u[1]+'レース';
+    var QQ={1:'誰が1着候補か',2:'2着までに残るか',3:'3着までに残るか'};document.getElementById('axQ').innerHTML='<b>1号艇は逃げる？</b> '+QQ[t];
+    document.getElementById('axE').textContent='1号艇の差がつく材料 ▲3件'+(t===1?'':'（'+TL[t]+'）');
+    var hs=['h1','h2','h3'];
+    ORDER[t].forEach(function(idx,i){
+      var el=document.getElementById(hs[i]);
+      el.previousElementSibling.textContent=NM[idx];
+      el.textContent='▲6艇で一番'+W[idx]+'とき '+TL[t]+' '+pct(H[t][idx])+'%・'+H[t][idx][1]+'件（全体 '+p1(u)+'%）';
+    });
+    setSeg(document.querySelector('#p1 .seg'),t,'t');
+  }
+  function renderBet(t){
+    var rows=document.getElementById('rows3');rows.innerHTML='';
+    POP.forEach(function(p,i){
+      var d=document.createElement('div');d.className='betrow num';
+      d.innerHTML='<span class="badge c'+(i+1)+'">'+(i+1)+'</span><span class="t"><span'+(t>1?' style="color:var(--sub)"':'')+'>'+(t>1?'人気（1着）':'1着人気')+' '+p[0]+'番（'+p[1]+'）</span><span><b>過去の'+TL[t]+' '+Math.round(PAST[t][i])+'%</b>（'+KN[t][i]+'）</span></span><div class="pos3"><span'+(i===0?' class="on"':'')+'>1着</span><span'+(i>0&&i<5?' class="on"':'')+'>2着</span><span'+(i>0&&i<5?' class="on"':'')+'>3着</span></div>';
+      rows.appendChild(d);
+    });
+    document.getElementById('note3').textContent='過去の'+TL[t]+'＝艇ごとに、その艇の深掘りと同じレースでの割合';
+    setSeg(document.getElementById('seg3'),t,'t');
+  }
+  function setShared(t){shared=t;renderAxis(t);renderBet(t)}
+  document.querySelectorAll('#p1 .seg button,#seg3 button').forEach(function(b){b.addEventListener('click',function(){setShared(Number(b.dataset.t))})});
+  setShared(2);
+
+  // 1b
+  var S2=[25,18,11,7,4],S3=[14,16,20,9,6],N1=65;
+  var t1='<div class="r h"><span></span><span>2着</span><span>3着</span></div>';
+  for(var b=2;b<=6;b++){var a=100*S2[b-2]/N1,c=100*S3[b-2]/N1;t1+='<div class="r"><span class="badge c'+b+'">'+b+'</span><span class="cell"><span class="track"><span class="fill" style="display:block;width:'+a.toFixed(1)+'%"></span></span>'+Math.round(a)+'%</span><span class="cell"><span class="track"><span class="fill" style="display:block;width:'+c.toFixed(1)+'%"></span></span>'+Math.round(c)+'%</span></div>'}
+  document.getElementById('tbl1b').innerHTML=t1;
+
+  // 案2
+  var F1=[65,18,36,29,10,3],F2=[31,20,40,35,22,13],N2=161;
+  var C={1:'var(--b1)',2:'var(--b2)',3:'var(--b3)',4:'var(--b4)',5:'var(--b5)',6:'var(--b6)'};
+  function cols(id,a,second){var h='';a.forEach(function(v,i){var r=100*v/N2;h+='<div class="col"><span>'+Math.round(r)+'%</span><div class="v"><i style="height:'+Math.max(2,Math.round(r*1.5))+'px;background:'+C[i+1]+';border:1px solid var(--line)'+(second?';background-image:repeating-linear-gradient(45deg,transparent 0 3px,var(--card) 3px 5px)':'')+'"></i></div><span class="badge c'+(i+1)+'">'+(i+1)+'</span><span>'+v+'件</span></div>'});document.getElementById(id).innerHTML=h}
+  cols('cols1',F1,false);
+
+  // 案4
+  var bets={1:new Set([1]),2:new Set([2,3,4,5]),3:new Set([2,3,4,5])};
+  var ms=document.getElementById('ms');
+  function pts(){var c=0;bets[1].forEach(function(a){bets[2].forEach(function(b){bets[3].forEach(function(d){if(a!==b&&b!==d&&a!==d)c++})})});return c}
+  function seq(s){return Array.from(s).sort().join('')||'－'}
+  function rms(){
+    var h='';[1,2,3].forEach(function(k){h+='<span class="h">'+k+'着</span>';for(var n=1;n<=6;n++){h+='<button type="button" data-k="'+k+'" data-n="'+n+'" aria-pressed="'+bets[k].has(n)+'" aria-label="'+n+'号艇を'+k+'着の候補に"><span class="badge c'+n+'">'+n+'</span></button>'}});
+    ms.innerHTML=h;
+    var nb=bets[1].size;var bb=document.getElementById('bBox');bb.disabled=nb<3;
+    document.getElementById('bBoxP').textContent=nb<3?'1着に3艇以上入れると使える':'押すと '+(nb*(nb-1)*(nb-2))+'点';
+    document.getElementById('bFlowP').textContent='1着以外の艇を2・3着に'+(nb>1?'（1着の艇どうしも入る）':'');
+    document.getElementById('foot').innerHTML='3連単 '+seq(bets[1])+'-'+seq(bets[2])+'-'+seq(bets[3])+'（'+pts()+'点）<small>合成オッズ（オッズがあるとき）</small>';
+  }
+  ms.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var k=+b.dataset.k,n=+b.dataset.n;bets[k].has(n)?bets[k].delete(n):bets[k].add(n);rms()});
+  var prev=null;function snap(){prev={2:new Set(bets[2]),3:new Set(bets[3])}}function undoMsg(){var u=document.getElementById('undoRow');u.innerHTML='2・3着を入れ替えた <button type="button" id="undo" style="min-height:44px;font:inherit;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);padding:0 12px;cursor:pointer">元に戻す</button>';document.getElementById('undo').onclick=function(){if(prev){bets[2]=prev[2];bets[3]=prev[3];prev=null}u.textContent='押した後もマスは1つずつ外せる。3連単のまま';rms()}}
+  document.getElementById('bBox').addEventListener('click',function(){if(bets[1].size<3)return;snap();bets[2]=new Set(bets[1]);bets[3]=new Set(bets[1]);rms();undoMsg()});
+  document.getElementById('bFlow').addEventListener('click',function(){snap();var r=[1,2,3,4,5,6].filter(function(n){return !bets[1].has(n)||bets[1].size>1});bets[2]=new Set(r);bets[3]=new Set(r);rms();undoMsg()});
+  rms();
+})();
+</script>

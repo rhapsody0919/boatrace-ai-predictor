@@ -421,11 +421,15 @@
 
 .ta-lens-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* 軸・展開・機力・相手・買い目（spec D-46）。タブの字は折らない */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--spacing-1-5);
+  grid-area: tabs;
 }
 
 .ta-lens-tabs button {
+  white-space: nowrap;
+  padding: 0;
   border: 1px solid var(--border-hairline);
   background: transparent;
   color: var(--text-primary);
@@ -1808,7 +1812,6 @@
   .ta-rough {
     max-width: 480px;
   }
-
 }
 
 @media (min-width: 1024px) and (min-height: 800px) {
@@ -1816,5 +1819,197 @@
     position: sticky;
     /* 共通のヘッダーとレンズの下に止める */
     top: calc(var(--ta-sticky-top, 0px) + 120px);
+  }
+}
+
+/* 軸の要約の「差がつく材料」の入口1行（2026-10-11 ユーザー決定 案D）。行全体を押せる、高さ44px以上 */
+.ta-facts-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.ta-facts-entry-names {
+  display: block;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* ---- 買い目の着順の切り替え（BOA-831、spec D-44・D-46） ---- */
+.ta-target {
+  display: grid;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.ta-target-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.ta-target-seg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--text-primary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.ta-target-seg button {
+  min-height: 44px;
+  border: 0;
+  border-left: 1px solid var(--text-primary);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.ta-target-seg button:first-child {
+  border-left: 0;
+}
+
+.ta-target-seg button[aria-pressed="true"] {
+  background: var(--text-primary);
+  color: var(--surface-card);
+}
+
+.ta-target-seg button:focus-visible {
+  outline: 3px solid var(--color-info-text);
+  outline-offset: -3px;
+}
+
+/* 1着以外を選んだときの「人気（1着）」。着順の違う数字を取り違えないよう主従を分ける（デザイナー役 P2-5） */
+.ta-num-muted,
+.ta-num-muted b {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-normal);
+}
+
+/* ---- 1号艇が1着のとき、2着・3着に来たのは（BOA-831 案1b、承認モック v2） ---- */
+.ta-follow {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.ta-follow th,
+.ta-follow td {
+  padding: var(--spacing-1) 0;
+  text-align: left;
+  font-weight: var(--font-weight-normal);
+}
+
+.ta-follow thead th {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+}
+
+.ta-follow th[scope="row"] {
+  width: 32px;
+}
+
+.ta-follow td {
+  padding-right: var(--spacing-2);
+}
+
+.ta-follow-cell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3em;
+  gap: var(--spacing-1-5);
+  align-items: center;
+  text-align: right;
+}
+
+.ta-follow-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border-hairline);
+  overflow: hidden;
+}
+
+.ta-follow-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--color-info-text);
+}
+
+/* よく出た組の「1-3（24件）」を途中で改行しない（BOA-831 ファン評価 1周目 指摘6） */
+.ta-nowrap {
+  white-space: nowrap;
+}
+
+/* ---- 相手レンズ（spec D-46）: ●2着以内と○3着以内を同じ行に置き、間を線でつなぐ ---- */
+.ta-track-span {
+  position: absolute;
+  top: 50%;
+  height: 3px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  opacity: 0.6;
+}
+
+.ta-track-dot.ta-track-dot-o {
+  background: var(--surface-card);
+  border: 3px solid var(--text-primary);
+  box-shadow: none;
+}
+
+/* レンズの並び（spec D-46）: 1行目にタブとガイド、2行目に問い。
+   360px 以下ではガイドを問いの行の右端へ移し、タブ5つを1行（1つ44px 以上）に収める（visual-designer v3 P1-1） */
+.ta-lens {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "tabs guide"
+    "q q"
+    "hint hint";
+  column-gap: var(--spacing-1-5);
+}
+
+.ta-lens .ta-lens-row {
+  display: contents;
+}
+
+.ta-lens .ta-guide-btn {
+  grid-area: guide;
+}
+
+.ta-lens .ta-lens-q {
+  grid-area: q;
+}
+
+.ta-lens .ta-hint {
+  grid-area: hint;
+}
+
+@media (max-width: 360px) {
+  .ta-lens {
+    grid-template-areas:
+      "tabs tabs"
+      "q guide"
+      "hint hint";
+    align-items: center;
+  }
+
+  .ta-lens .ta-guide-btn {
+    margin-top: var(--spacing-1-5);
   }
 }

@@ -16,6 +16,7 @@
 | 設計・実装資料 | `docs/design/` | 採用され実装中 or 実装済みの設計書 |
 | セットアップ | `docs/setup/` | 環境構築手順 |
 | 廃案・不要 | `docs/archive/` | 廃案になった提案、古くなった資料 |
+| 専門役の知見ノート | `docs/knowledge/` | `.claude/agents/` の専門役が最初に読む1行1知見（出典つき） |
 | 分析結果 | `data/analysis/` | JSON形式で保存 |
 | ブログ記事 | `public/blog/` | Markdown形式 |
 | note.com記事 | `note-articles/` | Markdown形式 |

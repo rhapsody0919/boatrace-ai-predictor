@@ -21,6 +21,7 @@ import {
   findMeetStartDate,
 } from "../utils/meetGrouping";
 import { deriveRaceStContext } from "../utils/stConsideration";
+import { isWithinFreshMotorWindow } from "../utils/motorFreshRate.js";
 import {
   currentMotorGenerationStart,
   isInMotorGeneration,
@@ -78,6 +79,8 @@ import {
   pickLatestPretestByRacer,
   shiftDate,
 } from "../utils/pretestRows";
+// get_today_races の整形は、ボット向け HTML の関数（ADR 0089）と共有するため純粋なモジュールに置く
+import { transformTodayRaces } from "../utils/todayRaces.js";
 
 // 100円単位で賭けた場合の回収率(%)を返す（払戻合計 / (件数*100) * 100）。
 // getRacerBoatReturnRate/getRaceRacerBoatReturnRate/aggregateRacerVenueBoatStats
@@ -588,6 +591,67 @@ async function getMotorGenerationStart(venueCode) {
   return cached.generationStart;
 }
 
+/**
+ * 会場の、その日を含む節の初日（BOA-830。公式の2連率は「前の節まで」の走りで出ているので、
+ * 何走で出た数字かを数える起点）。種別（race_conditions）の series_day・is_final_day・
+ * 開催日の空きから findMeetStartDate で決める（getMeetScoreboard と同じ）。
+ * 種別が1行も無ければ null
+ * @returns {Promise<string|null>} YYYY-MM-DD
+ */
+async function getVenueMeetStart(venueCode, date) {
+  const cached = await withCache(
+    `venue-meet-start-${venueCode}-${date}`,
+    async () => {
+      const vv = String(venueCode).padStart(2, "0");
+      const { data } = await supabase
+        .from("race_conditions")
+        .select("race_id, series_day, is_final_day")
+        .gte("race_id", addDaysToDateString(date, -12))
+        .lte("race_id", `${date}-zz`)
+        .like("race_id", `__________-${vv}-__`);
+      const byDate = new Map();
+      for (const c of data ?? []) {
+        const d = c.race_id.slice(0, 10);
+        const cur = byDate.get(d) ?? {
+          date: d,
+          seriesDay: null,
+          isFinalDay: false,
+        };
+        if (
+          c.series_day != null &&
+          (cur.seriesDay == null || c.series_day < cur.seriesDay)
+        )
+          cur.seriesDay = c.series_day;
+        if (c.is_final_day) cur.isFinalDay = true;
+        byDate.set(d, cur);
+      }
+      return { meetStart: findMeetStartDate([...byDate.values()], date) };
+    },
+  );
+  return cached.meetStart;
+}
+
+/**
+ * その日のその会場で、公式のモーター2連率が全行 0 か（BOA-830。新しいモーターの最初の節）。
+ * 1行でも 0 より大きければ false
+ */
+async function isAllOfficialMotorRateZero(venueCode, date) {
+  const cached = await withCache(
+    `venue-official-motor-zero-${venueCode}-${date}`,
+    async () => {
+      const vv = String(venueCode).padStart(2, "0");
+      const { data } = await supabase
+        .from("race_entries")
+        .select("race_id")
+        .like("race_id", `${date}-${vv}-__`)
+        .gt("motor_2rate", 0)
+        .limit(1);
+      return { allZero: (data ?? []).length === 0 };
+    },
+  );
+  return cached.allZero;
+}
+
 /** JSTの今日（YYYY-MM-DD） */
 function jstToday() {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -945,33 +1009,6 @@ function buildRaceResult(r) {
  * Edge APIレスポンスをフロント期待形式に変換
  * Edge API(RPC)とSupabase直接クエリの構造差異を吸収する
  */
-/**
- * get_today_races（RPC。Edge API /api/races/today はこの結果をそのまま返す）の出力を、画面の形に整える。
- * Edge API の経路と、Edge API が失敗したときに RPC を直接呼ぶ経路の両方が使う（BOA-668）
- */
-function transformTodayRaces(data, venueWinRateMap = {}) {
-  return {
-    success: true,
-    data: data.data.map((venue) => ({
-      placeCd: venue.place_cd || venue.placeCd,
-      placeName:
-        venue.place_name ||
-        venue.placeName ||
-        VENUE_NAMES[venue.place_cd || venue.placeCd],
-      races: (venue.races || []).map((race) => ({
-        ...race,
-        volatility: race.volatility
-          ? {
-              ...race.volatility,
-              venueWinRate: venueWinRateMap[race.placeCd] ?? null,
-            }
-          : null,
-      })),
-    })),
-    scrapedAt: data.scrapedAt || new Date().toISOString(),
-  };
-}
-
 function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
   const transformedRaces = (edgeData.races || []).map((race) => {
     const entries = race.entries || [];
@@ -2613,7 +2650,9 @@ export const supabaseDataService = {
       //     「前検なし」として最長7日残っている可能性があるため読まない
       // v10: 戻り値を { rows, fetchFailed? } にし、会場公式のモーター成績の取得失敗を行に印として残す
       //     （BOA-740）。v9 は配列の形で、失敗も「成績なし」として最長7日残っている可能性があるため読まない
-      `race-motor-breakdown-v10-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
+      // v11: 新しいモーターの最初の開催向けに、自前の値（generation_*）・前の節までの走数
+      //     （prior_meet_runs）・freshness を追加（BOA-830）。v10 には無い列なので読まない
+      `race-motor-breakdown-v11-${past ? "official" : "recalc"}-${venueCode}-${days}-${raceId}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -2630,11 +2669,18 @@ export const supabaseDataService = {
 
         const rows = data ?? [];
         if (venueCode === null) return { rows };
-        // 会場公式のモーター成績が1艇でも取れなかったら、結果を保存させない（BOA-740）
-        const settle = (out) =>
-          out.some((r) => r.venue_stats_failed)
-            ? { rows: out, fetchFailed: true }
-            : { rows: out };
+        // 新しいモーターの最初の開催で、公式の2連率が 0 の艇に出す自前の値（BOA-830）。
+        // 過去レース・当日のレースで同じ値を足す
+        const freshPromise = this.getRaceMotorFreshness(raceId, venueCode, rows);
+        // 会場公式のモーター成績が1艇でも取れなかったら、結果を保存させない（BOA-740）。
+        // 自前の値の材料（使用開始日・節の初日）が取れなかったときも同じ（BOA-830）
+        const settle = async (out) => {
+          const fresh = await freshPromise;
+          const merged = out.map((row, i) => ({ ...row, ...fresh.columns[i] }));
+          return out.some((r) => r.venue_stats_failed) || fresh.failed
+            ? { rows: merged, freshness: fresh.freshness, fetchFailed: true }
+            : { rows: merged, freshness: fresh.freshness };
+        };
 
         if (past) {
           const raceDate = raceId.slice(0, 10);
@@ -2665,7 +2711,7 @@ export const supabaseDataService = {
               venue_stats_failed: statsAsOf[i]?.fetchFailed === true,
             };
           });
-          return settle(out);
+          return await settle(out);
         }
 
         const [powerIndexes, venueMotorStatsList, pretestByRacer] =
@@ -2720,9 +2766,117 @@ export const supabaseDataService = {
             venue_stats_failed: venueMotorStatsList[i]?.fetchFailed === true,
           };
         });
-        return settle(out);
+        return await settle(out);
       },
     );
+  },
+
+  /**
+   * 新しいモーターの最初の開催向けの列（BOA-830、2026-10-11 ユーザー決定）。
+   * 公式の出走表のモーター2連率は、入れ替え後の最初の節の間は全艇 0（2節目の初日から入る）。
+   * 公式が 0 の艇に、現世代の開始日以降・このレースより前の自前の値を出すための材料を返す。
+   *
+   * - generation_runs / generation_rate2 / generation_rate3 / generation_power_index:
+   *   機力指数の計算（過去90日・このレースより前）の結果。期間は使用開始日で切り詰められる。
+   *   このレースが現世代で、入れ替えから90日以内か公式 0 の艇があるときだけ取る。それ以外は null
+   * - prior_meet_runs: 入れ替えから90日以内で公式 > 0 の艇の、節の初日より前の走数
+   *   （公式の値が何走で出た数字か）。取れなければ null
+   * - freshness: { generationStart（このレースが現世代のときだけ）, firstMeet（その日の
+   *   その会場の公式2連率が全行 0＝最初の節） }
+   *
+   * 使用開始日・節の初日・公式の確認の取得に失敗したら、その材料を出さずに failed: true
+   * （呼び出し元はキャッシュに保存しない）
+   * @param {string} raceId
+   * @param {number} venueCode
+   * @param {Array<{motor_number:number, motor_2rate:number|null}>} rows race_entries の行（公式値）
+   * @returns {Promise<{columns: Array<Object>, freshness: {generationStart: string|null, firstMeet: boolean}, failed: boolean}>}
+   */
+  async getRaceMotorFreshness(raceId, venueCode, rows) {
+    const raceDate = raceId.slice(0, 10);
+    const none = rows.map(() => ({
+      generation_runs: null,
+      generation_rate2: null,
+      generation_rate3: null,
+      generation_power_index: null,
+      prior_meet_runs: null,
+    }));
+    let failed = false;
+    let generationStart = null;
+    try {
+      generationStart = await getMotorGenerationStart(venueCode);
+    } catch (err) {
+      console.error("モーター使用開始日の取得に失敗:", err.message);
+      failed = true;
+    }
+    if (generationStart === null || raceDate < generationStart) {
+      return {
+        columns: none,
+        freshness: { generationStart: null, firstMeet: false },
+        failed,
+      };
+    }
+    const official = rows.map((r) =>
+      r.motor_2rate === null || r.motor_2rate === undefined
+        ? null
+        : Number(r.motor_2rate),
+    );
+    const fresh = isWithinFreshMotorWindow(generationStart, raceDate);
+    const needOwn = fresh || official.some((v) => v === 0);
+    // 節の初日・全行0の確認は、取れなくても他の列は出す（その材料だけ出さず、保存しない）
+    const softFail = (label, fallback) => (err) => {
+      console.error(`${label}の取得に失敗:`, err.message);
+      failed = true;
+      return fallback;
+    };
+    const [own, meetStart, firstMeet] = await Promise.all([
+      needOwn
+        ? Promise.all(
+            rows.map((r) =>
+              this.getMotorPowerIndex(venueCode, r.motor_number, 90, raceId),
+            ),
+          )
+        : null,
+      fresh
+        ? getVenueMeetStart(venueCode, raceDate).catch(
+            softFail("節の初日", null),
+          )
+        : null,
+      // 最初の節は、入れ替えから90日以内で、このレースにも公式0の艇があるときだけ確かめる。
+      // 公式の値が取れていない日（全行 null）を、何か月後でも最初の節と取り違えないため
+      fresh && official.some((v) => v === 0)
+        ? isAllOfficialMotorRateZero(venueCode, raceDate).catch(
+            softFail("公式2連率の確認", false),
+          )
+        : false,
+    ]);
+    // 節の初日より前（race_id < "YYYY-MM-DD"）の走数。公式は節の途中で変わらないので、
+    // 公式の値はこの走りで出た数字
+    const prior =
+      meetStart !== null
+        ? await Promise.all(
+            rows.map((r, i) =>
+              official[i] > 0
+                ? this.getMotorPowerIndex(
+                    venueCode,
+                    r.motor_number,
+                    90,
+                    meetStart,
+                  )
+                : null,
+            ),
+          )
+        : null;
+    return {
+      columns: rows.map((_, i) => ({
+        generation_runs: own?.[i]?.sample_count ?? null,
+        generation_rate2: own?.[i]?.actual_rate2 ?? null,
+        generation_rate3: own?.[i]?.actual_rate3 ?? null,
+        generation_power_index: own?.[i]?.power_index ?? null,
+        prior_meet_runs: prior?.[i]?.sample_count ?? null,
+      })),
+      freshness: { generationStart, firstMeet },
+      failed,
+    };
   },
 
   /**
