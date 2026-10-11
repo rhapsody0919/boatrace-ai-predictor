@@ -26,6 +26,7 @@ import {
 import { ASSIST_COPY as C, GLOSSARY } from "../../../data/thinkingAssistCopy";
 import { TermButton, TheoryButton } from "./SheetButtons";
 import TargetSwitch from "./TargetSwitch";
+import WinFollowers, { ComboList } from "./WinFollowers";
 
 const pct = (k, n) => (n ? (k / n) * 100 : 0);
 const p0 = (k, n) => Math.round(pct(k, n));
@@ -49,8 +50,11 @@ function AxisSummary({ m }) {
     onFacts,
     target = 1,
     onTarget,
+    follow = null,
   } = m;
   const u = b1Usual(scope, 1, target);
+  // 案1b の「同じレース」の比べる相手は1着の件数（切り替えに関わらず）
+  const u1 = b1Usual(scope, 1, 1);
   const entry = factsEntry(chips);
   if (!u) return null;
   const va = vaFacts ? b1Usual({ facts: vaFacts }, 1, target) : null;
@@ -154,6 +158,16 @@ function AxisSummary({ m }) {
           </button>
         )}
       </section>
+      {/* 軸の着順の切り替えでは変わらない（「1号艇が1着のとき」が前提。D-44 (3)） */}
+      {follow && (
+        <WinFollowers
+          f={follow}
+          label={label}
+          axisK={u1.k}
+          axisN={u1.n}
+          target={target}
+        />
+      )}
     </>
   );
 }
@@ -248,12 +262,14 @@ function FlowSummary({ m }) {
           ) : (
             <>
               <Bars6 values={form.first.map((k) => k / form.n)} />
+              {form.topExacta.length > 0 && (
+                <p className="ta-note ta-num">
+                  {C.flowTopExacta}: <ComboList rows={form.topExacta} />
+                </p>
+              )}
               {form.topTrifecta.length > 0 && (
                 <p className="ta-note ta-num">
-                  {C.flowTopTrifecta}:{" "}
-                  {form.topTrifecta
-                    .map(([x, k]) => C.trifectaCount(x.join("-"), k))
-                    .join("　")}
+                  {C.flowTopTrifecta}: <ComboList rows={form.topTrifecta} />
                 </p>
               )}
             </>

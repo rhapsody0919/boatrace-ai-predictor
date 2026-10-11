@@ -50,6 +50,7 @@ import {
   similarSummary,
 } from "../utils/assistModel";
 import {
+  winFollowers,
   HINT_BOAT,
   b1Usual,
   boardFactMark,
@@ -477,6 +478,9 @@ export default function ThinkingAssistPage() {
           onFacts: (all) => act({ type: "openFacts", boat: 1, all }),
           target: state.target,
           onTarget,
+          follow: v16Off
+            ? null
+            : winFollowers(data.scenario.axis?.data?.scenario ?? null),
         }
       : null,
     flow: {
