@@ -251,11 +251,27 @@ export const ASSIST_COPY = Object.freeze({
   targets: TARGET_LABEL,
   // 買い目だけの切り替え（軸は1着だけ、2着以内・3着以内は相手レンズ。spec D-46）
   targetGroup: "何着までで見るか",
-  // 1号艇が1着のとき、2着・3着に来たのは（BOA-831 案1b、spec D-44 (3)）
-  // 1号艇を軸にしたときだけの表と分かる見出し（v4。ほかの艇が1着のときは BOA-845）
-  followHeading: (boat) => `${boat}号艇を軸にしたときの2着・3着`,
-  followOnly: (boat) =>
-    `${boat}号艇が1着のときだけ（ほかの艇が1着のときはまだ出ない）`,
+  // 相手レンズの「{X}号艇を軸にしたときの2着」（BOA-845、spec D-48、承認モック v3）
+  followHeading: (boat) => `${boat}号艇を軸にしたときの2着`,
+  followAxisLabel: "軸（1着）",
+  followAxisGroup: "軸にする艇",
+  followAxisBtn: "軸",
+  followConcl: (x, y, p, q) => [
+    `${x}号艇が1着なら、2着は`,
+    `${y}号艇 ${p}%`,
+    `（軸を問わないと${q}%）`,
+  ],
+  followNoThird:
+    "3着は軸の艇でほとんど変わらないので出さない。3着以内は図の ○ を見る",
+  followLegendAxis: (x) => `${x}号艇が1着のときの2着`,
+  followLegendAny: "軸を問わない2着",
+  followAny: (q) => `問わず${q}%`,
+  followSonar: "着順の流れを見る（龍神ソナー）",
+  followSonarSub: (x) => `1着の${x}号艇を押すと、その流れになる`,
+  followAuto: (x) => `1着の候補に合わせた（${x}号艇）`,
+  followNone: (x) => `この会場の全レースで、${x}号艇が1着のレースがまだ無い`,
+  partVenueAll: "会場の全レースの値",
+  followVenueAll: (venue) => `${venue ?? ""}の全レース`,
   // 相手レンズの図（D-46）。●2着以内・○3着以内を同じ行に置く。値は艇ごとの範囲（深掘り・買い目と同じ）
   placeTitle: "●2着以内・○3着以内（右ほど高い）",
   placeNote: "艇ごとに、その艇の深掘りと同じレースでの割合",
@@ -264,18 +280,7 @@ export const ASSIST_COPY = Object.freeze({
   placeFew: (n) => `${n.toLocaleString("ja-JP")}件（少ない）`,
   followScope: (label, boat, n) =>
     `${label} ${boat}号艇が1着の${n.toLocaleString("ja-JP")}件`,
-  followBoatCol: "艇",
-  followPos: (k) => `${k}着`,
   followCount: (k) => `${k.toLocaleString("ja-JP")}件`,
-  followSame: (k, n) =>
-    `${k.toLocaleString("ja-JP")}件は上の ${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")} の${k.toLocaleString("ja-JP")}と同じレース`,
-  // 2着以内・3着以内を選んでいるときは上に 65/119 が無いので、上を指さない書き方（ファン評価 1周目 指摘2）
-  followSameAlone: (k, n) =>
-    `${k.toLocaleString("ja-JP")}件は、同じ範囲で1号艇が1着になった ${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}レースと同じ`,
-  followRefundAlone: (k, axisK) =>
-    `返還のあったレースは除く（同じ範囲で1号艇が1着になった${axisK.toLocaleString("ja-JP")}件のうち${k.toLocaleString("ja-JP")}件）`,
-  followRefund: (k, axisK) =>
-    `返還のあったレースは除く（上の${axisK.toLocaleString("ja-JP")}件のうち${k.toLocaleString("ja-JP")}件）`,
   races: (k, n) =>
     `${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}レース`,
   venueAllN: (venue, n) => `${venue}の全レース ${n.toLocaleString("ja-JP")}件`,

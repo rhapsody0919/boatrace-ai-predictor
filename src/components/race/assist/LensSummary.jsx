@@ -851,15 +851,20 @@ export default function LensSummary({ lens, axis, flow, power, place, bet }) {
       {lens === "axis" && axis && <AxisSummary m={axis} />}
       {lens === "flow" && <FlowSummary m={flow} />}
       {lens === "power" && <PowerSummary m={power} />}
-      {lens === "place" && place?.follow && (
-        // 相手レンズ（spec D-46）: 1号艇を軸にしたときの2着・3着
+      {lens === "place" && place?.ready && (
+        // 相手レンズ: {X}号艇を軸にしたときの2着（BOA-845、spec D-48）
         <WinFollowers
-          f={place.follow}
-          label={place.label}
-          axisK={place.axisK}
-          axisN={place.axisN}
-          above={false}
+          f={place.f}
+          any={place.any}
+          axis={place.axis}
+          auto={place.auto}
+          venue={place.venue}
+          raceId={place.raceId}
+          onAxis={place.onAxis}
         />
+      )}
+      {lens === "place" && place?.failed && (
+        <p className="ta-note">{C.partFailed(C.partVenueAll)}</p>
       )}
       {lens === "bet" && <BetLensSummary m={bet} />}
     </div>

@@ -4,7 +4,7 @@
  *
  * - キーはレースごと（別のレースへ持ち越さない）。接頭辞は boatai-user:（キャッシュの全削除 boatai:* で消えない名前空間）
  * - 残るのは同じタブの中だけ。タブ・ブラウザを閉じると消える（sessionStorage の性質）
- * - 残すのは買い目（1〜3着の候補）・予算・配分の方式・着順の切り替え・レンズ。深掘り・シート・ガイドは残さない
+ * - 残すのは買い目（1〜3着の候補）・予算・配分の方式・着順の切り替え・レンズ・相手レンズで選んだ軸の艇（BOA-845）。深掘り・シート・ガイドは残さない
  * - 読み書きの失敗（プライベートブラウズ・容量超過等）は無視して、ページ内だけの状態で動く
  */
 import { LENSES } from "./assistModel.js";
@@ -22,7 +22,7 @@ const boatList = (v) =>
 /**
  * 保存した文字列 → 状態の一部。形が違う値は捨てる（壊れた保存でページを落とさない）
  * @param {string|null} raw
- * @returns {null | {bets: {1: Set<number>, 2: Set<number>, 3: Set<number>}, budget?: string, mode?: string, target?: number, lens?: string}}
+ * @returns {null | {bets: {1: Set<number>, 2: Set<number>, 3: Set<number>}, budget?: string, mode?: string, target?: number, lens?: string, placeAxis?: number}}
  */
 export function parseAssistSession(raw) {
   if (!raw) return null;
@@ -45,6 +45,8 @@ export function parseAssistSession(raw) {
   if (MODES.includes(v.mode)) out.mode = v.mode;
   if ([1, 2, 3].includes(v.target)) out.target = v.target;
   if (LENSES.includes(v.lens)) out.lens = v.lens;
+  if (Number.isInteger(v.placeAxis) && v.placeAxis >= 1 && v.placeAxis <= 6)
+    out.placeAxis = v.placeAxis;
   return out;
 }
 
@@ -60,6 +62,7 @@ export const serializeAssistSession = (state) =>
     mode: state.mode,
     target: state.target,
     lens: state.lens,
+    placeAxis: state.placeAxis ?? null,
     at: Date.now(),
   });
 

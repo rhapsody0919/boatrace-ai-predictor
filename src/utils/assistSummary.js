@@ -349,7 +349,7 @@ export function exactaList(tri) {
 }
 
 /**
- * 1号艇が1着のとき、2着・3着に来た艇（BOA-831 案1b、spec D-44 (3)）。範囲は軸の大きい数字と同じ範囲キーの scenario。
+ * {boat}号艇が1着のとき、2着・3着に来た艇（BOA-831 案1b、spec D-44 (3)。BOA-845 で軸を2〜6号艇にも、範囲は会場の全レース。spec D-48）。
  * 全体のセル（cells.all.forms.any）の3連単から、1着が boat の組だけで数える（返還のあったレースは scenario 側で除かれている）
  * @param {object|null} scenario scenario の応答の scenario
  * @returns {null | {n: number, second: number[], third: number[], topTrifecta: Array<[number[], number]>, few: boolean}}
@@ -377,12 +377,18 @@ export function winFollowers(scenario, boat = 1) {
 }
 
 /**
- * 案1b の件数と軸の大きい数字（1着、返還を含む）の関係。同じなら same、少ないなら返還を除いた分で refund、
- * 多いとき（別の応答で時刻がずれた等）は書かない（null。BOA-831 /code-review の指摘）
- * @returns {"same"|"refund"|null}
+ * 軸を問わない2着（BOA-845、spec D-48 (4)）。全体のセル（cells.all.forms.any）の3連単の2着の艇ごとの件数。
+ * winFollowers と同じ範囲・同じく返還のあったレースを除いた件数で数える
+ * @returns {null | {n: number, second: number[]}}
  */
-export const followNoteKind = (n, axisK) =>
-  n === axisK ? "same" : n < axisK ? "refund" : null;
+export function secondAny(scenario) {
+  const rows = trifectaList(scenario?.cells?.all?.forms?.any?.tri);
+  const n = rows.reduce((a, [, c]) => a + c, 0);
+  if (!n) return null;
+  const second = [0, 0, 0, 0, 0, 0];
+  for (const [x, c] of rows) second[x[1] - 1] += c;
+  return { n, second };
+}
 
 /**
  * スリットの形のときの1着の艇とよく出た3連単（枠なり。承認モック v7 の「もし2コース凹みになったら」）

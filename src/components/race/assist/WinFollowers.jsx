@@ -1,6 +1,7 @@
+import { useRef } from "react";
+import { Link } from "react-router-dom";
 import BoatBadge from "../BoatBadge";
 import { ASSIST_COPY as C } from "../../../data/thinkingAssistCopy";
-import { followNoteKind } from "../../../utils/assistSummary";
 
 const pct = (k, n) => Math.round((k / n) * 100);
 
@@ -15,85 +16,174 @@ export function ComboList({ rows }) {
 }
 
 /**
- * 「1号艇が1着のとき、2着・3着に来たのは」（BOA-831 案1b、spec D-44 (3)。承認モック v2）。
- * 2〜6号艇 × 2着・3着の割合を1つの表に並べる（中に切り替えは置かない。軸の着順の切り替えと見分けがつかなくなるため）。
- * 件数は札（1号艇が1着の件数）。件数が少ない（MIN_SCENARIO 未満）ときは割合を出さず件数だけ
- * @param {{f: ReturnType<typeof import("../../../utils/assistSummary").winFollowers>, label: string, axisK: number, axisN: number}} props
- *   axisK・axisN は軸の大きい数字（返還のあったレースを含む）。件数が同じなら「同じレース」と書く
+ * 軸の艇を選ぶ1本の帯（BOA-845、承認モック v3）。「軸（1着）」の札＋6つ（丸と「軸」の2段）。選んだ艇は塗り。
+ * 図の艇の丸（押すと深掘り）と見た目を分ける。radiogroup なので左右の矢印でも選べる
  */
-export default function WinFollowers({
-  f,
-  label,
-  axisK,
-  axisN,
-  target = 1,
-  above = true,
-}) {
-  // 上の大きい数字が1着のときだけ「上の 65/119」を指す
-  // 上に軸の大きい数字（1着）があるときだけ「上の 65/119」を指す。相手レンズ（above=false）では上を指さない
-  const win = above && target === 1;
-  const note = followNoteKind(f.n, axisK);
-  const val = (k) => (f.few ? C.followCount(k) : `${pct(k, f.n)}%`);
+function AxisPicker({ axis, onAxis }) {
+  const refs = useRef([]);
+  const move = (e, b) => {
+    const step =
+      e.key === "ArrowRight" || e.key === "ArrowDown"
+        ? 1
+        : e.key === "ArrowLeft" || e.key === "ArrowUp"
+          ? -1
+          : 0;
+    if (!step) return;
+    e.preventDefault();
+    const next = ((b - 1 + step + 6) % 6) + 1;
+    onAxis(next);
+    refs.current[next - 1]?.focus();
+  };
+  return (
+    <div className="ta-axis-pick-row">
+      <span className="ta-axis-pick-lbl">{C.followAxisLabel}</span>
+      <div
+        className="ta-axis-pick"
+        role="radiogroup"
+        aria-label={C.followAxisGroup}
+      >
+        {[1, 2, 3, 4, 5, 6].map((b) => (
+          <button
+            key={b}
+            ref={(el) => (refs.current[b - 1] = el)}
+            type="button"
+            role="radio"
+            aria-checked={b === axis}
+            aria-label={`${b}号艇を${C.followAxisBtn}`}
+            tabIndex={b === axis ? 0 : -1}
+            onClick={() => b !== axis && onAxis(b)}
+            onKeyDown={(e) => move(e, b)}
+          >
+            <BoatBadge n={b} size="sm" />
+            <span aria-hidden="true">{C.followAxisBtn}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 「{X}号艇を軸にしたときの2着」（BOA-845、spec D-48、承認モック v3）。範囲は全艇とも会場の全レース（scenario の VA）。
+ * 6行固定（軸の艇は「軸（1着）」）。棒は軸のときの2着、縦線と「問わずq%」は軸を問わない2着（1行の数字は2個）。
+ * 3着は軸の艇で変わらない（boa845-axis-place.md）ので出さない。30件未満は割合を出さず件数だけ
+ * @param {{f: ReturnType<typeof import("../../../utils/assistSummary").winFollowers>|null,
+ *   any: ReturnType<typeof import("../../../utils/assistSummary").secondAny>|null, axis: number, venue: string|null,
+ *   onAxis: (boat: number) => void, auto: boolean, raceId: string}} props auto は1着の候補に合わせて選んだとき
+ */
+export default function WinFollowers({ f, any, axis, venue, onAxis, auto, raceId }) {
+  const q = (b) => (any ? pct(any.second[b - 1], any.n) : null);
+  const others = [1, 2, 3, 4, 5, 6].filter((b) => b !== axis);
+  const topBoat =
+    f && !f.few
+      ? others.reduce((a, b) => (f.second[b - 1] > f.second[a - 1] ? b : a))
+      : null;
+  const concl =
+    topBoat && any
+      ? C.followConcl(axis, topBoat, pct(f.second[topBoat - 1], f.n), q(topBoat))
+      : null;
   return (
     <section className="ta-box">
-      <h3>{C.followHeading(1)}</h3>
-      <p className="ta-note">{C.followOnly(1)}</p>
-      <span className="ta-scopechip ta-num">
-        {C.followScope(label, 1, f.n)}
-      </span>
-      {f.few && <p className="ta-note">{C.flowFew}</p>}
-      <table className="ta-follow ta-num">
-        <thead>
-          <tr>
-            <th scope="col">
-              <span className="ta-sr">{C.followBoatCol}</span>
-            </th>
-            <th scope="col">{C.followPos(2)}</th>
-            <th scope="col">{C.followPos(3)}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {[2, 3, 4, 5, 6].map((b) => (
-            <tr key={b}>
-              <th scope="row">
-                {/* 読み上げは「{n}号艇」の1回だけ（丸の数字と重ねない） */}
-                <span aria-hidden="true">
-                  <BoatBadge n={b} size="sm" />
+      <AxisPicker axis={axis} onAxis={onAxis} />
+      <h3 className="ta-follow-h">
+        <BoatBadge n={axis} size="sm" />
+        {C.followHeading(axis).replace(/^\d+/, "")}
+      </h3>
+      {auto && <p className="ta-note">{C.followAuto(axis)}</p>}
+      {concl && (
+        <p className="ta-follow-concl ta-num">
+          {concl[0]}
+          <b>{concl[1]}</b>
+          {concl[2]}
+        </p>
+      )}
+      <p className="ta-note">{C.followNoThird}</p>
+      {f ? (
+        <>
+          <span className="ta-scopechip ta-num">
+            {C.followScope(C.followVenueAll(venue), axis, f.n)}
+          </span>
+          {f.few ? (
+            <p className="ta-note">{C.flowFew}</p>
+          ) : (
+            <div className="ta-follow-legend" aria-hidden="true">
+              <span>
+                <i className="ta-follow-lf" />
+                {C.followLegendAxis(axis)}
+              </span>
+              {any && (
+                <span>
+                  <i className="ta-follow-lb" />
+                  {C.followLegendAny}
                 </span>
-                <span className="ta-sr">{`${b}号艇`}</span>
-              </th>
-              {[f.second[b - 1], f.third[b - 1]].map((k, i) => (
-                <td key={i}>
-                  <div className="ta-follow-cell">
-                    <span className="ta-follow-track" aria-hidden="true">
-                      <span
-                        className="ta-follow-fill"
-                        style={{ width: `${(k / f.n) * 100}%` }}
-                      />
+              )}
+            </div>
+          )}
+          <table className="ta-follow ta-num">
+            <tbody>
+              {[1, 2, 3, 4, 5, 6].map((b) => (
+                <tr key={b}>
+                  <th scope="row">
+                    {/* 読み上げは「{n}号艇」の1回だけ（丸の数字と重ねない） */}
+                    <span aria-hidden="true">
+                      <BoatBadge n={b} size="sm" />
                     </span>
-                    <span>{val(k)}</span>
-                  </div>
-                </td>
+                    <span className="ta-sr">{`${b}号艇`}</span>
+                  </th>
+                  {b === axis ? (
+                    <td colSpan={3} className="ta-follow-axis">
+                      {C.followAxisLabel}
+                    </td>
+                  ) : f.few ? (
+                    <td colSpan={3}>{C.followCount(f.second[b - 1])}</td>
+                  ) : (
+                    <>
+                      <td className="ta-follow-bar">
+                        <span className="ta-follow-track" aria-hidden="true">
+                          <span
+                            className="ta-follow-fill"
+                            style={{ width: `${(f.second[b - 1] / f.n) * 100}%` }}
+                          />
+                          {any && (
+                            <span
+                              className="ta-follow-base"
+                              style={{ left: `${q(b)}%` }}
+                            />
+                          )}
+                        </span>
+                      </td>
+                      <td className="ta-follow-p">
+                        <b>{pct(f.second[b - 1], f.n)}%</b>
+                      </td>
+                      <td className="ta-follow-u">
+                        {any ? C.followAny(q(b)) : ""}
+                      </td>
+                    </>
+                  )}
+                </tr>
               ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {f.topTrifecta.length > 0 && (
-        <p className="ta-note ta-num">
-          {C.flowTopTrifecta}: <ComboList rows={f.topTrifecta} />
-        </p>
+            </tbody>
+          </table>
+          {f.topTrifecta.length > 0 && (
+            <p className="ta-note ta-num">
+              {C.flowTopTrifecta}: <ComboList rows={f.topTrifecta} />
+            </p>
+          )}
+        </>
+      ) : (
+        <p className="ta-note">{C.followNone(axis)}</p>
       )}
-      {note === "same" && (
-        <p className="ta-note ta-num">
-          {win ? C.followSame(axisK, axisN) : C.followSameAlone(axisK, axisN)}
-        </p>
-      )}
-      {note === "refund" && (
-        <p className="ta-note ta-num">
-          {win ? C.followRefund(f.n, axisK) : C.followRefundAlone(f.n, axisK)}
-        </p>
-      )}
+      {/* 龍神ソナーの着順の流れ（サンキー図）へ。軸を選んだ状態で開く URL は BOA-847 */}
+      <Link
+        className="ta-follow-sonar"
+        to={`/race/${raceId}?tab=sonar&sonar=scenario`}
+      >
+        <span>
+          <b>{C.followSonar}</b>
+          <span className="ta-follow-sonar-sub">{C.followSonarSub(axis)}</span>
+        </span>
+        <span aria-hidden="true">›</span>
+      </Link>
     </section>
   );
 }
