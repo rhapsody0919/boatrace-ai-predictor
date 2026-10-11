@@ -143,7 +143,10 @@
       "raceCard": "出走表與分頁",
       "assist": "思考輔助",
       "new": "新",
-      "note": "依查看順序排列數據與理論的畫面"
+      "note": "依照不會迷路的閱讀順序，排列數據與理論"
+    },
+    "assistEntry": {
+      "lead": "想依序查看資料的話"
     },
     "metaTitle": "{{venue}} 第{{race}}場 AI數據分析（{{date}}）- 龍神雷達",
     "metaDescription": "免費查看{{date}}{{venue}}第{{race}}場的出賽表資料、AI數據分析與展開預測。",

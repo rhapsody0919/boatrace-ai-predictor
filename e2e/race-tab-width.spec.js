@@ -69,11 +69,12 @@ test("「?」は見た目16pxのまま、押せる範囲は24×24", async ({ pag
   await btn.scrollIntoViewIfNeeded();
   const b = await btn.boundingBox();
   expect(Math.round(b.width)).toBeLessThanOrEqual(18);
-  // ボタンの外側 3px の点（見た目の外、押せる範囲の内）を押しても「?」が反応する
-  const hit = await page.evaluate(
-    ({ x, y }) =>
-      document.elementFromPoint(x, y)?.closest(".term-hint__button") !== null,
-    { x: b.x + b.width + 3, y: b.y + b.height / 2 },
-  );
+  // ボタンの外側 3px の点（見た目の外、押せる範囲の内）を押しても「?」が反応する。
+  // 位置の取得と判定を同じ瞬間に行う（読み込み中に行がずれると、別々に取った座標が外れる）
+  const hit = await btn.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const at = document.elementFromPoint(r.right + 3, r.top + r.height / 2);
+    return at?.closest(".term-hint__button") === el;
+  });
   expect(hit).toBe(true);
 });
